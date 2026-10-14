@@ -30,8 +30,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.apps.builtins.design_critique.backend import routes
-from kiro_crew.dashboard import token_auth
+from efm_go.apps.builtins.design_critique.backend import routes
+from efm_go.dashboard import token_auth
 
 OWNER = "owner-user"
 BASE = "/api/apps/design-critique"

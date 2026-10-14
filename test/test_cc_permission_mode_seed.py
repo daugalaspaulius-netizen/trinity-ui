@@ -29,16 +29,16 @@ from test_acp_seed_provenance import (  # noqa: F401 -- autouse fixture
     isolated_records,
 )
 
-from kiro_crew.acp import seed_provenance as sp
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.types import CC_PERMISSION_MODE_AUTO, CC_PERMISSION_MODE_BYPASS
-from kiro_crew.agent_sdk.backends import (
+from efm_go.acp import seed_provenance as sp
+from efm_go.acp.client import AcpClient
+from efm_go.acp.types import CC_PERMISSION_MODE_AUTO, CC_PERMISSION_MODE_BYPASS
+from efm_go.agent_sdk.backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_KIRO,
     CC_PERMISSION_MODE_ENV,
     resolve_cc_permission_mode,
 )
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 
 def _cfg(backend: str, tmp_path: Path) -> KiroCrewConfig:
@@ -51,7 +51,7 @@ def _cfg(backend: str, tmp_path: Path) -> KiroCrewConfig:
     cfg_file.write_text(
         json.dumps({"agent": {"provider": "acp", "acp_backend": backend}}), encoding="utf-8"
     )
-    with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+    with unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_file):
         return KiroCrewConfig.load()
 
 
@@ -131,7 +131,7 @@ class TestFactoryThreadsTheMode:
 
     @staticmethod
     def _captured(backend: str, tmp_path: Path, **factory_kwargs: object) -> dict:
-        import kiro_crew.providers.acp as acp_mod
+        import efm_go.providers.acp as acp_mod
 
         seen: list[dict] = []
 

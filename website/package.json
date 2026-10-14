@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "license": "Apache-2.0",
-  "repository": "https://github.com/kirodotdev/KiroCrew",
-  "homepage": "https://github.com/kirodotdev/KiroCrew",
+  "repository": "https://efmleads.com",
+  "homepage": "https://efmleads.com",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

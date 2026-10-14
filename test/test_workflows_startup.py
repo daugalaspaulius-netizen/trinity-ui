@@ -10,9 +10,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.workflows.registry import RunHandle, RunRegistry
-from kiro_crew.workflows.service import WorkflowService
-from kiro_crew.workflows.store import WorkflowRunStore
+from efm_go.workflows.registry import RunHandle, RunRegistry
+from efm_go.workflows.service import WorkflowService
+from efm_go.workflows.store import WorkflowRunStore
 
 
 async def _create(**kwargs):
@@ -156,8 +156,8 @@ async def test_dashboard_binds_before_restart_write_and_owns_initialization(
         _start_dashboard,
     )
 
-    from kiro_crew.dashboard.handlers.workflows import api_workflow_runs
-    from kiro_crew.workflows import service
+    from efm_go.dashboard.handlers.workflows import api_workflow_runs
+    from efm_go.workflows import service
 
     store = WorkflowRunStore(base_dir=tmp_path)
     await asyncio.to_thread(_seed, store)
@@ -194,7 +194,7 @@ async def test_dashboard_binds_before_restart_write_and_owns_initialization(
         return result
 
     monkeypatch.setattr(_FakeSockSite, "start", _marked_start)
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.taskrunner import TaskRunner
 
     driver = TaskRunner(sessions=MagicMock(), context_builder=MagicMock(), work_dir=tmp_path)
     attach = MagicMock(wraps=driver.attach_workflow_service)
@@ -320,7 +320,7 @@ async def test_async_reload_refuses_inventory_failure_but_keeps_write_compatibil
 
 @pytest.mark.asyncio
 async def test_async_service_without_persistence_does_not_construct_store(monkeypatch):
-    from kiro_crew.workflows import service
+    from efm_go.workflows import service
 
     store_factory = MagicMock(side_effect=AssertionError("unexpected store construction"))
     monkeypatch.setattr(service, "WorkflowRunStore", store_factory)
@@ -337,8 +337,8 @@ async def test_dashboard_initialization_failure_keeps_workflows_unavailable(
     from aiohttp.test_utils import make_mocked_request
     from test_dashboard_server_startup_coverage import _dashboard
 
-    from kiro_crew.dashboard.handlers.workflows import api_workflow_runs
-    from kiro_crew.taskrunner import TaskRunner, WorkflowInitializing
+    from efm_go.dashboard.handlers.workflows import api_workflow_runs
+    from efm_go.taskrunner import TaskRunner, WorkflowInitializing
 
     async def fail(**kwargs):
         raise RuntimeError("test initialization failure")
@@ -466,8 +466,8 @@ async def test_channel_task_admission_waits_for_workflow_attachment(
 ):
     from test_dashboard_server_startup_coverage import _dashboard
 
-    from kiro_crew.messaging.commands import task_arg_reply
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.messaging.commands import task_arg_reply
+    from efm_go.taskrunner import TaskRunner
 
     entered, release = asyncio.Event(), asyncio.Event()
     original_create = WorkflowService.create
@@ -506,7 +506,7 @@ async def test_channel_task_admission_waits_for_workflow_attachment(
             await asyncio.wait_for(initializer, 5)
             reply = await task_arg_reply(str(spec), orch.task_runner)
             if init_fails:
-                from kiro_crew.taskrunner import WorkflowInitializing
+                from efm_go.taskrunner import WorkflowInitializing
 
                 assert state.workflow_service is None
                 assert state.task_runner is driver
@@ -552,7 +552,7 @@ async def test_channel_task_admission_waits_for_workflow_attachment(
     "entry", ["plan", "run", "start_background", "execute_plan", "retry_from_task"]
 )
 async def test_shared_task_admission_refuses_before_mutating_state(tmp_path, entry):
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.taskrunner import TaskRunner
 
     driver = TaskRunner(sessions=MagicMock(), work_dir=tmp_path)
     driver.defer_workflow_attachment()
@@ -567,7 +567,7 @@ async def test_shared_task_admission_refuses_before_mutating_state(tmp_path, ent
 
 @pytest.mark.asyncio
 async def test_async_factory_moves_constructor_io_off_loop(tmp_path, monkeypatch):
-    from kiro_crew.workflows import library, service, store
+    from efm_go.workflows import library, service, store
 
     loop_thread = threading.get_ident()
     observed = []
@@ -601,7 +601,7 @@ async def test_async_factory_moves_constructor_io_off_loop(tmp_path, monkeypatch
 async def test_cancelled_factory_drains_constructor_before_return(
     tmp_path, monkeypatch, constructor_fails
 ):
-    from kiro_crew.workflows import service
+    from efm_go.workflows import service
 
     entered = asyncio.Event()
     release, finished = threading.Event(), threading.Event()
@@ -650,13 +650,13 @@ async def test_dashboard_task_reads_and_cancel_remain_available_during_init(tmp_
     from test_dashboard_server_startup_coverage import _dashboard
     from test_handlers_taskrunner_coverage import _body, _request
 
-    from kiro_crew.dashboard.handlers.taskrunner import (
+    from efm_go.dashboard.handlers.taskrunner import (
         api_taskrunner_cancel,
         api_taskrunner_start,
         api_taskrunner_status,
     )
-    from kiro_crew.task_models import Project
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.task_models import Project
+    from efm_go.taskrunner import TaskRunner
 
     entered, release = asyncio.Event(), asyncio.Event()
     real_create = WorkflowService.create
@@ -717,14 +717,14 @@ async def test_dashboard_task_reads_and_cancel_remain_available_during_init(tmp_
 async def test_restored_link_mutations_wait_for_attachment(tmp_path, operation, init_fails):
     from test_handlers_taskrunner_coverage import _body, _request
 
-    from kiro_crew.dashboard.handlers.taskrunner import (
+    from efm_go.dashboard.handlers.taskrunner import (
         api_taskrunner_delete,
         api_taskrunner_update_plan,
         api_taskrunner_update_task,
     )
-    from kiro_crew.task_models import Project, Task
-    from kiro_crew.task_planner import plan_to_yaml
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.task_models import Project, Task
+    from efm_go.task_planner import plan_to_yaml
+    from efm_go.taskrunner import TaskRunner
 
     store = WorkflowRunStore(tmp_path / "workflows")
     workflows = WorkflowService(sessions=None, store=store)
@@ -758,7 +758,7 @@ async def test_restored_link_mutations_wait_for_attachment(tmp_path, operation, 
 
     async def mutate():
         if operation == "project_delete":
-            from kiro_crew.dashboard.handlers_project import api_project_delete
+            from efm_go.dashboard.handlers_project import api_project_delete
 
             return await api_project_delete(
                 _request(state, "DELETE", match_info={"id": "existing"})
@@ -810,8 +810,8 @@ async def test_restored_link_mutations_wait_for_attachment(tmp_path, operation, 
 async def test_from_chat_refuses_before_creating_an_unlinked_plan(tmp_path):
     from test_handlers_taskrunner_coverage import _body, _request
 
-    from kiro_crew.dashboard.handlers.taskrunner import api_taskrunner_from_chat
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.dashboard.handlers.taskrunner import api_taskrunner_from_chat
+    from efm_go.taskrunner import TaskRunner
 
     driver = TaskRunner(sessions=MagicMock(), work_dir=tmp_path / "tasks")
     driver.defer_workflow_attachment()
@@ -851,9 +851,9 @@ async def test_task_handler_readiness_errors_are_typed(
 
     from test_handlers_taskrunner_coverage import _body, _request
 
-    from kiro_crew.dashboard.handlers import taskrunner as handlers
-    from kiro_crew.task_models import Project, Task
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.dashboard.handlers import taskrunner as handlers
+    from efm_go.task_models import Project, Task
+    from efm_go.taskrunner import TaskRunner
 
     driver = TaskRunner(sessions=MagicMock(), work_dir=tmp_path / "tasks")
     run = Project(spec_path="", spec_content="", task_id="existing", status="planned")
@@ -898,7 +898,7 @@ async def test_project_delete_preserves_unrelated_errors():
 
     from test_project_alias import _make_app, _make_request
 
-    from kiro_crew.dashboard.handlers_project import api_project_delete
+    from efm_go.dashboard.handlers_project import api_project_delete
 
     runner = SimpleNamespace(delete_run=AsyncMock(side_effect=RuntimeError("storage failure")))
     request = _make_request(_make_app(runner), "DELETE", match_info={"id": "existing"})
@@ -911,7 +911,7 @@ async def test_project_delete_preserves_unrelated_errors():
 async def test_requested_persistence_never_falls_back_when_store_cannot_open(
     monkeypatch, async_factory
 ):
-    from kiro_crew.workflows import service
+    from efm_go.workflows import service
 
     factory = MagicMock(side_effect=OSError("store unavailable"))
     monkeypatch.setattr(service, "WorkflowRunStore", factory)

@@ -1,6 +1,6 @@
 """Arrival provenance filing — the folder resolution behind an arriving session.
 
-Unit-level cover for :mod:`kiro_crew.dashboard.arrival_folders`. The handler's own
+Unit-level cover for :mod:`efm_go.dashboard.arrival_folders`. The handler's own
 use of it (both arrival routes, the late resolution, the mid-import repair) is
 pinned in ``test/test_session_transfer.py``; what is pinned HERE is the resolution
 itself, and specifically the five folder-lifecycle constraints
@@ -24,8 +24,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.dashboard import arrival_folders as af
-from kiro_crew.dashboard.chat_folders import (
+from efm_go.dashboard import arrival_folders as af
+from efm_go.dashboard.chat_folders import (
     MAX_CHAT_FOLDERS,
     folder_ids_filed_into,
     note_folder_filed,
@@ -82,7 +82,7 @@ def test_the_mirrored_clip_matches_the_folder_store_itself():
     following it here fails HERE instead of shipping a duplicate folder per
     arrival from a long-named sender.
     """
-    from kiro_crew.dashboard.chat_folders import create_folder_record
+    from efm_go.dashboard.chat_folders import create_folder_record
 
     source = inspect.getsource(create_folder_record)
     found = re.search(r"name = name\.strip\(\)\[:(\d+)\]", source)
@@ -742,7 +742,7 @@ async def test_filing_a_session_through_the_route_records_the_row(tmp_path, monk
     from aiohttp.test_utils import TestClient, TestServer
     from chat_test_helpers import _make_folder_app, _make_state
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("myslot")
     slot.append("user", "hello")
@@ -773,7 +773,7 @@ async def test_a_refused_placement_records_nothing(tmp_path, monkeypatch):
     from aiohttp.test_utils import TestClient, TestServer
     from chat_test_helpers import _make_folder_app, _make_state
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("myslot")
     slot.append("user", "hello")
@@ -809,9 +809,9 @@ async def test_a_placement_refused_under_the_lock_records_nothing(tmp_path, monk
     from aiohttp.test_utils import TestClient, TestServer
     from chat_test_helpers import _make_folder_app, _make_state
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_folders._unhide_folder",
+        "efm_go.dashboard.chat_folders._unhide_folder",
         _refuse_unhide,
     )
     state = _make_state(tmp_path)

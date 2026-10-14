@@ -96,7 +96,7 @@ if [ -x "$_kirocrew_dir/ensure-node.sh" ]; then
     # Linux 2, whose glibc 2.26 cannot load the official builds -- ensure-node.sh
     # installs a private toolchain that neither nvm nor mise owns, so the
     # re-sourcing above cannot surface it. It records the directory it settled on;
-    # consume that marker the way the Makefile and kiro_crew.env.node_bin_dirs()
+    # consume that marker the way the Makefile and efm_go.env.node_bin_dirs()
     # already do. Without this the checks below miss the node just installed and
     # the frontend build plus the agent-backend install are skipped.
     _nbd="$(cat "${KIROCREW_HOME:-$HOME/.kiro/crew}/node-bin-dir" 2>/dev/null || true)"
@@ -170,18 +170,16 @@ fi
 if _check kiro-cli; then
     echo "  ✅ kiro-cli ($(which kiro-cli))"
 else
-    echo "  ⚠️  Kiro CLI is required for the default agent."
-    echo "       Install it separately from https://kiro.dev/cli/"
+    echo "  ⚠️  EFM Go does not install a foreign agent CLI."
 fi
-echo "  Sign in separately with: kiro-cli login"
-echo "  This script does not install Kiro CLI or handle sign-in."
+echo "  This script does not install a foreign CLI or handle that sign-in."
 echo ""
 
 # ── 4. Build (npm/vite frontend + pip backend) ──
 
 echo "── Step 4: Build ──"
 
-# Frontend: vite emits to website/dist; stage into src/kiro_crew/static/dist
+# Frontend: vite emits to website/dist; stage into src/efm_go/static/dist
 if _check node && [ -d "$_kirocrew_dir/website" ]; then
     echo "→ Building frontend (website/)..."
     if (cd "$_kirocrew_dir/website" \
@@ -189,12 +187,12 @@ if _check node && [ -d "$_kirocrew_dir/website" ]; then
                  || npm install --no-audit --no-fund --loglevel=error; } \
             && npm run build); then
         _dist_src="$_kirocrew_dir/website/dist"
-        _dist_dst="$_kirocrew_dir/src/kiro_crew/static/dist"
+        _dist_dst="$_kirocrew_dir/src/efm_go/static/dist"
         if [ -d "$_dist_src" ]; then
             rm -rf "$_dist_dst"
             mkdir -p "$(dirname "$_dist_dst")"
             cp -R "$_dist_src" "$_dist_dst"
-            echo "  ✅ Frontend built and staged → src/kiro_crew/static/dist"
+            echo "  ✅ Frontend built and staged → src/efm_go/static/dist"
         else
             echo "  ⚠️  website/dist not found after build — dashboard will use legacy fallback"
         fi

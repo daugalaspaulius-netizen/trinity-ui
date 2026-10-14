@@ -21,12 +21,12 @@ import dataclasses
 
 import pytest
 
-from kiro_crew import agent_backend_governance as abg
-from kiro_crew.agent_sdk import backends as acp_backends
-from kiro_crew.platform import context as ctx_mod
-from kiro_crew.platform import governance_profiles as gp
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.governance import SCOPE_CATALOG, parse_policy
+from efm_go import agent_backend_governance as abg
+from efm_go.agent_sdk import backends as acp_backends
+from efm_go.platform import context as ctx_mod
+from efm_go.platform import governance_profiles as gp
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.governance import SCOPE_CATALOG, parse_policy
 
 FLOOR = acp_backends.GOVERNANCE_FLOOR_BACKEND
 
@@ -39,7 +39,7 @@ def _isolate(tmp_path, monkeypatch):
     gp.reset_store()
     # Both registry sets are process-global module state; restore them so one test's
     # recompute cannot leak into the next. Reached through ``agent_sdk.backends``,
-    # the module that DEFINES the pair: the ``kiro_crew.acp_backends`` shim
+    # the module that DEFINES the pair: the ``efm_go.acp_backends`` shim
     # re-exports the public names only, because a second binding to a mutable set
     # is how two views of one registry start disagreeing.
     baseline = set(acp_backends._baseline)
@@ -54,7 +54,7 @@ def _isolate(tmp_path, monkeypatch):
 
 
 def _install(policy_body):
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     base = build_default_context(KiroCrewConfig.load())
     ceiling = parse_policy(policy_body) if policy_body is not None else None
@@ -242,7 +242,7 @@ class TestAudit:
             def log_governance_decision(self, **kw):
                 records.append(kw)
 
-        monkeypatch.setattr("kiro_crew.sel.sel", lambda: _Sel())
+        monkeypatch.setattr("efm_go.sel.sel", lambda: _Sel())
         abg.narrow_selectable_backends()
         outcomes = {r["item"]: r["outcome"] for r in records}
         # "allowed"/"denied" is the vocabulary log_governance_decision pins and the
@@ -259,7 +259,7 @@ class TestAudit:
         def _boom():
             raise RuntimeError("SEL unavailable")
 
-        monkeypatch.setattr("kiro_crew.sel.sel", _boom)
+        monkeypatch.setattr("efm_go.sel.sel", _boom)
         assert abg.narrow_selectable_backends() == ["kas"]
 
 
@@ -309,7 +309,7 @@ class TestWhenAPolicyChangeBinds:
         # offering the backend while sessions keep running on it, and an operator reads
         # the disappearance as "it stopped being used". Deleting this test is part of
         # that change, not a way around it.
-        from kiro_crew.platform import policy_distribution as pd
+        from efm_go.platform import policy_distribution as pd
 
         _registered(monkeypatch, FLOOR, "kas")
         _install(None)
@@ -322,7 +322,7 @@ class TestWhenAPolicyChangeBinds:
     def test_the_ceiling_itself_is_still_installed(self, monkeypatch):
         # Not re-narrowing must not turn into not applying: every other scope reads the
         # new ceiling per decision and gets it immediately.
-        from kiro_crew.platform import policy_distribution as pd
+        from efm_go.platform import policy_distribution as pd
 
         _registered(monkeypatch, FLOOR, "kas")
         _install(None)
@@ -359,7 +359,7 @@ class TestNoSecondGate:
         # A second derivation here (an intersection with a policy read) is the drift
         # the registry replaced, and it would also put a ceiling read on a request
         # path. The narrowed registry is the whole answer.
-        from kiro_crew.dashboard.handlers import core as core_mod
+        from efm_go.dashboard.handlers import core as core_mod
 
         _registered(monkeypatch, FLOOR, "kas", "claude")
         _install(_policy({"mode": "deny", "deny": ["claude"]}))
@@ -381,7 +381,7 @@ class TestNoSecondGate:
         # Asserted on the source because the rule is about the code's shape.
         import inspect
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         src = inspect.getsource(KiroCrewConfig.create_provider_factory)
         assert "effective_acp_backend" not in src
@@ -408,7 +408,7 @@ class TestNoSecondGate:
             if isinstance(node, ast.Import)
             for alias in node.names
         }
-        assert not [m for m in imported if m.startswith("kiro_crew.platform")]
+        assert not [m for m in imported if m.startswith("efm_go.platform")]
         called = {
             node.func.id
             for node in ast.walk(tree)

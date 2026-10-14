@@ -29,19 +29,19 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import autonudge_judge as judge
-from kiro_crew import irq
-from kiro_crew.autonudge import (
+from efm_go import autonudge_judge as judge
+from efm_go import irq
+from efm_go.autonudge import (
     _MAX_QUIET_STREAK,
     AutoNudgeService,
     NudgeLoop,
     _bounded_judge_recent,
 )
-from kiro_crew.config.sections import DecisionsConfig, NudgeWakeConfig
-from kiro_crew.decisions import gate as decisions_gate
-from kiro_crew.decisions import log as decisions_log
-from kiro_crew.decisions.points import nudge_wake as point
-from kiro_crew.monitoring.models import MonitorState
+from efm_go.config.sections import DecisionsConfig, NudgeWakeConfig
+from efm_go.decisions import gate as decisions_gate
+from efm_go.decisions import log as decisions_log
+from efm_go.decisions.points import nudge_wake as point
+from efm_go.monitoring.models import MonitorState
 
 
 def _verdict(outcome: irq.Outcome) -> irq.Verdict:
@@ -257,7 +257,7 @@ class TestMutatingToolReading:
         Names with no scope row are not covered here -- the KAS ids have none -- so this
         sits alongside that join rather than replacing it.
         """
-        from kiro_crew.platform.governance import BUILTIN_TOOL_SCOPES
+        from efm_go.platform.governance import BUILTIN_TOOL_SCOPES
 
         write_scopes = {"filesystem.write", "commands", "tools"}
         covered = 0
@@ -276,7 +276,7 @@ class TestMutatingToolReading:
 
     def test_the_builtin_half_is_the_approval_gate_s_own_set(self):
         """Not a copy of it: a copy is what admitted a write-capable tool."""
-        from kiro_crew.hooks import _HOST_READ_ONLY_BUILTIN_TOOLS
+        from efm_go.hooks import _HOST_READ_ONLY_BUILTIN_TOOLS
 
         assert _HOST_READ_ONLY_BUILTIN_TOOLS
         assert _HOST_READ_ONLY_BUILTIN_TOOLS <= judge.READ_ONLY_BUILTIN_TOOLS
@@ -290,7 +290,7 @@ class TestMutatingToolReading:
         sides, so a renamed or added tool id breaks here rather than silently leaving a
         stale spelling in the judge that classifies a live read as unknown.
         """
-        from kiro_crew.acp import kas_permissions
+        from efm_go.acp import kas_permissions
 
         read_only_kiro_names = ("fs_read", "grep", "glob", "web_fetch", "web_search")
         for name in read_only_kiro_names:
@@ -1673,8 +1673,8 @@ class TestQuietStreakBound:
     def test_the_point_does_not_import_the_loop_engine(self):
         # A cycle deferred by a function-local import is still a cycle.
         source = Path(point.__file__).read_text(encoding="utf-8")
-        assert "from kiro_crew.autonudge import" not in source
-        assert "import kiro_crew.autonudge" not in source
+        assert "from efm_go.autonudge import" not in source
+        assert "import efm_go.autonudge" not in source
 
 
 class TestVerdictIdBound:
@@ -1717,18 +1717,18 @@ class TestTheStoredPullRequestBaselineIsBoundOnLoad:
 
     @staticmethod
     def _bound(raw):
-        from kiro_crew.autonudge import _bounded_judge_pr_seen
+        from efm_go.autonudge import _bounded_judge_pr_seen
 
         return _bounded_judge_pr_seen(raw)
 
     def test_an_oversized_id_list_is_capped(self):
-        from kiro_crew import autonudge as _an
+        from efm_go import autonudge as _an
 
         loaded = self._bound({"digest": "a" * 16, "remarks": [f"c{i}" for i in range(5_000)]})
         assert len(loaded["remarks"]) == _an._JUDGE_PR_SEEN_REMARKS
 
     def test_a_long_id_and_a_long_digest_are_clipped(self):
-        from kiro_crew import autonudge as _an
+        from efm_go import autonudge as _an
 
         loaded = self._bound({"digest": "d" * 9_000, "remarks": ["x" * 9_000]})
         assert len(loaded["digest"]) == _an._JUDGE_PR_SEEN_DIGEST_CHARS
@@ -1887,8 +1887,8 @@ class TestStoredHistoryLoader:
             built.append(item["at"])
             return dict(item)
 
-        monkeypatch.setattr("kiro_crew.autonudge._bounded_judge_verdict", _build)
-        with caplog.at_level("DEBUG", logger="kiro_crew.autonudge"):
+        monkeypatch.setattr("efm_go.autonudge._bounded_judge_verdict", _build)
+        with caplog.at_level("DEBUG", logger="efm_go.autonudge"):
             loaded = _bounded_judge_recent(rows)
 
         assert len(built) == judge.MAX_STORED_VERDICTS
@@ -1913,7 +1913,7 @@ class TestTurnCompleteLabelling:
         runner_path = (
             Path(__file__).resolve().parents[1]
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "dashboard"
             / "chat_runner.py"
         )

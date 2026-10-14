@@ -31,8 +31,8 @@ from pathlib import Path
 import acp_launch_capture as capture_mod
 import pytest
 
-from kiro_crew.acp import client as client_mod
-from kiro_crew.agent_sdk.backends import (
+from efm_go.acp import client as client_mod
+from efm_go.agent_sdk.backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_DEEPSEEK,

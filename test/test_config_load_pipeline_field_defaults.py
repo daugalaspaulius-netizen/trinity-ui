@@ -28,11 +28,11 @@ from typing import Any
 import pytest
 from test_config_load_pipeline import _DECLARED_EXCEPTIONS, _document, _section_fields
 
-from kiro_crew.acp_backends import selectable_backends
-from kiro_crew.config import loader, sections, validation
-from kiro_crew.instances.constants import DEFAULT_CONNECT_TIMEOUT_SECS, DEFAULT_MINT_TIMEOUT_SECS
-from kiro_crew.monitoring.limits import DEFAULT_RUNTIME_CEILING_SECS
-from kiro_crew.stt import models as stt_models
+from efm_go.acp_backends import selectable_backends
+from efm_go.config import loader, sections, validation
+from efm_go.instances.constants import DEFAULT_CONNECT_TIMEOUT_SECS, DEFAULT_MINT_TIMEOUT_SECS
+from efm_go.monitoring.limits import DEFAULT_RUNTIME_CEILING_SECS
+from efm_go.stt import models as stt_models
 
 _BARE = loader.KiroCrewConfig()
 

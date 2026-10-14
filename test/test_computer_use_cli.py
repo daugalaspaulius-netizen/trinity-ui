@@ -32,11 +32,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.computer_use import backend as cu_backend
-from kiro_crew.computer_use import cli as cu_cli
-from kiro_crew.computer_use import index as cu_index
-from kiro_crew.computer_use import service as cu_service
-from kiro_crew.computer_use.types import (
+from efm_go.computer_use import backend as cu_backend
+from efm_go.computer_use import cli as cu_cli
+from efm_go.computer_use import index as cu_index
+from efm_go.computer_use import service as cu_service
+from efm_go.computer_use.types import (
     ERROR_PREFIX,
     REFUSAL_DISABLED,
     TOOL_CLICK,
@@ -44,7 +44,7 @@ from kiro_crew.computer_use.types import (
     TOOL_GET_STATE,
     TOOL_LIST_APPS,
 )
-from kiro_crew.testing.fake_computer_use import FAKE_FILES_APP
+from efm_go.testing.fake_computer_use import FAKE_FILES_APP
 
 # ── Fixtures ──
 

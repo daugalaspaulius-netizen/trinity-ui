@@ -10,7 +10,7 @@ the temp file down before the first content byte and before the rename.
 Two layers guard against a new writer reintroducing the exposed shape:
 
 * ``scripts/check_lockdown_before_publish.py`` is an AST rule over
-  ``src/kiro_crew``, exercised below against fixtures for every shape it must
+  ``src/efm_go``, exercised below against fixtures for every shape it must
   catch and every correct shape it must not.
 * behavioural probes assert the ORDER at the live writers, rather than the
   final mode -- a final-mode assertion passes just as happily when the payload
@@ -585,7 +585,7 @@ class TestTheRealTree:
         """One whole-tree AST scan, shared by every test in this class.
 
         Both tests below independently re-derive `checker.main`'s per-file
-        `scan_path` results over the same `src/kiro_crew` tree; walking and
+        `scan_path` results over the same `src/efm_go` tree; walking and
         re-parsing every file twice per test is what made this class slow.
 
         Narrowed through ``source_corpus.iter_candidate_sources`` rather than a bare
@@ -605,7 +605,7 @@ class TestTheRealTree:
             require_any=("restrict_to_owner", "chmod_safe", "chmod", "fchmod_safe", "fchmod")
         ):
             # Same relative-to convention as `scan_path` (relative to REPO_ROOT,
-            # e.g. `src/kiro_crew/...`), so a KNOWN_UNCONVERTED key built from
+            # e.g. `src/efm_go/...`), so a KNOWN_UNCONVERTED key built from
             # this scan matches one built from `checker.main`.
             rel = (
                 path.relative_to(REPO_ROOT).as_posix()
@@ -829,7 +829,7 @@ def _home(tmp_path, monkeypatch):
 
 def _record_final_path_presence(final_path_of):
     """Patch restrict_to_owner, returning the list it records into."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     seen: list[bool] = []
     real = platform_compat.restrict_to_owner
@@ -855,10 +855,10 @@ class TestTheLiveTargetPointerIsLockedDownBeforePublication:
     """
 
     def test_write_target_never_publishes_an_unprotected_pointer(self, _home) -> None:
-        from kiro_crew.service import live_target
+        from efm_go.service import live_target
 
         seen, recording = _record_final_path_presence(live_target.pointer_path)
-        with patch("kiro_crew.platform_compat.restrict_to_owner", side_effect=recording):
+        with patch("efm_go.platform_compat.restrict_to_owner", side_effect=recording):
             live_target.write_target(_make_valid_checkout(_home))
 
         assert seen, "the pointer was written with no owner-only lockdown at all"
@@ -868,14 +868,14 @@ class TestTheLiveTargetPointerIsLockedDownBeforePublication:
         )
 
     def test_restore_never_publishes_an_unprotected_pointer(self, _home) -> None:
-        from kiro_crew.service import live_target
+        from efm_go.service import live_target
 
         live_target.write_target(_make_valid_checkout(_home))
         prior = live_target.pointer_path().read_text(encoding="utf-8")
         live_target.pointer_path().unlink()
 
         seen, recording = _record_final_path_presence(live_target.pointer_path)
-        with patch("kiro_crew.platform_compat.restrict_to_owner", side_effect=recording):
+        with patch("efm_go.platform_compat.restrict_to_owner", side_effect=recording):
             live_target.restore(prior)
 
         assert seen, "restore rewrote the pointer with no lockdown at all"

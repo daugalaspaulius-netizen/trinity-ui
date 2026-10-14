@@ -50,7 +50,7 @@ export const STATUSES = ['active', 'archived']
 // so the onboarding empty state treats this value as "no filter applied".
 export const DEFAULT_STATUS_FILTER = 'active'
 // Fallback shown/used only until GET /api/knowledge/config resolves. The
-// backend's `FileReader.SUPPORTED` (src/kiro_crew/knowledge/readers.py) is the
+// backend's `FileReader.SUPPORTED` (src/efm_go/knowledge/readers.py) is the
 // single source of truth for what upload ingests; this mirror exists so the
 // file picker and the copy are not empty during the config round-trip.
 // test/test_knowledge_formats_parity.py holds this list identical to

@@ -6,9 +6,7 @@
 # only public tooling: python3 + pip (backend) and npm + vite (frontend).
 # No Brazil, no Builder Toolbox, no internal registries.
 #
-# Run from inside a cloned repo:
-#   git clone https://github.com/kirodotdev/KiroCrew.git
-#   cd kirocrew
+# Run from inside a local checkout:
 #   bash minimal_install.sh
 #
 # Prerequisites: Python 3.12+, Node.js 22.12+ (24 LTS recommended), npm, git
@@ -62,7 +60,7 @@ echo "  Node:    $(node --version)"
 echo ""
 
 # ── 1. Frontend build (npm + vite) ──
-# Vite emits to website/dist; setup.py copies src/kiro_crew/static/dist into
+# Vite emits to website/dist; setup.py copies src/efm_go/static/dist into
 # the package at install time, so we stage the build there first.
 if [ -d "$REPO_DIR/website" ]; then
     echo "→ Building frontend (website/)…"
@@ -77,12 +75,12 @@ if [ -d "$REPO_DIR/website" ]; then
     ) || die "Frontend build failed. Fix the npm/vite error above and re-run."
     # Stage built assets where setup.py expects them.
     _dist_src="$REPO_DIR/website/dist"
-    _dist_dst="$REPO_DIR/src/kiro_crew/static/dist"
+    _dist_dst="$REPO_DIR/src/efm_go/static/dist"
     if [ -d "$_dist_src" ]; then
         rm -rf "$_dist_dst"
         mkdir -p "$(dirname "$_dist_dst")"
         cp -R "$_dist_src" "$_dist_dst"
-        echo "✓ Frontend built and staged → src/kiro_crew/static/dist"
+        echo "✓ Frontend built and staged → src/efm_go/static/dist"
     else
         echo "⚠ website/dist not found after build — dashboard assets may be missing"
     fi
@@ -155,8 +153,7 @@ else
     echo "⚠ npm not found — install the agent backend later:"
     echo "    npm i -g @agentclientprotocol/claude-agent-acp"
 fi
-echo "⚠ The default Kiro agent requires Kiro CLI; this installer does not install or sign in to it."
-echo "  Install it separately from https://kiro.dev/cli/ and run: kiro-cli login"
+echo "⚠ EFM Go does not install a foreign agent CLI."
 echo ""
 
 # ── 4. Symlink CLI (no shell rc modification) ──
@@ -169,9 +166,7 @@ echo ""
 echo "👻 KiroCrew installed!"
 echo ""
 echo "  Next steps:"
-echo "    1. Default agent: install Kiro CLI from https://kiro.dev/cli/"
-echo "                      then run: kiro-cli login"
-echo "       (skip this if you selected another ACP backend)"
+echo "    1. The foreign agent CLI is not part of this install."
 echo "    2. Run setup:    $HOME/.local/bin/kirocrew setup"
 echo "    3. Start it:     $HOME/.local/bin/kirocrew gateway"
 echo "       (or add ~/.local/bin to PATH and just run: kirocrew gateway)"

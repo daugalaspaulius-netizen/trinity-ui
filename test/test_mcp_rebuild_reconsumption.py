@@ -24,8 +24,8 @@ import pytest
 from mcp_merge_helpers import bundled_defaults as _bundled_defaults
 from mcp_merge_helpers import run_install_mcp_merge as _run_install_mcp_merge
 
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
-from kiro_crew.mcp_provenance import DERIVED_KEY
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.mcp_provenance import DERIVED_KEY
 
 
 @pytest.fixture(autouse=True)
@@ -33,14 +33,14 @@ def _pinned_kiro_cli_version(monkeypatch):
     """Pin the kiro-cli release the spec ``permissions`` gate believes is installed.
 
     Every rebuild here ends in ``_write_derived_permissions``, which reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``:
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``:
     one real ``kiro-cli --version`` spawn per binary identity, process-cached, so
     whichever test in the worker rebuilds first pays it against the HOST's install
     with the checkout as the child's cwd. Pinned to the floor release, as
     ``test_agent.py`` and the generated-writer suites pin it.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -326,7 +326,7 @@ class TestTheRecordIsNotPartOfSpecIdentity:
     """
 
     def test_the_record_is_excluded_from_the_dedup_comparison(self) -> None:
-        from kiro_crew.agent import _norm_mcp_spec
+        from efm_go.agent import _norm_mcp_spec
 
         plain = {"command": "/abs/srv", "args": ["--x"]}
         recorded = dict(plain)
@@ -335,7 +335,7 @@ class TestTheRecordIsNotPartOfSpecIdentity:
 
     def test_a_real_difference_still_differs(self) -> None:
         """The exclusion must not flatten specs that genuinely disagree."""
-        from kiro_crew.agent import _norm_mcp_spec
+        from efm_go.agent import _norm_mcp_spec
 
         a = {"command": "/abs/one", DERIVED_KEY: {"from": "srv", "emitted": "/abs/one"}}
         b = {"command": "/abs/two"}

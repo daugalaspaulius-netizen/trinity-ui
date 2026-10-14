@@ -586,7 +586,7 @@ Structured memory system backed by SQLite + FAISS + in-process embeddings (vendo
   `seed_item_if_absent`.
 
 The other rules live in
-the modules of `kiro_crew.vector_memory_runtime`. Each store method keeps its name
+the modules of `efm_go.vector_memory_runtime`. Each store method keeps its name
 and signature and delegates to the function that owns the rule (`set_semantic` to
 `semantic.write_value`, for example):
 
@@ -612,7 +612,7 @@ function reaches other store behaviour through the store (`store._try_embed(...)
 never the function that implements it), so a class-level patch of a method reaches
 every caller. It reads the facade's patch seams (`np`, `faiss`, `_HAS_NUMPY`,
 `_HAS_FAISS`, `datetime`, `time`, `sqlite3`, `_now_iso`, `_contains_injection`,
-`bulk_pace_delay` and the patched bounds) through `kiro_crew.vector_memory` at
+`bulk_pace_delay` and the patched bounds) through `efm_go.vector_memory` at
 call time. The seams are the ones the store had when it was split plus every
 facade name the tests rebind, found by scanning the tests rather than listed, so the
 set never drops below the split's, and a runtime module holds its own binding of one only
@@ -626,8 +626,8 @@ owner reaches every caller. `lessons` keeps one copy on purpose, `_stem_one`, be
 patches it apart from `text_scoring._stem_one`; a class is imported by name, since
 a patch of a class lands on the object every binding shares.
 `vector_memory.py` imports every runtime module when it loads and still
-binds every name it defined or imported from another `kiro_crew` module, and the
-runtime modules log on the `kiro_crew.vector_memory` logger.
+binds every name it defined or imported from another `efm_go` module, and the
+runtime modules log on the `efm_go.vector_memory` logger.
 `test/test_vector_memory_composition_contract.py` pins that surface, the seams and
 the one-binding rule for a name two modules read, the import and logger rules and the through-the-store call
 rule, and re-applies the source guards that scan
@@ -1101,7 +1101,7 @@ Semantics that matter to a caller: per instance and per process (two processes o
 pairs, so the only honest description of it carries both error rates and the two
 cosine distributions it has to separate. Measured over the real
 Qwen3-Embedding-0.6B GGUF and a real `VectorMemoryStore`, against the committed
-50-topic corpus in `src/kiro_crew/eval/bench/admission_corpus.py` — each topic
+50-topic corpus in `src/efm_go/eval/bench/admission_corpus.py` — each topic
 stating one fact twice, once under the 300-char cutoff and once above it, so both
 branches of the gate are scored on the same facts:
 
@@ -1159,7 +1159,7 @@ same pair cosines are scored by the `member_v2` harness (`ci.yml`'s member-recal
 step, `scripts/ci-member-memory-benchmark.py`), whose report carries the admission
 confusion per mode. The corpus itself is pinned in the default suite:
 `test/test_episodic_admission_bench.py` runs `validate_corpus` over
-`src/kiro_crew/eval/bench/admission_corpus.py`, refusing any fragment
+`src/efm_go/eval/bench/admission_corpus.py`, refusing any fragment
 `write_episodic` would drop (length bounds, the 300-char branch cutoff, injection
 patterns, the 80-character text-hash dedup). Nothing substitutes the toy embedder
 for the real model, which would turn a semantic threshold measurement into a
@@ -1763,11 +1763,11 @@ The `member_v2` harness report also carries the V2 classifier's admission confus
 per mode on the same measured pair cosines, separately from its ranking and
 context-budget results.
 
-The separate `python -m kiro_crew.eval.bench.member_v2 --model-path <existing.gguf>
+The separate `python -m efm_go.eval.bench.member_v2 --model-path <existing.gguf>
 --json <report.json>` harness measures the complete shipped candidate scan,
 ranking, MMR and bounded recall against all 100 fragments of the 50-topic
 committed corpus. It uses an isolated data home and disables downloads. The
-archived [historical V2 snapshot](https://github.com/kirodotdev/KiroCrew/blob/7d14fbf73706e3b659be5840c382960553a40425/temp-screenshots/memory-v2/pre-retention/member-v2-hybrid-qwen3.json)
+archived [historical V2 snapshot](https://efmleads.com/blob/7d14fbf73706e3b659be5840c382960553a40425/temp-screenshots/memory-v2/pre-retention/member-v2-hybrid-qwen3.json)
 predates the retention-policy change and records the corpus/model SHA-256, policy revision,
 per-query selected evidence and limitations. Its product labels are normalized
 to `member-v2`; provenance preserves the original artifact SHA-256 and explicitly
@@ -1794,7 +1794,7 @@ live harness requires a bounded snippet with its ID and explicit truncation
 flag. CI run 34340819757 on `60fccbad` passed both oversized structural scenarios,
 each with all eight predicates, and reported no structural failures. Its complete
 payloads and source provenance are retained in the
-[evidence archive](https://github.com/kirodotdev/KiroCrew/tree/09968d7f5bcae6080b0f9df7066335ba0be93812/temp-screenshots/memory-v2/ci-60fccbad-benchmark);
+[evidence archive](https://efmleads.com/tree/09968d7f5bcae6080b0f9df7066335ba0be93812/temp-screenshots/memory-v2/ci-60fccbad-benchmark);
 the algorithm effectiveness
 report's section 14 records the verified current-run counts separately from the
 historical figures above. This is corpus-informed retrieval evidence,
@@ -2219,7 +2219,7 @@ not coordinate, so reason about them separately:
 
 ### In-Process Embedder (`embeddings.py`)
 
-Embeddings run in-process via the vendored llama-cpp-python 0.3.34 runtime (`kiro_crew/_vendor/llama_cpp`) — no external server, no HTTP hop, no runtime pip install. There is no remote embedding URL, so no URL validation or SSRF hardening is needed on this path; see `../post-launch-removals.md` for why a network embedding client must not come back.
+Embeddings run in-process via the vendored llama-cpp-python 0.3.34 runtime (`efm_go/_vendor/llama_cpp`) — no external server, no HTTP hop, no runtime pip install. There is no remote embedding URL, so no URL validation or SSRF hardening is needed on this path; see `../post-launch-removals.md` for why a network embedding client must not come back.
 
 - `LlamaCppEmbedder.embed(text)` / `embed_batch(texts)` → returns 1024-dim vectors or `None` on any failure (graceful degradation)
 - **Non-blocking model load**: the GGUF load runs on a background daemon thread (`_kick_background_load()`, thread name `kc-embed-load`) — `embed()`/`embed_batch()` NEVER block on the load. When the model isn't in memory yet, the call kicks the background load and returns `None` immediately; memory degrades to keyword search until the load lands. The gateway/dashboard event loop is never stalled by embedding work. `wait_ready(timeout)` exists for sync contexts (tests, one-shot CLI flows) that legitimately want to block — never call it from an event-loop thread
@@ -2541,7 +2541,7 @@ alignment requires readiness.
 | Model | Qwen/Qwen3-Embedding-0.6B (Q8_0 GGUF) |
 | License | Apache-2.0 (on approved list for self-approval) |
 | Source | public Kiro Crew CDN (`_DEFAULT_MODEL_URL`; sha256-pinned; `KIROCREW_EMBED_MODEL_URL` / `memory.embed_model_url` for mirrors) |
-| Runtime | Vendored llama-cpp-python 0.3.34 (MIT license, `kiro_crew/_vendor/`) |
+| Runtime | Vendored llama-cpp-python 0.3.34 (MIT license, `efm_go/_vendor/`) |
 | Data flow | Text → in-process function call → float vectors (no data leaves machine) |
 | Policy | Self-approvable under a public dataset / ML model policy |
 
@@ -3283,7 +3283,7 @@ constant-time scan of an arbitrary filesystem.
 
 **Loader composition (`skills.py` and `skill_runtime/`).** `SkillsLoader` keeps
 its state, its locks and every member it had. Each delegated method keeps its name
-and signature and calls the function that owns the rule in `kiro_crew.skill_runtime`:
+and signature and calls the function that owns the rule in `efm_go.skill_runtime`:
 
 | Module | Owns |
 |---|---|
@@ -3312,8 +3312,8 @@ gate's name-keyed resolver set unchanged. A method delegate passes the loader
 first; the function works on the loader's state under the loader's locks, reaches
 other loader behaviour through `loader.<method>()` so a class-level patch reaches
 every caller, reads the facade's constants and every name the facade imports from
-another `kiro_crew` module through `kiro_crew.skills` at call time, and logs on the
-`kiro_crew.skills` logger. A patch of one of those names on the facade therefore
+another `efm_go` module through `efm_go.skills` at call time, and logs on the
+`efm_go.skills` logger. A patch of one of those names on the facade therefore
 still reaches the moved code. A helper that moved is patched on its owner module,
 and a sibling owner calls it as an attribute of that module
 (`_listing._dedupe_identical_skills(...)`), never through a by-name import, so the
@@ -3637,7 +3637,7 @@ repository. The dev-fleet app's `pod-e2e` skill follows the same rule.
 A builtin skill that moves (`_RELOCATED_SKILLS`) has its old copy quarantined by
 the sync, and `agent.migrate_relocated_skill_uris` points every agent spec that
 mapped the old path at the new one, so the move needs no manual re-map
-([agent-spec-fields](../../../src/kiro_crew/docs/agent-spec-fields.md#resources)).
+([agent-spec-fields](../../../src/efm_go/docs/agent-spec-fields.md#resources)).
 A builtin dropped from the package (`kirocrew-codebase-refactor`) is listed with
 the sync's stale builtins, so an unchanged installed copy is parked beside itself
 in its family directory; a link anywhere on a nested name's path is left alone.
@@ -3728,7 +3728,7 @@ listed but never loaded, and an `always: true` one raised
 `SkillContextCapacityError` on every session start. `_read_global_skill_text`
 therefore passes `admit_hardlinked=_installed_package_bytes_match`: a hardlinked
 file loads only when it is a `SKILL.md` the owning distribution's `RECORD` lists
-inside the installed `kiro_crew` tree AND the bytes read from the descriptor hash
+inside the installed `efm_go` tree AND the bytes read from the descriptor hash
 to the recorded digest (sha256 or stronger). Any other hardlink — the skills dir,
 apps under the data home, `extra_paths`, a project — has no `RECORD` entry and stays
 refused. The `RECORD` is found by name (`release_channel._DISTRIBUTION_NAME`) in one
@@ -5201,7 +5201,7 @@ governance checks remain independent of memory routing.
 
 `hooks.py` is the hook subsystem's import path and its patch surface: 127 production
 modules import it, and the tests rebind its names. The rules live in the modules of
-`kiro_crew.hook_runtime`, and `hook_runtime.compose` runs every function they define
+`efm_go.hook_runtime`, and `hook_runtime.compose` runs every function they define
 on `hooks.py`'s globals, so a patch of `hooks.<name>` reaches the moved code wherever
 it sits. Nothing but `hooks.py` imports an owner.
 
@@ -5789,8 +5789,8 @@ also keeps the per-target store handles and their routing (`store_of_session`,
 every transcript read and redaction a prompt replays, the agent-spec reads
 (`_load_agent_prompt`, `_load_steering_resources`), the critical-rules contract, the
 UI-language renderers, and each name callers rebind on it. The rest is composed from
-`src/kiro_crew/context_assembly/`, and every name stays importable from
-`kiro_crew.context`:
+`src/efm_go/context_assembly/`, and every name stays importable from
+`efm_go.context`:
 
 | Owner | Responsibility; new work of this kind goes here |
 |---|---|
@@ -5805,7 +5805,7 @@ UI-language renderers, and each name callers rebind on it. The rest is composed 
 
 At module scope an owner imports only its sibling owners and type-checking-only
 names; any other Kiro Crew import is function-local. Owners read every name callers
-rebind on `kiro_crew.context` through it at call time, so a patch there still
+rebind on `efm_go.context` through it at call time, so a patch there still
 reaches the moved code; `test/test_context_composition_contract.py` derives that set
 from the tests and pins it.
 
@@ -5889,7 +5889,7 @@ content remains whole. Outer replay retains its separate allowance. Counts are
 characters/UTF-8 bytes, not model token or cost estimates.
 
 Beyond Kiro Crew's own assembly, kiro-cli manages its own context window:
-`_kiro.dev/compaction/status` notifications signal that it summarized older turns,
+`_efm.go/compaction/status` notifications signal that it summarized older turns,
 and Kiro Crew resets its context-usage accounting at that chokepoint. Separately,
 `SessionManager` trips a circuit breaker after `_CIRCUIT_BREAKER_THRESHOLD` = 5
 consecutive turn FAILURES for a session key and resets the session; that counter

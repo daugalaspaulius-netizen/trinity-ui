@@ -30,16 +30,16 @@ import pytest
 from test_decisions_strip_rides_message import _quiet_sel, _runner_state, _settle, _slot
 from turn_harness import ScriptedProvider, SlotSpec, TurnContext, TurnScript, run_turn
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
-from kiro_crew.config.sections import DECISION_PROVIDER_ENDPOINT_DEFAULT, DecisionsConfig
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.decisions import gate as gate_mod
-from kiro_crew.decisions import log as log_mod
-from kiro_crew.decisions import outcomes
-from kiro_crew.decisions.points import model_route as mr
-from kiro_crew.decisions.types import Answer
-from kiro_crew.hooks import HOOK_EVENT_USER_PROMPT_SUBMIT
-from kiro_crew.providers.base import LLMEvent
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
+from efm_go.config.sections import DECISION_PROVIDER_ENDPOINT_DEFAULT, DecisionsConfig
+from efm_go.dashboard import chat_runner
+from efm_go.decisions import gate as gate_mod
+from efm_go.decisions import log as log_mod
+from efm_go.decisions import outcomes
+from efm_go.decisions.points import model_route as mr
+from efm_go.decisions.types import Answer
+from efm_go.hooks import HOOK_EVENT_USER_PROMPT_SUBMIT
+from efm_go.providers.base import LLMEvent
 
 ADVERTISED = ["model-a", "model-b", "model-c"]
 
@@ -68,7 +68,7 @@ def consented(tmp_path, monkeypatch):
         json.dumps({"enabled": True, "endpoint": DECISION_PROVIDER_ENDPOINT_DEFAULT}),
         encoding="utf-8",
     )
-    monkeypatch.setattr("kiro_crew.config.loader.decisions_consent_path", lambda: path)
+    monkeypatch.setattr("efm_go.config.loader.decisions_consent_path", lambda: path)
     monkeypatch.setattr(log_mod, "log_dir", lambda: tmp_path / "decisions")
     monkeypatch.setattr(
         gate_mod,
@@ -80,7 +80,7 @@ def consented(tmp_path, monkeypatch):
 @pytest.fixture
 def answers(monkeypatch):
     """Install an oracle answering a fixed tier; returns a setter."""
-    import kiro_crew.decisions.impl_jev as impl_mod
+    import efm_go.decisions.impl_jev as impl_mod
 
     state = {"tier": "complex"}
 
@@ -254,7 +254,7 @@ class TestRefusalsKeepTheCurrentModel:
     async def test_an_unconsented_keystone_routes_nothing(self, tmp_path, answers, monkeypatch):
         answers("complex")
         monkeypatch.setattr(
-            "kiro_crew.config.loader.decisions_consent_path", lambda: tmp_path / "absent.json"
+            "efm_go.config.loader.decisions_consent_path", lambda: tmp_path / "absent.json"
         )
         client = await _run(tmp_path, _routed_slot())
 
@@ -428,9 +428,9 @@ class TestWhatTextIsClassified:
         absent -- so a hook that sent the prefix alone fails as loudly as one that
         sent both.
         """
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.context import ContextBuilder
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         answers("complex")
         seen: list[str] = []
@@ -480,10 +480,10 @@ class TestWhatTextIsClassified:
         variable that is right rather than passing on whichever prepend happens to be
         empty.
         """
-        import kiro_crew.context as context_mod
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        import efm_go.context as context_mod
+        from efm_go.context import ContextBuilder
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         answers("complex")
         seen: list[str] = []
@@ -549,9 +549,9 @@ class TestTheRoutingFlag:
         import importlib
         import pkgutil
 
-        import kiro_crew.dashboard.channel_slots as channel_slots
-        import kiro_crew.dashboard.chat_persistence as persistence
-        import kiro_crew.dashboard.slot_persistence as slot_persistence
+        import efm_go.dashboard.channel_slots as channel_slots
+        import efm_go.dashboard.chat_persistence as persistence
+        import efm_go.dashboard.slot_persistence as slot_persistence
 
         # The facade composes the metadata-line writer and the restore checks from
         # these owners, so they are sites that handle this file too.
@@ -584,7 +584,7 @@ class TestTheRoutingFlag:
         what the NEXT turn runs on either. Asserted on the source order rather than
         by driving the handler: the flag is committed on each success path, and the
         defect was a write placed ABOVE the busy check where no rollback covers it."""
-        import kiro_crew.dashboard.chat_handlers as handlers
+        import efm_go.dashboard.chat_handlers as handlers
 
         source = Path(handlers.__file__).read_text(encoding="utf-8")
         body = source[source.index("async def api_chat_slot_model(") :]
@@ -610,7 +610,7 @@ class TestTheRoutingFlag:
     def test_the_sentinel_is_not_a_provider_model_id(self):
         """`slot.model` reaches `session/set_model`, the session allocation and the
         composer chip. The sentinel therefore never lands in it."""
-        from kiro_crew.dashboard.chat_handlers import JEV_ROUTE_MODEL, _is_jev_route_pick
+        from efm_go.dashboard.chat_handlers import JEV_ROUTE_MODEL, _is_jev_route_pick
 
         assert JEV_ROUTE_MODEL == "auto:jev"
         assert _is_jev_route_pick("auto:jev") is True
@@ -635,7 +635,7 @@ def _owner_app(state):
     from aiohttp import web
     from dashboard_owner_helpers import _identity
 
-    from kiro_crew.dashboard.chat import api_chat_slot_model
+    from efm_go.dashboard.chat import api_chat_slot_model
 
     app = web.Application(middlewares=[_identity])
     app["state"] = state
@@ -678,7 +678,7 @@ class TestArmingIsAnOwnerAction:
         ownership, which the same non-owner passes for a slot the owner armed, so the
         copy carries the owner predicate itself. Asserted on the source because the
         defect is an ABSENT condition on one assignment."""
-        import kiro_crew.dashboard.chat_fork as fork
+        import efm_go.dashboard.chat_fork as fork
 
         source = Path(fork.__file__).read_text(encoding="utf-8")
         # Two halves since the route was split: the wrapper answers the owner
@@ -711,7 +711,7 @@ class TestAManualPickDuringTheAwaitWins:
         mid-await clears the flag and means "let Jev pick", so applying the answer is
         the instruction rather than an overwrite of it. Only a NAMED MODEL is a
         different instruction, which is what the `pin` case moves."""
-        import kiro_crew.decisions.impl_jev as impl_mod
+        import efm_go.decisions.impl_jev as impl_mod
 
         for moved in ("served_model", "pin"):
             state, client = _runner_state(tmp_path)
@@ -843,7 +843,7 @@ def windows(monkeypatch):
     An id a test removes is one the registry has not met, which is the state both
     rules have to refuse nothing on.
     """
-    from kiro_crew import model_registry
+    from efm_go import model_registry
 
     live = dict(WINDOWS)
     monkeypatch.setattr(model_registry, "has_known_window", lambda name: name in live)
@@ -854,7 +854,7 @@ def windows(monkeypatch):
 @pytest.fixture
 def answered(monkeypatch):
     """An oracle answering a chosen tier at a chosen probability."""
-    import kiro_crew.decisions.impl_jev as impl_mod
+    import efm_go.decisions.impl_jev as impl_mod
 
     held = {"tier": "simple", "p": 0.41}
 
@@ -1176,8 +1176,8 @@ class TestTheFitReadingSizesTheAssembledPrompt:
         the sync would measure one turn against two different numbers, and the rule
         would clear a shrink the ladder then compacts on. Asked of the ANSWER each
         reader gives, so a reader that stops syncing fails here."""
-        from kiro_crew import session as session_mod
-        from kiro_crew.session import SessionManager
+        from efm_go import session as session_mod
+        from efm_go.session import SessionManager
 
         monkeypatch.setattr(session_mod, "published_autocompact_pct", lambda: 55.0)
 
@@ -1448,7 +1448,7 @@ class TestARefusalNothingActedOn:
         and never rewritten -- so a refusal recorded before that guard describes a
         decision nothing acted on and nobody can clear. Driven through the oracle,
         which is the only place inside the await window."""
-        import kiro_crew.decisions.impl_jev as impl_mod
+        import efm_go.decisions.impl_jev as impl_mod
 
         slot = _routed_slot("chat-repick-refused")
         state, client = _wired(tmp_path, serves="model-c")
@@ -1480,7 +1480,7 @@ class TestARefusalNothingActedOn:
                 )
             ),
         )
-        import kiro_crew.decisions.impl_jev as impl_mod
+        import efm_go.decisions.impl_jev as impl_mod
 
         slot = _routed_slot("chat-empty-landing-repick")
         state, client = _wired(tmp_path, serves="model-c")

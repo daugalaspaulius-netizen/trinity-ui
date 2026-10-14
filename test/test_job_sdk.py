@@ -28,8 +28,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.apps import job_sdk
-from kiro_crew.apps.job_sdk import (
+from efm_go.apps import job_sdk
+from efm_go.apps.job_sdk import (
     _CLEANUP_JOIN_SECS,
     CANCELLED,
     DONE,
@@ -1496,7 +1496,7 @@ class TestDisableTrace:
         denied_stem = "d" * 32
         (sdk.store.dir / f"{denied_stem}.json").write_text("{}")
 
-        from kiro_crew import platform_compat as _pc
+        from efm_go import platform_compat as _pc
 
         real_no_reparse = _pc.open_file_no_reparse
 
@@ -1706,7 +1706,7 @@ class TestDefensiveBranches:
     def test_redact_falls_back_to_raw_when_security_raises(self, sdk: JobSDK, monkeypatch) -> None:
         """If the redaction chain itself raises, the raw error text survives
         (redaction must never mask the error)."""
-        import kiro_crew.security as security
+        import efm_go.security as security
 
         def boom(_text):
             raise RuntimeError("redaction backend down")
@@ -1724,7 +1724,7 @@ class TestDefensiveBranches:
 
     def test_audit_failure_is_swallowed(self, sdk: JobSDK, monkeypatch) -> None:
         """A SEL audit failure must not fail the job."""
-        import kiro_crew.apps.job_sdk as m
+        import efm_go.apps.job_sdk as m
 
         def boom():
             raise RuntimeError("sel down")
@@ -2418,7 +2418,7 @@ class TestDedupeKeyIsNotLogged:
         sdk.register("slow", lambda h: gate.acquire(timeout=10))
 
         first = sdk.start("slow", dedupe_key=secret)
-        with caplog.at_level(logging.INFO, logger="kiro_crew.apps.job_sdk"):
+        with caplog.at_level(logging.INFO, logger="efm_go.apps.job_sdk"):
             second = sdk.start("slow", dedupe_key=secret)
         assert second == first, "the second start should have adopted the first"
 
@@ -2448,7 +2448,7 @@ class TestEnableReconcilesStaleRecords:
     ) -> None:
         from types import SimpleNamespace
 
-        from kiro_crew.apps import hooks_integration as hi
+        from efm_go.apps import hooks_integration as hi
 
         sdk = JobSDK("enable-app", tmp_path)
         sdk.register("work", lambda h: None)
@@ -2490,7 +2490,7 @@ class TestEnableReconcilesStaleRecords:
         """Enable must survive it: a stale record is worth less than the app."""
         from types import SimpleNamespace
 
-        from kiro_crew.apps import hooks_integration as hi
+        from efm_go.apps import hooks_integration as hi
 
         sdk = JobSDK("enable-app", tmp_path)
 
@@ -2580,7 +2580,7 @@ class TestDisableCleansUpRegardlessOfTheGrant:
     def test_cleanup_runs_for_an_app_whose_grant_was_revoked(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps import hooks_integration as hi
+        from efm_go.apps import hooks_integration as hi
 
         sdk = JobSDK("revoked-app", tmp_path)
         started = threading.Event()
@@ -4373,7 +4373,7 @@ class TestABrokenParamsMapOnDiskCostsOnlyItsBadEntries:
         redacted, clamped to ``_RUN_ID_LEN`` and repr-quoted: a newline inside it
         cannot start a second line, and a megabyte of it cannot pad the ring.
         """
-        forged = "aa\n2026-01-01 WARNING kiro_crew.security: policy check passed"
+        forged = "aa\n2026-01-01 WARNING efm_go.security: policy check passed"
         raw = {
             "run_id": forged + "b" * 4096,
             "app": "x",

@@ -73,7 +73,7 @@ const ISO = '2026-08-01T18:00:00Z'
 const PULLS = [
   {
     number: 1111, title: 'feat(issue-radar): act on pull requests from the app',
-    url: 'https://github.com/kirodotdev/KiroCrew/pull/1111', state: 'open', draft: false,
+    url: 'https://efmleads.com/pull/1111', state: 'open', draft: false,
     labels: ['enhancement'], author: 'bolinchen', author_association: 'MEMBER',
     created_at: ISO, updated_at: ISO, closed_at: null, merged_at: null,
     assignees: [], requested_reviewers: ['kyleseaman'],
@@ -85,7 +85,7 @@ const PULLS = [
   },
   {
     number: 1102, title: 'fix(nav): keep the rail width across a reload',
-    url: 'https://github.com/kirodotdev/KiroCrew/pull/1102', state: 'open', draft: false,
+    url: 'https://efmleads.com/pull/1102', state: 'open', draft: false,
     labels: ['bug'], author: 'kyleseaman', author_association: 'MEMBER',
     created_at: ISO, updated_at: ISO, closed_at: null, merged_at: null,
     assignees: [], requested_reviewers: [],
@@ -140,7 +140,7 @@ async function main() {
       return json(route, {
         repos: [{
           ...REPO, provider: 'github', host: 'github.com',
-          slug: 'kirodotdev/KiroCrew',
+          slug: 'efmleads.com',
           permissions: { triage: true, push: true, maintain: false, admin: false },
         }],
       })

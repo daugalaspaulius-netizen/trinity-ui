@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import vector_memory as vm
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import vector_memory as vm
+from efm_go.vector_memory import VectorMemoryStore
 
 
 @pytest.fixture()

@@ -10,20 +10,20 @@ from typing import Any
 import pytest
 from test_discord import MultipartFake
 
-from kiro_crew.config.paths import config_dir
-from kiro_crew.discord import session_resume
-from kiro_crew.discord.client import DISCORD_CHUNK_LIMIT, DiscordInteraction
-from kiro_crew.discord.commands import parse_command, parse_command_argument
-from kiro_crew.discord.renderer import session_provenance_tag
-from kiro_crew.discord.transport_dispatch import DiscordDispatcher
-from kiro_crew.history import transcript_stem
-from kiro_crew.messaging import resume_expectation
-from kiro_crew.messaging import session_resume as session_resume_core
-from kiro_crew.messaging.link import UNBIND_REASON_UNSPECIFIED, ChannelLink
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.session import _opt_out_key
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.session_map import ConversationOwnershipConflict
+from efm_go.config.paths import config_dir
+from efm_go.discord import session_resume
+from efm_go.discord.client import DISCORD_CHUNK_LIMIT, DiscordInteraction
+from efm_go.discord.commands import parse_command, parse_command_argument
+from efm_go.discord.renderer import session_provenance_tag
+from efm_go.discord.transport_dispatch import DiscordDispatcher
+from efm_go.history import transcript_stem
+from efm_go.messaging import resume_expectation
+from efm_go.messaging import session_resume as session_resume_core
+from efm_go.messaging.link import UNBIND_REASON_UNSPECIFIED, ChannelLink
+from efm_go.messaging.transport import InboundMessage
+from efm_go.session import _opt_out_key
+from efm_go.session_allocation import SessionClosingError
+from efm_go.session_map import ConversationOwnershipConflict
 
 
 @pytest.fixture(autouse=True)
@@ -95,7 +95,7 @@ class _Provider:
     supports_steer, cwd = False, str(Path.cwd())
 
     async def stream(self, message: str):
-        from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+        from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
 
         yield SimpleNamespace(
             kind=EVENT_TEXT_CHUNK,
@@ -817,7 +817,7 @@ async def test_a_failed_pick_restores_displaced_rows_without_laundering_them() -
     """
     import dataclasses
 
-    from kiro_crew.mirror_admission import sign_mirror_admission, verify_mirror_admission
+    from efm_go.mirror_admission import sign_mirror_admission, verify_mirror_admission
 
     prior_key = "discord:kirocrew:direct:u1:gen4"
     log = _ConversationLog(
@@ -882,8 +882,8 @@ async def test_a_failed_picks_rollback_leaves_a_refreshed_relink_in_place(monkey
     import dataclasses
     import secrets
 
-    from kiro_crew.dashboard import token_secret
-    from kiro_crew.mirror_admission import sign_mirror_admission, verify_mirror_admission
+    from efm_go.dashboard import token_secret
+    from efm_go.mirror_admission import sign_mirror_admission, verify_mirror_admission
 
     log = _log()
     log.messages["dashboard:chat-1"] = [{"role": "assistant", "content": "prior"}]
@@ -1462,7 +1462,7 @@ async def test_own_session_records_the_origin_conversation() -> None:
 @pytest.mark.asyncio
 async def test_new_own_session_surfaces_in_dashboard_immediately(monkeypatch) -> None:
     """Discord must not wait for the 30-second lifetime reconcile pass."""
-    from kiro_crew.dashboard import channel_slots
+    from efm_go.dashboard import channel_slots
 
     log = _log()
     dispatcher, _, sessions = _dispatcher({"u1"}, log)
@@ -1485,7 +1485,7 @@ async def test_new_own_session_surfaces_in_dashboard_immediately(monkeypatch) ->
 @pytest.mark.asyncio
 async def test_resumed_session_does_not_surface_duplicate_dashboard_slot(monkeypatch) -> None:
     """A Discord-driven dashboard resume already owns a slot."""
-    from kiro_crew.dashboard import channel_slots
+    from efm_go.dashboard import channel_slots
 
     log = _log()
     log.messages["dashboard:chat-1"] = [{"role": "assistant", "content": "prior"}]
@@ -2262,8 +2262,8 @@ class TestBindingLostUnderTheConversation:
         """
         import dataclasses
 
-        from kiro_crew.dashboard.chat_runner import _recipient_principal
-        from kiro_crew.mirror_admission import sign_mirror_admission
+        from efm_go.dashboard.chat_runner import _recipient_principal
+        from efm_go.mirror_admission import sign_mirror_admission
 
         dispatcher, client, sessions = _dispatcher({"u1"}, _log("Launch plan"))
         link = ChannelLink(channel_type="discord", channel_id="c1", principal="u1")
@@ -2288,7 +2288,7 @@ class TestBindingLostUnderTheConversation:
         back WITHOUT its peer -- nothing mints -- so the send stays refused and one
         audit row says why.
         """
-        from kiro_crew.dashboard.chat_runner import _recipient_principal
+        from efm_go.dashboard.chat_runner import _recipient_principal
 
         dispatcher, client, sessions = _dispatcher({"u1"}, _log("Launch plan"))
         forged = ChannelLink(
@@ -2345,7 +2345,7 @@ class TestBindingLostUnderTheConversation:
         """
         import dataclasses
 
-        from kiro_crew.mirror_admission import sign_mirror_admission
+        from efm_go.mirror_admission import sign_mirror_admission
 
         dispatcher, client, sessions = _dispatcher({"u1"}, _log("Launch plan"))
         link = ChannelLink(channel_type="discord", channel_id="c1", principal="u1")
@@ -2610,7 +2610,7 @@ class TestExpectationStoreInvariants:
     async def test_the_store_is_gated_from_agent_tools_yet_writable_by_the_gateway(
         self, monkeypatch
     ) -> None:
-        from kiro_crew.security import is_sensitive_path
+        from efm_go.security import is_sensitive_path
 
         restricted: list[str] = []
         pc = resume_expectation.platform_compat

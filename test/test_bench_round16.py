@@ -17,8 +17,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-import kiro_crew.eval.bench.safepath as sp
-from kiro_crew.eval.bench.safepath import UnsafePathError
+import efm_go.eval.bench.safepath as sp
+from efm_go.eval.bench.safepath import UnsafePathError
 
 WORKFLOW = (
     Path(__file__).resolve().parents[1]

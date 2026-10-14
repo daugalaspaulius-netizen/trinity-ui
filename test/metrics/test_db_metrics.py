@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.metrics import db_metrics
+from efm_go.metrics import db_metrics
 
 
 class _Rec:
@@ -137,6 +137,6 @@ class TestBucketRegistration:
         10s-ceiling defaults, which floors every reported percentile at the top
         bound. The provider's own guard test enforces this too; this pins the
         specific metric."""
-        from kiro_crew.metrics.provider import _HISTOGRAM_BUCKETS_MS
+        from efm_go.metrics.provider import _HISTOGRAM_BUCKETS_MS
 
         assert db_metrics.DB_METRIC in _HISTOGRAM_BUCKETS_MS

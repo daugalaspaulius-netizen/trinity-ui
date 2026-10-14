@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import sandbox
+from efm_go import sandbox
 
 _CONFIG_LEAVES = ("config.json", "config.local.json")
 
@@ -60,11 +60,11 @@ def home(tmp_path, monkeypatch):
         json.dumps({"session": {"autocompact_pct": 90.0}}), encoding="utf-8"
     )
     with (
-        patch("kiro_crew.cli_config.config_path", return_value=d / "config.json"),
-        patch("kiro_crew.cli_config.config_local_path", return_value=d / "config.local.json"),
-        patch("kiro_crew.config.loader.config_path", return_value=d / "config.json"),
-        patch("kiro_crew.config.loader.config_dir", return_value=d),
-        patch("kiro_crew.cli_config.sel"),
+        patch("efm_go.cli_config.config_path", return_value=d / "config.json"),
+        patch("efm_go.cli_config.config_local_path", return_value=d / "config.local.json"),
+        patch("efm_go.config.loader.config_path", return_value=d / "config.json"),
+        patch("efm_go.config.loader.config_dir", return_value=d),
+        patch("efm_go.cli_config.sel"),
     ):
         yield d
 
@@ -78,10 +78,10 @@ def _assert_hint(err: str) -> None:
 @pytest.mark.parametrize("leaf", _CONFIG_LEAVES)
 def test_sandboxed_config_set_reports_the_seal_on_an_in_place_write(home, capsys, code, leaf):
     """``open(path, "w")`` refused by the seal names the sealed file as ``filename``."""
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     with patch(
-        "kiro_crew.cli_config.update_config_locked",
+        "efm_go.cli_config.update_config_locked",
         side_effect=OSError(code, "denied", str(home / leaf)),
     ):
         with pytest.raises(SystemExit) as exc:
@@ -98,11 +98,11 @@ def test_sandboxed_config_set_reports_the_seal_on_the_publishing_rename(home, ca
     writable), and the rename over the sealed leaf is what the OS refuses -- ``EPERM``
     from Seatbelt, ``EBUSY`` from a Linux bind mount.
     """
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     tmp = home / "tmpa1b2c3.tmp"
     with patch(
-        "kiro_crew.cli_config.update_config_locked",
+        "efm_go.cli_config.update_config_locked",
         side_effect=OSError(code, "denied", str(tmp), None, str(home / "config.local.json")),
     ):
         with pytest.raises(SystemExit) as exc:
@@ -113,10 +113,10 @@ def test_sandboxed_config_set_reports_the_seal_on_the_publishing_rename(home, ca
 
 def test_a_denial_against_an_unrelated_file_is_not_relabelled(home):
     """Errno alone is not the seal: the same errno against another path is re-raised."""
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     with patch(
-        "kiro_crew.cli_config.update_config_locked",
+        "efm_go.cli_config.update_config_locked",
         side_effect=PermissionError(errno.EPERM, "denied", str(home / "other.json")),
     ):
         with pytest.raises(PermissionError):
@@ -124,10 +124,10 @@ def test_a_denial_against_an_unrelated_file_is_not_relabelled(home):
 
 
 def test_a_denial_with_no_filename_is_not_relabelled(home):
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     with patch(
-        "kiro_crew.cli_config.update_config_locked",
+        "efm_go.cli_config.update_config_locked",
         side_effect=PermissionError(errno.EPERM, "denied"),
     ):
         with pytest.raises(PermissionError):
@@ -136,10 +136,10 @@ def test_a_denial_with_no_filename_is_not_relabelled(home):
 
 def test_a_non_denial_errno_against_the_config_is_not_relabelled(home):
     """A full data home names the same file but is not the seal."""
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     with patch(
-        "kiro_crew.cli_config.update_config_locked",
+        "efm_go.cli_config.update_config_locked",
         side_effect=OSError(errno.ENOSPC, "full", str(home / "config.local.json")),
     ):
         with pytest.raises(OSError) as exc:
@@ -149,10 +149,10 @@ def test_a_non_denial_errno_against_the_config_is_not_relabelled(home):
 
 def test_config_edit_editor_exec_denial_is_not_relabelled(home):
     """``config edit`` failing to exec the editor is an editor problem, not the seal."""
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     with patch(
-        "kiro_crew.cli_config.os.execvp",
+        "efm_go.cli_config.os.execvp",
         side_effect=PermissionError(errno.EACCES, "denied", "vi"),
     ):
         with pytest.raises(PermissionError):
@@ -161,10 +161,10 @@ def test_config_edit_editor_exec_denial_is_not_relabelled(home):
 
 def test_sandboxed_config_defaults_adopt_reports_the_seal(home, capsys):
     """``config defaults --adopt`` writes ``config.json`` through its own error path."""
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     with patch(
-        "kiro_crew.cli_config.update_config_locked",
+        "efm_go.cli_config.update_config_locked",
         side_effect=OSError(errno.EPERM, "denied", str(home / "config.json")),
     ):
         with pytest.raises(SystemExit) as exc:
@@ -178,10 +178,10 @@ def test_sandboxed_config_defaults_adopt_reports_the_seal(home, capsys):
 
 
 def test_config_defaults_adopt_keeps_its_own_message_for_other_failures(home, capsys):
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     with patch(
-        "kiro_crew.cli_config.update_config_locked",
+        "efm_go.cli_config.update_config_locked",
         side_effect=OSError(errno.ENOSPC, "full", str(home / "config.json")),
     ):
         with pytest.raises(SystemExit) as exc:

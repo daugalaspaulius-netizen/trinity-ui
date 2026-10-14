@@ -15,8 +15,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import mcp_core, mcp_shared
-from kiro_crew.mcp_tools.dashboard_client import (
+from efm_go import mcp_core, mcp_shared
+from efm_go.mcp_tools.dashboard_client import (
     DashboardError,
     DashboardRequest,
     InMemoryDashboardClient,
@@ -25,8 +25,8 @@ from kiro_crew.mcp_tools.dashboard_client import (
     UnroutedRequest,
     restrict_routes,
 )
-from kiro_crew.mcp_tools.table import Caller, GatewayCaller, Tool, ToolContext, ToolTable
-from kiro_crew.validation import FieldSpec, ToolSchema
+from efm_go.mcp_tools.table import Caller, GatewayCaller, Tool, ToolContext, ToolTable
+from efm_go.validation import FieldSpec, ToolSchema
 
 _SERVER = "kirocrew-test-table"
 _SCHEMA = ToolSchema(

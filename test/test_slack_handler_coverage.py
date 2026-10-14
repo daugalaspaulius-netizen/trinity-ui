@@ -1,4 +1,4 @@
-"""Coverage tests for :mod:`kiro_crew.slack.handler`.
+"""Coverage tests for :mod:`efm_go.slack.handler`.
 
 Focus is the command surface that ``test_slack_handler.py`` leaves untouched:
 ``!bang`` slash-command dispatch (every branch of ``_handle_slash_command``),
@@ -23,15 +23,15 @@ from unittest.mock import ANY, AsyncMock, MagicMock
 import pytest
 
 from conftest import MockSlackClient
-from kiro_crew.cron import CronJob, CronSchedule, CronStoreBusy
-from kiro_crew.messaging import auto_title as auto_title_mod
-from kiro_crew.messaging import commands as mc
-from kiro_crew.messaging import privacy_mode
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.safety_override import NO_EXPIRY_TEXT, fmt_grant_duration
-from kiro_crew.slack import handler as h
-from kiro_crew.task_models import Project, Task, TaskStatus
-from kiro_crew.task_reporter import build_status
+from efm_go.cron import CronJob, CronSchedule, CronStoreBusy
+from efm_go.messaging import auto_title as auto_title_mod
+from efm_go.messaging import commands as mc
+from efm_go.messaging import privacy_mode
+from efm_go.providers.base import LLMEvent
+from efm_go.safety_override import NO_EXPIRY_TEXT, fmt_grant_duration
+from efm_go.slack import handler as h
+from efm_go.task_models import Project, Task, TaskStatus
+from efm_go.task_reporter import build_status
 
 #: Lost-run ceiling for a wait the test itself must end (a park, a click it
 #: delivers). These paths make no executor hop. Timed wait by wait: at most 0.06 s,
@@ -227,7 +227,7 @@ class TestYoloCommand:
         gate inside the test and therefore exercised no handler code, passing even
         with the fix reverted.
         """
-        from kiro_crew import safety_override as so
+        from efm_go import safety_override as so
 
         await _slash("!yolo on", slack, sessions)
         assert h.is_yolo_mode() is True
@@ -354,7 +354,7 @@ class TestVoiceCommand:
 
     @pytest.mark.asyncio
     async def test_valid_engine_accepted(self, slack, sessions, owner):
-        from kiro_crew.voice_reply import VALID_ENGINES
+        from efm_go.voice_reply import VALID_ENGINES
 
         engine = sorted(VALID_ENGINES)[0]
         await _slash(f"!voice engine {engine}", slack, sessions)
@@ -525,7 +525,7 @@ class TestMiscSlashCommands:
 
     @pytest.mark.asyncio
     async def test_dashboard_link_sent(self, slack, sessions, owner, monkeypatch):
-        import kiro_crew.slack.allowlist as al
+        import efm_go.slack.allowlist as al
 
         monkeypatch.setattr(al, "send_dashboard_link", AsyncMock(return_value="https://x/y"))
         await _slash("!dashboard 2h", slack, sessions)
@@ -533,7 +533,7 @@ class TestMiscSlashCommands:
 
     @pytest.mark.asyncio
     async def test_dashboard_link_failure(self, slack, sessions, owner, monkeypatch):
-        import kiro_crew.slack.allowlist as al
+        import efm_go.slack.allowlist as al
 
         monkeypatch.setattr(al, "send_dashboard_link", AsyncMock(return_value=""))
         await _slash("!dashboard", slack, sessions)
@@ -561,7 +561,7 @@ class TestMiscSlashCommands:
     @pytest.mark.asyncio
     async def test_link_to_dashboard_empty_thread(self, slack, sessions, owner, monkeypatch):
         monkeypatch.setattr(h, "_dashboard_state", MagicMock(get_or_create_slot=MagicMock()))
-        import kiro_crew.slack.interactions as inter
+        import efm_go.slack.interactions as inter
 
         monkeypatch.setattr(inter, "_import_thread_to_slot", AsyncMock(return_value=None))
         await _slash("!link-to-dashboard", slack, sessions)
@@ -570,7 +570,7 @@ class TestMiscSlashCommands:
     @pytest.mark.asyncio
     async def test_link_to_dashboard_imports_thread(self, slack, sessions, owner, monkeypatch):
         monkeypatch.setattr(h, "_dashboard_state", MagicMock(get_or_create_slot=MagicMock()))
-        import kiro_crew.slack.interactions as inter
+        import efm_go.slack.interactions as inter
 
         slot = MagicMock(key="slot-3", messages=["a", "b", "c"])
         monkeypatch.setattr(inter, "_import_thread_to_slot", AsyncMock(return_value=slot))
@@ -626,7 +626,7 @@ class TestChannelCommand:
 
     @pytest.mark.asyncio
     async def test_valid_mode_persists(self, slack, sessions, owner):
-        from kiro_crew.config.loader import KiroCrewConfig, config_path
+        from efm_go.config.loader import KiroCrewConfig, config_path
 
         await _slash("!channel observe", slack, sessions)
         assert "activation set to *observe*" in _texts(slack)
@@ -646,7 +646,7 @@ class TestChannelCommand:
 
     @pytest.mark.asyncio
     async def test_agent_subcommand_sets_and_clears(self, slack, sessions, owner, agents_dir):
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         await _slash("!channel agent demo", slack, sessions)
         assert (
@@ -675,7 +675,7 @@ class TestKeywordCommands:
     @pytest.mark.asyncio
     async def test_sessions_keyword_allowed(self, slack, sessions, owner, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.slack.sessions_view._collect_recent_sessions",
+            "efm_go.slack.sessions_view._collect_recent_sessions",
             lambda s, limit=0, kind=None, include_ended=False: [],
         )
         handled = await h.maybe_handle_keyword_command(
@@ -835,7 +835,7 @@ class TestKeywordCommands:
 
     @pytest.mark.asyncio
     async def test_cron_keyword(self, slack, sessions, owner, tmp_path):
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         svc._jobs = []
@@ -1059,14 +1059,14 @@ class TestSessionsHelper:
         def _boom(_sessions, limit=0, kind=None, include_ended=False):
             raise OSError("history unreadable")
 
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._collect_recent_sessions", _boom)
+        monkeypatch.setattr("efm_go.slack.sessions_view._collect_recent_sessions", _boom)
         await h._handle_sessions_command("sessions", slack, "C1", "t1", "msg1", "t1", None)
         assert "_Sessions unavailable._" in _texts(slack)
 
     @pytest.mark.asyncio
     async def test_rows_render_blocks(self, slack, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.slack.sessions_view._collect_recent_sessions",
+            "efm_go.slack.sessions_view._collect_recent_sessions",
             lambda s, limit=0, kind=None, include_ended=False: [{"key": "s1"}],
         )
         monkeypatch.setattr(h, "_build_sessions_blocks", lambda rows: [{"type": "divider"}])
@@ -1166,7 +1166,7 @@ class TestAgentResolution:
             h._persist_channel_config("C1", activation="always")
 
     def test_persist_channel_config_merges(self):
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         h._persist_channel_config("C1", activation="always")
         h._persist_channel_config("C1", agent="demo")
@@ -1182,7 +1182,7 @@ class TestThreadOverrideHydration:
     async def test_execution_identity_reads_run_off_loop_and_live_maps_stay_on_loop(
         self, monkeypatch
     ):
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
         loop_thread = threading.get_ident()
 
@@ -1374,9 +1374,9 @@ class TestPrivacyModifiers:
     async def test_flags_are_persisted_on_the_session_map(
         self, slack, sessions, owner, tmp_path, monkeypatch
     ):
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
-        from kiro_crew.session_map import SessionMap
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
+        from efm_go.session_map import SessionMap
 
         sessions._session_map = SessionMap()
         await h._apply_privacy_mode(
@@ -1405,11 +1405,11 @@ class TestPrivacyModifiers:
         honour by returning without a turn -- so the message is never run with
         the mode dropped. Mutation: drop the gate in ``SessionMap.set_flag`` --
         the flag is written, ``only_modifier`` is False and the turn would run."""
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
-        import kiro_crew.session_map as session_map_mod
-        from kiro_crew.messaging import privacy_mode
-        from kiro_crew.session_map import SessionMap
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
+        import efm_go.session_map as session_map_mod
+        from efm_go.messaging import privacy_mode
+        from efm_go.session_map import SessionMap
 
         monkeypatch.setattr(session_map_mod, "PRIVACY_ROW_CAP", 1)
         sessions._session_map = SessionMap()
@@ -1447,9 +1447,9 @@ class TestPrivacyModifiers:
         assert not h.is_thread_incognito("t1")
 
     def test_hydrate_conv_flags_restores_both(self, sessions, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
-        from kiro_crew.session_map import SessionMap
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
+        from efm_go.session_map import SessionMap
 
         sm = SessionMap()
         sm.set_flag("t1", "temporary", True)
@@ -1556,7 +1556,7 @@ class TestHandleInteractionGuards:
         slack.fetch_thread_replies = AsyncMock(return_value=[{"user": "U1"}])
         fake_map = MagicMock()
         fake_map.get_session_for_thread.return_value = ""
-        monkeypatch.setattr("kiro_crew.session.SessionMap", lambda: fake_map)
+        monkeypatch.setattr("efm_go.session.SessionMap", lambda: fake_map)
         out = await h.handle_interaction(
             "C1", "m1", h._ACTION_TRUST, "U1", "t1", slack=slack, sessions=sessions
         )
@@ -1571,7 +1571,7 @@ class TestHandleInteractionGuards:
         def _boom():
             raise RuntimeError("no map")
 
-        monkeypatch.setattr("kiro_crew.session.SessionMap", _boom)
+        monkeypatch.setattr("efm_go.session.SessionMap", _boom)
         out = await h.handle_interaction("C1", "m1", h._ACTION_TRUST, "U1", "t1", slack=slack)
         assert out is None
         assert not h.is_slack_session_trusted("t1")
@@ -2128,7 +2128,7 @@ class TestApprovalTimeoutInbandNotice:
         assert not h._pending_approvals
 
     def test_steer_bound_mirrors_the_dashboard_runner(self):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         assert h._STEER_NOTICE_BOUND_SECS == chat_runner._STEER_NOTICE_BOUND_SECS
 
@@ -2444,7 +2444,7 @@ class TestPureHelpers:
         assert h.get_orch_cfg() is None
 
     def test_reload_orch_cfg_refreshes_channel_state(self):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig.load()
         h.set_orch_cfg(cfg)
@@ -2486,7 +2486,7 @@ class TestPureHelpers:
 class TestSafeUpdates:
     @pytest.mark.asyncio
     async def test_update_truncates_over_limit(self, slack):
-        from kiro_crew.slack.format import SLACK_MSG_LIMIT
+        from efm_go.slack.format import SLACK_MSG_LIMIT
 
         await h._safe_update(slack, "C1", "m1", "x" * (SLACK_MSG_LIMIT + 50))
         text = slack.actions[0][1]["text"]
@@ -2501,7 +2501,7 @@ class TestSafeUpdates:
 
     @pytest.mark.asyncio
     async def test_final_update_splits_long_text(self, slack):
-        from kiro_crew.slack.format import SLACK_MSG_LIMIT
+        from efm_go.slack.format import SLACK_MSG_LIMIT
 
         await h._safe_final_update(slack, "C1", "m1", "y " * SLACK_MSG_LIMIT, "t1")
         assert [a for a in slack.actions if a[0] == "update"]

@@ -8,8 +8,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import embeddings as emb
-from kiro_crew.dashboard.handlers import memory as handlers
+from efm_go import embeddings as emb
+from efm_go.dashboard.handlers import memory as handlers
 
 
 def model_file(tmp_path):
@@ -206,7 +206,7 @@ def test_bulk_shared_cache_retries_after_explicit_deadline(tmp_path, monkeypatch
 
 @pytest.mark.parametrize("pace", [False, True])
 def test_expired_backfill_remains_pending_for_next_repair(tmp_path, monkeypatch, pace):
-    from kiro_crew.vector_memory import VectorMemoryStore
+    from efm_go.vector_memory import VectorMemoryStore
 
     backend = emb.LlamaCppEmbedder(model_path=tmp_path / "model.gguf", dim=2)
     backend._llm = SimpleNamespace(

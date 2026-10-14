@@ -16,13 +16,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from kiro_crew.decisions.impl_jev import _to_wire
-from kiro_crew.decisions.types import Choice
+from efm_go.decisions.impl_jev import _to_wire
+from efm_go.decisions.types import Choice
 
 _LAUNCHER = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "decisions"
     / "local_servers"
     / "strands_decider_cpu.py"

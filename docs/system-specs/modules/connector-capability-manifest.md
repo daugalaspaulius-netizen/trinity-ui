@@ -12,12 +12,12 @@ fields — without that validator's *implementation* shipping here.
 
 Scope note: this spec governs the *campaign contract* — the shape a manifest
 entry must have, and the order the campaign's provider streams unlock in. It
-does not implement `src/kiro_crew/connections/**` (see
+does not implement `src/efm_go/connections/**` (see
 [connections.md](connections.md) for that subsystem's shipped behavior) and
-does not implement `src/kiro_crew/knowledge/connectors/**` (see
+does not implement `src/efm_go/knowledge/connectors/**` (see
 [knowledge.md](knowledge.md)). Current provider slices under
-`src/kiro_crew/connections/control_plane/` and
-`src/kiro_crew/connections/vendors/` implement portions of this contract; the
+`src/efm_go/connections/control_plane/` and
+`src/efm_go/connections/vendors/` implement portions of this contract; the
 manifest validator, discovery runner, and live conformance runner remain later
 rounds. When an implementation changes what this spec documents, the owning-spec
 rule applies exactly as it does everywhere else in this tree: the spec is
@@ -554,7 +554,7 @@ section governs.
 
 | Stream | Scope |
 |---|---|
-| `W00` | The campaign's foundational contract, covering four distinct deliverables: (1) directory/code audit of the existing connector-relevant surface (`src/kiro_crew/connections/**`, `src/kiro_crew/knowledge/connectors/**`, and related subsystems), (2) the machine-checkable schema/validator contract (the manifest schema, `ConformanceRun`, `EvidenceReceipt` — this document), (3) the campaign's architecture (the DAG in this section, the requirement families it references), and (4) the evidence/runner/CI foundation the later validator/discovery/conformance rounds build on. **This document (W00-S1) covers only the docs portion of (2) and (3)** — the audit (1) and the evidence/runner/CI foundation (4) are separate, not-yet-landed deliverables inside `W00`, not implied complete by this PR. |
+| `W00` | The campaign's foundational contract, covering four distinct deliverables: (1) directory/code audit of the existing connector-relevant surface (`src/efm_go/connections/**`, `src/efm_go/knowledge/connectors/**`, and related subsystems), (2) the machine-checkable schema/validator contract (the manifest schema, `ConformanceRun`, `EvidenceReceipt` — this document), (3) the campaign's architecture (the DAG in this section, the requirement families it references), and (4) the evidence/runner/CI foundation the later validator/discovery/conformance rounds build on. **This document (W00-S1) covers only the docs portion of (2) and (3)** — the audit (1) and the evidence/runner/CI foundation (4) are separate, not-yet-landed deliverables inside `W00`, not implied complete by this PR. |
 | `W01` | Shared control plane: binding, auth, policy, reliability. **`W01` is a prerequisite of every provider stream below it** — no provider stream starts ahead of `W01`. |
 | `W02` | GitHub. |
 | `W03` | Gmail, plus the shared Google auth layer Gmail and Drive both need. |

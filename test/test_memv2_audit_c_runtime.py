@@ -9,9 +9,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import embeddings as emb
-from kiro_crew import executors as pools
-from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+from efm_go import embeddings as emb
+from efm_go import executors as pools
+from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
 
 def test_same_name_size_weights_have_distinct_identity(tmp_path):
@@ -343,7 +343,7 @@ def test_model_digest_cached_until_file_changes(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("cold_open", [False, True])
 async def test_http_deadline_wraps_real_recall_handler(monkeypatch, cold_open, entered_recall_pool):
-    from kiro_crew.dashboard.handlers import memory, memory_member
+    from efm_go.dashboard.handlers import memory, memory_member
 
     release, entered, finished = threading.Event(), threading.Event(), threading.Event()
     seen = []
@@ -403,7 +403,7 @@ def test_embedding_signature_preserves_existing_encoding():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("cached", [False, True])
 async def test_ensure_store_aligns_off_loop_outside_cache_lock(tmp_path, monkeypatch, cached):
-    from kiro_crew import context
+    from efm_go import context
 
     store = VectorMemoryStore(db_path=tmp_path / "memory.db", embedding_dim=2)
     await asyncio.to_thread(store.init)
@@ -439,9 +439,9 @@ async def test_store_opened_after_apply_snapshot_before_config_gets_new_width(
 
     from member_memory_helpers import write_member_home
 
-    from kiro_crew import context
-    from kiro_crew.config import loader
-    from kiro_crew.dashboard.handlers import memory
+    from efm_go import context
+    from efm_go.config import loader
+    from efm_go.dashboard.handlers import memory
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     config = write_member_home(tmp_path, "late")
@@ -504,8 +504,8 @@ async def test_registered_recall_route_has_server_deadline(monkeypatch):
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers import memory_member
-    from kiro_crew.dashboard.routes import memory as routes
+    from efm_go.dashboard.handlers import memory_member
+    from efm_go.dashboard.routes import memory as routes
 
     entered = asyncio.Event()
     cancelled = asyncio.Event()

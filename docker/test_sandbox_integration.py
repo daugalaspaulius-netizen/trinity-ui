@@ -34,7 +34,7 @@ def step1_reproduce_issue():
     """Default Docker seccomp blocks unshare → must show Docker-specific guidance."""
     banner("STEP 1: Reproduce issue #1617 (default seccomp)")
 
-    from kiro_crew.sandbox import detect_backend, is_docker_container, wrap_argv
+    from efm_go.sandbox import detect_backend, is_docker_container, wrap_argv
 
     print(f"  in_container : {is_docker_container()}")
     print(f"  backend      : {detect_backend()}")
@@ -89,7 +89,7 @@ def step2_with_seccomp_profile():
 
     import subprocess
 
-    from kiro_crew.sandbox import (
+    from efm_go.sandbox import (
         detect_backend,
         is_docker_container,
         launcher_refusal,
@@ -159,7 +159,7 @@ def step3_unsandboxed_consent():
 
     import os
 
-    from kiro_crew.sandbox import detect_backend, is_docker_container, wrap_argv
+    from efm_go.sandbox import detect_backend, is_docker_container, wrap_argv
 
     print(f"  in_container              : {is_docker_container()}")
     print(f"  backend                   : {detect_backend()}")
@@ -172,7 +172,7 @@ def step3_unsandboxed_consent():
     assert is_docker_container(), "FAIL: should be inside a container"
 
     # Patch the config-read function directly since we have no entrypoint here.
-    import kiro_crew.sandbox as _sandbox
+    import efm_go.sandbox as _sandbox
     original = _sandbox._allow_unsandboxed_exec
     _sandbox._allow_unsandboxed_exec = lambda: True
     try:

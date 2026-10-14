@@ -23,7 +23,7 @@ import { ChannelFolderBackfill } from './ChannelFolderBackfill'
 /** Brand name — do-not-translate, so it lives here rather than in the catalog. */
 const CHANNEL_NAME = "WhatsApp"
 const SETUP_GUIDE =
-  'https://github.com/kirodotdev/KiroCrew/blob/main/src/kiro_crew/docs/whatsapp-integration.md'
+  'https://efmleads.com/blob/main/src/efm_go/docs/whatsapp-integration.md'
 
 /** How often we poll the QR scan status while a login session is open. */
 const POLL_MS = 1500

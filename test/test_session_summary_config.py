@@ -10,8 +10,8 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 
-from kiro_crew.config import loader as L
-from kiro_crew.config.loader import KiroCrewConfig, SessionSummaryConfig
+from efm_go.config import loader as L
+from efm_go.config.loader import KiroCrewConfig, SessionSummaryConfig
 
 # Sentinel for "the section is absent from config.json entirely", which is a
 # different case from an empty dict.
@@ -132,7 +132,7 @@ class TestSessionSummaryParsing:
 
     def test_section_is_registered_in_the_config_schema(self):
         """Config surfaces (CLI, baseline) enumerate SCHEMA_REGISTRY."""
-        from kiro_crew.config import schema
+        from efm_go.config import schema
 
         paths = {e.path for e in schema.SCHEMA_REGISTRY}
         assert "session_summary" in paths

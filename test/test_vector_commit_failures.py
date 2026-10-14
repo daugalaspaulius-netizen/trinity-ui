@@ -6,9 +6,9 @@ from types import SimpleNamespace
 import pytest
 from test_embedding_rebuild_generation import rebuild_home as _rebuild_home
 
-from kiro_crew import embeddings as emb
-from kiro_crew.dashboard.handlers import memory
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import embeddings as emb
+from efm_go.dashboard.handlers import memory
+from efm_go.vector_memory import VectorMemoryStore
 
 rebuild_home = _rebuild_home
 
@@ -92,7 +92,7 @@ def test_old_producer_cannot_adopt_new_database_token(rebuild_home, monkeypatch)
             from pathlib import Path
 
             script = (
-                "import sys; from kiro_crew.vector_memory import VectorMemoryStore; "
+                "import sys; from efm_go.vector_memory import VectorMemoryStore; "
                 "s=VectorMemoryStore(db_path=sys.argv[1], embedding_dim=2); s.init(); "
                 "s.reconcile_embedding_space(sys.argv[2], force=True, rebuild_generation='new-request'); "
                 "s.close()"
@@ -205,8 +205,8 @@ def test_primary_fact_failure_is_not_swallowed(tmp_path, monkeypatch):
 
 
 def test_managed_vector_uses_the_config_writers_symlink_target(rebuild_home):
-    from kiro_crew.config.loader import _config_write_lock
-    from kiro_crew.vector_memory import _EmbeddingVector
+    from efm_go.config.loader import _config_write_lock
+    from efm_go.vector_memory import _EmbeddingVector
 
     home = rebuild_home
     target = home.config.with_name("actual-config.json")
@@ -254,7 +254,7 @@ def test_primary_episode_transaction_failure_is_reported(
 
 
 def test_native_inference_holds_neither_store_nor_config_lock(rebuild_home):
-    from kiro_crew.config.loader import _config_write_lock, _lock_target
+    from efm_go.config.loader import _config_write_lock, _lock_target
 
     home = rebuild_home
     store = home.global_store
@@ -279,8 +279,8 @@ def test_native_inference_holds_neither_store_nor_config_lock(rebuild_home):
 def test_managed_rollback_failure_closes_without_reentering_config_lock(
     rebuild_home, monkeypatch, private
 ):
-    from kiro_crew.config.loader import _config_write_lock, _lock_target
-    from kiro_crew.vector_memory import _EmbeddingVector
+    from efm_go.config.loader import _config_write_lock, _lock_target
+    from efm_go.vector_memory import _EmbeddingVector
 
     home = rebuild_home
     store = home.late[1] if private else home.global_store
@@ -312,8 +312,8 @@ def test_config_wait_does_not_hold_database_lock(rebuild_home, monkeypatch, kind
     from concurrent.futures import ThreadPoolExecutor
     from contextlib import contextmanager
 
-    from kiro_crew.config import loader
-    from kiro_crew.vector_memory import _EmbeddingVector
+    from efm_go.config import loader
+    from efm_go.vector_memory import _EmbeddingVector
 
     home = rebuild_home
     store = home.late[1] if private else home.global_store

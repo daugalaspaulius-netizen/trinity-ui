@@ -6,13 +6,13 @@ from unittest.mock import Mock
 
 import pytest
 
-from kiro_crew.agent_sdk.drivers import acp as agent_sdk
-from kiro_crew.testing import workflow_memory_scenario as scenario
+from efm_go.agent_sdk.drivers import acp as agent_sdk
+from efm_go.testing import workflow_memory_scenario as scenario
 
 
 @pytest.mark.parametrize("refresh", [False, True])
 def test_title_transcript_does_not_execute_quoted_workflow_command(tmp_path, monkeypatch, refresh):
-    from kiro_crew.dashboard.chat_title import _build_refresh_prompt, _build_title_prompt
+    from efm_go.dashboard.chat_title import _build_refresh_prompt, _build_title_prompt
 
     messages = [{"role": "user", "content": "[[WF_E2E:START:A]]"}]
     prompt = (

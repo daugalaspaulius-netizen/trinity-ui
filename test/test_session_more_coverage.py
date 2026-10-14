@@ -1,4 +1,4 @@
-"""Refusal, retry and teardown edges of ``kiro_crew.session`` the suites skip.
+"""Refusal, retry and teardown edges of ``efm_go.session`` the suites skip.
 
 The behavioural session suites drive happy paths: a session is created, used,
 reset. What they leave untested is the half of ``SessionManager`` that exists
@@ -37,11 +37,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.acp.types import ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.messaging.link import UNBIND_REASON_UNSPECIFIED, ChannelLink
-from kiro_crew.session import (
+from efm_go import platform_compat
+from efm_go.acp.types import ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS
+from efm_go.config import KiroCrewConfig
+from efm_go.messaging.link import UNBIND_REASON_UNSPECIFIED, ChannelLink
+from efm_go.session import (
     BACKGROUND_KEY,
     FirstTurnState,
     SessionManager,
@@ -241,7 +241,7 @@ class TestCancelAndCallbacks:
             return None
 
         mgr.set_recycle_callback(cb)
-        with caplog.at_level("WARNING", logger="kiro_crew.session"):
+        with caplog.at_level("WARNING", logger="efm_go.session"):
             mgr.set_recycle_callback(cb)
         assert "Recycle callback already registered" in caplog.text
         assert mgr._on_recycled is cb
@@ -266,7 +266,7 @@ class TestResolveAgentModel:
         """``stat()`` on an absent dir raises OSError; mtime 0.0 must be used as
         the cache stamp rather than the lookup blowing up."""
         missing = tmp_path / "nope"
-        with patch("kiro_crew.session.kiro_agents_dir_path", return_value=missing):
+        with patch("efm_go.session.kiro_agents_dir_path", return_value=missing):
             assert SessionManager._resolve_agent_model("researcher") == "auto"
         assert SessionManager._agent_model_cache["researcher"][1] == 0.0
 
@@ -276,7 +276,7 @@ class TestResolveAgentModel:
         agents = tmp_path / "agents"
         agents.mkdir()
         (agents / "researcher.json").write_text("{not json", encoding="utf-8")
-        with patch("kiro_crew.session.kiro_agents_dir_path", return_value=agents):
+        with patch("efm_go.session.kiro_agents_dir_path", return_value=agents):
             assert SessionManager._resolve_agent_model("researcher") == "auto"
 
     def test_a_readable_agent_file_supplies_its_pinned_model(self, tmp_path) -> None:
@@ -285,7 +285,7 @@ class TestResolveAgentModel:
         (agents / "researcher.json").write_text(
             '{"name": "researcher", "model": "sonnet-9"}', encoding="utf-8"
         )
-        with patch("kiro_crew.session.kiro_agents_dir_path", return_value=agents):
+        with patch("efm_go.session.kiro_agents_dir_path", return_value=agents):
             assert SessionManager._resolve_agent_model("researcher") == "sonnet-9"
 
     def test_a_raising_spec_reader_falls_back_to_auto(self, tmp_path) -> None:
@@ -293,8 +293,8 @@ class TestResolveAgentModel:
         agents.mkdir()
         (agents / "researcher.json").write_text('{"name": "researcher"}', encoding="utf-8")
         with (
-            patch("kiro_crew.session.kiro_agents_dir_path", return_value=agents),
-            patch("kiro_crew.session._read_agent_spec", side_effect=RuntimeError("bad spec")),
+            patch("efm_go.session.kiro_agents_dir_path", return_value=agents),
+            patch("efm_go.session._read_agent_spec", side_effect=RuntimeError("bad spec")),
         ):
             assert SessionManager._resolve_agent_model("researcher") == "auto"
 
@@ -307,7 +307,7 @@ class TestRuntimePidProbes:
         # The id is backend-authored and retained on every Sessions poll, so it is
         # bounded where it is retained: an oversize one is carried as None, never
         # truncated to a string that would name a different crew log unit.
-        from kiro_crew.validation import MAX_ACP_SESSION_ID_LEN
+        from efm_go.validation import MAX_ACP_SESSION_ID_LEN
 
         _register(
             mgr, "dashboard:fits", provider=_provider(session_id="s" * MAX_ACP_SESSION_ID_LEN)
@@ -374,7 +374,7 @@ class TestWarmPoolQueueRaces:
         mgr._discard_pool_provider = AsyncMock()
         with (
             patch.object(mgr, "start_pool", AsyncMock()),
-            patch("kiro_crew.session.build_provider_factory", return_value=MagicMock()),
+            patch("efm_go.session.build_provider_factory", return_value=MagicMock()),
         ):
             await mgr.refresh_defaults()
         mgr._discard_pool_provider.assert_not_called()
@@ -386,7 +386,7 @@ class TestWarmPoolQueueRaces:
         stale = _register(mgr, "dashboard:a")
         with (
             patch.object(mgr, "start_pool", AsyncMock()),
-            patch("kiro_crew.session.build_provider_factory", return_value=MagicMock()),
+            patch("efm_go.session.build_provider_factory", return_value=MagicMock()),
         ):
             await mgr.reload_provider_factory()
         assert mgr._sessions == {}
@@ -448,7 +448,7 @@ class TestPoolHealthLoop:
 
 class TestPoolDecisionMetric:
     def test_a_failing_recorder_never_reaches_the_caller(self, mgr) -> None:
-        with patch("kiro_crew.session.get_recorder", side_effect=RuntimeError("no otel")):
+        with patch("efm_go.session.get_recorder", side_effect=RuntimeError("no otel")):
             mgr._record_pool_decision("hit", "dashboard:a")
 
 
@@ -465,7 +465,7 @@ class TestDiscardPoolProvider:
             raise _Bang()
 
         provider = _provider(shutdown=shutdown)
-        with patch("kiro_crew.session._sync_kill_provider") as killer:
+        with patch("efm_go.session._sync_kill_provider") as killer:
             with pytest.raises(_Bang):
                 await mgr._discard_pool_provider(provider, "unit")
         # Dispatched to the executor; wait for the worker to pick it up.
@@ -484,7 +484,7 @@ class TestDiscardPoolProvider:
             raise RuntimeError("wedged")
 
         provider = _provider(is_process_alive=boom)
-        with patch("kiro_crew.session._sync_kill_provider") as killer:
+        with patch("efm_go.session._sync_kill_provider") as killer:
             await mgr._discard_pool_provider(provider, "unit")
         assert killer.call_count == 0
 
@@ -584,7 +584,7 @@ class TestGetBgSessionRespawn:
 
     @pytest.fixture
     def fake_runtime_cls(self):
-        import kiro_crew.acp.runtime as runtime_mod
+        import efm_go.acp.runtime as runtime_mod
 
         created: list[object] = []
 
@@ -636,7 +636,7 @@ class TestGetBgSessionRespawn:
     async def test_a_still_live_runtime_that_keeps_failing_gives_up_after_one_retry(
         self, mgr, fake_runtime_cls
     ) -> None:
-        from kiro_crew.acp.runtime import AcpRuntimeDead
+        from efm_go.acp.runtime import AcpRuntimeDead
 
         create = AsyncMock(side_effect=AcpRuntimeDead("gone"))
         mgr._bg_runtime = SimpleNamespace(
@@ -657,7 +657,7 @@ class TestGetBgSessionRespawn:
     async def test_a_runtime_that_dies_mid_create_is_reaped_and_respawned(
         self, mgr, fake_runtime_cls
     ) -> None:
-        from kiro_crew.acp.runtime import AcpRuntimeDead
+        from efm_go.acp.runtime import AcpRuntimeDead
 
         alive = [True]
 
@@ -691,9 +691,9 @@ def no_child_scan():
     a naive reset test cannot run on a CI runner.
     """
     with (
-        patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-        patch("kiro_crew.acp.client._capture_child_records", return_value={}),
-        patch("kiro_crew.acp.client._kill_escaped_children") as sweep,
+        patch("efm_go.acp.client._get_child_pids", return_value=[]),
+        patch("efm_go.acp.client._capture_child_records", return_value={}),
+        patch("efm_go.acp.client._kill_escaped_children") as sweep,
     ):
         yield sweep
 
@@ -950,7 +950,7 @@ class TestOpenTaskSession:
 
         dup = _provider(shutdown=AsyncMock(side_effect=RuntimeError("terminate failed")))
         with patch(
-            "kiro_crew.acp.session_provider.AcpSessionProvider",
+            "efm_go.acp.session_provider.AcpSessionProvider",
             side_effect=lambda handle, rt: dup,
         ):
             provider, is_new, resumed = await mgr.open_task_session("taskrunner:run1", key)

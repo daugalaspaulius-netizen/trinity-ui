@@ -1,7 +1,7 @@
 """Build gate: every unguarded third-party import is declared in setup.cfg.
 
 Static AST check that fails the build when a module-level third-party import
-in core ``kiro_crew`` source is NOT declared in ``setup.cfg [options]
+in core ``efm_go`` source is NOT declared in ``setup.cfg [options]
 install_requires``. This prevents the recurring pattern where a dependency
 is present in a dev environment but missing from ``setup.cfg``
 — silently breaking pip-based installs (editable, one-line, auto-update) with
@@ -9,7 +9,7 @@ is present in a dev environment but missing from ``setup.cfg``
 
 Hermetic — no network, no package installation, pure AST + configparser.
 
-Scope: only core kiro_crew modules (excludes apps/builtins/, knowledge/,
+Scope: only core efm_go modules (excludes apps/builtins/, knowledge/,
 workflows/ sub-trees which have their own dependency management).
 
 The historical PyYAML gap and the opentelemetry
@@ -56,7 +56,7 @@ _EXEMPT: set[str] = {
     "httpx",
 }
 
-# Sub-trees within kiro_crew that are NOT core startup and have their own
+# Sub-trees within efm_go that are NOT core startup and have their own
 # dependency management (app builtins have requirements.txt, knowledge/
 # and workflows/ are feature modules loaded lazily).
 _EXCLUDED_SUBTREES: tuple[str, ...] = (
@@ -78,13 +78,13 @@ _EXCLUDED_SUBTREES: tuple[str, ...] = (
 
 
 def _src_root() -> pathlib.Path:
-    """Locate the kiro_crew source tree."""
+    """Locate the efm_go source tree."""
     try:
-        import kiro_crew  # noqa: PLC0415
+        import efm_go  # noqa: PLC0415
 
-        return pathlib.Path(kiro_crew.__file__).resolve().parent
+        return pathlib.Path(efm_go.__file__).resolve().parent
     except Exception:
-        return pathlib.Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        return pathlib.Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 
 def _setup_cfg_path() -> pathlib.Path:
@@ -299,7 +299,7 @@ def test_dev_extra_pins_agree_with_the_dev_dependency_group():
     The group is what CI installs (``--group dev``); the extra is what
     CONTRIBUTING.md tells a contributor to install (``.[dev]``). jsonschema and
     PyJWT are not dev tools -- they are what makes guarded test modules RUN:
-    ``kiro_crew.config.validation`` imports jsonschema behind a try/except, so
+    ``efm_go.config.validation`` imports jsonschema behind a try/except, so
     an install without it silently skips the 11 config-validation guard tests
     (pytest scores a skip as a pass), and ``test_teams_client.py``'s
     ``importorskip`` does the same for the Teams token gate. A missing entry
@@ -417,7 +417,7 @@ def _collect_unguarded_imports(filepath: pathlib.Path) -> list[tuple[str, str]]:
         for root, stmt in imports_to_check:
             if root in stdlib or root.startswith("_"):
                 continue
-            if root == "kiro_crew":
+            if root == "efm_go":
                 continue
             if root in _EXEMPT:
                 continue
@@ -427,7 +427,7 @@ def _collect_unguarded_imports(filepath: pathlib.Path) -> list[tuple[str, str]]:
 
 
 def test_all_unguarded_third_party_imports_are_declared():
-    """Every module-level unguarded third-party import in core kiro_crew
+    """Every module-level unguarded third-party import in core efm_go
     MUST be in setup.cfg install_requires."""
     src_root = _src_root()
     declared = _parse_install_requires()
@@ -475,9 +475,9 @@ def test_noop_recorder_when_otel_missing(monkeypatch):
         if k.startswith("opentelemetry")
         or k
         in (
-            "kiro_crew.metrics.provider",
-            "kiro_crew.metrics.recorder",
-            "kiro_crew.metrics.local_exporter",
+            "efm_go.metrics.provider",
+            "efm_go.metrics.recorder",
+            "efm_go.metrics.local_exporter",
         )
     ]
     saved = {k: sys.modules.pop(k) for k in to_remove}
@@ -496,10 +496,10 @@ def test_noop_recorder_when_otel_missing(monkeypatch):
     try:
         # Re-import provider — it should set _OTEL_AVAILABLE = False and
         # degrade to the MetricsRecorder(None) no-op path (contract).
-        spec = importlib.util.find_spec("kiro_crew.metrics.provider")
+        spec = importlib.util.find_spec("efm_go.metrics.provider")
         assert spec is not None
         prov = importlib.util.module_from_spec(spec)
-        sys.modules["kiro_crew.metrics.provider"] = prov
+        sys.modules["efm_go.metrics.provider"] = prov
         spec.loader.exec_module(prov)
 
         assert prov._OTEL_AVAILABLE is False
@@ -515,7 +515,7 @@ def test_noop_recorder_when_otel_missing(monkeypatch):
         monkeypatch.undo()
         # Drop the degraded copy we injected BEFORE restoring, never after.
         # ``saved`` holds the ORIGINAL module object, and that object is what
-        # every module-level ``from kiro_crew.metrics.provider import
+        # every module-level ``from efm_go.metrics.provider import
         # get_recorder`` (context.py, session.py, skills.py, heartbeat.py,
         # metrics/turns.py, dashboard/chat_runner.py, ...) is already bound to.
         # Popping after the update therefore discards the original and the
@@ -528,14 +528,14 @@ def test_noop_recorder_when_otel_missing(monkeypatch):
         # (test/metrics/test_provider.py's degrade-to-no-op and reader-reaping
         # tests are exactly that shape), and ``reset_for_testing()`` can no
         # longer clear the copy the import-time consumers emit through.
-        sys.modules.pop("kiro_crew.metrics.provider", None)
+        sys.modules.pop("efm_go.metrics.provider", None)
         sys.modules.update(saved)
         # Only re-import when there was nothing to put back — i.e. provider had
         # not been imported before this test. Without the guard that branch
         # would leave our ``_OTEL_AVAILABLE = False`` copy installed, which is
         # strictly worse than a second clean one.
-        if "kiro_crew.metrics.provider" not in sys.modules:
-            importlib.import_module("kiro_crew.metrics.provider")
+        if "efm_go.metrics.provider" not in sys.modules:
+            importlib.import_module("efm_go.metrics.provider")
 
 
 # --- setup.cfg decoding: this gate must run on a non-UTF-8 locale host ---

@@ -1,4 +1,4 @@
-"""``kiro_crew/BUILD_VERSION`` -- a distribution's build stamp over ``__version__``.
+"""``efm_go/BUILD_VERSION`` -- a distribution's build stamp over ``__version__``.
 
 The contract is the FILE (its name and the ``<base>.N`` shape), not a Python
 API, so the helpers are private and imported here under test-local names.
@@ -7,9 +7,9 @@ A distribution that repackages one core release as several builds of its own
 (``0.6.0.10``, ``0.6.0.11``, ... of the same ``0.6.0``) had no way to make the
 running process say which one it was: the About page's version chip,
 ``/api/status``, ``/api/health``, ``kirocrew --version`` and the diagnostics
-report all read ``kiro_crew.__version__``, several through an import-time copy
+report all read ``efm_go.__version__``, several through an import-time copy
 (``dashboard/handlers/updates.py::_local_version``, ``ws.py``) that nothing
-after import can reach. The stamp is a file BESIDE ``kiro_crew/__init__.py``,
+after import can reach. The stamp is a file BESIDE ``efm_go/__init__.py``,
 written at packaging time and resolved at import -- the one point that
 precedes every copy -- and deliberately not an environment variable, which the
 local operator could set to wave a forbidden build past the governance
@@ -36,16 +36,16 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew
-from kiro_crew import _BUILD_VERSION_FILENAME as BUILD_VERSION_FILENAME
-from kiro_crew import _build_version_override as build_version_override
+import efm_go
+from efm_go import _BUILD_VERSION_FILENAME as BUILD_VERSION_FILENAME
+from efm_go import _build_version_override as build_version_override
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC = REPO_ROOT / "src"
-PKG_DIR = SRC / "kiro_crew"
+PKG_DIR = SRC / "efm_go"
 
 # The version the reach tests' synthesized package DECLARES. Pinned here, never
-# read from ``kiro_crew.__version__``, because a stamp is honoured only over a
+# read from ``efm_go.__version__``, because a stamp is honoured only over a
 # BARE numeric base: an expectation computed from the checkout (``f"{live}.12"``)
 # holds on ``main``, which declares a bare release, and fails on any checkout
 # that does not -- an insider release branch declares ``X.Y.Z-rc.N`` by contract
@@ -141,34 +141,34 @@ def test_empty_base_never_matches() -> None:
 
 
 def test_no_file_keeps_the_base(tmp_path) -> None:
-    assert kiro_crew._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
+    assert efm_go._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
 
 
 def test_no_package_dir_keeps_the_base() -> None:
-    assert kiro_crew._apply_build_version_file("0.6.0", "") == "0.6.0"
-    assert kiro_crew._apply_build_version_file("0.6.0", None) == "0.6.0"
+    assert efm_go._apply_build_version_file("0.6.0", "") == "0.6.0"
+    assert efm_go._apply_build_version_file("0.6.0", None) == "0.6.0"
 
 
 def test_a_blank_file_keeps_the_base(tmp_path) -> None:
     (tmp_path / BUILD_VERSION_FILENAME).write_text("  \n", encoding="utf-8")
-    assert kiro_crew._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
+    assert efm_go._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
 
 
 def test_a_build_of_the_base_is_applied(tmp_path) -> None:
     (tmp_path / BUILD_VERSION_FILENAME).write_text("0.6.0.12\n", encoding="utf-8")
-    assert kiro_crew._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0.12"
+    assert efm_go._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0.12"
 
 
 def test_an_unreadable_file_keeps_the_base(tmp_path) -> None:
     """A directory where the file should be: open() raises, the base stays."""
     (tmp_path / BUILD_VERSION_FILENAME).mkdir()
-    assert kiro_crew._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
+    assert efm_go._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
 
 
 def test_a_foreign_value_is_refused_with_one_warning(tmp_path, caplog) -> None:
     (tmp_path / BUILD_VERSION_FILENAME).write_text("0.5.0.16\n", encoding="utf-8")
-    with caplog.at_level("WARNING", logger="kiro_crew"):
-        assert kiro_crew._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
+    with caplog.at_level("WARNING", logger="efm_go"):
+        assert efm_go._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
     warnings = [r for r in caplog.records if r.levelname == "WARNING"]
     assert len(warnings) == 1
     assert BUILD_VERSION_FILENAME in warnings[0].getMessage()
@@ -179,30 +179,30 @@ def test_an_oversized_file_is_refused_not_truncated(tmp_path, caplog) -> None:
     """The read is capped, and a file past the cap is a foreign value: it must
     not be truncated into a prefix that happens to parse as ``<base>.N``."""
     (tmp_path / BUILD_VERSION_FILENAME).write_bytes(b"0.6.0." + b"9" * 4096)
-    with caplog.at_level("WARNING", logger="kiro_crew"):
-        assert kiro_crew._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
+    with caplog.at_level("WARNING", logger="efm_go"):
+        assert efm_go._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
     assert BUILD_VERSION_FILENAME in caplog.text
     # ...while a stamp comfortably under the cap is still honoured.
     (tmp_path / BUILD_VERSION_FILENAME).write_text("0.6.0.1234567890\n", encoding="utf-8")
-    assert kiro_crew._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0.1234567890"
+    assert efm_go._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0.1234567890"
 
 
 def test_an_undecodable_file_keeps_the_base(tmp_path) -> None:
     (tmp_path / BUILD_VERSION_FILENAME).write_bytes(b"\xff\xfe0.6.0.1")
-    assert kiro_crew._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
+    assert efm_go._apply_build_version_file("0.6.0", str(tmp_path)) == "0.6.0"
 
 
 # ── reach: a fresh interpreter importing a package that carries the file ────
 
 
 def _stamped_package_root(tmp_path: Path, stamp: str | None, base: str = _PINNED_BASE) -> Path:
-    """A ``kiro_crew`` package that IS the source tree's, with the file beside it.
+    """A ``efm_go`` package that IS the source tree's, with the file beside it.
 
     ``__init__.py`` is a byte copy of the real one (the code under test) apart
     from its ``__version__`` literal, which is rewritten to *base*, plus a
-    ``__path__`` line that points submodule resolution back at ``src/kiro_crew``,
-    so ``kiro_crew.dashboard...`` imports the real modules while
-    ``kiro_crew.__file__`` -- the anchor the stamp is read beside -- is the
+    ``__path__`` line that points submodule resolution back at ``src/efm_go``,
+    so ``efm_go.dashboard...`` imports the real modules while
+    ``efm_go.__file__`` -- the anchor the stamp is read beside -- is the
     copy. Nothing is written into the source tree, and no symlink is needed.
 
     The literal is REWRITTEN rather than inherited so the declared version is an
@@ -210,14 +210,14 @@ def _stamped_package_root(tmp_path: Path, stamp: str | None, base: str = _PINNED
     carries why that matters.
     """
     root = tmp_path / "pkgroot"
-    pkg = root / "kiro_crew"
+    pkg = root / "efm_go"
     pkg.mkdir(parents=True)
     init_src = (PKG_DIR / "__init__.py").read_text(encoding="utf-8")
     init_src, rewritten = _VERSION_LINE.subn(f'__version__ = "{base}"', init_src, count=1)
     # Load-bearing: a refactor that moved or renamed the literal would otherwise
     # silently hand the tests the checkout's own version back and recreate the
     # branch-dependent expectation the pin exists to remove.
-    assert rewritten == 1, "no __version__ assignment found in kiro_crew/__init__.py"
+    assert rewritten == 1, "no __version__ assignment found in efm_go/__init__.py"
     (pkg / "__init__.py").write_text(
         init_src + f"\n__path__.append({str(PKG_DIR)!r})\n", encoding="utf-8"
     )
@@ -237,7 +237,7 @@ def _fresh_interpreter(
     env["PYTHONPATH"] = os.pathsep.join([str(root)] + [p for p in sys.path if p])
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     return subprocess.run(
-        [sys.executable, "-c", f"PKG = {str(root / 'kiro_crew')!r}\n" + code],
+        [sys.executable, "-c", f"PKG = {str(root / 'efm_go')!r}\n" + code],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -249,19 +249,19 @@ def _fresh_interpreter(
 
 _REACH_PROBE = """
 import os
-import kiro_crew
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.dashboard import ws
-from kiro_crew.dashboard import handlers_system
-from kiro_crew import release_channel
-from kiro_crew.platform import update_governance
-assert os.path.dirname(kiro_crew.__file__) == PKG, kiro_crew.__file__
+import efm_go
+from efm_go.dashboard.handlers import updates
+from efm_go.dashboard import ws
+from efm_go.dashboard import handlers_system
+from efm_go import release_channel
+from efm_go.platform import update_governance
+assert os.path.dirname(efm_go.__file__) == PKG, efm_go.__file__
 assert os.path.dirname(updates.__file__) != PKG  # the REAL dashboard module
-print("version", kiro_crew.__version__)
+print("version", efm_go.__version__)
 print("updates", updates._local_version)
 print("ws", ws._local_version)
 print("display", updates.status_update_fields()["version_display"])
-print("health", handlers_system.kiro_crew.__version__)
+print("health", handlers_system.efm_go.__version__)
 print("channel", release_channel.channel())
 """
 
@@ -365,7 +365,7 @@ def test_the_cli_version_flag_reports_the_build(tmp_path) -> None:
         tmp_path,
         stamped,
         "import sys\nsys.argv = ['kirocrew', '--version']\n"
-        "from kiro_crew.cli import main\n"
+        "from efm_go.cli import main\n"
         "try:\n    main()\nexcept SystemExit as exc:\n    raise SystemExit(exc.code or 0)\n",
     )
     assert proc.returncode == 0, proc.stderr
@@ -377,10 +377,10 @@ def test_the_governance_floor_sees_the_stamp(tmp_path) -> None:
     the stamp the core base could never satisfy ``0.6.0.10`` and every host
     read as permanently below the floor; with it the floor works as written."""
     code = (
-        "import kiro_crew\n"
-        "from kiro_crew.dashboard.handlers import updates\n"
-        "from kiro_crew.platform import update_governance as ug\n"
-        "print('version', kiro_crew.__version__)\n"
+        "import efm_go\n"
+        "from efm_go.dashboard.handlers import updates\n"
+        "from efm_go.platform import update_governance as ug\n"
+        "print('version', efm_go.__version__)\n"
         "print('required', ug.update_required(updates._local_version))\n"
     )
     stamped = f"{_PINNED_BASE}.12"
@@ -395,7 +395,7 @@ def test_the_governance_floor_sees_the_stamp(tmp_path) -> None:
 
 
 def test_a_child_leaves_no_bytecode_behind(tmp_path) -> None:
-    proc = _fresh_interpreter(tmp_path, "0.0.0", "import kiro_crew")
+    proc = _fresh_interpreter(tmp_path, "0.0.0", "import efm_go")
     assert proc.returncode == 0, proc.stderr
     assert not list(tmp_path.rglob("__pycache__"))
 
@@ -404,7 +404,7 @@ def test_update_compare_orders_stamped_builds() -> None:
     """The stamp now feeds the update check's comparator: ``<base>.<n>`` must
     order by ``n`` (incl. the 9->10 / 99->100 boundaries), sit above the bare
     base, and below the next patch line."""
-    from kiro_crew.dashboard.handlers.updates import _is_newer
+    from efm_go.dashboard.handlers.updates import _is_newer
 
     numbers = list(range(0, 25)) + [98, 99, 100, 101, 999, 1000]
     for n in numbers:
@@ -420,7 +420,7 @@ def test_update_compare_orders_stamped_builds() -> None:
 def test_changelog_marks_the_release_row_for_a_stamped_build() -> None:
     """``0.6.0.12`` is a build OF 0.6.0: its notes are 0.6.0's, so the running
     build must mark that row -- not open an empty ``0.6.0.12`` row above it."""
-    from kiro_crew.changelog import build_release_list, running_release
+    from efm_go.changelog import build_release_list, running_release
 
     assert running_release("0.6.0.12") == ("0.6.0", False)
     assert running_release("0.6.0") == ("0.6.0", False)  # three segments untouched
@@ -439,8 +439,8 @@ def test_channel_move_compares_by_release_not_by_stamp() -> None:
     ``0.6.0`` is ON that lane, not ahead of it: the feed check must not flag a
     permanent channel move (which the About panel renders as a standing
     "re-run the installer" affordance pointing at the bare wheel)."""
-    from kiro_crew.changelog import release_of_build
-    from kiro_crew.dashboard.handlers.updates import _is_newer
+    from efm_go.changelog import release_of_build
+    from efm_go.dashboard.handlers.updates import _is_newer
 
     assert release_of_build("0.6.0.12") == "0.6.0"
     assert release_of_build("0.6.0") == "0.6.0"
@@ -471,7 +471,7 @@ def test_the_feed_check_source_folds_the_stamp() -> None:
 def test_telemetry_release_is_unchanged_by_the_stamp() -> None:
     """The anonymous usage beacon deliberately reports ``major.minor.patch``
     only (cardinality); a stamped build sends the same value as its base."""
-    from kiro_crew import beacon
+    from efm_go import beacon
 
     assert beacon.release("0.6.0.12") == beacon.release("0.6.0") == "0.6.0"
 
@@ -499,6 +499,6 @@ def test_the_file_is_not_shipped_by_this_repo() -> None:
     wheels it publishes carry none, and the gitignore keeps a dev experiment
     from being committed."""
     assert not (PKG_DIR / BUILD_VERSION_FILENAME).exists()
-    assert f"src/kiro_crew/{BUILD_VERSION_FILENAME}" in (REPO_ROOT / ".gitignore").read_text(
+    assert f"src/efm_go/{BUILD_VERSION_FILENAME}" in (REPO_ROOT / ".gitignore").read_text(
         encoding="utf-8"
     )

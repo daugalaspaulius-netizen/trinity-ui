@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard.handlers_channel import api_channel_clear_context
+from efm_go.dashboard.handlers_channel import api_channel_clear_context
 
 
 def _make_agent(agent_id: str, role: str, session_key: str):
@@ -48,7 +48,7 @@ class TestChannelClearContext:
     async def test_returns_404_when_channel_not_found(self):
         request = _make_request("nonexistent", {}, channel=None)
         with patch(
-            "kiro_crew.dashboard.handlers_channel._mgr",
+            "efm_go.dashboard.handlers_channel._mgr",
             return_value=MagicMock(get=MagicMock(return_value=None)),
         ):
             resp = await api_channel_clear_context(request)
@@ -66,7 +66,7 @@ class TestChannelClearContext:
 
         request = _make_request("ch1", {"scope": "all"}, channel=ch, sessions=sessions)
         with patch(
-            "kiro_crew.dashboard.handlers_channel._mgr",
+            "efm_go.dashboard.handlers_channel._mgr",
             return_value=MagicMock(get=MagicMock(return_value=ch)),
         ):
             resp = await api_channel_clear_context(request)
@@ -94,7 +94,7 @@ class TestChannelClearContext:
             "ch1", {"scope": "agent", "agent_id": "a1"}, channel=ch, sessions=sessions
         )
         with patch(
-            "kiro_crew.dashboard.handlers_channel._mgr",
+            "efm_go.dashboard.handlers_channel._mgr",
             return_value=MagicMock(get=MagicMock(return_value=ch)),
         ):
             resp = await api_channel_clear_context(request)
@@ -119,7 +119,7 @@ class TestChannelClearContext:
             "ch1", {"scope": "agent", "agent_id": "nonexistent"}, channel=ch, sessions=sessions
         )
         with patch(
-            "kiro_crew.dashboard.handlers_channel._mgr",
+            "efm_go.dashboard.handlers_channel._mgr",
             return_value=MagicMock(get=MagicMock(return_value=ch)),
         ):
             resp = await api_channel_clear_context(request)
@@ -136,7 +136,7 @@ class TestChannelClearContext:
         request = _make_request("ch1", {}, channel=ch, sessions=sessions)
         request.json = AsyncMock(side_effect=Exception("no body"))
         with patch(
-            "kiro_crew.dashboard.handlers_channel._mgr",
+            "efm_go.dashboard.handlers_channel._mgr",
             return_value=MagicMock(get=MagicMock(return_value=ch)),
         ):
             resp = await api_channel_clear_context(request)
@@ -154,7 +154,7 @@ class TestChannelClearContext:
             "ch1", {"scope": "agent"}, channel=ch, sessions=sessions
         )
         with patch(
-            "kiro_crew.dashboard.handlers_channel._mgr",
+            "efm_go.dashboard.handlers_channel._mgr",
             return_value=MagicMock(get=MagicMock(return_value=ch)),
         ):
             resp = await api_channel_clear_context(request)

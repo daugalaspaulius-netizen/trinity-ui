@@ -29,11 +29,11 @@ from typing import Any, cast
 
 import pytest
 
-from kiro_crew import history_index_worker
-from kiro_crew._sqlite_compat import fts5_available
-from kiro_crew.history import ConversationLog
-from kiro_crew.history_index import INDEX_FILENAME, SessionSearchIndex
-from kiro_crew.history_index_worker import SessionIndexWorkerSupervisor
+from efm_go import history_index_worker
+from efm_go._sqlite_compat import fts5_available
+from efm_go.history import ConversationLog
+from efm_go.history_index import INDEX_FILENAME, SessionSearchIndex
+from efm_go.history_index_worker import SessionIndexWorkerSupervisor
 
 pytestmark = pytest.mark.skipif(not fts5_available(), reason="SQLite built without FTS5")
 
@@ -99,7 +99,7 @@ def _settle(sessions, *keys):
     file's own mtime is moved back instead -- the one signal the deferral reads
     that crosses the process boundary.
     """
-    from kiro_crew import history_search
+    from efm_go import history_search
 
     settled = time.time() - history_search._INDEX_QUIET_WINDOW_SECS - 600.0
     for key in keys:
@@ -237,7 +237,7 @@ def test_a_spawn_that_keeps_failing_gives_up_after_a_healthy_child_dies(tmp_path
     failure means the host is short of exactly the memory and threads this module
     exists to give back.
     """
-    import kiro_crew.history_index_worker as worker_module
+    import efm_go.history_index_worker as worker_module
 
     class _AlwaysFailsToSpawn:
         def __init__(self, *args, **kwargs):
@@ -366,7 +366,7 @@ def test_the_child_body_survives_a_failing_pass(tmp_path, monkeypatch, _restore_
     The failure branch takes the same wait as the success branch, so a child whose
     passes keep failing still notices a parent that has gone.
     """
-    import kiro_crew.history_search as history_search
+    import efm_go.history_search as history_search
 
     calls = []
 

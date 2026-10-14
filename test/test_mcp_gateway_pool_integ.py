@@ -27,7 +27,7 @@ platform branch other than where the endpoint is placed. Permission modes
 token SID vs macOS ``UNVERIFIABLE``) are genuinely platform-shaped and are
 covered by their own platform-split tests; folding them in here would turn this
 into a per-platform mock farm and cost the portability that
-:mod:`kiro_crew.mcp_gateway.transport` was written to provide.
+:mod:`efm_go.mcp_gateway.transport` was written to provide.
 
 ``test_pool_integ_is_never_silently_skipped_on_windows`` guards the coverage
 itself: a Windows skip would remove the only positive proof of pooling on the
@@ -45,10 +45,10 @@ from pathlib import Path
 import pytest
 from fake_pool_mcp_server import recorded
 
-from kiro_crew import code_fingerprint as cf
-from kiro_crew import platform_compat as pc
-from kiro_crew.mcp_gateway import gatewayd as gw
-from kiro_crew.mcp_gateway import transport
+from efm_go import code_fingerprint as cf
+from efm_go import platform_compat as pc
+from efm_go.mcp_gateway import gatewayd as gw
+from efm_go.mcp_gateway import transport
 
 _FAKE_SERVER = Path(__file__).with_name("fake_pool_mcp_server.py")
 
@@ -138,7 +138,7 @@ async def _spawn_stub(
     return await asyncio.create_subprocess_exec(
         sys.executable,
         "-m",
-        "kiro_crew.mcp_gateway.stub",
+        "efm_go.mcp_gateway.stub",
         "--server", server,
         "--agent", agent,
         "--target-command", sys.executable,
@@ -775,7 +775,7 @@ async def test_backends_hosting_stub_covers_exclusive() -> None:
     """The stub lookup must cover exclusive (private) backends too: a
     private stub rekeys like a pooled one, and omitting it would leave the
     previous caller's subscriptions routing to the new owner."""
-    from kiro_crew.mcp_gateway.pool import BackendPool
+    from efm_go.mcp_gateway.pool import BackendPool
 
     class _Stub:
         def __init__(self, inboxes: dict) -> None:
@@ -795,7 +795,7 @@ async def test_backends_hosting_stub_covers_exclusive() -> None:
 
 #: Private (non-poolable) stubs launched at once. The storm the spawn gate exists
 #: for is ~30 such stubs; every one is a full Python process importing
-#: ``kiro_crew`` plus its backend, so this suite runs a smaller storm with a
+#: ``efm_go`` plus its backend, so this suite runs a smaller storm with a
 #: proportionally smaller gate. The assertions are the same shape at any size.
 _STORM_STUBS = 12
 _STORM_CAPACITY = 3

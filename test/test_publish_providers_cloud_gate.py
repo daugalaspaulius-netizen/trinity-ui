@@ -11,10 +11,10 @@ import dataclasses
 
 import pytest
 
-from kiro_crew.apps import routes as app_routes
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform import context as ctx_mod
-from kiro_crew.platform.bootstrap import build_default_context
+from efm_go.apps import routes as app_routes
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform import context as ctx_mod
+from efm_go.platform.bootstrap import build_default_context
 
 
 class _NoCloud:

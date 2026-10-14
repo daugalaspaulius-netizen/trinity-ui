@@ -2,7 +2,7 @@
 
 Two halves, and they are separate on purpose.
 
-The first half drives :class:`~kiro_crew.acp.harness.codex.CodexHarness` against a
+The first half drives :class:`~efm_go.acp.harness.codex.CodexHarness` against a
 FAKE ACP peer -- a scripted dict-in/dict-out stand-in for the adapter, no process and
 no pipe. What it proves is that the harness's own seam answers, sent in the order a
 session is built in, produce an exchange the adapter accepts: one handshake, two
@@ -38,24 +38,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.client import (
+from efm_go.acp.client import (
     CLIENT_NAME,
     CLIENT_VERSION,
     AcpError,
     AcpToolGateUnroutable,
 )
-from kiro_crew.acp.harness import codex as harness_mod
-from kiro_crew.acp.harness import harness_for
-from kiro_crew.acp.harness.base import SpawnContext, TeardownPolicy
-from kiro_crew.acp.harness.codex import CodexHarness
-from kiro_crew.acp.runtime import AcpRuntime, _MirroredSessionMcp
-from kiro_crew.acp.session_handle import (
+from efm_go.acp.harness import codex as harness_mod
+from efm_go.acp.harness import harness_for
+from efm_go.acp.harness.base import SpawnContext, TeardownPolicy
+from efm_go.acp.harness.codex import CodexHarness
+from efm_go.acp.runtime import AcpRuntime, _MirroredSessionMcp
+from efm_go.acp.session_handle import (
     AcpSessionHandle,
     advertised_models_from_session,
     models_from_config_options,
     parse_advertised_models,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
@@ -75,13 +75,13 @@ from kiro_crew.acp.types import (
     METHOD_SET_CONFIG_OPTION,
     METHOD_SET_MODE,
 )
-from kiro_crew.agent_sdk.backends import (
+from efm_go.agent_sdk.backends import (
     ACP_BACKENDS_SESSION_EVICTION,
     effort_config_option_id,
 )
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
-from kiro_crew.providers.acp import AcpProvider
-from kiro_crew.providers.mirrors.registry import has_mirror
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.providers.acp import AcpProvider
+from efm_go.providers.mirrors.registry import has_mirror
 
 
 @pytest.fixture(autouse=True)
@@ -90,14 +90,14 @@ def _pinned_kiro_cli_version(monkeypatch):
 
     A runtime start here materialises the agent spec (``ensure_agent_materialized``
     -> ``rebuild_agent_config`` -> ``_write_derived_permissions``), which reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``:
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``:
     one real ``kiro-cli --version`` spawn per binary identity, process-cached, so
     whichever test in the worker starts first pays it against the HOST's install
     with the checkout as the child's cwd. Pinned to the floor release, as
     ``test_agent.py`` and the generated-writer suites pin it.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -518,7 +518,7 @@ class TestTeardown:
 
     def test_no_kiro_family_delete_verb_is_sent(self, adapter):
         """Either kiro-family verb would draw -32601 and leave the session on the process."""
-        assert adapter.teardown.method != "_kiro.dev/session/terminate"
+        assert adapter.teardown.method != "_efm.go/session/terminate"
         assert adapter.teardown.method != "_kiro/session/delete"
 
     def test_the_policy_carries_the_verb_and_its_delivery(self, adapter):
@@ -593,7 +593,7 @@ class TestTeardownAwaitsTheReplyTheHostGives:
     async def test_the_await_is_bounded_by_the_teardown_budget(self):
         """The reply is awaited, but never past ``_TERMINATE_TIMEOUT``: a stalled
         adapter costs one budget, then the local unregister still runs."""
-        from kiro_crew.acp.runtime import _TERMINATE_TIMEOUT
+        from efm_go.acp.runtime import _TERMINATE_TIMEOUT
 
         rt = _codex_runtime()
         rt._session_queues["sid-codex"] = asyncio.Queue()
@@ -617,7 +617,7 @@ class TestTeardownAwaitsTheReplyTheHostGives:
         drop the only signal that a kiro session actually left the shared process.
         """
         for backend, verb in (
-            (ACP_BACKEND_KIRO, "_kiro.dev/session/terminate"),
+            (ACP_BACKEND_KIRO, "_efm.go/session/terminate"),
             (ACP_BACKEND_KAS, "_kiro/session/delete"),
         ):
             rt = _runtime_for(backend, pid=4243)
@@ -671,8 +671,8 @@ class TestWhatThisHarnessDoesNotHave:
         assert aliases.mcp_init == ()
 
     def test_the_kiro_family_vocabulary_is_not_inherited(self, adapter):
-        """KAS speaks ``_kiro.dev/*`` because it is reached THROUGH kiro-cli. codex is not."""
-        from kiro_crew.acp.harness._common import KIRO_FAMILY_ALIASES
+        """KAS speaks ``_efm.go/*`` because it is reached THROUGH kiro-cli. codex is not."""
+        from efm_go.acp.harness._common import KIRO_FAMILY_ALIASES
 
         assert adapter.notification_aliases != KIRO_FAMILY_ALIASES
 
@@ -702,7 +702,7 @@ def mask_resolved(monkeypatch):
     async def _preflight(_fn, _backend, _mode):
         return ("/h/.aws",)
 
-    from kiro_crew.acp import client as client_mod
+    from efm_go.acp import client as client_mod
 
     monkeypatch.setattr(client_mod, "_run_preflight_bounded", _preflight)
     monkeypatch.setattr(
@@ -713,7 +713,7 @@ def mask_resolved(monkeypatch):
 class TestSpawn:
     @pytest.mark.asyncio
     async def test_the_resolved_entry_is_the_whole_argv(self, adapter, mask_resolved):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         with patch.object(
             client_mod, "_resolve_codex_acp_bin", return_value=(["/n/node", "/p/index.js"], "/s")
@@ -724,7 +724,7 @@ class TestSpawn:
     @pytest.mark.asyncio
     async def test_no_agent_and_no_model_flag_is_appended(self, adapter, mask_resolved):
         """codex takes no argv of its own: any invocation blocks on stdin."""
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         with patch.object(
             client_mod, "_resolve_codex_acp_bin", return_value=(["/n/node", "/p/index.js"], "/s")
@@ -738,7 +738,7 @@ class TestSpawn:
     @pytest.mark.asyncio
     async def test_crew_never_owns_this_host_credential(self, adapter, mask_resolved):
         """codex raises nothing at Crew, so a process expecting a callback would wait."""
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         with patch.object(
             client_mod, "_resolve_codex_acp_bin", return_value=(["/n/node", "/p/index.js"], "/s")
@@ -748,8 +748,8 @@ class TestSpawn:
 
     @pytest.mark.asyncio
     async def test_a_missing_adapter_aborts_the_spawn_with_the_searched_path(self, adapter):
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.acp.session_handle import AcpRuntimeError
+        from efm_go.acp import client as client_mod
+        from efm_go.acp.session_handle import AcpRuntimeError
 
         with patch.object(client_mod, "_resolve_codex_acp_bin", return_value=(None, "/one:/two")):
             with pytest.raises(AcpRuntimeError) as exc:
@@ -763,7 +763,7 @@ class TestSpawn:
     @pytest.mark.asyncio
     async def test_the_resolver_is_delegated_not_duplicated(self, adapter, mask_resolved):
         """One resolution order, so "why did it pick that one?" has one answer."""
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         with patch.object(
             client_mod, "_resolve_codex_acp_bin", return_value=(["/n/node", "/p/i.js"], "/s")
@@ -799,7 +799,7 @@ class TestSpawnMasks:
 
     @pytest.mark.asyncio
     async def test_the_mask_is_resolved_and_the_carve_out_is_projected_over_it(self):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         async def _preflight(_fn, backend, mode):
             assert (backend, mode) == (ACP_BACKEND_CODEX, "standard")
@@ -821,7 +821,7 @@ class TestSpawnMasks:
     @pytest.mark.asyncio
     async def test_a_refused_preflight_stops_the_spawn_rather_than_returning_empty(self):
         """An enforced adapter started with its mask dropped has no control at all."""
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         async def _refuse(*_args, **_kwargs):
             raise RuntimeError("sandbox floor refused")
@@ -838,7 +838,7 @@ class TestSpawnMasks:
         the operator's credential homes readable and nothing compensating for it, so
         the whole spawn has to fail rather than return an empty mask.
         """
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         async def _refuse(*_args, **_kwargs):
             raise RuntimeError("sandbox floor refused")
@@ -859,7 +859,7 @@ class TestSpawnMasks:
         Re-reading it would resolve a different tier than the one the argv was built
         for, which is the mismatch carrying the mask on the plan exists to prevent.
         """
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         seen: list[str] = []
 
@@ -906,7 +906,7 @@ class TestReclaimIsScopedToTheCore:
     @pytest.mark.asyncio
     async def test_the_spawn_scope_includes_a_resident_launcher(self, adapter):
         """The pid-relative depth reaches app-server through a resident launcher."""
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         with (
             patch.object(
@@ -941,7 +941,7 @@ class TestReclaimIsScopedToTheCore:
 
 
 def _build_provider(backend: str) -> AcpProvider:
-    with patch("kiro_crew.providers.acp.AcpClient"):
+    with patch("efm_go.providers.acp.AcpClient"):
         provider = AcpProvider(acp_backend=backend)
     provider._client = MagicMock()
     provider._client.backend = backend
@@ -1058,7 +1058,7 @@ class TestOneFactReadThreeWays:
         conversation. They are safe on this host exactly because every one of them
         is evicted on teardown; the eviction term in ``_bg_runtime_backends`` is what
         admits it, and would exclude it again the day the verb stopped evicting."""
-        from kiro_crew.session import _bg_runtime_backends
+        from efm_go.session import _bg_runtime_backends
 
         assert ACP_BACKEND_CODEX in _bg_runtime_backends()
 
@@ -1068,7 +1068,7 @@ class TestOneFactReadThreeWays:
         that happens to read the same from the outside."""
         import inspect
 
-        from kiro_crew import session as session_mod
+        from efm_go import session as session_mod
 
         source = inspect.getsource(session_mod._bg_runtime_backends)
         assert "ACP_BACKENDS_SESSION_EVICTION" in source

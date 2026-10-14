@@ -27,9 +27,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.session_handle import models_from_config_options
-from kiro_crew.acp_backends import (
+from efm_go.acp.client import AcpClient
+from efm_go.acp.session_handle import models_from_config_options
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_DEEPSEEK,
     ACP_BACKEND_KIRO,
@@ -49,7 +49,7 @@ from kiro_crew.acp_backends import (
     effort_config_option_id,
     routing_for,
 )
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 
 @pytest.fixture(autouse=True)
@@ -58,14 +58,14 @@ def _pinned_kiro_cli_version(monkeypatch):
 
     A client start here materialises the agent spec (``ensure_agent_materialized``
     -> ``rebuild_agent_config`` -> ``_write_derived_permissions``), which reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``:
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``:
     one real ``kiro-cli --version`` spawn per binary identity, process-cached, so
     whichever test in the worker starts first pays it against the HOST's install
     with the checkout as the child's cwd. Pinned to the floor release, as
     ``test_agent.py`` and the generated-writer suites pin it.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -210,7 +210,7 @@ def _good_gate_marker(module: str = "/sealed/gate.mjs", names: tuple[str, ...] =
     """The complete marker emitted by the shipped plugin on a clean ACP profile.
 
     *module* defaults to a plain path for the callers that hand this marker straight
-    to :func:`~kiro_crew.acp_tool_gate.gate_marker_issue`, which compares strings.
+    to :func:`~efm_go.acp_tool_gate.gate_marker_issue`, which compares strings.
     Anything going through ``_verify_deepseek_gate`` must pass the ``file://`` URL of
     :func:`_gate_extension_path` instead, because that is what the shipped plugin
     writes (``import.meta.url``) and the only shape the read-back normalises.
@@ -293,7 +293,7 @@ def _deepseek_gate_verifier(tmp_path, monkeypatch, marker_writer, *, names: tupl
     The third element is the fake process the probe drove, carrying the ``Popen``
     keyword arguments (``kwargs``) and the environment the harness was booted with.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     marker_path = tmp_path / "gate-marker.json"
     extension_path = _gate_extension_path(tmp_path)
@@ -387,7 +387,7 @@ def test_the_probe_hands_the_plugin_a_canary_under_each_vault_fed_name_and_never
     The names themselves ride in a dedicated variable so the plugin checks exactly
     the set Crew configured and the marker cannot claim a different one.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     names = ("DEEPSEEK_API_KEY", "PROBE_SECRET")
 
@@ -430,7 +430,7 @@ def test_the_probe_refuses_a_marker_that_checked_a_different_name_set(
 
 def test_an_oversize_but_otherwise_valid_marker_is_refused(tmp_path, monkeypatch) -> None:
     """Size is checked before parsing, so a child cannot allocate an unbounded object."""
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     def write_marker(path):
         marker = {
@@ -448,7 +448,7 @@ def test_an_oversize_but_otherwise_valid_marker_is_refused(tmp_path, monkeypatch
 
 def test_a_marker_that_grows_past_its_fstat_size_is_refused(tmp_path, monkeypatch) -> None:
     """One extra byte rejects a file changed between metadata capture and its read."""
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     def write_marker(path):
         marker = _good_gate_marker(_gate_extension_path(tmp_path).as_uri())
@@ -536,7 +536,7 @@ def test_the_routing_is_a_verified_gate_extension_and_therefore_enforced() -> No
     composes into it, answering the harness's own ``tools/pre-execute`` waterfall,
     and a read-back that confirms the plugin loaded before the first prompt.
     """
-    from kiro_crew import acp_tool_gate as gate
+    from efm_go import acp_tool_gate as gate
 
     assert routing_for(ACP_BACKEND_DEEPSEEK) is Routing.VERIFIED_GATE_EXTENSION
     assert gate.is_enforced(ACP_BACKEND_DEEPSEEK) is True
@@ -557,8 +557,8 @@ def test_the_gate_is_read_back_through_its_load_marker() -> None:
     distinct failure: a foreign marker, a stale one, and one written by a plugin
     that is not Kiro Crew's.
     """
-    from kiro_crew import acp_tool_gate as gate
-    from kiro_crew.acp_backends import Readback, gate_readback_for
+    from efm_go import acp_tool_gate as gate
+    from efm_go.acp_backends import Readback, gate_readback_for
 
     assert gate_readback_for(ACP_BACKEND_DEEPSEEK) is Readback.LOAD_MARKER
     probe = gate.gate_probe_command_for(ACP_BACKEND_DEEPSEEK)
@@ -590,7 +590,7 @@ def test_the_marker_must_report_the_composed_tool_presentation_as_native() -> No
     ``ask``: under ``ptc`` or ``both`` the model reaches Node's own APIs through one
     ``run_code`` call the gate cannot read inside.
     """
-    from kiro_crew import acp_tool_gate as gate
+    from efm_go import acp_tool_gate as gate
 
     good = _good_gate_marker()
     assert gate.gate_marker_issue(ACP_BACKEND_DEEPSEEK, good, "/sealed/gate.mjs", "n1") == ""
@@ -620,7 +620,7 @@ def test_the_marker_must_prove_each_vault_fed_name_is_absent_from_a_harness_chil
     verified), when the plugin checked a different set of names than Crew
     configured, or when the child could not be run at all.
     """
-    from kiro_crew import acp_tool_gate as gate
+    from efm_go import acp_tool_gate as gate
 
     names = ("DEEPSEEK_API_KEY",)
     good = _good_gate_marker(names=names)
@@ -677,7 +677,7 @@ def test_the_marker_must_prove_each_vault_fed_name_is_absent_from_a_harness_chil
 
 def test_the_shipped_plugin_snapshots_the_tools_mode_and_proves_the_child_scrub() -> None:
     """The plugin's marker carries both new snapshots, taken through the harness's own seams."""
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     source = pathlib.Path(client_module.deepseek_gate_extension_path()).read_text()
     # The subprocess service is injected, so `apply` running is itself the evidence
@@ -710,7 +710,7 @@ def test_the_session_writes_no_forensic_marker_of_its_own() -> None:
     """
     import inspect
 
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     body = inspect.getsource(client_module.AcpClient._spawn)
     arm_start = "if self._is_deepseek:\n            # Pinned rather than left to the ambient value"
@@ -740,7 +740,7 @@ def test_the_shipped_gate_plugin_matches_the_pinned_digest() -> None:
     """
     import hashlib
 
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     path = client_module.deepseek_gate_extension_path()
     with open(path, "rb") as fh:
@@ -763,7 +763,7 @@ def test_the_gate_writers_share_one_seal_and_one_publish_block() -> None:
     """
     import inspect
 
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     for writer in (
         client_module._seal_pi_gate_extension,
@@ -787,7 +787,7 @@ def test_the_gate_writers_share_one_seal_and_one_publish_block() -> None:
 
 def test_the_marker_waits_until_every_profile_entry_has_settled() -> None:
     """A pre-readiness snapshot can race the ACP bridge and refuse every clean boot."""
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     source = pathlib.Path(client_module.deepseek_gate_extension_path()).read_text()
     assert 'export const inject = ["tools", "approval", "appReady", "subprocess"]' in source
@@ -806,7 +806,7 @@ def test_the_per_launch_patch_composes_only_the_sealed_plugin() -> None:
     """
     import json as _json
 
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     sealed = client_module._seal_deepseek_gate_extension()
     patch = client_module._write_deepseek_gate_patch(sealed)
@@ -829,7 +829,7 @@ def test_the_patch_pins_the_tool_presentation_to_native() -> None:
     and a ``--patch`` overlay is applied after the profile's own layer so the pin
     wins.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     sealed = client_module._seal_deepseek_gate_extension()
     body = open(client_module._write_deepseek_gate_patch(sealed), encoding="utf-8").read()
@@ -845,7 +845,7 @@ def test_the_patch_reasserts_the_approval_service_and_acp_bridge() -> None:
     without pretending they can overwrite a replaced module. The marker's strict
     owner check is the fail-closed half for that shape.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     sealed = client_module._seal_deepseek_gate_extension()
     body = open(client_module._write_deepseek_gate_patch(sealed), encoding="utf-8").read()
@@ -876,8 +876,8 @@ def test_a_spawn_that_cannot_resolve_its_binary_leaves_no_scratch_behind(
     """
     import asyncio
 
-    from kiro_crew import agent_scratch
-    from kiro_crew.acp import client as client_module
+    from efm_go import agent_scratch
+    from efm_go.acp import client as client_module
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     root = agent_scratch.scratch_root()
@@ -917,8 +917,8 @@ def _deepseek_readback_spawn(tmp_path, monkeypatch, *, readback):
     """
     import asyncio
 
-    from kiro_crew import agent_scratch
-    from kiro_crew.acp import client as client_module
+    from efm_go import agent_scratch
+    from efm_go.acp import client as client_module
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     root = agent_scratch.scratch_root()
@@ -1006,7 +1006,7 @@ def test_a_refused_read_back_removes_its_own_probe_window(tmp_path, monkeypatch)
         tmp_path, monkeypatch, readback=("the gate did not load", "reinstall it")
     )
 
-    from kiro_crew.acp.client import AcpToolGateUnroutable
+    from efm_go.acp.client import AcpToolGateUnroutable
 
     with pytest.raises(AcpToolGateUnroutable):
         asyncio_mod.run(client._spawn())
@@ -1030,8 +1030,8 @@ def test_a_session_with_no_private_window_is_started_not_refused(tmp_path, monke
     path, and the launcher the wrap wrote is handed to the process start rather than
     discarded.
     """
-    from kiro_crew import agent_scratch
-    from kiro_crew.acp import client as client_module
+    from efm_go import agent_scratch
+    from efm_go.acp import client as client_module
 
     client, root, before, _wrapped, asyncio_mod = _deepseek_readback_spawn(
         tmp_path, monkeypatch, readback=("", "")
@@ -1151,7 +1151,7 @@ def test_a_denial_the_harness_reports_does_not_trip_the_ungated_call_guard() -> 
     """
     import asyncio
 
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.types import JsonRpcMessage
 
     client = AcpClient.__new__(AcpClient)
     client._acp_backend = ACP_BACKEND_DEEPSEEK
@@ -1191,7 +1191,7 @@ def test_a_denial_the_harness_reports_does_not_trip_the_ungated_call_guard() -> 
     assert client._kill_process.await_count == 0
 
     # The guard still has teeth for the case it exists for.
-    from kiro_crew.acp.client import AcpToolGateUnroutable
+    from efm_go.acp.client import AcpToolGateUnroutable
 
     with pytest.raises(AcpToolGateUnroutable):
         asyncio.run(client._tripwire_pi_gate(update("never-asked", "completed")))
@@ -1210,9 +1210,9 @@ def test_the_load_marker_is_never_written_into_a_sealed_leaf() -> None:
     than the current path spelling, so moving the marker back under any sealed leaf
     fails here instead of in production.
     """
-    from kiro_crew import sandbox as sandbox_module
-    from kiro_crew.acp import client as client_module
-    from kiro_crew.agent_sdk.tool_gate import PI_GATE_ARTIFACT_LEAF
+    from efm_go import sandbox as sandbox_module
+    from efm_go.acp import client as client_module
+    from efm_go.agent_sdk.tool_gate import PI_GATE_ARTIFACT_LEAF
 
     # The leaf the gate's own code is sealed into is read-only to the child ...
     assert PI_GATE_ARTIFACT_LEAF in sandbox_module._CREW_NOFOLLOW_READONLY_DIR_LEAVES
@@ -1238,8 +1238,8 @@ def test_every_file_the_gate_writers_leave_in_the_leaf_is_swept(monkeypatch, tmp
     property is asserted here so a future writer dropping a differently-named file
     into the leaf fails this test rather than leaving an unswept file behind.
     """
-    from kiro_crew import sandbox as sandbox_module
-    from kiro_crew.acp import client as client_module
+    from efm_go import sandbox as sandbox_module
+    from efm_go.acp import client as client_module
 
     artifact_dir = tmp_path / "pi-gate"
     artifact_dir.mkdir()
@@ -1264,7 +1264,7 @@ def test_every_file_the_gate_writers_leave_in_the_leaf_is_swept(monkeypatch, tmp
 
 def test_stale_dsh_gate_artifacts_are_swept_from_the_leaf(monkeypatch, tmp_path) -> None:
     """A dead gateway's sealed plugin, patch and orphaned stages are all reclaimed."""
-    from kiro_crew import sandbox as sandbox_module
+    from efm_go import sandbox as sandbox_module
 
     artifact_dir = tmp_path / "pi-gate"
     artifact_dir.mkdir()
@@ -1291,7 +1291,7 @@ def test_a_live_gateways_dsh_gate_artifacts_survive_the_sweep(monkeypatch, tmp_p
     liveness alone -- an age rule here would delete the sealed plugin from under a
     running gateway's next deepseek spawn.
     """
-    from kiro_crew import sandbox as sandbox_module
+    from efm_go import sandbox as sandbox_module
 
     artifact_dir = tmp_path / "pi-gate"
     artifact_dir.mkdir()
@@ -1329,8 +1329,8 @@ def test_a_completed_call_the_gate_never_asked_about_stops_the_session() -> None
     """
     import asyncio
 
-    from kiro_crew.acp.client import AcpToolGateUnroutable
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.client import AcpToolGateUnroutable
+    from efm_go.acp.types import JsonRpcMessage
 
     client = AcpClient.__new__(AcpClient)
     client._acp_backend = ACP_BACKEND_DEEPSEEK
@@ -1384,7 +1384,7 @@ def test_the_permission_frame_records_the_call_the_tripwire_will_look_for() -> N
     frame whose ``toolCall`` carries just a ``toolCallId``. Reading it through pi's
     envelope would record nothing and every completed call would trip.
     """
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.types import JsonRpcMessage
 
     client = AcpClient.__new__(AcpClient)
     client._acp_backend = ACP_BACKEND_DEEPSEEK
@@ -1435,7 +1435,7 @@ def _asked(client, frame) -> None:
     ``approve_tool`` approves only a request the client built an event for, so a
     test that approves seeds the event the builder would have recorded.
     """
-    from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
+    from efm_go.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
 
     client._note_pi_gate_asked(frame)
     client._permission_gate_events[frame.id] = AcpEvent(
@@ -1445,7 +1445,7 @@ def _asked(client, frame) -> None:
 
 def _deepseek_permission_frame(tool_call_id: str, request_id: int):
     """This harness's own permission frame: the call is named directly, with no envelope."""
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.types import JsonRpcMessage
 
     return JsonRpcMessage(
         id=request_id,
@@ -1455,7 +1455,7 @@ def _deepseek_permission_frame(tool_call_id: str, request_id: int):
 
 
 def _deepseek_completed(tool_call_id: str):
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.types import JsonRpcMessage
 
     return JsonRpcMessage(
         method="session/update",
@@ -1481,7 +1481,7 @@ def test_a_re_asked_call_is_judged_on_its_fresh_verdict_not_the_stale_deny(monke
     """
     import asyncio
 
-    from kiro_crew.acp.client import AcpToolGateUnroutable
+    from efm_go.acp.client import AcpToolGateUnroutable
 
     client, killed = _deepseek_tripwire_client(monkeypatch)
 
@@ -1521,7 +1521,7 @@ def test_a_completed_call_consumes_its_ask_so_a_reused_id_must_be_asked_again(mo
     """
     import asyncio
 
-    from kiro_crew.acp.client import AcpToolGateUnroutable
+    from efm_go.acp.client import AcpToolGateUnroutable
 
     client, killed = _deepseek_tripwire_client(monkeypatch)
     asked = _deepseek_permission_frame("call_0", 1)
@@ -1558,8 +1558,8 @@ def test_a_failed_terminal_consumes_the_gate_state_too(monkeypatch) -> None:
     """
     import asyncio
 
-    from kiro_crew.acp.client import AcpToolGateUnroutable
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.client import AcpToolGateUnroutable
+    from efm_go.acp.types import JsonRpcMessage
 
     def failed(tool_call_id: str) -> JsonRpcMessage:
         frame = _deepseek_completed(tool_call_id)
@@ -1593,7 +1593,7 @@ def test_registering_an_unverified_harness_as_selectable_is_refused(monkeypatch)
     guard covered for the next harness onboarded in that state rather than
     deleting it with the condition that motivated it.
     """
-    from kiro_crew.agent_sdk import backends as sdk_backends
+    from efm_go.agent_sdk import backends as sdk_backends
 
     monkeypatch.setitem(sdk_backends.ACP_BACKEND_ROUTING, ACP_BACKEND_DEEPSEEK, Routing.UNVERIFIED)
     baseline_before = set(sdk_backends._baseline)
@@ -1629,7 +1629,7 @@ def test_the_refusal_has_no_escape_hatch() -> None:
     """
     import inspect
 
-    from kiro_crew.agent_sdk import backends as sdk_backends
+    from efm_go.agent_sdk import backends as sdk_backends
 
     signature = inspect.signature(sdk_backends.register_selectable_backend)
     assert list(signature.parameters) == ["backend"], (
@@ -1645,7 +1645,7 @@ def test_a_routed_harness_still_registers() -> None:
     ``UNVERIFIED`` harness would walk straight onto the switch. It is also what keeps the
     unconditional refusal from being a blanket one -- a routed harness still registers.
     """
-    from kiro_crew.agent_sdk import backends as sdk_backends
+    from efm_go.agent_sdk import backends as sdk_backends
 
     baseline_before = set(sdk_backends._baseline)
     selectable_before = set(sdk_backends._selectable)
@@ -1672,7 +1672,7 @@ def test_no_known_backend_is_unverified() -> None:
     assert unverified == set()
     # Every known id is named EXPLICITLY, so none of them is unverified merely by
     # omission.
-    from kiro_crew.acp_backends import ACP_BACKEND_ROUTING
+    from efm_go.acp_backends import ACP_BACKEND_ROUTING
 
     assert set(ACP_BACKEND_ROUTING) >= ACP_BACKENDS_KNOWN
     # And the shipped baseline now carries this harness, which is the point of the
@@ -1693,8 +1693,8 @@ def test_it_carves_nothing_out_of_the_deny_list_because_its_key_comes_from_the_v
     resolved mask, not just the declaration: a projection that stopped honouring an
     empty ``adapter_own_leaves`` would reopen them.
     """
-    from kiro_crew.agent_sdk import host_auth
-    from kiro_crew.agent_sdk import tool_gate as gate
+    from efm_go.agent_sdk import host_auth
+    from efm_go.agent_sdk import tool_gate as gate
 
     declaration = host_auth.declaration_for(ACP_BACKEND_DEEPSEEK)
     assert declaration.adapter_own_leaves == ()
@@ -1734,7 +1734,7 @@ def test_the_credential_leaves_are_declared_with_their_override_spelling() -> No
     is what lets a reader check the right file is fenced without re-deriving which
     prefix the variable replaces.
     """
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.agent_sdk import host_auth
 
     declaration = host_auth.declaration_for(ACP_BACKEND_DEEPSEEK)
     assert declaration.credential_leaves == (".dsh/.credentials.yaml", ".dsh/.env")
@@ -1898,14 +1898,14 @@ def test_a_stalled_restore_keeps_its_mcp_detail() -> None:
 
 def test_the_handshake_is_the_spec_dialect() -> None:
     """Integer ``protocolVersion`` 1, captured off its own wire."""
-    from kiro_crew.acp.client import _PROTOCOL_VERSION_BY_BACKEND
+    from efm_go.acp.client import _PROTOCOL_VERSION_BY_BACKEND
 
     assert _PROTOCOL_VERSION_BY_BACKEND[ACP_BACKEND_DEEPSEEK] == 1
 
 
 def test_the_argv_is_the_host_binary_plus_the_shipped_profile() -> None:
     """The ACP package is a plugin with no executable; the host binary boots it."""
-    from kiro_crew.agent_sdk.backends import launch_for
+    from efm_go.agent_sdk.backends import launch_for
 
     # The RECORD is what is pinned, not a line of source: the spawn arm reads
     # ``_resolve_self_served_launch``, which is shared with the sibling harnesses, so
@@ -1931,7 +1931,7 @@ def test_the_resolution_ladder_prefers_the_explicit_override(monkeypatch, tmp_pa
     asserting the platform's notion of an executable instead of the precedence it
     exists to pin.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     binary = tmp_path / "dsh"
     binary.write_text("#!/bin/sh\n")
@@ -1949,7 +1949,7 @@ def test_the_resolution_ladder_prefers_the_explicit_override(monkeypatch, tmp_pa
 
 def test_an_absent_binary_reports_what_was_searched(monkeypatch) -> None:
     """A caller must be able to say where it looked rather than raising from inside."""
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     monkeypatch.delenv("DSH_BIN", raising=False)
     monkeypatch.setattr(client_module, "_mise_which", lambda _name: None)
@@ -1968,7 +1968,7 @@ def test_the_sandbox_posture_is_pinned_in_the_child_environment() -> None:
     Pinning the confined value keeps an inherited shell variable from selecting
     that end; it does not make a tool call reach Crew's gate.
     """
-    from kiro_crew.acp.client import _ENV_DEEPSEEK_PERMISSION_MODE, DEEPSEEK_PERMISSION_MODE
+    from efm_go.acp.client import _ENV_DEEPSEEK_PERMISSION_MODE, DEEPSEEK_PERMISSION_MODE
 
     assert _ENV_DEEPSEEK_PERMISSION_MODE == "DSH_PERMISSION_MODE"
     assert DEEPSEEK_PERMISSION_MODE == "workspace-write"
@@ -2062,7 +2062,7 @@ def test_no_site_that_asks_about_effort_spells_the_id_itself() -> None:
     no-op for this harness: the check reports the option unsupported, the push never
     happens, and the dropdown still offers levels that can never be applied.
     """
-    from kiro_crew.providers import acp as provider_module
+    from efm_go.providers import acp as provider_module
 
     body = inspect.getsource(provider_module.AcpProvider)
     assert 'supports_config_option("effort")' not in body
@@ -2075,7 +2075,7 @@ def test_no_site_that_asks_about_effort_spells_the_id_itself() -> None:
 @pytest.mark.asyncio
 async def test_the_effort_push_uses_this_harness_own_option_id(tmp_path) -> None:
     """The push reaches the wire under the id the harness advertised."""
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.providers.acp import AcpProvider
 
     provider = AcpProvider.__new__(AcpProvider)
     provider._client = MagicMock()
@@ -2247,7 +2247,7 @@ def test_the_override_anchored_credential_spellings_are_masked_too(tmp_path) -> 
     declaration's ``override_relative_leaves`` exists to prevent, asserted here
     against the resolved mask rather than against the declaration.
     """
-    from kiro_crew.agent_sdk import tool_gate
+    from efm_go.agent_sdk import tool_gate
 
     home = tmp_path / "dsh-home"
     home.mkdir()
@@ -2267,7 +2267,7 @@ def test_the_remedy_names_the_vault_and_the_mapping_not_a_file() -> None:
     them to a file the child mask now hides. Both strings name the two steps that do
     work: store the secret, then map it.
     """
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.agent_sdk import host_auth
 
     declaration = host_auth.declaration_for(ACP_BACKEND_DEEPSEEK)
     for text in (declaration.sign_in_remedy, declaration.signed_out_message):
@@ -2345,7 +2345,7 @@ def test_a_provider_key_mapping_the_harness_would_not_honour_is_refused(
     is a refusal, and the message has to be specific enough that the operator knows
     which rule they hit.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     with pytest.raises(ValueError) as refused:
         client_module._validate_deepseek_env_mapping(mapping)
@@ -2378,8 +2378,8 @@ def test_every_scrub_class_name_crew_writes_on_the_child_is_reserved() -> None:
     """
     import re
 
-    from kiro_crew import agent_scratch, sandbox
-    from kiro_crew.acp import client as client_module
+    from efm_go import agent_scratch, sandbox
+    from efm_go.acp import client as client_module
 
     composers = (
         AcpClient._spawn,
@@ -2408,7 +2408,7 @@ def test_every_scrub_class_name_crew_writes_on_the_child_is_reserved() -> None:
 
 def test_a_provider_key_mapping_the_harness_honours_is_accepted() -> None:
     """The happy shape passes every rule, so the refusals are not vacuous."""
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     client_module._validate_deepseek_env_mapping(_vault_env_mapping())
     # Not DeepSeek-specific: a credential reference is any provider name the harness
@@ -2427,7 +2427,7 @@ def test_a_plaintext_value_never_reaches_disk_through_the_locked_write(tmp_path)
     publication: ``write_config_atomically`` refuses the document, the locked
     read-modify-write propagates that, and the file on disk is exactly what it was.
     """
-    from kiro_crew.config.loader import ConfigWriteRefused, update_config_locked
+    from efm_go.config.loader import ConfigWriteRefused, update_config_locked
 
     path = tmp_path / "config.json"
     path.write_text(json.dumps({"agent": {"yolo": True}}), encoding="utf-8")
@@ -2466,7 +2466,7 @@ def test_a_pre_existing_plaintext_value_does_not_refuse_an_unrelated_write(
     """
     import logging
 
-    from kiro_crew.config.loader import update_config_locked
+    from efm_go.config.loader import update_config_locked
 
     path = tmp_path / "config.json"
     stale = {"DEEPSEEK_API_KEY": "sk-live-not-a-reference"}
@@ -2476,7 +2476,7 @@ def test_a_pre_existing_plaintext_value_does_not_refuse_an_unrelated_write(
         existing.setdefault("agent", {})["yolo"] = True
         return existing
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
         update_config_locked(path, mutate=unrelated)
 
     written = json.loads(path.read_text(encoding="utf-8"))
@@ -2490,7 +2490,7 @@ def test_a_pre_existing_plaintext_value_does_not_refuse_an_unrelated_write(
 
 def test_a_write_that_touches_the_mapping_while_keeping_plaintext_is_refused(tmp_path) -> None:
     """Keeping a plaintext entry while changing the mapping is the write's own doing."""
-    from kiro_crew.config.loader import ConfigWriteRefused, update_config_locked
+    from efm_go.config.loader import ConfigWriteRefused, update_config_locked
 
     path = tmp_path / "config.json"
     path.write_text(
@@ -2512,7 +2512,7 @@ def test_a_write_that_touches_the_mapping_while_keeping_plaintext_is_refused(tmp
 
 def test_a_plaintext_with_no_readable_prior_document_is_refused(tmp_path) -> None:
     """Fail closed: a plaintext that cannot be shown pre-existing is treated as introduced."""
-    from kiro_crew.config.loader import ConfigWriteRefused, write_config_atomically
+    from efm_go.config.loader import ConfigWriteRefused, write_config_atomically
 
     data = {"agent": {"deepseek_env": {"DEEPSEEK_API_KEY": "sk-live-not-a-reference"}}}
     # No file at all: the plaintext is being introduced.
@@ -2536,7 +2536,7 @@ def test_a_reference_passes_the_publish_floor_and_the_whole_document_save_is_gat
     in the one function both reach. A reference is what the mapping is FOR, so it
     has to pass, or the floor would refuse the operator's correct configuration.
     """
-    from kiro_crew.config.loader import ConfigWriteRefused, KiroCrewConfig, update_config_locked
+    from efm_go.config.loader import ConfigWriteRefused, KiroCrewConfig, update_config_locked
 
     path = tmp_path / "config.json"
 
@@ -2563,7 +2563,7 @@ def test_the_cli_reports_the_refusal_by_key_and_writes_nothing(tmp_path, capsys)
     import argparse
     from unittest.mock import patch
 
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     local = tmp_path / "config.local.json"
     args = argparse.Namespace(
@@ -2573,8 +2573,8 @@ def test_the_cli_reports_the_refusal_by_key_and_writes_nothing(tmp_path, capsys)
         file=None,
         local=True,
     )
-    with patch("kiro_crew.cli_config.config_local_path", return_value=local):
-        with patch("kiro_crew.cli_config.sel"):
+    with patch("efm_go.cli_config.config_local_path", return_value=local):
+        with patch("efm_go.cli_config.sel"):
             with pytest.raises(SystemExit) as exited:
                 _config_cmd(args)
 
@@ -2601,7 +2601,7 @@ def test_the_cli_file_import_reports_the_refusal_and_leaves_config_json_as_it_wa
     import argparse
     from unittest.mock import patch
 
-    from kiro_crew.cli_config import _config_cmd
+    from efm_go.cli_config import _config_cmd
 
     config_dir = tmp_path / "kiro"
     config_dir.mkdir()
@@ -2618,9 +2618,9 @@ def test_the_cli_file_import_reports_the_refusal_and_leaves_config_json_as_it_wa
         config_action="set", key=None, value=None, file=str(imported), local=False
     )
     with (
-        patch("kiro_crew.cli_config.config_path", return_value=target),
-        patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-        patch("kiro_crew.cli_config.sel"),
+        patch("efm_go.cli_config.config_path", return_value=target),
+        patch("efm_go.config.loader.config_dir", return_value=config_dir),
+        patch("efm_go.cli_config.sel"),
     ):
         with pytest.raises(SystemExit) as exited:
             _config_cmd(args)
@@ -2643,7 +2643,7 @@ def test_the_publish_floor_predicate_names_keys_only_and_leaves_shape_to_the_coe
     a non-dict shape is not this function's problem -- ``coerce_deepseek_env`` drops
     it -- so it returns empty rather than inventing an entry to refuse.
     """
-    from kiro_crew.config.sections import deepseek_env_plaintext_keys
+    from efm_go.config.sections import deepseek_env_plaintext_keys
 
     assert deepseek_env_plaintext_keys(None) == ()
     assert deepseek_env_plaintext_keys("secret://not-a-mapping") == ()
@@ -2663,7 +2663,7 @@ def test_the_child_scrub_class_is_read_from_the_harness_not_guessed() -> None:
     spared file, so it is pinned rather than paraphrased: a Crew-side copy that
     drifted wider would admit a name the harness forwards to the model's shell.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     pattern = client_module._DEEPSEEK_ENV_CHILD_SCRUB_CLASS
     for name in ("DEEPSEEK_API_KEY", "MY_PASSWORD", "A_SECRET", "GH_TOKEN", "api_key"):
@@ -2683,8 +2683,8 @@ def test_a_missing_vault_secret_refuses_rather_than_starting_without_a_key() -> 
     the harness anyway would produce an opaque provider auth error on the first turn
     instead of a message the operator can act on.
     """
-    from kiro_crew.acp import client as client_module
-    from kiro_crew.config.paths import config_dir
+    from efm_go.acp import client as client_module
+    from efm_go.config.paths import config_dir
 
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(
@@ -2718,10 +2718,10 @@ def _dsh_vault_spawn(tmp_path, monkeypatch, *, mapping, secret=None):
     """
     import asyncio
 
-    from kiro_crew import agent_scratch
-    from kiro_crew.acp import client as client_module
-    from kiro_crew.config.paths import config_dir
-    from kiro_crew.secrets import SecretVault
+    from efm_go import agent_scratch
+    from efm_go.acp import client as client_module
+    from efm_go.config.paths import config_dir
+    from efm_go.secrets import SecretVault
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     root = agent_scratch.scratch_root()
@@ -2788,8 +2788,8 @@ def _dsh_vault_spawn(tmp_path, monkeypatch, *, mapping, secret=None):
     monkeypatch.setattr(client_module, "browser_session_env", lambda _env: {})
     monkeypatch.setattr(client_module, "inject_xdist_auto_cap", lambda _env: None)
     monkeypatch.setattr(client_module.agent_scratch, "record_owner", lambda *a, **k: "recorded")
-    monkeypatch.setattr("kiro_crew.session._track_pid", lambda *a, **k: None)
-    monkeypatch.setattr("kiro_crew.session._track_session_pid", lambda *a, **k: None)
+    monkeypatch.setattr("efm_go.session._track_pid", lambda *a, **k: None)
+    monkeypatch.setattr("efm_go.session._track_session_pid", lambda *a, **k: None)
 
     return client, spawned, asyncio
 
@@ -2807,7 +2807,7 @@ def test_the_vault_key_reaches_the_child_and_leaves_the_parent(tmp_path, monkeyp
     child's own env dict is a local of ``_spawn`` and dies with the frame, so there
     is no later site for a clear to run at.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     client, spawned, asyncio_mod = _dsh_vault_spawn(
         tmp_path,
@@ -2850,7 +2850,7 @@ def test_a_refused_mapping_stops_the_session_before_any_child_starts(tmp_path, m
     its key would take a turn, fail at the provider, and leave the operator reading a
     vendor error instead of the rule they broke.
     """
-    from kiro_crew.acp.client import AcpToolGateUnroutable
+    from efm_go.acp.client import AcpToolGateUnroutable
 
     client, spawned, asyncio_mod = _dsh_vault_spawn(
         tmp_path, monkeypatch, mapping={"DEEPSEEK_API_KEY": "sk-live-not-a-reference"}
@@ -2882,7 +2882,7 @@ def test_an_empty_mapping_costs_the_spawn_no_vault_read(tmp_path, monkeypatch) -
     read is filesystem work on every DeepSeek session start and because a vault that
     cannot be loaded must not refuse a session that referenced nothing in it.
     """
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     client, spawned, asyncio_mod = _dsh_vault_spawn(tmp_path, monkeypatch, mapping={})
     reads: list[object] = []
@@ -2942,16 +2942,16 @@ _DSH_NO_KEY_ERROR = {
 
 
 def test_a_missing_provider_key_gets_the_declared_message() -> None:
-    from kiro_crew.acp.client import _format_acp_error
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.acp.client import _format_acp_error
+    from efm_go.agent_sdk import host_auth
 
     formatted = _format_acp_error(_DSH_NO_KEY_ERROR, backend=ACP_BACKEND_DEEPSEEK)
     assert formatted == host_auth.signed_out_message(ACP_BACKEND_DEEPSEEK)
 
 
 def test_the_request_id_survives_the_rewrite() -> None:
-    from kiro_crew.acp.client import _format_acp_error
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.acp.client import _format_acp_error
+    from efm_go.agent_sdk import host_auth
 
     error = dict(_DSH_NO_KEY_ERROR, data="request_id: 0f1e2d3c-4b5a")
     formatted = _format_acp_error(error, backend=ACP_BACKEND_DEEPSEEK)
@@ -2961,7 +2961,7 @@ def test_the_request_id_survives_the_rewrite() -> None:
 
 
 def test_a_missing_provider_key_is_not_retried() -> None:
-    from kiro_crew.acp.client import AcpError, _raise_acp_error
+    from efm_go.acp.client import AcpError, _raise_acp_error
 
     with pytest.raises(AcpError) as info:
         _raise_acp_error(_DSH_NO_KEY_ERROR, backend=ACP_BACKEND_DEEPSEEK)
@@ -2969,8 +2969,8 @@ def test_a_missing_provider_key_is_not_retried() -> None:
 
 
 def test_the_deepseek_phrase_does_not_classify_another_harness() -> None:
-    from kiro_crew.acp.client import _format_acp_error
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.acp.client import _format_acp_error
+    from efm_go.agent_sdk import host_auth
 
     formatted = _format_acp_error(_DSH_NO_KEY_ERROR, backend="goose")
     assert host_auth.signed_out_message(ACP_BACKEND_DEEPSEEK) not in formatted
@@ -2980,7 +2980,7 @@ def test_the_deepseek_phrase_does_not_classify_another_harness() -> None:
 def test_a_blank_signed_out_signature_is_refused() -> None:
     import dataclasses
 
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.agent_sdk import host_auth
 
     declaration = host_auth.declaration_for(ACP_BACKEND_DEEPSEEK)
     with pytest.raises(ValueError, match="blank signed-out signature"):

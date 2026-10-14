@@ -1,20 +1,20 @@
-"""``kiro_crew.sandbox`` stays the sandbox's import and patch surface after the split.
+"""``efm_go.sandbox`` stays the sandbox's import and patch surface after the split.
 
 The Linux launcher renderer, the macOS Seatbelt renderer and the stale mount-source sweep
 are defined in ``sandbox_launcher``, ``sandbox_seatbelt`` and ``sandbox_mount_sweep``.
 The facade keeps every name moved to those owners readable under its old path, and
 FORWARDS every one of them, so a patch through the facade lands on the owner, where the
 owner's own callers read it -- whether or not a scan could read the patched name off the
-test. The path rules moved to ``kiro_crew.sandbox_plan`` are bound on the facade as plain
+test. The path rules moved to ``efm_go.sandbox_plan`` are bound on the facade as plain
 compatibility aliases instead, pinned by identity below; a patch of one does not reach
 the planner. The two
 builders are the facade's own functions: they gather the live host here, plan the spawn
-(``kiro_crew.sandbox_plan``) and hand the plan to the owner's renderer, so a test that
+(``efm_go.sandbox_plan``) and hand the plan to the owner's renderer, so a test that
 rebinds a tier list or a host-fact helper on the facade reaches the plan, and no owner
 imports the facade at all.
 
-This file also holds what both facades share -- ``kiro_crew.sandbox`` and
-``kiro_crew.platform_compat`` -- so ``test_platform_compat_refactor_facade`` runs the same
+This file also holds what both facades share -- ``efm_go.sandbox`` and
+``efm_go.platform_compat`` -- so ``test_platform_compat_refactor_facade`` runs the same
 checks on its facade: the static shape of a facade module, the owner-import scan, and the
 census of every facade patch in the test trees, which is read once for both facades.
 
@@ -44,7 +44,7 @@ from unittest import mock
 import pytest
 import test_sandbox_refactor_create_guard as create_guard
 
-from kiro_crew import (
+from efm_go import (
     sandbox,
     sandbox_launcher,
     sandbox_mount_sweep,
@@ -67,12 +67,12 @@ _OWNERS: dict[str, ModuleType] = {
 }
 
 #: Every module-level name the split moved out of sandbox.py, by its owner. The two
-#: builders are not here: they are ``kiro_crew.sandbox``'s own functions again, which
+#: builders are not here: they are ``efm_go.sandbox``'s own functions again, which
 #: plan the spawn and hand the plan to the owners' renderers.
 _MOVED: dict[str, tuple[str, ...]] = {
-    "kiro_crew.sandbox_launcher": (),
-    "kiro_crew.sandbox_seatbelt": ("_SEATBELT_PROFILE",),
-    "kiro_crew.sandbox_mount_sweep": (
+    "efm_go.sandbox_launcher": (),
+    "efm_go.sandbox_seatbelt": ("_SEATBELT_PROFILE",),
+    "efm_go.sandbox_mount_sweep": (
         "_MOUNT_SOURCE_PREFIX",
         "_MOUNT_SOURCE_MAX_AGE_SECONDS",
         "_PIN_SCAN_MAX_PASSES",
@@ -100,7 +100,7 @@ _MOVED: dict[str, tuple[str, ...]] = {
 
 #: Every function in an owner that imports from the facade, and what it reads there.
 #: None does: the renderers read only the plan they are handed, and the live host the
-#: plan is made from is gathered in ``kiro_crew.sandbox`` itself.
+#: plan is made from is gathered in ``efm_go.sandbox`` itself.
 _SEAM_IMPORTS: dict[tuple[str, str], tuple[str, tuple[str, ...]]] = {}
 
 
@@ -387,7 +387,7 @@ def owner_seams(
 #: The facades by layer: an owner may import a LOWER facade at module level, as any other
 #: module does (the mount sweep probes pids through ``platform_compat``), but never its own
 #: or a higher one.
-_LAYER = {"kiro_crew.platform_compat": 0, "kiro_crew.sandbox": 1}
+_LAYER = {"efm_go.platform_compat": 0, "efm_go.sandbox": 1}
 
 
 def check_owner_dependency_direction(owners: dict[str, ModuleType], facade: ModuleType) -> None:
@@ -453,7 +453,7 @@ register_owners(_OWNERS)
 register_owners(
     {
         name: importlib.import_module(name)
-        for name in ("kiro_crew.platform_lock_compat", "kiro_crew.platform_owner_compat")
+        for name in ("efm_go.platform_lock_compat", "efm_go.platform_owner_compat")
     }
 )
 
@@ -651,7 +651,7 @@ def monkeypatch_targets(tree: ast.Module) -> list[tuple[int, str, str, str]]:
 def facade_patches() -> tuple[tuple[str, int, str, str, str], ...]:
     """``(file, line, enclosing function, facade, name)`` for every facade patch under
     ``test/``, each ``src/**/tests`` and the root conftest, read once for both facades."""
-    roots = [_REPO / "test", *sorted((_REPO / "src" / "kiro_crew").rglob("tests"))]
+    roots = [_REPO / "test", *sorted((_REPO / "src" / "efm_go").rglob("tests"))]
     paths = [_REPO / "conftest.py", *(p for root in roots for p in sorted(root.rglob("*.py")))]
     patches: list[tuple[str, int, str, str, str]] = []
     for path in paths:
@@ -690,7 +690,7 @@ def check_shared_bindings(
 
 
 # --------------------------------------------------------------------------- #
-# kiro_crew.sandbox
+# efm_go.sandbox
 # --------------------------------------------------------------------------- #
 
 
@@ -779,23 +779,23 @@ def test_the_bare_global_scan_can_fail() -> None:
 def test_the_facade_import_scan_reads_every_spelling() -> None:
     source = (
         "from typing import TYPE_CHECKING\n"
-        "from kiro_crew import sandbox\n"
-        "import kiro_crew.platform_compat\n"
+        "from efm_go import sandbox\n"
+        "import efm_go.platform_compat\n"
         "from . import sandbox as sb\n"
         "if TYPE_CHECKING:\n"
-        "    from kiro_crew.sandbox import _STANDARD_DIRS\n"
+        "    from efm_go.sandbox import _STANDARD_DIRS\n"
         "def f():\n"
-        "    from kiro_crew.sandbox import _STANDARD_DIRS, _CC_FILES\n"
+        "    from efm_go.sandbox import _STANDARD_DIRS, _CC_FILES\n"
         "class C:\n"
         "    def m(self):\n"
-        "        from kiro_crew.platform_compat import IS_POSIX\n"
+        "        from efm_go.platform_compat import IS_POSIX\n"
     )
-    assert facade_imports(ast.parse(source), "kiro_crew", _FACADE_NAMES) == [
-        ("<module>", "kiro_crew.sandbox", ("<module>",)),
-        ("<module>", "kiro_crew.platform_compat", ("<module>",)),
-        ("<module>", "kiro_crew.sandbox", ("<module>",)),
-        ("f", "kiro_crew.sandbox", ("_STANDARD_DIRS", "_CC_FILES")),
-        ("C.m", "kiro_crew.platform_compat", ("IS_POSIX",)),
+    assert facade_imports(ast.parse(source), "efm_go", _FACADE_NAMES) == [
+        ("<module>", "efm_go.sandbox", ("<module>",)),
+        ("<module>", "efm_go.platform_compat", ("<module>",)),
+        ("<module>", "efm_go.sandbox", ("<module>",)),
+        ("f", "efm_go.sandbox", ("_STANDARD_DIRS", "_CC_FILES")),
+        ("C.m", "efm_go.platform_compat", ("IS_POSIX",)),
     ]
 
 
@@ -829,19 +829,19 @@ def _imported_modules(module: ModuleType) -> set[str]:
 #: The layers under the facade: the plan and the launcher program import the standard
 #: library and nothing else, and the two renderers import the plan and nothing else of
 #: the package. So the plan stays pure, the program stays runnable as a stdlib script,
-#: and neither renderer can reach back into ``kiro_crew.sandbox`` for a rule.
+#: and neither renderer can reach back into ``efm_go.sandbox`` for a rule.
 _LAYERED: dict[str, frozenset[str]] = {
-    "kiro_crew.sandbox_plan": frozenset(),
-    "kiro_crew.sandbox_launcher_program": frozenset(),
-    "kiro_crew.sandbox_launcher": frozenset({"kiro_crew.sandbox_plan"}),
-    "kiro_crew.sandbox_seatbelt": frozenset({"kiro_crew.sandbox_plan"}),
+    "efm_go.sandbox_plan": frozenset(),
+    "efm_go.sandbox_launcher_program": frozenset(),
+    "efm_go.sandbox_launcher": frozenset({"efm_go.sandbox_plan"}),
+    "efm_go.sandbox_seatbelt": frozenset({"efm_go.sandbox_plan"}),
 }
 
 
 @pytest.mark.parametrize("name", sorted(_LAYERED))
 def test_the_plan_layers_import_nothing_above_them(name: str) -> None:
     imported = _imported_modules(importlib.import_module(name))
-    package = {m for m in imported if m.split(".")[0] == "kiro_crew"}
+    package = {m for m in imported if m.split(".")[0] == "efm_go"}
     assert package == _LAYERED[name], name
     foreign = {
         m
@@ -853,13 +853,13 @@ def test_the_plan_layers_import_nothing_above_them(name: str) -> None:
 
 def test_the_layer_check_flags_an_import_of_the_facade(tmp_path: Path) -> None:
     probe = tmp_path / "probe_layer.py"
-    probe.write_text("import os\nfrom kiro_crew import sandbox\nimport yaml\n", encoding="utf-8")
+    probe.write_text("import os\nfrom efm_go import sandbox\nimport yaml\n", encoding="utf-8")
     module = ModuleType("probe_layer")
     module.__file__ = str(probe)
-    assert _imported_modules(module) == {"os", "kiro_crew", "yaml"}
+    assert _imported_modules(module) == {"os", "efm_go", "yaml"}
 
 
-#: The path rules that moved to ``kiro_crew.sandbox_plan`` and are still bound on the
+#: The path rules that moved to ``efm_go.sandbox_plan`` and are still bound on the
 #: facade under their old names, for the callers and tests that read them there. They
 #: are compatibility ALIASES, not forwards: a patch of one does not reach the planner,
 #: which calls its own functions -- patch ``sandbox_plan.<rule>`` instead. A moved rule
@@ -891,7 +891,7 @@ def test_every_plan_object_the_facade_binds_is_a_listed_alias() -> None:
     assert bound == set(_PLAN_ALIASES)
 
 
-#: Names a test patches through ``kiro_crew.sandbox`` that the facade AND an owner both
+#: Names a test patches through ``efm_go.sandbox`` that the facade AND an owner both
 #: bind, each importing its own, so the patch reaches only the facade's code. ``time`` is
 #: rebound for the agents-slice throttling probe, which stays here; the mount sweep's own
 #: clock is never faked through the facade. A new entry is a decision that the patch
@@ -906,10 +906,10 @@ def test_a_patched_name_bound_by_the_facade_and_an_owner_is_a_listed_one() -> No
 def test_the_patch_scan_reads_every_binding_of_a_patch_site() -> None:
     source = (
         "from unittest import mock\n"
-        "from kiro_crew import platform_compat, sandbox\n"
+        "from efm_go import platform_compat, sandbox\n"
         "def test_x(monkeypatch, attr):\n"
         '    monkeypatch.setattr(sandbox, "_overflow_uid", 1)\n'
-        '    monkeypatch.setattr("kiro_crew.platform_compat.file_lock", 1)\n'
+        '    monkeypatch.setattr("efm_go.platform_compat.file_lock", 1)\n'
         '    monkeypatch.setattr(other, "_overflow_uid", 1)\n'
         "    for module in (platform_compat, sandbox, other):\n"
         '        monkeypatch.setattr(module, "IS_WINDOWS", 1)\n'
@@ -921,19 +921,19 @@ def test_the_patch_scan_reads_every_binding_of_a_patch_site() -> None:
         '    monkeypatch.setattr(discover.platform_compat, "file_lock", 1)\n'
         "def _helper(monkeypatch, module):\n"
         '    monkeypatch.setattr(module, "IS_WINDOWS", 1)\n'
-        "from kiro_crew.dashboard.handlers import discover\n"
+        "from efm_go.dashboard.handlers import discover\n"
     )
     assert monkeypatch_targets(ast.parse(source)) == [
-        (4, "test_x", "kiro_crew.sandbox", "_overflow_uid"),
-        (5, "test_x", "kiro_crew.platform_compat", "file_lock"),
+        (4, "test_x", "efm_go.sandbox", "_overflow_uid"),
+        (5, "test_x", "efm_go.platform_compat", "file_lock"),
         (8, "test_x", "<dynamic>", "<dynamic>"),
-        (8, "test_x", "kiro_crew.platform_compat", "IS_WINDOWS"),
-        (8, "test_x", "kiro_crew.sandbox", "IS_WINDOWS"),
+        (8, "test_x", "efm_go.platform_compat", "IS_WINDOWS"),
+        (8, "test_x", "efm_go.sandbox", "IS_WINDOWS"),
         (10, "test_x", "<dynamic>", "<dynamic>"),
-        (12, "test_x", "kiro_crew.platform_compat", "sys"),
-        (12, "test_x", "kiro_crew.platform_compat", "time"),
-        (13, "test_x", "kiro_crew.sandbox", "<dynamic>"),
-        (14, "test_x", "kiro_crew.platform_compat", "file_lock"),
+        (12, "test_x", "efm_go.platform_compat", "sys"),
+        (12, "test_x", "efm_go.platform_compat", "time"),
+        (13, "test_x", "efm_go.sandbox", "<dynamic>"),
+        (14, "test_x", "efm_go.platform_compat", "file_lock"),
         (16, "_helper", "<dynamic>", "<dynamic>"),
     ]
 
@@ -1053,6 +1053,6 @@ def test_the_sweep_s_pin_scan_coverage_class_is_one_class() -> None:
 def test_the_forwarding_is_live_for_any_module_that_imported_a_name_early() -> None:
     """``cli_doctor`` imports ``_MOUNT_SOURCE_PREFIX`` from the facade at load: the
     import resolves through ``__getattr__`` to the owner's object."""
-    from kiro_crew import cli_doctor
+    from efm_go import cli_doctor
 
     assert cli_doctor._MOUNT_SOURCE_PREFIX is sandbox_mount_sweep._MOUNT_SOURCE_PREFIX

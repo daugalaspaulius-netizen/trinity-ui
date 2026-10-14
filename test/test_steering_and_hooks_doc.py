@@ -21,14 +21,14 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.dashboard.handlers.steering import (
+from efm_go.dashboard.handlers.steering import (
     STEERING_FILE_MAX_BYTES,
     STEERING_INCLUSION_DEFAULT,
     STEERING_INCLUSION_MODES,
     STEERING_MAX_FILES,
     STEERING_SOURCES,
 )
-from kiro_crew.hooks import (
+from efm_go.hooks import (
     _SKILLS_ONLY_EVENTS,
     HOOK_EVENT_POST_TOOL_USE,
     HOOK_EVENT_PRE_TOOL_USE,
@@ -37,10 +37,10 @@ from kiro_crew.hooks import (
     HOOK_TIMEOUT_MIN,
     ScriptHook,
 )
-from kiro_crew.validation import REGISTER_HOOK_SCHEMA
+from efm_go.validation import REGISTER_HOOK_SCHEMA
 
 REPO = Path(__file__).resolve().parent.parent
-DOC = REPO / "src" / "kiro_crew" / "docs" / "steering-and-hooks.md"
+DOC = REPO / "src" / "efm_go" / "docs" / "steering-and-hooks.md"
 HOOKS_PAGE = REPO / "website" / "src" / "pages" / "HooksPage.tsx"
 
 
@@ -138,7 +138,7 @@ class TestHookFields:
             f"matcher_mode row names {set(_backticked(row)[1:])}; "
             f"MATCHER_MODES in {HOOKS_PAGE.name} offers {modes}. "
             "Changing the form's modes means updating the matcher_mode row "
-            "in src/kiro_crew/docs/steering-and-hooks.md."
+            "in src/efm_go/docs/steering-and-hooks.md."
         )
 
     def test_the_matcher_split_names_both_tool_events(self, doc_text: str) -> None:

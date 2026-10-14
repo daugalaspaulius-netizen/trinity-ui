@@ -10,18 +10,18 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.history import ConversationLog
-from kiro_crew.trust_patterns import (
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.history import ConversationLog
+from efm_go.trust_patterns import (
     approval_command,
     approval_display_command,
     canonical_non_shell_tool,
     canonical_non_shell_trust_key,
     exact_trust_pattern,
 )
-from kiro_crew.trust_patterns import extract_base_command as _canonical_extract_base_command
-from kiro_crew.trust_patterns import extract_full_command as _canonical_extract_full_command
-from kiro_crew.trust_patterns import matches_trusted_pattern as _canonical_matches_trusted_pattern
+from efm_go.trust_patterns import extract_base_command as _canonical_extract_base_command
+from efm_go.trust_patterns import extract_full_command as _canonical_extract_full_command
+from efm_go.trust_patterns import matches_trusted_pattern as _canonical_matches_trusted_pattern
 
 
 def _legacy_title_command(value: str) -> str:
@@ -72,7 +72,7 @@ async def _test_auth_middleware(request, handler):
 
 
 def _make_app(state: DashboardState) -> web.Application:
-    from kiro_crew.dashboard.chat import api_chat_slot_approve
+    from efm_go.dashboard.chat import api_chat_slot_approve
 
     app = web.Application(middlewares=[_test_auth_middleware])
     app["state"] = state
@@ -321,13 +321,13 @@ class TestExtractFullCommand:
 
 class TestChatSlotTrustedPatterns:
     def test_new_slot_has_empty_patterns(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         assert slot._trusted_patterns == set()
 
     def test_patterns_are_mutable_set(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         slot._trusted_patterns.add("ls *")
@@ -342,8 +342,8 @@ class TestChatSlotTrustedPatterns:
 
 class TestGetPatternFromPending:
     def test_extracts_full_command(self):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         meta = json.dumps(
@@ -357,8 +357,8 @@ class TestGetPatternFromPending:
         assert _get_pattern_from_pending(slot, "req-123", "full_command") == "ls /tmp"
 
     def test_extracts_base_command(self):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         meta = json.dumps(
@@ -374,15 +374,15 @@ class TestGetPatternFromPending:
         assert _get_pattern_from_pending(slot, "req-456", "base_command") == "grep"
 
     def test_returns_empty_for_missing_request_id(self):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         assert _get_pattern_from_pending(slot, "nonexistent", "full_command") == ""
 
     def test_returns_empty_for_empty_request_id(self):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         assert _get_pattern_from_pending(slot, "", "full_command") == ""
@@ -488,7 +488,7 @@ class TestHandlerTrustCommand:
     """Test api_chat_slot_approve logic for trust_command action."""
 
     def test_trust_command_adds_exact_pattern(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         # Simulate what the handler does for trust_command
@@ -499,7 +499,7 @@ class TestHandlerTrustCommand:
         assert _matches_trusted_pattern("Running: ls /var", slot._trusted_patterns) is None
 
     def test_trust_command_with_flags(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         slot._trusted_patterns.add("grep -r foo .")
@@ -510,7 +510,7 @@ class TestHandlerTrustCommand:
         assert _matches_trusted_pattern("Running: grep -r bar .", slot._trusted_patterns) is None
 
     def test_trust_command_mcp_tool(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         slot._trusted_patterns.add("TaskeiGetTask")
@@ -522,7 +522,7 @@ class TestHandlerTrustBase:
     """Test api_chat_slot_approve logic for trust_base action."""
 
     def test_trust_base_adds_glob_and_bare(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         # Simulate handler: split pattern on comma, add glob + bare for each
@@ -535,7 +535,7 @@ class TestHandlerTrustBase:
         assert "ls" in slot._trusted_patterns
 
     def test_trust_base_multi_binary(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         # Simulate handler with multi-command pattern "cat *,wc *"
@@ -556,8 +556,8 @@ class TestHandlerTrustBase:
         assert _matches_trusted_pattern("Running: rm file", slot._trusted_patterns) is None
 
     def test_trust_base_fallback_from_meta(self):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         meta = json.dumps(
@@ -596,7 +596,7 @@ class TestHandlerTrustBase:
 
 class TestChatSlotSerialization:
     def test_to_dict_includes_trusted_patterns_count(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         d = slot.to_dict()
@@ -604,7 +604,7 @@ class TestChatSlotSerialization:
         assert d["trusted_patterns_count"] == 0
 
     def test_to_dict_reflects_pattern_count(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         slot._trusted_patterns.add("ls *")
@@ -637,7 +637,7 @@ class TestSecurityRedaction:
         assert _matches_trusted_pattern("Running: curl [REDACTED]", patterns) == "curl *"
 
     def test_patterns_scoped_to_slot(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot_a = _ChatSlot(key="slot-a")
         slot_b = _ChatSlot(key="slot-b")
@@ -646,7 +646,7 @@ class TestSecurityRedaction:
         assert "ls *" not in slot_b._trusted_patterns
 
     def test_patterns_independent_of_trust_flag(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         slot._trusted_patterns.add("ls *")
@@ -655,7 +655,7 @@ class TestSecurityRedaction:
         assert len(slot._trusted_patterns) == 1
 
     def test_trust_flag_makes_patterns_irrelevant(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         slot._trust = True
@@ -715,24 +715,24 @@ class TestEdgeCases:
         assert base == "make,./run,tee,echo"
 
     def test_get_pattern_from_pending_with_invalid_json(self):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         slot.messages.append({"role": "permission", "content": "bad", "cls": "not-json"})
         assert _get_pattern_from_pending(slot, "any-id", "full_command") == ""
 
     def test_get_pattern_from_pending_with_non_dict_json(self):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         slot.messages.append({"role": "permission", "content": "bad", "cls": "[1,2,3]"})
         assert _get_pattern_from_pending(slot, "any-id", "full_command") == ""
 
     def test_get_pattern_skips_non_permission_messages(self):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot(key="test-slot")
         meta = json.dumps({"request_id": "req-1", "full_command": "ls /tmp"})

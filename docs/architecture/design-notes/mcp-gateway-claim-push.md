@@ -105,12 +105,12 @@ claim-path involvement.
 
 ## Files
 
-- `src/kiro_crew/mcp_gateway/claim.py` — frame builder + sender (stdlib-only)
-- `src/kiro_crew/mcp_gateway/daemon/identity.py` — `_StubConn`, `_CONN_INDEX`;
+- `src/efm_go/mcp_gateway/claim.py` — frame builder + sender (stdlib-only)
+- `src/efm_go/mcp_gateway/daemon/identity.py` — `_StubConn`, `_CONN_INDEX`;
   `daemon/control.py` — `_apply_claim`, claim first-frame dispatch;
   `daemon/connection.py` — per-frame caller pickup
-- `src/kiro_crew/mcp_gateway/stub.py` — `ancestor_pids` on register; unbounded
+- `src/efm_go/mcp_gateway/stub.py` — `ancestor_pids` on register; unbounded
   backoff recaller
-- `src/kiro_crew/acp/client.py`, `src/kiro_crew/acp/session_provider.py` —
+- `src/efm_go/acp/client.py`, `src/efm_go/acp/session_provider.py` —
   `rekey()` claim hooks
 - `test/test_mcp_gateway_claim.py` — functional + unit coverage

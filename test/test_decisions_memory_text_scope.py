@@ -29,7 +29,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.decisions import consent, gate
+from efm_go.decisions import consent, gate
 
 DEFAULT_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 
@@ -37,7 +37,7 @@ DEFAULT_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 @pytest.fixture
 def keystone(tmp_path, monkeypatch):
     path = tmp_path / "decisions_consent.json"
-    monkeypatch.setattr("kiro_crew.config.loader.decisions_consent_path", lambda: path)
+    monkeypatch.setattr("efm_go.config.loader.decisions_consent_path", lambda: path)
     return path
 
 
@@ -237,7 +237,7 @@ class TestTheGateRefusesWithoutIt:
         ``is_enabled`` grants nothing by contract -- ``decide`` re-runs every refusal
         -- so a scope enforced only in the preflight would be no scope at all.
         """
-        from kiro_crew.decisions.points import memory_recall as mr
+        from efm_go.decisions.points import memory_recall as mr
 
         keystone.write_text(
             json.dumps({"enabled": True, "endpoint": DEFAULT_ENDPOINT}), encoding="utf-8"
@@ -252,7 +252,7 @@ class TestTheGateRefusesWithoutIt:
                 asked.append(state)
                 raise AssertionError("nothing may be sent for an unscoped point")
 
-        monkeypatch.setattr("kiro_crew.decisions.impl_jev.JevOracle", _Oracle)
+        monkeypatch.setattr("efm_go.decisions.impl_jev.JevOracle", _Oracle)
         rows = [{"key": "mem-a", "snippet": "an episode"}]
         answers = await gate.decide(
             mr.POINT, mr.build_state("hi", rows), mr.build_questions(rows), config=_config()
@@ -271,8 +271,8 @@ class TestTheGateRefusesWithoutIt:
         """
         import threading
 
-        from kiro_crew.decisions import log as _log
-        from kiro_crew.decisions.points import memory_recall as mr
+        from efm_go.decisions import log as _log
+        from efm_go.decisions.points import memory_recall as mr
 
         log_dir = keystone.parent / "decisions"
         monkeypatch.setattr(_log, "log_dir", lambda: log_dir)
@@ -327,7 +327,7 @@ def _request(body=None):
 @pytest.fixture
 def audited(quiet_route, monkeypatch):
     """The rows the handler hands SEL, so the AUDIT VERB can be read off a real PUT."""
-    import kiro_crew.dashboard.handlers as handlers_pkg
+    import efm_go.dashboard.handlers as handlers_pkg
 
     rows: list[dict] = []
     fake = MagicMock()
@@ -339,19 +339,19 @@ def audited(quiet_route, monkeypatch):
 @pytest.fixture
 def quiet_route(monkeypatch):
     """Silence the SEL audit and pin the configured endpoint the PUT must echo."""
-    import kiro_crew.dashboard.handlers as handlers_pkg
+    import efm_go.dashboard.handlers as handlers_pkg
 
     monkeypatch.setattr(handlers_pkg, "sel", lambda: MagicMock())
     monkeypatch.setattr(gate, "configured_endpoint", lambda *_a, **_kw: DEFAULT_ENDPOINT)
     monkeypatch.setattr(
-        "kiro_crew.decisions.capability.is_decisions_denied", lambda *_a, **_kw: False
+        "efm_go.decisions.capability.is_decisions_denied", lambda *_a, **_kw: False
     )
 
 
 class TestTheRoute:
     @pytest.mark.asyncio
     async def test_the_get_reports_the_scope(self, keystone, quiet_route):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_get
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_get
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         resp = await api_decisions_consent_get(_request())
@@ -359,7 +359,7 @@ class TestTheRoute:
 
     @pytest.mark.asyncio
     async def test_the_put_records_it(self, keystone, quiet_route):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         resp = await api_decisions_consent_put(
             _request({"enabled": True, "endpoint": DEFAULT_ENDPOINT, "memory_text": True})
@@ -371,7 +371,7 @@ class TestTheRoute:
     @pytest.mark.asyncio
     async def test_an_omitted_field_preserves_the_recorded_scope(self, keystone, quiet_route):
         """The card writes ``enabled`` and ``endpoint`` alone on an ordinary flip."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         resp = await api_decisions_consent_put(
@@ -386,7 +386,7 @@ class TestTheRoute:
         self, keystone, quiet_route
     ):
         """The card sends ONE scope per click, so the other must survive untouched."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         resp = await api_decisions_consent_put(
@@ -399,7 +399,7 @@ class TestTheRoute:
 
     @pytest.mark.asyncio
     async def test_an_explicit_false_revokes_it(self, keystone, quiet_route):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         resp = await api_decisions_consent_put(
@@ -411,7 +411,7 @@ class TestTheRoute:
 
     @pytest.mark.asyncio
     async def test_disabling_through_the_route_clears_it(self, keystone, quiet_route):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         resp = await api_decisions_consent_put(_request({"enabled": False}))
@@ -422,7 +422,7 @@ class TestTheRoute:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("bad", ["true", 1, 0, [], {}])
     async def test_a_truthy_stand_in_is_a_400_not_a_silent_yes(self, keystone, quiet_route, bad):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         resp = await api_decisions_consent_put(
             _request({"enabled": True, "endpoint": DEFAULT_ENDPOINT, "memory_text": bad})
@@ -439,7 +439,7 @@ class TestTheRoute:
         write can assert a consent that is gone. A scope-only body says nothing about
         consent, and the writer preserves the recorded flag.
         """
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         consent.save_enabled(False, endpoint=DEFAULT_ENDPOINT)
@@ -455,7 +455,7 @@ class TestTheRoute:
     async def test_a_scope_only_put_preserves_the_recorded_endpoint(self, keystone, quiet_route):
         """Consent is bound to an ADDRESS, so preserving one without the other would
         leave a keystone consenting to nowhere -- which `permits` reads as off."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT)
         resp = await api_decisions_consent_put(_request({"memory_text": True}))
@@ -470,7 +470,7 @@ class TestTheRoute:
     async def test_a_scope_only_put_needs_no_endpoint_echo(self, keystone, quiet_route):
         """The echo is what an ENABLING write owes, because it is consenting to an
         address. A scope write is not, so demanding one would make the switch unusable."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT)
         resp = await api_decisions_consent_put(_request({"tool_args": True}))
@@ -480,7 +480,7 @@ class TestTheRoute:
     @pytest.mark.asyncio
     async def test_a_malformed_body_is_still_a_400(self, keystone, quiet_route):
         """Absent `enabled` is an omission; a non-object body is a malformed request."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         resp = await api_decisions_consent_put(_request("nope"))
         assert resp.status == 400
@@ -494,11 +494,11 @@ class TestTheRoute:
         A scope-only write asserts nothing about consent, but turning a scope ON under a
         pin would still record an egress permission the fleet withdrew.
         """
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT)
         monkeypatch.setattr(
-            "kiro_crew.decisions.capability.is_decisions_denied", lambda *_a, **_kw: True
+            "efm_go.decisions.capability.is_decisions_denied", lambda *_a, **_kw: True
         )
         resp = await api_decisions_consent_put(_request({"memory_text": True}))
         assert resp.status == 403
@@ -508,11 +508,11 @@ class TestTheRoute:
     async def test_a_scope_REVOKE_still_works_under_a_pin(self, keystone, quiet_route, monkeypatch):
         """Same reason a disabling PUT stays available: trapping an owner with a record
         they cannot clear is worse than the record."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         monkeypatch.setattr(
-            "kiro_crew.decisions.capability.is_decisions_denied", lambda *_a, **_kw: True
+            "efm_go.decisions.capability.is_decisions_denied", lambda *_a, **_kw: True
         )
         resp = await api_decisions_consent_put(_request({"memory_text": False}))
         assert resp.status == 200
@@ -528,7 +528,7 @@ class TestTheRoute:
         the resolution: a route that read the scope itself would hold a value read
         BEFORE a revocation landed and write it back.
         """
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         seen: list = []
@@ -571,7 +571,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
 
     @pytest.mark.asyncio
     async def test_a_scope_only_revocation_audits_as_revoked(self, keystone, audited):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         resp = await api_decisions_consent_put(_request({"memory_text": False}))
@@ -583,7 +583,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
 
     @pytest.mark.asyncio
     async def test_a_scope_only_grant_audits_as_granted(self, keystone, audited):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=False)
         resp = await api_decisions_consent_put(_request({"memory_text": True}))
@@ -599,7 +599,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
         empty or misspelled body is a refusal rather than a silent rewrite of the record
         as itself. The scope stays exactly as it was.
         """
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         resp = await api_decisions_consent_put(_request({}))
@@ -614,7 +614,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
         A value that is not a boolean is a KEEP sentinel, meaning the field was absent,
         so it is not counted -- and a call carrying none of them asserts nothing.
         """
-        from kiro_crew.dashboard.handlers.decisions import _consent_write_verb
+        from efm_go.dashboard.handlers.decisions import _consent_write_verb
 
         assert _consent_write_verb() == "allowed"
         assert _consent_write_verb(consent.KEEP_ENABLED, consent.KEEP_MEMORY_TEXT) == "allowed"
@@ -629,7 +629,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
         neither the switch nor a scope. It is the REVOKING value, so the grant this
         asserts can only have come from the ceiling.
         """
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, history_budget_chars=100)
         resp = await api_decisions_consent_put(
@@ -643,7 +643,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
     @pytest.mark.asyncio
     async def test_clearing_the_history_ceiling_audits_as_revoked(self, keystone, audited):
         """`0` takes prior turns back, which is a revocation and not a bare read-write."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, history_budget_chars=5_000)
         resp = await api_decisions_consent_put(
@@ -656,7 +656,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
     @pytest.mark.asyncio
     async def test_disabling_beside_a_ceiling_still_audits_as_revoked(self, keystone, audited):
         """The writer forces the ceiling to 0 on a disabling write, so it widens nothing."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, history_budget_chars=100)
         resp = await api_decisions_consent_put(
@@ -670,7 +670,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
     @pytest.mark.asyncio
     async def test_a_mixed_write_names_the_widest_thing_it_did(self, keystone, audited):
         """Granting one scope while revoking another is a grant, and `resources` has both."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True, tool_args=False)
         resp = await api_decisions_consent_put(
@@ -684,7 +684,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
 
     @pytest.mark.asyncio
     async def test_disabling_consent_still_audits_as_revoked(self, keystone, audited):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         consent.save_enabled(True, endpoint=DEFAULT_ENDPOINT, memory_text=True)
         resp = await api_decisions_consent_put(_request({"enabled": False}))
@@ -694,7 +694,7 @@ class TestTheAuditVerbNamesWhatTheWriteAsserted:
 
     @pytest.mark.asyncio
     async def test_enabling_consent_audits_as_granted(self, keystone, audited):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_consent_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_consent_put
 
         resp = await api_decisions_consent_put(
             _request({"enabled": True, "endpoint": DEFAULT_ENDPOINT}),

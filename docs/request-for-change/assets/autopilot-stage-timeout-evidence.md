@@ -2,16 +2,16 @@
 
 > **Status:** the parent RFC is superseded by
 > [`rfc-retire-chat-autopilot.md`](../rfc-retire-chat-autopilot.md)
-> ([#15362](https://github.com/kirodotdev/KiroCrew/pull/15362),
-> [#15359](https://github.com/kirodotdev/KiroCrew/pull/15359)). Go All and the
+> ([#15362](https://efmleads.com/pull/15362),
+> [#15359](https://efmleads.com/pull/15359)). Go All and the
 > stage loop are removed from `main`, so the Reproduction below applies only to
-> the `7f1f4fb1d` baseline. [#14058](https://github.com/kirodotdev/KiroCrew/issues/14058)
+> the `7f1f4fb1d` baseline. [#14058](https://efmleads.com/issues/14058)
 > tracks the generic chat-turn cancellation defect.
 
 This appendix supports
 [`rfc-autopilot-stage-budgets.md`](../rfc-autopilot-stage-budgets.md) and the
 remaining lifecycle defect tracked by
-[#14058](https://github.com/kirodotdev/KiroCrew/issues/14058). It contains
+[#14058](https://efmleads.com/issues/14058). It contains
 sanitized lifecycle evidence from the incident owner's local Kiro Crew records.
 Raw transcripts are deliberately not committed: they contain unrelated prompts,
 local paths, tool arguments, and project content that are unnecessary to verify
@@ -130,16 +130,16 @@ They remain local.
 ## Code-path correlation on `main` at `7f1f4fb1d`
 
 1. `OrchestrationTracker.start_stage` in
-   `src/kiro_crew/context_management.py` starts an absolute stage clock.
-2. `_stage_loop` in `src/kiro_crew/dashboard/chat_orchestrator.py` checks the
+   `src/efm_go/context_management.py` starts an absolute stage clock.
+2. `_stage_loop` in `src/efm_go/dashboard/chat_orchestrator.py` checks the
    clock at a stage boundary.
 3. The same loop wraps the active `_run_chat` turn through `_bounded_turn` using
    the configured 30-minute value.
-4. `_bounded_turn` in `src/kiro_crew/dashboard/turn_dispatch.py` cancels the
+4. `_bounded_turn` in `src/efm_go/dashboard/turn_dispatch.py` cancels the
    inner task when its timer fires and records the fact even if the inner
    coroutine absorbs cancellation.
 5. `_run_chat`'s `CancelledError` branch in
-   `src/kiro_crew/dashboard/chat_runner.py` persists partial dashboard text, but
+   `src/efm_go/dashboard/chat_runner.py` persists partial dashboard text, but
    does not call native `session/cancel`.
 6. The native ACP turn therefore retains execution authority after the dashboard
    controller has emitted a terminal-looking card.

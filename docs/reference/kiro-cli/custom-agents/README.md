@@ -1,6 +1,6 @@
 # Custom Agents
 
-Source: https://kiro.dev/docs/custom-agents/ (fetched 2026-09-06; upstream
+Source: https://efmleads.com/docs/custom-agents/ (fetched 2026-09-06; upstream
 retired `/docs/cli/custom-agents/` and made the page surface-agnostic)
 
 Customize Kiro behavior by defining specific configurations for different use cases: which tools are available, permissions, and context.

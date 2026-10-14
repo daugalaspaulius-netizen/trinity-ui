@@ -437,7 +437,7 @@ def test_the_sampler_default_home_is_not_the_legacy_path() -> None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     import soak_process_sampler
 
-    from kiro_crew.config.paths import LEGACY_CONFIG_DIR_NAME, peek_data_home
+    from efm_go.config.paths import LEGACY_CONFIG_DIR_NAME, peek_data_home
 
     resolved = soak_process_sampler.default_home()
     assert resolved is not None

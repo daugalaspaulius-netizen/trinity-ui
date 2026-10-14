@@ -15,36 +15,36 @@ from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app_with_agent_routes, _make_state, drain_background_tasks
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew import agent, agent_discovery, agent_state
-from kiro_crew.acp.mcp_session_report import McpSessionReport
-from kiro_crew.acp.types import (
+from efm_go import agent, agent_discovery, agent_state
+from efm_go.acp.mcp_session_report import McpSessionReport
+from efm_go.acp.types import (
     ACP_BACKENDS_KNOWN,
     EVENT_MCP_OAUTH_REQUEST,
     EVENT_MCP_SERVER_INIT_FAILURE,
     EVENT_MCP_SERVER_INITIALIZED,
 )
-from kiro_crew.agent_capabilities import CapabilityService, prepare_member_capabilities
-from kiro_crew.config import loader as config_loader
-from kiro_crew.config.loader import (
+from efm_go.agent_capabilities import CapabilityService, prepare_member_capabilities
+from efm_go.config import loader as config_loader
+from efm_go.config.loader import (
     KiroCrewAgentConfig,
     KiroCrewConfig,
     WorkspaceConfig,
     refresh_materialized_agents,
 )
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard import chat_handlers, chat_runner
-from kiro_crew.dashboard.chat_persistence import _rehydrate_slot_from_history
-from kiro_crew.dashboard.handlers.agent_capabilities import _SERVICE
-from kiro_crew.dashboard.routes.agents import register
-from kiro_crew.history import ConversationLog
-from kiro_crew.member_memory_auth import bind_private_session_store, read_private_session_store
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_stores import provision_member_memory
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent, LLMProvider
-from kiro_crew.session import SessionManager
-from kiro_crew.session_agent_selection import session_agent_selection_kind
-from kiro_crew.session_capabilities import CapabilityStartupError, runtime_view
-from kiro_crew.skills import SkillsLoader
+from efm_go.context import ContextBuilder
+from efm_go.dashboard import chat_handlers, chat_runner
+from efm_go.dashboard.chat_persistence import _rehydrate_slot_from_history
+from efm_go.dashboard.handlers.agent_capabilities import _SERVICE
+from efm_go.dashboard.routes.agents import register
+from efm_go.history import ConversationLog
+from efm_go.member_memory_auth import bind_private_session_store, read_private_session_store
+from efm_go.memory import MemoryStore
+from efm_go.memory_stores import provision_member_memory
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent, LLMProvider
+from efm_go.session import SessionManager
+from efm_go.session_agent_selection import session_agent_selection_kind
+from efm_go.session_capabilities import CapabilityStartupError, runtime_view
+from efm_go.skills import SkillsLoader
 
 
 class FakeProvider(LLMProvider):
@@ -200,7 +200,7 @@ def dashboard_capability_world(world, tmp_path, monkeypatch):
     )
     # Discovery reads the same real temporary specs as the capability service.
     monkeypatch.setattr(agent_discovery, "_KIRO_AGENTS_DIR", specs)
-    monkeypatch.setattr("kiro_crew.config.loader.kiro_agents_dir", lambda: specs)
+    monkeypatch.setattr("efm_go.config.loader.kiro_agents_dir", lambda: specs)
     refresh_materialized_agents()
     monkeypatch.setattr(chat_handlers, "schedule_eager_spawn", lambda *a, **kw: None)
     monkeypatch.setattr(chat_runner, "title_then_refresh", AsyncMock())
@@ -567,7 +567,7 @@ async def test_private_task_uses_dedicated_provider_and_same_store(world):
 
 @pytest.mark.asyncio
 async def test_governance_change_during_startup_is_not_applied(world):
-    from kiro_crew.platform.context import _install, current_context
+    from efm_go.platform.context import _install, current_context
 
     service, cfg, factory, _, project, _, _ = world
     await asyncio.to_thread(save, service, enroll=True)
@@ -592,8 +592,8 @@ async def test_governance_change_during_startup_is_not_applied(world):
 
 @pytest.mark.parametrize("backend", sorted(ACP_BACKENDS_KNOWN))
 def test_real_provider_support_is_explicit_and_unstarted_is_unverified(tmp_path, backend):
-    from kiro_crew.acp.types import ACP_BACKEND_KIRO
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.acp.types import ACP_BACKEND_KIRO
+    from efm_go.providers.acp import AcpProvider
 
     provider = AcpProvider(work_dir=tmp_path, acp_backend=backend)
     assert provider.member_capabilities_supported is (backend == ACP_BACKEND_KIRO)
@@ -602,10 +602,10 @@ def test_real_provider_support_is_explicit_and_unstarted_is_unverified(tmp_path,
 
 @pytest.mark.parametrize("backend", sorted(ACP_BACKENDS_KNOWN) + ["byo-harness"])
 def test_real_session_provider_member_support_is_explicit(tmp_path, backend):
-    from kiro_crew.acp.runtime import AcpRuntime
-    from kiro_crew.acp.session_handle import AcpSessionHandle, WatchdogSettings
-    from kiro_crew.acp.session_provider import AcpSessionProvider
-    from kiro_crew.acp.types import ACP_BACKEND_KIRO
+    from efm_go.acp.runtime import AcpRuntime
+    from efm_go.acp.session_handle import AcpSessionHandle, WatchdogSettings
+    from efm_go.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.types import ACP_BACKEND_KIRO
 
     runtime = AcpRuntime(work_dir=tmp_path, acp_backend=backend)
     handle = AcpSessionHandle("member", asyncio.Queue(), runtime, watchdog=WatchdogSettings())
@@ -622,9 +622,9 @@ async def test_real_acp_mode_ack_is_required_for_loaded_template(
 ):
     from unittest.mock import AsyncMock, MagicMock, Mock
 
-    from kiro_crew.acp.runtime import AcpRuntime, AcpRuntimeError
-    from kiro_crew.acp.session_handle import AcpSessionHandle
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.runtime import AcpRuntime, AcpRuntimeError
+    from efm_go.acp.session_handle import AcpSessionHandle
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     handles = []
 
@@ -633,7 +633,7 @@ async def test_real_acp_mode_ack_is_required_for_loaded_template(
         handles.append(handle)
         return handle
 
-    monkeypatch.setattr("kiro_crew.acp.runtime.AcpSessionHandle", capture_handle)
+    monkeypatch.setattr("efm_go.acp.runtime.AcpSessionHandle", capture_handle)
     pre = Mock(wraps=agent.require_fresh_derived_spec)
     post = Mock(wraps=agent.require_unchanged_derived_spec)
     if fault == "pre":
@@ -694,7 +694,7 @@ async def test_real_acp_mode_ack_is_required_for_loaded_template(
             assert methods == [
                 "session/load" if resume else "session/new",
                 *([] if fault == "pre" else ["session/set_mode"]),
-                "_kiro.dev/session/terminate",
+                "_efm.go/session/terminate",
             ]
             pre.assert_called_once_with(template, tmp_path)
             assert post.call_count == (1 if fault == "post" else 0)
@@ -734,7 +734,7 @@ async def test_warm_process_is_not_claimed_for_enrolled_member(world):
 
 @pytest.mark.asyncio
 async def test_saved_bytes_changed_during_start_never_get_a_stamp(world):
-    from kiro_crew.agent_capabilities import CapabilityError
+    from efm_go.agent_capabilities import CapabilityError
 
     service, cfg, factory, made, project, _, _ = world
     await asyncio.to_thread(save, service, enroll=True)
@@ -979,7 +979,7 @@ async def test_cold_start_never_publishes_malformed_persisted_transport(world, f
 
 
 def test_capability_runtime_facade_projects_owned_state_without_exporting_it():
-    from kiro_crew.session_allocation import SessionRegistryState
+    from efm_go.session_allocation import SessionRegistryState
 
     state = SessionRegistryState()
     attempt = {

@@ -152,7 +152,7 @@ export function isSelfScroll(
  * that walks the reader down the message by one token's height per tick,
  * arriving on screen as the text they are reading sliding UP and out from
  * under them -- reported as "can't read the middle of a long reply while it
- * streams" (kirodotdev/KiroCrew#10810). The scroll inspector showed the
+ * streams" (efmleads.com#10810). The scroll inspector showed the
  * signature directly: `WRITE abovefold` firing +27/+54px per tick with
  * `Δtop == Δh`, while the same reader parked at the message's HEAD (row top
  * inside the fold) held perfectly.

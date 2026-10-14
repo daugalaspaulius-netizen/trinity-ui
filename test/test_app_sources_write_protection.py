@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.apps.registry import app_source_dir
-from kiro_crew.security import (
+from efm_go.apps.registry import app_source_dir
+from efm_go.security import (
     is_sensitive_bash_command,
     is_sensitive_path,
     is_sensitive_write_path,

@@ -10,13 +10,13 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import mcp_core, mcp_cron, member_memory_auth, platform_compat
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.cron import CronService
-from kiro_crew.dashboard.server import _register_mcp_routes
-from kiro_crew.history import ConversationLog
-from kiro_crew.mcp_caller import CallerContext, current_caller, set_current_caller
-from kiro_crew.memory_stores import provision_member_memory
+from efm_go import mcp_core, mcp_cron, member_memory_auth, platform_compat
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.cron import CronService
+from efm_go.dashboard.server import _register_mcp_routes
+from efm_go.history import ConversationLog
+from efm_go.mcp_caller import CallerContext, current_caller, set_current_caller
+from efm_go.memory_stores import provision_member_memory
 
 
 @pytest.fixture
@@ -148,7 +148,7 @@ async def test_proxy_preserves_validation_governance_and_member_scope(env, monke
         assert CronService(base_dir=env.home).get_job(jobs["bob"].id) is not None
         status, body = await invoke(client, env, "cron_add", {"name": 7, "every": 120})
         assert status == 200 and body["result"].startswith("Error:")
-        from kiro_crew.platform import governance_profiles
+        from efm_go.platform import governance_profiles
 
         def deny(*args, **kwargs):
             assert kwargs["session_key"] == env.identities["alice"].key
@@ -284,8 +284,8 @@ async def test_pooled_backend_carries_the_gateway_forwarded_token(env, monkeypat
     so ``KIROCREW_STUB_SESSION_TOKEN`` is never in its ``os.environ``. The token
     it proves the session with is the one gatewayd forwards inside the per-call
     caller block; without it the request is (correctly) refused."""
-    from kiro_crew.mcp_caller import build_caller_meta
-    from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+    from efm_go.mcp_caller import build_caller_meta
+    from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
     monkeypatch.delenv(STUB_SESSION_TOKEN_ENV, raising=False)
     identity = env.identities["alice"]

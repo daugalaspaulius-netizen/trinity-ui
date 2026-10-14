@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.history import ConversationLog
+from efm_go.history import ConversationLog
 
 
 class TestMarkConsolidatedAtomic:
@@ -56,7 +56,7 @@ class TestMarkConsolidatedOffloaded:
         import threading
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        from kiro_crew.history import HistoryConsolidator
+        from efm_go.history import HistoryConsolidator
 
         loop_thread_id = threading.get_ident()
         mark_thread_id: dict[str, int] = {}

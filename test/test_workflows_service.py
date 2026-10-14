@@ -21,13 +21,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-import kiro_crew.llm_helpers as llm_helpers
-from kiro_crew.acp.runtime import AcpRequestTimeout
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
-from kiro_crew.workflows.library import WorkflowDefinitionLibrary
-from kiro_crew.workflows.service import WorkflowService
-from kiro_crew.workflows.store import WorkflowRunStore
+import efm_go.llm_helpers as llm_helpers
+from efm_go.acp.runtime import AcpRequestTimeout
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
+from efm_go.workflows.library import WorkflowDefinitionLibrary
+from efm_go.workflows.service import WorkflowService
+from efm_go.workflows.store import WorkflowRunStore
 
 pytestmark = pytest.mark.asyncio
 
@@ -149,7 +149,7 @@ def _patch_stream(monkeypatch, replies: list[str]) -> dict:
     monkeypatch.setattr(llm_helpers, "stream_and_collect", fake_stream)
     # service.py binds stream_and_collect at module top (top-level-imports rule),
     # so patch the name in the service module's namespace too.
-    import kiro_crew.workflows.service as svc_mod
+    import efm_go.workflows.service as svc_mod
 
     monkeypatch.setattr(svc_mod, "stream_and_collect", fake_stream)
     return state
@@ -238,7 +238,7 @@ async def test_author_success_survives_teardown_failure(monkeypatch, caplog) -> 
     sessions = DestroyFailingSessions([])
     svc = WorkflowService(sessions=sessions)
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.workflows.service"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.workflows.service"):
         out = await svc.author("x")
 
     assert out["ok"] is True
@@ -252,7 +252,7 @@ async def test_author_success_survives_teardown_failure(monkeypatch, caplog) -> 
 async def test_author_primary_error_survives_teardown_failure(
     monkeypatch, caplog, primary_phase
 ) -> None:
-    import kiro_crew.workflows.service as svc_mod
+    import efm_go.workflows.service as svc_mod
 
     primary = LookupError(f"{primary_phase} failed")
 
@@ -271,7 +271,7 @@ async def test_author_primary_error_survives_teardown_failure(
 
     sessions = DestroyFailingSessions([])
     svc = WorkflowService(sessions=sessions)
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.workflows.service"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.workflows.service"):
         with pytest.raises(LookupError) as raised:
             await svc.author("x")
 
@@ -291,7 +291,7 @@ async def test_author_retries_then_succeeds(monkeypatch) -> None:
 
 
 async def test_author_revises_budget_rebinding_before_returning_script(monkeypatch) -> None:
-    import kiro_crew.workflows.service as svc_mod
+    import efm_go.workflows.service as svc_mod
 
     bad_script = GOOD_SCRIPT.replace("    ctx.log('hi')", "    ctx.budget = 7200")
     prompts: list[str] = []
@@ -316,7 +316,7 @@ async def test_author_revises_budget_rebinding_before_returning_script(monkeypat
 
 
 async def test_author_budget_rebinding_stops_at_validation_retry_limit(monkeypatch) -> None:
-    from kiro_crew.workflows.service import _AUTHOR_RETRIES
+    from efm_go.workflows.service import _AUTHOR_RETRIES
 
     bad_script = GOOD_SCRIPT.replace("    ctx.log('hi')", "    ctx.budget = 7200")
     generated = _patch_stream(monkeypatch, [bad_script])
@@ -334,7 +334,7 @@ async def test_author_budget_rebinding_stops_at_validation_retry_limit(monkeypat
 
 async def test_author_retries_transient_startup_with_fresh_session(monkeypatch) -> None:
     _patch_stream(monkeypatch, [GOOD_SCRIPT])
-    import kiro_crew.workflows.service as svc_mod
+    import efm_go.workflows.service as svc_mod
 
     monkeypatch.setattr(svc_mod, "_AUTHOR_STARTUP_BACKOFF_SECS", (0.0, 0.0))
     sessions = StartupScriptedSessions([AcpRequestTimeout("initialize timed out")])
@@ -350,7 +350,7 @@ async def test_author_retries_transient_startup_with_fresh_session(monkeypatch) 
 
 async def test_author_destroys_partial_session_before_startup_retry(monkeypatch) -> None:
     _patch_stream(monkeypatch, [GOOD_SCRIPT])
-    import kiro_crew.workflows.service as svc_mod
+    import efm_go.workflows.service as svc_mod
 
     monkeypatch.setattr(svc_mod, "_AUTHOR_STARTUP_BACKOFF_SECS", (0.0, 0.0))
     sessions = StartupScriptedSessions([AcpRequestTimeout("session/new timed out")])
@@ -381,7 +381,7 @@ async def test_author_does_not_retry_arbitrary_startup_failure(monkeypatch) -> N
 
 
 async def test_author_startup_retry_exhaustion_preserves_last_error(monkeypatch) -> None:
-    import kiro_crew.workflows.service as svc_mod
+    import efm_go.workflows.service as svc_mod
 
     monkeypatch.setattr(svc_mod, "_AUTHOR_STARTUP_BACKOFF_SECS", (0.0, 0.0))
     failures = [
@@ -422,8 +422,8 @@ def _record_prompts(
 ) -> list[str]:
     """Patch stream_and_collect to return ``replies`` in order, ending each turn
     with a shared or per-turn ``stop_reason`` like the provider's EVENT_COMPLETE."""
-    import kiro_crew.workflows.service as svc_mod
-    from kiro_crew.acp.types import EVENT_COMPLETE, AcpEvent
+    import efm_go.workflows.service as svc_mod
+    from efm_go.acp.types import EVENT_COMPLETE, AcpEvent
 
     prompts: list[str] = []
 
@@ -488,7 +488,7 @@ async def test_author_retry_rejects_valid_script_at_output_limit(monkeypatch) ->
 
 
 async def test_author_failure_reports_every_valid_script_at_output_limit(monkeypatch) -> None:
-    from kiro_crew.workflows.service import _AUTHOR_RETRIES
+    from efm_go.workflows.service import _AUTHOR_RETRIES
 
     attempts = _AUTHOR_RETRIES + 1
     prompts = _record_prompts(monkeypatch, [GOOD_SCRIPT], stop_reason="max_tokens")
@@ -507,7 +507,7 @@ async def test_author_failure_reports_every_valid_script_at_output_limit(monkeyp
 async def test_author_failure_bounds_each_attempts_errors(monkeypatch) -> None:
     # The failed run's error is stored and served verbatim, so what is retained
     # per attempt is bounded in count and in length, with one "+N more" marker.
-    from kiro_crew.workflows.service import (
+    from efm_go.workflows.service import (
         _AUTHOR_ERROR_CHARS,
         _AUTHOR_ERRORS_PER_ATTEMPT,
         _AUTHOR_RETRIES,
@@ -563,7 +563,7 @@ async def test_author_retry_keeps_invalid_wording_for_a_complete_script(
 
 
 async def test_author_failure_reports_every_attempts_error(monkeypatch) -> None:
-    from kiro_crew.workflows.service import _AUTHOR_RETRIES
+    from efm_go.workflows.service import _AUTHOR_RETRIES
 
     attempts = _AUTHOR_RETRIES + 1
     _record_prompts(monkeypatch, _CUT_OFF_REPLIES[:attempts])
@@ -608,7 +608,7 @@ async def test_author_uses_a_matching_saved_workflow_as_an_adaptation_example(
         captured.append(message)
         return adapted
 
-    import kiro_crew.workflows.service as svc_mod
+    import efm_go.workflows.service as svc_mod
 
     monkeypatch.setattr(svc_mod, "stream_and_collect", fake_stream)
     svc = WorkflowService(sessions=FakeSessions([]), persist=False, definition_library=library)
@@ -633,7 +633,7 @@ async def test_authoring_does_not_use_task_plans_as_python_examples(monkeypatch,
         captured.append(message)
         return GOOD_SCRIPT
 
-    import kiro_crew.workflows.service as svc_mod
+    import efm_go.workflows.service as svc_mod
 
     monkeypatch.setattr(svc_mod, "stream_and_collect", fake_stream)
     svc = WorkflowService(sessions=FakeSessions([]), persist=False, definition_library=library)
@@ -1241,7 +1241,7 @@ async def test_start_task_plan_definition_delegates_to_taskrunner_without_python
 
     assert started["run_id"] == "wf_task"
     assert started["task_id"] == "task_123"
-    from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+    from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
     assert task_runner.calls == [
         {
@@ -1579,7 +1579,7 @@ class _IntgState:
 
 
 async def test_finished_run_injects_result_and_autoruns_agent_turn(monkeypatch) -> None:
-    from kiro_crew.dashboard.workflow_inject import inject_workflow_result
+    from efm_go.dashboard.workflow_inject import inject_workflow_result
 
     _patch_stream(monkeypatch, ["stub"])
     origin = _IntgSlot("chat-1")
@@ -1610,7 +1610,7 @@ async def test_finished_run_injects_result_and_autoruns_agent_turn(monkeypatch) 
 async def test_finished_run_busy_slot_queues_turn(monkeypatch) -> None:
     """If the originating slot is mid-turn, the auto-turn queues (does not start),
     so we never stack a concurrent turn — mirrors enqueue_or_run_prompt semantics."""
-    from kiro_crew.dashboard.workflow_inject import inject_workflow_result
+    from efm_go.dashboard.workflow_inject import inject_workflow_result
 
     _patch_stream(monkeypatch, ["stub"])
     origin = _IntgSlot("chat-1")
@@ -1665,8 +1665,8 @@ async def test_pool_agents_false_uses_per_call_sessions() -> None:
 
 
 async def test_author_publishes_identity_before_each_revision(monkeypatch):
-    from kiro_crew.messaging import identity
-    from kiro_crew.workflows import service as service_module
+    from efm_go.messaging import identity
+    from efm_go.workflows import service as service_module
 
     sessions = FakeSessions([])
     events = []
@@ -1694,7 +1694,7 @@ async def test_author_publishes_identity_before_each_revision(monkeypatch):
 
 @pytest.mark.parametrize("entry", ["start", "intent", "rerun"])
 async def test_admission_closed_during_scope_binding_rejects_launch(monkeypatch, entry):
-    from kiro_crew.workflows.service import WorkflowScope
+    from efm_go.workflows.service import WorkflowScope
 
     sessions = FakeSessions([])
     service = WorkflowService(sessions=sessions, persist=False)
@@ -1722,7 +1722,7 @@ async def test_admission_closed_during_scope_binding_rejects_launch(monkeypatch,
 
 
 async def test_cancelled_allocator_worker_burns_id_across_service_restart(monkeypatch):
-    import kiro_crew.workflow_memory as wm
+    import efm_go.workflow_memory as wm
 
     written = threading.Event()
     release = threading.Event()
@@ -1774,7 +1774,7 @@ async def test_restored_floor_advances_allocator_without_becoming_authority():
 
 
 async def test_evicted_identity_survives_an_empty_registry_restart():
-    from kiro_crew.workflows.registry import STATUS_FINISHED, RunHandle, RunRegistry
+    from efm_go.workflows.registry import STATUS_FINISHED, RunHandle, RunRegistry
 
     service = WorkflowService(sessions=FakeSessions([]), persist=False)
     service.registry = RunRegistry(max_runs=0)
@@ -1864,8 +1864,8 @@ async def test_failed_store_load_refuses_service_without_overwriting_legacy_run(
 async def test_rerun_keeps_birth_mode_and_current_caller_policy(original, caller):
     from types import SimpleNamespace
 
-    from kiro_crew.messaging.privacy_mode import strictest
-    from kiro_crew.workflow_memory import read_binding
+    from efm_go.messaging.privacy_mode import strictest
+    from efm_go.workflow_memory import read_binding
 
     modes = {"dashboard:original": original, "dashboard:caller": caller}
 

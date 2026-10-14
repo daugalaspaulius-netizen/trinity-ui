@@ -79,7 +79,7 @@ writing at least one of the letters as a JSON `\u` escape (the only escape
 that yields a letter), so the filter matches on either the literal or the
 escape marker and lines that skip the parse provably cannot carry an image
 block. Every image block in a `tools/call` result is held to the same
-per-image budget the prompt path enforces (`kiro_crew/imaging.py`:
+per-image budget the prompt path enforces (`efm_go/imaging.py`:
 `MAX_IMAGE_EDGE_PX` = 2000 px longest edge, `MAX_IMAGE_B64_BYTES` = 5 MiB
 base64):
 

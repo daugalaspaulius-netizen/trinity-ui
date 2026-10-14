@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Slack integration (`kiro_crew/slack/`) connects KiroCrew to Slack via Socket Mode. DMs are routed through ACP to kiro-cli with real-time streaming and interactive tool approval.
+The Slack integration (`efm_go/slack/`) connects KiroCrew to Slack via Socket Mode. DMs are routed through ACP to kiro-cli with real-time streaming and interactive tool approval.
 
 Independently scheduled agent runs admit their exact execution key as durable
 work before provider allocation, publishing its privacy mode in the canonical
@@ -199,9 +199,9 @@ there; the responsibilities below live in private owners under
 rebinds every function an owner defines -- its module functions, the orchestrator
 methods it holds (bound as the `GatewayOrchestrator` attribute of the same name)
 and the methods of the classes it defines -- onto the facade's module globals. A
-patch of `kiro_crew.slack.gateway.<name>` therefore reaches owner code exactly as
+patch of `efm_go.slack.gateway.<name>` therefore reaches owner code exactly as
 it reached the one-module file, and `__module__` / `__qualname__` still read
-`kiro_crew.slack.gateway` / `GatewayOrchestrator.<name>`. The orchestrator is the
+`efm_go.slack.gateway` / `GatewayOrchestrator.<name>`. The orchestrator is the
 only holder of state: an owner keeps none, so a `GatewayOrchestrator.__new__`
 fixture or an unbound `GatewayOrchestrator.<method>(stub, ...)` call reaches an
 owner method unchanged. An owner imports the facade only under `TYPE_CHECKING`,
@@ -271,9 +271,9 @@ orchestrator of a turn. The responsibilities below live in private owners under
 **One namespace.** `handler_runtime.compose` (pinned byte-identical to
 `hook_runtime.compose`), called once at the foot of `slack/handler.py`, rebinds every
 function an owner defines -- its module functions and the methods of its classes --
-onto the facade's module globals. A patch of `kiro_crew.slack.handler.<name>`
+onto the facade's module globals. A patch of `efm_go.slack.handler.<name>`
 therefore reaches owner code exactly as it reached the one-module file, and an owner
-function's `__module__` still reads `kiro_crew.slack.handler`; an owner's classes keep
+function's `__module__` still reads `efm_go.slack.handler`; an owner's classes keep
 their own module. The facade is the only holder of state: the approval registries, the
 per-thread maps, the voice state, the phase table and the privacy, trust and auto-title
 tracker aliases are facade globals, and no owner keeps one. An owner imports the facade
@@ -648,7 +648,7 @@ process (or the launcher that spawned it), read with a bounded `systemctl show`
 so drop-ins and the scope that actually runs it count (a unit changed on disk
 since it was loaded is not judged); on macOS the launchd agent's launcher
 target. It must exist through its links and be executable, and when it is a
-Python script its interpreter must import `kiro_crew.cli` and `kiro_crew.cli_server` in a bounded probe run
+Python script its interpreter must import `efm_go.cli` and `efm_go.cli_server` in a bounded probe run
 the way the relaunch runs it: without `-I`, under the unit's own `Environment=`
 and `EnvironmentFile=` (or the plist's `EnvironmentVariables`), from `/`.
 `systemctl` is resolved with `platform_compat.trusted_system_bin`, never from the
@@ -950,10 +950,10 @@ Available to all allowed users.
 
 Slack `file_share` messages are processed in `_route_message()` after dedup + auth. Three categories handled in order:
 
-### Voice / Audio (`kiro_crew/transcribe.py`)
+### Voice / Audio (`efm_go/transcribe.py`)
 - **Mimetypes**: `audio/*`, `video/webm`
 - **Flow**: Download via `SlackClientOps.download_file()` → `transcribe.transcribe_audio()` → transcription text prepended as `[Voice memo transcription]...[End of transcription]`
-- **Config**: Enabled by default (`stt.enabled = true`). `stt.provider` decides where recognition runs, and the default `local` runs it in this process on a resident whisper.cpp model, so a memo costs one model download (`stt.model`, `base` by default) and nothing after that. A stored retired provider degrades to `local`; there is no binary to put on `PATH`. Availability per provider comes from `transcribe.availability_detail()`, which distinguishes a missing `voice` extra from a platform with no prebuilt recognizer and from a macOS too old for the `apple` provider, because those need different fixes. The pinned `imageio-ffmpeg` wheel decodes the memo's ogg/Opus or webm internally and is bundled in desktop releases; users do not install system FFmpeg. Setup: [configuration](../../../src/kiro_crew/docs/configuration.md) § Speech-to-text.
+- **Config**: Enabled by default (`stt.enabled = true`). `stt.provider` decides where recognition runs, and the default `local` runs it in this process on a resident whisper.cpp model, so a memo costs one model download (`stt.model`, `base` by default) and nothing after that. A stored retired provider degrades to `local`; there is no binary to put on `PATH`. Availability per provider comes from `transcribe.availability_detail()`, which distinguishes a missing `voice` extra from a platform with no prebuilt recognizer and from a macOS too old for the `apple` provider, because those need different fixes. The pinned `imageio-ffmpeg` wheel decodes the memo's ogg/Opus or webm internally and is bundled in desktop releases; users do not install system FFmpeg. Setup: [configuration](../../../src/efm_go/docs/configuration.md) § Speech-to-text.
 - **Provider-independent guards**: `transcribe_audio` refuses a sensitive `audio_path` and redacts every provider's output before returning, both before/after dispatch rather than inside a branch, so a provider cannot be added that skips either. See [stt-streaming](stt-streaming.md).
 - **Security**: Transcription output run through `redact_credentials()` + `redact_exfiltration_urls()` before injection. Audio file suffix sanitized to alphanumeric only. `_transcribe_audio_files` records a `slack.download_file` and a transcription SEL entry per memo.
 
@@ -1027,7 +1027,7 @@ Shared data-collection and Block Kit rendering for recent sessions, used by thre
 - **`sessions` keyword in DMs** — `_handle_sessions_command` in `handler.py`
 - **App Home Tab** — 🧵 Sessions section in `_publish_home_tab` (split into "Main chat" and "Task runner" sub-lists)
 
-The collector and renderer live in `kiro_crew/slack/sessions_view.py` so both `events.py` and `handler.py` can import them at module top-level without forming a circular import. `sessions_view.py` depends only on `kiro_crew.slack.blocks` and `kiro_crew.security` — it knows nothing about `events` or `handler`, which is what keeps the import graph acyclic.
+The collector and renderer live in `efm_go/slack/sessions_view.py` so both `events.py` and `handler.py` can import them at module top-level without forming a circular import. `sessions_view.py` depends only on `efm_go.slack.blocks` and `efm_go.security` — it knows nothing about `events` or `handler`, which is what keeps the import graph acyclic.
 
 All three surfaces call `await _collect_recent_sessions_off_loop(sessions, *, limit, kind, include_ended=False)` — the required entry point for async callers, which runs the synchronous collector `_collect_recent_sessions` in a worker thread via `asyncio.to_thread` — to read JSONL files under `~/.kiro/crew/sessions/`, classify them as `dashboard` (main chat slots), `taskrunner` (task runner steps), or `other`, and `_build_sessions_blocks(rows, *, for_home_tab=False)` to render them. The sync collector does unbounded-size transcript reads and is worker-thread-only: never call it directly from an `async def`. It pre-scans the directory (kind from the filename stem, rank from each candidate's line 0) and reads only the newest `limit` matching transcripts in full. `include_ended` and the third skip reason are covered under "Ended rows leave the list" below.
 

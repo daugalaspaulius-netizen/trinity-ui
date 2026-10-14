@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.whatsapp.commands import parse_command
-from kiro_crew.whatsapp.echo import EchoTracker
-from kiro_crew.whatsapp.group_gate import (
+from efm_go.whatsapp.commands import parse_command
+from efm_go.whatsapp.echo import EchoTracker
+from efm_go.whatsapp.group_gate import (
     SILENCE_SENTINEL,
     GroupGate,
     build_silence_contract,

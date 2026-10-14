@@ -17,8 +17,8 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.connections import tool_test
-from kiro_crew.dashboard.handlers import connections
+from efm_go.connections import tool_test
+from efm_go.dashboard.handlers import connections
 
 
 async def _client() -> TestClient:

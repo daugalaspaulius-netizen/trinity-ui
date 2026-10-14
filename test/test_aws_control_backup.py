@@ -34,9 +34,9 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.apps.builtins.aws_control.backend import backup, costs
-from kiro_crew.config import loader
+from efm_go import platform_compat
+from efm_go.apps.builtins.aws_control.backend import backup, costs
+from efm_go.config import loader
 
 ACCOUNT = "111122223333"
 
@@ -70,7 +70,7 @@ class TestAuthorizeUpload:
         # mid-build refuse: the recorded account and the account the profile
         # resolves to today do not agree, so the bytes must not leave.
         with mock.patch(
-            "kiro_crew.deploy.engine._checked",
+            "efm_go.deploy.engine._checked",
             return_value=json.dumps({"Account": "999988887777"}),
         ):
             with pytest.raises(RuntimeError, match="no longer points at"):
@@ -86,7 +86,7 @@ class TestAuthorizeUpload:
         # A garbled STS response must not be trusted as a match: it decodes to
         # an empty account, which can never equal the requested one, so the
         # upload is refused rather than proceeding on unknown identity.
-        with mock.patch("kiro_crew.deploy.engine._checked", return_value="not json"):
+        with mock.patch("efm_go.deploy.engine._checked", return_value="not json"):
             with pytest.raises(RuntimeError, match="no longer points at"):
                 backup._authorize_upload(
                     ACCOUNT,
@@ -101,10 +101,10 @@ class TestAuthorizeUpload:
         # local check catches it before put_file.
         with (
             mock.patch(
-                "kiro_crew.deploy.engine._checked",
+                "efm_go.deploy.engine._checked",
                 return_value=json.dumps({"Account": ACCOUNT}),
             ),
-            mock.patch("kiro_crew.apps.manager.is_app_enabled", return_value=False),
+            mock.patch("efm_go.apps.manager.is_app_enabled", return_value=False),
         ):
             with pytest.raises(RuntimeError, match="was disabled"):
                 backup._authorize_upload(
@@ -120,11 +120,11 @@ class TestAuthorizeUpload:
         # withdrawal reason is surfaced so the audit trail says why.
         with (
             mock.patch(
-                "kiro_crew.deploy.engine._checked",
+                "efm_go.deploy.engine._checked",
                 return_value=json.dumps({"Account": ACCOUNT}),
             ),
-            mock.patch("kiro_crew.apps.manager.is_app_enabled", return_value=True),
-            mock.patch("kiro_crew.aws_consent.is_granted", return_value=(False, "expired")),
+            mock.patch("efm_go.apps.manager.is_app_enabled", return_value=True),
+            mock.patch("efm_go.aws_consent.is_granted", return_value=(False, "expired")),
         ):
             with pytest.raises(RuntimeError, match="consent no longer holds.*expired"):
                 backup._authorize_upload(
@@ -1614,7 +1614,7 @@ class TestSessionsArchiveLayerBGate:
         what makes this a permission rather than a preference. A move out of that
         directory would silently un-protect it, so the placement is pinned.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert backup.STATE_DIR_LEAF in security._CREW_SECRET_LEAVES
         # Read through ``app_data_dir`` rather than ``_state_path``, which this
@@ -3075,7 +3075,7 @@ class TestListRemoteBackups:
         # is exactly that shape. If a redactor ever rewrote one, the id would stop
         # matching and another install's archives would read as absent: the drive
         # would look unshared. Pin the property the parse depends on.
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
         for candidate in (backup.install_identity()["id"], "a" * 32, f"{7:032x}"):
             name, _ = redact_credentials(candidate)
@@ -3108,7 +3108,7 @@ class TestInstallIdentity:
         # Reusing `beacon.install_id()` would materialise a TELEMETRY identity on
         # a host that opted out of telemetry, because that function creates the
         # file it reads. The technique is worth copying; the value is not.
-        with mock.patch("kiro_crew.beacon.install_id") as beacon_id:
+        with mock.patch("efm_go.beacon.install_id") as beacon_id:
             backup.install_identity()
         beacon_id.assert_not_called()
 
@@ -3235,7 +3235,7 @@ class TestLabelIsDisplayOnly:
         # segment to START alphanumeric -- so the object is unreachable through
         # every route that validates a caller-supplied key. That is a rule, not a
         # name comparison somebody has to remember to write.
-        from kiro_crew.apps.builtins.aws_control.backend import storage as storage_mod
+        from efm_go.apps.builtins.aws_control.backend import storage as storage_mod
 
         assert storage_mod.validate_key(f"snapshots/{'f' * 32}/{backup.LABEL_OBJECT_NAME}")
 
@@ -3254,7 +3254,7 @@ class TestObjectAuthentication:
     def _isolated_state(self, tmp_path, monkeypatch):
         monkeypatch.setattr(backup, "_state_path", lambda: tmp_path / "backup.json")
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.aws_control.backend.backup.app_data_dir",
+            "efm_go.apps.builtins.aws_control.backend.backup.app_data_dir",
             lambda name: tmp_path / "appdata",
         )
         backup._unpersisted_runs.clear()
@@ -3380,7 +3380,7 @@ class TestSelfOwnershipIsProvenNotInferred:
     def _isolated_state(self, tmp_path, monkeypatch):
         monkeypatch.setattr(backup, "_state_path", lambda: tmp_path / "backup.json")
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.aws_control.backend.backup.app_data_dir",
+            "efm_go.apps.builtins.aws_control.backend.backup.app_data_dir",
             lambda name: tmp_path / "appdata",
         )
         backup._unpersisted_runs.clear()
@@ -3467,7 +3467,7 @@ class TestRestoreOwnershipGate:
     def _isolated_state(self, tmp_path, monkeypatch):
         monkeypatch.setattr(backup, "_state_path", lambda: tmp_path / "backup.json")
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.aws_control.backend.backup.app_data_dir",
+            "efm_go.apps.builtins.aws_control.backend.backup.app_data_dir",
             lambda name: tmp_path / "appdata",
         )
         yield
@@ -5597,7 +5597,7 @@ class TestRecordedVersionRecovery:
     def _isolated_state(self, tmp_path, monkeypatch):
         monkeypatch.setattr(backup, "_state_path", lambda: tmp_path / "backup.json")
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.aws_control.backend.backup.app_data_dir",
+            "efm_go.apps.builtins.aws_control.backend.backup.app_data_dir",
             lambda name: tmp_path / "appdata",
         )
         # The recovery authorizes its extra read immediately before making it, with
@@ -5607,14 +5607,14 @@ class TestRecordedVersionRecovery:
         # the mechanism. Each gate test below revokes exactly one of the four, which
         # is what keeps them pinned individually rather than papered over.
         monkeypatch.setattr(
-            "kiro_crew.deploy.engine._checked",
+            "efm_go.deploy.engine._checked",
             lambda args, profile, *, action="", timeout=30, extra_visible_dirs=(): (
                 '{"Account": "%s"}' % ACCOUNT
             ),
         )
-        monkeypatch.setattr("kiro_crew.apps.manager.is_app_enabled", lambda name: True)
+        monkeypatch.setattr("efm_go.apps.manager.is_app_enabled", lambda name: True)
         monkeypatch.setattr(
-            "kiro_crew.aws_consent.read_grant",
+            "efm_go.aws_consent.read_grant",
             lambda service: mock.Mock(profile="p", region="us-west-2", account=ACCOUNT),
         )
         backup._unpersisted_runs.clear()
@@ -5755,7 +5755,7 @@ class TestRecordedVersionRecovery:
         # account is.
         key = self._recorded(RECOVERED_FINGERPRINT, "v-ours")
         with mock.patch(
-            "kiro_crew.aws_consent.read_grant",
+            "efm_go.aws_consent.read_grant",
             return_value=mock.Mock(profile="other", region="us-west-2", account=ACCOUNT),
         ):
             exc, asked = self._download(
@@ -5772,7 +5772,7 @@ class TestRecordedVersionRecovery:
         # whole surface off, which must stop a read the restore is spending on their
         # behalf just as a withdrawn grant does.
         key = self._recorded(RECOVERED_FINGERPRINT, "v-ours")
-        with mock.patch("kiro_crew.apps.manager.is_app_enabled", return_value=False):
+        with mock.patch("efm_go.apps.manager.is_app_enabled", return_value=False):
             exc, asked = self._download(
                 key, current=b"somebody elses archive", by_version=RECOVERED_BYTES
             )
@@ -5786,7 +5786,7 @@ class TestRecordedVersionRecovery:
         # what closes that, and it runs before the read rather than after it.
         key = self._recorded(RECOVERED_FINGERPRINT, "v-ours")
         with mock.patch(
-            "kiro_crew.deploy.engine._checked", return_value='{"Account": "999988887777"}'
+            "efm_go.deploy.engine._checked", return_value='{"Account": "999988887777"}'
         ):
             exc, asked = self._download(
                 key, current=b"somebody elses archive", by_version=RECOVERED_BYTES
@@ -5802,7 +5802,7 @@ class TestRecordedVersionRecovery:
         # is read and compared rather than trusted because `is_granted` said yes.
         key = self._recorded(RECOVERED_FINGERPRINT, "v-ours")
         with mock.patch(
-            "kiro_crew.aws_consent.read_grant",
+            "efm_go.aws_consent.read_grant",
             return_value=mock.Mock(profile="p", region="us-west-2", account="999988887777"),
         ):
             exc, asked = self._download(
@@ -5823,7 +5823,7 @@ class TestRecordedVersionRecovery:
             reads.append(service)
             return mock.Mock(profile="p", region="us-west-2", account=ACCOUNT)
 
-        with mock.patch("kiro_crew.aws_consent.read_grant", counting):
+        with mock.patch("efm_go.aws_consent.read_grant", counting):
             result, asked = self._download(
                 key, current=b"somebody elses archive", by_version=RECOVERED_BYTES
             )
@@ -5835,7 +5835,7 @@ class TestRecordedVersionRecovery:
         # A grant that cannot be read names no account, so it cannot be verified
         # against anything and is refused for the same reason a mismatched one is.
         key = self._recorded(RECOVERED_FINGERPRINT, "v-ours")
-        with mock.patch("kiro_crew.aws_consent.read_grant", return_value=None):
+        with mock.patch("efm_go.aws_consent.read_grant", return_value=None):
             exc, asked = self._download(
                 key, current=b"somebody elses archive", by_version=RECOVERED_BYTES
             )
@@ -5848,7 +5848,7 @@ class TestRecordedVersionRecovery:
         # caller already had.
         key = self._recorded(RECOVERED_FINGERPRINT, "v-ours")
         with mock.patch(
-            "kiro_crew.deploy.engine._checked",
+            "efm_go.deploy.engine._checked",
             side_effect=backup.AWSError("sts:GetCallerIdentity failed"),
         ):
             exc, asked = self._download(

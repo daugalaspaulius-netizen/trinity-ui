@@ -8,17 +8,17 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from kiro_crew.acp import client as client_mod
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.types import (
+from efm_go.acp import client as client_mod
+from efm_go.acp.client import AcpClient
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
     METHOD_SESSION_LOAD,
     METHOD_SESSION_NEW,
 )
-from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER
+from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER
 
 
 class _RequestCaptured(Exception):
@@ -181,10 +181,10 @@ async def test_kas_projection_preserves_direct_or_pooled_tools(
         ),
         encoding="utf-8",
     )
-    import kiro_crew.config.paths as paths_mod
+    import efm_go.config.paths as paths_mod
 
     monkeypatch.setattr(paths_mod, "kiro_agents_dir", lambda: agents)
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda _agent: True)
     runtime = AcpRuntime(

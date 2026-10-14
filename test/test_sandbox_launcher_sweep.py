@@ -20,8 +20,8 @@ from unittest.mock import patch
 
 import pytest
 
-import kiro_crew.sandbox as sandbox_mod
-from kiro_crew.sandbox import (
+import efm_go.sandbox as sandbox_mod
+from efm_go.sandbox import (
     _LAUNCHER_MAX_AGE_SECONDS,
     _ensure_run_dir,
     cleanup_stale_sandbox_profiles,
@@ -43,7 +43,7 @@ def fake_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     (tmp_path / ".kirocrew").mkdir()
     monkeypatch.setattr("os.path.expanduser", lambda p: str(tmp_path) + p[1:] if p.startswith("~") else p)
-    monkeypatch.setattr("kiro_crew.sandbox.config_dir", lambda: tmp_path / ".kirocrew")
+    monkeypatch.setattr("efm_go.sandbox.config_dir", lambda: tmp_path / ".kirocrew")
     return tmp_path
 
 
@@ -57,7 +57,7 @@ def _pin_ssh_accept_new(monkeypatch: pytest.MonkeyPatch) -> None:
     launcher suites on a five-run hygiene sweep, a host program none of them is about
     (test-hygiene class 7). ``True`` is what a modern host answers.
     """
-    monkeypatch.setattr("kiro_crew.sandbox._ssh_supports_accept_new", lambda: True)
+    monkeypatch.setattr("efm_go.sandbox._ssh_supports_accept_new", lambda: True)
 
 
 @pytest.fixture(autouse=True)
@@ -70,7 +70,7 @@ def _isolated_legacy_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """
     empty = tmp_path / "isolated_legacy"
     empty.mkdir(exist_ok=True)
-    monkeypatch.setattr("kiro_crew.sandbox._LEGACY_LAUNCHER_DIR", str(empty))
+    monkeypatch.setattr("efm_go.sandbox._LEGACY_LAUNCHER_DIR", str(empty))
     return empty
 
 
@@ -89,7 +89,7 @@ class TestNamespaceArgvPlacement:
         """
         return next(a for a in argv if a.endswith(".py"))
 
-    @patch("kiro_crew.sandbox.detect_backend", return_value="namespace")
+    @patch("efm_go.sandbox.detect_backend", return_value="namespace")
     def test_launcher_in_run_dir(self, _mock_detect, fake_home: Path):
         run_dir = fake_home / ".kirocrew" / "run"
         result = namespace_argv(["kiro-cli", "--version"])
@@ -98,7 +98,7 @@ class TestNamespaceArgvPlacement:
         launcher = self._launcher_of(result)
         assert launcher.startswith(str(run_dir)), f"launcher {launcher} not under {run_dir}"
 
-    @patch("kiro_crew.sandbox.detect_backend", return_value="namespace")
+    @patch("efm_go.sandbox.detect_backend", return_value="namespace")
     def test_launcher_has_pid_in_name(self, _mock_detect, fake_home: Path):
         result = namespace_argv(["kiro-cli", "--version"])
         launcher = Path(self._launcher_of(result))
@@ -106,7 +106,7 @@ class TestNamespaceArgvPlacement:
         assert launcher.name.startswith(f"kirocrew_sandbox_{os.getpid()}_")
         assert launcher.suffix == ".py"
 
-    @patch("kiro_crew.sandbox.detect_backend", return_value="namespace")
+    @patch("efm_go.sandbox.detect_backend", return_value="namespace")
     def test_launcher_is_executable(self, _mock_detect, fake_home: Path):
         result = namespace_argv(["kiro-cli", "--version"])
         launcher = self._launcher_of(result)
@@ -295,7 +295,7 @@ class TestTheSweepIsRootedAtTheHomeItIsHanded:
     def test_an_explicit_home_is_used_and_config_dir_is_never_consulted(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.sandbox as sandbox
+        import efm_go.sandbox as sandbox
 
         def _forbidden():
             raise AssertionError("the sweep resolved the data home on the pool thread")
@@ -317,7 +317,7 @@ class TestTheSweepIsRootedAtTheHomeItIsHanded:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The deps lambda carries a home resolved at construction, not at run time."""
-        import kiro_crew.session as session_mod
+        import efm_go.session as session_mod
 
         pinned = tmp_path / "pinned-home"
         pinned.mkdir()

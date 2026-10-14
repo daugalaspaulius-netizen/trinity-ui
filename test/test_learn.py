@@ -10,11 +10,11 @@ from unittest.mock import patch
 
 import pytest
 
-import kiro_crew.learn as learn_mod
-from kiro_crew.atomic_write import replace_with_retry
-from kiro_crew.learn import Lesson, LessonStore
+import efm_go.learn as learn_mod
+from efm_go.atomic_write import replace_with_retry
+from efm_go.learn import Lesson, LessonStore
 
-# Read through the MODULE, never `from kiro_crew.learn import _DEFAULT_DIR`.
+# Read through the MODULE, never `from efm_go.learn import _DEFAULT_DIR`.
 # ``_DEFAULT_DIR`` is a ``Path.home()``-derived literal, so the isolation floor in the
 # rootdir conftest redirects it per test to keep the fallback from writing the
 # operator's real data home. A by-value capture at import time would freeze the
@@ -88,7 +88,7 @@ class TestLessonStoreSecurity:
     def test_sensitive_base_dir_falls_back_to_default(self, tmp_path: Path) -> None:
         sensitive = tmp_path / ".ssh"
         sensitive.mkdir()
-        with patch("kiro_crew.security.is_sensitive_path", return_value=True):
+        with patch("efm_go.security.is_sensitive_path", return_value=True):
             store = LessonStore(base_dir=sensitive)
         assert store._dir == _default_dir()
 
@@ -96,8 +96,8 @@ class TestLessonStoreSecurity:
         sensitive = tmp_path / ".aws"
         sensitive.mkdir()
         with (
-            patch("kiro_crew.security.is_sensitive_path", return_value=True),
-            patch("kiro_crew.sel.SecurityEventLog.log_tool_invocation") as mock_log,
+            patch("efm_go.security.is_sensitive_path", return_value=True),
+            patch("efm_go.sel.SecurityEventLog.log_tool_invocation") as mock_log,
         ):
             LessonStore(base_dir=sensitive)
         mock_log.assert_called_once()
@@ -109,9 +109,9 @@ class TestLessonStoreSecurity:
         sensitive = tmp_path / ".secret"
         sensitive.mkdir()
         with (
-            patch("kiro_crew.security.is_sensitive_path", return_value=True),
+            patch("efm_go.security.is_sensitive_path", return_value=True),
             patch(
-                "kiro_crew.sel.SecurityEventLog.log_tool_invocation",
+                "efm_go.sel.SecurityEventLog.log_tool_invocation",
                 side_effect=RuntimeError("SEL broken"),
             ),
         ):
@@ -122,24 +122,24 @@ class TestLessonStoreSecurity:
         sensitive = tmp_path / ".kirocrew-sensitive"
         sensitive.mkdir()
         with (
-            patch("kiro_crew.learn._config_dir", return_value=sensitive),
-            patch("kiro_crew.security.is_sensitive_path", return_value=True),
+            patch("efm_go.learn._config_dir", return_value=sensitive),
+            patch("efm_go.security.is_sensitive_path", return_value=True),
         ):
             store = LessonStore()
         assert store._dir == _default_dir()
 
     def test_config_dir_exception_falls_back_to_default(self) -> None:
-        with patch("kiro_crew.learn._config_dir", side_effect=OSError("broken loader")):
+        with patch("efm_go.learn._config_dir", side_effect=OSError("broken loader")):
             store = LessonStore()
         assert store._dir == _default_dir()
 
     def test_config_dir_none_falls_back_to_default(self) -> None:
-        with patch("kiro_crew.learn._config_dir", None):
+        with patch("efm_go.learn._config_dir", None):
             store = LessonStore()
         assert store._dir == _default_dir()
 
     def test_non_sensitive_base_dir_used_directly(self, tmp_path: Path) -> None:
-        with patch("kiro_crew.security.is_sensitive_path", return_value=False):
+        with patch("efm_go.security.is_sensitive_path", return_value=False):
             store = LessonStore(base_dir=tmp_path)
         assert store._dir == tmp_path
 
@@ -155,14 +155,14 @@ class TestImportPurity:
         # be a pure literal; config_dir() is resolved lazily in
         # LessonStore.__init__.
         #
-        # Probed on a PRIVATE copy of learn.py, never by reloading kiro_crew.learn: a
+        # Probed on a PRIVATE copy of learn.py, never by reloading efm_go.learn: a
         # reload rebinds Lesson, LessonStore and _PATH_LOCKS inside the shared module
         # while every by-value importer (onboarding_import, context, taskrunner,
         # cli_server, slack.gateway) keeps the old objects, so a later identity
         # contract in the same worker goes red.
         import importlib.util
 
-        import kiro_crew.config.loader as config_loader
+        import efm_go.config.loader as config_loader
 
         inherited = dict(vars(learn_mod))
         real_config_dir = config_loader.config_dir
@@ -174,7 +174,7 @@ class TestImportPurity:
                 return real_config_dir()
             raise AssertionError("config_dir() called at learn import scope")
 
-        name = "_kiro_crew_learn_import_purity_probe"
+        name = "_efm_go_learn_import_purity_probe"
         spec = importlib.util.spec_from_file_location(name, learn_mod.__file__)
         assert spec is not None and spec.loader is not None
         probe = importlib.util.module_from_spec(spec)
@@ -183,14 +183,14 @@ class TestImportPurity:
         # @dataclass resolves through sys.modules[cls.__module__].
         sys.modules[name] = probe
         try:
-            with patch("kiro_crew.config.loader.config_dir", _tripwire):
+            with patch("efm_go.config.loader.config_dir", _tripwire):
                 spec.loader.exec_module(probe)
         finally:
             sys.modules.pop(name, None)
         assert probe._config_dir is _tripwire, "the probe never bound the seam it trips"
         assert probe._DEFAULT_DIR == Path.home() / ".kiro" / "crew"
         rebound = sorted(k for k, v in inherited.items() if vars(learn_mod).get(k) is not v)
-        assert rebound == [], f"the shared kiro_crew.learn was re-executed: {rebound}"
+        assert rebound == [], f"the shared efm_go.learn was re-executed: {rebound}"
 
 
 class TestSaveOrEnrich:
@@ -389,7 +389,7 @@ class TestSaveOrEnrich:
         the store's write routes through it rather than hand-rolling the rename."""
         store = LessonStore(base_dir=tmp_path)
         with patch(
-            "kiro_crew.atomic_write.replace_with_retry", wraps=replace_with_retry
+            "efm_go.atomic_write.replace_with_retry", wraps=replace_with_retry
         ) as spy:
             store.save(_make_lesson("Pin the port", "tool"))
         assert spy.called, "the write bypassed replace_with_retry"
@@ -519,7 +519,7 @@ class TestAtomicWrite:
         # Patched inside atomic_write, which is where the rename now happens. This is
         # the real seam: learn.py does not touch os itself.
         with patch(
-            "kiro_crew.atomic_write.replace_with_retry", side_effect=OSError("disk full")
+            "efm_go.atomic_write.replace_with_retry", side_effect=OSError("disk full")
         ):
             with pytest.raises(OSError):
                 store.save_or_enrich(_make_lesson("Pin the port", "tool", "Do not autopick"))

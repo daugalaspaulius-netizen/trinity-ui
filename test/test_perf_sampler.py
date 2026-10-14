@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_perf, gateway_lock, perf_sampler
+from efm_go import cli_perf, gateway_lock, perf_sampler
 
 # ── The debug gate ──
 
@@ -800,8 +800,8 @@ class TestResolveCallable:
 
     def test_rejects_non_callable(self):
         with pytest.raises(TypeError):
-            cli_perf._resolve_callable("kiro_crew.perf_sampler:DEBUG_ENV_VAR")
+            cli_perf._resolve_callable("efm_go.perf_sampler:DEBUG_ENV_VAR")
 
     def test_resolves_a_dotted_attribute(self):
-        resolved = cli_perf._resolve_callable("kiro_crew.perf_sampler:StackSampler.start")
+        resolved = cli_perf._resolve_callable("efm_go.perf_sampler:StackSampler.start")
         assert callable(resolved)

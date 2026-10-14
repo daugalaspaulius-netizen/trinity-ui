@@ -130,7 +130,7 @@ function renderSidebar(
 const structuredMonitor = (overrides: Partial<StructuredMonitor> = {}): StructuredMonitor => ({
   kind: 'structured_monitor', id: 'monitor-1', slotKey: 'k', active: true,
   actionable: true, version: 1, monitorKind: 'github_pull_request', objective: 'review_ready',
-  target: 'https://github.com/kirodotdev/KiroCrew/pull/42', cadenceSecs: 300,
+  target: 'https://efmleads.com/pull/42', cadenceSecs: 300,
   nextProbeAt: 1_800_000_300, wakeInstructions: '',
   budgets: { maxRuntimeSecs: 14_400, maxAgentTurns: 8, maxTokens: 250_000, maxProviderErrors: 3 },
   latest: { classification: 'actionable', reasonCode: 'review_feedback', observedAt: 1_800_000_000, decision: 'wake_actionable' },

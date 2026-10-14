@@ -10,7 +10,7 @@ import logging
 
 import pytest
 
-from kiro_crew.acp import _frame_record
+from efm_go.acp import _frame_record
 
 
 @pytest.fixture(autouse=True)

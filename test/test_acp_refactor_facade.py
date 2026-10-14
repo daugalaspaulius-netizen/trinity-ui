@@ -1,4 +1,4 @@
-"""``kiro_crew.acp.client`` and ``kiro_crew.acp.runtime`` stay the ACP patch seams after the split.
+"""``efm_go.acp.client`` and ``efm_go.acp.runtime`` stay the ACP patch seams after the split.
 
 The module-level code moved out of the two transports lives in five owner modules
 (``transport_framing``, ``transport_errors``, ``runtime_models``, ``runtime_process_tree``,
@@ -39,19 +39,19 @@ from unittest import mock
 import pytest
 import test_acp_refactor_create_guard as create_guard
 
-import kiro_crew.acp as acp_package
-from kiro_crew import platform_compat, sandbox, subagent
-from kiro_crew.acp import client as acp_client
-from kiro_crew.acp import runtime as acp_runtime
-from kiro_crew.acp import (
+import efm_go.acp as acp_package
+from efm_go import platform_compat, sandbox, subagent
+from efm_go.acp import client as acp_client
+from efm_go.acp import runtime as acp_runtime
+from efm_go.acp import (
     runtime_models,
     runtime_process_tree,
     runtime_start,
     transport_errors,
     transport_framing,
 )
-from kiro_crew.credential_errors import is_credential_propagation_delay
-from kiro_crew.start_priority import StartPriority
+from efm_go.credential_errors import is_credential_propagation_delay
+from efm_go.start_priority import StartPriority
 
 # The patch-target scan parses every test file once; keep it on one worker.
 pytestmark = pytest.mark.xdist_group(name="tree_scan_acp_refactor_facade")
@@ -72,8 +72,8 @@ _SRC = Path(acp_client.__file__).resolve().parent
 #: Every module-level name the split moved, by the facade that defined it before and the
 #: owner that defines it now.
 _MOVED: dict[str, dict[str, tuple[str, ...]]] = {
-    "kiro_crew.acp.client": {
-        "kiro_crew.acp.transport_framing": (
+    "efm_go.acp.client": {
+        "efm_go.acp.transport_framing": (
             "_STDOUT_BUFFER_LIMIT",
             "_OVERSIZE_DRAIN_MAX_BYTES",
             "OversizeLineUnrecoverable",
@@ -90,7 +90,7 @@ _MOVED: dict[str, dict[str, tuple[str, ...]]] = {
             "response_write_window_secs",
             "write_notification_best_effort",
         ),
-        "kiro_crew.acp.transport_errors": (
+        "efm_go.acp.transport_errors": (
             "_COMPACTION_DETAIL_MAX_CHARS",
             "_COMPACTION_DETAIL_KEYS",
             "_COMPACTION_DETAIL_PLACEHOLDERS",
@@ -163,7 +163,7 @@ _MOVED: dict[str, dict[str, tuple[str, ...]]] = {
             "_rejected_model_from_error",
             "_raise_acp_error",
         ),
-        "kiro_crew.acp.runtime_models": (
+        "efm_go.acp.runtime_models": (
             "DEFAULT_MODEL",
             "advertised_model_ids",
             "model_is_unusable",
@@ -177,7 +177,7 @@ _MOVED: dict[str, dict[str, tuple[str, ...]]] = {
             "_MODEL_SUBSTITUTE_RE",
             "_substitute_model_from_advisory",
         ),
-        "kiro_crew.acp.runtime_process_tree": (
+        "efm_go.acp.runtime_process_tree": (
             "_get_child_pids",
             "_direct_children",
             "_get_start_time",
@@ -188,8 +188,8 @@ _MOVED: dict[str, dict[str, tuple[str, ...]]] = {
             "_kill_escaped_children",
         ),
     },
-    "kiro_crew.acp.runtime": {
-        "kiro_crew.acp.runtime_process_tree": (
+    "efm_go.acp.runtime": {
+        "efm_go.acp.runtime_process_tree": (
             "_get_rss_mb",
             "_own_children",
             "_iter_descendant_pids",
@@ -202,7 +202,7 @@ _MOVED: dict[str, dict[str, tuple[str, ...]]] = {
             "_rss_tree_mb_for_pids",
             "_get_rss_tree_mb",
         ),
-        "kiro_crew.acp.runtime_start": (
+        "efm_go.acp.runtime_start": (
             "_COLD_START_MAX_CONCURRENT",
             "_ColdStartAdmission",
             "_cold_start_admissions",
@@ -467,7 +467,7 @@ def test_a_patched_rss_read_reaches_the_tree_sum(monkeypatch: pytest.MonkeyPatch
 async def test_a_patched_concurrency_resolver_reaches_the_session_start_gate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from kiro_crew.config import live
+    from efm_go.config import live
 
     monkeypatch.setattr(live, "snapshot", lambda: None)
     monkeypatch.setattr(acp_runtime, "_resolve_session_start_concurrency", lambda: 7)
@@ -533,10 +533,10 @@ _MODULE_SEAMS: list[tuple[str, str, dict[str, object], str, tuple[object, ...]]]
             ("_read_basename", _POSIX_PS),
         )
         for row in (
-            ("kiro_crew.acp.client", "platform_compat", {}, helper, (1,)),
-            ("kiro_crew.acp.client", "sys", {"platform_compat": _POSIX}, helper, (1,)),
+            ("efm_go.acp.client", "platform_compat", {}, helper, (1,)),
+            ("efm_go.acp.client", "sys", {"platform_compat": _POSIX}, helper, (1,)),
             (
-                "kiro_crew.acp.client",
+                "efm_go.acp.client",
                 "subprocess_mod",
                 {"platform_compat": ps, "sys": _DARWIN},
                 helper,
@@ -548,7 +548,7 @@ _MODULE_SEAMS: list[tuple[str, str, dict[str, object], str, tuple[object, ...]]]
     # so only the other two reach ``Path`` on the facade.
     *[
         (
-            "kiro_crew.acp.client",
+            "efm_go.acp.client",
             "Path",
             {"platform_compat": _POSIX, "sys": _LINUX},
             helper,
@@ -556,29 +556,29 @@ _MODULE_SEAMS: list[tuple[str, str, dict[str, object], str, tuple[object, ...]]]
         )
         for helper in ("_direct_children", "_read_basename")
     ],
-    ("kiro_crew.acp.client", "platform_compat", {}, "_capture_child_records", ([1],)),
-    ("kiro_crew.acp.client", "platform_compat", {}, "_is_our_child", (1, "start", b"node")),
-    ("kiro_crew.acp.client", "platform_compat", {}, "_kill_escaped_children", ({1: None},)),
-    ("kiro_crew.acp.runtime", "sys", {}, "_get_rss_mb", (1,)),
-    ("kiro_crew.acp.runtime", "platform_compat", {"sys": _DARWIN}, "_get_rss_mb", (1,)),
+    ("efm_go.acp.client", "platform_compat", {}, "_capture_child_records", ([1],)),
+    ("efm_go.acp.client", "platform_compat", {}, "_is_our_child", (1, "start", b"node")),
+    ("efm_go.acp.client", "platform_compat", {}, "_kill_escaped_children", ({1: None},)),
+    ("efm_go.acp.runtime", "sys", {}, "_get_rss_mb", (1,)),
+    ("efm_go.acp.runtime", "platform_compat", {"sys": _DARWIN}, "_get_rss_mb", (1,)),
     (
-        "kiro_crew.acp.runtime",
+        "efm_go.acp.runtime",
         "subprocess",
         {"sys": _DARWIN, "platform_compat": _POSIX_PS},
         "_get_rss_mb",
         (1,),
     ),
-    ("kiro_crew.acp.runtime", "os", {}, "_own_children", (1,)),
-    ("kiro_crew.acp.runtime", "platform_compat", {}, "_ps_process_table", ()),
+    ("efm_go.acp.runtime", "os", {}, "_own_children", (1,)),
+    ("efm_go.acp.runtime", "platform_compat", {}, "_ps_process_table", ()),
     (
-        "kiro_crew.acp.runtime",
+        "efm_go.acp.runtime",
         "subprocess",
         {"platform_compat": _POSIX_PS},
         "_ps_process_table",
         (),
     ),
-    ("kiro_crew.acp.runtime", "sys", {}, "_get_rss_tree_mb", (1,)),
-    ("kiro_crew.acp.runtime", "platform_compat", {"sys": _DARWIN}, "_get_rss_tree_mb", (1,)),
+    ("efm_go.acp.runtime", "sys", {}, "_get_rss_tree_mb", (1,)),
+    ("efm_go.acp.runtime", "platform_compat", {"sys": _DARWIN}, "_get_rss_tree_mb", (1,)),
 ]
 
 #: Inert stand-ins for the process-tree helpers a row's helper may call next, so a row
@@ -689,7 +689,7 @@ async def test_a_clock_rebound_on_the_runtime_reaches_the_session_start_gate(
 def test_a_clock_rebound_on_the_runtime_reaches_the_start_sample(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from kiro_crew.adaptive import controller
+    from efm_go.adaptive import controller
 
     samples: list[float] = []
     recorder = SimpleNamespace(record_start=lambda elapsed, **_kw: samples.append(elapsed))
@@ -1072,8 +1072,8 @@ _MODULE_ITSELF = "<module>"
 def _facade_imports(tree: ast.Module, package: str) -> list[tuple[str, str, tuple[str, ...]]]:
     """``(enclosing function, facade, names)`` for each import of a facade in *tree*, a
     module of *package*; ``"<module>"`` for one at module level. An import of the
-    facade module itself (``from kiro_crew.acp import client``, ``from . import
-    client``, ``import kiro_crew.acp.client``) names ``("<module>",)``. A
+    facade module itself (``from efm_go.acp import client``, ``from . import
+    client``, ``import efm_go.acp.client``) names ``("<module>",)``. A
     ``TYPE_CHECKING`` import is not one."""
     found: list[tuple[str, str, tuple[str, ...]]] = []
 
@@ -1110,26 +1110,26 @@ def _owner_facade_imports(owner: ModuleType) -> list[tuple[str, str, tuple[str, 
 def test_the_facade_import_scan_reads_every_spelling() -> None:
     source = (
         "from typing import TYPE_CHECKING\n"
-        "from kiro_crew.acp import client\n"
+        "from efm_go.acp import client\n"
         "from . import runtime as rt\n"
-        "import kiro_crew.acp.client\n"
-        "from kiro_crew.acp import types\n"
+        "import efm_go.acp.client\n"
+        "from efm_go.acp import types\n"
         "if TYPE_CHECKING:\n"
-        "    from kiro_crew.acp.runtime import AcpRuntime\n"
+        "    from efm_go.acp.runtime import AcpRuntime\n"
         "def f():\n"
-        "    from kiro_crew.acp import runtime\n"
+        "    from efm_go.acp import runtime\n"
         "    from .client import sys\n"
         "class C:\n"
         "    def m(self):\n"
-        "        from kiro_crew.acp.runtime import time\n"
+        "        from efm_go.acp.runtime import time\n"
     )
-    assert _facade_imports(ast.parse(source), "kiro_crew.acp") == [
-        ("<module>", "kiro_crew.acp.client", ("<module>",)),
-        ("<module>", "kiro_crew.acp.runtime", ("<module>",)),
-        ("<module>", "kiro_crew.acp.client", ("<module>",)),
-        ("f", "kiro_crew.acp.runtime", ("<module>",)),
-        ("f", "kiro_crew.acp.client", ("sys",)),
-        ("C.m", "kiro_crew.acp.runtime", ("time",)),
+    assert _facade_imports(ast.parse(source), "efm_go.acp") == [
+        ("<module>", "efm_go.acp.client", ("<module>",)),
+        ("<module>", "efm_go.acp.runtime", ("<module>",)),
+        ("<module>", "efm_go.acp.client", ("<module>",)),
+        ("f", "efm_go.acp.runtime", ("<module>",)),
+        ("f", "efm_go.acp.client", ("sys",)),
+        ("C.m", "efm_go.acp.runtime", ("time",)),
     ]
 
 
@@ -1137,38 +1137,38 @@ def test_the_facade_import_scan_reads_every_spelling() -> None:
 #: from which facade -- always the one its code came from.
 _SEAM_IMPORTS: dict[tuple[str, str], tuple[str, tuple[str, ...]]] = {
     **{
-        ("kiro_crew.acp.runtime_process_tree", helper): (
-            "kiro_crew.acp.client",
+        ("efm_go.acp.runtime_process_tree", helper): (
+            "efm_go.acp.client",
             ("Path", "platform_compat", "subprocess_mod", "sys"),
         )
         for helper in ("_direct_children", "_read_basename")
     },
-    ("kiro_crew.acp.runtime_process_tree", "_get_start_time"): (
-        "kiro_crew.acp.client",
+    ("efm_go.acp.runtime_process_tree", "_get_start_time"): (
+        "efm_go.acp.client",
         ("platform_compat", "subprocess_mod", "sys"),
     ),
     **{
-        ("kiro_crew.acp.runtime_process_tree", helper): (
-            "kiro_crew.acp.client",
+        ("efm_go.acp.runtime_process_tree", helper): (
+            "efm_go.acp.client",
             ("platform_compat",),
         )
         for helper in ("_capture_child_records", "_is_our_child", "_kill_escaped_children")
     },
-    ("kiro_crew.acp.runtime_process_tree", "_get_rss_mb"): (
-        "kiro_crew.acp.runtime",
+    ("efm_go.acp.runtime_process_tree", "_get_rss_mb"): (
+        "efm_go.acp.runtime",
         ("platform_compat", "subprocess", "sys"),
     ),
-    ("kiro_crew.acp.runtime_process_tree", "_own_children"): ("kiro_crew.acp.runtime", ("os",)),
-    ("kiro_crew.acp.runtime_process_tree", "_ps_process_table"): (
-        "kiro_crew.acp.runtime",
+    ("efm_go.acp.runtime_process_tree", "_own_children"): ("efm_go.acp.runtime", ("os",)),
+    ("efm_go.acp.runtime_process_tree", "_ps_process_table"): (
+        "efm_go.acp.runtime",
         ("platform_compat", "subprocess", "time"),
     ),
-    ("kiro_crew.acp.runtime_process_tree", "_get_rss_tree_mb"): (
-        "kiro_crew.acp.runtime",
+    ("efm_go.acp.runtime_process_tree", "_get_rss_tree_mb"): (
+        "efm_go.acp.runtime",
         ("platform_compat", "sys"),
     ),
     **{
-        ("kiro_crew.acp.runtime_start", function): ("kiro_crew.acp.runtime", ("time",))
+        ("efm_go.acp.runtime_start", function): ("efm_go.acp.runtime", ("time",))
         for function in (
             "_ColdStartAdmission.acquire",
             "_record_session_start",
@@ -1176,12 +1176,12 @@ _SEAM_IMPORTS: dict[tuple[str, str], tuple[str, tuple[str, ...]]] = {
             "StartCollector.__init__",
         )
     },
-    ("kiro_crew.acp.runtime_start", "_cold_start_admission"): (
-        "kiro_crew.acp.runtime",
+    ("efm_go.acp.runtime_start", "_cold_start_admission"): (
+        "efm_go.acp.runtime",
         ("weakref",),
     ),
-    ("kiro_crew.acp.runtime_start", "StartCollector._run"): (
-        "kiro_crew.acp.runtime",
+    ("efm_go.acp.runtime_start", "StartCollector._run"): (
+        "efm_go.acp.runtime",
         ("AcpRuntimeDead", "AcpSessionHandle", "time"),
     ),
 }
@@ -1227,8 +1227,8 @@ def test_each_seam_is_a_binding_of_the_facade_the_helper_came_from(
 #: spawn through the modules a file imports.
 _LOAD_TIME_BINDINGS = frozenset(
     {
-        ("kiro_crew.acp.runtime_start", "weakref"),
-        ("kiro_crew.acp.runtime_process_tree", "subprocess_mod"),
+        ("efm_go.acp.runtime_start", "weakref"),
+        ("efm_go.acp.runtime_process_tree", "subprocess_mod"),
     }
 )
 
@@ -1458,7 +1458,7 @@ def _facade_patches() -> tuple[tuple[str, int, str, str, str], ...]:
     """``(file, line, enclosing function, facade, name)`` for every facade patch under
     ``test/`` and each ``src/**/tests``, read once for all the census tests."""
     repo = _SRC.parents[2]
-    roots = [repo / "test", *sorted((repo / "src" / "kiro_crew").rglob("tests"))]
+    roots = [repo / "test", *sorted((repo / "src" / "efm_go").rglob("tests"))]
     patches: list[tuple[str, int, str, str, str]] = []
     for root in roots:
         for path in sorted(root.rglob("*.py")):
@@ -1561,10 +1561,10 @@ def test_the_launch_capture_patches_no_moved_name() -> None:
 #: patch needs no forwarding.
 _SHARED_BINDINGS_PATCHED: frozenset[tuple[str, str]] = frozenset(
     {
-        ("kiro_crew.acp.client", "logger"),
-        ("kiro_crew.acp.client", "redact_exfiltration_urls"),
-        ("kiro_crew.acp.runtime", "_RESPONSE_WRITE_BOUND_SECS"),
-        ("kiro_crew.acp.runtime", "_get_child_pids"),
+        ("efm_go.acp.client", "logger"),
+        ("efm_go.acp.client", "redact_exfiltration_urls"),
+        ("efm_go.acp.runtime", "_RESPONSE_WRITE_BOUND_SECS"),
+        ("efm_go.acp.runtime", "_get_child_pids"),
     }
 )
 
@@ -1591,10 +1591,10 @@ def test_a_patched_name_bound_by_a_facade_and_an_owner_is_a_listed_one() -> None
 def test_the_patch_scan_reads_every_binding_of_a_patch_site() -> None:
     source = (
         "from unittest import mock\n"
-        "from kiro_crew.acp import client, runtime\n"
+        "from efm_go.acp import client, runtime\n"
         "def test_x(monkeypatch, attr):\n"
         '    monkeypatch.setattr(client, "_is_our_child", 1)\n'
-        '    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_mb", 1)\n'
+        '    monkeypatch.setattr("efm_go.acp.runtime._get_rss_mb", 1)\n'
         '    monkeypatch.setattr(other, "_is_our_child", 1)\n'
         "    for module in (runtime, client, other):\n"
         '        monkeypatch.setattr(module, "platform_compat", 1)\n'
@@ -1617,27 +1617,27 @@ def test_the_patch_scan_reads_every_binding_of_a_patch_site() -> None:
         "class TestY:\n"
         "    def test_z(self, monkeypatch):\n"
         '        monkeypatch.setattr(self.module, "config_dir", 1)\n'
-        '        monkeypatch.setattr(f"kiro_crew.acp.client.{self.name}", 1)\n'
+        '        monkeypatch.setattr(f"efm_go.acp.client.{self.name}", 1)\n'
     )
     assert _monkeypatch_targets(ast.parse(source)) == [
-        (4, "test_x", "kiro_crew.acp.client", "_is_our_child"),
-        (5, "test_x", "kiro_crew.acp.runtime", "_get_rss_mb"),
+        (4, "test_x", "efm_go.acp.client", "_is_our_child"),
+        (5, "test_x", "efm_go.acp.runtime", "_get_rss_mb"),
         (8, "test_x", "<dynamic>", "<dynamic>"),
-        (8, "test_x", "kiro_crew.acp.client", "platform_compat"),
-        (8, "test_x", "kiro_crew.acp.runtime", "platform_compat"),
+        (8, "test_x", "efm_go.acp.client", "platform_compat"),
+        (8, "test_x", "efm_go.acp.runtime", "platform_compat"),
         (10, "test_x", "<dynamic>", "<dynamic>"),
-        (12, "test_x", "kiro_crew.acp.runtime", "sys"),
-        (12, "test_x", "kiro_crew.acp.runtime", "time"),
-        (13, "test_x", "kiro_crew.acp.client", "<dynamic>"),
-        (16, "test_x", "kiro_crew.acp.client", "os"),
-        (16, "test_x", "kiro_crew.acp.client", "time"),
-        (16, "test_x", "kiro_crew.acp.runtime", "os"),
-        (16, "test_x", "kiro_crew.acp.runtime", "time"),
-        (18, "test_x", "kiro_crew.acp.client", "Path"),
-        (18, "test_x", "kiro_crew.acp.runtime", "weakref"),
-        (19, "test_x", "kiro_crew.acp.client", "sys"),
-        (19, "test_x", "kiro_crew.acp.runtime", "sys"),
-        (20, "test_x", "kiro_crew.acp.client", "<dynamic>"),
+        (12, "test_x", "efm_go.acp.runtime", "sys"),
+        (12, "test_x", "efm_go.acp.runtime", "time"),
+        (13, "test_x", "efm_go.acp.client", "<dynamic>"),
+        (16, "test_x", "efm_go.acp.client", "os"),
+        (16, "test_x", "efm_go.acp.client", "time"),
+        (16, "test_x", "efm_go.acp.runtime", "os"),
+        (16, "test_x", "efm_go.acp.runtime", "time"),
+        (18, "test_x", "efm_go.acp.client", "Path"),
+        (18, "test_x", "efm_go.acp.runtime", "weakref"),
+        (19, "test_x", "efm_go.acp.client", "sys"),
+        (19, "test_x", "efm_go.acp.runtime", "sys"),
+        (20, "test_x", "efm_go.acp.client", "<dynamic>"),
         (22, "_helper", "<dynamic>", "<dynamic>"),
         (24, "_helper", "<dynamic>", "<dynamic>"),
         (27, "TestY.test_z", "<dynamic>", "<dynamic>"),

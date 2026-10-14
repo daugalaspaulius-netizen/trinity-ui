@@ -19,9 +19,9 @@ from unittest.mock import patch
 import pytest
 from test_sandbox_launcher_program import launch, payload, rendered_payload
 
-import kiro_crew.sandbox as sandbox_mod
-from kiro_crew import sandbox_launcher_program as program
-from kiro_crew.sandbox import (
+import efm_go.sandbox as sandbox_mod
+from efm_go import sandbox_launcher_program as program
+from efm_go.sandbox import (
     _build_launcher_script,
     reset_backend,
     sandbox_exec_argv,
@@ -39,7 +39,7 @@ def clean_state(monkeypatch):
     monkeypatch.delenv("KIROCREW_SANDBOX_ACTIVE", raising=False)
     monkeypatch.delenv("KIROCREW_SANDBOX_LEVEL", raising=False)
     monkeypatch.setattr(
-        "kiro_crew.sandbox._KIRO_INTERNAL_SETTINGS_PATH",
+        "efm_go.sandbox._KIRO_INTERNAL_SETTINGS_PATH",
         "/nonexistent/kirocrew-test/amazon-internal.json",
     )
     # ``_build_launcher_script`` asks the HOST's ``ssh -V`` for accept-new
@@ -113,7 +113,7 @@ class TestLauncherExportsLevel:
 class TestPassthroughTierComparison:
     """The passthrough compares requested vs active tier and audits the pair."""
 
-    @patch("kiro_crew.sandbox.detect_backend")
+    @patch("efm_go.sandbox.detect_backend")
     def test_downgrade_detected_audited_and_warned(self, mock_detect, monkeypatch, caplog):
         monkeypatch.setenv("KIROCREW_SANDBOX_ACTIVE", "1")
         monkeypatch.setenv("KIROCREW_SANDBOX_LEVEL", "standard")
@@ -131,8 +131,8 @@ class TestPassthroughTierComparison:
                     monkeypatch.delenv(key, raising=False)
         monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test")
         argv = ["kiro-cli", "acp"]
-        with patch("kiro_crew.sel.sel") as mock_sel:
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.sandbox"):
+        with patch("efm_go.sel.sel") as mock_sel:
+            with caplog.at_level(logging.WARNING, logger="efm_go.sandbox"):
                 result, cleanup = wrap_argv(argv, mode="strict")
         # The passthrough never fail-closes (refusing the downgrade breaks
         # in-sandbox callers that legitimately request a stricter tier), but
@@ -149,7 +149,7 @@ class TestPassthroughTierComparison:
         assert kwargs["metadata"]["tier_downgrade"] is True
         assert any("SECURITY" in r.message and "downgrade" in r.message for r in caplog.records)
 
-    @patch("kiro_crew.sandbox.detect_backend")
+    @patch("efm_go.sandbox.detect_backend")
     def test_downgrade_scrub_skipped_without_trusted_env_binary(
         self, mock_detect, monkeypatch, caplog
     ):
@@ -162,14 +162,14 @@ class TestPassthroughTierComparison:
         monkeypatch.setattr(sandbox_mod, "_sandbox_env_unset_args", lambda *a, **k: ["-u", "X"])
         monkeypatch.setattr(sandbox_mod, "_unset_env_argv", lambda keys: None)
         argv = ["kiro-cli", "acp"]
-        with patch("kiro_crew.sel.sel"):
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.sandbox"):
+        with patch("efm_go.sel.sel"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.sandbox"):
                 result, cleanup = wrap_argv(argv, mode="strict")
         assert result == argv
         assert cleanup is None
         assert any("no trusted env binary" in r.message for r in caplog.records)
 
-    @patch("kiro_crew.sandbox.detect_backend")
+    @patch("efm_go.sandbox.detect_backend")
     def test_downgrade_without_scrub_delta_returns_argv(self, mock_detect, monkeypatch):
         # No sensitive keys in the environment → the delta is empty and the
         # passthrough returns argv verbatim even on a downgrade.
@@ -178,12 +178,12 @@ class TestPassthroughTierComparison:
         monkeypatch.setattr(sandbox_mod, "_macos_sandbox_state", lambda: None)
         monkeypatch.setattr(sandbox_mod, "_sandbox_env_unset_args", lambda *a, **k: [])
         argv = ["kiro-cli", "acp"]
-        with patch("kiro_crew.sel.sel"):
+        with patch("efm_go.sel.sel"):
             result, cleanup = wrap_argv(argv, mode="strict")
         assert result == argv
         assert cleanup is None
 
-    @patch("kiro_crew.sandbox.detect_backend")
+    @patch("efm_go.sandbox.detect_backend")
     def test_no_downgrade_when_requesting_weaker_tier(self, mock_detect, monkeypatch, caplog):
         # standard requested under a strict outer sandbox is an UPGRADE of the
         # actual confinement — not a downgrade. No warning, verbatim argv.
@@ -191,8 +191,8 @@ class TestPassthroughTierComparison:
         monkeypatch.setenv("KIROCREW_SANDBOX_LEVEL", "strict")
         monkeypatch.setattr(sandbox_mod, "_macos_sandbox_state", lambda: None)
         argv = ["git", "status"]
-        with patch("kiro_crew.sel.sel") as mock_sel:
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.sandbox"):
+        with patch("efm_go.sel.sel") as mock_sel:
+            with caplog.at_level(logging.WARNING, logger="efm_go.sandbox"):
                 result, cleanup = wrap_argv(argv, mode="standard")
         assert result == argv
         assert cleanup is None
@@ -202,19 +202,19 @@ class TestPassthroughTierComparison:
         assert kwargs["metadata"]["tier_downgrade"] is False
         assert not any("SECURITY" in r.message for r in caplog.records)
 
-    @patch("kiro_crew.sandbox.detect_backend")
+    @patch("efm_go.sandbox.detect_backend")
     def test_same_tier_is_not_a_downgrade(self, mock_detect, monkeypatch):
         monkeypatch.setenv("KIROCREW_SANDBOX_ACTIVE", "1")
         monkeypatch.setenv("KIROCREW_SANDBOX_LEVEL", "strict")
         monkeypatch.setattr(sandbox_mod, "_macos_sandbox_state", lambda: None)
         argv = ["kiro-cli", "acp"]
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        with patch("efm_go.sel.sel") as mock_sel:
             result, _ = wrap_argv(argv, mode="strict")
         assert result == argv
         kwargs = mock_sel.return_value.log_tool_invocation.call_args.kwargs
         assert kwargs["metadata"]["tier_downgrade"] is False
 
-    @patch("kiro_crew.sandbox.detect_backend")
+    @patch("efm_go.sandbox.detect_backend")
     def test_unknown_active_tier_no_crash_no_downgrade_claim(
         self, mock_detect, monkeypatch, caplog
     ):
@@ -224,8 +224,8 @@ class TestPassthroughTierComparison:
         monkeypatch.setenv("KIROCREW_SANDBOX_ACTIVE", "1")
         monkeypatch.setattr(sandbox_mod, "_macos_sandbox_state", lambda: None)
         argv = ["kiro-cli", "acp"]
-        with patch("kiro_crew.sel.sel") as mock_sel:
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.sandbox"):
+        with patch("efm_go.sel.sel") as mock_sel:
+            with caplog.at_level(logging.WARNING, logger="efm_go.sandbox"):
                 result, cleanup = wrap_argv(argv, mode="strict")
         assert result == argv
         assert cleanup is None
@@ -237,13 +237,13 @@ class TestPassthroughTierComparison:
         assert kwargs["metadata"]["tier_downgrade"] is False
         assert not any("SECURITY" in r.message for r in caplog.records)
 
-    @patch("kiro_crew.sandbox.detect_backend")
+    @patch("efm_go.sandbox.detect_backend")
     def test_unrecognized_level_value_treated_as_unknown(self, mock_detect, monkeypatch):
         # A garbage/forged value carries no ordinal claim either.
         monkeypatch.setenv("KIROCREW_SANDBOX_ACTIVE", "1")
         monkeypatch.setenv("KIROCREW_SANDBOX_LEVEL", "bogus-tier")
         monkeypatch.setattr(sandbox_mod, "_macos_sandbox_state", lambda: None)
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        with patch("efm_go.sel.sel") as mock_sel:
             result, _ = wrap_argv(["kiro-cli"], mode="strict")
         assert result == ["kiro-cli"]
         kwargs = mock_sel.return_value.log_tool_invocation.call_args.kwargs
@@ -251,7 +251,7 @@ class TestPassthroughTierComparison:
         assert kwargs["metadata"]["tier_known"] is False
         assert kwargs["metadata"]["tier_downgrade"] is False
 
-    @patch("kiro_crew.sandbox.detect_backend")
+    @patch("efm_go.sandbox.detect_backend")
     def test_downgrade_survives_sel_failure(self, mock_detect, monkeypatch, caplog):
         # SEL down must not brick the passthrough (existing guarantee), and the
         # downgrade warning + scrub delta must still apply — they do not depend
@@ -261,8 +261,8 @@ class TestPassthroughTierComparison:
         monkeypatch.setattr(sandbox_mod, "_macos_sandbox_state", lambda: None)
         monkeypatch.setattr(sandbox_mod, "_sandbox_env_unset_args", lambda *a, **k: ["-u", "X"])
         argv = ["kiro-cli", "acp"]
-        with patch("kiro_crew.sel.sel", side_effect=OSError("SEL down")):
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.sandbox"):
+        with patch("efm_go.sel.sel", side_effect=OSError("SEL down")):
+            with caplog.at_level(logging.WARNING, logger="efm_go.sandbox"):
                 result, cleanup = wrap_argv(argv, mode="strict")
         assert result[0] in sandbox_mod._ENV_BINARY_CANDIDATES
         assert result[1:] == ["-u", "X", *argv]

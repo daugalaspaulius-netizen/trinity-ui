@@ -12,7 +12,7 @@ These tests pin the policy semantics of the memo that answers the second request
 from one ``scandir``: an unchanged directory performs no spec read at all, an
 in-place edit or a new file makes the next call read again, and refusals are
 deliberately not memoized. The revision the memo is pinned to, and the memo's
-store rules, are :mod:`kiro_crew.agent_discovery`'s and are tested in
+store rules, are :mod:`efm_go.agent_discovery`'s and are tested in
 ``test_agents_dir_memo.py``.
 """
 
@@ -26,8 +26,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import agent_discovery
-from kiro_crew.dashboard.handlers import sessions as sessions_mod
+from efm_go import agent_discovery
+from efm_go.dashboard.handlers import sessions as sessions_mod
 
 AGENT = "reviewer"
 
@@ -215,7 +215,7 @@ def test_the_policy_memo_is_separate_from_the_projection_memo(
     """The two ``spec_by_declared_name`` callers carry different SEL
     ``operation`` labels, so an answer read under one label is never handed
     to the other surface."""
-    from kiro_crew.acp import kas_agents
+    from efm_go.acp import kas_agents
 
     _populate(tmp_path)
     monkeypatch.setattr(kas_agents, "_SPEC_SCAN_MEMO", agent_discovery.AgentsDirMemo())

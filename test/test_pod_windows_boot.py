@@ -47,12 +47,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat as pc
-from kiro_crew.platform_compat import IS_WINDOWS, SIGKILL, pid_exists, process_start_time
-from kiro_crew.pod import windows as win
-from kiro_crew.pod.config import PodConfig
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
-from kiro_crew.testing.harness import fake_acp_backend_launcher
+from efm_go import platform_compat as pc
+from efm_go.platform_compat import IS_WINDOWS, SIGKILL, pid_exists, process_start_time
+from efm_go.pod import windows as win
+from efm_go.pod.config import PodConfig
+from efm_go.subprocess_utf8 import UTF8_TEXT
+from efm_go.testing.harness import fake_acp_backend_launcher
 
 # The whole module is win32-only (there is no Task Scheduler to drive elsewhere)
 # AND opt-in: it registers a real scheduled task and boots a real gateway, which
@@ -181,7 +181,7 @@ def served_dist():
     The test itself writes nothing under ``src/``: a hard timeout or a worker
     kill would bypass any cleanup it promised.
     """
-    index = CHECKOUT / "src" / "kiro_crew" / "static" / "dist" / "index.html"
+    index = CHECKOUT / "src" / "efm_go" / "static" / "dist" / "index.html"
     if not index.exists():
         pytest.fail(
             f"no served SPA bundle at {index}; build the SPA or place a one-file "
@@ -320,7 +320,7 @@ def _pod(env: dict[str, str], *args: str, timeout: int = 300) -> subprocess.Comp
     from breaking the verbs that would diagnose it.
     """
     return subprocess.run(
-        [sys.executable, "-m", "kiro_crew", "pod", *args],
+        [sys.executable, "-m", "efm_go", "pod", *args],
         capture_output=True,
         timeout=timeout,
         check=False,

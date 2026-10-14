@@ -130,7 +130,7 @@ export default function MobileConnectModal({
           tabIndex={-1}
           role="dialog"
           aria-modal="true"
-          aria-label={t('components.mobileConnect.use_kiro_crew_on_your_phone')}
+          aria-label={t('components.mobileConnect.use_efm_go_on_your_phone')}
           className="bg-card border border-border rounded-xl shadow-xl w-[440px] max-w-[90vw] max-h-[85vh] overflow-y-auto outline-hidden p-6 relative pointer-events-auto"
         >
           <button
@@ -142,7 +142,7 @@ export default function MobileConnectModal({
           </button>
           <div className="flex items-center gap-2 text-[15px] font-semibold text-text-strong mb-1.5">
             <Smartphone size={16} className="shrink-0" />
-            {t('components.mobileConnect.use_kiro_crew_on_your_phone')}
+            {t('components.mobileConnect.use_efm_go_on_your_phone')}
           </div>
           {hasQr && (
             <p className="text-[12.5px] text-muted leading-relaxed mb-4">

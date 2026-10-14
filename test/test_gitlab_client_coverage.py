@@ -24,7 +24,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.apps.builtins.issue_radar.backend import gitlab_client as gl
+from efm_go.apps.builtins.issue_radar.backend import gitlab_client as gl
 
 # The autouse isolation fixture stubs ``allowed_hosts``, so the two tests that
 # cover the real reader hold onto it here, before any patching.
@@ -323,7 +323,7 @@ def test_glab_run_maps_undecodable_output_to_a_cli_error(monkeypatch):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the POSIX resolution path")
 def test_glab_bin_override_is_validated_and_cached(monkeypatch):
-    from kiro_crew.dashboard.handlers import source_providers
+    from efm_go.dashboard.handlers import source_providers
 
     monkeypatch.setenv("KIROCREW_ISSUE_RADAR_GLAB", "/opt/glab")
     monkeypatch.setattr(source_providers, "_validate_provider_executable", lambda p: "/opt/glab")
@@ -339,7 +339,7 @@ def test_glab_bin_override_is_validated_and_cached(monkeypatch):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the POSIX resolution path")
 def test_glab_bin_override_failure_is_a_setup_error(monkeypatch):
-    from kiro_crew.dashboard.handlers import source_providers
+    from efm_go.dashboard.handlers import source_providers
 
     monkeypatch.setenv("KIROCREW_ISSUE_RADAR_GLAB", "/opt/glab")
 
@@ -355,7 +355,7 @@ def test_glab_bin_override_failure_is_a_setup_error(monkeypatch):
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the POSIX resolution path")
 def test_glab_bin_skips_untrusted_candidates_and_reports_the_last_check(monkeypatch, tmp_path):
-    from kiro_crew.dashboard.handlers import source_providers
+    from efm_go.dashboard.handlers import source_providers
 
     monkeypatch.delenv("KIROCREW_ISSUE_RADAR_GLAB", raising=False)
     present = tmp_path / "glab"
@@ -379,7 +379,7 @@ def test_glab_bin_skips_untrusted_candidates_and_reports_the_last_check(monkeypa
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the POSIX resolution path")
 def test_glab_bin_accepts_the_first_trusted_candidate(monkeypatch, tmp_path):
-    from kiro_crew.dashboard.handlers import source_providers
+    from efm_go.dashboard.handlers import source_providers
 
     monkeypatch.delenv("KIROCREW_ISSUE_RADAR_GLAB", raising=False)
     present = tmp_path / "glab"
@@ -401,7 +401,7 @@ def test_glab_bin_no_longer_short_circuits_on_windows(monkeypatch):
     must fail for the ordinary reason (nothing trustworthy found) rather than
     for being Windows.
     """
-    from kiro_crew.dashboard.handlers import source_providers
+    from efm_go.dashboard.handlers import source_providers
 
     monkeypatch.setattr(gl, "_glab_bin_cache", "")
     monkeypatch.delenv("KIROCREW_ISSUE_RADAR_GLAB", raising=False)

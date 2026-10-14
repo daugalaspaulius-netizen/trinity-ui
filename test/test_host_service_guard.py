@@ -35,7 +35,7 @@ import source_corpus
 pytestmark = pytest.mark.xdist_group(name="tree_scan_test_host_service_guard")
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 _ROOT_CONFTEST = _REPO_ROOT / "conftest.py"
-_SRC = _REPO_ROOT / "src" / "kiro_crew"
+_SRC = _REPO_ROOT / "src" / "efm_go"
 
 
 def _load_root_conftest():
@@ -350,14 +350,14 @@ class TestRefusalReason:
 
     def test_the_pod_cli_mutating_verbs_are_refused(self) -> None:
         """A child ``kirocrew pod up`` reaches a service manager one process away."""
-        assert _root._refusal_reason(["python", "-m", "kiro_crew", "pod", "up", "wt", "--json"])
+        assert _root._refusal_reason(["python", "-m", "efm_go", "pod", "up", "wt", "--json"])
         assert _root._refusal_reason(["/x/.venv/bin/kirocrew", "pod", "down", "wt"])
         assert _root._refusal_reason(["C:\\v\\Scripts\\kirocrew.exe", "pod", "install"])
         assert _root._refusal_reason(["kirocrew", "pod", "prune", "--all"])
 
     def test_the_pod_cli_read_only_verbs_are_allowed(self) -> None:
         assert _root._refusal_reason(["kirocrew", "pod", "ls", "--json"]) is None
-        assert _root._refusal_reason(["python", "-m", "kiro_crew", "pod", "status", "wt"]) is None
+        assert _root._refusal_reason(["python", "-m", "efm_go", "pod", "status", "wt"]) is None
         assert _root._refusal_reason(["kirocrew", "pod", "api", "wt", "GET", "health"]) is None
 
     def test_pod_as_an_argument_to_another_program_is_ignored(self) -> None:
@@ -479,7 +479,7 @@ class TestLaunchdRedirect:
         assert root == resolved or root in resolved.parents, f"{resolved} is not under {root}"
 
     def test_every_macos_install_path_is_redirected(self, _xdg_config_root) -> None:
-        from kiro_crew.service import macos
+        from efm_go.service import macos
 
         for attr in ("PLIST_DIR", "PLIST_PATH", "LOG_DIR", "STDOUT_LOG", "STDERR_LOG",
                      "LIVE_PROGRAM"):
@@ -487,7 +487,7 @@ class TestLaunchdRedirect:
 
     def test_the_launcher_path_helper_is_redirected(self, _xdg_config_root) -> None:
         """``LaunchdBackend.live_program()`` calls the function, not the constant."""
-        from kiro_crew.service.common import launchd_live_program
+        from efm_go.service.common import launchd_live_program
 
         self._assert_under(launchd_live_program(), _xdg_config_root)
 
@@ -502,7 +502,7 @@ class TestLaunchdRedirect:
         constant. Subprocess is stubbed here because ``launchctl load`` is a
         mutating verb the execution guard would (correctly) refuse.
         """
-        from kiro_crew.service import macos
+        from efm_go.service import macos
 
         with mock.patch.object(macos, "_launchctl", return_value=SimpleNamespace(
             returncode=0, stdout="", stderr=""
@@ -528,7 +528,7 @@ class TestXdgRedirect:
         A test that forgets to stub it must not be able to name the
         operator's real unit directory.
         """
-        from kiro_crew.apps.builtins.dev_fleet import server as mod
+        from efm_go.apps.builtins.dev_fleet import server as mod
 
         dropin = mod._dropin_path().resolve()
         real = (pathlib.Path.home() / ".config" / "systemd" / "user").resolve()

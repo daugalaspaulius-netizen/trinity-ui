@@ -22,7 +22,7 @@ const none = {
 
 describe("findKirocrewBin", () => {
   it("returns the bundled backend launcher (backend-dist/.../bin/kirocrew) when it exists", () => {
-    const venvLayout = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "bin", "kirocrew");
+    const venvLayout = path.join(RESOURCES, "backend-dist", "efm-go-backend", "bin", "kirocrew");
     const fakeFs = only(venvLayout);
     const result = findKirocrewBin(fakeFs, fakeOs, path, RESOURCES, DIRNAME);
     assert.equal(result, venvLayout);
@@ -68,8 +68,8 @@ describe("findKirocrewBin", () => {
 
 
   it("returns bin\\kirocrew.cmd when only bundled python.exe exists (Windows recovery)", () => {
-    const py = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "python.exe");
-    const cmd = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "bin", "kirocrew.cmd");
+    const py = path.join(RESOURCES, "backend-dist", "efm-go-backend", "python.exe");
+    const cmd = path.join(RESOURCES, "backend-dist", "efm-go-backend", "bin", "kirocrew.cmd");
     const result = findKirocrewBin(only(py), fakeOs, path, RESOURCES, DIRNAME, "x64", true);
     assert.equal(result, cmd);
   });
@@ -83,7 +83,7 @@ describe("findKirocrewBin", () => {
 
   it("finds the bundled Windows backend Scripts\\kirocrew.exe on Windows", () => {
     const bundledExe = path.join(
-      RESOURCES, "backend-dist", "kirocrew-backend", "Scripts", "kirocrew.exe"
+      RESOURCES, "backend-dist", "efm-go-backend", "Scripts", "kirocrew.exe"
     );
     const fakeFs = only(bundledExe);
     const result = findKirocrewBin(fakeFs, fakeOs, path, RESOURCES, DIRNAME, "x64", true);
@@ -117,8 +117,8 @@ describe("findKirocrewBin", () => {
     // the user's machine. The .cmd shim resolves the interpreter through %~dp0
     // and is the only relocatable launcher of the two -- so it must win whenever
     // both are present, which in a real bundle is always.
-    const cmd = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "bin", "kirocrew.cmd");
-    const exe = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "Scripts", "kirocrew.exe");
+    const cmd = path.join(RESOURCES, "backend-dist", "efm-go-backend", "bin", "kirocrew.cmd");
+    const exe = path.join(RESOURCES, "backend-dist", "efm-go-backend", "Scripts", "kirocrew.exe");
     const result = findKirocrewBin(present(cmd, exe), fakeOs, path, RESOURCES, DIRNAME, "x64", true);
     assert.equal(result, cmd);
   });
@@ -126,7 +126,7 @@ describe("findKirocrewBin", () => {
   it("prefers the bundle's Scripts\\kirocrew.exe over a user-level install", () => {
     // A packaged app must run the backend it shipped with, never whatever
     // happens to be installed on the machine.
-    const exe = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "Scripts", "kirocrew.exe");
+    const exe = path.join(RESOURCES, "backend-dist", "efm-go-backend", "Scripts", "kirocrew.exe");
     const userLocal = path.join(HOME, ".local", "bin", "kirocrew.exe");
     const result = findKirocrewBin(
       present(exe, userLocal), fakeOs, path, RESOURCES, DIRNAME, "x64", true
@@ -153,7 +153,7 @@ describe("findKirocrewBin", () => {
   });
 
   it("returns first match when multiple candidates exist", () => {
-    const bundled = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "bin", "kirocrew");
+    const bundled = path.join(RESOURCES, "backend-dist", "efm-go-backend", "bin", "kirocrew");
     const localBin = path.join(HOME, ".local", "bin", "kirocrew");
     const fakeFs = {
       accessSync: (p) => { if (p !== bundled && p !== localBin) throw new Error("ENOENT"); },
@@ -171,7 +171,7 @@ describe("findKirocrewBin", () => {
   });
 
   it("resolves dirname-relative dev path correctly", () => {
-    const devBin = path.resolve(DIRNAME, "backend-dist", "kirocrew-backend", "bin", "kirocrew");
+    const devBin = path.resolve(DIRNAME, "backend-dist", "efm-go-backend", "bin", "kirocrew");
     const fakeFs = only(devBin);
     const result = findKirocrewBin(fakeFs, fakeOs, path, RESOURCES, DIRNAME);
     assert.equal(result, devBin);
@@ -189,7 +189,7 @@ describe("findKirocrewBin", () => {
 
   // Universal-bundle layout: arch-suffixed backend trees under backend-dist/.
   const archBin = (arch) =>
-    path.join(RESOURCES, "backend-dist", `kirocrew-backend-${arch}`, "bin", "kirocrew");
+    path.join(RESOURCES, "backend-dist", `efm-go-backend-${arch}`, "bin", "kirocrew");
   const armBackend = archBin("arm64");
   const x64Backend = archBin("x64");
 
@@ -211,14 +211,14 @@ describe("findKirocrewBin", () => {
   });
 
   it("prefers the arch-suffixed tree over the unsuffixed layout when both exist", () => {
-    const unsuffixed = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "bin", "kirocrew");
+    const unsuffixed = path.join(RESOURCES, "backend-dist", "efm-go-backend", "bin", "kirocrew");
     const fakeFs = both([armBackend, unsuffixed]);
     const result = findKirocrewBin(fakeFs, fakeOs, path, RESOURCES, DIRNAME, "arm64");
     assert.equal(result, armBackend);
   });
 
   it("falls back to the unsuffixed layout when arch-suffixed dirs are absent", () => {
-    const unsuffixed = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "bin", "kirocrew");
+    const unsuffixed = path.join(RESOURCES, "backend-dist", "efm-go-backend", "bin", "kirocrew");
     const fakeFs = only(unsuffixed);
     const result = findKirocrewBin(fakeFs, fakeOs, path, RESOURCES, DIRNAME, "arm64");
     assert.equal(result, unsuffixed);
@@ -226,14 +226,14 @@ describe("findKirocrewBin", () => {
 
   it("skips arch-suffixed candidates cleanly for an unmapped arch (e.g. 'ia32')", () => {
     const probed = [];
-    const unsuffixed = path.join(RESOURCES, "backend-dist", "kirocrew-backend", "bin", "kirocrew");
+    const unsuffixed = path.join(RESOURCES, "backend-dist", "efm-go-backend", "bin", "kirocrew");
     const fakeFs = {
       accessSync: (p) => { probed.push(p); if (p !== unsuffixed) throw new Error("ENOENT"); },
       constants: { X_OK: fs.constants.X_OK },
     };
     const result = findKirocrewBin(fakeFs, fakeOs, path, RESOURCES, DIRNAME, "ia32");
     assert.equal(result, unsuffixed);
-    assert.deepStrictEqual(probed.filter((p) => p.includes("kirocrew-backend-")), []);
+    assert.deepStrictEqual(probed.filter((p) => p.includes("efm-go-backend-")), []);
   });
 });
 

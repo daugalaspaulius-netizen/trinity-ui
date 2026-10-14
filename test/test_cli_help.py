@@ -10,7 +10,7 @@ import sys
 
 import pytest
 
-from kiro_crew import cli_help
+from efm_go import cli_help
 
 
 def _capture_cli(monkeypatch, tmp_path, capsys, argv):
@@ -21,7 +21,7 @@ def _capture_cli(monkeypatch, tmp_path, capsys, argv):
     """
     monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
     monkeypatch.setattr(sys, "argv", ["kirocrew", *argv])
-    from kiro_crew.cli import main
+    from efm_go.cli import main
 
     with pytest.raises(SystemExit):
         main()
@@ -128,7 +128,7 @@ class TestTopLevelHelpLayout:
     def test_orientation_explains_both_lifetimes_and_the_default_port(
         self, monkeypatch, tmp_path, capsys
     ):
-        from kiro_crew.config.loader import _DEFAULT_PORT
+        from efm_go.config.loader import _DEFAULT_PORT
 
         out, _err = _capture_cli(monkeypatch, tmp_path, capsys, ["--help"])
         assert "kirocrew service install" in out
@@ -141,7 +141,7 @@ class TestTopLevelHelpLayout:
 class TestPodApiMethodParsing:
     @pytest.mark.parametrize("spelling", ["GET", "Get", "get"])
     def test_method_is_case_insensitive_and_canonicalized(self, spelling, monkeypatch, tmp_path):
-        import kiro_crew.cli_commands as cli_commands
+        import efm_go.cli_commands as cli_commands
 
         captured = []
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
@@ -151,7 +151,7 @@ class TestPodApiMethodParsing:
             ["kirocrew", "pod", "api", "wt", spelling, "health"],
         )
         monkeypatch.setattr(cli_commands, "_pod", lambda args: captured.append(args))
-        from kiro_crew.cli import main
+        from efm_go.cli import main
 
         main()
         assert len(captured) == 1

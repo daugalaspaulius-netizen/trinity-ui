@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.dashboard.handlers import messaging as mod
+from efm_go.dashboard.handlers import messaging as mod
 
 
 @pytest.mark.asyncio

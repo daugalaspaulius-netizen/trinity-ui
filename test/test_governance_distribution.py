@@ -31,16 +31,16 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat, security
-from kiro_crew.hooks import validate_file_path
-from kiro_crew.platform import governance
-from kiro_crew.platform import governance_health as health
-from kiro_crew.platform import governance_profiles as gp
-from kiro_crew.platform import policy_distribution as pd
-from kiro_crew.platform.context import PlatformCompositionError, current_context
+from efm_go import platform_compat, security
+from efm_go.hooks import validate_file_path
+from efm_go.platform import governance
+from efm_go.platform import governance_health as health
+from efm_go.platform import governance_profiles as gp
+from efm_go.platform import policy_distribution as pd
+from efm_go.platform.context import PlatformCompositionError, current_context
 
 #: The import the boot tier must NOT perform on a host that configures no source.
-_ENGINE_MODULE = "kiro_crew.platform.policy_distribution"
+_ENGINE_MODULE = "efm_go.platform.policy_distribution"
 
 #: A scheme no built-in handles, so a fake fetcher registered for it cannot be
 #: confused with (or shadowed by) the real https/http/file transports.
@@ -274,9 +274,9 @@ def install_ceiling():
     """
     from dataclasses import replace
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.platform import context as context_mod
-    from kiro_crew.platform.bootstrap import build_default_context
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.platform import context as context_mod
+    from efm_go.platform.bootstrap import build_default_context
 
     base = build_default_context(KiroCrewConfig.load())
 
@@ -1440,7 +1440,7 @@ class TestCeilingSwapInvalidatesProfiles:
         Every profile is composed against a ceiling; serving one composed against
         the retired ceiling would apply a narrowing nobody currently declares.
         """
-        from kiro_crew.platform.context import governance_generation
+        from efm_go.platform.context import governance_generation
 
         (profiles_dir / "host.json").write_text(
             json.dumps({"name": "host", "bind": {"type": "surface", "id": "host"}}),
@@ -1580,7 +1580,7 @@ class TestAFileSourceMustNotBeAgentWritable:
 
     def test_the_walk_answers_false_for_a_genuinely_root_owned_chain(self):
         """The other direction, against a real path, so the refusal is not vacuous."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         # /etc is root-owned on every supported POSIX host; skip where it is not present.
         if not os.path.isfile("/etc/hostname"):
@@ -1588,7 +1588,7 @@ class TestAFileSourceMustNotBeAgentWritable:
         assert platform_compat.path_writable_by_current_user("/etc/hostname") is False
 
     def test_the_walk_finds_a_writable_ancestor_above_a_read_only_leaf(self, tmp_path):
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         nested = tmp_path / "a" / "b"
         nested.mkdir(parents=True)
@@ -1708,7 +1708,7 @@ class TestTheDetailNeverNamesTheEndpoint:
         _cache_raw(b"{ not a policy", source=secret)
         dist = governance.PolicyDistribution(source=secret)
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.platform.policy_distribution"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.platform.policy_distribution"):
             pd._from_cache_on_outage(dist, pd.read_cache(), "the endpoint was down")
 
         emitted = "\n".join(r.getMessage() + (pd_format_exc(r) or "") for r in caplog.records)
@@ -1731,7 +1731,7 @@ class TestTheDetailNeverNamesTheEndpoint:
         # reason ("already attempted"), which never carries the endpoint's text at all.
         monkeypatch.setattr(pd, "_claim_fetch_slot", lambda window: True)
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.platform.policy_distribution"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.platform.policy_distribution"):
             with pytest.raises(PlatformCompositionError) as caught:
                 pd.load_distributed_policy(governance.PolicyDistribution(source=source))
 
@@ -1804,7 +1804,7 @@ class TestTheDetailNeverNamesTheEndpoint:
         _cache_raw(b"{ not a policy", source=source)
         declared = governance.PolicyDistribution(source=source)
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.platform.policy_distribution"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.platform.policy_distribution"):
             pd.load_distributed_policy(declared)
 
         emitted = "\n".join(r.getMessage() + (pd_format_exc(r) or "") for r in caplog.records)
@@ -1932,7 +1932,7 @@ class TestTheDeniedEnvListCoversEveryVariable:
     """
 
     def test_every_distribution_variable_is_denied_to_agents_by_exact_name(self):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         denied = set(sandbox._AGENT_DENIED_ENV_KEYS)
         missing = [v for v in pd.POLICY_DISTRIBUTION_ENV_VARS if v not in denied]
@@ -1943,7 +1943,7 @@ class TestTheDeniedEnvListCoversEveryVariable:
 
     def test_the_cron_scrub_actually_drops_them(self, monkeypatch):
         """The consumer with the exact-match rule, exercised rather than assumed."""
-        from kiro_crew import cron_script
+        from efm_go import cron_script
 
         for var in pd.POLICY_DISTRIBUTION_ENV_VARS:
             monkeypatch.setenv(var, "secret-value")
@@ -2043,7 +2043,7 @@ class TestTheCacheIsPublishedBeforeTheCeilingIsInstalled:
         install_ceiling(governance.parse_policy(_doc("running", distribution={"source": source})))
         seen_at_install: dict = {}
 
-        import kiro_crew.platform.context as ctx_mod
+        import efm_go.platform.context as ctx_mod
 
         original = ctx_mod.set_context
 
@@ -2549,9 +2549,9 @@ class TestTheSignatureAuditLabelIsRedacted:
         tooling can drive; the SEL record is on the keystone and is not reachable that
         way. So the reason and the policy label belong in the record, and the warning
         carries only the state plus a pointer to it."""
-        from kiro_crew.platform import governance as gov
+        from efm_go.platform import governance as gov
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.governance"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.governance"):
             gov._audit_policy_signature(
                 gov.SIGNATURE_UNVERIFIED,
                 "no trust key for issuer 'corp'",
@@ -2584,8 +2584,8 @@ class TestTheFetchCommandDoesNotOverclaim:
 
     @staticmethod
     def _run(capsys, *, interval, monkeypatch):
-        from kiro_crew import cli_commands
-        from kiro_crew.platform import policy_distribution as dist_mod
+        from efm_go import cli_commands
+        from efm_go.platform import policy_distribution as dist_mod
 
         monkeypatch.setattr(
             dist_mod,
@@ -3030,7 +3030,7 @@ class TestAMaterialisedControlIsReDerivedAfterAnInstall:
         )
         pd.register_post_install_hook(lambda: (_ for _ in ()).throw(OSError("disk full")))
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.platform.policy_distribution"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.platform.policy_distribution"):
             assert pd.refresh_now().status == pd.REFRESH_APPLIED
 
         assert any(k == "degraded" and "post_install_hook" in d for k, d in marks)
@@ -3067,13 +3067,13 @@ class TestAllowedToolsIsReDerivedWhenTheCeilingTightens:
         """``prime_ceiling_projection`` seeds nothing while the last real rebuild left a
         conductor spec unwritten; these tests pin the seeded baseline, so a hold a test
         elsewhere in this process left behind must not reach them."""
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "_conductor_spec_held", False, raising=False)
 
     @staticmethod
     def _hook(monkeypatch):
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         rebuilds: list[int] = []
 
@@ -3123,7 +3123,7 @@ class TestAllowedToolsIsReDerivedWhenTheCeilingTightens:
         """The memo advances only after a SUCCESSFUL rebuild. Marking the generation
         synchronised on failure loses the retry, leaving forbidden auto-approvals on disk for
         the process lifetime."""
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         attempts: list[int] = []
 
@@ -3162,7 +3162,7 @@ class TestAllowedToolsIsReDerivedWhenTheCeilingTightens:
         """
         import logging
 
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         rebuilds: list[int] = []
         declined = {"value": True}
@@ -3208,7 +3208,7 @@ class TestAllowedToolsIsReDerivedWhenTheCeilingTightens:
         forbidden auto-approvals. The hook must consult only the rebuild's own
         verdict.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         def no_probe(**kw):
             raise AssertionError("reproject pre-probed the guard: probe/rebuild race reopened")
@@ -3240,7 +3240,7 @@ class TestAllowedToolsIsReDerivedWhenTheCeilingTightens:
         revocation, before the poller starts."""
         from pathlib import Path as _Path
 
-        import kiro_crew.slack.gateway as gw
+        import efm_go.slack.gateway as gw
 
         src = _Path(gw.__file__).read_text(encoding="utf-8")
         assert "register_post_install_hook(reproject_for_ceiling_change)" in src
@@ -3879,7 +3879,7 @@ class TestAnUnconditional304IsNotSuccess:
     def test_the_cli_exits_non_zero_on_it(self, transport, install_ceiling, capsys):
         """Which is the whole point: a verification step must fail on the host that did not
         take the change."""
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         source = transport(_static_fetcher(pd.FetchedPolicy(etag="v1", not_modified=True)))
         install_ceiling(governance.parse_policy(_doc("running", distribution={"source": source})))
@@ -4120,7 +4120,7 @@ class TestTheCacheIsHiddenFromAgentSubprocesses:
 
     @pytest.mark.parametrize("prefix", [".kiro/crew", ".kirocrew"])
     def test_every_sandbox_tier_masks_the_cache_directory(self, prefix):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         entry = f"{prefix}/{pd.CACHE_DIR_LEAF}"
         for name, dirs in (
@@ -4131,7 +4131,7 @@ class TestTheCacheIsHiddenFromAgentSubprocesses:
             assert entry in dirs, f"{entry} is not hidden in the {name} sandbox tier"
 
     def test_the_leaf_matches_the_engine(self):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert sandbox._POLICY_CACHE_LEAF == pd.CACHE_DIR_LEAF
 
@@ -4143,7 +4143,7 @@ class TestTheCacheIsHiddenFromAgentSubprocesses:
         on-disk copy of the ceiling, and its metadata records the source the next boot
         trusts.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         relocated = tmp_path / "relocated-home"
         monkeypatch.setenv("KIROCREW_HOME", str(relocated))
@@ -4159,7 +4159,7 @@ class TestTheCacheIsHiddenFromAgentSubprocesses:
         textually — which is the ordinary case, including dot segments — and a symlinked
         home is handled by the test below instead.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         # A REAL (non-symlinked) home, so the test states the de-duplication contract
         # rather than whatever the CI host's home happens to be. ``config_dir()`` resolves
@@ -4187,7 +4187,7 @@ class TestTheCacheIsHiddenFromAgentSubprocesses:
         masked either way — the comparison was only ever de-duplication, so it cannot
         produce a gap.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         real = tmp_path / "real-home"
         (real / ".kiro" / "crew").mkdir(parents=True)
@@ -4234,7 +4234,7 @@ class TestAnExposedCacheIsStillReadOnly:
         first builds a plan — these tests read the mount lists, not the ssh
         flag, so the seam is pinned rather than left to find the host binary.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         monkeypatch.setattr(sandbox, "_ssh_supports_accept_new", lambda: True)
 
@@ -4245,7 +4245,7 @@ class TestAnExposedCacheIsStillReadOnly:
         return str(_Path.home() / ".kiro" / "crew" / pd.CACHE_DIR_LEAF)
 
     def test_the_linux_launcher_binds_it_read_only_instead_of_hiding_it(self):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         cache = self._cache_path()
         plan = sandbox._spawn_plan("namespace", "standard", extra_visible_dirs=(cache,))
@@ -4269,7 +4269,7 @@ class TestAnExposedCacheIsStillReadOnly:
         """
         from test_sandbox_launcher_program import RecordingLibc, launch, payload, refusal
 
-        from kiro_crew import sandbox_launcher_program as program
+        from efm_go import sandbox_launcher_program as program
 
         cache = tmp_path / pd.CACHE_DIR_LEAF
         cache.mkdir()
@@ -4291,14 +4291,14 @@ class TestAnExposedCacheIsStillReadOnly:
 
     def test_an_unexposed_cache_gets_no_read_only_rule(self):
         """The ordinary spawn hides it; only the protected runtime parent is read-only."""
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         readonly = sandbox._spawn_plan("namespace", "standard").readonly
         assert set(readonly) >= set(sandbox._voice_runtime_parent_paths())
         assert self._cache_path() not in readonly
 
     def test_macos_keeps_the_write_and_link_denies_when_it_drops_the_read_deny(self):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         cache = self._cache_path()
         profile = sandbox._build_seatbelt_profile("standard", extra_visible_dirs=(cache,))
@@ -4312,7 +4312,7 @@ class TestAnExposedCacheIsStillReadOnly:
         one on ``.aws`` would break a tool legitimately refreshing a cached token."""
         from pathlib import Path as _Path
 
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         aws = str(_Path.home() / ".aws")
         profile = sandbox._build_seatbelt_profile("strict", extra_visible_dirs=(aws,))
@@ -4327,7 +4327,7 @@ class TestAnExposedCacheIsStillReadOnly:
         """Including the legacy ``~/.kirocrew`` entry the deny lists must keep covering."""
         from pathlib import Path as _Path
 
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         path = str(_Path.home() / prefix / pd.CACHE_DIR_LEAF)
         assert sandbox._is_policy_cache_dir(path)
@@ -4336,7 +4336,7 @@ class TestAnExposedCacheIsStillReadOnly:
         )
 
     def test_a_sibling_directory_is_not_mistaken_for_the_cache(self):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert not sandbox._is_policy_cache_dir("/home/u/.kiro/crew")
         assert not sandbox._is_policy_cache_dir("/home/u/.kiro/crew/policy_cache_backup")
@@ -4923,7 +4923,7 @@ class TestARefreshReComposesTheWholeLadder:
         Identity, not equality -- a re-install bumps the governance generation and
         invalidates every cache keyed on it, so "nothing moved" has to mean no install.
         """
-        from kiro_crew.platform.context import governance_generation
+        from efm_go.platform.context import governance_generation
 
         source = transport(_static_fetcher(pd.FetchedPolicy(etag="v1", not_modified=True)))
         body = _body("running", distribution={"source": source})
@@ -4961,7 +4961,7 @@ class TestARefreshReComposesTheWholeLadder:
         """
         from dataclasses import replace as _replace
 
-        from kiro_crew.platform.context import governance_generation
+        from efm_go.platform.context import governance_generation
 
         source = transport(_static_fetcher(pd.FetchedPolicy(etag="v1", not_modified=True)))
         body = _body("running", distribution={"source": source})
@@ -5002,7 +5002,7 @@ class TestARefreshReComposesTheWholeLadder:
         """
         from dataclasses import replace as _replace
 
-        from kiro_crew.platform.context import governance_generation
+        from efm_go.platform.context import governance_generation
 
         source = transport(_static_fetcher(pd.FetchedPolicy(etag="v1", not_modified=True)))
         body = _body("running", distribution={"source": source})
@@ -5039,7 +5039,7 @@ class TestARefreshReComposesTheWholeLadder:
         skip -- the looser ceiling would stay in effect after the operator fixed the
         profile, until a restart. The basis is what LANDED, so the retry installs.
         """
-        from kiro_crew.platform.context import governance_generation
+        from efm_go.platform.context import governance_generation
 
         source = transport(_static_fetcher(pd.FetchedPolicy(etag="v1", not_modified=True)))
         body = _body("running", distribution={"source": source})
@@ -5381,7 +5381,7 @@ class TestABootThroughTheLoaderThenTwoQuietPolls:
         """The existing control installs via ``compose_installed_ceiling`` itself. This
         one boots through ``load_security_policy`` -- the path a real gateway takes --
         so the comparison basis is the loader's own fold."""
-        from kiro_crew.platform.context import governance_generation
+        from efm_go.platform.context import governance_generation
 
         body = _body("running", tools={"mode": "deny", "deny": ["danger"]})
         source = transport(_static_fetcher(pd.FetchedPolicy(body=body, etag="v1")))

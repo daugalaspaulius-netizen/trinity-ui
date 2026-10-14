@@ -20,9 +20,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.subagent as subagent_mod
-from kiro_crew.subagent import SubagentInfo, SubagentManager
-from kiro_crew.subagent_persistence import (
+import efm_go.subagent as subagent_mod
+from efm_go.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent_persistence import (
     create_agent_folder,
     read_state,
     remember_live_cleanup_identity,
@@ -191,7 +191,7 @@ class TestConversationRegistryRebuild:
     def test_agent_folder_identity_rehydrates_hint_without_deletion_authority(
         self,
     ) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         mgr = _manager()
 
@@ -276,7 +276,7 @@ class TestConversationRegistryRebuild:
         # stamps updated_at=now, so write the timestamps directly.
         import json as _json
 
-        from kiro_crew.subagent_persistence import _agent_dir
+        from efm_go.subagent_persistence import _agent_dir
 
         def _write_keep_state(run_id: str, conv_key: str, ts: float) -> None:
             create_agent_folder(run_id, task="t")
@@ -347,7 +347,7 @@ class TestRetentionSourceOfTruth:
         assert mgr._keep_recorded_on_disk("dashboard:tab1") is False
 
     def test_unreadable_state_with_tombstone_identity_fails_safe(self) -> None:
-        from kiro_crew.subagent_persistence import _agent_dir, write_tombstone
+        from efm_go.subagent_persistence import _agent_dir, write_tombstone
 
         mgr = _manager()
         create_agent_folder("corrupt-keep", task="t")
@@ -356,7 +356,7 @@ class TestRetentionSourceOfTruth:
         (_agent_dir("corrupt-keep") / "state.json").write_text("{corrupt")
 
         with patch(
-            "kiro_crew.subagent_persistence.read_tombstone",
+            "efm_go.subagent_persistence.read_tombstone",
             side_effect=AssertionError("event-loop tombstone read"),
         ):
             assert mgr._keep_recorded_on_disk("subagent:corrupt-keep") is True
@@ -390,7 +390,7 @@ class TestRetentionSourceOfTruth:
         assert bool((read_state("conv1") or {}).get("keep")) is False
 
     def _session_manager(self):  # type: ignore[no-untyped-def]
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         with patch.object(SessionManager, "__init__", lambda self: None):
             smgr = SessionManager()  # type: ignore[call-arg]

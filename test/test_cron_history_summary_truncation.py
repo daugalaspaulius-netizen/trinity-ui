@@ -24,15 +24,15 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.cron_history import (
+from efm_go.cron_history import (
     _SUMMARY_CAP,
     CronHistoryStore,
     CronRunRecord,
     truncate_summary,
 )
 
-_PR_URL = "https://github.com/kirodotdev/KiroCrew/pull/2836"
-_ISSUE_URL = "https://github.com/kirodotdev/KiroCrew/issues/2836"
+_PR_URL = "https://efmleads.com/pull/2836"
+_ISSUE_URL = "https://efmleads.com/issues/2836"
 
 
 # ── truncate_summary: what survives ──────────────────────────────────────
@@ -198,7 +198,7 @@ class TestTruncateSummaryEdges:
 
     def test_an_uppercase_scheme_is_still_a_url(self) -> None:
         """A scheme is case-insensitive, so a shouted link is not prose."""
-        shouted = "HTTPS://GITHUB.COM/kirodotdev/KiroCrew/pull/12001"
+        shouted = "HTTPS://GITHUB.COM/efmleads.com/pull/12001"
         text = "start " + "noise " * 40 + f"see {shouted} " + "more " * 40 + "\ndone ok"
 
         out = truncate_summary(text, 120)
@@ -208,8 +208,8 @@ class TestTruncateSummaryEdges:
 
     def test_a_link_whose_address_prefixes_another_is_kept_separately(self) -> None:
         """`/pull/28` is not `/pull/2836`, so neither may absorb the other."""
-        short = "https://github.com/kirodotdev/KiroCrew/pull/28"
-        long = "https://github.com/kirodotdev/KiroCrew/pull/2836"
+        short = "https://efmleads.com/pull/28"
+        long = "https://efmleads.com/pull/2836"
         text = f"reopened {short} while sweeping " + "noise " * 40 + f"\nlanded {long}"
 
         out = truncate_summary(text, 200)
@@ -263,7 +263,7 @@ class TestTruncateSummaryEdges:
             assert restated == [real], real
 
     def test_a_trailing_full_stop_or_comma_is_still_prose(self) -> None:
-        url = "https://github.com/kirodotdev/KiroCrew/pull/12001"
+        url = "https://efmleads.com/pull/12001"
         for suffix in (".", ","):
             text = "start " + "noise " * 40 + f"see {url}{suffix} " + "more " * 40 + "\nok"
 
@@ -283,7 +283,7 @@ class TestTruncateSummaryEdges:
         assert restated == [wiki]
 
     def test_a_url_wrapped_in_prose_parentheses_loses_them(self) -> None:
-        url = "https://github.com/kirodotdev/KiroCrew/pull/12001"
+        url = "https://efmleads.com/pull/12001"
         text = "start " + "noise " * 40 + f"(see {url}) " + "more " * 40 + "\ndone ok"
 
         out = truncate_summary(text, 120)
@@ -320,10 +320,10 @@ def test_default_summary_cap_is_200() -> None:
 #: the run created, and a closing outcome line.
 _SWEEP_SUMMARY = (
     "Nightly flake sweep: reran 6 failing shards and opened one PR per shard. "
-    "https://github.com/kirodotdev/KiroCrew/pull/12001 "
-    "https://github.com/kirodotdev/KiroCrew/pull/12002 "
-    "https://github.com/kirodotdev/KiroCrew/pull/12003 "
-    "https://github.com/kirodotdev/KiroCrew/pull/12004\n"
+    "https://efmleads.com/pull/12001 "
+    "https://efmleads.com/pull/12002 "
+    "https://efmleads.com/pull/12003 "
+    "https://efmleads.com/pull/12004\n"
     "4 PRs opened, 2 shards still red"
 )
 
@@ -380,13 +380,13 @@ def test_the_module_spec_states_the_current_default() -> None:
 
 
 def test_config_default_matches_module_default() -> None:
-    from kiro_crew.config.sections import CronHistoryConfig
+    from efm_go.config.sections import CronHistoryConfig
 
     assert CronHistoryConfig().cron_summary_cap == _SUMMARY_CAP
 
 
 def test_loader_default_matches_module_default() -> None:
-    from kiro_crew.config.loader import _build_cron_history_config
+    from efm_go.config.loader import _build_cron_history_config
 
     assert _build_cron_history_config({}).cron_summary_cap == _SUMMARY_CAP
 
@@ -442,7 +442,7 @@ class TestAppendAppliesTheConfiguredCap:
 
     @pytest.mark.asyncio
     async def test_reconfigured_cap_is_what_append_applies(self, tmp_path: Path) -> None:
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         store = CronHistoryStore(base_dir=tmp_path, cron_summary_cap=500)
         cfg = KiroCrewConfig()
@@ -461,8 +461,8 @@ class TestAppendAppliesTheConfiguredCap:
 
 
 class TestTheLinkBudget:
-    _A = "https://github.com/kirodotdev/KiroCrew/pull/12001"
-    _B = "https://github.com/kirodotdev/KiroCrew/pull/900"
+    _A = "https://efmleads.com/pull/12001"
+    _B = "https://efmleads.com/pull/900"
 
     def test_a_link_that_exactly_fills_the_room_is_kept(self) -> None:
         """A separator is charged only when something precedes the link."""
@@ -524,7 +524,7 @@ class TestUrlsAreReservedFirst:
     """
 
     #: 56 characters: wide enough that half of a 120 cap leaves no room for it.
-    _LONG_URL = "https://github.com/kirodotdev/KiroCrew/pull/12001/files"
+    _LONG_URL = "https://efmleads.com/pull/12001/files"
     #: No URL of its own, and long enough to claim half the cap.
     _LONG_OUTCOME = "finished the sweep with 3 shards red and 2 reruns still queued"
 
@@ -552,7 +552,7 @@ class TestUrlsAreReservedFirst:
 
 
 def _job(**kw):
-    from kiro_crew.cron import CronJob, CronSchedule
+    from efm_go.cron import CronJob, CronSchedule
 
     return CronJob(
         id=kw.pop("id", "j1"),
@@ -573,7 +573,7 @@ class TestRunPathDoesNotPreTruncate:
         own literal on the way in, so a wider configured cap could never take
         effect and the trailing URL would never reach history.
         """
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         result = "Reviewed the sweep. " + "x" * (300 - 20 - len(_PR_URL) - 8) + f"\nPR: {_PR_URL}"
         assert 280 <= len(result) <= 320
@@ -597,7 +597,7 @@ class TestRunPathDoesNotPreTruncate:
 
     def test_result_over_the_cap_is_cut_by_append_not_by_the_run_path(self, tmp_path: Path) -> None:
         """A result past the cap keeps its URL — the cut is append's."""
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         result = "Swept the backlog. " + "detail " * 120 + f"\nOpened {_PR_URL}"
         assert len(result) > 500

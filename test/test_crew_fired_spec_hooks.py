@@ -16,14 +16,14 @@ from types import SimpleNamespace
 
 import pytest
 
-import kiro_crew.config.paths as paths_mod
-import kiro_crew.hooks as hooks_mod
-from kiro_crew.acp.kas_permissions import kas_tool_match_names
-from kiro_crew.agent_sdk import spec_hooks
-from kiro_crew.agent_sdk.backends import ACP_BACKEND_KAS, ACP_BACKEND_KIRO
-from kiro_crew.agent_sdk.capabilities import capabilities_for
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.hooks import (
+import efm_go.config.paths as paths_mod
+import efm_go.hooks as hooks_mod
+from efm_go.acp.kas_permissions import kas_tool_match_names
+from efm_go.agent_sdk import spec_hooks
+from efm_go.agent_sdk.backends import ACP_BACKEND_KAS, ACP_BACKEND_KIRO
+from efm_go.agent_sdk.capabilities import capabilities_for
+from efm_go.dashboard import chat_runner
+from efm_go.hooks import (
     HOOK_EVENT_PRE_TOOL_USE,
     HOOK_EVENT_STOP,
     ScriptHook,
@@ -136,7 +136,7 @@ def test_disabled_and_confirm_documents_do_not_run():
 
 
 def test_every_skipped_spec_hook_is_audited_once(monkeypatch):
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     audited: list = []
     monkeypatch.setattr(
@@ -213,8 +213,8 @@ def test_extra_hooks_fire_but_are_never_persisted(tmp_path, monkeypatch):
 
 
 def _passthrough_sandbox(monkeypatch):
-    monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
-    monkeypatch.setattr("kiro_crew.sandbox.cgroup_scope_argv", lambda argv: list(argv))
+    monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+    monkeypatch.setattr("efm_go.sandbox.cgroup_scope_argv", lambda argv: list(argv))
 
 
 def test_a_spec_pre_tool_use_hook_exit_2_blocks(tmp_path, agents_dir, monkeypatch, notices):
@@ -249,7 +249,7 @@ def test_a_governance_denied_spec_hook_does_not_spawn(tmp_path, monkeypatch):
     async def no_spawn(*a, **k):
         raise AssertionError("a denied hook must not spawn")
 
-    monkeypatch.setattr("kiro_crew.sandbox.create_subprocess_limited", no_spawn)
+    monkeypatch.setattr("efm_go.sandbox.create_subprocess_limited", no_spawn)
     hooks = spec_hooks.spec_script_hooks("a1", {"hooks": _OBJECT_HOOKS})
     results = asyncio.run(
         ScriptHookStore(tmp_path).fire(
@@ -272,10 +272,10 @@ async def test_an_in_turn_agent_switch_reloads_the_new_agents_spec_hooks(tmp_pat
 
     from chat_test_helpers import _make_state
 
-    from kiro_crew.agent_discovery import clear_list_agents_cache
-    from kiro_crew.config.loader import refresh_materialized_agents
-    from kiro_crew.config.paths import kiro_agents_dir
-    from kiro_crew.providers.base import EVENT_AGENT_SWITCHED, EVENT_COMPLETE, LLMEvent
+    from efm_go.agent_discovery import clear_list_agents_cache
+    from efm_go.config.loader import refresh_materialized_agents
+    from efm_go.config.paths import kiro_agents_dir
+    from efm_go.providers.base import EVENT_AGENT_SWITCHED, EVENT_COMPLETE, LLMEvent
 
     d = kiro_agents_dir()
     d.mkdir(parents=True, exist_ok=True)
@@ -342,11 +342,11 @@ async def test_an_in_turn_switch_that_leaves_the_session_stale_stops_the_turn(
 
     from chat_test_helpers import _make_state
 
-    from kiro_crew.agent_discovery import clear_list_agents_cache
-    from kiro_crew.agent_sdk import spec_hooks
-    from kiro_crew.config.loader import refresh_materialized_agents
-    from kiro_crew.config.paths import kiro_agents_dir
-    from kiro_crew.providers.base import (
+    from efm_go.agent_discovery import clear_list_agents_cache
+    from efm_go.agent_sdk import spec_hooks
+    from efm_go.config.loader import refresh_materialized_agents
+    from efm_go.config.paths import kiro_agents_dir
+    from efm_go.providers.base import (
         EVENT_AGENT_SWITCHED,
         EVENT_COMPLETE,
         EVENT_PERMISSION_REQUEST,

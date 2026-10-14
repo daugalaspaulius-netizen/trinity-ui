@@ -12,8 +12,8 @@ from types import SimpleNamespace
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew.mcp_gateway import rewriter
-from kiro_crew.mcp_gateway.hashing import expand_stub_flags, hash_command
+from efm_go.mcp_gateway import rewriter
+from efm_go.mcp_gateway.hashing import expand_stub_flags, hash_command
 
 
 @pytest.mark.parametrize("is_windows", [False, True])

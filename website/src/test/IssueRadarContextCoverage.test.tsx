@@ -53,7 +53,7 @@ const REPOS = [
   { ...OTHER, permissions: { pull: true } },
 ]
 /** repoScopeKey(ACTIVE) — provider:host:owner/repo. */
-const SCOPE = 'github:github.com:kirodotdev/Kiro'
+const SCOPE = 'github:github.com:efmleads.com'
 const CREW_UI_KEY = 'kc:issue-radar:crew-ui'
 
 // #1 authored + assigned to me. #2 authored by a roster member, also assigned to

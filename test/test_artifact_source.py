@@ -1,4 +1,4 @@
-"""Tests for :mod:`kiro_crew.artifact_source` — the copy-vs-link decision.
+"""Tests for :mod:`efm_go.artifact_source` — the copy-vs-link decision.
 
 The decision is ORDERED, and the order is the whole point: a disposable root
 wins over a git repository (a throwaway clone in the temp dir is still
@@ -18,8 +18,8 @@ from pathlib import Path
 import pytest
 
 from conftest import cap_project_root_walk, requires_symlinks
-from kiro_crew import artifact_source
-from kiro_crew.artifact_source import (
+from efm_go import artifact_source
+from efm_go.artifact_source import (
     COPY,
     LINK,
     classify_source,
@@ -225,7 +225,7 @@ class TestNonGitProjectsLink:
         root, and a forged artifact naming ``source_root="/"`` would then
         authorize reading any file the process can open.
         """
-        from kiro_crew import artifact_source as mod
+        from efm_go import artifact_source as mod
 
         # Treat tmp_path as a filesystem root: dirname(root) == root is the
         # portable root test, so fake exactly that for this one path.

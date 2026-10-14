@@ -22,11 +22,11 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew import history_projection, pinned_fs, platform_compat
-from kiro_crew.acp_backends import ACP_BACKEND_KIRO
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard import chat_threads, ws
-from kiro_crew.dashboard.chat_threads import (
+from efm_go import history_projection, pinned_fs, platform_compat
+from efm_go.acp_backends import ACP_BACKEND_KIRO
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard import chat_threads, ws
+from efm_go.dashboard.chat_threads import (
     THREAD_BOUNDARY_PROMPT,
     THREAD_BOUNDARY_PROMPT_NO_TOOLS,
     THREAD_INSTRUCTIONS,
@@ -38,11 +38,11 @@ from kiro_crew.dashboard.chat_threads import (
     summarize,
     thread_session_key,
 )
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.side_readonly_spec import PublishedSpec, ReadOnlySpecError
-from kiro_crew.dashboard.ws import broadcast_thread_reply
-from kiro_crew.history import ThreadStoreUnreadable
-from kiro_crew.members import DM_SLOT_MODE
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.side_readonly_spec import PublishedSpec, ReadOnlySpecError
+from efm_go.dashboard.ws import broadcast_thread_reply
+from efm_go.history import ThreadStoreUnreadable
+from efm_go.members import DM_SLOT_MODE
 
 _MEMBER_SLOT = "member-radar"
 _ANSWER = "Five are covered by open PRs, three are queued."
@@ -152,7 +152,7 @@ def _no_carry_over():
 def _prime_threads_flag(enabled: bool) -> None:
     """Publish ``dashboard.crewmate_threads`` as the live snapshot the routes and
     the WS frame read; the process watcher is reset around every test."""
-    from kiro_crew.config import live
+    from efm_go.config import live
 
     cfg = KiroCrewConfig()
     cfg.dashboard.crewmate_threads = enabled
@@ -212,8 +212,8 @@ async def test_threads_off_hides_the_routes_and_sends_no_frame(tmp_path, monkeyp
 
 
 def test_the_flag_is_off_by_default_and_editable_from_the_dashboard():
-    from kiro_crew.config import loader
-    from kiro_crew.dashboard.handlers import core
+    from efm_go.config import loader
+    from efm_go.dashboard.handlers import core
 
     assert KiroCrewConfig().dashboard.crewmate_threads is False
     # Only a real bool turns it on: the string "false" (a hand edit) stays off.
@@ -444,14 +444,14 @@ def test_a_sidecar_that_cannot_be_looked_at_stops_the_reclaim_scan(tmp_path, mon
     """Session Storage lists a session's files through one scan; a sidecar
     that is absent is fine, one that cannot be stat'ed RAISES rather than being
     left out, or the transcript would move and the replies stay behind."""
-    from kiro_crew import session_storage
+    from efm_go import session_storage
 
     state = _make_state(tmp_path)
     slot, mid = _member_slot(state)
     assert _seed_reply(state, slot, mid, "user", "kept") == "ok"
     sidecar = _store_path(state, slot)
     monkeypatch.setattr(session_storage, "_crew_sessions_dir", lambda: sidecar.parent.parent)
-    from kiro_crew.history import transcript_stem
+    from efm_go.history import transcript_stem
 
     stem = transcript_stem(slot_history_key(slot))
     listed = session_storage._unit_paths("", (stem,), archives={}, cli_files={})
@@ -550,7 +550,7 @@ def test_read_threads_bounds_every_retained_field_and_count(tmp_path):
     """The reader cuts a sidecar to the writer's own shape: a string longer than
     the writer ever stores is clipped, a thread keeps its newest rows only, the
     map stops at the whole-file cap, and an oversize mid is not a thread."""
-    from kiro_crew.history import (
+    from efm_go.history import (
         THREAD_MID_RE,
         THREAD_REPLY_CONTENT_MAX_CHARS,
         THREADS_MAX_REPLIES_PER_SIDECAR,
@@ -611,7 +611,7 @@ def test_an_oversized_or_irregular_sidecar_is_refused_before_it_is_read(tmp_path
     a parse that already blew the memory they exist to protect. The writer
     holds the same line: a document that would pass the ceiling is refused as
     ``sidecar_full`` and the file is left as it was."""
-    from kiro_crew import history
+    from efm_go import history
 
     state = _make_state(tmp_path)
     slot, mid = _member_slot(state)
@@ -1403,9 +1403,9 @@ def test_a_credential_straddling_the_line_cap_is_scrubbed_before_the_cut():
 
 
 def test_thread_session_key_is_its_own_stateless_dashboard_surface():
-    from kiro_crew import session as session_module
-    from kiro_crew.messaging.link import telemetry_channel_of
-    from kiro_crew.sel import _infer_source
+    from efm_go import session as session_module
+    from efm_go.messaging.link import telemetry_channel_of
+    from efm_go.sel import _infer_source
 
     key = thread_session_key("member-radar", M("1"))
     assert key == f"thread:member-radar:{M('1')}"
@@ -1716,7 +1716,7 @@ async def test_a_signed_out_harness_says_so(tmp_path, monkeypatch):
         raise AcpAuthRequired("signed out")
 
     monkeypatch.setattr(chat_threads, "stream_and_collect", _signed_out)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner._mark_kiro_signed_out", lambda state: None)
+    monkeypatch.setattr("efm_go.dashboard.chat_runner._mark_kiro_signed_out", lambda state: None)
     await _run_thread_turn(
         state, slot, mid, "run-1", "hi", _parent(), [], f"{slot.key}:{mid}", _identity(state, slot)
     )

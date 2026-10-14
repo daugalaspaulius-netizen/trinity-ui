@@ -5,11 +5,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.service.common import RestartReport
+from efm_go.service.common import RestartReport
 
 
 def test_authenticated_shutdown_request_uses_fixed_loopback_endpoint() -> None:
-    from kiro_crew import cli_server
+    from efm_go import cli_server
 
     assert hasattr(cli_server, "_request_gateway_shutdown")
     _request_gateway_shutdown = cli_server._request_gateway_shutdown
@@ -20,8 +20,8 @@ def test_authenticated_shutdown_request_uses_fixed_loopback_endpoint() -> None:
     context.__enter__.return_value = response
 
     with (
-        patch("kiro_crew.cli_server.run_marker.read_secret", return_value="local-secret"),
-        patch("kiro_crew.cli_server.loopback_urlopen", return_value=context) as mock_open,
+        patch("efm_go.cli_server.run_marker.read_secret", return_value="local-secret"),
+        patch("efm_go.cli_server.loopback_urlopen", return_value=context) as mock_open,
     ):
         assert _request_gateway_shutdown(7777) is True
 
@@ -32,21 +32,21 @@ def test_authenticated_shutdown_request_uses_fixed_loopback_endpoint() -> None:
 
 
 def test_authenticated_shutdown_request_fails_closed_without_secret() -> None:
-    from kiro_crew import cli_server
+    from efm_go import cli_server
 
     assert hasattr(cli_server, "_request_gateway_shutdown")
     _request_gateway_shutdown = cli_server._request_gateway_shutdown
 
     with (
-        patch("kiro_crew.cli_server.run_marker.read_secret", return_value=""),
-        patch("kiro_crew.cli_server.loopback_urlopen") as mock_open,
+        patch("efm_go.cli_server.run_marker.read_secret", return_value=""),
+        patch("efm_go.cli_server.loopback_urlopen") as mock_open,
     ):
         assert _request_gateway_shutdown(7777) is False
     mock_open.assert_not_called()
 
 
 def test_authenticated_shutdown_request_rejects_non_object_response() -> None:
-    from kiro_crew import cli_server
+    from efm_go import cli_server
 
     assert hasattr(cli_server, "_request_gateway_shutdown")
     _request_gateway_shutdown = cli_server._request_gateway_shutdown
@@ -57,31 +57,31 @@ def test_authenticated_shutdown_request_rejects_non_object_response() -> None:
     context.__enter__.return_value = response
 
     with (
-        patch("kiro_crew.cli_server.run_marker.read_secret", return_value="local-secret"),
-        patch("kiro_crew.cli_server.loopback_urlopen", return_value=context),
+        patch("efm_go.cli_server.run_marker.read_secret", return_value="local-secret"),
+        patch("efm_go.cli_server.loopback_urlopen", return_value=context),
     ):
         assert _request_gateway_shutdown(7777) is False
 
 
 def test_stop_uses_authenticated_shutdown_when_listener_lookup_is_blind(capsys) -> None:
-    from kiro_crew import cli_server
+    from efm_go import cli_server
 
     assert hasattr(cli_server, "_report_authenticated_shutdown")
     _stop = cli_server._stop
 
     mock_sel = MagicMock()
     with (
-        patch("kiro_crew.cli_server.service_controller.stop_service", return_value=False),
+        patch("efm_go.cli_server.service_controller.stop_service", return_value=False),
         patch(
-            "kiro_crew.cli_server.platform_compat.find_listening_pids",
+            "efm_go.cli_server.platform_compat.find_listening_pids",
             return_value=[],
         ),
         patch(
-            "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+            "efm_go.cli_server.platform_compat.listening_pid_tool_available",
             return_value=True,
         ),
-        patch("kiro_crew.cli_server._request_gateway_shutdown", return_value=True),
-        patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+        patch("efm_go.cli_server._request_gateway_shutdown", return_value=True),
+        patch("efm_go.cli_server.sel", return_value=mock_sel),
     ):
         _stop(7777)
 
@@ -92,7 +92,7 @@ def test_stop_uses_authenticated_shutdown_when_listener_lookup_is_blind(capsys) 
 
 
 def test_authenticated_shutdown_request_rejects_oversized_response() -> None:
-    from kiro_crew import cli_server
+    from efm_go import cli_server
 
     response = MagicMock(status=200)
     response.read.return_value = b"x" * (cli_server._SHUTDOWN_RESPONSE_MAX_BYTES + 1)
@@ -100,8 +100,8 @@ def test_authenticated_shutdown_request_rejects_oversized_response() -> None:
     context.__enter__.return_value = response
 
     with (
-        patch("kiro_crew.cli_server.run_marker.read_secret", return_value="local-secret"),
-        patch("kiro_crew.cli_server.loopback_urlopen", return_value=context),
+        patch("efm_go.cli_server.run_marker.read_secret", return_value="local-secret"),
+        patch("efm_go.cli_server.loopback_urlopen", return_value=context),
     ):
         assert cli_server._request_gateway_shutdown(7777) is False
 
@@ -109,7 +109,7 @@ def test_authenticated_shutdown_request_rejects_oversized_response() -> None:
 
 
 def test_authenticated_shutdown_request_rejects_recursive_json() -> None:
-    from kiro_crew import cli_server
+    from efm_go import cli_server
 
     response = MagicMock(status=200)
     response.read.return_value = b"[" * 1500 + b"]" * 1500
@@ -117,8 +117,8 @@ def test_authenticated_shutdown_request_rejects_recursive_json() -> None:
     context.__enter__.return_value = response
 
     with (
-        patch("kiro_crew.cli_server.run_marker.read_secret", return_value="local-secret"),
-        patch("kiro_crew.cli_server.loopback_urlopen", return_value=context),
+        patch("efm_go.cli_server.run_marker.read_secret", return_value="local-secret"),
+        patch("efm_go.cli_server.loopback_urlopen", return_value=context),
     ):
         assert cli_server._request_gateway_shutdown(7777) is False
 
@@ -127,31 +127,31 @@ def test_authenticated_shutdown_request_rejects_recursive_json() -> None:
 def test_restart_refuses_spawn_after_blind_authenticated_shutdown(
     capsys, marker_pid: int | None
 ) -> None:
-    from kiro_crew import cli_server
+    from efm_go import cli_server
 
     mock_sel = MagicMock()
     with (
-        patch("kiro_crew.cli_server.resolve_client_port", return_value=7777),
+        patch("efm_go.cli_server.resolve_client_port", return_value=7777),
         patch(
-            "kiro_crew.cli_server.service_controller.restart_service",
+            "efm_go.cli_server.service_controller.restart_service",
             return_value=RestartReport(),
         ),
         patch(
-            "kiro_crew.cli_server.service_controller.is_service_active",
+            "efm_go.cli_server.service_controller.is_service_active",
             return_value=False,
         ),
-        patch("kiro_crew.cli_server.run_marker.read_pid", return_value=marker_pid),
+        patch("efm_go.cli_server.run_marker.read_pid", return_value=marker_pid),
         patch(
-            "kiro_crew.cli_server.platform_compat.find_listening_pids",
+            "efm_go.cli_server.platform_compat.find_listening_pids",
             return_value=[],
         ),
         patch(
-            "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+            "efm_go.cli_server.platform_compat.listening_pid_tool_available",
             return_value=True,
         ),
-        patch("kiro_crew.cli_server._report_authenticated_shutdown", return_value=True),
-        patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
-        patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+        patch("efm_go.cli_server._report_authenticated_shutdown", return_value=True),
+        patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
+        patch("efm_go.cli_server.sel", return_value=mock_sel),
     ):
         with pytest.raises(SystemExit) as exc:
             cli_server._restart(None)
@@ -170,30 +170,30 @@ def test_restart_refuses_spawn_when_the_lock_is_still_held_after_the_incumbent_e
     """The listener exited, yet ``gateway.lock`` is still held -- a child that
     inherited the descriptor. The re-probe right before the spawn sees the live
     holder and refuses; nothing is spawned into a lock that would reject it."""
-    from kiro_crew import cli_server
-    from kiro_crew.gateway_lock import LockHolder
+    from efm_go import cli_server
+    from efm_go.gateway_lock import LockHolder
 
     mock_sel = MagicMock()
     with (
-        patch("kiro_crew.cli_server.resolve_client_port", return_value=7777),
+        patch("efm_go.cli_server.resolve_client_port", return_value=7777),
         patch(
-            "kiro_crew.cli_server.service_controller.restart_service", return_value=RestartReport()
+            "efm_go.cli_server.service_controller.restart_service", return_value=RestartReport()
         ),
-        patch("kiro_crew.cli_server.service_controller.is_service_active", return_value=False),
-        patch("kiro_crew.cli_server.run_marker.read_pid", return_value=4242),
-        patch("kiro_crew.cli_server.platform_compat.find_listening_pids", return_value=[4242]),
+        patch("efm_go.cli_server.service_controller.is_service_active", return_value=False),
+        patch("efm_go.cli_server.run_marker.read_pid", return_value=4242),
+        patch("efm_go.cli_server.platform_compat.find_listening_pids", return_value=[4242]),
         patch(
-            "kiro_crew.cli_server.platform_compat.listening_pid_tool_available", return_value=True
+            "efm_go.cli_server.platform_compat.listening_pid_tool_available", return_value=True
         ),
-        patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
-        patch("kiro_crew.cli_server._stop"),
-        patch("kiro_crew.cli_server._wait_for_pids_exit", return_value=[]),
+        patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
+        patch("efm_go.cli_server._stop"),
+        patch("efm_go.cli_server._wait_for_pids_exit", return_value=[]),
         patch(
-            "kiro_crew.cli_server.lock_holder",
+            "efm_go.cli_server.lock_holder",
             return_value=LockHolder(pid=4300, alive=True, source="flock_owner"),
         ),
-        patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
-        patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+        patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
+        patch("efm_go.cli_server.sel", return_value=mock_sel),
     ):
         with pytest.raises(SystemExit) as exc:
             cli_server._restart(None)
@@ -209,30 +209,30 @@ def test_restart_refuses_spawn_when_the_lock_is_still_held_after_the_incumbent_e
 def test_restart_refuses_spawn_when_the_lock_probe_is_indeterminate_after_the_wait(
     capsys,
 ) -> None:
-    from kiro_crew import cli_server
-    from kiro_crew.gateway_lock import LockProbeError
+    from efm_go import cli_server
+    from efm_go.gateway_lock import LockProbeError
 
     mock_sel = MagicMock()
     with (
-        patch("kiro_crew.cli_server.resolve_client_port", return_value=7777),
+        patch("efm_go.cli_server.resolve_client_port", return_value=7777),
         patch(
-            "kiro_crew.cli_server.service_controller.restart_service", return_value=RestartReport()
+            "efm_go.cli_server.service_controller.restart_service", return_value=RestartReport()
         ),
-        patch("kiro_crew.cli_server.service_controller.is_service_active", return_value=False),
-        patch("kiro_crew.cli_server.run_marker.read_pid", return_value=4242),
-        patch("kiro_crew.cli_server.platform_compat.find_listening_pids", return_value=[4242]),
+        patch("efm_go.cli_server.service_controller.is_service_active", return_value=False),
+        patch("efm_go.cli_server.run_marker.read_pid", return_value=4242),
+        patch("efm_go.cli_server.platform_compat.find_listening_pids", return_value=[4242]),
         patch(
-            "kiro_crew.cli_server.platform_compat.listening_pid_tool_available", return_value=True
+            "efm_go.cli_server.platform_compat.listening_pid_tool_available", return_value=True
         ),
-        patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
-        patch("kiro_crew.cli_server._stop"),
-        patch("kiro_crew.cli_server._wait_for_pids_exit", return_value=[]),
+        patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
+        patch("efm_go.cli_server._stop"),
+        patch("efm_go.cli_server._wait_for_pids_exit", return_value=[]),
         patch(
-            "kiro_crew.cli_server.lock_holder",
+            "efm_go.cli_server.lock_holder",
             side_effect=LockProbeError("gateway.lock", OSError("held but unnameable")),
         ),
-        patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
-        patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+        patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
+        patch("efm_go.cli_server.sel", return_value=mock_sel),
     ):
         with pytest.raises(SystemExit) as exc:
             cli_server._restart(None)

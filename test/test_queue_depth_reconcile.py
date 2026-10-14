@@ -34,22 +34,22 @@ from overload_fakes import (
     wait_taskq_open,
 )
 
-import kiro_crew.subagent as subagent_mod
-import kiro_crew.subagent_manager.admission.taskq_bridge as taskq_bridge_mod
-import kiro_crew.subagent_manager.run as run_mod
-import kiro_crew.taskq.store as store_mod
-from kiro_crew.subagent import SubagentInfo, SubagentManager
-from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
-from kiro_crew.subagent_manager.admission.types import (
+import efm_go.subagent as subagent_mod
+import efm_go.subagent_manager.admission.taskq_bridge as taskq_bridge_mod
+import efm_go.subagent_manager.run as run_mod
+import efm_go.taskq.store as store_mod
+from efm_go.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
+from efm_go.subagent_manager.admission.types import (
     MIN_RECHECK_DELAY_SECS,
     WINDOW_ENTRY_RECOVERING,
 )
-from kiro_crew.subagent_manager.run import _QUEUE_DEPTH_RETRIES
-from kiro_crew.subagent_wait_reasons import QUEUED_REASON_LOW_MEMORY
-from kiro_crew.taskq import KIND_SUBAGENT, model
-from kiro_crew.taskq.reconcile import reconcile_on_boot
-from kiro_crew.taskq.store import TaskStore, TaskStoreUnavailable
-from kiro_crew.taskq.waits import WaitRecord
+from efm_go.subagent_manager.run import _QUEUE_DEPTH_RETRIES
+from efm_go.subagent_wait_reasons import QUEUED_REASON_LOW_MEMORY
+from efm_go.taskq import KIND_SUBAGENT, model
+from efm_go.taskq.reconcile import reconcile_on_boot
+from efm_go.taskq.store import TaskStore, TaskStoreUnavailable
+from efm_go.taskq.waits import WaitRecord
 
 #: Where each warning these tests count is logged; a count filters on it, so a
 #: record another thread in the worker logs cannot move it.

@@ -17,7 +17,7 @@
 
 这里的 98% 是**记忆主题命中率**，不是用户问题的回答准确率；本评测没有生成或评分最终回答。
 
-![三种向量状态的主题命中率和片段召回率](https://github.com/kirodotdev/KiroCrew/raw/568abd2faf45db6ae36dd62164b8f5a85af74a71/docs/task-specs/2026/09/memory-v2/algorithm-retrieval-quality.svg)
+![三种向量状态的主题命中率和片段召回率](https://efmleads.com/raw/568abd2faf45db6ae36dd62164b8f5a85af74a71/docs/task-specs/2026/09/memory-v2/algorithm-retrieval-quality.svg)
 
 ## 2. 评测到底测了什么
 
@@ -63,7 +63,7 @@
 | 缺失全部短片段向量 | 73 | 6 | 27 | 4894 |
 | 完全无向量 | 56 | 5 | 44 | 4895 |
 
-![三种模式中的正确候选、误召回和漏召回](https://github.com/kirodotdev/KiroCrew/raw/568abd2faf45db6ae36dd62164b8f5a85af74a71/docs/task-specs/2026/09/memory-v2/algorithm-admission-errors.svg)
+![三种模式中的正确候选、误召回和漏召回](https://efmleads.com/raw/568abd2faf45db6ae36dd62164b8f5a85af74a71/docs/task-specs/2026/09/memory-v2/algorithm-admission-errors.svg)
 
 相对完整向量，缺失短向量使片段召回下降 **20 个百分点**；完全无向量下降 **37 个百分点**，问题命中下降 **24 个百分点**。这些是 **V2 历史快照的向量缺失对照**，不是 V1→V2 的改进幅度，也不是按时间衰减实验。
 
@@ -151,11 +151,11 @@
 
 本报告只使用 Memory V1 与 Memory V2 两个产品名称。历史 JSON 仅规范化算法标签，逐题结果、数值、其他证据和原有指纹保持不变；provenance 记录规范化前的原始文件 SHA-256，并明确旧源码没有输出规范化后的标签。快照时间与源码指纹用于区分实测运行，不代表产品子版本。
 
-- [原始完整评测 JSON](https://github.com/kirodotdev/KiroCrew/blob/7d14fbf73706e3b659be5840c382960553a40425/temp-screenshots/memory-v2/pre-retention/member-v2-hybrid-qwen3.json)：保留策略修改前的原始快照，逐题入选 ID、证据、模式结果与模型指纹；完整字节已归档。
-- [评测程序](../../../../../src/kiro_crew/eval/bench/member_v2.py)：`ranking_metrics`、`_mode_report`、`_edge_report` 定义指标与流程。
-- [公开语料与标签](../../../../../src/kiro_crew/eval/bench/admission_corpus.py)：50 个主题与各自两条相关片段。
-- [V2 策略](../../../../../src/kiro_crew/memory_v2.py)与[检索实现](../../../../../src/kiro_crew/vector_memory.py)：阈值、词法证据、排序、MMR 与上下文。
-- [语料约束校验](../../../../../src/kiro_crew/eval/bench/admission.py)：`validate_corpus` 拒绝 `write_episodic` 会丢弃的片段；原同余弦 V1/V2 准入对照 CLI 未保留在仓库中。
+- [原始完整评测 JSON](https://efmleads.com/blob/7d14fbf73706e3b659be5840c382960553a40425/temp-screenshots/memory-v2/pre-retention/member-v2-hybrid-qwen3.json)：保留策略修改前的原始快照，逐题入选 ID、证据、模式结果与模型指纹；完整字节已归档。
+- [评测程序](../../../../../src/efm_go/eval/bench/member_v2.py)：`ranking_metrics`、`_mode_report`、`_edge_report` 定义指标与流程。
+- [公开语料与标签](../../../../../src/efm_go/eval/bench/admission_corpus.py)：50 个主题与各自两条相关片段。
+- [V2 策略](../../../../../src/efm_go/memory_v2.py)与[检索实现](../../../../../src/efm_go/vector_memory.py)：阈值、词法证据、排序、MMR 与上下文。
+- [语料约束校验](../../../../../src/efm_go/eval/bench/admission.py)：`validate_corpus` 拒绝 `write_episodic` 会丢弃的片段；原同余弦 V1/V2 准入对照 CLI 未保留在仓库中。
 - [评测产物完整性测试](../../../../../test/test_member_memory_hybrid_bench.py)：本次复核 **3/3 通过**；另按入选 ID 独立重算上下文指标，与产物一致。
 
 语料 SHA-256：`646922d14616e33a67b4b05181ac633ca1def857592b7d063665a96839b29c7f`
@@ -167,7 +167,7 @@
 重新运行实测时，使用已有本地 GGUF（程序禁用下载、采用隔离临时数据目录）：
 
 ```sh
-python -m kiro_crew.eval.bench.member_v2 --model-path <existing.gguf> --json <report.json>
+python -m efm_go.eval.bench.member_v2 --model-path <existing.gguf> --json <report.json>
 ```
 
 指纹用于固定输入与产物；不同推理运行环境仍可能存在数值差异。历史 V2 产物没有完整记录硬件、库版本和源码哈希，不能声称已具备完全冻结的运行环境。第 11 节的 V2 复跑另行记录源码指纹。
@@ -350,7 +350,7 @@ Memory MCP 的正文保持 3,000 字符上限，同时对完整记忆结果执�
 
 ### 运行身份与可核对的来源
 
-- CI [运行 34321741403](https://github.com/kirodotdev/KiroCrew/actions/runs/34321741403)，attempt `1`；[产物 10092236389](https://github.com/kirodotdev/KiroCrew/actions/runs/34321741403/artifacts/10092236389)。
+- CI [运行 34321741403](https://efmleads.com/actions/runs/34321741403)，attempt `1`；[产物 10092236389](https://efmleads.com/actions/runs/34321741403/artifacts/10092236389)。
 - PR head：`201eb6e1b7b36ba93c3ee1f3fa8fa0ed09326070`；CI synthetic checkout：`0291a6eff1733e175153adc5c094d10bb2a85166`。两者是不同提交，不能互换。
 - 原始测量 JSON 的 SHA256：`aa7f6d4de1c6cdfc63db7fbf9a7221e7cb3cdb4a64d9835d87053f66ee9fe66c`，与 `provenance.report_sha256` 一致。
 - 固定模型：`qwen3-embedding:0.6b`，1,024 维；模型 SHA256：`06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439`。
@@ -398,11 +398,11 @@ Memory MCP 的正文保持 3,000 字符上限，同时对完整记忆结果执�
 
 **本节记录新的 b02 CI 静态产物。第 12 节的 PR 201 `bounded_oversized.passed = false` 结果保持原样。新产物将独立和竞争记录两个超长片段场景都记录为通过。b02 离线浏览器 E2E 已通过，但整轮 CI 尚未全绿，不能据此宣布发布门禁完成。**
 
-证据来自已保存且未修改的 `member-v2-hybrid-qwen3.json`、`provenance.json` 与 `run.log`。本次更新只读取既有 CI 产物和作业日志，没有在本地调用模型、执行评测或运行产品测试。`provenance.status` 为 `completed measurement; structural checks passed; scores require review`，`structural_failures` 为空。静态产物本身不包含 workflow 步骤结论；另行核对的 [CI 作业 102407307837](https://github.com/kirodotdev/KiroCrew/actions/runs/34333392423/job/102407307837) 记录结构门禁通过。该结论只覆盖这次测量的结构断言，整轮 CI 仍未通过。
+证据来自已保存且未修改的 `member-v2-hybrid-qwen3.json`、`provenance.json` 与 `run.log`。本次更新只读取既有 CI 产物和作业日志，没有在本地调用模型、执行评测或运行产品测试。`provenance.status` 为 `completed measurement; structural checks passed; scores require review`，`structural_failures` 为空。静态产物本身不包含 workflow 步骤结论；另行核对的 [CI 作业 102407307837](https://efmleads.com/actions/runs/34333392423/job/102407307837) 记录结构门禁通过。该结论只覆盖这次测量的结构断言，整轮 CI 仍未通过。
 
 ### b02 运行身份与产物指纹
 
-- CI [运行 34333392423](https://github.com/kirodotdev/KiroCrew/actions/runs/34333392423)，attempt `1`；[产物 10096834238](https://github.com/kirodotdev/KiroCrew/actions/runs/34333392423/artifacts/10096834238)，名称为 `member-recall-qwen-bff23582600b7b444e75e9141207fc46c47b5558`。
+- CI [运行 34333392423](https://efmleads.com/actions/runs/34333392423)，attempt `1`；[产物 10096834238](https://efmleads.com/actions/runs/34333392423/artifacts/10096834238)，名称为 `member-recall-qwen-bff23582600b7b444e75e9141207fc46c47b5558`。
 - PR head：`b02cd67c08732b86e549973942a05e2638bf7976`；CI synthetic checkout：`bff23582600b7b444e75e9141207fc46c47b5558`。两者是不同提交，不能互换。
 - GitHub 产物摘要：`sha256:56ad63f894c427c1bb6840d8c1a8b1875297b2e5870261191ffe5b68b9e11d2b`。
 - 原始测量 JSON 的 SHA256：`2727db85de0515c10b42166e8175eada0151e3dab232ac4a0373f32546ada611`，与 `provenance.report_sha256` 一致。
@@ -440,7 +440,7 @@ Memory MCP 的正文保持 3,000 字符上限，同时对完整记忆结果执�
 
 ### b02 未完成验证和证据边界
 
-b02 的 `E2E (stub ACP backend, offline)` 已通过，当前浏览器截图与录像保存在[产物 10097394058](https://github.com/kirodotdev/KiroCrew/actions/runs/34333392423/artifacts/10097394058)。该执行使用真实临时网关和模拟 ACP 后端；它不证明线上模型质量或重启恢复激活。整轮 b02 CI 尚未全绿，新增源码修复仍需后续 CI 验证。
+b02 的 `E2E (stub ACP backend, offline)` 已通过，当前浏览器截图与录像保存在[产物 10097394058](https://efmleads.com/actions/runs/34333392423/artifacts/10097394058)。该执行使用真实临时网关和模拟 ACP 后端；它不证明线上模型质量或重启恢复激活。整轮 b02 CI 尚未全绿，新增源码修复仍需后续 CI 验证。
 
 在 b02 源码复查中，人工编写的 `U+0344` 小预算用例确认了小预算下最后一条证据会被删除；归档解析器也确认存在缺口。对应源码修复尚未发布，因此这份 b02 产物不能证明这两项已经关闭。
 
@@ -450,7 +450,7 @@ b02 的 `E2E (stub ACP backend, offline)` 已通过，当前浏览器截图与�
 
 ### 最新重复测量的来源与范围
 
-最新 [CI 运行 34365002665](https://github.com/kirodotdev/KiroCrew/actions/runs/34365002665) 的 [Qwen 产物 10109674392](https://github.com/kirodotdev/KiroCrew/actions/runs/34365002665/artifacts/10109674392) 已完成测量，attempt 为 `1`。PR head 为 `eb47b0f0a7ec81534652f9849f76b88c5aa73b96`，实际 CI synthetic checkout 为 `b7af0bee59df49e6df51e8291bce54214de93e11`。产物记录 `completed measurement; structural checks passed; scores require review`，`structural_failures=[]`。本次源码比对范围仅为六个核心文件，**6/6 摘要一致，不是对 provenance 所列全部源码文件的复核**。
+最新 [CI 运行 34365002665](https://efmleads.com/actions/runs/34365002665) 的 [Qwen 产物 10109674392](https://efmleads.com/actions/runs/34365002665/artifacts/10109674392) 已完成测量，attempt 为 `1`。PR head 为 `eb47b0f0a7ec81534652f9849f76b88c5aa73b96`，实际 CI synthetic checkout 为 `b7af0bee59df49e6df51e8291bce54214de93e11`。产物记录 `completed measurement; structural checks passed; scores require review`，`structural_failures=[]`。本次源码比对范围仅为六个核心文件，**6/6 摘要一致，不是对 provenance 所列全部源码文件的复核**。
 
 测量 JSON 的 SHA256 为 `2727db85de0515c10b42166e8175eada0151e3dab232ac4a0373f32546ada611`，与 60fcc 报告逐字节相同。完整向量、缺失全部短片段向量、完全无向量三种模式的主题命中分别为 **49/50、48/50、37/50**，相关片段入选分别为 **93/100、73/100、56/100**，各有 **5** 个无关片段入选；上下文 nDCG@8 分别为 **0.931972、0.769785、0.596207**。这仍是同一语料的重复测量，没有新增留出集、V1/V2 A/B、回答质量或性能证据，也不代表整轮 CI 通过。本次只读取既有产物，未重新运行模型或评测。
 
@@ -460,11 +460,11 @@ b02 的 `E2E (stub ACP backend, offline)` 已通过，当前浏览器截图与�
 
 ### 运行身份与可保留的原始来源
 
-- CI [运行 34340819757](https://github.com/kirodotdev/KiroCrew/actions/runs/34340819757)，attempt `1`；官方 [Qwen 产物 10099798781](https://github.com/kirodotdev/KiroCrew/actions/runs/34340819757/artifacts/10099798781)。
+- CI [运行 34340819757](https://efmleads.com/actions/runs/34340819757)，attempt `1`；官方 [Qwen 产物 10099798781](https://efmleads.com/actions/runs/34340819757/artifacts/10099798781)。
 - PR head：`60fccbad521cad6df09a2f60075fa43f3ca02be4`；实际 CI synthetic checkout：`17b40179e70547e3f8e298c8e7ca121602fcdb5e`。两个提交身份分别记录，不能互换。
-- [原始测量 JSON](https://github.com/kirodotdev/KiroCrew/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/temp-screenshots/memory-v2/ci-60fccbad-benchmark/member-v2-hybrid-qwen3.json)，SHA256：`2727db85de0515c10b42166e8175eada0151e3dab232ac4a0373f32546ada611`，与 provenance 中的报告摘要一致。
-- [原始 provenance](https://github.com/kirodotdev/KiroCrew/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/temp-screenshots/memory-v2/ci-60fccbad-benchmark/provenance.json)，SHA256：`0ad8c32add329704de0e89c1cde7b6acef3bc3b501d3133bb3f0518e7c632114`。
-- [原始运行日志](https://github.com/kirodotdev/KiroCrew/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/temp-screenshots/memory-v2/ci-60fccbad-benchmark/run.log)，SHA256：`e0187f91b43e52b2cc9dc193936f71f2179a397ce938fb470a2693057656ed2c`。日志内两个 JSON 对象与报告对应内容一致。
+- [原始测量 JSON](https://efmleads.com/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/temp-screenshots/memory-v2/ci-60fccbad-benchmark/member-v2-hybrid-qwen3.json)，SHA256：`2727db85de0515c10b42166e8175eada0151e3dab232ac4a0373f32546ada611`，与 provenance 中的报告摘要一致。
+- [原始 provenance](https://efmleads.com/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/temp-screenshots/memory-v2/ci-60fccbad-benchmark/provenance.json)，SHA256：`0ad8c32add329704de0e89c1cde7b6acef3bc3b501d3133bb3f0518e7c632114`。
+- [原始运行日志](https://efmleads.com/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/temp-screenshots/memory-v2/ci-60fccbad-benchmark/run.log)，SHA256：`e0187f91b43e52b2cc9dc193936f71f2179a397ce938fb470a2693057656ed2c`。日志内两个 JSON 对象与报告对应内容一致。
 - 仓库中的三个原始文件与独立保留副本逐字节一致，SHA256 也已核对。产物编号及 ZIP 摘要由实现负责人提供；ZIP SHA256 为 `3a2a68ccae49246c8f43d6f11eaf9474f01705266bffabaf16793eb037fe9cc2`。本次未取得 ZIP 独立重算，ZIP 摘要与三个提取文件的摘要分开记录。
 
 `provenance.canonical_source_sha256` 所列 **1,416 个 Python 文件**均与上述 PR head 的精确 Git 文件内容一致。规范化只将 CRLF 换为 LF；该结果不涵盖检出中的所有文件或完整运行环境。新报告与日志的字节和 b02 相同，新 provenance 则记录不同的 PR、检出与运行身份。本次直接重算新提供的文件；相同输出本身既不能独立证明复跑，也不能据此断言复用旧产物。
@@ -500,7 +500,7 @@ b02 的 `E2E (stub ACP backend, offline)` 已通过，当前浏览器截图与�
 
 实现负责人报告运行 `34340819757` 已全部结束：离线 E2E、前端四个分组及覆盖率合并、Linux namespace、macOS gateway，以及 Linux 和 Windows 后端第 1、2 组通过；Linux 和 Windows 后端第 3、4 组因已定位的测试泄漏或旧断言失败。对应修复和 GPT/Opus 评审修复已写入工作树，仍待新 CI 验证。**该轮 CI 已完成但未通过，修复已编写不等于验证通过。** 这些完整作业状态由实现负责人提供，本次报告更新未独立查询整轮 CI。
 
-新 UI [产物 10100214873](https://github.com/kirodotdev/KiroCrew/actions/runs/34340819757/artifacts/10100214873)的八个场景记录均为 passed、retry 0，run 和 checkout 与本节一致。22 张静态截图已逐张核对，八段视频已保留但未播放；范围为真实临时网关和合成数据，不包含在线模型回答或重启恢复激活。后续工作树增加的 recall 前后、Advanced 截图及布局修复尚无新执行结果，不能由这批旧于修复的媒体证明。
+新 UI [产物 10100214873](https://efmleads.com/actions/runs/34340819757/artifacts/10100214873)的八个场景记录均为 passed、retry 0，run 和 checkout 与本节一致。22 张静态截图已逐张核对，八段视频已保留但未播放；范围为真实临时网关和合成数据，不包含在线模型回答或重启恢复激活。后续工作树增加的 recall 前后、Advanced 截图及布局修复尚无新执行结果，不能由这批旧于修复的媒体证明。
 
 ### 测量限制保持不变
 
@@ -511,7 +511,7 @@ b02 的 `E2E (stub ACP backend, offline)` 已通过，当前浏览器截图与�
 
 ## 15. 最新已复核测量：44546
 
-**结论没有改变：完整向量找回更多相关经历；现有样本不能证明 V2 整体优于 V1。** [Qwen CI 产物 10135513019](https://github.com/kirodotdev/KiroCrew/actions/runs/34433763685/artifacts/10135513019) 来自 PR 提交 `44546ae46d5dd3b2f67c6db813c3473cd9dc617a`。实际检出为合并提交 `e74dbe6ec831747774c3906698ddef7a7d4c94b9`，另一父提交是 main `160343495894edde05af057032b6b62dd6df1984`。
+**结论没有改变：完整向量找回更多相关经历；现有样本不能证明 V2 整体优于 V1。** [Qwen CI 产物 10135513019](https://efmleads.com/actions/runs/34433763685/artifacts/10135513019) 来自 PR 提交 `44546ae46d5dd3b2f67c6db813c3473cd9dc617a`。实际检出为合并提交 `e74dbe6ec831747774c3906698ddef7a7d4c94b9`，另一父提交是 main `160343495894edde05af057032b6b62dd6df1984`。
 
 | 向量状态 | 主题命中 | 相关片段入选 | 无关片段入选 | nDCG@8 |
 | --- | ---: | ---: | ---: | ---: |
@@ -521,8 +521,8 @@ b02 的 `E2E (stub ACP backend, offline)` 已通过，当前浏览器截图与�
 
 报告 SHA256 为 `2727db85de0515c10b42166e8175eada0151e3dab232ac4a0373f32546ada611`，与前次报告逐字节相同。原始 ZIP SHA256 为 `29e4114bb0a053658b5dc74e55bfbc7991dfc6c9745a464a58d266d54599294c`，与 GitHub 产物摘要一致。本次复核将 provenance 中全部 **1,426 个规范化 Python 源码摘要**逐项对应到上述 PR 提交和合并树，未发现差异。该范围不涵盖所有仓库文件或完整安装环境。原生运行库与固定模型摘要仍是 CI 保存的来源记录，本轮未重新下载这些二进制文件作独立复核。
 
-Qwen 进程启用 NumPy，未安装 FAISS。中日韩固定结构样例、超长输出与已遗忘记录排除检查通过，`structural_failures=[]`。另一个 [FAISS 产物 10135478508](https://github.com/kirodotdev/KiroCrew/actions/runs/34433763685/artifacts/10135478508) 记录 faiss-cpu 1.12.0 下六个指定用例通过，无失败、错误或跳过；ZIP SHA256 为 `33c11793fe64cac9b36ef2632ffb8dfe5d6a22ea37dcfb8efff716857a218b29`。同一 namespace 作业的两项真实 Linux 隔离检查通过。这些通过记录属于各自作业，不等于整轮 CI 全绿。
+Qwen 进程启用 NumPy，未安装 FAISS。中日韩固定结构样例、超长输出与已遗忘记录排除检查通过，`structural_failures=[]`。另一个 [FAISS 产物 10135478508](https://efmleads.com/actions/runs/34433763685/artifacts/10135478508) 记录 faiss-cpu 1.12.0 下六个指定用例通过，无失败、错误或跳过；ZIP SHA256 为 `33c11793fe64cac9b36ef2632ffb8dfe5d6a22ea37dcfb8efff716857a218b29`。同一 namespace 作业的两项真实 Linux 隔离检查通过。这些通过记录属于各自作业，不等于整轮 CI 全绿。
 
-44546 的[浏览器产物 10135852001](https://github.com/kirodotdev/KiroCrew/actions/runs/34433763685/artifacts/10135852001)包含九个记忆场景，全部首次通过。29 张截图已逐张检查，九段录像共检查了 84 个按时间排列的解码画面，未发现具体视觉缺陷；这不是连续播放检查。该次运行的原始媒体未随仓库保留；后续来源 `a46796234356c217d5fd531f21e1ca7a1c026b86` 的十个场景捕获保存在[已提交的证据目录](https://github.com/kirodotdev/KiroCrew/blob/d78172afa410ab226336eef1e633a354742692cc/temp-screenshots/memory-v2/ci-a467/README.md)。该执行使用真实临时网关、合成数据和模拟 ACP，未验证线上模型回答或重启后的恢复激活，也不覆盖后续界面改动。
+44546 的[浏览器产物 10135852001](https://efmleads.com/actions/runs/34433763685/artifacts/10135852001)包含九个记忆场景，全部首次通过。29 张截图已逐张检查，九段录像共检查了 84 个按时间排列的解码画面，未发现具体视觉缺陷；这不是连续播放检查。该次运行的原始媒体未随仓库保留；后续来源 `a46796234356c217d5fd531f21e1ca7a1c026b86` 的十个场景捕获保存在[已提交的证据目录](https://efmleads.com/blob/d78172afa410ab226336eef1e633a354742692cc/temp-screenshots/memory-v2/ci-a467/README.md)。该执行使用真实临时网关、合成数据和模拟 ACP，未验证线上模型回答或重启后的恢复激活，也不覆盖后续界面改动。
 
 本次仍复用 50 个英文主题、100 条经历片段和每模式 5,000 对问题与片段。0.62 与 0.57 是同一语料上的暂定阈值，没有独立留出集。主题命中不是回答正确率；这些测量没有比较同条件 V1/V2、核心指南遵守、Crew 协作效果、长期学习、延迟、CPU、内存或成本。完整向量的优势只适用于本语料中的片段召回。后续提交的完整 CI、安全门禁和新界面证据需要分别验证。

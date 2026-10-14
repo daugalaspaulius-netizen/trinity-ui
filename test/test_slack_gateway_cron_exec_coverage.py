@@ -42,10 +42,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.cron import CronJob, CronStoreBusy
-from kiro_crew.dashboard import chat_persistence
-from kiro_crew.slack import gateway as gw
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.cron import CronJob, CronStoreBusy
+from efm_go.dashboard import chat_persistence
+from efm_go.slack import gateway as gw
 
 # ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -196,7 +196,7 @@ async def _cron_cb(
             patch.object(
                 gw, "build_cron_session_context", lambda job: (f"cron:{job.id}", job.message)
             ),
-            patch("kiro_crew.apps.bridges.reconcile_app_crons_for_execution", AsyncMock()),
+            patch("efm_go.apps.bridges.reconcile_app_crons_for_execution", AsyncMock()),
         ):
             stack.enter_context(patcher)
         if queue_hook is not None:
@@ -904,8 +904,8 @@ class TestTheVetIsAnAccountedBudgetTerm:
     @staticmethod
     def _budgets(job: Any) -> tuple[float, float]:
         """(vet bound, pre-fix inner backstop) from the live functions."""
-        from kiro_crew.cron import effective_wake_budget
-        from kiro_crew.executors import cron_gate_budget
+        from efm_go.cron import effective_wake_budget
+        from efm_go.executors import cron_gate_budget
 
         return cron_gate_budget(effective_wake_budget(job)), float((job.timeout or 300) + 5)
 
@@ -1075,7 +1075,7 @@ class TestTheVetIsAnAccountedBudgetTerm:
         exactly that drift.  Parsed with ``ast`` so the assertion survives the
         expression being wrapped across lines.
         """
-        from kiro_crew import cron as cron_mod
+        from efm_go import cron as cron_mod
 
         tree = ast.parse(Path(cron_mod.__file__).read_text(encoding="utf-8"))
         owed = {"_pool_queue_allowance", "_gate_budget_allowance", "_vet_allowance"}
@@ -1441,7 +1441,7 @@ class TestDeliverChannelReply:
         line in it then takes the prose branch of the dialect converter and the
         markup INSIDE the code is rewritten.
         """
-        from kiro_crew.messaging.split import FENCE_OUTSIDE, iter_fence_lines
+        from efm_go.messaging.split import FENCE_OUTSIDE, iter_fence_lines
 
         orch = _make_orchestrator()
         orch.dashboard_state = _mock_dashboard_state()
@@ -1906,7 +1906,7 @@ class TestCronResolvesAgentAlias:
 
     @staticmethod
     def _cfg_with_alias(ws_dir: str) -> Any:
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             KiroCrewAgentConfig,
             WorkspaceConfig,
         )
@@ -1926,7 +1926,7 @@ class TestCronResolvesAgentAlias:
     async def test_alias_agent_id_dispatches_resolved_kiro_agent_and_cwd(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.slack import gateway as _gw
+        from efm_go.slack import gateway as _gw
 
         monkeypatch.setattr(_gw.live, "snapshot", lambda: None)
         ws_dir = str(tmp_path / "in-3d-ws")
@@ -1955,8 +1955,8 @@ class TestCronResolvesAgentAlias:
         """A RELATIVE workspace dir must be anchored by the placement rule
         (config_dir()/dirname), not handed to the provider as a bare relative
         string that would resolve against the gateway process directory."""
-        from kiro_crew.config import loader as _loader
-        from kiro_crew.slack import gateway as _gw
+        from efm_go.config import loader as _loader
+        from efm_go.slack import gateway as _gw
 
         monkeypatch.setattr(_gw.live, "snapshot", lambda: None)
 
@@ -1983,7 +1983,7 @@ class TestCronResolvesAgentAlias:
         snapshot but not in the boot self._cfg. Resolution must consult
         live.snapshot() so a hot-added alias resolves instead of being
         dispatched raw and failing closed on every fire."""
-        from kiro_crew.slack import gateway as _gw
+        from efm_go.slack import gateway as _gw
 
         ws_dir = str(tmp_path / "in-3d-ws")
         orch = _make_orchestrator()
@@ -2012,8 +2012,8 @@ class TestCronResolvesAgentAlias:
         must pin to the captured identity (member_config_for_id), never bind the
         same-name-but-different-identity record — which would run the new member
         while writing into the retired member's memory silo."""
-        from kiro_crew.config.loader import KiroCrewAgentConfig, WorkspaceConfig
-        from kiro_crew.slack import gateway as _gw
+        from efm_go.config.loader import KiroCrewAgentConfig, WorkspaceConfig
+        from efm_go.slack import gateway as _gw
 
         monkeypatch.setattr(_gw.live, "snapshot", lambda: None)
         orch = _make_orchestrator()
@@ -2060,9 +2060,9 @@ class TestCronResolvesAgentAlias:
         anchors to the BASE workspace directory (workspace_dir_from_entry(None)),
         never to cfg.default_workspace's dir and never to a bare cwd=None that
         would resolve against the gateway process directory."""
-        from kiro_crew.config import loader as _loader
-        from kiro_crew.config.loader import KiroCrewAgentConfig
-        from kiro_crew.slack import gateway as _gw
+        from efm_go.config import loader as _loader
+        from efm_go.config.loader import KiroCrewAgentConfig
+        from efm_go.slack import gateway as _gw
 
         monkeypatch.setattr(_gw.live, "snapshot", lambda: None)
         # Alias present, but its workspace name 'ghost' is NOT in cfg.workspaces.
@@ -2094,7 +2094,7 @@ class TestCronResolvesAgentAlias:
     async def test_unknown_agent_is_passed_through_unchanged(self, tmp_path, monkeypatch):
         """A non-alias agent (already a real mode, or unmapped) is unchanged:
         the resolver misses and the raw value is dispatched with cwd=None."""
-        from kiro_crew.slack import gateway as _gw
+        from efm_go.slack import gateway as _gw
 
         monkeypatch.setattr(_gw.live, "snapshot", lambda: None)
         ws_dir = str(tmp_path / "in-3d-ws")
@@ -2289,7 +2289,7 @@ class TestCronDeliversEmbeddedImages:
         sel_double = MagicMock()
         with (
             patch.object(gw, "_resolve_channel_target", MagicMock(return_value=None)),
-            patch("kiro_crew.slack.files.sel", lambda: sel_double),
+            patch("efm_go.slack.files.sel", lambda: sel_double),
         ):
             async with _cron_message_cb(orch, result_text=reply) as cb:
                 await cb(job)

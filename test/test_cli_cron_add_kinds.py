@@ -22,15 +22,15 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from kiro_crew.cli_commands import _cron, _format_schedule
-from kiro_crew.config.loader import config_dir
-from kiro_crew.cron import CronSchedule
+from efm_go.cli_commands import _cron, _format_schedule
+from efm_go.config.loader import config_dir
+from efm_go.cron import CronSchedule
 
 
 def test_at_schedule_uses_configured_timezone_when_job_timezone_is_unset(monkeypatch):
     schedule = CronSchedule(kind="at", at_ts=1767225600)
     monkeypatch.setattr(
-        "kiro_crew.cli_commands.get_local_tz",
+        "efm_go.cli_commands.get_local_tz",
         lambda: ("Asia/Tokyo", ZoneInfo("Asia/Tokyo")),
     )
 
@@ -114,8 +114,8 @@ class TestSingleTransaction:
     def test_script_job_lands_fully_formed_in_one_add_job(self, home, capsys):
         script = _write_script()
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job("s1")
@@ -141,8 +141,8 @@ class TestSingleTransaction:
         script = _write_script()
         monkeypatch.chdir(config_dir() / "crons")
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job("s2")
@@ -155,8 +155,8 @@ class TestSingleTransaction:
         script = _write_script()
         spec = f"{str(Path(script).resolve())}:run"
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job("s3")
@@ -165,9 +165,9 @@ class TestSingleTransaction:
 
     def test_command_job_forwards_timeouts_and_defaults(self, home):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands._vet_shell_command", return_value=None) as vet,
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands._vet_shell_command", return_value=None) as vet,
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job("c1")
@@ -184,9 +184,9 @@ class TestSingleTransaction:
 
     def test_command_timeout_with_default_wake_budget_is_accepted(self, home):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands._vet_shell_command", return_value=None),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands._vet_shell_command", return_value=None),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job("c2")
@@ -198,8 +198,8 @@ class TestSingleTransaction:
     def test_explicit_session_flags_are_forwarded(self, home):
         script = _write_script()
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job()
@@ -219,8 +219,8 @@ class TestSingleTransaction:
 
     def test_agent_job_keeps_the_store_defaults(self, home):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job()
@@ -237,8 +237,8 @@ class TestSingleTransaction:
         # "auto" is the inherit sentinel with no pinned provider id; the CLI
         # normalises it to "" exactly as cron_add and the dashboard POST do.
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job()
@@ -248,8 +248,8 @@ class TestSingleTransaction:
     def test_audit_line_names_the_job_kind(self, home):
         script = _write_script()
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel") as sel,
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job("s9")
@@ -259,8 +259,8 @@ class TestSingleTransaction:
 
     def test_success_audit_failure_keeps_committed_add_successful(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel") as sel,
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job("ok1")
@@ -280,8 +280,8 @@ class TestOneShot:
     def test_unix_timestamp_sets_at_ts_and_delete_after_run(self, home):
         future = time.time() + 3600
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job()
@@ -295,8 +295,8 @@ class TestOneShot:
 
     def test_time_string_goes_through_the_shared_parser(self, home):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job()
@@ -307,8 +307,8 @@ class TestOneShot:
 
     def test_past_instant_is_refused(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(at=str(time.time() - 60)), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -319,10 +319,10 @@ class TestOneShot:
         # in the zone parse_time_string resolved the value in, not the
         # process zone.
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
             patch(
-                "kiro_crew.cli_commands.get_local_tz",
+                "efm_go.cli_commands.get_local_tz",
                 return_value=("Asia/Tokyo", ZoneInfo("Asia/Tokyo")),
             ),
         ):
@@ -332,8 +332,8 @@ class TestOneShot:
 
     def test_huge_relative_time_is_refused_without_parsing(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(at=f"in {'9' * 400} hours"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -341,8 +341,8 @@ class TestOneShot:
 
     def test_overlong_at_value_is_refused(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(at="tomorrow " + "x" * 64), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -350,8 +350,8 @@ class TestOneShot:
 
     def test_timestamp_after_year_2100_is_refused(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(at="4102444801"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -359,8 +359,8 @@ class TestOneShot:
 
     def test_unparseable_time_is_refused(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(at="next blue moon"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -371,10 +371,10 @@ class TestOneShot:
         # cron_add and POST /api/crons read at_time. The configured zone is UTC
         # and the job's zone is 14 hours ahead, so a clock read in the wrong one
         # lands on a different hour in the job's zone.
-        monkeypatch.setattr("kiro_crew.cron.get_local_tz", lambda: ("UTC", ZoneInfo("UTC")))
+        monkeypatch.setattr("efm_go.cron.get_local_tz", lambda: ("UTC", ZoneInfo("UTC")))
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job()
@@ -386,8 +386,8 @@ class TestOneShot:
 
     def test_invalid_timezone_with_at_is_refused(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(at="23:59", timezone="Not/AZone"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -395,8 +395,8 @@ class TestOneShot:
 
     def test_timezone_with_every_refused(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(every=300, timezone="Asia/Tokyo"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -404,8 +404,8 @@ class TestOneShot:
 
     def test_timezone_with_cron_still_succeeds(self, home):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc = svc_cls.return_value
             svc.add_job.return_value = _mock_job()
@@ -464,9 +464,9 @@ class TestRefusals:
     )
     def test_validation_failures_exit_1_before_any_write(self, overrides, needle, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands._vet_shell_command", return_value=None),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands._vet_shell_command", return_value=None),
         ):
             err = _refused(_ns(**overrides), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -481,14 +481,14 @@ class TestRefusals:
     def test_range_checks_are_read_from_the_mcp_schema(self, flag, field, home, capsys):
         # The handler enforces the bounds CRON_ADD_SCHEMA declares for the MCP
         # cron_add tool, so a bound that moves in validation.py moves here too.
-        from kiro_crew.validation import CRON_ADD_SCHEMA
+        from efm_go.validation import CRON_ADD_SCHEMA
 
         spec = next(s for s in CRON_ADD_SCHEMA.fields if s.name == field)
         lo, hi = int(spec.min_val), int(spec.max_val)
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands._vet_shell_command", return_value=None),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands._vet_shell_command", return_value=None),
         ):
             for bad in (lo - 1, hi + 1):
                 err = _refused(_ns(every=300, shell_command="ls", **{flag: bad}), capsys)
@@ -497,10 +497,10 @@ class TestRefusals:
 
     def test_command_rejected_by_the_security_vet(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
             patch(
-                "kiro_crew.cli_commands._vet_shell_command",
+                "efm_go.cli_commands._vet_shell_command",
                 return_value="Error: cron command blocked by security policy: nope",
             ),
         ):
@@ -514,8 +514,8 @@ class TestRefusals:
         # One real pass through _vet_shell_command, so the CLI is proven to be
         # wired to the same gate cron_add uses rather than to a stub.
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(
                 _ns(message="", every=300, shell_command="echo $(cat ~/.ssh/id_rsa)"), capsys
@@ -527,8 +527,8 @@ class TestRefusals:
         outside = tmp_path / "elsewhere.py"
         outside.write_text("def run(ctx):\n    pass\n", encoding="utf-8")
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(message="", every=300, script=f"{outside}:run"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -539,8 +539,8 @@ class TestRefusals:
         # is a refusal, never a create-and-hope.
         missing = config_dir() / "crons" / "ghost.py"
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             _refused(_ns(message="", every=300, script=f"{missing}:run"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -562,9 +562,9 @@ class TestRefusals:
         # BEFORE resolve_script_path runs -- proven by asserting resolve is
         # never called.
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands.resolve_script_path") as resolve,
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands.resolve_script_path") as resolve,
         ):
             err = _refused(_ns(message="", every=300, script=spec), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -574,8 +574,8 @@ class TestRefusals:
     def test_script_body_rejected_by_the_security_vet(self, home, capsys):
         script = _write_script("import os\nkey = open(os.path.expanduser('~/.aws/credentials'))\n")
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             err = _refused(_ns(message="", every=300, script=f"{script}:run"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -585,9 +585,9 @@ class TestRefusals:
         # Schedule/timeout coupling belongs to _build_job; the CLI relays its
         # ValueError verbatim and exits 1.
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands._vet_shell_command", return_value=None),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands._vet_shell_command", return_value=None),
         ):
             svc_cls.return_value.add_job.side_effect = ValueError(
                 "timeout_secs (wake budget) must cover the command/script subprocess timeout"
@@ -596,12 +596,12 @@ class TestRefusals:
         assert "wake budget" in err
 
     def test_contended_store_is_a_retryable_refusal_not_a_traceback(self, home, capsys):
-        from kiro_crew.cron import CronStoreBusy
+        from efm_go.cron import CronStoreBusy
 
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands._vet_shell_command", return_value=None),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands._vet_shell_command", return_value=None),
         ):
             svc_cls.return_value.add_job.side_effect = CronStoreBusy("lock held")
             err = _refused(_ns(message="", every=300, shell_command="ls"), capsys)
@@ -609,9 +609,9 @@ class TestRefusals:
 
     def test_store_write_error_is_a_refusal_not_a_traceback(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel") as sel,
-            patch("kiro_crew.cli_commands._vet_shell_command", return_value=None),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands._vet_shell_command", return_value=None),
         ):
             svc_cls.return_value.add_job.side_effect = OSError(28, "No space left on device")
             err = _refused(_ns(message="", every=300, shell_command="ls"), capsys)
@@ -638,8 +638,8 @@ class TestDenialAudit:
         # The command never reaches the kiro-cli permission/hook flow, so this
         # event is the ONLY audit trace of the refusal -- as on the MCP path.
         with (
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.sel") as sel,
         ):
             _refused(_ns(message="", every=300, shell_command="echo $(id)"), capsys)
         (denial,) = self._denials(sel)
@@ -649,8 +649,8 @@ class TestDenialAudit:
 
     def test_denial_audit_failure_preserves_refusal_contract(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel") as sel,
         ):
             sel.return_value.log_api_access.side_effect = RuntimeError("sel unavailable")
             _refused(_ns(message="", every=300, shell_command="echo $(id)"), capsys)
@@ -671,9 +671,9 @@ class TestDenialAudit:
         # The refusal fires before resolve_script_path, so this SEL event is the
         # only audit trace of the blocked network path.
         with (
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.sel") as sel,
-            patch("kiro_crew.cli_commands.resolve_script_path") as resolve,
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.resolve_script_path") as resolve,
         ):
             _refused(_ns(message="", every=300, script=spec), capsys)
             resolve.assert_not_called()
@@ -685,8 +685,8 @@ class TestDenialAudit:
         outside = tmp_path / "elsewhere.py"
         outside.write_text("def run(ctx):\n    pass\n", encoding="utf-8")
         with (
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.sel") as sel,
         ):
             _refused(_ns(message="", every=300, script=f"{outside}:run"), capsys)
         (denial,) = self._denials(sel)
@@ -700,10 +700,10 @@ class TestDenialAudit:
         secret = "ghp-" + "A" * 36  # not an identifier, so the func-name refusal fires
         script = _write_script()
         with (
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.sel") as sel,
             patch(
-                "kiro_crew.cli_commands.redact_log_via_context",
+                "efm_go.cli_commands.redact_log_via_context",
                 side_effect=lambda t: t.replace(secret, "***"),
             ) as red,
         ):
@@ -721,9 +721,9 @@ class TestDenialAudit:
     )
     def test_script_resolution_error_leaves_a_denied_sel_event(self, error, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel") as sel,
-            patch("kiro_crew.cli_commands.resolve_script_path", side_effect=error),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.resolve_script_path", side_effect=error),
         ):
             err = _refused(_ns(message="", every=300, script="check.py:run"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -741,9 +741,9 @@ class TestDenialAudit:
     ):
         script = _write_script()
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel") as sel,
-            patch("kiro_crew.cli_commands._vet_script_file") as vet,
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands._vet_script_file") as vet,
         ):
             err = _refused(_ns(message="", every=300, script=f"{script}:{function_name}"), capsys)
             svc_cls.return_value.add_job.assert_not_called()
@@ -756,8 +756,8 @@ class TestDenialAudit:
     def test_valid_script_function_name_reaches_add_job(self, home):
         script = _write_script()
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             svc_cls.return_value.add_job.return_value = _mock_job()
             _cron(_ns(message="", every=300, script=f"{script}:run"))
@@ -766,8 +766,8 @@ class TestDenialAudit:
     def test_blocked_script_body_leaves_a_denied_sel_event(self, home, capsys):
         script = _write_script("import os\nopen(os.path.expanduser('~/.aws/credentials'))\n")
         with (
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.sel") as sel,
         ):
             _refused(_ns(message="", every=300, script=f"{script}:run"), capsys)
         (denial,) = self._denials(sel)
@@ -776,8 +776,8 @@ class TestDenialAudit:
 
     def test_plain_validation_refusal_is_not_a_permission_event(self, home, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.sel") as sel,
         ):
             _refused(_ns(every=300, cron_expr="0 9 * * *"), capsys)
         assert self._denials(sel) == []
@@ -796,13 +796,13 @@ class TestDenialAudit:
         # capability could never run -- but the CLI must not store it and
         # print "Added job" either. Same authoring-time gate cron_add applies.
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel") as sel,
             patch(
-                "kiro_crew.cli_commands._vet_cron_capability_governance",
+                "efm_go.cli_commands._vet_cron_capability_governance",
                 return_value="Error: cron capability disabled by governance policy",
             ) as gate,
-            patch("kiro_crew.cli_commands._vet_shell_command", return_value=None),
+            patch("efm_go.cli_commands._vet_shell_command", return_value=None),
         ):
             err = _refused(_ns(**overrides), capsys)
             gate.assert_called_once_with("cron:cli_add")
@@ -813,10 +813,10 @@ class TestDenialAudit:
 
     def test_permitted_capability_lets_the_create_through(self, home):
         with (
-            patch("kiro_crew.cli_commands.CronService") as svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as svc_cls,
+            patch("efm_go.cli_commands.sel"),
             patch(
-                "kiro_crew.cli_commands._vet_cron_capability_governance", return_value=None
+                "efm_go.cli_commands._vet_cron_capability_governance", return_value=None
             ) as gate,
         ):
             svc_cls.return_value.add_job.return_value = _mock_job()
@@ -833,7 +833,7 @@ class TestDenialAudit:
 class TestRealStore:
     def test_script_cron_is_persisted_and_readable_back(self, home, capsys):
         script = _write_script()
-        with patch("kiro_crew.cli_commands.sel"):
+        with patch("efm_go.cli_commands.sel"):
             _cron(
                 _ns(
                     name="version-check",
@@ -867,10 +867,10 @@ class TestRealStore:
 
 class TestArgparse:
     def _main_with(self, argv: list[str], monkeypatch) -> argparse.Namespace | None:
-        from kiro_crew import cli
+        from efm_go import cli
 
         seen: dict[str, argparse.Namespace] = {}
-        monkeypatch.setattr("kiro_crew.cli_commands._cron", lambda args: seen.update(args=args))
+        monkeypatch.setattr("efm_go.cli_commands._cron", lambda args: seen.update(args=args))
         monkeypatch.setattr(sys, "argv", ["kirocrew", "cron", "add", *argv])
         cli.main()
         return seen.get("args")
@@ -937,9 +937,9 @@ class TestArgparse:
         # read back from the code that enforces it, so a bound that moves in
         # cron_service/ (model.py, execution.py) or validation.py fails here
         # instead of leaving stale prose.
-        from kiro_crew import cli
-        from kiro_crew.cron import _JOB_TIMEOUT_SECS, _SUBPROC_CLEANUP_ALLOWANCE_SECS
-        from kiro_crew.validation import CRON_ADD_SCHEMA
+        from efm_go import cli
+        from efm_go.cron import _JOB_TIMEOUT_SECS, _SUBPROC_CLEANUP_ALLOWANCE_SECS
+        from efm_go.validation import CRON_ADD_SCHEMA
 
         bounds = {f.name: (f.min_val, f.max_val) for f in CRON_ADD_SCHEMA.fields}
         t_min, t_max = bounds["timeout"]
@@ -959,7 +959,7 @@ class TestArgparse:
         # a default that flips there flips this test, not just the prose.
         import inspect
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         params = inspect.signature(CronService.add_job).parameters
         for flag, name in (

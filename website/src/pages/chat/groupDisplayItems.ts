@@ -61,7 +61,7 @@ export const isReasoningBurst = (t: TurnItem): t is Extract<TurnItem, { kind: 's
  * Grouping and pinning answer different questions — "where does this turn start"
  * versus "what did I ask" — so the two lists are allowed to differ here.
  *
- * Mirrored by `_TURN_OPENER_ROLES` in `src/kiro_crew/dashboard/chat_handlers.py`
+ * Mirrored by `_TURN_OPENER_ROLES` in `src/efm_go/dashboard/chat_handlers.py`
  * (the stop-card same-turn reuse boundary, #9556) — keep the two in agreement.
  */
 export const TURN_OPENER_ROLES = new Set(['user', 'nudge', 'subagent'])

@@ -1,7 +1,7 @@
 """Unit tests for native subagent card sync in chat_runner.
 
 Native (use_subagent) crews surface in the Activity tab via kiro-cli's
-``_kiro.dev/subagent/list_update`` notification. ``_native_subagent_sync``
+``_efm.go/subagent/list_update`` notification. ``_native_subagent_sync``
 reconciles one Activity card per sub-agent (spawn / done) from that list.
 """
 
@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.dashboard.chat_runner import (
+from efm_go.dashboard.chat_runner import (
     _append_native_output,
     _native_crew_should_auto_approve,
     _native_done_result,
@@ -20,7 +20,7 @@ from kiro_crew.dashboard.chat_runner import (
     _native_subagent_sync,
     _retain_terminal_native,
 )
-from kiro_crew.dashboard.state import (
+from efm_go.dashboard.state import (
     NATIVE_SUBAGENT_DONE_TRUNC_MARKER,
     NATIVE_SUBAGENT_OUTPUT_HARD,
     NATIVE_SUBAGENT_TERMINAL_KEEP,
@@ -405,7 +405,7 @@ class TestNativeCardRegistry:
     """_register_native_card / _unregister_native_card manage state._native_cards."""
 
     def test_register_creates_dict_and_entry(self):
-        from kiro_crew.dashboard.chat_runner import _register_native_card
+        from efm_go.dashboard.chat_runner import _register_native_card
 
         class _Bare:
             pass
@@ -416,7 +416,7 @@ class TestNativeCardRegistry:
         assert state._native_cards["native:s1"]["session_id"] == "s1"
 
     def test_unregister_removes_entry(self):
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go.dashboard.chat_runner import (
             _register_native_card,
             _unregister_native_card,
         )
@@ -430,7 +430,7 @@ class TestNativeCardRegistry:
         assert "native:s1" not in state._native_cards
 
     def test_unregister_noop_without_registry(self):
-        from kiro_crew.dashboard.chat_runner import _unregister_native_card
+        from efm_go.dashboard.chat_runner import _unregister_native_card
 
         class _Bare:
             pass
@@ -469,7 +469,7 @@ class TestNativeCardFeedRedaction:
     """_native_card_feed joins, truncates, and redacts at the broadcast boundary."""
 
     def test_feed_joined_and_truncated(self):
-        from kiro_crew.dashboard.chat_runner import _native_card_feed
+        from efm_go.dashboard.chat_runner import _native_card_feed
 
         out = _native_card_feed({"c1": ["a" * 5000, "b" * 5000]}, "c1")
         assert len(out) <= 8000 + len(NATIVE_SUBAGENT_DONE_TRUNC_MARKER)
@@ -477,7 +477,7 @@ class TestNativeCardFeedRedaction:
         assert out.endswith("b" * 5000)
 
     def test_feed_empty_when_no_output(self):
-        from kiro_crew.dashboard.chat_runner import _native_card_feed
+        from efm_go.dashboard.chat_runner import _native_card_feed
 
         assert _native_card_feed(None, "c1") == ""
         assert _native_card_feed({}, "c1") == ""
@@ -485,15 +485,15 @@ class TestNativeCardFeedRedaction:
     def test_feed_applies_both_redactions(self):
         from unittest.mock import patch
 
-        from kiro_crew.dashboard.chat_runner import _native_card_feed
+        from efm_go.dashboard.chat_runner import _native_card_feed
 
         with (
             patch(
-                "kiro_crew.dashboard.chat_runner.redact_exfiltration_urls",
+                "efm_go.dashboard.chat_runner.redact_exfiltration_urls",
                 return_value=("URLS_REDACTED", 0),
             ) as m_urls,
             patch(
-                "kiro_crew.dashboard.chat_runner.redact_credentials",
+                "efm_go.dashboard.chat_runner.redact_credentials",
                 return_value=("FULLY_REDACTED", 0),
             ) as m_creds,
         ):
@@ -519,11 +519,11 @@ class TestNativeCancelHandler:
         import json
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers.messaging import api_spawn_delete
+        from efm_go.dashboard.handlers.messaging import api_spawn_delete
 
         state = _make_state()
         state._native_cards = {"native:s1": {"slot": "slot-1", "session_id": "s1", "started": 0}}
-        with patch("kiro_crew.dashboard.handlers.messaging._sel") as m_sel:
+        with patch("efm_go.dashboard.handlers.messaging._sel") as m_sel:
             m_sel.return_value.log_tool_invocation = MagicMock()
             resp = await api_spawn_delete(self._request(state, "native:s1"))
         body = json.loads(resp.text)
@@ -544,8 +544,8 @@ class TestNativeCancelHandler:
         still-running or successfully completed."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers.messaging import api_spawn_delete
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.handlers.messaging import api_spawn_delete
+        from efm_go.dashboard.state import DashboardState
 
         state = _make_state()
         slot = _make_slot()
@@ -561,7 +561,7 @@ class TestNativeCancelHandler:
         state._native_cards = {
             "native:s1": {"slot": "slot-1", "session_id": "s1", "started": 100.0}
         }
-        with patch("kiro_crew.dashboard.handlers.messaging._sel") as m_sel:
+        with patch("efm_go.dashboard.handlers.messaging._sel") as m_sel:
             m_sel.return_value.log_tool_invocation = MagicMock()
             await api_spawn_delete(self._request(state, "native:s1"))
 
@@ -579,7 +579,7 @@ class TestNativeCancelHandler:
 
     @pytest.mark.asyncio
     async def test_cancel_unknown_native_card_404(self):
-        from kiro_crew.dashboard.handlers.messaging import api_spawn_delete
+        from efm_go.dashboard.handlers.messaging import api_spawn_delete
 
         state = _make_state()
         state._native_cards = {}
@@ -591,12 +591,12 @@ class TestNativeCancelHandler:
         import json
         from unittest.mock import patch
 
-        from kiro_crew.dashboard.handlers.messaging import api_spawn_delete
+        from efm_go.dashboard.handlers.messaging import api_spawn_delete
 
         state = _make_state()
         state._native_cards = {"native:s1": {"slot": "slot-1", "session_id": "s1", "started": 0}}
         with patch(
-            "kiro_crew.dashboard.handlers.messaging._sel",
+            "efm_go.dashboard.handlers.messaging._sel",
             side_effect=RuntimeError("sel down"),
         ):
             resp = await api_spawn_delete(self._request(state, "native:s1"))
@@ -1059,7 +1059,7 @@ class TestNativeAutoApproveLogSanitization:
     """
 
     def test_newline_is_escaped_not_forged(self) -> None:
-        from kiro_crew.dashboard.chat_runner import _safe_native_crew_debug_title
+        from efm_go.dashboard.chat_runner import _safe_native_crew_debug_title
 
         forged = "innocent\nERROR: forged admin line"
         safe = _safe_native_crew_debug_title(forged)
@@ -1073,7 +1073,7 @@ class TestNativeAutoApproveLogSanitization:
         assert "\nERROR: forged admin line" not in rendered
 
     def test_credential_redacted_before_logging(self) -> None:
-        from kiro_crew.dashboard.chat_runner import _safe_native_crew_debug_title
+        from efm_go.dashboard.chat_runner import _safe_native_crew_debug_title
 
         cred = "ghp_" + "a" * 36
         safe = _safe_native_crew_debug_title("call " + cred + "\ntrailer")

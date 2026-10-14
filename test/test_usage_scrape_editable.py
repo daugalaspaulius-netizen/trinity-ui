@@ -22,11 +22,11 @@ import logging
 
 import pytest
 
-from kiro_crew.config import loader as L
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.schema import SCHEMA_REGISTRY
-from kiro_crew.config.sections import DashboardConfig
-from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+from efm_go.config import loader as L
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.schema import SCHEMA_REGISTRY
+from efm_go.config.sections import DashboardConfig
+from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
 FIELD = "dashboard.usage_text_scrape_enabled"
 LEAF = "usage_text_scrape_enabled"
@@ -80,7 +80,7 @@ async def test_the_config_patch_refuses_the_key(cfg_home) -> None:
     from aiohttp.test_utils import TestClient, TestServer
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.dashboard.handlers import api_kirocrew_config_patch
+    from efm_go.dashboard.handlers import api_kirocrew_config_patch
 
     cfg_home.write_text(json.dumps({"dashboard": {}}), encoding="utf-8")
     app = web.Application()

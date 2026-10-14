@@ -253,7 +253,7 @@ describe('contributedFileMenuItems — resolving untrusted manifest data', () =>
     // Two copies of one security control drift apart invisibly, and the drift only shows
     // up as something being let through. Read the owning module rather than restating it.
     const py = readFileSync(
-      resolve(__dirname, '../../../src/kiro_crew/apps/manifest.py'),
+      resolve(__dirname, '../../../src/efm_go/apps/manifest.py'),
       'utf8',
     )
     const block = /CORE_APP_ROUTE_SEGMENTS = frozenset\(\s*\{([^}]*)\}/.exec(py)

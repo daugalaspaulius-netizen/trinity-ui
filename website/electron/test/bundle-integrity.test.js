@@ -29,7 +29,7 @@ ${childOutput}`,
     bundled: true,
   });
 
-const ROOT = "/mock/backend-dist/kirocrew-backend";
+const ROOT = "/mock/backend-dist/efm-go-backend";
 const WIN_PY = path.join(ROOT, "python.exe");
 
 // A fully-extracted package: the dir AND the __init__.py that makes it
@@ -93,7 +93,7 @@ describe("interpreter detection", () => {
   });
 
   it("stays silent on the legacy flat layout (frozen exe, no interpreter tree)", () => {
-    const flat = path.join(ROOT, "kirocrew-backend");
+    const flat = path.join(ROOT, "efm-go-backend");
     assert.deepStrictEqual(missingFor(fakeFs([flat]), ROOT), []);
   });
 
@@ -179,7 +179,7 @@ describe("findMissingBundleParts", () => {
   // The gate must stay silent on trees it does not model, or it would refuse a
   // launch that would actually have worked.
   it("reports nothing for the legacy flat layout (no interpreter tree to check)", () => {
-    const flat = path.join(ROOT, "kirocrew-backend");
+    const flat = path.join(ROOT, "efm-go-backend");
     assert.deepStrictEqual(findMissingBundleParts(fakeFs([flat]), path, ROOT), []);
   });
 
@@ -247,7 +247,7 @@ describe("crash matching (via shouldReclassifyAsInstalling)", () => {
   // The exact traceback this whole change exists to explain.
   const REAL_LOG = [
     "Traceback (most recent call last):",
-    '  File "...\\Lib\\site-packages\\kiro_crew\\platform_compat.py", line 29, in <module>',
+    '  File "...\\Lib\\site-packages\\efm_go\\platform_compat.py", line 29, in <module>',
     "    from pathlib import Path",
     '  File "...\\Lib\\pathlib.py", line 20, in <module>',
     "    from urllib.parse import quote_from_bytes as urlquote_from_bytes",
@@ -279,7 +279,7 @@ describe("crash matching (via shouldReclassifyAsInstalling)", () => {
   });
 
   it("does not excuse a missing first-party module", () => {
-    assert.equal(crashIsInstalling("ModuleNotFoundError: No module named 'kiro_crew'"), false);
+    assert.equal(crashIsInstalling("ModuleNotFoundError: No module named 'efm_go'"), false);
   });
 
   // A dotted stdlib name means the package landed but a submodule had not —
@@ -293,7 +293,7 @@ describe("crash matching (via shouldReclassifyAsInstalling)", () => {
 
   it("still refuses a dotted NON-stdlib name", () => {
     assert.equal(
-      crashIsInstalling("ModuleNotFoundError: No module named 'kiro_crew.acp'"),
+      crashIsInstalling("ModuleNotFoundError: No module named 'efm_go.acp'"),
       false
     );
   });
@@ -315,7 +315,7 @@ describe("crash matching (via shouldReclassifyAsInstalling)", () => {
   it("does not excuse a partially initialized NON-stdlib package", () => {
     assert.equal(
       crashIsInstalling(
-        "ImportError: cannot import name 'x' from partially initialized module 'kiro_crew'"
+        "ImportError: cannot import name 'x' from partially initialized module 'efm_go'"
       ),
       false
     );

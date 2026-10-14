@@ -14,13 +14,13 @@ superseded-by: []
 
 # RFC: Arrival provenance filing — file every arriving session under Imported / from &lt;sender&gt;
 
-- Status: implemented in `src/kiro_crew/dashboard/arrival_folders.py` and
-  `src/kiro_crew/dashboard/session_transfer.py`. This remains the decision
+- Status: implemented in `src/efm_go/dashboard/arrival_folders.py` and
+  `src/efm_go/dashboard/session_transfer.py`. This remains the decision
   record for the **changed default** on an existing route; every historical
   "exists today" claim below was checked at `f31f25a8a2` (main, 2026-09-19),
   and citations name symbols rather than line numbers.
 - Author: chenmingwei23
-- Tracking issue: [#11468](https://github.com/kirodotdev/KiroCrew/issues/11468)
+- Tracking issue: [#11468](https://efmleads.com/issues/11468)
 - Related: [rfc-crew-projects.md](rfc-crew-projects.md) (folders as the sidebar's
   organising object), [rfc-session-address-model.md](rfc-session-address-model.md)
   (a session's identity versus its placement).
@@ -33,7 +33,7 @@ Instances tunnel, and a person installs one from a file exported by
 mixed in with the sessions the person started themselves.
 
 The receiving code says so deliberately. `api_chat_slot_import` in
-`src/kiro_crew/dashboard/session_transfer.py` composes the imported slot's
+`src/efm_go/dashboard/session_transfer.py` composes the imported slot's
 metadata with no `folder_id`, and its comment records that the imported session
 "lands unfiled just as the tunnel importer always has".
 
@@ -50,7 +50,7 @@ both arrival routes.
 ## 2. Why this needs a decision record rather than just a patch
 
 For the file route, filing is a new feature: that route shipped in
-[#11315](https://github.com/kirodotdev/KiroCrew/pull/11315) and has no prior
+[#11315](https://efmleads.com/pull/11315) and has no prior
 default to change.
 
 For the tunnel route it is a **changed default** on a path that has behaved one
@@ -65,7 +65,7 @@ The change is reversible by deletion, not by a flag. There is no
 `Imported` folder, and the delete handler's own unfile sweep returns its
 sessions to the top level. A later arrival recreates the folder, which is the
 behaviour the channel-filing precedent already has
-(`ensure_channel_folder` in `src/kiro_crew/dashboard/channel_folders.py`
+(`ensure_channel_folder` in `src/efm_go/dashboard/channel_folders.py`
 recreates a deleted folder on the next settings save). A configuration knob is
 deliberately not added: the feature has one sensible destination, and a
 per-instance setting would be a second thing to migrate for a grouping the
@@ -127,7 +127,7 @@ them.
    therefore lands unfiled and touches the folder store not at all — it does not
    create, and it does not adopt a folder the person owns. Identity comes from
    the shared `effective_request_app` rule in
-   `src/kiro_crew/dashboard/token_auth.py`, never from the request body.
+   `src/efm_go/dashboard/token_auth.py`, never from the request body.
 
 2. **Placement is resolved only after the slot exists.** The import handler
    re-checks the live-slot cap after its last `await` and can answer `429` there.
@@ -198,6 +198,6 @@ fresh folder, visibly.
 
 ## 8. Provenance
 
-Written for [#11468](https://github.com/kirodotdev/KiroCrew/issues/11468), which
+Written for [#11468](https://efmleads.com/issues/11468), which
 carries the review history of the withdrawn implementation in
-[#11315](https://github.com/kirodotdev/KiroCrew/pull/11315).
+[#11315](https://efmleads.com/pull/11315).

@@ -49,9 +49,9 @@ from typing import Dict, Iterator, List, Optional, Set, Tuple
 import pytest
 from source_corpus import parsed_candidates
 
-import kiro_crew
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform import (
+import efm_go
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform import (
     RESERVED_METHODS,
     RESERVED_SLOTS,
     PlatformCompositionError,
@@ -59,21 +59,21 @@ from kiro_crew.platform import (
     reset_context,
     set_context,
 )
-from kiro_crew.platform.context import (
+from efm_go.platform.context import (
     _RESERVED_DEFAULT_ADAPTERS,
     _RESERVED_WARNED,
     PEEK_CALLERS,
     PlatformContext,
     _reserved_slot_is_default,
 )
-from kiro_crew.platform.governance import (
+from efm_go.platform.governance import (
     CAPABILITY,
     SCOPE_CATALOG,
     parse_policy,
     parse_profile,
     resolve,
 )
-from kiro_crew.platform.interfaces import InboundToken, SessionPrincipal
+from efm_go.platform.interfaces import InboundToken, SessionPrincipal
 
 # ── Static-analysis configuration ──
 
@@ -82,7 +82,7 @@ from kiro_crew.platform.interfaces import InboundToken, SessionPrincipal
 # spread across workers and each worker re-pays that scan -- measured at 5 workers x 40-75s
 # per full run for this file alone. Grouping keeps the scan single-copy per run.
 pytestmark = pytest.mark.xdist_group(name="tree_scan_test_platform_cpp_seam_coverage")
-_SRC_ROOT = Path(kiro_crew.__file__).resolve().parent
+_SRC_ROOT = Path(efm_go.__file__).resolve().parent
 
 # Directories under the package that are NOT core consumption sites.
 #  - ``platform``: the seam's own definition/composition code. A read here is
@@ -148,7 +148,7 @@ def _is_context_expr(node: ast.expr) -> bool:
 
 
 def _core_source_files() -> List[Path]:
-    """Every non-excluded ``.py`` file under ``src/kiro_crew``."""
+    """Every non-excluded ``.py`` file under ``src/efm_go``."""
     return [
         path
         for path in sorted(_SRC_ROOT.rglob("*.py"))
@@ -250,7 +250,7 @@ _PEEK_FUNC = "installed_context"
 
 
 def _peek_scanned_files() -> List[Path]:
-    """Every ``.py`` under ``src/kiro_crew`` except vendored third-party source."""
+    """Every ``.py`` under ``src/efm_go`` except vendored third-party source."""
     return [
         path
         for path in sorted(_SRC_ROOT.rglob("*.py"))
@@ -259,7 +259,7 @@ def _peek_scanned_files() -> List[Path]:
 
 
 def _module_key(path: Path) -> str:
-    """``src/kiro_crew/platform/context.py`` → ``platform/context.py``."""
+    """``src/efm_go/platform/context.py`` → ``platform/context.py``."""
     return path.relative_to(_SRC_ROOT).as_posix()
 
 
@@ -411,7 +411,7 @@ class TestSeamCoverage:
         assert not unaccounted, (
             "PlatformContext field(s) with NO core consumption site and no "
             f"RESERVED_SLOTS entry: {unaccounted}. Either wire the field to a real "
-            "call site, or add it to kiro_crew.platform.context.RESERVED_SLOTS with "
+            "call site, or add it to efm_go.platform.context.RESERVED_SLOTS with "
             "the reason it is inert and the wired alternative — otherwise an edition "
             "can override it and get silence."
         )
@@ -578,7 +578,7 @@ class TestInstalledContextPeeks:
         found = _peeks_in_source(
             "\n".join(
                 (
-                    "from kiro_crew.platform.context import installed_context",
+                    "from efm_go.platform.context import installed_context",
                     "def outer():",
                     "    return installed_context()",
                     "class C:",
@@ -615,7 +615,7 @@ class TestInstalledContextPeeks:
             f"undeclared installed_context() caller(s): {undeclared}. This accessor "
             "answers None instead of refusing to compose, so it is safe ONLY where "
             "the no-context answer is already the conservative one. Add an entry to "
-            "kiro_crew.platform.context.PEEK_CALLERS stating why that holds for this "
+            "efm_go.platform.context.PEEK_CALLERS stating why that holds for this "
             "caller, or use current_context() and take the fail-closed error."
         )
 
@@ -667,7 +667,7 @@ class TestReservedSlotWarning:
         _RESERVED_WARNED.update(saved)
 
     def test_default_context_warns_about_nothing(self, caplog) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.context"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.context"):
             build_default_context(KiroCrewConfig())
         assert "RESERVED slot" not in caplog.text
 
@@ -680,7 +680,7 @@ class TestReservedSlotWarning:
                 return None
 
         base = build_default_context(KiroCrewConfig())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.context"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.context"):
             dataclasses.replace(base, package_manager=_MyPackageManager())
         assert "PlatformContext.package_manager is a RESERVED slot" in caplog.text
         # The warning must be actionable: it names the offending adapter AND the
@@ -701,7 +701,7 @@ class TestReservedSlotWarning:
                 return None
 
         base = build_default_context(KiroCrewConfig())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.context"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.context"):
             dataclasses.replace(base, feature_apps=(_App(),))
         assert "PlatformContext.feature_apps is a RESERVED slot" in caplog.text
 
@@ -717,7 +717,7 @@ class TestReservedSlotWarning:
 
         mine = _MyPackageManager()
         base = build_default_context(KiroCrewConfig())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.context"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.context"):
             first = dataclasses.replace(base, package_manager=mine)
             dataclasses.replace(first, profile="enterprise")
             dataclasses.replace(first, telemetry=first.telemetry)
@@ -737,7 +737,7 @@ class TestReservedSlotWarning:
             pass
 
         base = build_default_context(KiroCrewConfig())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.context"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.context"):
             dataclasses.replace(base, package_manager=_First())
             dataclasses.replace(base, package_manager=_Second())
         assert caplog.text.count("PlatformContext.package_manager is a RESERVED slot") == 2
@@ -749,14 +749,14 @@ class TestReservedSlotWarning:
         otherwise the loudest case (an edition extending the default) would be
         the one case that stays silent.
         """
-        from kiro_crew.platform.defaults import DefaultPackageManager
+        from efm_go.platform.defaults import DefaultPackageManager
 
         class _Extended(DefaultPackageManager):
             def install_plan(self, tool: str) -> List[str]:
                 return ["managed-install", tool]
 
         base = build_default_context(KiroCrewConfig())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.context"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.context"):
             dataclasses.replace(base, package_manager=_Extended())
         assert "PlatformContext.package_manager is a RESERVED slot" in caplog.text
 
@@ -772,9 +772,9 @@ class TestReservedSlotWarning:
         def _boom(*_args, **_kwargs):
             raise RuntimeError("recognizer exploded")
 
-        monkeypatch.setattr("kiro_crew.platform.context._reserved_slot_is_default", _boom)
+        monkeypatch.setattr("efm_go.platform.context._reserved_slot_is_default", _boom)
         base = build_default_context(KiroCrewConfig())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.context"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.context"):
             ctx = dataclasses.replace(base, telemetry=base.telemetry)
         assert isinstance(ctx, PlatformContext)
         assert "RESERVED slot" not in caplog.text
@@ -940,7 +940,7 @@ class TestAgentIdentitySeam:
             assert decision.permitted, f"posture={posture!r} must remain enabled"
 
     def test_agent_identity_known_posture_is_stored_on_ceiling(self) -> None:
-        from kiro_crew.platform.governance import agentcore_posture
+        from efm_go.platform.governance import agentcore_posture
 
         for posture in ("workload", "login"):
             ceiling = parse_policy(
@@ -949,21 +949,21 @@ class TestAgentIdentitySeam:
             assert agentcore_posture(ceiling) == posture
 
     def test_agent_identity_omitted_capability_has_no_stored_posture(self) -> None:
-        from kiro_crew.platform.governance import agentcore_posture
+        from efm_go.platform.governance import agentcore_posture
 
         ceiling = parse_policy(_agentcore_policy_body())
         assert agentcore_posture(ceiling) is None
         assert agentcore_posture(None) is None
 
     def test_agent_identity_disabled_row_does_not_require_posture(self) -> None:
-        from kiro_crew.platform.governance import agentcore_posture
+        from efm_go.platform.governance import agentcore_posture
 
         ceiling = parse_policy(_agentcore_policy_body(agentcore={"enabled": False}))
         assert not resolve(ceiling, None, "capabilities.agentcore", "").permitted
         assert agentcore_posture(ceiling) is None
 
     def test_agent_identity_fail_closed_disabled_has_no_stored_posture(self) -> None:
-        from kiro_crew.platform.governance import agentcore_posture
+        from efm_go.platform.governance import agentcore_posture
 
         ceiling = parse_policy(
             _agentcore_policy_body(fail_closed=False, agentcore={"enabled": True})
@@ -972,7 +972,7 @@ class TestAgentIdentitySeam:
 
     def test_agent_identity_profile_enabled_without_posture_parses(self) -> None:
         """A profile may toggle enabled; posture is policy-only and not required."""
-        from kiro_crew.platform.governance import CapabilityGate
+        from efm_go.platform.governance import CapabilityGate
 
         profile = parse_profile({"name": "host", "capabilities": {"agentcore": {"enabled": True}}})
         gate = profile.controls["capabilities.agentcore"]
@@ -997,7 +997,7 @@ class TestAgentIdentitySeam:
             )
 
     def test_agent_identity_policy_gateway_url_is_stored(self) -> None:
-        from kiro_crew.platform.governance import agentcore_gateway_url
+        from efm_go.platform.governance import agentcore_gateway_url
 
         ceiling = parse_policy(
             _agentcore_policy_body(
@@ -1043,8 +1043,8 @@ class TestAgentIdentitySeam:
 
     def test_agent_identity_seam_stays_off_when_capability_is_off(self) -> None:
         """Adapter-on is not enough: capability off / no posture keeps the seam off."""
-        from kiro_crew.agent import _agent_identity_enabled
-        from kiro_crew.platform.defaults import DefaultAgentIdentityProvider
+        from efm_go.agent import _agent_identity_enabled
+        from efm_go.platform.defaults import DefaultAgentIdentityProvider
 
         class _ForcedOn(DefaultAgentIdentityProvider):
             def enabled(self) -> bool:

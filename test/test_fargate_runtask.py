@@ -15,12 +15,12 @@ import re
 
 import pytest
 
-from kiro_crew.cloud import fargate as fargate_package
-from kiro_crew.cloud.fargate import identity as ident
-from kiro_crew.cloud.fargate import runtask as rt
-from kiro_crew.cloud.fargate import taskdef as td
-from kiro_crew.cloud.fargate.identity import CrewBinding, DocumentRefused, SecretRef
-from kiro_crew.cloud.iam import MANAGED_TAG_KEY
+from efm_go.cloud import fargate as fargate_package
+from efm_go.cloud.fargate import identity as ident
+from efm_go.cloud.fargate import runtask as rt
+from efm_go.cloud.fargate import taskdef as td
+from efm_go.cloud.fargate.identity import CrewBinding, DocumentRefused, SecretRef
+from efm_go.cloud.iam import MANAGED_TAG_KEY
 
 ACCOUNT = "123456789012"
 REGION = "us-east-1"
@@ -320,7 +320,7 @@ def _container_env_names() -> set[str]:
     source = (
         pathlib.Path(__file__).resolve().parents[1]
         / "src"
-        / "kiro_crew"
+        / "efm_go"
         / "apps"
         / "builtins"
         / "aws_control"
@@ -674,7 +674,7 @@ def _managed_value_the_codebase_filters_on() -> set[str]:
     Parsed as a file, not imported: importing it would make coverage.py measure it
     in this lane, where these tests exercise none of it.
     """
-    source = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "cloud" / "ec2.py"
+    source = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "cloud" / "ec2.py"
     assert source.is_file(), f"ec2 module moved: {source}"
     text = source.read_text(encoding="utf-8")
     found = set(re.findall(r"\{MANAGED_TAG_KEY\}=([A-Za-z0-9_-]+)", text))
@@ -958,7 +958,7 @@ def test_every_constant_a_consumer_must_import_is_on_the_package_surface():
     missing = sorted(name for name in required if name not in surface | SURFACE_EXCLUSIONS.keys())
     assert not missing, (
         "these constants are required by the contract but cannot be imported from "
-        f"kiro_crew.cloud.fargate, so a consumer must re-spell them: {missing}"
+        f"efm_go.cloud.fargate, so a consumer must re-spell them: {missing}"
     )
 
     stale = sorted(name for name in SURFACE_EXCLUSIONS if name in surface)

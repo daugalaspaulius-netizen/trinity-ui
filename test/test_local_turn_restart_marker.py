@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard.chat_persistence import (
+from efm_go.dashboard.chat_persistence import (
     _LOCAL_TURN_PROMPT_MAX_ATTACHMENTS,
     _LOCAL_TURN_PROMPT_MAX_BYTES,
     _LOCAL_TURN_PROMPT_MAX_FIELD_CHARS,
@@ -26,14 +26,14 @@ from kiro_crew.dashboard.chat_persistence import (
     _save_slot_to_history,
     restore_recent_sessions,
 )
-from kiro_crew.dashboard.chat_runner import (
+from efm_go.dashboard.chat_runner import (
     _begin_local_turn_marker,
     _clear_local_turn_marker,
     _local_turn_generation_for,
     _local_turn_opening_row,
     _retire_local_turn_marker,
 )
-from kiro_crew.history import SLOT_OWNED_META_KEYS
+from efm_go.history import SLOT_OWNED_META_KEYS
 
 _RESTART_KIND = "gateway_restart_interruption"
 
@@ -69,7 +69,7 @@ def _client_streaming(events: list) -> AsyncMock:
 
 
 def _state_for_run_chat(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     state.broadcast_ws = MagicMock()
     state.push_slots_update = MagicMock()
@@ -114,7 +114,7 @@ def test_marker_key_is_slot_owned():
 
 
 def test_retire_is_generation_checked_so_a_successor_keeps_its_marker():
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     slot = _ChatSlot("chat-1")
     slot._turn_in_flight_generation = 9
@@ -164,7 +164,7 @@ async def test_admission_creates_the_transcript_for_a_newborn_slot(tmp_path):
 
 def _replace_slot_under_same_key(state, old_slot):
     """Mimic a tab close + same-key reopen that resumes the same transcript."""
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     replacement = _ChatSlot(old_slot.key)
     replacement._tab_id = old_slot._tab_id
@@ -222,7 +222,7 @@ async def test_admission_merge_is_a_guarded_history_write(tmp_path):
     # orders itself after the write instead of racing it.
     import threading
 
-    from kiro_crew.dashboard.chat_handlers import _pending_guarded_history_writes
+    from efm_go.dashboard.chat_handlers import _pending_guarded_history_writes
 
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("chat-1")
@@ -408,7 +408,7 @@ async def test_a_failed_marker_save_never_refuses_the_turn(tmp_path, monkeypatch
     slot._turn_generation = 3
     slot._dirty = False
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_persistence._save_slot_to_history",
+        "efm_go.dashboard.chat_persistence._save_slot_to_history",
         MagicMock(side_effect=OSError("disk unavailable")),
     )
 
@@ -423,7 +423,7 @@ async def test_a_failed_marker_save_never_refuses_the_turn(tmp_path, monkeypatch
 
 
 def test_generation_is_bound_before_the_marker_save_is_awaited():
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     # A cancellation inside the admission save must still leave the finally a
     # generation to retire, so the generation is a plain read, not the save's
@@ -441,13 +441,13 @@ async def test_a_cancel_inside_the_admission_save_still_clears_the_marker(tmp_pa
     cancel, and teardown must still retire the marker it wrote."""
     import asyncio
 
-    from kiro_crew.dashboard.chat import _run_chat
+    from efm_go.dashboard.chat import _run_chat
 
     state = _state_for_run_chat(tmp_path, monkeypatch)
     slot = state.get_or_create_slot("cancel-in-admission")
     slot.append("user", "hello", "msg msg-u")
     real_begin = __import__(
-        "kiro_crew.dashboard.chat_runner", fromlist=["x"]
+        "efm_go.dashboard.chat_runner", fromlist=["x"]
     )._begin_local_turn_marker
 
     async def cancelling_begin(st, sl, generation):
@@ -455,7 +455,7 @@ async def test_a_cancel_inside_the_admission_save_still_clears_the_marker(tmp_pa
         raise asyncio.CancelledError()
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_runner._begin_local_turn_marker", cancelling_begin
+        "efm_go.dashboard.chat_runner._begin_local_turn_marker", cancelling_begin
     )
 
     # _run_chat absorbs the cancellation (its except arm persists the partial
@@ -475,7 +475,7 @@ async def test_clear_for_another_generation_writes_nothing(tmp_path, monkeypatch
     slot = state.get_or_create_slot("chat-1")
     slot._turn_in_flight_generation = 5
     save = AsyncMock(return_value=True)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner.save_slot_off_loop", save)
+    monkeypatch.setattr("efm_go.dashboard.chat_runner.save_slot_off_loop", save)
 
     await _clear_local_turn_marker(state, slot, 4)
 
@@ -696,9 +696,9 @@ def test_local_marker_and_relay_marker_together_append_one_row(tmp_path):
 
 @pytest.mark.asyncio
 async def test_a_landed_turn_leaves_no_marker_on_disk(tmp_path, monkeypatch):
-    from kiro_crew.acp.types import STOP_REASON_END_TURN
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go.acp.types import STOP_REASON_END_TURN
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
     state = _state_for_run_chat(tmp_path, monkeypatch)
     slot = state.get_or_create_slot("landed")
@@ -729,9 +729,9 @@ async def test_a_landed_turn_leaves_no_marker_on_disk(tmp_path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_a_cancelled_turn_clears_its_marker_while_the_process_lives(tmp_path, monkeypatch):
-    from kiro_crew.acp.types import STOP_REASON_CANCELLED
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go.acp.types import STOP_REASON_CANCELLED
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
     state = _state_for_run_chat(tmp_path, monkeypatch)
     slot = state.get_or_create_slot("cancelled")
@@ -759,10 +759,10 @@ async def test_a_cancelled_turn_clears_its_marker_while_the_process_lives(tmp_pa
 
 @pytest.mark.asyncio
 async def test_shutdown_preserves_the_marker_of_an_unlanded_turn(tmp_path, monkeypatch):
-    from kiro_crew import shutdown_event
-    from kiro_crew.acp.types import STOP_REASON_CANCELLED
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go import shutdown_event
+    from efm_go.acp.types import STOP_REASON_CANCELLED
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
     state = _state_for_run_chat(tmp_path, monkeypatch)
     slot = state.get_or_create_slot("shutdown-cancelled")
@@ -795,10 +795,10 @@ async def test_shutdown_preserves_the_marker_of_an_unlanded_turn(tmp_path, monke
 
 @pytest.mark.asyncio
 async def test_a_turn_that_lands_during_shutdown_still_clears(tmp_path, monkeypatch):
-    from kiro_crew import shutdown_event
-    from kiro_crew.acp.types import STOP_REASON_END_TURN
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go import shutdown_event
+    from efm_go.acp.types import STOP_REASON_END_TURN
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
     state = _state_for_run_chat(tmp_path, monkeypatch)
     slot = state.get_or_create_slot("shutdown-landed")
@@ -827,9 +827,9 @@ async def test_a_turn_that_lands_during_shutdown_still_clears(tmp_path, monkeypa
 
 @pytest.mark.asyncio
 async def test_the_marker_is_on_disk_before_the_provider_streams(tmp_path, monkeypatch):
-    from kiro_crew.acp.types import STOP_REASON_END_TURN
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go.acp.types import STOP_REASON_END_TURN
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
     state = _state_for_run_chat(tmp_path, monkeypatch)
     slot = state.get_or_create_slot("ordered")
@@ -900,7 +900,7 @@ def test_prompt_copy_key_is_slot_owned():
 
 
 def test_retire_clears_the_prompt_copy_with_the_generation():
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     slot = _ChatSlot("chat-1")
     slot._turn_in_flight_generation = 9
@@ -912,7 +912,7 @@ def test_retire_clears_the_prompt_copy_with_the_generation():
 
 
 def test_opening_row_copy_picks_the_newest_unanswered_opener():
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     slot = _ChatSlot("chat-1")
     slot.append("user", "first", "msg msg-u")
@@ -1200,7 +1200,7 @@ def test_a_restored_copy_carries_only_identity_and_attachments(tmp_path):
 
 
 def test_an_oversize_opener_is_not_copied_and_never_truncated():
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     # The copy is bounded as a whole. Over the bound nothing is carried: a
     # truncated copy would come back as the user's own words, shortened.
@@ -1269,7 +1269,7 @@ def test_a_cron_openers_json_cls_does_not_round_trip(tmp_path):
     # ``injectKind``, and the frontend would stop reading the turn as
     # interrupted. The copy carries no ``cls`` and the restore assigns the
     # loader's default, so the emitted row keeps its identity.
-    from kiro_crew.dashboard.chat_utils import parse_cls_meta
+    from efm_go.dashboard.chat_utils import parse_cls_meta
 
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("chat-1")

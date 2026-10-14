@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import credential_patterns as cp
+from efm_go import credential_patterns as cp
 
 
 class TestImportFreeShape:
@@ -40,10 +40,10 @@ class TestImportFreeShape:
 
     def test_fresh_import_pulls_in_no_module(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A fresh import adds only the module itself to ``sys.modules``."""
-        import kiro_crew
+        import efm_go
 
-        mod_name = "kiro_crew.credential_patterns"
-        monkeypatch.setattr(kiro_crew, "credential_patterns", sys.modules[mod_name])
+        mod_name = "efm_go.credential_patterns"
+        monkeypatch.setattr(efm_go, "credential_patterns", sys.modules[mod_name])
         monkeypatch.delitem(sys.modules, mod_name)
 
         before = set(sys.modules)
@@ -62,7 +62,7 @@ class TestSharedSpellings:
         reflow of the concatenation cannot make this pass vacuously, and a
         hand-written copy reintroduced at one of the five AWS sites fails here.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for name in (
             "_EXFIL_PATTERNS",
@@ -78,13 +78,13 @@ class TestSharedSpellings:
 
     def test_redaction_floor_compiles_the_shared_spellings(self) -> None:
         """``log_redaction``'s patterns are exactly the shared strings."""
-        from kiro_crew.log_redaction import _AWS_KEY_ID_RE, _JWT_RE
+        from efm_go.log_redaction import _AWS_KEY_ID_RE, _JWT_RE
 
         assert _AWS_KEY_ID_RE.pattern == cp.AWS_KEY_ID_REDACTION
         assert _JWT_RE.pattern == cp.JWT_MULTI_SEGMENT
 
     def test_no_module_spells_the_prefix_group_by_hand(self) -> None:
-        """No module under ``src/kiro_crew`` writes the prefix group as a literal.
+        """No module under ``src/efm_go`` writes the prefix group as a literal.
 
         The point of the consolidation, enforced across the WHOLE tree rather than
         the two original homes: five sites in ``security.py``, the redaction floor,
@@ -109,9 +109,9 @@ class TestSharedSpellings:
 
     def test_siblings_read_their_spelling_from_the_home(self) -> None:
         """The three sites outside the two original homes compile the shared strings."""
-        from kiro_crew import sel
-        from kiro_crew.apps.builtins.pptx_maker.backend import routes as pptx_routes
-        from kiro_crew.metrics import schema as metrics_schema
+        from efm_go import sel
+        from efm_go.apps.builtins.pptx_maker.backend import routes as pptx_routes
+        from efm_go.metrics import schema as metrics_schema
 
         assert pptx_routes._ENCODED_CREDENTIAL_RE.pattern == cp.AWS_KEY_ID
         assert metrics_schema._HIGH_ENTROPY_PATTERNS[0].pattern == cp.AWS_KEY_ID

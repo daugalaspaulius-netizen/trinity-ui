@@ -12,7 +12,7 @@ import pytest
 from chat_test_helpers import _make_state
 from test_telegram import FakeClient, FakeCtx, FakeProvider, _origin
 
-from kiro_crew.dashboard.channel_handoff import (
+from efm_go.dashboard.channel_handoff import (
     HANDOFF_QUEUED,
     HANDOFF_REFUSED,
     HANDOFF_STEERED,
@@ -26,19 +26,19 @@ from kiro_crew.dashboard.channel_handoff import (
     REFUSED_UNSAVED_CLOSE,
     ResumedBusyOutcome,
 )
-from kiro_crew.history import ConversationLog, transcript_stem
-from kiro_crew.messaging import auto_title
-from kiro_crew.messaging.link import UNBIND_REASON_UNSPECIFIED, ChannelLink
-from kiro_crew.messaging.renderer import session_provenance_tag
-from kiro_crew.messaging.session_resume import SETTLE_NOTHING, RoutingDecision
-from kiro_crew.messaging.session_trust import clear_trusted_sessions
-from kiro_crew.session import _opt_out_key
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.session_map import ConversationOwnershipConflict
-from kiro_crew.telegram.renderer import TelegramApprovalDecider
-from kiro_crew.telegram.session_resume import _ROUTE_OWNER_REFUSAL
-from kiro_crew.telegram.transport import TELEGRAM_CAPABILITIES, TelegramInboundMessage
-from kiro_crew.telegram.transport_dispatch import TelegramDispatcher
+from efm_go.history import ConversationLog, transcript_stem
+from efm_go.messaging import auto_title
+from efm_go.messaging.link import UNBIND_REASON_UNSPECIFIED, ChannelLink
+from efm_go.messaging.renderer import session_provenance_tag
+from efm_go.messaging.session_resume import SETTLE_NOTHING, RoutingDecision
+from efm_go.messaging.session_trust import clear_trusted_sessions
+from efm_go.session import _opt_out_key
+from efm_go.session_allocation import SessionClosingError
+from efm_go.session_map import ConversationOwnershipConflict
+from efm_go.telegram.renderer import TelegramApprovalDecider
+from efm_go.telegram.session_resume import _ROUTE_OWNER_REFUSAL
+from efm_go.telegram.transport import TELEGRAM_CAPABILITIES, TelegramInboundMessage
+from efm_go.telegram.transport_dispatch import TelegramDispatcher
 
 
 @pytest.fixture(autouse=True)
@@ -287,7 +287,7 @@ def _config() -> Any:
 
 
 def _log(tmp_path: Any, *, agent: str = "") -> ConversationLog:
-    from kiro_crew.history import allow_on_loop_persist
+    from efm_go.history import allow_on_loop_persist
 
     log = ConversationLog(base_dir=tmp_path / "sessions")
     with allow_on_loop_persist():
@@ -359,7 +359,7 @@ def _picker_button(client: _Client) -> tuple[str, int]:
 
 
 def _resume_module() -> Any:
-    return importlib.import_module("kiro_crew.telegram.session_resume")
+    return importlib.import_module("efm_go.telegram.session_resume")
 
 
 async def _bind(
@@ -735,7 +735,7 @@ class TestTelegramSessionPicker:
         an escaping store error would discard the press with no reply and leave a
         dead button. It settles fail-closed instead.
         """
-        from kiro_crew.messaging.resume_expectation import ExpectationStoreError
+        from efm_go.messaging.resume_expectation import ExpectationStoreError
 
         dispatcher, client, sessions, _ = _dispatcher(tmp_path)
         expectations = dispatcher._session_resume.expectations
@@ -1139,7 +1139,7 @@ class TestTelegramInboundResumeRouting:
         """The dashboard holds the resumed session's turn: the message goes to the slot's
         own machinery (steer or queue there), never to this chat's queue, and the chat is
         told. Base refused it ("busy with a turn started elsewhere")."""
-        from kiro_crew.dashboard import channel_handoff
+        from efm_go.dashboard import channel_handoff
 
         dispatcher, client, sessions, _ = _dispatcher(tmp_path)
         dispatcher._session_resume.route = AsyncMock(
@@ -1180,7 +1180,7 @@ class TestTelegramInboundResumeRouting:
         dispatcher's command intercept, so the words "/clear" alone reach the slot's
         queue -- where the hand-off stamps them as turn content, never as the
         dashboard command."""
-        from kiro_crew.dashboard import channel_handoff
+        from efm_go.dashboard import channel_handoff
 
         dispatcher, client, sessions, _ = _dispatcher(tmp_path)
         dispatcher._session_resume.route = AsyncMock(
@@ -1231,7 +1231,7 @@ class TestTelegramInboundResumeRouting:
     async def test_every_hand_off_outcome_is_told_to_the_chat(
         self, tmp_path: Any, monkeypatch: Any, outcome: ResumedBusyOutcome, told: str
     ) -> None:
-        from kiro_crew.dashboard import channel_handoff
+        from efm_go.dashboard import channel_handoff
 
         dispatcher, client, sessions, _ = _dispatcher(tmp_path)
         dispatcher._session_resume.route = AsyncMock(
@@ -1265,7 +1265,7 @@ class TestTelegramInboundResumeRouting:
         second binding resolution: updates are concurrent tasks and ``/unlink`` is
         exempt from the busy gate, so a binding that changed in the window
         (``unlinked``) must not reroute the message into the native session."""
-        from kiro_crew.dashboard import channel_handoff
+        from efm_go.dashboard import channel_handoff
 
         dispatcher, client, sessions, _ = _dispatcher(tmp_path)
         route = AsyncMock(return_value=RoutingDecision(resumed_key="dashboard:chat-1"))
@@ -1463,7 +1463,7 @@ class TestTelegramColdResume:
     async def test_cold_resume_suppresses_every_native_only_side_effect(
         self, tmp_path: Any, monkeypatch: Any
     ) -> None:
-        from kiro_crew.dashboard import channel_slots
+        from efm_go.dashboard import channel_slots
 
         log = _log(tmp_path, agent="research-agent")
         dispatcher, _, sessions, _ = _dispatcher(tmp_path, log=log)
@@ -1489,7 +1489,7 @@ class TestTelegramColdResume:
     async def test_resumed_turn_explicitly_broadcasts_channel_user_row(
         self, tmp_path: Any, monkeypatch: Any
     ) -> None:
-        from kiro_crew.dashboard import channel_slots
+        from efm_go.dashboard import channel_slots
 
         dispatcher, _, _, _ = _dispatcher(tmp_path)
         dispatcher._session_resume.route = AsyncMock(
@@ -1530,7 +1530,7 @@ class TestTelegramResumeIntegration:
         assert TELEGRAM_CAPABILITIES.supports_session_resume is True
 
     def test_dashboard_resume_target_requires_one_owner_dm(self) -> None:
-        from kiro_crew.telegram.transport import TelegramTransport
+        from efm_go.telegram.transport import TelegramTransport
 
         owner = TelegramTransport(_Client(), allowed_user_ids={7})
         assert owner.may_resume_from("7", None) is True
@@ -1574,7 +1574,7 @@ class TestTelegramRestrictedResumedSession:
     @pytest.mark.asyncio
     async def test_channel_privacy_mode_alone_would_have_failed_open(self, tmp_path: Any) -> None:
         """The regression anchor: the native predicate cannot see this restriction."""
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         dispatcher, _, _, _ = _dispatcher(tmp_path)
         dispatcher.dashboard_state = self._state(SimpleNamespace(is_restricted=True))
@@ -1602,7 +1602,7 @@ class TestTelegramRestrictedResumedSession:
     @pytest.mark.asyncio
     async def test_an_affirmative_incognito_marker_still_denies(self, tmp_path: Any) -> None:
         """The closed-tab rung that DOES restrict: the transcript says incognito."""
-        from kiro_crew.messaging import upload_gate
+        from efm_go.messaging import upload_gate
 
         assert (
             upload_gate._persisted_mode_is_restricted(
@@ -1627,7 +1627,7 @@ class TestTelegramRestrictedResumedSession:
         does NOT land here — it reads ``persistent`` — so denying costs no ordinary
         history.
         """
-        from kiro_crew.messaging import upload_gate
+        from efm_go.messaging import upload_gate
 
         assert (
             upload_gate._persisted_mode_is_restricted(
@@ -1646,7 +1646,7 @@ class TestTelegramRestrictedResumedSession:
     @pytest.mark.asyncio
     async def test_the_upload_ceiling_keeps_denying_an_unknown_mode(self, tmp_path: Any) -> None:
         """The two postures stay independent: uploads deny unknown either way."""
-        from kiro_crew.messaging import upload_gate
+        from efm_go.messaging import upload_gate
 
         for probe_result in ((False, None), (True, None)):
             assert (
@@ -1664,7 +1664,7 @@ class TestTelegramRestrictedResumedSession:
         fact lives on the slot. Left to the channel tracker, stored memories and
         lessons would enter the model prompt for a session that asked for none.
         """
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         dispatcher, _, _, _ = _dispatcher(tmp_path)
         dispatcher.dashboard_state = self._state(
@@ -1718,7 +1718,7 @@ class TestTelegramRestrictedResumedSession:
         self, tmp_path: Any, command: str
     ) -> None:
         """A channel-local mark cannot promise privacy for a persistent live slot."""
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         privacy_mode.reset()
         dispatcher, client, sessions, _ = _dispatcher(tmp_path)
@@ -1902,7 +1902,7 @@ class TestResumedRefusalsCharacterization:
     async def test_a_resumed_privacy_modifier_refuses_byte_exact(
         self, tmp_path: Any, monkeypatch: Any, text: str
     ) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         dispatcher, client, sessions = self._resumed(tmp_path)
         apply = AsyncMock()

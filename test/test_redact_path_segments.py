@@ -17,10 +17,10 @@ import hmac
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.security import _exports, redact, redact_path_segments
-from kiro_crew.security import redaction as redaction_mod
-from kiro_crew.security.redaction import (
+from efm_go import security
+from efm_go.security import _exports, redact, redact_path_segments
+from efm_go.security import redaction as redaction_mod
+from efm_go.security.redaction import (
     _PATH_SEGMENT_DISCRIMINATOR_SEP,
     _REDACTED_CREDENTIAL_TAG,
     _path_segment_label,

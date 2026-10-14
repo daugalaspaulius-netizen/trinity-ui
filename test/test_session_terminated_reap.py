@@ -31,8 +31,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
 
 # Far larger than any wall-clock this test spends, so every reap asserted below
 # is on the terminated-owner axis and never on the idle clock.
@@ -516,7 +516,7 @@ class TestPendingInjectionIsSpared:
         """
         from unittest.mock import MagicMock, patch
 
-        import kiro_crew.session as session_mod
+        import efm_go.session as session_mod
 
         cfg.session.watchdog_rss_max_mb = 1000
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
@@ -537,8 +537,8 @@ class TestPendingInjectionIsSpared:
 
         with (
             patch.object(session_mod.platform_compat, "IS_WINDOWS", False),
-            patch("kiro_crew.session._build_child_map", return_value={}),
-            patch("kiro_crew.session._rss_mb_from_tree", return_value=2048),
+            patch("efm_go.session._build_child_map", return_value={}),
+            patch("efm_go.session._rss_mb_from_tree", return_value=2048),
         ):
             await mgr._rss_threshold_check()
 
@@ -553,7 +553,7 @@ class TestPendingInjectionIsSpared:
         """
         from unittest.mock import MagicMock, patch
 
-        import kiro_crew.session as session_mod
+        import efm_go.session as session_mod
 
         cfg.session.watchdog_rss_max_mb = 1000
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
@@ -567,8 +567,8 @@ class TestPendingInjectionIsSpared:
 
         with (
             patch.object(session_mod.platform_compat, "IS_WINDOWS", False),
-            patch("kiro_crew.session._build_child_map", return_value={}),
-            patch("kiro_crew.session._rss_mb_from_tree", return_value=2048),
+            patch("efm_go.session._build_child_map", return_value={}),
+            patch("efm_go.session._rss_mb_from_tree", return_value=2048),
         ):
             await mgr._rss_threshold_check()
 
@@ -665,7 +665,7 @@ class TestPendingInjectionIsSpared:
         """
         from pathlib import Path
 
-        import kiro_crew.slack.gateway as gateway_mod
+        import efm_go.slack.gateway as gateway_mod
 
         src = Path(gateway_mod.__file__).read_text(encoding="utf-8")
         assert (

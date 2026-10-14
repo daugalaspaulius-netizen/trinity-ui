@@ -1,5 +1,5 @@
 /**
- * GUARD for kirodotdev/KiroCrew#10810: a reader parked in the MIDDLE of a
+ * GUARD for efmleads.com#10810: a reader parked in the MIDDLE of a
  * streaming reply is walked down the message -- seen as the text sliding UP
  * out from under them -- by one token's height per tick.
  *

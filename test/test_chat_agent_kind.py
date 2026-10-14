@@ -11,9 +11,9 @@ from chat_test_helpers import _make_app_with_agent_routes
 from dashboard_owner_helpers import as_owner
 from test_chat_agent_selection import TEMPLATE, _template_chat, _turn_state
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.execution_context import read_session_execution
-from kiro_crew.member_memory_auth import read_private_session_store
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.execution_context import read_session_execution
+from efm_go.member_memory_auth import read_private_session_store
 
 
 async def _same_name_state(tmp_path, monkeypatch):
@@ -153,7 +153,7 @@ async def test_remote_switch_forwards_and_persists_the_selection_kind(tmp_path, 
     slot.remote_slot = "peer-chat-1"
     forward = AsyncMock(return_value={})
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+        "efm_go.dashboard.chat_handlers.forward_peer_selection",
         forward,
     )
 
@@ -233,7 +233,7 @@ async def test_member_thread_refuses_the_same_name_template_kind(tmp_path, monke
     shared template and detach the thread from the member's memory, which is a
     re-bind by another spelling and is refused like any other re-bind.
     """
-    from kiro_crew.members import DM_SLOT_MODE, write_dm_binding
+    from efm_go.members import DM_SLOT_MODE, write_dm_binding
 
     state, private_store = await _same_name_state(tmp_path, monkeypatch)
     key = f"member-{TEMPLATE}"

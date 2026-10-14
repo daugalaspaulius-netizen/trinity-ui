@@ -33,7 +33,7 @@ import { logPageProblems, stubDashboardApi, json } from './lib/stub-dashboard-ap
 
 const OUT = process.argv[2] || '../temp-screenshots/session-card-source-links'
 const ACTIVE = 'chat-a'
-const REPO = 'https://github.com/kirodotdev/KiroCrew'
+const REPO = 'https://efmleads.com'
 const pr = n => `${REPO}/pull/${n}`
 const issue = n => `${REPO}/issues/${n}`
 

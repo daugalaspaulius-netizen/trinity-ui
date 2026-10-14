@@ -42,8 +42,8 @@ There is no persisted optimizer setting. `ChatInput` enables `promptOptimizer` b
 
 ## Key files
 
-- `src/kiro_crew/dashboard/handlers/optimizer.py`: endpoint, system prompt, paste-block assembly, input screening, output redaction, and placeholder guard.
-- `src/kiro_crew/dashboard/routes/chat.py`: optimizer route registration.
+- `src/efm_go/dashboard/handlers/optimizer.py`: endpoint, system prompt, paste-block assembly, input screening, output redaction, and placeholder guard.
+- `src/efm_go/dashboard/routes/chat.py`: optimizer route registration.
 - `website/src/components/ChatInput.tsx`: the `promptOptimizer` capability gate and the sparkle button.
 - `website/src/components/chat-input/optimizer.ts`: mutation, slot routing, and verified write-back.
 - `website/src/components/chat-input/keyboard.ts`: the `Cmd/Ctrl+Shift+Enter` shortcut.

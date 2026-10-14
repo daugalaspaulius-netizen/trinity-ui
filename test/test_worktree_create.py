@@ -23,9 +23,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import sandbox as sandbox_mod
-from kiro_crew.dashboard.handlers import worktree as wt_mod
-from kiro_crew.dashboard.handlers.worktree import (
+from efm_go import sandbox as sandbox_mod
+from efm_go.dashboard.handlers import worktree as wt_mod
+from efm_go.dashboard.handlers.worktree import (
     _FILTER_PROBE_FAILED,
     SandboxUnavailable,
     _checkout_filter,
@@ -41,7 +41,7 @@ from kiro_crew.dashboard.handlers.worktree import (
     _worktree_probe_failure_is_empty_scope,
     api_worktree_create,
 )
-from kiro_crew.validation import FOLLOWUP_BRANCH_RE, is_valid_followup_branch
+from efm_go.validation import FOLLOWUP_BRANCH_RE, is_valid_followup_branch
 
 
 def _branch_exists(root: str, branch: str) -> bool:
@@ -492,7 +492,7 @@ class TestNoRepositoryCodeExecution:
         `os.devnull` cannot be replaced or filled, so there is no window between
         one git call and the next in which a hook could appear.
         """
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         assert wt._HOOKS_SINK == os.devnull
         assert not os.path.isdir(wt._HOOKS_SINK)
@@ -557,7 +557,7 @@ class TestIdempotentReentry:
             return real_run_git(args, cwd)
 
         async with TestClient(TestServer(_make_app(str(repo)))) as client:
-            with patch("kiro_crew.dashboard.handlers.worktree._run_git", side_effect=fail_add):
+            with patch("efm_go.dashboard.handlers.worktree._run_git", side_effect=fail_add):
                 resp = await client.post(
                     "/api/worktree/create", json={"repo": str(repo), "branch": "feat/doomed"}
                 )
@@ -575,7 +575,7 @@ class TestIdempotentReentry:
         """A base ref that resolves to no commit fails before anything is made."""
         async with TestClient(TestServer(_make_app(str(repo)))) as client:
             with patch(
-                "kiro_crew.dashboard.handlers.worktree._resolve_base_ref",
+                "efm_go.dashboard.handlers.worktree._resolve_base_ref",
                 return_value="refs/heads/does-not-exist-xyz",
             ):
                 resp = await client.post(
@@ -645,7 +645,7 @@ class TestConcurrencySafety:
         ours = repo.parent / "proj-wt-ours"
         ours.mkdir()
         (ours / "marker").write_text("x")
-        with patch("kiro_crew.dashboard.handlers.worktree._worktree_branches", return_value=None):
+        with patch("efm_go.dashboard.handlers.worktree._worktree_branches", return_value=None):
             # created=True: the mkdir claim is what authorizes removal, not the
             # (unavailable) listing.
             _cleanup_partial(str(repo), str(ours), "feat/ours", claimed=False, created=True)
@@ -672,7 +672,7 @@ class TestConcurrencySafety:
             return real_run_git(args, cwd)
 
         with patch(
-            "kiro_crew.dashboard.handlers.worktree._run_git", side_effect=_fail_worktree_remove
+            "efm_go.dashboard.handlers.worktree._run_git", side_effect=_fail_worktree_remove
         ):
             _cleanup_partial(
                 str(repo), dest, "feat/stale", claimed=True, created=True, base_sha=sha
@@ -704,7 +704,7 @@ class TestConcurrencySafety:
         reporting "already exists" is recoverable where a broken worktree is not."""
         sha = _resolve_commit(str(repo), "HEAD")
         assert _claim_branch(str(repo), "feat/unknown", sha) is True
-        with patch("kiro_crew.dashboard.handlers.worktree._worktree_branches", return_value=None):
+        with patch("efm_go.dashboard.handlers.worktree._worktree_branches", return_value=None):
             _cleanup_partial(
                 str(repo),
                 str(repo.parent / "proj-wt-unknown"),
@@ -762,7 +762,7 @@ class TestConcurrencySafety:
         """If git cannot enumerate worktrees, refuse rather than guess."""
         async with TestClient(TestServer(_make_app(str(repo)))) as client:
             with patch(
-                "kiro_crew.dashboard.handlers.worktree._worktree_branches", return_value=None
+                "efm_go.dashboard.handlers.worktree._worktree_branches", return_value=None
             ):
                 resp = await client.post(
                     "/api/worktree/create", json={"repo": str(repo), "branch": "feat/blind"}
@@ -933,7 +933,7 @@ class TestCheckoutFilters:
     def test_probe_failure_fails_closed(self, repo):
         """An unreadable config scope refuses rather than assuming "no filter"."""
         failed = subprocess.CompletedProcess(args=["git"], returncode=128, stdout="", stderr="x")
-        with patch("kiro_crew.dashboard.handlers.worktree._run_git", return_value=failed):
+        with patch("efm_go.dashboard.handlers.worktree._run_git", return_value=failed):
             assert _checkout_filter(str(repo)) == _FILTER_PROBE_FAILED
 
     @pytest.mark.asyncio
@@ -1007,7 +1007,7 @@ class TestRound9Hardening:
     @pytest.mark.asyncio
     async def test_sandbox_unavailable_refuses_with_503(self, repo):
         """Fail CLOSED: no OS isolation available means the git spawn does not run."""
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         with patch.object(wt, "sandboxed_spawn_argv", side_effect=RuntimeError("no backend")):
             async with TestClient(TestServer(_make_app(str(repo)))) as client:
@@ -1024,7 +1024,7 @@ class TestRound9Hardening:
         read that file as config. "standard" leaves those paths visible; strict
         bind-mounts them away. Pinned so the mode cannot silently widen.
         """
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         assert wt._SANDBOX_MODE == "strict"
         seen: dict = {}
@@ -1051,7 +1051,7 @@ class TestRound9Hardening:
         a misdiagnosis that sent the user looking at their repo instead of the
         host.
         """
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         denied = subprocess.CompletedProcess(
             args=["git"],
@@ -1069,7 +1069,7 @@ class TestRound9Hardening:
     def test_a_real_git_failure_is_still_a_git_failure(self):
         """Only the launcher's own `sandbox: ` prefix means "no isolation"; an
         ordinary non-zero git exit must pass through untouched."""
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         failed = subprocess.CompletedProcess(
             args=["git"], returncode=128, stdout="", stderr="fatal: not a git repository\n"
@@ -1245,7 +1245,7 @@ class TestLauncherAdvisoryIsNotARefusal:
 
     @pytest.fixture(autouse=True)
     def _spawn_passthrough(self, monkeypatch):
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         monkeypatch.setattr(wt, "sandboxed_spawn_argv", _passthrough_spawn)
 
@@ -1256,7 +1256,7 @@ class TestLauncherAdvisoryIsNotARefusal:
 
     def test_a_warning_on_a_non_zero_exit_is_returned_as_data(self, tmp_path, monkeypatch):
         """The non-zero exit is the ANSWER here, not an error to translate."""
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         stderr = self._WARNING + "\n"
         monkeypatch.setattr(wt, "run_limited", lambda *a, **k: self._completed(1, stderr))
@@ -1269,8 +1269,8 @@ class TestLauncherAdvisoryIsNotARefusal:
         git's stdout intact. Text mode's universal-newline translation would
         rewrite it, misdirecting the empty-scope classifier's lstat to a path
         that names nothing and clearing a scope whose ``config.worktree``
-        exists (see kiro_crew.git_worktree_scope)."""
-        from kiro_crew.dashboard.handlers import worktree as wt
+        exists (see efm_go.git_worktree_scope)."""
+        from efm_go.dashboard.handlers import worktree as wt
 
         monkeypatch.setattr(
             wt,
@@ -1292,7 +1292,7 @@ class TestLauncherAdvisoryIsNotARefusal:
         surrogate (``utf8_path_stdout``), or ``os.fsencode`` inside the lstat
         rebuilds a U+FFFD path that names nothing and an EXISTING
         ``config.worktree`` reads as the empty scope -- dropping the refusal."""
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         gitdir_bytes = os.fsencode(str(tmp_path)) + b"/git-\xff"
         os.mkdir(gitdir_bytes)
@@ -1308,7 +1308,7 @@ class TestLauncherAdvisoryIsNotARefusal:
         assert wt._worktree_probe_failure_is_empty_scope(str(tmp_path)) is False
 
     def test_a_fatal_launcher_line_still_refuses(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         stderr = self._FATAL + "\n"
         monkeypatch.setattr(wt, "run_limited", lambda *a, **k: self._completed(1, stderr))
@@ -1318,7 +1318,7 @@ class TestLauncherAdvisoryIsNotARefusal:
 
     def test_a_fatal_line_a_warning_precedes_is_still_found(self, tmp_path, monkeypatch):
         """Order must not decide it: ``startswith`` on the whole stderr missed this."""
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         stderr = f"{self._WARNING}\n{self._FATAL}\n"
         monkeypatch.setattr(wt, "run_limited", lambda *a, **k: self._completed(1, stderr))
@@ -1347,7 +1347,7 @@ class TestLauncherAdvisoryIsNotARefusal:
         of the launcher program's source (an f-string by its literal head), which is
         the text the renderer emits, so a line no test triggers is still counted.
         """
-        from kiro_crew import sandbox_launcher
+        from efm_go import sandbox_launcher
 
         literals: list[str] = []
         for node in ast.walk(ast.parse(sandbox_launcher.launcher_program_source())):
@@ -1393,7 +1393,7 @@ class TestLauncherAdvisoryIsNotARefusal:
         the sandbox never came up, so running the git command bare would silently drop
         the isolation the caller asked for.
         """
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         stderr = self._FATAL_PRE_READ + "\n"
         monkeypatch.setattr(wt, "run_limited", lambda *a, **k: self._completed(1, stderr))
@@ -1404,7 +1404,7 @@ class TestLauncherAdvisoryIsNotARefusal:
         assert str(excinfo.value) == self._FATAL_PRE_READ
 
     def test_gits_own_error_is_never_mistaken_for_a_refusal(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import worktree as wt
+        from efm_go.dashboard.handlers import worktree as wt
 
         stderr = "fatal: not a git repository (or any of the parent directories): .git\n"
         monkeypatch.setattr(wt, "run_limited", lambda *a, **k: self._completed(128, stderr))

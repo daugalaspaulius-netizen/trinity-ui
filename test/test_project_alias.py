@@ -11,8 +11,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.dashboard.handlers import api_taskrunner_export_yaml, api_taskrunner_status
-from kiro_crew.dashboard.handlers_project import (
+from efm_go.dashboard.handlers import api_taskrunner_export_yaml, api_taskrunner_status
+from efm_go.dashboard.handlers_project import (
     _redact,
     _run_to_project,
     api_activities_list,
@@ -25,9 +25,9 @@ from kiro_crew.dashboard.handlers_project import (
     api_project_update,
     api_projects_list,
 )
-from kiro_crew.slack.handler import _handle_run_command
-from kiro_crew.task_models import Project
-from kiro_crew.taskrunner import TaskRunner
+from efm_go.slack.handler import _handle_run_command
+from efm_go.task_models import Project
+from efm_go.taskrunner import TaskRunner
 
 # ── Fixtures ──
 
@@ -419,7 +419,7 @@ class TestProjectRunAlias:
 class TestTaskRunnerStatusMcpFilter:
     @pytest.mark.asyncio
     async def test_taskrunner_status_excludes_cron_runs(self):
-        from kiro_crew.task_reporter import build_status
+        from efm_go.task_reporter import build_status
 
         runner = MagicMock()
         cron_run = Project(
@@ -468,7 +468,7 @@ class TestTaskRunnerStatusMcpFilter:
         # lessons_learned is LLM-generated text surfaced to the dashboard JSON;
         # it must be scrubbed of credentials like the sibling error / task_details
         # fields the handler already redacts (build_status emits it raw).
-        from kiro_crew.task_reporter import build_status
+        from efm_go.task_reporter import build_status
 
         runner = MagicMock()
         run = Project(
@@ -503,7 +503,7 @@ class TestTaskRunnerStatusMcpFilter:
     async def test_taskrunner_status_surfaces_default_workspace_dir(self, tmp_path):
         # The UI pre-fills its per-run workspace-folder selector from this field:
         # the configured workspace_dir when set, else the base work dir.
-        from kiro_crew.task_reporter import build_status
+        from efm_go.task_reporter import build_status
 
         runner = MagicMock()
         runner._runs = {}
@@ -527,7 +527,7 @@ class TestTaskRunnerExportYaml:
     """GET /api/taskrunner/{task_id}/plan.yaml — plan → YAML download."""
 
     def _run_with_tasks(self, task_id="r1", name="My Plan"):
-        from kiro_crew.task_models import Task
+        from efm_go.task_models import Task
 
         run = Project(spec_path="", spec_content="", task_id=task_id, name=name, status="planned")
         run.tasks = [
@@ -538,7 +538,7 @@ class TestTaskRunnerExportYaml:
 
     @pytest.mark.asyncio
     async def test_export_success_roundtrips(self):
-        from kiro_crew.task_planner import decompose_yaml
+        from efm_go.task_planner import decompose_yaml
 
         runner = MagicMock()
         runner._runs = {"r1": self._run_with_tasks()}

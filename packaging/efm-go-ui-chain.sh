@@ -8,7 +8,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WEBSITE="$ROOT/website"
 DIST="$WEBSITE/dist"
 ELECTRON="$WEBSITE/electron"
-BACKEND_STATIC="$ELECTRON/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew/static/dist"
+BACKEND_STATIC="$ELECTRON/backend-dist/efm-go-backend/Lib/site-packages/efm_go/static/dist"
 MANIFEST="$ELECTRON/build-info.json"
 PACK="${EFM_PACK:-0}"
 
@@ -21,8 +21,8 @@ hash_tree() {
 
 log() { printf 'EFM-CHAIN: %s\n' "$*"; }
 
-if [[ ! -d "$ELECTRON/backend-dist/kirocrew-backend" ]]; then
-  echo "FAIL: website/electron/backend-dist/kirocrew-backend missing. Stage Windows backend first." >&2
+if [[ ! -d "$ELECTRON/backend-dist/efm-go-backend" ]]; then
+  echo "FAIL: website/electron/backend-dist/efm-go-backend missing. Stage Windows backend first." >&2
   exit 2
 fi
 
@@ -45,14 +45,14 @@ DIST_HASH="$(hash_tree "$DIST")"
 log "website/dist hash=$DIST_HASH"
 
 log "copy official_catalog.py + sections.py into backend-dist"
-SRC_APPS="$ROOT/src/kiro_crew/apps/official_catalog.py"
-SRC_SEC="$ROOT/src/kiro_crew/config/sections.py"
-DST_APPS="$ELECTRON/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew/apps/official_catalog.py"
-DST_SEC="$ELECTRON/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew/config/sections.py"
+SRC_APPS="$ROOT/src/efm_go/apps/official_catalog.py"
+SRC_SEC="$ROOT/src/efm_go/config/sections.py"
+DST_APPS="$ELECTRON/backend-dist/efm-go-backend/Lib/site-packages/efm_go/apps/official_catalog.py"
+DST_SEC="$ELECTRON/backend-dist/efm-go-backend/Lib/site-packages/efm_go/config/sections.py"
 cp -f "$SRC_APPS" "$DST_APPS"
 cp -f "$SRC_SEC" "$DST_SEC"
-rm -f "$ELECTRON/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew/apps/__pycache__/official_catalog"*.pyc
-rm -f "$ELECTRON/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew/config/__pycache__/sections"*.pyc
+rm -f "$ELECTRON/backend-dist/efm-go-backend/Lib/site-packages/efm_go/apps/__pycache__/official_catalog"*.pyc
+rm -f "$ELECTRON/backend-dist/efm-go-backend/Lib/site-packages/efm_go/config/__pycache__/sections"*.pyc
 
 log "sync dist -> backend-dist static"
 rm -rf "$BACKEND_STATIC"

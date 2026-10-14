@@ -10,23 +10,23 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 
 @pytest.fixture()
 def cfg_file(tmp_path):
     path = tmp_path / "config.json"
     path.write_text("{}", encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=path):
+    with patch("efm_go.config.loader.config_path", return_value=path):
         yield path
 
 
 @pytest.fixture()
 def handler_app(cfg_file):
-    from kiro_crew.dashboard.handlers.files import api_dashboard_config
+    from efm_go.dashboard.handlers.files import api_dashboard_config
 
     audit = MagicMock()
-    with patch("kiro_crew.dashboard.handlers.files._sel", return_value=audit):
+    with patch("efm_go.dashboard.handlers.files._sel", return_value=audit):
         app = web.Application()
         app.router.add_get("/api/dashboard/config", api_dashboard_config)
         app.router.add_put("/api/dashboard/config", api_dashboard_config)
@@ -182,7 +182,7 @@ async def test_configured_fact_requires_successful_model_save(handler_app, cfg_f
         assert await configured() is False
 
         with patch(
-            "kiro_crew.config.loader.update_config_locked",
+            "efm_go.config.loader.update_config_locked",
             side_effect=OSError("test write failure"),
         ):
             response = await client.put(

@@ -1,10 +1,10 @@
 # Agent Client Protocol (ACP)
 
-Source: https://kiro.dev/docs/cli/acp/ (fetched 2026-09-06)
+Source: https://efmleads.com/docs/cli/acp/ (fetched 2026-09-06)
 
 > **Carries local additions.** `session/set_config_option`, the snake_case
 > session-update names and everything below them, and the
-> `_kiro.dev/mcp/server_init_failure` and `_kiro.dev/agent/switched` rows have no
+> `_efm.go/mcp/server_init_failure` and `_efm.go/agent/switched` rows have no
 > counterpart in upstream's method table; they are measured here and describe Kiro
 > Crew's claude-agent-acp path. A re-fetch must preserve them. Upstream's own
 > table now carries `_session/terminate`, so that row is no longer local-only.
@@ -98,31 +98,31 @@ Advertised during initialization:
 
 ## Kiro extensions (experimental)
 
-Custom methods prefixed with `_kiro.dev/` (optional, safe to ignore).
+Custom methods prefixed with `_efm.go/` (optional, safe to ignore).
 
 ### Slash commands
 
 | Method | Type | Description |
 |--------|------|-------------|
-| `_kiro.dev/commands/execute` | Request | Execute slash command |
-| `_kiro.dev/commands/options` | Request | Autocomplete suggestions |
-| `_kiro.dev/commands/available` | Notification | Available commands list |
+| `_efm.go/commands/execute` | Request | Execute slash command |
+| `_efm.go/commands/options` | Request | Autocomplete suggestions |
+| `_efm.go/commands/available` | Notification | Available commands list |
 
 ### MCP server events
 
 | Method | Type | Description |
 |--------|------|-------------|
-| `_kiro.dev/mcp/oauth_request` | Notification | OAuth URL for MCP auth |
-| `_kiro.dev/mcp/server_initialized` | Notification | MCP server ready |
-| `_kiro.dev/mcp/server_init_failure` | Notification | MCP server init failed |
+| `_efm.go/mcp/oauth_request` | Notification | OAuth URL for MCP auth |
+| `_efm.go/mcp/server_initialized` | Notification | MCP server ready |
+| `_efm.go/mcp/server_init_failure` | Notification | MCP server init failed |
 
 ### Session management
 
 | Method | Type | Description |
 |--------|------|-------------|
-| `_kiro.dev/compaction/status` | Notification | Context compaction progress |
-| `_kiro.dev/clear/status` | Notification | Session clear status |
-| `_kiro.dev/agent/switched` | Notification | Agent mode/name changed |
+| `_efm.go/compaction/status` | Notification | Context compaction progress |
+| `_efm.go/clear/status` | Notification | Session clear status |
+| `_efm.go/agent/switched` | Notification | Agent mode/name changed |
 | `_session/terminate` | Notification | Terminate subagent session |
 
 ## Example: Initialize connection

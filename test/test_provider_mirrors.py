@@ -17,15 +17,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.acp_backends import (
+from efm_go.acp_backends import (
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
     ACP_BACKEND_OPENCODE,
     ACP_BACKENDS_KNOWN,
 )
-from kiro_crew.agent_sdk.backends import BASELINE_SELECTABLE_BACKENDS
-from kiro_crew.agent_sdk.mcp_refs import unresolved_server_refs
-from kiro_crew.providers.mirrors import (
+from efm_go.agent_sdk.backends import BASELINE_SELECTABLE_BACKENDS
+from efm_go.agent_sdk.mcp_refs import unresolved_server_refs
+from efm_go.providers.mirrors import (
     MIRRORS,
     PROJECTIONS,
     Concern,
@@ -258,7 +258,7 @@ class TestEveryBackendIsAccountedFor:
         """
         declared = projection_for(ACP_BACKEND_KAS)
         assert declared.kind is ProjectionKind.EXTERNAL
-        assert declared.projection == "kiro_crew.acp.kas_agents"
+        assert declared.projection == "efm_go.acp.kas_agents"
         assert declared.tracking
 
     def test_any_no_channel_backend_names_what_would_have_to_exist(self):
@@ -532,7 +532,7 @@ class TestAProseOnlyDeclarationFailsTheParityTest:
                 McpProjection(
                     kind=ProjectionKind.EXTERNAL,
                     reason="its projection lives beside the transport that carries it",
-                    projection="kiro_crew.acp.kas_agents",
+                    projection="efm_go.acp.kas_agents",
                     tracking="docs/request-for-change/rfc-agent-config-mirror.md#no-such-heading",
                 )
             )
@@ -545,7 +545,7 @@ class TestAProseOnlyDeclarationFailsTheParityTest:
                 McpProjection(
                     kind=ProjectionKind.EXTERNAL,
                     reason="its projection lives beside the transport that carries it",
-                    projection="kiro_crew.acp.no_such_module",
+                    projection="efm_go.acp.no_such_module",
                     tracking="docs/request-for-change/rfc-agent-config-mirror.md#5-migration",
                 )
             )
@@ -668,8 +668,8 @@ class TestPerToolDenyIsDeclaredAndTrue:
         """
         import json
 
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.acp import session_mcp
+        from efm_go import agent as agent_mod
+        from efm_go.acp import session_mcp
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -804,7 +804,7 @@ class TestPerToolDenyIsDeclaredAndTrue:
         per-provider ability card renders the same field. A member added here without
         a mention there is a state a user can be in and cannot look up.
         """
-        readme = (_REPO_ROOT / "src/kiro_crew/providers/mirrors/README.md").read_text(
+        readme = (_REPO_ROOT / "src/efm_go/providers/mirrors/README.md").read_text(
             encoding="utf-8"
         )
         for member in PerToolDeny:

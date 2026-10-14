@@ -5,7 +5,7 @@ verdict. The source of truth is `.github/workflows/`; this doc explains the
 shape and the rationale.
 
 The `kirocrew-prepare-pr` skill
-(`src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/SKILL.md`) is the agent
+(`src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/SKILL.md`) is the agent
 side of this: it drives a working tree to review-ready by working with these
 gates. Its phase flow, exit-code contract and PR-description contract live in
 that skill, not here. Its portability design is
@@ -15,7 +15,7 @@ is [CONTRIBUTING.md](../../CONTRIBUTING.md).
 ### Agent repair routing
 
 For Kiro Crew PR CI AI comments, agents MUST load and execute
-[kirocrew-prepare-pr's Review repair routing](../../src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/SKILL.md#review-repair-routing).
+[kirocrew-prepare-pr's Review repair routing](../../src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/SKILL.md#review-repair-routing).
 That section is the one canonical contract, and its table is the only place the
 repair-family preference order is written; this doc does not restate it, and
 `test/test_review_repair_routing_skill.py` pins that table on purpose because it
@@ -383,20 +383,20 @@ See [oss-fork-boundaries](../system-specs/oss-fork-boundaries.md).
 
 | Job | What it enforces |
 |---|---|
-| `vendor-manifest` | `scripts/verify_vendor_manifest.py`. Hashes every file under `src/kiro_crew/_vendor` against the committed `scripts/vendor_manifest.sha256` — the tree is excluded from semgrep and the AI reviewers' diff, so this checksum is its only content review. Hashing the ~26MB tree takes seconds, so it is always-on like the rest of this workflow |
+| `vendor-manifest` | `scripts/verify_vendor_manifest.py`. Hashes every file under `src/efm_go/_vendor` against the committed `scripts/vendor_manifest.sha256` — the tree is excluded from semgrep and the AI reviewers' diff, so this checksum is its only content review. Hashing the ~26MB tree takes seconds, so it is always-on like the rest of this workflow |
 | `brand-lint` | `scripts/check_brand_name.py`, self-test first. Fails on a newly added line that joins the two words of the product name. Diff-scoped: the tree still carries thousands of pre-convention prose lines, so a whole-tree gate would charge that backlog to whoever pushed next; the whole-tree count is still printed as a non-failing report |
 | `comment-history-lint` | `scripts/check_comment_history.py`, self-test first. Fails when an added Python comment or docstring narrates change history (PR/issue ids, commit SHAs, dated incidents, review rounds, or past-tense change markers) instead of explaining current behavior. Diff-scoped; whole-tree runs report the backlog without enforcing it |
 | `focus-cue-lint` | `scripts/check_focus_cue.py`, self-test first. Fails when a change writes the `className` of an element that then has no visible focus cue. Diff-scoped for the same reason as `brand-lint`, and reports whole-tree |
-| `feature-map-lint` | `scripts/check_feature_map.py`, self-test first. Fails when a file is ADDED or DELETED under `website/src/pages/` or `src/kiro_crew/dashboard/handlers/`, or a `<Route>` entry arrives or leaves `website/src/App.tsx`, while `docs/feature-map/README.md` stays untouched. The blocking root AUTOSDE rule `feature-map-correctness` is the semantic half: it verifies changed rows against the code, rejects unrelated or cosmetic map churn, and checks that the map's net diff matches the PR's stated scope. Structural on purpose: an edit to an existing page changes a feature's behavior, which the map does not describe, so an edit-only diff never fires — a gate demanding a map review on every UI fix produces a map nobody reads. Fails OPEN on an unreadable diff, unlike the other gates here: this one guards a documentation habit, not an invariant a bad line carries into `main` forever |
+| `feature-map-lint` | `scripts/check_feature_map.py`, self-test first. Fails when a file is ADDED or DELETED under `website/src/pages/` or `src/efm_go/dashboard/handlers/`, or a `<Route>` entry arrives or leaves `website/src/App.tsx`, while `docs/feature-map/README.md` stays untouched. The blocking root AUTOSDE rule `feature-map-correctness` is the semantic half: it verifies changed rows against the code, rejects unrelated or cosmetic map churn, and checks that the map's net diff matches the PR's stated scope. Structural on purpose: an edit to an existing page changes a feature's behavior, which the map does not describe, so an edit-only diff never fires — a gate demanding a map review on every UI fix produces a map nobody reads. Fails OPEN on an unreadable diff, unlike the other gates here: this one guards a documentation habit, not an invariant a bad line carries into `main` forever |
 | `changelog-history` | `scripts/check_changelog_history.py`, self-test first. Fails when a shipped `CHANGELOG.md` section loses lines. Every section already in that file describes software a user has installed, and it has been silently truncated once already — a commit titled "docs: add 0.3.0-insider.9 changelog" REPLACED the file (53 insertions, 322 deletions) and nothing noticed until the Releases page had gone nearly empty |
 | `decision-ledger-history` | `scripts/check_decisions_history.py`, self-test first. Fails when a file under `docs/decisions/` other than its README is deleted, renamed or edited: each file there records a decision a person on the team made, so a change to one silently rewrites what was decided. A change of mind is a new entry naming the one it supersedes, so the only legal diff in that directory is additions. The blocking root AUTOSDE rule `recorded-decisions-are-not-regressions` is the judgment half: it blocks a change to a label, placement or behaviour an entry records unless a superseding entry quoting a maintainer arrives with it |
-| `builtin-skill-scope` | `scripts/check_builtin_skill_scope.py`, self-test first. Fails on a marker for THIS repository (its GitHub slug, a `src/` checkout path, a test or workflow file) inside a skill body under `src/kiro_crew/builtin_skills/`, because those install on every machine and resolve for exactly one of them. The `kirocrew-dev/` family is exempt by directory, since this repository is its subject matter |
-| `loop-bound-locks` | `scripts/check_loop_bound_locks.py`, self-test first. Fails on any module-global `asyncio.Lock()`/`Event()`/`Queue()` declaration — those bind to the import-time (or first-use) event loop and raise `RuntimeError` when acquired from another loop (Python 3.10+). #4800 converted the tree to `kiro_crew.loop_lock.LoopBoundLock`; whole-tree, since the backlog is zero |
+| `builtin-skill-scope` | `scripts/check_builtin_skill_scope.py`, self-test first. Fails on a marker for THIS repository (its GitHub slug, a `src/` checkout path, a test or workflow file) inside a skill body under `src/efm_go/builtin_skills/`, because those install on every machine and resolve for exactly one of them. The `kirocrew-dev/` family is exempt by directory, since this repository is its subject matter |
+| `loop-bound-locks` | `scripts/check_loop_bound_locks.py`, self-test first. Fails on any module-global `asyncio.Lock()`/`Event()`/`Queue()` declaration — those bind to the import-time (or first-use) event loop and raise `RuntimeError` when acquired from another loop (Python 3.10+). #4800 converted the tree to `efm_go.loop_lock.LoopBoundLock`; whole-tree, since the backlog is zero |
 | `testpaths-coverage` | `scripts/check_testpaths_coverage.py`, self-test first. Fails on a `test_*.py` file outside the roots `setup.cfg` pins in `testpaths` — such a file is never collected, so it is green by omission and rots against the code it claims to cover (#6577 found twelve). Whole-tree, since the backlog is zero |
 | `cwd-relative-repo-reads` | `scripts/check_cwd_relative_repo_reads.py`, self-test first. Fails when a test reaches the repository through a bare relative literal: the read resolves against whatever directory the process started in, so launched from anywhere but the root it raises FileNotFoundError before a single assertion runs -- a failure that says nothing about the behaviour the test pins. Whole-tree, not diff-scoped: the backlog is zero, so there is nothing to charge to whoever pushes next. A file that changes directory itself is skipped, and a single access can carry a `# cwd-ok:` reason |
 | `harness-parity` | `scripts/check_harness_parity.py`, self-test first. Fails on a newly added line that expresses "this is the Kiro harness" as the absence of another one — a shape that fails toward the permissive answer, so nothing else goes red. Diff-scoped; the whole-tree backlog is a non-failing report |
 | `memory-store-seam` | `scripts/check_memory_store_seam.py`, self-test first, with `MEMSTORE_BASE_REF` resolved to the diff base. Enforces explicit store selection on added memory-context calls. The kirocrew-prepare-pr floor runs both commands; the main ratchet lane classifies this as a diff-only gate because its whole-tree backlog is a non-failing report |
-| `docs-lint` | `scripts/docs_lint.py --test` then `scripts/docs-lint.sh`. Every internal link resolves, every doc is reachable from its directory index, every directory holding docs has one, no code comment cites a doc that does not exist, no doc cites a source LINE past the end of the file it names, no module spec names a source file that exists nowhere, every bare harness `H<n>` ID in a source comment names a row in `harness-parity.md`, and no doc whose filename is hardcoded in code has been renamed out from under its consumer. Four trees are walked: `docs/`, the packaged `src/kiro_crew/docs/`, `website/docs/`, and the markdown a builtin app ships under `src/kiro_crew/apps/builtins/`. Plus the fact checks below, behind a shrink-only baseline |
+| `docs-lint` | `scripts/docs_lint.py --test` then `scripts/docs-lint.sh`. Every internal link resolves, every doc is reachable from its directory index, every directory holding docs has one, no code comment cites a doc that does not exist, no doc cites a source LINE past the end of the file it names, no module spec names a source file that exists nowhere, every bare harness `H<n>` ID in a source comment names a row in `harness-parity.md`, and no doc whose filename is hardcoded in code has been renamed out from under its consumer. Four trees are walked: `docs/`, the packaged `src/efm_go/docs/`, `website/docs/`, and the markdown a builtin app ships under `src/efm_go/apps/builtins/`. Plus the fact checks below, behind a shrink-only baseline |
 | `static-ratchets` | The seven source-only exact-set / exact-count ratchets (error codes, crew-log `exc_info` sites, PID readers, fleet-routing parity, security posture, backend cards, fold catalogue), run with `-n 4 --no-cov`. They also stay in the backend shards; this job only returns the verdict in about a minute instead of after a 20-40 min shard |
 
 Each of these runs its own self-test in the same step, ahead of the real check. A
@@ -424,7 +424,7 @@ Three checks skip a doc whose genre names things that do not exist yet
 (`docs/request-for-change/`, which carries the plans, and `docs/task-specs/`):
 `path-exists`, `fenced-path` and `dead-identifier`. A proposal
 names a file or a symbol precisely BECAUSE it is not there yet. `fenced-path` also
-skips the packaged user docs under `src/kiro_crew/docs/`, where a task-spec path is
+skips the packaged user docs under `src/efm_go/docs/`, where a task-spec path is
 a template for the reader's own project rather than a file in this checkout.
 
 The builtin app tree is the mirror image of that exemption: it keeps every fact
@@ -456,7 +456,7 @@ Every job here is blocking. Every job that costs real runner time also `needs:`
 |---|---|
 | `changes` | "Detect changed surface". Resolves the path filters every other job reads, so a diff that cannot affect a surface does not pay for it |
 | `await-fast-gate` | Polls the `Fast Gate` run for this exact head commit and **fails closed** in all three ways it can go wrong: a run that never appears (180s budget), one that never completes (720s budget), and one whose conclusion is a decided non-success. `action_required` is not one of them: GitHub reports a fork run still awaiting maintainer approval as `completed`/`action_required`, so the barrier polls it as pending under the 720s budget rather than letting approval order decide whether the matrix runs. A listing read that errors is not a run that never appeared: the error is logged, it spends only the 720s budget, and the barrier fails closed there with a message saying the code was never judged. A barrier that passed when it could not read its subject would be worse than none, because the matrix would run anyway and the log would claim it was cleared to. One extra ~1-minute job buys the whole matrix the right to not start |
-| `backend-lint` | `isort --check-only`, `flake8`, `mypy` on Python 3.12, plus `scripts/check_black_formatting.py` — black enforced on every file outside `.github/black-baseline.txt`, which can only shrink — and `scripts/check_subprocess_encoding.py` (self-test first) — no text-mode subprocess call without an explicit `encoding=`, `**UTF8_TEXT`, or a `# subprocess-encoding: locale` marker, outside `.github/subprocess-encoding-baseline.txt`, which can only shrink — and `scripts/check_sync_io_in_async.py` (self-test first) — no blocking db / subprocess / http / `time.sleep` call inside an `async def` under `src/`, outside `.github/sync-io-in-async-baseline.txt`, which can only shrink. A stall past `dashboard.loop_stall_exit_after_secs` (25s) makes the watchdog kill the gateway and drop every in-flight turn (#3057, #1572); the escape is an offload (`await asyncio.to_thread(...)`, or a named lane from `src/kiro_crew/executors.py`) or a `# on-loop-io-ok: <why it cannot block>` marker whose reason is mandatory. All four baselined gates in this job read their diff scope from the one shared resolver in `scripts/ratchet_scope.py`, so they cannot disagree about which lines a change added; the env-base gates (`check_brand_name.py`, `check_harness_parity.py`, `check_focus_cue.py`) share the same diff parsing through its explicit-base entry points while keeping their `*_BASE_REF` base semantics |
+| `backend-lint` | `isort --check-only`, `flake8`, `mypy` on Python 3.12, plus `scripts/check_black_formatting.py` — black enforced on every file outside `.github/black-baseline.txt`, which can only shrink — and `scripts/check_subprocess_encoding.py` (self-test first) — no text-mode subprocess call without an explicit `encoding=`, `**UTF8_TEXT`, or a `# subprocess-encoding: locale` marker, outside `.github/subprocess-encoding-baseline.txt`, which can only shrink — and `scripts/check_sync_io_in_async.py` (self-test first) — no blocking db / subprocess / http / `time.sleep` call inside an `async def` under `src/`, outside `.github/sync-io-in-async-baseline.txt`, which can only shrink. A stall past `dashboard.loop_stall_exit_after_secs` (25s) makes the watchdog kill the gateway and drop every in-flight turn (#3057, #1572); the escape is an offload (`await asyncio.to_thread(...)`, or a named lane from `src/efm_go/executors.py`) or a `# on-loop-io-ok: <why it cannot block>` marker whose reason is mandatory. All four baselined gates in this job read their diff scope from the one shared resolver in `scripts/ratchet_scope.py`, so they cannot disagree about which lines a change added; the env-base gates (`check_brand_name.py`, `check_harness_parity.py`, `check_focus_cue.py`) share the same diff parsing through its explicit-base entry points while keeping their `*_BASE_REF` base semantics |
 | `backend-test` | 8 whole-file shards on Python 3.12, assigned before import, `-n auto` within each; 60-minute job budget includes coverage upload, with the 120-second per-test timeout retained. Large CodeBuild compute with the non-root boundary for eligible actors; hosted fallback |
 | `backend-test-windows` | All 8 whole-file shards use large CodeBuild compute for eligible actors, windows-latest otherwise; `--no-cov`, 180s per-test timeout. See the migration contract below |
 | `backend-test-ipv6` | Five native IPv6 cases on hosted Linux and Windows; fail-closed report check, Linux full-run coverage merged with the ordinary shards |
@@ -546,12 +546,12 @@ Full-suite throughput and the five-minute goal require remote evidence, not an
 extrapolation from shard count. Full-run coverage combines ordinary shards with
 the required hosted IPv6 artifact.
 
-The Linux coverage command retains the `kiro_crew` and `sage_lib` package-name
+The Linux coverage command retains the `efm_go` and `sage_lib` package-name
 boundary. It additionally selects only the AWS Control crew packaging directory
 and the Sage tests directory: both contain source already included in that
 boundary's reports, but synthetic builder module names and app-local fixture
 imports can otherwise lose executed lines depending on import order. Selecting
-all of `src/kiro_crew` instead also admits vendored libraries, standalone skill
+all of `src/efm_go` instead also admits vendored libraries, standalone skill
 scripts and container code outside the package-name boundary. No new exclusions
 or baseline entries are needed; omit rules, branch measurement and floors stay
 unchanged. Sage's path alias remains in place. Combined data can contain both
@@ -615,7 +615,7 @@ artifact names. `backend-lint` uses large on the fleet. The formatter gate runs
 with at most eight workers regardless of the native pool size; the CI step does
 not set `BLACK_NUM_WORKERS`. Hosted runners originally kept Black's native CLI and
 default pool, and every fork PR's lint job then died mid-step with exit 143 after
-6-9 minutes ([#13689](https://github.com/kirodotdev/KiroCrew/issues/13689)):
+6-9 minutes ([#13689](https://efmleads.com/issues/13689)):
 `ubuntu-latest` installs the compiled Black wheel, whose per-worker retention is
 the same failure the fleet measured, and the hosted VM has no cgroup cap
 (`memory.max: max`, 16 GB host), so the runner itself was torn down instead of a
@@ -623,7 +623,7 @@ worker being OOM-killed. Recycling costs about 1.6x native wall time on four
 cores; more workers than cores do not shorten it. `scripts/ci_black_diagnostics.py` runs the gate
 once, preserves its failure status and stderr, and records bounded cgroup readings
 and child peak RSS. Worker count alone does not bound retained formatting trees:
-[the env-only two-worker fleet run](https://github.com/kirodotdev/KiroCrew/actions/runs/35417525930/job/105829161045)
+[the env-only two-worker fleet run](https://efmleads.com/actions/runs/35417525930/job/105829161045)
 reached its 15,032,385,536-byte cgroup limit and incremented `oom_kill` from zero
 to one before the recycling wrapper existed. Retirement after one file is what
 bounds retention, so a worker's own peak does not grow with the pool and the
@@ -745,7 +745,7 @@ its calls. Probes touch only disposable files and log no environment dump or
 credentials. Hosted setup and test behavior is unchanged.
 
 The reusable Linux boundary has one eight-way shard measurement:
-[run 35374412954, job 105696454897](https://github.com/kirodotdev/KiroCrew/actions/runs/35374412954/job/105696454897)
+[run 35374412954, job 105696454897](https://efmleads.com/actions/runs/35374412954/job/105696454897)
 reports 12,998 passed, 42 skipped and 5 xfailed in 473.89 seconds. It does not prove
 all eight shards, Windows image capabilities, Black with the new worker cap, or
 service cleanup. Retain each newly executed job's log/progress artifact, compare
@@ -870,7 +870,7 @@ Details worth knowing:
     that runs after `changes` failed (`coverage-gate` fails closed with
     `if: always()`) still gets a runner instead of erroring out before its own
     checks execute: a run in any
-    repository other than `kirodotdev/KiroCrew` (a fork's own CI on its `main`),
+    repository other than `efmleads.com` (a fork's own CI on its `main`),
     or a `pull_request` whose head repository is not this one, gets
     `ubuntu-latest`; every other run still needs the event and actor checks
     in [the migration contract](#linux-and-windows-codebuild-migration) before
@@ -1487,8 +1487,8 @@ PR-time proof only, no publishing.
   wheel, then `pip install dist/*.whl` and `kirocrew --version` as a smoke test.
   Bare `--version` is a pre-dispatch fast-path (see
   `docs/system-specs/modules/cli.md`), so it proves the console script exists
-  and exits 0 — not that `kiro_crew.cli`'s import chain resolves. An
-  `import kiro_crew.cli` probe is what carries that meaning; the wheel lane
+  and exits 0 — not that `efm_go.cli`'s import chain resolves. An
+  `import efm_go.cli` probe is what carries that meaning; the wheel lane
   does not run one, so an undeclared runtime dependency reaches gateway boot
   before any pip-install lane fails.
 - **`desktop-matrix`** resolves the `build-desktop` matrix: `macos-15` joins
@@ -1507,7 +1507,7 @@ PR-time proof only, no publishing.
   gateway and bytecode-floor checks. See [e2e-gate.md](e2e-gate.md#buildymls-installer-job-boots-the-gateway-it-installed-on-every-pr).
 
 **Only the smoked legs RUN the bundled backend.** `build-desktop` here and
-`build-desktop.yml` in the release lane both build the real `kirocrew-backend`
+`build-desktop.yml` in the release lane both build the real `efm-go-backend`
 tree via `packaging/build-desktop.sh` — which provisions a
 python-build-standalone interpreter and pip-installs the project into it. The
 macOS leg is then installed and booted by `smoke-install-macos`, and `ci.yml`'s
@@ -1676,14 +1676,14 @@ Captain or its hand-off, to be reported as such; it is never a reason to pick th
 issue up unsized, and the gate deliberately has no "silence means yes"
 fallback. Nothing in this repository alarms on that overdue state yet -- the
 crew runs outside `.github/`, and an in-repo overdue sweep is a separate
-change, filed as [#16308](https://github.com/kirodotdev/KiroCrew/issues/16308).
+change, filed as [#16308](https://efmleads.com/issues/16308).
 Until it lands, a stalled crew is visible as PRs red on "no tier label" or
 "still waiting for a person"; the maintainer's per-PR fallback is the
 `issue-gate: waived` label, and a run of those waivers is the signal to go fix
 the crew, not to loosen the gate. The cost this puts on a drive-by contributor
 -- a one-line fix waits on a tier too -- is accepted by the maintainer as the
 price of the rule (decided in
-[#16064](https://github.com/kirodotdev/KiroCrew/issues/16064)); a lighter path
+[#16064](https://efmleads.com/issues/16064)); a lighter path
 for trivial fixes is a policy change to propose on an issue, not a waiver to add
 here.
 
@@ -1778,7 +1778,7 @@ unvetted dependency cannot ride in on a stale override.
 the source files the container contract spans: the bind override in
 `dashboard/origin.py`, the probe Host-barrier exemption that both chains in
 `dashboard/server.py` build from `dashboard/server_runtime/security_middleware.py`
-(the filter takes `src/kiro_crew/dashboard/server_runtime/**` with `server.py`),
+(the filter takes `src/efm_go/dashboard/server_runtime/**` with `server.py`),
 and the liveness payload in `dashboard/handlers/core.py`). It builds the image from
 a locally-built wheel and proves, across a real container boundary, that
 `KIROCREW_BIND=0.0.0.0` makes the gateway reachable from the host, that token auth
@@ -2710,9 +2710,9 @@ posts under the same check name so branch protection is satisfied on either path
 ### Scope
 
 The lane runs only when the change touches the security surface: the deny
-composite's own modules (`src/kiro_crew/security/`, `src/kiro_crew/hooks.py`,
-`src/kiro_crew/hook_runtime/`, `src/kiro_crew/deny_guidance.py`,
-`src/kiro_crew/platform/security_authority.py`), the security-conductor's
+composite's own modules (`src/efm_go/security/`, `src/efm_go/hooks.py`,
+`src/efm_go/hook_runtime/`, `src/efm_go/deny_guidance.py`,
+`src/efm_go/platform/security_authority.py`), the security-conductor's
 `rules-of-engagement.json` and `golden-paths.json`, and the lane's own harness
 (`scripts/deny_diff.py`, `scripts/scope_candidates.py`, `scripts/scope_redact.py`,
 `.github/review-prompts/security-scope.md`, and this workflow). A tightening can
@@ -2739,7 +2739,7 @@ The model is `us.anthropic.claude-opus-5-5`, with `us.anthropic.claude-sonnet-5-
 the overload fallback. `generate` mints the credential but runs no repository
 Python, so a prompt injection reaches no product code. `validate` and `adjudicate`
 execute the change's own harness — `adjudicate` materializes each ref's own
-`kiro_crew.security` into its own directory and classifies against it in a child
+`efm_go.security` into its own directory and classifies against it in a child
 process — but hold no credential and no write token, so a judge supplied by the
 change under judgement decides nothing worth stealing. `publish` holds the only
 write token and reads every program it runs out of a committed base-commit blob,
@@ -2848,7 +2848,7 @@ template to paste into the approval. That comment is why the job holds
 
 **Advisory for now.** `PR Readiness` does not read it yet. Enrolling it waits on
 the workflow itself running from default-branch context
-([#16870](https://github.com/kirodotdev/KiroCrew/issues/16870)); until then a PR
+([#16870](https://efmleads.com/issues/16870)); until then a PR
 can edit the workflow file to skip the check.
 
 ## `pr-readiness.yml`: the aggregator
@@ -3127,7 +3127,7 @@ Two subtleties:
   binding still applies. The hold step and `MONITORED_LANES` key on run ids and workflow
   files, so they need no alias. A head stuck before the alias merged has no new check
   evidence for the sweep, so re-dispatch it once:
-  `gh workflow run pr-readiness.yml --repo kirodotdev/KiroCrew --ref main -f pr=<PR> -f sha=<full 40-char head sha>`
+  `gh workflow run pr-readiness.yml --repo efmleads.com --ref main -f pr=<PR> -f sha=<full 40-char head sha>`
   (a short sha reads as a stale revision and publishes nothing).
   Remove the table once no open PR has a pre-#16238 head (#16373).
 

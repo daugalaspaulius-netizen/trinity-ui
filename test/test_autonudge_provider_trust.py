@@ -9,10 +9,10 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import autonudge_authz
-from kiro_crew import autonudge_provider_trust as trust
-from kiro_crew.autonudge import AutoNudgeService
-from kiro_crew.monitoring.models import (
+from efm_go import autonudge_authz
+from efm_go import autonudge_provider_trust as trust
+from efm_go.autonudge import AutoNudgeService
+from efm_go.monitoring.models import (
     MonitorBudgets,
     MonitorCreationSurface,
     MonitorOutcome,

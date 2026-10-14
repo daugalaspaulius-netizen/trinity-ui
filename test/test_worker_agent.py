@@ -25,8 +25,8 @@ from typing import Any
 import pytest
 from source_corpus import iter_source_texts, parsed_candidates
 
-from kiro_crew import agent
-from kiro_crew.agent_files import (
+from efm_go import agent
+from efm_go.agent_files import (
     AGENT_FILENAME,
     CONDUCTOR_AGENT_FILENAME,
     LEDGER_CONDUCTOR_AGENT_FILENAME,
@@ -34,8 +34,8 @@ from kiro_crew.agent_files import (
     PIPELINE_CONDUCTOR_AGENT_FILENAME,
     WORKER_AGENT_FILENAME,
 )
-from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 #: A release that accepts a spec ``permissions`` block, and one that refuses it,
 #: expressed against the floor so raising it cannot strand these tests.
@@ -48,11 +48,11 @@ def _pin_spec_permissions_cli(monkeypatch, which):
     """Pin what the shared writer gate believes the installed kiro-cli is.
 
     ``_write_derived_permissions`` reads ``installed_kiro_cli_version``
-    function-locally from ``kiro_crew.kiro_cli``, so the patch lands there.
+    function-locally from ``efm_go.kiro_cli``, so the patch lands there.
     ``which`` is ``"accepts"``, ``"refuses"`` or ``"unknown"``.
     """
     version = {"accepts": _ACCEPTS, "refuses": _REFUSES, "unknown": None}[which]
-    monkeypatch.setattr("kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: version)
+    monkeypatch.setattr("efm_go.kiro_cli.installed_kiro_cli_version", lambda: version)
 
 
 # One xdist worker for the whole module: the four enumeration gates below each stream
@@ -63,7 +63,7 @@ pytestmark = pytest.mark.xdist_group(name="tree_scan_test_worker_agent")
 
 
 def _package_sources() -> Iterator[tuple[Path, str]]:
-    """Every ``kiro_crew`` module except ``agent.py``, streamed off the shared corpus.
+    """Every ``efm_go`` module except ``agent.py``, streamed off the shared corpus.
 
     Four enumeration tests below reason over the package. Streamed, not collected: the
     text of the ~1,700 modules under ``src/`` is ~130 MB of ``str`` (a quarter of the
@@ -264,7 +264,7 @@ def test_the_worker_install_runs_on_the_rebuild_path():
     """
     import inspect
 
-    from kiro_crew.agent_files import REQUIRED_KIRO_AGENT_FILES
+    from efm_go.agent_files import REQUIRED_KIRO_AGENT_FILES
 
     src = inspect.getsource(agent.rebuild_agent_config)
     assert "_install_worker_agent()" in src
@@ -281,7 +281,7 @@ def test_a_lazily_written_spec_would_not_resolve_for_session_create(tmp_path, mo
     lazily leaves the feature unusable on a clean install: the conductor's very first
     dispatch is refused.
     """
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     agents = tmp_path / "agents"
     agents.mkdir()
@@ -393,7 +393,7 @@ def test_the_grant_tuples_cover_the_server_and_share_only_the_read():
     # Together they cover the server's whole surface. The one overlap is the
     # read-only ``work_brief``: a nested conductor is also a worker, and its first
     # mandated call must not be an approval stall. The write is never shared.
-    from kiro_crew import mcp_work
+    from efm_go import mcp_work
 
     granted = {
         ref.split("/", 1)[1]
@@ -1081,7 +1081,7 @@ def test_the_strict_read_reaches_the_sidecar_module(tmp_path, monkeypatch):
     """Pinned against the real getter rather than a stub, because the fix is the
     ``strict`` keyword existing there at all: ``agent_state._read`` already states this
     rule for its mutators, and this caller's answer feeds a write."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
     (tmp_path / agent_state._STATE_FILENAME).write_text("{not json", encoding="utf-8")
@@ -1101,7 +1101,7 @@ def test_the_default_specs_own_writer_lock_is_held_too(tmp_path, monkeypatch):
     snapshot keeps its auto-approved grant on the worker."""
     import contextlib
 
-    from kiro_crew.apps import bridges
+    from efm_go.apps import bridges
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     (tmp_path / AGENT_FILENAME).write_text(json.dumps(_DEFAULT_SPEC_ON_DISK), encoding="utf-8")
@@ -1494,8 +1494,8 @@ def test_an_auto_approve_pattern_that_reaches_an_excluded_verb_is_dropped(
 
 def _pin_honour_auto_approve(monkeypatch, honour: bool) -> None:
     """Pin ``mcp.honour_auto_approve`` for a grant no spec declares."""
-    from kiro_crew.config import live
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config import live
+    from efm_go.config.loader import KiroCrewConfig
 
     cfg = KiroCrewConfig()
     cfg.mcp.honour_auto_approve = honour
@@ -1803,7 +1803,7 @@ def test_the_per_writer_hook_is_gone():
     """One runtime mechanism, not two. The app-registration hook is removed in favour
     of the spawn gate — keeping both would leave two answers to one question, and the
     hook is the one that cannot cover a writer it does not own."""
-    from kiro_crew.apps import bridges
+    from efm_go.apps import bridges
 
     assert not hasattr(bridges, "_rederive_derived_specs")
 
@@ -1812,7 +1812,7 @@ def test_the_mirrored_from_fingerprint_is_recorded_in_the_sidecar(tmp_path, monk
     """In the sidecar rather than the spec: kiro-cli validates with
     ``deny_unknown_fields`` and DROPS a spec carrying a key it does not know, so
     bookkeeping written into the spec would cost the agent its existence."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -1886,7 +1886,7 @@ def test_the_kas_session_projection_converts_the_refusal_into_its_abort_type():
     warning line beside the best-effort materialization."""
     import inspect
 
-    from kiro_crew.acp.harness import kas
+    from efm_go.acp.harness import kas
 
     src = inspect.getsource(kas)
     assert "except agent_mod.DerivedSpecStale as exc:" in src
@@ -1900,7 +1900,7 @@ def test_the_runtime_converts_the_spawn_refusal_into_its_abort_type():
     pre-spawn refusal on this path is an ``AcpRuntimeError``."""
     import inspect
 
-    from kiro_crew.acp import runtime
+    from efm_go.acp import runtime
 
     src = inspect.getsource(runtime.AcpRuntime._resolve_spawn_plan)
     assert "except DerivedSpecStale as exc:" in src
@@ -1916,7 +1916,7 @@ def test_the_client_converts_the_refusal_into_its_abort_type():
     without the cleanup path, the post-load one leaving a live child behind."""
     import inspect
 
-    from kiro_crew.acp import client
+    from efm_go.acp import client
 
     src = inspect.getsource(client)
     handlers = src.split("except DerivedSpecStale as exc:")[1:]
@@ -1938,8 +1938,8 @@ def test_the_spawn_gate_is_called_exactly_once_per_spawn():
     import inspect
     from pathlib import Path as _Path
 
-    from kiro_crew.acp import runtime as runtime_mod
-    from kiro_crew.acp.harness import base, kas, kiro
+    from efm_go.acp import runtime as runtime_mod
+    from efm_go.acp.harness import base, kas, kiro
 
     def _gate_calls(module, class_name: str, method: str) -> int:
         source = _Path(module.__file__).read_text(encoding="utf-8")
@@ -2007,9 +2007,9 @@ def test_a_re_derive_during_the_hosts_own_pre_spawn_work_does_not_kill_the_sessi
     spec the child will actually load, so the post-handshake check passes."""
     import asyncio
 
-    from kiro_crew import agent_state
-    from kiro_crew.acp import runtime as runtime_mod
-    from kiro_crew.acp.harness.base import SpawnPlan
+    from efm_go import agent_state
+    from efm_go.acp import runtime as runtime_mod
+    from efm_go.acp.harness.base import SpawnPlan
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -2057,8 +2057,8 @@ def test_the_kas_projection_is_built_from_the_spec_read_under_the_gate(tmp_path,
     between reaches the session as its whole tool surface."""
     import inspect
 
-    from kiro_crew.acp import kas_agents
-    from kiro_crew.acp.harness import kas
+    from efm_go.acp import kas_agents
+    from efm_go.acp.harness import kas
 
     builder = inspect.getsource(kas_agents.build_kas_custom_agents)
     assert "load_agent_spec(" not in builder, (
@@ -2079,17 +2079,17 @@ def test_the_kas_projection_reads_nothing_after_the_gate(tmp_path, monkeypatch):
     reads of the spec and projects the gate's own object."""
     import asyncio
 
-    from kiro_crew import agent_state
-    from kiro_crew.acp import kas_agents as kas_agents_mod
-    from kiro_crew.acp.harness import harness_for
-    from kiro_crew.acp.types import ACP_BACKEND_KAS
+    from efm_go import agent_state
+    from efm_go.acp import kas_agents as kas_agents_mod
+    from efm_go.acp.harness import harness_for
+    from efm_go.acp.types import ACP_BACKEND_KAS
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
     (tmp_path / AGENT_FILENAME).write_text(json.dumps(_DEFAULT_SPEC_ON_DISK), encoding="utf-8")
     agent._install_worker_agent()
 
-    import kiro_crew.config.paths as paths_mod
+    import efm_go.config.paths as paths_mod
 
     monkeypatch.setattr(paths_mod, "kiro_agents_dir", lambda: tmp_path)
     monkeypatch.setattr(agent, "require_fork_governance", lambda a, w: None)
@@ -2128,7 +2128,7 @@ def test_the_kas_projection_cannot_be_called_without_a_verified_spec():
     any caller that forgot to pass one."""
     import inspect
 
-    from kiro_crew.acp.kas_agents import build_kas_custom_agents
+    from efm_go.acp.kas_agents import build_kas_custom_agents
 
     params = inspect.signature(build_kas_custom_agents).parameters
     assert list(params)[:3] == ["agents_dir", "agent_id", "spec"]
@@ -2515,7 +2515,7 @@ def test_the_runtime_closes_the_bracket_after_the_handshake():
     survive."""
     import inspect
 
-    from kiro_crew.acp import runtime
+    from efm_go.acp import runtime
 
     src = inspect.getsource(runtime.AcpRuntime)
     assert "require_unchanged_derived_spec" in src
@@ -2533,7 +2533,7 @@ def test_the_snapshot_is_a_coherent_pair_from_one_observation(tmp_path, monkeypa
     OLD content's hash -- and the post-load check then accepts the new default while the
     subprocess loaded the old spec. Here the default moves during the verification, and the
     pair that comes back describes ONE generation of the file, whichever one it settled on."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -2594,7 +2594,7 @@ def test_a_default_spec_that_never_settles_refuses_the_spawn(tmp_path, monkeypat
     """Bounded, and fail-closed at the bound. The loop's exit condition is another process
     leaving the file alone, so unbounded it would spin on a host rewriting the spec in a
     loop -- and a spawn that never returns is worse than one that refuses."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -2620,7 +2620,7 @@ def test_the_derive_time_pair_is_also_one_observation(tmp_path, monkeypatch):
     """The same property at the WRITE end, because a torn pair recorded here is what a
     later identity match would accept: the fingerprint is of the bytes this derivation
     mirrored, and the identity is recorded only when a re-stat proves the file held still."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -2658,7 +2658,7 @@ def test_the_identity_fast_path_re_stats_after_reading_the_sidecar(tmp_path, mon
     """Reading the sidecar is itself a window. The recorded value is evidence about the file
     the FIRST stat described, so without a second stat the fast path can answer "provably
     current" about a default that has already been replaced."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -2699,7 +2699,7 @@ def test_the_client_closes_the_bracket_after_the_handshake():
     built on a spec nobody verified."""
     import inspect
 
-    from kiro_crew.acp import client
+    from efm_go.acp import client
 
     spawn_src = inspect.getsource(client.AcpClient._spawn)
     assert (
@@ -2762,7 +2762,7 @@ def _client_at_the_handshake(snapshot):
     were moved BELOW would need attributes this stub does not have, so a test that
     passes here is a test that ran the check early.
     """
-    from kiro_crew.acp import client as client_mod
+    from efm_go.acp import client as client_mod
 
     c = client_mod.AcpClient.__new__(client_mod.AcpClient)
     c._derived_spec_snapshot = snapshot
@@ -2792,8 +2792,8 @@ def test_the_client_bracket_aborts_before_a_session_is_created(tmp_path, monkeyp
     session state -- with no session/load or session/new sent."""
     import asyncio
 
-    from kiro_crew import agent_state
-    from kiro_crew.acp import client as client_mod
+    from efm_go import agent_state
+    from efm_go.acp import client as client_mod
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -2822,7 +2822,7 @@ def test_the_client_bracket_judges_the_snapshot_its_own_spawn_captured(monkeypat
     would compare the spec against itself and always pass."""
     import asyncio
 
-    from kiro_crew.acp import client as client_mod
+    from efm_go.acp import client as client_mod
 
     class _Reached(Exception):
         pass
@@ -2856,7 +2856,7 @@ def test_every_set_mode_send_goes_through_the_one_bracketed_helper():
     import inspect
     import textwrap
 
-    from kiro_crew.acp import runtime as runtime_mod
+    from efm_go.acp import runtime as runtime_mod
 
     def _tree(fn):
         return ast.parse(textwrap.dedent(inspect.getsource(fn)))
@@ -2929,7 +2929,7 @@ def test_the_bracketed_helper_orders_gate_send_and_check_by_consumption_point():
     import inspect
     import textwrap
 
-    from kiro_crew.acp import runtime as runtime_mod
+    from efm_go.acp import runtime as runtime_mod
 
     tree = ast.parse(
         textwrap.dedent(inspect.getsource(runtime_mod.AcpRuntime._activate_mode_bracketed))
@@ -2965,10 +2965,10 @@ def test_a_revocation_between_the_payload_build_and_activation_is_caught(tmp_pat
     Comparing against the payload's own snapshot catches it."""
     import asyncio
 
-    from kiro_crew import agent_state
-    from kiro_crew.acp.harness import SessionExtras
-    from kiro_crew.acp.session_handle import AcpRuntimeError
-    from kiro_crew.acp.types import METHOD_SET_MODE
+    from efm_go import agent_state
+    from efm_go.acp.harness import SessionExtras
+    from efm_go.acp.session_handle import AcpRuntimeError
+    from efm_go.acp.types import METHOD_SET_MODE
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -3008,8 +3008,8 @@ def test_a_revocation_between_the_payload_build_and_activation_is_caught(tmp_pat
 
 def _runtime_for_spawn(monkeypatch, attempts_outcomes):
     """A runtime whose ``_spawn_admitted`` plays back the given outcomes in order."""
-    from kiro_crew.acp import runtime as runtime_mod
-    from kiro_crew.acp.types import ACP_BACKEND_KIRO
+    from efm_go.acp import runtime as runtime_mod
+    from efm_go.acp.types import ACP_BACKEND_KIRO
 
     rt = object.__new__(runtime_mod.AcpRuntime)
     rt._acp_backend = ACP_BACKEND_KIRO
@@ -3065,7 +3065,7 @@ def test_a_default_that_keeps_moving_across_two_spawns_is_refused(monkeypatch):
     ``RuntimeError`` no caller of ``spawn()`` catches."""
     import asyncio
 
-    from kiro_crew.acp.session_handle import AcpRuntimeError
+    from efm_go.acp.session_handle import AcpRuntimeError
 
     rt, calls = _runtime_for_spawn(
         monkeypatch,
@@ -3083,7 +3083,7 @@ def test_a_mirror_that_cannot_be_re_derived_is_not_retried(monkeypatch):
     post-handshake bracket only."""
     import asyncio
 
-    from kiro_crew.acp.session_handle import AcpRuntimeError
+    from efm_go.acp.session_handle import AcpRuntimeError
 
     rt, calls = _runtime_for_spawn(monkeypatch, [AcpRuntimeError("could not be re-derived")])
     with pytest.raises(AcpRuntimeError):
@@ -3134,8 +3134,8 @@ def _runtime_for_create_session(monkeypatch, tmp_path, sent, terminated):
     ordering, the teardown -- which is what makes these tests fail when the bracket is
     removed from the product.
     """
-    from kiro_crew.acp import runtime as runtime_mod
-    from kiro_crew.acp.types import ACP_BACKEND_KIRO
+    from efm_go.acp import runtime as runtime_mod
+    from efm_go.acp.types import ACP_BACKEND_KIRO
 
     rt = object.__new__(runtime_mod.AcpRuntime)
     rt._initialized = True
@@ -3167,7 +3167,7 @@ def _runtime_for_create_session(monkeypatch, tmp_path, sent, terminated):
     async def _kas_custom_agents(agent, *, member_dispatch=False, crew_panel=False, session_key=""):
         # The kiro backend builds no wire surface, so it carries no payload and no payload
         # snapshot -- which is what makes the set_mode line itself the consumed load.
-        from kiro_crew.acp.harness import SessionExtras
+        from efm_go.acp.harness import SessionExtras
 
         return SessionExtras()
 
@@ -3204,9 +3204,9 @@ def test_activating_the_worker_on_an_unrepairable_mirror_never_sends_set_mode(
     grants the default agent does not have."""
     import asyncio
 
-    from kiro_crew import agent_state
-    from kiro_crew.acp.session_handle import AcpRuntimeError
-    from kiro_crew.acp.types import METHOD_SESSION_NEW
+    from efm_go import agent_state
+    from efm_go.acp.session_handle import AcpRuntimeError
+    from efm_go.acp.types import METHOD_SESSION_NEW
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -3238,9 +3238,9 @@ def test_a_default_changed_during_set_mode_tears_the_session_down(tmp_path, monk
     spec nobody verified, so it is ended rather than left running."""
     import asyncio
 
-    from kiro_crew import agent_state
-    from kiro_crew.acp.session_handle import AcpRuntimeError
-    from kiro_crew.acp.types import METHOD_SET_MODE
+    from efm_go import agent_state
+    from efm_go.acp.session_handle import AcpRuntimeError
+    from efm_go.acp.types import METHOD_SET_MODE
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -3279,7 +3279,7 @@ def test_activating_a_non_derived_agent_costs_no_check(tmp_path, monkeypatch):
     without reading the default spec, let alone hashing it."""
     import asyncio
 
-    from kiro_crew.acp.types import METHOD_SET_MODE
+    from efm_go.acp.types import METHOD_SET_MODE
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     (tmp_path / AGENT_FILENAME).write_text(json.dumps(_DEFAULT_SPEC_ON_DISK), encoding="utf-8")
@@ -3308,8 +3308,8 @@ def test_the_array_projection_carries_the_snapshot_it_was_built_from(tmp_path, m
     where they consume the derived spec. So the projection has to hand back the snapshot
     those elements were built from, or the client has a gate and a payload but nothing to
     re-verify once the host has taken it."""
-    from kiro_crew import agent_state
-    from kiro_crew.acp import session_mcp
+    from efm_go import agent_state
+    from efm_go.acp import session_mcp
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -3340,7 +3340,7 @@ def test_every_array_mirror_passes_the_snapshot_through(monkeypatch):
     leave its host family with no post-consume check while the others had one."""
     import inspect
 
-    from kiro_crew.providers.mirrors import claude_code, codex, opencode
+    from efm_go.providers.mirrors import claude_code, codex, opencode
 
     for module in (claude_code, codex, opencode):
         source = inspect.getsource(module)
@@ -3354,8 +3354,8 @@ def _claude_client_at_session_new(tmp_path, snapshot):
     with a pre-warmed array and the snapshot it was built from."""
     from unittest.mock import AsyncMock
 
-    from kiro_crew.acp import client as client_mod
-    from kiro_crew.acp.types import ACP_BACKEND_CLAUDE
+    from efm_go.acp import client as client_mod
+    from efm_go.acp.types import ACP_BACKEND_CLAUDE
 
     c = client_mod.AcpClient(
         work_dir=tmp_path, agent="kirocrew-worker", acp_backend=ACP_BACKEND_CLAUDE
@@ -3388,9 +3388,9 @@ def test_a_revocation_between_the_array_build_and_session_new_ends_the_session(
     registered the revoked server with nothing to catch it."""
     import asyncio
 
-    from kiro_crew import agent_state
-    from kiro_crew.acp.client import AcpError
-    from kiro_crew.acp.types import METHOD_INITIALIZE, METHOD_SESSION_NEW
+    from efm_go import agent_state
+    from efm_go.acp.client import AcpError
+    from efm_go.acp.types import METHOD_INITIALIZE, METHOD_SESSION_NEW
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -3424,9 +3424,9 @@ def test_post_check_uses_snapshot_sent_not_the_reseeded_one(tmp_path, monkeypatc
     invalidates the instance projection for the next composition."""
     import asyncio
 
-    from kiro_crew import agent_state
-    from kiro_crew.acp.client import AcpError
-    from kiro_crew.acp.types import METHOD_SESSION_NEW
+    from efm_go import agent_state
+    from efm_go.acp.client import AcpError
+    from efm_go.acp.types import METHOD_SESSION_NEW
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -3465,7 +3465,7 @@ def test_an_unchanged_default_lets_the_array_backed_session_proceed(tmp_path, mo
     """The ordinary case pays one stat and says nothing."""
     import asyncio
 
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -3481,7 +3481,7 @@ def test_an_unchanged_default_lets_the_array_backed_session_proceed(tmp_path, mo
 def test_the_array_snapshot_is_dropped_with_the_array_on_reset(tmp_path):
     """Per-spawn freshness, same as the array: a replacement process must judge its own
     array against its own snapshot, never inherit this one's."""
-    from kiro_crew.acp import client as client_mod
+    from efm_go.acp import client as client_mod
 
     c = client_mod.AcpClient(work_dir=tmp_path, agent="kirocrew-worker")
     c._session_mcp_cache = [{"name": "x"}]
@@ -3497,8 +3497,8 @@ def test_the_session_mcp_projection_reads_nothing_after_the_gate(tmp_path, monke
     looks -- and a revocation landing between the two becomes the session's MCP surface as
     though it had been checked. The gate reads and verifies those bytes, so the projection
     is handed the object rather than the path."""
-    from kiro_crew import agent_state
-    from kiro_crew.acp import session_mcp
+    from efm_go import agent_state
+    from efm_go.acp import session_mcp
 
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(agent_state, "config_dir", lambda: tmp_path)
@@ -3537,7 +3537,7 @@ def test_the_snapshot_reader_takes_no_read_of_its_own(monkeypatch):
     resolve a different spec than the projection ran on."""
     import inspect
 
-    from kiro_crew.acp import session_mcp
+    from efm_go.acp import session_mcp
 
     snapshot_src = inspect.getsource(session_mcp.agent_spec_snapshot)
     assert "_agent_spec_for(" in snapshot_src

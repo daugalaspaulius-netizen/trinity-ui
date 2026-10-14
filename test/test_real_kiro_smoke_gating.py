@@ -116,7 +116,7 @@ class TestGateAndIdentity:
             assert home == tmp_path
             return "C:/Program Files/Kiro-Cli/kiro-cli.exe"
 
-        with patch("kiro_crew.acp.client._resolve_kiro_bin", side_effect=_resolve):
+        with patch("efm_go.acp.client._resolve_kiro_bin", side_effect=_resolve):
             result = rk._resolve_real_kiro_cli(tmp_path / ".kiro")
         assert result.endswith("kiro-cli.exe")
         assert "KIROCREW_KIRO_BIN" not in seen
@@ -153,7 +153,7 @@ class TestGateAndIdentity:
 class TestFreshPrivatePreflight:
     @pytest.mark.parametrize("reachable", ["same", "missing", "different"])
     def test_requires_launcher_already_on_path(self, rk, tmp_path, monkeypatch, reachable):
-        from kiro_crew import agent
+        from efm_go import agent
 
         home = tmp_path / "kiro"
         launcher = tmp_path / "bin" / "kirocrew"
@@ -209,7 +209,7 @@ class TestLoopbackClient:
                 return _Response()
 
         opener = _Opener()
-        with patch("kiro_crew.loopback_http.build_loopback_opener", return_value=opener):
+        with patch("efm_go.loopback_http.build_loopback_opener", return_value=opener):
             rk._Client(51234, "secret")
         assert opener.requests == [("http://localhost:51234/api/status?token=secret", 30)]
         assert len(opener.handlers) == 1
@@ -331,10 +331,10 @@ class TestConfinedRealSmoke:
     def test_private_spec_and_real_hook_ceiling(self, rk, tmp_path, monkeypatch):
         import dataclasses
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.hooks import TOOL_AUTO_APPROVE, TOOL_DENY, HookManager
-        from kiro_crew.platform.bootstrap import build_default_context
-        from kiro_crew.platform.governance import parse_policy
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.hooks import TOOL_AUTO_APPROVE, TOOL_DENY, HookManager
+        from efm_go.platform.bootstrap import build_default_context
+        from efm_go.platform.governance import parse_policy
 
         nonce = tmp_path / "nonce.txt"
         other = tmp_path / "other.txt"
@@ -352,7 +352,7 @@ class TestConfinedRealSmoke:
         ceiling = parse_policy(json.loads(policy_path.read_text()))
         base = build_default_context(KiroCrewConfig.load())
         monkeypatch.setattr(
-            "kiro_crew.hooks.current_context", lambda: dataclasses.replace(base, governance=ceiling)
+            "efm_go.hooks.current_context", lambda: dataclasses.replace(base, governance=ceiling)
         )
         hooks = HookManager()
         effects = []
@@ -369,7 +369,7 @@ class TestConfinedRealSmoke:
                 assert path.read_text() == "allowed"
         assert effects == ["nonce.txt"]
         monkeypatch.setattr(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             lambda: dataclasses.replace(base, governance=ceiling),
         )
         monkeypatch.setenv("KIROCREW_SECURITY_POLICY", str(policy_path))
@@ -434,13 +434,13 @@ class TestConfinedRealSmoke:
     def test_missing_read_ceiling_fails_before_open(self, rk, tmp_path, monkeypatch, empty_policy):
         from types import SimpleNamespace
 
-        from kiro_crew.platform.governance import parse_policy
+        from efm_go.platform.governance import parse_policy
 
         ceiling = (
             parse_policy({"version": 1, "boot": {"fail_closed": True}}) if empty_policy else None
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             lambda: SimpleNamespace(governance=ceiling),
         )
         with patch.object(Path, "read_text") as read:
@@ -456,7 +456,7 @@ class TestPrivateWriterIsolation:
         import io
         from types import SimpleNamespace
 
-        from kiro_crew.testing import harness
+        from efm_go.testing import harness
 
         home = tmp_path / "rig"
         home.mkdir()
@@ -506,7 +506,7 @@ class TestPrivateWriterIsolation:
             patch.object(harness.subprocess, "Popen", side_effect=spawn),
             patch.object(harness, "_wait_for_ready_line", side_effect=ready),
             patch.object(harness, "_terminate_process_group", side_effect=stop),
-            patch("kiro_crew.agent._resolve_kirocrew_bin", return_value=sys.executable),
+            patch("efm_go.agent._resolve_kirocrew_bin", return_value=sys.executable),
             patch.object(harness.shutil, "which", return_value=sys.executable),
             patch.object(rk, "_run_private_probe", side_effect=preflight),
             patch.object(rk, "_probe_signed_in") as auth,
@@ -541,7 +541,7 @@ class TestPrivateWriterIsolation:
             yield
 
         with (
-            patch("kiro_crew.testing.harness.spawn_feature_gateway", side_effect=spawn),
+            patch("efm_go.testing.harness.spawn_feature_gateway", side_effect=spawn),
             patch.object(rk, "_probe_signed_in") as auth,
             patch.object(rk, "_run_private_probe") as probe,
             pytest.raises(pytest.fail.Exception, match="private KIRO_HOME"),
@@ -552,7 +552,7 @@ class TestPrivateWriterIsolation:
         probe.assert_not_called()
 
     def test_native_proof_requires_real_files_not_reader_override(self, rk, tmp_path, monkeypatch):
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         other = tmp_path / "unrelated"
         other.mkdir()
@@ -590,7 +590,7 @@ class TestPrivateWriterIsolation:
             yield
 
         with (
-            patch("kiro_crew.testing.harness.spawn_feature_gateway", side_effect=spawn),
+            patch("efm_go.testing.harness.spawn_feature_gateway", side_effect=spawn),
             patch.object(rk, "_run_private_probe", return_value=payload),
             patch.object(rk, "_probe_signed_in") as auth,
             pytest.raises(pytest.fail.Exception, match="before boot|private KIRO_HOME"),
@@ -624,7 +624,7 @@ class TestPrivateWriterIsolation:
             yield handle  # Model a swallowed rmtree error after a confirmed stop.
 
         with (
-            patch("kiro_crew.testing.harness.spawn_feature_gateway", side_effect=spawn),
+            patch("efm_go.testing.harness.spawn_feature_gateway", side_effect=spawn),
             patch.object(rk, "_run_private_probe", return_value=payload),
             patch.object(rk, "_probe_signed_in"),
             patch.object(rk, "_Client", lambda *_args: _ClientStub([{}])),

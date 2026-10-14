@@ -1,6 +1,6 @@
 """Unit tests for TurnUsage and AcpEvent.usage."""
 
-from kiro_crew.acp.types import AcpEvent, TurnUsage
+from efm_go.acp.types import AcpEvent, TurnUsage
 
 
 def test_turn_usage_defaults_all_zero():

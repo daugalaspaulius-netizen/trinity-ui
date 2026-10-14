@@ -24,9 +24,9 @@ opposite answers.
 
 from __future__ import annotations
 
-from kiro_crew.mcp_caller import POOLING_REQUIRES_TENANT_NONCE
-from kiro_crew.mcp_gateway.gatewayd import REGISTERED_CAPABILITIES
-from kiro_crew.mcp_gateway.stub import (
+from efm_go.mcp_caller import POOLING_REQUIRES_TENANT_NONCE
+from efm_go.mcp_gateway.gatewayd import REGISTERED_CAPABILITIES
+from efm_go.mcp_gateway.stub import (
     must_degrade_nonce_blind,
     must_degrade_unshareable,
 )

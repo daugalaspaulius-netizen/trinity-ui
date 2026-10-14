@@ -7,10 +7,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew import mcp_cron
-from kiro_crew.cron import CronSchedule, CronService
-from kiro_crew.mcp_cron import _call_tool_inner, _call_tool_locally
-from kiro_crew.validation import (
+from efm_go import mcp_cron
+from efm_go.cron import CronSchedule, CronService
+from efm_go.mcp_cron import _call_tool_inner, _call_tool_locally
+from efm_go.validation import (
     CRON_ADD_SCHEMA,
     MCP_CRON_SCHEMAS,
     ValidationError,
@@ -30,7 +30,7 @@ def _cron_caller_is_named(named_cron_caller):
 
 class TestCronAddThreadTs:
     def test_add_with_thread_ts(self, tmp_path: Path) -> None:
-        with patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls:
+        with patch("efm_go.mcp_cron.CronService") as mock_svc_cls:
             mock_svc = mock_svc_cls.return_value
             mock_job = type(
                 "Job",
@@ -65,7 +65,7 @@ class TestCronAddThreadTs:
             assert "abc" in result
 
     def test_add_without_thread_ts(self, tmp_path: Path) -> None:
-        with patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls:
+        with patch("efm_go.mcp_cron.CronService") as mock_svc_cls:
             mock_svc = mock_svc_cls.return_value
             mock_job = type(
                 "Job",
@@ -130,8 +130,8 @@ class TestCronAddInheritsCallerThread:
         # cron targets that same channel.
         monkeypatch.setenv("KIROCREW_SESSION_KEY", "slack:1789696119.009399")
         with (
-            patch("kiro_crew.mcp_cron._caller_channel_id", return_value="C0AP77JJSN6"),
-            patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls,
+            patch("efm_go.mcp_cron._caller_channel_id", return_value="C0AP77JJSN6"),
+            patch("efm_go.mcp_cron.CronService") as mock_svc_cls,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.add_job.return_value = self._mock_job()
@@ -150,7 +150,7 @@ class TestCronAddInheritsCallerThread:
 
     def test_explicit_thread_ts_wins_over_caller(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setenv("KIROCREW_SESSION_KEY", "slack:1789696119.009399")
-        with patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls:
+        with patch("efm_go.mcp_cron.CronService") as mock_svc_cls:
             mock_svc = mock_svc_cls.return_value
             mock_svc.add_job.return_value = self._mock_job()
             _call_tool_locally(
@@ -175,8 +175,8 @@ class TestCronAddInheritsCallerThread:
         # only when the key is ABSENT.
         monkeypatch.setenv("KIROCREW_SESSION_KEY", "slack:1789696119.009399")
         with (
-            patch("kiro_crew.mcp_cron._caller_channel_id", return_value="C0AP77JJSN6"),
-            patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls,
+            patch("efm_go.mcp_cron._caller_channel_id", return_value="C0AP77JJSN6"),
+            patch("efm_go.mcp_cron.CronService") as mock_svc_cls,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.add_job.return_value = self._mock_job()
@@ -198,7 +198,7 @@ class TestCronAddInheritsCallerThread:
     def test_non_slack_caller_gets_no_thread(self, tmp_path: Path, monkeypatch) -> None:
         # Dashboard caller: no thread to inherit.
         monkeypatch.setenv("KIROCREW_SESSION_KEY", "dashboard:conftest-slot")
-        with patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls:
+        with patch("efm_go.mcp_cron.CronService") as mock_svc_cls:
             mock_svc = mock_svc_cls.return_value
             mock_svc.add_job.return_value = self._mock_job()
             _call_tool_locally(
@@ -212,8 +212,8 @@ class TestCronAddInheritsCallerThread:
         # Even a Slack caller: without a channel a thread_ts is meaningless.
         monkeypatch.setenv("KIROCREW_SESSION_KEY", "slack:1789696119.009399")
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
-        with patch("kiro_crew.mcp_cron._caller_channel_id", return_value=""):
-            with patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls:
+        with patch("efm_go.mcp_cron._caller_channel_id", return_value=""):
+            with patch("efm_go.mcp_cron.CronService") as mock_svc_cls:
                 mock_svc = mock_svc_cls.return_value
                 mock_svc.add_job.return_value = self._mock_job()
                 _call_tool_locally("cron_add", {"name": "ops", "message": "check", "every": 300})
@@ -233,8 +233,8 @@ class TestCronAddInheritsCallerThread:
         monkeypatch.setenv("KIROCREW_SESSION_KEY", "slack:1789696119.009399")
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
         with (
-            patch("kiro_crew.mcp_cron._caller_channel_id", return_value="C0CALLER0OWN"),
-            patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls,
+            patch("efm_go.mcp_cron._caller_channel_id", return_value="C0CALLER0OWN"),
+            patch("efm_go.mcp_cron.CronService") as mock_svc_cls,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.add_job.return_value = self._mock_job()
@@ -262,8 +262,8 @@ class TestCronAddInheritsCallerThread:
         monkeypatch.setenv("KIROCREW_SESSION_KEY", "slack:1789696119.009399")
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
         with (
-            patch("kiro_crew.mcp_cron._caller_channel_id", return_value="C0SAME0CHAN"),
-            patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls,
+            patch("efm_go.mcp_cron._caller_channel_id", return_value="C0SAME0CHAN"),
+            patch("efm_go.mcp_cron.CronService") as mock_svc_cls,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.add_job.return_value = self._mock_job()
@@ -295,7 +295,7 @@ class TestCronAddThreadInheritAcrossGateway:
 
     @staticmethod
     def _forwarded_args(monkeypatch, *, caller_key: str, caller_channel: str, call_args: dict):
-        from kiro_crew.mcp_caller import CallerContext, set_current_caller
+        from efm_go.mcp_caller import CallerContext, set_current_caller
 
         captured: dict = {}
 
@@ -303,7 +303,7 @@ class TestCronAddThreadInheritAcrossGateway:
             captured["payload"] = payload
             return {"result": "Added job abc"}
 
-        monkeypatch.setattr("kiro_crew.mcp_core._post", fake_post)
+        monkeypatch.setattr("efm_go.mcp_core._post", fake_post)
         monkeypatch.setenv("KIROCREW_SESSION_KEY", caller_key)
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
         set_current_caller(
@@ -476,7 +476,7 @@ class TestCronUpdateThreadTs:
     """
 
     def test_update_sets_thread_ts(self, tmp_path: Path, named_cron_caller: str) -> None:
-        with patch("kiro_crew.mcp_cron.CronService") as mock_svc_cls:
+        with patch("efm_go.mcp_cron.CronService") as mock_svc_cls:
             mock_svc = mock_svc_cls.return_value
             fake_job = MagicMock()
             fake_job.id = "abc"

@@ -31,9 +31,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.computer_use import apps_macos, macos_ffi, policy
-from kiro_crew.computer_use.types import AppRef, ComputerUseError, PolicyConfig
-from kiro_crew.platform_compat import IS_POSIX
+from efm_go.computer_use import apps_macos, macos_ffi, policy
+from efm_go.computer_use.types import AppRef, ComputerUseError, PolicyConfig
+from efm_go.platform_compat import IS_POSIX
 
 # The live finding, as a fixture. Both entries claim the same owner name; only the
 # layer distinguishes them, and only the layer-0 one has a populated AX tree.
@@ -437,7 +437,7 @@ def test_a_plist_on_the_sensitive_path_floor_is_never_read(
     ``$HOME`` redirected at the tmp dir) rather than by patching
     ``is_sensitive_path``: the read now goes through ``hooks.safe_read_prefix``,
     which resolves the name through its own import, so a patch of the
-    ``kiro_crew.security`` attribute would not be observed and the test would pass
+    ``efm_go.security`` attribute would not be observed and the test would pass
     against a bypassed floor.
     """
     home = tmp_path / "home"
@@ -592,7 +592,7 @@ def test_identity_for_falls_back_to_the_process_name(monkeypatch: pytest.MonkeyP
     with no bundle id is still nameable — and therefore still deniable.
     """
     monkeypatch.setattr(apps_macos, "resolve_identity", lambda pid: apps_macos.AppIdentity())
-    from kiro_crew.computer_use.types import AppRef
+    from efm_go.computer_use.types import AppRef
 
     identity = apps_macos.identity_for(AppRef(name="somebinary", pid=99))
     assert identity.display_name == "somebinary"
@@ -606,7 +606,7 @@ def test_identity_for_prefers_the_freshly_resolved_display_name(monkeypatch: pyt
         "resolve_identity",
         lambda pid: apps_macos.AppIdentity(bundle_id="com.apple.Preview", display_name="Preview"),
     )
-    from kiro_crew.computer_use.types import AppRef
+    from efm_go.computer_use.types import AppRef
 
     identity = apps_macos.identity_for(AppRef(name="stale name", pid=99))
     assert identity.display_name == "Preview"

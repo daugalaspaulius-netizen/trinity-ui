@@ -195,7 +195,7 @@ reuses that rule verbatim and adds the second and third clauses.
 
 ### §2 Forwarded-peer resolution
 
-A new module `src/kiro_crew/dashboard/tailnet.py` exposes one function:
+A new module `src/efm_go/dashboard/tailnet.py` exposes one function:
 
 ```python
 def resolve_forwarded_peer(request: web.Request) -> ForwardedPeer | None

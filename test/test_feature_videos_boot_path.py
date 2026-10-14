@@ -34,7 +34,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import feature_videos_manifest as manifest_mod
+from efm_go import feature_videos_manifest as manifest_mod
 
 _CREDENTIAL = "sup3rs3cret"
 _URL_WITH_CREDENTIAL = f"https://carol:{_CREDENTIAL}@cdn.example.com:notaport/manifest.json"
@@ -55,14 +55,14 @@ def _run(snippet: str) -> subprocess.CompletedProcess:
 class TestNoWorkOnTheBootPath:
     def test_the_boot_path_method_never_reaches_the_starter(self) -> None:
         """``_start_embeddings`` runs before KIROCREW_READY, so it must not start a transfer."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         src = inspect.getsource(GatewayOrchestrator._start_embeddings)
         assert _STARTER not in src, "a clip transfer is being scheduled on the boot path"
 
     def test_the_gateway_module_has_no_top_level_import_of_the_starter(self) -> None:
         """A module-scope import runs on every boot, including a default-off one."""
-        from kiro_crew.slack import gateway as gw
+        from efm_go.slack import gateway as gw
 
         for line in inspect.getsource(gw).splitlines():
             # Column 0 only. An INDENTED import is the deferred one inside the
@@ -76,7 +76,7 @@ class TestNoWorkOnTheBootPath:
 
     def test_the_start_site_is_gated_on_the_kill_switch(self) -> None:
         """Off by default, so an install that never wanted this pays nothing for it."""
-        from kiro_crew.slack import gateway as gw
+        from efm_go.slack import gateway as gw
 
         src = inspect.getsource(gw)
         marker = "if self._cfg.dashboard.feature_videos_enabled:"
@@ -87,7 +87,7 @@ class TestNoWorkOnTheBootPath:
     def test_the_starter_is_reachable_when_something_asks_for_it(self) -> None:
         """The deferral must not have orphaned the entry point it defers."""
         proc = _run("""
-            from kiro_crew.feature_videos_cache import start_background_feature_video_download
+            from efm_go.feature_videos_cache import start_background_feature_video_download
 
             assert callable(start_background_feature_video_download)
             print("reachable")
@@ -99,14 +99,14 @@ class TestNoWorkOnTheBootPath:
 class TestTheTaskIsHeldAndCancelled:
     def test_the_task_attribute_exists_before_anything_starts_it(self) -> None:
         """Declared in __init__, so a reader that runs first is not an AttributeError."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         src = inspect.getsource(GatewayOrchestrator.__init__)
         assert 'self._feature_video_task: "asyncio.Task[bool] | None" = None' in src
 
     def test_shutdown_cancels_it_beside_its_sibling(self) -> None:
         """A pending transfer must not outlive the process it was started for."""
-        from kiro_crew.slack import gateway as gw
+        from efm_go.slack import gateway as gw
 
         src = inspect.getsource(gw)
         assert (
@@ -125,7 +125,7 @@ class TestNoCredentialInTheLogRecord:
             raise http.client.InvalidURL(f"nonnumeric port: '{_CREDENTIAL}@cdn.example.com'")
 
         opener = type("_Opener", (), {"open": staticmethod(_explode)})()
-        monkeypatch.setattr("kiro_crew.asset_downloader.build_opener", lambda *a, **k: opener)
+        monkeypatch.setattr("efm_go.asset_downloader.build_opener", lambda *a, **k: opener)
 
         with caplog.at_level(logging.INFO, logger=manifest_mod.logger.name):
             assert manifest_mod._fetch_json(_URL_WITH_CREDENTIAL) is None
@@ -169,13 +169,13 @@ class TestTheDownloaderLeaksNothingEither:
         caplog: pytest.LogCaptureFixture,
         raised: Exception,
     ) -> None:
-        from kiro_crew import asset_downloader
+        from efm_go import asset_downloader
 
         def _explode(*_a: object, **_k: object) -> object:
             raise raised
 
         opener = type("_Opener", (), {"open": staticmethod(_explode)})()
-        monkeypatch.setattr("kiro_crew.asset_downloader.build_opener", lambda *a, **k: opener)
+        monkeypatch.setattr("efm_go.asset_downloader.build_opener", lambda *a, **k: opener)
 
         with caplog.at_level(logging.INFO):
             ok, err = asset_downloader.download_to(

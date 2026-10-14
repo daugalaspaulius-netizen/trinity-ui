@@ -7,7 +7,7 @@ forbids.
 
 Five test modules each grew their own loader and none of them carried the guard.
 Measured one file at a time from a clean tree, they left this in
-``src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/__pycache__/``:
+``src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/__pycache__/``:
 
 ===================================  ==========================================
 test module                          residue

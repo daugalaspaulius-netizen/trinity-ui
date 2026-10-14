@@ -226,7 +226,7 @@ describe('FeaturedSpotlight — installed lead swaps to local art on a failed re
   it('a curated card is untouched: editorial art keeps its own error path', () => {
     mountCard({
       curated: true,
-      artwork: { url: 'https://apps.crew.kiro.dev/assets/editorial/aaa.png' },
+      artwork: { url: 'https://efmleads.com/api/apps/assets/editorial/aaa.png' },
       leadInstalled: INSTALLED,
     })
     const img = document.querySelector('img') as HTMLImageElement

@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import web
 
-import kiro_crew.dashboard.handlers_channel as handlers
-from kiro_crew.channel import ApprovalPolicy, ChannelManager, ListenMode
+import efm_go.dashboard.handlers_channel as handlers
+from efm_go.channel import ApprovalPolicy, ChannelManager, ListenMode
 
 
 def _request(manager: ChannelManager, body: dict, **match_info: str) -> MagicMock:

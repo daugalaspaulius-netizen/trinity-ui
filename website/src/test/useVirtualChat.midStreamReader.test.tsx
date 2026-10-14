@@ -1,5 +1,5 @@
 /**
- * kirodotdev/KiroCrew#10810 -- reading the MIDDLE of a streaming reply, the text
+ * efmleads.com#10810 -- reading the MIDDLE of a streaming reply, the text
  * slides UP out from under the reader by one token's height per tick.
  *
  * Reproduced on the device with the scroll inspector: every write was

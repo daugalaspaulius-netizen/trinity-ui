@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from conftest import host_abs
-from kiro_crew.dashboard import terminal_commands as tc
+from efm_go.dashboard import terminal_commands as tc
 
 
 @pytest.fixture(autouse=True)
@@ -502,7 +502,7 @@ class TestSanitizedPath:
     ):
         # The lookup is imported lazily inside the function, so patch the module it
         # comes from. Raising must produce the None sentinel, not ().
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         def boom():
             raise OSError("workspace unreadable")

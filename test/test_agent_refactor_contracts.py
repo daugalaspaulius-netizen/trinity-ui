@@ -1,7 +1,7 @@
 """Contracts the agent-materialization split must carry across unchanged.
 
-``kiro_crew.agent`` is the import path every caller, test and document uses, and its
-implementation now lives in owners under ``kiro_crew.agent_materialization``. These
+``efm_go.agent`` is the import path every caller, test and document uses, and its
+implementation now lives in owners under ``efm_go.agent_materialization``. These
 tests freeze what the pre-split module offered and what it wrote, independently of
 where the code lives:
 
@@ -31,13 +31,13 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent, agent_state, platform_compat
-from kiro_crew.agent_files import GUEST_AGENT_FILENAME, LITE_AGENT_FILENAME
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go import agent, agent_state, platform_compat
+from efm_go.agent_files import GUEST_AGENT_FILENAME, LITE_AGENT_FILENAME
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 # ── the surface ─────────────────────────────────────────────────────────────
 
-#: Every name ``kiro_crew.agent`` bound before the split, described the way
+#: Every name ``efm_go.agent`` bound before the split, described the way
 #: :func:`_describe` describes it now. A value is compared by the digest of its JSON
 #: rendering; a name whose value depends on the host (a home-derived path, the logger)
 #: is compared by type only, and process state the module keeps across calls (a
@@ -274,7 +274,7 @@ BASE_SURFACE: dict[str, str] = {
     "_write_worker_spec": "callable _write_worker_spec(config: 'dict', path: 'Path', *, template_grants: 'list[str]') -> 'None'",
     "agent_spec_candidates": "callable agent_spec_candidates(directory: 'Path', name: 'str') -> 'list[Path]'",
     "agent_spec_path": "callable agent_spec_path(name: 'str', *, agents_dir: 'Path | None' = None) -> 'Path | None'",
-    "agent_state": "module kiro_crew.agent_state",
+    "agent_state": "module efm_go.agent_state",
     "agentcore_posture": "callable agentcore_posture(ceiling: 'Optional[GovernanceCeiling]') -> 'Optional[str]'",
     "agents_spec_lock": "callable agents_spec_lock(agents_dir: 'Path') -> 'Iterator[None]'",
     "ambient_agents_dir": "callable ambient_agents_dir() -> 'Path'",
@@ -320,7 +320,7 @@ BASE_SURFACE: dict[str, str] = {
     "migrate_agent_specs": "callable migrate_agent_specs() -> 'int'",
     "missing_required_agent_specs": "callable missing_required_agent_specs() -> 'list[str]'",
     "normalize_spec_hooks": "callable normalize_spec_hooks(value: 'object') -> 'list[dict]'",
-    "platform_compat": "module kiro_crew.platform_compat",
+    "platform_compat": "module efm_go.platform_compat",
     "present_required_agent_specs": "callable present_required_agent_specs() -> 'list[tuple[str, Path]]'",
     "prime_ceiling_projection": "callable prime_ceiling_projection() -> 'None'",
     "project_agent_files": "callable project_agent_files(project_dir: 'str | Path | None', include_legacy: 'bool' = False, *, operation: 'str' = 'project_agent_files', source: 'str' = 'project_agent_files') -> 'list[Path]'",
@@ -358,93 +358,93 @@ BASE_SURFACE: dict[str, str] = {
     "without_marker": "callable without_marker(entry: 'object') -> 'dict[str, Any]'",
 }
 
-#: Every ``kiro_crew`` collaborator the pre-split module imported, by (module, attribute).
+#: Every ``efm_go`` collaborator the pre-split module imported, by (module, attribute).
 BASE_COLLABORATORS: dict[str, tuple[str, str]] = {
-    "AGENT_FILENAME": ("kiro_crew.agent_files", "AGENT_FILENAME"),
-    "AmbiguousAgentSpecError": ("kiro_crew.agent_discovery", "AmbiguousAgentSpecError"),
-    "CU_MCP_SERVER": ("kiro_crew.platform.governance", "CU_MCP_SERVER"),
-    "DERIVED_KEY": ("kiro_crew.mcp_provenance", "DERIVED_KEY"),
-    "FileTooLargeError": ("kiro_crew.hooks", "FileTooLargeError"),
-    "MCP_PATH_HINT": ("kiro_crew.env", "MCP_PATH_HINT"),
-    "OWNED_KIRO_AGENT_FILES": ("kiro_crew.agent_files", "OWNED_KIRO_AGENT_FILES"),
-    "REQUIRED_KIRO_AGENT_FILES": ("kiro_crew.agent_files", "REQUIRED_KIRO_AGENT_FILES"),
-    "SecurityEvent": ("kiro_crew.sel", "SecurityEvent"),
-    "_CONDUCTOR_AGENT_FILENAME": ("kiro_crew.agent_files", "CONDUCTOR_AGENT_FILENAME"),
-    "_GUEST_AGENT_FILENAME": ("kiro_crew.agent_files", "GUEST_AGENT_FILENAME"),
-    "_HEARTBEAT_AGENT_FILENAME": ("kiro_crew.agent_files", "HEARTBEAT_AGENT_FILENAME"),
-    "_KNOWLEDGE_AGENT_FILENAME": ("kiro_crew.agent_files", "KNOWLEDGE_AGENT_FILENAME"),
+    "AGENT_FILENAME": ("efm_go.agent_files", "AGENT_FILENAME"),
+    "AmbiguousAgentSpecError": ("efm_go.agent_discovery", "AmbiguousAgentSpecError"),
+    "CU_MCP_SERVER": ("efm_go.platform.governance", "CU_MCP_SERVER"),
+    "DERIVED_KEY": ("efm_go.mcp_provenance", "DERIVED_KEY"),
+    "FileTooLargeError": ("efm_go.hooks", "FileTooLargeError"),
+    "MCP_PATH_HINT": ("efm_go.env", "MCP_PATH_HINT"),
+    "OWNED_KIRO_AGENT_FILES": ("efm_go.agent_files", "OWNED_KIRO_AGENT_FILES"),
+    "REQUIRED_KIRO_AGENT_FILES": ("efm_go.agent_files", "REQUIRED_KIRO_AGENT_FILES"),
+    "SecurityEvent": ("efm_go.sel", "SecurityEvent"),
+    "_CONDUCTOR_AGENT_FILENAME": ("efm_go.agent_files", "CONDUCTOR_AGENT_FILENAME"),
+    "_GUEST_AGENT_FILENAME": ("efm_go.agent_files", "GUEST_AGENT_FILENAME"),
+    "_HEARTBEAT_AGENT_FILENAME": ("efm_go.agent_files", "HEARTBEAT_AGENT_FILENAME"),
+    "_KNOWLEDGE_AGENT_FILENAME": ("efm_go.agent_files", "KNOWLEDGE_AGENT_FILENAME"),
     "_LEDGER_CONDUCTOR_AGENT_FILENAME": (
-        "kiro_crew.agent_files",
+        "efm_go.agent_files",
         "LEDGER_CONDUCTOR_AGENT_FILENAME",
     ),
-    "_LITE_AGENT_FILENAME": ("kiro_crew.agent_files", "LITE_AGENT_FILENAME"),
+    "_LITE_AGENT_FILENAME": ("efm_go.agent_files", "LITE_AGENT_FILENAME"),
     "_PIPELINE_CONDUCTOR_AGENT_FILENAME": (
-        "kiro_crew.agent_files",
+        "efm_go.agent_files",
         "PIPELINE_CONDUCTOR_AGENT_FILENAME",
     ),
-    "_RESEARCH_AGENT_FILENAME": ("kiro_crew.agent_files", "RESEARCH_AGENT_FILENAME"),
+    "_RESEARCH_AGENT_FILENAME": ("efm_go.agent_files", "RESEARCH_AGENT_FILENAME"),
     "_SECURITY_CONDUCTOR_AGENT_FILENAME": (
-        "kiro_crew.agent_files",
+        "efm_go.agent_files",
         "SECURITY_CONDUCTOR_AGENT_FILENAME",
     ),
-    "_WORKER_AGENT_FILENAME": ("kiro_crew.agent_files", "WORKER_AGENT_FILENAME"),
-    "_declared_project_agent_name": ("kiro_crew.agent_discovery", "_declared_project_agent_name"),
-    "_in_ephemeral_tree": ("kiro_crew.config.paths", "_in_ephemeral_tree"),
-    "_in_linked_git_worktree": ("kiro_crew.config.paths", "_in_linked_git_worktree"),
-    "_mc_config_path": ("kiro_crew.config", "config_path"),
-    "_read_agent_spec": ("kiro_crew.agent_discovery", "_read_agent_spec"),
-    "_under_system_tmp": ("kiro_crew.config.paths", "_under_system_tmp"),
-    "_valid_override_home": ("kiro_crew.config.paths", "_valid_override_home"),
-    "agent_spec_candidates": ("kiro_crew.agent_spec_format", "agent_spec_candidates"),
-    "agent_state": ("kiro_crew", "agent_state"),
-    "agentcore_posture": ("kiro_crew.platform.governance", "agentcore_posture"),
-    "ambient_agents_dir": ("kiro_crew.config.paths", "ambient_agents_dir"),
-    "command_is_ours": ("kiro_crew.mcp_provenance", "command_is_ours"),
-    "config_dir": ("kiro_crew.config", "config_dir"),
-    "current_context": ("kiro_crew.platform", "current_context"),
-    "dedup_path": ("kiro_crew.env", "dedup_path"),
-    "describe_search_path": ("kiro_crew.env", "describe_search_path"),
-    "emit_env": ("kiro_crew.env", "emit_env"),
-    "governance_permits": ("kiro_crew.platform.governance_profiles", "governance_permits"),
-    "invalid_disabled_flag": ("kiro_crew.mcp_cleanup", "invalid_disabled_flag"),
-    "is_markdown_spec": ("kiro_crew.agent_spec_format", "is_markdown_spec"),
-    "is_registered_agent_name": ("kiro_crew.validation", "is_registered_agent_name"),
-    "is_sensitive_path": ("kiro_crew.security", "is_sensitive_path"),
-    "is_unc_shape": ("kiro_crew.hooks", "is_unc_shape"),
-    "isolated_agents_dir": ("kiro_crew.config.paths", "isolated_agents_dir"),
-    "iter_agent_spec_files": ("kiro_crew.agent_spec_format", "iter_agent_spec_files"),
-    "kiro_agents_dir": ("kiro_crew.config.paths", "kiro_agents_dir"),
-    "kiro_oauth_wire_entry": ("kiro_crew.mcp_utils", "kiro_oauth_wire_entry"),
-    "may_skip_gate_now": ("kiro_crew.platform.governance", "may_skip_gate_now"),
-    "mcp_entries_muted": ("kiro_crew.mcp_cleanup", "mcp_entries_muted"),
-    "mcp_entry_is_muted": ("kiro_crew.mcp_cleanup", "mcp_entry_is_muted"),
-    "mcp_search_path": ("kiro_crew.env", "mcp_search_path"),
-    "mcp_server_alias": ("kiro_crew.mcp_utils", "mcp_server_alias"),
-    "platform_compat": ("kiro_crew", "platform_compat"),
-    "project_agent_files": ("kiro_crew.agent_discovery", "project_agent_files"),
-    "project_agent_name": ("kiro_crew.agent_discovery", "project_agent_name"),
-    "project_agent_names": ("kiro_crew.agent_discovery", "project_agent_names"),
-    "prune_dangling_tool_refs": ("kiro_crew.mcp_cleanup", "prune_dangling_tool_refs"),
-    "purge_deleted_proxy_from_config": ("kiro_crew.mcp_cleanup", "purge_deleted_proxy_from_config"),
-    "record_derived": ("kiro_crew.mcp_provenance", "record_derived"),
-    "recorded_source": ("kiro_crew.mcp_provenance", "recorded_source"),
-    "redact": ("kiro_crew.platform", "redact_via_context"),
-    "redact_log": ("kiro_crew.platform", "redact_log_via_context"),
-    "replace_with_retry": ("kiro_crew.atomic_write", "replace_with_retry"),
-    "safe_context_call": ("kiro_crew.platform", "safe_context_call"),
-    "safe_read_file_bytes_nolink": ("kiro_crew.hooks", "safe_read_file_bytes_nolink"),
-    "sanitize_spec_env": ("kiro_crew.env", "sanitize_spec_env"),
-    "sel": ("kiro_crew.sel", "sel"),
-    "shared_kiro_agents_writable": ("kiro_crew.config.paths", "shared_kiro_agents_writable"),
-    "source_view": ("kiro_crew.mcp_provenance", "source_view"),
-    "spec_path_key": ("kiro_crew.env", "spec_path_key"),
+    "_WORKER_AGENT_FILENAME": ("efm_go.agent_files", "WORKER_AGENT_FILENAME"),
+    "_declared_project_agent_name": ("efm_go.agent_discovery", "_declared_project_agent_name"),
+    "_in_ephemeral_tree": ("efm_go.config.paths", "_in_ephemeral_tree"),
+    "_in_linked_git_worktree": ("efm_go.config.paths", "_in_linked_git_worktree"),
+    "_mc_config_path": ("efm_go.config", "config_path"),
+    "_read_agent_spec": ("efm_go.agent_discovery", "_read_agent_spec"),
+    "_under_system_tmp": ("efm_go.config.paths", "_under_system_tmp"),
+    "_valid_override_home": ("efm_go.config.paths", "_valid_override_home"),
+    "agent_spec_candidates": ("efm_go.agent_spec_format", "agent_spec_candidates"),
+    "agent_state": ("efm_go", "agent_state"),
+    "agentcore_posture": ("efm_go.platform.governance", "agentcore_posture"),
+    "ambient_agents_dir": ("efm_go.config.paths", "ambient_agents_dir"),
+    "command_is_ours": ("efm_go.mcp_provenance", "command_is_ours"),
+    "config_dir": ("efm_go.config", "config_dir"),
+    "current_context": ("efm_go.platform", "current_context"),
+    "dedup_path": ("efm_go.env", "dedup_path"),
+    "describe_search_path": ("efm_go.env", "describe_search_path"),
+    "emit_env": ("efm_go.env", "emit_env"),
+    "governance_permits": ("efm_go.platform.governance_profiles", "governance_permits"),
+    "invalid_disabled_flag": ("efm_go.mcp_cleanup", "invalid_disabled_flag"),
+    "is_markdown_spec": ("efm_go.agent_spec_format", "is_markdown_spec"),
+    "is_registered_agent_name": ("efm_go.validation", "is_registered_agent_name"),
+    "is_sensitive_path": ("efm_go.security", "is_sensitive_path"),
+    "is_unc_shape": ("efm_go.hooks", "is_unc_shape"),
+    "isolated_agents_dir": ("efm_go.config.paths", "isolated_agents_dir"),
+    "iter_agent_spec_files": ("efm_go.agent_spec_format", "iter_agent_spec_files"),
+    "kiro_agents_dir": ("efm_go.config.paths", "kiro_agents_dir"),
+    "kiro_oauth_wire_entry": ("efm_go.mcp_utils", "kiro_oauth_wire_entry"),
+    "may_skip_gate_now": ("efm_go.platform.governance", "may_skip_gate_now"),
+    "mcp_entries_muted": ("efm_go.mcp_cleanup", "mcp_entries_muted"),
+    "mcp_entry_is_muted": ("efm_go.mcp_cleanup", "mcp_entry_is_muted"),
+    "mcp_search_path": ("efm_go.env", "mcp_search_path"),
+    "mcp_server_alias": ("efm_go.mcp_utils", "mcp_server_alias"),
+    "platform_compat": ("efm_go", "platform_compat"),
+    "project_agent_files": ("efm_go.agent_discovery", "project_agent_files"),
+    "project_agent_name": ("efm_go.agent_discovery", "project_agent_name"),
+    "project_agent_names": ("efm_go.agent_discovery", "project_agent_names"),
+    "prune_dangling_tool_refs": ("efm_go.mcp_cleanup", "prune_dangling_tool_refs"),
+    "purge_deleted_proxy_from_config": ("efm_go.mcp_cleanup", "purge_deleted_proxy_from_config"),
+    "record_derived": ("efm_go.mcp_provenance", "record_derived"),
+    "recorded_source": ("efm_go.mcp_provenance", "recorded_source"),
+    "redact": ("efm_go.platform", "redact_via_context"),
+    "redact_log": ("efm_go.platform", "redact_log_via_context"),
+    "replace_with_retry": ("efm_go.atomic_write", "replace_with_retry"),
+    "safe_context_call": ("efm_go.platform", "safe_context_call"),
+    "safe_read_file_bytes_nolink": ("efm_go.hooks", "safe_read_file_bytes_nolink"),
+    "sanitize_spec_env": ("efm_go.env", "sanitize_spec_env"),
+    "sel": ("efm_go.sel", "sel"),
+    "shared_kiro_agents_writable": ("efm_go.config.paths", "shared_kiro_agents_writable"),
+    "source_view": ("efm_go.mcp_provenance", "source_view"),
+    "spec_path_key": ("efm_go.env", "spec_path_key"),
     "strip_ungoverned_auto_approve": (
-        "kiro_crew.platform.governance",
+        "efm_go.platform.governance",
         "strip_ungoverned_auto_approve",
     ),
-    "unc_probe_allowed": ("kiro_crew.hooks", "unc_probe_allowed"),
-    "warn_invalid_disabled": ("kiro_crew.mcp_cleanup", "warn_invalid_disabled"),
-    "without_marker": ("kiro_crew.mcp_provenance", "without_marker"),
+    "unc_probe_allowed": ("efm_go.hooks", "unc_probe_allowed"),
+    "warn_invalid_disabled": ("efm_go.mcp_cleanup", "warn_invalid_disabled"),
+    "without_marker": ("efm_go.mcp_provenance", "without_marker"),
 }
 
 #: Standard-library and typing names the pre-split module imported for its own use.
@@ -570,7 +570,7 @@ def test_every_pre_split_name_resolves_with_its_pre_split_shape() -> None:
     """
     drifted = {}
     for name, expected in BASE_SURFACE.items():
-        assert hasattr(agent, name), f"kiro_crew.agent.{name} no longer resolves"
+        assert hasattr(agent, name), f"efm_go.agent.{name} no longer resolves"
         actual = _describe(name, getattr(agent, name))
         if name in _PER_PLATFORM:
             actual = _describe_value(getattr(agent, name))
@@ -616,7 +616,7 @@ def test_every_collaborator_is_still_the_source_object() -> None:
     """An imported collaborator the facade re-offers is the object its own module holds."""
     for name, (module, attribute) in BASE_COLLABORATORS.items():
         source = getattr(importlib.import_module(module), attribute)
-        assert getattr(agent, name) is source, f"kiro_crew.agent.{name} is not {module}.{attribute}"
+        assert getattr(agent, name) is source, f"efm_go.agent.{name} is not {module}.{attribute}"
 
 
 def test_the_surface_inventory_covers_every_pre_split_binding() -> None:
@@ -716,10 +716,10 @@ class _Rig:
         monkeypatch.setattr(agent, "_KIRO_MCP_JSON", tmp_path / "kiro-global-mcp.json")
         monkeypatch.setattr(agent, "_DEFAULT_KIRO_HOOKS_DIR", tmp_path / "no-hooks")
         monkeypatch.setattr(
-            "kiro_crew.apps.bridges._mcp_json_path", lambda: self.agents / "kirocrew.json"
+            "efm_go.apps.bridges._mcp_json_path", lambda: self.agents / "kirocrew.json"
         )
         monkeypatch.setattr(
-            "kiro_crew.kiro_cli.installed_kiro_cli_version",
+            "efm_go.kiro_cli.installed_kiro_cli_version",
             lambda: SPEC_PERMISSIONS_MIN_VERSION,
         )
 
@@ -779,7 +779,7 @@ def test_a_fork_refresh_keeps_the_shape(
     shape: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A private template copy keeps its settings through the governance refresh."""
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
 
     rig = _Rig(tmp_path, monkeypatch)
     cfg = KiroCrewConfig()
@@ -826,7 +826,7 @@ def test_the_guest_prompt_is_frozen() -> None:
 def test_the_guest_spec_follows_the_operator_model(
     configured: str, expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", tmp_path)
     cfg = KiroCrewConfig()
@@ -839,7 +839,7 @@ def test_the_guest_spec_follows_the_operator_model(
 def test_an_unreadable_config_gives_the_guest_auto(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     def _broken() -> None:
         raise RuntimeError("unreadable")

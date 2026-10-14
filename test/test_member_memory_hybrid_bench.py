@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from kiro_crew.eval.bench import member_v2
+from efm_go.eval.bench import member_v2
 
 
 def test_ranking_metrics_penalize_false_positives_missing_evidence_and_bad_order():

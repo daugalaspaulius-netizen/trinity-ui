@@ -47,16 +47,16 @@ from typing import Any
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import agent, agent_discovery
-from kiro_crew.agent_files import (
+from efm_go import agent, agent_discovery
+from efm_go.agent_files import (
     CONDUCTOR_AGENT_FILENAME,
     LEDGER_CONDUCTOR_AGENT_FILENAME,
     PIPELINE_CONDUCTOR_AGENT_FILENAME,
     SECURITY_CONDUCTOR_AGENT_FILENAME,
 )
-from kiro_crew.agent_materialization import conductor_agents
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
-from kiro_crew.platform import governance
+from efm_go.agent_materialization import conductor_agents
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.platform import governance
 
 #: (spec name, filename, installer) for the three installers; the ledger alias shares
 #: ``_conductor_spec`` with the goal conductor and gets its own test below.
@@ -143,7 +143,7 @@ def agents_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A private agents directory, an ungoverned ceiling, and an accepting kiro-cli."""
     monkeypatch.setattr(agent, "kiro_agents_dir_path", lambda: tmp_path)
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: SPEC_PERMISSIONS_MIN_VERSION
+        "efm_go.kiro_cli.installed_kiro_cli_version", lambda: SPEC_PERMISSIONS_MIN_VERSION
     )
     monkeypatch.setattr(
         agent,
@@ -759,7 +759,7 @@ class TestUserGrantsSurviveRegeneration:
 
         with caplog.at_level(logging.WARNING), monkeypatch.context() as scoped:
             if breakage == "cap":
-                scoped.setattr("kiro_crew.hooks.MAX_FILE_BYTES", 64)
+                scoped.setattr("efm_go.hooks.MAX_FILE_BYTES", 64)
             wrote = install()
 
         data = _read(agents_dir, filename)
@@ -1129,7 +1129,7 @@ class TestASpecLeftInPlaceHoldsTheCeilingMemo:
         default home is never resolved (conftest's ratchet fails a test that does)."""
         from test_agent_home_isolation import _durable_checkout, _pretend_target_is_shared
 
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         home = tmp_path / "home"
         home.mkdir()
@@ -1233,7 +1233,7 @@ class TestASpecLeftInPlaceHoldsTheCeilingMemo:
     ) -> None:
         """The hook reads both signals: a refusal OR a hold leaves the memo behind;
         only a rebuild that wrote and held nothing advances it."""
-        from kiro_crew.platform.context import governance_generation
+        from efm_go.platform.context import governance_generation
 
         outcomes = iter([(False, False), (True, True), (True, False)])
 
@@ -1264,7 +1264,7 @@ class TestASpecLeftInPlaceHoldsTheCeilingMemo:
         again -- the list is never re-derived for the process lifetime. The baseline
         must stay unseeded while the last rebuild held, so the first poll retries; it
         advances only once the spec is rewritten."""
-        from kiro_crew.platform.context import governance_generation
+        from efm_go.platform.context import governance_generation
 
         shared = self._shared_home_rig(monkeypatch, tmp_path)
         agent.rebuild_agent_config()
@@ -1322,7 +1322,7 @@ class TestASpecLeftInPlaceHoldsTheCeilingMemo:
         retries it: a no-op while nothing is held, one reporting rebuild when
         something is, the hold standing while the failure does, and the memo clearing
         only once every spec is written."""
-        from kiro_crew.platform import policy_distribution
+        from efm_go.platform import policy_distribution
 
         shared = self._shared_home_rig(monkeypatch, tmp_path)
         agent.rebuild_agent_config()
@@ -1382,7 +1382,7 @@ class TestASpecLeftInPlaceHoldsTheCeilingMemo:
         loop that already hosts the scratch, work-root and session-dir sweeps rather
         than a scheduler of its own -- first in the wake, off the event loop, and
         from nowhere else: no second timer, no thread."""
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         source = Path(gateway.__file__).read_text(encoding="utf-8")
         wake = source.index("async def _run_agent_scratch_sweep()")

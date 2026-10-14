@@ -19,8 +19,8 @@ import re
 
 import pytest
 
-from kiro_crew.cloud.fargate import taskdef as td
-from kiro_crew.cloud.fargate.identity import DocumentRefused, SecretRef
+from efm_go.cloud.fargate import taskdef as td
+from efm_go.cloud.fargate.identity import DocumentRefused, SecretRef
 
 ACCOUNT = "123456789012"
 REGION = "us-east-1"

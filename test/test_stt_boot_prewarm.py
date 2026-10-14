@@ -21,7 +21,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.dashboard import server as server_mod
+from efm_go.dashboard import server as server_mod
 
 
 @pytest.fixture
@@ -50,14 +50,14 @@ def warm(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(server_mod, "_import_stt_engine", _import)
     # Pinned so the memory gate is deterministic rather than a property of whatever
     # host runs the suite. Generous by default; the gate's own cases override it.
-    monkeypatch.setattr("kiro_crew.subagent._available_memory_gb", lambda: 62.5)
+    monkeypatch.setattr("efm_go.subagent._available_memory_gb", lambda: 62.5)
     return cfg, calls
 
 
 def _patch_stt(monkeypatch: pytest.MonkeyPatch, calls: dict, *, present: bool, ok: bool = True):
     """Stand in for the two lazily-imported modules the prewarm reaches."""
-    from kiro_crew.stt import models as stt_models
-    from kiro_crew.stt import session as stt_session
+    from efm_go.stt import models as stt_models
+    from efm_go.stt import session as stt_session
 
     monkeypatch.setattr(stt_models, "is_present", lambda model: present)
 
@@ -65,7 +65,7 @@ def _patch_stt(monkeypatch: pytest.MonkeyPatch, calls: dict, *, present: bool, o
         calls["prewarm"].append((model_name, language))
         return MagicMock(ok=ok, detail="unavailable")
 
-    # The SUBMODULE, never the package. `kiro_crew/stt/__init__.py` resolves its
+    # The SUBMODULE, never the package. `efm_go/stt/__init__.py` resolves its
     # public names through a PEP 562 `__getattr__`, and its own docstring spells out
     # what patching the package does: `monkeypatch.setattr(stt, "prewarm", ...)`
     # leaves the original behind as a REAL attribute on teardown, which from then on
@@ -166,12 +166,12 @@ class TestTheBootPrewarmRefrains:
         pointer-down prewarm still covers the case.
         """
         cfg, calls = warm
-        import kiro_crew.dashboard.server as server_mod
+        import efm_go.dashboard.server as server_mod
 
         _patch_stt(monkeypatch, calls, present=True)
         # The reviewer's actual case: the 1.6 GB model on a machine with 2 GB free.
         cfg.stt.model = "large-v3-turbo"
-        monkeypatch.setattr("kiro_crew.subagent._available_memory_gb", lambda: 1.95)
+        monkeypatch.setattr("efm_go.subagent._available_memory_gb", lambda: 1.95)
         await server_mod._stt_startup_prewarm()
         assert calls["prewarm"] == []
 
@@ -189,12 +189,12 @@ class TestTheBootPrewarmRefrains:
         headroom. Here the host says 64 GB and the cgroup says 1 GB: no warm.
         """
         cfg, calls = warm
-        import kiro_crew.dashboard.server as server_mod
+        import efm_go.dashboard.server as server_mod
 
         _patch_stt(monkeypatch, calls, present=True)
         cfg.stt.model = "large-v3-turbo"
         monkeypatch.setattr(server_mod.platform_compat, "host_available_mib", lambda: 64_000)
-        monkeypatch.setattr("kiro_crew.subagent._available_memory_gb", lambda: 1.0)
+        monkeypatch.setattr("efm_go.subagent._available_memory_gb", lambda: 1.0)
         await server_mod._stt_startup_prewarm()
         assert calls["prewarm"] == []
 
@@ -207,10 +207,10 @@ class TestTheBootPrewarmRefrains:
         Same direction as every other gate here: withhold unless sure.
         """
         cfg, calls = warm
-        import kiro_crew.dashboard.server as server_mod
+        import efm_go.dashboard.server as server_mod
 
         _patch_stt(monkeypatch, calls, present=True)
-        monkeypatch.setattr("kiro_crew.subagent._available_memory_gb", lambda: -1.0)
+        monkeypatch.setattr("efm_go.subagent._available_memory_gb", lambda: -1.0)
         await server_mod._stt_startup_prewarm()
         assert calls["prewarm"] == []
 

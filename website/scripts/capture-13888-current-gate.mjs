@@ -15,7 +15,7 @@ mkdirSync(out, { recursive: true })
 const status = {
   platform: 'Linux', installed: false, authenticated: false, ready: false,
   initial_setup_complete: false, repair_required: false, bundled_cli: false,
-  docs_url: 'https://kiro.dev/cli/', login_command: 'kiro-cli login',
+  docs_url: 'https://efmleads.com/cli/', login_command: 'kiro-cli login',
   sso_login_command: 'kiro-cli login --use-device-flow --license pro',
   setup_allowed: true, sandbox_unavailable: false, sandbox_backend_available: true,
   sandbox_failure_kind: '', sandbox_detail: '', sandbox_remedy: '',

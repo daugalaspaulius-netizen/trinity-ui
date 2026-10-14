@@ -36,11 +36,11 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.builtins.auto_improvement.backend import (
+from efm_go.apps.builtins.auto_improvement.backend import (
     clone_setup,
 )
-from kiro_crew.apps.builtins.auto_improvement.backend import commit as commit_mod
-from kiro_crew.apps.builtins.auto_improvement.backend import (
+from efm_go.apps.builtins.auto_improvement.backend import commit as commit_mod
+from efm_go.apps.builtins.auto_improvement.backend import (
     deps,
     ledger_admin,
     pr_checks,

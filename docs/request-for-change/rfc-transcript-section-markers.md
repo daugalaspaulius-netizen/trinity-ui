@@ -24,7 +24,7 @@ superseded-by: []
   this one adds a row, that one changes how rows are written),
   `rfc-tool-derived-diff-cards.md` (the nearest precedent for promoting a
   transcript-derived affordance into the dashboard),
-  [#6853](https://github.com/kirodotdev/KiroCrew/pull/6853) (merged — exposes
+  [#6853](https://efmleads.com/pull/6853) (merged — exposes
   `reset_conversation` as a boundary-deferred session directive; the context-side
   counterpart to this RFC's view-side marker, see §2.3).
 
@@ -93,7 +93,7 @@ answers 409 on four guards: `provider.has_active_turn()`
 The two compose rather than compete: **mark the section for the view, reset the
 conversation for the context.**
 
-That pairing is not hypothetical. [#6853](https://github.com/kirodotdev/KiroCrew/pull/6853)
+That pairing is not hypothetical. [#6853](https://efmleads.com/pull/6853)
 has landed on `main`, adding `reset_conversation` as a session directive and MCP
 tool, and it reaches the effect the four guards above block by **queuing the
 discard for a later turn boundary** rather than applying it inline — the same
@@ -250,7 +250,7 @@ already call it (`chat_runner.py:3988`, `:4406`; `chat_orchestrator.py:244`,
 `:839`). **Reuse it; do not add a second notion of "held".**
 
 That is worth stating precisely, because a second one already exists:
-[#6853](https://github.com/kirodotdev/KiroCrew/pull/6853) defers its discard
+[#6853](https://efmleads.com/pull/6853) defers its discard
 through `slot._pending_discard_conversation_key`, consumed at a boundary in
 `chat_runner.py`, not through `_deferred_notes`. The two are not obviously
 mergeable — one holds a row to append, the other a teardown to perform, and they
@@ -665,7 +665,7 @@ marker would vanish on one of the two write paths.
    derive-from-transcript sufficient without a user-facing switch?
 8. **Should the two turn-boundary mechanisms converge?** A marker would ride the
    `/note` deferral (`_deferred_notes`, flushed by `flush_deferred_notes`), while
-   [#6853](https://github.com/kirodotdev/KiroCrew/pull/6853) introduces a second
+   [#6853](https://efmleads.com/pull/6853) introduces a second
    boundary path (`slot._pending_discard_conversation_key`, consumed in
    `chat_runner.py`) that additionally waits on sub-agents. If a marker lands
    there are two answers to "what happens at a turn boundary", which is the kind

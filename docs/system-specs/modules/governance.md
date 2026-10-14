@@ -1,6 +1,6 @@
 # Governance Model (two-level Policy ∩ Profile)
 
-The `kiro_crew.platform.governance` + `kiro_crew.platform.governance_profiles`
+The `efm_go.platform.governance` + `efm_go.platform.governance_profiles`
 modules implement Kiro Crew's **two-level security governance model**. Governance
 is resolved by a single rule — *the tightest boundary wins*:
 
@@ -202,7 +202,7 @@ rollback lever for a bad central document. That made the enterprise ceiling
 advisory: any account that can set an environment variable could point it at a
 permissive file and the fleet's ceiling never bound.
 
-A time-boxed local override (a dated `break_glass` grant an authority document could issue to a lower tier) was designed for this change and **withdrawn before merge**: a channel by which a local document outranks the fleet ceiling is the override this ladder exists to remove, and the reviewed design carried its own expiry-handling and cache-trust defects. Recovery from a bad central push is by re-publishing a good document at the source. The override is tracked as the follow-up issue [#9106](https://github.com/kirodotdev/KiroCrew/issues/9106), not shipped here.
+A time-boxed local override (a dated `break_glass` grant an authority document could issue to a lower tier) was designed for this change and **withdrawn before merge**: a channel by which a local document outranks the fleet ceiling is the override this ladder exists to remove, and the reviewed design carried its own expiry-handling and cache-trust defects. Recovery from a bad central push is by re-publishing a good document at the source. The override is tracked as the follow-up issue [#9106](https://efmleads.com/issues/9106), not shipped here.
 
 **The inversion announces itself once.** An upgraded fleet whose runbook still reads
 "set `KIROCREW_SECURITY_POLICY` to roll back" would otherwise learn mid-incident that the
@@ -265,7 +265,7 @@ pins ride in the policy file for it:
     floor with nothing newer, or with a diverged checkout that a reset would
     strip of local commits, it notifies and refreshes the badge instead of
     resetting to every new upstream commit, released or not
-    ([#15796](https://github.com/kirodotdev/KiroCrew/issues/15796)). A no-op
+    ([#15796](https://efmleads.com/issues/15796)). A no-op
     apply (the required code already on disk) leaves a restart pending without
     arming a reload. A non-primary branch never applies, floor or not.
   - **The `cli.sh` managed venv** re-runs the installer when the feed has a
@@ -279,7 +279,7 @@ pins ride in the policy file for it:
     floor only makes the update-found prompt undismissable, and with it on (the
     default) the floor has no effect.
   - A mandatory apply waits for idle like any other
-    ([configuration.md → Updates](../../../src/kiro_crew/docs/configuration.md#when-the-gateway-checks))
+    ([configuration.md → Updates](../../../src/efm_go/docs/configuration.md#when-the-gateway-checks))
     and is never forced: the grace period (`_MANDATORY_UPDATE_MAX_DEFER_SECS`)
     only logs.
 - **`check_command`** / **`apply_command`** — select the command update
@@ -713,7 +713,7 @@ repoint rule trusts, so a tear could hand a repointed host the retired endpoint'
 under the new endpoint's name. A mismatch reads as no cache at all, and the caller
 fetches. Metadata written by a build without the field is still accepted, so an existing
 cache does not read as torn. Both are written through the shared
-[`atomic_write`](../../../src/kiro_crew/atomic_write.py) — never a hand-rolled temp +
+[`atomic_write`](../../../src/efm_go/atomic_write.py) — never a hand-rolled temp +
 rename, which is how earlier writers here lost the Windows rename retry — and
 document-before-metadata, so a process killed mid-write leaves a consistent pair or a
 new document with old metadata, never metadata promising a document that is not
@@ -1829,7 +1829,7 @@ read-your-writes should add it deliberately, with its own tests.
 > themselves sit on the sensitive-path floor (`mcp-apps` in
 > `security._SENSITIVE_HOME_DIRS`) so the agent cannot harvest them.
 > Remaining Plane A parity refinements are tracked in
-> [issue #418](https://github.com/kirodotdev/KiroCrew/issues/418) — see
+> [issue #418](https://efmleads.com/issues/418) — see
 > [mcp-apps.md](mcp-apps.md).
 
 - **Plane A — the host gate** (`HookManager.on_tool_call`, the primary
@@ -2411,7 +2411,7 @@ denials leave the same forensic trail.
 - **Windows has no machine-policy managed tier today, so the central ceiling is
   advisory against a local account.** There is no machine-scoped policy pin on
   Windows, so `resolve_distribution`
-  ([`src/kiro_crew/platform/policy_distribution.py`](../../../src/kiro_crew/platform/policy_distribution.py))
+  ([`src/efm_go/platform/policy_distribution.py`](../../../src/efm_go/platform/policy_distribution.py))
   lets a per-setting environment override stand: a standard user can set the
   `KIROCREW_POLICY_URL` environment variable to a document of their own and
   replace the whole central rung. Read the Windows guidance accordingly —
@@ -2636,7 +2636,7 @@ enterprise POLICY can force-disable **installed-pack persona injection** —
 the scope this row enforces today. (It does NOT gate L2 asset serving —
 overlays/topbar/audio keep working under a denying policy; if wholesale L2
 disablement is wanted it will be its own row or an extension of this one,
-tracked with kirodotdev/KiroCrew#312.) The decision is consulted at the
+tracked with efmleads.com#312.) The decision is consulted at the
 injection site
 (`chat_runner.py`, via `governance_permits("capabilities.theme_persona",
 "", session_key=...)`); a denying policy skips injection silently (info log).
@@ -2682,7 +2682,7 @@ above — while a default-off would make every installed persona silently dead
 on arrival. The considered stronger alternatives (server-recorded grants,
 default-off until a headless consent story exists) were explicitly declined
 for v1; server-side grant persistence remains the optional half of
-kirodotdev/KiroCrew#312 and MAY tighten the model later without breaking this
+efmleads.com#312 and MAY tighten the model later without breaking this
 contract (a stricter server is backward-compatible with consenting clients).
 **Revisit trigger:** #312 MUST be revisited before any persona-scope
 expansion (longer length bound, per-turn injection, or richer pack tiers) —
@@ -3137,7 +3137,7 @@ keep. The wire vocabulary is therefore owned in one place rather than translated
 at each reader.
 
 **Additive over a floor — the semantics ruling that unblocked
-[issue #6622](https://github.com/kirodotdev/KiroCrew/issues/6622).**
+[issue #6622](https://efmleads.com/issues/6622).**
 
 ```json
 {"agent_backend": {"mode": "allow", "allow": ["claude"]}}

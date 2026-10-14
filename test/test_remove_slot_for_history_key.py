@@ -15,9 +15,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import web
 
-from kiro_crew import cron as cron_module
-from kiro_crew import session_ledger
-from kiro_crew.cron import (
+from efm_go import cron as cron_module
+from efm_go import session_ledger
+from efm_go.cron import (
     CronService,
     CronStoreBusy,
     CronStoreUnreadable,
@@ -25,16 +25,16 @@ from kiro_crew.cron import (
     cron_owner_matches,
     cron_session_key_is_stable,
 )
-from kiro_crew.dashboard import chat_handlers
-from kiro_crew.dashboard.handlers import (
+from efm_go.dashboard import chat_handlers
+from efm_go.dashboard.handlers import (
     _remove_slot_for_history_key as _remove_slot_for_history_key_impl,
 )
-from kiro_crew.dashboard.handlers import (
+from efm_go.dashboard.handlers import (
     api_session_delete,
     api_sessions_clear,
 )
-from kiro_crew.dashboard.handlers import sessions as sessions_module
-from kiro_crew.dashboard.handlers.sessions import (
+from efm_go.dashboard.handlers import sessions as sessions_module
+from efm_go.dashboard.handlers.sessions import (
     _CRON_RELEASE_ATTEMPTS,
     CRON_OWNERSHIP_UNKNOWN_CODE,
     CRON_STORE_BUSY_CODE,
@@ -45,7 +45,7 @@ from kiro_crew.dashboard.handlers.sessions import (
     _HistoryDeleteClaim,
     _resolve_history_delete_claim,
 )
-from kiro_crew.history import ConversationLog, HistoryLockTimeout
+from efm_go.history import ConversationLog, HistoryLockTimeout
 
 
 class _LedgerExclusionError(RuntimeError):
@@ -1743,9 +1743,9 @@ class TestAChildCannotBeBornUnderADeadParent:
         self, tmp_path, monkeypatch, append_path
     ):
         """A late child keeps its creator's captured memory after becoming ownerless."""
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-        from kiro_crew.execution_context import bind_session_execution, execution_from_record
-        from kiro_crew.memory_stores import provision_member_memory
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.execution_context import bind_session_execution, execution_from_record
+        from efm_go.memory_stores import provision_member_memory
 
         config = KiroCrewConfig()
         config.agents["writer"] = KiroCrewAgentConfig(kiro_agent="kirocrew")
@@ -2806,7 +2806,7 @@ class TestTheOwnerSweepMustReadTheStoreStrictly:
         cross-process contention a CLI ``cron adopt`` or a large atomic save
         produces, not a patched-out lock.
         """
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         holder = (base_dir / ".crons.lock").open("w")
         platform_compat.acquire_lock(holder.fileno(), exclusive=True)
@@ -3232,7 +3232,7 @@ class TestSessionLedgerOnPermanentDelete:
         ledger tree. A fixture with no slot is a unit the funnel must refuse, which
         is what the two tests below use it for.
         """
-        from kiro_crew import crew_log as lg
+        from efm_go import crew_log as lg
 
         return lg.CrewLog.create(
             lg.KIND_SESSION, session_id, owner="default", agent="kirocrew", slot=slot
@@ -3240,7 +3240,7 @@ class TestSessionLedgerOnPermanentDelete:
 
     @staticmethod
     def _exists(session_id: str) -> bool:
-        from kiro_crew import crew_log as lg
+        from efm_go import crew_log as lg
 
         return lg.CrewLog.exists(lg.KIND_SESSION, session_id)
 
@@ -3301,10 +3301,10 @@ class TestSessionLedgerOnPermanentDelete:
         exactly how the rest of this class was green while the funnel could not
         remove a real one.
         """
-        from kiro_crew import crew_log as lg
-        from kiro_crew.crew_log import emit
-        from kiro_crew.crew_log.store import REMOVE_OWNED, remove_unit
-        from kiro_crew.metrics.sessions import END_REASON_DESTROYED
+        from efm_go import crew_log as lg
+        from efm_go.crew_log import emit
+        from efm_go.crew_log.store import REMOVE_OWNED, remove_unit
+        from efm_go.metrics.sessions import END_REASON_DESTROYED
 
         _guard_work_ledger_cleanup(monkeypatch)
         monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -3352,8 +3352,8 @@ class TestSessionLedgerOnPermanentDelete:
         assertion would pass either way. Refusing the removal is the one reading
         where the two diverge.
         """
-        from kiro_crew.crew_log import emit
-        from kiro_crew.crew_log import store as crew_log_store
+        from efm_go.crew_log import emit
+        from efm_go.crew_log import store as crew_log_store
 
         _guard_work_ledger_cleanup(monkeypatch)
         monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -3408,7 +3408,7 @@ class TestSessionLedgerOnPermanentDelete:
         landed.
         """
         _guard_work_ledger_cleanup(monkeypatch)
-        from kiro_crew import crew_log as lg
+        from efm_go import crew_log as lg
 
         lg.CrewLog.create(lg.KIND_SESSION, "acp-slotless", owner="default", agent="kirocrew")
         slot = _make_slot("dashboard_chat-1-100")
@@ -3594,7 +3594,7 @@ class TestSessionLedgerOnPermanentDelete:
         state = _make_state({"dashboard_chat-1-100": slot})
         state.sessions.resumable_sid = MagicMock(return_value="acp-explodes")
 
-        from kiro_crew.crew_log import store as crew_log_store
+        from efm_go.crew_log import store as crew_log_store
 
         def _boom(*_args, **_kwargs):
             raise RuntimeError("ledger tree unreadable")
@@ -3617,7 +3617,7 @@ class TestEveryCrewLogOfTheConversationGoes:
     def _unit(session_id: str, slot: str, *, closed: bool = True) -> None:
         from crew_log_type_helpers import minimal_data
 
-        from kiro_crew import crew_log as lg
+        from efm_go import crew_log as lg
 
         log = lg.CrewLog.create(
             lg.KIND_SESSION, session_id, owner="default", agent="kirocrew", slot=slot
@@ -3682,7 +3682,7 @@ class TestEveryCrewLogOfTheConversationGoes:
     def test_a_proved_unit_that_resumes_before_its_removal_is_kept(self, monkeypatch):
         """The map then names the deleted row's own key and the lease is free between
         turns, so only a fresh read of what is running tells it from a finished unit."""
-        from kiro_crew.crew_log import store as crew_log_store
+        from efm_go.crew_log import store as crew_log_store
 
         _guard_work_ledger_cleanup(monkeypatch)
         self._unit("acp-resumed", "chat-7")
@@ -3709,8 +3709,8 @@ class TestEveryCrewLogOfTheConversationGoes:
 
     def test_a_proved_unit_the_trash_still_holds_is_kept(self, monkeypatch):
         """A unit a failed restore left live and held belongs to a session in the trash."""
-        from kiro_crew import crew_log as lg
-        from kiro_crew.crew_log.store import hold_unit
+        from efm_go import crew_log as lg
+        from efm_go.crew_log.store import hold_unit
 
         _guard_work_ledger_cleanup(monkeypatch)
         self._unit("acp-trashed", "chat-7")
@@ -3764,7 +3764,7 @@ class TestAKeptCrewLogIsNotLeftExcluded:
 
     @staticmethod
     def _run(monkeypatch, *, status=None, raises=False, mapped_after_exclusion=False, held=False):
-        from kiro_crew.crew_log import store as crew_log_store
+        from efm_go.crew_log import store as crew_log_store
 
         excluded: list[tuple[str, tuple[str, ...]]] = []
         given_back: list[tuple[str, tuple[str, ...]]] = []
@@ -3836,7 +3836,7 @@ class TestAKeptCrewLogIsNotLeftExcluded:
 
     def test_a_later_slot_s_failed_exclusion_gives_back_the_earlier_one(self, monkeypatch):
         """Nothing is removed when any exclusion fails, so none of them may stand."""
-        from kiro_crew.crew_log import store as crew_log_store
+        from efm_go.crew_log import store as crew_log_store
 
         given_back: list = []
 
@@ -3909,7 +3909,7 @@ class TestTheExclusionMustNotCatchASuccessorUnit:
             state.sessions.session_generation.return_value = 2
             return ("acp-being-deleted", "acp-successor")
 
-        monkeypatch.setattr("kiro_crew.crew_log.store.session_units_for_slot", listing_with_a_reset)
+        monkeypatch.setattr("efm_go.crew_log.store.session_units_for_slot", listing_with_a_reset)
 
         with pytest.raises(_LedgerExclusionError):
             _exclude_slot_units(state, session_ledger, self._claim())
@@ -3922,7 +3922,7 @@ class TestTheExclusionMustNotCatchASuccessorUnit:
         session_ledger = MagicMock()
         session_ledger.LedgerExclusionError = _LedgerExclusionError
         monkeypatch.setattr(
-            "kiro_crew.crew_log.store.session_units_for_slot",
+            "efm_go.crew_log.store.session_units_for_slot",
             lambda slot_key, **_kwargs: ("acp-being-deleted", "acp-earlier"),
         )
 
@@ -3934,8 +3934,8 @@ class TestTheExclusionMustNotCatchASuccessorUnit:
 
     def test_an_established_unit_whose_header_will_not_read_refuses_the_delete(self, monkeypatch):
         """Left out of a short listing, the unit would stay foldable on the reused key."""
-        from kiro_crew import crew_log as lg
-        from kiro_crew.crew_log import store as crew_log_store
+        from efm_go import crew_log as lg
+        from efm_go.crew_log import store as crew_log_store
 
         TestEveryCrewLogOfTheConversationGoes._unit("acp-being-deleted", "chat-1")
         TestEveryCrewLogOfTheConversationGoes._unit("acp-unreadable", "chat-1")

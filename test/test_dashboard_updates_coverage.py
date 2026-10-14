@@ -36,9 +36,9 @@ import pytest
 from aiohttp import web
 from aiohttp.client_exceptions import ClientConnectionResetError
 
-from kiro_crew.config.loader import ConfigReadError
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.platform import update_layout
+from efm_go.config.loader import ConfigReadError
+from efm_go.dashboard.handlers import updates
+from efm_go.platform import update_layout
 
 
 @pytest.fixture(autouse=True)
@@ -185,7 +185,7 @@ def _git_proj(monkeypatch, tmp_path) -> str:
     (git_dir / "refs").mkdir()
     (git_dir / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
     monkeypatch.setattr(
-        "kiro_crew.platform.update_capability.running_from_checkout",
+        "efm_go.platform.update_capability.running_from_checkout",
         lambda root, **kw: True,
     )
     return str(proj)
@@ -198,7 +198,7 @@ def _git_capability():
     under test do not also depend on a real git binary answering about this
     host's own tree.
     """
-    from kiro_crew.platform import update_capability
+    from efm_go.platform import update_capability
 
     return update_capability.UpdateCapability(
         supported=True,
@@ -347,7 +347,7 @@ class TestGitCheckoutFailurePaths:
         self._assert_failed_check(updates.ERR_GIT_READ_FAILED)
         # The version is read at the REMOTE sha when the two differ, not at HEAD:
         # comparing HEAD against itself can never detect an update.
-        assert argv[-1] == ("git", "show", "bbb222:src/kiro_crew/__init__.py")
+        assert argv[-1] == ("git", "show", "bbb222:src/efm_go/__init__.py")
 
     @pytest.mark.asyncio
     async def test_a_version_that_cannot_be_parsed_is_reported_as_such(self, monkeypatch, tmp_path):
@@ -521,7 +521,7 @@ class TestAutoUpdateToggle:
         back, so the write is refused with the reason, like the other
         overlay-owned settings.
         """
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         local = tmp_path / "config.local.json"
         local.write_text(json.dumps({"auto_update": True}), encoding="utf-8")
@@ -587,7 +587,7 @@ class TestAutoUpdateToggle:
     )
     def test_an_unreadable_overlay_reports_not_pinned(self, monkeypatch, tmp_path, raw):
         """Best-effort, like the loader: a bad overlay must not 500 a committed write."""
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         local = tmp_path / "config.local.json"
         local.write_bytes(raw)
@@ -596,7 +596,7 @@ class TestAutoUpdateToggle:
         assert loader.overlay_pins("auto_update") is False
 
     def test_a_nested_key_is_found_by_path(self, monkeypatch, tmp_path):
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         local = tmp_path / "config.local.json"
         local.write_text(json.dumps({"telemetry": {"enabled": False}}), encoding="utf-8")
@@ -696,7 +696,7 @@ class TestPipInstallFailureReport:
 
     @pytest.mark.asyncio
     async def test_a_huge_stderr_is_truncated_with_a_marker(self, monkeypatch):
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         state = MagicMock()
 
@@ -733,7 +733,7 @@ class TestApplyRefusals:
         """An apply started now would be cut off mid-write by the shutdown."""
         from types import SimpleNamespace
 
-        from kiro_crew.platform import update_provider
+        from efm_go.platform import update_provider
 
         monkeypatch.setattr(updates, "shutdown_event", SimpleNamespace(is_set=lambda: True))
         applied = AsyncMock()
@@ -807,7 +807,7 @@ class TestApplyRefusals:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", _git_proj(monkeypatch, tmp_path))
         monkeypatch.setattr(updates, "resolve_remote_url", lambda _p: "")
         monkeypatch.setattr(updates, "update_blocked_reason", lambda _u: "")
-        _sequence_procs(monkeypatch, [_FakeProc(out=b" M src/kiro_crew/cli.py\n")])
+        _sequence_procs(monkeypatch, [_FakeProc(out=b" M src/efm_go/cli.py\n")])
 
         req = _request({})
         resp = await updates.api_update_apply(req)
@@ -827,7 +827,7 @@ class TestApplyRefusals:
         -- a state the running gateway then serves from memory while every
         later attempt repeats the pull and the refusal.
         """
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", _git_proj(monkeypatch, tmp_path))
         monkeypatch.setattr(updates, "resolve_remote_url", lambda _p: "")
@@ -868,7 +868,7 @@ class TestApplyRefusals:
     @pytest.mark.asyncio
     async def test_a_floor_git_cannot_read_refuses_rather_than_passing(self, monkeypatch, tmp_path):
         """ "Could not read the floor" is not "no floor": the pinned revision stays out."""
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", _git_proj(monkeypatch, tmp_path))
         monkeypatch.setattr(updates, "resolve_remote_url", lambda _p: "")
@@ -897,7 +897,7 @@ class TestApplyRefusals:
     @pytest.mark.asyncio
     async def test_an_unresolvable_upstream_pin_is_refused(self, monkeypatch, tmp_path):
         """rev-parse @{u} failing means nothing to floor-check and nothing to land on."""
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", _git_proj(monkeypatch, tmp_path))
         monkeypatch.setattr(updates, "resolve_remote_url", lambda _p: "")
@@ -944,7 +944,7 @@ class TestApplyRefusals:
 
     async def _drive_worker(self, monkeypatch, tmp_path, procs: list[_FakeProc | OSError]):
         """Accept the request, then await the background worker it scheduled."""
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", _git_proj(monkeypatch, tmp_path))
         monkeypatch.setattr(updates, "resolve_remote_url", lambda _p: "")
@@ -1023,7 +1023,7 @@ class TestApplyRefusals:
     @pytest.mark.asyncio
     async def test_the_worker_owns_the_bundle_gap(self, monkeypatch, tmp_path):
         """The build can empty the served bundle, so the watchdog must see an owner."""
-        from kiro_crew import update_ownership
+        from efm_go import update_ownership
 
         seen = []
 
@@ -1045,7 +1045,7 @@ class TestApplyRefusals:
     @pytest.mark.asyncio
     async def test_the_worker_hands_the_gap_to_the_restart(self, monkeypatch, tmp_path):
         """No update step is still open around the restart, so its own maximum binds."""
-        from kiro_crew import update_ownership
+        from efm_go import update_ownership
 
         open_at_restart = []
 
@@ -1063,7 +1063,7 @@ class TestApplyRefusals:
 
     @pytest.mark.asyncio
     async def test_a_failed_reinstall_refuses_the_watchdogs_relaunch(self, monkeypatch, tmp_path):
-        from kiro_crew import update_ownership
+        from efm_go import update_ownership
 
         monkeypatch.setattr(updates, "_build_frontend", AsyncMock())
         monkeypatch.setattr(updates, "_venv_pip_install", AsyncMock(return_value=False))
@@ -1075,7 +1075,7 @@ class TestApplyRefusals:
     @pytest.mark.asyncio
     async def test_a_later_update_whose_merge_fails_keeps_the_refusal(self, monkeypatch, tmp_path):
         """The unsynced tree the refusal describes is still on disk."""
-        from kiro_crew import update_ownership
+        from efm_go import update_ownership
 
         update_ownership.refuse_restart("an earlier install did not complete")
 
@@ -1087,7 +1087,7 @@ class TestApplyRefusals:
     async def test_a_later_update_that_installs_its_tree_ends_the_refusal(
         self, monkeypatch, tmp_path
     ):
-        from kiro_crew import update_ownership
+        from efm_go import update_ownership
 
         update_ownership.refuse_restart("an earlier install did not complete")
         monkeypatch.setattr(updates, "_build_frontend", AsyncMock())
@@ -1101,7 +1101,7 @@ class TestApplyRefusals:
     @pytest.mark.asyncio
     async def test_a_merge_that_never_spawned_records_no_refusal(self, monkeypatch, tmp_path):
         """A fork failure wrote nothing to the checkout, so nothing describes a moved tree."""
-        from kiro_crew import update_ownership
+        from efm_go import update_ownership
 
         await self._drive_worker(
             monkeypatch, tmp_path, [BlockingIOError(11, "Resource temporarily unavailable")]
@@ -1114,7 +1114,7 @@ class TestApplyRefusals:
     async def test_an_update_that_raises_after_the_merge_refuses_the_relaunch(
         self, monkeypatch, tmp_path
     ):
-        from kiro_crew import update_ownership
+        from efm_go import update_ownership
 
         monkeypatch.setattr(
             updates, "_build_frontend", AsyncMock(side_effect=RuntimeError("vite crashed"))
@@ -1131,7 +1131,7 @@ class TestApplyRefusals:
         The overlay has no other way to leave the "updating" state, so a
         swallowed error strands the user on a spinner forever.
         """
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", _git_proj(monkeypatch, tmp_path))
         monkeypatch.setattr(updates, "resolve_remote_url", lambda _p: "")
@@ -1203,7 +1203,7 @@ class TestLogLevel:
 
     @pytest.fixture(autouse=True)
     def _restore_level(self):
-        root = logging.getLogger("kiro_crew")
+        root = logging.getLogger("efm_go")
         saved = root.level
         yield
         root.setLevel(saved)
@@ -1216,11 +1216,11 @@ class TestLogLevel:
     @pytest.mark.parametrize("level", ["TRACE", "", "verbose", "CRITICAL"])
     @pytest.mark.asyncio
     async def test_rejects_a_level_outside_the_map(self, level):
-        before = logging.getLogger("kiro_crew").level
+        before = logging.getLogger("efm_go").level
         resp = await updates.api_log_level(_request({"level": level}))
         assert resp.status == 400
         # A rejected level must not have been applied on the way to the refusal.
-        assert logging.getLogger("kiro_crew").level == before
+        assert logging.getLogger("efm_go").level == before
 
     @pytest.mark.asyncio
     async def test_applies_and_persists_a_valid_level_case_insensitively(self, monkeypatch):
@@ -1240,7 +1240,7 @@ class TestLogLevel:
         assert resp.status == 200
         payload = json.loads(resp.body.decode())
         assert payload == {"ok": True, "level": "WARNING", "persisted": True}
-        assert logging.getLogger("kiro_crew").level == logging.WARNING
+        assert logging.getLogger("efm_go").level == logging.WARNING
         assert saved == ["WARNING"]
 
     @pytest.mark.asyncio
@@ -1261,17 +1261,17 @@ class TestLogLevel:
         payload = json.loads(resp.body.decode())
         assert payload["ok"] is True
         assert payload["persisted"] is False
-        assert logging.getLogger("kiro_crew").level == logging.DEBUG
+        assert logging.getLogger("efm_go").level == logging.DEBUG
 
     @pytest.mark.asyncio
     async def test_the_getter_reports_the_live_level(self):
-        logging.getLogger("kiro_crew").setLevel(logging.ERROR)
+        logging.getLogger("efm_go").setLevel(logging.ERROR)
         resp = await updates.api_log_level_get(_request())
         assert json.loads(resp.body.decode()) == {"level": "ERROR"}
 
 
 def _record(msg: str = "hello", level: int = logging.INFO) -> logging.LogRecord:
-    return logging.LogRecord("kiro_crew.test", level, __file__, 1, msg, None, None)
+    return logging.LogRecord("efm_go.test", level, __file__, 1, msg, None, None)
 
 
 class TestQueueLogHandler:
@@ -1430,7 +1430,7 @@ class TestRingLogHandler:
         assert json.loads(ring[0])["msg"] == "during shutdown"
 
     def test_install_is_idempotent_and_attaches_exactly_one_handler(self, monkeypatch):
-        root = logging.getLogger("kiro_crew")
+        root = logging.getLogger("efm_go")
         monkeypatch.setattr(updates, "_log_ring_handler_installed", False)
         monkeypatch.setattr(updates, "_log_ring_handler", None)
         before = list(root.handlers)
@@ -1497,7 +1497,7 @@ class TestLogsStream:
         # The queue handler is only installed AFTER the replay, so an abort here
         # must not leave one attached to the logger.
         assert not any(
-            isinstance(h, updates._QueueLogHandler) for h in logging.getLogger("kiro_crew").handlers
+            isinstance(h, updates._QueueLogHandler) for h in logging.getLogger("efm_go").handlers
         )
 
     @pytest.mark.parametrize("raw", ["not-a-number", "", "1e5"])
@@ -1532,7 +1532,7 @@ class TestLogsStream:
         self, monkeypatch
     ):
         writes = _stub_stream(monkeypatch)
-        root = logging.getLogger("kiro_crew")
+        root = logging.getLogger("efm_go")
         before = len(root.handlers)
 
         task = asyncio.ensure_future(updates.api_logs(_request(query={"lines": "1"})))
@@ -1542,8 +1542,8 @@ class TestLogsStream:
                 break
         assert any(isinstance(h, updates._QueueLogHandler) for h in root.handlers)
 
-        logging.getLogger("kiro_crew.stream").warning("live one")
-        logging.getLogger("kiro_crew.stream").warning("live two")
+        logging.getLogger("efm_go.stream").warning("live one")
+        logging.getLogger("efm_go.stream").warning("live two")
         for _ in range(200):
             await asyncio.sleep(0.005)
             if len(writes) >= 2:
@@ -1608,7 +1608,7 @@ def test_neither_chat_message_door_builds_the_frame_by_hand() -> None:
     """
     from pathlib import Path
 
-    import kiro_crew
+    import efm_go
 
     def _branch(src: str) -> str:
         """The `chat_message` arm's body, up to the next sibling arm."""
@@ -1621,7 +1621,7 @@ def test_neither_chat_message_door_builds_the_frame_by_hand() -> None:
         ]
         return rest[: min(ends)] if ends else rest
 
-    root = Path(kiro_crew.__file__).parent
+    root = Path(efm_go.__file__).parent
     for rel in ("dashboard/state.py", "dashboard/handlers/updates.py"):
         branch = _branch((root / rel).read_text(encoding="utf-8"))
         assert "chat_message_frame(" in branch, (
@@ -1651,7 +1651,7 @@ class TestDashboardStream:
         # Seed it warm so the writer serves serializable counts without the
         # MagicMock state's count methods (which return non-serializable Mocks)
         # ever running.
-        from kiro_crew.dashboard import status_counts as sc
+        from efm_go.dashboard import status_counts as sc
 
         monkeypatch.setattr(sc, "_counts_cache", (0, 0))
         monkeypatch.setattr(sc, "_counts_cache_ts", time.monotonic())
@@ -1949,7 +1949,7 @@ class TestUpdateInfoAccessors:
         A second copy of the list is the drift this contract removed: the
         capability now answers for every stamp, including the Linux packages.
         """
-        from kiro_crew.platform import update_capability
+        from efm_go.platform import update_capability
 
         for stamp in ("dmg", "appimage", "deb", "rpm"):
             capability = update_capability.derive_capability(install_root="", dist=stamp)
@@ -1990,9 +1990,9 @@ class TestExternallyManagedCheck:
         Answering with a CLI verdict here would compare against the wrong version
         stream and then recommend an installer that does not apply to a bundle.
         """
-        from kiro_crew.platform import update_capability
+        from efm_go.platform import update_capability
 
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "dmg")
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "dmg")
         await updates._do_update_check()
         assert updates._update_info["managed_by"] == update_capability.MANAGED_BY_ELECTRON
         assert updates._update_info["can_apply"] is False
@@ -2033,7 +2033,7 @@ class TestExternallyManagedCheck:
             started.set()
             await release.wait()
 
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "wheel")
         monkeypatch.setattr(updates, "_check_release_feed", _count)
         leader = asyncio.create_task(updates._do_update_check())
         await asyncio.wait_for(started.wait(), timeout=1)
@@ -2056,23 +2056,23 @@ class TestAnUnexpectedCheckFailureKeepsTheInstallsShape:
 
     @pytest.mark.asyncio
     async def test_can_arm_and_the_effect_survive_the_failure(self, monkeypatch):
-        from kiro_crew.platform import update_capability, wheel_engine
+        from efm_go.platform import update_capability, wheel_engine
 
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(update_capability, "_source_checkout_root", lambda: None)
         monkeypatch.setattr(update_capability, "_runs_from_managed_venv", lambda: True)
         monkeypatch.setattr(update_capability, "_installer_runs_here", lambda: True)
-        monkeypatch.setattr("kiro_crew.platform_compat.trusted_system_bin", lambda _n: "/bin/sh")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.cdn_bases_are_safe", lambda: True)
+        monkeypatch.setattr("efm_go.platform_compat.trusted_system_bin", lambda _n: "/bin/sh")
+        monkeypatch.setattr("efm_go.platform.update_layout.cdn_bases_are_safe", lambda: True)
         monkeypatch.setattr(
-            "kiro_crew.platform.update_layout.cdn_bases", lambda: ("https://a", "https://b")
+            "efm_go.platform.update_layout.cdn_bases", lambda: ("https://a", "https://b")
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_blocked_reason", lambda _u: ""
+            "efm_go.platform.update_governance.update_blocked_reason", lambda _u: ""
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_required", lambda _v: False
+            "efm_go.platform.update_governance.update_required", lambda _v: False
         )
 
         def _boom():
@@ -2104,7 +2104,7 @@ class TestTheManualCheckRecordsTheEffect:
 
     @pytest.mark.asyncio
     async def test_the_check_derives_and_publishes_it(self, monkeypatch):
-        from kiro_crew.platform.update_capability import AutoUpdateEffect
+        from efm_go.platform.update_capability import AutoUpdateEffect
 
         monkeypatch.setattr(updates, "_auto_effect", None)
         monkeypatch.setattr(updates, "_auto_effect_task", None)

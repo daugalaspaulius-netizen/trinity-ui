@@ -23,9 +23,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.decisions.points import memory_recall as mr
-from kiro_crew.decisions.types import Answer
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go.decisions.points import memory_recall as mr
+from efm_go.decisions.types import Answer
+from efm_go.vector_memory import VectorMemoryStore
 
 # Stored vectors are unit vectors, so their dot product with this is exactly their
 # cosine similarity (the search path normalises the query).
@@ -125,7 +125,7 @@ def _answering(monkeypatch, verdict_of):
 
 @pytest.fixture
 def enabled(monkeypatch, tmp_path):
-    from kiro_crew.decisions import log as _log
+    from efm_go.decisions import log as _log
 
     monkeypatch.setattr(_log, "log_dir", lambda: tmp_path / "decisions")
     monkeypatch.setattr(mr.core, "is_enabled", lambda *a, **k: True)

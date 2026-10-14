@@ -27,10 +27,10 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.config import loader as L
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.sections import KiroCrewAgentConfig
-from kiro_crew.dashboard.handlers.core import (
+from efm_go.config import loader as L
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.sections import KiroCrewAgentConfig
+from efm_go.dashboard.handlers.core import (
     _AGENT_UNTRUSTED_TEXT_FIELDS,
     _SENSITIVE_MASK,
     _mask_agent_free_text,
@@ -63,7 +63,7 @@ def test_payload_preconditions_pin_the_redactor():
     Localizes a detector regression: without these, a redactor change makes the
     masking tests fail with no signal whether the rule or the detector moved.
     """
-    from kiro_crew.dashboard.handlers.discover import _redact_external
+    from efm_go.dashboard.handlers.discover import _redact_external
 
     assert _redact_external(_CRED_DESCRIPTION) != _CRED_DESCRIPTION
     assert _redact_external(_EXFIL_TRIGGERS) != _EXFIL_TRIGGERS
@@ -244,7 +244,7 @@ class TestConfigEndpointWire:
 
     @pytest.mark.asyncio
     async def test_get_response_masks_agent_free_text(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import core as core_mod
+        from efm_go.dashboard.handlers import core as core_mod
 
         _point_loader_at(tmp_path, monkeypatch, _seed_config())
         app = web.Application()
@@ -260,7 +260,7 @@ class TestConfigEndpointWire:
     @pytest.mark.asyncio
     async def test_patch_echo_masks_agent_free_text(self, tmp_path, monkeypatch):
         """The PATCH handler's config echo is the second response site."""
-        from kiro_crew.dashboard.handlers import api_kirocrew_config_patch
+        from efm_go.dashboard.handlers import api_kirocrew_config_patch
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(json.dumps(_seed_config()), encoding="utf-8")
@@ -268,7 +268,7 @@ class TestConfigEndpointWire:
         app.router.add_patch("/api/config/kirocrew", api_kirocrew_config_patch)
         app["state"] = SimpleNamespace(subagents=MagicMock(spec=["update_completion_keep"]))
         as_owner(app)
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg_path):
+        with patch("efm_go.config.loader.config_path", return_value=cfg_path):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.patch(
                     "/api/config/kirocrew", json={"path": "auto_update", "value": True}

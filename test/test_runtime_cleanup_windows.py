@@ -20,10 +20,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import platform_compat as pc
-from kiro_crew import session_pid
-from kiro_crew.acp import runtime
-from kiro_crew.acp.session_provider import AcpSessionProvider
+from efm_go import platform_compat as pc
+from efm_go import session_pid
+from efm_go.acp import runtime
+from efm_go.acp.session_provider import AcpSessionProvider
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="native Windows process trees")
 
@@ -130,7 +130,7 @@ async def _owned_tree(directory, *, depth=2, admitted=False):
     script = directory / "worker.py"
     script.write_text(_WORKER, encoding="utf-8")
     python = getattr(sys, "_base_executable", sys.executable)
-    from kiro_crew.sandbox import create_subprocess_limited
+    from efm_go.sandbox import create_subprocess_limited
 
     spawn = functools.partial(
         create_subprocess_limited if admitted else asyncio.create_subprocess_exec,
@@ -347,7 +347,7 @@ async def test_windows_owner_shutdown_reclaims_children_after_root_exit(tmp_path
 async def test_windows_direct_client_shutdown_reclaims_children_after_root_exit(
     tmp_path, monkeypatch
 ):
-    from kiro_crew.acp.client import AcpClient
+    from efm_go.acp.client import AcpClient
 
     monkeypatch.setattr(session_pid, "config_dir", lambda: tmp_path)
     async with _owned_tree(tmp_path / "client") as tree:
@@ -439,7 +439,7 @@ async def test_windows_failed_owner_drain_recovers_after_owner_drop(tmp_path, mo
 async def test_native_admission_and_owner_shutdown_refund_after_verified_drain(
     tmp_path, monkeypatch, direct_client
 ):
-    from kiro_crew.acp.client import AcpClient
+    from efm_go.acp.client import AcpClient
 
     monkeypatch.setattr(session_pid, "config_dir", lambda: tmp_path)
     monkeypatch.setattr(session_pid, "_PROTECTED_PIDS", set())
@@ -547,7 +547,7 @@ async def test_creation_failure_before_process_return_keeps_cleanup_ownership(
     """Actual factory/CPython transport; a denied kill cannot certify absence."""
     from asyncio import base_subprocess
 
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     k = creation_kernel
     k.mode[0] = failure
@@ -589,7 +589,7 @@ async def test_creation_failure_before_process_return_keeps_cleanup_ownership(
 
 @pytest.mark.asyncio
 async def test_precreation_failure_refunds_captured_factory(creation_kernel):
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     creation_kernel.mode[0] = "pre_create"
 
@@ -610,7 +610,7 @@ async def test_precreation_failure_refunds_captured_factory(creation_kernel):
 async def test_repeated_cancel_during_pipe_setup_keeps_creation_pin(monkeypatch, creation_kernel):
     from asyncio import base_subprocess
 
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     entered, release = asyncio.Event(), asyncio.Event()
     creation_kernel.mode[0] = "pipe_setup"

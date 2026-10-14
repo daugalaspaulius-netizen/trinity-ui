@@ -22,8 +22,8 @@ from pathlib import Path
 import pytest
 from source_corpus import parsed_candidates
 
-from kiro_crew import image_artifacts
-from kiro_crew.messaging.outbound_files import (
+from efm_go import image_artifacts
+from efm_go.messaging.outbound_files import (
     REASON_MISSING,
     REASON_NOT_ABSOLUTE,
     REASON_NOT_RASTER,
@@ -46,8 +46,8 @@ from kiro_crew.messaging.outbound_files import (
     strip_url_syntax,
     unescape_md,
 )
-from kiro_crew.messaging.raster import SNIFF_BYTES, sniff_raster_mime
-from kiro_crew.messaging.split import iter_fence_spans
+from efm_go.messaging.raster import SNIFF_BYTES, sniff_raster_mime
+from efm_go.messaging.split import iter_fence_spans
 
 _PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
 _JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 32
@@ -155,7 +155,7 @@ class TestExtraction:
     def test_backslash_parity_controls_image_markers(
         self, tmp_path: Path, slashes: int, escaped: bool
     ) -> None:
-        from kiro_crew.messaging.outbound_files import open_ref_start
+        from efm_go.messaging.outbound_files import open_ref_start
 
         path = _png(tmp_path)
         prefix = "\\" * slashes
@@ -251,7 +251,7 @@ class TestStripUrlSyntaxExtendedLengthPath:
         refuses them. Asserted directly, because a strip that mangled them into a
         non-share shape would let a share reach the filesystem.
         """
-        from kiro_crew.hooks import is_unc_shape
+        from efm_go.hooks import is_unc_shape
 
         for raw in (self._SHARE, self._DEVICE, self._OBJNS):
             assert strip_url_syntax(raw) == raw, f"strip mangled {raw!r}"
@@ -262,7 +262,7 @@ class TestStripUrlSyntaxExtendedLengthPath:
     ) -> None:
         """End-to-end on a simulated Windows host: the surviving share form is
         refused by ``local_destination`` (no ``Path`` is constructed for it)."""
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         monkeypatch.setattr(module, "os", type("OS", (), {"name": "nt"})(), raising=False)
         monkeypatch.setattr(module, "unc_probe_allowed", lambda raw: False, raising=False)
@@ -296,10 +296,10 @@ class TestUncDestinationIsNotARemoteUrl:
 
     @pytest.fixture
     def windows_with_a_unc_data_home(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         monkeypatch.setattr(module, "os", type("OS", (), {"name": "nt"})(), raising=False)
-        monkeypatch.setattr("kiro_crew.config.paths.peek_data_home", lambda: Path(self._UNC_HOME))
+        monkeypatch.setattr("efm_go.config.paths.peek_data_home", lambda: Path(self._UNC_HOME))
 
     def test_a_stored_unc_attachment_is_a_local_reference(
         self, windows_with_a_unc_data_home: None
@@ -330,10 +330,10 @@ class TestUncDestinationIsNotARemoteUrl:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A UNC path does not exist on POSIX, so ``//`` there can only be a URL."""
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         monkeypatch.setattr(module, "os", type("OS", (), {"name": "posix"})(), raising=False)
-        monkeypatch.setattr("kiro_crew.config.paths.peek_data_home", lambda: Path(self._UNC_HOME))
+        monkeypatch.setattr("efm_go.config.paths.peek_data_home", lambda: Path(self._UNC_HOME))
         assert is_remote_destination(self._STORED) is True
         assert iter_local_refs(f"![s]({self._STORED})") == []
 
@@ -365,7 +365,7 @@ class TestUncDestinationIsNotARemoteUrl:
             calls.append(1)
             return real_home
 
-        monkeypatch.setattr("kiro_crew.config.paths.peek_data_home", counting_data_home)
+        monkeypatch.setattr("efm_go.config.paths.peek_data_home", counting_data_home)
         text = f"![shot]({self._STORED})"
         # Prime whatever this configuration is allowed to resolve once, so the
         # count below is per-call cost rather than first-touch cost.
@@ -382,7 +382,7 @@ class TestOutboundSecurity:
     def test_untrusted_windows_unc_is_rejected_before_path_construction(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         monkeypatch.setattr(module, "os", type("OS", (), {"name": "nt"})(), raising=False)
         monkeypatch.setattr(
@@ -415,7 +415,7 @@ class TestOutboundSecurity:
         reply still goes out carrying the markup instead of dying with it. A
         composed host whose credential policy fails to load arrives here.
         """
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         p = _png(tmp_path)
         text = f"![x]({p})"
@@ -888,7 +888,7 @@ class TestLinkedAncestorGate:
     def _windows(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import types
 
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         # Patch ONLY the module's view of os -- patching the global os.name
         # would make pathlib dispatch WindowsPath on a POSIX test host.
@@ -901,7 +901,7 @@ class TestLinkedAncestorGate:
         explode -- is_sensitive_path builds realpath()/resolve() candidate
         forms, so running it first would resolve the chain just like the
         is_symlink lstat would. A regression that probes first fails loudly."""
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         p = _png(tmp_path)
         self._windows(monkeypatch)
@@ -928,7 +928,7 @@ class TestLinkedAncestorGate:
         """Mutation check: with the walk reporting no link, the same file is
         inspected and accepted -- the refusal above is attributable to the
         guard, not to some other screen."""
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         p = _png(tmp_path)
         self._windows(monkeypatch)
@@ -945,7 +945,7 @@ class TestLinkedAncestorGate:
         uploads from a symlinked temp dir (macOS /tmp)."""
         if os.name == "nt":
             pytest.skip("gate is active on Windows by design")
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         def _boom(_p: object) -> None:  # pragma: no cover
             raise AssertionError("ancestor walk ran on POSIX")
@@ -961,7 +961,7 @@ class TestLinkedAncestorGate:
         """A `~` that expands to a roaming-profile UNC home surfaces a UNC
         shape the raw text did not have; the expanded form must be screened
         (still lexically) before the path reaches any inspecting caller."""
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         self._windows(monkeypatch)
 
@@ -982,7 +982,7 @@ class TestLinkedAncestorGate:
         is_symlink() refusal is junction-blind and runs after
         is_sensitive_path (whose candidate forms resolve the leaf) -- so on
         Windows the leaf needs its own junction-aware check first."""
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         p = _png(tmp_path)
         self._windows(monkeypatch)
@@ -1052,7 +1052,7 @@ def _default_table_jpeg() -> bytes:
     from the product constant rather than restated, so this cannot pass against a
     table the scanner does not pin itself to.
     """
-    from kiro_crew.security.redaction import _BASELINE_SYMBOL_TABLE
+    from efm_go.security.redaction import _BASELINE_SYMBOL_TABLE
 
     return (
         b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\xff\xc4\x00\xb5\x00"
@@ -1067,13 +1067,13 @@ class TestSynthesizedMaterialActuallyTrips:
     """A generator the scanner ignores would make every case below vacuous."""
 
     def test_the_synth_key_is_detected_at_narrow_spacing(self) -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         key = _synth_aws_key()
         assert security.redact(key) != key
 
     def test_the_default_table_jpeg_is_a_raster_and_carries_the_table(self) -> None:
-        from kiro_crew.security.redaction import _BASELINE_SYMBOL_TABLE
+        from efm_go.security.redaction import _BASELINE_SYMBOL_TABLE
 
         raw = _default_table_jpeg()
         assert sniff_raster_mime(raw[:SNIFF_BYTES]) == "image/jpeg"
@@ -1089,7 +1089,7 @@ class TestSynthesizedMaterialActuallyTrips:
         be invisible to a single-byte projection -- otherwise a plain narrow scan
         would have caught it and the wide pass is not what the refusal measures.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         raw = _wide_png(encoding)
         assert sniff_raster_mime(raw[:SNIFF_BYTES]) == "image/png"
@@ -1235,7 +1235,7 @@ class TestOneEgressScanOnEveryOutboundPath:
         A condition that matched nothing would pass in silence, so the leg that
         exists today is asserted to be inside it.
         """
-        from kiro_crew.messaging import outbound_files as module
+        from efm_go.messaging import outbound_files as module
 
         tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
         matched = [
@@ -1338,7 +1338,7 @@ class TestSharedScanDecidesThisLeg:
         gets the baseline pattern set and nothing else, which on such a host is a
         narrower answer than the gate beside it gives.
         """
-        from kiro_crew.platform import context as platform_context
+        from efm_go.platform import context as platform_context
 
         marker = "house-internal-token-" + hashlib.sha256(b"kc-outbound-house").hexdigest()[:12]
 

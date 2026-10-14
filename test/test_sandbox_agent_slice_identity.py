@@ -33,24 +33,24 @@ def wrapped():
     test host having systemd-run in a trusted directory, and the off-thread
     slice reconciliation is stubbed so no thread or subprocess is started.
     """
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     def _call(argv=None):
         sb._CGROUP_SCOPE_PROBE = None
         sb._CGROUP_WARNED = False
         try:
             with (
-                patch("kiro_crew.sandbox._probe_cgroup_scope", return_value=(True, "ok")),
+                patch("efm_go.sandbox._probe_cgroup_scope", return_value=(True, "ok")),
                 patch(
-                    "kiro_crew.platform_compat.trusted_system_bin",
+                    "efm_go.platform_compat.trusted_system_bin",
                     return_value="/usr/bin/systemd-run",
                 ),
-                patch("kiro_crew.sandbox._reconcile_slice_memory_high_off_thread"),
+                patch("efm_go.sandbox._reconcile_slice_memory_high_off_thread"),
                 patch(
-                    "kiro_crew.sandbox._cgroup_limits_from_config",
+                    "efm_go.sandbox._cgroup_limits_from_config",
                     return_value=(8192, 8192, 50, 0),
                 ),
-                patch("kiro_crew.sandbox._cpu_controller_delegated", return_value=False),
+                patch("efm_go.sandbox._cpu_controller_delegated", return_value=False),
             ):
                 return sb.cgroup_scope_argv(list(argv or ["kiro-cli", "chat"]))
         finally:
@@ -92,7 +92,7 @@ class TestAgentSliceIdentity:
         the parent remains a path component of every scope's cgroup -- which is
         what callers matching the parent name in ``/proc/self/cgroup`` rely on.
         """
-        import kiro_crew.sandbox as sb
+        import efm_go.sandbox as sb
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "instance-a"))
         name = _slice_arg(wrapped())
@@ -111,7 +111,7 @@ class TestAgentSliceIdentity:
         nest under ``...-ab.slice`` -- an extra level, and a prefix two tokens
         could share.
         """
-        import kiro_crew.sandbox as sb
+        import efm_go.sandbox as sb
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "instance-a"))
         token = sb._instance_slice_token()
@@ -129,10 +129,10 @@ class TestAgentSliceIdentity:
         """
         import logging
 
-        import kiro_crew.sandbox as sb
+        import efm_go.sandbox as sb
 
         with patch(
-            "kiro_crew.sandbox._instance_slice_token",
+            "efm_go.sandbox._instance_slice_token",
             side_effect=RuntimeError("no home"),
         ):
             with caplog.at_level(logging.WARNING):
@@ -174,7 +174,7 @@ class TestSlicePressureScanFindsNestedScopes:
         build keeps putting scopes directly in it, and its kills are still
         worth naming.
         """
-        import kiro_crew.sandbox as sb
+        import efm_go.sandbox as sb
 
         root, scope_name = self._slice_tree(tmp_path, nested=nested)
         prev = sb._SLICE_OOM_SEEN
@@ -182,8 +182,8 @@ class TestSlicePressureScanFindsNestedScopes:
             # Baseline below the tree's counters, so the scan sees new kills.
             sb._SLICE_OOM_SEEN = {"oom_kill": 0, "max": 0}
             with (
-                patch("kiro_crew.sandbox._agents_slice_cgroup_dir", return_value=root),
-                patch("kiro_crew.sandbox._SLICE_LIMITS_APPLIED", False),
+                patch("efm_go.sandbox._agents_slice_cgroup_dir", return_value=root),
+                patch("efm_go.sandbox._SLICE_LIMITS_APPLIED", False),
             ):
                 message = sb.check_agents_slice_pressure()
         finally:

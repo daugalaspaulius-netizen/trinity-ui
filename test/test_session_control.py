@@ -22,15 +22,15 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.config import loader
-from kiro_crew.dashboard import chat_delivery as cd
-from kiro_crew.dashboard import chat_runner as cr
-from kiro_crew.dashboard import create_rate_limit
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard import stop_retry
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.handlers import session_control as handlers_sc
-from kiro_crew.validation import MAX_SHORT_STRING
+from efm_go.config import loader
+from efm_go.dashboard import chat_delivery as cd
+from efm_go.dashboard import chat_runner as cr
+from efm_go.dashboard import create_rate_limit
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard import stop_retry
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.handlers import session_control as handlers_sc
+from efm_go.validation import MAX_SHORT_STRING
 
 # The autouse fixture below replaces ``sc.session_control_enabled`` so every
 # other test runs in the shipped (enabled) state without reading config. Keep a
@@ -140,7 +140,7 @@ def test_resolves_target_by_the_key_list_sessions_reports(tmp_path):
     with ``target_not_found`` — the caller does the thing the description tells
     it to do and the tool says the session does not exist.
     """
-    from kiro_crew.history import transcript_stem
+    from efm_go.history import transcript_stem
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -156,7 +156,7 @@ def test_resolves_target_by_the_key_list_sessions_reports(tmp_path):
 
 def test_the_caller_is_also_resolvable_by_its_stem(tmp_path):
     """Symmetry: the MCP process may present either form as the caller identity."""
-    from kiro_crew.history import transcript_stem
+    from efm_go.history import transcript_stem
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -466,8 +466,8 @@ async def test_a_requeued_steer_records_queued_and_never_steered(tmp_path, monke
     monkeypatch.setenv("KIROCREW_CREW_LOG", "1")
     import json
 
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import emit as crew_log_emit
 
     crew_log_emit.reset_caches()
     sid = "sess-steer-requeue"
@@ -1006,7 +1006,7 @@ class TestTheRoutesRequireTheInternalSecret:
         async def _fake_run_chat(_state, _slot, _prompt):
             return None
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._run_chat", _fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._run_chat", _fake_run_chat)
 
         resp = asyncio.run(handlers_sc.api_session_control_send(req))
 
@@ -1580,7 +1580,7 @@ def test_nothing_suspends_between_the_stop_gate_and_the_stop(tmp_path, monkeypat
 
     monkeypatch.setattr(sc, "sel", _sel)
     monkeypatch.setattr(sc, "authorize_target", _authorize)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
 
     asyncio.run(sc.stop_target(state, caller_session_key=_key(caller), target=target.key))
 
@@ -1635,7 +1635,7 @@ def test_the_config_warm_is_the_last_suspension_before_the_stop_gate(tmp_path, m
     monkeypatch.setattr(sc, "sel", _sel)
     monkeypatch.setattr(sc, "authorize_target", _authorize)
     monkeypatch.setattr(sc, "session_control_enabled", _enabled)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
 
     asyncio.run(sc.stop_target(state, caller_session_key=_key(caller), target=target.key))
 
@@ -1693,7 +1693,7 @@ def test_stop_constructs_the_sel_off_loop_before_stopping(tmp_path, monkeypatch)
     async def _fake_stop(_state, slot, *, source, escalate=True):
         return {"ok": True}
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
 
     async def _drive() -> int:
         await sc.stop_target(state, caller_session_key=_key(caller), target=target.key)
@@ -1721,7 +1721,7 @@ def test_stop_goes_through_the_same_path_as_the_stop_button(tmp_path, monkeypatc
         seen["escalate"] = escalate
         return {"ok": True}
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
 
     out = asyncio.run(sc.stop_target(state, caller_session_key=_key(caller), target="chat-2"))
 
@@ -1777,7 +1777,7 @@ def test_a_retried_stop_keeps_the_queue_instead_of_escalating(tmp_path, monkeypa
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
     target = _stoppable(state, _peer_target(state, "chat-2", caller))
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     first = asyncio.run(sc.stop_target(state, caller_session_key=_key(caller), target="chat-2"))
     assert target._stop_state == "soft_pending", "fixture must leave a stop pending"
@@ -1806,7 +1806,7 @@ def test_a_repeat_still_stops_a_target_that_started_running_again(tmp_path, monk
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
     target = _stoppable(state, _peer_target(state, "chat-2", caller))
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(sc.stop_target(state, caller_session_key=_key(caller), target="chat-2"))
     # The first stop lands and the target drains its queue into a new turn.
@@ -1834,7 +1834,7 @@ def test_a_stop_after_the_window_still_escalates(tmp_path, monkeypatch):
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
     target = _stoppable(state, _peer_target(state, "chat-2", caller))
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(sc.stop_target(state, caller_session_key=_key(caller), target="chat-2"))
     # The window closes, so the next stop is a decision rather than a retry.
@@ -1862,7 +1862,7 @@ def test_a_withheld_escalation_is_recorded(tmp_path, monkeypatch):
     logged: list[dict] = []
     fake_sel = MagicMock()
     fake_sel.log_tool_invocation = lambda **kw: logged.append(kw)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: fake_sel)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: fake_sel)
 
     asyncio.run(sc.stop_target(state, caller_session_key=_key(caller), target="chat-2"))
     asyncio.run(sc.stop_target(state, caller_session_key=_key(caller), target="chat-2"))
@@ -1882,11 +1882,11 @@ def test_the_stop_button_still_escalates_on_a_second_press(tmp_path, monkeypatch
     Mutation guard: defaulting `escalate` to False in `stop_slot_turn` breaks this
     without touching the session-control tests above.
     """
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _make_state(tmp_path)
     slot = _stoppable(state, _slot(state, "chat-1"))
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot))
     assert slot._stop_state == "soft_pending"
@@ -1905,10 +1905,10 @@ def test_the_no_op_reply_says_which_of_its_two_facts_it_hit(tmp_path, monkeypatc
 
     Mutation guard: hardcoding `already_stopping` either way collapses the two.
     """
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _make_state(tmp_path)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     stopping = _stoppable(state, _slot(state, "chat-1"))
     asyncio.run(stop_slot_turn(state, stopping))
@@ -2010,7 +2010,7 @@ def test_send_to_an_idle_target_starts_a_turn_with_provenance(tmp_path, monkeypa
         ran["slot"] = slot.key
         ran["prompt"] = prompt
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner._run_chat", _fake_run_chat)
+    monkeypatch.setattr("efm_go.dashboard.chat_runner._run_chat", _fake_run_chat)
 
     async def _drive():
         out = await sc.send_to_target(
@@ -2056,7 +2056,7 @@ def test_the_sent_body_passes_through_the_outbound_guard(tmp_path, monkeypatch):
     async def _fake_run_chat(_state, slot, prompt):
         ran["prompt"] = prompt
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner._run_chat", _fake_run_chat)
+    monkeypatch.setattr("efm_go.dashboard.chat_runner._run_chat", _fake_run_chat)
 
     async def _drive():
         out = await sc.send_to_target(
@@ -2341,7 +2341,7 @@ async def test_a_mirror_linked_during_the_rpc_stops_the_steered_turn(tmp_path, m
         stops.append({"slot": _slot.key, **kwargs})
         return {"stopped": True}
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
 
     async def _mirror_then_accept(_msg):
         # The window: an operator attaches an outbound mirror while the steer RPC is
@@ -2394,7 +2394,7 @@ async def test_an_unchanged_audience_leaves_the_steered_turn_alone(tmp_path, mon
         stops.append({"slot": _slot.key, **kwargs})
         return {"stopped": True}
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
 
     client = MagicMock()
     client.supports_steer = True
@@ -2607,7 +2607,7 @@ async def test_a_changed_audience_withholds_the_cross_surface_reply(tmp_path, mo
     async def _fake_stop(_state, _slot, **kwargs):
         return {"stopped": True}
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
 
     fence_during_rpc: list[int] = []
 
@@ -2752,7 +2752,7 @@ async def test_steer_on_an_idle_target_just_starts_the_turn(tmp_path, monkeypatc
     async def _fake_run_chat(_state, _slot, _prompt):
         return None
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner._run_chat", _fake_run_chat)
+    monkeypatch.setattr("efm_go.dashboard.chat_runner._run_chat", _fake_run_chat)
 
     out = await sc.send_to_target(
         state,
@@ -2810,7 +2810,7 @@ def test_send_to_a_remote_bound_target_is_refused_not_run_locally(tmp_path, monk
     async def _fake_run_chat(_state, slot, prompt):
         ran["slot"] = slot.key
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner._run_chat", _fake_run_chat)
+    monkeypatch.setattr("efm_go.dashboard.chat_runner._run_chat", _fake_run_chat)
 
     with pytest.raises(sc.SessionControlError) as err:
         asyncio.run(
@@ -2879,7 +2879,7 @@ def test_session_control_routes_are_strict_internal():
     """
     from aiohttp import web
 
-    from kiro_crew.dashboard.server import _STRICT_INTERNAL_API_PATHS, _register_mcp_routes
+    from efm_go.dashboard.server import _STRICT_INTERNAL_API_PATHS, _register_mcp_routes
 
     app = web.Application()
     _register_mcp_routes(app)
@@ -2965,15 +2965,15 @@ def test_created_session_inherits_the_callers_workspace(tmp_path, monkeypatch):
 @pytest.fixture
 def private_dispatch(tmp_path, monkeypatch):
 
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.memory_stores import provision_member_memory
 
     cfg = KiroCrewConfig.load()
     cfg.agents["writer"] = KiroCrewAgentConfig(kiro_agent="kirocrew", triggers="write")
     store = provision_member_memory(cfg, "writer")
     cfg.save()
     state = _make_state(tmp_path)
-    from kiro_crew.history import ConversationLog
+    from efm_go.history import ConversationLog
 
     state.conversation_log = ConversationLog()
     caller = _slot(state, "chat-conductor")
@@ -2998,7 +2998,7 @@ def test_create_refuses_unreadable_delegation_identity(private_dispatch, monkeyp
 
 @pytest.mark.parametrize("explicit", [False, True])
 def test_private_creator_keeps_its_memory(private_dispatch, explicit):
-    from kiro_crew.member_memory_auth import bind_private_session_store, read_private_session_store
+    from efm_go.member_memory_auth import bind_private_session_store, read_private_session_store
 
     state, caller, store = private_dispatch
     caller.agent = "writer"
@@ -3054,9 +3054,9 @@ def test_create_rechecks_caller_identity_after_delegation(
 
 @pytest.mark.parametrize("restored", [False, True])
 def test_created_private_worker_can_start_after_birth_history(private_dispatch, tmp_path, restored):
-    from kiro_crew.dashboard.chat_runner import _require_session_memory_assignment
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.dashboard.chat_runner import _require_session_memory_assignment
+    from efm_go.history import ConversationLog
+    from efm_go.member_memory_auth import read_private_session_store
 
     state, caller, store = private_dispatch
     created = asyncio.run(sc.create_session(state, caller_session_key=_key(caller), agent="writer"))
@@ -3074,7 +3074,7 @@ def test_created_private_worker_can_start_after_birth_history(private_dispatch, 
 
 
 def test_private_worker_assignment_precedes_birth_history(private_dispatch, monkeypatch):
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.member_memory_auth import read_private_session_store
 
     state, caller, store = private_dispatch
     log = state.conversation_log
@@ -3096,10 +3096,10 @@ def test_private_worker_assignment_precedes_birth_history(private_dispatch, monk
 @pytest.mark.parametrize("explicit", [False, True])
 def test_created_template_keeps_namespace_after_member_discovery(tmp_path, monkeypatch, explicit):
 
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, resolve_agent_bindings
-    from kiro_crew.member_memory_auth import read_private_session_store
-    from kiro_crew.memory_stores import provision_member_memory
-    from kiro_crew.session_agent_selection import resolve_session_agent_bindings
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, resolve_agent_bindings
+    from efm_go.member_memory_auth import read_private_session_store
+    from efm_go.memory_stores import provision_member_memory
+    from efm_go.session_agent_selection import resolve_session_agent_bindings
 
     template = "dispatched-template"
     monkeypatch.setattr(
@@ -3144,16 +3144,16 @@ def test_created_template_keeps_namespace_after_member_discovery(tmp_path, monke
 def test_failed_private_birth_retains_its_permanent_assignment(
     private_dispatch, monkeypatch, preexisting, started_turn
 ):
-    from kiro_crew.dashboard.chat_runner import _require_session_memory_assignment
-    from kiro_crew.member_memory_auth import bind_private_session_store, read_private_session_store
-    from kiro_crew.memory_stores import UnknownMemoryStore
-    from kiro_crew.session_agent_selection import session_agent_selection_kind
+    from efm_go.dashboard.chat_runner import _require_session_memory_assignment
+    from efm_go.member_memory_auth import bind_private_session_store, read_private_session_store
+    from efm_go.memory_stores import UnknownMemoryStore
+    from efm_go.session_agent_selection import session_agent_selection_kind
 
     state, caller, store = private_dispatch
     before = set(state._slots)
     child_name = "chat-failed-private-birth"
     key = f"dashboard:{child_name}"
-    monkeypatch.setattr("kiro_crew.dashboard.state._mint_slot_key", lambda *args: child_name)
+    monkeypatch.setattr("efm_go.dashboard.state._mint_slot_key", lambda *args: child_name)
     if preexisting:
         bind_private_session_store(key, store)
 
@@ -3181,8 +3181,8 @@ def test_failed_private_birth_retains_its_permanent_assignment(
 
 
 def test_cancelled_private_birth_drains_before_returning(private_dispatch, monkeypatch):
-    from kiro_crew.member_memory_auth import read_private_session_store
-    from kiro_crew.session_agent_selection import session_agent_selection_kind
+    from efm_go.member_memory_auth import read_private_session_store
+    from efm_go.session_agent_selection import session_agent_selection_kind
 
     state, caller, store = private_dispatch
     entered = threading.Event()
@@ -3236,14 +3236,14 @@ def test_cancelled_private_birth_drains_before_returning(private_dispatch, monke
 def test_private_worker_creation_cannot_adopt_an_old_session(
     private_dispatch, monkeypatch, prior_context
 ):
-    from kiro_crew.member_memory_auth import read_private_session_store
-    from kiro_crew.memory_stores import UnknownMemoryStore
+    from efm_go.member_memory_auth import read_private_session_store
+    from efm_go.memory_stores import UnknownMemoryStore
 
     state, caller, _store = private_dispatch
     before = set(state._slots)
     child_name = "chat-private-worker-collision"
     key = f"dashboard:{child_name}"
-    monkeypatch.setattr("kiro_crew.dashboard.state._mint_slot_key", lambda *args: child_name)
+    monkeypatch.setattr("efm_go.dashboard.state._mint_slot_key", lambda *args: child_name)
     if prior_context == "history":
         state.conversation_log.append(key, "user", "Existing conversation", agent="default")
     else:
@@ -3472,7 +3472,7 @@ def test_create_schema_bounds_the_folder_reference():
     the same contract `chat_folder_move_session.folder` carries. Over-length is
     refused at validation, before any resolution work.
     """
-    from kiro_crew.validation import SESSION_CREATE_SCHEMA, ValidationError, validate_tool_args
+    from efm_go.validation import SESSION_CREATE_SCHEMA, ValidationError, validate_tool_args
 
     out = validate_tool_args({"folder": "aaaaaaaaaaaa"}, SESSION_CREATE_SCHEMA)
     assert out["folder"] == "aaaaaaaaaaaa", "an id-shaped reference must pass"
@@ -3627,7 +3627,7 @@ def test_create_without_a_model_leaves_the_default(tmp_path):
 
 def test_create_refuses_a_model_the_picker_refuses(tmp_path, monkeypatch):
     """The picker's own guard decides, and a refusal allocates nothing."""
-    import kiro_crew.dashboard.chat_handlers as ch
+    import efm_go.dashboard.chat_handlers as ch
 
     monkeypatch.setattr(
         ch, "_model_rejected_reason", lambda name, provider=None: f"{name} is display-only"
@@ -3792,7 +3792,7 @@ def test_moving_an_empty_newborn_before_its_first_message_survives_a_restart(tmp
     metadata merge, a restart would resurrect the BIRTH placement the user
     already changed (or point at a folder they deleted).
     """
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -3835,7 +3835,7 @@ def test_metadata_mutations_on_an_empty_newborn_survive_a_restart(tmp_path):
     the merge cannot delete a key, so untag/unpin write falsy values that
     rehydrate reads as cleared.
     """
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -3883,8 +3883,8 @@ def test_the_empty_window_merge_mirrors_the_full_saves_slot_owned_fields(tmp_pat
     conditional-identity keys the merge legitimately writes only when the
     slot carries them.
     """
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
-    from kiro_crew.history import SLOT_OWNED_META_KEYS
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.history import SLOT_OWNED_META_KEYS
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -3949,7 +3949,7 @@ def test_the_empty_window_merge_mirrors_the_full_saves_slot_owned_fields(tmp_pat
     assert meta.get("color_index") == 3
     assert meta.get("title") == "Pinned title"
     assert meta.get("title_origin") == "user"
-    from kiro_crew.context import store_of_session
+    from efm_go.context import store_of_session
 
     assert (
         store_of_session(state.conversation_log, slot_history_key(child)) == ""
@@ -3966,7 +3966,7 @@ def test_the_empty_window_merge_keeps_a_named_memory_store(tmp_path):
     isolation exists to prevent. Asserted in both directions, because the retract
     path (rebinding a crew back to the default store) depends on absence.
     """
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -3981,7 +3981,7 @@ def test_the_empty_window_merge_keeps_a_named_memory_store(tmp_path):
     # Rebinding to the default RETRACTS it. The merge cannot delete a key, so the
     # cleared form is a falsy value; what must hold is that the consolidator
     # resolves it to the global store again.
-    from kiro_crew.context import store_of_session
+    from efm_go.context import store_of_session
 
     child.memory_store = "default"
     asyncio.run(save_slot_off_loop(state, child, force=True))
@@ -4002,7 +4002,7 @@ def test_the_empty_window_merge_reads_slot_state_at_write_time(tmp_path):
     """
     from unittest.mock import patch
 
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -4035,7 +4035,7 @@ def test_closing_an_empty_newborn_does_not_resurrect_it_open(tmp_path):
     line stays open-shaped and the next restart resurrects a tab the user
     dismissed.
     """
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -4063,7 +4063,7 @@ def test_an_unreadable_record_fails_the_empty_window_merge_loudly(tmp_path):
     """
     from unittest.mock import patch
 
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -4125,7 +4125,7 @@ def test_the_empty_window_merge_cannot_resurrect_a_deleted_session(tmp_path):
     the cross-process lock; a session file deleted before the forced save stays
     deleted.
     """
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -4196,10 +4196,10 @@ def test_every_session_control_refusal_is_audited_as_failed(monkeypatch, refusal
     Mutation guard: a refusal reply opening with a cross mark instead of "Error:"
     is recorded `completed` and fails here.
     """
-    from kiro_crew import mcp_shared
-    from kiro_crew.mcp_dashboard import SESSION_CONTROL_TOOLS, TABLE
-    from kiro_crew.mcp_tools.dashboard_client import InMemoryDashboardClient
-    from kiro_crew.mcp_tools.table import Caller, ToolContext
+    from efm_go import mcp_shared
+    from efm_go.mcp_dashboard import SESSION_CONTROL_TOOLS, TABLE
+    from efm_go.mcp_tools.dashboard_client import InMemoryDashboardClient
+    from efm_go.mcp_tools.table import Caller, ToolContext
 
     assert set(_DASHBOARD_TOOL_CALLS) == set(TABLE.names())
     assert set(SESSION_CONTROL_TOOLS) <= set(_DASHBOARD_TOOL_CALLS)
@@ -4328,7 +4328,7 @@ def test_the_binding_is_resolved_with_the_childs_project_dir(tmp_path, monkeypat
 async def test_agent_binding_resolution_is_off_loop_and_precedes_allocation(
     tmp_path, monkeypatch, outcome
 ):
-    from kiro_crew.memory_stores import UnknownMemoryStore
+    from efm_go.memory_stores import UnknownMemoryStore
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -4578,7 +4578,7 @@ def test_the_opened_entry_cites_lineage_only_from_a_witnessed_mint():
     """
     from types import SimpleNamespace
 
-    from kiro_crew.dashboard.chat_runner import _crew_log_lineage
+    from efm_go.dashboard.chat_runner import _crew_log_lineage
 
     minted = SimpleNamespace(
         _created_by="chat-1", _created_by_sid="acp-sess-creator-at-mint", _lineage_minted=True
@@ -4615,9 +4615,9 @@ def test_the_opened_entry_records_the_session_class_from_the_live_slot(monkeypat
     """
     from types import SimpleNamespace
 
-    from kiro_crew.dashboard import session_control as sc
-    from kiro_crew.dashboard.chat_runner import _crew_log_class
-    from kiro_crew.dashboard.session_control import CRON_LINK_PREFIX
+    from efm_go.dashboard import session_control as sc
+    from efm_go.dashboard.chat_runner import _crew_log_class
+    from efm_go.dashboard.session_control import CRON_LINK_PREFIX
 
     mirrored: dict[str, bool] = {"value": False}
     monkeypatch.setattr(sc, "_has_channel_mirror", lambda state, slot: mirrored["value"])
@@ -4668,7 +4668,7 @@ def test_an_oversize_creator_session_id_is_dropped_at_mint_not_retained(tmp_path
     """
     from unittest.mock import MagicMock
 
-    from kiro_crew.validation import MAX_ACP_SESSION_ID_LEN
+    from efm_go.validation import MAX_ACP_SESSION_ID_LEN
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -4948,7 +4948,7 @@ def test_an_identical_steer_is_refused_while_the_first_is_still_in_flight(tmp_pa
 
     Mutation guard: checking only `_pending_steers` admits the second steer.
     """
-    from kiro_crew.dashboard import chat_delivery
+    from efm_go.dashboard import chat_delivery
 
     state = _make_state(tmp_path)
     slot = _busy(_slot(state, "chat-2"))
@@ -4984,7 +4984,7 @@ def test_an_unrelated_identical_queue_item_is_not_read_as_our_requeue(tmp_path):
     Mutation guard: a content count sees the queue grow and returns the requeued
     outcome, so nothing persists.
     """
-    from kiro_crew.dashboard import chat_delivery
+    from efm_go.dashboard import chat_delivery
 
     state = _make_state(tmp_path)
     slot = _busy(_slot(state, "chat-2"))
@@ -5020,8 +5020,8 @@ def test_the_delivery_path_never_claims_a_turn_consumed_a_steer(tmp_path, monkey
     Mutation guard: recording the delivered case here -- from a live ordinal or any
     other guess -- reddens this.
     """
-    from kiro_crew.crew_log import emit as crew_log_emit
-    from kiro_crew.dashboard import chat_delivery
+    from efm_go.crew_log import emit as crew_log_emit
+    from efm_go.dashboard import chat_delivery
 
     state = _make_state(tmp_path)
     slot = _busy(_slot(state, "chat-2"))
@@ -5071,8 +5071,8 @@ def test_a_stop_race_that_only_expects_a_requeue_records_nothing(tmp_path, monke
 
     Mutation guard: recording the queued outcome here reddens this.
     """
-    from kiro_crew.crew_log import emit as crew_log_emit
-    from kiro_crew.dashboard import chat_delivery
+    from efm_go.crew_log import emit as crew_log_emit
+    from efm_go.dashboard import chat_delivery
 
     state = _make_state(tmp_path)
     slot = _busy(_slot(state, "chat-2"))
@@ -5110,8 +5110,8 @@ def test_a_requeued_steer_is_recorded_as_a_queued_message(tmp_path, monkeypatch)
 
     Mutation guard: recording `send_id` reddens this, because the two differ here.
     """
-    from kiro_crew.crew_log import emit as crew_log_emit
-    from kiro_crew.dashboard import chat_delivery
+    from efm_go.crew_log import emit as crew_log_emit
+    from efm_go.dashboard import chat_delivery
 
     state = _make_state(tmp_path)
     slot = _busy(_slot(state, "chat-2"))
@@ -5152,7 +5152,7 @@ def test_our_own_requeue_is_still_detected_by_its_delivery_id(tmp_path):
     Mutation guard: dropping the id probe reports this as delivered and the drain
     then appends the row a second time.
     """
-    from kiro_crew.dashboard import chat_delivery
+    from efm_go.dashboard import chat_delivery
 
     state = _make_state(tmp_path)
     slot = _busy(_slot(state, "chat-2"))
@@ -5190,7 +5190,7 @@ def test_a_steer_a_hard_kill_discarded_is_not_reported_as_delivered(tmp_path):
 
     Mutation guard: without the delivery-id check this returns the delivered path.
     """
-    from kiro_crew.dashboard import chat_delivery
+    from efm_go.dashboard import chat_delivery
 
     state = _make_state(tmp_path)
     slot = _busy(_slot(state, "chat-2"))
@@ -5224,7 +5224,7 @@ def test_a_steer_consumed_before_a_stop_is_still_reported_as_delivered(tmp_path)
     Mutation guard: reading absence as discard would send this down the queue path
     and risk a duplicate execution.
     """
-    from kiro_crew.dashboard import chat_delivery
+    from efm_go.dashboard import chat_delivery
 
     state = _make_state(tmp_path)
     slot = _busy(_slot(state, "chat-2"))
@@ -5259,7 +5259,7 @@ def test_session_control_is_not_imported_on_the_gateway_boot_path():
     """
     from pathlib import Path
 
-    from kiro_crew.dashboard import server as dashboard_server
+    from efm_go.dashboard import server as dashboard_server
 
     src = Path(dashboard_server.__file__).read_text(encoding="utf-8")
     # The server_runtime owners server.py composes load with it, so their module-level
@@ -5268,7 +5268,7 @@ def test_session_control_is_not_imported_on_the_gateway_boot_path():
     assert owners, "expected the server_runtime owners beside server.py"
     src += "".join(path.read_text(encoding="utf-8") for path in owners)
     for line in src.splitlines():
-        if line.startswith("from kiro_crew.dashboard.handlers import"):
+        if line.startswith("from efm_go.dashboard.handlers import"):
             assert "session_control" not in line, (
                 "session_control must not be imported at server module level -- " f"found: {line!r}"
             )
@@ -5457,10 +5457,10 @@ def test_slot_cap_has_one_owning_constant() -> None:
     pins that no door has re-introduced its own literal: all three modules must
     expose the identical owning object.
     """
-    from kiro_crew.dashboard import chat_fork
-    from kiro_crew.dashboard import session_control as sc_mod
-    from kiro_crew.dashboard import session_transfer
-    from kiro_crew.dashboard import state as state_mod
+    from efm_go.dashboard import chat_fork
+    from efm_go.dashboard import session_control as sc_mod
+    from efm_go.dashboard import session_transfer
+    from efm_go.dashboard import state as state_mod
 
     owning = state_mod.MAX_LIVE_SLOTS
     # Each door imported the owning constant into its own namespace; assert they
@@ -5511,7 +5511,7 @@ def test_close_maps_a_close_failure_to_its_code(tmp_path, monkeypatch):
     caller = _slot(state, "chat-1")
     target = _peer_target(state, "chat-2", caller)
 
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     async def _boom(_state, _slot, _name, *, pre_pop_check=None):
         raise chat_handlers.SlotCloseError("failed to notify the app", code="app_close_hook_failed")
@@ -5529,7 +5529,7 @@ def test_close_maps_a_close_failure_to_its_code(tmp_path, monkeypatch):
             detail=detail,
         )
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.close_slot", _boom)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.close_slot", _boom)
     monkeypatch.setattr(sc, "_audit", _audit)
 
     with pytest.raises(sc.SessionControlError) as exc:
@@ -5568,7 +5568,7 @@ def test_close_authorizes_then_acts_with_nothing_in_between(tmp_path, monkeypatc
 
     monkeypatch.setattr(sc, "sel", _sel)
     monkeypatch.setattr(sc, "authorize_target", _authorize)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.close_slot", _fake_close)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.close_slot", _fake_close)
 
     asyncio.run(sc.close_target(state, caller_session_key=_key(caller), target=target.key))
 
@@ -5598,7 +5598,7 @@ def test_close_reauthorizes_at_the_point_of_no_return(tmp_path, monkeypatch):
         pre_pop_check()  # re-runs authorize_target -> raises for the new mirror
         raise AssertionError("close must not reach the pop after a stale-auth abort")
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.close_slot", _fake_close)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.close_slot", _fake_close)
 
     with pytest.raises(sc.SessionControlError) as exc:
         asyncio.run(sc.close_target(state, caller_session_key=_key(caller), target=target.key))
@@ -5613,7 +5613,7 @@ def test_close_slot_pre_pop_abort_rolls_back_and_does_not_pop(tmp_path):
     """A `pre_pop_check` that raises `SlotCloseError` aborts the close at the point
     of no return: the slot stays in `_slots` and the per-tab session is never torn
     down. The human ✕ path (pre_pop_check=None) is unaffected."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("chat-1")
@@ -5652,7 +5652,7 @@ def test_close_aborts_if_the_key_was_reminted_during_the_close(tmp_path, monkeyp
         pre_pop_check()  # authorize_target resolves the replacement -> identity mismatch
         raise AssertionError("close must not pop after a re-mint abort")
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.close_slot", _fake_close)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.close_slot", _fake_close)
 
     with pytest.raises(sc.SessionControlError) as exc:
         asyncio.run(sc.close_target(state, caller_session_key=_key(caller), target=original_key))
@@ -5674,7 +5674,7 @@ def test_close_slot_runs_the_pre_pop_check_synchronously_after_retirement(tmp_pa
     then the pop) and by the callback being a plain synchronous function."""
     import inspect
 
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("chat-1")
@@ -5721,7 +5721,7 @@ async def test_a_failed_containment_stop_still_reports_the_delivery(tmp_path, mo
     async def _exploding_stop(_state, _slot, **kwargs):
         raise RuntimeError("session was already gone")
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _exploding_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _exploding_stop)
 
     audits: list[dict] = []
     monkeypatch.setattr(sc, "_audit", lambda **kw: audits.append(kw))
@@ -5785,7 +5785,7 @@ async def test_a_rolled_over_turn_is_not_cancelled_by_containment(tmp_path, monk
         stops.append(_slot.key)
         return {"stopped": True}
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop)
 
     audits: list[dict] = []
     monkeypatch.setattr(sc, "_audit", lambda **kw: audits.append(kw))
@@ -5932,7 +5932,7 @@ async def test_a_requeue_onto_a_replaced_slot_is_refused_not_reported_as_sent(
     # Patched on chat_delivery, NOT on sc: `send_to_target` imports this name
     # through a deferred import inside the function, so a patch on the importing
     # module is never consulted.
-    import kiro_crew.dashboard.chat_delivery as cd
+    import efm_go.dashboard.chat_delivery as cd
 
     async def _fake_steer(*_a, **_kw):
         await _requeue_then_replace_the_slot()

@@ -33,7 +33,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.config.sections import (
+from efm_go.config.sections import (
     DECISION_BUCKET_MAX,
     DECISION_BUCKET_MIN,
     DECISION_MODEL_ROUTE_TIERS,
@@ -52,7 +52,7 @@ def _app() -> web.Application:
     ``as_owner`` every case below would land on the gate instead of on the
     bucket/provider contract it names.
     """
-    from kiro_crew.dashboard.handlers import api_kirocrew_config, api_kirocrew_config_patch
+    from efm_go.dashboard.handlers import api_kirocrew_config, api_kirocrew_config_patch
 
     app = web.Application()
     app.router.add_patch("/api/config/kirocrew", api_kirocrew_config_patch)
@@ -65,7 +65,7 @@ def config_file(tmp_path, monkeypatch):
     """A temp ``config.json`` both handlers read and the PATCH writes."""
     path = tmp_path / "config.json"
     path.write_text(json.dumps(_BASE_CONFIG), encoding="utf-8")
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: path)
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: path)
     return path
 
 
@@ -93,7 +93,7 @@ class TestPatchBucket:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("value", [DECISION_BUCKET_MIN, 1, 37, DECISION_BUCKET_MAX])
     async def test_an_in_range_bucket_is_stored(self, config_file, value):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         async with TestClient(TestServer(_app())) as client:
             assert (await _patch(client, "decisions.bucket", value)).status == 200
@@ -163,7 +163,7 @@ class TestModelRouteIsWritable:
         import asyncio
         import threading
 
-        from kiro_crew.dashboard.handlers import core as _core
+        from efm_go.dashboard.handlers import core as _core
 
         loop_thread = threading.current_thread()
         seen: list[threading.Thread] = []
@@ -270,7 +270,7 @@ class TestProviderIsNotWritable:
 class TestGet:
     @pytest.mark.asyncio
     async def test_the_api_key_reads_back_masked(self, config_file):
-        from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+        from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
         secret = "sk-" + "realsecret0123456789"
         config_file.write_text(

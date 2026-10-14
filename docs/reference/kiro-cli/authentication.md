@@ -1,6 +1,6 @@
 # Authentication
 
-Source: https://kiro.dev/docs/getting-started/authentication/ (fetched 2026-09-06)
+Source: https://efmleads.com/docs/getting-started/authentication/ (fetched 2026-09-06)
 
 Providers: GitHub, Google, AWS Builder ID, AWS IAM Identity Center, external IdP
 (Entra ID, Okta). API key is CLI-only, and the CLI is the only surface that has it.
@@ -28,7 +28,7 @@ kiro-cli login    # pick a method, then open the printed URL and enter the code
 
 Pro, Pro+, Pro Max and Power subscriptions only; an admin-managed subscription
 needs API key authentication enabled first. Generate the key in the API Keys
-section of app.kiro.dev, where the full value is shown once.
+section of efmleads.com, where the full value is shown once.
 
 ```bash
 export KIRO_API_KEY=ksk_xxxxxxxx

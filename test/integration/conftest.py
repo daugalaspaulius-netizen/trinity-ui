@@ -11,7 +11,7 @@ wired together?" -- that is what a test here answers:
   subset of it, so a new boot step is covered the day it lands;
 * a real ``KIROCREW_HOME`` under ``tmp_path`` -- real session store, real
   config, real memory bindings, real agent-spec directory;
-* the ONLY fake is the model: ``kiro_crew.testing.fake_acp_backend`` stands in
+* the ONLY fake is the model: ``efm_go.testing.fake_acp_backend`` stands in
   for ``kiro-cli`` (tests MUST NOT spawn the real one);
 * the HTTP client talks to the port the gateway actually bound, on loopback,
   from the same interpreter and event loop -- so an event-loop stall in one
@@ -96,7 +96,7 @@ hooks and raises process limits, and never expects any of it to change or to
 be undone. Left alone, the second boot in a worker inherits the first home's
 copies and the last test's residue. Four mechanisms cover it. The lists ARE
 the contract, and ``test_a_second_boot_touches_only_known_module_globals`` is
-the witness that keeps them honest: it diffs every loaded ``kiro_crew`` module's
+the witness that keeps them honest: it diffs every loaded ``efm_go`` module's
 globals across a second boot, so a home-derived global startup grows that is
 on no list goes red there, naming itself, rather than surfacing as a
 cross-home flake three tests later.
@@ -185,7 +185,7 @@ cross-home flake three tests later.
    ``KIROCREW_BOUND_HOST``).
 
 3. **Waited for** by ``_teardown_boot``: the memory-preparation worker is a
-   THREAD behind a process-wide fence (``kiro_crew.memory_startup``) that
+   THREAD behind a process-wide fence (``efm_go.memory_startup``) that
    ``_shutdown()`` cannot join, so teardown polls until the fence drops.
 
 4. **Reaped** by ``_teardown_boot``: every asyncio task the boot created that
@@ -254,7 +254,7 @@ from typing import Any, AsyncIterator, Callable, Iterator, NoReturn
 import pytest
 from aiohttp import ClientSession, ClientTimeout
 
-from kiro_crew import (
+from efm_go import (
     autonudge,
     crash_guard,
     embeddings,
@@ -265,28 +265,28 @@ from kiro_crew import (
     sandbox,
     shutdown_event,
 )
-from kiro_crew.acp import client as acp_client
-from kiro_crew.agent_sdk import host_auth
-from kiro_crew.browser_cli import launch as browser_launch
-from kiro_crew.config import live as config_live
-from kiro_crew.config import loader as config_loader
-from kiro_crew.config.loader import CREDENTIAL_KEYS
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.dashboard import (
+from efm_go.acp import client as acp_client
+from efm_go.agent_sdk import host_auth
+from efm_go.browser_cli import launch as browser_launch
+from efm_go.config import live as config_live
+from efm_go.config import loader as config_loader
+from efm_go.config.loader import CREDENTIAL_KEYS
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.dashboard import (
     loop_watchdog,
     revocation_gen,
     status_counts,
     token_auth,
     token_secret,
 )
-from kiro_crew.dashboard.handlers import kiro_usage_api
-from kiro_crew.dashboard.handlers import updates as dashboard_updates
-from kiro_crew.diag import threads as diag_threads
-from kiro_crew.metrics import inventory_gauges
-from kiro_crew.platform import bootstrap as platform_bootstrap
-from kiro_crew.platform import context as platform_context
-from kiro_crew.security import paths as security_paths
-from kiro_crew.testing import fake_acp_backend
+from efm_go.dashboard.handlers import kiro_usage_api
+from efm_go.dashboard.handlers import updates as dashboard_updates
+from efm_go.diag import threads as diag_threads
+from efm_go.metrics import inventory_gauges
+from efm_go.platform import bootstrap as platform_bootstrap
+from efm_go.platform import context as platform_context
+from efm_go.security import paths as security_paths
+from efm_go.testing import fake_acp_backend
 
 try:  # POSIX only; the layer is Linux-only in CI, but keep the import honest.
     import resource as _resource
@@ -357,7 +357,7 @@ class HarnessExit(BaseException):
 def hard_exit_timer_disabled() -> "Iterator[None]":
     """Keep the loop-stall watchdog's C-level exit timer off while a boot is live.
 
-    ``start_dashboard`` arms :class:`~kiro_crew.dashboard.loop_watchdog.LoopStallWatchdog`
+    ``start_dashboard`` arms :class:`~efm_go.dashboard.loop_watchdog.LoopStallWatchdog`
     whenever ``faulthandler`` is enabled -- which pytest does for every worker --
     and its hard timer is ``faulthandler.dump_traceback_later(exit=True)``: 25s
     without a loop beat and the PROCESS exits, which here is the xdist worker
@@ -639,7 +639,7 @@ class IntegrationGateway:
         process, ``X-Session-Token`` attests the ``X-Session-Key``). Use with
         ``auth=False``: these routes are for processes, not the dashboard user.
         """
-        from kiro_crew.session_token_sig import publish_session_token
+        from efm_go.session_token_sig import publish_session_token
 
         token = secrets.token_hex(16)
         publish_session_token(token, session_key)
@@ -964,9 +964,9 @@ async def _boot(home: Path, *, boot_secs: float) -> IntegrationGateway:
     cancellation from outside -- reaps the boot before the error propagates
     (module docstring, "One process, many homes").
     """
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.dashboard.token_auth import MAX_SESSION_TTL_SECS, generate_token
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.config import KiroCrewConfig
+    from efm_go.dashboard.token_auth import MAX_SESSION_TTL_SECS, generate_token
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     shutdown_event.clear()
     _reset_home_bound_globals()
@@ -1208,7 +1208,7 @@ def integration_home(
 ) -> Path:
     """A fresh, isolated ``KIROCREW_HOME`` with the fake model wired in.
 
-    Modelled on ``kiro_crew.testing.harness.spawn_feature_gateway``'s
+    Modelled on ``efm_go.testing.harness.spawn_feature_gateway``'s
     environment, so a test that passes here and fails in E2E mostly differs in
     the process boundary. This boot runs in the test process, though, so it also
     keeps out what that subprocess gateway inherits from its caller: the

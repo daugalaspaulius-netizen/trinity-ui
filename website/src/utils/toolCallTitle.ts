@@ -16,7 +16,7 @@
  *   renderToolAction(action) -> string                i18n template
  *   deriveToolCallTitle(input) -> DerivedToolTitle    the two, plus fallbacks
  *
- * The split is load-bearing: `src/kiro_crew/tool_call_title.py` is a
+ * The split is load-bearing: `src/efm_go/tool_call_title.py` is a
  * line-for-line mirror of `classifyToolCall` for the messaging renderers, and
  * `test/fixtures/tool_call_titles.json` pins both implementations to one case
  * table (action + English title). Change a rule here and the fixture fails on
@@ -78,7 +78,7 @@ import { i18nT } from '../i18n/t'
 
 import { classifyShellCommand, hostOf } from './shellCommandParse'
 import type { ToolAction } from './toolAction'
-import declaredMcpToolTitles from '../../../src/kiro_crew/data/mcp_tool_titles.json'
+import declaredMcpToolTitles from '../../../src/efm_go/data/mcp_tool_titles.json'
 
 export type { ToolAction } from './toolAction'
 

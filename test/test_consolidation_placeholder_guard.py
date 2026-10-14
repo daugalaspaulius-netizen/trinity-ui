@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.history import HistoryConsolidator, _is_plausible_memory_file
+from efm_go.history import HistoryConsolidator, _is_plausible_memory_file
 
 _PREFS_HEADER = "# User Preferences"
 _PROJECTS_HEADER = "# Active Projects"
@@ -223,11 +223,11 @@ async def test_only_v1_legacy_consolidation_can_replace_core_documents(
     tmp_path, monkeypatch, version, include_history
 ):
     """A real V2 store retains its anchors while still admitting new facts."""
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-    from kiro_crew.context import ContextBuilder
-    from kiro_crew.memory import MemoryStore
-    from kiro_crew.memory_stores import memory_store_dir_for, provision_member_memory
-    from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.context import ContextBuilder
+    from efm_go.memory import MemoryStore
+    from efm_go.memory_stores import memory_store_dir_for, provision_member_memory
+    from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
     store_name = None
     directory = tmp_path / "global"
@@ -255,7 +255,7 @@ async def test_only_v1_legacy_consolidation_can_replace_core_documents(
     try:
         c = _make_consolidator(memory)
         c._vector_store = vectors
-        monkeypatch.setattr("kiro_crew.context.store_of_session", lambda *_: store_name)
+        monkeypatch.setattr("efm_go.context.store_of_session", lambda *_: store_name)
         monkeypatch.setattr(ContextBuilder, "ensure_store", AsyncMock(return_value=vectors))
         monkeypatch.setattr(ContextBuilder, "get_memory_for", lambda *a, **kw: memory)
         monkeypatch.setattr(ContextBuilder, "get_lessons_for", lambda *a, **kw: None)

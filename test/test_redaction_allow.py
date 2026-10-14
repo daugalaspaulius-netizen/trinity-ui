@@ -7,9 +7,9 @@ from typing import Iterator
 
 import pytest
 
-from kiro_crew.platform_compat import IS_POSIX
-from kiro_crew.security import redaction_allow
-from kiro_crew.security.exfil import redact_exfiltration_urls_with_records
+from efm_go.platform_compat import IS_POSIX
+from efm_go.security import redaction_allow
+from efm_go.security.exfil import redact_exfiltration_urls_with_records
 
 _LONG = "https://reviews.corp.example/reviews?filter=" + "a" * 260
 
@@ -83,11 +83,11 @@ def test_an_allowed_host_still_loses_a_credential() -> None:
 
 
 def test_display_pass_keeps_an_allowed_link_only_inside_its_scope() -> None:
-    from kiro_crew.dashboard.chat_utils import (
+    from efm_go.dashboard.chat_utils import (
         _clear_display_redaction_cache,
         redact_display_content,
     )
-    from kiro_crew.security.exfil import scoped_exempt_hosts
+    from efm_go.security.exfil import scoped_exempt_hosts
 
     _clear_display_redaction_cache()
     assert _LONG not in redact_display_content(_LONG)
@@ -98,7 +98,7 @@ def test_display_pass_keeps_an_allowed_link_only_inside_its_scope() -> None:
 
 
 def test_prepare_messages_relaxes_the_slot_workspace_hosts() -> None:
-    from kiro_crew.dashboard.chat_utils import _clear_display_redaction_cache, _prepare_messages
+    from efm_go.dashboard.chat_utils import _clear_display_redaction_cache, _prepare_messages
 
     _clear_display_redaction_cache()
     rows = [{"role": "assistant", "content": _LONG, "ts": "1"}]
@@ -109,7 +109,7 @@ def test_prepare_messages_relaxes_the_slot_workspace_hosts() -> None:
 
 
 def test_a_variant_shows_an_allowed_link_like_its_row() -> None:
-    from kiro_crew.dashboard.chat_utils import _clear_display_redaction_cache, _prepare_messages
+    from efm_go.dashboard.chat_utils import _clear_display_redaction_cache, _prepare_messages
 
     _clear_display_redaction_cache()
     saved, _warnings, records = redact_exfiltration_urls_with_records(_LONG)
@@ -131,7 +131,7 @@ def test_what_is_saved_never_depends_on_the_allow_list() -> None:
     import inspect
     import pkgutil
 
-    from kiro_crew.dashboard import chat_persistence, chat_runner, chat_turn, slot_persistence
+    from efm_go.dashboard import chat_persistence, chat_runner, chat_turn, slot_persistence
 
     # The save-side row projection is composed into chat_persistence from these,
     # and the runner's turn helpers into chat_runner from the chat_turn owners.
@@ -157,7 +157,7 @@ def test_what_is_saved_never_depends_on_the_allow_list() -> None:
 def test_the_live_frame_restores_an_allowed_link(monkeypatch) -> None:
     from types import SimpleNamespace
 
-    from kiro_crew.dashboard.state import DashboardState
+    from efm_go.dashboard.state import DashboardState
 
     row = _saved_row()
     sent: list[dict] = []
@@ -181,7 +181,7 @@ def _saved_row() -> dict:
 
 
 def test_a_saved_placeholder_shows_its_link_once_the_host_is_allowed() -> None:
-    from kiro_crew.dashboard.chat_utils import _clear_display_redaction_cache, _prepare_messages
+    from efm_go.dashboard.chat_utils import _clear_display_redaction_cache, _prepare_messages
 
     _clear_display_redaction_cache()
     row = _saved_row()
@@ -198,7 +198,7 @@ def test_a_saved_placeholder_shows_its_link_once_the_host_is_allowed() -> None:
 
 
 def test_restore_keeps_links_the_allow_does_not_cover() -> None:
-    from kiro_crew.security.exfil import restore_allowed_links
+    from efm_go.security.exfil import restore_allowed_links
 
     text, _, records = redact_exfiltration_urls_with_records(f"a {_LONG} b")
     assert len(records) == 1
@@ -215,7 +215,7 @@ def test_restore_keeps_links_the_allow_does_not_cover() -> None:
 def test_restore_leaves_a_host_whose_links_differ() -> None:
     """A placeholder names only its host, so with two addresses on one host none
     is restored rather than one landing where the other stood."""
-    from kiro_crew.security.exfil import restore_allowed_links
+    from efm_go.security.exfil import restore_allowed_links
 
     second = _LONG.replace("filter=", "sort=")
     text, _, records = redact_exfiltration_urls_with_records(f"a {_LONG} b {_LONG} c {second}")
@@ -233,7 +233,7 @@ def test_an_allowed_host_is_neither_redacted_nor_reported() -> None:
 
 def test_the_allow_list_lives_in_a_sealed_read_only_leaf(monkeypatch) -> None:
     """An agent that could write the list could allow its own exfiltration host."""
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(redaction_allow, "_path_override", None)
     leaf = redaction_allow._path().parent.name
@@ -297,7 +297,7 @@ def test_the_settings_list_reads_the_file_even_before_the_load_lands() -> None:
 def test_restore_leaves_a_host_with_a_placeholder_no_record_stands_behind() -> None:
     """A placeholder the model echoed in prose has no record, so it must not
     become a link to an address that never stood there."""
-    from kiro_crew.security.exfil import restore_allowed_links
+    from efm_go.security.exfil import restore_allowed_links
 
     text, _, records = redact_exfiltration_urls_with_records(f"a {_LONG}")
     echoed = text + " and again " + text.split("a ", 1)[1]
@@ -308,7 +308,7 @@ def test_restore_leaves_a_host_with_a_placeholder_no_record_stands_behind() -> N
 def test_the_file_edit_tool_cannot_write_the_allow_list(monkeypatch) -> None:
     """The sandbox seal covers a shell; the write gate covers the file-edit tool
     on a host with no OS sandbox."""
-    from kiro_crew.security import is_sensitive_write_path
+    from efm_go.security import is_sensitive_write_path
 
     monkeypatch.setattr(redaction_allow, "_path_override", None)
     assert is_sensitive_write_path(str(redaction_allow._path()))

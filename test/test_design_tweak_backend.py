@@ -26,8 +26,8 @@ if sys.platform == "win32":  # pragma: no cover - platform-gated
     import _winapi
 
 from conftest import requires_symlinks
-from kiro_crew.apps.builtins.design_tweak.backend import server
-from kiro_crew.platform_compat import IS_POSIX
+from efm_go.apps.builtins.design_tweak.backend import server
+from efm_go.platform_compat import IS_POSIX
 
 
 class TestContained:
@@ -1740,7 +1740,7 @@ class TestStaticPreviewIsSizeBounded:
 
 
 class TestDataHomeDefault:
-    def test_default_home_is_kiro_crew(self, tmp_path, monkeypatch):
+    def test_default_home_is_efm_go(self, tmp_path, monkeypatch):
         """With no env override the data dir lands under ~/.kiro/crew.
 
         The pre-move `~/.kirocrew` home is dead; loading a fresh copy of the

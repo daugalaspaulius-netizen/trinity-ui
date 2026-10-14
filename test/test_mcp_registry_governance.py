@@ -16,11 +16,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew import cli_doctor
-from kiro_crew import kiro_cli as kiro_cli_mod
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.kiro_cli import (
+from efm_go import agent as agent_mod
+from efm_go import cli_doctor
+from efm_go import kiro_cli as kiro_cli_mod
+from efm_go.config import KiroCrewConfig
+from efm_go.kiro_cli import (
     kiro_cli_state_dbs,
     mcp_governance_may_apply,
     signed_in_via_idc,
@@ -132,7 +132,7 @@ class TestIdentityProbeIsAudited:
     """
 
     def test_read_id_is_registered(self):
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         assert kiro_cli_mod._IDC_PROBE_READ_ID in hooks._AUDIT_ONLY_READ_IDS
 
@@ -145,7 +145,7 @@ class TestIdentityProbeIsAudited:
             seen.append((read_id, outcome))
             return True
 
-        monkeypatch.setattr("kiro_crew.hooks.emit_internal_read_audit", _spy)
+        monkeypatch.setattr("efm_go.hooks.emit_internal_read_audit", _spy)
         assert signed_in_via_idc("linux", tmp_path, {}) is True
         assert seen and seen[0][0] == kiro_cli_mod._IDC_PROBE_READ_ID
 
@@ -154,7 +154,7 @@ class TestIdentityProbeIsAudited:
         merely log — otherwise the audit requirement is advisory."""
         db = kiro_cli_state_dbs("linux", tmp_path, {})[0]
         TestIdcDetection._make_db(db, ("auth.idc.start-url",))
-        monkeypatch.setattr("kiro_crew.hooks.emit_internal_read_audit", lambda *_: False)
+        monkeypatch.setattr("efm_go.hooks.emit_internal_read_audit", lambda *_: False)
         assert signed_in_via_idc("linux", tmp_path, {}) is False
 
 

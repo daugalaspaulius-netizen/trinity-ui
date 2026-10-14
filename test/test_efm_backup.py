@@ -27,7 +27,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from kiro_crew.efm_backup import (
+from efm_go.efm_backup import (
     SECRETS_INVENTORY,
     VENDOR_ENDPOINT_PATTERNS,
     check_backup_content,
@@ -183,7 +183,7 @@ def main():
         cfg_text = (clean_dir / "config.json").read_text()
         report(
             "Kiro vendor endpoints NOT restored",
-            "crew.kiro.dev" not in cfg_text,
+            "efmleads.com" not in cfg_text,
         )
 
     # ============================================================
@@ -259,9 +259,9 @@ def main():
     # 5. Vendor sanitize function
     test_config = {
         "beacon_enabled": True,
-        "update_feed_url": "https://updates.crew.kiro.dev",
+        "update_feed_url": "https://efmleads.com/go/updates",
         "keep_me": "value",
-        "nested": {"catalog_endpoint": "https://apps.crew.kiro.dev", "keep": True},
+        "nested": {"catalog_endpoint": "https://efmleads.com/api/apps", "keep": True},
     }
     cleaned = sanitize_vendor_config(test_config)
     report(
@@ -279,7 +279,7 @@ def main():
     )
 
     # 6. Secret path detection
-    from kiro_crew.efm_backup import is_secret_path
+    from efm_go.efm_backup import is_secret_path
     is_sec, name = is_secret_path("config.local.json")
     report("Secret path detection: config.local.json", is_sec and name == "api_keys")
     is_sec, name = is_secret_path("workspace/my_doc.md")

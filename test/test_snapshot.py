@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.snapshot — snapshot and restore."""
+"""Tests for efm_go.snapshot — snapshot and restore."""
 
 from __future__ import annotations
 
@@ -16,9 +16,9 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_o_nofollow, requires_symlinks
-from kiro_crew import snapshot as snapshot_mod
-from kiro_crew.jsonl_util import OversizedRecord, UndecodableRecord, UnreadableRecord
-from kiro_crew.snapshot import restore_main, snapshot_main
+from efm_go import snapshot as snapshot_mod
+from efm_go.jsonl_util import OversizedRecord, UndecodableRecord, UnreadableRecord
+from efm_go.snapshot import restore_main, snapshot_main
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ def unpinnable_argv() -> list[str]:
     platform without descriptors, so such a test skips there rather than asserting a
     promise the platform cannot keep.
     """
-    from kiro_crew import pinned_fs
+    from efm_go import pinned_fs
 
     return [] if pinned_fs.supports_pinned_tree_walk() else ["--allow-unpinned-staging"]
 
@@ -902,7 +902,7 @@ class TestSecurity:
         """The SEL key moved to trust/sel_hmac.key; NEVER_SNAPSHOT_FILES is
         matched by BASENAME so the key must be dropped from a bundle at BOTH
         the new and the legacy location."""
-        from kiro_crew.snapshot import _data_filter
+        from efm_go.snapshot import _data_filter
 
         legacy = tarfile.TarInfo(name="snap/sel_hmac.key")
         assert _data_filter(legacy) is None
@@ -1195,7 +1195,7 @@ class TestTheArchiveIsLockedDownBeforeItIsPublished:
     """
 
     def test_the_lockdown_runs_before_the_archive_is_published(self, tmp_path, monkeypatch):
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         src = tmp_path / "src"
         out = tmp_path / "out"
@@ -1209,7 +1209,7 @@ class TestTheArchiveIsLockedDownBeforeItIsPublished:
             locked.append(Path(path))
             return real(path)
 
-        monkeypatch.setattr("kiro_crew.platform_compat.restrict_to_owner", _recording)
+        monkeypatch.setattr("efm_go.platform_compat.restrict_to_owner", _recording)
         snapshot_main([str(out)] + unpinnable_argv())
 
         published = sorted(out.glob("kirocrew-snapshot-*.tar.gz"))
@@ -1229,7 +1229,7 @@ class TestTheArchiveIsLockedDownBeforeItIsPublished:
         monkeypatch.setenv("KIROCREW_HOME", str(src))
 
         monkeypatch.setattr(
-            "kiro_crew.platform_compat.restrict_to_owner",
+            "efm_go.platform_compat.restrict_to_owner",
             lambda path: (_ for _ in ()).throw(OSError("icacls: transient failure")),
         )
 
@@ -2003,7 +2003,7 @@ class TestNotificationCopyWhenNoLiveFileExists(_NotificationCopyFixtures):
         clean, home2 = self._snap(tmp_path / "clean", self.GOOD + self.MORE)
         monkeypatch.setenv("KIROCREW_HOME", str(home2))
         self._merge(clean, home2)
-        from kiro_crew.dashboard import state as dashboard_state
+        from efm_go.dashboard import state as dashboard_state
 
         assert len(dashboard_state._load_notifications()) == 2
 
@@ -2411,7 +2411,7 @@ class TestNotificationCopyWhenNoLiveFileExists(_NotificationCopyFixtures):
         The note is SUBMITTED to the executor rather than written inline, because that is
         the product's own route and the only one the serialisation can order.
         """
-        from kiro_crew.dashboard import state as dashboard_state
+        from efm_go.dashboard import state as dashboard_state
 
         snap, home = self._snap(
             tmp_path,
@@ -2497,7 +2497,7 @@ class TestNotificationCopyWhenNoLiveFileExists(_NotificationCopyFixtures):
 
         snap, home = self._snap(tmp_path, self.GOOD)
         monkeypatch.setenv("KIROCREW_HOME", str(home))
-        from kiro_crew.dashboard import state as dashboard_state
+        from efm_go.dashboard import state as dashboard_state
 
         pool = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="notif-io")
         monkeypatch.setattr(dashboard_state, "_notification_io_pool", pool)
@@ -2527,7 +2527,7 @@ class TestNotificationCopyWhenNoLiveFileExists(_NotificationCopyFixtures):
         copy is occupying and queues behind it. Asserted for the `pool is None` path
         specifically, because that is the branch whose reasoning was wrong.
         """
-        from kiro_crew.dashboard import state as dashboard_state
+        from efm_go.dashboard import state as dashboard_state
 
         snap, home = self._snap(
             tmp_path,
@@ -2606,7 +2606,7 @@ class TestNotificationCopyWhenNoLiveFileExists(_NotificationCopyFixtures):
         race it: the trigger fired on the destination, the worker stayed held,
         the note survived.
         """
-        from kiro_crew.dashboard import state as dashboard_state
+        from efm_go.dashboard import state as dashboard_state
 
         snap, home = self._snap(
             tmp_path,
@@ -2698,7 +2698,7 @@ class TestNotificationCopyWhenNoLiveFileExists(_NotificationCopyFixtures):
         real_import = builtins.__import__
 
         def failing(name, globals=None, locals=None, fromlist=(), level=0):
-            if name == "kiro_crew.dashboard" and "state" in (fromlist or ()):
+            if name == "efm_go.dashboard" and "state" in (fromlist or ()):
                 raise RuntimeError("dashboard state failed to initialise")
             return real_import(name, globals, locals, fromlist, level)
 
@@ -2723,7 +2723,7 @@ class TestNotificationCopyWhenNoLiveFileExists(_NotificationCopyFixtures):
         snap, home = self._snap(tmp_path, self.GOOD)
         # `None` in sys.modules makes the import raise ImportError, which is the exact
         # branch under test rather than a stand-in for it.
-        monkeypatch.setitem(sys.modules, "kiro_crew.dashboard.state", None)
+        monkeypatch.setitem(sys.modules, "efm_go.dashboard.state", None)
         snapshot_mod._copy_notifications(snap / "notifications.jsonl", home / "notifications.jsonl")
         assert (home / "notifications.jsonl").read_bytes() == self.GOOD
 
@@ -2749,7 +2749,7 @@ class TestNotificationCopyWhenNoLiveFileExists(_NotificationCopyFixtures):
         """
         import concurrent.futures
 
-        from kiro_crew.dashboard import state as dashboard_state
+        from efm_go.dashboard import state as dashboard_state
 
         real_executor = concurrent.futures.ThreadPoolExecutor
 
@@ -2867,7 +2867,7 @@ class TestNotificationCopyRefusalWithoutONofollow(_NotificationCopyFixtures):
             opens.append(path)
             return real_open(path, *a, **kw)
 
-        from kiro_crew.dashboard import state as dashboard_state
+        from efm_go.dashboard import state as dashboard_state
 
         real_exec = dashboard_state._notification_io_executor
 

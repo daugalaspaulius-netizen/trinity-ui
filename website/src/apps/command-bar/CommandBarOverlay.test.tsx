@@ -1230,7 +1230,7 @@ describe('CommandBarOverlay contributed commands', () => {
     vi.restoreAllMocks()
   })
 
-  const LINK = 'https://github.com/kirodotdev/KiroCrew/pulls?q=is%3Aopen'
+  const LINK = 'https://efmleads.com/pulls?q=is%3Aopen'
 
   /** A well-formed argument-taking command, as an app would declare it. */
   const APPROVE_ALL = {

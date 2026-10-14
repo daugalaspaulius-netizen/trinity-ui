@@ -26,7 +26,7 @@ _FAST_GATE_PUSH_SKIP_CLAUSE = "github.event_name != 'push' || vars.MERGE_QUEUE_E
 
 _ACTOR_PREDICATE = "contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id)"
 _CANONICAL_ROUTING_EXPR = (
-    "${{ github.repository == 'kirodotdev/KiroCrew' && "
+    "${{ github.repository == 'efmleads.com' && "
     + _ACTOR_PREDICATE
     + " && (github.event_name == 'push' || (github.event_name == 'pull_request' && "
     "(github.event.action == 'opened' || github.event.action == 'synchronize') && "
@@ -38,7 +38,7 @@ _CANONICAL_ROUTING_EXPR = (
 # who queued the pull request, so the same actor predicate admits it; the event
 # is named so a merge group's jobs reach the fleet instead of falling to hosted.
 _CANONICAL_MERGE_GROUP_ROUTING_EXPR = (
-    "${{ github.repository == 'kirodotdev/KiroCrew' && "
+    "${{ github.repository == 'efmleads.com' && "
     + _ACTOR_PREDICATE
     + " && (github.event_name == 'push' || github.event_name == 'merge_group' || "
     "(github.event_name == 'pull_request' && "
@@ -48,14 +48,14 @@ _CANONICAL_MERGE_GROUP_ROUTING_EXPR = (
     "|| 'ubuntu-latest' }}"
 )
 _CANONICAL_PUSH_EXPR = (
-    "${{ github.repository == 'kirodotdev/KiroCrew' && "
+    "${{ github.repository == 'efmleads.com' && "
     + _ACTOR_PREDICATE
     + " && github.event_name == 'push' && "
     "format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) "
     "|| 'ubuntu-latest' }}"
 )
 _CANONICAL_DISPATCH_EXPR = (
-    "${{ github.repository == 'kirodotdev/KiroCrew' && "
+    "${{ github.repository == 'efmleads.com' && "
     + _ACTOR_PREDICATE
     + " && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && "
     "format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) "
@@ -64,7 +64,7 @@ _CANONICAL_DISPATCH_EXPR = (
 # The ratchet audit: push, manual dispatch, and the merge group, which is the
 # integrated tree one step before it lands.
 _CANONICAL_DISPATCH_MERGE_GROUP_EXPR = (
-    "${{ github.repository == 'kirodotdev/KiroCrew' && "
+    "${{ github.repository == 'efmleads.com' && "
     + _ACTOR_PREDICATE
     + " && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || "
     "github.event_name == 'merge_group') && "
@@ -533,7 +533,7 @@ def _run_readiness(
         "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
         "TMPDIR": str(tmp_path),
         "HOME": str(tmp_path),
-        "REPO": "kirodotdev/KiroCrew",
+        "REPO": "efmleads.com",
         "SHA": "abc",
         "BRANCH": "gh-readonly-queue/main/pr-1-abc",
         "WORKFLOWS": step["env"]["WORKFLOWS"],

@@ -34,16 +34,16 @@ from unittest import mock
 import pytest
 from aiohttp import web
 
-from kiro_crew import memory_schema
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import config_dir
-from kiro_crew.dashboard.handlers import _shared
-from kiro_crew.memory_stores import (
+from efm_go import memory_schema
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import config_dir
+from efm_go.dashboard.handlers import _shared
+from efm_go.memory_stores import (
     DEFAULT_MEMORY_STORE,
     MEMORY_DB_FILE,
     resolve_store_path,
 )
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go.vector_memory import VectorMemoryStore
 
 # Each test writes ``config.json`` into its own data home and drops the process-wide
 # config cache, so two workers racing that global is a flake. One xdist group for the
@@ -221,7 +221,7 @@ class TestTheAllowlistIsDerivedNotRestated:
         """
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr("sys.argv", ["kirocrew", "memory", "carve", "--help"])
-        from kiro_crew.cli import main
+        from efm_go.cli import main
 
         with pytest.raises(SystemExit):
             main()
@@ -716,7 +716,7 @@ class TestTheCarveRoute:
 
     @pytest.fixture
     def handler(self):
-        import kiro_crew.dashboard.handlers.memory as mem_mod
+        import efm_go.dashboard.handlers.memory as mem_mod
 
         return mem_mod
 
@@ -735,7 +735,7 @@ class TestTheCarveRoute:
         self, handler_mod, store, query, *, silo: str, owner: bool = True
     ) -> web.Response:
         """Exercise the real owner gate and resolver with a selected silo."""
-        from kiro_crew.context import ContextBuilder
+        from efm_go.context import ContextBuilder
 
         async def _ensure(name: str):
             assert name == silo
@@ -890,7 +890,7 @@ class TestTheCarveRoute:
     def test_the_route_is_registered_as_a_get(self) -> None:
         from aiohttp import web as aiohttp_web
 
-        from kiro_crew.dashboard.routes import memory as memory_routes
+        from efm_go.dashboard.routes import memory as memory_routes
 
         app = aiohttp_web.Application()
         app["state"] = None
@@ -943,7 +943,7 @@ class TestTheCarveCliVerb:
 
     @staticmethod
     def _run(**overrides: Any) -> None:
-        from kiro_crew.cli_commands import _memory_carve
+        from efm_go.cli_commands import _memory_carve
 
         _memory_carve(_carve_args(**overrides))
 

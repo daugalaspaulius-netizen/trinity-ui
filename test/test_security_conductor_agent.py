@@ -12,13 +12,13 @@ from __future__ import annotations
 
 import json
 
-from kiro_crew import agent, subagent
-from kiro_crew.agent_files import (
+from efm_go import agent, subagent
+from efm_go.agent_files import (
     OWNED_KIRO_AGENT_FILES,
     SECURITY_CONDUCTOR_AGENT_FILENAME,
 )
-from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 #: A release that accepts a spec ``permissions`` block, and one that refuses it,
 #: expressed against the floor so raising it cannot strand these tests.
@@ -31,13 +31,13 @@ def _pin_spec_permissions_cli(monkeypatch, which):
     """Pin what the shared writer gate believes the installed kiro-cli is.
 
     ``_write_derived_permissions`` reads ``installed_kiro_cli_version``
-    function-locally from ``kiro_crew.kiro_cli``, so the patch lands there.
+    function-locally from ``efm_go.kiro_cli``, so the patch lands there.
     Without it CI's absent binary reads as "unknown" and the field is withheld,
     failing a shared permissions assertion for a host reason. ``which`` is
     ``"accepts"``, ``"refuses"`` or ``"unknown"``.
     """
     version = {"accepts": _ACCEPTS, "refuses": _REFUSES, "unknown": None}[which]
-    monkeypatch.setattr("kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: version)
+    monkeypatch.setattr("efm_go.kiro_cli.installed_kiro_cli_version", lambda: version)
 
 
 def _stub_environment(
@@ -257,7 +257,7 @@ class TestSecurityConductorInstaller:
         security = json.loads(
             (tmp_path / SECURITY_CONDUCTOR_AGENT_FILENAME).read_text(encoding="utf-8")
         )
-        from kiro_crew.agent_files import PIPELINE_CONDUCTOR_AGENT_FILENAME
+        from efm_go.agent_files import PIPELINE_CONDUCTOR_AGENT_FILENAME
 
         pipeline = json.loads(
             (tmp_path / PIPELINE_CONDUCTOR_AGENT_FILENAME).read_text(encoding="utf-8")
@@ -281,7 +281,7 @@ class TestSecurityConductorInstaller:
         skill = (
             Path(__file__).resolve().parents[1]
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "builtin_skills"
             / "security-conductor"
             / "SKILL.md"

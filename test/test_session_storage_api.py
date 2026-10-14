@@ -20,8 +20,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import session_storage as session_storage_module
-from kiro_crew.dashboard.handlers import session_storage as handler
+from efm_go import session_storage as session_storage_module
+from efm_go.dashboard.handlers import session_storage as handler
 
 _DAY = 86400.0
 
@@ -1603,8 +1603,8 @@ def test_the_activation_reads_the_live_map_under_the_lock_a_resume_maps_under():
     """A mapping in the live map is seen before its deferred file write lands."""
     from types import SimpleNamespace
 
-    from kiro_crew.dashboard.handlers import session_storage as handler
-    from kiro_crew.session_map import _MAP_LOCK
+    from efm_go.dashboard.handlers import session_storage as handler
+    from efm_go.session_map import _MAP_LOCK
 
     live = SimpleNamespace(mapped_sids_by_key=lambda: {"dashboard:chat-1": "acp-resumed"})
     state = SimpleNamespace(sessions=SimpleNamespace(_session_map=live))

@@ -59,8 +59,8 @@ import ChatSidebar from '../pages/ChatSidebar'
 import type { ChatSlot } from '../types'
 import type { RootState } from '../store'
 
-const PR = (n: number) => `https://github.com/kirodotdev/KiroCrew/pull/${n}`
-const ISSUE = (n: number) => `https://github.com/kirodotdev/KiroCrew/issues/${n}`
+const PR = (n: number) => `https://efmleads.com/pull/${n}`
+const ISSUE = (n: number) => `https://efmleads.com/issues/${n}`
 
 /** What the slots payload carries: the per-kind budget, three PRs + one issue. */
 const budgeted = [

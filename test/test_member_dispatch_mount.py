@@ -32,11 +32,11 @@ from types import SimpleNamespace
 
 import pytest
 
-import kiro_crew.validation  # noqa: F401 - break the legacy import cycle first
-from kiro_crew import acp_tool_gate
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.kas_agents import to_client_custom_agent
-from kiro_crew.acp.types import (
+import efm_go.validation  # noqa: F401 - break the legacy import cycle first
+from efm_go import acp_tool_gate
+from efm_go.acp.client import AcpClient
+from efm_go.acp.kas_agents import to_client_custom_agent
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_GOOSE,
@@ -46,13 +46,13 @@ from kiro_crew.acp.types import (
     ACP_BACKENDS_MEMBER_DISPATCH,
     ACP_BACKENDS_SESSION_MCP_ARRAY,
 )
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
-from kiro_crew.members import (
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+from efm_go.members import (
     MEMBER_DISPATCH_SERVER,
     is_member_session_key,
     member_dispatch_session_server,
 )
-from kiro_crew.providers.acp import AcpProvider
+from efm_go.providers.acp import AcpProvider
 
 MEMBER_KEY = "dashboard_member-autofix"
 
@@ -70,8 +70,8 @@ def goose_agents_dir(tmp_path, monkeypatch):
     a spec-described control-plane server (``mirrors.identity``), so whatever appears
     in the array is the entry the member mount placed.
     """
-    import kiro_crew.agent as agent_mod
-    from kiro_crew.acp import session_mcp
+    import efm_go.agent as agent_mod
+    from efm_go.acp import session_mcp
 
     d = tmp_path / "agents"
     d.mkdir()
@@ -114,7 +114,7 @@ def _goose_client(tmp_path: Path, session_key: str):
     Driving a real goose session would activate the harness, which needs a provider
     this test host does not have.
     """
-    from kiro_crew.acp.client import AcpClient as _C
+    from efm_go.acp.client import AcpClient as _C
 
     client = object.__new__(_C)
     # ``backend`` is a read-only property over this attribute on the real class.
@@ -242,7 +242,7 @@ class TestMemberDispatchSessionServer:
         port: the serving resolver's remaining order — configured, marker,
         default — decides it, and the member child inherits that answer instead
         of re-deriving it without lsof."""
-        from kiro_crew import port_resolution
+        from efm_go import port_resolution
 
         monkeypatch.delenv("KIROCREW_BOUND_PORT", raising=False)
         monkeypatch.setattr(port_resolution, "resolve_serving_port", lambda: 6123)
@@ -269,7 +269,7 @@ class TestMemberDispatchSessionServer:
         the member slot does not exist, and every verb would be refused as
         ``caller_unidentified``. Same helper the managed Crew servers use, so the
         two cannot drift."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "_managed_mcp_env", lambda: {"KIROCREW_HOME": "/pods/x"})
         entry = member_dispatch_session_server(MEMBER_KEY)
@@ -281,7 +281,7 @@ class TestMemberDispatchSessionServer:
         """No ``KIROCREW_HOME`` override on a default install: the env is exactly
         the identity pair plus the bound port — byte-identical to before the
         override was threaded through."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "_managed_mcp_env", lambda: {})
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "7779")
@@ -293,7 +293,7 @@ class TestMemberDispatchSessionServer:
         ]
 
     def test_unresolvable_command_degrades_to_none(self, monkeypatch):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "_kirocrew_mcp_invocation", lambda _sub: ("", []))
         assert member_dispatch_session_server(MEMBER_KEY) is None
@@ -338,7 +338,7 @@ class TestKasMemberProjection:
         """The member grant set (conductor's verbs plus the created_by-bounded
         write verbs), merged BEFORE the ceiling filter so it crosses the same
         governance gate as every other grant."""
-        from kiro_crew.agent import _MEMBER_DASHBOARD_GRANTS
+        from efm_go.agent import _MEMBER_DASHBOARD_GRANTS
 
         out = to_client_custom_agent("a", dict(self.SPEC), "p", member_dispatch=True)
         rendered = str(out.get("permissions") or {})
@@ -497,7 +497,7 @@ class TestCodexMemberMount:
         codex-acp 1.11.0 advertises; a remote-transport entry would be dropped with
         no error anywhere.
         """
-        from kiro_crew.acp.harness.codex import CodexHarness
+        from efm_go.acp.harness.codex import CodexHarness
 
         entry = member_dispatch_session_server(MEMBER_KEY, "f" * 64)
         assert entry is not None
@@ -574,7 +574,7 @@ class TestOpencodeSessionArray:
 
     @staticmethod
     def _client(agents_dir: Path, tmp_path: Path, session_key: str):
-        from kiro_crew.acp.client import AcpClient as _C
+        from efm_go.acp.client import AcpClient as _C
 
         client = object.__new__(_C)
         # ``backend`` is a read-only property over this attribute on the real class.
@@ -595,8 +595,8 @@ class TestOpencodeSessionArray:
         Same one ``test_opencode_session_mcp.py`` uses: materialization would
         otherwise rebuild the managed default and overwrite the spec under test.
         """
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.acp import session_mcp
+        import efm_go.agent as agent_mod
+        from efm_go.acp import session_mcp
 
         d = tmp_path / "agents"
         d.mkdir()
@@ -747,7 +747,7 @@ class TestRestrictedServerIsNotReAdded:
     def test_the_channel_question_is_answered_from_the_declaration(self):
         """And it is the declaration the projection itself acts on, so the two cannot
         disagree about one backend."""
-        from kiro_crew.providers.mirrors import PerToolDeny, projection_for
+        from efm_go.providers.mirrors import PerToolDeny, projection_for
 
         assert projection_for(ACP_BACKEND_OPENCODE).per_tool_deny is PerToolDeny.WHOLE_SERVER
         assert projection_for(ACP_BACKEND_GOOSE).per_tool_deny is PerToolDeny.WHOLE_SERVER
@@ -803,7 +803,7 @@ class TestDisabledServerIsNeverMounted:
     def test_the_parse_reads_both_sources_and_exempts_nothing(self):
         """Including the control plane: ``disabled`` there is the user saying so, and
         this function's job is to report it rather than to judge it."""
-        from kiro_crew.acp.session_mcp import session_mcp_disabled_servers
+        from efm_go.acp.session_mcp import session_mcp_disabled_servers
 
         spec = {"mcpServers": {"from-spec": {"disabled": True}, "on": {}}}
         settings = {"mcpServers": {"kirocrew-core": {"disabled": True}}}
@@ -818,18 +818,18 @@ class TestRuntimeMemberThreading:
 
     @staticmethod
     def _runtime(monkeypatch, seen):
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         rt = object.__new__(runtime_mod.AcpRuntime)
         rt._acp_backend = ACP_BACKEND_KAS
         rt._mcp_gateway_overlay = None
 
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda _a: None)
-        import kiro_crew.acp.kas_agents as kas_agents_mod
-        import kiro_crew.config.paths as paths_mod
-        import kiro_crew.mcp_gateway.session_servers as session_servers_mod
+        import efm_go.acp.kas_agents as kas_agents_mod
+        import efm_go.config.paths as paths_mod
+        import efm_go.mcp_gateway.session_servers as session_servers_mod
 
         monkeypatch.setattr(paths_mod, "kiro_agents_dir", lambda: Path("/agents"))
         monkeypatch.setattr(kas_agents_mod, "load_agent_spec", lambda _dir, agent: {"name": agent})
@@ -877,7 +877,7 @@ class TestPoolBypass:
     """
 
     def test_member_key_is_recognized_for_bypass(self):
-        from kiro_crew.session_allocation import SessionAllocationService
+        from efm_go.session_allocation import SessionAllocationService
 
         assert SessionAllocationService._is_member_key("dashboard:member-x")
         assert SessionAllocationService._is_member_key("dashboard_member-x")
@@ -895,17 +895,17 @@ class TestMemberServerJoinsSubtraction:
 
     @pytest.mark.asyncio
     async def test_stubbed_set_gains_the_member_server(self, monkeypatch):
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         rt = object.__new__(runtime_mod.AcpRuntime)
         rt._acp_backend = ACP_BACKEND_KAS
         rt._mcp_gateway_overlay = None
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda _a: None)
-        import kiro_crew.acp.kas_agents as kas_agents_mod
-        import kiro_crew.config.paths as paths_mod
-        import kiro_crew.mcp_gateway.session_servers as session_servers_mod
+        import efm_go.acp.kas_agents as kas_agents_mod
+        import efm_go.config.paths as paths_mod
+        import efm_go.mcp_gateway.session_servers as session_servers_mod
 
         monkeypatch.setattr(paths_mod, "kiro_agents_dir", lambda: Path("/agents"))
         monkeypatch.setattr(kas_agents_mod, "load_agent_spec", lambda _dir, agent: {"name": agent})
@@ -933,17 +933,17 @@ class TestMemberServerJoinsSubtraction:
 
     @pytest.mark.asyncio
     async def test_non_member_set_is_unchanged(self, monkeypatch):
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         rt = object.__new__(runtime_mod.AcpRuntime)
         rt._acp_backend = ACP_BACKEND_KAS
         rt._mcp_gateway_overlay = None
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda _a: None)
-        import kiro_crew.acp.kas_agents as kas_agents_mod
-        import kiro_crew.config.paths as paths_mod
-        import kiro_crew.mcp_gateway.session_servers as session_servers_mod
+        import efm_go.acp.kas_agents as kas_agents_mod
+        import efm_go.config.paths as paths_mod
+        import efm_go.mcp_gateway.session_servers as session_servers_mod
 
         monkeypatch.setattr(paths_mod, "kiro_agents_dir", lambda: Path("/agents"))
         monkeypatch.setattr(kas_agents_mod, "load_agent_spec", lambda _dir, agent: {"name": agent})
@@ -974,7 +974,7 @@ class TestSelectProviderBackend:
     """The per-session half of the one backend-selection gate (H3/H13)."""
 
     def test_member_route(self):
-        from kiro_crew.members import select_provider_backend
+        from efm_go.members import select_provider_backend
 
         assert select_provider_backend(MEMBER_KEY, "kas", "") == "kas"
 
@@ -982,12 +982,12 @@ class TestSelectProviderBackend:
         """The default arm passes the configured value through UNCHANGED —
         normalization already happened at config load, and re-resolving here
         would be the second check H3 forbids."""
-        from kiro_crew.members import select_provider_backend
+        from efm_go.members import select_provider_backend
 
         assert select_provider_backend("dashboard_abc", "kas", "") == ""
 
     def test_denied_member_backend_degrades_to_kiro(self):
-        from kiro_crew.members import select_provider_backend
+        from efm_go.members import select_provider_backend
 
         assert select_provider_backend(MEMBER_KEY, "no-such-backend", "") == ""
 
@@ -999,14 +999,14 @@ class TestSessionHistoryWriteProtected:
     gain send/read/stop over the victim session)."""
 
     def test_sessions_dir_is_write_protected(self):
-        from kiro_crew.security import write_protected_home_paths
+        from efm_go.security import write_protected_home_paths
 
         assert any(p.endswith("/sessions") for p in write_protected_home_paths())
 
     def test_sessions_dir_stays_readable(self):
         """Write-protected, NOT sensitive: transcripts are the user's own
         conversations and reading them is routine."""
-        from kiro_crew.security import sensitive_home_dirs
+        from efm_go.security import sensitive_home_dirs
 
         assert not any(p.endswith("/sessions") for p in sensitive_home_dirs())
 
@@ -1143,7 +1143,7 @@ class TestGooseIdentityDrift:
 
     @staticmethod
     def _event(server: str, tool: str):
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         return AcpEvent(
             kind="permission_request",

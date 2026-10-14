@@ -1,4 +1,4 @@
-"""Additional coverage for ``kiro_crew.slack.gateway``.
+"""Additional coverage for ``efm_go.slack.gateway``.
 
 Focuses on the orchestrator surfaces the existing ``test_slack_gateway.py`` and
 ``test_turn_duration_slack.py`` do not reach:
@@ -31,26 +31,26 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import session_directive
-from kiro_crew import subagent as _sa
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TOOL_CALL, EVENT_TOOL_RESULT, AcpEvent
-from kiro_crew.autonudge import (
+from efm_go import session_directive
+from efm_go import subagent as _sa
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TOOL_CALL, EVENT_TOOL_RESULT, AcpEvent
+from efm_go.autonudge import (
     MANUAL_STOP_REASON,
     MONITOR_TERMINAL_REASON,
     AutoNudgeService,
     NudgeLoop,
 )
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.monitoring import models as monitor_models
-from kiro_crew.monitoring.completion import MonitorCompletionHook
-from kiro_crew.monitoring.models import (
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.monitoring import models as monitor_models
+from efm_go.monitoring.completion import MonitorCompletionHook
+from efm_go.monitoring.models import (
     MonitorActionDisposition,
     MonitorBudgets,
     MonitorOutcome,
     MonitorState,
 )
-from kiro_crew.session import SessionBusyError, SessionClosingError
-from kiro_crew.slack import gateway as gw
+from efm_go.session import SessionBusyError, SessionClosingError
+from efm_go.slack import gateway as gw
 
 #: Lost-run ceiling for a wait the test itself must end (a turn it parks, a
 #: replay it releases). A nudge turn's pre-turn chain makes real executor hops
@@ -767,7 +767,7 @@ class TestFireSlackNudgeGuards:
 
         orch.sessions.get_or_create = AsyncMock(return_value=(_DirectiveProvider(), False, False))
         orch.autonudge_svc = service
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: service)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: service)
         monkeypatch.setattr(gw, "_persist_turn_row", AsyncMock())
 
         result = await orch._fire_slack_nudge(loop, "[Monitor wake]")
@@ -1056,10 +1056,10 @@ class TestAutonudgeRouterAndObserver:
         existing_loops: list[NudgeLoop] | None = None,
         emit_during_start: NudgeLoop | None = None,
     ):
-        with patch("kiro_crew.slack.gateway.autonudge_enabled", return_value=True):
+        with patch("efm_go.slack.gateway.autonudge_enabled", return_value=True):
             with (
-                patch("kiro_crew.slack.gateway.AutoNudgeService") as mock_svc,
-                patch("kiro_crew.monitoring.controller.MonitorController") as mock_controller,
+                patch("efm_go.slack.gateway.AutoNudgeService") as mock_svc,
+                patch("efm_go.monitoring.controller.MonitorController") as mock_controller,
             ):
                 inst = MagicMock()
                 inst.subscribe = MagicMock()
@@ -1252,7 +1252,7 @@ class TestAutonudgeRouterAndObserver:
         """The kind is a stored string a hand-edited state file reads back as
         written, and this frame reaches every dashboard socket, so the scalar
         goes through the redaction the structured record goes through."""
-        from kiro_crew.slack import gateway as gateway_module
+        from efm_go.slack import gateway as gateway_module
 
         seen: list[object] = []
 
@@ -1286,8 +1286,8 @@ class TestAutonudgeRouterAndObserver:
         inactive row, and the member event log has to record it as a patrol stop
         -- a plain pause is not one -- or the drawer reads ``armed`` for good,
         since the boot closer closes only a log whose row is gone."""
-        from kiro_crew import eventlog_hooks
-        from kiro_crew.eventlog.types import PATROL_STOPPED
+        from efm_go import eventlog_hooks
+        from efm_go.eventlog.types import PATROL_STOPPED
 
         orch = _make_orchestrator()
         orch.dashboard_state = _mock_dashboard_state()
@@ -1570,8 +1570,8 @@ class TestAutonudgeRouterAndObserver:
 
 
 def _capture_subagent_kwargs(orch: Any) -> dict:
-    with patch("kiro_crew.slack.handler.is_yolo_mode", return_value=False):
-        with patch("kiro_crew.slack.gateway.SubagentManager") as mock_sm:
+    with patch("efm_go.slack.handler.is_yolo_mode", return_value=False):
+        with patch("efm_go.slack.gateway.SubagentManager") as mock_sm:
             inst = MagicMock()
             inst.start_reaper = MagicMock()
             mock_sm.return_value = inst
@@ -1697,7 +1697,7 @@ class TestTaskNotify:
         orch.ctx_builder = MagicMock()
         orch.conv_log = MagicMock()
         orch.consolidator = MagicMock()
-        with patch("kiro_crew.slack.gateway.TaskRunner") as mock_tr:
+        with patch("efm_go.slack.gateway.TaskRunner") as mock_tr:
             mock_tr.return_value = MagicMock()
             orch._init_task_runner()
             return mock_tr.call_args.kwargs["on_notify"]
@@ -1797,7 +1797,7 @@ class TestInitMcpGateway:
         orch = _make_orchestrator()
         orch._cfg.mcp_gateway.enabled = False
         orch._cfg.mcp_gateway.stub_servers = []
-        with patch("kiro_crew.slack.gateway.is_gateway_supported") as probe:
+        with patch("efm_go.slack.gateway.is_gateway_supported") as probe:
             await orch._init_mcp_gateway()
         probe.assert_not_called()
         assert orch._mcp_gateway_manager is None
@@ -1814,7 +1814,7 @@ class TestInitMcpGateway:
         orch = _make_orchestrator()
         orch._cfg.mcp_gateway.enabled = False
         orch._cfg.mcp_gateway.stub_servers = ["alpha-mcp"]
-        with patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=False) as probe:
+        with patch("efm_go.slack.gateway.is_gateway_supported", return_value=False) as probe:
             await orch._init_mcp_gateway()
         probe.assert_called_once()
 
@@ -1850,7 +1850,7 @@ class TestInitMcpGateway:
             calls.append("init")
             assert stub_servers == frozenset({"alpha-mcp"})
 
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=orch._cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=orch._cfg):
             with (
                 patch.object(orch, "_stop_mcp_broker", _stop),
                 patch.object(orch, "_init_mcp_gateway", _init),
@@ -1876,7 +1876,7 @@ class TestInitMcpGateway:
         async def _init() -> None:
             calls.append("init")
 
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=orch._cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=orch._cfg):
             with (
                 patch.object(orch, "_stop_mcp_broker", _stop),
                 patch.object(orch, "_init_mcp_gateway", _init),
@@ -1889,8 +1889,8 @@ class TestInitMcpGateway:
     async def test_unsupported_platform_returns_early(self):
         orch = _make_orchestrator()
         orch._cfg.mcp_gateway.enabled = True
-        with patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=False):
-            with patch("kiro_crew.slack.gateway.rewrite_agents") as rewriter:
+        with patch("efm_go.slack.gateway.is_gateway_supported", return_value=False):
+            with patch("efm_go.slack.gateway.rewrite_agents") as rewriter:
                 await orch._init_mcp_gateway()
         rewriter.assert_not_called()
         assert orch._mcp_gateway_manager is None
@@ -1900,13 +1900,13 @@ class TestInitMcpGateway:
         orch = _make_orchestrator()
         orch._cfg.mcp_gateway.enabled = True
         with (
-            patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
+            patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
             patch(
-                "kiro_crew.slack.gateway.rewrite_kwargs",
+                "efm_go.slack.gateway.rewrite_kwargs",
                 side_effect=_gateway_rewrite_inputs(tmp_path),
             ),
-            patch("kiro_crew.slack.gateway.rewrite_agents", side_effect=RuntimeError("bad spec")),
-            patch("kiro_crew.slack.gateway.GatewayManager") as mgr_cls,
+            patch("efm_go.slack.gateway.rewrite_agents", side_effect=RuntimeError("bad spec")),
+            patch("efm_go.slack.gateway.GatewayManager") as mgr_cls,
         ):
             await orch._init_mcp_gateway()
         mgr_cls.assert_not_called()
@@ -1922,16 +1922,16 @@ class TestInitMcpGateway:
         manager = MagicMock()
         manager.start = AsyncMock(return_value=True)
         with (
-            patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
+            patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
             patch(
-                "kiro_crew.slack.gateway.rewrite_kwargs",
+                "efm_go.slack.gateway.rewrite_kwargs",
                 side_effect=_gateway_rewrite_inputs(tmp_path),
             ),
             patch(
-                "kiro_crew.slack.gateway.rewrite_agents",
+                "efm_go.slack.gateway.rewrite_agents",
                 return_value=(None, {"MC_MCP_TARGET_X": "1"}),
             ),
-            patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager),
+            patch("efm_go.slack.gateway.GatewayManager", return_value=manager),
         ):
             await orch._init_mcp_gateway()
         assert orch._mcp_gateway_manager is manager
@@ -1954,13 +1954,13 @@ class TestInitMcpGateway:
         manager = MagicMock()
         manager.start = AsyncMock(return_value=True)
         with (
-            patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
+            patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
             patch(
-                "kiro_crew.slack.gateway.rewrite_kwargs",
+                "efm_go.slack.gateway.rewrite_kwargs",
                 side_effect=_gateway_rewrite_inputs(tmp_path),
             ),
-            patch("kiro_crew.slack.gateway.rewrite_agents", return_value=(None, {})) as rewriter,
-            patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager),
+            patch("efm_go.slack.gateway.rewrite_agents", return_value=(None, {})) as rewriter,
+            patch("efm_go.slack.gateway.GatewayManager", return_value=manager),
         ):
             await orch._init_mcp_gateway(stub_servers=frozenset({"alpha-mcp"}))
 
@@ -1987,15 +1987,15 @@ class TestInitMcpGateway:
         manager = MagicMock()
         manager.start = AsyncMock(return_value=True)
         with (
-            patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
+            patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
             patch(
-                "kiro_crew.slack.gateway.rewrite_kwargs",
+                "efm_go.slack.gateway.rewrite_kwargs",
                 side_effect=_gateway_rewrite_inputs(tmp_path),
             ),
-            patch("kiro_crew.slack.gateway.rewrite_agents", return_value=(None, {})),
-            patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager),
+            patch("efm_go.slack.gateway.rewrite_agents", return_value=(None, {})),
+            patch("efm_go.slack.gateway.GatewayManager", return_value=manager),
         ):
-            with caplog.at_level(logging.INFO, logger="kiro_crew.slack.gateway"):
+            with caplog.at_level(logging.INFO, logger="efm_go.slack.gateway"):
                 await orch._init_mcp_gateway(stub_servers=frozenset({"alpha-mcp"}))
 
         ready = [r for r in caplog.records if "broker ready" in r.getMessage()]
@@ -2020,13 +2020,13 @@ class TestInitMcpGateway:
         manager = MagicMock()
         manager.start = AsyncMock(return_value=False)  # transient failure
         with (
-            patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
+            patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
             patch(
-                "kiro_crew.slack.gateway.rewrite_kwargs",
+                "efm_go.slack.gateway.rewrite_kwargs",
                 side_effect=_gateway_rewrite_inputs(tmp_path),
             ),
-            patch("kiro_crew.slack.gateway.rewrite_agents", return_value=(None, {})),
-            patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager),
+            patch("efm_go.slack.gateway.rewrite_agents", return_value=(None, {})),
+            patch("efm_go.slack.gateway.GatewayManager", return_value=manager),
         ):
             await orch._init_mcp_gateway()
 
@@ -2043,13 +2043,13 @@ class TestInitMcpGateway:
         manager = MagicMock()
         manager.start = AsyncMock(return_value=False)
         with (
-            patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
+            patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
             patch(
-                "kiro_crew.slack.gateway.rewrite_kwargs",
+                "efm_go.slack.gateway.rewrite_kwargs",
                 side_effect=_gateway_rewrite_inputs(tmp_path),
             ),
-            patch("kiro_crew.slack.gateway.rewrite_agents", return_value=(None, {})),
-            patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager),
+            patch("efm_go.slack.gateway.rewrite_agents", return_value=(None, {})),
+            patch("efm_go.slack.gateway.GatewayManager", return_value=manager),
         ):
             await orch._init_mcp_gateway()
         assert orch._mcp_gateway_manager is None
@@ -2279,7 +2279,7 @@ class TestFireDashboardNudgeDispatch:
         # spawn_guarded_turn, so a plain sentinel avoids creating a coroutine
         # nothing will ever await.
         task = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat._run_chat", MagicMock(return_value="CORO"))
+        monkeypatch.setattr("efm_go.dashboard.chat._run_chat", MagicMock(return_value="CORO"))
         monkeypatch.setattr(gw, "spawn_guarded_turn", MagicMock(return_value=task))
 
         loop = _loop("chat-1", cycle_count=1)
@@ -2337,7 +2337,7 @@ class TestFireDashboardNudgeDispatch:
             return restored
 
         monkeypatch.setattr(gw, "rehydrate_slot_from_history_async", _rehydrate)
-        monkeypatch.setattr("kiro_crew.dashboard.chat._run_chat", MagicMock(return_value="CORO"))
+        monkeypatch.setattr("efm_go.dashboard.chat._run_chat", MagicMock(return_value="CORO"))
         monkeypatch.setattr(gw, "spawn_guarded_turn", MagicMock(return_value=MagicMock()))
 
         assert await orch._fire_dashboard_nudge(_loop("chat-9")) is True
@@ -2567,7 +2567,7 @@ class TestFireWebexNudge:
         assert kwargs == {"interpret_commands": False}
         assert inbound.person_email == "a@b.test"
         assert inbound.text.startswith("[auto-nudge cycle 1]")
-        from kiro_crew.webex.transport import ROOM_DIRECT
+        from efm_go.webex.transport import ROOM_DIRECT
 
         assert inbound.room_type == ROOM_DIRECT
 
@@ -2749,7 +2749,7 @@ class TestMcpBrokerRefreshPrefetchAndPersistArms:
         orch = _make_orchestrator()
         failing = AsyncMock(side_effect=RuntimeError("registry unreachable"))
         with patch.object(gw, "resolve_prefetch", failing):
-            with caplog.at_level(logging.ERROR, logger="kiro_crew.slack.gateway"):
+            with caplog.at_level(logging.ERROR, logger="efm_go.slack.gateway"):
                 assert await orch._prefetch_mcp_resolutions({"K": "v"}) == {}
         failing.assert_awaited_once()
         assert "pre-resolve pass failed" in caplog.text
@@ -2766,7 +2766,7 @@ class TestMcpBrokerRefreshPrefetchAndPersistArms:
         orch = _make_orchestrator()
         orch._background_tasks = set()
         with patch.object(gw, "save_pass", side_effect=OSError("disk full")):
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.gateway"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.slack.gateway"):
                 orch._schedule_mcp_launch_approval_persist(MagicMock())
                 (task,) = orch._background_tasks
                 orch._mcp_launch_approval_ready.set()

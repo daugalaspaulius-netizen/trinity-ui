@@ -1,4 +1,4 @@
-"""Characterization of what ``kiro_crew.context`` assembles, byte for byte.
+"""Characterization of what ``efm_go.context`` assembles, byte for byte.
 
 The prompt a session receives is a contract with the model: its block order, the
 framing around each block, which blocks a lifecycle carries and how untrusted
@@ -39,15 +39,15 @@ from pathlib import Path
 import pytest
 from source_corpus import repo_files_named, repo_root
 
-import kiro_crew
-from kiro_crew import context as ctx
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.context_blocks import measure_prompt
-from kiro_crew.hooks import HookManager, HookResult
-from kiro_crew.learn import Lesson, LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+import efm_go
+from efm_go import context as ctx
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.context_blocks import measure_prompt
+from efm_go.hooks import HookManager, HookResult
+from efm_go.learn import Lesson, LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 pytestmark = [
     pytest.mark.xdist_group("context_composition_contract"),
@@ -134,8 +134,8 @@ class _Rig:
         self.agents.mkdir(parents=True)
         monkeypatch.setenv("KIRO_HOME", str(tmp_path / "kiro"))
         monkeypatch.setattr(ctx, "kiro_agents_dir", lambda: self.agents)
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", self.agents)
-        monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", self.agents)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", self.agents)
+        monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", self.agents)
         (tmp_path / "home").mkdir()
         monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path / "home")
         self.globs: list[str] = []
@@ -1057,7 +1057,7 @@ def test_assembled_prompt_is_byte_identical(rig: _Rig, scenario: str) -> None:
 
 # ── Frozen surface ─────────────────────────────────────────────────────────────
 
-#: Every name kiro_crew/context.py defined before its owners moved out. Each must
+#: Every name efm_go/context.py defined before its owners moved out. Each must
 #: keep resolving on the facade, whichever module now holds it.
 _FACADE_DEFINED = """
     CONTEXT_GROUP_LESSONS CONTEXT_GROUP_MEMORY CONTEXT_GROUP_PROJECT ContextBuilder
@@ -1128,73 +1128,73 @@ _FACADE_STDLIB = """
 
 #: facade name -> (home module, attribute) for each Kiro Crew name it imported.
 _FACADE_IMPORTS: dict[str, tuple[str, str]] = {
-    "ESSENTIAL_MAX_CHARS": ("kiro_crew.member_essential_context", "ESSENTIAL_MAX_CHARS"),
+    "ESSENTIAL_MAX_CHARS": ("efm_go.member_essential_context", "ESSENTIAL_MAX_CHARS"),
     "FOLDER_STEERING_OMISSION_SOURCE": (
-        "kiro_crew.folder_steering",
+        "efm_go.folder_steering",
         "FOLDER_STEERING_OMISSION_SOURCE",
     ),
-    "FileTooLargeError": ("kiro_crew.hooks", "FileTooLargeError"),
-    "HOOK_INJECT_CONTEXT": ("kiro_crew.hooks", "HOOK_INJECT_CONTEXT"),
-    "HOOK_MODIFY": ("kiro_crew.hooks", "HOOK_MODIFY"),
-    "HookManager": ("kiro_crew.hooks", "HookManager"),
-    "HookResult": ("kiro_crew.hooks", "HookResult"),
-    "KiroCrewConfig": ("kiro_crew.config.loader", "KiroCrewConfig"),
-    "LessonStore": ("kiro_crew.learn", "LessonStore"),
+    "FileTooLargeError": ("efm_go.hooks", "FileTooLargeError"),
+    "HOOK_INJECT_CONTEXT": ("efm_go.hooks", "HOOK_INJECT_CONTEXT"),
+    "HOOK_MODIFY": ("efm_go.hooks", "HOOK_MODIFY"),
+    "HookManager": ("efm_go.hooks", "HookManager"),
+    "HookResult": ("efm_go.hooks", "HookResult"),
+    "KiroCrewConfig": ("efm_go.config.loader", "KiroCrewConfig"),
+    "LessonStore": ("efm_go.learn", "LessonStore"),
     "MemberEssentialContextError": (
-        "kiro_crew.member_essential_context",
+        "efm_go.member_essential_context",
         "MemberEssentialContextError",
     ),
-    "MemberLifecycle": ("kiro_crew.members", "MemberLifecycle"),
-    "MemberSlugError": ("kiro_crew.members", "MemberSlugError"),
-    "MemoryStore": ("kiro_crew.memory", "MemoryStore"),
-    "PROJECT_SKILL_BODY_CAP": ("kiro_crew.skills", "PROJECT_SKILL_BODY_CAP"),
-    "PROVIDER_ACP": ("kiro_crew.agent_sdk.provider_identity", "PROVIDER_ACP"),
-    "SkillsLoader": ("kiro_crew.skills", "SkillsLoader"),
-    "SteeringCollection": ("kiro_crew.folder_steering", "SteeringCollection"),
-    "_MAX_DOCUMENTS": ("kiro_crew.member_essential_context", "_MAX_DOCUMENTS"),
-    "_prompt_path": ("kiro_crew.agent", "_prompt_path"),
-    "_shipped_prompt": ("kiro_crew.agent", "_shipped_prompt"),
-    "acp_driver": ("kiro_crew.agent_sdk.drivers", "acp"),
-    "agent_skill_globs": ("kiro_crew.agent_discovery", "agent_skill_globs"),
-    "audit_injection_dropped": ("kiro_crew.security", "audit_injection_dropped"),
-    "collect_folder_steering": ("kiro_crew.folder_steering", "collect_folder_steering"),
-    "contains_injection": ("kiro_crew.security", "contains_injection"),
-    "expand_quick_prompt": ("kiro_crew.quick_prompts", "expand_quick_prompt"),
-    "get_local_tz": ("kiro_crew.cron", "get_local_tz"),
-    "get_recorder": ("kiro_crew.metrics.provider", "get_recorder"),
-    "has_dashboard_surface": ("kiro_crew.session_surface", "has_dashboard_surface"),
-    "is_claude_code": ("kiro_crew.agent_sdk.provider_identity", "is_claude_code"),
-    "is_grantable_tag_id": ("kiro_crew.board_tag_grammar", "is_grantable_tag_id"),
-    "is_managed_prompt": ("kiro_crew.agent", "is_managed_prompt"),
-    "is_sensitive_path": ("kiro_crew.security", "is_sensitive_path"),
-    "iter_agent_spec_files": ("kiro_crew.agent_spec_format", "iter_agent_spec_files"),
-    "kiro_agents_dir": ("kiro_crew.config.paths", "kiro_agents_dir"),
-    "live": ("kiro_crew.config", "live"),
-    "measure_prompt": ("kiro_crew.context_blocks", "measure_prompt"),
-    "member_briefing_path": ("kiro_crew.members", "member_briefing_path"),
-    "member_briefing_supported": ("kiro_crew.members", "member_briefing_supported"),
-    "member_context_identity": ("kiro_crew.member_essential_context", "member_context_identity"),
+    "MemberLifecycle": ("efm_go.members", "MemberLifecycle"),
+    "MemberSlugError": ("efm_go.members", "MemberSlugError"),
+    "MemoryStore": ("efm_go.memory", "MemoryStore"),
+    "PROJECT_SKILL_BODY_CAP": ("efm_go.skills", "PROJECT_SKILL_BODY_CAP"),
+    "PROVIDER_ACP": ("efm_go.agent_sdk.provider_identity", "PROVIDER_ACP"),
+    "SkillsLoader": ("efm_go.skills", "SkillsLoader"),
+    "SteeringCollection": ("efm_go.folder_steering", "SteeringCollection"),
+    "_MAX_DOCUMENTS": ("efm_go.member_essential_context", "_MAX_DOCUMENTS"),
+    "_prompt_path": ("efm_go.agent", "_prompt_path"),
+    "_shipped_prompt": ("efm_go.agent", "_shipped_prompt"),
+    "acp_driver": ("efm_go.agent_sdk.drivers", "acp"),
+    "agent_skill_globs": ("efm_go.agent_discovery", "agent_skill_globs"),
+    "audit_injection_dropped": ("efm_go.security", "audit_injection_dropped"),
+    "collect_folder_steering": ("efm_go.folder_steering", "collect_folder_steering"),
+    "contains_injection": ("efm_go.security", "contains_injection"),
+    "expand_quick_prompt": ("efm_go.quick_prompts", "expand_quick_prompt"),
+    "get_local_tz": ("efm_go.cron", "get_local_tz"),
+    "get_recorder": ("efm_go.metrics.provider", "get_recorder"),
+    "has_dashboard_surface": ("efm_go.session_surface", "has_dashboard_surface"),
+    "is_claude_code": ("efm_go.agent_sdk.provider_identity", "is_claude_code"),
+    "is_grantable_tag_id": ("efm_go.board_tag_grammar", "is_grantable_tag_id"),
+    "is_managed_prompt": ("efm_go.agent", "is_managed_prompt"),
+    "is_sensitive_path": ("efm_go.security", "is_sensitive_path"),
+    "iter_agent_spec_files": ("efm_go.agent_spec_format", "iter_agent_spec_files"),
+    "kiro_agents_dir": ("efm_go.config.paths", "kiro_agents_dir"),
+    "live": ("efm_go.config", "live"),
+    "measure_prompt": ("efm_go.context_blocks", "measure_prompt"),
+    "member_briefing_path": ("efm_go.members", "member_briefing_path"),
+    "member_briefing_supported": ("efm_go.members", "member_briefing_supported"),
+    "member_context_identity": ("efm_go.member_essential_context", "member_context_identity"),
     "member_inherits_default_resources": (
-        "kiro_crew.member_essential_context",
+        "efm_go.member_essential_context",
         "member_inherits_default_resources",
     ),
-    "member_lifecycle": ("kiro_crew.members", "member_lifecycle"),
-    "member_turn_context": ("kiro_crew.members", "member_turn_context"),
-    "model_registry": ("kiro_crew", "model_registry"),
-    "parse_agent_spec_text": ("kiro_crew.agent_spec_format", "parse_agent_spec_text"),
-    "read_member_briefing": ("kiro_crew.members", "read_member_briefing"),
-    "read_member_rules": ("kiro_crew.members", "read_member_rules"),
-    "redact_credentials": ("kiro_crew.security", "redact_credentials"),
-    "redact_exfiltration_urls": ("kiro_crew.security", "redact_exfiltration_urls"),
-    "render_essentials": ("kiro_crew.member_essential_context", "render_essentials"),
-    "render_folder_steering": ("kiro_crew.folder_steering", "render_folder_steering"),
-    "render_omission_notice": ("kiro_crew.folder_steering", "render_omission_notice"),
-    "resource_status": ("kiro_crew", "resource_status"),
-    "safe_read_file": ("kiro_crew.hooks", "safe_read_file"),
-    "safe_read_file_bytes_nolink": ("kiro_crew.hooks", "safe_read_file_bytes_nolink"),
-    "slug_for_name": ("kiro_crew.members", "slug_for_name"),
-    "sqlite3": ("kiro_crew._sqlite_compat", "sqlite3"),
-    "workspace_dir_for": ("kiro_crew.config.loader", "workspace_dir_for"),
+    "member_lifecycle": ("efm_go.members", "member_lifecycle"),
+    "member_turn_context": ("efm_go.members", "member_turn_context"),
+    "model_registry": ("efm_go", "model_registry"),
+    "parse_agent_spec_text": ("efm_go.agent_spec_format", "parse_agent_spec_text"),
+    "read_member_briefing": ("efm_go.members", "read_member_briefing"),
+    "read_member_rules": ("efm_go.members", "read_member_rules"),
+    "redact_credentials": ("efm_go.security", "redact_credentials"),
+    "redact_exfiltration_urls": ("efm_go.security", "redact_exfiltration_urls"),
+    "render_essentials": ("efm_go.member_essential_context", "render_essentials"),
+    "render_folder_steering": ("efm_go.folder_steering", "render_folder_steering"),
+    "render_omission_notice": ("efm_go.folder_steering", "render_omission_notice"),
+    "resource_status": ("efm_go", "resource_status"),
+    "safe_read_file": ("efm_go.hooks", "safe_read_file"),
+    "safe_read_file_bytes_nolink": ("efm_go.hooks", "safe_read_file_bytes_nolink"),
+    "slug_for_name": ("efm_go.members", "slug_for_name"),
+    "sqlite3": ("efm_go._sqlite_compat", "sqlite3"),
+    "workspace_dir_for": ("efm_go.config.loader", "workspace_dir_for"),
 }
 
 
@@ -1547,10 +1547,10 @@ async def test_session_routing_is_read_off_the_event_loop(monkeypatch) -> None:
 
 # ── The facade and its owners ─────────────────────────────────────────────────
 
-OWNER_PACKAGE = "kiro_crew.context_assembly"
+OWNER_PACKAGE = "efm_go.context_assembly"
 OWNER_DIR = Path(ctx.__file__).resolve().with_name("context_assembly")
 FACADE_PATH = Path(ctx.__file__).resolve()
-FACADE_LOGGER = "kiro_crew.context"
+FACADE_LOGGER = "efm_go.context"
 
 #: The owners the facade composes. A module added or removed changes the
 #: composition, so the set is spelled out rather than globbed.
@@ -1691,7 +1691,7 @@ class TestSurface:
     def test_moved_classes_keep_their_owner_module(self) -> None:
         assert ctx._ResolvedCaps.__module__ == f"{OWNER_PACKAGE}.budget"
         assert ctx._ShownLessons.__module__ == f"{OWNER_PACKAGE}.store_admission"
-        assert ctx.ContextBuilder.__module__ == "kiro_crew.context"
+        assert ctx.ContextBuilder.__module__ == "efm_go.context"
 
     def test_the_facade_is_a_plain_module(self) -> None:
         """Every name is an ordinary binding: no ``__getattr__`` forwarding, no class
@@ -1703,7 +1703,7 @@ class TestSurface:
 
     def test_a_star_import_still_binds_every_public_name(self, tmp_path: Path) -> None:
         path = tmp_path / "context_star_probe.py"
-        path.write_text("from kiro_crew.context import *\n", encoding="utf-8")
+        path.write_text("from efm_go.context import *\n", encoding="utf-8")
         spec = importlib.util.spec_from_file_location("context_star_probe", path)
         assert spec is not None and spec.loader is not None
         probe = importlib.util.module_from_spec(spec)
@@ -1735,11 +1735,11 @@ class TestEagerOwners:
     def test_every_owner_is_loaded_by_a_fresh_import_of_the_facade(self, tmp_path: Path) -> None:
         probe = (
             "import json, sys\n"
-            "import kiro_crew.context\n"
+            "import efm_go.context\n"
             f"print(json.dumps(sorted(m for m in sys.modules if m.startswith({OWNER_PACKAGE + '.'!r}))))\n"
         )
         env = dict(os.environ)
-        src = str(Path(kiro_crew.__file__).resolve().parents[1])
+        src = str(Path(efm_go.__file__).resolve().parents[1])
         env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
         out = subprocess.run(
             [sys.executable, "-c", probe],
@@ -1759,23 +1759,23 @@ class TestEagerOwners:
 
 
 #: Every spelling a test uses to reach the facade module.
-_MENTIONS_THE_FACADE = re.compile(r"kiro_crew\.context\b|from kiro_crew import [^\n]*\bcontext\b")
+_MENTIONS_THE_FACADE = re.compile(r"efm_go\.context\b|from efm_go import [^\n]*\bcontext\b")
 _PATCH_CALLS = ("setattr", "patch.object", "delattr")
 
 
 def _facade_aliases(tree: ast.AST) -> set[str]:
-    """Local names bound to ``kiro_crew.context`` in *tree*, resolved to a fixed point."""
-    aliases = {"kiro_crew.context"}
+    """Local names bound to ``efm_go.context`` in *tree*, resolved to a fixed point."""
+    aliases = {"efm_go.context"}
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module == "kiro_crew":
+        if isinstance(node, ast.ImportFrom) and node.module == "efm_go":
             aliases |= {a.asname or a.name for a in node.names if a.name == "context"}
         elif isinstance(node, ast.Import):
-            aliases |= {a.asname for a in node.names if a.name == "kiro_crew.context" and a.asname}
+            aliases |= {a.asname for a in node.names if a.name == "efm_go.context" and a.asname}
     loaders = {
-        'importlib.import_module("kiro_crew.context")',
-        "importlib.import_module('kiro_crew.context')",
-        'sys.modules["kiro_crew.context"]',
-        "sys.modules['kiro_crew.context']",
+        'importlib.import_module("efm_go.context")',
+        "importlib.import_module('efm_go.context')",
+        'sys.modules["efm_go.context"]',
+        "sys.modules['efm_go.context']",
     }
     changed = True
     while changed:
@@ -1820,12 +1820,12 @@ def _patched_names_in(text: str) -> set[str]:
             for target in targets:
                 if isinstance(target, ast.Attribute) and ast.unparse(target.value) in aliases:
                     found.add(target.attr)
-    found |= set(re.findall(r"""["']kiro_crew\.context\.(\w+)["']""", text))
+    found |= set(re.findall(r"""["']efm_go\.context\.(\w+)["']""", text))
     return found
 
 
 def _facade_patched_names() -> set[str]:
-    """Names any test rebinds on ``kiro_crew.context``."""
+    """Names any test rebinds on ``efm_go.context``."""
     root = repo_root()
     tests = root / "test"
     found: set[str] = set()
@@ -1869,7 +1869,7 @@ def _bare_seam_loads(source: str, seams: set[str]) -> list[str]:
     """Reads of *seams* inside owner functions that a patch on the facade would miss.
 
     A seam is read as ``ctx.<name>`` after a function-local
-    ``from kiro_crew import context as ctx``. A bare global load or a function-local
+    ``from efm_go import context as ctx``. A bare global load or a function-local
     import binding the name reads some other binding.
     """
     tree = ast.parse(source)
@@ -1910,7 +1910,7 @@ def _bare_seam_loads(source: str, seams: set[str]) -> list[str]:
 class TestPlacement:
     """The rules that keep a patch on the facade effective once the code has moved."""
 
-    def test_owners_import_no_kiro_crew_module_at_module_scope(self) -> None:
+    def test_owners_import_no_efm_go_module_at_module_scope(self) -> None:
         """Every Kiro Crew name an owner needs is read through the facade at call
         time, so a patch there reaches it and the facade's import closure is
         unchanged. Sibling owners and ``TYPE_CHECKING`` imports are the exceptions."""
@@ -1921,11 +1921,11 @@ class TestPlacement:
                 if id(node) in typing_only:
                     continue
                 if isinstance(node, ast.ImportFrom) and _imported_module(node).startswith(
-                    "kiro_crew"
+                    "efm_go"
                 ):
                     assert _imported_module(node) == OWNER_PACKAGE, (stem, node.module)
                 elif isinstance(node, ast.Import):
-                    assert not [a.name for a in node.names if a.name.startswith("kiro_crew")], stem
+                    assert not [a.name for a in node.names if a.name.startswith("efm_go")], stem
 
     def test_owners_reach_the_facade_as_a_module_at_call_time(self) -> None:
         imports = 0
@@ -1935,8 +1935,8 @@ class TestPlacement:
             for node in ast.walk(tree):
                 if id(node) in typing_only or not isinstance(node, ast.ImportFrom):
                     continue
-                assert node.module != "kiro_crew.context", f"{stem}:{node.lineno}"
-                if node.module == "kiro_crew" and "context" in [a.name for a in node.names]:
+                assert node.module != "efm_go.context", f"{stem}:{node.lineno}"
+                if node.module == "efm_go" and "context" in [a.name for a in node.names]:
                     assert node.col_offset > 0, f"{stem}:{node.lineno} imports the facade early"
                     imports += 1
         # Non-vacuous: the owners do reach the facade's seams.
@@ -1953,10 +1953,10 @@ class TestPlacement:
     @pytest.mark.parametrize(
         "planted",
         [
-            "from kiro_crew.context_assembly.markers import _apply_marker_spans\n",
-            "from kiro_crew.context_assembly.budget import _ResolvedCaps as Caps\n",
-            "def f():\n    from kiro_crew.context_assembly.replay import _quota_tail\n",
-            "from kiro_crew.context_assembly import _quota_tail\n",
+            "from efm_go.context_assembly.markers import _apply_marker_spans\n",
+            "from efm_go.context_assembly.budget import _ResolvedCaps as Caps\n",
+            "def f():\n    from efm_go.context_assembly.replay import _quota_tail\n",
+            "from efm_go.context_assembly import _quota_tail\n",
             "from .sections import widget_block\n",
         ],
     )
@@ -1966,7 +1966,7 @@ class TestPlacement:
     @pytest.mark.parametrize(
         "allowed",
         [
-            "from kiro_crew.context_assembly import markers as _markers\n",
+            "from efm_go.context_assembly import markers as _markers\n",
             "from . import budget\n",
         ],
     )
@@ -2022,17 +2022,17 @@ class TestPlacement:
     def test_the_patch_scan_reads_every_spelling(self) -> None:
         planted = (
             "import importlib\n"
-            "import kiro_crew.context as cm\n"
-            "from kiro_crew import context as ctx_mod\n"
-            "facade = importlib.import_module('kiro_crew.context')\n"
+            "import efm_go.context as cm\n"
+            "from efm_go import context as ctx_mod\n"
+            "facade = importlib.import_module('efm_go.context')\n"
             "alias = facade\n"
             "def test(monkeypatch):\n"
             "    monkeypatch.setattr(cm, 'first', 1)\n"
             "    monkeypatch.setattr(ctx_mod, 'second', 2)\n"
             "    patch.object(alias, 'third')\n"
             "    ctx_mod.fourth = 4\n"
-            "    monkeypatch.setattr('kiro_crew.context.fifth', 5)\n"
-            "    monkeypatch.setattr('kiro_crew.context.Shared.attr', 6)\n"
+            "    monkeypatch.setattr('efm_go.context.fifth', 5)\n"
+            "    monkeypatch.setattr('efm_go.context.Shared.attr', 6)\n"
             "    monkeypatch.setattr(ctx_mod.Shared, 'attr', 7)\n"
             "    monkeypatch.setattr(other, 'not_facade', 8)\n"
         )
@@ -2041,12 +2041,12 @@ class TestPlacement:
     def test_the_seam_scan_catches_a_planted_bare_read(self) -> None:
         planted = (
             "def f(path: 'datetime') -> '_resolve_caps':\n"
-            "    from kiro_crew import context as ctx\n"
+            "    from efm_go import context as ctx\n"
             "    good = ctx._resolve_caps(None)\n"
             "    return _resolve_caps(None), datetime\n"
             "def g():\n"
-            "    from kiro_crew.cron import get_local_tz\n"
-            "    from kiro_crew.agent import _prompt_path as path\n"
+            "    from efm_go.cron import get_local_tz\n"
+            "    from efm_go.agent import _prompt_path as path\n"
             "    return get_local_tz, path\n"
         )
         seams = {"_resolve_caps", "datetime", "get_local_tz", "_prompt_path"}
@@ -2105,7 +2105,7 @@ class TestPatchReach:
         assert out == "keep A.txt [marker-removed] y"
 
     def test_embedding_deadline(self, monkeypatch) -> None:
-        from kiro_crew.embeddings import embedding_work
+        from efm_go.embeddings import embedding_work
 
         monkeypatch.setattr(ctx, "_PROMPT_BUILD_EMBED_TIMEOUT_SECS", 1000.0)
         with ctx._prompt_build_embedding_deadline(True):
@@ -2201,7 +2201,7 @@ class TestPatchReach:
 
 
 def _guidance(session_key: str) -> list[str]:
-    from kiro_crew.context_assembly import turn
+    from efm_go.context_assembly import turn
 
     return turn.interactive_guidance(
         interactive=True, session_key=session_key, agent=None, minimal_context=False

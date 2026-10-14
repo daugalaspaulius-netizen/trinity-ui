@@ -11,8 +11,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from kiro_crew.mcp_gateway.hashing import expand_stub_flags
-from kiro_crew.mcp_gateway.rewriter import _rewrite_single_spec
+from efm_go.mcp_gateway.hashing import expand_stub_flags
+from efm_go.mcp_gateway.rewriter import _rewrite_single_spec
 
 STUB_MARKER = "mcp_gateway.stub"
 

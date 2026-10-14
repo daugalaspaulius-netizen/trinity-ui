@@ -18,11 +18,11 @@ the seam and behaves byte-identically until a companion overrides it.
 
 from __future__ import annotations
 
-from kiro_crew.platform.defaults import (
+from efm_go.platform.defaults import (
     DefaultDashboardContributor,
     DefaultSlackEnterpriseGate,
 )
-from kiro_crew.platform.interfaces import InterceptDecision
+from efm_go.platform.interfaces import InterceptDecision
 
 
 class TestInterceptDecisionDefault:
@@ -83,7 +83,7 @@ class TestDecoratedReplyIsReScanned:
     """
 
     def test_redaction_catches_credential_a_decorator_could_inject(self) -> None:
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         # A footer that (pathologically) carried an AWS key must be redacted.
         decorated = "Your reply.\n\n_expires in 4m_ AKIAIOSFODNN7EXAMPLE"
@@ -92,7 +92,7 @@ class TestDecoratedReplyIsReScanned:
         assert warnings  # a credential was flagged
 
     def test_redaction_leaves_benign_footer_untouched(self) -> None:
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
         # The realistic decorator output (a plain expiry footer) survives both
         # passes unchanged, so the re-scan never mangles a legitimate decoration.
@@ -125,7 +125,7 @@ class TestInterceptOrderingIsBeforeContentRecording:
         import inspect
         import re
 
-        from kiro_crew.slack import events
+        from efm_go.slack import events
 
         raw = inspect.getsource(events._route_message)
         code = "\n".join(re.sub(r"#.*$", "", ln) for ln in raw.splitlines())
@@ -173,7 +173,7 @@ class TestChannelsGatePrecedesSideEffects:
         import inspect
         import re
 
-        from kiro_crew.slack import events
+        from efm_go.slack import events
 
         raw = inspect.getsource(events._route_message)
         code = "\n".join(re.sub(r"#.*$", "", ln) for ln in raw.splitlines())
@@ -202,7 +202,7 @@ class TestChannelsGatePrecedesSideEffects:
         # can't accidentally gate cancellation (which would strand a live session).
         import inspect
 
-        from kiro_crew.slack import events
+        from efm_go.slack import events
 
         src = inspect.getsource(events._route_message)
         gate_idx = src.find("channel_inbound_permitted(")

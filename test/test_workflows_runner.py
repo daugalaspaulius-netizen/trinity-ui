@@ -14,7 +14,7 @@ import asyncio
 
 import pytest
 
-from kiro_crew.workflows.runner import RunResult, WorkflowRunner
+from efm_go.workflows.runner import RunResult, WorkflowRunner
 
 pytestmark = pytest.mark.asyncio
 

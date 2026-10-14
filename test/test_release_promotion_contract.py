@@ -160,7 +160,7 @@ def test_stable_gate_requires_the_three_version_files_to_declare_the_bare_versio
     assert gate["env"]["PROMOTE_MODE"] == "${{ needs.version.outputs.promote_mode }}"
     run = gate["run"]
     for path in (
-        "src/kiro_crew/__init__.py",
+        "src/efm_go/__init__.py",
         "pyproject.toml",
         "website/electron/package.json",
     ):

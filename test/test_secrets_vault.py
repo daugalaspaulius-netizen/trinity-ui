@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.secrets.vault — encrypted vault store."""
+"""Tests for efm_go.secrets.vault — encrypted vault store."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.secrets.vault import SecretValue, SecretVault
+from efm_go.secrets.vault import SecretValue, SecretVault
 
 
 @pytest.fixture
@@ -124,7 +124,7 @@ def test_secret_value_opacity() -> None:
 
 def test_denylist_coverage() -> None:
     """The .vault directory is in the agent denylist."""
-    from kiro_crew.security import _CREW_SECRET_LEAVES
+    from efm_go.security import _CREW_SECRET_LEAVES
 
     assert ".vault" in _CREW_SECRET_LEAVES
 
@@ -199,7 +199,7 @@ def test_restrict_to_owner_called_on_read(tmp_path, monkeypatch):
 
     calls = []
     monkeypatch.setattr(
-        "kiro_crew.secrets.vault.restrict_to_owner",
+        "efm_go.secrets.vault.restrict_to_owner",
         lambda path: calls.append(str(path)),
     )
     vault._get_or_create_key()
@@ -225,7 +225,7 @@ def test_restrict_to_owner_called_on_read(tmp_path, monkeypatch):
 
 def test_vault_dir_is_a_registered_keystone_leaf() -> None:
     """The `.vault` directory is a keystone leaf in security._CREW_SECRET_LEAVES."""
-    from kiro_crew import security
+    from efm_go import security
 
     assert ".vault" in security._CREW_SECRET_LEAVES
 
@@ -238,7 +238,7 @@ def test_keystone_denies_agent_reads_of_the_vault(tmp_path, monkeypatch) -> None
     crew home via KIROCREW_HOME so the keystone-leaf expansion applies, then
     assert the enforced predicate returns True for each.
     """
-    from kiro_crew import security
+    from efm_go import security
 
     crew_home = tmp_path / "crew"
     (crew_home / ".vault").mkdir(parents=True)
@@ -264,7 +264,7 @@ def test_keystone_allows_a_non_vault_sibling(tmp_path, monkeypatch) -> None:
     Guards against the assertion above passing because is_sensitive_path()
     returns True for everything under the crew home.
     """
-    from kiro_crew import security
+    from efm_go import security
 
     crew_home = tmp_path / "crew"
     (crew_home / ".vault").mkdir(parents=True)
@@ -283,7 +283,7 @@ def test_vault_dir_is_hidden_by_the_os_sandbox() -> None:
     (macOS); the vault dir must be in every mode's list so the subprocess cannot
     read `.vault/.vault_key` and decrypt.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     for mode_list in (
         sandbox._STRICT_DIRS,

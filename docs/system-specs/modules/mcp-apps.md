@@ -128,11 +128,11 @@ Both endpoints register through `server._deferred`, not the eager `handlers/__in
 
 ## Files and tests
 
-- `src/kiro_crew/mcp_gateway/apps.py` owns spool writing, URI extraction, marker insertion, stale-record cleanup, and the shared model/app visibility parser.
-- `src/kiro_crew/mcp_gateway/backend.py` injects UI capability for eligible stdio backends, captures declarations, fetches `ui://` resources, and delivers the marked result.
-- `src/kiro_crew/mcp_apps_render.py` validates and claims spool records, redacts app-bound payloads, strips markers, and broadcasts owner-scoped render events.
-- `src/kiro_crew/dashboard/handlers/mcp_apps.py` owns the authenticated HTTP relay, the dashboard-side session gates, and the `ui/message` delivery endpoint (capability verification + session injection).
-- `src/kiro_crew/mcp_gateway/app_call.py` owns capability, backend, visibility, schema, governance, forwarding, cancellation, and SEL decisions for callbacks.
+- `src/efm_go/mcp_gateway/apps.py` owns spool writing, URI extraction, marker insertion, stale-record cleanup, and the shared model/app visibility parser.
+- `src/efm_go/mcp_gateway/backend.py` injects UI capability for eligible stdio backends, captures declarations, fetches `ui://` resources, and delivers the marked result.
+- `src/efm_go/mcp_apps_render.py` validates and claims spool records, redacts app-bound payloads, strips markers, and broadcasts owner-scoped render events.
+- `src/efm_go/dashboard/handlers/mcp_apps.py` owns the authenticated HTTP relay, the dashboard-side session gates, and the `ui/message` delivery endpoint (capability verification + session injection).
+- `src/efm_go/mcp_gateway/app_call.py` owns capability, backend, visibility, schema, governance, forwarding, cancellation, and SEL decisions for callbacks.
 - `website/src/lib/mcpAppSrcdoc.ts` and `website/src/components/McpAppFrame.tsx` own the CSP, sandbox, permissions, and AppBridge.
 - `website/src/lib/mcpAppTheme.ts` owns the token map and the `readMcpAppStyleVariables()` resolver behind the `hostContext.styles.variables` theming handoff.
 - `website/src/store/chat/mcpApps.ts` owns the live render-payload cache: the session-scoped `mcpAppKey`, the `sseMcpAppRender` reducer with its per-session bound, and `evictMcpApps`, which drops a session's payloads with its slot. `website/src/store/chatSlice.ts` composes it into the chat slice and re-exports `mcpAppKey`; `website/src/test/mcpAppRender.reducer.test.ts` covers it.

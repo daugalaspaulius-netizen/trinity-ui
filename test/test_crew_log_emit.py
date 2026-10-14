@@ -23,14 +23,14 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew import executors, session_map
-from kiro_crew.crew_log import crew_log_path, crew_log_root, eager, emit
-from kiro_crew.crew_log import projection as crew_log_projection
-from kiro_crew.crew_log.lease import LEASE_FILE
-from kiro_crew.crew_log.writer import DEFAULT_LIMITS, WriterLimits
-from kiro_crew.dashboard import server as server_module
-from kiro_crew.platform_compat import file_lock
+from efm_go import crew_log as lg
+from efm_go import executors, session_map
+from efm_go.crew_log import crew_log_path, crew_log_root, eager, emit
+from efm_go.crew_log import projection as crew_log_projection
+from efm_go.crew_log.lease import LEASE_FILE
+from efm_go.crew_log.writer import DEFAULT_LIMITS, WriterLimits
+from efm_go.dashboard import server as server_module
+from efm_go.platform_compat import file_lock
 
 SESSION = "acp-sess-0001"
 
@@ -638,7 +638,7 @@ def test_an_app_authored_send_is_not_dispatched_as_a_person():
     import ast
     import inspect
 
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     tree = ast.parse(inspect.getsource(chat_handlers))
     kwargs_writes = [
@@ -796,7 +796,7 @@ def test_chat_runner_records_the_input_and_refusal_on_a_blocked_expansion():
     # gate. Asserted structurally rather than by driving the whole runner.
     import ast
 
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     tree = ast.parse(inspect.getsource(chat_runner))
     src = inspect.getsource(chat_runner)
@@ -1395,8 +1395,8 @@ def test_settle_once_holds_for_a_terminal_frame_from_either_parser():
     # frame produced by _dispatch and a frame produced by the AcpClient parser
     # settle the same call identically: the first writes the closer, the second
     # (whichever parser it came from) writes nothing.
-    from kiro_crew.acp.client import AcpClient
-    from kiro_crew.acp.types import EVENT_TOOL_RESULT, JsonRpcMessage
+    from efm_go.acp.client import AcpClient
+    from efm_go.acp.types import EVENT_TOOL_RESULT, JsonRpcMessage
 
     # Parser A: the shared _dispatch terminal-frame builder.
     parser_a = _tool_result_event(None)
@@ -1902,7 +1902,7 @@ def test_every_gateway_mode_drains_the_log_before_a_hard_exit():
     import importlib
     import inspect
 
-    gateway_module = importlib.import_module("kiro_crew.slack.gateway")
+    gateway_module = importlib.import_module("efm_go.slack.gateway")
     tree = ast.parse(inspect.getsource(gateway_module))
     fn = next(
         node
@@ -2669,7 +2669,7 @@ def test_a_resume_does_not_close_a_turn_this_process_is_still_running(caplog):
     assert emit.flush()
     # NO reset_caches: this process still holds turn 1 as live, which is the whole
     # point -- the claim below is contradicted by our own state.
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.crew_log.emit"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.crew_log.emit"):
         emit.on_session_opened(SESSION, agent="kirocrew", resumed=True)
         assert emit.flush()
 
@@ -2839,7 +2839,7 @@ def test_a_nested_prompt_turn_keeps_the_author_of_the_turn_that_carried_it():
     import ast
     import inspect
 
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     tree = ast.parse(inspect.getsource(chat_runner))
     reentries = [
@@ -3090,8 +3090,8 @@ def test_a_tool_completion_records_the_error_flag_and_a_result_digest():
 
 
 def _tool_result_event(output: str | None):
-    from kiro_crew.acp._dispatch import parse_session_update
-    from kiro_crew.acp.types import EVENT_TOOL_RESULT
+    from efm_go.acp._dispatch import parse_session_update
+    from efm_go.acp.types import EVENT_TOOL_RESULT
 
     raw_output = {"items": [] if output is None else [{"Text": output}]}
     events = parse_session_update(
@@ -3122,7 +3122,7 @@ def _record_tool_result_event(event, *, call_id: str = "tc-measured") -> dict:
 
 
 def test_a_long_result_records_the_full_redacted_output_measurement():
-    from kiro_crew import session_directive
+    from efm_go import session_directive
 
     full_output = "x" * session_directive.MAX_TOOL_RESULT_CHARS + "distinct suffix"
     event = _tool_result_event(full_output)
@@ -3142,7 +3142,7 @@ def test_a_long_result_records_the_full_redacted_output_measurement():
 
 
 def test_equal_display_prefixes_record_different_full_result_hashes():
-    from kiro_crew import session_directive
+    from efm_go import session_directive
 
     prefix = "x" * session_directive.MAX_TOOL_RESULT_CHARS
     _open_session()
@@ -3169,7 +3169,7 @@ def test_a_status_only_terminal_frame_records_no_result_measurement():
 def test_chat_runner_forwards_the_full_result_measurement_to_the_emitter():
     import ast
 
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     tree = ast.parse(inspect.getsource(chat_runner))
     calls = [
@@ -3878,12 +3878,12 @@ def test_a_typed_automation_banner_cannot_attribute_a_turn_to_automation():
     So the runner reads the enqueue-time ``kind`` tag -- stamped by the producer,
     absent from anything a user writes -- and never the message.
     """
-    from kiro_crew.dashboard.chat_runner import _actor_for_queue_items
-    from kiro_crew.dashboard.chat_utils import (
+    from efm_go.dashboard.chat_runner import _actor_for_queue_items
+    from efm_go.dashboard.chat_utils import (
         CRON_NOTIFICATION_KIND,
         SUBAGENT_COMPLETION_KIND,
     )
-    from kiro_crew.dashboard.state import (
+    from efm_go.dashboard.state import (
         CRON_NOTIFY_PREFIX,
         SUBAGENT_COMPLETION_PREFIXES,
     )
@@ -3908,8 +3908,8 @@ def test_a_recovery_is_a_second_turn_of_the_same_actor():
     without the stamp its actor would fall back to the default and record an
     autonudge's retry as a user turn.
     """
-    from kiro_crew.dashboard.chat_runner import TURN_ACTOR_META_KEY, _actor_for_queue_items
-    from kiro_crew.dashboard.chat_utils import SYNTHETIC_RECOVERY_KIND
+    from efm_go.dashboard.chat_runner import TURN_ACTOR_META_KEY, _actor_for_queue_items
+    from efm_go.dashboard.chat_utils import SYNTHETIC_RECOVERY_KIND
 
     recovery = [
         {
@@ -3924,8 +3924,8 @@ def test_a_recovery_is_a_second_turn_of_the_same_actor():
 def test_a_stamped_actor_outside_the_vocabulary_is_ignored():
     # The stamp is gateway-authored, but a value the emitter does not recognise
     # would be recorded as `other`, which says less than the honest default.
-    from kiro_crew.dashboard.chat_runner import TURN_ACTOR_META_KEY, _actor_for_queue_items
-    from kiro_crew.dashboard.chat_utils import SYNTHETIC_RECOVERY_KIND
+    from efm_go.dashboard.chat_runner import TURN_ACTOR_META_KEY, _actor_for_queue_items
+    from efm_go.dashboard.chat_utils import SYNTHETIC_RECOVERY_KIND
 
     bogus = [{"content": "x", "kind": SYNTHETIC_RECOVERY_KIND, "meta": {TURN_ACTOR_META_KEY: "??"}}]
     assert _actor_for_queue_items(bogus) == ""
@@ -3934,8 +3934,8 @@ def test_a_stamped_actor_outside_the_vocabulary_is_ignored():
 def test_a_queue_kind_beats_a_stamped_actor():
     # A cron notification that also carries a stamp is still a cron turn: the kind
     # is set by the producer minting the entry, the stamp by whoever retried one.
-    from kiro_crew.dashboard.chat_runner import TURN_ACTOR_META_KEY, _actor_for_queue_items
-    from kiro_crew.dashboard.chat_utils import CRON_NOTIFICATION_KIND
+    from efm_go.dashboard.chat_runner import TURN_ACTOR_META_KEY, _actor_for_queue_items
+    from efm_go.dashboard.chat_utils import CRON_NOTIFICATION_KIND
 
     both = [
         {
@@ -4487,17 +4487,17 @@ def _record(fn, *a, **k):
 
 
 atexit.register = _record
-importlib.import_module("kiro_crew.dashboard.server")
+importlib.import_module("efm_go.dashboard.server")
 print(
     json.dumps(
         {
             "storage": sorted(
                 k
                 for k in sys.modules
-                if k.startswith("kiro_crew.crew_log.")
-                and k != "kiro_crew.crew_log.emit"
+                if k.startswith("efm_go.crew_log.")
+                and k != "efm_go.crew_log.emit"
             ),
-            "glue": "kiro_crew.crew_log.emit" in sys.modules,
+            "glue": "efm_go.crew_log.emit" in sys.modules,
             "hooks": [n for n in registered if "drain_for_shutdown" in n],
         }
     )
@@ -5188,7 +5188,7 @@ def test_the_repair_stands_down_for_a_turn_still_running_in_this_process(caplog)
     _dangling_predecessor()
     assert emit.live_turn(SESSION) == 1
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.crew_log.emit"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.crew_log.emit"):
         emit._repair_superseded(SESSION, "chat-7")
 
     assert _closers(SESSION) == [], "a turn still running in this process was closed"
@@ -5489,7 +5489,7 @@ def test_the_recovery_reads_this_logs_own_edge_not_the_callers(caplog):
     assert opened and "previous" not in opened[0]["data"], "the fixture wrote an edge"
 
     emit.reset_caches()
-    with caplog.at_level(logging.INFO, logger="kiro_crew.crew_log.emit"):
+    with caplog.at_level(logging.INFO, logger="efm_go.crew_log.emit"):
         emit.on_session_opened(
             SUCCESSOR, agent="kirocrew", slot="chat-7", resumed=True, previous_sid=third
         )
@@ -5859,7 +5859,7 @@ def test_every_slot_allocation_site_latches_the_predecessor_first():
     Mutation guard: deleting either latch call, or moving it below its allocation,
     reds this.
     """
-    runner = Path(__file__).parent.parent / "src" / "kiro_crew" / "dashboard" / "chat_runner.py"
+    runner = Path(__file__).parent.parent / "src" / "efm_go" / "dashboard" / "chat_runner.py"
     lines = runner.read_text(encoding="utf-8").splitlines()
     allocations = [i for i, line in enumerate(lines) if "get_or_create(" in line]
     assert len(allocations) == 2, (
@@ -5899,7 +5899,7 @@ def test_the_turn_path_reads_the_predecessor_through_the_non_pruning_accessor():
     Mutation guard: feeding either latch from `mapped_sid` directly, or swapping the
     resolver's own fallback to `resumable_sid`, reds this.
     """
-    runner = Path(__file__).parent.parent / "src" / "kiro_crew" / "dashboard" / "chat_runner.py"
+    runner = Path(__file__).parent.parent / "src" / "efm_go" / "dashboard" / "chat_runner.py"
     source = runner.read_text(encoding="utf-8")
     # Joined because the call can be wrapped across lines; the whole expression is
     # what this pins, so a line-at-a-time read could not see it.
@@ -6065,7 +6065,7 @@ def test_every_report_call_site_names_a_literal_operation():
     """
     import ast
 
-    from kiro_crew.crew_log import writer as writer_mod
+    from efm_go.crew_log import writer as writer_mod
 
     sites = []
     for module, wanted in ((emit, ast.Name), (writer_mod, ast.Attribute)):

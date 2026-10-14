@@ -33,9 +33,9 @@ from typing import Any, Dict, List, Optional
 
 import pytest
 
-from kiro_crew.memory import MemoryStore
-from kiro_crew.platform.context import current_context, set_context
-from kiro_crew.platform.interfaces import MemoryEntry, MemoryRoots
+from efm_go.memory import MemoryStore
+from efm_go.platform.context import current_context, set_context
+from efm_go.platform.interfaces import MemoryEntry, MemoryRoots
 
 
 class DictMemoryFiles:
@@ -296,10 +296,10 @@ class TestProviderFailureIsNotSwallowed:
         would serve this machine's stale copy and let the next write publish it
         over the live document, so the signal has to propagate.
         """
-        import kiro_crew.memory_files as mf
-        import kiro_crew.platform.context as ctx
-        from kiro_crew.platform.context import PlatformCompositionError
-        from kiro_crew.platform.interfaces import MemoryRoots
+        import efm_go.memory_files as mf
+        import efm_go.platform.context as ctx
+        from efm_go.platform.context import PlatformCompositionError
+        from efm_go.platform.interfaces import MemoryRoots
 
         def _raise() -> Any:
             raise PlatformCompositionError("platform did not compose (governed host)")
@@ -324,7 +324,7 @@ class TestNoContextStillWorks:
         the standalone implementation -- which is what keeps several hundred
         direct ``MemoryStore(...)`` constructions across this suite working.
         """
-        from kiro_crew.memory_files import LocalMemoryFiles
+        from efm_go.memory_files import LocalMemoryFiles
 
         workspace = _seed_local_tree(tmp_path, preferences="- from local disk\n")
         store = MemoryStore(workspace=workspace)

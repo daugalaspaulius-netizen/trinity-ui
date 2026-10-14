@@ -15,14 +15,14 @@ import logging
 import pytest
 from chat_test_helpers import move_transcript_past
 
-from kiro_crew import history as history_mod
-from kiro_crew.config.loader import KiroCrewConfig, SessionSummaryConfig
-from kiro_crew.dashboard import chat_summary
-from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.state import _ChatSlot
-from kiro_crew.history import ConversationLog, HistoryLockTimeout
-from kiro_crew.session_summary import (
+from efm_go import history as history_mod
+from efm_go.config.loader import KiroCrewConfig, SessionSummaryConfig
+from efm_go.dashboard import chat_summary
+from efm_go.dashboard.chat_persistence import _save_slot_to_history
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.state import _ChatSlot
+from efm_go.history import ConversationLog, HistoryLockTimeout
+from efm_go.session_summary import (
     count_user_turns,
     count_user_turns_in_records,
     extract_turns,

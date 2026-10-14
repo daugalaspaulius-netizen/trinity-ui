@@ -2,7 +2,7 @@
 
 ## Overview
 
-`src/kiro_crew/channel.py`, `src/kiro_crew/dashboard/handlers_channel.py`, and `website/src/pages/ChannelPage.tsx` implement persistent multi-agent workspaces where an orchestrator coordinates specialist agents through channel messages, threads, and @mentions.
+`src/efm_go/channel.py`, `src/efm_go/dashboard/handlers_channel.py`, and `website/src/pages/ChannelPage.tsx` implement persistent multi-agent workspaces where an orchestrator coordinates specialist agents through channel messages, threads, and @mentions.
 
 The UI is a hidden, opt-in built-in app (`name: channels`, `defaultEnabled: false`) on macOS, Linux, and Windows. Enable it with `kirocrew app enable channels`. The app is manifest-only: the dashboard server always initializes the core `ChannelManager` and registers `/api/channels` routes; enabling the app exposes its `/channels` page rather than registering a separate backend.
 
@@ -137,16 +137,16 @@ The page renders pending, working, listening, done, failed, and tool-running sta
 | POST | `/api/channels/{id}/agents/{aid}/wake` | Restart a terminal agent. |
 | POST | `/api/channels/{id}/agents/{aid}/approve` | Resolve a pending provider permission request; command/base trust decisions include a consent-proof `pattern`. |
 
-`src/kiro_crew/dashboard/routes/connections.py::register` registers these routes.
+`src/efm_go/dashboard/routes/connections.py::register` registers these routes.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `src/kiro_crew/apps/builtins/channels/app.json` | Hidden opt-in app manifest, platform declaration, permissions, and `/channels` page registration. |
-| `src/kiro_crew/channel.py` | Channel model, routing, persistence, containment, and agent execution loop. |
-| `src/kiro_crew/dashboard/handlers_channel.py` | Validated channel REST handlers, agent lifecycle calls, approvals, presets, and context resets. |
-| `src/kiro_crew/dashboard/routes/connections.py` | Dashboard route registration. |
+| `src/efm_go/apps/builtins/channels/app.json` | Hidden opt-in app manifest, platform declaration, permissions, and `/channels` page registration. |
+| `src/efm_go/channel.py` | Channel model, routing, persistence, containment, and agent execution loop. |
+| `src/efm_go/dashboard/handlers_channel.py` | Validated channel REST handlers, agent lifecycle calls, approvals, presets, and context resets. |
+| `src/efm_go/dashboard/routes/connections.py` | Dashboard route registration. |
 | `website/src/pages/ChannelPage.tsx` | Channel workspace UI, WebSocket reconciliation, threads, presets, and agent controls. |
 | `website/src/api/client/agentChannels.ts` | Encoded channel API client methods, exposed on `api` by `website/src/api/client.ts`. |
 | `test/test_channel.py` | Model, routing, capacity, and persistence coverage. |

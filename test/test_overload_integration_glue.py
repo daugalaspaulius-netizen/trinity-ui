@@ -40,19 +40,19 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from overload_fakes import Clock, backoff, settle_store_writes
 
-from kiro_crew.acp.session_handle import NATIVE_CHILD_NOT_RESUMABLE
-from kiro_crew.dashboard import session_health
-from kiro_crew.dashboard.handlers import tasks as tasks_mod
-from kiro_crew.on_loop_db import OnLoopStoreError
-from kiro_crew.slack.gateway import GatewayOrchestrator
-from kiro_crew.subagent_manager import admission as admission_mod
-from kiro_crew.subagent_manager.continuation import ContinuationCoordinator
-from kiro_crew.taskq import dependency as dep_mod
-from kiro_crew.taskq import model
-from kiro_crew.taskq import store as store_mod
-from kiro_crew.taskq.adapters import runner as runner_mod
-from kiro_crew.taskq.store import TaskStore
-from kiro_crew.taskq.waits import WaitRecord
+from efm_go.acp.session_handle import NATIVE_CHILD_NOT_RESUMABLE
+from efm_go.dashboard import session_health
+from efm_go.dashboard.handlers import tasks as tasks_mod
+from efm_go.on_loop_db import OnLoopStoreError
+from efm_go.slack.gateway import GatewayOrchestrator
+from efm_go.subagent_manager import admission as admission_mod
+from efm_go.subagent_manager.continuation import ContinuationCoordinator
+from efm_go.taskq import dependency as dep_mod
+from efm_go.taskq import model
+from efm_go.taskq import store as store_mod
+from efm_go.taskq.adapters import runner as runner_mod
+from efm_go.taskq.store import TaskStore
+from efm_go.taskq.waits import WaitRecord
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -241,7 +241,7 @@ def no_memory_pressure(monkeypatch: pytest.MonkeyPatch) -> None:
     the runner admission reads the posture from ``resource_status``, so without
     this a loaded machine turns an admission into a defer.
     """
-    from kiro_crew import resource_status
+    from efm_go import resource_status
 
     monkeypatch.setattr(
         resource_status,
@@ -413,7 +413,7 @@ def test_native_child_refusal_without_a_registry_is_none() -> None:
 async def test_api_spawn_continue_and_steer_answer_409_for_a_native_child(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     refusal = f"{NATIVE_CHILD_NOT_RESUMABLE}: kid-1 is a child of parent-1"
 
@@ -946,7 +946,7 @@ def test_owner_of_parses_runner_ids() -> None:
 
 
 def test_lane_for_is_the_shared_lane_key_policy() -> None:
-    from kiro_crew.taskq import lanes
+    from efm_go.taskq import lanes
 
     assert runner_mod.lane_for("cron:job-1", "chat") == lanes.SYSTEM_LANE
     assert runner_mod.lane_for("_hb", "") == lanes.SYSTEM_LANE
@@ -992,7 +992,7 @@ class _Info:
 def test_resume_entry_is_granted_before_the_stagger_and_does_not_consume_it() -> None:
     import time as _t
 
-    from kiro_crew.subagent_manager.admission import CapacityView
+    from efm_go.subagent_manager.admission import CapacityView
 
     info = _Info("r-1")
     mgr = SimpleNamespace(
@@ -1224,7 +1224,7 @@ async def _resume_stop_manager() -> Any:
     """A real manager on a real store, one lane slot, no stagger."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -1261,7 +1261,7 @@ async def test_stop_all_reaps_a_resident_resumed_run_it_never_treats_as_queued()
     """
     from unittest.mock import patch
 
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     mgr = await _resume_stop_manager()
     store = mgr._admission.taskq_store()
@@ -1322,7 +1322,7 @@ async def test_cancel_never_reports_a_queued_stop_over_a_run_that_already_ended(
     synthetic "(stopped before start)" one, plus a SECOND terminal to the parent.
     A run that has already ended is not cancellable: the answer is False.
     """
-    from kiro_crew.subagent import SubagentInfo
+    from efm_go.subagent import SubagentInfo
 
     mgr = await _resume_stop_manager()
     try:
@@ -1361,7 +1361,7 @@ async def test_stop_all_never_takes_the_queued_stop_path_for_a_claimable_residen
     """
     from unittest.mock import patch
 
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     mgr = await _resume_stop_manager()
     store = mgr._admission.taskq_store()
@@ -1403,7 +1403,7 @@ async def test_stop_all_never_takes_the_queued_stop_path_for_a_claimable_residen
 
 
 def test_journal_mode_key_reaches_the_store(tmp_path: Path) -> None:
-    from kiro_crew import taskq
+    from efm_go import taskq
 
     home = tmp_path / "home"
     (home / "tasks").mkdir(parents=True)
@@ -1424,11 +1424,11 @@ def test_journal_mode_key_reaches_the_store(tmp_path: Path) -> None:
 def test_journal_mode_config_key_parses_and_clamps(tmp_path: Path) -> None:
     import unittest.mock
 
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     def _loaded(data: dict) -> KiroCrewConfig:
         (tmp_path / "config.json").write_text(json.dumps(data), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
             return KiroCrewConfig.load()
 
     assert (
@@ -1551,7 +1551,7 @@ class TestStoreOffLoop:
         import threading
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         sessions = MagicMock()
         sessions.get_pid = MagicMock(return_value=None)
@@ -1591,7 +1591,7 @@ class TestStoreOffLoop:
         # ARMED: the accept, the window decision, the claim and the
         # registration writes all run on the writer thread; a store call on
         # the loop raises here instead of passing silently.
-        from kiro_crew.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import messaging
 
         monkeypatch.setattr(admission_mod.SpawnAdmissionCoordinator, "pump_off_loop", True)
         before = real_store.loop_thread_calls
@@ -1616,7 +1616,7 @@ class TestStoreOffLoop:
     async def _manager_with_store(monkeypatch: pytest.MonkeyPatch) -> Any:
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         sessions = MagicMock()
         sessions.get_pid = MagicMock(return_value=None)
@@ -1775,7 +1775,7 @@ class TestStoreOffLoop:
             approval_mode=None,
         )
         assert mgr._admission.taskq_accept_record(rec) is None
-        monkeypatch.setattr("kiro_crew.subagent.check_memory_available", self._low_memory)
+        monkeypatch.setattr("efm_go.subagent.check_memory_available", self._low_memory)
         before = store.loop_thread_calls
         await mgr._drain_queue_async()
         await settle_store_writes(store)
@@ -1818,7 +1818,7 @@ class TestStoreOffLoop:
                 "_preassigned_id": "ghost0",
             }
         ]
-        monkeypatch.setattr("kiro_crew.subagent.check_memory_available", self._low_memory)
+        monkeypatch.setattr("efm_go.subagent.check_memory_available", self._low_memory)
         before = store.loop_thread_calls
         await mgr._drain_queue_async()
         await settle_store_writes(store)
@@ -1866,7 +1866,7 @@ class TestStoreOffLoop:
         info = await mgr.continue_conversation_async("conv-1", "again", parent_session_key="web-1")
         assert info is not None and not info.error, info
         # app SpawnSDK
-        from kiro_crew.apps import spawn_sdk
+        from efm_go.apps import spawn_sdk
 
         class _Agent:
             name = "demo--worker"
@@ -1894,8 +1894,8 @@ class TestStoreOffLoop:
         """
         import threading
 
-        from kiro_crew.messaging import commands as messaging_commands
-        from kiro_crew.slack import handler as slack_handler
+        from efm_go.messaging import commands as messaging_commands
+        from efm_go.slack import handler as slack_handler
 
         mgr = await self._manager_with_store(monkeypatch)
         store = mgr._admission.taskq_store()
@@ -1999,7 +1999,7 @@ class TestStoreOffLoop:
         a 409 route, the RSS sweep, the completion frame) is a coroutine on the
         gateway loop.
         """
-        from kiro_crew.dashboard import chat_utils
+        from efm_go.dashboard import chat_utils
 
         mgr = await self._manager_with_store(monkeypatch)
         store = mgr._admission.taskq_store()
@@ -2052,7 +2052,7 @@ class TestStoreOffLoop:
         import ast
 
         allowed = {("chat_utils.py", "_queued_depth_off_loop", "_queued_depth")}
-        src = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        src = Path(__file__).resolve().parents[1] / "src" / "efm_go"
         offenders: list[str] = []
         for path in sorted(src.rglob("*.py")):
             tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -2104,7 +2104,7 @@ class TestStoreOffLoop:
         """
         import threading
 
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = await self._manager_with_store(monkeypatch)
         store = mgr._admission.taskq_store()
@@ -2182,7 +2182,7 @@ class TestStoreOffLoop:
         though the grant is refused: the run's own terminal write is fenced by
         the generation the ROW now carries, not by the stale one it went in with.
         """
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = await self._manager_with_store(monkeypatch)
         store = mgr._admission.taskq_store()
@@ -2267,7 +2267,7 @@ class TestStoreOffLoop:
         land once admission reopens, which is what keeps the guard from trading a
         loosened census for stranded work.
         """
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = await self._manager_with_store(monkeypatch)
         store = mgr._admission.taskq_store()
@@ -2321,8 +2321,8 @@ class TestStoreOffLoop:
         counter (which no ``except`` can swallow) and the armed guard (this route
         has no exception arm, so an on-loop take would answer 500).
         """
-        from kiro_crew.dashboard.handlers import spawn_resume
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.dashboard.handlers import spawn_resume
+        from efm_go.subagent import SubagentInfo
 
         mgr = await self._manager_with_store(monkeypatch)
         store = mgr._admission.taskq_store()
@@ -2376,8 +2376,8 @@ class TestStoreOffLoop:
         """
         import inspect
 
-        from kiro_crew.subagent import SubagentInfo
-        from kiro_crew.subagent_manager import monitoring as monitoring_mod
+        from efm_go.subagent import SubagentInfo
+        from efm_go.subagent_manager import monitoring as monitoring_mod
 
         mgr = await self._manager_with_store(monkeypatch)
         store = mgr._admission.taskq_store()
@@ -2500,7 +2500,7 @@ class TestStoreOffLoop:
             type(mgr), "_announce_rejection", lambda self, info: announced.append(info) or info
         )
         # Low memory defers every spawn, so the drain takes the parked-defer path.
-        from kiro_crew import subagent as subagent_mod
+        from efm_go import subagent as subagent_mod
 
         monkeypatch.setattr(subagent_mod, "check_memory_available", lambda *a, **k: (False, 1.2))
         monkeypatch.setattr(admission_mod.SpawnAdmissionCoordinator, "pump_off_loop", True)
@@ -2540,8 +2540,8 @@ async def test_claim_unavailable_leaves_the_row_queued_instead_of_starting(
 ) -> None:
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew import taskq as _taskq
-    from kiro_crew.subagent import SubagentManager
+    from efm_go import taskq as _taskq
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -2586,9 +2586,9 @@ async def test_store_accepted_row_is_re_vetted_after_its_awaits(
     refused work can never run."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew import subagent as subagent_mod
-    from kiro_crew import taskq as _taskq
-    from kiro_crew.subagent import SubagentManager
+    from efm_go import subagent as subagent_mod
+    from efm_go import taskq as _taskq
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -2640,9 +2640,9 @@ async def test_a_drained_row_refused_by_the_pump_is_failed_in_the_store(
 ) -> None:
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew import subagent as subagent_mod
-    from kiro_crew import taskq as _taskq
-    from kiro_crew.subagent import SubagentManager
+    from efm_go import subagent as subagent_mod
+    from efm_go import taskq as _taskq
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -2690,7 +2690,7 @@ async def test_batch_members_are_counted_once_including_a_prepare_refusal(
     refused member too."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -2728,8 +2728,8 @@ async def test_batch_members_are_counted_once_including_a_prepare_refusal(
 async def test_spawn_is_refused_typed_when_the_enabled_store_is_unavailable() -> None:
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.subagent import SubagentManager
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go.subagent import SubagentManager
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -2762,7 +2762,7 @@ async def test_spawn_is_refused_typed_when_the_enabled_store_is_unavailable() ->
 async def _app_manager(monkeypatch: pytest.MonkeyPatch) -> Any:
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -2791,7 +2791,7 @@ async def test_committed_prevalidated_app_spawn_queues_instead_of_refusing(
     """Capacity is a scheduling fact: an accepted (committed) app spawn that
     finds no slot QUEUES like any other row, with its prevalidation dropped so
     the drain re-validates the agent and re-proves app ownership."""
-    from kiro_crew import taskq as _taskq
+    from efm_go import taskq as _taskq
 
     mgr = await _app_manager(monkeypatch)
     store = mgr._admission.taskq_store()
@@ -2816,8 +2816,8 @@ async def test_drained_app_spawn_reproves_ownership_or_fails_its_row(
 ) -> None:
     from types import SimpleNamespace as NS
 
-    from kiro_crew import subagent as subagent_mod
-    from kiro_crew import taskq as _taskq
+    from efm_go import subagent as subagent_mod
+    from efm_go import taskq as _taskq
 
     mgr = await _app_manager(monkeypatch)
     store = mgr._admission.taskq_store()
@@ -2851,9 +2851,9 @@ async def test_durable_row_never_carries_prevalidation(monkeypatch: pytest.Monke
     a start rebuilt from the row (window refill, restart) runs the gates."""
     from types import SimpleNamespace as NS
 
-    from kiro_crew import subagent as subagent_mod
-    from kiro_crew import taskq as _taskq
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go import subagent as subagent_mod
+    from efm_go import taskq as _taskq
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     mgr = await _app_manager(monkeypatch)
     store = mgr._admission.taskq_store()
@@ -2995,7 +2995,7 @@ async def test_a_spawn_during_the_parked_claim_queues_instead_of_overshooting(
 async def test_a_refused_or_unavailable_claim_releases_the_reservation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from kiro_crew import taskq as _taskq
+    from efm_go import taskq as _taskq
 
     mgr = await _app_manager(monkeypatch)
     store = mgr._admission.taskq_store()
@@ -3045,7 +3045,7 @@ async def test_posted_terminal_writes_are_tracked_and_drained_by_cancel_all(
     run ended does not leave a ``running`` row for the next boot to re-run."""
     import threading
 
-    from kiro_crew import taskq as _taskq
+    from efm_go import taskq as _taskq
 
     mgr = await _app_manager(monkeypatch)
     store = mgr._admission.taskq_store()
@@ -3063,7 +3063,7 @@ async def test_posted_terminal_writes_are_tracked_and_drained_by_cancel_all(
     assert mgr._admission.taskq_accept_record(rec) is None
     claimed = store.claim("done1")
     assert claimed is not None
-    from kiro_crew.subagent import SubagentInfo
+    from efm_go.subagent import SubagentInfo
 
     info = SubagentInfo(
         id="done1", task="t", parent_session_key="web-1", done=True, user_stopped=True
@@ -3099,8 +3099,8 @@ async def test_nested_child_of_a_blocked_parent_runs_w3_off_loop(
     writer thread -- pinned with the strict guard armed for the whole call."""
     from types import SimpleNamespace as NS
 
-    from kiro_crew import taskq as _taskq
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go import taskq as _taskq
+    from efm_go.dashboard.handlers import messaging
 
     mgr = await _app_manager(monkeypatch)
     mgr._max_concurrent = 2
@@ -3108,7 +3108,7 @@ async def test_nested_child_of_a_blocked_parent_runs_w3_off_loop(
     monkeypatch.setattr(admission_mod.SpawnAdmissionCoordinator, "pump_off_loop", True)
     # The parent: a live run (a hand-built record, so the fake session cannot
     # end it), in the store as ``running``, blocked in the blocking tool.
-    from kiro_crew.subagent import SubagentInfo
+    from efm_go.subagent import SubagentInfo
 
     rec = mgr._admission.taskq_build_record(
         "parent1",
@@ -3163,7 +3163,7 @@ async def test_nested_child_of_a_blocked_parent_runs_w3_off_loop(
 async def test_a_raise_inside_reenter_releases_the_reservation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from kiro_crew import taskq as _taskq
+    from efm_go import taskq as _taskq
 
     mgr = await _app_manager(monkeypatch)
     store = mgr._admission.taskq_store()
@@ -3234,7 +3234,7 @@ async def test_admitting_id_is_held_until_the_posted_defer_landed(
 ) -> None:
     import threading
 
-    from kiro_crew import subagent as subagent_mod
+    from efm_go import subagent as subagent_mod
 
     mgr = await _app_manager(monkeypatch)
     store = mgr._admission.taskq_store()
@@ -3277,7 +3277,7 @@ async def test_corrupt_tasks_db_is_quarantined_and_spawns_proceed(
 ) -> None:
     import os
 
-    from kiro_crew.taskq.store import TaskStore as _TS
+    from efm_go.taskq.store import TaskStore as _TS
 
     home = Path(os.environ["KIROCREW_HOME"])
     path = _TS.default_path(home)

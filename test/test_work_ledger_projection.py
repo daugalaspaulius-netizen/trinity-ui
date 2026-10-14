@@ -22,9 +22,9 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from off_loop_helpers import off_loop
 
-from kiro_crew import work_ledger as wl
-from kiro_crew.crew_log import eager, entry_types, projection, schema
-from kiro_crew.dashboard.handlers import work_ledger as routes
+from efm_go import work_ledger as wl
+from efm_go.crew_log import eager, entry_types, projection, schema
+from efm_go.dashboard.handlers import work_ledger as routes
 
 CONDUCTOR = "chat-9-conductor"
 WORKER = "chat-9-worker"
@@ -549,8 +549,8 @@ def test_a_bound_workers_real_unit_joins_the_fold_and_its_report_is_rebuilt():
     """The report lives in the WORKER's log, whose header names the worker's own
     slot; the fold reaches it through the conductor's ``bind`` entry, and another
     board's entry in that same worker log stays out."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     item_id = "it_0000abcd"
     conductor = CrewLog.create(
@@ -648,9 +648,9 @@ def test_a_bound_workers_real_unit_joins_the_fold_and_its_report_is_rebuilt():
 
 def test_work_fold_uses_append_order_when_header_clocks_go_backward(monkeypatch):
     """A later work append wins even when its unit header carries an older clock."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew import session_ledger
-    from kiro_crew.crew_log import CrewLog, emit, store
+    from efm_go import crew_log as lg
+    from efm_go import session_ledger
+    from efm_go.crew_log import CrewLog, emit, store
 
     older_unit = "u-work-clock-older"
     newer_unit = "u-work-clock-newer"
@@ -707,8 +707,8 @@ def test_work_fold_uses_append_order_when_header_clocks_go_backward(monkeypatch)
 
 
 def test_an_out_of_range_entry_time_does_not_escape_the_work_fold():
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog, store
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog, store
 
     item_id = "it_0000abcd"
     unit_id = "u-out-of-range-time"
@@ -767,8 +767,8 @@ async def test_the_rebuild_route_refuses_when_the_crew_log_is_off(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_the_rebuild_route_rebuilds_the_callers_own_board_from_real_units(monkeypatch):
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     monkeypatch.setattr(routes.crew_log_emit, "enabled", lambda: True)
     item_id = "it_0000abcd"
@@ -868,8 +868,8 @@ async def test_an_unconfirmed_append_is_answered_as_a_failure_naming_the_committ
 def test_on_work_recorded_acknowledges_only_an_append_that_landed(monkeypatch):
     """Against the real writer: a valid entry returns True and is in the log; one
     the type refuses returns False; with the emitter off nothing is promised."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog, emit
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog, emit
 
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     monkeypatch.setattr(emit, "_retry_delay", lambda _attempts: 0.0)
@@ -897,8 +897,8 @@ def test_a_nested_conductors_own_board_folds_even_when_its_first_entry_reports_u
     """The nested conductor is a worker of PARENT and the conductor of NESTED. Its
     log's FIRST entry is a report to the parent's board; that entry must not pick
     the fold's board. Bound by the reader, the fold is of NESTED regardless."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     parent, nested = "chat-1-parent", "chat-2-nested"
     unit = CrewLog.create(
@@ -948,8 +948,8 @@ def test_a_nested_conductors_own_board_folds_even_when_its_first_entry_reports_u
 
 
 def test_rebuild_removes_an_item_file_the_fold_does_not_know(monkeypatch):
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     conductor = CrewLog.create(
         lg.KIND_SESSION, "u-conductor", owner="raymond", agent="kirocrew", slot=CONDUCTOR
@@ -1049,8 +1049,8 @@ async def test_decide_and_accept_log_the_fields_they_commit(recorded):
 
 
 def test_the_fold_keeps_text_at_the_stores_widths_not_the_shared_two_hundred():
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     unit = CrewLog.create(
         lg.KIND_SESSION, "u-conductor", owner="raymond", agent="kirocrew", slot=CONDUCTOR
@@ -1094,8 +1094,8 @@ async def test_an_unconfirmed_write_is_undone_from_the_record_in_the_same_reques
     """Real units: the record holds goal+create; a report whose append is not
     confirmed is answered 503 and its cache mutation is dropped by the rebuild
     the refusal runs, so the cache never keeps what the log never saw."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     monkeypatch.setattr(routes.crew_log_emit, "enabled", lambda: True)
     monkeypatch.setattr(
@@ -1323,8 +1323,8 @@ async def test_a_legacy_baseline_key_collision_is_refused_before_writing(recorde
 
 def _real_units(monkeypatch, *, worker_lands: bool = True) -> None:
     """Real conductor and worker units; the routes' appends go to them for real."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     monkeypatch.setattr(routes.crew_log_emit, "enabled", lambda: True)
     units = {CONDUCTOR: "u-conductor", WORKER: "u-worker"}
@@ -1488,8 +1488,8 @@ def test_an_append_the_waiter_gave_up_on_never_lands(monkeypatch):
     """The queued job is held back until after the waiter gave up, then run as
     the writer would run it. The abandoned entry must not land: a write the
     caller was told failed would otherwise come back on the next rebuild."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog, emit
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog, emit
 
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     emit.reset_caches()
@@ -1637,8 +1637,8 @@ async def test_cancelled_report_drains_its_append_before_reraising(monkeypatch):
 
 
 def test_a_reused_slot_folds_only_its_latest_board():
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     unit = CrewLog.create(
         lg.KIND_SESSION, "u-conductor", owner="raymond", agent="kirocrew", slot=CONDUCTOR
@@ -1706,8 +1706,8 @@ def test_a_reused_slot_folds_only_its_latest_board():
 
 
 def test_parked_entries_keep_within_the_item_bound(monkeypatch):
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     monkeypatch.setattr(projection, "WORK_ITEM_LIMIT", 2)
     unit = CrewLog.create(
@@ -1788,8 +1788,8 @@ def _cache_files(slot: str) -> dict[str, bytes]:
 
 
 def test_a_rebuild_that_fails_part_way_leaves_the_cache_as_it_was(monkeypatch):
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     conductor = CrewLog.create(
         lg.KIND_SESSION, "u-conductor", owner="raymond", agent="kirocrew", slot=CONDUCTOR
@@ -1835,8 +1835,8 @@ def test_a_rebuild_that_fails_part_way_leaves_the_cache_as_it_was(monkeypatch):
 
 
 def test_a_generationless_board_is_dropped_when_a_stamped_one_opens_the_slot():
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     unit = CrewLog.create(
         lg.KIND_SESSION, "u-conductor", owner="raymond", agent="kirocrew", slot=CONDUCTOR
@@ -1889,8 +1889,8 @@ async def test_an_unconfirmed_bind_spelled_with_the_dashboard_prefix_is_undone(m
 
 
 def test_a_rebuild_recreates_the_identity_breadcrumb():
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     unit = CrewLog.create(
         lg.KIND_SESSION, "u-conductor", owner="raymond", agent="kirocrew", slot=CONDUCTOR
@@ -2194,8 +2194,8 @@ async def test_a_rebuild_reproduces_the_stores_stamps_and_event_ids(monkeypatch)
 
 def test_fold_fallback_event_id_matches_the_stores_report_id():
     """A legacy entry without an explicit id uses the store's exact formula."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     wl.ensure_conductor(CONDUCTOR, goal="ship it")
     created = wl.apply_conductor_action(
@@ -2254,8 +2254,8 @@ def test_fold_fallback_event_id_matches_the_stores_report_id():
 
 
 def test_a_rebuild_refuses_while_a_units_header_cannot_be_read():
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog, store
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog, store
 
     unit = CrewLog.create(
         lg.KIND_SESSION, "u-conductor", owner="raymond", agent="kirocrew", slot=CONDUCTOR
@@ -2331,7 +2331,7 @@ async def test_a_nested_legacy_boards_baseline_carries_its_lineage(monkeypatch):
 async def test_a_pruned_worker_unit_refuses_the_rebuild_instead_of_erasing_its_reports(
     monkeypatch,
 ):
-    from kiro_crew.crew_log import store
+    from efm_go.crew_log import store
 
     _real_units(monkeypatch)
     item_id = await _board()
@@ -2342,7 +2342,7 @@ async def test_a_pruned_worker_unit_refuses_the_rebuild_instead_of_erasing_its_r
     # Retention takes the worker's unit; the conductor's create and bind remain.
     import shutil
 
-    from kiro_crew import crew_log as lg
+    from efm_go import crew_log as lg
 
     with eager.paused():
         shutil.rmtree(store.crew_log_dir(lg.KIND_SESSION, "u-worker"))
@@ -2369,8 +2369,8 @@ async def test_a_rebuild_keeps_the_completeness_marker_so_a_later_prune_still_re
     reports the first rebuild had just written. The stamp must survive the fold."""
     import shutil
 
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import store
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import store
 
     _real_units(monkeypatch)
     item_id = await _board()
@@ -2595,8 +2595,8 @@ def test_supplemental_worker_units_use_append_order_not_the_header_clock(monkeyp
     an earlier one, so that inconsistency let a backward clock step across the worker's
     reset fold its OLDER report last, overwriting the latest status and summary.
     """
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog, emit, store
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog, emit, store
 
     older_unit = "u-worker-clock-older"
     newer_unit = "u-worker-clock-newer"
@@ -2837,8 +2837,8 @@ def test_a_rebuild_holds_a_fold_created_items_lock_through_its_undo(monkeypatch)
     So this fails the rebuild AFTER the new item lands, and asks at undo time
     whether another holder could take that item's lock. It must not be able to.
     """
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     new_id = "it_0000abcd"
     stray_id = "it_0000dead"
@@ -2967,8 +2967,8 @@ def test_a_new_generation_resets_the_boards_own_entry_count_and_epoch():
     the same second, so comparing timestamps end to end would be flaky, while the
     reset itself is exact.
     """
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     state = projection._work_start()
     state["entries"] = 5
@@ -3033,8 +3033,8 @@ def test_a_generationless_straggler_is_omitted_once_a_stamped_board_is_live():
     because it materialises an item through the same line with no dependence on the
     baseline payload's shape.
     """
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     unit = CrewLog.create(
         lg.KIND_SESSION, "u-conductor", owner="raymond", agent="kirocrew", slot=CONDUCTOR
@@ -3079,8 +3079,8 @@ def test_a_board_from_before_the_stamp_still_applies_its_own_entries():
     this, a guard that omitted every generationless entry would satisfy the test
     above while silently emptying every pre-stamp board.
     """
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     legacy_slot = "chat-91-legacy"
     unit = CrewLog.create(

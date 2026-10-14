@@ -23,9 +23,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from test_subagent_continuable import continuation_runtime as _continuation_runtime
 
-from kiro_crew.effort import EFFORT_LEVELS
-from kiro_crew.execution_context import execution_for_store
-from kiro_crew.validation import SPAWN_RUN_SCHEMA, ValidationError, validate_tool_args
+from efm_go.effort import EFFORT_LEVELS
+from efm_go.execution_context import execution_for_store
+from efm_go.validation import SPAWN_RUN_SCHEMA, ValidationError, validate_tool_args
 
 # ``SubagentManager.spawn`` refuses -- registering no task -- while the host
 # looks short of memory, which is the runner's state, not this test's input.
@@ -47,12 +47,12 @@ def _hermetic_cfg(role_models=None, agent_pins=None):
     sentinel (``_resolve_agent_model`` would otherwise read the installed
     ``~/.kiro/agents/kirocrew.json`` from disk) and named-agent pins come from
     *agent_pins* instead of the real agents directory."""
-    from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
+    from efm_go.config.loader import AgentConfig, KiroCrewConfig
 
     pins = dict(agent_pins or {})
     cfg = KiroCrewConfig(agent=AgentConfig(role_models=role_models or {}))
     with (
-        patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
+        patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
         patch.object(KiroCrewConfig, "_resolve_agent_model", staticmethod(lambda: "")),
         patch.object(
             KiroCrewConfig,
@@ -79,7 +79,7 @@ def _through_solo_gate(args: dict[str, Any]) -> dict[str, Any]:
 
 def _run_tool(args: dict[str, Any]) -> tuple[list[dict], str]:
     """Run spawn_run and return (POSTed bodies, returned text)."""
-    from kiro_crew import mcp_core
+    from efm_go import mcp_core
 
     bodies: list[dict] = []
 
@@ -146,7 +146,7 @@ def _run_tool_with_server_verdicts(
     args: dict[str, Any], responses: list[dict]
 ) -> tuple[list[dict], str]:
     """Run spawn_run against a fake gateway answering from *responses*."""
-    from kiro_crew import mcp_core
+    from efm_go import mcp_core
 
     bodies: list[dict] = []
     answers = iter(responses)
@@ -233,7 +233,7 @@ class TestUnsupportedModelReport:
         """SEL and callers test the FIRST line for the 'Error:' prefix
         (mcp_shared logs outcome='failed' iff result.startswith('Error:')),
         so a spawn where nothing started must not lead with the ℹ line."""
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         def _reject_post(path: str, body: dict) -> dict:
             return {"error": "capacity reached"}
@@ -347,7 +347,7 @@ class TestApiSpawnHandler:
 
     @pytest.mark.asyncio
     async def test_value_reaches_spawn(self):
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
+        from efm_go.dashboard.handlers.messaging import api_spawn
 
         request, mgr = self._request({"task": "x", "reasoning_effort": "xhigh"})
         await api_spawn(request)
@@ -355,7 +355,7 @@ class TestApiSpawnHandler:
 
     @pytest.mark.asyncio
     async def test_absent_value_reaches_spawn_as_empty(self):
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
+        from efm_go.dashboard.handlers.messaging import api_spawn
 
         request, mgr = self._request({"task": "x"})
         await api_spawn(request)
@@ -363,7 +363,7 @@ class TestApiSpawnHandler:
 
     @pytest.mark.asyncio
     async def test_invalid_value_is_rejected_with_400(self):
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
+        from efm_go.dashboard.handlers.messaging import api_spawn
 
         request, mgr = self._request({"task": "x", "reasoning_effort": "turbo"})
         resp = await api_spawn(request)
@@ -390,7 +390,7 @@ def _mock_ctx() -> MagicMock:
 
 
 def _mgr():
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     return SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx())
 
@@ -445,8 +445,8 @@ class TestRecordAndRetry:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("crew", ["", "coding"])
     async def test_retry_re_spawns_at_the_same_effort(self, crew):
-        from kiro_crew.dashboard.handlers.messaging import api_spawn_retry
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.dashboard.handlers.messaging import api_spawn_retry
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
         old = SimpleNamespace(
             id="a1",
@@ -497,9 +497,9 @@ class TestResolutionPrecedence:
     exactly as a role pin already does."""
 
     def _run(self, *, info_effort: str = "", role_efforts=None):
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
-        from kiro_crew.subagent import SubagentInfo, SubagentManager
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.subagent import SubagentInfo, SubagentManager
 
         sessions = MagicMock()
         sessions.get_pid = MagicMock(return_value=None)
@@ -540,7 +540,7 @@ class TestResolutionPrecedence:
         with (
             patch.object(runner, "_create_shared_session", shared),
             patch.object(runner, "_should_use_session_sharing", return_value=True),
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
+            patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
         ):
             asyncio.run(runner._run_inner(info, "subagent:sub1"))
         return captured, shared
@@ -570,7 +570,7 @@ class TestEffortDropReason:
     def _reason(
         self, model: str, effort: str, *, role_models=None, agent="", agent_pins=None
     ) -> str:
-        from kiro_crew.subagent import effort_drop_reason
+        from efm_go.subagent import effort_drop_reason
 
         with _hermetic_cfg(role_models=role_models, agent_pins=agent_pins):
             return effort_drop_reason(model, effort, agent)
@@ -658,9 +658,9 @@ class TestNoSpawnSiteDropWarning:
         role_efforts=None,
         role_models=None,
     ):
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
-        from kiro_crew.subagent import SubagentInfo, SubagentManager
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.subagent import SubagentInfo, SubagentManager
 
         sessions = MagicMock()
         sessions.get_pid = MagicMock(return_value=None)
@@ -703,7 +703,7 @@ class TestNoSpawnSiteDropWarning:
         runner._log_spawned(info)
         with (
             patch.object(runner, "_should_use_session_sharing", return_value=False),
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
+            patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
         ):
             asyncio.run(runner._run_inner(info, "subagent:sub1"))
         return captured
@@ -716,22 +716,22 @@ class TestNoSpawnSiteDropWarning:
         ]
 
     def test_per_call_effort_on_auto_emits_no_spawn_warning(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent"):
             self._run(info_effort="high")
         assert self._drop_messages(caplog) == []
 
     def test_role_pin_drop_emits_no_spawn_warning(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent"):
             self._run(role_efforts={"subagent": "low"})
         assert self._drop_messages(caplog) == []
 
     def test_capable_model_stays_silent(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent"):
             self._run(info_effort="high", info_model="sonnet-test-model")
         assert self._drop_messages(caplog) == []
 
     def test_no_effort_anywhere_stays_silent(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent"):
             self._run()
         assert self._drop_messages(caplog) == []
 
@@ -739,7 +739,7 @@ class TestNoSpawnSiteDropWarning:
         """Reporting never alters spawning (design Property 2): the factory
         stays the single dropping authority, so the override kwarg must reach
         session creation — and the spawn path adds no warning of its own."""
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent"):
             captured = self._run(info_effort="high")
         assert self._drop_messages(caplog) == []
         assert captured.get("reasoning_effort_override") == "high"
@@ -760,9 +760,9 @@ class TestApiSpawnEffortDropped:
         parent_agent="",
         parent_selection=("template", ""),
     ) -> dict:
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.dashboard.handlers.messaging import api_spawn
+        from efm_go.dashboard.state import _ChatSlot
 
         mgr = MagicMock()
         mgr.spawn.return_value = SimpleNamespace(id="a1", done=False, error="")
@@ -789,9 +789,9 @@ class TestApiSpawnEffortDropped:
         if crews:
             cfg.agents.update(crews)
         with (
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
+            patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
             patch(
-                "kiro_crew.dashboard.handlers.messaging.warm_project_agents_for_spawn",
+                "efm_go.dashboard.handlers.messaging.warm_project_agents_for_spawn",
                 AsyncMock(),
             ),
         ):
@@ -863,7 +863,7 @@ class TestEffortAppliedNote:
     for a requested effort, naming the resolved model and family key."""
 
     def _note(self, model: str, effort: str, *, role_models=None, agent="", agent_pins=None) -> str:
-        from kiro_crew.subagent import effort_applied_note
+        from efm_go.subagent import effort_applied_note
 
         with _hermetic_cfg(role_models=role_models, agent_pins=agent_pins):
             return effort_applied_note(model, effort, agent)
@@ -871,7 +871,7 @@ class TestEffortAppliedNote:
     def _reason(
         self, model: str, effort: str, *, role_models=None, agent="", agent_pins=None
     ) -> str:
-        from kiro_crew.subagent import effort_drop_reason
+        from efm_go.subagent import effort_drop_reason
 
         with _hermetic_cfg(role_models=role_models, agent_pins=agent_pins):
             return effort_drop_reason(model, effort, agent)
@@ -894,10 +894,10 @@ class TestEffortAppliedNote:
         assert self._note("deepseek-3.2", "high") == ""
 
     def test_unavailable_model_resolution_omits_both_claims(self):
-        from kiro_crew.subagent import effort_applied_note, effort_drop_reason
+        from efm_go.subagent import effort_applied_note, effort_drop_reason
 
         with patch(
-            "kiro_crew.config.loader.KiroCrewConfig.load", side_effect=OSError("unreadable")
+            "efm_go.config.loader.KiroCrewConfig.load", side_effect=OSError("unreadable")
         ):
             assert effort_drop_reason("", "high", "worker", crew_agent="") == ""
             assert effort_applied_note("", "high", "worker", crew_agent="") == ""
@@ -952,8 +952,8 @@ class TestVerdictFactoryParity:
 
     @pytest.mark.parametrize("model,role_pin,agent,pins", CASES)
     def test_factory_gate_and_verdict_agree(self, model, role_pin, agent, pins, tmp_path):
-        from kiro_crew.session import _session_model
-        from kiro_crew.subagent import (
+        from efm_go.session import _session_model
+        from efm_go.subagent import (
             _spawn_effective_model,
             _subagent_default_model,
             effort_applied_note,
@@ -969,7 +969,7 @@ class TestVerdictFactoryParity:
             # ``None``) to the factory as ``model_override``.
             eff_model = model or _subagent_default_model()
             override = eff_model or _session_model(cfg, agent or None)
-            with patch("kiro_crew.providers.acp.AcpProvider") as provider_cls:
+            with patch("efm_go.providers.acp.AcpProvider") as provider_cls:
                 factory = cfg.create_provider_factory()
                 factory(
                     "parity-key",
@@ -1023,8 +1023,8 @@ class TestAppliedLineRendering:
         assert "applied for" not in result
 
     def test_api_spawn_returns_applied_for_capable_model(self):
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.dashboard.handlers.messaging import api_spawn
 
         mgr = MagicMock()
         mgr.spawn.return_value = SimpleNamespace(id="a1", done=False, error="")
@@ -1051,9 +1051,9 @@ class TestAppliedLineRendering:
         )
         cfg = KiroCrewConfig(agent=AgentConfig())
         with (
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
+            patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
             patch(
-                "kiro_crew.dashboard.handlers.messaging.warm_project_agents_for_spawn",
+                "efm_go.dashboard.handlers.messaging.warm_project_agents_for_spawn",
                 AsyncMock(),
             ),
         ):
@@ -1065,8 +1065,8 @@ class TestAppliedLineRendering:
         assert "effort_dropped" not in data
 
     def test_api_spawn_omits_applied_when_dropped(self):
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.dashboard.handlers.messaging import api_spawn
 
         mgr = MagicMock()
         mgr.spawn.return_value = SimpleNamespace(id="a1", done=False, error="")
@@ -1088,9 +1088,9 @@ class TestAppliedLineRendering:
         )
         cfg = KiroCrewConfig(agent=AgentConfig())
         with (
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
+            patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
             patch(
-                "kiro_crew.dashboard.handlers.messaging.warm_project_agents_for_spawn",
+                "efm_go.dashboard.handlers.messaging.warm_project_agents_for_spawn",
                 AsyncMock(),
             ),
         ):
@@ -1108,23 +1108,23 @@ class TestSessionChainResolution:
     behind an omitted per-call model and role pin."""
 
     def _reason(self, model: str, effort: str, agent: str = "", *, cfg=None) -> str:
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.subagent import effort_drop_reason
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.subagent import effort_drop_reason
 
         cfg = cfg or KiroCrewConfig(agent=AgentConfig())
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)):
             return effort_drop_reason(model, effort, agent)
 
     def _note(self, model: str, effort: str, agent: str = "", *, cfg=None) -> str:
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.subagent import effort_applied_note
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.subagent import effort_applied_note
 
         cfg = cfg or KiroCrewConfig(agent=AgentConfig())
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)):
             return effort_applied_note(model, effort, agent)
 
     def _cfg_with_crew(self, crew_model: str):
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             AgentConfig,
             KiroCrewAgentConfig,
             KiroCrewConfig,
@@ -1146,14 +1146,14 @@ class TestSessionChainResolution:
         assert "deepseek-3.2" in self._reason("", "high", "mycrew", cfg=cfg)
 
     def test_concrete_global_model_carries_the_effort(self):
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
 
         cfg = KiroCrewConfig(agent=AgentConfig(model="sonnet-test-model"))
         assert self._reason("", "high", cfg=cfg) == ""
         assert "sonnet-test-model" in self._note("", "high", cfg=cfg)
 
     def test_sentinel_global_still_drops(self):
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
 
         cfg = KiroCrewConfig(agent=AgentConfig(model="auto"))
         assert "auto" in self._reason("", "high", cfg=cfg)
@@ -1166,7 +1166,7 @@ class TestSessionChainResolution:
         """No agent in the request: the verdict judges the agent the session
         will inherit from the parent, mirroring _run_inner."""
         harness = TestApiSpawnEffortDropped()
-        from kiro_crew.config.loader import KiroCrewAgentConfig
+        from efm_go.config.loader import KiroCrewAgentConfig
 
         data = harness._spawn(
             {"task": "x", "reasoning_effort": "high", "parent_session": "dashboard:1"},
@@ -1186,9 +1186,9 @@ class TestVerdictOffTheEventLoop:
     def test_verdict_resolvers_run_off_the_loop_thread(self):
         import threading
 
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.dashboard.handlers import messaging as messaging_mod
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.dashboard.handlers import messaging as messaging_mod
+        from efm_go.dashboard.handlers.messaging import api_spawn
 
         mgr = MagicMock()
         mgr.spawn.return_value = SimpleNamespace(id="a1", done=False, error="")
@@ -1222,10 +1222,10 @@ class TestVerdictOffTheEventLoop:
             return await api_spawn(request)
 
         with (
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
+            patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
             patch.object(messaging_mod, "effort_drop_reason", _recording_drop),
             patch(
-                "kiro_crew.dashboard.handlers.messaging.warm_project_agents_for_spawn",
+                "efm_go.dashboard.handlers.messaging.warm_project_agents_for_spawn",
                 AsyncMock(),
             ),
         ):
@@ -1317,16 +1317,16 @@ class TestAllocatedEffortReceipt:
         role_model,
         template_model,
     ):
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
-        from kiro_crew.dashboard.state import _ChatSlot
-        from kiro_crew.member_memory_auth import (
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.dashboard.handlers.messaging import api_spawn
+        from efm_go.dashboard.state import _ChatSlot
+        from efm_go.member_memory_auth import (
             bind_private_session_store,
             private_memory_store_for_session,
         )
-        from kiro_crew.memory_stores import provision_member_memory
-        from kiro_crew.session_capabilities import prepare_runtime
-        from kiro_crew.subagent_persistence import read_run_memory_mode
+        from efm_go.memory_stores import provision_member_memory
+        from efm_go.session_capabilities import prepare_runtime
+        from efm_go.subagent_persistence import read_run_memory_mode
 
         world = continuation_runtime
 
@@ -1360,10 +1360,10 @@ class TestAllocatedEffortReceipt:
         sessions._provider_factory = capture_factory
         member = selection == "member"
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.session_capabilities.prepare_runtime", wraps=prepare_runtime
+                "efm_go.session_capabilities.prepare_runtime", wraps=prepare_runtime
             ) as prepare,
         ):
             try:
@@ -1377,7 +1377,7 @@ class TestAllocatedEffortReceipt:
                     else:
                         from dataclasses import replace
 
-                        from kiro_crew.execution_context import (
+                        from efm_go.execution_context import (
                             bind_session_execution,
                             read_session_execution,
                         )
@@ -1470,7 +1470,7 @@ class TestAllocatedEffortReceipt:
                     cfg = KiroCrewConfig.load()
                     # Feed captured allocation inputs through the real factory;
                     # only construction of the external provider is intercepted.
-                    with patch("kiro_crew.providers.acp.AcpProvider") as constructor:
+                    with patch("efm_go.providers.acp.AcpProvider") as constructor:
                         cfg.create_provider_factory()(key, **actual_inputs[key])
                         return constructor.call_args.kwargs
 

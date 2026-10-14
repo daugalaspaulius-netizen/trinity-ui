@@ -2,7 +2,7 @@
 
 Lives in the repo-level ``test/`` tree (not the app's in-package ``tests/``)
 because ``setup.cfg`` sets ``testpaths = test transfer`` — a test under
-``src/kiro_crew/apps/builtins/...`` is never collected by CI.
+``src/efm_go/apps/builtins/...`` is never collected by CI.
 
 **No test here reaches the network.** Every download is mocked at the
 ``urllib.request`` opener, and :data:`tectonic.SKIP_DOWNLOAD_ENV` is set for the
@@ -40,7 +40,7 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.apps.builtins.papyrus.backend import latex, store, tectonic
+from efm_go.apps.builtins.papyrus.backend import latex, store, tectonic
 
 
 @pytest.fixture(autouse=True)

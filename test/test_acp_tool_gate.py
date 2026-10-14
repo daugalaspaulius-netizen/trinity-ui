@@ -24,9 +24,9 @@ import sys
 
 import pytest
 
-from kiro_crew import acp_tool_gate as gate
-from kiro_crew import platform_compat
-from kiro_crew.acp_backends import (
+from efm_go import acp_tool_gate as gate
+from efm_go import platform_compat
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_DEEPSEEK,
@@ -40,14 +40,14 @@ from kiro_crew.acp_backends import (
     permission_config_for,
     routing_for,
 )
-from kiro_crew.agent_sdk.tool_gate import PI_GATE_ARTIFACT_LEAF
-from kiro_crew.sandbox import (
+from efm_go.agent_sdk.tool_gate import PI_GATE_ARTIFACT_LEAF
+from efm_go.sandbox import (
     _CREW_CHILD_WITHHELD_LEAVES,
     _CREW_READONLY_LEAVES,
     _CREW_SANDBOX_VISIBLE_LEAVES,
     crew_host_runtime_leaves,
 )
-from kiro_crew.security import crew_home_prefixes, sensitive_home_dirs
+from efm_go.security import crew_home_prefixes, sensitive_home_dirs
 
 AGENT_SPEC_BACKENDS = (ACP_BACKEND_KIRO, ACP_BACKEND_KAS)
 
@@ -497,7 +497,7 @@ def test_every_session_config_harness_names_its_option() -> None:
     never perform, so the verdict degrades to INDETERMINATE instead. This pins that
     no shipped harness is in that state.
     """
-    from kiro_crew.acp_backends import ACP_BACKEND_ROUTING
+    from efm_go.acp_backends import ACP_BACKEND_ROUTING
 
     for backend, routing in ACP_BACKEND_ROUTING.items():
         if routing is not Routing.SESSION_CONFIG:
@@ -525,8 +525,8 @@ def test_every_enforced_harness_declares_its_own_credential() -> None:
     the file the vault route exists to keep masked, while looking like it had
     tightened something.
     """
-    from kiro_crew.acp_backends import ACP_BACKEND_ROUTING
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.acp_backends import ACP_BACKEND_ROUTING
+    from efm_go.agent_sdk import host_auth
 
     for backend, routing in ACP_BACKEND_ROUTING.items():
         if routing not in gate.ENFORCED_ROUTINGS:
@@ -569,9 +569,9 @@ def test_every_enforced_harness_reaches_the_spawn_preflight() -> None:
     import inspect
     import textwrap
 
-    from kiro_crew.acp.client import AcpClient
-    from kiro_crew.acp.harness import harness_for
-    from kiro_crew.acp_backends import ACP_BACKEND_ROUTING, ACP_BACKENDS_ACP_RUNTIME
+    from efm_go.acp.client import AcpClient
+    from efm_go.acp.harness import harness_for
+    from efm_go.acp_backends import ACP_BACKEND_ROUTING, ACP_BACKENDS_ACP_RUNTIME
 
     enforced = {
         backend
@@ -688,7 +688,7 @@ def test_sandbox_off_refuses_an_enforced_adapter(monkeypatch: pytest.MonkeyPatch
     weaker than the gate-routed harnesses beside it. Revert-verified: without the
     guard this raises nothing.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: None)
     with pytest.raises(gate.ToolGateUnroutable):
@@ -704,7 +704,7 @@ def test_sandbox_off_is_allowed_for_an_unenforced_harness(
     attempted the guarantee, so refusing would break the Kiro path over a promise
     it does not make.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: None)
     monkeypatch.setattr(sandbox, "_inside_kirocrew_sandbox", lambda: False)
@@ -726,7 +726,7 @@ def test_governed_floor_keeps_an_enforced_adapter_startable(
     no-backend host must stay startable", a claim it never meant and which
     ``test_no_backend_refuses_under_a_governance_floor_too`` now contradicts.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: "standard")
     monkeypatch.setattr(sandbox, "_inside_kirocrew_sandbox", lambda: False)
@@ -750,7 +750,7 @@ def test_no_backend_refuses_under_a_governance_floor_too(
     Revert-verified: returning ``_floor_mandates_sandbox(floor)`` passes this
     through.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: "strict")
     monkeypatch.setattr(sandbox, "_inside_kirocrew_sandbox", lambda: False)
@@ -771,7 +771,7 @@ def test_env_root_override_is_read_verbatim(
     ``.env``, signing keys and governance files outside the floor. Revert-verified:
     restoring ``.strip()`` fails this.
     """
-    from kiro_crew import security
+    from efm_go import security
 
     # Compare against the SAME resolution the helper performs on the raw value,
     # rather than a POSIX literal: the contract under test is "the value is not
@@ -796,7 +796,7 @@ def test_no_backend_with_opt_in_refuses_an_enforced_adapter(
     too. Revert-verified: keying it on ``effective_sandbox_mode(mode) != "off"``
     passes this configuration straight through.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: None)
     monkeypatch.setattr(sandbox, "detect_backend", lambda **_: "none")
@@ -820,7 +820,7 @@ def test_no_backend_refuses_even_without_the_opt_in(
 
     Revert-verified: restoring the opt-in read makes this pass through instead.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: None)
     monkeypatch.setattr(sandbox, "detect_backend", lambda **_: "none")
@@ -839,7 +839,7 @@ def test_no_backend_verdict_ignores_the_mutable_opt_in() -> None:
     """
     import unittest.mock as _mock
 
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     verdicts = set()
     for opted_in in (True, False):
@@ -869,7 +869,7 @@ def test_nested_sandbox_passthrough_refuses_an_enforced_adapter(
     enforced adapter. Revert-verified: without the nested branch the backend probe
     returns a real backend and the guard passes this configuration through.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: None)
     monkeypatch.setattr(sandbox, "_inside_kirocrew_sandbox", lambda: True)
@@ -880,7 +880,7 @@ def test_nested_sandbox_passthrough_refuses_an_enforced_adapter(
 
 def _pin_no_sandbox_backend(monkeypatch: pytest.MonkeyPatch, *, opted_in: bool = False) -> None:
     """Pin the probes ``credential_mask_applies`` reads; never the operator config."""
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: None)
     monkeypatch.setattr(sandbox, "detect_backend", lambda **_: "none")
@@ -954,7 +954,7 @@ def test_windows_still_passes_when_the_mask_applies(
     A working backend whose governance floor raises ``off`` still starts on a
     simulated Windows host, matching the non-Windows governed-floor path.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: "standard")
@@ -968,7 +968,7 @@ def test_non_windows_keeps_the_generic_sandbox_refusal(
     monkeypatch: pytest.MonkeyPatch, mode: str, detect: str
 ) -> None:
     """A host that CAN have a backend still gets the set-standard-or-strict remedy."""
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(platform_compat, "IS_WINDOWS", False)
     monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: None)
@@ -993,8 +993,8 @@ def test_sandbox_preflight_retains_the_windows_remedy(
     the operator back to the generic sandbox advice that cannot succeed on
     native Windows. Uses the real preflight; does not start a child.
     """
-    from kiro_crew.acp import client as acp_client
-    from kiro_crew.acp.client import AcpToolGateUnroutable
+    from efm_go.acp import client as acp_client
+    from efm_go.acp.client import AcpToolGateUnroutable
 
     monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
     _pin_no_sandbox_backend(monkeypatch)

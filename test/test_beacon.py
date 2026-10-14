@@ -1,4 +1,4 @@
-"""Tests for the anonymous usage beacon (kiro_crew.beacon).
+"""Tests for the anonymous usage beacon (efm_go.beacon).
 
 Drives real production code — no reimplementation of the payload shape or the
 suppression rules in the test, so drift in either fails here.
@@ -22,8 +22,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import beacon, platform_compat
-from kiro_crew.apps import install_receipt
+from efm_go import beacon, platform_compat
+from efm_go.apps import install_receipt
 
 # Captured before any fixture can monkeypatch the module attribute, so the
 # dedicated tests below can exercise the REAL implementation.
@@ -350,7 +350,7 @@ class TestDistributionStamp:
     def test_generated_module_is_gitignored(self):
         """A committed stamp would mislabel every other build's beacon."""
         root = Path(__file__).resolve().parents[1]
-        assert "src/kiro_crew/_build_info.py" in (root / ".gitignore").read_text()
+        assert "src/efm_go/_build_info.py" in (root / ".gitignore").read_text()
 
 
 class TestDesktopStampPerOS:
@@ -394,7 +394,7 @@ class TestDesktopStampPerOS:
         the artifact then advertises an update path that cannot replace its
         bytes.
         """
-        from kiro_crew.platform.update_capability import EXTERNALLY_MANAGED_STAMPS
+        from efm_go.platform.update_capability import EXTERNALLY_MANAGED_STAMPS
 
         for branch, dist in self._os_stamps().items():
             assert dist in EXTERNALLY_MANAGED_STAMPS, (
@@ -653,7 +653,7 @@ class TestDefaultHomeDetection:
     def test_real_home_spelled_explicitly_is_default(self, monkeypatch):
         from pathlib import Path
 
-        from kiro_crew.config.paths import CONFIG_DIR_LEAF, KIRO_BASE_DIR_NAME
+        from efm_go.config.paths import CONFIG_DIR_LEAF, KIRO_BASE_DIR_NAME
 
         real = Path.home() / KIRO_BASE_DIR_NAME / CONFIG_DIR_LEAF
         monkeypatch.setenv("KIROCREW_HOME", str(real))
@@ -874,7 +874,7 @@ class TestFailOpen:
         """
         import inspect
 
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         src = inspect.getsource(gateway.run_gateway)
         assert "beacon.send" in src
@@ -932,11 +932,11 @@ class TestTelemetryCliWrite:
         return argparse.Namespace(telemetry_action=action)
 
     def test_toggle_preserves_unrelated_config(self, _isolated_home, monkeypatch):
-        from kiro_crew.cli_commands import _telemetry
+        from efm_go.cli_commands import _telemetry
 
         cfg = _isolated_home / "config.json"
         cfg.write_text(json.dumps({"slack": {"command": "kirocrew"}, "timezone": "UTC"}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg)
         _telemetry(self._args("disable"))
         data = json.loads(cfg.read_text())
         assert data["telemetry"]["beacon_enabled"] is False
@@ -956,11 +956,11 @@ class TestTelemetryCliWrite:
         write — that silently destroys the file's contents AND prints success. A
         privacy toggle must never be a data-loss path.
         """
-        from kiro_crew.cli_commands import _telemetry
+        from efm_go.cli_commands import _telemetry
 
         cfg = _isolated_home / "config.json"
         cfg.write_text(raw)
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg)
 
         with pytest.raises(SystemExit) as exc:
             _telemetry(self._args("disable"))
@@ -984,12 +984,12 @@ class TestTelemetryCliWrite:
         import os
         import stat as _stat
 
-        from kiro_crew.cli_commands import _telemetry
+        from efm_go.cli_commands import _telemetry
 
         cfg = _isolated_home / "config.json"
         cfg.write_text(json.dumps({"slack": {"bot_token": "xoxb-secret"}}))
         os.chmod(cfg, 0o600)
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg)
 
         _telemetry(self._args("disable"))
 
@@ -1007,12 +1007,12 @@ class TestTelemetryCliWrite:
         """
         import os
 
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         cfg = _isolated_home / "config.json"
         cfg.write_text(json.dumps({"slack": {"bot_token": "xoxb-secret"}}))
         os.chmod(cfg, 0o600)
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg)
 
         calls: list[str] = []
         real = cli_commands.platform_compat.restrict_to_owner
@@ -1034,11 +1034,11 @@ class TestTelemetryCliWrite:
         """A config.json this command creates must start owner-only."""
         import stat as _stat
 
-        from kiro_crew.cli_commands import _telemetry
+        from efm_go.cli_commands import _telemetry
 
         cfg = _isolated_home / "config.json"
         assert not cfg.exists()
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg)
 
         _telemetry(self._args("disable"))
 
@@ -1059,11 +1059,11 @@ class TestTelemetryCliWrite:
         because ``KiroCrewConfig.load()`` performs its own migration write-back
         that rewrites config.json independently of this code path.
         """
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         cfg = _isolated_home / "config.json"
         cfg.write_text(json.dumps({"timezone": "UTC"}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg)
 
         calls: list[dict] = []
 
@@ -1099,12 +1099,12 @@ class TestTelemetryCliWrite:
         actually covers: the write-back did not persist (a read-only data home),
         leaving the malformed value on disk at read time.
         """
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         cfg = _isolated_home / "config.json"
         original = json.dumps({"timezone": "UTC", section: value})
         cfg.write_text(original)
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg)
         monkeypatch.setattr(cli_commands.KiroCrewConfig, "load", classmethod(lambda cls: MagicMock()))
 
         with pytest.raises(SystemExit) as excinfo:
@@ -1115,11 +1115,11 @@ class TestTelemetryCliWrite:
 
     def test_absent_sections_are_created(self, _isolated_home, monkeypatch):
         """Absent is not malformed: create both sections and record the choice."""
-        from kiro_crew.cli_commands import _telemetry
+        from efm_go.cli_commands import _telemetry
 
         cfg = _isolated_home / "config.json"
         cfg.write_text(json.dumps({"timezone": "UTC"}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg)
 
         _telemetry(self._args("disable"))
 
@@ -1142,8 +1142,8 @@ class TestSnapshotAndPortabilityRegistration:
     """
 
     def test_beacon_names_are_not_basename_filtered(self):
-        from kiro_crew.portability import EXPORT_EXCLUDE
-        from kiro_crew.snapshot import NEVER_SNAPSHOT_FILES
+        from efm_go.portability import EXPORT_EXCLUDE
+        from efm_go.snapshot import NEVER_SNAPSHOT_FILES
 
         for name in (beacon.INSTALL_ID_FILE, beacon.STAMP_FILE):
             assert name not in EXPORT_EXCLUDE, (
@@ -1159,14 +1159,14 @@ class TestSnapshotAndPortabilityRegistration:
         """Root-level export copies a fixed allowlist; beacon files aren't on it."""
         import inspect
 
-        from kiro_crew import portability
+        from efm_go import portability
 
         src = inspect.getsource(portability.create_export_zip)
         assert beacon.INSTALL_ID_FILE not in src
         assert beacon.STAMP_FILE not in src
 
     def test_snapshot_components_never_name_beacon_state(self):
-        from kiro_crew.snapshot import CORE_FILES
+        from efm_go.snapshot import CORE_FILES
 
         listed = {f for files in CORE_FILES.values() for f in files}
         assert beacon.INSTALL_ID_FILE not in listed
@@ -1176,7 +1176,7 @@ class TestSnapshotAndPortabilityRegistration:
         """A user file merely SHARING the name must not be filtered out."""
         from pathlib import PurePosixPath
 
-        from kiro_crew.portability import _is_excluded
+        from efm_go.portability import _is_excluded
 
         for rel in (
             f"workspace/proj/{beacon.INSTALL_ID_FILE}",
@@ -1187,7 +1187,7 @@ class TestSnapshotAndPortabilityRegistration:
 
 class TestConfigDefaults:
     def test_beacon_on_by_default_with_https_endpoint(self):
-        from kiro_crew.config.loader import TelemetryConfig
+        from efm_go.config.loader import TelemetryConfig
 
         cfg = TelemetryConfig()
         # EFM Go: beacon default OFF, empty endpoint (no CloudFront).
@@ -1207,7 +1207,7 @@ class TestConfigDefaults:
         The fixture already neutralizes the CI and data-home suppressions (both
         fire in the test environment for reasons unrelated to defaults).
         """
-        from kiro_crew.config.loader import TelemetryConfig
+        from efm_go.config.loader import TelemetryConfig
 
         cfg = TelemetryConfig()
         ok, reason, _code = beacon.should_send(enabled=cfg.beacon_enabled, acked=True)
@@ -1225,7 +1225,7 @@ class TestConfigDefaults:
         assert beacon.is_governance_pinned_off() is False
 
     def test_non_https_endpoint_is_cleared(self):
-        from kiro_crew.config.loader import TelemetryConfig
+        from efm_go.config.loader import TelemetryConfig
 
         assert TelemetryConfig(beacon_endpoint="http://insecure.invalid").beacon_endpoint == ""
 
@@ -1236,7 +1236,7 @@ class TestConfigDefaults:
         beacon_url's scheme check, then fails only inside urlopen — deep in the
         beacon thread. Reject it at config load instead.
         """
-        from kiro_crew.config.loader import TelemetryConfig
+        from efm_go.config.loader import TelemetryConfig
 
         for bad in (
             "https://exa mple.invalid",  # whitespace in host
@@ -1247,7 +1247,7 @@ class TestConfigDefaults:
 
     def test_local_metrics_switch_stays_off(self):
         """The beacon must not ride the local-only telemetry.enabled switch."""
-        from kiro_crew.config.loader import TelemetryConfig
+        from efm_go.config.loader import TelemetryConfig
 
         assert TelemetryConfig().enabled is False
 
@@ -1285,8 +1285,8 @@ class TestGovernancePin:
 
     def _install_policy(self, monkeypatch, doc):
         """Install ``doc`` as the boot-frozen ceiling for the duration of a test."""
-        from kiro_crew.platform import context as pc
-        from kiro_crew.platform.governance import parse_policy
+        from efm_go.platform import context as pc
+        from efm_go.platform.governance import parse_policy
 
         ceiling = parse_policy(doc) if doc is not None else None
 
@@ -1394,12 +1394,12 @@ class TestGovernancePin:
         ordinary permitted=False ``Decision``, not an exception — which is why the
         probe keys on ``layer``, not on ``permitted`` alone.
         """
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         monkeypatch.setattr(
             gp, "resolve_active_scope", lambda *a, **k: gp.deny_all_profile("_deny_all_unloaded:x")
         )
-        from kiro_crew.platform import context as pc
+        from efm_go.platform import context as pc
 
         class _Ctx:
             governance = None
@@ -1425,7 +1425,7 @@ class TestGovernancePin:
                 "capabilities": {"telemetry": {"enabled": False}},
             },
         )
-        from kiro_crew.platform.governance import parse_policy, resolve
+        from efm_go.platform.governance import parse_policy, resolve
 
         decision = resolve(
             parse_policy(
@@ -1457,8 +1457,8 @@ class TestGovernancePin:
         Asserted at the ``should_send`` boundary too, since the probe only matters
         if it actually suppresses.
         """
-        from kiro_crew.platform import governance_profiles as gp
-        from kiro_crew.platform.governance import parse_policy
+        from efm_go.platform import governance_profiles as gp
+        from efm_go.platform.governance import parse_policy
 
         # A governed fleet whose profile resolution breaks mid-evaluation.
         monkeypatch.setattr(
@@ -1466,7 +1466,7 @@ class TestGovernancePin:
             "resolve_active_scope",
             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")),
         )
-        from kiro_crew.platform import context as pc
+        from efm_go.platform import context as pc
 
         class _Ctx:
             governance = parse_policy({"version": 1, "boot": {"fail_closed": True}})
@@ -1487,7 +1487,7 @@ class TestGovernancePin:
         documented to propagate). That is still an unevaluable ceiling, so it must
         not permit the egress.
         """
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         monkeypatch.setattr(
             beacon,
@@ -1517,7 +1517,7 @@ class TestGovernancePin:
         )
         monkeypatch.setattr(beacon, "already_sent_today", lambda: False)
         fake = MagicMock()
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: fake)
 
@@ -1552,7 +1552,7 @@ class TestGovernancePin:
             },
         )
         monkeypatch.setattr(beacon, "already_sent_today", lambda: False)
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         def _tools_for(action):
             fake = MagicMock()
@@ -1563,9 +1563,9 @@ class TestGovernancePin:
                 pass  # the CLI refusals exit(1) by design
             return [c[1].get("tool_name") for c in fake.log_governance_decision.call_args_list]
 
-        from kiro_crew.cli_commands import _telemetry
-        from kiro_crew.cli_config import _config_cmd
-        from kiro_crew.dashboard.handlers.core import _beacon_governance_pinned_off
+        from efm_go.cli_commands import _telemetry
+        from efm_go.cli_config import _config_cmd
+        from efm_go.dashboard.handlers.core import _beacon_governance_pinned_off
 
         assert _tools_for(lambda: beacon.send("https://e.invalid", "1.2.3", enabled=True, acked=True)) == [
             "beacon_send"
@@ -1605,7 +1605,7 @@ class TestGovernancePin:
             },
         )
         fake = MagicMock()
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: fake)
 
@@ -1652,7 +1652,7 @@ class TestGenericConfigSetterIsGated:
         return argparse.Namespace(config_action="set", key=key, value=value, local=local, file=None)
 
     def _pin(self, monkeypatch, pinned):
-        from kiro_crew import beacon as beacon_mod
+        from efm_go import beacon as beacon_mod
 
         # **kwargs, not a bare lambda: the enforcement call sites pass
         # ``audit_tool=`` so the decision is SEL-audited, and a fixed-arity stub
@@ -1661,7 +1661,7 @@ class TestGenericConfigSetterIsGated:
 
     @pytest.mark.parametrize("local", [False, True])
     def test_enable_is_refused_under_a_pin(self, _isolated_home, monkeypatch, local):
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         self._pin(monkeypatch, True)
         with pytest.raises(SystemExit) as exc:
@@ -1675,7 +1675,7 @@ class TestGenericConfigSetterIsGated:
 
     def test_disable_is_still_allowed_under_a_pin(self, _isolated_home, monkeypatch):
         """Tightest-wins: a narrower local choice composes with the ceiling."""
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         self._pin(monkeypatch, True)
         _config_cmd(self._args("telemetry.beacon_enabled", "false"))
@@ -1683,7 +1683,7 @@ class TestGenericConfigSetterIsGated:
         assert data["telemetry"]["beacon_enabled"] is False
 
     def test_unpinned_host_can_still_enable(self, _isolated_home, monkeypatch):
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         self._pin(monkeypatch, False)
         _config_cmd(self._args("telemetry.beacon_enabled", "true"))

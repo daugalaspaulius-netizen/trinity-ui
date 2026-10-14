@@ -78,7 +78,7 @@ async function main() {
       // carries no role or test id of its own. The hook is `border-t` — the
       // side utility, which this change leaves alone — never the colour token
       // being compared, so the locator cannot drift with the thing under test.
-      const row = page.locator('a[href="https://github.com/kirodotdev/KiroCrew"]')
+      const row = page.locator('a[href="https://efmleads.com"]')
         .locator('xpath=ancestor::div[contains(@class,"border-t")][1]')
       await row.waitFor({ state: 'visible', timeout: 15000 })
 

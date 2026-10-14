@@ -22,15 +22,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     KiroCrewAgentConfig,
     KiroCrewConfig,
     normalize_agent_model,
     resolve_agent_bindings,
     resolve_effective_model,
 )
-from kiro_crew.memory_stores import provision_member_memory
-from kiro_crew.session import _session_model
+from efm_go.memory_stores import provision_member_memory
+from efm_go.session import _session_model
 
 
 def _load_from_dict(data: object) -> KiroCrewConfig:
@@ -40,7 +40,7 @@ def _load_from_dict(data: object) -> KiroCrewConfig:
         tmp = Path(f.name)
     try:
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path",
+            "efm_go.config.loader.config_path",
             return_value=tmp,
         ):
             return KiroCrewConfig.load()
@@ -127,8 +127,8 @@ class TestApiDoesNotStringifyModels:
         """
         import inspect
 
-        from kiro_crew.dashboard import agent_admin
-        from kiro_crew.dashboard.handlers import agents as agents_mod
+        from efm_go.dashboard import agent_admin
+        from efm_go.dashboard.handlers import agents as agents_mod
 
         owners = sorted(Path(agent_admin.__file__).parent.glob("[!_]*.py"))
         return "\n".join(
@@ -236,7 +236,7 @@ def specs_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         encoding="utf-8",
     )
     (d / "unpinned.json").write_text(json.dumps({"name": "unpinned"}), encoding="utf-8")
-    monkeypatch.setattr("kiro_crew.config.loader.kiro_agents_dir", lambda: d)
+    monkeypatch.setattr("efm_go.config.loader.kiro_agents_dir", lambda: d)
     return d
 
 

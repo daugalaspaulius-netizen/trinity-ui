@@ -14,9 +14,9 @@ import subprocess
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.platform import update_capability
-from kiro_crew.platform.update_capability import (
+from efm_go import platform_compat
+from efm_go.platform import update_capability
+from efm_go.platform.update_capability import (
     _git_toplevel,
     derive_capability,
     is_git_worktree,
@@ -488,7 +488,7 @@ class TestRemediationTracksTheReportedChannel:
     """
 
     def test_a_switch_between_the_two_reads_cannot_split_the_pair(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.platform.update_layout.release_channel", lambda: "stable")
+        monkeypatch.setattr("efm_go.platform.update_layout.release_channel", lambda: "stable")
         capability = derive_capability(install_root="", dist="kirocrew")
         assert "stable" in (capability.remediation or {})["command"]
 
@@ -598,7 +598,7 @@ class TestTheProbeDoesNotTrustPath:
         does not come back with it.
         """
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.trusted_system_bin", lambda _n: None
+            "efm_go.platform.update_capability.trusted_system_bin", lambda _n: None
         )
         checkout = tmp_path / "checkout"
         checkout.mkdir()
@@ -627,13 +627,13 @@ class TestExternallyManagedTablesAgree:
     """
 
     def test_every_managed_stamp_has_guidance(self):
-        from kiro_crew.platform.update_capability import EXTERNALLY_MANAGED_STAMPS
-        from kiro_crew.platform.update_layout import EXTERNALLY_MANAGED
+        from efm_go.platform.update_capability import EXTERNALLY_MANAGED_STAMPS
+        from efm_go.platform.update_layout import EXTERNALLY_MANAGED
 
         assert set(EXTERNALLY_MANAGED) == set(EXTERNALLY_MANAGED_STAMPS)
 
     def test_the_windows_guidance_names_the_app_updater(self):
-        from kiro_crew.platform.update_layout import EXTERNALLY_MANAGED
+        from efm_go.platform.update_layout import EXTERNALLY_MANAGED
 
         guidance = EXTERNALLY_MANAGED["nsis"]
         assert "desktop app's built-in updater" in guidance

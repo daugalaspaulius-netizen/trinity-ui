@@ -30,8 +30,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import kiro_crew.dashboard.handlers.core as core_mod
-from kiro_crew import sel as sel_mod
+import efm_go.dashboard.handlers.core as core_mod
+from efm_go import sel as sel_mod
 
 
 class _FakeLoop:

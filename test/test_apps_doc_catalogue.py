@@ -1,6 +1,6 @@
 """The packaged Apps page's shipped-app catalogue is pinned to ``apps/builtins/``.
 
-``src/kiro_crew/docs/apps.md`` carries a user-facing table of every app that ships
+``src/efm_go/docs/apps.md`` carries a user-facing table of every app that ships
 inside the wheel. That kind of list has one failure mode and it is silent: an app is
 added, removed or renamed, and the catalogue keeps reading as complete while it no
 longer is. ``scripts/docs_lint.py`` cannot catch it — the page's links and symbols all
@@ -32,10 +32,10 @@ from typing import cast
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-DOCS = REPO / "src" / "kiro_crew" / "docs"
+DOCS = REPO / "src" / "efm_go" / "docs"
 DOC = DOCS / "apps.md"
 INDEX = DOCS / "index.md"
-BUILTINS = REPO / "src" / "kiro_crew" / "apps" / "builtins"
+BUILTINS = REPO / "src" / "efm_go" / "apps" / "builtins"
 
 #: A catalogue cell names its app as ``**Display Name** (`slug`)``. Anchored on the
 #: bolded-name-then-backticked-slug pair so a slug mentioned in running prose or in a
@@ -237,7 +237,7 @@ def test_the_agents_bullet_names_every_app_and_its_count(doc_text: str) -> None:
     }
     assert stated == expected, (
         "Update the Agents bullet under 'Agents, skills and MCP tools an app brings' "
-        "in src/kiro_crew/docs/apps.md to match each app.json agents roster "
+        "in src/efm_go/docs/apps.md to match each app.json agents roster "
         f"(extend _AGENT_COUNT_WORDS if needed): stated={stated}, expected={expected}"
     )
 
@@ -260,6 +260,6 @@ def test_resource_bullet_names_exactly_the_contributing_apps(
     expected = {str(m["displayName"]) for m in _manifests().values() if m.get(field)}
     assert stated == expected, (
         f"Update the {label} bullet under 'Agents, skills and MCP tools an app brings' "
-        f"in src/kiro_crew/docs/apps.md to name exactly the apps with non-empty {field} "
+        f"in src/efm_go/docs/apps.md to name exactly the apps with non-empty {field} "
         f"in app.json: stated={sorted(stated)}, expected={sorted(expected)}"
     )

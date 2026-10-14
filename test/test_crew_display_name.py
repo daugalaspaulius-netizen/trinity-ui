@@ -26,15 +26,15 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.config.paths import config_dir
-from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.config.paths import config_dir
+from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
 
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -70,7 +70,7 @@ class TestConfigField:
 
 
 def _crud_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
+    from efm_go.dashboard.handlers import api_kirocrew_agent_update
 
     app = web.Application()
     app.router.add_put("/api/agents/{name}", api_kirocrew_agent_update)
@@ -122,7 +122,7 @@ class TestCreateEndpoint:
     def _fake_config():
         from types import SimpleNamespace
 
-        from kiro_crew.config.sections import MemoryConfig
+        from efm_go.config.sections import MemoryConfig
 
         saved: list[bool] = []
         return SimpleNamespace(
@@ -140,7 +140,7 @@ class TestCreateEndpoint:
     async def _post(self, body, cfg):
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.handlers.agents import api_kirocrew_agents_create
+        from efm_go.dashboard.handlers.agents import api_kirocrew_agents_create
 
         def _fake_update_config_locked(*args, **kwargs):
             doc: dict = {"agents": {}}
@@ -153,19 +153,19 @@ class TestCreateEndpoint:
         app.router.add_post("/api/agents", api_kirocrew_agents_create)
         with (
             patch(
-                "kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.agents.KiroCrewConfig.load",
                 return_value=cfg,
             ),
             patch(
-                "kiro_crew.config.loader.update_config_locked",
+                "efm_go.config.loader.update_config_locked",
                 new=_fake_update_config_locked,
             ),
             patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents",
+                "efm_go.dashboard.handlers.agents.list_agents",
                 new=lambda *a, **k: [SimpleNamespace(name="kirocrew")],
             ),
             patch(
-                "kiro_crew.dashboard.handlers.agents._sel",
+                "efm_go.dashboard.handlers.agents._sel",
                 return_value=SimpleNamespace(log_api_access=lambda **kwargs: None),
             ),
         ):
@@ -295,19 +295,19 @@ class TestCrewIdDerivation:
         [("Release Writer", "release-writer"), ("Café Bot!", "cafe-bot"), ("a" * 100, "a" * 56)],
     )
     def test_slugs_the_name(self, name, expected):
-        from kiro_crew.members import crew_id_for_display_name
+        from efm_go.members import crew_id_for_display_name
 
         assert crew_id_for_display_name(name, set()) == expected
 
     def test_name_with_no_slug_characters_derives_from_its_hash(self):
-        from kiro_crew.members import crew_id_for_display_name, is_crew_id
+        from efm_go.members import crew_id_for_display_name, is_crew_id
 
         first = crew_id_for_display_name("数据助手", set())
         assert first.startswith("crew-") and is_crew_id(first)
         assert crew_id_for_display_name("代码助手", set()) != first
 
     def test_suffixes_past_taken_ids(self):
-        from kiro_crew.members import crew_id_for_display_name
+        from efm_go.members import crew_id_for_display_name
 
         taken = {"release-writer", "release-writer-2"}
         assert crew_id_for_display_name("Release Writer", taken) == "release-writer-3"
@@ -323,7 +323,7 @@ class TestCrewIdDerivation:
         ],
     )
     def test_is_crew_id(self, value, ok):
-        from kiro_crew.members import is_crew_id
+        from efm_go.members import is_crew_id
 
         assert is_crew_id(value) is ok
 
@@ -331,7 +331,7 @@ class TestCrewIdDerivation:
 class TestRosterSurfaces:
     @pytest.mark.asyncio
     async def test_agents_roster_carries_the_label(self, tmp_path):
-        from kiro_crew.dashboard.handlers import api_kirocrew_agents
+        from efm_go.dashboard.handlers import api_kirocrew_agents
 
         cfg = KiroCrewConfig.load()
         cfg.agents["labelled"] = KiroCrewAgentConfig(
@@ -350,7 +350,7 @@ class TestRosterSurfaces:
     async def test_credential_shaped_label_leaves_as_the_mask(self, tmp_path):
         """Same posture as description/triggers: the label is agent-writable
         free text, so a credential-shaped value must not reach the browser."""
-        from kiro_crew.dashboard.handlers import api_kirocrew_agents
+        from efm_go.dashboard.handlers import api_kirocrew_agents
 
         # Assembled at runtime: the value must look real enough to trip the
         # redactor, but the joined literal must never appear in the file or
@@ -381,8 +381,8 @@ class TestProjectionLockstep:
     """
 
     def test_config_fields_tuples_match_and_carry_display_name(self):
-        from kiro_crew import eventlog_hooks
-        from kiro_crew.eventlog import members_projections
+        from efm_go import eventlog_hooks
+        from efm_go.eventlog import members_projections
 
         assert eventlog_hooks._CONFIG_FIELDS == members_projections._CONFIG_FIELDS, (
             "the event snapshot vocabulary and the roster fold vocabulary drifted: "
@@ -397,8 +397,8 @@ class TestProjectionLockstep:
         member/config for that field's changes -- exactly the bug this guards."""
         import inspect
 
-        from kiro_crew import eventlog_hooks
-        from kiro_crew.dashboard.handlers import agents as agents_mod
+        from efm_go import eventlog_hooks
+        from efm_go.dashboard.handlers import agents as agents_mod
 
         source = inspect.getsource(agents_mod.api_kirocrew_agent_update)
         before_at = source.index("_ev_before = {")
@@ -410,14 +410,14 @@ class TestProjectionLockstep:
             assert f'"{field}"' in after_block, f"_ev_after omits {field!r}"
 
     def test_snapshot_for_agent_carries_display_name(self):
-        from kiro_crew.eventlog_hooks import _config_snapshot_for_agent
+        from efm_go.eventlog_hooks import _config_snapshot_for_agent
 
         agent = KiroCrewAgentConfig(kiro_agent="kirocrew", display_name="Release Writer")
         assert _config_snapshot_for_agent(agent)["display_name"] == "Release Writer"
 
     def test_roster_projection_folds_display_name(self):
-        from kiro_crew.eventlog import types
-        from kiro_crew.eventlog.members_projections import RosterProjection
+        from efm_go.eventlog import types
+        from efm_go.eventlog.members_projections import RosterProjection
 
         proj = RosterProjection()
         state = proj.init()

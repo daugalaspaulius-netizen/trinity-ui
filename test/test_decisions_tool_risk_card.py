@@ -29,18 +29,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
     EVENT_TOOL_CALL,
 )
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_persistence import _build_message_entry_uncached
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.decisions.points import tool_risk as tr
-from kiro_crew.history import ConversationLog
-from kiro_crew.providers.base import LLMEvent
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_persistence import _build_message_entry_uncached
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.decisions.points import tool_risk as tr
+from efm_go.history import ConversationLog
+from efm_go.providers.base import LLMEvent
 
 RECORD = {
     "ts": "2026-09-20T07:00:00+00:00",

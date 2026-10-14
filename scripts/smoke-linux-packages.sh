@@ -71,7 +71,7 @@ common_asserts() {
   cat <<ASSERTS
     files=\$($1)
     entry=\$(printf '%s\\n' "\$files" | grep -E '^/usr/share/applications/[^/]+[.]desktop\$' | head -1)
-    stamp=\$(printf '%s\\n' "\$files" | grep -E '/kiro_crew/_build_info[.]py\$' | head -1)
+    stamp=\$(printf '%s\\n' "\$files" | grep -E '/efm_go/_build_info[.]py\$' | head -1)
     test -n "\$entry" && test -f "\$entry"
     test -n "\$stamp"
     # The identity comes from the desktop entry's FILENAME, not from parsing its
@@ -96,7 +96,7 @@ common_asserts() {
     grep -qE "^Exec=\\"?/opt/.*/\${exe}" "\$entry"
     # The bundled CLI that fixed prefix makes reachable -- what an AppImage
     # cannot offer, and what makes \`kirocrew service install\` usable.
-    printf '%s\\n' "\$files" | grep -qE '/backend-dist/kirocrew-backend/bin/kirocrew\$'
+    printf '%s\\n' "\$files" | grep -qE '/backend-dist/efm-go-backend/bin/kirocrew\$'
 ASSERTS
 }
 

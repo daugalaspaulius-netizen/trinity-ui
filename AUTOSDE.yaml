@@ -14,10 +14,10 @@ custom-rules:
     file-patterns:
       - "docs/feature-map/README.md"
       - "website/src/pages/**"
-      - "src/kiro_crew/dashboard/handlers/**"
-      - "src/kiro_crew/dashboard/messaging_api/**"
-      - "src/kiro_crew/dashboard/file_api/**"
-      - "src/kiro_crew/dashboard/agent_admin/**"
+      - "src/efm_go/dashboard/handlers/**"
+      - "src/efm_go/dashboard/messaging_api/**"
+      - "src/efm_go/dashboard/file_api/**"
+      - "src/efm_go/dashboard/agent_admin/**"
       - "website/src/App.tsx"
     rule: |
       Keep the feature map semantically aligned with every structural dashboard
@@ -42,7 +42,7 @@ custom-rules:
   - id: backend-security-controls
     blocking: true
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       Enforce KiroCrew backend security controls, based on real vulnerabilities
       found and fixed in this codebase.
@@ -94,7 +94,7 @@ custom-rules:
   - id: no-blocking-call-on-event-loop
     blocking: true
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       Do NOT add a blocking syscall that runs on the asyncio event loop. The
       gateway runs everything on one loop; a single blocking call there freezes
@@ -132,15 +132,15 @@ custom-rules:
   - id: no-new-work-on-gateway-boot-path
     blocking: true
     file-patterns:
-      - "src/kiro_crew/slack/gateway.py"
-      - "src/kiro_crew/slack/gateway_runtime/**/*.py"
-      - "src/kiro_crew/dashboard/server.py"
-      - "src/kiro_crew/dashboard/server_runtime/**/*.py"
-      - "src/kiro_crew/dashboard/handlers/**/*.py"
-      - "src/kiro_crew/dashboard/messaging_api/**/*.py"
-      - "src/kiro_crew/dashboard/file_api/**/*.py"
-      - "src/kiro_crew/dashboard/agent_admin/**/*.py"
-      - "src/kiro_crew/cli.py"
+      - "src/efm_go/slack/gateway.py"
+      - "src/efm_go/slack/gateway_runtime/**/*.py"
+      - "src/efm_go/dashboard/server.py"
+      - "src/efm_go/dashboard/server_runtime/**/*.py"
+      - "src/efm_go/dashboard/handlers/**/*.py"
+      - "src/efm_go/dashboard/messaging_api/**/*.py"
+      - "src/efm_go/dashboard/file_api/**/*.py"
+      - "src/efm_go/dashboard/agent_admin/**/*.py"
+      - "src/efm_go/cli.py"
     rule: |
       Do NOT add work to the gateway boot path. Everything between process
       start and the moment the dashboard socket accepts requests runs once, in
@@ -202,8 +202,8 @@ custom-rules:
     file-patterns:
       - "test/**/*.py"
       - "tests/**/*.py"
-      - "src/kiro_crew/apps/builtins/**/tests/**/*.py"
-      - "src/kiro_crew/apps/builtins/**/*_tests/**/*.py"
+      - "src/efm_go/apps/builtins/**/tests/**/*.py"
+      - "src/efm_go/apps/builtins/**/*_tests/**/*.py"
       - "conftest.py"
       - "**/conftest.py"
     rule: |
@@ -283,7 +283,7 @@ custom-rules:
         session-wide, redirects `tempfile`'s base with residue reported, and
         fails the run on residue at the repository root.
       - `test/conftest.py` adds ~20 MORE autouse fixtures, and it applies ONLY to
-        `test/`. Tests under `src/kiro_crew/apps/builtins/**/tests/` see the
+        `test/`. Tests under `src/efm_go/apps/builtins/**/tests/` see the
         rootdir conftest plus that app's own
         `tests/conftest.py` where one exists (`auto_improvement`,
         `code_review_sage`, `spec_builder` have one; the other apps do not), and
@@ -299,7 +299,7 @@ custom-rules:
       - `~/.kiro` is a SEPARATE isolation axis from the data home: it is
         kiro-cli's own machine-wide home, shared with the real installed agent,
         so `~/.kiro/settings/mcp.json` is the LIVE agent's MCP server list. A new
-        module-level `Path.home()` binding in `src/kiro_crew` must be added to
+        module-level `Path.home()` binding in `src/efm_go` must be added to
         `_SHARED_KIRO_PATHS` or excluded with a reason —
         `test/test_host_isolation_floor.py` fails otherwise. That ratchet covers the
         IMPORT-TIME shape only: a lazy resolver such as `config.paths.kiro_home()`
@@ -335,7 +335,7 @@ custom-rules:
       relative paths non-deterministic. Always anchor to the repo root via
       `_REPO_ROOT = Path(__file__).resolve().parents[1]` (for test/ files) or
       the equivalent number of parent hops for deeper test directories, then
-      use `_REPO_ROOT / "src/kiro_crew/..."`. This pattern is already
+      use `_REPO_ROOT / "src/efm_go/..."`. This pattern is already
       established in test_builtin_app_assets.py, test_platform_compat.py, and
       test_skill_home_paths.py.
 
@@ -343,8 +343,8 @@ custom-rules:
     blocking: true
     file-patterns:
       - "test/**/*.py"
-      - "src/kiro_crew/apps/builtins/**/tests/**/*.py"
-      - "src/kiro_crew/apps/builtins/**/*_tests/**/*.py"
+      - "src/efm_go/apps/builtins/**/tests/**/*.py"
+      - "src/efm_go/apps/builtins/**/*_tests/**/*.py"
       - "conftest.py"
       - "**/conftest.py"
     rule: |
@@ -455,7 +455,7 @@ custom-rules:
   - id: top-level-imports
     blocking: false
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       All imports must be at the top of the file, not inside functions or
       methods. In-method imports make dependencies hard to trace, break IDE
@@ -471,17 +471,17 @@ custom-rules:
   - id: harness-parity
     blocking: true
     file-patterns:
-      - "src/kiro_crew/acp/**/*.py"
-      - "src/kiro_crew/providers/**/*.py"
-      - "src/kiro_crew/platform/**/*.py"
-      - "src/kiro_crew/config/loader.py"
-      - "src/kiro_crew/session.py"
-      - "src/kiro_crew/subagent.py"
-      - "src/kiro_crew/sandbox.py"
-      - "src/kiro_crew/sandbox_plan.py"
-      - "src/kiro_crew/sandbox_launcher.py"
-      - "src/kiro_crew/sandbox_launcher_program.py"
-      - "src/kiro_crew/sandbox_seatbelt.py"
+      - "src/efm_go/acp/**/*.py"
+      - "src/efm_go/providers/**/*.py"
+      - "src/efm_go/platform/**/*.py"
+      - "src/efm_go/config/loader.py"
+      - "src/efm_go/session.py"
+      - "src/efm_go/subagent.py"
+      - "src/efm_go/sandbox.py"
+      - "src/efm_go/sandbox_plan.py"
+      - "src/efm_go/sandbox_launcher.py"
+      - "src/efm_go/sandbox_launcher_program.py"
+      - "src/efm_go/sandbox_seatbelt.py"
     rule: |
       Kiro Crew drives ONE first-class agent harness — kiro-cli
       (ACP_BACKEND_KIRO, spelled "") — and ADAPTS the others (the dormant
@@ -542,29 +542,29 @@ custom-rules:
   - id: memory-store-seam
     blocking: true
     file-patterns:
-      - "src/kiro_crew/context.py"
-      - "src/kiro_crew/context_assembly/**/*.py"
-      - "src/kiro_crew/memory.py"
-      - "src/kiro_crew/vector_memory.py"
-      - "src/kiro_crew/vector_memory_runtime/**/*.py"
-      - "src/kiro_crew/suggestions.py"
-      - "src/kiro_crew/tips.py"
-      - "src/kiro_crew/task_executor.py"
-      - "src/kiro_crew/task_planner.py"
-      - "src/kiro_crew/history_consolidation.py"
-      - "src/kiro_crew/messaging/**/*.py"
-      - "src/kiro_crew/subagent_manager/**/*.py"
-      - "src/kiro_crew/slack/**/*.py"
-      - "src/kiro_crew/telegram/**/*.py"
-      - "src/kiro_crew/discord/**/*.py"
-      - "src/kiro_crew/dashboard/chat_runner.py"
-      - "src/kiro_crew/dashboard/chat_turn/**/*.py"
-      - "src/kiro_crew/dashboard/handlers/**/*.py"
-      - "src/kiro_crew/dashboard/messaging_api/**/*.py"
-      - "src/kiro_crew/dashboard/file_api/**/*.py"
-      - "src/kiro_crew/dashboard/agent_admin/**/*.py"
-      - "src/kiro_crew/eval/runner.py"
-      - "src/kiro_crew/config/loader.py"
+      - "src/efm_go/context.py"
+      - "src/efm_go/context_assembly/**/*.py"
+      - "src/efm_go/memory.py"
+      - "src/efm_go/vector_memory.py"
+      - "src/efm_go/vector_memory_runtime/**/*.py"
+      - "src/efm_go/suggestions.py"
+      - "src/efm_go/tips.py"
+      - "src/efm_go/task_executor.py"
+      - "src/efm_go/task_planner.py"
+      - "src/efm_go/history_consolidation.py"
+      - "src/efm_go/messaging/**/*.py"
+      - "src/efm_go/subagent_manager/**/*.py"
+      - "src/efm_go/slack/**/*.py"
+      - "src/efm_go/telegram/**/*.py"
+      - "src/efm_go/discord/**/*.py"
+      - "src/efm_go/dashboard/chat_runner.py"
+      - "src/efm_go/dashboard/chat_turn/**/*.py"
+      - "src/efm_go/dashboard/handlers/**/*.py"
+      - "src/efm_go/dashboard/messaging_api/**/*.py"
+      - "src/efm_go/dashboard/file_api/**/*.py"
+      - "src/efm_go/dashboard/agent_admin/**/*.py"
+      - "src/efm_go/eval/runner.py"
+      - "src/efm_go/config/loader.py"
       - "scripts/check_memory_store_seam.py"
     rule: |
       A named memory store is a SILO: cfg.agents[<crew>].memory_store
@@ -697,14 +697,14 @@ custom-rules:
       - FLAG a heading that is not a plain release: `## [0.3.0-insider.9]`,
         `## [0.3.0-rc.2]` and similar prerelease spellings must not appear.
         A prerelease is a draft of its base version and is folded onto it by
-        src/kiro_crew/changelog.py; giving it its own heading puts a build
+        src/efm_go/changelog.py; giving it its own heading puts a build
         stamp in the reader's version archive. Mechanically refused by
         `scripts/check_changelog_history.py` as well; a release branch writes
         its section once, under the release's final heading.
 
       Allowed (do NOT flag):
       - A release PR that prepends one new `## [X.Y.Z] - YYYY-MM-DD` section
-        and, in the same commit, bumps src/kiro_crew/__init__.py.
+        and, in the same commit, bumps src/efm_go/__init__.py.
       - Correcting a genuine factual error inside an already-shipped section,
         when the PR body says that is what it is doing. Say it out loud; an
         unexplained edit to shipped history is the defect this rule exists for.
@@ -716,7 +716,7 @@ custom-rules:
     file-patterns:
       - "docs/decisions/**"
       - "website/src/**"
-      - "src/kiro_crew/**"
+      - "src/efm_go/**"
     rule: |
       docs/decisions/ is the team's record of product and design decisions a
       person made: one immutable file per decision, indexed by its README. The
@@ -776,7 +776,7 @@ custom-rules:
   - id: recurring-defect-patterns
     blocking: false
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       Defect patterns harvested from this repository's own fix history (each
       appeared as a SERIES of shipped bugs, not a one-off). Flag a changed
@@ -806,7 +806,7 @@ custom-rules:
   - id: no-new-builtin-apps
     blocking: true
     file-patterns:
-      - "src/kiro_crew/apps/builtins/**"
+      - "src/efm_go/apps/builtins/**"
     rule: |
       The set of built-in apps is CLOSED. A new app ships as an EXTERNAL app
       published through the KiroCrewApps registry (what the App Store's
@@ -818,13 +818,13 @@ custom-rules:
       a client ship.
 
       - FLAG any PR that adds a new app directory under
-        src/kiro_crew/apps/builtins/ (a new app.json). The publishing path is
+        src/efm_go/apps/builtins/ (a new app.json). The publishing path is
         the KiroCrewApps registry; point the author there. An explicit
         maintainer decision recorded on the PR (the /ai-review override flow)
         is the only exception — the default is closed.
       - FLAG restoring a withdrawn built-in (the Board app) or un-hiding the
         Channels app from the App Store (flipping "hidden": true in
-        src/kiro_crew/apps/builtins/channels/app.json). Both are deliberate
+        src/efm_go/apps/builtins/channels/app.json). Both are deliberate
         fork divergences an upstream sync must not undo.
 
       Allowed (do NOT flag):
@@ -836,7 +836,7 @@ custom-rules:
   - id: no-sync-store-call-from-a-coroutine
     blocking: true
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       A coroutine on the gateway event loop MUST NOT call a synchronous
       persistent-store method. This is narrower and stricter than
@@ -883,7 +883,7 @@ custom-rules:
   - id: persist-before-you-publish
     blocking: true
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       When a durable record is the authority for a piece of state, the PERSISTED
       transition must be a precondition for publishing that state in memory —
@@ -953,15 +953,15 @@ custom-rules:
   - id: a-sandbox-widening-is-not-incidental-scope
     blocking: true
     file-patterns:
-      - "src/kiro_crew/sandbox.py"
-      - "src/kiro_crew/sandbox_plan.py"
-      - "src/kiro_crew/sandbox_launcher.py"
-      - "src/kiro_crew/sandbox_launcher_program.py"
-      - "src/kiro_crew/sandbox_seatbelt.py"
-      - "src/kiro_crew/sandbox_mount_sweep.py"
-      - "src/kiro_crew/security.py"
-      - "src/kiro_crew/hooks.py"
-      - "src/kiro_crew/hook_runtime/**"
+      - "src/efm_go/sandbox.py"
+      - "src/efm_go/sandbox_plan.py"
+      - "src/efm_go/sandbox_launcher.py"
+      - "src/efm_go/sandbox_launcher_program.py"
+      - "src/efm_go/sandbox_seatbelt.py"
+      - "src/efm_go/sandbox_mount_sweep.py"
+      - "src/efm_go/security.py"
+      - "src/efm_go/hooks.py"
+      - "src/efm_go/hook_runtime/**"
     rule: |
       What the OS sandbox seals, masks, no-follow pins or refuses is an
       OPERATOR-FACING contract: it decides which of their own files their agent can
@@ -991,7 +991,7 @@ custom-rules:
       An added invariant ships with the data it demands, in the SAME commit, and
       at import time the blast radius is the whole PACKAGE rather than one test.
       #11556 added a module-level `assert` over the full sealed union while writing
-      wording for two of five leaves. `import kiro_crew.sandbox` then raised on
+      wording for two of five leaves. `import efm_go.sandbox` then raised on
       main, so every backend test in the repo failed at COLLECTION — including
       `test_every_strict_leaf_of_either_shape_is_covered_by_the_delegated_guard`,
       the test written to pin that exact invariant, which could not report the gap
@@ -1006,7 +1006,7 @@ custom-rules:
   - id: prefer-subtracting-a-duplicate-mechanism
     blocking: false
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       A long-lived branch can be in review while `main` lands its OWN fix for the
       same incident. Merging both leaves two mechanisms deciding one question,
@@ -1038,7 +1038,7 @@ custom-rules:
   - id: a-refusal-is-not-a-commit
     blocking: true
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       The inverse of `persist-before-you-publish`, and it shipped separately.
       That rule says do not publish AHEAD of the write. This one says: when the
@@ -1081,7 +1081,7 @@ custom-rules:
   - id: an-invariant-line-needs-a-mutation-pin
     blocking: false
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
       - "test/**/*.py"
     rule: |
       A line that CARRIES an invariant — a `generation=` argument, an
@@ -1117,7 +1117,7 @@ custom-rules:
   - id: a-bound-bounds-every-field-it-retains
     blocking: true
     file-patterns:
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       A cap on how many items are stored bounds memory only when every STORED
       FIELD of an item is bounded too. 4096 rows of an unbounded title is
@@ -1152,10 +1152,10 @@ custom-rules:
   - id: an-operator-facing-string-states-what-was-measured
     blocking: false
     file-patterns:
-      - "src/kiro_crew/config/sections.py"
+      - "src/efm_go/config/sections.py"
       - "config-baseline.json"
       - "docs/system-specs/**/*.md"
-      - "src/kiro_crew/**/*.py"
+      - "src/efm_go/**/*.py"
     rule: |
       `recurring-defect-patterns` already flags a docstring that contradicts the
       code BELOW it. This is the case adjacency cannot catch: a config help

@@ -7,8 +7,8 @@ Shared by the main chat and the /side sidecar.
 
 from __future__ import annotations
 
-from kiro_crew.acp._dispatch import redact_text
-from kiro_crew.dashboard.steer_settle import settle_consumed_steers
+from efm_go.acp._dispatch import redact_text
+from efm_go.dashboard.steer_settle import settle_consumed_steers
 
 
 def _echo(*messages: str) -> str:
@@ -101,7 +101,7 @@ def test_a_redacted_echo_still_settles_its_steer():
     question = "deploy using AKIAIOSFODNN7EXAMPLE now"
 
     # The echo carries what ACP produced: the redacted form.
-    from kiro_crew.acp._dispatch import redact_text
+    from efm_go.acp._dispatch import redact_text
 
     echoed = redact_text(question)
     assert echoed != question, "fixture is pointless unless redaction changes it"
@@ -112,7 +112,7 @@ def test_a_redacted_echo_still_settles_its_steer():
 
 def test_redaction_parity_does_not_settle_an_unrelated_steer():
     """Redacting both sides must not collapse DIFFERENT secrets into one match."""
-    from kiro_crew.acp._dispatch import redact_text
+    from efm_go.acp._dispatch import redact_text
 
     # Distinct surrounding prose keeps the two distinguishable after the
     # secret itself is masked, which is the property that matters: parity

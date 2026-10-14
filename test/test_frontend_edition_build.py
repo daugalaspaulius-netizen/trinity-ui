@@ -32,7 +32,7 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew import frontend, platform_compat
+from efm_go import frontend, platform_compat
 
 _DIR_ENV = "KIROCREW_EDITION_DIR"
 _OPT_IN_ENV = "KIROCREW_ALLOW_EDITION"
@@ -352,7 +352,7 @@ def test_stage_built_dist_copies_website_dist_into_static_dist(tmp_path):
     built.mkdir(parents=True)
     (built / "index.html").write_text("<html>fresh</html>")
     frontend.stage_built_dist(tmp_path, log=lambda _m: None)
-    staged = tmp_path / "src" / "kiro_crew" / "static" / "dist" / "index.html"
+    staged = tmp_path / "src" / "efm_go" / "static" / "dist" / "index.html"
     assert staged.read_text() == "<html>fresh</html>"
 
 
@@ -366,7 +366,7 @@ def test_stage_built_dist_replaces_a_stale_symlink(tmp_path):
     built = tmp_path / "website" / "dist"
     built.mkdir(parents=True)
     (built / "index.html").write_text("<html>fresh</html>")
-    static_parent = tmp_path / "src" / "kiro_crew" / "static"
+    static_parent = tmp_path / "src" / "efm_go" / "static"
     static_parent.mkdir(parents=True)
     make_dir_link(static_parent / "dist", built)  # a junction on Windows
     frontend.stage_built_dist(tmp_path, log=lambda _m: None)
@@ -384,7 +384,7 @@ def test_stage_built_dist_fails_loudly_without_a_build(tmp_path):
     right after `npm run build` reported success, so a MISSING build output means
     something is genuinely wrong and must not be reported as a successful sync.
     """
-    static_dist = tmp_path / "src" / "kiro_crew" / "static" / "dist"
+    static_dist = tmp_path / "src" / "efm_go" / "static" / "dist"
     static_dist.mkdir(parents=True)
     (static_dist / "index.html").write_text("<html>previous</html>")
     messages: list = []
@@ -405,7 +405,7 @@ def test_stage_built_dist_raises_when_staging_did_not_happen(tmp_path, monkeypat
     built = tmp_path / "website" / "dist"
     built.mkdir(parents=True)
     (built / "index.html").write_text("<html>fresh</html>")
-    served = tmp_path / "src" / "kiro_crew" / "static" / "dist"
+    served = tmp_path / "src" / "efm_go" / "static" / "dist"
     served.mkdir(parents=True)
     (served / "index.html").write_text("<html>previous</html>")
     monkeypatch.setattr(frontend, "_stage_dist", lambda *_a, **_k: False)
@@ -423,7 +423,7 @@ def test_stage_dist_keeps_the_served_bundle_when_the_copy_fails(tmp_path, monkey
     built = tmp_path / "website" / "dist"
     built.mkdir(parents=True)
     (built / "index.html").write_text("<html>fresh</html>")
-    served = tmp_path / "src" / "kiro_crew" / "static" / "dist"
+    served = tmp_path / "src" / "efm_go" / "static" / "dist"
     served.mkdir(parents=True)
     (served / "index.html").write_text("<html>previous</html>")
 
@@ -444,7 +444,7 @@ def test_stage_dist_replaces_the_served_bundle_on_success(tmp_path):
     built = tmp_path / "website" / "dist"
     built.mkdir(parents=True)
     (built / "index.html").write_text("<html>fresh</html>")
-    served = tmp_path / "src" / "kiro_crew" / "static" / "dist"
+    served = tmp_path / "src" / "efm_go" / "static" / "dist"
     served.mkdir(parents=True)
     (served / "index.html").write_text("<html>previous</html>")
     (served / "stale-asset.js").write_text("old")
@@ -474,7 +474,7 @@ def test_stage_dist_replaces_a_dangling_dist_link_and_publishes(tmp_path):
     built = tmp_path / "website" / "dist"
     built.mkdir(parents=True)
     (built / "index.html").write_text("<html>fresh</html>")
-    static_dir = tmp_path / "src" / "kiro_crew" / "static"
+    static_dir = tmp_path / "src" / "efm_go" / "static"
     static_dir.mkdir(parents=True)
     served = static_dir / "dist"
     gone = tmp_path / "removed-target"
@@ -579,7 +579,7 @@ def test_edition_dir_survives_the_app_backend_env_allowlist(monkeypatch):
     this: without it the guard can never fire and a stock SPA would be staged
     over an edition dashboard.
     """
-    from kiro_crew.apps.registry import minimal_env
+    from efm_go.apps.registry import minimal_env
 
     monkeypatch.setenv("KIROCREW_EDITION_DIR", "/opt/edition")
     # The generic allowlist does NOT carry it -- that is the trap this guards.

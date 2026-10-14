@@ -7,9 +7,9 @@ off-loop config read as the fallback), the gate/permit bookkeeping, the
 cold-start admission's cancel-while-queued path, the controller sample, the
 start-outcome tokens and the start-budget resolvers' defaults and clamps.
 
-The code is reached only through the ``kiro_crew.acp.runtime`` facade. Only names
-defined there, or attributes of shared modules (``kiro_crew.config.live``,
-``kiro_crew.adaptive.controller``, the config class), are patched, so these tests
+The code is reached only through the ``efm_go.acp.runtime`` facade. Only names
+defined there, or attributes of shared modules (``efm_go.config.live``,
+``efm_go.adaptive.controller``, the config class), are patched, so these tests
 hold unchanged before and after the definitions move to their owner module.
 """
 
@@ -22,12 +22,12 @@ from typing import Any
 
 import pytest
 
-import kiro_crew.adaptive.controller as controller_mod
-import kiro_crew.config.live as live_mod
-from kiro_crew.acp import runtime as acp_runtime
-from kiro_crew.acp.session_handle import AcpRuntimeDead
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.start_priority import StartPriority
+import efm_go.adaptive.controller as controller_mod
+import efm_go.config.live as live_mod
+from efm_go.acp import runtime as acp_runtime
+from efm_go.acp.session_handle import AcpRuntimeDead
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.start_priority import StartPriority
 
 # Upper bound for an await the test itself must unblock. It exists so a hang fails
 # here by name rather than as pytest's --timeout; no passing run measures it.

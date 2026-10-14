@@ -9,7 +9,7 @@ when the sandboxed process exits — filling the runtime tmpfs until
 fails.
 
 Two halves lock the fix in:
-  (a) the launcher (``kiro_crew.sandbox_launcher_program``) tags every staging
+  (a) the launcher (``efm_go.sandbox_launcher_program``) tags every staging
       site with a pid-bearing prefix (``kirocrew_sb_<pid>_``) taken from the
       process that execs the agent — a whole child run over a tree that reaches
       every staging site, with a libc whose binds hide their target, shows every
@@ -49,9 +49,9 @@ from pathlib import Path
 import pytest
 from test_sandbox_launcher_program import CoveringLibc, launch, payload
 
-from kiro_crew import sandbox_launcher, sandbox_launcher_program, sandbox_plan
-from kiro_crew.config.paths import config_dir
-from kiro_crew.sandbox import (
+from efm_go import sandbox_launcher, sandbox_launcher_program, sandbox_plan
+from efm_go.config.paths import config_dir
+from efm_go.sandbox import (
     _MOUNT_SOURCE_MAX_AGE_SECONDS,
     _cleanup_legacy_mount_source_residue,
     _cleanup_stale_sandbox_mount_sources,
@@ -123,7 +123,7 @@ def _pin(
             coverage.covered = False
         return (names, complete)
 
-    monkeypatch.setattr("kiro_crew.sandbox._mount_pinned_source_names", _fake)
+    monkeypatch.setattr("efm_go.sandbox._mount_pinned_source_names", _fake)
 
 
 def _raise_einval_for(monkeypatch: pytest.MonkeyPatch, target: Path) -> None:
@@ -383,7 +383,7 @@ class TestMountSourceSweep:
         root = tmp_path / "tmpfs"
         root.mkdir()
         _make_dir(root, f"kirocrew_sb_{_DEAD_PID}_wired", populate=True)
-        monkeypatch.setattr("kiro_crew.sandbox._mount_source_candidate_roots", lambda: [str(root)])
+        monkeypatch.setattr("efm_go.sandbox._mount_source_candidate_roots", lambda: [str(root)])
         # Point the legacy /tmp sweep at an empty per-test dir so host residue
         # cannot inflate the count.
         legacy = tmp_path / "legacy"
@@ -942,7 +942,7 @@ class TestMountPinnedSourceNames:
         """A thread gone between the ``task/`` snapshot and its read may have
         left a successor thread holding its namespace; only re-reading the
         group can tell, and the final pass has no next pass."""
-        monkeypatch.setattr("kiro_crew.sandbox._PIN_SCAN_MAX_PASSES", 1)
+        monkeypatch.setattr("efm_go.sandbox._PIN_SCAN_MAX_PASSES", 1)
         proc = tmp_path / "proc"
         self._proc_task(proc, 1, mountinfo="")
         self._proc_task(proc, 500, mountinfo="", threads={501: None})
@@ -970,7 +970,7 @@ class TestMountPinnedSourceNames:
             return names
 
         with pytest.MonkeyPatch.context() as mp:
-            mp.setattr("kiro_crew.sandbox.os.listdir", _settling_listdir)
+            mp.setattr("efm_go.sandbox.os.listdir", _settling_listdir)
             coverage = _PinScanCoverage()
             _, complete = _mount_pinned_source_names(proc_root=str(proc), coverage=coverage)
 
@@ -984,7 +984,7 @@ class TestMountPinnedSourceNames:
         namespace to a child forked after that pass's listing, which no
         re-listing will catch — coverage of launcher descendants is unproven.
         """
-        monkeypatch.setattr("kiro_crew.sandbox._PIN_SCAN_MAX_PASSES", 1)
+        monkeypatch.setattr("efm_go.sandbox._PIN_SCAN_MAX_PASSES", 1)
         proc = tmp_path / "proc"
         self._proc_task(proc, 1, mountinfo="")
         self._proc_task(proc, 4242, mountinfo=None)  # departed before its read
@@ -1036,7 +1036,7 @@ class TestMountPinnedSourceNames:
                 return os.stat_result(tuple(st)[:4] + (uid,) + tuple(st)[5:])
             return st
 
-        monkeypatch.setattr("kiro_crew.sandbox.os.stat", _fake_stat)
+        monkeypatch.setattr("efm_go.sandbox.os.stat", _fake_stat)
 
     @pytest.mark.skipif(
         not hasattr(os, "getuid"), reason="without os.getuid every task is a possible holder"
@@ -1046,8 +1046,8 @@ class TestMountPinnedSourceNames:
     ):
         """Another user's task departing on the final pass lowers only the
         host-wide flag: it cannot hold a source this uid staged."""
-        monkeypatch.setattr("kiro_crew.sandbox._PIN_SCAN_MAX_PASSES", 1)
-        monkeypatch.setattr("kiro_crew.sandbox._overflow_uid", lambda: 65534)
+        monkeypatch.setattr("efm_go.sandbox._PIN_SCAN_MAX_PASSES", 1)
+        monkeypatch.setattr("efm_go.sandbox._overflow_uid", lambda: 65534)
         proc = tmp_path / "proc"
         self._proc_task(proc, 1, mountinfo="")
         self._proc_task(proc, 4242, mountinfo=None)
@@ -1062,8 +1062,8 @@ class TestMountPinnedSourceNames:
     def test_root_departure_clears_coverage(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         """Root can ``nsenter`` a sandbox's namespace, so a root task departing
         on the final pass is a possible holder gone unread."""
-        monkeypatch.setattr("kiro_crew.sandbox._PIN_SCAN_MAX_PASSES", 1)
-        monkeypatch.setattr("kiro_crew.sandbox._overflow_uid", lambda: 65534)
+        monkeypatch.setattr("efm_go.sandbox._PIN_SCAN_MAX_PASSES", 1)
+        monkeypatch.setattr("efm_go.sandbox._overflow_uid", lambda: 65534)
         proc = tmp_path / "proc"
         self._proc_task(proc, 1, mountinfo="")
         self._proc_task(proc, 4242, mountinfo=None)
@@ -1081,8 +1081,8 @@ class TestMountPinnedSourceNames:
         """A holder inside a nested user namespace stats as the overflow uid.
         When that uid cannot be learned (sysctl unreadable), a departing task of
         ANY other uid may have been such a holder, so coverage fails closed."""
-        monkeypatch.setattr("kiro_crew.sandbox._PIN_SCAN_MAX_PASSES", 1)
-        monkeypatch.setattr("kiro_crew.sandbox._overflow_uid", lambda: None)
+        monkeypatch.setattr("efm_go.sandbox._PIN_SCAN_MAX_PASSES", 1)
+        monkeypatch.setattr("efm_go.sandbox._overflow_uid", lambda: None)
         proc = tmp_path / "proc"
         self._proc_task(proc, 1, mountinfo="")
         self._proc_task(proc, 4242, mountinfo=None)
@@ -1142,7 +1142,7 @@ class TestMountPinnedSourceNames:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cache_limit: str
     ):
         """A zero cache bound drops deduplication, not mount-source discovery."""
-        monkeypatch.setattr(f"kiro_crew.sandbox.{cache_limit}", 0)
+        monkeypatch.setattr(f"efm_go.sandbox.{cache_limit}", 0)
         proc = tmp_path / "proc"
         first = "100 99 0:40 /kirocrew_sb_1_first /root/a rw - tmpfs tmpfs rw\n"
         uncached = "101 99 0:40 /kirocrew_sb_2_later /root/b rw - tmpfs tmpfs rw\n"
@@ -1209,16 +1209,16 @@ class TestLegacyResidueSweep:
     ) -> None:
         if covered is None:
             covered = complete
-        monkeypatch.setattr("kiro_crew.sandbox._launcher_tmpfs_roots", lambda: [str(root)])
+        monkeypatch.setattr("efm_go.sandbox._launcher_tmpfs_roots", lambda: [str(root)])
 
         def _fake(proc_root="/proc", *, coverage=None, **_kw):
             if coverage is not None and not covered:
                 coverage.covered = False
             return (bound or set(), complete)
 
-        monkeypatch.setattr("kiro_crew.sandbox._bound_source_basenames", _fake)
+        monkeypatch.setattr("efm_go.sandbox._bound_source_basenames", _fake)
         # Each test below pins ONE fence; the pile threshold has its own tests.
-        monkeypatch.setattr("kiro_crew.sandbox._LEGACY_PILE_THRESHOLD", 1)
+        monkeypatch.setattr("efm_go.sandbox._LEGACY_PILE_THRESHOLD", 1)
 
     def _legacy_dir(self, root: Path, name: str = "tmpab12cd34", *, old: bool = True) -> Path:
         path = root / name
@@ -1263,7 +1263,7 @@ class TestLegacyResidueSweep:
         """The stamp is create-only and O_NOFOLLOW: a dangling link at the
         marker path fails the stamp (the pass repeats) instead of making the
         gateway write at the link's target."""
-        from kiro_crew.sandbox import _LEGACY_RESIDUE_MARKER, config_dir
+        from efm_go.sandbox import _LEGACY_RESIDUE_MARKER, config_dir
 
         self._fence(monkeypatch, tmp_path)
         marker = config_dir() / _LEGACY_RESIDUE_MARKER
@@ -1316,7 +1316,7 @@ class TestLegacyResidueSweep:
         self._fence(monkeypatch, tmp_path, complete=False)
         held = self._legacy_dir(tmp_path)
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.sandbox"):
+        with caplog.at_level(logging.INFO, logger="efm_go.sandbox"):
             assert _cleanup_legacy_mount_source_residue(data_home=config_dir()) == 0
         assert held.exists()
         retained = [r for r in caplog.records if "legacy pass retained" in r.getMessage()]
@@ -1341,7 +1341,7 @@ class TestLegacyResidueSweep:
         scanned = []
 
         monkeypatch.setattr(
-            "kiro_crew.sandbox._launcher_tmpfs_roots", lambda: [str(tmp_path / "absent")]
+            "efm_go.sandbox._launcher_tmpfs_roots", lambda: [str(tmp_path / "absent")]
         )
 
         def _fake(proc_root="/proc", *, coverage=None, **_kw):
@@ -1350,9 +1350,9 @@ class TestLegacyResidueSweep:
                 coverage.covered = False
             return (set(), False)
 
-        monkeypatch.setattr("kiro_crew.sandbox._bound_source_basenames", _fake)
+        monkeypatch.setattr("efm_go.sandbox._bound_source_basenames", _fake)
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.sandbox"):
+        with caplog.at_level(logging.INFO, logger="efm_go.sandbox"):
             assert _cleanup_legacy_mount_source_residue(data_home=config_dir()) == 0
         assert scanned == []  # the pin scan never ran
         assert not [r for r in caplog.records if "legacy pass retained" in r.getMessage()]
@@ -1402,7 +1402,7 @@ class TestLegacyResidueSweep:
         # restored on the module for the delegation to reach the real walk.
         bound_scan = sandbox_sweep_original("_bound_source_basenames")
         monkeypatch.setattr(
-            "kiro_crew.sandbox._mount_pinned_source_names",
+            "efm_go.sandbox._mount_pinned_source_names",
             sandbox_sweep_original("_mount_pinned_source_names"),
         )
 
@@ -1453,7 +1453,7 @@ class TestLegacyResidueSweep:
         tmpfs on every sweep.
         """
         self._fence(monkeypatch, tmp_path)
-        monkeypatch.setattr("kiro_crew.sandbox._LEGACY_PILE_THRESHOLD", 4)
+        monkeypatch.setattr("efm_go.sandbox._LEGACY_PILE_THRESHOLD", 4)
         strays = [self._legacy_dir(tmp_path, f"tmpstray00{i}") for i in range(3)]
 
         assert _cleanup_legacy_mount_source_residue(data_home=config_dir()) == 0
@@ -1468,7 +1468,7 @@ class TestLegacyResidueSweep:
     ):
         """Candidates seen BEFORE the threshold is reached are not stranded."""
         self._fence(monkeypatch, tmp_path)
-        monkeypatch.setattr("kiro_crew.sandbox._LEGACY_PILE_THRESHOLD", 4)
+        monkeypatch.setattr("efm_go.sandbox._LEGACY_PILE_THRESHOLD", 4)
         pile = [self._legacy_dir(tmp_path, f"tmppile000{i}") for i in range(6)]
 
         assert _cleanup_legacy_mount_source_residue(data_home=config_dir()) == 6
@@ -1490,7 +1490,7 @@ class TestLegacyResidueSweep:
         just-updated host stays broken until someone finds it by hand."""
         self._fence(monkeypatch, tmp_path)
         monkeypatch.setattr(
-            "kiro_crew.sandbox._mount_source_candidate_roots", lambda: [str(tmp_path)]
+            "efm_go.sandbox._mount_source_candidate_roots", lambda: [str(tmp_path)]
         )
         legacy = self._legacy_dir(tmp_path)
 
@@ -1514,7 +1514,7 @@ class TestLegacyResidueSweep:
         Asserted structurally: the ORDER and the non-await are the contract, and
         both are one edit away from silently regressing.
         """
-        import kiro_crew.session_cleanup as cleanup_mod
+        import efm_go.session_cleanup as cleanup_mod
 
         tree = ast.parse(Path(cleanup_mod.__file__).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
@@ -1557,8 +1557,8 @@ class TestSweepTimeBudget:
         done nothing, and a pass that can never progress is a different bug.
         """
         budget = pytest.MonkeyPatch()
-        budget.setattr("kiro_crew.sandbox._SWEEP_TIME_BUDGET_SECONDS", -1.0)
-        budget.setattr("kiro_crew.sandbox._SWEEP_BUDGET_CHECK_EVERY", 2)
+        budget.setattr("efm_go.sandbox._SWEEP_TIME_BUDGET_SECONDS", -1.0)
+        budget.setattr("efm_go.sandbox._SWEEP_BUDGET_CHECK_EVERY", 2)
         return budget
 
     def test_keyed_pass_stops_at_the_budget_and_resumes(
@@ -1570,7 +1570,7 @@ class TestSweepTimeBudget:
 
         budget = self._spent_budget()
         try:
-            with caplog.at_level(logging.INFO, logger="kiro_crew.sandbox"):
+            with caplog.at_level(logging.INFO, logger="efm_go.sandbox"):
                 first = _cleanup_stale_sandbox_mount_sources(roots=[str(tmp_path)])
         finally:
             budget.undo()
@@ -1588,12 +1588,12 @@ class TestSweepTimeBudget:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         """Stamping a partial pass would retire the rest of the residue unswept."""
-        monkeypatch.setattr("kiro_crew.sandbox._launcher_tmpfs_roots", lambda: [str(tmp_path)])
+        monkeypatch.setattr("efm_go.sandbox._launcher_tmpfs_roots", lambda: [str(tmp_path)])
         monkeypatch.setattr(
-            "kiro_crew.sandbox._bound_source_basenames",
+            "efm_go.sandbox._bound_source_basenames",
             lambda proc_root="/proc", **_kw: (set(), True),
         )
-        monkeypatch.setattr("kiro_crew.sandbox._LEGACY_PILE_THRESHOLD", 1)
+        monkeypatch.setattr("efm_go.sandbox._LEGACY_PILE_THRESHOLD", 1)
         stale = time.time() - _MOUNT_SOURCE_MAX_AGE_SECONDS - 100
         for name in ("tmpaaaaaaaa", "tmpbbbbbbbb", "tmpcccccccc"):
             path = tmp_path / name
@@ -1630,7 +1630,7 @@ class TestHeldBackDiagnostic:
         _pin(monkeypatch, set(), complete=False)
         _make_dir(tmp_path, f"kirocrew_sb_{_DEAD_PID}_held01")
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.sandbox"):
+        with caplog.at_level(logging.INFO, logger="efm_go.sandbox"):
             removed = _cleanup_stale_sandbox_mount_sources(roots=[str(tmp_path)])
 
         assert removed == 0
@@ -1648,7 +1648,7 @@ class TestHeldBackDiagnostic:
         _pin(monkeypatch, {name}, complete=True)
         _make_dir(tmp_path, name)
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.sandbox"):
+        with caplog.at_level(logging.INFO, logger="efm_go.sandbox"):
             removed = _cleanup_stale_sandbox_mount_sources(roots=[str(tmp_path)])
 
         assert removed == 0

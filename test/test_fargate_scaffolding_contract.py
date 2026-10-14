@@ -36,19 +36,19 @@ import pytest
 import yaml
 from yaml_helpers import load_with
 
-from kiro_crew.cloud.fargate.identity import _CREW_RE  # the contract the template mirrors
-from kiro_crew.cloud.fargate.identity import _PARTITION_RE  # ditto, for ARN partitions
-from kiro_crew.cloud.fargate.identity import (
+from efm_go.cloud.fargate.identity import _CREW_RE  # the contract the template mirrors
+from efm_go.cloud.fargate.identity import _PARTITION_RE  # ditto, for ARN partitions
+from efm_go.cloud.fargate.identity import (
     SECRET_NAME_PREFIX,
     CrewBinding,
     execution_role_arn,
     log_group_name,
     task_role_arn,
 )
-from kiro_crew.cloud.fargate.taskdef import CPU_ARCHITECTURES
+from efm_go.cloud.fargate.taskdef import CPU_ARCHITECTURES
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATES = ROOT / "src" / "kiro_crew" / "cloud" / "templates"
+TEMPLATES = ROOT / "src" / "efm_go" / "cloud" / "templates"
 BASE = TEMPLATES / "kirocrew-fargate-base.yaml"
 CREW = TEMPLATES / "kirocrew-fargate-crew.yaml"
 
@@ -374,7 +374,7 @@ def test_each_roles_ceiling_covers_its_own_grant() -> None:
     check that distinguishes "both roles carry a boundary" from "each role carries a
     boundary that lets it do its job".
     """
-    from kiro_crew.cloud import iam
+    from efm_go.cloud import iam
 
     document = _load(CREW)
     ceilings = {
@@ -416,7 +416,7 @@ def test_neither_ceiling_admits_the_other_roles_work() -> None:
     never holds the secret-reading role" a property of the ceiling too, not only of
     the identity policy.
     """
-    from kiro_crew.cloud import iam
+    from efm_go.cloud import iam
 
     task = set(_statement_actions(iam.crew_boundary_policy_document()["Statement"][0]))
     execution = set(_statement_actions(iam.crew_exec_boundary_policy_document()["Statement"][0]))

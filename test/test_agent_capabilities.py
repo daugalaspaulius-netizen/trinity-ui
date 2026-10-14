@@ -7,15 +7,15 @@ import json
 
 import pytest
 
-from kiro_crew import agent, agent_state
-from kiro_crew.agent_capabilities import (
+from efm_go import agent, agent_state
+from efm_go.agent_capabilities import (
     CapabilityError,
     CapabilityService,
     prepare_member_capabilities,
     validate_request,
 )
-from kiro_crew.config import loader
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.config import loader
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 #: A release that accepts a spec ``permissions`` block, and one that refuses it,
 #: expressed against the floor so raising it cannot strand these tests.
@@ -27,13 +27,13 @@ def _pin_spec_permissions_cli(monkeypatch, which):
     """Pin what the shared writer gate believes the installed kiro-cli is.
 
     Same helper the five generated writers' suites use: the gate reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``,
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``,
     so the patch lands there. ``which`` is ``"accepts"``, ``"refuses"`` or
     ``"unknown"``. A developer box below the floor -- or with no resolvable
     binary at all -- would otherwise decide these assertions.
     """
     version = {"accepts": _ACCEPTS, "refuses": _REFUSES, "unknown": None}[which]
-    monkeypatch.setattr("kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: version)
+    monkeypatch.setattr("efm_go.kiro_cli.installed_kiro_cli_version", lambda: version)
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +56,7 @@ def editor(tmp_path, monkeypatch):
     monkeypatch.setenv("KIRO_HOME", str(home / "kiro"))
     monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", specs)
     monkeypatch.setattr(agent_state, "_state_path", lambda: home / "agent_model_state.json")
-    monkeypatch.setattr("kiro_crew.agent_capabilities.default_project_dir", lambda _: "")
+    monkeypatch.setattr("efm_go.agent_capabilities.default_project_dir", lambda _: "")
     loader._invalidate_config_cache()
     config = {
         "agents": {
@@ -328,7 +328,7 @@ def test_selected_parent_rows_can_be_accepted_for_multiple_members(editor):
 def test_batch_failure_preserves_reviewed_intent_until_binding_commit(
     editor, monkeypatch, kept_members, failed_step
 ):
-    import kiro_crew.agent_capabilities as capabilities
+    import efm_go.agent_capabilities as capabilities
 
     service, home, specs, parent = editor
     for member in ("A", "B"):
@@ -450,7 +450,7 @@ async def test_http_failed_batch_can_review_and_retry_the_same_acceptance(
 ):
     from aiohttp.test_utils import TestClient, TestServer
 
-    import kiro_crew.agent_capabilities as capabilities
+    import efm_go.agent_capabilities as capabilities
 
     service, home, specs, parent = editor
     app, refreshes = capability_app
@@ -597,8 +597,8 @@ async def test_http_owner_boundary(editor, caller, app_id, expected):
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers.agent_capabilities import _SERVICE
-    from kiro_crew.dashboard.routes.agents import register
+    from efm_go.dashboard.handlers.agent_capabilities import _SERVICE
+    from efm_go.dashboard.routes.agents import register
 
     service, _, _, _ = editor
 
@@ -682,7 +682,7 @@ def test_publish_flattens_saved_snapshot_without_accepting_pending_parent(editor
 
 
 def test_derived_permissions_follow_owner_approval_edits(editor):
-    from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
+    from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
 
     service, home, specs, parent = editor
     parent["permissions"] = {"rules": []}
@@ -729,7 +729,7 @@ def test_reset_reviews_parent_permissions_the_derive_does_not_produce(editor):
 
 
 def test_reset_onto_reviewed_parent_keeps_derived_permissions(editor):
-    from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
+    from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
 
     service, home, specs, parent = editor
     parent["allowedTools"] = ["@search"]
@@ -763,8 +763,8 @@ def test_ordinary_apply_leaves_untouched_approval_sections_alone(editor):
 def test_policy_withheld_approval_never_resurrects_on_relaxation(editor):
     from dataclasses import replace
 
-    from kiro_crew.platform.context import current_context, set_context
-    from kiro_crew.platform.governance import parse_policy
+    from efm_go.platform.context import current_context, set_context
+    from efm_go.platform.governance import parse_policy
 
     service, home, specs, parent = editor
     parent["allowedTools"] = ["@search"]
@@ -795,7 +795,7 @@ def test_project_parent_is_pinned_and_never_falls_back(editor, monkeypatch):
     config["workspaces"] = {"default": {"dir": str(project)}}
     (home / "config.json").write_text(json.dumps(config))
     monkeypatch.setattr(
-        "kiro_crew.agent_capabilities.default_project_dir", loader.default_project_dir
+        "efm_go.agent_capabilities.default_project_dir", loader.default_project_dir
     )
     loader._invalidate_config_cache()
     assert service.get("A")["template"]["scope"] == "project"
@@ -878,7 +878,7 @@ def test_existing_connection_preserves_secret_transport_fields(editor):
 
 @pytest.mark.parametrize("failed_step", ["spec", "receipt"])
 def test_failed_reconciliation_recovers_on_retry(editor, monkeypatch, failed_step):
-    import kiro_crew.agent_capabilities as capabilities
+    import efm_go.agent_capabilities as capabilities
 
     service, home, specs, parent = editor
     save(service, enroll=True)
@@ -965,8 +965,8 @@ def test_preview_and_publication_use_identical_governance_without_preview_audit(
     from copy import deepcopy
     from dataclasses import replace
 
-    from kiro_crew.platform import governance
-    from kiro_crew.platform.context import current_context, set_context
+    from efm_go.platform import governance
+    from efm_go.platform.context import current_context, set_context
 
     service, _, specs, parent = editor
     parent["allowedTools"] = ["@search"]
@@ -1126,7 +1126,7 @@ def test_local_overlay_member_saves_in_overlay_and_preserves_base(editor):
 
 
 def test_reconcile_changes_ordinary_parent_fields_in_new_generation_only(editor):
-    from kiro_crew.agent_capabilities import reconcile_member_capabilities
+    from efm_go.agent_capabilities import reconcile_member_capabilities
 
     service, home, specs, parent = editor
     parent["description"] = "before"
@@ -1242,7 +1242,7 @@ def test_publish_respects_reserved_legacy_default_binding(editor):
 def test_publish_refuses_windows_device_names_in_any_case_or_extension(editor, name):
     from unittest.mock import patch
 
-    from kiro_crew import agent_capabilities
+    from efm_go import agent_capabilities
 
     # One shared definition: constants.WINDOWS_DEVICE_STEMS, not an inline copy.
     service, home, specs, _ = editor
@@ -1270,7 +1270,7 @@ def test_publish_allows_names_that_only_resemble_device_names(editor, name):
 def test_owned_parent_refreshes_real_plumbing_without_regranting_tools(editor, monkeypatch):
     import sys
 
-    from kiro_crew.agent_capabilities import reconcile_member_capabilities
+    from efm_go.agent_capabilities import reconcile_member_capabilities
 
     service, home, specs, parent = editor
     parent.update(name="kirocrew", prompt="owner prompt", model="owner-selected-model")
@@ -1382,8 +1382,8 @@ def test_mixed_layer_parent_acceptance_is_one_overlay_delta(editor):
 
 
 def test_prepare_detects_governance_change_during_spec_read(editor, monkeypatch):
-    import kiro_crew.agent_capabilities as capabilities
-    from kiro_crew.platform.context import current_context, set_context
+    import efm_go.agent_capabilities as capabilities
+    from efm_go.platform.context import current_context, set_context
 
     service, home, specs, _ = editor
     save(service, enroll=True)
@@ -1404,7 +1404,7 @@ def test_prepare_detects_governance_change_during_spec_read(editor, monkeypatch)
 
 @pytest.mark.parametrize("stage", ["receipt", "spec", "binding", "completion", "crash"])
 def test_publish_interruption_is_recoverable_with_same_name(editor, monkeypatch, stage):
-    import kiro_crew.agent_capabilities as capabilities
+    import efm_go.agent_capabilities as capabilities
 
     class Interrupted(BaseException):
         pass
@@ -1555,8 +1555,8 @@ async def test_publish_http_retries_pending_and_completed_receipts(editor, monke
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers.agent_capabilities import _SERVICE
-    from kiro_crew.dashboard.routes.agents import register
+    from efm_go.dashboard.handlers.agent_capabilities import _SERVICE
+    from efm_go.dashboard.routes.agents import register
 
     service, home, specs, _ = editor
     await asyncio.to_thread(save, service, enroll=True)
@@ -1756,8 +1756,8 @@ async def test_nested_corruption_fails_closed_without_writes(editor, path, repla
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers.agent_capabilities import _SERVICE
-    from kiro_crew.dashboard.routes.agents import register
+    from efm_go.dashboard.handlers.agent_capabilities import _SERVICE
+    from efm_go.dashboard.routes.agents import register
 
     service, home, specs, _ = editor
 
@@ -1782,7 +1782,7 @@ async def test_nested_corruption_fails_closed_without_writes(editor, path, repla
             agent_state.get_capabilities(name)
         with pytest.raises(ValueError, match="^capability_state_invalid$"):
             service.get("A")
-        from kiro_crew.agent_capabilities import reconcile_member_capabilities
+        from efm_go.agent_capabilities import reconcile_member_capabilities
 
         with pytest.raises(ValueError, match="^capability_state_invalid$"):
             reconcile_member_capabilities("A")
@@ -1865,7 +1865,7 @@ async def test_nested_corruption_fails_closed_without_writes(editor, path, repla
     ],
 )
 def test_source_transport_fields_survive_enrollment_and_reconciliation(editor, legacy, transport):
-    from kiro_crew.agent_capabilities import reconcile_member_capabilities
+    from efm_go.agent_capabilities import reconcile_member_capabilities
 
     service, home, specs, parent = editor
     parent["mcpServers"] = {"search": {**transport, "autoApprove": ["read"]}}
@@ -1953,8 +1953,8 @@ async def test_oauth_secret_http_projection_and_retention(editor, secret):
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers.agent_capabilities import _SERVICE
-    from kiro_crew.dashboard.routes.agents import register
+    from efm_go.dashboard.handlers.agent_capabilities import _SERVICE
+    from efm_go.dashboard.routes.agents import register
 
     _, home, specs, parent = editor
     configured_secret = "configured-oauth-credential"
@@ -2151,8 +2151,8 @@ async def test_short_transport_credentials_http_retention(editor, field, secret)
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers.agent_capabilities import _SERVICE
-    from kiro_crew.dashboard.routes.agents import register
+    from efm_go.dashboard.handlers.agent_capabilities import _SERVICE
+    from efm_go.dashboard.routes.agents import register
 
     service, home, specs, parent = editor
     original = {
@@ -2241,8 +2241,8 @@ async def test_legacy_actions_bound_sidecar_read_errors(editor, action, damage):
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers.agent_capabilities import _SERVICE
-    from kiro_crew.dashboard.routes.agents import register
+    from efm_go.dashboard.handlers.agent_capabilities import _SERVICE
+    from efm_go.dashboard.routes.agents import register
 
     service, home, specs, _ = editor
 
@@ -2305,8 +2305,8 @@ def capability_app(editor):
 
     from aiohttp import web
 
-    from kiro_crew.dashboard.handlers.agent_capabilities import _SERVICE
-    from kiro_crew.dashboard.routes.agents import register
+    from efm_go.dashboard.handlers.agent_capabilities import _SERVICE
+    from efm_go.dashboard.routes.agents import register
 
     service, _, _, _ = editor
     service.get("A")
@@ -2420,9 +2420,9 @@ async def test_resolved_removals_respect_ambient_mcp(
 ):
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.agent_capabilities import reconcile_member_capabilities
-    from kiro_crew.config import live as _live
-    from kiro_crew.config.loader import KiroCrewConfig as _Cfg
+    from efm_go.agent_capabilities import reconcile_member_capabilities
+    from efm_go.config import live as _live
+    from efm_go.config.loader import KiroCrewConfig as _Cfg
 
     # The subject is capability reconcile. The ``autoApprove`` parametrization
     # hand-writes a grant on a user server, which the undeclared-grant floor drops
@@ -2756,7 +2756,7 @@ async def test_http_inherit_and_accept_same_parent_change(
 ):
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.agent_capabilities import _rows
+    from efm_go.agent_capabilities import _rows
 
     service, home, specs, parent = editor
     app, refreshes = capability_app
@@ -3063,7 +3063,7 @@ async def test_basic_auth_http_projection_retention_and_stale_refusal(
     ],
 )
 def test_basic_auth_short_option_does_not_guess_other_argv(args):
-    from kiro_crew.agent_capabilities import safe_view
+    from efm_go.agent_capabilities import safe_view
 
     transport = {"command": "python", "args": args}
     assert safe_view(transport) == transport
@@ -3071,7 +3071,7 @@ def test_basic_auth_short_option_does_not_guess_other_argv(args):
 
 @pytest.mark.parametrize("args", [["--user", ":x"], ["--user=:x"]])
 def test_basic_auth_nested_reflection_retains_original_scalars(args):
-    from kiro_crew.agent_capabilities import _retain_transport, safe_view
+    from efm_go.agent_capabilities import _retain_transport, safe_view
 
     original = {"command": "other-program", "args": args, "metadata": {"copies": ["copy=:x"]}}
     shown = safe_view(original)
@@ -3196,7 +3196,7 @@ async def test_legacy_guard_http_healthy_controls(
 
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers import agents as handlers
+    from efm_go.dashboard.handlers import agents as handlers
 
     service, home, specs, _ = editor
     app, _ = capability_app
@@ -3238,7 +3238,7 @@ async def test_legacy_patch_final_guard_precedes_bookkeeping(
 ):
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers import agents as handlers
+    from efm_go.dashboard.handlers import agents as handlers
 
     _, home, _, _ = editor
     app, refreshes = capability_app
@@ -3279,7 +3279,7 @@ async def test_legacy_rebind_late_unavailable_preserves_binding_and_rolls_back(
 ):
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers import agents as handlers
+    from efm_go.dashboard.handlers import agents as handlers
 
     _, home, specs, _ = editor
     app, refreshes = capability_app
@@ -3320,7 +3320,7 @@ async def test_legacy_patch_divergent_file_identity(
 ):
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers import agents as handlers
+    from efm_go.dashboard.handlers import agents as handlers
 
     service, home, specs, parent = editor
     app, refreshes = capability_app
@@ -3378,7 +3378,7 @@ async def test_legacy_patch_checks_fresh_declared_identity_before_bookkeeping(
 ):
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers import agents as handlers
+    from efm_go.dashboard.handlers import agents as handlers
 
     service, home, specs, parent = editor
     app, refreshes = capability_app
@@ -3435,7 +3435,7 @@ def test_a_fork_writes_permissions_only_where_the_installed_cli_accepts_them(
     grants. The grant list itself is never withheld: it is the ceiling, not
     the optional relay.
     """
-    from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
+    from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
 
     service, home, specs, parent = editor
     parent["permissions"] = derived_agent_permissions(parent["allowedTools"], "parent")

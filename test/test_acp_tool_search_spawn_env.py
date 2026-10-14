@@ -10,21 +10,21 @@ import sys
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew import kiro_cli
-from kiro_crew.acp.harness._common import MANDATORY_MCPS_ENV as _ENV
-from kiro_crew.acp.harness.kas import KasHarness
-from kiro_crew.acp.harness.kiro import KiroHarness
+from efm_go import agent as agent_mod
+from efm_go import kiro_cli
+from efm_go.acp.harness._common import MANDATORY_MCPS_ENV as _ENV
+from efm_go.acp.harness.kas import KasHarness
+from efm_go.acp.harness.kiro import KiroHarness
 
 
 @pytest.fixture(autouse=True)
 def quiet_host(monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep credentials independent of the host."""
     monkeypatch.setattr(
-        "kiro_crew.config.loader.inject_kiro_cli_api_key", lambda _env: None, raising=True
+        "efm_go.config.loader.inject_kiro_cli_api_key", lambda _env: None, raising=True
     )
     monkeypatch.setattr(
-        "kiro_crew.config.loader.strip_kiro_cli_api_key", lambda _env: None, raising=True
+        "efm_go.config.loader.strip_kiro_cli_api_key", lambda _env: None, raising=True
     )
 
 
@@ -255,7 +255,7 @@ class TestTheServerSet:
         ever seeing an extra — and the seam does not constrain its keys, so a caller
         may not assume one. Pin what is actually promised.
         """
-        from kiro_crew.agent import _MANAGED_MCP_SERVERS, _extra_mcp_servers
+        from efm_go.agent import _MANAGED_MCP_SERVERS, _extra_mcp_servers
 
         assert agent_mod.crew_owned_mcp_servers() == frozenset(
             (*_MANAGED_MCP_SERVERS, *_extra_mcp_servers())
@@ -266,7 +266,7 @@ def test_operator_help_states_the_floor_and_the_override() -> None:
     """The agent.tool_search help names the measured floor and the recovery knob."""
     import dataclasses
 
-    from kiro_crew.config.sections import AgentConfig
+    from efm_go.config.sections import AgentConfig
 
     help_text = next(
         f.metadata["help"] for f in dataclasses.fields(AgentConfig) if f.name == "tool_search"

@@ -31,8 +31,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.browser_cli import view as browser_cli_view
-from kiro_crew.dashboard.handlers import browser_view_relay
+from efm_go.browser_cli import view as browser_cli_view
+from efm_go.dashboard.handlers import browser_view_relay
 
 pytestmark = pytest.mark.asyncio
 
@@ -887,7 +887,7 @@ def test_relay_prefix_bypasses_cookie_auth_by_design() -> None:
     # The panel frames the relay in an opaque-origin sandbox that sends no
     # cookies, so the capability token is the gate — the prefix must therefore
     # sit on token_auth's bypass list (like /artifact-app/ and /sandbox-doc/).
-    from kiro_crew.dashboard import token_auth
+    from efm_go.dashboard import token_auth
 
     assert "/browser-view/" in token_auth._BYPASS_PREFIXES
     # The bare path (no trailing slash) is a registered relay route too, and
@@ -902,7 +902,7 @@ def test_relay_prefix_bypasses_cookie_auth_by_design() -> None:
 async def test_status_payload_gains_tokened_relay_path_when_running(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     monkeypatch.setattr(
         messaging.browser_cli_view,
@@ -930,7 +930,7 @@ async def test_status_payload_never_publishes_target_the_proof_refused(
     # for — whatever wins the freed loopback port inherits the frame. The
     # whole payload must degrade to stopped instead; the panel's next poll
     # re-reports a live view.
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     monkeypatch.setattr(
         messaging.browser_cli_view,

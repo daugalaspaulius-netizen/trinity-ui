@@ -30,7 +30,7 @@ import json
 import subprocess
 from collections.abc import Sequence
 
-from kiro_crew.monitoring.github_pull_request import (
+from efm_go.monitoring.github_pull_request import (
     GitHubPullRequestProvider,
     parse_github_pull_request_target,
 )

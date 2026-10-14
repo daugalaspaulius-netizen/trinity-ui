@@ -20,9 +20,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import cron_script
-from kiro_crew import member_memory_auth as auth
-from kiro_crew import platform_compat
+from efm_go import cron_script
+from efm_go import member_memory_auth as auth
+from efm_go import platform_compat
 
 _ROOT = 4101
 _LAUNCHER_CHILD = 4102

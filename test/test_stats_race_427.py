@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import threading
 
-from kiro_crew.stats import Stats
+from efm_go.stats import Stats
 
 
 def test_new_publishes_only_after_init() -> None:

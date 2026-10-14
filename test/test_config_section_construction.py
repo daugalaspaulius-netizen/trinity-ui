@@ -10,8 +10,8 @@ from dataclasses import fields, is_dataclass
 
 import pytest
 
-from kiro_crew.config import loader
-from kiro_crew.memory_stores import (
+from efm_go.config import loader
+from efm_go.memory_stores import (
     UnknownMemoryStore,
     persist_member_config,
     provision_member_memory,

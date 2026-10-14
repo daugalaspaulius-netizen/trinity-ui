@@ -2,7 +2,7 @@
 import unittest
 from unittest import mock
 
-from kiro_crew.dashboard.handlers import source_providers as sp
+from efm_go.dashboard.handlers import source_providers as sp
 
 
 class TestCommentOnPullRequestRefusesAnIssueUrl(unittest.IsolatedAsyncioTestCase):

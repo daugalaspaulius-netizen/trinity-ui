@@ -16,9 +16,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.eval.bench import datasets
-from kiro_crew.eval.bench.run import compare_reports
-from kiro_crew.eval.bench.safepath import (
+from efm_go.eval.bench import datasets
+from efm_go.eval.bench.run import compare_reports
+from efm_go.eval.bench.safepath import (
     UnsafePathError,
     open_write_nofollow,
     read_text_nofollow,

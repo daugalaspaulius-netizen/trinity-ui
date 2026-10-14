@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from kiro_crew.apps.builtins.auto_improvement.spine.contracts import (
+from efm_go.apps.builtins.auto_improvement.spine.contracts import (
     Candidate,
     GateResult,
     Measurement,
     Proposal,
 )
-from kiro_crew.apps.builtins.auto_improvement.spine.keeper import KEPT, Keeper
+from efm_go.apps.builtins.auto_improvement.spine.keeper import KEPT, Keeper
 
 
 def _make_proposal() -> Proposal:

@@ -1,6 +1,6 @@
 """The published config-timezone snapshot.
 
-``kiro_crew.cron`` resolves the global default timezone on the event loop --
+``efm_go.cron`` resolves the global default timezone on the event loop --
 ``CronService._on_timer``'s due-scan reaches ``_job_tz`` for every
 cron-expression job that carries no zone of its own, on every tick -- so the
 value is PUBLISHED by each successful ``KiroCrewConfig.load`` rather than read
@@ -18,13 +18,13 @@ import unittest.mock
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     KiroCrewConfig,
     next_config_load_ticket,
     publish_config_timezone,
     published_config_timezone,
 )
-from kiro_crew.cron import CronJob, _job_tz
+from efm_go.cron import CronJob, _job_tz
 
 
 def _reset_published_timezone() -> None:
@@ -42,7 +42,7 @@ def _reset_published_timezone() -> None:
     real base ticket instead of hardcoding synthetic numbers, which is what
     makes it independent of whatever ran before it.
     """
-    from kiro_crew.config import loader as _loader
+    from efm_go.config import loader as _loader
 
     _loader._CONFIG_TIMEZONE = ""
     _loader._CONFIG_TIMEZONE_TICKET = 0
@@ -72,7 +72,7 @@ def _load_with_timezone(tz_name: str) -> KiroCrewConfig:
         json.dump({"timezone": tz_name}, f)
         tmp = Path(f.name)
     try:
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             return KiroCrewConfig.load()
     finally:
         tmp.unlink(missing_ok=True)
@@ -92,7 +92,7 @@ class TestTheSnapshotCarriesTheConfiguredZone:
         read. The claim under test is that load() publishes what it resolved,
         which the call itself carries.
         """
-        with unittest.mock.patch("kiro_crew.config.loader.publish_config_timezone") as publish:
+        with unittest.mock.patch("efm_go.config.loader.publish_config_timezone") as publish:
             cfg = _load_with_timezone("America/Toronto")
 
         assert cfg.timezone == "America/Toronto"
@@ -132,7 +132,7 @@ class TestTheSnapshotFailsToUnsetRatherThanToAGuess:
         # process global: a concurrent load publishing a real zone would make an
         # assertion on the reset global fail for a reason this test is not about.
         # What is under test is that an UNSET default resolves to UTC.
-        with unittest.mock.patch("kiro_crew.cron.published_config_timezone", return_value=""):
+        with unittest.mock.patch("efm_go.cron.published_config_timezone", return_value=""):
             job = CronJob(id="j1", name="t", message="m", timezone="")
             assert _job_tz(job) == ZoneInfo("UTC")
 

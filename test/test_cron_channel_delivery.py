@@ -33,10 +33,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.cron import CronJob, CronSchedule
-from kiro_crew.platform import governance_profiles
-from kiro_crew.slack import gateway as gw
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.cron import CronJob, CronSchedule
+from efm_go.platform import governance_profiles
+from efm_go.slack import gateway as gw
 
 #: A Discord DM session key: ``{channel}:{agent}:{chatType}:{user}``. Direct, so
 #: it is allowed to take ``_channel_reply_link``'s stored-channel rung.

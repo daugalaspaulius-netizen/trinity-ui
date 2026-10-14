@@ -24,12 +24,12 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import hooks as hooks_mod
-from kiro_crew.acp import kas_wire, session_handle
-from kiro_crew.acp._dispatch import classify_notification
-from kiro_crew.acp.harness.kas import KasHarness
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import (
+from efm_go import hooks as hooks_mod
+from efm_go.acp import kas_wire, session_handle
+from efm_go.acp._dispatch import classify_notification
+from efm_go.acp.harness.kas import KasHarness
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import (
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
     ACP_BACKENDS_HOOKS_LIST,
@@ -37,7 +37,7 @@ from kiro_crew.acp.types import (
     KAS_CLIENT_CAPABILITIES,
     JsonRpcMessage,
 )
-from kiro_crew.hooks import HOOK_EVENTS, ScriptHookStore, set_global_hook_store
+from efm_go.hooks import HOOK_EVENTS, ScriptHookStore, set_global_hook_store
 
 
 class _FakeHandle:
@@ -209,7 +209,7 @@ class TestSelection:
 
     def test_a_truncated_answer_says_so(self, caplog):
         pool = [_hook(id=f"crew:script:{i}") for i in range(kas_wire.HOOKS_LIST_MAX + 3)]
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.kas_wire"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.kas_wire"):
             selected = kas_wire.select_hooks(pool, trigger="preToolUse")
         assert len(selected) == kas_wire.HOOKS_LIST_MAX
         assert "3 further hook(s) withheld" in caplog.text
@@ -698,7 +698,7 @@ def passthrough_sandbox(monkeypatch):
     A host without a sandbox backend (Windows CI) otherwise fails closed with exit -1
     before the hook runs.
     """
-    monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+    monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
 
 
 @pytest.fixture

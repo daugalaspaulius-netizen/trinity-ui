@@ -71,7 +71,7 @@ const REQUIRED_STDLIB_PARTS = [
  *
  * @param {{existsSync: Function, readdirSync: Function}} fs
  * @param {typeof import("path")} path
- * @param {string} backendRoot  the `…/backend-dist/kirocrew-backend` directory
+ * @param {string} backendRoot  the `…/backend-dist/efm-go-backend` directory
  * @returns {string|null} absolute stdlib dir, or null if none is present yet
  */
 function resolveStdlibDir(fs, path, backendRoot) {
@@ -122,7 +122,7 @@ function hasBundledInterpreter(fs, path, backendRoot) {
  *
  * @param {{existsSync: Function, readdirSync: Function}} fs
  * @param {typeof import("path")} path
- * @param {string} backendRoot  the `…/backend-dist/kirocrew-backend` directory
+ * @param {string} backendRoot  the `…/backend-dist/efm-go-backend` directory
  * @returns {string[]} missing part names ([] = complete or not applicable).
  *   `["Lib"]` means the stdlib root itself is not there yet, i.e. extraction has
  *   barely begun.
@@ -303,7 +303,7 @@ const STDLIB_MODULE_NAMES = new Set([
  *
  * Deliberately narrow in two ways. The module must belong to the stdlib set, so a
  * missing THIRD-PARTY or first-party dependency (a genuine packaging defect, e.g.
- * `aiohttp` or `kiro_crew.foo`) is never excused as "still installing". And only
+ * `aiohttp` or `efm_go.foo`) is never excused as "still installing". And only
  * the CURRENT launch attempt is read: the log is append-only across launches, so
  * a traceback from an earlier attempt must not relabel this attempt's unrelated
  * failure (a SIGKILL, a bound port) as an unfinished install, which would show a

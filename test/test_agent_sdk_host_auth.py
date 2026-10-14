@@ -39,15 +39,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import acp_backends, security
-from kiro_crew.acp import types as acp_types
-from kiro_crew.agent_sdk import host_auth, tool_gate
-from kiro_crew.agent_sdk.backends import ACP_BACKEND_KAS, ACP_BACKEND_KIRO
-from kiro_crew.security import paths as security_paths
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go import acp_backends, security
+from efm_go.acp import types as acp_types
+from efm_go.agent_sdk import host_auth, tool_gate
+from efm_go.agent_sdk.backends import ACP_BACKEND_KAS, ACP_BACKEND_KIRO
+from efm_go.security import paths as security_paths
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 SRC = Path(__file__).resolve().parent.parent / "src"
-HOST_AUTH_PY = SRC / "kiro_crew" / "agent_sdk" / "host_auth.py"
+HOST_AUTH_PY = SRC / "efm_go" / "agent_sdk" / "host_auth.py"
 
 #: Stdlib modules this table may import, named one by one.
 #:
@@ -77,14 +77,14 @@ _ALLOWED_STDLIB = frozenset(
 
 #: The only in-tree import allowed here: itself a stdlib-only leaf, and the module
 #: that supplies the backend ids this table is keyed by.
-_ALLOWED_IN_TREE = frozenset({"kiro_crew.agent_sdk.backends"})
+_ALLOWED_IN_TREE = frozenset({"efm_go.agent_sdk.backends"})
 
 #: Packages whose arrival would close the cycle the leaf exists to avoid.
 _FORBIDDEN_IN_TREE = (
-    "kiro_crew.security",
-    "kiro_crew.acp",
-    "kiro_crew.config",
-    "kiro_crew.sandbox",
+    "efm_go.security",
+    "efm_go.acp",
+    "efm_go.config",
+    "efm_go.sandbox",
 )
 
 #: The methods :class:`host_auth.AgentInteractiveLogin` requires.
@@ -185,8 +185,8 @@ def test_importing_the_table_pulls_in_nothing_heavy() -> None:
     """The gate that keeps the credential floor able to read this table.
 
     ``security.paths`` imports ``host_auth`` at module scope while assembling the
-    read-gate floor. If importing this table pulled in ``kiro_crew.security``,
-    ``kiro_crew.acp``, ``kiro_crew.config`` or ``kiro_crew.sandbox``, that would be
+    read-gate floor. If importing this table pulled in ``efm_go.security``,
+    ``efm_go.acp``, ``efm_go.config`` or ``efm_go.sandbox``, that would be
     a cycle through the very module doing the importing -- and the failure mode is
     not a clean ImportError but a partially-initialised security module whose floor
     is shorter than its author believed.
@@ -202,7 +202,7 @@ def test_importing_the_table_pulls_in_nothing_heavy() -> None:
             "import sys",
             f"sys.path.insert(0, {str(SRC)!r})",
             "before = set(sys.modules)",
-            "import kiro_crew.agent_sdk.host_auth as m",
+            "import efm_go.agent_sdk.host_auth as m",
             "assert m.credential_leaves(), 'table did not load'",
             "added = sorted(set(sys.modules) - before)",
             f"forbidden_roots = {_FORBIDDEN_IN_TREE!r}",
@@ -240,7 +240,7 @@ def test_importing_the_table_pulls_in_nothing_heavy() -> None:
         f"importing host_auth loaded third-party module(s) {loaded['vendored']}; the "
         "table must be readable before any dependency is available"
     )
-    assert "kiro_crew.agent_sdk.backends" in loaded["added"], (
+    assert "efm_go.agent_sdk.backends" in loaded["added"], (
         "the probe did not observe the backend-id leaf loading, so it was measuring "
         "an already-warm interpreter rather than a cold import"
     )
@@ -581,7 +581,7 @@ def test_no_current_driver_implements_the_login_protocol() -> None:
     for a harness whose login Kiro Crew drives -- and none of them has one yet.
     """
     implementers: list[str] = []
-    for source in sorted(SRC.rglob("kiro_crew/**/*.py")):
+    for source in sorted(SRC.rglob("efm_go/**/*.py")):
         if source == HOST_AUTH_PY:
             continue
         tree = ast.parse(source.read_text(encoding="utf-8"))
@@ -681,7 +681,7 @@ def test_every_declared_expose_leaf_sits_under_a_masked_directory() -> None:
     sufficient, because a private key under a masked directory satisfies it exactly
     as the one legitimate case does. Which is why there is no declared field for it.
     """
-    from kiro_crew.agent_sdk import tool_gate as gate
+    from efm_go.agent_sdk import tool_gate as gate
 
     for backend, leaves in gate.ADAPTER_EXPOSED_CREDENTIAL_LEAVES.items():
         if not leaves or not gate.is_enforced(backend):
@@ -704,7 +704,7 @@ def test_an_uncontained_expose_leaf_is_dropped_not_honoured(monkeypatch) -> None
     actually being applied, rather than where the table is written: the floor is not
     readable from a leaf this early.
     """
-    from kiro_crew.agent_sdk import tool_gate as gate
+    from efm_go.agent_sdk import tool_gate as gate
 
     enforced = next(
         b
@@ -727,7 +727,7 @@ def test_a_sibling_of_a_masked_directory_is_not_treated_as_inside_it() -> None:
     one the declaration named. A root that IS the target is not inside itself
     either.
     """
-    from kiro_crew.agent_sdk import tool_gate as gate
+    from efm_go.agent_sdk import tool_gate as gate
 
     root = os.path.join(os.path.sep, "tmp", "authseam-root", ".aws")
     assert gate._sits_under_any(os.path.join(root, "config"), (root,))

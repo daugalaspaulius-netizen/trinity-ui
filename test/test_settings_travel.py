@@ -31,11 +31,11 @@ from pathlib import Path
 import pytest
 from test_snapshot import _make_snapshot, _setup_fake_kirocrew, unpinnable_argv
 
-from kiro_crew import portability
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.notifications.settings import ChannelSettings
-from kiro_crew.snapshot import restore_main
-from kiro_crew.snapshot_components import COMPONENT_JSON_OBJECTS, CORE_FILES
+from efm_go import portability
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.notifications.settings import ChannelSettings
+from efm_go.snapshot import restore_main
+from efm_go.snapshot_components import COMPONENT_JSON_OBJECTS, CORE_FILES
 
 _SETTINGS_FILES = ("config.local.json", "ui-prefs.json", "notification_settings.json")
 _ALL_FOUR = ("config.json", *_SETTINGS_FILES)
@@ -66,7 +66,7 @@ def _source_home(root: Path) -> Path:
                     "mc-chat-config": '{"sendKey":"enter"}',
                     "mc-terminal-font": '{"fontSize":15}',
                     # Hand-planted: no client can store it, so no import may either.
-                    "kiro_crew_token": "bearer-abc",
+                    "efm_go_token": "bearer-abc",
                 }
             }
         ),
@@ -335,8 +335,8 @@ class TestReplaceRestoresEverySettingsDocument:
     def test_the_swap_holds_both_settings_stores_writer_locks(self, tmp_path, monkeypatch):
         """A write from another tab or channel cannot land mid-swap and publish its
         pre-import copy over the restored file."""
-        from kiro_crew import ui_prefs
-        from kiro_crew.notifications import settings as notification_settings
+        from efm_go import ui_prefs
+        from efm_go.notifications import settings as notification_settings
 
         zip_path = _export(_source_home(tmp_path), monkeypatch, tmp_path)
         _fresh_install(tmp_path, monkeypatch)
@@ -369,13 +369,13 @@ class TestReplaceRestoresEverySettingsDocument:
         }
         prefs = json.loads((target / "ui-prefs.json").read_text(encoding="utf-8"))["prefs"]
         assert prefs["mc-chat-config"] == '{"sendKey":"enter"}'
-        assert "kiro_crew_token" not in prefs
+        assert "efm_go_token" not in prefs
         assert summary["ui_prefs_restored"] is True
         # The running store re-read the swapped file.
         assert live.get("system.heartbeat") == {"muted": True}
         assert live.get("system.approval") == {}
         # And the settings load as the user chose them.
-        from kiro_crew.config.loader import _invalidate_config_cache
+        from efm_go.config.loader import _invalidate_config_cache
 
         _invalidate_config_cache()
         loaded = KiroCrewConfig.load()
@@ -719,7 +719,7 @@ class TestCliMergeSaysWhatItKept:
 
 class TestNestingBound:
     def test_depth_is_counted_per_container_level(self):
-        from kiro_crew.user_json import exceeds_nesting
+        from efm_go.user_json import exceeds_nesting
 
         assert not exceeds_nesting(1, limit=0)
         assert not exceeds_nesting({"a": [1]}, limit=2)
@@ -727,7 +727,7 @@ class TestNestingBound:
         assert exceeds_nesting({"a": 1, "b": {"c": {}}}, limit=2)
 
     def test_a_hostile_depth_is_measured_without_recursing(self):
-        from kiro_crew.user_json import exceeds_nesting
+        from efm_go.user_json import exceeds_nesting
 
         doc: object = 1
         for _ in range(50_000):

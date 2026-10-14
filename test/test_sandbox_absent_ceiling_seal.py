@@ -48,8 +48,8 @@ from test_sandbox_launcher_program import (
     rendered_payload,
 )
 
-from kiro_crew import sandbox, sandbox_launcher_program
-from kiro_crew.sandbox_plan import BACKEND_NAMESPACE, ConfinementPlan
+from efm_go import sandbox, sandbox_launcher_program
+from efm_go.sandbox_plan import BACKEND_NAMESPACE, ConfinementPlan
 
 program = sandbox_launcher_program
 
@@ -577,7 +577,7 @@ class TestEveryMaskedLeafIsEnumerated:
         Each resolves to one managed path with no override, so a second name is not a
         layout the product offers and the refusal costs no supported setup.
         """
-        from kiro_crew import agent_scratch
+        from efm_go import agent_scratch
 
         assert "scratch" in _NO_ALIAS_MASKED_LEAVES
         assert "backup" in _NO_ALIAS_MASKED_LEAVES
@@ -976,7 +976,7 @@ class TestAMaskedCredentialLeafRefusesASecondHardLink:
         This list is written out by hand for exactly that reason: changing the set must also
         change this literal, which is a decision someone makes rather than a side effect.
         """
-        from kiro_crew.identity_stores import AUTH_SQLITE_DB, AUTH_SQLITE_SIDECAR_SUFFIXES
+        from efm_go.identity_stores import AUTH_SQLITE_DB, AUTH_SQLITE_SIDECAR_SUFFIXES
 
         expected = {
             # signs dashboard access and refresh tokens
@@ -1013,7 +1013,7 @@ class TestAMaskedCredentialLeafRefusesASecondHardLink:
 
     def test_the_sqlite_sidecars_come_from_the_shared_suffix_constant(self):
         """Re-listing the suffixes is how one gets forgotten when a fourth is added."""
-        from kiro_crew.identity_stores import AUTH_SQLITE_DB, AUTH_SQLITE_SIDECAR_SUFFIXES
+        from efm_go.identity_stores import AUTH_SQLITE_DB, AUTH_SQLITE_SIDECAR_SUFFIXES
 
         for suffix in AUTH_SQLITE_SIDECAR_SUFFIXES:
             assert f"{AUTH_SQLITE_DB}{suffix}" in sandbox._CREW_HARDLINK_REFUSED_LEAVES
@@ -1622,7 +1622,7 @@ class TestTheDoctorReadOfMaskedCredentialAliases:
         leaf whose root IS the live home. The remedy command must survive, because finding the
         extra link is still the action.
         """
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         target = crew_home / "token_signing.key"
         target.write_bytes(b"key")
@@ -1661,7 +1661,7 @@ class TestTheDoctorReadOfMaskedCredentialAliases:
         A platform with no confined launch path is skipped, so the section is silent rather
         than naming an outage that cannot arrive.
         """
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         for platform, expected in (("linux", True), ("darwin", True), ("win32", False)):
             asked: list[bool] = []
@@ -2337,7 +2337,7 @@ class TestAnUnsealedCeilingIsNeverSilent:
             os, "mkdir", lambda *a, **k: (_ for _ in ()).throw(OSError("read-only fs"))
         )
 
-        with caplog.at_level("WARNING", logger="kiro_crew.sandbox"):
+        with caplog.at_level("WARNING", logger="efm_go.sandbox"):
             with pytest.raises(sandbox.SandboxCeilingUnsealable):
                 sandbox._materialize_sealable_ceilings()
 
@@ -2349,7 +2349,7 @@ class TestAnUnsealedCeilingIsNeverSilent:
             os, "link", lambda *a, **k: (_ for _ in ()).throw(OSError("no hardlinks"))
         )
 
-        with caplog.at_level("WARNING", logger="kiro_crew.sandbox"):
+        with caplog.at_level("WARNING", logger="efm_go.sandbox"):
             with pytest.raises(sandbox.SandboxCeilingUnsealable):
                 sandbox._materialize_sealable_ceilings()
 
@@ -2359,7 +2359,7 @@ class TestAnUnsealedCeilingIsNeverSilent:
         assert sandbox._CREW_PRECREATE_READONLY_FILE_LEAVES[0] in caplog.text
 
     def test_success_is_quiet(self, crew_home, caplog):
-        with caplog.at_level("WARNING", logger="kiro_crew.sandbox"):
+        with caplog.at_level("WARNING", logger="efm_go.sandbox"):
             sandbox._materialize_sealable_ceilings()
 
         assert "REFUSING to launch" not in caplog.text
@@ -2658,7 +2658,7 @@ class TestAnAliasBackedCeilingIsReported:
         real.write_text("{}", encoding="utf-8")
         (crew_home / "computer_use.json").symlink_to(real)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.sandbox"):
+        with caplog.at_level("WARNING", logger="efm_go.sandbox"):
             sandbox._materialize_sealable_ceilings()
 
         assert "is a SYMLINK" in caplog.text
@@ -2670,7 +2670,7 @@ class TestAnAliasBackedCeilingIsReported:
         os.link(target, crew_home / "alias.json")
         assert target.stat().st_nlink == 2
 
-        with caplog.at_level("WARNING", logger="kiro_crew.sandbox"):
+        with caplog.at_level("WARNING", logger="efm_go.sandbox"):
             sandbox._materialize_sealable_ceilings()
 
         assert "hardlinks" in caplog.text
@@ -2681,7 +2681,7 @@ class TestAnAliasBackedCeilingIsReported:
         real.mkdir()
         (crew_home / "profiles").symlink_to(real)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.sandbox"):
+        with caplog.at_level("WARNING", logger="efm_go.sandbox"):
             sandbox._materialize_sealable_ceilings()
 
         assert "is a SYMLINK" in caplog.text
@@ -2702,7 +2702,7 @@ class TestAnAliasBackedCeilingIsReported:
     def test_an_ordinary_single_link_ceiling_is_quiet(self, crew_home, caplog):
         (crew_home / "computer_use.json").write_text("{}", encoding="utf-8")
 
-        with caplog.at_level("WARNING", logger="kiro_crew.sandbox"):
+        with caplog.at_level("WARNING", logger="efm_go.sandbox"):
             sandbox._materialize_sealable_ceilings()
 
         assert "SYMLINK" not in caplog.text
@@ -2958,7 +2958,7 @@ class TestTheAuthStoreStagingLeafIsSpelledOnceInEffect:
     """
 
     def test_the_three_spellings_agree(self):
-        from kiro_crew.dashboard import token_secret as ts
+        from efm_go.dashboard import token_secret as ts
 
         assert sandbox._AUTH_STORE_STAGING_LEAF == ts._AUTH_STORE_STAGING_LEAF, (
             "the sandbox masks one directory name and the publisher stages in another, "
@@ -2966,7 +2966,7 @@ class TestTheAuthStoreStagingLeafIsSpelledOnceInEffect:
         )
 
     def test_the_fence_names_the_same_directory(self):
-        from kiro_crew import security
+        from efm_go import security
 
         assert any(
             leaf == sandbox._AUTH_STORE_STAGING_LEAF for leaf in security.sensitive_home_dirs()
@@ -3157,7 +3157,7 @@ class TestTheLegacyAuthStoreTempSweep:
         A rename on either side otherwise leaves the sweep matching a shape nothing
         produces, which reads exactly like a clean home.
         """
-        from kiro_crew.dashboard import token_secret as ts
+        from efm_go.dashboard import token_secret as ts
 
         captured: list[str] = []
         real_link = os.link
@@ -3166,7 +3166,7 @@ class TestTheLegacyAuthStoreTempSweep:
             captured.append(os.path.basename(str(src_path)))
             return real_link(src_path, dst_path, **kwargs)
 
-        monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
         monkeypatch.setattr(os, "link", _spy_link)
         ts._load_or_create_secret()
 

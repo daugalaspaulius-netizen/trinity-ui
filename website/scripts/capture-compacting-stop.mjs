@@ -23,7 +23,7 @@ if (!HINT || !CARD) throw new Error('compacting keys missing from en.manual.json
 // The two gateway notices this change words, READ from dashboard/state.py at
 // capture time rather than copied here: a copy drifted once and the shots then
 // showed a wording the code no longer shipped.
-const STATE_PY = fileURLToPath(new URL('../../src/kiro_crew/dashboard/state.py', import.meta.url))
+const STATE_PY = fileURLToPath(new URL('../../src/efm_go/dashboard/state.py', import.meta.url))
 function noticeTemplate(name) {
   // Matches ``NAME = (`` ... ``)`` and joins the adjacent string literals,
   // including a ``+ _RESTART_MEMORY_TAIL`` reference, which is resolved once.

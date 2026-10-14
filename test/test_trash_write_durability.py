@@ -25,10 +25,10 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import atomic_write as atomic_write_mod
-from kiro_crew import session_storage
-from kiro_crew.atomic_write import fsync_dir
-from kiro_crew.session_storage import INCOMING_PREFIX, MANIFEST_NAME, SessionIndex
+from efm_go import atomic_write as atomic_write_mod
+from efm_go import session_storage
+from efm_go.atomic_write import fsync_dir
+from efm_go.session_storage import INCOMING_PREFIX, MANIFEST_NAME, SessionIndex
 
 _NOW = 1_700_000_000.0
 _DAY = 86400.0

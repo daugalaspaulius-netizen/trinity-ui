@@ -82,7 +82,7 @@ class TestTheRuleAndItsFixturesStayPaired:
         """
         include = _rule_body()["paths"]["include"]
         assert "test/**" in include
-        assert "src/kiro_crew/apps/builtins/**/tests/**" in include, include
+        assert "src/efm_go/apps/builtins/**/tests/**" in include, include
 
 
 class TestTheCeilingHasOneValueRepoWide:

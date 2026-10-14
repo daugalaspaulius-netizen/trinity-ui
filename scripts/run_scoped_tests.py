@@ -125,7 +125,7 @@ BROAD_IMPACT_NAME_PREFIXES = (
 # graph was never treated as broad-impact and the gap sat undetected for four
 # review rounds -- a dead path looks exactly like a working one.
 BROAD_IMPACT_PATH_PREFIXES = (
-    "src/kiro_crew/testing/",
+    "src/efm_go/testing/",
     # The vitest setup graph, per vite.config.ts `setupFiles: './integration/setup.ts'`.
     # Every integration spec inherits it, and `mocks/server.ts` installs the global
     # MSW handlers they all rely on, so a change there can fail a spec that never
@@ -151,7 +151,7 @@ _WORKER_CEILING = 12
 # root is asserted to exist by the self-test: a root that resolves to nothing
 # looks exactly like a root with no matching tests, which is how a dead
 # broad-impact prefix survived four review rounds here.
-_BACKEND_TEST_ROOTS = ("test", "src/kiro_crew/apps/builtins")
+_BACKEND_TEST_ROOTS = ("test", "src/efm_go/apps/builtins")
 _BACKEND_TEST_NAME = re.compile(r"^test_[A-Za-z0-9_]+\.py$")
 # `website/electron/` is deliberately absent: those specs belong to the
 # `node --test` lane and vitest cannot collect them.
@@ -278,7 +278,7 @@ def reference_tokens(path: str) -> set[str]:
     """Strings a test would contain if it reaches ``path``.
 
     For a PYTHON module the bare stem is included, because that is what a reach
-    is spelled as: ``import session``, ``from kiro_crew.session import ...``, a
+    is spelled as: ``import session``, ``from efm_go.session import ...``, a
     ``"session"`` handed to ``importlib.import_module``, or a fixture named after
     the module. It is over-broad on purpose -- ``session`` occurs in most of this
     tree -- and that over-breadth is now affordable, because it costs a longer
@@ -896,12 +896,12 @@ def _self_test() -> int:
     check("broad impact: requirements variant", has_broad_impact(["requirements-dev.txt"]) is not None)
     check("broad impact: vitest setup graph", has_broad_impact(["website/integration/setup.ts"]) is not None)
     check("broad impact: global MSW handlers", has_broad_impact(["website/integration/mocks/server.ts"]) is not None)
-    check("broad impact: ordinary file is not broad", has_broad_impact(["src/kiro_crew/session.py"]) is None)
+    check("broad impact: ordinary file is not broad", has_broad_impact(["src/efm_go/session.py"]) is None)
     # Regression trap: substring matching escalated any path merely CONTAINING a
     # marker, so `clone_setup.py` was treated as `setup.py`.
     check(
         "broad impact: a name merely containing a marker is NOT broad",
-        has_broad_impact(["src/kiro_crew/apps/builtins/auto_improvement/backend/clone_setup.py"]) is None,
+        has_broad_impact(["src/efm_go/apps/builtins/auto_improvement/backend/clone_setup.py"]) is None,
     )
 
     # Git C-quotes a path carrying a non-ASCII byte, a quote or a newline unless
@@ -912,7 +912,7 @@ def _self_test() -> int:
     hostile = "website/src/fée.tsx"
     newlined = "website/src/we ird\nname.tsx"
     assert "\0" not in hostile
-    diff_out = f"src/kiro_crew/a.py\0{hostile}\0{newlined}\0"
+    diff_out = f"src/efm_go/a.py\0{hostile}\0{newlined}\0"
     parsed = _parse_diff_z(diff_out)
     check("diff -z keeps a non-ASCII path verbatim", hostile in parsed)
     check("diff -z keeps a newline-bearing path whole", newlined in parsed)
@@ -921,9 +921,9 @@ def _self_test() -> int:
         "a newline-bearing website path is classified frontend",
         surface_bucket(newlined) == "frontend",
     )
-    status_out = f" M src/kiro_crew/a.py\0?? {hostile}\0 M {newlined}\0"
+    status_out = f" M src/efm_go/a.py\0?? {hostile}\0 M {newlined}\0"
     sparsed = _parse_status_z(status_out)
-    check("status -z strips only the 3-char prefix", "src/kiro_crew/a.py" in sparsed)
+    check("status -z strips only the 3-char prefix", "src/efm_go/a.py" in sparsed)
     check("status -z keeps a non-ASCII path verbatim", hostile in sparsed)
     check("status -z keeps a newline-bearing path whole", newlined in sparsed)
     check(
@@ -936,7 +936,7 @@ def _self_test() -> int:
     # is asserted on by a FRONTEND spec, so treating it as backend let a reduced
     # frontend run drop that spec.
     check("bucket: website is frontend", surface_bucket("website/src/App.tsx") == "frontend")
-    check("bucket: src is backend", surface_bucket("src/kiro_crew/session.py") == "backend")
+    check("bucket: src is backend", surface_bucket("src/efm_go/session.py") == "backend")
     check("bucket: test is backend", surface_bucket("test/test_x.py") == "backend")
     check("bucket: docs are backend (ci.yml catch-all)", surface_bucket("docs/guides/install.md") == "backend")
     check("bucket: root files are backend", surface_bucket("README.md") == "backend")
@@ -1036,10 +1036,10 @@ def _self_test() -> int:
     # The related set, and the invariant that replaced escalation: NO diff shape
     # yields a full local suite. Each of these used to return `None`.
     for label, diff in (
-        ("this surface", ["src/kiro_crew/session.py"]),
+        ("this surface", ["src/efm_go/session.py"]),
         ("broad-impact", ["setup.cfg"]),
         ("meta", [".github/workflows/ci.yml"]),
-        ("both surfaces", ["src/kiro_crew/session.py", "website/src/App.tsx"]),
+        ("both surfaces", ["src/efm_go/session.py", "website/src/App.tsx"]),
         ("neither surface", ["temp-screenshots/feature/shot.png"]),
         ("the runner itself", ["scripts/run_scoped_tests.py"]),
     ):
@@ -1058,7 +1058,7 @@ def _self_test() -> int:
                 not verdict.startswith("full suite"),
             )
 
-    be_targets, be_verdict = related_targets("backend", ["src/kiro_crew/session.py"])
+    be_targets, be_verdict = related_targets("backend", ["src/efm_go/session.py"])
     check("a changed module selects its name-matched tests", "test/test_session.py" in be_targets)
     check("the backend related set is non-empty for a real module", len(be_targets) > 1)
     check("the verdict counts what it selected", f"related: {len(be_targets)} test file(s)" in be_verdict)
@@ -1083,7 +1083,7 @@ def _self_test() -> int:
 
     # A backend-only diff must still pick up CI's cross-surface frontend set, and
     # vice versa -- that component is the one reduction CI itself computes.
-    fe_from_backend, fe_reason = related_targets("frontend", ["src/kiro_crew/session.py"])
+    fe_from_backend, fe_reason = related_targets("frontend", ["src/efm_go/session.py"])
     check("a backend diff pulls the cross-surface frontend set", "cross-surface" in fe_reason)
     check("cross-surface frontend targets are website-relative", all(not p.startswith("website/") for p in fe_from_backend))
     _be_from_frontend, be_reason = related_targets("backend", ["website/src/App.tsx"])
@@ -1113,11 +1113,11 @@ def _self_test() -> int:
     # Reference tokens: a python module contributes its stem (that is what an
     # import or an importlib string spells), a non-python file does not, because a
     # bare `SKILL.md` matches nearly everything that mentions a skill.
-    py_tokens = reference_tokens("src/kiro_crew/session.py")
+    py_tokens = reference_tokens("src/efm_go/session.py")
     check("python tokens carry the stem", "session" in py_tokens)
-    check("python tokens carry the dotted path", "kiro_crew.session" in py_tokens)
-    check("python tokens carry the repo path", "src/kiro_crew/session.py" in py_tokens)
-    md_tokens = reference_tokens("src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/SKILL.md")
+    check("python tokens carry the dotted path", "efm_go.session" in py_tokens)
+    check("python tokens carry the repo path", "src/efm_go/session.py" in py_tokens)
+    md_tokens = reference_tokens("src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/SKILL.md")
     check("a non-python file does not contribute a bare basename", "SKILL.md" not in md_tokens)
     check("a non-python file contributes its last two components", "kirocrew-prepare-pr/SKILL.md" in md_tokens)
     check(
@@ -1126,11 +1126,11 @@ def _self_test() -> int:
     )
     check(
         "a path token is a plain substring",
-        _reference_matcher({"kiro_crew/session.py"}).search("reads src/kiro_crew/session.py here"),
+        _reference_matcher({"efm_go/session.py"}).search("reads src/efm_go/session.py here"),
     )
     check(
         "a dotted module is a plain substring",
-        _reference_matcher({"kiro_crew.session"}).search("from kiro_crew.session import x"),
+        _reference_matcher({"efm_go.session"}).search("from efm_go.session import x"),
     )
     check("no tokens, no matcher", _reference_matcher(set()) is None)
     check(

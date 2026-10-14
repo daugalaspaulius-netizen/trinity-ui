@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew.dashboard import side_readonly_spec as srs
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go import agent as agent_mod
+from efm_go.dashboard import side_readonly_spec as srs
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 #: A release that accepts a spec ``permissions`` block, and one that refuses it,
 #: expressed against the floor so raising it cannot strand these tests.
@@ -26,12 +26,12 @@ def _pin_spec_permissions_cli(monkeypatch, which):
     """Pin what the shared writer gate believes the installed kiro-cli is.
 
     Same helper the generated writers' suites use: the gate reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``,
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``,
     so the patch lands there. ``which`` is ``"accepts"``, ``"refuses"`` or
     ``"unknown"``.
     """
     version = {"accepts": _ACCEPTS, "refuses": _REFUSES, "unknown": None}[which]
-    monkeypatch.setattr("kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: version)
+    monkeypatch.setattr("efm_go.kiro_cli.installed_kiro_cli_version", lambda: version)
 
 
 @pytest.fixture(autouse=True)
@@ -46,7 +46,7 @@ def _accepting_kiro_cli(monkeypatch):
     _pin_spec_permissions_cli(monkeypatch, "accepts")
 
 
-_SHIPPED_DEFAULTS = Path(__file__).resolve().parents[1] / "src/kiro_crew/config/defaults.json"
+_SHIPPED_DEFAULTS = Path(__file__).resolve().parents[1] / "src/efm_go/config/defaults.json"
 
 #: A base spec carrying every grant shape the derivation must empty, plus the
 #: fields it must keep byte-for-byte.

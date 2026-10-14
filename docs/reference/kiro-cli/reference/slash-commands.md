@@ -1,6 +1,6 @@
 # Slash Commands
 
-Source: https://kiro.dev/docs/reference/slash-commands/ (fetched 2026-09-06;
+Source: https://efmleads.com/docs/reference/slash-commands/ (fetched 2026-09-06;
 upstream retired `/docs/cli/reference/slash-commands/`)
 
 Available in interactive chat mode only. `scripts/docs_lint.py` hand-excepts this

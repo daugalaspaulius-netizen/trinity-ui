@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.cloud import config as cloud_config
-from kiro_crew.cloud.config import (
+from efm_go.cloud import config as cloud_config
+from efm_go.cloud.config import (
     _MAX_FILE_BYTES,
     DEFAULT_REGION,
     CloudConfig,
@@ -95,7 +95,7 @@ class TestFargateConfig:
         import inspect
         import textwrap
 
-        from kiro_crew.cloud.fargate.taskdef import credential_recipient as shared
+        from efm_go.cloud.fargate.taskdef import credential_recipient as shared
 
         tree = ast.parse(textwrap.dedent(inspect.getsource(FargateConfig.credential_recipient)))
         returns = [n for n in ast.walk(tree) if isinstance(n, ast.Return) and n.value is not None]
@@ -216,7 +216,7 @@ class TestFargateConfig:
         that does not exist. Parametrized over the FIELDS as well as the values, so a
         string field added later is covered without anyone remembering.
         """
-        from kiro_crew.cloud.config import _STRING_FIELD_DEFAULTS
+        from efm_go.cloud.config import _STRING_FIELD_DEFAULTS
 
         assert _STRING_FIELD_DEFAULTS, "the field derivation must not be empty"
         for field_name in _STRING_FIELD_DEFAULTS:
@@ -227,7 +227,7 @@ class TestFargateConfig:
         """Pins the derivation itself, so a field cannot silently drop out of it."""
         from dataclasses import fields
 
-        from kiro_crew.cloud.config import _STRING_FIELD_DEFAULTS
+        from efm_go.cloud.config import _STRING_FIELD_DEFAULTS
 
         expected = {f.name for f in fields(FargateConfig) if isinstance(f.default, str)}
         assert set(_STRING_FIELD_DEFAULTS) == expected
@@ -245,7 +245,7 @@ class TestFargateConfig:
         ``None`` is in the values because an explicit JSON ``null`` is a PRESENT value
         and must drop the block rather than fall through to the default.
         """
-        from kiro_crew.cloud.config import _BOOL_FIELD_DEFAULTS
+        from efm_go.cloud.config import _BOOL_FIELD_DEFAULTS
 
         assert _BOOL_FIELD_DEFAULTS, "the field derivation must not be empty"
         for field_name in _BOOL_FIELD_DEFAULTS:
@@ -261,7 +261,7 @@ class TestFargateConfig:
         """
         from dataclasses import fields
 
-        from kiro_crew.cloud.config import _BOOL_FIELD_DEFAULTS
+        from efm_go.cloud.config import _BOOL_FIELD_DEFAULTS
 
         expected = {f.name for f in fields(FargateConfig) if isinstance(f.default, bool)}
         assert set(_BOOL_FIELD_DEFAULTS) == expected
@@ -274,7 +274,7 @@ class TestFargateConfig:
         field in this block that LOOSENS a posture, so a default of ``True`` would hand
         every lane an unsandboxed model subprocess for saying nothing at all.
         """
-        from kiro_crew.cloud.config import _BOOL_FIELD_DEFAULTS
+        from efm_go.cloud.config import _BOOL_FIELD_DEFAULTS
 
         assert all(default is False for default in _BOOL_FIELD_DEFAULTS.values())
 
@@ -310,7 +310,7 @@ class TestFargateConfig:
         thing the ``None`` default exists to avoid. Read from the engine, this also fails
         if that constant moves without this lane following it.
         """
-        from kiro_crew.cloud.fargate_engine import (
+        from efm_go.cloud.fargate_engine import (
             DEFAULT_MAX_RUNNING_TASKS,
             DEFAULT_TASK_TTL_SECONDS,
         )
@@ -329,7 +329,7 @@ class TestFargateConfig:
         cannot quietly move the population ceiling with it: the two travel in one
         dataclass and only one of them is operator-reachable.
         """
-        from kiro_crew.cloud.fargate_engine import (
+        from efm_go.cloud.fargate_engine import (
             DEFAULT_MAX_RUNNING_TASKS,
             DEFAULT_TASK_TTL_SECONDS,
         )
@@ -392,13 +392,13 @@ class TestFargateConfig:
         legitimately in ordinary prose and in unrelated numbers, so an absence assertion
         on it would pass for reasons unrelated to the property and prove nothing.
         """
-        from kiro_crew.cloud.fargate_engine import (
+        from efm_go.cloud.fargate_engine import (
             DEFAULT_MAX_RUNNING_TASKS,
             DEFAULT_TASK_TTL_SECONDS,
         )
 
         spec = (_REPO_ROOT / "docs/system-specs/modules/cloud.md").read_text(encoding="utf-8")
-        module_src = (_REPO_ROOT / "src/kiro_crew/cloud/config.py").read_text(encoding="utf-8")
+        module_src = (_REPO_ROOT / "src/efm_go/cloud/config.py").read_text(encoding="utf-8")
 
         assert "DEFAULT_TASK_TTL_SECONDS" in spec
         assert "DEFAULT_MAX_RUNNING_TASKS" in spec
@@ -425,7 +425,7 @@ class TestFargateConfig:
         raise: a lane carrying a bound the engine refuses has to read as no lane, not as
         a lane that raises out of ``TaskBounds`` on its first launch.
         """
-        from kiro_crew.cloud.config import _INT_FIELD_NAMES
+        from efm_go.cloud.config import _INT_FIELD_NAMES
 
         assert _INT_FIELD_NAMES, "the field derivation must not be empty"
         for field_name in _INT_FIELD_NAMES:
@@ -442,7 +442,7 @@ class TestFargateConfig:
         """
         from dataclasses import fields
 
-        from kiro_crew.cloud.config import _INT_FIELD_NAMES
+        from efm_go.cloud.config import _INT_FIELD_NAMES
 
         declared = {f.name: f for f in fields(FargateConfig)}
         for name in _INT_FIELD_NAMES:
@@ -488,7 +488,7 @@ class TestAConcurrentEditIsNeverLost:
 
     def test_the_tag_pattern_accepts_its_own_bound(self):
         """One bound, two users. A second literal would be free to drift."""
-        from kiro_crew.cloud.config import _TAG_MAX_LEN, _TAG_RE
+        from efm_go.cloud.config import _TAG_MAX_LEN, _TAG_RE
 
         assert _TAG_RE.match("a" * _TAG_MAX_LEN), "the pattern must accept its own bound"
         assert not _TAG_RE.match("a" * (_TAG_MAX_LEN + 1)), "and reject one past it"
@@ -501,7 +501,7 @@ class TestAConcurrentEditIsNeverLost:
         A read that ignores the ceiling both defeats the memory bound and pulls in a file
         too large to write back, so the size of what comes in is the property under test.
         """
-        from kiro_crew.cloud.config import _MAX_FILE_BYTES, CloudConfig
+        from efm_go.cloud.config import _MAX_FILE_BYTES, CloudConfig
 
         p = tmp_path / "cloud.json"
         p.write_text(
@@ -559,7 +559,7 @@ class TestAConcurrentEditIsNeverLost:
 
     def test_two_configs_with_the_same_settings_are_equal(self, tmp_path):
         """The fingerprint must stay out of equality, or callers comparing configs break."""
-        from kiro_crew.cloud.config import CloudConfig
+        from efm_go.cloud.config import CloudConfig
 
         p = tmp_path / "cloud.json"
         self._seed(p)
@@ -574,7 +574,7 @@ class TestAConcurrentEditIsNeverLost:
         cover, and a directory leaf no alias check validated -- so the code they are about is
         what had to go. A mechanism left in place behind a flag would keep both.
         """
-        import kiro_crew.cloud.config as config_mod
+        import efm_go.cloud.config as config_mod
 
         leftovers = [n for n in vars(config_mod) if "preserv" in n.lower()]
         assert leftovers == [], leftovers
@@ -592,8 +592,8 @@ class TestAConcurrentEditIsNeverLost:
 
         import pytest as _pytest
 
-        from kiro_crew import cli_cloud as _cli_cloud
-        from kiro_crew.cloud.config import CloudConfig
+        from efm_go import cli_cloud as _cli_cloud
+        from efm_go.cloud.config import CloudConfig
 
         monkeypatch.setattr(CloudConfig, "load", classmethod(lambda cls, *a, **k: cls()))
         assert CloudConfig().last_tag == "", "the premise of this test is the default tag"
@@ -622,7 +622,7 @@ class TestAConcurrentEditIsNeverLost:
         environment variable, and a 60,000-bracket document in the id blows past the Windows
         32767-character cap, which the repo has a gate for.
         """
-        from kiro_crew.cloud.config import CloudConfig
+        from efm_go.cloud.config import CloudConfig
 
         p = tmp_path / "cloud.json"
         if kind == "not_utf8":
@@ -651,8 +651,8 @@ class TestAConcurrentEditIsNeverLost:
         so with no block it writes a complete one and the owner's next launch runs its image.
         All three cases must refuse identically, which is what makes the rule content-blind.
         """
-        from kiro_crew import sandbox
-        from kiro_crew.cloud import config as cloud_config
+        from efm_go import sandbox
+        from efm_go.cloud import config as cloud_config
 
         home = tmp_path / "crew"
         home.mkdir()
@@ -684,7 +684,7 @@ class TestAConcurrentEditIsNeverLost:
         """
         import inspect
 
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         both = set(sandbox._CREW_NOFOLLOW_READONLY_FILE_LEAVES) | set(
             sandbox._CREW_NOFOLLOW_READONLY_DIR_LEAVES
@@ -699,7 +699,7 @@ class TestAConcurrentEditIsNeverLost:
 
     def test_a_delegated_workspace_elsewhere_is_left_alone(self, tmp_path):
         """Only an overlap is refused, so an ordinary project workspace still spawns."""
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         home = tmp_path / "crew"
         home.mkdir()
@@ -738,7 +738,7 @@ class TestAConcurrentEditIsNeverLost:
         import ast as _ast
         import pathlib as _pathlib
 
-        src_root = _pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew"
+        src_root = _pathlib.Path(__file__).resolve().parents[1] / "src/efm_go"
         # `load` is a read and is always fine. Anything ELSE that is not `apply_update`
         # fails, including a write method added later under a name nobody here foresaw --
         # that is what makes this a closed set rather than a list of the two callers a
@@ -787,7 +787,7 @@ class TestAConcurrentEditIsNeverLost:
         import ast as _ast
         import pathlib as _pathlib
 
-        for rel in ("src/kiro_crew/cloud/wizard.py", "src/kiro_crew/cli_cloud.py"):
+        for rel in ("src/efm_go/cloud/wizard.py", "src/efm_go/cli_cloud.py"):
             path = _pathlib.Path(__file__).resolve().parents[1] / rel
             tree = _ast.parse(path.read_text(encoding="utf-8"))
             offenders = [
@@ -907,7 +907,7 @@ class TestCloudConfig:
         # into the resume path where validate_tag (cap 51) would raise. The
         # sanitizer's job is "no last launch", not a crash. Keep _TAG_RE in
         # lockstep with ec2._TAG_RE.
-        from kiro_crew.cloud import ec2
+        from efm_go.cloud import ec2
 
         assert ec2._TAG_RE.pattern == r"^[a-zA-Z0-9-]{1,51}\Z"  # the cap we mirror
         p = tmp_path / "cloud.json"
@@ -965,7 +965,7 @@ class TestCloudConfigIsSealedAgainstAgentWrites:
 
     @pytest.mark.parametrize("path", PATHS)
     def test_an_agent_may_not_write_it(self, path: str):
-        from kiro_crew.security.paths import is_sensitive_write_path
+        from efm_go.security.paths import is_sensitive_write_path
 
         assert is_sensitive_write_path(path) is True
 
@@ -975,7 +975,7 @@ class TestCloudConfigIsSealedAgainstAgentWrites:
 
         Blocking reads would take the Set-up tab down instead of protecting it.
         """
-        from kiro_crew.security.paths import is_sensitive_path
+        from efm_go.security.paths import is_sensitive_path
 
         assert is_sensitive_path(path) is False
 
@@ -986,7 +986,7 @@ class TestCloudConfigIsSealedAgainstAgentWrites:
         writable; without this, a predicate that answered True for everything would
         satisfy this class.
         """
-        from kiro_crew.security.paths import is_sensitive_write_path
+        from efm_go.security.paths import is_sensitive_write_path
 
         assert is_sensitive_write_path("~/.kiro/crew/not-a-protected-leaf.json") is False
 
@@ -1000,7 +1000,7 @@ class TestTheSealedCloudConfigNameCannotBeAnAlias:
     """
 
     def test_cloud_json_is_on_the_nofollow_file_list(self):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert "cloud.json" in sandbox._CREW_NOFOLLOW_READONLY_FILE_LEAVES
 
@@ -1010,7 +1010,7 @@ class TestTheSealedCloudConfigNameCannotBeAnAlias:
         A nofollow leaf that is not materialised has no seal to protect on a default
         install, so the strict check would guard a name nothing binds.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert set(sandbox._CREW_NOFOLLOW_READONLY_FILE_LEAVES) <= set(
             sandbox._CREW_PRECREATE_READONLY_FILE_LEAVES
@@ -1018,7 +1018,7 @@ class TestTheSealedCloudConfigNameCannotBeAnAlias:
 
     def test_the_list_is_not_everything(self):
         """Positive control: the strict path is opt-in, not applied to every leaf."""
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert set(sandbox._CREW_PRECREATE_READONLY_FILE_LEAVES) - set(
             sandbox._CREW_NOFOLLOW_READONLY_FILE_LEAVES
@@ -1034,7 +1034,7 @@ def _strict_check(target: str) -> None:
     other's message. Which words those are is not what this class is about, so they are
     supplied once here rather than repeated in every case.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     sandbox._require_real_file_nofollow(
         target,
@@ -1062,7 +1062,7 @@ class TestTheStrictCloudConfigSealRefusesEveryUncoveredName:
 
     @staticmethod
     def _strict_target(tmp_path):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         return tmp_path / sandbox._CREW_NOFOLLOW_READONLY_FILE_LEAVES[0]
 
@@ -1076,7 +1076,7 @@ class TestTheStrictCloudConfigSealRefusesEveryUncoveredName:
         _strict_check(str(self._strict_target(tmp_path)))
 
     def test_a_symlink_is_refused(self, tmp_path):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         real = tmp_path / "elsewhere.json"
         real.write_text(self.RISKY, encoding="utf-8")
@@ -1087,7 +1087,7 @@ class TestTheStrictCloudConfigSealRefusesEveryUncoveredName:
 
     def test_a_hardlinked_file_is_refused(self, tmp_path):
         """The shape the earlier symlink-only check missed entirely."""
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         p = self._strict_target(tmp_path)
         p.write_text(self.RISKY, encoding="utf-8")
@@ -1096,7 +1096,7 @@ class TestTheStrictCloudConfigSealRefusesEveryUncoveredName:
             _strict_check(str(p))
 
     def test_a_directory_at_the_name_is_refused(self, tmp_path):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         p = self._strict_target(tmp_path)
         p.mkdir()
@@ -1105,7 +1105,7 @@ class TestTheStrictCloudConfigSealRefusesEveryUncoveredName:
 
     def test_an_unreadable_alias_is_treated_as_risky(self, tmp_path):
         """Contents are never read now, so even an unreadable alias refuses."""
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         p = self._strict_target(tmp_path)
         p.write_text(self.RISKY, encoding="utf-8")
@@ -1135,7 +1135,7 @@ class TestTheStrictCloudConfigSealRefusesEveryUncoveredName:
 
     @pytest.mark.parametrize(("label", "body"), ENCODINGS)
     def test_a_symlink_is_refused_whatever_the_contents(self, tmp_path, label, body):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         real = tmp_path / "elsewhere.json"
         real.write_text(body, encoding="utf-8")
@@ -1146,7 +1146,7 @@ class TestTheStrictCloudConfigSealRefusesEveryUncoveredName:
 
     @pytest.mark.parametrize(("label", "body"), ENCODINGS)
     def test_a_hardlink_is_refused_whatever_the_contents(self, tmp_path, label, body):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         p = self._strict_target(tmp_path)
         p.write_text(body, encoding="utf-8")
@@ -1163,7 +1163,7 @@ class TestTheStrictCloudConfigSealRefusesEveryUncoveredName:
         """
         import inspect
 
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         src = inspect.getsource(sandbox._require_real_file_nofollow)
         for reader in ("open(", "read(", "json.loads", "carries_risk"):
@@ -1219,7 +1219,7 @@ class TestTheCredentialGateAgreesWithTheEngine:
         """
         import itertools
 
-        from kiro_crew.cloud.fargate.identity import SecretRef, secret_env_name
+        from efm_go.cloud.fargate.identity import SecretRef, secret_env_name
 
         prefixes = ["kirocrew/crew/", "kirocrew/crews/", "junk/", ""]
         crews = [

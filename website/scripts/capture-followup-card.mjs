@@ -65,7 +65,7 @@ const ITEMS = [
     description:
       'The upload endpoint is bounded now, but /api/ws still accepts unlimited concurrent upgrades from one caller.',
     prompt:
-      'In src/kiro_crew/dashboard/ws.py, apply the same token-bucket limiter added to the upload handler to the WebSocket upgrade path. Reuse the limiter helper rather than duplicating it, cap concurrent sockets per caller, and add tests for the reject path.',
+      'In src/efm_go/dashboard/ws.py, apply the same token-bucket limiter added to the upload handler to the WebSocket upgrade path. Reuse the limiter helper rather than duplicating it, cap concurrent sockets per caller, and add tests for the reject path.',
     branch: 'feat/ws-rate-limit',
   },
   {
@@ -79,7 +79,7 @@ const ITEMS = [
     title: 'Document the limiter defaults',
     description: 'The new limits are undocumented, so operators cannot tune them.',
     prompt:
-      'Document the upload rate-limiter defaults and their config keys in src/kiro_crew/docs/configuration.md, including how to raise them for a trusted deployment.',
+      'Document the upload rate-limiter defaults and their config keys in src/efm_go/docs/configuration.md, including how to raise them for a trusted deployment.',
     branch: 'docs/rate-limit-defaults',
   },
 ]

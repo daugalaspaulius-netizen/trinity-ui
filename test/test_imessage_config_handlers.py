@@ -9,8 +9,8 @@ from typing import Any
 
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.config.loader as loader
-import kiro_crew.dashboard.handlers.messaging as mod
+import efm_go.config.loader as loader
+import efm_go.dashboard.handlers.messaging as mod
 
 
 class _StubRequest:

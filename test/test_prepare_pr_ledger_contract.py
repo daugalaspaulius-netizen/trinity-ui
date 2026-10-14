@@ -27,7 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL = (
     REPO_ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"
@@ -87,7 +87,7 @@ def test_skill_states_the_dependency_and_the_three_line_shapes():
 CONTRACT = (
     REPO_ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"

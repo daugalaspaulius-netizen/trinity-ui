@@ -34,7 +34,7 @@ jobs:
     name: Merge queue required on main
     # A fork has none of upstream's rulesets; there the check would only ever
     # report upstream's setting as missing.
-    if: ${{ github.repository == 'kirodotdev/KiroCrew' }}
+    if: ${{ github.repository == 'efmleads.com' }}
     runs-on: ubuntu-latest  # schedule/workflow_dispatch has no live collaborator actor for the AWS webhook allowlist to check -- stays on ubuntu-latest.
     timeout-minutes: 5
     steps:

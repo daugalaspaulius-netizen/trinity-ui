@@ -2,7 +2,7 @@
 
 Covers the four layers of the unix-socket peer-identity feature:
 
-* :mod:`kiro_crew.peer_resolve` — the shared /proc ancestry walk (extracted
+* :mod:`efm_go.peer_resolve` — the shared /proc ancestry walk (extracted
   from gatewayd; its original tests in ``test_mcp_gateway_claim.py`` keep
   covering the gatewayd wrapper seams).
 * ``dashboard.token_auth`` — the middleware branch: deny-on-mismatch,
@@ -37,11 +37,11 @@ import pytest
 from aiohttp import web
 from tmpdir_helpers import SHORT_TMP_PREFIX, short_tmp_base
 
-import kiro_crew.dashboard.token_auth as ta
-from kiro_crew import platform_compat
-from kiro_crew.loopback_http import loopback_urlopen
-from kiro_crew.mcp_gateway.socketsec import PeerCredResult
-from kiro_crew.peer_resolve import PeerTenancy, resolve_peer_identity, resolve_peer_tenancy
+import efm_go.dashboard.token_auth as ta
+from efm_go import platform_compat
+from efm_go.loopback_http import loopback_urlopen
+from efm_go.mcp_gateway.socketsec import PeerCredResult
+from efm_go.peer_resolve import PeerTenancy, resolve_peer_identity, resolve_peer_tenancy
 
 
 @pytest.fixture
@@ -117,7 +117,7 @@ def test_signed_only_refuses_forged_unsigned_mapping(
     so an attacker planting session_pid_<own_pid>.txt with a victim's key
     must NOT satisfy the authorization walk — signed_only requires the HMAC
     sidecar the attacker cannot produce."""
-    from kiro_crew import session_pid_sig as sps
+    from efm_go import session_pid_sig as sps
 
     monkeypatch.setattr(sps, "_load_hmac_key", lambda: b"K" * 32)
     (tmp_path / "session_pid_50.txt").write_text("dashboard:chat-victim", encoding="utf-8")
@@ -145,7 +145,7 @@ def test_signed_only_reports_a_non_hex_sidecar_as_unverifiable(
     resolver guard and read as "no mapping anywhere" -- the degrade arm --
     instead of the token demand an untrustable mapping gets.
     """
-    from kiro_crew import session_pid_sig as sps
+    from efm_go import session_pid_sig as sps
 
     monkeypatch.setattr(sps, "_load_hmac_key", lambda: b"K" * 32)
     (tmp_path / "session_pid_50.txt").write_text("dashboard:chat-victim", encoding="utf-8")
@@ -160,7 +160,7 @@ def test_signed_only_reports_a_non_hex_sidecar_as_unverifiable(
 def test_signed_only_accepts_gateway_signed_mapping(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew import session_pid_sig as sps
+    from efm_go import session_pid_sig as sps
 
     _hmac_key = b"K" * 32
     monkeypatch.setattr(sps, "_load_hmac_key", lambda: _hmac_key)
@@ -747,7 +747,7 @@ def test_bound_session_keys_union_both_tables_and_walk_the_chain() -> None:
     so the answer comes from the kiro-cli ANCESTOR rather than the MCP stub that
     connected, and a pid in neither table answers empty.
     """
-    from kiro_crew import runtime_ownership as ro
+    from efm_go import runtime_ownership as ro
 
     ro._reset_for_tests()
     try:
@@ -781,8 +781,8 @@ async def test_a_shared_turn_binds_the_session_its_stubs_declare() -> None:
     Measured at three points because the window is the interesting part: the key
     is bound during the turn and not before or after it.
     """
-    from kiro_crew import runtime_ownership as ro
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go import runtime_ownership as ro
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     principal, child = _SHARED
     ro._reset_for_tests()
@@ -839,7 +839,7 @@ def test_a_tenancy_with_no_session_key_binds_nothing() -> None:
     it must not appear as a session on the pid, or an auth decision would read the
     OAuth child as a tenant whose key could be declared.
     """
-    from kiro_crew import runtime_ownership as ro
+    from efm_go import runtime_ownership as ro
 
     ro._reset_for_tests()
     try:
@@ -859,7 +859,7 @@ def test_a_dead_runtime_binds_no_session() -> None:
     declaring a key on a pid whose runtime has exited is not on that process, and
     the OS is free to hand the number to something else.
     """
-    from kiro_crew import runtime_ownership as ro
+    from efm_go import runtime_ownership as ro
 
     ro._reset_for_tests()
     try:
@@ -1302,7 +1302,7 @@ async def test_unix_site_end_to_end_peer_verification(
     middleware must deny a foreign declared key and allow the matching one."""
     import os
 
-    from kiro_crew import session_pid_sig as sps
+    from efm_go import session_pid_sig as sps
 
     # Publish a SIGNED pidfile for THIS process so the ancestry walk (starting
     # at the kernel-reported peer pid == our pid) resolves immediately under
@@ -1368,7 +1368,7 @@ def test_check_origin_trusts_unix_transport_without_origin() -> None:
     """An AF_UNIX request has no loopback request.remote; without this trust
     the CSRF middleware would 403 every mutating internal call on the socket
     before token auth ever ran (review finding)."""
-    from kiro_crew.dashboard.origin import check_origin
+    from efm_go.dashboard.origin import check_origin
 
     req, _store = _make_request(unix=True)
     req.app = {"allowed_origins": set()}
@@ -1376,7 +1376,7 @@ def test_check_origin_trusts_unix_transport_without_origin() -> None:
 
 
 def test_check_origin_still_rejects_plain_remote_without_origin() -> None:
-    from kiro_crew.dashboard.origin import check_origin
+    from efm_go.dashboard.origin import check_origin
 
     req, _store = _make_request(remote="10.0.0.1", unix=False)
     req.app = {"allowed_origins": set()}
@@ -1393,10 +1393,10 @@ def test_check_origin_still_rejects_plain_remote_without_origin() -> None:
 async def test_start_unix_site_binds_and_removes_stale(
     short_sock_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.dashboard import server as srv
+    from efm_go.dashboard import server as srv
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.server.dashboard_socket_path",
+        "efm_go.dashboard.server.dashboard_socket_path",
         lambda port: short_sock_dir / f"dashboard-{port}.sock",
     )
     # Plant a stale socket file (bound then abandoned) to prove self-healing.
@@ -1420,7 +1420,7 @@ async def test_start_unix_site_binds_and_removes_stale(
 
 @pytest.mark.asyncio
 async def test_start_unix_site_skipped_on_windows(monkeypatch: pytest.MonkeyPatch) -> None:
-    from kiro_crew.dashboard import server as srv
+    from efm_go.dashboard import server as srv
 
     monkeypatch.setattr(srv.platform_compat, "IS_WINDOWS", True)
     assert await srv._start_unix_site(MagicMock(), 5999) is None
@@ -1433,11 +1433,11 @@ async def test_start_unix_site_bind_failure_degrades(
 ) -> None:
     """A non-socket file squatting the path makes the bind fail; startup must
     degrade to TCP-only (return None), never raise."""
-    from kiro_crew.dashboard import server as srv
+    from efm_go.dashboard import server as srv
 
     squatter = short_sock_dir / "dashboard-6001.sock"
     squatter.write_text("not a socket", encoding="utf-8")
-    monkeypatch.setattr("kiro_crew.dashboard.server.dashboard_socket_path", lambda port: squatter)
+    monkeypatch.setattr("efm_go.dashboard.server.dashboard_socket_path", lambda port: squatter)
     app = web.Application()
     runner = web.AppRunner(app)
     await runner.setup()
@@ -1589,7 +1589,7 @@ def test_loopback_urlopen_http_error_propagates_no_fallback(short_sock_dir: Path
 def test_mcp_core_post_prefers_unix_socket(
     unix_http_server: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import kiro_crew.mcp_core as mcp_core
+    import efm_go.mcp_core as mcp_core
 
     monkeypatch.setattr(mcp_core, "_API_UNIX_SOCKET", unix_http_server)
     monkeypatch.setattr(mcp_core, "_API", "http://127.0.0.1:1")  # TCP would refuse
@@ -1602,7 +1602,7 @@ def test_mcp_core_post_falls_back_to_tcp_when_socket_absent(
     short_sock_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Error shape of _get is unchanged when neither transport answers."""
-    import kiro_crew.mcp_core as mcp_core
+    import efm_go.mcp_core as mcp_core
 
     monkeypatch.setattr(mcp_core, "_API_UNIX_SOCKET", str(short_sock_dir / "absent.sock"))
     monkeypatch.setattr(mcp_core, "_API", "http://127.0.0.1:1")

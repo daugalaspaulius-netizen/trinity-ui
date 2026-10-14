@@ -1,4 +1,4 @@
-"""Tests for ``kiro_crew.seed`` — Phase 1.A walking skeleton.
+"""Tests for ``efm_go.seed`` — Phase 1.A walking skeleton.
 
 Scope: one fixture (``empty``), one guardrail (``KIROCREW_HOME`` unset), plus a
 regression guard for unknown fixture names. Non-empty target, main-home guardrail,
@@ -15,8 +15,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import cli, pinned_fs, platform_compat
-from kiro_crew import seed as seed_mod
+from efm_go import cli, pinned_fs, platform_compat
+from efm_go import seed as seed_mod
 
 
 def test_seed_empty_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -165,7 +165,7 @@ def test_seed_path_traversal_rejected(
         ), f"expected path-separator gate to reject {name!r}, got: {excinfo.value}"
 
 
-@patch("kiro_crew.seed.sel")
+@patch("efm_go.seed.sel")
 def test_seed_cmd_exit_code_on_unset(
     mock_sel: MagicMock, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -238,7 +238,7 @@ def test_seed_cli_flag_registered(
 # ------------------------------------------------------------------
 
 
-@patch("kiro_crew.seed.sel")
+@patch("efm_go.seed.sel")
 def test_seed_cmd_emits_sel_audit_on_success(
     mock_sel: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -264,7 +264,7 @@ def test_seed_cmd_emits_sel_audit_on_success(
     assert str(target) not in kw["resources"]
 
 
-@patch("kiro_crew.seed.sel")
+@patch("efm_go.seed.sel")
 def test_seed_cmd_emits_sel_audit_on_rail_denied(
     mock_sel: MagicMock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -283,7 +283,7 @@ def test_seed_cmd_emits_sel_audit_on_rail_denied(
     assert f"guardrail={seed_mod.SeedError.GUARDRAIL_UNSET_HOME}" in kw["resources"]
 
 
-@patch("kiro_crew.seed.sel")
+@patch("efm_go.seed.sel")
 def test_seed_cmd_emits_sel_audit_on_path_traversal_denied(
     mock_sel: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -302,7 +302,7 @@ def test_seed_cmd_emits_sel_audit_on_path_traversal_denied(
     assert f"guardrail={seed_mod.SeedError.GUARDRAIL_BAD_NAME}" in kw["resources"]
 
 
-@patch("kiro_crew.seed.sel", side_effect=OSError("read-only HOME"))
+@patch("efm_go.seed.sel", side_effect=OSError("read-only HOME"))
 def test_seed_cmd_safe_audit_swallows_sel_init_failure(
     mock_sel: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -322,7 +322,7 @@ def test_seed_cmd_safe_audit_swallows_sel_init_failure(
     assert (target / "fixture.yaml").is_file()
 
 
-@patch("kiro_crew.seed.sel")
+@patch("efm_go.seed.sel")
 def test_seed_cmd_emits_sel_audit_on_copytree_oserror(
     mock_sel: MagicMock,
     tmp_path: Path,
@@ -368,7 +368,7 @@ def test_seed_cmd_emits_sel_audit_on_copytree_oserror(
     assert "OSError" in kw["resources"]
 
 
-@patch("kiro_crew.seed.sel", side_effect=OSError("read-only HOME"))
+@patch("efm_go.seed.sel", side_effect=OSError("read-only HOME"))
 def test_seed_cmd_safe_audit_logs_warning_on_swallowed_failure(
     mock_sel: MagicMock,
     tmp_path: Path,
@@ -389,7 +389,7 @@ def test_seed_cmd_safe_audit_logs_warning_on_swallowed_failure(
     and actually reaches stderr, restoring audit observability.
 
     This test asserts a WARNING-level log record is emitted from
-    ``kiro_crew.seed`` whenever ``sel()`` raises.  Regression guard
+    ``efm_go.seed`` whenever ``sel()`` raises.  Regression guard
     against a future refactor that silently reverts to ``.debug`` /
     ``pass`` / drops the ``exc_info=True`` that carries the traceback.
     """
@@ -399,13 +399,13 @@ def test_seed_cmd_safe_audit_logs_warning_on_swallowed_failure(
     monkeypatch.setenv("KIROCREW_HOME", str(target))
 
     args = type("Args", (), {"seed": "empty"})()
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.seed"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.seed"):
         rc = seed_mod.seed_cmd(args)
 
     assert rc == seed_mod.EXIT_OK
     # Exactly one WARNING record from our audit handler.
     audit_records = [
-        r for r in caplog.records if r.name == "kiro_crew.seed" and r.levelno == logging.WARNING
+        r for r in caplog.records if r.name == "efm_go.seed" and r.levelno == logging.WARNING
     ]
     assert len(audit_records) == 1, (
         f"expected exactly one WARNING log from _safe_audit on sel() failure; "
@@ -663,7 +663,7 @@ def test_seed_empty_existing_dir_succeeds_without_replace(
     assert (target / "fixture.yaml").is_file()
 
 
-@patch("kiro_crew.seed.sel")
+@patch("efm_go.seed.sel")
 def test_seed_cmd_replace_flag_threaded(
     mock_sel: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -689,7 +689,7 @@ def test_seed_cmd_replace_flag_threaded(
     assert not (target / "junk").exists()
 
 
-@patch("kiro_crew.seed.sel")
+@patch("efm_go.seed.sel")
 def test_seed_cmd_missing_seed_replace_attr_defaults_false(
     mock_sel: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -773,7 +773,7 @@ def test_seed_empty_string_fixture_rejected(
     assert excinfo.value.guardrail == seed_mod.SeedError.GUARDRAIL_BAD_NAME
 
 
-@patch("kiro_crew.seed.sel")
+@patch("efm_go.seed.sel")
 def test_seed_cmd_empty_seed_routes_to_seed_cmd(
     mock_sel: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -830,7 +830,7 @@ def test_seed_audit_uses_rail_tag_not_raw_path(
     """
     # Patch ``sel`` LOCALLY per test so parametrize doesn't collide with
     # the @patch decorator's call-count tracking.
-    with patch("kiro_crew.seed.sel") as mock_sel:
+    with patch("efm_go.seed.sel") as mock_sel:
         if setup == "main_home":
             fake_home = tmp_path / "fake_home"
             fake_home.mkdir()

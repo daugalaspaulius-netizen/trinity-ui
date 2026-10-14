@@ -24,20 +24,20 @@ from chat_test_helpers import _make_app as _make_chat_app
 from chat_test_helpers import _make_state as _make_chat_state
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.apps.manager import APP_MANIFEST_FILENAME
-from kiro_crew.apps.routes import register_app_routes
-from kiro_crew.dashboard import chat_persistence, chat_runner
-from kiro_crew.dashboard.chat import api_chat_slot_context, api_chat_slot_note
-from kiro_crew.dashboard.chat_handlers import _MAX_DEFERRED_NOTES
-from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
-from kiro_crew.dashboard.chat_runner import drain_pending_context
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.apps.manager import APP_MANIFEST_FILENAME
+from efm_go.apps.routes import register_app_routes
+from efm_go.dashboard import chat_persistence, chat_runner
+from efm_go.dashboard.chat import api_chat_slot_context, api_chat_slot_note
+from efm_go.dashboard.chat_handlers import _MAX_DEFERRED_NOTES
+from efm_go.dashboard.chat_persistence import save_slot_off_loop
+from efm_go.dashboard.chat_runner import drain_pending_context
+from efm_go.dashboard.chat_utils import (
     _history_key_for,
     effective_session_key,
     slot_history_key,
 )
-from kiro_crew.dashboard.handlers import api_mcp_server_detail
-from kiro_crew.dashboard.state import _MAX_PENDING_CONTEXT, DashboardState, _ChatSlot
+from efm_go.dashboard.handlers import api_mcp_server_detail
+from efm_go.dashboard.state import _MAX_PENDING_CONTEXT, DashboardState, _ChatSlot
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -51,15 +51,15 @@ def mcp_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     mcp_json.parent.mkdir(parents=True)
     mcp_json.write_text('{"mcpServers": {}}')
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.mcp._GLOBAL_MCP_JSON", mcp_json
+        "efm_go.dashboard.handlers.mcp._GLOBAL_MCP_JSON", mcp_json
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.mcp._MCP_LOCK_PATH",
+        "efm_go.dashboard.handlers.mcp._MCP_LOCK_PATH",
         mcp_json.with_suffix(".lock"),
     )
     # Stub _sync_mcp_to_agent to avoid touching real agent config
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent",
+        "efm_go.dashboard.handlers.mcp._sync_mcp_to_agent",
         lambda *a, **kw: None,
     )
     return mcp_json
@@ -92,11 +92,11 @@ def app_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     }
     (app_dir / "installed.json").write_text(json.dumps(installed))
     # Stub bridges to avoid touching real kiro agents dir
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
     bmod._processes.clear()
     bmod._allocated_ports.clear()
     return home
@@ -524,7 +524,7 @@ class TestContextDrain:
         frame changed underneath it — e.g. the silent-consumption
         contract line would never have shown up here).
         """
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go.dashboard.chat_runner import (
             _CONTEXT_FRAME_CONTRACT,
             drain_pending_context,
         )
@@ -644,15 +644,15 @@ class TestReverseProxy:
         }
         (app_dir / "installed.json").write_text(json.dumps(installed))
         # Stub bridges
-        import kiro_crew.apps.bridges as bridges_mod
+        import efm_go.apps.bridges as bridges_mod
         kiro_agents = tmp_path / "kiro-agents"
         kiro_agents.mkdir()
         monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         bmod._processes.clear()
         bmod._allocated_ports.clear()
         # Clear secret cache
-        from kiro_crew.apps.routes import _app_secret_cache
+        from efm_go.apps.routes import _app_secret_cache
         _app_secret_cache.clear()
         self._home = home
 
@@ -673,7 +673,7 @@ class TestReverseProxy:
         """
         from unittest.mock import MagicMock
 
-        from kiro_crew.apps.routes import handle_app_api_proxy
+        from efm_go.apps.routes import handle_app_api_proxy
 
         request = MagicMock()
         request.match_info = {"name": "proxy-app", "path": "foo/../etc/passwd"}
@@ -698,7 +698,7 @@ class TestReverseProxy:
         """
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.routes import handle_app_api_proxy
+        from efm_go.apps.routes import handle_app_api_proxy
 
         # Flip the fixture's app to disabled; everything else stays valid.
         installed_path = self._home / "apps" / "proxy-app" / "installed.json"
@@ -711,7 +711,7 @@ class TestReverseProxy:
         request.match_info = {"name": "proxy-app", "path": "health"}
         request.get = lambda key, default="": default   # dashboard caller, not an app
 
-        with patch("kiro_crew.apps.routes.sel") as mock_sel:
+        with patch("efm_go.apps.routes.sel") as mock_sel:
             resp = await handle_app_api_proxy(request)
 
         assert resp.status == 403, f"expected 403, got {resp.status}"
@@ -741,7 +741,7 @@ class TestReverseProxy:
         """
         from unittest.mock import MagicMock
 
-        from kiro_crew.apps.routes import handle_app_api_proxy
+        from efm_go.apps.routes import handle_app_api_proxy
 
         meta = json.loads((self._home / "apps" / "proxy-app" / "installed.json").read_text())
         assert meta["enabled"] is True
@@ -761,7 +761,7 @@ class TestReverseProxy:
         (CWE-269 cross-app guard). Called directly with a crafted request."""
         from unittest.mock import MagicMock
 
-        from kiro_crew.apps.routes import handle_app_api_proxy
+        from efm_go.apps.routes import handle_app_api_proxy
 
         request = MagicMock()
         request.match_info = {"name": "proxy-app", "path": "health"}
@@ -779,8 +779,8 @@ class TestReverseProxy:
         PAST the 403 guard without exercising the header-forwarding path."""
         from unittest.mock import MagicMock
 
-        import kiro_crew.apps.routes as rmod
-        from kiro_crew.apps.routes import handle_app_api_proxy
+        import efm_go.apps.routes as rmod
+        from efm_go.apps.routes import handle_app_api_proxy
 
         monkeypatch.setattr(rmod, "_resolve_app_backend_url", lambda name: "")
         request = MagicMock()
@@ -808,7 +808,7 @@ class TestReverseProxy:
             "schemaVersion": 2,
         }
         (app_dir / "installed.json").write_text(json.dumps(installed))
-        import kiro_crew.apps.routes as rmod
+        import efm_go.apps.routes as rmod
         monkeypatch.setattr(rmod, "_resolve_app_backend_url", lambda name: "http://127.0.0.1:19999")
         # Clear cache so the missing secret is detected
         rmod._app_secret_cache.clear()
@@ -822,7 +822,7 @@ class TestReverseProxy:
     @pytest.mark.asyncio
     async def test_backend_unreachable_returns_502(self, monkeypatch):
         """Proxy to unreachable backend returns 502."""
-        import kiro_crew.apps.routes as rmod
+        import efm_go.apps.routes as rmod
 
         # Point to a port that's definitely not listening
         monkeypatch.setattr(rmod, "_resolve_app_backend_url", lambda name: "http://127.0.0.1:19999")
@@ -855,7 +855,7 @@ class TestReverseProxy:
         await site.start()
         port = runner.addresses[0][1]
 
-        import kiro_crew.apps.routes as rmod
+        import efm_go.apps.routes as rmod
         monkeypatch.setattr(rmod, "_resolve_app_backend_url", lambda name: f"http://127.0.0.1:{port}")
 
         try:
@@ -904,7 +904,7 @@ class TestReverseProxy:
         await site.start()
         port = runner.addresses[0][1]
 
-        import kiro_crew.apps.routes as rmod
+        import efm_go.apps.routes as rmod
         monkeypatch.setattr(rmod, "_resolve_app_backend_url", lambda name: f"http://127.0.0.1:{port}")
 
         try:
@@ -939,7 +939,7 @@ class TestReverseProxy:
     @pytest.mark.asyncio
     async def test_hmac_includes_percent_encoded_query_string_with_spaces(self, monkeypatch):
         """HMAC signature correctly signs percent-encoded query parameters (spaces, #, non-ASCII)."""
-        from kiro_crew.apps.proxy_auth import verify_proxy_request
+        from efm_go.apps.proxy_auth import verify_proxy_request
 
         received_headers: dict[str, str] = {}
 
@@ -966,7 +966,7 @@ class TestReverseProxy:
         await site.start()
         port = runner.addresses[0][1]
 
-        import kiro_crew.apps.routes as rmod
+        import efm_go.apps.routes as rmod
         monkeypatch.setattr(rmod, "_resolve_app_backend_url", lambda name: f"http://127.0.0.1:{port}")
 
         try:
@@ -1003,7 +1003,7 @@ class TestReverseProxy:
         await site.start()
         port = runner.addresses[0][1]
 
-        import kiro_crew.apps.routes as rmod
+        import efm_go.apps.routes as rmod
         monkeypatch.setattr(rmod, "_resolve_app_backend_url", lambda name: f"http://127.0.0.1:{port}")
 
         body_bytes = b'{"hello": "world", "n": 42}'
@@ -1072,12 +1072,12 @@ class TestSSRFGuard:
         }
         (app_dir / "installed.json").write_text(json.dumps(installed))
 
-        import kiro_crew.apps.bridges as bridges_mod
+        import efm_go.apps.bridges as bridges_mod
         kiro_agents = tmp_path / "kiro-agents"
         kiro_agents.mkdir(exist_ok=True)
         monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
 
-        from kiro_crew.apps.routes import _resolve_app_backend_url
+        from efm_go.apps.routes import _resolve_app_backend_url
         result = _resolve_app_backend_url("evil-app")
         assert result is None, f"Expected None for self-referential URL, got {result}"
 
@@ -1105,12 +1105,12 @@ class TestSSRFGuard:
         }
         (app_dir / "installed.json").write_text(json.dumps(installed))
 
-        import kiro_crew.apps.bridges as bridges_mod
+        import efm_go.apps.bridges as bridges_mod
         kiro_agents = tmp_path / "kiro-agents"
         kiro_agents.mkdir(exist_ok=True)
         monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
 
-        from kiro_crew.apps.routes import _resolve_app_backend_url
+        from efm_go.apps.routes import _resolve_app_backend_url
         result = _resolve_app_backend_url("ext-app")
         assert result is None, f"Expected None for non-loopback URL, got {result}"
 
@@ -1139,12 +1139,12 @@ class TestSSRFGuard:
         }
         (app_dir / "installed.json").write_text(json.dumps(installed))
 
-        import kiro_crew.apps.bridges as bridges_mod
+        import efm_go.apps.bridges as bridges_mod
         kiro_agents = tmp_path / "kiro-agents"
         kiro_agents.mkdir(exist_ok=True)
         monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
 
-        from kiro_crew.apps.routes import _resolve_app_backend_url
+        from efm_go.apps.routes import _resolve_app_backend_url
         result = _resolve_app_backend_url("good-app")
         assert result == "http://127.0.0.1:8080"
 
@@ -2306,7 +2306,7 @@ class TestNoteEndpoint:
         app.router.add_post("/api/chat/slots/{slot}/context", api_chat_slot_context)
         events: list[dict] = []
         with patch(
-            "kiro_crew.dashboard.slot_ownership.sel",
+            "efm_go.dashboard.slot_ownership.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kw: events.append(kw)),
         ):
             async with TestClient(TestServer(app)) as client:
@@ -2451,7 +2451,7 @@ class TestNoteEndpoint:
         """
         import inspect
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         queued = inspect.getsource(chat_runner._start_next_queued_turn)
         assert "flush_deferred_notes" in queued
@@ -2474,9 +2474,9 @@ class TestNoteEndpoint:
         flush above that drain. Draining is the mechanism by which a successor
         starts, so a sixth seam is caught wherever it is added.
         """
-        import kiro_crew
+        import efm_go
 
-        root = Path(kiro_crew.__file__).resolve().parent
+        root = Path(efm_go.__file__).resolve().parent
         found: list[tuple[str, str, bool]] = []
         for path in sorted(root.rglob("*.py")):
             if "__pycache__" in path.parts:
@@ -2673,7 +2673,7 @@ class TestNoteEndpoint:
         """
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.chat_handlers import _reset_slot_session
+        from efm_go.dashboard.chat_handlers import _reset_slot_session
 
         state = _make_state(tmp_path)
         slot = _ChatSlot("s1")
@@ -2733,7 +2733,7 @@ class TestNoteEndpoint:
                 return {"content": "x"}
 
         with patch(
-            "kiro_crew.dashboard.chat_handlers.sel",
+            "efm_go.dashboard.chat_handlers.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kw: events.append(kw)),
         ):
             resp = await api_chat_slot_note(_Req())
@@ -2872,7 +2872,7 @@ class TestImmediateNoteSessionBinding:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         """Neither half may reach the session the slot is rebound to."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_chat_state(tmp_path)
         slot = _ChatSlot("cron-42")
         slot._app = "owner-app"
@@ -2903,7 +2903,7 @@ class TestImmediateNoteSessionBinding:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         """Control: the guard drops ONLY content whose session actually changed."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_chat_state(tmp_path)
         slot = _ChatSlot("cron-42")
         slot._app = "owner-app"
@@ -2932,7 +2932,7 @@ class TestImmediateNoteSessionBinding:
         rebind the slot, so reading the routing twice authorizes the row against
         one session and then writes the file of another.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_chat_state(tmp_path)
         slot = _ChatSlot("cron-42")
         slot._app = "owner-app"
@@ -2999,9 +2999,9 @@ class TestCleanupPersistsHeldNotes:
         context reaches nobody. The visible row survives either way, which is why
         the sibling test above cannot see this.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         monkeypatch.setattr(
-            "kiro_crew.autonudge.get_instance",
+            "efm_go.autonudge.get_instance",
             lambda: MagicMock(list_all=MagicMock(return_value=[])),
         )
         state = _make_chat_state(tmp_path)
@@ -3059,9 +3059,9 @@ class TestCleanupPersistsHeldNotes:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         """A note accepted with 200 must be in the archived record."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         monkeypatch.setattr(
-            "kiro_crew.autonudge.get_instance",
+            "efm_go.autonudge.get_instance",
             lambda: MagicMock(list_all=MagicMock(return_value=[])),
         )
         state = _make_chat_state(tmp_path)
@@ -3117,9 +3117,9 @@ class TestCleanupPersistsHeldNotes:
         saying so. Reverting the cancel is not the fix: it would delete the bulk
         cleanup's only flush, which the sibling tests above pin.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         monkeypatch.setattr(
-            "kiro_crew.autonudge.get_instance",
+            "efm_go.autonudge.get_instance",
             lambda: MagicMock(list_all=MagicMock(return_value=[])),
         )
         state = _make_chat_state(tmp_path)
@@ -3136,7 +3136,7 @@ class TestCleanupPersistsHeldNotes:
 
         try:
             with patch(
-                "kiro_crew.dashboard.chat_handlers.save_slot_off_loop", new=_failing_save
+                "efm_go.dashboard.chat_handlers.save_slot_off_loop", new=_failing_save
             ):
                 async with self._make_client(state) as client:
                     resp = await client.post(
@@ -3178,7 +3178,7 @@ class TestPersistenceRebindDenialIsAudited:
     ):
         from types import SimpleNamespace
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_chat_state(tmp_path)
         slot = _ChatSlot("s1")
         state._slots["s1"] = slot
@@ -3196,7 +3196,7 @@ class TestPersistenceRebindDenialIsAudited:
         events: list[dict] = []
 
         with patch(
-            "kiro_crew.dashboard.chat_persistence.sel",
+            "efm_go.dashboard.chat_persistence.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kw: events.append(kw)),
         ):
             chat_persistence._save_slot_to_history(state, slot, messages=window, force=True)
@@ -3229,7 +3229,7 @@ class TestPersistenceRebindDenialIsAudited:
         """Count-gated: this is the periodic path, so a clean save must stay silent."""
         from types import SimpleNamespace
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_chat_state(tmp_path)
         slot = _ChatSlot("s2")
         state._slots["s2"] = slot
@@ -3239,7 +3239,7 @@ class TestPersistenceRebindDenialIsAudited:
         events: list[dict] = []
 
         with patch(
-            "kiro_crew.dashboard.chat_persistence.sel",
+            "efm_go.dashboard.chat_persistence.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kw: events.append(kw)),
         ):
             chat_persistence._save_slot_to_history(state, slot, messages=window, force=True)
@@ -3258,15 +3258,15 @@ class TestUninstallAppSourcesCleanup:
         home.mkdir()
         monkeypatch.setenv("KIROCREW_HOME", str(home))
         # Stub bridges
-        import kiro_crew.apps.bridges as bridges_mod
+        import efm_go.apps.bridges as bridges_mod
         kiro_agents = tmp_path / "kiro-agents"
         kiro_agents.mkdir()
         monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         bmod._processes.clear()
         bmod._allocated_ports.clear()
         # Clear secret cache
-        from kiro_crew.apps.routes import _app_secret_cache
+        from efm_go.apps.routes import _app_secret_cache
         _app_secret_cache.clear()
         self._home = home
 
@@ -3354,7 +3354,7 @@ class TestStreamingLogLines:
     the streaming install endpoint."""
 
     def test_append_pushes_to_queue(self) -> None:
-        from kiro_crew.apps.registry import StreamingLogLines
+        from efm_go.apps.registry import StreamingLogLines
         q: asyncio.Queue[str | None] = asyncio.Queue()
         sl = StreamingLogLines(q)
         sl.append("line 1")
@@ -3365,7 +3365,7 @@ class TestStreamingLogLines:
         assert q.get_nowait() == "line 2"
 
     def test_extend_pushes_each_line(self) -> None:
-        from kiro_crew.apps.registry import StreamingLogLines
+        from efm_go.apps.registry import StreamingLogLines
         q: asyncio.Queue[str | None] = asyncio.Queue()
         sl = StreamingLogLines(q)
         sl.extend(["a", "b", "c"])
@@ -3373,7 +3373,7 @@ class TestStreamingLogLines:
         assert q.qsize() == 3
 
     def test_join_works_like_plain_list(self) -> None:
-        from kiro_crew.apps.registry import StreamingLogLines
+        from efm_go.apps.registry import StreamingLogLines
         q: asyncio.Queue[str | None] = asyncio.Queue()
         sl = StreamingLogLines(q)
         sl.append("hello")
@@ -3382,7 +3382,7 @@ class TestStreamingLogLines:
 
     def test_full_queue_does_not_raise(self) -> None:
         """When the queue is full, append should silently drop (not block)."""
-        from kiro_crew.apps.registry import StreamingLogLines
+        from efm_go.apps.registry import StreamingLogLines
         q: asyncio.Queue[str | None] = asyncio.Queue(maxsize=1)
         sl = StreamingLogLines(q)
         sl.append("first")   # fills the queue
@@ -3391,7 +3391,7 @@ class TestStreamingLogLines:
         assert q.qsize() == 1  # only first made it
 
     def test_empty_list_join(self) -> None:
-        from kiro_crew.apps.registry import StreamingLogLines
+        from efm_go.apps.registry import StreamingLogLines
         q: asyncio.Queue[str | None] = asyncio.Queue()
         sl = StreamingLogLines(q)
         assert "\n".join(sl) == ""
@@ -3459,7 +3459,7 @@ class TestRegistryInstallStream:
         the companion test below pins separately.
         """
         monkeypatch.setattr(
-            "kiro_crew.apps.official_catalog.inventory_for_install",
+            "efm_go.apps.official_catalog.inventory_for_install",
             lambda name: None,
         )
         async with self._make_client() as client:
@@ -3486,7 +3486,7 @@ class TestRegistryInstallStream:
         coordinates. Both branches are now deterministic instead of being
         selected by the CI runner's live network.
         """
-        from kiro_crew.apps import official_catalog
+        from efm_go.apps import official_catalog
 
         def _outage(name: str) -> None:
             raise official_catalog.CatalogUnavailable(
@@ -3494,7 +3494,7 @@ class TestRegistryInstallStream:
             )
 
         monkeypatch.setattr(
-            "kiro_crew.apps.official_catalog.inventory_for_install", _outage,
+            "efm_go.apps.official_catalog.inventory_for_install", _outage,
         )
         async with self._make_client() as client:
             resp = await client.post(
@@ -3528,11 +3528,11 @@ class TestRegistryInstallStream:
             }
 
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.install_from_registry", _fake_install,
+            "efm_go.apps.routes.install_from_registry", _fake_install,
         )
         # Stub register_app to avoid touching real bridges
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.register_app",
+            "efm_go.apps.routes.register_app",
             lambda name: type("R", (), {"to_dict": lambda self: {"ok": True}})(),
         )
 
@@ -3566,7 +3566,7 @@ class TestRegistryInstallStream:
             return {"ok": False, "name": name, "error": "build failed", "log": "\n".join(log_lines or [])}
 
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.install_from_registry", _fake_install,
+            "efm_go.apps.routes.install_from_registry", _fake_install,
         )
 
         async with self._make_client() as client:
@@ -3596,7 +3596,7 @@ class TestRegistryInstallStream:
             }
 
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.install_from_registry", _fake_install,
+            "efm_go.apps.routes.install_from_registry", _fake_install,
         )
 
         async with self._make_client() as client:
@@ -3620,7 +3620,7 @@ class TestRegistryInstallStream:
             raise RuntimeError("unexpected crash")
 
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.install_from_registry", _fake_install,
+            "efm_go.apps.routes.install_from_registry", _fake_install,
         )
 
         async with self._make_client() as client:
@@ -3650,7 +3650,7 @@ class TestInstallFromRegistryLogLines:
         verdict depends on the runner's network.
         """
         monkeypatch.setattr(
-            "kiro_crew.apps.official_catalog.inventory_for_install",
+            "efm_go.apps.official_catalog.inventory_for_install",
             lambda name: None,
         )
 
@@ -3658,7 +3658,7 @@ class TestInstallFromRegistryLogLines:
     async def test_custom_log_lines_receives_entries(self) -> None:
         """When a custom log_lines is passed, it should receive entries
         (even if the install fails early due to missing registry entry)."""
-        from kiro_crew.apps.registry import install_from_registry
+        from efm_go.apps.registry import install_from_registry
         custom: list[str] = []
         result = await install_from_registry("nonexistent", log_lines=custom)
         assert result["ok"] is False
@@ -3669,7 +3669,7 @@ class TestInstallFromRegistryLogLines:
     @pytest.mark.asyncio
     async def test_default_log_lines_is_plain_list(self) -> None:
         """When log_lines is not passed, a plain list is used internally."""
-        from kiro_crew.apps.registry import install_from_registry
+        from efm_go.apps.registry import install_from_registry
         result = await install_from_registry("nonexistent")
         assert result["ok"] is False
         assert "not found" in result.get("error", "")
@@ -3719,10 +3719,10 @@ class TestRegistryInstallStreamSecurity:
             return {"ok": True, "name": name, "message": "ok", "log": "\n".join(log_lines or [])}
 
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.install_from_registry", _fake_install,
+            "efm_go.apps.routes.install_from_registry", _fake_install,
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.register_app",
+            "efm_go.apps.routes.register_app",
             lambda name: type("R", (), {"to_dict": lambda self: {"ok": True}})(),
         )
 
@@ -3758,10 +3758,10 @@ class TestRegistryInstallStreamSecurity:
             return {"ok": True, "name": name, "message": "ok", "log": "\n".join(log_lines or [])}
 
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.install_from_registry", _fake_install,
+            "efm_go.apps.routes.install_from_registry", _fake_install,
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.routes.register_app",
+            "efm_go.apps.routes.register_app",
             lambda name: type("R", (), {"to_dict": lambda self: {"ok": True}})(),
         )
 

@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import snapshot as snap
-from kiro_crew import snapshot_redact
+from efm_go import snapshot as snap
+from efm_go import snapshot_redact
 
 
 def _real_db(path: Path, secret: str | None = None) -> bytes:
@@ -209,7 +209,7 @@ class TestTheOptOut:
         So a config that cannot be read says nothing about redaction either way: with the
         operator opted in, the pass still runs.
         """
-        from kiro_crew.config import loader as cfg_loader
+        from efm_go.config import loader as cfg_loader
 
         def boom(*a, **k):
             raise OSError("config unreadable")

@@ -19,9 +19,9 @@ from typing import Any, List, Optional
 
 import pytest
 
-from kiro_crew import cli
-from kiro_crew.config.loader import KiroCrewConfig, build_provider_factory
-from kiro_crew.platform import (
+from efm_go import cli
+from efm_go.config.loader import KiroCrewConfig, build_provider_factory
+from efm_go.platform import (
     PROFILE_ENTERPRISE,
     PlatformCompositionError,
     async_safe_context_call,
@@ -393,7 +393,7 @@ def test_marker_restored_before_on_mode_exit(cfg: KiroCrewConfig, monkeypatch) -
 
 def test_normalize_jail_unit() -> None:
     """_normalize_jail: valid modes pass through; anything else → 'auto' (deny-by-default)."""
-    from kiro_crew.config.loader import _normalize_jail
+    from efm_go.config.loader import _normalize_jail
 
     assert _normalize_jail("on") == "on"
     assert _normalize_jail("off") == "off"
@@ -421,9 +421,9 @@ def test_child_argv_sentinel_falls_back_to_module(
     monkeypatch, nonbundled_python_without_user_site
 ) -> None:
     """When _resolve_kirocrew_bin returns the bare 'kirocrew' sentinel (no usable
-    binary), _child_argv falls back to ``python -s -P -m kiro_crew`` with
+    binary), _child_argv falls back to ``python -s -P -m efm_go`` with
     sys.argv[1:] -- ``-P`` keeps the jailed child's cwd off sys.path."""
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "_resolve_kirocrew_bin", lambda: "kirocrew")
     monkeypatch.setattr(cli.sys, "argv", ["kirocrew", "chat", "--model", "x"])
@@ -432,7 +432,7 @@ def test_child_argv_sentinel_falls_back_to_module(
         "-s",
         "-P",
         "-m",
-        "kiro_crew",
+        "efm_go",
         "chat",
         "--model",
         "x",
@@ -441,7 +441,7 @@ def test_child_argv_sentinel_falls_back_to_module(
 
 def test_child_argv_resolved_path_used(monkeypatch) -> None:
     """A resolved absolute path is used verbatim as argv[0], with sys.argv[1:]."""
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "_resolve_kirocrew_bin", lambda: "/opt/venv/bin/kirocrew")
     monkeypatch.setattr(cli.sys, "argv", ["kirocrew", "run", "TASK.md"])
@@ -745,7 +745,7 @@ async def test_async_safe_context_call_requires_a_fallback() -> None:
 
 
 def test_default_dashboard_contributor_is_noop(cfg: KiroCrewConfig) -> None:
-    from kiro_crew.platform.defaults import DefaultDashboardContributor
+    from efm_go.platform.defaults import DefaultDashboardContributor
 
     d = DefaultDashboardContributor()
     assert d.contribute_routes(object()) is None
@@ -755,7 +755,7 @@ def test_default_dashboard_contributor_is_noop(cfg: KiroCrewConfig) -> None:
 @pytest.mark.asyncio
 async def test_default_dashboard_services_symmetric_app(cfg: KiroCrewConfig) -> None:
     """stop_services takes the same app handle as start_services (symmetric)."""
-    from kiro_crew.platform.defaults import DefaultDashboardContributor
+    from efm_go.platform.defaults import DefaultDashboardContributor
 
     d = DefaultDashboardContributor()
     sentinel = object()
@@ -764,7 +764,7 @@ async def test_default_dashboard_services_symmetric_app(cfg: KiroCrewConfig) -> 
 
 
 def test_default_jail_provider_noop() -> None:
-    from kiro_crew.platform.defaults import DefaultJailProvider
+    from efm_go.platform.defaults import DefaultJailProvider
 
     j = DefaultJailProvider()
     assert j.available() is False
@@ -800,7 +800,7 @@ class _RaisingKnowledge:
 
 def _merge_connectors(cfg: KiroCrewConfig):
     """Mirror of the production connector-merge (built-ins first, then the seam)."""
-    from kiro_crew.platform import current_context, safe_context_call
+    from efm_go.platform import current_context, safe_context_call
 
     connectors = {"local_folder": object(), "obsidian_vault": object()}
 
@@ -837,7 +837,7 @@ def test_knowledge_extra_connectors_reraises_composition_error(cfg: KiroCrewConf
 
 
 def test_default_knowledge_provider_empty(cfg: KiroCrewConfig) -> None:
-    from kiro_crew.platform.defaults import DefaultKnowledgeProvider
+    from efm_go.platform.defaults import DefaultKnowledgeProvider
 
     assert DefaultKnowledgeProvider().extra_connectors(cfg) == {}
 
@@ -868,7 +868,7 @@ class _RaisingDashboard:
 
 
 def test_dashboard_sso_login_handler_degrades_to_stub(cfg: KiroCrewConfig) -> None:
-    from kiro_crew.platform import current_context, safe_context_call
+    from efm_go.platform import current_context, safe_context_call
 
     base = build_default_context(cfg, profile=PROFILE_ENTERPRISE)
     set_context(dataclasses.replace(base, dashboard=_RaisingDashboard(RuntimeError("boom"))))
@@ -885,7 +885,7 @@ def test_dashboard_sso_login_handler_degrades_to_stub(cfg: KiroCrewConfig) -> No
 
 
 def test_dashboard_contribute_routes_reraises_composition_error(cfg: KiroCrewConfig) -> None:
-    from kiro_crew.platform import current_context, safe_context_call
+    from efm_go.platform import current_context, safe_context_call
 
     base = build_default_context(cfg, profile=PROFILE_ENTERPRISE)
     set_context(
@@ -901,7 +901,7 @@ def test_dashboard_contribute_routes_reraises_composition_error(cfg: KiroCrewCon
 
 @pytest.mark.asyncio
 async def test_dashboard_start_services_degrades(cfg: KiroCrewConfig) -> None:
-    from kiro_crew.platform import async_safe_context_call, current_context
+    from efm_go.platform import async_safe_context_call, current_context
 
     base = build_default_context(cfg, profile=PROFILE_ENTERPRISE)
     set_context(dataclasses.replace(base, dashboard=_RaisingDashboard(RuntimeError("boom"))))
@@ -916,7 +916,7 @@ async def test_dashboard_start_services_degrades(cfg: KiroCrewConfig) -> None:
 
 @pytest.mark.asyncio
 async def test_dashboard_start_services_reraises_composition_error(cfg: KiroCrewConfig) -> None:
-    from kiro_crew.platform import async_safe_context_call, current_context
+    from efm_go.platform import async_safe_context_call, current_context
 
     base = build_default_context(cfg, profile=PROFILE_ENTERPRISE)
     set_context(
@@ -947,7 +947,7 @@ def _read_source(modpath: str) -> str:
 def test_knowledge_extra_connectors_site_uses_safe_context_call() -> None:
     """dashboard/handlers/knowledge.py must route extra_connectors through the
     fail-closed shim (not a bare except that would swallow composition errors)."""
-    src = _read_source("kiro_crew.dashboard.handlers.knowledge")
+    src = _read_source("efm_go.dashboard.handlers.knowledge")
     assert "extra_connectors" in src
     assert "safe_context_call" in src
     # The merge must NOT have regressed to swallowing everything.
@@ -958,10 +958,10 @@ def test_dashboard_contributor_sites_use_safe_context_call() -> None:
     """dashboard/server.py must wrap the DashboardContributor seam calls in the
     fail-closed shims: sync ``safe_context_call`` for sso_login_handler /
     contribute_routes, async ``async_safe_context_call`` for start/stop_services."""
-    src = _read_source("kiro_crew.dashboard.server")
+    src = _read_source("efm_go.dashboard.server")
     # The sso_login_handler seam is resolved where its route is registered, which
     # is the connections slice of the route table rather than server.py itself.
-    src += _read_source("kiro_crew.dashboard.routes.connections")
+    src += _read_source("efm_go.dashboard.routes.connections")
     for sym in ("sso_login_handler", "contribute_routes", "start_services", "stop_services"):
         assert sym in src, f"production site for {sym} disappeared"
     assert "safe_context_call(" in src

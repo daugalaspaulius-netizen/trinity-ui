@@ -294,7 +294,7 @@ an alias that translation is already a substitution — `to_provider_id`
 turns `claude-haiku-4.5` into Sonnet's id, because the claude backend serves no
 Haiku — so a site that scopes the translated value asks about the substitute and
 the pin passes. `test_model_scope_wire_paths.py::TestScopeSeesTheUntranslatedPin`
-parses `src/kiro_crew` and fails when any scope call receives a value assigned from
+parses `src/efm_go` and fails when any scope call receives a value assigned from
 `to_provider_id` / `to_acp_id` / `resolve_wire_model_id` in the same function. It
 asserts the property rather than freezing a list of sites, so a legitimate new site
 needs no edit.

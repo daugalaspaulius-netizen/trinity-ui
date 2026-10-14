@@ -35,15 +35,15 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, EVENT_TEXT_CHUNK
-from kiro_crew.apps.builtins.auto_improvement import profiles as profiles_mod
-from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup, crew
-from kiro_crew.apps.builtins.auto_improvement.backend import runner as R
-from kiro_crew.apps.builtins.auto_improvement.backend import store
-from kiro_crew.apps.builtins.auto_improvement.spine import agent_discovery as discovery_mod
-from kiro_crew.apps.builtins.auto_improvement.spine import agent_runner as agent_runner_mod
-from kiro_crew.apps.builtins.auto_improvement.spine import driver as driver_mod
-from kiro_crew.apps.builtins.auto_improvement.spine.crew_runner import CrewRunner
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, EVENT_TEXT_CHUNK
+from efm_go.apps.builtins.auto_improvement import profiles as profiles_mod
+from efm_go.apps.builtins.auto_improvement.backend import clone_setup, crew
+from efm_go.apps.builtins.auto_improvement.backend import runner as R
+from efm_go.apps.builtins.auto_improvement.backend import store
+from efm_go.apps.builtins.auto_improvement.spine import agent_discovery as discovery_mod
+from efm_go.apps.builtins.auto_improvement.spine import agent_runner as agent_runner_mod
+from efm_go.apps.builtins.auto_improvement.spine import driver as driver_mod
+from efm_go.apps.builtins.auto_improvement.spine.crew_runner import CrewRunner
 
 WAIT_S = 10.0
 
@@ -340,26 +340,26 @@ class TestCoercion:
 
 class TestRedactActivity:
     def test_recurses_into_nested_events(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("kiro_crew.security.redact", lambda text: text.replace("s3cret", "***"))
+        monkeypatch.setattr("efm_go.security.redact", lambda text: text.replace("s3cret", "***"))
         out = R._redact_activity({"agent": {"detail": ["s3cret", 3, None]}, "n": 1})
         assert out == {"agent": {"detail": ["***", 3, None]}, "n": 1}
 
     def test_passthrough_for_non_text_scalars(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("kiro_crew.security.redact", lambda text: text)
+        monkeypatch.setattr("efm_go.security.redact", lambda text: text)
         assert R._redact_activity(4.5) == 4.5
 
     def test_fails_closed_when_the_redactor_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
         def _boom(_text: str) -> str:
             raise RuntimeError("scanner down")
 
-        monkeypatch.setattr("kiro_crew.security.redact", _boom)
+        monkeypatch.setattr("efm_go.security.redact", _boom)
         assert R._redact_activity("aws_secret_access_key=abc") == R._UNSCANNED
         assert R._redact_activity({"k": "aws_secret_access_key=abc"}) == {"k": R._UNSCANNED}
 
     def test_fails_closed_for_a_bare_string_when_the_redactor_cannot_be_imported(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setitem(sys.modules, "kiro_crew.security", None)
+        monkeypatch.setitem(sys.modules, "efm_go.security", None)
         assert R._redact_activity("some-credential=abc") == R._UNSCANNED
 
     def test_import_failure_fails_OPEN_for_containers_known_defect(
@@ -380,7 +380,7 @@ class TestRedactActivity:
         A fix would recurse first and only substitute at the leaf, e.g. hoist the
         placeholder decision below the dict/list branches. Reported, not fixed.
         """
-        monkeypatch.setitem(sys.modules, "kiro_crew.security", None)
+        monkeypatch.setitem(sys.modules, "efm_go.security", None)
         served = R._redact_activity({"agent": {"detail": "some-credential=abc"}})
         assert served == {"agent": {"detail": "some-credential=abc"}}  # defect: unscanned
         assert R._redact_activity(["some-credential=abc"]) == ["some-credential=abc"]
@@ -405,8 +405,8 @@ class TestCredentialConfinement:
     def _sandbox(
         self, monkeypatch: pytest.MonkeyPatch, mode: Any, floor: str | None = None
     ) -> None:
-        from kiro_crew import sandbox
-        from kiro_crew.config import KiroCrewConfig
+        from efm_go import sandbox
+        from efm_go.config import KiroCrewConfig
 
         config = KiroCrewConfig()
         config.agent.sandbox = mode
@@ -443,7 +443,7 @@ class TestCredentialConfinement:
         assert "acceptUnsandboxedAgentRisk" in reason
 
     def test_unreadable_config_fails_closed(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.config import KiroCrewConfig
+        from efm_go.config import KiroCrewConfig
 
         def _boom() -> Any:
             raise OSError("config unreadable")
@@ -484,7 +484,7 @@ class TestProgressSinks:
     def test_agent_activity_is_tagged_and_redacted(
         self, sup: Any, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr("kiro_crew.security.redact", lambda text: text.replace("k3y", "***"))
+        monkeypatch.setattr("efm_go.security.redact", lambda text: text.replace("k3y", "***"))
         sup._on_agent_activity({"detail": "read the k3y"})
         entry = sup.status()["activity"][-1]
         assert entry["agent"] == {"detail": "read the ***"}
@@ -506,7 +506,7 @@ class TestProgressSinks:
         assert snapshot["activity"][-1]["error"] == "PermissionError: push is enabled"
 
     def test_fail_message_is_fail_closed(self, sup: Any, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setitem(sys.modules, "kiro_crew.security", None)
+        monkeypatch.setitem(sys.modules, "efm_go.security", None)
         sup._fail(RuntimeError("aws_secret_access_key=abc"))
         assert sup.status()["error"] == f"RuntimeError: {R._UNSCANNED}"
 
@@ -530,7 +530,7 @@ class _FakeCrewRunner:
 
 @pytest.fixture()
 def fake_crew_runner(monkeypatch: pytest.MonkeyPatch) -> Any:
-    from kiro_crew.apps.builtins.auto_improvement.backend import crew
+    from efm_go.apps.builtins.auto_improvement.backend import crew
 
     monkeypatch.setattr(_FakeCrewRunner, "made", [])
     monkeypatch.setattr(_FakeCrewRunner, "registers", True)
@@ -809,7 +809,7 @@ class TestBuildDriver:
         self, sup: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The wrapper is what serializes the ``checkout -B`` against the draft route."""
-        from kiro_crew.apps.builtins.auto_improvement.backend import commit as commit_mod
+        from efm_go.apps.builtins.auto_improvement.backend import commit as commit_mod
 
         held: list[bool] = []
         real_lock = commit_mod.clone_lock()

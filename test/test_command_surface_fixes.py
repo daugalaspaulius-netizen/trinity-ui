@@ -26,17 +26,17 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.discord import commands as dcmd
-from kiro_crew.discord import transport_dispatch as dtd
-from kiro_crew.discord.session_resume import RoutingDecision
-from kiro_crew.discord.transport import DISCORD_CAPABILITIES
-from kiro_crew.discord.transport_dispatch import DiscordDispatcher
-from kiro_crew.hooks import HookResult
-from kiro_crew.messaging import dispatch as D
-from kiro_crew.messaging.dispatch import ChannelTurn, drive_turn
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.telegram import commands as tcmd
+from efm_go.discord import commands as dcmd
+from efm_go.discord import transport_dispatch as dtd
+from efm_go.discord.session_resume import RoutingDecision
+from efm_go.discord.transport import DISCORD_CAPABILITIES
+from efm_go.discord.transport_dispatch import DiscordDispatcher
+from efm_go.hooks import HookResult
+from efm_go.messaging import dispatch as D
+from efm_go.messaging.dispatch import ChannelTurn, drive_turn
+from efm_go.messaging.transport import InboundMessage
+from efm_go.session_allocation import SessionClosingError
+from efm_go.telegram import commands as tcmd
 
 # ── 1. An unrecognized ``!command`` (and the prose that must not trip it) ───
 

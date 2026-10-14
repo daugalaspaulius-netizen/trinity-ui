@@ -1,6 +1,6 @@
 """Switch-free session identity: the token on the element, and the resolver.
 
-:mod:`kiro_crew.session_token_sig` proves the mapping is trustworthy; these tests
+:mod:`efm_go.session_token_sig` proves the mapping is trustworthy; these tests
 prove it is WIRED — that the token reaches a control-plane MCP element, that the
 resolvers prefer it over an env key a warm-pool rekey has made stale, and that
 nothing about the wiring depends on ``stub_servers``, on gatewayd or on a config
@@ -26,9 +26,9 @@ from unittest.mock import Mock, patch
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew import mcp_core, members, session_pid, session_pid_sig, session_token_sig
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV, mint_stub_session_token
-from kiro_crew.providers.mirrors.identity import control_plane_identity_env
+from efm_go import mcp_core, members, session_pid, session_pid_sig, session_token_sig
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV, mint_stub_session_token
+from efm_go.providers.mirrors.identity import control_plane_identity_env
 
 LIVE_KEY = "dashboard:chat-9-current"
 STALE_KEY = "dashboard:chat-7-previous"
@@ -37,7 +37,7 @@ OTHER_TOKEN = "d" * 64
 
 
 def test_tool_policy_tracks_signed_session_rekeys_instead_of_stale_parent(cfg, monkeypatch):
-    from kiro_crew import mcp_shared
+    from efm_go import mcp_shared
 
     monkeypatch.setattr(mcp_shared, "_excluded_tools_by_session", {})
     monkeypatch.setattr(mcp_shared, "_last_failure_time", 0.0)
@@ -212,7 +212,7 @@ class TestElementCarriage:
         chose, so handing it a bearer name for this session would let a
         hand-edited line drive the session it was mounted into.
         """
-        from kiro_crew.providers.mirrors.codex import codex_elements
+        from efm_go.providers.mirrors.codex import codex_elements
 
         out = codex_elements(
             [
@@ -229,7 +229,7 @@ class TestElementCarriage:
         assert by_name["third-party"]["env"] == []
 
     def test_opencode_puts_the_token_on_the_control_plane_and_nowhere_else(self):
-        from kiro_crew.providers.mirrors.opencode import opencode_elements
+        from efm_go.providers.mirrors.opencode import opencode_elements
 
         out = opencode_elements(
             [
@@ -254,11 +254,11 @@ class TestElementCarriage:
         )
         with (
             patch(
-                "kiro_crew.agent._kirocrew_mcp_invocation",
+                "efm_go.agent._kirocrew_mcp_invocation",
                 return_value=("kirocrew", ["mcp-dashboard"]),
             ),
-            patch("kiro_crew.agent._managed_mcp_env", return_value={}),
-            patch("kiro_crew.port_resolution.resolve_serving_port", return_value=4711),
+            patch("efm_go.agent._managed_mcp_env", return_value={}),
+            patch("efm_go.port_resolution.resolve_serving_port", return_value=4711),
         ):
             entry = members.member_dispatch_session_server("dashboard:member-x", TOKEN)
         assert entry is not None
@@ -273,7 +273,7 @@ class TestElementCarriage:
         claimed the process), but one AcpClient drives one child serving one
         session, so here the process names exactly one session.
         """
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = object.__new__(AcpClient)
         client._session_key = LIVE_KEY
@@ -293,7 +293,7 @@ class TestElementCarriage:
         ``__init__`` and its mapping is published once the key is known, so a child
         holding a token and no key still resolves.
         """
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = object.__new__(AcpClient)
         client._session_key = ""
@@ -311,7 +311,7 @@ class TestElementCarriage:
         this client's rather than dropped: the token is a pointer whose mapping is
         rewritten on every rekey, so the right answer is to make it name THIS client.
         """
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = object.__new__(AcpClient)
         client._session_key = ""
@@ -323,7 +323,7 @@ class TestElementCarriage:
 
     def test_a_client_with_no_token_carries_no_empty_value(self):
         """An empty token would be tried FIRST and can never verify."""
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = object.__new__(AcpClient)
         client._session_key = LIVE_KEY
@@ -336,11 +336,11 @@ class TestElementCarriage:
     def test_member_dispatch_element_without_a_token_is_unchanged(self):
         with (
             patch(
-                "kiro_crew.agent._kirocrew_mcp_invocation",
+                "efm_go.agent._kirocrew_mcp_invocation",
                 return_value=("kirocrew", ["mcp-dashboard"]),
             ),
-            patch("kiro_crew.agent._managed_mcp_env", return_value={}),
-            patch("kiro_crew.port_resolution.resolve_serving_port", return_value=4711),
+            patch("efm_go.agent._managed_mcp_env", return_value={}),
+            patch("efm_go.port_resolution.resolve_serving_port", return_value=4711),
         ):
             entry = members.member_dispatch_session_server("dashboard:member-x")
         assert entry is not None
@@ -352,7 +352,7 @@ class TestMintIsSwitchFree:
     """The mint must not depend on a reachable gatewayd — that is the S2 change."""
 
     def test_own_stub_session_mints_and_publishes_with_no_gateway_socket(self, cfg):
-        from kiro_crew.acp.runtime import AcpRuntime
+        from efm_go.acp.runtime import AcpRuntime
 
         runtime = object.__new__(AcpRuntime)
         runtime._mcp_gateway_socket = None  # gateway off: the default install
@@ -365,7 +365,7 @@ class TestMintIsSwitchFree:
                 side_effect=lambda t, k: published.append((t, k)),
             ),
             patch(
-                "kiro_crew.acp.runtime.publish_session_token",
+                "efm_go.acp.runtime.publish_session_token",
                 side_effect=lambda t, k: published.append((t, k)),
             ),
         ):
@@ -377,12 +377,12 @@ class TestMintIsSwitchFree:
 
     def test_a_session_with_no_key_yet_mints_but_publishes_nothing(self, cfg):
         """A warm-pool worker is claimed later; ``rekey()`` publishes for it."""
-        from kiro_crew.acp.runtime import AcpRuntime
+        from efm_go.acp.runtime import AcpRuntime
 
         runtime = object.__new__(AcpRuntime)
         runtime._mcp_gateway_socket = None
         with patch(
-            "kiro_crew.acp.runtime.publish_session_token",
+            "efm_go.acp.runtime.publish_session_token",
             side_effect=AssertionError("must not publish without a session key"),
         ):
             _entries, token = asyncio.run(runtime._own_stub_session([], ""))
@@ -399,8 +399,8 @@ class TestMintIsSwitchFree:
 async def test_kiro_unpooled_control_plane_receives_session_token(cfg, monkeypatch, resume):
     from test_acp_runtime import _make_runtime
 
-    from kiro_crew.acp import session_handle, session_mcp
-    from kiro_crew.acp.types import METHOD_SESSION_LOAD, METHOD_SESSION_NEW
+    from efm_go.acp import session_handle, session_mcp
+    from efm_go.acp.types import METHOD_SESSION_LOAD, METHOD_SESSION_NEW
 
     entry = {"command": "test-crew", "args": ["mcp"], "env": {}}
     spec = {"tools": ["@kirocrew-core"], "mcpServers": {"kirocrew-core": entry}}
@@ -434,8 +434,8 @@ async def test_kiro_unpooled_control_plane_receives_session_token(cfg, monkeypat
 async def test_projected_skill_search_receives_the_shared_sessions_identity(cfg, monkeypatch):
     from test_acp_runtime import _make_runtime
 
-    from kiro_crew.acp import session_mcp
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp import session_mcp
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     entry = {"command": "test-crew", "args": ["mcp"]}
     spec = {"tools": ["@kirocrew-core/skill_search"], "mcpServers": {"kirocrew-core": entry}}
@@ -462,7 +462,7 @@ async def test_projected_skill_search_receives_the_shared_sessions_identity(cfg,
 def test_kiro_identity_projection_preserves_native_restrictions(tmp_path, monkeypatch, restriction):
     import json
 
-    from kiro_crew.acp import session_mcp
+    from efm_go.acp import session_mcp
 
     managed = {"command": "test-crew", "args": ["mcp"]}
     entry = dict(managed)
@@ -499,9 +499,9 @@ def test_kiro_identity_projection_reads_global_restrictions_after_workspace_retr
     tmp_path, monkeypatch
 ):
     """A tool disabled during a workspace retry must not reach the session element."""
-    from kiro_crew import agent as agent_mod
-    from kiro_crew import hooks
-    from kiro_crew.acp import session_mcp
+    from efm_go import agent as agent_mod
+    from efm_go import hooks
+    from efm_go.acp import session_mcp
 
     managed = {"command": "test-crew", "args": ["mcp"]}
     spec = {
@@ -554,9 +554,9 @@ def test_kiro_identity_projection_rereads_the_workspace_after_a_global_retry_pau
     workspace snapshot older than the file on disk; the set is re-read until two
     passes agree.
     """
-    from kiro_crew import agent as agent_mod
-    from kiro_crew import hooks
-    from kiro_crew.acp import session_mcp
+    from efm_go import agent as agent_mod
+    from efm_go import hooks
+    from efm_go.acp import session_mcp
 
     managed = {"command": "test-crew", "args": ["mcp"]}
     spec = {
@@ -603,8 +603,8 @@ def test_kiro_identity_projection_rereads_the_workspace_after_a_global_retry_pau
 def _bracket_fixture(tmp_path, monkeypatch, on_read, after_read=lambda n, path: None):
     """A real workspace settings file; its reader runs *on_read* before and
     *after_read* after each read."""
-    from kiro_crew import agent as agent_mod
-    from kiro_crew.acp import session_mcp
+    from efm_go import agent as agent_mod
+    from efm_go.acp import session_mcp
 
     workspace_path = tmp_path / ".kiro" / "settings" / "mcp.json"
     workspace_path.parent.mkdir(parents=True)
@@ -704,7 +704,7 @@ def test_native_settings_sources_screens_every_identity_sample(tmp_path, monkeyp
     so the bracket re-runs the credential screen for every file on both sides of
     every pass instead of remembering which paths it admitted.
     """
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     session_mcp, reads = _bracket_fixture(tmp_path, monkeypatch, lambda n, path: None)
     real_validate = hooks.validate_file_path
@@ -725,7 +725,7 @@ def test_native_settings_sources_screens_every_identity_sample(tmp_path, monkeyp
 
 def test_safe_file_identity_reads_through_the_gate(tmp_path, monkeypatch):
     """The identity comes from a screened, no-reparse descriptor, and refusals raise."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     target = tmp_path / "mcp.json"
     assert hooks.safe_file_identity(str(target)) is None
@@ -745,7 +745,7 @@ def test_safe_file_identity_refuses_a_descriptor_that_does_not_match_the_screen(
     tmp_path, monkeypatch
 ):
     """An opened descriptor that is not the validated file yields no identity."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     target = tmp_path / "mcp.json"
     target.write_text("{}", encoding="utf-8")
@@ -757,7 +757,7 @@ def test_safe_file_identity_refuses_a_descriptor_that_does_not_match_the_screen(
 
 def test_native_settings_sources_refuses_when_no_identity_can_be_taken(tmp_path, monkeypatch):
     """Two unknown samples are not an unchanged file: every pass is voided, then refused."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     session_mcp, reads = _bracket_fixture(tmp_path, monkeypatch, lambda n, path: None)
 
@@ -800,7 +800,7 @@ def test_kiro_identity_projection_repairs_a_stale_reserved_name_command(
     squatter gets no token for its own binary. Everything the spec restricts
     (mute, ``disabledTools``, the grant itself) is still honoured by the
     parametrized test above; only the invocation is re-derived."""
-    from kiro_crew.acp import session_mcp
+    from efm_go.acp import session_mcp
 
     managed = {"command": "test-crew", "args": ["mcp"]}
     if where == "spec":
@@ -833,7 +833,7 @@ def test_kiro_identity_projection_survives_a_scalar_args_on_a_reserved_name(
     on; the repair's comparison must not raise on it either -- a TypeError here
     leaves ``create_session`` and aborts ``session/new``. It reads as "not the
     managed launch" and the managed one is mounted."""
-    from kiro_crew.acp import session_mcp
+    from efm_go.acp import session_mcp
 
     managed = {"command": "test-crew", "args": ["mcp"]}
     if where == "spec":
@@ -862,7 +862,7 @@ def test_kiro_identity_projection_covers_a_granted_opt_in_server(tmp_path, monke
     environment, so its every ``tools/call`` refused as ``identity_unattested``.
     The identity projection must re-emit the granted opt-in element exactly as it
     does the control plane's, so the token attach that follows reaches it."""
-    from kiro_crew.acp import session_mcp
+    from efm_go.acp import session_mcp
 
     sub = {"kirocrew-dashboard": "mcp-dashboard", "kirocrew-work": "mcp-work"}.get(
         server, "mcp-crew-log"
@@ -894,7 +894,7 @@ def test_kiro_identity_projection_leaves_an_ungranted_opt_in_server_out(tmp_path
     """Widening the set must not widen the GRANT: a spec whose ``tools`` does not
     name the opt-in server gets no element for it, exactly as kiro-cli mounts
     nothing the allowlist does not reference."""
-    from kiro_crew.acp import session_mcp
+    from efm_go.acp import session_mcp
 
     spec = {
         "tools": ["@kirocrew-core"],
@@ -920,8 +920,8 @@ def test_identity_bound_set_is_every_managed_server():
     construction, the two always-on control planes are a strict subset, and they
     LEAD in their own order -- a session granting only those two emits exactly the
     elements, in exactly the order, it emitted before the set widened."""
-    from kiro_crew.acp.session_mcp import CONTROL_PLANE_SERVERS, IDENTITY_BOUND_SERVERS
-    from kiro_crew.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
+    from efm_go.acp.session_mcp import CONTROL_PLANE_SERVERS, IDENTITY_BOUND_SERVERS
+    from efm_go.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
 
     assert set(IDENTITY_BOUND_SERVERS) == set(KIROCREW_BIN_MCP_SERVERS)
     assert len(IDENTITY_BOUND_SERVERS) == len(set(IDENTITY_BOUND_SERVERS))
@@ -937,8 +937,8 @@ class TestGrantedOptInResolution:
     refusing as ``identity_unattested``."""
 
     def test_every_opt_in_server_resolves_only_under_the_flag(self):
-        from kiro_crew.agent import managed_mcp_spec_entry
-        from kiro_crew.mcp_cleanup import OPT_IN_BIN_MCP_SERVERS
+        from efm_go.agent import managed_mcp_spec_entry
+        from efm_go.mcp_cleanup import OPT_IN_BIN_MCP_SERVERS
 
         for name in OPT_IN_BIN_MCP_SERVERS:
             assert managed_mcp_spec_entry(name) is None, f"{name}: a writer never mints a grant"
@@ -947,7 +947,7 @@ class TestGrantedOptInResolution:
             assert entry["args"] == [name.replace("kirocrew-", "mcp-")]
 
     def test_kiro_projection_asks_for_an_opt_in_invocation(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import session_mcp
+        from efm_go.acp import session_mcp
 
         name = "kirocrew-dashboard"
         managed = {"command": "test-crew", "args": ["mcp-dashboard"]}
@@ -969,8 +969,8 @@ class TestGrantedOptInResolution:
         assert seen == [(name, {"include_opt_in": True})]
 
     def test_the_flag_leaves_the_control_plane_answer_unchanged(self):
-        from kiro_crew.acp.session_mcp import CONTROL_PLANE_SERVERS
-        from kiro_crew.agent import managed_mcp_spec_entry
+        from efm_go.acp.session_mcp import CONTROL_PLANE_SERVERS
+        from efm_go.agent import managed_mcp_spec_entry
 
         for name in CONTROL_PLANE_SERVERS:
             assert managed_mcp_spec_entry(name, include_opt_in=True) == managed_mcp_spec_entry(name)
@@ -995,8 +995,8 @@ class TestGrantedOptInResolution:
 def test_kiro_identity_projection_fails_closed_on_settings_errors(
     tmp_path, monkeypatch, scope, failure
 ):
-    from kiro_crew import agent, hooks
-    from kiro_crew.acp import session_mcp
+    from efm_go import agent, hooks
+    from efm_go.acp import session_mcp
 
     managed = {"command": "test-crew", "args": ["mcp"]}
     spec = {"tools": ["@kirocrew-core"], "mcpServers": {"kirocrew-core": managed}}
@@ -1054,8 +1054,8 @@ def test_kiro_identity_projection_fails_closed_on_settings_errors(
     ids=["bom_object", "bom_only", "bom_crlf"],
 )
 def test_kiro_identity_projection_accepts_utf8_bom_in_global_settings(tmp_path, monkeypatch, raw):
-    from kiro_crew import agent
-    from kiro_crew.acp import session_mcp
+    from efm_go import agent
+    from efm_go.acp import session_mcp
 
     managed = {"command": "test-crew", "args": ["mcp"]}
     spec = {"tools": ["@kirocrew-core"], "mcpServers": {"kirocrew-core": managed}}
@@ -1084,9 +1084,9 @@ def test_the_control_plane_element_env_matches_the_spec_writing_consumer(tmp_pat
     launcher-exec or home-deriving name reaching the element, and an ordinary user
     variable dropped here while the disk path keeps it.
     """
-    from kiro_crew import agent as agent_mod
-    from kiro_crew.acp import session_mcp
-    from kiro_crew.mcp_gateway.session_servers import attach_stub_session_token
+    from efm_go import agent as agent_mod
+    from efm_go.acp import session_mcp
+    from efm_go.mcp_gateway.session_servers import attach_stub_session_token
 
     withheld = agent_mod._HOME_DERIVING_ENV_KEYS | agent_mod._LAUNCHER_EXEC_ENV_KEYS
     # PRECONDITION -- the control being mirrored exists for this population, so what
@@ -1181,8 +1181,8 @@ class TestSettingsReadRaceKeepsIdentity:
     def test_a_refused_read_that_succeeds_on_retry_returns_the_settings(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1199,8 +1199,8 @@ class TestSettingsReadRaceKeepsIdentity:
         assert len(calls) == 2
 
     def test_a_read_that_never_succeeds_still_raises(self, tmp_path, monkeypatch):
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1225,8 +1225,8 @@ class TestSettingsReadRaceKeepsIdentity:
     ):
         # A saturated resolver pool refuses the first attempt AND the immediate
         # re-check; only the paused final attempt finds a worker free.
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1247,8 +1247,8 @@ class TestSettingsReadRaceKeepsIdentity:
     def test_a_resolver_stall_on_the_path_screen_is_retried(self, tmp_path, monkeypatch):
         # The sensitive-path resolver refuses fail-closed when its pool misses the
         # budget under load; the screen then answers None for a path that is fine.
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1263,8 +1263,8 @@ class TestSettingsReadRaceKeepsIdentity:
         assert session_mcp._read_mcp_settings(path) == {"mcpServers": {}}
 
     def test_a_path_that_stays_refused_still_raises(self, tmp_path, monkeypatch):
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1278,8 +1278,8 @@ class TestSettingsReadRaceKeepsIdentity:
         # pool is worth one pause sized to the resolver's 2 s candidate budget,
         # after the immediate re-check that clears a rename-over. Only
         # ``session_mcp._sleep`` is replaced, never the shared ``time`` module.
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1308,8 +1308,8 @@ class TestSettingsReadRaceKeepsIdentity:
         # Each attempt is two to three bounded path resolutions that can block the
         # loop for the resolver's whole per-thread allowance, so on a loop thread
         # the read makes exactly one attempt, never pauses, and fails closed.
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1348,8 +1348,8 @@ class TestSettingsReadRaceKeepsIdentity:
         # A read that WOULD succeed on a re-check is still not re-checked on the
         # loop thread: the re-check costs the loop another two to three bounded
         # resolutions, so the stall is left to the fail-closed contract there.
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1372,8 +1372,8 @@ class TestSettingsReadRaceKeepsIdentity:
 
     def test_off_the_loop_the_rename_race_recovers_without_a_pause(self, tmp_path, monkeypatch):
         # The immediate re-check is what clears a rename-over; it costs no pause.
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_mcp
+        from efm_go import hooks
+        from efm_go.acp import session_mcp
 
         path = tmp_path / "mcp.json"
         path.write_text(json.dumps({"mcpServers": {}}))
@@ -1397,10 +1397,10 @@ class TestSettingsReadRaceKeepsIdentity:
     ):
         from test_acp_runtime import _make_runtime
 
-        from kiro_crew import agent as agent_mod
-        from kiro_crew import hooks
-        from kiro_crew.acp import session_handle, session_mcp
-        from kiro_crew.acp.types import METHOD_SESSION_NEW
+        from efm_go import agent as agent_mod
+        from efm_go import hooks
+        from efm_go.acp import session_handle, session_mcp
+        from efm_go.acp.types import METHOD_SESSION_NEW
 
         settings = tmp_path / "settings-mcp.json"
         body = json.dumps({"mcpServers": {"other": {"command": "true"}}})

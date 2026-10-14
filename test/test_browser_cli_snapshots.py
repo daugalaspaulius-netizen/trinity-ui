@@ -9,7 +9,7 @@ from typing import Protocol
 
 import pytest
 
-from kiro_crew.browser_cli import snapshots as mod
+from efm_go.browser_cli import snapshots as mod
 
 
 class _Writer(Protocol):

@@ -12,8 +12,8 @@ from unittest.mock import patch
 import pytest
 from stray_line_helpers import STRAY_LINES, too_deep_to_decode
 
-import kiro_crew.mcp_shared as mcp_shared
-from kiro_crew.mcp_shared import SKIP, _read_message, respond
+import efm_go.mcp_shared as mcp_shared
+from efm_go.mcp_shared import SKIP, _read_message, respond
 
 
 @pytest.fixture(autouse=True)
@@ -214,7 +214,7 @@ class TestReadMessageContentLength:
 
     def test_the_body_cap_is_the_gateways_read_limit(self):
         """The constant's comment says so; a copy could drift without a test."""
-        from kiro_crew.mcp_gateway import pool
+        from efm_go.mcp_gateway import pool
 
         assert mcp_shared.MAX_CONTENT_LENGTH_BYTES == pool._DEFAULT_READ_BUFFER_LIMIT
 
@@ -708,7 +708,7 @@ class TestCallToolWithLoggingRedaction:
         ],
     )
     def test_session_body_tools_audit_outcome_without_retaining_payload(self, failure, tool):
-        from kiro_crew.validation import ValidationError
+        from efm_go.validation import ValidationError
 
         captured = {}
 
@@ -743,7 +743,7 @@ class TestCallToolWithLoggingRedaction:
         assert result.startswith("Error:") if failure else result == "recalled context"
 
     def test_args_redacted_before_sel_log(self):
-        from kiro_crew.mcp_shared import call_tool_with_logging
+        from efm_go.mcp_shared import call_tool_with_logging
 
         captured = {}
 
@@ -759,7 +759,7 @@ class TestCallToolWithLoggingRedaction:
         def _inner(_name, _args):
             return "ok"
 
-        with patch("kiro_crew.mcp_shared.sel", return_value=_FakeSel()):
+        with patch("efm_go.mcp_shared.sel", return_value=_FakeSel()):
             call_tool_with_logging(
                 "artifact_post_comment",
                 {"slug": "doc", "text": f"leak {secret} here"},
@@ -787,8 +787,8 @@ class TestCallToolWithLoggingKind:
     _CALLER = "dashboard:chat-7"
 
     def _capture(self, *, raises: bool = False) -> dict:
-        from kiro_crew.mcp_shared import call_tool_with_logging
-        from kiro_crew.validation import ValidationError
+        from efm_go.mcp_shared import call_tool_with_logging
+        from efm_go.validation import ValidationError
 
         captured: dict = {}
 
@@ -804,7 +804,7 @@ class TestCallToolWithLoggingKind:
         def _inner(_name, _args):
             return "ok"
 
-        with patch("kiro_crew.mcp_shared.sel", return_value=_FakeSel()):
+        with patch("efm_go.mcp_shared.sel", return_value=_FakeSel()):
             call_tool_with_logging(
                 "artifact_list",
                 {"slug": "doc"},
@@ -847,7 +847,7 @@ class TestCallToolWithLoggingKind:
 # worker-thread + select() interleave is POSIX-only (the Windows loop
 # dispatches synchronously), so gate the class accordingly.
 
-from kiro_crew import platform_compat  # noqa: E402
+from efm_go import platform_compat  # noqa: E402
 
 
 class _LoopHarness:
@@ -1344,7 +1344,7 @@ def _initialize(req_id) -> dict:
 
 
 def _tools_call_with_caller(req_id, tool_name: str, session_key: str) -> dict:
-    from kiro_crew.mcp_caller import CallerContext, build_caller_meta
+    from efm_go.mcp_caller import CallerContext, build_caller_meta
 
     msg = _tools_call(req_id, tool_name)
     msg["params"]["_meta"] = build_caller_meta(
@@ -1355,7 +1355,7 @@ def _tools_call_with_caller(req_id, tool_name: str, session_key: str) -> dict:
 
 def _tools_call_with_tenant(req_id, tool_name: str, nonce: str) -> dict:
     """A forwarded call as an UNNAMED co-tenant receives it: nonce, no identity."""
-    from kiro_crew.mcp_caller import build_tenant_meta
+    from efm_go.mcp_caller import build_tenant_meta
 
     msg = _tools_call(req_id, tool_name)
     msg["params"]["_meta"] = build_tenant_meta(nonce)
@@ -1364,7 +1364,7 @@ def _tools_call_with_tenant(req_id, tool_name: str, nonce: str) -> dict:
 
 class TestStdioLoopCallerIdentity:
     def test_tool_policy_uses_only_the_current_request_identity(self, monkeypatch):
-        from kiro_crew.mcp_caller import CallerContext, build_caller_meta
+        from efm_go.mcp_caller import CallerContext, build_caller_meta
 
         seen = []
         harness = _LoopHarness(monkeypatch, lambda _name, _args: "ok")
@@ -1401,7 +1401,7 @@ class TestStdioLoopCallerIdentity:
         control-plane backend's only copy of the per-session token is the caller
         block gatewayd injected; the dispatch must hand it to the resolver, or the
         gateway answers the read as an unattested caller and refuses every call."""
-        from kiro_crew.mcp_caller import CallerContext, build_caller_meta, current_caller
+        from efm_go.mcp_caller import CallerContext, build_caller_meta, current_caller
 
         seen: list[tuple[str, str, object]] = []
         harness = _LoopHarness(monkeypatch, lambda _name, _args: "ok")
@@ -1559,7 +1559,7 @@ class TestStdioLoopCallerIdentity:
         token and the spec instead. When the caller block carries the daemon's
         ``identityDenial``, the refusal says it; without it, the text is unchanged
         (the previous test)."""
-        from kiro_crew.mcp_caller import CallerContext, build_caller_meta
+        from efm_go.mcp_caller import CallerContext, build_caller_meta
 
         harness = _LoopHarness(monkeypatch, lambda n, a: "ok")
         monkeypatch.setattr(
@@ -1590,8 +1590,8 @@ class TestStdioLoopCallerIdentity:
         refusal answers through ``_tool_response`` without the tool path's scrubber,
         so a directive sentinel smuggled into a spec's ``args`` must not reach the
         consumer intact."""
-        from kiro_crew.mcp_caller import CallerContext, build_caller_meta
-        from kiro_crew.session_directive import SENTINEL
+        from efm_go.mcp_caller import CallerContext, build_caller_meta
+        from efm_go.session_directive import SENTINEL
 
         harness = _LoopHarness(monkeypatch, lambda n, a: "ok")
         monkeypatch.setattr(
@@ -1618,7 +1618,7 @@ class TestStdioLoopCallerIdentity:
     def test_the_quoted_denial_is_credential_redacted(self, monkeypatch):
         """A denial reason that carries a token (a hand-authored reserved entry
         whose argv the gate quoted) must not hand that token to the session."""
-        from kiro_crew.mcp_caller import CallerContext, build_caller_meta
+        from efm_go.mcp_caller import CallerContext, build_caller_meta
 
         harness = _LoopHarness(monkeypatch, lambda n, a: "ok")
         monkeypatch.setattr(
@@ -1645,7 +1645,7 @@ class TestStdioLoopCallerIdentity:
 
     @pytest.mark.skipif(platform_compat.IS_WINDOWS, reason="select interleave uses a POSIX pipe")
     def test_listing_while_busy_does_not_borrow_the_running_members_identity(self, monkeypatch):
-        from kiro_crew.mcp_caller import CallerContext, build_caller_meta
+        from efm_go.mcp_caller import CallerContext, build_caller_meta
 
         call, started, release = _slow_then_echo()
         seen = []
@@ -1705,7 +1705,7 @@ class TestStdioLoopCallerIdentity:
     def test_tool_sees_current_caller_from_meta(self, monkeypatch):
         # The dispatch loop must install the gateway-injected caller for the
         # duration of the call and clear it afterwards.
-        from kiro_crew import mcp_caller
+        from efm_go import mcp_caller
 
         seen: list = []
 
@@ -1732,7 +1732,7 @@ class TestStdioLoopCallerIdentity:
         an identity), and both must be cleared afterwards so the next dispatch on
         this thread cannot inherit them.
         """
-        from kiro_crew import mcp_caller
+        from efm_go import mcp_caller
 
         seen: list = []
 
@@ -1755,7 +1755,7 @@ class TestStdioLoopCallerIdentity:
         An empty nonce is the signal to keep using the backend's own per-process
         fallback, so it must not be a stale value from a previous call.
         """
-        from kiro_crew import mcp_caller
+        from efm_go import mcp_caller
 
         seen: list = []
 
@@ -1866,7 +1866,7 @@ class TestStdioLoopCallerIdentity:
 
     def test_the_gateway_reason_is_defanged_and_bounded(self, monkeypatch):
         """A filename can carry the directive sentinel or a token; neither survives."""
-        from kiro_crew import session_directive
+        from efm_go import session_directive
 
         harness = _LoopHarness(monkeypatch, lambda n, a: "ok")
         sentinel = session_directive.SENTINEL
@@ -2207,7 +2207,7 @@ class TestPerSessionToolPolicy:
 class TestStdioLoopExitsWhenItsInstallIsPruned:
     """A backend whose install an update removed must be replaced, not limp on.
 
-    Lazy imports fail there with ``No module named 'kiro_crew.<x>'`` (seen live
+    Lazy imports fail there with ``No module named 'efm_go.<x>'`` (seen live
     on ``kirocrew-core``: every ``monitor_*`` and ``session_ledger_record`` call)
     and keep failing until the process is gone. The loop answers the call with a
     retryable refusal, answers anything queued behind it, never runs the tool,
@@ -2222,9 +2222,9 @@ class TestStdioLoopExitsWhenItsInstallIsPruned:
     ) -> None:
         import shutil as _shutil
 
-        from kiro_crew import install_liveness
+        from efm_go import install_liveness
 
-        package = tmp_path / "0.8.0.4" / "kiro_crew"
+        package = tmp_path / "0.8.0.4" / "efm_go"
         package.mkdir(parents=True)
         (package / "__init__.py").write_text("")
         monkeypatch.setattr(install_liveness, "_PACKAGE_ROOT", package)
@@ -2265,9 +2265,9 @@ class TestStdioLoopExitsWhenItsInstallIsPruned:
         import shutil as _shutil
         import time
 
-        from kiro_crew import install_liveness
+        from efm_go import install_liveness
 
-        package = tmp_path / "0.8.0.4" / "kiro_crew"
+        package = tmp_path / "0.8.0.4" / "efm_go"
         package.mkdir(parents=True)
         (package / "__init__.py").write_text("")
         monkeypatch.setattr(install_liveness, "_PACKAGE_ROOT", package)
@@ -2320,9 +2320,9 @@ class TestStdioLoopExitsWhenItsInstallIsPruned:
         assert _audited("cancelled") == [("4", "queued-c")]
 
     def test_an_intact_install_keeps_serving(self, monkeypatch, tmp_path) -> None:
-        from kiro_crew import install_liveness
+        from efm_go import install_liveness
 
-        package = tmp_path / "kiro_crew"
+        package = tmp_path / "efm_go"
         package.mkdir()
         (package / "__init__.py").write_text("")
         monkeypatch.setattr(install_liveness, "_PACKAGE_ROOT", package)
@@ -2350,9 +2350,9 @@ class TestStdioLoopExitsWhenItsInstallIsPruned:
         stays up and refuses every call with the restart that recovers it."""
         import shutil as _shutil
 
-        from kiro_crew import install_liveness
+        from efm_go import install_liveness
 
-        package = tmp_path / "0.8.0.4" / "kiro_crew"
+        package = tmp_path / "0.8.0.4" / "efm_go"
         package.mkdir(parents=True)
         (package / "__init__.py").write_text("")
         monkeypatch.setattr(install_liveness, "_PACKAGE_ROOT", package)
@@ -2397,9 +2397,9 @@ class TestStdioLoopExitsWhenItsInstallIsPruned:
         replacement, so the server must stay up and refuse like a direct one."""
         import shutil as _shutil
 
-        from kiro_crew import install_liveness
+        from efm_go import install_liveness
 
-        package = tmp_path / "0.8.0.4" / "kiro_crew"
+        package = tmp_path / "0.8.0.4" / "efm_go"
         package.mkdir(parents=True)
         (package / "__init__.py").write_text("")
         launcher = tmp_path / "0.8.0.4" / "bin" / "kirocrew"

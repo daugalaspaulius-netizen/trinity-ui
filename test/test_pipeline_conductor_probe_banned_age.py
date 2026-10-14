@@ -36,7 +36,7 @@ _POSIX_PROC_ONLY = pytest.mark.skipif(
 SKILL_DIR = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "pipeline-conductor"
 )

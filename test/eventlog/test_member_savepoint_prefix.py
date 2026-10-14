@@ -19,14 +19,14 @@ import shutil
 
 import pytest
 
-from kiro_crew.crew_log.schema import KIND_MEMBER
-from kiro_crew.crew_log.store import crew_log_dir, crew_log_path
-from kiro_crew.eventlog import members_projections
-from kiro_crew.eventlog import service as service_mod
-from kiro_crew.eventlog import types
-from kiro_crew.eventlog.log import MemberLog
-from kiro_crew.eventlog.service import MemberEventLogService
-from kiro_crew.projection import EMPTY_WATERMARK, ProjectionRegistry
+from efm_go.crew_log.schema import KIND_MEMBER
+from efm_go.crew_log.store import crew_log_dir, crew_log_path
+from efm_go.eventlog import members_projections
+from efm_go.eventlog import service as service_mod
+from efm_go.eventlog import types
+from efm_go.eventlog.log import MemberLog
+from efm_go.eventlog.service import MemberEventLogService
+from efm_go.projection import EMPTY_WATERMARK, ProjectionRegistry
 
 SLUG = "alice"
 
@@ -72,7 +72,7 @@ def serializable_units(monkeypatch):
 
 
 def _service(tmp_path, monkeypatch) -> MemberEventLogService:
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"

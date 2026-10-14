@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import ledger_wake as lw
-from kiro_crew import session_ledger as sl
-from kiro_crew import work_ledger
+from efm_go import ledger_wake as lw
+from efm_go import session_ledger as sl
+from efm_go import work_ledger
 
 CONDUCTOR = "chat-conductor"
 ITEM = "it_abcd1234"
@@ -170,7 +170,7 @@ class TestRateLimit:
         file lives, not that anything collects it: what changes is that deletion
         becomes permitted rather than prevented.
         """
-        from kiro_crew import irq
+        from efm_go import irq
 
         lw.note_wake(CONDUCTOR, ITEM, now=1000.0)
         path = lw._rate_path(CONDUCTOR)
@@ -425,7 +425,7 @@ def _ctx(key: str = CONDUCTOR) -> _Ctx:
 
 
 def _probe(*, running: bool = False):
-    from kiro_crew.probes.work_ledger import WorkLedgerProbe
+    from efm_go.probes.work_ledger import WorkLedgerProbe
 
     return WorkLedgerProbe(worker_running=lambda _key: running)
 
@@ -440,7 +440,7 @@ def _briefs(tick) -> str:
 
 
 def test_build_serves_the_work_ledger_kind_and_still_refuses_a_stranger():
-    from kiro_crew import probes
+    from efm_go import probes
 
     assert probes.WORK_LEDGER == "work-ledger"
     assert probes.build(probes.WORK_LEDGER) is not None
@@ -459,7 +459,7 @@ def test_both_monitor_schemas_accept_the_work_ledger_watch():
     Both schemas, and the same bound on each: a loop must not be updatable into a state
     the arm would have refused.
     """
-    from kiro_crew import validation
+    from efm_go import validation
 
     for schema in (validation.MONITOR_START_SCHEMA, validation.MONITOR_UPDATE_SCHEMA):
         fields = [f for f in schema.fields if f.name == "watch"]
@@ -478,15 +478,15 @@ def test_the_watch_field_is_spelled_the_same_at_every_layer():
     that buys is a clean gateway boot path; what it costs is this test, which is the thing
     keeping the three equal.
     """
-    from kiro_crew import probes, validation
-    from kiro_crew.mcp_tools import control
+    from efm_go import probes, validation
+    from efm_go.mcp_tools import control
 
     assert validation._WATCH_WORK_LEDGER == probes.WORK_LEDGER
     assert control._WATCH_WORK_LEDGER == probes.WORK_LEDGER
 
 
 def test_inference_names_the_sessions_own_ledger_only_when_it_is_asked():
-    from kiro_crew.probes import targets
+    from efm_go.probes import targets
 
     asked = targets.infer("dispatch the queue", watch="work-ledger", slot_key=CONDUCTOR)
     assert asked is not None
@@ -500,7 +500,7 @@ def test_inference_names_the_sessions_own_ledger_only_when_it_is_asked():
 
 
 def test_an_explicit_ledger_watch_ignores_a_pull_request_in_the_same_text():
-    from kiro_crew.probes import targets
+    from efm_go.probes import targets
 
     text = "watch my ledger; worker A is driving https://github.com/o/r/pull/7"
     ledger = targets.infer(text, watch="work-ledger", slot_key=CONDUCTOR)
@@ -512,7 +512,7 @@ def test_an_explicit_ledger_watch_ignores_a_pull_request_in_the_same_text():
 
 
 def test_a_gh_pr_hint_falls_through_to_the_text_rather_than_refusing():
-    from kiro_crew.probes import targets
+    from efm_go.probes import targets
 
     text = "babysit https://github.com/o/r/pull/7"
     hinted = targets.infer(text, watch="gh-pr", slot_key=CONDUCTOR)
@@ -545,7 +545,7 @@ def test_the_epoch_moves_when_an_item_reports_and_holds_when_nothing_does():
 
 
 def test_each_waking_status_produces_one_observation():
-    from kiro_crew import irq
+    from efm_go import irq
 
     for status in ("done", "blocked", "question"):
         work_ledger.ensure_conductor(CONDUCTOR, goal="g")
@@ -574,8 +574,8 @@ def test_two_reports_in_one_tick_deliver_once_and_mask_both():
     zero coalescing window the kernel folds every fresh wake into one report and
     masks all of them, so the next tick has nothing to say.
     """
-    from kiro_crew import irq
-    from kiro_crew.cron_script import Report, Skip
+    from efm_go import irq
+    from efm_go.cron_script import Report, Skip
 
     work_ledger.ensure_conductor(CONDUCTOR, goal="g")
     first = _create(title="first worker's item")
@@ -632,8 +632,8 @@ def test_a_silent_worker_wakes_only_while_its_session_is_not_running(monkeypatch
 
 
 def test_every_item_closed_is_terminal_but_an_empty_ledger_is_not():
-    from kiro_crew import irq
-    from kiro_crew.probes import work_ledger as probe_module
+    from efm_go import irq
+    from efm_go.probes import work_ledger as probe_module
 
     _open_ledger()
     empty = _observe(_probe(), _ctx())
@@ -655,8 +655,8 @@ def test_a_rejected_goal_is_terminal_but_is_not_recorded_as_a_success():
     so the distinction cannot live in whether the observation is TERMINAL. It lives
     in the key, because the key is what the driver turns into the persisted outcome.
     """
-    from kiro_crew import irq, probes
-    from kiro_crew.probes import work_ledger as probe_module
+    from efm_go import irq, probes
+    from efm_go.probes import work_ledger as probe_module
 
     for state in ("rejected", "abandoned"):
         _open_ledger()
@@ -671,7 +671,7 @@ def test_a_rejected_goal_is_terminal_but_is_not_recorded_as_a_success():
 
 
 def test_one_unaccepted_item_decides_the_whole_ledger_is_not_a_success():
-    from kiro_crew.probes import work_ledger as probe_module
+    from efm_go.probes import work_ledger as probe_module
 
     _open_ledger()
     good, bad = _create(), _create()
@@ -694,7 +694,7 @@ def test_the_accepted_state_name_is_pinned_to_the_store_vocabulary():
     its success state would make the comparison never hold and every finished ledger
     read as a failure -- a silent, plausible-looking wrong answer.
     """
-    from kiro_crew.probes import work_ledger as probe_module
+    from efm_go.probes import work_ledger as probe_module
 
     assert probe_module.ACCEPTED_STATE in work_ledger.TERMINAL_ITEM_STATES
     assert probe_module.ACCEPTED_STATE in work_ledger.ITEM_STATES
@@ -795,8 +795,8 @@ def test_a_finished_goal_is_success_not_a_blocked_pull_request():
     # through the pull-request vocabulary alone, a conductor whose every item is
     # closed has no "merged" key and is persisted as BLOCKED -- a succeeded goal
     # filed as a failure.
-    from kiro_crew import probes
-    from kiro_crew.probes import work_ledger as probe_module
+    from efm_go import probes
+    from efm_go.probes import work_ledger as probe_module
 
     assert probes.terminal_succeeded((probe_module.ACCEPTED_KEY,)) is True
     # A ledger whose items are all closed with at least one rejected or abandoned is
@@ -813,14 +813,14 @@ def test_a_finished_goal_is_success_not_a_blocked_pull_request():
 
 def test_the_remembered_token_bound_covers_what_one_window_can_charge():
     """A bound below the budget re-charges evicted tokens and empties it early."""
-    from kiro_crew.probes import work_ledger as probe_module
+    from efm_go.probes import work_ledger as probe_module
 
     assert lw._MAX_REMEMBERED_TOKENS >= lw.MAX_WAKES_PER_ITEM_PER_HOUR
     assert lw._MAX_REMEMBERED_TOKENS >= probe_module._EVENT_TAIL
 
 
 def test_an_unreadable_item_cannot_terminate_the_watch():
-    from kiro_crew import irq
+    from efm_go import irq
 
     _open_ledger()
     closed = _create(title="finished")
@@ -845,10 +845,10 @@ def test_no_config_switch_gates_the_wake():
     # a setting with one consumer -- and the one it had never read a persisted
     # value, because no loader hydration line was ever written for it. Two review
     # lanes asked for the removal on those grounds.
-    from kiro_crew import ledger_wake as module
-    from kiro_crew import probes as probes_module
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.probes.work_ledger import WorkLedgerProbe
+    from efm_go import ledger_wake as module
+    from efm_go import probes as probes_module
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.probes.work_ledger import WorkLedgerProbe
 
     assert not hasattr(module, "enabled")
     assert not hasattr(KiroCrewConfig, "ledger_wake")

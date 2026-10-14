@@ -44,7 +44,7 @@ mkdirSync(OUT, { recursive: true })
  * passing while proving nothing about artwork. The bodies are served by a route
  * on the catalog host, below.
  */
-const CATALOG = 'https://apps.crew.kiro.dev'
+const CATALOG = 'https://efmleads.com/api/apps'
 const artBodies = new Map()
 
 const art = (from, to, label) => {

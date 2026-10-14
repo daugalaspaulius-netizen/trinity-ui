@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import kiro_crew.dashboard.chat_runner as chat_runner
+import efm_go.dashboard.chat_runner as chat_runner
 
 
 def _make_slot(key: str = "slot-1", agent: str = "kirocrew") -> MagicMock:

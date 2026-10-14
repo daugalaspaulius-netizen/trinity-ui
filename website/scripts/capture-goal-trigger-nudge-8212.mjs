@@ -104,7 +104,7 @@ const detail = {
 const makeLoop = over => ({
   id: LOOP_ID,
   slot_key: SLOT,
-  message: 'Check https://github.com/kirodotdev/KiroCrew/pull/8188 for new CI results and review comments.',
+  message: 'Check https://efmleads.com/pull/8188 for new CI results and review comments.',
   idle_secs: 300,
   max_cycles: 24,
   cycle_count: 3,

@@ -17,14 +17,14 @@ import pytest
 from conftest import requires_symlinks
 
 _ROOT = Path(__file__).resolve().parents[1]
-_TPL = _ROOT / "src/kiro_crew/deploy/skills/artifact-deploy/templates"
+_TPL = _ROOT / "src/efm_go/deploy/skills/artifact-deploy/templates"
 
 
 # --- F1: privilege-escalation chain closed by permissions boundary ---
 
 
 def _fullstack_policy() -> dict:
-    from kiro_crew.deploy import iam
+    from efm_go.deploy import iam
     return iam.policy_document(tier="fullstack")
 
 
@@ -54,7 +54,7 @@ def test_f1_boundary_tampering_denied():
 
 
 def test_f1_boundary_policy_document_is_scoped():
-    from kiro_crew.deploy import iam
+    from efm_go.deploy import iam
     doc = iam.boundary_policy_document()
     body = json.dumps(doc)
     # Only own-prefix resources; no wildcard-action grants.
@@ -82,7 +82,7 @@ def test_f1_all_template_roles_carry_boundary():
 
 
 def test_f2_all_staging_rejections_convert_to_409():
-    src = (_ROOT / "src/kiro_crew/deploy/handlers.py").read_text(encoding="utf-8")
+    src = (_ROOT / "src/efm_go/deploy/handlers.py").read_text(encoding="utf-8")
     assert '"hardlink-in-tree"' in src
     assert '"staging-read-blocked"' in src
     # Cleanup wrapper guards everything after mkdtemp.
@@ -94,7 +94,7 @@ def test_f2_all_staging_rejections_convert_to_409():
 
 @requires_symlinks
 def test_f3_stage_tree_safe_rejects_dir_symlink(tmp_path):
-    from kiro_crew.deploy.handlers import _stage_tree_safe
+    from efm_go.deploy.handlers import _stage_tree_safe
     src = tmp_path / "src"
     (src / "real").mkdir(parents=True)
     (src / "real" / "a.txt").write_text("hi")

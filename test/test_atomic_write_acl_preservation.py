@@ -26,7 +26,7 @@ import os
 
 import pytest
 
-from kiro_crew.atomic_write import atomic_write
+from efm_go.atomic_write import atomic_write
 
 
 def _needs_xattr() -> None:
@@ -192,7 +192,7 @@ def test_no_source_descriptor_is_opened_where_xattrs_do_not_exist(tmp_path, monk
     would fail every dashboard and steering save. Returning ``None`` keeps the
     write on its plain path.
     """
-    import kiro_crew.atomic_write as aw
+    import efm_go.atomic_write as aw
 
     target = tmp_path / "file.txt"
     target.write_text("before", encoding="utf-8")
@@ -229,7 +229,7 @@ def test_pinned_caller_gets_a_descriptor_even_without_xattrs(tmp_path, monkeypat
     if not hasattr(os, "O_DIRECTORY") or os.open not in os.supports_dir_fd:
         pytest.skip("platform cannot pin a parent directory")
 
-    import kiro_crew.atomic_write as aw
+    import efm_go.atomic_write as aw
 
     target = tmp_path / "file.txt"
     target.write_text("before", encoding="utf-8")
@@ -254,7 +254,7 @@ def test_source_descriptor_is_opened_where_xattrs_exist(tmp_path):
     target = tmp_path / "file.txt"
     target.write_text("before", encoding="utf-8")
 
-    from kiro_crew.atomic_write import open_access_control_source
+    from efm_go.atomic_write import open_access_control_source
 
     fd = open_access_control_source(target)
     assert isinstance(fd, int)
@@ -274,7 +274,7 @@ def test_source_open_refuses_a_leaf_symlink(tmp_path):
     link = tmp_path / "link.txt"
     link.symlink_to(real)
 
-    from kiro_crew.atomic_write import open_access_control_source
+    from efm_go.atomic_write import open_access_control_source
 
     with pytest.raises(OSError) as caught:
         open_access_control_source(link)

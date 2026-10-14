@@ -1,11 +1,11 @@
-"""Tests for kiro_crew.feishu.renderer (FeishuRenderer, Layer 2b)."""
+"""Tests for efm_go.feishu.renderer (FeishuRenderer, Layer 2b)."""
 
 from __future__ import annotations
 
 import pytest
 
-from kiro_crew.feishu.renderer import FeishuRenderer
-from kiro_crew.messaging.transport import TransportCapabilities
+from efm_go.feishu.renderer import FeishuRenderer
+from efm_go.messaging.transport import TransportCapabilities
 
 
 class FakeClient:
@@ -217,7 +217,7 @@ class TestRedactionNotice:
 
     @pytest.mark.asyncio
     async def test_redacted_answer_is_followed_by_one_notice(self) -> None:
-        from kiro_crew.security import CREDENTIAL_REDACTION_TAGS
+        from efm_go.security import CREDENTIAL_REDACTION_TAGS
 
         c = FakeClient()
         r = _renderer(c)
@@ -237,7 +237,7 @@ class TestRedactionNotice:
 
     @pytest.mark.asyncio
     async def test_notice_send_failure_does_not_fail_a_delivered_turn(self) -> None:
-        from kiro_crew.security import CREDENTIAL_REDACTION_TAGS
+        from efm_go.security import CREDENTIAL_REDACTION_TAGS
 
         c = FakeClient()
         real_send = c.send_reply
@@ -255,7 +255,7 @@ class TestRedactionNotice:
 
     @pytest.mark.asyncio
     async def test_a_false_notice_verdict_is_contained_too(self) -> None:
-        from kiro_crew.security import CREDENTIAL_REDACTION_TAGS
+        from efm_go.security import CREDENTIAL_REDACTION_TAGS
 
         c = FakeClient()
         real_send = c.send_reply

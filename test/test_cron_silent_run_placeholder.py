@@ -15,8 +15,8 @@ import asyncio
 from collections.abc import Callable
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from kiro_crew.cron import CronJob, CronSchedule
-from kiro_crew.slack.gateway import _GateTally
+from efm_go.cron import CronJob, CronSchedule
+from efm_go.slack.gateway import _GateTally
 
 GateScript = list[tuple[str, bool, bool]]
 
@@ -33,7 +33,7 @@ def _run_silent_cron(gate: GateScript, reply: str = "", runs: int = 1) -> CronJo
     Each turn replays *gate* and returns *reply* as the model's prose -- empty
     by default, which is the shape a silent job's turn actually has.
     """
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
     gw.sessions = MagicMock()
@@ -73,8 +73,8 @@ def _run_silent_cron(gate: GateScript, reply: str = "", runs: int = 1) -> CronJo
     captured_cb = None
 
     with (
-        patch("kiro_crew.slack.gateway.stream_and_collect", fake_stream),
-        patch("kiro_crew.slack.gateway.CronService") as mock_cron_cls,
+        patch("efm_go.slack.gateway.stream_and_collect", fake_stream),
+        patch("efm_go.slack.gateway.CronService") as mock_cron_cls,
     ):
 
         def capture_cron(on_job=None, **kw):

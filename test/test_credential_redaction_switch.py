@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.security import redaction_switch
+from efm_go import security
+from efm_go.security import redaction_switch
 
 
 def _synth_aws_key() -> str:
@@ -216,7 +216,7 @@ class TestSwitchedOffOutsideOwnerView:
 
     def test_diagnostics_bundle_scrubs_regardless(self):
         """The bundle goes to a public issue; it never opens the owner scope."""
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         _off()
         clean, count = diagnostics._scrub(_synth_aws_key())
@@ -228,9 +228,9 @@ class TestSwitchedOffOutsideOwnerView:
         the unconditional pass; none of them may import the owner-view scope."""
         import inspect
 
-        from kiro_crew.messaging import renderer as messaging_renderer
-        from kiro_crew.slack import renderer as slack_renderer
-        from kiro_crew.webex import renderer as webex_renderer
+        from efm_go.messaging import renderer as messaging_renderer
+        from efm_go.slack import renderer as slack_renderer
+        from efm_go.webex import renderer as webex_renderer
 
         for mod in (slack_renderer, webex_renderer, messaging_renderer):
             src = inspect.getsource(mod)
@@ -241,18 +241,18 @@ class TestSwitchedOffOutsideOwnerView:
         import re
         from pathlib import Path
 
-        pkg = Path(security.__file__).resolve().parents[1]  # src/kiro_crew
+        pkg = Path(security.__file__).resolve().parents[1]  # src/efm_go
         needle = re.compile(r"owner_view(?:_scope)?\(|redact_owner_view_via_context")
         files = {
-            "src/kiro_crew/" + f.relative_to(pkg).as_posix()
+            "src/efm_go/" + f.relative_to(pkg).as_posix()
             for f in pkg.rglob("*.py")
             if "/tests/" not in f.as_posix() and needle.search(f.read_text(encoding="utf-8"))
         }
         assert files == {
-            "src/kiro_crew/dashboard/handlers/files.py",  # api_file_read + api_file_diff, owner only
-            "src/kiro_crew/platform/context.py",
-            "src/kiro_crew/security/redaction.py",
-            "src/kiro_crew/security/redaction_switch.py",
+            "src/efm_go/dashboard/handlers/files.py",  # api_file_read + api_file_diff, owner only
+            "src/efm_go/platform/context.py",
+            "src/efm_go/security/redaction.py",
+            "src/efm_go/security/redaction_switch.py",
         }, files
 
     def test_the_chat_surface_never_opens_the_scope(self):
@@ -263,7 +263,7 @@ class TestSwitchedOffOutsideOwnerView:
         would advertise a raw transcript it cannot deliver."""
         import inspect
 
-        from kiro_crew.dashboard import chat_runner, chat_utils
+        from efm_go.dashboard import chat_runner, chat_utils
 
         assert "owner_view" not in inspect.getsource(chat_runner)
         assert "owner_view" not in inspect.getsource(chat_utils)
@@ -277,7 +277,7 @@ class TestSwitchedOffOutsideOwnerView:
         its frame."""
         import inspect
 
-        from kiro_crew.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import files as files_handlers
 
         helper = inspect.getsource(files_handlers._owner_view_bypasses_credential_pass)
         assert "owner_view_for_request(request)" in helper
@@ -295,7 +295,7 @@ class TestSwitchedOffOutsideOwnerView:
         file may LEAVE; they are not owner-view renders."""
         import inspect
 
-        from kiro_crew.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import files as files_handlers
 
         assert "redact_owner_view_via_context" not in inspect.getsource(
             files_handlers.api_outbox_download
@@ -310,9 +310,9 @@ class TestSwitchedOffOutsideOwnerView:
     async def test_read_and_diff_take_the_same_verdict(self, monkeypatch, _isolated_switch):
         """A non-owner never bypasses; the owner bypasses exactly when the switch is
         OFF -- the same answer for both handlers, from the one helper."""
-        from kiro_crew.dashboard.handlers import files as files_handlers
-        from kiro_crew.dashboard.handlers import source_providers
-        from kiro_crew.security import redaction_switch
+        from efm_go.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import source_providers
+        from efm_go.security import redaction_switch
 
         monkeypatch.setattr(source_providers, "owner_view_for_request", lambda req: req["owner"])
         assert await files_handlers._owner_view_bypasses_credential_pass({"owner": False}) is False
@@ -348,7 +348,7 @@ class TestTheMotivatingLinkThroughTheFileViewerPath:
     """
 
     def test_with_the_switch_on_the_token_value_is_redacted(self):
-        from kiro_crew.platform.context import redact_via_context
+        from efm_go.platform.context import redact_via_context
 
         link = _synth_approval_link()
         out = redact_via_context(link)
@@ -359,7 +359,7 @@ class TestTheMotivatingLinkThroughTheFileViewerPath:
         """Stated limit: the switch reaches the credential pass only. A long
         base64 query to a non-exempt host is independently classified as
         exfiltration and replaced whole, switch or no switch."""
-        from kiro_crew.platform.context import redact_owner_view_via_context
+        from efm_go.platform.context import redact_owner_view_via_context
 
         link = _synth_approval_link()
         out = redact_owner_view_via_context(link)
@@ -369,8 +369,8 @@ class TestTheMotivatingLinkThroughTheFileViewerPath:
     def test_with_a_companion_host_exemption_the_link_renders_raw_when_off(self, monkeypatch):
         """The internal companion exempts its approval hosts from the exfil
         heuristics; there, switching off renders the reported link as written."""
-        from kiro_crew.platform.context import redact_owner_view_via_context, redact_via_context
-        from kiro_crew.security import exfil
+        from efm_go.platform.context import redact_owner_view_via_context, redact_via_context
+        from efm_go.security import exfil
 
         link = _synth_approval_link()
         host = link.split("/")[2]
@@ -387,32 +387,32 @@ class TestTheMotivatingLinkThroughTheFileViewerPath:
 
 class TestTheLeafIsAKeystone:
     def test_the_path_is_the_named_leaf_under_the_data_home(self, monkeypatch, tmp_path):
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         monkeypatch.setattr(loader, "config_dir", lambda: tmp_path)
         assert loader.credential_redaction_path() == tmp_path / "credential_redaction.json"
 
     def test_fenced_on_the_agent_file_tool_path(self):
-        from kiro_crew.security.paths import _CREW_SECRET_LEAVES, is_sensitive_path
+        from efm_go.security.paths import _CREW_SECRET_LEAVES, is_sensitive_path
 
         assert "credential_redaction.json" in _CREW_SECRET_LEAVES
         assert is_sensitive_path("~/.kiro/crew/credential_redaction.json") is True
 
     def test_mounted_read_only_and_pre_created_in_the_sandbox(self):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert "credential_redaction.json" in sandbox._CREW_READONLY_LEAVES
         assert "credential_redaction.json" in sandbox._CREW_PRECREATE_READONLY_FILE_LEAVES
         assert "credential_redaction.json" in sandbox._CREW_CHILD_WITHHELD_LEAVES
 
     def test_config_json_carries_no_switch(self):
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         assert not any("redaction" in key for key in _EDITABLE_CONFIG)
 
     def test_not_re_exported_on_the_security_facade(self):
         """The scope is reached by its owning module only: no consumer needs the facade."""
-        from kiro_crew.security._exports import EXPORTED_NAMES
+        from efm_go.security._exports import EXPORTED_NAMES
 
         assert "owner_view" not in EXPORTED_NAMES
         assert "credential_redaction_enabled" not in EXPORTED_NAMES
@@ -441,7 +441,7 @@ def _request(*, app: str = "", user: str = "owner-1", owner: str = "owner-1", bo
 
 @pytest.fixture
 def _quiet_audit(monkeypatch):
-    from kiro_crew.dashboard.handlers import credential_redaction as handlers
+    from efm_go.dashboard.handlers import credential_redaction as handlers
 
     class _Events(list):
         ops: list[str] = []
@@ -463,7 +463,7 @@ class TestHandlers:
     async def test_owner_get_is_audited_as_an_allowed_read(self, _quiet_audit):
         """Refusals AND owner reads are in the SEL: the history says who read the
         switch. Non-critical -- a read never fails on a briefly unavailable log."""
-        from kiro_crew.dashboard.handlers import credential_redaction as handlers
+        from efm_go.dashboard.handlers import credential_redaction as handlers
 
         resp = await handlers.api_credential_redaction_get(_request())
         assert resp.status == 200
@@ -472,7 +472,7 @@ class TestHandlers:
 
     @pytest.mark.asyncio
     async def test_get_reports_the_default(self, _quiet_audit):
-        from kiro_crew.dashboard.handlers.credential_redaction import api_credential_redaction_get
+        from efm_go.dashboard.handlers.credential_redaction import api_credential_redaction_get
 
         resp = await api_credential_redaction_get(_request())
         assert resp.status == 200
@@ -480,7 +480,7 @@ class TestHandlers:
 
     @pytest.mark.asyncio
     async def test_put_false_records_and_audits(self, _isolated_switch, _quiet_audit):
-        from kiro_crew.dashboard.handlers.credential_redaction import api_credential_redaction_put
+        from efm_go.dashboard.handlers.credential_redaction import api_credential_redaction_put
 
         resp = await api_credential_redaction_put(_request(body={"enabled": False}))
         assert resp.status == 200
@@ -502,7 +502,7 @@ class TestHandlers:
     ):
         """A second browser tab holds the same raw bodies; only a push reaches it.
         Owner sockets only (``broadcast_ws_owners``), never the app-scoped fan-out."""
-        from kiro_crew.dashboard.handlers import credential_redaction as handlers
+        from efm_go.dashboard.handlers import credential_redaction as handlers
 
         req = _request(body={"enabled": False})
         resp = await handlers.api_credential_redaction_put(req)
@@ -516,7 +516,7 @@ class TestHandlers:
 
     @pytest.mark.asyncio
     async def test_a_lost_push_does_not_fail_the_put(self, _isolated_switch, _quiet_audit):
-        from kiro_crew.dashboard.handlers import credential_redaction as handlers
+        from efm_go.dashboard.handlers import credential_redaction as handlers
 
         req = _request(body={"enabled": False})
         req.app["state"].broadcast_ws_owners.side_effect = RuntimeError("hub gone")
@@ -525,7 +525,7 @@ class TestHandlers:
 
     @pytest.mark.asyncio
     async def test_put_true_restores(self, _quiet_audit):
-        from kiro_crew.dashboard.handlers.credential_redaction import api_credential_redaction_put
+        from efm_go.dashboard.handlers.credential_redaction import api_credential_redaction_put
 
         await api_credential_redaction_put(_request(body={"enabled": False}))
         resp = await api_credential_redaction_put(_request(body={"enabled": True}))
@@ -540,7 +540,7 @@ class TestHandlers:
         write, because the default SEL path only enqueues."""
         import inspect
 
-        from kiro_crew.dashboard.handlers.credential_redaction import api_credential_redaction_put
+        from efm_go.dashboard.handlers.credential_redaction import api_credential_redaction_put
 
         src = inspect.getsource(api_credential_redaction_put)
         closure = src[src.index("def _write_and_audit") : src.index("try:\n        state = await")]
@@ -563,8 +563,8 @@ class TestHandlers:
         concurrent set_enabled must wait: the SEL order equals the write order."""
         import threading
 
-        from kiro_crew.dashboard.handlers import credential_redaction as handlers
-        from kiro_crew.security import redaction_switch
+        from efm_go.dashboard.handlers import credential_redaction as handlers
+        from efm_go.security import redaction_switch
 
         held_during_audit: list[bool] = []
 
@@ -595,7 +595,7 @@ class TestHandlers:
     async def test_a_disable_whose_audit_cannot_be_written_does_not_happen(
         self, _isolated_switch, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import credential_redaction as handlers
+        from efm_go.dashboard.handlers import credential_redaction as handlers
 
         seen: list[dict] = []
 
@@ -618,7 +618,7 @@ class TestHandlers:
         self, _isolated_switch, monkeypatch
     ):
         """Enabling is the fail-safe direction; an unavailable log must not pin OFF."""
-        from kiro_crew.dashboard.handlers import credential_redaction as handlers
+        from efm_go.dashboard.handlers import credential_redaction as handlers
 
         _off()
         monkeypatch.setattr(handlers, "_audit", lambda **kw: False, raising=True)
@@ -629,7 +629,7 @@ class TestHandlers:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("body", [{"enabled": "false"}, {"enabled": 0}, {}, [False], None])
     async def test_put_refuses_a_non_boolean(self, _isolated_switch, _quiet_audit, body):
-        from kiro_crew.dashboard.handlers.credential_redaction import api_credential_redaction_put
+        from efm_go.dashboard.handlers.credential_redaction import api_credential_redaction_put
 
         resp = await api_credential_redaction_put(_request(body=body))
         assert resp.status == 400
@@ -637,7 +637,7 @@ class TestHandlers:
 
     @pytest.mark.asyncio
     async def test_put_refuses_invalid_json(self, _isolated_switch, _quiet_audit):
-        from kiro_crew.dashboard.handlers.credential_redaction import api_credential_redaction_put
+        from efm_go.dashboard.handlers.credential_redaction import api_credential_redaction_put
 
         resp = await api_credential_redaction_put(_request(body=ValueError("bad json")))
         assert resp.status == 400
@@ -645,7 +645,7 @@ class TestHandlers:
 
     @pytest.mark.asyncio
     async def test_non_owner_is_refused_on_both_verbs(self, _isolated_switch, _quiet_audit):
-        from kiro_crew.dashboard.handlers.credential_redaction import (
+        from efm_go.dashboard.handlers.credential_redaction import (
             api_credential_redaction_get,
             api_credential_redaction_put,
         )
@@ -661,7 +661,7 @@ class TestHandlers:
 
     @pytest.mark.asyncio
     async def test_an_app_token_is_refused(self, _isolated_switch, _quiet_audit):
-        from kiro_crew.dashboard.handlers.credential_redaction import api_credential_redaction_put
+        from efm_go.dashboard.handlers.credential_redaction import api_credential_redaction_put
 
         resp = await api_credential_redaction_put(_request(app="some-app", body={"enabled": False}))
         assert resp.status == 403
@@ -670,7 +670,7 @@ class TestHandlers:
     def test_routes_are_registered(self):
         import inspect
 
-        from kiro_crew.dashboard.routes import system
+        from efm_go.dashboard.routes import system
 
         src = inspect.getsource(system)
         assert (

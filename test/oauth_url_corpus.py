@@ -15,7 +15,7 @@ This corpus is the contract: every entry is a *real* provider URL shape
 
 **Adding a provider:** when KiroCrew gains/observes a new MCP OAuth provider,
 add a representative authorize URL here.  If any param it uses isn't yet in
-``_OAUTH_QUERY_PARAMS`` (kiro_crew/security.py), add it there too
+``_OAUTH_QUERY_PARAMS`` (efm_go/security.py), add it there too
 — and confirm the value is benign (not a real secret) before exempting it.
 
 Values use realistic-but-fake identifiers; PKCE ``code_challenge`` is a real

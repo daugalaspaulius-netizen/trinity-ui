@@ -3,7 +3,7 @@
 AWS Control is the builtin account portal and S3-backed drive. It registers
 selected local AWS profiles, groups their live identity probes by AWS account,
 and exposes Drive, Library, Backup, cost, share, and IAM-policy views. The
-builtin is declared by `kiro_crew.apps.builtins` and mounted by
+builtin is declared by `efm_go.apps.builtins` and mounted by
 `aws_control.backend.routes.register_routes`; the dashboard surface is
 `website/src/apps/aws-control/`.
 
@@ -1775,15 +1775,15 @@ localised lead, so the hand-off carries the text AWS returned.
 copies in: `agent.json`, `mcp.json`, `manifest.json` and `skills/`. It runs as
 `python -m packaging.build` with the crew directory on the import path (the
 `crew/__init__.py` docstring records why that package file has to exist), and it imports as
-`kiro_crew.apps.builtins.aws_control.crew.packaging.build`. `plan` writes a deny-by-default
+`efm_go.apps.builtins.aws_control.crew.packaging.build`. `plan` writes a deny-by-default
 review template into `--out` and prints the decision set; `build`, the default verb, writes
 the bundle and prints `SMC_BUNDLE_JSON=<report path>` as its last line. Every refusal is an
 `ExportRefused`, printed as `refused: <reason>` with exit status 2.
 
 The build fails closed. It refuses at its entry on a platform with no descriptor-relative
 no-follow open (Windows, feature-detected rather than named). It refuses a read when
-`kiro_crew.hooks` -- the hard-link, sensitive-path and UNC authority -- is not importable, and
-it refuses an external prompt reference when `kiro_crew.security.is_sensitive_path` is not. It
+`efm_go.hooks` -- the hard-link, sensitive-path and UNC authority -- is not importable, and
+it refuses an external prompt reference when `efm_go.security.is_sensitive_path` is not. It
 ships a skill or MCP server only when a
 signed plan selects it and its content still matches the pin the review recorded. And it
 refuses, rather than skips, anything it cannot read, scan or hash.
@@ -1847,7 +1847,7 @@ refused, and one deliberate demonstration is exempt by file and enclosing test. 
 standard-library names the one-module builder bound stay bound in the facade, so each still
 resolves there. Importing the facade imports every owner at the end of its body, not on a
 first read: an owner binds what it imports by name when it first runs (`pipeline/scan.py` takes
-`redact_credentials` from `kiro_crew.security`), and a first read inside a test's patch of that
+`redact_credentials` from `efm_go.security`), and a first read inside a test's patch of that
 source would leave the owner holding the patched value for the rest of the process. Run as
 `python -m packaging.build` the facade is `__main__`, so it resolves its owners against
 `__package__` rather than `__name__`; run by file path (`python .../build.py`) it has no package
@@ -1863,7 +1863,7 @@ against the owners' own definitions, that the facade's own code reads no forward
 bare global, that a loaded owner is read and written without calling
 `importlib.import_module`, the layer order, the late-binding rule and the write rule above.
 `test/test_packaging_build_refactor_facade.py` pins, in a fresh interpreter, that importing
-the facade has loaded every owner before a test can patch `kiro_crew.security`, and that both
+the facade has loaded every owner before a test can patch `efm_go.security`, and that both
 entries above still hold.
 
 ## The crew container runtime
@@ -1954,7 +1954,7 @@ machine-wide directory as private whenever the data home is an ancestor of it --
 
 Two processes have to agree on that one directory and they reach it by different routes:
 the supervisor's installer mirrors kiro-cli's own `$KIRO_HOME`-or-`~/.kiro` rule from the
-environment (it imports no `kiro_crew`), while the backend goes through Kiro Crew's
+environment (it imports no `efm_go`), while the backend goes through Kiro Crew's
 resolver. So the value is exported into the supervisor's environment *and* set on the
 backend's from the settings, and the export then asserts that the installer's resolver
 answers the same path -- a rename on either side fails at boot instead of installing the
@@ -1992,11 +1992,11 @@ serving the grant would be the unaudited grant the record exists to prevent, and
 the deny would leave a denial nobody can later account for. 503 rather than 403 says the
 failure is the container's, not the caller's.
 
-The record mirrors `kiro_crew.sel` -- the `SecurityEvent` field names, its `event_type`
+The record mirrors `efm_go.sel` -- the `SecurityEvent` field names, its `event_type`
 vocabulary (`tool_approval` / `tool_denial`), and the audit-or-deny discipline
 `log_tool_invocation(critical=True)` exists for -- and is mirrored rather than called
 because of the SINK, not importability. The wheel is installed in this image, so
-`kiro_crew.sel` would import; what does not survive the move is where SEL keeps its log.
+`efm_go.sel` would import; what does not survive the move is where SEL keeps its log.
 `sel._default_dir()` resolves under `config_dir()` with the HMAC key in `trust/` beside
 it, which here means the persistent volume, and the supervisor and the model worker run as
 the same user -- so the audited party could delete both and write a self-consistent
@@ -2168,7 +2168,7 @@ declared name is therefore the one field the install rewrites; every other key i
 bundle's own, and the digest still covers the bundle's bytes in the image layer. A crew
 name whose namespaced id cannot fit the gateway's 64-character agent-name grammar is
 refused at boot rather than answering 400 per turn. `crew-` is free of every name Kiro
-Crew manages, and because the container imports no `kiro_crew` that claim is pinned by a
+Crew manages, and because the container imports no `efm_go` that claim is pinned by a
 test that imports both rather than by a comment.
 
 The derivation holds the other end: it refuses to overwrite a `kirocrew-worker.json` that
@@ -2376,7 +2376,7 @@ route is not something this module can do: it needs a user namespace, a worker u
 different uid from the BACKEND (the gateway's own spawn path, not this container's), or
 a credential not worth stealing — short-lived and narrowly scoped, issued to the task
 rather than to a process. Tracked in
-[#9355](https://github.com/kirodotdev/KiroCrew/issues/9355).
+[#9355](https://efmleads.com/issues/9355).
 
 ### Shutdown
 

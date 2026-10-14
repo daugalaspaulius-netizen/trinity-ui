@@ -32,11 +32,11 @@ from meetings_helpers import (  # noqa: F401 — fixtures are used by name
     root_fixture,
 )
 
-from kiro_crew.apps.builtins.meetings.backend import constants as k
-from kiro_crew.apps.builtins.meetings.backend.domain import audio
-from kiro_crew.apps.builtins.meetings.backend.routes import _common
-from kiro_crew.apps.builtins.meetings.backend.routes import audio_import as ai
-from kiro_crew.pinned_fs import supports_pinned_walk
+from efm_go.apps.builtins.meetings.backend import constants as k
+from efm_go.apps.builtins.meetings.backend.domain import audio
+from efm_go.apps.builtins.meetings.backend.routes import _common
+from efm_go.apps.builtins.meetings.backend.routes import audio_import as ai
+from efm_go.pinned_fs import supports_pinned_walk
 
 BASE = k.API_BASE
 
@@ -86,7 +86,7 @@ def _patch(monkeypatch: pytest.MonkeyPatch, **over: Any) -> dict[str, list]:
     """Patch the route's external dependencies. Returns a call log.
 
     ``transcribe_audio`` (and the config/duration helpers beside it) is patched on
-    :mod:`kiro_crew.transcribe`, not on this module, because the route imports
+    :mod:`efm_go.transcribe`, not on this module, because the route imports
     them INSIDE the handler (so a heavy optional dependency is not imported at
     gateway startup). Defaults keep the gate ACTIVE but passing — a cap exists
     and the recording is under it — so every normal-path test exercises the gate
@@ -103,7 +103,7 @@ def _patch(monkeypatch: pytest.MonkeyPatch, **over: Any) -> dict[str, list]:
     descriptor path returns the open file's identity on both, and identity is the
     guarantee the route actually makes. The real copy helper has its own tests below.
     """
-    import kiro_crew.transcribe as transcribe_mod
+    import efm_go.transcribe as transcribe_mod
 
     stt_config = over.get("stt_config", SimpleNamespace(timeout_secs=300))
     log: dict[str, list] = {
@@ -388,7 +388,7 @@ class TestRefusals:
         every dispatched line requires that same object, so the replacement gets a
         410 instead of the old lines.
         """
-        import kiro_crew.transcribe as transcribe_mod
+        import efm_go.transcribe as transcribe_mod
 
         _patch(monkeypatch)
         async with client_for(app) as client:
@@ -432,7 +432,7 @@ class TestRefusals:
         identity check must see the initializing session (``ACTIVE.get``) and
         answer the permanent 410, same as the fully-started replacement above.
         """
-        import kiro_crew.transcribe as transcribe_mod
+        import efm_go.transcribe as transcribe_mod
 
         _patch(monkeypatch)
         async with client_for(app) as client:
@@ -857,7 +857,7 @@ class TestRefusals:
     ):
         """One import per meeting at a time: a second request answers 409 while
         the first is running, and the guard is released when the first ends."""
-        import kiro_crew.transcribe as transcribe_mod
+        import efm_go.transcribe as transcribe_mod
 
         _patch(monkeypatch)
         gate = asyncio.Event()
@@ -959,7 +959,7 @@ class TestImport:
         This is the whole argument for dispatching rather than storing: nothing had
         to be re-implemented for import, and nothing can drift.
         """
-        from kiro_crew.apps.builtins.meetings.backend.domain import session as sess
+        from efm_go.apps.builtins.meetings.backend.domain import session as sess
 
         _patch(monkeypatch, transcript="we deployed it to cooper netties today")
         async with client_for(app) as client:
@@ -1042,7 +1042,7 @@ class TestSnapshotPinning:
         its NAME after the duration probe passes. Both consumers were handed
         the same descriptor-pinned path, so the transcriber still reads the
         bytes the probe capped — the replacement is unreachable."""
-        import kiro_crew.transcribe as transcribe_mod
+        import efm_go.transcribe as transcribe_mod
 
         log = _patch(monkeypatch, snapshot_bytes=b"ORIGINAL RECORDING")
         seen: dict[str, Any] = {}
@@ -1438,7 +1438,7 @@ class TestSnapshotRecording:
         ANCESTOR directory is the link — the traversal is redirected before the
         final open. ``pin_parent`` walks the chain with one O_NOFOLLOW ``openat``
         per component and refuses the swapped ancestor."""
-        from kiro_crew.pinned_fs import supports_pinned_walk
+        from efm_go.pinned_fs import supports_pinned_walk
 
         if not supports_pinned_walk():
             pytest.skip("platform cannot pin a directory walk")
@@ -1520,7 +1520,7 @@ class TestWiring:
     def test_the_route_is_registered(self):
         from aiohttp import web
 
-        from kiro_crew.apps.builtins.meetings.backend.routes import register_routes
+        from efm_go.apps.builtins.meetings.backend.routes import register_routes
 
         app = web.Application()
         register_routes(app)
@@ -1541,7 +1541,7 @@ class TestWiring:
         """
         import inspect
 
-        from kiro_crew.apps.builtins.meetings.backend.routes import agents as ag
+        from efm_go.apps.builtins.meetings.backend.routes import agents as ag
 
         assert "dispatch_line(" in inspect.getsource(ag.handle_dispatch_text)
         assert "dispatch_line(" in inspect.getsource(ai.handle_import_audio)
@@ -1570,4 +1570,4 @@ class TestWiring:
         import inspect
 
         header = inspect.getsource(ai).split("logger = ")[0]
-        assert "from kiro_crew.transcribe import" not in header
+        assert "from efm_go.transcribe import" not in header

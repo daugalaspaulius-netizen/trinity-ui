@@ -25,12 +25,12 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog
-from kiro_crew.crew_log import eager as crew_log_eager
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.work_vocab import WorkBoardView
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog
+from efm_go.crew_log import eager as crew_log_eager
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.work_vocab import WorkBoardView
 
 SLOT = "member-fleet-crew"
 UNIT = "acp-fleet-crew"

@@ -37,7 +37,7 @@ async def test_slot_is_never_reachable_unhydrated_during_the_threaded_read(tmp_p
     name, which is what any concurrent request does. Seeing the slot present but
     empty there is the defect: whatever it appends lands ahead of the history.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     log.append("dashboard:race1", "user", "history-1")
@@ -102,7 +102,7 @@ async def test_a_slot_published_during_the_read_still_faces_the_ownership_gate(
     name and applies no ownership check of its own, so without a re-check a
     foreign app is handed a slot it does not own.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     log.append("dashboard:race2", "user", "history-1")
@@ -151,7 +151,7 @@ async def test_slot_is_not_reachable_unhydrated_during_the_folder_unhide(tmp_pat
     a folder therefore still published an empty slot across a suspension point, and
     a concurrent append there lands ahead of the restored history.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     log.append("dashboard:race3", "user", "history-1")
@@ -166,7 +166,7 @@ async def test_slot_is_not_reachable_unhydrated_during_the_folder_unhide(tmp_pat
         await may_finish.wait()
         return True
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._unhide_folder", slow_unhide)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers._unhide_folder", slow_unhide)
 
     observed = {}
 
@@ -221,7 +221,7 @@ async def test_a_delete_during_the_read_does_not_republish_the_transcript(tmp_pa
     ``{}`` for both "deleted" and "unreadable", and treating an unreadable
     metadata line as a deletion would discard a live session.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:del1"
@@ -294,7 +294,7 @@ async def test_a_delete_then_recreate_during_the_read_does_not_overwrite_the_rep
     transcript that carried one means the file was recreated rather than merely
     rewritten.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:recreate1"
@@ -386,7 +386,7 @@ async def test_a_benign_metadata_rewrite_during_the_read_still_publishes(tmp_pat
     the identity field -- would refuse here, turning an ordinary concurrent
     rename into a failed resume.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:benign1"
@@ -452,7 +452,7 @@ async def test_a_folder_filed_during_the_read_is_not_erased_by_a_stale_existence
 
     A verdict is only about the folder it was computed for.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:folderrace1"
@@ -538,7 +538,7 @@ async def test_a_dangling_folder_id_unchanged_across_the_read_is_still_dropped(
     since it was last saved still has to resume plainly unfiled rather than
     pointing at nothing.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:folderdangle1"
@@ -581,7 +581,7 @@ async def test_a_close_landing_during_the_read_is_not_cleared_by_the_stale_snaps
     recreated file's mtime is necessarily fresh, which is what makes the
     delete/recreate case comparable at all.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:closerace1"
@@ -690,7 +690,7 @@ async def test_a_session_closed_before_the_resume_still_has_its_flag_cleared(tmp
     import json
     from types import SimpleNamespace
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:closenormal1"
@@ -707,7 +707,7 @@ async def test_a_session_closed_before_the_resume_still_has_its_flag_cleared(tmp
     # tick on Windows, and compare-and-clear intentionally preserves ties.
     # Pin only the handler's clock, not process-wide time or the real writer.
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_handlers.time",
+        "efm_go.dashboard.chat_handlers.time",
         SimpleNamespace(time=lambda: closed_at + 1),
     )
     async with TestClient(TestServer(app)) as client:
@@ -747,7 +747,7 @@ async def test_a_metadata_only_session_removed_during_the_read_is_not_republishe
     post_read_meta`` stays false while the session is still present, and the
     identity arm needs two DIFFERING ``created_at`` values.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:mdonly1"
@@ -834,7 +834,7 @@ async def test_a_legitimately_empty_session_that_still_exists_still_resumes(tmp_
     empty session starts answering 409 ``resume_session_deleted`` -- one silent
     bug traded for another, and this is the assertion that catches it.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:mdonly2"
@@ -860,7 +860,7 @@ async def test_resuming_a_session_that_never_existed_is_not_refused(tmp_path, mo
     the case the widened witness could plausibly catch by accident, since both
     guards read ``meta_readable`` and an absent file is readable-and-empty.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:neverexisted1"
@@ -890,7 +890,7 @@ async def test_resume_does_not_apply_the_remote_binding_from_disk(tmp_path, monk
     and which would still pass if the applied set were widened and the snapshot
     updated in the same commit).
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:remotebound1"
@@ -946,7 +946,7 @@ async def test_resume_still_windows_a_long_transcript_to_500(tmp_path, monkeypat
     narrow resume's own window: a transcript of 600 rows loads the newest 500 and
     reports 100 older-on-disk.
     """
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     log = state.conversation_log
     key = "dashboard:longresume1"
@@ -975,9 +975,9 @@ def test_serialize_slots_omits_a_slot_under_construction(tmp_path, monkeypatch):
     half-built session whose Layer B join is not yet written. Registered +
     begin_slot_construction -> absent from serialize_slots; end -> present.
     """
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     slot = _ChatSlot("dashboard:underconstruction1")
     state._slots[slot.key] = slot
@@ -1012,9 +1012,9 @@ async def test_materialise_never_makes_the_slot_visible_before_it_is_ready(tmp_p
     the earlier test pass vacuously): every serialize_slots taken at a push during
     the materialise call must omit the slot, and it must appear only after.
     """
-    import kiro_crew.dashboard.chat_handlers as ch
+    import efm_go.dashboard.chat_handlers as ch
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     key = "dashboard:materialise-vis1"
 
@@ -1069,9 +1069,9 @@ def test_background_flush_and_open_slots_skip_an_under_construction_slot(tmp_pat
     the open-slots set must not list a slot a crash could then resurrect
     half-built. Both skip on ``_slots_under_construction`` membership.
     """
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     slot = _ChatSlot("dashboard:flush1")
     state._slots[slot.key] = slot
@@ -1111,7 +1111,7 @@ def test_live_slot_count_counts_an_under_construction_slot_once(tmp_path):
     sum of the two lengths would charge it twice and refuse admissible
     imports/forks/creates near ``MAX_LIVE_SLOTS`` with fewer real slots than that.
     """
-    from kiro_crew.dashboard.slot_registry import SlotRegistry
+    from efm_go.dashboard.slot_registry import SlotRegistry
 
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("count-uc")
@@ -1160,7 +1160,7 @@ def test_raw_acquirer_mutators_refuse_an_under_construction_slot(tmp_path):
     an under-construction slot, so a crafted request against the predictable
     minted key cannot truncate+persist during the import Layer B async tail.
     """
-    from kiro_crew.dashboard.chat_utils import reject_if_slot_under_construction
+    from efm_go.dashboard.chat_utils import reject_if_slot_under_construction
 
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("raw-uc")
@@ -1180,7 +1180,7 @@ def test_redact_history_rows_only_touches_the_window_not_the_frozen_prefix():
     returned untouched (same objects) and only the last 2 non-user rows are
     scrubbed. ``window_limit=None`` (import) redacts everything.
     """
-    from kiro_crew.dashboard.chat_handlers import _redact_history_rows
+    from efm_go.dashboard.chat_handlers import _redact_history_rows
 
     secret = "ghp_" + "a" * 36  # a token-shaped string the credential scanner redacts
     rows = [{"role": "assistant", "content": f"p{i} {secret}", "ts": ""} for i in range(5)]
@@ -1218,8 +1218,8 @@ def test_redact_history_rows_normalises_structured_content_to_a_redacted_string(
     (``m = {**m, "content": content}`` keeping the original structure) and this
     test fails -- the token survives and the content stays non-string.
     """
-    from kiro_crew.dashboard.chat_handlers import _redact_history_rows
-    from kiro_crew.dashboard.chat_persistence import _build_message_entry_uncached
+    from efm_go.dashboard.chat_handlers import _redact_history_rows
+    from efm_go.dashboard.chat_persistence import _build_message_entry_uncached
 
     secret = "ghp_" + "b" * 36  # token-shaped; the credential scanner redacts it
     key_secret = "ghp_" + "d" * 36  # a credential sitting in a dict KEY
@@ -1254,7 +1254,7 @@ def test_normalise_structured_content_is_bounded_and_never_raises():
     collapses to a fixed placeholder (fail-closed) rather than leaking or
     crashing.
     """
-    from kiro_crew.dashboard.chat_handlers import (
+    from efm_go.dashboard.chat_handlers import (
         _STRUCTURED_CONTENT_PLACEHOLDER,
         _normalise_structured_content,
     )
@@ -1322,7 +1322,7 @@ def test_failed_hydration_does_not_leave_a_stale_restricted_marker(tmp_path, mon
     ``_restricted_keys`` early in hydration; force a raise AFTER that add and
     assert the except path discarded it (and dropped the slot).
     """
-    import kiro_crew.dashboard.chat_handlers as ch
+    import efm_go.dashboard.chat_handlers as ch
 
     state = _make_state(tmp_path)
 
@@ -1380,7 +1380,7 @@ def test_flush_failure_at_construction_does_not_leak_the_reservation(tmp_path, m
     monkeypatch.setattr(state, "begin_slot_construction", _begin)
     monkeypatch.setattr(state, "push_slots_update", _push)
 
-    import kiro_crew.dashboard.chat_handlers as ch
+    import efm_go.dashboard.chat_handlers as ch
 
     before = state.live_slot_count()
     with pytest.raises(RuntimeError, match="poisoned broadcast"):

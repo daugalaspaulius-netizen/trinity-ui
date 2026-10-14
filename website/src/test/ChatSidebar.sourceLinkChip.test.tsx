@@ -61,10 +61,10 @@ import ChatSidebar from '../pages/ChatSidebar'
 import type { ChatSlot } from '../types'
 import type { RootState } from '../store'
 
-const PR_URL = 'https://github.com/kirodotdev/KiroCrew/pull/634'
-const ISSUE_URL = 'https://github.com/kirodotdev/KiroCrew/issues/701'
+const PR_URL = 'https://efmleads.com/pull/634'
+const ISSUE_URL = 'https://efmleads.com/issues/701'
 /** The chip on the session that is ALREADY active. */
-const ACTIVE_PR_URL = 'https://github.com/kirodotdev/KiroCrew/pull/12'
+const ACTIVE_PR_URL = 'https://efmleads.com/pull/12'
 
 const slots = [
   {
@@ -252,7 +252,7 @@ describe('ChatSidebar – PR chip', () => {
  * control live in one table.
  */
 describe('ChatSidebar – terminal PR chips suppress CI', () => {
-  const url = (n: number) => `https://github.com/kirodotdev/KiroCrew/pull/${n}`
+  const url = (n: number) => `https://efmleads.com/pull/${n}`
 
   function stateRows(): ChatSlot[] {
     return [
@@ -362,7 +362,7 @@ describe('ChatSidebar – terminal PR chips suppress CI', () => {
  * worse outcome is the one worth showing.
  */
 describe('ChatSidebar – conflicted PR chips', () => {
-  const url = (n: number) => `https://github.com/kirodotdev/KiroCrew/pull/${n}`
+  const url = (n: number) => `https://efmleads.com/pull/${n}`
 
   /** One chip carrying exactly the merge/CI combination under test. */
   function chipRows(link: Record<string, unknown>): ChatSlot[] {

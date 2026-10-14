@@ -22,17 +22,17 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
     STOP_REASON_CANCELLED,
     STOP_REASON_END_TURN,
 )
-from kiro_crew.messaging.link import canonical_key
-from kiro_crew.session import BACKGROUND_KEY
-from kiro_crew.slack import handler as slack_handler
-from kiro_crew.slack import transport_dispatch
+from efm_go.messaging.link import canonical_key
+from efm_go.session import BACKGROUND_KEY
+from efm_go.slack import handler as slack_handler
+from efm_go.slack import transport_dispatch
 
 _golden = importlib.import_module("test_slack_golden_transcript")
 
@@ -60,7 +60,7 @@ class _CapturingSessions(FakeSessions):
         self.background_keys: list = []
 
     async def get_or_create(self, session_key, agent=None, channel_id=None, start_priority=None):
-        from kiro_crew.session import BACKGROUND_KEY
+        from efm_go.session import BACKGROUND_KEY
 
         if session_key == BACKGROUND_KEY:
             self.background_keys.append(session_key)
@@ -143,7 +143,7 @@ class TestTransportAgentResolution:
         # transport call site (distinct from the native handle_message gate).
         import json
 
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         pdir = tmp_path / "profiles"
         pdir.mkdir()
@@ -170,7 +170,7 @@ class TestTransportAgentResolution:
 
 class TestTransportAdmissionSpool:
     def test_session_closing_spools_the_unopened_slack_turn(self, monkeypatch):
-        from kiro_crew.session_allocation import SessionClosingError
+        from efm_go.session_allocation import SessionClosingError
 
         async def reject_turn(*_args, **_kwargs):
             raise SessionClosingError("automatic update owns admission")
@@ -193,7 +193,7 @@ class TestTransportAdmissionSpool:
         assert sessions.agents == []
 
     def test_session_closing_does_not_spool_restricted_slack_turn(self, monkeypatch):
-        from kiro_crew.session_allocation import SessionClosingError
+        from efm_go.session_allocation import SessionClosingError
 
         async def reject_turn(*_args, **_kwargs):
             raise SessionClosingError("automatic update owns admission")
@@ -272,7 +272,7 @@ class TestTransportBookkeepingIsolation:
 
 
 # ── Keyword commands on the transport path (spawn/run/cron/sessions) ──
-from kiro_crew.slack import handler as _handler  # noqa: E402
+from efm_go.slack import handler as _handler  # noqa: E402
 
 
 class _FakeSubagentMgr:
@@ -357,7 +357,7 @@ def _posts(slack):
 def test_member_memory_refusal_redacts_before_posting(monkeypatch):
     from unittest.mock import AsyncMock
 
-    from kiro_crew.memory_stores import UnknownMemoryStore
+    from efm_go.memory_stores import UnknownMemoryStore
 
     private_path = "/home/alice/.kiro/crew/memory_stores/member-one/memory.db"
     credential = "AKIAIOSFODNN7EXAMPLE"
@@ -476,7 +476,7 @@ class TestTransportPrivacyModifiers:
             class hooks:  # noqa: N801 - stub attribute, not a real class use
                 @staticmethod
                 def on_message(text):
-                    from kiro_crew.hooks import HookResult
+                    from efm_go.hooks import HookResult
 
                     return HookResult.passthrough()
 
@@ -592,7 +592,7 @@ class _CapturingCtxBuilder:
 
         class _Hooks:
             def on_message(self, text):
-                from kiro_crew.hooks import HookResult
+                from efm_go.hooks import HookResult
 
                 return hook_result or HookResult.passthrough()
 
@@ -623,7 +623,7 @@ class TestTransportNativeParity:
         )
 
     def test_hook_reply_short_circuits_no_llm_turn(self, monkeypatch):
-        from kiro_crew.hooks import HookResult
+        from efm_go.hooks import HookResult
 
         self._prep(monkeypatch)
         cb = _CapturingCtxBuilder(hook_result=HookResult.reply("canned answer"))
@@ -922,7 +922,7 @@ class TestTransportStatusIdentitySeam:
         assert sessions.agents == []
 
     def test_no_direct_sso_stub_import(self):
-        import kiro_crew.slack.transport_dispatch as td
+        import efm_go.slack.transport_dispatch as td
 
         assert not hasattr(td, "get_sso_status_line")
 
@@ -934,7 +934,7 @@ class TestTransportToolGateWiring:
     even though the default gate mode is interactive."""
 
     def test_hook_deny_rejects_tool_without_prompt(self, monkeypatch):
-        from kiro_crew.hooks import HookResult, ToolHookResult
+        from efm_go.hooks import HookResult, ToolHookResult
 
         monkeypatch.setattr(transport_dispatch, "_get_default_agent", lambda: "kirocrew")
         monkeypatch.setattr(
@@ -1039,7 +1039,7 @@ class TestHydrationBeforeHook:
             class hooks:  # noqa: N801 - stub attribute, not a real class use
                 @staticmethod
                 def on_message(text):
-                    from kiro_crew.hooks import HookResult
+                    from efm_go.hooks import HookResult
 
                     return HookResult.reply("canned answer")
 
@@ -1080,7 +1080,7 @@ class TestConversationLogAgentMetadata:
     shows "default" for Slack sessions)."""
 
     def test_transport_turn_records_agent_in_session_metadata(self, monkeypatch, tmp_path):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         monkeypatch.setattr(transport_dispatch, "_get_default_agent", lambda: "sales-agent")
         monkeypatch.setattr(
@@ -1128,7 +1128,7 @@ class TestConversationLogAgentMetadata:
         """The options-stamp fallback write is file-creating exactly when the
         user-turn receipt write failed — it must supply the agent for the same
         reason the receipt write does, or the session is pinned to "default"."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         monkeypatch.setattr(transport_dispatch, "_get_default_agent", lambda: "sales-agent")
         monkeypatch.setattr(
@@ -1188,8 +1188,8 @@ class TestConversationLogAgentMetadata:
         file — it runs before session acquisition, so the agent must be
         resolved early (native handler parity) or the session is pinned to
         "default" forever."""
-        from kiro_crew.history import ConversationLog
-        from kiro_crew.hooks import HookResult
+        from efm_go.history import ConversationLog
+        from efm_go.hooks import HookResult
 
         monkeypatch.setattr(transport_dispatch, "_get_default_agent", lambda: "sales-agent")
         monkeypatch.setattr(
@@ -1522,7 +1522,7 @@ class TestTransportPartialProgressRescue:
         break_user_row_after_write: bool = False,
         finish_first: bool = False,
     ):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         monkeypatch.setattr(transport_dispatch, "_get_default_agent", lambda: "sales-agent")
         monkeypatch.setattr(
@@ -1617,7 +1617,7 @@ class TestTransportPartialProgressRescue:
         return rows, slack
 
     def test_partial_reply_is_persisted_with_continue_marker(self, monkeypatch, tmp_path):
-        from kiro_crew.slack.renderer import PARTIAL_TURN_MARKER
+        from efm_go.slack.renderer import PARTIAL_TURN_MARKER
 
         rows, slack = self._run_dying_turn(
             monkeypatch, tmp_path, streamed="Analysis so far: the first two checks passed."
@@ -1717,7 +1717,7 @@ class TestTransportPartialProgressRescue:
         the marker is a standing instruction to resume, so the next turn would
         continue work that had in fact finished.
         """
-        from kiro_crew.slack.renderer import PARTIAL_TURN_MARKER
+        from efm_go.slack.renderer import PARTIAL_TURN_MARKER
 
         rows, _ = self._run_dying_turn(
             monkeypatch,

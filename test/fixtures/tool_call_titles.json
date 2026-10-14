@@ -4069,17 +4069,17 @@
         "kind": "other",
         "title": "mcp__github__list_prs",
         "rawInput": {
-          "repo": "kirodotdev/KiroCrew"
+          "repo": "efmleads.com"
         }
       },
       "expect": {
         "action": {
           "type": "mcp",
           "tool": "list_prs",
-          "arg": "kirodotdev/KiroCrew"
+          "arg": "efmleads.com"
         },
         "more": 0,
-        "title": "List prs: kirodotdev/KiroCrew",
+        "title": "List prs: efmleads.com",
         "kind": "other",
         "derived": true
       }

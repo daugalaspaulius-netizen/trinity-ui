@@ -36,15 +36,15 @@ const loopbackScene = scene === 'loopback' || scene === 'fallback'
 const deviceSession = {
   login_id: 'capture-login-1',
   user_code: 'KWXR-VBTM',
-  verification_uri_complete: 'https://app.kiro.dev/account/device?user_code=KWXR-VBTM',
+  verification_uri_complete: 'https://efmleads.com/account/device?user_code=KWXR-VBTM',
   expires_at: new Date(Date.now() + 5 * 60_000).toISOString(),
 }
 const loopbackSession = {
   ...deviceSession,
   login_id: 'capture-loopback-1',
   user_code: '',
-  verification_uri_complete: 'https://app.kiro.dev/signin?state=capture',
-  auth_url: 'https://app.kiro.dev/signin?state=capture',
+  verification_uri_complete: 'https://efmleads.com/signin?state=capture',
+  auth_url: 'https://efmleads.com/signin?state=capture',
   port: 3128,
 }
 api.kasLoginStatus = () =>

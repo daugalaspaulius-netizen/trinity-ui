@@ -19,7 +19,7 @@ import time
 
 import pytest
 
-from kiro_crew.dashboard import handlers_system as hs
+from efm_go.dashboard import handlers_system as hs
 
 
 @pytest.fixture(autouse=True)

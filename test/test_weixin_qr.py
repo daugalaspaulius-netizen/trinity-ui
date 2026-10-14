@@ -18,7 +18,7 @@ import stat
 
 import pytest
 
-from kiro_crew.dashboard.handlers import weixin_qr as qr
+from efm_go.dashboard.handlers import weixin_qr as qr
 
 posix_only = pytest.mark.skipif(os.name != "posix", reason="POSIX mode bits only")
 
@@ -49,7 +49,7 @@ def test_atomic_write_secret_locks_down_before_any_content_byte(tmp_path, monkey
     whole write. The shared helper restricts the empty temp file first; assert
     the sequence through the same os.write seam the helper's own ordering test
     uses."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     events = []
     real_restrict = platform_compat.restrict_to_owner
@@ -77,7 +77,7 @@ def test_atomic_write_secret_survives_a_lockdown_refusal(tmp_path, monkeypatch):
     """A host where the owner lockdown fails (e.g. SID resolution refused) must
     warn and keep the credential save, not abort a sign-in that already
     succeeded: the writer's contract is enforce-and-warn."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     def _boom(path):
         raise OSError("icacls failed")
@@ -286,7 +286,7 @@ def test_render_qr_round_trips_the_scan_url():
 
 # -- _delete_env_key: it rewrites the user's credential file, so what it PRESERVES
 #    matters as much as what it removes. Untested before; the QR-encoder body that
-#    covered this file, then moved to kiro_crew.qr, which made the gap visible.
+#    covered this file, then moved to efm_go.qr, which made the gap visible.
 
 
 def test_delete_env_key_removes_only_the_named_key(tmp_path, monkeypatch):
@@ -398,7 +398,7 @@ def test_commit_credential_aborts_when_env_lock_is_held(tmp_path, monkeypatch):
       * does NOT write config.json,
       * raises OSError with a descriptive message.
     """
-    import kiro_crew.platform_compat as _pc
+    import efm_go.platform_compat as _pc
 
     ep = tmp_path / ".env"
     ep.write_text("OTHER=keepme\n", encoding="utf-8")

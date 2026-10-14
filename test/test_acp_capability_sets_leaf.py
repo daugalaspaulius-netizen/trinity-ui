@@ -1,20 +1,20 @@
-"""The capability sets must be askable without importing ``kiro_crew.acp``.
+"""The capability sets must be askable without importing ``efm_go.acp``.
 
 Importing anything under
-``kiro_crew.acp`` executes that package's ``__init__`` (client + runtime), and
-``kiro_crew.acp`` is a FORBIDDEN_ROOT for the agent-SDK boundary gate -- so every
+``efm_go.acp`` executes that package's ``__init__`` (client + runtime), and
+``efm_go.acp`` is a FORBIDDEN_ROOT for the agent-SDK boundary gate -- so every
 consumer outside the ACP layer that asked a capability question had to add a
 forbidden edge, against a baseline that may only shrink. Onboarding a new harness
 means teaching outside consumers (readiness, prerequisite, MCP wiring) to ask these
 sets, so that cost was about to be paid repeatedly.
 
-Definitions now live in the leaf :mod:`kiro_crew.agent_sdk.backends` -- moved there
-from ``kiro_crew/acp_backends.py`` by RFC PR 3, which pulls the capability
+Definitions now live in the leaf :mod:`efm_go.agent_sdk.backends` -- moved there
+from ``efm_go/acp_backends.py`` by RFC PR 3, which pulls the capability
 mechanism inside the agent-SDK boundary -- and are re-exported from ``acp.types``
 for existing importers. These tests pin both halves: the leaf stays reachable
 without the ACP package, and the re-export keeps working.
 
-``kiro_crew.acp_backends`` survives as a pure re-export shim, so both spellings
+``efm_go.acp_backends`` survives as a pure re-export shim, so both spellings
 still import and both still read one registry. The definition-home test below
 asserts the sets are defined in the SDK module and NOT in that shim, because a
 definition left behind in the shim is a definition an outside consumer can reach
@@ -30,7 +30,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.acp_backends import (
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_DEEPSEEK,
@@ -51,10 +51,10 @@ from kiro_crew.acp_backends import (
     ACP_BACKENDS_STEER,
     model_registry_namespace,
 )
-from kiro_crew.agent_sdk.host_auth import backends_retired_by_host_logout
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.agent_sdk.host_auth import backends_retired_by_host_logout
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
-SRC = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 #: The sets whose definition home is the leaf. The kiro-identity-store membership is
 #: deliberately absent: it is ``host_auth.backends_retired_by_host_logout()``,
@@ -94,7 +94,7 @@ def test_defined_in_the_leaf_not_in_the_acp_package(name: str) -> None:
     assert f"\n{name} = frozenset(" in leaf, f"{name} is not defined in agent_sdk/backends.py"
     assert f"\n{name} = frozenset(" not in types_mod, (
         f"{name} is defined in acp/types.py again; define it in the leaf "
-        f"agent_sdk/backends.py so a consumer can read it without importing kiro_crew.acp"
+        f"agent_sdk/backends.py so a consumer can read it without importing efm_go.acp"
     )
     assert f"\n{name} = frozenset(" not in shim, (
         f"{name} is defined in the acp_backends shim; that file must only re-export "
@@ -104,13 +104,13 @@ def test_defined_in_the_leaf_not_in_the_acp_package(name: str) -> None:
 
 @pytest.mark.parametrize("name", CAPABILITY_SETS)
 def test_the_re_export_is_the_same_object(name: str) -> None:
-    """Existing ``from kiro_crew.acp.types import ...`` call sites keep working.
+    """Existing ``from efm_go.acp.types import ...`` call sites keep working.
 
     Identity, not equality: a copy would drift the moment one side is edited.
     """
-    import kiro_crew.acp_backends as shim
-    import kiro_crew.agent_sdk.backends as leaf
-    from kiro_crew.acp import types as acp_types
+    import efm_go.acp_backends as shim
+    import efm_go.agent_sdk.backends as leaf
+    from efm_go.acp import types as acp_types
 
     assert getattr(acp_types, name) is getattr(leaf, name), (
         f"acp.types.{name} is a different object than agent_sdk.backends.{name}; "
@@ -126,7 +126,7 @@ def test_reading_a_capability_set_does_not_load_the_acp_package() -> None:
     """The whole point of the move, and the reason it needs a test.
 
     The boundary gate counts import edges; it cannot see that this one is now
-    avoidable. If the sets drifted back behind ``kiro_crew.acp``, every consumer
+    avoidable. If the sets drifted back behind ``efm_go.acp``, every consumer
     would silently start paying that package again -- and the gate would stay green
     because those consumers are already in its baseline.
 
@@ -137,10 +137,10 @@ def test_reading_a_capability_set_does_not_load_the_acp_package() -> None:
     probe = (
         "import sys\n"
         f"sys.path.insert(0, {str(SRC.parent)!r})\n"
-        "from kiro_crew.acp_backends import ACP_BACKENDS_STEER, ACP_BACKENDS_ACP_RUNTIME\n"
+        "from efm_go.acp_backends import ACP_BACKENDS_STEER, ACP_BACKENDS_ACP_RUNTIME\n"
         "assert isinstance(ACP_BACKENDS_STEER, frozenset)\n"
-        "print(repr({'acp': 'kiro_crew.acp' in sys.modules,\n"
-        "            'providers': 'kiro_crew.providers' in sys.modules}))\n"
+        "print(repr({'acp': 'efm_go.acp' in sys.modules,\n"
+        "            'providers': 'efm_go.providers' in sys.modules}))\n"
     )
     result = subprocess.run(
         [sys.executable, "-c", probe],
@@ -152,10 +152,10 @@ def test_reading_a_capability_set_does_not_load_the_acp_package() -> None:
     loaded = ast.literal_eval(result.stdout.strip().splitlines()[-1])
 
     assert loaded["acp"] is False, (
-        "reading a capability set loaded kiro_crew.acp; the sets must stay in the "
+        "reading a capability set loaded efm_go.acp; the sets must stay in the "
         "leaf so an outside consumer can ask without a forbidden-root import"
     )
-    assert loaded["providers"] is False, "reading a capability set loaded kiro_crew.providers"
+    assert loaded["providers"] is False, "reading a capability set loaded efm_go.providers"
 
 
 def test_membership_is_unchanged_by_the_move() -> None:

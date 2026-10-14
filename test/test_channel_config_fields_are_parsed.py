@@ -29,7 +29,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 #: Config section name -> the attribute on ``KiroCrewConfig`` holding it. The
 #: channels only; a section whose parse block is generated rather than hand-written
@@ -203,7 +203,7 @@ def test_telegram_does_not_advertise_an_activation_it_cannot_express() -> None:
     rendering mode built on Slack Block Kit ephemerals. Advertising either would
     give the operator a mode that silently behaves like a different one.
     """
-    from kiro_crew.config.loader import _VALID_ACTIVATIONS, TELEGRAM_ACTIVATIONS
+    from efm_go.config.loader import _VALID_ACTIVATIONS, TELEGRAM_ACTIVATIONS
 
     assert TELEGRAM_ACTIVATIONS == {"always", "mention", "off"}
     assert TELEGRAM_ACTIVATIONS < _VALID_ACTIVATIONS

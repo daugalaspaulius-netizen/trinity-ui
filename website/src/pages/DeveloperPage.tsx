@@ -131,8 +131,7 @@ export default function DeveloperPage() {
   // TIME-BOXED, not permanent: the need decays as users relearn, while the
   // redirect above covers bookmarks, docs and palette history indefinitely.
   // Retire the footer (and its catalog key) once two releases have shipped
-  // with the move — tracked in kirodotdev/KiroCrew#9017 with the deletion
-  // checklist and a due date.
+  // with the move.
   //
   // The rail is narrow, so the label wraps: plain inline text (not a flex row)
   // keeps the arrow glued to the last word instead of floating to the far edge.

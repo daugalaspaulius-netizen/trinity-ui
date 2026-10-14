@@ -15,8 +15,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.acp.types import AcpEvent
-from kiro_crew.slack.gateway import (
+from efm_go.acp.types import AcpEvent
+from efm_go.slack.gateway import (
     _HEARTBEAT_KEEP_INJECTION,
     HEARTBEAT_SAFE_TOOLS,
     GatewayOrchestrator,
@@ -50,7 +50,7 @@ class TestHeartbeatHooksCarryDeniedState:
     """
 
     def test_scoped_hooks_snapshot_live_denied_state(self) -> None:
-        from kiro_crew.hooks import HookManager, HooksConfig, UserDeniedPattern
+        from efm_go.hooks import HookManager, HooksConfig, UserDeniedPattern
 
         primary = HookManager(HooksConfig())
         # Simulate a live opt-out mutation hot-reloaded into the primary manager.
@@ -201,9 +201,9 @@ class TestEditionHeartbeatAllowlist:
 
     def _install_gate_extra(self, monkeypatch, extra):
         """Install a platform context whose slack_gate returns *extra*."""
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform import build_default_context
-        from kiro_crew.platform.context import set_context
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform import build_default_context
+        from efm_go.platform.context import set_context
 
         base = build_default_context(KiroCrewConfig())
 
@@ -221,11 +221,11 @@ class TestEditionHeartbeatAllowlist:
 
         ctx = dataclasses.replace(base, slack_gate=_Gate())
         set_context(ctx)
-        monkeypatch.setattr("kiro_crew.platform.bootstrap._BOOTED", True, raising=False)
+        monkeypatch.setattr("efm_go.platform.bootstrap._BOOTED", True, raising=False)
 
     @pytest.fixture(autouse=True)
     def _reset_ctx(self):
-        from kiro_crew.platform.context import set_context
+        from efm_go.platform.context import set_context
 
         yield
         set_context(None)
@@ -310,7 +310,7 @@ class TestHeartbeatApproval:
     @pytest.mark.asyncio
     async def test_approves_allowlisted_tool(self, orchestrator, monkeypatch) -> None:
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: sel_mock)
         event = _make_event("WorkspaceSearch")
         assert await orchestrator._heartbeat_approval(event) is True
         # Approvals must also emit a SEL audit event (security-controls
@@ -333,7 +333,7 @@ class TestHeartbeatApproval:
     async def test_rejects_unknown_read_shaped_tool(self, orchestrator, monkeypatch) -> None:
         """Strict allowlist: unknown tool with a read-shaped name still rejects."""
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: sel_mock)
         event = _make_event("get_session_status", request_id="req-unknown")
         assert await orchestrator._heartbeat_approval(event) is False
         sel_mock.log_tool_invocation.assert_called_once()
@@ -344,7 +344,7 @@ class TestHeartbeatApproval:
     @pytest.mark.asyncio
     async def test_rejects_write_tool(self, orchestrator, monkeypatch) -> None:
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: sel_mock)
         event = _make_event("send_message", request_id="req-write")
         assert await orchestrator._heartbeat_approval(event) is False
         # SEL must record the deny so operators can audit blocked calls
@@ -360,7 +360,7 @@ class TestHeartbeatApproval:
     @pytest.mark.asyncio
     async def test_rejects_empty_title(self, orchestrator, monkeypatch) -> None:
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: sel_mock)
         event = _make_event("")
         assert await orchestrator._heartbeat_approval(event) is False
 
@@ -376,12 +376,12 @@ class TestHeartbeatApproval:
         import logging
 
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: sel_mock)
         # Title carries an AWS access key (a polled CR comment or ticket
         # body could mention one, and the tool-name path is LLM-controlled).
         bad_title = "tool_with_secret AKIAIOSFODNN7EXAMPLE inside"
         event = _make_event(bad_title)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.gateway"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.slack.gateway"):
             await orchestrator._heartbeat_approval(event)
         # The raw AWS key body must NOT appear in any log record produced
         # by this callback — redact_credentials should have replaced it.
@@ -400,7 +400,7 @@ class TestHeartbeatApproval:
         """
         sel_mock = MagicMock()
         sel_mock.log_tool_invocation.side_effect = RuntimeError("sel down")
-        monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: sel_mock)
         deny_event = _make_event("send_message")
         assert await orchestrator._heartbeat_approval(deny_event) is False
 
@@ -415,7 +415,7 @@ class TestHeartbeatApproval:
         """
         sel_mock = MagicMock()
         sel_mock.log_tool_invocation.side_effect = RuntimeError("sel down")
-        monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: sel_mock)
         approve_event = _make_event("WorkspaceSearch")
         assert await orchestrator._heartbeat_approval(approve_event) is False
 
@@ -431,12 +431,12 @@ class TestHeartbeatApproval:
         approve path was unreachable and the tool auto-approved unaudited. With
         ``critical=True`` the write is synchronous and raises, so we deny.
         """
-        from kiro_crew.sel import SecurityEventLog
+        from efm_go.sel import SecurityEventLog
 
         SecurityEventLog._instance = None
         SecurityEventLog._initialized = False
         real_sel = SecurityEventLog(base_dir=tmp_path)
-        monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: real_sel)
+        monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: real_sel)
 
         real_os_open = os.open
 
@@ -468,14 +468,14 @@ class TestHeartbeatHooks:
     """
 
     def _user_hooks(self, **cfg):
-        from kiro_crew.hooks import HookManager, HooksConfig
+        from efm_go.hooks import HookManager, HooksConfig
 
         return HookManager(HooksConfig(**cfg))
 
     def test_drops_user_auto_approve_tools(self) -> None:
         """User's auto_approve_tools must NOT carry into heartbeat hooks."""
-        from kiro_crew.hooks import TOOL_AUTO_APPROVE
-        from kiro_crew.slack.gateway import _build_heartbeat_hooks
+        from efm_go.hooks import TOOL_AUTO_APPROVE
+        from efm_go.slack.gateway import _build_heartbeat_hooks
 
         # User has a wide auto-approve list — this is the threat scenario.
         user = self._user_hooks(auto_approve_tools=["*", "Write*", "cron_*"])
@@ -498,8 +498,8 @@ class TestHeartbeatHooks:
 
         Heartbeat denies should be at least as strict as the user config.
         """
-        from kiro_crew.hooks import TOOL_DENY
-        from kiro_crew.slack.gateway import _build_heartbeat_hooks
+        from efm_go.hooks import TOOL_DENY
+        from efm_go.slack.gateway import _build_heartbeat_hooks
 
         user = self._user_hooks(auto_deny_tools=["dangerous_tool"])
         hb = _build_heartbeat_hooks(user)
@@ -512,8 +512,8 @@ class TestHeartbeatHooks:
         Heartbeat does not browse — anything outside HEARTBEAT_SAFE_TOOLS
         should reach _heartbeat_approval.
         """
-        from kiro_crew.hooks import TOOL_AUTO_APPROVE, HookManager, HooksConfig
-        from kiro_crew.slack.gateway import _build_heartbeat_hooks
+        from efm_go.hooks import TOOL_AUTO_APPROVE, HookManager, HooksConfig
+        from efm_go.slack.gateway import _build_heartbeat_hooks
 
         # User config goes through from_dict → bundled patterns merged in.
         user = HookManager(HooksConfig.from_dict({}))

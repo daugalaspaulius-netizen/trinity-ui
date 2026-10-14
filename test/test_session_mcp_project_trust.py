@@ -16,16 +16,16 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew.acp import session_mcp
-from kiro_crew.acp_backends import (
+from efm_go import agent as agent_mod
+from efm_go.acp import session_mcp
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_GOOSE,
     ACP_BACKEND_KIRO,
     ACP_BACKEND_OPENCODE,
 )
-from kiro_crew.providers.mirrors.registry import mirror_for
+from efm_go.providers.mirrors.registry import mirror_for
 
 _CORE = {"command": "/opt/kirocrew", "args": ["mcp-core"]}
 _REPO_CMD = "/nonexistent/project-trust/repo-launcher"

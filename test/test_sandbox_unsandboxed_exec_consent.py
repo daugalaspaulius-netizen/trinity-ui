@@ -59,7 +59,7 @@ def _run_consent(
     and so never reaches stdout — asserting the question via ``capsys`` would pass
     whatever the step asked, including nothing at all.
     """
-    from kiro_crew import cli_setup
+    from efm_go import cli_setup
 
     cfg_file = tmp_path / "config.json"
     local_file = tmp_path / "config.local.json"

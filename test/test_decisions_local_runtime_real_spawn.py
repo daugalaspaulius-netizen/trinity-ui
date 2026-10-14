@@ -23,9 +23,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.decisions import local_models
-from kiro_crew.decisions import local_runtime as lr
+from efm_go import platform_compat
+from efm_go.decisions import local_models
+from efm_go.decisions import local_runtime as lr
 
 pytestmark = pytest.mark.timeout(120)
 
@@ -115,9 +115,9 @@ def make_runtime(tmp_path: Path, setattr) -> lr.LocalModelRuntime:
     rt = lr.LocalModelRuntime(tmp_path / "models", download=download, run_command=run_command)
     # The interpreter running the suite stands in for the preset's uv environment.
     rt._env_python = lambda m: Path(sys.executable)  # type: ignore[method-assign]
-    import kiro_crew.env
+    import efm_go.env
 
-    setattr(kiro_crew.env, "resolve_uv", lambda: sys.executable)
+    setattr(efm_go.env, "resolve_uv", lambda: sys.executable)
     return rt
 
 
@@ -194,7 +194,7 @@ _PARENT = textwrap.dedent("""
     import sys, time
     sys.path[:0] = {paths!r}
     import test_decisions_local_runtime_real_spawn as t
-    from kiro_crew.decisions import local_runtime as lr
+    from efm_go.decisions import local_runtime as lr
 
     from pathlib import Path
     rt = t.make_runtime(Path({tmp!r}), setattr)

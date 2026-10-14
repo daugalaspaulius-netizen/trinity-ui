@@ -31,13 +31,13 @@ from pathlib import Path
 # root conftest pins ``KIROCREW_TELEMETRY=0`` for the same reason; this script
 # runs outside pytest, so on a host with telemetry enabled the fixtures' tool
 # calls would land in the real histogram as sub-millisecond samples. The pin is
-# set before any ``kiro_crew`` import because ``metrics.provider`` resolves
+# set before any ``efm_go`` import because ``metrics.provider`` resolves
 # consent on its first build and the env var outranks the config flag.
 os.environ["KIROCREW_TELEMETRY"] = "0"
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 # The harness lives under test/ (not src/) so that importing
-# kiro_crew.acp._dispatch does not add an edge to the agent-sdk boundary
+# efm_go.acp._dispatch does not add an edge to the agent-sdk boundary
 # baseline. Both this script and the test import it from there.
 sys.path.insert(0, str(REPO_ROOT / "test"))
 sys.path.insert(0, str(REPO_ROOT / "src"))

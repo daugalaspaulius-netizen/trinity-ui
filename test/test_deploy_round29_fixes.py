@@ -18,7 +18,7 @@ import yaml
 from yaml_helpers import load_with
 
 from conftest import _find_posix_test_shell
-from kiro_crew.deploy import handlers
+from efm_go.deploy import handlers
 
 
 def _bash():
@@ -30,7 +30,7 @@ def _bash():
 SCRIPTS_DIR = (
     Path(__file__).parent.parent
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "deploy"
     / "skills"
     / "artifact-deploy"
@@ -39,7 +39,7 @@ SCRIPTS_DIR = (
 TEMPLATES_DIR = (
     Path(__file__).parent.parent
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "deploy"
     / "skills"
     / "artifact-deploy"
@@ -48,7 +48,7 @@ TEMPLATES_DIR = (
 SKILL_MD = (
     Path(__file__).parent.parent
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "deploy"
     / "skills"
     / "artifact-deploy"

@@ -214,23 +214,6 @@ jobs:
         if: steps.existing.outputs.exists == 'false'
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
-      # Resolve the kiro-cli version BEFORE the build so (a) the Dockerfile
-      # can cross-check that the manifest did not move mid-build and (b) the
-      # resolved version lands in the dev.kirocrew.kiro-cli.version OCI
-      # label — an auditable record of the agent runtime a digest carries.
-      # The Dockerfile independently sha256-verifies the downloaded bytes
-      # against the manifest (fail-closed).
-      - name: Resolve kiro-cli version
-        if: steps.existing.outputs.exists == 'false' && !inputs.promote
-        id: kirocli
-        run: |
-          set -euo pipefail
-          VERSION_RESOLVED=$(curl --proto '=https' --tlsv1.2 -fsSL \
-            "https://desktop-release.q.us-east-1.amazonaws.com/latest/manifest.json" \
-            | python3 -c 'import json,sys;print(json.load(sys.stdin)["version"])')
-          echo "Resolved kiro-cli ${VERSION_RESOLVED}"
-          echo "version=${VERSION_RESOLVED}" >> "$GITHUB_OUTPUT"
-
       # Version tag ONLY here — channel aliases move after attestation.
       # provenance:false keeps the pushed manifest a plain two-arch index
       # (no unknown/unknown attestation entries); SLSA provenance is
@@ -249,7 +232,6 @@ jobs:
           build-args: |
             KIROCREW_VERSION=${{ inputs.version }}
             VCS_REF=${{ github.sha }}
-            KIRO_CLI_VERSION=${{ steps.kirocli.outputs.version }}
             SOURCE_REPO_URL=${{ github.server_url }}/${{ github.repository }}
 
       # The digest every subsequent step operates on: fresh build OR the

@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.cloud import aws, ssm
+from efm_go.cloud import aws, ssm
 
 
 def _stub_bin(name: str) -> str:

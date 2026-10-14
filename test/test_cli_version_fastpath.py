@@ -1,7 +1,7 @@
 """Fast-path contract for bare `--version` (cli.md Import Weight Contract).
 
 Bare `--version` must print `kirocrew <version>` and exit 0 on both entry
-paths, without paying for `kiro_crew.cli`'s heavy module scope — and importing
+paths, without paying for `efm_go.cli`'s heavy module scope — and importing
 `cli` itself must never exit the process, whatever argv is set (there is
 deliberately no module-scope version guard left in `cli.py`: every real entry
 answers earlier). The `-c` cases run in fresh interpreters so import-time
@@ -15,15 +15,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-from kiro_crew import __version__
+from efm_go import __version__
 
 _EXPECTED_VERSION_LINE = f"kirocrew {__version__}\n"
 
 
 def _run_module_version(tmp_path: Path) -> subprocess.CompletedProcess[str]:
-    """`python -m kiro_crew --version` end to end (the `__main__` guard)."""
+    """`python -m efm_go --version` end to end (the `__main__` guard)."""
     return subprocess.run(
-        [sys.executable, "-m", "kiro_crew", "--version"],
+        [sys.executable, "-m", "efm_go", "--version"],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -55,7 +55,7 @@ class TestVersionFastPath:
     def test_bootstrap_entry_prints_version(self, tmp_path: Path) -> None:
         res = _run_probe(
             "import sys; sys.argv = ['kirocrew', '--version'];"
-            " from kiro_crew._bootstrap import main; main()",
+            " from efm_go._bootstrap import main; main()",
             tmp_path,
         )
         assert res.returncode == 0, f"bootstrap --version failed:\n{res.stderr}"
@@ -64,7 +64,7 @@ class TestVersionFastPath:
     def test_cli_import_never_exits(self, tmp_path: Path) -> None:
         res = _run_probe(
             "import sys; sys.argv = ['kirocrew', '--version'];"
-            " import kiro_crew.cli; print('IMPORTED')",
+            " import efm_go.cli; print('IMPORTED')",
             tmp_path,
         )
         assert res.returncode == 0, f"cli import failed:\n{res.stderr}"

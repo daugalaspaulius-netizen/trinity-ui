@@ -19,8 +19,8 @@ import struct
 
 import pytest
 
-from kiro_crew import platform_compat as pc
-from kiro_crew import session_pid as sp
+from efm_go import platform_compat as pc
+from efm_go import session_pid as sp
 
 _SZOMB = 5
 _SRUN = 2

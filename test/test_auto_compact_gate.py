@@ -40,15 +40,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp_backends import (
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_KAS,
     ACP_BACKENDS_COMPACT,
 )
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.providers.acp import AcpProvider
-from kiro_crew.session import SessionManager
-from kiro_crew.session_compaction import _compact_unsupported_backend
+from efm_go.config import KiroCrewConfig
+from efm_go.providers.acp import AcpProvider
+from efm_go.session import SessionManager
+from efm_go.session_compaction import _compact_unsupported_backend
 
 KEY = "dashboard:auto-compact-gate"
 
@@ -301,7 +301,7 @@ class TestDeclineIsObservable:
         async with _managed(cfg, _provider_factory(pct=92.0)) as mgr:
             provider, _, _ = await _live_session(mgr)
             caplog.clear()
-            with caplog.at_level(logging.INFO, logger="kiro_crew.session"):
+            with caplog.at_level(logging.INFO, logger="efm_go.session"):
                 assert await mgr.compact_if_needed(KEY) == "compact_unsupported"
 
         lines = [r.getMessage() for r in caplog.records]
@@ -324,7 +324,7 @@ class TestDeclineIsObservable:
         async with _managed(cfg, _provider_factory(pct=92.0)) as mgr:
             provider, _, _ = await _live_session(mgr)
             caplog.clear()
-            with caplog.at_level(logging.INFO, logger="kiro_crew.session"):
+            with caplog.at_level(logging.INFO, logger="efm_go.session"):
                 assert await mgr.compact_if_needed(KEY) == "compact_unsupported"
 
         loud = [
@@ -356,7 +356,7 @@ class TestMemberBackendsUnchanged:
         rather than streaming a prompt, and the gate must not intercept it."""
         async with _managed(cfg, _provider_factory(unsupported=None)) as mgr:
             provider, _, spy = await _live_session(mgr)
-            monkeypatch.setattr("kiro_crew.session._is_claude_backend", lambda p: True)
+            monkeypatch.setattr("efm_go.session._is_claude_backend", lambda p: True)
 
             assert await mgr.compact_if_needed(KEY) in ("ok", "reset")
 

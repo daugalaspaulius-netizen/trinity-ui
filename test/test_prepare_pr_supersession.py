@@ -44,7 +44,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"
@@ -1593,7 +1593,7 @@ def _run_gate_step(tmp_path: Path, gate_source: str | None):
         **os.environ,
         "GITHUB_OUTPUT": str(output),
         "GH_TOKEN": "stub",
-        "REPO": "kirodotdev/KiroCrew",
+        "REPO": "efmleads.com",
         "PR": "13951",
         "SHA": HEAD,
         "GATE": str(gate),

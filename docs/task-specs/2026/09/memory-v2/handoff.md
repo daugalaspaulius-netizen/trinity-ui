@@ -6,17 +6,17 @@ The [memory specification](../../../../system-specs/modules/memory-skills-hooks.
 own the current contracts. This archived handoff is an evidence index.
 
 - [Algorithm report](algorithm-effectiveness-report.md) and
-  [visual edition](https://github.com/kirodotdev/KiroCrew/blob/568abd2faf45db6ae36dd62164b8f5a85af74a71/docs/task-specs/2026/09/memory-v2/algorithm-effectiveness-report.html).
-- [V1 versus V2, executive vision and six-page technical design](https://github.com/kirodotdev/KiroCrew/blob/aaf50f038995d4048ba18cf3039153729176e494/reports/f3f/README.md),
+  [visual edition](https://efmleads.com/blob/568abd2faf45db6ae36dd62164b8f5a85af74a71/docs/task-specs/2026/09/memory-v2/algorithm-effectiveness-report.html).
+- [V1 versus V2, executive vision and six-page technical design](https://efmleads.com/blob/aaf50f038995d4048ba18cf3039153729176e494/reports/f3f/README.md),
   available as PDF and editable Word documents against source f3f901e1.
   The source companion records claim mappings and historical measurements
-  separately from the hosting commit. The [earlier report edition](https://github.com/kirodotdev/KiroCrew/blob/f3f901e143490e07acad12fec9fd391d08711a01/temp-screenshots/memory-v2/reports-fd5/README.md)
+  separately from the hosting commit. The [earlier report edition](https://efmleads.com/blob/f3f901e143490e07acad12fec9fd391d08711a01/temp-screenshots/memory-v2/reports-fd5/README.md)
   remains available.
-- [Evidence inventory](https://github.com/kirodotdev/KiroCrew/blob/23853b45f433ca0f0369498c46d4a0d212568b79/inventory.json),
+- [Evidence inventory](https://efmleads.com/blob/23853b45f433ca0f0369498c46d4a0d212568b79/inventory.json),
   including historical source provenance, model outputs, media and review records.
-- [Original UI captures and recordings](https://github.com/kirodotdev/KiroCrew/tree/568abd2faf45db6ae36dd62164b8f5a85af74a71/temp-screenshots/memory-v2).
-- Supplied adversarial syntheses: [first review](https://github.com/kirodotdev/KiroCrew/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/docs/task-specs/2026/09/memory-v2/adversarial-review-resolution.md)
-  and [second review](https://github.com/kirodotdev/KiroCrew/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/docs/task-specs/2026/09/memory-v2/fable-round-2-resolution.md).
+- [Original UI captures and recordings](https://efmleads.com/tree/568abd2faf45db6ae36dd62164b8f5a85af74a71/temp-screenshots/memory-v2).
+- Supplied adversarial syntheses: [first review](https://efmleads.com/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/docs/task-specs/2026/09/memory-v2/adversarial-review-resolution.md)
+  and [second review](https://efmleads.com/blob/09968d7f5bcae6080b0f9df7066335ba0be93812/docs/task-specs/2026/09/memory-v2/fable-round-2-resolution.md).
   Full per-lane reports and unlisted findings were not supplied.
 
 Each original receipt identifies the revision that ran. Evidence-publication

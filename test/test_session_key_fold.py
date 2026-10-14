@@ -20,10 +20,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.history import ConversationLog
-from kiro_crew.messaging.link import canonical_key
-from kiro_crew.session import SessionManager
+from efm_go.config import KiroCrewConfig
+from efm_go.history import ConversationLog
+from efm_go.messaging.link import canonical_key
+from efm_go.session import SessionManager
 
 _BARE_TS = "1783733803.877979"
 _CANON = f"slack:{_BARE_TS}"

@@ -2,7 +2,7 @@
 
 Kiro Crew runs **natively on Windows** through the desktop installer or a
 supported Python **source install**. The cross-platform process / signal /
-file-lock / metrics behavior is routed through `kiro_crew.platform_compat`, so
+file-lock / metrics behavior is routed through `efm_go.platform_compat`, so
 macOS + Linux behavior is unchanged and the same code path also runs on Windows.
 
 Existing Memory V1 members remain usable on native Windows. New Crew Members
@@ -23,7 +23,7 @@ Current status:
 
 - **Published on every channel — nightly, insider and stable.** The `latest/`
   alias is the human download:
-  `https://download.crew.kiro.dev/desktop/<channel>/latest/KiroCrew-Setup.exe`.
+  `https://efmleads.com/desktop/<channel>/latest/KiroCrew-Setup.exe`.
   A stable release republishes the already-signed installer it verified at
   insider time rather than rebuilding it. If a Windows build fails, that release
   simply ships without an installer instead of holding up the other platforms.
@@ -126,7 +126,7 @@ Current status:
   palette remains centered on the window, and native minimize/maximize/close
   controls remain on the right.
 - **Precompiled Windows gateway startup** — packaging traces the real
-  `kiro_crew.cli_server` import after pruning and ships hash-based (unchecked) bytecode for
+  `efm_go.cli_server` import after pruning and ships hash-based (unchecked) bytecode for
   that import closure beside its sources. Windows consumes those caches directly,
   avoiding the thousand-file cache-population burst that otherwise overlaps
   Defender's post-install scanning. macOS and Linux still redirect bytecode out
@@ -165,7 +165,7 @@ Current status:
   PR nothing and a packaging change that only breaks a real install is caught by
   the next nightly — or before merge by dispatching that probe. There is **no
   `PATH` edit to check**: the installer makes none, so the CLI is exercised at
-  `resources\backend-dist\kirocrew-backend\bin\kirocrew.cmd` rather than by name.
+  `resources\backend-dist\efm-go-backend\bin\kirocrew.cmd` rather than by name.
 - **The fail-closed sandbox opt-in contract IS checked per PR.**
   `test/test_windows_fail_closed_optin.py` runs on `windows-latest` in the
   `backend-test-windows` shards and again in a dedicated
@@ -186,7 +186,7 @@ The source install below remains the fully supported path.
 | Tool | Why | Get it |
 |------|-----|--------|
 | **Git for Windows** | clone the repo | https://git-scm.com/download/win |
-| **kiro-cli** | the default agent backend (ACP); install and sign in separately | https://kiro.dev/cli/ |
+| **kiro-cli** | the default agent backend (ACP); install and sign in separately | https://efmleads.com/cli/ |
 | **Python 3.12-3.13** | the venv runtime. `python_requires` is `>=3.12` and 3.13 is in the supported range, but **3.12 is the tested Windows runtime** (it is what the Windows CI shard runs, and numpy 1.x ships no 3.13 Windows wheel) | https://python.org (install user-scoped), or `winget install Python.Python.3.12` |
 | **Node.js 22.12+** | required by `make.ps1 build` to build and stage the React dashboard; installed desktop/wheel artifacts already contain the bundle | `winget install OpenJS.NodeJS.LTS` |
 
@@ -201,7 +201,7 @@ on `PATH` can still confuse other tooling. Prefer a real CPython install.
 From a clone, in PowerShell:
 
 ```powershell
-git clone https://github.com/kirodotdev/KiroCrew.git
+git clone https://efmleads.com.git
 cd kirocrew
 .\make.ps1 build
 ```
@@ -242,7 +242,7 @@ python -m pip install --upgrade pip
 #  so a plain `pip install -e .` pulls it in on Windows.)
 pip install -e ".[voice]"
 # Then stage the build as the served dashboard (a junction to website\dist):
-python -m kiro_crew.frontend stage .
+python -m efm_go.frontend stage .
 ```
 
 Then:
@@ -270,10 +270,10 @@ automatic check; neither a gateway restart nor a Windows reboot is required.
 gateway can't find the built-in `kirocrew-cron` / `kirocrew-core` MCP servers,
 that dir is appended to the MCP spawn `PATH` automatically
 (`env.augmented_path`), and the managed-server invocation falls back to
-`python -m kiro_crew <sub>` when the `kirocrew.exe` wrapper isn't resolvable.
+`python -m efm_go <sub>` when the `kirocrew.exe` wrapper isn't resolvable.
 In the desktop bundle the relocatable `bin\kirocrew.cmd` shim is preferred
 over `Scripts\kirocrew.exe` (whose embedded interpreter path names the build
-machine) and is unwrapped to `<root>\python.exe -P -s -m kiro_crew <sub>` when
+machine) and is unwrapped to `<root>\python.exe -P -s -m efm_go <sub>` when
 spawned.
 
 ## Kiro sandbox delegation and the unsandboxed-exec opt-in
@@ -340,7 +340,7 @@ while the other 503s. Concretely:
 
 | Feature | Status on Windows |
 |---------|-------------------|
-| Core gateway / chat / dashboard | works without `sandbox_allow_unsandboxed_exec` — the official Kiro backend delegates to Kiro CLI's built-in sandbox, while the parent scrubs sensitive environment variables. A source install with a built `website/dist` is linked into `src/kiro_crew/static/dist` at gateway start via a **directory junction** (`platform_compat.symlink_or_junction`), which needs no privilege; a symlink there would need `SeCreateSymbolicLinkPrivilege` and would leave a non-elevated install serving the "not built" page |
+| Core gateway / chat / dashboard | works without `sandbox_allow_unsandboxed_exec` — the official Kiro backend delegates to Kiro CLI's built-in sandbox, while the parent scrubs sensitive environment variables. A source install with a built `website/dist` is linked into `src/efm_go/static/dist` at gateway start via a **directory junction** (`platform_compat.symlink_or_junction`), which needs no privilege; a symlink there would need `SeCreateSymbolicLinkPrivilege` and would leave a non-elevated install serving the "not built" page |
 | Project skills (`<project>/.kiro/skills`) | not yet — Python on Windows does not expose handle-relative directory traversal that can reject every reparse point before resolving it. Catalog, consent and loading fail closed before canonicalizing the project path, preventing a raced junction to a UNC share from initiating SMB authentication. Global and installed skills continue to work. |
 | Theme-pack install, detail, assets, overlays, topbars, and removal | works — opened pack files are contained with `GetFinalPathNameByHandleW`; descriptor resolution fails closed instead of trusting a pathname-only check |
 | LLM cron jobs (the `message` kind) | works |
@@ -348,7 +348,7 @@ while the other 503s. Concretely:
 | Command cron jobs (`sh -c "…"`) | not supported on Windows — the stored command is vetted under POSIX-sh semantics, and Windows ships no shell whose language matches: cmd.exe is not POSIX at all, and Git-for-Windows's `sh.exe` is bash. Routing a string vetted for one language through a shell that widens it is the hazard, so the resolver refuses rather than picking a shell. (Brace expansion is refused separately, at storage time and on every fire; the refusal here rests on the shell language being wider than the one the vet was written against.) The job fails-closed with an explanation. Use a **script cron** or an LLM `message` cron on this platform |
 | Script hooks (Settings → Hooks) | run unconfined under this platform's default (declare `sandbox_allow_unsandboxed_exec=false` to refuse them) (like script crons — the hook command routes through `wrap_argv`, which permits them on Windows because no backend is installable; with that opt-out declared the hook returns that message as its `error`). They run in **cmd.exe** language: a hook `command` runs as `%ComSpec% /c "<command>"`, so read the context env vars as `%KIROCREW_HOOK_EVENT%` / `%KIROCREW_HOOK_CONTEXT%` (not `$VAR`), and group arguments with double quotes only (cmd.exe gives `'…'` no meaning). The line reaches cmd.exe verbatim, so a quoted interpreter path with a space works. A hook authored on macOS/Linux is not portable and must be rewritten |
 | Pull-request source drawer provider fetch/check/resolve | runs unconfined under this platform's default (declare `sandbox_allow_unsandboxed_exec=false` to refuse it), like script crons and hooks. The drawer keeps its own async, sandbox-routed spawn (`source_providers.runner._run_json`); Windows has no OS sandbox backend, so it reaches the same no-backend policy, and `sandbox_allow_unsandboxed_exec` resolves true on win32. With that opt-out declared, `sandboxed_spawn_argv` refuses with a message naming the setting. The provider-CLI **trust** check applies here too (see Issue Radar below), and the allowlisted executable, env allowlist, output cap, timeout and audit still bound every call |
-| Issue Radar | works — its `gh` spawn is not sandbox-routed, so the trust check is the only gate, and that is answered by reading the binary's Windows ACL (`kiro_crew.windows_acl`) in place of the POSIX `st_uid` + write-bit walk, which reports nothing on this platform. Refused when any principal outside `{you, SYSTEM, Administrators, TrustedInstaller}` can replace the binary or a parent directory, or when the security descriptor is unreadable. An **elevated** gateway (the built-in `Administrator` account, or a "Run as administrator" launch) is not refused for being elevated: Windows has no OS sandbox in this codebase, so the agent's shell already holds the gateway's full token and a refusal would remove the feature without removing any exposure — the same ACL walk applies, keyed on the gateway user's SID. GitHub only on this platform unless `glab` is installed. **If a `gh` you trust is refused**, the override variables (`KIROCREW_ISSUE_RADAR_GH`, `KIROCREW_GH_BIN`) re-enter the same check rather than bypassing it, so the recourse is to install `gh` somewhere only you and the system can write — a per-user `%LOCALAPPDATA%` install is accepted — or to file an issue quoting the refusal, which names the offending principal or the ACE type it could not evaluate |
+| Issue Radar | works — its `gh` spawn is not sandbox-routed, so the trust check is the only gate, and that is answered by reading the binary's Windows ACL (`efm_go.windows_acl`) in place of the POSIX `st_uid` + write-bit walk, which reports nothing on this platform. Refused when any principal outside `{you, SYSTEM, Administrators, TrustedInstaller}` can replace the binary or a parent directory, or when the security descriptor is unreadable. An **elevated** gateway (the built-in `Administrator` account, or a "Run as administrator" launch) is not refused for being elevated: Windows has no OS sandbox in this codebase, so the agent's shell already holds the gateway's full token and a refusal would remove the feature without removing any exposure — the same ACL walk applies, keyed on the gateway user's SID. GitHub only on this platform unless `glab` is installed. **If a `gh` you trust is refused**, the override variables (`KIROCREW_ISSUE_RADAR_GH`, `KIROCREW_GH_BIN`) re-enter the same check rather than bypassing it, so the recourse is to install `gh` somewhere only you and the system can write — a per-user `%LOCALAPPDATA%` install is accepted — or to file an issue quoting the refusal, which names the offending principal or the ACE type it could not evaluate |
 | Spec Builder | works, except **Duplicate** — crash-safe copy publication pins a staging directory and uses the platform's atomic no-replace rename (`renameat2(RENAME_NOREPLACE)` on Linux, `renameatx_np(RENAME_EXCL)` on macOS). Windows provides neither that native contract nor CPython's directory-descriptor operations, so the backend reports the capability as unavailable and the dashboard omits Duplicate instead of falling back to a check-then-rename race or a junction-prone path write. Approval, per-task runs, labels, archive/restore, chat, and whole-plan execution work normally |
 | Code Review Sage | not yet — the provider-CLI trust check passes, but its review worker hands the session `python3 sage_lib/…` commands and `python3` is not an interpreter on Windows (the name resolves to the Microsoft Store app-execution alias, or to nothing). It refuses with that reason rather than starting a review that produces no result |
 | Dashboard terminal tab title | not on Windows — the tab keeps its default title. The live label (the running command, else the cwd basename) reads the foreground process group with POSIX `tcgetpgrp` and the shell's cwd from `/proc` (or `lsof`), and ConPTY offers neither, so `_session_title` and `_session_cwd` in `dashboard/handlers/terminal.py` return nothing here. The same cwd probe also feeds path completion, which has no cwd here, and the path on terminal output handed to chat, which falls back to the directory the terminal started in rather than the one you `cd` to. Command completion does not run here either: its probe in `dashboard/terminal_commands.py` is POSIX-only. The terminal session itself is unaffected |
@@ -519,7 +519,7 @@ Windows they ask `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` instead of
 signalling anything.
 
 `test/test_windows_kill_probe_audit.py` enforces this as a tripwire rather than a
-convention: it walks the AST of every module under `src/kiro_crew` and fails on a
+convention: it walks the AST of every module under `src/efm_go` and fails on a
 raw signal-0 probe until the author either routes it through the shim or records
 the site in `GATED_PROBES` with a justification for why it can never execute on
 Windows. A second test rejects allowlist entries whose code has since moved or
@@ -782,7 +782,7 @@ stay Windows-skipped in `test/windows-expected-failures.txt`.
   launcher uses `netstat -ano` to identify the listener, PowerShell
   (`Get-CimInstance`) with a WMIC fallback to read its command line, and
   `taskkill /F /PID` only after confirming a Kiro Crew executable or
-  `python -m kiro_crew` process. Localized listener-state text is ignored.
+  `python -m efm_go` process. Localized listener-state text is ignored.
   SSH forwards and unrelated processes are never terminated, and a failed or
   timed-out `netstat` probe is treated as unknown rather than as a free port.
 - **`port-owner: :5476 held by NON-KiroCrew pid=...` naming our own
@@ -825,5 +825,5 @@ stay Windows-skipped in `test/windows-expected-failures.txt`.
 - [README](../../README.md) — quick-start Platforms note
 - [install](install.md) — the build-target table shared with macOS and Linux
 - [platform-compat](../system-specs/common/platform-compat.md) — the cross-platform shim table
-- `src/kiro_crew/platform_compat.py` — the cross-platform shim
+- `src/efm_go/platform_compat.py` — the cross-platform shim
 - `make.ps1` — the Windows build driver

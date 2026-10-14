@@ -27,12 +27,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.mcp_caller import CallerContext
-from kiro_crew.mcp_gateway import gatewayd as gw
-from kiro_crew.mcp_gateway.backend import Backend, BackendGone
-from kiro_crew.mcp_gateway.hashing import hash_effective_env
-from kiro_crew.mcp_gateway.pool import BackendPool, BackendUnavailable, PoolKey
-from kiro_crew.mcp_gateway.rewriter import (
+from efm_go.mcp_caller import CallerContext
+from efm_go.mcp_gateway import gatewayd as gw
+from efm_go.mcp_gateway.backend import Backend, BackendGone
+from efm_go.mcp_gateway.hashing import hash_effective_env
+from efm_go.mcp_gateway.pool import BackendPool, BackendUnavailable, PoolKey
+from efm_go.mcp_gateway.rewriter import (
     env_sidecar_dir,
     env_sidecar_name,
     resolve_overlay_dir,
@@ -489,7 +489,7 @@ class TestHeartbeatSweeper:
         misbehaved keeps its recommendation until it misbehaves again. Shutdown is
         the ordinary path, not the exceptional one.
         """
-        from kiro_crew.mcp_gateway import hazards
+        from efm_go.mcp_gateway import hazards
 
         ledger = hazards.HazardLedger(hazards.ledger_path(tmp_path))
         gw.hazards._sink = ledger  # type: ignore[attr-defined]
@@ -1119,7 +1119,7 @@ class TestAcquireBackend:
     async def test_secret_temp_skips_raw_precheck_and_reaches_spawn_backend(
         self, monkeypatch, caplog
     ) -> None:
-        from kiro_crew import sandbox as sandbox_mod
+        from efm_go import sandbox as sandbox_mod
 
         pool = BackendPool(max_backends=2)
         key = _pool_key(server="secret-temp-mcp")
@@ -1153,7 +1153,7 @@ class TestAcquireBackend:
 
         monkeypatch.setattr(gw, "resolve_secret_uris", _resolve)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.gatewayd"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.gatewayd"):
             await gw._acquire_backend(
                 pool,
                 key,
@@ -1170,7 +1170,7 @@ class TestAcquireBackend:
 
     @pytest.mark.asyncio
     async def test_sealed_declared_temp_is_removed_before_spawn(self, monkeypatch, caplog) -> None:
-        from kiro_crew import sandbox as sandbox_mod
+        from efm_go import sandbox as sandbox_mod
 
         pool = BackendPool(max_backends=2)
         key = _pool_key(server="sealed-temp-mcp")
@@ -1192,7 +1192,7 @@ class TestAcquireBackend:
 
         monkeypatch.setattr(sandbox_mod, "classify_declared_temp_path", _sealed)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.gatewayd"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.gatewayd"):
             await gw._acquire_backend(
                 pool,
                 key,
@@ -1389,7 +1389,7 @@ class TestRespawnBackendForStub:
         old backend's binding instead would decrement a digest this respawn never
         reserved and drop a concurrent pooled connection's eviction protection.
         """
-        from kiro_crew.mcp_gateway import hazards
+        from efm_go.mcp_gateway import hazards
 
         key = _pool_key(server="respawn-hazard-mcp")
         ledger = hazards.HazardLedger(tmp_path / hazards.HAZARDS_FILENAME)

@@ -1,6 +1,6 @@
 # Implementation Plan: Builtin App Migration
 
-Status: implemented in `src/kiro_crew/apps/manager.py` and the dashboard migration components.
+Status: implemented in `src/efm_go/apps/manager.py` and the dashboard migration components.
 
 ## Overview
 

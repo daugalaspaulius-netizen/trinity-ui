@@ -39,7 +39,7 @@ import { MARKER_SELECTORS } from './lib/session-row-marker.mjs'
 
 const OUT = process.argv[2] || '../temp-screenshots/session-row-grid'
 const ACTIVE = 'chat-run'
-const REPO = 'https://github.com/kirodotdev/KiroCrew'
+const REPO = 'https://efmleads.com'
 
 mkdirSync(OUT, { recursive: true })
 const now = Math.floor(Date.now() / 1000)

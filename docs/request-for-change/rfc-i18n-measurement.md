@@ -232,7 +232,7 @@ neighbouring content**, in any locale. No bidi fixture or rendered reproduction
 exists, so the blast radius is unmeasured.
 
 **Backend, Electron, CLI and site are English-only.** No `gettext`, `babel`, or
-`Accept-Language` anywhere in `src/kiro_crew`; `dashboard.language` is stored,
+`Accept-Language` anywhere in `src/efm_go`; `dashboard.language` is stored,
 served, and injected into the LLM prompt only. Native menus
 (`website/electron/app-menu.js`), tray (`createTray` in
 `website/electron/window-lifecycle.js`), and dialogs (`resolveGatewayConflict`
@@ -240,7 +240,7 @@ in `website/electron/gateway-supervisor.js` and
 `offerRelocationIfUnupdatable` in `website/electron/main.js`) are hardcoded, as
 are update notifications (the `notifyUpdateFound` callback in `registerUpdater`
 in `website/electron/ipc-registrar.js`).
-`src/kiro_crew/builtin_skills` has 79 user-facing
+`src/efm_go/builtin_skills` has 79 user-facing
 `print`/`echo` lines and zero i18n references. `site/` has no `i18n` directory.
 
 ### Medium
@@ -248,7 +248,7 @@ in `website/electron/ipc-registrar.js`).
 - A stored or server-provided tag that is not an exact `SUPPORTED_CODES` member is
   **discarded** rather than negotiated (`website/src/i18n/detect.ts:133`), while the
   backend accepts any tag matching its own **conservative BCP-47 subset**
-  (`src/kiro_crew/dashboard/handlers/core.py:299-307,377`). `dashboard.language='de-AT'`
+  (`src/efm_go/dashboard/handlers/core.py:299-307,377`). `dashboard.language='de-AT'`
   silently becomes browser-detected.
 - Script subtags are ignored: `zh-Hant` resolves to `zh-CN` (Simplified).
 - `pt` is Brazilian content — 96 `arquivo` and 72 `você` occurrences across 71

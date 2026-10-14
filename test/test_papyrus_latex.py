@@ -2,7 +2,7 @@
 
 Lives in the repo-level ``test/`` tree (not the app's in-package ``tests/``)
 because ``setup.cfg`` sets ``testpaths = test transfer`` — a test under
-``src/kiro_crew/apps/builtins/...`` is never collected by CI.
+``src/efm_go/apps/builtins/...`` is never collected by CI.
 
 Every subprocess is mocked — no ``pdflatex``, ``tectonic`` or ``bibtex`` is ever
 invoked, so this suite runs on a host with no TeX installation.
@@ -36,8 +36,8 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import sandbox, security
-from kiro_crew.apps.builtins.papyrus.backend import latex, procio, store
+from efm_go import sandbox, security
+from efm_go.apps.builtins.papyrus.backend import latex, procio, store
 
 
 def _spawn_mode(wrap: mock.Mock) -> str:
@@ -974,7 +974,7 @@ class TestSensitivePathsFollowTheLiveDataHome:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "moved-home"))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         data_home = str(config_dir())
         hidden = latex._sensitive_hidden_dirs()
@@ -1016,7 +1016,7 @@ class TestSensitivePathsFollowTheLiveDataHome:
         # operator's real ~/.kiro/crew, which the bare delenv resolved and created.
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
-        monkeypatch.setattr("kiro_crew.config.paths._resolved_home", None)
+        monkeypatch.setattr("efm_go.config.paths._resolved_home", None)
         hidden = latex._sensitive_hidden_dirs()
         assert len(hidden) == len(set(hidden))
         assert any(h.startswith(str(tmp_path)) for h in hidden), "the fake home was not the anchor"

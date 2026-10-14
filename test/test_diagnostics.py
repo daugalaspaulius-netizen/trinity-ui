@@ -25,9 +25,9 @@ import pytest
 import yaml
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import beacon, diagnostics, release_channel
-from kiro_crew.dashboard.handlers import diagnostics as dh
-from kiro_crew.diagnostics import BundleResult
+from efm_go import beacon, diagnostics, release_channel
+from efm_go.dashboard.handlers import diagnostics as dh
+from efm_go.diagnostics import BundleResult
 
 _GATEWAY = (
     "09:00 boot ok\n"
@@ -65,7 +65,7 @@ def _pin_provenance(monkeypatch, *, distribution=None, recorded=None) -> None:
 def _isolate(monkeypatch, home: Path) -> None:
     """Point the collector at a temp home and stub host-specific probes."""
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr("kiro_crew.diagnostics.config_dir", lambda: home)
+    monkeypatch.setattr("efm_go.diagnostics.config_dir", lambda: home)
     monkeypatch.setattr(diagnostics, "_macos_crash_reports", lambda: [])
     monkeypatch.setattr(diagnostics, "_kiro_cli_chat_log", lambda: None)
     monkeypatch.setattr(diagnostics, "_kiro_cli_extra_logs", lambda: [])
@@ -365,7 +365,7 @@ def test_issue_url_is_well_formed(tmp_path, monkeypatch):
     r = diagnostics.collect_bundle(note="hi", output_dir=tmp_path / "out")
 
     assert r.github_issue_url.startswith(
-        "https://github.com/kirodotdev/KiroCrew/issues/new?"
+        "https://efmleads.com/issues/new?"
     )
     # Routes through the issue FORM, not a free-form body: the form is what
     # carries the version / install / channel answers triage reads.
@@ -393,13 +393,13 @@ class TestTerminalIssueUrlSurvivesRedaction:
         These tests are about URL shape and redaction, so the seam is answered
         in-process, the same way ``_isolate`` answers it for the bundle tests.
         """
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         monkeypatch.setattr(diagnostics, "_kiro_cli_version", lambda: "kiro-cli 2.14.2")
         _pin_provenance(monkeypatch)
 
     def _result(self, tmp_path):  # type: ignore[no-untyped-def]
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         name = "kirocrew-diagnostics-20260811.zip"
         return diagnostics.BundleResult(
@@ -410,16 +410,16 @@ class TestTerminalIssueUrlSurvivesRedaction:
 
     def test_prefilled_variant_is_the_one_that_gets_eaten(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
         """Guard the premise — if this stops being redacted the fix is moot."""
-        from kiro_crew import diagnostics
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go import diagnostics
+        from efm_go.security import scan_exfiltration_urls
 
         rich = diagnostics._issue_url(self._result(tmp_path), "something broke")
         assert len(rich.split("?", 1)[1]) >= 200
         assert scan_exfiltration_urls(rich) != []
 
     def test_terminal_variant_is_not_redacted(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
-        from kiro_crew import diagnostics
-        from kiro_crew.security import redact_exfiltration_urls, scan_exfiltration_urls
+        from efm_go import diagnostics
+        from efm_go.security import redact_exfiltration_urls, scan_exfiltration_urls
 
         url = diagnostics.terminal_issue_url(self._result(tmp_path), "something broke")
         assert scan_exfiltration_urls(url) == []
@@ -432,8 +432,8 @@ class TestTerminalIssueUrlSurvivesRedaction:
         note, so a budget that merely fits today's fields is not enough — the
         free-form fields are dropped so the query is bounded by construction.
         """
-        from kiro_crew import diagnostics
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go import diagnostics
+        from efm_go.security import scan_exfiltration_urls
 
         result = self._result(tmp_path)
         for note in ("", "short note", "x" * 5000, "multi\nline\nnote " * 200):
@@ -445,7 +445,7 @@ class TestTerminalIssueUrlSurvivesRedaction:
         """Shortening must not cost the answers automatic triage reads."""
         from urllib.parse import parse_qs, urlsplit
 
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         params = parse_qs(urlsplit(diagnostics.terminal_issue_url(self._result(tmp_path))).query)
         assert params["template"] == ["bug_report.yml"]
@@ -976,13 +976,13 @@ class _CollectReq(_OwnerReq):
 def _stub_sel(monkeypatch) -> MagicMock:
     """Install a mock SEL logger and return it (download handler audits via it)."""
     sel = MagicMock()
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: sel)
+    monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: sel)
     return sel
 
 
 def test_download_rejects_path_traversal(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
+        "efm_go.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
     )
     sel = _stub_sel(monkeypatch)
     resp = asyncio.run(dh.api_diagnostics_download(_DownloadReq("../../etc/passwd")))
@@ -995,7 +995,7 @@ def test_download_rejects_non_zip(tmp_path, monkeypatch):
     diag.mkdir()
     (diag / "foo.txt").write_text("not a zip")
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
+        "efm_go.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
     )
     sel = _stub_sel(monkeypatch)
     resp = asyncio.run(dh.api_diagnostics_download(_DownloadReq("foo.txt")))
@@ -1008,7 +1008,7 @@ def test_download_allows_and_audits_valid_zip(tmp_path, monkeypatch):
     diag.mkdir()
     (diag / "b.zip").write_bytes(b"PK\x03\x04zip")
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
+        "efm_go.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
     )
     sel = _stub_sel(monkeypatch)
     resp = asyncio.run(dh.api_diagnostics_download(_DownloadReq("b.zip")))
@@ -1018,7 +1018,7 @@ def test_download_allows_and_audits_valid_zip(tmp_path, monkeypatch):
 
 def test_collect_handler_returns_download_url(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
+        "efm_go.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
     )
     fake = BundleResult(
         zip_path=tmp_path / "b.zip",
@@ -1026,7 +1026,7 @@ def test_collect_handler_returns_download_url(tmp_path, monkeypatch):
         included=["versions.txt", "manifest.json"],
         skipped=[],
         redaction_summary={"versions.txt": 0},
-        github_issue_url="https://github.com/kirodotdev/KiroCrew/issues/new?title=x",
+        github_issue_url="https://efmleads.com/issues/new?title=x",
     )
     monkeypatch.setattr(dh.diagnostics, "collect_bundle", lambda **kw: fake)
 
@@ -1074,7 +1074,7 @@ def test_old_bundles_are_pruned(tmp_path):
 
 def test_collect_handler_rejects_non_object_body(tmp_path, monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
+        "efm_go.dashboard.handlers.diagnostics.config_dir", lambda: tmp_path
     )
     resp = asyncio.run(dh.api_diagnostics_collect(_CollectReq(["not", "a", "dict"])))
     assert resp.status == 400

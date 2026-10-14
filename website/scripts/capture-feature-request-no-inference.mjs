@@ -49,7 +49,7 @@ if (!['before', 'after'].includes(EXPECT)) throw new Error(`--expect must be bef
 
 const EXISTING = 'chat-existing'
 const FR_SLOT = 'chat-feature-request'
-const FORM_URL = 'https://github.com/kirodotdev/KiroCrew/issues/new?template=feature_request.yml'
+const FORM_URL = 'https://efmleads.com/issues/new?template=feature_request.yml'
 // Derived from this script's own location (scripts/ -> website/ -> repo root),
 // never hardcoded: this path RENDERS into the captured screenshot.
 const PROJECT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')

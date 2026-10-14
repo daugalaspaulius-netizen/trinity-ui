@@ -16,8 +16,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.dashboard.state import DashboardState
-from kiro_crew.history import ConversationLog
+from efm_go.dashboard.state import DashboardState
+from efm_go.history import ConversationLog
 
 
 def _make_context_builder():
@@ -70,7 +70,7 @@ def _make_slack_client():
 
 
 def _fake_provider():
-    from kiro_crew.providers.base import LLMEvent
+    from efm_go.providers.base import LLMEvent
 
     fake_client = AsyncMock()
 
@@ -97,15 +97,15 @@ def _fake_provider():
 class TestMirrorSuppressionAfterUnlink:
     @pytest.mark.asyncio
     async def test_linked_turn_mirrors_then_unlinked_turn_does_not(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _history_key_for, _run_chat
-        from kiro_crew.dashboard.chat_slack import api_chat_slot_slack_unlink
-        from kiro_crew.session_map import SessionMap
+        from efm_go.dashboard.chat import _history_key_for, _run_chat
+        from efm_go.dashboard.chat_slack import api_chat_slot_slack_unlink
+        from efm_go.session_map import SessionMap
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
-        monkeypatch.setattr("kiro_crew.dashboard.chat_slack.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_slack.sel", lambda: MagicMock())
 
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             session_map = SessionMap()
 
         state = _make_state(tmp_path, session_map)
@@ -154,15 +154,15 @@ class TestMirrorSuppressionAfterUnlink:
         """Even when chat_runner has copied the link onto the dashboard:-prefixed
         key, unlink clears BOTH so a follow-up turn stays silent. This is the
         highest-risk path: clearing only one key lets mirroring silently resume."""
-        from kiro_crew.dashboard.chat import _history_key_for, _run_chat
-        from kiro_crew.dashboard.chat_slack import api_chat_slot_slack_unlink
-        from kiro_crew.session_map import SessionMap
+        from efm_go.dashboard.chat import _history_key_for, _run_chat
+        from efm_go.dashboard.chat_slack import api_chat_slot_slack_unlink
+        from efm_go.session_map import SessionMap
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
-        monkeypatch.setattr("kiro_crew.dashboard.chat_slack.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_slack.sel", lambda: MagicMock())
 
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             session_map = SessionMap()
 
         state = _make_state(tmp_path, session_map)

@@ -61,7 +61,7 @@ def _read_lib_declarations(source: pathlib.Path) -> tuple[str, dict[str, tuple[s
 def main(argv: list[str]) -> int:
     dist = pathlib.Path(argv[1] if len(argv) > 1 else "dist")
     # CI installs build tools, not runtime dependencies such as PyYAML.
-    source = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew/embeddings.py"
+    source = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go/embeddings.py"
     libs_dir_name, required_libs = _read_lib_declarations(source)
 
     try:
@@ -83,7 +83,7 @@ def main(argv: list[str]) -> int:
     failures: list[str] = []
     for plat, required in sorted(required_libs.items()):
         for name in required:
-            rel = f"kiro_crew/_vendor/{libs_dir_name}/{plat}/{name}"
+            rel = f"efm_go/_vendor/{libs_dir_name}/{plat}/{name}"
             if rel not in wheel_names:
                 failures.append(f"{wheel.name}: missing {rel}")
             if f"{prefix}/src/{rel}" not in sdist_names:

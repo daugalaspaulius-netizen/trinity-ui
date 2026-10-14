@@ -12,9 +12,9 @@ from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
 from conftest import requires_symlinks
-from kiro_crew import platform_compat
-from kiro_crew.dashboard.handlers import api_browse_dirs
-from kiro_crew.dashboard.handlers.files import (
+from efm_go import platform_compat
+from efm_go.dashboard.handlers import api_browse_dirs
+from efm_go.dashboard.handlers.files import (
     _browse_dirs_sync,
     _browse_drives_sync,
     _browse_parent,
@@ -29,7 +29,7 @@ def _make_app() -> web.Application:
 
 @pytest.fixture()
 def mock_sel():
-    with patch("kiro_crew.dashboard.handlers.sel") as m:
+    with patch("efm_go.dashboard.handlers.sel") as m:
         m.return_value = MagicMock()
         yield m.return_value
 
@@ -96,7 +96,7 @@ class TestBrowseDirs:
         def is_sens(p: str) -> bool:
             return os.path.realpath(p) == os.path.realpath(secret)
 
-        with patch("kiro_crew.dashboard.handlers.files.is_sensitive_path", side_effect=is_sens):
+        with patch("efm_go.dashboard.handlers.files.is_sensitive_path", side_effect=is_sens):
             async with TestClient(TestServer(_make_app())) as client:
                 resp = await client.get(f"/api/browse-dirs?path={tmp_path}")
                 names = {d["name"] for d in (await resp.json())["dirs"]}
@@ -150,7 +150,7 @@ class TestBrowseDirs:
 
         entries = [_Entry("alpha"), _Entry("docker"), _Entry("zebra")]
         with patch(
-            "kiro_crew.dashboard.handlers.files.os.scandir",
+            "efm_go.dashboard.handlers.files.os.scandir",
             return_value=entries,
         ):
             async with TestClient(TestServer(_make_app())) as client:
@@ -176,7 +176,7 @@ class TestBrowseDirs:
             ran_on.append(threading.get_ident())
             return _browse_dirs_sync(base, skip)
 
-        with patch("kiro_crew.dashboard.handlers.files._browse_dirs_sync", spy):
+        with patch("efm_go.dashboard.handlers.files._browse_dirs_sync", spy):
             async with TestClient(TestServer(_make_app())) as client:
                 resp = await client.get(f"/api/browse-dirs?path={tmp_path}")
                 assert resp.status == 200
@@ -230,7 +230,7 @@ class TestWindowsDriveRoots:
         with (
             patch.object(platform_compat, "IS_WINDOWS", True),
             patch(
-                "kiro_crew.dashboard.handlers.files._browse_drives_sync",
+                "efm_go.dashboard.handlers.files._browse_drives_sync",
                 return_value=[{"name": "C:\\", "path": "C:\\"}, {"name": "D:\\", "path": "D:\\"}],
             ),
         ):
@@ -254,7 +254,7 @@ class TestWindowsDriveRoots:
         assertion green -- so pin the dispatch itself: the wrapper is called with
         ``transfer=True`` and the helper really runs off the loop thread.
         """
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         loop_thread = threading.get_ident()
         ran_on: list[int] = []
@@ -311,7 +311,7 @@ class TestWindowsDriveRoots:
     async def test_drives_query_is_400_off_windows(self, mock_sel):
         with (
             patch.object(platform_compat, "IS_WINDOWS", False),
-            patch("kiro_crew.dashboard.handlers.files._browse_drives_sync") as lister,
+            patch("efm_go.dashboard.handlers.files._browse_drives_sync") as lister,
         ):
             async with TestClient(TestServer(_make_app())) as client:
                 resp = await client.get("/api/browse-dirs?drives=1")
@@ -325,8 +325,8 @@ class TestWindowsDriveRoots:
         (tmp_path / "alpha").mkdir()
         with (
             patch.object(platform_compat, "IS_WINDOWS", True),
-            patch("kiro_crew.dashboard.handlers.files._browse_drives_sync", return_value=[]),
-            patch("kiro_crew.dashboard.handlers.files._resolve_search_root") as resolver,
+            patch("efm_go.dashboard.handlers.files._browse_drives_sync", return_value=[]),
+            patch("efm_go.dashboard.handlers.files._resolve_search_root") as resolver,
         ):
             async with TestClient(TestServer(_make_app())) as client:
                 resp = await client.get(f"/api/browse-dirs?drives=1&path={tmp_path}")
@@ -343,11 +343,11 @@ class TestWindowsDriveRoots:
         with (
             patch.object(platform_compat, "IS_WINDOWS", True),
             patch(
-                "kiro_crew.dashboard.handlers.files._resolve_search_root",
+                "efm_go.dashboard.handlers.files._resolve_search_root",
                 return_value=("C:\\", True),
             ),
             patch(
-                "kiro_crew.dashboard.handlers.files._browse_dirs_sync",
+                "efm_go.dashboard.handlers.files._browse_dirs_sync",
                 return_value=[{"name": "Users", "path": "C:\\Users"}],
             ),
         ):

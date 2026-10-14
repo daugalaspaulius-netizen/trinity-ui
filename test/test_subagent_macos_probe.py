@@ -13,7 +13,7 @@ import ctypes
 
 import pytest
 
-import kiro_crew.subagent as subagent
+import efm_go.subagent as subagent
 
 _SENTINEL_PORT = 0x1111
 _SENTINEL_TASK = 0x2222

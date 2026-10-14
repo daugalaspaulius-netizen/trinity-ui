@@ -14,11 +14,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from member_memory_helpers import write_member_home
 
-from kiro_crew import agent_discovery, subagent
-from kiro_crew.config import loader
-from kiro_crew.config.loader import KiroCrewConfig, config_dir
-from kiro_crew.cron import CronJob
-from kiro_crew.execution_context import (
+from efm_go import agent_discovery, subagent
+from efm_go.config import loader
+from efm_go.config.loader import KiroCrewConfig, config_dir
+from efm_go.cron import CronJob
+from efm_go.execution_context import (
     ExecutionContext,
     MemoryStoreRef,
     read_session_execution,
@@ -26,7 +26,7 @@ from kiro_crew.execution_context import (
 
 
 async def _cron_callback(monkeypatch, cfg):
-    from kiro_crew.slack import gateway
+    from efm_go.slack import gateway
 
     # Resolution reads ``live.snapshot() or self._cfg``; pin both to the test
     # config so the two crew aliases are visible without a live config watcher.
@@ -68,7 +68,7 @@ async def test_each_crew_in_a_sequence_is_dispatched_as_itself(monkeypatch, tmp_
     # runtime (agent) and tree (cwd) are pinned, not just its crew_agent alias.
     # A regression that put the step back on the captured member's runtime or in
     # the base workspace would then red, not pass silently.
-    from kiro_crew.config.sections import WorkspaceConfig
+    from efm_go.config.sections import WorkspaceConfig
 
     beta_tree = tmp_path / "beta-tree"
     beta_tree.mkdir()
@@ -317,7 +317,7 @@ async def test_an_empty_step_does_not_consume_a_delete_after_run_oneshot(monkeyp
 
 def _let_sequence_complete(monkeypatch, gw):
     """Replace the stop-before-provider seam with one complete sequence turn."""
-    from kiro_crew.slack import gateway
+    from efm_go.slack import gateway
 
     client = MagicMock()
     gw.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
@@ -340,7 +340,7 @@ async def test_a_crew_edit_after_the_sweep_does_not_change_the_dispatch(monkeypa
     loader._invalidate_config_cache()
     cfg = KiroCrewConfig.load()
 
-    from kiro_crew.config.sections import WorkspaceConfig
+    from efm_go.config.sections import WorkspaceConfig
 
     beta_tree = tmp_path / "beta-tree"
     edited_tree = tmp_path / "edited-tree"

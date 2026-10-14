@@ -15,13 +15,13 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.acp.session_handle import (
+from efm_go.acp.session_handle import (
     INTERACTIVE_POLICY_CANCEL,
     INTERACTIVE_POLICY_WAIT,
     WatchdogSettings,
     _load_watchdog_settings,
 )
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 
 def _cfg(policy: str) -> KiroCrewConfig:
@@ -37,7 +37,7 @@ def test_default_snapshot_is_cancel() -> None:
 
 @pytest.mark.parametrize("policy", [INTERACTIVE_POLICY_CANCEL, INTERACTIVE_POLICY_WAIT])
 def test_settings_follow_the_config_key(policy: str) -> None:
-    with unittest.mock.patch("kiro_crew.config.loader.KiroCrewConfig.load") as load:
+    with unittest.mock.patch("efm_go.config.loader.KiroCrewConfig.load") as load:
         settings = _load_watchdog_settings("", cfg=_cfg(policy))
     load.assert_not_called()
     assert settings.interactive_command_policy == policy
@@ -54,6 +54,6 @@ def test_hand_edited_file_reaches_the_snapshot(tmp_path: Path) -> None:
     (tmp_path / "config.json").write_text(
         json.dumps({"agent": {"interactive_command_policy": "wait"}}), encoding="utf-8"
     )
-    with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+    with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
         settings = _load_watchdog_settings("")
     assert settings.interactive_command_policy == INTERACTIVE_POLICY_WAIT

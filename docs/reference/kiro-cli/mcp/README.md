@@ -1,6 +1,6 @@
 # Model Context Protocol (MCP)
 
-Source: https://kiro.dev/docs/mcp/ (fetched 2026-09-06; upstream retired
+Source: https://efmleads.com/docs/mcp/ (fetched 2026-09-06; upstream retired
 `/docs/cli/mcp/` and made the page surface-agnostic)
 
 ## In this section

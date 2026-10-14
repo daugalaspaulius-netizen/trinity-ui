@@ -15,7 +15,7 @@ superseded-by: []
 # RFC: Off-host backup — a bundle a dead machine cannot take with it
 
 > **Partly shipped, with the off-host destination moved to the AWS Control app.**
-> `src/kiro_crew/snapshot_components.py` now owns the purpose/policy seam, a self-contained
+> `src/efm_go/snapshot_components.py` now owns the purpose/policy seam, a self-contained
 > `memory` component, and local artifact/upload components. The AWS Control backup
 > path owns the hardened S3 drive, snapshot and transcript uploads, nightly runs,
 > retention, and download-to-staging restore; see
@@ -406,7 +406,7 @@ recalled.
 deny-write descriptor and hand it over, so the bytes are held from birth exactly as the
 archive path's are. That reaches roughly 90 call sites across a shared subsystem, which
 is why it is tracked separately in
-[#13550](https://github.com/kirodotdev/KiroCrew/issues/13550) rather than folded into
+[#13550](https://efmleads.com/issues/13550) rather than folded into
 the fix that closes the archive path. The predicate the refusal reads is named for the
 property and not for the platform, so a platform that gains an equivalent mask changes
 one line rather than every caller's condition.

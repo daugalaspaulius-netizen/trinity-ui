@@ -3,7 +3,7 @@
 The ancestor PID walk these exercise lives once, in
 ``mcp_caller.resolve_own_identity``, which every client-side resolver shares,
 so the seams are that module's: ``mcp_caller._parent_pid`` for the parent
-lookup and ``kiro_crew.config.loader.config_dir`` for the mapping directory.
+lookup and ``efm_go.config.loader.config_dir`` for the mapping directory.
 """
 
 from __future__ import annotations
@@ -11,10 +11,10 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-from kiro_crew.mcp_core import _resolve_session_key
+from efm_go.mcp_core import _resolve_session_key
 
-_PPID = "kiro_crew.mcp_caller._parent_pid"
-_CFG = "kiro_crew.config.paths.config_dir"
+_PPID = "efm_go.mcp_caller._parent_pid"
+_CFG = "efm_go.config.paths.config_dir"
 
 
 class TestResolveSessionKey:
@@ -163,7 +163,7 @@ class TestParentLookupSpawnsNothing:
     def test_parent_lookup_normalises_failure_to_zero(self):
         """``platform_compat.get_ppid`` reports failure as -1; the walk's guard
         is ``while pid > 1``, so the seam must hand it 0 instead."""
-        from kiro_crew import mcp_caller
+        from efm_go import mcp_caller
 
-        with patch("kiro_crew.platform_compat.get_ppid", return_value=-1):
+        with patch("efm_go.platform_compat.get_ppid", return_value=-1):
             assert mcp_caller._parent_pid(1234) == 0

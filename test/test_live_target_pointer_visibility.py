@@ -31,7 +31,7 @@ from unittest import mock
 import pytest
 from turn_harness import TurnScript, run_turn
 
-from kiro_crew import cli_chat, cli_doctor, sandbox
+from efm_go import cli_chat, cli_doctor, sandbox
 
 _POSIX_ONLY = pytest.mark.skipif(sys.platform == "win32", reason="POSIX link semantics")
 _LINUX_ONLY = pytest.mark.skipif(
@@ -398,7 +398,7 @@ class TestTheRefusalReachesTheChatCard:
         before appending it. A remedy containing a path and a ``find`` invocation must
         come out the other side intact -- a scrubbed ``find`` line is a remedy the
         operator cannot run."""
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
         detail = sandbox._live_target_multilink_detail(str(_pointer(crew_home)), 2)
 
@@ -411,7 +411,7 @@ class TestTheRefusalReachesTheChatCard:
         """A transient verdict would put this in the "Connection lost -- retrying..."
         ladder: the card would show no reason, and the retries would fail identically
         because nothing about the host changed between them."""
-        from kiro_crew.llm_helpers import acp_error_is_transient
+        from efm_go.llm_helpers import acp_error_is_transient
 
         refusal = sandbox.SandboxCeilingUnsealable(
             sandbox._live_target_multilink_detail("/var/lib/kirocrew/live_target.json", 2)
@@ -883,7 +883,7 @@ class TestTheSiblingRefusalsAreDefusedToo:
         ``-s`` on a terminal would fail on the UI's own decoration while the refusal text
         was escaped correctly.
         """
-        from kiro_crew import cli_cloud
+        from efm_go import cli_cloud
 
         def explode(_args):
             raise sandbox.SandboxCeilingUnsealable(f"refused {_LINKABLE_PAYLOAD} here")

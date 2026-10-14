@@ -16,8 +16,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.platform import update_stepup
+from efm_go.dashboard.handlers import updates
+from efm_go.platform import update_stepup
 
 
 def _request(
@@ -68,7 +68,7 @@ class TestStepUpModule:
             # POSIX mode bits only: on Windows restrict_to_owner grants via
             # DACL and stat().st_mode reports 0o666 regardless, so the POSIX
             # assertion would test the platform, not the code.
-            from kiro_crew.platform_compat import IS_POSIX
+            from efm_go.platform_compat import IS_POSIX
 
             if IS_POSIX:
                 mode = path.stat().st_mode & 0o777
@@ -245,7 +245,7 @@ class TestStepUpModule:
 @pytest.mark.asyncio
 class TestArmEndpoint:
     async def test_arm_refuses_non_managed_shape(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: False)
         resp = await updates.api_update_arm(_request())
@@ -253,7 +253,7 @@ class TestArmEndpoint:
         assert json.loads(resp.body.decode())["code"] == "arm_wrong_shape"
 
     async def test_arm_refuses_without_a_verdict(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
@@ -265,7 +265,7 @@ class TestArmEndpoint:
     async def test_arm_refuses_when_check_reports_nothing_to_apply(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
@@ -282,7 +282,7 @@ class TestArmEndpoint:
     async def test_arm_accepts_a_pending_channel_downgrade(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
@@ -307,14 +307,14 @@ class TestArmEndpoint:
     async def test_arm_refuses_a_channel_move_below_the_minimum_version(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
         monkeypatch.setattr(updates, "min_version", lambda: "0.6.0")
         monkeypatch.setattr(updates, "_local_version", "0.7.0")
         audit = MagicMock()
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: audit)
         updates._set_update_info(
@@ -346,7 +346,7 @@ class TestArmEndpoint:
     async def test_arm_floor_denial_survives_an_unwritable_audit(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
@@ -357,7 +357,7 @@ class TestArmEndpoint:
             def log_api_access(self, **kwargs: object) -> None:
                 raise OSError(28, "no space left on device")
 
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: _BrokenSel())
         updates._set_update_info(
@@ -379,7 +379,7 @@ class TestArmEndpoint:
     async def test_arm_allows_an_upgrade_toward_the_minimum_version(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
@@ -402,7 +402,7 @@ class TestArmEndpoint:
             updates._set_update_info()
 
     async def test_arm_response_carries_no_nonce(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
@@ -430,7 +430,7 @@ class TestArmEndpoint:
         build's own never-folded `__version__`. Arming a display-folded value
         (e.g. "0.4.0" instead of "0.4.0rc14") would make apply fail every time
         on the stable channel."""
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
@@ -449,7 +449,7 @@ class TestArmEndpoint:
             updates._set_update_info()
 
     async def test_policy_managed_host_refuses_arm(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(updates, "resolve_provider", lambda: object())
@@ -464,7 +464,7 @@ def _assert_update_lock_free() -> None:
     The layout sits beside the scratch data home (the conftest floor clears
     ``KIROCREW_VENV``), so this takes a real lock no operator install uses.
     """
-    from kiro_crew.platform import wheel_engine
+    from efm_go.platform import wheel_engine
 
     wheel_engine.release_update_lock(wheel_engine.hold_update_lock())
 
@@ -474,7 +474,7 @@ class TestApproveEndpoint:
     @pytest.fixture(autouse=True)
     def _host_isolated(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """The host's AppArmor state is never read, and no apply is in flight."""
-        from kiro_crew.platform import wheel_apply
+        from efm_go.platform import wheel_apply
 
         monkeypatch.setattr(wheel_apply, "userns_reattach_needed", lambda _version: False)
         monkeypatch.setattr(wheel_apply, "_IN_FLIGHT", set())
@@ -488,7 +488,7 @@ class TestApproveEndpoint:
     async def test_refusal_releases_the_lock_once_off_loop(
         self, monkeypatch: pytest.MonkeyPatch, reason: str
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         loop_thread = threading.current_thread()
         released: list[tuple[int, threading.Thread]] = []
@@ -526,7 +526,7 @@ class TestApproveEndpoint:
     ) -> None:
         import asyncio
 
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         entered, finish, released = threading.Event(), threading.Event(), threading.Event()
         loop_thread = threading.current_thread()
@@ -689,7 +689,7 @@ class TestApproveEndpoint:
             restarted.append(state)
             return True
 
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         monkeypatch.setattr(wheel_engine, "apply_wheel_update", fake_apply)
         monkeypatch.setattr(wheel_apply, "restart_reaches", lambda _version: True)
@@ -721,7 +721,7 @@ class TestApproveEndpoint:
         """
         applied: list[dict[str, object]] = []
 
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "apply_wheel_update", lambda **kw: applied.append(kw))
 
@@ -729,7 +729,7 @@ class TestApproveEndpoint:
             def log_api_access(self, **kwargs: object) -> None:
                 raise OSError(28, "no space left on device")
 
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: _BrokenSel())
         pending = update_stepup.arm("9.9.9", "stable")
@@ -747,7 +747,7 @@ class TestApproveEndpoint:
     async def test_failed_apply_reports_and_does_not_restart(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform.wheel_engine import WheelUpdateError
+        from efm_go.platform.wheel_engine import WheelUpdateError
 
         def failing_apply(**kwargs: object) -> None:
             raise WheelUpdateError("wheel SHA-256 mismatch")
@@ -758,7 +758,7 @@ class TestApproveEndpoint:
             restarted.append(state)
             return True
 
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "apply_wheel_update", failing_apply)
         monkeypatch.setattr(updates, "_restart_gateway", fake_restart)
@@ -781,7 +781,7 @@ class TestApproveEndpoint:
     async def test_an_incompatible_release_names_the_installer_rerun(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         def incompatible(**kwargs: object) -> None:
             raise wheel_engine.WheelUpdateIncompatible(
@@ -806,7 +806,7 @@ class TestApproveEndpoint:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The restart's exec would stop the apply before its outcome is audited."""
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
         locked: list[int] = []
@@ -828,7 +828,7 @@ class TestApproveEndpoint:
     async def test_an_apply_already_holding_the_lock_refuses_before_the_nonce_is_used(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         def busy() -> int:
             raise wheel_engine.WheelUpdateBusy("another kirocrew update is already in progress")
@@ -854,7 +854,7 @@ class TestApproveEndpoint:
     async def test_memory_still_preparing_defers_before_the_nonce_is_used(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         def preparing() -> None:
             raise wheel_engine.WheelUpdateNotReady("memory is still being prepared")
@@ -873,7 +873,7 @@ class TestApproveEndpoint:
     async def test_a_memory_failure_refuses_with_its_own_words_before_the_nonce(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         def failed() -> None:
             raise wheel_engine.WheelUpdateSnapshotFailed("Memory recovery failed: journal broken")
@@ -893,7 +893,7 @@ class TestApproveEndpoint:
     async def test_a_cancelled_apply_is_audited_as_cancelled_not_failed(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         def stopped(**_kw: object) -> None:
             raise wheel_engine.WheelUpdateCancelled("stopped", reason="exec")
@@ -928,8 +928,8 @@ class TestApproveEndpoint:
         ``busy`` that would make the operator approve again."""
         import asyncio
 
-        from kiro_crew.platform import wheel_apply, wheel_engine
-        from kiro_crew.platform.wheel_engine import ApplyCancel
+        from efm_go.platform import wheel_apply, wheel_engine
+        from efm_go.platform.wheel_engine import ApplyCancel
 
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
         monkeypatch.setattr(wheel_engine, "apply_wheel_update", lambda **_kw: None)
@@ -958,7 +958,7 @@ class TestApproveEndpoint:
     async def test_a_promotion_that_detaches_the_sandbox_profile_says_how_to_reattach(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
         monkeypatch.setattr(wheel_engine, "apply_wheel_update", lambda **_kw: None)
@@ -983,7 +983,7 @@ class TestApproveEndpoint:
         """A promotion the restart cannot reach (the stable link leads elsewhere)
         must not exec the running version again: that successor would find the
         same update, promote and restart, for ever."""
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         monkeypatch.setattr(updates, "resolve_provider", lambda: None)
         monkeypatch.setattr(wheel_engine, "apply_wheel_update", lambda **_kw: None)

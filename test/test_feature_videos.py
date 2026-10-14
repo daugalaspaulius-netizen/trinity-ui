@@ -1,4 +1,4 @@
-"""Unit tests for kiro_crew.feature_videos — the deterministic feature-intro catalog."""
+"""Unit tests for efm_go.feature_videos — the deterministic feature-intro catalog."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from body_stream_helpers import attach_body
 
-from kiro_crew import feature_videos as fv
-from kiro_crew import feature_videos_cache as cache_mod
+from efm_go import feature_videos as fv
+from efm_go import feature_videos_cache as cache_mod
 
 
 def _request(method: str, path: str, *, session_key: str = "dashboard:ui") -> MagicMock:
@@ -142,7 +142,7 @@ class TestShippedCatalog:
         assert [e.id for e in fv.CATALOG] == ["feature-tips", "monitor-loops"]
 
     def test_docs_are_in_the_tips_allowlist(self) -> None:
-        from kiro_crew.tips_allowlist import TIP_DOC_ALLOWLIST
+        from efm_go.tips_allowlist import TIP_DOC_ALLOWLIST
 
         for entry in fv.CATALOG:
             assert entry.doc in TIP_DOC_ALLOWLIST
@@ -678,7 +678,7 @@ class TestNextRoute:
     def test_kill_switch_reports_disabled_and_no_video(self, tmp_path: Path) -> None:
         async def run() -> dict[str, object]:
             with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
-                with patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls:
+                with patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls:
                     cfg_cls.load.return_value = _cfg(enabled=False)
                     resp = await fv.api_feature_videos_next(
                         _request("GET", "/api/feature-videos/next")
@@ -693,7 +693,7 @@ class TestNextRoute:
         async def run() -> dict[str, object]:
             with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
                 with (
-                    patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                    patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                     patch.object(fv, "CATALOG", (_entry("first"),)),
                 ):
                     cfg_cls.load.return_value = _cfg()
@@ -712,7 +712,7 @@ class TestNextRoute:
         async def run() -> dict[str, object]:
             with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
                 with (
-                    patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                    patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                     patch.object(fv, "_is_restricted_session", return_value=True),
                     patch.object(fv, "CATALOG", (_entry("first"),)),
                 ):
@@ -731,7 +731,7 @@ class TestNextRoute:
                     fv.FeatureVideoState(videos={"only": {"status": "dismissed", "ts": 1.0}})
                 )
                 with (
-                    patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                    patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                     patch.object(fv, "CATALOG", (_entry("only"),)),
                 ):
                     cfg_cls.load.return_value = _cfg()
@@ -751,7 +751,7 @@ class TestStatusRoute:
                 fv.save_state(
                     fv.FeatureVideoState(videos={"feature-tips": {"status": "seen", "ts": 7.0}})
                 )
-                with patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls:
+                with patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls:
                     cfg_cls.load.return_value = _cfg()
                     resp = await fv.api_feature_videos_status(
                         _request("GET", "/api/feature-videos/status")
@@ -772,7 +772,7 @@ class TestStatusRoute:
                     fv.FeatureVideoState(videos={"feature-tips": {"status": "seen", "ts": 7.0}})
                 )
                 with (
-                    patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                    patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                     patch.object(fv, "_blocks_reads_session", return_value=True),
                 ):
                     cfg_cls.load.return_value = _cfg()
@@ -799,7 +799,7 @@ class TestStatusRoute:
                     fv.FeatureVideoState(videos={"feature-tips": {"status": "seen", "ts": 7.0}})
                 )
                 with (
-                    patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                    patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                     patch.object(fv, "_is_restricted_session", return_value=True),
                     patch.object(fv, "_blocks_reads_session", return_value=False),
                 ):
@@ -815,7 +815,7 @@ class TestStatusRoute:
     def test_reports_the_kill_switch(self, tmp_path: Path) -> None:
         async def run() -> dict[str, object]:
             with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
-                with patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls:
+                with patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls:
                     cfg_cls.load.return_value = _cfg(enabled=False)
                     resp = await fv.api_feature_videos_status(
                         _request("GET", "/api/feature-videos/status")
@@ -856,7 +856,7 @@ class TestFeedbackRoute:
         async def run() -> object:
             with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
                 with (
-                    patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                    patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                     patch.object(fv, "CATALOG", (_entry("first"), _entry("second"))),
                 ):
                     cfg_cls.load.return_value = _cfg()
@@ -988,7 +988,7 @@ class TestIssuedIdSurvivesACatalogChange:
         async def run() -> tuple[int, object]:
             with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
                 with (
-                    patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                    patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                     patch.object(fv, "CATALOG", (_entry("about-to-vanish"),)),
                 ):
                     cfg_cls.load.return_value = _cfg()
@@ -1039,7 +1039,7 @@ class TestIssuedIdSurvivesACatalogChange:
         async def run() -> None:
             with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
                 with patch.object(fv, "CATALOG", (_entry("recorded-once"),)):
-                    with patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls:
+                    with patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls:
                         cfg_cls.load.return_value = _cfg()
                         await fv.api_feature_videos_next(
                             _request("GET", "/api/feature-videos/next")
@@ -1069,28 +1069,28 @@ class TestRouteRegistration:
 
 class TestConfigFlag:
     def test_default_is_off(self) -> None:
-        from kiro_crew.config.sections import DashboardConfig
+        from efm_go.config.sections import DashboardConfig
 
         assert DashboardConfig().feature_videos_enabled is False
 
     def test_loader_reads_the_key(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(
             json.dumps({"dashboard": {"feature_videos_enabled": False}}), encoding="utf-8"
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         assert KiroCrewConfig.load().dashboard.feature_videos_enabled is False
 
     def test_absent_key_keeps_the_default(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"dashboard": {}}), encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         assert KiroCrewConfig.load().dashboard.feature_videos_enabled is False
 
     def test_a_non_bool_value_keeps_the_default(
@@ -1101,11 +1101,11 @@ class TestConfigFlag:
         Still load-bearing with the default OFF: a naive ``bool(...)`` would read the
         STRING "false" as True and turn the feature on against the operator's config.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(
             json.dumps({"dashboard": {"feature_videos_enabled": "false"}}), encoding="utf-8"
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         assert KiroCrewConfig.load().dashboard.feature_videos_enabled is False

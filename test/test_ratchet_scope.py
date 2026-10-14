@@ -31,7 +31,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.platform.update_governance import _GIT_LOCATION_VARS, git_command_env
+from efm_go.platform.update_governance import _GIT_LOCATION_VARS, git_command_env
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "ratchet_scope.py"

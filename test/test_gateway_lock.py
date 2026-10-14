@@ -17,8 +17,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.gateway_lock import (
+from efm_go import platform_compat
+from efm_go.gateway_lock import (
     _IDENTITY_ATTEMPTS,
     _NO_DIRECTORY_LOCK_ERRNOS,
     LOCK_FILENAME,
@@ -276,7 +276,7 @@ def test_a_refusal_by_a_live_acquirer_on_the_port_is_a_live_holder_only_when_it_
     stays restartable, and the relaunch is what takes over once it dies. Without
     the port fact at all the same held lock is only a hedge.
     """
-    from kiro_crew import gateway_lock, platform_compat
+    from efm_go import gateway_lock, platform_compat
 
     monkeypatch.setattr(platform_compat, "find_port_listeners", lambda _p: _listeners(os.getpid()))
     monkeypatch.setattr(gateway_lock, "_port_answers_http", lambda *_a, **_k: answers_http)
@@ -324,7 +324,7 @@ def test_stale_lock_is_reclaimed(tmp_path):
 
 def test_posix_dead_holder_contention_is_retried(tmp_path, monkeypatch):
     """A dying POSIX gateway may release its flock just after our first probe."""
-    from kiro_crew import gateway_lock
+    from efm_go import gateway_lock
 
     lock_file = tmp_path / LOCK_FILENAME
     lock_file.write_text("999999\n", encoding="utf-8")
@@ -460,7 +460,7 @@ def test_read_pid_handles_garbage(tmp_path):
 def test_windows_stale_pid_reclaimed_on_startup(tmp_path, monkeypatch):
     """On Windows, if the lock file holds a dead PID, the file is deleted and
     recreated before acquisition so that msvcrt.locking gets a clean file."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     # Simulate Windows platform
     monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
@@ -528,7 +528,7 @@ class TestLockFileIdentity:
         file still names it; listening without answering is a wedged gateway,
         and that refusal stays restartable here too.
         """
-        from kiro_crew import gateway_lock, platform_compat
+        from efm_go import gateway_lock, platform_compat
 
         if _directory_locks_supported(kernel_lock_home)[0] is not _DirectoryLockSupport.SUPPORTED:
             pytest.skip("this filesystem does not implement directory locks")
@@ -625,7 +625,7 @@ class TestLockFileIdentity:
     @pytest.mark.skipif(platform_compat.IS_WINDOWS, reason="no home anchor on Windows")
     def test_a_filesystem_without_directory_locks_still_starts(self, tmp_path, monkeypatch):
         """Missing evidence must never refuse a legitimate start."""
-        from kiro_crew import gateway_lock
+        from efm_go import gateway_lock
 
         anchor = os.open(tmp_path, os.O_RDONLY)
         try:
@@ -694,7 +694,7 @@ class TestLockFileIdentity:
 
     @pytest.mark.skipif(platform_compat.IS_WINDOWS, reason="no home anchor on Windows")
     def test_indeterminate_support_probe_refuses_a_held_anchor(self, tmp_path, monkeypatch):
-        from kiro_crew import gateway_lock
+        from efm_go import gateway_lock
 
         held = GatewayLock(tmp_path).acquire()
         try:
@@ -716,7 +716,7 @@ class TestLockFileIdentity:
 
     @pytest.mark.skipif(platform_compat.IS_WINDOWS, reason="no home anchor on Windows")
     def test_indeterminate_support_probe_is_not_nobody(self, tmp_path, monkeypatch):
-        from kiro_crew import gateway_lock
+        from efm_go import gateway_lock
 
         held = GatewayLock(tmp_path).acquire()
         try:
@@ -918,9 +918,9 @@ class TestLockHolder:
         # held-probe is what keeps the stranger from being named.
         (tmp_path / LOCK_FILENAME).write_text("4242\n")
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
-        monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: True)
+        monkeypatch.setattr("efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: True)
         assert lock_holder(tmp_path) == LockHolder(pid=None, alive=False, source="none")
 
     def test_held_probe_error_is_indeterminate_not_a_holder(self, tmp_path, monkeypatch):
@@ -930,14 +930,14 @@ class TestLockHolder:
         # INDETERMINATE: no LockHolder is produced, a typed error is raised.
         (tmp_path / LOCK_FILENAME).write_text("4242\n")
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.try_acquire_lock",
+            "efm_go.gateway_lock.platform_compat.try_acquire_lock",
             lambda fd, **k: (_ for _ in ()).throw(OSError("flock unsupported")),
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 4242
+            "efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 4242
         )
         with pytest.raises(LockProbeError) as excinfo:
             lock_holder(tmp_path)
@@ -950,14 +950,14 @@ class TestLockHolder:
         # the probe failing does not take that answer away.
         (tmp_path / LOCK_FILENAME).write_text("111\n")
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.try_acquire_lock",
+            "efm_go.gateway_lock.platform_compat.try_acquire_lock",
             lambda fd, **k: (_ for _ in ()).throw(OSError("flock unsupported")),
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: 222
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: 222
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 222
+            "efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 222
         )
         assert lock_holder(tmp_path) == LockHolder(pid=222, alive=True, source="flock_owner")
 
@@ -966,13 +966,13 @@ class TestLockHolder:
     ):
         (tmp_path / LOCK_FILENAME).write_text("111\n")
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.try_acquire_lock",
+            "efm_go.gateway_lock.platform_compat.try_acquire_lock",
             lambda fd, **k: (_ for _ in ()).throw(OSError("flock unsupported")),
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: 222
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: 222
         )
-        monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: False)
+        monkeypatch.setattr("efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: False)
         with pytest.raises(LockProbeError):
             lock_holder(tmp_path)
 
@@ -985,12 +985,12 @@ class TestLockHolder:
         # not a holder to signal either.
         (tmp_path / LOCK_FILENAME).write_text("111\n")
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.try_acquire_lock", lambda fd, **k: False
+            "efm_go.gateway_lock.platform_compat.try_acquire_lock", lambda fd, **k: False
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: 222
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: 222
         )
-        monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: False)
+        monkeypatch.setattr("efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: False)
         with pytest.raises(LockProbeError, match="pid 222"):
             lock_holder(tmp_path)
 
@@ -1000,11 +1000,11 @@ class TestLockHolder:
         # (stop/restart would report nothing running on a lock `kirocrew
         # gateway` refuses to start on) nor a holder to act on.
         (tmp_path / LOCK_FILENAME).write_text("4242\n")
-        monkeypatch.setattr("kiro_crew.gateway_lock._lock_is_held", lambda *_a: True)
+        monkeypatch.setattr("efm_go.gateway_lock._lock_is_held", lambda *_a: True)
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
-        monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: False)
+        monkeypatch.setattr("efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: False)
         with pytest.raises(LockProbeError):
             lock_holder(tmp_path)
 
@@ -1034,12 +1034,12 @@ class TestLockHolder:
 
         monkeypatch.setattr(os, "read", denied)
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
-        monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.pid_exists", lambda _p: True)
-        monkeypatch.setattr("kiro_crew.gateway_lock._lock_is_held", lambda *_a: False)
+        monkeypatch.setattr("efm_go.gateway_lock.platform_compat.pid_exists", lambda _p: True)
+        monkeypatch.setattr("efm_go.gateway_lock._lock_is_held", lambda *_a: False)
         assert lock_holder(tmp_path) == LockHolder(pid=None, alive=False, source="none")
-        monkeypatch.setattr("kiro_crew.gateway_lock._lock_is_held", lambda *_a: True)
+        monkeypatch.setattr("efm_go.gateway_lock._lock_is_held", lambda *_a: True)
         with pytest.raises(LockProbeError):
             lock_holder(tmp_path)
         assert len(denied_reads) == 2, "the read itself must have been refused both times"
@@ -1054,22 +1054,22 @@ class TestLockHolder:
         # is nobody; a held one with garbage for a pid is indeterminate.
         (tmp_path / LOCK_FILENAME).write_text(content)
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
-        monkeypatch.setattr("kiro_crew.gateway_lock._lock_is_held", lambda *_a: False)
+        monkeypatch.setattr("efm_go.gateway_lock._lock_is_held", lambda *_a: False)
         assert lock_holder(tmp_path).pid is None
-        monkeypatch.setattr("kiro_crew.gateway_lock._lock_is_held", lambda *_a: True)
+        monkeypatch.setattr("efm_go.gateway_lock._lock_is_held", lambda *_a: True)
         with pytest.raises(LockProbeError):
             lock_holder(tmp_path)
 
     def test_recorded_pid_used_only_when_flock_owner_is_unavailable(self, tmp_path, monkeypatch):
         (tmp_path / LOCK_FILENAME).write_text("4242\n")
-        monkeypatch.setattr("kiro_crew.gateway_lock._lock_is_held", lambda *_a: True)
+        monkeypatch.setattr("efm_go.gateway_lock._lock_is_held", lambda *_a: True)
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 4242
+            "efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 4242
         )
         holder = lock_holder(tmp_path)
         assert holder == LockHolder(pid=4242, alive=True, source="recorded_pid")
@@ -1098,12 +1098,12 @@ class TestLockHolder:
         # A forked inheritor keeps the flock alive under a DIFFERENT pid than
         # the one last written to the file -- the authoritative source wins.
         (tmp_path / LOCK_FILENAME).write_text("111\n")
-        monkeypatch.setattr("kiro_crew.gateway_lock._lock_is_held", lambda *_a: True)
+        monkeypatch.setattr("efm_go.gateway_lock._lock_is_held", lambda *_a: True)
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: 222
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: 222
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 222
+            "efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 222
         )
         holder = lock_holder(tmp_path)
         assert holder == LockHolder(pid=222, alive=True, source="flock_owner")
@@ -1122,8 +1122,8 @@ class TestLockHolder:
             readings.append(True)
             return len(readings) == 1
 
-        monkeypatch.setattr("kiro_crew.gateway_lock._home_is_anchored", anchored_once)
-        monkeypatch.setattr("kiro_crew.gateway_lock.time.sleep", lambda _s: None)
+        monkeypatch.setattr("efm_go.gateway_lock._home_is_anchored", anchored_once)
+        monkeypatch.setattr("efm_go.gateway_lock.time.sleep", lambda _s: None)
         holder = lock_holder(tmp_path)
         assert holder == LockHolder(pid=None, alive=False, source="none")
         assert len(readings) > 1  # the first reading was re-probed, not believed
@@ -1139,10 +1139,10 @@ class TestLockHolder:
             readings.append(True)
             return True
 
-        monkeypatch.setattr("kiro_crew.gateway_lock._home_is_anchored", always_anchored)
-        monkeypatch.setattr("kiro_crew.gateway_lock.time.sleep", lambda _s: None)
+        monkeypatch.setattr("efm_go.gateway_lock._home_is_anchored", always_anchored)
+        monkeypatch.setattr("efm_go.gateway_lock.time.sleep", lambda _s: None)
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
         with pytest.raises(LockProbeError, match="no longer names"):
             lock_holder(tmp_path)
@@ -1159,7 +1159,7 @@ class TestLockHolder:
             readings.append(True)
             raise LockProbeError(path, OSError(errno.EMFILE, "cannot open home anchor"))
 
-        monkeypatch.setattr("kiro_crew.gateway_lock._home_is_anchored", probe_fails)
+        monkeypatch.setattr("efm_go.gateway_lock._home_is_anchored", probe_fails)
         with pytest.raises(LockProbeError, match="cannot open home anchor"):
             lock_holder(tmp_path)
         assert len(readings) == 1
@@ -1243,7 +1243,7 @@ class TestTheLockFileIsARegularFile:
         def refuse(_path, _mode=0o600):
             raise OSError(failure[0], os.strerror(failure[0]))
 
-        monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.open_create_no_reparse", refuse)
+        monkeypatch.setattr("efm_go.gateway_lock.platform_compat.open_create_no_reparse", refuse)
         # A link that appeared between a sibling's look and this open: the errno
         # alone classifies it, whatever the name now holds.
         failure.append(errno.ELOOP)
@@ -1265,9 +1265,9 @@ class TestTheLockFileIsARegularFile:
             raise FileNotFoundError(errno.ENOENT, "gone", os.fspath(path))
 
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.open_create_no_reparse", vanished
+            "efm_go.gateway_lock.platform_compat.open_create_no_reparse", vanished
         )
-        monkeypatch.setattr("kiro_crew.gateway_lock.time.sleep", lambda _s: None)
+        monkeypatch.setattr("efm_go.gateway_lock.time.sleep", lambda _s: None)
         with pytest.raises(GatewayLockError, match="replaced faster than it can be locked"):
             GatewayLock(tmp_path).acquire()
         assert len(opens) == _IDENTITY_ATTEMPTS
@@ -1312,9 +1312,9 @@ class TestTheLockFileIsARegularFile:
         # The non-Linux shape: no kernel owner surface, and the recorded number
         # belongs to some live process, as a reused pid would.
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
-        monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.pid_exists", lambda _p: True)
+        monkeypatch.setattr("efm_go.gateway_lock.platform_compat.pid_exists", lambda _p: True)
 
         held = GatewayLock(tmp_path).acquire()
         try:
@@ -1345,12 +1345,12 @@ class TestTheLockFileIsARegularFile:
         lock_file = tmp_path / LOCK_FILENAME
         lock_file.write_text("4242\n", encoding="utf-8")
         backup = tmp_path / "backup-of-the-lock"
-        monkeypatch.setattr("kiro_crew.gateway_lock._lock_is_held", lambda *_a: True)
+        monkeypatch.setattr("efm_go.gateway_lock._lock_is_held", lambda *_a: True)
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid", lambda _p: None
         )
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 4242
+            "efm_go.gateway_lock.platform_compat.pid_exists", lambda pid: pid == 4242
         )
         named = LockHolder(pid=4242, alive=True, source="recorded_pid")
 
@@ -1495,7 +1495,7 @@ class TestTheLockFileIsARegularFile:
 
         monkeypatch.setattr(os, "lstat", stale_check)
         monkeypatch.setattr(
-            "kiro_crew.gateway_lock.platform_compat.flock_owner_pid",
+            "efm_go.gateway_lock.platform_compat.flock_owner_pid",
             lambda p: looked_up.append(p),
         )
         with pytest.raises(LockPathProbeError):
@@ -1514,8 +1514,8 @@ class TestTheLockFileIsARegularFile:
                 asked.append(target)
                 return None
 
-            monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.flock_owner_pid", record)
-            monkeypatch.setattr("kiro_crew.gateway_lock.platform_compat.pids_holding_file", record)
+            monkeypatch.setattr("efm_go.gateway_lock.platform_compat.flock_owner_pid", record)
+            monkeypatch.setattr("efm_go.gateway_lock.platform_compat.pids_holding_file", record)
             with pytest.raises(GatewayLockError):
                 GatewayLock(tmp_path).acquire()
             # The kernel names nobody here, so this falls back to the stamp (our

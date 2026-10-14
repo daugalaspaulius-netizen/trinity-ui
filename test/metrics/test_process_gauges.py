@@ -19,9 +19,9 @@ import pytest
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
-from kiro_crew.metrics import events
-from kiro_crew.metrics import process_gauges as pg
-from kiro_crew.metrics.schema import validate_name
+from efm_go.metrics import events
+from efm_go.metrics import process_gauges as pg
+from efm_go.metrics.schema import validate_name
 
 # Linux's current and peak RSS use different accounting paths whose per-CPU
 # counters are approximate and can be sampled at different instants. Probes on
@@ -290,8 +290,8 @@ def test_observable_counters_survive_provider_rebuild(tmp_path):
     from opentelemetry.sdk.metrics import MeterProvider
     from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-    from kiro_crew.dashboard.handlers.telemetry import _aggregate
-    from kiro_crew.metrics.local_exporter import JsonlMetricExporter
+    from efm_go.dashboard.handlers.telemetry import _aggregate
+    from efm_go.metrics.local_exporter import JsonlMetricExporter
 
     def run_provider(value: float) -> None:
         exporter = JsonlMetricExporter(tmp_path)
@@ -337,12 +337,12 @@ def _enable_telemetry(monkeypatch):
 
 
 def test_live_build_registers_process_gauges(monkeypatch):
-    from kiro_crew.metrics import provider as provider_mod
+    from efm_go.metrics import provider as provider_mod
 
     _enable_telemetry(monkeypatch)
     provider_mod.reset_for_testing()
     try:
-        with patch("kiro_crew.metrics.process_gauges.register_process_gauges") as register:
+        with patch("efm_go.metrics.process_gauges.register_process_gauges") as register:
             rec = provider_mod.get_recorder()
             assert rec.enabled
             register.assert_called_once()
@@ -351,13 +351,13 @@ def test_live_build_registers_process_gauges(monkeypatch):
 
 
 def test_gauge_registration_failure_keeps_telemetry_alive(monkeypatch):
-    from kiro_crew.metrics import provider as provider_mod
+    from efm_go.metrics import provider as provider_mod
 
     _enable_telemetry(monkeypatch)
     provider_mod.reset_for_testing()
     try:
         with patch(
-            "kiro_crew.metrics.process_gauges.register_process_gauges",
+            "efm_go.metrics.process_gauges.register_process_gauges",
             side_effect=RuntimeError("boom"),
         ):
             rec = provider_mod.get_recorder()

@@ -11,11 +11,11 @@ from pathlib import Path
 import yaml
 from yaml_helpers import load_with
 
-from kiro_crew.deploy import iam as iam_mod
+from efm_go.deploy import iam as iam_mod
 
 REPO = Path(__file__).resolve().parents[1]
-HANDLERS = (REPO / "src" / "kiro_crew" / "deploy" / "handlers.py").read_text(encoding="utf-8")
-TEMPLATES = REPO / "src" / "kiro_crew" / "deploy" / "skills" / "artifact-deploy" / "templates"
+HANDLERS = (REPO / "src" / "efm_go" / "deploy" / "handlers.py").read_text(encoding="utf-8")
+TEMPLATES = REPO / "src" / "efm_go" / "deploy" / "skills" / "artifact-deploy" / "templates"
 
 
 def _statements(doc):

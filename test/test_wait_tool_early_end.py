@@ -15,7 +15,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.mcp_core import WAIT_PING_SECS, _call_tool
+from efm_go.mcp_core import WAIT_PING_SECS, _call_tool
 
 # Smallest wait the handler allows (seconds = max(60, ...)), so the loop makes
 # 60 / WAIT_PING_SECS = 12 countdown pings before it would elapse naturally.
@@ -100,9 +100,9 @@ def _run_wait(reply_fn, *, seconds: int = MIN_WAIT, reason: str = "test", identi
         return reply_fn(len(posts), dict(body or {}))
 
     with (
-        patch("kiro_crew.mcp_core._post", side_effect=_fake_post),
+        patch("efm_go.mcp_core._post", side_effect=_fake_post),
         patch(
-            "kiro_crew.mcp_core._resolve_session_key_strict",
+            "efm_go.mcp_core._resolve_session_key_strict",
             return_value="dashboard:test" if identified else "",
         ),
         patch.object(_time, "monotonic", clock.monotonic),

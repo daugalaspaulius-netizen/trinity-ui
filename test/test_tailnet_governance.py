@@ -33,7 +33,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard import tailnet
+from efm_go.dashboard import tailnet
 
 _SCOPE = "capabilities.tailnet_origin"
 
@@ -56,8 +56,8 @@ def isolated_home(tmp_path, monkeypatch):
 
 def _install_policy(monkeypatch, doc: dict | None) -> None:
     """Install *doc* as the boot-frozen ceiling for the duration of a test."""
-    from kiro_crew.platform import context as pc
-    from kiro_crew.platform.governance import parse_policy
+    from efm_go.platform import context as pc
+    from efm_go.platform.governance import parse_policy
 
     ceiling = parse_policy(doc) if doc is not None else None
 
@@ -74,7 +74,7 @@ class TestScopeCatalog:
     """Adding the scope must be a DATA change: one row, nothing else."""
 
     def test_row_is_registered_as_a_default_on_capability(self) -> None:
-        from kiro_crew.platform.governance import CAPABILITY, SCOPE_CATALOG
+        from efm_go.platform.governance import CAPABILITY, SCOPE_CATALOG
 
         spec = SCOPE_CATALOG[_SCOPE]
         assert spec.kind == CAPABILITY
@@ -84,7 +84,7 @@ class TestScopeCatalog:
 
     def test_a_policy_can_actually_express_the_pin(self) -> None:
         """The loader parses the row without a matcher/scale registry entry."""
-        from kiro_crew.platform.governance import CapabilityGate, parse_policy
+        from efm_go.platform.governance import CapabilityGate, parse_policy
 
         gate = parse_policy(_PIN_DOC).get(_SCOPE)
         assert isinstance(gate, CapabilityGate)
@@ -112,7 +112,7 @@ class TestGovernancePin:
         """Narrowing to ``layer == "policy"`` is only correct if a genuine Level-1
         pin still reports ``policy``. ``resolve`` wraps the CapabilityGate's own
         ``layer="both"``, so this asserts the wrapping rather than assuming it."""
-        from kiro_crew.platform.governance import parse_policy, resolve
+        from efm_go.platform.governance import parse_policy, resolve
 
         decision = resolve(parse_policy(_PIN_DOC), None, _SCOPE, "")
         assert decision.permitted is False
@@ -134,7 +134,7 @@ class TestGovernancePin:
         an ordinary ``permitted=False`` Decision, not an exception — which is why
         the probe keys on ``layer``, not on ``permitted`` alone.
         """
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         monkeypatch.setattr(
             gp, "resolve_active_scope", lambda *a, **k: gp.deny_all_profile("_deny_all_unloaded:x")
@@ -147,8 +147,8 @@ class TestGovernancePin:
     ) -> None:
         """Same rule with a real ceiling present, so the ``layer`` test — not the
         ``ceiling is None`` short-circuit — is what produces the answer."""
-        from kiro_crew.platform import governance_profiles as gp
-        from kiro_crew.platform.governance import CapabilityGate, Profile
+        from efm_go.platform import governance_profiles as gp
+        from efm_go.platform.governance import CapabilityGate, Profile
 
         monkeypatch.setattr(
             gp,
@@ -167,9 +167,9 @@ class TestGovernancePin:
         wrong-PERMIT grows the set of origins the gateway accepts authenticated
         state-changing requests from, on a fleet that forbade it.
         """
-        from kiro_crew.platform import context as pc
-        from kiro_crew.platform import governance_profiles as gp
-        from kiro_crew.platform.governance import parse_policy
+        from efm_go.platform import context as pc
+        from efm_go.platform import governance_profiles as gp
+        from efm_go.platform.governance import parse_policy
 
         monkeypatch.setattr(
             gp,
@@ -248,7 +248,7 @@ class TestResolveChokepoint:
 
 
 def _status_app(host: str = "", resolved_at: int = 0) -> web.Application:
-    from kiro_crew.dashboard.handlers import api_tailnet_status
+    from efm_go.dashboard.handlers import api_tailnet_status
 
     app = web.Application()
     app["tailnet_host"] = host
@@ -258,9 +258,9 @@ def _status_app(host: str = "", resolved_at: int = 0) -> web.Application:
 
 
 async def _get_status(monkeypatch, *, enabled: bool, pinned: bool, host: str, resolved_at: int = 0):
-    from kiro_crew.dashboard.handlers import tailnet as handler_mod
+    from efm_go.dashboard.handlers import tailnet as handler_mod
 
-    # The handler resolves the probe through ``kiro_crew.dashboard.tailnet``, so
+    # The handler resolves the probe through ``efm_go.dashboard.tailnet``, so
     # patching it there is what the route actually consults.
     monkeypatch.setattr(tailnet, "is_governance_pinned_off", lambda **_k: pinned)
     monkeypatch.setattr(
@@ -324,7 +324,7 @@ class TestStatusState:
     @pytest.mark.asyncio
     async def test_never_500s_on_an_unreadable_config(self, isolated_home, monkeypatch) -> None:
         """An unreadable config is exactly when the operator wants this card."""
-        from kiro_crew.dashboard.handlers import tailnet as handler_mod
+        from efm_go.dashboard.handlers import tailnet as handler_mod
 
         monkeypatch.setattr(tailnet, "is_governance_pinned_off", lambda **_k: False)
         monkeypatch.setattr(
@@ -340,7 +340,7 @@ class TestStatusState:
         assert body["enabled"] is False and body["state"] == "off"
 
     def test_state_precedence_is_a_pure_function(self) -> None:
-        from kiro_crew.dashboard.handlers.tailnet import _derive_state
+        from efm_go.dashboard.handlers.tailnet import _derive_state
 
         assert _derive_state(pinned=True, enabled=True, host=_HOST) == "pinned"
         assert _derive_state(pinned=False, enabled=False, host=_HOST) == "off"
@@ -359,7 +359,7 @@ async def _owner_identity(request, handler):
 
 
 def _patch_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import api_kirocrew_config_patch
+    from efm_go.dashboard.handlers import api_kirocrew_config_patch
 
     app = web.Application(middlewares=[_owner_identity])
     app["state"] = SimpleNamespace(owner_id="")
@@ -371,14 +371,14 @@ def _patch_app() -> web.Application:
 def tmp_config(tmp_path, monkeypatch):
     cfg_path = tmp_path / "config.json"
     cfg_path.write_text(json.dumps({"auto_update": False}), encoding="utf-8")
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_path)
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_path)
     return cfg_path
 
 
 class TestPatchChokepoint:
     @staticmethod
     def _pin(monkeypatch, pinned: bool) -> None:
-        from kiro_crew.dashboard.handlers import core as core_mod
+        from efm_go.dashboard.handlers import core as core_mod
 
         monkeypatch.setattr(core_mod, "_tailnet_governance_pinned_off", lambda: pinned)
 
@@ -466,7 +466,7 @@ class TestCliChokepoint:
 
     @pytest.mark.parametrize("local", [False, True])
     def test_enable_is_refused_under_a_pin(self, isolated_home, monkeypatch, local) -> None:
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         self._pin(monkeypatch, True)
         with pytest.raises(SystemExit) as exc:
@@ -478,7 +478,7 @@ class TestCliChokepoint:
                 assert "tailscale" not in path.read_text(encoding="utf-8")
 
     def test_disable_is_still_allowed_under_a_pin(self, isolated_home, monkeypatch) -> None:
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         self._pin(monkeypatch, True)
         _config_cmd(self._args("false"))
@@ -486,7 +486,7 @@ class TestCliChokepoint:
         assert data["dashboard"]["tailscale"]["enabled"] is False
 
     def test_unpinned_host_can_still_enable(self, isolated_home, monkeypatch) -> None:
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         self._pin(monkeypatch, False)
         _config_cmd(self._args("true"))
@@ -508,7 +508,7 @@ class TestBothStartupSitesStash:
 
     @staticmethod
     def _func(name: str) -> ast.AsyncFunctionDef:
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import server as server_mod
 
         tree = ast.parse(Path(server_mod.__file__).read_text(encoding="utf-8"))
         for node in tree.body:
@@ -551,9 +551,9 @@ class TestBothStartupSitesStash:
         assert len(calls) == 1, f"{startup} must install one tailnet recovery lifecycle"
 
     def test_the_route_is_registered(self) -> None:
-        from kiro_crew.dashboard import handlers
-        from kiro_crew.dashboard import routes as routes_pkg
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import handlers
+        from efm_go.dashboard import routes as routes_pkg
+        from efm_go.dashboard import server as server_mod
 
         assert hasattr(handlers, "api_tailnet_status")
         # The registration lives in the route table under ``dashboard/routes/``;
@@ -579,7 +579,7 @@ class TestRevokingAPublishedOriginWhenTheCeilingTightens:
 
     @staticmethod
     def _run(monkeypatch, *, pinned_off: bool, published, unpublish_ok: bool = True):
-        from kiro_crew.dashboard import tailnet_serve
+        from efm_go.dashboard import tailnet_serve
 
         calls: list[int] = []
         monkeypatch.setattr(tailnet_serve, "is_governance_pinned_off", lambda **kw: pinned_off)
@@ -602,7 +602,7 @@ class TestRevokingAPublishedOriginWhenTheCeilingTightens:
         contract is that auditing an inspection appends HMAC-chained SEL rows at a multiple
         of the decisions that actually govern anything. The forensic record comes from
         ``unpublish``, which audits the decision that DOES something."""
-        from kiro_crew.dashboard import tailnet_serve
+        from efm_go.dashboard import tailnet_serve
 
         seen: list[dict] = []
         monkeypatch.setattr(
@@ -619,7 +619,7 @@ class TestRevokingAPublishedOriginWhenTheCeilingTightens:
         there, so it discards its own ``audit_tool``. An automatic revocation needs the SEL
         row more than a human-driven one does: nobody typed it, so that row is the only place
         a reviewer can see the FLEET took this host off the tailnet."""
-        from kiro_crew.dashboard import tailnet_serve
+        from efm_go.dashboard import tailnet_serve
 
         asked: list[dict] = []
         monkeypatch.setattr(
@@ -646,7 +646,7 @@ class TestRevokingAPublishedOriginWhenTheCeilingTightens:
 
     def test_nothing_is_audited_when_there_is_nothing_to_withdraw(self, monkeypatch):
         """The per-poll cost the pure read exists to avoid must stay avoided."""
-        from kiro_crew.dashboard import tailnet_serve
+        from efm_go.dashboard import tailnet_serve
 
         asked: list[dict] = []
         monkeypatch.setattr(
@@ -681,7 +681,7 @@ class TestRevokingAPublishedOriginWhenTheCeilingTightens:
         installed ceiling being reported as installed, but it must not be silent either."""
         import logging
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.dashboard.tailnet_serve"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.dashboard.tailnet_serve"):
             assert self._run(monkeypatch, pinned_off=True, published=True, unpublish_ok=False) == [
                 8765
             ]

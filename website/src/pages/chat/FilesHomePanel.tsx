@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { FileText, ExternalLink, TerminalSquare, MoreHorizontal } from 'lucide-react'
+import { hideKiroPath } from '../../efm/paths'
 import { useBranding } from '../../hooks/useBranding'
 import { revealOrOpen, useRevealFailure, useRevealLabel } from '../../components/FilePathMenu'
 import ErrorNotice from '../../components/ErrorNotice'
@@ -97,7 +98,7 @@ export default function FilesHomePanel({ projectDir, onFileOpen, onAddToContext,
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-2 h-[38px] px-3 shrink-0 border-b border-border">
         <span className="text-[12px] font-semibold text-text-strong">{t('pages.chat.filesHome.title')}</span>
-        {projectDir && <span className="text-[11.5px] text-muted truncate" title={projectDir}>{basename(projectDir)}</span>}
+        {projectDir && <span className="text-[11.5px] text-muted truncate" title={hideKiroPath(projectDir)}>{basename(hideKiroPath(projectDir))}</span>}
         <span className="flex-1" />
         {projectDir && (
           <>

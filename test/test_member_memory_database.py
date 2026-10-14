@@ -13,11 +13,11 @@ from sqlite3.dump import _iterdump as iter_sql_dump
 
 import pytest
 
-from kiro_crew import memory_stores
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.hooks import FileTooLargeError
-from kiro_crew.memory import MemoryStore
-from kiro_crew.vector_memory import (
+from efm_go import memory_stores
+from efm_go._sqlite_compat import sqlite3
+from efm_go.hooks import FileTooLargeError
+from efm_go.memory import MemoryStore
+from efm_go.vector_memory import (
     VectorMemoryStore,
     create_member_database,
     open_member_database,
@@ -35,8 +35,8 @@ def test_empty_pysqlite_package_admission_uses_reader_fallback(tmp_path):
         from types import ModuleType, SimpleNamespace
 
         sys.modules['pysqlite3'] = ModuleType('pysqlite3')
-        from kiro_crew import execution_context, memory_stores, vector_memory
-        from kiro_crew.config.sections import KiroCrewAgentConfig, MemoryStoreConfig
+        from efm_go import execution_context, memory_stores, vector_memory
+        from efm_go.config.sections import KiroCrewAgentConfig, MemoryStoreConfig
 
         assert not hasattr(sys.modules['pysqlite3'], 'connect')
         assert vector_memory.sqlite3 is sqlite3
@@ -151,7 +151,7 @@ def test_history_search_and_edits_share_database_without_learned_files(member_db
 
 
 def test_obsolete_full_transcript_receipt_schema_refuses_without_repair(member_db):
-    from kiro_crew.vector_memory import sqlite3 as reader_sqlite
+    from efm_go.vector_memory import sqlite3 as reader_sqlite
 
     path = member_db._db_path
     member_db.db.execute("DROP TABLE memory_consolidations")
@@ -283,7 +283,7 @@ def test_consolidation_persists_the_authored_lesson_tier(member_db, caplog):
     must carry the tier the model stated: both literals round-trip, an omitted
     key lands unstated (absent, not ``null``), and a misspelling is logged and
     still lands unstated rather than dropping the correction."""
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.vector_memory"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.vector_memory"):
         receipt = consolidate(
             member_db,
             result={
@@ -375,7 +375,7 @@ def test_recall_has_no_database_writes_and_fts_tracks_revision_mutations(member_
     member_db.write_episodic("Aurora release notes are ready for review.", defer_embedding=True)
     before = list(iter_sql_dump(member_db.db))
     changes = member_db.db.total_changes
-    with caplog.at_level("DEBUG", logger="kiro_crew.vector_memory"):
+    with caplog.at_level("DEBUG", logger="efm_go.vector_memory"):
         member_db.recall("aurora release")
     assert "aurora release" not in caplog.text
     member_db.search_memory("aurora")
@@ -391,7 +391,7 @@ def test_legacy_recall_diagnostics_do_not_record_query(tmp_path, caplog, query_e
     store.init()
     try:
         store.write_episodic("Release notes are ready", defer_embedding=True)
-        with caplog.at_level("DEBUG", logger="kiro_crew.vector_memory"):
+        with caplog.at_level("DEBUG", logger="efm_go.vector_memory"):
             store.search_episodic(query_embedding, query_text="private aurora release")
         assert "Episodic" in caplog.text
         assert "private aurora release" not in caplog.text
@@ -407,8 +407,8 @@ async def test_lost_transcript_ack_recovers_committed_prefix_without_another_mod
 ):
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.context import ContextBuilder
-    from kiro_crew.history_consolidation import HistoryConsolidator
+    from efm_go.context import ContextBuilder
+    from efm_go.history_consolidation import HistoryConsolidator
 
     log = MagicMock()
     first = {"role": "user", "content": "The release codename is aurora 中文."}
@@ -422,7 +422,7 @@ async def test_lost_transcript_ack_recovers_committed_prefix_without_another_mod
     writer = HistoryConsolidator(log, memory, vector_store=member_db, migrated=True)
     writer._call_llm = AsyncMock(return_value={"history_entry": "Approved aurora."})
     writer._note_failed_attempt = AsyncMock()
-    monkeypatch.setattr("kiro_crew.context.store_of_session", lambda *_: "alice-store")
+    monkeypatch.setattr("efm_go.context.store_of_session", lambda *_: "alice-store")
     monkeypatch.setattr(memory_stores, "memory_store_version", lambda *_: 2)
     monkeypatch.setattr(ContextBuilder, "ensure_store", AsyncMock(return_value=member_db))
     monkeypatch.setattr(ContextBuilder, "get_memory_for", lambda **_: memory)
@@ -486,7 +486,7 @@ def test_member_database_cannot_open_a_separate_index_or_migrate_global_files(me
 @pytest.mark.parametrize("kind", ["fact", "directive", "episode"])
 @pytest.mark.parametrize("change", ["content", "space"])
 def test_member_backfill_rejects_late_content_or_model_space(member_db, monkeypatch, kind, change):
-    from kiro_crew import memory_edit
+    from efm_go import memory_edit
 
     if kind == "fact":
         member_db.set_semantic("project.name", "aurora", 1, "user_explicit")
@@ -546,13 +546,13 @@ async def test_restricted_consolidation_never_reads_transcript_or_opens_memory(
 ):
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED, HistoryConsolidator
+    from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED, HistoryConsolidator
 
     execution = ExecutionContext(
         "alice-id", MemoryStoreRef("alice-store", "alice-id"), "member", "kirocrew", mode
     )
-    monkeypatch.setattr("kiro_crew.execution_context.read_session_execution", lambda _: execution)
+    monkeypatch.setattr("efm_go.execution_context.read_session_execution", lambda _: execution)
     log = MagicMock()
     writer = HistoryConsolidator(log, MagicMock(), vector_store=member_db)
     writer._call_llm = AsyncMock()

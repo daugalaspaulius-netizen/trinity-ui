@@ -16,10 +16,10 @@ from unittest.mock import patch
 
 def _resolve(prompt: str, session_key: str, density: str = "more") -> str:
     """Call the private template resolver with a canned config."""
-    from kiro_crew.context import ContextBuilder
+    from efm_go.context import ContextBuilder
 
     fake_cfg = SimpleNamespace(dashboard=SimpleNamespace(widget_density=density))
-    with patch("kiro_crew.context.KiroCrewConfig.load", return_value=fake_cfg):
+    with patch("efm_go.context.KiroCrewConfig.load", return_value=fake_cfg):
         return ContextBuilder._resolve_prompt_templates(prompt, session_key)
 
 
@@ -108,10 +108,10 @@ class TestWidgetBlockPlaceholder:
 
     def test_density_default_when_config_missing(self):
         # If the dashboard config omits widget_density entirely, fall back to "more".
-        from kiro_crew.context import ContextBuilder
+        from efm_go.context import ContextBuilder
 
         fake_cfg = SimpleNamespace(dashboard=SimpleNamespace())
-        with patch("kiro_crew.context.KiroCrewConfig.load", return_value=fake_cfg):
+        with patch("efm_go.context.KiroCrewConfig.load", return_value=fake_cfg):
             result = ContextBuilder._resolve_prompt_templates("{{WIDGET_BLOCK}}", "dashboard:x")
         # The `more` branch fires (skill pointer + encouraging wording) and the
         # `less` branch does not. Assert structurally, not on specific prose
@@ -125,19 +125,19 @@ class TestMaxSubagentsPlaceholder:
 
     @staticmethod
     def _resolve_cap(prompt, session_key, *, cap=None, raises=False, live=0):
-        from kiro_crew.context import ContextBuilder
+        from efm_go.context import ContextBuilder
 
         fake_cfg = SimpleNamespace(dashboard=SimpleNamespace(widget_density="more"))
         if raises:
             sub = patch(
-                "kiro_crew.subagent.resolve_max_subagents",
+                "efm_go.subagent.resolve_max_subagents",
                 side_effect=RuntimeError("boom"),
             )
         else:
-            sub = patch("kiro_crew.subagent.resolve_max_subagents", return_value=cap)
+            sub = patch("efm_go.subagent.resolve_max_subagents", return_value=cap)
         with (
-            patch("kiro_crew.context.KiroCrewConfig.load", return_value=fake_cfg),
-            patch("kiro_crew.resource_status.adaptive_exec_cap", return_value=live),
+            patch("efm_go.context.KiroCrewConfig.load", return_value=fake_cfg),
+            patch("efm_go.resource_status.adaptive_exec_cap", return_value=live),
             sub,
         ):
             return ContextBuilder._resolve_prompt_templates(prompt, session_key)
@@ -173,12 +173,12 @@ class TestMaxSubagentsPlaceholder:
 
     def test_absent_token_skips_resolver(self):
         # No token → the (heavier) sub-agent resolver is never invoked.
-        from kiro_crew.context import ContextBuilder
+        from efm_go.context import ContextBuilder
 
         fake_cfg = SimpleNamespace(dashboard=SimpleNamespace(widget_density="more"))
         with (
-            patch("kiro_crew.context.KiroCrewConfig.load", return_value=fake_cfg),
-            patch("kiro_crew.subagent.resolve_max_subagents") as resolver,
+            patch("efm_go.context.KiroCrewConfig.load", return_value=fake_cfg),
+            patch("efm_go.subagent.resolve_max_subagents") as resolver,
         ):
             ContextBuilder._resolve_prompt_templates(
                 "no token here {{WIDGET_BLOCK}}", "dashboard:abc"

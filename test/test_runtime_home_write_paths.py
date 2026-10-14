@@ -48,7 +48,7 @@ from source_corpus import repo_files_named
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-DEFAULTS_JSON = REPO_ROOT / "src" / "kiro_crew" / "config" / "defaults.json"
+DEFAULTS_JSON = REPO_ROOT / "src" / "efm_go" / "config" / "defaults.json"
 
 # ``.kirocrew`` NOT followed by ``-`` or ``.`` -- so the top-level siblings that
 # genuinely did not move (``.kirocrew-pods``, ``.kirocrew-dev``,
@@ -66,7 +66,7 @@ LEGACY_READER_SCRIPTS = frozenset(
         # seeds a dev home FROM the pre-move home on a not-yet-migrated box
         "dev-seed.sh",
         # sensitive-path denylist; must still refuse the legacy tree
-        "src/kiro_crew/deploy/skills/artifact-deploy/scripts/_common.sh",
+        "src/efm_go/deploy/skills/artifact-deploy/scripts/_common.sh",
     }
 )
 
@@ -108,9 +108,9 @@ def _shipped_python() -> list[Path]:
     legacy path to assert migration and sensitive-path behavior. Filtered by prefix
     out of :func:`_repo_python_files` rather than enumerated per root, so the
     ``_vendor`` exclusion is inherited from one place: the vendored tree IS tracked,
-    and git names it exactly as a walk of ``src/kiro_crew`` would.
+    and git names it exactly as a walk of ``src/efm_go`` would.
     """
-    shipped = (("src", "kiro_crew"), ("packages",))
+    shipped = (("src", "efm_go"), ("packages",))
     return [
         p
         for p in _repo_python_files()

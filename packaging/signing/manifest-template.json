@@ -2,15 +2,15 @@
   "manifest": {
     "type": "app",
     "os": "osx",
-    "name": "KiroCrew.app",
-    "outputs": [{ "label": "macos", "path": "KiroCrew.app" }],
+    "name": "EFM Go.app",
+    "outputs": [{ "label": "macos", "path": "EFM Go.app" }],
     "app": {
-      "identifier": "com.amazon.kiro.crew",
+      "identifier": "com.efmleads.go",
       "embedded_requirements": {},
       "signing_requirements": {
         "signing_args": { "entitlements_path": "SIGNING_METADATA/Entitlements.entitlements" },
         "certificate_type": "developerIDAppDistribution",
-        "team_id": "94KV3E626L"
+        "team_id": ""
       }
     }
   },

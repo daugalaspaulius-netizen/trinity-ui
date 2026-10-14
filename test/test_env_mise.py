@@ -10,7 +10,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from kiro_crew import env
+from efm_go import env
 
 
 @pytest.fixture

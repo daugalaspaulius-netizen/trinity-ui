@@ -8,15 +8,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.config.loader import KiroCrewAgentConfig
-from kiro_crew.execution_context import bind_session_execution, resolve_member_execution
-from kiro_crew.history import ConversationLog
-from kiro_crew.memory_stores import persist_member_config, provision_member_memory
-from kiro_crew.workflow_memory import capture_execution
-from kiro_crew.workflows import agent_exec, agent_pool, service
-from kiro_crew.workflows.library import WorkflowDefinitionLibrary
-from kiro_crew.workflows.registry import RunHandle
+from efm_go.config import KiroCrewConfig
+from efm_go.config.loader import KiroCrewAgentConfig
+from efm_go.execution_context import bind_session_execution, resolve_member_execution
+from efm_go.history import ConversationLog
+from efm_go.memory_stores import persist_member_config, provision_member_memory
+from efm_go.workflow_memory import capture_execution
+from efm_go.workflows import agent_exec, agent_pool, service
+from efm_go.workflows.library import WorkflowDefinitionLibrary
+from efm_go.workflows.registry import RunHandle
 
 SCRIPT = 'META = {"name": "lease"}\nasync def workflow(ctx):\n    return await ctx.agent("work")\n'
 PARENT = "dashboard:private-workflow-parent"
@@ -293,7 +293,7 @@ async def test_author_identity_cannot_be_hidden_by_global_result_route(private_p
 
 @pytest.mark.asyncio
 async def test_restored_private_run_cannot_resume_on_global_workers(tmp_path, private_parent):
-    from kiro_crew.workflows.store import WorkflowRunStore
+    from efm_go.workflows.store import WorkflowRunStore
 
     store = WorkflowRunStore(tmp_path / "workflows")
     before = service.WorkflowService(sessions=LeaseSessions(), store=store)

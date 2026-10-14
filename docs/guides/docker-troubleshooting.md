@@ -525,7 +525,7 @@ gateway's own process environment has no trace of the token you passed in.
 `docker/entrypoint.sh` moves every credential it finds in the environment into
 the data home's `.env` (written mode 600), unsets it, and exports
 `_KIROCREW_CREDS_SCRUBBED=1`. `KiroCrewConfig.load_credentials`
-(`src/kiro_crew/config/loader.py`) reads that marker and refuses to re-inject
+(`src/efm_go/config/loader.py`) reads that marker and refuses to re-inject
 those keys into `os.environ`, so they never sit in the long-lived gateway's
 `/proc/<pid>/environ`.
 
@@ -622,7 +622,7 @@ docker stats kirocrew --no-stream
 
 - Check the full startup log: `docker logs kirocrew`
 - Review [docker.md](docker.md) for the complete configuration reference.
-- Open an [issue](https://github.com/kirodotdev/KiroCrew/issues) with your
+- Open an [issue](https://efmleads.com/issues) with your
   Docker version (`docker version`), OS, and the relevant log output.
 
 **Redact before you post.** A container log is not guaranteed to be free of

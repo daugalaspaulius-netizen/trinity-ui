@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from kiro_crew.deploy import engine
+from efm_go.deploy import engine
 
 _SITE_TAGS = [
     {"ResourceARN": "arn:aws:s3:::kirocrew-web-aaaa1111",

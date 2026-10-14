@@ -21,15 +21,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.knowledge import retrieval
-from kiro_crew.knowledge.embedder import floats_to_bytes
-from kiro_crew.knowledge.retrieval import (
+from efm_go.knowledge import retrieval
+from efm_go.knowledge.embedder import floats_to_bytes
+from efm_go.knowledge.retrieval import (
     ANY_EMBEDDING_SPACE,
     HybridRetriever,
     _bytes_to_floats,
     _looks_like_json,
 )
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.knowledge.store import KnowledgeStore
 
 _DIM = 8
 # _mixed_corpus shape: how many rows are struct-packed at the query's width

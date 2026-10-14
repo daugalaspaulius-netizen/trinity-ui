@@ -21,14 +21,14 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.dashboard.handlers import knowledge as kh
-from kiro_crew.embeddings import PRIORITY_NORMAL
-from kiro_crew.knowledge.embedder import embedder_signature
-from kiro_crew.knowledge.ingestion import IngestionPipeline
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go._sqlite_compat import sqlite3
+from efm_go.dashboard.handlers import knowledge as kh
+from efm_go.embeddings import PRIORITY_NORMAL
+from efm_go.knowledge.embedder import embedder_signature
+from efm_go.knowledge.ingestion import IngestionPipeline
+from efm_go.knowledge.store import KnowledgeStore
 
-MODULE = "kiro_crew.dashboard.handlers.knowledge"
+MODULE = "efm_go.dashboard.handlers.knowledge"
 
 
 @pytest.fixture()
@@ -1038,7 +1038,7 @@ class TestImportBundle:
         # platform's json C-scanner raises (vs parses) varies, so force the
         # error instead of gambling on real nesting.  The old guard caught only
         # ValueError, leaking RecursionError as an unhandled 500.
-        from kiro_crew.dashboard.handlers import knowledge as knowledge_mod
+        from efm_go.dashboard.handlers import knowledge as knowledge_mod
 
         real_loads = knowledge_mod.json.loads
 

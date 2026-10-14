@@ -487,7 +487,7 @@ test("stopGatewayGracefully: no-op on already-dead process", async () => {
 // Injectable deps so we exercise the verify-the-kill-worked logic without a
 // real OS process. `listenSeq` is a queue of lsof results returned on each
 // successive call, letting a test model "killed then gone" vs "never gone".
-function fakeDeps({ listenSeq, command = "python -m kiro_crew gateway", onKill = () => {} }) {
+function fakeDeps({ listenSeq, command = "python -m efm_go gateway", onKill = () => {} }) {
   let i = 0;
   const killed = [];
   return {
@@ -561,7 +561,7 @@ test("forceStopPort: freed reflects real port state even after killing our targe
   const seq = [[4242], [777]]; // ours dies, foreign 777 appears
   const deps = {
     getListenPids: async () => seq[Math.min(i++, seq.length - 1)],
-    getCommand: async () => "python -m kiro_crew gateway",
+    getCommand: async () => "python -m efm_go gateway",
     kill: () => {},
     sleep: async () => {},
     verifyTimeoutMs: 1000,
@@ -634,7 +634,7 @@ test("forceStopPort: a failed Windows verification never claims recovery", async
 test("classifyPortOwner: local KiroCrew gateway is ours", async () => {
   const owner = await classifyPortOwner(5476, {
     getListenPids: async () => [4242],
-    getCommand: async () => "python -m kiro_crew gateway --port 5476",
+    getCommand: async () => "python -m efm_go gateway --port 5476",
   });
   assert.strictEqual(owner, "kirocrew");
 });
@@ -646,7 +646,7 @@ test("classifyPortOwner: local KiroCrew gateway is ours", async () => {
 test("classifyPortOwner: a service-managed gateway (ppid 1) is 'service'", async () => {
   const owner = await classifyPortOwner(5476, {
     getListenPids: async () => [4242],
-    getCommand: async () => "python -m kiro_crew gateway --port 5476",
+    getCommand: async () => "python -m efm_go gateway --port 5476",
     getPpid: async () => "1",
   });
   assert.strictEqual(owner, "service");
@@ -655,7 +655,7 @@ test("classifyPortOwner: a service-managed gateway (ppid 1) is 'service'", async
 test("classifyPortOwner: an app-spawned gateway (real ppid) stays 'kirocrew'", async () => {
   const owner = await classifyPortOwner(5476, {
     getListenPids: async () => [4242],
-    getCommand: async () => "python -m kiro_crew gateway --port 5476",
+    getCommand: async () => "python -m efm_go gateway --port 5476",
     getPpid: async () => "  3310\n",
   });
   assert.strictEqual(owner, "kirocrew");
@@ -666,7 +666,7 @@ test("classifyPortOwner: an unreadable ppid fails closed to 'service'", async ()
   // mistaking a wedge for a service only costs an eviction we can explain.
   const owner = await classifyPortOwner(5476, {
     getListenPids: async () => [4242],
-    getCommand: async () => "python -m kiro_crew gateway --port 5476",
+    getCommand: async () => "python -m efm_go gateway --port 5476",
     getPpid: async () => { throw new Error("ps failed"); },
   });
   assert.strictEqual(owner, "service");
@@ -677,7 +677,7 @@ test("classifyPortOwner: without a ppid probe the old classification stands", as
   // every local gateway as a service.
   const owner = await classifyPortOwner(5476, {
     getListenPids: async () => [4242],
-    getCommand: async () => "python -m kiro_crew gateway --port 5476",
+    getCommand: async () => "python -m efm_go gateway --port 5476",
   });
   assert.strictEqual(owner, "kirocrew");
 });
@@ -686,7 +686,7 @@ test("forceStopPort: never SIGKILLs a service-managed gateway", async () => {
   const killed = [];
   const res = await forceStopPort(5476, {
     getListenPids: async () => [4242],
-    getCommand: async () => "python -m kiro_crew gateway --port 5476",
+    getCommand: async () => "python -m efm_go gateway --port 5476",
     getPpid: async () => "1",
     kill: (pid, sig) => killed.push([pid, sig]),
     sleep: async () => {},
@@ -703,7 +703,7 @@ test("forceStopPort: still evicts a gateway this app spawned", async () => {
   const res = await forceStopPort(5476, {
     // Second probe reports the port free, i.e. the kill took.
     getListenPids: async () => (probes++ === 0 ? [4242] : []),
-    getCommand: async () => "python -m kiro_crew gateway --port 5476",
+    getCommand: async () => "python -m efm_go gateway --port 5476",
     getPpid: async () => "3310",
     kill: (pid, sig) => killed.push([pid, sig]),
     sleep: async () => {},
@@ -760,7 +760,7 @@ test("classifyPortOwner: a composed edition's gateway classifies as ours, not fo
 
 test("classifyPortOwner and forceStopPort share one KiroCrew matcher", async () => {
   // Drift between the two would let one mis-target a stranger's process.
-  assert.ok(isKirocrewCommand("python -m kiro_crew gateway"));
+  assert.ok(isKirocrewCommand("python -m efm_go gateway"));
   assert.ok(isKirocrewCommand("/Applications/KiroCrew.app/.../kirocrew"));
   assert.ok(!isKirocrewCommand("ssh -NL 5476:localhost:5476 host"));
   assert.ok(!isKirocrewCommand("ssh -NL 5476:localhost:5476 kirocrew"));
@@ -770,19 +770,19 @@ test("classifyPortOwner and forceStopPort share one KiroCrew matcher", async () 
   assert.ok(!isKirocrewCommand("/home/kirocrew/some-other-server --port 5476"));
   assert.ok(!isKirocrewCommand("C:\\Users\\kirocrew\\python.exe -m http.server 5476"));
   assert.ok(!isKirocrewCommand("python app.py C:\\tmp\\kirocrew"));
-  assert.ok(!isKirocrewCommand("python app.py -m kiro_crew"));
+  assert.ok(!isKirocrewCommand("python app.py -m efm_go"));
   // A POSIX `ps` line is unquoted, so an install path with a space arrives
   // split across tokens. Our own gateway must still be identified there, and a
   // later argument must still never pose as the executable.
   assert.ok(isKirocrewCommand("/Users/Jane Doe/Apps/KiroCrew.app/Contents/Resources/bin/kirocrew gateway --port 5476"));
-  assert.ok(isKirocrewCommand("/Users/Jane Doe/venv/bin/python -m kiro_crew gateway"));
+  assert.ok(isKirocrewCommand("/Users/Jane Doe/venv/bin/python -m efm_go gateway"));
   assert.ok(!isKirocrewCommand("/tmp/evil --spoof /usr/local/bin/kirocrew"));
   assert.ok(!isKirocrewCommand("/tmp/evil /usr/local/bin/kirocrew"));
   assert.ok(!isKirocrewCommand("/tmp/dir with space/evil kirocrew --port 5476"));
   // Windows identity is path-bound: a matching basename at any other location
   // remains foreign and can never authorize taskkill.
   const trustedCli = "C:\\Program Files\\KiroCrew\\kirocrew.exe";
-  const trustedBackend = "C:\\Program Files\\KiroCrew\\kirocrew-backend.exe";
+  const trustedBackend = "C:\\Program Files\\KiroCrew\\efm-go-backend.exe";
   const trustedPython = "C:\\Program Files\\KiroCrew\\python.exe";
   assert.ok(isKirocrewCommand(`"${trustedCli}"`, {
     trustedExecutablePaths: [trustedCli],
@@ -790,7 +790,7 @@ test("classifyPortOwner and forceStopPort share one KiroCrew matcher", async () 
   assert.ok(isKirocrewCommand(`"${trustedBackend}" --gateway`, {
     trustedExecutablePaths: [trustedBackend],
   }));
-  assert.ok(isKirocrewCommand(`"${trustedPython}" -m kiro_crew gateway`, {
+  assert.ok(isKirocrewCommand(`"${trustedPython}" -m efm_go gateway`, {
     trustedExecutablePaths: [trustedPython],
   }));
   assert.ok(!isKirocrewCommand("C:\\Temp\\kirocrew.exe gateway", {
@@ -800,7 +800,7 @@ test("classifyPortOwner and forceStopPort share one KiroCrew matcher", async () 
 
 test("isKirocrewCommand: a composed edition's `-m kirocrew_<edition>` gateway is ours", () => {
   // A companion package boots the gateway from its own top-level module so its
-  // composition root runs instead of the core CLI. Hardcoding `kiro_crew` made
+  // composition root runs instead of the core CLI. Hardcoding `efm_go` made
   // every such gateway a "foreign holder" the launcher refused to reuse. The
   // core must not learn any edition's name, so the match is the naming
   // convention `kirocrew_<edition>`, mirroring the Python side's
@@ -822,9 +822,9 @@ test("isKirocrewCommand: a composed edition's `-m kirocrew_<edition>` gateway is
   assert.ok(!isKirocrewCommand("python -m kirocrew gateway"));
   assert.ok(!isKirocrewCommand("python -m kirocrew-enterprise gateway"));
   assert.ok(!isKirocrewCommand("python -m Kirocrew_Enterprise gateway"));
-  assert.ok(!isKirocrewCommand("python -m kiro_crew_enterprise gateway"));
+  assert.ok(!isKirocrewCommand("python -m efm_go_enterprise gateway"));
   assert.ok(!isKirocrewCommand("python -m mykirocrew_enterprise gateway"));
-  assert.ok(!isKirocrewCommand("python -m kiro_crew.dashboard gateway"));
+  assert.ok(!isKirocrewCommand("python -m efm_go.dashboard gateway"));
   assert.ok(!isKirocrewCommand("python -m"));
   // The module alone never authorizes a kill: the first positional after it
   // must be a server subcommand, mirroring `_KIROCREW_SERVER_SUBCOMMANDS`. A
@@ -835,6 +835,6 @@ test("isKirocrewCommand: a composed edition's `-m kirocrew_<edition>` gateway is
   assert.ok(!isKirocrewCommand("python -m kirocrew_backup serve --port 5476"));
   assert.ok(!isKirocrewCommand("python -m kirocrew_enterprise run gateway"));
   assert.ok(!isKirocrewCommand("python -m kirocrew_enterprise --port 5476 gateway"));
-  assert.ok(!isKirocrewCommand("python -m kiro_crew"));
-  assert.ok(!isKirocrewCommand("python -m kiro_crew run /tmp/spec.md"));
+  assert.ok(!isKirocrewCommand("python -m efm_go"));
+  assert.ok(!isKirocrewCommand("python -m efm_go run /tmp/spec.md"));
 });

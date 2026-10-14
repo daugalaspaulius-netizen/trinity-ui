@@ -18,15 +18,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew import agent_state
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_local_path
-from kiro_crew.dashboard.handlers.agents import api_kirocrew_agent_delete
+from efm_go import agent_state
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_local_path
+from efm_go.dashboard.handlers.agents import api_kirocrew_agent_delete
 
 
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -72,7 +72,7 @@ async def test_delete_removes_corroborated_private_copy_and_lineage(tmp_path):
     agents_dir.mkdir()
     _seed(agents_dir)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -96,7 +96,7 @@ async def test_delete_keeps_copy_whose_lineage_names_another_crew(tmp_path):
     agents_dir.mkdir()
     _seed(agents_dir, private_to="other-crew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -115,7 +115,7 @@ async def test_delete_keeps_copy_the_crew_was_not_bound_to(tmp_path):
     agents_dir.mkdir()
     _seed(agents_dir, bound_to="kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -135,7 +135,7 @@ async def test_delete_keeps_copy_another_crew_is_still_bound_to(tmp_path):
     cfg.agents["other-crew"] = KiroCrewAgentConfig(kiro_agent="design-crew")
     cfg.save()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -151,13 +151,13 @@ async def test_delete_succeeds_when_copy_cannot_be_removed(tmp_path, caplog):
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
     _seed(agents_dir)
-    caplog.set_level(logging.DEBUG, logger="kiro_crew.dashboard.handlers.agents")
+    caplog.set_level(logging.DEBUG, logger="efm_go.dashboard.handlers.agents")
 
     def _refuse(self, missing_ok=False):
         raise PermissionError("locked")
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch("pathlib.Path.unlink", _refuse),
     ):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
@@ -191,7 +191,7 @@ async def test_delete_finds_lineage_when_crew_is_bound_by_file_stem(tmp_path):
     cfg.default_agent = "kirocrew"
     cfg.save()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -208,9 +208,9 @@ async def test_delete_keeps_lineage_of_unreadable_copy(tmp_path, caplog):
     agents_dir.mkdir()
     _seed(agents_dir)
     (agents_dir / "design-crew.json").write_text("{not json", encoding="utf-8")
-    caplog.set_level(logging.DEBUG, logger="kiro_crew.dashboard.handlers.agents")
+    caplog.set_level(logging.DEBUG, logger="efm_go.dashboard.handlers.agents")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -241,7 +241,7 @@ async def test_delete_keeps_lineage_of_malformed_copy_with_divergent_stem(tmp_pa
     cfg.default_agent = "kirocrew"
     cfg.save()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -258,7 +258,7 @@ async def test_delete_keeps_lineage_when_copy_file_is_already_gone(tmp_path):
     _seed(agents_dir)
     (agents_dir / "design-crew.json").unlink()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -278,7 +278,7 @@ async def test_delete_keeps_copy_bound_only_through_config_local_overlay(tmp_pat
         encoding="utf-8",
     )
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200
@@ -295,7 +295,7 @@ async def test_delete_keeps_copy_when_config_local_overlay_is_unreadable(tmp_pat
     _seed(agents_dir)
     config_local_path().write_text("{not json", encoding="utf-8")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_kirocrew_agent_delete(_delete_request("design-crew"))
 
     assert resp.status == 200

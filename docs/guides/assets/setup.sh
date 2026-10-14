@@ -21,7 +21,7 @@ fi
 echo "✅ Systemd user manager running"
 
 # ── Check: kirocrew gateway already running in tmux? ──
-if pgrep -f "kiro_crew gateway\|kirocrew gateway" | grep -v $$ >/dev/null 2>&1; then
+if pgrep -f "efm_go gateway\|kirocrew gateway" | grep -v $$ >/dev/null 2>&1; then
     echo ""
     echo "⚠️  kirocrew gateway is already running (tmux or manual)."
     echo "   Kill it first: tmux kill-session -t kirocrew"

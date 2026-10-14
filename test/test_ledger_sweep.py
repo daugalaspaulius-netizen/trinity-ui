@@ -27,10 +27,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import ledger_sweep as sweep
-from kiro_crew import session_ledger as sl
-from kiro_crew import work_ledger as wl
-from kiro_crew.platform_compat import IS_POSIX
+from efm_go import ledger_sweep as sweep
+from efm_go import session_ledger as sl
+from efm_go import work_ledger as wl
+from efm_go.platform_compat import IS_POSIX
 
 CONDUCTOR = "chat-9-conductor"
 WORKER = "chat-9-worker"
@@ -448,7 +448,7 @@ def test_the_sweep_is_its_own_command_and_doctor_stays_read_only(monkeypatch, tm
     that exits 0 and reads like a purge that found nothing."""
     import sys
 
-    from kiro_crew.cli import main
+    from efm_go.cli import main
 
     monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
     ran: list[dict[str, object]] = []

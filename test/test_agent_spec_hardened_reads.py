@@ -37,15 +37,15 @@ import source_corpus
 from aiohttp import web
 
 from conftest import requires_symlinks
-from kiro_crew.agent import _install_heartbeat_agent, migrate_agent_specs
-from kiro_crew.agent_files import AGENT_FILENAME, HEARTBEAT_AGENT_FILENAME
-from kiro_crew.connections import mint
-from kiro_crew.dashboard.chat_persistence import _build_kiro_model_map
-from kiro_crew.dashboard.handlers.agents import (
+from efm_go.agent import _install_heartbeat_agent, migrate_agent_specs
+from efm_go.agent_files import AGENT_FILENAME, HEARTBEAT_AGENT_FILENAME
+from efm_go.connections import mint
+from efm_go.dashboard.chat_persistence import _build_kiro_model_map
+from efm_go.dashboard.handlers.agents import (
     _namespaced_agent_file_exists,
     api_agent_detail,
 )
-from kiro_crew.dashboard.handlers.mcp import (
+from efm_go.dashboard.handlers.mcp import (
     _collect_server_rows,
     _find_server_spec_anywhere,
     _launch_specs_for,
@@ -74,10 +74,10 @@ def agents_dir(tmp_path, monkeypatch):
     resolves through ``kiro_agents_dir_path()``; the cap is lowered rather than
     writing a real 50 MB fixture (same trade the reader's own tests made).
     """
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     monkeypatch.setattr(hooks, "MAX_FILE_BYTES", 256)
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", tmp_path)
     return tmp_path
 
 
@@ -212,7 +212,7 @@ def identity_bindings(monkeypatch):
     """
     from types import SimpleNamespace
 
-    import kiro_crew.config.loader as loader
+    import efm_go.config.loader as loader
 
     monkeypatch.setattr(
         loader,
@@ -301,8 +301,8 @@ def agents_dir_resolver(agents_dir, monkeypatch):
     cache is cleared around the test instead of leaking a resolved answer into
     the next one.
     """
-    from kiro_crew.config import paths as config_paths
-    from kiro_crew.cron_script import _resolve_mcp_server
+    from efm_go.config import paths as config_paths
+    from efm_go.cron_script import _resolve_mcp_server
 
     monkeypatch.setattr(config_paths, "_agents_dir_override", lambda: agents_dir)
     _resolve_mcp_server.cache_clear()
@@ -344,7 +344,7 @@ class TestResolveMcpServer:
 
     @pytest.mark.parametrize("kind", REFUSALS)
     def test_refused_agent_spec_resolves_to_no_server(self, agents_dir_resolver, kind):
-        from kiro_crew.cron_script import _resolve_mcp_server
+        from efm_go.cron_script import _resolve_mcp_server
 
         _plant_refused(
             agents_dir_resolver,
@@ -356,7 +356,7 @@ class TestResolveMcpServer:
         assert _resolve_mcp_server("srv-hr") is None
 
     def test_valid_agent_spec_still_resolves_under_the_same_cap(self, agents_dir_resolver):
-        from kiro_crew.cron_script import _resolve_mcp_server
+        from efm_go.cron_script import _resolve_mcp_server
 
         _plant(
             agents_dir_resolver,
@@ -380,7 +380,7 @@ class TestResolveMcpServer:
         the size-capped hardened read, which is exactly where a future tightening
         could drop the block with the argv assertion still green.
         """
-        from kiro_crew.cron_script import _resolve_mcp_server
+        from efm_go.cron_script import _resolve_mcp_server
 
         _plant(
             agents_dir_resolver,
@@ -407,7 +407,7 @@ class TestResolveMcpServer:
         resolver and into the cron runner. Refusal now degrades to "no such
         server", the same answer an absent entry gives.
         """
-        from kiro_crew.cron_script import _resolve_mcp_server
+        from efm_go.cron_script import _resolve_mcp_server
 
         (agents_dir_resolver / AGENT_FILENAME).write_text("{not json", encoding="utf-8")
 
@@ -423,7 +423,7 @@ class TestLoadAgentConfig:
 
     @pytest.mark.parametrize("kind", REFUSALS)
     def test_refused_agent_spec_contributes_no_servers(self, agents_dir_resolver, kind):
-        from kiro_crew.mcp_discovery import _load_agent_config
+        from efm_go.mcp_discovery import _load_agent_config
 
         _plant_refused(
             agents_dir_resolver,
@@ -435,7 +435,7 @@ class TestLoadAgentConfig:
         assert "phantom-md" not in _load_agent_config().get("mcpServers", {})
 
     def test_valid_agent_spec_still_merges_under_the_same_cap(self, agents_dir_resolver):
-        from kiro_crew.mcp_discovery import _load_agent_config
+        from efm_go.mcp_discovery import _load_agent_config
 
         _plant(
             agents_dir_resolver,
@@ -452,7 +452,7 @@ class TestLoadAgentConfig:
         ``(JSONDecodeError, OSError)``, so a non-UTF-8 spec raised
         ``UnicodeDecodeError`` -- a ``ValueError`` -- straight through.
         """
-        from kiro_crew.mcp_discovery import _load_agent_config
+        from efm_go.mcp_discovery import _load_agent_config
 
         (agents_dir_resolver / AGENT_FILENAME).write_bytes(b'{"mcpServers": {"\xff": {}}}')
 
@@ -482,7 +482,7 @@ class TestLoadSteeringResources:
 
     @pytest.mark.parametrize("kind", REFUSALS)
     def test_refused_agent_spec_loads_no_steering(self, agents_dir_resolver, monkeypatch, kind):
-        from kiro_crew.context import _load_steering_resources
+        from efm_go.context import _load_steering_resources
 
         self._plant_steering(agents_dir_resolver, monkeypatch)
         _plant_refused(
@@ -497,7 +497,7 @@ class TestLoadSteeringResources:
     def test_valid_agent_spec_still_loads_steering_under_the_same_cap(
         self, agents_dir_resolver, monkeypatch
     ):
-        from kiro_crew.context import _load_steering_resources
+        from efm_go.context import _load_steering_resources
 
         self._plant_steering(agents_dir_resolver, monkeypatch)
         _plant(
@@ -509,7 +509,7 @@ class TestLoadSteeringResources:
         assert "STEERING-MARKER" in _load_steering_resources()
 
     def test_absent_spec_still_returns_empty(self, agents_dir_resolver):
-        from kiro_crew.context import _load_steering_resources
+        from efm_go.context import _load_steering_resources
 
         assert _load_steering_resources() == ""
 
@@ -533,7 +533,7 @@ class TestDenialAuditNeverRaises:
 
     @staticmethod
     def _break_sel(monkeypatch):
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         # Every fence refuses: the project-directory and cache-key checks ask
         # is_sensitive_path, the spec readers ask is_sensitive_canonical_path.
@@ -551,7 +551,7 @@ class TestDenialAuditNeverRaises:
         spec.write_text(json.dumps({"name": "evil"}), encoding="utf-8")
         agent_discovery = self._break_sel(monkeypatch)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.agent_discovery"):
+        with caplog.at_level("WARNING", logger="efm_go.agent_discovery"):
             result = agent_discovery._read_agent_spec(spec, operation="doctor", source="cli")
 
         # The spec is still REFUSED, so nothing unaudited is read; only the audit
@@ -562,7 +562,7 @@ class TestDenialAuditNeverRaises:
     def test_project_scan_audit_failure_still_yields_empty(self, tmp_path, monkeypatch, caplog):
         agent_discovery = self._break_sel(monkeypatch)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.agent_discovery"):
+        with caplog.at_level("WARNING", logger="efm_go.agent_discovery"):
             result = agent_discovery.project_agent_names(tmp_path)
 
         assert result == frozenset()
@@ -578,7 +578,7 @@ class TestDenialAuditNeverRaises:
         """
         agent_discovery = self._break_sel(monkeypatch)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.agent_discovery"):
+        with caplog.at_level("WARNING", logger="efm_go.agent_discovery"):
             result = agent_discovery.project_agent_files(tmp_path)
 
         assert result == []
@@ -594,7 +594,7 @@ class TestSensitiveSymlinkGuard:
 
     @requires_symlinks
     def test_link_to_a_sensitive_target_is_refused(self, tmp_path, monkeypatch):
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         target = tmp_path / "protected.json"
         target.write_text(json.dumps({"name": "linked", "model": "leaked-value"}))
@@ -604,7 +604,7 @@ class TestSensitiveSymlinkGuard:
         monkeypatch.setattr(
             agent_discovery, "is_sensitive_canonical_path", lambda p: str(target) in str(p)
         )
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents)
 
         out = _build_kiro_model_map()
 
@@ -673,7 +673,7 @@ class TestAgentSpecEntryMissing:
     @requires_symlinks
     def test_link_to_a_sensitive_target_reads_as_entry_missing(self, tmp_path, monkeypatch):
         """The sensitive-symlink guard flows through a migrated mint caller."""
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         alias = mint.mcp_server_alias("probe")
         target = tmp_path / "protected.json"
@@ -684,7 +684,7 @@ class TestAgentSpecEntryMissing:
         monkeypatch.setattr(
             agent_discovery, "is_sensitive_canonical_path", lambda p: str(target) in str(p)
         )
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents)
 
         assert mint._agent_spec_entry_missing("probe") is True
 
@@ -700,8 +700,8 @@ class TestInstallHeartbeatAgent:
     @pytest.fixture
     def heartbeat_env(self, monkeypatch):
         """Keep the install local: no config load, no cc-model sidecar write."""
-        monkeypatch.setattr("kiro_crew.agent._background_agent_model", lambda: "auto")
-        monkeypatch.setattr("kiro_crew.agent.agent_state.set_cc_model", lambda *a, **k: None)
+        monkeypatch.setattr("efm_go.agent._background_agent_model", lambda: "auto")
+        monkeypatch.setattr("efm_go.agent.agent_state.set_cc_model", lambda *a, **k: None)
 
     @pytest.mark.parametrize("kind", REFUSALS)
     def test_refused_main_spec_yields_no_mcp_servers(self, agents_dir, heartbeat_env, kind):
@@ -745,7 +745,7 @@ class TestDenialAttribution:
         """
         from types import SimpleNamespace
 
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         path = tmp_path / "protected.json"
         path.write_text(json.dumps({"name": "linked"}), encoding="utf-8")
@@ -762,7 +762,7 @@ class TestDenialAttribution:
 
     def test_default_call_shape_emits_exactly_the_historical_event(self, tmp_path, monkeypatch):
         """The compatibility defaults preserve the pre-attribution event."""
-        from kiro_crew.agent_discovery import _read_agent_spec
+        from efm_go.agent_discovery import _read_agent_spec
 
         link, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -779,7 +779,7 @@ class TestDenialAttribution:
         ]
 
     def test_labelled_call_attributes_the_denial_to_that_surface(self, tmp_path, monkeypatch):
-        from kiro_crew.agent_discovery import _read_agent_spec
+        from efm_go.agent_discovery import _read_agent_spec
 
         link, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -792,7 +792,7 @@ class TestDenialAttribution:
 
     def test_source_defaults_independently_of_operation(self, tmp_path, monkeypatch):
         """Supplying an operation must not corrupt the source vocabulary."""
-        from kiro_crew.agent_discovery import _read_agent_spec
+        from efm_go.agent_discovery import _read_agent_spec
 
         link, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -816,7 +816,7 @@ class TestProjectNamesDenialAttribution:
         """Return a sensitive project dir and a spy collecting SEL fields."""
         from types import SimpleNamespace
 
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         project_dir = tmp_path / "protected-project"
         project_dir.mkdir()
@@ -833,7 +833,7 @@ class TestProjectNamesDenialAttribution:
 
     def test_default_call_shape_emits_exactly_the_historical_event(self, tmp_path, monkeypatch):
         """The compatibility defaults preserve the pre-attribution event."""
-        from kiro_crew.agent_discovery import project_agent_names
+        from efm_go.agent_discovery import project_agent_names
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -850,7 +850,7 @@ class TestProjectNamesDenialAttribution:
         ]
 
     def test_labelled_call_attributes_the_denial_to_that_surface(self, tmp_path, monkeypatch):
-        from kiro_crew.agent_discovery import project_agent_names
+        from efm_go.agent_discovery import project_agent_names
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -866,7 +866,7 @@ class TestProjectNamesDenialAttribution:
 
     def test_source_defaults_independently_of_operation(self, tmp_path, monkeypatch):
         """Supplying an operation must not corrupt the source vocabulary."""
-        from kiro_crew.agent_discovery import project_agent_names
+        from efm_go.agent_discovery import project_agent_names
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -878,7 +878,7 @@ class TestProjectNamesDenialAttribution:
         """The executor hop must not erase the caller's attribution."""
         import asyncio
 
-        from kiro_crew.agent_discovery import warm_project_agent_names
+        from efm_go.agent_discovery import warm_project_agent_names
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -895,7 +895,7 @@ class TestProjectNamesDenialAttribution:
         default pair cannot drift unrecorded."""
         import asyncio
 
-        from kiro_crew.agent_discovery import warm_project_agent_names
+        from efm_go.agent_discovery import warm_project_agent_names
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -922,7 +922,7 @@ class TestProjectFilesDenialAttribution:
         """Return a sensitive project dir and a spy collecting SEL fields."""
         from types import SimpleNamespace
 
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         project_dir = tmp_path / "protected-project"
         project_dir.mkdir()
@@ -939,7 +939,7 @@ class TestProjectFilesDenialAttribution:
 
     def test_a_refused_project_dir_emits_a_denial_row(self, tmp_path, monkeypatch):
         """The refusal stands AND is recorded, under labels naming this function."""
-        from kiro_crew.agent_discovery import project_agent_files
+        from efm_go.agent_discovery import project_agent_files
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -956,7 +956,7 @@ class TestProjectFilesDenialAttribution:
         ]
 
     def test_labelled_call_attributes_the_denial_to_that_surface(self, tmp_path, monkeypatch):
-        from kiro_crew.agent_discovery import project_agent_files
+        from efm_go.agent_discovery import project_agent_files
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -972,7 +972,7 @@ class TestProjectFilesDenialAttribution:
 
     def test_source_defaults_independently_of_operation(self, tmp_path, monkeypatch):
         """Supplying an operation must not corrupt the source vocabulary."""
-        from kiro_crew.agent_discovery import project_agent_files
+        from efm_go.agent_discovery import project_agent_files
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -986,7 +986,7 @@ class TestProjectFilesDenialAttribution:
         ``include_legacy`` widens what a permitted directory yields; it is read
         after the fence, so it can neither reach nor excuse a sensitive one.
         """
-        from kiro_crew.agent_discovery import project_agent_files
+        from efm_go.agent_discovery import project_agent_files
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -1005,7 +1005,7 @@ class TestProjectFilesDenialAttribution:
         and returns, so the file scan is never entered on that path and the
         operator sees a single denial rather than a pair for one request.
         """
-        from kiro_crew.agent_discovery import project_agent_names
+        from efm_go.agent_discovery import project_agent_names
 
         project_dir, events = self._denial_events(tmp_path, monkeypatch)
 
@@ -1023,7 +1023,7 @@ class TestProjectFilesDenialAttribution:
 _EXPECTED_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
     # One read: the launch loop reads each authored spec to project it. Alias
     # reclaim is keyed on lease liveness and reads no authored source.
-    "kiro_crew/acp/skill_projection.py": [
+    "efm_go/acp/skill_projection.py": [
         ("native_skill_projection", "acp"),
     ],
     # Three reads, deliberately labelled apart: the session-MCP translation resolves
@@ -1032,18 +1032,18 @@ _EXPECTED_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
     # two was refused rather than leaving the reader to guess. The third is the same
     # project read made for Crew-fired spec hooks (``project_agent_spec``), named
     # for that surface so a refusal there is not filed under the MCP projection.
-    "kiro_crew/acp/session_mcp.py": [
+    "efm_go/acp/session_mcp.py": [
         ("session_mcp_project_agent", "unknown"),
         ("session_mcp_servers", "unknown"),
         ("spec_hooks_project_agent", "unknown"),
     ],
-    "kiro_crew/agent.py": [
+    "efm_go/agent.py": [
         ("agent_spec_lookup", "unknown"),
         ("migrate_agent_specs", "unknown"),
         ("migrate_relocated_skill_uris", "unknown"),
     ],
-    "kiro_crew/agent_capabilities.py": [("capability_publish", "dashboard")],
-    "kiro_crew/agent_discovery.py": [
+    "efm_go/agent_capabilities.py": [("capability_publish", "dashboard")],
+    "efm_go/agent_discovery.py": [
         ("agent_skill_globs", "unknown"),
         # ``agent_welcome_message`` reads the PROJECT checkout's specs itself
         # (project scope shadows the user level, as `list_agents` resolves it),
@@ -1063,25 +1063,25 @@ _EXPECTED_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
         ("list_agents", "unknown"),
         ("resolve_project_agent_name", "unknown"),
     ],
-    "kiro_crew/apps/builtins/auto_improvement/spine/crew_runner.py": [
+    "efm_go/apps/builtins/auto_improvement/spine/crew_runner.py": [
         ("auto_improvement_assignment", "unknown")
     ],
-    "kiro_crew/cli_doctor.py": [("doctor", "cli"), ("doctor", "cli"), ("doctor", "cli")],
-    "kiro_crew/config/loader.py": [("load_config", "unknown")],
-    "kiro_crew/connections/mint.py": [
+    "efm_go/cli_doctor.py": [("doctor", "cli"), ("doctor", "cli"), ("doctor", "cli")],
+    "efm_go/config/loader.py": [("load_config", "unknown")],
+    "efm_go/connections/mint.py": [
         ("connections_mint", "dashboard"),
         ("connections_mint", "dashboard"),
     ],
-    "kiro_crew/connections/warm.py": [
+    "efm_go/connections/warm.py": [
         ("connections_warm_mint", "dashboard"),
         ("connections_warm_mint", "dashboard"),
     ],
-    "kiro_crew/context.py": [
+    "efm_go/context.py": [
         ("agent_prompt", "context"),
         ("steering_resources", "unknown"),
     ],
-    "kiro_crew/cron_script.py": [("cron_resolve_mcp_server", "cron")],
-    "kiro_crew/dashboard/agent_admin/agent_detail.py": [
+    "efm_go/cron_script.py": [("cron_resolve_mcp_server", "cron")],
+    "efm_go/dashboard/agent_admin/agent_detail.py": [
         ("api_agent_detail", "dashboard"),
         ("api_agent_detail", "dashboard"),
         # PATCH's locked overwrite re-reads the spec INSIDE agents_spec_lock so
@@ -1089,28 +1089,28 @@ _EXPECTED_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
         # pre-lock snapshot.
         ("api_agent_detail", "dashboard"),
     ],
-    "kiro_crew/dashboard/agent_admin/fork_publish.py": [
+    "efm_go/dashboard/agent_admin/fork_publish.py": [
         # Fork/publish create closures re-read the SOURCE inside the lock too —
         # the pre-lock snapshot can miss a concurrent refresh's writes (GPT
         # round-10 stale-copy finding).
         ("api_agent_fork", "dashboard"),
         ("api_agent_publish", "dashboard"),
     ],
-    "kiro_crew/dashboard/agent_admin/installed_agents.py": [("api_agents_sync", "dashboard")],
+    "efm_go/dashboard/agent_admin/installed_agents.py": [("api_agents_sync", "dashboard")],
     # The fork/publish endpoints share _load_template_specs, which forwards
     # its ``operation`` argument -- each caller still names itself.
-    "kiro_crew/dashboard/agent_admin/template_lineage.py": [("forward:operation", "dashboard")],
+    "efm_go/dashboard/agent_admin/template_lineage.py": [("forward:operation", "dashboard")],
     # The templates tab's read-only rule for a definition PATCH reads the spec
     # file the PATCH targets, so it labels itself as that PATCH; create re-reads
     # the SOURCE it copies inside the spec lock (the fork/publish shape).
-    "kiro_crew/dashboard/handlers/agent_templates.py": [
+    "efm_go/dashboard/handlers/agent_templates.py": [
         ("api_agent_detail", "dashboard"),
         ("api_agent_template_create", "dashboard"),
         ("api_agent_template_delete", "dashboard"),
         ("api_agent_template_delete", "dashboard"),
     ],
-    "kiro_crew/dashboard/handlers/hooks.py": [("api_kiro_hooks", "dashboard")],
-    "kiro_crew/dashboard/handlers/mcp.py": [
+    "efm_go/dashboard/handlers/hooks.py": [("api_kiro_hooks", "dashboard")],
+    "efm_go/dashboard/handlers/mcp.py": [
         ("api_mcp_active", "dashboard"),
         ("mcp_find_server_spec", "dashboard"),
         ("mcp_server_rows", "dashboard"),
@@ -1122,17 +1122,17 @@ _EXPECTED_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
     # The first read is not the side turn's: it words an ACP "Agent mode ... is
     # not available" refusal by checking the derived file's owner marker, on
     # whatever channel's session raised it -- hence its own label and "unknown".
-    "kiro_crew/dashboard/side_readonly_spec.py": [
+    "efm_go/dashboard/side_readonly_spec.py": [
         ("agent_mode_refusal", "unknown"),
         ("side_readonly_spec", "dashboard"),
         ("side_readonly_spec", "dashboard"),
     ],
-    "kiro_crew/mcp_discovery.py": [("mcp_discovery_agent_config", "unknown")],
-    "kiro_crew/member_essential_context.py": [
+    "efm_go/mcp_discovery.py": [("mcp_discovery_agent_config", "unknown")],
+    "efm_go/member_essential_context.py": [
         ("member_essentials", "context"),
         ("member_essentials", "context"),
     ],
-    "kiro_crew/session.py": [
+    "efm_go/session.py": [
         ("forward:operation", "forward:source"),
         ("resolve_agent_model", "unknown"),
     ],
@@ -1140,7 +1140,7 @@ _EXPECTED_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
     # ``toolsSettings.subagent.availableAgents`` allowlist, and keeps a file the
     # reader refuses as unreadable (refuse) rather than as "no spec"; a denial
     # there belongs to the sub-agent surface that asked to spawn.
-    "kiro_crew/subagent.py": [("spawn_available_agents", "subagent")],
+    "efm_go/subagent.py": [("spawn_available_agents", "subagent")],
 }
 
 
@@ -1152,10 +1152,10 @@ _EXPECTED_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
 # absent by design: it is a pure in-memory lookup that performs no filesystem
 # work and can never reach the denial log line.
 _EXPECTED_PROJECT_NAMES_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
-    "kiro_crew/agent.py": [("require_fork_governance", "unknown")],
-    "kiro_crew/agent_discovery.py": [("forward:operation", "forward:source")],
-    "kiro_crew/config/loader.py": [("project_declares_agent", "unknown")],
-    "kiro_crew/dashboard/handlers/agents.py": [("api_kirocrew_agents", "dashboard")],
+    "efm_go/agent.py": [("require_fork_governance", "unknown")],
+    "efm_go/agent_discovery.py": [("forward:operation", "forward:source")],
+    "efm_go/config/loader.py": [("project_declares_agent", "unknown")],
+    "efm_go/dashboard/handlers/agents.py": [("api_kirocrew_agents", "dashboard")],
 }
 
 
@@ -1166,29 +1166,29 @@ _EXPECTED_PROJECT_NAMES_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
 # labelled apart. The in-module hop inside ``project_agent_names`` is pinned as
 # forwarding: a literal there would erase the surface that asked.
 _EXPECTED_PROJECT_FILES_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
-    "kiro_crew/acp/session_mcp.py": [("session_mcp_project_agent", "unknown")],
-    "kiro_crew/agent.py": [
+    "efm_go/acp/session_mcp.py": [("session_mcp_project_agent", "unknown")],
+    "efm_go/agent.py": [
         ("agent_project_shadow", "unknown"),
         ("markdown_spec_lookup", "unknown"),
     ],
-    # No ``kiro_crew/agent_discovery.py`` entry on purpose. The two in-module
+    # No ``efm_go/agent_discovery.py`` entry on purpose. The two in-module
     # readers (``list_agents``, ``project_agent_names``) decide this scope's
     # sensitivity THEMSELVES -- pinned in
     # ``_EXPECTED_SCOPE_GUARD_CALL_SITE_LABELS`` -- and then scan through the
     # unguarded ``_scan_project_agent_files``. Re-entering this reader would
     # decide a second time on the same scope, and a second verdict that
     # disagreed would record a denial for a tree the caller already read.
-    "kiro_crew/cli_doctor.py": [("doctor", "cli")],
+    "efm_go/cli_doctor.py": [("doctor", "cli")],
     # The base-spec read and the shadow check are one surface's two questions
     # about the same checkout, so one label covers both.
-    "kiro_crew/dashboard/side_readonly_spec.py": [
+    "efm_go/dashboard/side_readonly_spec.py": [
         ("side_readonly_spec", "dashboard"),
         ("side_readonly_spec", "dashboard"),
     ],
-    "kiro_crew/member_essential_context.py": [("member_essentials", "context")],
+    "efm_go/member_essential_context.py": [("member_essentials", "context")],
     # Slack's shared discovery helper forwards the operation its two routes name
     # (the listing, the name resolution); the channel is fixed, so it is a literal.
-    "kiro_crew/slack/handler.py": [("forward:operation", "slack")],
+    "efm_go/slack/handler.py": [("forward:operation", "slack")],
 }
 
 
@@ -1198,15 +1198,15 @@ _EXPECTED_PROJECT_FILES_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
 # highest-traffic route to the scan (a chat turn's ``slot.project`` reaches it
 # every turn), so it is exactly where attribution matters most.
 _EXPECTED_WARM_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
-    "kiro_crew/dashboard/chat_handlers.py": [
+    "efm_go/dashboard/chat_handlers.py": [
         ("api_chat", "dashboard"),
         ("api_chat_slot_agent", "dashboard"),
         ("api_chat_slot_agent", "dashboard"),
     ],
-    "kiro_crew/dashboard/chat_runner.py": [("chat_turn", "unknown")],
-    "kiro_crew/dashboard/chat_threads.py": [("thread_reply", "dashboard")],
-    "kiro_crew/dashboard/handlers/side.py": [("side_panel", "dashboard")],
-    "kiro_crew/spawn_warm.py": [("spawn_warm", "unknown")],
+    "efm_go/dashboard/chat_runner.py": [("chat_turn", "unknown")],
+    "efm_go/dashboard/chat_threads.py": [("thread_reply", "dashboard")],
+    "efm_go/dashboard/handlers/side.py": [("side_panel", "dashboard")],
+    "efm_go/spawn_warm.py": [("spawn_warm", "unknown")],
 }
 
 
@@ -1216,7 +1216,7 @@ _EXPECTED_WARM_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
 # lookup is a hit -- names the surface a denial during that first parse belongs
 # to. The channel is ``unknown``: the background session serves several.
 _EXPECTED_WARM_SPECS_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
-    "kiro_crew/session_background.py": [("ensure_background", "unknown")],
+    "efm_go/session_background.py": [("ensure_background", "unknown")],
 }
 
 
@@ -1291,7 +1291,7 @@ _EXPECTED_PARSED_SPECS_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
     # that asked still owns the denial. Pinned as forwarding, like the wrapper.
     # ``warm_agent_specs`` is the awaited face: it hands the parse to the pool
     # by reference and forwards for the same reason.
-    "kiro_crew/agent_discovery.py": [
+    "efm_go/agent_discovery.py": [
         ("agent_skill_globs", "unknown"),
         ("forward:operation", "forward:source"),
         ("forward:operation", "forward:source"),
@@ -1299,10 +1299,10 @@ _EXPECTED_PARSED_SPECS_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
     # The named-agent model resolver runs on the event loop from the provider
     # factory; it reads the snapshot so a warm call re-parses nothing, and keeps
     # the label its per-file hardened read carried.
-    "kiro_crew/config/loader.py": [("load_config", "unknown")],
-    "kiro_crew/dashboard/handlers/_shared.py": [("skills_loaded_by_agents", "dashboard")],
+    "efm_go/config/loader.py": [("load_config", "unknown")],
+    "efm_go/dashboard/handlers/_shared.py": [("skills_loaded_by_agents", "dashboard")],
     # Export/import warn about crew rows whose template this machine lacks.
-    "kiro_crew/portability.py": [("portability", "dashboard")],
+    "efm_go/portability.py": [("portability", "dashboard")],
 }
 
 
@@ -1315,8 +1315,8 @@ _EXPECTED_PARSED_SPECS_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
 # servers make. It reads specs it did not name in a user-writable directory, so
 # every caller names the surface whose resolution the denial belongs to.
 _EXPECTED_DECLARED_NAME_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
-    "kiro_crew/acp/kas_agents.py": [("kas_agent_projection", "unknown")],
-    "kiro_crew/dashboard/handlers/sessions.py": [("session_tool_policy", "dashboard")],
+    "efm_go/acp/kas_agents.py": [("kas_agent_projection", "unknown")],
+    "efm_go/dashboard/handlers/sessions.py": [("session_tool_policy", "dashboard")],
 }
 
 
@@ -1333,18 +1333,18 @@ _EXPECTED_DECLARED_NAME_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
 # deletes the row built from it; a spec that cannot be read as a spec refuses
 # the delete, so that read needs the failure to surface rather than fold to None.
 _EXPECTED_STRICT_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
-    "kiro_crew/acp/kas_agents.py": [("kas_agent_projection", "unknown")],
-    "kiro_crew/agent_materialization/conductor_agents.py": [
+    "efm_go/acp/kas_agents.py": [("kas_agent_projection", "unknown")],
+    "efm_go/agent_materialization/conductor_agents.py": [
         ("conductor_spec_regeneration", "unknown"),
     ],
-    "kiro_crew/crewmate_prune_migration.py": [("crewmate_prune", "dashboard")],
-    "kiro_crew/dashboard/handlers/sessions.py": [
+    "efm_go/crewmate_prune_migration.py": [("crewmate_prune", "dashboard")],
+    "efm_go/dashboard/handlers/sessions.py": [
         ("session_tool_policy", "dashboard"),
         ("session_tool_policy", "dashboard"),
     ],
-    "kiro_crew/doctor_deadpath.py": [("doctor", "cli")],
-    "kiro_crew/mcp_gateway/rewriter.py": [("mcp_overlay_rewrite", "unknown")],
-    "kiro_crew/slack/handler.py": [("slack_resolve_agent", "slack")],
+    "efm_go/doctor_deadpath.py": [("doctor", "cli")],
+    "efm_go/mcp_gateway/rewriter.py": [("mcp_overlay_rewrite", "unknown")],
+    "efm_go/slack/handler.py": [("slack_resolve_agent", "slack")],
 }
 
 
@@ -1355,7 +1355,7 @@ _EXPECTED_STRICT_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
 # enclosing function records. ``list_agents`` is the one in-module caller that IS
 # the surface, so its literals are the pinned exception.
 _EXPECTED_SCOPE_GUARD_CALL_SITE_LABELS: dict[str, list[tuple[str, str]]] = {
-    "kiro_crew/agent_discovery.py": [
+    "efm_go/agent_discovery.py": [
         ("forward:operation", "forward:source"),
         ("forward:operation", "forward:source"),
         ("list_agents", "unknown"),

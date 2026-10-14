@@ -66,10 +66,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp import runtime as rt_mod
-from kiro_crew.acp import session_handle as sh_mod
-from kiro_crew.acp.runtime import _STDOUT_BUFFER_LIMIT, AcpRuntime
-from kiro_crew.acp.session_handle import (
+from efm_go.acp import runtime as rt_mod
+from efm_go.acp import session_handle as sh_mod
+from efm_go.acp.runtime import _STDOUT_BUFFER_LIMIT, AcpRuntime
+from efm_go.acp.session_handle import (
     NATIVE_CHILD_LABEL_CAP,
     NATIVE_CHILD_NOT_RESUMABLE,
     NATIVE_CHILD_ROSTER_CAP,
@@ -77,7 +77,7 @@ from kiro_crew.acp.session_handle import (
     AcpSessionHandle,
     WatchdogSettings,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
@@ -96,11 +96,11 @@ from kiro_crew.acp.types import (
     WAIT_REASON_INPUT,
     JsonRpcMessage,
 )
-from kiro_crew.adaptive.controller import AdaptiveController, HostSample
-from kiro_crew.adaptive.signals import SIGNAL_TIMEOUTS, classify
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.mcp_gateway.host_budget import HostBudget, HostBudgetExhausted, HostBudgetLimits
-from kiro_crew.metrics.events import CHILD_PERMISSION_DENIED
+from efm_go.adaptive.controller import AdaptiveController, HostSample
+from efm_go.adaptive.signals import SIGNAL_TIMEOUTS, classify
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.mcp_gateway.host_budget import HostBudget, HostBudgetExhausted, HostBudgetLimits
+from efm_go.metrics.events import CHILD_PERMISSION_DENIED
 
 pytestmark = pytest.mark.timeout(30)
 
@@ -277,13 +277,13 @@ def test_session_handle_never_reaches_the_scheduler():
     way to mint either. The only scheduler-facing surface is a read
     (``native_child_sessions``) and a report (``report_native_children``)."""
     src = inspect.getsource(sh_mod)
-    for forbidden in ("kiro_crew.taskq", "subagent_manager.admission", "yield_slot("):
+    for forbidden in ("efm_go.taskq", "subagent_manager.admission", "yield_slot("):
         assert forbidden not in src, forbidden
 
 
 @pytest.mark.asyncio
 async def test_kiro_child_stream_extension_spelling_counts_on_parent():
-    """kiro-cli 2.21.x carries the child stream as ``_kiro.dev/session/update``;
+    """kiro-cli 2.21.x carries the child stream as ``_efm.go/session/update``;
     that route counts exactly like the plain spelling."""
     q: asyncio.Queue = asyncio.Queue()
     handle = AcpSessionHandle(PARENT, q, _runtime())
@@ -310,7 +310,7 @@ async def test_kiro_child_stream_extension_spelling_counts_on_parent():
 
 @pytest.mark.asyncio
 async def test_kiro_roster_counts_only_when_this_handle_owns_it():
-    """The ``_kiro.dev/subagent/list_update`` roster names no session, so the
+    """The ``_efm.go/subagent/list_update`` roster names no session, so the
     runtime fans it out to every co-tenant. Only the sole owner (frame not
     marked ``fanout_no_owner``) may count it; a co-tenant must not adopt
     another session's children."""
@@ -565,7 +565,7 @@ def test_spawn_continue_on_a_native_child_id_never_starts_a_run():
     typed error) before any session is created. The precise
     ``native_child_not_resumable`` reason is the seam above; wiring it ahead
     of the generic lookup miss is an integration TODO recorded in the handoff."""
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -581,7 +581,7 @@ def test_spawn_continue_on_a_native_child_id_never_starts_a_run():
     handle = _handle()
     _feed_children(handle, 1)
     (child_sid,) = handle.native_child_sessions
-    with patch("kiro_crew.subagent.sel"), patch("kiro_crew.subagent.read_state", return_value=None):
+    with patch("efm_go.subagent.sel"), patch("efm_go.subagent.read_state", return_value=None):
         info = manager.continue_conversation(child_sid, "keep going")
     assert info is not None and info.done
     assert info.error and ":" in info.error  # typed ``<class>: ...``
@@ -779,7 +779,7 @@ def test_two_hundred_children_do_not_trip_the_timeout_rate_signal():
 
 
 def ctl_live():
-    from kiro_crew.config import live
+    from efm_go.config import live
 
     return live
 
@@ -1032,7 +1032,7 @@ async def test_past_the_cap_the_refusal_names_the_cap_and_the_count_is_visible(t
                     ]
                 },
             }
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.runtime"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.acp.runtime"):
                 _feed_frame(reader, frame)
                 await _settle(rt, reader)
                 # Idempotent above the cap too: the frame IS the full list, so

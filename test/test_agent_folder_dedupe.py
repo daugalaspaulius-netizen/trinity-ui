@@ -28,16 +28,16 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import chat_folders, create_rate_limit
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_folders import api_chat_folder_create, create_folder_record
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.handlers import session_control as handlers_sc
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.dashboard.token_auth import MEMBER_CHAT_PRINCIPAL_KEY
-from kiro_crew.mcp_dashboard import TABLE
-from kiro_crew.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
-from kiro_crew.mcp_tools.table import Caller, ToolContext
+from efm_go.dashboard import chat_folders, create_rate_limit
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_folders import api_chat_folder_create, create_folder_record
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.handlers import session_control as handlers_sc
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard.token_auth import MEMBER_CHAT_PRINCIPAL_KEY
+from efm_go.mcp_dashboard import TABLE
+from efm_go.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
+from efm_go.mcp_tools.table import Caller, ToolContext
 
 _CALLER = "dashboard:chat-1-100"
 _OPS = {"id": "0000000000a1", "name": "Ops", "parent_id": ""}

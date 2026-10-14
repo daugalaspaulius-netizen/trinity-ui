@@ -1,8 +1,8 @@
 """The dashboard chat runner stays one namespace while its owners live in ``chat_turn``.
 
-``kiro_crew.dashboard.chat_runner`` keeps its import path, its patch surface, the
+``efm_go.dashboard.chat_runner`` keeps its import path, its patch surface, the
 turn entry ``_run_chat`` and every construct a path-keyed repository guard reads in
-that file; the modules of ``kiro_crew.dashboard.chat_turn`` hold these
+that file; the modules of ``efm_go.dashboard.chat_turn`` hold these
 responsibilities, one each, and ``chat_turn.compose`` runs every function they
 define on the runner's globals. These tests pin what that composition promises:
 
@@ -11,7 +11,7 @@ define on the runner's globals. These tests pin what that composition promises:
   object whichever module a caller reads it from;
 * each owner function runs on the runner's globals, every global it reads resolves
   there, and no owner captures a name a test rebinds on the runner, so a patch of
-  ``kiro_crew.dashboard.chat_runner.<name>`` reaches it (the rebound names are
+  ``efm_go.dashboard.chat_runner.<name>`` reaches it (the rebound names are
   read off the test corpus, by a scan proven able to see each spelling);
 * nothing but the runner imports an owner, no owner imports another at runtime,
   and importing the runner loads every owner;
@@ -40,9 +40,9 @@ from typing import Any
 import pytest
 from source_corpus import repo_files_named, repo_root
 
-import kiro_crew.dashboard.chat_runner as cr
-from kiro_crew.dashboard import chat_turn
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+import efm_go.dashboard.chat_runner as cr
+from efm_go.dashboard import chat_turn
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _FACADE = cr.__name__
 _FACADE_PATH = Path(cr.__file__).resolve()
@@ -675,7 +675,7 @@ def test_a_moved_name_keeps_its_base_shape_and_owner(
 def test_the_handler_seams_are_the_runner_objects() -> None:
     """``chat_handlers`` imports six seams from the runner by name; each must be the
     object the runner holds, so a patch on the runner and the handler agree."""
-    from kiro_crew.dashboard import chat_handlers, state
+    from efm_go.dashboard import chat_handlers, state
 
     seams = (
         "_context_usage_payload",
@@ -690,7 +690,7 @@ def test_the_handler_seams_are_the_runner_objects() -> None:
 
 
 def test_the_chat_facade_reexports_the_runner_objects() -> None:
-    from kiro_crew.dashboard import chat
+    from efm_go.dashboard import chat
 
     tree = ast.parse(Path(chat.__file__).read_text(encoding="utf-8"))
     names = [
@@ -809,12 +809,12 @@ def test_run_chat_keeps_its_entry_signature() -> None:
 
 
 def test_a_star_import_carries_the_moved_public_names(tmp_path: Path) -> None:
-    """``from kiro_crew.dashboard.chat_runner import *`` exports what the one-module
+    """``from efm_go.dashboard.chat_runner import *`` exports what the one-module
     file did; the runner declares no ``__all__``, so every public binding goes."""
     assert not hasattr(cr, "__all__")
     probe = tmp_path / "chat_runner_star_probe.py"
     probe.write_text(
-        "from kiro_crew.dashboard.chat_runner import *  # noqa: F401,F403\n", encoding="utf-8"
+        "from efm_go.dashboard.chat_runner import *  # noqa: F401,F403\n", encoding="utf-8"
     )
     spec = importlib.util.spec_from_file_location("chat_runner_star_probe", probe)
     assert spec is not None and spec.loader is not None
@@ -850,7 +850,7 @@ def test_runner_state_stays_on_the_runner(name: str) -> None:
 
 
 def test_the_owners_log_as_the_runner() -> None:
-    """Log capture keyed to ``kiro_crew.dashboard.chat_runner`` keeps seeing the
+    """Log capture keyed to ``efm_go.dashboard.chat_runner`` keeps seeing the
     moved sites: an owner function logs through the runner's ``logger``."""
     assert cr.logger.name == _FACADE
     readers = [
@@ -873,7 +873,7 @@ def test_the_owners_define_functions_for_the_sweeps_to_check() -> None:
 
 
 def test_every_owner_function_runs_on_the_runner_globals() -> None:
-    """A patch of ``kiro_crew.dashboard.chat_runner.<name>`` reaches an owner function
+    """A patch of ``efm_go.dashboard.chat_runner.<name>`` reaches an owner function
     only because the function reads the runner's globals, not its own module's."""
     strays = [
         label
@@ -1048,24 +1048,24 @@ def _owner_runtime_edges(source: str, package: str) -> list[int]:
         ("from .recovery import _recovery_delay\n", True),
         ("from .. import chat_runner\n", True),
         ("from ..chat_runner import sel\n", True),
-        ("from kiro_crew.dashboard import chat_runner\n", True),
-        ("from kiro_crew.dashboard import chat_turn\n", True),
-        ("import kiro_crew.dashboard.chat_runner\n", True),
-        ("import kiro_crew.dashboard.chat_runner as runner\n", True),
-        ("from kiro_crew.dashboard.chat_runner import sel\n", True),
-        ("def f():\n    from kiro_crew.dashboard.chat_runner import sel\n", True),
-        ("import importlib\nimportlib.import_module('kiro_crew.dashboard.chat_runner')\n", True),
-        ("__import__('kiro_crew.dashboard.chat_turn.recovery')\n", True),
+        ("from efm_go.dashboard import chat_runner\n", True),
+        ("from efm_go.dashboard import chat_turn\n", True),
+        ("import efm_go.dashboard.chat_runner\n", True),
+        ("import efm_go.dashboard.chat_runner as runner\n", True),
+        ("from efm_go.dashboard.chat_runner import sel\n", True),
+        ("def f():\n    from efm_go.dashboard.chat_runner import sel\n", True),
+        ("import importlib\nimportlib.import_module('efm_go.dashboard.chat_runner')\n", True),
+        ("__import__('efm_go.dashboard.chat_turn.recovery')\n", True),
         (
             "import importlib\n"
-            "importlib.import_module('.recovery', 'kiro_crew.dashboard.chat_turn')\n",
+            "importlib.import_module('.recovery', 'efm_go.dashboard.chat_turn')\n",
             True,
         ),
-        ("if TYPE_CHECKING:\n    from kiro_crew.dashboard.chat_runner import sel\n", False),
+        ("if TYPE_CHECKING:\n    from efm_go.dashboard.chat_runner import sel\n", False),
         ("if TYPE_CHECKING:\n    from .. import chat_runner\n", False),
-        ("from kiro_crew.dashboard import chat_utils\n", False),
-        ("import kiro_crew.dashboard.chat_runner_elsewhere\n", False),
-        ("from kiro_crew.dashboard.chat_utils import run_to_completion\n", False),
+        ("from efm_go.dashboard import chat_utils\n", False),
+        ("import efm_go.dashboard.chat_runner_elsewhere\n", False),
+        ("from efm_go.dashboard.chat_utils import run_to_completion\n", False),
     ],
 )
 def test_the_owner_edge_check_sees_every_spelling(source: str, flagged: bool) -> None:
@@ -1079,23 +1079,23 @@ def test_the_owner_edge_check_sees_every_spelling(source: str, flagged: bool) ->
         ("from .chat_turn import recovery\n", True),
         ("from . import chat_turn\n", True),
         ("from .chat_turn.recovery import _recovery_delay\n", True),
-        ("import kiro_crew.dashboard.chat_turn.recovery\n", True),
-        ("from kiro_crew.dashboard.chat_turn import recovery as r\n", True),
+        ("import efm_go.dashboard.chat_turn.recovery\n", True),
+        ("from efm_go.dashboard.chat_turn import recovery as r\n", True),
         ("if TYPE_CHECKING:\n    from .chat_turn import recovery\n", True),
         (
             "import importlib\n"
-            "importlib.import_module('kiro_crew.dashboard.chat_turn.recovery')\n",
+            "importlib.import_module('efm_go.dashboard.chat_turn.recovery')\n",
             True,
         ),
         ("from . import chat_runner\n", False),
         ("from .chat_runner import _run_chat\n", False),
-        ("from kiro_crew.dashboard import chat_runner\n", False),
+        ("from efm_go.dashboard import chat_runner\n", False),
         ("import importlib\nimportlib.import_module(name)\n", False),
     ],
 )
 def test_the_importer_check_sees_every_spelling(source: str, flagged: bool) -> None:
     """The one-import-path check below is only as good as the spellings it resolves."""
-    assert bool(_owner_importers(source, "kiro_crew.dashboard")) is flagged
+    assert bool(_owner_importers(source, "efm_go.dashboard")) is flagged
 
 
 def test_nothing_but_the_runner_imports_an_owner() -> None:
@@ -1103,7 +1103,7 @@ def test_nothing_but_the_runner_imports_an_owner() -> None:
     object, but the runner is the one import path and the one patch surface, so no
     production module reaches past it."""
     importers = []
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         resolved = path.resolve()
         if _OWNER_DIR in resolved.parents or resolved == _FACADE_PATH or "_vendor" in path.parts:
             continue
@@ -1167,8 +1167,8 @@ def test_a_fresh_runner_import_loads_every_owner(tmp_path: Path) -> None:
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.chat_runner
-        missing = [n for n in sys.argv[1:] if f"kiro_crew.dashboard.chat_turn.{n}" not in sys.modules]
+        import efm_go.dashboard.chat_runner
+        missing = [n for n in sys.argv[1:] if f"efm_go.dashboard.chat_turn.{n}" not in sys.modules]
         assert missing == [], missing
         print("ok")
         """,
@@ -1183,10 +1183,10 @@ def test_a_second_runner_import_recomposes_the_owners_onto_it(tmp_path: Path) ->
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.chat_runner as first
-        del sys.modules["kiro_crew.dashboard.chat_runner"]
-        import kiro_crew.dashboard.chat_runner as second
-        from kiro_crew.dashboard.chat_turn import steer_queue
+        import efm_go.dashboard.chat_runner as first
+        del sys.modules["efm_go.dashboard.chat_runner"]
+        import efm_go.dashboard.chat_runner as second
+        from efm_go.dashboard.chat_turn import steer_queue
         fn = second._requeue_unconsumed_steers
         assert second is not first
         assert fn.__globals__ is vars(second)
@@ -1206,7 +1206,7 @@ _PATCH_CALLS = ("setattr", "patch.object", "delattr")
 _PATCH_MULTIPLE = ("patch.multiple",)
 #: ``patch.multiple`` keywords that configure the patch rather than name a target.
 _MULTIPLE_OPTIONS = frozenset({"spec", "create", "spec_set", "autospec", "new_callable"})
-_RUNNER_STRING = re.compile(r"""^kiro_crew\.dashboard\.chat_runner\.(\w+)$""")
+_RUNNER_STRING = re.compile(r"""^efm_go\.dashboard\.chat_runner\.(\w+)$""")
 
 
 def _facade_aliases(tree: ast.Module) -> set[str]:
@@ -1217,7 +1217,7 @@ def _facade_aliases(tree: ast.Module) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             aliases |= {a.asname for a in node.names if a.name == _FACADE and a.asname}
-        elif isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.dashboard":
+        elif isinstance(node, ast.ImportFrom) and node.module == "efm_go.dashboard":
             aliases |= {a.asname or a.name for a in node.names if a.name == "chat_runner"}
     changed = True
     while changed:
@@ -1276,7 +1276,7 @@ def _resolve_name(node: ast.AST, params: dict[str, set[str]]) -> set[str] | None
 
 
 def _resolve_target(node: ast.AST, params: dict[str, set[str]]) -> set[str] | None:
-    """The runner names a ``patch("kiro_crew.dashboard.chat_runner.<name>")`` target
+    """The runner names a ``patch("efm_go.dashboard.chat_runner.<name>")`` target
     can spell, an empty set when it names something else, or None when unresolved."""
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         match = _RUNNER_STRING.match(node.value)
@@ -1338,7 +1338,7 @@ def _patched_names_in(text: str) -> set[str]:
                 for target in targets:
                     if isinstance(target, ast.Attribute) and ast.unparse(target.value) in aliases:
                         found.add(target.attr)
-    found |= set(re.findall(r"""["']kiro_crew\.dashboard\.chat_runner\.(\w+)["']""", text))
+    found |= set(re.findall(r"""["']efm_go\.dashboard\.chat_runner\.(\w+)["']""", text))
     return found
 
 
@@ -1420,19 +1420,19 @@ def _captured_names(source: str) -> set[str]:
 def test_the_patch_scan_reads_every_spelling() -> None:
     planted = (
         "import importlib, sys\n"
-        "import kiro_crew.dashboard.chat_runner as runner\n"
-        "from kiro_crew.dashboard import chat_runner as crm\n"
-        "facade = importlib.import_module('kiro_crew.dashboard.chat_runner')\n"
+        "import efm_go.dashboard.chat_runner as runner\n"
+        "from efm_go.dashboard import chat_runner as crm\n"
+        "facade = importlib.import_module('efm_go.dashboard.chat_runner')\n"
         "alias = facade\n"
         "typed: object = alias\n"
-        "held = sys.modules['kiro_crew.dashboard.chat_runner']\n"
+        "held = sys.modules['efm_go.dashboard.chat_runner']\n"
         "def test(monkeypatch):\n"
         "    monkeypatch.setattr(runner, 'first', 1)\n"
         "    monkeypatch.setattr(crm, 'second', 2)\n"
         "    patch.object(alias, 'third')\n"
         "    crm.fourth = 4\n"
-        "    monkeypatch.setattr('kiro_crew.dashboard.chat_runner.fifth', 5)\n"
-        "    monkeypatch.setattr('kiro_crew.dashboard.chat_runner.Shared.attr', 6)\n"
+        "    monkeypatch.setattr('efm_go.dashboard.chat_runner.fifth', 5)\n"
+        "    monkeypatch.setattr('efm_go.dashboard.chat_runner.Shared.attr', 6)\n"
         "    monkeypatch.setattr(crm.Shared, 'attr', 7)\n"
         "    monkeypatch.setattr(other, 'not_runner', 8)\n"
         "    monkeypatch.delattr(crm, 'sixth')\n"
@@ -1440,7 +1440,7 @@ def test_the_patch_scan_reads_every_spelling() -> None:
         "    patch.multiple(held, eighth=1, ninth=2, create=True)\n"
         "@pytest.mark.parametrize('which', ['tenth', 'eleventh'])\n"
         "def test_param(which):\n"
-        "    patch(f'kiro_crew.dashboard.chat_runner.{which}')\n"
+        "    patch(f'efm_go.dashboard.chat_runner.{which}')\n"
         "    patch.object(crm, which)\n"
     )
     assert _patched_names_in(planted) == {
@@ -1457,19 +1457,19 @@ def test_the_patch_scan_reads_every_spelling() -> None:
         "eleventh",
     }
     unresolved = (
-        "from kiro_crew.dashboard import chat_runner as crm\n"
+        "from efm_go.dashboard import chat_runner as crm\n"
         "def test(monkeypatch, name):\n"
-        "    patch(f'kiro_crew.dashboard.chat_runner.{name}')\n"
+        "    patch(f'efm_go.dashboard.chat_runner.{name}')\n"
     )
     assert _patched_names_in(unresolved) == {"<dynamic>"}
     unresolved_name = (
-        "from kiro_crew.dashboard import chat_runner as crm\n"
+        "from efm_go.dashboard import chat_runner as crm\n"
         "def test(monkeypatch, name):\n"
         "    monkeypatch.setattr(crm, name, 1)\n"
     )
     assert _patched_names_in(unresolved_name) == {"<dynamic>"}
     splat = (
-        "from kiro_crew.dashboard import chat_runner as crm\n"
+        "from efm_go.dashboard import chat_runner as crm\n"
         "def test():\n"
         "    patch.multiple(crm, **targets)\n"
     )
@@ -1480,14 +1480,14 @@ def test_the_capture_scan_flags_what_an_owner_evaluates_when_it_loads() -> None:
     planted = (
         '"""An owner."""\n'
         "from typing import TYPE_CHECKING\n"
-        "from kiro_crew.dashboard.chat_utils import run_to_completion\n"
+        "from efm_go.dashboard.chat_utils import run_to_completion\n"
         "import asyncio as aio\n"
         "if TYPE_CHECKING:\n"
-        "    from kiro_crew.dashboard.chat_runner import sel\n"
+        "    from efm_go.dashboard.chat_runner import sel\n"
         "else:\n"
-        "    from kiro_crew.sel import log_runtime\n"
+        "    from efm_go.sel import log_runtime\n"
         "try:\n"
-        "    from kiro_crew.platform import nested_import\n"
+        "    from efm_go.platform import nested_import\n"
         "except ImportError:\n"
         "    nested_import = None\n"
         "LIMIT = _MAX_SLOT_MESSAGES * 2\n"
@@ -1594,9 +1594,9 @@ def test_a_stalled_owner_frame_still_reads_as_a_dashboard_chat_turn() -> None:
     """A moved helper called from outside the runner (the mirror, a handler) leaves
     an owner file as the only frame ``stall_attribution`` recognises, and that
     frame names the dashboard chat surface as the runner's own frame does."""
-    from kiro_crew.stall_attribution import Frame, classify_surface
+    from efm_go.stall_attribution import Frame, classify_surface
 
-    outside = Frame("/site/kiro_crew/dashboard/chat_mirror.py", 10, "mirror_reply")
+    outside = Frame("/site/efm_go/dashboard/chat_mirror.py", 10, "mirror_reply")
     for path in (_FACADE_PATH, *(_OWNER_DIR / f"{stem}.py" for stem in sorted(_OWNER_MODULES))):
         inner = Frame(path.as_posix(), 1, "_resolve_channel_target")
         assert classify_surface([inner, outside]) == "dashboard chat", path.name

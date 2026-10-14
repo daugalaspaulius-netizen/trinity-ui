@@ -21,9 +21,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import kiro_crew.slack.gateway as gw_mod
-from kiro_crew.heartbeat import HEARTBEAT_TASK_TIMEOUT_SECS
-from kiro_crew.session import HEARTBEAT_KEY
+import efm_go.slack.gateway as gw_mod
+from efm_go.heartbeat import HEARTBEAT_TASK_TIMEOUT_SECS
+from efm_go.session import HEARTBEAT_KEY
 
 
 def _make_orchestrator():

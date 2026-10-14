@@ -1,6 +1,6 @@
 # Implementation Plan: Config Schema
 
-Status: implemented in `src/kiro_crew/config/schema.py`, `src/kiro_crew/config/validation.py`, and `scripts/generate_config_baseline.py`.
+Status: implemented in `src/efm_go/config/schema.py`, `src/efm_go/config/validation.py`, and `scripts/generate_config_baseline.py`.
 
 ## Overview
 

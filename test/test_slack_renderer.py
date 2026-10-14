@@ -12,7 +12,7 @@ import asyncio
 
 import pytest
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
@@ -20,9 +20,9 @@ from kiro_crew.acp.types import (
     EVENT_TOOL_CALL,
     AcpEvent,
 )
-from kiro_crew.messaging import APPROVAL_INTERACTIVE, TurnDriver
-from kiro_crew.slack.client import RealSlackClient
-from kiro_crew.slack.renderer import (
+from efm_go.messaging import APPROVAL_INTERACTIVE, TurnDriver
+from efm_go.slack.client import RealSlackClient
+from efm_go.slack.renderer import (
     _STATUS_WORKING,
     TOOL_APPROVE_ACTION_PREFIX,
     TOOL_DENY_ACTION_PREFIX,
@@ -610,7 +610,7 @@ class TestApprovalDecider:
     def test_timeout_denies(self, monkeypatch):
         # If the user never clicks, the decider denies by default after the
         # approval window (patched tiny for the test).
-        monkeypatch.setattr("kiro_crew.slack.renderer._APPROVAL_TIMEOUT", 0.01)
+        monkeypatch.setattr("efm_go.slack.renderer._APPROVAL_TIMEOUT", 0.01)
         rec = _RecSlack()
         decider = SlackApprovalDecider()
         renderer = SlackRenderer(rec, "C1", "t1", reactions_enabled=False, decider=decider)
@@ -898,7 +898,7 @@ class TestStreamMachinery:
         ref-hold can defer a long unbroken run for its own, unrelated reason,
         which would make a stream-level assertion pass without this rule.
         """
-        from kiro_crew.slack.renderer import _WORD_HOLD_MAX, _split_trailing_word
+        from efm_go.slack.renderer import _WORD_HOLD_MAX, _split_trailing_word
 
         short = "y" * _WORD_HOLD_MAX
         assert _split_trailing_word(f"pin {short}") == ("pin ", short)

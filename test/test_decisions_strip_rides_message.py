@@ -27,14 +27,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_persistence import _build_message_entry_uncached
-from kiro_crew.dashboard.chat_utils import effective_session_key
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.decisions import outcomes
-from kiro_crew.history import ConversationLog
-from kiro_crew.providers.base import LLMEvent
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_persistence import _build_message_entry_uncached
+from efm_go.dashboard.chat_utils import effective_session_key
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.decisions import outcomes
+from efm_go.history import ConversationLog
+from efm_go.providers.base import LLMEvent
 
 STRIP = {
     "turn_id": "turn-7",
@@ -344,7 +344,7 @@ class TestAnOutcomeOnlyReachesItsOwnTurnsReply:
         assert _strip_of(_assistant(slot)) == [STRIP]
 
     def test_a_failing_registry_cannot_cost_the_turn(self, tmp_path, monkeypatch):
-        import kiro_crew.decisions.outcomes as outcomes_mod
+        import efm_go.decisions.outcomes as outcomes_mod
 
         def _boom(_key):
             raise RuntimeError("registry exploded")

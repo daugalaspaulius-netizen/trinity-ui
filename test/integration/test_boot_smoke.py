@@ -20,10 +20,10 @@ from typing import Any, Awaitable
 import pytest
 from integration import conftest as harness
 
-from kiro_crew import identity_stores, onboarding_sources, safety_override
-from kiro_crew.agent_sdk import host_auth
-from kiro_crew.dashboard.handlers import kiro_usage_api
-from kiro_crew.slack.gateway import GatewayOrchestrator
+from efm_go import identity_stores, onboarding_sources, safety_override
+from efm_go.agent_sdk import host_auth
+from efm_go.dashboard.handlers import kiro_usage_api
+from efm_go.slack.gateway import GatewayOrchestrator
 
 try:
     import resource as _resource
@@ -155,7 +155,7 @@ async def test_a_second_home_gets_its_own_signing_key(tmp_path: Path, monkeypatc
     """Two boots on two homes in one process: the token minted for the first
     must not validate against the second, which is only true when the cached
     signing key and revoked-nonce store are dropped between them."""
-    from kiro_crew.dashboard import token_secret
+    from efm_go.dashboard import token_secret
 
     homes = []
     keys = []
@@ -416,84 +416,84 @@ async def test_a_boot_reads_nothing_from_the_outer_home(
 #: (``conftest._reset_home_bound_globals``) or, with a reason, here.
 _KNOWN_SECOND_BOOT_CHANGES: dict[tuple[str, str], str] = {
     # Monotonic counters and clocks: carry no home state.
-    ("kiro_crew.config.loader", "_CONFIG_AUTOCOMPACT_ISSUED"): "counter",
-    ("kiro_crew.config.loader", "_CONFIG_AUTOCOMPACT_TICKET"): "counter",
-    ("kiro_crew.config.loader", "_CONFIG_TIMEZONE_TICKET"): "counter",
-    ("kiro_crew.config.loader", "_MATERIALIZED_REFRESH_APPLIED"): "counter",
-    ("kiro_crew.config.loader", "_MATERIALIZED_REFRESH_ISSUED"): "counter",
-    ("kiro_crew.context", "_store_cache_generation"): "counter",
-    ("kiro_crew.dashboard.handlers.updates", "_last_update_check"): "clock",
+    ("efm_go.config.loader", "_CONFIG_AUTOCOMPACT_ISSUED"): "counter",
+    ("efm_go.config.loader", "_CONFIG_AUTOCOMPACT_TICKET"): "counter",
+    ("efm_go.config.loader", "_CONFIG_TIMEZONE_TICKET"): "counter",
+    ("efm_go.config.loader", "_MATERIALIZED_REFRESH_APPLIED"): "counter",
+    ("efm_go.config.loader", "_MATERIALIZED_REFRESH_ISSUED"): "counter",
+    ("efm_go.context", "_store_cache_generation"): "counter",
+    ("efm_go.dashboard.handlers.updates", "_last_update_check"): "clock",
     # When telemetry consent was last re-read, and whether a re-read is in
     # flight: a boot that outlasts the recheck window starts one. The consent
     # itself (``_built_consent``) does not change here.
-    ("kiro_crew.metrics.provider", "_check_in_flight"): "clock-driven recheck",
-    ("kiro_crew.metrics.provider", "_consent_checked_at"): "clock",
-    ("kiro_crew.platform.context", "_GOVERNANCE_GENERATION"): "counter",
-    ("kiro_crew.platform.governance_profiles", "_PROFILE_GENERATION"): "counter",
+    ("efm_go.metrics.provider", "_check_in_flight"): "clock-driven recheck",
+    ("efm_go.metrics.provider", "_consent_checked_at"): "clock",
+    ("efm_go.platform.context", "_GOVERNANCE_GENERATION"): "counter",
+    ("efm_go.platform.governance_profiles", "_PROFILE_GENERATION"): "counter",
     # Host facts re-probed on their own TTL or backoff: the user login session
     # behind cgroup scopes and the machine's own host names. A boot that
     # outlasts the window probes again, or a lookup started in one boot lands
     # in the next; neither is derived from the home.
-    ("kiro_crew.sandbox", "_CGROUP_SCOPE_PROBE_AT"): "host probe clock",
-    ("kiro_crew.sandbox", "_CPU_DELEGATED"): "host probe, re-read after a re-probe",
-    ("kiro_crew.security.argv_floor", "_OWN_HOST_NAMES_CACHE"): "host names",
-    ("kiro_crew.security.argv_floor", "_OWN_HOST_RESOLVE_DONE"): "host names",
-    ("kiro_crew.security.argv_floor", "_OWN_HOST_RESOLVE_IN_FLIGHT"): "host names",
-    ("kiro_crew.security.argv_floor", "_OWN_HOST_RESOLVE_NEXT_TRY"): "host probe clock",
-    ("kiro_crew.security.argv_floor", "_OWN_HOST_RESOLVE_STAMP"): "host probe clock",
+    ("efm_go.sandbox", "_CGROUP_SCOPE_PROBE_AT"): "host probe clock",
+    ("efm_go.sandbox", "_CPU_DELEGATED"): "host probe, re-read after a re-probe",
+    ("efm_go.security.argv_floor", "_OWN_HOST_NAMES_CACHE"): "host names",
+    ("efm_go.security.argv_floor", "_OWN_HOST_RESOLVE_DONE"): "host names",
+    ("efm_go.security.argv_floor", "_OWN_HOST_RESOLVE_IN_FLIGHT"): "host names",
+    ("efm_go.security.argv_floor", "_OWN_HOST_RESOLVE_NEXT_TRY"): "host probe clock",
+    ("efm_go.security.argv_floor", "_OWN_HOST_RESOLVE_STAMP"): "host probe clock",
     # Per-boot objects the next boot replaces wholesale before any read; they
     # hold references, not home-derived decisions a later request would act on.
-    ("kiro_crew.apps.builtins.auto_improvement.backend.crew", "_runtime"): "replaced per boot",
-    ("kiro_crew.apps.hook_reconcile", "_cron_service"): "replaced per boot",
-    ("kiro_crew.apps.hooks_integration", "_lifecycle_dispatcher"): "replaced per boot",
-    ("kiro_crew.apps.hooks_integration", "_route_registry"): "replaced per boot",
-    ("kiro_crew.dashboard.cautious_boot", "_decision"): "replaced per boot",
-    ("kiro_crew.dashboard.crash_dump_store", "_active_dump_file"): "replaced per boot",
-    ("kiro_crew.diag.recorder", "_recorder"): "replaced per boot",
-    ("kiro_crew.hooks", "_BUILTIN_APP_AGENTS"): "replaced per boot",
-    ("kiro_crew.hooks", "_global_script_hook_store"): "replaced per boot",
-    ("kiro_crew.skill_usage", "_global_skill_read_observer"): "replaced per boot",
-    ("kiro_crew.slack.interactions", "_orch"): "replaced per boot",
-    ("kiro_crew.taskq.dependency", "_current"): "cleared by _shutdown()",
+    ("efm_go.apps.builtins.auto_improvement.backend.crew", "_runtime"): "replaced per boot",
+    ("efm_go.apps.hook_reconcile", "_cron_service"): "replaced per boot",
+    ("efm_go.apps.hooks_integration", "_lifecycle_dispatcher"): "replaced per boot",
+    ("efm_go.apps.hooks_integration", "_route_registry"): "replaced per boot",
+    ("efm_go.dashboard.cautious_boot", "_decision"): "replaced per boot",
+    ("efm_go.dashboard.crash_dump_store", "_active_dump_file"): "replaced per boot",
+    ("efm_go.diag.recorder", "_recorder"): "replaced per boot",
+    ("efm_go.hooks", "_BUILTIN_APP_AGENTS"): "replaced per boot",
+    ("efm_go.hooks", "_global_script_hook_store"): "replaced per boot",
+    ("efm_go.skill_usage", "_global_skill_read_observer"): "replaced per boot",
+    ("efm_go.slack.interactions", "_orch"): "replaced per boot",
+    ("efm_go.taskq.dependency", "_current"): "cleared by _shutdown()",
     # Caches keyed by the thing they cache (a path, a server name), so a stale
     # entry is never returned for a different home.
-    ("kiro_crew.agent_discovery", "_LIST_AGENTS_CACHE"): "keyed cache",
-    ("kiro_crew.apps.dev_mode", "_dev_apps_cache"): "keyed cache",
-    ("kiro_crew.apps.manager", "_orphaned_builtins_cache"): "keyed cache",
-    ("kiro_crew.autonudge", "_MAINTENANCE_LOCKS"): "keyed cache",
-    ("kiro_crew.dashboard.handlers.mcp", "_mcp_probe_cache"): "keyed cache",
-    ("kiro_crew.dashboard.handlers.mcp", "_mcp_probe_ts"): "keyed cache",
-    ("kiro_crew.mcp_discovery", "_probe_cache"): "keyed cache",
-    ("kiro_crew.agent_discovery", "_PARSED_SPECS_CACHE"): "keyed cache",
+    ("efm_go.agent_discovery", "_LIST_AGENTS_CACHE"): "keyed cache",
+    ("efm_go.apps.dev_mode", "_dev_apps_cache"): "keyed cache",
+    ("efm_go.apps.manager", "_orphaned_builtins_cache"): "keyed cache",
+    ("efm_go.autonudge", "_MAINTENANCE_LOCKS"): "keyed cache",
+    ("efm_go.dashboard.handlers.mcp", "_mcp_probe_cache"): "keyed cache",
+    ("efm_go.dashboard.handlers.mcp", "_mcp_probe_ts"): "keyed cache",
+    ("efm_go.mcp_discovery", "_probe_cache"): "keyed cache",
+    ("efm_go.agent_discovery", "_PARSED_SPECS_CACHE"): "keyed cache",
     # Process-wide thread pools created on first use, home-independent.
-    ("kiro_crew.executors", "_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_subprocess_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_kiro_spawn_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_cron_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_discovery_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_embed_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_recall_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_image_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_stt_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_governance_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_cron_gate_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_path_resolve_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_path_probe_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_path_transfer_pool"): "lazy thread pool",
-    ("kiro_crew.executors", "_crew_log_pool"): "lazy thread pool",
+    ("efm_go.executors", "_pool"): "lazy thread pool",
+    ("efm_go.executors", "_subprocess_pool"): "lazy thread pool",
+    ("efm_go.executors", "_kiro_spawn_pool"): "lazy thread pool",
+    ("efm_go.executors", "_cron_pool"): "lazy thread pool",
+    ("efm_go.executors", "_discovery_pool"): "lazy thread pool",
+    ("efm_go.executors", "_embed_pool"): "lazy thread pool",
+    ("efm_go.executors", "_recall_pool"): "lazy thread pool",
+    ("efm_go.executors", "_image_pool"): "lazy thread pool",
+    ("efm_go.executors", "_stt_pool"): "lazy thread pool",
+    ("efm_go.executors", "_governance_pool"): "lazy thread pool",
+    ("efm_go.executors", "_cron_gate_pool"): "lazy thread pool",
+    ("efm_go.executors", "_path_resolve_pool"): "lazy thread pool",
+    ("efm_go.executors", "_path_probe_pool"): "lazy thread pool",
+    ("efm_go.executors", "_path_transfer_pool"): "lazy thread pool",
+    ("efm_go.executors", "_crew_log_pool"): "lazy thread pool",
     # Task handles of loops the harness reaps at teardown (docstring, item 4);
     # only the dead handle remains.
-    ("kiro_crew.apps.builtins.auto_research.handlers", "_watchdog_task"): "reaped task handle",
-    ("kiro_crew.apps.builtins.code_review_sage.backend.routes", "_TASKS"): "reaped task handles",
-    ("kiro_crew.dashboard.handlers.mcp", "_mcp_probe_task"): "reaped task handle",
-    ("kiro_crew.sandbox", "_warm_thread"): "finished probe thread handle",
+    ("efm_go.apps.builtins.auto_research.handlers", "_watchdog_task"): "reaped task handle",
+    ("efm_go.apps.builtins.code_review_sage.backend.routes", "_TASKS"): "reaped task handles",
+    ("efm_go.dashboard.handlers.mcp", "_mcp_probe_task"): "reaped task handle",
+    ("efm_go.sandbox", "_warm_thread"): "finished probe thread handle",
 }
 
 _SCALAR_TYPES = (int, float, str, bool, bytes, type(None), tuple, frozenset)
 
 
 def _module_globals() -> dict[tuple[str, str], tuple[int, str]]:
-    """One comparable value per module-level name of every loaded ``kiro_crew`` module.
+    """One comparable value per module-level name of every loaded ``efm_go`` module.
 
     Scalars compare by value; containers by identity plus size; anything else
     by identity. Classes, functions and modules are skipped: a boot does not
@@ -501,7 +501,7 @@ def _module_globals() -> dict[tuple[str, str], tuple[int, str]]:
     """
     out: dict[tuple[str, str], tuple[int, str]] = {}
     for module_name, module in list(sys.modules.items()):
-        if not module_name.startswith("kiro_crew") or module is None:
+        if not module_name.startswith("efm_go") or module is None:
             continue
         for attr, value in list(vars(module).items()):
             if attr.startswith("__") or isinstance(
@@ -520,7 +520,7 @@ def _module_globals() -> dict[tuple[str, str], tuple[int, str]]:
 @pytest.mark.asyncio
 async def test_a_second_boot_touches_only_known_module_globals(gateway_boot) -> None:
     """The generic witness behind the reset list: diff every loaded
-    ``kiro_crew`` module's globals across a SECOND boot (the first warms the
+    ``efm_go`` module's globals across a SECOND boot (the first warms the
     imports) and require each changed name to be either restored by the
     harness or listed in ``_KNOWN_SECOND_BOOT_CHANGES`` with its reason. A
     home-derived global that startup grows fails here by name."""
@@ -548,8 +548,8 @@ async def test_a_boot_inherits_no_cooldown_or_cached_count(gateway_boot) -> None
     cannot see most of that: an inherited dict entry changes no identity and,
     once the boot adds its own, no size. So one of each is seeded under a key
     no boot uses, and both reset points must drop it."""
-    from kiro_crew.dashboard import status_counts
-    from kiro_crew.security import paths
+    from efm_go.dashboard import status_counts
+    from efm_go.security import paths
 
     prefix = paths._stall_prefix(os.path.join(os.sep, "kc-integration-unresolved", "leaf"))
     synthetic_tid = -1  # thread idents are positive, so no real caller collides

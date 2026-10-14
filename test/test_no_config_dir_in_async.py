@@ -14,7 +14,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 # Files the AST guard checks for config_dir() calls inside async functions.
 _ASYNC_CHECKED_FILES = [

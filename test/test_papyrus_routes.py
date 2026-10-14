@@ -2,7 +2,7 @@
 
 Lives in the repo-level ``test/`` tree (not the app's in-package ``tests/``)
 because ``setup.cfg`` sets ``testpaths = test transfer`` — a test under
-``src/kiro_crew/apps/builtins/...`` is never collected by CI.
+``src/efm_go/apps/builtins/...`` is never collected by CI.
 
 Handlers are driven directly with ``aiohttp.test_utils.make_mocked_request``, the
 same approach ``issue_radar``'s route tests take, so no server is bound and no
@@ -35,7 +35,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.builtins.papyrus.backend import gitops, latex, routes, store, tectonic
+from efm_go.apps.builtins.papyrus.backend import gitops, latex, routes, store, tectonic
 
 
 def _request(method: str, path: str, body: dict[str, Any] | None = None) -> web.Request:
@@ -1244,9 +1244,9 @@ class TestNoBlockingCallsOnTheLoop:
         the spawns live, and the blocking cold-probe above was reached from an
         ``async def`` in each of them rather than from a handler.
         """
-        from kiro_crew.apps.builtins.papyrus.backend import gitops as papyrus_gitops
-        from kiro_crew.apps.builtins.papyrus.backend import latex as papyrus_latex
-        from kiro_crew.apps.builtins.papyrus.backend import routes as papyrus_routes
+        from efm_go.apps.builtins.papyrus.backend import gitops as papyrus_gitops
+        from efm_go.apps.builtins.papyrus.backend import latex as papyrus_latex
+        from efm_go.apps.builtins.papyrus.backend import routes as papyrus_routes
 
         return [papyrus_routes, papyrus_latex, papyrus_gitops]
 

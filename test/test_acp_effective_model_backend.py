@@ -12,8 +12,8 @@ exists. These pin that the two paths agree.
 
 from __future__ import annotations
 
-from kiro_crew.acp_backends import ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS, ACP_BACKEND_KIRO
-from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
+from efm_go.acp_backends import ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS, ACP_BACKEND_KIRO
+from efm_go.config.loader import AgentConfig, KiroCrewConfig
 
 # A canonical registry key whose kiro id and claude provider id differ — the
 # whole point of the fix. Kept as data so the assertions below read as "which

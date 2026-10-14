@@ -1,8 +1,8 @@
-"""Tests for kiro_crew.apps.permissions — permission validation and enforcement."""
+"""Tests for efm_go.apps.permissions — permission validation and enforcement."""
 from __future__ import annotations
 
-from kiro_crew.apps.manifest import AppManifest, Permissions
-from kiro_crew.apps.permissions import (
+from efm_go.apps.manifest import AppManifest, Permissions
+from efm_go.apps.permissions import (
     PermissionCheck,
     app_can_manage_session_approvals,
     check_tool_permission,
@@ -114,13 +114,13 @@ class TestSessionApprovalPermission:
             description="T",
             permissions=Permissions(sessionApproval=True),
         )
-        monkeypatch.setattr("kiro_crew.apps.permissions.is_app_enabled", lambda name: name == "test")
-        monkeypatch.setattr("kiro_crew.apps.permissions.get_app_manifest", lambda _name: manifest)
+        monkeypatch.setattr("efm_go.apps.permissions.is_app_enabled", lambda name: name == "test")
+        monkeypatch.setattr("efm_go.apps.permissions.get_app_manifest", lambda _name: manifest)
 
         assert app_can_manage_session_approvals("test") is True
 
     def test_disabled_app_is_denied(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.apps.permissions.is_app_enabled", lambda _name: False)
+        monkeypatch.setattr("efm_go.apps.permissions.is_app_enabled", lambda _name: False)
         assert app_can_manage_session_approvals("test") is False
 
     def test_missing_grant_is_denied(self, monkeypatch):
@@ -130,8 +130,8 @@ class TestSessionApprovalPermission:
             displayName="T",
             description="T",
         )
-        monkeypatch.setattr("kiro_crew.apps.permissions.is_app_enabled", lambda _name: True)
-        monkeypatch.setattr("kiro_crew.apps.permissions.get_app_manifest", lambda _name: manifest)
+        monkeypatch.setattr("efm_go.apps.permissions.is_app_enabled", lambda _name: True)
+        monkeypatch.setattr("efm_go.apps.permissions.get_app_manifest", lambda _name: manifest)
 
         assert app_can_manage_session_approvals("test") is False
 

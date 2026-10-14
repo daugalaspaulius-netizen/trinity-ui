@@ -26,9 +26,9 @@ import sys
 from pathlib import Path
 from unittest.mock import AsyncMock
 
-import kiro_crew.messaging.dispatch as _pipeline
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, STOP_REASON_END_TURN
-from kiro_crew.slack import transport_dispatch as slack_dispatch
+import efm_go.messaging.dispatch as _pipeline
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, STOP_REASON_END_TURN
+from efm_go.slack import transport_dispatch as slack_dispatch
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -104,7 +104,7 @@ class TestTelegram:
             async def close(self, failure_reason: str | None = None):  # noqa: D102
                 raise RuntimeError("telegram renderer finalization failed")
 
-        import kiro_crew.telegram.transport_dispatch as tg_dispatch
+        import efm_go.telegram.transport_dispatch as tg_dispatch
 
         monkeypatch.setattr(tg_dispatch, "TelegramRenderer", _ExplodingRenderer)
 

@@ -19,10 +19,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.knowledge.ingestion import IngestionPipeline
-from kiro_crew.knowledge.store import KnowledgeStore
-from kiro_crew.knowledge.sync import SyncScheduler
-from kiro_crew.knowledge.watcher import KnowledgeWatcher
+from efm_go.knowledge.ingestion import IngestionPipeline
+from efm_go.knowledge.store import KnowledgeStore
+from efm_go.knowledge.sync import SyncScheduler
+from efm_go.knowledge.watcher import KnowledgeWatcher
 
 
 @pytest.fixture()

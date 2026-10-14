@@ -24,7 +24,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.apps import manager, registry
+from efm_go.apps import manager, registry
 
 GOOD_URL = "https://github.com/good-org/shared-name.git"
 EVIL_URL = "https://github.com/evil-org/shared-name.git"
@@ -33,7 +33,7 @@ EVIL_URL = "https://github.com/evil-org/shared-name.git"
 @pytest.fixture(autouse=True)
 def _admit_registry_execution(monkeypatch):
     """These tests must reach the admitted post-clone install path."""
-    monkeypatch.setattr("kiro_crew.apps.execution.third_party_execution_allowed", lambda: True)
+    monkeypatch.setattr("efm_go.apps.execution.third_party_execution_allowed", lambda: True)
     monkeypatch.setattr(registry, "app_admission_denied", lambda *a, **k: None)
 
 
@@ -49,7 +49,7 @@ def _catalog_absent(monkeypatch):
     runner's live network being up.
     """
     monkeypatch.setattr(
-        "kiro_crew.apps.official_catalog.inventory_for_install",
+        "efm_go.apps.official_catalog.inventory_for_install",
         lambda name: None,
     )
 
@@ -201,7 +201,7 @@ class TestProvenanceCapture:
         home = tmp_path / "kirocrew-home"
         home.mkdir()
         monkeypatch.setenv("KIROCREW_HOME", str(home))
-        monkeypatch.setattr("kiro_crew.config.paths._resolved_home", None)
+        monkeypatch.setattr("efm_go.config.paths._resolved_home", None)
         assert manager.config_dir() == home
         return home
 
@@ -218,7 +218,7 @@ class TestProvenanceCapture:
             json.dumps({"mode": "open", "trust_keys": {"acme": secret}}), encoding="utf-8"
         )
 
-        from kiro_crew.apps.manifest import AppManifest
+        from efm_go.apps.manifest import AppManifest
 
         manifest = _manifest("signed-app", signer="acme")
         manifest["signature"] = hmac.new(

@@ -1,6 +1,6 @@
 # Implementation Plan — Human-in-the-Loop Tool-Approval Layer
 
-Status: partially implemented in `src/kiro_crew/hooks.py` and the dashboard approval components. Unimplemented: typed `ToolPreviewFrame` previews (the App Builder Kit dependency did not ship), batch multi-select approval of pending tool calls, and the show-raw-input control on the approval card.
+Status: partially implemented in `src/efm_go/hooks.py` and the dashboard approval components. Unimplemented: typed `ToolPreviewFrame` previews (the App Builder Kit dependency did not ship), batch multi-select approval of pending tool calls, and the show-raw-input control on the approval card.
 
 This plan enriches the render + resume steps of Kiro Crew's existing approval loop and
 documents the portable AI-SDK mapping. The backend enforcement gate (`on_tool_call`) is

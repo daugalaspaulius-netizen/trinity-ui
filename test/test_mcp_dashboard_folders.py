@@ -17,11 +17,11 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import mcp_dashboard
-from kiro_crew.config.loader import KiroCrewConfig, config_dir
-from kiro_crew.mcp_dashboard import TABLE, _list_tools
-from kiro_crew.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
-from kiro_crew.mcp_tools.table import Caller, ToolContext
+from efm_go import mcp_dashboard
+from efm_go.config.loader import KiroCrewConfig, config_dir
+from efm_go.mcp_dashboard import TABLE, _list_tools
+from efm_go.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
+from efm_go.mcp_tools.table import Caller, ToolContext
 
 # Representative GET /api/chat/folders body — a bare JSON array (no envelope),
 # each row carrying only parent_id (the human path is derived client-side).

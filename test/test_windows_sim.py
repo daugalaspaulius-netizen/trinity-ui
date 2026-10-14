@@ -24,9 +24,9 @@ from windows_sim import (
 
 class TestCollidingClock:
     def test_now_is_frozen(self):
-        import kiro_crew.history as h
+        import efm_go.history as h
 
-        with colliding_clock("kiro_crew.history") as at:
+        with colliding_clock("efm_go.history") as at:
             a = h.datetime.now()
             b = h.datetime.now()
         assert a == b == at
@@ -35,26 +35,26 @@ class TestCollidingClock:
     def test_inherited_classmethods_still_work(self):
         # The stub subclasses real datetime, so fromisoformat/strptime keep
         # working for code under test that uses them next to now().
-        import kiro_crew.history as h
+        import efm_go.history as h
 
-        with colliding_clock("kiro_crew.history"):
+        with colliding_clock("efm_go.history"):
             parsed = h.datetime.fromisoformat("2020-05-01T12:00:00+00:00")
         assert (parsed.year, parsed.month) == (2020, 5)
 
     def test_tz_aware_now_respects_tz(self):
         import datetime as dt
 
-        import kiro_crew.history as h
+        import efm_go.history as h
 
-        with colliding_clock("kiro_crew.history"):
+        with colliding_clock("efm_go.history"):
             aware = h.datetime.now(dt.timezone.utc)
         assert aware.tzinfo is not None
 
     def test_real_appends_survive_the_collision(self, tmp_path):
-        from kiro_crew.history import ConversationLog, transcript_sort_key
+        from efm_go.history import ConversationLog, transcript_sort_key
 
         log = ConversationLog(base_dir=tmp_path)
-        with colliding_clock("kiro_crew.history"):
+        with colliding_clock("efm_go.history"):
             log.append("t", "user", "a")
             log.append("t", "user", "b")
             log.append("t", "user", "c")
@@ -70,18 +70,18 @@ class TestCollidingClock:
 
 class TestIncreasingClock:
     def test_now_strictly_increases(self):
-        import kiro_crew.history as h
+        import efm_go.history as h
 
-        with increasing_clock("kiro_crew.history"):
+        with increasing_clock("efm_go.history"):
             first = h.datetime.now()
             second = h.datetime.now()
         assert second > first
 
     def test_real_appends_are_distinct_and_ordered(self, tmp_path):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog(base_dir=tmp_path)
-        with increasing_clock("kiro_crew.history"):
+        with increasing_clock("efm_go.history"):
             log.append("t", "user", "a")
             log.append("t", "user", "b")
         ts = [m["ts"] for m in log.read_messages("t")]

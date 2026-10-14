@@ -22,10 +22,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.chat_folders import api_chat_folder_reorder
-from kiro_crew.dashboard.folder_repository import FolderRepository
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.loop_lock import LoopBoundLock
+from efm_go.dashboard.chat_folders import api_chat_folder_reorder
+from efm_go.dashboard.folder_repository import FolderRepository
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.loop_lock import LoopBoundLock
 
 # ...01 belongs to the person, ...02 to issue-radar, ...03 predates the owner field.
 PERSON = "fldr00000001"

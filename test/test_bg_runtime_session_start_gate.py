@@ -22,19 +22,19 @@ import pytest
 from test_start_priority import bounded, settle_tasks, until
 from test_update_provider import _UNALLOCATABLE_PID
 
-import kiro_crew.acp.runtime as runtime_mod
-import kiro_crew.acp.runtime_start as runtime_start
-import kiro_crew.config.live as live_mod
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.types import METHOD_SESSION_NEW
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
-from kiro_crew.start_priority import StartPriority
+import efm_go.acp.runtime as runtime_mod
+import efm_go.acp.runtime_start as runtime_start
+import efm_go.config.live as live_mod
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.types import METHOD_SESSION_NEW
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
+from efm_go.start_priority import StartPriority
 
 
 @pytest.fixture(autouse=True)
 def _fresh_gates(monkeypatch):
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     monkeypatch.setattr(sh, "_MCP_DRAIN_NO_REPORT_CEILING", 0.05, raising=False)
     runtime_mod._session_start_gates.clear()

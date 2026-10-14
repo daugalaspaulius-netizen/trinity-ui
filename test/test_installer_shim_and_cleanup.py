@@ -5,7 +5,7 @@ satisfies both by accident, which is why these gates exist:
 
 Property A — the packaged launcher must resolve
     ``_resolve_kirocrew_bin()`` reaches the desktop bundle's launcher by walking
-    up from ``kiro_crew.__file__``: the bundle is a python-build-standalone
+    up from ``efm_go.__file__``: the bundle is a python-build-standalone
     interpreter tree carrying the package under ``lib/*/site-packages`` and
     exposing a launcher at its root. When that walk misses, the resolver falls
     back to the bare string ``"kirocrew"`` — which is not on ``PATH`` inside a
@@ -40,13 +40,13 @@ from unittest.mock import patch
 
 import pytest
 
-import kiro_crew
-import kiro_crew.agent as agent
-import kiro_crew.mcp_cleanup as mcp_cleanup
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.context import reset_context, set_context
-from kiro_crew.platform.interfaces import ImportSource
+import efm_go
+import efm_go.agent as agent
+import efm_go.mcp_cleanup as mcp_cleanup
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.context import reset_context, set_context
+from efm_go.platform.interfaces import ImportSource
 
 # The ~/.local/bin symlink shim is POSIX-only: ensure_kirocrew_on_path returns
 # early on Windows (pip's Scripts\kirocrew.exe is the launcher there, and a
@@ -121,7 +121,7 @@ def _fake_bundle_launcher(tmp_path: Path) -> Path:
     the per-OS naming: ``bin/kirocrew`` on POSIX, ``Scripts\\kirocrew.exe`` on
     Windows).
     """
-    root = tmp_path / "backend-dist" / "kirocrew-backend"
+    root = tmp_path / "backend-dist" / "efm-go-backend"
     launcher = agent._kirocrew_bin_subpath(root)
     launcher.parent.mkdir(parents=True, exist_ok=True)
     launcher.write_text("#!/bin/sh\nexit 0\n")
@@ -151,17 +151,17 @@ def _simulate_bundled_app(monkeypatch, launcher: Path) -> None:
 
     Nothing marks the bundle at runtime — it is an ordinary python-build-standalone
     interpreter — so what distinguishes it is WHERE the package sits: the
-    resolver's walk-up from ``kiro_crew.__file__`` is what reaches the bundle's
+    resolver's walk-up from ``efm_go.__file__`` is what reaches the bundle's
     launcher. Point the package at the bundle's ``site-packages`` so that walk runs
     against the shipped layout, reject every other candidate so the test does not
     depend on the tree it runs in, and leave nothing named ``kirocrew`` on PATH.
     """
     root = launcher.parent.parent
-    pkg_init = root / "lib" / "python3.12" / "site-packages" / "kiro_crew" / "__init__.py"
+    pkg_init = root / "lib" / "python3.12" / "site-packages" / "efm_go" / "__init__.py"
     pkg_init.parent.mkdir(parents=True, exist_ok=True)
     pkg_init.touch()
     monkeypatch.setattr(agent, "_KIROCREW_BIN", "", raising=False)
-    monkeypatch.setattr(kiro_crew, "__file__", str(pkg_init))
+    monkeypatch.setattr(efm_go, "__file__", str(pkg_init))
     monkeypatch.setattr(agent, "_bin_is_usable", lambda p: str(p) == str(launcher))
     # `kirocrew` is not on PATH; only absolute paths resolve.
     monkeypatch.setattr(
@@ -198,18 +198,18 @@ def test_managed_servers_survive_in_the_desktop_bundle(tmp_path, monkeypatch):
 
     with ExitStack() as stack:
         stack.enter_context(
-            patch("kiro_crew.agent._shipped_defaults", return_value=cfg_dir / "defaults.json")
+            patch("efm_go.agent._shipped_defaults", return_value=cfg_dir / "defaults.json")
         )
         _missing_overrides = tmp_path / "missing_overrides.json"
-        stack.enter_context(patch.multiple("kiro_crew.agent", _BUNDLED_CFG_DIR=cfg_dir))
+        stack.enter_context(patch.multiple("efm_go.agent", _BUNDLED_CFG_DIR=cfg_dir))
         stack.enter_context(
-            patch("kiro_crew.agent._user_overrides_path", return_value=_missing_overrides)
+            patch("efm_go.agent._user_overrides_path", return_value=_missing_overrides)
         )
         stack.enter_context(
-            patch("kiro_crew.agent._prompt_path", return_value=cfg_dir / "prompt.md")
+            patch("efm_go.agent._prompt_path", return_value=cfg_dir / "prompt.md")
         )
         stack.enter_context(
-            patch("kiro_crew.agent._mc_config_path", return_value=tmp_path / "missing_mc.json")
+            patch("efm_go.agent._mc_config_path", return_value=tmp_path / "missing_mc.json")
         )
         config = agent.build_agent_config()
 
@@ -343,7 +343,7 @@ def test_first_run_removes_a_generated_conductor_skill(tmp_path, monkeypatch):
     exe = _fake_bundle_launcher(tmp_path)
     _sandbox_first_run(tmp_path, monkeypatch, exe)
     skills_root = tmp_path / "skills"
-    monkeypatch.setattr("kiro_crew.skills.skills_dir", lambda: skills_root)
+    monkeypatch.setattr("efm_go.skills.skills_dir", lambda: skills_root)
     skill = skills_root / "conductor" / "SKILL.md"
     skill.parent.mkdir(parents=True)
     fixture = Path(__file__).parent / "fixtures" / "retired_conductor_skill" / "select-crew-v2.md"
@@ -391,7 +391,7 @@ def test_first_run_is_best_effort(tmp_path, monkeypatch):
         raise RuntimeError("purge boom")
 
     monkeypatch.setattr(agent, "ensure_kirocrew_on_path", _raise)
-    monkeypatch.setattr("kiro_crew.mcp_cleanup.clean_stale_managed_mcp", _raise_purge)
+    monkeypatch.setattr("efm_go.mcp_cleanup.clean_stale_managed_mcp", _raise_purge)
 
     # Must not propagate — gateway startup cannot be broken by setup failures.
     agent.run_first_run_setup()
@@ -409,7 +409,7 @@ def _spy_backfill(monkeypatch, calls, *, raises=None):
             raise raises
         return ["command-bar"]
 
-    monkeypatch.setattr("kiro_crew.apps.manager.backfill_default_on_builtins", _fake)
+    monkeypatch.setattr("efm_go.apps.manager.backfill_default_on_builtins", _fake)
 
 
 def test_first_run_runs_the_default_on_backfill(tmp_path, monkeypatch):
@@ -980,7 +980,7 @@ def test_in_ephemeral_tree_matches_the_runtime_mount(tmp_path):
     """An AppImage's `/tmp/.mount_<name>XXXXXX` tree disappears on exit, so a
     launcher aimed into it dangles. Matched on the `.mount_` path component."""
     mount = tmp_path / ".mount_KiroCrewAbc123"
-    binary = mount / "resources" / "backend-dist" / "kirocrew-backend" / "bin" / "kirocrew"
+    binary = mount / "resources" / "backend-dist" / "efm-go-backend" / "bin" / "kirocrew"
     assert agent._in_ephemeral_tree(binary) is True
     # A durable install is not condemned by the same check.
     assert agent._in_ephemeral_tree(Path("/opt/KiroCrew/resources/bin/kirocrew")) is False
@@ -1023,7 +1023,7 @@ def test_launcher_whose_venv_is_gone_is_not_usable(tmp_path):
     root = tmp_path / "kc-work-dir"
     launcher = root / "bin" / "kirocrew"
     launcher.parent.mkdir(parents=True)
-    launcher.write_text('#!/bin/sh\nexec "$(dirname "$0")/../.venv/bin/python" -m kiro_crew "$@"\n')
+    launcher.write_text('#!/bin/sh\nexec "$(dirname "$0")/../.venv/bin/python" -m efm_go "$@"\n')
     launcher.chmod(0o755)
 
     assert agent._bin_is_usable(launcher) is False
@@ -1049,7 +1049,7 @@ def test_console_script_inside_a_venv_stays_usable(tmp_path):
     (venv / "bin" / "python").write_text("")
     (venv / "bin" / "python").chmod(0o755)  # a real interpreter is executable
     script = venv / "bin" / "kirocrew"
-    script.write_text(f"#!{venv}/bin/python\nfrom kiro_crew.cli import main\n")
+    script.write_text(f"#!{venv}/bin/python\nfrom efm_go.cli import main\n")
     script.chmod(0o755)
 
     assert agent._bin_is_usable(script) is True
@@ -1067,7 +1067,7 @@ def test_console_script_is_judged_by_its_own_shebang(tmp_path):
     python.chmod(0o755)  # a real interpreter is executable
     script = tmp_path / "localbin" / "kirocrew"
     script.parent.mkdir(parents=True)
-    script.write_text(f"#!{python}\nfrom kiro_crew.cli import main\n")
+    script.write_text(f"#!{python}\nfrom efm_go.cli import main\n")
     script.chmod(0o755)
 
     assert agent._bin_is_usable(script) is True
@@ -1081,7 +1081,7 @@ def test_env_shebang_is_not_treated_as_an_interpreter_path(tmp_path):
     nothing about a specific path and must not be tested as one."""
     script = tmp_path / "bin" / "kirocrew"
     script.parent.mkdir(parents=True)
-    script.write_text("#!/usr/bin/env python3\nfrom kiro_crew.cli import main\n")
+    script.write_text("#!/usr/bin/env python3\nfrom efm_go.cli import main\n")
     script.chmod(0o755)
 
     assert agent._bin_is_usable(script) is True
@@ -1240,7 +1240,7 @@ def test_interpreter_that_is_not_executable_is_not_usable(tmp_path):
     python.chmod(0o644)  # readable, NOT executable
     script = tmp_path / "localbin" / "kirocrew"
     script.parent.mkdir(parents=True)
-    script.write_text(f"#!{python}\nfrom kiro_crew.cli import main\n")
+    script.write_text(f"#!{python}\nfrom efm_go.cli import main\n")
     script.chmod(0o755)
 
     assert agent._bin_is_usable(script) is False

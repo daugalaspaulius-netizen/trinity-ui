@@ -17,8 +17,8 @@ import math
 
 import pytest
 
-from kiro_crew import autonudge as _an
-from kiro_crew.autonudge import (
+from efm_go import autonudge as _an
+from efm_go.autonudge import (
     SESSION_START_FAILURE_REASON,
     AutoNudgeService,
     NudgeLoop,
@@ -424,9 +424,9 @@ def test_both_terminal_branches_report_a_tagged_start_failure(monkeypatch):
     population this bound exists for. One helper serves both, and this pins that it
     reads the tag rather than the exception type.
     """
-    from kiro_crew.acp.client import AcpTimeoutError
-    from kiro_crew.acp.runtime import AcpSessionStartTimeout
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.acp.client import AcpTimeoutError
+    from efm_go.acp.runtime import AcpSessionStartTimeout
+    from efm_go.dashboard import chat_runner
 
     reported: list[str] = []
 
@@ -457,9 +457,9 @@ def test_both_terminal_branches_report_a_tagged_start_failure(monkeypatch):
 def test_an_untagged_or_human_turn_reports_nothing(monkeypatch):
     """Two false-positive guards in one place: an ordinary failure is not a starved
     start, and a human turn must not spend an unrelated loop's stand-down budget."""
-    from kiro_crew.acp.client import AcpTimeoutError
-    from kiro_crew.acp.runtime import AcpSessionStartTimeout
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.acp.client import AcpTimeoutError
+    from efm_go.acp.runtime import AcpSessionStartTimeout
+    from efm_go.dashboard import chat_runner
 
     reported: list[str] = []
 

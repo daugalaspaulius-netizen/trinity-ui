@@ -14,11 +14,11 @@ from __future__ import annotations
 
 import importlib
 
-from kiro_crew import agent, mcp_cleanup, mcp_discovery, onboarding_import
+from efm_go import agent, mcp_cleanup, mcp_discovery, onboarding_import
 
 PANEL_SERVER = "kirocrew-panel"
 PANEL_SUBCOMMAND = "mcp-panel"
-PANEL_MODULE = "kiro_crew.mcp_panel"
+PANEL_MODULE = "efm_go.mcp_panel"
 PANEL_REF = f"@{PANEL_SERVER}"
 
 
@@ -95,7 +95,7 @@ class TestTheDeclarationSurfacesBeyondTheRegistries:
         """
         from pathlib import Path
 
-        from kiro_crew.agent import _MANAGED_MCP_SERVERS
+        from efm_go.agent import _MANAGED_MCP_SERVERS
 
         repo = Path(__file__).resolve().parent.parent
         spec = repo / "docs" / "architecture" / "mcp.md"
@@ -122,7 +122,7 @@ class TestTheDeclarationSurfacesBeyondTheRegistries:
         import re
         from pathlib import Path
 
-        from kiro_crew.agent import _MANAGED_MCP_SERVERS
+        from efm_go.agent import _MANAGED_MCP_SERVERS
 
         repo = Path(__file__).resolve().parent.parent
         spec = repo / "docs" / "system-specs" / "modules" / "mcp-shareability.md"
@@ -150,7 +150,7 @@ class TestTheDeclarationSurfacesBeyondTheRegistries:
         Derived from ``validation``'s own registries, so a NEW ``MCP_*_SCHEMAS``
         fails here too.
         """
-        from kiro_crew import security_posture, validation
+        from efm_go import security_posture, validation
 
         registries = {n for n in dir(validation) if n.startswith("MCP_") and n.endswith("_SCHEMAS")}
         assert registries, "no MCP_*_SCHEMAS found in validation -- this test would be vacuous"
@@ -168,7 +168,7 @@ class TestTheDeclarationSurfacesBeyondTheRegistries:
         well because THAT test names the module only once it already fails, and
         this file is where a reader looks for what registering a server costs.
         """
-        from kiro_crew import security_posture
+        from efm_go import security_posture
 
         module = f"{PANEL_MODULE.rsplit('.', 1)[-1]}.py"
         sinks = {entry[1] for entry in security_posture._REDACTION_SINKS}
@@ -183,7 +183,7 @@ class TestTheDeclarationSurfacesBeyondTheRegistries:
         deliberately different buckets, and collapsing them would lose the
         distinction between relaying content and scrubbing it.
         """
-        from kiro_crew import security_posture
+        from efm_go import security_posture
 
         sinks = {entry[1] for entry in security_posture._REDACTION_SINKS}
         assert "agent_panel.py" in sinks
@@ -200,7 +200,7 @@ class TestTheDeclarationSurfacesBeyondTheRegistries:
         leaf's argument to make; having a sandbox disposition is not optional either
         way, which is what this pins.
         """
-        from kiro_crew import agent_panel, sandbox, security
+        from efm_go import agent_panel, sandbox, security
 
         placed = (
             set(sandbox._CREW_HIDDEN_LEAVES)
@@ -232,7 +232,7 @@ class TestTheDeclarationSurfacesBeyondTheRegistries:
         which is the failure this asserts against rather than merely detecting a
         blank.
         """
-        from kiro_crew import agent_panel, sandbox
+        from efm_go import agent_panel, sandbox
 
         assert agent_panel.TEMPLATES_DIRNAME not in sandbox._CREW_SANDBOX_VISIBLE_LEAVES
 
@@ -259,7 +259,7 @@ class TestTheDefaultAgentIsNotGrantedTheSet:
         """
         import json
 
-        from kiro_crew.config.loader import config_package_dir
+        from efm_go.config.loader import config_package_dir
 
         defaults = json.loads((config_package_dir() / "defaults.json").read_text(encoding="utf-8"))
         agent_defaults = defaults.get("agent", {})
@@ -311,7 +311,7 @@ class TestWhatThisSetGrants:
 
     def test_every_tool_has_a_registered_schema(self) -> None:
         """A tool absent from its server's registry has its args passed through raw."""
-        from kiro_crew.validation import MCP_PANEL_SCHEMAS
+        from efm_go.validation import MCP_PANEL_SCHEMAS
 
         mcp_panel = importlib.import_module(PANEL_MODULE)
         assert {t["name"] for t in mcp_panel._tool_definitions()} == set(MCP_PANEL_SCHEMAS)
@@ -339,9 +339,9 @@ class TestCallerIdentity:
 
     def test_the_cli_can_launch_it(self) -> None:
         """The spec's command is only useful if the CLI actually dispatches it."""
-        from kiro_crew import cli
+        from efm_go import cli
 
-        source = importlib.import_module("kiro_crew.cli").__file__
+        source = importlib.import_module("efm_go.cli").__file__
         assert source is not None
         text = open(source, encoding="utf-8").read()
         assert f'sub.add_parser("{PANEL_SUBCOMMAND}")' in text

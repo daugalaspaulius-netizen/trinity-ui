@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.schema import SCHEMA_REGISTRY
+from efm_go.config.schema import SCHEMA_REGISTRY
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE_PATH = ROOT / "website" / "src" / "test" / "fixtures" / "settingref-schema.json"
@@ -21,7 +21,7 @@ ENV_VARS_FIXTURE_PATH = ROOT / "website" / "src" / "test" / "fixtures" / "settin
 SETTINGS_REGISTRY_PATH = (
     ROOT / "website" / "src" / "components" / "commandPalette" / "settingsRegistry.gen.ts"
 )
-BACKEND_SRC_ROOT = ROOT / "src" / "kiro_crew"
+BACKEND_SRC_ROOT = ROOT / "src" / "efm_go"
 CONFIG_KEY_RE = re.compile(r'"configKey"\s*:\s*"([^"]+)"')
 DECISIONS_READER_PATH = ROOT / "website" / "src" / "pages" / "settings" / "decisionsPreview.ts"
 FEATURE_PREVIEWS_PATH = (
@@ -156,7 +156,7 @@ class TestDecisionsSettingCrossLayer:
         card therefore SHOWS the address and names the path. Read as source text
         because the defect is a call site, not a rendered string.
         """
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         card = DECISIONS_CARD_PATH.read_text(encoding="utf-8")
         reader = DECISIONS_READER_PATH.read_text(encoding="utf-8")
@@ -173,8 +173,8 @@ class TestDecisionsSettingCrossLayer:
 
     def test_every_tier_the_card_offers_is_editable_on_the_backend(self):
         """The three pickers write real paths, or they are three dead controls."""
-        from kiro_crew.config.sections import DECISION_MODEL_ROUTE_TIERS
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.config.sections import DECISION_MODEL_ROUTE_TIERS
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         reader = DECISIONS_READER_PATH.read_text(encoding="utf-8")
         prefix = _ts_const(reader, "DECISIONS_MODEL_ROUTE_PATH")
@@ -184,7 +184,7 @@ class TestDecisionsSettingCrossLayer:
             ), f"the card offers a picker for {tier}, which the config route refuses"
 
     def test_the_consent_routes_are_registered(self):
-        from kiro_crew.dashboard import handlers
+        from efm_go.dashboard import handlers
 
         assert callable(handlers.api_decisions_consent_get)
         assert callable(handlers.api_decisions_consent_put)
@@ -213,8 +213,8 @@ class TestDecisionsSettingCrossLayer:
         Discovery is asserted non-empty and anchored on the skills point, because a
         scan that silently matched nothing would pass while measuring nothing.
         """
-        from kiro_crew.decisions.gate import DECISION_POINT_NAMES
-        from kiro_crew.decisions.points.tool_risk import POINT as ANNOTATION_POINT
+        from efm_go.decisions.gate import DECISION_POINT_NAMES
+        from efm_go.decisions.points.tool_risk import POINT as ANNOTATION_POINT
 
         source = DECISIONS_READER_PATH.read_text(encoding="utf-8")
         names = re.findall(r"export const (DECISIONS_\w+_POINT)\b", source)
@@ -267,5 +267,5 @@ class TestSettingRefEnvVarsDrift:
         missing = [name for name in env_vars_fixture if not _scan_backend_source_for_literal(name)]
         assert not missing, (
             "settingref-env-vars.json lists env vars not found in "
-            f"src/kiro_crew/**/*.py: {missing}. Remove stale names or fix their spelling."
+            f"src/efm_go/**/*.py: {missing}. Remove stale names or fix their spelling."
         )

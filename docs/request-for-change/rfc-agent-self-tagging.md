@@ -24,7 +24,7 @@ owns the judgment of *when* to move; a fixed backend authorization layer owns
 never inferred. The reversible-once-shipped decision this document exists to
 record is the **default grant shape** — which tags are agent-writable out of the
 box, and why a fresh install and an upgrade differ. It is a design of record for
-v1, which is on main via [#7779](https://github.com/kirodotdev/KiroCrew/pull/7779),
+v1, which is on main via [#7779](https://efmleads.com/pull/7779),
 and for the protected-identity requirement recorded below. A1's inline policy
 control and explicit adoption are part of this scope; ambient provenance,
 history/undo, and proposal-confirm movement controls remain open.
@@ -100,7 +100,7 @@ trace to an accepted design of record. The default grant shape (§Design →
 Defaults) is precisely the reversible-once-shipped product decision that lane
 asks to see agreed before it ships, which is why this document exists even
 though the mechanism is small. The scoping comment on
-[#7774](https://github.com/kirodotdev/KiroCrew/issues/7774) records the same
+[#7774](https://efmleads.com/issues/7774) records the same
 requirement from the review of #7779. This document is filed `partial`: v1 (#7779) is on
 `main`, protected identity is resolved below, and broader movement controls
 remain open; the maintainers' merge of this RFC
@@ -121,7 +121,7 @@ records the default the lane reads from the base branch.
   whose turn produced it (self-only).
 - **Not folder moves, conductor-over-children, propose-confirm for
   human-placed state, or move budgets/cooldowns.** Those are the v2 scope
-  tracked in [#7774](https://github.com/kirodotdev/KiroCrew/issues/7774).
+  tracked in [#7774](https://efmleads.com/issues/7774).
 - **Not ambient provenance, history/undo, or proposal confirmation.** B1, B2,
   C1, and C2 depend on the later movement contracts and remain deferred.
 - **Not a lane-transition event.** Reacting server-side to a tag change is

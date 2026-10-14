@@ -1,6 +1,6 @@
 # Agent Configuration Reference
 
-Source: https://kiro.dev/docs/custom-agents/configuration-reference/ (fetched
+Source: https://efmleads.com/docs/custom-agents/configuration-reference/ (fetched
 2026-09-06; upstream retired `/docs/cli/custom-agents/configuration-reference/`)
 
 The schema below is the IDE 1.0 / CLI 3.0 one. An older config still loads;

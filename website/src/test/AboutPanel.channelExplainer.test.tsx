@@ -88,7 +88,7 @@ describe('AboutPanel channel explainer', () => {
     // The disclosure is still closed — the ask must not depend on it.
     expect(screen.queryByTestId('channel-help')).toBeNull()
     const link = note.querySelector('a')
-    expect(link?.getAttribute('href')).toBe('https://github.com/kirodotdev/KiroCrew/issues/new')
+    expect(link?.getAttribute('href')).toBe('https://efmleads.com/issues/new')
     expect(link?.getAttribute('target')).toBe('_blank')
     // The destination is named, so a GitHub form is not a surprise.
     expect(link?.textContent).toMatch(/github/i)
@@ -160,7 +160,7 @@ describe('AboutPanel channel explainer', () => {
         channelPreference: 'stable',
         laneVersion: '0.4.1-insider.1',
         runningAheadOfLane: true,
-        downloadUrl: 'https://download.crew.kiro.dev/desktop/stable/latest',
+        downloadUrl: 'https://efmleads.com/desktop/stable/latest',
       },
       ok(),
     )

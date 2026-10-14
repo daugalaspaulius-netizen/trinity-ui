@@ -2,7 +2,7 @@
 
 ``scripts/docs_lint.py`` gates a doc's links, its reachability from an index, and the
 symbols and paths it cites — never what it CLAIMS about them. So
-``src/kiro_crew/docs/work-ledger.md`` could name three tools, or a fifth worker
+``src/efm_go/docs/work-ledger.md`` could name three tools, or a fifth worker
 status, and stay green while a dispatched worker read it at runtime and called
 something that does not exist.
 
@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-DOC = _REPO_ROOT / "src" / "kiro_crew" / "docs" / "work-ledger.md"
+DOC = _REPO_ROOT / "src" / "efm_go" / "docs" / "work-ledger.md"
 
 
 @pytest.fixture(scope="module")
@@ -38,7 +38,7 @@ def test_the_doc_names_every_work_tool_and_no_other(doc_text: str) -> None:
     call that fails. The reverse direction matters too: a tool added to the server
     and left out here leaves the page describing a smaller surface than it has.
     """
-    from kiro_crew.mcp_work import WORK_TOOLS, _list_tools
+    from efm_go.mcp_work import WORK_TOOLS, _list_tools
 
     # Against the ADVERTISED surface, not against the tuple's own definition:
     # ``WORK_TOOLS`` is spelled ``WORKER_TOOLS + CONDUCTOR_TOOLS``, so comparing it
@@ -63,7 +63,7 @@ def test_the_doc_pins_the_four_worker_statuses(doc_text: str) -> None:
     'progress' and 'done' are ordinary English elsewhere in the prose, so a page-wide
     substring search would stay green with the table's own rows gone.
     """
-    from kiro_crew.work_ledger import WORKER_STATUSES
+    from efm_go.work_ledger import WORKER_STATUSES
 
     table = doc_text.split("## `work_report`", 1)[1].split("## Why `done` is a claim", 1)[0]
     rows = {line.split("|")[1].strip() for line in table.splitlines() if line.startswith("| `")} - {
@@ -77,7 +77,7 @@ def test_the_doc_pins_the_four_worker_statuses(doc_text: str) -> None:
 
 def test_the_doc_pins_the_five_acceptance_verdicts(doc_text: str) -> None:
     """Every verdict the conductor may record is explained, none is invented."""
-    from kiro_crew.work_ledger import VERDICTS
+    from efm_go.work_ledger import VERDICTS
 
     section = doc_text.split("## Why `done` is a claim", 1)[1].split("\n## ", 1)[0]
     listed = {
@@ -92,7 +92,7 @@ def test_the_doc_pins_the_five_acceptance_verdicts(doc_text: str) -> None:
 
 def test_the_doc_pins_the_item_states(doc_text: str) -> None:
     """The item table's ``state`` row names the open state and all three terminal ones."""
-    from kiro_crew.work_ledger import ITEM_STATES, TERMINAL_ITEM_STATES
+    from efm_go.work_ledger import ITEM_STATES, TERMINAL_ITEM_STATES
 
     row = next(line for line in doc_text.splitlines() if line.startswith("| `state` |"))
     named = set(re.findall(r"`([a-z_]+)`", row)) - {"state"}
@@ -107,7 +107,7 @@ def test_the_doc_pins_the_item_states(doc_text: str) -> None:
 
 def test_the_doc_quotes_the_real_caps(doc_text: str) -> None:
     """The three numbers the page states are read off the store's own constants."""
-    from kiro_crew.work_ledger import (
+    from efm_go.work_ledger import (
         MAX_DEPTH,
         MAX_ITEMS_PER_CONDUCTOR,
         MAX_STORED_ITEMS_PER_CONDUCTOR,
@@ -120,7 +120,7 @@ def test_the_doc_quotes_the_real_caps(doc_text: str) -> None:
 
 def _cap(tool: str, field: str) -> int:
     """The validated ``max_len`` for one field of one work tool."""
-    from kiro_crew.validation import MCP_WORK_SCHEMAS
+    from efm_go.validation import MCP_WORK_SCHEMAS
 
     spec = next(f for f in MCP_WORK_SCHEMAS[tool].fields if f.name == field)
     assert spec.max_len is not None, f"{tool}.{field} no longer carries a length cap"
@@ -158,7 +158,7 @@ def test_the_doc_lists_every_acceptance_kind_the_evaluator_handles(doc_text: str
     the thing a conductor runs, so its branches are the real vocabulary.
     """
     script = (
-        _REPO_ROOT / "src/kiro_crew/builtin_skills/goal-conductor/scripts/accept_eval.py"
+        _REPO_ROOT / "src/efm_go/builtin_skills/goal-conductor/scripts/accept_eval.py"
     ).read_text(encoding="utf-8")
     handled = {
         line.split('== "', 1)[1].split('"', 1)[0]

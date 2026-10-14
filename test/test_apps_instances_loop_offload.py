@@ -34,12 +34,12 @@ from typing import Any, Callable
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.apps.bridges as bridges_mod
-import kiro_crew.apps.hooks_integration as hooks_mod
-import kiro_crew.apps.routes as routes_mod
-import kiro_crew.dashboard.handlers_instances as handlers_instances_mod
-import kiro_crew.instances.ssh_tunnel_manager as ssh_tunnel_manager_mod
-from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager, TunnelStatus
+import efm_go.apps.bridges as bridges_mod
+import efm_go.apps.hooks_integration as hooks_mod
+import efm_go.apps.routes as routes_mod
+import efm_go.dashboard.handlers_instances as handlers_instances_mod
+import efm_go.instances.ssh_tunnel_manager as ssh_tunnel_manager_mod
+from efm_go.instances.ssh_tunnel_manager import SshTunnelManager, TunnelStatus
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -308,7 +308,7 @@ def test_list_apps_is_read_only_under_version_drift(
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     import json as _json
 
-    from kiro_crew.apps.manager import InstalledApp, _write_installed, apps_dir, list_apps
+    from efm_go.apps.manager import InstalledApp, _write_installed, apps_dir, list_apps
 
     app_root = apps_dir() / "drift-app"
     app_root.mkdir(parents=True)
@@ -398,7 +398,7 @@ def test_no_direct_registry_write_in_async_frames() -> None:
     worker holds it across an fsync) may not be called directly inside an
     async frame of the tunnel manager. Sync helpers (e.g. _reserved_ports) are
     separate frames and stay out of scope."""
-    import kiro_crew.instances.ssh_tunnel_manager as stm_mod
+    import efm_go.instances.ssh_tunnel_manager as stm_mod
 
     write_methods = {
         "update",

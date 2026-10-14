@@ -16,7 +16,7 @@ from __future__ import annotations
 import inspect
 import subprocess
 
-from kiro_crew import cli_server
+from efm_go import cli_server
 
 
 class _RunRecorder:

@@ -27,11 +27,11 @@ from types import SimpleNamespace
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import create_rate_limit
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.state import SlotOrigin
-from kiro_crew.members import DM_SLOT_KEY_PREFIX
+from efm_go.dashboard import create_rate_limit
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.state import SlotOrigin
+from efm_go.members import DM_SLOT_KEY_PREFIX
 
 JOB_ID = "2c3b2e25"
 CRON_SLOT = f"cron-{JOB_ID}"

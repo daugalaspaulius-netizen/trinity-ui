@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.mcp_cleanup as cleanup_mod
+import efm_go.mcp_cleanup as cleanup_mod
 
 
 def _seed_settings(kiro_home: Path) -> Path:

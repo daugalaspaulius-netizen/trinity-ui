@@ -16,7 +16,7 @@ import urllib.request
 import pytest
 from e2e.test_gateway_boot_matrix import _await_assistant_reply, _booted
 
-from kiro_crew.testing.workflow_memory_scenario import (
+from efm_go.testing.workflow_memory_scenario import (
     progress_summary,
     source,
     wait_for_spawn_result,

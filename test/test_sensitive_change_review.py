@@ -69,31 +69,31 @@ def _eval(mod, pr, files, reviews, perm=None):
     return mod.evaluate(pr, files, reviews, perm or _writers("bob", "carol"))
 
 
-SENSITIVE = ["src/kiro_crew/sandbox.py", "README.md"]
+SENSITIVE = ["src/efm_go/sandbox.py", "README.md"]
 
 
 def test_no_sensitive_path_passes_without_review(mod):
-    assert _eval(mod, _pr(), ["README.md", "src/kiro_crew/cli.py"], []).ok
+    assert _eval(mod, _pr(), ["README.md", "src/efm_go/cli.py"], []).ok
 
 
 @pytest.mark.parametrize(
     "path",
     [
-        "src/kiro_crew/sandbox.py",
-        "src/kiro_crew/sandbox_seatbelt.py",
-        "src/kiro_crew/security/redaction.py",
-        "src/kiro_crew/secrets/vault.py",
-        "src/kiro_crew/log_redaction.py",
-        "src/kiro_crew/apps/scrub_sdk.py",
-        "src/kiro_crew/hooks.py",
-        "src/kiro_crew/hook_runtime/denied_commands.py",
-        "src/kiro_crew/deny_guidance.py",
-        "src/kiro_crew/platform/security_authority.py",
-        "src/kiro_crew/agent_sdk/tool_gate.py",
-        "src/kiro_crew/acp_tool_gate.py",
-        "src/kiro_crew/security_posture.py",
-        "src/kiro_crew/computer_use/gate.py",
-        "src/kiro_crew/dashboard/handlers/credential_redaction.py",
+        "src/efm_go/sandbox.py",
+        "src/efm_go/sandbox_seatbelt.py",
+        "src/efm_go/security/redaction.py",
+        "src/efm_go/secrets/vault.py",
+        "src/efm_go/log_redaction.py",
+        "src/efm_go/apps/scrub_sdk.py",
+        "src/efm_go/hooks.py",
+        "src/efm_go/hook_runtime/denied_commands.py",
+        "src/efm_go/deny_guidance.py",
+        "src/efm_go/platform/security_authority.py",
+        "src/efm_go/agent_sdk/tool_gate.py",
+        "src/efm_go/acp_tool_gate.py",
+        "src/efm_go/security_posture.py",
+        "src/efm_go/computer_use/gate.py",
+        "src/efm_go/dashboard/handlers/credential_redaction.py",
         ".github/scripts/sensitive_change_review.py",
         ".github/workflows/sensitive-change-review.yml",
     ],
@@ -138,7 +138,7 @@ def test_sensitive_globs_cover_denial_differential_paths(mod):
 def test_complete_approval_on_head_passes(mod):
     v = _eval(mod, _pr(), SENSITIVE, [_review()])
     assert v.ok, v.messages
-    assert v.sensitive == ["src/kiro_crew/sandbox.py"]
+    assert v.sensitive == ["src/efm_go/sandbox.py"]
 
 
 def test_no_review_fails(mod):
@@ -185,9 +185,9 @@ def test_admin_reviewer_passes(mod):
 
 
 def test_renamed_sensitive_file_counts_by_old_name(mod):
-    rows = [{"filename": "src/kiro_crew/moved.py", "previous_filename": "src/kiro_crew/sandbox.py"}]
+    rows = [{"filename": "src/efm_go/moved.py", "previous_filename": "src/efm_go/sandbox.py"}]
     paths = mod.changed_paths(rows)
-    assert mod.sensitive_files(paths) == ["src/kiro_crew/sandbox.py"]
+    assert mod.sensitive_files(paths) == ["src/efm_go/sandbox.py"]
 
 
 def test_file_list_must_be_complete(mod):
@@ -323,7 +323,7 @@ def test_bare_approval_skips_permission_read(mod):
 def _main_with(mod, monkeypatch, permission_result):
     """Run main() with a fake `gh api` whose permission call returns or raises."""
     pr = dict(_pr(), changed_files=1)
-    rows = [{"filename": "src/kiro_crew/sandbox.py"}]
+    rows = [{"filename": "src/efm_go/sandbox.py"}]
 
     def fake(path, paginate=False):
         if path.endswith("/files?per_page=100"):
@@ -369,7 +369,7 @@ def test_main_fails_when_event_head_lags(mod, monkeypatch):
 
     def fake(path, paginate=False):
         if path.endswith("/files?per_page=100"):
-            return [{"filename": "src/kiro_crew/sandbox.py"}]
+            return [{"filename": "src/efm_go/sandbox.py"}]
         if path.endswith("/reviews?per_page=100"):
             return [_review(commit=OLD)]
         if path.endswith("/permission"):
@@ -468,7 +468,7 @@ def _sticky_run(mod, monkeypatch, pr, comments):
 
     def fake(path, paginate=False):
         if path.endswith("/files?per_page=100"):
-            return [{"filename": "src/kiro_crew/sandbox.py"}]
+            return [{"filename": "src/efm_go/sandbox.py"}]
         if path.endswith("/reviews?per_page=100"):
             return []
         if path.endswith("/comments?per_page=100"):
@@ -511,7 +511,7 @@ def test_comment_failure_does_not_change_verdict(mod, monkeypatch, capsys):
 
     def fake(path, paginate=False):
         if path.endswith("/files?per_page=100"):
-            return [{"filename": "src/kiro_crew/sandbox.py"}]
+            return [{"filename": "src/efm_go/sandbox.py"}]
         if path.endswith("/reviews?per_page=100"):
             return [_review()]
         if path.endswith("/comments?per_page=100"):

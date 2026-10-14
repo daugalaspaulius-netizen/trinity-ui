@@ -102,7 +102,7 @@ const INPUT_PREVIEW = JSON.stringify({ seconds: WAIT_SECONDS, reason: RESUME_REA
  * the whole capture.
  */
 function readWaitPingSecs() {
-  const src = fileURLToPath(new URL('../../src/kiro_crew/mcp_core.py', import.meta.url))
+  const src = fileURLToPath(new URL('../../src/efm_go/mcp_core.py', import.meta.url))
   try {
     const m = /^WAIT_PING_SECS\s*=\s*([0-9]+(?:\.[0-9]+)?)/m.exec(readFileSync(src, 'utf8'))
     if (m) return Number(m[1])

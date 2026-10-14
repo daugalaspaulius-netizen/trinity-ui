@@ -1,6 +1,6 @@
 # Platform Context (Composed Platform Providers)
 
-The `kiro_crew.platform` package defines the **Composed Platform Providers
+The `efm_go.platform` package defines the **Composed Platform Providers
 (CPP)** contract: the seam that lets one core serve both the open-source
 edition and an enterprise companion without the core ever importing
 enterprise-specific code.
@@ -17,7 +17,7 @@ enterprise-specific code.
 The core defines a set of **extension points** — interfaces where behavior
 differs between editions — and ships a `Default*` adapter for each that
 reproduces today's Kiro Crew behavior. An enterprise companion package (module
-separate from `kiro_crew`) depends on the public wheel and supplies enterprise
+separate from `efm_go`) depends on the public wheel and supplies enterprise
 adapters for the same interfaces.
 
 The dependency runs one way: **the companion depends on the core; the core never
@@ -37,7 +37,7 @@ omit the policy.
 
 ## PlatformContext
 
-`kiro_crew.platform.context.PlatformContext` is an immutable dataclass holding the chosen adapter for every extension point, plus four carriers. Boot installs the initial context once; a validated central-governance refresh replaces the active context only to carry a new `governance` value. `policy_distribution.apply_ceiling` performs that replacement through `set_context`, and `governance_generation()` makes dependent profile snapshots refresh rather than serving a profile composed against a retired ceiling:
+`efm_go.platform.context.PlatformContext` is an immutable dataclass holding the chosen adapter for every extension point, plus four carriers. Boot installs the initial context once; a validated central-governance refresh replaces the active context only to carry a new `governance` value. `policy_distribution.apply_ceiling` performs that replacement through `set_context`, and `governance_generation()` makes dependent profile snapshots refresh rather than serving a profile composed against a retired ceiling:
 
 | Field | Kind | Default adapter | Companion supplies |
 |-------|------|-----------------|--------------------|
@@ -112,7 +112,7 @@ omit the policy.
 > discovery (skills.sh) and MCP server discovery (the official registry) hardcoded
 > their public provider at registration time, so a managed deployment could not
 > restrict where installable code came from without patching the core. The third is
-> **cloud deployment**: `kiro_crew/deploy/` provisions S3, CloudFront, IAM roles and
+> **cloud deployment**: `efm_go/deploy/` provisions S3, CloudFront, IAM roles and
 > a reaper Lambda in the operator's own account and carried no capability gate at
 > all — `capabilities.publish`, which bounds publish-provider destinations, does not
 > reach it.
@@ -426,8 +426,8 @@ the desktop side, and the app refuses to start on its own gateway's port.
 A distribution that repackages one core release as several builds of its own
 (an enterprise bundle vending `0.6.0.10`, `0.6.0.11`, … of the same `0.6.0`)
 names the build it shipped in a `BUILD_VERSION` file placed **beside
-`kiro_crew/__init__.py`** at packaging time (declared as optional package data;
-absent in this repo and in the wheels it publishes). `kiro_crew/__init__`
+`efm_go/__init__.py`** at packaging time (declared as optional package data;
+absent in this repo and in the wheels it publishes). `efm_go/__init__`
 resolves it **at import**, replacing `__version__` for every reader — the About
 page's version chip (`version_display`), `/api/status`, `/api/health`,
 `kirocrew --version`, the diagnostics report, and the governance minimum-version
@@ -438,7 +438,7 @@ build sends the same value as its base), and the About page's changelog, where
 `changelog.running_release` folds the stamp back onto its three-segment release
 so the build marks the `0.6.0` row rather than opening an empty `0.6.0.12` row. Import time is the only point that works:
 `dashboard/handlers/updates.py`, `dashboard/ws.py`, `config/loader.py` and
-`cli_server.py` bind `from kiro_crew import __version__` copies that nothing
+`cli_server.py` bind `from efm_go import __version__` copies that nothing
 later can reach, so this is deliberately not a `PlatformContext` field — a
 context is composed after those imports.
 
@@ -458,7 +458,7 @@ A different base, a prerelease stamp, a non-numeric or second segment, or a
 suffix over an `rc` / nightly base is a build this core is not; it is ignored
 with one warning and the base stays, so a process can never claim bytes it does
 not run. The contract is the file — its name and that shape — not a Python API;
-the helpers in `kiro_crew/__init__` are private. The accepted shape parses as a
+the helpers in `efm_go/__init__` are private. The accepted shape parses as a
 PEP 440 release wherever the version is compared (`_is_newer` orders `0.6.0.12`
 above `0.6.0` and below `0.6.1`; `release_channel.channel` still reads
 `stable`), and `base_version` — the stable-channel display fold — preserves the
@@ -626,7 +626,7 @@ Wired sites:
   the kiro-hooks egress (`dashboard/handlers/hooks.py`) scrubs command/matcher
   through the shared `redact_via_context` shim.
 - Credential redaction — all egress scrubs route through the single
-  `kiro_crew.platform.redact_via_context` shim (the one canonical
+  `efm_go.platform.redact_via_context` shim (the one canonical
   fail-closed-aware shim; modules import it as `redact`). Covers: `agent.py`
   SEL-audit callers, `mcp_core.py` chat-history/spawn output, `mcp_cron.py`
   deny-reason + script-vet + timezone messages, and `dashboard/handlers/files.py`
@@ -636,7 +636,7 @@ Wired sites:
   exfil-then-credential two-pass (the Default `CredentialPolicy.redact` delegates
   to `security.redact`); a loaded companion adds its internal-token regexes
   uniformly across every egress surface.
-- Gate-side LOG lines (`kiro_crew.platform.redact_log_via_context`) — the same
+- Gate-side LOG lines (`efm_go.platform.redact_log_via_context`) — the same
   companion-aware redaction for an operational log or audit line, which unlike an
   egress sink cannot afford to raise. `redact_via_context` propagates
   `PlatformCompositionError` because refusing to SEND is both safe and the point;
@@ -718,7 +718,7 @@ Wired sites:
   heuristics, it can never be the reason a credential reaches a log — the
   credential pass (`redact_credentials`) is independent of it and unchanged by a
   missing context. **Deferred-import exception:** `security` reads the set
-  through a FUNCTION-LOCAL import of `kiro_crew.platform.context` (the `sel.py`
+  through a FUNCTION-LOCAL import of `efm_go.platform.context` (the `sel.py`
   pattern), so the CPP import-direction invariant holds — `platform/defaults.py`
   imports `security` at module load, and `security` never reaches `platform` at
   module-load time (only at call time). v1 method addition to the existing
@@ -769,7 +769,7 @@ Wired sites:
   standalone is byte-identical. Phase-1 scope is dashboard + slack only
   (cli_chat/cron/subagent/task_executor sites are deliberately not wired).
 - Preflight checks (`IdentityProvider.preflight_checks()`) —
-  `kiro_crew.preflight.run_preflight_checks()` runs seam-supplied pre-launch
+  `efm_go.preflight.run_preflight_checks()` runs seam-supplied pre-launch
   checks at exactly two sites: the `gateway` dispatch in `cli.py` (before
   faulthandler/lock/`asyncio.run`) and `_token` in `cli_server.py` (before TTL
   parsing). The method returns **already-resolved callables** — checks are
@@ -851,7 +851,7 @@ Wired sites:
   `start_api_server` (the `--slack-only`/headless path) never calls
   `setup_tunnel`, so it needs no hook.
   Import direction: `tunnel/` imports
-  `kiro_crew.platform.context`; `platform/` keeps zero imports of `kiro_crew.tunnel`.
+  `efm_go.platform.context`; `platform/` keeps zero imports of `efm_go.tunnel`.
 - `dashboard/server.py` (the gate in `dashboard/server_runtime/tunnel.py`) — tunnel enable-gate
   ORs in `current_context().tunnel.enabled()`. **Dashboard contributor (wave 3):**
   in `start_dashboard` only, the `/api/sso-login` route binds
@@ -1267,7 +1267,7 @@ is byte-identical) with no `CONTRACT_VERSION` bump.
   edition-specific carve-out. ADD-only and de-duped by name (the built-in wins a
   collision, so an edition cannot silently replace an identity the policy
   admitted). Each returned object implements the
-  `kiro_crew.skill_providers.base.SkillProvider` protocol and SHOULD expose an
+  `efm_go.skill_providers.base.SkillProvider` protocol and SHOULD expose an
   `api_base` naming its catalog endpoint (the identity an allowlist is written
   against; a provider without one is gated on an empty base). Provider-sourced
   result fields flow through the existing `_redact_external` scrub before
@@ -1308,7 +1308,7 @@ package-installed agent, `"builtin"` for the rest. It has many consumers —
 `slack/handler` and several dashboard modules among them — so treat any list here as
 representative rather than exhaustive.
 - **There is no browser-auth provider hook.** Browsing runs through the external
-  `playwright-cli` binary (`kiro_crew/browser_cli/`), and a logged-in session
+  `playwright-cli` binary (`efm_go/browser_cli/`), and a logged-in session
   reaches that binary through the CLI's own surfaces (`state-save` /
   `state-load`, `attach --extension`) rather than through an in-process
   provider.
@@ -1420,7 +1420,7 @@ Three arms make the inertness impossible to miss:
    of a `Default*` adapter still warns — it can change behavior.
 3. **An anti-rot gate.** `test/test_platform_cpp_seam_coverage.py` drives off
    `dataclasses.fields(PlatformContext)` and discovers real consumption sites by
-   `ast` analysis of `src/kiro_crew` (excluding `platform/` itself and
+   `ast` analysis of `src/efm_go` (excluding `platform/` itself and
    `_vendor/`). It asserts, in both directions:
    - every field is EITHER consumed by non-`platform` core code OR listed in
      `RESERVED_SLOTS` — so a **new** field with no call site fails the build

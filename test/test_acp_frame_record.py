@@ -1,6 +1,6 @@
 """The opt-in ACP frame recorder that produces a replay-corpus fixture.
 
-``kiro_crew.acp._frame_record.record_frame`` sits on the hot path of every frame
+``efm_go.acp._frame_record.record_frame`` sits on the hot path of every frame
 of every session, so the properties worth pinning are the ones whose absence
 would be a production incident rather than a wrong fixture: silent when off, off
 the event loop when on, silent when broken, scrubbed when it writes, and
@@ -29,11 +29,11 @@ from types import SimpleNamespace
 import pytest
 from stray_line_helpers import cyclic_gc_quiesced  # noqa: F401 - fixture
 
-from kiro_crew import security_posture
-from kiro_crew.acp import _frame_record
-from kiro_crew.acp import client as client_module
-from kiro_crew.acp import runtime as runtime_module
-from kiro_crew.acp_backends import ACP_BACKEND_KIRO, ACP_BACKENDS_KNOWN
+from efm_go import security_posture
+from efm_go.acp import _frame_record
+from efm_go.acp import client as client_module
+from efm_go.acp import runtime as runtime_module
+from efm_go.acp_backends import ACP_BACKEND_KIRO, ACP_BACKENDS_KNOWN
 
 # The recorder is POSIX-only (see the module docstring of ``_frame_record``):
 # every test here exercises the pinned-descriptor path. The one Windows
@@ -1696,7 +1696,7 @@ def test_the_recording_switch_is_scrubbed_from_agent_children(monkeypatch) -> No
     """Both spawn paths build the child env through
     ``scrub_agent_subprocess_env``; the switch must not survive it, or a nested
     Kiro Crew would record into the same per-backend file as this gateway."""
-    from kiro_crew.sandbox import scrub_agent_subprocess_env
+    from efm_go.sandbox import scrub_agent_subprocess_env
 
     env = {_frame_record.ENV_RECORD_FRAMES: "/somewhere", "PATH": "/usr/bin"}
     scrubbed = scrub_agent_subprocess_env(env)

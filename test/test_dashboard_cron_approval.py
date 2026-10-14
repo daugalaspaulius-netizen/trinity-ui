@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from body_stream_helpers import attach_body
 
-from kiro_crew.cron import CronSchedule
-from kiro_crew.dashboard.handlers import api_crons, api_crons_create
+from efm_go.cron import CronSchedule
+from efm_go.dashboard.handlers import api_crons, api_crons_create
 
 
 class TestCronCreateApprovalMode:

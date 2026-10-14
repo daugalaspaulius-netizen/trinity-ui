@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from kiro_crew.security.redaction import (
+from efm_go.security.redaction import (
     redact_credentials,
     redact_credentials_with_records,
 )

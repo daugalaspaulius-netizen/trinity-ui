@@ -19,7 +19,7 @@ import urllib.request
 
 import pytest
 
-from kiro_crew.apps import official_catalog as oc
+from efm_go.apps import official_catalog as oc
 
 
 def doc(**over):
@@ -154,7 +154,7 @@ class TestResolveRef:
         """NOT against the app's repository -- the whole point of the catalog
         hosting the bytes is that the publisher's repo leaves the render path."""
         assert oc._resolve_ref("assets/icons/abc.png") == (
-            "https://apps.crew.kiro.dev/assets/icons/abc.png"
+            "https://efmleads.com/api/apps/assets/icons/abc.png"
         )
 
     @pytest.mark.parametrize(
@@ -255,8 +255,8 @@ class TestAnnotate:
             "iconRefDark": "assets/icons/b.png",
             "heroRef": "/app-assets/demo/hero.svg",
         }])
-        assert rows[0]["iconUrl"] == "https://apps.crew.kiro.dev/assets/icons/a.png"
-        assert rows[0]["iconUrlDark"] == "https://apps.crew.kiro.dev/assets/icons/b.png"
+        assert rows[0]["iconUrl"] == "https://efmleads.com/api/apps/assets/icons/a.png"
+        assert rows[0]["iconUrlDark"] == "https://efmleads.com/api/apps/assets/icons/b.png"
         assert rows[0]["heroImage"] == "/app-assets/demo/hero.svg"
 
     def test_detail_hero_and_screenshot_refs_become_loadable_urls(self):
@@ -270,8 +270,8 @@ class TestAnnotate:
             "heroDetailRef": "assets/hero/detail.png",
             "screenshotRefs": ["assets/s/1.png", "https://evil.example/x.png"],
         }])
-        assert rows[0]["heroImageDetail"] == "https://apps.crew.kiro.dev/assets/hero/detail.png"
-        assert rows[0]["screenshots"] == ["https://apps.crew.kiro.dev/assets/s/1.png"]
+        assert rows[0]["heroImageDetail"] == "https://efmleads.com/api/apps/assets/hero/detail.png"
+        assert rows[0]["screenshots"] == ["https://efmleads.com/api/apps/assets/s/1.png"]
         assert "heroImageDetail" not in rows[1], "a row the catalog does not name is untouched"
         assert "screenshots" not in rows[1]
 
@@ -285,7 +285,7 @@ class TestAnnotate:
 def test_the_catalog_url_is_https_and_under_the_documented_host():
     """A plaintext or third-party host here would silently move where every
     client's app list comes from."""
-    assert oc.OFFICIAL_CATALOG_BASE.startswith("https://apps.crew.kiro.dev/")
+    assert oc.OFFICIAL_CATALOG_BASE.startswith("https://efmleads.com/api/apps/")
     assert oc.OFFICIAL_CATALOG_URL == oc.OFFICIAL_CATALOG_BASE + "official-registry.json"
     assert oc.EFM_DISABLE_REMOTE_CATALOG is True
     assert oc._download() is None
@@ -379,9 +379,9 @@ class TestSchemeGuard:
         "url",
         [
             "file:///etc/passwd",
-            "http://apps.crew.kiro.dev/official-registry.json",
+            "http://apps.efmleads.com/official-registry.json",
             "ftp://example.invalid/x.json",
-            "//apps.crew.kiro.dev/x.json",
+            "//apps.efmleads.com/x.json",
         ],
     )
     def test_a_non_https_url_is_refused(self, url):
@@ -719,10 +719,10 @@ class TestListCatalogRows:
         entry["screenshotRefs"] = ["assets/s/1.png", "assets/s/2.png"]
         monkeypatch.setattr(oc, "load_official_catalog", lambda: [entry])
         [row] = oc.list_catalog_rows()
-        assert row["heroImageDetail"] == "https://apps.crew.kiro.dev/assets/hero/detail.png"
+        assert row["heroImageDetail"] == "https://efmleads.com/api/apps/assets/hero/detail.png"
         assert row["screenshots"] == [
-            "https://apps.crew.kiro.dev/assets/s/1.png",
-            "https://apps.crew.kiro.dev/assets/s/2.png",
+            "https://efmleads.com/api/apps/assets/s/1.png",
+            "https://efmleads.com/api/apps/assets/s/2.png",
         ]
         assert "/api/apps/blob" not in row["heroImageDetail"]
 
@@ -739,4 +739,4 @@ class TestListCatalogRows:
         entry["screenshotRefs"] = ["https://evil.example/x.png", "assets/s/ok.png"]
         monkeypatch.setattr(oc, "load_official_catalog", lambda: [entry])
         [row] = oc.list_catalog_rows()
-        assert row["screenshots"] == ["https://apps.crew.kiro.dev/assets/s/ok.png"]
+        assert row["screenshots"] == ["https://efmleads.com/api/apps/assets/s/ok.png"]

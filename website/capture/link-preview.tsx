@@ -54,7 +54,7 @@ const MID_TONE =
 
 /** Wire payloads keyed by URL, as `GET /api/link-meta` would answer them. */
 const META: Record<string, { title: string; icon: string; icon_dark: string }> = {
-  'https://github.com/kirodotdev/KiroCrew/pull/843': {
+  'https://efmleads.com/pull/843': {
     title: 'feat(agents): add Agent Template creation',
     // One icon for every surface: the reported bug, and the common case.
     icon: GITHUB_LIGHT,
@@ -104,14 +104,14 @@ globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
 }) as typeof fetch
 
 const CHIPS = [
-  'Opened [feat(agents): add Agent Template creation](https://github.com/kirodotdev/KiroCrew/pull/843) is the one from the report.',
+  'Opened [feat(agents): add Agent Template creation](https://efmleads.com/pull/843) is the one from the report.',
   '',
   'A site that declares its variant: [Site that declares a dark-scheme icon](https://declares-a-variant.example.com/post) mid-sentence.',
   '',
   'And a mid-tone mark: [Mid-tone brand colour, legible either way](https://mid-tone.example.com/post) mid-sentence.',
 ].join('\n')
 
-const CARD = 'https://github.com/kirodotdev/KiroCrew/pull/843'
+const CARD = 'https://efmleads.com/pull/843'
 
 function Scene() {
   return (

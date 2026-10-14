@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.config.loader import workspace_root
+from efm_go import platform_compat
+from efm_go.config.loader import workspace_root
 
 
 def _make_aliased_workspace(tmp_path: Path) -> tuple[Path, Path]:

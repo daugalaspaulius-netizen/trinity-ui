@@ -1,4 +1,4 @@
-"""Coverage tests for ``kiro_crew.deploy.handlers`` error/refusal branches.
+"""Coverage tests for ``efm_go.deploy.handlers`` error/refusal branches.
 
 Focus is the paths the existing deploy suites never reach: the redaction
 helpers, ``_scan_tree`` fail-closed findings, ``_stage_tree_safe`` rejections,
@@ -20,8 +20,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.deploy import engine, handlers
-from kiro_crew.deploy import profiles as profiles_mod
+from efm_go.deploy import engine, handlers
+from efm_go.deploy import profiles as profiles_mod
 
 _POSIX_ONLY = pytest.mark.skipif(
     sys.platform == "win32",
@@ -49,8 +49,8 @@ def _force_posix_shell(monkeypatch):
 @pytest.fixture(autouse=True)
 def _isolate_config(tmp_path: Path, monkeypatch):
     """Redirect every deploy-module config_dir() and KIROCREW_HOME to tmp_path."""
-    import kiro_crew.deploy as _deploy_pkg
-    from kiro_crew.deploy import pending as _pending_mod
+    import efm_go.deploy as _deploy_pkg
+    from efm_go.deploy import pending as _pending_mod
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     monkeypatch.setattr(handlers, "config_dir", lambda: tmp_path)
@@ -198,7 +198,7 @@ class TestHelpers:
 
 class TestAllowedLocalRoots:
     def test_config_load_failure_degrades_to_fallback(self, monkeypatch, tmp_path: Path):
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         class _Boom:
             @staticmethod
@@ -213,7 +213,7 @@ class TestAllowedLocalRoots:
                    for r in roots)
 
     def test_configured_roots_are_included(self, monkeypatch, tmp_path: Path):
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         allowed = tmp_path / "cfgroot"
         allowed.mkdir()
@@ -226,7 +226,7 @@ class TestAllowedLocalRoots:
         assert any(os.path.realpath(str(r)) == os.path.realpath(str(allowed)) for r in roots)
 
     def test_registered_workspaces_are_included(self, monkeypatch, tmp_path: Path):
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         ws = tmp_path / "ws1"
         ws.mkdir()
@@ -263,7 +263,7 @@ class TestScanTree:
         assert size == 10
 
     def test_hook_denied_file_is_a_credential_finding(self, tmp_path: Path, monkeypatch):
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         src = tmp_path / "site"
         src.mkdir()
@@ -359,7 +359,7 @@ class TestStageTreeSafe:
             handlers._stage_tree_safe(src, tmp_path / "stage")
 
     def test_hook_refusal_blocks_staging(self, tmp_path: Path, monkeypatch):
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         src = tmp_path / "site"
         src.mkdir()
@@ -370,7 +370,7 @@ class TestStageTreeSafe:
             handlers._stage_tree_safe(src, tmp_path / "stage")
 
     def test_too_large_file_blocks_staging(self, tmp_path: Path, monkeypatch):
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         src = tmp_path / "site"
         src.mkdir()
@@ -553,7 +553,7 @@ class TestDoDeployRefusals:
 
     @pytest.mark.asyncio
     async def test_overridable_findings_block_without_override(self, _site, monkeypatch):
-        from kiro_crew.deploy.scan import Finding
+        from efm_go.deploy.scan import Finding
 
         handlers._save_config("p", "us-west-2")
         monkeypatch.setattr(
@@ -1030,7 +1030,7 @@ class TestAdapters:
 
     @pytest.mark.asyncio
     async def test_verify_backfills_account_on_success(self, monkeypatch):
-        from kiro_crew.deploy import iam as iam_mod
+        from efm_go.deploy import iam as iam_mod
 
         handlers._save_config("p", "us-west-2")
         monkeypatch.setattr(iam_mod, "reachability_check",
@@ -1043,7 +1043,7 @@ class TestAdapters:
 
     @pytest.mark.asyncio
     async def test_verify_unreachable_skips_backfill(self, monkeypatch):
-        from kiro_crew.deploy import iam as iam_mod
+        from efm_go.deploy import iam as iam_mod
 
         handlers._save_config("p", "us-west-2")
         monkeypatch.setattr(iam_mod, "reachability_check",
@@ -1071,7 +1071,7 @@ class TestAdapters:
 
     @pytest.mark.asyncio
     async def test_pricing_returns_unit_prices(self, monkeypatch):
-        from kiro_crew.deploy import pricing as pricing_mod
+        from efm_go.deploy import pricing as pricing_mod
 
         handlers._save_config("p", "us-west-2")
         monkeypatch.setattr(
@@ -1492,7 +1492,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_list_redacts_entries(self):
-        from kiro_crew.deploy.pending import add_pending
+        from efm_go.deploy.pending import add_pending
 
         add_pending({"site_id": "s", "profile": "p"})
         body = _payload(await handlers._handle_pending_list(_FakeReq()))
@@ -1506,7 +1506,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_confirm_refuses_on_profile_drift(self):
-        from kiro_crew.deploy.pending import add_pending
+        from efm_go.deploy.pending import add_pending
 
         handlers._save_config("p", "us-west-2")
         entry = add_pending({"site_id": "s", "profile": "p", "region": "eu-west-1"})
@@ -1516,7 +1516,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_confirm_refuses_when_local_dir_vanished(self, tmp_path: Path):
-        from kiro_crew.deploy.pending import add_pending, list_pending
+        from efm_go.deploy.pending import add_pending, list_pending
 
         handlers._save_config("p", "us-west-2")
         entry = add_pending({
@@ -1531,7 +1531,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_confirm_refuses_dir_outside_allowed_roots(self, tmp_path: Path, monkeypatch):
-        from kiro_crew.deploy.pending import add_pending
+        from efm_go.deploy.pending import add_pending
 
         handlers._save_config("p", "us-west-2")
         outside = tmp_path / "outside"
@@ -1547,7 +1547,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_confirm_refuses_sensitive_dir(self, tmp_path: Path, monkeypatch):
-        from kiro_crew.deploy.pending import add_pending
+        from efm_go.deploy.pending import add_pending
 
         handlers._save_config("p", "us-west-2")
         src = tmp_path / "site"
@@ -1564,7 +1564,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_confirm_refuses_oversized_tree(self, tmp_path: Path, monkeypatch):
-        from kiro_crew.deploy.pending import add_pending
+        from efm_go.deploy.pending import add_pending
 
         handlers._save_config("p", "us-west-2")
         src = tmp_path / "site"
@@ -1582,7 +1582,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_confirm_refuses_edited_artifact(self, monkeypatch):
-        from kiro_crew.deploy.pending import add_pending
+        from efm_go.deploy.pending import add_pending
 
         handlers._save_config("p", "us-west-2")
         art = SimpleNamespace(kind="html", content="<p>changed</p>", name="a")
@@ -1597,7 +1597,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_confirm_tolerates_unstageable_artifact(self, monkeypatch):
-        from kiro_crew.deploy.pending import add_pending
+        from efm_go.deploy.pending import add_pending
 
         handlers._save_config("p", "us-west-2")
         exc = handlers.ArtifactNotFoundError("deleted")
@@ -1614,7 +1614,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_confirm_carries_human_override_scan(self, monkeypatch, tmp_path: Path):
-        from kiro_crew.deploy.pending import add_pending
+        from efm_go.deploy.pending import add_pending
 
         handlers._save_config("p", "us-west-2")
         seen: dict = {}
@@ -1637,7 +1637,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_failed_confirm_readds_the_entry(self, monkeypatch, tmp_path: Path):
-        from kiro_crew.deploy.pending import add_pending, list_pending
+        from efm_go.deploy.pending import add_pending, list_pending
 
         handlers._save_config("p", "us-west-2")
 
@@ -1679,7 +1679,7 @@ class TestPending:
 
     @pytest.mark.asyncio
     async def test_dismiss_removes_the_entry(self):
-        from kiro_crew.deploy.pending import add_pending, list_pending
+        from efm_go.deploy.pending import add_pending, list_pending
 
         entry = add_pending({"site_id": "s"})
         resp = await handlers._handle_pending_dismiss(

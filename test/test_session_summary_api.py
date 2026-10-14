@@ -18,13 +18,13 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state, move_transcript_past
 
-from kiro_crew.config.loader import KiroCrewConfig, SessionSummaryConfig
-from kiro_crew.dashboard import chat_handlers, chat_summary
-from kiro_crew.dashboard.chat import api_chat_slot_summary, api_chat_slot_summary_generate
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.state import _ChatSlot
-from kiro_crew.history import HistoryLockTimeout, TranscriptBusy
-from kiro_crew.session_summary import count_user_turns_in_records
+from efm_go.config.loader import KiroCrewConfig, SessionSummaryConfig
+from efm_go.dashboard import chat_handlers, chat_summary
+from efm_go.dashboard.chat import api_chat_slot_summary, api_chat_slot_summary_generate
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.state import _ChatSlot
+from efm_go.history import HistoryLockTimeout, TranscriptBusy
+from efm_go.session_summary import count_user_turns_in_records
 
 pytestmark = pytest.mark.asyncio
 
@@ -153,7 +153,7 @@ class TestSummaryEndpoint:
 
     async def test_the_endpoint_never_generates(self, tmp_path, monkeypatch):
         """Opening the panel must not spend tokens."""
-        from kiro_crew.dashboard import chat_summary
+        from efm_go.dashboard import chat_summary
 
         called: list[int] = []
 
@@ -269,7 +269,7 @@ class TestSummaryAppIsolation:
     ):
         mock_sel = MagicMock()
         monkeypatch.setattr(chat_handlers, "sel", lambda: mock_sel)
-        monkeypatch.setattr("kiro_crew.dashboard.slot_ownership.sel", lambda: mock_sel)
+        monkeypatch.setattr("efm_go.dashboard.slot_ownership.sel", lambda: mock_sel)
         _pin_flag(monkeypatch, True)
         state = _make_state(tmp_path)
         slot = _ChatSlot("s1")
@@ -419,7 +419,7 @@ def _seed_slot(state, *, user_turns=3, app_owner="", memory_mode="default") -> _
 
 def _stub_generation(monkeypatch, reply=_GOOD_REPLY) -> list[int]:
     """Patch the model call the forced pass makes; return its call log."""
-    from kiro_crew.dashboard import chat_summary
+    from efm_go.dashboard import chat_summary
 
     called: list[int] = []
 
@@ -452,7 +452,7 @@ class TestSummaryGenerateEndpoint:
         be the laxer of the two (App Kit §5.2)."""
         mock_sel = MagicMock()
         monkeypatch.setattr(chat_handlers, "sel", lambda: mock_sel)
-        monkeypatch.setattr("kiro_crew.dashboard.slot_ownership.sel", lambda: mock_sel)
+        monkeypatch.setattr("efm_go.dashboard.slot_ownership.sel", lambda: mock_sel)
         _pin_flag(monkeypatch, True)
         called = _stub_generation(monkeypatch)
         state = _make_state(tmp_path)

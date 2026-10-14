@@ -26,7 +26,7 @@ import sys
 
 import pytest
 
-from kiro_crew import cli_doctor, sandbox
+from efm_go import cli_doctor, sandbox
 
 
 @pytest.fixture(autouse=True)

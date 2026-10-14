@@ -1,4 +1,4 @@
-"""kiro_crew.messaging.approval -- both channel-neutral approval seams.
+"""efm_go.messaging.approval -- both channel-neutral approval seams.
 
 Every test here is a security property, not a convenience. The module hosts two
 styles behind one INTERACTIVE decider, and this file exercises both:
@@ -18,8 +18,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.messaging import approval
-from kiro_crew.messaging.approval import (
+from efm_go.messaging import approval
+from efm_go.messaging.approval import (
     APPROVE,
     DENY,
     RECEIPT_APPROVED,
@@ -369,7 +369,7 @@ class TestDenyByDefault:
         asserting on the RESULT of an elapsed window is the property that
         matters, so shrink the window instead of sleeping.
         """
-        monkeypatch.setattr("kiro_crew.messaging.approval.APPROVAL_TIMEOUT_S", 0.01)
+        monkeypatch.setattr("efm_go.messaging.approval.APPROVAL_TIMEOUT_S", 0.01)
         pending = PendingApprovals("webex")
 
         assert await pending.decide("s1", _event()) is False
@@ -567,7 +567,7 @@ class TestApprovalStallSignalling:
         reporting itself healthy — its per-turn cap is measured in tens of minutes
         and the approval window in minutes.
         """
-        from kiro_crew import autonudge
+        from efm_go import autonudge
 
         stalled: list[str] = []
         monkeypatch.setattr(approval, "APPROVAL_TIMEOUT_S", 0.01)
@@ -585,7 +585,7 @@ class TestApprovalStallSignalling:
     async def test_a_key_no_loop_can_bind_to_is_not_signalled(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import autonudge
+        from efm_go import autonudge
 
         stalled: list[str] = []
         monkeypatch.setattr(approval, "APPROVAL_TIMEOUT_S", 0.01)
@@ -605,7 +605,7 @@ class TestApprovalStallSignalling:
     ) -> None:
         # A monitoring convenience must not be able to turn a denied tool into a
         # raised exception inside the turn.
-        from kiro_crew import autonudge
+        from efm_go import autonudge
 
         def _boom() -> object:
             raise RuntimeError("autonudge is unavailable")

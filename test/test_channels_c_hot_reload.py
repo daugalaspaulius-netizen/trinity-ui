@@ -37,13 +37,13 @@ from _hot_reload_helpers import (
     sel_outcomes,
 )
 
-from kiro_crew.config import live
-from kiro_crew.feishu.client import CHAT_P2P, LarkInbound
-from kiro_crew.feishu.transport import FeishuTransport
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.wecom.transport import WeComTransport
-from kiro_crew.wecom.transport_dispatch import WeComDispatcher
-from kiro_crew.weixin.transport import WeixinTransport
+from efm_go.config import live
+from efm_go.feishu.client import CHAT_P2P, LarkInbound
+from efm_go.feishu.transport import FeishuTransport
+from efm_go.messaging.transport import InboundMessage
+from efm_go.wecom.transport import WeComTransport
+from efm_go.wecom.transport_dispatch import WeComDispatcher
+from efm_go.weixin.transport import WeixinTransport
 
 # ------------------------------------------------------------------
 # WeCom: the allow-all flip and the file-over-boot fallback
@@ -64,7 +64,7 @@ class TestWeComAllowAll:
     def _audited(self, monkeypatch) -> list[dict]:
         audited: list[dict] = []
         monkeypatch.setattr(
-            "kiro_crew.wecom.transport.sel",
+            "efm_go.wecom.transport.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kw: audited.append(kw)),
         )
         return audited
@@ -107,9 +107,9 @@ class TestWeComThresholds:
         cfg_path.write_text(
             json.dumps({"wecom": {"soft_threshold_pct": 33, "hard_threshold_pct": 66}})
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_path)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_path)
         monkeypatch.setattr(
-            "kiro_crew.config.loader.config_local_path", lambda: tmp_path / "local.json"
+            "efm_go.config.loader.config_local_path", lambda: tmp_path / "local.json"
         )
         assert self._dispatcher(soft=70, hard=90)._thresholds() == (33, 66)
 
@@ -157,7 +157,7 @@ class TestWeixinAllowListAndPolicy:
         assert t.may_send_to("wxid_new")
 
     def test_a_degraded_section_keeps_the_policy_too(self):
-        from kiro_crew.weixin.transport_dispatch import WeixinDispatcher
+        from efm_go.weixin.transport_dispatch import WeixinDispatcher
 
         t = self._transport()
         d = WeixinDispatcher(
@@ -223,7 +223,7 @@ class TestFeishuAllowLists:
         roster is adopted BEFORE the audit runs, so a revocation lands even when
         the audit does not -- and both sets, not just the first: an exception on
         the first audit must not leave the second roster on its old value."""
-        from kiro_crew.feishu import transport as feishu_transport
+        from efm_go.feishu import transport as feishu_transport
 
         def _boom():
             raise RuntimeError("SEL trust root too short")

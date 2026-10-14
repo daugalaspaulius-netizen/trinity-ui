@@ -17,9 +17,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import cron_script
-from kiro_crew.cron_script import ScriptContext
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+from efm_go import cron_script
+from efm_go.cron_script import ScriptContext
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
 _JOB = "nightly-dispatch"
 # Assembled at runtime so the source never holds a credential-shaped literal.

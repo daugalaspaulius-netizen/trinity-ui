@@ -15,8 +15,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard import handlers
-from kiro_crew.onboarding_sources import gemini as gemini_source
+from efm_go.dashboard import handlers
+from efm_go.onboarding_sources import gemini as gemini_source
 
 
 class _AuditLog:
@@ -37,14 +37,14 @@ def _isolate_mcp_host_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     in a worker reaches the operator's real files. A test that patches these names
     itself still wins, because its own patch runs after this one.
     """
-    mcp_handlers = importlib.import_module("kiro_crew.dashboard.handlers.mcp")
+    mcp_handlers = importlib.import_module("efm_go.dashboard.handlers.mcp")
     global_mcp = tmp_path / "host-kiro-settings" / "mcp.json"
     monkeypatch.setattr(mcp_handlers, "_GLOBAL_MCP_JSON", global_mcp)
     monkeypatch.setattr(mcp_handlers, "_MCP_LOCK_PATH", global_mcp.with_suffix(".lock"))
 
 
 def _handler_module():
-    return importlib.import_module("kiro_crew.dashboard.handlers.onboarding_import")
+    return importlib.import_module("efm_go.dashboard.handlers.onboarding_import")
 
 
 def _make_app(
@@ -753,7 +753,7 @@ async def test_state_names_an_unreadable_config(monkeypatch, tmp_path) -> None:
     # empty, so the fail-closed write must refuse rather than replace it.
     original = b'{"dashboard": {"import_onboarded": fal'
     config.write_bytes(original)
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: config)
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: config)
     monkeypatch.setattr(module, "_sel", lambda: audit)
 
     async with TestClient(TestServer(_make_app(module))) as client:
@@ -946,7 +946,7 @@ async def test_apply_omitting_the_strategy_means_skip(monkeypatch) -> None:
 async def test_scan_never_writes(monkeypatch, tmp_path) -> None:
     """The dry run is hard: previewing must not open a destination for writing."""
     module = _handler_module()
-    import kiro_crew.onboarding_import as backend
+    import efm_go.onboarding_import as backend
 
     monkeypatch.setattr(module, "_backend", lambda: backend)
     monkeypatch.setattr(module, "_sel", lambda: _AuditLog())
@@ -1101,7 +1101,7 @@ async def test_apply_skips_backfill_when_nothing_was_deferred(monkeypatch) -> No
 def test_backfill_embeddings_waits_for_the_model_before_sweeping(monkeypatch) -> None:
     """A still-warming model embeds zero rows, and nothing would re-schedule."""
     module = _handler_module()
-    embeddings = importlib.import_module("kiro_crew.embeddings")
+    embeddings = importlib.import_module("efm_go.embeddings")
     swept: list[bool] = []
 
     monkeypatch.setattr(embeddings, "model_file_present", lambda: True)
@@ -1118,7 +1118,7 @@ def test_backfill_embeddings_waits_for_the_model_before_sweeping(monkeypatch) ->
 
 def test_backfill_embeddings_skips_while_the_model_is_downloading(monkeypatch) -> None:
     module = _handler_module()
-    embeddings = importlib.import_module("kiro_crew.embeddings")
+    embeddings = importlib.import_module("efm_go.embeddings")
     swept: list[bool] = []
 
     monkeypatch.setattr(embeddings, "model_file_present", lambda: False)
@@ -1131,7 +1131,7 @@ def test_backfill_embeddings_skips_while_the_model_is_downloading(monkeypatch) -
 def test_backfill_embeddings_never_raises_into_the_apply_response(monkeypatch) -> None:
     """The memories ARE imported; a failed sweep must not fail the request."""
     module = _handler_module()
-    embeddings = importlib.import_module("kiro_crew.embeddings")
+    embeddings = importlib.import_module("efm_go.embeddings")
 
     monkeypatch.setattr(embeddings, "model_file_present", lambda: True)
     monkeypatch.setattr(
@@ -1148,7 +1148,7 @@ def test_backfill_embeddings_never_raises_into_the_apply_response(monkeypatch) -
 
 def test_backfill_embeddings_sweeps_a_ready_model(monkeypatch) -> None:
     module = _handler_module()
-    embeddings = importlib.import_module("kiro_crew.embeddings")
+    embeddings = importlib.import_module("efm_go.embeddings")
 
     monkeypatch.setattr(embeddings, "model_file_present", lambda: True)
     monkeypatch.setattr(
@@ -1172,7 +1172,7 @@ def test_the_two_source_id_patterns_cannot_drift() -> None:
     rather than trusted to stay in step.
     """
     module = _handler_module()
-    backend = importlib.import_module("kiro_crew.onboarding_import")
+    backend = importlib.import_module("efm_go.onboarding_import")
 
     assert module._SOURCE_ID_SHAPE_RE.pattern == backend._SOURCE_ID_RE.pattern
 
@@ -1191,7 +1191,7 @@ def test_handler_category_tables_match_the_backend() -> None:
     which is what makes an edition-registered source reachable at all.
     """
     module = _handler_module()
-    backend = importlib.import_module("kiro_crew.onboarding_import")
+    backend = importlib.import_module("efm_go.onboarding_import")
 
     assert module._CATEGORY_IDS == frozenset(backend.CATEGORY_IDS)
     assert set(module._CATEGORY_NAMES) >= frozenset(backend.CATEGORY_IDS) - {"instructions"}

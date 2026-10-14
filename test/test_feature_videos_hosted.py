@@ -40,12 +40,12 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import asset_downloader
-from kiro_crew import feature_videos as fv
-from kiro_crew import feature_videos_cache as cache_mod
-from kiro_crew import feature_videos_manifest as manifest_mod
-from kiro_crew import pinned_fs
-from kiro_crew.platform import feed_trust
+from efm_go import asset_downloader
+from efm_go import feature_videos as fv
+from efm_go import feature_videos_cache as cache_mod
+from efm_go import feature_videos_manifest as manifest_mod
+from efm_go import pinned_fs
+from efm_go.platform import feed_trust
 
 _CLIP = b"clip-bytes" * 64
 _POSTER = b"poster-bytes" * 8
@@ -77,10 +77,10 @@ def _no_network(monkeypatch: pytest.MonkeyPatch) -> None:
     # rather than escaping to the network. feature_videos.py itself imports no
     # urllib at all — it makes no outbound request.
     monkeypatch.setattr(
-        "kiro_crew.asset_downloader.build_opener",
+        "efm_go.asset_downloader.build_opener",
         lambda *a, **k: SimpleNamespace(open=_blocked),
     )
-    for module in ("kiro_crew.feature_videos_manifest", "kiro_crew.asset_downloader"):
+    for module in ("efm_go.feature_videos_manifest", "efm_go.asset_downloader"):
         monkeypatch.setattr(f"{module}.urllib.request.urlopen", _blocked)
 
 
@@ -599,7 +599,7 @@ class TestManifestFetch:
         signed = _sign(signing_key, tmp_path, _document(release="0.5.0"))
         state = SimpleNamespace(urls=[])
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(
                 _fake_manifest_fetch(
                     {
@@ -630,7 +630,7 @@ class TestManifestFetch:
         signed = _sign(signing_key, tmp_path, _document(release="0.6.0"))
         state = SimpleNamespace(urls=[])
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(
                 _fake_manifest_fetch(
                     {
@@ -654,7 +654,7 @@ class TestManifestFetch:
         signed = _sign(signing_key, tmp_path, _document(release="0.4.0"))
         state = SimpleNamespace(urls=[])
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(
                 _fake_manifest_fetch(
                     {
@@ -678,7 +678,7 @@ class TestManifestFetch:
         signed = _sign(signing_key, tmp_path, _document(release="0.4.0"))
         state = SimpleNamespace(urls=[])
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(
                 _fake_manifest_fetch(
                     {
@@ -701,7 +701,7 @@ class TestManifestFetch:
         state = SimpleNamespace(urls=[])
         override = "https://mirror.example/feature-videos/manifest.json"
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_manifest_fetch({override: json.dumps(signed).encode()}, state)),
         )
         monkeypatch.setenv(manifest_mod.MANIFEST_URL_ENV, override)
@@ -722,7 +722,7 @@ class TestManifestFetch:
         state = SimpleNamespace(urls=[])
         override = "https://mirror.example/feature-videos/manifest.json"
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_manifest_fetch({override: json.dumps(signed).encode()}, state)),
         )
         monkeypatch.setenv(manifest_mod.MANIFEST_URL_ENV, override)
@@ -740,7 +740,7 @@ class TestManifestFetch:
             seen.append(allow_cross_host_redirects)
             raise urllib.error.URLError("stop here")
 
-        monkeypatch.setattr("kiro_crew.asset_downloader.build_opener", _record)
+        monkeypatch.setattr("efm_go.asset_downloader.build_opener", _record)
         manifest_mod.fetch_manifest("0.6.0")
         assert seen and not any(seen), "CDN urls are host-pinned"
         seen.clear()
@@ -751,7 +751,7 @@ class TestManifestFetch:
     def test_an_unsigned_response_yields_nothing(self, monkeypatch: pytest.MonkeyPatch) -> None:
         state = SimpleNamespace(urls=[])
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(
                 _fake_manifest_fetch(
                     {
@@ -773,7 +773,7 @@ class TestManifestFetch:
         state = SimpleNamespace(urls=[])
         url = f"{manifest_mod.DEFAULT_CDN_BASE}/0.6.0/manifest.json"
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_manifest_fetch({url: b"x" * (256 * 1024 + 10)}, state)),
         )
         assert manifest_mod._fetch_json(url) is None
@@ -789,7 +789,7 @@ class TestManifestFetch:
         def _explode(*_a: object, **_k: object) -> object:
             raise http.client.InvalidURL("nonnumeric port: 'not-a-port'")
 
-        monkeypatch.setattr("kiro_crew.asset_downloader.build_opener", _as_opener(_explode))
+        monkeypatch.setattr("efm_go.asset_downloader.build_opener", _as_opener(_explode))
         assert manifest_mod._fetch_json("https://cdn.example.com:not-a-port/manifest.json") is None
 
 
@@ -812,7 +812,7 @@ class TestManifestUrlResolution:
         ``feature_videos_manifest_url`` leaf, and the cache asks the manifest
         module for the url without consulting the dashboard config.
         """
-        from kiro_crew.config.sections import DashboardConfig
+        from efm_go.config.sections import DashboardConfig
 
         assert not hasattr(DashboardConfig(), "feature_videos_manifest_url")
         assert manifest_mod.operator_manifest_url() == ""
@@ -1564,7 +1564,7 @@ class TestDownloadPass:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_media_fetch({"hosted-clip.mp4", "hosted-clip.jpg"})),
         )
         with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
@@ -1586,7 +1586,7 @@ class TestDownloadPass:
         reads as not cached, so the next pass re-fetches it and tries again.
         """
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_media_fetch({"hosted-clip.mp4", "hosted-clip.jpg"})),
         )
 
@@ -1607,7 +1607,7 @@ class TestDownloadPass:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_media_fetch({"hosted-clip.mp4"})),
         )
         with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
@@ -1621,7 +1621,7 @@ class TestDownloadPass:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_media_fetch({"hosted-clip.mp4", "hosted-clip.jpg"})),
         )
         with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
@@ -1649,7 +1649,7 @@ class TestDownloadPass:
             cfg.dashboard.feature_videos_enabled = False
             cache = cache_mod.feature_video_cache()
             with (
-                patch("kiro_crew.feature_videos_cache.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos_cache.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", side_effect=AssertionError),
             ):
                 cfg_cls.load.return_value = cfg
@@ -1664,7 +1664,7 @@ class TestDownloadPass:
             cfg.dashboard.feature_videos_enabled = True
             cache = cache_mod.feature_video_cache()
             with (
-                patch("kiro_crew.feature_videos_cache.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos_cache.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", return_value=True),
                 patch.object(
                     manifest_mod, "fetch_manifest", side_effect=AssertionError("fetched anyway")
@@ -1683,7 +1683,7 @@ class TestGovernanceDuringAPass:
     ) -> None:
         """The kill switch is re-read per entry too, not snapshotted before the loop."""
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_media_fetch({"a.mp4", "a.jpg", "b.mp4", "b.jpg", "c.mp4", "c.jpg"})),
         )
         with patch.dict(
@@ -1701,7 +1701,7 @@ class TestGovernanceDuringAPass:
                 return cfg
 
             with (
-                patch("kiro_crew.feature_videos_cache.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos_cache.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", return_value=False),
                 patch.object(cache, "refresh_manifest", return_value=manifest),
             ):
@@ -1717,7 +1717,7 @@ class TestGovernanceDuringAPass:
     ) -> None:
         """Checking once before the loop would keep downloading under a lifted grant."""
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_media_fetch({"a.mp4", "a.jpg", "b.mp4", "b.jpg", "c.mp4", "c.jpg"})),
         )
         with patch.dict(
@@ -1736,7 +1736,7 @@ class TestGovernanceDuringAPass:
                 return next(answers, True)
 
             with (
-                patch("kiro_crew.feature_videos_cache.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos_cache.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", side_effect=_denied),
                 patch.object(cache, "refresh_manifest", return_value=manifest),
             ):
@@ -1755,7 +1755,7 @@ class TestGovernanceDuringAPass:
         post-loop one is what holds the budget once they have. Pinned by observing
         the state of the current folder at each eviction call."""
         monkeypatch.setattr(
-            "kiro_crew.asset_downloader.build_opener",
+            "efm_go.asset_downloader.build_opener",
             _as_opener(_fake_media_fetch({"a.mp4", "a.jpg"})),
         )
         with patch.dict(
@@ -1774,7 +1774,7 @@ class TestGovernanceDuringAPass:
                 return []
 
             with (
-                patch("kiro_crew.feature_videos_cache.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos_cache.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", return_value=False),
                 patch.object(cache, "refresh_manifest", return_value=manifest),
                 patch.object(cache_mod, "evict", _evict),
@@ -1906,7 +1906,7 @@ class TestServingRoute:
         load. A <video> pointed at a clip must not receive HTML with a 200 —
         the exclusion list is what keeps this route on the refusing side.
         """
-        import kiro_crew.dashboard.token_auth as ta
+        import efm_go.dashboard.token_auth as ta
 
         request = MagicMock()
         request.method = method
@@ -2293,7 +2293,7 @@ class TestNoEgressFromSelection:
         """A display field must not spend an audited decision."""
         with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
             with patch(
-                "kiro_crew.platform.governance_profiles.vet_and_audit",
+                "efm_go.platform.governance_profiles.vet_and_audit",
                 return_value=SimpleNamespace(permitted=True),
             ) as vet:
                 manifest_mod.download_permitted_cached()
@@ -2451,7 +2451,7 @@ def _dashboard_request(path: str = "/api/feature-videos/status") -> MagicMock:
 def _next_body(tmp_path: Path) -> dict[str, object]:
     cfg = MagicMock()
     cfg.dashboard.feature_videos_enabled = True
-    with patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls:
+    with patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls:
         cfg_cls.load.return_value = cfg
         resp = asyncio.run(
             fv.api_feature_videos_next(_dashboard_request("/api/feature-videos/next"))
@@ -2513,7 +2513,7 @@ class TestNextRouteReportsNoDownloadPolicy:
             cfg = MagicMock()
             cfg.dashboard.feature_videos_enabled = False
             with (
-                patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", side_effect=AssertionError),
                 patch.object(manifest_mod, "download_permitted_cached", side_effect=AssertionError),
             ):
@@ -2534,7 +2534,7 @@ class TestStatusRoute:
             # The memo is process-wide and TTL'd, so a sibling test that just
             # evaluated a denial would otherwise leak into this readout.
             with (
-                patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_permitted_cached", return_value=True),
             ):
                 cfg_cls.load.return_value = cfg
@@ -2551,7 +2551,7 @@ class TestStatusRoute:
             cfg = MagicMock()
             cfg.dashboard.feature_videos_enabled = True
             with (
-                patch("kiro_crew.feature_videos.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_permitted_cached", return_value=False),
             ):
                 cfg_cls.load.return_value = cfg
@@ -2571,7 +2571,7 @@ class TestFetchAllRoute:
         """A silent ok would leave the panel polling for bytes that never come."""
         with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
             with (
-                patch("kiro_crew.feature_videos_cache.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos_cache.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", side_effect=AssertionError),
                 patch.object(cache_mod.FeatureVideoCache, "ensure_all", side_effect=AssertionError),
             ):
@@ -2586,7 +2586,7 @@ class TestFetchAllRoute:
         """An ACTION chokepoint, so it takes the audited answer, not the polled memo."""
         with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
             with (
-                patch("kiro_crew.feature_videos_cache.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos_cache.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", return_value=True),
                 patch.object(cache_mod.FeatureVideoCache, "ensure_all", side_effect=AssertionError),
             ):
@@ -2606,7 +2606,7 @@ class TestFetchAllRoute:
 
         async def run() -> web.Response:
             with (
-                patch("kiro_crew.feature_videos_cache.KiroCrewConfig") as cfg_cls,
+                patch("efm_go.feature_videos_cache.KiroCrewConfig") as cfg_cls,
                 patch.object(manifest_mod, "download_denied", return_value=False),
                 patch.object(cache_mod.FeatureVideoCache, "ensure_all", _fake_ensure_all),
             ):
@@ -2627,7 +2627,7 @@ class TestFetchAllRoute:
 
 class TestGovernanceProbe:
     def test_the_scope_is_in_the_catalog_as_a_capability(self) -> None:
-        from kiro_crew.platform.governance import SCOPE_CATALOG
+        from efm_go.platform.governance import SCOPE_CATALOG
 
         spec = SCOPE_CATALOG[manifest_mod.DOWNLOAD_SCOPE]
         assert spec.capability_default is True
@@ -2635,7 +2635,7 @@ class TestGovernanceProbe:
     def test_a_permitting_decision_reads_as_not_denied(self) -> None:
         decision = SimpleNamespace(permitted=True)
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit", return_value=decision
+            "efm_go.platform.governance_profiles.vet_and_audit", return_value=decision
         ) as vet:
             assert manifest_mod.download_denied() is False
         # Fail-closed posture and the pinned surface are part of the contract.
@@ -2645,7 +2645,7 @@ class TestGovernanceProbe:
 
     def test_a_denying_decision_denies(self) -> None:
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             return_value=SimpleNamespace(permitted=False),
         ):
             assert manifest_mod.download_denied() is True
@@ -2653,10 +2653,10 @@ class TestGovernanceProbe:
     def test_an_unevaluable_ceiling_denies_and_is_audited(self) -> None:
         with (
             patch(
-                "kiro_crew.platform.governance_profiles.vet_and_audit",
+                "efm_go.platform.governance_profiles.vet_and_audit",
                 side_effect=RuntimeError("composition failed"),
             ),
-            patch("kiro_crew.sel.sel") as sel_factory,
+            patch("efm_go.sel.sel") as sel_factory,
         ):
             assert manifest_mod.download_denied() is True
         sel_factory.return_value.log_governance_decision.assert_called_once()
@@ -2667,13 +2667,13 @@ class TestGovernanceProbe:
     def test_the_cached_read_tracks_the_last_real_answer(self) -> None:
         """A polled read reports what the last decision was, without deciding again."""
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             return_value=SimpleNamespace(permitted=True),
         ):
             manifest_mod.download_denied()
         assert manifest_mod.download_permitted_cached() is True
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             return_value=SimpleNamespace(permitted=False),
         ):
             manifest_mod.download_denied()

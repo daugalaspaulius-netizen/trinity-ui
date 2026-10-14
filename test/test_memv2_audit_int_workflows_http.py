@@ -9,11 +9,11 @@ from aiohttp.test_utils import TestClient, TestServer
 from member_memory_helpers import env as _member_env
 from member_memory_helpers import make_request
 
-from kiro_crew import member_memory_auth as auth
-from kiro_crew.dashboard.handlers import workflows
-from kiro_crew.dashboard.server import _MIXED_INTERNAL_API_PATHS, _STRICT_INTERNAL_API_PATHS
-from kiro_crew.dashboard.token_auth import token_auth_middleware
-from kiro_crew.mcp_core import _post as _real_mcp_post
+from efm_go import member_memory_auth as auth
+from efm_go.dashboard.handlers import workflows
+from efm_go.dashboard.server import _MIXED_INTERNAL_API_PATHS, _STRICT_INTERNAL_API_PATHS
+from efm_go.dashboard.token_auth import token_auth_middleware
+from efm_go.mcp_core import _post as _real_mcp_post
 
 pytestmark = pytest.mark.xdist_group("memory_workflow_http")
 env = _member_env
@@ -113,8 +113,8 @@ async def test_mcp_workflow_real_transport_pins_authenticated_path(
 ):
     import asyncio
 
-    from kiro_crew import mcp_core
-    from kiro_crew.mcp_tools import workflows as tools
+    from efm_go import mcp_core
+    from efm_go.mcp_tools import workflows as tools
 
     monkeypatch.setenv("KIROCREW_SESSION_KEY", "dashboard:global")
     monkeypatch.setattr(mcp_core, "_resolve_session_key", lambda: "dashboard:wrong-parent")

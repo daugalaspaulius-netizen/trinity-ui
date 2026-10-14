@@ -14,7 +14,7 @@ const { classifyPortOwner, isKirocrewCommand } = require("../gateway-stop");
 const JUNCTION_ROOT = "C:\\Toolbox\\kirocrew\\current";
 const VERSION_ROOT = "C:\\Toolbox\\kirocrew\\0.7.0.5";
 const OLD_VERSION_ROOT = "C:\\Toolbox\\kirocrew\\0.7.0.3";
-const BACKEND_TAIL = "\\resources\\backend-dist\\kirocrew-backend";
+const BACKEND_TAIL = "\\resources\\backend-dist\\efm-go-backend";
 const JUNCTION_LAUNCHER = `${JUNCTION_ROOT}${BACKEND_TAIL}\\bin\\kirocrew.cmd`;
 const JUNCTION_PYTHON = `${JUNCTION_ROOT}${BACKEND_TAIL}\\python.exe`;
 const VERSION_PYTHON = `${VERSION_ROOT}${BACKEND_TAIL}\\python.exe`;
@@ -32,7 +32,7 @@ function junctionRealpath(candidate) {
 
 // Win32_Process identity: ExecutablePath quoted, then the OS command line.
 function gatewayCommand(executable) {
-  return `"${executable}" "${executable}" -s -m kiro_crew gateway --no-open --port 5476`;
+  return `"${executable}" "${executable}" -s -m efm_go gateway --no-open --port 5476`;
 }
 
 test("canonicalWindowsPath follows junctions and strips the long-path prefix", () => {

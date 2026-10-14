@@ -25,8 +25,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import mcp_shared
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+from efm_go import mcp_shared
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
 LENIENT_KEY = "dashboard:chat-9-current"
 
@@ -102,7 +102,7 @@ def test_a_locally_resolved_key_with_a_token_is_still_sent(monkeypatch, dialled)
     monkeypatch.setattr(mcp_shared, "_policy_session_key", lambda: LENIENT_KEY)
     monkeypatch.setenv(STUB_SESSION_TOKEN_ENV, "f" * 64)
     monkeypatch.setattr(
-        "kiro_crew.session_token_sig.session_token_header",
+        "efm_go.session_token_sig.session_token_header",
         lambda token="": {"X-Session-Token": "f" * 64},
     )
 

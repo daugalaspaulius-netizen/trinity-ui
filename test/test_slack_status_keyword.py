@@ -15,8 +15,8 @@ import pytest
 from test_slack_handler import FakeSessionManager
 
 from conftest import MockSlackClient
-from kiro_crew.slack import handler as h
-from kiro_crew.stats import Stats
+from efm_go.slack import handler as h
+from efm_go.stats import Stats
 
 
 @pytest.mark.asyncio

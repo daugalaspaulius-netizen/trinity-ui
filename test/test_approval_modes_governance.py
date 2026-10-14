@@ -19,12 +19,12 @@ import dataclasses
 
 import pytest
 
-from kiro_crew.platform import context as ctx_mod
-from kiro_crew.platform import governance_profiles as gp
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.context import PlatformCompositionError
-from kiro_crew.platform.governance import parse_policy
-from kiro_crew.safety_override import approval_mode_permitted
+from efm_go.platform import context as ctx_mod
+from efm_go.platform import governance_profiles as gp
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.context import PlatformCompositionError
+from efm_go.platform.governance import parse_policy
+from efm_go.safety_override import approval_mode_permitted
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +39,7 @@ def _isolate(tmp_path, monkeypatch):
 
 
 def _install(policy_body):
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     base = build_default_context(KiroCrewConfig.load())
     ceiling = parse_policy(policy_body) if policy_body is not None else None
@@ -129,7 +129,7 @@ class TestNonDeniableHoldsAtRuntimeNotJustParseTime:
     """
 
     def test_a_governance_evaluation_error_cannot_deny_a_non_deniable_mode(self, monkeypatch):
-        import kiro_crew.platform.governance_profiles as gp_mod
+        import efm_go.platform.governance_profiles as gp_mod
 
         def _boom(*a, **kw):
             raise RuntimeError("profile store unreadable")
@@ -143,7 +143,7 @@ class TestNonDeniableHoldsAtRuntimeNotJustParseTime:
 
     def test_the_deniable_mode_still_fails_closed_on_an_evaluation_error(self):
         """The short-circuit must not weaken the mode the scope DOES govern."""
-        from kiro_crew.platform.governance import SCOPE_CATALOG
+        from efm_go.platform.governance import SCOPE_CATALOG
 
         spec = SCOPE_CATALOG["approval_modes"]
         assert (
@@ -152,8 +152,8 @@ class TestNonDeniableHoldsAtRuntimeNotJustParseTime:
 
     def test_the_predicate_reads_the_catalog_rather_than_a_hardcoded_list(self):
         """Drift between the two declarations is what this pins."""
-        from kiro_crew.platform.governance import SCOPE_CATALOG
-        from kiro_crew.safety_override import _non_deniable_approval_modes
+        from efm_go.platform.governance import SCOPE_CATALOG
+        from efm_go.safety_override import _non_deniable_approval_modes
 
         assert set(_non_deniable_approval_modes()) == set(
             SCOPE_CATALOG["approval_modes"].always_permitted

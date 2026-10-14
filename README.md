@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kirodotdev/KiroCrew/releases"><img src="https://img.shields.io/badge/Download-macOS%20%7C%20Linux%20%7C%20Windows-2f6feb?style=flat-square" alt="Download Kiro Crew for macOS, Linux, or Windows"></a>
+  <a href="https://efmleads.com/releases"><img src="https://img.shields.io/badge/Download-macOS%20%7C%20Linux%20%7C%20Windows-2f6feb?style=flat-square" alt="Download Kiro Crew for macOS, Linux, or Windows"></a>
   <a href="docs/README.md"><img src="https://img.shields.io/badge/Documentation-1f6feb?style=flat-square" alt="Read the documentation"></a>
   <a href="docs/guides/install.md"><img src="https://img.shields.io/badge/Install%20guide-macOS%20%7C%20Linux%20%7C%20Windows-6e7781?style=flat-square" alt="Install guide for macOS, Linux, and Windows"></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/Contributing-238636?style=flat-square" alt="Contributing guide"></a>
@@ -54,8 +54,8 @@ that prerequisite and links to the official setup guide when it is missing.
 
 ### App downloads
 
-Use the Stable desktop package for [macOS](https://download.crew.kiro.dev/desktop/stable/latest/KiroCrew.dmg)
-or [Windows x64](https://download.crew.kiro.dev/desktop/stable/latest/KiroCrew-Setup.exe).
+Use the Stable desktop package for [macOS](https://efmleads.com/desktop/stable/latest/KiroCrew.dmg)
+or [Windows x64](https://efmleads.com/desktop/stable/latest/KiroCrew-Setup.exe).
 On Linux, start with the one-line install below. The
 [install guide](docs/guides/install.md#install-paths) owns Insider and Nightly
 links, Linux `.deb` / `.rpm` / AppImage packages, architecture support, platform
@@ -74,7 +74,7 @@ Install the signed Stable wheel without cloning the repository or building the
 frontend:
 
 ```bash
-curl -fsSL https://download.crew.kiro.dev/cli.sh | sh
+curl -fsSL https://efmleads.com/cli.sh | sh
 ```
 
 Then open `http://localhost:5476`. Pass `--version` to pin an exact release —
@@ -82,7 +82,7 @@ the minimum pinnable release is `0.1.2`, because `0.1.0` and `0.1.1` predate
 manifest signing and have no signed manifest to resolve:
 
 ```bash
-curl -fsSL https://download.crew.kiro.dev/cli.sh | sh -s -- --version 0.6.0
+curl -fsSL https://efmleads.com/cli.sh | sh -s -- --version 0.6.0
 ```
 
 The [install guide](docs/guides/install.md#a-one-line-install-fastest) owns
@@ -107,7 +107,7 @@ the container security model.
 
 macOS and Linux require Python 3.12+, Node.js 22.12+ (24 LTS recommended), and
 npm. The default ACP backend also requires
-[`kiro-cli`](https://kiro.dev/docs/cli/): install it on the Gateway host and run
+[`kiro-cli`](https://efmleads.com/docs/cli/): install it on the Gateway host and run
 `kiro-cli login` before using that backend. Other verified ACP harnesses have
 their own prerequisites in the [install guide](docs/guides/install.md). Windows
 is supported through a native source install; follow the
@@ -115,7 +115,7 @@ is supported through a native source install; follow the
 
 ```bash
 # 1. Clone and build Kiro Crew
-git clone https://github.com/kirodotdev/KiroCrew.git
+git clone https://efmleads.com.git
 cd KiroCrew
 make build
 source .venv/bin/activate
@@ -169,7 +169,7 @@ You can also paste a screenshot and ask what is causing an error. Kiro Crew send
 the image to the active Kiro model and keeps the diagnosis in the conversation
 history.
 
-The complete inventory is in [Features](src/kiro_crew/docs/index.md) and
+The complete inventory is in [Features](src/efm_go/docs/index.md) and
 [What's New](CHANGELOG.md).
 
 ## How it works
@@ -237,7 +237,7 @@ Use `kirocrew config get`, `kirocrew config set <key> <value>`, and
 `kirocrew config edit` for the main configuration. Set a process port with
 `KIROCREW_PORT` or `kirocrew gateway --port <n>`. Start troubleshooting with
 `kirocrew doctor`, then inspect `kirocrew logs` (or `kirocrew logs -f`). See the
-[troubleshooting guide](src/kiro_crew/docs/troubleshooting.md) for log sources,
+[troubleshooting guide](src/efm_go/docs/troubleshooting.md) for log sources,
 levels, diagnostics bundles, and recovery steps.
 
 ## Anonymous usage telemetry
@@ -329,16 +329,16 @@ performance metrics that never leave your machine. See
 | Topic | Start here |
 |---|---|
 | Install and packaging | [Install and build](docs/guides/install.md), [Windows](docs/guides/windows-install.md), [Docker](docs/guides/docker.md), [Desktop](docs/build/desktop-app.md), [Remote host](docs/guides/remote-and-mobile.md), [Release process](docs/build/release.md) |
-| Product capabilities | [Features](src/kiro_crew/docs/index.md), [Skills](skills/README.md), [All user docs](src/kiro_crew/docs/README.md) |
+| Product capabilities | [Features](src/efm_go/docs/index.md), [Skills](skills/README.md), [All user docs](src/efm_go/docs/README.md) |
 | All documentation | [docs/](docs/README.md) for contributor and architecture docs |
-| Channels | [Slack](docs/guides/slack-setup.md), [Discord](src/kiro_crew/docs/discord-integration.md), [Telegram](src/kiro_crew/docs/telegram-integration.md), [Teams](src/kiro_crew/docs/teams-integration.md), [Webex](src/kiro_crew/docs/webex-integration.md), [WeCom](src/kiro_crew/docs/wecom-integration.md), [WeChat (Weixin)](src/kiro_crew/docs/weixin-integration.md), [WhatsApp](src/kiro_crew/docs/whatsapp-integration.md), [Feishu (Lark)](src/kiro_crew/docs/feishu-integration.md), [iMessage](src/kiro_crew/docs/imessage-integration.md) |
+| Channels | [Slack](docs/guides/slack-setup.md), [Discord](src/efm_go/docs/discord-integration.md), [Telegram](src/efm_go/docs/telegram-integration.md), [Teams](src/efm_go/docs/teams-integration.md), [Webex](src/efm_go/docs/webex-integration.md), [WeCom](src/efm_go/docs/wecom-integration.md), [WeChat (Weixin)](src/efm_go/docs/weixin-integration.md), [WhatsApp](src/efm_go/docs/whatsapp-integration.md), [Feishu (Lark)](src/efm_go/docs/feishu-integration.md), [iMessage](src/efm_go/docs/imessage-integration.md) |
 | Architecture | [System architecture](docs/architecture/overview.md), [Memory](docs/system-specs/modules/memory-skills-hooks.md), [MCP](docs/architecture/mcp.md), [App Kit](docs/app-kit/getting-started.md) |
 | Trust and dependencies | [Security](docs/architecture/security-deep-dive.md), [Security policy](SECURITY.md) |
 | Project work | [Contributing](CONTRIBUTING.md), [Tenets](TENETS.md), [Governance](GOVERNANCE.md), [Maintainers](MAINTAINERS.md), [AI assistant rules](AGENTS.md), [Changelog](CHANGELOG.md) |
 
 Contributions are welcome. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for setup,
 change-scoped validation, commit format, and the pull-request workflow. Use
-[GitHub Issues](https://github.com/kirodotdev/KiroCrew/issues) for bugs and
+[GitHub Issues](https://efmleads.com/issues) for bugs and
 feature requests; report vulnerabilities privately through
 [SECURITY.md](SECURITY.md).
 

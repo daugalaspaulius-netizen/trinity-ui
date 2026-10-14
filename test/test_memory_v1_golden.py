@@ -36,17 +36,17 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import context as ctx
-from kiro_crew import embeddings, resource_status, session_surface, vector_memory
-from kiro_crew.config import paths as config_paths
-from kiro_crew.config.loader import KiroCrewConfig, workspace_dir_for
-from kiro_crew.config.paths import config_dir
-from kiro_crew.embeddings import PRIORITY_NORMAL
-from kiro_crew.hooks import HookManager
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import context as ctx
+from efm_go import embeddings, resource_status, session_surface, vector_memory
+from efm_go.config import paths as config_paths
+from efm_go.config.loader import KiroCrewConfig, workspace_dir_for
+from efm_go.config.paths import config_dir
+from efm_go.embeddings import PRIORITY_NORMAL
+from efm_go.hooks import HookManager
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
+from efm_go.vector_memory import VectorMemoryStore
 
 # ``context._memory_stores`` / ``context._lesson_stores`` are module globals behind
 # ``context._stores_lock``. Two workers racing them is a flake, so the whole module
@@ -445,7 +445,7 @@ def test_production_agent_prompt_exists() -> None:
     time the prompt is reworded — a change this golden does not cover. Asserting the
     file exists keeps the stub honest.
     """
-    from kiro_crew.agent import _prompt_path
+    from efm_go.agent import _prompt_path
 
     assert _prompt_path().is_file()
     assert _prompt_path().read_text(encoding="utf-8").strip()

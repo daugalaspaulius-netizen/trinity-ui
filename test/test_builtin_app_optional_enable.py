@@ -14,7 +14,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from kiro_crew.apps.manager import (
+from efm_go.apps.manager import (
     InstalledApp,
     _read_installed,
     _validate_builtin_app,
@@ -24,8 +24,8 @@ from kiro_crew.apps.manager import (
     register_builtin_apps,
     uninstall_app,
 )
-from kiro_crew.apps.manifest import app_name_error
-from kiro_crew.constants import WINDOWS_DEVICE_STEMS
+from efm_go.apps.manifest import app_name_error
+from efm_go.constants import WINDOWS_DEVICE_STEMS
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -44,7 +44,7 @@ def _ship_builtin(monkeypatch, root, name, **manifest_extra):
     import json as _json
     from pathlib import Path
 
-    import kiro_crew.apps.execution as execution
+    import efm_go.apps.execution as execution
 
     shipped = Path(root) / "shipped-builtins"
     app_root = shipped / name
@@ -79,13 +79,13 @@ async def test_shipped_builtin_cron_registers_with_default_off(
 ):
     import json
 
-    import kiro_crew.apps.execution as execution
-    import kiro_crew.apps.manager as mgr
-    from kiro_crew.apps.bridges import (
+    import efm_go.apps.execution as execution
+    import efm_go.apps.manager as mgr
+    from efm_go.apps.bridges import (
         register_app,
         register_app_crons_with_service,
     )
-    from kiro_crew.cron import CronService
+    from efm_go.cron import CronService
 
     shipped_root = _ship_builtin(
         monkeypatch,
@@ -126,11 +126,11 @@ def _no_disk_discovery(monkeypatch):
     explicitly inject via ``monkeypatch.setattr(mgr, "_BUILTIN_APPS", ...)``.
 
     Without this, ``register_builtin_apps()`` also picks up real builtins
-    discovered from ``src/kiro_crew/apps/builtins/*/app.json`` (e.g.
+    discovered from ``src/efm_go/apps/builtins/*/app.json`` (e.g.
     ``code-reviewer``), which would inflate counts in tests that rely on
     ``_BUILTIN_APPS`` being the sole source.
     """
-    import kiro_crew.apps.manager as mgr
+    import efm_go.apps.manager as mgr
     monkeypatch.setattr(mgr, "discover_builtin_apps", lambda: [])
 
 
@@ -200,7 +200,7 @@ class TestProperty1FirstTimeRegistration:
         request.addfinalizer(lambda h=home: shutil.rmtree(h, ignore_errors=True))
         monkeypatch.setenv("KIROCREW_HOME", home)
 
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [app_def])
         monkeypatch.setattr(mgr, "_orphaned_builtins_cache", None)
 
@@ -214,7 +214,7 @@ class TestProperty1FirstTimeRegistration:
 
     def test_explicit_default_enabled_false(self, app_home, monkeypatch):
         """A builtin app with defaultEnabled: false registers as disabled."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
             "name": "test-opt-in",
             "version": "1.0.0",
@@ -231,7 +231,7 @@ class TestProperty1FirstTimeRegistration:
 
     def test_missing_default_enabled_defaults_to_true(self, app_home, monkeypatch):
         """A builtin app without defaultEnabled registers as enabled (backward compat)."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
             "name": "test-legacy",
             "version": "1.0.0",
@@ -269,7 +269,7 @@ class TestProperty2ReRegistrationPreservesState:
         request.addfinalizer(lambda h=home: shutil.rmtree(h, ignore_errors=True))
         monkeypatch.setenv("KIROCREW_HOME", home)
 
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [app_def])
         monkeypatch.setattr(mgr, "_orphaned_builtins_cache", None)
 
@@ -322,7 +322,7 @@ class TestProperty3LifecycleLocked:
         request.addfinalizer(lambda h=home: shutil.rmtree(h, ignore_errors=True))
         monkeypatch.setenv("KIROCREW_HOME", home)
 
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [app_def])
         monkeypatch.setattr(mgr, "_orphaned_builtins_cache", None)
 
@@ -334,7 +334,7 @@ class TestProperty3LifecycleLocked:
 
     def test_uninstall_locked_rejected(self, app_home, monkeypatch):
         """Calling uninstall_app() on a builtin app SHALL return an error."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
             "name": "locked-app",
             "version": "1.0.0",
@@ -359,7 +359,7 @@ class TestProperty8InvalidDefinitionsSkipped:
 
     def test_invalid_skipped_valid_registered(self, app_home, monkeypatch):
         """A mix of valid and invalid definitions: valid ones register, invalid skip."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         apps_list = [
             # Invalid: missing description
@@ -400,7 +400,7 @@ class TestProperty8InvalidDefinitionsSkipped:
 
     def test_unsafe_name_skipped(self, app_home, monkeypatch):
         """An app with path-traversal in name is skipped."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
             "name": "../evil",
             "version": "1.0.0",
@@ -521,7 +521,7 @@ class TestValidateBuiltinApp:
         state lands on disk and other apps are unaffected."""
         import logging
 
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [
             {
@@ -541,7 +541,7 @@ class TestValidateBuiltinApp:
         ])
         monkeypatch.setattr(mgr, "_orphaned_builtins_cache", None)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.apps.manager"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.apps.manager"):
             count = register_builtin_apps()
 
         assert "aux" in caplog.text, "the skip must be operator-visible"
@@ -552,7 +552,7 @@ class TestValidateBuiltinApp:
 
     def test_existing_builtins_all_valid(self):
         """The shipped builtin apps must all pass validation."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         for app_data in mgr._BUILTIN_APPS:
             errors = _validate_builtin_app(app_data)
             assert errors == [], f"{app_data['name']} failed validation: {errors}"
@@ -569,7 +569,7 @@ class TestValidateBuiltinApp:
         it is declared once in ``manager._DEFAULT_ON_BUILTINS`` and read from
         there by both this test and the file-based-manifest test below.
         """
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         for app_data in mgr._BUILTIN_APPS:
             name = app_data["name"]
@@ -596,8 +596,8 @@ class TestValidateBuiltinApp:
         surface the app on a fresh install, so require an explicit False on every
         other discovered manifest.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.discovery import discover_builtin_apps
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.discovery import discover_builtin_apps
 
         for app_data in discover_builtin_apps():
             name = app_data["name"]
@@ -620,8 +620,8 @@ class TestValidateBuiltinApp:
         exempts nothing, and the app it was meant to cover would fail the
         default-disabled assertion above with a confusing message.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.discovery import discover_builtin_apps
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.discovery import discover_builtin_apps
 
         shipped = {a["name"] for a in mgr._BUILTIN_APPS}
         shipped |= {a["name"] for a in discover_builtin_apps()}
@@ -637,7 +637,7 @@ class TestValidateBuiltinApp:
         policy would be bypassed for default-on apps. When governance denies the
         app, it must register DISABLED.
         """
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         monkeypatch.setattr(mgr, "_app_activation_denied", lambda name: "denied by policy")
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
@@ -659,7 +659,7 @@ class TestValidateBuiltinApp:
     def test_default_enabled_builtin_enabled_when_governance_permits(self, app_home, monkeypatch):
         """When governance permits (the common case), a default-enabled builtin
         registers enabled — the gate is a no-op absent a deny policy."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         monkeypatch.setattr(mgr, "_app_activation_denied", lambda name: None)
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
@@ -689,8 +689,8 @@ class TestProperty6EnableDisableRoundTrip:
 
     def test_enable_then_read(self, app_home, monkeypatch, tmp_path):
         """Enabling a disabled builtin app persists enabled=True."""
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import enable_app
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import enable_app
 
         _ship_builtin(monkeypatch, tmp_path, "roundtrip-app")
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
@@ -722,9 +722,9 @@ class TestProperty6EnableDisableRoundTrip:
         self, app_home, monkeypatch, tmp_path
     ):
         """Interactive enable remains available when governance evaluation degrades."""
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import enable_app
-        from kiro_crew.platform import governance_profiles as gp
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import enable_app
+        from efm_go.platform import governance_profiles as gp
 
         _ship_builtin(monkeypatch, tmp_path, "degraded-enable-app")
         monkeypatch.setattr(
@@ -754,8 +754,8 @@ class TestProperty6EnableDisableRoundTrip:
 
     def test_disable_then_read(self, app_home, monkeypatch):
         """Disabling an enabled builtin app persists enabled=False."""
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import disable_app
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import disable_app
 
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
             "name": "roundtrip-app2",
@@ -794,8 +794,8 @@ class TestProperty6EnableDisableRoundTrip:
         monkeypatch.setenv("KIROCREW_HOME", home)
         _ship_builtin(monkeypatch, tmp_path, "toggle-app")
 
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import disable_app, enable_app
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import disable_app, enable_app
 
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
             "name": "toggle-app",
@@ -832,7 +832,7 @@ class TestProperty7APIReturnsCompleteManifest:
 
     def test_list_apps_includes_all_fields(self, app_home, monkeypatch):
         """list_apps() returns origin, enabled, lifecycle, and full manifest."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [
             {
@@ -872,7 +872,7 @@ class TestProperty7APIReturnsCompleteManifest:
 
     def test_disabled_builtin_has_complete_manifest(self, app_home, monkeypatch):
         """A disabled builtin app still returns full manifest in list_apps()."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
             "name": "disabled-full",
@@ -915,7 +915,7 @@ def _register_builtin_disabled(monkeypatch, tmp_path, name, *, backfilled: bool)
     flipped off — a hand-built record would not exercise
     ``_builtin_owns_install``.
     """
-    import kiro_crew.apps.manager as mgr
+    import efm_go.apps.manager as mgr
 
     _ship_builtin(monkeypatch, tmp_path, name)
     monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
@@ -947,7 +947,7 @@ class TestDefaultOnBackfill:
 
     def test_flips_a_disabled_promoted_builtin(self, app_home, monkeypatch, tmp_path):
         """The case the backfill exists for: promotion owed, record still disabled."""
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _register_builtin_disabled(monkeypatch, tmp_path, "late-default-on", backfilled=True)
 
@@ -966,7 +966,7 @@ class TestDefaultOnBackfill:
         has been default-on far longer than the allowlist has existed, so every
         disabled record for it is an opt-out.
         """
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _register_builtin_disabled(monkeypatch, tmp_path, "long-default-on", backfilled=False)
 
@@ -983,7 +983,7 @@ class TestDefaultOnBackfill:
         every existing install; a disabled record is a user who found it and
         turned it off. Adding it here would silently reverse that.
         """
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         assert "projects" not in mgr._DEFAULT_ON_BACKFILL
 
@@ -993,7 +993,7 @@ class TestDefaultOnBackfill:
         Otherwise the backfill would enable something the shipped policy says
         should be off, which is a promotion nobody declared.
         """
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         stray = set(mgr._DEFAULT_ON_BACKFILL) - set(mgr._DEFAULT_ON_BUILTINS)
         assert not stray, f"backfilled but not default-on: {sorted(stray)}"
@@ -1005,8 +1005,8 @@ class TestDefaultOnBackfill:
         ``_builtin_owns_install``: the backfill must not enable something the
         user installed and disabled themselves.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         monkeypatch.setattr(mgr, "_DEFAULT_ON_BACKFILL", frozenset({"user-owned"}))
         _write_installed("user-owned", InstalledApp(
@@ -1029,8 +1029,8 @@ class TestDefaultOnBackfill:
         The return value is what the caller logs, so a no-op start must not
         claim it enabled something.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _ship_builtin(monkeypatch, tmp_path, "already-on")
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
@@ -1057,8 +1057,8 @@ class TestDefaultOnBackfill:
         default-on builtin; arriving through the backfill instead must not be a
         way around it.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _register_builtin_disabled(monkeypatch, tmp_path, "gov-denied", backfilled=True)
         monkeypatch.setattr(mgr, "_app_activation_denied", lambda name: "denied by policy")
@@ -1074,8 +1074,8 @@ class TestDefaultOnBackfill:
         An older wheel may not ship the app at all; the backfill reads existing
         state and must never conjure an install.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         monkeypatch.setattr(mgr, "_DEFAULT_ON_BACKFILL", frozenset({"never-shipped"}))
 
@@ -1088,7 +1088,7 @@ class TestDefaultOnBackfill:
         Disabling the app is the only way to get a replaced host surface back, so
         a backfill that re-ran would make the promotion impossible to opt out of.
         """
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _register_builtin_disabled(monkeypatch, tmp_path, "once-only", backfilled=True)
 
@@ -1108,8 +1108,8 @@ class TestDefaultOnBackfill:
         this one runs at startup, so without an event an operator cannot tell when
         the app became active or why.
         """
-        import kiro_crew.sel as sel_mod
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.sel as sel_mod
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _register_builtin_disabled(monkeypatch, tmp_path, "audited-app", backfilled=True)
         events: list[dict] = []
@@ -1135,8 +1135,8 @@ class TestDefaultOnBackfill:
         Same trade the trust-grant withdrawal above makes: the record is emitted
         after the fact and never allowed to fail the operation.
         """
-        import kiro_crew.sel as sel_mod
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.sel as sel_mod
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _register_builtin_disabled(monkeypatch, tmp_path, "audit-down", backfilled=True)
 
@@ -1163,8 +1163,8 @@ class TestDefaultOnBackfill:
         write raising propagates out of the call, so no caller ever sees a return
         value to be misled by.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _register_builtin_disabled(monkeypatch, tmp_path, "write-fails", backfilled=True)
 
@@ -1198,8 +1198,8 @@ class TestDefaultOnBackfill:
         disable as a promotion still owed; the return value stays empty because
         nothing was activated.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _ship_builtin(monkeypatch, tmp_path, "on-and-unflagged")
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
@@ -1230,8 +1230,8 @@ class TestDefaultOnBackfill:
         no ordering fix for that, because on a fresh install the record may not
         exist yet when first-run setup runs.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins, disable_app
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins, disable_app
 
         _ship_builtin(monkeypatch, tmp_path, "born-flagged")
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
@@ -1263,8 +1263,8 @@ class TestDefaultOnBackfill:
         record would claim it already had. Matches the rule the backfill applies
         to the same situation.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         _ship_builtin(monkeypatch, tmp_path, "denied-at-birth")
         monkeypatch.setattr(mgr, "_BUILTIN_APPS", [{
@@ -1301,8 +1301,8 @@ class TestDefaultOnBackfill:
         run" once for the whole install -- rather than once per app -- would make
         the second run a no-op and the app added later would never arrive.
         """
-        import kiro_crew.apps.manager as mgr
-        from kiro_crew.apps.manager import backfill_default_on_builtins
+        import efm_go.apps.manager as mgr
+        from efm_go.apps.manager import backfill_default_on_builtins
 
         # Release N: one promotion, delivered.
         _register_builtin_disabled(monkeypatch, tmp_path, "shipped-earlier", backfilled=True)

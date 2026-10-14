@@ -1,8 +1,8 @@
 """Tests for deploy_web render_standalone + pre-publish scan."""
 from __future__ import annotations
 
-from kiro_crew.deploy.render import render_standalone
-from kiro_crew.deploy.scan import scan_content, summarize
+from efm_go.deploy.render import render_standalone
+from efm_go.deploy.scan import scan_content, summarize
 
 # --- render ---------------------------------------------------------------
 

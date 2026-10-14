@@ -117,7 +117,7 @@ function call(n = 0) {
 
 describe('client transport', () => {
   it('exposes the backend search threshold as a shared constant', () => {
-    // Must match kiro_crew.history.SEARCH_MIN_CHARS — the pages gate typing on it.
+    // Must match efm_go.history.SEARCH_MIN_CHARS — the pages gate typing on it.
     expect(SEARCH_MIN_CHARS).toBe(2)
   })
 

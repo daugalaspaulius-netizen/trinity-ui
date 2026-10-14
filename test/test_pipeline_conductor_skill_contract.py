@@ -36,10 +36,10 @@ from pathlib import Path
 import pytest
 from skill_script_helpers import load_skill_script
 
-from kiro_crew import agent, hooks
+from efm_go import agent, hooks
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SKILL_DIR = REPO_ROOT / "src" / "kiro_crew" / "builtin_skills" / "pipeline-conductor"
+SKILL_DIR = REPO_ROOT / "src" / "efm_go" / "builtin_skills" / "pipeline-conductor"
 SKILL_MD = SKILL_DIR / "SKILL.md"
 DESIGN_DOC = REPO_ROOT / "docs" / "request-for-change" / "rfc-pipeline-conductor.md"
 
@@ -548,7 +548,7 @@ class TestSpecCheckReadsThroughTheSensitivePathGate:
         """Plant a credential store and classify ONLY it as sensitive.
 
         Returns the planted path. ``safe_read_file`` calls the bare
-        ``is_sensitive_path`` name out of ``kiro_crew.hooks``' module globals, so
+        ``is_sensitive_path`` name out of ``efm_go.hooks``' module globals, so
         patching the attribute there intercepts the real call site rather than a
         copy. The wrapper compares canonical paths, which is what makes the
         symlink case meaningful: the link resolves to the planted target.
@@ -615,7 +615,7 @@ class TestSpecCheckReadsThroughTheSensitivePathGate:
     def test_an_unenforceable_gate_refuses_rather_than_reading_plainly(
         self, tmp_path, capsys, monkeypatch
     ):
-        """A skill's scripts can run as bare files with ``kiro_crew`` off the
+        """A skill's scripts can run as bare files with ``efm_go`` off the
         path. Degrading to ``read_text`` there would reopen the bypass in
         the case least likely to be noticed, so absence of the gate is itself a
         refusal.
@@ -662,7 +662,7 @@ class TestSpecCheckRunsWhereTheGateIsImportable:
 
         Both halves mirror production. ``_ensure_builtin_skills`` copies the
         packaged skill into the skills directory, so the file the agent runs sits
-        outside ``kiro_crew/`` and no ``__file__``-relative walk reaches the
+        outside ``efm_go/`` and no ``__file__``-relative walk reaches the
         package from it. And the launcher is the only handle on the interpreter:
         a managed install puts ``kirocrew`` on ``PATH`` while the interpreter
         beside it is on ``PATH`` nowhere.
@@ -1403,7 +1403,7 @@ class TestWorkOrderBriefClauses:
         -- a fleet-wide push refusal. The clause carries the exception and its
         reason, because an unexplained omission gets 'fixed' back in."""
         gate_scripts = (
-            REPO_ROOT / "src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts"
+            REPO_ROOT / "src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts"
         )
         preflight = (gate_scripts / "preflight.py").read_text(encoding="utf-8")
         assert "from push_guard import" in preflight, "the sibling import this guards is gone"
@@ -1454,7 +1454,7 @@ class TestWorkOrderBriefClauses:
         repository's CI."""
         script = (
             REPO_ROOT
-            / "src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/push_guard.py"
+            / "src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/push_guard.py"
         ).read_text(encoding="utf-8")
         declared = re.search(r"^DEFAULT_MAX_AHEAD = (\d+)", script, re.M)
         assert declared, "DEFAULT_MAX_AHEAD not found in push_guard.py"
@@ -1472,7 +1472,7 @@ class TestWorkOrderBriefClauses:
         unknown code, so the number is asserted against the script."""
         script = (
             REPO_ROOT
-            / "src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/push_guard.py"
+            / "src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/push_guard.py"
         ).read_text(encoding="utf-8")
         declared = re.search(r"^EXIT_FOREIGN_INDEX = (\d+)", script, re.M)
         assert declared, "EXIT_FOREIGN_INDEX not found in push_guard.py"

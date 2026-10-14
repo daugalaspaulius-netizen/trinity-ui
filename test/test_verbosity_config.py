@@ -19,9 +19,9 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-import kiro_crew
-from kiro_crew.config.loader import KiroCrewConfig, config_path
-from kiro_crew.context import (
+import efm_go
+from efm_go.config.loader import KiroCrewConfig, config_path
+from efm_go.context import (
     _MULTIBYTE_TABLE,
     _RESPONSE_PREFERENCES_FOOTER,
     _RESPONSE_PREFERENCES_HEADER,
@@ -30,9 +30,9 @@ from kiro_crew.context import (
     _neutralize_structural_markers,
     _reply_style_rules,
 )
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 
 def _section(verbosity: str = "default") -> str:
@@ -543,12 +543,12 @@ class TestTokenRetired:
     """
 
     def test_no_shipped_prompt_file_carries_the_token(self):
-        cfg_dir = Path(kiro_crew.__file__).parent / "config"
+        cfg_dir = Path(efm_go.__file__).parent / "config"
         for name in ("prompt.md",):
             assert "{{VERBOSITY_BLOCK}}" not in (cfg_dir / name).read_text(encoding="utf-8"), name
 
     def test_no_builtin_agent_prompt_carries_the_token(self):
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         for attr in dir(agent_mod):
             if attr.endswith("_SYSTEM_PROMPT"):
@@ -560,7 +560,7 @@ class TestTokenRetired:
         fake_cfg = SimpleNamespace(
             dashboard=SimpleNamespace(widget_density="more", verbosity="concise")
         )
-        with patch("kiro_crew.context.KiroCrewConfig.load", return_value=fake_cfg):
+        with patch("efm_go.context.KiroCrewConfig.load", return_value=fake_cfg):
             result = ContextBuilder._resolve_prompt_templates(
                 "a {{VERBOSITY_BLOCK}} b", "dashboard:x"
             )
@@ -768,7 +768,7 @@ class TestVerbosityRoundTrip:
     def cfg_file(self, tmp_path):
         p = tmp_path / "config.json"
         p.write_text("{}", encoding="utf-8")
-        with patch("kiro_crew.config.loader.config_path", return_value=p):
+        with patch("efm_go.config.loader.config_path", return_value=p):
             yield p
 
     def test_defaults_to_default(self):
@@ -803,25 +803,25 @@ class TestVerbosityRoundTrip:
 def cfg_file(tmp_path):
     p = tmp_path / "config.json"
     p.write_text("{}", encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=p):
+    with patch("efm_go.config.loader.config_path", return_value=p):
         yield p
 
 
 @pytest.fixture()
 def mock_sel():
     try:
-        import kiro_crew.dashboard.handlers  # noqa: F401
+        import efm_go.dashboard.handlers  # noqa: F401
     except ImportError:
         pytest.skip("dashboard handler deps not available locally")
     m = MagicMock()
     m.log_tool_invocation = MagicMock()
-    with patch("kiro_crew.dashboard.handlers.sel", return_value=m):
+    with patch("efm_go.dashboard.handlers.sel", return_value=m):
         yield m
 
 
 @pytest.fixture()
 def handler_app(cfg_file, mock_sel):
-    from kiro_crew.dashboard.handlers.files import api_dashboard_config
+    from efm_go.dashboard.handlers.files import api_dashboard_config
 
     app = web.Application()
     app.router.add_put("/api/dashboard/config", api_dashboard_config)

@@ -8,7 +8,7 @@ F2: teardown.sh verifies the stack's kirocrew:site + kirocrew:managed tags
 from pathlib import Path
 
 _SCRIPTS = Path(__file__).resolve().parents[1] / (
-    "src/kiro_crew/deploy/skills/artifact-deploy/scripts"
+    "src/efm_go/deploy/skills/artifact-deploy/scripts"
 )
 
 

@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.acp.types import AcpEvent as LLMEvent
-from kiro_crew.eval.runner import (
+from efm_go.acp.types import AcpEvent as LLMEvent
+from efm_go.eval.runner import (
     EvalRunner,
     ScenarioResult,
     SessionResult,
@@ -17,7 +17,7 @@ from kiro_crew.eval.runner import (
     format_results,
     score_by_dimension,
 )
-from kiro_crew.eval.scenario import (
+from efm_go.eval.scenario import (
     Assertion,
     AssertionType,
     Scenario,
@@ -27,7 +27,7 @@ from kiro_crew.eval.scenario import (
     load_scenario,
     load_scenarios,
 )
-from kiro_crew.providers.base import (
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
@@ -456,7 +456,7 @@ class TestPermissionFlow:
             seen.update(kwargs)
             return "policy"
 
-        runner_module = __import__("kiro_crew.eval.runner", fromlist=["refusal_for"])
+        runner_module = __import__("efm_go.eval.runner", fromlist=["refusal_for"])
         refusal_for = getattr(runner_module, "refusal_for", None)
         assert refusal_for is not None, "eval runner has no identity-bearing permission gate"
         monkeypatch.setattr(runner_module, "refusal_for", _deny)
@@ -617,14 +617,14 @@ class TestPermissionFlow:
         """A pending row precedes the wire call; the definitive row follows the answer."""
         from unittest.mock import MagicMock
 
-        from kiro_crew.permission_floor import (
+        from efm_go.permission_floor import (
             OUTCOME_PENDING_APPROVAL,
             OUTCOME_REJECTED_TRANSPORT_FLOOR,
         )
 
         assert OUTCOME_REJECTED_TRANSPORT_FLOOR == "rejected_transport_floor"
         audit = MagicMock()
-        monkeypatch.setattr("kiro_crew.eval.runner.sel", lambda: audit)
+        monkeypatch.setattr("efm_go.eval.runner.sel", lambda: audit)
 
         class PermProvider(MockProvider):
             async def stream(self, message):
@@ -662,11 +662,11 @@ class TestPermissionFlow:
         """``approve_tool`` can raise (a dead runtime); the decision must already be on record."""
         from unittest.mock import MagicMock
 
-        from kiro_crew.acp.session_handle import AcpRuntimeDead
-        from kiro_crew.permission_floor import OUTCOME_PENDING_APPROVAL
+        from efm_go.acp.session_handle import AcpRuntimeDead
+        from efm_go.permission_floor import OUTCOME_PENDING_APPROVAL
 
         audit = MagicMock()
-        monkeypatch.setattr("kiro_crew.eval.runner.sel", lambda: audit)
+        monkeypatch.setattr("efm_go.eval.runner.sel", lambda: audit)
 
         class PermProvider(MockProvider):
             async def stream(self, message):
@@ -818,7 +818,7 @@ class TestJudgeParsing:
 
     @pytest.mark.asyncio
     async def test_judge_parses_valid_json(self):
-        from kiro_crew.eval.judge import LLMJudge
+        from efm_go.eval.judge import LLMJudge
 
         class JudgeProvider(MockProvider):
             async def stream(self, message):
@@ -838,7 +838,7 @@ class TestJudgeParsing:
 
     @pytest.mark.asyncio
     async def test_judge_handles_unparseable_response(self):
-        from kiro_crew.eval.judge import LLMJudge
+        from efm_go.eval.judge import LLMJudge
 
         class BadProvider(MockProvider):
             async def stream(self, message):
@@ -885,7 +885,7 @@ class TestConsolidationFailure:
         runner = EvalRunner(provider_factory=lambda key, **kw: MockProvider())
 
         with patch(
-            "kiro_crew.history.HistoryConsolidator._consolidate",
+            "efm_go.history.HistoryConsolidator._consolidate",
             new_callable=AsyncMock,
             side_effect=RuntimeError("consolidation boom"),
         ):
@@ -949,7 +949,7 @@ class TestJudgeFiltering:
 async def test_eval_context_explicitly_reads_default_store_off_loop(tmp_path):
     import threading
 
-    from kiro_crew.memory_stores import DEFAULT_MEMORY_STORE
+    from efm_go.memory_stores import DEFAULT_MEMORY_STORE
 
     loop_thread = threading.get_ident()
     calls = []

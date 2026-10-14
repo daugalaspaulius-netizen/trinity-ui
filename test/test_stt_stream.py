@@ -11,8 +11,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import stt
-from kiro_crew.config.loader import KiroCrewConfig, SttConfig
+from efm_go import stt
+from efm_go.config.loader import KiroCrewConfig, SttConfig
 
 # Upper bound for _wait_for_operation. Generous because it only ever elapses on
 # a genuine regression (the audit never fires); the happy path returns as soon
@@ -55,7 +55,7 @@ async def _wait_for_operation(calls: list[dict], operation: str) -> None:
 
 
 def _make_app() -> web.Application:
-    from kiro_crew.dashboard import stt_stream
+    from efm_go.dashboard import stt_stream
 
     app = web.Application()
     app.router.add_get("/api/ws/stt", stt_stream.api_ws_stt)
@@ -76,10 +76,10 @@ class TestGuards:
     @pytest.mark.asyncio
     async def test_rejects_when_streaming_disabled(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg(streaming=False)),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/ws/stt")
             assert resp.status == 503
@@ -97,10 +97,10 @@ class TestGuards:
         socket needs its own gate rather than trusting the loaded value.
         """
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg(provider="whisper")),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/ws/stt")
             assert resp.status == 503
@@ -112,7 +112,7 @@ class TestGuards:
         ``_STREAMING_PROVIDERS`` would 503 every microphone press on a fresh
         install, with the settings panel showing voice input as ready.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         assert SttConfig().provider in stt_stream._STREAMING_PROVIDERS
         assert SttConfig().streaming is True
@@ -120,10 +120,10 @@ class TestGuards:
     @pytest.mark.asyncio
     async def test_rejects_when_stt_disabled(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg(enabled=False)),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/ws/stt")
             assert resp.status == 503
@@ -131,10 +131,10 @@ class TestGuards:
     @pytest.mark.asyncio
     async def test_rejects_bad_origin(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg()),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: False)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: False)
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/ws/stt")
             assert resp.status == 403
@@ -147,12 +147,12 @@ class TestGuards:
         trace in the audit trail.
         """
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg()),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: False)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: False)
         fake_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/ws/stt")
             assert resp.status == 403
@@ -167,12 +167,12 @@ class TestGuards:
     async def test_disabled_streaming_emits_sel_rejection_audit(self, monkeypatch):
         """503 (streaming not enabled) must emit ``stt_stream_rejected`` SEL event."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg(streaming=False)),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
         fake_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/ws/stt")
             assert resp.status == 503
@@ -194,12 +194,12 @@ class TestGuards:
         utterance and serialises its decodes onto one resident model.
         """
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg()),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream._MAX_CONCURRENT_SESSIONS", 1)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream._active_sessions", 1)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream._MAX_CONCURRENT_SESSIONS", 1)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream._active_sessions", 1)
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/ws/stt")
             assert resp.status == 503
@@ -229,13 +229,13 @@ class TestAppleStreamingSession:
         path consults to name a start failure. It defaults to a capable host so the
         cases that never fail to start do not depend on the runner's OS.
         """
-        from kiro_crew import apple_speech as real_apple_speech
+        from efm_go import apple_speech as real_apple_speech
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg(provider="apple", language_code=language_code)),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
 
         events: asyncio.Queue = asyncio.Queue()
         fed: list[bytes] = []
@@ -271,13 +271,13 @@ class TestAppleStreamingSession:
             Availability=real_apple_speech.Availability,
             availability=lambda: avail or real_apple_speech.Availability(True),
         )
-        # BOTH, deliberately. `_run_apple_session` does `from kiro_crew import
+        # BOTH, deliberately. `_run_apple_session` does `from efm_go import
         # apple_speech`, which resolves the ATTRIBUTE on the already-imported
-        # `kiro_crew` package rather than consulting sys.modules — so patching
+        # `efm_go` package rather than consulting sys.modules — so patching
         # sys.modules alone works when this file runs alone and is silently
         # bypassed once any other test module has imported the real one.
-        monkeypatch.setitem(sys.modules, "kiro_crew.apple_speech", fake_module)
-        monkeypatch.setattr("kiro_crew.apple_speech", fake_module, raising=False)
+        monkeypatch.setitem(sys.modules, "efm_go.apple_speech", fake_module)
+        monkeypatch.setattr("efm_go.apple_speech", fake_module, raising=False)
         return events, fed
 
     @pytest.mark.asyncio
@@ -287,7 +287,7 @@ class TestAppleStreamingSession:
     )
     async def test_stream_uses_effective_locale(self, monkeypatch, language, expected_locale):
         self._install(monkeypatch, language_code=language)
-        from kiro_crew import apple_speech
+        from efm_go import apple_speech
 
         factory = MagicMock(wraps=apple_speech.StreamingSession)
         monkeypatch.setattr(apple_speech, "StreamingSession", factory)
@@ -312,7 +312,7 @@ class TestAppleStreamingSession:
         can key off and an uncoded frame can only ever be shown in English.
         """
         self._install(monkeypatch)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             assert (await ws.receive_json()) == {"type": "ready"}
@@ -334,10 +334,10 @@ class TestAppleStreamingSession:
         for the same event.
         """
         self._install(monkeypatch)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
         outcomes: list[str] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream._emit_end_audit",
+            "efm_go.dashboard.stt_stream._emit_end_audit",
             lambda caller, *, outcome: outcomes.append(outcome),
         )
         async with TestClient(TestServer(_make_app())) as client:
@@ -357,7 +357,7 @@ class TestAppleStreamingSession:
         self._install(monkeypatch)
         outcomes: list[str] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream._emit_end_audit",
+            "efm_go.dashboard.stt_stream._emit_end_audit",
             lambda caller, *, outcome: outcomes.append(outcome),
         )
         async with TestClient(TestServer(_make_app())) as client:
@@ -441,7 +441,7 @@ class TestAppleStreamingSession:
         worth telling this user. The code is the availability probe's own, which is
         what the settings panel already renders for the same condition.
         """
-        from kiro_crew import apple_speech
+        from efm_go import apple_speech
 
         self._install(
             monkeypatch,
@@ -501,10 +501,10 @@ class TestAppleStreamingSession:
 
         self._install(monkeypatch, session=HangingSession)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream._emit_end_audit",
+            "efm_go.dashboard.stt_stream._emit_end_audit",
             lambda caller, *, outcome: outcomes.append(outcome),
         )
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         task = asyncio.create_task(
             stt_stream._run_apple_session(
@@ -533,8 +533,8 @@ def transcribe_consented(tmp_path_factory, monkeypatch):
     """
     home = tmp_path_factory.mktemp("stt-consent-home")
     monkeypatch.setenv("KIROCREW_HOME", str(home))
-    from kiro_crew import aws_consent
-    from kiro_crew.config.loader import config_dir
+    from efm_go import aws_consent
+    from efm_go.config.loader import config_dir
 
     config_dir().mkdir(parents=True, exist_ok=True)
     cfg = _cfg()
@@ -570,12 +570,12 @@ class TestStreamLifecycle:
         from amazon_transcribe.handlers import TranscriptResultStreamHandler
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(
                 lambda cls: _cfg(language_code=language_code, transcribe_vocabulary=vocabulary)
             ),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
 
         # Stub Transcribe client.
         input_stream = MagicMock()
@@ -593,7 +593,7 @@ class TestStreamLifecycle:
         else:
             client.start_stream_transcription = AsyncMock(return_value=stream)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.TranscribeStreamingClient",
+            "efm_go.dashboard.stt_stream.TranscribeStreamingClient",
             lambda **kw: client,
         )
 
@@ -703,7 +703,7 @@ class TestStreamLifecycle:
         )
         outcomes: list[str] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream._emit_end_audit",
+            "efm_go.dashboard.stt_stream._emit_end_audit",
             lambda caller, *, outcome: outcomes.append(outcome),
         )
         async with TestClient(TestServer(_make_app())) as client:
@@ -723,7 +723,7 @@ class TestStreamLifecycle:
         service refusing it, and with no vocabulary configured nothing is."""
         from amazon_transcribe.exceptions import BadRequestException
 
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         refusal = BadRequestException("The requested vocabulary couldn't be found.")
         assert stt_stream._vocabulary_rejected(refusal, "team-terms") is True
@@ -741,7 +741,7 @@ class TestStreamLifecycle:
         calls: list[dict] = []
         fake_sel = MagicMock()
         fake_sel.log_api_access = lambda **kw: calls.append(kw)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             await ws.receive_json()
@@ -766,15 +766,15 @@ class TestStreamLifecycle:
         same condition and one localised string serves both.
         """
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg()),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.TranscribeStreamingClient", None)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.TranscribeStreamingClient", None)
         calls: list[dict] = []
         fake_sel = MagicMock()
         fake_sel.log_api_access = lambda **kw: calls.append(kw)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             msg = await ws.receive_json()
@@ -795,7 +795,7 @@ class TestStreamLifecycle:
     @pytest.mark.asyncio
     async def test_final_transcript_is_redacted(self, monkeypatch):
         """The real _make_handler must redact credentials before emitting final."""
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         captured: list[dict] = []
 
@@ -821,7 +821,7 @@ class TestStreamLifecycle:
     @pytest.mark.asyncio
     async def test_partial_transcript_is_redacted(self, monkeypatch):
         """Partials are now redacted too (security-controls guideline)."""
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         captured: list[dict] = []
 
@@ -897,7 +897,7 @@ class TestStreamLifecycle:
         condition, one localised string, whichever provider the user is on.
         """
         _, input_stream = self._install_stubs(monkeypatch)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             assert (await ws.receive_json()) == {"type": "ready"}
@@ -927,12 +927,12 @@ class TestStreamLifecycle:
             return False, "AWS Transcribe needs your consent for profile default"
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.aws_consent.authorize", _refuse, raising=True
+            "efm_go.dashboard.stt_stream.aws_consent.authorize", _refuse, raising=True
         )
         calls: list[dict] = []
         fake_sel = MagicMock()
         fake_sel.log_api_access = lambda **kw: calls.append(kw)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             msg = await ws.receive_json()
@@ -956,10 +956,10 @@ class TestStreamLifecycle:
         acknowledgement and reads as not-yet-done.
         """
         _, input_stream = self._install_stubs(monkeypatch)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
         outcomes: list[str] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream._emit_end_audit",
+            "efm_go.dashboard.stt_stream._emit_end_audit",
             lambda caller, *, outcome: outcomes.append(outcome),
         )
         async with TestClient(TestServer(_make_app())) as client:
@@ -1020,7 +1020,7 @@ class TestConfigPutRoundTrip:
         # way that survives the `from ... import config_path` idiom used by
         # the handler, unlike monkeypatching a module-level name.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.dashboard import handlers
+        from efm_go.dashboard import handlers
 
         app = web.Application()
         app.router.add_get("/api/config/stt", handlers.api_stt_config)
@@ -1059,7 +1059,7 @@ class TestConfigPutRoundTrip:
         keeps the stored value where the user left it.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.dashboard import handlers
+        from efm_go.dashboard import handlers
 
         app = web.Application()
         app.router.add_put("/api/config/stt", handlers.api_stt_config)
@@ -1098,7 +1098,7 @@ class TestConfigPutRoundTrip:
         can render the current values and a language dropdown.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.dashboard import handlers
+        from efm_go.dashboard import handlers
 
         app = web.Application()
         app.router.add_get("/api/config/stt", handlers.api_stt_config)
@@ -1145,7 +1145,7 @@ class TestSttLanguageCodes:
         Regression: `ko-KR` was absent while ja-JP and zh-CN were present, so
         Korean speakers could not choose their language from the dashboard.
         """
-        from kiro_crew.dashboard.handlers.core import _STT_LANGUAGE_CODES
+        from efm_go.dashboard.handlers.core import _STT_LANGUAGE_CODES
 
         assert "ko-KR" in _STT_LANGUAGE_CODES
 
@@ -1155,7 +1155,7 @@ class TestSttLanguageCodes:
         A duplicate renders twice in the dropdown, and a malformed tag is
         rejected by Transcribe at stream-start rather than at selection time.
         """
-        from kiro_crew.dashboard.handlers.core import _STT_LANGUAGE_CODES
+        from efm_go.dashboard.handlers.core import _STT_LANGUAGE_CODES
 
         assert len(set(_STT_LANGUAGE_CODES)) == len(_STT_LANGUAGE_CODES)
         for code in _STT_LANGUAGE_CODES:
@@ -1167,7 +1167,7 @@ class TestSttLanguageCodes:
     async def test_korean_round_trips_through_the_config_api(self, tmp_path, monkeypatch):
         """Selecting Korean persists and is served back to the UI."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.dashboard import handlers
+        from efm_go.dashboard import handlers
 
         app = web.Application()
         app.router.add_get("/api/config/stt", handlers.api_stt_config)
@@ -1209,16 +1209,16 @@ class TestDefensiveGuards:
         HTTPForbidden/HTTPServiceUnavailable.
         """
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg()),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: False)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: False)
         # sel() itself raises — worst case. _emit_guard_audit must swallow.
 
         def _raising_sel():
             raise RuntimeError("SEL not initialized")
 
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", _raising_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", _raising_sel)
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/ws/stt")
             # Must be 403 (from HTTPForbidden), not 500.
@@ -1235,23 +1235,23 @@ class TestDefensiveGuards:
         """
         pytest.importorskip("amazon_transcribe")
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg()),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
         # Force TranscribeStreamingClient constructor to raise.
 
         def _raising_client(**kw):
             raise RuntimeError("bad region")
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.TranscribeStreamingClient",
+            "efm_go.dashboard.stt_stream.TranscribeStreamingClient",
             _raising_client,
         )
         calls: list[dict] = []
         fake_sel = MagicMock()
         fake_sel.log_api_access = lambda **kw: calls.append(kw)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             msg = await ws.receive_json()
@@ -1282,10 +1282,10 @@ class TestDefensiveGuards:
         same reason theirs do.
         """
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg()),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
         calls: list[dict] = []
         # sel() itself returns an object whose log_api_access raises only for
         # the start operation — guard rejections are unreachable (origin ok,
@@ -1298,7 +1298,7 @@ class TestDefensiveGuards:
                 raise RuntimeError("SEL unavailable")
 
         fake_sel.log_api_access = _log
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             msg = await ws.receive_json()
@@ -1330,10 +1330,10 @@ class TestDefensiveGuards:
         from amazon_transcribe.handlers import TranscriptResultStreamHandler
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg()),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
 
         # Stub Transcribe happy-path client.
         input_stream = MagicMock()
@@ -1343,7 +1343,7 @@ class TestDefensiveGuards:
         client = MagicMock()
         client.start_stream_transcription = AsyncMock(return_value=stream)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.TranscribeStreamingClient",
+            "efm_go.dashboard.stt_stream.TranscribeStreamingClient",
             lambda **kw: client,
         )
         monkeypatch.setattr(
@@ -1370,7 +1370,7 @@ class TestDefensiveGuards:
         calls: list[dict] = []
         fake_sel = MagicMock()
         fake_sel.log_api_access = lambda **kw: calls.append(kw)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
 
         async with TestClient(TestServer(_make_app())) as http_client:
             ws = await http_client.ws_connect("/api/ws/stt")
@@ -1528,10 +1528,10 @@ class TestLocalStreamingSession:
     def _install(self, monkeypatch, session, **cfg_kwargs):
         """Point the endpoint at ``local`` with *session* standing in for the recogniser."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream.KiroCrewConfig.load",
+            "efm_go.dashboard.stt_stream.KiroCrewConfig.load",
             classmethod(lambda cls: _cfg(provider="local", **cfg_kwargs)),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.check_origin", lambda r, require: True)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.check_origin", lambda r, require: True)
 
         def _factory(**kwargs):
             session.kwargs = kwargs
@@ -1549,14 +1549,14 @@ class TestLocalStreamingSession:
         """
         outcomes: list[str] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.stt_stream._emit_end_audit",
+            "efm_go.dashboard.stt_stream._emit_end_audit",
             lambda caller, *, outcome: outcomes.append(outcome),
         )
         return outcomes
 
     @pytest.mark.asyncio
     async def test_pcm_and_stop_are_read_while_a_partial_is_still_decoding(self, monkeypatch):
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         decoding = asyncio.Event()
         stopped = asyncio.Event()
@@ -1595,7 +1595,7 @@ class TestLocalStreamingSession:
 
     @pytest.mark.asyncio
     async def test_an_overflowing_pcm_backlog_reports_one_error(self, monkeypatch):
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         monkeypatch.setattr(stt_stream, "_MAX_LOCAL_BUFFER_BYTES", 2)
         session = self._install(monkeypatch, _FakeLocalSession())
@@ -1617,7 +1617,7 @@ class TestLocalStreamingSession:
 
     @pytest.mark.asyncio
     async def test_cancelling_the_transport_never_starts_a_final_decode(self, monkeypatch):
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         decoding = asyncio.Event()
         release = asyncio.Event()
@@ -1655,7 +1655,7 @@ class TestLocalStreamingSession:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("buffered_seconds", [40, 60])
     async def test_readiness_burst_fits_the_backend_inbox(self, monkeypatch, buffered_seconds):
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         session = self._install(monkeypatch, _FakeLocalSession(final_text="complete capture"))
         outcomes = self._record_end_audits(monkeypatch)
@@ -1684,7 +1684,7 @@ class TestLocalStreamingSession:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("phase", ["partial", "final"])
     async def test_stop_budget_covers_the_active_partial_and_the_final(self, monkeypatch, phase):
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         cfg = _cfg(provider="local", timeout_secs=22)
         budget_started = asyncio.Event()
@@ -1754,7 +1754,7 @@ class TestLocalStreamingSession:
     async def test_an_empty_final_retracts_the_partial_without_semantic_endpointing(
         self, monkeypatch
     ):
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         self._install(
             monkeypatch,
@@ -1986,7 +1986,7 @@ class TestLocalStreamingSession:
         is the signal that the load is under way, so it must arrive BEFORE ``ready``.
         """
         self._install(monkeypatch, _FakeLocalSession(pending=None, pending_load=True))
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
@@ -2033,7 +2033,7 @@ class TestLocalStreamingSession:
         RECONNECTS when it fires, so a single frame at the start of a 148 MB fetch
         would have the client tear the socket down and restart the transfer, forever.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         model = stt.resolve_model("base")
         gate = asyncio.Event()
@@ -2117,7 +2117,7 @@ class TestLocalStreamingSession:
         discards it at sixty seconds while this side is still building the context.
         The announce is therefore owed late, and this pins that it arrives.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         released = asyncio.Event()
 
@@ -2179,7 +2179,7 @@ class TestLocalStreamingSession:
         that is doing nothing -- and a socket that is simply dead -- the whole prepare
         budget. The gate is ``pending_load`` being true, not merely arriving here.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         released = asyncio.Event()
         reads = {"store": 0}
@@ -2226,7 +2226,7 @@ class TestLocalStreamingSession:
         client disappears turns a resumable first run into one that starts from zero
         every time. Reporting stops, the download does not.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         gate = asyncio.Event()
         finished: list[bool] = []
@@ -2295,7 +2295,7 @@ class TestLocalStreamingSession:
         calls: list[dict] = []
         fake_sel = MagicMock()
         fake_sel.log_api_access = lambda **kw: calls.append(kw)
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream.sel", lambda: fake_sel)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             assert (await ws.receive_json())["type"] == "ready"
@@ -2319,7 +2319,7 @@ class TestLocalStreamingSession:
         attempt, which is also why the frame says "still downloading" rather than
         reporting a failure.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         outcomes = self._record_end_audits(monkeypatch)
         gate = asyncio.Event()
@@ -2358,7 +2358,7 @@ class TestLocalStreamingSession:
         unmatched ``stt_stream_start`` is indistinguishable in the trail from a
         session that is still open.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         outcomes = self._record_end_audits(monkeypatch)
         model = stt.resolve_model("base")
@@ -2405,7 +2405,7 @@ class TestLocalStreamingSession:
         that point, which makes the end audit the whole of the cleanup, and without
         it the trail shows a voice session that never ended.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         outcomes = self._record_end_audits(monkeypatch)
 
@@ -2461,7 +2461,7 @@ class TestLocalStreamingSession:
         """
         outcomes = self._record_end_audits(monkeypatch)
         self._install(monkeypatch, _FakeLocalSession())
-        monkeypatch.setattr("kiro_crew.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
+        monkeypatch.setattr("efm_go.dashboard.stt_stream._MAX_STREAM_DURATION_SECS", 0.05)
         async with TestClient(TestServer(_make_app())) as client:
             ws = await client.ws_connect("/api/ws/stt")
             assert (await ws.receive_json())["type"] == "ready"
@@ -2483,7 +2483,7 @@ class TestLocalStreamingSession:
         those would leave the panel rendering a progress bar for a transfer that is
         not moving, at the republication cadence, for as long as the wait lasts.
         """
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         gate = asyncio.Event()
 

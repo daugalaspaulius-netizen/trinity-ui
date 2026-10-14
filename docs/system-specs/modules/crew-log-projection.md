@@ -1521,7 +1521,7 @@ already names:
  "state"}
 ```
 
-The envelope is the projection kernel's (`kiro_crew.projection.checkpoint`), and this
+The envelope is the projection kernel's (`efm_go.projection.checkpoint`), and this
 package supplies the two blocks inside it. The `identity` block holds the facts a
 savepoint must MATCH to describe this log, compared verbatim by the kernel and never
 interpreted by it. The `witness` holds the evidence a LIVE check needs, which cannot

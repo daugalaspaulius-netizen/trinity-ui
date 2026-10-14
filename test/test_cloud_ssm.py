@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.cloud import aws, ssm
+from efm_go import platform_compat
+from efm_go.cloud import aws, ssm
 
 
 class TestArgvBuilders:
@@ -68,8 +68,8 @@ class TestArgvBuilders:
 
         if _os.name == "nt":
             pytest.skip("fallback install dirs are POSIX literals; dead on Windows by design")
-        from kiro_crew import github_runner
-        from kiro_crew.deploy import engine
+        from efm_go import github_runner
+        from efm_go.deploy import engine
 
         fake_aws = tmp_path / "aws"
         fake_aws.write_text("#!/bin/sh\n")
@@ -116,7 +116,7 @@ class TestOpenPortForward:
         is the minimal launchd one — so the tunnel died inside a correctly
         resolved ``aws``.
         """
-        from kiro_crew.deploy import engine
+        from efm_go.deploy import engine
 
         captured: dict = {}
 
@@ -165,8 +165,8 @@ class TestOpenPortForward:
         refused binary back in execvp's reach and hand it AWS credentials — a
         fail-closed rejection silently turned into an execution.
         """
-        from kiro_crew import github_runner
-        from kiro_crew.deploy import engine
+        from efm_go import github_runner
+        from efm_go.deploy import engine
 
         captured: dict = {}
 
@@ -216,7 +216,7 @@ class TestSessionManagerPluginProbe:
         "dir branch is dead on Windows by design",
     )
     def test_probe_finds_plugin_in_install_dir_under_minimal_path(self, monkeypatch, tmp_path):
-        from kiro_crew.deploy import engine
+        from efm_go.deploy import engine
 
         plugin = tmp_path / "session-manager-plugin"
         plugin.write_text("#!/bin/sh\n")
@@ -229,7 +229,7 @@ class TestSessionManagerPluginProbe:
         monkeypatch.setenv("PATH", str(empty_bin))
         monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(tmp_path),))
 
-        from kiro_crew import github_runner
+        from efm_go import github_runner
 
         monkeypatch.setattr(github_runner, "validate_provider_executable", lambda c: c)
 
@@ -238,7 +238,7 @@ class TestSessionManagerPluginProbe:
     def test_probe_false_when_the_plugin_is_absent_everywhere(self, monkeypatch, tmp_path):
         """Genuinely missing still reports missing — the actionable install hint
         must not be traded away for the false-negative fix."""
-        from kiro_crew.deploy import engine
+        from efm_go.deploy import engine
 
         empty_bin = tmp_path / "emptybin"
         empty_bin.mkdir()

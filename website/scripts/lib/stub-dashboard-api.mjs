@@ -64,7 +64,7 @@ export const AGENT_CONFIG_FIXTURE = { name: 'kirocrew', mcpServers: {} }
 
 /**
  * The `/api/knowledge/stats` body, matching `get_stats` in
- * `src/kiro_crew/dashboard/handlers/knowledge.py`.
+ * `src/efm_go/dashboard/handlers/knowledge.py`.
  *
  * Named ahead of the catch-all for the same reason as KIROCREW_CONFIG_FIXTURE,
  * but with a failure mode that is intermittent rather than fatal. `stats` does

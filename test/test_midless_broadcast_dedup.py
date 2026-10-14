@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from kiro_crew.dashboard.state import _ChatSlot, append_and_surface, row_mid
+from efm_go.dashboard.state import _ChatSlot, append_and_surface, row_mid
 
 
 class _StateStub:
@@ -120,7 +120,7 @@ class TestConvertedSites:
         hand-built mid-less frame = two renderable copies. New: one delivery,
         mid-carrying.
         """
-        from kiro_crew.dashboard.chat_utils import _append_compaction_notice
+        from efm_go.dashboard.chat_utils import _append_compaction_notice
 
         state = _StateStub()
         slot, delivered = _slot_with_callback()

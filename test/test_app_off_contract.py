@@ -24,7 +24,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.apps.manager import (
+from efm_go.apps.manager import (
     APP_MANIFEST_FILENAME,
     _read_installed,
     _write_installed,
@@ -68,7 +68,7 @@ def _write_config(**agent: Any) -> None:
     that this route never passes through the dashboard endpoint, so a test that
     patched the loaded value would not exercise the route that was broken.
     """
-    from kiro_crew.config.loader import KiroCrewConfig, config_path
+    from efm_go.config.loader import KiroCrewConfig, config_path
 
     path = config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -111,14 +111,14 @@ def _serving() -> Any:
     still passes against a bool stub while treating every port in production as alive.
     Stubbing the real type is what makes that mistake fail here.
     """
-    from kiro_crew.apps.backend import HealthProbeOutcome
+    from efm_go.apps.backend import HealthProbeOutcome
 
     return HealthProbeOutcome.answered(200)
 
 
 def _silent() -> Any:
     """A health probe that produced no healthy answer, in the production type."""
-    from kiro_crew.apps.backend import HealthProbeOutcome
+    from efm_go.apps.backend import HealthProbeOutcome
 
     return HealthProbeOutcome(None, "nothing answered")
 
@@ -131,8 +131,8 @@ def _tracked(monkeypatch: pytest.MonkeyPatch, name: str = APP, *, proc: Any = ..
     so no test here can reach a process the suite does not own, and asserting on
     that list says more than asserting the record vanished.
     """
-    import kiro_crew.apps.backend as bmod
-    from kiro_crew.apps.backend import AppProcess
+    import efm_go.apps.backend as bmod
+    from efm_go.apps.backend import AppProcess
 
     signalled: list[tuple[int, Any]] = []
     monkeypatch.setattr(bmod, "_HEALTH_WATCH_INTERVAL", 0)
@@ -225,7 +225,7 @@ class TestAConfigFileEditRevokes:
         bmod, ap, signalled = _tracked(monkeypatch)
         rows: list[dict] = []
         monkeypatch.setattr(
-            "kiro_crew.apps.execution.sel",
+            "efm_go.apps.execution.sel",
             lambda: type(
                 "_Sel",
                 (),
@@ -261,7 +261,7 @@ class TestAConfigFileEditRevokes:
         scrubbed: list[str] = []
         monkeypatch.setitem(
             __import__("sys").modules,
-            "kiro_crew.apps.bridges",
+            "efm_go.apps.bridges",
             type(
                 "_Bridges",
                 (),
@@ -296,7 +296,7 @@ class TestAConfigFileEditRevokes:
         scrubbed: list[str] = []
         monkeypatch.setitem(
             __import__("sys").modules,
-            "kiro_crew.apps.bridges",
+            "efm_go.apps.bridges",
             type(
                 "_Bridges",
                 (),
@@ -326,9 +326,9 @@ class TestMetadataCannotRemoveAnAppFromTheSweep:
     """
 
     def test_a_deleted_installed_record_still_revokes(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.apps.manager import INSTALLED_META_FILENAME
-        from kiro_crew.apps.manager import _read_installed as read_installed
-        from kiro_crew.apps.manager import app_dir
+        from efm_go.apps.manager import INSTALLED_META_FILENAME
+        from efm_go.apps.manager import _read_installed as read_installed
+        from efm_go.apps.manager import app_dir
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
@@ -346,7 +346,7 @@ class TestMetadataCannotRemoveAnAppFromTheSweep:
                 bmod._processes.clear()
 
     def test_a_corrupt_installed_record_still_revokes(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.apps.manager import INSTALLED_META_FILENAME, app_dir
+        from efm_go.apps.manager import INSTALLED_META_FILENAME, app_dir
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
@@ -388,7 +388,7 @@ class TestAShadowingAppGetsNoBuiltinExemption:
     def test_a_forged_builtin_origin_does_not_win_the_exemption(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.apps.manager import _read_installed, _write_installed
+        from efm_go.apps.manager import _read_installed, _write_installed
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
@@ -414,8 +414,8 @@ class TestAShadowingAppGetsNoBuiltinExemption:
         self, tmp_path, monkeypatch
     ) -> None:
         """The captured path is load-bearing in both directions."""
-        import kiro_crew.apps.backend as backend_mod
-        from kiro_crew.apps import execution
+        import efm_go.apps.backend as backend_mod
+        from efm_go.apps import execution
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
@@ -470,8 +470,8 @@ class TestTheExemptionIsNotReResolved:
     """
 
     def test_the_recheck_resolves_no_path(self, tmp_path, monkeypatch) -> None:
-        import kiro_crew.apps.backend as backend_mod
-        from kiro_crew.apps import execution
+        import efm_go.apps.backend as backend_mod
+        from efm_go.apps import execution
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
@@ -501,7 +501,7 @@ class TestTheExemptionIsNotReResolved:
         caller cannot pass what the signature does not take. The core keeps it,
         because the gate must still vet a real path.
         """
-        from kiro_crew.apps import execution
+        from efm_go.apps import execution
 
         poller = inspect.signature(execution.third_party_ceiling_closed)
         assert list(poller.parameters) == ["app_name"]
@@ -582,7 +582,7 @@ class TestAnUnreadablePolicyFileRevokes:
     """
 
     def test_a_missing_config_revokes_a_running_backend(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.config.loader import KiroCrewConfig, config_path
+        from efm_go.config.loader import KiroCrewConfig, config_path
 
         _install(tmp_path, monkeypatch)
         # Granted, running, and admitted -- the state the revocation must not reach
@@ -615,7 +615,7 @@ class TestASuccessorKeepsItsMcpRegistration:
     def _bridges(self, monkeypatch, scrubbed):
         monkeypatch.setitem(
             sys.modules,
-            "kiro_crew.apps.bridges",
+            "efm_go.apps.bridges",
             type(
                 "_Bridges",
                 (),
@@ -628,7 +628,7 @@ class TestASuccessorKeepsItsMcpRegistration:
         )
 
     def test_a_tracked_successor_is_left_alone(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.apps.backend import AppProcess
+        from efm_go.apps.backend import AppProcess
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
@@ -665,7 +665,7 @@ class TestASuccessorKeepsItsMcpRegistration:
         to act on, and this record's dead url stays in `mcp.json` with nothing that
         would ever scrub it.
         """
-        from kiro_crew.apps.backend import AppProcess
+        from efm_go.apps.backend import AppProcess
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
@@ -719,7 +719,7 @@ class TestTrustRestoredDuringTheWindowIsRespected:
     def test_a_flag_flipped_back_on_between_the_two_reads_stops_nothing(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.apps import execution
+        from efm_go.apps import execution
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
@@ -1065,7 +1065,7 @@ class TestAdoptionCannotInheritTheBuiltinExemption:
         import ast
         import inspect
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         tree = ast.parse(inspect.getsource(bmod))
         adoption_sites = [
@@ -1100,7 +1100,7 @@ class TestAdoptionCannotInheritTheBuiltinExemption:
         import ast
         import inspect
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         tree = ast.parse(inspect.getsource(bmod))
         sites = [
@@ -1151,7 +1151,7 @@ class TestAdoptionCannotInheritTheBuiltinExemption:
         import json
         from pathlib import Path
 
-        import kiro_crew.apps.execution as emod
+        import efm_go.apps.execution as emod
 
         builtins_dir = Path(emod.__file__).parent / "builtins"
         declared: dict[str, str] = {}
@@ -1248,7 +1248,7 @@ class TestThePollerDoesNotFloodTheAuditTrail:
     def _rows(self, monkeypatch) -> list[dict]:
         rows: list[dict] = []
         monkeypatch.setattr(
-            "kiro_crew.apps.execution.sel",
+            "efm_go.apps.execution.sel",
             lambda: type(
                 "_Sel",
                 (),
@@ -1258,7 +1258,7 @@ class TestThePollerDoesNotFloodTheAuditTrail:
         return rows
 
     def test_a_poll_writes_nothing_while_the_gate_writes_a_row(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.apps.execution import (
+        from efm_go.apps.execution import (
             app_execution_denied,
             third_party_ceiling_closed,
         )
@@ -1288,7 +1288,7 @@ class TestADeletedRecordCannotBuyImmunityFromRevocation:
     def test_a_granted_app_whose_record_is_unreadable_is_still_revoked(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.apps import execution
+        from efm_go.apps import execution
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False, apps_trusted=[APP])
@@ -1296,7 +1296,7 @@ class TestADeletedRecordCannotBuyImmunityFromRevocation:
             execution, "repository_bound_grant_denied", lambda *_a, **_k: "unresolved"
         )
         # The record cannot be read -- which an app can arrange for itself.
-        monkeypatch.setattr("kiro_crew.apps.manager.get_app", lambda _n: None, raising=False)
+        monkeypatch.setattr("efm_go.apps.manager.get_app", lambda _n: None, raising=False)
         assert (
             execution.third_party_ceiling_closed(APP) == "unresolved"
         ), "deleting its own metadata must not buy an app a reprieve from the sweep"
@@ -1305,19 +1305,19 @@ class TestADeletedRecordCannotBuyImmunityFromRevocation:
         self, tmp_path, monkeypatch
     ) -> None:
         """The reason the suppression was removed: both must fail closed alike."""
-        from kiro_crew.apps import execution
+        from efm_go.apps import execution
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False, apps_trusted=[APP])
         monkeypatch.setattr(
             execution, "repository_bound_grant_denied", lambda *_a, **_k: "unresolved"
         )
-        monkeypatch.setattr("kiro_crew.apps.manager.get_app", lambda _n: None, raising=False)
+        monkeypatch.setattr("efm_go.apps.manager.get_app", lambda _n: None, raising=False)
         assert execution.app_execution_denied(APP, action="module_load") is not None
         assert execution.third_party_ceiling_closed(APP) is not None
 
     def test_a_resolved_mismatch_still_revokes(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.apps import execution
+        from efm_go.apps import execution
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False, apps_trusted=[APP])
@@ -1327,11 +1327,11 @@ class TestADeletedRecordCannotBuyImmunityFromRevocation:
         assert execution.third_party_ceiling_closed(APP) == "mismatch"
 
     def test_an_ungranted_app_with_no_record_still_revokes(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.apps import execution
+        from efm_go.apps import execution
 
         _install(tmp_path, monkeypatch)
         _write_config(apps_allow_third_party=False)
-        monkeypatch.setattr("kiro_crew.apps.manager.get_app", lambda _n: None, raising=False)
+        monkeypatch.setattr("efm_go.apps.manager.get_app", lambda _n: None, raising=False)
         assert execution.third_party_ceiling_closed(APP) is not None
 
 
@@ -1356,7 +1356,7 @@ class TestThePollerAndTheGateCannotDisagree:
         ],
     )
     def test_both_paths_reach_the_same_verdict(self, tmp_path, monkeypatch, agent) -> None:
-        from kiro_crew.apps.execution import (
+        from efm_go.apps.execution import (
             app_execution_denied,
             third_party_ceiling_closed,
         )

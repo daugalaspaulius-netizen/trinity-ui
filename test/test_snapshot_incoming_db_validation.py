@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from test_snapshot import unpinnable_argv
 
-from kiro_crew import snapshot as snap
+from efm_go import snapshot as snap
 
 
 def _make_bundle(tmp_path: Path, memory_db: bytes, *, name: str = "memory.db") -> Path:

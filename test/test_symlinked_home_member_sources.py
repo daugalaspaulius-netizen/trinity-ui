@@ -23,9 +23,9 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.member_essential_context import MemberEssentialContextError, documents_for_member
-from kiro_crew.memory_files import LocalMemoryFiles
-from kiro_crew.platform.interfaces import MemoryRoots
+from efm_go.member_essential_context import MemberEssentialContextError, documents_for_member
+from efm_go.memory_files import LocalMemoryFiles
+from efm_go.platform.interfaces import MemoryRoots
 
 pytestmark = [
     requires_symlinks,
@@ -51,8 +51,8 @@ def linked_home(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: link))
     agents = link / ".kiro" / "agents"
     agents.mkdir(parents=True)
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents)
-    monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", agents)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents)
+    monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", agents)
     return link, real
 
 
@@ -122,7 +122,7 @@ def test_member_memory_still_refuses_a_link_under_a_symlinked_home(linked_home, 
 
 
 def _workspace(link: Path) -> Path:
-    from kiro_crew.config import config_dir
+    from efm_go.config import config_dir
 
     workspace = config_dir() / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)

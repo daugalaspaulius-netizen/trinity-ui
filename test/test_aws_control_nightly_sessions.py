@@ -32,9 +32,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew import aws_consent
-from kiro_crew.apps.builtins.aws_control import hooks
-from kiro_crew.apps.builtins.aws_control.backend import backup
+from efm_go import aws_consent
+from efm_go.apps.builtins.aws_control import hooks
+from efm_go.apps.builtins.aws_control.backend import backup
 
 ACCOUNT = "111122223333"
 
@@ -412,10 +412,10 @@ def _authorized_env(monkeypatch):
     backup.clear_stop()
     monkeypatch.setattr(backup, "_CAN_PIN_TRAVERSAL", True)
     monkeypatch.setattr(
-        "kiro_crew.deploy.engine._checked",
+        "efm_go.deploy.engine._checked",
         lambda *a, **k: '{"Account": "%s"}' % ACCOUNT,
     )
-    monkeypatch.setattr("kiro_crew.apps.manager.is_app_enabled", lambda *a, **k: True)
+    monkeypatch.setattr("efm_go.apps.manager.is_app_enabled", lambda *a, **k: True)
     monkeypatch.setattr(aws_consent, "is_granted", lambda *a, **k: (True, ""))
     monkeypatch.setattr(aws_consent, "read_grant", lambda *a, **k: SimpleNamespace(account=ACCOUNT))
 
@@ -577,7 +577,7 @@ class TestAnOptedInRedactionStopsTheUnattendedUpload:
     """
 
     def _switch(self, monkeypatch, *, enabled=None, raises=False):
-        from kiro_crew import snapshot_redact
+        from efm_go import snapshot_redact
 
         def answer():
             if raises:

@@ -19,7 +19,7 @@
  * the window later loses focus: it was seen.
  *
  * A muted channel's notes arrive with `silenced: true` and `priority:
- * "passive"` (`ChannelSettings.apply()`, `kiro_crew/notifications/settings.py`)
+ * "passive"` (`ChannelSettings.apply()`, `efm_go/notifications/settings.py`)
  * -- the backend's stated contract is that every attention surface (badge
  * count, sound, native banner, feed styling) skips them. The in-app feed
  * (`NotificationFeed.tsx`) already reads `silenced` for its styling; this hook

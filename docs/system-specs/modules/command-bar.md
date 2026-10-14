@@ -2,7 +2,7 @@
 
 ## Overview
 
-Command Bar is a builtin App Store app (`kiro_crew/apps/builtins/command_bar/`) that replaces
+Command Bar is a builtin App Store app (`efm_go/apps/builtins/command_bar/`) that replaces
 the dashboard's quick-search surface with a launcher: the reader types a command rather than a
 query. It is the first app to ship with **no backend at all** — no subprocess, no port, no
 proxy, no routes. Its whole surface is a code-split React chunk in the dashboard bundle, so it

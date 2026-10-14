@@ -43,19 +43,19 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import memory_stores as memory_stores_mod
-from kiro_crew import security, vector_memory
-from kiro_crew.cli_commands import _finding_store_suffix, _security
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import config_dir
-from kiro_crew.learn import Lesson, LessonStore
-from kiro_crew.memory_stores import (
+from efm_go import memory_stores as memory_stores_mod
+from efm_go import security, vector_memory
+from efm_go.cli_commands import _finding_store_suffix, _security
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import config_dir
+from efm_go.learn import Lesson, LessonStore
+from efm_go.memory_stores import (
     DEFAULT_MEMORY_STORE,
     MEMORY_DB_FILE,
     memory_stores_root,
     resolve_store_path,
 )
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go.vector_memory import VectorMemoryStore
 
 #: Two declared, written silos plus one declared-but-never-written store. ``personal``
 #: sorts BEFORE ``work``, which the fail-soft test relies on: corrupting it proves a bad
@@ -733,7 +733,7 @@ class TestMemberDatabaseAudit:
     def test_member_sqlite_rows_are_scanned_and_legacy_lessons_ignored(self):
         from member_memory_helpers import write_member_home
 
-        from kiro_crew.vector_memory import open_member_database
+        from efm_go.vector_memory import open_member_database
 
         write_member_home(config_dir(), "alice")
         loader_mod._invalidate_config_cache()
@@ -785,7 +785,7 @@ class TestMemberDatabaseAudit:
 def test_member_audit_includes_all_retained_learning_tables(tier):
     from member_memory_helpers import write_member_home
 
-    from kiro_crew.vector_memory import open_member_database
+    from efm_go.vector_memory import open_member_database
 
     write_member_home(config_dir(), "alice")
     loader_mod._invalidate_config_cache()

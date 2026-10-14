@@ -29,9 +29,9 @@ from meetings_helpers import (  # noqa: F401 — fixtures are used by name
     root_fixture,
 )
 
-from kiro_crew.apps.builtins.meetings.backend import constants as k
-from kiro_crew.apps.builtins.meetings.backend import store
-from kiro_crew.apps.builtins.meetings.backend.domain import translate
+from efm_go.apps.builtins.meetings.backend import constants as k
+from efm_go.apps.builtins.meetings.backend import store
+from efm_go.apps.builtins.meetings.backend.domain import translate
 
 
 @pytest.fixture(autouse=True)

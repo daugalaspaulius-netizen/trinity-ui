@@ -31,7 +31,7 @@ const skip = IS_WIN ? false : "real NTFS junctions and Win32_Process exist only 
 // Bundle layout under one versioned root: python.exe at the tree root, the
 // launcher shim under bin\ (build-desktop.sh build_backend_windows).
 function makeBundle(root, version) {
-  const tree = path.join(root, version, "resources", "backend-dist", "kirocrew-backend");
+  const tree = path.join(root, version, "resources", "backend-dist", "efm-go-backend");
   fs.mkdirSync(path.join(tree, "bin"), { recursive: true });
   return tree;
 }
@@ -48,7 +48,7 @@ test("realpathSync.native follows a real directory junction to the versioned tre
   fs.writeFileSync(path.join(target, "python.exe"), "");
   const link = path.join(root, "current");
   fs.symlinkSync(path.join(root, "0.7.0.5"), link, "junction");
-  const viaLink = path.join(link, "resources", "backend-dist", "kirocrew-backend");
+  const viaLink = path.join(link, "resources", "backend-dist", "efm-go-backend");
 
   const linkPython = path.join(viaLink, "python.exe");
   const targetPython = path.join(target, "python.exe");
@@ -90,7 +90,7 @@ test("a process launched through a junction is matched however Win32_Process spe
   fs.copyFileSync(process.execPath, targetPython);
   const link = path.join(root, "current");
   fs.symlinkSync(path.join(root, "0.7.0.5"), link, "junction");
-  const viaLink = path.join(link, "resources", "backend-dist", "kirocrew-backend");
+  const viaLink = path.join(link, "resources", "backend-dist", "efm-go-backend");
   const linkPython = path.join(viaLink, "python.exe");
 
   await warmUpCimProvider();
@@ -122,12 +122,12 @@ test("a process launched through a junction is matched however Win32_Process spe
 
     // The path-bound matcher, fed the real ExecutablePath spelling and the
     // gateway argv the launcher would have used, accepts the process as ours.
-    // (Node cannot run `-m kiro_crew`, so the argv is synthesised; the
+    // (Node cannot run `-m efm_go`, so the argv is synthesised; the
     // executable spelling under test is the OS's.)
     const trustedExecutablePaths = windowsGatewayExecutablePaths(
       path.join(viaLink, "bin", "kirocrew.cmd")
     );
-    const command = `"${reported[1]}" "${reported[1]}" -s -m kiro_crew gateway --no-open --port 5476`;
+    const command = `"${reported[1]}" "${reported[1]}" -s -m efm_go gateway --no-open --port 5476`;
     assert.strictEqual(
       isKirocrewCommand(command, { trustedExecutablePaths, canonicalizePath: canonicalWindowsPath }),
       true,

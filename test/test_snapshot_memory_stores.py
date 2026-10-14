@@ -30,11 +30,11 @@ from unittest.mock import patch
 import pytest
 from test_snapshot import _make_snapshot, _setup_fake_kirocrew, unpinnable_argv
 
-from kiro_crew import member_memory_backup, platform_compat, portability
-from kiro_crew import snapshot as snap
-from kiro_crew import snapshot_redact as redact
-from kiro_crew.memory import INDEX_DB_FILE
-from kiro_crew.memory_stores import (
+from efm_go import member_memory_backup, platform_compat, portability
+from efm_go import snapshot as snap
+from efm_go import snapshot_redact as redact
+from efm_go.memory import INDEX_DB_FILE
+from efm_go.memory_stores import (
     EXECUTION_LOGS_DIR_NAME,
     MEMBER_API_KEY_FILE,
     MEMBER_BACKUPS_DIR_NAME,
@@ -44,8 +44,8 @@ from kiro_crew.memory_stores import (
     is_host_local_store_state,
     named_store_product_file,
 )
-from kiro_crew.security import is_sensitive_path
-from kiro_crew.snapshot import restore_main
+from efm_go.security import is_sensitive_path
+from efm_go.snapshot import restore_main
 
 STORE = "acme"
 ROOT = MEMORY_STORES_DIR_NAME
@@ -109,7 +109,7 @@ def _plant_named_store(home: Path, *, rows: int = 3) -> None:
 
 def _seed_store_generation(home: Path, name: str, version: int) -> Path:
     """Create and close a real store so merge tests can check its next initialization."""
-    from kiro_crew.vector_memory import VectorMemoryStore, create_member_database
+    from efm_go.vector_memory import VectorMemoryStore, create_member_database
 
     directory = home / ROOT / name
     if version == 2:
@@ -380,7 +380,7 @@ class TestRestoreBringsNamedStoresBack:
     def test_merge_preserves_store_generations(
         self, tmp_path, monkeypatch, existing, per_file_copy
     ):
-        from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+        from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
         source, destination = tmp_path / "source", tmp_path / "destination"
         source.mkdir()
@@ -453,7 +453,7 @@ class TestRestoreBringsNamedStoresBack:
 def test_member_single_database_round_trip_includes_committed_wal(
     tmp_path, monkeypatch, archive_kind
 ):
-    from kiro_crew.vector_memory import create_member_database, open_member_database
+    from efm_go.vector_memory import create_member_database, open_member_database
 
     source, destination = tmp_path / "source", tmp_path / "destination"
     _declare_named_store(source, version=2)
@@ -626,7 +626,7 @@ class TestTheDashboardExportCarriesNamedStores:
         _setup_fake_kirocrew(d)
         _plant_named_store(d)
         monkeypatch.setenv("KIROCREW_HOME", str(d))
-        with patch("kiro_crew.portability.config_dir", return_value=d):
+        with patch("efm_go.portability.config_dir", return_value=d):
             yield d
 
     @staticmethod
@@ -837,7 +837,7 @@ class TestImportValidatesStoreDatabasesBeforeMutating:
         _setup_fake_kirocrew(d)
         _plant_named_store(d)
         monkeypatch.setenv("KIROCREW_HOME", str(d))
-        with patch("kiro_crew.portability.config_dir", return_value=d):
+        with patch("efm_go.portability.config_dir", return_value=d):
             yield d
 
     @staticmethod
@@ -898,7 +898,7 @@ class TestThePortabilityRoutesAreOwnerOnly:
 
     @pytest.fixture
     def handlers(self):
-        import kiro_crew.dashboard.handlers.portability as ph
+        import efm_go.dashboard.handlers.portability as ph
 
         events: list[dict] = []
 
@@ -1028,7 +1028,7 @@ class TestNamedStoreRollbackSafety:
 
     @pytest.mark.skipif(not platform_compat.IS_POSIX, reason="the lifetime lock is POSIX-only")
     def test_named_v1_store_holds_lock_until_close(self, tmp_path, monkeypatch):
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         db = tmp_path / ROOT / STORE / MEMORY_DB_FILE
@@ -1107,7 +1107,7 @@ async def test_named_v1_markdown_write_cannot_be_lost_during_replace(
 ):
     from types import SimpleNamespace
 
-    from kiro_crew.dashboard.handlers._shared import (
+    from efm_go.dashboard.handlers._shared import (
         markdown_memory_for_store,
         release_markdown_memory_store,
     )
@@ -1243,8 +1243,8 @@ def test_provisioning_waits_for_replace_and_rollback(
     from concurrent.futures import ThreadPoolExecutor
     from contextlib import contextmanager
 
-    from kiro_crew import memory_stores, pinned_fs
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go import memory_stores, pinned_fs
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
 
     destination = tmp_path / "destination"
     destination.mkdir()
@@ -1269,7 +1269,7 @@ def test_provisioning_waits_for_replace_and_rollback(
     provision = memory_stores.provision_member_memory
     publish = memory_stores.persist_member_config
     if without_namespace:
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         provision = memory_stores._provision_member_memory
         publish = publish.__wrapped__
@@ -1306,7 +1306,7 @@ def test_provisioning_waits_for_replace_and_rollback(
     assert store.exists() is not without_namespace
     if not without_namespace:
         assert (store / MEMORY_DB_FILE).is_file()
-        from kiro_crew.vector_memory import read_member_database_identity
+        from efm_go.vector_memory import read_member_database_identity
 
         member = KiroCrewConfig.load().agents["new-member"]
         assert read_member_database_identity(store / MEMORY_DB_FILE) == (member.member_id, name)
@@ -1346,9 +1346,9 @@ def test_file_only_writes_serialize_with_replace(
     from concurrent.futures import ThreadPoolExecutor
     from contextlib import contextmanager, nullcontext
 
-    from kiro_crew import pinned_fs
-    from kiro_crew.learn import Lesson, LessonStore
-    from kiro_crew.memory import MemoryStore
+    from efm_go import pinned_fs
+    from efm_go.learn import Lesson, LessonStore
+    from efm_go.memory import MemoryStore
 
     destination = tmp_path / "destination"
     source = tmp_path / "source"
@@ -1357,7 +1357,7 @@ def test_file_only_writes_serialize_with_replace(
     memory = MemoryStore(workspace=destination / ROOT / STORE, memory_version=version)
     lessons = None
     if version == 2:
-        from kiro_crew.vector_memory import create_member_database
+        from efm_go.vector_memory import create_member_database
 
         for home in (source, destination):
             create_member_database(
@@ -1439,9 +1439,9 @@ def test_file_only_readers_hold_namespace(tmp_path, monkeypatch, kind, without_a
     import inspect
     from contextlib import contextmanager
 
-    from kiro_crew import pinned_fs
-    from kiro_crew.learn import Lesson, LessonStore
-    from kiro_crew.memory import MemoryStore
+    from efm_go import pinned_fs
+    from efm_go.learn import Lesson, LessonStore
+    from efm_go.memory import MemoryStore
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     _declare_named_store(tmp_path, version=version)
@@ -1449,7 +1449,7 @@ def test_file_only_readers_hold_namespace(tmp_path, monkeypatch, kind, without_a
     memory = MemoryStore(workspace=directory, memory_version=version)
     lessons = None
     if version == 2:
-        from kiro_crew.vector_memory import create_member_database
+        from efm_go.vector_memory import create_member_database
 
         create_member_database(directory / MEMORY_DB_FILE, member_id=STORE, store_id=STORE)
         memory.write_preferences("manual preferences")
@@ -1504,8 +1504,8 @@ def test_file_only_readers_hold_namespace(tmp_path, monkeypatch, kind, without_a
 
 
 def test_nested_named_memory_operations_release_namespace_on_failure(tmp_path, monkeypatch):
-    from kiro_crew import memory_stores
-    from kiro_crew.memory import MemoryStore
+    from efm_go import memory_stores
+    from efm_go.memory import MemoryStore
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     _declare_named_store(tmp_path)
@@ -1534,8 +1534,8 @@ async def test_named_lessons_request_offloads_locked_operations(monkeypatch, inl
     from aiohttp import web
     from aiohttp.test_utils import make_mocked_request
 
-    from kiro_crew.dashboard.handlers import cron as handlers
-    from kiro_crew.learn import Lesson
+    from efm_go.dashboard.handlers import cron as handlers
+    from efm_go.learn import Lesson
 
     loop_thread = threading.get_ident()
     seen = []
@@ -1600,8 +1600,8 @@ def test_cold_vector_open_waits_until_replace_or_rollback_finishes(
     from concurrent.futures import ThreadPoolExecutor
     from contextlib import contextmanager
 
-    from kiro_crew import memory_stores, pinned_fs
-    from kiro_crew.vector_memory import VectorMemoryStore
+    from efm_go import memory_stores, pinned_fs
+    from efm_go.vector_memory import VectorMemoryStore
 
     destination = tmp_path / "destination"
     destination.mkdir()
@@ -1674,7 +1674,7 @@ def test_cold_vector_open_waits_until_replace_or_rollback_finishes(
 
 @pytest.mark.asyncio
 async def test_ensure_store_refuses_a_declared_store_without_a_directory(tmp_path, monkeypatch):
-    from kiro_crew import context, memory_stores
+    from efm_go import context, memory_stores
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     (tmp_path / "config.json").write_text(

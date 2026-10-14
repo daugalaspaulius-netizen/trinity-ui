@@ -89,12 +89,12 @@ credential, and `kiro-cli login` is where it is set.
 Two channels do not travel to an arbitrary remote host. **iMessage** needs the
 gateway on a Mac running macOS 14 or newer, with Full Disk Access and Automation
 granted to whatever launched it, so a Linux VPS cannot serve it at all
-([imessage-integration.md](../../src/kiro_crew/docs/imessage-integration.md)).
+([imessage-integration.md](../../src/efm_go/docs/imessage-integration.md)).
 **WhatsApp** runs anywhere, but it is not in the base install: it needs the
 optional `neonize` dependency (`pip install ".[whatsapp]"`) and a one-time device
 pairing from **Settings → Channels → WhatsApp**, so reach the remote dashboard
 first (part 2 below) and scan the rotating code from there
-([whatsapp-integration.md](../../src/kiro_crew/docs/whatsapp-integration.md)).
+([whatsapp-integration.md](../../src/efm_go/docs/whatsapp-integration.md)).
 
 ### Install Kiro Crew
 
@@ -102,12 +102,12 @@ Same two steps as a local machine (Python backend plus the React dashboard
 bundle). See the [install guide](install.md) for the full walkthrough:
 
 ```bash
-git clone https://github.com/kirodotdev/KiroCrew.git
+git clone https://efmleads.com.git
 cd KiroCrew
 
 # Build the frontend bundle and stage it into the package
 cd website && npm install && npm run build && cd ..
-PYTHONPATH=src python3 -m kiro_crew.frontend stage .
+PYTHONPATH=src python3 -m efm_go.frontend stage .
 
 # Install the backend (ships the bundled dashboard)
 pip install .
@@ -264,7 +264,7 @@ ssh -fN -L 7779:localhost:7779 user@your-host.example.com   # background
 
 Pass `-C` to enable SSH transport compression. A hand-rolled tunnel gets no
 compression by default, while Kiro Crew's own tunnel manager turns it on for
-exactly this traffic (`src/kiro_crew/instances/ssh_tunnel_manager.py`): the
+exactly this traffic (`src/efm_go/instances/ssh_tunnel_manager.py`): the
 forwarded stream carries the dashboard SPA bundle plus all API/WS payloads,
 which are highly compressible, and the gateway does not gzip at the HTTP layer.
 
@@ -689,8 +689,8 @@ bugs:
   app is closed or backgrounded. On iOS that constructor is unavailable inside an
   installed PWA at all — notifications there require
   `ServiceWorkerRegistration.showNotification()`. Tracked in
-  [issue #2267](https://github.com/kirodotdev/KiroCrew/issues/2267); the Android
-  symptom is [issue #1828](https://github.com/kirodotdev/KiroCrew/issues/1828).
+  [issue #2267](https://efmleads.com/issues/2267); the Android
+  symptom is [issue #1828](https://efmleads.com/issues/1828).
 - **Pinch zoom is off.** The installed app behaves like an application, not a
   web page: two-finger pinch and double-tap no longer scale the shell. **To
   magnify, use the OS display-zoom setting** (iOS: Settings → Display &

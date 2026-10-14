@@ -11,7 +11,7 @@ paying:
    answers ``""``, and the test asserts that too.
 2. **Completeness under a new spec concern.** ``Concern`` is closed and a mirror
    must rule on every member, so a member added there must be either ON the card
-   or recorded in :data:`~kiro_crew.agent_sdk.backend_mcp_ability.OFF_CARD_CONCERNS`
+   or recorded in :data:`~efm_go.agent_sdk.backend_mcp_ability.OFF_CARD_CONCERNS`
    with the reason it is not. A concern in neither is one nobody decided about.
 3. **Completeness under a new kind or reach.** Every ``ProjectionKind`` and every
    ``PerToolDeny`` member must reach the wire as its own value, and doctor must
@@ -33,10 +33,10 @@ import json
 from pathlib import Path
 from typing import Set
 
-from kiro_crew.acp_backends import selectable_backend_values
-from kiro_crew.agent_sdk import backend_mcp_ability as mcp_mod
-from kiro_crew.agent_sdk.backend_cards import card_payload
-from kiro_crew.providers.mirrors import (
+from efm_go.acp_backends import selectable_backend_values
+from efm_go.agent_sdk import backend_mcp_ability as mcp_mod
+from efm_go.agent_sdk.backend_cards import card_payload
+from efm_go.providers.mirrors import (
     PROJECTIONS,
     Concern,
     Disposition,
@@ -189,7 +189,7 @@ def test_the_doctor_report_prints_the_declarations_own_values() -> None:
     member of both vocabularies reaches the report as its own value, so a new member is
     printable the moment it is declared and there is nothing to keep in step.
     """
-    from kiro_crew import cli_doctor
+    from efm_go import cli_doctor
 
     assert not hasattr(cli_doctor, "_PROJECTION_PHRASE"), "the prose table is back"
     assert not hasattr(cli_doctor, "_DENY_PHRASE"), "the prose table is back"
@@ -222,7 +222,7 @@ def _doctor_ability_output(backend: str = "") -> str:
     from contextlib import redirect_stdout
     from types import SimpleNamespace
 
-    from kiro_crew import cli_doctor
+    from efm_go import cli_doctor
 
     buffer = io.StringIO()
     cfg = SimpleNamespace(agent=SimpleNamespace(acp_backend=backend))
@@ -299,7 +299,7 @@ def test_a_mirror_whose_rulings_raise_answers_nothing_established(monkeypatch) -
     Driven through the real failure: the mirror is registered and its ``rulings()``
     raises, which is what a half-built mirror does.
     """
-    import kiro_crew.providers.mirrors as mirrors_pkg
+    import efm_go.providers.mirrors as mirrors_pkg
 
     declared_mirror = next(b for b, d in PROJECTIONS.items() if d.kind is ProjectionKind.MIRROR)
     intact = mcp_mod.ability_for(declared_mirror)
@@ -377,7 +377,7 @@ def test_every_reach_is_told_apart_by_both_costs() -> None:
     Driven from the vocabulary rather than from a table, so a member added to
     ``PerToolDeny`` is ruled on by ``costs_control_plane`` here.
     """
-    from kiro_crew.agent_sdk.backend_mcp_ability import McpAbility
+    from efm_go.agent_sdk.backend_mcp_ability import McpAbility
 
     def ability(reach: str) -> McpAbility:
         return McpAbility(projection="mirror", per_tool_deny=reach, withheld=(), no_channel=())

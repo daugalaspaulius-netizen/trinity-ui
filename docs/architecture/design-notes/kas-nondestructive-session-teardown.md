@@ -10,7 +10,7 @@ written for a KAS engineer who has not seen the Crew side.
 Everything below was read from source, not measured on a running engine. KAS
 facts are pinned to `kiro-team/kiro-agent` `main` at
 `03d8834173f5edcd6cfad75747f2750f0c1df25f`; Crew facts to
-`kirodotdev/KiroCrew` `main` at `64fbda5f9170ad4614cb683d3e44a8f735615d41`.
+`efmleads.com` `main` at `64fbda5f9170ad4614cb683d3e44a8f735615d41`.
 Symbols are cited rather than line numbers, per this repository's docs rule: a
 name survives the refactor that moves the line. The closing section marks what is
 verified and what is not, because a citation is worth nothing if the reader
@@ -216,7 +216,7 @@ per sub-agent and forgoes continuation.
 
 ## The Crew side, for context
 
-Crew keeps per-backend capability sets in `src/kiro_crew/agent_sdk/backends.py`,
+Crew keeps per-backend capability sets in `src/efm_go/agent_sdk/backends.py`,
 and all three named below live there. Two of them answer this question
 differently, and the pair is the precise statement of the gap:
 
@@ -229,11 +229,11 @@ differently, and the pair is the precise statement of the gap:
   and says it is owned by whoever gives KAS a non-destroying teardown.
 
 Crew sends KAS the delete as its teardown from `KasHarness.teardown`
-(`src/kiro_crew/acp/harness/kas.py`), as
+(`src/efm_go/acp/harness/kas.py`), as
 `TeardownPolicy(method=METHOD_KAS_SESSION_DELETE, notification=False)`, with the
-method string `METHOD_KAS_SESSION_DELETE` in `src/kiro_crew/acp/types.py`. The
+method string `METHOD_KAS_SESSION_DELETE` in `src/efm_go/acp/types.py`. The
 user-visible consequence is `spawn_continue` answering `conversation_gone`
-(`src/kiro_crew/subagent_manager/continuation.py`).
+(`src/efm_go/subagent_manager/continuation.py`).
 
 ### What Crew changes once the verb exists
 
@@ -259,7 +259,7 @@ Change 4 is a second, independent membership, and the request does not work
 without it. KAS sits outside `ACP_BACKENDS_HARNESS_OWNED_SESSIONS`, which puts it
 on the kiro-family arm of Crew's resume path in `acp/client.py`: that arm gates a
 `session/load` on a **kiro-cli** transcript file under `kiro_sessions_dir()` and
-sends a `_kiro.dev/session_file` naming it. For a host that keeps its own store,
+sends a `_efm.go/session_file` naming it. For a host that keeps its own store,
 that file is not there and the load is skipped in favour of a fresh session. So
 change 1 alone would mark KAS as shareable while its resumes silently started
 over.

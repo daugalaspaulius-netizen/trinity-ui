@@ -15,9 +15,9 @@ from __future__ import annotations
 
 import asyncio
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent, TurnUsage
-from kiro_crew.dashboard.handlers import usage
-from kiro_crew.dashboard.handlers.hooks import _run_hook_inner
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent, TurnUsage
+from efm_go.dashboard.handlers import usage
+from efm_go.dashboard.handlers.hooks import _run_hook_inner
 
 # A provider-reported duration no sub-second test turn could ever produce
 # (~16 min). A record showing it proves the provider value won over the local

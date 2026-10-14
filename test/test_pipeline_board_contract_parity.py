@@ -1,8 +1,8 @@
 """The board template reads exactly the fields the contract type declares.
 
-``mypy src/kiro_crew/`` checks both ends of :func:`build_pipeline_board`: a
-:class:`~kiro_crew.work_vocab.WorkBoardView` in, a
-:class:`~kiro_crew.pipeline_board_contract.PipelineBoardPanel` out, required keys and
+``mypy src/efm_go/`` checks both ends of :func:`build_pipeline_board`: a
+:class:`~efm_go.work_vocab.WorkBoardView` in, a
+:class:`~efm_go.pipeline_board_contract.PipelineBoardPanel` out, required keys and
 all. What it cannot see is ``kirocrew-pipeline-conductor.html``, so the HTML end needs a gate of its own.
 This is that gate, built after ``test_agent_host_contract_parity``: parse the real
 artefact, extract the set it actually uses, and assert equality with the set the code
@@ -40,14 +40,14 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent_panel
-from kiro_crew.pipeline_board_contract import (
+from efm_go import agent_panel
+from efm_go.pipeline_board_contract import (
     BOARD_CREW_NAME,
     BOARD_TEMPLATE_ID,
     CONTRACT_VERSION,
     PipelineBoardPanel,
 )
-from kiro_crew.work_vocab import WORK_ITEM_STATES
+from efm_go.work_vocab import WORK_ITEM_STATES
 
 # ``BOARD_TEMPLATE_ID`` and ``BOARD_CREW_NAME`` are IMPORTED, not restated here. The
 # reader (``_panel_record``) branches on that id to decide whose data it rebuilds, so a

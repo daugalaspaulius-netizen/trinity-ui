@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.dashboard.handlers.usage."""
+"""Tests for efm_go.dashboard.handlers.usage."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.dashboard.handlers.usage as usage_mod
-from kiro_crew.dashboard.handlers.usage import (
+import efm_go.dashboard.handlers.usage as usage_mod
+from efm_go.dashboard.handlers.usage import (
     _cached_parse_sessions,
     _parse_sessions,
     _parse_token_history,
@@ -156,7 +156,7 @@ class TestParseSessions:
         with (
             patch.object(usage_mod, "_SESSIONS_DIR", d),
             patch.object(usage_mod, "validate_file_path", return_value=None),
-            caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers.usage"),
+            caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers.usage"),
         ):
             r = _parse_sessions()
         assert r["total_sessions"] == 0
@@ -177,7 +177,7 @@ class TestParseSessions:
         with (
             patch.object(usage_mod, "_SESSIONS_DIR", d),
             patch.object(usage_mod, "validate_file_path", return_value=str(f)),
-            caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers.usage"),
+            caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers.usage"),
         ):
             r = _parse_sessions()
         assert r["total_sessions"] == 1
@@ -248,7 +248,7 @@ class TestParseSessions:
             patch.object(usage_mod, "validate_file_path", side_effect=validate),
             patch.object(Path, "stat", stat_side_effect),
             patch.object(Path, "open", open_side_effect),
-            caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers.usage"),
+            caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers.usage"),
         ):
             r = _parse_sessions()
         assert r["total_sessions"] == 0
@@ -449,18 +449,18 @@ class TestGetUsageCache:
         mock_cache = {"credits_used": 42}
         with patch.dict(
             "sys.modules",
-            {"kiro_crew.dashboard.handlers.sessions": MagicMock(_usage_cache=mock_cache)},
+            {"efm_go.dashboard.handlers.sessions": MagicMock(_usage_cache=mock_cache)},
         ):
             assert get_usage_cache() == {"credits_used": 42}
 
     def test_empty_cache(self):
         with patch.dict(
-            "sys.modules", {"kiro_crew.dashboard.handlers.sessions": MagicMock(_usage_cache={})}
+            "sys.modules", {"efm_go.dashboard.handlers.sessions": MagicMock(_usage_cache={})}
         ):
             assert get_usage_cache() == {}
 
     def test_import_error(self):
-        with patch.dict("sys.modules", {"kiro_crew.dashboard.handlers.sessions": None}):
+        with patch.dict("sys.modules", {"efm_go.dashboard.handlers.sessions": None}):
             assert get_usage_cache() == {}
 
 

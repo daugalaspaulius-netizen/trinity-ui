@@ -9,7 +9,7 @@ import zipfile
 
 import pytest
 
-from kiro_crew.doc_parser import (
+from efm_go.doc_parser import (
     extract_slides,
     extract_text,
     is_parseable_document,
@@ -252,7 +252,7 @@ class TestDecompressionGuards:
         """A ZIP entry whose actual decompressed content exceeds the limit is skipped."""
         from unittest.mock import patch
 
-        import kiro_crew.doc_parser as dp
+        import efm_go.doc_parser as dp
 
         path = _make_docx(["Normal text"])
         try:
@@ -269,7 +269,7 @@ class TestDecompressionGuards:
         """_safe_decompress raises on output exceeding max_size."""
         import zlib as _zlib
 
-        from kiro_crew.doc_parser import _safe_decompress
+        from efm_go.doc_parser import _safe_decompress
 
         # Compress 1 MB of zeros
         big = _zlib.compress(b"\x00" * (1024 * 1024))
@@ -350,12 +350,12 @@ class TestXxeGuards:
 
 def test_missing_defusedxml_degrades_without_stdlib_fallback(monkeypatch, caplog):
     """No hardened parser -> empty string + warning; NEVER stdlib xml (XXE)."""
-    import kiro_crew.doc_parser as doc_parser
+    import efm_go.doc_parser as doc_parser
 
     monkeypatch.setattr(doc_parser, "_xml_fromstring", None)
     path = _make_docx(["hello"])
     try:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.doc_parser"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.doc_parser"):
             assert extract_text(path, filename="a.docx") == ""
     finally:
         os.unlink(path)
@@ -364,7 +364,7 @@ def test_missing_defusedxml_degrades_without_stdlib_fallback(monkeypatch, caplog
 
 def test_missing_defusedxml_leaves_pdf_parsing_alone(monkeypatch, caplog):
     """PDF extraction has no XML dependency and must keep working."""
-    import kiro_crew.doc_parser as doc_parser
+    import efm_go.doc_parser as doc_parser
 
     monkeypatch.setattr(doc_parser, "_xml_fromstring", None)
     fd, path = tempfile.mkstemp(suffix=".pdf")
@@ -372,7 +372,7 @@ def test_missing_defusedxml_leaves_pdf_parsing_alone(monkeypatch, caplog):
     try:
         # The point is the dispatch path: a .pdf must reach the PDF parser,
         # not be short-circuited by the missing-XML-parser gate.
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.doc_parser"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.doc_parser"):
             extract_text(path, filename="a.pdf")
     finally:
         os.unlink(path)
@@ -403,7 +403,7 @@ class TestArchiveInventoryBound:
         return path
 
     def test_an_over_cap_inventory_degrades_to_empty(self, tmp_path, monkeypatch):
-        from kiro_crew import doc_parser
+        from efm_go import doc_parser
 
         path = self._many_member_docx(tmp_path, members=40)
         # Under the real cap the document parses -- the bound does not narrow
@@ -419,7 +419,7 @@ class TestArchiveInventoryBound:
         central-directory size does not. ZipFile allocates from the size."""
         import zipfile
 
-        from kiro_crew import doc_parser
+        from efm_go import doc_parser
 
         path = self._many_member_docx(tmp_path, members=2)
         data = bytearray(path.read_bytes())
@@ -436,7 +436,7 @@ class TestArchiveInventoryBound:
     def test_pptx_is_bounded_too(self, tmp_path, monkeypatch):
         import zipfile
 
-        from kiro_crew import doc_parser
+        from efm_go import doc_parser
 
         path = tmp_path / "many.pptx"
         with zipfile.ZipFile(path, "w") as z:
@@ -621,7 +621,7 @@ class TestExtractSlides:
     def test_sensitive_path_is_refused_and_audited(self, monkeypatch):
         from unittest.mock import MagicMock
 
-        from kiro_crew import doc_parser
+        from efm_go import doc_parser
 
         monkeypatch.setattr(doc_parser, "is_sensitive_path", lambda p: True)
         sel_instance = MagicMock()

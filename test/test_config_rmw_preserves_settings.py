@@ -19,8 +19,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.config.loader import ConfigReadError, read_config_for_update
+from efm_go import platform_compat
+from efm_go.config.loader import ConfigReadError, read_config_for_update
 
 
 class _OwnerRequest(dict):
@@ -139,7 +139,7 @@ class TestNoFailOpenConfigWriters:
         import ast
         import pathlib
 
-        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go"
         # The one documented exception: interactive `config set --local`
         # deliberately overwrites a corrupt overlay (see config.md).
         allowed = {("cli_config.py", "d")}
@@ -222,7 +222,7 @@ class TestNoModeWideningConfigWriters:
         import ast
         import pathlib
 
-        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go"
         # loader.py IS the implementation; cli_commands.py hand-rolls the same
         # contract (explicit mode= + restrict_to_owner) and predates the helper.
         allowed_files = {"loader.py", "cli_commands.py"}
@@ -348,7 +348,7 @@ class TestNoRawOpenWriteOfConfig:
     def test_no_module_opens_a_config_file_for_writing(self):
         import pathlib
 
-        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go"
         offenders: list[str] = []
         for path in root.rglob("*.py"):
             if "_vendor" in path.parts:
@@ -419,7 +419,7 @@ class TestWriteConfigAtomically:
         import os
         import stat
 
-        from kiro_crew.config.loader import write_config_atomically
+        from efm_go.config.loader import write_config_atomically
 
         path = tmp_path / "config.json"
         path.write_text(json.dumps({"slack": {"bot_token": "xoxb-secret"}}), encoding="utf-8")
@@ -438,7 +438,7 @@ class TestWriteConfigAtomically:
     def test_new_file_is_owner_only(self, tmp_path):
         import stat
 
-        from kiro_crew.config.loader import write_config_atomically
+        from efm_go.config.loader import write_config_atomically
 
         path = tmp_path / "config.json"
         write_config_atomically(path, {"auto_update": True})
@@ -457,7 +457,7 @@ class TestWriteConfigAtomically:
         """
         import subprocess
 
-        from kiro_crew.config.loader import write_config_atomically
+        from efm_go.config.loader import write_config_atomically
 
         def _fail(*a, **k):  # pragma: no cover - must never run
             raise AssertionError("write_config_atomically must not spawn a subprocess")
@@ -478,8 +478,8 @@ class TestWriteConfigAtomically:
         can catch that (NTFS reports 0o666 regardless), so the descriptor itself
         is the observable.
         """
-        from kiro_crew import windows_acl
-        from kiro_crew.config.loader import write_config_atomically
+        from efm_go import windows_acl
+        from efm_go.config.loader import write_config_atomically
 
         path = tmp_path / "config.json"
         write_config_atomically(path, {"slack": {"bot_token": "xoxb-secret"}})
@@ -511,7 +511,7 @@ class TestWriteConfigAtomically:
         and skips the classification entirely -- so calling directly here would
         assert nothing about the gate.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         order: list[str] = []
         monkeypatch.setattr(platform_compat, "IS_POSIX", False)
@@ -549,7 +549,7 @@ class TestWriteConfigAtomically:
     def test_a_local_volume_still_gets_the_lockdown(self, tmp_path, monkeypatch):
         # The other half: the gate must not become a blanket opt-out. On a local
         # volume the on-loop write is protected exactly as it is without the gate.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         locked: list[str] = []
         monkeypatch.setattr(platform_compat, "IS_POSIX", False)
@@ -568,7 +568,7 @@ class TestWriteConfigAtomically:
         # A host where the security API cannot be loaded at all must still get its
         # config written: the lockdown would have failed there anyway, so the
         # classifier raising must degrade to "skip", never to a failed save.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         def _boom(_p):
             raise RuntimeError("cannot load the Windows security API")
@@ -593,7 +593,7 @@ class TestWriteConfigAtomically:
         The volume must not even be classified here: its answer could only take
         protection away, so asking would be both pointless and a round-trip.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         locked: list[str] = []
         classified: list[str] = []
@@ -626,7 +626,7 @@ class TestWriteConfigAtomically:
         # The CLI and startup paths (cli_setup, cli_chat, KiroCrewConfig.save from
         # boot) have no event loop at all, so they were skipping the DACL on a
         # network-homed data home for a reason that never applied to them.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         locked: list[str] = []
         monkeypatch.setattr(platform_compat, "IS_POSIX", False)
@@ -643,7 +643,7 @@ class TestWriteConfigAtomically:
         # restrict_on_error="warn", not "raise": config.json must not become
         # unwritable because a DACL could not be applied. Newly reachable on a
         # non-local volume, so it is pinned there rather than assumed.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         def _boom(_p):
             raise OSError("the SMB share refused the descriptor write")
@@ -670,7 +670,7 @@ class TestWriteConfigAtomically:
         flipped -- an on-loop write would take the SMB stall and an offloaded one
         would skip the DACL it can afford.
         """
-        from kiro_crew.atomic_write import on_event_loop
+        from efm_go.atomic_write import on_event_loop
 
         async def _both():
             return on_event_loop(), await asyncio.to_thread(on_event_loop)
@@ -691,7 +691,7 @@ class TestWriteConfigAtomically:
         Symlinking config.json into a dotfiles repo is a normal setup, and the
         write_text this replaced followed the link. Preserve that.
         """
-        from kiro_crew.config.loader import write_config_atomically
+        from efm_go.config.loader import write_config_atomically
 
         target = tmp_path / "real-config.json"
         link = tmp_path / "config.json"
@@ -704,7 +704,7 @@ class TestWriteConfigAtomically:
         assert json.loads(target.read_text(encoding="utf-8"))["auto_update"] is False
 
     def test_leaves_no_temp_files_behind(self, tmp_path):
-        from kiro_crew.config.loader import write_config_atomically
+        from efm_go.config.loader import write_config_atomically
 
         path = tmp_path / "config.json"
         write_config_atomically(path, {"auto_update": True})
@@ -716,7 +716,7 @@ class TestAutoUpdateToggleKeepsSettings:
 
     @pytest.mark.asyncio
     async def test_toggle_preserves_all_other_settings(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import updates
+        from efm_go.dashboard.handlers import updates
 
         path = tmp_path / "config.json"
         path.write_text(json.dumps(_REAL_SETTINGS, indent=2), encoding="utf-8")
@@ -737,7 +737,7 @@ class TestAutoUpdateToggleKeepsSettings:
 
     @pytest.mark.asyncio
     async def test_unreadable_config_fails_loudly_and_changes_nothing(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import updates
+        from efm_go.dashboard.handlers import updates
 
         path = tmp_path / "config.json"
         torn = json.dumps(_REAL_SETTINGS, indent=2)[:-20]
@@ -774,7 +774,7 @@ class TestEveryConfigWriterIsLocked:
 
     **What it does NOT cover.** Only calls to ``write_config_atomically``. A
     second family of writers reaches ``config.json`` through
-    ``kiro_crew.agent._atomic_json_write`` (``messaging.py``'s channel savers,
+    ``efm_go.agent._atomic_json_write`` (``messaging.py``'s channel savers,
     ``core.py``'s STT PUT, ``mcp.py``'s gateway-enable) and still bypasses the
     lock; that family has its own ratchet,
     :class:`TestTheAtomicJsonWriteConfigFamilyIsRatcheted` below, which holds it
@@ -799,7 +799,7 @@ class TestEveryConfigWriterIsLocked:
         import ast
         import pathlib
 
-        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go"
         offenders: list[str] = []
 
         def _is_config_path_call(node: ast.AST) -> bool:
@@ -923,7 +923,7 @@ class TestTheAtomicJsonWriteConfigFamilyIsRatcheted:
 
     ``TestEveryConfigWriterIsLocked`` above covers calls to
     ``write_config_atomically``. A second family reached ``config.json``
-    through ``kiro_crew.agent._atomic_json_write``, takes no advisory lock on
+    through ``efm_go.agent._atomic_json_write``, takes no advisory lock on
     the ``<path>.lock`` sidecar, and is therefore invisible to that scan. Such
     a writer holds only the in-process asyncio
     ``_get_config_lock()``, which serializes callers on this event loop and
@@ -1000,7 +1000,7 @@ class TestTheAtomicJsonWriteConfigFamilyIsRatcheted:
         import ast
         import pathlib
 
-        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go"
         found: set[str] = set()
         for path in root.rglob("*.py"):
             if "_vendor" in path.parts or path.name in cls._ALLOWED_FILES:
@@ -1157,8 +1157,8 @@ class TestAutoUpdateToggleHoldsBothConfigLocks:
 
     @pytest.mark.asyncio
     async def test_the_loop_side_lock_is_held_across_the_write(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import updates
-        from kiro_crew.dashboard.handlers.agents import _get_config_lock
+        from efm_go.dashboard.handlers import updates
+        from efm_go.dashboard.handlers.agents import _get_config_lock
 
         path = tmp_path / "config.json"
         path.write_text(json.dumps(_REAL_SETTINGS, indent=2), encoding="utf-8")
@@ -1191,8 +1191,8 @@ class TestAutoUpdateToggleHoldsBothConfigLocks:
     @pytest.mark.asyncio
     async def test_the_loop_side_lock_is_released_afterwards(self, tmp_path, monkeypatch):
         """Holding it is only correct if the handler also gives it back."""
-        from kiro_crew.dashboard.handlers import updates
-        from kiro_crew.dashboard.handlers.agents import _get_config_lock
+        from efm_go.dashboard.handlers import updates
+        from efm_go.dashboard.handlers.agents import _get_config_lock
 
         path = tmp_path / "config.json"
         path.write_text(json.dumps(_REAL_SETTINGS, indent=2), encoding="utf-8")
@@ -1213,8 +1213,8 @@ class TestAutoUpdateToggleHoldsBothConfigLocks:
         writer exception has to propagate unchanged for the 500 arm to stay
         reachable -- and the lock must not be stranded on that path.
         """
-        from kiro_crew.dashboard.handlers import updates
-        from kiro_crew.dashboard.handlers.agents import _get_config_lock
+        from efm_go.dashboard.handlers import updates
+        from efm_go.dashboard.handlers.agents import _get_config_lock
 
         path = tmp_path / "config.json"
         torn = json.dumps(_REAL_SETTINGS, indent=2)[:-20]
@@ -1233,7 +1233,7 @@ class TestAutoUpdateToggleHoldsBothConfigLocks:
         site if the dispatch is ever changed back, and it is written as an AST
         walk rather than a substring search so a reformat cannot defeat it.
         """
-        from kiro_crew.dashboard.handlers import updates
+        from efm_go.dashboard.handlers import updates
 
         source = Path(inspect.getsourcefile(updates)).read_text(encoding="utf-8")
         offenders = []

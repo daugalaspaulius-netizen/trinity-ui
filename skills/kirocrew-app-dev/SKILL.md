@@ -167,7 +167,7 @@ _jsx('button', {
 ### Reference Implementation
 
 For a working example, use `docs/app-kit/examples/`, which contains installable
-external-app patterns. Builtins under `src/kiro_crew/apps/builtins/` are useful
+external-app patterns. Builtins under `src/efm_go/apps/builtins/` are useful
 for UI idioms, but their backend and lifecycle contracts differ from external
 apps.
 
@@ -430,7 +430,7 @@ they can: throttling. That breaks your app, not just its polling.
 
 Put install-wide schedules in the `crons` array of `app.json`. The gateway
 reconciles that array through `register_app_crons_with_service`
-(`src/kiro_crew/apps/bridges.py`) at enable and gateway startup. Registration is
+(`src/efm_go/apps/bridges.py`) at enable and gateway startup. Registration is
 add-if-absent under one store lock, keyed by cron name.
 
 A schedule derived from user configuration may instead use `ctx.cron` / CronSDK;
@@ -447,7 +447,7 @@ schedule configuration visible in the app UI and README.
 | Poll only where no push path exists, and then at the coarsest cadence the feature tolerates | A stale panel is a smaller cost than an app the service owner has to block |
 
 **A 5-minute schedule gets no jitter from the platform, so add your own.**
-`_compute_jitter` (`src/kiro_crew/cron.py`) returns `0.0` for `every` under
+`_compute_jitter` (`src/efm_go/cron.py`) returns `0.0` for `every` under
 3600s and for any `cron_expr` whose minute field contains `/`, `,` or `*`;
 only hourly schedules get spread (0 to 5 minutes) and daily ones (0 to 59).
 Nothing spreads a 5-minute job, so anything that makes it overdue on many
@@ -473,7 +473,7 @@ and use the phase offset for anything longer.
 ### Bounded concurrency
 
 The scheduler will not overlap a job with itself: the due-scan skips any job
-that holds a run claim (`is_running`, `src/kiro_crew/cron.py`), so a slow run
+that holds a run claim (`is_running`, `src/efm_go/cron.py`), so a slow run
 delays its own next tick rather than doubling up. What is not bounded is what
 you do inside one run. There is no per-app cap on sessions or subagents today;
 per-app quotas are still a draft phase in
@@ -523,9 +523,9 @@ users actually decide.
 
 Disable removes an app's cron jobs, but only when the manifest declares the
 `cron` permission: the disable path in
-`src/kiro_crew/apps/hooks_integration.py` gates cleanup on `permissions.cron`
+`src/efm_go/apps/hooks_integration.py` gates cleanup on `permissions.cron`
 being truthy. That gate is a platform gap, tracked in
-[issue #10997](https://github.com/kirodotdev/KiroCrew/issues/10997) and recorded
+[issue #10997](https://efmleads.com/issues/10997) and recorded
 here at symptom level because the fix belongs in the gateway, not in a skill.
 Until it lands, an app
 that schedules work without declaring that permission keeps firing after the
@@ -540,7 +540,7 @@ owner and no off switch.
 - `scripts/uninstall.sh` must always stop background work and remove anything
   the app registered outside its own directory. **User state is a separate
   decision and is not yours to make.** Uninstall preserves app data by default
-  (`keep_data = True` in `src/kiro_crew/apps/routes.py`, flipped only by an
+  (`keep_data = True` in `src/efm_go/apps/routes.py`, flipped only by an
   explicit `purge_data` request), and that choice reaches your script as
   `PURGE_DATA` / `KEEP_DATA` in its environment. So delete state files only
   under `PURGE_DATA=1`, and leave them untouched under `KEEP_DATA=1`. A script
@@ -573,7 +573,7 @@ Publish the app as a plain git repository (any git host — e.g. GitHub):
 ### 2. App Registry Entry
 
 Open a pull request to the Kiro Crew repo adding an entry to
-`src/kiro_crew/apps/app-registry.json`:
+`src/efm_go/apps/app-registry.json`:
 ```json
 {
   "name": "my-app",
@@ -586,7 +586,7 @@ Open a pull request to the Kiro Crew repo adding an entry to
 only read when `gitUrl` is absent; it is never a slug.
 
 That file is the offline seed. The live App Store reads `official-registry.json`
-from the hosted catalog at `https://apps.crew.kiro.dev/`, so a listing lands there
+from the hosted catalog at `https://efmleads.com/api/apps/`, so a listing lands there
 too, alongside its editorial and category-order files.
 
 Display metadata (description, tags, author) comes from `app.json` in the app's own repo (cached 24h).
@@ -700,7 +700,7 @@ process — but the contract DIFFERS from builtins (`auto_research` etc.):
   Do NOT set the `backend.routes` base-path string — that field triggers the
   STANDALONE-PROCESS proxy, which serves dead stubs that shadow your handlers.
 - `register_routes(ctx)` receives an AppContext and MUST return `list[AppRoute]`
-  (`from kiro_crew.apps.route_registry import AppRoute`) with paths RELATIVE to
+  (`from efm_go.apps.route_registry import AppRoute`) with paths RELATIVE to
   `/api/apps/<name>`; `{params}` land in `request.match_info`.
 - Handlers take `(request, ctx)`; gateway state is `request.app["state"]`;
   auth-check `request.get("user") is not None` → else 401.
@@ -737,7 +737,7 @@ process — but the contract DIFFERS from builtins (`auto_research` etc.):
   the symlink after ANY install/update, and re-check dev mode is still on.
 - Same clobber applies to locally edited shipped skills: installed skill files
   under `~/.kiro/crew/skills/` re-sync from the Kiro Crew package on update.
-  Durable bundled-skill changes belong in `src/kiro_crew/builtin_skills/`;
+  Durable bundled-skill changes belong in `src/efm_go/builtin_skills/`;
   top-level `skills/` is checkout-only guidance.
 - Validate `.mjs` before relying on a reload: `node --check ui/index.mjs` —
   a parse error surfaces only as "Failed to load <App>: Unexpected token".
@@ -860,9 +860,9 @@ and use `position: absolute; inset: 0` for the overlay.
 ## Graduating an External App to a Builtin
 
 When an app proves out and should ship with Kiro Crew, port it into the repo —
-the contracts CHANGE on both sides. Template: `src/kiro_crew/apps/builtins/issue_radar/`.
+the contracts CHANGE on both sides. Template: `src/efm_go/apps/builtins/issue_radar/`.
 
-- Layout: `src/kiro_crew/apps/builtins/<snake_name>/` with `app.json`,
+- Layout: `src/efm_go/apps/builtins/<snake_name>/` with `app.json`,
   `backend/routes.py`, optional `skills/<skill>/SKILL.md`, `tests/`.
 - **Backend contract flips**: builtins use `register_routes(app: web.Application) -> None`
   registering FULL paths (`/api/apps/<name>/…`) directly on the router — the
@@ -887,12 +887,12 @@ the contracts CHANGE on both sides. Template: `src/kiro_crew/apps/builtins/issue
 - Full worktree + build-gate discipline applies (see the kirocrew-worktree-dev
   skill) — this is now Kiro Crew source.
 - **Tests**: the suite under `tests/` follows the repo's test rules — the
-  [writing-tests](../../src/kiro_crew/builtin_skills/kirocrew-dev/writing-tests/SKILL.md)
+  [writing-tests](../../src/efm_go/builtin_skills/kirocrew-dev/writing-tests/SKILL.md)
   skill and the
   [Determinism contract](../../docs/system-specs/common/testing-conventions.md#determinism-contract-read-this-first).
   The rootdir `conftest.py` floor applies there (plus the app's own `tests/conftest.py`
   where one exists), not `test/conftest.py`, and the helpers under `test/` are not on
   your import path: take shared test support from
-  `kiro_crew.testing`, which ships in the package (`kiro_crew.testing.clock`, `.wait`,
+  `efm_go.testing`, which ships in the package (`efm_go.testing.clock`, `.wait`,
   `.ids` and `.links`), and the rootdir's `manual_clock`, `seeded_rng` and `local_tz`
   fixtures.

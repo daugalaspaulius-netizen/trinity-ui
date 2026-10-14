@@ -8,7 +8,7 @@
 ## File Layout
 
 Backend tests live under the roots `setup.cfg` pins in `testpaths`
-(`test` plus `src/kiro_crew/apps/builtins`): pytest recurses into
+(`test` plus `src/efm_go/apps/builtins`): pytest recurses into
 `test`, so nested `test/<pkg>/test_*.py` files are collected too (for
 example `test/metrics/`, `test/e2e/`, `test/integration/`), alongside
 helper subdirectories that hold shared fixtures rather than tests (for
@@ -25,7 +25,7 @@ outside those roots is never collected, so it stays green by omission.
 
 Every backend test MUST keep these twelve rules. Each line names the shape to use and
 links the class that explains it; the rest of this document is the evidence behind
-them. The shared shapes live in `kiro_crew.testing` (`clock`, `wait`, `ids`), which
+them. The shared shapes live in `efm_go.testing` (`clock`, `wait`, `ids`), which
 ships in the wheel, so the in-package app suites use them too; the rootdir
 `conftest.py` adds the `manual_clock`, `seeded_rng` and `local_tz` fixtures.
 `AUTOSDE.yaml`'s `tests-are-deterministic` rule holds review to them, and the SAST
@@ -39,14 +39,14 @@ promise-sleep, `waitForTimeout`); a deliberate one says why with
 
 - **D1. Wait on a signal, never a duration.** Poll the state you are about to assert
   under a bounded deadline that RAISES quoting the last state it read: `wait_until` /
-  `async_wait_until` in `kiro_crew.testing.wait`, `until_parked` for a task parked on a
+  `async_wait_until` in `efm_go.testing.wait`, `until_parked` for a task parked on a
   lock, `drained_progress` for a batch whose speed the host owns; import it at module
   level. That deadline is a lost-run bound (D7), half the test's timeout by default. An
   absence assertion waits on a positive signal first (the waiter registered, the
   product's own tick counter reached N), or it passes for the trivial reason.
   [Class 2](#2-wall-clock-races).
 - **D2. One clock, injected or frozen at the seam the code reads.** Replace the module's
-  own `time` / `datetime` name with a `ManualClock` (`kiro_crew.testing.clock`, or the
+  own `time` / `datetime` name with a `ManualClock` (`efm_go.testing.clock`, or the
   `manual_clock` fixture): `clock.install(monkeypatch, module)`. Never rebind a stdlib
   clock or `time.sleep` for the whole worker. [Class 2](#2-wall-clock-races),
   [class 4](#4-order-dependence-and-shared-state).
@@ -71,7 +71,7 @@ promise-sleep, `waitForTimeout`); a deliberate one says why with
 - **D6. Seed every RNG that feeds an assertion** (`random.Random(SEED)`, or the
   `seeded_rng` fixture, seeded from the node id and printing the seed when the test
   fails), and give a fake PID a number no OS can allocate (`UNALLOCATABLE_PID` /
-  `unallocatable_pids()` in `kiro_crew.testing.ids`).
+  `unallocatable_pids()` in `efm_go.testing.ids`).
   [Class 1](#1-nondeterministic-input).
 - **D7. No upper bound on a measured duration, rate or sample count, except a lost-run
   bound or a lower bound.** Assert the work, the schedule or the order. A wait's
@@ -99,7 +99,7 @@ promise-sleep, `waitForTimeout`); a deliberate one says why with
   registered under that name with `monkeypatch.setitem(sys.modules, name, mod)` before
   `exec_module` (a `@dataclass` module needs it), never under the real name.
   A `sys.modules` eviction restores the entry AND its parent package's attribute in the
-  same scope (the rootdir package-attribute floor puts back a `kiro_crew` one a test
+  same scope (the rootdir package-attribute floor puts back a `efm_go` one a test
   left changed, and names the test), and a new process-global ships its floor entry.
   [Class 4](#4-order-dependence-and-shared-state).
 - **D12. Prove it.** Each new or changed test passes 20 times at `-n0`, 10 times at
@@ -283,7 +283,7 @@ multi-phase uninstall's phase 1, a dependency coordinator's park, a policy-file 
 anything spanning them is a thin wrapper over `threading.Event` / `asyncio.Event` plus
 `try`/`finally` behind an indirection every reader must learn, and the seam form holds
 nothing at all, so a hold helper would not even cover it. A condition POLL is a different
-thing: wait on the state through `kiro_crew.testing.wait` (`wait_until`,
+thing: wait on the state through `efm_go.testing.wait` (`wait_until`,
 `async_wait_until`, `until_parked`), which raises with the state it last read
 ([D1](#determinism-contract-read-this-first)), never another silent poll.
 
@@ -305,7 +305,7 @@ path, so the crash needs the full shard. The surface is every kill helper on
 one of the two spellings
 already in the tree rather than inventing a third: give the mock a pid above
 every supported platform's `pid_max`
-(`src/kiro_crew/testing/ids.py::UNALLOCATABLE_PID`, or `unallocatable_pids(n)` for
+(`src/efm_go/testing/ids.py::UNALLOCATABLE_PID`, or `unallocatable_pids(n)` for
 several; `test/test_update_provider.py::_UNALLOCATABLE_PID` is the same value), or
 neutralise the killer
 and assert the ordering instead
@@ -313,7 +313,7 @@ and assert the ordering instead
 `semgrep/mock-pid-allocatable.yaml` (`kirocrew.mock-pid-allocatable`), which
 `code-review.yml`'s SAST job runs diff-scoped and blocking, refuses a literal below
 `2**32` assigned to `.pid` or passed as `pid=` to a `Mock` / `SimpleNamespace`
-constructor under `test/` and `src/kiro_crew/apps/builtins/**/tests/`. It is
+constructor under `test/` and `src/efm_go/apps/builtins/**/tests/`. It is
 unconditional on purpose. Whether a given double is covered by the second spelling stays
 a convention, because one file does not carry the answer: the neutralising patch may sit
 in a class fixture or a conftest, and the killer is as often replaced one level down
@@ -325,7 +325,7 @@ tell a covered mock from an exposed one.
 Use `monkeypatch` to override config paths:
 ```python
 def test_load_from_file(self, tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
 ```
 
 Chat-runner fixtures that resolve agent bindings must use a concrete
@@ -450,8 +450,8 @@ where these path semantics differ most. Two helpers in `test/conftest.py`:
 | A path that reaches OUT of a sandbox root through a link | `make_escaping_link(inside, outside)` |
 | A directory link at a chosen location (`ui/` -> the dev source tree) | `make_dir_link(link, target)` |
 
-`make_dir_link` lives in `kiro_crew.testing.links`; the conftest re-exports it, and
-app-embedded tests under `src/kiro_crew/apps/builtins` import it from there.
+`make_dir_link` lives in `efm_go.testing.links`; the conftest re-exports it, and
+app-embedded tests under `src/efm_go/apps/builtins` import it from there.
 
 Prefer either over a bare `Path.symlink_to` plus a `skipif(sys.platform == "win32")`:
 an unconditional skip drops the whole assertion on Windows. Reach for a skip only
@@ -462,7 +462,7 @@ say), and then still pair it with a Windows counterpart.
 
 `monkeypatch.setattr`/`patch` rebind a NAME in one module namespace. Code
 reads its globals from its **defining** module, so patching a package
-re-export (e.g. `kiro_crew.dashboard.handlers.X`, imported there from
+re-export (e.g. `efm_go.dashboard.handlers.X`, imported there from
 `handlers/sessions.py`) is a **silent no-op** — the test still passes but
 exercises the production value. Symptom: a test that "shortens" a timeout yet
 still takes the full production duration.
@@ -470,10 +470,10 @@ still takes the full production duration.
 ```python
 # WRONG — handlers/__init__.py only re-exports the constant; sessions.py
 # still reads its own module global (test silently waits the real 10s):
-monkeypatch.setattr("kiro_crew.dashboard.handlers._SHUTDOWN_TIMEOUT_SECS", 0.05)
+monkeypatch.setattr("efm_go.dashboard.handlers._SHUTDOWN_TIMEOUT_SECS", 0.05)
 
 # RIGHT — patch where the constant is defined and read:
-monkeypatch.setattr("kiro_crew.dashboard.handlers.sessions._SHUTDOWN_TIMEOUT_SECS", 0.05)
+monkeypatch.setattr("efm_go.dashboard.handlers.sessions._SHUTDOWN_TIMEOUT_SECS", 0.05)
 ```
 
 The opposite mistake is a patch WIDER than the caller under test. A patch on a
@@ -584,7 +584,7 @@ Rules that decide whether one is worth having:
 
 ### Channel wire fakes: borrow the library's read side, do not model it
 
-`kiro_crew.testing.fake_channel_wire` fakes a channel's `aiohttp` session one layer
+`efm_go.testing.fake_channel_wire` fakes a channel's `aiohttp` session one layer
 below the client, so the real client, transport, dispatcher and renderer run against
 canned vendor bytes. A fake at that seam has a standing hazard: a response object
 written by hand can disagree with `aiohttp` in ways that raise no `AttributeError`,
@@ -651,14 +651,14 @@ keystone paths instead.
 ## Which conftest you are standing on
 
 There are **two** testpaths (`setup.cfg`'s `testpaths = test
-src/kiro_crew/apps/builtins`) and they do **not** get the same fixtures. Know which
+src/efm_go/apps/builtins`) and they do **not** get the same fixtures. Know which
 floor is under your file before you decide what to isolate yourself:
 
 | Your test lives in | It inherits |
 |---|---|
 | `test/` | the rootdir `conftest.py` **and** `test/conftest.py` |
-| `src/kiro_crew/apps/builtins/**/tests/` (one level down for most apps, deeper for `aws_control/crew/packaging/tests/`) | the rootdir `conftest.py`, plus that app's own `tests/conftest.py` where one exists (currently `auto_improvement`, `code_review_sage`, and `spec_builder`) |
-| `src/kiro_crew/apps/builtins/**/*_tests/` (today only `aws_control/crew/runtime/container_tests/`) | the rootdir `conftest.py`, plus its own `conftest.py`, which puts the docker build context on `sys.path` so the suite imports `container.*` the way the image does. Patterns written as `**/tests/**` skip it. |
+| `src/efm_go/apps/builtins/**/tests/` (one level down for most apps, deeper for `aws_control/crew/packaging/tests/`) | the rootdir `conftest.py`, plus that app's own `tests/conftest.py` where one exists (currently `auto_improvement`, `code_review_sage`, and `spec_builder`) |
+| `src/efm_go/apps/builtins/**/*_tests/` (today only `aws_control/crew/runtime/container_tests/`) | the rootdir `conftest.py`, plus its own `conftest.py`, which puts the docker build context on `sys.path` so the suite imports `container.*` the way the image does. Patterns written as `**/tests/**` skip it. |
 
 The **rootdir `conftest.py` is the host-mutation floor**: everything in it protects the
 developer's machine rather than the correctness of one suite, so it holds for all
@@ -676,14 +676,14 @@ running gateway sweeps stray entries there as orphans), the 610MB embedding-mode
 download, and the agent-state sidecar.
 
 It also carries the [Determinism contract](#determinism-contract-read-this-first)'s
-floors. Two of them act: `_kiro_crew_package_attr_floor` puts back every `kiro_crew.*`
+floors. Two of them act: `_efm_go_package_attr_floor` puts back every `efm_go.*`
 module, parent-package attribute and root-package global a test replaced, evicted or
 rebound (and reports the test; `KIROCREW_PKG_ATTR_STRICT=1` fails it instead; a module the
 test imported meanwhile stays, bound to what it saw), and
 `_reset_member_eventlog_singleton` drains the member event-log queue (class 4). The rest
 only REPORT, in one `[determinism floors]` warning per worker at session end: a test that
 changed the process time zone, left work running or queued on a shared
-`kiro_crew.executors` pool, reached a host other than loopback (a test marked
+`efm_go.executors` pool, reached a host other than loopback (a test marked
 `@pytest.mark.real_network` is exempt; `KIROCREW_NET_STRICT=1` refuses the call and fails
 the test, except a datagram route probe, which sends nothing), or signalled the worker
 itself, its xdist controller, a process group, or, on Linux, a sibling xdist worker or
@@ -723,11 +723,11 @@ one scope down:
   `log_redaction.uninstall_log_redaction()` exists for a test that wants to assert on
   the uninstalled state itself.
 * `_restore_logger_levels` puts every logger's level and `disabled` flag back. A level is
-  process-global AND hierarchical, so an explicit one left on `kiro_crew` decides what
-  every `kiro_crew.*` logger in the worker may emit and it outranks the root level
+  process-global AND hierarchical, so an explicit one left on `efm_go` decides what
+  every `efm_go.*` logger in the worker may emit and it outranks the root level
   `caplog.at_level()` sets — the victim's `caplog.text` comes back **empty**, not wrong,
   which reads as "the code stopped logging" rather than as pollution.
-  `cli._setup_cli_logging` pins `kiro_crew` at WARNING, and test modules across the suite
+  `cli._setup_cli_logging` pins `efm_go` at WARNING, and test modules across the suite
   run it for real by driving `cli.main()` in process. Restored rather than blamed, for the
   same reason the CWD restore is. **Handlers are deliberately not restored**: one is
   routinely paired with a module-global recording it as installed
@@ -791,8 +791,8 @@ Three layers, told apart by how much of the product is real:
 
 | Layer | Where | What is real | What is fake | Runs |
 |---|---|---|---|---|
-| Unit | `test/`, `src/kiro_crew/apps/builtins/*/tests/` | one function or one handler on a bare `web.Application()` | everything else | every shard, every platform |
-| Integration | `test/integration/` | the whole gateway, booted by `GatewayOrchestrator.run()` in the pytest process, on a `tmp_path` home; real config, stores, policy files, routes | the model (`kiro_crew.testing.fake_acp_backend`) | the `integration` job, Linux, behind `KIROCREW_INTEGRATION=1` |
+| Unit | `test/`, `src/efm_go/apps/builtins/*/tests/` | one function or one handler on a bare `web.Application()` | everything else | every shard, every platform |
+| Integration | `test/integration/` | the whole gateway, booted by `GatewayOrchestrator.run()` in the pytest process, on a `tmp_path` home; real config, stores, policy files, routes | the model (`efm_go.testing.fake_acp_backend`) | the `integration` job, Linux, behind `KIROCREW_INTEGRATION=1` |
 | E2E | `test/test_e2e_smoke.py`, `test/e2e/`, `test/test_playwright_e2e.py` | a `kirocrew gateway` subprocess, and for the browser suite a real Chromium | the model | the `e2e*` jobs, behind `KIROCREW_E2E=1` |
 
 The middle layer exists because the other two cannot see the seams between
@@ -934,7 +934,7 @@ asyncio task the boot added that `_shutdown()` left running (production leaves
 those to `os._exit`), failing the test by name if one ignores cancellation.
 The lists are kept honest by
 `test_boot_smoke.py::test_a_second_boot_touches_only_known_module_globals`:
-it diffs every loaded `kiro_crew` module's globals across a second boot, and a
+it diffs every loaded `efm_go` module's globals across a second boot, and a
 changed name that is neither restored by the harness nor listed with a reason
 in `_KNOWN_SECOND_BOOT_CHANGES` fails there. When startup grows a home-derived
 global, that test names it; put it on the reset list, or on the known list
@@ -966,7 +966,7 @@ unions them and prints the share of registered routes the suite requested,
 `--missing` grouped by path prefix so the next file to write is obvious. A
 route served end to end proves the wiring; a line reached through a mock
 proves the line exists. Line coverage of the layer is still worth reading
-(`--cov=kiro_crew` works as usual), it is just not what the layer is gated on.
+(`--cov=efm_go` works as usual), it is just not what the layer is gated on.
 `--min` in the `integration` job is a ratchet: a little under what `main`
 measures, never above.
 
@@ -1040,7 +1040,7 @@ measures, never above.
      live agent's MCP server list. The rootdir conftest's `_isolate_shared_kiro_paths`
      redirects these from a table, and
      `test/test_host_isolation_floor.py::TestTheSharedKiroPathRatchet` fails when
-     `src/kiro_crew` grows a module-level `Path.home()` binding that is neither in the
+     `src/efm_go` grows a module-level `Path.home()` binding that is neither in the
      table nor explicitly excluded with a reason. The guarantee is exactly that:
      **import-time bindings**.
 
@@ -1074,7 +1074,7 @@ measures, never above.
      against a pattern that no longer matches the thing it protects.
 
 - **Tests MUST NOT derive an expected value from the repo's declared version.**
-  `kiro_crew.__version__` is an input the checkout controls, not a constant: a release
+  `efm_go.__version__` is an input the checkout controls, not a constant: a release
   branch declares `X.Y.Z-rc.N` by contract ([release](../../build/release.md)), a
   nightly tree carries `.dev<stamp>`, an insider wheel its own suffix. `main` declares
   a bare release, so an expectation COMPUTED from it is green there and red exactly
@@ -1114,7 +1114,7 @@ measures, never above.
 
 - **Never name one of the repository's own files by a bare relative path.** A
   structural test that reads the source it pins has to name a file, and
-  `Path("src/kiro_crew/dashboard/ws.py")` names it against whatever directory the
+  `Path("src/efm_go/dashboard/ws.py")` names it against whatever directory the
   process started in. That holds only while pytest is launched from the root: from a
   subdirectory, an editor's runner, or any wrapper that changes directory first, the
   same literal resolves to nothing and the read raises `FileNotFoundError` before a
@@ -1126,7 +1126,7 @@ measures, never above.
   different file than the one the rest of the test exercises.
 
   ```python
-  from kiro_crew.dashboard import ws
+  from efm_go.dashboard import ws
   source = Path(ws.__file__).read_text(encoding="utf-8")
   ```
 
@@ -1269,7 +1269,7 @@ measures, never above.
 - Tests MUST NOT reconfigure or restart a real host service. This is enforced,
   not just asked for: the **rootdir** `conftest.py` (distinct from
   `test/conftest.py`, which only applies to `test/` — `testpaths` also collects
-  `src/kiro_crew/apps/builtins`) pins `$XDG_CONFIG_HOME` to a tmp
+  `src/efm_go/apps/builtins`) pins `$XDG_CONFIG_HOME` to a tmp
   dir so `dev_fleet._dropin_path()` cannot name the operator's real
   `~/.config/systemd/user/kirocrew-gateway.service.d/`, and traps every stdlib
   spawn funnel (`subprocess.Popen.__init__`,
@@ -1357,7 +1357,7 @@ measures, never above.
   becomes the id of the test that leaked it:
 
   ```bash
-  KIROCREW_TMP_PER_TEST=1 pytest src/kiro_crew/apps/builtins/<app>/tests -n0 -q
+  KIROCREW_TMP_PER_TEST=1 pytest src/efm_go/apps/builtins/<app>/tests -n0 -q
   # AssertionError: 1 temporary entry outlived this run under /tmp/kc-pytest-you-951504:
   #     test_provider_listing_never_contains_a_token/tmpw2kvty2z
   ```
@@ -1447,7 +1447,7 @@ measures, never above.
 - **A reimported module is restored in both places.** Tests that reimport a module
   restore its `sys.modules` entry and its parent package's child attribute, including
   their original absence, and remove temporary module entries before restoring the
-  saved objects. The pysqlite3 fallback tests left `kiro_crew.knowledge.store`
+  saved objects. The pysqlite3 fallback tests left `efm_go.knowledge.store`
   pointing at the stdlib-backed temporary module after restoring `sys.modules`, so
   the next schema-behind test failed to catch the optional driver's exception. Verify
   by running the fallback and its consumer in order in one `-n0` process.
@@ -1585,7 +1585,7 @@ Two things the survey CANNOT tell you, both of which misled the first pass:
   `tmp_path`, and monkeypatch the constant at its defining module when production owns
   the name.
 - **Writes into `src/`.** Skill registration created symlinks inside
-  `src/kiro_crew/apps/builtins/*/skills/`, a task runner wrote `runs.json` relative to
+  `src/efm_go/apps/builtins/*/skills/`, a task runner wrote `runs.json` relative to
   CWD, a child interpreter left `__pycache__` in the tree, and hypothesis kept its
   example database at the repo root. `pytest_configure` now points hypothesis at the
   per-user cache dir (`~/.cache/kirocrew/hypothesis`), where its shrunk counterexamples
@@ -1766,7 +1766,7 @@ tests; the classes below are what the rest was made of.
   the rootdir override. Never `undo()` a shared instance to lift one patch; use
   `pytest.MonkeyPatch.context()`.
 - **A pin that lives in `test/conftest.py` is not a floor.** `KIROCREW_PROFILE=standalone`
-  was pinned there, so the ~108 modules under `src/kiro_crew/apps/builtins/*/tests/`
+  was pinned there, so the ~108 modules under `src/efm_go/apps/builtins/*/tests/`
   never saw it. A Kiro Crew agent session exports the enterprise `KIROCREW_PROFILE` to every
   child it spawns; with no companion installed that profile FAILS CLOSED, and 150+
   builtin-app tests were red (every governance-gated route 500, every gated
@@ -2255,12 +2255,12 @@ about the code. Each is a hermeticity gap, and each has one fix:
   literal name fails with cmd's 9009 and every verdict downstream reads as a plain failure.
 - **A child interpreter must import the tree under test, not the installed one.**
   `setup.cfg`'s `pythonpath = src` reaches only pytest's own interpreter; a
-  `sys.executable -c` child resolves `kiro_crew` from the venv's install. On CI that is
+  `sys.executable -c` child resolves `efm_go` from the venv's install. On CI that is
   the checkout being tested, so CI stays green; in a linked worktree that borrows another
   checkout's venv, every child imported THAT checkout, and a child calling a symbol the
   worktree added failed with `AttributeError`. The rootdir conftest's
   `_put_the_tree_under_test_first_on_child_paths` closes the class once: in
-  `pytest_configure` it prepends the directory `kiro_crew` resolves from to
+  `pytest_configure` it prepends the directory `efm_go` resolves from to
   `os.environ["PYTHONPATH"]`, keeps any inherited entries after it and never writes an
   empty component (an empty entry is the child's CWD on `sys.path`). A child that
   inherits the environment needs nothing of its own; a test that builds a child env from
@@ -2713,7 +2713,7 @@ pins `XDG_CACHE_HOME`, rather than each test opting out.
 ### What an eighth five-run pass found (macOS, eight workers, ~121k tests per run)
 
 A Linux pass ran on another machine at the same time and claims the seventh slot
-([#12425](https://github.com/kirodotdev/KiroCrew/pull/12425)); the two overlap on
+([#12425](https://efmleads.com/pull/12425)); the two overlap on
 three findings and are noted where they do.
 
 Five rounds of backend, vitest and electron on a test-only branch off one commit:
@@ -2794,12 +2794,12 @@ negative control before it was believed, and that is what caught them.
   callable it uses at IMPORT time; reading one by attribute at call time makes the observer
   visible to whatever the test patched, and the test cannot tell it apart from the product.
   The concurrent Linux pass closed the other half in
-  [#12425](https://github.com/kirodotdev/KiroCrew/pull/12425), keying the trap on which
+  [#12425](https://efmleads.com/pull/12425), keying the trap on which
   module asked so a bystander normalising a path it was handed is not the defect production
   re-resolving the name is. Both halves are worth having: the test stops accusing observers,
   and a well-behaved observer stops being visible to tests that patch a stdlib symbol.
 - **A datagram `connect()` sends no packet, so it is a routing-table query and not a network
-  connection.** `src/kiro_crew/security/argv_floor.py`'s own-address enumeration connects a
+  connection.** `src/efm_go/security/argv_floor.py`'s own-address enumeration connects a
   `SOCK_DGRAM` socket to `198.51.100.1:53` and `2001:db8::1:53` — TEST-NET-2 and
   documentation addresses, contacted by nobody — to learn the primary outbound address per
   family, and says so in a comment three lines above. The `socket.connect` audit hook never
@@ -2831,9 +2831,9 @@ negative control before it was believed, and that is what caught them.
   filter's: a tool that must recognise the suite's own directories needs the suite to SAY
   whose they are, because a rule built from a sample of them is wrong by construction the
   next time a fixture is added. Both halves of the answer are now in the tree:
-  [#12399](https://github.com/kirodotdev/KiroCrew/pull/12399) gives the short-rooted
+  [#12399](https://efmleads.com/pull/12399) gives the short-rooted
   fixtures one shared stem (`SHORT_TMP_PREFIX`) with two ratchets pinning every caller to
-  it, and [#12425](https://github.com/kirodotdev/KiroCrew/pull/12425) mints a run-owned
+  it, and [#12425](https://efmleads.com/pull/12425) mints a run-owned
   short root under the per-run stem the residue guard already recognises. They compose, and
   each answers a question the other cannot: the root says WHICH RUN made the directory and
   who removes it, the prefix says WHICH FIXTURE inside it — which still matters wherever the
@@ -2848,7 +2848,7 @@ before rerunning.
 
 - `test/test_kiro_cli_pin.py`'s two `*_never_runs_a_path_shadowed_shim` tests pin `PATH` to a
   fake shim directory and pass a fake `home`, but the candidate list in
-  `src/kiro_crew/kiro_cli.py` also carries a HARDCODED `/Applications` bundle path that no
+  `src/efm_go/kiro_cli.py` also carries a HARDCODED `/Applications` bundle path that no
   fixture argument reaches. On a developer machine with the real app installed the product
   CORRECTLY resolves a pinned absolute path there, and the test's "nothing was spawned"
   assertion fails. A resolver whose candidate set mixes injectable locations with a fixed
@@ -2880,7 +2880,7 @@ own assertion still holds. A test that fences a module's network access must pat
 fetch entry point the module exposes, found by grepping the module for its fetch helpers —
 not the subset the assertion happens to read. The concurrent Linux pass reached the same
 test independently and its fix lands in
-[#12425](https://github.com/kirodotdev/KiroCrew/pull/12425), which also refuses the shared
+[#12425](https://efmleads.com/pull/12425), which also refuses the shared
 opener for the whole module so an unrouted seam raises instead of requesting — the stronger
 shape, because it does not depend on the next author grepping.
 
@@ -2917,7 +2917,7 @@ mechanism, and one of them a production defect wearing a test's clothes.
   this host a cold thread pool plus a first file open crosses 50 ms often: alone at `-n0`
   the file was red in three runs of four, and the point's own debug line named it (`outcome
   row outlived its write budget`); with the budget lifted, 5 of 5 green. The fix landed
-  concurrently in [#12753](https://github.com/kirodotdev/KiroCrew/pull/12753), which lifts
+  concurrently in [#12753](https://efmleads.com/pull/12753), which lifts
   all three budgets on that path in the file's autouse fixture and pins the budget's own
   branch with the value set to 0 -- this pass only confirms it from a second host, and
   carries no change to that file.
@@ -2962,7 +2962,7 @@ mechanism, and one of them a production defect wearing a test's clothes.
   paths, one in the reader -- route through one `store.log_exception_text` helper, which
   renders the traceback to text and skips the render when the level is off. The pin,
   `test_crew_log_exc_info_sites.py`, walks the source tree's AST: no `exc_info` call in
-  a `CrewLog` method or in any function under `kiro_crew` that names a handle anywhere
+  a `CrewLog` method or in any function under `efm_go` that names a handle anywhere
   in its body (the invariant is process-wide, so the walk is too -- files naming no handle
   are skipped before the parse, which keeps it under a second), and the sites left in the
   package equal to a vetted list. A checklist item asks a reviewer to notice; the pin
@@ -3061,14 +3061,14 @@ went red, or the fix lands in the wrong file and the leak stays.
   two readings would let a stall that reproduces intermittently pass.
 - **A helper that counts WARNINGs over unfiltered `caplog.records` asserts on every thread
   in the worker.** `test_taskq_runner_adapter.py`'s `_one_warning` demanded exactly one
-  record while the test had scoped `at_level` to `kiro_crew.taskq.adapters.runner`; the
-  second record was `kiro_crew.sandbox`'s mount-source sweep, finishing on the shared
+  record while the test had scoped `at_level` to `efm_go.taskq.adapters.runner`; the
+  second record was `efm_go.sandbox`'s mount-source sweep, finishing on the shared
   `mc-maint` executor seconds after the `SessionManager` test that armed it had torn down
   (`close_all()` cancels the asyncio task but cannot stop an executor thread mid-`/proc`
   scan). Two fixes, in two places: the helper filters `rec.name == _RUNNER_LOGGER`, and
   `test/conftest.py`'s autouse `_no_boot_sandbox_sweep` pins
-  `kiro_crew.session.cleanup_stale_sandbox_profiles` to a no-op for every test under
-  `test/` -- the app test trees under `src/kiro_crew/apps/builtins` do not load
+  `efm_go.session.cleanup_stale_sandbox_profiles` to a no-op for every test under
+  `test/` -- the app test trees under `src/efm_go/apps/builtins` do not load
   `test/conftest.py` and so get no such pin (the table in § Which conftest you are
   standing on says which floors each testpath gets); a test of the sweep itself patches
   the same name inside its body and so still wins. Measured
@@ -3109,7 +3109,7 @@ went red, or the fix lands in the wrong file and the leak stays.
   moment at which every thread is provably idle short of process exit, so it gets no
   consumer there -- built from a module flag (`_ALLOW_CROSS_THREAD_CLOSE_FOR_TESTS`) that
   `test/conftest.py` flips once per session (so only the `test/` testpath has it: the app
-  test trees under `src/kiro_crew/apps/builtins` do not load `test/conftest.py` and do not
+  test trees under `src/efm_go/apps/builtins` do not load `test/conftest.py` and do not
   activate the flip themselves), under which a connection opens
   `check_same_thread=False` through a factory that re-applies the thread-affinity guard in
   Python on every statement entry point the store uses (`cursor`, `execute*`, `commit`,
@@ -3600,7 +3600,7 @@ assertion for the host fact it depends on before reading the test for a bug.
   `CreateProcess`-es the base interpreter as its own child and stays alive as its
   parent. With the limit at one that `CreateProcess` fails with `ERROR_NOT_ENOUGH_QUOTA`,
   the redirector prints `Unable to create process using '"C:\Python312\python.exe" -s -P
-  -m kiro_crew.pdf_extract_child ...'` and exits 101, and the reader files it as
+  -m efm_go.pdf_extract_child ...'` and exits 101, and the reader files it as
   `protocol`. So PDF extraction never worked from a venv-hosted gateway on Windows; the
   five red tests (`test_file_grep.py::TestDocumentPass`, `test_knowledge.py::
   TestFileReaderPdf`) were deterministic, and CI's `setup-python` interpreter is not a
@@ -3643,7 +3643,7 @@ assertion for the host fact it depends on before reading the test for a bug.
   and installing each candidate's leftover through a plugin until the body matched;
   reproduced deterministically at `-n0` by running the two files in order (10 red on the
   base). The eleventh pass, on macOS, met the same leak from the other side and carries
-  the fix in [#14388](https://github.com/kirodotdev/KiroCrew/pull/14388): a rootdir
+  the fix in [#14388](https://efmleads.com/pull/14388): a rootdir
   conftest floor that hands the next test the two globals it inherited, pinned in
   `test_host_isolation_floor.py`. This pass adds only the witness the diagnosis needed:
   the revoke tests' status assertions now carry the response body, so the next 409 names
@@ -3738,7 +3738,7 @@ review finding; the version below is what the lane accepted.
 - **A hung reset the test does not bound waits the shipped `_RESET_TIMEOUT`.** Five
   `TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle` cases in
   `test_subagent_force_stop_audit.py` hand the reaper `_hanging_reset` (a reset that sleeps
-  999 s) without the `patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05)` every sibling class
+  999 s) without the `patch("efm_go.subagent._RESET_TIMEOUT", 0.05)` every sibling class
   in the file carries: 30.04 s each, 150 s of worker time per round, on CI exactly as here.
   `test_subagent_reap_race.py::test_cancel_all_keeps_the_tombstone_when_delivery_already_happened`
   spent 60 s the same way: its docstring described a report "cancelled in the wait that
@@ -3864,7 +3864,7 @@ was `mc-embed`, `mc-recall`, `mc-maint`, `mc-mcpprobe`, `mc-subproc` and `sel-wr
 warming to their caps. `slow` was the suite's own budgets, plus the five
 `test_subagent_force_stop_audit.py` cases at 30 s each -- a missing `_RESET_TIMEOUT` pin,
 which the concurrent fourteenth pass (native Windows, three rounds) found and fixes in
-[#15061](https://github.com/kirodotdev/KiroCrew/pull/15061), together with the
+[#15061](https://efmleads.com/pull/15061), together with the
 `test_connections_mint.py` tenancy stub behind the same refused-kill wording the conftest
 reset above floors.
 
@@ -3973,10 +3973,10 @@ do not quote a layer's absolute number as current. Re-ablate before optimizing o
 
 - **~77 MiB is spent before collection starts** — interpreter, pytest, its
   auto-loaded plugins, and the two conftests. The rootdir conftest alone is ~35 MiB;
-  `test/conftest.py` adds the rest, mostly `hypothesis` and `kiro_crew.slack`.
+  `test/conftest.py` adds the rest, mostly `hypothesis` and `efm_go.slack`.
 - **~320 MiB imports the ~1,540 test modules** and, through them, most of
-  `kiro_crew`. The package's ~960 modules cost ~145 MiB to import on their own, so
-  the product is a sixth of the floor, not a rounding error — `import kiro_crew`
+  `efm_go`. The package's ~960 modules cost ~145 MiB to import on their own, so
+  the product is a sixth of the floor, not a rounding error — `import efm_go`
   alone is 2 MiB and is the wrong number to plan around.
 - **~350 MiB is pytest's item tree**, ~6 KiB per item. Roughly half of that is the
   fixture closure, and the autouse guards in the two conftests are what fill it: they
@@ -4715,7 +4715,7 @@ The same reach applies, more mildly, to a patch of `asyncio.create_subprocess_ex
 value; otherwise patch only for the span of the call, through `monkeypatch`.
 
 **A reload or a `sys.modules` eviction leaves the parent package pointing somewhere
-else.** A string target (`monkeypatch.setattr("kiro_crew.agent_state.config_dir", ...)`)
+else.** A string target (`monkeypatch.setattr("efm_go.agent_state.config_dir", ...)`)
 is resolved through the PARENT PACKAGE's attribute, not through `sys.modules`. Two shapes
 break it, both reproduced:
 
@@ -4729,15 +4729,15 @@ break it, both reproduced:
   one, so the patch silently misses.
 
 `importlib.reload` is the same trap one step over. It rebinds the module's globals to new
-objects, but every `from kiro_crew.learn import Lesson` taken earlier keeps the old class,
+objects, but every `from efm_go.learn import Lesson` taken earlier keeps the old class,
 so an `isinstance` or identity check in a later test fails. `test_learn.py` reloads
-`kiro_crew.learn` to prove its import is side-effect free, and
+`efm_go.learn` to prove its import is side-effect free, and
 `test_onboarding_import_refactor_contract.py` is the victim; a second reload to "restore"
 does not undo it. So never reload a shared module in-process: probe an import on a private
 copy instead, loaded with `importlib.util.spec_from_file_location` under a unique name and
 registered under that unique name with `monkeypatch.setitem(sys.modules, name, mod)`
 before `spec.loader.exec_module(mod)`. Without the registration a module like
-`kiro_crew.learn` (`from __future__ import annotations` plus `@dataclass`) raises
+`efm_go.learn` (`from __future__ import annotations` plus `@dataclass`) raises
 `AttributeError` inside `dataclasses`; never register the copy under the real name. A
 test that must evict a `sys.modules` entry restores both the entry and the parent
 attribute in the same scope (`monkeypatch.setitem(sys.modules, ...)` and
@@ -5096,7 +5096,7 @@ commands and both outputs in the pull request.
 
 ### The gateway harness runs on all three platforms
 
-`kiro_crew.testing.harness.spawn_feature_gateway` boots a real gateway subprocess
+`efm_go.testing.harness.spawn_feature_gateway` boots a real gateway subprocess
 on an isolated throwaway `KIROCREW_HOME`. Two of its internals are platform
 contracts rather than implementation taste, and both used to be POSIX-shaped:
 
@@ -5355,7 +5355,7 @@ throwaway git worktree, so your tree is never mutated and nothing needs restorin
 and it refuses to run while a file under proof carries uncommitted edits.
 
 ```bash
-python3 src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/prove.py
+python3 src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/prove.py
 # 0 PROVEN · 20 NOT_PROVEN · 21 INCONCLUSIVE · 10 nothing to prove · 30 baseline red
 # add --per-hunk to name the hunks no test catches
 ```
@@ -5374,7 +5374,7 @@ pytest exits 0, i.e. only in the case where the mutation did *not* do its job, l
 correctly-failing mutation in your tree.
 
 ```bash
-f=src/kiro_crew/foo.py
+f=src/efm_go/foo.py
 cp "$f" "$f.premutation"                 # back up whatever is there now
 # ...edit $f to invert the branch the test covers...
 pytest test/test_foo.py -n0 -q           # expect RED; if it passes, the test is weak

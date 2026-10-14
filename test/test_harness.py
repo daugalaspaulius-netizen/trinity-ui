@@ -1,4 +1,4 @@
-"""Tests for ``kiro_crew.testing.harness`` — gateway-spawning context manager.
+"""Tests for ``efm_go.testing.harness`` — gateway-spawning context manager.
 
 Most tests exercise the harness's internal helpers in isolation with a
 stand-in for ``subprocess.Popen``. Spawning a real gateway takes 5–15s
@@ -31,8 +31,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.testing.harness import (
+from efm_go import platform_compat
+from efm_go.testing.harness import (
     DEFAULT_READY_TIMEOUT,
     READY_PREFIX,
     GatewayHandle,
@@ -439,7 +439,7 @@ def test_terminate_falls_back_to_sigkill() -> None:
         ready_line = proc.stdout.readline()
         assert ready_line == b"READY\n", f"child did not signal ready: {ready_line!r}"
 
-        with patch("kiro_crew.testing.harness.TERMINATE_GRACE_SECONDS", 0.5):
+        with patch("efm_go.testing.harness.TERMINATE_GRACE_SECONDS", 0.5):
             _terminate_process_group(proc)
         assert proc.poll() is not None
         # On POSIX, SIGKILL is signal 9; returncode is -9 when killed.
@@ -471,13 +471,13 @@ def test_terminate_routes_through_process_tree_kill_on_windows() -> None:
     killed: list[int] = []
     try:
         with (
-            patch("kiro_crew.testing.harness.platform_compat.IS_WINDOWS", True),
+            patch("efm_go.testing.harness.platform_compat.IS_WINDOWS", True),
             patch(
-                "kiro_crew.testing.harness.platform_compat.kill_process_tree",
+                "efm_go.testing.harness.platform_compat.kill_process_tree",
                 side_effect=lambda pid, sig=None: killed.append(pid) or True,
             ),
-            patch("kiro_crew.testing.harness.terminate_pgid") as pgid,
-            patch("kiro_crew.testing.harness.TERMINATE_GRACE_SECONDS", 0.2),
+            patch("efm_go.testing.harness.terminate_pgid") as pgid,
+            patch("efm_go.testing.harness.TERMINATE_GRACE_SECONDS", 0.2),
         ):
             _terminate_process_group(proc)
         assert killed == [proc.pid], "Windows teardown did not kill the process tree"
@@ -503,12 +503,12 @@ def test_terminate_on_windows_survives_a_failed_tree_kill() -> None:
     )
     try:
         with (
-            patch("kiro_crew.testing.harness.platform_compat.IS_WINDOWS", True),
+            patch("efm_go.testing.harness.platform_compat.IS_WINDOWS", True),
             patch(
-                "kiro_crew.testing.harness.platform_compat.kill_process_tree",
+                "efm_go.testing.harness.platform_compat.kill_process_tree",
                 side_effect=PermissionError("taskkill rc=5 access denied"),
             ),
-            patch("kiro_crew.testing.harness.TERMINATE_GRACE_SECONDS", 0.2),
+            patch("efm_go.testing.harness.TERMINATE_GRACE_SECONDS", 0.2),
         ):
             _terminate_process_group(proc)  # must not raise
     finally:
@@ -651,7 +651,7 @@ def test_terminate_pgid_grace_default_resolved_at_call_time() -> None:
         assert proc.stdout is not None
         assert proc.stdout.readline() == b"READY\n"
         start = time.monotonic()
-        with patch("kiro_crew.testing.harness.TERMINATE_GRACE_SECONDS", 0.5):
+        with patch("efm_go.testing.harness.TERMINATE_GRACE_SECONDS", 0.5):
             terminate_pgid(proc.pid)  # default grace — must pick up the patch
         elapsed = time.monotonic() - start
         assert elapsed < 3.0, f"patched grace ignored, took {elapsed:.2f}s"
@@ -702,7 +702,7 @@ def test_terminate_pgid_wait_hook_used_for_exit_detection() -> None:
 def test_resolve_workspace_src_finds_package() -> None:
     """When run from inside the package, returns ``<pkg>/src``."""
     src = _resolve_workspace_src()
-    assert (src / "kiro_crew" / "__init__.py").exists()
+    assert (src / "efm_go" / "__init__.py").exists()
 
 
 def test_gateway_handle_is_frozen() -> None:
@@ -770,13 +770,13 @@ def test_spawn_feature_gateway_happy_path(body_fails: bool) -> None:
         return fake_proc
 
     with (
-        patch("kiro_crew.testing.harness.subprocess.Popen", side_effect=fake_popen),
+        patch("efm_go.testing.harness.subprocess.Popen", side_effect=fake_popen),
         patch(
-            "kiro_crew.testing.harness._terminate_process_group",
+            "efm_go.testing.harness._terminate_process_group",
             side_effect=fake_terminate,
         ),
         patch(
-            "kiro_crew.testing.harness.platform_compat.process_descendants",
+            "efm_go.testing.harness.platform_compat.process_descendants",
             return_value=[],
         ),
     ):
@@ -824,13 +824,13 @@ def test_spawn_feature_gateway_keeps_the_home_when_the_gateway_will_not_die() ->
     )
 
     with (
-        patch("kiro_crew.testing.harness.subprocess.Popen", return_value=fake_proc),
+        patch("efm_go.testing.harness.subprocess.Popen", return_value=fake_proc),
         patch(
-            "kiro_crew.testing.harness._terminate_process_group",
+            "efm_go.testing.harness._terminate_process_group",
             return_value=False,
         ),
         patch(
-            "kiro_crew.testing.harness.platform_compat.process_descendants",
+            "efm_go.testing.harness.platform_compat.process_descendants",
             return_value=[],
         ),
     ):
@@ -863,7 +863,7 @@ def test_spawn_feature_gateway_isolates_the_agent_spec_home() -> None:
     private-target exemption already lets an isolated instance own -- and the whole tree
     is removed with ``home`` on teardown.
     """
-    from kiro_crew.config.paths import isolated_agents_dir
+    from efm_go.config.paths import isolated_agents_dir
 
     fake_proc = _make_fake_proc_with_ready(
         '{"port": 51234, "token": "t-abc", "pid": 9876, "home": "/tmp/x"}'
@@ -877,10 +877,10 @@ def test_spawn_feature_gateway_isolates_the_agent_spec_home() -> None:
         return fake_proc
 
     with (
-        patch("kiro_crew.testing.harness.subprocess.Popen", side_effect=fake_popen),
-        patch("kiro_crew.testing.harness._terminate_process_group"),
+        patch("efm_go.testing.harness.subprocess.Popen", side_effect=fake_popen),
+        patch("efm_go.testing.harness._terminate_process_group"),
         patch(
-            "kiro_crew.testing.harness.platform_compat.process_descendants",
+            "efm_go.testing.harness.platform_compat.process_descendants",
             return_value=[],
         ),
     ):
@@ -908,7 +908,7 @@ def test_spawn_feature_gateway_isolates_the_agent_spec_home() -> None:
 def test_spawn_feature_gateway_explicit_host_inputs_are_child_scoped(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew import agent
+    from efm_go import agent
 
     launcher_dir = tmp_path / "installed-bin"
     launcher_dir.mkdir()
@@ -947,13 +947,13 @@ def test_spawn_feature_gateway_explicit_host_inputs_are_child_scoped(
     binary = Path("/host/bin/kiro-cli")
     with (
         patch(
-            "kiro_crew.testing.harness.subprocess.run",
+            "efm_go.testing.harness.subprocess.run",
             return_value=subprocess.CompletedProcess([], 0),
         ),
-        patch("kiro_crew.testing.harness.subprocess.Popen", side_effect=fake_popen),
-        patch("kiro_crew.testing.harness._terminate_process_group"),
+        patch("efm_go.testing.harness.subprocess.Popen", side_effect=fake_popen),
+        patch("efm_go.testing.harness._terminate_process_group"),
         patch(
-            "kiro_crew.testing.harness.platform_compat.process_descendants",
+            "efm_go.testing.harness.platform_compat.process_descendants",
             return_value=[],
         ),
     ):
@@ -984,7 +984,7 @@ def test_spawn_feature_gateway_explicit_host_inputs_are_child_scoped(
 def test_explicit_binary_refuses_without_reachable_launcher(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, candidate: str
 ) -> None:
-    from kiro_crew import agent
+    from efm_go import agent
 
     launcher = "kirocrew" if candidate == "kirocrew" else str(tmp_path / candidate)
     if candidate == "other-name":
@@ -992,7 +992,7 @@ def test_explicit_binary_refuses_without_reachable_launcher(
         Path(launcher).chmod(0o755)
     monkeypatch.setenv("PATH", str(tmp_path / "empty-path"))
     monkeypatch.setattr(agent, "_resolve_kirocrew_bin", lambda: launcher)
-    with patch("kiro_crew.testing.harness.subprocess.Popen") as popen:
+    with patch("efm_go.testing.harness.subprocess.Popen") as popen:
         with pytest.raises(GatewaySpawnError, match="kirocrew launcher"):
             with spawn_feature_gateway(kiro_bin="native-cli"):
                 pytest.fail("unreachable launcher must prevent boot")
@@ -1012,10 +1012,10 @@ def test_spawn_feature_gateway_host_inputs_default_to_isolation() -> None:
         return fake_proc
 
     with (
-        patch("kiro_crew.testing.harness.subprocess.Popen", side_effect=fake_popen),
-        patch("kiro_crew.testing.harness._terminate_process_group"),
+        patch("efm_go.testing.harness.subprocess.Popen", side_effect=fake_popen),
+        patch("efm_go.testing.harness._terminate_process_group"),
         patch(
-            "kiro_crew.testing.harness.platform_compat.process_descendants",
+            "efm_go.testing.harness.platform_compat.process_descendants",
             return_value=[],
         ),
     ):
@@ -1041,10 +1041,10 @@ def test_spawn_feature_gateway_crons_opt_in() -> None:
         return fake_proc
 
     with (
-        patch("kiro_crew.testing.harness.subprocess.Popen", side_effect=fake_popen),
-        patch("kiro_crew.testing.harness._terminate_process_group"),
+        patch("efm_go.testing.harness.subprocess.Popen", side_effect=fake_popen),
+        patch("efm_go.testing.harness._terminate_process_group"),
         patch(
-            "kiro_crew.testing.harness.platform_compat.process_descendants",
+            "efm_go.testing.harness.platform_compat.process_descendants",
             return_value=[],
         ),
     ):
@@ -1079,12 +1079,12 @@ def test_parallel_spawns_get_distinct_homes_and_ports() -> None:
 
     with (
         patch(
-            "kiro_crew.testing.harness.subprocess.Popen",
+            "efm_go.testing.harness.subprocess.Popen",
             side_effect=lambda *a, **kw: next(procs),
         ),
-        patch("kiro_crew.testing.harness._terminate_process_group"),
+        patch("efm_go.testing.harness._terminate_process_group"),
         patch(
-            "kiro_crew.testing.harness.platform_compat.process_descendants",
+            "efm_go.testing.harness.platform_compat.process_descendants",
             return_value=[],
         ),
     ):
@@ -1150,7 +1150,7 @@ def test_spawn_real_gateway_round_trip() -> None:
 # --------------------------------------------------------------------------- #
 def test_the_backend_shim_is_the_module_path_itself_off_windows(tmp_path: Path) -> None:
     """No shim where none is needed: POSIX spawns the module file directly."""
-    from kiro_crew.testing import harness as h
+    from efm_go.testing import harness as h
 
     with patch.object(h.platform_compat, "IS_WINDOWS", False):
         produced = h.fake_acp_backend_launcher(tmp_path)
@@ -1167,7 +1167,7 @@ def test_the_backend_shim_is_written_in_the_console_code_page() -> None:
     decodes a batch file in the console's OEM code page: ``ascii`` raises outright
     on a non-ASCII interpreter path, and ``utf-8`` hands cmd.exe mojibake for one.
     """
-    from kiro_crew.testing import harness as h
+    from efm_go.testing import harness as h
 
     assert h.SHIM_ENCODING == "oem"
 
@@ -1183,7 +1183,7 @@ def test_the_backend_shim_doubles_percent_so_cmd_cannot_expand_the_path(tmp_path
     rule under test is the ESCAPING, which is the same on every platform. The real
     codec is pinned by the test above, so nothing is lost by not using it here.
     """
-    from kiro_crew.testing import harness as h
+    from efm_go.testing import harness as h
 
     interpreter = r"C:\tools\100%python\python.exe"
     with patch.object(h, "SHIM_ENCODING", "utf-8"):
@@ -1209,7 +1209,7 @@ def test_the_backend_shim_refuses_a_path_cmd_cannot_quote(tmp_path: Path) -> Non
     the wrong executable. The message has to name the path, because the operator
     cannot see the generated file.
     """
-    from kiro_crew.testing import harness as h
+    from efm_go.testing import harness as h
 
     for hostile in ('C:\\to"ols\\python.exe', "C:\\tools\\py\nthon.exe"):
         with patch.object(h.platform_compat, "IS_WINDOWS", True):
@@ -1253,7 +1253,7 @@ class TestTeardownDoesNotTrustTheRootsExit:
             return 0
 
     def test_the_windows_sweep_still_runs_for_an_exited_root(self, monkeypatch) -> None:
-        from kiro_crew.testing import harness as h
+        from efm_go.testing import harness as h
 
         swept: list[int] = []
         monkeypatch.setattr(h.platform_compat, "IS_WINDOWS", True)
@@ -1270,7 +1270,7 @@ class TestTeardownDoesNotTrustTheRootsExit:
 
     def test_an_exited_root_with_no_snapshot_never_calls_killpg(self, monkeypatch) -> None:
         """A recycled root pid cannot be used as a process-group identity."""
-        from kiro_crew.testing import harness as h
+        from efm_go.testing import harness as h
 
         calls: list[tuple[int, int]] = []
         monkeypatch.setattr(h.platform_compat, "IS_WINDOWS", False)
@@ -1296,7 +1296,7 @@ class TestTeardownDoesNotTrustTheRootsExit:
         teardown polls the group itself, so its answer is read rather than
         re-probed here.
         """
-        from kiro_crew.testing import harness as h
+        from efm_go.testing import harness as h
 
         monkeypatch.setattr(h.platform_compat, "IS_WINDOWS", False)
         monkeypatch.setattr(h.platform_compat, "process_descendants", lambda pid: [])
@@ -1313,7 +1313,7 @@ class TestTeardownDoesNotTrustTheRootsExit:
 
     def test_a_live_root_names_its_process_group_explicitly(self, monkeypatch) -> None:
         """The group id is passed rather than derived through another pid lookup."""
-        from kiro_crew.testing import harness as h
+        from efm_go.testing import harness as h
 
         seen: list[object] = []
         monkeypatch.setattr(h.platform_compat, "IS_WINDOWS", False)
@@ -1411,7 +1411,7 @@ def test_preflight_runs_after_seed_and_preserves_its_files(
     tmp_path, monkeypatch, nonbundled_python_with_user_site
 ):
     """A native whoami/config preflight may legitimately populate private state."""
-    from kiro_crew.seed import seed
+    from efm_go.seed import seed
 
     events = []
     proc = _make_fake_proc_with_ready('{"port": 51234, "token": "synthetic"}')
@@ -1444,10 +1444,10 @@ def test_preflight_runs_after_seed_and_preserves_its_files(
         return proc
 
     with (
-        patch("kiro_crew.testing.harness.subprocess.run", side_effect=seed_child),
-        patch("kiro_crew.testing.harness.subprocess.Popen", side_effect=popen),
-        patch("kiro_crew.testing.harness._terminate_process_group", return_value=True),
-        patch("kiro_crew.testing.harness.platform_compat.process_descendants", return_value=[]),
+        patch("efm_go.testing.harness.subprocess.run", side_effect=seed_child),
+        patch("efm_go.testing.harness.subprocess.Popen", side_effect=popen),
+        patch("efm_go.testing.harness._terminate_process_group", return_value=True),
+        patch("efm_go.testing.harness.platform_compat.process_descendants", return_value=[]),
     ):
         with spawn_feature_gateway(fixture="minimal", before_spawn=preflight) as handle:
             home = handle.home
@@ -1459,10 +1459,10 @@ def test_failed_preflight_seed_never_calls_preflight_or_gateway():
     called = []
     with (
         patch(
-            "kiro_crew.testing.harness.subprocess.run",
+            "efm_go.testing.harness.subprocess.run",
             return_value=subprocess.CompletedProcess([], 2, "", "seed refused"),
         ),
-        patch("kiro_crew.testing.harness.subprocess.Popen") as popen,
+        patch("efm_go.testing.harness.subprocess.Popen") as popen,
         pytest.raises(GatewaySpawnError, match="seed refused"),
     ):
         with spawn_feature_gateway(before_spawn=lambda *_args: called.append(True)):
@@ -1473,7 +1473,7 @@ def test_failed_preflight_seed_never_calls_preflight_or_gateway():
 
 @pytest.mark.parametrize("field", ["command", "argv", "args", "executable"])
 def test_gateway_launcher_rejects_command_input(tmp_path, monkeypatch, field):
-    from kiro_crew.testing import harness
+    from efm_go.testing import harness
 
     with patch.object(harness.subprocess, "Popen") as spawn:
         with pytest.raises(TypeError, match="unexpected keyword"):
@@ -1491,7 +1491,7 @@ def test_gateway_launcher_rejects_command_input(tmp_path, monkeypatch, field):
 def test_gateway_launcher_fixed_command_and_restart_seed(
     tmp_path, nonbundled_python_with_user_site
 ):
-    from kiro_crew.testing import harness
+    from efm_go.testing import harness
 
     env = {"KIROCREW_HOME": str(tmp_path)}
     with patch.object(harness.subprocess, "Popen") as spawn:
@@ -1503,7 +1503,7 @@ def test_gateway_launcher_fixed_command_and_restart_seed(
                 "-s",
                 "-P",
                 "-m",
-                "kiro_crew",
+                "efm_go",
                 "gateway",
                 "--test-mode",
             ]
@@ -1574,9 +1574,9 @@ def test_restart_changes_only_download_switch_and_keeps_environment(monkeypatch)
         )
 
     with (
-        patch("kiro_crew.testing.harness._launch_gateway", side_effect=fake_launch),
-        patch("kiro_crew.testing.harness._terminate_process_group", return_value=True),
-        patch("kiro_crew.testing.harness.platform_compat.process_descendants", return_value=[]),
+        patch("efm_go.testing.harness._launch_gateway", side_effect=fake_launch),
+        patch("efm_go.testing.harness._terminate_process_group", return_value=True),
+        patch("efm_go.testing.harness.platform_compat.process_descendants", return_value=[]),
     ):
         with spawn_feature_gateway(fixture="empty") as handle:
             monkeypatch.setenv("KIROCREW_EMBED_MODEL_URL", "https://127.0.0.1:9/changed.gguf")
@@ -1591,7 +1591,7 @@ def test_restart_changes_only_download_switch_and_keeps_environment(monkeypatch)
 
 
 def test_restart_tracks_each_tree_teardown_and_keeps_scratch_cwd():
-    from kiro_crew.testing import harness
+    from efm_go.testing import harness
 
     launches = []
 

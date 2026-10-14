@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.apps.builtins.dev_fleet import fleet_state, runtime
+from efm_go.apps.builtins.dev_fleet import fleet_state, runtime
 
 # Pod HOME values are opaque here -- ``rt.pod_home`` is stubbed and nothing
 # touches the filesystem -- but they are built from the platform temp dir rather

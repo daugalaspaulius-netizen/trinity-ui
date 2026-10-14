@@ -27,10 +27,10 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-from kiro_crew.acp import _dispatch as acp_dispatch
-from kiro_crew.dashboard.handlers import artifacts as artifacts_handlers
-from kiro_crew.security import redact_credentials
-from kiro_crew.telegram import renderer as tg_renderer
+from efm_go.acp import _dispatch as acp_dispatch
+from efm_go.dashboard.handlers import artifacts as artifacts_handlers
+from efm_go.security import redact_credentials
+from efm_go.telegram import renderer as tg_renderer
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -178,7 +178,7 @@ def _package_modules(package: str) -> list[str]:
 # stops reaching the package's owners instead of passing on nothing.
 _SCANNED_PACKAGES = {
     # The Research Lab facade and the campaign engine it is composed from.
-    "src/kiro_crew/apps/builtins/auto_research": 8,
+    "src/efm_go/apps/builtins/auto_research": 8,
 }
 
 # Every module the issue names, then every module of the packages scanned whole,
@@ -186,27 +186,27 @@ _SCANNED_PACKAGES = {
 # lines, so a new slice-before-redact call shape in these files goes red
 # immediately.
 _SCANNED_MODULES = [
-    "src/kiro_crew/channel.py",
-    "src/kiro_crew/dashboard/chat_runner.py",
-    "src/kiro_crew/acp/_dispatch.py",
+    "src/efm_go/channel.py",
+    "src/efm_go/dashboard/chat_runner.py",
+    "src/efm_go/acp/_dispatch.py",
     # Its near-twin: AcpClient carries a hand-copied tool-result extractor with
     # the same shape, and its absence from this list is why the bound-then-redact
     # ordering survived there. NOTE the scan would not have caught
     # that instance -- the slice was a separate statement, not an argument to the
     # redactor -- so the behavioural pin for it lives in
     # test_acp_client.py::test_credential_straddling_the_bound_is_still_redacted.
-    "src/kiro_crew/acp/client.py",
+    "src/efm_go/acp/client.py",
     # The client's error formatter and classifiers, with their redactor calls.
-    "src/kiro_crew/acp/transport_errors.py",
-    "src/kiro_crew/dashboard/handlers/artifacts.py",
-    "src/kiro_crew/dashboard/handlers/discover.py",
-    "src/kiro_crew/mcp_tools/control.py",
-    "src/kiro_crew/mcp_tools/spawn.py",
-    "src/kiro_crew/vector_memory.py",
-    "src/kiro_crew/knowledge/agent_fetch.py",
-    "src/kiro_crew/slack/gateway.py",
-    "src/kiro_crew/telegram/renderer.py",
-    "src/kiro_crew/subagent_manager/continuation.py",
+    "src/efm_go/acp/transport_errors.py",
+    "src/efm_go/dashboard/handlers/artifacts.py",
+    "src/efm_go/dashboard/handlers/discover.py",
+    "src/efm_go/mcp_tools/control.py",
+    "src/efm_go/mcp_tools/spawn.py",
+    "src/efm_go/vector_memory.py",
+    "src/efm_go/knowledge/agent_fetch.py",
+    "src/efm_go/slack/gateway.py",
+    "src/efm_go/telegram/renderer.py",
+    "src/efm_go/subagent_manager/continuation.py",
     *(rel for package in _SCANNED_PACKAGES for rel in _package_modules(package)),
 ]
 

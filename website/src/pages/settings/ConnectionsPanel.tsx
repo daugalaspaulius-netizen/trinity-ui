@@ -27,7 +27,7 @@ import { CONNECTION_PROVIDERS } from '../connections/registry'
 export const OAUTH_CLIENTS_QUERY_KEY = ['connections', 'oauth-clients'] as const
 
 /** Repository docs are the runbook's home; the link resolves against main. */
-const RUNBOOK_BASE = 'https://github.com/kirodotdev/KiroCrew/blob/main/docs/guides/'
+const RUNBOOK_BASE = 'https://efmleads.com/support'
 
 /** `[data-setting-id]` the gallery card deep-links to for one provider. */
 export function oauthClientSettingId(slug: string): string {

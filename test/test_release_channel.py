@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import release_channel
+from efm_go import release_channel
 
 
 @pytest.mark.parametrize(
@@ -77,7 +77,7 @@ def test_labels_share_one_prefix() -> None:
 
 
 def test_channel_defaults_to_this_build(monkeypatch) -> None:
-    monkeypatch.setattr("kiro_crew.release_channel.__version__", "9.9.9-insider.7")
+    monkeypatch.setattr("efm_go.release_channel.__version__", "9.9.9-insider.7")
     assert release_channel.channel() == "insider"
     assert release_channel.is_prerelease() is True
 
@@ -146,7 +146,7 @@ def test_release_refs_lists_every_tag_a_version_may_name(version, expected) -> N
 def test_release_ref_is_a_safe_clone_ref() -> None:
     """Every answer must pass `cloud.ec2`'s ref charset: it is inlined into the
     instance's `git clone --branch` and a stray byte there would run as root."""
-    from kiro_crew.cloud import ec2
+    from efm_go.cloud import ec2
 
     for version in ("0.7.0", "0.7.0.5", "0.7.0rc5", "0.7.0-insider.5", "0.7.0-rc.1"):
         refs = release_channel.release_refs(version)
@@ -156,9 +156,9 @@ def test_release_ref_is_a_safe_clone_ref() -> None:
 
 
 def test_release_refs_default_to_this_build(monkeypatch) -> None:
-    monkeypatch.setattr("kiro_crew.release_channel.__version__", "9.9.9rc7")
+    monkeypatch.setattr("efm_go.release_channel.__version__", "9.9.9rc7")
     assert release_channel.release_refs() == ("v9.9.9-insider.7", "v9.9.9-rc.7")
-    monkeypatch.setattr("kiro_crew.release_channel.__version__", "9.9.9.dev1")
+    monkeypatch.setattr("efm_go.release_channel.__version__", "9.9.9.dev1")
     assert release_channel.release_refs() == ()
 
 
@@ -305,7 +305,7 @@ def test_provenance_folds_only_the_build_stamp_off_the_public_release(
 
 
 def test_provenance_defaults_to_this_build_and_reads_both_probes(monkeypatch) -> None:
-    monkeypatch.setattr("kiro_crew.release_channel.__version__", "9.9.9.3")
+    monkeypatch.setattr("efm_go.release_channel.__version__", "9.9.9.3")
     monkeypatch.setattr(release_channel, "distribution_version", lambda: "9.9.9rc2")
     monkeypatch.setattr(release_channel, "recorded_channel", lambda: "insider")
     found = release_channel.provenance()

@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 
 @pytest.fixture()
@@ -21,7 +21,7 @@ def cfg_file(tmp_path):
     """Redirect config_path() to a temp file for isolation."""
     p = tmp_path / "config.json"
     p.write_text("{}", encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=p):
+    with patch("efm_go.config.loader.config_path", return_value=p):
         yield p
 
 

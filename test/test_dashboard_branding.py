@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.config.loader import DashboardConfig, KiroCrewConfig
+from efm_go.config.loader import DashboardConfig, KiroCrewConfig
 
 
 class TestBrandingConfig:
@@ -19,7 +19,7 @@ class TestBrandingConfig:
         assert cfg.dashboard.avatar == ""
 
     def test_load_from_dict(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: tmp_path / "config.json")
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: tmp_path / "config.json")
         data = {"dashboard": {"url": "", "bot_name": "Jarvis", "avatar": "/tmp/a.png"}}
         (tmp_path / "config.json").write_text(json.dumps(data))
         cfg = KiroCrewConfig.load()
@@ -38,53 +38,53 @@ class TestLogoHandler:
 
     @pytest.mark.asyncio
     async def test_logo_custom_avatar(self, tmp_path):
-        from kiro_crew.dashboard.handlers import logo
+        from efm_go.dashboard.handlers import logo
 
         avatar = tmp_path / "custom.png"
         avatar.write_bytes(b"\x89PNG")
         cfg = KiroCrewConfig(dashboard=DashboardConfig(avatar=str(avatar)))
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg):
             resp = await logo(req)
         assert resp.status == 200
 
     @pytest.mark.asyncio
     async def test_logo_missing_custom_and_default_returns_404(self, tmp_path):
-        from kiro_crew.dashboard.handlers import logo
+        from efm_go.dashboard.handlers import logo
 
         cfg = KiroCrewConfig(dashboard=DashboardConfig(avatar="/nonexistent/path.png"))
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
-            "kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
+            "efm_go.dashboard.handlers._STATIC_DIR", tmp_path
         ):
             resp = await logo(req)
         assert resp.status == 404
 
     @pytest.mark.asyncio
     async def test_logo_missing_custom_falls_back_to_default(self, tmp_path):
-        from kiro_crew.dashboard.handlers import logo
+        from efm_go.dashboard.handlers import logo
 
         default_logo = tmp_path / "kirocrew-logo.png"
         default_logo.write_bytes(b"\x89PNG")
         cfg = KiroCrewConfig(dashboard=DashboardConfig(avatar="/nonexistent/path.png"))
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
-            "kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
+            "efm_go.dashboard.handlers._STATIC_DIR", tmp_path
         ):
             resp = await logo(req)
         assert resp.status == 200
 
     @pytest.mark.asyncio
     async def test_logo_sensitive_path_rejected(self, tmp_path):
-        from kiro_crew.dashboard.handlers import logo
+        from efm_go.dashboard.handlers import logo
 
         sensitive = tmp_path / "secret_key"
         sensitive.write_bytes(b"\x89PNG")
         cfg = KiroCrewConfig(dashboard=DashboardConfig(avatar=str(sensitive)))
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
-            "kiro_crew.hooks.validate_file_path", return_value=None
-        ), patch("kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path / "empty"):
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
+            "efm_go.hooks.validate_file_path", return_value=None
+        ), patch("efm_go.dashboard.handlers._STATIC_DIR", tmp_path / "empty"):
             resp = await logo(req)
         assert resp.status == 404
 
@@ -93,15 +93,15 @@ class TestLogoHandler:
         """Nightly-stamped builds serve the night-sky logo so in-app branding
         (sidebar, favicon, notification avatar -- all /logo.png) matches the
         nightly app's Dock/tray identity."""
-        from kiro_crew.dashboard.handlers import logo
+        from efm_go.dashboard.handlers import logo
 
         (tmp_path / "kirocrew-logo.png").write_bytes(b"\x89PNG-default")
         (tmp_path / "kirocrew-logo-nightly.png").write_bytes(b"\x89PNG-nightly")
-        monkeypatch.setattr("kiro_crew.__version__", "0.1.0-nightly.20260722223306")
+        monkeypatch.setattr("efm_go.__version__", "0.1.0-nightly.20260722223306")
         cfg = KiroCrewConfig(dashboard=DashboardConfig(avatar=""))
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
-            "kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
+            "efm_go.dashboard.handlers._STATIC_DIR", tmp_path
         ):
             resp = await logo(req)
         assert resp.status == 200
@@ -109,14 +109,14 @@ class TestLogoHandler:
 
     @pytest.mark.asyncio
     async def test_logo_nightly_missing_asset_falls_back_to_default(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import logo
+        from efm_go.dashboard.handlers import logo
 
         (tmp_path / "kirocrew-logo.png").write_bytes(b"\x89PNG-default")
-        monkeypatch.setattr("kiro_crew.__version__", "0.1.0-nightly.20260722223306")
+        monkeypatch.setattr("efm_go.__version__", "0.1.0-nightly.20260722223306")
         cfg = KiroCrewConfig(dashboard=DashboardConfig(avatar=""))
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
-            "kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
+            "efm_go.dashboard.handlers._STATIC_DIR", tmp_path
         ):
             resp = await logo(req)
         assert resp.status == 200
@@ -126,15 +126,15 @@ class TestLogoHandler:
     async def test_logo_stable_version_ignores_nightly_variant(self, tmp_path, monkeypatch):
         """Insider/stable stamps keep the production logo even when the
         nightly asset is present in the static dir."""
-        from kiro_crew.dashboard.handlers import logo
+        from efm_go.dashboard.handlers import logo
 
         (tmp_path / "kirocrew-logo.png").write_bytes(b"\x89PNG-default")
         (tmp_path / "kirocrew-logo-nightly.png").write_bytes(b"\x89PNG-nightly")
-        monkeypatch.setattr("kiro_crew.__version__", "0.1.0")
+        monkeypatch.setattr("efm_go.__version__", "0.1.0")
         cfg = KiroCrewConfig(dashboard=DashboardConfig(avatar=""))
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
-            "kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
+            "efm_go.dashboard.handlers._STATIC_DIR", tmp_path
         ):
             resp = await logo(req)
         assert resp.status == 200
@@ -142,14 +142,14 @@ class TestLogoHandler:
 
     @pytest.mark.asyncio
     async def test_logo_no_config_serves_default(self, tmp_path):
-        from kiro_crew.dashboard.handlers import logo
+        from efm_go.dashboard.handlers import logo
 
         default_logo = tmp_path / "kirocrew-logo.png"
         default_logo.write_bytes(b"\x89PNG")
         cfg = KiroCrewConfig()
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
-            "kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg), patch(
+            "efm_go.dashboard.handlers._STATIC_DIR", tmp_path
         ):
             resp = await logo(req)
         assert resp.status == 200
@@ -160,11 +160,11 @@ class TestBrandingEndpoint:
 
     @pytest.mark.asyncio
     async def test_branding_defaults(self):
-        from kiro_crew.dashboard.handlers import api_branding
+        from efm_go.dashboard.handlers import api_branding
 
         cfg = KiroCrewConfig()
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg):
             resp = await api_branding(req)
         body = json.loads(resp.body)
         assert body["bot_name"] == "Kiro Crew"
@@ -172,11 +172,11 @@ class TestBrandingEndpoint:
 
     @pytest.mark.asyncio
     async def test_branding_custom_name(self):
-        from kiro_crew.dashboard.handlers import api_branding
+        from efm_go.dashboard.handlers import api_branding
 
         cfg = KiroCrewConfig(dashboard=DashboardConfig(bot_name="Jarvis"))
         req = MagicMock()
-        with patch("kiro_crew.dashboard.handlers.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.KiroCrewConfig.load", return_value=cfg):
             resp = await api_branding(req)
         body = json.loads(resp.body)
         assert body["bot_name"] == "Jarvis"
@@ -185,7 +185,7 @@ class TestBrandingEndpoint:
 class TestLogoAssetInvariant:
     """The dashboard-served logo and the PWA 512 icon are the same image.
 
-    ``src/kiro_crew/static/kirocrew-logo.png`` (served at ``/logo.png`` for the
+    ``src/efm_go/static/kirocrew-logo.png`` (served at ``/logo.png`` for the
     sidebar, favicon, and notification avatar) is kept byte-identical to
     ``website/public/icon-512.png`` (the PWA/manifest 512 icon) by hand — they
     are two copies of one brand mark. Nothing else asserts that equality, so an
@@ -200,7 +200,7 @@ class TestLogoAssetInvariant:
         from pathlib import Path
 
         repo_root = Path(__file__).resolve().parents[1]
-        served = repo_root / "src" / "kiro_crew" / "static" / "kirocrew-logo.png"
+        served = repo_root / "src" / "efm_go" / "static" / "kirocrew-logo.png"
         pwa = repo_root / "website" / "public" / "icon-512.png"
         # Skip rather than fail on a python-only checkout that lacks website/.
         if not pwa.is_file():

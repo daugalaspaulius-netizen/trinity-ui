@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.dashboard.handlers import updates
+from efm_go.dashboard.handlers import updates
 
 
 @pytest.fixture(autouse=True)

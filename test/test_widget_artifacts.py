@@ -1,4 +1,4 @@
-"""Tests for :mod:`kiro_crew.widget_artifacts` — chat-widget auto-registration."""
+"""Tests for :mod:`efm_go.widget_artifacts` — chat-widget auto-registration."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import widget_artifacts
-from kiro_crew.artifacts import ArtifactComment, ArtifactPublication, ArtifactStore
-from kiro_crew.widget_slug import derive_widget_body_slug
+from efm_go import widget_artifacts
+from efm_go.artifacts import ArtifactComment, ArtifactPublication, ArtifactStore
+from efm_go.widget_slug import derive_widget_body_slug
 
 
 @pytest.fixture

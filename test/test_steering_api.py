@@ -23,9 +23,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.dashboard.handlers.steering as steering_mod
-from kiro_crew.dashboard.handlers._shared import active_project_dir, active_project_state
-from kiro_crew.dashboard.handlers.steering import (
+import efm_go.dashboard.handlers.steering as steering_mod
+from efm_go.dashboard.handlers._shared import active_project_dir, active_project_state
+from efm_go.dashboard.handlers.steering import (
     _STEERING_META_MAX_CHARS,
     STEERING_FILE_MAX_BYTES,
     STEERING_INCLUSION_DEFAULT,
@@ -205,10 +205,10 @@ class TestListing:
         input this read stopped trusting. The ordinary neighbour must not
         produce a line, or the log says nothing.
         """
-        from kiro_crew.dashboard.handlers import steering as mod
+        from efm_go.dashboard.handlers import steering as mod
 
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: sel_mock)
         root = fake_home / ".kiro" / "steering"
         _write_steering(root, "innocent.md", "# Innocent\n")
         denied = _write_steering(root, "denied.md", "# Denied\n")
@@ -860,7 +860,7 @@ class TestListEndpoint:
     @pytest.mark.asyncio
     async def test_get_audits(self, fake_home, monkeypatch):
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: sel_mock)
         async with TestClient(TestServer(_make_app(_state()))) as client:
             assert (await client.get("/api/steering")).status == 200
         names = [c.kwargs.get("tool_name") for c in sel_mock.log_tool_invocation.call_args_list]
@@ -899,7 +899,7 @@ class TestReadEndpoint:
         ``safe_read_file_bytes_nolink`` (O_NOFOLLOW + fstat), so the swap yields
         an error rather than the symlink target's contents.
         """
-        from kiro_crew.dashboard.handlers import steering as mod
+        from efm_go.dashboard.handlers import steering as mod
 
         root = fake_home / ".kiro" / "steering"
         real = _write_steering(root, "a.md", "real content\n")
@@ -917,8 +917,8 @@ class TestReadEndpoint:
     @pytest.mark.asyncio
     async def test_growth_past_cap_mid_read_is_413_not_500(self, fake_home, monkeypatch):
         """The helper raises FileTooLargeError if the file grows after the lstat."""
-        from kiro_crew import hooks
-        from kiro_crew.dashboard.handlers import steering as mod
+        from efm_go import hooks
+        from efm_go.dashboard.handlers import steering as mod
 
         _write_steering(fake_home / ".kiro" / "steering", "a.md", "small\n")
 
@@ -944,10 +944,10 @@ class TestReadEndpoint:
         records that bytes were withheld (``error``), never the cause, for the
         reason the listing test gives.
         """
-        from kiro_crew.dashboard.handlers import steering as mod
+        from efm_go.dashboard.handlers import steering as mod
 
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: sel_mock)
         _write_steering(fake_home / ".kiro" / "steering", "a.md", "# A\nbody\n")
         # steering.py imports the helper at module scope, so patch it there.
         monkeypatch.setattr(mod, "safe_read_file_bytes_nolink", lambda *_a, **_kw: None)
@@ -1043,7 +1043,7 @@ class TestCreateEndpoint:
     @pytest.mark.asyncio
     async def test_audits_creation(self, fake_home, monkeypatch):
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: sel_mock)
         async with TestClient(TestServer(_make_app(_state()))) as client:
             await client.post("/api/steering", json={"name": "a.md", "content": "x"})
         ops = [c.kwargs.get("operation") for c in sel_mock.log_api_access.call_args_list]
@@ -1102,7 +1102,7 @@ class TestUpdateDeleteEndpoints:
         Referencing ``os.O_NOFOLLOW`` directly would raise AttributeError there
         and turn every create/update into a 500.
         """
-        from kiro_crew.dashboard.handlers import steering as mod
+        from efm_go.dashboard.handlers import steering as mod
 
         assert mod._O_NOFOLLOW == getattr(os, "O_NOFOLLOW", 0)
 
@@ -1116,7 +1116,7 @@ class TestUpdateDeleteEndpoints:
         truncating in place, so a write that dies part-way — a full filesystem,
         say — cannot destroy the user's steering document.
         """
-        from kiro_crew.dashboard.handlers import steering as mod
+        from efm_go.dashboard.handlers import steering as mod
 
         path = _write_steering(fake_home / ".kiro" / "steering", "a.md", "original\n")
 
@@ -1192,8 +1192,8 @@ class TestUpdateDeleteEndpoints:
         """
         import os as _os
 
-        import kiro_crew.atomic_write as aw
-        from kiro_crew.dashboard.handlers import steering as mod
+        import efm_go.atomic_write as aw
+        from efm_go.dashboard.handlers import steering as mod
 
         root = fake_home / ".kiro" / "steering"
         path = _write_steering(root, "a.md", "original\n")

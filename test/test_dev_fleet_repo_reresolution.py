@@ -17,7 +17,7 @@ import asyncio
 
 import pytest
 
-from kiro_crew.apps.builtins.dev_fleet import repository, runtime, worktree_ops
+from efm_go.apps.builtins.dev_fleet import repository, runtime, worktree_ops
 
 pytestmark = pytest.mark.asyncio
 
@@ -438,7 +438,7 @@ class TestAConfigReadThatFailedIsNotAConfigChange:
         self, monkeypatch, tmp_path
     ) -> None:
         """Drives the real reader, so the flag is measured rather than stubbed."""
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         monkeypatch.setattr(loader_mod, "config_dir", lambda: tmp_path)
         cfg = tmp_path / "config.json"
@@ -453,7 +453,7 @@ class TestAConfigReadThatFailedIsNotAConfigChange:
 
     async def test_a_config_naming_no_path_is_a_whole_read(self, monkeypatch, tmp_path) -> None:
         """A parseable file carrying no ``repo_path`` is an answer, not a missing read."""
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         monkeypatch.setattr(loader_mod, "config_dir", lambda: tmp_path)
         (tmp_path / "config.json").write_text('{"dev_fleet": {}}', encoding="utf-8")
@@ -467,7 +467,7 @@ class TestAConfigReadThatFailedIsNotAConfigChange:
         flag, because this is the one path that reaches the caller without having read
         any file at all.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         def _boom() -> object:
             raise RuntimeError("no data home")
@@ -483,7 +483,7 @@ class TestAConfigReadThatFailedIsNotAConfigChange:
         or an unreachable network-backed home) must fold into ``whole=False`` rather
         than propagate.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         monkeypatch.setattr(loader_mod, "config_dir", lambda: tmp_path)
         (tmp_path / "config.json").write_text(

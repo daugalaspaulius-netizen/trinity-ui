@@ -12,9 +12,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from kiro_crew.dashboard import crash_dump_store
+from efm_go.dashboard import crash_dump_store
 
-_SITE = "/opt/venv/lib/python3.12/site-packages/kiro_crew"
+_SITE = "/opt/venv/lib/python3.12/site-packages/efm_go"
 
 # The field crash, frames innermost-first exactly as faulthandler prints them.
 CRON_STACK = [

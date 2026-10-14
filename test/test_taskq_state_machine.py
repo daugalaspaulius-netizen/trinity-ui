@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.taskq import model
-from kiro_crew.taskq.model import (
+from efm_go.taskq import model
+from efm_go.taskq.model import (
     ACTIVE,
     CANCELLED,
     CLAIMABLE,

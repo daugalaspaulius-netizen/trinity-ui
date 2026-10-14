@@ -19,13 +19,13 @@ import json
 
 import pytest
 
-from kiro_crew.apps.manager import (
+from efm_go.apps.manager import (
     APP_MANIFEST_FILENAME,
     _read_installed,
     install_app,
     register_external_app,
 )
-from kiro_crew.apps.manifest import RESERVED_APP_NAME_CODE
+from efm_go.apps.manifest import RESERVED_APP_NAME_CODE
 
 # ---------------------------------------------------------------------------
 # Fixtures

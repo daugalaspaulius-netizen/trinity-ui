@@ -46,11 +46,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.code_fingerprint import code_fingerprint as _real_code_fingerprint
-from kiro_crew.mcp_gateway import gatewayd as gw
-from kiro_crew.mcp_gateway import manager as mgr
-from kiro_crew.mcp_gateway import transport
-from kiro_crew.mcp_gateway.gatewayd import resolvable_target_stems
+from efm_go.code_fingerprint import code_fingerprint as _real_code_fingerprint
+from efm_go.mcp_gateway import gatewayd as gw
+from efm_go.mcp_gateway import manager as mgr
+from efm_go.mcp_gateway import transport
+from efm_go.mcp_gateway.gatewayd import resolvable_target_stems
 
 #: The fingerprint every fake pong in this module carries. The REAL one, because
 #: the end-to-end test spawns a real daemon from this same checkout and the
@@ -1085,7 +1085,7 @@ async def test_a_stale_survivor_is_repaired_end_to_end(
     survivor = await asyncio.create_subprocess_exec(
         sys.executable,
         "-m",
-        "kiro_crew.mcp_gateway.gatewayd",
+        "efm_go.mcp_gateway.gatewayd",
         "--socket",
         str(sock),
         "--idle-timeout-secs",

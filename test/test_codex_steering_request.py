@@ -16,15 +16,15 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
-from kiro_crew.acp import session_handle as sh
-from kiro_crew.acp.runtime import AcpRuntime, AcpRuntimeError
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import (
+from efm_go.acp import session_handle as sh
+from efm_go.acp.runtime import AcpRuntime, AcpRuntimeError
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import (
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KIRO,
     METHOD_CANCEL,
 )
-from kiro_crew.dashboard.steer_settle import settle_consumed_steers
+from efm_go.dashboard.steer_settle import settle_consumed_steers
 
 
 class _Runtime:
@@ -332,7 +332,7 @@ async def test_proven_steers_awaiting_the_terminal_count_toward_the_cap():
 
 def test_only_codex_takes_the_steering_request():
     """A mutation pin: a backend added here would inherit this steer transport."""
-    from kiro_crew.agent_sdk.backends import ACP_BACKENDS_STEERING_REQUEST
+    from efm_go.agent_sdk.backends import ACP_BACKENDS_STEERING_REQUEST
 
     assert ACP_BACKENDS_STEERING_REQUEST == frozenset({ACP_BACKEND_CODEX})
 
@@ -949,8 +949,8 @@ def _handle_for(backend: str) -> AcpSessionHandle:
 async def test_the_provider_wrapper_refuses_a_codex_steer():
     """Channels and Side Chat steer AcpProvider; for codex it reports no steer
     and refuses one, so those surfaces take their queue paths."""
-    from kiro_crew.acp.session_provider import AcpSessionProvider
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.acp.session_provider import AcpSessionProvider
+    from efm_go.providers.acp import AcpProvider
 
     handle = _handle_for(ACP_BACKEND_CODEX)
     handle.steer = AsyncMock(return_value=True)  # type: ignore[method-assign]
@@ -966,7 +966,7 @@ async def test_the_provider_wrapper_refuses_a_codex_steer():
 
 @pytest.mark.asyncio
 async def test_the_provider_wrapper_still_steers_kiro():
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.providers.acp import AcpProvider
 
     inner = MagicMock()
     inner.supports_steer = True
@@ -1182,7 +1182,7 @@ async def test_a_stalled_steering_write_raises_only_when_its_frame_was_buffered(
     drain-phase stall left the frame in a pipe the live child may still read:
     it raises, so the caller requeues the steer as possibly delivered instead
     of re-sending it as fresh text."""
-    from kiro_crew.acp.runtime import AcpRuntimeStdinStalled
+    from efm_go.acp.runtime import AcpRuntimeStdinStalled
 
     rt = _Runtime()
 
@@ -1206,7 +1206,7 @@ async def test_a_written_steer_whose_runtime_then_stalls_is_ambiguous():
     """A sibling's stall kills the runtime after this steer's frame drained: the
     unanswered steer may still be read and injected, so it raises an ambiguous
     death instead of reporting itself undelivered."""
-    from kiro_crew.acp.session_handle import AcpRuntimeDead
+    from efm_go.acp.session_handle import AcpRuntimeDead
 
     rt = _Runtime()
     rt.stdin_stall_death = True

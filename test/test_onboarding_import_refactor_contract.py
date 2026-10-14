@@ -1,4 +1,4 @@
-"""Compatibility contract of the :mod:`kiro_crew.onboarding_import` facade.
+"""Compatibility contract of the :mod:`efm_go.onboarding_import` facade.
 
 The engine is composed of cohesive owners (``onboarding_scan``,
 ``onboarding_plan``, ``onboarding_sources``, ``onboarding_apply``) behind the
@@ -10,7 +10,7 @@ rule is implemented:
 * the importable names and the public signatures;
 * that every re-exported name IS the canonical owner's object, so a caller of
   the facade and a caller of the owner can never observe two implementations;
-* that every engine warning is still emitted on the ``kiro_crew.onboarding_import``
+* that every engine warning is still emitted on the ``efm_go.onboarding_import``
   logger, which operators and tests filter on;
 * that the deferred imports stay deferred, so importing the facade does not pull
   the dashboard MCP handler, MCP discovery or the cron service into a process;
@@ -59,13 +59,13 @@ from unittest import mock
 import pytest
 import source_corpus
 
-from kiro_crew import onboarding_import, onboarding_scan, onboarding_sources, platform_compat
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.context import reset_context, set_context
-from kiro_crew.platform.interfaces import ImportSource
+from efm_go import onboarding_import, onboarding_scan, onboarding_sources, platform_compat
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.context import reset_context, set_context
+from efm_go.platform.interfaces import ImportSource
 
-_FACADE_LOGGER = "kiro_crew.onboarding_import"
+_FACADE_LOGGER = "efm_go.onboarding_import"
 
 #: Names reached through the facade by code this engine does not own -- imported,
 #: or cited by their ``onboarding_import.<name>`` path in specs, docstrings and
@@ -119,25 +119,25 @@ _FACADE_DEFINED = (
 
 #: The canonical owner of every re-exported consumer name.
 _OWNERS = {
-    "CATEGORY_IDS": "kiro_crew.onboarding_scan",
-    "_Item": "kiro_crew.onboarding_scan",
-    "_frontmatter": "kiro_crew.onboarding_scan",
-    "_column0_activation_declared": "kiro_crew.onboarding_scan",
-    "_load_no_alias_yaml": "kiro_crew.onboarding_scan",
-    "CONFLICT_STRATEGIES": "kiro_crew.onboarding_apply",
-    "STRATEGY_SKIP": "kiro_crew.onboarding_apply",
-    "STRATEGY_RENAME": "kiro_crew.onboarding_apply",
-    "STRATEGY_OVERWRITE": "kiro_crew.onboarding_apply",
-    "STRATEGY_CATEGORIES": "kiro_crew.onboarding_apply",
-    "_WriteOutcome": "kiro_crew.onboarding_apply",
-    "predecessor_mcp_names": "kiro_crew.onboarding_sources",
-    "stale_mcp_binaries": "kiro_crew.onboarding_sources",
-    "_managed_mcp_names": "kiro_crew.onboarding_sources",
-    "_sources": "kiro_crew.onboarding_sources",
-    "_Source": "kiro_crew.onboarding_sources",
-    "_SOURCE_ID_RE": "kiro_crew.onboarding_sources",
-    "_CORE_MANAGED_MCP_NAMES": "kiro_crew.onboarding_sources",
-    "_scan_source": "kiro_crew.onboarding_sources",
+    "CATEGORY_IDS": "efm_go.onboarding_scan",
+    "_Item": "efm_go.onboarding_scan",
+    "_frontmatter": "efm_go.onboarding_scan",
+    "_column0_activation_declared": "efm_go.onboarding_scan",
+    "_load_no_alias_yaml": "efm_go.onboarding_scan",
+    "CONFLICT_STRATEGIES": "efm_go.onboarding_apply",
+    "STRATEGY_SKIP": "efm_go.onboarding_apply",
+    "STRATEGY_RENAME": "efm_go.onboarding_apply",
+    "STRATEGY_OVERWRITE": "efm_go.onboarding_apply",
+    "STRATEGY_CATEGORIES": "efm_go.onboarding_apply",
+    "_WriteOutcome": "efm_go.onboarding_apply",
+    "predecessor_mcp_names": "efm_go.onboarding_sources",
+    "stale_mcp_binaries": "efm_go.onboarding_sources",
+    "_managed_mcp_names": "efm_go.onboarding_sources",
+    "_sources": "efm_go.onboarding_sources",
+    "_Source": "efm_go.onboarding_sources",
+    "_SOURCE_ID_RE": "efm_go.onboarding_sources",
+    "_CORE_MANAGED_MCP_NAMES": "efm_go.onboarding_sources",
+    "_scan_source": "efm_go.onboarding_sources",
 }
 
 #: Public project names the module bound before it was split into owners, each
@@ -145,42 +145,42 @@ _OWNERS = {
 #: own object, so code written against the single module keeps resolving. Standard
 #: library, typing and third-party imports and private helpers are not surface.
 _PRE_SPLIT_PUBLIC_NAMES = {
-    "platform_compat": "kiro_crew",
-    "atomic_write": "kiro_crew.atomic_write",
-    "ConfigReadError": "kiro_crew.config.loader",
-    "update_config_locked": "kiro_crew.config.loader",
-    "config_dir": "kiro_crew.config.paths",
-    "make_sync_embed_fn": "kiro_crew.embeddings",
-    "ONBOARDING_IMPORT": "kiro_crew.frontmatter",
-    "parse_block_scalar_header": "kiro_crew.frontmatter",
-    "split_frontmatter": "kiro_crew.frontmatter",
-    "FileTooLargeError": "kiro_crew.hooks",
-    "safe_read_file_bytes_nolink": "kiro_crew.hooks",
-    "Lesson": "kiro_crew.learn",
-    "LessonStore": "kiro_crew.learn",
-    "contains_volatile_lesson_fact": "kiro_crew.lesson_validation",
-    "mcp_server_alias": "kiro_crew.mcp_utils",
-    "current_context": "kiro_crew.platform.context",
-    "safe_context_call": "kiro_crew.platform.context",
-    "contains_injection": "kiro_crew.security",
-    "is_sensitive_path": "kiro_crew.security",
-    "redact_with_findings": "kiro_crew.security",
-    "VectorMemoryStore": "kiro_crew.vector_memory",
+    "platform_compat": "efm_go",
+    "atomic_write": "efm_go.atomic_write",
+    "ConfigReadError": "efm_go.config.loader",
+    "update_config_locked": "efm_go.config.loader",
+    "config_dir": "efm_go.config.paths",
+    "make_sync_embed_fn": "efm_go.embeddings",
+    "ONBOARDING_IMPORT": "efm_go.frontmatter",
+    "parse_block_scalar_header": "efm_go.frontmatter",
+    "split_frontmatter": "efm_go.frontmatter",
+    "FileTooLargeError": "efm_go.hooks",
+    "safe_read_file_bytes_nolink": "efm_go.hooks",
+    "Lesson": "efm_go.learn",
+    "LessonStore": "efm_go.learn",
+    "contains_volatile_lesson_fact": "efm_go.lesson_validation",
+    "mcp_server_alias": "efm_go.mcp_utils",
+    "current_context": "efm_go.platform.context",
+    "safe_context_call": "efm_go.platform.context",
+    "contains_injection": "efm_go.security",
+    "is_sensitive_path": "efm_go.security",
+    "redact_with_findings": "efm_go.security",
+    "VectorMemoryStore": "efm_go.vector_memory",
 }
 
 #: Every module of the engine, facade included.
 _ENGINE_MODULES = (
-    "kiro_crew.onboarding_import",
-    "kiro_crew.onboarding_scan",
-    "kiro_crew.onboarding_plan",
-    "kiro_crew.onboarding_apply",
-    "kiro_crew.onboarding_sources",
-    "kiro_crew.onboarding_sources.claude_code",
-    "kiro_crew.onboarding_sources.codex",
-    "kiro_crew.onboarding_sources.gemini",
-    "kiro_crew.onboarding_sources.hermes",
-    "kiro_crew.onboarding_sources.lineage",
-    "kiro_crew.onboarding_sources.openclaw",
+    "efm_go.onboarding_import",
+    "efm_go.onboarding_scan",
+    "efm_go.onboarding_plan",
+    "efm_go.onboarding_apply",
+    "efm_go.onboarding_sources",
+    "efm_go.onboarding_sources.claude_code",
+    "efm_go.onboarding_sources.codex",
+    "efm_go.onboarding_sources.gemini",
+    "efm_go.onboarding_sources.hermes",
+    "efm_go.onboarding_sources.lineage",
+    "efm_go.onboarding_sources.openclaw",
 )
 
 #: Modules the facade must NOT load at import time. Each is imported lazily at
@@ -189,9 +189,9 @@ _ENGINE_MODULES = (
 #: (the dashboard handler imports this engine during gateway startup) or adds
 #: boot weight every importer pays.
 _DEFERRED_MODULES = (
-    "kiro_crew.dashboard.handlers.mcp",
-    "kiro_crew.mcp_discovery",
-    "kiro_crew.cron",
+    "efm_go.dashboard.handlers.mcp",
+    "efm_go.mcp_discovery",
+    "efm_go.cron",
 )
 
 #: ``(seam, owner module)`` for every name the facade mirrors, read off the facade's
@@ -214,7 +214,7 @@ def _isolate_mcp_host_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     in a worker reaches the operator's real files. A test that patches these names
     itself still wins, because its own patch runs after this one.
     """
-    mcp_handlers = importlib.import_module("kiro_crew.dashboard.handlers.mcp")
+    mcp_handlers = importlib.import_module("efm_go.dashboard.handlers.mcp")
     global_mcp = tmp_path / "host-kiro-settings" / "mcp.json"
     monkeypatch.setattr(mcp_handlers, "_GLOBAL_MCP_JSON", global_mcp)
     monkeypatch.setattr(mcp_handlers, "_MCP_LOCK_PATH", global_mcp.with_suffix(".lock"))
@@ -261,7 +261,7 @@ class TestFacadeSurface:
         loaded from ``tmp_path``, the one place a star import is legal.
         """
         probe_path = tmp_path / "onboarding_star_probe.py"
-        probe_path.write_text("from kiro_crew.onboarding_import import *\n", encoding="utf-8")
+        probe_path.write_text("from efm_go.onboarding_import import *\n", encoding="utf-8")
         spec = importlib.util.spec_from_file_location("onboarding_star_probe", probe_path)
         assert spec and spec.loader
         probe = importlib.util.module_from_spec(spec)
@@ -286,7 +286,7 @@ class TestFacadeSurface:
             public - set(onboarding_import.__all__)
         )
         assert public <= set(namespace), sorted(public - set(namespace))
-        gemini = importlib.import_module("kiro_crew.onboarding_sources.gemini")
+        gemini = importlib.import_module("efm_go.onboarding_sources.gemini")
         assert namespace["url2pathname"] is gemini.url2pathname
         assert callable(vars(onboarding_import)["__getattr__"])
 
@@ -333,7 +333,7 @@ class TestFacadeSurface:
     def test_a_facade_defined_name_is_defined_here(self, name: str) -> None:
         # The persistence-switch and cron-probe ratchets locate these writers by
         # ``onboarding_import.py::<name>``; the plan/apply entry points are here too.
-        assert getattr(onboarding_import, name).__module__ == "kiro_crew.onboarding_import"
+        assert getattr(onboarding_import, name).__module__ == "efm_go.onboarding_import"
 
 
 class TestLoggerIdentity:
@@ -344,7 +344,7 @@ class TestLoggerIdentity:
         return [
             record
             for record in caplog.records
-            if record.name.startswith("kiro_crew.onboarding") and record.levelno >= logging.WARNING
+            if record.name.startswith("efm_go.onboarding") and record.levelno >= logging.WARNING
         ]
 
     def test_registry_warnings(self, caplog, install_sources) -> None:
@@ -383,7 +383,7 @@ class TestLoggerIdentity:
         # the real ~/.kiro unless redirected: the host floor only rebinds it when
         # the handler module was already imported, which is not yet the case when
         # this test is the first one a process runs.
-        mcp_handlers = importlib.import_module("kiro_crew.dashboard.handlers.mcp")
+        mcp_handlers = importlib.import_module("efm_go.dashboard.handlers.mcp")
         global_mcp = tmp_path / "kiro" / "settings" / "mcp.json"
         monkeypatch.setattr(mcp_handlers, "_GLOBAL_MCP_JSON", global_mcp)
         monkeypatch.setattr(mcp_handlers, "_MCP_LOCK_PATH", global_mcp.with_suffix(".lock"))
@@ -442,7 +442,7 @@ class TestManagedNamesDuringAScan:
 
     def test_an_unwired_scan_refuses_to_guess_managed_names(self, tmp_path: Path) -> None:
         """A scan built outside ``_scan_source`` fails closed at the MCP projection."""
-        from kiro_crew.onboarding_scan import _Scan
+        from efm_go.onboarding_scan import _Scan
 
         scan = _Scan(source_id="codex", root=tmp_path, user_home=tmp_path)
         with pytest.raises(RuntimeError, match="no registry"):
@@ -550,7 +550,7 @@ class TestMirroredSeams:
     @pytest.mark.parametrize(
         "patcher",
         [
-            lambda name, new: mock.patch(f"kiro_crew.onboarding_import.{name}", new),
+            lambda name, new: mock.patch(f"efm_go.onboarding_import.{name}", new),
             lambda name, new: mock.patch.object(onboarding_import, name, new),
         ],
         ids=["mock.patch", "mock.patch.object"],
@@ -601,7 +601,7 @@ class TestMirroredSeams:
         assert name not in vars(onboarding_import)
 
     def test_a_name_outside_the_table_keeps_plain_module_behaviour(self) -> None:
-        with mock.patch("kiro_crew.onboarding_import._not_a_seam", "set", create=True):
+        with mock.patch("efm_go.onboarding_import._not_a_seam", "set", create=True):
             assert vars(onboarding_import)["_not_a_seam"] == "set"
         assert "_not_a_seam" not in vars(onboarding_import)
         assert not hasattr(onboarding_import, "_not_a_seam")
@@ -647,7 +647,7 @@ class TestTheFacadesOwnCodeReadsTheOwner:
     """
 
     def test_the_facade_reads_no_mirrored_name_as_a_bare_global(self) -> None:
-        source = _engine_source("kiro_crew.onboarding_import").read_text(encoding="utf-8")
+        source = _engine_source("efm_go.onboarding_import").read_text(encoding="utf-8")
         assert _bare_loads(source) == [], (
             "the facade reads these mirrored names from its own namespace, which only "
             "resolves if it binds them; read them off _owner(<name>) instead"
@@ -661,7 +661,7 @@ class TestTheFacadesOwnCodeReadsTheOwner:
         assert (
             _bare_loads(
                 "if TYPE_CHECKING:\n"
-                "    from kiro_crew.onboarding_apply import _write_json\n"
+                "    from efm_go.onboarding_apply import _write_json\n"
                 "def f(path, data):\n"
                 '    _owner("_write_json")._write_json(path, data)\n'
             )
@@ -699,7 +699,7 @@ class TestTheMirroredNamesStayVisibleToTypeCheckers:
     sees one only through the ``TYPE_CHECKING`` imports, each from its owner."""
 
     def test_every_mirrored_name_is_imported_from_its_owner(self) -> None:
-        source = _engine_source("kiro_crew.onboarding_import").read_text(encoding="utf-8")
+        source = _engine_source("efm_go.onboarding_import").read_text(encoding="utf-8")
         imported = _type_checking_imports(source)
         assert {name: imported.get(name) for name in onboarding_import._EXPORTS} == dict(
             onboarding_import._EXPORTS
@@ -741,15 +741,15 @@ class TestTheMirroredNamesStayVisibleToTypeCheckers:
 
     def test_the_check_can_fail(self) -> None:
         """An import outside the guard, or under another condition, is not counted."""
-        source = _engine_source("kiro_crew.onboarding_import").read_text(encoding="utf-8")
+        source = _engine_source("efm_go.onboarding_import").read_text(encoding="utf-8")
         # Must flag: the facade's own guard with one name dropped from it.
         assert source.count("        _toml,\n") == 1
         assert "_toml" not in _type_checking_imports(source.replace("        _toml,\n", ""))
         assert (
             _type_checking_imports(
-                "from kiro_crew.onboarding_scan import _toml\n"
+                "from efm_go.onboarding_scan import _toml\n"
                 "if DEBUG:\n"
-                "    from kiro_crew.onboarding_scan import _MAX_FILES\n"
+                "    from efm_go.onboarding_scan import _MAX_FILES\n"
             )
             == {}
         )
@@ -797,7 +797,7 @@ class TestALoadedOwnerIsReadWithoutImportModule:
             # The refusal sits on the binding the miss path calls: a module that is
             # not loaded yet reaches it.
             with pytest.raises(AssertionError, match="resolution called import_module"):
-                onboarding_import._submodule("kiro_crew._onboarding_import_absent_probe")
+                onboarding_import._submodule("efm_go._onboarding_import_absent_probe")
             assert refused.call_count == 1
 
 
@@ -815,7 +815,7 @@ class TestALoadedOwnerIsReadWithoutImportModule:
 # the literal ``False``. The one exemption is ``_CREATE_PATCH_ALLOWLIST``, which the
 # scan must equal exactly.
 
-_FACADE = "kiro_crew.onboarding_import"
+_FACADE = "efm_go.onboarding_import"
 
 #: Reported in place of a mirrored name the source only computes at runtime.
 _DYNAMIC = "<dynamic>"
@@ -975,7 +975,7 @@ def _bindings(tree: ast.Module) -> _Bindings:
                     bindings.mock_modules.add(bound)
                 elif node.module == "importlib" and alias.name == "import_module":
                     bindings.importers.add(bound)
-                elif node.module == "kiro_crew" and alias.name == "onboarding_import":
+                elif node.module == "efm_go" and alias.name == "onboarding_import":
                     bindings.facades.add(bound)
 
     # Module-level string constants, each bound exactly once, resolved in order.
@@ -1190,8 +1190,8 @@ def _alias_case(import_line: str, patcher: str) -> str:
     """The three call spellings of one patch binding, each passing ``create=True``."""
     return (
         f"{import_line}\n"
-        "from kiro_crew import onboarding_import\n"
-        f'{patcher}("kiro_crew.onboarding_import._MAX_FILES", 1, create=True)\n'
+        "from efm_go import onboarding_import\n"
+        f'{patcher}("efm_go.onboarding_import._MAX_FILES", 1, create=True)\n'
         f'{patcher}.object(onboarding_import, "_toml", None, create=True)\n'
         f"{patcher}.multiple(onboarding_import, create=True, _MAX_DB_ROWS=1)\n"
     )
@@ -1199,7 +1199,7 @@ def _alias_case(import_line: str, patcher: str) -> str:
 
 _ALIAS_HITS = [(3, "_MAX_FILES"), (4, "_toml"), (5, "_MAX_DB_ROWS")]
 
-_MOCK = "from unittest import mock\nfrom kiro_crew import onboarding_import, onboarding_scan\n"
+_MOCK = "from unittest import mock\nfrom efm_go import onboarding_import, onboarding_scan\n"
 
 #: id -> (synthetic source, the ``(line, name)`` hits it must produce). Each rule the
 #: guard enforces has a case it must flag and a case it must ignore.
@@ -1241,7 +1241,7 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
     "decorator/flag": (
         "from unittest.mock import patch as X\n"
         + _MOCK
-        + '@X("kiro_crew.onboarding_import._MAX_FILES", 1, create=True)\n'
+        + '@X("efm_go.onboarding_import._MAX_FILES", 1, create=True)\n'
         '@X.object(onboarding_import, "_toml", None, create=True)\n'
         "def test_decorated():\n    pass\n",
         [(4, "_MAX_FILES"), (5, "_toml")],
@@ -1249,32 +1249,32 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
     "decorator/ignore: no create": (
         "from unittest.mock import patch as X\n"
         + _MOCK
-        + '@X("kiro_crew.onboarding_import._MAX_FILES", 1)\n'
+        + '@X("efm_go.onboarding_import._MAX_FILES", 1)\n'
         '@X.object(onboarding_import, "_toml", None)\n'
         "def test_decorated():\n    pass\n",
         [],
     ),
     # 3. f-string targets built from the facade's __name__ or a module constant.
     "f-string/flag": (
-        _MOCK + 'FACADE = "kiro_crew.onboarding_import"\n'
+        _MOCK + 'FACADE = "efm_go.onboarding_import"\n'
         'mock.patch(f"{onboarding_import.__name__}._MAX_FILES", 1, create=True)\n'
         'mock.patch(f"{FACADE}._is_link_like", None, create=True)\n',
         [(4, "_MAX_FILES"), (5, "_is_link_like")],
     ),
     "f-string/ignore: the owner's name, not the facade's": (
-        _MOCK + 'OWNER = "kiro_crew.onboarding_scan"\n'
+        _MOCK + 'OWNER = "efm_go.onboarding_scan"\n'
         'mock.patch(f"{onboarding_scan.__name__}._MAX_FILES", 1, create=True)\n'
         'mock.patch(f"{OWNER}._MAX_FILES", 1, create=True)\n',
         [],
     ),
     # 4. Concatenation onto a module constant.
     "concatenation/flag": (
-        _MOCK + 'FACADE = "kiro_crew.onboarding_import"\n'
+        _MOCK + 'FACADE = "efm_go.onboarding_import"\n'
         'mock.patch(FACADE + "._MAX_FILES", 1, create=True)\n',
         [(4, "_MAX_FILES")],
     ),
     "concatenation/ignore: onto the owner's name": (
-        _MOCK + 'OWNER = "kiro_crew.onboarding_scan"\n'
+        _MOCK + 'OWNER = "efm_go.onboarding_scan"\n'
         'mock.patch(OWNER + "._MAX_FILES", 1, create=True)\n',
         [],
     ),
@@ -1283,7 +1283,7 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
         _MOCK + "mock.patch.object(\n"
         '    target=onboarding_import, attribute="_MAX_FILES", new=1, create=True\n'
         ")\n"
-        'mock.patch(target="kiro_crew.onboarding_import._toml", new=None, create=True)\n'
+        'mock.patch(target="efm_go.onboarding_import._toml", new=None, create=True)\n'
         "mock.patch.multiple(target=onboarding_import, create=True, _MAX_DB_ROWS=1)\n",
         [(3, "_MAX_FILES"), (6, "_toml"), (7, "_MAX_DB_ROWS")],
     ),
@@ -1318,21 +1318,21 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
     # 7. create=False, and no create at all, are the safe spellings.
     "create-false/flag: the same patches with create=True": (
         _MOCK + 'mock.patch.object(onboarding_import, "_MAX_FILES", 1, create=True)\n'
-        'mock.patch("kiro_crew.onboarding_import._toml", None, create=True)\n',
+        'mock.patch("efm_go.onboarding_import._toml", None, create=True)\n',
         [(3, "_MAX_FILES"), (4, "_toml")],
     ),
     "create-false/ignore": (
         _MOCK + 'mock.patch.object(onboarding_import, "_MAX_FILES", 1, create=False)\n'
-        'mock.patch("kiro_crew.onboarding_import._toml", None, create=False)\n'
+        'mock.patch("efm_go.onboarding_import._toml", None, create=False)\n'
         "mock.patch.multiple(onboarding_import, create=False, _MAX_DB_ROWS=1)\n"
         'mock.patch.object(onboarding_import, "_MAX_FILES", 1)\n',
         [],
     ),
     # 8. On the facade, a name the source only computes at runtime is a hit.
     "dynamic/flag": (
-        _MOCK + 'FACADE = "kiro_crew.onboarding_import"\n'
+        _MOCK + 'FACADE = "efm_go.onboarding_import"\n'
         "mock.patch.object(onboarding_import, name, 1, create=True)\n"
-        'mock.patch(f"kiro_crew.onboarding_import.{name}", 1, create=True)\n'
+        'mock.patch(f"efm_go.onboarding_import.{name}", 1, create=True)\n'
         'mock.patch(FACADE + "." + name, 1, create=True)\n'
         "mock.patch.multiple(onboarding_import, create=True, **names)\n",
         [(4, _DYNAMIC), (5, _DYNAMIC), (6, _DYNAMIC), (7, _DYNAMIC)],
@@ -1349,7 +1349,7 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
         "import sys\n"
         "import unittest.mock\n"
         "from unittest import mock\n"
-        "from kiro_crew import onboarding_import\n"
+        "from efm_go import onboarding_import\n"
         "m = unittest.mock\n"
         "m2 = m\n"
         "p = mock.patch\n"
@@ -1357,8 +1357,8 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
         "multi = p.multiple\n"
         'lm = il.import_module("unittest.mock")\n'
         'sm = sys.modules["unittest.mock"]\n'
-        'm2.patch("kiro_crew.onboarding_import._MAX_FILES", 1, create=True)\n'
-        'p("kiro_crew.onboarding_import._toml", None, create=True)\n'
+        'm2.patch("efm_go.onboarding_import._MAX_FILES", 1, create=True)\n'
+        'p("efm_go.onboarding_import._toml", None, create=True)\n'
         'patcher(onboarding_import, "_MAX_FILES", 1, create=True)\n'
         "multi(onboarding_import, create=True, _MAX_DB_ROWS=1)\n"
         'lm.patch.object(onboarding_import, "_toml", None, create=True)\n'
@@ -1366,7 +1366,7 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
         'late(onboarding_import, "_MAX_FILES", 1, create=True)\n'
         "late = patcher\n"
         "load = il.import_module\n"
-        'load("unittest.mock").patch("kiro_crew.onboarding_import._toml", None, create=True)\n',
+        'load("unittest.mock").patch("efm_go.onboarding_import._toml", None, create=True)\n',
         [
             (13, "_MAX_FILES"),
             (14, "_toml"),
@@ -1382,13 +1382,13 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
         "import importlib as il\n"
         "import requests\n"
         "from unittest import mock\n"
-        "from kiro_crew import onboarding_import\n"
+        "from efm_go import onboarding_import\n"
         "m = requests\n"
         "p = requests.patch\n"
         "patcher = mock.MagicMock\n"
         'lm = il.import_module("requests")\n'
-        'm.patch("kiro_crew.onboarding_import._MAX_FILES", 1, create=True)\n'
-        'p("kiro_crew.onboarding_import._toml", None, create=True)\n'
+        'm.patch("efm_go.onboarding_import._MAX_FILES", 1, create=True)\n'
+        'p("efm_go.onboarding_import._toml", None, create=True)\n'
         'patcher(onboarding_import, "_MAX_FILES", 1, create=True)\n'
         'lm.patch.object(onboarding_import, "_toml", None, create=True)\n',
         [],
@@ -1403,11 +1403,11 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
         'mock.patch.object(m, "_toml", None, create=True)\n'
         "m = oi\n"
         "oi = onboarding_import\n"
-        'loaded = importlib.import_module("kiro_crew.onboarding_import")\n'
+        'loaded = importlib.import_module("efm_go.onboarding_import")\n'
         'mock.patch.object(loaded, "_toml", None, create=True)\n'
         'mock.patch.object(load(onboarding_import.__name__), "_toml", None, create=True)\n'
         'mock.patch.object(_api(), "_toml", None, create=True)\n'
-        'mock.patch.object(sys.modules["kiro_crew.onboarding_import"], "_toml", create=True)\n',
+        'mock.patch.object(sys.modules["efm_go.onboarding_import"], "_toml", create=True)\n',
         [(8, "_toml"), (12, "_toml"), (13, "_toml"), (14, "_toml"), (15, "_toml")],
     ),
     "facade-alias/ignore: aliases of the owner": (
@@ -1415,7 +1415,7 @@ _GUARD_CASES: dict[str, tuple[str, list[tuple[int, str]]]] = {
         "oi = onboarding_scan\n"
         "m = oi\n"
         'mock.patch.object(m, "_MAX_FILES", 1, create=True)\n'
-        'loaded = importlib.import_module("kiro_crew.onboarding_scan")\n'
+        'loaded = importlib.import_module("efm_go.onboarding_scan")\n'
         'mock.patch.object(loaded, "_MAX_FILES", 1, create=True)\n',
         [],
     ),
@@ -1443,8 +1443,8 @@ def test_a_hit_is_attributed_to_the_test_that_holds_it() -> None:
         "    def test_decorated(self):\n"
         "        pass\n"
         "    def test_inline(self):\n"
-        '        mock.patch("kiro_crew.onboarding_import._MAX_FILES", 1, create=True)\n'
-        'mock.patch("kiro_crew.onboarding_import._MAX_FILES", 1, create=True)\n'
+        '        mock.patch("efm_go.onboarding_import._MAX_FILES", 1, create=True)\n'
+        'mock.patch("efm_go.onboarding_import._MAX_FILES", 1, create=True)\n'
     )
     hits = mirrored_create_patches(ast.parse(source), onboarding_import._EXPORTS)
     assert [hit.scope for hit in hits] == [
@@ -1536,7 +1536,7 @@ def facade_rebinds(tree: ast.Module, names: Collection[str]) -> set[str]:
     A rebind is a ``patch``, ``patch.object`` or ``patch.multiple`` call or
     decorator the create guard resolves to the facade, or a ``setattr`` /
     ``delattr`` on any receiver (``monkeypatch``, the builtins) whose target is the
-    facade with a static attribute name or a dotted ``kiro_crew.onboarding_import``
+    facade with a static attribute name or a dotted ``efm_go.onboarding_import``
     string. ``patch.dict`` is not one: it mutates the shared object in place, so
     every holder sees it. A name the source only computes at runtime is skipped.
     """
@@ -1575,20 +1575,20 @@ def _other_holders(name: str) -> list[str]:
 _REBIND_PROBE = (
     "import importlib\n"
     "from unittest import mock\n"
-    "import kiro_crew.onboarding_import as backend\n"
-    "from kiro_crew import onboarding_import, onboarding_sources\n"
+    "import efm_go.onboarding_import as backend\n"
+    "from efm_go import onboarding_import, onboarding_sources\n"
     "def _api():\n"
-    '    return importlib.import_module("kiro_crew.onboarding_import")\n'
+    '    return importlib.import_module("efm_go.onboarding_import")\n'
     "def test_probe(monkeypatch, name):\n"
     "    api = _api()\n"
     # Must flag: each spelling of a rebind on the facade.
     '    monkeypatch.setattr(api, "_managed_mcp_names", frozenset)\n'
     '    monkeypatch.setattr(backend, "CATEGORY_IDS", ())\n'
-    '    monkeypatch.setattr("kiro_crew.onboarding_import.STRATEGY_SKIP", "rename")\n'
+    '    monkeypatch.setattr("efm_go.onboarding_import.STRATEGY_SKIP", "rename")\n'
     '    monkeypatch.delattr(onboarding_import, "_SOURCE_ID_RE")\n'
     '    setattr(onboarding_import, "split_frontmatter", None)\n'
     '    mock.patch.object(onboarding_import, "_sources", dict)\n'
-    '    mock.patch("kiro_crew.onboarding_import.CONFLICT_STRATEGIES", ())\n'
+    '    mock.patch("efm_go.onboarding_import.CONFLICT_STRATEGIES", ())\n'
     '    mock.patch.multiple(onboarding_import, STRATEGY_RENAME="r")\n'
     # Must ignore: the owner, an attribute of a module the facade shares, a name
     # computed at runtime, an in-place dict patch and the owner's dotted name.
@@ -1596,7 +1596,7 @@ _REBIND_PROBE = (
     '    monkeypatch.setattr(onboarding_import.platform_compat, "IS_WINDOWS", True)\n'
     "    monkeypatch.setattr(onboarding_import, name, None)\n"
     "    mock.patch.dict(onboarding_import._EXPORTS, {})\n"
-    '    mock.patch("kiro_crew.onboarding_scan.CATEGORY_IDS", ())\n'
+    '    mock.patch("efm_go.onboarding_scan.CATEGORY_IDS", ())\n'
 )
 
 
@@ -1943,7 +1943,7 @@ def _hermes_projects_db_scenario(
         with connection:
             connection.execute("CREATE TABLE projects (path TEXT)")
     spy = patch_seam(_Spy(original))
-    hermes = importlib.import_module("kiro_crew.onboarding_sources.hermes")
+    hermes = importlib.import_module("efm_go.onboarding_sources.hermes")
     scan = onboarding_scan._Scan(source_id="hermes", root=root, user_home=tmp_path)
     hermes._scan_hermes_projects_db(scan, root)
     assert _tables(spy) == ["projects"]
@@ -1955,7 +1955,7 @@ def _ledger_flush_scenario(tmp_path: Path, original: Any, patch_seam, install_so
     _claude_skill(home)
     destination = tmp_path / "destination"
     ledger = (
-        destination / importlib.import_module("kiro_crew.onboarding_apply")._LEDGER_RELATIVE_PATH
+        destination / importlib.import_module("efm_go.onboarding_apply")._LEDGER_RELATIVE_PATH
     )
     spy = patch_seam(_Spy(original))
     onboarding_import.apply_import(_preview("claude_code", home), data_home=destination)
@@ -2014,17 +2014,17 @@ _CALL_SITE_SEAMS: dict[str, Callable[..., None]] = {
 #: ``(seam, a module other than its owner that reads it)`` -> a scenario that patches
 #: ONLY the facade and proves that module's call site saw the patch.
 _CROSS_MODULE_READERS: dict[tuple[str, str], Callable[..., None]] = {
-    ("_MAX_FILES", "kiro_crew.onboarding_sources.openclaw"): _openclaw_agent_cap_scenario,
-    ("_is_link_like", "kiro_crew.onboarding_apply"): _apply_ancestor_scenario,
-    ("_is_link_like", "kiro_crew.onboarding_import"): _facade_probe_scenario,
-    ("_is_link_like", "kiro_crew.onboarding_sources"): _scan_source_scenario,
-    ("_is_link_like", "kiro_crew.onboarding_sources.hermes"): _hermes_profiles_scenario,
-    ("_is_link_like", "kiro_crew.onboarding_sources.openclaw"): _openclaw_agents_scenario,
-    ("_scan_lineage_install", "kiro_crew.onboarding_sources"): _scan_lineage_install_scenario,
-    ("_sqlite_columns", "kiro_crew.onboarding_sources.codex"): _codex_automations_scenario,
-    ("_sqlite_columns", "kiro_crew.onboarding_sources.hermes"): _hermes_projects_db_scenario,
-    ("_sqlite_columns", "kiro_crew.onboarding_sources.lineage"): _sqlite_columns_scenario,
-    ("_write_json", "kiro_crew.onboarding_import"): _ledger_flush_scenario,
+    ("_MAX_FILES", "efm_go.onboarding_sources.openclaw"): _openclaw_agent_cap_scenario,
+    ("_is_link_like", "efm_go.onboarding_apply"): _apply_ancestor_scenario,
+    ("_is_link_like", "efm_go.onboarding_import"): _facade_probe_scenario,
+    ("_is_link_like", "efm_go.onboarding_sources"): _scan_source_scenario,
+    ("_is_link_like", "efm_go.onboarding_sources.hermes"): _hermes_profiles_scenario,
+    ("_is_link_like", "efm_go.onboarding_sources.openclaw"): _openclaw_agents_scenario,
+    ("_scan_lineage_install", "efm_go.onboarding_sources"): _scan_lineage_install_scenario,
+    ("_sqlite_columns", "efm_go.onboarding_sources.codex"): _codex_automations_scenario,
+    ("_sqlite_columns", "efm_go.onboarding_sources.hermes"): _hermes_projects_db_scenario,
+    ("_sqlite_columns", "efm_go.onboarding_sources.lineage"): _sqlite_columns_scenario,
+    ("_write_json", "efm_go.onboarding_import"): _ledger_flush_scenario,
 }
 
 
@@ -2122,7 +2122,7 @@ class TestFacadeModuleAttributes:
 
 @pytest.mark.parametrize("attr", _MCP_HOST_PATHS)
 def test_the_mcp_host_paths_resolve_under_tmp_path(attr: str, tmp_path: Path) -> None:
-    mcp_handlers = importlib.import_module("kiro_crew.dashboard.handlers.mcp")
+    mcp_handlers = importlib.import_module("efm_go.dashboard.handlers.mcp")
     assert Path(getattr(mcp_handlers, attr)).is_relative_to(tmp_path)
 
 
@@ -2159,7 +2159,7 @@ class TestImportTimeBehaviour:
         out = _run_python(
             tmp_path,
             "import json, sys\n"
-            "import kiro_crew.onboarding_import\n"
+            "import efm_go.onboarding_import\n"
             f"print(json.dumps([m for m in {list(_DEFERRED_MODULES)!r} if m in sys.modules]))\n",
         )
         assert json.loads(out.strip().splitlines()[-1]) == []
@@ -2170,17 +2170,17 @@ class TestImportTimeBehaviour:
         out = _run_python(
             tmp_path,
             f"import {module}\n"
-            "import kiro_crew.onboarding_import as facade\n"
+            "import efm_go.onboarding_import as facade\n"
             "print(facade.preview_import.__module__)\n",
         )
-        assert out.strip().splitlines()[-1] == "kiro_crew.onboarding_import"
+        assert out.strip().splitlines()[-1] == "efm_go.onboarding_import"
 
     def test_importing_mcp_cleanup_does_not_load_the_engine(self, tmp_path) -> None:
         out = _run_python(
             tmp_path,
             "import sys\n"
-            "import kiro_crew.mcp_cleanup\n"
-            "print('kiro_crew.onboarding_import' in sys.modules)\n",
+            "import efm_go.mcp_cleanup\n"
+            "print('efm_go.onboarding_import' in sys.modules)\n",
         )
         assert out.strip().splitlines()[-1] == "False"
 
@@ -2198,4 +2198,4 @@ def test_the_claude_code_source_id_is_the_foreign_app_not_the_provider() -> None
 
 
 def test_the_facade_module_is_importable_through_importlib() -> None:
-    assert importlib.import_module("kiro_crew.onboarding_import") is onboarding_import
+    assert importlib.import_module("efm_go.onboarding_import") is onboarding_import

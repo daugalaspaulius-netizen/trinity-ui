@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 
 
 def _make_gw(state: object) -> object:
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
     gw.dashboard_state = state  # type: ignore[attr-defined]

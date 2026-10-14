@@ -36,7 +36,7 @@ import { pathToFileURL } from 'node:url'
 // to a non-`file:` URL, which `fileURLToPath` rejects. Every other path-reading
 // test in this folder resolves the same way.
 const WEBSITE = resolve(__dirname, '..', '..')
-const LOGO = resolve(WEBSITE, '..', 'src', 'kiro_crew', 'static', 'kirocrew-logo.png')
+const LOGO = resolve(WEBSITE, '..', 'src', 'efm_go', 'static', 'kirocrew-logo.png')
 
 interface Probe {
   status: number

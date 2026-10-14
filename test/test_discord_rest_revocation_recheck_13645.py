@@ -29,9 +29,9 @@ import aiohttp
 import pytest
 from multidict import CIMultiDict
 
-from kiro_crew.discord import client as dc
-from kiro_crew.discord import transport as dt
-from kiro_crew.discord.client import (
+from efm_go.discord import client as dc
+from efm_go.discord import transport as dt
+from efm_go.discord.client import (
     _REVOKED_DETAIL,
     _UNANSWERABLE_DETAIL,
     _UNATTRIBUTABLE_DETAIL,
@@ -43,7 +43,7 @@ from kiro_crew.discord.client import (
     SendPermission,
     _guarded_destination,
 )
-from kiro_crew.discord.transport import DiscordTransport
+from efm_go.discord.transport import DiscordTransport
 
 #: Structural assertions read their sources from here, not from the process
 #: working directory, so a run started anywhere reads this checkout.
@@ -483,7 +483,7 @@ class TestCallerSuppliedDestination:
         """A send is outbound traffic, so the row it leaves has to say so. Pinned
         by which name the client calls, because the direction is carried by the
         entry point rather than by an argument."""
-        import kiro_crew.discord.client as dc
+        import efm_go.discord.client as dc
 
         assert hasattr(dc, "channel_outbound_permitted")
         assert not hasattr(dc, "channel_inbound_permitted")
@@ -585,7 +585,7 @@ class TestCallerSuppliedDestination:
         be delivered in the one case it exists for. Both are ephemeral, so they
         disclose nothing into the channel.
         """
-        from kiro_crew.discord import transport_dispatch as td
+        from efm_go.discord import transport_dispatch as td
 
         source = Path(td.__file__).read_text(encoding="utf-8")
         verbs = {"respond_interaction", "ack_component_interaction"}
@@ -982,7 +982,7 @@ class TestTransportPredicate:
         """
         import ast as _ast
 
-        client_src = (_REPO_ROOT / "src/kiro_crew/discord/client.py").read_text(encoding="utf-8")
+        client_src = (_REPO_ROOT / "src/efm_go/discord/client.py").read_text(encoding="utf-8")
         tree = _ast.parse(client_src)
         holders: list[str] = []
         for node in _ast.walk(tree):
@@ -1023,8 +1023,8 @@ class TestTransportPredicate:
         assert funnel_callers == ["create_dm_channel", "remember_dm_recipient"], funnel_callers
 
         for path in (
-            _REPO_ROOT / "src/kiro_crew/discord/transport.py",
-            _REPO_ROOT / "src/kiro_crew/discord/transport_dispatch.py",
+            _REPO_ROOT / "src/efm_go/discord/transport.py",
+            _REPO_ROOT / "src/efm_go/discord/transport_dispatch.py",
         ):
             src = path.read_text(encoding="utf-8")
             t = _ast.parse(src)

@@ -64,9 +64,9 @@ const META = {
     icon: ICON.google,
     fetched_at: Date.now() / 1000,
   },
-  'https://github.com/kirodotdev/KiroCrew': {
-    url: 'https://github.com/kirodotdev/KiroCrew',
-    title: 'kirodotdev/KiroCrew: an autonomous agent management layer',
+  'https://efmleads.com': {
+    url: 'https://efmleads.com',
+    title: 'efmleads.com: an autonomous agent management layer',
     description: 'Persistent memory, scheduled jobs, background subagents, self-learning and multi-session orchestration.',
     site_name: 'GitHub',
     domain: 'github.com',
@@ -90,7 +90,7 @@ const CONTENT = [
   'Two of the big ones: shopping is [Amazon](https://www.amazon.com) and search is',
   '[Google](https://www.google.com) — both linked inline, mid-sentence.',
   '',
-  'https://github.com/kirodotdev/KiroCrew',
+  'https://efmleads.com',
   '',
   'A link with no favicon available, still inline: https://example.org/rfc/9110 — the',
   'icon box holds its width so the title does not shift.',
@@ -401,7 +401,7 @@ async function main() {
   const spanned = await page.evaluate(() => window.__copied.join('\n'))
   console.log('CROSS-CARD raw browser text:', JSON.stringify(rawSpan))
   console.log('CROSS-CARD what Copy handed over:', JSON.stringify(spanned))
-  const wantUrls = ['https://www.amazon.com', 'https://www.google.com', 'https://github.com/kirodotdev/KiroCrew']
+  const wantUrls = ['https://www.amazon.com', 'https://www.google.com', 'https://efmleads.com']
   const missing = wantUrls.filter((u) => !spanned.includes(u))
   console.log(
     'ASSERT every link in the span became its model-written URL:',

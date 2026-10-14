@@ -28,23 +28,23 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import constants as kc_constants
-from kiro_crew.acp import client as acp_client
-from kiro_crew.acp.client import (
+from efm_go import constants as kc_constants
+from efm_go.acp import client as acp_client
+from efm_go.acp.client import (
     _DEFAULT_PROMPT_TIMEOUT,
     _PROMPT_TIMEOUT_MARGIN_SECS,
     _effective_prompt_timeout,
     resolve_prompt_timeout,
 )
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     CHAT_TURN_TIMEOUT_MAX,
     CHAT_TURN_TIMEOUT_MIN,
     KiroCrewConfig,
     _clamp_security_bounds,
     _safe_int,
 )
-from kiro_crew.constants import SUBAGENT_TIMEOUT_SECS
-from kiro_crew.dashboard import turn_dispatch as td
+from efm_go.constants import SUBAGENT_TIMEOUT_SECS
+from efm_go.dashboard import turn_dispatch as td
 
 
 def _patch_loaded_ceiling(monkeypatch, value: object, subagent: object = 60) -> None:
@@ -271,7 +271,7 @@ class TestTransportEntryPointsResolveNone:
     def test_session_handle_prompt_defaults_to_none(self) -> None:
         import inspect
 
-        from kiro_crew.acp.session_handle import AcpSessionHandle
+        from efm_go.acp.session_handle import AcpSessionHandle
 
         sig = inspect.signature(AcpSessionHandle.prompt)
         assert sig.parameters["timeout"].default is None

@@ -681,7 +681,7 @@ jobs:
 
             The committed golden-path corpus you must read before writing rows,
             and must not re-propose from, is
-                src/kiro_crew/builtin_skills/security-conductor/golden-paths.json
+                src/efm_go/builtin_skills/security-conductor/golden-paths.json
             at this base checkout. You never edit it.
 
             Write your candidate rows to `candidates.json` in the current working
@@ -961,7 +961,7 @@ jobs:
               exit 1
             fi
           done
-          git show "$BASE_SHA:src/kiro_crew/builtin_skills/security-conductor/golden-paths.json" \
+          git show "$BASE_SHA:src/efm_go/builtin_skills/security-conductor/golden-paths.json" \
             > "$CORPUS" 2>/dev/null || true
           if [ ! -s "$CORPUS" ]; then
             echo "::error::no golden-paths corpus on the base commit ($BASE_SHA); there is no contract to dedupe against."
@@ -1200,7 +1200,7 @@ jobs:
       # package's own modules, and the child reaches them through PYTHONPATH at a
       # materialized checkout. Installing the package would add three
       # platform-dependent minutes and a resolution failure mode, and an editable
-      # install would put a SECOND copy of `kiro_crew` on the path -- which the
+      # install would put a SECOND copy of `efm_go` on the path -- which the
       # script's own tree check would then refuse.
       - name: Fetch the two commits as git objects
         shell: bash

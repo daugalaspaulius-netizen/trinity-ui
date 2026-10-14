@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.messaging -- v1a contracts (ABCs, value objects)."""
+"""Tests for efm_go.messaging -- v1a contracts (ABCs, value objects)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from dataclasses import fields
 
 import pytest
 
-from kiro_crew.messaging import (
+from efm_go.messaging import (
     COMPACTION,
     DONE,
     OUTPUT_KINDS,
@@ -122,7 +122,7 @@ class TestAbstract:
 
 class TestSessionProvenanceTag:
     def test_tag_is_stable_short_and_keyed(self):
-        from kiro_crew.messaging.renderer import session_provenance_tag
+        from efm_go.messaging.renderer import session_provenance_tag
 
         first = session_provenance_tag("dashboard:chat-1")
         assert first == session_provenance_tag("dashboard:chat-1")
@@ -131,7 +131,7 @@ class TestSessionProvenanceTag:
         assert first != session_provenance_tag("dashboard:chat-2")
 
     def test_empty_key_has_no_tag(self):
-        from kiro_crew.messaging.renderer import session_provenance_tag
+        from efm_go.messaging.renderer import session_provenance_tag
 
         assert session_provenance_tag("") == ""
 

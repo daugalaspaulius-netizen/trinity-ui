@@ -41,7 +41,7 @@ representative seams of each kind.
 
 | Owner | Owns |
 |---|---|
-| `config/fields.py` | `_meta` field metadata, the `_safe_*` value coercers every section shares, and `field_default`, the one reader of a DTO field's declared default (`SectionReader` reads through it). A leaf: it imports nothing from `kiro_crew`. |
+| `config/fields.py` | `_meta` field metadata, the `_safe_*` value coercers every section shares, and `field_default`, the one reader of a DTO field's declared default (`SectionReader` reads through it). A leaf: it imports nothing from `efm_go`. |
 | `config/sections.py` | The DTOs other specs and tests anchor here: agent, crew record, workspace, session, dashboard (with `TailscaleConfig` and its parser), the messaging channels, `wakatime`, speech-to-text and its degradation rules, telemetry, decisions, resource limits, and the bounds constants. It is also the facade for the three section owners below. It also holds `SectionReader`, which resolves a builder's omitted key and coercer fallback to the DTO field's declared default. |
 | `config/memory_sections.py` | `memory`, `knowledge`, `skills`, `session_summary` and the named `memory_stores` records. |
 | `config/integration_sections.py` | `mcp`, `mcp_gateway` (with the MCP stub roster readers the gateway seed shares), `instances`, `tunnel`, `publish`, `computer_use` and the external app `registries`. |
@@ -59,7 +59,7 @@ modules earlier in that order plus the existing leaves (`sections` imports
 `resolution`, `migration` imports `superseded_defaults`, and neither leaf imports
 back), and none of the owners imports `loader`, `schema` or `validation`;
 `test_config_module_boundaries.py` pins the graph. Every module
-split out of the loader logs as `kiro_crew.config.loader`, so a relocated warning
+split out of the loader logs as `efm_go.config.loader`, so a relocated warning
 keeps the record name operators filter on.
 
 `sections.py` keeps its DTOs because other specs name the file for them:
@@ -88,7 +88,7 @@ because its readers look up a name the loader's callers and tests patch there:
 | The security clamp and its SEL event | [security](security.md), [sel](sel.md) and [resource-protection](../../architecture/resource-protection.md) name the loader. |
 | The loop-stall and managed-launch readers | `load_loop_stall_exit_after` reads the loader's patchable `KiroCrewConfig`; `resolve_loop_stall_exit_after` and `consume_managed_service_launch_environment` are its two halves, and the dashboard server imports all three from here. The consume takes the marker out of `os.environ` so descendants do not inherit it, and hands it to `platform_compat.keep_for_reexec`, so the gateway's own exec successor (an in-app restart) is still a managed launch; `launched_as_managed_service` answers from either place, so it does not change once the dashboard has started. |
 | The agent, session, telemetry and dashboard builders | The harness-parity review scope; the patchable `DEFAULT_POOL_SIZE` fallback; [metrics](metrics.md) naming the loader as the telemetry parser; the feature map naming the loader's `folder_sort` read. |
-| Published snapshots: materialized agents, the alias table, the compaction threshold, the timezone | Tests rebind this module's snapshot state, and the second-boot witness in `test/integration/test_boot_smoke.py` keys the counters to `kiro_crew.config.loader`. |
+| Published snapshots: materialized agents, the alias table, the compaction threshold, the timezone | Tests rebind this module's snapshot state, and the second-boot witness in `test/integration/test_boot_smoke.py` keys the counters to `efm_go.config.loader`. |
 | Agent resolution and the provider factory | [crew-mode](crew-mode.md) and [context-management](../../architecture/context-management.md) name the loader for `resolve_agent_bindings` and `resolve_effective_model`. The agent-spec read inventory keys its call sites to this file, the ACP import is a baselined agent-SDK edge, and the blocking harness-parity and memory-store review rules cover `config/loader.py`. |
 
 New section constants, including local speech's automatic-language default, are
@@ -172,7 +172,7 @@ admission again, including when rollback failure closes an uncertain connection.
 
 Kiro Crew's data root nests **under kiro-cli's own `~/.kiro/` base** so all
 Kiro-family apps share a single directory a user can secure. `config_dir()`
-(in `kiro_crew/config/paths.py`, re-exported from `kiro_crew/config/loader.py`)
+(in `efm_go/config/paths.py`, re-exported from `efm_go/config/loader.py`)
 is the single accessor and resolves to:
 
 1. `$KIROCREW_HOME` when set (used as-is; refuses system directories like `/`,
@@ -239,7 +239,7 @@ eliminate, the one-way-door risk above; the release gate still stands.
 > `~/.kiro/`-wide wipe would be unrecoverable total data loss. Until confirmed,
 > the placement decision is acknowledged-but-owned here under this name so it is
 > not lost. **Tracked as release-blocking in
-> [issue #355](https://github.com/kirodotdev/KiroCrew/issues/355)**; the sign-off
+> [issue #355](https://efmleads.com/issues/355)**; the sign-off
 > must be recorded there and the issue closed
 > before tagging the first release containing this change.
 
@@ -274,7 +274,7 @@ def _some_dir() -> Path:
 Annotating the override as `Path | None` is load-bearing: any consumer that
 still reads the constant directly becomes a **mypy error** rather than a silent
 `None` at runtime. This is enforced repo-wide by
-`test/test_lazy_data_home_paths.py`, which walks the AST of `src/kiro_crew` for
+`test/test_lazy_data_home_paths.py`, which walks the AST of `src/efm_go` for
 module-level assignments calling any factory declared in `config/paths.py` and
 fails on every hit. The factory list is derived from `paths.py` itself, so a
 newly added factory is covered without editing the test. Issue #874.
@@ -342,7 +342,7 @@ subdirectories are derived.
 `KIROCREW_PROJECT_DIR` env var controls where agent config and skills are loaded from:
 
 1. Env var `KIROCREW_PROJECT_DIR` (if set and valid)
-2. CWD walk-up — CLI walks up from CWD looking for `skills/` + `src/kiro_crew/` (the `agents/` dir was removed in commit bbbc1f6e when agent config moved into `src/kiro_crew/config/`)
+2. CWD walk-up — CLI walks up from CWD looking for `skills/` + `src/efm_go/` (the `agents/` dir was removed in commit bbbc1f6e when agent config moved into `src/efm_go/config/`)
 3. Saved path in `~/.kiro/crew/project_dir` (written by `kirocrew setup`)
 4. Bundled fallback — `config/defaults.json` and `builtin_skills/` inside the package
 
@@ -392,8 +392,8 @@ none" is the single on-disk representation and a PATCH with `[]` clears it.
   resolver error logs a warning naming the slot and the turn proceeds with no
   folder steering, and a directory that has since disappeared is skipped at read
   time rather than failing the turn. Delivery is performed once by the context
-  builder (`kiro_crew.context.ContextBuilder`) reading through
-  `kiro_crew.folder_steering` — the one layer every backend passes through, so
+  builder (`efm_go.context.ContextBuilder`) reading through
+  `efm_go.folder_steering` — the one layer every backend passes through, so
   no provider can silently drop it. See [providers](providers.md).
 
 ## Named Memory Stores (`memory_stores.py`)
@@ -937,7 +937,7 @@ cost a warning on every load, forever, because a load never writes.
 One entry today: `stt.provider`. Its retired values (`whisper`, `mlx`, `parakeet`,
 `faster`) degrade to `local`; any other unknown value degrades to `off`, so a
 value nobody can account for never selects the in-process native recogniser
-(kirodotdev/KiroCrew#13179). Because the two resolutions differ, `resolves_to` is
+(efmleads.com#13179). Because the two resolutions differ, `resolves_to` is
 a callable of the stored value (delegating to `_validated_stt_provider`, the
 loader's own rule) and the entry carries the section `default`. `--adopt` uses
 both: it REWRITES a coerced key as what it resolves to, or deletes it only when
@@ -1022,7 +1022,7 @@ Electron's `userData` directory, so a moved dashboard port, a relocated
 browser storage eviction wipes every setting the user chose — and reads to the
 user as "the upgrade lost my settings".
 
-Owned by `kiro_crew/ui_prefs.py`, served by `GET`/`PUT /api/ui-prefs`, and
+Owned by `efm_go/ui_prefs.py`, served by `GET`/`PUT /api/ui-prefs`, and
 consumed by `website/src/lib/uiPrefs.ts`. Deliberately NOT a section of
 `config.json`:
 
@@ -1516,7 +1516,7 @@ above, does not.
 ### `KiroCrewConfig._resolve_agent_model() -> str`
 Reads model from installed agent config (`~/.kiro/agents/kirocrew.json`),
 falling back to the bundled `config_package_dir()/defaults.json` (i.e.
-`src/kiro_crew/config/defaults.json`), then `DEFAULT_MODEL`.
+`src/efm_go/config/defaults.json`), then `DEFAULT_MODEL`.
 
 ### `KiroCrewConfig._resolve_named_agent_model(agent, agents_dir=None) -> str`
 Returns a named agent's own kiro `model` field, or `""` if none. Used by
@@ -1563,7 +1563,7 @@ an exception into model resolution.
 ### `kiro_agents_dir() -> Path` (`config/paths.py`)
 Leaf helper returning `~/.kiro/agents` — the **user-level** scope. Lives in the leaf
 module so `loader.py` (and `_resolve_named_agent_model`'s `agents_dir` DI seam) can
-locate installed agent JSONs without importing `kiro_crew.agent` — which imports
+locate installed agent JSONs without importing `efm_go.agent` — which imports
 `config.loader` and would create an import cycle.
 
 Deliberately **single-valued**: it is the WRITE target as well as a read scope
@@ -1869,7 +1869,7 @@ on.
 **No dashboard module calls it.** A dashboard writer publishes the keys it owns
 through `run_config_write(update_config_locked, config_path(), mutate=...)`.
 `test_config_save_locking.py::TestNoDashboardModuleSavesTheWholeConfig` pins
-that over `src/kiro_crew/dashboard`, matching a `.save` REFERENCE handed to an
+that over `src/efm_go/dashboard`, matching a `.save` REFERENCE handed to an
 offloader as well as a call, with an empty baseline. The workspace display PUT
 (`PUT /api/config/theme`) was the last such writer: it loaded the whole config
 and saved it back, so on a momentarily unreadable file (a torn read, a sharing
@@ -2114,7 +2114,7 @@ name:
 }
 ```
 
-- Read/written via `kiro_crew/agent_state.py` (atomic, lock-guarded near-leaf
+- Read/written via `efm_go/agent_state.py` (atomic, lock-guarded near-leaf
   module: stdlib + `config.paths` + `atomic_write` only).
 - `build_agent_config()` is pure (writes no spec key); `rebuild_agent_config()`
   seeds managed-state on a fresh/clean install (never clobbering a frozen pick).
@@ -2362,10 +2362,10 @@ live in `dashboard/server_runtime/config_watch.py::_register_config_watch` — `
 (→ `handlers/updates.py::apply_log_level_from_config`), and
 `dashboard.dynamic_dashboard_cards` (→ `DashboardState.set_dynamic_cards_enabled`). The log-level applier
 shares `apply_log_level` with the Logs page's `POST /api/logs/level`, and that
-one function moves the `kiro_crew` logger only — which is the ONLY level gate
+one function moves the `efm_go` logger only — which is the ONLY level gate
 on the way to `gateway.log`: the file handler and the queue handler
-`cli._setup_cli_logging` installs carry no level of their own (kiro_crew
-records are gated at the kiro_crew logger, third-party records on the detached
+`cli._setup_cli_logging` installs carry no level of their own (efm_go
+records are gated at the efm_go logger, third-party records on the detached
 gateway's root-attached handler at the root logger's WARNING), so the runtime
 change reaches the file with nothing else to update. The handlers used to hold
 a boot-time copy of the level that nothing updated, so a gateway booted at
@@ -2638,7 +2638,7 @@ class ChannelConfig:
 class SttConfig:
     enabled: bool = True           # on by default: the default provider needs no account
     provider: str = "local"        # "local" | "apple" | "transcribe"; a retired value degrades to "local"
-    model: str = "base"            # a kiro_crew.stt.models CATALOG name; a superseded name resolves via its alias table
+    model: str = "base"            # a efm_go.stt.models CATALOG name; a superseded name resolves via its alias table
     language_code: str = "auto"    # stored preference; effective_language_code resolves auto to en-US for Apple/Transcribe
     streaming: bool = True         # live partials; every provider produces them
     silence_ms: int = 700          # end-of-phrase pause; clamped to _STT_INTERVAL_MS_MIN.._MAX
@@ -2738,7 +2738,7 @@ class KiroCrewConfig:
 the crew's name (zero migration). `_safe_avatar` (`config/sections.py`) is the
 total coercer applied on load, in the create/update endpoints, and nowhere else,
 and it is deliberately NOT re-exported from `loader.py` — the loader's
-`from kiro_crew.config.sections import (...)` list is a frozen pre-split snapshot
+`from efm_go.config.sections import (...)` list is a frozen pre-split snapshot
 (`test_config_module_boundaries`), so post-split internals are reached through the
 `sections` module. Three accepted shapes:
 
@@ -3664,7 +3664,7 @@ one precedence step below the operator override.
 When `agent.model` is `"auto"` (default):
 
 1. `~/.kiro/agents/kirocrew.json` → `model` field (installed agent config)
-2. `config_package_dir()/defaults.json` → `model` field (bundled `src/kiro_crew/config/defaults.json`)
+2. `config_package_dir()/defaults.json` → `model` field (bundled `src/efm_go/config/defaults.json`)
 3. Falls back to `DEFAULT_MODEL` (passed through to provider)
 
 ## Load-time Error Handling

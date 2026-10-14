@@ -13,8 +13,8 @@ from __future__ import annotations
 import pytest
 from aiohttp import web
 
-import kiro_crew.dashboard.token_auth as ta
-from kiro_crew.dashboard.token_auth import (
+import efm_go.dashboard.token_auth as ta
+from efm_go.dashboard.token_auth import (
     bind_token_ip,
     generate_token,
     mark_consumed,
@@ -24,9 +24,9 @@ from kiro_crew.dashboard.token_auth import (
 
 @pytest.fixture(autouse=True)
 def _clear(tmp_path, monkeypatch):
-    import kiro_crew.dashboard.revocation_gen as _rg
+    import efm_go.dashboard.revocation_gen as _rg
 
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
     monkeypatch.setattr(_rg, "_gen", 0)
     monkeypatch.setattr(ta, "_revoked_store_singleton", None)
     ta._state.clear_all()

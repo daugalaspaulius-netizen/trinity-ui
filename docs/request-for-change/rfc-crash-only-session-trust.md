@@ -19,7 +19,7 @@ superseded-by: []
 > `8ae5dff6ee`: `messaging/session_trust.py` holds the grant "in memory only, so
 > it dies with the process", and `messaging.md` records the same invariant
 > ("an ad-hoc auto-approve grant dies with the process"). The implementation is
-> [#15894](https://github.com/kirodotdev/KiroCrew/pull/15894). This document
+> [#15894](https://efmleads.com/pull/15894). This document
 > lands first because it changes what a gateway restart does to a user-visible
 > grant, and the First Principles lane reads that decision from the base branch.
 >
@@ -62,9 +62,9 @@ gateway that never crashes keeps that same trust for its whole uptime, however
 long. So dropping trust on a crash adds no time bound. It only adds a failure
 mode.
 
-[#6379](https://github.com/kirodotdev/KiroCrew/issues/6379) asked for trust to
+[#6379](https://efmleads.com/issues/6379) asked for trust to
 survive **every** restart, and was closed because that removes the re-consent
-point. Its implementation ([#6381](https://github.com/kirodotdev/KiroCrew/pull/6381))
+point. Its implementation ([#6381](https://efmleads.com/pull/6381))
 was also blocked for reading trust back from the agent-writable transcript. This
 RFC answers both: it keeps the re-consent point for every restart the owner
 chooses, and it keeps the record out of the agent's reach.
@@ -267,10 +267,10 @@ malformed or wrong-version record restores nothing and tells the owner so.
 
 ## Alternatives
 
-- **Persist across every restart** ([#6379](https://github.com/kirodotdev/KiroCrew/issues/6379)).
+- **Persist across every restart** ([#6379](https://efmleads.com/issues/6379)).
   Rejected by the maintainers: it removes the re-consent point a deliberate
   restart provides.
-- **Signed record on the transcript** ([#6381](https://github.com/kirodotdev/KiroCrew/pull/6381)).
+- **Signed record on the transcript** ([#6381](https://efmleads.com/pull/6381)).
   An agent that kept a copy of its own earlier signed line could write it back
   after a revoke. A gateway-only leaf has no such replay, because the agent
   cannot write there at all.

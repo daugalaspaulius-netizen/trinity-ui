@@ -436,7 +436,7 @@ describe('why a review failed', () => {
     // A different remedy from the missing executable — the CLI may well be
     // installed — so it must not share that sentence.
     const reason = failureReason(failed(
-      'the reviewer cannot run: the ACP runtime (kiro_crew.acp.runtime) is not '
+      'the reviewer cannot run: the ACP runtime (efm_go.acp.runtime) is not '
       + 'importable in this install'))
     expect(reason?.text).toMatch(/cannot load the agent runtime/i)
     expect(reason?.text).not.toMatch(/PATH/)
@@ -499,7 +499,7 @@ describe('why a review failed', () => {
       ['Runtime process died during prompt', /stopped mid-review/i],
       ['the reviewer cannot run: no kiro-cli executable was found on this host',
         /never started/i],
-      ['the reviewer cannot run: the ACP runtime (kiro_crew.acp.runtime) is not '
+      ['the reviewer cannot run: the ACP runtime (efm_go.acp.runtime) is not '
         + 'importable in this install', /cannot load the agent runtime/i],
       ['the reviewer never ran: its agent runtime is unavailable on this host',
         /agent runtime is unavailable on this host/i],

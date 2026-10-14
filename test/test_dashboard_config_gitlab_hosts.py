@@ -19,32 +19,32 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import NoConfiguredOwner, as_owner
 
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 
 @pytest.fixture()
 def cfg_file(tmp_path):
     p = tmp_path / "config.json"
     p.write_text("{}", encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=p):
+    with patch("efm_go.config.loader.config_path", return_value=p):
         yield p
 
 
 @pytest.fixture()
 def mock_sel():
     try:
-        import kiro_crew.dashboard.handlers  # noqa: F401
+        import efm_go.dashboard.handlers  # noqa: F401
     except ImportError:
         pytest.skip("dashboard handler deps not available locally")
     m = MagicMock()
     m.log_tool_invocation = MagicMock()
-    with patch("kiro_crew.dashboard.handlers.sel", return_value=m):
+    with patch("efm_go.dashboard.handlers.sel", return_value=m):
         yield m
 
 
 @pytest.fixture()
 def handler_app(cfg_file, mock_sel):
-    from kiro_crew.dashboard.handlers.files import api_dashboard_config
+    from efm_go.dashboard.handlers.files import api_dashboard_config
 
     app = web.Application()
     app.router.add_put("/api/dashboard/config", api_dashboard_config)
@@ -136,7 +136,7 @@ async def test_cancellation_during_config_load_is_audited(
     authorized config access absent from the tamper-evident SEL chain. Driven
     without a TestClient because aiohttp turns a handler ``CancelledError`` into
     a connection abort that would mask the re-raise."""
-    from kiro_crew.dashboard.handlers import files as files_mod
+    from efm_go.dashboard.handlers import files as files_mod
 
     async def cancel_load(_fn):
         raise asyncio.CancelledError()

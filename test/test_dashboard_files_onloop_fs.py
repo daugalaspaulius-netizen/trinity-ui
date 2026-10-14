@@ -44,15 +44,15 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.dashboard.handlers as _HANDLERS_PKG
-from kiro_crew import executors
-from kiro_crew.dashboard import file_api
-from kiro_crew.dashboard.handlers import files as f
+import efm_go.dashboard.handlers as _HANDLERS_PKG
+from efm_go import executors
+from efm_go.dashboard import file_api
+from efm_go.dashboard.handlers import files as f
 
 #: The shared open-and-check prefix resolves the validator through the
 #: ``handlers`` package at call time -- a documented monkey-patch seam kept for
 #: the circular import. A stub on the ``files`` module alone is invisible to it.
-_VALIDATOR_SEAM = "kiro_crew.dashboard.handlers._validate_dashboard_path"
+_VALIDATOR_SEAM = "efm_go.dashboard.handlers._validate_dashboard_path"
 
 #: Thread-name prefixes of the two dedicated pools in ``executors.py``: probes
 #: (validation and stats) and transfers (bounded full reads, walks, listings,

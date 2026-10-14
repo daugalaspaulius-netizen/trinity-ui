@@ -2,7 +2,7 @@
 
 ## Overview
 
-Dev Fleet is a builtin App Store app (`kiro_crew/apps/builtins/dev_fleet/`) for
+Dev Fleet is a builtin App Store app (`efm_go/apps/builtins/dev_fleet/`) for
 managing Kiro Crew feature worktrees (git worktrees of the main repo) and their isolated
 pod test instances. It runs as a managed app backend SUBPROCESS: an aiohttp server on the
 backend-assigned port, reached only through the gateway proxy. Every proxied request
@@ -68,12 +68,12 @@ fleet manages. It is resolved in this order, first hit wins:
 | 1 | `KIROCREW_DEVFLEET_REPO` env var | no — taken verbatim |
 | 2 | `dev_fleet.repo_path` in `config.json` / `config.local.json` | no — taken verbatim |
 | 3 | `KIROCREW_PROJECT_DIR` | yes |
-| 4 | the checkout this gateway is executing from (`src/kiro_crew` layout walk) | yes |
+| 4 | the checkout this gateway is executing from (`src/efm_go` layout walk) | yes |
 | 5 | conventional clone locations under `$HOME` (`kirocrew`, `KiroCrew`, `kiro-crew` directly and under `Repos`, `repos`, `src`, `Projects`, `projects`, `dev`, `git`, `code`, `workplace`) | yes |
 
 Tier 5 matches directory names case-insensitively against each parent's own listing rather than joining the guessed spellings, so the resolved path is spelled the way the filesystem spells it. A blind join succeeds against a differently-cased directory on a case-insensitive filesystem (macOS) and yields a path that does not match the ones git reports for the same tree.
 
-The marker test (`_is_kirocrew_checkout`) requires `.git`, `src/kiro_crew/` and
+The marker test (`_is_kirocrew_checkout`) requires `.git`, `src/efm_go/` and
 `pyproject.toml` together. `.git` alone is insufficient on purpose: an unrelated
 repository adopted as the main checkout would have its worktrees listed and Pull+Build,
 rebase and worktree-removal git commands run inside it. Tiers 1–2 skip the test *during
@@ -447,7 +447,7 @@ that ceiling, so a reused branch name can never authorize removing new work.
 
 ## Pod Integration
 
-Relies on `kiro_crew.pod` subpackage (optional import — degrades gracefully if unavailable).
+Relies on `efm_go.pod` subpackage (optional import — degrades gracefully if unavailable).
 On Linux, `runtime.require_backend()` runs `systemctl --user is-system-running` once at
 pod verb entry and at each Dev Fleet removal safety gate. `kirocrew doctor` runs the same
 probe for its advisory row. Low-level `systemctl()`, `is_active()`, and `main_pid()` calls
@@ -492,10 +492,10 @@ All blocking pod operations are offloaded via `asyncio.get_running_loop().run_in
 subprocess_executor(), ...)` to avoid blocking the gateway event loop.
 
 Pod lifecycle verbs (`up`/`down`/`restart`/`provision`) shell the CLI via
-`_find_cli()` = `[sys.executable, "-m", "kiro_crew"]` — the **package** entry
-(`kiro_crew/__main__`, which also runs the required SSL-cert / UTF-8-console
-setup), never `-m kiro_crew.cli`. `kiro_crew/cli.py` has no
-`if __name__ == "__main__"` guard, so `python -m kiro_crew.cli <cmd>` imports the
+`_find_cli()` = `[sys.executable, "-m", "efm_go"]` — the **package** entry
+(`efm_go/__main__`, which also runs the required SSL-cert / UTF-8-console
+setup), never `-m efm_go.cli`. `efm_go/cli.py` has no
+`if __name__ == "__main__"` guard, so `python -m efm_go.cli <cmd>` imports the
 module, runs no `main()`, and exits 0 with no output — which turned every pod op
 into a **silent no-op the backend reported as success** (the "Stopped but still
 running" bug, issue #220). As defence-in-depth, `_pod_up` and `_pod_down` both
@@ -506,7 +506,7 @@ is never taken as proof of the state change, in either direction.
 ### Pod runtime ownership
 
 Dev Fleet, the pod CLI and the pod test suite all reach the pod runtime as one
-namespace, `kiro_crew.pod.runtime`. That module holds the core: pod names and the
+namespace, `efm_go.pod.runtime`. That module holds the core: pod names and the
 pod exception types, the per-pod env file, git worktree resolution, a pod's
 identity paths, the `systemd --user` adapter with the launchd / Task Scheduler
 dispatch (`require_backend`, `is_active`, `main_pid`, `unit_state`,
@@ -514,7 +514,7 @@ dispatch (`require_backend`, `is_active`, `main_pid`, `unit_state`,
 `pod_plane_mutex`), seed sanitization, `build_pod_env` and `_ensure_pod_dir`. Six
 owners build on that core. The core imports them at the end of its own body, once
 its own names are bound and before it installs its forwarding, so each owner's
-module-level bindings are taken when `kiro_crew.pod.runtime` is imported, as they
+module-level bindings are taken when `efm_go.pod.runtime` is imported, as they
 were when it was one module, and never later inside a test's patch of the module
 they come from:
 
@@ -558,7 +558,7 @@ tests patch the owner: here the facade is the permanent surface every caller
 already uses, not a migration step. The core stays in `runtime.py` because
 repository gates and other specs cite it there: the spawn-audit allowlist, the
 subprocess-encoding baseline, `require_systemd`, seed sanitization and
-`build_pod_env`. Purging `kiro_crew.pod.runtime` from `sys.modules` and importing it
+`build_pod_env`. Purging `efm_go.pod.runtime` from `sys.modules` and importing it
 again is unsupported, because every owner holds the core module object.
 
 ### Pod identity guard
@@ -668,7 +668,7 @@ step needs before using them, so provisioning a **fresh** worktree (no
   When `KIROCREW_PROVISION_USE_UV` is truthy (opt-in; the default flip is
   Phase 2 of the shared-dependency-cache RFC and waits on that document being
   on main) and `_find_uv` locates `uv`
-  (`kiro_crew.env.resolve_uv`: `uv.find_uv_bin()` from the declared `uv` wheel
+  (`efm_go.env.resolve_uv`: `uv.find_uv_bin()` from the declared `uv` wheel
   first, then `PATH` — the one ladder pptx-maker's `resolve_uv` also consumes),
   it runs
   `uv venv --seed --allow-existing --link-mode clone --python <py3.12> .venv` then `uv pip install --link-mode clone
@@ -857,7 +857,7 @@ provision cannot be dismissed. A successful response therefore survives reload.
 Dev Fleet's two slowest actions — **Restart Gateway** and **Sync (Pull+Build)** —
 narrate their progress so users don't read them as hung and fire them again. A
 duplicate Restart Gateway causes a second real ~10s gateway outage
-([issue #639](https://github.com/kirodotdev/KiroCrew/issues/639)).
+([issue #639](https://efmleads.com/issues/639)).
 
 ### Restart identity handshake
 
@@ -1049,7 +1049,7 @@ tree-id read run back-to-back under the staging lock, and the preflight runs
 immediately before the merge.
 
 The final **npm build + stage** step builds the frontend and stages `website/dist`
-as the served `src/kiro_crew/static/dist` under the Dev Fleet backend's OWN interpreter, with
+as the served `src/efm_go/static/dist` under the Dev Fleet backend's OWN interpreter, with
 the target repo passed as an argument. Resolving the helper from the target
 instead would make the step's very existence contingent on the pulled revision
 already carrying it, so an older target would turn the whole Pull+Build into an
@@ -1638,8 +1638,8 @@ The `plan` object describes the cutover mechanism:
 | `undo_not_ready` | the requested inverse is still the running checkout, so the original cutover is only staged; use Cancel staged cutover instead |
 | `missing_venv` | the worktree has no `.venv/bin/kirocrew` (Provision it first) |
 | `venv_not_executable` | the worktree's `.venv/bin/kirocrew` exists but is **not executable** (`chmod +x` it or re-Provision) — a non-executable binary would stop the live gateway but could not start the replacement, leaving no gateway running |
-| `missing_dist` | the worktree has no built `src/kiro_crew/static/dist/index.html` (Pull+Build first) — a cutover without a built dist serves a broken dashboard |
-| `unsafe_path` | the worktree path cannot be used as a live target (control characters, unresolvable, missing binary, no `src/kiro_crew` dir) |
+| `missing_dist` | the worktree has no built `src/efm_go/static/dist/index.html` (Pull+Build first) — a cutover without a built dist serves a broken dashboard |
+| `unsafe_path` | the worktree path cannot be used as a live target (control characters, unresolvable, missing binary, no `src/efm_go` dir) |
 | `write_failed` | writing the pointer file failed — rolled back to prior state |
 | `restart_failed` | the detached restart failed to launch — the pointer is rolled back before returning (response carries `rolled_back`) |
 | `busy` | another make-live cutover is already in progress — the mutation sequence is single-flighted, so a concurrent request is refused immediately (no queueing) rather than racing the in-flight pointer write/rollback |
@@ -1731,7 +1731,7 @@ unusable worktree instead of promising a cutover that would then be refused.
 Rejects with a distinct message for each: empty/blank value; control characters
 (ord < 0x20 or 0x7F); unresolvable path; path is not a directory; missing
 `target_bin` (`.venv/bin/kirocrew`, or `.venv/Scripts/kirocrew.exe` on Windows);
-`target_bin` not executable; no `src/kiro_crew` directory in the checkout.
+`target_bin` not executable; no `src/efm_go` directory in the checkout.
 Returns the resolved checkout path on success.
 
 ### Rollback semantics
@@ -1952,7 +1952,7 @@ things:
 
 | Flag | Meaning | True when |
 |---|---|---|
-| `_POD_IMPORTED` | the `kiro_crew.pod` modules imported, so its platform-neutral helpers are callable | the import succeeded (any platform) |
+| `_POD_IMPORTED` | the `efm_go.pod` modules imported, so its platform-neutral helpers are callable | the import succeeded (any platform) |
 | `_POD_AVAILABLE` | pods can actually **run** here | Linux with `systemctl` on PATH, or macOS with `launchctl` on PATH |
 
 Conflating the two used to report every worktree as "not built" on hosts without a runnable pod backend, since
@@ -2057,7 +2057,7 @@ is all that is wanted: it is a smaller tool and needs no narration script.
 
 `kirocrew-worktree-dev` carries no app-bridged copy: the canonical copy is
 owned by the `kirocrew-dev` development-skills suite under
-`src/kiro_crew/builtin_skills/`, and the app-bridged duplicate was removed
+`src/efm_go/builtin_skills/`, and the app-bridged duplicate was removed
 because two copies of the same skill drift and get loaded nondeterministically
 against each other (PR #353 arbiter finding). That single-copy rule is what
 matters here; where the one copy lives is a packaging question, and it lives in

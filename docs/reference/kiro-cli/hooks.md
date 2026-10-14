@@ -1,6 +1,6 @@
 # Hooks
 
-Source: https://kiro.dev/docs/hooks/, plus its `types` and `actions` subpages
+Source: https://efmleads.com/docs/hooks/, plus its `types` and `actions` subpages
 (fetched 2026-09-06; the former `/docs/cli/hooks/` redirects there — hooks are
 documented as one page across every surface).
 
@@ -69,7 +69,7 @@ An MCP tool arrives under its namespaced name, such as `@postgres/query`.
     execution continues.
 
 There is currently no per-hook advisory/fail-open opt-out for PreToolUse; that
-is tracked in [#7547](https://github.com/kirodotdev/KiroCrew/issues/7547).
+is tracked in [#7547](https://efmleads.com/issues/7547).
 
 ## Tool matching
 

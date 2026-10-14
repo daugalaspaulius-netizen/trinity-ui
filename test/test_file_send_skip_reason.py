@@ -3,7 +3,7 @@
 The channel endpoint answers "no destination here" as
 ``{"ok": true, "delivered": false, "skipped": "<reason>"}`` — a closed reason
 vocabulary it computes, audits and serializes
-(:mod:`kiro_crew.dashboard.upload_destination`). Reading only ``delivered`` and
+(:mod:`efm_go.dashboard.upload_destination`). Reading only ``delivered`` and
 ``error`` returns a bare ``File sent:`` for every skip, so the
 caller cannot tell a delivery from a dashboard-only copy.
 
@@ -17,8 +17,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import mcp_core
-from kiro_crew.mcp_tools.messaging import file_send
+from efm_go import mcp_core
+from efm_go.mcp_tools.messaging import file_send
 
 #: The reason codes ``upload_destination`` can return, as the tool sees them.
 #: Only a missing DESTINATION earns the inline-route remedy.
@@ -46,7 +46,7 @@ def _describe() -> object:
     production change is reverted — an import error proves nothing, while a
     failing assertion proves the tests catch the regression.
     """
-    from kiro_crew.mcp_tools.messaging import _describe_channel_skip
+    from efm_go.mcp_tools.messaging import _describe_channel_skip
 
     return _describe_channel_skip
 
@@ -283,7 +283,7 @@ class TestToolDescriptionMatchesBehaviour:
         """The description is the only thing a fresh caller reads before
         choosing this tool, so it must name the inline route and the fact that
         native delivery can be skipped."""
-        from kiro_crew.mcp_tools.messaging import schemas
+        from efm_go.mcp_tools.messaging import schemas
 
         spec = next(s for s in schemas() if s["name"] == "file_send")
         desc = spec["description"]
@@ -295,8 +295,8 @@ class TestToolDescriptionMatchesBehaviour:
         description must not promise "any file" and must name every category
         the allowlist admits -- otherwise a caller builds a zip and only learns
         from the refusal that it cannot be sent."""
-        from kiro_crew.mcp_tools.messaging import schemas
-        from kiro_crew.security import BINARY_MIME_ALLOWLIST
+        from efm_go.mcp_tools.messaging import schemas
+        from efm_go.security import BINARY_MIME_ALLOWLIST
 
         desc = next(s for s in schemas() if s["name"] == "file_send")["description"]
         assert "any file" not in desc
@@ -307,7 +307,7 @@ class TestToolDescriptionMatchesBehaviour:
             assert category.lower() in desc.lower(), mime
 
     def test_the_description_does_not_claim_slack_delivery_is_dashboard_only(self) -> None:
-        from kiro_crew.mcp_tools.messaging import schemas
+        from efm_go.mcp_tools.messaging import schemas
 
         desc = next(s for s in schemas() if s["name"] == "file_send")["description"]
         assert "only from the dashboard" not in desc

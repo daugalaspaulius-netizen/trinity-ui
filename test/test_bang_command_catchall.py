@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.slack import handler
+from efm_go.slack import handler
 
 
 def _make_slack():

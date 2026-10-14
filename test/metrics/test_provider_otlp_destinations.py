@@ -21,15 +21,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig, TelemetryConfig
-from kiro_crew.metrics.provider import get_recorder, reset_for_testing
-from kiro_crew.platform import build_default_context
-from kiro_crew.platform.context import (
+from efm_go.config.loader import KiroCrewConfig, TelemetryConfig
+from efm_go.metrics.provider import get_recorder, reset_for_testing
+from efm_go.platform import build_default_context
+from efm_go.platform.context import (
     PlatformCompositionError,
     reset_context,
     set_context,
 )
-from kiro_crew.platform.interfaces import OtlpDestination
+from efm_go.platform.interfaces import OtlpDestination
 
 ENDPOINT = "https://collector.example.internal:4318/v1/metrics"
 
@@ -89,11 +89,11 @@ def _clean_context():
 def _fake_readers(monkeypatch, *, fail_on=None):
     """Patch the CONSUMER module's reader/provider globals.
 
-    Patched on ``kiro_crew.metrics.provider`` where the names are looked up, not
+    Patched on ``efm_go.metrics.provider`` where the names are looked up, not
     on ``opentelemetry.*`` that defines them — the module binds them as globals
     precisely so a stand-in survives the lazy SDK load.
     """
-    import kiro_crew.metrics.provider as provider_mod
+    import efm_go.metrics.provider as provider_mod
 
     built: list = []
     shut: list = []
@@ -131,7 +131,7 @@ def _fake_readers(monkeypatch, *, fail_on=None):
 
 def _stub_otlp_readers(monkeypatch):
     """Make each destination yield one reader, recording the destinations seen."""
-    import kiro_crew.metrics.provider as provider_mod
+    import efm_go.metrics.provider as provider_mod
 
     seen: list = []
 
@@ -171,7 +171,7 @@ class TestAttachment:
         import sys
         import types
 
-        from kiro_crew.metrics.provider import _build_otlp_reader
+        from efm_go.metrics.provider import _build_otlp_reader
 
         captured: dict = {}
 
@@ -186,7 +186,7 @@ class TestAttachment:
             "opentelemetry.exporter.otlp.proto.http.metric_exporter",
             mod,
         )
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         seen: dict = {}
 
@@ -218,7 +218,7 @@ class TestTemporalityIsACoreDecision:
         import sys
         import types
 
-        from kiro_crew.metrics.provider import _build_otlp_reader
+        from efm_go.metrics.provider import _build_otlp_reader
 
         captured: dict = {}
 
@@ -233,7 +233,7 @@ class TestTemporalityIsACoreDecision:
             "opentelemetry.exporter.otlp.proto.http.metric_exporter",
             mod,
         )
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         class FakeReader:
             def __init__(self, exporter, export_interval_millis=None):
@@ -252,8 +252,8 @@ class TestTemporalityIsACoreDecision:
         sink asked for DELTA. Compared against the local exporter's RESOLVED map
         rather than against a literal, so a change to one sink cannot pass here
         while leaving the other behind."""
-        from kiro_crew.metrics.local_exporter import JsonlMetricExporter
-        from kiro_crew.metrics.temporality import TEMPORALITY_ENV_VAR
+        from efm_go.metrics.local_exporter import JsonlMetricExporter
+        from efm_go.metrics.temporality import TEMPORALITY_ENV_VAR
 
         monkeypatch.delenv(TEMPORALITY_ENV_VAR, raising=False)
         captured = self._captured_kwargs(monkeypatch)
@@ -274,7 +274,7 @@ class TestTemporalityIsACoreDecision:
         from opentelemetry.sdk.metrics import Counter, Histogram, UpDownCounter
         from opentelemetry.sdk.metrics.export import AggregationTemporality
 
-        from kiro_crew.metrics.temporality import TEMPORALITY_ENV_VAR
+        from efm_go.metrics.temporality import TEMPORALITY_ENV_VAR
 
         monkeypatch.delenv(TEMPORALITY_ENV_VAR, raising=False)
         preference = self._captured_kwargs(monkeypatch)["preferred_temporality"]
@@ -290,7 +290,7 @@ class TestTemporalityIsACoreDecision:
         dict ON TOP of whichever base the env var chose, so a builder that always
         passes one would override exactly the operator who asked for CUMULATIVE.
         Passing nothing is what hands every instrument kind back at once."""
-        from kiro_crew.metrics.temporality import TEMPORALITY_ENV_VAR
+        from efm_go.metrics.temporality import TEMPORALITY_ENV_VAR
 
         for preference in ("CUMULATIVE", "DELTA", "LOWMEMORY", "  delta  "):
             monkeypatch.setenv(TEMPORALITY_ENV_VAR, preference)
@@ -302,7 +302,7 @@ class TestTemporalityIsACoreDecision:
     def test_a_blank_variable_is_not_a_preference(self, monkeypatch):
         """An exported-but-empty variable is how a shell wrapper spells "unset".
         Reading it as a decision would silently restore the CUMULATIVE default."""
-        from kiro_crew.metrics.temporality import TEMPORALITY_ENV_VAR
+        from efm_go.metrics.temporality import TEMPORALITY_ENV_VAR
 
         monkeypatch.setenv(TEMPORALITY_ENV_VAR, "   ")
         assert "preferred_temporality" in self._captured_kwargs(monkeypatch)
@@ -396,7 +396,7 @@ class TestEgressPostureIsSingleSourced:
     """
 
     def test_a_provider_destination_counts_as_egress_with_no_config_endpoint(self):
-        from kiro_crew.metrics.provider import otlp_egress_active
+        from efm_go.metrics.provider import otlp_egress_active
 
         cfg = TelemetryConfig(enabled=True)  # otlp_endpoint deliberately EMPTY
         assert otlp_egress_active(cfg) is False, "default provider: no destination"
@@ -410,7 +410,7 @@ class TestEgressPostureIsSingleSourced:
         )
 
     def test_posture_ignores_a_destination_for_another_signal(self):
-        from kiro_crew.metrics.provider import otlp_egress_active
+        from efm_go.metrics.provider import otlp_egress_active
 
         _install(_StubProvider((OtlpDestination("traces-only", ENDPOINT, frozenset({"traces"})),)))
         assert otlp_egress_active(TelemetryConfig(enabled=True)) is False
@@ -422,8 +422,8 @@ class TestEgressPostureIsSingleSourced:
         would report egress that provably cannot happen and brick the dashboard
         enable switch, while the build path on the same host is local-only - the
         two surfaces disagreeing is the defect this seam exists to remove."""
-        from kiro_crew.dashboard.handlers import telemetry as telemetry_handlers
-        from kiro_crew.metrics.provider import _otlp_destinations, otlp_egress_active
+        from efm_go.dashboard.handlers import telemetry as telemetry_handlers
+        from efm_go.metrics.provider import _otlp_destinations, otlp_egress_active
 
         class _StaleProvider:
             def record_event(self, event_type, data):
@@ -444,7 +444,7 @@ class TestEgressPostureIsSingleSourced:
         """Only an ABSENT attribute is read as no-destinations. A provider whose
         implementation itself raises AttributeError is a broken provider, not a
         stale one, so posture stays unknown and the gate stays closed."""
-        from kiro_crew.metrics.provider import otlp_egress_active
+        from efm_go.metrics.provider import otlp_egress_active
 
         _install(_StubProvider(raises=AttributeError("typo inside the provider")))
         with pytest.raises(AttributeError):
@@ -459,7 +459,7 @@ class TestEgressPostureIsSingleSourced:
         recovered provider turns into egress. So posture raises and the callers
         decide.
         """
-        from kiro_crew.metrics.provider import _otlp_destinations, otlp_egress_active
+        from efm_go.metrics.provider import _otlp_destinations, otlp_egress_active
 
         cfg = TelemetryConfig(enabled=True)
         _install(_StubProvider(raises=RuntimeError("provider exploded")))
@@ -472,7 +472,7 @@ class TestEgressPostureIsSingleSourced:
     def test_the_panel_reports_egress_when_posture_is_unresolvable(self, monkeypatch):
         """A disclosure surface fails closed by assuming it EXPORTS - promising
         local-only on an unresolved posture is the lie this must not tell."""
-        from kiro_crew.dashboard.handlers import telemetry as telemetry_handlers
+        from efm_go.dashboard.handlers import telemetry as telemetry_handlers
 
         _patch_config(monkeypatch, enabled=True)
         _install(_StubProvider(raises=RuntimeError("provider exploded")))
@@ -483,7 +483,7 @@ class TestEgressPostureIsSingleSourced:
         enforcement half — the config route refusing to ENABLE collection on such
         a host — is pinned at the route itself, in
         test/test_config_patch.py::TestTelemetryEnabledEgressGate."""
-        from kiro_crew.dashboard.handlers import telemetry as telemetry_handlers
+        from efm_go.dashboard.handlers import telemetry as telemetry_handlers
 
         _patch_config(monkeypatch, enabled=True)  # empty otlp_endpoint
         _install(

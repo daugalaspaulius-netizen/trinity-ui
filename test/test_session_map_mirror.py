@@ -18,7 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.messaging.link import (
+from efm_go.messaging.link import (
     UNBIND_REASON_PRUNED_STALE,
     UNBIND_REASON_UNSPECIFIED,
     ChannelLink,
@@ -26,8 +26,8 @@ from kiro_crew.messaging.link import (
     legacy_dashboard_mirror_key,
     release_conversation_location,
 )
-from kiro_crew.session import SessionManager, _opt_out_key
-from kiro_crew.session_map import (
+from efm_go.session import SessionManager, _opt_out_key
+from efm_go.session_map import (
     MIRROR_OPT_OUT_FLAG,
     ConversationOwnershipConflict,
     SessionMap,
@@ -38,7 +38,7 @@ from kiro_crew.session_map import (
 @pytest.fixture()
 def session_map(tmp_path):
     """A SessionMap backed by a temp directory."""
-    with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+    with patch("efm_go.session_map.config_dir", return_value=tmp_path):
         yield SessionMap()
 
 
@@ -261,7 +261,7 @@ class TestRecordedPrincipal:
         stored with its admission byte-for-byte and reads back verifying for that
         session; a link that names a peer but carries no admission is stored
         UNSIGNED and stays that way -- the refusal at send is the point."""
-        from kiro_crew.mirror_admission import sign_mirror_admission, verify_mirror_admission
+        from efm_go.mirror_admission import sign_mirror_admission, verify_mirror_admission
 
         link = ChannelLink(channel_type="discord", channel_id="dm-9", principal="42")
         signed = dataclasses.replace(link, admission=sign_mirror_admission(self._KEY, link))
@@ -282,7 +282,7 @@ class TestRecordedPrincipal:
         """The map neither repairs nor rejects a bad admission -- that is the
         reader's job, and repairing here is exactly the laundering a generic
         signer would do."""
-        from kiro_crew.mirror_admission import verify_mirror_admission
+        from efm_go.mirror_admission import verify_mirror_admission
 
         planted = ChannelLink(
             channel_type="discord", channel_id="dm-9", principal="42", admission="f" * 64
@@ -615,7 +615,7 @@ class TestClearMirrorLinksAt:
         # resurrect the stale binding on the next gateway start.
         session_map.set_mirror_link("dashboard:chat-1", self.LINK)
         session_map.clear_mirror_links_at(self.LINK)
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
         assert reloaded.find_mirror_sessions(self.LINK) == []
 
@@ -724,7 +724,7 @@ class TestReleaseConversationLocation:
 
 class TestPrunePreservesMirror:
     def test_mirror_only_entry_survives_prune(self, tmp_path):
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm = SessionMap()
             # No sid yet, no Slack thread — only a non-Slack mirror binding.
             sm.set_mirror_link(
@@ -743,7 +743,7 @@ class TestPrunePreservesMirror:
         """
         key = "dashboard:chat-1"
         link = ChannelLink(channel_type="discord", channel_id="dm-1")
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm = SessionMap()
             sm.set(key, "sid-that-no-longer-exists")
             sm.set_mirror_link(key, link, accepts_inbound=True)
@@ -751,7 +751,7 @@ class TestPrunePreservesMirror:
             assert sm.get_mirror_link(key) == link
             assert sm.mirror_accepts_inbound(key) is True
             assert (sm._data.get(key) or {}).get("sid") == ""
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
         # The repair reached disk, so the next startup does not redo it.
         assert reloaded.get_mirror_link(key) == link
@@ -765,20 +765,20 @@ class TestPrunePreservesMirror:
         the next reply in it starts a new conversation.
         """
         key = "dashboard:chat-1"
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm = SessionMap()
             sm.set(key, "sid-that-no-longer-exists")
             sm.set_slack_link(key, "1700000000.000100", "C123")
             assert sm.prune() == 0
             assert (sm._data.get(key) or {}).get("sid") == ""
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
         assert reloaded.get_session_for_thread("1700000000.000100") == key
         assert not (reloaded._data.get(key) or {}).get("sid")
 
     def test_stale_sid_with_no_binding_is_still_collected(self, tmp_path):
         """Repair is for entries that carry state; a bare stale row is garbage."""
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm = SessionMap()
             sm.set("dashboard:chat-1", "sid-that-no-longer-exists")
             assert sm.prune() == 1
@@ -788,11 +788,11 @@ class TestPrunePreservesMirror:
         """Prune only touches entries whose session file is gone."""
         key = "dashboard:chat-1"
         link = ChannelLink(channel_type="discord", channel_id="dm-1")
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm = SessionMap()
             sm.set(key, "sid-alive")
             sm.set_mirror_link(key, link, accepts_inbound=True)
-            with patch("kiro_crew.session_map._kiro_sessions_dir", return_value=tmp_path):
+            with patch("efm_go.session_map._kiro_sessions_dir", return_value=tmp_path):
                 (tmp_path / "sid-alive.json").write_text("{}", encoding="utf-8")
                 assert sm.prune() == 0
             assert (sm._data.get(key) or {}).get("sid") == "sid-alive"
@@ -803,21 +803,21 @@ class TestPrunePreservesMirror:
 class TestPersistence:
     def test_inbound_resume_marker_round_trips_to_disk(self, tmp_path):
         link = ChannelLink(channel_type="discord", channel_id="dm-1")
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm = SessionMap()
             sm.set_mirror_link("dashboard:chat-1", link, accepts_inbound=True)
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm2 = SessionMap()
             assert sm2.find_mirror_sessions(link, inbound_only=True) == ["dashboard:chat-1"]
 
     def test_mirror_round_trips_to_disk(self, tmp_path):
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm = SessionMap()
             sm.set_mirror_link(
                 "dashboard:chat-1",
                 ChannelLink(channel_type="telegram", channel_id="777", thread_id=None),
             )
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sm2 = SessionMap()
             got = sm2.get_mirror_link("dashboard:chat-1")
             assert got == ChannelLink(channel_type="telegram", channel_id="777", thread_id=None)
@@ -1007,7 +1007,7 @@ class TestConversationOwnership:
         gone after the next restart — the fork would come back on reboot only.
         """
         session_map.set_mirror_link("dashboard:brand-new", self.LINK, accepts_inbound=True)
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
         assert reloaded.find_mirror_sessions(self.LINK, inbound_only=True) == [
             "dashboard:brand-new"
@@ -1064,7 +1064,7 @@ class TestBatchedSave:
         with session_map.batched_save():
             session_map.set_mirror_link(key, self.LINK)
             session_map.set_flag(key, MIRROR_OPT_OUT_FLAG, True)
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
         assert reloaded.get_mirror_link(key) == self.LINK
         assert reloaded.get_flag(key, MIRROR_OPT_OUT_FLAG) is True
@@ -1083,7 +1083,7 @@ class TestAutomaticMirrorOptOut:
 
     def test_opt_out_survives_a_reload(self, session_map, tmp_path):
         session_map.set_flag("telegram:kirocrew:direct:7", MIRROR_OPT_OUT_FLAG, True)
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
         assert reloaded.get_flag("telegram:kirocrew:direct:7", MIRROR_OPT_OUT_FLAG) is True
 
@@ -1229,7 +1229,7 @@ class TestAutomaticMirrorOptOut:
         session_map.set_flag(key, MIRROR_OPT_OUT_FLAG, True)
         assert session_map.prune() == 0
         assert session_map.get_flag(key, MIRROR_OPT_OUT_FLAG) is True
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
         # The repair reached disk, so the next startup does not redo it.
         assert reloaded.get_flag(key, MIRROR_OPT_OUT_FLAG) is True
@@ -1258,7 +1258,7 @@ def unbind_calls():
 @pytest.fixture()
 def sel_events():
     """Capture every SEL event the map emits during a removal."""
-    with patch("kiro_crew.session_map.sel") as fake_sel:
+    with patch("efm_go.session_map.sel") as fake_sel:
         fake_sel.return_value.log_api_access = MagicMock()
         yield fake_sel.return_value.log_api_access
 
@@ -1399,7 +1399,7 @@ class TestPruneRemovesThroughTheChokePoint:
         session_map.set_mirror_link(key, INBOUND_LINK, accepts_inbound=True)
         # Stand in for a future edit to the predicate: the entry becomes
         # collectable while still holding the binding prune would take with it.
-        monkeypatch.setattr("kiro_crew.session_map._survives_prune", lambda entry: False)
+        monkeypatch.setattr("efm_go.session_map._survives_prune", lambda entry: False)
 
         assert session_map.prune() == 1
         assert key not in session_map._data
@@ -1435,7 +1435,7 @@ class TestPruneRemovesThroughTheChokePoint:
         removals through the choke point must keep that property: per-key
         audits, zero loop-thread writes, one coalesced flush afterwards.
         """
-        import kiro_crew.session_map as mod
+        import efm_go.session_map as mod
 
         loop_thread = threading.current_thread()
         replace_threads: list[threading.Thread] = []
@@ -1471,7 +1471,7 @@ class TestPruneRemovesThroughTheChokePoint:
         key = "dashboard:chat-1"
         session_map.set_slack_link(key, "1700000000.000100", "C123")
         assert session_map.get_session_for_thread("1700000000.000100") == key
-        monkeypatch.setattr("kiro_crew.session_map._survives_prune", lambda entry: False)
+        monkeypatch.setattr("efm_go.session_map._survives_prune", lambda entry: False)
 
         assert session_map.prune() == 1
         assert session_map.get_session_for_thread("1700000000.000100") is None
@@ -1536,7 +1536,7 @@ class TestAnnouncementIsBestEffort:
 
         set_unbind_listener(_explode)
         try:
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.session_map"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.session_map"):
                 session_map.set_mirror_link("dashboard:chat-1", INBOUND_LINK, accepts_inbound=True)
                 assert session_map.clear_mirror_link("dashboard:chat-1") is True
         finally:
@@ -1551,7 +1551,7 @@ class TestAnnouncementIsBestEffort:
         _manager_over(session_map).set_unbind_listener(lambda key, link, reason: calls.append(key))
         try:
             session_map.set_mirror_link("dashboard:chat-1", INBOUND_LINK, accepts_inbound=True)
-            with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+            with patch("efm_go.session_map.config_dir", return_value=tmp_path):
                 other = SessionMap()
             other.clear_mirror_link("dashboard:chat-1")
         finally:
@@ -1588,7 +1588,7 @@ class TestAuditDoesNotBlockTheLoop:
 
         session_map.set_mirror_link("dashboard:chat-1", INBOUND_LINK, accepts_inbound=True)
         try:
-            with patch("kiro_crew.session_map.sel", _blocking_sel):
+            with patch("efm_go.session_map.sel", _blocking_sel):
                 started = time.monotonic()
                 session_map.clear_mirror_link("dashboard:chat-1", reason="dashboard_unlink")
                 elapsed = time.monotonic() - started
@@ -1608,8 +1608,8 @@ class TestAuditDoesNotBlockTheLoop:
     @pytest.mark.asyncio
     async def test_an_audit_failure_is_isolated_and_logged_at_warning(self, session_map, caplog):
         session_map.set_mirror_link("dashboard:chat-1", INBOUND_LINK, accepts_inbound=True)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_map"):
-            with patch("kiro_crew.session_map.sel", side_effect=RuntimeError("sel down")):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_map"):
+            with patch("efm_go.session_map.sel", side_effect=RuntimeError("sel down")):
                 # The removal still commits despite the broken sink.
                 assert session_map.clear_mirror_link("dashboard:chat-1") is True
                 for _ in range(200):
@@ -1627,7 +1627,7 @@ class TestAuditDoesNotBlockTheLoop:
         fake.log_api_access = lambda **kw: calls.append(kw)
 
         session_map.set_mirror_link("dashboard:chat-1", INBOUND_LINK, accepts_inbound=True)
-        with patch("kiro_crew.session_map.sel", return_value=fake):
+        with patch("efm_go.session_map.sel", return_value=fake):
             session_map.clear_mirror_link("dashboard:chat-1", reason="dashboard_unlink")
 
         assert len(calls) == 1
@@ -1640,7 +1640,7 @@ class TestReasonIsNormalizedAtTheChokePoint:
 
     def test_an_unknown_reason_is_normalized_and_warned(self, session_map, unbind_calls, caplog):
         session_map.set_mirror_link("dashboard:chat-1", INBOUND_LINK, accepts_inbound=True)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_map"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_map"):
             session_map.clear_mirror_link("dashboard:chat-1", reason="totally_made_up")
 
         assert unbind_calls == [("dashboard:chat-1", INBOUND_LINK, UNBIND_REASON_UNSPECIFIED)]
@@ -1694,7 +1694,7 @@ class TestGetRepairsRatherThanUnbinds:
         session_map.set_mirror_link(key, INBOUND_LINK, accepts_inbound=True)
         assert session_map.get(key) is None
 
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
 
         assert reloaded.get_mirror_link(key) == INBOUND_LINK

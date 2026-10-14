@@ -350,7 +350,7 @@ Write-Host "> Start Menu shortcut targets this install: $($matchingShortcuts[0])
 # makes no PATH edit (see the header). What is asserted is that the packaged
 # launcher runs standalone, before this script sets any KIROCREW_* or PYTHON*
 # variable, so nothing this script arranged can be what made it work.
-$backendRoot = Join-Path $installLocation "resources\backend-dist\kirocrew-backend"
+$backendRoot = Join-Path $installLocation "resources\backend-dist\efm-go-backend"
 $bundledCli = Join-Path $backendRoot "bin\kirocrew.cmd"
 $bundledPython = Join-Path $backendRoot "python.exe"
 foreach ($required in @($backendRoot, $bundledCli, $bundledPython)) {
@@ -441,7 +441,7 @@ New-Item -ItemType Directory -Path $gatewayHome -Force | Out-Null
 $fakeBackendLauncher = Join-Path $requestedRoot "kiro-backend.cmd"
 Set-Content -LiteralPath $fakeBackendLauncher -Encoding ascii -Value @(
   "@echo off",
-  "`"$bundledPython`" -s -m kiro_crew.testing.fake_acp_backend %*"
+  "`"$bundledPython`" -s -m efm_go.testing.fake_acp_backend %*"
 )
 
 $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
@@ -486,7 +486,7 @@ try {
 
   # -s: no user site-packages, so the installed payload is what runs.
   $gateway = Start-Process -FilePath $bundledPython -ArgumentList @(
-    "-s", "-P", "-m", "kiro_crew", "gateway", "--no-open", "--port", "$gatewayPort"
+    "-s", "-P", "-m", "efm_go", "gateway", "--no-open", "--port", "$gatewayPort"
   ) -WorkingDirectory $installLocation -RedirectStandardOutput $gatewayStdout `
     -RedirectStandardError $gatewayStderr -WindowStyle Hidden -PassThru
 
@@ -552,7 +552,7 @@ Write-Host "> Installed gateway answered /api/health in $healthSeconds seconds"
     Set-Item -Path "Env:KIRO_NO_AUTO_UPDATE" -Value "1"
     try {
       $doctorExit = Wait-BoundedExit -FilePath $bundledPython -Arguments @(
-        "-s", "-P", "-m", "kiro_crew", "doctor"
+        "-s", "-P", "-m", "efm_go", "doctor"
       ) -TimeoutSeconds $MaxHealthSeconds -What "Installed kirocrew doctor" `
         -StdoutFile $doctorOut -StderrFile $doctorErr
     } finally {

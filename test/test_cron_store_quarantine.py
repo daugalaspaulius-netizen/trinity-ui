@@ -23,11 +23,11 @@ from unittest.mock import MagicMock
 import pytest
 from aiohttp import web
 
-import kiro_crew.apps.hooks_integration as hooks_mod
-from kiro_crew.apps.bridges import disarm_app_crons_for_execution
-from kiro_crew.apps.route_registry import RouteRegistry
-from kiro_crew.cron import CronService, CronStoreUnreadable
-from kiro_crew.cron_service.store import quarantine_copies, quarantine_unreadable_store
+import efm_go.apps.hooks_integration as hooks_mod
+from efm_go.apps.bridges import disarm_app_crons_for_execution
+from efm_go.apps.route_registry import RouteRegistry
+from efm_go.cron import CronService, CronStoreUnreadable
+from efm_go.cron_service.store import quarantine_copies, quarantine_unreadable_store
 
 # Invalid JSON part-way through a real-looking store, like a truncated or
 # hand-edited file: the job above the break is what a user wants back.
@@ -63,7 +63,7 @@ def test_the_copy_is_behind_the_same_fence_as_the_store(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The copy holds session keys and commands, so the agent's file tools must refuse it."""
-    from kiro_crew.security import is_sensitive_path
+    from efm_go.security import is_sensitive_path
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     store = _write_malformed(tmp_path)
@@ -106,7 +106,7 @@ def test_a_read_error_leaves_the_file_where_it_is(tmp_path: Path) -> None:
 def test_a_second_quarantine_in_the_same_second_does_not_overwrite_the_first(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("kiro_crew.cron_service.store.time.strftime", lambda *_a: "STAMP")
+    monkeypatch.setattr("efm_go.cron_service.store.time.strftime", lambda *_a: "STAMP")
     store = _write_malformed(tmp_path)
     first = quarantine_unreadable_store(store)
     store.write_bytes(b"{second")
@@ -156,7 +156,7 @@ async def test_a_lock_that_cannot_be_opened_does_not_abort_create(
     def _denied(*_a: object, **_k: object) -> None:
         raise PermissionError(13, "Permission denied")
 
-    monkeypatch.setattr("kiro_crew.cron_service.store.platform_compat.open_lock_file", _denied)
+    monkeypatch.setattr("efm_go.cron_service.store.platform_compat.open_lock_file", _denied)
 
     svc = await CronService.create(base_dir=tmp_path, quarantine_unreadable=True)
 
@@ -183,10 +183,10 @@ async def test_the_boot_disarm_that_crashed_startup_now_succeeds(tmp_path: Path)
 async def test_the_gateway_init_records_the_copy_and_the_dashboard_says_so(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     _write_malformed(tmp_path)
-    monkeypatch.setattr("kiro_crew.slack.gateway.data_home", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.slack.gateway.data_home", lambda: tmp_path)
     gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
     gw.dashboard_state = None
     gw._no_crons = True
@@ -206,7 +206,7 @@ async def test_the_gateway_init_records_the_copy_and_the_dashboard_says_so(
 
 
 def test_no_notice_when_nothing_was_moved() -> None:
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
     gw.dashboard_state = MagicMock()
@@ -258,7 +258,7 @@ async def test_an_unopenable_store_lock_does_not_abort_the_startup_hook(
     monkeypatch.setattr(hooks_mod, "list_apps", lambda: [info])
     monkeypatch.setattr(hooks_mod, "_app_hook_root", lambda _name: tmp_path / "apps" / "probe-app")
     monkeypatch.setattr(hooks_mod, "app_execution_denied", lambda *a, **kw: "untrusted")
-    monkeypatch.setattr("kiro_crew.cron_service.store.platform_compat.open_lock_file", _denied)
+    monkeypatch.setattr("efm_go.cron_service.store.platform_compat.open_lock_file", _denied)
 
     await hooks_mod.on_gateway_startup(cron_service=svc)
 
@@ -271,7 +271,7 @@ async def test_an_unopenable_store_lock_does_not_abort_the_startup_hook(
 def test_doctor_names_the_copy_and_how_to_restore_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from kiro_crew.doctor_checks import workload
+    from efm_go.doctor_checks import workload
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     moved = quarantine_unreadable_store(_write_malformed(tmp_path))
@@ -295,7 +295,7 @@ def test_doctor_prints_a_planted_control_sequence_inert(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """A file name carrying an OSC 52 clipboard write must not reach the terminal raw."""
-    from kiro_crew.doctor_checks import workload
+    from efm_go.doctor_checks import workload
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     folder = tmp_path / "cron-history" / "quarantine"
@@ -312,7 +312,7 @@ def test_doctor_prints_a_planted_control_sequence_inert(
 def test_doctor_is_silent_without_a_copy(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from kiro_crew.doctor_checks import workload
+    from efm_go.doctor_checks import workload
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     issues: list[str] = []

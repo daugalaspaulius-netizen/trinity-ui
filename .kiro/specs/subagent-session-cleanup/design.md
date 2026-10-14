@@ -1,6 +1,6 @@
 # Design Document: Subagent Session Cleanup
 
-Status: implemented in `src/kiro_crew/session_allocation.py`, `src/kiro_crew/subagent_persistence.py`, and provider cleanup hooks. The ClaudeCodeProvider and Bedrock sections describe providers that are not shipped; ACP is the only provider. The shipped `_is_safe_path` (`src/kiro_crew/providers/cleanup.py`) refuses the root directory itself.
+Status: implemented in `src/efm_go/session_allocation.py`, `src/efm_go/subagent_persistence.py`, and provider cleanup hooks. The ClaudeCodeProvider and Bedrock sections describe providers that are not shipped; ACP is the only provider. The shipped `_is_safe_path` (`src/efm_go/providers/cleanup.py`) refuses the root directory itself.
 
 ## Overview
 

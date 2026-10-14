@@ -22,8 +22,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import webhooks
-from kiro_crew.dashboard.handlers import hooks as H
+from efm_go import webhooks
+from efm_go.dashboard.handlers import hooks as H
 
 
 def _as_owner(req):

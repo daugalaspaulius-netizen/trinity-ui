@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.plugin_import -- converting a plugin package into an app.
+"""Tests for efm_go.apps.plugin_import -- converting a plugin package into an app.
 
 The three properties worth a test are the ones a converter gets wrong in a way
 nobody notices: it silently drops a kind, it follows a path out of the package
@@ -16,9 +16,9 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.apps import plugin_import
-from kiro_crew.apps.manifest import AppManifest
-from kiro_crew.apps.plugin_import import (
+from efm_go.apps import plugin_import
+from efm_go.apps.manifest import AppManifest
+from efm_go.apps.plugin_import import (
     FORMAT_SCHEMA_QUALIFIED,
     FORMAT_VENDOR_DIRECTORY,
     SCHEMA_NAMESPACE_PREFIX,
@@ -507,7 +507,7 @@ class TestIdentity:
         """
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app_import
+        from efm_go.cli_commands import _handle_app_import
 
         root = tmp_path / "src" / "my-plugin-dir"
         root.mkdir(parents=True)
@@ -629,7 +629,7 @@ class TestForeignManifestShape:
         of its except arms."""
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app_import
+        from efm_go.cli_commands import _handle_app_import
 
         root = tmp_path / "src" / "demo-plugin"
         root.mkdir(parents=True)
@@ -703,7 +703,7 @@ class TestForeignManifestShape:
         import ast
         from pathlib import Path as _Path
 
-        module = _Path(__file__).resolve().parents[1] / "src/kiro_crew/apps/plugin_import.py"
+        module = _Path(__file__).resolve().parents[1] / "src/efm_go/apps/plugin_import.py"
         raised = set()
         for node in ast.walk(ast.parse(module.read_text(encoding="utf-8"))):
             if (
@@ -738,7 +738,7 @@ class TestLinksAndJunctions:
         """Junctions cannot be created on POSIX, so the platform's own verdict is
         what gets stubbed: this pins that the walk ASKS the junction-aware helper
         and honours it, which is the part that was missing."""
-        from kiro_crew.apps import plugin_import as PI
+        from efm_go.apps import plugin_import as PI
 
         root = _package(tmp_path)
         skill = root / "skills" / "greet"
@@ -765,7 +765,7 @@ class TestLinksAndJunctions:
         have already left, so the link check is ordered ahead of the resolve and
         this test pins that order by observing that resolve is never reached.
         """
-        from kiro_crew.apps import plugin_import as PI
+        from efm_go.apps import plugin_import as PI
 
         root = tmp_path / "pkg"
         (root / "real").mkdir(parents=True)
@@ -794,7 +794,7 @@ class TestLinksAndJunctions:
         whole rather than one call site at a time."""
         from pathlib import Path as _Path
 
-        module = _Path(__file__).resolve().parents[1] / "src/kiro_crew/apps/plugin_import.py"
+        module = _Path(__file__).resolve().parents[1] / "src/efm_go/apps/plugin_import.py"
         source = module.read_text(encoding="utf-8")
         assert ".is_symlink()" not in source, (
             "use platform_compat.is_link_or_junction: Path.is_symlink answers False "
@@ -807,7 +807,7 @@ class TestLinksAndJunctions:
         escaping OSError reaches the operator as a traceback."""
         import shutil as _shutil
 
-        from kiro_crew.apps import plugin_import as PI
+        from efm_go.apps import plugin_import as PI
 
         root = _package(tmp_path)
         _skill(root / "skills", "greet")
@@ -833,7 +833,7 @@ class TestOutput:
         pinning this on a malformed field breaks the moment that field gains
         validation, which is what happened to the first version of this test.
         """
-        from kiro_crew.apps import plugin_import as PI
+        from efm_go.apps import plugin_import as PI
 
         def _boom(*_a, **_k):
             raise RuntimeError("a later conversion step failed")
@@ -881,7 +881,7 @@ class TestOutput:
         """A pathologically deep resource tree must be skipped past the depth
         bound rather than recursing to a RecursionError that leaves a partial
         import."""
-        from kiro_crew.apps.plugin_import import (
+        from efm_go.apps.plugin_import import (
             MAX_SKILL_TREE_DEPTH,
             _copy_tree_without_links,
         )
@@ -900,7 +900,7 @@ class TestOutput:
     def test_the_skip_list_is_capped_rather_than_unbounded(self, tmp_path):
         """A pathologically wide tree of skippable entries must not grow the
         retained skip-description list without a ceiling."""
-        from kiro_crew.apps.plugin_import import (
+        from efm_go.apps.plugin_import import (
             MAX_SKIP_DESCRIPTIONS,
             _copy_tree_without_links,
         )
@@ -929,7 +929,7 @@ class TestOutput:
         directories each over the cap is the smallest shape that tells the two
         apart: one directory cannot, because there is no second list to add.
         """
-        from kiro_crew.apps.plugin_import import (
+        from efm_go.apps.plugin_import import (
             MAX_SKIP_DESCRIPTIONS,
             _copy_tree_without_links,
         )
@@ -1000,7 +1000,7 @@ class TestEmittedAppIsInstallable:
         assert AppManifest.from_dict(data).validate(out) == []
 
     def test_a_converted_package_installs_and_lists(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.manager import get_app_manifest, install_app, list_apps
+        from efm_go.apps.manager import get_app_manifest, install_app, list_apps
 
         home = tmp_path / "kirocrew-home"
         home.mkdir()
@@ -1097,7 +1097,7 @@ class TestLinkCheckOrdering:
     """
 
     def test_no_boolean_test_probes_a_path_before_proving_it_unlinked(self):
-        from kiro_crew.apps import plugin_import as module
+        from efm_go.apps import plugin_import as module
 
         source = Path(module.__file__).read_text(encoding="utf-8")
         offenders = _probe_before_link_offenders(source)
@@ -1659,7 +1659,7 @@ class TestProvenanceCarriesTheFinalBoundingWarnings:
     def test_a_truncation_by_the_final_pass_reaches_the_persisted_provenance(self, tmp_path):
         import json as _json
 
-        from kiro_crew.apps import plugin_import as pi
+        from efm_go.apps import plugin_import as pi
 
         long_description = "d" * (pi.MAX_MANIFEST_STRING_CHARS + 50)
         root = _package(tmp_path, skills="./skills", description=long_description)
@@ -1716,7 +1716,7 @@ class TestARelativeProgramIsDetectedByItsSeparator:
     """
 
     def test_every_relative_spelling_is_detected(self):
-        from kiro_crew.apps.plugin_import import _package_relative_fields
+        from efm_go.apps.plugin_import import _package_relative_fields
 
         for command in [
             "bin/server",  # the spelling the dot-prefixed rule missed
@@ -1738,7 +1738,7 @@ class TestARelativeProgramIsDetectedByItsSeparator:
         convert correctly: each of these carries no filesystem meaning, and three
         of them carry a slash, which is exactly why a bare separator test needs
         these exclusions stated as tests rather than assumed."""
-        from kiro_crew.apps.plugin_import import _package_relative_fields
+        from efm_go.apps.plugin_import import _package_relative_fields
 
         for command in [
             "node",  # a bare name resolved through PATH
@@ -1755,7 +1755,7 @@ class TestARelativeProgramIsDetectedByItsSeparator:
             )
 
     def test_a_relative_arg_is_detected_too(self):
-        from kiro_crew.apps.plugin_import import _package_relative_fields
+        from efm_go.apps.plugin_import import _package_relative_fields
 
         found = _package_relative_fields({"command": "node", "args": ["-y", "lib/main.js"]})
         assert found == ["args[1]"], found
@@ -2131,7 +2131,7 @@ class TestInstallDoesNotActivateADisabledApp:
         import ast
         from pathlib import Path as _Path
 
-        import kiro_crew.cli_commands as cli
+        import efm_go.cli_commands as cli
 
         tree = ast.parse(_Path(cli.__file__).read_text(encoding="utf-8"))
         target = next(
@@ -2153,7 +2153,7 @@ class TestInstallDoesNotActivateADisabledApp:
         import ast
         from pathlib import Path as _Path
 
-        import kiro_crew.cli_commands as cli
+        import efm_go.cli_commands as cli
 
         tree = ast.parse(_Path(cli.__file__).read_text(encoding="utf-8"))
         target = next(
@@ -2292,8 +2292,8 @@ class TestTheImportCommandCannotBeMadeToWriteLiveTerminalControls:
     def test_a_conversion_refusal_cannot_carry_controls(self, tmp_path, monkeypatch, capsys):
         import argparse
 
-        from kiro_crew import cli_commands
-        from kiro_crew.cli_commands import _handle_app_import
+        from efm_go import cli_commands
+        from efm_go.cli_commands import _handle_app_import
 
         root = _package(tmp_path)
 
@@ -2315,8 +2315,8 @@ class TestTheImportCommandCannotBeMadeToWriteLiveTerminalControls:
         filename -- and that name comes from the package."""
         import argparse
 
-        from kiro_crew import cli_commands
-        from kiro_crew.cli_commands import _handle_app_import
+        from efm_go import cli_commands
+        from efm_go.cli_commands import _handle_app_import
 
         root = _package(tmp_path)
 

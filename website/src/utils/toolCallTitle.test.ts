@@ -23,7 +23,7 @@ import { shortDisplayPath, tokenizeShell } from './shellCommandParse'
  * The TypeScript half of the tool-call title conformance suite.
  *
  * Reads the SAME fixture as `test/test_tool_call_title.py`. The two
- * implementations (this module for the dashboard, `kiro_crew/tool_call_title.py`
+ * implementations (this module for the dashboard, `efm_go/tool_call_title.py`
  * for the Slack / Discord renderers) must agree on every case's ACTION and its
  * English TITLE, or a user sees one label in the dashboard and another in the
  * channel for the same call. The fixture is the contract; each side asserts it

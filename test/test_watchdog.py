@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.watchdog import CleanupHook, SessionWatchdog
+from efm_go.watchdog import CleanupHook, SessionWatchdog
 
 
 class TestDispatch:

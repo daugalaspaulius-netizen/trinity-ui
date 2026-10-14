@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from kiro_crew import model_registry as mr
+from efm_go import model_registry as mr
 
 
 class TestModelRegistry:
@@ -825,8 +825,8 @@ class TestImportDoesNotCreateTheDataHome:
             "        sys.stderr.write('mkdir %s\\n' % args[0])\n"
             "        sys.stderr.write(''.join(traceback.format_stack(limit=12)[:-1]))\n"
             "sys.addaudithook(hook)\n"
-            "import kiro_crew.model_registry\n"
-            "from kiro_crew.config import paths\n"
+            "import efm_go.model_registry\n"
+            "from efm_go.config import paths\n"
             "sys.exit(1 if paths._default_home().exists() else 0)\n"
         )
         env = {k: v for k, v in os.environ.items() if k != "KIROCREW_HOME"}
@@ -849,7 +849,7 @@ class TestImportDoesNotCreateTheDataHome:
     def test_the_sidecar_path_follows_the_data_home_without_creating_it(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         data = tmp_path / "data"
         monkeypatch.setenv("KIROCREW_HOME", str(data))

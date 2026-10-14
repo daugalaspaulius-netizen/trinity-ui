@@ -45,8 +45,8 @@ whole folder, and the folder must hold nothing the manifest does not sign.
 
 `duration_s` is required: nothing here inspects the media, and the dashboard shows
 the length from it. `doc` must be in the tips doc allowlist
-(`src/kiro_crew/tips_allowlist.py`). The fields are described in
-[feature-videos](../../src/kiro_crew/docs/feature-videos.md).
+(`src/efm_go/tips_allowlist.py`). The fields are described in
+[feature-videos](../../src/efm_go/docs/feature-videos.md).
 
 Clips should be H.264 video with AAC or no audio, the formats a browser `<video>`
 plays everywhere the dashboard runs. The tool does not check this.
@@ -82,7 +82,7 @@ Publishing refuses, with the reason on stderr and nothing written:
 | A missing `<id>.mp4` or `<id>.jpg`, or a symlink in their place | A release folder with a hole in it is not publishable; the bytes hashed must be the bytes uploaded. |
 | A file the catalog does not name | It would be uploaded and served under a signature that never covered it. |
 | A folder already holding `manifest.json` | A release is never re-signed. |
-| A `doc` outside `src/kiro_crew/tips_allowlist.py` | So a clip cannot point at an internal design note. |
+| A `doc` outside `src/efm_go/tips_allowlist.py` | So a clip cannot point at an internal design note. |
 | An empty file, or a clip or poster over the dashboard's limit for it | The dashboard drops an entry whose clip is over its cap and refuses an oversize poster. |
 | A release that is not `major.minor.patch` with no leading zeros | The only folder shape a dashboard ever asks for. |
 | A `--cdn-host` that is not a bare host name or IP, with at most a port | The host goes into every signed URL; a path in it would be served from nowhere. |
@@ -121,7 +121,7 @@ preserves old bytes but does not prevent replacing the current key.
 
 Every limit is the dashboard's own number: `_SIGNED_PAYLOAD_MAX_BYTES`,
 `_MANIFEST_MAX_BYTES`, `_MAX_ENTRIES`, `_MAX_ENTRY_BYTES` and `_MAX_DURATION_S` in
-`src/kiro_crew/feature_videos_manifest.py`, `MAX_POSTER_BYTES` in
-`src/kiro_crew/feature_videos_cache.py`. `_manifest.py` carries them as
+`src/efm_go/feature_videos_manifest.py`, `MAX_POSTER_BYTES` in
+`src/efm_go/feature_videos_cache.py`. `_manifest.py` carries them as
 `RUNTIME_LIMITS`, a test holds them equal to the source, and there is no flag to
 loosen one.

@@ -68,7 +68,7 @@ describe('trust pattern transform (shared with the dashboard)', () => {
   it('renders the same label as the dashboard for the same command', () => {
     // One behavioral spot check on top of the identity assertion, so a future
     // wrapper (same module, different behavior) is also caught.
-    const cmd = `gh api repos/kirodotdev/KiroCrew/contents/${'p/'.repeat(120)}config.json --jq .sha`
+    const cmd = `gh api repos/efmleads.com/contents/${'p/'.repeat(120)}config.json --jq .sha`
     expect(cmd.length).toBeGreaterThan(256)
     expect(truncateCommandLabel(cmd)).toBe(dashboardTruncateCommandLabel(cmd))
     expect(truncateCommandLabel(cmd)).toHaveLength(256)

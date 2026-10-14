@@ -31,7 +31,7 @@ from conftest import _find_posix_test_shell
 
 _SKILL = (
     Path(__file__).resolve().parent.parent
-    / "src/kiro_crew/apps/builtins/dev_fleet/skills/pod-e2e"
+    / "src/efm_go/apps/builtins/dev_fleet/skills/pod-e2e"
 )
 _DRIVER = _SKILL / "scripts/pod-playwright.py"
 _RUNNER = _SKILL / "scripts/pod-e2e.sh"

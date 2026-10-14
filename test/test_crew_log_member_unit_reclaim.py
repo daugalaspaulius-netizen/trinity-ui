@@ -20,13 +20,13 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.resolution import reset_degraded_observations
-from kiro_crew.crew_log.schema import KIND_MEMBER
-from kiro_crew.crew_log.store import REMOVE_ABSENT, REMOVE_OWNED, REMOVE_REMOVED, crew_log_dir
-from kiro_crew.dashboard.handlers import agents as agents_mod
-from kiro_crew.eventlog import service as service_mod
-from kiro_crew.eventlog.types import ACTIVITY_RECORD, MEMBER_CONFIG
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.resolution import reset_degraded_observations
+from efm_go.crew_log.schema import KIND_MEMBER
+from efm_go.crew_log.store import REMOVE_ABSENT, REMOVE_OWNED, REMOVE_REMOVED, crew_log_dir
+from efm_go.dashboard.handlers import agents as agents_mod
+from efm_go.eventlog import service as service_mod
+from efm_go.eventlog.types import ACTIVITY_RECORD, MEMBER_CONFIG
 
 GONE = "retired"
 LIVE = "keeper"
@@ -282,7 +282,7 @@ def test_claim_predicate_reads_the_roster_by_persisted_identity(tmp_path, roster
 @pytest.fixture
 def _owner_caller(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -308,7 +308,7 @@ def _namespace_lock_is_held() -> bool:
     thread is holding, so this answers about the real hold rather than a stand-in
     for it.
     """
-    from kiro_crew import memory_stores
+    from efm_go import memory_stores
 
     roots = getattr(memory_stores._NAMESPACE_LOCK_STATE, "roots", None) or set()
     return memory_stores.memory_stores_root().resolve() in roots
@@ -326,7 +326,7 @@ async def test_the_delete_route_reclaims_the_unit_while_holding_the_namespace_lo
     _seed_log(GONE, GONE)
     assert _unit(GONE).is_dir()
 
-    from kiro_crew.dashboard.handlers.agents import api_kirocrew_agent_delete
+    from efm_go.dashboard.handlers.agents import api_kirocrew_agent_delete
 
     held: list[bool] = []
     real = agents_mod._reclaim_deleted_member_crew_log
@@ -666,7 +666,7 @@ def test_the_legacy_cleanup_runs_while_the_units_lease_is_still_held(tmp_path, m
     its holder, so its presence at the moment the cleanup runs is exactly the claim
     that the cleanup is inside the hold.
     """
-    from kiro_crew.crew_log.store import LEASE_FILE
+    from efm_go.crew_log.store import LEASE_FILE
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}})
@@ -741,7 +741,7 @@ def test_a_linked_members_root_cannot_reach_files_outside_the_member_tree(tmp_pa
 
 def test_a_partial_removal_still_takes_the_legacy_source(tmp_path, monkeypatch):
     """A partial removal destroyed the history too, and nothing revisits the unit."""
-    from kiro_crew.crew_log import store as store_mod
+    from efm_go.crew_log import store as store_mod
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}})
@@ -771,7 +771,7 @@ def test_a_refused_source_cleanup_keeps_the_unit_and_the_source(tmp_path, monkey
     lives inside the unit, so the next fresh ensure reads a source it thinks was never
     read. So a refusal keeps everything and reports failed.
     """
-    from kiro_crew.crew_log import store as store_mod
+    from efm_go.crew_log import store as store_mod
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}})
@@ -793,7 +793,7 @@ def test_a_refused_source_cleanup_keeps_the_unit_and_the_source(tmp_path, monkey
 
 def test_the_source_goes_before_the_unit_that_holds_the_folds_marker(tmp_path, monkeypatch):
     """Observed from inside the contents removal, which is the step that takes the marker."""
-    from kiro_crew.crew_log import store as store_mod
+    from efm_go.crew_log import store as store_mod
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}})
@@ -817,7 +817,7 @@ def test_the_source_goes_before_the_unit_that_holds_the_folds_marker(tmp_path, m
 
 def test_a_partial_removal_still_drops_the_cached_handle(tmp_path, monkeypatch):
     """History went, so a cached handle would serve a projection folded from it."""
-    from kiro_crew.crew_log import store as store_mod
+    from efm_go.crew_log import store as store_mod
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}})
@@ -883,7 +883,7 @@ def test_the_unitless_cleanup_also_runs_under_a_held_unit_lease(tmp_path, monkey
     lease can lose to it. Observed the same way as the unit's own: the lease file
     exists only while it is held.
     """
-    from kiro_crew.crew_log.lease import LEASE_FILE
+    from efm_go.crew_log.lease import LEASE_FILE
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}})
@@ -915,7 +915,7 @@ def test_a_refused_unit_lease_leaves_the_peers_lease_inode_alone(tmp_path, monke
     acquire would lock a fresh inode and prove nothing -- two writers folding the same
     source at once. So the assertion is on the inode, not merely on the name.
     """
-    from kiro_crew.crew_log.lease import LEASE_FILE
+    from efm_go.crew_log.lease import LEASE_FILE
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}})
@@ -993,8 +993,8 @@ def test_a_linked_unit_name_is_not_treated_as_proven_absence(tmp_path):
     module's own unitless cleanup to the RESOLVED path -- the peer's live unit -- where
     it would take that unit's lease and unlink the lease file inside its own hold.
     """
-    from kiro_crew.crew_log import store as store_mod
-    from kiro_crew.crew_log.lease import LEASE_FILE
+    from efm_go.crew_log import store as store_mod
+    from efm_go.crew_log.lease import LEASE_FILE
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}, LIVE: {}})
@@ -1150,7 +1150,7 @@ def test_the_raced_branch_removes_nothing_of_its_own(tmp_path, monkeypatch):
     itself, so a refused re-run leaves both the fold and the source in place and
     addressable, rather than the source gone and the fold orphaned.
     """
-    from kiro_crew.crew_log import store as store_mod
+    from efm_go.crew_log import store as store_mod
 
     home = tmp_path / "home"
     _write_roster(home, **{GONE: {}})

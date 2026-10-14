@@ -24,9 +24,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import sandbox
-from kiro_crew.dashboard.handlers import agents
-from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+from efm_go import sandbox
+from efm_go.dashboard.handlers import agents
+from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
 
 def _drain_catalog_task():
@@ -140,7 +140,7 @@ class _FakeProc:
 def test_kiro_binary_unresolved_returns_503(tmp_path):
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value=""),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value=""),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
     assert resp.status == 503
@@ -150,12 +150,12 @@ def test_kiro_binary_unresolved_returns_503(tmp_path):
 def test_list_models_timeout_returns_503(tmp_path):
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=_FakeProc()),
         patch.object(agents.asyncio, "wait_for", new=_raise_timeout),
     ):
@@ -169,13 +169,13 @@ def test_list_models_nonzero_exit_returns_503(tmp_path):
     proc = _FakeProc(stderr=b"sandbox initialization failed", returncode=71)
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
-        patch("kiro_crew.platform.redact_via_context", lambda text: text),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.platform.redact_via_context", lambda text: text),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=proc),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -187,12 +187,12 @@ def test_list_models_empty_stdout_returns_503(tmp_path):
     proc = _FakeProc(returncode=0)
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=proc),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -204,12 +204,12 @@ def test_list_models_invalid_json_returns_503(tmp_path):
     proc = _FakeProc(stdout=b"not-json", returncode=0)
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=proc),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -222,12 +222,12 @@ def test_list_models_invalid_payload_returns_503(tmp_path):
     proc = _FakeProc(stdout=payload, returncode=0)
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=proc),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -240,7 +240,7 @@ def test_unexpected_exception_returns_503(tmp_path):
     # caught and surfaced as 503, not a cached empty 200.
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", side_effect=RuntimeError("boom")),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", side_effect=RuntimeError("boom")),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
     assert resp.status == 503
@@ -252,12 +252,12 @@ def test_successful_list_returns_200_with_models(tmp_path):
     ).encode()
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=_FakeProc(payload)),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -276,7 +276,7 @@ def test_successful_list_launches_resolved_binary_in_place(tmp_path, monkeypatch
     env_file = tmp_path / ".env"
     env_file.write_text("KIRO_API_KEY=model-list-key\n", encoding="utf-8")
     monkeypatch.delenv("KIRO_API_KEY", raising=False)
-    monkeypatch.setattr("kiro_crew.config.loader.env_path", lambda: env_file)
+    monkeypatch.setattr("efm_go.config.loader.env_path", lambda: env_file)
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "FAKE-secret")
     monkeypatch.setenv("PYTHONPATH", "/gateway/pythonpath")
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-FAKE")
@@ -284,12 +284,12 @@ def test_successful_list_launches_resolved_binary_in_place(tmp_path, monkeypatch
     monkeypatch.setenv("KIROCREW_UNRELATED_KEEPME", "keep-this-value")
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value=resolved),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value=resolved),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", spawn),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -317,7 +317,7 @@ def test_structured_context_window_seeds_central_authority(tmp_path):
     # instead of a guessed default. (This fork keeps kiro's bare-dotted ids as
     # the picker wire format, so the response rows are NOT canonicalized — only
     # the window cache is seeded; see api_models.)
-    import kiro_crew.model_registry as mr
+    import efm_go.model_registry as mr
 
     payload = json.dumps(
         {
@@ -339,12 +339,12 @@ def test_structured_context_window_seeds_central_authority(tmp_path):
     ).encode()
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=_FakeProc(payload)),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -360,8 +360,8 @@ def test_catalog_warms_the_acp_advertised_cache_unfiltered(tmp_path, monkeypatch
     # exists. Fed from the UNFILTERED catalog: a deprecated row is still a kiro
     # id, and a vocabulary that omitted it would make a native pin read as
     # foreign. Both spellings of a row are collected, like refresh_kiro_windows.
-    import kiro_crew.model_registry as mr
-    from kiro_crew.dashboard import chat_utils
+    import efm_go.model_registry as mr
+    from efm_go.dashboard import chat_utils
 
     monkeypatch.setattr(mr, "_ADVERTISED_MODELS", {})
     monkeypatch.setattr(
@@ -388,12 +388,12 @@ def test_catalog_warms_the_acp_advertised_cache_unfiltered(tmp_path, monkeypatch
     ).encode()
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=_FakeProc(payload)),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -435,13 +435,13 @@ def test_list_models_spawns_at_the_configured_sandbox_tier(tmp_path):
 
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.configured_sandbox_mode", lambda: "off"),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _record),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.configured_sandbox_mode", lambda: "off"),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _record),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=_FakeProc(payload)),
     ):
         resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -461,13 +461,13 @@ def test_configured_sandbox_mode_is_the_tier_the_chat_path_uses():
     """
     for configured in ("off", "auto"):
         cfg = SimpleNamespace(agent=SimpleNamespace(sandbox=configured))
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg):
             assert sandbox.configured_sandbox_mode() == configured
 
 
 def test_configured_sandbox_mode_fails_secure_when_config_unreadable(caplog):
     """An unreadable config must not become a way to obtain a LOOSER tier."""
-    with patch("kiro_crew.config.loader.KiroCrewConfig.load", side_effect=OSError("boom")):
+    with patch("efm_go.config.loader.KiroCrewConfig.load", side_effect=OSError("boom")):
         with caplog.at_level(logging.WARNING, logger=sandbox.logger.name):
             assert sandbox.configured_sandbox_mode() == sandbox._SANDBOX_MODE_FALLBACK
     # Never silently: the substituted tier is announced.
@@ -492,10 +492,10 @@ def test_sandbox_refusal_is_reported_with_a_machine_readable_code(tmp_path, capl
 
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.configured_sandbox_mode", lambda: "auto"),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _refuse),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.configured_sandbox_mode", lambda: "auto"),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _refuse),
     ):
         with caplog.at_level(logging.WARNING, logger=agents.logger.name):
             resp = _run(agents.api_models(_kiro_request(tmp_path)))
@@ -534,12 +534,12 @@ def test_ssh_auth_sock_resolver_runs_off_the_event_loop(tmp_path):
 
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=_kiro_cfg()),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", _probe),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", _probe),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", return_value=_FakeProc(payload)),
     ):
         loop_thread, resp = _run(_drive())

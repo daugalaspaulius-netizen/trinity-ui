@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.dashboard.state import (
+from efm_go.dashboard.state import (
     _SLOTS_BROADCAST_INTERVAL_S,
     DashboardState,
     _ChatSlot,
@@ -28,7 +28,7 @@ def loop():
 
 @pytest.fixture
 def state(monkeypatch, tmp_path, loop):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     s = DashboardState(
         sessions=MagicMock(count=0),
         crons=MagicMock(list_jobs=MagicMock(return_value=[]), status=MagicMock(return_value={})),

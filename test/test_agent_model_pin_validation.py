@@ -15,15 +15,15 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.agent_sdk.backends import ACP_BACKEND_KIRO
-from kiro_crew.model_registry import acp_id_correction
+from efm_go.agent_sdk.backends import ACP_BACKEND_KIRO
+from efm_go.model_registry import acp_id_correction
 
 
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     """Exercise the agent handlers past their independent owner-auth boundary."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
     pass  # Member routing does not depend on OS isolation.
@@ -58,7 +58,7 @@ class TestAcpIdCorrection:
         Pins the rule rather than the three instances above, so a registry entry
         added later cannot reintroduce the bypass silently.
         """
-        from kiro_crew.model_registry import available_models
+        from efm_go.model_registry import available_models
 
         served = set(available_models("acp"))
         for pid in available_models("claude_code"):
@@ -91,7 +91,7 @@ class TestDoctorFlagsSpecPins:
         )
 
     def test_reports_an_unusable_pin_with_the_right_id(self, tmp_path):
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         agents_dir = tmp_path / "agents"
         self._spec(agents_dir, "code-reviewer", "claude-opus-4-8")
@@ -101,7 +101,7 @@ class TestDoctorFlagsSpecPins:
         assert ("code-reviewer", "claude-opus-4-8", "claude-opus-4.5") in problems
 
     def test_silent_when_every_pin_is_usable(self, tmp_path):
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         agents_dir = tmp_path / "agents"
         self._spec(agents_dir, "fine", "claude-opus-4.8")
@@ -115,7 +115,7 @@ class TestDoctorFlagsSpecPins:
         Auditing only the global scope reports a clean bill of health for the
         very spec a session in that project actually runs.
         """
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         global_dir = tmp_path / "agents"
         self._spec(global_dir, "fine", "claude-opus-4.8")
@@ -131,7 +131,7 @@ class TestDoctorFlagsSpecPins:
 
     def test_unreadable_specs_report_unchecked_not_clean(self, tmp_path):
         """A diagnostic must not print green for a check it never performed."""
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
@@ -142,7 +142,7 @@ class TestDoctorFlagsSpecPins:
         assert result is None, "an unrunnable check must be distinguishable from a clean one"
 
     def test_claude_code_provider_does_not_audit_its_valid_wire_id(self, tmp_path):
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         agents_dir = tmp_path / "agents"
         self._spec(
@@ -157,7 +157,7 @@ class TestDoctorFlagsSpecPins:
         )
 
     def test_appledouble_sidecar_is_not_an_unreadable_spec(self, tmp_path):
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
@@ -166,8 +166,8 @@ class TestDoctorFlagsSpecPins:
         assert cli_doctor._agent_spec_model_problems(agents_dir=agents_dir) == []
 
     def test_unreadable_project_enumeration_reports_unchecked(self, tmp_path, monkeypatch):
-        from kiro_crew import cli_doctor
-        from kiro_crew.config.paths import project_agents_dir
+        from efm_go import cli_doctor
+        from efm_go.config.paths import project_agents_dir
 
         project = tmp_path / "project"
         target = project_agents_dir(project)
@@ -193,7 +193,7 @@ class TestDoctorFlagsSpecPins:
         A planted or packaged spec whose name carries cursor moves, a screen
         clear or an OSC sequence could otherwise rewrite or hide this report.
         """
-        from kiro_crew.cli_doctor import _format_model_pin_problem
+        from efm_go.cli_doctor import _format_model_pin_problem
 
         hostile = "\x1b[2J\x1b[1Aevil\x1b]52;c;cGFzcw==\x07"
         lines = _format_model_pin_problem(hostile, "claude-opus-4-8", "claude-opus-4.5")
@@ -206,7 +206,7 @@ class TestDoctorFlagsSpecPins:
 
     def test_a_hostile_pin_and_correction_are_escaped_too(self):
         """All three fields come from spec contents, so none may pass through raw."""
-        from kiro_crew.cli_doctor import _format_model_pin_problem
+        from efm_go.cli_doctor import _format_model_pin_problem
 
         rendered = "\n".join(_format_model_pin_problem("ok", "\x1b[2Jpin", "\x1b[2Jfix"))
 
@@ -223,7 +223,7 @@ class TestNoRedundantConfigLoad:
     """
 
     def _counting_load(self, monkeypatch):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         original = KiroCrewConfig.load
         calls: list[int] = []
@@ -236,7 +236,7 @@ class TestNoRedundantConfigLoad:
         return calls
 
     def test_supplied_provider_skips_the_load(self, monkeypatch):
-        from kiro_crew.dashboard.chat_handlers import _model_rejected_reason
+        from efm_go.dashboard.chat_handlers import _model_rejected_reason
 
         calls = self._counting_load(monkeypatch)
         _model_rejected_reason("claude-opus-4-8", provider="acp")
@@ -244,14 +244,14 @@ class TestNoRedundantConfigLoad:
 
     def test_omitted_provider_still_resolves_it(self, monkeypatch):
         """The default must preserve the original behaviour for existing callers."""
-        from kiro_crew.dashboard.chat_handlers import _model_rejected_reason
+        from efm_go.dashboard.chat_handlers import _model_rejected_reason
 
         calls = self._counting_load(monkeypatch)
         _model_rejected_reason("claude-opus-4-8")
         assert len(calls) == 1
 
     def test_validator_forwards_the_provider(self, monkeypatch):
-        from kiro_crew.dashboard.handlers.core import _validate_role_model
+        from efm_go.dashboard.handlers.core import _validate_role_model
 
         calls = self._counting_load(monkeypatch)
         request = SimpleNamespace(app={})
@@ -260,7 +260,7 @@ class TestNoRedundantConfigLoad:
 
     def test_live_entitlements_preserve_the_registry_correction(self, monkeypatch):
         """A live advertised set must not replace the actionable spelling hint."""
-        from kiro_crew.dashboard.handlers import agents, core
+        from efm_go.dashboard.handlers import agents, core
 
         monkeypatch.setattr(core, "_active_advertised_ids", lambda request: ["claude-opus-4.8"])
 
@@ -272,7 +272,7 @@ class TestNoRedundantConfigLoad:
         assert "registry maps that spelling to 'claude-opus-4.5'" in reason
 
     def test_claude_code_provider_keeps_its_wire_id(self, monkeypatch):
-        from kiro_crew.dashboard.handlers import agents, core
+        from efm_go.dashboard.handlers import agents, core
 
         monkeypatch.setattr(core, "_active_advertised_ids", lambda request: ["claude-opus-4-8"])
 
@@ -286,7 +286,7 @@ class TestNoRedundantConfigLoad:
 
 
 def _crud_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import (
+    from efm_go.dashboard.handlers import (
         api_kirocrew_agent_update,
         api_kirocrew_agents_create,
     )
@@ -312,7 +312,7 @@ def seeded_agent():
     The config home is already redirected per test by the rootdir conftest, so
     this touches no real install.
     """
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
 
     cfg = KiroCrewConfig.load()
     cfg.agents["existing"] = KiroCrewAgentConfig(
@@ -342,7 +342,7 @@ class TestSavePathRefusesAnUnusablePin:
         status: int,
     ) -> None:
         """Another live harness must not decide a regular agent's entitlement."""
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig.load()
         cfg.agent.acp_backend = target_backend
@@ -375,7 +375,7 @@ class TestSavePathRefusesAnUnusablePin:
         self, seeded_agent, method: str
     ) -> None:
         """No live catalog at all: entitlement is unknown, not denied."""
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig.load()
         cfg.agent.acp_backend = "codex"
@@ -409,7 +409,7 @@ class TestSavePathRefusesAnUnusablePin:
         the member backend's own catalog: it admits what it advertises and
         rejects what it does not.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig.load()
         cfg.agent.acp_backend = "codex"
@@ -448,7 +448,7 @@ class TestSavePathRefusesAnUnusablePin:
         false rejection by the wrong backend's advertised ids — the defect the
         unscoped fallback left open.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig.load()
         cfg.agent.acp_backend = "codex"
@@ -474,7 +474,7 @@ class TestSavePathRefusesAnUnusablePin:
 
     @pytest.mark.asyncio
     async def test_create_refuses_and_carries_an_error_code(self, seeded_agent):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         async with TestClient(TestServer(_crud_app())) as client:
             resp = await client.post(
@@ -498,7 +498,7 @@ class TestSavePathRefusesAnUnusablePin:
 
     @pytest.mark.asyncio
     async def test_update_refuses_and_leaves_the_stored_value_alone(self, seeded_agent):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         async with TestClient(TestServer(_crud_app())) as client:
             resp = await client.put(
@@ -572,9 +572,9 @@ class TestSavePathRefusesAnUnusablePin:
     async def test_an_in_flight_revalidation_refuses_the_save(
         self, seeded_agent, method: str
     ) -> None:
-        from kiro_crew.agent_sdk.drivers.acp import EntitlementRevalidating
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.dashboard.handlers.core import _ROLE_PIN_REVALIDATING
+        from efm_go.agent_sdk.drivers.acp import EntitlementRevalidating
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.dashboard.handlers.core import _ROLE_PIN_REVALIDATING
 
         async def _pending(_catalog_ids: list[str]) -> list[dict[str, str]]:
             raise EntitlementRevalidating

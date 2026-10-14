@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_doctor
-from kiro_crew import members as members_mod
-from kiro_crew import memory_stores
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_dir
-from kiro_crew.config.sections import MemoryStoreConfig
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import cli_doctor
+from efm_go import members as members_mod
+from efm_go import memory_stores
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_dir
+from efm_go.config.sections import MemoryStoreConfig
+from efm_go.vector_memory import VectorMemoryStore
 
 
 def _snapshot(home: Path) -> dict[str, bytes]:
@@ -286,7 +286,7 @@ def _composition_failed(monkeypatch):
     ``platform.context.redact_via_context``, which re-raises the composition
     failure instead of degrading; doctor must survive it.
     """
-    from kiro_crew.platform import PlatformCompositionError
+    from efm_go.platform import PlatformCompositionError
 
     def _raise(name):
         raise PlatformCompositionError("security_policy.json unreadable")

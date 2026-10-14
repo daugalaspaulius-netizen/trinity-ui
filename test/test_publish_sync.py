@@ -21,12 +21,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import publish_provider, publish_sync
-from kiro_crew.artifacts import (
+from efm_go import publish_provider, publish_sync
+from efm_go.artifacts import (
     ArtifactPublication,
     ArtifactStore,
 )
-from kiro_crew.publish_provider import (
+from efm_go.publish_provider import (
     Capability,
     PublishError,
     PublishProvider,
@@ -1088,7 +1088,7 @@ def test_clear_publication(tmp_path):
 
 
 def test_update_publication_unknown_field_rejected(tmp_path):
-    from kiro_crew.artifacts import ArtifactValidationError
+    from efm_go.artifacts import ArtifactValidationError
 
     store = ArtifactStore(root=tmp_path / "a")
     store.create(name="Doc", content="x", kind="text", slug="d")
@@ -1098,7 +1098,7 @@ def test_update_publication_unknown_field_rejected(tmp_path):
 
 
 def test_update_publication_requires_existing(tmp_path):
-    from kiro_crew.artifacts import ArtifactValidationError
+    from efm_go.artifacts import ArtifactValidationError
 
     store = ArtifactStore(root=tmp_path / "a")
     store.create(name="Doc", content="x", kind="text", slug="d")
@@ -1353,7 +1353,7 @@ async def test_refresh_clears_drift_written_before_the_brand_rename(store, fake_
 
 import getpass  # noqa: E402
 
-from kiro_crew.artifacts import ForkMetadata  # noqa: E402
+from efm_go.artifacts import ForkMetadata  # noqa: E402
 
 
 def _remote_get(

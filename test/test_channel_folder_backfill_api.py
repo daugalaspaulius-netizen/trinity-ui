@@ -24,7 +24,7 @@ from typing import Any
 
 
 def _mod() -> Any:
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     return mod
 

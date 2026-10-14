@@ -19,8 +19,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew import aws_consent
-from kiro_crew.apps.builtins.aws_control import hooks
+from efm_go import aws_consent
+from efm_go.apps.builtins.aws_control import hooks
 
 ACCOUNT = "111122223333"
 

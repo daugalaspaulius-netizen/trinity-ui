@@ -37,9 +37,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.autonudge import AutoNudgeService, NudgeLoop
-from kiro_crew.dashboard.handlers import autonudge as h
-from kiro_crew.monitoring.models import MonitorState
+from efm_go.autonudge import AutoNudgeService, NudgeLoop
+from efm_go.dashboard.handlers import autonudge as h
+from efm_go.monitoring.models import MonitorState
 
 
 @pytest.fixture(autouse=True)
@@ -179,7 +179,7 @@ async def test_the_next_automatic_nudge_is_a_full_interval_after_the_manual_turn
 
     # Freeze the clock only for the re-arm, so the assertion is an equality
     # rather than a tolerance window a slow host could widen past.
-    monkeypatch.setattr("kiro_crew.autonudge.time.time", lambda: 1_700_000_000.0)
+    monkeypatch.setattr("efm_go.autonudge.time.time", lambda: 1_700_000_000.0)
     svc.notify_turn_complete(loop.slot_key)
 
     assert loop.next_due_ts == 1_700_000_000.0 + 300

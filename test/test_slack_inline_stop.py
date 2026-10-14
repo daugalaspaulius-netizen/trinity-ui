@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.slack.blocks import build_working_blocks, session_task_card
+from efm_go.slack.blocks import build_working_blocks, session_task_card
 
 # ---------------------------------------------------------------------------
 # build_working_blocks
@@ -118,11 +118,11 @@ def mock_orch():
 @pytest.fixture
 def setup_interactions(mock_orch, monkeypatch):
     """Set up interactions module state for testing."""
-    import kiro_crew.slack.interactions as interactions
+    import efm_go.slack.interactions as interactions
 
     monkeypatch.setattr(interactions, "_orch", mock_orch)
     # Set owner so is_owner returns True for U_OWNER
-    from kiro_crew.slack.handler import set_owner_id
+    from efm_go.slack.handler import set_owner_id
 
     set_owner_id("U_OWNER")
     return interactions
@@ -136,7 +136,7 @@ class TestHandleInlineStop:
         payload = {"user": {"id": "U_OTHER"}}
         action = {"value": "sess-key"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             mock_sel.return_value.log_tool_invocation = MagicMock()
             await interactions._handle_inline_stop(payload, action, "C1", "ts1", "U_OTHER")
@@ -159,7 +159,7 @@ class TestHandleInlineStop:
         payload = {"user": {"id": "U_OWNER"}}
         action = {"value": "my-session"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             mock_sel.return_value.log_tool_invocation = MagicMock()
             await interactions._handle_inline_stop(payload, action, "C1", "msg_ts", "U_OWNER")
@@ -185,7 +185,7 @@ class TestHandleInlineStop:
         payload = {"user": {"id": "U_OWNER"}}
         action = {"value": "sess-x"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             mock_sel.return_value.log_tool_invocation = MagicMock()
             await interactions._handle_inline_stop(payload, action, "C1", "ts1", "U_OWNER")
@@ -202,7 +202,7 @@ class TestHandleInlineStop:
         payload = {"user": {"id": "U_OWNER"}}
         action = {"value": "idle-sess"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             mock_sel.return_value.log_tool_invocation = MagicMock()
             await interactions._handle_inline_stop(payload, action, "C1", "ts1", "U_OWNER")
@@ -219,7 +219,7 @@ class TestHandleInlineStop:
         """The decline reply promises a repeat forces: the first press arms the
         marker for this presser, the second press by the same presser inside the
         window passes ``force=True``."""
-        from kiro_crew import session_lifecycle as sl
+        from efm_go import session_lifecycle as sl
 
         sl._stop_declined_markers.clear()
         interactions = setup_interactions
@@ -228,7 +228,7 @@ class TestHandleInlineStop:
         payload = {"user": {"id": "U_OWNER"}}
         action = {"value": "sess-c"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             mock_sel.return_value.log_tool_invocation = MagicMock()
             await interactions._handle_inline_stop(payload, action, "C1", "ts1", "U_OWNER")
@@ -243,7 +243,7 @@ class TestHandleInlineStop:
         """This reply is a message update guarded by a client and a message id and
         wrapped in its own ``except``. An escalation armed behind a swallowed
         failure would turn the presser's retry into a silent session reset."""
-        from kiro_crew import session_lifecycle as sl
+        from efm_go import session_lifecycle as sl
 
         sl._stop_declined_markers.clear()
         interactions = setup_interactions
@@ -253,7 +253,7 @@ class TestHandleInlineStop:
         payload = {"user": {"id": "U_OWNER"}}
         action = {"value": "sess-d"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             mock_sel.return_value.log_tool_invocation = MagicMock()
             await interactions._handle_inline_stop(payload, action, "C1", "ts1", "U_OWNER")
@@ -268,7 +268,7 @@ class TestHandleInlineStop:
         payload = {"user": {"id": "U_OWNER"}}
         action = {"value": ""}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             mock_sel.return_value.log_tool_invocation = MagicMock()
             await interactions._handle_inline_stop(payload, action, "C1", "ts1", "U_OWNER")
@@ -295,7 +295,7 @@ class TestHandleSessionEnd:
         payload = {"user": {"id": "U_OWNER"}, "response_url": ""}
         action = {"value": "sid-abc"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             await interactions._handle_session_end(payload, action, "C1", "ts1", "U_OWNER")
 
@@ -312,7 +312,7 @@ class TestHandleSessionEnd:
         payload = {"user": {"id": "U_OWNER"}, "response_url": ""}
         action = {"value": "direct-key"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             await interactions._handle_session_end(payload, action, "C1", "ts1", "U_OWNER")
 
@@ -326,7 +326,7 @@ class TestHandleSessionEnd:
         payload = {"user": {"id": "U_OTHER"}, "response_url": ""}
         action = {"value": "some-key"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             await interactions._handle_session_end(payload, action, "C1", "ts1", "U_OTHER")
 
@@ -344,7 +344,7 @@ class TestHandleSessionEnd:
         payload = {"user": {"id": "U_OWNER"}, "response_url": ""}
         action = {"value": "sid-with-consol"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             await interactions._handle_session_end(payload, action, "C1", "ts1", "U_OWNER")
 
@@ -362,7 +362,7 @@ class TestHandleSessionEnd:
         payload = {"user": {"id": "U_OWNER"}, "response_url": ""}
         action = {"value": "sid-123456789abc"}
 
-        with patch("kiro_crew.slack.interactions.sel") as mock_sel:
+        with patch("efm_go.slack.interactions.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             await interactions._handle_session_end(payload, action, "C1", "ts1", "U_OWNER")
 
@@ -384,8 +384,8 @@ class TestWorkingBlockPostFailure:
         import importlib
 
         from conftest import MockSlackClient
-        from kiro_crew.providers.base import LLMEvent
-        from kiro_crew.slack.handler import handle_message
+        from efm_go.providers.base import LLMEvent
+        from efm_go.slack.handler import handle_message
 
         handler_tests = importlib.import_module("test_slack_handler")
 

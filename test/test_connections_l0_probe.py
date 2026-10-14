@@ -16,8 +16,8 @@ from pathlib import Path
 import pytest
 from yarl import URL
 
-from kiro_crew.connections import get_provider, l0_drift, l0_probe, l0_record
-from kiro_crew.connections.registry import (
+from efm_go.connections import get_provider, l0_drift, l0_probe, l0_record
+from efm_go.connections.registry import (
     L0_VERIFICATION_WARN_AGE_DAYS,
     REGISTRY_PATH,
     canonical_host,

@@ -51,7 +51,7 @@ from conftest import requires_symlinks
 # per full run for this file alone. Grouping keeps the cache single-copy per run.
 pytestmark = pytest.mark.xdist_group(name="tree_scan_test_lazy_data_home_paths")
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 PATHS_MODULE = SRC / "config" / "paths.py"
 
 
@@ -97,7 +97,7 @@ def _transitive_path_factories() -> frozenset[str]:
     """Transitive closure: Path-returning functions that resolve through a paths.py factory.
 
     Extends the root set (functions declared in ``paths.py``) with every
-    ``Path``-returning function elsewhere in ``src/kiro_crew/`` that calls
+    ``Path``-returning function elsewhere in ``src/efm_go/`` that calls
     (directly or transitively) any member of the set. This closes the gap where
     accessors like ``kiro_agents_dir_path()`` or ``_subagents_dir()`` resolve
     through ``kiro_agents_dir()`` or ``data_home()`` without being members of the
@@ -366,7 +366,7 @@ class TestNoImportTimePathResolution:
 
         mod = sys.modules[__name__]
 
-        fake_src = tmp_path / "kiro_crew"
+        fake_src = tmp_path / "efm_go"
         (fake_src / "config").mkdir(parents=True)
         (fake_src / "config" / "paths.py").write_text(
             "from pathlib import Path\n\n\ndef config_dir() -> Path:\n    return Path('.')\n",
@@ -394,7 +394,7 @@ class TestNoImportTimePathResolution:
 
         mod = sys.modules[__name__]
 
-        fake_src = tmp_path / "kiro_crew"
+        fake_src = tmp_path / "efm_go"
         (fake_src / "config").mkdir(parents=True)
         (fake_src / "config" / "paths.py").write_text(
             "from pathlib import Path\n\n\ndef data_home() -> Path:\n    return Path('.')\n",
@@ -429,16 +429,16 @@ class TestNoImportTimePathResolution:
 # environment -- without the reset this test would assert the fixture, not the
 # live-resolution branch it exists to cover.
 _CONFIG_DIR_ACCESSORS = [
-    ("kiro_crew.dashboard.handlers.usage", "_TOKEN_USAGE_DIR", "_token_usage_dir"),
-    ("kiro_crew.cron", "_DEFAULT_DIR", "_default_dir"),
-    ("kiro_crew.subagent_persistence", "_SUBAGENTS_DIR", "_subagents_dir"),
-    ("kiro_crew.dashboard.handlers.files", "_UPLOAD_DIR", "_upload_dir"),
-    ("kiro_crew.dashboard.handlers.files", "_SCREENSHOT_DIR", "_screenshot_dir"),
-    ("kiro_crew.dashboard.handlers.hooks", "_HOOK_STORE_PATH", "_hook_store_path"),
-    ("kiro_crew.dashboard.handlers.mcp", "_KIROCREW_MCP_JSON", "_kirocrew_mcp_json"),
-    ("kiro_crew.slack.sessions_view", "_SESSIONS_DIR", "_sessions_dir"),
-    ("kiro_crew.apps.builtins.auto_research.handlers", "RESEARCH_DIR", "research_dir"),
-    ("kiro_crew.apps.builtins.auto_research.handlers", "DB_PATH", "db_path"),
+    ("efm_go.dashboard.handlers.usage", "_TOKEN_USAGE_DIR", "_token_usage_dir"),
+    ("efm_go.cron", "_DEFAULT_DIR", "_default_dir"),
+    ("efm_go.subagent_persistence", "_SUBAGENTS_DIR", "_subagents_dir"),
+    ("efm_go.dashboard.handlers.files", "_UPLOAD_DIR", "_upload_dir"),
+    ("efm_go.dashboard.handlers.files", "_SCREENSHOT_DIR", "_screenshot_dir"),
+    ("efm_go.dashboard.handlers.hooks", "_HOOK_STORE_PATH", "_hook_store_path"),
+    ("efm_go.dashboard.handlers.mcp", "_KIROCREW_MCP_JSON", "_kirocrew_mcp_json"),
+    ("efm_go.slack.sessions_view", "_SESSIONS_DIR", "_sessions_dir"),
+    ("efm_go.apps.builtins.auto_research.handlers", "RESEARCH_DIR", "research_dir"),
+    ("efm_go.apps.builtins.auto_research.handlers", "DB_PATH", "db_path"),
 ]
 
 
@@ -474,7 +474,7 @@ class TestAccessorsFollowTheLiveHome:
         """Not merely read-once-late: it must re-resolve on every call."""
         import importlib
 
-        mod = importlib.import_module("kiro_crew.dashboard.handlers.usage")
+        mod = importlib.import_module("efm_go.dashboard.handlers.usage")
         first = tmp_path / "home-1"
         monkeypatch.setenv("KIROCREW_HOME", str(first))
         one = mod._token_usage_dir()
@@ -491,7 +491,7 @@ class TestAccessorsFollowTheLiveHome:
         """
         import importlib
 
-        mod = importlib.import_module("kiro_crew.dashboard.handlers.usage")
+        mod = importlib.import_module("efm_go.dashboard.handlers.usage")
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "ignored-home"))
         pinned = tmp_path / "pinned"
         monkeypatch.setattr(mod, "_TOKEN_USAGE_DIR", pinned)
@@ -513,7 +513,7 @@ class TestResolutionDoesNotRepeatStartupMaintenance:
     """
 
     def _count_maintenance(self, monkeypatch):
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         calls: list[int] = []
         monkeypatch.setattr(paths, "_write_recovery_breadcrumb", lambda d: calls.append(1))
@@ -522,7 +522,7 @@ class TestResolutionDoesNotRepeatStartupMaintenance:
     def test_repeat_calls_skip_maintenance_but_config_dir_still_runs_it(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
         home = tmp_path / "resolved"
@@ -540,7 +540,7 @@ class TestResolutionDoesNotRepeatStartupMaintenance:
 
     def test_first_resolution_still_performs_maintenance(self, tmp_path, monkeypatch):
         """Per START, not per call -- the breadcrumb refresh runs once per process."""
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
         monkeypatch.setattr(paths, "_resolved_home", None)
@@ -556,7 +556,7 @@ class TestResolutionDoesNotRepeatStartupMaintenance:
         Caching would be cheaper but would freeze the home again, so the override
         branch deliberately delegates on every call.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.setattr(paths, "_resolved_home", tmp_path / "stale-default")
         first = tmp_path / "ov-1"
@@ -577,7 +577,7 @@ class TestResolutionDoesNotRepeatStartupMaintenance:
         call down the maintenance path and put the breadcrumb refresh back on the
         request path for anyone with a bad override.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         home = tmp_path / "resolved"
         home.mkdir()
@@ -603,7 +603,7 @@ class TestResolutionDoesNotRepeatStartupMaintenance:
         Otherwise the previous test could pass simply because the override
         branch stopped working altogether.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.setattr(paths, "_resolved_home", tmp_path / "stale-default")
         good = tmp_path / "good-override"
@@ -636,7 +636,7 @@ class TestConfigDirMemoIsNotServedAfterTheHomeIsCleared:
     """
 
     def test_entry_from_a_bypassed_resolution_is_not_served_later(self, tmp_path, monkeypatch):
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
         stubbed = tmp_path / "stubbed"
@@ -672,7 +672,7 @@ class TestConfigDirMemoIsNotServedAfterTheHomeIsCleared:
         Two consecutive default-path calls must hit the entry, which is what keeps
         the breadcrumb refresh once-per-process instead of once-per-call.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
         monkeypatch.setattr(paths, "_resolved_home", None)
@@ -698,7 +698,7 @@ class TestRecoveryBreadcrumb:
         without following it: the symlink is consumed (a regular breadcrumb
         takes its place) and the file it pointed at keeps its exact content.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         data_home = tmp_path / "data-home"
         crumb = tmp_path / paths.RECOVERY_BREADCRUMB_NAME
@@ -716,7 +716,7 @@ class TestRecoveryBreadcrumb:
     def test_normal_breadcrumb_write_is_private_and_contains_the_data_home(
         self, tmp_path: Path
     ) -> None:
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         data_home = tmp_path / "data-home"
         crumb = tmp_path / paths.RECOVERY_BREADCRUMB_NAME
@@ -739,7 +739,7 @@ class TestRecoveryBreadcrumb:
         that lack it (Windows) deliberately rewrite every start, so there the
         assertion is that the rewrite lands a valid breadcrumb.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         data_home = tmp_path / "data-home"
         crumb = tmp_path / paths.RECOVERY_BREADCRUMB_NAME
@@ -764,7 +764,7 @@ class TestRecoveryBreadcrumb:
         no-follow, non-blocking descriptor gated on ``S_ISREG``, so a FIFO is
         skipped and atomically replaced by the real breadcrumb.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         data_home = tmp_path / "data-home"
         crumb = tmp_path / paths.RECOVERY_BREADCRUMB_NAME
@@ -786,7 +786,7 @@ class TestRecoveryBreadcrumb:
         to the atomic rewrite there. Startup must not crash and the breadcrumb
         must still land correctly.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         data_home = tmp_path / "data-home"
         crumb = tmp_path / paths.RECOVERY_BREADCRUMB_NAME

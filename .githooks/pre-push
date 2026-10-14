@@ -1,35 +1,21 @@
 #!/usr/bin/env bash
-# ============================================================
-# EFM Go DONE GATE V2 — pre-push hook (FULL)
-#
-# Prieš push paleidžia FULL gate: fast + COMMIT_SHA + konsistencija +
-# full verifieriai + tests + build provenance + worktree clean.
-# ============================================================
+# Push irgi pirma tikrina KANONAS.md. DONE GATE FULL yra žemiau.
 set -uo pipefail
 
+KANON="/opt/efm/vault/gamyba/efm-go/tools/efm_kanonas_hook.py"
 GATE="/opt/efm/vault/gamyba/efm-go/tools/efm_done_gate.py"
 
-echo ""
-echo "============================================================"
-echo " EFM Go DONE GATE V2 (pre-push / FULL)"
-echo "============================================================"
-
-if [ ! -f "$GATE" ]; then
-    echo "  FAIL: nerastas gate engine: $GATE"
+echo "KANONAS — pirmas, prieš push"
+python3 "$KANON" --repo "$(git rev-parse --show-toplevel)" --push
+if [ "$?" != "0" ]; then
+    echo "PUSH BLOKUOTAS. Sutvarkyk darbą pagal KANONAS.md. --no-verify draudžiama."
     exit 1
 fi
 
 python3 "$GATE" --full
-RC=$?
-
-if [ "$RC" != "0" ]; then
-    echo ""
-    echo "============================================================"
-    echo " PUSH BLOKUOTAS — DONE GATE FULL FAIL"
-    echo "============================================================"
+if [ "$?" != "0" ]; then
+    echo "PUSH BLOKUOTAS — DONE GATE FULL FAIL. Sutvarkyk darbą. --no-verify draudžiama."
     exit 1
 fi
-
-echo ""
-echo " DONE GATE FULL PASS — push leidžiamas ✓"
+echo "KANONAS ir DONE GATE FULL PASS"
 exit 0

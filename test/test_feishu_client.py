@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.feishu.client."""
+"""Tests for efm_go.feishu.client."""
 
 from __future__ import annotations
 
@@ -288,8 +288,8 @@ def _fake_lark_sdk():
             sys.modules[k] = originals[k]
 
     # Force-remove cached import in the client module if it was imported
-    if "kiro_crew.feishu.client" in sys.modules:
-        mod = sys.modules["kiro_crew.feishu.client"]
+    if "efm_go.feishu.client" in sys.modules:
+        mod = sys.modules["efm_go.feishu.client"]
         # Clear any cached lark ref from module-level
         if hasattr(mod, "_lark_mod_cache"):
             delattr(mod, "_lark_mod_cache")
@@ -371,7 +371,7 @@ class TestInit:
     """LarkClient.__init__ builds the REST client via the stub SDK."""
 
     def test_builds_rest_client(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="aid", app_secret="asec")
         assert client._lark is not None
@@ -399,7 +399,7 @@ class TestInit:
             # approach: patch builtins.__import__ to block lark_oapi.
             import builtins
 
-            from kiro_crew.feishu.client import LarkClient
+            from efm_go.feishu.client import LarkClient
 
             original_import = builtins.__import__
 
@@ -431,7 +431,7 @@ class TestSendReply:
 
     @pytest.mark.asyncio
     async def test_happy_path_returns_true(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         result = await client.send_reply("msg-1", "Hello")
@@ -440,7 +440,7 @@ class TestSendReply:
     @pytest.mark.asyncio
     async def test_long_reply_is_chunked_not_truncated(self) -> None:
         """A reply over the per-message cap is SPLIT; no character is dropped."""
-        from kiro_crew.feishu.client import FEISHU_MAX_TEXT, LarkClient
+        from efm_go.feishu.client import FEISHU_MAX_TEXT, LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         long_text = "x" * (FEISHU_MAX_TEXT + 100)
@@ -459,7 +459,7 @@ class TestSendReply:
     @pytest.mark.asyncio
     async def test_chunk_failure_stops_and_reports_false(self) -> None:
         """A mid-sequence REST failure returns False rather than half-success."""
-        from kiro_crew.feishu.client import FEISHU_MAX_TEXT, LarkClient
+        from efm_go.feishu.client import FEISHU_MAX_TEXT, LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         reply_mock = client._lark.im.v1.message
@@ -471,7 +471,7 @@ class TestSendReply:
 
     @pytest.mark.asyncio
     async def test_failure_returns_false(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         # Make the reply fail
@@ -541,7 +541,7 @@ class TestSendReplyFenceSafety:
     @pytest.mark.asyncio
     async def test_long_reply_with_fence_produces_balanced_chunks(self) -> None:
         """Every chunk of a fenced-code reply is independently fence-balanced."""
-        from kiro_crew.feishu.client import FEISHU_MAX_TEXT, LarkClient
+        from efm_go.feishu.client import FEISHU_MAX_TEXT, LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
 
@@ -572,7 +572,7 @@ class TestSendReplyFenceSafety:
     @pytest.mark.asyncio
     async def test_long_reply_with_fence_preserves_content_lines(self) -> None:
         """All original code-block content lines survive in order across chunks."""
-        from kiro_crew.feishu.client import FEISHU_MAX_TEXT, LarkClient
+        from efm_go.feishu.client import FEISHU_MAX_TEXT, LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
 
@@ -606,7 +606,7 @@ class TestSendReplyFenceSafety:
     @pytest.mark.asyncio
     async def test_short_reply_with_fence_sent_as_one_message(self) -> None:
         """A reply under the cap containing a fence is sent untouched."""
-        from kiro_crew.feishu.client import FEISHU_MAX_TEXT, LarkClient
+        from efm_go.feishu.client import FEISHU_MAX_TEXT, LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
 
@@ -630,7 +630,7 @@ class TestSyncReply:
     """_sync_reply builds correct request and raises on failure."""
 
     def test_raises_runtime_error_on_failure(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         client._lark.im.v1.message.succeed = False
@@ -638,7 +638,7 @@ class TestSyncReply:
             client._sync_reply("msg-1", "text")
 
     def test_happy_path_no_raise(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         # Should not raise
@@ -655,7 +655,7 @@ class TestHandleReceiveV1:
 
     @pytest.mark.asyncio
     async def test_well_formed_text_dispatches(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         received: list[Any] = []
 
@@ -692,7 +692,7 @@ class TestHandleReceiveV1:
         layer that may answer. ``text`` stays empty so nothing can mistake it
         for an instruction.
         """
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         received: list[Any] = []
 
@@ -717,7 +717,7 @@ class TestHandleReceiveV1:
     async def test_an_unreadable_message_with_no_sender_is_still_dropped(self) -> None:
         """The sender gate stays ahead of the type decision: with no open_id
         there is nobody to authorise, so there is nobody to answer."""
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         received: list[Any] = []
 
@@ -735,7 +735,7 @@ class TestHandleReceiveV1:
 
     @pytest.mark.asyncio
     async def test_no_open_id_ignored(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         received: list[Any] = []
 
@@ -753,7 +753,7 @@ class TestHandleReceiveV1:
 
     @pytest.mark.asyncio
     async def test_invalid_json_content_ignored(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         received: list[Any] = []
 
@@ -771,7 +771,7 @@ class TestHandleReceiveV1:
 
     @pytest.mark.asyncio
     async def test_whitespace_only_after_mention_strip_ignored(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         received: list[Any] = []
 
@@ -807,7 +807,7 @@ class TestHandleReceiveV1DropLogging:
     """
 
     def _make_client(self):
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         received: list[Any] = []
 
@@ -823,7 +823,7 @@ class TestHandleReceiveV1DropLogging:
         class Data:
             event = None
 
-        with caplog.at_level("INFO", logger="kiro_crew.feishu.client"):
+        with caplog.at_level("INFO", logger="efm_go.feishu.client"):
             client._handle_receive_v1(Data())
 
         assert received == []
@@ -838,7 +838,7 @@ class TestHandleReceiveV1DropLogging:
         class Data:
             event = Event()
 
-        with caplog.at_level("INFO", logger="kiro_crew.feishu.client"):
+        with caplog.at_level("INFO", logger="efm_go.feishu.client"):
             client._handle_receive_v1(Data())
 
         assert received == []
@@ -848,7 +848,7 @@ class TestHandleReceiveV1DropLogging:
         client, received = self._make_client()
         data = _make_event(message_id="")
 
-        with caplog.at_level("INFO", logger="kiro_crew.feishu.client"):
+        with caplog.at_level("INFO", logger="efm_go.feishu.client"):
             client._handle_receive_v1(data)
 
         assert received == []
@@ -858,7 +858,7 @@ class TestHandleReceiveV1DropLogging:
         client, received = self._make_client()
         data = _make_event(message_id="img-1", message_type="image")
 
-        with caplog.at_level("INFO", logger="kiro_crew.feishu.client"):
+        with caplog.at_level("INFO", logger="efm_go.feishu.client"):
             client._handle_receive_v1(data)
 
         assert received == []
@@ -872,7 +872,7 @@ class TestHandleReceiveV1DropLogging:
         client, received = self._make_client()
         data = _make_event(message_id="no-sender", open_id="")
 
-        with caplog.at_level("INFO", logger="kiro_crew.feishu.client"):
+        with caplog.at_level("INFO", logger="efm_go.feishu.client"):
             client._handle_receive_v1(data)
 
         assert received == []
@@ -882,7 +882,7 @@ class TestHandleReceiveV1DropLogging:
         client, received = self._make_client()
         data = _make_event(message_id="bad-json", content="not-json{{{")
 
-        with caplog.at_level("INFO", logger="kiro_crew.feishu.client"):
+        with caplog.at_level("INFO", logger="efm_go.feishu.client"):
             client._handle_receive_v1(data)
 
         assert received == []
@@ -895,7 +895,7 @@ class TestHandleReceiveV1DropLogging:
             content=json.dumps({"text": "@_user_1   "}),
         )
 
-        with caplog.at_level("INFO", logger="kiro_crew.feishu.client"):
+        with caplog.at_level("INFO", logger="efm_go.feishu.client"):
             client._handle_receive_v1(data)
 
         assert received == []
@@ -910,7 +910,7 @@ class TestHandleReceiveV1DropLogging:
         ``_resolve_mentions`` to return whitespace for a body that clears the
         mention-only check.
         """
-        import kiro_crew.feishu.client as client_mod
+        import efm_go.feishu.client as client_mod
 
         client, received = self._make_client()
         monkeypatch.setattr(client_mod, "_resolve_mentions", lambda raw, mentions: "   ")
@@ -919,7 +919,7 @@ class TestHandleReceiveV1DropLogging:
             content=json.dumps({"text": "real words here"}),
         )
 
-        with caplog.at_level("INFO", logger="kiro_crew.feishu.client"):
+        with caplog.at_level("INFO", logger="efm_go.feishu.client"):
             client._handle_receive_v1(data)
 
         assert received == []
@@ -936,7 +936,7 @@ class TestStart:
 
     @pytest.mark.asyncio
     async def test_start_spawns_thread(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         await client.start()
@@ -954,7 +954,7 @@ class TestStart:
     @pytest.mark.asyncio
     async def test_start_rebinds_sdk_loop_to_receiver_thread(self) -> None:
         """The SDK must not drive the gateway's already-running event loop."""
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         gateway_loop = asyncio.get_running_loop()
         gateway_thread_id = threading.get_ident()
@@ -982,7 +982,7 @@ class TestStart:
     @pytest.mark.asyncio
     async def test_start_propagates_sdk_constructor_failure(self) -> None:
         """A constructor failure is reported and leaves no receiver loop alive."""
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         lark_mod = sys.modules["lark_oapi"]
         original_client = lark_mod.ws.Client  # type: ignore[attr-defined]
@@ -1015,7 +1015,7 @@ class TestHealthTransitions:
 
     @pytest.mark.asyncio
     async def test_start_reports_healthy_then_close_reports_down(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         seen: list[tuple[bool, str]] = []
@@ -1033,7 +1033,7 @@ class TestHealthTransitions:
     @pytest.mark.asyncio
     async def test_receiver_exit_reports_the_reason(self) -> None:
         """A receiver that returns on its own is the bad-credential signal."""
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         seen: list[tuple[bool, str]] = []
@@ -1054,7 +1054,7 @@ class TestHealthTransitions:
         assert "receiver stopped" in seen[-1][1]
 
     def test_transitions_are_deduped_but_the_first_always_publishes(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         seen: list[tuple[bool, str]] = []
@@ -1071,7 +1071,7 @@ class TestHealthTransitions:
         assert seen == [(False, ""), (False, "first reason")]
 
     def test_an_observer_that_raises_cannot_break_the_receiver(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
 
@@ -1094,7 +1094,7 @@ class TestClose:
 
     @pytest.mark.asyncio
     async def test_close_sets_flag_and_stops(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         await client.start()
@@ -1111,7 +1111,7 @@ class TestClose:
     @pytest.mark.asyncio
     async def test_close_supports_sdk_without_public_stop(self) -> None:
         """lark-oapi 1.7.x closes through _disconnect on its worker loop."""
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         lark_mod = sys.modules["lark_oapi"]
         original_client = lark_mod.ws.Client  # type: ignore[attr-defined]
@@ -1146,7 +1146,7 @@ class TestClose:
         """
         import threading
 
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         await client.start()
@@ -1172,7 +1172,7 @@ class TestClose:
 
     @pytest.mark.asyncio
     async def test_close_tolerates_ws_stop_raising(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         # Patch ws module to use the raising variant
         lark_mod = sys.modules["lark_oapi"]
@@ -1195,7 +1195,7 @@ class TestClose:
     @pytest.mark.asyncio
     async def test_close_without_start(self) -> None:
         """close() on a never-started client does not raise."""
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         client = LarkClient(app_id="a", app_secret="s")
         await client.close()
@@ -1214,7 +1214,7 @@ class TestThresholdClamp:
 
     def test_soft_above_hard_is_lowered_to_hard(self) -> None:
         """Otherwise the hard branch wins and the soft nudge never fires."""
-        from kiro_crew.config.loader import FeishuConfig
+        from efm_go.config.loader import FeishuConfig
 
         c = FeishuConfig(soft_threshold_pct=95, hard_threshold_pct=50)
         assert c.soft_threshold_pct == 50
@@ -1222,7 +1222,7 @@ class TestThresholdClamp:
 
     def test_out_of_range_values_clamped(self) -> None:
         """Above 100 saturates; below the floor lands ON the floor, not at 0."""
-        from kiro_crew.config.loader import FeishuConfig
+        from efm_go.config.loader import FeishuConfig
 
         c = FeishuConfig(soft_threshold_pct=-10, hard_threshold_pct=200)
         assert c.soft_threshold_pct == 1
@@ -1234,7 +1234,7 @@ class TestThresholdClamp:
         throw away the conversation. The floor is 1, which is why the shared
         ``_clamp_pct`` -- not a hand-rolled ``max(0, ...)`` -- is the only
         correct statement of this range."""
-        from kiro_crew.config.loader import FeishuConfig
+        from efm_go.config.loader import FeishuConfig
 
         c = FeishuConfig(soft_threshold_pct=0, hard_threshold_pct=0)
         assert c.hard_threshold_pct == 1
@@ -1244,7 +1244,7 @@ class TestThresholdClamp:
         """Pins the delegation itself: the same input must normalize identically
         for Feishu and for a channel that already uses the shared helper, so a
         future edit cannot silently reintroduce a private clamp."""
-        from kiro_crew.config.loader import FeishuConfig, WeixinConfig
+        from efm_go.config.loader import FeishuConfig, WeixinConfig
 
         for soft, hard in ((0, 0), (-10, 200), (95, 50), (80, 95), (100, 100)):
             f = FeishuConfig(soft_threshold_pct=soft, hard_threshold_pct=hard)
@@ -1265,7 +1265,7 @@ class TestMentionResolution:
 
     @pytest.mark.asyncio
     async def test_third_party_mention_becomes_a_name(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         seen: list[str] = []
 
@@ -1294,7 +1294,7 @@ class TestMentionResolution:
         command match can fire. Deriving the second form in the dispatcher is
         impossible -- the ``@_user_N`` placeholders are gone by then.
         """
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         seen: list[tuple[str, str]] = []
 
@@ -1324,7 +1324,7 @@ class TestMentionResolution:
         conversation on a message that named a third party and was never a bare
         command. The loss is unrecoverable, so ambiguity resolves to "prompt".
         """
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         seen: list[tuple[str, str]] = []
 
@@ -1349,7 +1349,7 @@ class TestMentionResolution:
     @pytest.mark.asyncio
     async def test_a_mention_that_does_not_lead_yields_no_command_body(self) -> None:
         """Only a LEADING mention can be the bot's own; mid-text is a prompt."""
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         seen: list[tuple[str, str]] = []
 
@@ -1382,7 +1382,7 @@ class TestMentionResolution:
         """
         import json as _json
 
-        from kiro_crew.feishu import client as client_mod
+        from efm_go.feishu import client as client_mod
 
         body = "中" * 4000
         escaped = len(_json.dumps({"text": body}).encode("utf-8"))
@@ -1398,7 +1398,7 @@ class TestMentionResolution:
 
     @pytest.mark.asyncio
     async def test_at_all_keeps_its_scope(self) -> None:
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         seen: list[str] = []
 
@@ -1415,7 +1415,7 @@ class TestMentionResolution:
     @pytest.mark.asyncio
     async def test_unresolvable_placeholder_is_dropped(self) -> None:
         """No name available: drop it rather than leak an opaque token."""
-        from kiro_crew.feishu.client import LarkClient
+        from efm_go.feishu.client import LarkClient
 
         seen: list[str] = []
 

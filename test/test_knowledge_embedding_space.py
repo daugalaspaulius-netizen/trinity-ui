@@ -15,10 +15,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.embeddings import PRIORITY_NORMAL
-from kiro_crew.knowledge.embedder import floats_to_bytes
-from kiro_crew.knowledge.retrieval import ANY_EMBEDDING_SPACE, HybridRetriever, vector_leg
-from kiro_crew.knowledge.store import KnowledgeBundleError, KnowledgeStore
+from efm_go.embeddings import PRIORITY_NORMAL
+from efm_go.knowledge.embedder import floats_to_bytes
+from efm_go.knowledge.retrieval import ANY_EMBEDDING_SPACE, HybridRetriever, vector_leg
+from efm_go.knowledge.store import KnowledgeBundleError, KnowledgeStore
 
 _SIG_OLD = "aaaaaaaaaaaaaaaa"
 _SIG_NEW = "bbbbbbbbbbbbbbbb"
@@ -179,7 +179,7 @@ class TestVectorLegPairing:
         assert vector_leg(None) == (None, None)
 
     def test_an_embedder_always_arrives_with_its_signature(self):
-        from kiro_crew.knowledge.embedder import embedder_signature
+        from efm_go.knowledge.embedder import embedder_signature
 
         class _E:
             model = "m"
@@ -316,8 +316,8 @@ class TestEveryProductionCallSitePinsTheSpace:
         """GET /api/knowledge/items?q="""
         from unittest.mock import MagicMock
 
-        from kiro_crew.dashboard.handlers import knowledge as kh
-        from kiro_crew.knowledge.embedder import embedder_signature
+        from efm_go.dashboard.handlers import knowledge as kh
+        from efm_go.knowledge.embedder import embedder_signature
 
         seen: dict[str, object] = {}
 
@@ -344,8 +344,8 @@ class TestEveryProductionCallSitePinsTheSpace:
         """The ``local_knowledge_search`` MCP tool."""
         from unittest.mock import MagicMock
 
-        from kiro_crew import mcp_core
-        from kiro_crew.knowledge.embedder import embedder_signature
+        from efm_go import mcp_core
+        from efm_go.knowledge.embedder import embedder_signature
 
         seen: dict[str, object] = {}
 

@@ -11,12 +11,12 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew
-from kiro_crew import seed as seed_mod
-from kiro_crew.pod import cli as pod_cli
-from kiro_crew.pod.config import PodConfig
+import efm_go
+from efm_go import seed as seed_mod
+from efm_go.pod import cli as pod_cli
+from efm_go.pod.config import PodConfig
 
-_SRC = str(Path(kiro_crew.__file__).resolve().parents[1])
+_SRC = str(Path(efm_go.__file__).resolve().parents[1])
 _REPO = Path(_SRC).parent
 
 # Fixtures every checkout ships. Assertions against the real registry name these
@@ -40,7 +40,7 @@ def _run_cli(tmp_path: Path, *args: str) -> subprocess.CompletedProcess[str]:
         }
     )
     return subprocess.run(
-        [sys.executable, "-m", "kiro_crew", "pod", "scenarios", *args],
+        [sys.executable, "-m", "efm_go", "pod", "scenarios", *args],
         capture_output=True,
         text=True,
         encoding="utf-8",

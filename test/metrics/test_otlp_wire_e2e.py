@@ -42,10 +42,10 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.metrics import inventory_gauges as ig
-from kiro_crew.metrics import process_gauges as pg
-from kiro_crew.metrics import provider as pm
-from kiro_crew.metrics.schema import RESOURCE_ATTR_PROCESS_START_TIME
+from efm_go.metrics import inventory_gauges as ig
+from efm_go.metrics import process_gauges as pg
+from efm_go.metrics import provider as pm
+from efm_go.metrics.schema import RESOURCE_ATTR_PROCESS_START_TIME
 
 # OTEL AggregationTemporality, as it appears in serialized output.
 _DELTA = 1
@@ -146,7 +146,7 @@ def _drive_live_build(tmp_path, monkeypatch, readings=None):
     # ~/.kiro/crew (third side-effect audit). A fixture outside the floor pins what
     # it resolves itself.
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "kirocrew-home"))
-    import kiro_crew.config.paths as _paths
+    import efm_go.config.paths as _paths
 
     monkeypatch.setattr(_paths, "_resolved_home", None)
     for name, value in (readings if readings is not None else _PINNED_READINGS).items():
@@ -419,10 +419,10 @@ def test_no_mcp_server_name_appears_anywhere_on_the_wire(tmp_path, monkeypatch):
     readings["read_mcp_server_classes"] = _REAL
 
     with patch(
-        "kiro_crew.mcp_discovery._load_agent_config",
+        "efm_go.mcp_discovery._load_agent_config",
         return_value={"mcpServers": {secret: {}}},
     ):
-        with patch("kiro_crew.mcp_discovery._load_mcp_json_by_source", return_value={}):
+        with patch("efm_go.mcp_discovery._load_mcp_json_by_source", return_value={}):
             data, _ = _drive_live_build(tmp_path, monkeypatch, readings)
 
     points = data.points(ig.GAUGE_MCP_SERVERS)
@@ -515,7 +515,7 @@ def test_otlp_export_delivers_every_instrument_and_the_resource(monkeypatch, tmp
     """
     from opentelemetry.proto.collector.metrics.v1 import metrics_service_pb2
 
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     with _Receiver() as receiver:
         cfg = KiroCrewConfig()
@@ -586,10 +586,10 @@ def test_otlp_defaults_to_the_local_sink_temporality(monkeypatch, tmp_path):
     from opentelemetry.sdk.metrics import Counter, Histogram, UpDownCounter
     from opentelemetry.sdk.metrics.export import AggregationTemporality
 
-    from kiro_crew.metrics.local_exporter import JsonlMetricExporter
-    from kiro_crew.metrics.provider import _build_otlp_reader
-    from kiro_crew.metrics.temporality import TEMPORALITY_ENV_VAR
-    from kiro_crew.platform.interfaces import OtlpDestination
+    from efm_go.metrics.local_exporter import JsonlMetricExporter
+    from efm_go.metrics.provider import _build_otlp_reader
+    from efm_go.metrics.temporality import TEMPORALITY_ENV_VAR
+    from efm_go.platform.interfaces import OtlpDestination
 
     monkeypatch.delenv(TEMPORALITY_ENV_VAR, raising=False)
 
@@ -632,9 +632,9 @@ def test_otlp_temporality_preference_is_honored(monkeypatch, tmp_path):
     """
     from opentelemetry.sdk.metrics import Counter
 
-    from kiro_crew.metrics.provider import _build_otlp_reader
-    from kiro_crew.metrics.temporality import TEMPORALITY_ENV_VAR
-    from kiro_crew.platform.interfaces import OtlpDestination
+    from efm_go.metrics.provider import _build_otlp_reader
+    from efm_go.metrics.temporality import TEMPORALITY_ENV_VAR
+    from efm_go.platform.interfaces import OtlpDestination
 
     class _Cfg:
         export_interval_seconds = 60

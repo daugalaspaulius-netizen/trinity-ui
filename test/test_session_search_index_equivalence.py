@@ -18,9 +18,9 @@ import os
 
 import pytest
 
-from kiro_crew import history
-from kiro_crew._sqlite_compat import fts5_available
-from kiro_crew.history import ConversationLog
+from efm_go import history
+from efm_go._sqlite_compat import fts5_available
+from efm_go.history import ConversationLog
 
 pytestmark = pytest.mark.skipif(not fts5_available(), reason="SQLite built without FTS5")
 
@@ -35,7 +35,7 @@ def _close_session_search_indexes(monkeypatch):
     the index is opened synchronously on this (the test) thread, so the
     per-thread :meth:`SessionSearchIndex.close` reaches it.
     """
-    import kiro_crew.history as _history_mod
+    import efm_go.history as _history_mod
 
     created = []
     orig_init = _history_mod.ConversationLog.__init__
@@ -63,7 +63,7 @@ def _no_index_quiet_window(monkeypatch):
     the backfill they feed, so the production deferral would skip every session
     and the assertions below would be measuring the deferral, not the indexing.
     """
-    from kiro_crew import history_search
+    from efm_go import history_search
 
     monkeypatch.setattr(history_search, "_INDEX_QUIET_WINDOW_SECS", 0.0)
 

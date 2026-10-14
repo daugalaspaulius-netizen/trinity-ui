@@ -19,9 +19,9 @@ superseded-by: []
 > section, `fork-pr-description.yml` still reads "Fork-only by design", and
 > prepare-pr's `SKILL.md` still posts the `<!-- prepare-pr-intent -->` comment.
 > The design is implemented by
-> [#14181](https://github.com/kirodotdev/KiroCrew/pull/14181) (frozen sections,
+> [#14181](https://efmleads.com/pull/14181) (frozen sections,
 > gate, prepare-pr),
-> [#14161](https://github.com/kirodotdev/KiroCrew/pull/14161) (First Principles
+> [#14161](https://efmleads.com/pull/14161) (First Principles
 > lens) and a follow-up Intent Lock PR not yet opened. This document records
 > the maintainer's decisions so the First Principles lane can trace them.
 

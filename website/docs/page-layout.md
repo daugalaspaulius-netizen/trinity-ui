@@ -372,7 +372,7 @@ position, and the scroller pays for the covered strip with its `padding-bottom`
 holds a bar and whether or not the jump-to-bottom pill is showing; the pill
 floats over the transcript. Do not make the scroller's box end above the dock,
 reserve the dock's height with a margin, or otherwise clip the transcript so that
-"no text is read through glass": [#15820](https://github.com/kirodotdev/KiroCrew/pull/15820)
+"no text is read through glass": [#15820](https://efmleads.com/pull/15820)
 did exactly that and its transcript half was reverted on the maintainer's
 decision. Legibility of what sits over the transcript is the glass recipe's job
 (blur and tint), never the scroller's.

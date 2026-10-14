@@ -19,14 +19,14 @@ superseded-by: []
   the implementation is the one named in `implementation-prs`.
 - Builds on [`rfc-conductor-work-ledger`](rfc-conductor-work-ledger.md) Phase 3
   (the `work-ledger` probe, in flight on
-  [#12781](https://github.com/kirodotdev/KiroCrew/pull/12781)) and on
+  [#12781](https://efmleads.com/pull/12781)) and on
   [`rfc-append-only-ledger`](rfc-append-only-ledger.md) (the crew log). It adds
   no delivery path and no second loop: it moves one deadline.
 - Terminology. An earlier draft of this design (2026-09-22, never in this tree)
   said "the ledger is the channel" and hooked `session_ledger_record`. The word
   has since moved. The per-unit append-only file is the **crew log**
-  (`kiro_crew.crew_log`, recorded by default since
-  [#14295](https://github.com/kirodotdev/KiroCrew/pull/14295)). The **session
+  (`efm_go.crew_log`, recorded by default since
+  [#14295](https://efmleads.com/pull/14295)). The **session
   ledger** (`session_ledger.py`, fold `ledger`) and the **work ledger**
   (`work_ledger.py`, entry type `WORK_ENTRY_TYPE`, rebuilt by
   `rebuild_from_crew_log`) are two folds of that log. So the channel the draft
@@ -441,7 +441,7 @@ the loop and resets on restart.
    takes no standalone RFC pull requests, so the design and the code land
    together and the document is reviewed against the diff beside it.
 2. The implementation, in that same pull request, based on
-   [#12781](https://github.com/kirodotdev/KiroCrew/pull/12781) until it merges and
+   [#12781](https://efmleads.com/pull/12781) until it merges and
    retargeted to `main` after: the one-call arm (`watch` on `monitor_start` and
    `monitor_update`, the payload, the applier, the authz forward), the eager-drain
    consumer, the `close_slot` hook, the turn-end hook, the `worker_closed` probe

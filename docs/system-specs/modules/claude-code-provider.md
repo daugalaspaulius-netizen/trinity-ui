@@ -577,7 +577,7 @@ single-valued and **no provider selector is re-added**. The harness switch is
 
 ## Model registry
 
-`src/kiro_crew/model_registry.json` is the shared model data source for
+`src/efm_go/model_registry.json` is the shared model data source for
 `model_registry.py` and `website/src/model_registry.json`.
 `test_frontend_registry_matches_python_source` compares their parsed JSON, and
 `website/src/providers/modelRegistry.ts` imports the frontend copy. The

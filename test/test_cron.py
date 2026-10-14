@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from kiro_crew.cron import (
+from efm_go.cron import (
     _TIMER_POLL_SECS,
     CronJob,
     CronSchedule,
@@ -730,7 +730,7 @@ class TestTimerRestoreOnLoad:
         svc = CronService(base_dir=tmp_path)
         svc._running = True
         with patch.object(svc, "_arm_timer"):
-            with caplog.at_level(logging.INFO, logger="kiro_crew.cron"):
+            with caplog.at_level(logging.INFO, logger="efm_go.cron"):
                 svc._load()
         assert "Restored 2 cron timer(s) from disk" in caplog.text
 
@@ -938,7 +938,7 @@ class TestRunJobIsolatedPreambleFailure:
 
         # The fire counter is the first call in the preamble that leaves the
         # module; make it raise so the run ends before its try is entered.
-        monkeypatch.setattr("kiro_crew.cron.emit_counter", _boom)
+        monkeypatch.setattr("efm_go.cron.emit_counter", _boom)
 
         # Exactly what _on_timer leaves for the task: the claim, then no awaiter.
         claim = svc._claim_run(job.id, "scheduled")
@@ -967,7 +967,7 @@ class TestRunJobIsolatedPreambleFailure:
         emitted: list[tuple[str, dict[str, object]]] = []
         order: list[str] = []
         monkeypatch.setattr(
-            "kiro_crew.cron.emit_counter",
+            "efm_go.cron.emit_counter",
             lambda name, attrs: (emitted.append((name, dict(attrs))), order.append("counter")),
         )
         monkeypatch.setattr(svc, "_compute_jitter", lambda _job: (order.append("jitter"), 0.0)[1])
@@ -1022,7 +1022,7 @@ class TestCancelAgainstFinishedTask:
             task=stale,
         )
 
-        with patch("kiro_crew.sel.sel"):
+        with patch("efm_go.sel.sel"):
             cancelled = await svc.cancel(job.id)
 
         assert not svc._runs.cancelled._marks, (
@@ -1126,10 +1126,10 @@ class TestFormatSchedule:
             time.tzset()
 
     def test_cron_expr_human_readable(self, monkeypatch) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         monkeypatch.setattr(
-            "kiro_crew.cron.KiroCrewConfig.load",
+            "efm_go.cron.KiroCrewConfig.load",
             staticmethod(lambda: type("C", (), {"timezone": ""})()),
         )
         s = CronSchedule(kind="cron", cron_expr="0 22 * * 1-5")
@@ -1138,7 +1138,7 @@ class TestFormatSchedule:
         assert "10:00 PM" in result
 
     def test_cron_expr_with_timezone(self) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         s = CronSchedule(kind="cron", cron_expr="0 22 * * 1-5")
         result = format_schedule(s, tz_name="America/Los_Angeles")
@@ -1148,10 +1148,10 @@ class TestFormatSchedule:
         assert "Monday through Friday" in result
 
     def test_cron_expr_single_day(self, monkeypatch) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         monkeypatch.setattr(
-            "kiro_crew.cron.KiroCrewConfig.load",
+            "efm_go.cron.KiroCrewConfig.load",
             staticmethod(lambda: type("C", (), {"timezone": ""})()),
         )
         s = CronSchedule(kind="cron", cron_expr="0 21 * * 5")
@@ -1159,7 +1159,7 @@ class TestFormatSchedule:
         assert "Friday" in result
 
     def test_single_digit_hour_with_timezone(self) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         # 03:00 in LA timezone = 3 AM local, no date boundary issue
         s = CronSchedule(kind="cron", cron_expr="0 3 * * *")
@@ -1184,18 +1184,18 @@ class TestFormatSchedule:
         ],
     )
     def test_every_preserves_interval(self, every_secs: int, expected: str) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         s = CronSchedule(kind="every", every_secs=every_secs)
         assert format_schedule(s) == expected
 
     def test_at_timestamp_today(self, monkeypatch, _utc_tz) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         # Mock "now" to Apr 10, job at 3PM same day
         fake_now = datetime(2026, 4, 10, 12, 0, tzinfo=timezone.utc)
         # Mock only covers now() and fromtimestamp() — extend if format_schedule evolves.
-        monkeypatch.setattr("kiro_crew.cron.datetime", type("D", (datetime,), {
+        monkeypatch.setattr("efm_go.cron.datetime", type("D", (datetime,), {
             "now": classmethod(lambda cls, tz=None: fake_now),
             "fromtimestamp": staticmethod(lambda ts, tz=None: datetime.fromtimestamp(ts, tz)),
         }))
@@ -1205,12 +1205,12 @@ class TestFormatSchedule:
         assert "," not in result  # no date for today
 
     def test_at_timestamp_future_date(self, monkeypatch, _utc_tz) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         # Mock "now" to Apr 10, job on Apr 17
         fake_now = datetime(2026, 4, 10, 12, 0, tzinfo=timezone.utc)
         # Mock only covers now() and fromtimestamp() — extend if format_schedule evolves.
-        monkeypatch.setattr("kiro_crew.cron.datetime", type("D", (datetime,), {
+        monkeypatch.setattr("efm_go.cron.datetime", type("D", (datetime,), {
             "now": classmethod(lambda cls, tz=None: fake_now),
             "fromtimestamp": staticmethod(lambda ts, tz=None: datetime.fromtimestamp(ts, tz)),
         }))
@@ -1219,16 +1219,16 @@ class TestFormatSchedule:
         assert "Apr 17" in result
 
     def test_unknown_kind(self) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         s = CronSchedule(kind="unknown")
         assert format_schedule(s) == "unknown"
 
     def test_every_5_minutes(self, monkeypatch) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         monkeypatch.setattr(
-            "kiro_crew.cron.KiroCrewConfig.load",
+            "efm_go.cron.KiroCrewConfig.load",
             staticmethod(lambda: type("C", (), {"timezone": ""})()),
         )
         s = CronSchedule(kind="cron", cron_expr="*/5 * * * *")
@@ -1236,10 +1236,10 @@ class TestFormatSchedule:
         assert "5 minutes" in result
 
     def test_invalid_timezone_falls_back(self, monkeypatch) -> None:
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         monkeypatch.setattr(
-            "kiro_crew.cron.KiroCrewConfig.load",
+            "efm_go.cron.KiroCrewConfig.load",
             staticmethod(lambda: type("C", (), {"timezone": ""})()),
         )
         s = CronSchedule(kind="cron", cron_expr="0 22 * * 1-5")
@@ -1254,7 +1254,7 @@ class TestFormatSchedule:
         ``config.json``: that is what lets a loop-side caller omit tz_name at
         all, and it replaced a comment telling those callers to pass one.
         """
-        from kiro_crew.cron import CronSchedule, format_schedule
+        from efm_go.cron import CronSchedule, format_schedule
 
         loads: list[int] = []
 
@@ -1262,9 +1262,9 @@ class TestFormatSchedule:
             loads.append(1)
             return type("C", (), {"timezone": "Bad/Zone"})()
 
-        monkeypatch.setattr("kiro_crew.cron.KiroCrewConfig.load", staticmethod(_record_load))
+        monkeypatch.setattr("efm_go.cron.KiroCrewConfig.load", staticmethod(_record_load))
         monkeypatch.setattr(
-            "kiro_crew.cron.published_config_timezone", lambda: "America/New_York"
+            "efm_go.cron.published_config_timezone", lambda: "America/New_York"
         )
         s = CronSchedule(kind="cron", cron_expr="0 22 * * 1-5")
         result = format_schedule(s)
@@ -1338,7 +1338,7 @@ class TestComputeNextRunTs:
 
     def test_cron_schedule(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.cron.KiroCrewConfig.load",
+            "efm_go.cron.KiroCrewConfig.load",
             staticmethod(lambda: type("C", (), {"timezone": ""})()),
         )
         now = 1745000000.0  # 2025-04-18T18:13:20Z
@@ -1409,7 +1409,7 @@ class TestTimezoneScheduling:
 
     def test_job_tz_empty_returns_utc(self, monkeypatch) -> None:
         """No job zone and no published default resolves to UTC."""
-        monkeypatch.setattr("kiro_crew.cron.published_config_timezone", lambda: "")
+        monkeypatch.setattr("efm_go.cron.published_config_timezone", lambda: "")
         job = CronJob(id="j1", name="t", message="m", timezone="")
         assert _job_tz(job) == ZoneInfo("UTC")
 
@@ -1433,9 +1433,9 @@ class TestTimezoneScheduling:
             loads.append(1)
             return type("C", (), {"timezone": "Bad/Zone"})()
 
-        monkeypatch.setattr("kiro_crew.cron.KiroCrewConfig.load", staticmethod(_record_load))
+        monkeypatch.setattr("efm_go.cron.KiroCrewConfig.load", staticmethod(_record_load))
         monkeypatch.setattr(
-            "kiro_crew.cron.published_config_timezone", lambda: "America/Toronto"
+            "efm_go.cron.published_config_timezone", lambda: "America/Toronto"
         )
 
         assert _job_tz(CronJob(id="j1", name="t", message="m", timezone="")) == ZoneInfo(
@@ -1449,7 +1449,7 @@ class TestTimezoneScheduling:
     def test_get_local_tz_never_loads_the_config_file(self, monkeypatch) -> None:
         """Same rule, same reason: prompt assembly and the dashboard cron
         handler both reach ``get_local_tz`` from the event loop."""
-        from kiro_crew.cron import get_local_tz
+        from efm_go.cron import get_local_tz
 
         loads: list[int] = []
 
@@ -1457,8 +1457,8 @@ class TestTimezoneScheduling:
             loads.append(1)
             return type("C", (), {"timezone": "Bad/Zone"})()
 
-        monkeypatch.setattr("kiro_crew.cron.KiroCrewConfig.load", staticmethod(_record_load))
-        monkeypatch.setattr("kiro_crew.cron.published_config_timezone", lambda: "Asia/Tokyo")
+        monkeypatch.setattr("efm_go.cron.KiroCrewConfig.load", staticmethod(_record_load))
+        monkeypatch.setattr("efm_go.cron.published_config_timezone", lambda: "Asia/Tokyo")
 
         tz_name, tz = get_local_tz()
         assert tz_name == "Asia/Tokyo"
@@ -1467,9 +1467,9 @@ class TestTimezoneScheduling:
 
     def test_get_local_tz_unset_default_reads_as_utc(self, monkeypatch) -> None:
         """An unset default is not an error -- it resolves to UTC by name."""
-        from kiro_crew.cron import get_local_tz
+        from efm_go.cron import get_local_tz
 
-        monkeypatch.setattr("kiro_crew.cron.published_config_timezone", lambda: "")
+        monkeypatch.setattr("efm_go.cron.published_config_timezone", lambda: "")
         assert get_local_tz() == ("UTC", ZoneInfo("UTC"))
 
     def test_job_tz_invalid_falls_back_to_utc(self) -> None:
@@ -1495,7 +1495,7 @@ class TestTimezoneScheduling:
     def test_compute_next_run_ts_no_timezone_stays_utc(self, monkeypatch) -> None:
         """Backward compat: no timezone means cron_expr evaluated as UTC."""
         monkeypatch.setattr(
-            "kiro_crew.cron.KiroCrewConfig.load",
+            "efm_go.cron.KiroCrewConfig.load",
             staticmethod(lambda: type("C", (), {"timezone": ""})()),
         )
         now = datetime(2025, 4, 18, 12, 0, tzinfo=timezone.utc).timestamp()
@@ -1537,7 +1537,7 @@ class TestTimezoneScheduling:
     def test_is_due_no_timezone_fires_at_utc(self, monkeypatch) -> None:
         """Backward compat: no timezone fires at UTC time."""
         monkeypatch.setattr(
-            "kiro_crew.cron.KiroCrewConfig.load",
+            "efm_go.cron.KiroCrewConfig.load",
             staticmethod(lambda: type("C", (), {"timezone": ""})()),
         )
         now = datetime(2025, 4, 18, 13, 0, tzinfo=timezone.utc).timestamp()

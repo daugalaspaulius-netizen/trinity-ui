@@ -18,8 +18,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.cron import CronJob, CronSchedule, CronService, _RunClaim
-from kiro_crew.dashboard.handlers.cron import api_cron_run
+from efm_go.cron import CronJob, CronSchedule, CronService, _RunClaim
+from efm_go.dashboard.handlers.cron import api_cron_run
 
 
 def _make_job(job_id: str = "j1", name: str = "etl job") -> CronJob:

@@ -18,13 +18,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.constants import SUBAGENT_COMPLETION_META_KEY
-from kiro_crew.dashboard.chat_runner import _start_next_queued_turn
-from kiro_crew.dashboard.state import (
+from efm_go.constants import SUBAGENT_COMPLETION_META_KEY
+from efm_go.dashboard.chat_runner import _start_next_queued_turn
+from efm_go.dashboard.state import (
     SUBAGENT_BATCH_COMPLETION_PREFIX,
     SUBAGENT_COMPLETION_PREFIX,
 )
-from kiro_crew.subagent_completion_meta import (
+from efm_go.subagent_completion_meta import (
     OUTCOME_FAILED,
     OUTCOME_INTERRUPTED,
     OUTCOME_OK,
@@ -146,7 +146,7 @@ class TestDrainStampsMetaOntoRow:
                 )
             },
         )
-        with patch("kiro_crew.dashboard.chat_runner.spawn_guarded_turn", side_effect=_swallow_turn):
+        with patch("efm_go.dashboard.chat_runner.spawn_guarded_turn", side_effect=_swallow_turn):
             started = await _start_next_queued_turn(state, slot)
 
         assert started is True
@@ -168,7 +168,7 @@ class TestDrainStampsMetaOntoRow:
                 )
             },
         )
-        with patch("kiro_crew.dashboard.chat_runner.spawn_guarded_turn", side_effect=_swallow_turn):
+        with patch("efm_go.dashboard.chat_runner.spawn_guarded_turn", side_effect=_swallow_turn):
             await _start_next_queued_turn(state, slot)
 
         row = [m for m in slot.messages if m["role"] == "subagent"][0]
@@ -182,7 +182,7 @@ class TestDrainStampsMetaOntoRow:
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("meta-user")
         slot.queue_append("please fix the bug")
-        with patch("kiro_crew.dashboard.chat_runner.spawn_guarded_turn", side_effect=_swallow_turn):
+        with patch("efm_go.dashboard.chat_runner.spawn_guarded_turn", side_effect=_swallow_turn):
             await _start_next_queued_turn(state, slot)
 
         row = [m for m in slot.messages if m["role"] == "user"][0]
@@ -211,7 +211,7 @@ class TestDrainStampsMetaOntoRow:
                 )
             },
         )
-        with patch("kiro_crew.dashboard.chat_runner.spawn_guarded_turn", side_effect=_swallow_turn):
+        with patch("efm_go.dashboard.chat_runner.spawn_guarded_turn", side_effect=_swallow_turn):
             await _start_next_queued_turn(state, slot)
 
         drained = [m for m in slot.messages if m["role"] in ("user", "subagent")][0]

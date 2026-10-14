@@ -32,7 +32,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers import worktree as wt
+from efm_go.dashboard.handlers import worktree as wt
 
 # ── injected git boundary ────────────────────────────────────────────────
 

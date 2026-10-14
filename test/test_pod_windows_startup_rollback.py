@@ -17,9 +17,9 @@ import subprocess
 import pytest
 from test_pod_windows_stop_race import _FakeClock, _held
 
-from kiro_crew.pod import _windows_run as runs
-from kiro_crew.pod import windows as win
-from kiro_crew.pod.config import PodConfig
+from efm_go.pod import _windows_run as runs
+from efm_go.pod import windows as win
+from efm_go.pod.config import PodConfig
 
 
 @pytest.fixture

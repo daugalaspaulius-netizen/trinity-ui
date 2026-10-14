@@ -2,7 +2,7 @@
 
 ## Overview
 
-Notes is a builtin App Store app (`kiro_crew/apps/builtins/md_notebook/`) for keeping a
+Notes is a builtin App Store app (`efm_go/apps/builtins/md_notebook/`) for keeping a
 markdown notebook inside a git repository. It runs as a managed app backend SUBPROCESS: an
 aiohttp server on the backend-assigned port, reached only through the gateway proxy. Every
 proxied request carries an HMAC signature (`X-KiroCrew-Proxy: <ts>:<hmac>` over
@@ -506,9 +506,9 @@ move-without-overwrite, external-change detection, self-write suppression, token
 permissions, the knowledge flag round-trip, and a real sync against git fixtures including
 the conflict path. `test/test_md_notebook_git_ops.py` pins Git subprocess lifecycle,
 `test/test_sandbox_md_notebook_carveout.py` pins the state-file carve-out and orphan sweep,
-and `src/kiro_crew/apps/builtins/md_notebook/tests/test_md_notebook_windows.py` covers the
+and `src/efm_go/apps/builtins/md_notebook/tests/test_md_notebook_windows.py` covers the
 native Windows branches. All are collected because `setup.cfg` includes both `test` and
-`src/kiro_crew/apps/builtins` in `testpaths`.
+`src/efm_go/apps/builtins` in `testpaths`.
 
 Frontend coverage lives in `website/src/test/Frontend5MdNotebook.cov80.test.tsx`,
 `MdNotebookApiCoverage.test.tsx`, `MdNotebookPage.coverage.test.tsx`, and

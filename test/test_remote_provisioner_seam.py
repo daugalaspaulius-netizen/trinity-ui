@@ -13,14 +13,14 @@ import os
 
 import pytest
 
-from kiro_crew.cloud.launch_engine import RealLaunchEngine
-from kiro_crew.platform.defaults import (
+from efm_go.cloud.launch_engine import RealLaunchEngine
+from efm_go.platform.defaults import (
     BUILTIN_REMOTE_PROVISIONER,
     FARGATE_PROVISIONER_ID,
     FARGATE_REMOTE_PROVISIONER,
     DefaultRemoteProvisionerProvider,
 )
-from kiro_crew.platform.interfaces import (
+from efm_go.platform.interfaces import (
     BUILTIN_PROVISIONER_ID,
     RemoteProvisioner,
     RemoteProvisionerProvider,
@@ -81,7 +81,7 @@ class TestFargateLane:
         self, monkeypatch, tmp_path
     ):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         block = self._complete_block()
         self._write_config(config_dir(), block)
@@ -114,7 +114,7 @@ class TestFargateLane:
         is the failure that hands every lane an unsandboxed worker.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         self._write_config(config_dir(), {**self._complete_block(), "internal_only": True})
         engine = DefaultRemoteProvisionerProvider().engine_for(FARGATE_PROVISIONER_ID)
@@ -136,7 +136,7 @@ class TestFargateLane:
         task gets.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         block = {**self._complete_block(), "task_ttl_seconds": 43200}
         self._write_config(config_dir(), block)
@@ -145,7 +145,7 @@ class TestFargateLane:
         assert engine._bounds.ttl_seconds == 43200
         # The cap must NOT move because the file set a lifetime: it has no key, so the
         # engine's own value has to survive an operator override of its sibling.
-        from kiro_crew.cloud.fargate_engine import DEFAULT_MAX_RUNNING_TASKS
+        from efm_go.cloud.fargate_engine import DEFAULT_MAX_RUNNING_TASKS
 
         assert engine._bounds.max_running == DEFAULT_MAX_RUNNING_TASKS
 
@@ -156,11 +156,11 @@ class TestFargateLane:
         from them and cannot pass by coincidence.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.cloud.fargate_engine import (
+        from efm_go.cloud.fargate_engine import (
             DEFAULT_MAX_RUNNING_TASKS,
             DEFAULT_TASK_TTL_SECONDS,
         )
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         self._write_config(config_dir(), self._complete_block())
 
@@ -176,7 +176,7 @@ class TestFargateLane:
         "incomplete means absent" rule exists to prevent.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         self._write_config(config_dir(), {**self._complete_block(), "task_ttl_seconds": 0})
 
@@ -187,7 +187,7 @@ class TestFargateLane:
 
     def test_the_ec2_lane_is_unchanged_either_way(self, monkeypatch, tmp_path):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         provider = DefaultRemoteProvisionerProvider()
         assert isinstance(provider.engine_for(BUILTIN_PROVISIONER_ID), RealLaunchEngine)
@@ -197,7 +197,7 @@ class TestFargateLane:
     def test_an_incomplete_block_leaves_the_lane_unoffered(self, monkeypatch, tmp_path):
         """Offered-and-refusing is the state this avoids."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         self._write_config(config_dir(), {"cluster": "only-a-cluster"})
         provider = DefaultRemoteProvisionerProvider()
@@ -217,7 +217,7 @@ class TestFargateLane:
         that drops the requirement passes the seam suite untouched.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         self._write_config(config_dir(), {**self._complete_block(), "secrets": []})
         provider = DefaultRemoteProvisionerProvider()
@@ -231,7 +231,7 @@ class TestFargateLane:
         ``provisioners()`` builds the Set-up list, so raising here would render the
         tab empty -- turning a Fargate problem into no lanes at all.
         """
-        import kiro_crew.cloud.config as cloud_config
+        import efm_go.cloud.config as cloud_config
 
         def boom(*_args, **_kwargs):
             raise OSError("unreadable")
@@ -243,7 +243,7 @@ class TestFargateLane:
     def test_the_block_is_read_per_call_not_cached(self, monkeypatch, tmp_path):
         """An operator who edits the file gets the answer from the next request."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         provider = DefaultRemoteProvisionerProvider()
         assert [p.id for p in provider.provisioners()] == [BUILTIN_PROVISIONER_ID]
@@ -267,8 +267,8 @@ class TestFargateLane:
     def test_importing_the_platform_does_not_pull_the_cloud_config_module(self):
         """The deferral is load-bearing twice over, so it is pinned.
 
-        ``kiro_crew.cloud`` reaches ``kiro_crew.sandbox``, which imports
-        ``kiro_crew.platform.current_context`` -- a module-level import here raises
+        ``efm_go.cloud`` reaches ``efm_go.sandbox``, which imports
+        ``efm_go.platform.current_context`` -- a module-level import here raises
         ``ImportError: cannot import name 'current_context' from partially
         initialized module``, because this module loads during ``platform`` init.
         It is also 105 ms and 122 modules against a 126 ms init, for a lane most
@@ -279,11 +279,11 @@ class TestFargateLane:
         import sys
         from pathlib import Path
 
-        from kiro_crew.subprocess_utf8 import UTF8_TEXT
+        from efm_go.subprocess_utf8 import UTF8_TEXT
 
         probe = (
-            "import sys, kiro_crew.platform.defaults as d;"
-            "print('cloud.config' if 'kiro_crew.cloud.config' in sys.modules else 'deferred')"
+            "import sys, efm_go.platform.defaults as d;"
+            "print('cloud.config' if 'efm_go.cloud.config' in sys.modules else 'deferred')"
         )
         # Run from the repository root with src/ on the path, so the child imports
         # this checkout rather than whatever is installed.
@@ -348,8 +348,8 @@ class TestDefaultProvider:
 class TestComposition:
     def test_default_context_composes_the_seam(self, monkeypatch, tmp_path):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform.bootstrap import build_default_context
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform.bootstrap import build_default_context
 
         ctx = build_default_context(KiroCrewConfig.load(), profile="standalone")
         assert isinstance(ctx.remote_provisioners, DefaultRemoteProvisionerProvider)
@@ -358,8 +358,8 @@ class TestComposition:
         """The companion's composition root is ``dataclasses.replace`` on the base
         context; a new required field must not break that path."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform.bootstrap import build_default_context
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform.bootstrap import build_default_context
 
         class Two:
             def provisioners(self):
@@ -401,7 +401,7 @@ class TestTheConfirmationReachesTheEngine:
         import json
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         home = config_dir()
         home.mkdir(parents=True, exist_ok=True)
@@ -486,7 +486,7 @@ class TestTheOperatorCanReadTheRecipientBeforeConfirming:
         import json
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         home = config_dir()
         home.mkdir(parents=True, exist_ok=True)
@@ -494,7 +494,7 @@ class TestTheOperatorCanReadTheRecipientBeforeConfirming:
         return DefaultRemoteProvisionerProvider()
 
     def test_the_fargate_row_carries_the_resolved_recipient(self, monkeypatch, tmp_path):
-        from kiro_crew.cloud.config import FargateConfig
+        from efm_go.cloud.config import FargateConfig
 
         block = self._block()
         provider = self._provider(monkeypatch, tmp_path, block)
@@ -515,7 +515,7 @@ class TestTheOperatorCanReadTheRecipientBeforeConfirming:
 
         import json
 
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         substituted = {**self._block(), "image": "public.ecr.aws/attacker/x@sha256:" + "b" * 64}
         (config_dir() / "cloud.json").write_text(json.dumps({"fargate": substituted}))
@@ -547,7 +547,7 @@ class TestTheOperatorCanReadTheRecipientBeforeConfirming:
         mechanism being special-cased to Fargate."""
         import dataclasses
 
-        from kiro_crew.platform.interfaces import RemoteProvisioner
+        from efm_go.platform.interfaces import RemoteProvisioner
 
         field = {f.name: f for f in dataclasses.fields(RemoteProvisioner)}["confirm_before_launch"]
         assert field.default == ""
@@ -577,7 +577,7 @@ class TestTheAliasRefusalSitsWhereTheFileIsConsumed:
         Both shapes matter and only one is a link. ``rsync --link-dest`` and hardlinking
         backups produce the second, which no symlink check sees at all.
         """
-        import kiro_crew.sandbox as sandbox_mod
+        import efm_go.sandbox as sandbox_mod
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         home = tmp_path
@@ -602,7 +602,7 @@ class TestTheAliasRefusalSitsWhereTheFileIsConsumed:
         The alias harm is credential delivery to a container the owner did not choose, and it
         is answered where the launch reads the file rather than where a spawn starts.
         """
-        import kiro_crew.sandbox as sandbox_mod
+        import efm_go.sandbox as sandbox_mod
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         real = tmp_path / "dotfiles-cloud.json"
@@ -625,7 +625,7 @@ class TestTheAliasRefusalSitsWhereTheFileIsConsumed:
         import ast
         import inspect
 
-        import kiro_crew.sandbox as sandbox_mod
+        import efm_go.sandbox as sandbox_mod
 
         tree = ast.parse(inspect.getsource(sandbox_mod))
         callers = {
@@ -647,7 +647,7 @@ class TestTheAliasRefusalSitsWhereTheFileIsConsumed:
         import pytest as _pytest
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         home = config_dir()
         home.mkdir(parents=True, exist_ok=True)

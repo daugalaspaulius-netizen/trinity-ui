@@ -32,11 +32,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_commands as cc
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import config_dir
-from kiro_crew.memory_stores import DEFAULT_MEMORY_STORE, resolve_store_path
-from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+from efm_go import cli_commands as cc
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import config_dir
+from efm_go.memory_stores import DEFAULT_MEMORY_STORE, resolve_store_path
+from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
 # Each test writes ``config.json`` into its own data home and drops the process-wide
 # config cache, so two workers racing that global is a flake.
@@ -285,7 +285,7 @@ class TestADeletedStoreIsRefusedRatherThanRecreatedEmpty:
         than "refuse a missing database on a READ" would remove the capability this
         PR adds.
         """
-        from kiro_crew.memory_stores import ensure_memory_store_dir
+        from efm_go.memory_stores import ensure_memory_store_dir
 
         _declare_silos(_BETA)
         ensure_memory_store_dir(_BETA)
@@ -314,7 +314,7 @@ class TestAFailedImportLeavesNoDatabaseBehind:
 
     def _deleted_db_store(self) -> Path:
         """A declared store whose directory survived but whose database did not."""
-        from kiro_crew.memory_stores import ensure_memory_store_dir
+        from efm_go.memory_stores import ensure_memory_store_dir
 
         _declare_silos(_ACME)
         ensure_memory_store_dir(_ACME)
@@ -479,7 +479,7 @@ class TestAFacetBearingDestinationIsRefusedRatherThanFlattened:
         """
         from member_memory_helpers import forget_declared_stores, write_member_home
 
-        from kiro_crew import memory_schema
+        from efm_go import memory_schema
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         write_member_home(tmp_path, "alice")
@@ -576,7 +576,7 @@ class TestTheMarkdownLayerIsRefusedRatherThanReportedEmpty:
         as ``content: ""`` -- identical to a file that is genuinely empty. An
         operator moving a store would read it as "there was nothing to carry".
         """
-        from kiro_crew.memory_stores import memory_store_dir_for
+        from efm_go.memory_stores import memory_store_dir_for
 
         markdown = memory_store_dir_for(_ACME) / "memory"
         markdown.mkdir(parents=True, exist_ok=True)
@@ -608,7 +608,7 @@ class TestTheMarkdownLayerIsRefusedRatherThanReportedEmpty:
         self, seeded, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """The refusal is scoped to a NAMED store; the default path is untouched."""
-        from kiro_crew.memory import workspace_dir
+        from efm_go.memory import workspace_dir
 
         markdown = workspace_dir() / "memory"
         markdown.mkdir(parents=True, exist_ok=True)
@@ -633,7 +633,7 @@ class TestTheFlagIsReachableFromTheCommandLine:
     ) -> None:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr("sys.argv", ["kirocrew", "memory", verb, "--help"])
-        from kiro_crew.cli import main
+        from efm_go.cli import main
 
         with pytest.raises(SystemExit):
             main()
@@ -645,7 +645,7 @@ class TestTheFlagIsReachableFromTheCommandLine:
         """ "all memory" was never a thing one file held: a store is a separate silo."""
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr("sys.argv", ["kirocrew", "memory", "--help"])
-        from kiro_crew.cli import main
+        from efm_go.cli import main
 
         with pytest.raises(SystemExit):
             main()
@@ -1042,7 +1042,7 @@ class TestFacetsDroppedOnImportAreReported:
         it: a sixth facet added to the schema fails here rather than going silently
         unreported by the import.
         """
-        from kiro_crew import memory_schema
+        from efm_go import memory_schema
 
         assert cc._IMPORT_FACET_KEYS == tuple(memory_schema.FACET_NAMES)
 
@@ -1153,7 +1153,7 @@ def member_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stores):
     """
     from member_memory_helpers import forget_declared_stores, write_member_home
 
-    from kiro_crew import memory_schema
+    from efm_go import memory_schema
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     write_member_home(tmp_path, "alice")
@@ -1173,7 +1173,7 @@ def member_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stores):
 
 
 def _carve_ns(store: str | None, **overrides: object) -> argparse.Namespace:
-    from kiro_crew import memory_schema
+    from efm_go import memory_schema
 
     fields: dict[str, object] = {facet: None for facet in memory_schema.FACET_NAMES}
     fields.update(mem_action="carve", store=store, kind=None, count_by=None, limit=50, offset=0)
@@ -1213,8 +1213,8 @@ class TestAMemberStoreIsOpenedThroughMemberAdmission:
 
     def test_the_opener_binds_a_v2_declaration_and_leaves_v1_alone(self, member_home) -> None:
         """The choice itself, pinned without opening anything."""
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.vector_memory import declared_store
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.vector_memory import declared_store
 
         cfg = KiroCrewConfig.load()
         member = declared_store(resolve_store_path(_ALICE), store_id=_ALICE, config=cfg)

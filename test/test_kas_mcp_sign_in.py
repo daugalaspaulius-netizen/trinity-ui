@@ -21,9 +21,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.session_handle import BUCKET_CAP, AcpSessionHandle
-from kiro_crew.acp.types import (
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.session_handle import BUCKET_CAP, AcpSessionHandle
+from efm_go.acp.types import (
     ACP_BACKEND_KAS,
     EVENT_MCP_OAUTH_REQUEST,
     EVENT_MCP_SERVER_INITIALIZED,
@@ -32,7 +32,7 @@ from kiro_crew.acp.types import (
     AcpEvent,
     JsonRpcMessage,
 )
-from kiro_crew.config.paths import kiro_agents_dir
+from efm_go.config.paths import kiro_agents_dir
 
 _DEAD_URL = "https://auth.example.com/authorize?state=passive"
 _LIVE_URL = "https://auth.example.com/authorize?state=explicit"
@@ -108,11 +108,11 @@ def kas_sign_in_stub(tmp_path, monkeypatch):
     async def fake_bin(*, environ=None, home=None) -> str:
         return str(launcher)
 
-    monkeypatch.setattr("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", fake_bin)
+    monkeypatch.setattr("efm_go.acp.client._resolve_kiro_bin_for_spawn", fake_bin)
     monkeypatch.setenv("KIRO_HOME", str(tmp_path / "kiro-home"))
     capture = tmp_path / "capture.json"
     monkeypatch.setenv("KIROCREW_TEST_SIGN_IN_CAPTURE", str(capture))
-    from kiro_crew.agent import kiro_agents_dir_path
+    from efm_go.agent import kiro_agents_dir_path
 
     for agents_dir in {kiro_agents_dir(), kiro_agents_dir_path()}:
         agents_dir.mkdir(parents=True, exist_ok=True)
@@ -328,7 +328,7 @@ def test_entries_past_the_cap_are_counted_and_logged_once(caplog):
     begun: list = []
     handle = _handle(begun, accept=False)
     servers = [{"name": f"s{i}", "status": "connected"} for i in range(66)]
-    with caplog.at_level("WARNING", logger="kiro_crew.acp.session_handle"):
+    with caplog.at_level("WARNING", logger="efm_go.acp.session_handle"):
         handle._note_mcp_sign_in_status(_status(*servers), offer=True)
         handle._note_mcp_sign_in_status(_status(*servers), offer=True)
     warnings = [r for r in caplog.records if "skipped 2 status entries" in r.getMessage()]
@@ -341,7 +341,7 @@ def test_a_completion_past_the_cap_is_dropped_and_counted(caplog):
     handle = _handle(begun, accept=False)
     handle._mcp_sign_in_completed = {f"done{i}" for i in range(BUCKET_CAP)}
     handle._mcp_sign_in_needed = {"remote"}
-    with caplog.at_level("WARNING", logger="kiro_crew.acp.session_handle"):
+    with caplog.at_level("WARNING", logger="efm_go.acp.session_handle"):
         handle._note_mcp_sign_in_status(
             _status({"name": "remote", "status": "connected"}), offer=True
         )

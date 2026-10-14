@@ -50,8 +50,8 @@ from aiohttp.test_utils import make_mocked_request
 from dashboard_owner_helpers import NoConfiguredOwner
 from off_loop_helpers import off_loop
 
-from kiro_crew import mcp_core
-from kiro_crew.apps.builtins.issue_radar.backend import (
+from efm_go import mcp_core
+from efm_go.apps.builtins.issue_radar.backend import (
     crew_routes,
     crew_runtime,
     crew_store,
@@ -59,10 +59,10 @@ from kiro_crew.apps.builtins.issue_radar.backend import (
     routes,
     store,
 )
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log_projection
-from kiro_crew.crew_log.schema import KIND_SESSION
-from kiro_crew.crew_log.store import CrewLog
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log_projection
+from efm_go.crew_log.schema import KIND_SESSION
+from efm_go.crew_log.store import CrewLog
 
 BASE = "/api/apps/issue-radar"
 OWNER, REPO = "kirodotdev", "KiroCrew"  # brand-ok: the repository name
@@ -1133,7 +1133,7 @@ class TestWorkItems(_CrewRouteCase):
         """A drained writer whose entry is not in the log refused it. The caller is
         told so -- 503 `ledger_not_recorded`, retryable -- and is never handed an
         item that exists nowhere (the old answer was 200 with `durable: false`)."""
-        from kiro_crew.crew_log import emit as crew_log_emit
+        from efm_go.crew_log import emit as crew_log_emit
 
         crew = self.crew("Andromeda")
         with mock.patch.object(crew_log_emit, "on_radar_recorded", lambda *_a, **_k: None):

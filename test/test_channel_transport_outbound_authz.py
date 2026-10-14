@@ -28,9 +28,9 @@ from typing import Any
 
 import pytest
 
-import kiro_crew as kiro_crew_pkg
-from kiro_crew.messaging.link import ChannelLink
-from kiro_crew.messaging.transport import MessagingTransport
+import efm_go as efm_go_pkg
+from efm_go.messaging.link import ChannelLink
+from efm_go.messaging.transport import MessagingTransport
 
 #: The method every shipped transport must decide for itself.
 _HOOK = "may_send_to"
@@ -53,7 +53,7 @@ _PERMITS_WITH_REASON: dict[str, str] = {}
 
 def _transport_classes() -> dict[str, list[str]]:
     """``channel -> [MessagingTransport subclass names]`` across the package."""
-    root = Path(kiro_crew_pkg.__file__).parent
+    root = Path(efm_go_pkg.__file__).parent
     found: dict[str, list[str]] = {}
     for path in sorted(root.glob("*/transport.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -72,7 +72,7 @@ def _transport_classes() -> dict[str, list[str]]:
 
 def _overrides_hook(channel: str, class_name: str) -> bool:
     """Whether *class_name* defines :data:`_HOOK` in its OWN body."""
-    path = Path(kiro_crew_pkg.__file__).parent / channel / "transport.py"
+    path = Path(efm_go_pkg.__file__).parent / channel / "transport.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in tree.body:
         if isinstance(node, ast.ClassDef) and node.name == class_name:
@@ -164,7 +164,7 @@ class TestTelegramOutboundAuthz:
     """The channel the gap was reported against, and the one that can answer."""
 
     def _transport(self, **over: Any) -> Any:
-        from kiro_crew.telegram.transport import TelegramTransport
+        from efm_go.telegram.transport import TelegramTransport
 
         kwargs: dict[str, Any] = {
             "allowed_user_ids": [111],
@@ -220,7 +220,7 @@ class TestTelegramOutboundAuthz:
 
 class TestOtherTransportsThatCanAnswer:
     def test_imessage_matches_the_handle_roster(self) -> None:
-        from kiro_crew.imessage.transport import IMessageTransport
+        from efm_go.imessage.transport import IMessageTransport
 
         t = IMessageTransport(object(), allowed_handles=["+15550100"])
         assert t.may_send_to("+15550100") is True
@@ -234,7 +234,7 @@ class TestOtherTransportsThatCanAnswer:
         and a link written the plain way both normalize, and asserting that
         direction passes with the normalization deleted.
         """
-        from kiro_crew.imessage.transport import IMessageTransport
+        from efm_go.imessage.transport import IMessageTransport
 
         t = IMessageTransport(object(), allowed_handles=["+15550100"])
         assert t._allowed == frozenset({"+15550100"})
@@ -250,7 +250,7 @@ class TestOtherTransportsThatCanAnswer:
         mapping lives, so the test exercises the same lookup the send path does
         rather than a dict this assertion invented.
         """
-        from kiro_crew.teams.transport import TeamsTransport
+        from efm_go.teams.transport import TeamsTransport
 
         t = TeamsTransport(object(), allowed_emails=allowed)
         if owner and conversation:
@@ -292,7 +292,7 @@ class TestOtherTransportsThatCanAnswer:
         """
         import inspect
 
-        from kiro_crew.teams import gateway as teams_gateway
+        from efm_go.teams import gateway as teams_gateway
 
         src = inspect.getsource(teams_gateway)
         warm = src.index("await transport.warm_routes()")
@@ -316,7 +316,7 @@ class TestOtherTransportsThatCanAnswer:
         assert t.may_send_to("conv-1") is False
 
     def _weixin(self, policy: str, allowed: list[str]) -> Any:
-        from kiro_crew.weixin.transport import WeixinTransport
+        from efm_go.weixin.transport import WeixinTransport
 
         return WeixinTransport(
             object(),
@@ -347,7 +347,7 @@ class TestOtherTransportsThatCanAnswer:
         assert t.may_send_to("u1") is False
 
     def test_wecom_mirrors_authorize(self) -> None:
-        from kiro_crew.wecom.transport import WeComTransport
+        from efm_go.wecom.transport import WeComTransport
 
         t = WeComTransport(object(), allowed_users=["u1"], owner_id="owner")
         assert t.may_send_to("u1") is True
@@ -366,7 +366,7 @@ class TestPrincipalAnsweredTransports:
     """
 
     def _discord(self, allowed: list[str], threads: list[str] | None = None) -> Any:
-        from kiro_crew.discord.transport import DiscordTransport
+        from efm_go.discord.transport import DiscordTransport
 
         # The transport installs its mid-send authorization predicate onto the
         # client it is handed, so this stand-in has to accept an attribute --
@@ -460,7 +460,7 @@ class TestPrincipalAnsweredTransports:
         rooms: list[str] | None = None,
         group: bool = False,
     ) -> Any:
-        from kiro_crew.webex.transport import WebexTransport
+        from efm_go.webex.transport import WebexTransport
 
         return WebexTransport(
             object(),
@@ -529,7 +529,7 @@ class TestTransportsThatPermitWithAReason:
         A reader hitting the method needs the reason at the method, not only in
         this table -- so require a docstring that says it permits deliberately.
         """
-        root = Path(kiro_crew_pkg.__file__).parent
+        root = Path(efm_go_pkg.__file__).parent
         for channel in _PERMITS_WITH_REASON:
             source = (root / channel / "transport.py").read_text(encoding="utf-8")
             tree = ast.parse(source)
@@ -550,7 +550,7 @@ class TestSessionPrincipalExtraction:
     """``_session_principal``: empty rather than wrong, and never a guess."""
 
     def _principal(self, key: str) -> str:
-        from kiro_crew.dashboard.chat_runner import _session_principal
+        from efm_go.dashboard.chat_runner import _session_principal
 
         return _session_principal(key)
 
@@ -596,8 +596,8 @@ class TestSessionPrincipalExtraction:
         ``webex.transport_dispatch._route_of`` produces, rather than hand-written
         here where it could drift from the grammar.
         """
-        from kiro_crew.messaging.link import CHAT_TYPE_FORUM, build_dm_session_key
-        from kiro_crew.webex.transport import WebexTransport
+        from efm_go.messaging.link import CHAT_TYPE_FORUM, build_dm_session_key
+        from efm_go.webex.transport import WebexTransport
 
         room = "Y2lzY29zcGFyazovL3Jvb20xMjM"
         key = build_dm_session_key("webex", "kirocrew", f"space:{room}", chat_type=CHAT_TYPE_FORUM)
@@ -615,7 +615,7 @@ class TestSessionPrincipalExtraction:
         standing between it and a permit -- and it holds because the route is a 1:1
         DM room, which no operator puts in the SPACE allow-list.
         """
-        from kiro_crew.webex.transport import WebexTransport
+        from efm_go.webex.transport import WebexTransport
 
         transport = WebexTransport(
             object(),
@@ -635,7 +635,7 @@ class TestSessionPrincipalExtraction:
         """
         import inspect
 
-        from kiro_crew.dashboard.chat_runner import _session_principal
+        from efm_go.dashboard.chat_runner import _session_principal
 
         assert list(inspect.signature(_session_principal).parameters) == ["session_key"]
 
@@ -698,14 +698,14 @@ class TestTheLadderConsultsTheTransport:
     def _permit_governance(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Isolate the recipient decision from the channel-scope decision."""
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             lambda *a, **k: type("D", (), {"permitted": True})(),
         )
 
     def _resolve(
         self, transport: Any, link: ChannelLink, key: str = "telegram:kirocrew:direct:111"
     ) -> Any:
-        from kiro_crew.dashboard.chat_runner import _resolve_channel_target
+        from efm_go.dashboard.chat_runner import _resolve_channel_target
 
         return _resolve_channel_target(_StubState(transport), key, link)
 
@@ -779,7 +779,7 @@ class TestTheLadderConsultsTheTransport:
 
     def test_an_explicit_principal_outranks_both(self) -> None:
         """The caller that already established the recipient is taken verbatim."""
-        from kiro_crew.dashboard.chat_runner import _resolve_channel_target
+        from efm_go.dashboard.chat_runner import _resolve_channel_target
 
         transport = _StubTransport(True)
         link = ChannelLink(channel_type="discord", channel_id="dm-chan-1", principal="77")
@@ -802,7 +802,7 @@ class TestTheLadderConsultsTheTransport:
         resolved id. Governance and capability still gate the resolve."""
         transport = _StubTransport(False)
         link = ChannelLink(channel_type="telegram", channel_id="user:123")
-        from kiro_crew.dashboard.chat_runner import _resolve_channel_target
+        from efm_go.dashboard.chat_runner import _resolve_channel_target
 
         resolved = _resolve_channel_target(
             _StubState(transport), "telegram:kirocrew:direct:123", link, check_recipient=False
@@ -822,7 +822,7 @@ class TestTheLadderConsultsTheTransport:
         """A revoked recipient losing its notices must not look like an idle agent."""
         recorded: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.sel",
+            "efm_go.dashboard.chat_runner.sel",
             lambda: type("S", (), {"log_api_access": lambda self, **kw: recorded.append(kw)})(),
         )
         link = ChannelLink(channel_type="telegram", channel_id="111")
@@ -845,7 +845,7 @@ def _admitted(session_key: str, link: ChannelLink) -> ChannelLink:
     """*link* as the gateway stores it: signed for *session_key* and its location."""
     import dataclasses
 
-    from kiro_crew.mirror_admission import sign_mirror_admission
+    from efm_go.mirror_admission import sign_mirror_admission
 
     return dataclasses.replace(link, admission=sign_mirror_admission(session_key, link))
 
@@ -874,15 +874,15 @@ class TestADashboardSessionMirroredToADiscordDm:
     @pytest.fixture(autouse=True)
     def _permit_governance(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             lambda *a, **k: type("D", (), {"permitted": True})(),
         )
 
     @staticmethod
     def _discord(allowed: list[str], pairings: dict[str, str] | None = None) -> Any:
         """A real transport over a real client whose pairing store holds *pairings*."""
-        from kiro_crew.discord.client import DiscordClient
-        from kiro_crew.discord.transport import DiscordTransport
+        from efm_go.discord.client import DiscordClient
+        from efm_go.discord.transport import DiscordTransport
 
         client = DiscordClient(token="bot-secret")
         for channel_id, user_id in (pairings or {}).items():
@@ -891,12 +891,12 @@ class TestADashboardSessionMirroredToADiscordDm:
 
     @staticmethod
     def _telegram(allowed: list[str]) -> Any:
-        from kiro_crew.telegram.transport import TelegramTransport
+        from efm_go.telegram.transport import TelegramTransport
 
         return TelegramTransport(object(), allowed_user_ids=allowed)
 
     def _resolve(self, transport: Any, link: ChannelLink | None) -> Any:
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
 
         return _resolve_mirror_target(_MirrorState(transport, link), self._KEY)
 
@@ -987,7 +987,7 @@ class TestADashboardSessionMirroredToADiscordDm:
         refused until the session is re-linked, which mints a fresh record."""
         import secrets
 
-        from kiro_crew.dashboard import token_secret
+        from efm_go.dashboard import token_secret
 
         transport = self._discord(["42"])
         link = _admitted(
@@ -1005,15 +1005,15 @@ class TestADashboardSessionMirroredToADiscordDm:
     def test_a_refusal_is_audited_and_said_once(self, monkeypatch, caplog) -> None:
         recorded: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.sel",
+            "efm_go.dashboard.chat_runner.sel",
             lambda: type("S", (), {"log_api_access": lambda self, **kw: recorded.append(kw)})(),
         )
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         monkeypatch.setattr(chat_runner, "_RECIPIENT_LOGGED", set())
         transport = self._discord(["42"])
         unsigned = ChannelLink(channel_type="discord", channel_id="dm-chan-9", principal="42")
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"):
             assert self._resolve(transport, unsigned) is None
             assert self._resolve(transport, unsigned) is None
         admission_rows = [kw for kw in recorded if kw["operation"] == "channel.mirror_admission"]
@@ -1037,16 +1037,16 @@ class TestADashboardSessionMirroredToADiscordDm:
         hold unbounded memory under the cap. Each entry is a fixed-length digest of
         the marker; the raw id is never retained, and distinct ids stay distinct."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.sel",
+            "efm_go.dashboard.chat_runner.sel",
             lambda: type("S", (), {"log_api_access": lambda self, **kw: None})(),
         )
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         monkeypatch.setattr(chat_runner, "_RECIPIENT_LOGGED", set())
         transport = self._discord(["42"])
         huge_a = "a" * (1 << 20)
         huge_b = "b" * (1 << 20)
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"):
             for channel_id in (huge_a, huge_b, huge_a):
                 unsigned = ChannelLink(
                     channel_type="discord", channel_id=channel_id, principal="42"
@@ -1083,20 +1083,20 @@ class TestADashboardSessionMirroredToADiscordDm:
         import dataclasses
         from unittest.mock import patch
 
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat_runner import _resolve_channel_target
-        from kiro_crew.mirror_admission import sign_mirror_admission
-        from kiro_crew.session_map import SessionMap, set_unbind_listener
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat_runner import _resolve_channel_target
+        from efm_go.mirror_admission import sign_mirror_admission
+        from efm_go.session_map import SessionMap, set_unbind_listener
 
         recorded: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.sel",
+            "efm_go.dashboard.chat_runner.sel",
             lambda: type("S", (), {"log_api_access": lambda self, **kw: recorded.append(kw)})(),
         )
         monkeypatch.setattr(chat_runner, "_RECIPIENT_LOGGED", set())
         transport = self._discord(["42"])
         state = _StubState(transport)
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             sessions = SessionMap()
         state.sessions = sessions
         link = ChannelLink(channel_type="discord", channel_id="dm-chan-9", principal="42")
@@ -1105,7 +1105,7 @@ class TestADashboardSessionMirroredToADiscordDm:
         displaced: list[ChannelLink] = []
         set_unbind_listener(lambda key, gone, reason: displaced.append(gone))
         try:
-            with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"):
+            with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"):
                 assert sessions.clear_mirror_link(self._KEY) is True
                 assert sessions.get_mirror_link(self._KEY) is None  # the row is gone
                 assert len(displaced) == 1 and displaced[0].admission == signed.admission
@@ -1120,7 +1120,7 @@ class TestADashboardSessionMirroredToADiscordDm:
         forged = ChannelLink(
             channel_type="discord", channel_id="dm-chan-9", principal="42", admission="f" * 64
         )
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"):
             assert _resolve_channel_target(state, self._KEY, forged) is None
         said = [r for r in caplog.records if "no valid gateway admission" in r.getMessage()]
         assert [r.levelname for r in said] == ["WARNING"]
@@ -1140,7 +1140,7 @@ class TestRecipientPrincipal:
             return self._peers.get(conversation_id, "")
 
     def _principal(self, key: str, link: Any, transport: Any = None) -> str:
-        from kiro_crew.dashboard.chat_runner import _recipient_principal
+        from efm_go.dashboard.chat_runner import _recipient_principal
 
         return _recipient_principal(key, link, transport or self._Attesting({}))
 
@@ -1206,17 +1206,17 @@ class TestRecipientPrincipal:
     def test_the_session_key_extractor_is_untouched(self) -> None:
         """The key-only derivation keeps its contract; the link is read beside it,
         not through it."""
-        from kiro_crew.dashboard.chat_runner import _session_principal
+        from efm_go.dashboard.chat_runner import _session_principal
 
         assert _session_principal(self._KEY) == ""
         assert _session_principal("discord:kirocrew:direct:42") == "42"
 
 
 class TestMirrorAdmission:
-    """``kiro_crew.mirror_admission``: the gateway's MAC over a principal-bearing row."""
+    """``efm_go.mirror_admission``: the gateway's MAC over a principal-bearing row."""
 
     def test_signs_only_a_row_that_names_a_peer(self) -> None:
-        from kiro_crew.mirror_admission import sign_mirror_admission
+        from efm_go.mirror_admission import sign_mirror_admission
 
         assert (
             sign_mirror_admission("dashboard:chat-1", ChannelLink("discord", channel_id="dm-1"))
@@ -1266,7 +1266,7 @@ class TestMirrorAdmission:
         reject. ``restorable_link`` strips such a row rather than raising too."""
         import dataclasses
 
-        from kiro_crew.mirror_admission import restorable_link, verify_mirror_admission
+        from efm_go.mirror_admission import restorable_link, verify_mirror_admission
 
         genuine = _admitted(
             "dashboard:chat-1", ChannelLink("discord", channel_id="dm-1", principal="42")
@@ -1288,7 +1288,7 @@ class TestMirrorAdmission:
     def test_every_field_of_the_location_is_covered(self, field: str, value: str) -> None:
         import dataclasses
 
-        from kiro_crew.mirror_admission import verify_mirror_admission
+        from efm_go.mirror_admission import verify_mirror_admission
 
         original = ChannelLink("discord", channel_id="dm-1", thread_id=None, principal="42")
         signed = _admitted("dashboard:chat-1", original)
@@ -1300,8 +1300,8 @@ class TestMirrorAdmission:
     def test_the_session_key_is_canonicalized_on_both_sides(self) -> None:
         """The map stores rows under the canonical key; the ladder is handed the
         session's key. Both spellings of one session verify the same record."""
-        from kiro_crew.messaging.link import canonical_key
-        from kiro_crew.mirror_admission import verify_mirror_admission
+        from efm_go.messaging.link import canonical_key
+        from efm_go.mirror_admission import verify_mirror_admission
 
         raw = "dashboard:chat-1-1700000000"
         signed = _admitted(
@@ -1310,7 +1310,7 @@ class TestMirrorAdmission:
         assert verify_mirror_admission(raw, signed) is True
 
     def test_a_tampered_or_missing_admission_does_not_verify(self) -> None:
-        from kiro_crew.mirror_admission import verify_mirror_admission
+        from efm_go.mirror_admission import verify_mirror_admission
 
         signed = _admitted(
             "dashboard:chat-1", ChannelLink("discord", channel_id="dm-1", principal="42")
@@ -1339,8 +1339,8 @@ class TestMirrorAdmission:
         )
 
     def test_an_unreadable_key_admits_nobody(self, monkeypatch) -> None:
-        from kiro_crew.dashboard import token_secret
-        from kiro_crew.mirror_admission import verify_mirror_admission
+        from efm_go.dashboard import token_secret
+        from efm_go.mirror_admission import verify_mirror_admission
 
         signed = _admitted(
             "dashboard:chat-1", ChannelLink("discord", channel_id="dm-1", principal="42")
@@ -1359,8 +1359,8 @@ class TestMirrorAdmission:
         import hashlib
         import hmac
 
-        from kiro_crew.dashboard import token_secret
-        from kiro_crew.mirror_admission import _material, sign_mirror_admission
+        from efm_go.dashboard import token_secret
+        from efm_go.mirror_admission import _material, sign_mirror_admission
 
         link = ChannelLink("discord", channel_id="dm-1", principal="42")
         under_raw_secret = hmac.new(
@@ -1379,9 +1379,9 @@ class TestMirrorAdmission:
         """
         import ast as _ast
 
-        import kiro_crew
+        import efm_go
 
-        pkg = Path(kiro_crew.__file__).resolve().parent
+        pkg = Path(efm_go.__file__).resolve().parent
         sites: set[tuple[str, str]] = set()
         for path in pkg.rglob("*.py"):
             if "_vendor" in path.parts or path.name == "mirror_admission.py":
@@ -1417,7 +1417,7 @@ class TestMirrorAdmission:
 
     def test_the_map_itself_never_signs(self) -> None:
         """The store's writer carries bytes through; it does not import the signer."""
-        import kiro_crew.session_map as session_map_mod
+        import efm_go.session_map as session_map_mod
 
         src = Path(session_map_mod.__file__).read_text(encoding="utf-8")
         assert "sign_mirror_admission(" not in src
@@ -1434,9 +1434,9 @@ class TestMirrorAdmission:
         """
         import ast as _ast
 
-        import kiro_crew
+        import efm_go
 
-        pkg = Path(kiro_crew.__file__).resolve().parent
+        pkg = Path(efm_go.__file__).resolve().parent
         signers: set[tuple[str, str]] = set()
         sanitized: set[tuple[str, str]] = set()
         others: set[tuple[str, str]] = set()
@@ -1509,11 +1509,11 @@ class TestMirrorAdmission:
         verbatim; a row naming a peer under a missing or wrong admission goes back
         as its location alone, audited once, so the send is refused rather than a
         forged row laundered into a trusted one."""
-        from kiro_crew.mirror_admission import restorable_link
+        from efm_go.mirror_admission import restorable_link
 
         recorded: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.mirror_admission.sel",
+            "efm_go.mirror_admission.sel",
             lambda: type("S", (), {"log_api_access": lambda self, **kw: recorded.append(kw)})(),
         )
         key = "dashboard:chat-1-1700000000"
@@ -1524,7 +1524,7 @@ class TestMirrorAdmission:
         forged = ChannelLink("discord", channel_id="dm-1", principal="42", admission="f" * 64)
         unsigned = ChannelLink("discord", channel_id="dm-1", principal="42")
         moved = _admitted("dashboard:chat-2-1700000000", unsigned)
-        with caplog.at_level("WARNING", logger="kiro_crew.mirror_admission"):
+        with caplog.at_level("WARNING", logger="efm_go.mirror_admission"):
             for row in (forged, unsigned, moved):
                 restored = restorable_link(key, row)
                 assert restored == bare
@@ -1543,7 +1543,7 @@ class TestMirrorAdmission:
             admission="f" * 64,
         )
         recorded.clear()
-        with caplog.at_level("WARNING", logger="kiro_crew.mirror_admission"):
+        with caplog.at_level("WARNING", logger="efm_go.mirror_admission"):
             restorable_link(key, planted)
         assert recorded[0]["caller"] == "mirror-rollback" and recorded[0]["source"] == "session_map"
         assert "ghp_" not in recorded[0]["caller"] + recorded[0]["source"]
@@ -1559,7 +1559,7 @@ def _send_returns_only_empty(channel: str, class_name: str) -> bool:
     return is the constant ``""``, so the value cannot express failure and failure
     has to raise instead.
     """
-    path = Path(kiro_crew_pkg.__file__).parent / channel / "transport.py"
+    path = Path(efm_go_pkg.__file__).parent / channel / "transport.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in ast.walk(tree):
         if not isinstance(node, ast.ClassDef) or node.name != class_name:
@@ -1584,7 +1584,7 @@ def _declares_no_message_id(channel: str) -> bool:
     import is exactly the one whose gap would go unnoticed. An absent keyword means
     the dataclass default, which is True.
     """
-    path = Path(kiro_crew_pkg.__file__).parent / channel / "transport.py"
+    path = Path(efm_go_pkg.__file__).parent / channel / "transport.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):

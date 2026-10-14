@@ -37,7 +37,7 @@ from pathlib import Path
 
 import pytest
 
-_SRC = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+_SRC = Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 #: Calls that can compact a session in place, and so arm the flag.
 _TRIGGERS = frozenset({"check_context_usage", "compact_if_needed"})
@@ -51,7 +51,7 @@ _CONSUMERS = frozenset({"consume_reinjection", "consume_needs_reinjection"})
 _REARMS = frozenset({"rearm_reinjection"})
 
 #: The shared turn driver that consumes, forwards and re-arms for its callers.
-_DELEGATE_MODULE = "kiro_crew.messaging.dispatch"
+_DELEGATE_MODULE = "efm_go.messaging.dispatch"
 _DELEGATE = "drive_turn"
 #: The pipeline a dispatcher holds and calls ``answer`` on, the same delegate.
 _PIPELINE = "ChannelTurns"
@@ -215,7 +215,7 @@ def loop(sessions, ctx, key):
 """
 
 _DELEGATED = """
-from kiro_crew.messaging.dispatch import drive_turn
+from efm_go.messaging.dispatch import drive_turn
 
 async def loop(turn, sessions, ctx):
     sessions.check_context_usage(turn.key)
@@ -246,7 +246,7 @@ def loop(sessions, ctx, key):
 """
 
 _ANSWERS_THROUGH_THE_PIPELINE = """
-from kiro_crew.messaging.dispatch import ChannelTurns
+from efm_go.messaging.dispatch import ChannelTurns
 
 async def loop(turns, asker, sessions):
     sessions.check_context_usage(asker.session_key)
@@ -254,7 +254,7 @@ async def loop(turns, asker, sessions):
 """
 
 _IMPORTS_THE_PIPELINE_WITHOUT_ANSWERING = """
-from kiro_crew.messaging.dispatch import ChannelTurns
+from efm_go.messaging.dispatch import ChannelTurns
 
 def loop(sessions, ctx, key):
     ctx.build_message("hi")
@@ -262,7 +262,7 @@ def loop(sessions, ctx, key):
 """
 
 _IMPORTS_THE_DRIVER_WITHOUT_CALLING_IT = """
-from kiro_crew.messaging.dispatch import drive_turn
+from efm_go.messaging.dispatch import drive_turn
 
 def loop(sessions, ctx, key):
     ctx.build_message("hi")

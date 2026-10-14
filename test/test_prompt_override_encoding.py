@@ -26,11 +26,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import context as ctx_mod
-from kiro_crew.agent import _shipped_prompt
-from kiro_crew.context import ContextBuilder
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go import context as ctx_mod
+from efm_go.agent import _shipped_prompt
+from efm_go.context import ContextBuilder
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 _UTF16_OVERRIDE = b"\xff\xfe" + "You are helpful.".encode("utf-16-le")
 _UTF8_OVERRIDE = "UTF8-OVERRIDE-MARKER: you are the override prompt.\n"
@@ -144,8 +144,8 @@ class TestUtf16OverrideDegradesToShippedPrompt:
 
         monkeypatch.setattr(ctx_mod.KiroCrewConfig, "load", staticmethod(_auto_cap_load))
         sizes = iter(range(15, 0, -1))
-        monkeypatch.setattr("kiro_crew.subagent.compute_max_subagents", lambda cfg: next(sizes))
-        monkeypatch.setattr("kiro_crew.resource_status.adaptive_exec_cap", lambda: 0)
+        monkeypatch.setattr("efm_go.subagent.compute_max_subagents", lambda cfg: next(sizes))
+        monkeypatch.setattr("efm_go.resource_status.adaptive_exec_cap", lambda: 0)
 
         # The drift is live: unpinned, two readings of the figure differ.
         assert _REAL_LIVE_CAP_FIGURE() != _REAL_LIVE_CAP_FIGURE()
@@ -192,8 +192,8 @@ class TestManagedContractAgent:
             json.dumps({"name": "fork", "prompt": prompt}), encoding="utf-8"
         )
         monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir)
-        monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", agents_dir)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents_dir)
+        monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", agents_dir)
 
     def test_utf16_override_degrades_to_shipped_contract(
         self,
@@ -202,13 +202,13 @@ class TestManagedContractAgent:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        from kiro_crew.agent import _NATIVE_PROMPT_STUB
+        from efm_go.agent import _NATIVE_PROMPT_STUB
 
         shipped = tmp_path / "pkg" / "prompt.md"
         shipped.parent.mkdir()
         shipped.write_text("SHIPPED_CONTRACT", encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.agent._BUNDLED_CFG_DIR", shipped.parent)
-        monkeypatch.setattr("kiro_crew.agent._project_dir", lambda: None)
+        monkeypatch.setattr("efm_go.agent._BUNDLED_CFG_DIR", shipped.parent)
+        monkeypatch.setattr("efm_go.agent._project_dir", lambda: None)
         self._write_spec(tmp_path, monkeypatch, _NATIVE_PROMPT_STUB)
 
         assert ContextBuilder._load_agent_prompt("fork") == "SHIPPED_CONTRACT"

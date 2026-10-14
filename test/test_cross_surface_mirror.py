@@ -24,13 +24,13 @@ from test_chat_mirror import (
     _real_caps_transport,
 )
 
-from kiro_crew.dashboard.chat_runner import (
+from efm_go.dashboard.chat_runner import (
     _deliver_cross_surface_reply,
     _deliver_cross_surface_user_message,
 )
-from kiro_crew.messaging.link import ChannelLink
-from kiro_crew.platform import redact_via_context
-from kiro_crew.security import (
+from efm_go.messaging.link import ChannelLink
+from efm_go.platform import redact_via_context
+from efm_go.security import (
     redact_credentials,
     redact_exfiltration_urls,
 )
@@ -85,7 +85,7 @@ class TestGovernanceDegradationFailsClosed:
     @pytest.mark.asyncio
     async def test_degraded_evaluation_blocks_delivery(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.resolve_active_scope",
+            "efm_go.platform.governance_profiles.resolve_active_scope",
             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("profile store down")),
         )
         state = _make_state(tmp_path)
@@ -102,7 +102,7 @@ class TestGovernanceDegradationFailsClosed:
     @pytest.mark.asyncio
     async def test_decision_without_permitted_attr_blocks_delivery(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *a, **k: SimpleNamespace(),
         )
         state = _make_state(tmp_path)
@@ -124,12 +124,12 @@ class TestGovernanceDegradationFailsClosed:
         instead of degrading, so the resolver's generic fail-closed handler must
         let it through rather than swallowing it into a silent no-mirror.
         """
-        from kiro_crew.platform.context import PlatformCompositionError
+        from efm_go.platform.context import PlatformCompositionError
 
         def _boom(*a, **k):
             raise PlatformCompositionError("ceiling weakened")
 
-        monkeypatch.setattr("kiro_crew.platform.governance_profiles.governance_permits", _boom)
+        monkeypatch.setattr("efm_go.platform.governance_profiles.governance_permits", _boom)
         state = _make_state(tmp_path)
         tp = _fake_transport("telegram")
         state.register_channel_transport(tp)
@@ -496,7 +496,7 @@ _CODE_MARKERS = (
 
 def _lines_the_channel_would_read_as_prose(part: str) -> list[str]:
     """Lines of *part* that fall OUTSIDE a fence, as a dialect converter sees them."""
-    from kiro_crew.messaging.split import FENCE_OUTSIDE, iter_fence_lines
+    from efm_go.messaging.split import FENCE_OUTSIDE, iter_fence_lines
 
     return [line for line, role in iter_fence_lines(part) if role == FENCE_OUTSIDE]
 

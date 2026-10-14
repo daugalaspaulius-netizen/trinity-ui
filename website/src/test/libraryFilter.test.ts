@@ -244,7 +244,7 @@ describe('every builtin we ship stays reachable while disabled', () => {
   /** Concealment is a product decision; this list is the record of it. */
   const SANCTIONED_HIDDEN = ['channels', 'workflows']
 
-  const BUILTINS = resolve(__dirname, '../../../src/kiro_crew/apps/builtins')
+  const BUILTINS = resolve(__dirname, '../../../src/efm_go/apps/builtins')
 
   type Manifest = { name: string; hidden?: boolean }
 

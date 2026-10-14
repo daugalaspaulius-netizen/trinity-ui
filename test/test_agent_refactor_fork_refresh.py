@@ -19,9 +19,9 @@ from typing import Any, Callable, Iterator
 
 import pytest
 
-from kiro_crew import agent, agent_state
-from kiro_crew.agent_materialization import fork_refresh
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go import agent, agent_state
+from efm_go.agent_materialization import fork_refresh
+from efm_go.config.loader import KiroCrewConfig
 
 
 class _Boom(Exception):

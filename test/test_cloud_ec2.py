@@ -13,8 +13,8 @@ import subprocess
 
 import pytest
 
-from kiro_crew.cloud import aws, ec2, sizes
-from kiro_crew.validation import ValidationError
+from efm_go.cloud import aws, ec2, sizes
+from efm_go.validation import ValidationError
 
 
 class TestSubTemplateSyntax:
@@ -234,20 +234,20 @@ class TestValidation:
     def test_cidr_wide_range_warns(self, caplog):
         import logging
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.cloud.ec2"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.cloud.ec2"):
             assert ec2._validate_cidr("10.1.0.0/16") == "10.1.0.0/16"  # accepted, warned
             # Host bits are normalized away: 10.1.2.0/20 -> 10.1.0.0/20 (the
             # canonical network for that range), so the SG rule is unambiguous.
             assert ec2._validate_cidr("10.1.2.0/20") == "10.1.0.0/20"
         assert sum("wide range" in r.message for r in caplog.records) == 2
         caplog.clear()
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.cloud.ec2"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.cloud.ec2"):
             ec2._validate_cidr("192.168.1.0/24")  # /24+ is fine, no warning
             ec2._validate_cidr("1.2.3.4/32")
         assert not caplog.records
 
     def test_repo_ref_charset(self):
-        from kiro_crew.validation import validate_field
+        from efm_go.validation import validate_field
 
         assert validate_field("https://github.com/x/y.git", ec2._REPO_SPEC)
         assert validate_field("main", ec2._REF_SPEC)
@@ -358,7 +358,7 @@ class TestTemplate:
         # never loads. The template must verify the built SPA exists and `fail`
         # the WaitCondition otherwise, so a failed build rolls the stack back.
         text = ec2.load_template()
-        assert "src/kiro_crew/static/dist/index.html" in text
+        assert "src/efm_go/static/dist/index.html" in text
         assert 'fail "dashboard frontend build missing' in text
         # The failure reason must fold the real build error from the setup log, so it
         # is diagnosable even when the crew ran a cloned install.sh that did not itself
@@ -705,7 +705,7 @@ class TestBuildDeployArgv:
 
 class TestDeployDryRun:
     def test_dry_run_returns_argv_without_aws(self, monkeypatch):
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         # If run_aws is called during a dry run, fail loudly.
         monkeypatch.setattr(source_mod, "find_repo_root", lambda: object())
@@ -746,7 +746,7 @@ class TestDeployDryRun:
         assert not any(a.startswith("SourceBucket=") for a in r.argv)
 
     def test_dry_run_defaults_to_public_clone_without_checkout(self, monkeypatch):
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(source_mod, "find_repo_root", lambda: None)
         monkeypatch.setattr(aws, "run_aws", lambda *a, **k: pytest.fail("dry run must not hit AWS"))
@@ -758,7 +758,7 @@ class TestDeployDryRun:
 
 class TestDeployShipsSource:
     def test_deploy_uploads_source_and_passes_params(self, monkeypatch):
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(ec2, "find_stack", lambda *a, **k: None)
         monkeypatch.setattr(source_mod, "ensure_instance_boundary", lambda *a, **k: _BOUNDARY_ARN)
@@ -799,7 +799,7 @@ class TestDeployAbortsOnUnownedStack:
     def test_deploy_aborts_before_upload_on_name_collision(self, monkeypatch):
         # An untagged same-named stack -> find_stack raises -> deploy must abort
         # BEFORE uploading source or calling cloudformation deploy.
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(
             ec2,
@@ -824,7 +824,7 @@ class TestDeployCleansSourceOnEarlyFailure:
     def test_network_discovery_failure_deletes_uploaded_source(self, monkeypatch):
         # upload_source runs BEFORE discover_network; a discovery failure must
         # not orphan the just-uploaded tarball in S3.
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         deleted: list[str] = []
         monkeypatch.setattr(ec2, "find_stack", lambda *a, **k: None)
@@ -846,7 +846,7 @@ class TestDeployCleansSourceOnEarlyFailure:
 
 class TestDeployExplicitSubnet:
     def _stub_deploy_deps(self, monkeypatch):
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(ec2, "find_stack", lambda *a, **k: None)
         monkeypatch.setattr(source_mod, "ensure_instance_boundary", lambda *a, **k: _BOUNDARY_ARN)
@@ -920,7 +920,7 @@ class TestDeployExplicitSubnet:
     def test_explicit_subnet_failure_deletes_uploaded_source(self, monkeypatch):
         # Same cleanup contract as discovery: a validation failure after the
         # source upload must not orphan the tarball in S3.
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         deleted: list[str] = []
         self._stub_deploy_deps(monkeypatch)
@@ -975,14 +975,14 @@ class TestDnsPreflight:
 
     def test_zone_shadows_subdomain_and_apex(self):
         assert ec2._zone_shadows_host(
-            "q.us-east-1.amazonaws.com.", "desktop-release.q.us-east-1.amazonaws.com"
+            "q.us-east-1.amazonaws.com.", "efmleads.com"
         )
         assert ec2._zone_shadows_host("nodejs.org", "nodejs.org")
 
     def test_match_is_on_label_boundaries(self):
         # A plain endswith would wrongly match these.
         assert not ec2._zone_shadows_host(
-            "xq.us-east-1.amazonaws.com", "desktop-release.q.us-east-1.amazonaws.com"
+            "xq.us-east-1.amazonaws.com", "efmleads.com"
         )
         assert not ec2._zone_shadows_host("notnodejs.org", "nodejs.org")
         # A narrower zone does not shadow a shorter name.
@@ -1006,7 +1006,7 @@ class TestDnsPreflight:
         monkeypatch.setattr(aws, "checked_json", fake_json)
         hits = ec2.shadowed_download_hosts("vpc-1", "dev", "us-east-1")
         assert hits == [
-            ("desktop-release.q.us-east-1.amazonaws.com", "q.us-east-1.amazonaws.com")
+            ("efmleads.com", "q.us-east-1.amazonaws.com")
         ]
 
     def test_clean_vpc_has_no_hits(self, monkeypatch):
@@ -1733,7 +1733,7 @@ class TestStackEventsAndFailures:
         assert fails[0]["resource"] == "kirocrew-t1"
 
     def test_deploy_disable_rollback_appends_flag(self, monkeypatch):
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(ec2, "find_stack", lambda *a, **k: None)
         monkeypatch.setattr(source_mod, "ensure_instance_boundary", lambda *a, **k: _BOUNDARY_ARN)
@@ -1760,7 +1760,7 @@ class TestStackEventsAndFailures:
         assert "--disable-rollback" in captured["argv"]
 
     def test_deploy_failure_attaches_root_cause(self, monkeypatch):
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(ec2, "find_stack", lambda *a, **k: None)
         monkeypatch.setattr(source_mod, "ensure_instance_boundary", lambda *a, **k: _BOUNDARY_ARN)

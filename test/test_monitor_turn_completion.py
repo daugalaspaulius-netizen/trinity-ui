@@ -8,11 +8,11 @@ from copy import deepcopy
 
 import pytest
 
-from kiro_crew.acp.types import TurnUsage
-from kiro_crew.autonudge import AutoNudgeService, NudgeLoop
-from kiro_crew.monitoring import models
-from kiro_crew.monitoring.decision import monitor_budget_reason
-from kiro_crew.monitoring.models import MonitorBudgets, MonitorOutcome, MonitorState
+from efm_go.acp.types import TurnUsage
+from efm_go.autonudge import AutoNudgeService, NudgeLoop
+from efm_go.monitoring import models
+from efm_go.monitoring.decision import monitor_budget_reason
+from efm_go.monitoring.models import MonitorBudgets, MonitorOutcome, MonitorState
 
 
 def _structured_loop() -> NudgeLoop:
@@ -612,8 +612,8 @@ def test_restart_fails_closed_when_completion_evidence_is_unavailable(tmp_path) 
 @pytest.mark.asyncio
 async def test_completion_hook_delivers_one_typed_record_with_explicit_unknown_usage() -> None:
     """A credits-only usage result must not fabricate authoritative token counts."""
-    assert importlib.util.find_spec("kiro_crew.monitoring.completion") is not None
-    from kiro_crew.monitoring.completion import MonitorCompletionHook
+    assert importlib.util.find_spec("efm_go.monitoring.completion") is not None
+    from efm_go.monitoring.completion import MonitorCompletionHook
 
     completions: list[models.MonitorActionCompletion] = []
 

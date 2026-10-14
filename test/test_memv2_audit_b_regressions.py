@@ -8,8 +8,8 @@ from threading import Event
 import pytest
 from member_memory_helpers import env as _member_env
 
-from kiro_crew.mcp_tools import learn
-from kiro_crew.memory_recall import MAX_RECALL_PAYLOAD_BYTES, _transport_size
+from efm_go.mcp_tools import learn
+from efm_go.memory_recall import MAX_RECALL_PAYLOAD_BYTES, _transport_size
 
 env = _member_env
 

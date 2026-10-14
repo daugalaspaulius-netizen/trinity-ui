@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.skills import SkillsLoader
+from efm_go.skills import SkillsLoader
 
 
 def _write(root: Path, name: str, *, inject: str | None = None, body: str = "body") -> Path:
@@ -85,14 +85,14 @@ class TestSetInjectOnTrigger:
         d.mkdir(parents=True)
         (d / "SKILL.md").write_text(
             "---\nname: scoped\ndescription: d\ntriggers: zebra\n"
-            "repo_scope: src/kiro_crew\nalways: false\n---\n# Body\nkeep me\n"
+            "repo_scope: src/efm_go\nalways: false\n---\n# Body\nkeep me\n"
         )
         loader = SkillsLoader(skills_path=skills, install_builtins=False)
 
         loader.set_inject_on_trigger("scoped", False)
 
         text = (d / "SKILL.md").read_text()
-        assert "repo_scope: src/kiro_crew" in text
+        assert "repo_scope: src/efm_go" in text
         assert "always: false" in text
         assert "# Body\nkeep me" in text
 

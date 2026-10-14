@@ -12,20 +12,20 @@ from urllib.request import Request
 
 import pytest
 
-from kiro_crew import github_runner
-from kiro_crew import sandbox as sandbox_module
-from kiro_crew.acp import client as acp_client_module
-from kiro_crew.monitoring import azure_devops_pull_request as azure_module
-from kiro_crew.monitoring import bitbucket_pull_request as bitbucket_module
-from kiro_crew.monitoring import github_pull_request as github_module
-from kiro_crew.monitoring import provider_cli as provider_cli_module
-from kiro_crew.monitoring.azure_devops_pull_request import AzureDevOpsPullRequestProvider
-from kiro_crew.monitoring.bitbucket_pull_request import BitbucketPullRequestProvider
-from kiro_crew.monitoring.gitlab_merge_request import GitLabMergeRequestProvider
-from kiro_crew.monitoring.models import MonitorObservationStatus, ProviderErrorKind
-from kiro_crew.monitoring.provider_cli import provider_cli_env, run_provider_cli
-from kiro_crew.monitoring.pull_request import opaque_provider_check_identity
-from kiro_crew.sel import SecurityEventLog
+from efm_go import github_runner
+from efm_go import sandbox as sandbox_module
+from efm_go.acp import client as acp_client_module
+from efm_go.monitoring import azure_devops_pull_request as azure_module
+from efm_go.monitoring import bitbucket_pull_request as bitbucket_module
+from efm_go.monitoring import github_pull_request as github_module
+from efm_go.monitoring import provider_cli as provider_cli_module
+from efm_go.monitoring.azure_devops_pull_request import AzureDevOpsPullRequestProvider
+from efm_go.monitoring.bitbucket_pull_request import BitbucketPullRequestProvider
+from efm_go.monitoring.gitlab_merge_request import GitLabMergeRequestProvider
+from efm_go.monitoring.models import MonitorObservationStatus, ProviderErrorKind
+from efm_go.monitoring.provider_cli import provider_cli_env, run_provider_cli
+from efm_go.monitoring.pull_request import opaque_provider_check_identity
+from efm_go.sel import SecurityEventLog
 
 
 def _probe(provider, target: str, **kwargs):
@@ -425,7 +425,7 @@ def test_gitlab_native_fetch_reads_only_the_latest_current_head_pipeline(monkeyp
         return subprocess.CompletedProcess(["glab"], 0, stdout=json.dumps(payload), stderr="")
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.gitlab_merge_request.run_provider_cli",
+        "efm_go.monitoring.gitlab_merge_request.run_provider_cli",
         succeed,
     )
 
@@ -460,7 +460,7 @@ def test_gitlab_exactly_two_full_discussion_pages_are_complete(monkeypatch):
         return subprocess.CompletedProcess(["glab"], 0, stdout=json.dumps(payload), stderr="")
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.gitlab_merge_request.run_provider_cli",
+        "efm_go.monitoring.gitlab_merge_request.run_provider_cli",
         succeed,
     )
 
@@ -979,7 +979,7 @@ def test_gitlab_not_found_is_terminal_and_omits_provider_text(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.gitlab_merge_request.run_provider_cli",
+        "efm_go.monitoring.gitlab_merge_request.run_provider_cli",
         fail,
     )
 
@@ -1003,7 +1003,7 @@ def test_azure_forbidden_is_terminal_and_omits_provider_text(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.azure_devops_pull_request.run_provider_cli",
+        "efm_go.monitoring.azure_devops_pull_request.run_provider_cli",
         fail,
     )
 
@@ -1035,7 +1035,7 @@ def test_gitlab_throttling_refusal_is_rate_limited(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.gitlab_merge_request.run_provider_cli",
+        "efm_go.monitoring.gitlab_merge_request.run_provider_cli",
         fail,
     )
 
@@ -1065,7 +1065,7 @@ def test_azure_throttling_refusal_is_rate_limited(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.azure_devops_pull_request.run_provider_cli",
+        "efm_go.monitoring.azure_devops_pull_request.run_provider_cli",
         fail,
     )
 
@@ -1086,11 +1086,11 @@ def test_azure_channel_probe_does_not_load_owner_credentials_or_cli_state(monkey
         pytest.fail("channel probe reached operator-owned Azure state")
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.azure_devops_pull_request.KiroCrewConfig",
+        "efm_go.monitoring.azure_devops_pull_request.KiroCrewConfig",
         SimpleNamespace(load=fail),
     )
     monkeypatch.setattr(
-        "kiro_crew.monitoring.azure_devops_pull_request.run_provider_cli",
+        "efm_go.monitoring.azure_devops_pull_request.run_provider_cli",
         fail,
     )
     monkeypatch.setattr(
@@ -1121,7 +1121,7 @@ def test_azure_cli_uses_supported_project_scoping_for_each_command(monkeypatch):
         return credentials
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.azure_devops_pull_request.KiroCrewConfig",
+        "efm_go.monitoring.azure_devops_pull_request.KiroCrewConfig",
         SimpleNamespace(load=lambda: SimpleNamespace(load_credentials=load_credentials)),
     )
 
@@ -1149,7 +1149,7 @@ def test_azure_cli_uses_supported_project_scoping_for_each_command(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.azure_devops_pull_request.run_provider_cli",
+        "efm_go.monitoring.azure_devops_pull_request.run_provider_cli",
         succeed,
     )
 
@@ -1653,15 +1653,15 @@ def test_provider_cli_environments_are_scoped_and_disable_dynamic_install(monkey
 
 def test_provider_cli_rejects_output_over_the_transport_bound(monkeypatch, tmp_path):
     monkeypatch.setattr(
-        "kiro_crew.monitoring.provider_cli.resolve_provider_cli",
+        "efm_go.monitoring.provider_cli.resolve_provider_cli",
         lambda _executable: sys.executable,
     )
     monkeypatch.setattr(
-        "kiro_crew.monitoring.provider_cli._audit_provider_cli",
+        "efm_go.monitoring.provider_cli._audit_provider_cli",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        "kiro_crew.monitoring.provider_cli.sandboxed_spawn_argv",
+        "efm_go.monitoring.provider_cli.sandboxed_spawn_argv",
         lambda argv, **kwargs: (argv, kwargs["env"], None),
     )
     monkeypatch.setenv("KIROCREW_HOME", os.fspath(tmp_path / "home"))
@@ -1688,15 +1688,15 @@ def test_provider_cli_routes_through_sandbox_and_restores_only_explicit_credenti
         return argv, scrubbed, None
 
     monkeypatch.setattr(
-        "kiro_crew.monitoring.provider_cli.resolve_provider_cli",
+        "efm_go.monitoring.provider_cli.resolve_provider_cli",
         lambda _executable: sys.executable,
     )
     monkeypatch.setattr(
-        "kiro_crew.monitoring.provider_cli._audit_provider_cli",
+        "efm_go.monitoring.provider_cli._audit_provider_cli",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        "kiro_crew.monitoring.provider_cli.sandboxed_spawn_argv",
+        "efm_go.monitoring.provider_cli.sandboxed_spawn_argv",
         fake_sandbox,
     )
     monkeypatch.setenv("KIROCREW_HOME", os.fspath(tmp_path / "home"))
@@ -1766,14 +1766,14 @@ def test_provider_cli_accepts_only_pod_local_azure_config_in_a_pod(monkeypatch, 
 
 def _stub_az_spawn(monkeypatch, sandbox_stub):
     monkeypatch.setattr(
-        "kiro_crew.monitoring.provider_cli.resolve_provider_cli",
+        "efm_go.monitoring.provider_cli.resolve_provider_cli",
         lambda _executable: sys.executable,
     )
     monkeypatch.setattr(
-        "kiro_crew.monitoring.provider_cli._audit_provider_cli",
+        "efm_go.monitoring.provider_cli._audit_provider_cli",
         lambda *_args, **_kwargs: None,
     )
-    monkeypatch.setattr("kiro_crew.monitoring.provider_cli.sandboxed_spawn_argv", sandbox_stub)
+    monkeypatch.setattr("efm_go.monitoring.provider_cli.sandboxed_spawn_argv", sandbox_stub)
 
 
 def _pod_azure_env(monkeypatch, operator_home, pod_home):

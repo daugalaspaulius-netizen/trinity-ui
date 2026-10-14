@@ -13,9 +13,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from kiro_crew.dashboard.chat_utils import _collapse_wire_rows
-from kiro_crew.history import ConversationLog
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go.dashboard.chat_utils import _collapse_wire_rows
+from efm_go.history import ConversationLog
+from efm_go.testing.fixtures import seeded_home
 
 KEY = "dashboard_long-history"
 ROTATED_ROWS = 60
@@ -74,8 +74,8 @@ def test_sessions_long_history_advertises_a_reachable_earlier_page() -> None:
 
 def test_the_shipped_segment_matches_what_rotation_writes_today(tmp_path, monkeypatch) -> None:
     """The fixture's archive segment is real writer output, not authored bytes."""
-    monkeypatch.setattr("kiro_crew.history._SESSION_MAX_BYTES", 400)
-    monkeypatch.setattr("kiro_crew.history._SESSION_KEEP_LINES", 3)
+    monkeypatch.setattr("efm_go.history._SESSION_MAX_BYTES", 400)
+    monkeypatch.setattr("efm_go.history._SESSION_KEEP_LINES", 3)
     fresh = ConversationLog(base_dir=tmp_path)
     for index in range(20):
         fresh.append(KEY, "user", f"row {index:02d} with enough text to outgrow the budget")

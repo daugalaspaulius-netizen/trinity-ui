@@ -23,9 +23,9 @@ from typing import Callable
 
 import pytest
 
-from kiro_crew import file_delivery_consent
-from kiro_crew import session_ledger as sl
-from kiro_crew.platform import app_update_request, update_layout, update_stepup
+from efm_go import file_delivery_consent
+from efm_go import session_ledger as sl
+from efm_go.platform import app_update_request, update_layout, update_stepup
 
 SLOT = "chat-1"
 

@@ -11,9 +11,9 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.teams.client import TeamsInbound
-from kiro_crew.teams.transport import TEAMS_CAPABILITIES, TeamsTransport
+from efm_go.messaging.transport import InboundMessage
+from efm_go.teams.client import TeamsInbound
+from efm_go.teams.transport import TEAMS_CAPABILITIES, TeamsTransport
 
 
 class _FakeSel:
@@ -83,7 +83,7 @@ class TestAuthorize:
 
     def test_deny_by_default_and_audit(self, monkeypatch) -> None:
         fake = _FakeSel()
-        monkeypatch.setattr("kiro_crew.teams.transport.sel", lambda: fake)
+        monkeypatch.setattr("efm_go.teams.transport.sel", lambda: fake)
         t = TeamsTransport(_FakeClient(), allowed_emails=["alice@example.com"])
         msg = InboundMessage(
             channel_type="teams", user_id="mallory@evil.com", conversation_id="c", text="x"
@@ -132,7 +132,7 @@ class TestReceive:
     @pytest.mark.asyncio
     async def test_channel_scope_denied_and_audited(self, monkeypatch) -> None:
         fake = _FakeSel()
-        monkeypatch.setattr("kiro_crew.teams.transport.sel", lambda: fake)
+        monkeypatch.setattr("efm_go.teams.transport.sel", lambda: fake)
         dispatched: list[TeamsInbound] = []
 
         async def _dispatch(inb: TeamsInbound) -> None:
@@ -148,7 +148,7 @@ class TestReceive:
     @pytest.mark.asyncio
     async def test_unresolved_identity_fails_closed(self, monkeypatch) -> None:
         fake = _FakeSel()
-        monkeypatch.setattr("kiro_crew.teams.transport.sel", lambda: fake)
+        monkeypatch.setattr("efm_go.teams.transport.sel", lambda: fake)
         dispatched: list[TeamsInbound] = []
 
         async def _dispatch(inb: TeamsInbound) -> None:

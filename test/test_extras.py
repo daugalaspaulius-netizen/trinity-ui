@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import extras
+from efm_go import extras
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 SETUP_CFG = _REPO_ROOT / "setup.cfg"
@@ -209,7 +209,7 @@ def test_the_dashboard_guard_delegates_to_this_one(monkeypatch: pytest.MonkeyPat
     point in ``test_dashboard_handlers_core_coverage.py``; this pins the seam
     those tests now reach through.
     """
-    from kiro_crew.dashboard.handlers import _shared
+    from efm_go.dashboard.handlers import _shared
 
     monkeypatch.setattr(extras, "pip_install_channel_available", lambda: False)
     assert _shared._pip_install_channel_available() is False

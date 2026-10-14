@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.scaffold — app scaffolding."""
+"""Tests for efm_go.apps.scaffold — app scaffolding."""
 from __future__ import annotations
 
 import json
@@ -9,9 +9,9 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import platform_compat
-from kiro_crew.apps.manifest import AppManifest
-from kiro_crew.apps.scaffold import (
+from efm_go import platform_compat
+from efm_go.apps.manifest import AppManifest
+from efm_go.apps.scaffold import (
     _placeholder_icon_png,
     _resolve_for_write,
     _write_sites,
@@ -322,7 +322,7 @@ class TestWriteContainment:
         # write sequence and well before app.json. Failing here stands in for any
         # runtime write failure past what validation can foresee.
         monkeypatch.setattr(
-            "kiro_crew.apps.scaffold._placeholder_icon_png", _boom
+            "efm_go.apps.scaffold._placeholder_icon_png", _boom
         )
 
         with pytest.raises(OSError):
@@ -352,7 +352,7 @@ class TestWriteContainment:
         def _boom(*args, **kwargs):
             raise OSError(errno.ENOSPC, "No space left on device")
 
-        monkeypatch.setattr("kiro_crew.apps.scaffold.atomic_write", _boom)
+        monkeypatch.setattr("efm_go.apps.scaffold.atomic_write", _boom)
 
         with pytest.raises(OSError):
             _scaffold_all(out, "myapp")
@@ -379,7 +379,7 @@ class TestWriteContainment:
         """
         import errno
 
-        import kiro_crew.apps.scaffold as scaffold_mod
+        import efm_go.apps.scaffold as scaffold_mod
 
         out = tmp_path / "out"
         app_dir = out / "victim"
@@ -625,7 +625,7 @@ class TestAppNameValidation:
         # The permit case: the validation must not have narrowed the names that
         # legitimately work, and the manifest it writes must satisfy the very
         # contract that rejects an invalid name at install time.
-        from kiro_crew.apps.manifest import app_name_error
+        from efm_go.apps.manifest import app_name_error
 
         app_dir = scaffold_app(tmp_path, "my-good-app")
         manifest = json.loads((app_dir / "app.json").read_text(encoding="utf-8"))
@@ -740,7 +740,7 @@ class TestScaffold:
         monkeypatch.setenv("KIROCREW_HOME", str(home))
 
         app_dir = scaffold_app(tmp_path / "output", "installable-app")
-        from kiro_crew.apps.manager import install_app
+        from efm_go.apps.manager import install_app
         result = install_app(app_dir)
         assert result.ok, result.error
 
@@ -752,7 +752,7 @@ class TestScaffold:
 
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
         ns = argparse.Namespace(app_action="init", name="cli-scaffolded", dir=str(tmp_path), backend=False)
         _handle_app(ns)
         captured = capsys.readouterr()
@@ -768,7 +768,7 @@ class TestScaffold:
 
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
         out = tmp_path / "out"
         out.mkdir()
         ns = argparse.Namespace(app_action="init", name="../evil", dir=str(out), backend=False)

@@ -1,4 +1,4 @@
-"""Tests for the ``kiro_crew._bootstrap`` console-entry self-heal.
+"""Tests for the ``efm_go._bootstrap`` console-entry self-heal.
 
 The bootstrap closes the git-pull gap for editable installs: a commit that
 adds a runtime dependency must not leave ``kirocrew`` dying on a raw
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import _bootstrap
+from efm_go import _bootstrap
 
 # ── Helpers ──
 
@@ -30,7 +30,7 @@ def _venv_maps(monkeypatch):
     would pass for the wrong reason. The guard itself is covered in
     test/test_dep_sync.py.
     """
-    from kiro_crew import dep_sync
+    from efm_go import dep_sync
 
     monkeypatch.setattr(dep_sync, "installed_package_origin", lambda target: "<stub>")
     monkeypatch.setattr(dep_sync, "venv_not_mapped_to", lambda origin, repo: None)
@@ -125,7 +125,7 @@ def test_self_heal_runs_on_windows_through_the_dependency_only_path(monkeypatch,
     missing dependency is the only thing that brings us here. Skipping left the
     platform whose users hit this most with nothing but a printed one-liner.
     """
-    from kiro_crew import dep_sync
+    from efm_go import dep_sync
 
     monkeypatch.setattr(_bootstrap.sys, "platform", "win32")
     monkeypatch.setattr(_bootstrap, "_source_checkout_root", lambda: tmp_path)
@@ -175,7 +175,7 @@ def test_retry_invalidates_import_caches(monkeypatch):
 
 def test_self_heal_runs_fixed_pip_argv(monkeypatch, tmp_path):
     """A full reinstall heals dependencies and satisfies its artifact contract."""
-    from kiro_crew import dep_sync
+    from efm_go import dep_sync
 
     monkeypatch.setattr(_bootstrap.sys, "platform", "linux")
     monkeypatch.setattr(_bootstrap, "_source_checkout_root", lambda: tmp_path)
@@ -192,7 +192,7 @@ def test_self_heal_runs_fixed_pip_argv(monkeypatch, tmp_path):
             script.parent.mkdir(parents=True)
             script.write_text("#!/bin/sh\n")
             script.chmod(0o755)
-        elif argv[1:] == ["-I", "-X", "utf8", "-c", "import kiro_crew"]:
+        elif argv[1:] == ["-I", "-X", "utf8", "-c", "import efm_go"]:
             seen["import_checked"] = True
 
         class _P:
@@ -210,7 +210,7 @@ def test_self_heal_runs_fixed_pip_argv(monkeypatch, tmp_path):
 
 
 def test_self_heal_reports_pip_failure(monkeypatch, tmp_path):
-    from kiro_crew import dep_sync
+    from efm_go import dep_sync
 
     monkeypatch.setattr(_bootstrap.sys, "platform", "linux")  # POSIX heal path
     monkeypatch.setattr(_bootstrap, "_source_checkout_root", lambda: tmp_path)
@@ -230,7 +230,7 @@ def test_self_heal_output_stays_ascii(monkeypatch, tmp_path, capsys):
     The heal now relays pip's output and filesystem paths, neither of which is
     ASCII by nature, and it prints before ensure_utf8_console() has run.
     """
-    from kiro_crew import dep_sync
+    from efm_go import dep_sync
 
     monkeypatch.setattr(_bootstrap.sys, "platform", "linux")
     monkeypatch.setattr(_bootstrap, "_source_checkout_root", lambda: tmp_path)

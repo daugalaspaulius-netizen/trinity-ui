@@ -196,7 +196,7 @@ class TestScreenshotEvidence:
         the maintainer must have a step for at merge. Each place states the
         part that is its own; the reason lives once, in rationale.md."""
         root = WORKFLOWS.parents[1]
-        skills = root / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev"
+        skills = root / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev"
         rationale = (skills / "kirocrew-prepare-pr" / "references" / "rationale.md").read_text(
             encoding="utf-8"
         )
@@ -287,7 +287,7 @@ class TestScreenshotEvidence:
         100 MB. The script's ceiling itself is pinned in
         test_ai_review_workflows.py and is not this test's to move."""
         root = WORKFLOWS.parents[1]
-        skills = root / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev"
+        skills = root / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev"
         template = (root / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
         wf = _read("screenshot-evidence.yml")
         prepare = (skills / "kirocrew-prepare-pr" / "SKILL.md").read_text(encoding="utf-8")
@@ -342,7 +342,7 @@ class TestScreenshotEvidence:
         prepare = (
             root
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "builtin_skills"
             / "kirocrew-dev"
             / "kirocrew-prepare-pr"
@@ -743,8 +743,8 @@ class TestCrossPlatform:
 
     def test_excludes_vendor_and_compat_module(self):
         wf = _read("cross-platform.yml")
-        assert ":(exclude)src/kiro_crew/_vendor/**" in wf
-        assert ":(exclude)src/kiro_crew/platform_compat.py" in wf
+        assert ":(exclude)src/efm_go/_vendor/**" in wf
+        assert ":(exclude)src/efm_go/platform_compat.py" in wf
 
     def test_has_escape_hatch_label(self):
         assert "posix-only-approved" in _read("cross-platform.yml")
@@ -766,7 +766,7 @@ class TestPrScope:
 
     def test_excludes_vendor_and_screenshots(self):
         wf = _read("pr-scope.yml")
-        assert ":(exclude)src/kiro_crew/_vendor/**" in wf
+        assert ":(exclude)src/efm_go/_vendor/**" in wf
         assert ":(exclude)temp-screenshots/**" in wf
 
 
@@ -849,8 +849,8 @@ class TestPrScopeMeasureLogic:
     def test_measured_diff_reports_scope(self, tmp_path):
         result, summary = self._run_measure(
             tmp_path,
-            files_out="src/kiro_crew/session/state.py\n",
-            numstat_out="10\t2\tsrc/kiro_crew/session/state.py\n",
+            files_out="src/efm_go/session/state.py\n",
+            numstat_out="10\t2\tsrc/efm_go/session/state.py\n",
         )
         assert result.returncode == 0, result.stdout + result.stderr
         assert "distinct areas: 1" in result.stdout, result.stdout
@@ -884,7 +884,7 @@ class TestPrScopeMeasureLogic:
         # nothing into a legitimate-looking 0.
         result, summary = self._run_measure(
             tmp_path,
-            files_out="src/kiro_crew/session/state.py\n",
+            files_out="src/efm_go/session/state.py\n",
             numstat_status=128,
         )
         assert result.returncode == 0, result.stdout + result.stderr

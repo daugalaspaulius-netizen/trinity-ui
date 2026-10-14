@@ -19,10 +19,10 @@ import logging
 
 import pytest
 
-from kiro_crew.config import loader as L
-from kiro_crew.config import migration as M
-from kiro_crew.config import superseded_defaults as SD
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config import loader as L
+from efm_go.config import migration as M
+from efm_go.config import superseded_defaults as SD
+from efm_go.config.loader import KiroCrewConfig
 
 KEY = "skills.lazy_load"
 
@@ -73,7 +73,7 @@ def _rewrite_notices(caplog) -> list[str]:
 def test_a_0_6_config_holding_false_is_migrated_once(home, caplog):
     _write(home, _legacy_config())
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.config.loader"):
+    with caplog.at_level(logging.INFO, logger="efm_go.config.loader"):
         cfg = KiroCrewConfig.load()
 
     assert cfg.skills.lazy_load is True, "this very load must already run the new default"
@@ -92,7 +92,7 @@ def test_a_0_6_config_holding_false_is_migrated_once(home, caplog):
     ledger = SD.ack_file_path().read_bytes()
     caplog.clear()
     L._invalidate_config_cache()
-    with caplog.at_level(logging.INFO, logger="kiro_crew.config.loader"):
+    with caplog.at_level(logging.INFO, logger="efm_go.config.loader"):
         again = KiroCrewConfig.load()
 
     assert again.skills.lazy_load is True
@@ -126,7 +126,7 @@ def test_a_0_7_or_later_stamp_keeps_false_and_is_only_reported(home, monkeypatch
     monkeypatch.setattr(SD, "SUPERSEDED_DEFAULTS", (*SD.SUPERSEDED_DEFAULTS, row))
     _write(home, _legacy_config(stamp=stamp))
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
         cfg = KiroCrewConfig.load()
 
     assert cfg.skills.lazy_load is False
@@ -145,7 +145,7 @@ def test_the_report_skips_the_key_the_same_load_is_removing(home, monkeypatch, c
     monkeypatch.setattr(SD, "SUPERSEDED_DEFAULTS", (*SD.SUPERSEDED_DEFAULTS, row))
     _write(home, _legacy_config())
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
         KiroCrewConfig.load()
 
     assert not any("superseded default" in r.getMessage() for r in caplog.records)
@@ -267,7 +267,7 @@ def test_an_overlay_value_wins_in_memory(home, caplog):
     )
     L._invalidate_config_cache()
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
         cfg = KiroCrewConfig.load()
 
     assert "lazy_load" not in _on_disk(home)["skills"]

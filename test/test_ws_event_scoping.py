@@ -21,9 +21,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard.state import SlotOrigin
-from kiro_crew.dashboard.token_auth import app_token_path_allowed
-from kiro_crew.dashboard.ws_event_scope import (
+from efm_go.dashboard.state import SlotOrigin
+from efm_go.dashboard.token_auth import app_token_path_allowed
+from efm_go.dashboard.ws_event_scope import (
     build_allowed_event_set,
     filter_slots_for_app,
     ws_event_allowed,
@@ -39,7 +39,7 @@ def _clear_module_caches():
     entry from an earlier test can suppress the behaviour under test in a
     later one (especially the cross-app tests that patch ``get_app_manifest``).
     """
-    from kiro_crew.dashboard import ws_event_scope as _wes
+    from efm_go.dashboard import ws_event_scope as _wes
     _wes._exposeto_cache.clear()
     _wes._sel_last_audit.clear()
     yield
@@ -53,7 +53,7 @@ def _clear_module_caches():
 
 def _chat_handler_source() -> str:
     """chat_handlers.py and the chat_api owners it composes, as one text."""
-    import kiro_crew.dashboard.chat_handlers as _ch
+    import efm_go.dashboard.chat_handlers as _ch
 
     facade = Path(_ch.__file__)
     owners = sorted((facade.parent / "chat_api").glob("[!_]*.py"))
@@ -96,7 +96,7 @@ def _clear_ws_scope_module_caches(monkeypatch):
     default. Tests that exercise revocation override this explicitly (patch it
     False, or seed ``_declared_cache`` with a disabled entry).
     """
-    from kiro_crew.dashboard import ws_event_scope as mod
+    from efm_go.dashboard import ws_event_scope as mod
     monkeypatch.setattr(mod, "is_app_enabled", lambda _name: True)
     for cache in (mod._declared_cache, mod._exposeto_cache, mod._sel_last_audit):
         cache.clear()
@@ -265,7 +265,7 @@ class TestSlotScopedCrossApp:
         state = _make_state({"mochi-pet": slot})
         manifest = MagicMock()
         manifest.permissions.exposeToApps = ["monitor-app"]
-        with patch("kiro_crew.dashboard.ws_event_scope.get_app_manifest", return_value=manifest):
+        with patch("efm_go.dashboard.ws_event_scope.get_app_manifest", return_value=manifest):
             assert ws_event_allowed(
                 "chat_chunk", {"slot": "mochi-pet"},
                 app="monitor-app",
@@ -278,7 +278,7 @@ class TestSlotScopedCrossApp:
         state = _make_state({"mochi-pet": slot})
         manifest = MagicMock()
         manifest.permissions.exposeToApps = []  # no opt-in
-        with patch("kiro_crew.dashboard.ws_event_scope.get_app_manifest", return_value=manifest):
+        with patch("efm_go.dashboard.ws_event_scope.get_app_manifest", return_value=manifest):
             assert ws_event_allowed(
                 "chat_chunk", {"slot": "mochi-pet"},
                 app="monitor-app",
@@ -291,7 +291,7 @@ class TestSlotScopedCrossApp:
         state = _make_state({"mochi-pet": slot})
         manifest = MagicMock()
         manifest.permissions.exposeToApps = ["*"]
-        with patch("kiro_crew.dashboard.ws_event_scope.get_app_manifest", return_value=manifest):
+        with patch("efm_go.dashboard.ws_event_scope.get_app_manifest", return_value=manifest):
             assert ws_event_allowed(
                 "chat_chunk", {"slot": "mochi-pet"},
                 app="any-app",
@@ -304,7 +304,7 @@ class TestSlotScopedCrossApp:
         state = _make_state({"mochi-pet": slot})
         manifest = MagicMock()
         manifest.permissions.exposeToApps = ["monitor-app"]
-        with patch("kiro_crew.dashboard.ws_event_scope.get_app_manifest", return_value=manifest):
+        with patch("efm_go.dashboard.ws_event_scope.get_app_manifest", return_value=manifest):
             # monitor-app didn't declare slots:app:mochi-pet
             assert ws_event_allowed(
                 "chat_chunk", {"slot": "mochi-pet"},
@@ -472,7 +472,7 @@ class TestGlobalEvents:
     def test_channel_settings_is_gated_by_owner_not_by_note_source(self):
         """It is not in _SOURCE_FILTERED_EVENTS (it carries no `source` field) but
         it is still attributed -- by its CHANNEL owner."""
-        from kiro_crew.dashboard.ws_event_scope import _SOURCE_FILTERED_EVENTS
+        from efm_go.dashboard.ws_event_scope import _SOURCE_FILTERED_EVENTS
 
         assert "notification_channel_settings" not in _SOURCE_FILTERED_EVENTS
         state = _make_state()
@@ -554,7 +554,7 @@ class TestGlobalEvents:
 
     def test_channel_owner_helper_matches_the_handler_convention(self):
         """Pin the helper against the derivation messaging.py already uses."""
-        from kiro_crew.dashboard.ws_event_scope import notification_channel_owner
+        from efm_go.dashboard.ws_event_scope import notification_channel_owner
 
         for channel in ("mochi-pet.alerts", "system.cron", "workflows.x.y"):
             assert notification_channel_owner(channel) == channel.split(".", 1)[0]
@@ -678,9 +678,9 @@ class TestImplicitAllow:
     def test_api_ws_implicit_allow_emits_no_exception(self):
         """SEL audit in implicit allow path must not raise even if SEL is unavailable."""
         # Patch the reference used at call time (token_auth imports sel as _sel_fn
-        # at module load; patching kiro_crew.sel.sel would not affect that binding).
+        # at module load; patching efm_go.sel.sel would not affect that binding).
         with patch(
-            "kiro_crew.dashboard.token_auth._sel_fn",
+            "efm_go.dashboard.token_auth._sel_fn",
             side_effect=Exception("sel unavailable"),
         ):
             # Should return True despite SEL failure (audit is best-effort)
@@ -739,9 +739,9 @@ class TestEmptyAppDeniedClosed:
     def test_empty_app_deny_emits_audit(self):
         # A caller that reaches ws_event_allowed with an empty app must
         # leave an audit trail so the bypass is observable.
-        from kiro_crew.dashboard import ws_event_scope as _wes
+        from efm_go.dashboard import ws_event_scope as _wes
         state = _make_state()
-        with patch("kiro_crew.sel.sel") as sel_mock:
+        with patch("efm_go.sel.sel") as sel_mock:
             _wes._sel_last_audit.clear()  # fresh window
             ws_event_allowed(
                 "chat_chunk", {}, app="", allowed_events=_allowed(), state=state,
@@ -824,13 +824,13 @@ class TestSlotsListEvent:
 
 class TestAuditDedup:
     def _clear_cache(self):
-        from kiro_crew.dashboard import ws_event_scope
+        from efm_go.dashboard import ws_event_scope
         ws_event_scope._sel_last_audit.clear()
 
     def test_first_deny_audited_subsequent_within_window_suppressed(self):
         self._clear_cache()
         state = _make_state()
-        with patch("kiro_crew.sel.sel") as m:
+        with patch("efm_go.sel.sel") as m:
             for _ in range(5):
                 ws_event_allowed(
                     "notification", {"source": "app:other-app"},
@@ -844,7 +844,7 @@ class TestAuditDedup:
     def test_different_reasons_audited_independently(self):
         self._clear_cache()
         state = _make_state()
-        with patch("kiro_crew.sel.sel") as m:
+        with patch("efm_go.sel.sel") as m:
             # notification_scope_denied
             ws_event_allowed(
                 "notification", {"source": "app:other-app"},
@@ -885,7 +885,7 @@ class TestPositiveDashboardUserFlag:
 
     def test_dashboard_user_flag_unset_is_treated_as_app(self):
         """If a code path forgets to set _is_dashboard_user, the gate applies."""
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         # Build a minimal state stub with the helper method.
         state = MagicMock(spec=DashboardState)
@@ -897,7 +897,7 @@ class TestPositiveDashboardUserFlag:
         assert state._ws_client_allowed(ws, "totally_made_up", {}) is False
 
     def test_dashboard_user_positive_flag_bypasses_gate(self):
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
         state = MagicMock(spec=DashboardState)
         state._slots = {}
         state._ws_client_allowed = DashboardState._ws_client_allowed.__get__(state)
@@ -911,8 +911,8 @@ class TestScopeCheckExceptionAudited:
     """
 
     def test_scope_check_exception_emits_audit(self):
-        from kiro_crew.dashboard import ws_event_scope
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard import ws_event_scope
+        from efm_go.dashboard.state import DashboardState
         ws_event_scope._sel_last_audit.clear()
         state = MagicMock(spec=DashboardState)
         state._slots = {}
@@ -926,9 +926,9 @@ class TestScopeCheckExceptionAudited:
         }.get(k, default)
         # Force ws_event_allowed to raise
         with patch(
-            "kiro_crew.dashboard.ws_event_scope.ws_event_allowed",
+            "efm_go.dashboard.ws_event_scope.ws_event_allowed",
             side_effect=RuntimeError("boom"),
-        ), patch("kiro_crew.sel.sel") as sel_mock:
+        ), patch("efm_go.sel.sel") as sel_mock:
             result = state._ws_client_allowed(ws, "chat_chunk", {"slot": "x"})
             assert result is False
             # The audit was invoked at least once with the scope_check_exception reason.
@@ -961,8 +961,8 @@ class TestOriginPersistence:
 
         from chat_test_helpers import _make_ready_kiro_prerequisite
 
-        from kiro_crew.dashboard.state import DashboardState
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.state import DashboardState
+        from efm_go.history import ConversationLog
 
         sessions = MagicMock(count=0)
         sessions.remove = AsyncMock()
@@ -981,12 +981,12 @@ class TestOriginPersistence:
         return state
 
     def test_slot_has_origin_attribute(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         assert hasattr(_ChatSlot("s1"), "_origin")
 
     def test_to_dict_includes_origin(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot("s1")
         slot._origin = SlotOrigin.CRON
@@ -995,9 +995,9 @@ class TestOriginPersistence:
     def test_save_writes_origin_to_meta(self, tmp_path, monkeypatch):
         """The REAL save path must persist origin — this is the write side that
         was missing, letting every restored slot come back unattributed."""
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = self._state(tmp_path)
         slot = state.get_or_create_slot("cron-1")
         slot._origin = SlotOrigin.CRON
@@ -1011,9 +1011,9 @@ class TestOriginPersistence:
 
     def test_untagged_origin_not_persisted(self, tmp_path, monkeypatch):
         """The fail-closed empty sentinel must not be written as a real value."""
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = self._state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot._origin = ""
@@ -1027,12 +1027,12 @@ class TestOriginPersistence:
     @pytest.mark.parametrize("origin", [SlotOrigin.CRON, SlotOrigin.USER, SlotOrigin.APP])
     def test_origin_round_trips_through_rehydrate(self, tmp_path, monkeypatch, origin):
         """save -> _rehydrate_slot_from_history must return the SAME origin."""
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = self._state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot._origin = origin
@@ -1050,12 +1050,12 @@ class TestOriginPersistence:
     def test_origin_round_trips_through_bulk_restore(self, tmp_path, monkeypatch):
         """The bulk restore path (gateway boot) must restore origin too — the
         two restore sites are separate code and both read ``meta["origin"]``."""
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _save_slot_to_history,
             restore_recent_sessions,
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = self._state(tmp_path)
         slot = state.get_or_create_slot("cron-1")
         slot._origin = SlotOrigin.CRON
@@ -1072,12 +1072,12 @@ class TestOriginPersistence:
         """The security property the persistence exists for: a CRON slot that
         survived a restart must STILL be withheld from a ``slots:user`` app.
         Without the write side it rehydrated untagged and this gate flipped."""
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = self._state(tmp_path)
         slot = state.get_or_create_slot("cron-1")
         slot._origin = SlotOrigin.CRON
@@ -1108,7 +1108,7 @@ class TestAuthMiddlewareIsDashboardUser:
     def test_dashboard_user_bypasses_scope_gate(self):
         # Behavioral: a ws with positive _is_dashboard_user flag must bypass
         # the scope gate entirely (that's the CWE-269 fix's whole point).
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
         state = MagicMock(spec=DashboardState)
         state._slots = {}
         state._ws_client_allowed = DashboardState._ws_client_allowed.__get__(state)
@@ -1123,7 +1123,7 @@ class TestAuthMiddlewareIsDashboardUser:
 
     def test_missing_flag_treats_as_app_token(self):
         # Behavioral: without the positive flag, gate applies (deny-by-default).
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
         state = MagicMock(spec=DashboardState)
         state._slots = {}
         state._ws_client_allowed = DashboardState._ws_client_allowed.__get__(state)
@@ -1196,7 +1196,7 @@ class TestSlotsRepushFilter:
         # Wrap into a state that mimics DashboardState._serialize_for_client's
         # required surface.  We bind the real method to a MagicMock so it
         # runs against our slot map instead of a live DashboardState.
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
         state = MagicMock(spec=DashboardState)
         state._slots = slot_map
         state._serialize_for_client = (
@@ -1274,7 +1274,7 @@ class TestSlotsRepushFilter:
 
 class TestLiveScopeNarrowing:
     def setup_method(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._declared_cache.clear()
         mod._declared_refreshing.clear()
 
@@ -1282,7 +1282,7 @@ class TestLiveScopeNarrowing:
         return _allowed("slots:all", "notification")
 
     def test_narrowed_manifest_takes_effect_without_a_reconnect(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._declared_cache["mochi-pet"] = (time.monotonic(), True, _allowed("slots:own"))
         eff = mod.effective_allowed_events("mochi-pet", self._snapshot())
         assert "slots:all" not in eff, "a revoked scope must stop being honoured"
@@ -1290,7 +1290,7 @@ class TestLiveScopeNarrowing:
 
     def test_deleted_manifest_collapses_to_tier0_only(self):
         """`app disable` / uninstall leaves the socket open; scopes must go."""
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._declared_cache["mochi-pet"] = (time.monotonic(), False, frozenset())
         assert mod.effective_allowed_events("mochi-pet", self._snapshot()) == frozenset()
         assert mod.app_events_revoked("mochi-pet") is True
@@ -1301,7 +1301,7 @@ class TestLiveScopeNarrowing:
         Otherwise editing a manifest would grant a LIVE session scopes it was
         never authenticated for.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._declared_cache["mochi-pet"] = (
             time.monotonic(), True, _allowed("slots:own", "log")
         )
@@ -1314,14 +1314,14 @@ class TestLiveScopeNarrowing:
         event from every app on the first broadcast after a restart. The snapshot
         is itself an authenticated read, so leaning on it briefly widens nothing.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         snap = self._snapshot()
         with patch.object(mod, "_schedule_declared_refresh") as sched:
             assert mod.effective_allowed_events("mochi-pet", snap) == snap
             sched.assert_called_once_with("mochi-pet")
 
     def test_stale_entry_is_applied_and_refresh_scheduled(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._declared_cache["mochi-pet"] = (
             time.monotonic() - (mod._MANIFEST_EXPOSE_TTL_SECS + 5),
             True,
@@ -1333,14 +1333,14 @@ class TestLiveScopeNarrowing:
         assert eff == _allowed("notification"), "stale-but-narrower still narrows"
 
     def test_never_reads_the_disk_on_the_decision_path(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         with patch.object(mod, "get_app_manifest") as gm, \
                 patch.object(mod, "_schedule_declared_refresh"):
             mod.effective_allowed_events("mochi-pet", self._snapshot())
             gm.assert_not_called()
 
     def test_refresh_is_coalesced(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         loop = MagicMock()
         with patch.object(mod.asyncio, "get_running_loop", return_value=loop):
             for _ in range(20):
@@ -1353,7 +1353,7 @@ class TestLiveScopeNarrowing:
         Reading the manifest alone reports a disabled app's declarations
         unchanged, so the intersection would keep honouring them.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         fake = MagicMock()
         fake.permissions.events = ["slots:all", "log"]
         with patch.object(mod, "is_app_enabled", return_value=False), \
@@ -1361,7 +1361,7 @@ class TestLiveScopeNarrowing:
             assert mod._read_declared_events("mochi-pet") == (False, frozenset())
 
     def test_enabled_app_declares_its_manifest_events(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         fake = MagicMock()
         fake.permissions.events = ["slots:own"]
         with patch.object(mod, "is_app_enabled", return_value=True), \
@@ -1370,7 +1370,7 @@ class TestLiveScopeNarrowing:
 
     def test_enablement_is_checked_before_the_manifest_read(self):
         """A disabled app must not even cost a manifest parse."""
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         with patch.object(mod, "is_app_enabled", return_value=False), \
                 patch.object(mod, "get_app_manifest") as gm:
             mod._read_declared_events("mochi-pet")
@@ -1384,7 +1384,7 @@ class TestLiveScopeNarrowing:
         for a refresh interval over a filesystem hiccup. Revocation requires
         positive evidence from ``installed.json``.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         with patch.object(mod, "is_app_enabled", return_value=True), \
                 patch.object(mod, "get_app_manifest", return_value=None):
             assert mod._read_declared_events("gone") == (True, frozenset())
@@ -1401,9 +1401,9 @@ class TestLiveScopeNarrowing:
         """
         import asyncio as _aio
 
-        from kiro_crew.dashboard import ws_event_scope as mod
-        from kiro_crew.dashboard.handlers import updates as upd
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard import ws_event_scope as mod
+        from efm_go.dashboard.handlers import updates as upd
+        from efm_go.dashboard.state import DashboardState
 
         # Declaration set does not contain `log` (revoked).
         mod._declared_cache["mochi-pet"] = (time.monotonic(), True, _allowed("slots:own"))
@@ -1432,9 +1432,9 @@ class TestLiveScopeNarrowing:
     def test_log_subscriber_send_still_delivers_while_declared(self):
         import asyncio as _aio
 
-        from kiro_crew.dashboard import ws_event_scope as mod
-        from kiro_crew.dashboard.handlers import updates as upd
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard import ws_event_scope as mod
+        from efm_go.dashboard.handlers import updates as upd
+        from efm_go.dashboard.state import DashboardState
 
         mod._declared_cache["mochi-pet"] = (time.monotonic(), True, _allowed("log"))
         ws = MagicMock()
@@ -1466,9 +1466,9 @@ class TestLiveScopeNarrowing:
         """
         import asyncio as _aio
 
-        from kiro_crew.dashboard import ws_event_scope as mod
-        from kiro_crew.dashboard.handlers import updates as upd
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard import ws_event_scope as mod
+        from efm_go.dashboard.handlers import updates as upd
+        from efm_go.dashboard.state import DashboardState
 
         mod._sel_last_audit.clear()
         ws = MagicMock()
@@ -1485,7 +1485,7 @@ class TestLiveScopeNarrowing:
         state._slots = {}
         state._ws_client_allowed = DashboardState._ws_client_allowed.__get__(state)
         state._ws_log_subscribers = {ws}
-        with patch("kiro_crew.sel.sel") as sel_mock:
+        with patch("efm_go.sel.sel") as sel_mock:
             _aio.run(upd._safe_ws_send(ws, '{"type":"log"}', state))
         assert sent == ['{"type":"log"}'], "the owner must still receive the line"
         assert ws in state._ws_log_subscribers
@@ -1511,7 +1511,7 @@ class TestLiveScopeNarrowing:
         """
         src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "dashboard" / "ws.py"
+            / "src" / "efm_go" / "dashboard" / "ws.py"
         ).read_text(encoding="utf-8")
         assert 'for _owner_only in ("branch", "commit")' in src, (
             "the periodic dashboard frame must withhold checkout identity from apps"
@@ -1521,7 +1521,7 @@ class TestLiveScopeNarrowing:
         # dashboard-user tokens and still need the full snapshot.
         state_src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "dashboard" / "state.py"
+            / "src" / "efm_go" / "dashboard" / "state.py"
         ).read_text(encoding="utf-8")
         assert "branch, commit = self._build_info" in state_src, (
             "status_snapshot itself must keep returning branch/commit"
@@ -1538,7 +1538,7 @@ class TestLiveScopeNarrowing:
         """
         src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "dashboard" / "ws.py"
+            / "src" / "efm_go" / "dashboard" / "ws.py"
         ).read_text(encoding="utf-8")
         assert "effective_allowed_events(ws_app, allowed_events)" in src, (
             "subscribe_logs must resolve the live scope before replaying the ring"
@@ -1572,11 +1572,11 @@ class TestGrantsAreAudited:
         return _make_state({"s1": slot})
 
     def _enable(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._declared_cache[self.APP] = (time.monotonic(), True, frozenset())
 
     def test_an_allowed_event_is_audited_as_granted(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         self._enable()
         state = self._state_with_own_slot()
         with patch.object(mod, "_audit_decision") as audit:
@@ -1595,7 +1595,7 @@ class TestGrantsAreAudited:
         were attached per-branch instead of to the result, whichever branch was
         forgotten would show up here.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         self._enable()
         state = self._state_with_own_slot()
         batch = sorted(mod._SUBAGENT_BATCH_EVENTS)[0]
@@ -1619,7 +1619,7 @@ class TestGrantsAreAudited:
 
         # Count SEL emissions, not calls into the audit helper: the helper runs
         # every time and the window is what collapses the write.
-        with patch("kiro_crew.sel.sel") as sel_factory:
+        with patch("efm_go.sel.sel") as sel_factory:
             for _ in range(5):
                 ws_event_allowed(
                     "chat_delta", {"slot": "s1"},
@@ -1646,7 +1646,7 @@ class TestGrantsAreAudited:
         foreign._origin = ""
         state = _make_state({"s1": own, "s2": foreign})
 
-        with patch("kiro_crew.sel.sel") as sel_factory:
+        with patch("efm_go.sel.sel") as sel_factory:
             ws_event_allowed(
                 "chat_delta", {"slot": "s1"},
                 app=self.APP, allowed_events=frozenset(), state=state,
@@ -1682,11 +1682,11 @@ class TestDisabledAppLosesTheOwnSlotDefault:
     APP = "mochi-pet"
 
     def _revoke(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._declared_cache[self.APP] = (time.monotonic(), False, frozenset())
 
     def _enable(self, events: frozenset[str] = frozenset()):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._declared_cache[self.APP] = (time.monotonic(), True, events)
 
     def _own_slot_state(self):
@@ -1726,7 +1726,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
         empty envelopes instead of nothing. Denying at the gate is what makes
         "revocation collapses the socket to Tier 0" literally true.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         state = self._own_slot_state()
         batch = sorted(mod._SUBAGENT_BATCH_EVENTS)[0]
 
@@ -1744,7 +1744,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
 
     def test_slots_repush_filter_drops_own_slot_when_disabled(self):
         """Entry point 2: ``filter_slots_for_app`` never calls the gate."""
-        from kiro_crew.dashboard.ws_event_scope import filter_slots_for_app
+        from efm_go.dashboard.ws_event_scope import filter_slots_for_app
         state = self._own_slot_state()
         rows = [{"key": "s1"}]
 
@@ -1759,7 +1759,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
 
     def test_subagent_batch_filter_drops_own_items_when_disabled(self):
         """Entry point 3: ``filter_subagent_batch_for_app`` never calls the gate."""
-        from kiro_crew.dashboard.ws_event_scope import filter_subagent_batch_for_app
+        from efm_go.dashboard.ws_event_scope import filter_subagent_batch_for_app
         state = self._own_slot_state()
         items = [{"slot": "s1", "id": "a"}]
 
@@ -1775,7 +1775,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
         -- it needs an SEL record of its own for the same reason every other
         decision in this module does.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         self._enable()
         own = _make_slot(owner_app=self.APP, origin=SlotOrigin.APP, key="s1")
         foreign = _make_slot(owner_app="other-app", origin=SlotOrigin.APP, key="s2")
@@ -1793,7 +1793,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
         )
 
     def test_subagent_batch_filter_audits_each_item_decision(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         self._enable()
         own = _make_slot(owner_app=self.APP, origin=SlotOrigin.APP, key="s1")
         foreign = _make_slot(owner_app="other-app", origin=SlotOrigin.APP, key="s2")
@@ -1816,7 +1816,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
         """
         self._revoke()
         state = self._own_slot_state()
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         tier0 = sorted(mod._TIER0_ALWAYS)[0]
         assert ws_event_allowed(
             tier0, {}, app=self.APP, allowed_events=frozenset(), state=state,
@@ -1831,7 +1831,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
         real by PRIMING the cache -- see
         ``test_connect_load_primes_the_cache_so_the_first_frame_is_authoritative``.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         with patch.object(mod, "_schedule_declared_refresh") as sched:
             assert mod.app_events_revoked("never-seen") is False
             sched.assert_called_once_with("never-seen")
@@ -1843,7 +1843,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
         fallback (not revoked) for the initial slots push and the log replay --
         both of which run before any background refresh.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         fake = MagicMock()
         fake.permissions.events = ["slots:all"]
 
@@ -1859,7 +1859,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
         )
 
     def test_connect_load_reports_an_enabled_app_and_its_scopes(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         fake = MagicMock()
         fake.permissions.events = ["slots:own", "log"]
         with patch.object(mod, "is_app_enabled", return_value=True), \
@@ -1877,7 +1877,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
         ``allowed_events`` -- and they must be treated differently, since the
         latter still gets its own slots.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         snap = _allowed("slots:own")
 
         self._enable()
@@ -1906,7 +1906,7 @@ class TestDisabledAppLosesTheOwnSlotDefault:
 class TestSendWsAllComposition:
     def _sockets_and_state(self, *, app_events: frozenset[str]):
         """A state with one dashboard socket and one app socket, real methods."""
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         own = _make_slot(owner_app="mochi-pet", origin=SlotOrigin.APP, key="own")
         other = _make_slot(owner_app="other-app", origin=SlotOrigin.APP, key="foreign")
@@ -2033,7 +2033,7 @@ class TestSendWsAllComposition:
 
 class TestSlotsEnvelopePosture:
     def _state(self):
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
         slot = _make_slot(owner_app="mochi-pet", origin=SlotOrigin.APP, key="a")
         state = MagicMock(spec=DashboardState)
         state._slots = {"a": slot}
@@ -2107,7 +2107,7 @@ class TestSlotsEnvelopePosture:
         """
         src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "dashboard" / "ws.py"
+            / "src" / "efm_go" / "dashboard" / "ws.py"
         ).read_text(encoding="utf-8")
         assert "slots_envelope_extras(" in src, (
             "ws.py connect push must route the envelope through the gate helper"
@@ -2118,7 +2118,7 @@ class TestSlotsEnvelopePosture:
 
     def test_source_guard_yolo_scope_is_not_a_parallel_name(self):
         """The scope reuses the one that already gates ``yolo_expired``."""
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         assert mod._YOLO_SCOPE == mod._GLOBAL_EVENT_DECLARATIONS["yolo_expired"]
 
 
@@ -2130,12 +2130,12 @@ class TestSlotsEnvelopePosture:
 
 class TestExposeToCacheNeverBlocksTheLoop:
     def setup_method(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         mod._exposeto_cache.clear()
         mod._exposeto_refreshing.clear()
 
     def test_cold_miss_does_not_read_from_the_hot_path(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         with patch.object(mod, "get_app_manifest") as gm, \
                 patch.object(mod, "_schedule_expose_to_refresh") as sched:
             assert mod._load_expose_to("other-app") == frozenset()
@@ -2144,12 +2144,12 @@ class TestExposeToCacheNeverBlocksTheLoop:
 
     def test_cold_miss_fails_closed(self):
         """Withholding one frame is the safe direction; granting is not."""
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         with patch.object(mod, "_schedule_expose_to_refresh"):
             assert mod._load_expose_to("other-app") == frozenset()
 
     def test_stale_entry_is_served_not_reloaded(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         stale = frozenset({"mochi-pet"})
         mod._exposeto_cache["other-app"] = (
             time.monotonic() - (mod._MANIFEST_EXPOSE_TTL_SECS + 5), stale
@@ -2161,7 +2161,7 @@ class TestExposeToCacheNeverBlocksTheLoop:
             sched.assert_called_once_with("other-app")
 
     def test_fresh_entry_schedules_nothing(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         fresh = frozenset({"mochi-pet"})
         mod._exposeto_cache["other-app"] = (time.monotonic(), fresh)
         with patch.object(mod, "_schedule_expose_to_refresh") as sched:
@@ -2170,7 +2170,7 @@ class TestExposeToCacheNeverBlocksTheLoop:
 
     def test_refresh_is_coalesced_across_a_broadcast_burst(self):
         """One frame x many clients must not queue one thread job each."""
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         loop = MagicMock()
         with patch.object(mod.asyncio, "get_running_loop", return_value=loop):
             for _ in range(25):
@@ -2180,7 +2180,7 @@ class TestExposeToCacheNeverBlocksTheLoop:
     def test_no_running_loop_falls_back_to_sync_load(self):
         """Off the loop (tests, CLI) blocking is fine -- and refusing to load
         at all would leave the cache permanently cold."""
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         with patch.object(mod, "_read_expose_to", return_value=frozenset({"x"})):
             mod._schedule_expose_to_refresh("other-app")
         assert mod._exposeto_cache["other-app"][1] == frozenset({"x"})
@@ -2196,17 +2196,17 @@ class TestExposeToCacheNeverBlocksTheLoop:
         correct. A guard that pins a spelling resists the refactor instead of
         catching the regression.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod  # noqa: F401
+        from efm_go.dashboard import ws_event_scope as mod  # noqa: F401
         src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "dashboard" / "ws.py"
+            / "src" / "efm_go" / "dashboard" / "ws.py"
         ).read_text(encoding="utf-8")
 
         # Drop the import block: a loader NAME appearing in an import is not a
         # call. Then collapse whitespace so a multi-line
         # ``to_thread(\n    loader, arg\n)`` reads the same as the one-line form --
         # line-by-line matching would miss exactly that shape.
-        body = re.sub(r"from kiro_crew[^)]*?\)", "", src, flags=re.S)
+        body = re.sub(r"from efm_go[^)]*?\)", "", src, flags=re.S)
         norm = re.sub(r"\s+", " ", body)
 
         blocking_loaders = ("get_app_manifest", "load_declared_events_for_connect")
@@ -2235,7 +2235,7 @@ class TestExposeToCacheNeverBlocksTheLoop:
         """
         src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "dashboard" / "ws.py"
+            / "src" / "efm_go" / "dashboard" / "ws.py"
         ).read_text(encoding="utf-8")
         assert "if not app_enabled:" in src and "ws.close(" in src, (
             "ws.py must close the socket when the connect read reports the app "
@@ -2259,7 +2259,7 @@ class TestExposeToCacheNeverBlocksTheLoop:
         """
         import inspect
 
-        from kiro_crew.apps import manager
+        from efm_go.apps import manager
         src = inspect.getsource(manager.get_app_manifest)
         assert "from_json_file" in src and "cache" not in src.lower()
 
@@ -2278,7 +2278,7 @@ class TestSubscribeHandlerGates:
     """
 
     def _ws_source(self) -> str:
-        import kiro_crew.dashboard.ws as _ws
+        import efm_go.dashboard.ws as _ws
 
         # encoding is explicit on every source read in this file: Path.read_text()
         # defaults to the LOCALE codepage, so on Windows (cp1252) reading a module
@@ -2341,8 +2341,8 @@ class TestSubscribeHandlerGates:
         # in-process aiohttp WS.  Instead, we exercise _audit_deny directly
         # with the two reasons the handlers use, and confirm the SEL call
         # is made.
-        from kiro_crew.dashboard import ws_event_scope as _wes
-        with patch("kiro_crew.sel.sel") as sel_mock:
+        from efm_go.dashboard import ws_event_scope as _wes
+        with patch("efm_go.sel.sel") as sel_mock:
             _wes._audit_deny("mochi-pet", "subscribe_logs", "log_scope_not_declared")
             outcomes = [
                 c.kwargs.get("outcome", "")
@@ -2363,11 +2363,11 @@ class TestExposeToAppsCache:
     """
 
     def test_repeated_calls_hit_cache_and_do_not_reread_manifest(self):
-        from kiro_crew.dashboard import ws_event_scope as _wes
+        from efm_go.dashboard import ws_event_scope as _wes
         manifest = MagicMock()
         manifest.permissions.exposeToApps = ["monitor-app"]
         with patch(
-            "kiro_crew.dashboard.ws_event_scope.get_app_manifest",
+            "efm_go.dashboard.ws_event_scope.get_app_manifest",
             return_value=manifest,
         ) as m:
             state = MagicMock()
@@ -2378,9 +2378,9 @@ class TestExposeToAppsCache:
             assert m.call_count == 1
 
     def test_cache_denies_when_manifest_missing(self):
-        from kiro_crew.dashboard import ws_event_scope as _wes
+        from efm_go.dashboard import ws_event_scope as _wes
         with patch(
-            "kiro_crew.dashboard.ws_event_scope.get_app_manifest",
+            "efm_go.dashboard.ws_event_scope.get_app_manifest",
             return_value=None,
         ):
             state = MagicMock()
@@ -2388,9 +2388,9 @@ class TestExposeToAppsCache:
             assert _wes._target_exposes_to("ghost", "monitor-app", state) is False
 
     def test_cache_denies_on_manifest_load_failure(self):
-        from kiro_crew.dashboard import ws_event_scope as _wes
+        from efm_go.dashboard import ws_event_scope as _wes
         with patch(
-            "kiro_crew.dashboard.ws_event_scope.get_app_manifest",
+            "efm_go.dashboard.ws_event_scope.get_app_manifest",
             side_effect=RuntimeError("boom"),
         ):
             state = MagicMock()
@@ -2402,14 +2402,14 @@ class TestExposeToAppsCache:
         disabled app's slots -- the cross-app mirror of the check
         ``app_events_revoked`` already applies to the target's own socket.
         """
-        from kiro_crew.dashboard import ws_event_scope as _wes
+        from efm_go.dashboard import ws_event_scope as _wes
         manifest = MagicMock()
         manifest.permissions.exposeToApps = ["monitor-app"]
         with patch(
-            "kiro_crew.dashboard.ws_event_scope.get_app_manifest",
+            "efm_go.dashboard.ws_event_scope.get_app_manifest",
             return_value=manifest,
         ) as m, patch(
-            "kiro_crew.dashboard.ws_event_scope.is_app_enabled", return_value=False
+            "efm_go.dashboard.ws_event_scope.is_app_enabled", return_value=False
         ):
             state = MagicMock()
             assert _wes._target_exposes_to("mochi-pet", "monitor-app", state) is False
@@ -2443,7 +2443,7 @@ class TestEventTableCompleteness:
         declared, which is silent loss of the whole subagent stream rather than a
         loud error.
         """
-        source_root = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        source_root = Path(__file__).resolve().parents[1] / "src" / "efm_go"
         source_paths = [source_root / "subagent.py"]
         source_paths.extend(sorted((source_root / "subagent_manager").glob("*.py")))
         src = "\n".join(path.read_text(encoding="utf-8") for path in source_paths)
@@ -2464,14 +2464,14 @@ class TestEventTableCompleteness:
         unknown-event floor and is denied outright, and the SDK's slot-scoped
         drift loop stops covering it.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
         assert mod._SUBAGENT_EVENTS <= mod._SLOT_SCOPED_EVENTS, (
             mod._SUBAGENT_EVENTS - mod._SLOT_SCOPED_EVENTS
         )
 
     @staticmethod
     def _classified() -> frozenset[str]:
-        from kiro_crew.dashboard import ws_event_scope as m
+        from efm_go.dashboard import ws_event_scope as m
 
         return frozenset(
             set(m._TIER0_ALWAYS)
@@ -2488,9 +2488,9 @@ class TestEventTableCompleteness:
         import ast
         from pathlib import Path
 
-        import kiro_crew
+        import efm_go
 
-        root = Path(kiro_crew.__file__).parent
+        root = Path(efm_go.__file__).parent
         # Owner-only fan-outs never reach an app socket, so their event names
         # need no classification.
         gated = {"broadcast_ws", "broadcast_ws_subagent_subscribers"}
@@ -2591,10 +2591,10 @@ class TestUntaggedOriginIsNotUser:
     that private content."""
 
     def test_untagged_non_app_slot_is_not_user(self):
-        from kiro_crew.dashboard.state import SlotOrigin, request_slot_origin
+        from efm_go.dashboard.state import SlotOrigin, request_slot_origin
 
         src = Path(
-            __import__("kiro_crew.dashboard.state", fromlist=["x"]).__file__
+            __import__("efm_go.dashboard.state", fromlist=["x"]).__file__
         ).read_text(encoding="utf-8")
         # The fail-open derivation must be gone from the CREATION path. It
         # still exists once, inside request_slot_origin -- that is the point:
@@ -2666,7 +2666,7 @@ class TestUntaggedOriginIsNotUser:
         )
 
     def test_cron_injection_declares_cron(self):
-        import kiro_crew.dashboard.cron_inject as _ci
+        import efm_go.dashboard.cron_inject as _ci
 
         assert "origin=SlotOrigin.CRON" in Path(_ci.__file__).read_text(encoding="utf-8"), (
             "a cron result is the job's output, never something the user typed"
@@ -2681,10 +2681,10 @@ class TestUntaggedOriginIsNotUser:
         a real user slot untagged (dropping a grant an app legitimately holds)."""
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard import chat_handlers as ch
-        from kiro_crew.dashboard import chat_persistence as cp
+        from efm_go.dashboard import chat_handlers as ch
+        from efm_go.dashboard import chat_persistence as cp
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         meta = {"created_at": "2026-01-01T00:00:00", "origin": stored}
         rows = [{"role": "user", "content": "hi", "ts": "2026-01-01T00:00:01"}]
@@ -2723,7 +2723,7 @@ class TestWildcardDeclaration:
     such a manifest would keep its subscription and receive nothing."""
 
     def test_wildcard_expands_instead_of_passing_through(self):
-        from kiro_crew.dashboard.ws_event_scope import build_allowed_event_set
+        from efm_go.dashboard.ws_event_scope import build_allowed_event_set
 
         allowed = build_allowed_event_set(["*"])
         assert "*" not in allowed, "the wildcard must be expanded, not stored"
@@ -2732,7 +2732,7 @@ class TestWildcardDeclaration:
         assert "notification:all" in allowed
 
     def test_wildcard_covers_every_global_declaration(self):
-        from kiro_crew.dashboard.ws_event_scope import (
+        from efm_go.dashboard.ws_event_scope import (
             _GLOBAL_EVENT_DECLARATIONS,
             build_allowed_event_set,
         )
@@ -2744,7 +2744,7 @@ class TestWildcardDeclaration:
         assert not missing, f"wildcard omits declarations: {missing}"
 
     def test_ordinary_declarations_pass_through_unchanged(self):
-        from kiro_crew.dashboard.ws_event_scope import build_allowed_event_set
+        from efm_go.dashboard.ws_event_scope import build_allowed_event_set
 
         assert build_allowed_event_set(["slots:own", "notification"]) == frozenset(
             {"slots:own", "notification"}
@@ -2766,8 +2766,8 @@ class TestNotificationSourceParsing:
 
     def test_constants_match_the_real_emitters(self):
         """Pin the two producers, so a rename on either side fails here."""
-        from kiro_crew.dashboard import ws_event_scope as wes
-        from kiro_crew.notifications import bus
+        from efm_go.dashboard import ws_event_scope as wes
+        from efm_go.notifications import bus
 
         # state.notify() -> payload_from_legacy() stamps this exact value.
         assert wes._SYSTEM_SOURCE == bus._SYSTEM_SOURCE
@@ -2775,13 +2775,13 @@ class TestNotificationSourceParsing:
         # api_push_notification builds `source=f"app:{app_name}"`.
         push = Path(
             __import__(
-                "kiro_crew.dashboard.handlers.notifications_push", fromlist=["x"]
+                "efm_go.dashboard.handlers.notifications_push", fromlist=["x"]
             ).__file__
         ).read_text(encoding="utf-8")
         assert f'source=f"{wes._APP_SOURCE_PREFIX}{{app_name}}"' in push
 
     def test_parses_the_app_identity_out_of_the_prefix(self):
-        from kiro_crew.dashboard.ws_event_scope import notification_source_app
+        from efm_go.dashboard.ws_event_scope import notification_source_app
 
         assert notification_source_app("app:mochi-pet") == "mochi-pet"
         # A bare name is NOT an app push: it never appears on the wire, and
@@ -2828,7 +2828,7 @@ class TestNotificationSourceParsing:
         handed an app the ack stream for every other app's and the system's
         notifications. Unattributable metadata takes the broad scope.
         """
-        from kiro_crew.dashboard.ws_event_scope import (
+        from efm_go.dashboard.ws_event_scope import (
             _SOURCE_FILTERED_EVENTS,
             _UNATTRIBUTED_NOTIFICATION_EVENTS,
         )
@@ -2872,8 +2872,8 @@ class TestAppEventFrames:
 
     def test_constant_matches_the_event_bus(self):
         """Pin the mirrored constant against the app layer's own definition."""
-        from kiro_crew.apps.event_bus import APP_EVENT_WS_TYPE
-        from kiro_crew.dashboard.ws_event_scope import _APP_EVENT_WS_TYPE
+        from efm_go.apps.event_bus import APP_EVENT_WS_TYPE
+        from efm_go.dashboard.ws_event_scope import _APP_EVENT_WS_TYPE
 
         assert _APP_EVENT_WS_TYPE == APP_EVENT_WS_TYPE
 
@@ -2893,7 +2893,7 @@ class TestAppEventFrames:
         """`events: ["*"]` expands into CORE scopes, which cannot contain an
         app-chosen event name -- so ownership, not a second declaration lookup,
         has to decide, or every wildcard app loses its own events."""
-        from kiro_crew.dashboard.ws_event_scope import build_allowed_event_set
+        from efm_go.dashboard.ws_event_scope import build_allowed_event_set
 
         state = _make_state()
         assert ws_event_allowed(
@@ -2926,8 +2926,8 @@ class TestConstantValuedEventNamesAreClassified:
     constant-valued types explicitly."""
 
     def test_app_event_is_classified(self):
-        from kiro_crew.apps.event_bus import APP_EVENT_WS_TYPE
-        from kiro_crew.dashboard import ws_event_scope as wes
+        from efm_go.apps.event_bus import APP_EVENT_WS_TYPE
+        from efm_go.dashboard import ws_event_scope as wes
 
         src = Path(wes.__file__).read_text(encoding="utf-8")
         assert APP_EVENT_WS_TYPE in src, (
@@ -2949,7 +2949,7 @@ class TestApprovalResolvedCarriesSlot:
 
         from chat_test_helpers import _make_ready_kiro_prerequisite
 
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         sessions = MagicMock(count=0)
         sessions.remove = AsyncMock()
@@ -2979,7 +2979,7 @@ class TestApprovalResolvedCarriesSlot:
             fut: asyncio.Future = asyncio.get_running_loop().create_future()
             slot._approval_futures["a1"] = fut
             with patch.object(state, "broadcast_ws") as bws, patch(
-                "kiro_crew.dashboard.state.sel"
+                "efm_go.dashboard.state.sel"
             ):
                 state.resolve_approval("a1", True)
             return [c for c in bws.call_args_list if c.args[0] == "approval_resolved"]
@@ -3001,7 +3001,7 @@ class TestApprovalResolvedCarriesSlot:
             fut: asyncio.Future = asyncio.get_running_loop().create_future()
             state._approval_futures["b1"] = fut
             with patch.object(state, "broadcast_ws") as bws, patch(
-                "kiro_crew.dashboard.state.sel"
+                "efm_go.dashboard.state.sel"
             ):
                 state.resolve_state_approval("b1", True)
             return [c for c in bws.call_args_list if c.args[0] == "approval_resolved"]
@@ -3024,7 +3024,7 @@ class TestApprovalResolvedCarriesSlot:
             fut: asyncio.Future = asyncio.get_running_loop().create_future()
             slot._approval_futures["a1"] = fut
             with patch.object(state, "broadcast_ws") as bws, patch(
-                "kiro_crew.dashboard.state.sel"
+                "efm_go.dashboard.state.sel"
             ):
                 state.resolve_approval("a1", True)
             return next(
@@ -3048,7 +3048,7 @@ class TestApprovalResolvedCarriesSlot:
         import re
 
         roots = [
-            Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "dashboard" / f
+            Path(__file__).resolve().parents[1] / "src" / "efm_go" / "dashboard" / f
             for f in (
                 "interaction_coordinator.py",
                 "chat_handlers.py",
@@ -3083,14 +3083,14 @@ class TestApiStatusRequiresDeclaration:
     def test_declared_app_still_reaches_api_status(self):
         """Removing the implicit grant must not break apps that declare it."""
         with patch(
-            "kiro_crew.dashboard.token_auth._app_api_allowlist",
+            "efm_go.dashboard.token_auth._app_api_allowlist",
             return_value=("/api/status",),
         ):
             assert app_token_path_allowed("design-critique", "/api/status") is True
 
     def test_undeclared_app_is_denied_api_status(self):
         with patch(
-            "kiro_crew.dashboard.token_auth._app_api_allowlist", return_value=()
+            "efm_go.dashboard.token_auth._app_api_allowlist", return_value=()
         ):
             assert app_token_path_allowed("mochi-pet", "/api/status") is False
 
@@ -3109,7 +3109,7 @@ class TestApiStatusRequiresDeclaration:
 
         builtins = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "apps" / "builtins"
+            / "src" / "efm_go" / "apps" / "builtins"
         )
         frontends = (
             Path(__file__).resolve().parents[1] / "website" / "src" / "apps"
@@ -3210,7 +3210,7 @@ class TestGlobalEventWithSlotDoesNotBypassScope:
         caller flat-merges a slot onto a global notification frame."""
         gw = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "slack" / "gateway.py"
+            / "src" / "efm_go" / "slack" / "gateway.py"
         ).read_text(encoding="utf-8")
         assert 'meta={"slot": slot.key}' in gw
 
@@ -3218,7 +3218,7 @@ class TestGlobalEventWithSlotDoesNotBypassScope:
         """Source guard on the mechanism: bus.push merges meta keys flat."""
         bus = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "notifications" / "bus.py"
+            / "src" / "efm_go" / "notifications" / "bus.py"
         ).read_text(encoding="utf-8")
         assert "note[key] = value" in bus
 
@@ -3249,7 +3249,7 @@ class TestSubagentBatchFrames:
         )
 
     def test_filter_keeps_only_own_items(self):
-        from kiro_crew.dashboard.ws_event_scope import filter_subagent_batch_for_app
+        from efm_go.dashboard.ws_event_scope import filter_subagent_batch_for_app
 
         state = self._state()
         items = [
@@ -3260,14 +3260,14 @@ class TestSubagentBatchFrames:
         assert [i["slot"] for i in kept] == ["mine"]
 
     def test_filter_drops_items_with_unresolvable_slot(self):
-        from kiro_crew.dashboard.ws_event_scope import filter_subagent_batch_for_app
+        from efm_go.dashboard.ws_event_scope import filter_subagent_batch_for_app
 
         state = self._state()
         items = [{"id": "a1", "slot": "gone"}, {"id": "a2"}, "notadict"]
         assert filter_subagent_batch_for_app(items, "mochi-pet", frozenset(), state) == []
 
     def test_subagent_all_sees_every_item(self):
-        from kiro_crew.dashboard.ws_event_scope import filter_subagent_batch_for_app
+        from efm_go.dashboard.ws_event_scope import filter_subagent_batch_for_app
 
         state = self._state()
         items = [{"id": "a1", "slot": "mine"}, {"id": "a2", "slot": "theirs"}]
@@ -3281,7 +3281,7 @@ class TestSubagentBatchFrames:
         these two frames AND seeds every buffered row with its slot."""
         src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "subagent_scale.py"
+            / "src" / "efm_go" / "subagent_scale.py"
         ).read_text(encoding="utf-8")
         assert '"subagent_batch_update"' in src
         assert '"subagent_batch_chunks"' in src
@@ -3292,11 +3292,11 @@ class TestSubagentBatchFrames:
 
     def test_batch_item_key_map_matches_the_emitter(self):
         """The payload keys the filter reads must be the ones actually sent."""
-        from kiro_crew.dashboard.ws_event_scope import _SUBAGENT_BATCH_ITEM_KEY
+        from efm_go.dashboard.ws_event_scope import _SUBAGENT_BATCH_ITEM_KEY
 
         src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "subagent_scale.py"
+            / "src" / "efm_go" / "subagent_scale.py"
         ).read_text(encoding="utf-8")
         assert '"subagent_batch_update", {"updates": updates}' in src
         assert '"subagent_batch_chunks", {"chunks": chunks}' in src
@@ -3313,15 +3313,15 @@ class TestSuppressedDenyCountIsReported:
     frame (this gate runs per event PER CLIENT on the broadcast hot path)."""
 
     def _clear(self):
-        from kiro_crew.dashboard import ws_event_scope as _wes
+        from efm_go.dashboard import ws_event_scope as _wes
         _wes._sel_last_audit.clear()
 
     def test_next_emission_reports_the_suppressed_tally(self):
-        from kiro_crew.dashboard import ws_event_scope as _wes
+        from efm_go.dashboard import ws_event_scope as _wes
 
         self._clear()
         state = _make_state({})
-        with patch("kiro_crew.sel.sel") as m:
+        with patch("efm_go.sel.sel") as m:
             # First denial emits with no tally.
             _wes._audit_deny("app-x", "chat_chunk", "slot_missing")
             assert m.return_value.log_api_access.call_count == 1
@@ -3346,10 +3346,10 @@ class TestSuppressedDenyCountIsReported:
         self._clear()
 
     def test_tally_resets_after_emission(self):
-        from kiro_crew.dashboard import ws_event_scope as _wes
+        from efm_go.dashboard import ws_event_scope as _wes
 
         self._clear()
-        with patch("kiro_crew.sel.sel"):
+        with patch("efm_go.sel.sel"):
             _wes._audit_deny("app-y", "log", "unknown_event")
             key = ("app-y", "log", "unknown_event")
             assert _wes._sel_last_audit[key][1] == 0
@@ -3424,9 +3424,9 @@ class TestDirectSendGrantsAreAudited:
         """Run ``api_ws`` through connect + initial slots push for an app token."""
         import asyncio as _aio
 
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard import ws_event_scope
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws_event_scope
+        from efm_go.dashboard.handlers import source_providers
 
         monkeypatch.setattr(ws_event_scope, "is_app_enabled", lambda _n: True)
         monkeypatch.setattr(
@@ -3497,9 +3497,9 @@ class TestDirectSendGrantsAreAudited:
         """
         import asyncio as _aio
 
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard import ws_event_scope
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws_event_scope
+        from efm_go.dashboard.handlers import source_providers
 
         monkeypatch.setattr(ws_event_scope, "is_app_enabled", lambda _n: True)
         monkeypatch.setattr(
@@ -3558,14 +3558,14 @@ class TestDirectSendGrantsAreAudited:
         )
 
     def test_audit_helper_records_the_grant(self):
-        from kiro_crew.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws as dashboard_ws
 
         with patch.object(dashboard_ws, "_audit_allow") as allow:
             dashboard_ws._audit_grant_quietly("mochi-pet", "dashboard")
         allow.assert_called_once_with("mochi-pet", "dashboard")
 
     def test_audit_helper_names_an_unknown_app_rather_than_sending_empty(self):
-        from kiro_crew.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws as dashboard_ws
 
         with patch.object(dashboard_ws, "_audit_allow") as allow:
             dashboard_ws._audit_grant_quietly("", "dashboard")
@@ -3579,7 +3579,7 @@ class TestDirectSendGrantsAreAudited:
         copy of this branch is what makes it testable at all -- inlined at three
         call sites it was three never-executed paths.
         """
-        from kiro_crew.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws as dashboard_ws
 
         with patch.object(
             dashboard_ws, "_audit_allow", side_effect=RuntimeError("sink down")
@@ -3605,7 +3605,7 @@ class TestDirectSendGrantsAreAudited:
         """
         src = (
             Path(__file__).resolve().parents[1]
-            / "src" / "kiro_crew" / "dashboard" / "ws.py"
+            / "src" / "efm_go" / "dashboard" / "ws.py"
         ).read_text(encoding="utf-8")
         # The app-token narrowing block inside _push_status: it strips the
         # owner-only fields, and the grant must be recorded in the same branch.
@@ -3656,8 +3656,8 @@ def _granted(sel_mock) -> list[tuple[str, str]]:
 
 class TestDashboardUserGrantsAreAudited:
     def _predicate(self):
-        from kiro_crew.dashboard import ws_event_scope as mod
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard import ws_event_scope as mod
+        from efm_go.dashboard.state import DashboardState
 
         mod._sel_last_audit.clear()
         state = MagicMock(spec=DashboardState)
@@ -3674,10 +3674,10 @@ class TestDashboardUserGrantsAreAudited:
         unnamed app token's (``<unknown>``) or the fail-closed empty-app deny
         (``<empty>``).
         """
-        from kiro_crew.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
+        from efm_go.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
 
         allowed = self._predicate()
-        with patch("kiro_crew.sel.sel") as sel_mock:
+        with patch("efm_go.sel.sel") as sel_mock:
             assert allowed(_dashboard_user_ws(), "chat_chunk", {"slot": "chat-1"}) is True
         assert _granted(sel_mock) == [(DASHBOARD_USER_AUDITEE, "chat_chunk")]
         record = sel_mock.return_value.log_api_access.call_args.kwargs
@@ -3691,11 +3691,11 @@ class TestDashboardUserGrantsAreAudited:
         A chunk flood collapses to one record; a different event type is a
         different key and gets its own.
         """
-        from kiro_crew.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
+        from efm_go.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
 
         allowed = self._predicate()
         ws = _dashboard_user_ws()
-        with patch("kiro_crew.sel.sel") as sel_mock:
+        with patch("efm_go.sel.sel") as sel_mock:
             for _ in range(5):
                 assert allowed(ws, "chat_chunk", {"slot": "chat-1"}) is True
             assert allowed(ws, "slots", []) is True
@@ -3709,7 +3709,7 @@ class TestDashboardUserGrantsAreAudited:
         even when the sink raises. Patched at the module attribute the
         chokepoint resolves at call time, so this exercises the real swallow.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
+        from efm_go.dashboard import ws_event_scope as mod
 
         allowed = self._predicate()
         with patch.object(mod, "_audit_allow", side_effect=RuntimeError("sink down")):
@@ -3719,15 +3719,15 @@ class TestDashboardUserGrantsAreAudited:
         """No manifest can claim the label, so a record under it is always the
         dashboard user and never an app that picked a confusable id.
         """
-        from kiro_crew.apps.manifest import KEBAB_RE
-        from kiro_crew.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
+        from efm_go.apps.manifest import KEBAB_RE
+        from efm_go.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
 
         assert KEBAB_RE.match(DASHBOARD_USER_AUDITEE) is None
         assert DASHBOARD_USER_AUDITEE not in ("", "<unknown>", "<empty>")
 
     def test_grant_auditee_names_the_socket_kind(self):
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
 
         assert dashboard_ws._grant_auditee(_dashboard_user_ws(), "") == DASHBOARD_USER_AUDITEE
         app_ws = MagicMock()
@@ -3762,8 +3762,8 @@ class TestDashboardUserGrantsAreAudited:
         return Request()
 
     def _wire(self, monkeypatch, fake_ws):
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.handlers import source_providers
 
         monkeypatch.setattr(dashboard_ws, "_check_ws_origin", lambda request: None)
         monkeypatch.setattr(dashboard_ws.web, "WebSocketResponse", lambda **kwargs: fake_ws)
@@ -3777,8 +3777,8 @@ class TestDashboardUserGrantsAreAudited:
         """
         import asyncio as _aio
 
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
 
         state = self._dashboard_state()
         fake_ws = TestDirectSendGrantsAreAudited()._fake_ws()
@@ -3799,7 +3799,7 @@ class TestDashboardUserGrantsAreAudited:
 
         from aiohttp import WSMsgType
 
-        from kiro_crew.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws as dashboard_ws
 
         class Msg:
             type = WSMsgType.TEXT
@@ -3827,8 +3827,8 @@ class TestDashboardUserGrantsAreAudited:
         """The ring replay hands over the privileged gateway log history; the
         grant that admits the owner to it was gated out of the record.
         """
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
 
         state = self._dashboard_state()
         with patch.object(dashboard_ws, "_audit_grant_quietly") as audit:
@@ -3845,9 +3845,9 @@ class TestDashboardUserGrantsAreAudited:
         present after a gateway restart is the same record the live broadcast
         leaves -- the divergence the report worried about cannot open.
         """
-        from kiro_crew.dashboard import ws_event_scope as mod
-        from kiro_crew.dashboard.state import DashboardState
-        from kiro_crew.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
+        from efm_go.dashboard import ws_event_scope as mod
+        from efm_go.dashboard.state import DashboardState
+        from efm_go.dashboard.ws_event_scope import DASHBOARD_USER_AUDITEE
 
         mod._sel_last_audit.clear()
         state = self._dashboard_state()
@@ -3865,7 +3865,7 @@ class TestDashboardUserGrantsAreAudited:
             }
         ]
         state.subagents = None
-        with patch("kiro_crew.sel.sel") as sel_mock:
+        with patch("efm_go.sel.sel") as sel_mock:
             fake_ws = self._drive_one_message(
                 monkeypatch, state, {"type": "subscribe_subagents"}
             )
@@ -3883,7 +3883,7 @@ class TestDashboardUserGrantsAreAudited:
         never reaches it.
         """
         src = (
-            Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "dashboard" / "ws.py"
+            Path(__file__).resolve().parents[1] / "src" / "efm_go" / "dashboard" / "ws.py"
         ).read_text(encoding="utf-8")
         marker = 'for _owner_only in ("branch", "commit"):'
         assert marker in src, "the app-token narrowing block moved; re-anchor this guard"

@@ -1,6 +1,6 @@
 """Contracts the snapshot family must keep whatever module each rule lives in.
 
-``kiro_crew.snapshot`` is the command and API facade; component resolution, archive
+``efm_go.snapshot`` is the command and API facade; component resolution, archive
 format and staging, restore transactions and merge algorithms live in owner modules
 behind it. These tests pin what a caller of the facade can observe -- the names it
 exports, the CLI surface, the bundle a snapshot writes, and what importing it loads --
@@ -23,14 +23,14 @@ from unittest import mock
 import pytest
 from test_snapshot import _setup_fake_kirocrew, unpinnable_argv
 
-from kiro_crew import pinned_fs
-from kiro_crew import snapshot as snap
+from efm_go import pinned_fs
+from efm_go import snapshot as snap
 
 REPO_SRC = Path(__file__).resolve().parents[1] / "src"
 
-#: Every attribute a caller may import or patch through ``kiro_crew.snapshot``; portability,
+#: Every attribute a caller may import or patch through ``efm_go.snapshot``; portability,
 #: the dashboard handlers, the AWS Control backup, the CLI and the tests reach these by this
-#: path. Derived by AST from ``src/kiro_crew/snapshot.py`` at 20ed6a1dc, the facade the
+#: path. Derived by AST from ``src/efm_go/snapshot.py`` at 20ed6a1dc, the facade the
 #: owner modules were split from, and not chosen by hand: every module-level ``def``,
 #: ``class`` and assignment (the ``try``-bound ``_DASHBOARD_PORT`` included) plus every
 #: name its module-level ``from ... import`` statements bind. Left out are the
@@ -200,7 +200,7 @@ FACADE_NAMES = frozenset(
 
 def test_the_facade_still_answers_every_name_it_exported() -> None:
     missing = sorted(n for n in FACADE_NAMES if not hasattr(snap, n))
-    assert missing == [], f"kiro_crew.snapshot no longer exports: {missing}"
+    assert missing == [], f"efm_go.snapshot no longer exports: {missing}"
 
 
 def test_the_facade_binds_the_real_stdlib_modules_tests_patch_through() -> None:
@@ -430,7 +430,7 @@ def test_the_bundle_a_snapshot_writes_is_unchanged(
 
 
 def test_importing_the_facade_keeps_the_lazy_owners_unloaded(tmp_path: Path) -> None:
-    """``kiro_crew.snapshot`` is on the gateway's boot path; what it defers must stay deferred.
+    """``efm_go.snapshot`` is on the gateway's boot path; what it defers must stay deferred.
 
     The outbound redaction pass is imported only by a command that prepares an outbound
     copy, and the dashboard's notification worker only by a restore that writes
@@ -439,8 +439,8 @@ def test_importing_the_facade_keeps_the_lazy_owners_unloaded(tmp_path: Path) -> 
     """
     script = textwrap.dedent("""
         import sys
-        import kiro_crew.snapshot
-        deferred = ("kiro_crew.snapshot_redact", "kiro_crew.dashboard.state")
+        import efm_go.snapshot
+        deferred = ("efm_go.snapshot_redact", "efm_go.dashboard.state")
         loaded = [name for name in deferred if name in sys.modules]
         assert loaded == [], loaded
         """)

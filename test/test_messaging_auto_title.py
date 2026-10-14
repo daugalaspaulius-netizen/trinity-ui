@@ -22,8 +22,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, EVENT_TEXT_CHUNK
-from kiro_crew.messaging import auto_title
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, EVENT_TEXT_CHUNK
+from efm_go.messaging import auto_title
 
 _KEY = "telegram:kirocrew:direct:4242"
 
@@ -828,7 +828,7 @@ class TestDeletedDuringTheTurn:
         so a whole dispatcher would add a Telegram client and a session store to
         the fixture without changing what is measured.
         """
-        from kiro_crew.telegram.transport_dispatch import TelegramDispatcher
+        from efm_go.telegram.transport_dispatch import TelegramDispatcher
 
         titles: list[str] = []
 

@@ -31,20 +31,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import history as history_mod
-from kiro_crew.config.loader import config_dir, config_path
-from kiro_crew.context import (
+from efm_go import history as history_mod
+from efm_go.config.loader import config_dir, config_path
+from efm_go.context import (
     CONTEXT_GROUP_MEMORY,
     CONTEXT_GROUP_PROJECT,
     SWITCHABLE_CONTEXT_GROUPS,
     ContextBuilder,
     _config_scoped_groups,
 )
-from kiro_crew.history import ConversationLog, HistoryConsolidator
-from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
-from kiro_crew.learn import Lesson, LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.history import ConversationLog, HistoryConsolidator
+from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
+from efm_go.learn import Lesson, LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 ALL_GROUPS = frozenset(SWITCHABLE_CONTEXT_GROUPS)
 
@@ -235,11 +235,11 @@ class TestValidationPathIgnoresInjectionConfig:
         builder = _builder(tmp_path)
         calls: list[object] = []
         monkeypatch.setattr(
-            "kiro_crew.member_essential_context.member_context_identity",
+            "efm_go.member_essential_context.member_context_identity",
             lambda member, *, member_is_id=True: ("alice", "template"),
         )
         monkeypatch.setattr(
-            "kiro_crew.context._config_scoped_groups",
+            "efm_go.context._config_scoped_groups",
             lambda groups, cfg=None: calls.append(groups) or groups,
         )
         # Downstream rendering needs a fully provisioned V2 member; this test is
@@ -359,7 +359,7 @@ class TestLessonsRouteGate:
     @pytest.mark.asyncio
     async def test_post_api_lessons_refuses_when_disabled(self, tmp_path):
         _write_config({"persistence_enabled": False})
-        from kiro_crew.dashboard.handlers import cron as cron_mod
+        from efm_go.dashboard.handlers import cron as cron_mod
 
         req = MagicMock()
         req.app = {"state": MagicMock()}
@@ -390,7 +390,7 @@ class TestConsolidateRouteGate:
         leaves no trace that the switch turned work away.
         """
         _write_config({"persistence_enabled": False})
-        from kiro_crew.dashboard.handlers import memory as memory_mod
+        from efm_go.dashboard.handlers import memory as memory_mod
 
         req = MagicMock()
         req.app = {"state": MagicMock()}
@@ -417,7 +417,7 @@ class TestConsolidateRouteGate:
 class TestLearnCliGate:
     def test_learn_add_refuses_when_disabled(self, tmp_path, capsys):
         _write_config({"persistence_enabled": False})
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         args = argparse.Namespace(
             learn_action="add", rule="Always frobnicate", category="tool", negative=None
@@ -446,7 +446,7 @@ class TestTaskrunnerLessonGate:
 
     async def _capture_reached(self) -> bool:
         """Drive the extractor on a stub and report whether it ran past the gate."""
-        from kiro_crew.taskrunner import TaskRunner
+        from efm_go.taskrunner import TaskRunner
 
         reached = False
 

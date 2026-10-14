@@ -4,7 +4,7 @@
 what the upload picker's ``accept`` filter and the "Supported formats" copy
 advertise until ``GET /api/knowledge/config`` resolves. That endpoint serves
 ``sorted(FileReader.SUPPORTED - {''})``, so the fallback is a mirror of
-``FileReader.SUPPORTED`` (``kiro_crew.knowledge.readers``).
+``FileReader.SUPPORTED`` (``efm_go.knowledge.readers``).
 
 They must stay identical. If the backend gains a format the fallback lacks, the
 picker greys out files the backend would ingest fine (and the copy under-sells
@@ -22,8 +22,8 @@ import json
 import re
 from pathlib import Path
 
-from kiro_crew.dashboard.handlers.knowledge import _MAX_INGEST_FILE_SIZE
-from kiro_crew.knowledge.readers import FileReader
+from efm_go.dashboard.handlers.knowledge import _MAX_INGEST_FILE_SIZE
+from efm_go.knowledge.readers import FileReader
 
 _WEBSITE = Path(__file__).resolve().parents[1] / "website"
 _HELPERS = _WEBSITE / "src" / "pages" / "knowledge" / "helpers.ts"

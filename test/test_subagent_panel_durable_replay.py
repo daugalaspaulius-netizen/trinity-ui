@@ -19,17 +19,17 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import subagent_persistence
-from kiro_crew.dashboard import ws_event_scope as scope_module
-from kiro_crew.dashboard.chat_utils import subagent_event_slot
-from kiro_crew.dashboard.handlers import messaging
-from kiro_crew.dashboard.state import (
+from efm_go import subagent_persistence
+from efm_go.dashboard import ws_event_scope as scope_module
+from efm_go.dashboard.chat_utils import subagent_event_slot
+from efm_go.dashboard.handlers import messaging
+from efm_go.dashboard.state import (
     NATIVE_SUBAGENT_TERMINAL_TTL_SECS,
     PERSISTED_SUBAGENT_REPLAY_KEEP,
     PERSISTED_SUBAGENT_REPLAY_MAX_AGE_SECS,
 )
-from kiro_crew.dashboard.ws import build_persisted_subagent_frame
-from kiro_crew.dashboard.ws_event_scope import (
+from efm_go.dashboard.ws import build_persisted_subagent_frame
+from efm_go.dashboard.ws_event_scope import (
     persisted_precap_denial_reason,
     persisted_precap_readings,
     persisted_replay_denial_reason,
@@ -37,7 +37,7 @@ from kiro_crew.dashboard.ws_event_scope import (
     slot_owner_snapshot,
     visible_subagent_slot_keys,
 )
-from kiro_crew.subagent_persistence import (
+from efm_go.subagent_persistence import (
     _PANEL_AGENT_CAP,
     _PANEL_APP_CAP,
     _PANEL_CANDIDATE_MULTIPLE,
@@ -69,7 +69,7 @@ def messaging_crew_log_emit():
     Patched there rather than on ``messaging``: the helper does a local import, so
     a name set on ``messaging`` is never read.
     """
-    from kiro_crew.crew_log import emit
+    from efm_go.crew_log import emit
 
     return emit
 
@@ -83,7 +83,7 @@ def agent_root(tmp_path, monkeypatch):
     """Point persistence at a registry below this test's temp directory."""
     root = tmp_path / "subagents"
     root.mkdir()
-    monkeypatch.setattr("kiro_crew.subagent_persistence._SUBAGENTS_DIR", root)
+    monkeypatch.setattr("efm_go.subagent_persistence._SUBAGENTS_DIR", root)
     return root
 
 
@@ -199,7 +199,7 @@ class TestLiveStateWins:
 
     def test_an_excluded_folder_is_never_even_read(self, agent_root, monkeypatch):
         """Exclusion happens during the walk, so a live run costs no state read."""
-        from kiro_crew import subagent_persistence
+        from efm_go import subagent_persistence
 
         write_record(agent_root, "liveone")
         reads: list[str] = []
@@ -469,7 +469,7 @@ class TestRetainedFieldsAreBounded:
         self, agent_root, monkeypatch
     ):
         """Unreadable candidates must not let the walk grow with the registry."""
-        from kiro_crew import subagent_persistence
+        from efm_go import subagent_persistence
 
         moment = time.time()
         for index in range(60):
@@ -531,7 +531,7 @@ class TestBounds:
 
     def test_folders_outside_the_window_are_never_opened(self, agent_root, monkeypatch):
         """The age filter runs during the walk, so a stale folder costs no read."""
-        from kiro_crew import subagent_persistence
+        from efm_go import subagent_persistence
 
         moment = time.time()
         write_record(agent_root, "fresh01", started=moment - 30, died=moment - 10, mtime=moment - 1)
@@ -598,7 +598,7 @@ class TestResultText:
     def test_a_sensitive_result_path_is_not_read(self, agent_root, monkeypatch):
         """The same guard the single-agent read applies, at the one place a file opens."""
         write_record(agent_root, "res555", result="secret material")
-        monkeypatch.setattr("kiro_crew.subagent_persistence.is_sensitive_path", lambda path: True)
+        monkeypatch.setattr("efm_go.subagent_persistence.is_sensitive_path", lambda path: True)
         (record,) = panel(keep=10, max_age_secs=DAY, include_result=True)
         assert record["result"] == ""
 
@@ -622,7 +622,7 @@ class TestCorruptFolders:
 
     def test_absent_registry_reads_as_empty(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.subagent_persistence._SUBAGENTS_DIR", tmp_path / "never-created"
+            "efm_go.subagent_persistence._SUBAGENTS_DIR", tmp_path / "never-created"
         )
         assert panel(keep=10, max_age_secs=DAY) == []
 
@@ -769,7 +769,7 @@ class TestEqualityKeysAreRefusedNotClamped:
 
     def test_an_oversized_id_drops_the_record(self, agent_root, monkeypatch):
         """The id is bounded by the filesystem in practice; the check does not rely on that."""
-        from kiro_crew import subagent_persistence
+        from efm_go import subagent_persistence
 
         write_record(agent_root, "id111")
         monkeypatch.setattr(subagent_persistence, "_PANEL_ID_CAP", 3)
@@ -857,7 +857,7 @@ class TestOverflowIsCountedNotHidden:
         self, agent_root, monkeypatch
     ):
         """Past the scan's own window the count can only be a lower bound."""
-        from kiro_crew import subagent_persistence
+        from efm_go import subagent_persistence
 
         monkeypatch.setattr(subagent_persistence, "_PANEL_CANDIDATE_MULTIPLE", 1)
         self.seed(agent_root, 6)
@@ -875,7 +875,7 @@ class TestOverflowIsCountedNotHidden:
 
     def test_the_result_read_is_skipped_for_records_past_the_cap(self, agent_root, monkeypatch):
         """Counting overflow must not pay for output nobody will see."""
-        from kiro_crew import subagent_persistence
+        from efm_go import subagent_persistence
 
         moment = time.time()
         for index in range(4):
@@ -910,9 +910,9 @@ class TestTheCarryForwardReadIsNeverOnTheLoop:
     """
 
     MODULES = (
-        "src/kiro_crew/subagent_manager/terminal.py",
-        "src/kiro_crew/subagent_manager/monitoring.py",
-        "src/kiro_crew/subagent_manager/waves.py",
+        "src/efm_go/subagent_manager/terminal.py",
+        "src/efm_go/subagent_manager/monitoring.py",
+        "src/efm_go/subagent_manager/waves.py",
     )
     # Resolved from this file, not from the process working directory: a worker
     # whose cwd is not the invocation root would otherwise read these paths from
@@ -1194,7 +1194,7 @@ class TestElapsedMeasuresTheRunNotTheDeliveryWait:
         paths that never had it, for a value that is not wanted. Counted in both
         directions, because the whole point is which callers pay it.
         """
-        import kiro_crew.subagent_persistence as persistence
+        import efm_go.subagent_persistence as persistence
 
         write_record(agent_root, "read111", tombstone_cause=None)
         reads: list[str] = []
@@ -1841,7 +1841,7 @@ class TestTheCallersFilterRunsBeforeTheCap:
         assert ids(result.records) == ["any001"]
 
     def test_the_result_read_is_still_skipped_past_the_cap(self, agent_root, monkeypatch):
-        from kiro_crew import subagent_persistence
+        from efm_go import subagent_persistence
 
         moment = time.time()
         for index in range(3):
@@ -2107,7 +2107,7 @@ class TestADetachedSettleBatchSurvivesCancellation:
 
     def delivery(self, agent_id: str, elapsed: float = 1.5, credits: float = 0.25):
         """The real frozen dataclass, so these pin the shipped contract."""
-        from kiro_crew.subagent import SubagentDelivery
+        from efm_go.subagent import SubagentDelivery
 
         return SubagentDelivery(agent_id, elapsed, credits)
 
@@ -2191,7 +2191,7 @@ class TestADetachedSettleBatchSurvivesCancellation:
 
         root = pathlib.Path(__file__).resolve().parents[1]
         tree = ast.parse(
-            (root / "src/kiro_crew/subagent_manager/waves.py").read_text(encoding="utf-8")
+            (root / "src/efm_go/subagent_manager/waves.py").read_text(encoding="utf-8")
         )
         settle = next(
             fn
@@ -2387,7 +2387,7 @@ class TestADismissalOutlivesTheManager:
 
     def test_settle_before_delete_records_the_dismissal(self, agent_root, monkeypatch):
         """The pop and the durable record are one act, not two the route must pair."""
-        import kiro_crew.subagent as subagent_module
+        import efm_go.subagent as subagent_module
 
         write_record(agent_root, "a1")
         recorded: list[str] = []
@@ -2410,7 +2410,7 @@ class TestADismissalOutlivesTheManager:
         """It is a synchronous file write, and its caller is a coroutine."""
         import inspect
 
-        import kiro_crew.subagent as subagent_module
+        import efm_go.subagent as subagent_module
 
         source = inspect.getsource(subagent_module.SubagentManager.settle_before_delete)
         assert "asyncio.to_thread(record_panel_dismissal" in source
@@ -2464,7 +2464,7 @@ class TestAFailedDismissalWriteIsNotPublished:
         )
 
     def settle(self, monkeypatch, outcome: str):
-        import kiro_crew.subagent as subagent_module
+        import efm_go.subagent as subagent_module
 
         monkeypatch.setattr(
             subagent_module, "record_panel_dismissal_outcome", lambda agent_id: outcome
@@ -2568,7 +2568,7 @@ def _messaging_handler_files(root: pathlib.Path, *holders: str) -> list[pathlib.
     """
     import inspect
 
-    dashboard = root / "src/kiro_crew/dashboard"
+    dashboard = root / "src/efm_go/dashboard"
     owners = sorted((dashboard / "messaging_api").glob("[!_]*.py"))
     assert owners, "the messaging_api owners were not found"
     files = [dashboard / "handlers" / "messaging.py", *owners]
@@ -2695,7 +2695,7 @@ class TestADismissalHoldsOnBothReaders:
 
         root = pathlib.Path(__file__).resolve().parents[1]
         tree = ast.parse(
-            (root / "src/kiro_crew/subagent_persistence.py").read_text(encoding="utf-8")
+            (root / "src/efm_go/subagent_persistence.py").read_text(encoding="utf-8")
         )
         reader = next(
             node
@@ -2740,8 +2740,8 @@ class TestADismissalHoldsOnBothReaders:
         builder = re.compile(r"(?<![A-Za-z0-9_])_panel_record(?![A-Za-z0-9_])")
         root = pathlib.Path(__file__).resolve().parents[1]
         for relative in (
-            "src/kiro_crew/dashboard/handlers/messaging.py",
-            "src/kiro_crew/dashboard/ws.py",
+            "src/efm_go/dashboard/handlers/messaging.py",
+            "src/efm_go/dashboard/ws.py",
         ):
             source = (root / relative).read_text(encoding="utf-8")
             if relative.endswith("handlers/messaging.py"):
@@ -2760,7 +2760,7 @@ class TestADismissalHoldsOnBothReaders:
             )
         # Control on the needle itself: it must match the real thing somewhere, or
         # the assertions above pass because the pattern is broken.
-        owner = (root / "src/kiro_crew/subagent_persistence.py").read_text(encoding="utf-8")
+        owner = (root / "src/efm_go/subagent_persistence.py").read_text(encoding="utf-8")
         assert builder.search(owner), "the _panel_record needle matches nothing anywhere"
 
     def test_the_replay_folds_the_log_when_it_is_on_and_reads_folders_when_it_is_not(self):
@@ -2779,7 +2779,7 @@ class TestADismissalHoldsOnBothReaders:
         import ast
 
         root = pathlib.Path(__file__).resolve().parents[1]
-        source = (root / "src/kiro_crew/dashboard/ws.py").read_text(encoding="utf-8")
+        source = (root / "src/efm_go/dashboard/ws.py").read_text(encoding="utf-8")
 
         def _names(body: list[ast.stmt]) -> set[str]:
             """Every name this code reaches: bare, called, handed over, or attribute.
@@ -2941,13 +2941,13 @@ class TestTheDismissalStoreIsRegisteredEverywhereItMustBe:
 
     def test_the_leaf_is_a_direct_child_of_the_data_home(self):
         """A nested leaf would not be covered: every list keys on a top-level name."""
-        from kiro_crew.subagent_persistence import _subagents_dir
+        from efm_go.subagent_persistence import _subagents_dir
 
         assert subagent_persistence._panel_dismissals_dir().parent == _subagents_dir().parent
 
     def test_the_leaf_is_on_the_file_gates_sensitive_floor(self):
         """Agent file tools must neither read nor write the store."""
-        from kiro_crew.security import paths as security_paths
+        from efm_go.security import paths as security_paths
 
         floor = security_paths._CREW_SECRET_LEAVES
         # Control: an empty or renamed list would make the assertion below pass
@@ -2956,13 +2956,13 @@ class TestTheDismissalStoreIsRegisteredEverywhereItMustBe:
         assert subagent_persistence._PANEL_DISMISSAL_LEAF in floor
 
     def test_the_leaf_is_bind_masked_in_the_sandbox(self):
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert subagent_persistence._PANEL_DISMISSAL_LEAF in sandbox._CREW_HIDDEN_LEAVES
 
     def test_the_leaf_is_precreated_so_the_mask_is_not_skipped(self):
         """Created on the first dismissal, so an absent name would skip the bind."""
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert (
             subagent_persistence._PANEL_DISMISSAL_LEAF in sandbox._CREW_PRECREATE_HIDDEN_DIR_LEAVES
@@ -2970,7 +2970,7 @@ class TestTheDismissalStoreIsRegisteredEverywhereItMustBe:
 
     def test_a_symlink_at_the_leaf_is_refused(self):
         """A link attaches the mask to the target and leaves the name writable."""
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert subagent_persistence._PANEL_DISMISSAL_LEAF in sandbox._CREW_NO_ALIAS_LEAVES
 
@@ -2990,7 +2990,7 @@ class TestThePersistedGrantIsRecordedNotJustTheRefusals:
     """
 
     ROOT = pathlib.Path(__file__).resolve().parents[1]
-    REL = "src/kiro_crew/dashboard/ws.py"
+    REL = "src/efm_go/dashboard/ws.py"
 
     def block(self) -> list:
         """The INNERMOST statement block enclosing the persisted-frame append.
@@ -3225,8 +3225,8 @@ class TestTheRouteRecordsTheDismissalInTheOwningSessionsLog:
         headers name the slot, which a unit id that happened to BE the session key
         would not exercise.
         """
-        from kiro_crew import crew_log as lg
-        from kiro_crew.crew_log import CrewLog
+        from efm_go import crew_log as lg
+        from efm_go.crew_log import CrewLog
 
         handle = CrewLog.create(
             lg.KIND_SESSION, unit_id, owner="raymond", agent="kirocrew", slot=slot
@@ -3236,8 +3236,8 @@ class TestTheRouteRecordsTheDismissalInTheOwningSessionsLog:
         return handle
 
     def _drawn(self, unit_id: str) -> list[str]:
-        from kiro_crew.crew_log import emit
-        from kiro_crew.crew_log import projection as crew_log
+        from efm_go.crew_log import emit
+        from efm_go.crew_log import projection as crew_log
 
         # The emitter QUEUES its appends, so the route's entry has to reach the file
         # before the fold is read: an unflushed write would leave the row drawn and
@@ -3371,7 +3371,7 @@ class TestTheRouteRecordsTheDismissalInTheOwningSessionsLog:
         monkeypatch.setattr(
             messaging, "_sel", lambda: SimpleNamespace(log_api_access=lambda **_: None)
         )
-        from kiro_crew.crew_log import resolve as crew_log_resolve
+        from efm_go.crew_log import resolve as crew_log_resolve
 
         self._session_with_child("acp-nosay", "nosay1")
 
@@ -3448,7 +3448,7 @@ class TestTheLiveManagerPathRecordsTheDismissalToo:
         differ by exactly whether a pin exists. Cleared both sides, so neither
         order hides a failure.
         """
-        from kiro_crew.crew_log import emit
+        from efm_go.crew_log import emit
 
         monkeypatch.setenv("KIROCREW_CREW_LOG", "1")
         emit.forget_child_origin("live1")
@@ -3470,7 +3470,7 @@ class TestTheLiveManagerPathRecordsTheDismissalToo:
         )
 
     def settle(self, manager):
-        import kiro_crew.subagent as subagent_module
+        import efm_go.subagent as subagent_module
 
         return asyncio.run(subagent_module.SubagentManager.settle_before_delete(manager, "live1"))
 
@@ -3484,9 +3484,9 @@ class TestTheLiveManagerPathRecordsTheDismissalToo:
         proves nothing about production. Driving the real reporter is what makes
         this the live arm's own case.
         """
-        from kiro_crew import crew_log as lg
-        from kiro_crew.crew_log import CrewLog, emit
-        from kiro_crew.subagent_manager.terminal import TerminalCoordinator
+        from efm_go import crew_log as lg
+        from efm_go.crew_log import CrewLog, emit
+        from efm_go.subagent_manager.terminal import TerminalCoordinator
 
         CrewLog.create(lg.KIND_SESSION, unit_id, owner="raymond", agent="kirocrew", slot=slot)
         emit.remember_child_origin(agent_id, unit_id, 1)
@@ -3508,8 +3508,8 @@ class TestTheLiveManagerPathRecordsTheDismissalToo:
         )
 
     def _drawn(self, unit_id: str) -> list[str]:
-        from kiro_crew.crew_log import emit
-        from kiro_crew.crew_log import projection as crew_log
+        from efm_go.crew_log import emit
+        from efm_go.crew_log import projection as crew_log
 
         assert emit.flush()
         value = crew_log.fold_session(unit_id, names=("subagents",)).projection("subagents").value
@@ -3548,7 +3548,7 @@ class TestTheLiveManagerPathRecordsTheDismissalToo:
         the listing reads that record -- so a pop on a failed write reports a
         dismissal the listing will not honour.
         """
-        import kiro_crew.subagent as subagent_module
+        import efm_go.subagent as subagent_module
 
         self._session_with_child("acp-live", "live1")
         monkeypatch.setattr(
@@ -3591,7 +3591,7 @@ class TestTheLiveManagerPathRecordsTheDismissalToo:
         Popping on it reports a dismissal that was never looked for, and the card
         returns once the store recovers -- with the user having been told it worked.
         """
-        from kiro_crew.crew_log import resolve as crew_log_resolve
+        from efm_go.crew_log import resolve as crew_log_resolve
 
         self._session_with_child("acp-live-search", "live1")
         write_record(agent_root, "live1")

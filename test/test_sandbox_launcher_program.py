@@ -1,6 +1,6 @@
 """The namespace launcher program, driven through its stages with a stand-in libc.
 
-``kiro_crew.sandbox_launcher_program`` is the program a sandboxed spawn runs first on
+``efm_go.sandbox_launcher_program`` is the program a sandboxed spawn runs first on
 Linux. This test process cannot create a user namespace (a nested ``unshare`` is
 seccomp-denied inside an agent sandbox), so the stages run in-process against real
 files under ``tmp_path`` with :class:`CoveringLibc` in place of libc: a bind of a fresh
@@ -28,7 +28,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import sandbox_launcher, sandbox_launcher_program, sandbox_plan
+from efm_go import sandbox_launcher, sandbox_launcher_program, sandbox_plan
 
 try:
     import fcntl
@@ -50,7 +50,7 @@ _MS_REMOUNT = 32
 def payload(**overrides: Any) -> dict[str, Any]:
     """A launcher payload with nothing to mask, plus *overrides*.
 
-    The same keys :func:`kiro_crew.sandbox_plan.namespace_payload` emits, so a test
+    The same keys :func:`efm_go.sandbox_plan.namespace_payload` emits, so a test
     states only the lists its case is about.
     """
     base: dict[str, Any] = {
@@ -88,7 +88,7 @@ def rendered_payload(script: str) -> dict[str, Any]:
     """The plan data a rendered launcher carries: its one ``_PLAN = {...}`` line.
 
     For a test that reads back the file ``namespace_argv`` wrote; a test that builds the
-    plan itself reads :class:`~kiro_crew.sandbox_plan.ConfinementPlan` fields instead.
+    plan itself reads :class:`~efm_go.sandbox_plan.ConfinementPlan` fields instead.
     """
     lines = [line for line in script.splitlines() if line.startswith("_PLAN = {")]
     assert len(lines) == 1, "a rendered launcher carries exactly one plan line"
@@ -241,7 +241,7 @@ def launch(
     libc: RecordingLibc | None = None,
     environ: dict[str, str] | None = None,
 ) -> program.Launch:
-    """A :class:`~kiro_crew.sandbox_launcher_program.Launch` whose stand-ins live in *tmp_path*.
+    """A :class:`~efm_go.sandbox_launcher_program.Launch` whose stand-ins live in *tmp_path*.
 
     The stand-in root is set directly rather than chosen among ``/run/user`` and
     ``/dev/shm``, so every bind source shares a filesystem with the targets and
@@ -363,7 +363,7 @@ def _renderer_loaded_over(package: Path, monkeypatch: pytest.MonkeyPatch) -> Any
     """A private copy of the renderer module, imported while *package* is the package dir."""
     files = resources.files
     monkeypatch.setattr(
-        resources, "files", lambda name: package if name == "kiro_crew" else files(name)
+        resources, "files", lambda name: package if name == "efm_go" else files(name)
     )
     spec = importlib.util.spec_from_file_location("renderer_under_test", sandbox_launcher.__file__)
     assert spec is not None and spec.loader is not None
@@ -377,7 +377,7 @@ def test_the_program_is_the_one_on_disk_when_the_renderer_was_imported(
 ) -> None:
     """A package replaced under a running gateway must not pair the new program with the
     plan its already-imported code computes: the renderer keeps the text it loaded with."""
-    package = tmp_path / "kiro_crew"
+    package = tmp_path / "efm_go"
     package.mkdir()
     on_disk = package / "sandbox_launcher_program.py"
     # A sentinel only this copy carries, so the render shows which file it was read from.
@@ -397,7 +397,7 @@ def test_a_renderer_loaded_without_its_program_imports_and_refuses_every_render(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A package assembled without the program still imports: the spawn refuses instead."""
-    package = tmp_path / "kiro_crew"
+    package = tmp_path / "efm_go"
     package.mkdir()
     renderer = _renderer_loaded_over(package, monkeypatch)
     with pytest.raises(RuntimeError, match="could not be read"):
@@ -409,7 +409,7 @@ def test_a_program_without_exactly_one_plan_placeholder_is_not_rendered(
     placeholders: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The plan has one place to go; a program with none or two refuses every spawn."""
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     body = (
         Path(program.__file__)

@@ -44,8 +44,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.cloud.fargate.taskdef import _DIGEST_REF_RE
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.cloud.fargate.taskdef import _DIGEST_REF_RE
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "publish_crew_base_image.sh"
@@ -933,7 +933,7 @@ def test_a_nonce_that_could_not_be_read_stops_the_run_before_it_builds() -> None
 #: The producer stages its wheel into ONE fixed directory in the checkout, so the
 #: unique tag above does not make two publishes independent. The lock is scoped to
 #: exactly what is shared -- this checkout -- and sits beside that directory.
-PUBLISH_STAGING_RELATIVE = Path("src/kiro_crew/apps/builtins/aws_control/crew/runtime")
+PUBLISH_STAGING_RELATIVE = Path("src/efm_go/apps/builtins/aws_control/crew/runtime")
 PUBLISH_LOCK_NAME = ".publish-crew-base-image.lock"
 
 

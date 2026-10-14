@@ -1,7 +1,7 @@
 """A spawn says which MCP servers its session cannot use.
 
 The session already accumulated the answer in
-:class:`kiro_crew.acp.mcp_session_report.McpSessionReport`, but every reader was a
+:class:`efm_go.acp.mcp_session_report.McpSessionReport`, but every reader was a
 dashboard slot -- a surface a sub-agent does not have. So a sub-agent whose
 declared server never started saw no tools and no reason, and spent its turn
 budget hunting for one. These tests pin the one-line summary, the operator's
@@ -16,16 +16,16 @@ import logging
 import re
 from unittest.mock import MagicMock
 
-from kiro_crew.acp.mcp_session_report import _SUMMARY_NAME_CAP, McpSessionReport
-from kiro_crew.acp.types import (
+from efm_go.acp.mcp_session_report import _SUMMARY_NAME_CAP, McpSessionReport
+from efm_go.acp.types import (
     METHOD_MCP_OAUTH_REQUEST,
     METHOD_MCP_SERVER_INIT_FAILURE,
     METHOD_MCP_SERVER_INITIALIZED,
     JsonRpcMessage,
 )
-from kiro_crew.providers.base import SessionMcpReport
-from kiro_crew.subagent import SubagentInfo
-from kiro_crew.subagent_manager.run import RunEventCoordinator
+from efm_go.providers.base import SessionMcpReport
+from efm_go.subagent import SubagentInfo
+from efm_go.subagent_manager.run import RunEventCoordinator
 
 #: A directive shaped like the ones a hostile MCP server would emit in its startup
 #: error, kept harmless on purpose: the assertion is about where the text travels,
@@ -134,7 +134,7 @@ class TestOperatorWarning:
             _frame(METHOD_MCP_SERVER_INIT_FAILURE, "github-mcp", error="spawn ENOENT"),
             _frame(METHOD_MCP_OAUTH_REQUEST, "linear-mcp"),
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent_manager.run"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent_manager.run"):
             returned = _coordinator()._warn_unusable_mcp_servers(_info(), _provider(report))
 
         warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
@@ -154,7 +154,7 @@ class TestOperatorWarning:
         # nothing configured, so no bucket would ever mention it.
         report = _report()
         report.record_unresolved_refs(["docs-mcp"])
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent_manager.run"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent_manager.run"):
             returned = _coordinator()._warn_unusable_mcp_servers(_info(), _provider(report))
         assert "docs-mcp" in returned
         assert len([r for r in caplog.records if r.levelno == logging.WARNING]) == 1
@@ -164,7 +164,7 @@ class TestOperatorWarning:
             _frame(METHOD_MCP_SERVER_INITIALIZED, "kirocrew-core"),
             _frame(METHOD_MCP_SERVER_INITIALIZED, "slack-mcp"),
         )
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.subagent_manager.run"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.subagent_manager.run"):
             returned = _coordinator()._warn_unusable_mcp_servers(_info(), _provider(report))
         assert returned == ""
         assert caplog.records == []
@@ -172,7 +172,7 @@ class TestOperatorWarning:
     def test_provider_keeping_no_report_says_nothing(self, caplog):
         # The declared default of ``LLMProvider.mcp_session_report``. "No report"
         # is not evidence of a broken server and must not read as one.
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent_manager.run"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent_manager.run"):
             returned = _coordinator()._warn_unusable_mcp_servers(_info(), _provider(None))
         assert returned == ""
         assert caplog.records == []
@@ -180,7 +180,7 @@ class TestOperatorWarning:
     def test_an_unreadable_report_never_reaches_the_run(self, caplog):
         provider = MagicMock()
         provider.mcp_session_report.side_effect = RuntimeError("transport gone")
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent_manager.run"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent_manager.run"):
             returned = _coordinator()._warn_unusable_mcp_servers(_info(), provider)
         assert returned == ""
         assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
@@ -242,7 +242,7 @@ class TestServerAuthoredTextNeverReachesTheModel:
         report = _report(
             _frame(METHOD_MCP_SERVER_INIT_FAILURE, "github-mcp", error=INJECTED_DIRECTIVE)
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent_manager.run"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent_manager.run"):
             returned = _coordinator()._warn_unusable_mcp_servers(_info(), _provider(report))
         logged = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
 
@@ -266,4 +266,4 @@ class TestSeam:
         # The agent-SDK boundary gate refuses application code an ACP edge, which
         # is why the summary is reached through the provider contract.
         source = inspect.getsource(RunEventCoordinator._warn_unusable_mcp_servers)
-        assert "kiro_crew.acp" not in source
+        assert "efm_go.acp" not in source

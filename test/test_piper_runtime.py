@@ -14,9 +14,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import piper_runtime as runtime
-from kiro_crew import piper_worker as worker
-from kiro_crew import voice_reply as voice
+from efm_go import piper_runtime as runtime
+from efm_go import piper_worker as worker
+from efm_go import voice_reply as voice
 
 
 def frame(kind, identity="", pcm=b"", **meta):
@@ -107,7 +107,7 @@ async def test_worker_argv_follows_shared_user_site_policy(
     user_site_enabled,
     expected_isolated,
 ):
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(platform_compat, "is_bundled_interpreter", lambda: bundled)
     monkeypatch.setattr(platform_compat.site, "ENABLE_USER_SITE", user_site_enabled)
@@ -132,7 +132,7 @@ async def test_worker_argv_follows_shared_user_site_policy(
             "-P",
             "-u",
             "-m",
-            "kiro_crew.piper_worker",
+            "efm_go.piper_worker",
             "--model",
             runtime_env["model"],
             "--config",
@@ -542,7 +542,7 @@ async def test_real_worker_protocol_reuses_process_and_reaps_on_close(runtime_en
     code = """
 import sys
 from types import SimpleNamespace
-from kiro_crew.piper_worker import serve
+from efm_go.piper_worker import serve
 def synthesize(text, config):
     yield SimpleNamespace(sample_rate=22050, sample_width=2,
         sample_channels=1, audio_int16_bytes=b'\\x01\\x00' * 5000)

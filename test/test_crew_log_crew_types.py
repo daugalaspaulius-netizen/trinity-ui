@@ -25,9 +25,9 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, CrewLogError, Ref
-from kiro_crew.crew_log.entry_types import (
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, CrewLogError, Ref
+from efm_go.crew_log.entry_types import (
     CREW_ENTRY_TYPES,
     CREW_REPORT_STATUSES,
     CREW_TARGET_KINDS,
@@ -37,8 +37,8 @@ from kiro_crew.crew_log.entry_types import (
     render_markdown,
     validate_data,
 )
-from kiro_crew.crew_log.schema import KIND_CREW, KIND_SESSION, TYPE_OWNERSHIP, check_ownership
-from kiro_crew.work_vocab import WORK_WORKER_STATUSES
+from efm_go.crew_log.schema import KIND_CREW, KIND_SESSION, TYPE_OWNERSHIP, check_ownership
+from efm_go.work_vocab import WORK_WORKER_STATUSES
 
 CREW = "qa"
 SESSION = "s-7f3a"

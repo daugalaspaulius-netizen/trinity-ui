@@ -31,7 +31,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.browser_cli import launcher
+from efm_go.browser_cli import launcher
 
 #: The real reveal and owner tag, captured before the autouse fixture below pins them.
 REAL_REVEAL = launcher._reveal
@@ -195,8 +195,8 @@ class TestSessionName:
         carries its session variable -- and the only process that ever carries the
         panel's is the short-lived CLI invocation. So the panel's name must NOT
         read as generated to either the sweep or the launch module."""
-        from kiro_crew.browser_cli import launch
-        from kiro_crew.session_pid import _is_generated_browser_session
+        from efm_go.browser_cli import launch
+        from efm_go.session_pid import _is_generated_browser_session
 
         name = launcher.session_name("chat-1")
         assert not name.startswith("kc-")
@@ -301,7 +301,7 @@ class TestReclaimStranded:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        from kiro_crew.browser_cli import install
+        from efm_go.browser_cli import install
 
         home = tmp_path / "home"
         crew = home / ".kiro" / "crew"
@@ -873,7 +873,7 @@ VIEW_RUNNING = {"status": "running", "url": "http://127.0.0.1:45613", "port": 45
 def mock_sel():
     m = MagicMock()
     m.log_api_access = MagicMock()
-    with patch("kiro_crew.dashboard.handlers.sel", return_value=m):
+    with patch("efm_go.dashboard.handlers.sel", return_value=m):
         yield m
 
 
@@ -889,16 +889,16 @@ def launch_mocks(tmp_path: Path):
         return launcher.LaunchResult(True, launcher.session_name(session_key), None, attached=False)
 
     with (
-        patch("kiro_crew.config.loader.config_path", return_value=cfg),
-        patch("kiro_crew.browser_cli.view.ensure_running", side_effect=ensured.append),
-        patch("kiro_crew.browser_cli.view.status", return_value=VIEW_RUNNING),
-        patch("kiro_crew.browser_cli.launcher.open_url", side_effect=fake_open) as open_mock,
+        patch("efm_go.config.loader.config_path", return_value=cfg),
+        patch("efm_go.browser_cli.view.ensure_running", side_effect=ensured.append),
+        patch("efm_go.browser_cli.view.status", return_value=VIEW_RUNNING),
+        patch("efm_go.browser_cli.launcher.open_url", side_effect=fake_open) as open_mock,
     ):
         yield {"opened": opened, "ensured": ensured, "open_mock": open_mock}
 
 
 def _app(*, owner: bool = True, internal: bool = False) -> web.Application:
-    from kiro_crew.dashboard.handlers.messaging import api_browser_open
+    from efm_go.dashboard.handlers.messaging import api_browser_open
 
     app = web.Application()
     app.router.add_post("/api/browser/open", api_browser_open)

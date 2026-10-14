@@ -21,9 +21,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.session_provider import AcpSessionProvider
-from kiro_crew.acp.types import (
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.session_provider import AcpSessionProvider
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
@@ -35,10 +35,10 @@ from kiro_crew.acp.types import (
     PROVIDER_LABEL_DEFAULT,
     PROVIDER_LABEL_KAS,
 )
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.providers import acp as providers_acp
-from kiro_crew.providers.acp import AcpProvider, provider_label
-from kiro_crew.session import SessionManager
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.providers import acp as providers_acp
+from efm_go.providers.acp import AcpProvider, provider_label
+from efm_go.session import SessionManager
 
 #: The backends served by AcpRuntime rather than by one AcpClient per session,
 #: stated independently of the frozenset the provider property reads. A test that
@@ -49,7 +49,7 @@ ON_THE_ACP_RUNTIME = {ACP_BACKEND_KIRO, ACP_BACKEND_KAS, ACP_BACKEND_CODEX}
 
 def _build_provider(backend: str) -> AcpProvider:
     """Mirror test_acp_provider's helper: construct without spawning anything."""
-    with patch("kiro_crew.providers.acp.AcpClient"):
+    with patch("efm_go.providers.acp.AcpClient"):
         provider = AcpProvider(acp_backend=backend)
     provider._client = MagicMock()
     provider._client.backend = backend
@@ -162,13 +162,13 @@ class TestUnknownBackendRejected:
     """A typo must fail loudly rather than silently driving kiro-cli."""
 
     def test_unknown_backend_raises(self):
-        with patch("kiro_crew.providers.acp.AcpClient"):
+        with patch("efm_go.providers.acp.AcpClient"):
             with pytest.raises(ValueError) as exc:
                 AcpProvider(acp_backend="bogus")
         assert "bogus" in str(exc.value)
 
     def test_error_names_the_accepted_values(self):
-        with patch("kiro_crew.providers.acp.AcpClient"):
+        with patch("efm_go.providers.acp.AcpClient"):
             with pytest.raises(ValueError) as exc:
                 AcpProvider(acp_backend="Kas")  # case matters
         message = str(exc.value)
@@ -262,7 +262,7 @@ def _load_agent_config(agent_data: dict, tmp_path: Path) -> KiroCrewConfig:
     """
     cfg_file = tmp_path / "config.json"
     cfg_file.write_text(json.dumps({"agent": agent_data}), encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+    with patch("efm_go.config.loader.config_path", return_value=cfg_file):
         return KiroCrewConfig.load()
 
 
@@ -368,16 +368,16 @@ class TestNoImportCycle:
     """``config.loader`` must import standalone, before anything ACP.
 
     The gateway and desktop entrypoints import the config module first, so a
-    module-scope import of ``kiro_crew.acp.types`` from here is a cycle: reaching
-    that module executes the ``kiro_crew.acp`` package init, which imports the
+    module-scope import of ``efm_go.acp.types`` from here is a cycle: reaching
+    that module executes the ``efm_go.acp`` package init, which imports the
     ACP client and runtime, which import this module back. In-process tests
     cannot see it — by the time they run, something has usually imported
-    ``kiro_crew.acp`` already — so this asserts it in a fresh interpreter.
+    ``efm_go.acp`` already — so this asserts it in a fresh interpreter.
     """
 
     def test_config_loader_imports_alone(self):
         proc = subprocess.run(
-            [sys.executable, "-c", "import kiro_crew.config.loader"],
+            [sys.executable, "-c", "import efm_go.config.loader"],
             capture_output=True,
             text=True,
             timeout=120,
@@ -390,7 +390,7 @@ class TestNoImportCycle:
             [
                 sys.executable,
                 "-c",
-                "import kiro_crew.config.loader as m;"
+                "import efm_go.config.loader as m;"
                 "print(m._normalize_acp_backend(''), m._normalize_acp_backend('nope'), sep='|')",
             ],
             capture_output=True,

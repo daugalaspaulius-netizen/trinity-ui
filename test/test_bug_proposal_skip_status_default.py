@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from kiro_crew.apps.builtins.auto_improvement.spine.contracts import (
+from efm_go.apps.builtins.auto_improvement.spine.contracts import (
     TRACK_BUG,
     Candidate,
     Proposal,

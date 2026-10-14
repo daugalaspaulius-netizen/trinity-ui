@@ -25,8 +25,8 @@ import textwrap
 
 import pytest
 
-from kiro_crew.acp import client as acp_client
-from kiro_crew.acp.client import (
+from efm_go.acp import client as acp_client
+from efm_go.acp.client import (
     OPENCODE_BIN,
     OPENCODE_INSTALL_COMMAND,
     PROTOCOL_VERSION_OPENCODE,
@@ -36,8 +36,8 @@ from kiro_crew.acp.client import (
     _resolve_self_served_bin,
     _scrub_observed,
 )
-from kiro_crew.acp_backends import ACP_BACKEND_OPENCODE, Routing, routing_for
-from kiro_crew.acp_tool_gate import seeded_setting_issue
+from efm_go.acp_backends import ACP_BACKEND_OPENCODE, Routing, routing_for
+from efm_go.acp_tool_gate import seeded_setting_issue
 
 #: A read-back argv as the spawn arm hands it over: already sandbox-wrapped there,
 #: so these tests pass one through unchanged rather than reconstructing it.
@@ -134,7 +134,7 @@ class TestResolutionLadder:
 
     def test_there_is_no_adapter_package_in_the_argv(self):
         """The argv is the binary and its own subcommand: no node, no entry script."""
-        from kiro_crew.agent_sdk.backends import launch_for
+        from efm_go.agent_sdk.backends import launch_for
 
         record = launch_for(ACP_BACKEND_OPENCODE)
         assert record.acp_args == ("acp",)
@@ -301,7 +301,7 @@ class TestTheReadBackReportsFailureRatherThanAssuming:
         assert client._opencode_config_mcp_servers == ("docs.server",)
 
     def test_only_the_names_opencode_rewrites_are_kept(self):
-        from kiro_crew.acp.client import _opencode_config_mcp_server_names
+        from efm_go.acp.client import _opencode_config_mcp_server_names
 
         resolved = {"mcp": {"docs.server": {}, "kirocrew-core": {}, "a_b": {}}}
         assert _opencode_config_mcp_server_names(resolved) == (("docs.server",), "")
@@ -309,7 +309,7 @@ class TestTheReadBackReportsFailureRatherThanAssuming:
     @pytest.mark.parametrize("shape", ["count", "length"])
     def test_a_config_past_the_bounds_refuses_the_session(self, shape, tmp_path, monkeypatch):
         """Bounded by refusing, never by truncating: a dropped name would miss its deny."""
-        from kiro_crew.acp.harness_tool_names import (
+        from efm_go.acp.harness_tool_names import (
             MAX_HARNESS_CONFIG_MCP_SERVERS,
             MAX_HARNESS_TOOL_NAME_LEN,
         )
@@ -674,7 +674,7 @@ def test_a_successful_load_is_adopted_without_a_modes_block() -> None:
     success, fall through to session/new anyway, and discard the conversation the
     harness had just restored -- on every reopened slot, silently.
     """
-    from kiro_crew.acp_backends import ACP_BACKENDS_LOAD_WITHOUT_MODES
+    from efm_go.acp_backends import ACP_BACKENDS_LOAD_WITHOUT_MODES
 
     assert ACP_BACKEND_OPENCODE in ACP_BACKENDS_LOAD_WITHOUT_MODES
     body = inspect.getsource(AcpClient._initialize_session)
@@ -690,7 +690,7 @@ def test_a_resumed_session_is_not_gated_on_a_kiro_transcript() -> None:
     own, so gating the resume on a kiro transcript path silently starts every
     reopened slot fresh -- the opposite of what the host contract records.
     """
-    from kiro_crew.acp_backends import ACP_BACKENDS_HARNESS_OWNED_SESSIONS
+    from efm_go.acp_backends import ACP_BACKENDS_HARNESS_OWNED_SESSIONS
 
     assert ACP_BACKEND_OPENCODE in ACP_BACKENDS_HARNESS_OWNED_SESSIONS
     body = inspect.getsource(AcpClient._initialize_session)

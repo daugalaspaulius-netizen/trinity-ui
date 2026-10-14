@@ -1,7 +1,7 @@
 """Contracts the config package's module composition must keep (owners behind facades).
 
 Section DTOs, their builders and the loader's document, migration, cache and
-agent-resolution rules live in owner modules inside ``kiro_crew.config``, while
+agent-resolution rules live in owner modules inside ``efm_go.config``, while
 ``config.sections`` and ``config.loader`` stay the facades every caller imports.
 What a relocation can silently break is pinned here: the facade namespaces and
 the identity of what they hand out, the logger each owner writes under, and the
@@ -22,15 +22,15 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.config as config_pkg
-from kiro_crew.config import loader, migration, section_builders, sections
-from kiro_crew.monitoring.limits import DEFAULT_RUNTIME_CEILING_SECS, MAX_RUNTIME_CEILING_SECS
+import efm_go.config as config_pkg
+from efm_go.config import loader, migration, section_builders, sections
+from efm_go.monitoring.limits import DEFAULT_RUNTIME_CEILING_SECS, MAX_RUNTIME_CEILING_SECS
 
 # Every name each facade module held before the section/loader owners were split
 # out. A facade may gain names; it may not lose one, because tests and callers
 # reach private seams through these two modules by attribute.
 _HISTORICAL_NAMES = {
-    "kiro_crew.config.sections": """
+    "efm_go.config.sections": """
 ACTIVATION_ALWAYS ACTIVATION_MENTION ACTIVATION_OBSERVE ACTIVATION_OFF ACTIVATION_REVIEW
 APPROVAL_TURN_MARGIN_SECS AUTOCOMPACT_PCT_MAX AUTOCOMPACT_PCT_MIN AgentConfig
 BACKGROUND_WORKER_AGENTS CHAT_ENTRY_CACHE_BYTES_DEFAULT CHAT_ENTRY_CACHE_BYTES_MAX
@@ -98,7 +98,7 @@ link_pattern_url_ok logger logging math model_registry normalize_agent_model
 resolve_memory_store_config resolve_selected_backend stt_provider_is_coerced
 stt_provider_resolution yolo_duration_to_secs
 """.split(),
-    "kiro_crew.config.loader": """
+    "efm_go.config.loader": """
 ACP_BACKENDS_EFFORT_FROM_ADVERTISED_OPTION ACTIVATION_ALWAYS ACTIVATION_MENTION
 ACTIVATION_OBSERVE ACTIVATION_OFF ACTIVATION_REVIEW APPROVAL_TURN_MARGIN_SECS
 AUTOCOMPACT_PCT_MAX AUTOCOMPACT_PCT_MIN AgentConfig BACKGROUND_WORKER_AGENTS
@@ -225,9 +225,9 @@ workspace_root write_config_atomically yolo_duration_to_secs
 # logger; every other config module logs as the loader did, so a relocated
 # warning keeps the record name operators filter on and ``caplog`` tests select.
 _OWN_LOGGER_MODULES = {
-    "kiro_crew.config.live",
-    "kiro_crew.config.paths",
-    "kiro_crew.config.superseded_defaults",
+    "efm_go.config.live",
+    "efm_go.config.paths",
+    "efm_go.config.superseded_defaults",
 }
 
 _MONITORING_HELP = (
@@ -239,7 +239,7 @@ _MONITORING_HELP = (
 def _config_modules() -> list[str]:
     return sorted(
         info.name
-        for info in pkgutil.iter_modules(config_pkg.__path__, prefix="kiro_crew.config.")
+        for info in pkgutil.iter_modules(config_pkg.__path__, prefix="efm_go.config.")
         if not info.ispkg
     )
 
@@ -252,8 +252,8 @@ class TestFacadeNamespaces:
         assert missing == []
 
     def test_names_on_both_facades_are_the_same_object(self) -> None:
-        shared = set(_HISTORICAL_NAMES["kiro_crew.config.sections"]) & set(
-            _HISTORICAL_NAMES["kiro_crew.config.loader"]
+        shared = set(_HISTORICAL_NAMES["efm_go.config.sections"]) & set(
+            _HISTORICAL_NAMES["efm_go.config.loader"]
         )
         assert len(shared) > 200
         split = sorted(
@@ -313,10 +313,10 @@ class TestMonitoringRuntimeCeiling:
     def test_rejected_value_warns_with_the_value_and_the_fallback(
         self, raw: object, caplog: pytest.LogCaptureFixture
     ) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.monitoring.limits"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.monitoring.limits"):
             built = loader._build_monitoring_config({"max_runtime_secs": raw}, False)
         assert built.max_runtime_secs == DEFAULT_RUNTIME_CEILING_SECS
-        [record] = [r for r in caplog.records if r.name == "kiro_crew.monitoring.limits"]
+        [record] = [r for r in caplog.records if r.name == "efm_go.monitoring.limits"]
         assert repr(raw) in record.getMessage()
         assert str(DEFAULT_RUNTIME_CEILING_SECS) in record.getMessage()
 

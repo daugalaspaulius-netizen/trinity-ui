@@ -788,7 +788,7 @@ describe('WidgetFrame saved-state probe (useQuery cache)', () => {
 // ── exists vs pinned (auto-registered widgets) ─────────────────────────────
 //
 // The backend auto-registers every emitted <mcwidget> as an UNPINNED artifact
-// (src/kiro_crew/widget_artifacts.py), so `{exists: true, pinned: false}` is the
+// (src/efm_go/widget_artifacts.py), so `{exists: true, pinned: false}` is the
 // normal steady state. These tests pin the two states apart: collapsing them
 // (the pre-auto-registration behavior) would light up every widget's star as
 // though the user had already saved it, and would make the star click a no-op.

@@ -13,13 +13,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard.handlers.knowledge import (
+from efm_go.dashboard.handlers.knowledge import (
     _load_items_by_id,
     _matches_source,
     list_items,
     source_counts,
 )
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.knowledge.store import KnowledgeStore
 
 
 @pytest.fixture()
@@ -55,7 +55,7 @@ def _request(store, query: dict) -> MagicMock:
 async def _call(store, query: dict) -> dict:
     req = _request(store, query)
     with patch(
-        "kiro_crew.dashboard.handlers.knowledge._store", return_value=store
+        "efm_go.dashboard.handlers.knowledge._store", return_value=store
     ):
         resp = await list_items(req)
     return json.loads(resp.body.decode())
@@ -159,9 +159,9 @@ async def test_list_items_source_id_filters_search_results(seeded):
     retriever.search.return_value = results
     req = _request(store, {"q": "content", "source_id": beta})
     with (
-        patch("kiro_crew.dashboard.handlers.knowledge._store", return_value=store),
+        patch("efm_go.dashboard.handlers.knowledge._store", return_value=store),
         patch(
-            "kiro_crew.dashboard.handlers.knowledge.HybridRetriever",
+            "efm_go.dashboard.handlers.knowledge.HybridRetriever",
             return_value=retriever,
         ),
     ):
@@ -179,7 +179,7 @@ async def test_list_items_source_id_filters_search_results(seeded):
 async def _counts(store, query: dict) -> dict:
     req = _request(store, query)
     with patch(
-        "kiro_crew.dashboard.handlers.knowledge._store", return_value=store
+        "efm_go.dashboard.handlers.knowledge._store", return_value=store
     ):
         resp = await source_counts(req)
     return json.loads(resp.body.decode())
@@ -246,9 +246,9 @@ async def test_scoped_search_escalates_until_retrieval_is_exhausted(seeded):
     retriever.search.side_effect = _search
     req = _request(store, {"q": "content", "source_id": beta, "limit": "20"})
     with (
-        patch("kiro_crew.dashboard.handlers.knowledge._store", return_value=store),
+        patch("efm_go.dashboard.handlers.knowledge._store", return_value=store),
         patch(
-            "kiro_crew.dashboard.handlers.knowledge.HybridRetriever",
+            "efm_go.dashboard.handlers.knowledge.HybridRetriever",
             return_value=retriever,
         ),
     ):
@@ -267,9 +267,9 @@ async def test_scoped_search_stops_at_the_escalation_cap(seeded):
     ] * limit
     req = _request(store, {"q": "content", "source_id": beta, "limit": "20"})
     with (
-        patch("kiro_crew.dashboard.handlers.knowledge._store", return_value=store),
+        patch("efm_go.dashboard.handlers.knowledge._store", return_value=store),
         patch(
-            "kiro_crew.dashboard.handlers.knowledge.HybridRetriever",
+            "efm_go.dashboard.handlers.knowledge.HybridRetriever",
             return_value=retriever,
         ),
     ):
@@ -287,9 +287,9 @@ async def test_unscoped_search_keeps_the_narrow_pool(seeded):
     retriever.search.return_value = []
     req = _request(store, {"q": "content", "limit": "20"})
     with (
-        patch("kiro_crew.dashboard.handlers.knowledge._store", return_value=store),
+        patch("efm_go.dashboard.handlers.knowledge._store", return_value=store),
         patch(
-            "kiro_crew.dashboard.handlers.knowledge.HybridRetriever",
+            "efm_go.dashboard.handlers.knowledge.HybridRetriever",
             return_value=retriever,
         ),
     ):
@@ -310,13 +310,13 @@ async def test_search_candidate_loading_runs_off_the_event_loop(seeded):
     ]
     req = _request(store, {"q": "content", "source_id": beta})
     with (
-        patch("kiro_crew.dashboard.handlers.knowledge._store", return_value=store),
+        patch("efm_go.dashboard.handlers.knowledge._store", return_value=store),
         patch(
-            "kiro_crew.dashboard.handlers.knowledge.HybridRetriever",
+            "efm_go.dashboard.handlers.knowledge.HybridRetriever",
             return_value=retriever,
         ),
         patch(
-            "kiro_crew.dashboard.handlers.knowledge.asyncio.to_thread",
+            "efm_go.dashboard.handlers.knowledge.asyncio.to_thread",
             wraps=asyncio.to_thread,
         ) as to_thread,
     ):

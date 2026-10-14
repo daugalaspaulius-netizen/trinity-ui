@@ -1,6 +1,6 @@
 # MCP Examples
 
-Source: https://kiro.dev/docs/mcp/examples/ (fetched 2026-09-06; upstream retired
+Source: https://efmleads.com/docs/mcp/examples/ (fetched 2026-09-06; upstream retired
 `/docs/cli/mcp/examples/`)
 
 ## AWS Documentation server

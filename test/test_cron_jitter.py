@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.cron import (
+from efm_go.cron import (
     _JITTER_DAILY_MAX,
     _JITTER_HOURLY_MAX,
     CronJob,
@@ -51,28 +51,28 @@ class TestComputeJitterEveryJobs:
         job = _job(CronSchedule(kind="every", every_secs=3540))
         assert CronService._compute_jitter(job) == 0.0
 
-    @patch("kiro_crew.cron.random.uniform", return_value=600.0)
+    @patch("efm_go.cron.random.uniform", return_value=600.0)
     def test_hourly_returns_hourly_jitter(self, mock_rand):
         job = _job(CronSchedule(kind="every", every_secs=3600))
         result = CronService._compute_jitter(job)
         mock_rand.assert_called_once_with(0, _JITTER_HOURLY_MAX)
         assert result == 600.0
 
-    @patch("kiro_crew.cron.random.uniform", return_value=900.0)
+    @patch("efm_go.cron.random.uniform", return_value=900.0)
     def test_3hour_returns_hourly_jitter(self, mock_rand):
         job = _job(CronSchedule(kind="every", every_secs=10800))
         result = CronService._compute_jitter(job)
         mock_rand.assert_called_once_with(0, _JITTER_HOURLY_MAX)
         assert result == 900.0
 
-    @patch("kiro_crew.cron.random.uniform", return_value=3600.0)
+    @patch("efm_go.cron.random.uniform", return_value=3600.0)
     def test_daily_returns_daily_jitter(self, mock_rand):
         job = _job(CronSchedule(kind="every", every_secs=86400))
         result = CronService._compute_jitter(job)
         mock_rand.assert_called_once_with(0, _JITTER_DAILY_MAX)
         assert result == 3600.0
 
-    @patch("kiro_crew.cron.random.uniform", return_value=5000.0)
+    @patch("efm_go.cron.random.uniform", return_value=5000.0)
     def test_weekly_returns_daily_jitter(self, mock_rand):
         job = _job(CronSchedule(kind="every", every_secs=604800))
         result = CronService._compute_jitter(job)
@@ -96,7 +96,7 @@ class TestComputeJitterCronExpr:
         """Every parsed minute field with multiple fires per hour gets no jitter."""
         job = _job(CronSchedule(kind="cron", cron_expr=cron_expr))
 
-        with patch("kiro_crew.cron.random.uniform") as mock_rand:
+        with patch("efm_go.cron.random.uniform") as mock_rand:
             result = CronService._compute_jitter(job)
 
         assert result == 0.0
@@ -117,7 +117,7 @@ class TestComputeJitterCronExpr:
         """A single parsed minute keeps the existing hour-field band selection."""
         job = _job(CronSchedule(kind="cron", cron_expr=cron_expr))
 
-        with patch("kiro_crew.cron.random.uniform", return_value=123.0) as mock_rand:
+        with patch("efm_go.cron.random.uniform", return_value=123.0) as mock_rand:
             result = CronService._compute_jitter(job)
 
         assert result == 123.0
@@ -127,14 +127,14 @@ class TestComputeJitterCronExpr:
         """The next 0-30 run stays on its parsed minute instead of drifting."""
         from datetime import datetime, timezone
 
-        from kiro_crew.cron import compute_next_run_ts
+        from efm_go.cron import compute_next_run_ts
 
         frozen_now = datetime(2026, 9, 15, 12, 0, tzinfo=timezone.utc).timestamp()
         expected_next = datetime(2026, 9, 15, 12, 1, tzinfo=timezone.utc).timestamp()
         job = _job(CronSchedule(kind="cron", cron_expr="0-30 * * * *"))
         job.timezone = "UTC"
 
-        with patch("kiro_crew.cron.random.uniform", return_value=_JITTER_HOURLY_MAX):
+        with patch("efm_go.cron.random.uniform", return_value=_JITTER_HOURLY_MAX):
             next_run = compute_next_run_ts(job, now=frozen_now)
             jitter = CronService._compute_jitter(job)
 
@@ -232,7 +232,7 @@ class TestReaperJitterAllowance:
         """Job running for less than timeout+jitter should NOT be reaped."""
         import time as time_mod
 
-        from kiro_crew.cron import _JOB_TIMEOUT_SECS, _RunClaim
+        from efm_go.cron import _JOB_TIMEOUT_SECS, _RunClaim
 
         svc = CronService()
         svc._sessions = None
@@ -254,7 +254,7 @@ class TestReaperJitterAllowance:
         """Job running longer than timeout+jitter should be reaped."""
         import time as time_mod
 
-        from kiro_crew.cron import _JOB_TIMEOUT_SECS, _RunClaim
+        from efm_go.cron import _JOB_TIMEOUT_SECS, _RunClaim
 
         svc = CronService()
         svc._sessions = None
@@ -301,7 +301,7 @@ class TestJitterWaitEndsOnWallClock:
         within one slice of AWAKE time, not after ``jitter`` awake seconds."""
         import asyncio
 
-        import kiro_crew.cron as cron_mod
+        import efm_go.cron as cron_mod
 
         base = 1_790_000_000.0
         # deadline read, first remaining check, then the host "resumes" 66 min on
@@ -316,7 +316,7 @@ class TestJitterWaitEndsOnWallClock:
         """A wall clock stepped back a day still ends on the monotonic deadline."""
         import asyncio
 
-        import kiro_crew.cron as cron_mod
+        import efm_go.cron as cron_mod
 
         base = 1_790_000_000.0
         monkeypatch.setattr(cron_mod, "time", self._clock([base, base - 86400]))
@@ -335,7 +335,7 @@ class TestJitterWaitEndsOnWallClock:
         """
         import time as time_mod
 
-        from kiro_crew.cron import _sleep_out_jitter
+        from efm_go.cron import _sleep_out_jitter
 
         tick = max(
             time_mod.get_clock_info("monotonic").resolution,
@@ -364,7 +364,7 @@ class TestJitterWaitEndsOnWallClock:
         wait = AsyncMock()
         with (
             patch.object(CronService, "_compute_jitter", return_value=1234.0),
-            patch("kiro_crew.cron._sleep_out_jitter", wait),
+            patch("efm_go.cron._sleep_out_jitter", wait),
         ):
             await svc._run_job_isolated(job, svc._claim_run(job.id, "scheduled"))
 

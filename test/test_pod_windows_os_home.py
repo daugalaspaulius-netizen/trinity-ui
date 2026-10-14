@@ -24,11 +24,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import pinned_fs, platform_compat
-from kiro_crew.identity_stores import Product, StoreMapping
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod import windows as win
-from kiro_crew.pod.config import PodConfig
+from efm_go import pinned_fs, platform_compat
+from efm_go.identity_stores import Product, StoreMapping
+from efm_go.pod import runtime as rt
+from efm_go.pod import windows as win
+from efm_go.pod.config import PodConfig
 
 
 def _cp(stdout: str = "", returncode: int = 0, stderr: str = "") -> subprocess.CompletedProcess:
@@ -409,7 +409,7 @@ def test_pod_up_boots_end_to_end_under_the_windows_branches(cfg, tmp_path, monke
     binary = bin_dir / "kirocrew.exe"
     binary.write_text("stub")
     binary.chmod(0o700)
-    (checkout / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True)
+    (checkout / "src" / "efm_go" / "static" / "dist").mkdir(parents=True)
     rt.pin_checkout(cfg, "demo", checkout)
 
     monkeypatch.setattr(rt, "resolve_checkout", lambda c, n: checkout)
@@ -474,7 +474,7 @@ def test_pod_up_boots_end_to_end_with_a_seeded_scenario(cfg, tmp_path, monkeypat
     binary = bin_dir / "kirocrew.exe"
     binary.write_text("stub")
     binary.chmod(0o700)
-    (checkout / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True)
+    (checkout / "src" / "efm_go" / "static" / "dist").mkdir(parents=True)
     rt.pin_checkout(cfg, "demo", checkout)
     rt.write_env_file(cfg, "demo", {"SEED": "minimal"})
 

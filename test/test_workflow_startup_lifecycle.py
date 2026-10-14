@@ -9,10 +9,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard import server
-from kiro_crew.taskrunner import TaskRunner, WorkflowInitializing
-from kiro_crew.workflows.service import WorkflowService
-from kiro_crew.workflows.store import WorkflowRunStore
+from efm_go.dashboard import server
+from efm_go.taskrunner import TaskRunner, WorkflowInitializing
+from efm_go.workflows.service import WorkflowService
+from efm_go.workflows.store import WorkflowRunStore
 
 
 def _state():
@@ -272,9 +272,9 @@ async def test_shared_shutdown_gate_prevents_publication_before_app_shutdown(mon
 
 @pytest.mark.asyncio
 async def test_api_only_gateway_forwards_existing_context_builder(monkeypatch):
-    import kiro_crew.dashboard as dashboard
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    import efm_go.dashboard as dashboard
+    from efm_go.config import KiroCrewConfig
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     builder = object()
     state = SimpleNamespace()
@@ -330,9 +330,9 @@ async def test_canonical_gate_preserves_reads_and_cancel_and_reports_failure(
 ):
     from unittest.mock import MagicMock
 
-    from kiro_crew.dashboard.handlers import taskrunner as handlers
-    from kiro_crew.task_models import Project, Task
-    from kiro_crew.taskrunner import WorkflowInitializing
+    from efm_go.dashboard.handlers import taskrunner as handlers
+    from efm_go.task_models import Project, Task
+    from efm_go.taskrunner import WorkflowInitializing
 
     state = _state()
     driver = TaskRunner(sessions=state.sessions, work_dir=tmp_path / "tasks")
@@ -422,7 +422,7 @@ async def test_canonical_gate_preserves_reads_and_cancel_and_reports_failure(
 
 
 def test_canonical_explicit_none_releases_standalone_fallback(tmp_path):
-    from kiro_crew.taskrunner import WorkflowInitializing
+    from efm_go.taskrunner import WorkflowInitializing
 
     driver = TaskRunner(sessions=None, work_dir=tmp_path)
     driver._require_workflow_ready()

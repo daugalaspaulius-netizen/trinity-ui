@@ -40,13 +40,13 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from kiro_crew.acp import client as client_mod
-from kiro_crew.acp import runtime as runtime_mod
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.harness import codex as codex_harness_mod
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.skill_projection import NativeSkillProjection
-from kiro_crew.agent_sdk.backends import (
+from efm_go.acp import client as client_mod
+from efm_go.acp import runtime as runtime_mod
+from efm_go.acp.client import AcpClient
+from efm_go.acp.harness import codex as codex_harness_mod
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.skill_projection import NativeSkillProjection
+from efm_go.agent_sdk.backends import (
     ACP_BACKEND_DEEPSEEK,
     ACP_BACKEND_GOOSE,
     ACP_BACKEND_OPENCODE,
@@ -54,9 +54,9 @@ from kiro_crew.agent_sdk.backends import (
     ACP_BACKENDS_KIRO_SLASH_COMMANDS,
     ACP_BACKENDS_KNOWN,
 )
-from kiro_crew.config import paths as config_paths
-from kiro_crew.constants import KIROCREW_SPAWN_INSTANCE_ENV
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+from efm_go.config import paths as config_paths
+from efm_go.constants import KIROCREW_SPAWN_INSTANCE_ENV
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
 #: The committed fixture. Resolved from this file so both callers agree on it.
 GOLDEN_PATH = Path(__file__).parent / "fixtures" / "acp_launch_goldens.json"
@@ -69,12 +69,12 @@ _CODEX_ACP_ARGV = ["/opt/bin/node", "/opt/lib/codex-acp/index.js"]
 _PI_ACP_ARGV = ["/opt/bin/node", "/opt/lib/pi-acp/index.js"]
 _PI_BIN = "/opt/bin/pi"
 _PI_LAUNCHER = "/opt/run/pi-launcher.sh"
-_PI_EXTENSION = "/opt/run/kiro_crew_tool_gate.ts"
+_PI_EXTENSION = "/opt/run/efm_go_tool_gate.ts"
 # The DeepSeek Harness gate artifacts, pinned the same way and for the same reason:
 # both are real files in the owner-only run directory, and the golden records the
 # argv rather than the filesystem.
-_DSH_EXTENSION = "/opt/run/kiro_crew_tool_gate.mjs"
-_DSH_PATCH = "/opt/run/kiro_crew_dsh_gate.patch.yml"
+_DSH_EXTENSION = "/opt/run/efm_go_tool_gate.mjs"
+_DSH_PATCH = "/opt/run/efm_go_dsh_gate.patch.yml"
 _OPENCODE_BIN = "/opt/bin/opencode"
 _GOOSE_BIN = "/opt/bin/goose"
 _DEEPSEEK_BIN = "/opt/bin/dsh"
@@ -373,8 +373,8 @@ def _stub_common(stack: list, rec: _Recorder, tmp_path: Path, backend: str = "")
                 },
             ),
             patch.object(client_mod, "_run_preflight_bounded", new=AsyncMock(return_value=())),
-            patch("kiro_crew.session._track_pid", return_value=None),
-            patch("kiro_crew.session._track_session_pid", return_value=None),
+            patch("efm_go.session._track_pid", return_value=None),
+            patch("efm_go.session._track_session_pid", return_value=None),
             patch.object(
                 client_mod, "assert_voice_runtime_outside_agent_workspace", return_value=None
             ),
@@ -390,7 +390,7 @@ def _stub_common(stack: list, rec: _Recorder, tmp_path: Path, backend: str = "")
             ),
             patch.object(client_mod, "ensure_agent_materialized", return_value=None),
             patch(
-                "kiro_crew.acp.skill_projection.prepare_native_skill_projection",
+                "efm_go.acp.skill_projection.prepare_native_skill_projection",
                 return_value=NativeSkillProjection({"kirocrew": "kirocrew-skill-view-golden"}),
             ),
             patch.object(client_mod, "require_fresh_derived_spec", return_value=None),

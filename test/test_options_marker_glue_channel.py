@@ -1,6 +1,6 @@
 """Channel path: plain prose glued after the tail ``[OPTIONS: ...]`` moves above it.
 
-The channel grammar (:data:`kiro_crew.constants.OPTIONS_RE_TRAILER`) is anchored at
+The channel grammar (:data:`efm_go.constants.OPTIONS_RE_TRAILER`) is anchored at
 the end of the reply, so the dashboard's newline insert cannot help there. These
 tests replay the shapes ``test_options_marker_glue_reflow.py`` pins and check the
 channel relocation takes the same candidates and leaves the same shapes alone.
@@ -8,13 +8,13 @@ channel relocation takes the same candidates and leaves the same shapes alone.
 
 import pytest
 
-from kiro_crew.constants import (
+from efm_go.constants import (
     reflow_and_label_glued_option_marker,
     relocate_glued_tail_marker,
 )
-from kiro_crew.messaging.renderer import split_options_trailer
-from kiro_crew.slack.format import extract_options
-from kiro_crew.whatsapp.turn_renderer import _strip_options
+from efm_go.messaging.renderer import split_options_trailer
+from efm_go.slack.format import extract_options
+from efm_go.whatsapp.turn_renderer import _strip_options
 
 # Shapes the dashboard reflow leaves byte-for-byte; the channel must too.
 UNTOUCHED = [

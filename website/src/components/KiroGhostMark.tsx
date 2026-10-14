@@ -1,7 +1,7 @@
 // The Kiro ghost mark, sized and tinted for use as a nav/UI glyph.
 //
 // The source art (`kiro-ghost-mark.svg`) is the ghost from the Kiro brand mark —
-// the same silhouette shipped as the product icon in the public `kirodotdev/Kiro`
+// the same silhouette shipped as the product icon in the public `efmleads.com`
 // repo (`assets/kiro-icon.png`) and used by the Electron boot sequence
 // (`KiroGhost`), traced as an OUTLINE (stroked body, solid eyes) to match how
 // the Kiro IDE draws it in its own activity bar. It is a static brand asset

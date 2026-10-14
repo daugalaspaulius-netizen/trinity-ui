@@ -28,8 +28,8 @@ describe("pane constants agree across backend, panel and this allowlist", () => 
     return [...new Set(text.match(PANE_RE) || [])].sort();
   }
 
-  it("matches src/kiro_crew/computer_use/permissions.py", () => {
-    assert.deepEqual(panesIn("src/kiro_crew/computer_use/permissions.py"), [...EXTERNAL_URLS].sort());
+  it("matches src/efm_go/computer_use/permissions.py", () => {
+    assert.deepEqual(panesIn("src/efm_go/computer_use/permissions.py"), [...EXTERNAL_URLS].sort());
   });
 
   it("matches website/src/pages/settings/ComputerUsePanel.tsx", () => {
@@ -186,7 +186,7 @@ describe("parity with the previous inline handler", () => {
     `${ORIGIN}/apps/detail/thing`, // AppsPage cmd-click
     `${ORIGIN}/api/file-raw?path=/tmp/a.pdf`, // FileRenderers
     `blob:${ORIGIN}/0388b437`, // WidgetFrame popout
-    "https://kiro.dev/", // footer link
+    "https://efmleads.com/", // footer link
     "https://github.com/owner/repo", // RegistryManager
     "https://d123.cloudfront.net/index.html", // deployed artifact
     "http://localhost:3000/", // another loopback port

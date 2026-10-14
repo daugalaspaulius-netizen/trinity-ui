@@ -13,7 +13,7 @@ import tempfile
 import unittest.mock
 from pathlib import Path
 
-from kiro_crew.config.loader import KiroCrewConfig, TeamsConfig
+from efm_go.config.loader import KiroCrewConfig, TeamsConfig
 
 
 def _load_from_dict(data: object) -> KiroCrewConfig:
@@ -23,7 +23,7 @@ def _load_from_dict(data: object) -> KiroCrewConfig:
         tmp = Path(f.name)
     try:
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path",
+            "efm_go.config.loader.config_path",
             return_value=tmp,
         ):
             return KiroCrewConfig.load()

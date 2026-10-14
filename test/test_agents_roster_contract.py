@@ -27,8 +27,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.config.sections import KiroCrewAgentConfig, _safe_avatar
-from kiro_crew.dashboard.handlers.agents import (
+from efm_go.config.sections import KiroCrewAgentConfig, _safe_avatar
+from efm_go.dashboard.handlers.agents import (
     _agent_roster_row,
     _carries_mask,
     _name_would_be_masked,
@@ -78,7 +78,7 @@ WITHHELD_RECORD_FIELDS = frozenset(
 
 def _make_app() -> web.Application:
     """Minimal aiohttp app with just the roster endpoint."""
-    from kiro_crew.dashboard.handlers import api_kirocrew_agents
+    from efm_go.dashboard.handlers import api_kirocrew_agents
 
     app = web.Application()
     app.router.add_get("/api/agents", api_kirocrew_agents)
@@ -125,7 +125,7 @@ class TestRosterRowKeySet:
         """A ``cfg.agents`` row carries the allowlist and nothing else."""
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config_with_every_field_set()), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_app())) as client:
                 resp = await client.get("/api/agents")
                 assert resp.status == 200
@@ -157,16 +157,16 @@ class TestRosterRowKeySet:
         answer for the whole response.
         """
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.agents.active_project_dir",
+            "efm_go.dashboard.handlers.agents.active_project_dir",
             lambda state, key: "/probe/project",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.agents.project_agent_names",
+            "efm_go.dashboard.handlers.agents.project_agent_names",
             lambda project_dir, **kw: frozenset({"project-only-agent"}),
         )
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config_with_every_field_set()), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             app = _make_app()
             # Truthy state with no conversation log: the handler then takes
             # the project-scan branch and skips the usage re-sort.
@@ -205,9 +205,9 @@ class TestRosterRowKeySet:
             request["app"] = "probe-app"
             return await handler(request)
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             app = web.Application(middlewares=[_as_app])
-            from kiro_crew.dashboard.handlers import api_kirocrew_agents
+            from efm_go.dashboard.handlers import api_kirocrew_agents
 
             app.router.add_get("/api/agents", api_kirocrew_agents)
             async with TestClient(TestServer(app)) as client:
@@ -643,8 +643,8 @@ class TestCredentialShapedNamesAreRefusedAtCreation:
         seed = _seed_config_with_every_field_set()
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
-            from kiro_crew.dashboard.handlers import api_kirocrew_agents_create
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
+            from efm_go.dashboard.handlers import api_kirocrew_agents_create
 
             @web.middleware
             async def _owner(request: web.Request, handler):  # type: ignore[no-untyped-def]
@@ -669,8 +669,8 @@ class TestCredentialShapedNamesAreRefusedAtCreation:
         seed = _seed_config_with_every_field_set()
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
-            from kiro_crew.dashboard.handlers import api_kirocrew_agents_create
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
+            from efm_go.dashboard.handlers import api_kirocrew_agents_create
 
             # POST is owner-gated (`_require_owner`), so the caller must BE the
             # owner for the request to reach the name check at all.
@@ -716,7 +716,7 @@ class TestCallerClassIsTheOwnerPredicate:
             request["user"] = user
             return await handler(request)
 
-        from kiro_crew.dashboard.handlers import api_kirocrew_agents
+        from efm_go.dashboard.handlers import api_kirocrew_agents
 
         app = web.Application(middlewares=[_identity])
         app["state"] = types.SimpleNamespace(owner_id=owner_id, conversation_log=None)
@@ -724,7 +724,7 @@ class TestCallerClassIsTheOwnerPredicate:
         return app
 
     async def _name_for(self, app: web.Application, tmp: Path) -> str:
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.get("/api/agents")
                 assert resp.status == 200
@@ -778,7 +778,7 @@ class TestCallerClassIsTheOwnerPredicate:
         "not a mask", and lets `_safe_avatar` persist the sentinel over the stored
         trait. Any string anywhere inside the value must count.
         """
-        from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+        from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
         assert _carries_mask({"kind": "ghost", "traits": {"eyes": _SENSITIVE_MASK}}) is True
         assert _carries_mask({"kind": "ghost", "traits": {"eyes": f"{_SENSITIVE_MASK} x"}}) is True
@@ -790,7 +790,7 @@ class TestCallerClassIsTheOwnerPredicate:
     @pytest.mark.asyncio
     async def test_an_echoed_avatar_does_not_overwrite_a_masked_trait(self, tmp_path: Path) -> None:
         """End to end: the sentinel never reaches config.json through the nest."""
-        from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+        from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
         seed = _seed_config_with_every_field_set()
         stored = f"eyes-{self.PROBE}"
@@ -798,13 +798,13 @@ class TestCallerClassIsTheOwnerPredicate:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed), encoding="utf-8")
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+                "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
                 lambda request: True,
             ),
         ):
-            from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
+            from efm_go.dashboard.handlers import api_kirocrew_agent_update
 
             app = web.Application()
             app.router.add_put("/api/agents/{name}", api_kirocrew_agent_update)
@@ -834,13 +834,13 @@ class TestMaskIsTreatedAsUnchangedOnWrite:
         uses for the mutating agent endpoints.
         """
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: True,
         )
 
     def test_the_sentinel_is_the_one_the_config_endpoint_uses(self) -> None:
         """Not a private copy: drift would silently break the round-trip rule."""
-        from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+        from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
         assert _carries_mask(_SENSITIVE_MASK)
         row = _agent_roster_row(
@@ -861,7 +861,7 @@ class TestMaskIsTreatedAsUnchangedOnWrite:
         the redaction glyphs plus the addition over the stored original -- the data
         loss this rule exists to stop.
         """
-        from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+        from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
         assert _carries_mask(_SENSITIVE_MASK) is True
         assert _carries_mask(f"{_SENSITIVE_MASK} and also X") is True
@@ -876,15 +876,15 @@ class TestMaskIsTreatedAsUnchangedOnWrite:
         masked trigger -> editor appends text -> PUT must NOT persist the sentinel
         plus the text.
         """
-        from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+        from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
         seed = _seed_config_with_every_field_set()
         stored = f"use when {self.PROBE}"
         seed["agents"]["roster-probe"]["triggers"] = stored
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
-            from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
+            from efm_go.dashboard.handlers import api_kirocrew_agent_update
 
             app = web.Application()
             app.router.add_put("/api/agents/{name}", api_kirocrew_agent_update)
@@ -915,8 +915,8 @@ class TestMaskIsTreatedAsUnchangedOnWrite:
         seed["agents"]["roster-probe"]["triggers"] = stored_triggers
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
-            from kiro_crew.dashboard.handlers import (
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
+            from efm_go.dashboard.handlers import (
                 api_kirocrew_agent_update,
                 api_kirocrew_agents,
             )
@@ -962,8 +962,8 @@ class TestMaskIsTreatedAsUnchangedOnWrite:
         seed["agents"]["roster-probe"]["triggers"] = f"first {self.PROBE}"
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
-            from kiro_crew.dashboard.handlers import (
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
+            from efm_go.dashboard.handlers import (
                 api_kirocrew_agent_update,
                 api_kirocrew_agents,
             )
@@ -999,9 +999,9 @@ class TestMaskIsTreatedAsUnchangedOnWrite:
         seed = _seed_config_with_every_field_set()
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
-            from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
-            from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
+            from efm_go.dashboard.handlers import api_kirocrew_agent_update
+            from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
             app = web.Application()
             app.router.add_put("/api/agents/{name}", api_kirocrew_agent_update)
@@ -1030,8 +1030,8 @@ class TestMaskIsTreatedAsUnchangedOnWrite:
         seed["agents"]["roster-probe"]["triggers"] = f"use when {self.PROBE}"
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
-            from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
+            from efm_go.dashboard.handlers import api_kirocrew_agent_update
 
             app = web.Application()
             app.router.add_put("/api/agents/{name}", api_kirocrew_agent_update)

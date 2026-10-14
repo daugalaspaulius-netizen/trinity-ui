@@ -13,10 +13,10 @@ superseded-by: []
 ---
 # RFC: Retire chat Autopilot mode
 
-- Status: partial. Backend removal [#15362](https://github.com/kirodotdev/KiroCrew/pull/15362) and frontend removal [#15359](https://github.com/kirodotdev/KiroCrew/pull/15359) have merged. The user-visible mode is gone and saved `"orchestrator"` sessions restore as plain chat. Rollout step 3 remains open: `StageBoundary` / `_in_stage_execution` references still remain under `src/`, so the retirement is not yet implemented whole. This decision supersedes [rfc-autopilot-stage-budgets.md](rfc-autopilot-stage-budgets.md), which was not accepted before the feature disappeared.
+- Status: partial. Backend removal [#15362](https://efmleads.com/pull/15362) and frontend removal [#15359](https://efmleads.com/pull/15359) have merged. The user-visible mode is gone and saved `"orchestrator"` sessions restore as plain chat. Rollout step 3 remains open: `StageBoundary` / `_in_stage_execution` references still remain under `src/`, so the retirement is not yet implemented whole. This decision supersedes [rfc-autopilot-stage-budgets.md](rfc-autopilot-stage-budgets.md), which was not accepted before the feature disappeared.
 - Author: iamwhatever
 - Created: 2026-09-30
-- Related: [`docs/system-specs/modules/autopilot.md`](https://github.com/kirodotdev/KiroCrew/blob/2b91a6baddca220ce79ec95bec6d7ca3192fb6a4/docs/system-specs/modules/autopilot.md) (the shipped behaviour at `2b91a6badd`, deleted by #15362), [`../system-specs/modules/crew-mode.md`](../system-specs/modules/crew-mode.md) § "Retired: Crew Mode" (the precedent this follows), [rfc-orchestrator-chat-sessions.md](rfc-orchestrator-chat-sessions.md), and [rfc-autopilot-stage-budgets.md](rfc-autopilot-stage-budgets.md) (superseded incident record).
+- Related: [`docs/system-specs/modules/autopilot.md`](https://efmleads.com/blob/2b91a6baddca220ce79ec95bec6d7ca3192fb6a4/docs/system-specs/modules/autopilot.md) (the shipped behaviour at `2b91a6badd`, deleted by #15362), [`../system-specs/modules/crew-mode.md`](../system-specs/modules/crew-mode.md) § "Retired: Crew Mode" (the precedent this follows), [rfc-orchestrator-chat-sessions.md](rfc-orchestrator-chat-sessions.md), and [rfc-autopilot-stage-budgets.md](rfc-autopilot-stage-budgets.md) (superseded incident record).
 
 ## Summary
 
@@ -26,7 +26,7 @@ Autopilot is the chat slot mode `"orchestrator"`: the model presents a staged pl
 
 The mode costs far more than it returns. Measured at `2b91a6badd`:
 
-- `src/kiro_crew/dashboard/chat_orchestrator.py` is 2,376 lines, `docs/system-specs/modules/autopilot.md` is 642 lines, and `src/kiro_crew/config/prompt-orchestrator.md` is a second system prompt kept beside the main one.
+- `src/efm_go/dashboard/chat_orchestrator.py` is 2,376 lines, `docs/system-specs/modules/autopilot.md` is 642 lines, and `src/efm_go/config/prompt-orchestrator.md` is a second system prompt kept beside the main one.
 - #15362 deletes 10,014 test lines across 55 files under `test/` that exist to hold this mode.
 - 61 commits touched the mode's own files (the module, its prompt, its spec and its dedicated tests) since 2026-06-30.
 - Its stage state (`StageBoundary`, `_in_stage_execution`) is threaded through 16 files outside the module, including `chat_runner.py`, `session_control.py`, `slack/gateway.py`, `subagent.py` and the Spec Builder app's `turn_guard.py`, so every change to the turn loop has to reason about a mode almost nobody runs.
@@ -36,7 +36,7 @@ Almost nobody runs it. On the maintainer's own host, 3 of 2,835 saved chat sessi
 ## Decision
 
 1. Remove the mode, its module, its prompt, its `plan-action` endpoint and its tests (#15362), then its toggle, menu entries, stage chrome and plan-gate chips (#15359).
-2. Add `"orchestrator"` to `_RETIRED_MODES` in `src/kiro_crew/dashboard/chat_persistence.py`, beside `"crew"`. A saved session in that mode restores as plain chat (`""`) with its transcript intact, rather than failing to load.
+2. Add `"orchestrator"` to `_RETIRED_MODES` in `src/efm_go/dashboard/chat_persistence.py`, beside `"crew"`. A saved session in that mode restores as plain chat (`""`) with its transcript intact, rather than failing to load.
 3. In old transcripts, the `[OPTION: Go | Go All | Cancel]` footer renders as plain option text. Clicking one sends that word as an ordinary message; nothing resumes a stage loop.
 4. `PATCH /api/chat/slots/{slot}/mode` coerces a request naming `"orchestrator"` to `""`, so an older dashboard build still gets a working chat. An `orchestrator` section in `config.json` becomes a reserved key that loads as nothing and is not written back.
 

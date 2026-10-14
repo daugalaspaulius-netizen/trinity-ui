@@ -14,9 +14,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.browser_cli import install as browser_cli_install
-from kiro_crew.browser_cli import install_job as job_mod
-from kiro_crew.dashboard.handlers import messaging as msg
+from efm_go.browser_cli import install as browser_cli_install
+from efm_go.browser_cli import install_job as job_mod
+from efm_go.dashboard.handlers import messaging as msg
 
 _JOB_KEYS = {
     "id",

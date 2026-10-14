@@ -32,10 +32,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.schema import SCHEMA_REGISTRY, requires_restart
-from kiro_crew.config.sections import MonitoringConfig
-from kiro_crew.mcp_tools import control
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.schema import SCHEMA_REGISTRY, requires_restart
+from efm_go.config.sections import MonitoringConfig
+from efm_go.mcp_tools import control
 
 _KEY = "monitoring.prefer_structured_arming"
 
@@ -196,7 +196,7 @@ class TestAnInstallThatPredatesTheKey:
         """
         stored = tmp_path / "config.json"
         stored.write_text(json.dumps({"agent": {}, "dashboard": {}}), encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: stored)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: stored)
 
         resolved = KiroCrewConfig.load()
 
@@ -209,7 +209,7 @@ class TestAnInstallThatPredatesTheKey:
         stored.write_text(
             json.dumps({"monitoring": {"prefer_structured_arming": True}}), encoding="utf-8"
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: stored)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: stored)
 
         assert KiroCrewConfig.load().monitoring.prefer_structured_arming is True
 
@@ -226,7 +226,7 @@ class TestAnInstallThatPredatesTheKey:
         omission COSTS, which is the half an operator would notice.
         """
         stored = tmp_path / "config.json"
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: stored)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: stored)
         chosen = KiroCrewConfig(monitoring=MonitoringConfig(prefer_structured_arming=True))
 
         stored.write_text(json.dumps(chosen.to_dict()), encoding="utf-8")
@@ -242,13 +242,13 @@ class TestAMalformedRuntimeCeilingIsNamedWhenItIsReplaced:
     person who typed the value is the one who can correct it. The warning names
     the value that was replaced and the ceiling that replaced it."""
 
-    _LOGGER = "kiro_crew.monitoring.limits"
+    _LOGGER = "efm_go.monitoring.limits"
 
     @pytest.mark.parametrize("bad", ["7d", 0, -1, 2_592_001, 1.5, True, {}])
     def test_a_configured_value_the_policy_rejects_is_named(
         self, bad: object, caplog: pytest.LogCaptureFixture
     ) -> None:
-        from kiro_crew.monitoring.limits import DEFAULT_RUNTIME_CEILING_SECS, coerce_runtime_ceiling
+        from efm_go.monitoring.limits import DEFAULT_RUNTIME_CEILING_SECS, coerce_runtime_ceiling
 
         with caplog.at_level(logging.WARNING, logger=self._LOGGER):
             assert coerce_runtime_ceiling(bad) == DEFAULT_RUNTIME_CEILING_SECS
@@ -261,7 +261,7 @@ class TestAMalformedRuntimeCeilingIsNamedWhenItIsReplaced:
     def test_an_unset_key_is_the_ordinary_default_and_stays_quiet(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        from kiro_crew.monitoring.limits import DEFAULT_RUNTIME_CEILING_SECS, coerce_runtime_ceiling
+        from efm_go.monitoring.limits import DEFAULT_RUNTIME_CEILING_SECS, coerce_runtime_ceiling
 
         with caplog.at_level(logging.WARNING, logger=self._LOGGER):
             assert coerce_runtime_ceiling(None) == DEFAULT_RUNTIME_CEILING_SECS
@@ -269,7 +269,7 @@ class TestAMalformedRuntimeCeilingIsNamedWhenItIsReplaced:
         assert not [r for r in caplog.records if r.name == self._LOGGER]
 
     def test_a_valid_value_is_kept_and_stays_quiet(self, caplog: pytest.LogCaptureFixture) -> None:
-        from kiro_crew.monitoring.limits import coerce_runtime_ceiling
+        from efm_go.monitoring.limits import coerce_runtime_ceiling
 
         with caplog.at_level(logging.WARNING, logger=self._LOGGER):
             assert coerce_runtime_ceiling(2_592_000) == 2_592_000
@@ -285,7 +285,7 @@ class TestAMalformedRuntimeCeilingIsNamedWhenItIsReplaced:
         stored.write_text(
             json.dumps({"monitoring": {"max_runtime_secs": "thirty days"}}), encoding="utf-8"
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: stored)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: stored)
 
         with caplog.at_level(logging.WARNING, logger=self._LOGGER):
             resolved = KiroCrewConfig.load()
@@ -358,7 +358,7 @@ class TestTheOperatorFacingClaimsSurviveMeasurement:
         """
         overclaims = ("blocks monitor_start", "disables monitor_start", "requires monitor_watch")
         sites = {
-            "src/kiro_crew/config/service_sections.py (schema help)": self._entry().help,
+            "src/efm_go/config/service_sections.py (schema help)": self._entry().help,
             "config-baseline.json": _baseline_help(_KEY),
             str(_SPEC): _spec_paragraph_about("prefer_structured_arming"),
         }
@@ -396,8 +396,8 @@ class TestTheReversibilityClaimIsMeasuredNotAsserted:
 
     @staticmethod
     def _stopped_row(outcome: object) -> object:
-        from kiro_crew.autonudge import NudgeLoop
-        from kiro_crew.monitoring.models import MonitorState
+        from efm_go.autonudge import NudgeLoop
+        from efm_go.monitoring.models import MonitorState
 
         state = MonitorState(
             kind="github_pull_request",
@@ -413,15 +413,15 @@ class TestTheReversibilityClaimIsMeasuredNotAsserted:
         return loop
 
     def test_a_user_stop_is_retained_evidence_and_refuses_a_re_arm(self) -> None:
-        from kiro_crew.autonudge import _stopped_row_is_replaceable
-        from kiro_crew.monitoring.models import MonitorOutcome
+        from efm_go.autonudge import _stopped_row_is_replaceable
+        from efm_go.monitoring.models import MonitorOutcome
 
         assert not _stopped_row_is_replaceable(self._stopped_row(MonitorOutcome.USER_STOP))
 
     def test_only_the_system_imposed_outcomes_are_replaceable(self) -> None:
         """The four the spec names, and no consumer-recorded one beside them."""
-        from kiro_crew.autonudge import _stopped_row_is_replaceable
-        from kiro_crew.monitoring.models import MonitorOutcome
+        from efm_go.autonudge import _stopped_row_is_replaceable
+        from efm_go.monitoring.models import MonitorOutcome
 
         replaceable = {
             outcome
@@ -461,7 +461,7 @@ class TestTheSettingsPromiseHasWiringBehindIt:
     """
 
     def test_the_key_is_patchable_from_settings(self) -> None:
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         assert _KEY in _EDITABLE_CONFIG, (
             f"{_KEY} must be PATCH-able or Settings renders a toggle that cannot "
@@ -519,7 +519,7 @@ class TestNothingReadsConfigOnTheGatewayLoop:
 
     def test_the_serving_loop_module_never_imports_asyncio(self) -> None:
         """Pins the premise the branch above rests on, in the module itself."""
-        import kiro_crew.mcp_shared as mcp_shared
+        import efm_go.mcp_shared as mcp_shared
 
         source = Path(mcp_shared.__file__).read_text(encoding="utf-8")
 

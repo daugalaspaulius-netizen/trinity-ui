@@ -2,7 +2,7 @@
 
 React + TypeScript + Vite single-page app for the Kiro Crew dashboard. Built assets
 are emitted to `dist/` and copied into the Python package at
-`../src/kiro_crew/static/dist/` so the gateway can serve them.
+`../src/efm_go/static/dist/` so the gateway can serve them.
 
 ## Develop
 
@@ -24,10 +24,10 @@ two write in place.
 Then stage it into the backend package so the gateway serves it:
 
 ```bash
-cd .. && PYTHONPATH=src python -m kiro_crew.frontend stage .
+cd .. && PYTHONPATH=src python -m efm_go.frontend stage .
 ```
 
-The stager points `src/kiro_crew/static/dist` at `dist/` (or, for an edition, at
+The stager points `src/efm_go/static/dist` at `dist/` (or, for an edition, at
 a fresh private copy); a running gateway follows it on its next request.
 
 ## Test and lint

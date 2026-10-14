@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from test_snapshot import _setup_fake_kirocrew, unpinnable_argv
 
-from kiro_crew.snapshot import (
+from efm_go.snapshot import (
     COMPONENTS,
     ComponentRefused,
     Purpose,
@@ -66,7 +66,7 @@ class TestPolicyDeclarations:
             assert isinstance(spec.policy, SecretPolicy), name
 
     def test_component_spec_cannot_be_built_without_a_policy(self):
-        from kiro_crew.snapshot import ComponentSpec
+        from efm_go.snapshot import ComponentSpec
 
         with pytest.raises(TypeError):
             ComponentSpec(help="no policy declared")  # type: ignore[call-arg]

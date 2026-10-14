@@ -15,8 +15,8 @@ pooled, for every attached session) until respawn.
 
 from __future__ import annotations
 
-from kiro_crew.mcp_core import _call_tool
-from kiro_crew.validation import MCP_CORE_SCHEMAS
+from efm_go.mcp_core import _call_tool
+from efm_go.validation import MCP_CORE_SCHEMAS
 
 # Tools that validate their args internally and are gated by MCP_CORE_SCHEMAS.
 # Each entry: (tool_name, args_that_should_fail_validation). A required arg is

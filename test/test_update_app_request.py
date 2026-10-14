@@ -17,9 +17,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.platform import app_update_request, update_stepup
-from kiro_crew.platform.update_capability import (
+from efm_go.dashboard.handlers import updates
+from efm_go.platform import app_update_request, update_stepup
+from efm_go.platform.update_capability import (
     MANAGED_BY_ELECTRON,
     MANAGED_BY_KIROCREW,
     MODE_CONSENT,
@@ -92,7 +92,7 @@ def store(tmp_path):
 
 @pytest.fixture()
 def packaged(monkeypatch: pytest.MonkeyPatch, store):
-    from kiro_crew.platform import update_capability
+    from efm_go.platform import update_capability
 
     monkeypatch.setattr(update_capability, "derive_capability", _electron_capability)
     monkeypatch.setattr(updates, "resolve_provider", lambda: None)
@@ -412,7 +412,7 @@ class TestAgentReachability:
         A route in neither bucket falls through to cookie auth and refuses an
         agent's X-Internal-Secret. MIXED, not strict: the browser polls it too.
         """
-        from kiro_crew.dashboard.server import (
+        from efm_go.dashboard.server import (
             _MIXED_INTERNAL_API_PATHS,
             _STRICT_INTERNAL_API_PATHS,
         )
@@ -429,7 +429,7 @@ class TestWheelLaneUnchanged:
 
     @pytest.mark.asyncio
     async def test_wheel_arm_still_refuses_non_managed_shapes(self, monkeypatch) -> None:
-        from kiro_crew.platform import update_capability, wheel_engine
+        from efm_go.platform import update_capability, wheel_engine
 
         monkeypatch.setattr(update_capability, "derive_capability", _wheel_capability)
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: False)
@@ -440,8 +440,8 @@ class TestWheelLaneUnchanged:
 
 class TestCliApprove:
     def test_packaged_install_is_told_to_approve_in_the_app(self, monkeypatch, capsys) -> None:
-        from kiro_crew import cli_server
-        from kiro_crew.platform import update_capability
+        from efm_go import cli_server
+        from efm_go.platform import update_capability
 
         monkeypatch.setattr(update_capability, "derive_capability", _electron_capability)
         cli_server._update_approve()

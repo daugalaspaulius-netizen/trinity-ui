@@ -16,9 +16,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import resource_status
-from kiro_crew.dashboard import cautious_boot, crash_dump_store
-from kiro_crew.dashboard.cautious_boot import (
+from efm_go import resource_status
+from efm_go.dashboard import cautious_boot, crash_dump_store
+from efm_go.dashboard.cautious_boot import (
     MAX_DELAY_SECS,
     MILD_DELAY_SECS,
     RECENT_DUMP_MAX_AGE_SECS,
@@ -27,7 +27,7 @@ from kiro_crew.dashboard.cautious_boot import (
     initialize,
     pause_before,
 )
-from kiro_crew.dashboard.crash_dump_store import (
+from efm_go.dashboard.crash_dump_store import (
     DUMP_PREFIX,
     DUMP_SUFFIX,
     HEALTHY_MARKER_NAME,
@@ -278,12 +278,12 @@ class TestInitializeAndPause:
 
 class TestConfigKey:
     def test_dashboard_config_defaults_on(self):
-        from kiro_crew.config.loader import DashboardConfig
+        from efm_go.config.loader import DashboardConfig
 
         assert DashboardConfig().cautious_boot is True
 
     def test_loader_rejects_non_bool(self):
-        from kiro_crew.config.loader import _safe_bool
+        from efm_go.config.loader import _safe_bool
 
         assert _safe_bool("yes", True) is True  # non-bool → default
         assert _safe_bool(False, True) is False
@@ -460,7 +460,7 @@ class TestMarkerWriteDoesNotGateReadiness:
     async def test_a_stalled_write_does_not_block_the_caller(self, monkeypatch):
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard import server
+        from efm_go.dashboard import server
 
         blocked = threading.Event()
         entered = threading.Event()
@@ -487,7 +487,7 @@ class TestMarkerWriteDoesNotGateReadiness:
     async def test_a_completed_write_stops_being_tracked(self, monkeypatch, dumps_dir):
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard import server
+        from efm_go.dashboard import server
 
         monkeypatch.setattr(server, "record_healthy_boot", lambda *_a, **_k: None)
         state = SimpleNamespace(_background_tasks=set())

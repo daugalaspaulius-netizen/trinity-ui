@@ -18,13 +18,13 @@ import pytest
 from aiohttp import streams, web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import memory_stores
-from kiro_crew.config import loader
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard.handlers import cron
-from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
-from kiro_crew.memory import MemoryStore
-from kiro_crew.vector_memory import VectorMemoryStore, create_member_database, open_member_database
+from efm_go import memory_stores
+from efm_go.config import loader
+from efm_go.context import ContextBuilder
+from efm_go.dashboard.handlers import cron
+from efm_go.dashboard.handlers._shared import markdown_memory_for_store
+from efm_go.memory import MemoryStore
+from efm_go.vector_memory import VectorMemoryStore, create_member_database, open_member_database
 
 #: A credential-shaped token for "sensitive document" fixtures.
 DOCUMENT_CREDENTIAL = "AKIAIOSFODNN7EXAMPLE"
@@ -104,8 +104,8 @@ def env(tmp_path, monkeypatch):
             tier.init()
         tiers[name] = tier
     metadata = {}
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.member_memory_auth import bind_private_session_store
+    from efm_go.history import ConversationLog
+    from efm_go.member_memory_auth import bind_private_session_store
 
     history = ConversationLog()
 

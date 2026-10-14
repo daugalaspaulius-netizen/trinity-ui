@@ -10,8 +10,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import env as env_mod
-from kiro_crew.browser_cli import install as mod
+from efm_go import env as env_mod
+from efm_go.browser_cli import install as mod
 
 # The real implementation, captured before the autouse fixture below replaces
 # ``mod._required_revisions`` with a degradation stub. Revision-aware tests
@@ -59,7 +59,7 @@ def isolated_browser_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> P
 def _default_no_os_deps(monkeypatch: pytest.MonkeyPatch) -> None:
     """Default every test to a host with no OS-library remedy.
 
-    The browser step asks :mod:`kiro_crew.browser_cli.os_deps` for its remedy,
+    The browser step asks :mod:`efm_go.browser_cli.os_deps` for its remedy,
     and the answer is read from the DEVELOPER's ``/etc/os-release`` otherwise --
     which would make the detail assertions here pass on macOS and fail on
     Ubuntu. Tests that care about the hint or the flag opt in explicitly.
@@ -1082,7 +1082,7 @@ class TestCliEnvIsPublic:
     """The Node-augmented env helper is importable by view.py and other callers."""
 
     def test_cli_env_is_importable_by_name(self) -> None:
-        from kiro_crew.browser_cli.install import cli_env
+        from efm_go.browser_cli.install import cli_env
 
         assert callable(cli_env)
 
@@ -2767,7 +2767,7 @@ def _tree_script(pid_file: Path) -> list[str]:
 
     code = (
         "import subprocess, sys, time\n"
-        "from kiro_crew import platform_compat\n"
+        "from efm_go import platform_compat\n"
         "g = subprocess.Popen(\n"
         "    [sys.executable, '-c', 'import time; time.sleep(60)'],\n"
         f"    cwd={str(pid_file.parent)!r},\n"

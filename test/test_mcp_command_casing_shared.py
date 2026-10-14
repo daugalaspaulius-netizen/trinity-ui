@@ -5,7 +5,7 @@ it, so a bare ``demo-mcp`` resolves to ``demo-mcp.EXE`` while the file on disk i
 ``demo-mcp.exe``. A launcher that dispatches on its own ``argv[0]`` basename
 case-sensitively refuses to run under the synthesized spelling.
 
-The repair lives in ``kiro_crew.env`` beside ``mcp_search_path`` and is applied
+The repair lives in ``efm_go.env`` beside ``mcp_search_path`` and is applied
 by all three consumers of a ``which`` result: the agent-config resolver (whose
 result is PERSISTED as the spec's absolute ``command``), the dashboard probe, and
 gatewayd's rewriter. The rewriter's own coverage lives in
@@ -30,9 +30,9 @@ import pytest
 from mcp_merge_helpers import bundled_defaults as _bundled_defaults
 from mcp_merge_helpers import run_install_mcp_merge as _run_install_mcp_merge
 
-from kiro_crew import env, platform_compat
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
-from kiro_crew.mcp_discovery import McpServerInfo, _probe_cache, probe_server
+from efm_go import env, platform_compat
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.mcp_discovery import McpServerInfo, _probe_cache, probe_server
 
 
 def _windows_casing(path: str | None) -> str:
@@ -127,7 +127,7 @@ def _pinned_kiro_cli_version(monkeypatch):
     the HOST's ``kiro-cli --version`` once per worker.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -147,7 +147,7 @@ class TestAgentConfigResolver:
     ) -> None:
         monkeypatch.setenv("PATH", "/usr/bin")
         actual, raw = _launcher(tmp_path)
-        monkeypatch.setattr("kiro_crew.agent.resolved_command_casing", _windows_casing)
+        monkeypatch.setattr("efm_go.agent.resolved_command_casing", _windows_casing)
         cfg_dir = _bundled_defaults(tmp_path)
 
         emitted = _run_install_mcp_merge(
@@ -178,7 +178,7 @@ class TestAgentConfigResolver:
         actual, raw = _launcher(tmp_path)
         qualified = str(tmp_path / "bin" / "demo-mcp")
         assert not os.path.exists(qualified)
-        monkeypatch.setattr("kiro_crew.agent.resolved_command_casing", _windows_casing)
+        monkeypatch.setattr("efm_go.agent.resolved_command_casing", _windows_casing)
         cfg_dir = _bundled_defaults(tmp_path)
 
         emitted = _run_install_mcp_merge(
@@ -206,20 +206,20 @@ class TestDashboardProbe:
     @pytest.mark.asyncio
     async def test_the_probe_spawns_the_on_disk_casing(self, tmp_path: Path, monkeypatch) -> None:
         actual, raw = _launcher(tmp_path)
-        monkeypatch.setattr("kiro_crew.mcp_discovery.resolved_command_casing", _windows_casing)
+        monkeypatch.setattr("efm_go.mcp_discovery.resolved_command_casing", _windows_casing)
         captured: list[list[str]] = []
 
         def _wrap(argv, *a, env=None, **k):
             captured.append(list(argv))
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
         server = McpServerInfo(name="demo", command="demo-mcp", args=["--stdio"])
 
         with (
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value=raw),
+            patch("efm_go.mcp_discovery.shutil.which", return_value=raw),
             patch(
-                "kiro_crew.mcp_discovery.create_subprocess_limited",
+                "efm_go.mcp_discovery.create_subprocess_limited",
                 new_callable=AsyncMock,
                 side_effect=OSError("stop after argv capture"),
             ),
@@ -256,20 +256,20 @@ class TestDashboardProbe:
         def _would_repair(path: str | None) -> str:
             return str(Path(path).with_name("demo-mcp.exe")) if path else ""
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.resolved_command_casing", _would_repair)
+        monkeypatch.setattr("efm_go.mcp_discovery.resolved_command_casing", _would_repair)
         captured: list[list[str]] = []
 
         def _wrap(argv, *a, env=None, **k):
             captured.append(list(argv))
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
         server = McpServerInfo(name="demo", command=str(declared), args=["--stdio"])
 
         with (
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value=str(declared)),
+            patch("efm_go.mcp_discovery.shutil.which", return_value=str(declared)),
             patch(
-                "kiro_crew.mcp_discovery.create_subprocess_limited",
+                "efm_go.mcp_discovery.create_subprocess_limited",
                 new_callable=AsyncMock,
                 side_effect=OSError("stop after argv capture"),
             ),

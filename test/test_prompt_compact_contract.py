@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = ROOT / "src" / "kiro_crew" / "config"
+CONFIG = ROOT / "src" / "efm_go" / "config"
 # Absolute UTF-8 source-byte budgets, not token counts or live git baselines.
 # A maintainer may raise a budget in a reviewed change when a new rule earns
 # its space. Preserve the operational clauses below rather than cutting them
@@ -189,7 +189,7 @@ def test_monitor_modes_have_distinct_stop_paths_and_real_exit_conditions() -> No
         "max_runtime_secs",
         "session_ledger_record",
         "session_ledger_read",
-        "kiro_crew.heartbeat.append_heartbeat_task(entry)",
+        "efm_go.heartbeat.append_heartbeat_task(entry)",
         "HEARTBEAT_KEEP",
     ):
         assert token in monitor

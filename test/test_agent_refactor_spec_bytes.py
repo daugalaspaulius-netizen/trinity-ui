@@ -1,13 +1,13 @@
 """The bytes every agent-spec writer puts on disk, frozen across the materialization split.
 
-``kiro_crew.agent`` delegates to the owners under ``kiro_crew.agent_materialization``,
+``efm_go.agent`` delegates to the owners under ``efm_go.agent_materialization``,
 and that move is only behaviour-preserving if every spec file a rebuild writes comes out
 byte-for-byte as it did before, together with the audit records the rebuild emits and
 the sidecar bookkeeping it leaves behind. The existing suites pin individual fields; this
 module pins the whole output of one real rebuild per scenario, so a field an extraction
 dropped, reordered or re-typed is a red here even when no field-level test names it.
 
-Each scenario drives :func:`kiro_crew.agent.rebuild_agent_config` against the SHIPPED
+Each scenario drives :func:`efm_go.agent.rebuild_agent_config` against the SHIPPED
 ``defaults.json``, prompts and managed-server registry, in a private agents directory,
 with only the machine-specific inputs pinned: the ``kirocrew`` launcher path, the
 installed kiro-cli version, and the SEL writer (recorded, not written). Everything the
@@ -30,8 +30,8 @@ from typing import Any, Callable
 
 import pytest
 
-from kiro_crew import agent, agent_state
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go import agent, agent_state
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 #: One path segment under a normalized root, with the separator run before it: a
 #: Windows spec spells ``<TMP>\\bin\\kirocrew`` where POSIX spells ``<TMP>/bin/kirocrew``.
@@ -110,10 +110,10 @@ class _Rig:
         monkeypatch.setattr(agent, "_DEFAULT_KIRO_HOOKS_DIR", self.hooks_dir)
         monkeypatch.setattr(agent, "sel", lambda: _SelRecorder(self.events))
         monkeypatch.setattr(
-            "kiro_crew.apps.bridges._mcp_json_path", lambda: self.agents / "kirocrew.json"
+            "efm_go.apps.bridges._mcp_json_path", lambda: self.agents / "kirocrew.json"
         )
         monkeypatch.setattr(
-            "kiro_crew.kiro_cli.installed_kiro_cli_version",
+            "efm_go.kiro_cli.installed_kiro_cli_version",
             lambda: SPEC_PERMISSIONS_MIN_VERSION,
         )
 
@@ -340,7 +340,7 @@ def _registry_mode(rig: _Rig) -> dict[str, Any]:
 
 def _forks(rig: _Rig) -> dict[str, Any]:
     """Two private template copies: one corroborated by a crew binding, one orphaned."""
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
 
     cfg = KiroCrewConfig()
     cfg.agents = {"my-crew": KiroCrewAgentConfig(kiro_agent="my-crew")}
@@ -387,7 +387,7 @@ def materialize(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scenario: str) 
     return rig.snapshot()
 
 
-#: Digests recorded from the pre-split ``kiro_crew.agent``. See the module docstring.
+#: Digests recorded from the pre-split ``efm_go.agent``. See the module docstring.
 GOLDEN: dict[str, dict[str, Any]] = {
     "clean_over_customized": {
         "events": "e4016eba77605642de911e1089127f33fdb4c60579b4fd040df307c601101128",

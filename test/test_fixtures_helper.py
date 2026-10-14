@@ -1,4 +1,4 @@
-"""Tests for ``kiro_crew.testing.fixtures``.
+"""Tests for ``efm_go.testing.fixtures``.
 
 Covers the plain context manager and the pytest fixture, plus a
 byte-for-byte check that the helper produces exactly the shipped
@@ -13,15 +13,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import seed as seed_mod
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go import seed as seed_mod
+from efm_go.testing.fixtures import seeded_home
 
 # Register ``seeded_home_fixture`` as a pytest plugin rather than importing
 # it directly. Importing the fixture would shadow the test-function parameter
 # of the same name (flake8 F811), and renaming the parameter would break
 # pytest's name-based fixture binding. ``pytest_plugins`` is the sanctioned
 # way to pull fixtures into a test module without a name collision.
-pytest_plugins = ["kiro_crew.testing.fixtures"]
+pytest_plugins = ["efm_go.testing.fixtures"]
 
 # Fixture root used by the helper — one lookup, not repeated in every
 # test, so a future move of the fixtures dir is a one-line change here.
@@ -230,7 +230,7 @@ def test_seeded_home_populated_fixture_has_starter_session(
         assert "created_at" in meta, "metadata must carry created_at"
 
         # Restoration contract — keep in sync with
-        # ``kiro_crew.dashboard.chat_persistence.restore_recent_sessions``:
+        # ``efm_go.dashboard.chat_persistence.restore_recent_sessions``:
         #  - ``closed=True`` short-circuits the restore loop (line ~85)
         #  - absent ``pinned``/``folder_id`` falls through to the 30-min
         #    ``modified`` cutoff; ``shutil.copy2`` preserves mtime from the
@@ -316,9 +316,9 @@ def test_seeded_home_importable_without_pytest(
     """``seeded_home`` must be importable when pytest is unavailable.
 
     Regression guard (rev-1 review-bot finding #1): the runtime
-    wheel ships ``kiro_crew.testing`` without pytest in its dependencies,
+    wheel ships ``efm_go.testing`` without pytest in its dependencies,
     so any hard ``import pytest`` at module top breaks the contract that
-    ``from kiro_crew.testing import seeded_home`` works from any test
+    ``from efm_go.testing import seeded_home`` works from any test
     harness.
 
     Simulates pytest-absent by hiding ``pytest`` from ``sys.modules`` and
@@ -336,15 +336,15 @@ def test_seeded_home_importable_without_pytest(
     # incantation for this.
     monkeypatch.setitem(sys.modules, "pytest", None)  # type: ignore[arg-type]
     # Force a fresh load by removing any cached copy of the target module.
-    monkeypatch.delitem(sys.modules, "kiro_crew.testing.fixtures", raising=False)
-    monkeypatch.delitem(sys.modules, "kiro_crew.testing", raising=False)
+    monkeypatch.delitem(sys.modules, "efm_go.testing.fixtures", raising=False)
+    monkeypatch.delitem(sys.modules, "efm_go.testing", raising=False)
     # The fresh import_module below would otherwise byte-compile a real
-    # __pycache__/*.pyc into the checkout's src/kiro_crew/testing/ tree —
+    # __pycache__/*.pyc into the checkout's src/efm_go/testing/ tree —
     # this test only cares about the module's runtime attributes, not about
     # leaving compiled bytecode behind.
     monkeypatch.setattr(sys, "dont_write_bytecode", True)
 
-    fresh = importlib.import_module("kiro_crew.testing.fixtures")
+    fresh = importlib.import_module("efm_go.testing.fixtures")
 
     # Context-manager entry point still exposed.
     assert hasattr(fresh, "seeded_home")
@@ -369,7 +369,7 @@ def test_every_fixture_hook_event_is_one_the_loader_accepts() -> None:
     """
     import json
 
-    from kiro_crew.hooks import HOOK_EVENTS_ALL
+    from efm_go.hooks import HOOK_EVENTS_ALL
 
     hook_files = sorted(_FIXTURES.glob("*/hooks.json"))
     assert hook_files, "no fixture ships a hooks.json; the guard checks nothing"

@@ -30,10 +30,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.knowledge.ingestion import IngestionPipeline
-from kiro_crew.knowledge.store import KnowledgeStore
-from kiro_crew.knowledge.sync import MAX_FAILURES, SyncScheduler
-from kiro_crew.on_loop_db import STORE_STRICT_ENV
+from efm_go.knowledge.ingestion import IngestionPipeline
+from efm_go.knowledge.store import KnowledgeStore
+from efm_go.knowledge.sync import MAX_FAILURES, SyncScheduler
+from efm_go.on_loop_db import STORE_STRICT_ENV
 
 pytestmark = pytest.mark.asyncio
 

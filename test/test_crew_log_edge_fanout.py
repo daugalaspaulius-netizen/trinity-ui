@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.crew_log import CrewLog, crew_log_path, emit
+from efm_go.crew_log import CrewLog, crew_log_path, emit
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -237,7 +237,7 @@ class TestNothingIsShed:
     def test_no_ceiling_constant_exists_to_shed_against(self):
         from dataclasses import fields
 
-        from kiro_crew.crew_log.writer import WriterLimits
+        from efm_go.crew_log.writer import WriterLimits
 
         for name in ("_MAX_PENDING_PER_SESSION", "_MAX_PENDING_BYTES_PER_SESSION"):
             assert not hasattr(

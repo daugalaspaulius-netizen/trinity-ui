@@ -17,14 +17,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.messaging.attachments import cleanup
-from kiro_crew.telegram.attachments import (
+from efm_go.messaging.attachments import cleanup
+from efm_go.telegram.attachments import (
     _to_attachment,
     append_attachment_context,
     process_telegram_attachments,
 )
-from kiro_crew.telegram.client import TelegramClient, TelegramInbound
-from kiro_crew.telegram.transport import TELEGRAM_CAPABILITIES
+from efm_go.telegram.client import TelegramClient, TelegramInbound
+from efm_go.telegram.transport import TELEGRAM_CAPABILITIES
 
 # ── Capability declaration ─────────────────────────────────────────────────────
 
@@ -207,7 +207,7 @@ class TestToAttachment:
         rejected as an unknown format. Assert the SUFFIX the ingestion layer will
         actually put on the temp file, not just the synthesized name.
         """
-        from kiro_crew.messaging.attachments import safe_suffix
+        from efm_go.messaging.attachments import safe_suffix
 
         cases = {
             "audio/ogg": ".ogg",      # Telegram voice notes
@@ -343,9 +343,9 @@ class TestProcessTelegramAttachments:
             }
         ]
         with (
-            patch("kiro_crew.transcribe.is_available", return_value=True),
-            patch("kiro_crew.transcribe.batch_duration_cap_secs", return_value=None),
-            patch("kiro_crew.transcribe.transcribe_audio", return_value="hello from voice"),
+            patch("efm_go.transcribe.is_available", return_value=True),
+            patch("efm_go.transcribe.batch_duration_cap_secs", return_value=None),
+            patch("efm_go.transcribe.transcribe_audio", return_value="hello from voice"),
         ):
             result = await process_telegram_attachments(client, attachments)
 
@@ -380,7 +380,7 @@ class TestProcessTelegramAttachments:
                 "file_size": len(ogg_data),
             }
         ]
-        with patch("kiro_crew.transcribe.is_available", return_value=False):
+        with patch("efm_go.transcribe.is_available", return_value=False):
             result = await process_telegram_attachments(client, attachments)
 
         assert len(result.rejections) == 1
@@ -397,7 +397,7 @@ class TestProcessTelegramAttachments:
 
 class TestReExport:
     def test_telegram_exports_shared_function(self):
-        from kiro_crew.messaging.attachments import append_attachment_context as shared_fn
+        from efm_go.messaging.attachments import append_attachment_context as shared_fn
 
         assert append_attachment_context is shared_fn
 
@@ -412,8 +412,8 @@ class TestReExport:
         """
         import inspect
 
-        from kiro_crew.discord import attachments as discord_att
-        from kiro_crew.telegram import attachments as tg_att
+        from efm_go.discord import attachments as discord_att
+        from efm_go.telegram import attachments as tg_att
 
         cases = (
             (discord_att, discord_att.process_discord_attachments),

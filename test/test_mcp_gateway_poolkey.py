@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.mcp_gateway.pool import PoolKey
+from efm_go.mcp_gateway.pool import PoolKey
 
 _VALID = {
     "server_name": "slack-mcp",

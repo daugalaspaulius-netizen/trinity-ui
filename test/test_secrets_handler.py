@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.dashboard.handlers.secrets."""
+"""Tests for efm_go.dashboard.handlers.secrets."""
 
 from __future__ import annotations
 
@@ -10,15 +10,15 @@ from unittest.mock import patch
 import pytest
 from aiohttp import web
 
-from kiro_crew.config import loader as config_loader
-from kiro_crew.config.loader import MANAGED_VAULT_FIXED_CONSUMERS
-from kiro_crew.dashboard.handlers.secrets import (
+from efm_go.config import loader as config_loader
+from efm_go.config.loader import MANAGED_VAULT_FIXED_CONSUMERS
+from efm_go.dashboard.handlers.secrets import (
     _managed_secret_catalog,
     _sanitize_for_log,
     _unused_stored_secrets,
     setup_secrets_routes,
 )
-from kiro_crew.secrets import SecretVault
+from efm_go.secrets import SecretVault
 
 
 class _FakeState:
@@ -93,7 +93,7 @@ class TestApiSecretsList:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.get("/api/secrets")
                 assert resp.status == 200
@@ -107,7 +107,7 @@ class TestApiSecretsList:
         from aiohttp.test_utils import TestClient, TestServer
 
         with patch(
-            "kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(empty_vault_dir)
+            "efm_go.dashboard.handlers.secrets.config_dir", return_value=str(empty_vault_dir)
         ):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.get("/api/secrets")
@@ -131,9 +131,9 @@ class TestApiSecretsList:
             dashboard=SimpleNamespace(jira_auth=[SimpleNamespace(host="example.com")]),
         )
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
             patch(
-                "kiro_crew.dashboard.handlers.secrets.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.secrets.KiroCrewConfig.load",
                 return_value=jira_config,
             ),
         ):
@@ -175,9 +175,9 @@ class TestApiSecretsList:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
             patch(
-                "kiro_crew.dashboard.handlers.secrets.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.secrets.KiroCrewConfig.load",
                 return_value=jira_config,
             ),
         ):
@@ -211,9 +211,9 @@ class TestApiSecretsList:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
             patch(
-                "kiro_crew.dashboard.handlers.secrets.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.secrets.KiroCrewConfig.load",
                 return_value=jira_config,
             ),
         ):
@@ -233,9 +233,9 @@ class TestApiSecretsList:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
             patch(
-                "kiro_crew.dashboard.handlers.secrets.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.secrets.KiroCrewConfig.load",
                 return_value=jira_config,
             ),
         ):
@@ -253,9 +253,9 @@ class TestApiSecretsList:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)),
             patch(
-                "kiro_crew.dashboard.handlers.secrets.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.secrets.KiroCrewConfig.load",
                 side_effect=ValueError("broken config"),
             ),
         ):
@@ -283,9 +283,9 @@ class TestApiSecretsList:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
             patch(
-                "kiro_crew.dashboard.handlers.secrets.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.secrets.KiroCrewConfig.load",
                 return_value=config,
             ),
         ):
@@ -316,9 +316,9 @@ class TestApiSecretsList:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
             patch(
-                "kiro_crew.dashboard.handlers.secrets.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.secrets.KiroCrewConfig.load",
                 return_value=jira_config,
             ),
         ):
@@ -351,9 +351,9 @@ class TestApiSecretsList:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)),
             patch(
-                "kiro_crew.dashboard.handlers.secrets.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.secrets.KiroCrewConfig.load",
                 return_value=jira_config,
             ),
         ):
@@ -379,7 +379,7 @@ class TestApiSecretsSet:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
                     "/api/secrets",
@@ -399,7 +399,7 @@ class TestApiSecretsSet:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post("/api/secrets", json={"value": "x"})
                 assert resp.status == 400
@@ -410,7 +410,7 @@ class TestApiSecretsSet:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post("/api/secrets", json={"name": "X"})
                 assert resp.status == 400
@@ -425,7 +425,7 @@ class TestApiSecretsDelete:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.delete("/api/secrets/TEST_KEY")
                 assert resp.status == 200
@@ -444,7 +444,7 @@ class TestApiSecretsDelete:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.delete("/api/secrets/TEST_KEY")
                 assert resp.status == 200
@@ -468,7 +468,7 @@ class TestApiSecretsDelete:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.delete("/api/secrets/NONEXISTENT_NAME")
                 assert resp.status == 404
@@ -504,7 +504,7 @@ class TestApiSecretsOwnerAuthorization:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
             async with TestClient(TestServer(app)) as client:
                 # X-Test-App non-empty => an app-scoped (non-owner) caller.
                 headers = {"X-Test-App": "some-app", "X-Test-User": "some-app-subject"}
@@ -522,7 +522,7 @@ class TestApiSecretsOwnerAuthorization:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
             async with TestClient(TestServer(app)) as client:
                 headers = {"X-Test-User": "U_SOMEONE_ELSE"}
                 resp = await client.post(
@@ -546,8 +546,8 @@ class TestApiSecretsOwnerAuthorization:
 
         sel = MagicMock()
         with (
-            patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)),
-            patch("kiro_crew.dashboard.handlers.secrets._sel", return_value=sel),
+            patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)),
+            patch("efm_go.dashboard.handlers.secrets._sel", return_value=sel),
         ):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
@@ -569,7 +569,7 @@ class TestApiSecretsOwnerAuthorization:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(vault_dir)):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.get("/api/secrets", headers={"X-Test-User": "U_OWNER"})
                 assert resp.status == 200
@@ -593,9 +593,9 @@ class TestApiSecretsLogInjection:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
             async with TestClient(TestServer(app)) as client:
-                with caplog.at_level(logging.INFO, logger="kiro_crew.dashboard.handlers.secrets"):
+                with caplog.at_level(logging.INFO, logger="efm_go.dashboard.handlers.secrets"):
                     resp = await client.post("/api/secrets", json={"name": payload, "value": "v"})
                     assert resp.status == 200
 
@@ -626,9 +626,9 @@ class TestApiSecretsLogInjection:
         vault = SecretVault(tmp_path)
         vault._set_sync(injected_name, "v")
 
-        with patch("kiro_crew.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
+        with patch("efm_go.dashboard.handlers.secrets.config_dir", return_value=str(tmp_path)):
             async with TestClient(TestServer(app)) as client:
-                with caplog.at_level(logging.INFO, logger="kiro_crew.dashboard.handlers.secrets"):
+                with caplog.at_level(logging.INFO, logger="efm_go.dashboard.handlers.secrets"):
                     # aiohttp URL-encodes the path when using client.delete(url)
                     # with a plain string, so percent-encode manually.
                     resp = await client.delete("/api/secrets/x%0d%0aWARNING-forged")
@@ -673,7 +673,7 @@ class TestApiSecretsSetInputValidation:
         from aiohttp.test_utils import TestClient, TestServer
 
         with patch(
-            "kiro_crew.dashboard.handlers.secrets.config_dir",
+            "efm_go.dashboard.handlers.secrets.config_dir",
             return_value=str(empty_vault_dir),
         ):
             async with TestClient(TestServer(app)) as client:
@@ -692,7 +692,7 @@ class TestApiSecretsSetInputValidation:
         from aiohttp.test_utils import TestClient, TestServer
 
         with patch(
-            "kiro_crew.dashboard.handlers.secrets.config_dir",
+            "efm_go.dashboard.handlers.secrets.config_dir",
             return_value=str(empty_vault_dir),
         ):
             async with TestClient(TestServer(app)) as client:
@@ -723,7 +723,7 @@ class TestApiSecretsSetWhitespaceValue:
         from aiohttp.test_utils import TestClient, TestServer
 
         with patch(
-            "kiro_crew.dashboard.handlers.secrets.config_dir",
+            "efm_go.dashboard.handlers.secrets.config_dir",
             return_value=str(empty_vault_dir),
         ):
             async with TestClient(TestServer(app)) as client:
@@ -745,7 +745,7 @@ class TestApiSecretsSetWhitespaceValue:
         from aiohttp.test_utils import TestClient, TestServer
 
         with patch(
-            "kiro_crew.dashboard.handlers.secrets.config_dir",
+            "efm_go.dashboard.handlers.secrets.config_dir",
             return_value=str(empty_vault_dir),
         ):
             async with TestClient(TestServer(app)) as client:
@@ -763,7 +763,7 @@ class TestApiSecretsSetWhitespaceValue:
         from aiohttp.test_utils import TestClient, TestServer
 
         with patch(
-            "kiro_crew.dashboard.handlers.secrets.config_dir",
+            "efm_go.dashboard.handlers.secrets.config_dir",
             return_value=str(empty_vault_dir),
         ):
             async with TestClient(TestServer(app)) as client:
@@ -787,7 +787,7 @@ class TestApiSecretsSetWhitespaceValue:
 
         padded = "  sk-live-abc  "
         with patch(
-            "kiro_crew.dashboard.handlers.secrets.config_dir",
+            "efm_go.dashboard.handlers.secrets.config_dir",
             return_value=str(empty_vault_dir),
         ):
             async with TestClient(TestServer(app)) as client:

@@ -18,8 +18,8 @@ from __future__ import annotations
 import os
 from unittest.mock import AsyncMock, MagicMock
 
-from kiro_crew.dashboard.state import DashboardState
-from kiro_crew.history import ConversationLog
+from efm_go.dashboard.state import DashboardState
+from efm_go.history import ConversationLog
 
 
 class TestHousekeepingPreservesMtime:

@@ -99,7 +99,7 @@ def _invoke(path: Path, *args: str) -> subprocess.CompletedProcess:
 
 def test_resolves_when_invoked_directly(tmp_path):
     """Baseline: called by its real path, the launcher finds its sibling."""
-    bundle = tmp_path / "kirocrew-backend-arm64"
+    bundle = tmp_path / "efm-go-backend-arm64"
     launcher = _make_bundle(bundle)
 
     proc = _invoke(launcher)
@@ -115,7 +115,7 @@ def test_resolves_through_absolute_symlink(tmp_path):
     ``dirname "${BASH_SOURCE[0]}"`` form, which would resolve ``$DIR`` to the
     symlink's own directory and exec a python3.12 that does not exist there.
     """
-    bundle = tmp_path / "app" / "backend-dist" / "kirocrew-backend-arm64"
+    bundle = tmp_path / "app" / "backend-dist" / "efm-go-backend-arm64"
     launcher = _make_bundle(bundle)
 
     # Mirrors ~/.local/bin/kirocrew -> .../backend-dist/.../bin/kirocrew.
@@ -191,7 +191,7 @@ def test_resolves_through_symlink_chain(tmp_path):
 def test_forwards_arguments_through_symlink(tmp_path):
     """Resolution is worthless if the argv is mangled on the way through.
 
-    Asserts the module invocation contract (``-s -P -m kiro_crew``: no user
+    Asserts the module invocation contract (``-s -P -m efm_go``: no user
     site, launch directory kept off ``sys.path``) and that a quoted argument
     containing a space survives as ONE argument.
     """
@@ -203,7 +203,7 @@ def test_forwards_arguments_through_symlink(tmp_path):
     proc = _invoke(shim, "config", "set", "a b")
 
     assert proc.returncode == 0, proc.stderr
-    assert "ARGS=-s -P -m kiro_crew config set a b" in proc.stdout, proc.stdout
+    assert "ARGS=-s -P -m efm_go config set a b" in proc.stdout, proc.stdout
 
     # And the word-splitting guard: "$@" (not $@) keeps "a b" a single argv entry.
     stub = bundle / "bin" / "python3.12"
@@ -211,7 +211,7 @@ def test_forwards_arguments_through_symlink(tmp_path):
     stub.chmod(0o755)
     proc = _invoke(shim, "config", "set", "a b")
     assert proc.returncode == 0, proc.stderr
-    # -s, -P, -m, kiro_crew, config, set, "a b" == 7
+    # -s, -P, -m, efm_go, config, set, "a b" == 7
     assert "COUNT=7" in proc.stdout, proc.stdout
 
 

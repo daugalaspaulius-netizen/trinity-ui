@@ -18,7 +18,7 @@ import threading
 
 import pytest
 
-from kiro_crew.decisions import outcomes
+from efm_go.decisions import outcomes
 
 
 @pytest.fixture(autouse=True)

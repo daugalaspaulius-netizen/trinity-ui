@@ -36,9 +36,9 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import agent_discovery as ad_mod
-from kiro_crew import hooks, security
-from kiro_crew.agent_discovery import (
+from efm_go import agent_discovery as ad_mod
+from efm_go import hooks, security
+from efm_go.agent_discovery import (
     SensitiveAgentSpecPathError,
     _read_agent_spec,
     read_agent_spec_strict,

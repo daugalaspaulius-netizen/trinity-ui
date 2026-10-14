@@ -17,9 +17,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers import usage as usage_mod
-from kiro_crew.dashboard.handlers.telemetry import api_usage_turns
-from kiro_crew.dashboard.handlers.usage import TURN_USAGE_FIELDS, slot_turn_usage
+from efm_go.dashboard.handlers import usage as usage_mod
+from efm_go.dashboard.handlers.telemetry import api_usage_turns
+from efm_go.dashboard.handlers.usage import TURN_USAGE_FIELDS, slot_turn_usage
 
 
 @pytest.fixture(autouse=True)
@@ -178,8 +178,8 @@ class TestAppIsolation:
 
     @pytest.fixture(autouse=True)
     def _quiet_sel(self, monkeypatch):
-        import kiro_crew.sel as sel_mod
-        from kiro_crew.dashboard.handlers import telemetry as tele_mod
+        import efm_go.sel as sel_mod
+        from efm_go.dashboard.handlers import telemetry as tele_mod
 
         calls: list[dict] = []
 
@@ -243,7 +243,7 @@ class TestAppIsolation:
 
     @pytest.mark.asyncio
     async def test_a_disabled_app_is_refused_outright(self, _isolated_shards, monkeypatch):
-        from kiro_crew.dashboard.handlers import telemetry as tele_mod
+        from efm_go.dashboard.handlers import telemetry as tele_mod
 
         monkeypatch.setattr(tele_mod, "_app_is_enabled", lambda name: False)
         _write(_isolated_shards, [_row("mine", app="acme-app")])
@@ -311,11 +311,11 @@ class TestWriteSiteStamping:
     _ROOT = Path(__file__).resolve().parents[2]
 
     def test_chat_runner_stamps_the_slots_app(self):
-        src = (self._ROOT / "src/kiro_crew/dashboard/chat_runner.py").read_text(encoding="utf-8")
+        src = (self._ROOT / "src/efm_go/dashboard/chat_runner.py").read_text(encoding="utf-8")
         assert 'app=getattr(slot, "_app", "") or ""' in src
 
     def test_subagent_completion_stamps_the_dispatching_app(self):
-        src = (self._ROOT / "src/kiro_crew/subagent_manager/run.py").read_text(encoding="utf-8")
+        src = (self._ROOT / "src/efm_go/subagent_manager/run.py").read_text(encoding="utf-8")
         tree = ast.parse(src)
         calls = [
             node

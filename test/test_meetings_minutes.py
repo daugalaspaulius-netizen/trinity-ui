@@ -33,8 +33,8 @@ from meetings_helpers import (  # noqa: F401 — fixtures are used by name
     root_fixture,
 )
 
-from kiro_crew.apps.builtins.meetings.backend import constants as k
-from kiro_crew.apps.builtins.meetings.backend import store
+from efm_go.apps.builtins.meetings.backend import constants as k
+from efm_go.apps.builtins.meetings.backend import store
 
 BASE = k.API_BASE
 
@@ -59,9 +59,9 @@ class TestOwnership:
         self, monkeypatch, tmp_path: Path
     ):
         """The production hook gate enforces the owner boundary for actual fs tools."""
-        from kiro_crew import sandbox
-        from kiro_crew.hooks import TOOL_DENY, HookManager, HooksConfig
-        from kiro_crew.security import is_sensitive_path
+        from efm_go import sandbox
+        from efm_go.hooks import TOOL_DENY, HookManager, HooksConfig
+        from efm_go.security import is_sensitive_path
 
         relative_edit = "apps/meetings/data/edits/m1/note-taker.md"
         assert is_sensitive_path(f"~/.kiro/crew/{relative_edit}") is True
@@ -535,7 +535,7 @@ class TestBodyCaps:
         assert len(payload) <= k.MAX_MINUTES_BODY_BYTES
 
     def test_the_route_raises_the_cap_above_the_shared_default(self):
-        from kiro_crew.apps.builtins.meetings.backend.routes import _common
+        from efm_go.apps.builtins.meetings.backend.routes import _common
 
         assert k.MAX_MINUTES_BODY_BYTES > _common.MAX_BODY_BYTES
 
@@ -546,7 +546,7 @@ class TestBodyCaps:
         A multibyte document comfortably inside ``MAX_MINUTES_CHARS`` exceeds the
         256 KiB default, so this request is exactly the one the default would 413.
         """
-        from kiro_crew.apps.builtins.meetings.backend.routes import _common
+        from efm_go.apps.builtins.meetings.backend.routes import _common
 
         content = "議" * 100_000
         assert len(content) <= k.MAX_MINUTES_CHARS
@@ -575,7 +575,7 @@ class TestWiring:
     def test_both_methods_are_registered_on_the_outputs_path(self):
         from aiohttp import web
 
-        from kiro_crew.apps.builtins.meetings.backend.routes import register_routes
+        from efm_go.apps.builtins.meetings.backend.routes import register_routes
 
         app = web.Application()
         register_routes(app)
@@ -591,7 +591,7 @@ class TestWiring:
         """Same rule the rest of this app's handlers follow."""
         import inspect
 
-        from kiro_crew.apps.builtins.meetings.backend.routes import meeting_lifecycle as ml
+        from efm_go.apps.builtins.meetings.backend.routes import meeting_lifecycle as ml
 
         for handler in (ml.handle_put_output, ml.handle_delete_output):
             src = inspect.getsource(handler)
@@ -603,7 +603,7 @@ class TestWiring:
         """Two copies of "which agents are editable" would eventually disagree."""
         import inspect
 
-        from kiro_crew.apps.builtins.meetings.backend.routes import meeting_lifecycle as ml
+        from efm_go.apps.builtins.meetings.backend.routes import meeting_lifecycle as ml
 
         assert "_is_editable(" in inspect.getsource(ml._collect_outputs)
         assert "_is_editable(" in inspect.getsource(ml._editable_agent)
@@ -617,7 +617,7 @@ class TestWiring:
         """The existence check and sidecar mutation must be one delete-safe unit."""
         import inspect
 
-        from kiro_crew.apps.builtins.meetings.backend.routes import meeting_lifecycle as ml
+        from efm_go.apps.builtins.meetings.backend.routes import meeting_lifecycle as ml
 
         for helper in (ml._save_edit, ml._drop_edit):
             src = inspect.getsource(helper)

@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.dashboard import chat_folder_suggest as fs
-from kiro_crew.history import INCOGNITO_MEMORY_MODES
+from efm_go.dashboard import chat_folder_suggest as fs
+from efm_go.history import INCOGNITO_MEMORY_MODES
 
 # ── _parse_choice ───────────────────────────────────────────────────────────
 

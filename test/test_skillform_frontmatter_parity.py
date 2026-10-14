@@ -58,7 +58,7 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew.frontmatter import SKILL_LOADER, parse_frontmatter
+from efm_go.frontmatter import SKILL_LOADER, parse_frontmatter
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _WEBSITE = _REPO_ROOT / "website"

@@ -17,9 +17,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import emit, lease
-from kiro_crew.crew_log.writer import WriterLimits
+from efm_go import crew_log as lg
+from efm_go.crew_log import emit, lease
+from efm_go.crew_log.writer import WriterLimits
 
 SESSION = "acp-exhaust-0001"
 SESSION_B = "acp-exhaust-0002"

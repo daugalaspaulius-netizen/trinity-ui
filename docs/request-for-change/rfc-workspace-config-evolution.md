@@ -104,7 +104,7 @@ Each phase includes its own test plan. The goal is to catch regressions early wi
 - Integration test: swap backend via config, verify read/write round-trip
 - Gate: all Phase 3 tests pass with the built-in backend selected via plugin system
 
-**How to run:** All tests run via `black src/kiro_crew test && isort src/kiro_crew test && flake8 src/kiro_crew test && pytest`. No separate test commands. Property tests use `@settings(max_examples=100)`. Test files: `test/test_config_schema.py`, `test/test_config_loader.py`, plus new files per phase.
+**How to run:** All tests run via `black src/efm_go test && isort src/efm_go test && flake8 src/efm_go test && pytest`. No separate test commands. Property tests use `@settings(max_examples=100)`. Test files: `test/test_config_schema.py`, `test/test_config_loader.py`, plus new files per phase.
 
 ### Phase 1: Formalized Config System
 
@@ -369,7 +369,7 @@ Key design decisions:
 
 - **Schema extensibility** — the `kind` field on `ConfigEntry` already supports `"core"` vs `"plugin"`. Plugin configs contribute JSON Schema fragments merged into the root schema at runtime.
 
-- **No new dependencies for core** — plugin implementations bring their own deps. The ABC interfaces live in `kiro_crew/plugins/base.py`.
+- **No new dependencies for core** — plugin implementations bring their own deps. The ABC interfaces live in `efm_go/plugins/base.py`.
 
 Use cases this enables:
 - Team-shared memory via remote PostgreSQL + pgvector

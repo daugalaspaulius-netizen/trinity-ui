@@ -27,12 +27,12 @@ from collections.abc import Callable
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew import session_ledger as sl
-from kiro_crew.crew_log import CrewLog
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.crew_log.errors import CODE_BAD_HEADER, CrewLogError
+from efm_go import crew_log as lg
+from efm_go import session_ledger as sl
+from efm_go.crew_log import CrewLog
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.crew_log.errors import CODE_BAD_HEADER, CrewLogError
 
 SLOT = "chat-1"
 RETIRED = "acp-retired"

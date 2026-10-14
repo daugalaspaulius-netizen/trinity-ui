@@ -127,7 +127,7 @@ description.** It states what we owe an app so that "make it an app" cannot beco
 a polite refusal. It does not claim parity exists today, and it says nothing about
 privilege in the other direction: an app's Python currently runs in the gateway
 process with full privileges (`_warn_third_party_execution` in
-`src/kiro_crew/apps/module_loader.py`), which
+`src/efm_go/apps/module_loader.py`), which
 is a separate problem owned by
 [`rfc-app-sandbox-isolation.md`](rfc-app-sandbox-isolation.md). The gap between the
 obligation and today's behavior is inventoried in

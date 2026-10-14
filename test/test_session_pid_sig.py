@@ -1,4 +1,4 @@
-"""Tests for :mod:`kiro_crew.session_pid_sig` — signed session_pid publication.
+"""Tests for :mod:`efm_go.session_pid_sig` — signed session_pid publication.
 
 The ``session_pid_<pid>.txt`` file is same-uid agent-writable, so the strict
 identity path must not trust it bare. These tests lock in the sidecar
@@ -14,10 +14,10 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import platform_compat, session_pid_sig
+from efm_go import platform_compat, session_pid_sig
 
 SESSION_KEY = "dashboard:chat-7-123456"
-LOGGER_NAME = "kiro_crew.session_pid_sig"
+LOGGER_NAME = "efm_go.session_pid_sig"
 
 
 def records_from_this_module(caplog, level="ERROR"):
@@ -633,7 +633,7 @@ class TestTrustRootRelocationIsFollowed:
         the moved file, so a verifier in ANOTHER process resolves the same bytes.
         The memory fallback is stubbed to different bytes, so a result equal to
         the real key can only have come from the file."""
-        from kiro_crew.sel import SecurityEventLog
+        from efm_go.sel import SecurityEventLog
 
         SecurityEventLog._instance = None
         SecurityEventLog._initialized = False
@@ -783,7 +783,7 @@ class TestSigningHealth:
     def test_never_constructs_the_sel_singleton(self, cfg):
         """Asking the question must not create the trust root it asks about,
         and must not put a mkdir + key write behind a read-only command."""
-        with patch("kiro_crew.sel.SecurityEventLog") as sel_cls:
+        with patch("efm_go.sel.SecurityEventLog") as sel_cls:
             session_pid_sig.signing_health()
         sel_cls.assert_not_called()
 
@@ -792,7 +792,7 @@ class TestSigningHealth:
         the socket binds, and this check is a diagnostic, not a gate."""
         import inspect
 
-        from kiro_crew.dashboard import token_auth
+        from efm_go.dashboard import token_auth
 
         assert "signing_health" not in inspect.getsource(
             token_auth.warm_auth_singletons

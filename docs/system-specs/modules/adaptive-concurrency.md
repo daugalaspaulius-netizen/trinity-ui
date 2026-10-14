@@ -1,4 +1,4 @@
-# Adaptive concurrency (`kiro_crew.adaptive`)
+# Adaptive concurrency (`efm_go.adaptive`)
 
 The controller that turns the user's concurrency configuration into a runtime
 cap the host can actually sustain. It implements RFC

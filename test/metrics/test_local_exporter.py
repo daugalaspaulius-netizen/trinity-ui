@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.metrics.local_exporter — JsonlMetricExporter."""
+"""Tests for efm_go.metrics.local_exporter — JsonlMetricExporter."""
 
 import json
 from unittest.mock import MagicMock
@@ -7,9 +7,9 @@ import pytest
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-from kiro_crew import platform_compat
-from kiro_crew.metrics import local_exporter
-from kiro_crew.metrics.local_exporter import JsonlMetricExporter
+from efm_go import platform_compat
+from efm_go.metrics import local_exporter
+from efm_go.metrics.local_exporter import JsonlMetricExporter
 
 
 def _provider(tmp_path):

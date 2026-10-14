@@ -157,7 +157,7 @@ def test_checkpoint_evidence_fault_uses_only_an_empty_isolated_directory(
 ):
     from contextlib import nullcontext
 
-    from kiro_crew.testing import harness
+    from efm_go.testing import harness
 
     home = tmp_path / "gateway"
     runs = home / "workflows" / "runs"

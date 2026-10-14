@@ -16,8 +16,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import autonudge_judge as judge
-from kiro_crew.autonudge import (
+from efm_go import autonudge_judge as judge
+from efm_go.autonudge import (
     _JUDGE_QUIET_STREAK_FLOOR_DEFAULT,
     _MAX_QUIET_STREAK,
     AutoNudgeService,
@@ -28,11 +28,11 @@ from kiro_crew.autonudge import (
     infer_subject,
     loop_subject,
 )
-from kiro_crew.decisions.points import nudge_wake as point
-from kiro_crew.decisions.types import Answer
-from kiro_crew.irq import Outcome, Verdict
-from kiro_crew.probes import targets as probe_targets
-from kiro_crew.validation import JUDGE_OFF_KEY, ValidationError, validate_judge_spec
+from efm_go.decisions.points import nudge_wake as point
+from efm_go.decisions.types import Answer
+from efm_go.irq import Outcome, Verdict
+from efm_go.probes import targets as probe_targets
+from efm_go.validation import JUDGE_OFF_KEY, ValidationError, validate_judge_spec
 
 
 def _refused_row(first_seen: bool | None) -> dict[str, object]:
@@ -1293,7 +1293,7 @@ class TestJudgeTickFallsOpen:
         evidence = [
             {"source": "s", "kind": point.KIND_PR_CHECKS, "age_s": 1.0, "text": "checks pending"}
         ]
-        with patch("kiro_crew.decisions.decide", refuse):
+        with patch("efm_go.decisions.decide", refuse):
             verdict = asyncio.run(point.judge_tick("watch", evidence=evidence))
         assert verdict.outcome is Outcome.FALLBACK
 
@@ -1304,7 +1304,7 @@ class TestJudgeTickFallsOpen:
         evidence = [
             {"source": "s", "kind": point.KIND_PR_CHECKS, "age_s": 1.0, "text": "checks pending"}
         ]
-        with patch("kiro_crew.decisions.decide", boom):
+        with patch("efm_go.decisions.decide", boom):
             verdict = asyncio.run(point.judge_tick("watch", evidence=evidence))
         assert verdict.outcome is Outcome.FALLBACK
 
@@ -1514,7 +1514,7 @@ class TestCollectors:
         agree with the reader while the actual producer emits different keys, which
         is how a collector reading absent fields passed every test it had.
         """
-        from kiro_crew.monitoring.pull_request import (
+        from efm_go.monitoring.pull_request import (
             PullRequestCheck,
             PullRequestFacts,
             canonical_pull_request_facts,
@@ -1552,7 +1552,7 @@ class TestCollectors:
         Driven through the same screen and state builder the tick uses, so this
         fails if the rendered row is dropped by the scrub or the kind check.
         """
-        from kiro_crew.monitoring.pull_request import (
+        from efm_go.monitoring.pull_request import (
             PullRequestCheck,
             PullRequestFacts,
             canonical_pull_request_facts,
@@ -1903,7 +1903,7 @@ class TestTheStructuredPathRefusesABrief:
 
     @staticmethod
     def _refusal_set() -> set[str]:
-        from kiro_crew.dashboard import session_directive_apply
+        from efm_go.dashboard import session_directive_apply
 
         source = inspect.getsource(session_directive_apply)
         line = next(ln for ln in source.splitlines() if "legacy_only = sorted(" in ln)
@@ -1961,9 +1961,9 @@ class TestAnOwedWakeSurvives:
             return Verdict(outcome=outcome, body="x")
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             asyncio.run(svc._judge_tick_is_quiet(loop))
         return loop
@@ -2029,8 +2029,8 @@ class TestAScreenedPullRequestTickLeavesTheProbesQuietAlone:
         loop.message = "https://github.com/o/r/pull/7"
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
         ):
             got = asyncio.run(svc._judge_tick_is_quiet(loop))
         assert got is True, "the probe already read this subject, so the tick stays free"
@@ -2048,8 +2048,8 @@ class TestAScreenedPullRequestTickLeavesTheProbesQuietAlone:
         loop.message = "https://github.com/o/r/pull/7"
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
         ):
             got = asyncio.run(svc._judge_tick_is_quiet(loop))
         assert got is False, "one target nobody read makes the reading incomplete"
@@ -2110,9 +2110,9 @@ class TestARetargetDoesNotLeakOrLie:
             return Verdict(outcome=Outcome.QUIET, body="quiet")
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             answer = asyncio.run(svc._judge_tick_is_quiet(loop))
 
@@ -2159,8 +2159,8 @@ class TestANarrowedWatchIsNeverWidened:
 
         svc._collect_judge_evidence = collect
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
         ):
             assert asyncio.run(svc._judge_tick_is_quiet(loop)) is False
 
@@ -2199,9 +2199,9 @@ class TestANarrowedWatchIsNeverWidened:
             return Verdict(outcome=Outcome.QUIET, body="quiet")
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             answer = asyncio.run(svc._judge_tick_is_quiet(loop))
 
@@ -2259,9 +2259,9 @@ class TestCursorsMoveOnlyWithAVerdict:
         loop.judge_cursors = {"chat-2-2": 7}
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             try:
                 asyncio.run(svc._judge_tick_is_quiet(loop))
@@ -2279,9 +2279,9 @@ class TestCursorsMoveOnlyWithAVerdict:
         loop.judge_cursors = {"chat-2-2": 7}
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             asyncio.run(svc._judge_tick_is_quiet(loop))
 
@@ -2358,7 +2358,7 @@ class TestTickLeavesEverythingAloneWhenItShould:
 
         svc._collect_judge_evidence = never
         loop = _loop({"wake_when": "x"})
-        with patch("kiro_crew.decisions.is_enabled", lambda *a, **k: False):
+        with patch("efm_go.decisions.is_enabled", lambda *a, **k: False):
             assert asyncio.run(svc._judge_tick_is_quiet(loop)) is None
         assert loop.judge == {"wake_when": "x"}, "the brief is kept for when the scope arrives"
 
@@ -2372,7 +2372,7 @@ class TestTickLeavesEverythingAloneWhenItShould:
         So this asserts against the module's SYMBOLS rather than a call: the fault is a
         second rule existing at all, and a call-level test passes either way.
         """
-        from kiro_crew import autonudge as _autonudge
+        from efm_go import autonudge as _autonudge
 
         for gone in (
             "_judge_lane",
@@ -2417,8 +2417,8 @@ class TestTickVerdicts:
             return ans
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.decide", decide),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.decide", decide),
         ):
             return asyncio.run(svc._judge_tick_is_quiet(loop))
 
@@ -2629,11 +2629,11 @@ class TestTheDefaultBrief:
             return Verdict(outcome=Outcome.QUIET, body="no new evidence")
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
             # GRANTED, because the default brief's own precondition is this point's
             # egress scope -- these cases are a machine whose owner opted in.
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             return asyncio.run(svc._judge_tick_is_quiet(loop))
 
@@ -2678,9 +2678,9 @@ class TestTheDefaultBrief:
             return Verdict(outcome=Outcome.QUIET, body="no new evidence")
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: False),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: False),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             got = asyncio.run(svc._judge_tick_is_quiet(_loop()))
         assert got is None, "scope off leaves the tick exactly as today"
@@ -2696,9 +2696,9 @@ class TestTheDefaultBrief:
             return Verdict(outcome=Outcome.QUIET, body="no new evidence")
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: False),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: False),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             got = asyncio.run(svc._judge_tick_is_quiet(_loop({"wake_when": "RULING"})))
         assert got is True
@@ -2756,9 +2756,9 @@ class TestPersistBeforePublish:
             return Verdict(outcome=outcome, body="x")
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             got = asyncio.run(svc._judge_tick_is_quiet(_loop({"wake_when": "RULING"})))
         return got, trail
@@ -2812,9 +2812,9 @@ class TestPersistBeforePublish:
             return Verdict(outcome=Outcome.QUIET, body="x")
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.judge_evidence_scope_granted", lambda **k: True),
-            patch("kiro_crew.decisions.points.nudge_wake.judge_tick", tick),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.judge_evidence_scope_granted", lambda **k: True),
+            patch("efm_go.decisions.points.nudge_wake.judge_tick", tick),
         ):
             got = asyncio.run(svc._judge_tick_is_quiet(loop))
         assert got is False, "a verdict about a withdrawn question fires rather than suppressing"
@@ -2857,8 +2857,8 @@ class TestTranscriptNotice:
             return ans
 
         with (
-            patch("kiro_crew.decisions.is_enabled", lambda *a, **k: True),
-            patch("kiro_crew.decisions.decide", decide),
+            patch("efm_go.decisions.is_enabled", lambda *a, **k: True),
+            patch("efm_go.decisions.decide", decide),
         ):
             return asyncio.run(svc._judge_tick_is_quiet(loop))
 
@@ -2929,7 +2929,7 @@ class TestUpdatePathCarriesTheBrief:
     """
 
     def test_the_tool_copies_a_validated_brief_into_the_patch(self) -> None:
-        from kiro_crew.mcp_tools import control
+        from efm_go.mcp_tools import control
 
         assert 'patch["judge"] = validate_judge_spec(args["judge"])' in inspect.getsource(control)
 
@@ -2941,7 +2941,7 @@ class TestUpdatePathCarriesTheBrief:
         age 0.0 -- which is silent, and is exactly what defeats the drop-oldest-first
         bound the recency sort exists to serve.
         """
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         source = inspect.getsource(gateway)
         assert 'payload["observed_at"] = float(at)' in source
@@ -2954,14 +2954,14 @@ class TestUpdatePathCarriesTheBrief:
         only the last ``MAX_ROWS_PER_TARGET``, so an unbounded read loses the oldest
         rows of any burst larger than that and never reads them again.
         """
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         source = inspect.getsource(gateway)
         assert "limit=_judge.MAX_ROWS_PER_TARGET," in source
 
     def test_the_reader_checks_the_subject_before_answering(self) -> None:
         """One monitor answers every target, so the subject must be verified."""
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         source = inspect.getsource(gateway)
         assert "_judge.pr_observation_is_about(" in source
@@ -2975,8 +2975,8 @@ class TestTheReaderOnlyAnswersForItsOwnSubject:
     could then rule quiet on a different pull request's facts.
     """
 
-    WATCHED = "https://github.com/kirodotdev/KiroCrew/pull/12787"
-    OTHER = "https://github.com/kirodotdev/KiroCrew/pull/12788"
+    WATCHED = "https://efmleads.com/pull/12787"
+    OTHER = "https://efmleads.com/pull/12788"
 
     def _about(self, target: str, **kwargs: Any) -> bool:
         return judge.pr_observation_is_about(
@@ -2997,11 +2997,11 @@ class TestTheReaderOnlyAnswersForItsOwnSubject:
 
     def test_the_same_slug_on_another_host_is_refused(self) -> None:
         """One slug on two servers is two pull requests, so the host is identity."""
-        assert self._about("https://github.example.com/kirodotdev/KiroCrew/pull/12787") is False
+        assert self._about("https://github.example.com/efmleads.com/pull/12787") is False
 
     def test_another_spelling_of_the_watched_subject_is_accepted(self) -> None:
         """Owner and monitor are spelled by different writers, so both are inferred."""
-        assert self._about("https://github.com/kirodotdev/KiroCrew/pull/12787/files") is True
+        assert self._about("https://efmleads.com/pull/12787/files") is True
 
     def test_an_observation_labelled_with_another_subject_is_refused(self) -> None:
         """The reading's own label disagreeing with its record is not a guess to make."""
@@ -3037,16 +3037,16 @@ class TestTheReaderOnlyAnswersForItsOwnSubject:
 
     def test_an_empty_object_survives_as_a_clear(self) -> None:
         """``{}`` is falsy, so an ``if args.get(...)`` guard would silently eat it."""
-        from kiro_crew.mcp_tools import control
+        from efm_go.mcp_tools import control
 
         source = inspect.getsource(control)
         guard = source[: source.index('patch["judge"] = validate_judge_spec')].rsplit("if ", 1)[1]
         assert "is not None" in guard, "a truthiness guard would drop the clear"
 
     def test_every_hop_between_the_tool_and_the_loop_names_it(self) -> None:
-        from kiro_crew import autonudge_authz
-        from kiro_crew.autonudge import AutoNudgeService
-        from kiro_crew.dashboard import session_directive_apply
+        from efm_go import autonudge_authz
+        from efm_go.autonudge import AutoNudgeService
+        from efm_go.dashboard import session_directive_apply
 
         applier = inspect.getsource(session_directive_apply)
         assert 'judge=patch.get("judge")' in applier, "this applier names every kwarg"
@@ -3069,7 +3069,7 @@ class TestTheReaderAnswersForTheShapeAMonitorActuallyStores:
     producer emits.
     """
 
-    MESSAGE = "Watch https://github.com/kirodotdev/KiroCrew/pull/12787 until CI is green."
+    MESSAGE = "Watch https://efmleads.com/pull/12787 until CI is green."
 
     def _stored(self) -> tuple[str, str]:
         monitor = infer_monitor(self.MESSAGE, now=1_000.0)
@@ -3079,7 +3079,7 @@ class TestTheReaderAnswersForTheShapeAMonitorActuallyStores:
     def test_the_stored_subject_is_the_canonical_shorthand(self) -> None:
         """The premise: what is stored is not what the owner typed."""
         kind, watched = self._stored()
-        assert watched == "kirodotdev/KiroCrew#12787"
+        assert watched == "efmleads.com#12787"
         assert kind == "gh-pr"
         assert judge._pr_identity(watched) is None
 
@@ -3103,7 +3103,7 @@ class TestTheReaderAnswersForTheShapeAMonitorActuallyStores:
         kind, watched = self._stored()
         assert (
             judge.pr_observation_is_about(
-                "https://github.com/kirodotdev/KiroCrew/pull/12788",
+                "https://efmleads.com/pull/12788",
                 monitor_kind=kind,
                 monitor_target=watched,
                 observation={},
@@ -3245,13 +3245,13 @@ class TestTheBriefIsCredentialScrubbed:
         asyncio.run(main())
 
     def test_the_decode_entrance_scrubs(self) -> None:
-        from kiro_crew import autonudge as _autonudge
+        from efm_go import autonudge as _autonudge
 
         out = _autonudge._bounded_judge_spec({"wake_when": self.SECRET})
         assert "sk-live-AbCd1234567890abcdefghij" not in out["wake_when"]
 
     def test_a_target_carrying_a_credential_is_scrubbed(self) -> None:
-        from kiro_crew import autonudge as _autonudge
+        from efm_go import autonudge as _autonudge
 
         out = _autonudge.scrubbed_judge_spec(
             {"targets": ["https://api.example.com/x?token=ghp_AbCd1234567890abcdefghijklmn"]}
@@ -3260,9 +3260,9 @@ class TestTheBriefIsCredentialScrubbed:
 
     def test_a_clean_forge_target_is_untouched(self) -> None:
         """The scrub cannot be allowed to break a legitimate watch."""
-        from kiro_crew import autonudge as _autonudge
+        from efm_go import autonudge as _autonudge
 
-        url = "https://github.com/kirodotdev/KiroCrew/pull/12787"
+        url = "https://efmleads.com/pull/12787"
         out = _autonudge.scrubbed_judge_spec({"targets": [url], "wake_when": "a check goes red"})
         assert out["targets"] == [url]
         assert out["wake_when"] == "a check goes red"
@@ -3273,7 +3273,7 @@ class TestTheBriefIsCredentialScrubbed:
         Clipping first would leave the marker free to land over the bound, so the order
         is load-bearing and the bound is asserted on the scrubbed value.
         """
-        from kiro_crew import autonudge as _autonudge
+        from efm_go import autonudge as _autonudge
 
         bound = _autonudge._JUDGE_MAX_CRITERION_CHARS
         raw = ("x" * (bound - 20)) + " Bearer sk-live-AbCd1234567890abcdefghij"
@@ -3301,8 +3301,8 @@ class TestThePublishedKeysReachTheDashboardReader:
 
     @staticmethod
     def _published(**loop_kwargs: Any) -> dict:
-        from kiro_crew.autonudge import NudgeLoop, new_goal_token
-        from kiro_crew.dashboard.handlers.autonudge import _serialize_for_legacy_reader
+        from efm_go.autonudge import NudgeLoop, new_goal_token
+        from efm_go.dashboard.handlers.autonudge import _serialize_for_legacy_reader
 
         loop = NudgeLoop(
             id="l1",
@@ -3363,7 +3363,7 @@ class TestNudgeWakeConfigSection:
 
     def test_the_shipped_default_is_the_lane_resolver_s_own_fallback(self) -> None:
         """An install that never wrote the key takes ``auto``."""
-        from kiro_crew.config.sections import DecisionsConfig
+        from efm_go.config.sections import DecisionsConfig
 
         assert DecisionsConfig().nudge_wake.provider == "auto"
         assert DecisionsConfig.from_raw({}).nudge_wake.provider == "auto"
@@ -3375,7 +3375,7 @@ class TestNudgeWakeConfigSection:
         the number because its probe path answers the same question, and a copy here
         would be a second literal to keep in step.
         """
-        from kiro_crew.config.sections import DecisionsConfig
+        from efm_go.config.sections import DecisionsConfig
 
         assert DecisionsConfig().nudge_wake.quiet_streak_floor == 0
         # The binding this section relies on: the engine's default IS the probe's.
@@ -3383,7 +3383,7 @@ class TestNudgeWakeConfigSection:
 
     def test_the_engine_resolves_the_sentinel_to_the_shipped_floor(self) -> None:
         """A stored 0 becomes the probe's floor, through the engine's real reader."""
-        from kiro_crew.config.sections import DecisionsConfig
+        from efm_go.config.sections import DecisionsConfig
 
         stored = DecisionsConfig.from_raw({}).nudge_wake
 
@@ -3391,7 +3391,7 @@ class TestNudgeWakeConfigSection:
             decisions = DecisionsConfig(nudge_wake=stored)
 
         service = AutoNudgeService.__new__(AutoNudgeService)
-        with patch("kiro_crew.config.live.snapshot", return_value=_Snapshot()):
+        with patch("efm_go.config.live.snapshot", return_value=_Snapshot()):
             assert service._judge_quiet_streak_floor() == _MAX_QUIET_STREAK
 
     @pytest.mark.parametrize(
@@ -3412,7 +3412,7 @@ class TestNudgeWakeConfigSection:
     def test_the_lane_is_normalised_so_the_saved_config_says_what_is_in_force(
         self, raw: dict, expected: str
     ) -> None:
-        from kiro_crew.config.sections import DecisionsConfig
+        from efm_go.config.sections import DecisionsConfig
 
         assert DecisionsConfig.from_raw({"nudge_wake": raw}).nudge_wake.provider == expected
 
@@ -3433,7 +3433,7 @@ class TestNudgeWakeConfigSection:
     def test_the_floor_is_coerced_without_ever_reading_as_unbounded(
         self, raw: dict, stored: int
     ) -> None:
-        from kiro_crew.config.sections import DecisionsConfig
+        from efm_go.config.sections import DecisionsConfig
 
         assert DecisionsConfig.from_raw({"nudge_wake": raw}).nudge_wake.quiet_streak_floor == stored
 
@@ -3443,7 +3443,7 @@ class TestNudgeWakeConfigSection:
         ``config.json`` is agent-writable, and a floor that could be raised would be a
         second way to silence a watch with no new code -- only a number.
         """
-        from kiro_crew.config.sections import DecisionsConfig
+        from efm_go.config.sections import DecisionsConfig
 
         stored = DecisionsConfig.from_raw({"nudge_wake": {"quiet_streak_floor": 9999}}).nudge_wake
 
@@ -3451,13 +3451,13 @@ class TestNudgeWakeConfigSection:
             decisions = DecisionsConfig(nudge_wake=stored)
 
         service = AutoNudgeService.__new__(AutoNudgeService)
-        with patch("kiro_crew.config.live.snapshot", return_value=_Snapshot()):
+        with patch("efm_go.config.live.snapshot", return_value=_Snapshot()):
             assert service._judge_quiet_streak_floor() == _JUDGE_QUIET_STREAK_FLOOR_DEFAULT
 
     @pytest.mark.parametrize("section", [None, "jev", 7, [], True])
     def test_a_non_object_section_reads_as_the_defaults(self, section: object) -> None:
         """A hand-edited config.json must not stop the gateway booting."""
-        from kiro_crew.config.sections import DecisionsConfig
+        from efm_go.config.sections import DecisionsConfig
 
         got = DecisionsConfig.from_raw({"nudge_wake": section}).nudge_wake
         assert got.provider == "auto"
@@ -3465,7 +3465,7 @@ class TestNudgeWakeConfigSection:
 
     def test_registering_the_section_did_not_disturb_the_rest_of_decisions(self) -> None:
         """The sibling keys still parse, including alongside a judge section."""
-        from kiro_crew.config.sections import DecisionsConfig
+        from efm_go.config.sections import DecisionsConfig
 
         got = DecisionsConfig.from_raw(
             {
@@ -3495,7 +3495,7 @@ class TestTheHttpArmingRouteCarriesTheBrief:
     def _app(self, monkeypatch, fake_svc):
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import autonudge as _handler
+        from efm_go.dashboard.handlers import autonudge as _handler
 
         monkeypatch.setattr(_handler, "_autonudge_get", lambda: fake_svc)
         state = MagicMock()
@@ -3608,7 +3608,7 @@ class TestTheLoopPayloadPublishesNoEvidence:
     """
 
     def _payload(self, **judge_kw):
-        from kiro_crew.dashboard.handlers.autonudge import _serialize_for_legacy_reader
+        from efm_go.dashboard.handlers.autonudge import _serialize_for_legacy_reader
 
         loop = NudgeLoop(id="l1", slot_key="chat-1-1", message="patrol chat-2-2", **judge_kw)
         return _serialize_for_legacy_reader(loop)
@@ -3722,7 +3722,7 @@ class TestTheReadingHappensBeforeTheJudge:
         one stored by the tick before it -- a fresh service per tick has no previous
         reading and could only ever answer "changed".
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -3746,7 +3746,7 @@ class TestTheReadingHappensBeforeTheJudge:
 
     @staticmethod
     def _observation(**fields: Any):
-        from kiro_crew.probes import gh_pr
+        from efm_go.probes import gh_pr
 
         base: dict[str, Any] = {
             "repo": "acme/widgets",
@@ -3774,7 +3774,7 @@ class TestTheReadingHappensBeforeTheJudge:
         which publishes the reading on the probe, and then returns the kernel's own
         verdict. Pinning only one of the two would test a state the code cannot reach.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -3811,7 +3811,7 @@ class TestTheReadingHappensBeforeTheJudge:
         self, tmp_path, monkeypatch
     ) -> None:
         """A close without a merge ends on a question, so it must not read as done."""
-        from kiro_crew.monitoring.models import MonitorOutcome
+        from efm_go.monitoring.models import MonitorOutcome
 
         _quiet, loop, _calls = self._drive(
             tmp_path, monkeypatch, Outcome.QUIET, True, self._observation(state="CLOSED")
@@ -3842,8 +3842,8 @@ class TestTheReadingHappensBeforeTheJudge:
         the record's observation field has no other writer on this path -- so an
         owner's criterion about their pull request would be read against nothing.
         """
-        from kiro_crew import autonudge_judge as _judge
-        from kiro_crew.probes import gh_pr
+        from efm_go import autonudge_judge as _judge
+        from efm_go.probes import gh_pr
 
         remark = gh_pr.Remark(
             kind="review",
@@ -4058,7 +4058,7 @@ class TestTheReadingHappensBeforeTheJudge:
         publishes nothing and fires, because a reading the record could not keep is not
         ground for staying quiet.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4100,7 +4100,7 @@ class TestTheReadingHappensBeforeTheJudge:
         and the unchanged check would suppress a wake nobody ever judged. So the
         baseline advances with the VERDICT, and a cancelled tick leaves it untouched.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4145,7 +4145,7 @@ class TestTheReadingHappensBeforeTheJudge:
         and suppresses the watch the owner just re-aimed until the streak floor. Same
         comparison the judge call already makes twice, applied to the baseline.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4235,7 +4235,7 @@ class TestTheReadingHappensBeforeTheJudge:
         can only be the commit, and that ordering -- disk first -- is exactly what is at
         issue.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4278,7 +4278,7 @@ class TestTheReadingHappensBeforeTheJudge:
         commit reaches memory only once it has reached disk, and a refused write leaves
         both exactly as they were.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4320,7 +4320,7 @@ class TestTheReadingHappensBeforeTheJudge:
         would call every remark in the horizon new, spend a turn on remarks the record
         already knows, and keep doing so until a write lands.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4366,7 +4366,7 @@ class TestTheReadingHappensBeforeTheJudge:
         any other writer can take before the refusal still carries the prior baseline,
         and memory, that snapshot, and the record all agree afterwards.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4416,7 +4416,7 @@ class TestTheReadingHappensBeforeTheJudge:
         the loop would back off or stand down on a failure a completed turn had just
         disproved.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4470,7 +4470,7 @@ class TestTheReadingHappensBeforeTheJudge:
         record it does not match, which is the disagreement this whole commit exists to
         rule out.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4522,8 +4522,8 @@ class TestTheReadingHappensBeforeTheJudge:
         the same pair and must stamp ``first_seen_this_tick`` only on the remark the
         stored baseline has never held -- an emptied baseline would stamp both.
         """
-        import kiro_crew.autonudge as _an
-        from kiro_crew.probes import gh_pr
+        import efm_go.autonudge as _an
+        from efm_go.probes import gh_pr
 
         async def on_fire(loop: NudgeLoop) -> bool:
             return True
@@ -4592,7 +4592,7 @@ class TestTheReadingHappensBeforeTheJudge:
 
     def test_a_changed_reading_still_delivers_with_no_judge(self, tmp_path, monkeypatch) -> None:
         """A digest that moved is a subject that moved, so the turn is spent."""
-        from kiro_crew.probes import gh_pr
+        from efm_go.probes import gh_pr
 
         first = self._observation()
         changed = self._observation(
@@ -4613,7 +4613,7 @@ class TestTheReadingHappensBeforeTheJudge:
         would be withheld to the streak floor. Wholeness is decided by the same
         ``pr_target_is_unread`` rule the drop path uses, so the two cannot disagree.
         """
-        from kiro_crew.probes import gh_pr
+        from efm_go.probes import gh_pr
 
         partial = self._observation(
             status=gh_pr.STATUS_PARTIAL,
@@ -4633,7 +4633,7 @@ class TestTheReadingHappensBeforeTheJudge:
         ``observed_at`` is the clock and a remark's ``age_s`` grows every tick, so a
         digest carrying either would call every reading a change.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         base = {
             "target": "o/r#1",
@@ -4680,22 +4680,22 @@ class TestEachBriefBoundHasOneSpelling:
     """
 
     def test_the_target_count_is_spelled_once(self) -> None:
-        from kiro_crew import autonudge as _autonudge
-        from kiro_crew import validation as _validation
+        from efm_go import autonudge as _autonudge
+        from efm_go import validation as _validation
 
         assert judge.MAX_TARGETS is _validation.MAX_JUDGE_TARGETS
         assert _autonudge._JUDGE_MAX_TARGETS is _validation.MAX_JUDGE_TARGETS
 
     def test_the_criterion_length_is_spelled_once(self) -> None:
-        from kiro_crew import autonudge as _autonudge
-        from kiro_crew import validation as _validation
+        from efm_go import autonudge as _autonudge
+        from efm_go import validation as _validation
 
         assert point.MAX_CRITERION_CHARS is _validation.MAX_JUDGE_CRITERION_CHARS
         assert _autonudge._JUDGE_MAX_CRITERION_CHARS is _validation.MAX_JUDGE_CRITERION_CHARS
 
     def test_the_target_length_is_spelled_once(self) -> None:
-        from kiro_crew import autonudge as _autonudge
-        from kiro_crew import validation as _validation
+        from efm_go import autonudge as _autonudge
+        from efm_go import validation as _validation
 
         assert _autonudge._JUDGE_MAX_TARGET_CHARS is _validation.MAX_JUDGE_TARGET_CHARS
 
@@ -4746,9 +4746,9 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
     nothing.
     """
 
-    URL = "https://github.com/kirodotdev/KiroCrew/pull/13936"
+    URL = "https://efmleads.com/pull/13936"
     MESSAGE = "Babysit PR 13936 until every check is green; stop when it merges."
-    SUBJECT = "kirodotdev/KiroCrew#13936"
+    SUBJECT = "efmleads.com#13936"
 
     def _spec(self) -> dict[str, Any]:
         return {
@@ -4876,11 +4876,11 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
             gate=True,
         )
         svc._cancel_timer(loop.id)
-        other = "https://github.com/kirodotdev/KiroCrew/pull/14017"
+        other = "https://efmleads.com/pull/14017"
         updated = await svc.update(loop.id, judge={"targets": [other]})
         svc._cancel_timer(loop.id)
         assert updated.monitor is not None
-        assert updated.monitor.target == "kirodotdev/KiroCrew#14017"
+        assert updated.monitor.target == "efmleads.com#14017"
 
     @pytest.mark.asyncio
     async def test_a_brief_retarget_advances_the_config_generation(self, tmp_path) -> None:
@@ -4902,7 +4902,7 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
         )
         svc._cancel_timer(loop.id)
         before = loop.config_generation
-        other = "https://github.com/kirodotdev/KiroCrew/pull/14017"
+        other = "https://efmleads.com/pull/14017"
         updated = await svc.update(loop.id, judge={"targets": [other]})
         svc._cancel_timer(loop.id)
         assert updated.monitor is not None and updated.monitor.target.endswith("#14017")
@@ -4928,7 +4928,7 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
     def test_two_pull_requests_in_the_brief_leave_the_message_deciding(self) -> None:
         """A loop holds one monitor, so a list of two selects none -- and takes nothing away."""
         spec = {
-            "targets": [self.URL, "https://github.com/kirodotdev/KiroCrew/pull/14017"],
+            "targets": [self.URL, "https://efmleads.com/pull/14017"],
         }
         assert infer_monitor(self.MESSAGE, now=1_000.0, judge=spec) is None
         message = f"Watch {self.URL} until it merges."
@@ -4937,7 +4937,7 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
 
     def test_a_shorthand_in_the_brief_still_selects_nothing(self) -> None:
         """One grammar: the collector drops ``owner/name#N`` too, so it cannot be watched."""
-        spec = {"targets": ["kirodotdev/KiroCrew#13936"]}
+        spec = {"targets": ["efmleads.com#13936"]}
         assert judge.pr_targets_of(spec) == []
         assert infer_monitor(self.MESSAGE, now=1_000.0, judge=spec) is None
 
@@ -4957,7 +4957,7 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
         still retires when it merges. Watching the brief's entry instead would let the
         BLOCKER merging retire a loop whose own work was never observed.
         """
-        blocker = "https://github.com/kirodotdev/KiroCrew/pull/14017"
+        blocker = "https://efmleads.com/pull/14017"
         spec = {"wake_when": "the blocker moves", "targets": [blocker]}
         message = f"Babysit {self.URL} to green."
         subject = infer_subject(message, spec)
@@ -4993,14 +4993,14 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
 
     def test_the_blocker_is_never_the_watched_subject(self) -> None:
         """Named separately because watching the blocker is the specific harm."""
-        blocker = "https://github.com/kirodotdev/KiroCrew/pull/14017"
+        blocker = "https://efmleads.com/pull/14017"
         for message in (
             f"Drive {self.URL} to green.",
             "Babysit PR #13936 until every check is green.",
-            "Drive kirodotdev/KiroCrew#13936 to green.",
+            "Drive efmleads.com#13936 to green.",
         ):
             monitor = infer_monitor(message, now=1_000.0, judge={"targets": [blocker]})
-            assert monitor is None or monitor.target != "kirodotdev/KiroCrew#14017", message
+            assert monitor is None or monitor.target != "efmleads.com#14017", message
 
     def test_a_shorthand_instruction_refuses_the_briefs_entry(self) -> None:
         """The predicate must use ``infer``'s own wider notion of naming a pull request.
@@ -5009,10 +5009,10 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
         pull request, so the brief must not step in. A URL-only predicate read these as
         "names none" and handed the watch to the blocker.
         """
-        blocker = "https://github.com/kirodotdev/KiroCrew/pull/14017"
+        blocker = "https://efmleads.com/pull/14017"
         for message in (
             "Babysit PR #13936 until every check is green.",
-            "Drive kirodotdev/KiroCrew#13936 to green.",
+            "Drive efmleads.com#13936 to green.",
         ):
             assert probe_targets.names_pull_request(message) is True, message
             assert infer_subject(message, {"targets": [blocker]}) is None, message
@@ -5025,7 +5025,7 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
 
     def test_a_source_location_is_not_a_pull_request(self) -> None:
         """A cited line number must not read as a second subject and strip the gate."""
-        message = "Babysit PR 13936; the site is src/kiro_crew/autonudge.py#1751."
+        message = "Babysit PR 13936; the site is src/efm_go/autonudge.py#1751."
         assert probe_targets.names_pull_request(message) is False
         monitor = infer_monitor(message, now=1_000.0, judge=self._spec())
         assert monitor is not None and monitor.target == self.SUBJECT
@@ -5038,7 +5038,7 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
 
     def test_a_stored_loop_keeps_the_monitor_its_instruction_named(self) -> None:
         """A stored loop in the blocked-on shape must not lose the watch base gave it."""
-        blocker = "https://github.com/kirodotdev/KiroCrew/pull/14017"
+        blocker = "https://efmleads.com/pull/14017"
         loop = _loop({"targets": [blocker]})
         loop.message = f"Babysit {self.URL} to green."
         loop.monitor = self._monitor()
@@ -5052,7 +5052,7 @@ class TestTheBriefsOwnTargetListDecidesTheWatchedSubject:
         of the two named subjects would resolve that ambiguity by the side door -- and
         the one it picks is the blocker, which is the harm.
         """
-        blocker = "https://github.com/kirodotdev/KiroCrew/pull/14017"
+        blocker = "https://efmleads.com/pull/14017"
         message = f"Babysit {self.URL}; blocked on {blocker} landing first."
         assert probe_targets.infer(message) is None, "the premise: the message is ambiguous"
         assert probe_targets.names_pull_request(message) is True

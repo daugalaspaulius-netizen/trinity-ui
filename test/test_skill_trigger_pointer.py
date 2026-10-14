@@ -12,11 +12,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig, SkillsConfig
-from kiro_crew.context import ContextBuilder
-from kiro_crew.context_blocks import split_blocks
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import _SHORT_DESC_CHARS, SkillsLoader
+from efm_go.config.loader import KiroCrewConfig, SkillsConfig
+from efm_go.context import ContextBuilder
+from efm_go.context_blocks import split_blocks
+from efm_go.memory import MemoryStore
+from efm_go.skills import _SHORT_DESC_CHARS, SkillsLoader
 
 BODY_SENTINEL = "STEP ONE: pour the concrete before the rebar."
 HINT_HEADER = "[Relevant skills for this message]"
@@ -338,7 +338,7 @@ class TestDeliveryIsAuditable:
                 if isinstance(meta, dict):
                     captured.update(meta)
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: _Sel())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: _Sel())
 
         loader.get_triggered_skills("zebra quokka")
 

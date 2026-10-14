@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
 
 def _loaded(tmp_path: Path, data: dict) -> KiroCrewConfig:
@@ -31,7 +31,7 @@ def _loaded(tmp_path: Path, data: dict) -> KiroCrewConfig:
     and proves nothing about what a hand-edited file produces.
     """
     (tmp_path / "config.json").write_text(json.dumps(data), encoding="utf-8")
-    with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+    with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
         return KiroCrewConfig.load()
 
 
@@ -139,13 +139,13 @@ def test_a_negative_knowledge_budget_keeps_its_default_instead_of_clamping_to_ze
 def test_the_completion_keep_ceiling_matches_its_owner() -> None:
     """The one bound that genuinely has to be spelled twice, pinned equal.
 
-    `context_management` does `from kiro_crew.config.loader import config_dir`, so the
+    `context_management` does `from efm_go.config.loader import config_dir`, so the
     loader cannot import `RESULT_FILE_MAX_BYTES` back without a circular import. The value
     therefore lives in both modules, and this test is the only place the two spellings can
     be held together -- a test imports both without the cycle.
     """
-    from kiro_crew.config import loader
-    from kiro_crew.context_management import RESULT_FILE_MAX_BYTES
+    from efm_go.config import loader
+    from efm_go.context_management import RESULT_FILE_MAX_BYTES
 
     assert loader.COMPLETION_KEEP_CHARS_MAX == RESULT_FILE_MAX_BYTES, (
         "the loader's completion-keep ceiling has drifted from context_management's "
@@ -161,7 +161,7 @@ def test_the_write_table_reads_its_bounds_from_the_loader_constants() -> None:
     share named constants. This is NOT tautological: it fails the moment someone
     re-hardcodes a literal in either place.
     """
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     expected = {
         "agent.soft_stop_budget_secs": (loader.SOFT_STOP_BUDGET_MIN, loader.SOFT_STOP_BUDGET_MAX),

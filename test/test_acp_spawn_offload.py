@@ -35,11 +35,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.acp.client as client_mod
-import kiro_crew.acp.runtime as runtime_mod
-from kiro_crew.acp.client import AcpClient, _resolve_spawn_env
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+import efm_go.acp.client as client_mod
+import efm_go.acp.runtime as runtime_mod
+from efm_go.acp.client import AcpClient, _resolve_spawn_env
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 # A pid above every supported platform's pid_max: a cleanup path that signals it
 # reaches nothing on the runner (same spelling as test/test_update_provider.py).
@@ -52,14 +52,14 @@ def _pinned_kiro_cli_version(monkeypatch):
 
     A client start here materialises the agent spec (``ensure_agent_materialized``
     -> ``rebuild_agent_config`` -> ``_write_derived_permissions``), which reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``:
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``:
     one real ``kiro-cli --version`` spawn per binary identity, process-cached, so
     whichever test in the worker starts first pays it against the HOST's install
     with the checkout as the child's cwd. Pinned to the floor release, as
     ``test_agent.py`` and the generated-writer suites pin it.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -76,7 +76,7 @@ def _fake_process_admission(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _native_projection_for_fake_processes(monkeypatch):
-    from kiro_crew.acp import skill_projection
+    from efm_go.acp import skill_projection
 
     loop_thread = threading.current_thread()
 
@@ -153,10 +153,10 @@ class TestClientSpawnOffLoop:
         mock_proc.returncode = None
 
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch.object(client_mod, "ensure_agent_materialized"),
             patch(
-                "kiro_crew.acp.client.wrap_argv",
+                "efm_go.acp.client.wrap_argv",
                 return_value=(["/usr/bin/kiro-cli", "acp"], None),
             ),
             patch(
@@ -164,8 +164,8 @@ class TestClientSpawnOffLoop:
                 new_callable=AsyncMock,
                 return_value=mock_proc,
             ),
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
             # PID 12345 may be a real host process; without this, the early
             # descendant scan can find its children and _track_child_pids then
             # writes tracking state (mkdir included) on the loop thread —
@@ -247,10 +247,10 @@ class TestClientSpawnPidTrackingOffLoop:
         mock_proc.returncode = None
 
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch.object(client_mod, "ensure_agent_materialized"),
             patch(
-                "kiro_crew.acp.client.wrap_argv",
+                "efm_go.acp.client.wrap_argv",
                 return_value=(["/usr/bin/kiro-cli", "acp"], None),
             ),
             patch(
@@ -259,11 +259,11 @@ class TestClientSpawnPidTrackingOffLoop:
                 return_value=mock_proc,
             ),
             patch(
-                "kiro_crew.session._track_pid",
+                "efm_go.session._track_pid",
                 side_effect=lambda pid: track_threads.append(threading.current_thread()),
             ),
             patch(
-                "kiro_crew.session._track_session_pid",
+                "efm_go.session._track_session_pid",
                 side_effect=lambda pid, token=None: session_track_threads.append(
                     threading.current_thread()
                 ),
@@ -344,7 +344,7 @@ class TestRuntimeSpawnOffLoop:
             return real_mkdir(self, *a, **kw)
 
         monkeypatch.setattr(client_mod, "_resolve_kiro_bin_for_spawn", resolve_bin)
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda agent: None)
         monkeypatch.setattr(runtime_mod, "wrap_argv", lambda argv, mode, **kw: (list(argv), None))
@@ -408,10 +408,10 @@ class TestSpawnCancellationSandboxCleanup:
             raise asyncio.CancelledError()
 
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch.object(client_mod, "ensure_agent_materialized"),
             patch(
-                "kiro_crew.acp.client.wrap_argv",
+                "efm_go.acp.client.wrap_argv",
                 return_value=(["/usr/bin/kiro-cli", "acp"], sandbox_file),
             ),
             patch.object(client_mod, "cgroup_scope_argv", side_effect=_cgroup),
@@ -442,7 +442,7 @@ class TestSpawnCancellationSandboxCleanup:
             raise asyncio.CancelledError()
 
         monkeypatch.setattr(client_mod, "_resolve_kiro_bin_for_spawn", resolve_bin)
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda agent: None)
         monkeypatch.setattr(
@@ -504,10 +504,10 @@ class TestSpawnFailureCannotLeaveAnUntrackedProcess:
         killed = AsyncMock()
 
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch.object(client_mod, "ensure_agent_materialized"),
             patch(
-                "kiro_crew.acp.client.wrap_argv",
+                "efm_go.acp.client.wrap_argv",
                 return_value=(["/usr/bin/kiro-cli", "acp"], None),
             ),
             patch(
@@ -520,10 +520,10 @@ class TestSpawnFailureCannotLeaveAnUntrackedProcess:
                 "finish_suspended_spawn",
                 side_effect=_raise_if("finish_suspended_spawn"),
             ),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=1.0),
-            patch("kiro_crew.session._track_pid", side_effect=_raise_if("track_pid")),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=1.0),
+            patch("efm_go.session._track_pid", side_effect=_raise_if("track_pid")),
             patch(
-                "kiro_crew.session._track_session_pid",
+                "efm_go.session._track_session_pid",
                 side_effect=_raise_if("track_session_pid"),
             ),
             patch.object(client_mod, "_get_child_pids", side_effect=_raise_if("child_scan")),
@@ -552,10 +552,10 @@ class TestSpawnFailureCannotLeaveAnUntrackedProcess:
 
         with (
             caplog.at_level("ERROR"),
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch.object(client_mod, "ensure_agent_materialized"),
             patch(
-                "kiro_crew.acp.client.wrap_argv",
+                "efm_go.acp.client.wrap_argv",
                 return_value=(["/usr/bin/kiro-cli", "acp"], None),
             ),
             patch(
@@ -564,10 +564,10 @@ class TestSpawnFailureCannotLeaveAnUntrackedProcess:
                 return_value=mock_proc,
             ),
             patch.object(client_mod, "finish_suspended_spawn"),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=1.0),
-            patch("kiro_crew.session._track_pid"),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=1.0),
+            patch("efm_go.session._track_pid"),
             patch(
-                "kiro_crew.session._track_session_pid",
+                "efm_go.session._track_session_pid",
                 side_effect=OSError("no space left on device"),
             ),
             patch.object(client_mod, "_get_child_pids", return_value=[]),
@@ -593,7 +593,7 @@ class TestRuntimeSpawnCarriesItsInstance:
 
     @pytest.mark.asyncio
     async def test_env_instance_matches_process_instance(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.constants import KIROCREW_SPAWN_INSTANCE_ENV, KIROCREW_SPAWNED_ENV
+        from efm_go.constants import KIROCREW_SPAWN_INSTANCE_ENV, KIROCREW_SPAWNED_ENV
 
         class _StopSpawn(Exception):
             pass
@@ -655,14 +655,14 @@ class TestRuntimeShieldSurvivesAFailedAppend:
             return "/usr/bin/kiro-cli"
 
         monkeypatch.setattr(client_mod, "_resolve_kiro_bin_for_spawn", resolve_bin)
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda agent: None)
         monkeypatch.setattr(runtime_mod, "wrap_argv", lambda argv, mode, **kw: (list(argv), None))
         monkeypatch.setattr(runtime_mod, "cgroup_scope_argv", lambda argv: list(argv))
         monkeypatch.setattr(runtime_mod, "resolve_krb5_ccname", lambda env: None)
         monkeypatch.setattr(runtime_mod, "inject_xdist_auto_cap", lambda env: None)
-        monkeypatch.setattr("kiro_crew.platform_compat.get_process_start_id", lambda pid: 1.0)
+        monkeypatch.setattr("efm_go.platform_compat.get_process_start_id", lambda pid: 1.0)
 
         async def fake_spawn(*_a, **_kw):
             return mock_proc
@@ -688,7 +688,7 @@ class TestRuntimeShieldSurvivesAFailedAppend:
         Only the subprocess and kernel boundary are simulated. In particular,
         killing just the root must leave the MCP children visible to assertions.
         """
-        from kiro_crew import platform_compat, session_pid
+        from efm_go import platform_compat, session_pid
 
         root = 6100
         # Windows tree teardown follows parentage, not POSIX group membership.
@@ -913,7 +913,7 @@ class TestRuntimeShieldSurvivesAFailedAppend:
             )
         else:
             monkeypatch.setattr(
-                "kiro_crew.platform_compat.get_process_start_id",
+                "efm_go.platform_compat.get_process_start_id",
                 lambda pid: (_ for _ in ()).throw(boom),
             )
 

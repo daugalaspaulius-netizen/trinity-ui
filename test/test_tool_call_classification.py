@@ -22,15 +22,15 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import cli_chat
-from kiro_crew.acp._dispatch import (
+from efm_go import cli_chat
+from efm_go.acp._dispatch import (
     ToolCallIdentity,
     _build_tool_call_event,
     build_permission_event,
     classify_tool_call,
     parse_session_update,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_PERMISSION_REQUEST,
     EVENT_TOOL_CALL,
     EVENT_TOOL_CALL_UPDATE,
@@ -38,7 +38,7 @@ from kiro_crew.acp.types import (
     AcpPromptStats,
     JsonRpcMessage,
 )
-from kiro_crew.hooks import TOOL_DENY, HookManager
+from efm_go.hooks import TOOL_DENY, HookManager
 
 SERVER = "kirocrew-core"
 TOOL = "spawn_run"
@@ -427,7 +427,7 @@ class TestCliChatUnverifiableShell:
 
 
 def _bare_client():
-    from kiro_crew.acp.client import AcpClient
+    from efm_go.acp.client import AcpClient
 
     client = AcpClient.__new__(AcpClient)  # avoid spawning a real process
     client._tool_call_inputs = {}

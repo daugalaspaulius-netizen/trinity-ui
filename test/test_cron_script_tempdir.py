@@ -22,13 +22,13 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.cron_script import (
+from efm_go.cron_script import (
     _clean_cron_env,
     _default_temp_dir,
     compute_secret_env_pin,
     run_script_sandboxed,
 )
-from kiro_crew.secrets import SecretVault
+from efm_go.secrets import SecretVault
 
 _TEMP_KEYS = ("TMPDIR", "TMP", "TEMP")
 
@@ -41,17 +41,17 @@ def _cron_caller_is_named(named_cron_caller):
 @pytest.fixture(autouse=True)
 def _cron_home(monkeypatch):
     """Scripts live under ``<patched home>/.kirocrew/crons``, like the sibling modules."""
-    monkeypatch.setattr("kiro_crew.cron_script.config_dir", lambda: Path.home() / ".kirocrew")
+    monkeypatch.setattr("efm_go.cron_script.config_dir", lambda: Path.home() / ".kirocrew")
 
 
 @pytest.fixture(autouse=True)
 def _passthrough_sandbox(monkeypatch):
-    """Bypass the OS-sandbox wrap and let the child import ``kiro_crew``."""
+    """Bypass the OS-sandbox wrap and let the child import ``efm_go``."""
     src_dir = str(Path(__file__).resolve().parents[1] / "src")
     existing = os.environ.get("PYTHONPATH", "")
     monkeypatch.setenv("PYTHONPATH", src_dir + (os.pathsep + existing if existing else ""))
-    monkeypatch.setattr("kiro_crew.cron_script.wrap_argv", lambda argv, **k: (list(argv), None))
-    monkeypatch.setattr("kiro_crew.cron_script._resolve_command_shell", lambda: "sh")
+    monkeypatch.setattr("efm_go.cron_script.wrap_argv", lambda argv, **k: (list(argv), None))
+    monkeypatch.setattr("efm_go.cron_script._resolve_command_shell", lambda: "sh")
 
 
 @pytest.fixture
@@ -145,7 +145,7 @@ class TestRunScriptSandboxed:
             seen["launcher"] = argv[-1]
             return (list(argv), None)
 
-        monkeypatch.setattr("kiro_crew.cron_script.wrap_argv", recording_wrap)
+        monkeypatch.setattr("efm_go.cron_script.wrap_argv", recording_wrap)
         script = _make_script(tmp_path, "def run(ctx): pass\n")
         with patch("pathlib.Path.home", return_value=tmp_path):
             result = run_script_sandboxed(str(script) + ":run", "job1", timeout=120)
@@ -171,7 +171,7 @@ class TestRunScriptSandboxed:
             # (no sandbox backend), so the stand-in must alter it.
             return ([argv[0], "-X", "utf8", *argv[1:]], None)
 
-        monkeypatch.setattr("kiro_crew.cron_script.wrap_argv", recording_wrap)
+        monkeypatch.setattr("efm_go.cron_script.wrap_argv", recording_wrap)
         SecretVault(tmp_path / ".kirocrew").set_sync("slack-sandbox", "xoxb-script")
         script = _make_script(tmp_path, "def run(ctx): pass\n")
         spec = str(script) + ":run"

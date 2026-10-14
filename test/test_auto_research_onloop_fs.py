@@ -42,7 +42,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.builtins.auto_research import handlers as h
+from efm_go.apps.builtins.auto_research import handlers as h
 
 BASE = "/api/apps/auto-research"
 

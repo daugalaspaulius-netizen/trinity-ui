@@ -86,10 +86,10 @@ test.describe('Logs Page', () => {
   test('search filter shows match count when term matches log lines', async ({ page }) => {
     await waitForLogLines(page)
 
-    // Every log line contains "kiro_crew" in the logger name field.
+    // Every log line contains "efm_go" in the logger name field.
     // Type the search term
     const filterInput = page.getByLabel('Filter logs')
-    await filterInput.fill('kiro_crew')
+    await filterInput.fill('efm_go')
 
     // The match count indicator should appear (format: "N matches")
     await expect(page.getByText(/\d+ matches/)).toBeVisible({ timeout: 5000 })
@@ -100,7 +100,7 @@ test.describe('Logs Page', () => {
 
     // Search for a term that matches SOME lines (the logger name appears in all lines)
     const filterInput = page.getByLabel('Filter logs')
-    await filterInput.fill('kiro_crew')
+    await filterInput.fill('efm_go')
 
     // Wait for the match count to appear (proves search works)
     const matchCountEl = page.getByText(/\d+ matches/)

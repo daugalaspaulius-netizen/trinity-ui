@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.project_scan import (
+from efm_go.project_scan import (
     DEFAULT_DEPTH_CAP,
     GIT_DIR,
     KIRO_DIR,

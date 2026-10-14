@@ -1,7 +1,7 @@
 """Per-PR watcher coverage — the nudge loop, clone isolation, and the helper surface.
 
 The auto-improvement app ships its own watcher suite
-(``src/kiro_crew/apps/builtins/auto_improvement/tests/test_pr_watchers.py``), but CI
+(``src/efm_go/apps/builtins/auto_improvement/tests/test_pr_watchers.py``), but CI
 deselects it: those tests drive a REAL ``git`` through the OS sandbox, which the hosted
 runners cannot provide. Everything the deselected file guards is therefore unmeasured on
 every shard, and the module's loop body, its isolation control, and most of its helpers
@@ -32,9 +32,9 @@ from typing import Any
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.apps.builtins.auto_improvement.backend import pr_checks
-from kiro_crew.apps.builtins.auto_improvement.backend import pr_watchers as W
-from kiro_crew.apps.builtins.auto_improvement.backend import store
+from efm_go.apps.builtins.auto_improvement.backend import pr_checks
+from efm_go.apps.builtins.auto_improvement.backend import pr_watchers as W
+from efm_go.apps.builtins.auto_improvement.backend import store
 
 #: Captured BEFORE any fixture patches the module, so the two subprocess-owning helpers
 #: can still be tested on their own terms while every other test sees the fake.
@@ -578,7 +578,7 @@ class TestRedact:
     ) -> None:
         """Fail CLOSED: this is the only scan between agent output and the operator's
         screen, so an unscannable line must not be served."""
-        import kiro_crew.security as security
+        import efm_go.security as security
 
         def _boom(text: str) -> str:
             raise RuntimeError("redaction engine unavailable")
@@ -1583,7 +1583,7 @@ class TestMakeRunner:
         """Nudging a PR through an unguarded subprocess agent exactly when the platform is
         unhealthy is worse than not nudging it."""
         self._accept_egress()
-        from kiro_crew.apps.builtins.auto_improvement.spine import agent_runner
+        from efm_go.apps.builtins.auto_improvement.spine import agent_runner
 
         class Unavailable:
             @staticmethod
@@ -1601,7 +1601,7 @@ class TestMakeRunner:
     ) -> None:
         """Falling through would bypass the provider's own permission gate."""
         self._accept_egress()
-        from kiro_crew.apps.builtins.auto_improvement.spine import agent_runner
+        from efm_go.apps.builtins.auto_improvement.spine import agent_runner
 
         class Unregisterable:
             def __init__(self, **kwargs: Any) -> None:
@@ -1624,7 +1624,7 @@ class TestMakeRunner:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         self._accept_egress()
-        from kiro_crew.apps.builtins.auto_improvement.spine import agent_runner
+        from efm_go.apps.builtins.auto_improvement.spine import agent_runner
 
         built: dict[str, Any] = {}
 

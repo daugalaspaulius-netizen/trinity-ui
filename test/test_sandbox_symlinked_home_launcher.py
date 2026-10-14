@@ -12,7 +12,7 @@ This suite holds the two halves of the answer. The producers emit one spelling
 per directory (the one the tier lists carry, so the occupant pass records under a
 name the launcher looks up): read from the plan line of the launcher
 ``namespace_argv`` really writes for such a host. And the launcher's own stages
-(``kiro_crew.sandbox_launcher_program``) run to the end against that plan, with a
+(``efm_go.sandbox_launcher_program``) run to the end against that plan, with a
 bind that HIDES its target the way a real mount does; the crew-home alias checks on
 either side of the masks refuse a home link re-aimed in between, at the point in
 the child run where each one stands.
@@ -27,9 +27,9 @@ from pathlib import Path
 import pytest
 from test_sandbox_launcher_program import CoveringLibc, launch, refusal, rendered_payload
 
-import kiro_crew.sandbox as sb
-from kiro_crew import kiro_prerequisite as kp
-from kiro_crew import platform_compat, sandbox_launcher_program
+import efm_go.sandbox as sb
+from efm_go import kiro_prerequisite as kp
+from efm_go import platform_compat, sandbox_launcher_program
 
 program = sandbox_launcher_program
 

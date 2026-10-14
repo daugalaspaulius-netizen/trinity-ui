@@ -1,6 +1,6 @@
 # Completions & Autocomplete
 
-Source: https://kiro.dev/docs/cli/autocomplete/ (fetched 2026-09-06)
+Source: https://efmleads.com/docs/cli/autocomplete/ (fetched 2026-09-06)
 
 Two AI-powered features: autocomplete dropdown menu and inline ghost-text suggestions. Both support hundreds of CLI tools (git, npm, docker, aws, etc.).
 

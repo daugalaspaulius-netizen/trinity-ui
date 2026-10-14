@@ -28,13 +28,13 @@ from types import SimpleNamespace
 import pytest
 from overload_fakes import settle_store_writes
 
-import kiro_crew.platform.governance_profiles as governance_profiles
-import kiro_crew.workflows.agent_exec as agent_exec
-import kiro_crew.workflows.agent_pool as agent_pool
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.taskq.dependency import classify_exception
-from kiro_crew.workflows.agent_exec import WorkflowSpawnRefused, build_agent_fn
-from kiro_crew.workflows.agent_pool import build_pooled_agent_fn
+import efm_go.platform.governance_profiles as governance_profiles
+import efm_go.workflows.agent_exec as agent_exec
+import efm_go.workflows.agent_pool as agent_pool
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.taskq.dependency import classify_exception
+from efm_go.workflows.agent_exec import WorkflowSpawnRefused, build_agent_fn
+from efm_go.workflows.agent_pool import build_pooled_agent_fn
 
 pytestmark = pytest.mark.asyncio
 
@@ -350,7 +350,7 @@ async def test_the_service_hands_the_builders_the_run_s_app_identity(monkeypatch
     This one pins the WIRING -- without it the gate would be correct and always
     asked about an empty app, because nothing would populate the argument.
     """
-    from kiro_crew.workflows import service as service_mod
+    from efm_go.workflows import service as service_mod
 
     captured: dict[str, object] = {}
 
@@ -446,14 +446,14 @@ async def test_a_refusal_whose_text_looks_like_an_outage_still_fails_the_row(tmp
     a refusal look like a retryable outage: the row would park in
     ``waiting_dependency`` and rejected work would be re-run instead of ending.
     """
-    import kiro_crew.taskq.model as m
-    from kiro_crew.taskq.adapters.runner import (
+    import efm_go.taskq.model as m
+    from efm_go.taskq.adapters.runner import (
         RunnerAdmission,
         RunnerLane,
         workflow_task_id,
     )
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     # Precondition: this text IS classified as retryable, so the guard below is
     # what keeps the row terminal -- not the absence of a matching adapter.

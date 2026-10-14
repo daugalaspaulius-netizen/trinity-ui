@@ -16,9 +16,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from kiro_crew import vector_memory
-from kiro_crew.vector_memory import VectorMemoryStore
-from kiro_crew.vector_memory_runtime import lessons, text_scoring
+from efm_go import vector_memory
+from efm_go.vector_memory import VectorMemoryStore
+from efm_go.vector_memory_runtime import lessons, text_scoring
 
 # Every word here is a stop word to write_lesson's dedup (or two letters long),
 # so rows sharing all of it are still stored as separate lessons, while each one

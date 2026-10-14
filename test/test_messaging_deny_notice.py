@@ -39,24 +39,24 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import kiro_crew.channel as channel_mod
-import kiro_crew.slack.handler as h
-from kiro_crew import llm_helpers, permission_floor
-from kiro_crew.acp.types import AcpEvent
-from kiro_crew.channel import _APPROVAL_FIELD_MAX_CHARS, _stream_task
-from kiro_crew.constants import DENY_CAUSE_APPROVAL_OVERSIZE
-from kiro_crew.deny_notice import _DENY_CAUSE_TEXT, build_refusal_steer_notice
-from kiro_crew.hooks import TOOL_ALLOW, TOOL_DENY, ToolHookResult
-from kiro_crew.messaging import (
+import efm_go.channel as channel_mod
+import efm_go.slack.handler as h
+from efm_go import llm_helpers, permission_floor
+from efm_go.acp.types import AcpEvent
+from efm_go.channel import _APPROVAL_FIELD_MAX_CHARS, _stream_task
+from efm_go.constants import DENY_CAUSE_APPROVAL_OVERSIZE
+from efm_go.deny_notice import _DENY_CAUSE_TEXT, build_refusal_steer_notice
+from efm_go.hooks import TOOL_ALLOW, TOOL_DENY, ToolHookResult
+from efm_go.messaging import (
     APPROVAL_AUTO,
     APPROVAL_INTERACTIVE,
     TransportCapabilities,
     TurnDriver,
 )
-from kiro_crew.messaging import driver as driver_mod
-from kiro_crew.messaging.dispatch import build_tool_gate
-from kiro_crew.messaging.renderer import Renderer
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST
+from efm_go.messaging import driver as driver_mod
+from efm_go.messaging.dispatch import build_tool_gate
+from efm_go.messaging.renderer import Renderer
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST
 
 _GENERIC = "User denied tool execution"
 _TAG = "[Kiro Crew host notice]"
@@ -68,7 +68,7 @@ _SURFACE_CLAUSE = "tool policy of the surface"
 _TIMEOUT_CLAUSE = "approval prompt expired unanswered"
 _OVERSIZE_CLAUSE = "too long for this channel to show in full"
 
-_SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+_SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 
 def _assert_steered_then_rejected(calls: list[str], steered: list[str], *fragments: str) -> str:
@@ -367,7 +367,7 @@ def _done():
 @pytest.fixture()
 def channel_sel(monkeypatch):
     sel_mock = MagicMock()
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel_mock)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel_mock)
     return sel_mock
 
 
@@ -612,7 +612,7 @@ async def test_driver_audits_before_the_steer(monkeypatch):
     order: list[str] = []
     sel_mock = MagicMock()
     sel_mock.log_api_access.side_effect = lambda **kw: order.append("audit")
-    monkeypatch.setattr("kiro_crew.messaging.driver.sel", lambda: sel_mock)
+    monkeypatch.setattr("efm_go.messaging.driver.sel", lambda: sel_mock)
 
     class _Ordered(_DriverProvider):
         async def steer(self, message):
@@ -636,7 +636,7 @@ class _StalledDriverProvider(_DriverProvider):
 
 async def _cancel_driver_steer(monkeypatch, *, audited: bool) -> MagicMock:
     sel_mock = MagicMock()
-    monkeypatch.setattr("kiro_crew.messaging.driver.sel", lambda: sel_mock)
+    monkeypatch.setattr("efm_go.messaging.driver.sel", lambda: sel_mock)
     p = _StalledDriverProvider([])
     drv = TurnDriver(p, _Renderer(), approval_mode=APPROVAL_AUTO)
     event = SimpleNamespace(title="W", request_id="rq9")

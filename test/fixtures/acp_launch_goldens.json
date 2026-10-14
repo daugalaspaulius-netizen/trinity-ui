@@ -42,7 +42,7 @@
       "--profile",
       "acp",
       "--patch",
-      "/opt/run/kiro_crew_dsh_gate.patch.yml"
+      "/opt/run/efm_go_dsh_gate.patch.yml"
     ],
     "env_added": {
       "DSH_PERMISSION_MODE": "workspace-write",
@@ -58,8 +58,8 @@
       "TMP": "<scratch>",
       "TMPDIR": "<scratch>"
     },
-    "spawn_label": "/opt/bin/dsh --profile acp --patch /opt/run/kiro_crew_dsh_gate.patch.yml",
-    "stderr_label": "/opt/bin/dsh --profile acp --patch /opt/run/kiro_crew_dsh_gate.patch.yml"
+    "spawn_label": "/opt/bin/dsh --profile acp --patch /opt/run/efm_go_dsh_gate.patch.yml",
+    "stderr_label": "/opt/bin/dsh --profile acp --patch /opt/run/efm_go_dsh_gate.patch.yml"
   },
   "goose": {
     "argv": [

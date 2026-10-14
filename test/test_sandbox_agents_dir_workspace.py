@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import sandbox as sandbox_mod
+from efm_go import sandbox as sandbox_mod
 
 
 @pytest.fixture

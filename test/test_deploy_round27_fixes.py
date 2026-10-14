@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 _SCRIPTS = Path(__file__).resolve().parents[1] / (
-    "src/kiro_crew/deploy/skills/artifact-deploy/scripts"
+    "src/efm_go/deploy/skills/artifact-deploy/scripts"
 )
 
 
@@ -40,7 +40,7 @@ def test_f1_shell_reaper_gates_bucket_deletion_on_tag():
 
 
 def test_f2_boundary_destructive_cloudfront_actions_are_tag_scoped():
-    from kiro_crew.deploy import iam
+    from efm_go.deploy import iam
     doc = iam.boundary_policy_document()
     for st in doc["Statement"]:
         actions = st.get("Action", [])
@@ -56,7 +56,7 @@ def test_f2_boundary_destructive_cloudfront_actions_are_tag_scoped():
 
 
 def test_f2_boundary_no_unconditioned_delete_distribution_on_star():
-    from kiro_crew.deploy import iam
+    from efm_go.deploy import iam
     doc = iam.boundary_policy_document()
     for st in doc["Statement"]:
         actions = st.get("Action", [])

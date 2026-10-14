@@ -11,14 +11,14 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import member_memory_auth as auth
-from kiro_crew import sandbox
-from kiro_crew.agent_discovery import AgentInfo
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_dir
-from kiro_crew.config.sections import MemoryStoreConfig
-from kiro_crew.dashboard.handlers import agents as handlers
-from kiro_crew.dashboard.handlers.core import api_kirocrew_config_patch
-from kiro_crew.memory_stores import (
+from efm_go import member_memory_auth as auth
+from efm_go import sandbox
+from efm_go.agent_discovery import AgentInfo
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_dir
+from efm_go.config.sections import MemoryStoreConfig
+from efm_go.dashboard.handlers import agents as handlers
+from efm_go.dashboard.handlers.core import api_kirocrew_config_patch
+from efm_go.memory_stores import (
     UnknownMemoryStore,
     memory_stores_root,
     provision_member_memory,
@@ -50,7 +50,7 @@ def _snapshot():
 
 def _app(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request", lambda _: True
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request", lambda _: True
     )
     monkeypatch.setattr(handlers, "list_agents", lambda: [])
     app = web.Application()
@@ -67,7 +67,7 @@ def _app(monkeypatch):
 async def test_private_creation_refuses_degraded_config_but_allows_absent_memory(
     monkeypatch, shape, without_jsonschema
 ):
-    from kiro_crew.config import validation
+    from efm_go.config import validation
 
     if without_jsonschema:
         monkeypatch.setattr(validation, "_HAS_JSONSCHEMA", False)
@@ -164,7 +164,7 @@ async def test_explicit_creation_uses_database_not_platform_admission(
 
 @pytest.mark.parametrize("backend", ["kiro", "kas", "claude", "codex"])
 def test_cli_explicit_creation_with_sandbox_off(monkeypatch, backend):
-    from kiro_crew.cli_commands import _handle_agent
+    from efm_go.cli_commands import _handle_agent
 
     _environment(monkeypatch, "win32", backend, "off", "none", False)
     _handle_agent(
@@ -189,7 +189,7 @@ def test_cli_explicit_creation_with_sandbox_off(monkeypatch, backend):
 async def test_creation_refuses_malformed_reserved_identity(
     monkeypatch, capsys, interface, field, invalid
 ):
-    from kiro_crew.cli_commands import _handle_agent
+    from efm_go.cli_commands import _handle_agent
 
     def prepare():
         cfg = _environment(monkeypatch, "win32", "kas", "off", "none", False)

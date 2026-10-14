@@ -1,6 +1,6 @@
 # Requirements Document
 
-Status: implemented in `src/kiro_crew/apps/hooks_integration.py` and the related `apps` modules.
+Status: implemented in `src/efm_go/apps/hooks_integration.py` and the related `apps` modules.
 
 ## Introduction
 
@@ -14,7 +14,7 @@ This feature extends the KiroCrew App SDK and gateway to provide backend integra
 - **Cron_SDK**: A programmatic API exposed to apps for creating, updating, and deleting scheduled jobs without directly accessing DashboardState.
 - **Lifecycle_Hook**: A Python entry point declared in the app manifest that the gateway invokes at specific lifecycle stages (startup, shutdown, enable, disable).
 - **App_Context**: A scoped object passed to lifecycle hooks and route handlers providing access to permitted gateway services (cron, storage, events) without exposing raw DashboardState.
-- **Builtin_App**: An app bundled with KiroCrew source code, located in `src/kiro_crew/apps/builtins/`.
+- **Builtin_App**: An app bundled with KiroCrew source code, located in `src/efm_go/apps/builtins/`.
 - **DashboardState**: The central gateway state object holding cron service, session state, and configuration.
 
 ## Requirements

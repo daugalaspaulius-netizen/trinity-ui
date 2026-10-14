@@ -15,7 +15,7 @@ from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import patch
 
-from kiro_crew.agent import install_agent
+from efm_go.agent import install_agent
 
 
 def bundled_defaults(tmp_path: Path) -> Path:
@@ -70,7 +70,7 @@ def run_install_mcp_merge(
     _user_home = tmp_path / "kirocrew_home"
     patches = [
         patch.multiple(
-            "kiro_crew.agent",
+            "efm_go.agent",
             KIRO_AGENTS_DIR=kiro_dir,
             _BUNDLED_CFG_DIR=cfg_dir,
             _KIROCREW_BIN="/usr/bin/kirocrew",
@@ -78,18 +78,18 @@ def run_install_mcp_merge(
             _KIRO_MCP_JSON=kiro_mcp,
             _CC_MCP_JSON=cc_mcp,
         ),
-        patch("kiro_crew.agent._user_dir", lambda: _user_home),
-        patch("kiro_crew.agent._prompt_path", return_value=prompt),
-        patch("kiro_crew.agent._shipped_defaults", return_value=cfg_dir / "defaults.json"),
-        patch("kiro_crew.agent._project_dir", return_value=None),
-        patch("kiro_crew.agent._aim_skill_paths", return_value=[]),
-        patch("kiro_crew.agent.shutil.which", side_effect=which_side_effect),
-        patch("kiro_crew.agent._mc_config_path", return_value=mc_config),
+        patch("efm_go.agent._user_dir", lambda: _user_home),
+        patch("efm_go.agent._prompt_path", return_value=prompt),
+        patch("efm_go.agent._shipped_defaults", return_value=cfg_dir / "defaults.json"),
+        patch("efm_go.agent._project_dir", return_value=None),
+        patch("efm_go.agent._aim_skill_paths", return_value=[]),
+        patch("efm_go.agent.shutil.which", side_effect=which_side_effect),
+        patch("efm_go.agent._mc_config_path", return_value=mc_config),
         # A companion contributes the Claude Code scope via the CPP seam — the
         # core does not read ~/.claude.json directly at rebuild time (OSS is
         # Kiro-only). Point the seam at cc_mcp so these merge-priority tests
         # exercise the seam-routed provider-global merge.
-        patch("kiro_crew.agent._extra_mcp_scope_globals", return_value=[cc_mcp]),
+        patch("efm_go.agent._extra_mcp_scope_globals", return_value=[cc_mcp]),
     ]
     with ExitStack() as stack:
         for p in patches:

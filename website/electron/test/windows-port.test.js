@@ -40,9 +40,9 @@ test("windowsSystemToolPaths resolves every utility beneath the system root", ()
 test("windowsGatewayExecutablePaths resolves the executables a launcher can spawn", () => {
   assert.deepStrictEqual(
     windowsGatewayExecutablePaths(
-      "D:\\KiroCrew\\resources\\backend-dist\\kirocrew-backend\\bin\\kirocrew.cmd"
+      "D:\\KiroCrew\\resources\\backend-dist\\efm-go-backend\\bin\\kirocrew.cmd"
     ),
-    ["D:\\KiroCrew\\resources\\backend-dist\\kirocrew-backend\\python.exe"]
+    ["D:\\KiroCrew\\resources\\backend-dist\\efm-go-backend\\python.exe"]
   );
   assert.deepStrictEqual(
     windowsGatewayExecutablePaths("D:\\venv\\Scripts\\kirocrew.exe"),
@@ -85,7 +85,7 @@ test("a venv launcher trusts the Python listener it delegates to", () => {
   assert.strictEqual(
     isKirocrewCommand(
       '"D:\\venv\\Scripts\\python.exe" '
-        + '"D:\\venv\\Scripts\\python.exe" -s -m kiro_crew gateway',
+        + '"D:\\venv\\Scripts\\python.exe" -s -m efm_go gateway',
       { trustedExecutablePaths }
     ),
     true
@@ -167,7 +167,7 @@ test("windowsProcessCommand falls back to WMIC and unwraps its value", async () 
     callback(
       null,
       "\r\nExecutablePath=C:\\Python\\python.exe\r\n"
-        + "CommandLine=C:\\Python\\python.exe -m kiro_crew gateway\r\n\r\n"
+        + "CommandLine=C:\\Python\\python.exe -m efm_go gateway\r\n\r\n"
     );
   };
   const command = await windowsProcessCommand(4242, {
@@ -176,7 +176,7 @@ test("windowsProcessCommand falls back to WMIC and unwraps its value", async () 
   });
   assert.strictEqual(
     command,
-    '"C:\\Python\\python.exe" C:\\Python\\python.exe -m kiro_crew gateway'
+    '"C:\\Python\\python.exe" C:\\Python\\python.exe -m efm_go gateway'
   );
   assert.deepStrictEqual(
     calls.map(({ command: name }) => name),
@@ -213,7 +213,7 @@ test("windowsProcessCommand fails closed when WMIC cannot prove the executable p
 
 test("isKirocrewCommand accepts Windows executable and module shapes", () => {
   const trustedCli = "C:\\Program Files\\KiroCrew\\kirocrew.exe";
-  const trustedBackend = "C:\\bundle\\kirocrew-backend.exe";
+  const trustedBackend = "C:\\bundle\\efm-go-backend.exe";
   const trustedPython = "C:\\Python\\python.exe";
   assert.strictEqual(
     isKirocrewCommand(`"${trustedCli}" gateway`, {
@@ -228,7 +228,7 @@ test("isKirocrewCommand accepts Windows executable and module shapes", () => {
     true
   );
   assert.strictEqual(
-    isKirocrewCommand(`${trustedPython} -s -m kiro_crew gateway`, {
+    isKirocrewCommand(`${trustedPython} -s -m efm_go gateway`, {
       trustedExecutablePaths: [trustedPython],
     }),
     true
@@ -242,7 +242,7 @@ test("isKirocrewCommand accepts Windows executable and module shapes", () => {
   );
   assert.strictEqual(
     isKirocrewCommand(
-      `"${trustedPython}" ${trustedPython} -s -m kiro_crew gateway`,
+      `"${trustedPython}" ${trustedPython} -s -m efm_go gateway`,
       { trustedExecutablePaths: [trustedPython] }
     ),
     true
@@ -267,7 +267,7 @@ test("isKirocrewCommand rejects Windows path substrings and unrelated Python", (
     false
   );
   assert.strictEqual(
-    isKirocrewCommand("C:\\Python\\python.exe app.py -m kiro_crew"),
+    isKirocrewCommand("C:\\Python\\python.exe app.py -m efm_go"),
     false
   );
   assert.strictEqual(
@@ -286,7 +286,7 @@ test("isKirocrewCommand rejects SSH aliases and remote gateway commands", () => 
     false
   );
   assert.strictEqual(
-    isKirocrewCommand("ssh.exe host python.exe -m kiro_crew gateway"),
+    isKirocrewCommand("ssh.exe host python.exe -m efm_go gateway"),
     false
   );
 });

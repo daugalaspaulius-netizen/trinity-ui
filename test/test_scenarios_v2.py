@@ -11,8 +11,8 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_git
-from kiro_crew import git_coord
-from kiro_crew.taskrunner import (
+from efm_go import git_coord
+from efm_go.taskrunner import (
     Step,
     TaskRun,
 )

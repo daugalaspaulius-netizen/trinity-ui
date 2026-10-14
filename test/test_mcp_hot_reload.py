@@ -13,15 +13,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.acp._dispatch import agent_version_from_init
-from kiro_crew.acp_backends import (
+from efm_go.acp._dispatch import agent_version_from_init
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
     ACP_BACKENDS_KNOWN,
     ACP_BACKENDS_MCP_CONFIG_HOT_RELOAD,
 )
-from kiro_crew.mcp_hot_reload import (
+from efm_go.mcp_hot_reload import (
     MCP_HOT_RELOAD_MIN_KIRO_CLI_VERSION,
     live_sessions_hot_reload,
     mcp_hot_reload_supported,
@@ -42,7 +42,7 @@ def _acp_shape(backend: str | None, version: object) -> SimpleNamespace:
 
 
 def _acp_hot_reload(shape: SimpleNamespace) -> bool:
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.providers.acp import AcpProvider
 
     fget = AcpProvider.mcp_config_hot_reload.fget
     assert fget is not None
@@ -167,7 +167,7 @@ class TestProviderGate:
     def test_the_abc_default_is_false(self) -> None:
         """A harness that has not declared the capability does not inherit the
         skip (harness-parity H6/H14)."""
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         fget = LLMProvider.mcp_config_hot_reload.fget
         assert fget is not None

@@ -12,9 +12,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import model_registry
-from kiro_crew.acp.client import AcpClient, AcpError
-from kiro_crew.acp.types import (
+from efm_go import model_registry
+from efm_go.acp.client import AcpClient, AcpError
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_DEEPSEEK,
@@ -23,8 +23,8 @@ from kiro_crew.acp.types import (
     effort_config_option_id,
     effort_config_option_value,
 )
-from kiro_crew.llm_helpers import resolve_substitute_set_model
-from kiro_crew.providers.acp import AcpProvider
+from efm_go.llm_helpers import resolve_substitute_set_model
+from efm_go.providers.acp import AcpProvider
 
 #: Per config-option backend: (model left, model switched to, whether the new
 #: model takes an effort write). deepseek's models carry no effort selector in
@@ -39,7 +39,7 @@ BACKEND_CASES = {
 
 def _provider(backend: str, model: str, applied: list[tuple[str, str]]) -> AcpProvider:
     """A provider whose client records model and config-option writes in order."""
-    with patch("kiro_crew.providers.acp.AcpClient"):
+    with patch("efm_go.providers.acp.AcpClient"):
         provider = AcpProvider(acp_backend=backend)
     client = MagicMock()
     client.backend = backend
@@ -208,7 +208,7 @@ async def test_codex_fallback_onto_a_suffixed_pair_ends_on_the_slot_level(
             raise AcpError("JSON-RPC error: Invalid params", code=-32602)
 
     client.set_config_option = _set_option  # type: ignore[method-assign]
-    with patch("kiro_crew.providers.acp.AcpClient"):
+    with patch("efm_go.providers.acp.AcpClient"):
         provider = AcpProvider(acp_backend=ACP_BACKEND_CODEX)
     provider._client = client
     provider._effort_per_model["openai.gpt-6-astra[high]"] = "xhigh"

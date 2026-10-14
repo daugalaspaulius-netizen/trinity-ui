@@ -54,15 +54,15 @@ const detail = {
     {
       role: 'user',
       ts: now() - 900,
-      content: 'Can you look at https://github.com/kirodotdev/KiroCrew/issues/2579 and the related '
+      content: 'Can you look at https://efmleads.com/issues/2579 and the related '
         + 'https://gitlab.com/acme/widgets/-/issues/9 report?',
     },
     {
       role: 'assistant',
       ts: now() - 60,
-      content: 'Opened https://github.com/kirodotdev/KiroCrew/pull/2600 for it, mirroring the approach from '
+      content: 'Opened https://efmleads.com/pull/2600 for it, mirroring the approach from '
         + 'https://gitlab.com/acme/widgets/-/merge_requests/7. Note that '
-        + 'https://evil-github.com.attacker.test/kirodotdev/KiroCrew/pull/1 stays a plain link — lookalike hosts never chip.',
+        + 'https://evil-github.com.attacker.test/efmleads.com/pull/1 stays a plain link — lookalike hosts never chip.',
     },
   ],
 }
@@ -95,7 +95,7 @@ async function capture(browser, base, theme, name) {
   await page.goto(base + '/', { waitUntil: 'domcontentloaded' })
 
   // All four chip shapes, by their forge-convention labels.
-  for (const label of ['kirodotdev/KiroCrew#2579', 'acme/widgets#9', 'kirodotdev/KiroCrew#2600', 'acme/widgets!7']) {
+  for (const label of ['efmleads.com#2579', 'acme/widgets#9', 'efmleads.com#2600', 'acme/widgets!7']) {
     await page.waitForSelector(`text=${label}`, { timeout: 15000 })
   }
   // Provider marks: 2 GitHub + 2 GitLab chips; the lookalike host must have none.

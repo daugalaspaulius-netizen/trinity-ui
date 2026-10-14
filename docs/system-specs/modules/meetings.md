@@ -12,7 +12,7 @@ action items.
 
 | Path | What it is |
 |---|---|
-| `src/kiro_crew/apps/builtins/meetings/app.json` | manifest (`backend.routes`, `ui.pages`, agents, permissions) |
+| `src/efm_go/apps/builtins/meetings/app.json` | manifest (`backend.routes`, `ui.pages`, agents, permissions) |
 | `.../backend/constants.py` | every limit, state name, and provider id |
 | `.../backend/store.py` | on-disk layout **and the single path-containment barrier** |
 | `.../backend/domain/dictionary.py` | speech-correction dictionary (TOML) |
@@ -25,7 +25,7 @@ action items.
 | `.../backend/calendar_poller.py` | background calendar poll: keeps the cache fresh, pre-creates the meeting about to start |
 | `.../backend/routes/` | `_common` (gate + validation + the dispatch transaction), `meeting_lifecycle`, `agents`, `audio_import`, `tasks`, `calendar`, `settings` |
 | `.../agents/*.json` | the three shipped agent specs |
-| `src/kiro_crew/builtin_skills/meetings/SKILL.md` | the bundled skill (data layout, lifecycle, provider config) |
+| `src/efm_go/builtin_skills/meetings/SKILL.md` | the bundled skill (data layout, lifecycle, provider config) |
 | `website/src/apps/meetings/` | `MeetingsPage` (list) → `MeetingView` → `TaskReviewView`, `SettingsView` |
 | `website/public/app-assets/meetings/` | icon + hero art |
 
@@ -417,7 +417,7 @@ marks it rather than leaving a gap indistinguishable from nobody speaking.
 ## Importing a recording
 
 `POST …/{id}/import` (`backend/routes/audio_import.py`) takes a host path,
-transcribes it with the gateway's batch speech-to-text (`kiro_crew.transcribe`),
+transcribes it with the gateway's batch speech-to-text (`efm_go.transcribe`),
 and feeds the result into the meeting **as if it had been spoken**: every line goes
 through `_common.dispatch_line`, so it is appended to `transcript.jsonl` and only
 then fanned out — the same persist-before-fan-out boundary live speech crosses —
@@ -475,7 +475,7 @@ meeting view is a separate UI decision.
 
 ## The two provider seams
 
-Both follow `kiro_crew.embeddings`' `EmbeddingBackend` /
+Both follow `efm_go.embeddings`' `EmbeddingBackend` /
 `register_embedding_backend` shape: an ABC, a name-keyed factory registry, and a
 resolver that **degrades instead of raising** on an unknown id. Each ships
 exactly one real implementation; the seam exists so an out-of-repo edition can
@@ -775,7 +775,7 @@ that fake session manager; no test spawns a process, opens a socket, calls a
 model, or decodes audio.
 
 The app's current tests live in the repo-level `test/` tree. `setup.cfg` sets
-`testpaths = test src/kiro_crew/apps/builtins`, so a future in-package Meetings
+`testpaths = test src/efm_go/apps/builtins`, so a future in-package Meetings
 suite would also be collected by CI; the second root already collects builtin-app
 suites that intentionally ship beside their code.
 

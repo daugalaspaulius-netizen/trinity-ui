@@ -18,14 +18,14 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli, cli_doctor
-from kiro_crew import memory_record_metadata as record_meta
-from kiro_crew import memory_schema, memory_stores
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_dir
-from kiro_crew.execution_context import resolve_member_execution
-from kiro_crew.members import dm_binding_path, write_dm_binding
-from kiro_crew.memory import PREFERENCES_FILE, PROJECTS_FILE
-from kiro_crew.memory_stores import (
+from efm_go import cli, cli_doctor
+from efm_go import memory_record_metadata as record_meta
+from efm_go import memory_schema, memory_stores
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_dir
+from efm_go.execution_context import resolve_member_execution
+from efm_go.members import dm_binding_path, write_dm_binding
+from efm_go.memory import PREFERENCES_FILE, PROJECTS_FILE
+from efm_go.memory_stores import (
     LEGACY_MEMBER_MANIFEST,
     LEGACY_MEMBER_STORE_REMEDY,
     legacy_member_store_states,
@@ -34,8 +34,8 @@ from kiro_crew.memory_stores import (
     repair_legacy_member_stores,
     require_member_memory_store,
 )
-from kiro_crew.slack import gateway as slack_gateway
-from kiro_crew.vector_memory import open_member_database, read_member_database_identity
+from efm_go.slack import gateway as slack_gateway
+from efm_go.vector_memory import open_member_database, read_member_database_identity
 
 STORE = "member-reviewer-0123456789abcdef0123456789abcdef"
 LESSON_KEY = "lesson.deadbeef"
@@ -93,7 +93,7 @@ def _write_legacy_home(*bound: str, owner: str = "reviewer", manifest: bool = Tr
     single-owner case is the normal one). Every member also gets a peer on the
     default store so the roster is not degenerate.
     """
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     home = config_dir()
     agents: dict[str, dict] = {"default": {}, "peer": {"kiro_agent": "kirocrew"}}
@@ -284,7 +284,7 @@ class TestTheUpgradeRepairsAnAttributableStore:
         directory = _write_legacy_home("reviewer")
         database = directory / memory_stores.MEMORY_DB_FILE
         memory_stores._complete_legacy_member_database(database, member_id="reviewer", store=STORE)
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         data = json.loads(_config_bytes())
         data["agents"]["reviewer"]["member_id"] = "reviewer"
@@ -301,7 +301,7 @@ class TestTheUpgradeRepairsAnAttributableStore:
         memory_stores._complete_legacy_member_database(
             directory / memory_stores.MEMORY_DB_FILE, member_id="someone-else", store=STORE
         )
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         data = json.loads(_config_bytes())
         data["agents"]["intruder"] = {"kiro_agent": "kirocrew", "member_id": "someone-else"}
@@ -327,7 +327,7 @@ class TestTheUpgradeRefusesWhatItCannotAttribute:
         cfg = KiroCrewConfig.load()
         before = _config_bytes()
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.memory_stores"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.memory_stores"):
             assert migrate_legacy_member_stores(cfg) == []
 
         warnings = [record for record in caplog.records if STORE in record.getMessage()]
@@ -526,7 +526,7 @@ class TestTheUpgradeRefusesWhatItCannotAttribute:
 
     def test_one_refused_store_does_not_block_another(self) -> None:
         directory = _write_legacy_home("reviewer")
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         other = "member-auditor-fedcba9876543210fedcba9876543210"
         data = json.loads(_config_bytes())
@@ -556,7 +556,7 @@ class TestTheUpgradeRefusesWhatItCannotAttribute:
         refused on its own behalf by the candidate scan.
         """
         _write_legacy_home("reviewer")
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         damaged = "member-wrecked-0123456789abcdef0123456789abcdef"
         data = json.loads(_config_bytes())
@@ -576,7 +576,7 @@ class TestTheUpgradeRefusesWhatItCannotAttribute:
         """The creation path keeps refusing: a config it cannot read is no
         basis for writing a new identity into it."""
         _write_legacy_home("reviewer")
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         data = json.loads(_config_bytes())
         data["memory_stores"][STORE]["owner_member_id"] = 7

@@ -15,15 +15,15 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.config import loader as L
-from kiro_crew.config import validation
-from kiro_crew.config.loader import (
+from efm_go.config import loader as L
+from efm_go.config import validation
+from efm_go.config.loader import (
     CRED_TELEGRAM_BOT_TOKEN,
     KiroCrewAgentConfig,
     KiroCrewConfig,
     _parse_telegram_accounts,
 )
-from kiro_crew.slack.gateway import GatewayOrchestrator
+from efm_go.slack.gateway import GatewayOrchestrator
 
 _ACCOUNTS_RAW = {
     "ops": {
@@ -60,7 +60,7 @@ class TestAccountsSurvivesSave:
 
         cfg = KiroCrewConfig()
         cfg.telegram.accounts = _parse_telegram_accounts(_ACCOUNTS_RAW)
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg_path):
+        with patch("efm_go.config.loader.config_path", return_value=cfg_path):
             cfg.save()
 
         written = json.loads(cfg_path.read_text(encoding="utf-8"))
@@ -97,7 +97,7 @@ class TestEmptyAccountsAreNotMaterialized:
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         cfg_path = tmp_path / "config.json"
 
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg_path):
+        with patch("efm_go.config.loader.config_path", return_value=cfg_path):
             KiroCrewConfig().save()
 
         written = json.loads(cfg_path.read_text(encoding="utf-8"))
@@ -135,7 +135,7 @@ class TestEmptyAccountsAreNotMaterialized:
         monkeypatch.setattr(L, "config_dir", lambda: tmp_path)
         monkeypatch.setattr(L, "config_local_path", lambda: tmp_path / "config.local.json")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             KiroCrewConfig.load()
 
         assert not any(
@@ -146,7 +146,7 @@ class TestEmptyAccountsAreNotMaterialized:
     def test_a_populated_map_is_still_announced_as_deprecated(self, caplog):
         """The notice keeps firing for the operator who does have a token to move."""
         data = {"agent": {"provider": "acp"}, "telegram": {"accounts": dict(_ACCOUNTS_RAW)}}
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data(data)
 
         notices = [
@@ -170,7 +170,7 @@ class TestWithdrawalIsAnnounced:
         cfg.telegram.enabled = True
         cfg.telegram.accounts = _parse_telegram_accounts(_ACCOUNTS_RAW)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.gateway"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.slack.gateway"):
             self._build(cfg)
 
         warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
@@ -185,7 +185,7 @@ class TestWithdrawalIsAnnounced:
         cfg.telegram.enabled = True
         cfg.telegram.accounts = _parse_telegram_accounts(_ACCOUNTS_RAW)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.gateway"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.slack.gateway"):
             orch = self._build(cfg)
 
         assert orch._telegram_enabled is False
@@ -196,7 +196,7 @@ class TestWithdrawalIsAnnounced:
         cfg.telegram.enabled = True
         cfg.telegram.bot_token = "999:served"
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.gateway"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.slack.gateway"):
             self._build(cfg)
 
         assert not any("telegram.accounts" in r.getMessage() for r in caplog.records)

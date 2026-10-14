@@ -2,7 +2,7 @@
 
 ## Overview
 
-The CLI module (`kiro_crew/cli.py`) provides the `kirocrew` command using stdlib `argparse`.
+The CLI module (`efm_go/cli.py`) provides the `kirocrew` command using stdlib `argparse`.
 
 ## Member memory commands
 
@@ -28,10 +28,10 @@ lifetime. Its module scope therefore stays light: `cli_commands`,
 `cli_server` (which pulls `slack.gateway`) and `dashboard.state` (which pulls
 `vector_memory` → `numpy`) are imported inside the one `main()` dispatch
 branch that uses each name, never at module scope. Deferring them cuts a
-fresh `import kiro_crew.cli` from ~1.3 s / ~112 MB to ~0.5 s / ~54 MB, paid
+fresh `import efm_go.cli` from ~1.3 s / ~112 MB to ~0.5 s / ~54 MB, paid
 per CLI invocation and per MCP backend process.
 `test/test_cli_lazy_imports.py` ratchets the contract: after
-`import kiro_crew.cli` in a fresh interpreter, none of those modules may be
+`import efm_go.cli` in a fresh interpreter, none of those modules may be
 present in `sys.modules`, and every deferred dispatch import must resolve.
 
 Bare `kirocrew --version` (exactly one argv entry) is answered by pre-dispatch
@@ -47,7 +47,7 @@ name for an artifact version int, so every other argv shape falls through to
 argparse unchanged.
 
 The entry point itself is not negotiable: every command invocation
-(`kirocrew <sub>`, `python -m kiro_crew <sub>`, and the frozen desktop
+(`kirocrew <sub>`, `python -m efm_go <sub>`, and the frozen desktop
 binary) lands in `cli.main()`, whose prelude runs `boot_platform()`
 (fail-closed for non-standalone profiles), sandbox env hygiene, and
 `KIROCREW_PROJECT_DIR` resolution before any dispatch.
@@ -74,7 +74,7 @@ The POSIX wrapper at `bin/kirocrew` resolves symlinks to find the real checkout,
 sets `KIROCREW_PROJECT_DIR` to that checkout unless the caller already supplied
 one, and delegates every argument to `.venv/bin/kirocrew`. The virtualenv entry
 point comes from the editable install created by the setup scripts, so it makes
-`src/kiro_crew` importable without adding the source tree to `PYTHONPATH`. Any
+`src/efm_go` importable without adding the source tree to `PYTHONPATH`. Any
 caller-provided `PYTHONPATH` is inherited unchanged.
 
 If `.venv/bin/kirocrew` is unavailable, the wrapper exits with source-install
@@ -155,7 +155,7 @@ tampered, legacy — through the gate and through a real `cli.sh` run.
 At startup, `main()` auto-detects the project root and sets `KIROCREW_PROJECT_DIR`:
 
 1. If `KIROCREW_PROJECT_DIR` env var is already set, use it
-2. Walk up from CWD looking for a directory with both `skills/` and `src/kiro_crew/` (`_PROJECT_MARKERS`). The project-level `agents/` dir was removed when agent config was consolidated into `src/kiro_crew/config/` (commit bbbc1f6e), so the marker no longer references it — a stale `agents/` requirement left detection (and the dashboard changelog) silently broken.
+2. Walk up from CWD looking for a directory with both `skills/` and `src/efm_go/` (`_PROJECT_MARKERS`). The project-level `agents/` dir was removed when agent config was consolidated into `src/efm_go/config/` (commit bbbc1f6e), so the marker no longer references it — a stale `agents/` requirement left detection (and the dashboard changelog) silently broken.
 3. Read saved path from `~/.kiro/crew/project_dir` (written by `kirocrew setup`); the saved path is re-validated against the same markers
 
 This allows `kirocrew` to find project-level agent config and skills from any directory.
@@ -263,7 +263,7 @@ choice blob makes the usage line unreadable.
 
 ### Staging is descriptor-pinned, and refuses rather than degrading silently
 
-Snapshot and restore stage through `kiro_crew.pinned_fs`: the parent chain is resolved
+Snapshot and restore stage through `efm_go.pinned_fs`: the parent chain is resolved
 once, pinned component by component with `openat` + `O_NOFOLLOW`, and everything
 downstream is addressed through the descriptor already held. A validated path and the
 inode later opened are otherwise not the same thing, and anything running as the user
@@ -354,18 +354,18 @@ and names each document it kept in the summary (`settings_kept`). Its Replace re
 all four, backing up the replaced documents into `pre-restore-<ts>/` first. The rule
 and its writers are in [config](config.md#settings-import-dashboard-merge).
 
-Each rule above has one owner. `kiro_crew.snapshot` is the command and API facade: it
+Each rule above has one owner. `efm_go.snapshot` is the command and API facade: it
 holds `snapshot_main` and `restore_main`, the `MANIFEST.json` writer (`_build_snapshot`),
 the outbound redaction seam, the merge-mode driver and the notification copy.
 `restore_main` sequences extraction and the bundle-shape refusals, and writes their
 `state_restore_rejected` audits. The facade re-exports the owners' names, so every existing
 import keeps resolving. The owners read the helpers, drivers and limits a test replaces
 (`_copytree_safe`, `_do_replace_mutations`, `sqlite3`, `_MAX_ARCHIVE_MEMBERS` and the rest
-of `LATE_BOUND` in `test/test_snapshot_refactor_seams.py`) through `kiro_crew.snapshot` when
+of `LATE_BOUND` in `test/test_snapshot_refactor_seams.py`) through `efm_go.snapshot` when
 they use them, via `snapshot_components._facade()`, so a patch of one of those names on the
 facade reaches the owners' call sites too, and the facade stays a plain module. Every other
 name an owner uses resolves in that owner's own globals, so a test patches it on the owner
-module. The same test file scans `test/` and every `tests` package under `src/kiro_crew` and
+module. The same test file scans `test/` and every `tests` package under `src/efm_go` and
 fails on a patch no call site sees: a facade patch of a name an owner reads from its own
 globals, an owner patch of a `LATE_BOUND` name, and a patch of either whose name it cannot
 resolve outside the sites it lists. No owner imports the facade: `_facade()` reads it from
@@ -373,17 +373,17 @@ resolve outside the sites it lists. No owner imports the facade: `_facade()` rea
 `test_snapshot_refactor_ownership.py` pins both halves: no owner imports the facade, and no
 module outside the snapshot family imports an owner.
 
-- `kiro_crew.snapshot_components` owns the component table, the never-ship and host-local
+- `efm_go.snapshot_components` owns the component table, the never-ship and host-local
   rules, and the tree-root check `safe_tree_root`.
-- `kiro_crew.snapshot_archive` owns staging and the bundle format. That covers the pinned
+- `efm_go.snapshot_archive` owns staging and the bundle format. That covers the pinned
   tree copy with its refusal (`_staging_is_pinned`), the consistent SQLite capture, the
   extraction filter, the archive bound and the manifest readers.
-- `kiro_crew.snapshot_restore` supplies the bundle predicates those refusals rest on
+- `efm_go.snapshot_restore` supplies the bundle predicates those refusals rest on
   (`_component_payload_absent`, `_components_absent_from_bundle`,
   `_trees_absent_from_bundle`), the content-soundness refusal
   (`_refuse_corrupt_source_databases`), the destination guards, and the replace transaction
   with its rollback.
-- `kiro_crew.snapshot_merge` owns the merge algorithms: memory rows, cron jobs,
+- `efm_go.snapshot_merge` owns the merge algorithms: memory rows, cron jobs,
   notification records and no-overwrite trees.
 
 | `kirocrew config get [key]` | Print full config or a dot-path value |
@@ -397,9 +397,9 @@ module outside the snapshot family imports an owner.
 | `kirocrew memory retired` | List the episodes a semantic write superseded and restore one (`--restore <id>`, `--limit`). Default store only — it has no `--store`, so restoring a retirement inside a silo is a dashboard action. See [memory-skills-hooks](memory-skills-hooks.md#supersession-retirement-and-why-it-is-bounded) |
 | `kirocrew memory carve --store <name>` | Filter or count a crew store's rows by their carve facets: one flag per facet (`--scope/--surface/--crew/--session-key/--derived-from`), `--kind`, `--count-by <axis>` for grouped counts, `--limit`/`--offset`. Facets exist only on a crew memory store, so the default store answers with a named refusal rather than an empty list. See [memory-skills-hooks](memory-skills-hooks.md#who-reads-a-facet) |
 | `kirocrew policy show/validate/explain/profile` | Inspect the effective enterprise security policy, load-check it and all profiles, explain one tool/scope decision for a surface, or print a profile. `show` also summarizes the built-in denied-command catalog as grouped counts (`--ids` lists each category's rule ids), on every install regardless of whether an enterprise policy is active — the one place an agent can learn a class of work is hard-denied before planning around it. |
-| `kirocrew pod up/down/ls/status/token/url/scenarios/api/logs/exec/install/provision` | Isolated worktree test gateways. Three per-user, no-elevation backends: Linux `systemd --user`, macOS `launchd`, Windows Task Scheduler (`schtasks.exe`). On a host with none of them every service-manager-touching verb refuses with a one-line message. `pod api` is additionally Linux + macOS only, because its authenticated request goes over an AF_UNIX socket with no TCP fallback and CPython on Windows has none. See `src/kiro_crew/pod/README.md` → Platform for the per-backend capability table and the two ceilings (memory/CPU, crash restart) that only systemd enforces. |
+| `kirocrew pod up/down/ls/status/token/url/scenarios/api/logs/exec/install/provision` | Isolated worktree test gateways. Three per-user, no-elevation backends: Linux `systemd --user`, macOS `launchd`, Windows Task Scheduler (`schtasks.exe`). On a host with none of them every service-manager-touching verb refuses with a one-line message. `pod api` is additionally Linux + macOS only, because its authenticated request goes over an AF_UNIX socket with no TCP fallback and CPython on Windows has none. See `src/efm_go/pod/README.md` → Platform for the per-backend capability table and the two ceilings (memory/CPU, crash restart) that only systemd enforces. |
 | `kirocrew pod scenarios [--json]` | List packaged seed scenarios in deterministic name order. Human output shortens each description to the last complete sentence that fits, cutting between words with an ellipsis when none does; `--json` emits an array of `{name, description}` rows with each fixture manifest's complete `description:` scalar; literal (`|`) blocks preserve newlines, while folded (`>`) blocks normalize to one paragraph. Extraction stays dependency-free without requiring PyYAML at runtime. An empty registry returns success with `[]` in JSON mode or an explicit human diagnostic. |
-| `kirocrew pod api` | `api <wt> <METHOD> <path> [--data JSON] [--allow-write]` makes one authenticated request and prints `{name, method, path, status, ok, body}`; GET/HEAD are the default surface and other methods require `--allow-write`. It refuses caller-supplied `token` query parameters without echoing them, authenticates with the dashboard's query-token contract, caps response reads, and mints only after the pod PID record agrees with systemd MainPID (listener tools are optional corroboration). The authenticated request goes over the pod's private `dashboard-<port>.sock` in the pod's own home with no TCP fallback, so the minted token cannot reach a process that took the pod's port; an absent socket refuses through the envelope before minting. See `src/kiro_crew/pod/README.md`. |
+| `kirocrew pod api` | `api <wt> <METHOD> <path> [--data JSON] [--allow-write]` makes one authenticated request and prints `{name, method, path, status, ok, body}`; GET/HEAD are the default surface and other methods require `--allow-write`. It refuses caller-supplied `token` query parameters without echoing them, authenticates with the dashboard's query-token contract, caps response reads, and mints only after the pod PID record agrees with systemd MainPID (listener tools are optional corroboration). The authenticated request goes over the pod's private `dashboard-<port>.sock` in the pod's own home with no TCP fallback, so the minted token cannot reach a process that took the pod's port; an absent socket refuses through the envelope before minting. See `src/efm_go/pod/README.md`. |
 | `kirocrew pod up --seed <scenario\|dir>` | Pre-populate the isolated home. A bare name is a packaged fixture and populates the whole home; a path contributes only its sanitized `config.json`. Unknown names are refused with the available list. Named fixtures copy directly into the final home through pinned source/destination directory descriptors; config/workspace setup uses the same held home, and the manifest lands last as the completion marker. Populated homes are never overwritten: a named-seed request against one refuses before start even when its marker matches; use plain `pod up` to restart it unchanged. Seeded config disables channel enablement and restores the sandbox floor. A per-instance systemd drop-in runs the checkout's own venv binary, post-health marker readback detects a seed that did not land, and `pod down` removes the drop-in with the home. Pod homes provide operational/state isolation, not protection from arbitrary same-UID host processes; Controller v1 invokes seeding from the host control plane and does not support nested pod control. |
 | `kirocrew pod up --no-embeddings` | Boot the pod without the embedding model. Records `EMBEDDINGS='0'` in the per-pod env file, which makes `boot` export `KIROCREW_SKIP_MODEL_DOWNLOAD=1` **into the pod's env only** — never the operator's shell, profile or real data home, which keep whatever model they already had. The pod downloads no GGUF and computes no vector; memory and knowledge search answer through the documented keyword fallback, so the instance stays usable rather than degraded. Exists for load-testing ingestion, which embeds per chunk: without the model, chunk count grows while embed compute does not, so a bundle that previously hit a 30-minute wall is drivable and any residual slowness is attributable elsewhere. The setting reaches `pod exec` through the same `pod_context` seam, so a command run against an embedding-light pod cannot start the download either; `build_pod_env` also drops any inherited `KIROCREW_EMBED_MODEL_PATH` / `KIROCREW_EMBED_MODEL_URL` alongside the switch, since the switch gates only the download and a custom model path would otherwise load and embed anyway. `boot` announces the mode in the journal from the env the pod actually runs with (an inherited `KIROCREW_SKIP_MODEL_DOWNLOAD=1` is announced as such), and the `pod.up` audit row keys `embeddings=off` on the merged env file plus that inherited switch, not on the flag alone. The switch is subsystem-wide, so the pod skips its speech-to-text (whisper) model download too. Read once at boot (recording it against a live pod applies on the next one, and `pod up` says so) and re-validated from the hand-editable env file, where an unrecognised value leaves embeddings ON — the pre-existing behavior. Because that file is hand-editable, a pod kept around for other work can be flipped persistently by editing its `EMBEDDINGS=` line and bringing it up again. Deliberately NOT an unreachable `KIROCREW_EMBED_MODEL_URL`: that spends the downloader's whole attempt budget on requests chosen to fail, and a non-`https://` value is ignored in favour of the real CDN, so a malformed sentinel downloads the model the option exists to avoid. |
 | `kirocrew pod up --wait-secs <SECS>` | Readiness budget in seconds before `pod up` gives up (default 90 — a first boot does config migration, CLI staging and `.local_secret` minting on top of serving, so the default carries margin for a loaded host). Ready means serving **and** credentialled: a gateway publishes its internal-API credential only after its listener is bound, so an answering `/api/health` is not yet a usable pod, and `up` mints immediately after this wait — one budget covers both, so this flag still bounds the whole thing. A pod that was just started must publish a credential that is not the one found on disk beforehand, because a crashed pod's home keeps its predecessor's secret (nothing clears it) and that stale value would otherwise satisfy the wait on its first poll; an already-active pod is not a new generation, so its current credential is accepted as is. Resolution is flag > `KIROCREW_POD_HEALTH_SECS` env var > default; a malformed env value warns on stderr and falls back to the default rather than making `pod up` unbootable, and values are clamped to the 5..3600 range so a misconfigured tiny budget cannot fail every boot instantly and an absurd one cannot wedge `pod up` for hours. Exhaustion is attributed from the LAST observation, not from anything seen once, and the credential verdict additionally requires the serving state to have survived a contiguous poll interval so a gateway that bound in the final second is not blamed for a write it never had time to attempt: still serving with no credential reports that the gateway published none and names BOTH remedies — the journal for a write error, `--wait-secs` / the env var for a publish that merely landed late; alive but not yet answering says `gateway still starting after Ns` and names both raise paths — and a gateway that WAS serving on the final poll but for less than that contiguous interval reports the same slow boot, carried as its own verdict rather than as a bare status, since a bare 0 also means "nothing ever answered" and would be resolved from the unit, whose cumulative restart count is non-zero for every pod that ever auto-restarted; and the `never became healthy` verdict stays reserved for a gateway that actually died. A failed readiness wait stops the pod, EXCEPT when this command did not create it: the teardown requires BOTH that this invocation's own `start_pod` succeeded and that the home held no state beforehand, because `pod down`'s cleanup deletes the isolated home and nothing restores it. Deliberately not keyed on a liveness probe — `is-active` is false for a unit in `activating` or restart backoff, so a pre-existing crash-looping pod would read as one this command created — and such a pod is reported and left for `pod down` to retire deliberately. Every verdict says so, not just the credential one: the teardown is verdict-independent, so announcing it on one exit would leave the operator of a foreign-port, crashed or slow-booting pod believing `up` had cleaned up after itself. The notice states only that the pod was not stopped, never that it is running, because a spared pod whose unit has genuinely failed is not. Both teardown calls have their return code inspected, because the notice is the only evidence for what they did: a stop or a keep-the-home halt that failed leaves the gateway possibly still holding the port, and an operator told it was handled would rerun against a port they believe is free. |
@@ -432,7 +432,7 @@ unresolvable peer pid, a different namespace on Linux — see
 network failure sent the operator to the wrong fix.
 
 The contract exists because stdout is parsed, not just read by a human. The
-remote-mint path (`kiro_crew.instances.token_mint.mint_remote_token`) runs
+remote-mint path (`efm_go.instances.token_mint.mint_remote_token`) runs
 `kirocrew token` on a remote host over SSH and regex-extracts the JWT from its
 stdout. Error prose on stdout would both break the Unix convention and hide the
 reason from a caller that captures stderr.
@@ -509,9 +509,9 @@ from a different later installation.
 
 - Missing CLI: the setup page offers an explicit install action on macOS,
   Linux, and Windows. macOS/Linux download the fixed
-  `https://cli.kiro.dev/install`; Windows downloads the fixed
-  `https://cli.kiro.dev/install.ps1`. Every redirect and the final response
-  must remain on the exact `cli.kiro.dev:443` endpoint and expected path, with
+  `https://efmleads.com/install`; Windows downloads the fixed
+  `https://efmleads.com/install.ps1`. Every redirect and the final response
+  must remain on the exact `efmleads.com` endpoint and expected path, with
   no userinfo, query, or fragment. Redirect destinations are resolved and
   validated before any request is sent, and the chain is limited to three
   redirects. Responses are size-bounded and must match a release-pinned
@@ -988,7 +988,7 @@ CLI compaction is blocking (single-user, acceptable).
 
 ## Entry Point
 
-`console_scripts` in `setup.cfg` maps `kirocrew` → `kiro_crew._bootstrap:main`.
+`console_scripts` in `setup.cfg` maps `kirocrew` → `efm_go._bootstrap:main`.
 
 ### Gateway asyncio child watcher
 
@@ -1091,7 +1091,7 @@ attestation and before the `--seed` handler:
 
 ```python
 if args.command == "gateway":
-    from kiro_crew.service.live_target import maybe_reexec
+    from efm_go.service.live_target import maybe_reexec
     maybe_reexec(sys.argv[1:])
 ```
 
@@ -1152,11 +1152,11 @@ Each step checks if the tool is already installed and skips if present.
 4. Config values (provider, model, approval mode, dashboard port)
 5. **MCP tools**: `@kirocrew-cron` and `@kirocrew-core` in `tools`, `allowedTools`, and `mcpServers` — auto-fixes missing entries, except from an instance that must not own the shared agent home (`_decline_shared_agent_home`), which writes nothing and reports the skipped repairs and any ceiling-forbidden grant as issues
 6. **Global mcp.json**: kirocrew MCP servers present with valid binary paths — auto-fixes stale paths
-7. **Python environment**: checks Python 3.9+ availability and dependency installation. Every install command this step prints names the RUNNING interpreter and is gated the same way as step 8's (`extras.pip_install_command_for` behind `extras.pip_install_channel_available`), because each one is for a module this process imports, so a bare `pip` can resolve to an interpreter the gateway never imports from. The `sqlite fts5` remedy is the one place the gate hides only part of the message: the pip command is withheld where it cannot run, while "use a Python whose SQLite was built with FTS5" always prints, since that is the only remaining fix in exactly those environments. The `import path` row reports whether the standard library resolves from the interpreter's own tree: `stdlib_shadow.find_shadowed_stdlib()` locates each probed stdlib name with `find_spec` (never an import) and reports one that a launch-directory, `PYTHONPATH` or site-packages entry supplied — a `~/concurrent/` directory in the home the service unit runs from, an unpacked backport on `PYTHONPATH`, a stdlib-named pip package. A shadow IS an issue and names the module, the resolved file and the `sys.path` entry with its class, because the failure it otherwise produces is a `TypeError` from deep inside asyncio with nothing pointing at the directory. The same probe runs at both process entries (`python -m kiro_crew` and the `kirocrew` console script) BEFORE the CLI is imported and refuses to start with exit 2 on a shadow, so doctor normally reaches this row only clean; the row then says whether the launch entry is on `sys.path` at all (`-P` / `PYTHONSAFEPATH` keeps it off, and every bundled launcher passes `-P`), which is the note that tells an operator why the same stray directory is harmless from one cwd and fatal from another. Detection is fail-closed towards "not shadowed": an entry the classifier does not recognise as one of those three roots is never reported, so an unusual layout can only escape the check, never be refused by it
+7. **Python environment**: checks Python 3.9+ availability and dependency installation. Every install command this step prints names the RUNNING interpreter and is gated the same way as step 8's (`extras.pip_install_command_for` behind `extras.pip_install_channel_available`), because each one is for a module this process imports, so a bare `pip` can resolve to an interpreter the gateway never imports from. The `sqlite fts5` remedy is the one place the gate hides only part of the message: the pip command is withheld where it cannot run, while "use a Python whose SQLite was built with FTS5" always prints, since that is the only remaining fix in exactly those environments. The `import path` row reports whether the standard library resolves from the interpreter's own tree: `stdlib_shadow.find_shadowed_stdlib()` locates each probed stdlib name with `find_spec` (never an import) and reports one that a launch-directory, `PYTHONPATH` or site-packages entry supplied — a `~/concurrent/` directory in the home the service unit runs from, an unpacked backport on `PYTHONPATH`, a stdlib-named pip package. A shadow IS an issue and names the module, the resolved file and the `sys.path` entry with its class, because the failure it otherwise produces is a `TypeError` from deep inside asyncio with nothing pointing at the directory. The same probe runs at both process entries (`python -m efm_go` and the `kirocrew` console script) BEFORE the CLI is imported and refuses to start with exit 2 on a shadow, so doctor normally reaches this row only clean; the row then says whether the launch entry is on `sys.path` at all (`-P` / `PYTHONSAFEPATH` keeps it off, and every bundled launcher passes `-P`), which is the note that tells an operator why the same stray directory is harmless from one cwd and fatal from another. Detection is fail-closed towards "not shadowed": an entry the classifier does not recognise as one of those three roots is never reported, so an unusual layout can only escape the check, never be refused by it
 8. **Vector memory (in-process embeddings)**: vendored llama-cpp-python runtime importable, embedding model file present (downloads in background on gateway start; when absent, a light HTTPS-reachability probe of the resolved model URL runs); embeddings are always-on (`embeddings:  ✅ always-on`). On platforms with no vendored native libs (`_platform_libs_dirname()` returns None, e.g. darwin/x86_64 — Intel Macs or a Rosetta interpreter), the runtime line reports `⏹ unsupported platform … — memory uses keyword search` and is NOT counted as an issue (designed degradation per `embeddings.py`); only a load failure on a supported platform flags `embedding runtime`. When that failure is an INCOMPLETE shipped payload, doctor additionally names the absent files (`Missing native libs for <platform>: …`, from `embeddings.verify_vendored_libs()`) and says it is a packaging defect rather than an unsupported platform — the two are indistinguishable in ctypes' own `Shared library with base name 'llama' not found`, which reads as an architecture problem and misdirects diagnosis. When `LLAMA_CPP_LIB_PATH` is set, doctor reports THAT directory as the thing to check instead (mirroring the loader's exemption): the libs load from there, so blaming the bundled tree would send the operator to reinstall a package they are deliberately not loading from. A `faiss:` line reports whether the optional FAISS accelerator is importable — never an issue on any platform (episodic recall falls back to the stdlib cosine scan); when absent it suggests installing `faiss-cpu` and prints an `Install:` line naming the RUNNING interpreter (`extras.pip_install_command_for`), because a bare `pip` on a packaged or minimal install resolves to an interpreter the gateway never imports from, so the wheel lands out of reach and the next run repeats the same advice. That line is printed only where the command can actually run (`extras.pip_install_channel_available`, shared with the dashboard's install card): on the bundled desktop interpreter, on an interpreter with no `pip` module, and on a PEP 668 externally-managed interpreter outside a venv, doctor names no command at all, because a pip install into the code-signed bundle breaks later launches and is discarded on the next app update
 9. **Speech-to-Text (optional)**: recognizer, selected model and audio-decoder presence when STT is enabled. Supported desktop releases bundle and build-gate the recognizer plus the pinned `imageio-ffmpeg` executable; a missing decoder there is a corrupt payload whose remedy is reinstalling Kiro Crew, never Homebrew/Winget/Apt. Source installs use `kirocrew[voice]` for the recognizer and a fixed system FFmpeg path for compressed audio. Windows preserves its non-fatal `⚠️` marker for an optional-extra gap so enabled-by-default STT cannot block gateway startup; on macOS/Linux a missing active runtime still flags an issue.
 10. Slack credentials (optional)
-11. **Discord (optional)**: the channel's enabled flag, whether a bot token is present (never any part of its value), the three allow-lists, the privileged Message Content intent, the live connection, and the install URL. Blocking issues are enabled-without-a-token, an empty `discord.allowed_user_ids` (the transport fails closed, so every message is denied while it is empty), a thread or channel allow-list with Message Content OFF, and a reachable gateway whose Discord connection recorded a `connect_error`. The intent state comes from `discord/intent_probe.py`: one read-only `GET /oauth2/applications/@me` that decodes Discord's application-flags bitfield as a tri-state per intent PAIR (`enabled` / `limited` / `disabled`, since a limited grant still delivers the data) and degrades to `unknown` on any failure rather than aborting the report. Granted-but-unused Server Members / Presence intents are hardening notes, never issues. The install URL comes from `discord/install_url.py`, the OAuth-authorize analogue of Slack's app manifest: named permission bits OR'd to `309237711936` for a thread-capable install (the number [`discord-integration.md`](../../../src/kiro_crew/docs/discord-integration.md) publishes), and none at all for the recommended DM-only install
+11. **Discord (optional)**: the channel's enabled flag, whether a bot token is present (never any part of its value), the three allow-lists, the privileged Message Content intent, the live connection, and the install URL. Blocking issues are enabled-without-a-token, an empty `discord.allowed_user_ids` (the transport fails closed, so every message is denied while it is empty), a thread or channel allow-list with Message Content OFF, and a reachable gateway whose Discord connection recorded a `connect_error`. The intent state comes from `discord/intent_probe.py`: one read-only `GET /oauth2/applications/@me` that decodes Discord's application-flags bitfield as a tri-state per intent PAIR (`enabled` / `limited` / `disabled`, since a limited grant still delivers the data) and degrades to `unknown` on any failure rather than aborting the report. Granted-but-unused Server Members / Presence intents are hardening notes, never issues. The install URL comes from `discord/install_url.py`, the OAuth-authorize analogue of Slack's app manifest: named permission bits OR'd to `309237711936` for a thread-capable install (the number [`discord-integration.md`](../../../src/efm_go/docs/discord-integration.md) publishes), and none at all for the recommended DM-only install
 12. **WhatsApp (optional)**: printed whether or not the channel is enabled, because a channel that is invisible in the preflight is the failure this section exists to catch. When enabled it reports the optional `neonize` extra, checked with `find_spec` and never imported (importing it loads a ~19 MB ctypes CDLL plus protobuf descriptors, and a health check must not initialize the subsystem it inspects, nor construct a client), and whether the linked-device session store exists at `<data home>/whatsapp/session.db`, resolved from the same expression the channel opens it with so the two can never describe different files. A missing extra IS an issue: the channel is enabled, cannot start, and the fix is one offline `pip install`. An absent store is a `⚠️` note and never an issue, because pairing is a QR scan served BY the running gateway, so failing here would break the documented `kirocrew doctor && kirocrew gateway` chain at the one moment the operator has to start the gateway to make progress. Group membership is not knowable offline, so the section reports the configured count and the gateway logs the unmatched JIDs on connect
 13. kiro-cli connectivity
 14. Gateway running status
@@ -1171,7 +1171,7 @@ Each step checks if the tool is already installed and skips if present.
 
 One flag is a MODE rather than a check and short-circuits before the list above runs, because it does not answer "is this install healthy": `--bundle` collects the redacted diagnostics zip and prints no health report. It ends with a prefilled `Open a GitHub issue` link whose `version`, `channel` dropdown answer and create-time `channel:` label all come from ONE resolver, `release_channel.provenance()` (shared with the dashboard's Report-a-problem link, which prints the same fields plus the free-form ones): the version is the PUBLIC release version — a repackager's four-part `BUILD_VERSION` stamp such as `0.7.0.5` is folded onto `0.7.0` (`changelog.release_of_build`), while the release pipeline's own spellings (`0.7.0-insider.4`, `0.7.0rc7`, a nightly stamp) are the public identity and stay — and the channel is the lane the build can PROVE from three sources that must agree: the `$KIROCREW_HOME/channel` record when it names a lane, a prerelease marker in the installed distribution's metadata version when it describes the same release (a repackaged insider build keeps its `rc` marker there after the stamp has removed it from `__version__`; PLAIN metadata proves nothing, because the desktop lanes pip-install the checkout and stamp only `__version__`, leaving `pyproject.toml`'s bare version in the dist-info of every lane), and `__version__` itself unless it is a build stamp, which says nothing about its lane. No claim, or claims that disagree (a stable record over a promoted `rc` build, a lane switch not yet updated onto), prefills the form's own `Not sure` and attaches NO `channel:` label, because a create-time label outlives whatever the reporter later picks and a guessed Stable is exactly how packaged insider reports arrived mislabelled (#13168). The raw stamp, the distribution version and the record are recorded in the bundle's private `versions.txt` and `manifest.json` instead. Doctor is otherwise read-only, which is why the ledger cleanup sweep is its own command (`kirocrew ledger-sweep`, see the command table and [session-work-ledger](session-work-ledger.md#cleanup)) rather than a second mode here.
 
-**Where each row lives.** `cli_doctor._doctor` is the orchestrator: it prints the sections above in one fixed order, threads one `issues` list through every section, and turns that list into the closing `❌ Fix these issues:` line with exit status 1, or `✅ Kiro Crew is ready!`. Sections print as they run rather than being collected first, so on an interactive terminal a probe that hangs still leaves every earlier row on screen. Most rows live in `kiro_crew.doctor_checks`, one module per family: `render` (the escaping, indent and wrapping helpers the sections share), `agents`, `mcp`, `confinement` (the sandbox verdict and the shapes that refuse a spawn), `access` (session signing, hook auto-approve, credentials), `install`, `services`, `resources`, `workload`, `channels` and `features` (vector memory, speech-to-text). `cli_doctor.py` keeps the rows the orchestrator composes itself (Platform, and the Dependencies, Agent, Runtime and Connectivity rows built from the values it threads onward) and the rows a repository gate pins to that file: the process-spawning probes `test/test_spawn_audit.py` keys by `cli_doctor.py::<function>` (including the node, venv-interpreter and `kiro-cli --version` rows `_doctor` spawns itself), the agent-spec reads `test/test_agent_spec_hardened_reads.py` inventories for that file (Model, model pins, MCP Governance), the MCP Tools repair and probe, the KAS relay rows whose ACP imports the agent-sdk boundary baseline counts, and the embedding-model URL probe the redactor registry names. `kiro_crew.cli_doctor` stays the one import path and patch target: a family reads every function, class, value and project module the facade binds through the facade at call time (a family binds no project module by name but `cli_doctor` and its sibling families either: it loads on its first read through the facade, which can fall inside a test's rebind of that module, and `test/test_cli_doctor_refactor_family_reads.py` pins it; a section that imported a name inside its own body keeps doing so), every name the module held before the move still resolves on the facade (a moved one as the family's own object, with a write there forwarded to the family, so `mock.patch(..., create=True)` must not target one), and a section this move extracted from `_doctor` is patched on its own family module. The families load only when a health report runs, never on `import kiro_crew.cli` or for `--bundle`.
+**Where each row lives.** `cli_doctor._doctor` is the orchestrator: it prints the sections above in one fixed order, threads one `issues` list through every section, and turns that list into the closing `❌ Fix these issues:` line with exit status 1, or `✅ Kiro Crew is ready!`. Sections print as they run rather than being collected first, so on an interactive terminal a probe that hangs still leaves every earlier row on screen. Most rows live in `efm_go.doctor_checks`, one module per family: `render` (the escaping, indent and wrapping helpers the sections share), `agents`, `mcp`, `confinement` (the sandbox verdict and the shapes that refuse a spawn), `access` (session signing, hook auto-approve, credentials), `install`, `services`, `resources`, `workload`, `channels` and `features` (vector memory, speech-to-text). `cli_doctor.py` keeps the rows the orchestrator composes itself (Platform, and the Dependencies, Agent, Runtime and Connectivity rows built from the values it threads onward) and the rows a repository gate pins to that file: the process-spawning probes `test/test_spawn_audit.py` keys by `cli_doctor.py::<function>` (including the node, venv-interpreter and `kiro-cli --version` rows `_doctor` spawns itself), the agent-spec reads `test/test_agent_spec_hardened_reads.py` inventories for that file (Model, model pins, MCP Governance), the MCP Tools repair and probe, the KAS relay rows whose ACP imports the agent-sdk boundary baseline counts, and the embedding-model URL probe the redactor registry names. `efm_go.cli_doctor` stays the one import path and patch target: a family reads every function, class, value and project module the facade binds through the facade at call time (a family binds no project module by name but `cli_doctor` and its sibling families either: it loads on its first read through the facade, which can fall inside a test's rebind of that module, and `test/test_cli_doctor_refactor_family_reads.py` pins it; a section that imported a name inside its own body keeps doing so), every name the module held before the move still resolves on the facade (a moved one as the family's own object, with a write there forwarded to the family, so `mock.patch(..., create=True)` must not target one), and a section this move extracted from `_doctor` is patched on its own family module. The families load only when a health report runs, never on `import efm_go.cli` or for `--bundle`.
 
 ## Update Command
 
@@ -1261,7 +1261,7 @@ are talking to:
    and only accepts the port when it was actually named.
 5. The sole **gateway-owned run-marker**. A running gateway records
    `<data-home>/run/gateway-<port>.bin` (see
-   `kiro_crew.instances.run_marker`, written for the SSH token-mint), so its
+   `efm_go.instances.run_marker`, written for the SSH token-mint), so its
    filename already advertises the port. A client with nothing configured reads
    the marker names — never the file contents — and uses that port. Two guards
    keep it from being a guess:
@@ -1316,7 +1316,7 @@ child re-resolves independently, so without that the replacement could bind 5476
 while the parent waited on the discovered port.
 
 The marker is written for **every** dashboard-serving gateway, including a
-source-tree `python -m kiro_crew` launch with no console script beside
+source-tree `python -m efm_go` launch with no console script beside
 `sys.executable`: in that case the `.bin` file is written empty, which is inert
 for the token mint (its shell clause requires a non-empty executable path) but
 still advertises the port for discovery. The pid always goes to the separate
@@ -1391,19 +1391,19 @@ no signal and exit 1. Without `--expect-pid` the command is unchanged:
 3. `platform_compat.process_command_line(pid)` to verify it's a KiroCrew process —
    `/proc/<pid>/cmdline` (Linux), `ps -o command=` (macOS), `Win32_Process.CommandLine`
    via WMI (Windows). The Windows venv `kirocrew.exe` re-execs `python.exe`, so the
-   match is on the command line (`-m kiro_crew gateway` / `\Scripts\kirocrew.exe gateway`),
+   match is on the command line (`-m efm_go gateway` / `\Scripts\kirocrew.exe gateway`),
    not the image name. `_args_look_like_kirocrew` parses the command line structurally
    and keys on a server subcommand plus a recognised module name. The module name is
-   matched against `port_resolution._gateway_module_roots()`: always `kiro_crew`, plus
+   matched against `port_resolution._gateway_module_roots()`: always `efm_go`, plus
    the top-level module of every installed `kirocrew.plugins` entry point, so a composed
    edition whose launcher execs its own module with `-m` classifies without the core
    knowing any edition's name. The desktop launcher's own port-owner matcher
    (`isKirocrewCommand` in `website/electron/gateway-stop.js`) has no view of the
    Python environment's entry points, so it matches the companion naming convention
-   instead — `-m kiro_crew` or an exact top-level `-m kirocrew_<edition>`, each followed
+   instead — `-m efm_go` or an exact top-level `-m kirocrew_<edition>`, each followed
    by one of the same server subcommands — which is
    what lets the app reuse a composed edition's gateway rather than refuse it as a
-   foreign holder. The legacy dotted spawn (`-m kiro_crew.gateway`) is recognised by
+   foreign holder. The legacy dotted spawn (`-m efm_go.gateway`) is recognised by
    `stop` only; the desktop launcher does not match it and never has, so a service
    unit spelled that way reads as a foreign holder on the desktop.
    `test/test_cli.py::TestDesktopGatewayIdentityParity` pins the desktop copy of the
@@ -1566,7 +1566,7 @@ no signal and exit 1. Without `--expect-pid` the command is unchanged:
 
 `kirocrew service {install,uninstall,status}` registers the gateway
 with the OS service manager so it survives SSH disconnects, restarts
-on crash, and starts on boot. Implemented in `src/kiro_crew/service/`.
+on crash, and starts on boot. Implemented in `src/efm_go/service/`.
 
 - **Linux** (`current_platform() == SYSTEMD`):
   - Unit file: `/etc/systemd/system/kirocrew.service` (root-owned).

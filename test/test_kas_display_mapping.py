@@ -1,6 +1,6 @@
 """KAS session/update discriminant → Crew display mapping (Group A).
 
-KAS folds signals that kiro-cli sends as separate top-level ``_kiro.dev/*``
+KAS folds signals that kiro-cli sends as separate top-level ``_efm.go/*``
 methods (agent switch, per-turn metadata, compaction status) into
 ``session/update`` discriminants. These tests pin that the KAS-gated branch in
 ``AcpSessionHandle._handle_update`` restores each display, and that the kiro
@@ -13,8 +13,8 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import (
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import (
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
     EVENT_AGENT_SWITCHED,

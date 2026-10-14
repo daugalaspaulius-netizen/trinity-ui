@@ -31,9 +31,9 @@ import stat
 
 import pytest
 
-import kiro_crew.channel as channel_mod
-from kiro_crew import model_registry as mr
-from kiro_crew.channel import ChannelManager
+import efm_go.channel as channel_mod
+from efm_go import model_registry as mr
+from efm_go.channel import ChannelManager
 
 
 def _umask_default_mode() -> int:

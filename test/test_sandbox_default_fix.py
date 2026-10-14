@@ -18,8 +18,8 @@ import sys
 
 import pytest
 
-import kiro_crew.sandbox as sb
-from kiro_crew.config.loader import AgentConfig
+import efm_go.sandbox as sb
+from efm_go.config.loader import AgentConfig
 
 
 @pytest.fixture(autouse=True)
@@ -53,14 +53,14 @@ class TestFix1DefaultIsAuto:
 
     def test_config_read_fallback_is_auto(self):
         """When config.json has no 'sandbox' key, the read path returns 'auto'."""
-        from kiro_crew.knowledge.llm_pool import _get_sandbox_mode
+        from efm_go.knowledge.llm_pool import _get_sandbox_mode
 
         # Empty config -> returns new default
         assert _get_sandbox_mode(config={}) == "auto"
 
     def test_config_read_preserves_explicit_off(self):
         """Existing config with explicit 'off' is still honored."""
-        from kiro_crew.knowledge.llm_pool import _get_sandbox_mode
+        from efm_go.knowledge.llm_pool import _get_sandbox_mode
 
         assert _get_sandbox_mode(config={"agent": {"sandbox": "off"}}) == "off"
 

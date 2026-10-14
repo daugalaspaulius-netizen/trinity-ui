@@ -15,8 +15,8 @@ import typing
 from hypothesis import given
 from hypothesis import strategies as st
 
-from kiro_crew.config import schema as _schema_module
-from kiro_crew.config.loader import (
+from efm_go.config import schema as _schema_module
+from efm_go.config.loader import (
     AgentConfig,
     DashboardConfig,
     KiroCrewAgentConfig,
@@ -27,7 +27,7 @@ from kiro_crew.config.loader import (
     SlackConfig,
     WorkspaceConfig,
 )
-from kiro_crew.config.schema import (
+from efm_go.config.schema import (
     JSON_SCHEMA,
     SCHEMA_REGISTRY,
     ConfigEntry,
@@ -77,7 +77,7 @@ def _all_fields_recursive(
             # re-exports (memory_sections, integration_sections, service_sections),
             # so each annotation resolves there, while the loader facade's
             # frozen re-export list does not carry every section type.
-            import kiro_crew.config.sections as _mod
+            import efm_go.config.sections as _mod
 
             try:
                 tp = eval(tp, vars(_mod))  # noqa: S307
@@ -112,7 +112,7 @@ def _all_fields_recursive(
 def _resolve_type(f: dataclasses.Field) -> type:  # type: ignore[type-arg]
     """Resolve a field's type annotation to a runtime type."""
     # Same defining-module namespace as _all_fields_recursive above.
-    import kiro_crew.config.sections as _mod
+    import efm_go.config.sections as _mod
 
     tp = f.type
     if isinstance(tp, str):
@@ -503,7 +503,7 @@ class TestDeclaredDictProperties:
         # says "value kept", the surrounding dict survives untouched, and the
         # value is re-validated by its consumer (_resolve_shell coerces and
         # rejects at spawn time).
-        from kiro_crew.config.validation import validate_config_data
+        from efm_go.config.validation import validate_config_data
 
         data = {"dashboard": {"terminal": {"enabled": True, "shell": 123}}}
         validate_config_data(data)
@@ -531,7 +531,7 @@ class TestDeclaredDictProperties:
     def test_completion_dict_stays_open_for_undeclared_keys(self) -> None:
         # `completion.commands` (the subcommand-probe allowlist) is documented
         # and undeclared; declaring `enabled` must not invalidate it.
-        from kiro_crew.config.validation import validate_config_data
+        from efm_go.config.validation import validate_config_data
 
         node = JSON_SCHEMA["properties"]["dashboard"]["properties"]["terminal"]
         completion = node["properties"]["completion"]

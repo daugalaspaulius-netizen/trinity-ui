@@ -20,9 +20,9 @@ import json
 
 import pytest
 
-from kiro_crew.mcp_gateway import manager as manager_mod
-from kiro_crew.mcp_gateway import stub as stub_mod
-from kiro_crew.mcp_gateway.shutdown_budget import TOTAL_SHUTDOWN_BUDGET_SECS
+from efm_go.mcp_gateway import manager as manager_mod
+from efm_go.mcp_gateway import stub as stub_mod
+from efm_go.mcp_gateway.shutdown_budget import TOTAL_SHUTDOWN_BUDGET_SECS
 
 _SERVER_RESULT = {
     "protocolVersion": "2024-11-05",
@@ -164,7 +164,7 @@ def test_budget_equals_the_spawn_queue_wait_default() -> None:
     the stub keeps the transport open for this budget. The stub reads no config,
     so the two are coupled by value at the key's DEFAULT: whoever raises the
     default must raise the constant with it."""
-    from kiro_crew.config.sections import McpGatewayConfig
+    from efm_go.config.sections import McpGatewayConfig
 
     assert stub_mod._RECONNECT_TOTAL_BUDGET_SECS == float(McpGatewayConfig().spawn_queue_wait_secs)
 
@@ -334,7 +334,7 @@ async def test_backoff_doubles_from_start_and_caps_at_the_max(monkeypatch) -> No
 async def test_not_back_yet_log_carries_elapsed_and_remaining(monkeypatch, caplog) -> None:
     clock = _install_clock(monkeypatch)
     monkeypatch.setattr(stub_mod, "handshake", _absent_until(clock, back_at=30.0))
-    caplog.set_level("INFO", logger="kiro_crew.mcp_gateway.stub")
+    caplog.set_level("INFO", logger="efm_go.mcp_gateway.stub")
 
     attached = await _run_reconnect(_session_with_captured_init())
 

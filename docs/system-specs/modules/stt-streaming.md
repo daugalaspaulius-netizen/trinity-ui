@@ -8,7 +8,7 @@ All selectable recognisers implement streaming (`stt_stream._STREAMING_PROVIDERS
 
 | `stt.provider` | Where recognition runs | Cost | Precondition |
 |---|---|---|---|
-| `local` (default) | this process, whisper.cpp held loaded by [`kiro_crew.stt`](../../../src/kiro_crew/stt/__init__.py) | free | desktop builds include the runtime; select a model and click **Download now** |
+| `local` (default) | this process, whisper.cpp held loaded by [`efm_go.stt`](../../../src/efm_go/stt/__init__.py) | free | desktop builds include the runtime; select a model and click **Download now** |
 | `apple` | the OS, on-device SpeechAnalyzer | free | macOS 26 or later, and a Swift toolchain to build the helper |
 | `transcribe` | AWS Transcribe Streaming | billed per audio-second | the `voice` extra, and a recorded AWS consent |
 | `off` | nowhere | free | none. Every speech path answers `stt_disabled`, exactly as `stt.enabled = false` does; the live socket returns 503 because `off` is not in `_STREAMING_PROVIDERS`. Also the value an unknown stored provider degrades to ([Legacy provider values](#legacy-provider-values)) |
@@ -132,14 +132,14 @@ transcript delivery; explicit cancel and unmount remain discard-only and do not 
 
 | Component | File | Role |
 |---|---|---|
-| WS endpoint | `src/kiro_crew/dashboard/stt_stream.py` | One provider session per connection, plus the caps and the SEL audit pair |
-| Local recogniser | `src/kiro_crew/stt/engine.py` | One resident whisper.cpp context, serialised decodes, idle eviction |
-| Native preflight | `src/kiro_crew/stt/preflight.py` | Decides before the first native call whether this build can run on this CPU, and the load fuse that stops a crash loop |
-| Local session | `src/kiro_crew/stt/session.py` | Turns a PCM stream into partials and a final |
-| Endpointing VAD | `src/kiro_crew/stt/vad.py` | Adaptive-RMS speech detection and end-of-utterance |
-| Model catalog | `src/kiro_crew/stt/models.py` | The offered models, their sizes, and the sha256-pinned download |
-| Apple helper | `src/kiro_crew/apple_speech/` | Swift `AppleTranscribe.swift` plus its Python driver |
-| Config fields | `src/kiro_crew/config/sections.py` | `SttConfig`, and the degradation rules for a stored provider or model |
+| WS endpoint | `src/efm_go/dashboard/stt_stream.py` | One provider session per connection, plus the caps and the SEL audit pair |
+| Local recogniser | `src/efm_go/stt/engine.py` | One resident whisper.cpp context, serialised decodes, idle eviction |
+| Native preflight | `src/efm_go/stt/preflight.py` | Decides before the first native call whether this build can run on this CPU, and the load fuse that stops a crash loop |
+| Local session | `src/efm_go/stt/session.py` | Turns a PCM stream into partials and a final |
+| Endpointing VAD | `src/efm_go/stt/vad.py` | Adaptive-RMS speech detection and end-of-utterance |
+| Model catalog | `src/efm_go/stt/models.py` | The offered models, their sizes, and the sha256-pinned download |
+| Apple helper | `src/efm_go/apple_speech/` | Swift `AppleTranscribe.swift` plus its Python driver |
+| Config fields | `src/efm_go/config/sections.py` | `SttConfig`, and the degradation rules for a stored provider or model |
 | Worklet | `website/public/pcm-worklet.js` | Float32-to-16 kHz mono Int16 PCM downsampler |
 | Streaming hook | `website/src/hooks/useStreamingStt.ts` | Opens the WS, wires the worklet, emits partial and final |
 | Voice hook | `website/src/hooks/useVoiceInput.ts` | Chooses streaming or batch, owns mic and device selection |
@@ -531,12 +531,12 @@ not an exception: it ends the gateway from whichever thread it lands on. Before 
 preflight, a `pywhispercpp` build compiled with AVX-512 on a Broadwell Xeon that has
 none died on every boot's prewarm, the supervisor restarted it, and the loop ran every
 15-25 s until the operator changed `stt.provider` from outside the process
-(kirodotdev/KiroCrew#13179). The prewarm itself is unchanged; it asks `probe` like
+(efmleads.com#13179). The prewarm itself is unchanged; it asks `probe` like
 every other caller, and `probe` now refuses before anything is loaded.
 
 ### Native preflight and the load fuse
 
-`src/kiro_crew/stt/preflight.py`, consulted by `stt.engine.probe` BEFORE the in-process
+`src/efm_go/stt/preflight.py`, consulted by `stt.engine.probe` BEFORE the in-process
 `import pywhispercpp.model` (that import dlopens the extension and runs its static
 initialisers, which on an incompatible build can be the first thing that faults) and
 therefore by every surface that asks whether local recognition can run
@@ -1071,7 +1071,7 @@ newly committed text.
 `_validated_stt_provider` in `config/sections.py` accepts `local`, `apple`, `transcribe`, and `off`. Two classes of stored value fall outside that set and degrade differently, each logging the replacement once per process rather than preventing the gateway from loading a voice setting:
 
 - Persisted `whisper`, `mlx`, `parakeet`, or `faster` (the retired names) degrade to `local`: each was a local recogniser the user had working, and the resident engine recognises the same speech.
-- Any other value degrades to `off`. An unknown value used to degrade to `local`, which put a typo or a guessed value onto the one provider that links a native library into the gateway; a user told to set `stt.provider off` while that library was crashing on model load got the crashing engine back, and learned it only from a WARNING line (kirodotdev/KiroCrew#13179). Failing closed is the one reading that cannot make things worse. `kirocrew config set stt.provider <value>` refuses a value outside the enum at the write, so a stored unknown value can only arrive from a hand edit or an older writer.
+- Any other value degrades to `off`. An unknown value used to degrade to `local`, which put a typo or a guessed value onto the one provider that links a native library into the gateway; a user told to set `stt.provider off` while that library was crashing on model load got the crashing engine back, and learned it only from a WARNING line (efmleads.com#13179). Failing closed is the one reading that cannot make things worse. `kirocrew config set stt.provider <value>` refuses a value outside the enum at the write, so a stored unknown value can only arrive from a hand edit or an older writer.
 
 `stt.models` resolves legacy model aliases to a catalog entry; unknown models fall back through the loader's validation path.
 

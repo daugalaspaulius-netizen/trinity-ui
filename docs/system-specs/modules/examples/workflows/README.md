@@ -37,4 +37,4 @@ Caveats worth knowing before you copy one:
   engine that branch never fires.
 
 Two module docstrings here say the DSL "is not implemented yet". That predates the
-engine; `src/kiro_crew/workflows/` implements it.
+engine; `src/efm_go/workflows/` implements it.

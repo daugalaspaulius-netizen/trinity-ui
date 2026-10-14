@@ -9,12 +9,12 @@ from unittest.mock import AsyncMock
 import aiohttp
 import pytest
 
-from kiro_crew.slack.channel_resolver import (
+from efm_go.slack.channel_resolver import (
     _CACHE_FILENAME,
     _CACHE_TTL_SECS,
     ChannelNameResolver,
 )
-from kiro_crew.slack.client import RealSlackClient
+from efm_go.slack.client import RealSlackClient
 
 
 def _make_slack(channels: list[dict] | Exception | None = None) -> AsyncMock:

@@ -1,7 +1,7 @@
 """Import surface, patch seams and exact HTTP/MCP outputs of the artifact projections.
 
 The artifact store is reached through three projections -- the
-``kiro_crew.artifacts`` facade, the dashboard HTTP handlers and the MCP tool
+``efm_go.artifacts`` facade, the dashboard HTTP handlers and the MCP tool
 module -- and each of them is a contract of its own: names other modules import,
 module attributes tests and callers rebind, response status codes and bodies,
 and the tool registry the MCP server advertises. This file pins those surfaces
@@ -18,9 +18,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import artifacts as art_mod
-from kiro_crew.artifacts import ArtifactFolderStore, ArtifactStore
-from kiro_crew.dashboard.handlers import artifacts as art_handlers
+from efm_go import artifacts as art_mod
+from efm_go.artifacts import ArtifactFolderStore, ArtifactStore
+from efm_go.dashboard.handlers import artifacts as art_handlers
 
 #: Every name the facade exposes to callers: the public API plus the private
 #: names other modules import from it (``slugify``, ``_validate_slug``,
@@ -224,16 +224,16 @@ class TestImportSurface:
 
     def test_projections_resolve_the_store_through_the_facade(self) -> None:
         # The handlers must read the singletons through the facade functions, so a
-        # test (or caller) that rebinds ``kiro_crew.artifacts._default_store`` steers
+        # test (or caller) that rebinds ``efm_go.artifacts._default_store`` steers
         # every route.
         assert art_handlers.get_default_store is art_mod.get_default_store
         assert art_handlers.get_default_folder_store is art_mod.get_default_folder_store
 
     def test_leaf_modules_import_and_keep_their_identity_pins(self) -> None:
-        image_artifacts = importlib.import_module("kiro_crew.image_artifacts")
-        outbound = importlib.import_module("kiro_crew.messaging.outbound_files")
-        widget_artifacts = importlib.import_module("kiro_crew.widget_artifacts")
-        artifact_source = importlib.import_module("kiro_crew.artifact_source")
+        image_artifacts = importlib.import_module("efm_go.image_artifacts")
+        outbound = importlib.import_module("efm_go.messaging.outbound_files")
+        widget_artifacts = importlib.import_module("efm_go.widget_artifacts")
+        artifact_source = importlib.import_module("efm_go.artifact_source")
         for name in ("strip_url_syntax", "local_destination", "is_remote_destination"):
             assert getattr(image_artifacts, name) is getattr(outbound, name)
         assert callable(widget_artifacts.register_widgets_off_loop)
@@ -241,20 +241,20 @@ class TestImportSurface:
         assert callable(artifact_source.classify_source)
 
     def test_webapp_types_are_re_exported_not_copied(self) -> None:
-        webapp_types = importlib.import_module("kiro_crew.deploy.webapp_types")
+        webapp_types = importlib.import_module("efm_go.deploy.webapp_types")
         for name in ("WebAppMetadata", "WebAppLifecycle", "webapp_metadata_from_dict"):
             assert getattr(art_mod, name) is getattr(webapp_types, name)
 
 
 class TestMcpRegistry:
     def test_schemas_and_handlers_stay_paired_and_ordered(self) -> None:
-        tools = importlib.import_module("kiro_crew.mcp_tools.artifacts")
+        tools = importlib.import_module("efm_go.mcp_tools.artifacts")
         advertised = [(s["name"], s["inputSchema"].get("required", [])) for s in tools.schemas()]
         assert advertised == list(MCP_TOOLS)
         assert list(tools.HANDLERS) == [name for name, _ in MCP_TOOLS]
 
     def test_save_posts_the_store_route(self) -> None:
-        from kiro_crew.mcp_core import _call_tool_inner
+        from efm_go.mcp_core import _call_tool_inner
 
         sent: dict = {}
 
@@ -265,9 +265,9 @@ class TestMcpRegistry:
 
         # A chat widget save first asks the gateway for same-named widgets; stub that
         # probe too so the test never reaches a real gateway on the loopback port.
-        with patch("kiro_crew.mcp_core._resolve_session_key", return_value=""):
-            with patch("kiro_crew.mcp_core._get", return_value={"artifacts": []}) as probe:
-                with patch("kiro_crew.mcp_core._post", side_effect=_capture):
+        with patch("efm_go.mcp_core._resolve_session_key", return_value=""):
+            with patch("efm_go.mcp_core._get", return_value={"artifacts": []}) as probe:
+                with patch("efm_go.mcp_core._post", side_effect=_capture):
                     _call_tool_inner("artifact_save", {"name": "N", "content": "<div/>"})
         assert [c.args[0] for c in probe.call_args_list] == [
             "/api/artifacts?kind=widget&source=chat&q=N"

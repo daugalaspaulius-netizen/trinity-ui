@@ -147,8 +147,8 @@ python -m pip install -e /path/to/KiroCrew/packages/kirocrew-client-py
 ### Step 2: Replace sync calls with async
 
 ```python
-# Before — kiro_crew.apps.sdk (removed; was a sync client embedded in the main package)
-from kiro_crew.apps.sdk import KiroCrewClient
+# Before — efm_go.apps.sdk (removed; was a sync client embedded in the main package)
+from efm_go.apps.sdk import KiroCrewClient
 mc = KiroCrewClient(app_name="my-tool")
 result = mc.dispatch_agent("my-agent", "Do something")
 mc.cron_add("refresh", every=3600, message="Check updates")
@@ -163,13 +163,13 @@ async with KiroCrewClient(app_name="my-tool") as mc:
 
 Key differences:
 
-> **Note:** `kiro_crew.apps.sdk` no longer ships — it was removed in a prior
+> **Note:** `efm_go.apps.sdk` no longer ships — it was removed in a prior
 > release. Do not try to import it; use `kirocrew_client` for all Python apps.
 
-| | Old (`kiro_crew.apps.sdk`, removed) | New (`kirocrew_client`) |
+| | Old (`efm_go.apps.sdk`, removed) | New (`kirocrew_client`) |
 |---|---|---|
 | I/O model | Sync (`urllib`) | Async (`aiohttp`) |
-| Dependencies | Requires `kiro_crew` package | Standalone (only `aiohttp`) |
+| Dependencies | Requires `efm_go` package | Standalone (only `aiohttp`) |
 | Errors | `{"_error": True}` dicts | `KiroCrewError` exceptions |
 | Retry | None | Built-in (exponential backoff) |
 | Auth | Localhost only | Localhost + remote with app-secret auto-exchange |

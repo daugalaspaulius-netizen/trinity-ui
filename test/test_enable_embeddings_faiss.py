@@ -20,11 +20,11 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.dashboard.handlers.memory as mem_mod
-from kiro_crew.embeddings import DOWNLOAD_ATTEMPTS_INTERACTIVE
+import efm_go.dashboard.handlers.memory as mem_mod
+from efm_go.embeddings import DOWNLOAD_ATTEMPTS_INTERACTIVE
 
-_MOD = "kiro_crew.dashboard.handlers.memory"
-_EMB = "kiro_crew.embeddings"
+_MOD = "efm_go.dashboard.handlers.memory"
+_EMB = "efm_go.embeddings"
 
 
 @web.middleware
@@ -166,7 +166,7 @@ class TestFaissInstallFailure:
                 assert resp.status == 200
                 assert (await resp.json())["ok"] is True
 
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=MagicMock()), \
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=MagicMock()), \
              patch(f"{_MOD}.model_download_manager", return_value=mgr), \
              patch(f"{_MOD}.model_file_present", return_value=True):
             async with TestClient(TestServer(_make_app())) as c:
@@ -211,7 +211,7 @@ class TestFaissSandboxUnavailableDoesNotWedge:
 
     @pytest.mark.asyncio
     async def test_returns_200_and_status_not_wedged(self, tmp_path: Path) -> None:
-        from kiro_crew.sandbox import SandboxUnavailableError
+        from efm_go.sandbox import SandboxUnavailableError
 
         cfg_path = tmp_path / "kirocrew.json"
         cfg_path.write_text("{}", encoding="utf-8")
@@ -480,7 +480,7 @@ class TestEmbeddingStatusEndpoint:
         mgr = MagicMock()
         mgr.status = {"step": "downloading", "error": "", "attempt": 2}
 
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg), \
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg), \
              patch(f"{_MOD}.get_shared_embedder", return_value=embedder), \
              patch(f"{_MOD}.model_download_manager", return_value=mgr), \
              patch(f"{_MOD}.model_file_present", return_value=False):
@@ -521,7 +521,7 @@ class TestEmbeddingStatusEndpoint:
         mgr = MagicMock()
         mgr.status = {"step": "failed", "error": "sha256 mismatch", "attempt": 6}
 
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg), \
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg), \
              patch(f"{_MOD}.get_shared_embedder", return_value=embedder), \
              patch(f"{_MOD}.model_download_manager", return_value=mgr), \
              patch(f"{_MOD}.model_file_present", return_value=False):

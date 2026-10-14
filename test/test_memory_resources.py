@@ -12,21 +12,21 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from member_memory_helpers import env as _member_env
 
-from kiro_crew import context, memory_backup, memory_stores
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.config.loader import KiroCrewConfig, MemoryStoreConfig
-from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
-from kiro_crew.heartbeat import HeartbeatService
-from kiro_crew.memory import MemoryStore
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import context, memory_backup, memory_stores
+from efm_go._sqlite_compat import sqlite3
+from efm_go.config.loader import KiroCrewConfig, MemoryStoreConfig
+from efm_go.dashboard.handlers._shared import markdown_memory_for_store
+from efm_go.heartbeat import HeartbeatService
+from efm_go.memory import MemoryStore
+from efm_go.vector_memory import VectorMemoryStore
 
 env = _member_env
 
 
 @pytest.mark.asyncio
 async def test_member_snapshot_combines_guarded_manual_files_and_database_history(env, monkeypatch):
-    import kiro_crew.memory as module
-    import kiro_crew.memory_files as files_module
+    import efm_go.memory as module
+    import efm_go.memory_files as files_module
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     memory._memory_dir.mkdir(exist_ok=True)
@@ -86,9 +86,9 @@ async def test_late_named_store_construction_cannot_republish_after_eviction(env
         assert release.wait(5)
         return store
 
-    monkeypatch.setattr("kiro_crew.vector_memory.declared_store", initialize)
-    monkeypatch.setattr("kiro_crew.embeddings.model_file_present", lambda: False)
-    monkeypatch.setattr("kiro_crew.embeddings.reconcile_store_embedding_space", lambda store: 0)
+    monkeypatch.setattr("efm_go.vector_memory.declared_store", initialize)
+    monkeypatch.setattr("efm_go.embeddings.model_file_present", lambda: False)
+    monkeypatch.setattr("efm_go.embeddings.reconcile_store_embedding_space", lambda store: 0)
     monkeypatch.setattr(context, "_vector_stores", {})
     monkeypatch.setattr(context, "_memory_stores", {})
     monkeypatch.setattr(context, "_lesson_stores", {})
@@ -243,7 +243,7 @@ async def test_first_eligible_heartbeat_schedules_one_backup_without_blocking_ti
 
     monkeypatch.setattr(memory_backup, "back_up_all_stores", copy)
     monkeypatch.setattr(
-        "kiro_crew.heartbeat.KiroCrewConfig.load",
+        "efm_go.heartbeat.KiroCrewConfig.load",
         lambda: SimpleNamespace(memory=SimpleNamespace(backup_enabled=True, backup_keep=7)),
     )
     consolidator = MagicMock()

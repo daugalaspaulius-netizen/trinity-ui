@@ -72,14 +72,14 @@ through it. What it changes, as read at its head:
   cancel or interrupt, then reaped (`ApplyCancel` kills it synchronously when
   set). Interpreter children run `-I`; inside the gateway they get the trusted
   system PATH, while `kirocrew update` passes its own shell's environment.
-- The tree is proven with `pip check` and an import of `kiro_crew.cli` before
+- The tree is proven with `pip check` and an import of `efm_go.cli` before
   promotion; a release whose signed `python_requires` the build interpreter
   fails is refused before any download.
 - Superseded trees are pruned after a promotion: the engine keeps the stable
   link's target, the previous tree, the tree serving the caller, the tree the
   persisted launcher resolves into, and any tree some process holds. Every
   process started from an engine-built tree holds a shared liveness lock on it
-  (`platform/tree_liveness.py`, taken at `kiro_crew.cli.main` after parsing
+  (`platform/tree_liveness.py`, taken at `efm_go.cli.main` after parsing
   for non-gateway commands; the gateway takes it off-loop after readiness,
   before its update coordinator starts). Only trees this
   layout built (an ownership marker naming it) are ever swept or pruned, and a
@@ -184,14 +184,14 @@ sequence becomes shared and explicit.
 
 ### Current state
 
-Five shapes, enumerated at `src/kiro_crew/beacon.py:136`:
+Five shapes, enumerated at `src/efm_go/beacon.py:136`:
 
 ```python
 KNOWN_DISTRIBUTIONS = frozenset({"dmg", "appimage", "wheel", "source", "docker"})
 ```
 
 Each packaging path stamps that value at build time into a generated
-`kiro_crew/_build_info.py` (via `scripts/stamp-distribution.sh`), which
+`efm_go/_build_info.py` (via `scripts/stamp-distribution.sh`), which
 `beacon.distribution()` prefers over the `KIROCREW_DISTRIBUTION` env var: a
 baked module ships with the artifact and a running install cannot change it,
 whereas the env var is inherited by child processes and settable by anyone with

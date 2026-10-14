@@ -7,8 +7,8 @@ import shutil
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.browser_cli import os_deps as mod
+from efm_go import platform_compat
+from efm_go.browser_cli import os_deps as mod
 
 
 @pytest.fixture(autouse=True)

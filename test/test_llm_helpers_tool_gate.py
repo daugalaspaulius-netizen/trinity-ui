@@ -16,10 +16,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import llm_helpers, platform_compat
-from kiro_crew.acp.client import AcpError
-from kiro_crew.llm_helpers import ToolApprovalPolicy, stream_and_collect
-from kiro_crew.providers.base import (
+from efm_go import llm_helpers, platform_compat
+from efm_go.acp.client import AcpError
+from efm_go.llm_helpers import ToolApprovalPolicy, stream_and_collect
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
@@ -93,7 +93,7 @@ async def test_a_hook_security_deny_is_flagged_as_a_security_block():
     """The exfiltration/deny-list gate routes through HookManager, not the
     unconditional arms. Classifying only the unconditional arms as security
     would let a hook-blocked cron go on recording success forever."""
-    from kiro_crew.hooks import ToolHookResult
+    from efm_go.hooks import ToolHookResult
 
     provider = _ScriptedProvider(_script(_BENIGN_TITLE))
     hooks = MagicMock()
@@ -117,7 +117,7 @@ async def test_a_hook_security_deny_is_flagged_as_a_security_block():
 async def test_a_governance_deny_is_not_a_security_block():
     """Policy state is not a defect in the attempt: the same call becomes allowed
     when the ceiling loosens, so it must not feed a durable failure budget."""
-    from kiro_crew.hooks import ToolHookResult
+    from efm_go.hooks import ToolHookResult
 
     provider = _ScriptedProvider(_script(_BENIGN_TITLE))
     hooks = MagicMock()
@@ -435,7 +435,7 @@ async def test_omitting_the_callback_leaves_behavior_unchanged():
 
 
 def _read_only_hooks():
-    from kiro_crew.hooks import HookManager, HooksConfig
+    from efm_go.hooks import HookManager, HooksConfig
 
     return HookManager(HooksConfig())
 
@@ -592,7 +592,7 @@ async def test_read_only_policy_deny_floor_sees_the_canonical_mcp_tool():
     come from ``_meta.kiro``. A gate handed only the title judges the wrong
     subject, and the request auto-approves on a turn with no approver.
     """
-    from kiro_crew.hooks import HookManager, HooksConfig
+    from efm_go.hooks import HookManager, HooksConfig
 
     event = LLMEvent(
         kind=EVENT_PERMISSION_REQUEST,
@@ -621,8 +621,8 @@ async def test_read_only_policy_offers_the_canonical_mcp_ref_to_governance(monke
     """Governance is asked about the canonical ``@server/tool`` reference, not
     just the prose title, so a per-MCP-tool ceiling deny still binds a call the
     read-only classifier would otherwise approve."""
-    import kiro_crew.hooks as hooks_mod
-    from kiro_crew.hooks import HookManager
+    import efm_go.hooks as hooks_mod
+    from efm_go.hooks import HookManager
 
     seen: list[str] = []
 
@@ -718,7 +718,7 @@ async def test_read_only_policy_refuses_a_write_the_config_grant_matches():
     """``auto_approve_tools=["Write*"]`` matches the title. That is a grant, not
     a classification, so READ_ONLY refuses the write: rejected, never executed,
     and logged as policy state rather than a security block."""
-    from kiro_crew.hooks import HookManager, HooksConfig
+    from efm_go.hooks import HookManager, HooksConfig
 
     provider = _ScriptedProvider(_permission_script(_write_event()))
     seen: list[tuple[str, bool, bool]] = []
@@ -742,8 +742,8 @@ async def test_read_only_policy_refuses_an_app_own_server_grant(monkeypatch):
     """A first-party app calling a server its shipped manifest declares is
     auto-approved by provenance under HOOK_BASED. Provenance says nothing about
     the tool's effect, so READ_ONLY refuses it."""
-    import kiro_crew.hooks as hooks_mod
-    from kiro_crew.hooks import HookManager
+    import efm_go.hooks as hooks_mod
+    from efm_go.hooks import HookManager
 
     monkeypatch.setattr(hooks_mod, "_is_first_party_app", lambda app: app.casefold() == "myapp")
     monkeypatch.setattr(hooks_mod, "_BUILTIN_APP_MCP_SERVERS", frozenset({"myapp:srv"}))
@@ -777,7 +777,7 @@ async def test_read_only_policy_refuses_an_untagged_hook_auto_approve():
     carry it) is refused, so no auto-approve reaches this surface unclassified.
     The gate is also asked classifier-only, so a grant that shadows a read
     cannot pre-empt the classifier."""
-    from kiro_crew.hooks import ToolHookResult
+    from efm_go.hooks import ToolHookResult
 
     provider = _ScriptedProvider(_permission_script(_write_event()))
     hooks = MagicMock()
@@ -803,7 +803,7 @@ async def test_read_only_policy_classifies_a_read_the_grant_also_matches():
     ``auto_approve_tools=["*"]`` approves everything under HOOK_BASED, and under
     READ_ONLY the host-known built-in read (``fs_read``) is still approved — by the classifier,
     whose verdict the grant does not pre-empt."""
-    from kiro_crew.hooks import HookManager, HooksConfig
+    from efm_go.hooks import HookManager, HooksConfig
 
     event = LLMEvent(
         kind=EVENT_PERMISSION_REQUEST,
@@ -832,7 +832,7 @@ async def test_hook_based_policy_still_honours_the_config_grant():
     """HOOK_BASED is unchanged: the same ``Write*`` grant approves the same
     write, because on a surface with an approver a grant means exactly "skip
     the card"."""
-    from kiro_crew.hooks import HookManager, HooksConfig
+    from efm_go.hooks import HookManager, HooksConfig
 
     provider = _ScriptedProvider(_permission_script(_write_event()))
 
@@ -861,7 +861,7 @@ async def test_hook_based_policy_deny_floor_sees_the_canonical_mcp_tool():
     the same event with no such rule is still auto-approved by the ``read``-kind
     allow-list. Deny-only — nothing that matched before stops matching.
     """
-    from kiro_crew.hooks import HookManager, HooksConfig
+    from efm_go.hooks import HookManager, HooksConfig
 
     def _event() -> LLMEvent:
         return LLMEvent(

@@ -33,7 +33,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import web
 
-import kiro_crew.config.loader as loader
+import efm_go.config.loader as loader
 
 FOREIGN_KEY = "set_by_another_process"
 
@@ -43,7 +43,7 @@ FOREIGN_KEY = "set_by_another_process"
 
 class TestRunToCompletion:
     def test_defers_repeated_cancellation_until_the_work_is_done(self) -> None:
-        from kiro_crew.dashboard.chat_utils import run_to_completion
+        from efm_go.dashboard.chat_utils import run_to_completion
 
         phases: list[str] = []
         gate = asyncio.Event()
@@ -73,7 +73,7 @@ class TestRunToCompletion:
         assert phases == ["config", "env"]
 
     def test_returns_the_result_and_propagates_an_exception(self) -> None:
-        from kiro_crew.dashboard.chat_utils import run_to_completion
+        from efm_go.dashboard.chat_utils import run_to_completion
 
         async def _ok() -> int:
             return 7
@@ -95,7 +95,7 @@ class TestLockedSectionWrite:
 
     @staticmethod
     def _cls():
-        from kiro_crew.dashboard.handlers.messaging import _LockedSectionWrite
+        from efm_go.dashboard.handlers.messaging import _LockedSectionWrite
 
         return _LockedSectionWrite
 
@@ -292,7 +292,7 @@ class TestLockedSectionWrite:
         """
         import os
 
-        from kiro_crew.platform_compat import file_lock
+        from efm_go.platform_compat import file_lock
 
         cfg = tmp_path / "config.json"
         cfg.write_text(json.dumps({"teams": {"enabled": False}}), encoding="utf-8")
@@ -425,7 +425,7 @@ def _messaging_put(mod, route: str, handler, body: dict) -> int:
 def test_channel_save_keeps_a_write_that_landed_after_its_snapshot(
     tmp_path: Path, monkeypatch, channel: str, handler_name: str, body: dict, expect
 ) -> None:
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(monkeypatch, tmp_path, {channel: {"enabled": False}, "other": {"keep": 1}})
     monkeypatch.setattr(mod, "is_direct_local_request", lambda req: True)
@@ -451,7 +451,7 @@ def test_wecom_save_keeps_the_legacy_wechat_settings_on_first_save(
     absent -- inside the locked mutation, so the seed comes from the document as
     read under the lock, not from the validation snapshot.
     """
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     legacy = {"allowed_user_ids": ["zhangsan"], "soft_threshold_pct": 70}
     cfg = _seed(monkeypatch, tmp_path, {"wechat": legacy})
@@ -466,7 +466,7 @@ def test_wecom_save_keeps_the_legacy_wechat_settings_on_first_save(
 
 
 def test_stt_put_keeps_a_write_that_landed_after_its_snapshot(tmp_path: Path, monkeypatch) -> None:
-    import kiro_crew.dashboard.handlers.core as core
+    import efm_go.dashboard.handlers.core as core
 
     cfg = _seed(monkeypatch, tmp_path, {"stt": {"language_code": "en-US"}})
     monkeypatch.setattr(core, "config_path", lambda: cfg)
@@ -493,7 +493,7 @@ def test_mcp_gateway_toggle_keeps_a_write_that_landed_after_its_snapshot(
     from body_stream_helpers import BodyStreamPayload
     from dashboard_owner_helpers import owner_claims
 
-    import kiro_crew.dashboard.handlers.mcp as mcp_mod
+    import efm_go.dashboard.handlers.mcp as mcp_mod
 
     cfg = _seed(monkeypatch, tmp_path, {"mcp_gateway": {"enabled": True, "stub_servers": ["x"]}})
     monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
@@ -555,7 +555,7 @@ def test_teams_refuses_a_threshold_pair_inverted_only_in_the_merged_document(
     """Dashboard sets soft=90 while another process lowers hard to 50: the pair is
     valid against the snapshot and inverted against the fresh document. The save
     is refused with the same code the pre-lock check uses, and nothing is written."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(
         monkeypatch, tmp_path, {"teams": {"soft_threshold_pct": 80, "hard_threshold_pct": 95}}
@@ -583,7 +583,7 @@ def test_webex_normalizes_the_threshold_pair_against_the_merged_document(
 ) -> None:
     """Same race on Webex, which normalizes rather than refuses: the stored pair is
     the one the loader would compute (soft pulled down to the concurrent hard)."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(
         monkeypatch, tmp_path, {"webex": {"soft_threshold_pct": 80, "hard_threshold_pct": 95}}
@@ -610,7 +610,7 @@ def test_webex_rollback_restores_the_soft_threshold_the_normalizer_lowered(
 ) -> None:
     """hard 95->70 with stored soft 80 and a token that fails to write: the
     normalizer lowered soft to 70 inside the lock; the rollback puts both back."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(
         monkeypatch, tmp_path, {"webex": {"soft_threshold_pct": 80, "hard_threshold_pct": 95}}
@@ -639,7 +639,7 @@ def test_slack_refused_config_write_leaves_the_credential_unwritten(
 ) -> None:
     """Config commits first: when the locked reread finds the file corrupt, the
     save answers 500 and .env has NOT been touched -- no half-applied save."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(monkeypatch, tmp_path, {"slack": {}})
     env = tmp_path / ".env"
@@ -670,7 +670,7 @@ def test_slack_refused_config_write_leaves_the_credential_unwritten(
 
 
 def test_slack_failed_credential_write_rolls_the_config_back(tmp_path: Path, monkeypatch) -> None:
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(monkeypatch, tmp_path, {"slack": {"reactions_enabled": False}})
     monkeypatch.setattr(mod, "is_direct_local_request", lambda req: True)
@@ -700,8 +700,8 @@ def test_slack_config_and_env_writes_run_under_the_live_config_hold(
     """Nothing between the config commit and the .env commit may be applied to the
     running gateway: a widened allow-list must not go live on a save that then
     fails and rolls back."""
-    import kiro_crew.dashboard.handlers.messaging as mod
-    from kiro_crew.config import live
+    import efm_go.dashboard.handlers.messaging as mod
+    from efm_go.config import live
 
     _seed(monkeypatch, tmp_path, {"slack": {"reactions_enabled": False}})
     monkeypatch.setattr(mod, "is_direct_local_request", lambda req: True)
@@ -742,7 +742,7 @@ def test_teams_refuses_a_credential_tuple_changed_only_in_the_merged_document(
     """Azure verified (app_id=A, password, tenant); another process changes
     ``teams.app_id`` after the snapshot. The write must not store the new
     password under an app id Azure never saw."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     app_id = "a" * 36
     cfg = _seed(monkeypatch, tmp_path, {"teams": {"app_id": app_id, "tenant_id": "t" * 36}})
@@ -793,7 +793,7 @@ def test_clearing_the_credential_purges_a_legacy_token_landed_after_the_snapshot
     """The snapshot has no legacy ``bot_token``; another process writes one after
     the snapshot and before the locked write; the clear must still leave no
     usable fallback in ``config.json``."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(monkeypatch, tmp_path, {channel: {"enabled": False}})
     env = tmp_path / ".env"
@@ -828,7 +828,7 @@ def test_clearing_the_credential_purges_a_legacy_token_landed_after_the_snapshot
 def test_teams_save_blanks_a_legacy_password_landed_after_the_snapshot(
     tmp_path: Path, monkeypatch
 ) -> None:
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(monkeypatch, tmp_path, {"teams": {"enabled": False}})
     env = tmp_path / ".env"
@@ -856,7 +856,7 @@ def test_teams_save_blanks_a_legacy_password_landed_after_the_snapshot(
 def _hold_sidecar(cfg: Path, holding: threading.Event, release: threading.Event) -> None:
     import os
 
-    from kiro_crew.platform_compat import file_lock
+    from efm_go.platform_compat import file_lock
 
     fd = os.open(str(cfg) + ".lock", os.O_RDWR | os.O_CREAT, 0o600)
     try:
@@ -902,7 +902,7 @@ def test_save_cancelled_during_the_config_commit_still_writes_the_credential(
     completion instead: the credential lands, and only then does the caller see
     ``CancelledError``.
     """
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(monkeypatch, tmp_path, {channel: {"enabled": False}})
     env = tmp_path / ".env"
@@ -995,7 +995,7 @@ def test_rollback_keeps_a_concurrent_edit_it_does_not_own(
     reverts and the sibling keeps THEIR value -- a whole-file or whole-section
     restore would discard it.
     """
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = _seed(monkeypatch, tmp_path, {channel: {"enabled": False, "sibling": "before"}})
     monkeypatch.setattr(mod, "is_direct_local_request", lambda req: True)

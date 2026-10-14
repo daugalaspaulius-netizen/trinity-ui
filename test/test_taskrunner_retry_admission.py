@@ -11,9 +11,9 @@ import pytest
 from test_workflows_snapshot_commit import _fail_io, _private, _runner
 from test_workflows_snapshot_commit import world as _world
 
-from kiro_crew import atomic_write as atomic
-from kiro_crew.task_models import Task, TaskStatus
-from kiro_crew.workflow_memory import TaskSnapshotError
+from efm_go import atomic_write as atomic
+from efm_go.task_models import Task, TaskStatus
+from efm_go.workflow_memory import TaskSnapshotError
 
 world = _world
 

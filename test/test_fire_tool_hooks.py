@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.hooks import (
+from efm_go.hooks import (
     HOOK_EVENT_PRE_TOOL_USE,
     HOOK_EVENT_STOP,
     HOOK_EVENT_USER_PROMPT_SUBMIT,
@@ -191,7 +191,7 @@ class TestScriptHookStoreFire:
 
     @pytest.mark.asyncio
     async def test_fire_emits_subagent_id_when_set(self, fire_store: ScriptHookStore):
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "test-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await fire_store.fire(
                 HOOK_EVENT_PRE_TOOL_USE,
@@ -205,7 +205,7 @@ class TestScriptHookStoreFire:
 
     @pytest.mark.asyncio
     async def test_fire_emits_parent_session_key_when_set(self, fire_store: ScriptHookStore):
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "test-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await fire_store.fire(
                 HOOK_EVENT_PRE_TOOL_USE,
@@ -223,7 +223,7 @@ class TestScriptHookStoreFire:
         never spelled as ``parent_session_key`` (a subagent's parent pointer) or
         as ``subagent_id``, so a hook keyed on those cannot mistake a top-level
         turn for a spawned subagent's."""
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "test-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await fire_store.fire(
                 HOOK_EVENT_PRE_TOOL_USE,
@@ -237,7 +237,7 @@ class TestScriptHookStoreFire:
 
     @pytest.mark.asyncio
     async def test_fire_omits_session_key_when_unset(self, fire_store: ScriptHookStore):
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "test-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await fire_store.fire(HOOK_EVENT_PRE_TOOL_USE, tool_name="ReadFile")
             (_, _, hook_event), _ = mock_run.call_args
@@ -245,7 +245,7 @@ class TestScriptHookStoreFire:
 
     @pytest.mark.asyncio
     async def test_fire_emits_agent_role_when_set(self, fire_store: ScriptHookStore):
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "test-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await fire_store.fire(
                 HOOK_EVENT_PRE_TOOL_USE,
@@ -259,7 +259,7 @@ class TestScriptHookStoreFire:
 
     @pytest.mark.asyncio
     async def test_fire_emits_all_three_together(self, fire_store: ScriptHookStore):
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "test-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await fire_store.fire(
                 HOOK_EVENT_PRE_TOOL_USE,
@@ -276,7 +276,7 @@ class TestScriptHookStoreFire:
     @pytest.mark.asyncio
     async def test_fire_omits_all_three_when_none(self, fire_store: ScriptHookStore):
         """Backward compatibility: when all three are None (default), payload is byte-identical to pre-CR behavior."""
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "test-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await fire_store.fire(HOOK_EVENT_PRE_TOOL_USE, tool_name="ReadFile")
             (_, _, hook_event), _ = mock_run.call_args
@@ -312,7 +312,7 @@ class TestScriptHookStoreStopContext:
     async def test_stop_full_context_on_stdin_and_matcher(self, stop_store: ScriptHookStore):
         # The load-bearing marker sits at the tail, past the 500-char env cap.
         full = ("x" * 900) + "\n[OPTIONS: A | B | C]"
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "stop-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await stop_store.fire(HOOK_EVENT_STOP, context=full)
             (_, ctx_arg, hook_event), _ = mock_run.call_args
@@ -336,7 +336,7 @@ class TestScriptHookStoreStopContext:
             "command": "echo test",
         })
         full = ("x" * 900) + "\n[OPTIONS: A | B | C]"
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "options-stop-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await store.fire(HOOK_EVENT_STOP, context=full)
             assert mock_run.await_count == 1, "tail-matching Stop hook was filtered out by env truncation"
@@ -346,7 +346,7 @@ class TestScriptHookStoreStopContext:
         # An empty / no-output turn still fires Stop with context="". The key MUST
         # be present (unconditional, not truthiness-gated) so a hook that always
         # reads hook_event["assistant_text"] gets "" rather than KeyError-ing.
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "stop-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await stop_store.fire(HOOK_EVENT_STOP, context="")
             (_, _, hook_event), _ = mock_run.call_args
@@ -363,7 +363,7 @@ class TestScriptHookStoreStopContext:
             "matcher": "",
             "command": "echo test",
         })
-        with patch("kiro_crew.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
+        with patch("efm_go.hooks.run_script_hook", new_callable=AsyncMock) as mock_run:
             mock_run.return_value = type("R", (), {"hook_name": "ups-hook", "exit_code": 0, "stdout": "", "stderr": "", "duration_ms": 1})()
             await store.fire(HOOK_EVENT_USER_PROMPT_SUBMIT, context="hello")
             (_, _, hook_event), _ = mock_run.call_args
@@ -422,8 +422,8 @@ class TestRunScriptHookStopEnvCap:
         # ``/bin/sh -c`` as an argv. The env cap under test is identical either
         # way, so the test must not assume one host's form.
         with (
-            patch("kiro_crew.sandbox.wrap_argv", lambda argv, *a, **k: (argv, None)),
-            patch("kiro_crew.sandbox.cgroup_scope_argv", lambda argv: argv),
+            patch("efm_go.sandbox.wrap_argv", lambda argv, *a, **k: (argv, None)),
+            patch("efm_go.sandbox.cgroup_scope_argv", lambda argv: argv),
             patch("asyncio.create_subprocess_exec", side_effect=fake_exec),
             patch("asyncio.create_subprocess_shell", side_effect=fake_exec),
         ):
@@ -457,7 +457,7 @@ class TestRunScriptHookGovernanceScopeKey:
             return "off"
 
         hook = ScriptHook(id="g1", name="gov-hook", event=HOOK_EVENT_PRE_TOOL_USE, command="cat", timeout=5)
-        with patch("kiro_crew.hooks._script_hooks_capability_denied", _deny):
+        with patch("efm_go.hooks._script_hooks_capability_denied", _deny):
             result = await run_script_hook(hook, hook_event=hook_event)
         assert result.exit_code == 2
         assert seen, "the gate was not consulted"

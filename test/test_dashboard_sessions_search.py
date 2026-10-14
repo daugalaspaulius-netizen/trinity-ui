@@ -6,8 +6,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers import api_sessions_search
-from kiro_crew.history import ConversationLog
+from efm_go.dashboard.handlers import api_sessions_search
+from efm_go.history import ConversationLog
 
 
 def _make_app(log: ConversationLog) -> web.Application:
@@ -88,13 +88,13 @@ class TestSessionsSearchHandler:
             calls.append(("urls", text))
             return (text, [])
 
-        # Patched on `kiro_crew.security`, not on the `handlers` re-exports: the
+        # Patched on `efm_go.security`, not on the `handlers` re-exports: the
         # handler redacts through `security.redact`, which resolves both passes
         # from security's own globals, so patching the handlers-level names would
         # not reach it -- and this test's subject is that BOTH passes run
         # over the title, which is what these two fakes assert.
-        monkeypatch.setattr("kiro_crew.security.redact_credentials", _fake_redact_creds)
-        monkeypatch.setattr("kiro_crew.security.redact_exfiltration_urls", _fake_redact_urls)
+        monkeypatch.setattr("efm_go.security.redact_credentials", _fake_redact_creds)
+        monkeypatch.setattr("efm_go.security.redact_exfiltration_urls", _fake_redact_urls)
         async with TestClient(TestServer(_make_app(log))) as client:
             resp = await client.get("/api/sessions/search?q=matches")
             sessions = (await resp.json())["sessions"]

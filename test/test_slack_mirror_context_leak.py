@@ -8,7 +8,7 @@ blocks leak into the linked Slack thread.
 
 from __future__ import annotations
 
-from kiro_crew.dashboard.chat_runner import _prepare_mirror_msg
+from efm_go.dashboard.chat_runner import _prepare_mirror_msg
 
 
 class TestPrepareMirrorMsg:
@@ -41,7 +41,7 @@ class TestPrepareMirrorMsg:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_runner import drain_pending_context
+        from efm_go.dashboard.chat_runner import drain_pending_context
 
         user_msg = "Hello, please investigate"
 

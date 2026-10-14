@@ -20,7 +20,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer'
 
 const NESTED = [
   '- [ ] 1. Add TeamsConfig and credential wiring',
-  '  - [ ] 1.1 Add `TeamsConfig` dataclass in `src/kiro_crew/config/loader.py`',
+  '  - [ ] 1.1 Add `TeamsConfig` dataclass in `src/efm_go/config/loader.py`',
   '  - [ ] 1.2 Add `teams: TeamsConfig` to `KiroCrewConfig`',
 ].join('\n')
 

@@ -16,7 +16,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.crew_log import crew_log_path, emit, resolve
+from efm_go.crew_log import crew_log_path, emit, resolve
 
 SESSION = "acp-sid-1"
 
@@ -407,7 +407,7 @@ def test_a_background_call_with_no_owner_or_no_kind_resolves_no_owner():
     infrastructure, and picking a session for it would put someone else's spend in
     a user's log.
     """
-    from kiro_crew.llm_helpers import _background_crew_log_owner
+    from efm_go.llm_helpers import _background_crew_log_owner
 
     sessions = _Sessions({"dashboard:chat-7": _Provider(SESSION)})
     assert _background_crew_log_owner(sessions, "", "title") == ""
@@ -423,7 +423,7 @@ def test_a_background_owner_is_resolved_before_the_call_not_after_it():
     -- a session that never incurred it -- silently, in an append-only file. So the
     owner is pinned before the call and the teardown writes to that pin.
     """
-    from kiro_crew.llm_helpers import _background_crew_log_owner, _record_background_crew_log
+    from efm_go.llm_helpers import _background_crew_log_owner, _record_background_crew_log
 
     _open_session()
     sessions = _Sessions({"dashboard:chat-7": _Provider(SESSION)})
@@ -454,7 +454,7 @@ def test_both_background_helpers_pin_the_owner_before_their_first_await():
     import ast
     import inspect
 
-    from kiro_crew import llm_helpers
+    from efm_go import llm_helpers
 
     tree = ast.parse(inspect.getsource(llm_helpers))
     checked = []
@@ -480,7 +480,7 @@ def test_both_background_helpers_pin_the_owner_before_their_first_await():
 
 
 def test_a_named_background_call_lands_in_the_owner_s_log():
-    from kiro_crew.llm_helpers import _background_crew_log_owner, _record_background_crew_log
+    from efm_go.llm_helpers import _background_crew_log_owner, _record_background_crew_log
 
     _open_session()
     sessions = _Sessions({"dashboard:chat-7": _Provider(SESSION)})
@@ -606,7 +606,7 @@ def test_a_replayed_queued_child_is_repinned_with_an_unobserved_turn(monkeypatch
     """
     from types import SimpleNamespace
 
-    from kiro_crew.subagent_manager.admission.gate import _GateMixin
+    from efm_go.subagent_manager.admission.gate import _GateMixin
 
     monkeypatch.setattr(resolve, "unit_for_session_key", lambda _sessions, _key: SESSION)
     stub = SimpleNamespace(_manager=SimpleNamespace(_sessions=None))
@@ -636,8 +636,8 @@ async def test_a_claim_the_store_cannot_take_is_pinned_before_the_row_is_left_qu
     """
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew import taskq as _taskq
-    from kiro_crew.subagent import SubagentManager
+    from efm_go import taskq as _taskq
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -685,8 +685,8 @@ async def test_a_run_whose_memory_binding_cannot_be_persisted_records_no_spawn(m
     """
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew import subagent as _subagent
-    from kiro_crew.subagent import SubagentInfo, SubagentManager
+    from efm_go import subagent as _subagent
+    from efm_go.subagent import SubagentInfo, SubagentManager
 
     sessions = MagicMock()
     sessions.get_pid = MagicMock(return_value=None)
@@ -817,7 +817,7 @@ def test_a_terminal_is_recorded_before_the_child_leaves_the_running_set():
     """
     import inspect
 
-    from kiro_crew.subagent_manager.terminal import TerminalCoordinator
+    from efm_go.subagent_manager.terminal import TerminalCoordinator
 
     body = inspect.getsource(TerminalCoordinator._report_terminal_impl)
     record = body.index("self._record_crew_log_terminal(info)")
@@ -838,7 +838,7 @@ def test_the_closer_is_handed_over_before_its_child_s_origin_pin_is_released():
     therefore happens after the emit, and reporting stays one-shot without the pop
     because every route to it is gated on ``_claim_finalize``.
     """
-    from kiro_crew.subagent_manager.terminal import TerminalCoordinator
+    from efm_go.subagent_manager.terminal import TerminalCoordinator
 
     _open_session()
     emit.remember_child_origin("ab12", SESSION, 3)

@@ -34,10 +34,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
-from kiro_crew.session_compaction import CompactionCoordinator
-from kiro_crew.task_executor import check_context
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
+from efm_go.session_compaction import CompactionCoordinator
+from efm_go.task_executor import check_context
 
 KEY = "taskrunner:t1:runtime"
 
@@ -227,7 +227,7 @@ class TestCompactIfNeededGates:
     async def test_busy_decline_neither_compacts_nor_resets(self, cfg, monkeypatch):
         """(d) A turn holds the semaphore: the attempt is declined, nothing is
         compacted, nothing is reset, and there is no direct-compact fallback."""
-        monkeypatch.setattr("kiro_crew.session.COMPACT_WAIT_TIMEOUT_SECS", 0.05)
+        monkeypatch.setattr("efm_go.session.COMPACT_WAIT_TIMEOUT_SECS", 0.05)
         async with _managed(cfg, _compacting_provider_factory()) as mgr:
             provider, _, _ = await mgr.get_or_create(KEY)
             # Deliberately NOT released: get_or_create holds the turn semaphore.
@@ -544,7 +544,7 @@ class TestGateLadderParity:
             mgr._compact_cooldown_until[KEY] = time.monotonic() + 999
             try:
                 ctx, decisions = self._spy_gate(mgr)
-                with ctx, patch("kiro_crew.session.ClaudeCodeProvider", _FakeClaudeCode):
+                with ctx, patch("efm_go.session.ClaudeCodeProvider", _FakeClaudeCode):
                     assert await mgr.compact_if_needed(KEY) == "cc_managed"
                     assert mgr.check_context_usage(KEY, cc) == 92.0
                 assert decisions == ["cc_managed", "cc_managed"]
@@ -848,7 +848,7 @@ class TestCriticalResetFloorGuard:
                 assert KEY in mgr._compact_cooldown_until, "damping still arms"
 
     def test_adopting_a_fresh_provider_forgets_the_old_floor(self):
-        from kiro_crew.session import _Session
+        from efm_go.session import _Session
 
         session = _Session(provider=MagicMock())
         session.floor_pct = 88.0

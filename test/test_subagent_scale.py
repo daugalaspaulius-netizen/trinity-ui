@@ -25,14 +25,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from overload_fakes import settle_depth_emits, settle_store_writes
 
-from kiro_crew import subagent as subagent_module
-from kiro_crew.subagent import (
+from efm_go import subagent as subagent_module
+from efm_go.subagent import (
     _RUN_ID_HEX_CHARS,
     SubagentDelivery,
     SubagentInfo,
     SubagentManager,
 )
-from kiro_crew.subagent_scale import SubagentEventCoalescer
+from efm_go.subagent_scale import SubagentEventCoalescer
 
 # ``SubagentManager.spawn`` refuses -- registering no task -- while the host
 # looks short of memory, which is the runner's state, not this test's input.
@@ -183,7 +183,7 @@ class TestBatchIdentity:
         import os
         from unittest.mock import patch as _patch
 
-        from kiro_crew.slack.gateway import _digest_chunk_size
+        from efm_go.slack.gateway import _digest_chunk_size
 
         with _patch.dict(os.environ, {"KIROCREW_SUBAGENT_DIGEST_CHUNK_SIZE": "foo"}):
             assert _digest_chunk_size() == 10
@@ -591,8 +591,8 @@ class TestBatchIdentity:
         mgr = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx())
         mgr._spawn_stagger_secs = 0.0
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
         ):
             mgr.spawn("t1", batch_id="wv", batch_total=3)
@@ -627,7 +627,7 @@ class TestBatchIdentity:
             announced.append(info)
 
         mgr = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx(), on_done=_on_done)
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             rejected = mgr.spawn("   ", batch_id="wv9", batch_total=2)
             plain = mgr.spawn("   ")  # non-batch rejection: no announce
         await asyncio.sleep(0)  # let the scheduled announce run
@@ -661,7 +661,7 @@ class TestBatchIdentity:
         mgr._is_yolo = None
         mgr._on_spawn_approval = None  # no approval callback configured
         mgr._spawn_stagger_secs = 0.0
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             rejected = mgr.spawn("do work", batch_id="wvA", batch_total=2)
         await asyncio.sleep(0)
         assert rejected is not None and rejected.done
@@ -689,7 +689,7 @@ class TestBatchIdentity:
         m1.done = True
         mgr._agents = {"m1": m1}
         assert mgr.batch_members_pending("wvL") is True  # wedged pre-fix
-        with patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.sel"):
             mgr.record_lost_submission(
                 "wvL", 3, "connection refused", parent_session_key="dashboard:main"
             )
@@ -710,7 +710,7 @@ class TestBatchIdentity:
         window, with live members, or with queued members are left alone."""
         import time as _time
 
-        from kiro_crew.subagent import _WAVE_STUCK_SECS
+        from efm_go.subagent import _WAVE_STUCK_SECS
 
         mgr = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx())
         now = _time.time()
@@ -731,7 +731,7 @@ class TestBatchIdentity:
             "fresh": now,
             "full": stale,
         }
-        with patch("kiro_crew.subagent.sel"), patch.object(mgr, "record_lost_submission") as rec:
+        with patch("efm_go.subagent.sel"), patch.object(mgr, "record_lost_submission") as rec:
             mgr._sweep_stuck_waves(now)
         assert rec.call_count == 1
         assert rec.call_args.args[0] == "stuck"
@@ -746,7 +746,7 @@ class TestBatchIdentity:
         import io
         import urllib.error
 
-        from kiro_crew.mcp_core import _http_error_body
+        from efm_go.mcp_core import _http_error_body
 
         def _err(payload: bytes):
             return urllib.error.HTTPError(
@@ -775,8 +775,8 @@ class TestBatchIdentity:
         mgr._on_event = _spy
         # Skip actual execution — spawn creates the task; cancel it right away.
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
         ):
             i1 = mgr.spawn("t1", batch_id="wave1", batch_total=3)
@@ -795,8 +795,8 @@ class TestBatchIdentity:
         mgr = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx())
         mgr._spawn_stagger_secs = 0.0
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
         ):
             info = mgr.spawn("solo task")
@@ -850,8 +850,8 @@ class TestStallDampening:
 
 
 def _make_orchestrator():
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.config import KiroCrewConfig
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     cfg = KiroCrewConfig()
     with patch.object(cfg, "load_credentials", return_value={"KIROCREW_OWNER_ID": "U_OWNER"}):
@@ -951,8 +951,8 @@ def _ledger_ids(ledger) -> list[list[str]]:
 
 class TestWaveDigest:
     def _capture_on_done(self, orch):
-        with patch("kiro_crew.slack.handler.is_yolo_mode", return_value=False):
-            with patch("kiro_crew.slack.gateway.SubagentManager") as mock_sm:
+        with patch("efm_go.slack.handler.is_yolo_mode", return_value=False):
+            with patch("efm_go.slack.gateway.SubagentManager") as mock_sm:
                 mock_sm_inst = MagicMock()
                 mock_sm_inst.start_reaper = MagicMock()
                 mock_sm.return_value = mock_sm_inst
@@ -1007,8 +1007,8 @@ class TestWaveDigest:
             injected.append(text)
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             for i in range(total):
                 # running_agents_for: members still pending until the last one
@@ -1068,8 +1068,8 @@ class TestWaveDigest:
             injected.append(text)
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             # Member 0: served model present. Member 1: requested set but served
             # DIFFERS — the served id is still all that prints (no downgrade
@@ -1115,8 +1115,8 @@ class TestWaveDigest:
             injected.append(text)
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             m0, m1 = self._member(0, 2), self._member(1, 2)
             m0.partial = True
@@ -1156,8 +1156,8 @@ class TestWaveDigest:
             injected.append(text)
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             m0 = self._member(0, 1)
             m0.requested_model = "auto"  # a pin, but nothing served
@@ -1196,8 +1196,8 @@ class TestWaveDigest:
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             m0 = self._member(0, 1)
             m0.resolved_model = secret
@@ -1242,8 +1242,8 @@ class TestWaveDigest:
             injected.append(text)
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             # Both direct members complete; the count says the wave is done...
             mgr.batch_members_pending = MagicMock(return_value=False)
@@ -1293,8 +1293,8 @@ class TestWaveDigest:
             injected.append(text)
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             mgr.batch_members_pending = MagicMock(return_value=False)
             mgr.wave_has_live_nested_spawns = MagicMock(return_value=False)
@@ -1356,10 +1356,10 @@ class TestWaveDigest:
             return 60.0
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
             patch(
-                "kiro_crew.dashboard.turn_dispatch.chat_turn_timeout_secs",
+                "efm_go.dashboard.turn_dispatch.chat_turn_timeout_secs",
                 _held_resolver,
             ),
         ):
@@ -1390,7 +1390,7 @@ class TestWaveDigest:
         orch.dashboard_state.get_slot = MagicMock(return_value=slot)
         mgr, on_done = self._capture_on_done(orch)
         total = 12
-        with patch("kiro_crew.slack.gateway._run_chat", new_callable=AsyncMock):
+        with patch("efm_go.slack.gateway._run_chat", new_callable=AsyncMock):
             for i in range(total):
                 mgr.batch_members_pending = MagicMock(return_value=i != total - 1)
                 await on_done(self._member(i, total, error="boom" if i < 2 else ""))
@@ -1446,8 +1446,8 @@ class TestWaveDigest:
 
         marked: list[str] = []
         with (
-            patch("kiro_crew.slack.gateway._run_chat", _consuming_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered", side_effect=marked.append),
+            patch("efm_go.slack.gateway._run_chat", _consuming_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered", side_effect=marked.append),
         ):
             for i, m in enumerate(members):
                 mgr.batch_members_pending = MagicMock(return_value=i != total - 1)
@@ -1505,7 +1505,7 @@ class TestWaveDigest:
             SubagentDelivery("h2", 2.0, 0.2),
         ]
         with patch(
-            "kiro_crew.subagent.mark_delivered",
+            "efm_go.subagent.mark_delivered",
             side_effect=lambda agent_id, **_: marked.append(agent_id),
         ):
             await mgr._settle_digest_holds(info)
@@ -1519,7 +1519,7 @@ class TestWaveDigest:
         # unchanged, only its owning function moved.
         import inspect
 
-        from kiro_crew.subagent_manager.terminal import TerminalCoordinator
+        from efm_go.subagent_manager.terminal import TerminalCoordinator
 
         src = inspect.getsource(TerminalCoordinator._report_terminal_impl)
         on_done_pos = src.index("await asyncio.wait_for(self._manager._on_done(info)")
@@ -1583,8 +1583,8 @@ class TestWaveDigest:
 
         marked: list[str] = []
         with (
-            patch("kiro_crew.slack.gateway._run_chat", _gated_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered", side_effect=marked.append),
+            patch("efm_go.slack.gateway._run_chat", _gated_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered", side_effect=marked.append),
         ):
             for i, m in enumerate(members[:10]):
                 mgr.batch_members_pending = MagicMock(return_value=True)
@@ -1684,8 +1684,8 @@ class TestWaveDigest:
 
         marked: list[str] = []
         with (
-            patch("kiro_crew.slack.gateway._run_chat", new_callable=AsyncMock),
-            patch("kiro_crew.subagent_persistence.mark_delivered", side_effect=marked.append),
+            patch("efm_go.slack.gateway._run_chat", new_callable=AsyncMock),
+            patch("efm_go.subagent_persistence.mark_delivered", side_effect=marked.append),
         ):
             for i, m in enumerate(members[:10]):
                 mgr.batch_members_pending = MagicMock(return_value=True)
@@ -1763,8 +1763,8 @@ class TestWaveDigest:
 
         marked: list[str] = []
         with (
-            patch("kiro_crew.slack.gateway._run_chat", _auth_required_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered", side_effect=marked.append),
+            patch("efm_go.slack.gateway._run_chat", _auth_required_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered", side_effect=marked.append),
         ):
             for i, m in enumerate(members[:10]):
                 mgr.batch_members_pending = MagicMock(return_value=True)
@@ -1825,8 +1825,8 @@ class TestWaveDigest:
 
         marked: list[str] = []
         with (
-            patch("kiro_crew.slack.gateway._run_chat", _failing_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered", side_effect=marked.append),
+            patch("efm_go.slack.gateway._run_chat", _failing_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered", side_effect=marked.append),
         ):
             for i, m in enumerate(members[:10]):
                 mgr.batch_members_pending = MagicMock(return_value=True)
@@ -1875,8 +1875,8 @@ class TestWaveDigest:
             injected.append(text)
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             for i in range(total):
                 mgr.batch_members_pending = MagicMock(return_value=i != total - 1)
@@ -1922,7 +1922,7 @@ class TestWaveDigest:
         solo.result = "solo result"
         solo.elapsed = 12.0
         solo.credits = 0.25
-        with patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat):
+        with patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat):
             await on_done(solo)
             await _settle(lambda: len(injected) >= 1, what="the per-agent completion injected")
         assert len(injected) == 1
@@ -1978,7 +1978,7 @@ class TestDigestHoldDeadline:
         neither chunk trigger can fire. Once the oldest hold ages past the
         deadline the sweep forces the partial digest out instead of waiting for
         the straggler (up to 30 min for a hang)."""
-        from kiro_crew.subagent import DIGEST_HOLD_SECS
+        from efm_go.subagent import DIGEST_HOLD_SECS
 
         mgr = self._mgr(pending=True)
         now = time.time()
@@ -2001,7 +2001,7 @@ class TestDigestHoldDeadline:
         """When no member is outstanding the real wave-close digest (counts +
         release guidance) is already in flight; forcing a partial one here would
         race it and could double-deliver the same members."""
-        from kiro_crew.subagent import DIGEST_HOLD_SECS
+        from efm_go.subagent import DIGEST_HOLD_SECS
 
         mgr = self._mgr(pending=False)
         now = time.time()
@@ -2021,7 +2021,7 @@ class TestDigestHoldDeadline:
         m._digest_held_at = now - 100_000.0
         mgr._agents["h0"] = m
         with (
-            patch("kiro_crew.subagent.DIGEST_HOLD_SECS", 0.0),
+            patch("efm_go.subagent.DIGEST_HOLD_SECS", 0.0),
             patch.object(mgr, "force_digest_flush") as forced,
         ):
             mgr._sweep_digest_holds(now)
@@ -2030,7 +2030,7 @@ class TestDigestHoldDeadline:
     def test_unheld_members_never_trip_the_sweep(self):
         """``_digest_held_at`` is the sweep's ONLY input: a delivered member
         (hold cleared at flush) must not re-trigger a flush forever."""
-        from kiro_crew.subagent import DIGEST_HOLD_SECS
+        from efm_go.subagent import DIGEST_HOLD_SECS
 
         mgr = self._mgr()
         now = time.time()
@@ -2075,7 +2075,7 @@ class TestDigestHoldDeadline:
         marked: list[str] = []
         mgr._on_done = AsyncMock(side_effect=RuntimeError("routing blew up"))
         with patch(
-            "kiro_crew.subagent.mark_delivered",
+            "efm_go.subagent.mark_delivered",
             side_effect=lambda agent_id, **_: marked.append(agent_id),
         ):
             await mgr._announce_digest_flush(info)
@@ -2084,7 +2084,7 @@ class TestDigestHoldDeadline:
 
         mgr._on_done = AsyncMock()
         with patch(
-            "kiro_crew.subagent.mark_delivered",
+            "efm_go.subagent.mark_delivered",
             side_effect=lambda agent_id, **_: marked.append(agent_id),
         ):
             await mgr._announce_digest_flush(info)
@@ -2141,9 +2141,9 @@ class TestDigestHoldDeadline:
             real._agents[m.id] = m
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
-            patch("kiro_crew.subagent.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
+            patch("efm_go.subagent.mark_delivered"),
         ):
             for m in finished:
                 await on_done(m)
@@ -2156,7 +2156,7 @@ class TestDigestHoldDeadline:
             # getattr keeps the failure BEHAVIORAL on unfixed code (no injection)
             # instead of an AttributeError.
             hold = getattr(
-                __import__("kiro_crew.subagent", fromlist=["DIGEST_HOLD_SECS"]),
+                __import__("efm_go.subagent", fromlist=["DIGEST_HOLD_SECS"]),
                 "DIGEST_HOLD_SECS",
                 120.0,
             )
@@ -2218,8 +2218,8 @@ class TestDigestHoldDeadline:
             m.result_path = f"/tmp/s{i}/result.txt"
 
         with (
-            patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat),
-            patch("kiro_crew.subagent_persistence.mark_delivered"),
+            patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat),
+            patch("efm_go.subagent_persistence.mark_delivered"),
         ):
             mgr.batch_members_pending = MagicMock(return_value=True)
             for m in members:
@@ -2301,7 +2301,7 @@ class TestDigestHoldDeadline:
         )
         flush.done = True
         flush._digest_flush_only = True
-        with patch("kiro_crew.slack.gateway._run_chat", side_effect=_fake_run_chat):
+        with patch("efm_go.slack.gateway._run_chat", side_effect=_fake_run_chat):
             await on_done(flush)
             await asyncio.sleep(0.05)
         assert injected == []
@@ -2326,7 +2326,7 @@ class TestRetryGating:
 
     @pytest.mark.asyncio
     async def test_retry_rejects_running_and_stopped(self):
-        from kiro_crew.dashboard.handlers.messaging import api_spawn_retry
+        from efm_go.dashboard.handlers.messaging import api_spawn_retry
 
         running = SubagentInfo(id="r1", task="t")
         resp = await api_spawn_retry(self._request(self._mgr_with(running), "r1"))
@@ -2340,8 +2340,8 @@ class TestRetryGating:
 
     @pytest.mark.asyncio
     async def test_retry_respawns_failed_with_original_task(self):
-        from kiro_crew.dashboard.handlers.messaging import api_spawn_retry
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.dashboard.handlers.messaging import api_spawn_retry
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
         failed = SubagentInfo(id="f1", task="redacted task", parent_session_key="dashboard:m")
         failed.done = True
@@ -2394,7 +2394,7 @@ async def _await_drained(mgr, store, started: list[str], expected: int) -> None:
     mid-pass into one more pass), so this polls that path rather than pumping
     it — measured identical, 23 wakes and 0.6 s either way.
     """
-    from kiro_crew.taskq import model
+    from efm_go.taskq import model
 
     t0 = time.monotonic()
     deadline = t0 + _DRAIN_CEILING_SECS
@@ -2427,7 +2427,7 @@ class TestDurableQueueScale:
 
     @pytest.mark.asyncio
     async def test_2000_spawns_are_2000_rows_and_at_most_64_dicts(self):
-        from kiro_crew.taskq import model
+        from efm_go.taskq import model
 
         mgr = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx(), max_concurrent=4)
         await mgr.wait_taskq_ready()
@@ -2435,8 +2435,8 @@ class TestDurableQueueScale:
         store = mgr._taskq
         assert store is not None and store.window == 64
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
         ):
             ids = [
@@ -2454,7 +2454,7 @@ class TestDurableQueueScale:
 
     @pytest.mark.asyncio
     async def test_queue_survives_manager_loss_and_drains_fifo(self):
-        from kiro_crew.taskq import model
+        from efm_go.taskq import model
 
         first = SubagentManager(
             sessions=_mock_sessions(), ctx_builder=_mock_ctx(), max_concurrent=1
@@ -2462,8 +2462,8 @@ class TestDurableQueueScale:
         await first.wait_taskq_ready()
         first._spawn_stagger_secs = 0.0
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
         ):
             ids = [first.spawn(f"t{i}", parent_session_key="dashboard:s1").id for i in range(200)]
@@ -2488,8 +2488,8 @@ class TestDurableQueueScale:
                 second._drain_queue()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=run),
         ):
             second._drain_queue()  # the recovery kick; releases pump the rest
@@ -2529,8 +2529,8 @@ class TestRunIdMinting:
         await mgr.wait_taskq_ready()
         mgr._spawn_stagger_secs = 0.0
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
         ):
             ids = [mgr.spawn(f"t{i}", parent_session_key="dashboard:s1").id for i in range(40)]
@@ -2558,7 +2558,7 @@ class TestRunIdMinting:
             assert len({d[pos] for d in drawn}) > 1, pos
 
     def test_one_draw_site_owns_the_width(self):
-        import kiro_crew.subagent_manager as manager_pkg
+        import efm_go.subagent_manager as manager_pkg
 
         package = pathlib.Path(manager_pkg.__file__).parent
         component_draws = [
@@ -2623,8 +2623,8 @@ class TestQueuedDepthReachesZero:
                 self._drain_queue()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=run),
         ):
             for i in range(5):
@@ -2688,8 +2688,8 @@ class TestQueuedDepthReachesZero:
             return fn(*a, **kw)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
             patch("asyncio.to_thread", new=slow_policy),
             patch.object(type(mgr._admission), "pump_off_loop", True),
@@ -2729,7 +2729,7 @@ class TestQueuedDepthReachesZero:
         (its policy read is on a thread) when the parent stops everything. The
         row is in no window and has no ``_agents`` record, so the store sweep
         is the only one that can see it -- and it must."""
-        from kiro_crew.taskq import model
+        from efm_go.taskq import model
 
         mgr = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx(), max_concurrent=1)
         await mgr.wait_taskq_ready()
@@ -2746,8 +2746,8 @@ class TestQueuedDepthReachesZero:
             return fn(*a, **kw)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
             patch("asyncio.to_thread", new=slow_policy),
             patch.object(type(mgr._admission), "pump_off_loop", True),
@@ -2787,7 +2787,7 @@ class TestQueuedDepthReachesZero:
         """A claim the store cannot take leaves the row QUEUED. The re-entry's
         depth emit is the one the chip reads next, so it must count the row
         (1), never a dispatching-masked 0."""
-        from kiro_crew import taskq as _taskq
+        from efm_go import taskq as _taskq
 
         mgr = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx(), max_concurrent=1)
         await mgr.wait_taskq_ready()
@@ -2814,8 +2814,8 @@ class TestQueuedDepthReachesZero:
             return real_claim(agent_id, *a, **kw)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
             patch.object(store, "claim", new=claim),
         ):
@@ -2854,8 +2854,8 @@ class TestQueuedDepthReachesZero:
             return real_spawn(*a, **kw)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
         ):
             first = mgr.spawn("t0", parent_session_key="dashboard:s1")

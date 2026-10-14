@@ -8,14 +8,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-import kiro_crew.dashboard.handlers.agents as agents_mod
-from kiro_crew.dashboard.handlers.agents import api_agent_detail
+import efm_go.dashboard.handlers.agents as agents_mod
+from efm_go.dashboard.handlers.agents import api_agent_detail
 
 
 @pytest.fixture
 def owner_request(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -50,7 +50,7 @@ async def test_refused_under_lock_reread_returns_agent_changed(
         return None
 
     monkeypatch.setattr(agents_mod, "_read_agent_spec", _reader)
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
         response = await api_agent_detail(_patch_request("kirocrew", {"model": "new"}))
 
     assert response.status == 409
@@ -75,7 +75,7 @@ async def test_non_object_under_lock_reread_returns_409_not_type_error(
         return real_reader(spec_file, **attribution)
 
     monkeypatch.setattr(agents_mod, "_read_agent_spec", _reader)
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
         response = await api_agent_detail(_patch_request("kirocrew", {"model": "new"}))
 
     assert response.status == 409

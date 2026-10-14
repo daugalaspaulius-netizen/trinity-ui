@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli, cli_server, platform_compat
-from kiro_crew.gateway_lock import LockHolder, LockProbeError
+from efm_go import cli, cli_server, platform_compat
+from efm_go.gateway_lock import LockHolder, LockProbeError
 
 
 class _SelRecorder:

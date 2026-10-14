@@ -43,16 +43,16 @@ from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app, _make_state
 from turn_harness import REJECTED, SlotSpec, TurnScript, run_turn
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     STOP_REASON_END_TURN,
     AcpEvent,
 )
-from kiro_crew.constants import TOOL_APPROVAL_TIMEOUT
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.state import DashboardState
-from kiro_crew.safety_override import safety_override
+from efm_go.constants import TOOL_APPROVAL_TIMEOUT
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.state import DashboardState
+from efm_go.safety_override import safety_override
 
 _DONE = AcpEvent(kind=EVENT_COMPLETE, stop_reason=STOP_REASON_END_TURN)
 
@@ -140,7 +140,7 @@ class TestUnattendedApprovalWindow:
         Pins the placement of the write: inside ``api_chat``'s ``else`` (empty
         ``request_app``), not in a branch an app-scoped caller can reach.
         """
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         src = inspect.getsource(chat_handlers.api_chat)
         writes = [ln for ln in src.splitlines() if "_human_seen = True" in ln]
@@ -176,12 +176,12 @@ class TestUnattendedApprovalWindow:
         180s unattended deny-fast, with nothing on screen to say why. A restart is
         not evidence the person left: the browser tab reconnects to the same slot.
         """
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("worker-4", app="issue-radar")
         assert state.approval_timeout_for(slot) == float(
@@ -215,12 +215,12 @@ class TestUnattendedApprovalWindow:
         deny-fast window is what they get back. Without this, the fix above could
         be written as an unconditional restore and nothing would fail.
         """
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("worker-5", app="issue-radar")
         slot.append("user", "[nudge] advance your work")
@@ -340,7 +340,7 @@ class TestBackgroundTurnCap:
         """
         state = _make_state(tmp_path)
         raw: dict = {}
-        monkeypatch.setattr("kiro_crew.dashboard.state._raw_config", lambda: raw)
+        monkeypatch.setattr("efm_go.dashboard.state._raw_config", lambda: raw)
 
         assert state.effective_max_background_turns() == DashboardState.MAX_BACKGROUND_TURNS
 
@@ -448,8 +448,8 @@ class TestBackgroundTurnCap:
 
     def test_both_unattended_dispatch_sites_go_through_the_cap(self) -> None:
         """A new dispatch site that skips the gate reintroduces the uncapped fleet."""
-        from kiro_crew.dashboard import chat_handlers
-        from kiro_crew.slack import gateway as gw
+        from efm_go.dashboard import chat_handlers
+        from efm_go.slack import gateway as gw
 
         assert "run_background_turn" in inspect.getsource(chat_handlers.api_chat)
         assert "run_background_turn" in inspect.getsource(
@@ -506,8 +506,8 @@ def _closing_spawn():
 
 def _nudge_orchestrator():
     """Minimal GatewayOrchestrator for the dashboard nudge fire path."""
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.slack import gateway as gw
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.slack import gateway as gw
 
     cfg = KiroCrewConfig()
     with patch.object(cfg, "load_credentials", return_value={"KIROCREW_OWNER_ID": "U_OWNER"}):
@@ -537,7 +537,7 @@ class TestIdleCleanupSparesArmedLoops:
         other automatic closer (or before this landed) is still reachable
         instead of retiring the loop terminally.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         old_ts = (datetime.now(timezone.utc) - timedelta(days=9)).isoformat()
 
@@ -550,7 +550,7 @@ class TestIdleCleanupSparesArmedLoops:
         abandoned.drain()
 
         monkeypatch.setattr(
-            "kiro_crew.autonudge.get_instance",
+            "efm_go.autonudge.get_instance",
             lambda: _fake_autonudge([_Loop("worker-1")]),
         )
 
@@ -568,14 +568,14 @@ class TestIdleCleanupSparesArmedLoops:
         # Asserted behaviourally, not by substring — the explanatory comment in
         # that function contains the words "adopt_closed=True" and would satisfy
         # a source scan even with the argument deleted.
-        from kiro_crew.slack import gateway as gw
+        from efm_go.slack import gateway as gw
 
         orch = _nudge_orchestrator()
         rehydrate = AsyncMock(return_value=_bg_slot("worker-1"))
         with (
             patch.object(gw, "rehydrate_slot_from_history_async", new=rehydrate),
             patch.object(gw, "spawn_guarded_turn", _closing_spawn()),
-            patch("kiro_crew.dashboard.chat._run_chat", new=AsyncMock()),
+            patch("efm_go.dashboard.chat._run_chat", new=AsyncMock()),
         ):
             assert await orch._fire_dashboard_nudge(_Loop("worker-1")) is True
         assert rehydrate.await_args.kwargs.get("adopt_closed") is True, (
@@ -587,7 +587,7 @@ class TestIdleCleanupSparesArmedLoops:
         self, tmp_path, monkeypatch
     ) -> None:
         """Only ARMED loops are protected — a paused one must not leak slots."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         old_ts = (datetime.now(timezone.utc) - timedelta(days=9)).isoformat()
         slot = state.get_or_create_slot("worker-1", app="issue-radar")
@@ -595,7 +595,7 @@ class TestIdleCleanupSparesArmedLoops:
         slot.drain()
 
         monkeypatch.setattr(
-            "kiro_crew.autonudge.get_instance",
+            "efm_go.autonudge.get_instance",
             lambda: _fake_autonudge([_Loop("worker-1", active=False)]),
         )
 
@@ -610,7 +610,7 @@ class TestIdleCleanupSparesArmedLoops:
     @pytest.mark.asyncio
     async def test_an_unreadable_registry_archives_nothing(self, tmp_path, monkeypatch) -> None:
         """Fail CLOSED: not knowing which slots are protected must not destroy one."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         old_ts = (datetime.now(timezone.utc) - timedelta(days=9)).isoformat()
         slot = state.get_or_create_slot("worker-1", app="issue-radar")
@@ -620,7 +620,7 @@ class TestIdleCleanupSparesArmedLoops:
         def _boom():
             raise RuntimeError("autonudge.json unreadable")
 
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", _boom)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", _boom)
 
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post(
@@ -641,7 +641,7 @@ class TestIdleCleanupSparesArmedLoops:
         to retire the loop itself — otherwise a dismissed tab would be
         resurrected by its own loop on the next cycle.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("chat-1-1785")
 
@@ -655,7 +655,7 @@ class TestIdleCleanupSparesArmedLoops:
             return loop
 
         svc.remove_by_slot = _remove_by_slot
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: svc)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: svc)
 
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.delete("/api/chat/slots/chat-1-1785")
@@ -678,7 +678,7 @@ class TestIdleCleanupSparesArmedLoops:
         So the ✕ notifies the slot's OWN app. Dispatch is by ``slot._app``, so core
         names no app and this stays app-agnostic.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("crew-c_1a2b3c4d", app="issue-radar")
 
@@ -687,10 +687,10 @@ class TestIdleCleanupSparesArmedLoops:
         async def _hook(slot_key: str) -> None:
             notified.append(("issue-radar", slot_key))
 
-        from kiro_crew.apps import teardown
+        from efm_go.apps import teardown
 
         teardown.register_slot_close_hook("issue-radar", _hook)
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: None)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: None)
         try:
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.delete("/api/chat/slots/crew-c_1a2b3c4d")
@@ -703,7 +703,7 @@ class TestIdleCleanupSparesArmedLoops:
     @pytest.mark.asyncio
     async def test_an_unowned_slot_notifies_nobody(self, tmp_path, monkeypatch) -> None:
         """An ordinary chat tab has no owning app, so there is nothing to tell."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("chat-1-1786")
 
@@ -712,8 +712,8 @@ class TestIdleCleanupSparesArmedLoops:
         async def _notify(app: str, slot_key: str) -> None:
             calls.append(app)
 
-        monkeypatch.setattr("kiro_crew.apps.teardown.notify_slot_closed", _notify)
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: None)
+        monkeypatch.setattr("efm_go.apps.teardown.notify_slot_closed", _notify)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: None)
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.delete("/api/chat/slots/chat-1-1786")
             assert resp.status == 200
@@ -732,7 +732,7 @@ class TestIdleCleanupSparesArmedLoops:
         just closed — the resurrection this hook exists to prevent, reachable by an
         error in an unrelated subsystem.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("crew-c_1a2b3c4d", app="issue-radar")
 
@@ -744,11 +744,11 @@ class TestIdleCleanupSparesArmedLoops:
         async def _boom(key: str) -> None:
             raise RuntimeError("ACP session teardown failed")
 
-        from kiro_crew.apps import teardown
+        from efm_go.apps import teardown
 
         teardown.register_slot_close_hook("issue-radar", _hook)
         monkeypatch.setattr(state.sessions, "remove", _boom, raising=False)
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: None)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: None)
         try:
             async with TestClient(TestServer(_make_app(state))) as client:
                 # The request may well fail — that is not what is under test. What
@@ -782,7 +782,7 @@ class TestIdleCleanupSparesArmedLoops:
         scheduler. App-owned slots need one retirement before their close hook and a
         final re-arbitration after it; both must finish before the synchronous pop.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("crew-c_1a2b3c4d", app="issue-radar")
 
@@ -799,9 +799,9 @@ class TestIdleCleanupSparesArmedLoops:
 
         state._slots = _WatchedSlots(state._slots)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._retire_slot_nudge_loop", _retire
+            "efm_go.dashboard.chat_handlers._retire_slot_nudge_loop", _retire
         )
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: None)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: None)
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.delete("/api/chat/slots/crew-c_1a2b3c4d")
             assert resp.status == 200

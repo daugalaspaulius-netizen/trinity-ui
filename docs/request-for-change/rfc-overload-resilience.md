@@ -14,7 +14,7 @@ superseded-by: []
 ---
 # RFC: Overload resilience — durable task queue, admission before allocation, adaptive concurrency, layered recovery
 
-- Status: implemented on main in [#10521](https://github.com/kirodotdev/KiroCrew/pull/10521).
+- Status: implemented on main in [#10521](https://efmleads.com/pull/10521).
   The shipped contracts are [`../system-specs/modules/taskq.md`](../system-specs/modules/taskq.md),
   [`../system-specs/modules/adaptive-concurrency.md`](../system-specs/modules/adaptive-concurrency.md),
   and the linked module specifications they reference. The durable task store,
@@ -125,7 +125,7 @@ proves nothing about the host.
 
 ### 3.1 One durable store: `$KIROCREW_HOME/tasks/tasks.db`
 
-Decision: introduce one SQLite store owned by a new package `kiro_crew/taskq/`
+Decision: introduce one SQLite store owned by a new package `efm_go/taskq/`
 (`store.py`, `state.py`, `scheduler.py`, `budget.py`, `controller.py`,
 `recovery.py`). TaskRunner `runs.json`, the workflow `RunRegistry`, and subagent
 `state.json`/`tombstone.json`/`result.txt` folders stay as **artifact and
@@ -168,7 +168,7 @@ CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);  -- schema_version, incarn
 ```
 
 `task_events` is append-only and is the source for §10 "recent progress" and
-"retry count"; it uses the envelope shape of `kiro_crew.events` so it can later be
+"retry count"; it uses the envelope shape of `efm_go.events` so it can later be
 projected into the append-only ledger without a second writer.
 
 ### 3.3 State machine
@@ -619,7 +619,7 @@ paths with a fake dependency, fake harness and injected clock:
 | blocking wait timeout loses nothing, duplicates nothing | `test_subagent.py` (extend the `spawn_sub_agents` path) | `still_running` ids returned; same rows continue; completion delivered once |
 | gateway restart during a wait | `test_taskq_restart.py` | `WaitRecord`, parent links and `resume_condition` rebuilt from the store; wake fires after restart |
 | cancel + restart + late result + lease expiry concurrently | `test_taskq_fencing.py` | no resurrection, no duplicate execution, reservations balanced |
-| native subagent without fine-grained control: declared boundary holds | new `test_native_subagent_boundary.py` | `_kiro.dev/subagent/list_update` cards counted under the parent task; recovery boundary is the parent session; degradation declared |
+| native subagent without fine-grained control: declared boundary holds | new `test_native_subagent_boundary.py` | `_efm.go/subagent/list_update` cards counted under the parent task; recovery boundary is the parent session; degradation declared |
 
 **2000-task burst** is a test, not a script:
 `test_taskq_admission_integration.py::test_2000_submissions_all_complete_window_never_exceeds_64`
@@ -666,7 +666,7 @@ crew workspace; this section is the design-level summary of it.
 | Wave | Area | Scope | Size | Config (all `restart=True` unless noted) | Specs updated |
 |---|---|---|---|---|---|
 | 1 (slice 0, supervisor half superseded upstream) | — | The supervisor's "overload is not death" gate LANDED ON `main` as #10455's escalated probe: one further probe at `_LIVENESS_ESCALATED_TIMEOUT_SECS` (20s, a whole-round-trip bound) after the fast ping misses, answering either means alive, and the three-strike grace counts only cycles where neither answered. This branch's own answer to the same incident — a supervisor-side reader of the daemon's `is_serving` self-report (`mcp_gateway/self_report.py` + `GatewayManager._alive_but_overloaded`) — is therefore SUBTRACTED, not shipped: under fan-out the record is the strictly later and weaker signal, and it keeps vouching for a daemon whose accept path is dead. The record WRITER (`gatewayd._zombie_diagnostic`) pre-dates both and stays as a post-mortem log. Stub reconnect budget 600s stands. | small | — | mcp-gateway-daemon-lifecycle |
-| 1 | A `taskq` | `kiro_crew/taskq/` store + 13-state machine + lease/generation + migration + reconcile-first boot + network-FS detection; subagent entry writes-before-ack; memory pressure defers instead of refusing; `spawn_sub_agents` `still_running` | ~1.5k lines + tests | `agent.task_queue_enabled=true` (live), `agent.task_dispatch_window=64`, `agent.admit_wait_secs=30`, `agent.start_collect_timeout_secs=300`, `agent.task_store_journal_mode="auto"`, `taskrunner.auto_resume=false` | subagent, taskrunner, workflows, config, new `taskq.md` |
+| 1 | A `taskq` | `efm_go/taskq/` store + 13-state machine + lease/generation + migration + reconcile-first boot + network-FS detection; subagent entry writes-before-ack; memory pressure defers instead of refusing; `spawn_sub_agents` `still_running` | ~1.5k lines + tests | `agent.task_queue_enabled=true` (live), `agent.task_dispatch_window=64`, `agent.admit_wait_secs=30`, `agent.start_collect_timeout_secs=300`, `agent.task_store_journal_mode="auto"`, `taskrunner.auto_resume=false` | subagent, taskrunner, workflows, config, new `taskq.md` |
 | 1 | B `gateway-admission` | `HostBudget`; gatewayd `SpawnGate` with FIXED capacity and a `set_capacity()` seam; FIFO wait + `spawn_queue` capability + `queued` keepalive; `BackendPool.reserve` before spawn; rejection classes; fallback only for `compat`/`isolation`; prewarm through the gate; exactly-once permit settle; drain cancels waiters; all three stub paths queue-aware | ~1.2k lines + tests | `mcp_gateway.spawn_concurrency_initial=4`, `spawn_concurrency_min=1`, `spawn_concurrency_max=8`, `spawn_queue_wait_secs=600`, `initialize_timeout_secs=60` (constructor arg, not module setter) | mcp-gateway-daemon-lifecycle, mcp-gateway-backend-replacement, architecture/mcp, config |
 | 1 | C `rfc` | this document on the branch, §13 as decisions, index row | docs | — | request-for-change index |
 | 2 | D `SessionStartGate` | `SessionStartGate` + `StartCollector` + `AcpRuntime._pending_requests.adopt` with harness-parity tests for both backends | ~0.4k | `agent.session_start_concurrency=2` | acp-client, subagent |
@@ -899,7 +899,7 @@ Question text is kept as asked; the decision below it is final for this PR.
   `agent.subagent_queue_max_wait_secs=0` waits without a bound. Grounds: the
   level is the kernel's own verdict and it lags, so it is a backstop beside
   the figure, not a replacement for it.
-  **Implementation:** [#15876](https://github.com/kirodotdev/KiroCrew/pull/15876),
+  **Implementation:** [#15876](https://efmleads.com/pull/15876),
   whose spec calls the veto the *kernel memory-pressure hold*
   ([subagent.md § Memory guard](../system-specs/modules/subagent.md#memory-guard-what-must-remain-after-the-start)).
   Its design choices, which are not owner direction and shape where the veto
@@ -951,7 +951,7 @@ Question text is kept as asked; the decision below it is final for this PR.
   records this as accepted). Reversal: an explicit `agent.max_subagents` pins the
   ceiling; `agent.adaptive_concurrency_mode="fixed"` pins the execution cap at
   it; `agent.adaptive_concurrency=false` turns the controller off.
-  **Implementation:** [#17017](https://github.com/kirodotdev/KiroCrew/pull/17017),
+  **Implementation:** [#17017](https://efmleads.com/pull/17017),
   whose spec is [adaptive-concurrency.md](../system-specs/modules/adaptive-concurrency.md).
 
 ## 14. Waits, yielding and nested recovery (owner addendum, 2026-09-12 15:12)
@@ -1056,8 +1056,8 @@ terminal for the task, never a wait.
 
 Existing signals reused as-is: ACP `session/update` (`METHOD_SESSION_UPDATE` in
 `acp/types.py`) carries tool-call start/complete and agent text;
-`_kiro.dev/metadata` carries the harness `stopReason`; kiro-cli's
-`_kiro.dev/subagent/list_update` (`METHOD_SUBAGENT_LIST_UPDATE`) carries native
+`_efm.go/metadata` carries the harness `stopReason`; kiro-cli's
+`_efm.go/subagent/list_update` (`METHOD_SUBAGENT_LIST_UPDATE`) carries native
 sub-agent identity and status; MCP `notifications/progress` with
 `params._meta.progressToken` is already routed per request by
 `mcp_gateway/backend.py`. None of them carries a wait reason or a resume
@@ -1139,7 +1139,7 @@ result and checkpoint, never by re-submitting the original task text.
 
 | Backend | Native subtask surface | Identity | Tool events | Cancel | Resume | Scheduler treatment |
 |---|---|---|---|---|---|---|
-| kiro-cli (`ACP_BACKEND_KIRO`) `use_subagent` | `_kiro.dev/subagent/list_update` (per-sub-agent `sessionId`, status); stream events carry `AcpEvent.sub_session_id` (`acp/types.py` L599) | yes (session id) | attributable only via `sub_session_id`; approvals surface on the parent (`run.py` L1296 counts them separately) | only the parent session (`session/cancel` on the parent) | none independent of the parent | **not** a task row; counted as residency under the parent task; recovery boundary = parent session; the parent's `WaitRecord` lists native child ids for display only |
+| kiro-cli (`ACP_BACKEND_KIRO`) `use_subagent` | `_efm.go/subagent/list_update` (per-sub-agent `sessionId`, status); stream events carry `AcpEvent.sub_session_id` (`acp/types.py` L599) | yes (session id) | attributable only via `sub_session_id`; approvals surface on the parent (`run.py` L1296 counts them separately) | only the parent session (`session/cancel` on the parent) | none independent of the parent | **not** a task row; counted as residency under the parent task; recovery boundary = parent session; the parent's `WaitRecord` lists native child ids for display only |
 | Claude backend (`ACP_BACKEND_CLAUDE`) | in-harness task tool; no per-child ACP identity today | no | no | parent only | none | same boundary as above; declared in `harness-parity.md` as a capability gap, not a defect |
 | `spawn_run` / `spawn_sub_agents` (all backends) | Kiro Crew task rows | yes | yes | per task | per task (continuable) | full scheduling (§3–§9) |
 

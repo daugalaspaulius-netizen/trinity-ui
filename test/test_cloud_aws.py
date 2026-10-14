@@ -7,7 +7,7 @@ import os
 
 import pytest
 
-from kiro_crew.cloud import aws
+from efm_go.cloud import aws
 
 
 class TestBuildArgv:
@@ -40,8 +40,8 @@ class TestBuildArgv:
 
         if _os.name == "nt":
             pytest.skip("fallback install dirs are POSIX literals; dead on Windows by design")
-        from kiro_crew import github_runner
-        from kiro_crew.deploy import engine
+        from efm_go import github_runner
+        from efm_go.deploy import engine
 
         fake_aws = tmp_path / "aws"
         fake_aws.write_text("#!/bin/sh\n")
@@ -78,7 +78,7 @@ class TestRunAws:
         ``run_aws`` hands the child :func:`aws_spawn_env` for the resolved head, so
         the CLI's own by-name lookups search the AWS bin dirs too.
         """
-        from kiro_crew.deploy import engine
+        from efm_go.deploy import engine
 
         bin_dir = tmp_path / "aws-bin"
         bin_dir.mkdir()

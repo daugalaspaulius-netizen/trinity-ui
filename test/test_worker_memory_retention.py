@@ -196,7 +196,7 @@ class TestTheCollectedItemTreeIsFrozen:
 class TestLinecacheIsBounded:
     """``linecache`` keeps the full TEXT of every source file anything has read.
 
-    This suite has ~21 guard tests that deliberately read all of ``src/kiro_crew``
+    This suite has ~21 guard tests that deliberately read all of ``src/efm_go``
     (652k lines), and nothing evicts that. Measured at 21.8 MiB per worker.
     """
 

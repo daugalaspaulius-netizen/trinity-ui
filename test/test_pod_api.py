@@ -23,13 +23,13 @@ from typing import Any, cast
 import pytest
 from tmpdir_helpers import SHORT_TMP_PREFIX, short_tmp_base
 
-import kiro_crew
-from kiro_crew import platform_compat
-from kiro_crew.dashboard.urls import dashboard_socket_path
-from kiro_crew.instances import run_marker
-from kiro_crew.pod import cli as pod_cli
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod.config import PodConfig
+import efm_go
+from efm_go import platform_compat
+from efm_go.dashboard.urls import dashboard_socket_path
+from efm_go.instances import run_marker
+from efm_go.pod import cli as pod_cli
+from efm_go.pod import runtime as rt
+from efm_go.pod.config import PodConfig
 
 
 class _RecordingServer(HTTPServer):
@@ -1276,7 +1276,7 @@ class TestPodApiAuditAndCli:
         tests cannot see because they call `_api` directly. Runs the real parser
         in a subprocess so the whole chain is covered.
         """
-        src = str(Path(kiro_crew.__file__).resolve().parents[1])
+        src = str(Path(efm_go.__file__).resolve().parents[1])
         env = os.environ.copy()
         env.update(
             {
@@ -1287,7 +1287,7 @@ class TestPodApiAuditAndCli:
             }
         )
         result = subprocess.run(
-            [sys.executable, "-m", "kiro_crew", "pod", "api", "wt", "OPTIONS", "sessions"],
+            [sys.executable, "-m", "efm_go", "pod", "api", "wt", "OPTIONS", "sessions"],
             capture_output=True,
             encoding="utf-8",
             env=env,

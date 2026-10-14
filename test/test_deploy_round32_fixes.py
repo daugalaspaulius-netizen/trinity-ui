@@ -10,11 +10,11 @@ F3: fullstack policy must grant iam:GetPolicy on the boundary ARN — the R29
 """
 from pathlib import Path
 
-from kiro_crew.deploy import iam as iam_mod
+from efm_go.deploy import iam as iam_mod
 
 REPO = Path(__file__).resolve().parents[1]
 REAPER_SH = (
-    REPO / "src" / "kiro_crew" / "deploy" / "skills" / "artifact-deploy"
+    REPO / "src" / "efm_go" / "deploy" / "skills" / "artifact-deploy"
     / "scripts" / "reaper.sh"
 )
 

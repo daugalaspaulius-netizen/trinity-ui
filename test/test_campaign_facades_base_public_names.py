@@ -2,7 +2,7 @@
 
 A facade whose rules moved into owner modules stays the import path callers, tests and
 docs use, so a public name it bound before the split -- one it defined, or one it
-imported from the rest of ``kiro_crew`` -- is part of its surface even when no in-repo
+imported from the rest of ``efm_go`` -- is part of its surface even when no in-repo
 caller reads it today. Standard-library, typing and third-party imports and private
 names are not surface. The inventories below are frozen at the split: a name leaves one
 only when the facade deliberately stops offering it.
@@ -23,12 +23,12 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+import efm_go
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 #: Facade -> the public project names it bound before its split; each must keep resolving.
 _BASE_PUBLIC_NAMES: dict[str, frozenset[str]] = {
-    "kiro_crew.acp.client": frozenset("""
+    "efm_go.acp.client": frozenset("""
         ACP_BACKENDS_ADVERTISED_MODEL_SELECTION ACP_BACKENDS_HARNESS_OWNED_SESSIONS
         ACP_BACKENDS_HOST_AUTH_CALLBACK ACP_BACKENDS_INLINE_COMPACTION
         ACP_BACKENDS_INTERNAL_SANDBOX ACP_BACKENDS_LOAD_WITHOUT_MODES
@@ -117,7 +117,7 @@ _BASE_PUBLIC_NAMES: dict[str, frozenset[str]] = {
         warn_unresolved_server_refs wrap_argv wrap_argv_async wrapped_by_crew_sandbox
         write_notification_best_effort write_response_frame_bounded
         """.split()),
-    "kiro_crew.cron": frozenset("""
+    "efm_go.cron": frozenset("""
         CHANNEL_MAX_LEN CRON_FIRES CronFolderLookup CronHistoryStore CronJob
         CronLoopSafetyError CronPendingMismatch CronRunRecord CronSchedule CronService
         CronStoreBusy CronStoreUnreadable KiroCrewConfig MAX_CRON_MESSAGE MAX_SHORT_STRING
@@ -136,7 +136,7 @@ _BASE_PUBLIC_NAMES: dict[str, frozenset[str]] = {
         stall_attribution subprocess_executor teardown_barriers teardown_capture
         unhealthy_jobs_from_disk validate_cron_expr with_kill_failure
         """.split()),
-    "kiro_crew.autonudge": frozenset("""
+    "efm_go.autonudge": frozenset("""
         ADDRESSING_FIELDS APPROVAL_STALL_REASON AUTONUDGE_STOP_REASON AutoNudgeService
         AutoNudgeStaleBaseline AutoNudgeStoreUnvetted MANUAL_STOP_REASON MAX_BANNER_CHARS
         MONITOR_BUSY_RETRY_SECS MONITOR_COMPLETION_EVIDENCE_TIMEOUT_SECS
@@ -162,7 +162,7 @@ _BASE_PUBLIC_NAMES: dict[str, frozenset[str]] = {
         structured_monitor_binding_key_for targets terminal_notification_delivery_matches
         validate_runtime_secs validation
         """.split()),
-    "kiro_crew.apps.builtins.ops_mission_control.backend.routes": frozenset("""
+    "efm_go.apps.builtins.ops_mission_control.backend.routes": frozenset("""
         APP_NAME CLAIMED_BY_OPERATOR CronStoreUnreadable DEFAULT_VERIFY_AFTER_SECS
         EXPIRING_ACTIONS Handler LedgerEntry MAX_INCIDENTS_RESPONSE MODE_ORDER STATE_FIRING
         STATE_OK STATE_SUPPRESSED STATUS_NEEDS_HUMAN Signal UnknownFieldError VALID_ACTIONS
@@ -172,13 +172,13 @@ _BASE_PUBLIC_NAMES: dict[str, frozenset[str]] = {
         redact_tokens redact_via_context register_routes resolve_silence_secs rotation sel
         set_top_level slack_out slot_watch store utc_now_iso webhook_mod
         """.split()),
-    "kiro_crew.apps.builtins.issue_radar.backend.routes": frozenset("""
+    "efm_go.apps.builtins.issue_radar.backend.routes": frozenset("""
         GhCliError GhInvalidInputError GhPermissionError GhSetupError KiroCrewConfig
         LIST_POLL_MAX_STALENESS_SEC LoopBoundLock MAX_ASSIGNEES MAX_ITEM_NUMBER MAX_RUN_ID
         PrSearchError github_client is_app_enabled logger normalize_ui_language_tag
         pipeline_routes provider register_routes sel store ui_language_tag watch
         """.split()),
-    "kiro_crew.mcp_gateway.gatewayd": frozenset("""
+    "efm_go.mcp_gateway.gatewayd": frozenset("""
         Admission Backend BackendGone BackendPool BackendUnavailable CANONICAL_TEMP_KEYS
         CONTROL_PLANE_BACKENDS CallerContext CircuitBreaker DEFAULT_CAPACITY DEFAULT_CEILING
         DEFAULT_FLOOR DRAIN_DEADLINE_SECS DRAIN_SECS HostBudget HostBudgetExhausted
@@ -192,7 +192,7 @@ _BASE_PUBLIC_NAMES: dict[str, frozenset[str]] = {
         configure_default_executor credwatch declared_temp_refusal_reasons
         default_hot_keys_path env_sidecar_dir env_sidecar_name env_target_resolver
         format_declared_temp_refusals forward_declared_env_enabled get_recorder hash_command
-        hash_effective_env hazards is_credential_env_key kiro_crew launch_approval logger
+        hash_effective_env hazards is_credential_env_key efm_go launch_approval logger
         main maintenance_executor mcp_search_path new_tenant_nonce non_secret_env
         pool_identity_env_keys prewarm_from_payloads records_dir redact
         resolvable_target_stems resolve_limits resolve_once_resolver resolve_overlay_dir
@@ -204,103 +204,103 @@ _BASE_PUBLIC_NAMES: dict[str, frozenset[str]] = {
 
 #: Facade -> ``{name: module holding it}`` for each base name the facade re-binds by import.
 _REBOUND: dict[str, dict[str, str]] = {
-    "kiro_crew.acp.client": {
-        "ACP_BACKENDS_HOST_AUTH_CALLBACK": "kiro_crew.acp.types",
-        "LAUNCHER_EXIT_PREFIXES": "kiro_crew.sandbox",
-        "SANDBOX_LAYER_CREW": "kiro_crew.sandbox",
-        "SANDBOX_LAYER_HARNESS": "kiro_crew.sandbox",
-        "launcher_refusal": "kiro_crew.sandbox",
-        "sandbox_init_remediation": "kiro_crew.sandbox",
+    "efm_go.acp.client": {
+        "ACP_BACKENDS_HOST_AUTH_CALLBACK": "efm_go.acp.types",
+        "LAUNCHER_EXIT_PREFIXES": "efm_go.sandbox",
+        "SANDBOX_LAYER_CREW": "efm_go.sandbox",
+        "SANDBOX_LAYER_HARNESS": "efm_go.sandbox",
+        "launcher_refusal": "efm_go.sandbox",
+        "sandbox_init_remediation": "efm_go.sandbox",
     },
-    "kiro_crew.cron": {
-        "CHANNEL_MAX_LEN": "kiro_crew.validation",
-        "MAX_CRON_MESSAGE": "kiro_crew.validation",
-        "MAX_SHORT_STRING": "kiro_crew.validation",
-        "cron_gate_budget": "kiro_crew.executors",
-        "platform_compat": "kiro_crew",
+    "efm_go.cron": {
+        "CHANNEL_MAX_LEN": "efm_go.validation",
+        "MAX_CRON_MESSAGE": "efm_go.validation",
+        "MAX_SHORT_STRING": "efm_go.validation",
+        "cron_gate_budget": "efm_go.executors",
+        "platform_compat": "efm_go",
     },
-    "kiro_crew.autonudge": {
-        "MONITOR_BUSY_RETRY_SECS": "kiro_crew.monitoring.models",
-        "MONITOR_COMPLETION_EVIDENCE_TIMEOUT_SECS": "kiro_crew.monitoring.models",
-        "MONITOR_STOP_APPROVAL_STALL": "kiro_crew.monitoring.models",
-        "MONITOR_STOP_SESSION_CLOSE": "kiro_crew.monitoring.models",
-        "MONITOR_STOP_USER": "kiro_crew.monitoring.models",
-        "MonitorActionCompletion": "kiro_crew.monitoring.models",
-        "MonitorActionDisposition": "kiro_crew.monitoring.models",
-        "MonitorBudgets": "kiro_crew.monitoring.models",
-        "MonitorCreationSurface": "kiro_crew.monitoring.models",
-        "MonitorDecision": "kiro_crew.monitoring.models",
-        "MonitorObservationStatus": "kiro_crew.monitoring.models",
-        "MonitorProbeResult": "kiro_crew.monitoring.models",
-        "MonitorVerdict": "kiro_crew.monitoring.models",
-        "REVIEW_READY": "kiro_crew.monitoring.registry",
-        "data_home": "kiro_crew.config.loader",
-        "decide_monitor": "kiro_crew.monitoring.decision",
-        "is_unattempted_probe": "kiro_crew.monitoring.github_provider_errors",
-        "kind_supports_objective": "kiro_crew.monitoring.registry",
-        "monitor_budget_reason": "kiro_crew.monitoring.decision",
-        "monitor_stall_reason": "kiro_crew.monitoring.decision",
-        "monitor_state_to_dict": "kiro_crew.monitoring.models",
-        "platform_compat": "kiro_crew",
-        "probes": "kiro_crew",
-        "retained_outcome_blocks_rearm": "kiro_crew.monitoring.models",
-        "shutdown_event": "kiro_crew",
-        "stamp_monitor_alerted": "kiro_crew.monitoring.decision",
-        "targets": "kiro_crew.probes",
-        "validate_runtime_secs": "kiro_crew.monitoring.limits",
+    "efm_go.autonudge": {
+        "MONITOR_BUSY_RETRY_SECS": "efm_go.monitoring.models",
+        "MONITOR_COMPLETION_EVIDENCE_TIMEOUT_SECS": "efm_go.monitoring.models",
+        "MONITOR_STOP_APPROVAL_STALL": "efm_go.monitoring.models",
+        "MONITOR_STOP_SESSION_CLOSE": "efm_go.monitoring.models",
+        "MONITOR_STOP_USER": "efm_go.monitoring.models",
+        "MonitorActionCompletion": "efm_go.monitoring.models",
+        "MonitorActionDisposition": "efm_go.monitoring.models",
+        "MonitorBudgets": "efm_go.monitoring.models",
+        "MonitorCreationSurface": "efm_go.monitoring.models",
+        "MonitorDecision": "efm_go.monitoring.models",
+        "MonitorObservationStatus": "efm_go.monitoring.models",
+        "MonitorProbeResult": "efm_go.monitoring.models",
+        "MonitorVerdict": "efm_go.monitoring.models",
+        "REVIEW_READY": "efm_go.monitoring.registry",
+        "data_home": "efm_go.config.loader",
+        "decide_monitor": "efm_go.monitoring.decision",
+        "is_unattempted_probe": "efm_go.monitoring.github_provider_errors",
+        "kind_supports_objective": "efm_go.monitoring.registry",
+        "monitor_budget_reason": "efm_go.monitoring.decision",
+        "monitor_stall_reason": "efm_go.monitoring.decision",
+        "monitor_state_to_dict": "efm_go.monitoring.models",
+        "platform_compat": "efm_go",
+        "probes": "efm_go",
+        "retained_outcome_blocks_rearm": "efm_go.monitoring.models",
+        "shutdown_event": "efm_go",
+        "stamp_monitor_alerted": "efm_go.monitoring.decision",
+        "targets": "efm_go.probes",
+        "validate_runtime_secs": "efm_go.monitoring.limits",
     },
-    "kiro_crew.apps.builtins.ops_mission_control.backend.routes": {
-        "CLAIMED_BY_OPERATOR": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "CronStoreUnreadable": "kiro_crew.cron",
-        "DEFAULT_VERIFY_AFTER_SECS": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "EXPIRING_ACTIONS": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "LedgerEntry": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "MODE_ORDER": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "STATE_FIRING": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "STATE_OK": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "STATE_SUPPRESSED": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "STATUS_NEEDS_HUMAN": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "Signal": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "UnknownFieldError": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "VALID_ACTIONS": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "VERIFIABLE_ACTIONS": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "VERIFY_NOT_CHECKABLE": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "VERIFY_PENDING": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "describe_secrets": "kiro_crew.apps.builtins.ops_mission_control.backend.secrets",
-        "provider_config": "kiro_crew.apps.builtins.ops_mission_control.backend.providers",
-        "resolve_silence_secs": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
-        "set_top_level": "kiro_crew.apps.builtins.ops_mission_control.backend.providers",
-        "utc_now_iso": "kiro_crew.apps.builtins.ops_mission_control.backend.models",
+    "efm_go.apps.builtins.ops_mission_control.backend.routes": {
+        "CLAIMED_BY_OPERATOR": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "CronStoreUnreadable": "efm_go.cron",
+        "DEFAULT_VERIFY_AFTER_SECS": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "EXPIRING_ACTIONS": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "LedgerEntry": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "MODE_ORDER": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "STATE_FIRING": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "STATE_OK": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "STATE_SUPPRESSED": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "STATUS_NEEDS_HUMAN": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "Signal": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "UnknownFieldError": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "VALID_ACTIONS": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "VERIFIABLE_ACTIONS": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "VERIFY_NOT_CHECKABLE": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "VERIFY_PENDING": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "describe_secrets": "efm_go.apps.builtins.ops_mission_control.backend.secrets",
+        "provider_config": "efm_go.apps.builtins.ops_mission_control.backend.providers",
+        "resolve_silence_secs": "efm_go.apps.builtins.ops_mission_control.backend.models",
+        "set_top_level": "efm_go.apps.builtins.ops_mission_control.backend.providers",
+        "utc_now_iso": "efm_go.apps.builtins.ops_mission_control.backend.models",
     },
-    "kiro_crew.apps.builtins.issue_radar.backend.routes": {
-        "KiroCrewConfig": "kiro_crew.config.loader",
-        "normalize_ui_language_tag": "kiro_crew.context",
-        "ui_language_tag": "kiro_crew.context",
+    "efm_go.apps.builtins.issue_radar.backend.routes": {
+        "KiroCrewConfig": "efm_go.config.loader",
+        "normalize_ui_language_tag": "efm_go.context",
+        "ui_language_tag": "efm_go.context",
     },
-    "kiro_crew.mcp_gateway.gatewayd": {
-        "BackendGone": "kiro_crew.mcp_gateway.backend",
-        "BackendUnavailable": "kiro_crew.mcp_gateway.pool",
-        "CallerContext": "kiro_crew.mcp_caller",
-        "DRAIN_DEADLINE_SECS": "kiro_crew.mcp_gateway.pool",
-        "HostBudgetExhausted": "kiro_crew.mcp_gateway.host_budget",
-        "KIROCREW_BIN_MCP_SERVERS": "kiro_crew.mcp_cleanup",
-        "PoolAtCapacity": "kiro_crew.mcp_gateway.pool",
-        "SpawnGateClosed": "kiro_crew.mcp_gateway.admission",
-        "SpawnGateTimeout": "kiro_crew.mcp_gateway.admission",
-        "code_fingerprint": "kiro_crew.code_fingerprint",
-        "configure_default_executor": "kiro_crew.executors",
-        "env_sidecar_dir": "kiro_crew.mcp_gateway.rewriter",
-        "env_sidecar_name": "kiro_crew.mcp_gateway.rewriter",
-        "hash_command": "kiro_crew.mcp_gateway.hashing",
-        "hash_effective_env": "kiro_crew.mcp_gateway.hashing",
-        "is_credential_env_key": "kiro_crew.mcp_gateway.manager",
-        "new_tenant_nonce": "kiro_crew.mcp_caller",
-        "non_secret_env": "kiro_crew.mcp_gateway.hashing",
-        "prewarm_from_payloads": "kiro_crew.mcp_gateway.prewarm",
-        "resolve_overlay_dir": "kiro_crew.mcp_gateway.rewriter",
-        "resolve_peer_identity": "kiro_crew.peer_resolve",
-        "subprocess_executor": "kiro_crew.executors",
-        "tool_surface": "kiro_crew.mcp_gateway",
+    "efm_go.mcp_gateway.gatewayd": {
+        "BackendGone": "efm_go.mcp_gateway.backend",
+        "BackendUnavailable": "efm_go.mcp_gateway.pool",
+        "CallerContext": "efm_go.mcp_caller",
+        "DRAIN_DEADLINE_SECS": "efm_go.mcp_gateway.pool",
+        "HostBudgetExhausted": "efm_go.mcp_gateway.host_budget",
+        "KIROCREW_BIN_MCP_SERVERS": "efm_go.mcp_cleanup",
+        "PoolAtCapacity": "efm_go.mcp_gateway.pool",
+        "SpawnGateClosed": "efm_go.mcp_gateway.admission",
+        "SpawnGateTimeout": "efm_go.mcp_gateway.admission",
+        "code_fingerprint": "efm_go.code_fingerprint",
+        "configure_default_executor": "efm_go.executors",
+        "env_sidecar_dir": "efm_go.mcp_gateway.rewriter",
+        "env_sidecar_name": "efm_go.mcp_gateway.rewriter",
+        "hash_command": "efm_go.mcp_gateway.hashing",
+        "hash_effective_env": "efm_go.mcp_gateway.hashing",
+        "is_credential_env_key": "efm_go.mcp_gateway.manager",
+        "new_tenant_nonce": "efm_go.mcp_caller",
+        "non_secret_env": "efm_go.mcp_gateway.hashing",
+        "prewarm_from_payloads": "efm_go.mcp_gateway.prewarm",
+        "resolve_overlay_dir": "efm_go.mcp_gateway.rewriter",
+        "resolve_peer_identity": "efm_go.peer_resolve",
+        "subprocess_executor": "efm_go.executors",
+        "tool_surface": "efm_go.mcp_gateway",
     },
 }
 
@@ -335,7 +335,7 @@ def test_a_rebound_name_is_the_object_its_home_module_holds(tmp_path: Path) -> N
     can make a copy look like the original, or the original look like a copy. The child
     runs in ``tmp_path``, so anything an import writes by a relative path stays there."""
     env = dict(os.environ)
-    src = str(Path(kiro_crew.__file__).resolve().parents[1])
+    src = str(Path(efm_go.__file__).resolve().parents[1])
     env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
     out = subprocess.run(
         [sys.executable, "-c", _PROBE, json.dumps(_REBOUND)],

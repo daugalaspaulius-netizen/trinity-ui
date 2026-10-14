@@ -83,7 +83,7 @@ def test_windows_client_exchanges_token_once_then_uses_cookie_urls(tmp_path, mon
 
 
 def test_scenario_backend_uses_supported_launcher(tmp_path, monkeypatch):
-    from kiro_crew.testing import harness
+    from efm_go.testing import harness
 
     launcher = tmp_path / "kiro-backend.cmd"
     launcher.write_text("shim", encoding="utf-8")

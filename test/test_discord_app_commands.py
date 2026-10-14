@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.discord import commands as dc
-from kiro_crew.discord.client import _APP_COMMAND_DESC_LIMIT, _APP_COMMAND_NAME_RE
-from kiro_crew.discord.commands import (
+from efm_go.discord import commands as dc
+from efm_go.discord.client import _APP_COMMAND_DESC_LIMIT, _APP_COMMAND_NAME_RE
+from efm_go.discord.commands import (
     COMMAND_SPEC,
     application_command_payload,
     build_help_text,

@@ -842,25 +842,25 @@ def test_the_plan_script_is_recorded_executable() -> None:
     )
 
 
-def test_supervisor_tree_imports_without_kiro_crew(tmp_path: Path) -> None:
-    """The build plan imports the container tree with no ``kiro_crew`` on the path.
+def test_supervisor_tree_imports_without_efm_go(tmp_path: Path) -> None:
+    """The build plan imports the container tree with no ``efm_go`` on the path.
 
     ``content_digest`` puts the runtime directory on ``sys.path`` and imports
     ``container.supervisor.bundle`` as a TOP-LEVEL package, under whatever interpreter
     the lane happens to run -- a bare ``python3`` with this repository installed
     nowhere. ``supervisor/__init__.py`` re-exports from ``backend``, so a module-scope
-    ``kiro_crew`` import in ANY supervisor module makes that reach raise
+    ``efm_go`` import in ANY supervisor module makes that reach raise
     ``ModuleNotFoundError`` and fails the image lane on its first step.
 
-    A developer checkout hides this: an editable install makes ``kiro_crew`` importable,
+    A developer checkout hides this: an editable install makes ``efm_go`` importable,
     so the same call succeeds locally and reds only in CI. ``-S`` reproduces the lane's
     condition by dropping ``site-packages``, which is where the editable install lives.
 
-    Not a style rule. The supervisor is free to import ``kiro_crew`` inside a function --
+    Not a style rule. The supervisor is free to import ``efm_go`` inside a function --
     the vault seed does, because by the time it runs the image HAS the wheel -- and this
     test says only that reaching a module must not require it.
     """
-    runtime = ROOT / "src/kiro_crew/apps/builtins/aws_control/crew/runtime"
+    runtime = ROOT / "src/efm_go/apps/builtins/aws_control/crew/runtime"
     probe = "import container.supervisor.bundle, container.supervisor.__main__"
 
     def caches() -> set[Path]:
@@ -878,21 +878,21 @@ def test_supervisor_tree_imports_without_kiro_crew(tmp_path: Path) -> None:
         env={"PYTHONPATH": str(runtime), "PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"},
     )
     assert out.returncode == 0, (
-        "a supervisor module needs kiro_crew at import time, so "
+        "a supervisor module needs efm_go at import time, so "
         "crew_image_build_plan.py cannot reach the bundle digest:\n" + out.stderr
     )
     assert caches() == before, "the probe wrote bytecode into the source tree: " + str(
         sorted(caches() - before)
     )
 
-    # Non-vacuity: the probe must fail for the RIGHT reason when kiro_crew is genuinely
+    # Non-vacuity: the probe must fail for the RIGHT reason when efm_go is genuinely
     # required, otherwise a typo in the module names would pass this test silently.
     broken = subprocess.run(
-        [sys.executable, "-B", "-S", "-c", "import kiro_crew"],
+        [sys.executable, "-B", "-S", "-c", "import efm_go"],
         capture_output=True,
         encoding="utf-8",
         cwd=tmp_path,
         env={"PYTHONPATH": str(runtime), "PATH": "/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1"},
     )
-    assert broken.returncode != 0, "kiro_crew is importable under -S, so this proves nothing"
+    assert broken.returncode != 0, "efm_go is importable under -S, so this proves nothing"
     assert "ModuleNotFoundError" in broken.stderr

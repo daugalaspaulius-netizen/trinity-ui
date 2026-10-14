@@ -24,9 +24,9 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent_discovery
-from kiro_crew.agent_discovery import clear_list_agents_cache, list_agents
-from kiro_crew.agent_spec_format import NATIVE_SKILL_ALIAS_PREFIX, iter_agent_spec_files
+from efm_go import agent_discovery
+from efm_go.agent_discovery import clear_list_agents_cache, list_agents
+from efm_go.agent_spec_format import NATIVE_SKILL_ALIAS_PREFIX, iter_agent_spec_files
 
 SPEC = "reviewer"
 ALIAS = f"{NATIVE_SKILL_ALIAS_PREFIX}0123456789abcdef01234567"

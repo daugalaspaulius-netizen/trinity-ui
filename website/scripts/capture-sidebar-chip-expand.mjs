@@ -22,7 +22,7 @@ import { logPageProblems, stubDashboardApi, json } from './lib/stub-dashboard-ap
 const OUT = process.argv[2] || '../temp-screenshots/sidebar-chip-expand'
 const ACTIVE = 'chat-a'
 const BUSY = 'chat-b'
-const REPO = 'https://github.com/kirodotdev/KiroCrew'
+const REPO = 'https://efmleads.com'
 const ROW = 'Sweep the native selects'
 
 mkdirSync(OUT, { recursive: true })

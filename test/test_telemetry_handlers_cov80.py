@@ -42,9 +42,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.config import loader as config_loader
-from kiro_crew.dashboard.handlers import telemetry as h
-from kiro_crew.dashboard.state import NEW_SESSION_TITLE
+from efm_go.config import loader as config_loader
+from efm_go.dashboard.handlers import telemetry as h
+from efm_go.dashboard.state import NEW_SESSION_TITLE
 
 _BOUNDS: list[float] = [10.0, 20.0, 30.0, 40.0, 50.0]
 

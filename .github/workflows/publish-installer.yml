@@ -2,7 +2,7 @@ name: Publish Installer
 
 # Publishes cli.sh -- the bootstrap installer behind the documented one-liner
 #
-#   curl -fsSL https://download.crew.kiro.dev/cli.sh | sh -s -- --channel X
+#   curl -fsSL https://efmleads.com/cli.sh | sh -s -- --channel X
 #
 # to the ROOT of the public distribution bucket. It is the only root object.
 #
@@ -55,7 +55,7 @@ jobs:
     # Upstream only. Forks pushing to their own main have no publish role and
     # nothing to publish to; skipping at the JOB level (rather than gating each
     # step on a secret) is what keeps the fail-closed behaviour below honest.
-    if: github.repository == 'kirodotdev/KiroCrew'
+    if: github.repository == 'efmleads.com'
     # REQUIRED: the publish role's OIDC trust accepts exactly two subjects --
     # ref:refs/heads/main and environment:prod. See publish-cli.yml.
     environment: prod

@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.task_models import MAX_RETRIES
-from kiro_crew.taskrunner import (
+from efm_go.task_models import MAX_RETRIES
+from efm_go.taskrunner import (
     MAX_TOTAL_TASKS,
     Step,
     StepStatus,
@@ -47,7 +47,7 @@ def _make_mock_sessions() -> MagicMock:
 
 
 def _make_provider(text: str = "done"):
-    from kiro_crew.providers.base import LLMEvent
+    from efm_go.providers.base import LLMEvent
 
     provider = MagicMock()
 
@@ -84,7 +84,7 @@ class TestScenarioStepOrdering:
             ]
         )
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         decompose_provider = MagicMock()
 
@@ -144,7 +144,7 @@ class TestScenarioStepOrdering:
             ]
         )
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         decompose_provider = MagicMock()
 
@@ -335,9 +335,9 @@ class TestScenarioReviewModes:
         fake_diff = "--- a/auth.py\n+++ b/auth.py\n-old\n+new"
 
         with patch(
-            "kiro_crew.task_executor.stream_and_collect_json", return_value={"ok": True}
+            "efm_go.task_executor.stream_and_collect_json", return_value={"ok": True}
         ) as mock_json, patch(
-            "kiro_crew.task_executor.git_coord.get_step_diff", return_value=fake_diff
+            "efm_go.task_executor.git_coord.get_step_diff", return_value=fake_diff
         ):
             result = await runner.self_review(run, step)
 
@@ -363,7 +363,7 @@ class TestScenarioReviewModes:
         run.tasks = [step]
 
         with patch(
-            "kiro_crew.task_executor.stream_and_collect_json", return_value={"ok": True}
+            "efm_go.task_executor.stream_and_collect_json", return_value={"ok": True}
         ) as mock_json:
             result = await runner.self_review(run, step)
 
@@ -396,7 +396,7 @@ class TestScenarioStepPromptWithGit:
             "## Git Log\n```\nabc1234 step 1: Done\n```\n## Files\n```\nfoo.py | 5 +\n```"
         )
 
-        with patch("kiro_crew.git_coord.get_state_summary", return_value=fake_summary):
+        with patch("efm_go.git_coord.get_state_summary", return_value=fake_summary):
             prompt = await runner._build_task_prompt(run, run.tasks[1], attempt=1)
 
         assert "Git Log" in prompt
@@ -431,7 +431,7 @@ class TestScenarioFailureInParallelGroup:
         """If step B fails in group [B, C], the group fails (both run via gather)."""
         sessions = _make_mock_sessions()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         step_json = json.dumps(
             [
@@ -545,7 +545,7 @@ class TestScenarioParallelExecution:
             ]
         )
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         decompose_provider = MagicMock()
 

@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from kiro_crew.messaging.split import (
+from efm_go.messaging.split import (
     FENCE_BODY,
     FENCE_CLOSE,
     FENCE_OPEN,

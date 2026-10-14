@@ -11,7 +11,7 @@ import { safeGetItem, safeSetItem } from '../utils/safeStorage'
 // own arbitrary origin, which Aperture's browser-CORS allowlist model (a
 // finite, known set of domains) cannot accommodate. These calls go to the
 // EFM Go backend's own same-origin routes instead
-// (src/kiro_crew/dashboard/handlers/feedback.py), which forward to Aperture
+// (src/efm_go/dashboard/handlers/feedback.py), which forward to Aperture
 // server-to-server, where CORS does not apply.
 const FEEDBACK_SUBMIT_URL = '/api/feedback/submit'
 const FEEDBACK_ELIGIBLE_URL = '/api/feedback/eligible'

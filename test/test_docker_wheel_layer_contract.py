@@ -41,7 +41,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 _CREW_RUNTIME = (
-    ROOT / "src" / "kiro_crew" / "apps" / "builtins" / "aws_control" / "crew" / "runtime"
+    ROOT / "src" / "efm_go" / "apps" / "builtins" / "aws_control" / "crew" / "runtime"
 )
 
 #: ``recipe path -> the build-context directory its single wheel is staged in``.

@@ -308,15 +308,15 @@ function Invoke-Frontend {
     Write-Ok "dashboard built into website\dist"
 }
 
-# Stage website\dist as the served src\kiro_crew\static\dist with the
+# Stage website\dist as the served src\efm_go\static\dist with the
 # package's own stager, as the Makefile does, through the .venv Invoke-Backend
 # just installed it into: it links static\dist to website\dist (a junction),
 # keeps that link, or points it at a fresh copy -- never remove + copy under a
 # running gateway. Separate from Invoke-Frontend so backend-bin, which copies
 # website\dist itself, needs no Python for it.
 function Invoke-StageDashboard {
-    Invoke-Step $VenvPython @("-m", "kiro_crew.frontend", "stage", $RepoRoot) "stage the dashboard"
-    Write-Ok "dashboard staged into src\kiro_crew\static\dist"
+    Invoke-Step $VenvPython @("-m", "efm_go.frontend", "stage", $RepoRoot) "stage the dashboard"
+    Write-Ok "dashboard staged into src\efm_go\static\dist"
 }
 
 function Invoke-Backend {
@@ -462,7 +462,7 @@ function Remove-PathForce($path) {
 
 function Invoke-Clean {
     Write-Step "removing build artifacts and caches"
-    foreach ($p in @("build", "dist", "src\kiro_crew\static\dist", "website\dist",
+    foreach ($p in @("build", "dist", "src\efm_go\static\dist", "website\dist",
                      "website\electron\backend-dist", "website\electron\dist",
                      ".pytest_cache", ".mypy_cache")) {
         Remove-PathForce (Join-Path $RepoRoot $p)
@@ -477,8 +477,8 @@ function Invoke-Clean {
                            Where-Object { $_.Name -match '^\.dist.*\.(next|ready|prev)-' })) {
         Remove-PathForce $scratch.FullName
     }
-    # The staged copies src\kiro_crew\static\dist links to (kiro_crew.frontend).
-    foreach ($staged in @(Get-ChildItem -Path (Join-Path $RepoRoot "src\kiro_crew\static") -Filter ".dist.*" `
+    # The staged copies src\efm_go\static\dist links to (efm_go.frontend).
+    foreach ($staged in @(Get-ChildItem -Path (Join-Path $RepoRoot "src\efm_go\static") -Filter ".dist.*" `
                           -Force -ErrorAction SilentlyContinue)) {
         Remove-PathForce $staged.FullName
     }

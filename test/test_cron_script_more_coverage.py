@@ -20,8 +20,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import cron_script
-from kiro_crew.cron_script import (
+from efm_go import cron_script
+from efm_go.cron_script import (
     McpToolClient,
     ScriptContext,
     _kill_proc_group,
@@ -35,7 +35,7 @@ from kiro_crew.cron_script import (
     run_command_sandboxed,
     run_script_sandboxed,
 )
-from kiro_crew.sandbox import SandboxUnavailableError
+from efm_go.sandbox import SandboxUnavailableError
 
 # ── shared fakes ──
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from kiro_crew.apps.builtins.auto_research.subquestion_queue import (
+from efm_go.apps.builtins.auto_research.subquestion_queue import (
     QUEUE_FILENAME,
     dequeue_top_k,
     enqueue,

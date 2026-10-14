@@ -28,7 +28,7 @@ from tmpdir_helpers import SHORT_TMP_PREFIX, short_tmp_base
 from turn_harness import Raise, SlotSpec, TurnRecord, TurnScript, run_turn
 
 from conftest import requires_symlinks
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_CLEAR_STATUS,
     EVENT_COMPLETE,
     EVENT_TEXT_CHUNK,
@@ -37,7 +37,7 @@ from kiro_crew.acp.types import (
     STOP_REASON_END_TURN,
     AcpEvent,
 )
-from kiro_crew.dashboard.chat_runner import (
+from efm_go.dashboard.chat_runner import (
     _MAX_SNAPSHOT,
     _MAX_SNAPSHOT_PATH_CHARS,
     _MAX_TURN_SNAPSHOT_CHARS,
@@ -52,8 +52,8 @@ from kiro_crew.dashboard.chat_runner import (
     _truncate_snapshot,
     _turn_line_changes,
 )
-from kiro_crew.dashboard.state import _ChatSlot, row_mid
-from kiro_crew.security import redact
+from efm_go.dashboard.state import _ChatSlot, row_mid
+from efm_go.security import redact
 
 
 @pytest.fixture
@@ -177,7 +177,7 @@ class TestSafeReadSnapshot:
         # Path.home() reads USERPROFILE on Windows and never HOME; pin both.
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
-        from kiro_crew.security import is_sensitive_path
+        from efm_go.security import is_sensitive_path
 
         secret = tmp_path / ".aws" / "credentials"
         secret.parent.mkdir()
@@ -654,7 +654,7 @@ class TestFlushFileChanges:
         # transcript must still read as interrupted: the anchor is looked
         # through, the trailing error decides. On the old anchor text this
         # returned False and the composer lost its Resume control.
-        from kiro_crew.dashboard.state import is_turn_interrupted
+        from efm_go.dashboard.state import is_turn_interrupted
 
         f = short_tmp_dir / "edit.py"
         f.write_text("after\n")
@@ -718,7 +718,7 @@ class TestFlushFileChanges:
     def test_flush_segment_records_the_reply_identity(self, monkeypatch):
         # The production reply path registers its row, so the flush can tell it
         # from an injected one without any caller threading a list through.
-        from kiro_crew.dashboard import chat_runner as cr
+        from efm_go.dashboard import chat_runner as cr
 
         slot = _ChatSlot("test-flush-segment-identity")
         slot.append("user", "hi", "msg msg-u", broadcast=False)
@@ -730,7 +730,7 @@ class TestFlushFileChanges:
     def test_reply_identities_are_bounded_at_the_window_cap(self, monkeypatch):
         # A row older than the window cap has been trimmed away and cannot be an
         # anchor, so its id leaves the list; the newest ids stay.
-        from kiro_crew.dashboard import chat_runner as cr
+        from efm_go.dashboard import chat_runner as cr
 
         monkeypatch.setattr(cr, "_MAX_SLOT_MESSAGES", 2)
         slot = _ChatSlot("test-reply-ids-bounded")
@@ -999,7 +999,7 @@ class TestStrReplaceFullBeforeReconstruction:
     def test_post_read_size_recheck_declines(self, tmp_path: Path, monkeypatch):
         """The stat() gate races with an external writer growing the file;
         the post-read length re-check keeps the substring scans bounded."""
-        import kiro_crew.dashboard.chat_runner as cr
+        import efm_go.dashboard.chat_runner as cr
 
         f = tmp_path / "grown.txt"
         f.write_text("NEW\n")  # passes the stat gate
@@ -1079,7 +1079,7 @@ class TestStrReplaceFullBeforeReconstruction:
         """Server review finding: the synchronous reconstruction read runs on
         the event loop — files past _MAX_RECONSTRUCT_BYTES decline and fall
         through to the fragment chain instead of stalling the loop."""
-        import kiro_crew.dashboard.chat_runner as cr
+        import efm_go.dashboard.chat_runner as cr
 
         f = tmp_path / "big.txt"
         f.write_text("payload NEW payload\n")
@@ -1576,7 +1576,7 @@ class TestSnapshotPathBound:
         # confirms the length gate alone did not refuse it.
         long_path = "\\\\?\\C:\\" + "a" * 8_000 + "\\file.txt"
         assert 4_096 < len(long_path) <= _MAX_SNAPSHOT_PATH_CHARS
-        with patch("kiro_crew.dashboard.chat_runner.validate_file_path") as validate:
+        with patch("efm_go.dashboard.chat_runner.validate_file_path") as validate:
             validate.return_value = None
             assert (
                 _snapshot_write_target({"command": "create", "path": long_path}, diff_old_text="")
@@ -1617,8 +1617,8 @@ class TestTurnSnapshotAccumulator:
     def test_repeat_recency_drives_the_budget_at_and_below_the_cap(
         self, short_tmp_dir: Path, monkeypatch, row_cap: int
     ) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._MAX_TURN_SNAPSHOT_ENTRIES", row_cap)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._MAX_TURN_SNAPSHOT_CHARS", 0)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._MAX_TURN_SNAPSHOT_ENTRIES", row_cap)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._MAX_TURN_SNAPSHOT_CHARS", 0)
         slot = _make_slot_with_assistant_message()
         early = short_tmp_dir / "early.py"
         other = short_tmp_dir / "other.py"
@@ -1811,7 +1811,7 @@ def _persisted_meta(record: TurnRecord, content: str) -> dict:
 class TestOmittedSnapshotFiles:
     @pytest.mark.parametrize("multiple", [2, 10])
     def test_large_flush_visits_dropped_indices_at_most_once(self, monkeypatch, multiple):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         total = _MAX_TURN_SNAPSHOT_ENTRIES * multiple
         visited = 0
@@ -1853,7 +1853,7 @@ class TestOmittedSnapshotFiles:
         self, monkeypatch, short_tmp_dir, site
     ):
         # Through the real turn; a cap of 3 instead of 200 keeps the script short.
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._MAX_TURN_SNAPSHOT_ENTRIES", 3)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._MAX_TURN_SNAPSHOT_ENTRIES", 3)
         paths = _files(short_tmp_dir, 5)
         writes = [
             event
@@ -1916,8 +1916,8 @@ class TestOmittedSnapshotFiles:
     async def test_row_cap_and_path_budget_drops_are_counted_as_files(
         self, monkeypatch, short_tmp_dir
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._MAX_TURN_SNAPSHOT_ENTRIES", 2)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._MAX_TURN_SNAPSHOT_CHARS", 0)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._MAX_TURN_SNAPSHOT_ENTRIES", 2)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._MAX_TURN_SNAPSHOT_CHARS", 0)
         paths = _files(short_tmp_dir, 3)
         writes = [
             event
@@ -1959,7 +1959,7 @@ class TestOmittedSnapshotFiles:
         paths = _files(short_tmp_dir, 3)
         # Room for two paths beside the protected entry, none of their content.
         budget = 2 * len(str(paths[0])) + 5
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._MAX_TURN_SNAPSHOT_CHARS", budget)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._MAX_TURN_SNAPSHOT_CHARS", budget)
         writes = [e for i, path in enumerate(paths) for e in _write_call(i, path, "x" * 4096)]
         record = await _snapshot_turn(*writes, *_DIES, seeded=False)
         meta = _persisted_meta(record, "")
@@ -1975,7 +1975,7 @@ class TestOmittedSnapshotFiles:
         # path, f0 is dropped, and only the dropped one is counted.
         paths = _files(short_tmp_dir, 3)
         budget = len(str(paths[0])) + 5
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._MAX_TURN_SNAPSHOT_CHARS", budget)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._MAX_TURN_SNAPSHOT_CHARS", budget)
         writes = [e for i, path in enumerate(paths) for e in _write_call(i, path, "x" * 4096)]
         record = await _snapshot_turn(*writes, *_LANDS)
         meta = _persisted_meta(record, "done")
@@ -1986,7 +1986,7 @@ class TestOmittedSnapshotFiles:
 
     def test_a_flush_without_drops_clears_an_earlier_count_on_its_message(self, monkeypatch):
         slot = _make_slot_with_assistant_message()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._MAX_TURN_SNAPSHOT_ENTRIES", 1)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._MAX_TURN_SNAPSHOT_ENTRIES", 1)
         for path in ("/a.py", "/b.py"):
             _record_turn_snapshot(slot, {"path": path, "content": "before"})
         _flush_file_changes(slot)

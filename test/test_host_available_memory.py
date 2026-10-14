@@ -25,7 +25,7 @@ import ctypes
 import pytest
 
 from conftest import absent_sysconf
-from kiro_crew import platform_compat as pc
+from efm_go import platform_compat as pc
 
 _SENTINEL_PORT = 0x1111
 _SENTINEL_TASK = 0x2222

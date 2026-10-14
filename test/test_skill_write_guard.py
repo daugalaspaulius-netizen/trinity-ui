@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from kiro_crew.dashboard.handlers import prompts
+from efm_go.dashboard.handlers import prompts
 
 
 class _Request:

@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from kiro_crew.history import ConversationLog, is_incognito_transcript
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go.history import ConversationLog, is_incognito_transcript
+from efm_go.testing.fixtures import seeded_home
 
 
 def _memory_mode(home: Path, session_key: str) -> object:

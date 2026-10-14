@@ -22,13 +22,13 @@ import pytest
 from aiohttp import streams, web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import memory_backup, memory_stores
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard.handlers import memory_admin
-from kiro_crew.memory_startup import MemoryStartupUnavailable
-from kiro_crew.memory_stores import DEFAULT_MEMORY_STORE, owned_store_path
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import memory_backup, memory_stores
+from efm_go.config import loader as loader_mod
+from efm_go.context import ContextBuilder
+from efm_go.dashboard.handlers import memory_admin
+from efm_go.memory_startup import MemoryStartupUnavailable
+from efm_go.memory_stores import DEFAULT_MEMORY_STORE, owned_store_path
+from efm_go.vector_memory import VectorMemoryStore
 
 pytestmark = pytest.mark.xdist_group("memory_admin_handlers_coverage")
 
@@ -158,7 +158,7 @@ def _body(resp: web.Response) -> Any:
 
 class TestTakenAt:
     def test_zip_backup_reads_snapshot_time_via_member_memory_backup(self, monkeypatch) -> None:
-        from kiro_crew import member_memory_backup
+        from efm_go import member_memory_backup
 
         stamped = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
         monkeypatch.setattr(member_memory_backup, "snapshot_time", lambda p: stamped)
@@ -207,9 +207,9 @@ class TestProbeStoreBlocking:
             raise MemoryStartupUnavailable("boom AKIAIOSFODNN7EXAMPLE")
 
         # ``require_memory_ready`` is imported inside ``_probe_store_blocking`` from
-        # ``kiro_crew.memory_startup``, so patching a name on ``memory_admin`` itself
+        # ``efm_go.memory_startup``, so patching a name on ``memory_admin`` itself
         # is a silent no-op -- patch the defining module the deferred import reads.
-        from kiro_crew import memory_startup
+        from efm_go import memory_startup
 
         monkeypatch.setattr(memory_startup, "require_memory_ready", _refuse)
         row = memory_admin._probe_store_blocking(_FINANCE)
@@ -228,7 +228,7 @@ class TestProbeStoreBlocking:
         env.declare(_FINANCE)
         env.tier(_FINANCE)  # creates a real, empty crew-lineage db
 
-        from kiro_crew import memory_schema
+        from efm_go import memory_schema
 
         monkeypatch.setattr(memory_schema, "detect_lineage", lambda db: None)
         row = memory_admin._probe_store_blocking(_FINANCE)

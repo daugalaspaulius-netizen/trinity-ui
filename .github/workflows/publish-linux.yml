@@ -378,8 +378,8 @@ jobs:
       #     never hex: electron-updater string-compares base64; a hex value
       #     makes every download fail checksum verification.
       #   - files[].url is an ABSOLUTE byte-host url (CLI_CDN_BASE =
-      #     download.crew.kiro.dev). The yml itself lives on the POINTER
-      #     host (updates.crew.kiro.dev/feed/...); electron-updater's
+      #     download.efmleads.com). The yml itself lives on the POINTER
+      #     host (updates.efmleads.com/feed/...); electron-updater's
       #     newUrlFromBase does `new URL(fileUrl, base)`, which ignores the
       #     base for absolute urls -- that is what preserves the
       #     pointer/bytes host split. A bare filename here would resolve

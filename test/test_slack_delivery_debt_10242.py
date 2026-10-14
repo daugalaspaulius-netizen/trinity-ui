@@ -26,15 +26,15 @@ import importlib
 from unittest.mock import AsyncMock
 
 from conftest import MockSlackClient
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_TEXT_CHUNK,
     EVENT_TOOL_CALL,
     STOP_REASON_END_TURN,
 )
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.slack import transport_dispatch
-from kiro_crew.slack.handler import DELIVERY_DEBT_NOTICE, handle_message
+from efm_go.providers.base import LLMEvent
+from efm_go.slack import transport_dispatch
+from efm_go.slack.handler import DELIVERY_DEBT_NOTICE, handle_message
 
 _handler_tests = importlib.import_module("test_slack_handler")
 _golden = importlib.import_module("test_slack_golden_transcript")

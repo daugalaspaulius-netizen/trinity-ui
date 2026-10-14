@@ -25,9 +25,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp import session_handle
-from kiro_crew.acp.client import _DEFAULT_PROMPT_TIMEOUT
-from kiro_crew.acp.session_handle import (
+from efm_go.acp import session_handle
+from efm_go.acp.client import _DEFAULT_PROMPT_TIMEOUT
+from efm_go.acp.session_handle import (
     _TURN_BOUNDED_WINDOWS,
     _TURN_CEILING_WINDOW_FRACTION,
     _WORKING_LOG_INTERVAL_SECS,
@@ -38,10 +38,10 @@ from kiro_crew.acp.session_handle import (
     WatchdogSettings,
     _load_watchdog_settings,
 )
-from kiro_crew.config.loader import AgentConfig, KiroCrewConfig, WatchdogConfig
-from kiro_crew.constants import CHAT_TURN_TIMEOUT
+from efm_go.config.loader import AgentConfig, KiroCrewConfig, WatchdogConfig
+from efm_go.constants import CHAT_TURN_TIMEOUT
 
-_LOGGER_NAME = "kiro_crew.acp.session_handle"
+_LOGGER_NAME = "efm_go.acp.session_handle"
 _WINDOW_BUDGET = _DEFAULT_PROMPT_TIMEOUT * _TURN_CEILING_WINDOW_FRACTION
 
 

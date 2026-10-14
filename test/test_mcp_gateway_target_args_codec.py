@@ -13,8 +13,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.mcp_gateway import hashing, rewriter, session_servers, stub
+from efm_go import platform_compat
+from efm_go.mcp_gateway import hashing, rewriter, session_servers, stub
 
 CASES = [
     [],
@@ -346,7 +346,7 @@ def _through_cmd(tmp_path: Path, entry: dict, extra_env: dict[str, str] | None =
     assert cmd is not None, "native Windows regression requires the system cmd.exe"
     receiver = tmp_path / "receiver.py"
     receiver.write_text(
-        "import json\nfrom kiro_crew.mcp_gateway.stub import _parse_args, build_register_payload\n"
+        "import json\nfrom efm_go.mcp_gateway.stub import _parse_args, build_register_payload\n"
         "ns = _parse_args()\n"
         "print(json.dumps({'payload': build_register_payload(ns), 'args': vars(ns)}))\n",
         encoding="utf-8",

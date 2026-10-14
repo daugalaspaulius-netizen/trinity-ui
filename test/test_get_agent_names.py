@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from kiro_crew.slack.events import _get_agent_names
+from efm_go.slack.events import _get_agent_names
 
 
 def _write_agent(agents_dir, filename: str, data: dict) -> None:

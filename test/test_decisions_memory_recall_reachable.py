@@ -27,9 +27,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import session_surface
-from kiro_crew.decisions import log as _log
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import session_surface
+from efm_go.decisions import log as _log
+from efm_go.vector_memory import VectorMemoryStore
 
 ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 SESSION = "chat-reachability"
@@ -76,7 +76,7 @@ class _Oracle:
         pass
 
     async def ask(self, state, questions):
-        from kiro_crew.decisions.types import Answer
+        from efm_go.decisions.types import Answer
 
         _Oracle.asked.append(state)
         answers = {}
@@ -111,17 +111,17 @@ def wired(tmp_path, monkeypatch, opened):
         ),
         encoding="utf-8",
     )
-    monkeypatch.setattr("kiro_crew.config.loader.decisions_consent_path", lambda: keystone)
+    monkeypatch.setattr("efm_go.config.loader.decisions_consent_path", lambda: keystone)
     monkeypatch.setattr(_log, "log_dir", lambda: tmp_path / "decisions")
 
     provider = SimpleNamespace(endpoint=ENDPOINT, model="jev-1", timeout_ms=5000, api_key="")
     snapshot = SimpleNamespace(
         decisions=SimpleNamespace(bucket=100, provider=provider, history_budget_chars=0)
     )
-    monkeypatch.setattr("kiro_crew.decisions.gate._snapshot", lambda: snapshot)
-    monkeypatch.setattr("kiro_crew.decisions.impl_jev.JevOracle", _Oracle)
+    monkeypatch.setattr("efm_go.decisions.gate._snapshot", lambda: snapshot)
+    monkeypatch.setattr("efm_go.decisions.impl_jev.JevOracle", _Oracle)
     monkeypatch.setattr(
-        "kiro_crew.decisions.capability.is_decisions_denied", lambda *_a, **_kw: False
+        "efm_go.decisions.capability.is_decisions_denied", lambda *_a, **_kw: False
     )
 
     store = opened(VectorMemoryStore(db_path=tmp_path / "mem.db"))
@@ -164,7 +164,7 @@ class _PointClock:
     def __init__(self, monkeypatch):
         import time
 
-        from kiro_crew.decisions.points import memory_recall as point
+        from efm_go.decisions.points import memory_recall as point
 
         self.now = time.monotonic()
         monkeypatch.setattr(point, "time", SimpleNamespace(monotonic=lambda: self.now))
@@ -197,7 +197,7 @@ async def _recall(wired, session_key: str = SESSION) -> dict:
     about. Everything from the hook builder inward is the real path, including
     `run_in_embed_pool`, which is the worker thread the point must be called on.
     """
-    from kiro_crew.dashboard.handlers import memory_member as mm
+    from efm_go.dashboard.handlers import memory_member as mm
 
     request = _request(session_key)
     with (pytest.MonkeyPatch.context() as patch,):
@@ -266,7 +266,7 @@ class TestTheHookIsReachedOnARealRecall:
         leftover, so the outcome published here is claimed by the reply that ends THIS
         turn.
         """
-        from kiro_crew.decisions import outcomes
+        from efm_go.decisions import outcomes
 
         seen: list = []
         monkeypatch.setattr(outcomes, "publish", lambda key, row: seen.append((key, row)))
@@ -298,7 +298,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         """
         import asyncio as _asyncio
 
-        from kiro_crew.decisions.points import memory_recall as mr
+        from efm_go.decisions.points import memory_recall as mr
 
         class _Slow:
             def __init__(self, _provider):
@@ -308,7 +308,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
                 await _asyncio.sleep(5)
                 raise AssertionError("the caller must have stopped waiting by now")
 
-        monkeypatch.setattr("kiro_crew.decisions.impl_jev.JevOracle", _Slow)
+        monkeypatch.setattr("efm_go.decisions.impl_jev.JevOracle", _Slow)
         monkeypatch.setattr(mr, "MIN_WAIT_SECS", 0.05)
         monkeypatch.setattr(mr, "MAX_WAIT_SECS", 0.05)
 
@@ -328,7 +328,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         check to fail once makes `recall` retry, so the hook runs twice and exactly one of
         those attempts produced the result the caller got.
         """
-        from kiro_crew.vector_memory import _RecallSpaceChanged
+        from efm_go.vector_memory import _RecallSpaceChanged
 
         # Discard the first attempt AFTER it has run, which is the production sequence:
         # `_recall_once` applies the hook and only then validates the generation, so the
@@ -354,7 +354,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
 
         class _VaryingOracle(_Oracle):
             async def ask(self, state, questions):
-                from kiro_crew.decisions.types import Answer
+                from efm_go.decisions.types import Answer
 
                 asks.append(1)
                 _Oracle.asked.append(state)
@@ -372,7 +372,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
                     for i, q in enumerate(questions)
                 }
 
-        monkeypatch.setattr("kiro_crew.decisions.impl_jev.JevOracle", _VaryingOracle)
+        monkeypatch.setattr("efm_go.decisions.impl_jev.JevOracle", _VaryingOracle)
 
         payload = await _recall(wired)
         assert len(calls) == 2, "the store did not retry, so this proves nothing"
@@ -397,7 +397,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         list that kept what the first attempt left would make the caller write a row
         describing three kept memories for a response that returned none.
         """
-        from kiro_crew.vector_memory import _RecallSpaceChanged
+        from efm_go.vector_memory import _RecallSpaceChanged
 
         calls: list[int] = []
         real_once = type(wired.store)._recall_once
@@ -437,7 +437,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
     @pytest.mark.asyncio
     async def test_a_failing_route_commits_nothing(self, wired, monkeypatch):
         """A decision made for a response the caller never gets leaves no receipt."""
-        from kiro_crew.dashboard.handlers import memory_member as mm
+        from efm_go.dashboard.handlers import memory_member as mm
 
         real_recall = wired.store.recall
 
@@ -476,8 +476,8 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         """
         import time
 
-        from kiro_crew.dashboard.handlers import memory_member as mm
-        from kiro_crew.embeddings import EmbeddingWork, embedding_work
+        from efm_go.dashboard.handlers import memory_member as mm
+        from efm_go.embeddings import EmbeddingWork, embedding_work
 
         def _spent():
             work = EmbeddingWork(time.monotonic() - 1.0)
@@ -559,7 +559,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         The cap is lowered to reach the same state a large payload reaches on its own.
         Jev keeps two of three here and the budget drops one of those two.
         """
-        from kiro_crew.dashboard.handlers import memory_member as mm
+        from efm_go.dashboard.handlers import memory_member as mm
 
         monkeypatch.setattr(mm, "_RECALL_CONTEXT_CAP", 160)
 
@@ -602,8 +602,8 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         The search is made to spend most of the budget on the point's clock, and the
         wait the judge is actually given has to be exactly what is left.
         """
-        from kiro_crew.decisions.points import memory_recall as mr
-        from kiro_crew.embeddings import EmbeddingWork, embedding_work
+        from efm_go.decisions.points import memory_recall as mr
+        from efm_go.embeddings import EmbeddingWork, embedding_work
 
         clock = _PointClock(monkeypatch)
         budget, burn = _REAL_BACKSTOP_SECS, _REAL_BACKSTOP_SECS - 2.5
@@ -664,8 +664,8 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         import threading
         import time
 
-        from kiro_crew.decisions.points import memory_recall as mr
-        from kiro_crew.embeddings import EmbeddingWork, embedding_work
+        from efm_go.decisions.points import memory_recall as mr
+        from efm_go.embeddings import EmbeddingWork, embedding_work
 
         rows = [{"id": mem_id, "text": text} for mem_id, text in EPISODES]
         pending: list = []
@@ -710,7 +710,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         the published set, and a decision built on the earlier answer would still send
         snippets of their remembered notes. This closes the tab mid-search.
         """
-        from kiro_crew.dashboard.handlers import memory_member as mm
+        from efm_go.dashboard.handlers import memory_member as mm
 
         closed: list[int] = []
         real_search = wired.store.search_episodic
@@ -760,7 +760,7 @@ class TestOnlyACommittedRecallLeavesAReceipt:
         import asyncio as _asyncio
         import threading
 
-        from kiro_crew.decisions.points import memory_recall as mr
+        from efm_go.decisions.points import memory_recall as mr
 
         loop = _asyncio.new_event_loop()
         ready = threading.Event()
@@ -840,7 +840,7 @@ class TestTheGatesStillHold:
             async def ask(self, _state, _questions):
                 raise RuntimeError("boom")
 
-        monkeypatch.setattr("kiro_crew.decisions.impl_jev.JevOracle", _Broken)
+        monkeypatch.setattr("efm_go.decisions.impl_jev.JevOracle", _Broken)
         payload = await _recall(wired)
         ids = {row["id"] for row in payload["retrieval"]["episodes"]}
         assert ids == {mem_id for mem_id, _t in EPISODES}
@@ -865,12 +865,12 @@ class TestTheHookIsNotOnThePromptPath:
     def test_get_context_carries_no_hook(self):
         import inspect
 
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         assert "episodic_keep" not in inspect.signature(MemoryStore.get_context).parameters
 
     def test_the_context_builder_has_no_hook_builder(self):
-        from kiro_crew.context import ContextBuilder
+        from efm_go.context import ContextBuilder
 
         assert not hasattr(ContextBuilder, "_episodic_keep_hook")
 

@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.testing.fixtures import seeded_home
 
 
 def test_memory_populated_fixture_drives_production_readers() -> None:
@@ -26,7 +26,7 @@ def test_memory_populated_fixture_drives_production_readers() -> None:
                 "Do not use the system python; it lacks the dev group.",
                 "2026-01-16T00:00:01+00:00",
                 "tool",
-                "src/kiro_crew",
+                "src/efm_go",
             ),
             (
                 "Say what was verified and what was not.",

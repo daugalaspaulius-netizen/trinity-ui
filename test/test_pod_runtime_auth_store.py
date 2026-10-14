@@ -19,11 +19,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import pinned_fs
-from kiro_crew import sandbox as sb
-from kiro_crew import security
-from kiro_crew.identity_stores import fenced_home_dirs, store_mappings
-from kiro_crew.pod.runtime import (
+from efm_go import pinned_fs
+from efm_go import sandbox as sb
+from efm_go import security
+from efm_go.identity_stores import fenced_home_dirs, store_mappings
+from efm_go.pod.runtime import (
     _RUNTIME_AUTH_STORE_FILE_CAP,
     _is_sqlite_sidecar,
     _runtime_auth_store_mappings,

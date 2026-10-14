@@ -40,10 +40,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from test_mcp_shared import _LoopHarness, _tools_call
 
-from kiro_crew import mcp_caller, mcp_shared, session_pid_sig, session_token_sig
-from kiro_crew.mcp_caller import CallerContext
-from kiro_crew.mcp_gateway import stub as mcp_stub
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+from efm_go import mcp_caller, mcp_shared, session_pid_sig, session_token_sig
+from efm_go.mcp_caller import CallerContext
+from efm_go.mcp_gateway import stub as mcp_stub
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
 LIVE_KEY = "dashboard:chat-9-current"
 STALE_KEY = "dashboard:chat-7-previous"
@@ -85,8 +85,8 @@ def cfg(tmp_path, monkeypatch):
         patch.object(session_token_sig, "sel_hmac_key_path", return_value=key_path),
         patch.object(session_pid_sig, "_sel_hmac_key_bytes", return_value=None),
         patch.object(mcp_shared, "config_dir", return_value=tmp_path),
-        patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-        patch("kiro_crew.member_memory_auth.protected_member_session_for_pid", return_value=None),
+        patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+        patch("efm_go.member_memory_auth.protected_member_session_for_pid", return_value=None),
     ):
         session_pid_sig._reported.clear()
         yield tmp_path
@@ -236,7 +236,7 @@ class TestFromEnvReadsTheToken:
         monkeypatch.setenv(STUB_SESSION_TOKEN_ENV, TOKEN)
         monkeypatch.setenv("KIROCREW_SESSION_KEY", STALE_KEY)
         with patch(
-            "kiro_crew.member_memory_auth.protected_member_session_for_pid",
+            "efm_go.member_memory_auth.protected_member_session_for_pid",
             return_value=protected,
         ):
             ctx = CallerContext.from_env()
@@ -269,7 +269,7 @@ class TestFromEnvReadsTheToken:
 
             monkeypatch.setattr(mcp_caller, "_FROM_ENV_CACHE", None)
             with patch(
-                "kiro_crew.member_memory_auth.protected_member_session_for_pid",
+                "efm_go.member_memory_auth.protected_member_session_for_pid",
                 _boom,
             ):
                 ctx = CallerContext.from_env()
@@ -371,7 +371,7 @@ class TestToolPolicyReadsTheToken:
         policy.policies[protected or "unused"] = ["protected_tool"]
         policy.policies[LIVE_KEY] = ["live_only_tool"]
         with patch(
-            "kiro_crew.member_memory_auth.protected_member_session_for_pid",
+            "efm_go.member_memory_auth.protected_member_session_for_pid",
             return_value=protected,
         ):
             resolved = policy.resolve()
@@ -384,7 +384,7 @@ class TestToolPolicyReadsTheToken:
             # A refused identity is "no session key", not a broken resolution: the
             # record answered, and what it said was no.
             with patch(
-                "kiro_crew.member_memory_auth.protected_member_session_for_pid",
+                "efm_go.member_memory_auth.protected_member_session_for_pid",
                 return_value=protected,
             ):
                 assert (
@@ -461,13 +461,13 @@ class TestToolPolicyReadsTheToken:
         def _boom(_pid, **_kw):
             raise RuntimeError("unreadable home")
 
-        with patch("kiro_crew.member_memory_auth.protected_member_session_for_pid", _boom):
+        with patch("efm_go.member_memory_auth.protected_member_session_for_pid", _boom):
             assert policy.resolve() == set()
         ops = [c.kwargs.get("operation") for c in policy.audit.log_api_access.call_args_list]
         assert ops == ["tool_policy.resolution_failed"]
         assert mcp_shared._last_failure_time > 0.0
         assert mcp_shared._last_startup_race_time == 0.0
-        with patch("kiro_crew.member_memory_auth.protected_member_session_for_pid", _boom):
+        with patch("efm_go.member_memory_auth.protected_member_session_for_pid", _boom):
             assert (
                 mcp_shared._resolve_tool_policy(ignore_negative_cache=True).unresolved
                 == "resolution_failed"
@@ -491,7 +491,7 @@ class TestToolPolicyReadsTheToken:
         def _deny(_pid, **_kw):
             raise PermissionError(1, "Operation not permitted")
 
-        with patch("kiro_crew.member_memory_auth.protected_member_session_for_pid", _deny):
+        with patch("efm_go.member_memory_auth.protected_member_session_for_pid", _deny):
             assert policy.resolve() == set()
             assert (
                 mcp_shared._resolve_tool_policy(ignore_negative_cache=True).unresolved

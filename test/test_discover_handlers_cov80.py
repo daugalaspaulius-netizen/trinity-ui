@@ -35,9 +35,9 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
 from conftest import make_dir_link
-from kiro_crew.dashboard.handlers import discover as h
-from kiro_crew.skill_providers.base import ProviderRegistry, SkillSearchResult
-from kiro_crew.skills import SkillsLoader
+from efm_go.dashboard.handlers import discover as h
+from efm_go.skill_providers.base import ProviderRegistry, SkillSearchResult
+from efm_go.skills import SkillsLoader
 
 _SKILL_MD = "---\nname: cov-skill\ndescription: zzq nonsense payload\n---\n# body\n"
 

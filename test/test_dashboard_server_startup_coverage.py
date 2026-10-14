@@ -1,8 +1,8 @@
-"""Coverage tests for ``kiro_crew.dashboard.server``'s startup path.
+"""Coverage tests for ``efm_go.dashboard.server``'s startup path.
 
 Sibling of ``test_dashboard_server_coverage.py``, which pins the module's
 extracted *helpers*. What was left uncovered is the one thing no helper test can
-reach: the body of :func:`~kiro_crew.dashboard.server.start_dashboard` itself —
+reach: the body of :func:`~efm_go.dashboard.server.start_dashboard` itself —
 the app factory that wires every route, middleware and lifecycle hook the
 gateway serves. Nothing asserted here is reachable from a helper, because the
 wiring order and the hook/middleware inventory only exist inside that function.
@@ -41,10 +41,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import BaseTestServer, TestClient, TestServer
 
-from kiro_crew.browser_cli import launch as browser_cli_launch
-from kiro_crew.browser_cli import snapshots as browser_cli_snapshots
-from kiro_crew.browser_cli import token as browser_cli_token
-from kiro_crew.dashboard import server as srv
+from efm_go.browser_cli import launch as browser_cli_launch
+from efm_go.browser_cli import snapshots as browser_cli_snapshots
+from efm_go.browser_cli import token as browser_cli_token
+from efm_go.dashboard import server as srv
 
 requires_unix_socket = pytest.mark.skipif(
     not hasattr(socket, "AF_UNIX"),
@@ -229,8 +229,8 @@ def _neutralise_outside_process_work(monkeypatch) -> dict[str, Any]:
     operator's real config, or shells out to ``ps``, which is the shape of side
     effect AUTOSDE ``no-test-side-effects`` is blocking on.
     """
-    import kiro_crew.apps.dev_mode as dev_mode
-    import kiro_crew.kiro_prerequisite as kiro_prereq
+    import efm_go.apps.dev_mode as dev_mode
+    import efm_go.kiro_prerequisite as kiro_prereq
 
     spies: dict[str, Any] = {
         # Spawns a real backend process per enabled app.
@@ -281,8 +281,8 @@ async def _start_dashboard(tmp_path: Path, monkeypatch, **kwargs: Any) -> Any:
     this from starting a service; everything else runs for real against the
     ``tmp_path`` data home. Returns ``(runner, state, spies)``.
     """
-    import kiro_crew.config.loader as _loader
-    import kiro_crew.dashboard.state as _st
+    import efm_go.config.loader as _loader
+    import efm_go.dashboard.state as _st
 
     monkeypatch.setattr(srv, "data_home", lambda: tmp_path)
     monkeypatch.setattr(_st, "config_dir", lambda: tmp_path)
@@ -293,7 +293,7 @@ async def _start_dashboard(tmp_path: Path, monkeypatch, **kwargs: Any) -> Any:
     # await that MagicMock (the eleventh sweep's ten flaky 409s). Pin them
     # here so monkeypatch puts back what this test found -- the leaker's own
     # contract, alongside the rootdir conftest's snapshot/restore floor.
-    from kiro_crew.apps import hooks_integration as _hooks
+    from efm_go.apps import hooks_integration as _hooks
 
     monkeypatch.setattr(_hooks, "_lifecycle_dispatcher", None)
     monkeypatch.setattr(_hooks, "_route_registry", None)
@@ -707,8 +707,8 @@ class TestStartDashboardWiring:
         exactly that port, for a fixed port and ``--port auto`` alike, and a
         squatter can never hold the port the backends were told to trust.
         """
-        import kiro_crew.config.loader as _loader
-        import kiro_crew.dashboard.state as _st
+        import efm_go.config.loader as _loader
+        import efm_go.dashboard.state as _st
 
         seen: list[str | None] = []
         real_port = 43121
@@ -778,8 +778,8 @@ class TestStartDashboardWiring:
         backends' secrets to whatever grabs the v4 port: the host evidence
         must say ::1 (which the injection brackets into http://[::1]:<port>).
         """
-        import kiro_crew.config.loader as _loader
-        import kiro_crew.dashboard.state as _st
+        import efm_go.config.loader as _loader
+        import efm_go.dashboard.state as _st
 
         seen: list[str | None] = []
 
@@ -845,8 +845,8 @@ class TestStartDashboardWiring:
         WITHOUT having spawned children — a backend spawned first would present
         its X-App-Secret to whatever answers at the origin it was handed.
         """
-        import kiro_crew.config.loader as _loader
-        import kiro_crew.dashboard.state as _st
+        import efm_go.config.loader as _loader
+        import efm_go.dashboard.state as _st
 
         monkeypatch.setattr(srv, "data_home", lambda: tmp_path)
         monkeypatch.setattr(_st, "config_dir", lambda: tmp_path)
@@ -895,8 +895,8 @@ class TestStartDashboardWiring:
         backend_start_side_effect: Any | None = None,
     ) -> None:
         """Reach a selected post-reservation failure without host side effects."""
-        import kiro_crew.config.loader as _loader
-        import kiro_crew.dashboard.state as _st
+        import efm_go.config.loader as _loader
+        import efm_go.dashboard.state as _st
 
         monkeypatch.setattr(srv, "data_home", lambda: tmp_path)
         monkeypatch.setattr(_st, "config_dir", lambda: tmp_path)
@@ -970,7 +970,7 @@ class TestStartDashboardWiring:
         self, tmp_path: Path, monkeypatch
     ) -> None:
         """A spawn pass that raises after one child is recorded still sweeps it."""
-        import kiro_crew.apps.backend as backend_mod
+        import efm_go.apps.backend as backend_mod
 
         reserved_socket = _fake_reserved_socket()
         swept_names: list[list[str]] = []
@@ -1017,8 +1017,8 @@ class TestStartDashboardWiring:
         boot must run runner.cleanup() (whose _hooks_shutdown sweep stops this
         process's backends) before propagating.
         """
-        import kiro_crew.config.loader as _loader
-        import kiro_crew.dashboard.state as _st
+        import efm_go.config.loader as _loader
+        import efm_go.dashboard.state as _st
 
         monkeypatch.setattr(srv, "data_home", lambda: tmp_path)
         monkeypatch.setattr(_st, "config_dir", lambda: tmp_path)
@@ -1108,7 +1108,7 @@ class TestStartDashboardWiring:
                 "main_wave_before_setup": True,
                 "deferred_wave_before_setup": False,
             }
-            import kiro_crew.apps.backend as backend_mod
+            import efm_go.apps.backend as backend_mod
 
             assert backend_mod.DEV_FLEET_APP_NAME == "dev-fleet"
             assert spies["start_deferred_app_backends"].called
@@ -1355,7 +1355,7 @@ class TestStartDashboardWiring:
         passed down here -- ``slack.allowlist`` opens a second door that never
         reaches this function, so a parameter would have guarded only this one.
         """
-        from kiro_crew.tunnel import set_publish_disabled
+        from efm_go.tunnel import set_publish_disabled
 
         self._tunnel_enabled_context(monkeypatch)
         set_publish_disabled(True)
@@ -1382,7 +1382,7 @@ class TestStartDashboardWiring:
         so a state-only assertion would pass even if the tunnel were never
         attempted at all.
         """
-        from kiro_crew.tunnel import set_publish_disabled
+        from efm_go.tunnel import set_publish_disabled
 
         self._tunnel_enabled_context(monkeypatch)
         set_publish_disabled(False)
@@ -1439,7 +1439,7 @@ async def test_windows_time_wait_no_holder_stretches_the_reservation_ladder(
     the short graceful-handover ladder, so the NO_HOLDER outcome stretches
     the budget to _TIME_WAIT_BUDGET_SECS on Windows.
     """
-    from kiro_crew.dashboard.port_reclaim import NO_HOLDER
+    from efm_go.dashboard.port_reclaim import NO_HOLDER
 
     fails = 10  # more than the short ladder's retries below
 
@@ -1478,7 +1478,7 @@ async def test_live_holder_keeps_the_short_reservation_ladder_on_windows(
     ladder's prompt SystemExit (with its actionable message) is the right
     outcome.
     """
-    from kiro_crew.dashboard.port_reclaim import FOREIGN_HOLDER
+    from efm_go.dashboard.port_reclaim import FOREIGN_HOLDER
 
     calls: list[int] = []
 
@@ -1512,7 +1512,7 @@ async def test_non_time_wait_outcomes_keep_the_short_ladder_on_windows(
     a rare collision — the no-new-work-on-gateway-boot-path harm. They keep
     the short ladder's prompt exit.
     """
-    from kiro_crew.dashboard import port_reclaim
+    from efm_go.dashboard import port_reclaim
 
     outcome = getattr(port_reclaim, outcome_name)
     calls: list[int] = []

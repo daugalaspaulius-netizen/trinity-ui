@@ -38,9 +38,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import platform_compat
-from kiro_crew.apps import registry
-from kiro_crew.apps.manifest import AppManifest
+from efm_go import platform_compat
+from efm_go.apps import registry
+from efm_go.apps.manifest import AppManifest
 
 #: The install's refusal for a root `data` the data directory cannot stand beside,
 #: as `manager.gateway_data_dir_obstruction` spells it -- the transaction must carry it
@@ -54,7 +54,7 @@ _DATA_IS_A_FILE = (
 @pytest.fixture(autouse=True)
 def _explicit_registry_execution_admission(monkeypatch):
     """These tests must reach admitted registry subprocess paths."""
-    monkeypatch.setattr("kiro_crew.apps.execution.third_party_execution_allowed", lambda: True)
+    monkeypatch.setattr("efm_go.apps.execution.third_party_execution_allowed", lambda: True)
 
 
 @pytest.fixture(autouse=True)
@@ -70,7 +70,7 @@ def _catalog_absent(monkeypatch):
     the same seam itself (see ``TestCatalogAppsIncludesExternalRegistries``).
     """
     monkeypatch.setattr(
-        "kiro_crew.apps.official_catalog.inventory_for_install",
+        "efm_go.apps.official_catalog.inventory_for_install",
         lambda name: None,
     )
 
@@ -251,7 +251,7 @@ def unsandboxed_spawn(monkeypatch):
     hosts. Autouse because the coupling is a property of the whole module, not of
     individual tests. Sandbox construction is covered by ``test_sandbox_*.py``.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_allow_unsandboxed_exec", lambda: True)
 
@@ -698,7 +698,7 @@ async def test_install_persists_credential_free_source_provenance(monkeypatch, t
         # The manager callable contract remains one positional argument; the
         # safe server-resolved coordinate crosses the to_thread boundary in a
         # task-local context rather than in app-controlled manifest data.
-        from kiro_crew.apps.manager import _effective_source_repository
+        from efm_go.apps.manager import _effective_source_repository
 
         installed["source_repository"] = _effective_source_repository("")
         return MagicMock(ok=True, name="demoapp", message="done", error="")
@@ -731,7 +731,7 @@ async def test_registry_fresh_reinstall_checks_retained_startup_before_clone(
     )
     monkeypatch.setattr(registry, "get_app", lambda _name: None)
 
-    from kiro_crew.apps import hooks_integration
+    from efm_go.apps import hooks_integration
 
     cleanup_calls: list[tuple[str, bool]] = []
 
@@ -769,7 +769,7 @@ async def test_registry_fresh_reinstall_rechecks_retained_startup_before_replace
     )
     monkeypatch.setattr(registry, "get_app", lambda _name: None)
 
-    from kiro_crew.apps import hooks_integration
+    from efm_go.apps import hooks_integration
 
     cleanup_calls: list[tuple[str, bool]] = []
 
@@ -808,7 +808,7 @@ async def test_registry_reinstall_rechecks_retained_startup_before_replacement(
     )
     monkeypatch.setattr(registry, "get_app", lambda _name: {"name": "demoapp"})
 
-    from kiro_crew.apps import hooks_integration
+    from efm_go.apps import hooks_integration
 
     cleanup_calls: list[tuple[str, bool]] = []
 
@@ -842,7 +842,7 @@ async def test_an_empty_streaming_log_is_the_list_the_install_writes_to(monkeypa
     _identity_harness(monkeypatch, src, cloned_manifest={"name": "demoapp"})
     monkeypatch.setattr(registry, "get_app", lambda _name: None)
 
-    from kiro_crew.apps import hooks_integration
+    from efm_go.apps import hooks_integration
 
     async def _still_running(app_name: str, *, bounded: bool) -> bool:
         return False
@@ -871,7 +871,7 @@ async def test_a_replacement_boundary_refusal_is_stamped_by_the_finally(monkeypa
     monkeypatch.setattr(registry, "_resolved_clone_commit", lambda root: "a" * 40)
     monkeypatch.setattr(registry, "verified_signer", lambda manifest: "")
 
-    from kiro_crew.apps import hooks_integration
+    from efm_go.apps import hooks_integration
 
     calls: list[str] = []
 
@@ -2492,7 +2492,7 @@ async def test_a_self_managed_entry_keeps_the_desktop_refusal(monkeypatch, tmp_p
         return MagicMock(ok=True, notice="")
 
     # Imported inside the self-managed branch, so patched at its home.
-    monkeypatch.setattr("kiro_crew.apps.manager.register_external_app", _register)
+    monkeypatch.setattr("efm_go.apps.manager.register_external_app", _register)
     monkeypatch.setattr(registry, "set_app_provenance", lambda *a, **k: None)
     monkeypatch.setattr(registry.install_receipt, "dispatch_async", AsyncMock())
     monkeypatch.setattr(registry, "install_app", lambda *a, **k: pytest.fail("managed path"))
@@ -2945,7 +2945,7 @@ async def test_a_root_data_file_is_refused_before_any_record_is_written(monkeypa
     copy raises the install's own refusal: the transaction reports it as a refusal
     (no desktop code -- a browser install refuses the same tree), registration is
     never reached, no record exists, and the fresh clone is rolled back."""
-    from kiro_crew.apps.manager import _read_installed
+    from efm_go.apps.manager import _read_installed
 
     home = tmp_path / "home"
     home.mkdir()
@@ -2990,7 +2990,7 @@ async def test_a_preview_copy_failure_after_the_script_rolls_the_fresh_checkout_
     the same rollback every post-script gate takes -- a fresh clone is deleted
     whole, the slot is empty -- it is reported as the ordinary error it is,
     without the desktop code, and a clean re-clone installs."""
-    from kiro_crew.apps.manager import _read_installed
+    from efm_go.apps.manager import _read_installed
 
     home = tmp_path / "home"
     home.mkdir()
@@ -3072,7 +3072,7 @@ async def test_a_subdirectory_swapped_for_a_symlink_loop_still_rolls_the_fresh_c
     un-poison step never runs and the poisoned fresh clone sits in the live slot
     for every retry. The re-check must return its skip line for a loop exactly as
     for an escape, so the rollback completes and the fresh clone is deleted whole."""
-    from kiro_crew.apps.manager import _read_installed
+    from efm_go.apps.manager import _read_installed
 
     home = tmp_path / "home"
     home.mkdir()
@@ -3127,7 +3127,7 @@ async def test_the_streamed_refusal_names_the_update_when_the_app_is_installed(m
     The fresh-install fixture above, plus the installed record the page's
     `app.installed` is read from: the final desktop pass refuses as before, and
     the streamed line says which action it refused."""
-    from kiro_crew.apps.manager import InstalledApp, _write_installed, app_dir
+    from efm_go.apps.manager import InstalledApp, _write_installed, app_dir
 
     home = tmp_path / "home"
     home.mkdir()

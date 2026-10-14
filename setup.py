@@ -2,11 +2,11 @@
 
 Package metadata, dependencies, and entry points live in ``setup.cfg`` and
 ``pyproject.toml``; this file only adds a custom ``build_py`` step that copies
-the pre-built frontend assets from ``src/kiro_crew/static/dist`` into the
+the pre-built frontend assets from ``src/efm_go/static/dist`` into the
 package.
 
 The frontend is built separately with npm/Vite in the ``website/`` directory
-and the resulting ``dist/`` is staged as ``src/kiro_crew/static/dist`` before
+and the resulting ``dist/`` is staged as ``src/efm_go/static/dist`` before
 packaging. Vite emits content-hashed filenames that change on every build, so
 ``static/dist/`` is intentionally excluded from the ``package_data`` globs in
 ``setup.cfg``; we copy the directory tree directly here instead.
@@ -92,9 +92,9 @@ class E2eTestCommand(Command):
 class BuildWithFrontend(build_py):
     """Custom build_py that copies the pre-built frontend dist/ into the package.
 
-    Expects ``src/kiro_crew/static/dist`` to already exist in-tree (built by
+    Expects ``src/efm_go/static/dist`` to already exist in-tree (built by
     ``npm run build`` in the ``website/`` directory and staged by
-    ``python -m kiro_crew.frontend stage``). If it is missing we print a warning
+    ``python -m efm_go.frontend stage``). If it is missing we print a warning
     telling the user to build the frontend, but do not fail — the backend is
     still usable without the bundled web UI assets.
     """
@@ -102,10 +102,10 @@ class BuildWithFrontend(build_py):
     def run(self) -> None:
         super().run()
         base = os.path.dirname(os.path.abspath(__file__))
-        src_dist = os.path.join(base, "src", "kiro_crew", "static", "dist")
+        src_dist = os.path.join(base, "src", "efm_go", "static", "dist")
         if os.path.isdir(src_dist):
             build_dist = os.path.join(
-                self.build_lib, "kiro_crew", "static", "dist"
+                self.build_lib, "efm_go", "static", "dist"
             )
             if os.path.isdir(build_dist):
                 shutil.rmtree(build_dist)
@@ -118,7 +118,7 @@ class BuildWithFrontend(build_py):
                 "         Build the frontend first:\n"
                 "             cd website && npm install && npm run build\n"
                 "         then stage it: make build, or\n"
-                "             PYTHONPATH=src python -m kiro_crew.frontend stage ."
+                "             PYTHONPATH=src python -m efm_go.frontend stage ."
             )
         self._copy_changelog(base)
 
@@ -127,13 +127,13 @@ class BuildWithFrontend(build_py):
 
         Pip-wheel installs ship no source tree, so the dashboard's
         ``/api/changelog`` endpoint (handlers/updates.py:_changelog_path) falls
-        back to a bundled ``kiro_crew/CHANGELOG.md``. Copy it in here rather than
+        back to a bundled ``efm_go/CHANGELOG.md``. Copy it in here rather than
         via package_data because it lives at the repo root, outside the
-        ``src/kiro_crew`` package tree that setuptools globs.
+        ``src/efm_go`` package tree that setuptools globs.
         """
         src_changelog = os.path.join(base, "CHANGELOG.md")
         if os.path.isfile(src_changelog):
-            pkg_dir = os.path.join(self.build_lib, "kiro_crew")
+            pkg_dir = os.path.join(self.build_lib, "efm_go")
             if os.path.isdir(pkg_dir):
                 shutil.copy2(src_changelog, os.path.join(pkg_dir, "CHANGELOG.md"))
 

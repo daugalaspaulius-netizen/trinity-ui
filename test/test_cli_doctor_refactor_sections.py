@@ -1,10 +1,10 @@
 """The branches of the sandbox, task-queue and liveness rows, pinned by their output.
 
-Driven through ``kiro_crew.cli_doctor``, the name every caller uses, and through the
+Driven through ``efm_go.cli_doctor``, the name every caller uses, and through the
 probes the rows read: module attributes shared with the owning subsystem
 (``cli_doctor.sandbox.<probe>``, ``platform_compat.IS_LINUX``) or the seams the
 facade forwards (``cli_doctor._read_linux_proc_self``). The expected text is the
-report as it printed before the rows moved into ``kiro_crew.doctor_checks``.
+report as it printed before the rows moved into ``efm_go.doctor_checks``.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_doctor, platform_compat
+from efm_go import cli_doctor, platform_compat
 
 EXPECTED: dict[str, str] = {
     "aliases:accounted-confined": (
@@ -480,7 +480,7 @@ def test_no_alias_prints_nothing(monkeypatch, capsys) -> None:
 
 @pytest.fixture
 def task_home(tmp_path, monkeypatch) -> Path:
-    import kiro_crew.config.paths as paths
+    import efm_go.config.paths as paths
 
     monkeypatch.setattr(paths, "data_home", lambda: tmp_path)
     (tmp_path / "tasks").mkdir()
@@ -510,7 +510,7 @@ def test_a_quarantined_task_store_is_named_once_per_copy(task_home, capsys) -> N
 
 
 def test_an_unopenable_task_store_is_an_issue(task_home, capsys, monkeypatch) -> None:
-    from kiro_crew.taskq import TaskStore, TaskStoreUnavailable
+    from efm_go.taskq import TaskStore, TaskStoreUnavailable
 
     db = task_home / "tasks" / "tasks.db"
     db.write_bytes(b"")
@@ -533,7 +533,7 @@ def test_an_unopenable_task_store_is_an_issue(task_home, capsys, monkeypatch) ->
 
 
 def test_the_task_store_rows_and_warnings(task_home, capsys, monkeypatch) -> None:
-    from kiro_crew.taskq import TaskStore
+    from efm_go.taskq import TaskStore
 
     (task_home / "tasks" / "tasks.db").write_bytes(b"")
     monkeypatch.setattr(

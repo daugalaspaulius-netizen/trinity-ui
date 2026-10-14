@@ -1,6 +1,6 @@
 # Implementation Plan: Subagent Session Cleanup
 
-Status: implemented in `src/kiro_crew/session_allocation.py`, `src/kiro_crew/subagent_persistence.py`, and provider cleanup hooks.
+Status: implemented in `src/efm_go/session_allocation.py`, `src/efm_go/subagent_persistence.py`, and provider cleanup hooks.
 
 ## Overview
 

@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.dependencies — dependency resolution."""
+"""Tests for efm_go.apps.dependencies — dependency resolution."""
 from __future__ import annotations
 
 import sys
@@ -7,15 +7,15 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from kiro_crew.apps.dependencies import (
+from efm_go.apps.dependencies import (
     DependencyResult,
     _get_dep_id,
     _get_managed_by,
     clean_dependencies,
     resolve_dependencies,
 )
-from kiro_crew.apps.manifest import CapabilityDependencies, Dependencies
-from kiro_crew.platform.interfaces import CapabilityResult
+from efm_go.apps.manifest import CapabilityDependencies, Dependencies
+from efm_go.platform.interfaces import CapabilityResult
 
 
 @pytest.fixture(autouse=True)
@@ -169,7 +169,7 @@ def fake_manager(monkeypatch):
     def _install(**kwargs):
         mgr = _FakeManager(**kwargs)
         monkeypatch.setattr(
-            "kiro_crew.apps.dependencies._capability_manager",
+            "efm_go.apps.dependencies._capability_manager",
             lambda: mgr if mgr.available() else None,
         )
         return mgr
@@ -216,7 +216,7 @@ class TestCapabilitySeamResolution:
         """Commands-only manifests must not touch the capability seam at all."""
         probed = []
         monkeypatch.setattr(
-            "kiro_crew.apps.dependencies._capability_manager",
+            "efm_go.apps.dependencies._capability_manager",
             lambda: probed.append(1) or None,
         )
         await resolve_dependencies("test-app", Dependencies(commands=["sh"]))
@@ -282,9 +282,9 @@ class TestCapabilityManagerAccessor:
         """Returns the context-provided manager as-is, so the
         ``BoundedCapabilityManager`` timeout wrapper applied at context
         composition is inherited rather than stripped."""
-        from kiro_crew.apps import dependencies as deps_mod
-        from kiro_crew.platform import context as platform_context
-        from kiro_crew.platform.capability_bound import BoundedCapabilityManager
+        from efm_go.apps import dependencies as deps_mod
+        from efm_go.platform import context as platform_context
+        from efm_go.platform.capability_bound import BoundedCapabilityManager
 
         class _Inner:
             def available(self) -> bool:
@@ -299,8 +299,8 @@ class TestCapabilityManagerAccessor:
         assert deps_mod._capability_manager() is sentinel
 
     def test_unavailable_manager_yields_none(self, monkeypatch):
-        from kiro_crew.apps import dependencies as deps_mod
-        from kiro_crew.platform import context as platform_context
+        from efm_go.apps import dependencies as deps_mod
+        from efm_go.platform import context as platform_context
 
         class _Unavailable:
             def available(self) -> bool:
@@ -314,8 +314,8 @@ class TestCapabilityManagerAccessor:
 
     def test_context_lookup_failure_fails_closed(self, monkeypatch):
         """A broken context must degrade to "unavailable", never propagate."""
-        from kiro_crew.apps import dependencies as deps_mod
-        from kiro_crew.platform import context as platform_context
+        from efm_go.apps import dependencies as deps_mod
+        from efm_go.platform import context as platform_context
 
         def _boom():
             raise RuntimeError("no context")
@@ -324,8 +324,8 @@ class TestCapabilityManagerAccessor:
         assert deps_mod._capability_manager() is None
 
     def test_available_probe_raising_fails_closed(self, monkeypatch):
-        from kiro_crew.apps import dependencies as deps_mod
-        from kiro_crew.platform import context as platform_context
+        from efm_go.apps import dependencies as deps_mod
+        from efm_go.platform import context as platform_context
 
         class _Raising:
             def available(self) -> bool:
@@ -344,7 +344,7 @@ class TestCleanDependenciesFailurePaths:
     covered, the cleanup side had none."""
 
     async def test_unavailable_manager_cleans_nothing(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.apps.dependencies._capability_manager", lambda: None)
+        monkeypatch.setattr("efm_go.apps.dependencies._capability_manager", lambda: None)
         cleaned = await clean_dependencies(
             "test-app", [{"id": "capability/mcp/x", "type": "capability.mcp"}],
         )
@@ -363,7 +363,7 @@ class TestCleanDependenciesFailurePaths:
                 raise RuntimeError("boom")
 
         mgr = _Exploding()
-        monkeypatch.setattr("kiro_crew.apps.dependencies._capability_manager", lambda: mgr)
+        monkeypatch.setattr("efm_go.apps.dependencies._capability_manager", lambda: mgr)
         cleaned = await clean_dependencies(
             "test-app", [{"id": "capability/mcp/x", "type": "capability.mcp"}],
         )
@@ -388,7 +388,7 @@ class TestLedgerTypeRecorded:
     async def test_install_records_canonical_type(self, fake_manager):
         """Pins the ledger ``type`` string written on install — nothing else
         asserted it, so a wrong type could be written undetected."""
-        from kiro_crew.apps.dependency_ledger import get_entry
+        from efm_go.apps.dependency_ledger import get_entry
 
         fake_manager()
         deps = Dependencies(capabilities=CapabilityDependencies(mcp=["m"], skills=["s"]))

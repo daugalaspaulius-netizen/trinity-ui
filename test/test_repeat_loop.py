@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
-from kiro_crew.dashboard.chat_runner import _steer_repeat_loop_notice
-from kiro_crew.repeat_loop import _MAX_TRACKED, REPEAT_LOOP_THRESHOLD, RepeatLoopTracker
+from efm_go.dashboard.chat_runner import _steer_repeat_loop_notice
+from efm_go.repeat_loop import _MAX_TRACKED, REPEAT_LOOP_THRESHOLD, RepeatLoopTracker
 
 
 def _run(

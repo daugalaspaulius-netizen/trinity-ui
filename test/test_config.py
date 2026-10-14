@@ -2,7 +2,7 @@
 
 import json
 
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     ACTIVATION_ALWAYS,
     ACTIVATION_MENTION,
     ACTIVATION_OFF,
@@ -36,7 +36,7 @@ class TestKiroCrewConfig:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
 
         cfg = KiroCrewConfig.load()
         assert cfg.agent.approval_mode == "interactive"
@@ -47,7 +47,7 @@ class TestKiroCrewConfig:
     def test_load_invalid_json(self, tmp_path, monkeypatch):
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text("not json")
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
 
         cfg = KiroCrewConfig.load()
         assert cfg.agent.approval_mode == "auto"  # falls back to defaults
@@ -107,7 +107,7 @@ class TestChannelConfig:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
 
         cfg = KiroCrewConfig.load()
         assert "C111" in cfg.slack_channels
@@ -120,7 +120,7 @@ class TestChannelConfig:
         cfg_file = tmp_path / ".kirocrew" / "config.json"
         cfg_file.parent.mkdir(parents=True)
         cfg_file.write_text(json.dumps({"slack": {"dm_activation": "bogus"}}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
 
         cfg = KiroCrewConfig.load()
         assert cfg.slack_dm_activation == ACTIVATION_MENTION
@@ -148,12 +148,12 @@ class TestTrustedBotIds:
         cfg_file = tmp_path / ".kirocrew" / "config.json"
         cfg_file.parent.mkdir(parents=True)
         cfg_file.write_text(json.dumps({"slack": {"trusted_bot_ids": ["B07AAA", "B07BBB"]}}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         cfg = KiroCrewConfig.load()
         assert cfg.slack.trusted_bot_ids == {"B07AAA", "B07BBB"}
 
     def test_round_trip(self):
-        from kiro_crew.config.loader import SlackConfig
+        from efm_go.config.loader import SlackConfig
 
         cfg = KiroCrewConfig(slack=SlackConfig(trusted_bot_ids={"B07BBB", "B07AAA"}))
         d = cfg.to_dict()
@@ -173,13 +173,13 @@ class TestTimezoneConfig:
     def test_load_from_file(self, tmp_path, monkeypatch):
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"timezone": "America/Los_Angeles"}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         cfg = KiroCrewConfig.load()
         assert cfg.timezone == "America/Los_Angeles"
 
     def test_load_missing_timezone(self, tmp_path, monkeypatch):
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"agent": {}}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         cfg = KiroCrewConfig.load()
         assert cfg.timezone == ""

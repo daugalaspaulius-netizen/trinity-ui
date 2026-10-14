@@ -27,7 +27,7 @@ import pytest
 
 @pytest.fixture
 def mcp(monkeypatch: pytest.MonkeyPatch) -> Any:
-    module = importlib.import_module("kiro_crew.mcp_core")
+    module = importlib.import_module("efm_go.mcp_core")
     monkeypatch.setattr(module, "_API_PORT", None)
     monkeypatch.setattr(module, "_API", None)
     monkeypatch.setattr(module, "_API_UNIX_SOCKET", None)
@@ -61,7 +61,7 @@ def _sock_for(port: int) -> str:
     reports whichever port the counter happens to equal: the negative form fails
     a correct socket, and the positive form passes a wrong one.
     """
-    from kiro_crew.dashboard.origin import dashboard_socket_path
+    from efm_go.dashboard.origin import dashboard_socket_path
 
     return str(dashboard_socket_path(port))
 
@@ -306,7 +306,7 @@ class TestMcpComputerReplay:
 
     @pytest.fixture
     def computer(self, mcp: Any, monkeypatch) -> Any:
-        module = importlib.import_module("kiro_crew.mcp_computer")
+        module = importlib.import_module("efm_go.mcp_computer")
         monkeypatch.setattr(module, "_internal_secret", lambda: "s")
         return module
 

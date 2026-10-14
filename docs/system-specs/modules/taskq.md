@@ -1,4 +1,4 @@
-# Task Queue (`kiro_crew/taskq/`)
+# Task Queue (`efm_go/taskq/`)
 
 ## Overview
 
@@ -1487,7 +1487,7 @@ ARGUMENT (`await self._db(store.enter_wait, …)`, `await store.run(store.finish
 sweep over discarded-call statements, not a text search. A sweep matching only
 `store.<method>` UNDER-reports it: the write is also handed over as a bound
 `WaitLedger` method and as the bridge's own `taskq_advance`, so both spellings are
-in scope below. **The sweep's SCOPE is the whole of `src/kiro_crew`, not the
+in scope below. **The sweep's SCOPE is the whole of `src/efm_go`, not the
 packages that hold the store.** The first pass over `taskq/` and
 `subagent_manager/` alone was itself a defect of this list: `execute_task`,
 `_execute_single_task` and `admitted_agent_fn` are CONSUMERS of a handle, so they

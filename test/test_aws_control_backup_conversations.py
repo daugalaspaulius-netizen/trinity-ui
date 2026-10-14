@@ -30,7 +30,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.apps.builtins.aws_control.backend import backup
+from efm_go.apps.builtins.aws_control.backend import backup
 
 # A column name and value that would be a live bearer token if it leaked, plus a
 # whole auth table. The export must carry NEITHER.

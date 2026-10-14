@@ -1,4 +1,4 @@
-"""Tests for the extracted ``kiro_crew.config.validation`` module.
+"""Tests for the extracted ``efm_go.config.validation`` module.
 
 Covers the schema-introspection helpers, the ``validate_config_data`` entry
 point, and — most importantly — the new ``ConfigCache`` object, whose explicit
@@ -13,8 +13,8 @@ from importlib import metadata
 
 import pytest
 
-from kiro_crew.config import loader as _loader_module
-from kiro_crew.config import validation
+from efm_go.config import loader as _loader_module
+from efm_go.config import validation
 
 
 def test_published_metadata_requires_config_validator() -> None:
@@ -159,7 +159,7 @@ class TestSchemaIntrospectionHelpers:
     def test_every_fail_closed_path_is_a_real_schema_path(self) -> None:
         """The exemption list must not drift from the schema: a name that stops
         matching a declared field would silently exempt nothing."""
-        from kiro_crew.config.schema import JSON_SCHEMA
+        from efm_go.config.schema import JSON_SCHEMA
 
         for dot_path in validation._FAIL_CLOSED_PATHS:
             node = JSON_SCHEMA
@@ -194,7 +194,7 @@ class TestValidateConfigData:
     def test_unrecognized_top_level_key_warns(self, caplog: pytest.LogCaptureFixture) -> None:
         # Warnings must land on the loader's logger channel, not validation's
         # own __name__ logger (preserves the observable contract).
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data({"totally_unknown_key": 1})
         assert any("unrecognized top-level keys" in r.message for r in caplog.records)
 
@@ -210,7 +210,7 @@ class TestValidateConfigData:
             "meta": {"lastTouchedVersion": "1.2.3", "lastTouchedAt": "2026-01-01T00:00:00+00:00"},
             "agent": {"provider": "acp"},
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data(data)
         assert not [r for r in caplog.records if "unrecognized top-level keys" in r.message]
 
@@ -220,7 +220,7 @@ class TestValidateConfigData:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         # Excluding the reserved keys must not silence the real warning.
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data({"meta": {}, "totally_unknown_key": 1})
         warnings = [r.message for r in caplog.records if "unrecognized top-level keys" in r.message]
         assert warnings and "totally_unknown_key" in warnings[0]
@@ -229,14 +229,14 @@ class TestValidateConfigData:
     def test_warning_logger_name_is_loader_not_validation(self) -> None:
         # Pin the deliberate logger-name choice so an accidental
         # getLogger(__name__) refactor is caught.
-        assert validation.logger.name == "kiro_crew.config.loader"
+        assert validation.logger.name == "efm_go.config.loader"
 
     @pytest.mark.skipif(not validation._HAS_JSONSCHEMA, reason="jsonschema not installed")
     def test_enum_violation_warns_and_strips_value(self, caplog: pytest.LogCaptureFixture) -> None:
         # agent.provider is an enum field; an out-of-enum value must be warned
         # about and stripped in-place so the loader falls back to the default.
         data = {"agent": {"provider": "not_a_real_provider"}}
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data(data)
         assert any("enum violation" in r.message for r in caplog.records)
         # the invalid value was removed (so the dataclass default applies)
@@ -247,7 +247,7 @@ class TestValidateConfigData:
         # session.timeout_secs is an integer field; a string value is a type
         # mismatch that must be warned about and stripped.
         data = {"session": {"timeout_secs": "not-an-int"}}
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data(data)
         assert any("type mismatch" in r.message for r in caplog.records)
         assert "timeout_secs" not in data.get("session", {})
@@ -282,7 +282,7 @@ class TestValidateConfigData:
 
 
 class TestLoaderBackCompatReexport:
-    """The C3 symbols remain importable from ``kiro_crew.config.loader``."""
+    """The C3 symbols remain importable from ``efm_go.config.loader``."""
 
     def test_validate_alias_points_at_validation_impl(self) -> None:
         assert _loader_module._validate_config_data is validation.validate_config_data

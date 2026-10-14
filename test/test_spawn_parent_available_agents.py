@@ -34,10 +34,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import agent_discovery
-from kiro_crew import subagent as sa
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-from kiro_crew.mcp_tools import spawn as spawn_tools
+from efm_go import agent_discovery
+from efm_go import subagent as sa
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+from efm_go.mcp_tools import spawn as spawn_tools
 
 
 def _write_spec(agents_dir: Path, name: str, **extra: Any) -> None:
@@ -377,7 +377,7 @@ class TestVetAgainstParentSpec:
         self, triage_fixture: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
         planted = "ghp_abcdefghijklmnopqrstuvwxyz0123456789"
-        with caplog.at_level("WARNING", logger="kiro_crew.subagent"):
+        with caplog.at_level("WARNING", logger="efm_go.subagent"):
             assert _vet("orchestrator", planted) is not None
         joined = "\n".join(r.getMessage() for r in caplog.records)
         assert "refusing spawn" in joined
@@ -439,17 +439,17 @@ class TestGateWiring:
     is persisted, and reports its own code on the refused ``SubagentInfo``."""
 
     async def _spawn(self, parent_template: str, agent: str) -> Any:
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         manager = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx_builder())
         await manager.wait_taskq_ready()
         sel_mock = MagicMock()
         parent = _parent_execution(parent_template)
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel", return_value=sel_mock),
-            patch("kiro_crew.execution_context.read_session_execution", return_value=parent),
-            patch("kiro_crew.subagent.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel", return_value=sel_mock),
+            patch("efm_go.execution_context.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.read_session_execution", return_value=parent),
         ):
             info = manager.spawn("t", parent_session_key="chat-parent", agent=agent)
         return manager, info, sel_mock
@@ -514,16 +514,16 @@ class TestGateWiring:
     ) -> None:
         """The event-loop entry points hand the gate the parent's declaration
         they read off-loop; with it present the gate must not scan inline."""
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         manager = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx_builder())
         await manager.wait_taskq_ready()
         parent = _parent_execution("orchestrator")
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.execution_context.read_session_execution", return_value=parent),
-            patch("kiro_crew.subagent.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.execution_context.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.read_session_execution", return_value=parent),
             patch.object(
                 sa, "parent_spawn_policy", side_effect=AssertionError("scanned on the loop")
             ),
@@ -540,7 +540,7 @@ class TestGateWiring:
     async def test_spawn_async_resolves_the_policy_off_the_loop(self, triage_fixture: Path) -> None:
         import threading
 
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         manager = SubagentManager(sessions=_mock_sessions(), ctx_builder=_mock_ctx_builder())
         await manager.wait_taskq_ready()
@@ -554,10 +554,10 @@ class TestGateWiring:
             return (("agent1", "agent2", "agent3"),)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.execution_context.read_session_execution", return_value=parent),
-            patch("kiro_crew.subagent.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.execution_context.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.read_session_execution", return_value=parent),
             patch.object(sa, "parent_spawn_allowlists", side_effect=resolver),
             patch.object(sa, "parent_spawn_policy", side_effect=AssertionError("re-read parent")),
         ):
@@ -572,7 +572,7 @@ class TestGateWiring:
         """A queued entry waits on capacity, so the declaration it was admitted
         under may be tightened while it waits. Neither the in-memory entry nor
         the durable row stores the policy; every drain reads it fresh."""
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         manager = SubagentManager(
             sessions=_mock_sessions(), ctx_builder=_mock_ctx_builder(), max_concurrent=1
@@ -581,10 +581,10 @@ class TestGateWiring:
         parent = _parent_execution("plain")
         policy = ("plain", ())
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.execution_context.read_session_execution", return_value=parent),
-            patch("kiro_crew.subagent.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.execution_context.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.read_session_execution", return_value=parent),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
         ):
             manager.spawn("occupy", parent_session_key="chat-parent", _parent_spawn_policy=policy)
@@ -615,7 +615,7 @@ class TestGateWiring:
         parked on capacity while the operator tightens ``availableAgents`` to
         exclude its target, is refused when it drains -- the gate re-reads the
         declaration instead of reusing the one it was admitted under."""
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         manager = SubagentManager(
             sessions=_mock_sessions(), ctx_builder=_mock_ctx_builder(), max_concurrent=1
@@ -626,10 +626,10 @@ class TestGateWiring:
         tightened = ("orchestrator", (("agent2",),))
         drained: list[Any] = []
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.execution_context.read_session_execution", return_value=parent),
-            patch("kiro_crew.subagent.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.execution_context.read_session_execution", return_value=parent),
+            patch("efm_go.subagent.read_session_execution", return_value=parent),
             patch.object(SubagentManager, "_run", new=AsyncMock()),
             patch.object(sa, "parent_spawn_policy", return_value=tightened) as fresh_read,
         ):

@@ -6,7 +6,7 @@ import { SettingsSection, SettingsCard } from '../../components/settings'
 import ErrorNotice from '../../components/ErrorNotice'
 import { SecretField } from '../../components/SecretField'
 
-const SECRETS_SETUP_GUIDE = 'https://github.com/kirodotdev/KiroCrew/blob/main/docs/guides/secrets-env.md'
+const SECRETS_SETUP_GUIDE = 'https://efmleads.com/support'
 const UNUSED_REASON_KEYS = {
   wakatime_disabled: 'settings.secrets.wakatime_unused_hint',
   jira_multi_host: 'settings.secrets.jira_global_unused_multi_host',

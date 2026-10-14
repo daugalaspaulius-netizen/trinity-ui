@@ -13,12 +13,12 @@ import pytest
 import yaml  # type: ignore[import-untyped]
 
 from conftest import requires_symlinks
-from kiro_crew import seed as seed_mod
-from kiro_crew.platform_compat import IS_POSIX
-from kiro_crew.pod import cli as pod_cli
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod.config import PodConfig
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go import seed as seed_mod
+from efm_go.platform_compat import IS_POSIX
+from efm_go.pod import cli as pod_cli
+from efm_go.pod import runtime as rt
+from efm_go.pod.config import PodConfig
+from efm_go.testing.fixtures import seeded_home
 
 # Credential shapes that must never ship inside a fixture. The fixtures land in
 # the wheel and the sdist, so a placeholder that merely LOOKS like a secret is
@@ -400,7 +400,7 @@ class TestBootAppliesTheScenario:
         # neither the pinned home nor the emptied PATH -- so a brew-installed
         # kiro-cli on a macOS developer host would still resolve and be spawned.
         # Confine the search to the fake home so the resolver has nothing to find.
-        from kiro_crew import kiro_cli
+        from efm_go import kiro_cli
 
         monkeypatch.setattr(
             kiro_cli,
@@ -414,8 +414,8 @@ class TestBootAppliesTheScenario:
         binary.parent.mkdir(parents=True)
         binary.write_text("#!/bin/sh\n")
         binary.chmod(0o755)
-        (checkout / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True)
-        cli_src = checkout / "src" / "kiro_crew" / "cli.py"
+        (checkout / "src" / "efm_go" / "static" / "dist").mkdir(parents=True)
+        cli_src = checkout / "src" / "efm_go" / "cli.py"
         cli_src.write_text('gw.add_argument("--no-crons")\ngw.add_argument("--no-tunnel")\n')
         captured: dict[str, object] = {}
 
@@ -475,7 +475,7 @@ class TestBootAppliesTheScenario:
         reaches ``rc == 0`` via ``PROBE_UNAVAILABLE`` rather than by actually
         launching a real binary.
         """
-        from kiro_crew import kiro_cli as kiro_cli_mod
+        from efm_go import kiro_cli as kiro_cli_mod
 
         # Confirms the premise directly: nothing under the fake host home (or
         # any directory a real KIROCREW_KIRO_BIN would point at) resolves to

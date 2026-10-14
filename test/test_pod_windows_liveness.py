@@ -9,11 +9,11 @@ import pytest
 from test_pod_windows_run import contained
 from test_pod_windows_run import model as model
 
-from kiro_crew import platform_compat as pc
-from kiro_crew.pod import _windows_run as runs
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod import windows as win
-from kiro_crew.pod.config import EXIT_REFUSED_UNRECOVERABLE
+from efm_go import platform_compat as pc
+from efm_go.pod import _windows_run as runs
+from efm_go.pod import runtime as rt
+from efm_go.pod import windows as win
+from efm_go.pod.config import EXIT_REFUSED_UNRECOVERABLE
 
 __all__ = ["model", "supervisor"]
 

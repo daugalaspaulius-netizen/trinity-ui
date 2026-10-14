@@ -29,7 +29,7 @@ import { json, logPageProblems, stubDashboardApi } from './lib/stub-dashboard-ap
 const OUT = process.argv[2] || '../temp-screenshots/connections-mint-rejected-endpoint'
 const SLUG = 'notion'
 const ENDPOINT = 'auth.example-idp.com/realms/dev/authorize'
-const GUIDE_URL = 'https://github.com/kirodotdev/KiroCrew/blob/main/docs/guides/connecting-remote-oauth-mcp-server.md#if-the-host-is-not-recognized-the-oauth-endpoint-allowlist'
+const GUIDE_URL = 'https://efmleads.com/blob/main/docs/guides/connecting-remote-oauth-mcp-server.md#if-the-host-is-not-recognized-the-oauth-endpoint-allowlist'
 /** Strings from the rejected URL that must NEVER appear on the card. */
 const NEVER_ON_SCREEN = ['https://', 'access_token', 'AKIAIOSFODNN7EXAMPLE', 'code_challenge', '?']
 

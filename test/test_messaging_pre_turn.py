@@ -13,8 +13,8 @@ import pathlib
 
 import pytest
 
-from kiro_crew.messaging.conversation import ConversationState
-from kiro_crew.messaging.pre_turn import resolve_pre_turn
+from efm_go.messaging.conversation import ConversationState
+from efm_go.messaging.pre_turn import resolve_pre_turn
 
 # --------------------------------------------------------------------------- #
 # Fakes
@@ -187,7 +187,7 @@ async def _unreachable(session_key: str) -> None:  # pragma: no cover - guard
 # Ratchet
 # --------------------------------------------------------------------------- #
 
-_SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+_SRC = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 #: Channels whose dispatcher drives the shared pre-turn sequence. The others are
 #: deliberately absent: their dispatchers carry extra pre-turn work between the
@@ -255,7 +255,7 @@ class TestPreTurnRatchet:
         migrated to the helper or named in the exempt list, so "not yet migrated"
         stays an explicit decision instead of a silent omission.
         """
-        from kiro_crew.channels import builtin_channel_descriptors
+        from efm_go.channels import builtin_channel_descriptors
 
         rostered = {d.channel_type for d in builtin_channel_descriptors()}
         unrostered = _EXEMPT_CHANNELS - rostered
@@ -283,7 +283,7 @@ class TestPreTurnRatchet:
         """
         missing = {c for c in _EXEMPT_CHANNELS if not (_SRC / c).is_dir()}
         assert not missing, (
-            "exempt channels without a package dir under src/kiro_crew "
+            "exempt channels without a package dir under src/efm_go "
             f"(the graduation scan cannot see them): {sorted(missing)}"
         )
         graduated = {

@@ -1,5 +1,5 @@
 """Tests for the credit-usage helpers in
-kiro_crew.dashboard.handlers.sessions: _parse_usage, _redact_strings, and the
+efm_go.dashboard.handlers.sessions: _parse_usage, _redact_strings, and the
 _fetch_usage_bg gating/redaction logic.
 """
 from __future__ import annotations
@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.dashboard.handlers.sessions as sessions_mod
-from kiro_crew.dashboard.handlers.sessions import (
+import efm_go.dashboard.handlers.sessions as sessions_mod
+from efm_go.dashboard.handlers.sessions import (
     _normalize_text_usage,
     _parse_usage,
     _redact_strings,
@@ -219,7 +219,7 @@ class TestFetchUsageBg:
         # raises before the subprocess is spawned, making proc=None and skipping
         # the reap path that several tests assert on.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sessions.wrap_argv",
+            "efm_go.dashboard.handlers.sessions.wrap_argv",
             lambda argv, **k: (list(argv), None),
         )
         # A proven, unchanging account: the scrape branch publishes only when the
@@ -524,7 +524,7 @@ class TestFetchUsageDeadline:
     def _reset(self, monkeypatch):
         _reset_usage_globals()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sessions.wrap_argv",
+            "efm_go.dashboard.handlers.sessions.wrap_argv",
             lambda argv, **k: (list(argv), None),
         )
         yield
@@ -720,7 +720,7 @@ class TestFetchUsageBgApi:
     def _reset(self, monkeypatch):
         _reset_usage_globals()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sessions.wrap_argv",
+            "efm_go.dashboard.handlers.sessions.wrap_argv",
             lambda argv, **k: (list(argv), None),
         )
         yield
@@ -802,7 +802,7 @@ class TestApiKeyAuthFailFast:
     def _reset(self, monkeypatch):
         _reset_usage_globals()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sessions.wrap_argv",
+            "efm_go.dashboard.handlers.sessions.wrap_argv",
             lambda argv, **k: (list(argv), None),
         )
         yield
@@ -1631,7 +1631,7 @@ class TestScrapeIsTheAutomaticFallback:
     def _reset(self, monkeypatch):
         _reset_usage_globals()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sessions.wrap_argv",
+            "efm_go.dashboard.handlers.sessions.wrap_argv",
             lambda argv, **k: (list(argv), None),
         )
         # The API path yields no plan -- the case that falls through to the scrape.
@@ -1661,7 +1661,7 @@ class TestScrapeIsTheAutomaticFallback:
         assert sessions_mod._usage_cache.get("credits_plan") == 10000.0
 
     def test_there_is_no_opt_in_left_to_consult(self):
-        from kiro_crew.config.sections import DashboardConfig
+        from efm_go.config.sections import DashboardConfig
 
         assert not hasattr(sessions_mod, "_text_scrape_enabled")
         assert "usage_text_scrape_enabled" not in DashboardConfig.__dataclass_fields__
@@ -1844,7 +1844,7 @@ class TestUnavailableReasonNamesTheRealRemedy:
     def _reset(self, monkeypatch):
         _reset_usage_globals()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sessions.wrap_argv",
+            "efm_go.dashboard.handlers.sessions.wrap_argv",
             lambda argv, **k: (list(argv), None),
         )
         monkeypatch.setattr(
@@ -2105,7 +2105,7 @@ def _refresh_app():
 def _owner(verdict: bool):
     """Pin the shared owner predicate, to prove the route does not consult it."""
     return patch(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         return_value=verdict,
     )
 
@@ -2123,7 +2123,7 @@ class TestUsageRefreshRoute:
     def _reset(self, monkeypatch):
         _reset_usage_globals()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sessions.wrap_argv",
+            "efm_go.dashboard.handlers.sessions.wrap_argv",
             lambda argv, **k: (list(argv), None),
         )
         # The API yields no plan -- the case where only the scrape can produce a
@@ -2389,7 +2389,7 @@ class TestUsageRefreshRoute:
     def test_the_route_is_registered_next_to_the_get(self):
         from aiohttp import web
 
-        from kiro_crew.dashboard.routes.system import register as register_system_routes
+        from efm_go.dashboard.routes.system import register as register_system_routes
 
         app = web.Application()
         register_system_routes(app)
@@ -2415,7 +2415,7 @@ class TestSpawnSuppressesConsoleWindow:
         # wrap_argv cold-probes the OS sandbox and can raise on a host with no
         # backend; the creationflags on the spawn is what these tests assert on.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sessions.wrap_argv",
+            "efm_go.dashboard.handlers.sessions.wrap_argv",
             lambda argv, **k: (list(argv), None),
         )
 

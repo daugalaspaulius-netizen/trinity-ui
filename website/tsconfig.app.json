@@ -10,7 +10,7 @@
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
-    // Incremental type-checking (kirodotdev/KiroCrew#10687). Without a cache every
+    // Incremental type-checking (efmleads.com#10687). Without a cache every
     // `tsc` run re-checks the whole program (~35 s on a native toolchain); with the
     // tsbuildinfo below, a warm run re-checks only what changed (~5 s for a no-op).
     //

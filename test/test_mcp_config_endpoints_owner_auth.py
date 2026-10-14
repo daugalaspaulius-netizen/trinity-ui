@@ -14,17 +14,17 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.routes import agent_config as agent_config_routes
+from efm_go.dashboard.routes import agent_config as agent_config_routes
 
 pytestmark = pytest.mark.asyncio
 
 _MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 _TARGET_HANDLER_MODULES = frozenset(
     {
-        "kiro_crew.dashboard.handlers.core",
-        "kiro_crew.dashboard.handlers.mcp",
-        "kiro_crew.dashboard.handlers.mcp_custom",
-        "kiro_crew.dashboard.handlers.mcp_discover",
+        "efm_go.dashboard.handlers.core",
+        "efm_go.dashboard.handlers.mcp",
+        "efm_go.dashboard.handlers.mcp_custom",
+        "efm_go.dashboard.handlers.mcp_discover",
     }
 )
 

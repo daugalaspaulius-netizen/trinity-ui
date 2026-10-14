@@ -17,7 +17,7 @@ import aiohttp
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.server import _start_site
+from efm_go.dashboard.server import _start_site
 
 
 def _no_reclaim() -> AsyncMock:
@@ -73,7 +73,7 @@ async def test_start_site_retries_then_succeeds() -> None:
         _eaddrinuse(),
         None,  # succeeds on 4th attempt
     ]
-    with patch("kiro_crew.dashboard.server.asyncio.sleep", new_callable=AsyncMock):
+    with patch("efm_go.dashboard.server.asyncio.sleep", new_callable=AsyncMock):
         await _start_site(site, 7777, retries=5, delay=0.01, reclaim=_no_reclaim())
 
     assert site.start.await_count == 4
@@ -90,7 +90,7 @@ async def test_start_site_exits_after_exhausting_retries() -> None:
     site = _make_site()
     site.start.side_effect = _eaddrinuse()
 
-    with patch("kiro_crew.dashboard.server.asyncio.sleep", new_callable=AsyncMock):
+    with patch("efm_go.dashboard.server.asyncio.sleep", new_callable=AsyncMock):
         with pytest.raises(SystemExit) as exc_info:
             await _start_site(site, 7777, retries=3, delay=0.01, reclaim=_no_reclaim())
 
@@ -124,8 +124,8 @@ async def test_start_site_logs_warning_once() -> None:
     site.start.side_effect = [_eaddrinuse(), _eaddrinuse(), None]
 
     with (
-        patch("kiro_crew.dashboard.server.asyncio.sleep", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.server.logger") as mock_logger,
+        patch("efm_go.dashboard.server.asyncio.sleep", new_callable=AsyncMock),
+        patch("efm_go.dashboard.server.logger") as mock_logger,
     ):
         await _start_site(site, 7777, retries=5, delay=0.5, reclaim=_no_reclaim())
 
@@ -144,8 +144,8 @@ async def test_start_site_reclaims_stale_holder_then_binds() -> None:
     reclaim = AsyncMock(return_value="reclaimed")
 
     with (
-        patch("kiro_crew.dashboard.server.asyncio.sleep", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.server.logger") as mock_logger,
+        patch("efm_go.dashboard.server.asyncio.sleep", new_callable=AsyncMock),
+        patch("efm_go.dashboard.server.logger") as mock_logger,
     ):
         await _start_site(site, 7777, retries=5, delay=0.01, reclaim=reclaim)
 
@@ -165,8 +165,8 @@ async def test_start_site_reclaim_probe_error_falls_back_to_wait() -> None:
     reclaim = AsyncMock(side_effect=RuntimeError("lsof blew up"))
 
     with (
-        patch("kiro_crew.dashboard.server.asyncio.sleep", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.server.logger") as mock_logger,
+        patch("efm_go.dashboard.server.asyncio.sleep", new_callable=AsyncMock),
+        patch("efm_go.dashboard.server.logger") as mock_logger,
     ):
         await _start_site(site, 7777, retries=5, delay=0.01, reclaim=reclaim)
 
@@ -185,8 +185,8 @@ async def test_start_site_healthy_peer_skips_waiting_message() -> None:
     reclaim = AsyncMock(return_value="healthy_peer")
 
     with (
-        patch("kiro_crew.dashboard.server.asyncio.sleep", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.server.logger") as mock_logger,
+        patch("efm_go.dashboard.server.asyncio.sleep", new_callable=AsyncMock),
+        patch("efm_go.dashboard.server.logger") as mock_logger,
     ):
         with pytest.raises(SystemExit):
             await _start_site(site, 7777, retries=3, delay=0.01, reclaim=reclaim)

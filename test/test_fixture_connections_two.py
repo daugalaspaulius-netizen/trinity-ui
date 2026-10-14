@@ -6,8 +6,8 @@ import shutil
 
 import pytest
 
-from kiro_crew import mcp_discovery
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go import mcp_discovery
+from efm_go.testing.fixtures import seeded_home
 
 
 @pytest.mark.asyncio

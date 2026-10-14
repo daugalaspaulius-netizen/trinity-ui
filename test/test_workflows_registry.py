@@ -18,14 +18,14 @@ import asyncio
 
 import pytest
 
-from kiro_crew.workflows.registry import (
+from efm_go.workflows.registry import (
     STATUS_CANCELLED,
     STATUS_FINISHED,
     STATUS_RUNNING,
     RunHandle,
     RunRegistry,
 )
-from kiro_crew.workflows.runner import WorkflowRunner
+from efm_go.workflows.runner import WorkflowRunner
 
 pytestmark = pytest.mark.asyncio
 
@@ -215,7 +215,7 @@ async def test_async_persistence_serializes_and_discards_superseded_snapshots(
             await release_first.wait()
         return fn(*args)
 
-    monkeypatch.setattr("kiro_crew.workflows.registry.asyncio.to_thread", controlled_to_thread)
+    monkeypatch.setattr("efm_go.workflows.registry.asyncio.to_thread", controlled_to_thread)
 
     first = asyncio.create_task(registry.persist_async(handle.run_id))
     await first_started.wait()

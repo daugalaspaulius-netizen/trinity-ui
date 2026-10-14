@@ -11,14 +11,14 @@ from aiohttp.streams import EMPTY_PAYLOAD
 from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 from chat_test_helpers import _make_app, _make_state
 
-from kiro_crew import execution_context as execution
-from kiro_crew import memory_stores
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.config.sections import MemoryStoreConfig
-from kiro_crew.dashboard import chat_fork, chat_persistence
-from kiro_crew.dashboard.chat_utils import effective_session_key
-from kiro_crew.dashboard.state import _ChatSlot
-from kiro_crew.history import ConversationLog
+from efm_go import execution_context as execution
+from efm_go import memory_stores
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.config.sections import MemoryStoreConfig
+from efm_go.dashboard import chat_fork, chat_persistence
+from efm_go.dashboard.chat_utils import effective_session_key
+from efm_go.dashboard.state import _ChatSlot
+from efm_go.history import ConversationLog
 
 
 @pytest.fixture

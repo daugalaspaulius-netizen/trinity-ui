@@ -111,7 +111,7 @@ from collections.abc import Sequence
 _CODE_VALUE_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-_SRC = _REPO_ROOT / "src" / "kiro_crew"
+_SRC = _REPO_ROOT / "src" / "efm_go"
 _BASELINE_PATH = pathlib.Path(
     os.environ.get("KIROCREW_ERROR_CODE_BASELINE", _REPO_ROOT / "error-code-baseline.json")
 )
@@ -129,7 +129,7 @@ class _Finding:
         self.code_value = code_value
 
     def __str__(self) -> str:  # pragma: no cover - diagnostic only
-        return f"src/kiro_crew/{self.path}:{self.lineno}"
+        return f"src/efm_go/{self.path}:{self.lineno}"
 
 
 def _callee_name(call: ast.Call) -> str:
@@ -284,7 +284,7 @@ def test_baseline_file_is_parseable_and_shaped() -> None:
     assert set(baseline["_totals"]) == set(_BUCKETS)
     assert isinstance(baseline["files"], dict)
     for path, counts in baseline["files"].items():
-        assert not path.startswith("/"), f"baseline paths are relative to src/kiro_crew: {path}"
+        assert not path.startswith("/"), f"baseline paths are relative to src/efm_go: {path}"
         assert set(counts) <= set(_BUCKETS), f"unknown bucket in {path}: {sorted(counts)}"
         assert all(isinstance(n, int) and n > 0 for n in counts.values()), path
 
@@ -303,7 +303,7 @@ def test_no_new_error_response_without_a_code() -> None:
             if count <= cap:
                 continue
             lines = sorted(f.lineno for f in findings if f.path == path and f.bucket == bucket)
-            regressions.append(f"  src/kiro_crew/{path}: {bucket} {cap} -> {count} (lines {lines})")
+            regressions.append(f"  src/efm_go/{path}: {bucket} {cap} -> {count} (lines {lines})")
 
     assert not regressions, (
         "New error response(s) without a machine-readable `code`.\n"
@@ -326,7 +326,7 @@ def test_baseline_is_not_stale() -> None:
         for bucket, cap in counts.items():
             count = live.get(bucket, 0)
             if count < cap:
-                stale.append(f"  src/kiro_crew/{path}: {bucket} {cap} -> {count}")
+                stale.append(f"  src/efm_go/{path}: {bucket} {cap} -> {count}")
 
     assert not stale, (
         "The baseline is stale - these counts improved but were never re-snapshotted, so the "

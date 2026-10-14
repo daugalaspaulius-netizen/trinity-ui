@@ -30,14 +30,14 @@ from unittest.mock import MagicMock
 
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import channel_slots
-from kiro_crew.dashboard.chat_persistence import (
+from efm_go.dashboard import channel_slots
+from efm_go.dashboard.chat_persistence import (
     _rehydrate_slot_from_history,
     restore_open_slots,
     save_slot_off_loop,
 )
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.history import _safe_key
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.history import _safe_key
 
 CHANNEL_KEY = "slack:1783733803.877979"
 STEM = _safe_key(CHANNEL_KEY)  # "slack_1783733803.877979" — the slot name too

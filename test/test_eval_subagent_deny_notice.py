@@ -35,23 +35,23 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import llm_helpers, subagent
-from kiro_crew.agent_sdk.spec_hooks import TurnSpecHooks
-from kiro_crew.eval import judge as judge_mod
-from kiro_crew.eval import runner as runner_mod
-from kiro_crew.eval.judge import LLMJudge
-from kiro_crew.eval.runner import EvalRunner
-from kiro_crew.eval.scenario import Turn
-from kiro_crew.execution_context import execution_for_store
-from kiro_crew.hooks import TOOL_ALLOW, TOOL_DENY, ToolHookResult
-from kiro_crew.metrics.events import CHILD_PERMISSION_DENIED
-from kiro_crew.providers.base import (
+from efm_go import llm_helpers, subagent
+from efm_go.agent_sdk.spec_hooks import TurnSpecHooks
+from efm_go.eval import judge as judge_mod
+from efm_go.eval import runner as runner_mod
+from efm_go.eval.judge import LLMJudge
+from efm_go.eval.runner import EvalRunner
+from efm_go.eval.scenario import Turn
+from efm_go.execution_context import execution_for_store
+from efm_go.hooks import TOOL_ALLOW, TOOL_DENY, ToolHookResult
+from efm_go.metrics.events import CHILD_PERMISSION_DENIED
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
     LLMEvent,
 )
-from kiro_crew.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent import SubagentInfo, SubagentManager
 
 _GENERIC = "User denied tool execution"
 _TAG = "[Kiro Crew host notice]"
@@ -59,7 +59,7 @@ _TAG = "[Kiro Crew host notice]"
 #: is the fingerprint that must be absent from every surface-policy notice.
 _POLICY_GUIDANCE = "allowed alternative"
 _SURFACE_CLAUSE = "tool policy of the surface"
-_SRC = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew"
+_SRC = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go"
 
 
 # ── Doubles ──────────────────────────────────────────────────────────────────
@@ -375,7 +375,7 @@ async def _run_subagent(
         patch.object(subagent, "update_state"),
         patch.object(subagent, "create_agent_folder", MagicMock()),
         patch.object(subagent, "turn_spec_hooks", AsyncMock(return_value=spec)),
-        patch("kiro_crew.subagent_manager.run.permission_pre_tool_block", pre_tool or AsyncMock()),
+        patch("efm_go.subagent_manager.run.permission_pre_tool_block", pre_tool or AsyncMock()),
         patch.object(manager, "_write_tombstone"),
     ):
         await asyncio.wait_for(manager._run_inner(info, "subagent:a1"), 30)
@@ -557,7 +557,7 @@ async def test_a_childs_denial_is_counted_before_the_wire(monkeypatch):
             order.append("metric")
             points.append(attrs)
 
-    monkeypatch.setattr("kiro_crew.metrics.events.emit_counter", _emit)
+    monkeypatch.setattr("efm_go.metrics.events.emit_counter", _emit)
     await _run_subagent(provider)
     assert order == ["metric", "reject"], order
     assert points == [{"surface": "subagent", "reason": "child_origin_no_command_context"}]

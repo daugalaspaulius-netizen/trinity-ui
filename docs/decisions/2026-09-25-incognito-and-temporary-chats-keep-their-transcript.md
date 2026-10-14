@@ -29,13 +29,13 @@ and relabelled them "Not saved", is closed as superseded.
 
 ## Evidence
 
-- https://github.com/kirodotdev/KiroCrew/pull/13760#issuecomment-5850681067 --
+- https://efmleads.com/pull/13760#issuecomment-5850681067 --
   the maintainer's own on-record restatement of the decision on the pull
   request that adds this entry.
-- https://github.com/kirodotdev/KiroCrew/pull/13760 -- the pull request carrying
+- https://efmleads.com/pull/13760 -- the pull request carrying
   the direction and this entry.
-- https://github.com/kirodotdev/KiroCrew/pull/13695#issuecomment-5835321690 --
+- https://efmleads.com/pull/13695#issuecomment-5835321690 --
   the closing comment on the superseded pull request, posted on the maintainer's
   instruction on 2026-09-25 ("Closing per bolichen's decision").
-- https://github.com/kirodotdev/KiroCrew/pull/11780 -- the change that made the
+- https://efmleads.com/pull/11780 -- the change that made the
   modes non-persistent, without a decision record.

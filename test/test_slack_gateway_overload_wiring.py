@@ -14,9 +14,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.dashboard import session_health
-from kiro_crew.slack.gateway import GatewayOrchestrator
-from kiro_crew.taskq import dependency as taskq_dependency
+from efm_go.dashboard import session_health
+from efm_go.slack.gateway import GatewayOrchestrator
+from efm_go.taskq import dependency as taskq_dependency
 
 
 class _Controller:
@@ -141,8 +141,8 @@ def test_importing_the_gateway_loads_no_adaptive_module(tmp_path) -> None:
             sys.executable,
             "-B",
             "-c",
-            "import sys, importlib; importlib.import_module('kiro_crew.slack.gateway'); "
-            "leaked = sorted(m for m in sys.modules if m.startswith('kiro_crew.adaptive')); "
+            "import sys, importlib; importlib.import_module('efm_go.slack.gateway'); "
+            "leaked = sorted(m for m in sys.modules if m.startswith('efm_go.adaptive')); "
             "assert not leaked, leaked",
         ],
         cwd=tmp_path,
@@ -159,9 +159,9 @@ def test_importing_the_gateway_loads_no_adaptive_module(tmp_path) -> None:
 async def test_disabled_gateway_constructs_controller_only_on_live_enable(monkeypatch):
     from unittest.mock import MagicMock
 
-    from kiro_crew.adaptive import controller as adaptive_controller
-    from kiro_crew.config import live
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.adaptive import controller as adaptive_controller
+    from efm_go.config import live
+    from efm_go.config.loader import KiroCrewConfig
 
     orch = _orch()
     orch._adaptive_controller = None
@@ -210,9 +210,9 @@ async def test_run_starts_adaptive_only_after_dashboard_and_taskq_ready(
     import inspect
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew import session
-    from kiro_crew.metrics import sessions as session_metrics
-    from kiro_crew.slack import events, gateway
+    from efm_go import session
+    from efm_go.metrics import sessions as session_metrics
+    from efm_go.slack import events, gateway
 
     class ReachedController(Exception):
         pass

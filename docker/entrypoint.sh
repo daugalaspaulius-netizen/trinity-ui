@@ -45,16 +45,16 @@
 set -eu
 
 # ── Data-home resolution: ask the PRODUCT, never re-implement ────────────
-# ensure_data_home() (kiro_crew.config.paths) is the backend's single
+# ensure_data_home() (efm_go.config.paths) is the backend's single
 # source of truth: KIROCREW_HOME validation (system-dir rejection,
 # expanduser) and the default home. A shell mirror of that logic drifted
 # from the backend twice in review; delegating closes the entire divergence
 # class — the entrypoint writes exactly where the gateway will read, by
 # construction. KIROCREW_HOME itself passes through unmodified — the backend
 # applies the identical interpretation to it.
-if ! ACTIVE_HOME=$(python3 -c 'from kiro_crew.config.paths import ensure_data_home; print(ensure_data_home())' 2>/dev/null) || [ -z "$ACTIVE_HOME" ]; then
+if ! ACTIVE_HOME=$(python3 -c 'from efm_go.config.paths import ensure_data_home; print(ensure_data_home())' 2>/dev/null) || [ -z "$ACTIVE_HOME" ]; then
     ACTIVE_HOME="$HOME/.kiro/crew"
-    echo "[entrypoint] WARNING: could not resolve the data home via kiro_crew" \
+    echo "[entrypoint] WARNING: could not resolve the data home via efm_go" \
          "(broken install?); defaulting to $ACTIVE_HOME." >&2
 fi
 CONFIG="$ACTIVE_HOME/config.json"
@@ -133,7 +133,7 @@ else
     # which needs the same kernel facilities and cannot help here). Only
     # mode "auto" routes a missing backend into the audited fail-closed
     # refusal, so "auto" is the floor for all three container postures.
-    if python3 -c 'from kiro_crew.sandbox import detect_backend; raise SystemExit(0 if detect_backend() != "none" else 1)' 2>/dev/null; then
+    if python3 -c 'from efm_go.sandbox import detect_backend; raise SystemExit(0 if detect_backend() != "none" else 1)' 2>/dev/null; then
         mkdir -p "$ACTIVE_HOME"
         printf '%s\n' '{"agent": {"sandbox": "auto"}}' > "$CONFIG"
         echo "[entrypoint] First run: inner sandbox backend available — seeded" \

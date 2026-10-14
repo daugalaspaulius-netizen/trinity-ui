@@ -57,12 +57,12 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
-from kiro_crew.crew_log import projection as proj  # noqa: E402
-from kiro_crew.platform_compat import is_link_or_junction  # noqa: E402
+from efm_go.crew_log import projection as proj  # noqa: E402
+from efm_go.platform_compat import is_link_or_junction  # noqa: E402
 
 #: Where the generated artifacts live: beside the skill that consumes them, so they
 #: ship in the same package-data glob the skill already ships under.
-SKILL_DIR = ROOT / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev" / "dashboard-template"
+SKILL_DIR = ROOT / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev" / "dashboard-template"
 JSON_PATH = SKILL_DIR / "folds.json"
 MARKDOWN_PATH = SKILL_DIR / "FOLDS.md"
 

@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.skills as skills_mod
-from kiro_crew.skills import _iter_skill_files, _within_any
+import efm_go.skills as skills_mod
+from efm_go.skills import _iter_skill_files, _within_any
 
 # Creating a symlink on Windows needs elevation or Developer Mode, which CI
 # runners do not have. The repo's established idiom is to skip such a test there

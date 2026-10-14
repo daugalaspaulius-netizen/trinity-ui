@@ -14,8 +14,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import FirstTurnState, SessionManager, _Session
+from efm_go.config import KiroCrewConfig
+from efm_go.session import FirstTurnState, SessionManager, _Session
 
 
 @pytest.fixture
@@ -176,7 +176,7 @@ async def test_hard_stop_orders_abort_reset_respawn_and_hook(cfg: KiroCrewConfig
     async def on_hard() -> None:
         events.append("hard-hook")
 
-    with patch("kiro_crew.session.asyncio.create_task", side_effect=create_task):
+    with patch("efm_go.session.asyncio.create_task", side_effect=create_task):
         outcome = await manager.stop_turn("key", force=True, on_hard=on_hard)
 
     assert outcome == "hard"
@@ -233,7 +233,7 @@ async def test_identity_retirement_preserves_map_and_drops_transient_state(
     manager._retire_kiro_subagent_runtimes = AsyncMock(return_value=True)  # type: ignore[method-assign]
     manager._retire_kiro_bg_runtime = AsyncMock(return_value=True)  # type: ignore[method-assign]
 
-    with patch("kiro_crew.session._provider_uses_kiro_identity_store", return_value=True):
+    with patch("efm_go.session._provider_uses_kiro_identity_store", return_value=True):
         retired, complete = await manager.retire_kiro_identity_sessions()
 
     assert (retired, complete) == (["key"], True)

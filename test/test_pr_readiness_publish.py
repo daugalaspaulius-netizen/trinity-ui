@@ -235,10 +235,10 @@ class Runner:
             **os.environ,
             "PATH": f"{bindir}{os.pathsep}{os.environ['PATH']}",
             "FIXTURES": str(self.fixtures),
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             "PR": "2064",
             "SHA": SHA,
-            "URL": "https://github.com/kirodotdev/KiroCrew/actions/runs/1",
+            "URL": "https://efmleads.com/actions/runs/1",
             "RUNNER_TEMP": str(self.tmp),
             "GITHUB_STEP_SUMMARY": str(self.summary),
             "GH_TOKEN": "stub",
@@ -473,13 +473,13 @@ def _recheck_runner(
     runner.env.update(
         {
             "FORK": "true" if fork else "false",
-            "HEAD_REPO": "octo/KiroCrew" if fork else "kirodotdev/KiroCrew",
+            "HEAD_REPO": "octo/KiroCrew" if fork else "efmleads.com",
             "HEAD_REF": "feat/x",
             "MONITORED_LANES": job_env["MONITORED_LANES"],
             "LEGACY_LANE_NAMES": job_env["LEGACY_LANE_NAMES"],
         }
     )
-    head_repo = "octo/KiroCrew" if fork else "kirodotdev/KiroCrew"
+    head_repo = "octo/KiroCrew" if fork else "efmleads.com"
     workflow_runs: list[dict[str, object]] = [
         {
             "id": 5,

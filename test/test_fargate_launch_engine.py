@@ -21,12 +21,12 @@ from typing import Callable
 
 import pytest
 
-from kiro_crew.cloud import fargate, fargate_engine
-from kiro_crew.cloud import launch_job as lj
-from kiro_crew.cloud import sizes
-from kiro_crew.cloud.aws import AWSError
-from kiro_crew.cloud.ec2 import MANAGED_TAG_KEY
-from kiro_crew.cloud.fargate import (
+from efm_go.cloud import fargate, fargate_engine
+from efm_go.cloud import launch_job as lj
+from efm_go.cloud import sizes
+from efm_go.cloud.aws import AWSError
+from efm_go.cloud.ec2 import MANAGED_TAG_KEY
+from efm_go.cloud.fargate import (
     CREW_TAG_KEY,
     INTERNAL_ONLY_ENV,
     TASK_TTL_ENV,
@@ -38,7 +38,7 @@ from kiro_crew.cloud.fargate import (
     revision_fingerprint,
     spec_binding,
 )
-from kiro_crew.cloud.fargate_engine import (
+from efm_go.cloud.fargate_engine import (
     DEFAULT_MAX_RUNNING_TASKS,
     DEFAULT_TASK_TTL_SECONDS,
     MANAGED_TAG_VALUE,
@@ -52,10 +52,10 @@ from kiro_crew.cloud.fargate_engine import (
     plan_bounds_sweep,
     plan_teardown,
 )
-from kiro_crew.cloud.launch_job import LaunchEngine, SigninHandle
-from kiro_crew.instances.validation import split_ecs_target
-from kiro_crew.platform.defaults import FARGATE_PROVISIONER_ID
-from kiro_crew.platform.interfaces import BUILTIN_PROVISIONER_ID
+from efm_go.cloud.launch_job import LaunchEngine, SigninHandle
+from efm_go.instances.validation import split_ecs_target
+from efm_go.platform.defaults import FARGATE_PROVISIONER_ID
+from efm_go.platform.interfaces import BUILTIN_PROVISIONER_ID
 
 TAG = "kc-a1b2c3"
 ARN = "arn:aws:ecs:us-west-2:111122223333:task/crews/1111111111111111"
@@ -204,7 +204,7 @@ def test_engine_is_injectable_where_the_ec2_engine_is() -> None:
     ``state.cloud_launch_engine`` (typed ``Any`` at ``state.py:5254``) and returns
     the injected hook ahead of the provisioner seam.
     """
-    from kiro_crew.dashboard import handlers_cloud
+    from efm_go.dashboard import handlers_cloud
 
     class _StubState:
         def __init__(self, engine: object) -> None:
@@ -282,7 +282,7 @@ def test_signin_honours_the_default_login_target() -> None:
     before it existed, so passing it must change nothing: no ``error``, and the
     handle still reports the step done without a prompt.
     """
-    from kiro_crew.cloud.login_target import KiroLoginTarget
+    from efm_go.cloud.login_target import KiroLoginTarget
 
     engine = FargateLaunchEngine()
     for target in (None, KiroLoginTarget()):
@@ -303,7 +303,7 @@ def test_identity_center_target_is_refused_at_preflight_before_provision() -> No
     task exists to strand. Refusing later, at the sign-in step, would land after
     the task is billing, which is the shape this engine must never take.
     """
-    from kiro_crew.cloud.login_target import KiroLoginTarget
+    from efm_go.cloud.login_target import KiroLoginTarget
 
     target = KiroLoginTarget(
         license="pro", start_url="https://example.awsapps.com/start", region="us-west-2"
@@ -339,7 +339,7 @@ def test_signin_time_identity_center_target_is_a_programming_error_guard() -> No
     ``launch_job._begin_signin_with_target``; it is not a refusal channel, so
     the handle's ``error`` stays empty on every path that returns one.
     """
-    from kiro_crew.cloud.login_target import KiroLoginTarget
+    from efm_go.cloud.login_target import KiroLoginTarget
 
     target = KiroLoginTarget(
         license="pro", start_url="https://example.awsapps.com/start", region="us-west-2"
@@ -1253,7 +1253,7 @@ class _DecliningEngine:
 
 def test_unconfirmed_teardown_after_cancel_reaches_the_user(tmp_path) -> None:
     """``launch_job.py:510-514`` must turn a declined confirm into a visible warning."""
-    from kiro_crew.cloud import launch_job as lj
+    from efm_go.cloud import launch_job as lj
 
     store = lj.LaunchJobStore(root=tmp_path / "launch-jobs")
     job = store.create(profile="dev", region="us-east-1", size_key="balanced")
@@ -1267,7 +1267,7 @@ def test_unconfirmed_teardown_after_cancel_reaches_the_user(tmp_path) -> None:
 
 def test_unconfirmed_teardown_after_failed_provision_reaches_the_user(tmp_path) -> None:
     """``launch_job.py:550-553`` must do the same, and keep the original failure visible."""
-    from kiro_crew.cloud import launch_job as lj
+    from efm_go.cloud import launch_job as lj
 
     store = lj.LaunchJobStore(root=tmp_path / "launch-jobs")
     job = store.create(profile="dev", region="us-east-1", size_key="balanced")
@@ -1425,7 +1425,7 @@ def _spec_taskdef(region: str):
 
 
 def _patch_aws(monkeypatch, double: _EcsDouble) -> None:
-    from kiro_crew.cloud import aws as aws_mod
+    from efm_go.cloud import aws as aws_mod
 
     monkeypatch.setattr(aws_mod, "checked_json", double.checked_json)
     monkeypatch.setattr(aws_mod, "checked", double.checked)
@@ -1433,7 +1433,7 @@ def _patch_aws(monkeypatch, double: _EcsDouble) -> None:
 
 def test_preflight_validates_region_and_refuses_without_a_spec() -> None:
     """A refusal, not a probe: no ECS call, and it names the missing fields."""
-    from kiro_crew.cloud.fargate.identity import DocumentRefused
+    from efm_go.cloud.fargate.identity import DocumentRefused
 
     engine = FargateLaunchEngine(_spec())
     engine.preflight("p", "us-west-2")  # a spec present: returns without an AWS call
@@ -1703,7 +1703,7 @@ def test_teardown_removes_the_stopped_tasks_registry_row(monkeypatch, tmp_path) 
     task and leaving the row offers a crew whose target resolves to nothing, and
     nothing else removes it."""
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-    from kiro_crew.instances.registry import InstancesRegistry
+    from efm_go.instances.registry import InstancesRegistry
 
     reg = InstancesRegistry(tmp_path / "instances.json")
     reg.add(
@@ -1726,7 +1726,7 @@ def test_teardown_leaves_another_tasks_row_alone(monkeypatch, tmp_path) -> None:
     """The removal is keyed on the task it stopped, so a sibling crew in the same
     cluster keeps its record."""
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-    from kiro_crew.instances.registry import InstancesRegistry
+    from efm_go.instances.registry import InstancesRegistry
 
     other_task_id = "f" * 32
     reg = InstancesRegistry(tmp_path / "instances.json")
@@ -1757,7 +1757,7 @@ def test_teardown_does_not_confirm_when_the_row_could_not_be_removed(monkeypatch
     tell the operator the cleanup is finished while a row they cannot see the cause
     of is still there."""
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-    from kiro_crew.cloud import connect as connect_mod
+    from efm_go.cloud import connect as connect_mod
 
     monkeypatch.setattr(
         connect_mod, "unregister_ecs_task", lambda *_a, **_k: connect_mod.UNREGISTER_FAILED
@@ -1833,7 +1833,7 @@ def test_teardown_refuses_a_mislabelled_task_and_says_which_one(monkeypatch, cap
         }
     ]
     _patch_aws(monkeypatch, double)
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.cloud.fargate_engine"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.cloud.fargate_engine"):
         confirmed = FargateLaunchEngine(_spec()).teardown(tag=TAG, profile="p", region="us-west-2")
     assert confirmed is False
     assert double.stops == [], "a mislabelled task must not be stopped on a startedBy match"
@@ -1885,7 +1885,7 @@ def _run_through_engine(engine, store_root):
     ``size_key`` and ``tag`` a provision reads come from the same orchestration
     state both engines see.
     """
-    from kiro_crew.dashboard import handlers_cloud
+    from efm_go.dashboard import handlers_cloud
 
     class _StubState:
         def __init__(self, e) -> None:
@@ -2170,7 +2170,7 @@ def test_the_default_lifetime_is_the_only_session_length_the_cloud_lane_states()
     moves without the other, two answers to one question are live at once with
     nothing comparing them, which is what this pins.
     """
-    from kiro_crew.cloud import connect
+    from efm_go.cloud import connect
 
     assert connect._safe_ttl("nonsense") == "6h"
     assert DEFAULT_TASK_TTL_SECONDS == 6 * 60 * 60
@@ -2391,7 +2391,7 @@ def test_reap_removes_the_expired_tasks_registry_row(monkeypatch, tmp_path) -> N
     by the next launch. Leaving its row puts a dead crew in the list, and the TTL
     sweep is not a teardown, so nothing else comes along to prune it."""
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-    from kiro_crew.instances.registry import InstancesRegistry
+    from efm_go.instances.registry import InstancesRegistry
 
     reg = InstancesRegistry(tmp_path / "instances.json")
     reg.add(

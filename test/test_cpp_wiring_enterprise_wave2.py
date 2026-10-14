@@ -34,10 +34,10 @@ from typing import List, Optional
 
 import pytest
 
-from kiro_crew import embeddings
-from kiro_crew.apps import registry as app_registry
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform import (
+from efm_go import embeddings
+from efm_go.apps import registry as app_registry
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform import (
     PROFILE_ENTERPRISE,
     build_default_context,
     current_context,
@@ -106,7 +106,7 @@ class _EnterpriseCredentialPolicy:
     def redact(self, text: str) -> str:
         # Delegate to the core redaction (so baseline credential redaction is
         # preserved) and add one internal-token redaction on top.
-        from kiro_crew import security
+        from efm_go import security
 
         return security.redact(text).replace("SSO-COOKIE", "[REDACTED-SSO]")
 
@@ -185,7 +185,7 @@ def enterprise_ctx(manifest_dir: Path):
 
 
 def test_edition_builtin_apps_discovered_from_manifest_sources(enterprise_ctx) -> None:
-    from kiro_crew.apps.manager import _edition_builtin_apps
+    from efm_go.apps.manager import _edition_builtin_apps
 
     apps = _edition_builtin_apps()
     names = {a["name"] for a in apps}
@@ -198,7 +198,7 @@ def test_edition_builtin_apps_discovered_from_manifest_sources(enterprise_ctx) -
 
 
 def test_edition_bundled_app_names_reflect_enterprise(enterprise_ctx) -> None:
-    from kiro_crew.apps.manager import _edition_bundled_app_names
+    from efm_go.apps.manager import _edition_bundled_app_names
 
     assert set(_edition_bundled_app_names()) == set(_ENT_FEATURE_APPS)
 
@@ -210,14 +210,14 @@ def test_missing_manifest_source_is_skipped_gracefully(tmp_path: Path) -> None:
     missing = tmp_path / "does_not_exist"
     ctx = dataclasses.replace(base, apps_loader=_EnterpriseAppsLoader(missing))
     set_context(ctx)
-    from kiro_crew.apps.manager import _edition_builtin_apps
+    from efm_go.apps.manager import _edition_builtin_apps
 
     assert _edition_builtin_apps() == []
 
 
 def test_register_builtin_apps_includes_feature_apps(enterprise_ctx, tmp_path, monkeypatch) -> None:
     """register_builtin_apps installs the companion feature apps as builtins."""
-    from kiro_crew.apps import manager
+    from efm_go.apps import manager
 
     apps_root = tmp_path / "apps"
     apps_root.mkdir()
@@ -311,7 +311,7 @@ def test_embedding_backend_swap_seam(enterprise_ctx) -> None:
 
 def test_context_redact_runs_enterprise_policy(enterprise_ctx) -> None:
     """The mcp_core + agent context-routed redact uses the enterprise policy."""
-    from kiro_crew import agent, mcp_core
+    from efm_go import agent, mcp_core
 
     # Internal token redaction (enterprise overlay) applies through both callers.
     assert "[REDACTED-SSO]" in mcp_core.redact("token=SSO-COOKIE")
@@ -339,7 +339,7 @@ def test_record_event_captured_by_enterprise_telemetry(enterprise_ctx) -> None:
 
 def test_register_acp_backends_called_once_at_boot(monkeypatch, manifest_dir) -> None:
     """bootstrap_context invokes register_acp_backends exactly once after set_context."""
-    import kiro_crew.platform.bootstrap as bootstrap
+    import efm_go.platform.bootstrap as bootstrap
 
     counting = _CountingProviderRegistry()
     cfg = KiroCrewConfig()

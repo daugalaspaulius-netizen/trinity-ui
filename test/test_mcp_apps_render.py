@@ -13,7 +13,7 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import mcp_apps_render
+from efm_go import mcp_apps_render
 
 #: A credential-shaped value for the redaction tests. JWT-shaped rather than the
 #: more familiar cloud access-key shape because an access-key literal is matched

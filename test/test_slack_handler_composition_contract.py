@@ -1,6 +1,6 @@
 """The native Slack handler keeps its wire behaviour and its surface while its owners move.
 
-``kiro_crew.slack.handler`` is the native Slack turn path's import path and its patch
+``efm_go.slack.handler`` is the native Slack turn path's import path and its patch
 surface. The goldens below drive its public callbacks against recording doubles and pin
 what reaches Slack, the SEL ledger, the stats counters, the session manager and the
 provider, in order, as one transcript per scenario.
@@ -32,12 +32,12 @@ import pytest
 from source_corpus import repo_root
 
 from conftest import MockSlackClient
-from kiro_crew.acp.client import AcpError, AcpProcessDied, AcpPromptBusy, AcpTimeoutError
-from kiro_crew.acp.types import STOP_REASON_COMPACTION_FAILED
-from kiro_crew.config.loader import ACTIVATION_REVIEW
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.slack import handler, handler_runtime
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.acp.client import AcpError, AcpProcessDied, AcpPromptBusy, AcpTimeoutError
+from efm_go.acp.types import STOP_REASON_COMPACTION_FAILED
+from efm_go.config.loader import ACTIVATION_REVIEW
+from efm_go.providers.base import LLMEvent
+from efm_go.slack import handler, handler_runtime
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 # ── recording doubles ─────────────────────────────────────────────────────────
 
@@ -688,7 +688,7 @@ async def _scenario_interactive_timeout(log):
 
 
 async def _scenario_hook_deny_and_flag(log):
-    from kiro_crew.hooks import HookManager, HooksConfig
+    from efm_go.hooks import HookManager, HooksConfig
 
     hooks = HookManager(HooksConfig.from_dict({"auto_deny_tools": ["danger*"]}))
     cb = _ContextBuilder(log, hooks)
@@ -957,7 +957,7 @@ async def _scenario_linked_thread_routes_to_slot(log):
 
     log.monkeypatch.setattr(handler, "append_and_surface", _surface)
     log.monkeypatch.setattr(
-        "kiro_crew.dashboard.session_control.containment_meta", lambda state, slot: {"linked": 1}
+        "efm_go.dashboard.session_control.containment_meta", lambda state, slot: {"linked": 1}
     )
     slot = _Slot("chat-2", running=True)
     log.monkeypatch.setattr(handler, "_dashboard_state", _Dashboard(log, {}, linked=slot))
@@ -995,7 +995,7 @@ async def _scenario_keyword_commands(log):
 
 
 async def _scenario_privacy_modifiers(log):
-    from kiro_crew.messaging import privacy_mode
+    from efm_go.messaging import privacy_mode
 
     async def _apply(mode, session_key, **kwargs):
         log.add("privacy.apply_mode", mode=mode, key=session_key, source=kwargs.get("source"))
@@ -1139,8 +1139,8 @@ class _ConversationLog:
 async def _scenario_turn_with_history(log):
     """A cold start in a thread: replayed history, the cancelled-turn preamble, the
     thread-replies block, re-injection consumed, the replies watermark moved."""
-    from kiro_crew.hooks import HookManager, HooksConfig
-    from kiro_crew.slack.thread_replies import ThreadReplies
+    from efm_go.hooks import HookManager, HooksConfig
+    from efm_go.slack.thread_replies import ThreadReplies
 
     def _replay(conversation_log, session_key, *, model_window=None):
         log.add("history.replay", key=session_key, model_window=model_window)
@@ -1328,7 +1328,7 @@ async def _scenario_reasoning_only(log):
 
 
 async def _scenario_hook_auto_reply(log):
-    from kiro_crew.hooks import AutoReplyHook, HookManager, HooksConfig
+    from efm_go.hooks import AutoReplyHook, HookManager, HooksConfig
 
     hooks = HookManager(
         HooksConfig(auto_replies=[AutoReplyHook(pattern="ping", reply="pong", exact=True)])
@@ -1377,8 +1377,8 @@ async def _scenario_cancelled_messages(log):
 
 
 async def _scenario_turn_ceiling_and_shutdown(log):
-    from kiro_crew.messaging import turn_ceiling
-    from kiro_crew.session import SessionClosingError
+    from efm_go.messaging import turn_ceiling
+    from efm_go.session import SessionClosingError
 
     class _Refused(turn_ceiling.TurnCeilingExceeded):
         announce = True
@@ -1406,7 +1406,7 @@ async def _scenario_turn_ceiling_and_shutdown(log):
 
 
 async def _scenario_shared_runtime_deaths(log):
-    from kiro_crew import runtime_death
+    from efm_go import runtime_death
 
     log.monkeypatch.setattr(runtime_death, "caused_by_this_session", lambda client: False)
     try:
@@ -1860,10 +1860,10 @@ def test_a_fresh_interpreter_sees_the_surface_and_loads_every_owner(tmp_path: Pa
         tmp_path,
         """
         import sys
-        import kiro_crew.slack.handler as handler
+        import efm_go.slack.handler as handler
         owners = sys.argv[1].split(",")
         missing = [n for n in sys.argv[2:] if not hasattr(handler, n)]
-        unloaded = [o for o in owners if f"kiro_crew.slack.handler_runtime.{o}" not in sys.modules]
+        unloaded = [o for o in owners if f"efm_go.slack.handler_runtime.{o}" not in sys.modules]
         assert missing == [] and unloaded == [], (missing, unloaded)
         print("ok")
         """,
@@ -1883,9 +1883,9 @@ def test_no_owner_function_keeps_its_own_globals_once_the_entry_points_load(
         tmp_path,
         """
         import gc, os, types
-        import kiro_crew.slack.gateway
-        import kiro_crew.dashboard.server
-        import kiro_crew.slack.handler as handler
+        import efm_go.slack.gateway
+        import efm_go.dashboard.server
+        import efm_go.slack.handler as handler
 
         def norm(path):
             return os.path.normcase(os.path.realpath(path))
@@ -1916,7 +1916,7 @@ def test_a_star_import_carries_the_moved_public_names(tmp_path: Path) -> None:
     public binding goes out. Loaded through ``exec_module`` from a probe file."""
     assert not hasattr(handler, "__all__")
     probe = tmp_path / "slack_handler_star_probe.py"
-    probe.write_text("from kiro_crew.slack.handler import *  # noqa: F401,F403\n", encoding="utf-8")
+    probe.write_text("from efm_go.slack.handler import *  # noqa: F401,F403\n", encoding="utf-8")
     spec = importlib.util.spec_from_file_location("slack_handler_star_probe", probe)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -1928,8 +1928,8 @@ def test_a_star_import_carries_the_moved_public_names(tmp_path: Path) -> None:
 def test_the_shared_trackers_are_still_the_shared_objects() -> None:
     """The aliases conftest clears and the channel-neutral owners read are the very
     objects ``messaging`` keeps, not copies an owner could hold."""
-    from kiro_crew.config import paths
-    from kiro_crew.messaging import auto_title, privacy_mode, session_trust
+    from efm_go.config import paths
+    from efm_go.messaging import auto_title, privacy_mode, session_trust
 
     assert handler._trusted_sessions is session_trust._trusted_sessions
     assert handler._thread_temporary is privacy_mode._temporary
@@ -1944,7 +1944,7 @@ def test_the_shared_trackers_are_still_the_shared_objects() -> None:
 def _facade_importers() -> dict[str, set[str]]:
     """``{module path: names}`` every source file imports from the facade by name."""
     found: dict[str, set[str]] = {}
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         if path.resolve() == _FACADE_PATH or "_vendor" in path.parts:
             continue
         text = path.read_text(encoding="utf-8")
@@ -1964,7 +1964,7 @@ def test_every_name_a_production_module_imports_from_the_facade_resolves() -> No
     importers = {
         path: names
         for path, names in _facade_importers().items()
-        if not path.startswith("kiro_crew/slack/handler_runtime/")
+        if not path.startswith("efm_go/slack/handler_runtime/")
     }
     assert len(importers) >= 12
     imported = {name for names in importers.values() for name in names}
@@ -2053,7 +2053,7 @@ def test_every_definition_is_in_exactly_one_place() -> None:
 
 
 def test_the_owners_log_as_the_facade() -> None:
-    """Log capture keyed to ``kiro_crew.slack.handler`` keeps seeing the moved sites."""
+    """Log capture keyed to ``efm_go.slack.handler`` keeps seeing the moved sites."""
     assert handler.logger.name == _FACADE
     readers = [
         label for label, fn in _owner_functions() if "logger" in set(_global_names(fn.__code__))
@@ -2062,7 +2062,7 @@ def test_the_owners_log_as_the_facade() -> None:
 
 
 def test_every_owner_function_runs_on_the_facade_globals() -> None:
-    """A patch of ``kiro_crew.slack.handler.<name>`` reaches an owner function only
+    """A patch of ``efm_go.slack.handler.<name>`` reaches an owner function only
     because the function reads the facade's globals, not its own."""
     functions = _owner_functions()
     assert len(functions) >= 110
@@ -2169,7 +2169,7 @@ def test_the_compose_copy_matches_its_siblings() -> None:
     another's, and the copies stay identical."""
 
     def body(rel: str) -> str:
-        text = (_SRC / "kiro_crew" / rel / "__init__.py").read_text(encoding="utf-8")
+        text = (_SRC / "efm_go" / rel / "__init__.py").read_text(encoding="utf-8")
         return text[text.index("def compose(") :]
 
     assert body("slack/handler_runtime") == body("hook_runtime")
@@ -2216,7 +2216,7 @@ def _runtime_project_imports(source: str) -> list[int]:
             and isinstance(node.args[0], ast.Constant)
         ):
             targets = [str(node.args[0].value)]
-        if any(t.startswith(("kiro_crew", ".")) for t in targets):
+        if any(t.startswith(("efm_go", ".")) for t in targets):
             lines.append(node.lineno)
     return sorted(lines)
 
@@ -2226,11 +2226,11 @@ def _runtime_project_imports(source: str) -> list[int]:
     [
         ("from . import stream\n", True),
         ("from .stream import _AnswerStream\n", True),
-        ("from kiro_crew.slack import handler\n", True),
-        ("import kiro_crew.slack.handler as handler\n", True),
-        ("import importlib\nimportlib.import_module('kiro_crew.slack.handler')\n", True),
-        ("if TYPE_CHECKING:\n    from kiro_crew.slack.handler import sel\n", False),
-        ("def f():\n    from kiro_crew.slack.blocks import review_draft_blocks\n", False),
+        ("from efm_go.slack import handler\n", True),
+        ("import efm_go.slack.handler as handler\n", True),
+        ("import importlib\nimportlib.import_module('efm_go.slack.handler')\n", True),
+        ("if TYPE_CHECKING:\n    from efm_go.slack.handler import sel\n", False),
+        ("def f():\n    from efm_go.slack.blocks import review_draft_blocks\n", False),
         ("import asyncio\nfrom typing import Any\n", False),
     ],
 )
@@ -2261,7 +2261,7 @@ def test_an_owner_imports_project_modules_only_for_type_checking() -> None:
 def test_nothing_but_the_facade_imports_an_owner() -> None:
     """The facade is the one import path and the one patch surface."""
     importers = []
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         resolved = path.resolve()
         if _OWNER_DIR in resolved.parents or resolved == _FACADE_PATH or "_vendor" in path.parts:
             continue
@@ -2308,7 +2308,7 @@ def _facade_aliases(tree: ast.Module) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             aliases |= {a.asname for a in node.names if a.name == _FACADE and a.asname}
-        elif isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.slack":
+        elif isinstance(node, ast.ImportFrom) and node.module == "efm_go.slack":
             aliases |= {a.asname or a.name for a in node.names if a.name == "handler"}
     changed = True
     while changed:
@@ -2393,24 +2393,24 @@ def _facade_writes(source: str) -> set[str]:
     ("source", "expected"),
     [
         (
-            "import kiro_crew.slack.handler as h\nmonkeypatch.setattr(h, '_EDIT_INTERVAL', 0)\n",
+            "import efm_go.slack.handler as h\nmonkeypatch.setattr(h, '_EDIT_INTERVAL', 0)\n",
             {"_EDIT_INTERVAL"},
         ),
-        ("from kiro_crew.slack import handler\nmonkeypatch.setattr(handler, 'os', 1)\n", {"os"}),
-        ("monkeypatch.setattr('kiro_crew.slack.handler.is_owner', None)\n", {"is_owner"}),
-        ("from unittest import mock\nmock.patch('kiro_crew.slack.handler.sel')\n", {"sel"}),
-        ("patch('kiro_crew.slack.handler.Path.home')\n", {"Path"}),
+        ("from efm_go.slack import handler\nmonkeypatch.setattr(handler, 'os', 1)\n", {"os"}),
+        ("monkeypatch.setattr('efm_go.slack.handler.is_owner', None)\n", {"is_owner"}),
+        ("from unittest import mock\nmock.patch('efm_go.slack.handler.sel')\n", {"sel"}),
+        ("patch('efm_go.slack.handler.Path.home')\n", {"Path"}),
         (
-            "from kiro_crew.slack import handler as h\npatch.object(h, '_PendingApproval')\n",
+            "from efm_go.slack import handler as h\npatch.object(h, '_PendingApproval')\n",
             {"_PendingApproval"},
         ),
-        ("import kiro_crew.slack.handler as h\nh.sel = lambda: None\n", {"sel"}),
+        ("import efm_go.slack.handler as h\nh.sel = lambda: None\n", {"sel"}),
         (
-            "import kiro_crew.slack.handler as h\nassert h._trusted_sessions is t\n",
+            "import efm_go.slack.handler as h\nassert h._trusted_sessions is t\n",
             {"_trusted_sessions"},
         ),
-        ("import kiro_crew.slack.handler as h\nx = h._EDIT_INTERVAL\n", set()),
-        ("monkeypatch.setattr('kiro_crew.slack.events.is_owner', None)\n", set()),
+        ("import efm_go.slack.handler as h\nx = h._EDIT_INTERVAL\n", set()),
+        ("monkeypatch.setattr('efm_go.slack.events.is_owner', None)\n", set()),
         ("monkeypatch.setattr(other, '_owner_id', 1)\n", set()),
     ],
 )
@@ -2427,7 +2427,7 @@ def _test_sources() -> list[tuple[str, str]]:
         if path.resolve() == Path(__file__).resolve():
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
-        if _FACADE in text or "kiro_crew.slack import handler" in text:
+        if _FACADE in text or "efm_go.slack import handler" in text:
             out.append((path.relative_to(_ROOT).as_posix(), text))
     return out
 
@@ -2491,7 +2491,7 @@ def _runtime_shadows(source: str) -> dict[str, list[int]]:
 
 def test_the_binding_sweep_reports_a_shadow_and_ignores_an_inert_import() -> None:
     assert "sel" in _runtime_shadows(
-        "def f():\n    from kiro_crew.sel import sel\n\n    return sel\n"
+        "def f():\n    from efm_go.sel import sel\n\n    return sel\n"
     )
     assert "CAP" in _runtime_shadows("CAP = 7\n")
     assert "os" not in _runtime_shadows("import os\n\n\ndef f():\n    return os.name\n")
@@ -2624,11 +2624,11 @@ def test_no_owner_holds_a_construct_a_handler_guard_counts() -> None:
 def test_a_frame_in_an_owner_is_attributed_to_slack() -> None:
     """A loop stall whose outermost Kiro Crew frame is an owner function still reads
     as the Slack surface (``stall_attribution``'s slack rule names the package)."""
-    from kiro_crew import stall_attribution
+    from efm_go import stall_attribution
 
     frames = stall_attribution.parse_frames(
         [
-            '  File "/opt/venv/lib/python3.12/site-packages/kiro_crew/slack/handler_runtime/'
+            '  File "/opt/venv/lib/python3.12/site-packages/efm_go/slack/handler_runtime/'
             'stream.py", line 1 in on_text'
         ]
     )

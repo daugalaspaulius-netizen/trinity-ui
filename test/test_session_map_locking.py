@@ -27,15 +27,15 @@ from unittest.mock import patch
 import pytest
 from source_corpus import parsed_candidates
 
-import kiro_crew.session_map as session_map_mod
-from kiro_crew.session_map import SESSION_MAP_FILENAME, SessionMap
+import efm_go.session_map as session_map_mod
+from efm_go.session_map import SESSION_MAP_FILENAME, SessionMap
 
 SRC = Path(session_map_mod.__file__).resolve().parent
 
 
 @pytest.fixture
 def session_map(tmp_path):
-    with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+    with patch("efm_go.session_map.config_dir", return_value=tmp_path):
         yield SessionMap()
 
 
@@ -68,7 +68,7 @@ class TestConcurrentMutation:
             t.join(timeout=30)
 
         assert errors == []
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             reloaded = SessionMap()
         persisted = reloaded.mapped_sids_by_key()
         expected = {f"dashboard:t{n}-{i}": f"sid-{n}-{i}" for n in range(8) for i in range(25)}
@@ -310,7 +310,7 @@ class TestLockHoldIsBounded:
         loop_side_done = threading.Event()
 
         def worker() -> None:
-            with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+            with patch("efm_go.session_map.config_dir", return_value=tmp_path):
                 with patch.object(Path, "read_text", slow_read):
                     SessionMap()
 

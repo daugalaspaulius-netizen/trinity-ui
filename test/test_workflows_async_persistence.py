@@ -10,9 +10,9 @@ import threading
 
 import pytest
 
-from kiro_crew.workflows.registry import RunHandle, RunRegistry
-from kiro_crew.workflows.runner import WorkflowRunner
-from kiro_crew.workflows.service import WorkflowService
+from efm_go.workflows.registry import RunHandle, RunRegistry
+from efm_go.workflows.runner import WorkflowRunner
+from efm_go.workflows.service import WorkflowService
 
 pytestmark = pytest.mark.asyncio
 NOW = "2026-09-14T00:00:00Z"

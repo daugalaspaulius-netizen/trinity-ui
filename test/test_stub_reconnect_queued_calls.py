@@ -25,7 +25,7 @@ from typing import NamedTuple
 
 import pytest
 
-from kiro_crew.mcp_gateway import stub as stub_mod
+from efm_go.mcp_gateway import stub as stub_mod
 
 #: Small enough to keep these tests fast, and the drain takes it as a parameter
 #: for exactly that reason. Every timing assertion below is relative to it.

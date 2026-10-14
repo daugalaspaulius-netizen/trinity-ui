@@ -77,7 +77,7 @@ remains safe.
 
 ### The observed delay was ownership loss, not terminal latency
 
-Issue [#7638](https://github.com/kirodotdev/KiroCrew/issues/7638) records a
+Issue [#7638](https://efmleads.com/issues/7638) records a
 controlled reproduction:
 
 | Event | Local time | Elapsed from Enter |
@@ -116,7 +116,7 @@ the popout the only other window that knows the IDs.
 ### Current backend replacement is asymmetric
 
 The backend replays scrollback and then assigns `existing.ws = ws` in
-`api_terminal_ws` (`src/kiro_crew/dashboard/handlers/terminal.py`). PTY output is
+`api_terminal_ws` (`src/efm_go/dashboard/handlers/terminal.py`). PTY output is
 sent only to the socket currently stored in `sess.ws`.
 
 Disconnect cleanup correctly checks identity before clearing the current socket.
@@ -161,7 +161,7 @@ removes.
 ## Non-goals
 
 - Persisting PTY processes across a gateway restart. Issue
-  [#5656](https://github.com/kirodotdev/KiroCrew/issues/5656) asks for that
+  [#5656](https://efmleads.com/issues/5656) asks for that
   durable, first-class terminal; this RFC and PR #8863 relate to it (they fix
   ownership of the in-memory PTY that survives a browser reload) but do not
   complete it, and neither closes that issue.

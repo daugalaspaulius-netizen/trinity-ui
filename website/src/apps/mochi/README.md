@@ -10,7 +10,7 @@ adding cross-boundary calls.
 | Root | What lives there |
 |---|---|
 | `website/src/apps/mochi/` (here) | All frontend: window entry HTML + React, bridges, vendored original renderer |
-| `src/kiro_crew/apps/builtins/mochi/` | Python backend: runtime (`hooks.py`), services, MCP server, routes, agents/skills |
+| `src/efm_go/apps/builtins/mochi/` | Python backend: runtime (`hooks.py`), services, MCP server, routes, agents/skills |
 | `website/electron/mochi/` + `website/electron/mochi-session-token.js` | Electron shell layer: windows, preload, instance resolution, session-token borrowing |
 | `test/test_mochi_*.py` | Backend tests (flat `test/`, prefix-contained — see "Test placement") |
 
@@ -19,7 +19,7 @@ first-party registries name the app at explicit integration points. Those curren
 include `apps/builtins/__init__.py`, `security_posture.py`,
 `apps/builtinRegistry.ts`, `components/appstore/appManifest.ts`, and the Electron
 `main.js`, `package.json`, and `mochi-session-token.js` surfaces. Removing the app
-also removes the `apps.mochi` i18n subtree. Search `src/kiro_crew`, `website/src`,
+also removes the `apps.mochi` i18n subtree. Search `src/efm_go`, `website/src`,
 `website/electron`, and `test` for `mochi` rather than relying on a fixed count.
 
 ## Why the double `src` (`src/apps/mochi/src/renderer/...`)
@@ -57,7 +57,7 @@ ported line-for-line. It is intentional, not a nesting mistake.
 - `test/` — frontend tests (vitest picks up `src/**/*.test.*` with zero
   config).
 
-## Backend shape (`src/kiro_crew/apps/builtins/mochi/`)
+## Backend shape (`src/efm_go/apps/builtins/mochi/`)
 
 `hooks.py` owns the runtime: service graph, owner loop (all periodic work
 ticks here — no free-floating tasks), notification gate, and the late-bound

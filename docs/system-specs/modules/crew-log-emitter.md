@@ -1,7 +1,7 @@
 # Session Crew log Emitter
 
 `crew_log/emit.py` turns the gateway's ACP turn lifecycle into the append-only
-per-session crew log `kiro_crew.crew_log` keeps for each ACP session id. It is a **writer
+per-session crew log `efm_go.crew_log` keeps for each ACP session id. It is a **writer
 only**: it owns which facts matter and where they are known, not storage or its layout.
 
 ## Who owns what
@@ -459,7 +459,7 @@ same way, as text, through `store.log_exception_text`; so do the store's prefix 
 and the checkpoint module's savepoint paths, every `exc_info` site in the package whose
 frame holds a `CrewLog` handle. The `exc_info` sites that remain there hold no handle,
 and `test_crew_log_exc_info_sites.py` pins both halves by reading the package's source:
-no `exc_info` call inside a `CrewLog` method or in any function under `kiro_crew` that
+no `exc_info` call inside a `CrewLog` method or in any function under `efm_go` that
 names a handle (a parameter, a local bound from an opener, an `isinstance`), and the
 sites remaining in this package exactly the vetted list.
 
@@ -793,7 +793,7 @@ single `other` source. Three zeroed sources would claim a measurement nobody too
 
 ## The resolver: which unit is this slot's work landing in
 
-Several sites that produce facts about a session do not hold an ACP client. `kiro_crew.crew_log.resolve`
+Several sites that produce facts about a session do not hold an ACP client. `efm_go.crew_log.resolve`
 is the one place that gap is closed, and its contract is narrower than it looks.
 
 A slot owns exactly one ACP session id **at a time**, not for its whole life. A plain resume
@@ -1503,6 +1503,6 @@ handlers last-registered-first, and the registration happens immediately before 
 built, so the pool's own handler still runs ahead of this one.
 
 There is no second stream to reconcile with. The parallel lifecycle-event package this
-module was designed alongside is retired, so `kiro_crew.crew_log` is the only structured
+module was designed alongside is retired, so `efm_go.crew_log` is the only structured
 record of a session's history and this module is its only writer;
 `docs/request-for-change/rfc-append-only-ledger.md` is the decision of record.

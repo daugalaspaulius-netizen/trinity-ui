@@ -31,18 +31,18 @@ import asyncio
 
 import pytest
 
-from kiro_crew import session_directive
-from kiro_crew.acp.types import (
+from efm_go import session_directive
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_TEXT_CHUNK,
     EVENT_TOOL_CALL,
     EVENT_TOOL_RESULT,
     AcpEvent,
 )
-from kiro_crew.dashboard.session_directive_apply import apply_session_directive
-from kiro_crew.messaging import TransportCapabilities, TurnDriver
-from kiro_crew.messaging.dispatch import _ChannelDirectiveState, build_directive_consumer
-from kiro_crew.messaging.renderer import Renderer
+from efm_go.dashboard.session_directive_apply import apply_session_directive
+from efm_go.messaging import TransportCapabilities, TurnDriver
+from efm_go.messaging.dispatch import _ChannelDirectiveState, build_directive_consumer
+from efm_go.messaging.renderer import Renderer
 
 MONITOR_ARGS = {"message": "watch PR #1", "idle_secs": 300, "max_cycles": 5, "max_runtime_secs": 0}
 
@@ -369,7 +369,7 @@ class TestNativeSubAgentIsolation:
         """The isolation set is fed by activity events, so a parent frame must yield none.
 
         kiro-cli carries the parent turn's own tool-call chunk on
-        ``_kiro.dev/session/update`` under the parent's own sessionId and
+        ``_efm.go/session/update`` under the parent's own sessionId and
         toolCallId (recorded live in
         ``test/fixtures/acp_frames/kiro/session.jsonl``). The handle answers that
         frame with no activity event, which is what keeps the parent's own
@@ -436,7 +436,7 @@ class _ChannelSessions:
 @pytest.fixture()
 def no_dashboard_tabs():
     """Pin the dashboard-surface registry empty for the test, then restore."""
-    from kiro_crew import session_surface
+    from efm_go import session_surface
 
     before = session_surface.dashboard_surfaced_keys()
     session_surface.set_dashboard_surfaced(())
@@ -454,7 +454,7 @@ class TestChannelApplierBoundary:
         (Slack routability via state.sessions) arm the loop."""
         session_key = "slack:1755000000.123456"
         svc = _ArmSvc()
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: svc)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: svc)
         state = _ChannelDirectiveState(sessions=_ChannelSessions(session_key))
         result = await apply_session_directive(
             state, None, session_key, "monitor_start", dict(MONITOR_ARGS)
@@ -470,7 +470,7 @@ class TestChannelApplierBoundary:
     ):
         session_key = "slack:1755000000.123456"
         svc = _ArmSvc(loop=_FakeLoop("loop-9"))
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: svc)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: svc)
         state = _ChannelDirectiveState(sessions=_ChannelSessions(session_key))
         result = await apply_session_directive(
             state, None, session_key, "autonudge_stop", {"reason": "done"}
@@ -485,7 +485,7 @@ class TestChannelApplierBoundary:
         """A telegram: session has no AutoNudge binding — the applier answers
         honestly instead of arming anything (and instead of silence)."""
         svc = _ArmSvc()
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: svc)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: svc)
         state = _ChannelDirectiveState(sessions=_ChannelSessions("other"))
         result = await apply_session_directive(
             state, None, "telegram:kirocrew:direct:42", "monitor_start", dict(MONITOR_ARGS)
@@ -507,8 +507,8 @@ class TestChannelApplierBoundary:
             def log_tool_invocation(self, **kw):
                 calls.append(kw)
 
-        monkeypatch.setattr("kiro_crew.sel.sel", lambda: _SelSpy())
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: _ArmSvc())
+        monkeypatch.setattr("efm_go.sel.sel", lambda: _SelSpy())
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: _ArmSvc())
         result = await apply_session_directive(
             _ChannelDirectiveState(sessions=_ChannelSessions("x")),
             None,
@@ -542,7 +542,7 @@ class TestChannelApplierBoundary:
         (has_dashboard_surface True), but a slot-less channel turn still must
         not drive a slot-targeted effect — the effect targets the SLOT and this
         turn holds none. Guards the slot=None tightening."""
-        from kiro_crew import session_surface
+        from efm_go import session_surface
 
         session_key = "slack:1755000000.777"
         before = session_surface.dashboard_surfaced_keys()
@@ -580,7 +580,7 @@ class TestChannelApplierBoundary:
             def log_tool_invocation(self, **kw):
                 calls.append(kw)
 
-        monkeypatch.setattr("kiro_crew.sel.sel", lambda: _SelSpy())
+        monkeypatch.setattr("efm_go.sel.sel", lambda: _SelSpy())
         result = await apply_session_directive(
             _ChannelDirectiveState(sessions=_ChannelSessions("x")),
             None,
@@ -610,7 +610,7 @@ class TestBuildDirectiveConsumer:
             return "ok"
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.session_directive_apply.apply_session_directive", _spy
+            "efm_go.dashboard.session_directive_apply.apply_session_directive", _spy
         )
 
         class _Dispatcher:
@@ -644,7 +644,7 @@ class TestBuildDirectiveConsumer:
             return "ok"
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.session_directive_apply.apply_session_directive", _spy
+            "efm_go.dashboard.session_directive_apply.apply_session_directive", _spy
         )
         sessions = object()
         consume = build_directive_consumer(session_key="slack:1755000000.1", sessions=sessions)

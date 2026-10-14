@@ -24,10 +24,10 @@ from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app_with_agent_routes, _make_state
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, ResolvedBindings
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, ResolvedBindings
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
-MOD = "kiro_crew.dashboard.chat_handlers"
+MOD = "efm_go.dashboard.chat_handlers"
 
 _WORKSPACE_DEFAULT_DIR = "/workspace/default"
 _WORKSPACE_DEV_DIR = "/workspace/dev"
@@ -78,7 +78,7 @@ class TestChatSlotAgentProjectScope:
         Without this the agent pick retargets the slot at the new agent's
         workspace default, and the folder's repo silently stops being the cwd.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         folder_dir = tmp_path / "folder-repo"
         folder_dir.mkdir()
         state = _make_state(tmp_path)
@@ -99,7 +99,7 @@ class TestChatSlotAgentProjectScope:
     @pytest.mark.asyncio
     async def test_agent_switch_inherits_ancestor_folder_project_dir(self, tmp_path, monkeypatch):
         """The folder project is inherited from the nearest configured ancestor."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         folder_dir = tmp_path / "parent-repo"
         folder_dir.mkdir()
         state = _make_state(tmp_path)
@@ -128,7 +128,7 @@ class TestChatSlotAgentProjectScope:
         bound to no workspace and for one naming a workspace absent from the
         config, so without the gate every such pick discards the user's choice.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         picked = tmp_path / "picked"
         picked.mkdir()
         state = _make_state(tmp_path)
@@ -155,7 +155,7 @@ class TestChatSlotAgentProjectScope:
         the fallback through and the project is clobbered on exactly the installs
         that configured a default.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         picked = tmp_path / "picked"
         picked.mkdir()
         state = _make_state(tmp_path)
@@ -184,7 +184,7 @@ class TestChatSlotAgentProjectScope:
         to the previous workspace — so the two carve-outs above must not widen
         into an unconditional preserve.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.project = "/old/project"
@@ -204,7 +204,7 @@ class TestChatSlotAgentProjectScope:
         here would make the agent permanently unswitchable for any folder whose
         directory was moved or deleted, so the switch falls through instead.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._folders = [
             {"id": "f1", "name": "Gone", "project_dir": str(tmp_path / "deleted-repo")}

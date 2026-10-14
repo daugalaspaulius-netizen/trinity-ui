@@ -17,7 +17,7 @@ import os
 
 import pytest
 
-from kiro_crew.appearance_packs import store as ap
+from efm_go.appearance_packs import store as ap
 
 
 class TestFilenameValidation:

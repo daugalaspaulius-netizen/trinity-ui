@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from test_snapshot import _setup_fake_kirocrew, unpinnable_argv
 
-from kiro_crew.snapshot import restore_main, snapshot_main
+from efm_go.snapshot import restore_main, snapshot_main
 
 
 def _tagset(pairs: dict[str, str]) -> str:
@@ -158,7 +158,7 @@ class TestRestoreHonoursTheBundleManifest:
 
     def test_a_manifest_naming_an_unknown_component_drops_it(self, src, tmp_path, monkeypatch):
         """A bundle from a newer build must not steer this one into an unknown name."""
-        from kiro_crew.snapshot import _manifest_components
+        from efm_go.snapshot import _manifest_components
 
         snap = tmp_path / "fakesnap"
         snap.mkdir()
@@ -169,7 +169,7 @@ class TestRestoreHonoursTheBundleManifest:
 
     def test_a_pre_manifest_bundle_keeps_all_components(self, tmp_path):
         """No component map (a pre-v3 bundle) means it really did hold everything."""
-        from kiro_crew.snapshot import _manifest_components
+        from efm_go.snapshot import _manifest_components
 
         snap = tmp_path / "old"
         snap.mkdir()

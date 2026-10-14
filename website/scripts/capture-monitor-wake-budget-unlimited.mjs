@@ -99,7 +99,7 @@ const monitorFor = maxAgentTurns => ({
   version: 1,
   config_generation: 1,
   kind: 'github_pull_request',
-  target: 'https://github.com/kirodotdev/KiroCrew/pull/42',
+  target: 'https://efmleads.com/pull/42',
   objective: 'review_ready',
   cadence_secs: 300,
   wake_instructions: 'Address actionable review feedback.',

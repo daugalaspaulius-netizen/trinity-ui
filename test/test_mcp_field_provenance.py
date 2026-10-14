@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.mcp_provenance import (
+from efm_go.mcp_provenance import (
     DERIVED_KEY,
     MARKER_KEY,
     command_is_ours,

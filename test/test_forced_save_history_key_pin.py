@@ -37,11 +37,11 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_folder_app, _make_state, _make_tags_app
 
-from kiro_crew.dashboard.chat import api_chat_slot_mode
-from kiro_crew.dashboard.chat_persistence import save_slot_off_loop as _real_save
-from kiro_crew.dashboard.chat_tags import tags_write_lock
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard.chat import api_chat_slot_mode
+from efm_go.dashboard.chat_persistence import save_slot_off_loop as _real_save
+from efm_go.dashboard.chat_tags import tags_write_lock
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
 _FOREIGN_KEY = "channel:foreign:123"
 
@@ -73,7 +73,7 @@ class TestRealSaveRefusalThroughEndpoints:
 
     @pytest.mark.asyncio
     async def test_slot_tags_put_refuses_409_and_writes_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -82,7 +82,7 @@ class TestRealSaveRefusalThroughEndpoints:
             slot.append("user", "hello")
             slot.drain()
             pinned = slot_history_key(slot)
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", _rebinding_save(slot)):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", _rebinding_save(slot)):
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": [tag["id"]]})
             assert resp.status == 409
             assert (await resp.json())["code"] == "session_gone"
@@ -96,7 +96,7 @@ class TestRealSaveRefusalThroughEndpoints:
 
     @pytest.mark.asyncio
     async def test_slot_folder_patch_refuses_409_and_writes_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -106,7 +106,7 @@ class TestRealSaveRefusalThroughEndpoints:
             slot.drain()
             pinned = slot_history_key(slot)
             with patch(
-                "kiro_crew.dashboard.chat_folders.save_slot_off_loop", _rebinding_save(slot)
+                "efm_go.dashboard.chat_folders.save_slot_off_loop", _rebinding_save(slot)
             ):
                 resp = await client.patch(
                     "/api/chat/slots/s1/folder", json={"folder_id": folder["id"]}
@@ -125,14 +125,14 @@ class TestRefusalDispositionPerSite:
 
     @pytest.mark.asyncio
     async def test_slot_pin_rolls_back_and_409(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         refusing = AsyncMock(return_value=False)
         async with TestClient(TestServer(app)) as client:
             slot = state.get_or_create_slot("s1")
             pinned = slot_history_key(slot)
-            with patch("kiro_crew.dashboard.chat_folders.save_slot_off_loop", refusing):
+            with patch("efm_go.dashboard.chat_folders.save_slot_off_loop", refusing):
                 resp = await client.patch("/api/chat/slots/s1/pin", json={"pinned": True})
             assert resp.status == 409
             assert (await resp.json())["code"] == "session_gone"
@@ -148,7 +148,7 @@ class TestRefusalDispositionPerSite:
         state.push_slots_update = MagicMock()
         pinned = slot_history_key(slot)
         refusing = AsyncMock(return_value=False)
-        with patch("kiro_crew.dashboard.chat_folders.save_slot_off_loop", refusing):
+        with patch("efm_go.dashboard.chat_folders.save_slot_off_loop", refusing):
             async with TestClient(TestServer(_make_mode_app(state))) as client:
                 resp = await client.patch("/api/chat/slots/test/mode", json={"mode": ""})
                 assert resp.status == 409
@@ -158,7 +158,7 @@ class TestRefusalDispositionPerSite:
 
     @pytest.mark.asyncio
     async def test_slot_drop_answers_in_rejection_shape(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         refusing = AsyncMock(return_value=False)
@@ -173,7 +173,7 @@ class TestRefusalDispositionPerSite:
             ).json()
             slot = state.get_or_create_slot("s1")
             pinned = slot_history_key(slot)
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", refusing):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", refusing):
                 resp = await client.post("/api/chat/slots/s1/drop", json={"column_id": col["id"]})
             # This endpoint reports rejections as ok:False in a 200 body (the
             # card stays put); the refusal takes the same shape, with the
@@ -188,7 +188,7 @@ class TestRefusalDispositionPerSite:
 
     @pytest.mark.asyncio
     async def test_tag_delete_strip_marks_dirty_and_delete_succeeds(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         refusing = AsyncMock(return_value=False)
@@ -197,7 +197,7 @@ class TestRefusalDispositionPerSite:
             slot = state.get_or_create_slot("s1")
             slot.tags = [tag["id"]]
             pinned = slot_history_key(slot)
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", refusing):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", refusing):
                 resp = await client.delete(f"/api/chat/tags/{tag['id']}")
             # The vocabulary commit already made the deletion durable; the
             # refused strip is best-effort cleanup, so the delete still
@@ -212,7 +212,7 @@ class TestRefusalDispositionPerSite:
     async def test_folder_delete_unfile_marks_dirty_and_delete_succeeds(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         refusing = AsyncMock(return_value=False)
@@ -221,7 +221,7 @@ class TestRefusalDispositionPerSite:
             slot = state.get_or_create_slot("s1")
             slot.folder_id = folder["id"]
             pinned = slot_history_key(slot)
-            with patch("kiro_crew.dashboard.chat_folders.save_slot_off_loop", refusing):
+            with patch("efm_go.dashboard.chat_folders.save_slot_off_loop", refusing):
                 resp = await client.delete(f"/api/chat/folders/{folder['id']}")
             # The unfile stands in memory (the folder is gone); the refused
             # persist marks the slot dirty so the flush re-persists wherever
@@ -235,7 +235,7 @@ class TestRefusalDispositionPerSite:
     async def test_restore_unfiled_refusal_marks_dirty_and_keeps_restored_field(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         refusing = AsyncMock(return_value=False)
@@ -246,7 +246,7 @@ class TestRefusalDispositionPerSite:
             # Force the folder-store commit to fail so the rollback runs and
             # its restore save is also refused.
             with (
-                patch("kiro_crew.dashboard.chat_folders.save_slot_off_loop", refusing),
+                patch("efm_go.dashboard.chat_folders.save_slot_off_loop", refusing),
                 patch.object(state, "mutate_folders", AsyncMock(side_effect=OSError("disk full"))),
             ):
                 resp = await client.delete(f"/api/chat/folders/{folder['id']}")
@@ -271,7 +271,7 @@ class TestRefusalRollbackHardening:
 
     @pytest.mark.asyncio
     async def test_folder_refusal_preserves_pending_breadcrumb_latch(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         refusing = AsyncMock(return_value=False)
@@ -282,7 +282,7 @@ class TestRefusalRollbackHardening:
             # taken its next turn yet, so the breadcrumb re-injection is
             # still pending and must survive this request's refusal.
             slot._folder_changed = True
-            with patch("kiro_crew.dashboard.chat_folders.save_slot_off_loop", refusing):
+            with patch("efm_go.dashboard.chat_folders.save_slot_off_loop", refusing):
                 resp = await client.patch(
                     "/api/chat/slots/s1/folder", json={"folder_id": folder["id"]}
                 )
@@ -304,7 +304,7 @@ class TestRefusalRollbackHardening:
             target.mode = "design-critique"
             return False
 
-        with patch("kiro_crew.dashboard.chat_folders.save_slot_off_loop", _concurrent_writer_wins):
+        with patch("efm_go.dashboard.chat_folders.save_slot_off_loop", _concurrent_writer_wins):
             async with TestClient(TestServer(_make_mode_app(state))) as client:
                 resp = await client.patch("/api/chat/slots/test/mode", json={"mode": ""})
                 assert resp.status == 409
@@ -314,7 +314,7 @@ class TestRefusalRollbackHardening:
     async def test_tags_rebind_while_waiting_on_lock_is_refused_before_mutation(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         recording = AsyncMock(return_value=True)
@@ -322,7 +322,7 @@ class TestRefusalRollbackHardening:
             tag = await (await client.post("/api/chat/tags", json={"name": "T"})).json()
             slot = state.get_or_create_slot("s1")
             lock = tags_write_lock(state)
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", recording):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", recording):
                 # Hold the tags write lock so the PUT parks on a REAL await
                 # window, rebind the slot while it waits, then release. The
                 # post-await re-check must refuse before any mutation.
@@ -351,7 +351,7 @@ class TestRefusalRollbackHardening:
         it. Resolved under the lock, the dead target reads as "not a status
         lane" and the drop is a rejected no-op.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         recording = AsyncMock(return_value=True)
@@ -365,7 +365,7 @@ class TestRefusalRollbackHardening:
             ]
             slot = state.get_or_create_slot("s1")
             slot.tags = ["keep-me"]
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", recording):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", recording):
                 resp = await client.post("/api/chat/slots/s1/drop", json={"column_id": "col1"})
             assert resp.status == 200
             body = await resp.json()

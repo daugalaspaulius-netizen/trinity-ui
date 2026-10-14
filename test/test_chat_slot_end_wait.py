@@ -15,13 +15,13 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.chat import api_chat_slot_end_wait
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard.chat import api_chat_slot_end_wait
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SOURCE BUG (not fixed here — this file is tests only)
 #
-#   src/kiro_crew/dashboard/chat.py:56
+#   src/efm_go/dashboard/chat.py:56
 #     53      api_chat_slot_delete,
 #     54      api_chat_slot_detail,
 #     55      api_chat_slot_followup,
@@ -30,7 +30,7 @@ from kiro_crew.dashboard.state import DashboardState, _ChatSlot
 #
 #   The re-export was appended after `api_chat_slot_followup`, but `end_wait`
 #   sorts before `followup`. CI's BLOCKING import gate
-#   (`isort --check-only src/kiro_crew test`, ci.yml:228) therefore fails on
+#   (`isort --check-only src/efm_go test`, ci.yml:228) therefore fails on
 #   this branch. Verified: the same file at HEAD passes
 #   (`isort --check-only --settings-path <repo> ` on `git show HEAD:...` -> exit 0),
 #   the working tree fails -> exit 1, and the only delta is this one added line.
@@ -90,7 +90,7 @@ def _patch_sel():
     """Patch sel() to avoid SecurityEventLog initialization."""
     mock_sel = MagicMock()
     mock_sel.log_tool_invocation = MagicMock()
-    with patch("kiro_crew.dashboard.chat_handlers.sel", return_value=mock_sel):
+    with patch("efm_go.dashboard.chat_handlers.sel", return_value=mock_sel):
         yield mock_sel
 
 

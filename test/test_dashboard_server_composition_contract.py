@@ -1,9 +1,9 @@
 """The dashboard gateway bootstrap keeps its surface and contracts while its owners move.
 
-``kiro_crew.dashboard.server`` is the gateway's import path and its patch surface.
+``efm_go.dashboard.server`` is the gateway's import path and its patch surface.
 ``start_dashboard`` and ``start_api_server`` stay defined there as the boot
 sequencers; the helper families they call, and the boot phases they delegate to,
-live in the modules of ``kiro_crew.dashboard.server_runtime``, and
+live in the modules of ``efm_go.dashboard.server_runtime``, and
 ``server_runtime.compose`` runs every function those owners define on the server
 module's globals. These tests pin:
 
@@ -45,9 +45,9 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from source_corpus import repo_files_named, repo_root
 
-import kiro_crew.dashboard.server as server
-from kiro_crew.dashboard import server_runtime
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+import efm_go.dashboard.server as server
+from efm_go.dashboard import server_runtime
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _FACADE = server.__name__
 _FACADE_PATH = Path(server.__file__).resolve()
@@ -378,8 +378,8 @@ def test_a_fresh_interpreter_sees_every_base_public_name(tmp_path: Path) -> None
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard as pkg
-        import kiro_crew.dashboard.server as server
+        import efm_go.dashboard as pkg
+        import efm_go.dashboard.server as server
         missing = [n for n in sys.argv[1:] if not hasattr(server, n)]
         assert missing == [], missing
         assert pkg.start_dashboard is server.start_dashboard
@@ -393,7 +393,7 @@ def test_a_fresh_interpreter_sees_every_base_public_name(tmp_path: Path) -> None
 def _facade_importers() -> dict[str, set[str]]:
     """``{module path: names}`` every source file imports from the server by name."""
     found: dict[str, set[str]] = {}
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         resolved = path.resolve()
         if resolved == _FACADE_PATH or _OWNER_DIR in resolved.parents or "_vendor" in path.parts:
             continue
@@ -413,7 +413,7 @@ def test_the_seams_other_modules_import_keep_their_identity() -> None:
     function: the gateway's prune wait, the sandboxed documents' frame ancestors, and
     the package's lazy entrypoints. Each resolves to the composed object, which runs
     on the server's globals, so a patch of the server reaches every importer."""
-    from kiro_crew import dashboard as pkg
+    from efm_go import dashboard as pkg
 
     importers = _facade_importers()
     imported = {name for names in importers.values() for name in names}
@@ -442,54 +442,54 @@ def test_the_shared_state_keeps_its_identity() -> None:
 #: gateway's boot path or close an import cycle, so each stays where the one-module
 #: file had it: inside the function that needs it.
 _LAZY_IMPORTS = {
-    "kiro_crew": "_hist_mod _rs stt",
-    "kiro_crew.agent": "rebuild_agent_config rebuild_agent_config_reporting",
-    "kiro_crew.apps.bridges": "reconcile_enabled_app_resources",
-    "kiro_crew.apps.dev_mode": "init_dev_mode_watcher stop_dev_mode_watcher",
-    "kiro_crew.apps.event_bus": "build_broadcast_fn",
-    "kiro_crew.apps.execution": "builtin_app_agents builtin_app_mcp_servers builtin_app_names",
-    "kiro_crew.apps.spawn_sdk": "build_spawn_impl",
-    "kiro_crew.config": "live",
-    "kiro_crew.config.live": "ConfigChange",
-    "kiro_crew.config.resolution": "DEGRADED_WHOLE_CONFIG",
-    "kiro_crew.connections.warm": "scavenge_warm_mint_artifacts shutdown_warm_mint",
-    "kiro_crew.dashboard.chat": "_run_chat",
-    "kiro_crew.dashboard.handlers": "wf_handlers work_ledger",
-    "kiro_crew.dashboard.handlers.ask_question": (
+    "efm_go": "_hist_mod _rs stt",
+    "efm_go.agent": "rebuild_agent_config rebuild_agent_config_reporting",
+    "efm_go.apps.bridges": "reconcile_enabled_app_resources",
+    "efm_go.apps.dev_mode": "init_dev_mode_watcher stop_dev_mode_watcher",
+    "efm_go.apps.event_bus": "build_broadcast_fn",
+    "efm_go.apps.execution": "builtin_app_agents builtin_app_mcp_servers builtin_app_names",
+    "efm_go.apps.spawn_sdk": "build_spawn_impl",
+    "efm_go.config": "live",
+    "efm_go.config.live": "ConfigChange",
+    "efm_go.config.resolution": "DEGRADED_WHOLE_CONFIG",
+    "efm_go.connections.warm": "scavenge_warm_mint_artifacts shutdown_warm_mint",
+    "efm_go.dashboard.chat": "_run_chat",
+    "efm_go.dashboard.handlers": "wf_handlers work_ledger",
+    "efm_go.dashboard.handlers.ask_question": (
         "api_ask_question api_ask_question_answer api_ask_question_dismiss "
         "api_ask_question_pending"
     ),
-    "kiro_crew.dashboard.handlers.autonudge": (
+    "efm_go.dashboard.handlers.autonudge": (
         "api_autonudge_delete api_autonudge_fire api_autonudge_get api_autonudge_list "
         "api_autonudge_start api_autonudge_update api_monitor_clear api_monitor_create "
         "api_monitor_restart api_monitor_slot_get api_monitor_stop api_monitor_update "
         "api_monitors_list api_session_monitor_get"
     ),
-    "kiro_crew.dashboard.handlers.decisions": "resume_local_decision_model",
-    "kiro_crew.dashboard.handlers.sandbox_doc": "register_sandbox_doc_routes",
-    "kiro_crew.dashboard.handlers.updates": "apply_log_level_from_config",
-    "kiro_crew.dashboard.handlers.webapp_preview": "register_webapp_preview_routes",
-    "kiro_crew.dashboard.handlers.workflows": (
+    "efm_go.dashboard.handlers.decisions": "resume_local_decision_model",
+    "efm_go.dashboard.handlers.sandbox_doc": "register_sandbox_doc_routes",
+    "efm_go.dashboard.handlers.updates": "apply_log_level_from_config",
+    "efm_go.dashboard.handlers.webapp_preview": "register_webapp_preview_routes",
+    "efm_go.dashboard.handlers.workflows": (
         "api_workflow_author api_workflow_definition_get api_workflow_definition_run "
         "api_workflow_definition_update api_workflow_definitions "
         "api_workflow_definitions_create api_workflow_run api_workflow_run_cancel "
         "api_workflow_run_get api_workflow_run_intent api_workflow_run_promote "
         "api_workflow_run_rerun api_workflow_runs"
     ),
-    "kiro_crew.dashboard.handlers_system": "_get_owner_hash _get_static_system_info",
-    "kiro_crew.dashboard.workflow_inject": "inject_bound_workflow_result",
-    "kiro_crew.decisions": "local_runtime",
-    "kiro_crew.diag.recorder": "_DiagRecorder get_recorder",
-    "kiro_crew.history_index_worker": "SessionIndexWorkerSupervisor",
-    "kiro_crew.hooks": "set_builtin_app_agents set_builtin_app_mcp_servers set_builtin_app_names",
-    "kiro_crew.memory": "MemoryStore",
-    "kiro_crew.metrics": "_gauges",
-    "kiro_crew.security": "redact_credentials redact_exfiltration_urls",
-    "kiro_crew.sel": "sel",
-    "kiro_crew.stt": "engine stt_models",
-    "kiro_crew.subagent": "_available_memory_gb",
-    "kiro_crew.transcribe": "_whisper_language",
-    "kiro_crew.workflows.service": "WorkflowService",
+    "efm_go.dashboard.handlers_system": "_get_owner_hash _get_static_system_info",
+    "efm_go.dashboard.workflow_inject": "inject_bound_workflow_result",
+    "efm_go.decisions": "local_runtime",
+    "efm_go.diag.recorder": "_DiagRecorder get_recorder",
+    "efm_go.history_index_worker": "SessionIndexWorkerSupervisor",
+    "efm_go.hooks": "set_builtin_app_agents set_builtin_app_mcp_servers set_builtin_app_names",
+    "efm_go.memory": "MemoryStore",
+    "efm_go.metrics": "_gauges",
+    "efm_go.security": "redact_credentials redact_exfiltration_urls",
+    "efm_go.sel": "sel",
+    "efm_go.stt": "engine stt_models",
+    "efm_go.subagent": "_available_memory_gb",
+    "efm_go.transcribe": "_whisper_language",
+    "efm_go.workflows.service": "WorkflowService",
 }
 
 
@@ -517,7 +517,7 @@ def test_a_star_import_carries_the_moved_public_names(tmp_path: Path) -> None:
     assert not hasattr(server, "__all__")
     probe = tmp_path / "server_star_probe.py"
     probe.write_text(
-        "from kiro_crew.dashboard.server import *  # noqa: F401,F403\n", encoding="utf-8"
+        "from efm_go.dashboard.server import *  # noqa: F401,F403\n", encoding="utf-8"
     )
     spec = importlib.util.spec_from_file_location("server_star_probe", probe)
     assert spec is not None and spec.loader is not None
@@ -615,7 +615,7 @@ def test_every_base_definition_is_in_exactly_one_place() -> None:
 
 
 def test_the_owners_log_as_the_facade() -> None:
-    """Log capture keyed to ``kiro_crew.dashboard.server`` keeps seeing the moved
+    """Log capture keyed to ``efm_go.dashboard.server`` keeps seeing the moved
     sites: an owner function logs through the server's ``logger``."""
     assert server.logger.name == _FACADE
     readers = [
@@ -626,7 +626,7 @@ def test_the_owners_log_as_the_facade() -> None:
 
 
 def test_every_owner_function_runs_on_the_facade_globals() -> None:
-    """A patch of ``kiro_crew.dashboard.server.<name>`` reaches an owner function only
+    """A patch of ``efm_go.dashboard.server.<name>`` reaches an owner function only
     because the function reads the server's globals, not its own."""
     labels = {label for label, _ in _owner_functions()}
     assert len(labels) >= 112
@@ -716,7 +716,7 @@ def test_the_compose_copy_matches_its_siblings() -> None:
     so no package imports another's, and the copies stay identical."""
 
     def body(package: str) -> str:
-        text = (_SRC / "kiro_crew/dashboard" / package / "__init__.py").read_text(encoding="utf-8")
+        text = (_SRC / "efm_go/dashboard" / package / "__init__.py").read_text(encoding="utf-8")
         return text[text.index("def compose(") :]
 
     assert body("server_runtime") == body("agent_admin") == body("file_api")
@@ -774,7 +774,7 @@ def _type_checking_nodes(tree: ast.Module) -> set[int]:
 
 def _owner_runtime_edges(source: str, package: str) -> list[int]:
     """Lines where an owner imports a project module outside ``TYPE_CHECKING`` at
-    module level: the server, a sibling owner, or anything else under ``kiro_crew``."""
+    module level: the server, a sibling owner, or anything else under ``efm_go``."""
     tree = ast.parse(source)
     guarded = _type_checking_nodes(tree)
     module_level = {id(sub) for node in tree.body for sub in ast.walk(node)}
@@ -788,7 +788,7 @@ def _owner_runtime_edges(source: str, package: str) -> list[int]:
         {
             node.lineno
             for node, target in _import_targets(tree, package)
-            if _within(target, "kiro_crew")
+            if _within(target, "efm_go")
             and id(node) not in guarded
             and id(node) in module_level
             and id(node) not in function_bodies
@@ -802,12 +802,12 @@ def _owner_runtime_edges(source: str, package: str) -> list[int]:
         ("from . import listener\n", True),
         ("from .listener import _bind_once\n", True),
         ("from .. import server\n", True),
-        ("from kiro_crew.dashboard import server\n", True),
-        ("import kiro_crew.dashboard.server as srv\n", True),
-        ("import importlib\nimportlib.import_module('kiro_crew.dashboard.server')\n", True),
-        ("__import__('kiro_crew.dashboard.server_runtime.listener')\n", True),
-        ("if TYPE_CHECKING:\n    from kiro_crew.dashboard.server import logger\n", False),
-        ("def f():\n    from kiro_crew.config import live\n", False),
+        ("from efm_go.dashboard import server\n", True),
+        ("import efm_go.dashboard.server as srv\n", True),
+        ("import importlib\nimportlib.import_module('efm_go.dashboard.server')\n", True),
+        ("__import__('efm_go.dashboard.server_runtime.listener')\n", True),
+        ("if TYPE_CHECKING:\n    from efm_go.dashboard.server import logger\n", False),
+        ("def f():\n    from efm_go.config import live\n", False),
         ("import asyncio\nfrom aiohttp import web\n", False),
     ],
 )
@@ -818,7 +818,7 @@ def test_the_owner_edge_check_sees_every_spelling(source: str, flagged: bool) ->
 def test_nothing_but_the_facade_imports_an_owner() -> None:
     """The server module is the one import path and the one patch surface."""
     importers = []
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         resolved = path.resolve()
         if _OWNER_DIR in resolved.parents or resolved == _FACADE_PATH or "_vendor" in path.parts:
             continue
@@ -861,9 +861,9 @@ def test_a_fresh_facade_import_loads_every_owner(tmp_path: Path) -> None:
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.server
+        import efm_go.dashboard.server
         missing = [n for n in sys.argv[1:]
-                   if f"kiro_crew.dashboard.server_runtime.{n}" not in sys.modules]
+                   if f"efm_go.dashboard.server_runtime.{n}" not in sys.modules]
         assert missing == [], missing
         print("ok")
         """,
@@ -876,10 +876,10 @@ def test_a_second_facade_import_recomposes_the_owners_onto_it(tmp_path: Path) ->
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.server as first
-        del sys.modules["kiro_crew.dashboard.server"]
-        import kiro_crew.dashboard.server as second
-        from kiro_crew.dashboard.server_runtime import listener
+        import efm_go.dashboard.server as first
+        del sys.modules["efm_go.dashboard.server"]
+        import efm_go.dashboard.server as second
+        from efm_go.dashboard.server_runtime import listener
         assert second is not first
         assert second._bind_once.__globals__ is vars(second)
         assert listener._bind_once is second._bind_once
@@ -892,7 +892,7 @@ def test_a_second_facade_import_recomposes_the_owners_onto_it(tmp_path: Path) ->
 
 _PATCH_CALLS = ("setattr", "patch.object", "delattr")
 _MULTIPLE_OPTIONS = frozenset({"spec", "create", "spec_set", "autospec", "new_callable"})
-_FACADE_STRING = re.compile(r"""^kiro_crew\.dashboard\.server\.(\w+)$""")
+_FACADE_STRING = re.compile(r"""^efm_go\.dashboard\.server\.(\w+)$""")
 
 #: The patches whose attribute the scan cannot resolve from the source, keyed by
 #: (test file, enclosing function), with the names each one rebinds: the startup
@@ -917,7 +917,7 @@ def _facade_aliases(tree: ast.Module) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             aliases |= {a.asname for a in node.names if a.name == _FACADE and a.asname}
-        elif isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.dashboard":
+        elif isinstance(node, ast.ImportFrom) and node.module == "efm_go.dashboard":
             aliases |= {a.asname or a.name for a in node.names if a.name == "server"}
     changed = True
     while changed:
@@ -1059,7 +1059,7 @@ def _patched_names_in(text: str) -> tuple[set[str], set[str]]:
     # Every spelling below names the server's dotted path or imports ``server`` from
     # the dashboard package, so a source with neither holds no server patch.
     if "dashboard.server" not in text and not (
-        "kiro_crew.dashboard import" in text and re.search(r"\bserver\b", text)
+        "efm_go.dashboard import" in text and re.search(r"\bserver\b", text)
     ):
         return set(), set()
     tree = ast.parse(text)
@@ -1112,7 +1112,7 @@ def _patched_names_in(text: str) -> tuple[set[str], set[str]]:
                 for target in targets:
                     if isinstance(target, ast.Attribute) and ast.unparse(target.value) in aliases:
                         found.add(target.attr)
-    found |= set(re.findall(r"""["']kiro_crew\.dashboard\.server\.(\w+)["']""", text))
+    found |= set(re.findall(r"""["']efm_go\.dashboard\.server\.(\w+)["']""", text))
     return found, dynamic
 
 
@@ -1197,28 +1197,28 @@ def _captured_names(source: str) -> set[str]:
 def test_the_patch_scan_reads_every_spelling() -> None:
     planted = (
         "import importlib, sys\n"
-        "import kiro_crew.dashboard.server as srv\n"
-        "from kiro_crew.dashboard import server as sv\n"
-        "facade = importlib.import_module('kiro_crew.dashboard.server')\n"
+        "import efm_go.dashboard.server as srv\n"
+        "from efm_go.dashboard import server as sv\n"
+        "facade = importlib.import_module('efm_go.dashboard.server')\n"
         "alias = facade\n"
-        "held = sys.modules['kiro_crew.dashboard.server']\n"
+        "held = sys.modules['efm_go.dashboard.server']\n"
         "def test(monkeypatch):\n"
         "    monkeypatch.setattr(srv, 'first', 1)\n"
         "    monkeypatch.setattr(sv, 'second', 2)\n"
         "    patch.object(alias, 'third')\n"
         "    sv.fourth = 4\n"
-        "    monkeypatch.setattr('kiro_crew.dashboard.server.fifth', 5)\n"
+        "    monkeypatch.setattr('efm_go.dashboard.server.fifth', 5)\n"
         "    monkeypatch.setattr(sv.web, 'attr', 7)\n"
         "    monkeypatch.setattr(other, 'not_the_facade', 8)\n"
         "    monkeypatch.delattr(sv, 'sixth')\n"
         "    patch.object(target=alias, attribute='seventh')\n"
         "    patch.multiple(held, eighth=1, create=True)\n"
-        "    patch('kiro_crew.dashboard.server.KiroCrewConfig.load')\n"
+        "    patch('efm_go.dashboard.server.KiroCrewConfig.load')\n"
         "@pytest.mark.parametrize('which', ['ninth', 'tenth'])\n"
         "def test_param(which):\n"
-        "    patch(f'kiro_crew.dashboard.server.{which}')\n"
-        "FACADE = 'kiro_crew.dashboard.server'\n"
-        "other = 'kiro_crew.dashboard.state'\n"
+        "    patch(f'efm_go.dashboard.server.{which}')\n"
+        "FACADE = 'efm_go.dashboard.server'\n"
+        "other = 'efm_go.dashboard.state'\n"
         "def test_strings(monkeypatch):\n"
         "    path = FACADE\n"
         "    patch(f'{path}.eleventh')\n"
@@ -1245,7 +1245,7 @@ def test_the_patch_scan_reads_every_spelling() -> None:
     }
     assert dynamic == set()
     unresolvable = (
-        "from kiro_crew.dashboard import server as sv\n"
+        "from efm_go.dashboard import server as sv\n"
         "def _drive(monkeypatch, name):\n"
         "    monkeypatch.setattr(sv, name, 1)\n"
     )
@@ -1258,7 +1258,7 @@ def test_the_capture_scan_flags_what_an_owner_evaluates_when_it_loads() -> None:
         "from typing import TYPE_CHECKING\n"
         "import asyncio as aio\n"
         "if TYPE_CHECKING:\n"
-        "    from kiro_crew.dashboard.server import logger\n"
+        "    from efm_go.dashboard.server import logger\n"
         "LIMIT = _CAP * 2\n"
         "def f(x=_DEFAULT, *, y=_KW):\n"
         "    return logger, sel\n"
@@ -1519,7 +1519,7 @@ def _install_trace(monkeypatch: pytest.MonkeyPatch) -> list[str]:
             continue
         if not isinstance(value, types.FunctionType):
             continue
-        if not (getattr(value, "__module__", "") or "").startswith("kiro_crew"):
+        if not (getattr(value, "__module__", "") or "").startswith("efm_go"):
             continue
         if inspect.iscoroutinefunction(value):
 
@@ -1861,9 +1861,9 @@ async def test_the_local_decision_model_release_waits_for_its_import(
     """The cleanup hook releases the local decision model only once its runtime module
     was imported at all -- a gateway that never ran one does not import it to stop it
     -- and the release waits for the model off the event loop."""
-    import kiro_crew.decisions as decisions
+    import efm_go.decisions as decisions
 
-    name = "kiro_crew.decisions.local_runtime"
+    name = "efm_go.decisions.local_runtime"
     app = web.Application()
     server._register_stt_hooks(app)
     hook = next(h for h in app.on_cleanup if h.__name__ == "_local_decision_model_shutdown")
@@ -1923,8 +1923,8 @@ def test_a_dashboard_only_launch_builds_its_own_consolidator(
         stores.append(MagicMock())
         return stores[-1]
 
-    monkeypatch.setattr("kiro_crew.history.HistoryConsolidator", _consolidator)
-    monkeypatch.setattr("kiro_crew.memory.MemoryStore", _store)
+    monkeypatch.setattr("efm_go.history.HistoryConsolidator", _consolidator)
+    monkeypatch.setattr("efm_go.memory.MemoryStore", _store)
     monkeypatch.setattr(server, "SkillsLoader", lambda **kwargs: ("loader", kwargs))
     loader = MagicMock()
     loader.load.return_value.skills = _skill_settings()
@@ -2042,7 +2042,7 @@ async def test_the_recorder_row_reads_the_gateway_counters(
     degrades to None on its own; a cap of 0 means unknown, never a cap of zero."""
     monkeypatch.setattr(_Recorder, "instances", [])
     monkeypatch.setattr(_Recorder, "refuse_start", False)
-    monkeypatch.setattr("kiro_crew.diag.recorder.Recorder", _Recorder)
+    monkeypatch.setattr("efm_go.diag.recorder.Recorder", _Recorder)
     state = types.SimpleNamespace(sessions=types.SimpleNamespace(count=2), subagents=None)
     server._start_diag_recorder(state)
     recorder = _Recorder.instances[0]
@@ -2052,9 +2052,9 @@ async def test_the_recorder_row_reads_the_gateway_counters(
         "last": {"action": "hold", "reason": "ok", "signals": ["cpu"], "paused": False},
         "last_sample": {"running": 1, "queued": 4, "loop_lag_ms": 12},
     }
-    monkeypatch.setattr("kiro_crew.resource_status.adaptive_state", lambda: adaptive)
-    monkeypatch.setattr("kiro_crew.resource_status.adaptive_exec_cap", lambda: 0)
-    monkeypatch.setattr("kiro_crew.metrics.inventory_gauges.read_active_monitor_loops", lambda: 3)
+    monkeypatch.setattr("efm_go.resource_status.adaptive_state", lambda: adaptive)
+    monkeypatch.setattr("efm_go.resource_status.adaptive_exec_cap", lambda: 0)
+    monkeypatch.setattr("efm_go.metrics.inventory_gauges.read_active_monitor_loops", lambda: 3)
     assert recorder.sources["gateway"]() == {
         "sessions": 2,
         "subagents": 0,
@@ -2074,9 +2074,9 @@ async def test_the_recorder_row_reads_the_gateway_counters(
         raise RuntimeError("gauge unreadable")
 
     for target in (
-        "kiro_crew.resource_status.adaptive_state",
-        "kiro_crew.resource_status.adaptive_exec_cap",
-        "kiro_crew.metrics.inventory_gauges.read_active_monitor_loops",
+        "efm_go.resource_status.adaptive_state",
+        "efm_go.resource_status.adaptive_exec_cap",
+        "efm_go.metrics.inventory_gauges.read_active_monitor_loops",
     ):
         monkeypatch.setattr(target, _broken)
     state.sessions = None
@@ -2106,12 +2106,12 @@ async def test_the_recorder_stop_is_awaited_and_never_raises(
 
     recorder = MagicMock()
     recorder.stop.side_effect = lambda: asyncio.ensure_future(_finish())
-    monkeypatch.setattr("kiro_crew.diag.recorder.get_recorder", lambda: recorder)
+    monkeypatch.setattr("efm_go.diag.recorder.get_recorder", lambda: recorder)
     await hook(app)
     assert finished == ["joined"]
     recorder.stop.side_effect = RuntimeError("probe thread wedged")
     await hook(app)
-    monkeypatch.setattr("kiro_crew.diag.recorder.get_recorder", lambda: None)
+    monkeypatch.setattr("efm_go.diag.recorder.get_recorder", lambda: None)
     await hook(app)
 
 
@@ -2272,7 +2272,7 @@ async def test_the_dashboard_inner_layers_serve_the_shell_and_audit_mutations(
     assert await spa(make_mocked_request("GET", "/crew", app=app), _missing) is shell
     with pytest.raises(web.HTTPNotFound):
         await spa(make_mocked_request("GET", "/api/nothing", app=app), _missing)
-    log = _sel_double(monkeypatch, "kiro_crew.sel.sel")
+    log = _sel_double(monkeypatch, "efm_go.sel.sel")
     audit = _layer(app, "sel_audit_middleware")
 
     async def _created(_request: web.Request) -> web.StreamResponse:
@@ -2416,7 +2416,7 @@ async def test_the_workflow_service_hooks_redact_announce_and_authorize(
         created.update(kwargs)
         return types.SimpleNamespace(timeout_secs=kwargs["timeout_secs"], registry=MagicMock())
 
-    monkeypatch.setattr("kiro_crew.workflows.service.WorkflowService.create", _create)
+    monkeypatch.setattr("efm_go.workflows.service.WorkflowService.create", _create)
     slot = MagicMock()
     slot.enqueue_or_run_prompt.return_value = True
 
@@ -2424,7 +2424,7 @@ async def test_the_workflow_service_hooks_redact_announce_and_authorize(
         on_injected(slot, snapshot)
         on_injected(None, snapshot)
 
-    monkeypatch.setattr("kiro_crew.dashboard.workflow_inject.inject_bound_workflow_result", _inject)
+    monkeypatch.setattr("efm_go.dashboard.workflow_inject.inject_bound_workflow_result", _inject)
     loader = MagicMock()
     loader.load.side_effect = OSError("config unreadable")
     monkeypatch.setattr(server, "KiroCrewConfig", loader)
@@ -2482,14 +2482,14 @@ async def test_the_optional_post_bind_work_never_fails_the_gateway(
     server._register_connections_warm_lifecycle(app, MagicMock())
     shutdown = next(h for h in app.on_cleanup if h.__name__ == "_connections_warm_shutdown")
     monkeypatch.setattr(
-        "kiro_crew.connections.warm.shutdown_warm_mint",
+        "efm_go.connections.warm.shutdown_warm_mint",
         AsyncMock(side_effect=RuntimeError("mint wedged")),
     )
     state = MagicMock()
     state._background_tasks = set()
     resume = AsyncMock(side_effect=["qwen-small", RuntimeError("no model")])
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.decisions.resume_local_decision_model", resume
+        "efm_go.dashboard.handlers.decisions.resume_local_decision_model", resume
     )
     with caplog.at_level(logging.INFO, logger=_FACADE):
         await shutdown(app)
@@ -2532,7 +2532,7 @@ _STAYS_IN_THE_FACADE = (
     (r"build_hardened_runner\(app", 2),
     (r"KiroPrerequisiteService,$", 2),
     (r"register_skill_read_observer\(", 2),
-    (r"^    from kiro_crew\.apps\.builtins import _MIGRATED_BUILTINS$", 1),
+    (r"^    from efm_go\.apps\.builtins import _MIGRATED_BUILTINS$", 1),
     (r"asyncio\.to_thread\(browser_cli_launch\.cli_env_overrides\)", 1),
     (r"_internal_secret = os\.urandom\(16\)\.hex\(\)$", 2),
     (r"current_context\(\)\.dashboard\.contribute_routes\(app\)", 1),
@@ -2575,7 +2575,7 @@ def _owner_paths() -> list[str]:
 
 def _rules_missing_owners(rules: list[dict]) -> tuple[set[str], dict[str, list[str]]]:
     """``(ids of rules matching the server, {id: owner files those rules miss})``."""
-    facade = "src/kiro_crew/dashboard/server.py"
+    facade = "src/efm_go/dashboard/server.py"
     matched: set[str] = set()
     missing: dict[str, list[str]] = {}
     for rule in rules:
@@ -2638,7 +2638,7 @@ def test_the_container_smoke_lane_fires_on_the_owners() -> None:
     )
     on = workflow.get("on", workflow.get(True))
     patterns = [_globstar(p) for p in on["pull_request"]["paths"]]
-    assert any(p.match("src/kiro_crew/dashboard/server.py") for p in patterns)
+    assert any(p.match("src/efm_go/dashboard/server.py") for p in patterns)
     assert [o for o in _owner_paths() if not any(p.match(o) for p in patterns)] == []
 
 
@@ -2660,7 +2660,7 @@ def test_the_async_config_dir_guard_scans_every_owner_coroutine() -> None:
 
 def test_the_redaction_census_classifies_the_owners() -> None:
     """An owner that calls a redactor is classified where the server's entry was."""
-    from kiro_crew import security_posture
+    from efm_go import security_posture
 
     rel = {
         f"dashboard/server_runtime/{stem}.py"

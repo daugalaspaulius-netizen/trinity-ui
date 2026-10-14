@@ -5,7 +5,7 @@ resolves that path off disk at VIEW time, and the path usually points into the
 agent's per-process scratch directory -- reclaimed when the agent dies. The
 transcript then renders a permanently broken image.
 
-These tests pin the copy contract (:mod:`kiro_crew.chat_attachments`) and the two
+These tests pin the copy contract (:mod:`efm_go.chat_attachments`) and the two
 write boundaries that use it.
 """
 
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.chat_attachments import (
+from efm_go.chat_attachments import (
     MAX_ATTACHMENT_BYTES,
     _encode_destination,
     attachments_dir,
@@ -125,7 +125,7 @@ def test_missing_file_is_left_alone_without_raising(sessions, tmp_path):
 
 def test_oversize_image_is_skipped(sessions, tmp_path, monkeypatch):
     """(5) Session history is a conversation log, not a media store."""
-    monkeypatch.setattr("kiro_crew.chat_attachments.MAX_ATTACHMENT_BYTES", 16)
+    monkeypatch.setattr("efm_go.chat_attachments.MAX_ATTACHMENT_BYTES", 16)
     big = _write_png(tmp_path / "scratch" / "big.png")
     assert len(big.read_bytes()) > 16
     text = f"![big]({big})"
@@ -245,7 +245,7 @@ def test_restore_puts_the_directory_back_under_its_served_name(sessions, tmp_pat
 def test_a_purge_residue_is_reported_not_raised(sessions, tmp_path, monkeypatch):
     """A file the OS will not release (Windows: open in a viewer) leaves an orphan
     the operator is told about; the delete itself already succeeded."""
-    import kiro_crew.chat_attachments as mod
+    import efm_go.chat_attachments as mod
 
     source = _write_png(tmp_path / "scratch" / "shot.png")
     persist_inline_images(f"![s]({source})", sessions_dir=sessions, stem=STEM)
@@ -274,7 +274,7 @@ def test_a_destination_that_cannot_be_stored_still_counts_against_the_cap(
 ):
     """The cap bounds work under the lock, so an oversize or missing destination
     is charged too: a row of unstorable pictures cannot read without limit."""
-    import kiro_crew.chat_attachments as mod
+    import efm_go.chat_attachments as mod
 
     monkeypatch.setattr(mod, "MAX_IMAGES_PER_MESSAGE", 2)
     looked_at: list[str] = []
@@ -314,7 +314,7 @@ def test_an_escaped_destination_is_rewritten_not_orphaned(sessions, tmp_path):
 def test_a_repeat_after_the_cap_is_still_rewritten(sessions, tmp_path, monkeypatch):
     """The cap bounds distinct destinations. A repeat of one already stored costs
     nothing and must not be left naming the scratch file while its twin names storage."""
-    monkeypatch.setattr("kiro_crew.chat_attachments.MAX_IMAGES_PER_MESSAGE", 1)
+    monkeypatch.setattr("efm_go.chat_attachments.MAX_IMAGES_PER_MESSAGE", 1)
     first = _write_png(tmp_path / "scratch" / "a.png")
     second = _write_png(tmp_path / "scratch" / "b.png", OTHER_PNG_BYTES)
 
@@ -331,7 +331,7 @@ def test_a_repeat_after_the_cap_is_still_rewritten(sessions, tmp_path, monkeypat
 def test_a_repeated_reference_is_read_once_per_row(sessions, tmp_path, monkeypatch):
     """The copy hashes the whole file before it can see it is already stored, so a
     row repeating one reference must not pay that read per repeat."""
-    import kiro_crew.chat_attachments as mod
+    import efm_go.chat_attachments as mod
 
     source = _write_png(tmp_path / "scratch" / "shot.png")
     reads: list[str] = []
@@ -355,7 +355,7 @@ def test_a_repeated_reference_is_read_once_per_row(sessions, tmp_path, monkeypat
 
 def test_a_row_stops_after_the_per_message_image_cap(sessions, tmp_path, monkeypatch):
     """The copy runs under the session lock, so one row's work has a ceiling."""
-    monkeypatch.setattr("kiro_crew.chat_attachments.MAX_IMAGES_PER_MESSAGE", 2)
+    monkeypatch.setattr("efm_go.chat_attachments.MAX_IMAGES_PER_MESSAGE", 2)
     sources = [
         _write_png(tmp_path / "scratch" / f"s{i}.png", PNG_BYTES + bytes([i])) for i in range(4)
     ]
@@ -372,7 +372,7 @@ def test_a_row_stops_after_the_per_message_image_cap(sessions, tmp_path, monkeyp
 
 def test_a_row_stops_after_the_per_message_byte_cap(sessions, tmp_path, monkeypatch):
     """A byte ceiling as well, since one image may be far larger than another."""
-    monkeypatch.setattr("kiro_crew.chat_attachments.MAX_BYTES_PER_MESSAGE", len(PNG_BYTES))
+    monkeypatch.setattr("efm_go.chat_attachments.MAX_BYTES_PER_MESSAGE", len(PNG_BYTES))
     first = _write_png(tmp_path / "scratch" / "a.png", PNG_BYTES)
     second = _write_png(tmp_path / "scratch" / "b.png", OTHER_PNG_BYTES)
     out = persist_inline_images(f"![a]({first}) ![b]({second})", sessions_dir=sessions, stem=STEM)
@@ -384,7 +384,7 @@ def test_a_row_stops_after_the_per_message_byte_cap(sessions, tmp_path, monkeypa
 
 def test_a_repeated_image_is_not_charged_twice_to_the_budget(sessions, tmp_path, monkeypatch):
     """Content-addressing means a repeat costs no disk, so it costs no budget."""
-    monkeypatch.setattr("kiro_crew.chat_attachments.MAX_BYTES_PER_MESSAGE", len(PNG_BYTES))
+    monkeypatch.setattr("efm_go.chat_attachments.MAX_BYTES_PER_MESSAGE", len(PNG_BYTES))
     first = _write_png(tmp_path / "a" / "one.png")
     second = _write_png(tmp_path / "b" / "one.png")
 
@@ -439,7 +439,7 @@ def test_the_read_goes_through_the_house_chokepoint(sessions, tmp_path, monkeypa
     ``O_NOFOLLOW``), the hardlink refusal, and validation of the descriptor
     actually opened rather than of the path.
     """
-    import kiro_crew.chat_attachments as mod
+    import efm_go.chat_attachments as mod
 
     real = mod.safe_read_file_bytes_nolink
     calls: list[tuple[str, object]] = []
@@ -458,7 +458,7 @@ def test_the_read_goes_through_the_house_chokepoint(sessions, tmp_path, monkeypa
 
 def test_an_oversize_refusal_from_the_chokepoint_is_not_an_error(sessions, tmp_path, monkeypatch):
     """The chokepoint RAISES on oversize where the rest of it returns None."""
-    import kiro_crew.chat_attachments as mod
+    import efm_go.chat_attachments as mod
 
     def boom(path, *args, **kwargs):
         raise mod.FileTooLargeError("too big")
@@ -506,11 +506,11 @@ def test_same_text_modulo_images_pairs_a_copy_stored_on_a_unc_data_home(monkeypa
     forward-slash with ``peek_data_home`` patched, so the gate answers the same on
     the Linux CI box as on Windows -- the reason the UNC-gate tests give.
     """
-    from kiro_crew.messaging import outbound_files as module
+    from efm_go.messaging import outbound_files as module
 
     monkeypatch.setattr(module, "os", type("OS", (), {"name": "nt"})(), raising=False)
     unc_home = "//fileserver/home/me/.kiro/crew"
-    monkeypatch.setattr("kiro_crew.config.paths.peek_data_home", lambda: Path(unc_home))
+    monkeypatch.setattr("efm_go.config.paths.peek_data_home", lambda: Path(unc_home))
 
     unc_sessions = f"{unc_home}/sessions"
     stored = f"{unc_sessions}/{STEM}.attachments/0123456789abcdef-shot.png"

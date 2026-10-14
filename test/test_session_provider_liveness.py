@@ -15,10 +15,10 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent, LLMProvider
-from kiro_crew.session import _provider_effectively_alive
+from efm_go.providers.base import EVENT_COMPLETE, LLMEvent, LLMProvider
+from efm_go.session import _provider_effectively_alive
 
-_SESSION_PY = Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "session.py"
+_SESSION_PY = Path(__file__).resolve().parents[1] / "src" / "efm_go" / "session.py"
 
 
 class _BareProvider(LLMProvider):

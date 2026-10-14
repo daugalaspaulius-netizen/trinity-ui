@@ -119,7 +119,7 @@ def test_no_module_defines_a_fargate_forward_in_the_cloud_lane():
                         defined.add(f"{_rel(path)}::{node.name}")
     assert defined == set(), f"a second Fargate forward is defined: {sorted(defined)}"
 
-    from kiro_crew.cloud import connect
+    from efm_go.cloud import connect
 
     for name in sorted(RETIRED):
         assert not hasattr(connect, name), f"cloud.connect still exposes {name}"

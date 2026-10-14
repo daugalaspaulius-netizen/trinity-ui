@@ -6,9 +6,9 @@ from contextlib import closing
 
 from member_memory_helpers import forget_declared_stores, write_member_home
 
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.config import loader
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go._sqlite_compat import sqlite3
+from efm_go.config import loader
+from efm_go.vector_memory import VectorMemoryStore
 
 # The existing V1 schema after migrations 1, 2 and 3, before record metadata.
 # Keep this fixture independent of the current initializer and its DDL.

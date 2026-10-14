@@ -16,8 +16,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.cloud import launch_job as lj
-from kiro_crew.dashboard import handlers_cloud as hc
+from efm_go.cloud import launch_job as lj
+from efm_go.dashboard import handlers_cloud as hc
 
 
 @pytest.fixture(autouse=True)
@@ -232,7 +232,7 @@ class TestPluginInstallCommand:
     wrong for every Linux host — and Linux is the common case for a remote crew."""
 
     def _cmd(self, monkeypatch, system, arch, present):
-        from kiro_crew.cloud import ssm
+        from efm_go.cloud import ssm
 
         monkeypatch.setattr(ssm.platform, "system", lambda: system)
         monkeypatch.setattr(ssm, "_normalized_arch", lambda: arch)
@@ -736,7 +736,7 @@ class TestInstanceMutations:
     async def test_invalid_cloud_parameter_is_a_coded_400_not_a_500(self, tmp_path, monkeypatch):
         """ec2.* validates tag/profile/region and raises ValidationError, which is
         NOT an AWSError — without its own arm a malformed tag becomes a 500."""
-        from kiro_crew.validation import ValidationError
+        from efm_go.validation import ValidationError
 
         def _boom(tag, p, r, **kw):
             raise ValidationError("tag", "required")
@@ -838,7 +838,7 @@ class TestInstanceMutations:
         assert calls["unregistered"] == "i-fromjob"
 
     async def test_destroy_denied_maps_403(self, tmp_path, monkeypatch):
-        from kiro_crew.cloud.aws import CloudActionDenied
+        from efm_go.cloud.aws import CloudActionDenied
 
         def _boom(tag, p, r, **kw):
             raise CloudActionDenied("nope")
@@ -893,7 +893,7 @@ class RecordingEngine(FakeEngine):
 
 def _compose(monkeypatch, provider):
     """Install *provider* as ``current_context().remote_provisioners``."""
-    from kiro_crew.platform import context as ctx_mod
+    from efm_go.platform import context as ctx_mod
 
     monkeypatch.setattr(
         ctx_mod, "current_context", lambda: SimpleNamespace(remote_provisioners=provider)
@@ -1192,7 +1192,7 @@ class TestProvisionerSeam:
         as something they can fix -- the message names the file and the remedy -- rather than
         as a gateway fault.
         """
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         row = _Provisioner("aliased_lane")
 
@@ -1236,7 +1236,7 @@ class TestProvisionerSeam:
         Folding a host-setup refusal into ``unknown_provisioner`` would tell someone whose
         configuration is symlinked that the lane does not exist.
         """
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         row = _Provisioner("aliased_lane")
 

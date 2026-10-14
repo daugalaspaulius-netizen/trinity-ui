@@ -73,7 +73,7 @@ mkdirSync(OUT, { recursive: true })
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
 /** The block list `format=blocks` returns for a .docx. Shape and field names
- *  come from `kiro_crew.doc_blocks.extract_blocks`; this is one real document's
+ *  come from `efm_go.doc_blocks.extract_blocks`; this is one real document's
  *  worth of every block type the renderer handles. */
 const DOCX_BLOCKS = [
   { type: 'heading', level: 1, text: 'Q3 platform review' },

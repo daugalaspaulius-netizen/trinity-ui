@@ -47,14 +47,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.config.sections import McpGatewayConfig
-from kiro_crew.mcp_gateway import admission as adm
-from kiro_crew.mcp_gateway import gatewayd as gw
-from kiro_crew.mcp_gateway import host_budget as hb
-from kiro_crew.mcp_gateway import stub as stub_mod
-from kiro_crew.mcp_gateway import transport
-from kiro_crew.mcp_gateway.backend import Backend
-from kiro_crew.mcp_gateway.pool import BackendUnavailable, PoolAtCapacity, PoolKey
+from efm_go.config.sections import McpGatewayConfig
+from efm_go.mcp_gateway import admission as adm
+from efm_go.mcp_gateway import gatewayd as gw
+from efm_go.mcp_gateway import host_budget as hb
+from efm_go.mcp_gateway import stub as stub_mod
+from efm_go.mcp_gateway import transport
+from efm_go.mcp_gateway.backend import Backend
+from efm_go.mcp_gateway.pool import BackendUnavailable, PoolAtCapacity, PoolKey
 
 _POSIX_ONLY = pytest.mark.skipif(
     sys.platform == "win32",
@@ -1178,7 +1178,7 @@ class TestAcquireBackendOrder:
         cannot pass this: the third acquire would raise ``HostBudgetExhausted``
         instead of queueing.
         """
-        from kiro_crew.mcp_gateway.pool import BackendPool
+        from efm_go.mcp_gateway.pool import BackendPool
 
         pool = BackendPool(max_backends=8)
         admission = _admission(capacity=1, max_procs=2)
@@ -1221,7 +1221,7 @@ class TestAcquireBackendOrder:
 
     @pytest.mark.asyncio
     async def test_the_charge_is_released_on_a_gate_failure(self, monkeypatch) -> None:
-        from kiro_crew.mcp_gateway.pool import BackendPool
+        from efm_go.mcp_gateway.pool import BackendPool
 
         pool = BackendPool(max_backends=4)
         admission = _admission(capacity=1, max_procs=4)
@@ -1238,7 +1238,7 @@ class TestAcquireBackendOrder:
 
     @pytest.mark.asyncio
     async def test_resident_capacity_is_refused_before_any_fork(self, monkeypatch) -> None:
-        from kiro_crew.mcp_gateway.pool import BackendPool
+        from efm_go.mcp_gateway.pool import BackendPool
 
         pool = BackendPool(max_backends=1)
         occupant = _fake_backend()
@@ -1259,7 +1259,7 @@ class TestAcquireBackendOrder:
     async def test_prewarm_settles_neutral_at_once_and_a_stub_spawn_watches_initialize(
         self, monkeypatch
     ) -> None:
-        from kiro_crew.mcp_gateway.pool import BackendPool
+        from efm_go.mcp_gateway.pool import BackendPool
 
         pool = BackendPool(max_backends=4)
         admission = _admission(capacity=2, max_procs=4)
@@ -1473,7 +1473,7 @@ class TestPrewarmYieldsToALiveStub:
 
         monkeypatch.setattr(gw, "_acquire_backend", fake_acquire)
         monkeypatch.setattr(gw, "_audit_prewarm_spawn", lambda label: None)
-        caplog.set_level("INFO", logger="kiro_crew.mcp_gateway.prewarm")
+        caplog.set_level("INFO", logger="efm_go.mcp_gateway.prewarm")
         stop_event = asyncio.Event()
         daemon = asyncio.create_task(
             gw.run_gatewayd(

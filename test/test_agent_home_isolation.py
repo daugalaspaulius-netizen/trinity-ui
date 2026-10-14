@@ -21,10 +21,10 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew.config.paths import kiro_agents_dir, kiro_home
+from efm_go.config.paths import kiro_agents_dir, kiro_home
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SRC = REPO_ROOT / "src" / "kiro_crew"
+SRC = REPO_ROOT / "src" / "efm_go"
 
 
 @pytest.fixture(autouse=True)
@@ -103,7 +103,7 @@ def test_kiro_home_refuses_posix_system_dirs(monkeypatch, bad):
 
 def test_kiro_home_matches_kirocrew_home_safety_rules():
     """Both overrides share one predicate, so they refuse the same targets."""
-    from kiro_crew.config.paths import _is_unsafe_home
+    from efm_go.config.paths import _is_unsafe_home
 
     # Portable on every OS: a root is its own parent.
     assert _is_unsafe_home(Path(Path("/").resolve().anchor))
@@ -122,7 +122,7 @@ def test_macos_private_etc_is_refused():
     accepted ``KIRO_HOME=/etc`` and would create agent JSON inside a system
     directory.
     """
-    from kiro_crew.config.paths import _is_unsafe_home
+    from efm_go.config.paths import _is_unsafe_home
 
     assert _is_unsafe_home(Path("/etc").resolve())
     assert _is_unsafe_home(Path("/private/etc"))
@@ -145,7 +145,7 @@ def test_temp_dir_home_is_still_allowed():
     """
     import tempfile
 
-    from kiro_crew.config.paths import _is_unsafe_home
+    from efm_go.config.paths import _is_unsafe_home
 
     assert not _is_unsafe_home(Path(tempfile.gettempdir()).resolve())
 
@@ -159,7 +159,7 @@ def test_under_system_tmp_answers_on_the_call_time_root():
     """
     import tempfile
 
-    from kiro_crew.config.paths import _under_system_tmp
+    from efm_go.config.paths import _under_system_tmp
 
     root = Path(tempfile.gettempdir()).resolve()
     assert _under_system_tmp(root)
@@ -173,7 +173,7 @@ def test_under_system_tmp_answers_on_the_call_time_root():
 def _make_linked_worktree(tmp_path: Path) -> Path:
     """A directory whose ``.git`` is a linked-worktree gitdir pointer file."""
     wt = tmp_path / "kirocrew-wt-example"
-    (wt / "src" / "kiro_crew").mkdir(parents=True)
+    (wt / "src" / "efm_go").mkdir(parents=True)
     (wt / ".git").write_text(
         "gitdir: /somewhere/KiroCrew/.git/worktrees/kirocrew-wt-example\n",
         encoding="utf-8",
@@ -220,7 +220,7 @@ def _pin_default_home_and_breadcrumb(request, monkeypatch, tmp_path):
     pin would otherwise stub out. Only the cache reset is shared: cold-start
     assertions must hold regardless of test order.
     """
-    from kiro_crew.config import paths
+    from efm_go.config import paths
 
     monkeypatch.setattr(paths, "_resolved_home", None, raising=False)
     if "_isolate_default_home" in request.fixturenames:
@@ -235,11 +235,11 @@ def test_private_target_is_never_declined(monkeypatch, tmp_path):
     This is what keeps the guard from breaking KiroCrew's own suite: development
     happens in worktrees by hard rule, and those tests write to ``tmp_path``.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     # Target the ambient environment would never produce -> private by definition.
     monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", tmp_path / "private" / "agents")
     monkeypatch.setattr(agent, "kiro_agents_dir", lambda: tmp_path / "elsewhere")
@@ -259,7 +259,7 @@ def test_symlinked_shared_home_still_declines(monkeypatch, tmp_path):
     needed, and resolved by the same ``resolve()`` the guard relies on) — keeping
     this regression exercised there via ``make_dir_link`` rather than skipped.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     real = tmp_path / "real-kiro" / "agents"
     real.mkdir(parents=True)
@@ -267,7 +267,7 @@ def test_symlinked_shared_home_still_declines(monkeypatch, tmp_path):
     make_dir_link(link, tmp_path / "real-kiro")
 
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     # Same directory, two spellings: the target is reached through the symlink,
     # the machine-wide default through the real path.
     monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", link / "agents")
@@ -279,11 +279,11 @@ def test_symlinked_shared_home_still_declines(monkeypatch, tmp_path):
 
 
 def test_declines_when_running_from_worktree_without_kiro_home(monkeypatch, tmp_path):
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     _pretend_target_is_shared(monkeypatch, agent, tmp_path / "agents")
 
     declined = agent._decline_shared_agent_home()
@@ -297,15 +297,15 @@ def test_agent_home_inside_own_data_home_is_private(monkeypatch, tmp_path):
     That is provable privacy — the instance's own teardown owns the directory — so
     an ephemeral instance may write it freely.
     """
-    from kiro_crew import agent
-    from kiro_crew.config.paths import isolated_agents_dir
+    from efm_go import agent
+    from efm_go.config.paths import isolated_agents_dir
 
     own_home = tmp_path / "wt" / ".kirocrew-dev"
     own_home.mkdir(parents=True)
     agents = isolated_agents_dir(own_home)
 
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     monkeypatch.setenv("KIROCREW_HOME", str(own_home))
     monkeypatch.setenv("KIRO_HOME", str(own_home / "kiro"))
     _pretend_target_is_shared(monkeypatch, agent, agents)
@@ -322,14 +322,14 @@ def test_data_home_that_is_an_ancestor_does_not_make_shared_private(monkeypatch,
     specs the guard exists to protect. The exemption is now an EXACT match on the
     dedicated ``<data home>/kiro/agents``.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     fake_home = tmp_path / "home"
     shared = fake_home / ".kiro" / "agents"
     shared.mkdir(parents=True)
 
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
     # The data home is an ANCESTOR of the shared agents dir.
@@ -348,12 +348,12 @@ def test_global_kiro_home_in_a_worktree_still_declines(monkeypatch, tmp_path):
     and waved the write through; the comparison is against what the ambient
     environment resolves instead.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIROCREW_HOME", raising=False)
     monkeypatch.setenv("KIRO_HOME", str(tmp_path / "kiro-alt"))
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     _pretend_target_is_shared(monkeypatch, agent, tmp_path / "kiro-alt" / "agents")
 
     assert (
@@ -365,9 +365,9 @@ def test_cold_sel_decline_keeps_default_home_synthetic(
     monkeypatch, tmp_path, _isolate_default_home
 ):
     """Exercise key creation through the real writer after the override is removed."""
-    from kiro_crew import agent
-    from kiro_crew.config import paths
-    from kiro_crew.sel import SecurityEventLog
+    from efm_go import agent
+    from efm_go.config import paths
+    from efm_go.sel import SecurityEventLog
 
     _no_overrides(monkeypatch)
     monkeypatch.setattr(SecurityEventLog, "_instance", None)
@@ -381,7 +381,7 @@ def test_cold_sel_decline_keeps_default_home_synthetic(
     assert (home / paths.RECOVERY_BREADCRUMB_NAME).is_file()
 
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     shared = tmp_path / "shared-agents"
     _pretend_target_is_shared(monkeypatch, agent, shared)
     assert agent._decline_shared_agent_home() == shared / agent.AGENT_FILENAME
@@ -412,7 +412,7 @@ def test_declines_from_a_clone_under_the_temp_dir(monkeypatch, tmp_path):
     """
     import tempfile
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_HOME", raising=False)
@@ -421,9 +421,9 @@ def test_declines_from_a_clone_under_the_temp_dir(monkeypatch, tmp_path):
     (shared / agent.AGENT_FILENAME).write_text("{}", encoding="utf-8")
     with tempfile.TemporaryDirectory(prefix="kc-clone-") as scratch_name:
         clone = Path(scratch_name) / "repo"
-        (clone / "src" / "kiro_crew").mkdir(parents=True)
+        (clone / "src" / "efm_go").mkdir(parents=True)
         (clone / ".git").mkdir()  # a DIRECTORY -> ordinary clone, not a worktree
-        monkeypatch.setattr(agent, "__file__", str(clone / "src" / "kiro_crew" / "agent.py"))
+        monkeypatch.setattr(agent, "__file__", str(clone / "src" / "efm_go" / "agent.py"))
         _pretend_target_is_shared(monkeypatch, agent, shared)
 
         assert (
@@ -440,15 +440,15 @@ def test_does_not_decline_from_a_temp_clone_when_no_spec_exists(monkeypatch, tmp
     """
     import tempfile
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_HOME", raising=False)
     with tempfile.TemporaryDirectory(prefix="kc-clone-") as scratch_name:
         clone = Path(scratch_name) / "repo"
-        (clone / "src" / "kiro_crew").mkdir(parents=True)
+        (clone / "src" / "efm_go").mkdir(parents=True)
         (clone / ".git").mkdir()
-        monkeypatch.setattr(agent, "__file__", str(clone / "src" / "kiro_crew" / "agent.py"))
+        monkeypatch.setattr(agent, "__file__", str(clone / "src" / "efm_go" / "agent.py"))
         # Target resolves shared but holds no spec -> nothing to preserve.
         _pretend_target_is_shared(monkeypatch, agent, tmp_path / "agents")
 
@@ -470,7 +470,7 @@ def test_does_not_decline_from_an_appimage_runtime_mount(monkeypatch, tmp_path):
     """
     import tempfile
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_HOME", raising=False)
@@ -483,9 +483,9 @@ def test_does_not_decline_from_an_appimage_runtime_mount(monkeypatch, tmp_path):
         # fixture, so only the temp arm -- the one this test is about -- decides.
         (Path(scratch_name) / ".git").mkdir()
         mount = Path(scratch_name) / ".mount_KiroXk3Qm9"
-        (mount / "usr" / "lib" / "kiro_crew").mkdir(parents=True)
+        (mount / "usr" / "lib" / "efm_go").mkdir(parents=True)
         monkeypatch.setattr(
-            agent, "__file__", str(mount / "usr" / "lib" / "kiro_crew" / "agent.py")
+            agent, "__file__", str(mount / "usr" / "lib" / "efm_go" / "agent.py")
         )
         _pretend_target_is_shared(monkeypatch, agent, tmp_path / "agents")
 
@@ -512,7 +512,7 @@ def test_under_system_tmp_covers_posix_tmp_when_tmpdir_points_elsewhere(monkeypa
     if sys.platform == "win32":
         pytest.skip("no POSIX /tmp tree on Windows")
 
-    from kiro_crew.config import paths as paths_mod
+    from efm_go.config import paths as paths_mod
 
     monkeypatch.setattr(_tempfile, "gettempdir", lambda: str(tmp_path / "T"))
 
@@ -533,7 +533,7 @@ def test_under_system_tmp_omits_the_posix_literal_off_posix(monkeypatch, tmp_pat
     """
     import tempfile as _tempfile
 
-    from kiro_crew.config import paths as paths_mod
+    from efm_go.config import paths as paths_mod
 
     if sys.platform != "win32":
         pytest.skip("the drive-relative resolution being pinned is Windows-only")
@@ -562,7 +562,7 @@ def test_under_system_tmp_still_answers_yes_for_an_appimage_mount():
     """
     import tempfile
 
-    from kiro_crew.config.paths import _in_ephemeral_tree, _under_system_tmp
+    from efm_go.config.paths import _in_ephemeral_tree, _under_system_tmp
 
     mount = (Path(tempfile.gettempdir()) / ".mount_KiroXk3Qm9" / "usr" / "lib").resolve()
     assert _under_system_tmp(mount) is True
@@ -577,11 +577,11 @@ def test_does_not_decline_from_a_durable_clone(monkeypatch, tmp_path):
     lexical on the resolved path, so existence is not required, and a
     non-temp, non-worktree location is the durable-install shape.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_HOME", raising=False)
-    durable = Path("/durable-install/KiroCrew/src/kiro_crew/agent.py")
+    durable = Path("/durable-install/KiroCrew/src/efm_go/agent.py")
     monkeypatch.setattr(agent, "__file__", str(durable))
     _pretend_target_is_shared(monkeypatch, agent, tmp_path / "agents")
 
@@ -590,13 +590,13 @@ def test_does_not_decline_from_a_durable_clone(monkeypatch, tmp_path):
 
 def test_rebuild_agent_config_writes_nothing_when_declined(monkeypatch, tmp_path):
     """The guard must stop the write, not merely warn after it."""
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     agents_dir = tmp_path / "agents"
     _pretend_target_is_shared(monkeypatch, agent, agents_dir)
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
 
     returned = agent.rebuild_agent_config()
 
@@ -635,14 +635,14 @@ def test_refusal_is_sel_audited(monkeypatch, tmp_path):
     reconstructing what an ephemeral instance did to the host, so the log line
     alone is not enough.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     events = _capture_sel(monkeypatch, agent)
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     _pretend_target_is_shared(monkeypatch, agent, tmp_path / "agents")
 
     assert agent._decline_shared_agent_home() is not None
@@ -673,7 +673,7 @@ def test_allowed_shared_home_write_is_audited(monkeypatch, tmp_path):
     between "permitted" and "never attempted". Mirrors how ``api_lessons_create``
     records its allow and deny branches.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     events = _capture_sel(monkeypatch, agent)
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -683,7 +683,7 @@ def test_allowed_shared_home_write_is_audited(monkeypatch, tmp_path):
     # (correctly) declined by the temp-dir arm, and this test is about the GRANT
     # branch. The predicates are lexical on the resolved path, so the file need
     # not exist.
-    durable = Path("/durable-install/KiroCrew/src/kiro_crew/agent.py")
+    durable = Path("/durable-install/KiroCrew/src/efm_go/agent.py")
     monkeypatch.setattr(agent, "__file__", str(durable))
     _pretend_target_is_shared(monkeypatch, agent, tmp_path / "agents")
 
@@ -702,13 +702,13 @@ def test_private_target_emits_no_audit_event(monkeypatch, tmp_path):
     This bounds the audit to shared-resource decisions: without it every test and
     every pod boot would add events that carry no traceability.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     events = _capture_sel(monkeypatch, agent)
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", tmp_path / "private" / "agents")
     monkeypatch.setattr(agent, "kiro_agents_dir", lambda: tmp_path / "elsewhere")
 
@@ -729,8 +729,8 @@ def test_pod_env_gives_the_pod_its_own_homes():
     env pins the LIVE data home, so a pod's ``learn_add`` would write the real
     user's lessons.
     """
-    from kiro_crew.pod.config import PodConfig
-    from kiro_crew.pod.runtime import build_pod_env
+    from efm_go.pod.config import PodConfig
+    from efm_go.pod.runtime import build_pod_env
 
     cfg = PodConfig.load()
     home = Path("/tmp/kirocrew-pods/example")
@@ -749,15 +749,15 @@ def test_pod_target_is_private_so_the_guard_stands_aside(monkeypatch, tmp_path):
     Being refused is not harmless for a pod: it would inherit the shared spec,
     which pins the live data home.
     """
-    from kiro_crew import agent
-    from kiro_crew.config.paths import isolated_agents_dir
+    from efm_go import agent
+    from efm_go.config.paths import isolated_agents_dir
 
     pod_home = tmp_path / "pods" / "example"
     pod_home.mkdir(parents=True)
     monkeypatch.setenv("KIROCREW_HOME", str(pod_home))
     monkeypatch.setenv("KIRO_HOME", str(pod_home / "kiro"))
     wt = _make_linked_worktree(tmp_path)
-    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "kiro_crew" / "agent.py"))
+    monkeypatch.setattr(agent, "__file__", str(wt / "src" / "efm_go" / "agent.py"))
     _pretend_target_is_shared(monkeypatch, agent, isolated_agents_dir(pod_home))
 
     assert agent._decline_shared_agent_home() is None
@@ -774,7 +774,7 @@ def _durable_checkout(monkeypatch, agent_mod) -> None:
     and a real path a test can create lives under the redirected temp root,
     which the temp arm would (correctly) decline for its own reason.
     """
-    durable = Path("/durable-install/KiroCrew/src/kiro_crew/agent.py")
+    durable = Path("/durable-install/KiroCrew/src/efm_go/agent.py")
     monkeypatch.setattr(agent_mod, "__file__", str(durable))
 
 
@@ -789,7 +789,7 @@ def test_override_home_declines_shared_write_even_from_durable_checkout(monkeypa
     gateway never writes and strict identity failed closed in ALL sessions.
     Ephemerality arms never see this shape; the data-home arm must.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     events = _capture_sel(monkeypatch, agent)
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -822,7 +822,7 @@ def test_override_home_with_no_existing_spec_still_writes(monkeypatch, tmp_path)
     every turn dying at "Mode 'kirocrew' not found". Same precondition as the
     temp arm: decline only when there is something to preserve.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
@@ -842,8 +842,8 @@ def test_override_home_declines_when_only_a_sibling_spec_exists(monkeypatch, tmp
     surviving siblings with the foreign home — the same poison, one file over.
     The precondition therefore covers every ``OWNED_KIRO_AGENT_FILES`` entry.
     """
-    from kiro_crew import agent
-    from kiro_crew.agent_files import LITE_AGENT_FILENAME
+    from efm_go import agent
+    from efm_go.agent_files import LITE_AGENT_FILENAME
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
@@ -883,7 +883,7 @@ def test_self_pinned_specs_keep_their_writer(monkeypatch, tmp_path):
     rebuild — a self-lockout where the install's specs go permanently stale.
     Provenance matching is what lets it keep writing.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "relocated-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -900,7 +900,7 @@ def test_self_pinned_specs_keep_their_writer(monkeypatch, tmp_path):
 
 def test_foreign_pinned_specs_refuse(monkeypatch, tmp_path):
     """Specs pinned to a DIFFERENT home are someone else's — refuse."""
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
@@ -931,7 +931,7 @@ def test_unc_pin_refuses_without_touching_the_filesystem(monkeypatch, tmp_path):
     import os as os_mod
     from pathlib import Path
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "my-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -976,7 +976,7 @@ def test_symlinked_spec_is_present_and_unvouchable(monkeypatch, tmp_path):
     no-follow probe sees it, and the :func:`_spec_path_is_safe` fence every
     other spec reader in the module applies refuses to read through it.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "my-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -1002,7 +1002,7 @@ def test_case_differing_pin_reads_foreign(monkeypatch, tmp_path):
     own. Distinct spellings must compare foreign; the writer and reader share
     one resolver, so a self-written pin never differs by case.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "CrewHome").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -1030,7 +1030,7 @@ def test_resolution_equivalent_pin_reads_foreign(monkeypatch, tmp_path):
     provenance check forbids — so it reads foreign and refuses, the
     conservative direction every unparseable shape already takes.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "real-home").resolve()
     own_home.mkdir()
@@ -1063,7 +1063,7 @@ def test_oversized_spec_refuses_before_parsing(monkeypatch, tmp_path):
     """
     import pytest as _pytest
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "my-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -1099,7 +1099,7 @@ def test_non_regular_spec_refuses_without_opening(monkeypatch, tmp_path):
 
     import pytest as _pytest
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "my-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -1147,8 +1147,8 @@ def test_spec_growing_after_lstat_fails_closed(monkeypatch, tmp_path):
     (``False``) rather than let the raise abort the whole boot-path rebuild
     over a spec that changed underneath it.
     """
-    from kiro_crew import agent
-    from kiro_crew.hooks import FileTooLargeError
+    from efm_go import agent
+    from efm_go.hooks import FileTooLargeError
 
     own_home = (tmp_path / "my-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -1178,7 +1178,7 @@ def test_unnormalized_spelling_of_own_pin_stays_mine(monkeypatch, tmp_path):
     """
     import os
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "relocated-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -1196,7 +1196,7 @@ def test_unnormalized_spelling_of_own_pin_stays_mine(monkeypatch, tmp_path):
 
 def test_malformed_specs_refuse(monkeypatch, tmp_path):
     """An unparseable spec proves nothing about ownership — refuse."""
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
@@ -1219,7 +1219,7 @@ def test_custom_server_entries_cannot_vouch_ownership(monkeypatch, tmp_path):
     """
     import json
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "my-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -1251,7 +1251,7 @@ def test_garbage_recorded_home_refuses_without_crashing(monkeypatch, tmp_path):
     """
     import json
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
@@ -1278,7 +1278,7 @@ def test_mixed_pins_within_one_spec_refuse(monkeypatch, tmp_path):
     """
     import json
 
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = (tmp_path / "my-home").resolve()
     monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -1317,7 +1317,7 @@ def test_rebuild_round_trip_keeps_self_ownership(monkeypatch, tmp_path):
     proving ``_managed_mcp_env``'s pin and the ownership read agree, rather
     than both being asserted against hand-fabricated fixtures.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     own_home = tmp_path / "relocated-home"
     own_home.mkdir()
@@ -1348,7 +1348,7 @@ def test_rebuild_round_trip_keeps_self_ownership(monkeypatch, tmp_path):
 def test_rebuild_under_override_home_never_touches_shared_dir(monkeypatch, tmp_path):
     """``rebuild_agent_config`` under an override home must not rewrite an
     existing shared spec — the guard stops the write, not merely warns."""
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
@@ -1371,7 +1371,7 @@ def test_rebuild_under_override_home_never_touches_shared_dir(monkeypatch, tmp_p
 def test_default_home_instance_still_owns_shared_write(monkeypatch, tmp_path):
     """The other half of the contract: the DEFAULT-home instance keeps
     owning the shared specs — the new arm must not widen into refusing it."""
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_HOME", raising=False)
@@ -1386,8 +1386,8 @@ def test_default_home_instance_still_owns_shared_write(monkeypatch, tmp_path):
 def test_override_equal_to_default_home_still_owns_shared_write(monkeypatch, tmp_path):
     """A belt-and-braces ``KIROCREW_HOME=<default>`` export IS the default-home
     instance in substance; refusing it would leave its specs never refreshed."""
-    from kiro_crew import agent
-    from kiro_crew.config import paths
+    from efm_go import agent
+    from efm_go.config import paths
 
     monkeypatch.delenv("KIRO_HOME", raising=False)
     monkeypatch.delenv("KIROCREW_POD", raising=False)
@@ -1402,7 +1402,7 @@ def test_override_equal_to_default_home_still_owns_shared_write(monkeypatch, tmp
 
 def test_shared_kiro_agents_writable_predicate(monkeypatch, tmp_path):
     """The paths-level predicate: POD refuses, override refuses, default allows."""
-    from kiro_crew.config import paths
+    from efm_go.config import paths
 
     monkeypatch.delenv("KIROCREW_POD", raising=False)
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "override"))
@@ -1426,7 +1426,7 @@ def test_sessions_dir_follows_kiro_home(monkeypatch, tmp_path, unpinned_kiro_ses
     home would look for transcripts that are not there — losing session resume and
     letting ``SessionMap`` prune mappings whose files it cannot see.
     """
-    from kiro_crew.config.paths import kiro_agents_dir, kiro_sessions_dir
+    from efm_go.config.paths import kiro_agents_dir, kiro_sessions_dir
 
     monkeypatch.delenv("KIROCREW_HOME", raising=False)
     monkeypatch.setenv("KIRO_HOME", str(tmp_path / "pod-kiro"))
@@ -1438,7 +1438,7 @@ def test_sessions_dir_follows_kiro_home(monkeypatch, tmp_path, unpinned_kiro_ses
 
 def test_sessions_dir_defaults_to_dot_kiro(monkeypatch, unpinned_kiro_sessions_dir):
     _no_overrides(monkeypatch)
-    from kiro_crew.config.paths import kiro_sessions_dir
+    from efm_go.config.paths import kiro_sessions_dir
 
     assert kiro_sessions_dir() == Path.home() / ".kiro" / "sessions" / "cli"
 
@@ -1492,7 +1492,7 @@ _ALLOWED = {
     "config/paths.py",
     "security/paths.py",
     # A third case, and a different kind. The AWS Control crew container runs as its
-    # own process inside a Linux image where ``kiro_crew`` is not importable, so
+    # own process inside a Linux image where ``efm_go`` is not importable, so
     # ``supervisor/bundle.py`` re-implements this resolver rather than calling it.
     # The exempt file is that module's own TEST, which asserts what the
     # re-implementation returns against a tmp_path: it neither reads nor writes the

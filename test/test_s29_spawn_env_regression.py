@@ -37,8 +37,8 @@ from dashboard_owner_helpers import as_owner
 from test_app_execution import _install_test_app, _route_app
 from test_update_provider import _UNALLOCATABLE_PID
 
-from kiro_crew import platform_compat
-from kiro_crew.knowledge.llm_pool import CCWorker
+from efm_go import platform_compat
+from efm_go.knowledge.llm_pool import CCWorker
 
 MARKER = "S29_MARKER"
 PROBE_KEY = "KIROCREW_OWNER_ID"
@@ -85,8 +85,8 @@ async def _open_app_child_env(tmp_path, monkeypatch) -> dict[str, str]:
     one seam replaced, and only to read back the ``env`` the route handed it --
     the observable under test.
     """
-    import kiro_crew.apps.routes as routes
-    from kiro_crew.apps import execution
+    import efm_go.apps.routes as routes
+    from efm_go.apps import execution
 
     _install_test_app(
         tmp_path,
@@ -236,7 +236,7 @@ async def _run_worker_spawn(stub, monkeypatch) -> None:
     Teardown is unconditionally suppressed so a raising cleanup cannot decide
     this test's outcome instead of the assertion.
     """
-    import kiro_crew.knowledge.llm_pool as llm_pool
+    import efm_go.knowledge.llm_pool as llm_pool
 
     # The spawn inherits this process's working directory, and ``_spawn`` takes no
     # ``cwd``, so without this the stub child runs from the repository root. Any
@@ -337,7 +337,7 @@ async def test_knowledge_worker_wraps_at_the_operator_configured_tier(monkeypatc
     default -- so a worker that ignored the argument would read as ``auto``
     here rather than as the configured value.
     """
-    import kiro_crew.knowledge.llm_pool as llm_pool
+    import efm_go.knowledge.llm_pool as llm_pool
 
     seen: dict[str, object] = {}
 
@@ -385,7 +385,7 @@ async def test_a_respawned_worker_reads_the_current_tier_not_the_first_one(
     answer differently the second time, which is what an operator editing
     ``agent.sandbox`` between spawns looks like from here.
     """
-    import kiro_crew.knowledge.llm_pool as llm_pool
+    import efm_go.knowledge.llm_pool as llm_pool
 
     modes = iter(("standard", "strict"))
     seen: list[object] = []
@@ -434,7 +434,7 @@ async def test_pool_reads_the_tier_per_worker_not_once_at_start(monkeypatch) -> 
     inside the worker cannot help, because a pool-built worker is handed an
     explicit value and never resolves for itself.
     """
-    import kiro_crew.knowledge.llm_pool as llm_pool
+    import efm_go.knowledge.llm_pool as llm_pool
 
     modes = iter(("standard", "strict"))
     monkeypatch.setattr(llm_pool, "_get_sandbox_mode", lambda *a, **k: next(modes))

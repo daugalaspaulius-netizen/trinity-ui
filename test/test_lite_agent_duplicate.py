@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.agent import _LITE_AGENT_FILENAME, _install_lite_agent_fallback
+from efm_go.agent import _LITE_AGENT_FILENAME, _install_lite_agent_fallback
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ class TestLiteAgentDuplicate:
         aim_file = agents_dir / AIM_LITE_FILENAME
         aim_file.write_text(json.dumps({"name": "kirocrew-lite"}))
 
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
             _install_lite_agent_fallback()
 
         bare = agents_dir / _LITE_AGENT_FILENAME
@@ -46,7 +46,7 @@ class TestLiteAgentDuplicate:
 
     def test_fallback_writes_when_aim_version_missing(self, agents_dir: Path) -> None:
         """Fallback should write bare file when AIM version is absent."""
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
             _install_lite_agent_fallback()
 
         bare = agents_dir / _LITE_AGENT_FILENAME

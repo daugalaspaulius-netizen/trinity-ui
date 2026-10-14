@@ -43,16 +43,16 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from off_loop_helpers import off_loop
 
-from kiro_crew.apps.builtins.issue_radar.backend import (
+from efm_go.apps.builtins.issue_radar.backend import (
     crew_routes,
     crew_store,
     routes,
     store,
 )
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.crew_log.schema import KIND_SESSION
-from kiro_crew.crew_log.store import CrewLog
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.crew_log.schema import KIND_SESSION
+from efm_go.crew_log.store import CrewLog
 
 OWNER, REPO = "kirodotdev", "KiroCrew"  # brand-ok: the repository name
 BASE = "/api/apps/issue-radar"
@@ -604,7 +604,7 @@ class TitleHintDegradationTest(unittest.TestCase):
         _step(self.root, self.cid, 5109, "claimed", "claim", "mine")
 
     def test_an_unreadable_title_cache_still_folds_the_lane(self):
-        import kiro_crew.apps.builtins.issue_radar.backend.store as ir_store
+        import efm_go.apps.builtins.issue_radar.backend.store as ir_store
 
         def boom(*a, **k):
             raise OSError("cache vanished mid-refresh")

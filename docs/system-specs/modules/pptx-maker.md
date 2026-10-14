@@ -21,7 +21,7 @@ package, and the engine arrives over plain HTTPS, so `git` is not required. See
 Provisioning.
 
 Attribution: the app was originally written by **sktok** as a standalone app and
-ported here. See `src/kiro_crew/apps/builtins/pptx_maker/ATTRIBUTION.md`.
+ported here. See `src/efm_go/apps/builtins/pptx_maker/ATTRIBUTION.md`.
 
 Platform: `macos`, `linux`, and `windows`. The manifest exposes all three, and
 provisioning resolves the engine interpreter through the platform-specific POSIX
@@ -304,7 +304,7 @@ does not stage a BUILTIN app's non-manifest files into `~/.kiro/crew/apps/<name>
 user-triggered (it downloads a third-party tree and builds a venv) and idempotent.
 
 The **skill** is not part of provisioning: it lives in
-`src/kiro_crew/builtin_skills/pptx-maker/SKILL.md` (bundled, NOT the repo-only
+`src/efm_go/builtin_skills/pptx-maker/SKILL.md` (bundled, NOT the repo-only
 top-level `skills/`), which the gateway copies into the user's skills dir on
 every start. So it reaches every `pip`/DMG install whether or not the engine has
 been provisioned, per the skill-bundling rule in `AGENTS.md`. The manifest
@@ -866,8 +866,8 @@ state immediately.
 ## Tests
 
 Backend coverage spans the repo-level `test/test_pptx_maker_*.py` files and the
-package-local `src/kiro_crew/apps/builtins/pptx_maker/tests/` suite.
-`setup.cfg` sets `testpaths = test src/kiro_crew/apps/builtins`, so both locations
+package-local `src/efm_go/apps/builtins/pptx_maker/tests/` suite.
+`setup.cfg` sets `testpaths = test src/efm_go/apps/builtins`, so both locations
 are collected by CI:
 `..._paths.py` (segment grammar, traversal, symlink escape, deck-root
 resolution), `..._decks.py` (in-progress decks listed, newest compose epoch wins,

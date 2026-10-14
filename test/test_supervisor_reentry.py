@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import dep_sync, gateway_restart, platform_compat
-from kiro_crew.dashboard import stale_asset_watchdog
-from kiro_crew.update_ownership import Reentry
+from efm_go import dep_sync, gateway_restart, platform_compat
+from efm_go.dashboard import stale_asset_watchdog
+from efm_go.update_ownership import Reentry
 
 pytestmark = pytest.mark.skipif(not platform_compat.IS_POSIX, reason="systemd/launchd hosts")
 
@@ -62,7 +62,7 @@ class _Systemd:
 @pytest.fixture
 def systemd(monkeypatch):
     """A gateway launched by a generated systemd unit; ``systemd.runs`` sets its ExecStart."""
-    from kiro_crew.service import common, live_target
+    from efm_go.service import common, live_target
 
     monkeypatch.setenv("KIROCREW_SERVICE_MANAGED", "1")
     monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
@@ -93,7 +93,7 @@ def probe(monkeypatch):
     return recorder
 
 
-def _script(path: Path, interpreter: str, body: str = "import kiro_crew.cli\n") -> Path:
+def _script(path: Path, interpreter: str, body: str = "import efm_go.cli\n") -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"#!{interpreter}\n{body}", encoding="utf-8")
     path.chmod(0o755)
@@ -114,7 +114,7 @@ def test_without_a_service_manager_nothing_is_refused(monkeypatch):
 
 def test_a_marker_the_dashboard_consumed_still_counts(systemd, tmp_path):
     """start_dashboard takes the marker out of the environment before the watchdog runs."""
-    from kiro_crew.config.loader import consume_managed_service_launch_environment
+    from efm_go.config.loader import consume_managed_service_launch_environment
 
     systemd.runs(str(tmp_path / "gone" / "kirocrew"))
     consume_managed_service_launch_environment()
@@ -125,7 +125,7 @@ def test_a_marker_the_dashboard_consumed_still_counts(systemd, tmp_path):
 
 def test_an_exec_restart_hands_the_consumed_marker_to_its_successor(monkeypatch):
     """The successor of an in-app restart is the same service launch."""
-    from kiro_crew.config.loader import consume_managed_service_launch_environment
+    from efm_go.config.loader import consume_managed_service_launch_environment
 
     monkeypatch.setenv("KIROCREW_SERVICE_MANAGED", "1")
     consume_managed_service_launch_environment()
@@ -137,7 +137,7 @@ def test_an_exec_restart_hands_the_consumed_marker_to_its_successor(monkeypatch)
     )
     monkeypatch.setattr(platform_compat, "_disarm_process_alarm_before_exec", lambda: None)
 
-    platform_compat.reexec_python_module("kiro_crew", ["gateway"], executable=sys.executable)
+    platform_compat.reexec_python_module("efm_go", ["gateway"], executable=sys.executable)
 
     assert seen == ["1"]
 
@@ -214,7 +214,7 @@ def test_a_service_manager_that_does_not_answer_is_inconclusive(systemd, monkeyp
 
 def test_systemctl_show_is_parsed_and_bounded(monkeypatch, tmp_path):
     """The real reader: drop-ins merged by systemd, one bounded query per scope."""
-    from kiro_crew.service import common
+    from efm_go.service import common
 
     command = tmp_path / "bin" / "kirocrew"
     trusted = str(tmp_path / "trusted" / "systemctl")
@@ -250,7 +250,7 @@ def test_systemctl_show_is_parsed_and_bounded(monkeypatch, tmp_path):
 
 def test_a_systemctl_on_path_is_never_run(monkeypatch, tmp_path):
     """The check runs inside the gateway, whose PATH can lead with a writable directory."""
-    from kiro_crew.service import common
+    from efm_go.service import common
 
     planted = tmp_path / "planted"
     ran = tmp_path / "shim-ran"
@@ -396,7 +396,7 @@ def test_a_native_binary_not_run_as_the_gateway_is_a_wrapper(systemd, probe, tmp
     assert probe.calls == []
 
 
-@pytest.mark.parametrize("body", [b"", b"import kiro_crew.cli\n"], ids=["empty", "no-shebang"])
+@pytest.mark.parametrize("body", [b"", b"import efm_go.cli\n"], ids=["empty", "no-shebang"])
 def test_a_command_the_kernel_will_not_run_is_refused(systemd, probe, tmp_path, body):
     """A console script truncated mid-write: executable, but its exec fails."""
     command = tmp_path / "bin" / "kirocrew"
@@ -525,7 +525,7 @@ def test_only_a_probe_failure_that_proves_the_exec_would_fail_refuses(
 
 def test_a_live_target_that_starts_but_cannot_import_is_refused(systemd, tmp_path, monkeypatch):
     """The hop execs, so a target venv killed mid-install is what the relaunch runs."""
-    from kiro_crew.service import live_target
+    from efm_go.service import live_target
 
     systemd.runs(str(_script(tmp_path / "bin" / "kirocrew", sys.executable)))
     checkout = tmp_path / "worktree"
@@ -550,7 +550,7 @@ def test_a_live_target_whose_exec_fails_falls_back_to_the_supervisors_command(
     systemd, probe, tmp_path, monkeypatch, broken
 ):
     """``maybe_reexec`` swallows a failed exec and boots the supervisor's own build."""
-    from kiro_crew.service import live_target
+    from efm_go.service import live_target
 
     systemd.runs(str(_script(tmp_path / "bin" / "kirocrew", sys.executable)))
     checkout = tmp_path / "worktree"
@@ -569,7 +569,7 @@ def test_a_live_target_whose_exec_fails_falls_back_to_the_supervisors_command(
 @pytest.mark.parametrize("mode", [0o700, 0o600], ids=["executable", "not-executable"])
 def test_the_launchd_launcher_is_followed_to_its_target(monkeypatch, tmp_path, probe, mode):
     """Only once launchd could exec the launcher itself."""
-    from kiro_crew.service import common, live_target, macos
+    from efm_go.service import common, live_target, macos
 
     target = _script(tmp_path / "venv" / "bin" / "kirocrew", sys.executable)
     launcher = tmp_path / "live-gateway"
@@ -580,7 +580,7 @@ def test_the_launchd_launcher_is_followed_to_its_target(monkeypatch, tmp_path, p
     monkeypatch.setenv("KIROCREW_SERVICE_MANAGED", "1")
     monkeypatch.setattr(common, "current_platform", lambda: common.Platform.LAUNCHD)
     monkeypatch.setattr(live_target, "read_target_reason", lambda: (None, None))
-    monkeypatch.setattr("kiro_crew.service.controller.installed_unit_path", lambda: plist)
+    monkeypatch.setattr("efm_go.service.controller.installed_unit_path", lambda: plist)
     monkeypatch.setattr(macos, "LIVE_PROGRAM", launcher)
     monkeypatch.setattr(
         macos,
@@ -616,7 +616,7 @@ def test_the_whole_check_fits_inside_the_watchdogs_bound():
 
 def test_the_probe_honours_the_units_pythonpath(tmp_path):
     """Not isolated: a relaunch runs without -I, so PYTHONPATH reaches it too."""
-    shadow = tmp_path / "shadow" / "kiro_crew"
+    shadow = tmp_path / "shadow" / "efm_go"
     shadow.mkdir(parents=True)
     (shadow / "__init__.py").write_text("raise ImportError('shadowed')\n", encoding="utf-8")
     env = {**os.environ, "PYTHONPATH": str(shadow.parent)}
@@ -625,7 +625,7 @@ def test_the_probe_honours_the_units_pythonpath(tmp_path):
 
 
 def test_the_probe_ignores_the_callers_working_directory(tmp_path, monkeypatch):
-    shadow = tmp_path / "kiro_crew"
+    shadow = tmp_path / "efm_go"
     shadow.mkdir()
     (shadow / "__init__.py").write_text("raise ImportError('shadowed')\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
@@ -649,4 +649,4 @@ def test_the_probe_keeps_none_of_its_output(monkeypatch):
     assert seen["stdout"] is subprocess.DEVNULL
     assert seen["stderr"] is subprocess.DEVNULL
     # What ``gateway`` dispatches into too, not only the CLI's own module.
-    assert seen["argv"][-1] == "import kiro_crew.cli, kiro_crew.cli_server"
+    assert seen["argv"][-1] == "import efm_go.cli, efm_go.cli_server"

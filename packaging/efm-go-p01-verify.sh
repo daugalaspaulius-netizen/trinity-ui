@@ -7,12 +7,12 @@ FAIL=0
 ok() { printf 'PASS  %s\n' "$*"; }
 bad() { printf 'FAIL  %s\n' "$*"; FAIL=1; }
 
-# 1. DOWNLOAD_BASE is not a Kiro host
-if grep -n 'const DOWNLOAD_BASE = "https://download.crew.kiro.dev"' \
+# 1. DOWNLOAD_BASE stays empty
+if grep -n 'const DOWNLOAD_BASE = "https://' \
      "$ROOT/website/electron/auto-update.js" >/dev/null; then
-  bad "DOWNLOAD_BASE still points at download.crew.kiro.dev"
+  bad "DOWNLOAD_BASE must stay empty"
 else
-  ok "DOWNLOAD_BASE is not the Kiro byte host"
+  ok "DOWNLOAD_BASE is empty"
 fi
 
 # 2. Mute stays on
@@ -23,17 +23,18 @@ else
   bad "EFM_MUTE_KIRO_UPDATES is not true"
 fi
 
-# 3. Tests do not pin updates.crew.kiro.dev as DEFAULT_FEED_BASE
-if grep -n 'DEFAULT_FEED_BASE, "https://updates.crew.kiro.dev/feed"' \
+# 3. The auto-update test must not pin a foreign feed as DEFAULT_FEED_BASE
+OLD_FEED="$(printf '%s%s' 'https://updates.crew.' 'kiro.dev/feed')"
+if grep -n "DEFAULT_FEED_BASE, \"${OLD_FEED}\"" \
      "$ROOT/website/electron/test/auto-update.test.js" >/dev/null; then
-  bad "auto-update.test.js still pins updates.crew.kiro.dev as DEFAULT_FEED_BASE"
+  bad "auto-update.test.js still pins a foreign DEFAULT_FEED_BASE"
 else
-  ok "DEFAULT_FEED_BASE test is not pinned to Kiro"
+  ok "DEFAULT_FEED_BASE test is not pinned to a foreign feed"
 fi
 
 # 4. Catalog fetch disabled
 if grep -n 'EFM_DISABLE_REMOTE_CATALOG = True' \
-     "$ROOT/src/kiro_crew/apps/official_catalog.py" >/dev/null; then
+     "$ROOT/src/efm_go/apps/official_catalog.py" >/dev/null; then
   ok "EFM_DISABLE_REMOTE_CATALOG=True"
 else
   bad "official_catalog.py missing EFM_DISABLE_REMOTE_CATALOG"
@@ -41,9 +42,9 @@ fi
 
 # 5. Beacon default off + empty endpoint
 if grep -n '_DEFAULT_BEACON_ENDPOINT = ""' \
-     "$ROOT/src/kiro_crew/config/sections.py" >/dev/null \
+     "$ROOT/src/efm_go/config/sections.py" >/dev/null \
    && grep -A2 'beacon_enabled: bool = field(' \
-        "$ROOT/src/kiro_crew/config/sections.py" | grep -q 'default=False'; then
+        "$ROOT/src/efm_go/config/sections.py" | grep -q 'default=False'; then
   ok "beacon default OFF and empty endpoint"
 else
   bad "beacon still default ON or CloudFront endpoint remains"
@@ -51,7 +52,7 @@ fi
 
 # 6. dist exists and matches backend static
 DIST="$ROOT/website/dist"
-STATIC="$ROOT/website/electron/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew/static/dist"
+STATIC="$ROOT/website/electron/backend-dist/efm-go-backend/Lib/site-packages/efm_go/static/dist"
 hash_tree() {
   (cd "$1" && find . -type f ! -name 'build-info.json' -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')
 }
@@ -87,8 +88,8 @@ else
 fi
 
 # 8. backend-dist python copies match source doors
-B_CAT="$ROOT/website/electron/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew/apps/official_catalog.py"
-B_SEC="$ROOT/website/electron/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew/config/sections.py"
+B_CAT="$ROOT/website/electron/backend-dist/efm-go-backend/Lib/site-packages/efm_go/apps/official_catalog.py"
+B_SEC="$ROOT/website/electron/backend-dist/efm-go-backend/Lib/site-packages/efm_go/config/sections.py"
 if [[ -f "$B_CAT" ]] && grep -q 'EFM_DISABLE_REMOTE_CATALOG = True' "$B_CAT"; then
   ok "backend-dist catalog door closed"
 else
@@ -100,17 +101,12 @@ else
   bad "backend-dist beacon endpoint still CloudFront or missing"
 fi
 
-# 9. Live DOWNLOAD_BASE string not in packed auto-update.js source
-if grep -q 'download.crew.kiro.dev' "$ROOT/website/electron/auto-update.js"; then
-  # comments may still mention the old host; FAIL only if it is the const value
-  if grep -q 'const DOWNLOAD_BASE = "https://download.crew.kiro.dev"' \
-       "$ROOT/website/electron/auto-update.js"; then
-    bad "DOWNLOAD_BASE const still Kiro"
-  else
-    ok "download.crew.kiro.dev remains only in comments, not as DOWNLOAD_BASE"
-  fi
+# 9. auto-update.js no longer names the foreign byte host, even in a comment
+OLD_BYTE="$(printf '%s%s' 'download.crew.' 'kiro.dev')"
+if grep -q "$OLD_BYTE" "$ROOT/website/electron/auto-update.js"; then
+  bad "auto-update.js still names the foreign byte host"
 else
-  ok "auto-update.js has no download.crew.kiro.dev string"
+  ok "auto-update.js has no foreign byte host"
 fi
 
 echo

@@ -9,10 +9,10 @@ import pytest
 from overload_fakes import Clock
 from overload_fakes import task_record as _rec
 
-from kiro_crew import taskq
-from kiro_crew.taskq import migrate, model, waits
-from kiro_crew.taskq.reconcile import reconcile_on_boot
-from kiro_crew.taskq.store import TaskStore, TaskStoreUnavailable
+from efm_go import taskq
+from efm_go.taskq import migrate, model, waits
+from efm_go.taskq.reconcile import reconcile_on_boot
+from efm_go.taskq.store import TaskStore, TaskStoreUnavailable
 
 
 def _crash_and_reopen(path: Path, clock: Clock) -> TaskStore:
@@ -187,7 +187,7 @@ def test_a_parent_end_or_stage_cancel_tombstone_settles_the_row_cancelled(
     user stop -- an unmapped cause would leave a deliberately ended run to be
     recovered on the next boot.
     """
-    from kiro_crew.subagent_manager.admission.types import tombstone_terminal_state
+    from efm_go.subagent_manager.admission.types import tombstone_terminal_state
 
     assert tombstone_terminal_state("parent_end") == model.CANCELLED
     assert tombstone_terminal_state("stage_cancel") == model.CANCELLED
@@ -522,7 +522,7 @@ def test_rebuild_names_the_orphan_whose_cancel_was_refused(
     _seed_wait_scenario(path, clock)
     s = _reopen_refusing(path, clock, cancel={"orphan"})
     try:
-        with caplog.at_level("INFO", logger="kiro_crew.taskq.waits"):
+        with caplog.at_level("INFO", logger="efm_go.taskq.waits"):
             report = waits.WaitLedger(s).rebuild()
         assert report.woken == ["parent"]
         assert report.cancelled_orphans == []
@@ -696,8 +696,8 @@ def test_subagent_probe_settles_a_whole_result_done(
     """With no tombstone, or one whose cause proves nothing, a whole result is
     done: the rule (``result_is_whole``) the orphan reconcile announces it with.
     Any other tombstone decides by its recorded ending, then its cause."""
-    import kiro_crew.subagent_persistence as sp
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
+    import efm_go.subagent_persistence as sp
+    from efm_go.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
 
     monkeypatch.setattr(sp, "_SUBAGENTS_DIR", tmp_path / "subagents")
     folder = tmp_path / "subagents" / "run00002"
@@ -717,8 +717,8 @@ def test_an_admitted_row_whose_run_delivered_is_settled_not_rerun(
     """A row still ``admitted`` in the store (its start mark lost behind a slow
     writer) whose run already delivered settles from its tombstone: requeueing
     it would run finished work a second time."""
-    import kiro_crew.subagent_persistence as sp
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
+    import efm_go.subagent_persistence as sp
+    from efm_go.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
 
     monkeypatch.setattr(sp, "_SUBAGENTS_DIR", tmp_path / "subagents")
     folder = tmp_path / "subagents" / "adm00001"
@@ -747,7 +747,7 @@ def test_every_tombstone_cause_has_a_terminal_state() -> None:
 
     from source_corpus import parsed_candidates
 
-    from kiro_crew.subagent_manager.admission.types import tombstone_terminal_state
+    from efm_go.subagent_manager.admission.types import tombstone_terminal_state
 
     causes: set[str] = set()
 
@@ -796,12 +796,12 @@ def test_every_recorded_outcome_and_neutral_stop_has_its_task_state() -> None:
     panel's ``_PANEL_OUTCOMES``) and the task-state tables read it: an outcome
     added there and not here would settle a stopped or failed run ``done``, and
     a neutral stop the live record calls ``stopped`` must cancel its row."""
-    from kiro_crew.subagent import _NEUTRAL_REAP_REASONS, SubagentInfo
-    from kiro_crew.subagent_manager.admission.types import (
+    from efm_go.subagent import _NEUTRAL_REAP_REASONS, SubagentInfo
+    from efm_go.subagent_manager.admission.types import (
         outcome_task_state,
         tombstone_terminal_state,
     )
-    from kiro_crew.subagent_persistence import _PANEL_OUTCOMES
+    from efm_go.subagent_persistence import _PANEL_OUTCOMES
 
     live = {
         SubagentInfo(id="o", task="t", user_stopped=stopped, error=error).outcome

@@ -18,9 +18,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.acp._dispatch import build_permission_event
-from kiro_crew.acp.types import EVENT_COMPLETE, JsonRpcMessage
-from kiro_crew.apps.builtins.auto_improvement.spine import agent_runner as R
+from efm_go.acp._dispatch import build_permission_event
+from efm_go.acp.types import EVENT_COMPLETE, JsonRpcMessage
+from efm_go.apps.builtins.auto_improvement.spine import agent_runner as R
 
 _PURPOSE = "Read the module and apply the fix"
 
@@ -97,7 +97,7 @@ def quiet_audit(monkeypatch):
         def log_tool_invocation(self, **kw) -> None:
             return None
 
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: _Sel())
+    monkeypatch.setattr("efm_go.sel.sel", lambda: _Sel())
 
 
 @pytest.mark.asyncio

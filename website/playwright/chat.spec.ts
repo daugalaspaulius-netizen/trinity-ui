@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 // Prompt sentinels understood by the stub ACP backend. Keep in sync with
 // SLOW_TRIGGER / SLOW_NOACK_TRIGGER / SLOW_LATEACK_TRIGGER in
-// src/kiro_crew/testing/fake_acp_backend.py.
+// src/efm_go/testing/fake_acp_backend.py.
 const SLOW = '[[SLOW]]'
 const SLOW_NOACK = '[[SLOW_NOACK]]'
 const SLOW_LATEACK = '[[SLOW_LATEACK]]'
@@ -151,7 +151,7 @@ test.describe('Chat Page E2E Tests', { tag: '@needs-agent' }, () => {
 /**
  * Soft-stop E2E tests.
  *
- * Driven by the stub ACP backend (src/kiro_crew/testing/fake_acp_backend.py), so
+ * Driven by the stub ACP backend (src/efm_go/testing/fake_acp_backend.py), so
  * these need no model credentials: [[SLOW]] streams a long turn that DOES honour
  * session/cancel, answering stopReason:"cancelled" — the ack the host waits for.
  * They were @needs-live-agent while the stub dropped session/cancel entirely.
@@ -235,7 +235,7 @@ test.describe('Soft-Stop E2E Tests', { tag: '@needs-agent' }, () => {
  * The host half is `agent.soft_stop_budget_secs`, read server-side in
  * session.py stop_turn(). A client-side `page.route` override cannot reach it,
  * which is why this spec was dark. The harness fixture now declares 5.0
- * (src/kiro_crew/tests_fixtures/minimal/config.json), comfortably inside the
+ * (src/efm_go/tests_fixtures/minimal/config.json), comfortably inside the
  * 15s stream, so escalation fires around 5s. The 10.0 default would also
  * escalate before the stream ends, but it leaves only ~4s of headroom against
  * the assertion timeout on a loaded runner. Pinning it makes the dependency

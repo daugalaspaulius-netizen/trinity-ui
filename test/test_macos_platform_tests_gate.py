@@ -337,10 +337,10 @@ class TestTheOnDemandLaneCannotBecomeAGate:
         filters = next(step["with"]["filters"] for step in steps if step.get("id") == "filter")
         paths = yaml.safe_load(filters)["darwin"]
         assert {
-            "src/kiro_crew/session_pid.py",
-            "src/kiro_crew/session_lifecycle.py",
-            "src/kiro_crew/session_cleanup.py",
-            "src/kiro_crew/session_pool.py",
+            "src/efm_go/session_pid.py",
+            "src/efm_go/session_lifecycle.py",
+            "src/efm_go/session_cleanup.py",
+            "src/efm_go/session_pool.py",
             "test/test_darwin_native_provider_reap.py",
         } <= set(paths)
 
@@ -362,9 +362,9 @@ class TestTheOnDemandLaneCannotBecomeAGate:
         filters = next(step["with"]["filters"] for step in steps if step.get("id") == "filter")
         darwin = yaml.safe_load(filters)["darwin"]
         for path in (
-            "src/kiro_crew/hooks.py",
-            "src/kiro_crew/pinned_fs.py",
-            "src/kiro_crew/dashboard/handlers/files.py",
+            "src/efm_go/hooks.py",
+            "src/efm_go/pinned_fs.py",
+            "src/efm_go/dashboard/handlers/files.py",
             "test/test_safe_read_file_bytes_descriptor.py",
             "test/test_theme_install.py",
         ):

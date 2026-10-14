@@ -23,10 +23,10 @@ import pytest
 from crew_log_drain import assert_drained, settle, unsync_appends
 from off_loop_helpers import off_loop
 
-import kiro_crew.discord.transport_dispatch as td_mod
+import efm_go.discord.transport_dispatch as td_mod
 from conftest import CREDENTIAL_STRADDLE_SHAPES, assert_rejected_without_backtracking
-from kiro_crew import session_directive
-from kiro_crew.acp.types import (
+from efm_go import session_directive
+from efm_go.acp.types import (
     EVENT_COMPACTION_STATUS,
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
@@ -36,11 +36,11 @@ from kiro_crew.acp.types import (
     AcpEvent,
     TurnUsage,
 )
-from kiro_crew.autonudge import AutoNudgeService
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.discord import renderer as discord_renderer
-from kiro_crew.discord.attachments import process_discord_attachments
-from kiro_crew.discord.client import (
+from efm_go.autonudge import AutoNudgeService
+from efm_go.config import KiroCrewConfig
+from efm_go.discord import renderer as discord_renderer
+from efm_go.discord.attachments import process_discord_attachments
+from efm_go.discord.client import (
     _INTENT_DIRECT_MESSAGES,
     _INTENT_GUILD_MESSAGES,
     _INTENT_MESSAGE_CONTENT,
@@ -51,13 +51,13 @@ from kiro_crew.discord.client import (
     DiscordInteraction,
     _find_button_label,
 )
-from kiro_crew.discord.commands import (
+from efm_go.discord.commands import (
     COMMAND_SPEC,
     application_command_payload,
     parse_command,
     parse_mid_turn_override,
 )
-from kiro_crew.discord.renderer import (
+from efm_go.discord.renderer import (
     DiscordApprovalDecider,
     DiscordRenderer,
     _delivered_form,
@@ -67,12 +67,12 @@ from kiro_crew.discord.renderer import (
     build_option_components,
     session_provenance_tag,
 )
-from kiro_crew.discord.transport import (
+from efm_go.discord.transport import (
     DISCORD_CAPABILITIES,
     DiscordInboundMessage,
     DiscordTransport,
 )
-from kiro_crew.discord.transport_dispatch import (
+from efm_go.discord.transport_dispatch import (
     _NOT_A_SENDER,
     _STEER_ACK_EMOJI,
     DiscordDispatcher,
@@ -80,28 +80,28 @@ from kiro_crew.discord.transport_dispatch import (
     _queued_origin,
     _QueuedOrigin,
 )
-from kiro_crew.messaging import driver as messaging_driver
-from kiro_crew.messaging.attachments import cleanup
-from kiro_crew.messaging.display_safety import canonicalize_display, severs_a_credential
-from kiro_crew.messaging.link import (
+from efm_go.messaging import driver as messaging_driver
+from efm_go.messaging.attachments import cleanup
+from efm_go.messaging.display_safety import canonicalize_display, severs_a_credential
+from efm_go.messaging.link import (
     UNBIND_REASON_UNSPECIFIED,
     ChannelLink,
     legacy_dashboard_mirror_key,
 )
-from kiro_crew.messaging.queue_receipt import receipt_text as _receipt_text
-from kiro_crew.messaging.split import split_markdown_safe
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.monitoring.completion import MonitorCompletionHook
-from kiro_crew.monitoring.models import (
+from efm_go.messaging.queue_receipt import receipt_text as _receipt_text
+from efm_go.messaging.split import split_markdown_safe
+from efm_go.messaging.transport import InboundMessage
+from efm_go.monitoring.completion import MonitorCompletionHook
+from efm_go.monitoring.models import (
     MonitorActionCompletion,
     MonitorActionDisposition,
     MonitorBudgets,
     MonitorDispatchResult,
     MonitorOutcome,
 )
-from kiro_crew.session import SessionManager, _opt_out_key
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.session_map import ConversationOwnershipConflict
+from efm_go.session import SessionManager, _opt_out_key
+from efm_go.session_allocation import SessionClosingError
+from efm_go.session_map import ConversationOwnershipConflict
 
 _PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
 
@@ -661,8 +661,8 @@ def _prime_live(cfg: Any) -> None:
     """
     import dataclasses
 
-    from kiro_crew.config import live
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config import live
+    from efm_go.config.loader import KiroCrewConfig
 
     base = KiroCrewConfig()
     sections = {}
@@ -689,7 +689,7 @@ def _drop_live_config_snapshot():
     set the live config for every test after it in the same worker.
     """
     yield
-    from kiro_crew.config import live
+    from efm_go.config import live
 
     live.reset_for_tests()
 
@@ -705,8 +705,8 @@ def _live_discord(**discord_kw: Any):
     """
     import dataclasses
 
-    from kiro_crew.config import live
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config import live
+    from efm_go.config.loader import KiroCrewConfig
 
     previous = live.snapshot()
     base = previous if previous is not None else KiroCrewConfig()
@@ -910,7 +910,7 @@ class TestRotationSplitting:
         # stability promise and would interleave with the sealed frames. Holding
         # it back leaves ``cli.sent`` as exactly the sealed chunks, in order,
         # which is the channel every assertion below reads.
-        monkeypatch.setattr("kiro_crew.discord.renderer._EDIT_THROTTLE_S", 1e9)
+        monkeypatch.setattr("efm_go.discord.renderer._EDIT_THROTTLE_S", 1e9)
         return r, cli
 
     async def _rotate(
@@ -926,7 +926,7 @@ class TestRotationSplitting:
     async def test_pathological_rotation_work_is_offloaded(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.discord import renderer as renderer_module
+        from efm_go.discord import renderer as renderer_module
 
         r, _ = self._renderer(monkeypatch, 100)
         source = "`" * 5_000
@@ -1841,9 +1841,9 @@ class TestDiscordAttachmentAdapter:
             transcribed.append(path)
             return "spoken words"
 
-        monkeypatch.setattr("kiro_crew.transcribe.is_available", lambda: True)
-        monkeypatch.setattr("kiro_crew.transcribe.batch_duration_cap_secs", lambda _cfg: None)
-        monkeypatch.setattr("kiro_crew.transcribe.transcribe_audio", _transcribe)
+        monkeypatch.setattr("efm_go.transcribe.is_available", lambda: True)
+        monkeypatch.setattr("efm_go.transcribe.batch_duration_cap_secs", lambda _cfg: None)
+        monkeypatch.setattr("efm_go.transcribe.transcribe_audio", _transcribe)
 
         result = await process_discord_attachments(
             client,  # type: ignore[arg-type]
@@ -1875,7 +1875,7 @@ class TestDiscordAttachmentAdapter:
             observed.append(threading.get_ident())
             return False
 
-        monkeypatch.setattr("kiro_crew.transcribe.is_available", _available)
+        monkeypatch.setattr("efm_go.transcribe.is_available", _available)
         result = await process_discord_attachments(
             client,  # type: ignore[arg-type]
             [
@@ -2056,7 +2056,7 @@ class TestTransportReceive:
     ) -> None:
         events: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.discord.transport.sel",
+            "efm_go.discord.transport.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kwargs: events.append(kwargs)),
         )
         t, dispatched, _ = self._transport(["u1"], ["t1"])
@@ -2070,7 +2070,7 @@ class TestTransportReceive:
     ) -> None:
         events: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.discord.transport.sel",
+            "efm_go.discord.transport.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kwargs: events.append(kwargs)),
         )
         t, dispatched, _ = self._transport(["u1"], ["t1"])
@@ -2147,7 +2147,7 @@ class TestTransportReceive:
         async def _denied(_channel_type: str) -> bool:
             return False
 
-        monkeypatch.setattr("kiro_crew.discord.transport.channel_inbound_permitted", _denied)
+        monkeypatch.setattr("efm_go.discord.transport.channel_inbound_permitted", _denied)
         t, dispatched, client = self._transport(["u1"], allowed_channels=["c1"])
         await t.receive(
             DiscordInbound(
@@ -2663,7 +2663,7 @@ class TestRenderer:
         assert len(ids) == 2
         assert ids[0].startswith("a:req9:") and ids[0].endswith(":1")
         assert ids[1].startswith("a:req9:") and ids[1].endswith(":0")
-        from kiro_crew.messaging.renderer import new_approval_nonce
+        from efm_go.messaging.renderer import new_approval_nonce
 
         nonce = ids[0].split(":")[2]
         # Length is the shared minter's, not a Discord-local literal: three channels
@@ -2775,8 +2775,8 @@ class TestApprovalDecider:
         Without this the loop keeps waking, is denied by default, and spends its
         whole cycle cap accomplishing nothing.
         """
-        from kiro_crew import autonudge as _an
-        from kiro_crew.discord import renderer as _rend
+        from efm_go import autonudge as _an
+        from efm_go.discord import renderer as _rend
 
         recorded: list[str] = []
         monkeypatch.setattr(
@@ -2798,7 +2798,7 @@ class TestApprovalDecider:
         Recording it would stop a loop whose operator is right there declining
         one tool.
         """
-        from kiro_crew import autonudge as _an
+        from efm_go import autonudge as _an
 
         recorded: list[str] = []
         monkeypatch.setattr(
@@ -2829,7 +2829,7 @@ def _read_session_log(unit: str) -> list[Any]:
     the eager folder reads the unit on its own thread after each entry, and an
     acquire on the event-loop thread makes one attempt that such a read refuses.
     """
-    from kiro_crew.crew_log import projection
+    from efm_go.crew_log import projection
 
     handle = projection.open_session_log(unit)
     assert handle is not None, f"no crew log for {unit!r}"
@@ -2864,7 +2864,7 @@ class TestDispatcher:
         RED-BEFORE: without the restricted-session gate at the refusal point the
         private message is written verbatim to ``refused.jsonl``.
         """
-        from kiro_crew.messaging import inbound_spool as S
+        from efm_go.messaging import inbound_spool as S
 
         monkeypatch.setattr(S, "data_home", lambda: tmp_path)
         d, _cli, sess = _dispatcher({"u1"})
@@ -3017,7 +3017,7 @@ class TestDispatcher:
             return False
 
         monkeypatch.setattr(
-            "kiro_crew.discord.transport_dispatch.channel_inbound_permitted", _denied
+            "efm_go.discord.transport_dispatch.channel_inbound_permitted", _denied
         )
         result = await d.handle_message(
             self._msg("[Monitor wake]"),
@@ -3323,9 +3323,9 @@ class TestDispatcher:
             return provider, False, False
 
         sess.get_or_create = _get_or_create  # type: ignore[method-assign]
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: service)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: service)
         monkeypatch.setattr(
-            "kiro_crew.autonudge_authz.sel",
+            "efm_go.autonudge_authz.sel",
             lambda: SimpleNamespace(log_tool_invocation=lambda **_kwargs: None),
         )
         completion = MonitorCompletionHook(
@@ -3370,7 +3370,7 @@ class TestDispatcher:
     async def test_session_released_even_when_renderer_close_raises(self, monkeypatch) -> None:
         """A rendering-finalization failure (e.g. Discord returning a
         malformed body) must never leave the session permanently busy."""
-        from kiro_crew.discord.renderer import DiscordRenderer
+        from efm_go.discord.renderer import DiscordRenderer
 
         async def _boom(self) -> None:
             raise RuntimeError("finalization failed")
@@ -3426,7 +3426,7 @@ class TestDispatcher:
             cleanup(paths)
 
         monkeypatch.setattr(
-            "kiro_crew.discord.transport_dispatch.cleanup_attachments",
+            "efm_go.discord.transport_dispatch.cleanup_attachments",
             _cleanup,
         )
         d, cli, _ = _dispatcher({"u1"})
@@ -3928,9 +3928,9 @@ class TestDispatcher:
         from aiohttp import web
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.crew_log import emit
-        from kiro_crew.crew_log.resolve import unit_for_session_key
-        from kiro_crew.dashboard.handlers import work_ledger as ledger_routes
+        from efm_go.crew_log import emit
+        from efm_go.crew_log.resolve import unit_for_session_key
+        from efm_go.dashboard.handlers import work_ledger as ledger_routes
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
         monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -4008,8 +4008,8 @@ class TestDispatcher:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.crew_log import emit
-        from kiro_crew.dashboard.channel_slots import channel_slot_name
+        from efm_go.crew_log import emit
+        from efm_go.dashboard.channel_slots import channel_slot_name
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
         monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -4057,7 +4057,7 @@ class TestDispatcher:
         runner, which alone holds its lineage (``_created_by``); an opener from here
         would create that log without its ``parent``. The channel's own session is
         opened, the resumed one is left to its owner."""
-        from kiro_crew.crew_log import emit as crew_log_emit
+        from efm_go.crew_log import emit as crew_log_emit
 
         opened: list[str] = []
         monkeypatch.setattr(
@@ -4112,7 +4112,7 @@ class TestDispatcher:
         Real emitter and writer. The recycle is modelled at its observable seam: the
         mapping still names the predecessor while the provider hands out a new id.
         """
-        from kiro_crew.crew_log import emit
+        from efm_go.crew_log import emit
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
         monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -4165,7 +4165,7 @@ class TestDispatcher:
         (the permit wait), the concurrent recycle lands during that suspension, and
         the double captures the predecessor as the real boundary does -- at the
         registration, not before the call."""
-        from kiro_crew.crew_log import emit
+        from efm_go.crew_log import emit
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
         monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -4221,8 +4221,8 @@ class TestDispatcher:
         renderer setup, attachment I/O or any other await."""
         import contextlib
 
-        from kiro_crew.crew_log import emit
-        from kiro_crew.discord import transport_dispatch as td
+        from efm_go.crew_log import emit
+        from efm_go.discord import transport_dispatch as td
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
         monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -4588,7 +4588,7 @@ class TestInteractions:
             order.append("roster")
             return original_authorized(user_id)
 
-        import kiro_crew.discord.transport_dispatch as td
+        import efm_go.discord.transport_dispatch as td
 
         with mock.patch.object(td, "channel_inbound_permitted", _ceiling):
             cli.ack_component_interaction = _ack  # type: ignore[method-assign]
@@ -4659,7 +4659,7 @@ class TestInteractions:
         """
         import json
 
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         pdir.mkdir(exist_ok=True)
         monkeypatch.setattr(gp, "_PROFILES_DIR", pdir)
@@ -4686,7 +4686,7 @@ class TestInteractions:
         fold of everything sent and every edit applied, not merely as an empty edit
         list, because a component-only edit would also change what the channel shows.
         """
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         d, cli, _ = _dispatcher({"u1"})
         card_id = await cli.send_message(
@@ -4732,7 +4732,7 @@ class TestInteractions:
         separates a late read from an early one; the reject arm is the only press that
         reaches the verdict without the pre-resolve gate having read the ceiling.
         """
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         d, cli, _ = _dispatcher({"u1"})
         pdir = tmp_path / "profiles"
@@ -4900,7 +4900,7 @@ class TestInteractions:
         # (removing the gate makes the pending future resolve → test fails).
         import json
 
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         pdir = tmp_path / "profiles"
         pdir.mkdir()
@@ -4947,7 +4947,7 @@ class TestInteractions:
         # stays exactly as it was posted while the channel was still allowed.
         import json
 
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         pdir = tmp_path / "profiles"
         pdir.mkdir()
@@ -4985,7 +4985,7 @@ class TestInteractions:
         # driving a turn. Regression-locks the dispatcher's inbound chokepoint.
         import json
 
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         pdir = tmp_path / "profiles"
         pdir.mkdir()
@@ -5319,7 +5319,7 @@ class TestCommandSurfaceParity:
     async def test_every_catalogued_command_is_answered_over_slash(self, name: str) -> None:
         d, cli, _sess = _dispatcher({"u1"})
         with (
-            mock.patch("kiro_crew.dashboard.token_auth.generate_token", return_value="TKN"),
+            mock.patch("efm_go.dashboard.token_auth.generate_token", return_value="TKN"),
             mock.patch.object(td_mod, "safety_override") as so,
             mock.patch.object(td_mod, "describe_grant_lifetime", return_value="30m"),
         ):
@@ -5363,7 +5363,7 @@ class TestTheProcessGrantAnswersDiscordPermissions:
     async def test_an_interactive_permission_is_answered_by_the_grant_first(
         self, monkeypatch, granted: bool
     ) -> None:
-        from kiro_crew.safety_override import safety_override
+        from efm_go.safety_override import safety_override
 
         answered: list[tuple[str, str]] = []
         asked: list[str] = []
@@ -5440,7 +5440,7 @@ class TestRenderTogglesAreWiredPerTurn:
         the turn: reactions stay on (the loud default) and reasoning stays off
         (the quiet one)."""
         d, _cli, _sess = _dispatcher({"u1"})
-        with mock.patch("kiro_crew.config.loader.KiroCrewConfig.load", side_effect=OSError):
+        with mock.patch("efm_go.config.loader.KiroCrewConfig.load", side_effect=OSError):
             assert d._render_config() == (True, False)
 
 
@@ -5608,7 +5608,7 @@ class TestReviewFindingRegressions:
     async def test_an_ambiguous_allowlist_gets_no_owner_dm(self) -> None:
         """With no owner field and several allow-listed users, picking the first
         would send private agent output to the wrong human."""
-        from kiro_crew.dashboard.handlers.messaging import _owner_dm_target
+        from efm_go.dashboard.handlers.messaging import _owner_dm_target
 
         def _t(tid: str, available: bool = True) -> Any:
             return SimpleNamespace(target_id=tid, available=available)
@@ -5665,7 +5665,7 @@ class TestReviewFindingRegressions:
     def test_the_install_url_grants_thread_creation(self) -> None:
         """`auto_thread` promotes a channel message into a NEW public thread, so
         an install without this bit answers nothing in an allowed channel."""
-        from kiro_crew.discord.install_url import (
+        from efm_go.discord.install_url import (
             PERM_CREATE_PUBLIC_THREADS,
             THREAD_PERMISSIONS,
         )
@@ -5808,7 +5808,7 @@ class TestDrainSenderIdentity:
     @pytest.mark.asyncio
     async def test_a_senders_own_surplus_is_still_counted(self) -> None:
         """The guard against fixing the count by always reporting zero."""
-        from kiro_crew.discord.transport_dispatch import _MAX_COLLAPSE
+        from efm_go.discord.transport_dispatch import _MAX_COLLAPSE
 
         d, _cli, sess = _dispatcher({"u1"}, dm_scope="unified")
         deferred: list[int] = []
@@ -6130,7 +6130,7 @@ class TestRotationSeamCredentialSafety:
         cli = FakeClient()
         r = DiscordRenderer(cli, "chan1", DISCORD_CAPABILITIES, session_key="sk")  # type: ignore[arg-type]
         monkeypatch.setattr(r, "_limit", lambda: limit)
-        monkeypatch.setattr("kiro_crew.discord.renderer._EDIT_THROTTLE_S", 1e9)
+        monkeypatch.setattr("efm_go.discord.renderer._EDIT_THROTTLE_S", 1e9)
         return r, cli
 
     #: A cut inside an unbroken run of non-space characters is a HARD cut at the
@@ -6256,7 +6256,7 @@ class TestRotationSeamCredentialSafety:
         """
         head, tail = "AKIAIOSF", "ODNN7EXAMPLE"
         src = self._straddling_source(head, tail)
-        monkeypatch.setattr("kiro_crew.discord.renderer.safe_split_offset", lambda *a, **k: 0)
+        monkeypatch.setattr("efm_go.discord.renderer.safe_split_offset", lambda *a, **k: 0)
         r, cli = self._renderer(monkeypatch, self._LIMIT)
         r._buf = [src]
 
@@ -6400,8 +6400,8 @@ class TestRotationSeamCredentialSafety:
         # sees it: canonicalising collapses the link to its label, and the literal
         # form has the run between the halves. The seal's own split grading must
         # still catch the key after each delivered frame consumes the emphasis run.
-        from kiro_crew.messaging import display_safety
-        from kiro_crew.messaging import split as messaging_split
+        from efm_go.messaging import display_safety
+        from efm_go.messaging import split as messaging_split
 
         further_readings = (display_safety._plain_reading,)
         monkeypatch.setattr(display_safety, "FURTHER_READINGS", further_readings)
@@ -6466,7 +6466,7 @@ class TestTheLiveBubbleSeamSurvivesItsEditLifecycle:
         )
         # No throttle: every chunk becomes its own live frame so the bubble is
         # edited more than once, which is exactly where the ungraded rewrite lived.
-        monkeypatch.setattr("kiro_crew.discord.renderer._EDIT_THROTTLE_S", 0.0)
+        monkeypatch.setattr("efm_go.discord.renderer._EDIT_THROTTLE_S", 0.0)
         return r, cli
 
     @staticmethod

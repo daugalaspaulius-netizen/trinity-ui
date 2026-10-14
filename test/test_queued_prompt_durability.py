@@ -30,12 +30,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.dashboard.chat_persistence import (
+from efm_go.dashboard.chat_persistence import (
     _rehydrate_slot_from_history,
     _save_slot_to_history,
     restore_recent_sessions,
 )
-from kiro_crew.dashboard.slot_queue_repository import (
+from efm_go.dashboard.slot_queue_repository import (
     EMPTY_QUEUE_SIGNATURE,
     MAX_DURABLE_QUEUE_BYTES,
     MAX_DURABLE_QUEUE_ENTRIES,
@@ -47,8 +47,8 @@ from kiro_crew.dashboard.slot_queue_repository import (
     sanitize_restored_queue,
     warn_if_not_durable,
 )
-from kiro_crew.dashboard.state import DashboardState
-from kiro_crew.history import (
+from efm_go.dashboard.state import DashboardState
+from efm_go.history import (
     ROWS_ONLY_DEFERRED_META_KEYS,
     SLOT_OWNED_META_KEYS,
     ConversationLog,
@@ -56,7 +56,7 @@ from kiro_crew.history import (
 
 #: The logger the durable-queue warning is emitted on, so a caplog assertion
 #: names the real emitter rather than the root logger.
-_QUEUE_LOGGER = "kiro_crew.dashboard.slot_queue_repository"
+_QUEUE_LOGGER = "efm_go.dashboard.slot_queue_repository"
 
 
 def _make_state(tmp_path) -> DashboardState:
@@ -89,7 +89,7 @@ def _meta(state, name: str = "s1") -> dict:
 
 @pytest.fixture(autouse=True)
 def _config_dir(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
 
 
 class TestDurableSelection:
@@ -327,7 +327,7 @@ class TestDrift:
         slot._dirty = False
         saver = MagicMock()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.dashboard_persistence._current_slot_saver",
+            "efm_go.dashboard.dashboard_persistence._current_slot_saver",
             lambda: saver,
         )
 
@@ -664,7 +664,7 @@ class TestEnqueueStartsTheWriteImmediately:
     async def test_a_queued_prompt_reaches_disk_without_the_periodic_flush(self, tmp_path) -> None:
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -684,7 +684,7 @@ class TestEnqueueStartsTheWriteImmediately:
         import asyncio as _asyncio
         import threading
 
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -708,7 +708,7 @@ class TestEnqueueStartsTheWriteImmediately:
         assert seen and loop_thread not in seen
 
     def test_no_running_loop_leaves_the_write_to_the_flush(self, tmp_path) -> None:
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -725,7 +725,7 @@ class TestEnqueueStartsTheWriteImmediately:
     async def test_a_failed_background_write_is_logged_not_raised(self, tmp_path, caplog) -> None:
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -755,7 +755,7 @@ class TestOneWriterPerSlot:
         import asyncio as _asyncio
         import threading
 
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -804,7 +804,7 @@ class TestOneWriterPerSlot:
     async def test_the_single_flight_is_released_after_a_failed_write(self, tmp_path) -> None:
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -826,7 +826,7 @@ class TestOneWriterPerSlot:
     async def test_a_settled_debt_does_not_start_an_endless_chain(self, tmp_path) -> None:
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -957,7 +957,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
     async def test_an_owed_prompt_alone_still_attempts_the_write(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -980,7 +980,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
     async def test_a_deferred_queue_is_reported_with_its_count(
         self, tmp_path, monkeypatch, caplog
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1019,7 +1019,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
 
     @pytest.mark.asyncio
     async def test_a_carried_queue_is_not_reported(self, tmp_path, monkeypatch, caplog) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1045,7 +1045,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
 
     @pytest.mark.asyncio
     async def test_a_truly_idle_slot_still_writes_nothing(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1068,7 +1068,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
     async def test_a_declined_write_counts_the_pending_queue_as_lost(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1093,7 +1093,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
     async def test_a_raising_write_counts_the_pending_queue_as_lost(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1117,7 +1117,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
     async def test_an_already_durable_queue_is_not_counted_lost_by_a_failed_write(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1144,7 +1144,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
     async def test_a_failed_notification_does_not_fail_the_drain(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1164,7 +1164,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
         assert result == chat_handlers._HandoverDrainResult(rows_committed=True, prompts_lost=1)
 
     def test_the_result_is_truthy_even_when_the_write_failed(self) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         # A NamedTuple is a non-empty tuple, so ``if not result:`` passes over a
         # failed drain. This pin makes the hazard explicit: callers must read
@@ -1182,7 +1182,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
         the shared line is the entries' only copy — and a same-key recreate
         persists at birth, rebuilding that line without them. Survival must be
         read from the line, or exactly this hand-over reports zero loss."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1218,7 +1218,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
         a transcript-sharing holder is alive: that holder's next full save
         rebuilds ``queued_prompts`` from its own queue. Survival is the
         holder's queue, not a lucky snapshot of the line."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1248,7 +1248,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
     async def test_a_cleared_line_is_reported_even_when_nothing_needs_writing(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1284,7 +1284,7 @@ class TestHandoverDoesNotSilentlyDropAQueuedPrompt:
         """The line is the survival test in BOTH directions: entries a
         replacement's own save kept on the shared line live on as queue cards,
         so counting them lost would over-report."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1373,7 +1373,7 @@ class TestAnAcceptedButUnpersistedPromptIsReported:
         # an unrelated mention of the word in prose does not fail this.
         import inspect
 
-        from kiro_crew.dashboard import chat_delivery, chat_handlers
+        from efm_go.dashboard import chat_delivery, chat_handlers
 
         assert '"durable":' not in inspect.getsource(chat_delivery)
         assert '"durable":' not in inspect.getsource(chat_handlers)
@@ -1388,14 +1388,14 @@ class TestAnAcceptedButUnpersistedPromptIsReported:
     def test_an_ordinary_enqueue_emits_no_warning_and_reaches_disk(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
         frames: list[tuple[str, dict]] = []
         monkeypatch.setattr(state, "broadcast_ws", lambda kind, data: frames.append((kind, data)))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_delivery.start_queue_persist", lambda *_a: None
+            "efm_go.dashboard.chat_delivery.start_queue_persist", lambda *_a: None
         )
 
         queue_for_next_turn(state, slot, "my follow-up", directive_user_origin=True)
@@ -1410,7 +1410,7 @@ class TestAnAcceptedButUnpersistedPromptIsReported:
     def test_an_over_cap_enqueue_warns_and_is_still_accepted(
         self, tmp_path, monkeypatch, caplog
     ) -> None:
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1418,7 +1418,7 @@ class TestAnAcceptedButUnpersistedPromptIsReported:
             slot.queue_append(f"earlier {i}")
         monkeypatch.setattr(state, "broadcast_ws", lambda *_a: None)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_delivery.start_queue_persist", lambda *_a: None
+            "efm_go.dashboard.chat_delivery.start_queue_persist", lambda *_a: None
         )
 
         with caplog.at_level(logging.WARNING, logger=_QUEUE_LOGGER):
@@ -1537,7 +1537,7 @@ class TestTheHoldBranchStartsTheWrite:
     """
 
     def test_the_hold_branch_imports_the_shared_persist_seam(self) -> None:
-        from kiro_crew.dashboard import chat_delivery, chat_handlers
+        from efm_go.dashboard import chat_delivery, chat_handlers
 
         assert chat_handlers.start_queue_persist is chat_delivery.start_queue_persist
 
@@ -1546,7 +1546,7 @@ class TestTheHoldBranchStartsTheWrite:
     ) -> None:
         import inspect
 
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         # The branch is inside the send handler behind a sub-agent probe; pin the
         # call at the source so the receipt and the write cannot drift apart.
@@ -1556,7 +1556,7 @@ class TestTheHoldBranchStartsTheWrite:
         assert "start_queue_persist(state, slot)" in hold
 
     def test_both_accept_paths_use_one_persist_function(self) -> None:
-        from kiro_crew.dashboard import chat_delivery
+        from efm_go.dashboard import chat_delivery
 
         assert callable(chat_delivery.start_queue_persist)
         # Public, because two modules now depend on it: a private name would
@@ -1576,7 +1576,7 @@ class TestRestoredEntriesCarryNoAdmissionSnapshot:
     """
 
     def test_the_containment_snapshot_is_stripped_on_restore(self) -> None:
-        from kiro_crew.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
+        from efm_go.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
 
         forged = {
             "linked": True,
@@ -1599,7 +1599,7 @@ class TestRestoredEntriesCarryNoAdmissionSnapshot:
     def test_the_rest_of_meta_survives(self) -> None:
         # sendId and attachment lists decide nothing about audience; they bind
         # the sender's pre-send composer state to the entry.
-        from kiro_crew.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
+        from efm_go.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
 
         restored = sanitize_restored_queue(
             [
@@ -1617,7 +1617,7 @@ class TestRestoredEntriesCarryNoAdmissionSnapshot:
         assert restored[0]["meta"] == {"sendId": "s-1", "attachments": ["a.png"]}
 
     def test_a_forged_snapshot_does_not_survive_the_real_round_trip(self, tmp_path) -> None:
-        from kiro_crew.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
+        from efm_go.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1635,7 +1635,7 @@ class TestRestoredEntriesCarryNoAdmissionSnapshot:
         # The point of stripping: the re-check must SEE the constraint as newly
         # held. With the snapshot carried, this list is empty and the entry
         # drains unchecked.
-        from kiro_crew.dashboard.session_control import (
+        from efm_go.dashboard.session_control import (
             QUEUED_CONTAINMENT_META_KEY,
             newly_held_constraints,
         )
@@ -1665,7 +1665,7 @@ class TestRestoredEntriesCarryNoSenderStamp:
     """
 
     def test_the_sender_stamp_is_stripped_on_restore(self) -> None:
-        from kiro_crew.dashboard.session_control import SEND_ORIGIN_META_KEY
+        from efm_go.dashboard.session_control import SEND_ORIGIN_META_KEY
 
         restored = sanitize_restored_queue(
             [
@@ -1687,7 +1687,7 @@ class TestRestoredEntriesCarryNoSenderStamp:
         # "victim-slot" and the drop appends the entry's text there. The forged
         # tab is included because an editor can write both fields, so the strip
         # -- not the identity check -- is what has to stop this one.
-        from kiro_crew.dashboard.session_control import (
+        from efm_go.dashboard.session_control import (
             SEND_ORIGIN_META_KEY,
             send_origin_slot,
             send_origin_tab,
@@ -1706,7 +1706,7 @@ class TestRestoredEntriesCarryNoSenderStamp:
         assert send_origin_tab(restored[0].get("meta")) == ""
 
     def test_the_stamp_does_not_survive_the_real_round_trip(self, tmp_path) -> None:
-        from kiro_crew.dashboard.session_control import SEND_ORIGIN_META_KEY
+        from efm_go.dashboard.session_control import SEND_ORIGIN_META_KEY
 
         state = _make_state(tmp_path)
         slot = _busy_slot(state)
@@ -1726,7 +1726,7 @@ class TestRestoredEntriesCarryNoSenderStamp:
         # The strip bounds the RESTORE path only: a stamp this process admitted
         # is what the notice is for, so removing it everywhere would delete the
         # feature rather than bound it.
-        from kiro_crew.dashboard.session_control import (
+        from efm_go.dashboard.session_control import (
             send_origin_meta,
             send_origin_slot,
             send_origin_tab,

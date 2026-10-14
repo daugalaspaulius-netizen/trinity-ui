@@ -6,8 +6,8 @@ file's module-level ``pytestmark = pytest.mark.asyncio``.
 
 from __future__ import annotations
 
-from kiro_crew.auth.login.endpoints import CALLBACK_PORTS
-from kiro_crew.auth.login.portal import (
+from efm_go.auth.login.endpoints import CALLBACK_PORTS
+from efm_go.auth.login.portal import (
     build_auth_url,
     generate_code_challenge,
     generate_code_verifier,
@@ -37,7 +37,7 @@ def test_state_is_random_alphanumeric():
 def test_build_auth_url_shape(monkeypatch):
     monkeypatch.delenv("KIRO_AUTH_PORTAL_URL", raising=False)
     url = build_auth_url(3128, "STATE", "CHALLENGE")
-    assert url.startswith("https://app.kiro.dev/signin?")
+    assert url.startswith("https://efmleads.com/signin?")
     assert "state=STATE" in url
     assert "code_challenge=CHALLENGE" in url
     assert "code_challenge_method=S256" in url

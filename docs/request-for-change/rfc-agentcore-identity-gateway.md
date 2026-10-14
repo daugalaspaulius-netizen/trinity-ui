@@ -761,7 +761,7 @@ dependency. Standalone behavior byte-identical.
 Exit: `test_platform_cpp_seam_coverage.py` lists the new slot;
 `enabled()` is False; unknown/absent posture with `enabled: true`
 fails closed; no `bedrock-agentcore` SDK import under
-`src/kiro_crew/` (boto3 stays inside the opt-in extra).
+`src/efm_go/` (boto3 stays inside the opt-in extra).
 
 ### Phase 1b — Policy.json pair, boundary successor, login withhold
 
@@ -869,7 +869,7 @@ same principal rules, same redaction. Do not start this phase to
 - **Do not fail open** to a shared service-account token when JWT
   vending fails.
 - **Do not re-introduce Cognito / RUM ids / enterprise SSO** into
-  `src/kiro_crew/`. Discovery URLs live in the companion.
+  `src/efm_go/`. Discovery URLs live in the companion.
 - Computer use stays ungoverned and in-band. This RFC does not add
   `computer_use.*` scopes.
 - Sensitive-path matchers must cover any later keystone file on both
@@ -986,7 +986,7 @@ Closed on the OOTB session-inject pass:
   2.20.1 then accepted `session/new`, overrode the stale agent-file
   port, launched `agentcore-gateway` over unauthenticated HTTP to
   the SigV4 proxy, and emitted
-  `_kiro.dev/mcp/server_initialized`.
+  `_efm.go/mcp/server_initialized`.
 
 Closed on the existing-Gateway honesty pass:
 
@@ -1000,7 +1000,7 @@ Closed on the existing-Gateway honesty pass:
 Still open (not v1 blockers):
 
 - kiro-cli's hosted MCP OAuth challenge (`Authorize` /
-  `_kiro.dev/mcp/oauth_request`) against a `CUSTOM_JWT` Gateway was
+  `_efm.go/mcp/oauth_request`) against a `CUSTOM_JWT` Gateway was
   not driven. The product sidecar + a real IdP JWT were.
 - MCP initialize on this Gateway does not return `mcp-session-id`;
   `tools/list` still works without one.

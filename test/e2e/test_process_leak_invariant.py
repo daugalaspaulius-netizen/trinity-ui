@@ -142,8 +142,8 @@ def _authored_agent(home: Path, argv: str) -> str:
     with no ``--agent`` at all, or an alias with no sidecar, answers ``""`` so
     the caller classifies it as foreign rather than guessing.
     """
-    from kiro_crew.acp.skill_projection import _MANAGED_AGENT, _PROJECTION_METADATA_DIR_NAME
-    from kiro_crew.agent_spec_format import NATIVE_SKILL_ALIAS_PREFIX
+    from efm_go.acp.skill_projection import _MANAGED_AGENT, _PROJECTION_METADATA_DIR_NAME
+    from efm_go.agent_spec_format import NATIVE_SKILL_ALIAS_PREFIX
 
     words = argv.split()
     try:
@@ -168,7 +168,7 @@ def _split_background_runtimes(home: Path, alive: tuple) -> tuple[list, list]:
     the gateway is documented to keep; ``foreign`` is everything else, which
     after every slot is closed can only be a session's runtime that outlived it.
     """
-    from kiro_crew.session import BACKGROUND_AGENT
+    from efm_go.session import BACKGROUND_AGENT
 
     background = [f for f in alive if _authored_agent(home, f.argv) == BACKGROUND_AGENT]
     foreign = [f for f in alive if f not in background]
@@ -177,7 +177,7 @@ def _split_background_runtimes(home: Path, alive: tuple) -> tuple[list, list]:
 
 def _workspace_src() -> Path:
     """The in-repo ``src/`` the harness runs the product from."""
-    from kiro_crew.testing.harness import _resolve_workspace_src
+    from efm_go.testing.harness import _resolve_workspace_src
 
     return _resolve_workspace_src()
 

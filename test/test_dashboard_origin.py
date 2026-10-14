@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.dashboard.origin import (
+from efm_go.dashboard.origin import (
     _host_without_port,
     bind_address_for,
     build_allowed_origins,
@@ -87,7 +87,7 @@ class TestProbePaths:
     Host-check-free surface and must be a deliberate, reviewed act."""
 
     def test_exact_membership(self) -> None:
-        from kiro_crew.dashboard.origin import PROBE_PATHS
+        from efm_go.dashboard.origin import PROBE_PATHS
 
         assert PROBE_PATHS == {"/api/health", "/api/live", "/api/ready"}
 
@@ -235,7 +235,7 @@ class TestParseDashboardUrlMalformed:
 # module's namespace, so patching "...origin.machine_hostname" is INERT here — it
 # rebinds origin's copy while format_dashboard_urls keeps calling urls'. Point at
 # the defining module so the patches actually take effect.
-_MOD = "kiro_crew.dashboard.urls"
+_MOD = "efm_go.dashboard.urls"
 
 
 class TestBuildDashboardUrl:
@@ -643,7 +643,7 @@ class TestBuildHostCanonicalRedirect:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.server import build_host_canonical_redirect
+        from efm_go.dashboard.server import build_host_canonical_redirect
 
         async def _ok(_request: web.Request) -> web.Response:
             return web.Response(text="ok")
@@ -674,7 +674,7 @@ class TestBuildHostCanonicalRedirect:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.server import build_host_canonical_redirect
+        from efm_go.dashboard.server import build_host_canonical_redirect
 
         async def _ok(_request: web.Request) -> web.Response:
             return web.Response(text="ok")
@@ -702,7 +702,7 @@ class TestBuildHostCanonicalRedirect:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.server import build_host_canonical_redirect
+        from efm_go.dashboard.server import build_host_canonical_redirect
 
         async def _ok(_request: web.Request) -> web.Response:
             return web.Response(text="ok")
@@ -724,7 +724,7 @@ class TestBuildHostCanonicalRedirect:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.server import build_host_canonical_redirect
+        from efm_go.dashboard.server import build_host_canonical_redirect
 
         async def _ok(_request: web.Request) -> web.Response:
             return web.Response(text="ok")
@@ -756,7 +756,7 @@ class TestBuildHostCanonicalRedirect:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.server import build_host_canonical_redirect
+        from efm_go.dashboard.server import build_host_canonical_redirect
 
         async def _ok(_request: web.Request) -> web.Response:
             return web.Response(text="ok")
@@ -784,7 +784,7 @@ class TestBuildHostCanonicalRedirect:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.server import build_host_canonical_redirect
+        from efm_go.dashboard.server import build_host_canonical_redirect
 
         async def _ok(_request: web.Request) -> web.Response:
             return web.Response(text="served here")
@@ -815,7 +815,7 @@ class TestBuildHostCanonicalRedirect:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.server import build_host_canonical_redirect
+        from efm_go.dashboard.server import build_host_canonical_redirect
 
         async def _ok(_request: web.Request) -> web.Response:
             return web.Response(text="ok")
@@ -857,24 +857,24 @@ class TestHoldsEveryLoopbackFamily:
         return state
 
     def test_both_claims_and_no_guards_is_covered(self) -> None:
-        from kiro_crew.dashboard.server import _holds_every_loopback_family
+        from efm_go.dashboard.server import _holds_every_loopback_family
 
         state = self._state({"primary": (1, "127.0.0.1", "s"), "secondary": (1, "::1", "s")})
         assert _holds_every_loopback_family(state) is True  # type: ignore[arg-type]
 
     def test_a_missing_secondary_claim_is_uncovered(self) -> None:
-        from kiro_crew.dashboard.server import _holds_every_loopback_family
+        from efm_go.dashboard.server import _holds_every_loopback_family
 
         state = self._state({"primary": (1, "127.0.0.1", "s")})
         assert _holds_every_loopback_family(state) is False  # type: ignore[arg-type]
 
     def test_nothing_published_yet_is_uncovered(self) -> None:
-        from kiro_crew.dashboard.server import _holds_every_loopback_family
+        from efm_go.dashboard.server import _holds_every_loopback_family
 
         assert _holds_every_loopback_family(self._state(None)) is False  # type: ignore[arg-type]
 
     def test_a_closed_listener_is_uncovered_even_with_both_claims(self) -> None:
-        from kiro_crew.dashboard.server import _holds_every_loopback_family
+        from efm_go.dashboard.server import _holds_every_loopback_family
 
         class _Dead:
             def listener_open(self) -> bool:
@@ -892,13 +892,13 @@ class TestBuildAllowedHosts:
     same allowed_origins set the CSRF check uses."""
 
     def test_loopback_floor_always_present(self) -> None:
-        from kiro_crew.dashboard.origin import build_allowed_hosts
+        from efm_go.dashboard.origin import build_allowed_hosts
 
         hosts = build_allowed_hosts(set())
         assert {"localhost", "127.0.0.1", "::1", "kirocrew.localhost"} <= hosts
 
     def test_hostnames_extracted_port_stripped(self) -> None:
-        from kiro_crew.dashboard.origin import build_allowed_hosts
+        from efm_go.dashboard.origin import build_allowed_hosts
 
         hosts = build_allowed_hosts({"http://myhost:8080", "https://kirocrew.example.com"})
         # Exact set-membership assertion (build_allowed_hosts returns a set of
@@ -916,7 +916,7 @@ class TestBuildAllowedHosts:
         }
 
     def test_ipv6_bracket_stripped(self) -> None:
-        from kiro_crew.dashboard.origin import build_allowed_hosts
+        from efm_go.dashboard.origin import build_allowed_hosts
 
         hosts = build_allowed_hosts({"http://[::1]:8777"})
         assert "::1" in hosts
@@ -939,7 +939,7 @@ class TestCheckHost:
         return request
 
     def test_spoofed_host_rejected(self) -> None:
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         req = self._make_request("evil.rebind.attacker.com")
         assert check_host(req) is False
@@ -947,29 +947,29 @@ class TestCheckHost:
     def test_spoofed_host_rejected_even_from_loopback_remote(self) -> None:
         """The rebinding connection IS loopback while Host is forged — loopback
         remote must NOT bypass the Host check (unlike check_origin)."""
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         req = self._make_request("attacker.com", remote="127.0.0.1")
         assert check_host(req) is False
 
     def test_localhost_host_accepted(self) -> None:
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         assert check_host(self._make_request("localhost:5476")) is True
 
     def test_loopback_ip_host_accepted(self) -> None:
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         assert check_host(self._make_request("127.0.0.1:5476")) is True
 
     def test_tunnel_port_host_accepted_port_independent(self) -> None:
         """SSH-tunnel local port (localhost:8777) still matches 'localhost'."""
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         assert check_host(self._make_request("localhost:8777")) is True
 
     def test_configured_remote_host_accepted(self) -> None:
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         allowed = {"http://localhost:5476", "https://kirocrew.example.com"}
         req = self._make_request("kirocrew.example.com", allowed=allowed)
@@ -978,21 +978,21 @@ class TestCheckHost:
     def test_missing_host_allowed_from_loopback(self) -> None:
         """No Host header from a loopback remote is local IPC (mcp-core, doctor)
         and is allowed; browsers always send Host so this is not a rebinding gap."""
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         assert check_host(self._make_request(None, remote="127.0.0.1")) is True
 
     def test_missing_host_denied_from_non_loopback(self) -> None:
         """Deny-by-default: a headerless request from a non-loopback remote is
         rejected rather than blanket-allowed (review-bot security-controls)."""
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         assert check_host(self._make_request(None, remote="10.0.0.5")) is False
 
     def test_empty_allowlist_denied(self) -> None:
         """Deny-by-default: a missing/empty allowed_origins must NOT bypass the
         Host check (review-bot security-controls, fail-open guard)."""
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         req = self._make_request("evil.com", allowed=set())
         assert check_host(req) is False
@@ -1001,7 +1001,7 @@ class TestCheckHost:
         """None allowlist (key never set / race) is a denial, not fail-open."""
         from unittest.mock import MagicMock
 
-        from kiro_crew.dashboard.origin import check_host
+        from efm_go.dashboard.origin import check_host
 
         request = MagicMock()
         request.headers = {"Host": "localhost:5476"}
@@ -1028,7 +1028,7 @@ class TestFrameAncestorsValue:
         on ``https://<tunnel-host>``, matches no ancestor, and refuses the frame —
         a regression invisible on a direct loopback connection.
         """
-        from kiro_crew.dashboard.origin import frame_ancestors_value
+        from efm_go.dashboard.origin import frame_ancestors_value
 
         assert frame_ancestors_value() == "'self'"
 
@@ -1039,18 +1039,18 @@ class TestFrameAncestorsValue:
         the Instances embed (local dashboard -> embedded dashboard -> widget) is
         refused on ``'self'`` alone even though its immediate parent matches.
         """
-        from kiro_crew.dashboard.origin import frame_ancestors_value
+        from efm_go.dashboard.origin import frame_ancestors_value
 
         assert frame_ancestors_value(["http://localhost:5476"]) == "'self' http://localhost:5476"
 
     def test_several_ancestors_keep_their_order(self) -> None:
-        from kiro_crew.dashboard.origin import frame_ancestors_value
+        from efm_go.dashboard.origin import frame_ancestors_value
 
         value = frame_ancestors_value(["http://127.0.0.1:5476", "http://localhost:5476"])
         assert value == "'self' http://127.0.0.1:5476 http://localhost:5476"
 
     def test_a_duplicate_ancestor_is_not_repeated(self) -> None:
-        from kiro_crew.dashboard.origin import frame_ancestors_value
+        from efm_go.dashboard.origin import frame_ancestors_value
 
         value = frame_ancestors_value(["http://localhost:5476", "http://localhost:5476"])
         assert value == "'self' http://localhost:5476"
@@ -1076,7 +1076,7 @@ class TestFrameAncestorsValue:
         smuggle a whole directive. Each is dropped here rather than at the producer,
         so no future ancestor source can reintroduce the class.
         """
-        from kiro_crew.dashboard.origin import frame_ancestors_value
+        from efm_go.dashboard.origin import frame_ancestors_value
 
         assert frame_ancestors_value([bad]) == "'self'"
 
@@ -1095,7 +1095,7 @@ class TestBoundedHostnameResolve:
         authenticated URL they actually need -- to gain nothing. Unresolved is the
         honest answer and it costs a hint line.
         """
-        from kiro_crew.dashboard import urls as urls_mod
+        from efm_go.dashboard import urls as urls_mod
 
         class _RefusingThread:
             def __init__(self, *a, **k):

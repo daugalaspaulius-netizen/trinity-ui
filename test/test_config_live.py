@@ -1,4 +1,4 @@
-"""Tests for ``kiro_crew.config.live`` and the plumbing that feeds it.
+"""Tests for ``efm_go.config.live`` and the plumbing that feeds it.
 
 Covers the diff semantics, the subscriber registry, one forced reload cycle
 against a temp ``config.json``, the loader's writer -> ``notify_config_written``
@@ -19,14 +19,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from _hot_reload_helpers import write_config as _write
 
-from kiro_crew.config import live
-from kiro_crew.config.live import (
+from efm_go.config import live
+from efm_go.config.live import (
     ConfigChange,
     ConfigWatch,
     diff_config_docs,
     flatten_config,
 )
-from kiro_crew.config.loader import KiroCrewConfig, update_config_locked
+from efm_go.config.loader import KiroCrewConfig, update_config_locked
 
 # ── helpers ───────────────────────────────────────────────────────────────
 
@@ -37,8 +37,8 @@ def cfg_file(tmp_path: Path):
     cfg = tmp_path / "config.json"
     _write(cfg, {"agent": {"model": "model-a", "log_level": "INFO"}})
     with (
-        patch("kiro_crew.config.loader.config_path", return_value=cfg),
-        patch("kiro_crew.config.loader.config_local_path", return_value=tmp_path / "local.json"),
+        patch("efm_go.config.loader.config_path", return_value=cfg),
+        patch("efm_go.config.loader.config_local_path", return_value=tmp_path / "local.json"),
     ):
         yield cfg
     live.reset_for_tests()
@@ -283,7 +283,7 @@ class TestDegradedReloadKeepsLastValid:
         assert snap.agent.model == "model-a"
         assert "*" in snap.degraded_sections, "the flag the fail-closed gates read is kept"
         assert seen == [], "no applier is handed the defaults"
-        with patch("kiro_crew.config.live._WATCH", w):
+        with patch("efm_go.config.live._WATCH", w):
             assert live.current(good, log_prefix="t") is snap
 
         # A repair to NEW values is a real change and dispatches them.
@@ -386,7 +386,7 @@ class TestDegradedReloadKeepsLastValid:
     def test_the_helper_keys_on_the_file_not_the_sticky_flag(self) -> None:
         from dataclasses import replace
 
-        from kiro_crew.config.live import _keep_last_valid
+        from efm_go.config.live import _keep_last_valid
 
         prev = replace(
             KiroCrewConfig(), telegram=replace(KiroCrewConfig().telegram, forum_activation="off")
@@ -418,7 +418,7 @@ class TestLoaderNotifies:
     def test_update_config_locked_notifies_watcher(self, cfg_file: Path) -> None:
         calls: list[int] = []
         with patch(
-            "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+            "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
         ):
             update_config_locked(cfg_file, mutate=lambda d: {**d, "x": 1})
         assert calls == [1]
@@ -426,7 +426,7 @@ class TestLoaderNotifies:
     def test_skipped_write_does_not_notify(self, cfg_file: Path) -> None:
         calls: list[int] = []
         with patch(
-            "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+            "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
         ):
             update_config_locked(cfg_file, mutate=lambda d: None)
         assert calls == []
@@ -435,7 +435,7 @@ class TestLoaderNotifies:
         calls: list[int] = []
         cfg = KiroCrewConfig.load()
         with patch(
-            "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+            "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
         ):
             cfg.save()
         assert calls == [1]
@@ -451,7 +451,7 @@ class TestLoaderNotifies:
 
 class TestRequiresRestart:
     def test_hot_fields_and_ancestor_resolution(self) -> None:
-        from kiro_crew.config.schema import requires_restart
+        from efm_go.config.schema import requires_restart
 
         assert not requires_restart("agent.model")
         assert not requires_restart("agent.log_level")
@@ -474,7 +474,7 @@ class TestRequiresRestart:
         assert len(list(w.subscriptions())) == 1
 
     def test_schema_emits_requires_restart_only_when_true(self) -> None:
-        from kiro_crew.config.schema import SCHEMA_REGISTRY, config_entry_to_dict
+        from efm_go.config.schema import SCHEMA_REGISTRY, config_entry_to_dict
 
         by_path = {e.path: e for e in SCHEMA_REGISTRY}
         jail = config_entry_to_dict(by_path["agent.jail"])
@@ -490,7 +490,7 @@ class TestRequiresRestart:
 class TestHandlerRestartRequired:
     @pytest.mark.asyncio
     async def test_hot_apply_after_write_is_noop_when_unstarted(self) -> None:
-        from kiro_crew.dashboard.handlers.core import _hot_apply_after_write
+        from efm_go.dashboard.handlers.core import _hot_apply_after_write
 
         live.reset_for_tests()
         await _hot_apply_after_write()  # nothing started: must not raise or load
@@ -498,7 +498,7 @@ class TestHandlerRestartRequired:
 
     @pytest.mark.asyncio
     async def test_hot_apply_after_write_refreshes_started_watcher(self, cfg_file: Path) -> None:
-        from kiro_crew.dashboard.handlers.core import _hot_apply_after_write
+        from efm_go.dashboard.handlers.core import _hot_apply_after_write
 
         w = live.watch()
         await w.start(initial=KiroCrewConfig.load())
@@ -516,9 +516,9 @@ class TestLogLevelApplier:
     def test_apply_log_level_from_config(self) -> None:
         import logging
 
-        from kiro_crew.dashboard.handlers.updates import apply_log_level_from_config
+        from efm_go.dashboard.handlers.updates import apply_log_level_from_config
 
-        root = logging.getLogger("kiro_crew")
+        root = logging.getLogger("efm_go")
         before = root.level
         try:
             new = KiroCrewConfig()
@@ -540,7 +540,7 @@ class TestChannelManagerSetters:
     def test_the_channel_cap_is_never_set_below_one(self, tmp_path: Path) -> None:
         """The setters are plain assignments apart from this clamp, which is what
         keeps a hand-edited ``0`` from making every channel unopenable."""
-        from kiro_crew.channel import ChannelManager
+        from efm_go.channel import ChannelManager
 
         mgr = ChannelManager(max_channels=2, max_agents=3, channels_dir=str(tmp_path))
         mgr.set_max_channels(0)
@@ -673,7 +673,7 @@ class TestDispatchOrderAndScope:
         w.subscribe("agent", callback=_async_boom, name="async-boom")
         w.subscribe("agent", callback=lambda c: after.append("ran"), name="survivor")
         _write(cfg_file, {"agent": {"model": "model-secret-value", "log_level": "INFO"}})
-        with caplog.at_level("ERROR", logger="kiro_crew.config.live"):
+        with caplog.at_level("ERROR", logger="efm_go.config.live"):
             assert await w.refresh_now() is not None
         assert after == ["ran"]
         assert "sync-boom" in caplog.text
@@ -755,7 +755,7 @@ class TestDispatchOrderAndScope:
     async def test_only_changed_paths_are_logged_never_values(self, cfg_file: Path, caplog) -> None:
         w = ConfigWatch()
         w.prime(KiroCrewConfig.load())
-        with caplog.at_level("INFO", logger="kiro_crew.config.live"):
+        with caplog.at_level("INFO", logger="efm_go.config.live"):
             _write(cfg_file, {"agent": {"model": "sk-not-a-real-token", "log_level": "INFO"}})
             assert await w.refresh_now() is not None
         assert "agent.model" in caplog.text
@@ -860,13 +860,13 @@ class TestEveryWritePathNotifies:
     """
 
     def test_persist_config_migration_notifies(self, cfg_file: Path) -> None:
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         calls: list[int] = []
         with (
             patch.object(loader_mod, "_apply_document_migrations", return_value=True),
             patch(
-                "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+                "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
             ),
         ):
             wrote = loader_mod._persist_config_migration(
@@ -880,13 +880,13 @@ class TestEveryWritePathNotifies:
     def test_persist_config_migration_does_not_notify_when_nothing_to_migrate(
         self, cfg_file: Path
     ) -> None:
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         calls: list[int] = []
         with (
             patch.object(loader_mod, "_apply_document_migrations", return_value=False),
             patch(
-                "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+                "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
             ),
         ):
             assert (
@@ -898,12 +898,12 @@ class TestEveryWritePathNotifies:
         assert calls == []
 
     def test_refresh_config_meta_stamp_notifies_when_it_rewrites(self, cfg_file: Path) -> None:
-        from kiro_crew.config.loader import refresh_config_meta_stamp
+        from efm_go.config.loader import refresh_config_meta_stamp
 
         _write(cfg_file, {"agent": {"model": "model-a"}, "meta": {"lastTouchedVersion": "0.0.0"}})
         calls: list[int] = []
         with patch(
-            "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+            "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
         ):
             wrote = refresh_config_meta_stamp()
         assert wrote is True
@@ -914,18 +914,18 @@ class TestEveryWritePathNotifies:
         assert calls
 
     def test_refresh_config_meta_stamp_does_not_notify_when_current(self, cfg_file: Path) -> None:
-        from kiro_crew.config.loader import refresh_config_meta_stamp
+        from efm_go.config.loader import refresh_config_meta_stamp
 
         refresh_config_meta_stamp()  # stamp it once so the version now matches
         calls: list[int] = []
         with patch(
-            "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+            "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
         ):
             assert refresh_config_meta_stamp() is False
         assert calls == []  # no rewrite, no mtime churn, no kick
 
     def test_agent_atomic_write_notifies_for_config_json(self, tmp_path: Path) -> None:
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         target = tmp_path / "config.json"
         target.write_text("{}", encoding="utf-8")
@@ -933,21 +933,21 @@ class TestEveryWritePathNotifies:
         with (
             patch.object(agent_mod, "_mc_config_path", return_value=target),
             patch(
-                "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+                "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
             ),
         ):
             agent_mod._atomic_json_write(target, {"agent": {"model": "m"}})
         assert calls == [1]
 
     def test_agent_atomic_write_does_not_notify_for_an_agent_spec(self, tmp_path: Path) -> None:
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         spec = tmp_path / "kirocrew.json"
         calls: list[int] = []
         with (
             patch.object(agent_mod, "_mc_config_path", return_value=tmp_path / "config.json"),
             patch(
-                "kiro_crew.config.live.notify_config_written", side_effect=lambda: calls.append(1)
+                "efm_go.config.live.notify_config_written", side_effect=lambda: calls.append(1)
             ),
         ):
             agent_mod._atomic_json_write(spec, {"name": "kirocrew"})
@@ -969,7 +969,7 @@ class TestServerAppliers:
     def _register(self, state) -> dict[str, Any]:
         from aiohttp import web
 
-        from kiro_crew.dashboard.server import _register_config_watch
+        from efm_go.dashboard.server import _register_config_watch
 
         app = web.Application()
         state.set_dynamic_cards_enabled = MagicMock()
@@ -1023,7 +1023,7 @@ class TestServerAppliers:
             rebuilds.append(1)
             return (Path("/tmp/kirocrew.json"), True)
 
-        with patch("kiro_crew.agent.rebuild_agent_config_reporting", _rebuild):
+        with patch("efm_go.agent.rebuild_agent_config_reporting", _rebuild):
             await apply(
                 ConfigChange(old=KiroCrewConfig(), new=cfg, changed=frozenset({"agent.model"}))
             )
@@ -1055,7 +1055,7 @@ class TestServerAppliers:
         new_cfg = KiroCrewConfig()
         change = ConfigChange(old=KiroCrewConfig(), new=new_cfg, changed=frozenset({"agent.model"}))
         with patch(
-            "kiro_crew.agent.rebuild_agent_config_reporting",
+            "efm_go.agent.rebuild_agent_config_reporting",
             lambda: (Path("/tmp/kirocrew.json"), True),
         ):
             await apply(change)
@@ -1082,7 +1082,7 @@ class TestServerAppliers:
             raise OSError("spec directory is read-only")
 
         with (
-            patch("kiro_crew.agent.rebuild_agent_config_reporting", _boom),
+            patch("efm_go.agent.rebuild_agent_config_reporting", _boom),
             pytest.raises(OSError, match="spec directory is read-only"),
         ):
             await apply(
@@ -1126,7 +1126,7 @@ class TestServerAppliers:
             return (Path("/home/x/.kiro/agents/kirocrew.json"), False)
 
         with (
-            patch("kiro_crew.agent.rebuild_agent_config_reporting", _refused),
+            patch("efm_go.agent.rebuild_agent_config_reporting", _refused),
             pytest.raises(RuntimeError, match="refused"),
         ):
             await apply(
@@ -1167,7 +1167,7 @@ class TestServerAppliers:
             new=KiroCrewConfig(),
             changed=frozenset({"agent.model"}),
         )
-        with patch("kiro_crew.agent.rebuild_agent_config_reporting", _rebuild):
+        with patch("efm_go.agent.rebuild_agent_config_reporting", _rebuild):
             with pytest.raises(OSError, match="spec directory is read-only"):
                 await apply(change)
             await apply(change)
@@ -1185,7 +1185,7 @@ class TestServerAppliers:
     async def test_the_channel_manager_binds_its_caps_in_its_constructor(
         self, tmp_path: Path
     ) -> None:
-        from kiro_crew.channel import ChannelManager
+        from efm_go.channel import ChannelManager
 
         live.reset_for_tests()
         mgr = ChannelManager(
@@ -1215,7 +1215,7 @@ class TestServerAppliers:
 
     @pytest.mark.asyncio
     async def test_the_workflow_service_binds_its_ceiling_in_its_constructor(self) -> None:
-        from kiro_crew.workflows.service import WorkflowService
+        from efm_go.workflows.service import WorkflowService
 
         live.reset_for_tests()
         svc = WorkflowService(sessions=SimpleNamespace(), timeout_secs=600)
@@ -1240,7 +1240,7 @@ class TestServerAppliers:
         assert svc.timeout_secs == 1800, "an untouched leaf leaves the ceiling alone"
 
     def test_log_level_applier_is_registered_on_its_own_path(self) -> None:
-        from kiro_crew.dashboard.handlers.updates import apply_log_level_from_config
+        from efm_go.dashboard.handlers.updates import apply_log_level_from_config
 
         subs = self._register(SimpleNamespace(workflow_service=None, channel_manager=None))
         sub = subs["agent.log_level"]
@@ -1276,7 +1276,7 @@ class TestServerAppliers:
         )
         apply = self._register(state)["agent.provider"].callback()
         cfg = KiroCrewConfig()
-        with patch("kiro_crew.agent.rebuild_agent_config", lambda: None):
+        with patch("efm_go.agent.rebuild_agent_config", lambda: None):
             await asyncio.wait_for(
                 apply(
                     ConfigChange(
@@ -1328,11 +1328,11 @@ class TestServerAppliers:
         change = ConfigChange(
             old=KiroCrewConfig(), new=scheduled, changed=frozenset({"agent.provider"})
         )
-        with patch("kiro_crew.agent.rebuild_agent_config", lambda: None):
-            with patch("kiro_crew.config.live.snapshot", return_value=newer):
+        with patch("efm_go.agent.rebuild_agent_config", lambda: None):
+            with patch("efm_go.config.live.snapshot", return_value=newer):
                 await apply(change)
                 await asyncio.gather(*state._background_tasks)
-            with patch("kiro_crew.config.live.snapshot", return_value=torn):
+            with patch("efm_go.config.live.snapshot", return_value=torn):
                 await apply(change)
                 await asyncio.gather(*state._background_tasks)
         assert calls == [newer, scheduled]
@@ -1355,7 +1355,7 @@ class TestServerAppliers:
         cleanup hook is registered at build time."""
         from aiohttp import web
 
-        from kiro_crew.dashboard.server import _register_config_watch
+        from efm_go.dashboard.server import _register_config_watch
 
         app = web.Application()
         _register_config_watch(
@@ -1370,7 +1370,7 @@ class TestServerAppliers:
     ) -> None:
         from aiohttp import web
 
-        from kiro_crew.dashboard.server import _kick_config_watch, _register_config_watch
+        from efm_go.dashboard.server import _kick_config_watch, _register_config_watch
 
         app = web.Application()
         initial = KiroCrewConfig.load()
@@ -1395,7 +1395,7 @@ class TestServerAppliers:
         running gateway."""
         from aiohttp import web
 
-        from kiro_crew.dashboard.server import _kick_config_watch, _register_config_watch
+        from efm_go.dashboard.server import _kick_config_watch, _register_config_watch
 
         app = web.Application()
         initial = KiroCrewConfig.load()
@@ -1419,7 +1419,7 @@ class TestServerAppliers:
     @pytest.mark.asyncio
     async def test_a_file_write_reaches_the_workflow_ceiling(self, cfg_file: Path) -> None:
         """End to end: config.json -> ConfigWatch -> the WorkflowService's own bind."""
-        from kiro_crew.workflows.service import WorkflowService
+        from efm_go.workflows.service import WorkflowService
 
         svc = WorkflowService(sessions=SimpleNamespace(), timeout_secs=600)
         w = live.watch()  # the constructor bound on the singleton
@@ -1615,7 +1615,7 @@ class TestApplierTimeout:
             raise live.ConfigDeferred(c.changed)
 
         w.subscribe("wecom", callback=_refuse, name="refuser")
-        with caplog.at_level("DEBUG", logger="kiro_crew.config.live"):
+        with caplog.at_level("DEBUG", logger="efm_go.config.live"):
             _write(cfg_file, {"edit": 1})
             await w.refresh_now()
             _write(cfg_file, {"edit": 2})
@@ -1742,14 +1742,14 @@ class TestRestartHintIsSchemaDriven:
     )
 
     def test_every_put_settable_field_is_hot(self) -> None:
-        from kiro_crew.dashboard.handlers.core import _changed_paths_need_restart
+        from efm_go.dashboard.handlers.core import _changed_paths_need_restart
 
         for key in self.PUT_KEYS:
             assert not _changed_paths_need_restart([f"agent.{key}"]), key
         assert not _changed_paths_need_restart([f"agent.{k}" for k in self.PUT_KEYS])
 
     def test_a_restart_true_path_flips_the_hint(self) -> None:
-        from kiro_crew.dashboard.handlers.core import _changed_paths_need_restart
+        from efm_go.dashboard.handlers.core import _changed_paths_need_restart
 
         for path in (
             "agent.jail",
@@ -1766,7 +1766,7 @@ class TestRestartHintIsSchemaDriven:
         """The dashboard sends every setting on each save, so the handler feeds
         only the paths whose value actually MOVED -- an untouched restart=True
         field must not make a live edit report restart_required."""
-        from kiro_crew.dashboard.handlers.core import _changed_paths_need_restart
+        from efm_go.dashboard.handlers.core import _changed_paths_need_restart
 
         applied = ["max_subagents", "jail"]
         agent = {"max_subagents": 8, "jail": True}
@@ -1777,8 +1777,8 @@ class TestRestartHintIsSchemaDriven:
 
     def test_the_hint_and_the_schema_cannot_drift(self) -> None:
         """Whatever the schema marks, the handler agrees with -- no second list."""
-        from kiro_crew.config.schema import SCHEMA_REGISTRY, requires_restart
-        from kiro_crew.dashboard.handlers.core import _changed_paths_need_restart
+        from efm_go.config.schema import SCHEMA_REGISTRY, requires_restart
+        from efm_go.dashboard.handlers.core import _changed_paths_need_restart
 
         marked = {e.path for e in SCHEMA_REGISTRY if e.requires_restart}
         assert marked, "no restart=True fields in the schema at all"
@@ -1799,7 +1799,7 @@ class TestRestartHintIsSchemaDriven:
         """``requires_restart`` resolves through ancestors, so a marked container
         covers keys the schema never enumerates (a stub-server name, a jail
         sub-key) -- otherwise a nested edit would report itself hot."""
-        from kiro_crew.config.schema import requires_restart
+        from efm_go.config.schema import requires_restart
 
         assert requires_restart("mcp_gateway.stub_servers")
         assert requires_restart("mcp_gateway.stub_servers.some-server")
@@ -1829,7 +1829,7 @@ class TestRestartRequiredOverHttp:
         from aiohttp import web
         from dashboard_owner_helpers import as_owner
 
-        from kiro_crew.dashboard import handlers
+        from efm_go.dashboard import handlers
 
         app = web.Application()
         app.router.add_put("/api/config/kirocrew", handlers.api_kirocrew_config)
@@ -1843,7 +1843,7 @@ class TestRestartRequiredOverHttp:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.dashboard.handlers.sel", return_value=MagicMock()):
+        with patch("efm_go.dashboard.handlers.sel", return_value=MagicMock()):
             yield lambda: TestClient(TestServer(self._app()))
 
     @pytest.mark.asyncio
@@ -1878,7 +1878,7 @@ class TestRestartRequiredOverHttp:
         makes the difference observable: the first PUT moves the value and reports
         a restart, the identical second one moves nothing and must not."""
         with patch(
-            "kiro_crew.config.schema.requires_restart",
+            "efm_go.config.schema.requires_restart",
             side_effect=lambda p: p == "agent.max_subagents",
         ):
             async with client_ctx() as c:
@@ -1897,7 +1897,7 @@ class TestRestartRequiredOverHttp:
         """The False above is the SCHEMA's answer, not a constant: mark the very
         same path ``restart=True`` and the same request flips to True."""
         with patch(
-            "kiro_crew.config.schema.requires_restart",
+            "efm_go.config.schema.requires_restart",
             side_effect=lambda p: p == "agent.max_subagents",
         ):
             async with client_ctx() as c:
@@ -1999,7 +1999,7 @@ class TestOwnedAppliers:
         t = self._Transport()
         d = self._Dispatcher(w, t)  # held: the owner is weakly referenced
         cfg = replace(self._wecom_cfg(), _degraded_sections=frozenset({"wecom"}))
-        with caplog.at_level("WARNING", logger="kiro_crew.config.live"):
+        with caplog.at_level("WARNING", logger="efm_go.config.live"):
             await w._dispatch(self._change(cfg, "wecom.allow_all_users"))
         assert "degraded" in caplog.text
         assert t.seen == [], "a discarded section never rebuilds authorization state"
@@ -2065,7 +2065,7 @@ class TestOwnedAppliers:
         m = Manager()
         for degraded in ({"agent"}, {"subagent"}):
             cfg = replace(KiroCrewConfig(), _degraded_sections=frozenset(degraded))
-            with caplog.at_level("WARNING", logger="kiro_crew.config.live"):
+            with caplog.at_level("WARNING", logger="efm_go.config.live"):
                 await w._dispatch(self._change(cfg, "agent.subagent_max_turns"))
             assert "degraded" in caplog.text
         assert m.cfgs == []
@@ -2123,7 +2123,7 @@ class TestOwnedAppliers:
         got: list[int] = []
         w.bind("agent.max_channels", got.append)
         cfg = replace(KiroCrewConfig(), _degraded_sections=frozenset({"agent"}))
-        with caplog.at_level("WARNING", logger="kiro_crew.config.live"):
+        with caplog.at_level("WARNING", logger="efm_go.config.live"):
             await w._dispatch(self._change(cfg, "agent.max_channels"))
         assert "degraded" in caplog.text
         assert got == [], "a degraded section never reaches the setter"
@@ -2241,7 +2241,7 @@ class TestReplayOnRegistration:
         w.prime(degraded, ConfigWatch._current_fingerprint())
 
         owner = _ModelOwner(KiroCrewConfig())
-        caplog.set_level("ERROR", logger="kiro_crew.config.live")
+        caplog.set_level("ERROR", logger="efm_go.config.live")
         sub = w.watch_object(owner, "agent", name="owner")
         w.replay(sub)
 

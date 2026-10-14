@@ -1,6 +1,6 @@
 """Regression tests for the slowloris / CWE-400 read-timeout mitigation.
 
-Covers the connection-level guard in ``kiro_crew.dashboard.slowloris`` and its
+Covers the connection-level guard in ``efm_go.dashboard.slowloris`` and its
 wiring into the dashboard / API server start paths:
 
 - a connection that dribbles the request line/headers without ever completing
@@ -21,8 +21,8 @@ import aiohttp
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard import server as dashboard_server
-from kiro_crew.dashboard.slowloris import (
+from efm_go.dashboard import server as dashboard_server
+from efm_go.dashboard.slowloris import (
     SlowlorisAppRunner,
     SlowlorisRequestHandler,
     SlowlorisServer,
@@ -368,7 +368,7 @@ def test_start_paths_use_compressed_body_middleware() -> None:
     assert dashboard_server.reject_compressed_body_middleware is reject_compressed_body_middleware
     import inspect
 
-    from kiro_crew.dashboard.server_runtime import middleware_chain
+    from efm_go.dashboard.server_runtime import middleware_chain
 
     # The ordered chains for both the dashboard and the headless API server
     # live in server_runtime.middleware_chain (server.py builds the barriers

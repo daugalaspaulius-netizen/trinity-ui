@@ -16,7 +16,7 @@ superseded-by: []
 
 - Status: accepted — the product decision is the owner-controlled Perpetual
   mode in §Accepted decision. Its implementation is tracked in
-  [#11582](https://github.com/kirodotdev/KiroCrew/pull/11582).
+  [#11582](https://efmleads.com/pull/11582).
 - **Revision 4 (2026-09-28): accepted one narrow product shape.** An owner may
   keep one crewmate's auto-nudge loop active without cycle or elapsed-time caps
   until the owner turns it off. The larger self-scheduled cron design below is
@@ -46,14 +46,14 @@ superseded-by: []
   the "economy" is split into a mechanism and an experiment, because an
   incentive with no learning loop is not an incentive (Phase 3).
 - Author: zezhexu
-- Related: `src/kiro_crew/docs/cron-and-scheduling.md` (the surface this extends),
+- Related: `src/efm_go/docs/cron-and-scheduling.md` (the surface this extends),
   `docs/request-for-change/rfc-orchestrator-chat-sessions.md` (same
   "sessions are the unit of continuity" organizing rule)
 
 ## Accepted decision — owner-controlled Perpetual mode
 
 This section is the accepted decision. It records the smallest product shape
-needed by [#11582](https://github.com/kirodotdev/KiroCrew/pull/11582). The later
+needed by [#11582](https://efmleads.com/pull/11582). The later
 cron, agent-selected cadence, life-directory, supervision and wake-economy
 design remains historical research. Where that research conflicts with this
 section — including its rejection of AutoNudge and its required daily wake

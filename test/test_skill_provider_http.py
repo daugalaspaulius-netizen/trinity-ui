@@ -28,7 +28,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.skill_providers import _http
+from efm_go.skill_providers import _http
 
 _HOSTS = frozenset({"example.test", "cdn.example.test"})
 
@@ -158,7 +158,7 @@ class TestAuditSsrfBlocked:
             def log_api_access(self, **kw):
                 calls.append(kw)
 
-        with patch("kiro_crew.sel.sel", lambda: _Sel()):
+        with patch("efm_go.sel.sel", lambda: _Sel()):
             _http.audit_ssrf_blocked(
                 "github", "http://0xa9fea9fe/x", "0xa9fea9fe", "169.254.169.254"
             )
@@ -170,7 +170,7 @@ class TestAuditSsrfBlocked:
 
     def test_a_failing_audit_never_breaks_the_guard(self):
         # Auditing the defense must not become a way to crash the defense.
-        with patch("kiro_crew.sel.sel", side_effect=RuntimeError("sel down")):
+        with patch("efm_go.sel.sel", side_effect=RuntimeError("sel down")):
             _http.audit_ssrf_blocked("skillsh", "http://127.0.0.1/", "127.0.0.1", "127.0.0.1")
 
 

@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import autonudge as _an
-from kiro_crew.autonudge import AutoNudgeService, AutoNudgeStoreUnvetted
+from efm_go import autonudge as _an
+from efm_go.autonudge import AutoNudgeService, AutoNudgeStoreUnvetted
 
 
 def _moved_aside_sidecar(base_dir: Path) -> Path:
@@ -52,7 +52,7 @@ class TestTheQuarantineSidecarIsWrittenSafely:
         memory. Cycles are then spent against a count no restart will have seen, so
         ``max_cycles`` bounds nothing durable. Firing must stop instead.
         """
-        import kiro_crew.autonudge as _an
+        import efm_go.autonudge as _an
 
         fired: list[object] = []
 
@@ -91,8 +91,8 @@ class TestTheQuarantineSidecarIsWrittenSafely:
     async def test_a_refused_store_does_not_tick_a_structured_monitor(self, tmp_path) -> None:
         """A structured monitor's tick delivers before it records, so a refused store
         must stop it the same way it stops a prompt loop, and leave it unarmed."""
-        from kiro_crew.autonudge_service.model import NudgeLoop
-        from kiro_crew.monitoring.models import MonitorState
+        from efm_go.autonudge_service.model import NudgeLoop
+        from efm_go.monitoring.models import MonitorState
 
         ticks: list[object] = []
 

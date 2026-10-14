@@ -1,13 +1,13 @@
 # Member Event Log
 
-Owners: `kiro_crew.eventlog`, `kiro_crew.eventlog_hooks`,
-`kiro_crew.dashboard.handlers.members`, `kiro_crew.dashboard.websocket_hub`,
+Owners: `efm_go.eventlog`, `efm_go.eventlog_hooks`,
+`efm_go.dashboard.handlers.members`, `efm_go.dashboard.websocket_hub`,
 `website/src/state/memberProjectionStore.ts`, `website/src/state/useMemberProjection.ts`,
 `website/src/api/membersQuery.ts`
 
 ## 1. Purpose
 
-`kiro_crew.eventlog` gives every crew member one append-only log and derives the Members page's state from it. Before this module the page assembled each roster row at request time from thirteen sources — the agents config, a binding file, a rules file, a rotated activity file, the in-memory slot table, the auto-nudge registry and several client caches — and refreshed by re-fetching the whole roster on a coarse `refresh` frame plus a 60-second patrol poll. None of those sources recorded *what changed*, and a stop that the auto-nudge registry had forgotten collapsed into "no patrol scheduled".
+`efm_go.eventlog` gives every crew member one append-only log and derives the Members page's state from it. Before this module the page assembled each roster row at request time from thirteen sources — the agents config, a binding file, a rules file, a rotated activity file, the in-memory slot table, the auto-nudge registry and several client caches — and refreshed by re-fetching the whole roster on a coarse `refresh` frame plus a 60-second patrol poll. None of those sources recorded *what changed*, and a stop that the auto-nudge registry had forgotten collapsed into "no patrol scheduled".
 
 The log is the record; every view is a fold of it. A change appends one event,
 the event folds into projections, and changed projected values are pushed to
@@ -28,7 +28,7 @@ member's event count rather than with the number of members.
 
 ## 2. Storage and the envelope
 
-Each member's log is a `member`-kind **crew log**, so it lives at `<data_home>/crew-log/members/<store name>/log.jsonl`, where `<store name>` is the readable-plus-digest fold of the slug that every crew log uses. `kiro_crew.eventlog.log` is an adapter over `kiro_crew.crew_log.store`; the bytes, the locking, the durability, the torn-tail repair and retention all belong to that store, which already owns them for the `crew` and `session` kinds.
+Each member's log is a `member`-kind **crew log**, so it lives at `<data_home>/crew-log/members/<store name>/log.jsonl`, where `<store name>` is the readable-plus-digest fold of the slug that every crew log uses. `efm_go.eventlog.log` is an adapter over `efm_go.crew_log.store`; the bytes, the locking, the durability, the torn-tail repair and retention all belong to that store, which already owns them for the `crew` and `session` kinds.
 
 A third kind rather than a second mechanism, because the protection is named at the root: `crew-log` is masked from a sandboxed process (`sandbox._CREW_HIDDEN_LEAVES`) and refused to the agent's own file tools (`security.paths._CREW_SECRET_LEAVES`), so a kind placed under it inherits both. Dispatch trust reads this log, and an append-only record an agent can rewrite is not an append-only record — that property has to hold by where the file lives, not by someone remembering to add a second fence entry when a new log appears.
 
@@ -69,7 +69,7 @@ unit's id must not be enumerated as that other unit.
 
 ## 3. Event vocabulary
 
-`kiro_crew.eventlog.types` is the closed vocabulary; `MemberLog.append()` rejects any other type.
+`efm_go.eventlog.types` is the closed vocabulary; `MemberLog.append()` rejects any other type.
 
 | event | data | appended by |
 |---|---|---|
@@ -87,13 +87,13 @@ The binding and rules files remain. They are the trust subsystem's fail-closed f
 
 ## 4. Projections
 
-`kiro_crew.projection.ProjectionRegistry` folds events through registered units. A unit is `{key, state_version, init(), apply(state, event), view(state)}`. `apply` returns the **same object** for an event it does not care about; the registry treats identity as "no change" and emits nothing for it. Folds are incremental — each new event passes through every unit once — and folded state is cached per `(key, slug)` with the `seq` it has observed. A unit sees a member's full history once, lazily, the first time that member is touched.
+`efm_go.projection.ProjectionRegistry` folds events through registered units. A unit is `{key, state_version, init(), apply(state, event), view(state)}`. `apply` returns the **same object** for an event it does not care about; the registry treats identity as "no change" and emits nothing for it. Folds are incremental — each new event passes through every unit once — and folded state is cached per `(key, slug)` with the `seq` it has observed. A unit sees a member's full history once, lazily, the first time that member is touched.
 
-The registry is a shared kernel rather than this module's own: it owns no event type and no path, and reads an event's `seq` through a reader its client supplies, so the member log's `Event` TypedDict stays in `kiro_crew.eventlog.types`. This module imports those names from `kiro_crew.projection` directly and keeps no projection module of its own.
+The registry is a shared kernel rather than this module's own: it owns no event type and no path, and reads an event's `seq` through a reader its client supplies, so the member log's `Event` TypedDict stays in `efm_go.eventlog.types`. This module imports those names from `efm_go.projection` directly and keeps no projection module of its own.
 
 A fold resumes from a **savepoint** instead of replaying the whole log. One JSON file per unit holds `{state, watermark}` beside an identity block — the log's `origin` and its first retained `seq` — and a **witness**, the digest of the raw records the state was folded from. It lives under the member's own log directory, at `<store dir>/projections/<slug>/<key>.json`, so it inherits that directory's fences and is removed with the member. A savepoint is a shortcut and never an authority: the identity block is compared **verbatim** and never interpreted, and a mismatch there, a changed `state_version`, a payload naming another fold, or a file that is unreadable, oversized or malformed all collapse to the same answer — fold from the start, which reaches the same value at more cost.
 
-Two conditions decide that, not one, because equality cannot reach the second. The identity block covers what is fixed once a fold is done. The **prefix digest** covers whether the bytes the state was folded from are still the bytes in the file, and this log needs it on its own terms: a damaged committed line is skipped on load, so a cold fold omits what it contributed while a savepoint written before the damage keeps it, and a resumed fold never revisits the region below its watermark. Without the digest those two reads disagree for the life of the member, which is the one thing a savepoint may not do — lagging is allowed, holding a value no later read reproduces is not. The predicate is `kiro_crew.crew_log.checkpoint.prefix_admit`, the same one the crew log calls, over the `raw_prefix_digest` and `raw_records_through` helpers that sit on `CrewLog` precisely so one mechanism serves both clients. A payload carrying no witness says nothing about its own bytes and is refused, which retires every file written before the witness existed at the cost of one cold fold. Growth above the boundary is not a change: the walk stops at the record count the witness names.
+Two conditions decide that, not one, because equality cannot reach the second. The identity block covers what is fixed once a fold is done. The **prefix digest** covers whether the bytes the state was folded from are still the bytes in the file, and this log needs it on its own terms: a damaged committed line is skipped on load, so a cold fold omits what it contributed while a savepoint written before the damage keeps it, and a resumed fold never revisits the region below its watermark. Without the digest those two reads disagree for the life of the member, which is the one thing a savepoint may not do — lagging is allowed, holding a value no later read reproduces is not. The predicate is `efm_go.crew_log.checkpoint.prefix_admit`, the same one the crew log calls, over the `raw_prefix_digest` and `raw_records_through` helpers that sit on `CrewLog` precisely so one mechanism serves both clients. A payload carrying no witness says nothing about its own bytes and is refused, which retires every file written before the witness existed at the cost of one cold fold. Growth above the boundary is not a change: the walk stops at the record count the witness names.
 
 The digest is read **before** the fold consumes the file and re-checked after the pass, because one read afterwards can certify bytes the pass never saw — a consumed record that changed in between would be hashed together with state folded from its earlier value, and every later resume would recompute those same changed bytes, match, and serve that state for good. Resolving the record boundary decodes one record at a time, so it runs only where the threshold below could earn a write, or where a resume has a prefix to answer for; a load that resumed nothing and can write nothing pays nothing for it. A witness certifies one boundary, so a unit standing at another seq is skipped and waits for a pass whose witness covers it.
 
@@ -105,7 +105,7 @@ A held instance can be arbitrarily behind the file, because the gateway is not t
 
 One unit's state blocks the shortcut today: `DrivingProjection` holds its open slots as a `frozenset`, which the kernel store cannot serialize, so its file never reaches disk — and a set missing one unit drops the floor to empty, so every load folds cold. The guard above is therefore in place ahead of the shortcut it protects; making that state serializable is what turns the shortcut on, and doing it without the guard is what would make the disagreement live.
 
-`kiro_crew.eventlog.members_projections` registers four units:
+`efm_go.eventlog.members_projections` registers four units:
 
 | key | view | fold |
 |---|---|---|

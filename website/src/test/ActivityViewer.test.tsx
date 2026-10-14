@@ -159,7 +159,7 @@ describe('ActivityViewer', () => {
       reducer: { chat: chatReducer, dashboard: dashboardReducer, notifications: notificationsReducer },
     })
     store.dispatch(openActivityToTab('links'))
-    const prUrl = 'https://github.com/kirodotdev/KiroCrew/pull/42'
+    const prUrl = 'https://efmleads.com/pull/42'
     render(
       <Provider store={store}>
         <QueryClientProvider client={qc}>

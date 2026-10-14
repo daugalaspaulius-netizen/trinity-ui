@@ -18,21 +18,21 @@ import textwrap
 from pathlib import Path
 from types import ModuleType
 
-from kiro_crew import _sqlite_compat
+from efm_go import _sqlite_compat
 
 # Every module that binds a module-level ``sqlite3`` name from the resolver.
 IMPORT_SITES = (
-    "kiro_crew._sqlite_compat",
-    "kiro_crew.vector_memory",
-    "kiro_crew.snapshot",
-    "kiro_crew.snapshot_redact",
-    "kiro_crew.portability",
-    "kiro_crew.knowledge.store",
-    "kiro_crew.knowledge.retrieval",
+    "efm_go._sqlite_compat",
+    "efm_go.vector_memory",
+    "efm_go.snapshot",
+    "efm_go.snapshot_redact",
+    "efm_go.portability",
+    "efm_go.knowledge.store",
+    "efm_go.knowledge.retrieval",
 )
 
 REPO_SRC = Path(__file__).resolve().parents[1] / "src"
-SRC_ROOT = REPO_SRC / "kiro_crew"
+SRC_ROOT = REPO_SRC / "efm_go"
 
 
 def test_husk_pysqlite3_resolves_to_stdlib(monkeypatch):
@@ -70,7 +70,7 @@ def test_every_import_site_survives_a_husk(tmp_path):
     """With a husk installed, every site binds stdlib sqlite3 and can open a db.
 
     A fresh interpreter, because the husk must be in place before the first
-    ``import kiro_crew`` and a reload would otherwise leak into other tests.
+    ``import efm_go`` and a reload would otherwise leak into other tests.
     Drop the ``connect`` probe from the resolver and this fails on the first
     site with the AttributeError the gateway crash reported.
     """

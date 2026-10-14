@@ -67,7 +67,7 @@ jobs:
     # With the variable unset a push to main runs this job and the full matrix
     # behind it. Every heavy job `needs` this one, so skipping it skips them all.
     if: github.event_name != 'push' || vars.MERGE_QUEUE_ENABLED != 'true'
-    runs-on: ${{ github.repository == 'kirodotdev/KiroCrew' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
+    runs-on: ${{ github.repository == 'efmleads.com' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
     # 15, not 5: the job's own work is seconds, but its `fetch-depth: 0`
     # checkout (paths-filter and the leaf resolver diff against the merge base
     # with local git) is a full-history fetch of a large repository, and on a
@@ -280,7 +280,7 @@ jobs:
       - name: Pick the Linux runner label
         id: runner
         env:
-          ELIGIBLE: ${{ github.repository == 'kirodotdev/KiroCrew' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) }}
+          ELIGIBLE: ${{ github.repository == 'efmleads.com' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) }}
           LABEL: codebuild-kirocrew-gha-linux-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           if [ "$ELIGIBLE" = "true" ]; then
@@ -294,7 +294,7 @@ jobs:
       - name: Pick the Windows runner label
         id: windows-runner
         env:
-          ELIGIBLE: ${{ github.repository == 'kirodotdev/KiroCrew' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) }}
+          ELIGIBLE: ${{ github.repository == 'efmleads.com' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) }}
           LABEL: codebuild-kirocrew-gha-windows-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           if [ "$ELIGIBLE" = "true" ]; then
@@ -408,7 +408,7 @@ jobs:
     # push path needs the barrier. With the variable unset, Fast Gate runs on
     # the push too (fast-gate.yml has a push trigger) and this job consumes it.
     if: github.event_name != 'push' || vars.MERGE_QUEUE_ENABLED != 'true'
-    runs-on: ${{ github.repository == 'kirodotdev/KiroCrew' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
+    runs-on: ${{ github.repository == 'efmleads.com' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
     timeout-minutes: 15
     permissions:
       # actions:read is what lets this read another workflow's runs. Job-level
@@ -539,7 +539,7 @@ jobs:
       # black-clean, so the bulk pass it waits on is ~95,800 lines and has been
       # "pending" long enough for the old estimate in this comment to drift by 3x.
       # Leaving it off meanwhile was the worse failure: AGENTS.md tells every
-      # contributor to run `black src/kiro_crew test` before committing, and
+      # contributor to run `black src/efm_go test` before committing, and
       # following that instruction reformats those 1,420 files on top of their
       # change. The baseline makes the gate real for everything else, so new code
       # is formatted without any PR being forced to carry unrelated churn.
@@ -570,8 +570,8 @@ jobs:
       - name: Check ACP frame fixtures for host data (gate, baselined)
         run: python3 scripts/check_acp_frame_host_data.py
 
-      # Application code must reach the agent backend through kiro_crew.agent_sdk,
-      # not by importing kiro_crew.acp (or kiro_crew.providers, which re-exports
+      # Application code must reach the agent backend through efm_go.agent_sdk,
+      # not by importing efm_go.acp (or efm_go.providers, which re-exports
       # the same ACP shapes and would otherwise be a laundering channel). Today's
       # edges are carried in the baseline as pre-existing and it is shrink-only. Design
       # record: docs/request-for-change/rfc-crew-agent-sdk-boundary.md.
@@ -609,19 +609,19 @@ jobs:
 
       # isort/flake8/mypy below are BLOCKING (config in pyproject.toml + setup.cfg).
       #
-      # The two repo-root modules are named explicitly: `src/kiro_crew test` misses
+      # The two repo-root modules are named explicitly: `src/efm_go test` misses
       # them, and between them they hold the host-protection floor for all three
       # testpaths -- the isolation fixtures and the xdist worker budget -- so they
       # are the last files that should go unlinted.
 
       - name: Check imports (isort)
-        run: isort --check-only src/kiro_crew test conftest.py xdist_budget.py
+        run: isort --check-only src/efm_go test conftest.py xdist_budget.py
 
       - name: Lint (flake8)
-        run: flake8 src/kiro_crew test conftest.py xdist_budget.py
+        run: flake8 src/efm_go test conftest.py xdist_budget.py
 
       - name: Type check (mypy)
-        run: mypy src/kiro_crew/
+        run: mypy src/efm_go/
 
   backend-test:
     name: Backend Tests
@@ -807,9 +807,9 @@ jobs:
           fi
           python -m pytest ${PROGRESS[@]+"${PROGRESS[@]}"} -p scripts.ci_file_shards -q -n auto --timeout=120 -m "not ipv6_required" \
             --file-shards "$SHARD_COUNT" --file-shard ${{ matrix.group }} \
-            --cov=kiro_crew --cov=sage_lib \
-            --cov=src/kiro_crew/apps/builtins/aws_control/crew/packaging \
-            --cov=src/kiro_crew/apps/builtins/code_review_sage/tests
+            --cov=efm_go --cov=sage_lib \
+            --cov=src/efm_go/apps/builtins/aws_control/crew/packaging \
+            --cov=src/efm_go/apps/builtins/code_review_sage/tests
         # The shard union plus backend-test-ipv6 retains the full test population.
         # The eleven sandbox files -- the two sandbox suites, the two ops git/gh
         # suites, and the seven auto_improvement suites --
@@ -848,7 +848,7 @@ jobs:
           if-no-files-found: error
 
   # Windows regression line: the backend supports Windows natively via
-  # kiro_crew.platform_compat (see docs/guides/windows-install.md for the
+  # efm_go.platform_compat (see docs/guides/windows-install.md for the
   # per-feature status), but until this job existed nothing in CI held
   # that line -- a POSIX-only regression would land silently. Single
   # Python (3.12: the preferred Windows runtime; numpy 1.x ships no 3.13
@@ -1010,9 +1010,9 @@ jobs:
           echo "::remove-matcher owner=python::"
           COVERAGE=(--no-cov)
           if [ "$RUNNER_OS" = "Linux" ] && [ "$ONLY_FRONTEND" != "true" ] && [ "$LEAF_TESTS" != "true" ]; then
-            COVERAGE=(--cov=kiro_crew --cov=sage_lib
-              --cov=src/kiro_crew/apps/builtins/aws_control/crew/packaging
-              --cov=src/kiro_crew/apps/builtins/code_review_sage/tests)
+            COVERAGE=(--cov=efm_go --cov=sage_lib
+              --cov=src/efm_go/apps/builtins/aws_control/crew/packaging
+              --cov=src/efm_go/apps/builtins/code_review_sage/tests)
           fi
           # The bounded IPv6 population always runs, even in reduced scope.
           # Leaf runs repeat it three times; ordinary corpus gates stay once.
@@ -1093,9 +1093,9 @@ jobs:
           test "$(stat -f -c %T /proc)" = proc
           COVERAGE=(--no-cov)
           if [ "$ONLY_FRONTEND" != "true" ] && [ "$LEAF_TESTS" != "true" ]; then
-            COVERAGE=(--cov=kiro_crew --cov=sage_lib
-              --cov=src/kiro_crew/apps/builtins/aws_control/crew/packaging
-              --cov=src/kiro_crew/apps/builtins/code_review_sage/tests)
+            COVERAGE=(--cov=efm_go --cov=sage_lib
+              --cov=src/efm_go/apps/builtins/aws_control/crew/packaging
+              --cov=src/efm_go/apps/builtins/code_review_sage/tests)
           fi
           # Both strict cases always run, even in reduced scope. Leaf runs
           # repeat them three times; ordinary corpus gates stay once.
@@ -1246,9 +1246,9 @@ jobs:
         if: env.POD_SCENARIOS != 'true'
         shell: bash
         run: |
-          mkdir -p src/kiro_crew/static/dist
-          [ -f src/kiro_crew/static/dist/index.html ] || \
-            printf '<!doctype html><title>pod boot canary</title>' > src/kiro_crew/static/dist/index.html
+          mkdir -p src/efm_go/static/dist
+          [ -f src/efm_go/static/dist/index.html ] || \
+            printf '<!doctype html><title>pod boot canary</title>' > src/efm_go/static/dist/index.html
 
       # Label opt-in only: the scenario suite drives the served dashboard and
       # packages it into the wheel it installs, so the bundle is the real Vite
@@ -1263,10 +1263,10 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
           cd ..
-          rm -rf src/kiro_crew/static/dist
-          mkdir -p src/kiro_crew/static
-          cp -R website/dist src/kiro_crew/static/dist
-          test -f src/kiro_crew/static/dist/index.html
+          rm -rf src/efm_go/static/dist
+          mkdir -p src/efm_go/static
+          cp -R website/dist src/efm_go/static/dist
+          test -f src/efm_go/static/dist/index.html
 
       - name: Assert a real pod boots and is reclaimed (not skipped)
         shell: bash
@@ -1543,7 +1543,7 @@ jobs:
         # guarded test below skip and this job go green having asserted nothing,
         # so the probe's verdict is asserted on its own, with its reason.
         run: |
-          python3 -c "from kiro_crew.sandbox import userns_available, unavailable_reason; assert userns_available(), unavailable_reason()"
+          python3 -c "from efm_go.sandbox import userns_available, unavailable_reason; assert userns_available(), unavailable_reason()"
 
       - name: Run sandbox-dependent tests
         # `--no-cov` deliberately. This is the only lane that reaches these lines, so
@@ -1559,15 +1559,15 @@ jobs:
           pytest -q --timeout=180 --no-cov \
             test/test_script_hooks.py \
             test/test_cron_script.py \
-            src/kiro_crew/apps/builtins/ops_mission_control/tests/test_ledger_sync_git.py \
-            src/kiro_crew/apps/builtins/ops_mission_control/tests/test_schedule_file.py \
-            src/kiro_crew/apps/builtins/auto_improvement/tests/test_dogfood_learnings.py \
-            src/kiro_crew/apps/builtins/auto_improvement/tests/test_pr_watchers.py \
-            src/kiro_crew/apps/builtins/auto_improvement/tests/test_lint_findings.py \
-            src/kiro_crew/apps/builtins/auto_improvement/tests/test_github_profile.py \
-            src/kiro_crew/apps/builtins/auto_improvement/tests/test_profile_capture.py \
-            src/kiro_crew/apps/builtins/auto_improvement/tests/test_runner.py \
-            src/kiro_crew/apps/builtins/auto_improvement/tests/test_perf_track_propose.py
+            src/efm_go/apps/builtins/ops_mission_control/tests/test_ledger_sync_git.py \
+            src/efm_go/apps/builtins/ops_mission_control/tests/test_schedule_file.py \
+            src/efm_go/apps/builtins/auto_improvement/tests/test_dogfood_learnings.py \
+            src/efm_go/apps/builtins/auto_improvement/tests/test_pr_watchers.py \
+            src/efm_go/apps/builtins/auto_improvement/tests/test_lint_findings.py \
+            src/efm_go/apps/builtins/auto_improvement/tests/test_github_profile.py \
+            src/efm_go/apps/builtins/auto_improvement/tests/test_profile_capture.py \
+            src/efm_go/apps/builtins/auto_improvement/tests/test_runner.py \
+            src/efm_go/apps/builtins/auto_improvement/tests/test_perf_track_propose.py
 
       - name: Require real V1 vector acceleration regressions
         timeout-minutes: 5
@@ -1620,7 +1620,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           CHANGED="$(git diff --name-only HEAD^1 HEAD)"
-          if printf '%s\n' "$CHANGED" | grep -Eq '^(src/kiro_crew/(.*memory.*|embeddings\.py|context\.py|eval/bench/.*)|scripts/ci-member-memory-benchmark\.py|\.github/workflows/ci\.yml)$'; then
+          if printf '%s\n' "$CHANGED" | grep -Eq '^(src/efm_go/(.*memory.*|embeddings\.py|context\.py|eval/bench/.*)|scripts/ci-member-memory-benchmark\.py|\.github/workflows/ci\.yml)$'; then
             echo "selected=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -1632,7 +1632,7 @@ jobs:
           KIROCREW_HOME: ${{ runner.temp }}/member-memory-benchmark-home
         run: |
           python - <<'PY' >> "$GITHUB_OUTPUT"
-          from kiro_crew import embeddings
+          from efm_go import embeddings
           print(f"digest={embeddings._GGUF_SHA256}")
           print(f"path={embeddings.default_model_path().parent}")
           PY
@@ -1704,14 +1704,14 @@ jobs:
           cache-dependency-glob: |
             pyproject.toml
             setup.cfg
-            src/kiro_crew/apps/builtins/aws_control/crew/runtime/container/requirements.txt
+            src/efm_go/apps/builtins/aws_control/crew/runtime/container/requirements.txt
 
       # Two installs, deliberately not merged into one resolution.
       #
       # `-e .` and the dev group are what every other backend lane installs, and this
       # suite needs them for a reason that is not obvious: no container test imports
-      # `kiro_crew`, but the repo-root conftest's autouse isolation fixtures do
-      # (`importlib.import_module("kiro_crew.apps")`), so a venv without the package
+      # `efm_go`, but the repo-root conftest's autouse isolation fixtures do
+      # (`importlib.import_module("efm_go.apps")`), so a venv without the package
       # errors at test SETUP rather than at collection. Measured: 233 errors, every
       # one a ModuleNotFoundError on a transitive app dependency.
       #
@@ -1736,7 +1736,7 @@ jobs:
         run: |
           uv pip install --system -e "." --group dev
           uv pip install --system -r \
-            src/kiro_crew/apps/builtins/aws_control/crew/runtime/container/requirements.txt
+            src/efm_go/apps/builtins/aws_control/crew/runtime/container/requirements.txt
 
       # CREW_CONTAINER_TESTS_REQUIRED is the point of this job, not a detail of it.
       # The suite's conftest answers a missing image dependency with
@@ -1763,7 +1763,7 @@ jobs:
           # pytest failure.
           echo "::remove-matcher owner=python::"
           pytest -q -n0 --timeout=180 --no-cov \
-            src/kiro_crew/apps/builtins/aws_control/crew/runtime/container_tests/
+            src/efm_go/apps/builtins/aws_control/crew/runtime/container_tests/
 
   # ── Real-adapter contract lane (the measurements no other runner makes) ──
   # The codex and opencode projections rest on facts about the ADAPTER, not about
@@ -2579,7 +2579,7 @@ jobs:
   cfn-lint:
     name: CloudFormation Lint
     needs: [changes, await-fast-gate]
-    # The templates it lints live under src/kiro_crew/deploy/, which the
+    # The templates it lints live under src/efm_go/deploy/, which the
     # paths-filter counts as backend, so a frontend-only diff cannot touch one.
     if: needs.changes.outputs.only_frontend != 'true'
     # PILOT (first wave): runs on a CodeBuild-hosted runner (project
@@ -2604,7 +2604,7 @@ jobs:
         run: pip install "cfn-lint==1.22.3"
 
       - name: Lint deploy templates
-        run: cfn-lint src/kiro_crew/deploy/skills/artifact-deploy/templates/*.yaml
+        run: cfn-lint src/efm_go/deploy/skills/artifact-deploy/templates/*.yaml
 
   # The Electron shell (website/electron) has its own 460+ test node:test suite,
   # and until now NOTHING ran it on a PR — its only runner was ota-test.yml,
@@ -3062,12 +3062,12 @@ jobs:
       - name: Stage frontend into package
         shell: bash
         # The dashboard Playwright specs render the bundled UI the harness
-        # gateway serves from src/kiro_crew/static/dist. Mirror nightly.yml's
+        # gateway serves from src/efm_go/static/dist. Mirror nightly.yml's
         # build-wheel staging so the specs hit a real dashboard, not a 404.
         run: |
-          rm -rf src/kiro_crew/static/dist
-          mkdir -p src/kiro_crew/static
-          cp -R website/dist src/kiro_crew/static/dist
+          rm -rf src/efm_go/static/dist
+          mkdir -p src/efm_go/static
+          cp -R website/dist src/efm_go/static/dist
 
       # The browser install is the single largest source of red on this job, and
       # never because a test failed: across 112 consecutive E2E jobs the
@@ -3180,7 +3180,7 @@ jobs:
       # corpus, so the editor's simulation of the reader cannot drift from the
       # reader. It lives HERE because it is the only pull-request lane with BOTH
       # runtimes present AND usable: the backend is pip-installed above (Python +
-      # kiro_crew) and `npm ci` has populated website/node_modules (node + the
+      # efm_go) and `npm ci` has populated website/node_modules (node + the
       # `yaml` package the mirror imports + esbuild). The sharded backend-test job
       # has Python but no website node deps, and frontend-test has node but no
       # Python, so in each of those the file skips with a named reason -- which is

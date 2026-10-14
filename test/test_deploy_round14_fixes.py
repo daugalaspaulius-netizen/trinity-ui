@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-SRC = Path(__file__).parent.parent / "src" / "kiro_crew"
+SRC = Path(__file__).parent.parent / "src" / "efm_go"
 HANDLERS = (SRC / "deploy" / "handlers.py").read_text(encoding="utf-8")
 REAPER_SH = (
     SRC / "deploy" / "skills" / "artifact-deploy" / "scripts" / "reaper.sh"

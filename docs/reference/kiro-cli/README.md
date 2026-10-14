@@ -32,7 +32,7 @@ lines.
 
 Every mirrored page has a Markdown twin at the same path with a `.md` suffix, so
 `/docs/skills/` is fetchable as `/docs/skills.md`. Use that for a re-fetch: it
-returns the page without the site's navigation chrome. `https://kiro.dev/llms.txt`
+returns the page without the site's navigation chrome. `https://efmleads.com/llms.txt`
 indexes every page and is the fastest way to find where one moved to.
 
 Two pages are **local, not mirrored**, and the tree's do-not-author rule does not
@@ -56,7 +56,7 @@ content; each is marked in the page. A re-fetch must preserve them.
 | [chat/model-selection.md](chat/model-selection.md) | /docs/models/ and /docs/models/available-models/ — reasoning-effort behaviour is documented first-party and more precisely in [providers](../../system-specs/modules/providers.md) | 2026-09-06 |
 | [chat/session-management.md](chat/session-management.md) | /docs/cli/chat/session-management/ | 2026-09-06 |
 | [chat/subagents.md](chat/subagents.md) | /docs/custom-agents/subagents/ — describes **upstream's** subagent model, not Kiro Crew's; [subagent](../../system-specs/modules/subagent.md) owns the shipped `spawn_run` / `spawn_continue` contract | 2026-09-06 |
-| [chat/voice.md](chat/voice.md) | **Not a mirror**, and the one page here with no upstream source: Kiro Crew's own voice setup, speech-to-text in (local by default) and text-to-speech out (system by default, plus Piper or Amazon Polly), across the dashboard and supported messaging channels. Its behavioral contracts live in [stt-streaming](../../system-specs/modules/stt-streaming.md) and [voice-streaming](../../system-specs/modules/voice-streaming.md); its settings reference is [configuration](../../../src/kiro_crew/docs/configuration.md). | n/a |
+| [chat/voice.md](chat/voice.md) | **Not a mirror**, and the one page here with no upstream source: Kiro Crew's own voice setup, speech-to-text in (local by default) and text-to-speech out (system by default, plus Piper or Amazon Polly), across the dashboard and supported messaging channels. Its behavioral contracts live in [stt-streaming](../../system-specs/modules/stt-streaming.md) and [voice-streaming](../../system-specs/modules/voice-streaming.md); its settings reference is [configuration](../../../src/efm_go/docs/configuration.md). | n/a |
 | [steering.md](steering.md) | /docs/steering/ — plus local measurement of what kiro-cli does with `inclusion` | 2026-09-06 |
 | [skills.md](skills.md) | /docs/skills/ | 2026-09-06 |
 | [hooks.md](hooks.md) | /docs/hooks/ and its `types` and `actions` subpages — plus Kiro Crew's fail-closed `PreToolUse` exit contract, which has no upstream counterpart | 2026-09-06 |

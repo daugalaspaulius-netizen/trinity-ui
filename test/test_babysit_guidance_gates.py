@@ -21,22 +21,22 @@ from pathlib import Path
 
 from skill_script_helpers import load_skill_script
 
-from kiro_crew.autonudge_authz import authorize_and_add_nudge
-from kiro_crew.monitoring import github_pull_request
-from kiro_crew.monitoring.github_pull_request import _normalize_checks
-from kiro_crew.probes.targets import infer
+from efm_go.autonudge_authz import authorize_and_add_nudge
+from efm_go.monitoring import github_pull_request
+from efm_go.monitoring.github_pull_request import _normalize_checks
+from efm_go.probes.targets import infer
 
 ROOT = Path(__file__).resolve().parents[1]
-PROMPT = ROOT / "src" / "kiro_crew" / "config" / "prompt.md"
+PROMPT = ROOT / "src" / "efm_go" / "config" / "prompt.md"
 BABYSIT_SKILL = (
-    ROOT / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev" / "babysit" / "SKILL.md"
+    ROOT / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev" / "babysit" / "SKILL.md"
 )
 SPEC = ROOT / "docs" / "system-specs" / "modules" / "babysit-pr-watch.md"
 MONITOR_SPEC = ROOT / "docs" / "system-specs" / "modules" / "monitor-architecture.md"
 PR_STATUS_SCRIPT = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"
@@ -78,7 +78,7 @@ def test_the_babysit_example_message_names_its_subject_by_url() -> None:
 def test_a_bare_number_is_still_refused_so_the_ratchet_means_something() -> None:
     # Guards the guard: if inference ever started accepting a bare reference, the
     # two tests above would pass on the old wording and stop protecting anything.
-    assert infer("Babysit PR #8184 (kirodotdev/KiroCrew), branch fix/x") is None
+    assert infer("Babysit PR #8184 (efmleads.com), branch fix/x") is None
     assert infer("Check https://github.com/<owner>/<repo>/pull/123 now.") is None
 
 

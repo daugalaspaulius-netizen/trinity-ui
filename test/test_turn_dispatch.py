@@ -15,8 +15,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.constants import CHAT_TURN_TIMEOUT
-from kiro_crew.dashboard import turn_dispatch as td
+from efm_go.constants import CHAT_TURN_TIMEOUT
+from efm_go.dashboard import turn_dispatch as td
 
 
 def _slot() -> MagicMock:
@@ -61,7 +61,7 @@ class TestBoundedIntCoercion:
     """
 
     def test_numeric_string_below_the_floor_is_clamped(self) -> None:
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             CHAT_TURN_TIMEOUT_MAX,
             CHAT_TURN_TIMEOUT_MIN,
             _safe_int,
@@ -73,7 +73,7 @@ class TestBoundedIntCoercion:
         )
 
     def test_numeric_string_above_the_ceiling_is_clamped(self) -> None:
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             CHAT_TURN_TIMEOUT_MAX,
             CHAT_TURN_TIMEOUT_MIN,
             _safe_int,
@@ -85,7 +85,7 @@ class TestBoundedIntCoercion:
         )
 
     def test_integral_float_is_clamped_too(self) -> None:
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             LOOP_STALL_EXIT_AFTER_MAX,
             LOOP_STALL_EXIT_AFTER_MIN,
             _safe_int,
@@ -97,7 +97,7 @@ class TestBoundedIntCoercion:
         )
 
     def test_in_range_value_is_untouched(self) -> None:
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             CHAT_TURN_TIMEOUT_MAX,
             CHAT_TURN_TIMEOUT_MIN,
             _safe_int,
@@ -107,7 +107,7 @@ class TestBoundedIntCoercion:
 
     def test_callers_without_bounds_are_unaffected(self) -> None:
         """The clamp is opt-in; the dozens of existing call sites must not shift."""
-        from kiro_crew.config.loader import _safe_int
+        from efm_go.config.loader import _safe_int
 
         assert _safe_int("1", 7200) == 1
         assert _safe_int("nonsense", 42) == 42

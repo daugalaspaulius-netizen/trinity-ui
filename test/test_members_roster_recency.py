@@ -28,11 +28,11 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew import members
-from kiro_crew.config.sections import KiroCrewAgentConfig
-from kiro_crew.dashboard.handlers.members import _as_epoch, _recency_for_row
-from kiro_crew.eventlog import types
-from kiro_crew.eventlog.service import get_service, set_service
+from efm_go import members
+from efm_go.config.sections import KiroCrewAgentConfig
+from efm_go.dashboard.handlers.members import _as_epoch, _recency_for_row
+from efm_go.eventlog import types
+from efm_go.eventlog.service import get_service, set_service
 
 CREW = "radar"
 
@@ -95,7 +95,7 @@ class TestTheFoldNeverWalksRecencyBackwards:
     """
 
     def _apply(self, state: dict, data: dict) -> dict:
-        from kiro_crew.eventlog.members_projections import RosterProjection
+        from efm_go.eventlog.members_projections import RosterProjection
 
         event = {"type": types.MEMBER_MESSAGE, "seq": 1, "time": 0, "data": data}
         return RosterProjection().apply(state, event)  # type: ignore[arg-type]
@@ -167,7 +167,7 @@ class TestTheFoldNeverWalksRecencyBackwards:
         spoke. The fold's own rule is pinned above; this pins the retirement,
         without which those pins hold only for a store that has never saved.
         """
-        from kiro_crew.eventlog.members_projections import RosterProjection
+        from efm_go.eventlog.members_projections import RosterProjection
 
         assert RosterProjection.state_version >= 2
 
@@ -184,7 +184,7 @@ def _fresh_eventlog(tmp_path, monkeypatch):
 
 
 def _members_app(state) -> web.Application:
-    from kiro_crew.dashboard.handlers.members import api_members
+    from efm_go.dashboard.handlers.members import api_members
 
     @web.middleware
     async def _auth(request, handler):
@@ -205,7 +205,7 @@ def _cfg(monkeypatch):
         memory_stores={},
         degraded_sections=frozenset(),
     )
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+    monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
     return cfg
 
 

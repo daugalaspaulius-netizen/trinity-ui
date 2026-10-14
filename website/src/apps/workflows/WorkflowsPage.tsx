@@ -13,7 +13,7 @@
  * which a builtin page mounts for itself via `AppScopedApiProvider`; app identity
  * is published for every builtin page by BuiltinAppRoute).
  *
- * Backend contract: see kiro_crew/apps/builtins/workflows/server.py and the run
+ * Backend contract: see efm_go/apps/builtins/workflows/server.py and the run
  * event schema in docs/system-specs/modules/workflows.md.
  */
 import { useCallback, useMemo, useState } from 'react'

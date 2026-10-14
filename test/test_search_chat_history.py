@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import mcp_core
-from kiro_crew.history import ConversationLog
+from efm_go import mcp_core
+from efm_go.history import ConversationLog
 
 
 @pytest.fixture(autouse=True)
@@ -422,7 +422,7 @@ class TestLineTightenedBetweenCheckAndRead:
 
 class TestABusyTranscriptSaysRetry:
     def test_get_chat_session_says_busy_not_private(self, tmp_path, monkeypatch):
-        from kiro_crew.history import TranscriptBusy
+        from efm_go.history import TranscriptBusy
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         _seed_sessions(tmp_path)
@@ -437,7 +437,7 @@ class TestABusyTranscriptSaysRetry:
         assert "redis.timeout" not in out
 
     def test_search_skips_a_busy_session_and_keeps_the_rest(self, tmp_path, monkeypatch):
-        from kiro_crew.history import TranscriptBusy
+        from efm_go.history import TranscriptBusy
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         _seed_sessions(tmp_path)

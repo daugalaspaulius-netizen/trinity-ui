@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import session_scope_reap as r
-from kiro_crew.constants import KIROCREW_SPAWNED_ENV, KIROCREW_SPAWNED_VALUE
+from efm_go import session_scope_reap as r
+from efm_go.constants import KIROCREW_SPAWNED_ENV, KIROCREW_SPAWNED_VALUE
 
 pytestmark = pytest.mark.skipif(sys.platform != "linux", reason="Agent scope reaping is Linux-only")
 
@@ -652,7 +652,7 @@ class TestSandboxCredentialHelperRule:
     def test_the_helper_is_not_one_of_the_existential_anchor_identities(self):
         # Pinned in the direction that matters: if the helper ever becomes an
         # existential anchor, one of them authorizes killing every sibling.
-        from kiro_crew.session_pid import _is_agent_runtime_anchor
+        from efm_go.session_pid import _is_agent_runtime_anchor
 
         cmdline = _creds_helper_cmdline()
         assert _is_agent_runtime_anchor(cmdline, has_kirocrew_marker=True) is False
@@ -1477,7 +1477,7 @@ def test_non_linux_is_no_op(monkeypatch):
 
 
 def test_instance_dir_none_when_token_unavailable(monkeypatch):
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_agents_slice_cgroup_dir", lambda: Path("/nonexistent-parent"))
     # Degraded token: child name equals the shared parent -> not attributable.
@@ -1661,7 +1661,7 @@ def test_old_skips_emit_one_categorized_info_summary(tmp_path, caplog):
 
 
 def test_incomplete_tracking_snapshot_aborts_before_scan(monkeypatch, tmp_path, caplog):
-    from kiro_crew import sandbox, session_pid
+    from efm_go import sandbox, session_pid
 
     monkeypatch.setattr(r.sys, "platform", "linux")
     monkeypatch.setattr(sandbox, "_probe_cgroup_scope", lambda: (True, ""))
@@ -1683,7 +1683,7 @@ def test_incomplete_tracking_snapshot_aborts_before_scan(monkeypatch, tmp_path, 
 
 
 def test_complete_tracking_snapshot_proceeds(monkeypatch, tmp_path):
-    from kiro_crew import sandbox, session_pid
+    from efm_go import sandbox, session_pid
 
     expected = r.ReapSummary(scanned=2, reclaimed=1, skipped=1)
     seen = {}
@@ -1835,7 +1835,7 @@ def test_scope_age_fallback_returns_none_without_readable_member(tmp_path):
 
 
 def test_instance_dir_reports_missing_per_instance_cgroup(tmp_path, monkeypatch):
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     parent = tmp_path / "agents.slice"
     parent.mkdir()
@@ -1927,8 +1927,8 @@ async def test_periodic_ticks_reclaim_successive_runtime_trees_without_gateway_r
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
 
-    from kiro_crew import sandbox, session, session_pid
-    from kiro_crew.config import KiroCrewConfig
+    from efm_go import sandbox, session, session_pid
+    from efm_go.config import KiroCrewConfig
 
     proc, slice_dir = tmp_path / "proc", tmp_path / "slice"
     rec = _Recorder()

@@ -11,7 +11,7 @@ in ``--auth=acp-callback`` and the turn completes). Windows ships ONE self-conta
 ``kiro-cli.exe`` that IS the chat-cli crate (no q_cli launcher in the MSI), so there
 is nothing to swap there and :func:`chat_sibling` answers ``None``.
 
-Two layers are pinned here: :func:`kiro_crew.kiro_cli.chat_sibling` (pure path work,
+Two layers are pinned here: :func:`efm_go.kiro_cli.chat_sibling` (pure path work,
 asked with an explicit platform) and the KAS harness plan, which consults it on the
 Crew-owned branch only. The harness tests stub ``chat_sibling`` so they describe the
 plumbing on every CI host rather than inheriting the host's ``sys.platform``; the
@@ -28,13 +28,13 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import kiro_cli
-from kiro_crew.acp import client as client_mod
-from kiro_crew.acp.harness import harness_for
-from kiro_crew.acp.harness import kas as kas_mod
-from kiro_crew.acp.harness.base import SpawnContext
-from kiro_crew.acp.kas_transport import KAS_RELAY_AUTH_FLAG
-from kiro_crew.acp.types import ACP_BACKEND_KAS
+from efm_go import kiro_cli
+from efm_go.acp import client as client_mod
+from efm_go.acp.harness import harness_for
+from efm_go.acp.harness import kas as kas_mod
+from efm_go.acp.harness.base import SpawnContext
+from efm_go.acp.kas_transport import KAS_RELAY_AUTH_FLAG
+from efm_go.acp.types import ACP_BACKEND_KAS
 
 posix_only = pytest.mark.skipif(
     sys.platform == "win32", reason="POSIX execute bit; Windows reports every file executable"

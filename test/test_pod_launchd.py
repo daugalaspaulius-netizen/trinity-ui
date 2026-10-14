@@ -14,9 +14,9 @@ import subprocess
 
 import pytest
 
-from kiro_crew.pod import launchd
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod.config import PodConfig
+from efm_go.pod import launchd
+from efm_go.pod import runtime as rt
+from efm_go.pod.config import PodConfig
 
 
 def _cp(stdout: str = "", returncode: int = 0, stderr: str = "") -> subprocess.CompletedProcess:
@@ -51,7 +51,7 @@ def test_up_user_bus_preflight_is_linux_only(
     monkeypatch, platform: str, is_macos: bool, is_windows: bool
 ):
     """A pod-up preflight must never drive launchd or Task Scheduler."""
-    from kiro_crew.pod import cli as pod_cli
+    from efm_go.pod import cli as pod_cli
 
     monkeypatch.setattr(rt, "IS_LINUX", False)
     monkeypatch.setattr(rt, "IS_MACOS", is_macos)
@@ -133,7 +133,7 @@ def test_label_honours_a_hermetic_unit_prefix(cfg, monkeypatch):
 
 def test_env_selection_is_shared_with_the_systemd_backend(cfg):
     """Both backends must pin the SAME plane, or a pod boots differently per OS."""
-    from kiro_crew.pod.config import environment_vars
+    from efm_go.pod.config import environment_vars
 
     body = launchd.render_plist(cfg, "smoke")
     assert body.get("EnvironmentVariables") == environment_vars(cfg)
@@ -418,7 +418,7 @@ def test_down_preserves_the_new_pods_checkout_pin_when_reclaimed(cfg, monkeypatc
     it pins the NEW pod's checkout."""
     import argparse
 
-    from kiro_crew.pod import cli as pod_cli
+    from efm_go.pod import cli as pod_cli
 
     monkeypatch.setattr(rt, "validate_name", lambda n: n)
     monkeypatch.setattr(rt, "is_active", lambda c, n: True)
@@ -504,7 +504,7 @@ def test_down_fails_on_macos_when_stop_cannot_confirm_even_if_not_active(cfg, mo
     while leaving service, plist and HOME behind."""
     import argparse
 
-    from kiro_crew.pod import cli as pod_cli
+    from efm_go.pod import cli as pod_cli
 
     monkeypatch.setattr(rt, "IS_MACOS", True)
     monkeypatch.setattr(rt, "validate_name", lambda n: n)
@@ -527,7 +527,7 @@ def test_up_pins_the_checkout_inside_the_name_mutex(cfg, monkeypatch, tmp_path):
     import argparse
     import contextlib as _ctx
 
-    from kiro_crew.pod import cli as pod_cli
+    from efm_go.pod import cli as pod_cli
 
     events: list[str] = []
 
@@ -590,7 +590,7 @@ def test_up_failure_cleanup_stops_the_pod_inside_the_mutex(cfg, monkeypatch, tmp
     import argparse
     import contextlib as _ctx
 
-    from kiro_crew.pod import cli as pod_cli
+    from efm_go.pod import cli as pod_cli
 
     events: list[str] = []
 
@@ -642,7 +642,7 @@ def test_ls_translates_orphan_probe_failures_to_the_documented_error(cfg, monkey
     documented one-line `pod: <msg>` refusal (review finding)."""
     import argparse
 
-    from kiro_crew.pod import cli as pod_cli
+    from efm_go.pod import cli as pod_cli
 
     monkeypatch.setattr(rt, "IS_MACOS", True)
     monkeypatch.setattr(launchd, "launchctl", lambda *a, **k: _cp(returncode=5, stderr="EIO"))

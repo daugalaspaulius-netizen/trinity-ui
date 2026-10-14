@@ -21,7 +21,7 @@ name: Build Desktop (reusable)
 #
 # Linux is built NATIVELY per arch, never cross-compiled: build-desktop.sh
 # provisions a python-build-standalone interpreter and then RUNS it (pip
-# install + the self-containment gate `python -m kiro_crew --version`), so a
+# install + the self-containment gate `python -m efm_go --version`), so a
 # host that cannot execute the target arch cannot build it. macOS gets away
 # with one host because Rosetta 2 executes the x86_64 slice; Linux has no
 # equivalent, hence one runner per arch.
@@ -265,8 +265,8 @@ jobs:
         shell: bash
         run: |
           # BSD-sed-compatible -i.bak form: this step runs on macos-15 too.
-          sed -i.bak "s/__version__ = \".*\"/__version__ = \"${STAMP_VERSION}\"/" src/kiro_crew/__init__.py
-          rm -f src/kiro_crew/__init__.py.bak
+          sed -i.bak "s/__version__ = \".*\"/__version__ = \"${STAMP_VERSION}\"/" src/efm_go/__init__.py
+          rm -f src/efm_go/__init__.py.bak
           # Stamp the Electron app: app.getVersion() (from the bundle's
           # Info.plist, which electron-builder fills from package.json) must
           # equal the feed version for the auto-updater's compare gate.
@@ -283,9 +283,7 @@ jobs:
         # is verified against the committed sha. A moved latest manifest does not
         # invalidate a pinned rebuild.
         run: |
-          KIRO_CLI_VERSION="$(tr -d '[:space:]' < packaging/kiro-cli-version)"
-          echo "Bundling kiro-cli ${KIRO_CLI_VERSION} (packaging/kiro-cli-version)"
-          KIRO_CLI_VERSION="${KIRO_CLI_VERSION}" bash packaging/build-desktop.sh
+          bash packaging/build-desktop.sh
         env:
           # Unsigned here by design: the signing service signs the .app downstream in
           # sign-and-notarize.yml. Local certificate discovery must stay off.
@@ -404,8 +402,8 @@ jobs:
           STAMP_VERSION: ${{ inputs.version }}
         shell: bash
         run: |
-          sed -i.bak "s/__version__ = \".*\"/__version__ = \"${STAMP_VERSION}\"/" src/kiro_crew/__init__.py
-          rm -f src/kiro_crew/__init__.py.bak
+          sed -i.bak "s/__version__ = \".*\"/__version__ = \"${STAMP_VERSION}\"/" src/efm_go/__init__.py
+          rm -f src/efm_go/__init__.py.bak
           node -e "const fs=require('fs');const f='website/electron/package.json';const p=JSON.parse(fs.readFileSync(f));p.version=process.env.STAMP_VERSION;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
           echo "Building desktop: ${STAMP_VERSION}"
 

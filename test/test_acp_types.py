@@ -1,6 +1,6 @@
 """Tests for ACP types."""
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     JSONRPC_METHOD_NOT_FOUND,
     AcpPromptStats,
     JsonRpcMessage,

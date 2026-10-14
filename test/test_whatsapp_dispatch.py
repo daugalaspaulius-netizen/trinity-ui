@@ -14,12 +14,12 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.messaging.commands import compact_refusal_plain_text
-from kiro_crew.messaging.driver import APPROVAL_AUTO
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.whatsapp.commands import (
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.messaging.commands import compact_refusal_plain_text
+from efm_go.messaging.driver import APPROVAL_AUTO
+from efm_go.messaging.transport import InboundMessage
+from efm_go.session_allocation import SessionClosingError
+from efm_go.whatsapp.commands import (
     COMPACT_AUTO_TEXT,
     COMPACT_BUSY_TEXT,
     COMPACT_FAILED_TEXT,
@@ -28,8 +28,8 @@ from kiro_crew.whatsapp.commands import (
     COMPACTED_TEXT,
     CONTEXT_LONG_TEXT,
 )
-from kiro_crew.whatsapp.group_gate import SILENCE_SENTINEL, GroupVerdict
-from kiro_crew.whatsapp.transport_dispatch import (
+from efm_go.whatsapp.group_gate import SILENCE_SENTINEL, GroupVerdict
+from efm_go.whatsapp.transport_dispatch import (
     REACTION_DONE,
     REACTION_FAILED,
     REACTION_WORKING,
@@ -335,7 +335,7 @@ def test_new_command_starts_a_fresh_session_without_a_turn():
 
 
 def test_update_pause_spools_dm_new_before_generation_side_effects(monkeypatch):
-    import kiro_crew.messaging.dispatch as dispatch
+    import efm_go.messaging.dispatch as dispatch
 
     d, _client, sessions, transport = _make(provider=FakeProvider())
     sessions.reserve_inbound_callback = lambda: None
@@ -432,7 +432,7 @@ def test_a_member_waits_while_the_operators_group_turn_streams():
     streaming from either is a reply in this chat. Back-pressure is keyed on the
     conversation: the member gets the busy receipt and never steers the
     operator's turn, even though their own bucket is idle."""
-    from kiro_crew.whatsapp.transport_dispatch import BUSY_NOTE
+    from efm_go.whatsapp.transport_dispatch import BUSY_NOTE
 
     provider = FakeProvider()
     d, _client, sessions, transport = _make(provider=provider)
@@ -448,7 +448,7 @@ def test_stop_acts_on_the_members_bucket_when_that_is_the_live_one():
     """/stop is the channel's only cancel affordance and the operator types it
     at the conversation, not at a bucket: when the members' tool-less bucket is
     the one streaming, that is the turn it stops."""
-    from kiro_crew.whatsapp.transport_dispatch import STOPPED_TEXT
+    from efm_go.whatsapp.transport_dispatch import STOPPED_TEXT
 
     d, _client, sessions, transport = _make()
     member_key = d._session_key(_GROUP, is_operator=False)
@@ -470,8 +470,8 @@ def test_a_repeat_stop_while_compacting_forces_and_keeps_the_shared_queue():
     window forces. The force keeps the queue: under a unified ``dm_scope`` it
     holds other channels' messages, and ``stop_turn`` parks them for the
     successor rather than letting the reset drop them."""
-    from kiro_crew import session_lifecycle as sl
-    from kiro_crew.whatsapp.transport_dispatch import STOP_DECLINED_COMPACTING_TEXT, STOPPED_TEXT
+    from efm_go import session_lifecycle as sl
+    from efm_go.whatsapp.transport_dispatch import STOP_DECLINED_COMPACTING_TEXT, STOPPED_TEXT
 
     sl._stop_declined_markers.clear()
     d, _client, sessions, transport = _make()
@@ -538,7 +538,7 @@ def test_busy_flips_free_reprocesses_the_message():
 
 # ── dispatcher: governance + failures ───────────────────────────────────────
 def test_governance_deny_drops_before_any_turn(monkeypatch):
-    import kiro_crew.messaging.dispatch as mod
+    import efm_go.messaging.dispatch as mod
 
     async def deny(_ct):
         return False
@@ -711,7 +711,7 @@ def test_a_muted_unprompted_group_turn_starts_no_cooldown():
     transport.pending_verdicts[id(inbound)] = GroupVerdict(
         respond=True, may_steer=False, unprompted=True, rules="be helpful"
     )
-    import kiro_crew.messaging.dispatch as dispatch_mod
+    import efm_go.messaging.dispatch as dispatch_mod
 
     # Mute the conversation exactly the way the dashboard disconnect does.
     original = dispatch_mod.conversation_is_muted
@@ -746,7 +746,7 @@ def _captured_turn(monkeypatch, dispatcher, inbound):
     is whether a permission request is approved, which needs a provider driving
     the full ladder. What matters here is the dispatcher's CHOICE.
     """
-    import kiro_crew.whatsapp.transport_dispatch as mod
+    import efm_go.whatsapp.transport_dispatch as mod
 
     seen = {}
 
@@ -919,7 +919,7 @@ def test_a_non_operator_is_keyed_under_the_tool_less_agent():
     non-operator's bucket must be built under that agent from the start, in a DM
     and in a group alike; the group's shared session stays the operator's.
     """
-    from kiro_crew.messaging.dispatch import TOOLLESS_TURN_AGENT
+    from efm_go.messaging.dispatch import TOOLLESS_TURN_AGENT
 
     d, _client, _sessions, transport = _make()
     peer_dm = d._session_key("447711111111@s.whatsapp.net", is_operator=False)
@@ -1255,13 +1255,13 @@ def test_a_scope_seeds_from_the_member_bucket_when_it_is_ahead():
     segment) that shares the scope's generation counter. If only members talked
     since the last restart, the operator's bucket is behind; seeding from it
     alone would hand a member a generation whose session is still on disk."""
-    from kiro_crew.messaging.dispatch import TOOLLESS_TURN_AGENT
-    from kiro_crew.messaging.link import (
+    from efm_go.messaging.dispatch import TOOLLESS_TURN_AGENT
+    from efm_go.messaging.link import (
         CHAT_TYPE_FORUM,
         DM_SCOPE_PER_CHANNEL_PEER,
         build_dm_session_key,
     )
-    from kiro_crew.whatsapp.transport_dispatch import GUEST_SCOPE_SEGMENT
+    from efm_go.whatsapp.transport_dispatch import GUEST_SCOPE_SEGMENT
 
     d, _client, sessions, _transport = _make()
     member_bucket = build_dm_session_key(
@@ -1283,8 +1283,8 @@ def test_a_decline_whose_reply_never_sends_leaves_the_next_press_a_first_press()
     """``_say`` logs its own send error rather than raising, so the decline must
     read its answer: an operator who saw nothing presses again within seconds,
     and that press must be declined again rather than reset their session."""
-    from kiro_crew import session_lifecycle as sl
-    from kiro_crew.whatsapp.transport_dispatch import STOP_DECLINED_COMPACTING_TEXT
+    from efm_go import session_lifecycle as sl
+    from efm_go.whatsapp.transport_dispatch import STOP_DECLINED_COMPACTING_TEXT
 
     sl._stop_declined_markers.clear()
     d, _client, sessions, transport = _make()

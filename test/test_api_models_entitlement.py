@@ -29,18 +29,18 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.client import (
+from efm_go.acp.client import (
     catalog_row_would_drop,
     model_is_unusable,
     resolve_pin_spelling,
 )
-from kiro_crew.acp.session_handle import EntitlementRevalidating
-from kiro_crew.acp_backends import ACP_BACKEND_CLAUDE, ACP_BACKEND_KIRO
-from kiro_crew.agent_sdk.capabilities import capabilities_for
-from kiro_crew.dashboard.handlers import agents
-from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
-from kiro_crew.providers.acp import AcpProvider
-from kiro_crew.providers.base import LLMProvider
+from efm_go.acp.session_handle import EntitlementRevalidating
+from efm_go.acp_backends import ACP_BACKEND_CLAUDE, ACP_BACKEND_KIRO
+from efm_go.agent_sdk.capabilities import capabilities_for
+from efm_go.dashboard.handlers import agents
+from efm_go.kiro_prerequisite import KiroPrerequisiteService
+from efm_go.providers.acp import AcpProvider
+from efm_go.providers.base import LLMProvider
 
 CATALOG = [
     {"model_name": "auto", "description": "Models chosen by task"},
@@ -672,12 +672,12 @@ def _run_api_models(request, payload: bytes):
             "load",
             return_value=SimpleNamespace(agent=SimpleNamespace(provider="kiro")),
         ),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
-        patch("kiro_crew.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
+        patch("efm_go.dashboard.handlers.agents.wrap_argv", _stub_wrap_argv),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(
             agents.asyncio, "create_subprocess_exec", return_value=_FakeProc(stdout=payload)
         ),

@@ -220,7 +220,7 @@ async function shot(page, name) {
   const { context, page } = await openBar()
   await page.getByRole('combobox').fill('merge all')
   await page.getByRole('option').filter({ hasText: 'Merge all PRs' }).first().dispatchEvent('mousedown')
-  await page.getByRole('combobox').fill('https://github.com/kirodotdev/KiroCrew/pulls?q=is%3Aopen+is%3Apr+label%3A%22readiness%3A+passed%22')
+  await page.getByRole('combobox').fill('https://efmleads.com/pulls?q=is%3Aopen+is%3Apr+label%3A%22readiness%3A+passed%22')
   // Wait for the CUE, not just the preview. The clipped warning is set by an effect that
   // measures the rendered box, so it lands one render after the prompt text does -- and
   // shooting between the two produced exactly the misleading frame this review caught: a

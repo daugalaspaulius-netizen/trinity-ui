@@ -25,12 +25,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state, drain_background_tasks
 
-from kiro_crew import pinned_fs
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.memory import MemoryStore
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
-from kiro_crew.skills import SkillsLoader
+from efm_go import pinned_fs
+from efm_go.context import ContextBuilder
+from efm_go.dashboard import chat_runner
+from efm_go.memory import MemoryStore
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+from efm_go.skills import SkillsLoader
 
 SLOT_NAME = "standards-chat"
 
@@ -154,7 +154,7 @@ async def test_stale_stored_entry_is_skipped_not_fatal(tmp_path, monkeypatch, ca
     state = _turn_state(tmp_path, monkeypatch)
     state._folders = [{"id": "f-1", "name": "Std", "steering_dirs": ["relative/dir"]}]
     slot = _slot(state, folder_id="f-1")
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.chat_folders"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.chat_folders"):
         await _turn(state, slot)
     assert _passed_dirs(state) == ()
     skipped = [
@@ -231,8 +231,8 @@ async def test_member_slot_receives_its_own_members_folder_steering(tmp_path, mo
     folder silently. Drives ``_run_chat`` with a real provisioned member so the
     execution context is the one the runner captures, not a fabricated stand-in.
     """
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.memory_stores import provision_member_memory
 
     cfg = KiroCrewConfig.load()
     cfg.agents["reviewer"] = KiroCrewAgentConfig(kiro_agent="kirocrew")

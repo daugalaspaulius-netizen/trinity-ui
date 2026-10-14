@@ -1,4 +1,4 @@
-"""Coverage tests for kiro_crew.apps.routes — validation, denial and error paths.
+"""Coverage tests for efm_go.apps.routes — validation, denial and error paths.
 
 Complements ``test_app_routes.py`` (happy-path lifecycle) by exercising the
 branches a normal install/enable/uninstall never reaches: input validation,
@@ -35,9 +35,9 @@ from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 from dashboard_owner_helpers import as_owner
 from test_update_provider import _UNALLOCATABLE_PID
 
-import kiro_crew.apps.routes as routes_mod
+import efm_go.apps.routes as routes_mod
 from conftest import requires_symlinks
-from kiro_crew.apps.manager import (
+from efm_go.apps.manager import (
     APP_MANIFEST_FILENAME,
     AppResult,
     disable_app,
@@ -45,7 +45,7 @@ from kiro_crew.apps.manager import (
     install_app,
     register_external_app,
 )
-from kiro_crew.apps.routes import (
+from efm_go.apps.routes import (
     _client_install_manifest,
     _get_app_secret,
     _is_safe_repo_identifier,
@@ -93,10 +93,10 @@ def _setup_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     )
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
 
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
 
     bmod._processes.clear()
     bmod._allocated_ports.clear()
@@ -485,7 +485,7 @@ async def test_list_apps_resolves_legacy_registry_trust_repository(
     )
     monkeypatch.setattr(routes_mod, "list_app_processes", lambda: [])
     monkeypatch.setattr(
-        "kiro_crew.apps.registry.get_registry_app",
+        "efm_go.apps.registry.get_registry_app",
         lambda name: {"name": name, "gitUrl": f"{clone_target}.git"},
     )
 
@@ -517,7 +517,7 @@ async def test_get_app_keeps_genuinely_local_app_repositoryless(
     def _must_not_resolve(_name: str):
         pytest.fail("a local install must not fall through to the registry")
 
-    monkeypatch.setattr("kiro_crew.apps.registry.get_registry_app", _must_not_resolve)
+    monkeypatch.setattr("efm_go.apps.registry.get_registry_app", _must_not_resolve)
 
     async with TestClient(TestServer(_make_app())) as client:
         resp = await client.get(f"/api/apps/{APP}")
@@ -799,7 +799,7 @@ class TestRegisterExternal:
     async def test_public_registration_cannot_mint_registry_provenance(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps.manager import _read_installed
+        from efm_go.apps.manager import _read_installed
 
         _setup_env(tmp_path, monkeypatch)
         async with TestClient(TestServer(_make_app(dashboard_user="owner"))) as client:
@@ -825,7 +825,7 @@ class TestRegisterExternal:
     async def test_public_registration_cannot_mint_builtin_ownership(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps.manager import _builtin_owns_install, _read_installed
+        from efm_go.apps.manager import _builtin_owns_install, _read_installed
 
         _setup_env(tmp_path, monkeypatch)
         async with TestClient(TestServer(_make_app(dashboard_user="owner"))) as client:
@@ -862,7 +862,7 @@ class TestRegisterExternal:
     async def test_registration_never_persists_or_returns_source_credentials(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps.manager import INSTALLED_META_FILENAME, app_dir
+        from efm_go.apps.manager import INSTALLED_META_FILENAME, app_dir
 
         _setup_env(tmp_path, monkeypatch)
         credential = "register-source-secret"
@@ -944,7 +944,7 @@ class TestRegisterExternal:
         safe_source: str,
         secret: str,
     ) -> None:
-        from kiro_crew.apps.manager import INSTALLED_META_FILENAME, app_dir
+        from efm_go.apps.manager import INSTALLED_META_FILENAME, app_dir
 
         _setup_env(tmp_path, monkeypatch)
         async with TestClient(TestServer(_make_app(dashboard_user="owner"))) as client:
@@ -985,8 +985,8 @@ class TestRegisterExternal:
         monkeypatch: pytest.MonkeyPatch,
         repository_bound: bool,
     ) -> None:
-        from kiro_crew.apps.manager import _read_installed, set_app_provenance
-        from kiro_crew.config.loader import _invalidate_config_cache
+        from efm_go.apps.manager import _read_installed, set_app_provenance
+        from efm_go.config.loader import _invalidate_config_cache
 
         home = _setup_env(tmp_path, monkeypatch)
         _invalidate_config_cache()
@@ -1056,7 +1056,7 @@ class TestRegisterExternal:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The route lock prevents a stale pre-transition snapshot write-back."""
-        from kiro_crew.apps.manager import (
+        from efm_go.apps.manager import (
             _read_installed,
             app_lifecycle_lock,
             set_app_provenance,
@@ -1645,9 +1645,9 @@ class TestUpdateApp:
         home = _setup_env(tmp_path, monkeypatch)
         _install(tmp_path)
 
-        from kiro_crew.apps.manager import get_app, set_app_provenance
-        from kiro_crew.config.loader import _invalidate_config_cache
-        from kiro_crew.dashboard.token_auth import generate_token, token_auth_middleware
+        from efm_go.apps.manager import get_app, set_app_provenance
+        from efm_go.config.loader import _invalidate_config_cache
+        from efm_go.dashboard.token_auth import generate_token, token_auth_middleware
 
         reviewed = "https://clone.example.test/Owner/reviewed-app"
         assert set_app_provenance(
@@ -2241,7 +2241,7 @@ class TestDisableBranches:
         # trust-revocation path also calls, so `routes` does not hold these
         # symbols. The behaviour these tests pin is unchanged — the warnings still
         # surface on the disable response — only the module that owns the step moved.
-        from kiro_crew.apps import teardown as teardown_mod
+        from efm_go.apps import teardown as teardown_mod
 
         # Patched on `teardown`, NOT on `lifecycle_scripts`: teardown does
         # `from ... import run_lifecycle_script`, so it holds its own binding and a
@@ -2281,7 +2281,7 @@ class TestDisableBranches:
         # trust-revocation path also calls, so `routes` does not hold these
         # symbols. The behaviour these tests pin is unchanged — the warnings still
         # surface on the disable response — only the module that owns the step moved.
-        from kiro_crew.apps import teardown as teardown_mod
+        from efm_go.apps import teardown as teardown_mod
 
         monkeypatch.setattr(teardown_mod, "on_app_disable", _boom)
         monkeypatch.setattr(teardown_mod, "stop_app_backend", lambda n: None)
@@ -2310,7 +2310,7 @@ class TestDisableBranches:
         # trust-revocation path also calls, so `routes` does not hold these
         # symbols. The behaviour these tests pin is unchanged — the warnings still
         # surface on the disable response — only the module that owns the step moved.
-        from kiro_crew.apps import teardown as teardown_mod
+        from efm_go.apps import teardown as teardown_mod
 
         monkeypatch.setattr(teardown_mod, "on_app_disable", _hooks)
         monkeypatch.setattr(routes_mod, "stop_app_backend", lambda n: None)
@@ -2375,7 +2375,7 @@ class TestRepeatedToggleIsIdempotent:
         _setup_env(tmp_path, monkeypatch)
         _install(tmp_path, setup={"onDisable": "teardown.sh"})
         enable_app(APP)
-        from kiro_crew.apps import teardown as teardown_mod
+        from efm_go.apps import teardown as teardown_mod
 
         both_read = asyncio.Event()
         real_get_app = routes_mod.get_app
@@ -3787,7 +3787,7 @@ class TestFetchGitBlobCredentialPosture:
     async def test_ambiguous_git_target_refuses_before_ssrf_gate_or_clone(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, raw: str
     ) -> None:
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         def _must_not_check_host(url: str) -> bool:
             raise AssertionError("ambiguous Git target must fail before the host gate")
@@ -3811,7 +3811,7 @@ class TestFetchGitBlobCredentialPosture:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Blob checkout must never inherit the one-shot HTTP credential."""
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         raw = "https://user:secret@example.invalid/owner/registry.git"
         safe = "https://example.invalid/owner/registry.git"
@@ -3873,7 +3873,7 @@ class TestFetchGitBlobCredentialPosture:
         monkeypatch: pytest.MonkeyPatch,
         git_url: str,
     ) -> dict[str, Any]:
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         captured: dict[str, Any] = {}
 
@@ -4036,7 +4036,7 @@ class TestFetchGitBlobCredentialPosture:
         # system+global git config and never prompts, while minimal_env — used
         # for the owner-designated repo — does not strip those.
         _setup_env(tmp_path, monkeypatch)
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         anon = reg_mod.anonymous_git_env()
         minimal = reg_mod.minimal_env()
@@ -4108,7 +4108,7 @@ class TestBlobProxyOwnerDesignatedWiring:
     async def test_same_repo_entry_is_owner_designated(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         url = "ssh://forge.example/org/registry.git"
         # An external-index entry whose clone URL equals the owner-configured
@@ -4127,7 +4127,7 @@ class TestBlobProxyOwnerDesignatedWiring:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Retained rows stay public while the exact config target reaches fetch."""
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         _setup_env(tmp_path, monkeypatch)
         raw = "https://user:secret@example.invalid/org/registry.git"
@@ -4188,7 +4188,7 @@ class TestBlobProxyOwnerDesignatedWiring:
         # configured branch is ``main``, served on ``ref=main``, IS credentialed.
         # Paired with the differing-ref regression below — together they pin that
         # ONLY the configured branch attaches credentials.
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         url = "ssh://forge.example/org/registry.git"
         monkeypatch.setattr(
@@ -4219,7 +4219,7 @@ class TestBlobProxyOwnerDesignatedWiring:
         # branch).  The paired control above pins that ``ref=main`` (the configured
         # branch) on the SAME entry IS credentialed.  Fails at 803dddcb (grant
         # ignores ref); passes after.
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         url = "ssh://forge.example/org/registry.git"
         monkeypatch.setattr(
@@ -4239,7 +4239,7 @@ class TestBlobProxyOwnerDesignatedWiring:
     async def test_sibling_repo_same_host_is_not_owner_designated(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         registry_url = "ssh://forge.example/org/registry.git"
         sibling_url = "ssh://forge.example/org/sibling.git"
@@ -4290,7 +4290,7 @@ class TestBlobProxyOwnerDesignatedWiring:
         # A-owned entry.  The URL threaded to the fetch is resolved from the SAME
         # entry (``_entry_git_url``), so the URL the fetch clones is urlA — never
         # B, even though B is also configured.
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         url_a = "ssh://forge.example/org/registry-a.git"
         url_b = "ssh://forge.example/org/private-b.git"
@@ -4328,7 +4328,7 @@ class TestBlobProxyOwnerDesignatedWiring:
         # subprocess/env/sandbox faked, so the threading is exercised end to end
         # (never the raw git argv — we read back only the cloned URL and the
         # env/mode PAIR).
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         _setup_env(tmp_path, monkeypatch)
         url_a = "ssh://forge.example/org/registry-a.git"
@@ -4420,7 +4420,7 @@ class TestBlobProxyOwnerDesignatedWiring:
         # subprocess/env/sandbox faked, reading back the env/mode PAIR and the SEL
         # grants (never the raw git argv).  Fails at 64df951a (repo-keyed lookup
         # grants A's credentials); passes after.
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         _setup_env(tmp_path, monkeypatch)
         url_a = "ssh://forge.example/org/registry-a.git"
@@ -4502,7 +4502,7 @@ class TestBlobProxyOwnerDesignatedWiring:
         # inline, so it runs on the loop thread and this fails; after the offload
         # it runs on a worker and passes.  (Indexing ``ran_on[0]`` is deliberate: a
         # resolver that never ran raises rather than passing vacuously.)
-        import kiro_crew.apps.registry as reg_mod
+        import efm_go.apps.registry as reg_mod
 
         _setup_env(tmp_path, monkeypatch)
         url = "ssh://forge.example/org/registry.git"
@@ -4806,7 +4806,7 @@ async def test_api_proxy_signs_and_forwards_to_backend(
     shipped verifier), the preserved ``/api/`` prefix + query string, and that
     user credentials are stripped rather than forwarded.
     """
-    from kiro_crew.apps.proxy_auth import verify_proxy_request
+    from efm_go.apps.proxy_auth import verify_proxy_request
 
     home = _setup_env(tmp_path, monkeypatch)
     _install(tmp_path)
@@ -4871,7 +4871,7 @@ async def test_api_proxy_signs_and_forwards_to_backend(
 class TestMigrateCleanup:
 
     def _retired(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.manager import InstalledApp, _write_installed, app_dir
+        from efm_go.apps.manager import InstalledApp, _write_installed, app_dir
 
         home = _setup_env(tmp_path, monkeypatch)
         _install(tmp_path, setup={"onUninstall": "remove-data.sh"})
@@ -4942,7 +4942,7 @@ class TestMigrateCleanup:
             routes_mod._deregister_app_off_loop.return_value.errors = [
                 "cleanup failed: https://user:secret@example.test/path"
             ]
-        from kiro_crew.apps import manager
+        from efm_go.apps import manager
 
         monkeypatch.setattr(manager, "_orphaned_builtins_cache", {APP})
         async with TestClient(TestServer(app)) as client:
@@ -4971,8 +4971,8 @@ class TestMigrateCleanup:
     async def test_ineligible_builtin_is_untouched(self, tmp_path, monkeypatch, refusal):
         from contextlib import asynccontextmanager
 
-        from kiro_crew.apps import manager
-        from kiro_crew.testing.links import make_dir_link
+        from efm_go.apps import manager
+        from efm_go.testing.links import make_dir_link
 
         home, dest = self._retired(tmp_path, monkeypatch)
         before = (dest / "installed.json").read_bytes()
@@ -5104,7 +5104,7 @@ def test_on_disable_hook_resolves_hyphenated_builtin_names():
     """
     import importlib
 
-    from kiro_crew.apps.builtins import BUILTIN_NAMES
+    from efm_go.apps.builtins import BUILTIN_NAMES
 
     hyphenated = [n for n in BUILTIN_NAMES if "_" in n]
     assert hyphenated, "expected multi-word builtins to exist"
@@ -5112,14 +5112,14 @@ def test_on_disable_hook_resolves_hyphenated_builtin_names():
         manifest_name = module_name.replace("_", "-")
         # What the route computes from the manifest name must land on the package.
         assert manifest_name.replace("-", "_") == module_name
-        importlib.import_module(f"kiro_crew.apps.builtins.{module_name}")
+        importlib.import_module(f"efm_go.apps.builtins.{module_name}")
 
 
 def test_disable_route_normalizes_the_name_before_the_builtin_lookup():
     """Pins the normalization in the route itself, not just the name algebra."""
     import inspect
 
-    from kiro_crew.apps import routes
+    from efm_go.apps import routes
 
     src = inspect.getsource(routes.handle_disable_app)
     assert 'name.replace("-", "_")' in src, (
@@ -5178,7 +5178,7 @@ async def test_enable_does_not_re_register_after_the_backend_starts(
     _setup_env(tmp_path, monkeypatch)
     _install(tmp_path)
     called: list[str] = []
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
     monkeypatch.setattr(
         bridges_mod, "reregister_app_mcp_servers",
         lambda name, live_port=None, io_failures=None: called.append(name) or [],
@@ -5353,7 +5353,7 @@ class TestLifecycleRoutesAreOwnerOnly:
     async def test_app_token_cannot_register_over_another_app(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps.manager import app_dir
+        from efm_go.apps.manager import app_dir
 
         _setup_env(tmp_path, monkeypatch)
         _install(tmp_path)

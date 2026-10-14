@@ -25,8 +25,8 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import skills as skills_mod
-from kiro_crew.skills import (
+from efm_go import skills as skills_mod
+from efm_go.skills import (
     _PROVENANCE_MARKER,
     _ensure_builtin_skills,
     _record_builtin_provenance,
@@ -634,7 +634,7 @@ class TestFingerprint:
         # platform_compat.open_file_no_reparse -- CreateFileW on Windows, so a patch on
         # os.open alone would leave the Windows shard reading the file happily and
         # fingerprinting a tree this test needs to be unprovable. Deny at that seam too.
-        from kiro_crew import platform_compat as _pc
+        from efm_go import platform_compat as _pc
 
         real_no_reparse = _pc.open_file_no_reparse
 
@@ -1103,7 +1103,7 @@ class TestStandaloneCliPathsSync:
     def test_run_task_uses_explicit_off_loop_sync(self) -> None:
         import inspect
 
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         src = inspect.getsource(cli_server._run_task)
         assert "SkillsLoader(install_builtins=False)" in src
@@ -1112,7 +1112,7 @@ class TestStandaloneCliPathsSync:
     def test_eval_runner_uses_explicit_off_loop_sync(self) -> None:
         import inspect
 
-        from kiro_crew.eval import runner as eval_runner
+        from efm_go.eval import runner as eval_runner
 
         src = inspect.getsource(eval_runner)
         assert "install_builtins=False" in src

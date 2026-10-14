@@ -1,7 +1,7 @@
 """The two halves of a tool must stay in sync: descriptor and handler.
 
 A ``kirocrew-core`` tool is declared twice in the same domain module under
-:mod:`kiro_crew.mcp_tools` -- a descriptor in ``schemas()`` (what ``tools/list``
+:mod:`efm_go.mcp_tools` -- a descriptor in ``schemas()`` (what ``tools/list``
 advertises) and a function in ``HANDLERS`` (what runs). Nothing at runtime
 notices when only one half lands: a descriptor with no handler advertises a tool
 that answers with the dispatcher's fallthrough, and a handler with no descriptor
@@ -29,12 +29,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import mcp_core
-from kiro_crew.mcp_tools import DOMAIN_MODULES, build_tool_list, dispatch
+from efm_go import mcp_core
+from efm_go.mcp_tools import DOMAIN_MODULES, build_tool_list, dispatch
 
 
 def _domain(name: str):
-    return importlib.import_module(f"kiro_crew.mcp_tools.{name}")
+    return importlib.import_module(f"efm_go.mcp_tools.{name}")
 
 
 def _all_handlers() -> dict[str, object]:
@@ -118,7 +118,7 @@ def test_domain_modules_covers_the_package() -> None:
 @pytest.mark.parametrize("support", sorted(_SUPPORT_MODULES))
 def test_a_support_module_declares_no_tools(support: str) -> None:
     """The exclusion above holds only while a support module carries no tool half."""
-    module = importlib.import_module(f"kiro_crew.mcp_tools.{support}")
+    module = importlib.import_module(f"efm_go.mcp_tools.{support}")
     assert not hasattr(module, "HANDLERS") and not hasattr(module, "schemas"), support
     assert support not in DOMAIN_MODULES
 
@@ -131,13 +131,13 @@ def test_the_package_import_stays_a_leaf() -> None:
     import sys
 
     probe = (
-        "import sys, kiro_crew.mcp_tools as p\n"
-        "print(sorted(m for m in sys.modules if m.startswith('kiro_crew.mcp_tools.')))"
+        "import sys, efm_go.mcp_tools as p\n"
+        "print(sorted(m for m in sys.modules if m.startswith('efm_go.mcp_tools.')))"
     )
     out = subprocess.run(
         [sys.executable, "-c", probe], capture_output=True, text=True, check=True, encoding="utf-8"
     ).stdout.strip()
-    assert out == "['kiro_crew.mcp_tools._limits']" or out == "[]", out
+    assert out == "['efm_go.mcp_tools._limits']" or out == "[]", out
 
 
 def test_unknown_tool_falls_through() -> None:
@@ -156,7 +156,7 @@ def test_workflow_library_mutations_are_human_only(tool_name: str) -> None:
 
 
 def _dashboard_table():
-    from kiro_crew.mcp_dashboard import TABLE
+    from efm_go.mcp_dashboard import TABLE
 
     return TABLE
 
@@ -167,14 +167,14 @@ def test_every_dashboard_tool_is_validated() -> None:
     ``ToolTable.validate`` passes an unregistered tool's arguments through as
     sent, so the registry and the table must name the same tools.
     """
-    from kiro_crew.validation import MCP_DASHBOARD_SCHEMAS
+    from efm_go.validation import MCP_DASHBOARD_SCHEMAS
 
     assert set(_dashboard_table().names()) == set(MCP_DASHBOARD_SCHEMAS)
 
 
 def test_the_session_control_rows_are_the_strict_rows() -> None:
     """The gate and the containment list read one set, derived from the rows."""
-    from kiro_crew.mcp_dashboard import SESSION_CONTROL_TOOLS
+    from efm_go.mcp_dashboard import SESSION_CONTROL_TOOLS
 
     table = _dashboard_table()
     assert SESSION_CONTROL_TOOLS == table.names("strict")
@@ -198,8 +198,8 @@ def test_every_dashboard_row_is_well_formed() -> None:
 
 def test_the_dashboard_advertises_its_rows_in_order() -> None:
     """``tools/list`` is the rows in order, titled; ``_tool_definitions`` is untitled."""
-    from kiro_crew import mcp_dashboard
-    from kiro_crew.mcp_tool_titles import with_titles
+    from efm_go import mcp_dashboard
+    from efm_go.mcp_tool_titles import with_titles
 
     table = _dashboard_table()
     assert [t["name"] for t in mcp_dashboard._list_tools()] == list(table.names())

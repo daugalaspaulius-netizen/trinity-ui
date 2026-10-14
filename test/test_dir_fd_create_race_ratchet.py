@@ -18,9 +18,9 @@ import ast
 import functools
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
-#: (path under src/kiro_crew, enclosing function) -> why it cannot race.
+#: (path under src/efm_go, enclosing function) -> why it cannot race.
 ALLOWED = {
     ("diag/recorder.py", "_append"): "one recorder per gateway, appends under its own thread lock",
     ("acp/_frame_record.py", "_open_private_append"): (

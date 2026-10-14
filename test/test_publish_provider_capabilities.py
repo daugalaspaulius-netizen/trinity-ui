@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import publish_provider as pp
-from kiro_crew.publish_provider import (
+from efm_go import publish_provider as pp
+from efm_go.publish_provider import (
     DEFAULT_PROVIDER,
     Capability,
     CapabilityNotSupportedError,

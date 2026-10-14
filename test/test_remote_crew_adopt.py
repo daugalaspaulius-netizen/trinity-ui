@@ -39,9 +39,9 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-import kiro_crew
-from kiro_crew.dashboard import handlers_instances as hi
-from kiro_crew.dashboard import remote_adopt as ra
+import efm_go
+from efm_go.dashboard import handlers_instances as hi
+from efm_go.dashboard import remote_adopt as ra
 
 _SECRET = "AKIAIOSFODNN7EXAMPLE"
 
@@ -99,7 +99,7 @@ def _manager(*, slots=None, transcript=None, slots_status=200, transcript_status
         yield _Upstream(transcript_status, body)
 
     async def _peer_version(_instance_id):
-        return True, kiro_crew.__version__
+        return True, efm_go.__version__
 
     return SimpleNamespace(
         proxy_request=_proxy_request,
@@ -133,7 +133,7 @@ def _app(state, *, app_name="", user="local-app"):
     defaults to ``local-app`` because the binding's owner gate is a POSITIVE
     assertion, so a bare truthy user is an authenticated NON-owner.
     """
-    from kiro_crew.dashboard.chat import api_chat_slot_create
+    from efm_go.dashboard.chat import api_chat_slot_create
 
     async def handler(request: web.Request) -> web.Response:
         request["app"] = app_name
@@ -161,7 +161,7 @@ def no_mint(monkeypatch):
     to the conversation the user clicked.
     """
     spy = AsyncMock(return_value="peer-minted-1")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.create_peer_slot", spy)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.create_peer_slot", spy)
     return spy
 
 
@@ -339,7 +339,7 @@ class TestAdoptTargetValidation:
 
     async def test_an_unreachable_peer_is_a_502_and_binds_nothing(self, tmp_path, no_mint):
         """A validate read that cannot happen must not produce a half-bound slot."""
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         mgr = _manager(
             raises=ProxyRequestError("peer_not_connected", "not connected", http_status=503)
@@ -486,7 +486,7 @@ class TestAdoptIsIdempotent:
             return await real_backfill(*args, **kwargs)
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.fetch_adopted_backfill", gated_backfill
+            "efm_go.dashboard.chat_handlers.fetch_adopted_backfill", gated_backfill
         )
 
         async with TestClient(TestServer(_app(state))) as client:
@@ -553,7 +553,7 @@ class TestAdoptIsIdempotent:
         # `handlers_instances` would leave this call site untouched. The
         # `held_once` assertion below is what caught that.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.remote_adopt.read_peer_slots", read_after_the_winner_binds
+            "efm_go.dashboard.remote_adopt.read_peer_slots", read_after_the_winner_binds
         )
         try:
             async with TestClient(TestServer(_app(state))) as client:
@@ -771,7 +771,7 @@ class TestInheritedMetadata:
         exists to prevent, and reaching it from a new entry point must not change
         the answer.
         """
-        from kiro_crew.dashboard.remote_relay import remote_bound_refusal
+        from efm_go.dashboard.remote_relay import remote_bound_refusal
 
         mgr = _manager(slots=[_peer_row()], transcript=_msgs())
         state = _bound_state(tmp_path, mgr)
@@ -944,7 +944,7 @@ class TestInheritedWorkspace:
         local default, and the store must stay unassigned, exactly as for an
         adopt whose row names no workspace at all.
         """
-        from kiro_crew.dashboard import chat_handlers as ch
+        from efm_go.dashboard import chat_handlers as ch
 
         seen: list[str | None] = []
         real = ch.default_project_dir
@@ -953,7 +953,7 @@ class TestInheritedWorkspace:
             seen.append(workspace)
             return real(workspace)
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.default_project_dir", _spy)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.default_project_dir", _spy)
         mgr = _manager(
             slots=[_peer_row(workspace="peer-ws"), _peer_row(key="peer-chat-10")],
             transcript=_msgs(),
@@ -1002,7 +1002,7 @@ class TestInheritedWorkspace:
         """The adopt persists its metadata line at birth, and the rehydrate reads
         ``workspace`` back with the binding -- so a restart does not regress the
         slot to the create default the peer never held."""
-        from kiro_crew.dashboard.chat_persistence import _rehydrate_slot_from_history
+        from efm_go.dashboard.chat_persistence import _rehydrate_slot_from_history
 
         mgr = _manager(slots=[_peer_row(workspace="peer-ws")], transcript=_msgs())
         state = _bound_state(tmp_path, mgr)
@@ -1022,10 +1022,10 @@ class TestInheritedWorkspace:
     ):
         """Seeding is a mirror, not a lock: once the box shows the peer's value, a
         deliberate pick on the adopted slot still forwards and lands here."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         forward = AsyncMock(return_value={"ok": True})
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.forward_peer_selection", forward)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.forward_peer_selection", forward)
         mgr = _manager(slots=[_peer_row(workspace="peer-ws")], transcript=_msgs())
         state = _bound_state(tmp_path, mgr)
         _, body = await _post(state, {"instance_id": "nobita", "adopt_remote_slot": "peer-chat-9"})
@@ -1061,7 +1061,7 @@ def test_every_forwardable_control_is_classified_for_adopt():
     adds it says which, because an unclassified one is exactly how a box came
     to read a local default while its pick overwrote the peer's value.
     """
-    from kiro_crew.dashboard.remote_relay import _PEER_CONTROL_SEGMENTS
+    from efm_go.dashboard.remote_relay import _PEER_CONTROL_SEGMENTS
 
     controls = set(_PEER_CONTROL_SEGMENTS)
     assert ra.ADOPT_SEEDED_CONTROLS | ra.ADOPT_UNSEEDED_CONTROLS == controls

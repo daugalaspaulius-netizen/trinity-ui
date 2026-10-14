@@ -1,6 +1,6 @@
 """KiroCrewClient — async Python client for the KiroCrew Gateway.
 
-Standalone package (no dependency on kiro_crew main package).
+Standalone package (no dependency on efm_go main package).
 Uses aiohttp for HTTP and WebSocket communication.
 
 Mirrors the TypeScript @kirocrew/client API surface.

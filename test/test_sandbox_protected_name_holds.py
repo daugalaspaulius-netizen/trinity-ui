@@ -29,7 +29,7 @@ import sys
 
 import pytest
 
-from kiro_crew import sandbox, sandbox_plan
+from efm_go import sandbox, sandbox_plan
 
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32",

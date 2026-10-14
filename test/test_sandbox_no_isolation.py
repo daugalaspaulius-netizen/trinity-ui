@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import sys
 
-import kiro_crew.sandbox as sb
+import efm_go.sandbox as sb
 
 
 def _reset_warned():
@@ -208,7 +208,7 @@ def test_strip_python_env_holds_on_fail_open_path(monkeypatch):
 
 def test_strip_python_env_false_keeps_python_env(monkeypatch):
     """Without strip_python_env, the chokepoint leaves PYTHONPATH intact (our own
-    sandboxed Python children import kiro_crew via it)."""
+    sandboxed Python children import efm_go via it)."""
     _reset_warned()
     _neutralize_passthrough(monkeypatch)
     monkeypatch.setattr(sb, "detect_backend", lambda config_mode="auto": "none")

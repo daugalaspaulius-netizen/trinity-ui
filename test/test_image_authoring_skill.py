@@ -25,10 +25,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.skills import SkillsLoader
+from efm_go.skills import SkillsLoader
 
 ROOT = Path(__file__).resolve().parent.parent
-BUILTIN_SKILLS_DIR = ROOT / "src" / "kiro_crew" / "builtin_skills"
+BUILTIN_SKILLS_DIR = ROOT / "src" / "efm_go" / "builtin_skills"
 IMAGE_AUTHORING = BUILTIN_SKILLS_DIR / "image-authoring" / "SKILL.md"
 
 

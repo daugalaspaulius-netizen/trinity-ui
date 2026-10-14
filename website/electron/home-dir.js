@@ -1,5 +1,5 @@
 // Desktop data-home resolution -- a mirror of the backend's data-home resolver
-// in src/kiro_crew/config/paths.py (config_dir -> _resolve_default_home):
+// in src/efm_go/config/paths.py (config_dir -> _resolve_default_home):
 //   1. A valid KIROCREW_HOME env override wins. INVALID overrides -- a
 //      filesystem/drive root ("/" or "C:\") or a POSIX system dir
 //      (/usr, /System, /etc) -- are rejected (paths.py _valid_override_home)

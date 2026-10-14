@@ -23,7 +23,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
-from kiro_crew.acp.runtime import AcpRuntime, AcpRuntimeDead
+from efm_go.acp.runtime import AcpRuntime, AcpRuntimeDead
 
 _POSIX_ONLY = pytest.mark.skipif(
     sys.platform == "win32",

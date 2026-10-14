@@ -20,14 +20,14 @@ import re
 
 import pytest
 
-from kiro_crew.dashboard.chat_runner import (
+from efm_go.dashboard.chat_runner import (
     _refined_tool_row_content,
     _reject_hook_blocked,
     _reject_hook_error,
     _reject_invalid_tool,
     _steer_policy_notice,
 )
-from kiro_crew.dashboard.state import (
+from efm_go.dashboard.state import (
     _DENY_CAUSE_TEXT,
     DENY_CAUSE_APPROVAL_NO_BUDGET,
     DENY_CAUSE_APPROVAL_TIMEOUT,
@@ -252,24 +252,24 @@ class TestFloorDenialExplainsItself:
     MINT_PATTERN_TAIL = "\\btoken\\b"
 
     def _deny(self, command: str) -> str:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         return is_denied(command) or ""
 
     def test_inline_import_is_denied_at_all(self):
         # Guards the premise of every assertion below.
-        assert self._deny('python -c "import kiro_crew.cli"')
+        assert self._deny('python -c "import efm_go.cli"')
 
     def test_reported_pattern_cannot_match_the_command(self):
         # The exact trap: the first line requires a `token` word this command
         # does not contain, so the identifier alone reads as a false reason.
-        command = 'python -c "import kiro_crew.cli"'
+        command = 'python -c "import efm_go.cli"'
         first_line = self._deny(command).splitlines()[0]
         assert self.MINT_PATTERN_TAIL in first_line
         assert "token" not in command
 
     def test_second_line_says_the_match_was_structural(self):
-        lines = self._deny('python -c "import kiro_crew.cli"').splitlines()
+        lines = self._deny('python -c "import efm_go.cli"').splitlines()
         assert len(lines) >= 2, "floor denial must carry an explanation line"
         assert "structurally" in lines[1]
         assert "argv" in lines[1]
@@ -278,13 +278,13 @@ class TestFloorDenialExplainsItself:
         # What the agent needs in order to adapt: it is the IMPORT of the mint
         # surface that is gated, so retrying with a differently-worded command
         # that still names the CLI is futile.
-        note = self._deny('python -c "import kiro_crew.cli"').splitlines()[1]
+        note = self._deny('python -c "import efm_go.cli"').splitlines()[1]
         assert "import" in note
 
     def test_first_line_stays_single_line_and_prefixed(self):
         # RecoveryCard.tsx extracts the pattern with a per-line end-anchored
         # regex, so anything appended to line 1 would be read as the pattern.
-        out = self._deny('python -c "import kiro_crew.cli"')
+        out = self._deny('python -c "import efm_go.cli"')
         assert out.startswith("Blocked by security policy: ")
         assert "\n" not in out.splitlines()[0]
 
@@ -663,7 +663,7 @@ class TestEveryHostDenyCallSiteIsWired:
     catch once someone passes an explicit ``None`` to silence it.
     """
 
-    RUNNER = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew/dashboard/chat_runner.py"
+    RUNNER = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go/dashboard/chat_runner.py"
     HELPERS = ("_reject_invalid_tool", "_reject_hook_error", "_reject_hook_blocked")
     #: A call OPENING in either shape black may produce: arguments on the following
     #: lines, or the whole call on one line. Anchoring to a line that ENDS in "("

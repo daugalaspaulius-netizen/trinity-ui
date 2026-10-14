@@ -18,9 +18,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard import create_rate_limit
-from kiro_crew.dashboard.chat_folders import MAX_CHAT_FOLDERS, api_chat_folder_create
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard import create_rate_limit
+from efm_go.dashboard.chat_folders import MAX_CHAT_FOLDERS, api_chat_folder_create
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
 
 def _folders(count: int) -> list[dict[str, Any]]:

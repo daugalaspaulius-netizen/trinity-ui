@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.wecom.transport_dispatch (WeComDispatcher) + commands."""
+"""Tests for efm_go.wecom.transport_dispatch (WeComDispatcher) + commands."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.wecom.client import WeComInbound
-from kiro_crew.wecom.commands import ConversationState, parse_command
-from kiro_crew.wecom.transport_dispatch import WeComDispatcher
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
+from efm_go.session_allocation import SessionClosingError
+from efm_go.wecom.client import WeComInbound
+from efm_go.wecom.commands import ConversationState, parse_command
+from efm_go.wecom.transport_dispatch import WeComDispatcher
 
 # ------------------------------------------------------------------
 # Fakes
@@ -288,7 +288,7 @@ def _inbound(text: str = "hello", userid: str = "Wei") -> WeComInbound:
 def _deny_wecom_profile(monkeypatch, tmp_path):
     import json
 
-    from kiro_crew.platform import governance_profiles as gp
+    from efm_go.platform import governance_profiles as gp
 
     pdir = tmp_path / "profiles"
     pdir.mkdir(exist_ok=True)
@@ -310,7 +310,7 @@ class TestTurn:
     async def test_channels_deny_drops_inbound_message(self, tmp_path, monkeypatch) -> None:
         # A channels DENY must stop handle_message from driving a turn. This
         # locks the WeCom inbound chokepoint.
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         _deny_wecom_profile(monkeypatch, tmp_path)
         provider = FakeProvider([AcpEvent(kind=EVENT_COMPLETE)])

@@ -26,14 +26,14 @@ _THREAD_TS = "1699999999.000200"
 def sel_mock(monkeypatch):
     """Capture the SEL audit trail instead of writing the real one."""
     audit = MagicMock()
-    monkeypatch.setattr("kiro_crew.slack.gateway.sel", lambda: audit)
+    monkeypatch.setattr("efm_go.slack.gateway.sel", lambda: audit)
     return audit
 
 
 @pytest.fixture()
 def tracked(monkeypatch):
     """``_CHANNEL`` is the one channel the operator allowed egress to."""
-    monkeypatch.setattr("kiro_crew.slack.gateway.is_tracked_channel", lambda c: c == _CHANNEL)
+    monkeypatch.setattr("efm_go.slack.gateway.is_tracked_channel", lambda c: c == _CHANNEL)
 
 
 @pytest.fixture()
@@ -43,7 +43,7 @@ def orchestrator(sel_mock, tracked):
     Bypasses ``__init__`` via ``__new__``, like the sibling heartbeat tests: if
     ``__init__`` grows an attribute ``_deliver_result`` reads, update this.
     """
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     orch = GatewayOrchestrator.__new__(GatewayOrchestrator)
     orch.dashboard_state = MagicMock()

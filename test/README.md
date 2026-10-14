@@ -2,7 +2,7 @@
 
 Kiro Crew uses pytest with pytest-asyncio for async tests. Pytest collects both
 `test/` and the test suites shipped with builtin apps under
-`src/kiro_crew/apps/builtins/`; `setup.cfg` is the source of truth for collection
+`src/efm_go/apps/builtins/`; `setup.cfg` is the source of truth for collection
 and default options.
 
 See the [testing conventions](../docs/system-specs/common/testing-conventions.md)
@@ -37,7 +37,7 @@ conventions so the xdist safety flags are retained.
 ## Test Directories
 
 - `test/` — main test directory
-- `src/kiro_crew/apps/builtins/*/tests/` — builtin-app suites included by `testpaths`
+- `src/efm_go/apps/builtins/*/tests/` — builtin-app suites included by `testpaths`
 
 ## Conventions
 

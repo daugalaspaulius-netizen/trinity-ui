@@ -31,18 +31,18 @@ from pathlib import Path
 import pytest
 from source_corpus import parsed_candidates, src_root
 
-from kiro_crew.acp_backends import ACP_BACKEND_CODEX, permission_config_for, routing_for
-from kiro_crew.agent_sdk import backends as sdk_backends
-from kiro_crew.agent_sdk.capabilities import (
+from efm_go.acp_backends import ACP_BACKEND_CODEX, permission_config_for, routing_for
+from efm_go.agent_sdk import backends as sdk_backends
+from efm_go.agent_sdk.capabilities import (
     MODEL_NAMESPACE_ACP,
     UNKNOWN_BACKEND_CAPABILITIES,
     SessionCapabilities,
     capabilities_for,
     capabilities_of,
 )
-from kiro_crew.agent_sdk.provider_identity import PROVIDER_ACP, PROVIDER_CLAUDE_CODE
+from efm_go.agent_sdk.provider_identity import PROVIDER_ACP, PROVIDER_CLAUDE_CODE
 
-SRC = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 #: The six sites RFC PR 3 names, and the identity spelling each one used.
 #:
@@ -313,7 +313,7 @@ MAIN_ROUTING = {
 @pytest.mark.parametrize("backend", sorted(MAIN_ROUTING))
 def test_routing_and_permission_config_are_unchanged_by_the_move(backend: str) -> None:
     """The tool-gate answers survive the move to ``agent_sdk``, fail-closed included."""
-    from kiro_crew import acp_tool_gate
+    from efm_go import acp_tool_gate
 
     expected_routing, expected_config, expected_enforced = MAIN_ROUTING[backend]
     assert routing_for(backend).value == expected_routing
@@ -518,7 +518,7 @@ def test_a_spec_mock_does_not_read_as_a_member_of_everything() -> None:
     """
     from unittest.mock import MagicMock
 
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.providers.acp import AcpProvider
 
     assert capabilities_of(MagicMock(spec=AcpProvider)) is UNKNOWN_BACKEND_CAPABILITIES
 
@@ -527,7 +527,7 @@ def test_the_provider_property_answers_for_its_own_client_backend() -> None:
     """``AcpProvider.capabilities`` is the record for the backend it is talking to."""
     from types import SimpleNamespace
 
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.providers.acp import AcpProvider
 
     provider = object.__new__(AcpProvider)
     for backend in ("", "kas", "claude", "codex"):
@@ -555,7 +555,7 @@ class TestTheKiroConstructionPathIsUnconditional:
     @staticmethod
     def _translations(monkeypatch, backend: str) -> list[tuple]:
         """Record which registry translator ``acp_effective_model`` calls."""
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         calls: list[tuple] = []
 
@@ -621,7 +621,7 @@ class TestAForeignProviderIsClassifiedThePreviousWay:
 
     @staticmethod
     def _foreign_provider() -> object:
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         class _Foreign(LLMProvider):
             """A complete LLMProvider that is not an AcpProvider."""
@@ -666,7 +666,7 @@ class TestAForeignProviderIsClassifiedThePreviousWay:
         ``~/.claude`` or ``~/.kiro``. A foreign provider answered False before and
         must answer False now, or cleanup walks the wrong tree.
         """
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         assert SubagentManager._is_cc_provider(self._foreign_provider()) is False
 
@@ -688,8 +688,8 @@ def test_honor_zero_tool_ban_membership_matches_the_rule() -> None:
     routing IS enforced and it has a mirror, but it is a member of
     ``ACP_BACKENDS_ACP_RUNTIME``.
     """
-    from kiro_crew.agent_sdk.tool_gate import ENFORCED_ROUTINGS
-    from kiro_crew.providers.mirrors.registry import MIRRORS
+    from efm_go.agent_sdk.tool_gate import ENFORCED_ROUTINGS
+    from efm_go.providers.mirrors.registry import MIRRORS
 
     for backend in sorted(sdk_backends.ACP_BACKENDS_KNOWN):
         routing = routing_for(backend)
@@ -731,7 +731,7 @@ def test_the_knowledge_pool_client_takes_the_default_backend() -> None:
     qualifies for the pool with different effort answers is caught here, not
     assumed to inherit an existing member's.
     """
-    from kiro_crew.agent_sdk.backends import (
+    from efm_go.agent_sdk.backends import (
         ACP_BACKEND_GOOSE,
         ACP_BACKEND_KIRO,
         ACP_BACKEND_OPENCODE,

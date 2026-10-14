@@ -37,17 +37,17 @@ import pytest
 
 SCRIPT = (
     Path(__file__).resolve().parent.parent
-    / "src/kiro_crew/apps/builtins/dev_fleet/skills/pod-e2e/scripts/pod-e2e.sh"
+    / "src/efm_go/apps/builtins/dev_fleet/skills/pod-e2e/scripts/pod-e2e.sh"
 )
-POD_CLI = Path(__file__).resolve().parent.parent / "src/kiro_crew/pod/cli.py"
+POD_CLI = Path(__file__).resolve().parent.parent / "src/efm_go/pod/cli.py"
 #: ``runtime.mint_token`` is defined in the pod runtime client owner; the runtime
 #: module re-exports it.
-POD_RUNTIME_CLIENT = Path(__file__).resolve().parent.parent / "src/kiro_crew/pod/runtime_client.py"
-POD_CONFIG = Path(__file__).resolve().parent.parent / "src/kiro_crew/pod/config.py"
-TOKEN_AUTH = Path(__file__).resolve().parent.parent / "src/kiro_crew/dashboard/token_auth.py"
-TOKEN_HANDLER = Path(__file__).resolve().parent.parent / "src/kiro_crew/dashboard/handlers/core.py"
+POD_RUNTIME_CLIENT = Path(__file__).resolve().parent.parent / "src/efm_go/pod/runtime_client.py"
+POD_CONFIG = Path(__file__).resolve().parent.parent / "src/efm_go/pod/config.py"
+TOKEN_AUTH = Path(__file__).resolve().parent.parent / "src/efm_go/dashboard/token_auth.py"
+TOKEN_HANDLER = Path(__file__).resolve().parent.parent / "src/efm_go/dashboard/handlers/core.py"
 WORKTREE_OPS = (
-    Path(__file__).resolve().parent.parent / "src/kiro_crew/apps/builtins/dev_fleet/worktree_ops.py"
+    Path(__file__).resolve().parent.parent / "src/efm_go/apps/builtins/dev_fleet/worktree_ops.py"
 )
 
 
@@ -992,7 +992,7 @@ def test_the_refused_set_follows_the_producers_own_parse_of_the_variable(tmp_pat
     handle mode exists to keep. Pinning the agreement rather than one spelling is what
     makes a future divergence in either parse fail here.
     """
-    from kiro_crew.pod.config import DEFAULT_LIVE_PORT, _env_int
+    from efm_go.pod.config import DEFAULT_LIVE_PORT, _env_int
 
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv("KIROCREW_POD_LIVE_PORT", raw)
@@ -1367,7 +1367,7 @@ def _producer_token_alphabet() -> set[str]:
     # it: exec on AST-built code trips the repo's SAST rule, and a lifted copy would
     # miss any change made outside that one function body. Other suites import this
     # module directly for the same reason.
-    from kiro_crew.dashboard import token_auth
+    from efm_go.dashboard import token_auth
 
     encode = token_auth._b64url_encode
 

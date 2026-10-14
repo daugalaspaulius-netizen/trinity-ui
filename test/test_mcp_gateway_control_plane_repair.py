@@ -25,12 +25,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
-from kiro_crew.mcp_gateway import rewriter
-from kiro_crew.mcp_gateway.gatewayd import _spawns_own_control_plane
-from kiro_crew.mcp_gateway.hashing import decode_target_args, expand_stub_flags
-from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER, _rewrite_single_spec
+from efm_go import agent as agent_mod
+from efm_go.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
+from efm_go.mcp_gateway import rewriter
+from efm_go.mcp_gateway.gatewayd import _spawns_own_control_plane
+from efm_go.mcp_gateway.hashing import decode_target_args, expand_stub_flags
+from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER, _rewrite_single_spec
 
 TOOLBOX_SHIM = {"command": "kirocrew", "args": ["mcp-core"]}
 REAPED_PIN = {
@@ -77,7 +77,7 @@ def test_a_hand_authored_control_plane_launches_the_managed_binary_and_passes_th
     command and args, and the daemon gate -- the real one, on that exact launch --
     must hand over the token."""
     spec = {"name": "team-config", "mcpServers": {"kirocrew-core": dict(declared)}}
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         new_spec, wrapped = _rewrite(spec, tmp_path, stub_servers=frozenset({"kirocrew-core"}))
 
     assert wrapped == 1
@@ -128,7 +128,7 @@ def test_the_repair_warning_never_prints_the_declared_arguments(
         "name": "team-config",
         "mcpServers": {"kirocrew-core": {**TOOLBOX_SHIM, "args": ["mcp-core", "--token", token]}},
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         _rewrite(spec, tmp_path, stub_servers=frozenset({"kirocrew-core"}))
     said = [r.getMessage() for r in caplog.records if "reserved server" in r.getMessage()]
     assert len(said) == 1, said
@@ -196,7 +196,7 @@ def test_a_spec_already_naming_the_managed_launch_is_not_rewritten_or_warned(
             "kirocrew-core": {"command": managed_core["command"], "args": managed_core["args"]}
         },
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         new_spec, wrapped = _rewrite(spec, tmp_path, stub_servers=frozenset({"kirocrew-core"}))
     assert wrapped == 1
     assert _stub_launch(new_spec["mcpServers"]["kirocrew-core"]) == (
@@ -287,7 +287,7 @@ def test_the_repaired_entry_is_composed_from_the_managed_source_outward(
         "poolable": True,
         "somethingElse": {"x": 1},
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         out = rewriter._repair_control_plane_entry("kirocrew-core", declared, "agent-a")
     assert out == {
         "command": managed["command"],
@@ -313,7 +313,7 @@ def test_a_spec_auto_approve_on_a_reserved_name_is_dropped_and_named(caplog) -> 
     with pytest.MonkeyPatch.context() as mp:
         managed = {"command": "/opt/crew/bin/kirocrew", "args": ["mcp-core"]}
         mp.setattr(agent_mod, "managed_mcp_spec_entry", lambda name, **_kw: dict(managed))
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
             out = rewriter._repair_control_plane_entry(
                 "kirocrew-core", {**TOOLBOX_SHIM, "autoApprove": ["*"]}, "agent-a"
             )
@@ -354,7 +354,7 @@ def test_the_repaired_entry_holds_its_env_to_the_managed_ownership_rule(
             "NONE_VALUE": None,
         },
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         out = rewriter._repair_control_plane_entry("kirocrew-core", declared, "agent-a")
     assert out["command"] == managed["command"] and out["args"] == managed["args"]
     assert out["env"] == {"MY_FLAG": "1"}
@@ -461,7 +461,7 @@ def test_the_gate_reports_why_it_denied(tmp_path: Path, monkeypatch: pytest.Monk
         "managed_mcp_spec_entry",
         lambda name, **_kw: {"command": str(launcher), "args": ["mcp-core"]},
     )
-    from kiro_crew.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_gateway import gatewayd as gw
 
     denial: list[str] = []
     assert not gw._spawns_own_control_plane(
@@ -482,8 +482,8 @@ def test_the_gate_reports_why_it_denied(tmp_path: Path, monkeypatch: pytest.Monk
 def test_a_denied_reserved_backend_is_told_why_and_never_handed_the_token() -> None:
     from types import SimpleNamespace
 
-    from kiro_crew.mcp_caller import CallerContext
-    from kiro_crew.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_caller import CallerContext
+    from efm_go.mcp_gateway import gatewayd as gw
 
     base = CallerContext(session_key="dashboard:chat-69")
     conn = SimpleNamespace(stub_session_token="tok")
@@ -503,7 +503,7 @@ def test_a_denied_reserved_backend_is_told_why_and_never_handed_the_token() -> N
 
 
 def test_the_denial_survives_the_meta_round_trip_and_is_absent_when_empty() -> None:
-    from kiro_crew.mcp_caller import CALLER_META_KEY, CallerContext, build_caller_meta
+    from efm_go.mcp_caller import CALLER_META_KEY, CallerContext, build_caller_meta
 
     plain = build_caller_meta(CallerContext(session_key="k"))
     assert "identityDenial" not in plain[CALLER_META_KEY]

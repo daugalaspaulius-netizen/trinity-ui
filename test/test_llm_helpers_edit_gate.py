@@ -18,10 +18,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.sel as sel_mod
-from kiro_crew import llm_helpers
-from kiro_crew.llm_helpers import ToolApprovalPolicy, _resolve_permission
-from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+import efm_go.sel as sel_mod
+from efm_go import llm_helpers
+from efm_go.llm_helpers import ToolApprovalPolicy, _resolve_permission
+from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
 _PROSE = (
     "# Sandbox notes\n\n"
@@ -260,8 +260,8 @@ class TestTheClientCarriesTheDiffPathOntoThePermissionEvent:
         )
 
     def _permission(self, caches: dict, tool_call_id: str = "tc-1"):
-        from kiro_crew.acp import _dispatch
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import _dispatch
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id="req-1",
@@ -276,7 +276,7 @@ class TestTheClientCarriesTheDiffPathOntoThePermissionEvent:
         return event
 
     def test_tool_call_diff_block_path_reaches_the_permission_event(self) -> None:
-        from kiro_crew.acp import _dispatch
+        from efm_go.acp import _dispatch
 
         caches = self._caches()
         _dispatch.parse_session_update(
@@ -306,7 +306,7 @@ class TestTheClientCarriesTheDiffPathOntoThePermissionEvent:
     def test_refinement_diff_block_path_reaches_the_permission_event(self) -> None:
         # claude-agent-acp: the initial tool_call has no content; the refinement
         # carries the diff block.
-        from kiro_crew.acp import _dispatch
+        from efm_go.acp import _dispatch
 
         caches = self._caches()
         _dispatch.parse_session_update(
@@ -352,8 +352,8 @@ class TestProvenanceComesFromTheClientNotThePayload:
 
     @staticmethod
     def _frames(tool_call_kind: str, perm_kind: str, raw: dict):
-        from kiro_crew.acp import _dispatch
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import _dispatch
+        from efm_go.acp.types import JsonRpcMessage
 
         shell_cache: dict = {}
         raw_cache: dict = {}

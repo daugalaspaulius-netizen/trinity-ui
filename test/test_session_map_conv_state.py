@@ -20,7 +20,7 @@ import json
 
 import pytest
 
-from kiro_crew.session_map import SessionMap
+from efm_go.session_map import SessionMap
 
 
 def _make_kiro_session(kiro_dir, sid: str) -> None:
@@ -32,8 +32,8 @@ def _make_kiro_session(kiro_dir, sid: str) -> None:
 @pytest.fixture()
 def patched(tmp_path, monkeypatch):
     kiro = tmp_path / "kiro"
-    monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", kiro)
+    monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", kiro)
     return tmp_path, kiro
 
 
@@ -113,8 +113,8 @@ class TestPrivacyFlagsAndPrune:
     KEY = "telegram:kirocrew:direct:4242"
 
     def test_flag_names_are_the_privacy_mode_names_strictest_first(self):
-        from kiro_crew.messaging import privacy_mode
-        from kiro_crew.session_map import _PRIVACY_STRICTNESS
+        from efm_go.messaging import privacy_mode
+        from efm_go.session_map import _PRIVACY_STRICTNESS
 
         assert set(_PRIVACY_STRICTNESS) == {
             privacy_mode.MODE_TEMPORARY,
@@ -128,8 +128,8 @@ class TestPrivacyFlagsAndPrune:
     @staticmethod
     def _log(*, seed: bool, mode: str | None = None, key: str | None = None):
         """The thread's default-directory transcript: seeded with a turn, optionally stamped."""
-        from kiro_crew import history as history_mod
-        from kiro_crew.history import ConversationLog
+        from efm_go import history as history_mod
+        from efm_go.history import ConversationLog
 
         key = key or TestPrivacyFlagsAndPrune.KEY
         log = ConversationLog()
@@ -146,7 +146,7 @@ class TestPrivacyFlagsAndPrune:
         self, patched, monkeypatch, flag
     ):
         """The loop-side half: sid cleared, flag kept, on disk -- and no header read."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         monkeypatch.setattr(
             ConversationLog,
@@ -220,7 +220,7 @@ class TestPrivacyFlagsAndPrune:
         already records the mode must cost no write -- the stamp is tighten-only AND
         write-free at equality (``privacy_mode.needs_tightening``). Mutation: compare
         with plain ``strictest`` -- the second boot rewrites the header again."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = self._log(seed=True)  # legacy header: no mode
         writes: list[str] = []
@@ -252,7 +252,7 @@ class TestPrivacyFlagsAndPrune:
         normalizes first (``transcript_privacy_mode``, the shared predicate's rule):
         the header keeps what it spells and counts as recording the flag. Mutation:
         compare the raw string -- the header reads ``incognito``."""
-        from kiro_crew.history import transcript_privacy_mode
+        from efm_go.history import transcript_privacy_mode
 
         log = self._log(seed=True, mode="Temporary")
         sm = SessionMap()
@@ -268,7 +268,7 @@ class TestPrivacyFlagsAndPrune:
     async def test_a_flagged_entry_with_no_transcript_is_kept_and_none_is_created(self, patched):
         """``!incognito`` as the very first message: no sid, no transcript. Nothing to
         stamp (a refusal must never create a transcript), and the row stays."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         sm = SessionMap()
         sm.set_flag(self.KEY, "incognito", True)
@@ -282,7 +282,7 @@ class TestPrivacyFlagsAndPrune:
         self, patched, monkeypatch
     ):
         """Unreadable is not "recorded": the count says so, and the row stays."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         self._log(seed=True, mode="incognito")
         monkeypatch.setattr(
@@ -332,7 +332,7 @@ class TestPrivacyFlagsAndPrune:
     def test_the_per_read_repair_keeps_the_flag_and_reads_no_transcript(self, patched, monkeypatch):
         """``get()`` on a stale sid keeps the entry whatever the header says; the
         header stamp belongs to the startup step, off the loop."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         self._log(seed=True, mode="temporary")
         monkeypatch.setattr(
@@ -351,7 +351,7 @@ class TestPrivacyFlagsAndPrune:
         """The whole point of the split: the transcript I/O is a worker thread's."""
         import threading
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         loop_thread = threading.current_thread()
         seen: list[threading.Thread] = []
@@ -393,8 +393,8 @@ class TestPrivacyFlagsAndPrune:
         """
         from types import SimpleNamespace
 
-        from kiro_crew import session_map as session_map_mod
-        from kiro_crew.messaging import privacy_mode
+        from efm_go import session_map as session_map_mod
+        from efm_go.messaging import privacy_mode
 
         log = self._log(seed=True, mode="incognito")
         sm = SessionMap()
@@ -459,9 +459,9 @@ class TestPrivacyFlagsAndPrune:
         import threading
         from types import SimpleNamespace
 
-        from kiro_crew import session_map as session_map_mod
-        from kiro_crew.history import transcript_privacy_mode
-        from kiro_crew.messaging import privacy_mode
+        from efm_go import session_map as session_map_mod
+        from efm_go.history import transcript_privacy_mode
+        from efm_go.messaging import privacy_mode
 
         first, second = self.KEY, "telegram:kirocrew:direct:4343"
         log = self._log(seed=True, mode="incognito")
@@ -544,7 +544,7 @@ class TestPrivacyFlagsAndPrune:
         import ast
         import inspect
 
-        from kiro_crew import session_map as session_map_mod
+        from efm_go import session_map as session_map_mod
 
         tree = ast.parse(inspect.getsource(session_map_mod))
         sweep = next(
@@ -591,10 +591,10 @@ class TestStartPoolPrunesOffTheLoop:
         import threading
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew import history as history_mod
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.history import ConversationLog
-        from kiro_crew.session import SessionManager
+        from efm_go import history as history_mod
+        from efm_go.config import KiroCrewConfig
+        from efm_go.history import ConversationLog
+        from efm_go.session import SessionManager
 
         key = TestPrivacyFlagsAndPrune.KEY
         log = ConversationLog()
@@ -656,7 +656,7 @@ class TestANonBlockingStartDoesNotWaitForTheSweep:
 
     @staticmethod
     def _hook_sweep(monkeypatch, events: list[str]):
-        from kiro_crew.session_map import SessionMap
+        from efm_go.session_map import SessionMap
 
         async def _recording_sweep(self) -> int:
             events.append("sweep started")
@@ -670,8 +670,8 @@ class TestANonBlockingStartDoesNotWaitForTheSweep:
 
     @staticmethod
     def _manager():
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         cfg = KiroCrewConfig()
         cfg.session.timeout_secs = 2
@@ -717,8 +717,8 @@ class TestANonBlockingStartDoesNotWaitForTheSweep:
         header is stamped on a worker thread, and the row is kept."""
         import threading
 
-        from kiro_crew import history as history_mod
-        from kiro_crew.history import ConversationLog
+        from efm_go import history as history_mod
+        from efm_go.history import ConversationLog
 
         key = TestPrivacyFlagsAndPrune.KEY
         log = ConversationLog()
@@ -820,12 +820,12 @@ class TestPrivacyRowsAcrossARestart:
     ):
         from types import SimpleNamespace
 
-        from kiro_crew import execution_context
-        from kiro_crew import history as history_mod
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.history import ConversationLog, transcript_withholds_derivation
-        from kiro_crew.messaging import privacy_mode, upload_gate
-        from kiro_crew.session import SessionManager
+        from efm_go import execution_context
+        from efm_go import history as history_mod
+        from efm_go.config import KiroCrewConfig
+        from efm_go.history import ConversationLog, transcript_withholds_derivation
+        from efm_go.messaging import privacy_mode, upload_gate
+        from efm_go.session import SessionManager
 
         key = self.KEY
         log = ConversationLog()

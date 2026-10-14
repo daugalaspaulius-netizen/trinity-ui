@@ -14,9 +14,9 @@ from unittest import mock
 import pytest
 from member_memory_helpers import declare_v2_store
 
-from kiro_crew import memory_stores
-from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
-from kiro_crew.vector_memory_constants import _MAX_EPISODIC_RETIRED_PER_WRITE
+from efm_go import memory_stores
+from efm_go.vector_memory import VectorMemoryStore, open_member_database
+from efm_go.vector_memory_constants import _MAX_EPISODIC_RETIRED_PER_WRITE
 
 pytestmark = pytest.mark.xdist_group("episodic_retirement")
 

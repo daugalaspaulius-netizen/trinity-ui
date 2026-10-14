@@ -69,8 +69,8 @@ import pytest
 from link_screen_sites import DECLARED_SITES
 from source_corpus import candidate_sources, parsed_candidates, src_root
 
-from kiro_crew import atomic_write as atomic_write_module
-from kiro_crew import platform_compat
+from efm_go import atomic_write as atomic_write_module
+from efm_go import platform_compat
 
 #: Every test here reads the whole package, so they share one worker rather than
 #: paying that scan once per worker under ``--dist loadgroup``.
@@ -730,7 +730,7 @@ def test_an_ordinary_link_layout_is_not_broken_by_the_hold(
     so the layout is the shape the product itself creates: a symlink where the
     privilege allows one, a directory junction on an unelevated Windows host.
     """
-    from kiro_crew.apps.builtins.issue_radar.backend import crew_store
+    from efm_go.apps.builtins.issue_radar.backend import crew_store
 
     real = tmp_path / "real"
     (real / "crew").mkdir(parents=True)
@@ -785,7 +785,7 @@ def test_write_through_a_link_reaches_the_object_the_screen_inspected(
     no privilege and costs supported layouts. Which is why :data:`HELD_SITES` names
     the sites that vet a target and continue, and leaves the refusing ones alone.
     """
-    from kiro_crew.apps.builtins.issue_radar.backend import crew_store
+    from efm_go.apps.builtins.issue_radar.backend import crew_store
 
     real = tmp_path / "real"
     (real / "crew").mkdir(parents=True)

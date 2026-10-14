@@ -37,16 +37,16 @@ from unittest import mock
 import pytest
 from off_loop_helpers import off_loop
 
-import kiro_crew.sel as sel_mod
-from kiro_crew import platform_compat
-from kiro_crew.apps.builtins.issue_radar.backend import crew_runtime as cr
-from kiro_crew.apps.builtins.issue_radar.backend import crew_store as cs
-from kiro_crew.apps.builtins.issue_radar.backend import provider
-from kiro_crew.apps.builtins.issue_radar.backend import store as store_mod
-from kiro_crew.apps.builtins.issue_radar.backend import watch as watch_mod
-from kiro_crew.crew_log import projection as crew_log_projection
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.safety_override import reset_singleton, safety_override
+import efm_go.sel as sel_mod
+from efm_go import platform_compat
+from efm_go.apps.builtins.issue_radar.backend import crew_runtime as cr
+from efm_go.apps.builtins.issue_radar.backend import crew_store as cs
+from efm_go.apps.builtins.issue_radar.backend import provider
+from efm_go.apps.builtins.issue_radar.backend import store as store_mod
+from efm_go.apps.builtins.issue_radar.backend import watch as watch_mod
+from efm_go.crew_log import projection as crew_log_projection
+from efm_go.dashboard import chat_runner
+from efm_go.safety_override import reset_singleton, safety_override
 
 OWNER, REPO = "o", "r"
 _KEY = provider.key_from_parts(OWNER, REPO)
@@ -251,7 +251,7 @@ def _isolated_crew_log(monkeypatch):
     called from unittest classes that manage their own store roots; a crew's id is
     minted fresh per test, so ``_UNITS`` is cleared with the rest.
     """
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     monkeypatch.setenv("KIROCREW_CREW_LOG", "1")
     crew_log_emit.reset_caches()
@@ -267,8 +267,8 @@ def _isolated_crew_log(monkeypatch):
 def _unit_for(crew_id: str) -> str:
     """The crew's live unit, created on first use."""
     if crew_id not in _UNITS:
-        from kiro_crew.crew_log.schema import KIND_SESSION
-        from kiro_crew.crew_log.store import CrewLog
+        from efm_go.crew_log.schema import KIND_SESSION
+        from efm_go.crew_log.store import CrewLog
 
         sid = f"acp-{crew_id}"
         CrewLog.create(KIND_SESSION, sid, owner="owner", agent="kirocrew", slot=cs.slot_key_for(crew_id))
@@ -316,9 +316,9 @@ class TestSeedingSurvivesABriefLogLock:
         it out. On the loop nothing releases it until the read-back has given up, so
         each on-loop attempt meets a held lock.
         """
-        from kiro_crew import platform_lock_compat
-        from kiro_crew.crew_log import store as log_store
-        from kiro_crew.crew_log.schema import KIND_SESSION
+        from efm_go import platform_lock_compat
+        from efm_go.crew_log import store as log_store
+        from efm_go.crew_log.schema import KIND_SESSION
 
         real_landed = cs._landed_since
         real_file_lock = log_store.file_lock
@@ -393,8 +393,8 @@ class TestSeedingSurvivesABriefLogLock:
         the read-back this control is about is ever reached. Both are settled
         first, so the only holder the on-loop write can meet is the planted one.
         """
-        from kiro_crew.crew_log import eager as crew_log_eager
-        from kiro_crew.crew_log import emit as crew_log_emit
+        from efm_go.crew_log import eager as crew_log_eager
+        from efm_go.crew_log import emit as crew_log_emit
 
         crew = _crew(tmp_path, unattended=True)
         _item(tmp_path, crew["id"], 2201, phase="awaiting-ci")
@@ -797,7 +797,7 @@ class TestCrewStoreScoping(unittest.TestCase):
         return False
 
     def test_no_unscoped_crew_store_call_survives(self):
-        from kiro_crew.apps.builtins.issue_radar.backend import crew_routes
+        from efm_go.apps.builtins.issue_radar.backend import crew_routes
 
         for module in (crew_routes, cr):
             offenders = self._offenders(module)
@@ -939,7 +939,7 @@ class TestSession(unittest.IsolatedAsyncioTestCase):
         auto-approving tools with no record that it was ever allowed to."""
         crew = _crew(self.root, unattended=True)
         with mock.patch(
-            "kiro_crew.safety_override.sel", side_effect=OSError("SEL unavailable")
+            "efm_go.safety_override.sel", side_effect=OSError("SEL unavailable")
         ):
             slot = await cr.ensure_crew_session(_FakeState(), OWNER, REPO, crew)
         self.assertFalse(_effectively_trusted(slot))
@@ -2451,7 +2451,7 @@ class TestDismissal(unittest.IsolatedAsyncioTestCase):
         independent assertion to the change under test destroys the only signal
         that assertion carries.
         """
-        from kiro_crew.apps import teardown
+        from efm_go.apps import teardown
 
         self.addCleanup(teardown.unregister_slot_close_hook, cr.APP_NAME)
         return teardown
@@ -2585,7 +2585,7 @@ class TestDismissal(unittest.IsolatedAsyncioTestCase):
         the watchdog's own idempotent registration) never runs. The hook can only
         be present here if the loop registered it on entry.
         """
-        from kiro_crew.apps.builtins.issue_radar.backend import watch
+        from efm_go.apps.builtins.issue_radar.backend import watch
 
         teardown = self._teardown_mod()
         teardown.unregister_slot_close_hook(cr.APP_NAME)
@@ -2693,7 +2693,7 @@ class TestWatchGating(unittest.IsolatedAsyncioTestCase):
     """The two gates in ``watch.py`` and the difference between them."""
 
     def _watch(self):
-        from kiro_crew.apps.builtins.issue_radar.backend import watch
+        from efm_go.apps.builtins.issue_radar.backend import watch
 
         watch._crews_suspended = False
         return watch
@@ -2807,7 +2807,7 @@ class TestDisablingTheAppRevokesInline(unittest.IsolatedAsyncioTestCase):
         self.root = Path(self._tmp.name)
         reset_singleton()
         self.addCleanup(reset_singleton)
-        from kiro_crew.apps import teardown
+        from efm_go.apps import teardown
 
         # ``watchdog_cycle`` re-registers the dismissal hook, which is process-wide
         # state; drop it again so these tests cannot change another's outcome.
@@ -2836,7 +2836,7 @@ class TestDisablingTheAppRevokesInline(unittest.IsolatedAsyncioTestCase):
         registers the right callable under its own name, so the seam is live the
         moment core calls it.
         """
-        from kiro_crew.apps import teardown
+        from efm_go.apps import teardown
 
         registry: dict[str, Any] = {}
         patch = mock.patch.object(
@@ -2976,7 +2976,7 @@ class TestDisablingTheAppRevokesInline(unittest.IsolatedAsyncioTestCase):
         The absence is SIMULATED rather than read off the real module, so this keeps
         testing the degradation path after core lands the registry.
         """
-        from kiro_crew.apps import teardown
+        from efm_go.apps import teardown
 
         with mock.patch.object(teardown, "register_app_disable_hook", None, create=True):
             self.assertFalse(cr.install_app_disable_hook(self.state))
@@ -3171,7 +3171,7 @@ class TestSelRootIsolation(unittest.IsolatedAsyncioTestCase):
     """
 
     def setUp(self):
-        if getattr(sel_mod._default_dir, "__module__", "") == "kiro_crew.sel":
+        if getattr(sel_mod._default_dir, "__module__", "") == "efm_go.sel":
             # The rootdir conftest displaces ``_default_dir`` with a
             # session-scoped closure; the ORIGINAL still installed means that
             # isolation never ran (raw ``python -m unittest``, or pytest from

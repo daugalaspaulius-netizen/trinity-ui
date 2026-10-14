@@ -24,8 +24,8 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.apps.builtins.aws_control.backend import library
-from kiro_crew.deploy.engine import AWSError
+from efm_go.apps.builtins.aws_control.backend import library
+from efm_go.deploy.engine import AWSError
 
 ACCOUNT = "123456789012"
 

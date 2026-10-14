@@ -25,8 +25,8 @@ from aiohttp import ClientPayloadError, web
 from aiohttp.test_utils import TestClient, TestServer
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew.apps import dev_mode
-from kiro_crew.apps import routes as app_routes
+from efm_go.apps import dev_mode
+from efm_go.apps import routes as app_routes
 
 APP = "demo-app"
 
@@ -636,7 +636,7 @@ def _patch_agent_config(monkeypatch: pytest.MonkeyPatch, value: object) -> None:
     """Make the config source hand the route's resolver *value* for the knob."""
     from types import SimpleNamespace
 
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     monkeypatch.setattr(
         KiroCrewConfig,
@@ -667,7 +667,7 @@ def test_an_unreadable_config_keeps_the_default_deadline(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A config that cannot be loaded must not remove the deadline."""
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     def _boom() -> object:
         raise OSError("config.json is unreadable")
@@ -687,8 +687,8 @@ async def test_the_configured_deadline_is_what_the_route_enforces(
     a gateway restart."""
     from types import SimpleNamespace
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.config.sections import AgentConfig
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.config.sections import AgentConfig
 
     budgeted: list[float | None] = []
 

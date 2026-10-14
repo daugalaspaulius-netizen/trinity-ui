@@ -17,8 +17,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest  # noqa: F401 (collection marker)
 
-from kiro_crew.apps.builtins.design_tweak.backend import server
-from kiro_crew.platform_compat import IS_POSIX
+from efm_go.apps.builtins.design_tweak.backend import server
+from efm_go.platform_compat import IS_POSIX
 
 # `os.getpgid` does not exist on Windows, so `patch("os.getpgid")` raises
 # AttributeError there rather than exercising anything. The production code

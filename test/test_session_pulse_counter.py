@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from kiro_crew.dashboard import session_pulse_counter as spc
+from efm_go.dashboard import session_pulse_counter as spc
 
 
 @pytest.fixture(autouse=True)

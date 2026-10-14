@@ -38,7 +38,7 @@ from turn_harness import (
     run_turn,
 )
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_STEER_CONSUMED,
@@ -46,23 +46,23 @@ from kiro_crew.acp.types import (
     STOP_REASON_END_TURN,
     AcpEvent,
 )
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     APPROVAL_TURN_MARGIN_SECS,
     TOOL_APPROVAL_TIMEOUT_MAX,
     TOOL_APPROVAL_TIMEOUT_MIN,
     AgentConfig,
     _clamp_security_bounds,
 )
-from kiro_crew.constants import (
+from efm_go.constants import (
     CHAT_TURN_TIMEOUT,
     DENY_CAUSE_APPROVAL_NO_BUDGET,
     DENY_CAUSE_APPROVAL_TIMEOUT,
     STEER_NOTICE_BOUND_SECS,
     TOOL_APPROVAL_TIMEOUT,
 )
-from kiro_crew.dashboard import turn_dispatch as td
-from kiro_crew.dashboard.state import REFUSAL_RECOVERY_PREFIX
-from kiro_crew.hooks import HOOK_EVENT_PRE_TOOL_USE
+from efm_go.dashboard import turn_dispatch as td
+from efm_go.dashboard.state import REFUSAL_RECOVERY_PREFIX
+from efm_go.hooks import HOOK_EVENT_PRE_TOOL_USE
 
 
 class _Cfg:
@@ -184,7 +184,7 @@ class TestResolver:
 class TestLoadTimeClamp:
     def test_window_at_the_ceiling_is_clamped(self, caplog: pytest.LogCaptureFixture) -> None:
         data = {"agent": {"tool_approval_timeout_secs": 7200, "chat_turn_timeout_secs": 7200}}
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             _clamp_security_bounds(data)
         assert data["agent"]["tool_approval_timeout_secs"] == 7200 - APPROVAL_TURN_MARGIN_SECS
         assert "can never fire" in caplog.text
@@ -207,7 +207,7 @@ class TestLoadTimeClamp:
         binds first, so the cross-field clamp can only be SEEN to consult the
         field default by lowering that default below the static max.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         monkeypatch.setattr(loader_mod, "_DEFAULT_CHAT_TURN_TIMEOUT_SECS", 1200)
         data = {"agent": {"tool_approval_timeout_secs": 7200}}
@@ -268,7 +268,7 @@ class TestLoadTimeClamp:
     def test_non_int_ceiling_falls_back_to_the_default(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         # Lowered below the static max so the fallback is observable (see
         # test_absent_ceiling_uses_the_field_default).
@@ -681,7 +681,7 @@ def test_the_bounded_steer_is_never_wrapped_again_at_a_call_site() -> None:
     runner and every ``chat_turn`` owner, so a move between them keeps it.
     Counted in ``test_source_pin_budget.py``.
     """
-    from kiro_crew.dashboard import chat_runner, chat_turn
+    from efm_go.dashboard import chat_runner, chat_turn
 
     sources = [Path(chat_runner.__file__)] + sorted(Path(chat_turn.__file__).parent.glob("*.py"))
     rewrapped = [

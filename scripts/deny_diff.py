@@ -4,7 +4,7 @@
 Stdlib only, no third-party deps, cross-platform. Run from the repo root::
 
     python3 scripts/deny_diff.py --base origin/main --head HEAD \\
-        --corpus src/kiro_crew/builtin_skills/security-conductor/golden-paths.json
+        --corpus src/efm_go/builtin_skills/security-conductor/golden-paths.json
 
 Exit 0 = no regressions, exit 1 = regressions, exit 2 = corpus/ref error.
 
@@ -48,14 +48,14 @@ re-implementation of the rules in this script would agree with itself forever
 and catch nothing.
 
 *Each side proves which tree it loaded.* The child re-reports the file
-``kiro_crew.security`` actually resolved to and refuses when it sits outside the
+``efm_go.security`` actually resolved to and refuses when it sits outside the
 checkout it was pointed at. Without that check an installed copy of the package
 shadowing the path could serve BOTH sides from one tree, and the gate would
 report zero regressions forever while looking like it ran.
 
 *The parent never imports the product.* Two reasons, one of them empirical: the
 classifier is the thing under test, so importing it here would pin the harness
-to one side of the comparison; and an inline ``python -c "import kiro_crew..."``
+to one side of the comparison; and an inline ``python -c "import efm_go..."``
 is itself refused by the argv floor this gate exists to keep honest. The child
 is this same file re-executed with :data:`_WORKER_FLAG`, which imports the
 product only in that mode.
@@ -115,7 +115,7 @@ _KINDS = frozenset({"shell", "test", "flow", "cron"})
 _PLATFORMS = frozenset({"any", "posix", "windows"})
 
 #: The deny checks this gate measures, in the order ``hooks.on_tool_call`` applies
-#: them to a shell command, as (tier name, attribute of ``kiro_crew.security``).
+#: them to a shell command, as (tier name, attribute of ``efm_go.security``).
 #:
 #: Declared as data rather than inline in the worker so ``test/test_deny_diff.py``
 #: can compare it against the hooks gate itself. The gate's whole claim is that a
@@ -359,8 +359,8 @@ def resolve_checkout(repo_root: Path, ref: str, dest: Path) -> Path:
         raise DenyDiffError(f"cannot unpack archive of ref {ref!r}: {exc}") from exc
     finally:
         archive.unlink(missing_ok=True)
-    if not (dest / "src" / "kiro_crew").is_dir():
-        raise DenyDiffError(f"ref {ref!r} has no src/kiro_crew tree")
+    if not (dest / "src" / "efm_go").is_dir():
+        raise DenyDiffError(f"ref {ref!r} has no src/efm_go tree")
     return dest
 
 
@@ -497,9 +497,9 @@ def _worker_main() -> int:
         print(f"worker: unreadable request: {exc}", file=sys.stderr)
         return 2
     try:
-        import kiro_crew.security as security
+        import efm_go.security as security
     except Exception as exc:
-        print(f"worker: cannot import kiro_crew.security: {exc}", file=sys.stderr)
+        print(f"worker: cannot import efm_go.security: {exc}", file=sys.stderr)
         return 2
 
     # Which tree actually answered. An installed copy of the package that shadowed
@@ -512,7 +512,7 @@ def _worker_main() -> int:
     root = Path(os.path.normcase(str(expect_root)))
     if not loaded.is_relative_to(root):
         print(
-            f"worker: kiro_crew.security resolved to {loaded}, outside {root}",
+            f"worker: efm_go.security resolved to {loaded}, outside {root}",
             file=sys.stderr,
         )
         return 2

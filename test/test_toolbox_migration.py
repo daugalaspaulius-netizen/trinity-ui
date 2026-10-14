@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 def _load_cli():
     """Import cli module."""
-    from kiro_crew import cli
+    from efm_go import cli
     return cli
 
 

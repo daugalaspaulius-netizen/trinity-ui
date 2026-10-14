@@ -18,7 +18,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers.hooks import api_kiro_hooks
+from efm_go.dashboard.handlers.hooks import api_kiro_hooks
 
 # The handler imports `_shipped_defaults` at module scope (hoisted), so
 # it is patched in the handler's namespace.  `KIRO_AGENTS_DIR` stays patched at
@@ -26,9 +26,9 @@ from kiro_crew.dashboard.handlers.hooks import api_kiro_hooks
 # globals at call time, so the source-module patch is unaffected by the hoist —
 # do NOT retarget it to the handler namespace (the name does not exist there).
 # `redact` is likewise patched where it is defined.
-_P_AGENTS_DIR = "kiro_crew.agent.KIRO_AGENTS_DIR"
-_P_DEFAULTS = "kiro_crew.dashboard.handlers.hooks._shipped_defaults"
-_P_REDACT = "kiro_crew.security.redact"
+_P_AGENTS_DIR = "efm_go.agent.KIRO_AGENTS_DIR"
+_P_DEFAULTS = "efm_go.dashboard.handlers.hooks._shipped_defaults"
+_P_REDACT = "efm_go.security.redact"
 
 
 def _make_app() -> web.Application:

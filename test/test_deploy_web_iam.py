@@ -6,8 +6,8 @@ from pathlib import Path
 
 from yaml_helpers import load_with
 
-from kiro_crew.deploy import engine
-from kiro_crew.deploy import iam as iam_mod
+from efm_go.deploy import engine
+from efm_go.deploy import iam as iam_mod
 
 _PKG = Path(iam_mod.__file__).parent
 
@@ -348,8 +348,8 @@ def test_unmark_webapp_expired_sets_live():
     import tempfile
     from pathlib import Path
 
-    from kiro_crew.artifacts import ArtifactStore
-    from kiro_crew.deploy.webapp_types import WebAppDeployTarget, WebAppLifecycle, WebAppMetadata
+    from efm_go.artifacts import ArtifactStore
+    from efm_go.deploy.webapp_types import WebAppDeployTarget, WebAppLifecycle, WebAppMetadata
 
     with tempfile.TemporaryDirectory() as tmp:
         store = ArtifactStore(Path(tmp))

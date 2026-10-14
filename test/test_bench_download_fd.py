@@ -33,8 +33,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.eval.bench import datasets as _datasets
-from kiro_crew.eval.bench.datasets import CorpusFetchError, _download
+from efm_go.eval.bench import datasets as _datasets
+from efm_go.eval.bench.datasets import CorpusFetchError, _download
 
 
 @pytest.mark.parametrize(

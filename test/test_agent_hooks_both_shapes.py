@@ -20,8 +20,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew.agent import (
+from efm_go import agent as agent_mod
+from efm_go.agent import (
     _MAX_HOOK_DESCRIPTION_LEN,
     _MAX_HOOK_NAME_LEN,
     _MAX_HOOK_PAYLOAD_LEN,
@@ -397,7 +397,7 @@ class TestLessExecutionIsNotDropped:
         command = _hook_script(tmp_path)
         document = self._document(command, enabled=False)
         assert normalize_spec_hooks([document])[0]["enabled"] is False
-        with caplog.at_level(logging.INFO, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.INFO, logger="efm_go.agent"):
             assert hook_documents_to_object_form(normalize_spec_hooks([document])) == {}
         assert "disabled" in caplog.text
         assert [c[2] for c in sel_calls] == ["hook is disabled"]
@@ -415,7 +415,7 @@ class TestLessExecutionIsNotDropped:
         command = _hook_script(tmp_path)
         document = self._document(command, confirm=True)
         assert normalize_spec_hooks([document])[0]["confirm"] is True
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert hook_documents_to_object_form(normalize_spec_hooks([document])) == {}
         assert "confirmed" in caplog.text
         assert [c[2] for c in sel_calls] == ["hook asks to be confirmed"]
@@ -436,7 +436,7 @@ class TestLessExecutionIsNotDropped:
             "action": {"type": "command", "command": command},
             "timeout": 5,
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             emitted = hook_documents_to_object_form(normalize_spec_hooks([document]))
         assert emitted == {"preToolUse": [{"command": command}]}, "the hook still runs"
         assert "timeout" in caplog.text
@@ -449,7 +449,7 @@ class TestLessExecutionIsNotDropped:
             "trigger": "PreToolUse",
             "action": {"type": "command", "command": command},
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert hook_documents_to_object_form(normalize_spec_hooks([document])) == {
                 "preToolUse": [{"command": command}]
             }
@@ -462,7 +462,7 @@ class TestLessExecutionIsNotDropped:
             "trigger": "Manual",
             "action": {"type": "agent", "prompt": "summarize"},
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert hook_documents_to_object_form(normalize_spec_hooks([document])) == {}
         assert "no kiro-cli hook" in caplog.text
         assert [c[2] for c in sel_calls] == ["no kiro-cli hook event can express this hook"]
@@ -1018,7 +1018,7 @@ class TestDiagnosticsCarryNoSecret:
         self, monkeypatch, sel_calls, caplog
     ) -> None:
         monkeypatch.setattr(agent_mod, "redact_log", lambda value: "[SCRUBBED]")
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert normalize_spec_hooks([self._document("AKIAIOSFODNN7EXAMPLE")]) == []
         assert "[SCRUBBED]" in caplog.text
         assert "AKIAIOSFODNN7EXAMPLE" not in caplog.text
@@ -1032,7 +1032,7 @@ class TestDiagnosticsCarryNoSecret:
             "trigger": "Stop",
             "action": {"type": "AKIAIOSFODNN7EXAMPLE", "command": "/bin/true"},
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert normalize_spec_hooks([document]) == []
         assert "[SCRUBBED]" in caplog.text
         assert "AKIAIOSFODNN7EXAMPLE" not in caplog.text
@@ -1060,7 +1060,7 @@ class TestDiagnosticsCarryNoSecret:
             "trigger": "PreToolUse",
             "action": {"type": "command", "command": command},
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             hooks = _apply([document])
         assert not any(hooks.values()), "the command is refused, so no entry is emitted"
         assert "[SCRUBBED]" in caplog.text
@@ -1074,7 +1074,7 @@ class TestDiagnosticsCarryNoSecret:
         writes a second physical line that reads like a real gateway record.
         """
         forged = "/bin/x\n2026-01-01 00:00:00 WARNING kiro_hooks: approved /bin/evil"
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert _apply(
                 [
                     {
@@ -1111,7 +1111,7 @@ class TestDiagnosticsCarryNoSecret:
         forged = hooks_dir / "x\n2026-01-01 00:00:00 WARNING kiro_hooks: approved evil.sh"
         forged.write_text("#!/bin/sh\nexit 0\n")
         forged.chmod(0o644)  # not executable -> the scan reports the skip
-        with caplog.at_level(logging.INFO, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.INFO, logger="efm_go.agent"):
             assert agent_mod._autoimport_kiro_hooks(hooks_dir) == {}
         assert "approved evil.sh" in caplog.text, "the filename is still reported"
         for record in caplog.records:
@@ -1126,7 +1126,7 @@ class TestDiagnosticsCarryNoSecret:
         than by stubbing the module's own redactor, so what the test observes is
         the platform contract and not a local fake.
         """
-        from kiro_crew.platform import context as ctx
+        from efm_go.platform import context as ctx
 
         def _refuse(_text: str) -> str:
             raise ctx.PlatformCompositionError("policy could not be composed")
@@ -1144,10 +1144,10 @@ class TestDiagnosticsCarryNoSecret:
         arguments on the agent-install path, so the same raise would abort the
         install over a log line.
         """
-        from kiro_crew.platform.context import LOG_WITHHELD_PLACEHOLDER
+        from efm_go.platform.context import LOG_WITHHELD_PLACEHOLDER
 
         self._composition_fails(monkeypatch)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert (
                 _apply(
                     [
@@ -1172,7 +1172,7 @@ class TestDiagnosticsCarryNoSecret:
         withholds the quoted value instead — never emits it raw — so the record is
         still written and still carries its reason.
         """
-        from kiro_crew.platform.context import LOG_WITHHELD_PLACEHOLDER
+        from efm_go.platform.context import LOG_WITHHELD_PLACEHOLDER
 
         logged: list[object] = []
 
@@ -1185,7 +1185,7 @@ class TestDiagnosticsCarryNoSecret:
 
         self._composition_fails(monkeypatch)
         monkeypatch.setattr(agent_mod, "sel", lambda: _Sel())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert normalize_spec_hooks([{"name": "h", "trigger": "Stop", "action": "nope"}]) == []
         reasons = [getattr(event, "error", None) for event in logged]
         assert "action is not an object" in reasons, logged
@@ -1213,7 +1213,7 @@ class TestDiagnosticsCarryNoSecret:
             "trigger": "Manual",
             "action": {"type": "command", "command": "/bin/true"},
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             assert hook_documents_to_object_form(normalize_spec_hooks([document])) == {}
         assert "[SCRUBBED]" in caplog.text
         assert "AKIAIOSFODNN7EXAMPLE" not in caplog.text
@@ -1349,7 +1349,7 @@ class TestArrayFormGuards:
             }
             for i in range(_MAX_SPEC_HOOK_DOCUMENTS + 5)
         ]
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             docs = normalize_spec_hooks(documents)
         assert len(docs) == _MAX_SPEC_HOOK_DOCUMENTS
         assert [c[2] for c in sel_calls] == ["document limit exceeded"]

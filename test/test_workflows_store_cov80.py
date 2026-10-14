@@ -16,8 +16,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.workflows import store as store_mod
-from kiro_crew.workflows.store import WorkflowRunStore, _redact, default_workflows_dir
+from efm_go.workflows import store as store_mod
+from efm_go.workflows.store import WorkflowRunStore, _redact, default_workflows_dir
 
 
 class TestDefaultWorkflowsDir:

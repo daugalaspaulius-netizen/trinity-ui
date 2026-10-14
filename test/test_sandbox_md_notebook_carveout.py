@@ -29,7 +29,7 @@ import os
 
 import pytest
 
-import kiro_crew.sandbox as sb
+import efm_go.sandbox as sb
 
 _MODES = ("standard", "cc", "strict")
 _CREW_PREFIXES = (".kiro/crew", ".kirocrew")
@@ -44,7 +44,7 @@ def _pin_ssh_accept_new(monkeypatch: pytest.MonkeyPatch) -> None:
     plan-building test in the process a real spawn -- a host program none of these
     tests is about (test-hygiene class 7). ``True`` is what a modern host answers.
     """
-    monkeypatch.setattr("kiro_crew.sandbox._ssh_supports_accept_new", lambda: True)
+    monkeypatch.setattr("efm_go.sandbox._ssh_supports_accept_new", lambda: True)
 
 
 def _crew_path(prefix: str, leaf: str) -> str:
@@ -267,7 +267,7 @@ class TestAbsentStateFilesAreMaterializedSoTheMaskCanMount:
         """The writer spells the leaf itself rather than importing the sandbox module into
         the app backend's process, so the two spellings are pinned here: a mismatch would
         stage PAT bytes at a name nothing masks."""
-        from kiro_crew.apps.builtins.md_notebook import server
+        from efm_go.apps.builtins.md_notebook import server
 
         assert server._STAGING_LEAF == sb._MD_NOTEBOOK_STAGING_LEAF
 
@@ -288,7 +288,7 @@ class TestAbsentStateFilesAreMaterializedSoTheMaskCanMount:
         """The whole materialisation argument: an empty document must mean what
         an absent file means TO THE READER. Pin it against the backend's own
         read functions rather than restating their behavior here."""
-        from kiro_crew.apps.builtins.md_notebook import server
+        from efm_go.apps.builtins.md_notebook import server
 
         sb._materialize_md_notebook_mask_targets()
         monkeypatch.setattr(server, "_HOME", crew_home / "workspace" / "md-notebook")
@@ -632,7 +632,7 @@ class TestStateWritersStageInsideTheMask:
 
     @pytest.fixture()
     def server(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.md_notebook import server
+        from efm_go.apps.builtins.md_notebook import server
 
         monkeypatch.setattr(server, "_HOME", tmp_path / "state")
         return server

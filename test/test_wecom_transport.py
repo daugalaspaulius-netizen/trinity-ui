@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.wecom.transport (WeComTransport, Layer 1)."""
+"""Tests for efm_go.wecom.transport (WeComTransport, Layer 1)."""
 
 from __future__ import annotations
 
@@ -6,14 +6,14 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.messaging.outbound_files import OutboundFile
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.wecom.client import (
+from efm_go.messaging.outbound_files import OutboundFile
+from efm_go.messaging.transport import InboundMessage
+from efm_go.wecom.client import (
     WECOM_MAX_REPLY_BYTES,
     WECOM_SAFE_REPLY_CHARS,
     WeComInbound,
 )
-from kiro_crew.wecom.transport import (
+from efm_go.wecom.transport import (
     WECOM_CAPABILITIES,
     WeComSendError,
     WeComTransport,
@@ -365,18 +365,18 @@ class TestAuthorize:
 
     def test_unknown_denied(self) -> None:
         t = WeComTransport(FakeClient(), owner_id="Wei", allowed_users=["LiHaoYi"])
-        with patch("kiro_crew.wecom.transport.sel") as mock_sel:
+        with patch("efm_go.wecom.transport.sel") as mock_sel:
             assert t.authorize(_msg("stranger")) is False
         mock_sel().log_api_access.assert_called_once()
 
     def test_empty_userid_denied(self) -> None:
         t = WeComTransport(FakeClient(), owner_id="Wei")
-        with patch("kiro_crew.wecom.transport.sel"):
+        with patch("efm_go.wecom.transport.sel"):
             assert t.authorize(_msg("")) is False
 
     def test_empty_allowlist_and_no_owner_denies_everyone(self) -> None:
         t = WeComTransport(FakeClient())  # fail closed
-        with patch("kiro_crew.wecom.transport.sel"):
+        with patch("efm_go.wecom.transport.sel"):
             assert t.authorize(_msg("anyone")) is False
 
     def test_allow_all_admits_any_userid(self) -> None:
@@ -387,14 +387,14 @@ class TestAuthorize:
     def test_allow_all_still_denies_empty_userid(self) -> None:
         # Even under allow-all, an anonymous/malformed frame never dispatches.
         t = WeComTransport(FakeClient(), allow_all=True)
-        with patch("kiro_crew.wecom.transport.sel"):
+        with patch("efm_go.wecom.transport.sel"):
             assert t.authorize(_msg("")) is False
 
     def test_allow_all_off_is_not_inferred_from_empty_list(self) -> None:
         # The everybody grant is ONLY the explicit flag — an empty allow-list
         # plus allow_all=False stays fail-closed.
         t = WeComTransport(FakeClient(), allowed_users=[], allow_all=False)
-        with patch("kiro_crew.wecom.transport.sel"):
+        with patch("efm_go.wecom.transport.sel"):
             assert t.authorize(_msg("anyone")) is False
 
 
@@ -420,7 +420,7 @@ class TestReceive:
             dispatched.append(inbound)
 
         t = WeComTransport(FakeClient(), owner_id="Wei", dispatch=dispatch)
-        with patch("kiro_crew.wecom.transport.sel"):
+        with patch("efm_go.wecom.transport.sel"):
             await t.receive(_inbound("stranger", "hello"))
         assert dispatched == []
 

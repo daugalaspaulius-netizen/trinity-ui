@@ -23,11 +23,11 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew import agent_discovery
-from kiro_crew import subagent as sa
-from kiro_crew.dashboard import side_readonly_spec as srs
-from kiro_crew.mcp_tools import spawn as spawn_tools
+from efm_go import agent as agent_mod
+from efm_go import agent_discovery
+from efm_go import subagent as sa
+from efm_go.dashboard import side_readonly_spec as srs
+from efm_go.mcp_tools import spawn as spawn_tools
 
 _BASE = {"name": "scout", "description": "Scouts the repo", "allowedTools": ["fs_read"]}
 
@@ -159,7 +159,7 @@ class TestTheGateRefusesIt:
         it: the SDK's own ownership set must leave the derived spec out too."""
         import asyncio
 
-        from kiro_crew.apps.spawn_sdk import SpawnError, SpawnSDK, build_spawn_impl
+        from efm_go.apps.spawn_sdk import SpawnError, SpawnSDK, build_spawn_impl
 
         (registry / "myapp--helper.json").write_text(
             json.dumps({"name": "myapp--helper", "description": "app agent"}), encoding="utf-8"
@@ -173,7 +173,7 @@ class TestTheGateRefusesIt:
                 return SimpleNamespace(id="sub-1", error="")
 
         sdk = SpawnSDK("myapp", build_spawn_impl(_Manager()))
-        with patch("kiro_crew.apps.spawn_sdk._audit_spawn_denied"):
+        with patch("efm_go.apps.spawn_sdk._audit_spawn_denied"):
             with pytest.raises(SpawnError, match="only spawn its OWN"):
                 asyncio.run(sdk.run("do a thing", "myapp--helper--readonly"))
         assert calls == [], "the derived spec must never reach the manager"

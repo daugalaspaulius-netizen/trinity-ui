@@ -78,12 +78,12 @@ SESSION_PID_FILE = "kiro_session_pids.txt"
 PID_FILE = "kiro_pids.txt"
 
 #: argv fragment that identifies a managed MCP stub process. The stub is
-#: launched as ``python -m kiro_crew.mcp_gateway.stub --server <name> ...``, so
+#: launched as ``python -m efm_go.mcp_gateway.stub --server <name> ...``, so
 #: the module path is the stable token; the ``--server`` value names which one.
-STUB_ARGV_TOKEN = "kiro_crew.mcp_gateway.stub"
+STUB_ARGV_TOKEN = "efm_go.mcp_gateway.stub"
 
 #: argv fragment identifying the MCP gateway daemon, which owns the stubs.
-GATEWAYD_ARGV_TOKEN = "kiro_crew.mcp_gateway.gatewayd"
+GATEWAYD_ARGV_TOKEN = "efm_go.mcp_gateway.gatewayd"
 
 #: Substrings that mark a file as the crew log, for the open-handle probe.
 CREW_LOG_PATH_TOKENS = ("crew-log", "crewlog", "crew_log")
@@ -222,8 +222,8 @@ def assert_slice_contract(home: Path, src: Path) -> None:
     assertions would pass by measuring nothing.
     """
     probe = (
-        "from kiro_crew import sandbox\n"
-        "from kiro_crew.config.paths import config_dir\n"
+        "from efm_go import sandbox\n"
+        "from efm_go.config.paths import config_dir\n"
         "print(sandbox._agents_slice_name())\n"
         "print(config_dir())\n"
     )

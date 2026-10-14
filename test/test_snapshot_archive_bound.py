@@ -11,7 +11,7 @@ import tarfile
 
 import pytest
 
-from kiro_crew import snapshot as snap
+from efm_go import snapshot as snap
 
 
 def _info(name: str, size: int, *, kind: str = "file") -> tarfile.TarInfo:

@@ -28,9 +28,9 @@ from pathlib import Path
 import pytest
 from test_sandbox_launcher_program import rendered_payload
 
-from kiro_crew import sandbox
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.schema import SCHEMA_REGISTRY
+from efm_go import sandbox
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.schema import SCHEMA_REGISTRY
 
 
 def _load(tmp_path: Path, agent: dict | None) -> KiroCrewConfig:
@@ -44,8 +44,8 @@ def _load(tmp_path: Path, agent: dict | None) -> KiroCrewConfig:
     if agent is not None:
         cfg_file.write_text(json.dumps({"agent": agent}), encoding="utf-8")
     with (
-        unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
-        unittest.mock.patch("kiro_crew.config.loader.config_local_path", return_value=local_file),
+        unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_file),
+        unittest.mock.patch("efm_go.config.loader.config_local_path", return_value=local_file),
     ):
         return KiroCrewConfig.load()
 
@@ -64,14 +64,14 @@ class TestStrictIsSelectable:
         ``_declared_enum_value`` is the CLI write gate; a value it raises on is
         never written.
         """
-        from kiro_crew.cli_config import _declared_enum_value
+        from efm_go.cli_config import _declared_enum_value
 
         assert _declared_enum_value("agent.sandbox", "strict") == "strict"
         # Spelling is the one leniency the gate grants every enum key.
         assert _declared_enum_value("agent.sandbox", "STRICT") == "strict"
 
     def test_the_loader_keeps_a_hand_written_strict(self, tmp_path: Path, caplog) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config"):
             cfg = _load(tmp_path, {"sandbox": "strict"})
         assert cfg.agent.sandbox == "strict"
         assert "enum violation at 'agent.sandbox'" not in caplog.text
@@ -83,7 +83,7 @@ class TestStrictIsSelectable:
         enum for ``agent.sandbox``; a tier admitted on one surface and refused on
         the other is the drift this pins against.
         """
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         assert _EDITABLE_CONFIG["agent.sandbox"]["values"] == _declared_sandbox_enum()
 
@@ -140,13 +140,13 @@ class TestNothingElseMoved:
         self, tmp_path: Path, caplog
     ) -> None:
         pytest.importorskip("jsonschema")
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config"):
             cfg = _load(tmp_path, {"sandbox": "paranoid"})
         assert cfg.agent.sandbox == "auto"
         assert "enum violation at 'agent.sandbox'" in caplog.text
 
     def test_config_set_still_refuses_an_unknown_spelling(self) -> None:
-        from kiro_crew.cli_config import _declared_enum_value
+        from efm_go.cli_config import _declared_enum_value
 
         with pytest.raises(ValueError):
             _declared_enum_value("agent.sandbox", "paranoid")

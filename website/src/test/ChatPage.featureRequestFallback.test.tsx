@@ -189,7 +189,7 @@ describe('ChatPage — a feature request refused for a usage limit offers the is
     // misdescribe it, and the Resume it withholds is the one retry that helps.
     await renderWith([
       requestRow,
-      { role: 'assistant', content: 'Filed as kirodotdev/KiroCrew#13342.', cls: '' },
+      { role: 'assistant', content: 'Filed as efmleads.com#13342.', cls: '' },
       { role: 'user', content: 'now refactor the parser', cls: '', meta: { sendId: 's-typed', mid: 'u-2' } },
       limitRow,
     ])

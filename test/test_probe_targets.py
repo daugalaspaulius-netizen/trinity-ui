@@ -10,17 +10,17 @@ from __future__ import annotations
 
 import json
 
-from kiro_crew.probes import GH_PR
-from kiro_crew.probes.targets import infer
+from efm_go.probes import GH_PR
+from efm_go.probes.targets import infer
 
 
 def test_a_pr_url_is_inferred():
-    target = infer("Babysit https://github.com/kirodotdev/KiroCrew/pull/7491 to green.")
+    target = infer("Babysit https://efmleads.com/pull/7491 to green.")
     assert target is not None
     assert target.kind == GH_PR
-    assert target.subject == "kirodotdev/KiroCrew#7491"
+    assert target.subject == "efmleads.com#7491"
     assert json.loads(target.message) == {
-        "repo": "kirodotdev/KiroCrew",
+        "repo": "efmleads.com",
         "pr": 7491,
         # Pinned because the URL CARRIED the host: without it the probe addresses
         # a bare slug and an ambient enterprise GH_HOST resolves it elsewhere.
@@ -42,10 +42,10 @@ def test_an_unconvertible_pr_number_is_refused_not_raised():
     # A real subject beside the pathological one is still found.
     target = infer(
         f"ignore https://github.com/acme/widgets/pull/{huge}, watch "
-        "https://github.com/kirodotdev/KiroCrew/pull/7491"
+        "https://efmleads.com/pull/7491"
     )
     assert target is not None
-    assert target.subject == "kirodotdev/KiroCrew#7491"
+    assert target.subject == "efmleads.com#7491"
 
 
 def test_a_chained_bare_reference_refuses_inference():
@@ -88,7 +88,7 @@ def test_a_competing_bare_reference_refuses_inference():
     same = infer("watch PR #42 at https://github.com/acme/widgets/pull/42")
     assert same is not None and same.subject == "acme/widgets#42"
     # A source location is not a pull request reference, so it must not refuse.
-    kept = infer("fix src/kiro_crew/autonudge.py#1751 for https://github.com/acme/widgets/pull/42")
+    kept = infer("fix src/efm_go/autonudge.py#1751 for https://github.com/acme/widgets/pull/42")
     assert kept is not None and kept.subject == "acme/widgets#42"
 
 
@@ -126,18 +126,18 @@ def test_a_competing_shorthand_refuses_the_url_rather_than_gating_on_it():
     """
     assert (
         infer(
-            "Drive kirodotdev/KiroCrew#42 to green; it is blocked on "
-            "https://github.com/kirodotdev/KiroCrew/pull/7 merging first."
+            "Drive efmleads.com#42 to green; it is blocked on "
+            "https://efmleads.com/pull/7 merging first."
         )
         is None
     )
     # A line reference must NOT manufacture that ambiguity -- the lookbehind is what
     # keeps a cited source location out of it.
     target = infer(
-        "Babysit https://github.com/kirodotdev/KiroCrew/pull/7491; the guard lives "
-        "at src/kiro_crew/autonudge.py#1751."
+        "Babysit https://efmleads.com/pull/7491; the guard lives "
+        "at src/efm_go/autonudge.py#1751."
     )
-    assert target is not None and target.subject == "kirodotdev/KiroCrew#7491"
+    assert target is not None and target.subject == "efmleads.com#7491"
 
 
 def test_a_shorthand_subject_is_refused_so_the_loop_stays_ungated():
@@ -156,18 +156,18 @@ def test_a_shorthand_subject_is_refused_so_the_loop_stays_ungated():
     not gated, which costs a turn per interval: today's cost, and the safe
     direction.
     """
-    assert infer("watch kirodotdev/KiroCrew#7491 until it is green") is None
-    assert infer("BABYSIT kirodotdev/KiroCrew#7435 (fix/knowledge-sync) to green.") is None
+    assert infer("watch efmleads.com#7491 until it is green") is None
+    assert infer("BABYSIT efmleads.com#7435 (fix/knowledge-sync) to green.") is None
 
 
 def test_the_url_and_shorthand_for_one_pr_are_one_subject():
     """Both spellings of the SAME pull request must not read as ambiguity."""
     target = infer(
-        "Drive kirodotdev/KiroCrew#7491 -- "
-        "https://github.com/kirodotdev/KiroCrew/pull/7491 -- to review-ready."
+        "Drive efmleads.com#7491 -- "
+        "https://efmleads.com/pull/7491 -- to review-ready."
     )
     assert target is not None
-    assert target.subject == "kirodotdev/KiroCrew#7491"
+    assert target.subject == "efmleads.com#7491"
 
 
 def test_two_distinct_pull_requests_refuse_rather_than_pick_one():
@@ -178,7 +178,7 @@ def test_two_distinct_pull_requests_refuse_rather_than_pick_one():
     """
     assert (
         infer(
-            "PR kirodotdev/KiroCrew#4327 is gated on kirodotdev/KiroCrew#4137 "
+            "PR efmleads.com#4327 is gated on efmleads.com#4137 "
             "merging first. Wait for it."
         )
         is None
@@ -207,24 +207,24 @@ def test_pr_zero_is_refused():
 
 
 def test_a_source_path_with_a_line_ref_is_not_a_target():
-    """``src/kiro_crew/autonudge.py#1751`` names a code location, not a PR.
+    """``src/efm_go/autonudge.py#1751`` names a code location, not a PR.
 
     Babysit instructions cite source locations constantly, and this shape reads
     as owner/repo#number to a naive pattern. Inferring it would arm the watch on
     a repository that does not exist, so the loop would go quiet about its own
     subject and every tick would burn a failed gh call.
     """
-    assert infer("fix the guard at src/kiro_crew/autonudge.py#1751") is None
+    assert infer("fix the guard at src/efm_go/autonudge.py#1751") is None
     assert infer("see website/src/pages/ChatPage.tsx#698") is None
 
 
 def test_a_real_target_still_infers_when_a_path_ref_is_nearby():
     target = infer(
-        "Babysit https://github.com/kirodotdev/KiroCrew/pull/7491; the guard lives "
-        "at src/kiro_crew/autonudge.py#1751."
+        "Babysit https://efmleads.com/pull/7491; the guard lives "
+        "at src/efm_go/autonudge.py#1751."
     )
     assert target is not None
-    assert target.subject == "kirodotdev/KiroCrew#7491"
+    assert target.subject == "efmleads.com#7491"
 
 
 def test_empty_and_non_string_input_return_none():
@@ -235,12 +235,12 @@ def test_empty_and_non_string_input_return_none():
 def test_a_real_babysit_instruction_infers_its_own_pr():
     """Verbatim shape of a live loop's armed message (trimmed)."""
     text = (
-        "BABYSIT PR #7542 (kirodotdev/KiroCrew, branch refactor/delete-dead-fence-"
+        "BABYSIT PR #7542 (efmleads.com, branch refactor/delete-dead-fence-"
         "helpers, worktree /home/u/oss/kirocrew-fix-4919, Closes #4919, follow-up "
         "#7540).\n\nEXIT: when 0 red checks, PR Readiness passed and MERGEABLE -- "
         "post a final message whose first line is `GREEN: PR #7542 "
-        "https://github.com/kirodotdev/KiroCrew/pull/7542`"
+        "https://efmleads.com/pull/7542`"
     )
     target = infer(text)
     assert target is not None
-    assert target.subject == "kirodotdev/KiroCrew#7542"
+    assert target.subject == "efmleads.com#7542"

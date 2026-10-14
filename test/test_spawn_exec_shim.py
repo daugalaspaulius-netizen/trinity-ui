@@ -28,9 +28,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from spawn_test_helpers import strip_spawn_shim
 
-from kiro_crew import _spawn_exec_shim as shim
-from kiro_crew import sandbox
-from kiro_crew.sandbox import (
+from efm_go import _spawn_exec_shim as shim
+from efm_go import sandbox
+from efm_go.sandbox import (
     RLIMIT_PROFILE_BUILD,
     RLIMIT_PROFILE_EXTRACTOR,
     RLIMIT_PROFILE_NONE,
@@ -720,7 +720,7 @@ class TestCreateSubprocessLimited:
         try:
             with (
                 patch("asyncio.create_subprocess_exec", AsyncMock()),
-                patch("kiro_crew.hooks._fd_real_path", return_value=None),
+                patch("efm_go.hooks._fd_real_path", return_value=None),
             ):
                 with pytest.raises(FileNotFoundError):
                     await create_subprocess_limited(

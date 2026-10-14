@@ -38,19 +38,19 @@ import re
 
 import pytest
 
-import kiro_crew.mcp_core as mcp_core
-from kiro_crew import session_directive
-from kiro_crew.acp import _dispatch
-from kiro_crew.acp.types import (
+import efm_go.mcp_core as mcp_core
+from efm_go import session_directive
+from efm_go.acp import _dispatch
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_TOOL_CALL,
     EVENT_TOOL_RESULT,
     AcpEvent,
 )
-from kiro_crew.mcp_core import _call_tool
-from kiro_crew.messaging import TransportCapabilities, TurnDriver
-from kiro_crew.messaging.renderer import Renderer
-from kiro_crew.validation import (
+from efm_go.mcp_core import _call_tool
+from efm_go.messaging import TransportCapabilities, TurnDriver
+from efm_go.messaging.renderer import Renderer
+from efm_go.validation import (
     MAX_SHORT_STRING,
     FieldSpec,
     ValidationError,
@@ -323,7 +323,7 @@ class TestTheRefusalTagSurvivesDelivery:
         AFTER redacting, and redaction GROWS text (a credential becomes a longer
         placeholder). Measured 7,999 chars in, 8,755 out. So the marker is
         re-attached at the cut, the way the App render marker already is."""
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         tagged = session_directive.tag_refusal(("Error: " + ("AKIAIOSFODNN7EXAMPLE " * 380))[:7960])
         assert len(tagged) <= session_directive.MAX_TOOL_RESULT_CHARS

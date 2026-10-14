@@ -27,11 +27,11 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_folder_app, _make_state
 
-from kiro_crew import portability
-from kiro_crew.apps.builtins.issue_radar.backend.errors import sanitize_cli_stderr
-from kiro_crew.context import _neutralize_structural_markers
-from kiro_crew.dashboard import openai_compat
-from kiro_crew.deploy import engine
+from efm_go import portability
+from efm_go.apps.builtins.issue_radar.backend.errors import sanitize_cli_stderr
+from efm_go.context import _neutralize_structural_markers
+from efm_go.dashboard import openai_compat
+from efm_go.deploy import engine
 
 
 def _zip_with_symlink(path: Path) -> None:
@@ -275,7 +275,7 @@ class TestDeployBucketDurability:
         the explanatory comment in _harden_bucket.
         """
         src = (Path(__file__).resolve().parent.parent
-               / "src" / "kiro_crew" / "deploy" / "engine.py").read_text(encoding="utf-8")
+               / "src" / "efm_go" / "deploy" / "engine.py").read_text(encoding="utf-8")
         body = src.split("def empty_bucket", 1)[1].split("\ndef ", 1)[0]
         assert '"s3", "rm"' in body, "empty_bucket no longer uses the recursive rm"
         assert "version" not in body.lower(), (
@@ -287,7 +287,7 @@ class TestDeployBucketDurability:
         be added to a copy that nothing calls (which is how the previous scan's
         access-logging fix silently never applied)."""
         src = (Path(__file__).resolve().parent.parent
-               / "src" / "kiro_crew" / "deploy" / "engine.py").read_text(encoding="utf-8")
+               / "src" / "efm_go" / "deploy" / "engine.py").read_text(encoding="utf-8")
         assert src.count("_harden_bucket(") >= 3, (
             "expected the definition plus both call sites to go through one helper"
         )
@@ -299,7 +299,7 @@ class TestMdNotebookErrorRedaction:
     def test_absolute_paths_are_stripped(self):
         """The dominant leak shape here. redact_credentials alone does NOT match
         this, so a fix that only chains the credential/URL passes is cosmetic."""
-        from kiro_crew.apps.builtins.md_notebook import server as md_server
+        from efm_go.apps.builtins.md_notebook import server as md_server
         exc = FileNotFoundError(
             "[Errno 2] No such file or directory: '/home/alice/.kiro/crew/vaults/v1'"
         )
@@ -310,18 +310,18 @@ class TestMdNotebookErrorRedaction:
         assert "No such file or directory" in out
 
     def test_credentials_are_stripped(self):
-        from kiro_crew.apps.builtins.md_notebook import server as md_server
+        from efm_go.apps.builtins.md_notebook import server as md_server
         exc = RuntimeError("Authorization: Bearer sk-abcdefghijklmnopqrstuvwxyz012345")
         assert "sk-abcdefghijklmnopqrstuvwxyz012345" not in md_server._safe_error(exc)
 
     def test_plain_message_survives(self):
-        from kiro_crew.apps.builtins.md_notebook import server as md_server
+        from efm_go.apps.builtins.md_notebook import server as md_server
         assert md_server._safe_error(ValueError("vault not found")) == "vault not found"
 
     def test_both_middleware_branches_route_through_the_helper(self):
         """Modeled and catch-all branches both reach the browser, so neither may
         interpolate str(exc) directly."""
-        src = (Path(__file__).resolve().parent.parent / "src" / "kiro_crew" / "apps"
+        src = (Path(__file__).resolve().parent.parent / "src" / "efm_go" / "apps"
                / "builtins" / "md_notebook" / "server.py").read_text(encoding="utf-8")
         body = src.split("async def error_middleware", 1)[1].split("\n\n\n", 1)[0]
         assert "str(exc)" not in body, "a middleware branch still leaks raw exception text"
@@ -339,7 +339,7 @@ class TestChatFolderOrderIsNotA500:
     async def test_bad_order_does_not_500(self, tmp_path, monkeypatch, bad_order):
         """1e309 parses to float('inf'), and int(inf) raises OverflowError -- which
         is neither TypeError nor ValueError, so it needs its own entry."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -352,7 +352,7 @@ class TestChatFolderOrderIsNotA500:
 
     @pytest.mark.asyncio
     async def test_valid_order_is_still_applied(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -374,7 +374,7 @@ class TestFileSendErrorRedaction:
         ~30 times in this handler, so slicing on it lands in an unrelated
         validation branch.
         """
-        src = (Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        src = (Path(__file__).resolve().parent.parent / "src" / "efm_go"
                / "dashboard" / "handlers" / "files.py").read_text(encoding="utf-8")
         handler = src.split("async def api_slack_upload_file", 1)[1]
         handler = handler.split("\nasync def ", 1)[0]
@@ -390,6 +390,6 @@ class TestFileSendErrorRedaction:
         assert "error=str(e)" not in block
 
     def test_helpers_are_imported(self):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
         assert callable(files_mod.redact_credentials)
         assert callable(files_mod.redact_exfiltration_urls)

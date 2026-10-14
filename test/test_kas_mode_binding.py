@@ -18,11 +18,11 @@ import sys
 
 import pytest
 
-from kiro_crew.acp import session_handle as sh
-from kiro_crew.acp import skill_projection  # bound before a fixture patches its paths
-from kiro_crew.acp.kas_agents import _KAS_FALLBACK_PROMPT
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.types import ACP_BACKEND_KAS, ACP_BACKEND_KIRO
+from efm_go.acp import session_handle as sh
+from efm_go.acp import skill_projection  # bound before a fixture patches its paths
+from efm_go.acp.kas_agents import _KAS_FALLBACK_PROMPT
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.types import ACP_BACKEND_KAS, ACP_BACKEND_KIRO
 
 
 @pytest.fixture(autouse=True)
@@ -120,7 +120,7 @@ def mode_stub(tmp_path, monkeypatch):
     async def fake_bin(*, environ=None, home=None) -> str:
         return str(launcher)
 
-    monkeypatch.setattr("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", fake_bin)
+    monkeypatch.setattr("efm_go.acp.client._resolve_kiro_bin_for_spawn", fake_bin)
     monkeypatch.setenv("KAS_STUB_RECORD", str(record))
     return record
 
@@ -141,8 +141,8 @@ def crew_agent(tmp_path, monkeypatch):
         ),
         encoding="utf-8",
     )
-    monkeypatch.setattr("kiro_crew.config.paths.kiro_agents_dir", lambda: agents_dir)
-    monkeypatch.setattr("kiro_crew.agent.ensure_agent_materialized", lambda _a: True)
+    monkeypatch.setattr("efm_go.config.paths.kiro_agents_dir", lambda: agents_dir)
+    monkeypatch.setattr("efm_go.agent.ensure_agent_materialized", lambda _a: True)
     return agents_dir
 
 
@@ -178,7 +178,7 @@ class TestModeBinding:
         self, mode_stub, crew_agent, tmp_path, monkeypatch, backend
     ):
         """The projection bookkeeping is KAS-only: a kiro-cli handle keeps the defaults."""
-        from kiro_crew.acp import kas_agents
+        from efm_go.acp import kas_agents
 
         recorded: list = []
         real = kas_agents.projected_auto_approved
@@ -227,7 +227,7 @@ class TestModeBinding:
         self, mode_stub, crew_agent, tmp_path, monkeypatch
     ):
         """session/load re-registers the batch, and the resumed handle records it."""
-        from kiro_crew.acp import kas_agents
+        from efm_go.acp import kas_agents
 
         recorded: list = []
         real = kas_agents.projected_auto_approved

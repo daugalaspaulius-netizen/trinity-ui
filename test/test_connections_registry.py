@@ -7,14 +7,14 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from kiro_crew.connections import (
+from efm_go.connections import (
     RegistryValidationError,
     get_all_providers,
     get_all_registry_providers,
     get_visible_providers,
     stale_l0_baselines,
 )
-from kiro_crew.connections.registry import (
+from efm_go.connections.registry import (
     L0_VERIFICATION_MAX_AGE_DAYS,
     L0_VERIFICATION_WARN_AGE_DAYS,
     REVOKE_VERIFICATION_MAX_AGE_DAYS,
@@ -135,7 +135,7 @@ def test_every_registry_mcp_authorization_server_is_banner_allowlisted():
     """
     from urllib.parse import urlsplit
 
-    from kiro_crew.security import _OAUTH_AUTHORIZATION_ENDPOINTS
+    from efm_go.security import _OAUTH_AUTHORIZATION_ENDPOINTS
 
     consent_host_for_issuer_host = {
         "api.figma.com": "www.figma.com",
@@ -190,7 +190,7 @@ def test_client_id_is_optional_and_unset_for_every_launch_provider():
 def test_every_provider_declares_a_category_from_the_closed_vocabulary():
     """``category`` feeds the directory-coverage report; a free-text value would
     let one typo mint a one-provider bucket that report then counts as coverage."""
-    from kiro_crew.connections.registry import PROVIDER_CATEGORIES
+    from efm_go.connections.registry import PROVIDER_CATEGORIES
 
     for provider in get_all_registry_providers():
         assert provider["category"] in PROVIDER_CATEGORIES, provider["slug"]
@@ -493,7 +493,7 @@ def test_l0_baselines_due_for_re_recording_are_surfaced_without_failing():
     if aging:
         warnings.warn(
             "L0 baselines are due for re-recording: "
-            f"{aging}. Run `python -m kiro_crew.connections.l0_probe --record` "
+            f"{aging}. Run `python -m efm_go.connections.l0_probe --record` "
             "on a networked machine and commit the result.",
             stacklevel=2,
         )
@@ -502,7 +502,7 @@ def test_l0_baselines_due_for_re_recording_are_surfaced_without_failing():
 def test_visible_provider_l0_baselines_have_not_aged_out():
     """HARD tier, visible providers only, after the warn tier's lead time.
 
-    Failing here means running ``python -m kiro_crew.connections.l0_probe
+    Failing here means running ``python -m efm_go.connections.l0_probe
     --record`` on a networked machine and committing the result -- not widening
     the window or hand-editing dates.
     """

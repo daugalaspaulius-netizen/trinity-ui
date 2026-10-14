@@ -16,9 +16,9 @@ from datetime import datetime
 
 import pytest
 
-from kiro_crew.acp._dispatch import parse_prompt_token_usage, parse_usage_cost
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.types import AcpPromptStats, TurnUsage
+from efm_go.acp._dispatch import parse_prompt_token_usage, parse_usage_cost
+from efm_go.acp.client import AcpClient
+from efm_go.acp.types import AcpPromptStats, TurnUsage
 
 # ── parse_usage_cost ─────────────────────────────────────────────────────
 
@@ -341,7 +341,7 @@ class TestClientTracking:
         client._oauth_emitted_servers = set()
         client.last_prompt_stats.apply_cost_cumulative(0.50)
 
-        with patch("kiro_crew.session._untrack_pid"):
+        with patch("efm_go.session._untrack_pid"):
             client._reset_state()
 
         assert client.last_prompt_stats.cost_session_usd == 0.0
@@ -360,7 +360,7 @@ class TestClientTracking:
 
 class TestPersistGateFires:
     def test_claude_seam_row_materializes(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import usage as usage_mod
+        from efm_go.dashboard.handlers import usage as usage_mod
 
         shard_dir = tmp_path / "tokens"
         shard_dir.mkdir()

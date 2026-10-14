@@ -17,7 +17,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.mcp_tools import browser as mod
+from efm_go.mcp_tools import browser as mod
 
 
 @pytest.fixture(autouse=True)

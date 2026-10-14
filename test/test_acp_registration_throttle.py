@@ -18,15 +18,15 @@ import asyncio
 
 import pytest
 
-from kiro_crew.acp.client import (
+from efm_go.acp.client import (
     AcpProcessDied,
     AcpRegistrationRateLimited,
     is_registration_throttle_output,
     registration_rate_limited_error,
     registration_throttle_line,
 )
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.llm_helpers import acp_error_is_transient
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.llm_helpers import acp_error_is_transient
 
 # The sanitized line the field report retained, verbatim shape.
 _THROTTLE_LINE = (
@@ -162,8 +162,8 @@ def test_died_degrades_on_runtime_without_stderr_tail():
 def _provider(runtime, prompt_or_tool_seen: bool = False):
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.acp.session_provider import AcpSessionProvider
-    from kiro_crew.acp.types import AcpPromptStats
+    from efm_go.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.types import AcpPromptStats
 
     handle = MagicMock()
     handle.session_id = "s1"
@@ -182,7 +182,7 @@ def test_translate_dead_types_a_registration_throttled_death(stalled):
     the stall stays a non-transient AcpProcessDied carrying ambiguous_delivery."""
     from unittest.mock import MagicMock
 
-    from kiro_crew.acp.runtime import AcpRuntimeDead, AcpRuntimeStdinStalled
+    from efm_go.acp.runtime import AcpRuntimeDead, AcpRuntimeStdinStalled
 
     runtime = MagicMock()
     runtime.saw_not_logged_in.return_value = False
@@ -207,8 +207,8 @@ def test_translate_dead_auth_wins_over_a_throttle_line():
     in the same tail must not downgrade it to a retryable throttle."""
     from unittest.mock import MagicMock
 
-    from kiro_crew.acp.client import AcpAuthRequired
-    from kiro_crew.acp.runtime import AcpRuntimeDead
+    from efm_go.acp.client import AcpAuthRequired
+    from efm_go.acp.runtime import AcpRuntimeDead
 
     runtime = MagicMock()
     runtime.saw_not_logged_in.return_value = True
@@ -221,7 +221,7 @@ def test_translate_dead_auth_wins_over_a_throttle_line():
 def test_translate_dead_stays_generic_without_the_signature():
     from unittest.mock import MagicMock
 
-    from kiro_crew.acp.runtime import AcpRuntimeDead
+    from efm_go.acp.runtime import AcpRuntimeDead
 
     runtime = MagicMock()
     runtime.saw_not_logged_in.return_value = False
@@ -235,7 +235,7 @@ def test_translate_dead_carries_ambiguous_delivery_onto_the_process_died():
     translation, so the recovery path suppresses a verbatim prompt replay."""
     from unittest.mock import MagicMock
 
-    from kiro_crew.acp.runtime import AcpRuntimeDead
+    from efm_go.acp.runtime import AcpRuntimeDead
 
     runtime = MagicMock()
     runtime.saw_not_logged_in.return_value = False
@@ -265,7 +265,7 @@ def test_died_stays_generic_after_prompt_or_tool_activity():
 def test_translate_dead_stays_generic_after_prompt_or_tool_activity():
     from unittest.mock import MagicMock
 
-    from kiro_crew.acp.runtime import AcpRuntimeDead
+    from efm_go.acp.runtime import AcpRuntimeDead
 
     runtime = MagicMock()
     runtime.saw_not_logged_in.return_value = False
@@ -279,9 +279,9 @@ def test_translate_dead_fails_closed_on_a_handle_without_the_latch():
     """A handle double without the latch must never widen the retry surface."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.acp.runtime import AcpRuntimeDead
-    from kiro_crew.acp.session_provider import AcpSessionProvider
-    from kiro_crew.acp.types import AcpPromptStats
+    from efm_go.acp.runtime import AcpRuntimeDead
+    from efm_go.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.types import AcpPromptStats
 
     handle = MagicMock(spec=["session_id", "memory_mode", "last_prompt_stats", "destroy"])
     handle.session_id = "s1"
@@ -299,7 +299,7 @@ def test_translate_dead_fails_closed_on_a_handle_without_the_latch():
 def test_handle_latch_closes_on_a_delivered_text_chunk():
     """The dispatch accounting latches on the first delivered text chunk, and
     a later throttled death then classifies generically."""
-    from kiro_crew.acp.types import METHOD_SESSION_UPDATE, JsonRpcMessage
+    from efm_go.acp.types import METHOD_SESSION_UPDATE, JsonRpcMessage
 
     h = _handle(_ThrottledRuntime(_THROTTLE_LINE))
     assert h.prompt_or_tool_seen is False
@@ -330,7 +330,7 @@ async def test_client_reader_refuses_once_the_process_saw_work():
     a native child's fanned-out tool call."""
     from collections import deque
 
-    from kiro_crew.acp.client import AcpClient
+    from efm_go.acp.client import AcpClient
 
     c = object.__new__(AcpClient)
     c._stderr_task = None
@@ -348,7 +348,7 @@ async def test_client_reader_fails_closed_without_the_latch_attribute():
     classify rather than widen the retry surface."""
     from collections import deque
 
-    from kiro_crew.acp.client import AcpClient
+    from efm_go.acp.client import AcpClient
 
     c = object.__new__(AcpClient)
     c._stderr_task = None

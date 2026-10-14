@@ -60,7 +60,7 @@ from typing import Any, Callable, Iterator, NoReturn
 
 import pytest
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("KIROCREW_E2E"),
@@ -215,10 +215,10 @@ def _booted(fixture: str) -> Iterator[tuple[Any, _Client]]:
     may write on its first line. See ``_await_memory_recovery``.
     """
     try:
-        from kiro_crew.testing import fake_acp_backend
-        from kiro_crew.testing.harness import fake_acp_backend_launcher, spawn_feature_gateway
+        from efm_go.testing import fake_acp_backend
+        from efm_go.testing.harness import fake_acp_backend_launcher, spawn_feature_gateway
     except ImportError as exc:  # pragma: no cover - packaging regression
-        _unresolved(f"kiro_crew.testing is not importable: {exc}")
+        _unresolved(f"efm_go.testing is not importable: {exc}")
 
     backend_path = Path(str(fake_acp_backend.__file__))
     if not backend_path.is_file():
@@ -403,7 +403,7 @@ def test_seeded_sandbox_mode_boots_and_runs_a_turn(fixture: str) -> None:
     (``sandbox.wrap_argv``'s ``win32 and is_kiro_cli`` branch). Break that branch
     and every other spawn takes the no-backend fail-closed path, which is
     precisely the settings-probe break and what
-    [56f67aa43](https://github.com/kirodotdev/KiroCrew/commit/56f67aa43f00f9484c346a8d1669b39102a63c78)
+    [56f67aa43](https://efmleads.com/commit/56f67aa43f00f9484c346a8d1669b39102a63c78)
     reverted.
 
     Off Windows the expectation is derived, not assumed: a host with a real
@@ -417,7 +417,7 @@ def test_seeded_sandbox_mode_boots_and_runs_a_turn(fixture: str) -> None:
     the product's own backend probe, and on Windows it is unconditionally the
     first, so a regression cannot hide in the second.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     expected_mode = _SEED_SANDBOX_MODES[fixture]
 

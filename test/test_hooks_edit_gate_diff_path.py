@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.hooks import TOOL_DENY, HookManager, HooksConfig
+from efm_go.hooks import TOOL_DENY, HookManager, HooksConfig
 
 #: In the write-only tier: reads pass the sensitive-path keystone, edits are
 #: denied by the write-protected branch. This is what makes the read-allowance
@@ -160,7 +160,7 @@ class TestADiffBlockRoutesOntoTheWritePlane:
         assert decision.action != TOOL_DENY
 
     def test_the_always_enforced_tier_routes_on_the_diff_block_too(self) -> None:
-        from kiro_crew.platform.tool_paths import is_edit_call
+        from efm_go.platform.tool_paths import is_edit_call
 
         assert is_edit_call("", _WRITE_ONLY) is True
         assert is_edit_call("read", _WRITE_ONLY) is True
@@ -169,7 +169,7 @@ class TestADiffBlockRoutesOntoTheWritePlane:
         assert is_edit_call("read", "") is False
 
     def test_governance_classifies_a_kindless_diff_block_call_as_a_write(self) -> None:
-        from kiro_crew.platform.governance import classify_tool_args
+        from efm_go.platform.governance import classify_tool_args
 
         pairs = classify_tool_args("", None, diff_path="/tmp/outside.md")
         assert ("filesystem.write", "/tmp/outside.md") in pairs
@@ -187,8 +187,8 @@ class TestTheClientEventDrivesTheHookGate:
     hand them — are denied by the hook gate."""
 
     def _event(self, diff_path: str):
-        from kiro_crew.acp import _dispatch
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import _dispatch
+        from efm_go.acp.types import JsonRpcMessage
 
         caches = dict(
             tool_input_cache={},
@@ -258,7 +258,7 @@ class TestTheTwoGatesJudgeTheSameSet:
     silently fork again."""
 
     def test_edit_target_candidates_union(self) -> None:
-        from kiro_crew.platform.tool_paths import edit_target_candidates
+        from efm_go.platform.tool_paths import edit_target_candidates
 
         assert list(edit_target_candidates({"path": "/a"}, "/b")) == ["/a", "/b"]
         assert list(edit_target_candidates({"path": "/a"}, "/a")) == ["/a"], "deduped"
@@ -267,7 +267,7 @@ class TestTheTwoGatesJudgeTheSameSet:
         assert edit_target_candidates(None, "") == []
 
     def test_truncated_flag_survives_the_union(self) -> None:
-        from kiro_crew.platform.tool_paths import (
+        from efm_go.platform.tool_paths import (
             _TARGET_PATH_MAX_PATHS,
             edit_target_candidates,
         )
@@ -282,8 +282,8 @@ class TestTheTwoGatesJudgeTheSameSet:
         assert len(candidates) <= _TARGET_PATH_MAX_PATHS
 
     def test_llm_helpers_denial_uses_the_shared_helper(self) -> None:
-        from kiro_crew import llm_helpers
-        from kiro_crew.platform import tool_paths
+        from efm_go import llm_helpers
+        from efm_go.platform import tool_paths
 
         assert (
             getattr(llm_helpers, "edit_target_candidates", None)
@@ -299,8 +299,8 @@ class TestTheReorderGuardStaysArmed:
     walk and assert the edit branch still fails closed on its own reading."""
 
     def test_edit_branch_denies_truncation_without_the_keystone(self, monkeypatch) -> None:
-        import kiro_crew.hooks as hooks_mod
-        from kiro_crew.platform.tool_paths import _TARGET_PATH_MAX_PATHS, TargetPaths
+        import efm_go.hooks as hooks_mod
+        from efm_go.platform.tool_paths import _TARGET_PATH_MAX_PATHS, TargetPaths
 
         # The keystone reads hooks.target_paths; the edit branch reads
         # hooks.edit_target_candidates (which calls platform.tool_paths' own
@@ -336,7 +336,7 @@ class TestAnUnanchoredDiffBlockPathIsDenied:
         assert "relative target path" in decision.reason
 
     def test_relative_diff_path_is_denied_by_the_always_enforced_tier(self) -> None:
-        from kiro_crew.llm_helpers import _edit_target_denial
+        from efm_go.llm_helpers import _edit_target_denial
 
         hit = _edit_target_denial({"command": "create", "fileText": "x"}, "sub/x.md")
         assert hit is not None
@@ -350,7 +350,7 @@ class TestAnUnanchoredDiffBlockPathIsDenied:
         assert decision.action != TOOL_DENY
 
     def test_unanchored_flag_is_set_and_path_withheld(self) -> None:
-        from kiro_crew.platform.tool_paths import edit_target_candidates
+        from efm_go.platform.tool_paths import edit_target_candidates
 
         candidates = edit_target_candidates({"path": "/tmp/ok.md"}, "sub/x.md")
         assert candidates.unanchored is True
@@ -367,7 +367,7 @@ class TestGovernanceClassifiesTheDiffBlockPath:
     and the confinement never binds."""
 
     def test_diff_only_edit_is_classified_for_filesystem_write(self) -> None:
-        from kiro_crew.platform.governance import classify_tool_args
+        from efm_go.platform.governance import classify_tool_args
 
         pairs = classify_tool_args(
             "edit", {"command": "create", "fileText": "x"}, diff_path="/tmp/outside.md"
@@ -375,20 +375,20 @@ class TestGovernanceClassifiesTheDiffBlockPath:
         assert ("filesystem.write", "/tmp/outside.md") in pairs
 
     def test_diff_only_edit_with_no_params_is_classified(self) -> None:
-        from kiro_crew.platform.governance import classify_tool_args
+        from efm_go.platform.governance import classify_tool_args
 
         pairs = classify_tool_args("edit", None, diff_path="/tmp/outside.md")
         assert ("filesystem.write", "/tmp/outside.md") in pairs
 
     def test_params_and_diff_paths_are_both_classified(self) -> None:
-        from kiro_crew.platform.governance import classify_tool_args
+        from efm_go.platform.governance import classify_tool_args
 
         pairs = classify_tool_args("edit", {"path": "/a"}, diff_path="/b")
         assert ("filesystem.write", "/a") in pairs
         assert ("filesystem.write", "/b") in pairs
 
     def test_unanchored_diff_path_emits_the_never_permittable_marker(self) -> None:
-        from kiro_crew.platform.governance import (
+        from efm_go.platform.governance import (
             _UNANCHORED_TARGET_ITEM,
             classify_tool_args,
         )
@@ -398,15 +398,15 @@ class TestGovernanceClassifiesTheDiffBlockPath:
         assert ("filesystem.write", "sub/x.md") not in pairs
 
     def test_truncated_walk_still_emits_the_truncation_marker(self) -> None:
-        from kiro_crew.platform.governance import _TRUNCATED_SCAN_ITEM, classify_tool_args
-        from kiro_crew.platform.tool_paths import _TARGET_PATH_MAX_PATHS
+        from efm_go.platform.governance import _TRUNCATED_SCAN_ITEM, classify_tool_args
+        from efm_go.platform.tool_paths import _TARGET_PATH_MAX_PATHS
 
         flood = {"operations": [{"path": f"/tmp/f{i}"} for i in range(_TARGET_PATH_MAX_PATHS + 5)]}
         pairs = classify_tool_args("edit", flood, diff_path="/tmp/extra")
         assert ("filesystem.write", _TRUNCATED_SCAN_ITEM) in pairs
 
     def test_non_edit_kinds_are_unchanged(self) -> None:
-        from kiro_crew.platform.governance import classify_tool_args
+        from efm_go.platform.governance import classify_tool_args
 
         assert classify_tool_args("read", {"path": "/a"}) == (("filesystem.read", "/a"),)
         assert classify_tool_args("read", None) == ()
@@ -423,7 +423,7 @@ class TestEveryEnforcingCallSiteThreadsTheDiffPath:
         import ast
         from pathlib import Path
 
-        src_root = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        src_root = Path(__file__).resolve().parent.parent / "src" / "efm_go"
         offenders: list[str] = []
         for py in sorted(src_root.rglob("*.py")):
             if "tests" in py.parts:

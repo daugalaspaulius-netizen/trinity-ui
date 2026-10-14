@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import folder_steering
-from kiro_crew.folder_steering import (
+from efm_go import folder_steering
+from efm_go.folder_steering import (
     SteeringOmission,
     collect_folder_steering,
     render_folder_steering,

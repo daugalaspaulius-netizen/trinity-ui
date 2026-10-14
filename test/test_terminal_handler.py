@@ -20,9 +20,9 @@ import pytest
 from aiohttp import web
 from spawn_test_helpers import strip_spawn_shim
 
-from kiro_crew import platform_compat
-from kiro_crew.dashboard import terminal_commands
-from kiro_crew.dashboard.handlers import terminal
+from efm_go import platform_compat
+from efm_go.dashboard import terminal_commands
+from efm_go.dashboard.handlers import terminal
 
 
 @pytest.fixture(autouse=True)
@@ -547,7 +547,7 @@ class TestResolveCwd:
         monkeypatch,
         tmp_path,
     ):
-        from kiro_crew import executors
+        from efm_go import executors
 
         request, registry, ws = invalid_workspace
         entered = asyncio.Event()
@@ -632,7 +632,7 @@ class TestKillSession:
         task.cancel = MagicMock()
         sess = _make_session()
         sess.reader_task = task
-        with patch("os.close"), patch("kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree"):
+        with patch("os.close"), patch("efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree"):
             await terminal._kill_session(sess)
         task.cancel.assert_called_once()
 
@@ -640,7 +640,7 @@ class TestKillSession:
     async def test_closes_master_fd(self):
         sess = _make_session()
         sess.master_fd = 42
-        with patch("os.close") as mock_close, patch("kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree"):
+        with patch("os.close") as mock_close, patch("efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree"):
             await terminal._kill_session(sess)
         mock_close.assert_called_with(42)
         assert sess.master_fd == -1
@@ -649,7 +649,7 @@ class TestKillSession:
     async def test_skips_close_when_fd_negative(self):
         sess = _make_session()
         sess.master_fd = -1
-        with patch("os.close") as mock_close, patch("kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree"):
+        with patch("os.close") as mock_close, patch("efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree"):
             await terminal._kill_session(sess)
         mock_close.assert_not_called()
 
@@ -660,7 +660,7 @@ class TestKillSession:
         # shim rather than os.killpg directly.
         sess = _make_session(alive=True)
         with patch("os.close"), \
-                patch("kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree") as mock_kill:
+                patch("efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree") as mock_kill:
             await terminal._kill_session(sess)
         mock_kill.assert_any_call(12345, platform_compat.SIGTERM)
 
@@ -685,7 +685,7 @@ class TestKillSession:
             return True
 
         with patch("os.close", side_effect=lambda fd: order.append("close")), patch(
-            "kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree",
+            "efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree",
             side_effect=_kill,
         ):
             await terminal._kill_session(sess)
@@ -698,7 +698,7 @@ class TestKillSession:
     async def test_skips_kill_when_process_already_exited(self):
         sess = _make_session(alive=False)
         with patch("os.close"), \
-                patch("kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree") as mock_kill:
+                patch("efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree") as mock_kill:
             await terminal._kill_session(sess)
         mock_kill.assert_not_called()
 
@@ -706,7 +706,7 @@ class TestKillSession:
     async def test_handles_process_lookup_error_on_sigterm(self):
         sess = _make_session(alive=True)
         with patch("os.close"), \
-                patch("kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree",
+                patch("efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree",
                       side_effect=ProcessLookupError):
             await terminal._kill_session(sess)
         # Should not raise
@@ -716,7 +716,7 @@ class TestKillSession:
         sess = _make_session(alive=True)
         sess.proc.wait = AsyncMock(side_effect=[asyncio.TimeoutError, None])
         with patch("os.close"), \
-                patch("kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree") as mock_kill:
+                patch("efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree") as mock_kill:
             await terminal._kill_session(sess)
         calls = [c.args for c in mock_kill.call_args_list]
         assert (12345, platform_compat.SIGTERM) in calls
@@ -742,7 +742,7 @@ class TestKillSession:
             order.append(("kill", sig))
 
         with patch("os.close", side_effect=lambda fd: order.append(("close", fd))), patch(
-            "kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree_async",
+            "efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree_async",
             AsyncMock(side_effect=_kill),
         ):
             await terminal._kill_session(sess)
@@ -768,7 +768,7 @@ class TestKillSession:
             order.append("kill")
 
         with patch("os.close"), patch(
-            "kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree_async",
+            "efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree_async",
             AsyncMock(side_effect=_kill),
         ):
             await terminal._kill_session(sess)
@@ -870,7 +870,7 @@ class TestKillSession:
         monkeypatch.setattr(terminal.platform_compat, "REAP_TIMEOUT_SECS", 0.05)
 
         with patch("os.close") as mock_close, patch(
-            "kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree_async",
+            "efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree_async",
             AsyncMock(),
         ):
             await asyncio.wait_for(terminal._kill_session(sess), timeout=10)
@@ -884,7 +884,7 @@ class TestKillSession:
     async def test_handles_os_error_on_close(self):
         sess = _make_session()
         sess.master_fd = 42
-        with patch("os.close", side_effect=OSError), patch("kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree"):
+        with patch("os.close", side_effect=OSError), patch("efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree"):
             await terminal._kill_session(sess)
         assert sess.master_fd == -1
 
@@ -903,7 +903,7 @@ class TestKillSession:
         sess = _make_session()
         sess.master_fd = 42
         with patch("os.close", side_effect=_record_close), patch(
-            "kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree"
+            "efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree"
         ):
             await terminal._kill_session(sess)
         assert close_threads, "os.close must have run"
@@ -958,7 +958,7 @@ class TestKillSession:
             "run_in_executor",
             side_effect=RuntimeError("cannot schedule new futures after shutdown"),
         ), patch(
-            "kiro_crew.dashboard.handlers.terminal.platform_compat.kill_process_tree"
+            "efm_go.dashboard.handlers.terminal.platform_compat.kill_process_tree"
         ) as mock_kill:
             await terminal._kill_session(sess)
         # The close error was swallowed and teardown continued to the tree-kill.
@@ -1493,7 +1493,7 @@ def _sensitive(*, predicate=None, always=False, raises=False):
     chokepoint), while the per-ENTRY gate calls `is_sensitive_path` directly from
     the terminal module. A test that patched only one of them would silently
     exercise half the guard."""
-    import kiro_crew.hooks as hooks_mod
+    import efm_go.hooks as hooks_mod
     kw = {}
     if raises:
         kw["side_effect"] = OSError
@@ -3218,7 +3218,7 @@ class TestTerminalReservationOwnership:
         stage,
         windows,
     ):
-        from kiro_crew import conpty
+        from efm_go import conpty
 
         o = opening
         entered, release = asyncio.Event(), asyncio.Event()
@@ -3733,7 +3733,7 @@ class TestApiTerminalWs:
 
     @pytest.mark.asyncio
     async def test_windows_conpty_spawn_failure_sends_error(self, monkeypatch):
-        """On Windows a new WS session spawns a ConPTY shell (kiro_crew.conpty);
+        """On Windows a new WS session spawns a ConPTY shell (efm_go.conpty);
         the old 'not supported on Windows' refusal is gone. If the
         spawn fails, the handler pops the placeholder, sends an error frame, and
         closes. WindowsPty is mocked to raise so ``return ws`` is exercised
@@ -3749,7 +3749,7 @@ class TestApiTerminalWs:
 
         with patch.object(terminal.platform_compat, "IS_POSIX", False), \
              patch.object(terminal.platform_compat, "IS_WINDOWS", True), \
-             patch("kiro_crew.conpty.WindowsPty", side_effect=RuntimeError("boom")), \
+             patch("efm_go.conpty.WindowsPty", side_effect=RuntimeError("boom")), \
              patch.object(terminal, "_get_config", return_value={"enabled": True}), \
              patch.object(terminal.web, "WebSocketResponse", return_value=ws), \
              patch.object(terminal, "_sel") as mock_sel:
@@ -3778,7 +3778,7 @@ class TestApiTerminalWs:
 
         with patch.object(terminal.platform_compat, "IS_POSIX", False), \
              patch.object(terminal.platform_compat, "IS_WINDOWS", True), \
-             patch("kiro_crew.conpty.WindowsPty", side_effect=RuntimeError("boom")), \
+             patch("efm_go.conpty.WindowsPty", side_effect=RuntimeError("boom")), \
              patch.object(terminal, "_get_config", return_value={"enabled": True}), \
              patch.object(terminal.web, "WebSocketResponse", return_value=ws), \
              patch.object(terminal, "_sel") as mock_sel:
@@ -5116,7 +5116,7 @@ class TestTerminalWsIntegration:
             def terminate(self, force=True):
                 self._alive = False
 
-        monkeypatch.setattr("kiro_crew.conpty.WindowsPty", _FakeWinPty)
+        monkeypatch.setattr("efm_go.conpty.WindowsPty", _FakeWinPty)
 
         registry: dict = {}
         app = _make_app(registry=registry)
@@ -5784,7 +5784,7 @@ class TestTerminalWsIntegration:
             assert resp.status == 404
 
             # Seed registry directly, then delete
-            from kiro_crew.dashboard.handlers import terminal as _term
+            from efm_go.dashboard.handlers import terminal as _term
 
             registry = _term._get_registry(
                 type("R", (), {"app": client.app})()  # type: ignore[arg-type]
@@ -7354,7 +7354,7 @@ class TestPtyChildEnvStripsPythonStartupVars:
             def terminate(self, force=True):
                 pass
 
-        monkeypatch.setattr("kiro_crew.conpty.WindowsPty", _FakeWinPty)
+        monkeypatch.setattr("efm_go.conpty.WindowsPty", _FakeWinPty)
 
         registry: dict = {}
         app = _make_app(registry=registry)
@@ -7747,12 +7747,12 @@ class TestAbnormalExitNotification:
 
     @staticmethod
     def _bus(notes: list):
-        from kiro_crew.notifications.bus import NotificationBus
+        from efm_go.notifications.bus import NotificationBus
 
         return NotificationBus(sink=notes.append)
 
     def test_system_terminal_is_a_registered_default_channel(self):
-        from kiro_crew.notifications.bus import SYSTEM_CHANNELS
+        from efm_go.notifications.bus import SYSTEM_CHANNELS
 
         assert SYSTEM_CHANNELS["system.terminal"] == "default"
 
@@ -7945,7 +7945,7 @@ class TestShellExitIntegration:
         monkeypatch.setattr(terminal, "_sel", lambda: MagicMock())
 
         notes: list = []
-        from kiro_crew.notifications.bus import NotificationBus
+        from efm_go.notifications.bus import NotificationBus
 
         registry: dict = {}
         app = _make_app(registry=registry)

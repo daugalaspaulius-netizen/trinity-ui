@@ -24,8 +24,8 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import subagent_persistence
-from kiro_crew.subagent_persistence import (
+from efm_go import subagent_persistence
+from efm_go.subagent_persistence import (
     _agent_dir,
     agent_dir_for_display,
     create_agent_folder,
@@ -111,7 +111,7 @@ class TestEmittedResultPointersAreReadable:
     def _notice(self, agent_id: str) -> str:
         import asyncio
 
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         stub = object.__new__(SubagentManager)  # never touched on this branch
         msg = asyncio.run(
@@ -153,7 +153,7 @@ class TestNoEmissionSiteStillUsesTheResolvedHelper:
     stringifies it into a message would otherwise pass unnoticed.
     """
 
-    _SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+    _SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
     def test_agent_dir_is_never_stringified_into_text(self):
         offenders = []

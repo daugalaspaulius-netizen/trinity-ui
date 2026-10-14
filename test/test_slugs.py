@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from kiro_crew.slugs import slug_hash_fallback
+from efm_go.slugs import slug_hash_fallback
 
 _SHAPE_RE = re.compile(r"^[a-z0-9-]+-[0-9a-f]{16}$")
 

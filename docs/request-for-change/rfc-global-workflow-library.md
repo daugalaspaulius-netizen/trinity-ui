@@ -77,7 +77,7 @@ Verified at `749468d42` on 2026-08-25.
 `WorkflowRunStore` persists one JSON record per invocation under
 `<workflows.dir>/runs/`. The record includes the authored script, event stream,
 result, and resume cache, and is rehydrated after a gateway restart
-(`src/kiro_crew/workflows/store.py:1-17`, `81-170`). This is the right automatic
+(`src/efm_go/workflows/store.py:1-17`, `81-170`). This is the right automatic
 behavior: a user can inspect a run, edit its source, rerun it, or resume a prefix
 without first deciding whether the script deserves a permanent name.
 
@@ -338,7 +338,7 @@ Resolves `debug-login-flow`, starts its exact current source, and supplies
 `"reproduce with user 123"` as `ctx.args["input"]`.
 
 The dashboard dispatches the command locally before acquiring or forwarding to
-a harness (`src/kiro_crew/dashboard/chat_runner.py:4965-5003` in the implementation
+a harness (`src/efm_go/dashboard/chat_runner.py:4965-5003` in the implementation
 worktree). This is the critical harness-neutrality boundary: Kiro and KAS cannot
 assign different meanings to the same saved name.
 

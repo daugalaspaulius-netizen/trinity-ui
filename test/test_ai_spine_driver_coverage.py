@@ -28,10 +28,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.apps.builtins.auto_improvement.spine import driver as drv
-from kiro_crew.apps.builtins.auto_improvement.spine import ledger as L
-from kiro_crew.apps.builtins.auto_improvement.spine import push_policy as PP
-from kiro_crew.apps.builtins.auto_improvement.spine.contracts import (
+from efm_go.apps.builtins.auto_improvement.spine import driver as drv
+from efm_go.apps.builtins.auto_improvement.spine import ledger as L
+from efm_go.apps.builtins.auto_improvement.spine import push_policy as PP
+from efm_go.apps.builtins.auto_improvement.spine.contracts import (
     BUG_FAILED_BUILD,
     BUG_FILED,
     BUG_NOT_GREEN,
@@ -46,9 +46,9 @@ from kiro_crew.apps.builtins.auto_improvement.spine.contracts import (
     StageBreakdown,
     Verdict,
 )
-from kiro_crew.apps.builtins.auto_improvement.spine.keeper import DISCARD_NOISE, KEPT
-from kiro_crew.apps.builtins.auto_improvement.spine.pr_pipeline import CrOutcome
-from kiro_crew.apps.builtins.auto_improvement.spine.preflight import PreflightResult
+from efm_go.apps.builtins.auto_improvement.spine.keeper import DISCARD_NOISE, KEPT
+from efm_go.apps.builtins.auto_improvement.spine.pr_pipeline import CrOutcome
+from efm_go.apps.builtins.auto_improvement.spine.preflight import PreflightResult
 
 LOG = logging.getLogger("test.ai_spine_driver")
 
@@ -413,7 +413,7 @@ COMMITTED_HEAD = "c0ffee" + "0" * 34
 @pytest.fixture(autouse=True)
 def _isolate_env(tmp_path, monkeypatch):
     """No real home, no inherited fan-out overrides, no leaked log handlers."""
-    from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup
+    from efm_go.apps.builtins.auto_improvement.backend import clone_setup
 
     monkeypatch.setattr(clone_setup, "_repository_is_safe", lambda _clone: True)
     monkeypatch.setattr(clone_setup, "_push_disabled", lambda _clone: True)
@@ -537,7 +537,7 @@ def test_live_push_is_tolerated_under_an_authorized_direct_commit(tmp_path):
 
 
 def test_direct_commit_never_bypasses_unsafe_repository(tmp_path, monkeypatch):
-    from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup
+    from efm_go.apps.builtins.auto_improvement.backend import clone_setup
 
     monkeypatch.setattr(clone_setup, "_repository_is_safe", lambda _clone: False)
     d = _make(
@@ -672,7 +672,7 @@ def test_preflight_retires_before_interpreting_success_or_failure(tmp_path, monk
 
 
 def test_post_execution_live_urls_retire_the_clone(tmp_path, monkeypatch):
-    from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup
+    from efm_go.apps.builtins.auto_improvement.backend import clone_setup
 
     d = _make(tmp_path)
     monkeypatch.setattr(clone_setup, "_repository_is_safe", lambda _clone: True)
@@ -761,7 +761,7 @@ def test_redact_commit_message_scrubs_and_returns_a_string(tmp_path):
 
 
 def test_redact_commit_message_fails_closed_to_a_fixed_subject(monkeypatch):
-    import kiro_crew.security as sec
+    import efm_go.security as sec
 
     monkeypatch.setattr(sec, "redact", lambda text: (_ for _ in ()).throw(RuntimeError("no")))
     assert drv.Driver._redact_commit_message("anything") == (

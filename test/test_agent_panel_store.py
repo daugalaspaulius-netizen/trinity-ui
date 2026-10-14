@@ -16,7 +16,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent_panel
+from efm_go import agent_panel
 
 CREW = "fleet-crew"
 
@@ -577,12 +577,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _declared_package_data() -> list[str]:
-    """The ``kiro_crew`` globs from setup.cfg's ``[options.package_data]``."""
+    """The ``efm_go`` globs from setup.cfg's ``[options.package_data]``."""
     import configparser
 
     cfg = configparser.ConfigParser()
     cfg.read(REPO_ROOT / "setup.cfg", encoding="utf-8")
-    raw = cfg.get("options.package_data", "kiro_crew", fallback="")
+    raw = cfg.get("options.package_data", "efm_go", fallback="")
     return [
         line.strip()
         for line in raw.splitlines()
@@ -607,7 +607,7 @@ def test_every_shipped_template_is_covered_by_the_declared_package_data():
     declared = _declared_package_data()
     shipped = sorted(agent_panel.shipped_templates_dir().glob("*.html"))
     assert shipped, "no shipped templates found -- this test would be vacuous"
-    pkg = REPO_ROOT / "src" / "kiro_crew"
+    pkg = REPO_ROOT / "src" / "efm_go"
     for path in shipped:
         rel = path.relative_to(pkg).as_posix()
         assert any(fnmatch(rel, glob) for glob in declared), (
@@ -644,7 +644,7 @@ def test_the_template_directory_is_fenced_from_agent_file_tools():
     secret; the threat is authoring markup here. Both halves are pinned so neither
     drifts into the other.
     """
-    from kiro_crew import security
+    from efm_go import security
 
     assert agent_panel.TEMPLATES_DIRNAME not in security._CREW_SECRET_LEAVES
     protected = {
@@ -665,7 +665,7 @@ def test_the_record_is_fenced_from_agent_file_tools_too():
     past ownership resolution AND past the redactors in a single write, with the
     drawer rendering the result.
     """
-    from kiro_crew import security
+    from efm_go import security
 
     assert agent_panel._PANELS_DIRNAME in security._CREW_SECRET_LEAVES
     assert agent_panel._PANELS_DIRNAME in agent_panel.panel_path(CREW).parts
@@ -681,7 +681,7 @@ def test_the_record_is_masked_from_a_sandboxed_command():
     This is why the record is not under ``trust/``: ``trust`` is a declared
     read-write exception for the sandbox, so a record beneath it stayed writable.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     assert agent_panel._PANELS_DIRNAME in sandbox._CREW_HIDDEN_LEAVES
     assert agent_panel._PANELS_DIRNAME not in sandbox._CREW_SANDBOX_VISIBLE_LEAVES
@@ -705,7 +705,7 @@ def test_the_mask_is_materialised_so_it_applies_on_a_fresh_install():
     """
     from pathlib import PurePath
 
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     assert agent_panel._PANELS_DIRNAME in sandbox._CREW_PRECREATE_HIDDEN_DIR_LEAVES
     dir_targets, _files = sandbox._sealable_absent_ceilings()
@@ -741,7 +741,7 @@ def test_the_publishing_tool_never_writes_the_record_itself():
 
 def test_the_record_no_longer_lives_in_the_unfenced_member_space():
     """Pinned as a NEGATIVE so a future tidy-up cannot move it back."""
-    from kiro_crew import members as members_mod
+    from efm_go import members as members_mod
 
     assert members_mod.MEMBERS_DIR_NAME not in agent_panel.panel_path(CREW).parts
 
@@ -940,7 +940,7 @@ def test_the_module_docstring_does_not_describe_the_abandoned_storage():
     # The live layout must be.
     assert f"{agent_panel._PANELS_DIRNAME}/<slug>.json" in doc
 
-    from kiro_crew import sandbox, security
+    from efm_go import sandbox, security
 
     # And every disposition the docstring claims is actually declared.
     assert agent_panel._PANELS_DIRNAME in security._CREW_SECRET_LEAVES
@@ -956,7 +956,7 @@ def test_every_protected_leaf_this_store_uses_refuses_an_alias():
     the answer: whatever leaf this store depends on must be declared no-alias, so a
     fifth leaf cannot be added with the guard silently skipped.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     for leaf in (agent_panel._PANELS_DIRNAME, agent_panel.TEMPLATES_DIRNAME):
         assert leaf in sandbox._CREW_NO_ALIAS_LEAVES, f"{leaf} may be aliased"
@@ -972,7 +972,7 @@ def test_the_mirrored_member_layout_matches_members():
     and a widened pattern on one side would let a name through that the other
     refuses.
     """
-    from kiro_crew import members as members_mod
+    from efm_go import members as members_mod
 
     assert agent_panel._SLUG_RE.pattern == members_mod._SLUG_RE.pattern
 
@@ -984,7 +984,7 @@ def test_the_store_works_as_an_entry_point(tmp_path):
     which imports ``artifacts`` back. The cycle is LATENT whenever something
     else has already imported that chain -- which the test suite always has --
     so a module-scope import reads as green here and raises ``ImportError`` the
-    moment this module is the first ``kiro_crew`` import in a process. Run in a
+    moment this module is the first ``efm_go`` import in a process. Run in a
     subprocess for exactly that reason: importing it in-process proves nothing.
     """
     import subprocess
@@ -996,7 +996,7 @@ def test_the_store_works_as_an_entry_point(tmp_path):
     # an import-only probe and still fail here, which is how the first attempt at
     # this fix read as green.
     probe = (
-        "from kiro_crew import agent_panel;"
+        "from efm_go import agent_panel;"
         " print(agent_panel.panel_path('fleet-crew'));"
         " print(agent_panel.SCHEMA_VERSION)"
     )
@@ -1065,7 +1065,7 @@ def test_the_mirrored_slugify_matches_members(tmp_path):
     over a table of names, so a change on either side fails a test rather than
     silently sending a crew to the wrong template.
     """
-    from kiro_crew import members as members_mod
+    from efm_go import members as members_mod
 
     for name in [
         "Pipeline Conductor",

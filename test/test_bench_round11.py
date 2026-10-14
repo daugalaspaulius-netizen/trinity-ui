@@ -23,9 +23,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.eval.bench.corpus import BenchInstance, BenchSession, BenchTurn
-from kiro_crew.eval.bench.ingest import IngestConfig, IngestError, ingest_instance
-from kiro_crew.vector_memory import _EPISODIC_TEXT_MAX
+from efm_go.eval.bench.corpus import BenchInstance, BenchSession, BenchTurn
+from efm_go.eval.bench.ingest import IngestConfig, IngestError, ingest_instance
+from efm_go.vector_memory import _EPISODIC_TEXT_MAX
 
 
 def _instance_with(text: str) -> BenchInstance:
@@ -97,7 +97,7 @@ def test_a_fragment_exactly_at_the_limit_is_accepted(tmp_path: Path) -> None:
     assumed, because that off-by-the-prefix is exactly the kind of thing a hardcoded
     length would get wrong.
     """
-    from kiro_crew.eval.bench.ingest import fragment_text
+    from efm_go.eval.bench.ingest import fragment_text
 
     probe = BenchTurn(turn_id="t1", session_id="s1", speaker="A", text="x")
     overhead = len(fragment_text(probe, speaker_prefix=True)) - 1
@@ -138,12 +138,12 @@ def test_undersized_text_is_reported_not_refused(tmp_path: Path) -> None:
 def test_an_os_error_is_reported_at_the_cli_boundary(monkeypatch) -> None:
     """A read-only output directory is not a refusal — `BenchRefusal` does not cover
     it — but it is still a failed run rather than a crashed program."""
-    from kiro_crew import cli_bench
+    from efm_go import cli_bench
 
     def boom(*_a: object, **_k: object):
         raise PermissionError(13, "Permission denied", "/nonwritable/reports")
 
-    monkeypatch.setattr("kiro_crew.eval.bench.datasets.ensure", boom)
+    monkeypatch.setattr("efm_go.eval.bench.datasets.ensure", boom)
     rc = cli_bench.bench_cmd(argparse.Namespace(bench_action="fetch", corpus="locomo10"))
     assert rc == 1
 
@@ -158,11 +158,11 @@ def test_a_programming_error_is_not_swallowed(monkeypatch) -> None:
     A `TypeError` from a bug in this package must still surface as a traceback --
     swallowing it would turn a defect into a quiet exit code.
     """
-    from kiro_crew import cli_bench
+    from efm_go import cli_bench
 
     def bug(*_a: object, **_k: object):
         raise TypeError("a real bug, not an environmental failure")
 
-    monkeypatch.setattr("kiro_crew.eval.bench.datasets.ensure", bug)
+    monkeypatch.setattr("efm_go.eval.bench.datasets.ensure", bug)
     with pytest.raises(TypeError):
         cli_bench.bench_cmd(argparse.Namespace(bench_action="fetch", corpus="locomo10"))

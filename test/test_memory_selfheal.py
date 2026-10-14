@@ -15,9 +15,9 @@ from __future__ import annotations
 import threading
 from datetime import date, datetime, timedelta
 
-from kiro_crew import memory as memory_module
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.memory import MemoryStore, _is_corruption_error
+from efm_go import memory as memory_module
+from efm_go._sqlite_compat import sqlite3
+from efm_go.memory import MemoryStore, _is_corruption_error
 
 
 def _steady_clock(day: date, next_day: date) -> type[datetime]:

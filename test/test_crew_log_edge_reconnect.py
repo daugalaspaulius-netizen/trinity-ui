@@ -20,8 +20,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import emit
+from efm_go import crew_log as lg
+from efm_go.crew_log import emit
 
 SESSION = "reconnect-edge-001"
 

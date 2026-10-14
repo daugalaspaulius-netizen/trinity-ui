@@ -30,7 +30,7 @@ const SINGLE_PREFIX = '[Subagent completion event]'
 const BATCH_PREFIX = '[Subagent batch completion event]'
 
 /** Key under `message.meta` where the gateway stamps the structured header
- *  facts. Mirrors `SUBAGENT_COMPLETION_META_KEY` in src/kiro_crew/constants.py —
+ *  facts. Mirrors `SUBAGENT_COMPLETION_META_KEY` in src/efm_go/constants.py —
  *  the two names are one wire contract and must stay in lockstep. */
 const META_KEY = 'subagentCompletion'
 

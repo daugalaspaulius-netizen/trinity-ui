@@ -13,9 +13,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import artifacts as art_mod
-from kiro_crew.artifacts import ArtifactComment, ArtifactStore, filter_comments_for_forward
-from kiro_crew.dashboard.handlers import artifacts as h
+from efm_go import artifacts as art_mod
+from efm_go.artifacts import ArtifactComment, ArtifactStore, filter_comments_for_forward
+from efm_go.dashboard.handlers import artifacts as h
 
 # ── Unit tests for filter_comments_for_forward ───────────────────────────────
 

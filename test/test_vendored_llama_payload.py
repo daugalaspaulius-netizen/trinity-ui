@@ -48,8 +48,8 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.embeddings as embeddings_mod
-from kiro_crew.embeddings import (
+import efm_go.embeddings as embeddings_mod
+from efm_go.embeddings import (
     _LIB_PATH_ENV,
     _LIBS_DIR_NAME,
     _REQUIRED_VENDORED_LIBS,
@@ -58,7 +58,7 @@ from kiro_crew.embeddings import (
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_VENDOR_SRC = _REPO_ROOT / "src" / "kiro_crew" / "_vendor"
+_VENDOR_SRC = _REPO_ROOT / "src" / "efm_go" / "_vendor"
 _LIBS_SRC = _VENDOR_SRC / _LIBS_DIR_NAME
 
 # `*.so` is the glob that stripped libllama.so. Any required lib matching a
@@ -140,7 +140,7 @@ def test_manifest_reincludes_libs_after_the_excludes() -> None:
         for line in (_REPO_ROOT / "MANIFEST.in").read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.strip().startswith("#")
     ]
-    reinclude = f"recursive-include src/kiro_crew/_vendor/{_LIBS_DIR_NAME} *"
+    reinclude = f"recursive-include src/efm_go/_vendor/{_LIBS_DIR_NAME} *"
     assert reinclude in lines, "MANIFEST.in must re-include the vendored native libs"
 
     last_reinclude = max(i for i, line in enumerate(lines) if line == reinclude)
@@ -221,7 +221,7 @@ def test_manifest_rules_keep_every_required_lib() -> None:
             rules += [(kind, args[0].rstrip("/"), pat) for pat in args[1:]]
 
     for plat, required in _REQUIRED_VENDORED_LIBS.items():
-        directory = f"src/kiro_crew/_vendor/{_LIBS_DIR_NAME}/{plat}"
+        directory = f"src/efm_go/_vendor/{_LIBS_DIR_NAME}/{plat}"
         for name in required:
             shipped = False
             for kind, rule_dir, pattern in rules:
@@ -353,11 +353,11 @@ class TestPayloadVerifierWithoutRuntimeDependencies:
         """Both archives pass when complete; either missing member stays fatal."""
         wheel = tmp_path / "kirocrew-0.0.0-py3-none-any.whl"
         sdist = tmp_path / "kirocrew-0.0.0.tar.gz"
-        missing = f"kiro_crew/_vendor/{_LIBS_DIR_NAME}/linux_x86_64/libllama.so"
+        missing = f"efm_go/_vendor/{_LIBS_DIR_NAME}/linux_x86_64/libllama.so"
         with zipfile.ZipFile(wheel, "w") as whl, tarfile.open(sdist, "w:gz") as tar:
             for platform, required in _REQUIRED_VENDORED_LIBS.items():
                 for name in required:
-                    rel = f"kiro_crew/_vendor/{_LIBS_DIR_NAME}/{platform}/{name}"
+                    rel = f"efm_go/_vendor/{_LIBS_DIR_NAME}/{platform}/{name}"
                     if rel != missing or missing_from not in ("wheel", "both"):
                         whl.writestr(rel, b"stub")
                     if rel != missing or missing_from not in ("sdist", "both"):

@@ -15,12 +15,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.discord.renderer import DiscordApprovalDecider
-from kiro_crew.messaging.approval import PendingApprovals
-from kiro_crew.slack.renderer import SlackApprovalDecider
-from kiro_crew.teams.approvals import TeamsApprovalDecider, registry_key
-from kiro_crew.telegram.renderer import TelegramApprovalDecider
-from kiro_crew.webex.cards import LiveChoices
+from efm_go.discord.renderer import DiscordApprovalDecider
+from efm_go.messaging.approval import PendingApprovals
+from efm_go.slack.renderer import SlackApprovalDecider
+from efm_go.teams.approvals import TeamsApprovalDecider, registry_key
+from efm_go.telegram.renderer import TelegramApprovalDecider
+from efm_go.webex.cards import LiveChoices
 
 #: Any non-ASCII character raises inside a bare ``str``/``str`` compare.
 _NON_ASCII = "é"
@@ -41,7 +41,7 @@ def _event(request_id: str | int = 1) -> SimpleNamespace:
 
 class TestSharedCompare:
     def test_the_shared_compare_is_total_over_every_str(self) -> None:
-        from kiro_crew.messaging.renderer import nonce_eq
+        from efm_go.messaging.renderer import nonce_eq
 
         assert nonce_eq("n1", "n1") is True
         assert nonce_eq("n1", _NON_ASCII) is False
@@ -51,7 +51,7 @@ class TestSharedCompare:
         assert nonce_eq(_NON_ASCII, _NON_ASCII) is True
 
     def test_an_empty_side_denies(self) -> None:
-        from kiro_crew.messaging.renderer import nonce_eq
+        from efm_go.messaging.renderer import nonce_eq
 
         assert nonce_eq("", "") is False
         assert nonce_eq("n1", "") is False

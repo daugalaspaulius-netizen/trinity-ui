@@ -20,7 +20,7 @@ superseded-by: []
 > produced it.
 
 - Status: partial — the descriptor registry and shared lifecycle now ship in
-  `src/kiro_crew/channels.py` and `src/kiro_crew/messaging/registry.py`, with ten
+  `src/efm_go/channels.py` and `src/efm_go/messaging/registry.py`, with ten
   built-in channels registered. The shared `messaging/dispatch.py` pipeline is
   widely adopted, but Slack, Discord, and Telegram retain channel-specific turn
   seams, and descriptor-driven config schemas plus a generic settings UI remain
@@ -28,7 +28,7 @@ superseded-by: []
   and decisions rather than describing every later landing.
 - Author: zezhexu
 - Created: 2026-07-28
-- Related: rfc-federated-app-platform.md (frontend loading + registry this RFC rides), PR #572 + PR #627 (the parallel channel landings that produced the 9-file conflict set cited below), `kiro_crew/apps/module_loader.py` (SEC-012 trust model this RFC adopts)
+- Related: rfc-federated-app-platform.md (frontend loading + registry this RFC rides), PR #572 + PR #627 (the parallel channel landings that produced the 9-file conflict set cited below), `efm_go/apps/module_loader.py` (SEC-012 trust model this RFC adopts)
 
 ## 1. Problem statement
 

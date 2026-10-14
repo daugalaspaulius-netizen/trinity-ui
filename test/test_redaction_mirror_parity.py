@@ -48,7 +48,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from kiro_crew.security import _CREDENTIAL_PATTERNS
+from efm_go.security import _CREDENTIAL_PATTERNS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -58,15 +58,15 @@ ROOT = Path(__file__).resolve().parents[1]
 # any of them — or in `__init__.py` — would be just as live. Scanning the whole
 # tree keeps the absence guard below correct across further splits, which is the
 # failure mode that already retired the single-file path this replaced.
-BACKEND_PKG = ROOT / "src" / "kiro_crew" / "security"
+BACKEND_PKG = ROOT / "src" / "efm_go" / "security"
 # The module that owns the exfil URL classifier today. Named separately so a
 # guard can point at the enforcing site while the sweep stays package-wide.
 BACKEND_EXFIL = BACKEND_PKG / "exfil.py"
 PREPARE_PR = (
-    ROOT / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev" / "kirocrew-prepare-pr" / "scripts" / "pr_findings.py"
+    ROOT / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev" / "kirocrew-prepare-pr" / "scripts" / "pr_findings.py"
 )
 FRONTEND = ROOT / "website" / "src" / "utils" / "sanitize.ts"
-TOKEN_MINT = ROOT / "src" / "kiro_crew" / "instances" / "token_mint.py"
+TOKEN_MINT = ROOT / "src" / "efm_go" / "instances" / "token_mint.py"
 
 
 def _jwt_alternatives() -> tuple[str, str]:
@@ -293,7 +293,7 @@ class TestPrefilledIssueCarveOutParity:
         If the structured path is removed or renamed, the pressure to re-add a
         redactor waiver returns and this test is the place that says so.
         """
-        diagnostics = (ROOT / "src" / "kiro_crew" / "diagnostics.py").read_text(encoding="utf-8")
+        diagnostics = (ROOT / "src" / "efm_go" / "diagnostics.py").read_text(encoding="utf-8")
         assert "def _issue_url(" in diagnostics
         assert "github_issue_url" in diagnostics
         renderer = (

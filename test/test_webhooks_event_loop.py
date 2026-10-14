@@ -22,8 +22,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew import webhooks
-from kiro_crew.dashboard.handlers import hooks as hooks_handlers
+from efm_go import webhooks
+from efm_go.dashboard.handlers import hooks as hooks_handlers
 
 
 class _LoopGuard:

@@ -8,12 +8,12 @@ from typing import Callable, cast
 
 import pytest
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 pytestmark = pytest.mark.xdist_group(name="tree_scan_internal_python_isolation")
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_SRC_ROOT = _REPO_ROOT / "src" / "kiro_crew"
+_SRC_ROOT = _REPO_ROOT / "src" / "efm_go"
 
 # Each row owns an argv that can run under the desktop bundle's interpreter.
 # Keeping the inventory explicit makes a new process boundary a reviewed change.
@@ -91,15 +91,15 @@ def test_isolated_python_argv_disables_user_site_without_weakening_I(monkeypatch
     monkeypatch.setattr(site, "ENABLE_USER_SITE", False)
     monkeypatch.setattr(platform_compat, "is_bundled_interpreter", lambda: False)
 
-    assert isolated("-m", "kiro_crew") == [sys.executable, "-s", "-m", "kiro_crew"]
-    assert isolated("-mkiro_crew.apps.x") == [sys.executable, "-s", "-mkiro_crew.apps.x"]
+    assert isolated("-m", "efm_go") == [sys.executable, "-s", "-m", "efm_go"]
+    assert isolated("-mefm_go.apps.x") == [sys.executable, "-s", "-mefm_go.apps.x"]
     assert isolated("-cimport server") == [sys.executable, "-s", "-cimport server"]
-    assert isolated("-s", "-m", "kiro_crew") == [sys.executable, "-s", "-m", "kiro_crew"]
-    assert isolated("-us", "-m", "kiro_crew") == [
+    assert isolated("-s", "-m", "efm_go") == [sys.executable, "-s", "-m", "efm_go"]
+    assert isolated("-us", "-m", "efm_go") == [
         sys.executable,
         "-us",
         "-m",
-        "kiro_crew",
+        "efm_go",
     ]
     assert isolated("-I", "-c", "pass") == [sys.executable, "-I", "-c", "pass"]
     assert isolated("server.py", executable="/opt/app/python") == [
@@ -114,12 +114,12 @@ def test_isolated_python_argv_preserves_nonbundled_user_site_parent(monkeypatch)
     monkeypatch.setattr(site, "ENABLE_USER_SITE", True)
     monkeypatch.setattr(platform_compat, "is_bundled_interpreter", lambda: False)
 
-    assert isolated("-m", "kiro_crew") == [sys.executable, "-m", "kiro_crew"]
-    assert isolated("-m", "kiro_crew", force_isolation=True) == [
+    assert isolated("-m", "efm_go") == [sys.executable, "-m", "efm_go"]
+    assert isolated("-m", "efm_go", force_isolation=True) == [
         sys.executable,
         "-s",
         "-m",
-        "kiro_crew",
+        "efm_go",
     ]
 
 
@@ -128,7 +128,7 @@ def test_bundled_parent_isolates_every_helper_routed_argv(
 ) -> None:
     isolated = cast(Callable[..., list[str]], platform_compat.isolated_python_argv)
 
-    assert isolated("-m", "kiro_crew") == [sys.executable, "-s", "-m", "kiro_crew"]
+    assert isolated("-m", "efm_go") == [sys.executable, "-s", "-m", "efm_go"]
     assert isolated("-m", "pip") == [sys.executable, "-s", "-m", "pip"]
     assert isolated("server.py", executable="/bundle/python") == [
         "/bundle/python",

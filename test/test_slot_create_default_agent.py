@@ -21,8 +21,8 @@ from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard import chat_handlers
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard import chat_handlers
 
 
 def _stub_config(default_agent: str) -> KiroCrewConfig:
@@ -52,8 +52,8 @@ async def _create_slot(state: Any, payload: dict[str, Any]) -> None:
 async def test_owner_create_waits_for_memory_recovery_before_allocating(
     dashboard_state, monkeypatch, agent, recovery_error
 ):
-    from kiro_crew import memory_startup
-    from kiro_crew.session_agent_selection import session_agent_selection_name
+    from efm_go import memory_startup
+    from efm_go.session_agent_selection import session_agent_selection_name
 
     cfg = _alias_config(default={"kiro_agent": "kirocrew"}, worker={"kiro_agent": "kirocrew"})
     cfg.save()
@@ -173,8 +173,8 @@ async def test_unloadable_config_still_creates_with_empty_agent(
 
 def _alias_config(**aliases: Any) -> KiroCrewConfig:
     """A real config with each named member bound to its own private store."""
-    from kiro_crew.config.loader import KiroCrewAgentConfig
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewAgentConfig
+    from efm_go.memory_stores import provision_member_memory
 
     cfg = KiroCrewConfig()
     cfg.agents = {name: KiroCrewAgentConfig(**fields) for name, fields in aliases.items()}
@@ -199,7 +199,7 @@ class TestSameBindingGuard:
     async def test_comparison_runs_off_loop_and_refuses_changed_selection(
         self, dashboard_state, monkeypatch, change_project
     ):
-        import kiro_crew.config.loader as loader_mod
+        import efm_go.config.loader as loader_mod
 
         cfg = _alias_config(default={"kiro_agent": "kirocrew"})
         monkeypatch.setattr(loader_mod, "_MATERIALIZED_AGENTS_READY", True)
@@ -269,7 +269,7 @@ class TestSameBindingGuard:
     ) -> None:
         """Two names resolving to the same binding pass the guard, and the
         bypass of the 409 boundary emits its own SEL outcome."""
-        import kiro_crew.config.loader as loader_mod
+        import efm_go.config.loader as loader_mod
 
         cfg = _alias_config(default={"kiro_agent": "kirocrew"})
         monkeypatch.setattr(loader_mod, "_MATERIALIZED_AGENTS_READY", True)
@@ -297,7 +297,7 @@ class TestSameBindingGuard:
         request naming the default alias: without the slot's project scope both
         names resolve to default bindings and the guard would wave the request
         through while dispatch runs the project agent."""
-        import kiro_crew.config.loader as loader_mod
+        import efm_go.config.loader as loader_mod
 
         cfg = _alias_config(default={"kiro_agent": "kirocrew"})
         monkeypatch.setattr(chat_handlers, "KiroCrewConfig", SimpleNamespace(load=lambda: cfg))
@@ -362,7 +362,7 @@ class TestSameBindingGuard:
 async def test_create_resolves_off_loop_without_adopting_a_concurrent_slot(
     dashboard_state, monkeypatch, replace_slot
 ):
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     cfg = _alias_config(default={"kiro_agent": "kirocrew"}, worker={"kiro_agent": "kirocrew"})
     monkeypatch.setattr(chat_handlers, "KiroCrewConfig", SimpleNamespace(load=lambda: cfg))
@@ -409,7 +409,7 @@ async def test_create_resolves_off_loop_without_adopting_a_concurrent_slot(
 async def test_switch_resolves_off_loop_and_refuses_rebound_slot_before_reset(
     dashboard_state, monkeypatch, change
 ):
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     cfg = _alias_config(default={"kiro_agent": "kirocrew"}, worker={"kiro_agent": "kirocrew"})
     await asyncio.to_thread(cfg.save)

@@ -16,13 +16,13 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import chat_handlers
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.handlers import session_control as handlers_sc
-from kiro_crew.mcp_dashboard import TABLE
-from kiro_crew.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
-from kiro_crew.mcp_tools.table import Caller, ToolContext
+from efm_go.dashboard import chat_handlers
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.handlers import session_control as handlers_sc
+from efm_go.mcp_dashboard import TABLE
+from efm_go.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
+from efm_go.mcp_tools.table import Caller, ToolContext
 
 
 @pytest.fixture(autouse=True)
@@ -213,7 +213,7 @@ def test_a_running_turn_is_refused(tmp_path, eager):
 
 
 def test_a_turn_the_provider_reports_is_refused(tmp_path, eager):
-    from kiro_crew.providers.base import LLMProvider
+    from efm_go.providers.base import LLMProvider
 
     state, caller, target = _world(tmp_path)
     busy = MagicMock(spec=LLMProvider)
@@ -511,7 +511,7 @@ def test_route_renders_busy_as_409(tmp_path, eager):
 def test_the_route_is_in_the_strict_internal_set():
     """Off this set the caller's X-Internal-Secret is ignored and the tool is
     unreachable in production."""
-    from kiro_crew.dashboard.server import _STRICT_INTERNAL_API_PATHS
+    from efm_go.dashboard.server import _STRICT_INTERNAL_API_PATHS
 
     assert "/api/session-control/reload" in _STRICT_INTERNAL_API_PATHS
 
@@ -598,7 +598,7 @@ def test_tool_reports_a_degraded_teardown_as_a_completed_reload():
 
 
 def test_tool_takes_no_agent_model_or_workspace():
-    from kiro_crew.mcp_dashboard import _tool_definitions
+    from efm_go.mcp_dashboard import _tool_definitions
 
     (tool,) = [t for t in _tool_definitions() if t["name"] == "session_reload"]
     assert set(tool["inputSchema"]["properties"]) == {"target"}

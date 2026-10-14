@@ -23,8 +23,8 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.agent_discovery as agent_discovery
-from kiro_crew.agent_discovery import (
+import efm_go.agent_discovery as agent_discovery
+from efm_go.agent_discovery import (
     agent_skill_globs,
     clear_list_agents_cache,
     parsed_agent_specs,
@@ -273,7 +273,7 @@ class TestAgentSkillGlobsCachedPath:
 
 class TestDashboardAdapterSharesSnapshot:
     def test_load_parsed_agents_reads_through_the_snapshot(self, fake_home, monkeypatch):
-        import kiro_crew.dashboard.handlers._shared as shared
+        import efm_go.dashboard.handlers._shared as shared
 
         agents_dir = _agents_dir(fake_home)
         _write_agent(agents_dir, "a", {"name": "alpha", "resources": []})

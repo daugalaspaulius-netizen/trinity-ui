@@ -21,11 +21,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.eval.bench.corpus import CAT_SINGLE_HOP, BenchQuery
-from kiro_crew.eval.bench.ingest import IngestError
-from kiro_crew.eval.bench.retrieval import RetrievalConfig, retrieve_for_query
-from kiro_crew.eval.bench.run import write_report
-from kiro_crew.eval.bench.safepath import UnsafePathError
+from efm_go.eval.bench.corpus import CAT_SINGLE_HOP, BenchQuery
+from efm_go.eval.bench.ingest import IngestError
+from efm_go.eval.bench.retrieval import RetrievalConfig, retrieve_for_query
+from efm_go.eval.bench.run import write_report
+from efm_go.eval.bench.safepath import UnsafePathError
 
 
 def _link_or_skip(link: Path, target: Path) -> None:
@@ -56,7 +56,7 @@ class _FakeOutcome:
 @pytest.fixture(autouse=True)
 def _plain_report(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.eval.bench.run.format_report", lambda outcome: "# report\n"
+        "efm_go.eval.bench.run.format_report", lambda outcome: "# report\n"
     )
 
 

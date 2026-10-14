@@ -130,7 +130,7 @@ describe('ConnectionsPanel — one card per pre-registered provider', () => {
     await mount()
 
     const link = within(cardFor('github')).getByRole('link', { name: /Open the GitHub setup guide/ })
-    expect(link).toHaveAttribute('href', 'https://github.com/kirodotdev/KiroCrew/blob/main/docs/guides/oauth-app-registration/github.md')
+    expect(link).toHaveAttribute('href', 'https://efmleads.com/blob/main/docs/guides/oauth-app-registration/github.md')
     expect(link).toHaveAttribute('target', '_blank')
   })
 

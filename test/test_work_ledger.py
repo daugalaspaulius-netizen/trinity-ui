@@ -24,8 +24,8 @@ from unittest import mock
 import pytest
 from windows_sim import read_sharing_violation
 
-from kiro_crew import atomic_write, platform_compat
-from kiro_crew import work_ledger as wl
+from efm_go import atomic_write, platform_compat
+from efm_go import work_ledger as wl
 
 CONDUCTOR = "chat-1-conductor"
 WORKER = "chat-2-worker"
@@ -120,8 +120,8 @@ def test_the_stored_bound_is_the_folds_item_ceiling():
     guard is defensive. Both sides read the same ``work_vocab`` value; this pins
     that neither has grown a number of its own.
     """
-    from kiro_crew.crew_log import projection
-    from kiro_crew.work_vocab import WORK_STORED_ITEM_LIMIT
+    from efm_go.crew_log import projection
+    from efm_go.work_vocab import WORK_STORED_ITEM_LIMIT
 
     assert wl.MAX_STORED_ITEMS_PER_CONDUCTOR == projection.WORK_ITEM_LIMIT
     assert wl.MAX_STORED_ITEMS_PER_CONDUCTOR == WORK_STORED_ITEM_LIMIT
@@ -148,7 +148,7 @@ def test_a_model_supplied_string_cannot_reach_a_path_component(bad):
 
 
 def test_directory_name_is_session_ledgers_fold_not_a_copy():
-    from kiro_crew import session_ledger
+    from efm_go import session_ledger
 
     assert wl._store_name is session_ledger._store_name
     assert not hasattr(wl, "_STORE_NAME_UNSAFE")
@@ -505,7 +505,7 @@ def _ledger_conductor_accept_eval() -> Path:
     script = (
         Path(__file__).resolve().parents[1]
         / "src"
-        / "kiro_crew"
+        / "efm_go"
         / "builtin_skills"
         / "goal-conductor"
         / "scripts"
@@ -810,7 +810,7 @@ def test_accept_batch_is_what_accept_eval_reads_end_to_end():
     script = (
         Path(__file__).resolve().parents[1]
         / "src"
-        / "kiro_crew"
+        / "efm_go"
         / "builtin_skills"
         / "goal-conductor"
         / "scripts"
@@ -2111,7 +2111,7 @@ def test_the_guards_tolerate_a_prefixed_leaf_resolve(monkeypatch):
     simulates it where it arises: ``Path.resolve`` returning the
     extended-length form of the correct answer.
     """
-    import kiro_crew.session_ledger as sl
+    import efm_go.session_ledger as sl
 
     original_resolve = Path.resolve
 
@@ -2185,7 +2185,7 @@ def test_the_guards_share_one_containment_helper(monkeypatch):
     and watching both guards refuse is what makes the routing itself a tested
     property rather than a convention.
     """
-    import kiro_crew.work_ledger as wl_module
+    import efm_go.work_ledger as wl_module
 
     monkeypatch.setattr(wl_module, "resolved_within", lambda base, name: None)
     with pytest.raises(wl.WorkLedgerError) as excinfo:
@@ -2340,15 +2340,15 @@ _PERMITTED_STORE_IMPORTERS = frozenset(
 
 #: An import of THE STORE, spelled by its own module path. A bare
 #: ``import work_ledger`` substring is not enough: ``dashboard/handlers/work_ledger.py``
-#: shares the basename, so ``from kiro_crew.dashboard.handlers import work_ledger``
+#: shares the basename, so ``from efm_go.dashboard.handlers import work_ledger``
 #: (``server.py``'s deferred route binder) matched and was reported as a store
-#: importer. Anchoring on ``kiro_crew.work_ledger`` / ``from kiro_crew import ...
+#: importer. Anchoring on ``efm_go.work_ledger`` / ``from efm_go import ...
 #: work_ledger`` tells the two apart, and the guard's intent is unchanged.
 _STORE_IMPORT_RE = re.compile(
     r"^\s*(?:"
-    r"from\s+kiro_crew\.work_ledger\s+import"
-    r"|import\s+kiro_crew\.work_ledger"
-    r"|from\s+kiro_crew\s+import\s+[^\n]*\bwork_ledger\b"
+    r"from\s+efm_go\.work_ledger\s+import"
+    r"|import\s+efm_go\.work_ledger"
+    r"|from\s+efm_go\s+import\s+[^\n]*\bwork_ledger\b"
     r")",
     re.MULTILINE,
 )
@@ -2363,7 +2363,7 @@ def test_only_the_phase_2_seams_import_the_module():
     fails, and a listed module that does not import the store fails too, so the
     allowlist is data rather than lore.
     """
-    package = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+    package = Path(__file__).resolve().parents[1] / "src" / "efm_go"
     # Excluded by PATH, not by basename: the routes module is also called
     # ``work_ledger.py``, and a basename filter skipped it — hiding the very seam
     # this allowlist exists to name.
@@ -2984,7 +2984,7 @@ def test_a_writer_queued_behind_a_purge_refuses_instead_of_publishing():
     lock_path = directory / ".lock"
     import shutil
 
-    from kiro_crew import session_ledger as sl
+    from efm_go import session_ledger as sl
 
     with open(lock_path, "r+") as handle:
         # The purge runs to completion "while this writer waits": the store and
@@ -3004,7 +3004,7 @@ def test_a_writer_queued_behind_a_purge_refuses_instead_of_publishing():
 def test_every_store_lock_runs_the_inode_check_after_acquiring(monkeypatch):
     """The check is wired into ``_open_lock`` itself, so no store lock -- conductor,
     item or binding -- can be taken without it."""
-    from kiro_crew import session_ledger as sl
+    from efm_go import session_ledger as sl
 
     seen: list[str] = []
     real = sl.require_lock_inode

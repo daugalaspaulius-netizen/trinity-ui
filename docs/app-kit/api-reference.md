@@ -416,7 +416,7 @@ both wire shapes.
 WebSocket event types include `chat_chunk`, `chat_thinking`, `chat_status`,
 `chat_message`, `chat_done`, `tool_call`, `tool_result`, `notification`, `slots`,
 `slot_title`, `dashboard`, `log`, `refresh`, `approval`, `approval_resolved` and
-`subagent_done`. `src/kiro_crew/dashboard/ws_event_scope.py` owns the full set of
+`subagent_done`. `src/efm_go/dashboard/ws_event_scope.py` owns the full set of
 emitted types and how each is scoped to an app; read it rather than this list
 when you need every type.
 
@@ -452,9 +452,9 @@ Any other id, foreign or missing, answers 403 `owner_only`. A job without an
 app stamp is owner-only. An acknowledgement's `ts` must name a cron
 notification of that same job.
 
-#### Watching something without paying for a model call (`kiro_crew.irq`)
+#### Watching something without paying for a model call (`efm_go.irq`)
 
-> **Provisional surface.** `kiro_crew.irq` has two in-tree probes: `gh_pr`
+> **Provisional surface.** `efm_go.irq` has two in-tree probes: `gh_pr`
 > (`PrWatchProbe`) and `work_ledger` (`WorkLedgerProbe`). Script crons and the
 > in-process autonudge loop both drive it. Treat the shapes below as subject
 > to change: build on them, but expect `Observation` / `Tick` to gain fields,
@@ -465,7 +465,7 @@ queue depth — should not schedule an **agent** cron to go look. That spends a
 full model turn per check, and on a quiet subject every one of those turns says
 "nothing changed".
 
-Schedule a **script** cron instead and build it on `kiro_crew.irq`, the
+Schedule a **script** cron instead and build it on `efm_go.irq`, the
 interrupt controller. The script runs in a subprocess with no model call at
 all; a quiet tick is free. Only an unexpected observation raises a wake, and the
 wake is delivered into the session that armed the cron as a real agent turn.
@@ -482,7 +482,7 @@ and each failure looks like success.
 ```python
 import json
 
-from kiro_crew.irq import Observation, Probe, Severity, Tick, run
+from efm_go.irq import Observation, Probe, Severity, Tick, run
 
 
 class DeployProbe(Probe):
@@ -974,7 +974,7 @@ The standalone package exports `KiroCrewClient`, `KiroCrewError`, `ErrorCode`,
 `WsClient`, `WsEvent` and `GATEWAY_CONFIG_KEYS`. It does not export
 `AppManifest`, `AppLifecycle`, `GatewayManager` or proxy-auth helpers. Validate
 manifests through the main package's install path, manage the Gateway with the `kirocrew` CLI, and use
-`kiro_crew.apps.proxy_auth` only from a backend that can import the main package.
+`efm_go.apps.proxy_auth` only from a backend that can import the main package.
 
 ---
 
@@ -1072,10 +1072,10 @@ app secret as the key, where `sha256(body)` is the hex SHA-256 digest of the raw
 tampered body invalidates the signature. Backends verify with a constant-time comparison and
 reject requests whose timestamp is not within ±60s of now.
 
-A Python app backend whose environment can import `kiro_crew` (the built-in app backends run as child processes and still import it) verifies this with the gateway's own helper:
+A Python app backend whose environment can import `efm_go` (the built-in app backends run as child processes and still import it) verifies this with the gateway's own helper:
 
 ```python
-from kiro_crew.apps.proxy_auth import raw_request_target, verify_proxy_request
+from efm_go.apps.proxy_auth import raw_request_target, verify_proxy_request
 
 body = await request.read()
 if not verify_proxy_request(
@@ -1092,7 +1092,7 @@ Every argument after the header value is keyword-only. Pass the target through
 the wire, and rebuilding it from a decoded path diverges from the signed bytes as
 soon as a query parameter carries a space or a non-ASCII character.
 
-A backend that cannot import `kiro_crew` (a different language, or a Python
+A backend that cannot import `efm_go` (a different language, or a Python
 environment without the package) computes the HMAC itself, exactly as the Node.js
 paragraph below describes.
 

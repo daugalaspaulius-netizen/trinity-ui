@@ -1,6 +1,6 @@
-"""No test patches a name ``kiro_crew.agent`` forwards with ``create=True``.
+"""No test patches a name ``efm_go.agent`` forwards with ``create=True``.
 
-``kiro_crew.agent`` forwards a delete of a moved name to the
+``efm_go.agent`` forwards a delete of a moved name to the
 ``agent_materialization`` module that owns it. ``mock.patch`` restores a name the
 facade does not hold by deleting it and then, finding it gone, writing its original
 back -- unless ``create`` is true, in which case it skips that write and the owner
@@ -35,12 +35,12 @@ from unittest import mock
 import pytest
 from stale_package_attribute import package_attribute_replaced
 
-from kiro_crew import agent
+from efm_go import agent
 
 _FACADE = agent.__name__
 _DYNAMIC = "<dynamic>"
 _REPO = Path(__file__).resolve().parents[1]
-_SRC = _REPO / "src" / "kiro_crew"
+_SRC = _REPO / "src" / "efm_go"
 
 #: What a ``mock.patch`` callable resolves to, per module that provides one: the
 #: standard library, its PyPI backport, and pytest-mock's ``mocker`` fixture.
@@ -90,8 +90,8 @@ def _module_name(path: Path) -> str:
     return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
 
 
-#: ``from kiro_crew import agent`` (or ``agent as X``), also inside a parenthesized list.
-_FROM_IMPORT = re.compile(r"from\s+kiro_crew\s+import\s+\(?[\w\s,]*?\bagent\b(?!_)")
+#: ``from efm_go import agent`` (or ``agent as X``), also inside a parenthesized list.
+_FROM_IMPORT = re.compile(r"from\s+efm_go\s+import\s+\(?[\w\s,]*?\bagent\b(?!_)")
 
 
 def _names_the_facade(text: str) -> bool:
@@ -378,9 +378,9 @@ def _worth_parsing(text: str) -> bool:
     return _names_the_facade(text) or any(spelling in text for spelling in _SPELLINGS)
 
 
-_IMPORT_AGENT = "from kiro_crew import agent\n"
+_IMPORT_AGENT = "from efm_go import agent\n"
 _FROM_MOCK = "from unittest import mock\n"
-_IMPORT_OWNER = "from kiro_crew.agent_materialization import service_agents\n"
+_IMPORT_OWNER = "from efm_go.agent_materialization import service_agents\n"
 
 #: A forwarded name, and a name the facade binds itself (restored by assignment).
 _MOVED = "_install_guest_agent"
@@ -433,7 +433,7 @@ _CASES: list[tuple[str, list[str]]] = [
         [_MOVED],
     ),
     (
-        _FROM_MOCK + f'_MOD = "kiro_crew.other"\nmock.patch(f"{{_MOD}}.{_MOVED}", create=True)',
+        _FROM_MOCK + f'_MOD = "efm_go.other"\nmock.patch(f"{{_MOD}}.{_MOVED}", create=True)',
         [],
     ),
     (_FROM_MOCK + f'import os\nmock.patch(f"{{os.__name__}}.{_MOVED}", create=True)', []),
@@ -499,7 +499,7 @@ _CASES: list[tuple[str, list[str]]] = [
     ),
     (
         _FROM_MOCK + "mock.patch("
-        f'"kiro_crew.agent_materialization.service_agents.agent_mod.{_MOVED}", create=True)',
+        f'"efm_go.agent_materialization.service_agents.agent_mod.{_MOVED}", create=True)',
         [_MOVED],
     ),
     # the owner itself is not the facade: its own binding is restored by assignment
@@ -575,15 +575,15 @@ _CASES: list[tuple[str, list[str]]] = [
         [_MOVED],
     ),
     (
-        "import kiro_crew\n"
+        "import efm_go\n"
         + _FROM_MOCK
-        + f'mock.patch.object(kiro_crew.agent, "{_MOVED}", create=True)',
+        + f'mock.patch.object(efm_go.agent, "{_MOVED}", create=True)',
         [_MOVED],
     ),
     (
-        "import kiro_crew.agent\n"
+        "import efm_go.agent\n"
         + _FROM_MOCK
-        + f'mock.patch.object(kiro_crew.agent, "{_MOVED}", create=True)',
+        + f'mock.patch.object(efm_go.agent, "{_MOVED}", create=True)',
         [_MOVED],
     ),
 ]
@@ -601,7 +601,7 @@ def test_the_case_names_are_what_the_cases_claim() -> None:
 
 
 def test_the_facade_is_found_under_every_name_src_binds_it_to() -> None:
-    from kiro_crew import agent_materialization
+    from efm_go import agent_materialization
 
     owners = {
         f"{agent_materialization.__name__}.{name}.agent_mod"
@@ -629,7 +629,7 @@ def test_the_premise_create_true_through_the_facade_unbinds_the_owner(split: boo
     attribute can name another copy once an earlier test in the worker imports it
     fresh, so reading the attribute would make this check depend on test order.
     """
-    owner = "kiro_crew.agent_materialization.service_agents"
+    owner = "efm_go.agent_materialization.service_agents"
     with package_attribute_replaced(owner) if split else nullcontext():
         service_agents = importlib.import_module(owner)
         original = vars(service_agents)["_install_lite_agent_fallback"]
@@ -648,15 +648,15 @@ def test_every_must_flag_case_passes_the_prefilter() -> None:
     assert flagged and [source for source in flagged if not _worth_parsing(source)] == []
     assert ".agent_mod" in _SPELLINGS
     assert not _worth_parsing(
-        "from unittest import mock\nfrom kiro_crew import agent_state\n"
+        "from unittest import mock\nfrom efm_go import agent_state\n"
         "mock.patch.object(agent_state, 'x')\n"
     )
     assert _worth_parsing(
-        "from unittest import mock\nfrom kiro_crew import (\n    agent,\n)\n"
+        "from unittest import mock\nfrom efm_go import (\n    agent,\n)\n"
         "mock.patch.object(agent, 'x')\n"
     )
     assert not _worth_parsing("from unittest import mock\nmock.patch.object(json, 'x')\n")
-    assert not _worth_parsing("from kiro_crew import agent\n")
+    assert not _worth_parsing("from efm_go import agent\n")
 
 
 def test_no_test_patches_a_forwarded_name_that_it_may_create() -> None:

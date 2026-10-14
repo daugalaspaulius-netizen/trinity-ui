@@ -108,9 +108,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MAX_REVIEWABLE_LINES: "15000"
         run: |
-          changed=$(git diff --numstat "$BASE_SHA...$HEAD_SHA" -- . ':(exclude)src/kiro_crew/_vendor' 2>/dev/null \
+          changed=$(git diff --numstat "$BASE_SHA...$HEAD_SHA" -- . ':(exclude)src/efm_go/_vendor' 2>/dev/null \
             | awk '{ a += $1; d += $2 } END { print a + d + 0 }')
-          echo "reviewable changed lines (excluding src/kiro_crew/_vendor): ${changed}"
+          echo "reviewable changed lines (excluding src/efm_go/_vendor): ${changed}"
           if [ "${changed:-0}" -gt "$MAX_REVIEWABLE_LINES" ]; then
             echo "::warning::This PR changes ${changed} reviewable lines (> ${MAX_REVIEWABLE_LINES}) — likely too large for one reliable review pass. Consider splitting it into smaller, self-contained PRs."
           fi

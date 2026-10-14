@@ -28,8 +28,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.apps.builtins import BUILTIN_NAMES
-from kiro_crew.apps.builtins.dev_fleet import gateway_routes, live, pointer_broker, server
+from efm_go.apps.builtins import BUILTIN_NAMES
+from efm_go.apps.builtins.dev_fleet import gateway_routes, live, pointer_broker, server
 
 pytestmark = pytest.mark.asyncio
 
@@ -40,7 +40,7 @@ class TestRegistration:
         package hook composes the agent pod routes with these gateway routes, so what is
         pinned is that a call through the PACKAGE mounts every gateway route."""
         assert "dev_fleet" in BUILTIN_NAMES
-        mod = importlib.import_module("kiro_crew.apps.builtins.dev_fleet")
+        mod = importlib.import_module("efm_go.apps.builtins.dev_fleet")
         via_package = web.Application()
         mod.register_routes(via_package)
         direct = web.Application()
@@ -600,7 +600,7 @@ class TestRemovalLeasesInTheGateway:
         """The barrier shields a mutation only while the mutation cannot outlive it:
         pinned against the REAL `git worktree remove` timeout, so a future bump there
         cannot silently reopen the overlap window."""
-        from kiro_crew.apps.builtins.dev_fleet import worktree_ops
+        from efm_go.apps.builtins.dev_fleet import worktree_ops
 
         assert (
             live._REMOVAL_LEASE_GRACE_SECS
@@ -634,7 +634,7 @@ class TestRemovalLeasesInTheGateway:
         assert live.acquire_removal_lease("/wt/late") is not None
 
     def test_the_cap_exceeds_the_parallel_prune_width(self) -> None:
-        from kiro_crew.apps.builtins.dev_fleet import worktree_ops
+        from efm_go.apps.builtins.dev_fleet import worktree_ops
 
         assert live._REMOVAL_LEASE_MAX_OUTSTANDING >= 4 * worktree_ops._PRUNE_CONCURRENCY
 
@@ -1014,7 +1014,7 @@ class TestThePreSpawnGate:
     async def test_run_cmd_refuses_without_spawning_and_unlinks_the_launcher(
         self, monkeypatch, tmp_path
     ) -> None:
-        from kiro_crew.apps.builtins.dev_fleet import runtime
+        from efm_go.apps.builtins.dev_fleet import runtime
 
         launcher = tmp_path / "launcher.sh"
         launcher.write_text("#!/bin/sh\n")
@@ -1042,7 +1042,7 @@ class TestThePreSpawnGate:
         assert not launcher.exists(), "a refused gate must not leak the prepared launcher"
 
     async def test_run_cmd_proceeds_when_the_gate_allows(self, monkeypatch, tmp_path) -> None:
-        from kiro_crew.apps.builtins.dev_fleet import runtime
+        from efm_go.apps.builtins.dev_fleet import runtime
 
         order: list[str] = []
         # sys.executable exists on every CI platform; /bin/true does not (macOS
@@ -1174,7 +1174,7 @@ class TestFleetViewDegradesWithRowsDuringAnOutage:
         """All three pointer-derived fields come from ONE broker read, so a gateway that
         goes away mid-build cannot fail a later field (the cancel-availability probe
         would be a second, unguarded read)."""
-        from kiro_crew.apps.builtins.dev_fleet import fleet_state
+        from efm_go.apps.builtins.dev_fleet import fleet_state
 
         calls: list[bool] = []
 

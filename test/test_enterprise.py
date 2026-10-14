@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.slack.enterprise — workspace validation.
+"""Tests for efm_go.slack.enterprise — workspace validation.
 
 Focus: the default-open behaviour AND the fail-closed security property
 when auth.test cannot verify the workspace identity but an allowlist is
@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.slack import enterprise
+from efm_go.slack import enterprise
 
 
 @pytest.fixture(autouse=True)
@@ -541,10 +541,10 @@ def _install_governance_posture(allowed_enterprise_ids: list[str]):
     """Install a PlatformContext carrying a channels.posture slack allowlist."""
     import dataclasses
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.platform import context as ctx_mod
-    from kiro_crew.platform.bootstrap import build_default_context
-    from kiro_crew.platform.governance import parse_policy
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.platform import context as ctx_mod
+    from efm_go.platform.bootstrap import build_default_context
+    from efm_go.platform.governance import parse_policy
 
     policy = parse_policy(
         {
@@ -571,7 +571,7 @@ def test_governance_posture_blocks_workspace_outside_policy(tmp_path):
     # config.json has NO allowlist (default-open), but the governance posture
     # pins enterprise E_GOOD. A workspace E_EVIL must be REJECTED by the policy
     # ceiling even though the operator config would have accepted it.
-    from kiro_crew.platform import context as ctx_mod
+    from efm_go.platform import context as ctx_mod
 
     resp = {"enterprise_id": "E_EVIL", "team_id": "T1", "team": "Evil", "url": "https://x"}
     try:
@@ -584,7 +584,7 @@ def test_governance_posture_blocks_workspace_outside_policy(tmp_path):
 
 
 def test_governance_posture_allows_pinned_workspace(tmp_path):
-    from kiro_crew.platform import context as ctx_mod
+    from efm_go.platform import context as ctx_mod
 
     resp = {"enterprise_id": "E_GOOD", "team_id": "T1", "team": "Good", "url": "https://x"}
     try:
@@ -609,7 +609,7 @@ def test_governance_posture_blocks_empty_enterprise_id_when_pinned(tmp_path):
     # common case). An empty id cannot satisfy an explicitly-pinned
     # allowed_enterprise_ids ceiling, so it must FAIL CLOSED — not silently pass
     # via the old `if not value: continue`. (security-review blocking.)
-    from kiro_crew.platform import context as ctx_mod
+    from efm_go.platform import context as ctx_mod
 
     resp = {"enterprise_id": "", "team_id": "T1", "team": "NonGrid", "url": "https://x"}
     try:
@@ -629,10 +629,10 @@ def test_governance_posture_empty_enterprise_id_ok_when_not_pinned(tmp_path):
     # team-pinned policy is accepted iff its team matches.
     import dataclasses
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.platform import context as ctx_mod
-    from kiro_crew.platform.bootstrap import build_default_context
-    from kiro_crew.platform.governance import parse_policy
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.platform import context as ctx_mod
+    from efm_go.platform.bootstrap import build_default_context
+    from efm_go.platform.governance import parse_policy
 
     policy = parse_policy(
         {
@@ -848,7 +848,7 @@ def test_reader_entry_filter_does_not_drift_from_the_loader(tmp_path):
         encoding="utf-8",
     )
 
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     via_loader = set(KiroCrewConfig.load().slack.allowed_enterprise_ids)
     via_reader, refusal = enterprise._read_allowlist()
@@ -1008,7 +1008,7 @@ def test_grid_org_id_only_warns_that_it_admits_no_message(tmp_path, caplog):
     and the only origin that can is a workspace they never listed.
     """
     _write_allowlist(tmp_path, ["E_ORG"])
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.enterprise"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.slack.enterprise"):
         with _install_fake_slack_sdk(_GRID_AUTH_TEST):
             assert enterprise.validate_enterprise("xoxb-token") is True
 
@@ -1034,7 +1034,7 @@ def test_workspace_ids_without_the_org_id_disable_slack_and_say_why(tmp_path, ca
     the per-message gate.  The added line names the actual missing entry.
     """
     _write_allowlist(tmp_path, ["T_CHILD_SANDBOX"])
-    with caplog.at_level(logging.ERROR, logger="kiro_crew.slack.enterprise"):
+    with caplog.at_level(logging.ERROR, logger="efm_go.slack.enterprise"):
         with _install_fake_slack_sdk(_GRID_AUTH_TEST):
             assert enterprise.validate_enterprise("xoxb-token") is False
 
@@ -1053,7 +1053,7 @@ def test_non_grid_workspace_allowlist_stays_quiet(tmp_path, caplog):
     """
     _write_allowlist(tmp_path, ["T_CORP"])
     resp = {"enterprise_id": "", "team_id": "T_CORP", "team": "Corp", "url": "https://c"}
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.enterprise"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.slack.enterprise"):
         with _install_fake_slack_sdk(resp):
             assert enterprise.validate_enterprise("xoxb-token") is True
 
@@ -1070,7 +1070,7 @@ def test_org_id_alongside_workspace_ids_is_the_working_grid_config(tmp_path, cap
     actually resolves the state they complain about.
     """
     _write_allowlist(tmp_path, ["E_ORG", "T_CHILD_SANDBOX"])
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.enterprise"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.slack.enterprise"):
         with _install_fake_slack_sdk(_GRID_AUTH_TEST):
             assert enterprise.validate_enterprise("xoxb-token") is True
 
@@ -1092,7 +1092,7 @@ def test_hot_reload_warns_too(tmp_path, caplog):
     assert enterprise.check_message_origin("T_CHILD_SANDBOX") is True
 
     _write_allowlist(tmp_path, ["E_ORG"])
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.enterprise"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.slack.enterprise"):
         assert enterprise.reload_allowed_team_ids() is False
 
     warned = _warnings(caplog)
@@ -1107,7 +1107,7 @@ def test_degraded_config_does_not_warn_about_admitting_nothing(tmp_path, caplog)
     to the operator's id shapes, which is a different (and wrong) diagnosis.
     """
     (tmp_path / "config.json").write_text("}{ broken", encoding="utf-8")
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.enterprise"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.slack.enterprise"):
         with _install_fake_slack_sdk(_GRID_AUTH_TEST):
             assert enterprise.validate_enterprise("xoxb-token") is False
 

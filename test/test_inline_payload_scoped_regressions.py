@@ -10,8 +10,8 @@ import shlex
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.security import argv_floor, inline_payload
+from efm_go import security
+from efm_go.security import argv_floor, inline_payload
 
 _MINT = "credential-exfil-kirocrew-token"
 _ENCODED_MINT = "a2lyb2NyZXcgdG9rZW4="
@@ -60,12 +60,12 @@ class TestAnEncodedLiteralIsDataUntilSomethingDecodesIt:
         )
 
     def test_nested_decoding_preserves_case_until_resolved(self):
-        inner = base64.b64encode(b"import kiro_crew.cli").decode()
+        inner = base64.b64encode(b"import efm_go.cli").decode()
         outer = base64.b64encode(inner.encode()).decode()
         cmd = f"python -c 'exec(base64.b64decode(base64.b64decode(\"{outer}\")))'"
         assert argv_floor._is_credential_mint(cmd.lower(), raw_text=cmd)
         assert _rule_of(cmd) == _MINT
-        assert inline_payload._decoded_b64_literals(cmd) == (inner.lower(), "import kiro_crew.cli")
+        assert inline_payload._decoded_b64_literals(cmd) == (inner.lower(), "import efm_go.cli")
 
     def test_many_data_literals_do_not_spend_decode_work(self, monkeypatch):
         calls = 0
@@ -145,7 +145,7 @@ class TestACallArgumentHasOneQuoteAwareBoundary:
             "exec('print(\"(\")'); print('kirocrew done')",
             "exec(open('a(b').read()); x = 'kirocrew'",
             "exec('''print(\"(\")'''); print('kirocrew done')",
-            "exec(open('patch.py').read()); print('from kiro_crew.acp import x, secret hint')",
+            "exec(open('patch.py').read()); print('from efm_go.acp import x, secret hint')",
         ],
     )
     def test_later_prose_is_not_a_loader_argument(self, payload):
@@ -166,28 +166,28 @@ class TestACallIsJudgedByWhatItResolvesTo:
         "spelling",
         [
             # The name written at the call, and reached through a module alias.
-            'import runpy; runpy.run_module("kiro_crew")',
-            'import runpy as rp; rp.run_module("kiro_crew")',
+            'import runpy; runpy.run_module("efm_go")',
+            'import runpy as rp; rp.run_module("efm_go")',
             # Bound by a from-import, with and without an alias.
-            'from runpy import run_module as r; r("kiro_crew")',
-            'from runpy import run_module; run_module("kiro_crew")',
-            'from importlib import import_module as m; m("kiro_crew")',
+            'from runpy import run_module as r; r("efm_go")',
+            'from runpy import run_module; run_module("efm_go")',
+            'from importlib import import_module as m; m("efm_go")',
             # Bound by assignment, from the module or from a resolving head.
-            'import runpy; r = runpy.run_module; r("kiro_crew")',
-            'import runpy; r = getattr(runpy, "run_module"); r("kiro_crew")',
-            'import runpy; r = runpy.__dict__["run_module"]; r("kiro_crew")',
+            'import runpy; r = runpy.run_module; r("efm_go")',
+            'import runpy; r = getattr(runpy, "run_module"); r("efm_go")',
+            'import runpy; r = runpy.__dict__["run_module"]; r("efm_go")',
             # Called straight off the head, with no name to read at all.
-            'import runpy; getattr(runpy, "run_module")("kiro_crew")',
-            'import runpy; runpy.__dict__["run_module"]("kiro_crew")',
+            'import runpy; getattr(runpy, "run_module")("efm_go")',
+            'import runpy; runpy.__dict__["run_module"]("efm_go")',
             # The bound name spelled in pieces, which the fold joins first.
-            'import runpy; getattr(runpy, "run_" "module")("kiro_crew")',
+            'import runpy; getattr(runpy, "run_" "module")("efm_go")',
             # Grouped: the parentheses are not an operation, so the head is what
             # they wrap -- dotted, nested, spaced, or a bound name.
-            'import runpy; (runpy.run_module)("kiro_crew")',
-            'import runpy; ((runpy.run_module))("kiro_crew")',
-            'import runpy; ( runpy.run_module )("kiro_crew")',
-            'from runpy import run_module as r; (r)("kiro_crew")',
-            'import runpy; r = (runpy.run_module); r("kiro_crew")',
+            'import runpy; (runpy.run_module)("efm_go")',
+            'import runpy; ((runpy.run_module))("efm_go")',
+            'import runpy; ( runpy.run_module )("efm_go")',
+            'from runpy import run_module as r; (r)("efm_go")',
+            'import runpy; r = (runpy.run_module); r("efm_go")',
         ],
     )
     def test_every_static_binding_reaches_the_runner(self, spelling):
@@ -237,26 +237,26 @@ class TestACallIsJudgedByWhatItResolvesTo:
             # the package.
             'import runpy; runpy.run_path("patch.py")',
             'from runpy import run_path as rp; rp("patch.py")',
-            'from runpy import run_path as rp; rp("src/kiro_crew/x.py")',
-            'import runpy; getattr(runpy, "run_path")("src/kiro_crew/x.py")',
+            'from runpy import run_path as rp; rp("src/efm_go/x.py")',
+            'import runpy; getattr(runpy, "run_path")("src/efm_go/x.py")',
             # A binding to anything outside the vocabulary stays generic code.
             'import json; print(getattr(json, "dumps")({}))',
-            'import os; print(os.__dict__["getcwd"](), "src/kiro_crew")',
+            'import os; print(os.__dict__["getcwd"](), "src/efm_go")',
             # A same-named callable from an unrelated module is not the stdlib one.
             'from other import b64decode as d; print(d("aGVsbG8="))',
             # An imported alias is a bare name, so an object attribute is not it.
             'from base64 import b64decode as d; print(obj.d("aW1wb3J0IGtpcm9fY3Jldy5jbGk="))',
             # A binding written inside a string binds nothing.
-            'print("r = run_module"); print("kiro_crew")',
+            'print("r = run_module"); print("efm_go")',
             # A GROUPED head is judged by what it is handed, like any other.
             'import runpy; (runpy.run_path)("patch.py")',
-            'import runpy; (runpy.run_path)("src/kiro_crew/x.py")',
+            'import runpy; (runpy.run_path)("src/efm_go/x.py")',
             "import json; print((json.dumps)({}))",
             # A call's own argument list is not a grouping: this hands over what
             # partial RETURNS, not the callable named inside it.
-            'import functools; print(functools.partial(print)("kiro_crew"))',
+            'import functools; print(functools.partial(print)("efm_go"))',
             # ... and a plain tuple is data, not a head.
-            'print(("kiro_crew", "x"))',
+            'print(("efm_go", "x"))',
         ],
     )
     def test_a_binding_to_anything_else_is_not_a_mint(self, spelling):
@@ -267,12 +267,12 @@ class TestACallIsJudgedByWhatItResolvesTo:
     def test_a_head_resolves_only_from_its_own_name_argument(self):
         # A runner name in `getattr`'s DEFAULT slot is not what the call resolves to.
         assert not inline_payload._inline_payload_reaches_cli(
-            'getattr(obj, "dumps", "run_module")("kiro_crew")'
+            'getattr(obj, "dumps", "run_module")("efm_go")'
         )
         # ... a one-argument call resolves to nothing ...
-        assert not inline_payload._inline_payload_reaches_cli('getattr(runpy)("kiro_crew")')
+        assert not inline_payload._inline_payload_reaches_cli('getattr(runpy)("efm_go")')
         # ... and a subscript by a computed key is the noted residual, not a reach.
-        assert not inline_payload._inline_payload_reaches_cli('runpy.__dict__[name]("kiro_crew")')
+        assert not inline_payload._inline_payload_reaches_cli('runpy.__dict__[name]("efm_go")')
 
     def test_a_bound_name_is_the_callable_and_not_its_result(self):
         table = inline_payload._callable_aliases(
@@ -301,10 +301,10 @@ class TestTheInspectionIsOnePassAndNotRecursive:
 
     def test_nesting_is_still_read_without_the_rescan(self):
         assert inline_payload._inline_payload_reaches_cli(
-            "exec(compile('import kiro_crew.config.loader as l; l.read_local_secret(1)', 'x', 'exec'))"
+            "exec(compile('import efm_go.config.loader as l; l.read_local_secret(1)', 'x', 'exec'))"
         )
         assert not inline_payload._inline_payload_reaches_cli(
-            "exec(compile('from kiro_crew.acp import client', 'x', 'exec'))"
+            "exec(compile('from efm_go.acp import client', 'x', 'exec'))"
         )
 
     def test_nested_loaders_do_not_copy_or_scan_each_tail(self, monkeypatch):
@@ -329,13 +329,13 @@ class TestTheGenuineProtectionsSurvive:
     @pytest.mark.parametrize(
         "cmd",
         [
-            "python -c 'from kiro_crew.cli import main; main()'",
-            "python -c 'from kiro_crew.cli_server import _token; _token(None)'",
-            "python -c 'from kiro_crew.config.loader import read_local_secret; print(read_local_secret(5476))'",
-            "python -c 'from kiro_crew.instances import run_marker; print(run_marker.read_secret(5476))'",
-            "python3 -c \"import runpy; runpy.run_module(mod_name='kiro_crew', run_name='__main__')\"",
-            "python -c \"exec('from kiro_crew.config.loader import read_local_secret; f()')\"",
-            "python3 - <<'PY'\nfrom kiro_crew.dashboard.token_auth import generate_token\nPY",
+            "python -c 'from efm_go.cli import main; main()'",
+            "python -c 'from efm_go.cli_server import _token; _token(None)'",
+            "python -c 'from efm_go.config.loader import read_local_secret; print(read_local_secret(5476))'",
+            "python -c 'from efm_go.instances import run_marker; print(run_marker.read_secret(5476))'",
+            "python3 -c \"import runpy; runpy.run_module(mod_name='efm_go', run_name='__main__')\"",
+            "python -c \"exec('from efm_go.config.loader import read_local_secret; f()')\"",
+            "python3 - <<'PY'\nfrom efm_go.dashboard.token_auth import generate_token\nPY",
         ],
     )
     def test_the_mint_surface_is_still_denied(self, cmd):
@@ -344,17 +344,17 @@ class TestTheGenuineProtectionsSurvive:
     @pytest.mark.parametrize(
         "cmd",
         [
-            "python3 -c \"import ast; ast.parse(open('src/kiro_crew/security.py').read())\"",
-            "python3 -c 'from kiro_crew.acp import client; print(client)'",
+            "python3 -c \"import ast; ast.parse(open('src/efm_go/security.py').read())\"",
+            "python3 -c 'from efm_go.acp import client; print(client)'",
             "python3 -c \"exec(open('patch.py').read())\"",
-            "python3 -c \"print('kiro_crew docs mention the token verb')\"",
+            "python3 -c \"print('efm_go docs mention the token verb')\"",
         ],
     )
     def test_an_ordinary_mention_is_still_allowed(self, cmd):
         assert _rule_of(cmd) is None, cmd
 
 
-_READER = "from kiro_crew.config.loader import read_local_secret"
+_READER = "from efm_go.config.loader import read_local_secret"
 
 
 class TestAnImportBeginsAtEveryStatementBoundary:
@@ -362,7 +362,7 @@ class TestAnImportBeginsAtEveryStatementBoundary:
 
     A simple statement begins at the start of input, after ``;``, after a newline,
     or after the ``:`` that closes a compound header. Those four are the whole set
-    the grammar has, so the anchor is closed by construction: a ``from kiro_crew``
+    the grammar has, so the anchor is closed by construction: a ``from efm_go``
     tucked behind ``if True:`` is the same import as one on its own line.
     """
 
@@ -394,10 +394,10 @@ class TestAnImportBeginsAtEveryStatementBoundary:
         plain colon into a reason: the anchor still needs the import itself.
         """
         for payload in (
-            "d = {'kiro_crew': 1}; print(d)",
-            "s = 'kiro_crew token'[0:4]; print(s)",
-            "x: int = 1; print('kiro_crew', x)",
-            "print({'a': 'from kiro_crew.acp import client'})",
+            "d = {'efm_go': 1}; print(d)",
+            "s = 'efm_go token'[0:4]; print(s)",
+            "x: int = 1; print('efm_go', x)",
+            "print({'a': 'from efm_go.acp import client'})",
         ):
             assert _rule_of(f'python -c "{payload}"') is None, payload
 
@@ -405,8 +405,8 @@ class TestAnImportBeginsAtEveryStatementBoundary:
 class TestAPackagePathIsOneClassOfSeparators:
     """The mint surface reads a package path however its separators are spelled.
 
-    ``kiro_crew.cli`` is a module, ``kiro_crew/cli.py`` a POSIX path and
-    ``kiro_crew\\cli.py`` a Windows path; all three name the same file, so the
+    ``efm_go.cli`` is a module, ``efm_go/cli.py`` a POSIX path and
+    ``efm_go\\cli.py`` a Windows path; all three name the same file, so the
     matcher treats the three separators as one class. The Windows spellings
     below are raw or doubled, which is what a payload that actually opens the
     file on Windows has to write.
@@ -415,10 +415,10 @@ class TestAPackagePathIsOneClassOfSeparators:
     @pytest.mark.parametrize(
         "payload",
         [
-            "exec(open(r'src\\kiro_crew\\cli.py').read())",
-            "exec(open('src\\\\kiro_crew\\\\cli.py').read())",
-            "import runpy; runpy.run_path(r'src\\kiro_crew\\__main__.py')",
-            "exec(open(r'src\\kiro_crew\\dashboard\\token_auth.py').read())",
+            "exec(open(r'src\\efm_go\\cli.py').read())",
+            "exec(open('src\\\\efm_go\\\\cli.py').read())",
+            "import runpy; runpy.run_path(r'src\\efm_go\\__main__.py')",
+            "exec(open(r'src\\efm_go\\dashboard\\token_auth.py').read())",
         ],
     )
     def test_a_windows_path_to_the_mint_is_still_the_mint(self, payload):
@@ -427,9 +427,9 @@ class TestAPackagePathIsOneClassOfSeparators:
     @pytest.mark.parametrize(
         "cmd",
         [
-            r"isort src\kiro_crew\mcp_core.py",
-            "python -c \"print(r'src\\kiro_crew\\acp\\client.py')\"",
-            "python -c \"import ast; ast.parse(open(r'src\\kiro_crew\\security.py').read())\"",
+            r"isort src\efm_go\mcp_core.py",
+            "python -c \"print(r'src\\efm_go\\acp\\client.py')\"",
+            "python -c \"import ast; ast.parse(open(r'src\\efm_go\\security.py').read())\"",
         ],
     )
     def test_an_ordinary_windows_path_is_still_allowed(self, cmd):
@@ -533,7 +533,7 @@ class TestTheFoldIsClosedOverConstantExpressions:
         payload never wrote. Left as written, the escape is not whitespace and
         starts no statement.
         """
-        payload = "print('a;\\nimport kiro_crew, os\\ntoken')"
+        payload = "print('a;\\nimport efm_go, os\\ntoken')"
         folded = inline_payload._fold_inline_literals(payload)
         assert "\n" not in folded
         assert _rule_of(f'python -c "{payload}"') is None
@@ -558,7 +558,7 @@ class TestANulInThePayloadDoesNotCrashTheGate:
     def test_a_mint_after_the_nul_is_still_refused(self):
         body = (
             "def f(raw):\n    return raw\nparts = f(x).split(b'\\0')\n"
-            "import runpy; runpy.run_module('kiro_crew')\n"
+            "import runpy; runpy.run_module('efm_go')\n"
         )
         assert _rule_of(f'python3 -c "{body}"') == _MINT
 

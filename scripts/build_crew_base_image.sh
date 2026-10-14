@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the AWS Control crew BASE image from a checkout.
 #
-# src/kiro_crew/apps/builtins/aws_control/crew/runtime/Dockerfile names this
+# src/efm_go/apps/builtins/aws_control/crew/runtime/Dockerfile names this
 # script as the producer of the wheel it installs, and the script did not exist:
 # the image that merged in #9223 could not be built from a clean checkout at all,
 # because `runtime/vendor/` holds only a `.gitkeep` and nothing else in the tree
@@ -25,7 +25,7 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-readonly RUNTIME_DIR="${REPO_ROOT}/src/kiro_crew/apps/builtins/aws_control/crew/runtime"
+readonly RUNTIME_DIR="${REPO_ROOT}/src/efm_go/apps/builtins/aws_control/crew/runtime"
 readonly VENDOR_DIR="${RUNTIME_DIR}/vendor"
 
 TAG="kirocrew-crew-base:dev"

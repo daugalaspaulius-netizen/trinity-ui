@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.bridges — resource registration bridges."""
+"""Tests for efm_go.apps.bridges — resource registration bridges."""
 
 from __future__ import annotations
 
@@ -17,8 +17,8 @@ from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 from conftest import host_abs
-from kiro_crew import platform_compat
-from kiro_crew.apps.bridges import (
+from efm_go import platform_compat
+from efm_go.apps.bridges import (
     RegistrationResult,
     _app_crons_path,
     _deregister_agents,
@@ -37,8 +37,8 @@ from kiro_crew.apps.bridges import (
     register_app,
     register_app_crons_with_service,
 )
-from kiro_crew.apps.manager import APP_MANIFEST_FILENAME, install_app
-from kiro_crew.apps.manifest import AppManifest
+from efm_go.apps.manager import APP_MANIFEST_FILENAME, install_app
+from efm_go.apps.manifest import AppManifest
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -99,8 +99,8 @@ def app_env(tmp_path, monkeypatch):
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
     # Patch the KIRO_AGENTS_DIR in bridges module
-    import kiro_crew.apps.bridges as bridges_mod
-    import kiro_crew.apps.execution as execution_mod
+    import efm_go.apps.bridges as bridges_mod
+    import efm_go.apps.execution as execution_mod
 
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
     monkeypatch.setattr(
@@ -187,7 +187,7 @@ class TestAgentRegistration:
         the agent must still register, a dangling ref is degradation, not a
         broken agent.
         """
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         # Deterministic ambient: the check falls back to the user's global
         # mcp.json, and the developer's real one must not decide this test.
@@ -202,7 +202,7 @@ class TestAgentRegistration:
         )
         app_root = app_env["home"] / "apps" / "test-app"
 
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.bridges"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.bridges"):
             registered = _register_agents("test-app", manifest, app_root)
 
         assert "test-app/my-agent" in registered  # still registers
@@ -224,7 +224,7 @@ class TestAgentRegistration:
         resolvable at mount time; warning on any of them would train
         operators to ignore the log line that matters.
         """
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         monkeypatch.setattr(bridges_mod, "_global_mcp_specs", lambda: {"ambient-srv": {}})
         src = _make_app_source(tmp_path, mcpServers={"srv": {"command": "echo", "args": []}})
@@ -252,7 +252,7 @@ class TestAgentRegistration:
         # _own_mcp_servers reads it back from the registered config.
         _register_mcp_servers("test-app", manifest, live_port=None)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.bridges"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.bridges"):
             _register_agents("test-app", manifest, app_root)
 
         assert "silently never mount" not in caplog.text
@@ -267,7 +267,7 @@ class TestAgentRegistration:
         satisfy is dropped — treating the ambient entry as resolvable would
         suppress the warning for exactly the specs that set this flag.
         """
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         monkeypatch.setattr(bridges_mod, "_global_mcp_specs", lambda: {"ambient-srv": {}})
         src = _make_app_source(tmp_path)
@@ -287,7 +287,7 @@ class TestAgentRegistration:
         )
         app_root = app_env["home"] / "apps" / "test-app"
 
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.bridges"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.bridges"):
             _register_agents("test-app", manifest, app_root)
 
         assert "silently never mount" in caplog.text
@@ -303,7 +303,7 @@ class TestAgentRegistration:
         regular file is now left in place for atomic_write's rename to swap, so a
         failed write leaves the last-good config untouched.
         """
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -374,8 +374,8 @@ class TestAgentRegistration:
         """The app mcp.json is read by kiro-cli, so a governed `autoApprove` here
         would auto-approve locally and bypass the gate. It must be stripped before
         the write, exactly like the agent-config writers do."""
-        from kiro_crew.apps import bridges as bridges_mod
-        from kiro_crew.platform import governance as gov
+        from efm_go.apps import bridges as bridges_mod
+        from efm_go.platform import governance as gov
 
         monkeypatch.setattr(gov, "may_skip_gate_now", lambda ref: False)  # governed
         src = _make_app_source(
@@ -401,7 +401,7 @@ class TestAgentRegistration:
         silently loses capability it declared. A value that is not a mapping is
         carried through to the writer, which skips what it cannot read.
         """
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         src = _make_app_source(
             tmp_path, agents=["agents/bad-agent.json", "agents/my-agent.json"]
@@ -434,10 +434,10 @@ class TestAgentRegistration:
         the key was on; making that key default ON is what turned a setting almost
         nobody had into a grant on every default-config host.
         """
-        from kiro_crew.apps import bridges as bridges_mod
-        from kiro_crew.config import live
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform import governance as gov
+        from efm_go.apps import bridges as bridges_mod
+        from efm_go.config import live
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform import governance as gov
 
         monkeypatch.setattr(gov, "may_skip_gate_now", lambda ref: True)  # ungoverned
         cfg = KiroCrewConfig()
@@ -708,7 +708,7 @@ class TestCronRegistration:
         """
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -718,7 +718,7 @@ class TestCronRegistration:
 
         mock_sdk = MagicMock()
         mock_sdk.list_jobs.return_value = []
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", MagicMock()))
 
         assert result == []
@@ -751,7 +751,7 @@ class TestCronRegistration:
         # bounded store-lock spin to a worker thread and then arms the timer
         # IN-SERVICE on the loop. Driving it through a started CronService here
         # exercises that path end-to-end with NO caller-side drain step.
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -781,7 +781,7 @@ class TestCronRegistration:
         # (re)armed by CronService ITSELF (in-service, via the bound loop) — so
         # no caller-side drain (the removed rearm_after_offload) is required.
         # This mirrors on_app_enable / on_gateway_startup.
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -855,7 +855,7 @@ class TestTopLevel:
         # gate register_app does -- scrub any stale agent spec and register nothing
         # -- or a revoked app's agent (and its merged MCP servers) becomes
         # dispatchable again.
-        import kiro_crew.apps.execution as execution_mod
+        import efm_go.apps.execution as execution_mod
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -869,7 +869,7 @@ class TestTopLevel:
         assert not any(app_env["kiro_agents"].iterdir())
 
     def test_install_while_execution_denied_registers_nothing(self, tmp_path, app_env, monkeypatch):
-        import kiro_crew.apps.execution as execution_mod
+        import efm_go.apps.execution as execution_mod
 
         src = _make_app_source(
             tmp_path,
@@ -907,7 +907,7 @@ class TestTopLevel:
         bridge wrote a namespaced <app>--<agent>.json with empty mcpServers
         alongside the app's real agent file, and kiro-cli loaded the empty one.
         """
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -921,7 +921,7 @@ class TestTopLevel:
         install_app(src)
 
         # Mark as self-managed (like Mochi does via registerExternal)
-        from kiro_crew.apps.manager import register_external_app
+        from efm_go.apps.manager import register_external_app
 
         register_external_app("test-app", "1.0.0", "Test App", resources="app")
 
@@ -986,8 +986,8 @@ class TestRegistrationResult:
 
 class TestMCPRegistration:
     def test_register_mcp_servers(self, tmp_path, app_env, monkeypatch):
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1016,7 +1016,7 @@ class TestMCPRegistration:
         naming a PATH fragment must be emitted complete. See env.emit_env."""
         import os
 
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1057,8 +1057,8 @@ class TestMCPRegistration:
         # 9101, …). The manifest's mcpServers url carries an illustrative fixed port.
         # Registration MUST rewrite it to the live allocated port, else agents call the
         # wrong port and every app tool call silently fails.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1088,8 +1088,8 @@ class TestMCPRegistration:
         # makes kiro-cli try to connect on EVERY session → "backend hiccup" → 3 retries →
         # hard error, breaking all requests. The enable/boot flow re-registers with the
         # live port once the backend is up.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1118,8 +1118,8 @@ class TestMCPRegistration:
         # registration must be SCRUBBED
         # when we re-register and the backend still isn't up — so it can't keep poisoning
         # every kiro session across reboots/disable.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1149,8 +1149,8 @@ class TestMCPRegistration:
     def test_stdio_mcp_server_always_registered_no_backend(self, tmp_path, app_env, monkeypatch):
         # A command/stdio MCP server (no url) has no port to be dead — it must always be
         # registered regardless of backend liveness (only HTTP url servers are gated).
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1180,8 +1180,8 @@ class TestMCPRegistration:
         # _collect_app_mcp_servers (test_app_mcp_scoping::test_self_managed_http_url_is_preserved),
         # the other writer of this config: the two must agree or one scrubs what the other
         # writes straight back.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1209,8 +1209,8 @@ class TestMCPRegistration:
         # The complement of the self-managed case: an app that DOES declare a backend
         # (backend.entryPoint set) still has its portless url scrubbed when no live port
         # is known — the scrub is now conditional on backend.entryPoint, not removed.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1239,9 +1239,9 @@ class TestMCPRegistration:
     ):
         # reregister_app_mcp_servers (called after the backend starts) overwrites the
         # earlier manifest-default entry with the live-port url.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
-        from kiro_crew.apps.bridges import reregister_app_mcp_servers
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
+        from efm_go.apps.bridges import reregister_app_mcp_servers
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1279,9 +1279,9 @@ class TestMCPRegistration:
         # backend isn't marked *healthy* yet (get_app_backend_port would return None at
         # that instant). An explicit live_port must still rewrite the url — this is the
         # exact bug that left the registered url at :9100 while the backend was on :9101.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
-        from kiro_crew.apps.bridges import reregister_app_mcp_servers
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
+        from efm_go.apps.bridges import reregister_app_mcp_servers
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1298,7 +1298,7 @@ class TestMCPRegistration:
         assert data["mcpServers"]["test-app:my-mcp"]["url"] == "http://localhost:9101/mcp"
 
     def test_deregister_mcp_servers(self, tmp_path, app_env, monkeypatch):
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1331,7 +1331,7 @@ class TestMCPRegistration:
         # synchronously on the gateway event loop, so the scrub must NOT run
         # here or a held lock would stall all chat/heartbeat. Boot reconcile
         # performs it off-loop instead.
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1344,14 +1344,14 @@ class TestMCPRegistration:
         assert called == [], "deregister must not run the blocking legacy scrub on the event loop"
 
     def test_deregister_no_servers(self, tmp_path, monkeypatch):
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
         assert _deregister_mcp_servers("nonexistent") == 0
 
     def test_register_no_mcp_servers(self, tmp_path, app_env, monkeypatch):
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1360,8 +1360,8 @@ class TestMCPRegistration:
         assert _register_mcp_servers("test", manifest) == []
 
     def test_register_app_includes_mcp(self, tmp_path, app_env, monkeypatch):
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1416,7 +1416,7 @@ def _stub_venv_probe(monkeypatch):
     every rewrite-plumbing expectation in this module per-platform. The
     plumbing is what these tests pin; the probe has its own dedicated tests.
     """
-    from kiro_crew.apps import interpreter as _interp
+    from efm_go.apps import interpreter as _interp
 
     monkeypatch.setattr(
         _interp,
@@ -1438,7 +1438,7 @@ class TestStdioInterpreterResolution:
         ``setup(app_root)`` runs AFTER install (install_app removes a
         pre-existing dest dir, so a venv must be created post-install).
         """
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1586,9 +1586,9 @@ class TestStdioInterpreterResolution:
     def test_a_gateway_module_server_is_pinned_to_the_gateway_interpreter(
         self, tmp_path, app_env, monkeypatch
     ):
-        # A stdio server that runs Kiro Crew's OWN code (`-m kiro_crew...`) must
+        # A stdio server that runs Kiro Crew's OWN code (`-m efm_go...`) must
         # run under the gateway's interpreter even when the app has a venv: app
-        # venvs are created without --system-site-packages, so kiro_crew is not
+        # venvs are created without --system-site-packages, so efm_go is not
         # importable there and the venv interpreter dies on import — silently,
         # since the rewritten venv path exists and no warning fires.
         import sys
@@ -1597,7 +1597,7 @@ class TestStdioInterpreterResolution:
             tmp_path,
             app_env,
             monkeypatch,
-            {"command": "python3", "args": ["-s", "-m", "kiro_crew.apps.builtins.x.server"]},
+            {"command": "python3", "args": ["-s", "-m", "efm_go.apps.builtins.x.server"]},
             setup=_fake_venv_python,
         )
         assert entry["command"] == sys.executable
@@ -1617,12 +1617,12 @@ class TestStdioInterpreterResolution:
             monkeypatch,
             {
                 "command": "python3",
-                "args": ["-m", "kiro_crew.apps.builtins.x.server"],
+                "args": ["-m", "efm_go.apps.builtins.x.server"],
                 "env": {"PYTHONPATH": "/manifest/own"},
             },
         )
         assert entry["command"] == sys.executable
-        assert entry["args"] == ["-m", "kiro_crew.apps.builtins.x.server"]
+        assert entry["args"] == ["-m", "efm_go.apps.builtins.x.server"]
         assert entry["env"]["PYTHONPATH"] == "/manifest/own"
 
     def test_a_windows_exe_spelling_of_python_gets_the_interpreter_policy(
@@ -1672,14 +1672,14 @@ class TestStdioInterpreterResolution:
     def test_a_script_argument_named_dash_m_does_not_trigger_the_gateway_pin(
         self, tmp_path, app_env, monkeypatch
     ):
-        # `python3 server.py -m kiro_crew.mode`: the -m belongs to the SCRIPT
+        # `python3 server.py -m efm_go.mode`: the -m belongs to the SCRIPT
         # (CPython stops parsing its own options at the first operand), so the
         # entry must resolve venv-first — pinning it to sys.executable would
         # strand a venv-dependent server without its dependencies.
         created: list[Path] = []
         entry = self._register_stdio(
             tmp_path, app_env, monkeypatch,
-            {"command": "python3", "args": ["server.py", "-m", "kiro_crew.mode"]},
+            {"command": "python3", "args": ["server.py", "-m", "efm_go.mode"]},
             setup=lambda root: created.append(_fake_venv_python(root)),
         )
         assert entry["command"] == str(created[0])
@@ -1691,7 +1691,7 @@ class TestStdioInterpreterResolution:
 
         entry = self._register_stdio(
             tmp_path, app_env, monkeypatch,
-            {"command": "python3", "args": ["-s", "-u", "-m", "kiro_crew.apps.x"]},
+            {"command": "python3", "args": ["-s", "-u", "-m", "efm_go.apps.x"]},
             setup=_fake_venv_python,
         )
         assert entry["command"] == sys.executable
@@ -1706,7 +1706,7 @@ class TestStdioInterpreterResolution:
             tmp_path,
             app_env,
             monkeypatch,
-            {"command": "python3", "args": ["-X", "dev", "-W", "ignore", "-m", "kiro_crew.apps.x"]},
+            {"command": "python3", "args": ["-X", "dev", "-W", "ignore", "-m", "efm_go.apps.x"]},
             setup=_fake_venv_python,
         )
         assert entry["command"] == sys.executable
@@ -1717,7 +1717,7 @@ class TestStdioInterpreterResolution:
 
         entry = self._register_stdio(
             tmp_path, app_env, monkeypatch,
-            {"command": "python3", "args": ["-mkiro_crew.apps.x"]},
+            {"command": "python3", "args": ["-mefm_go.apps.x"]},
             setup=_fake_venv_python,
         )
         assert entry["command"] == sys.executable
@@ -1732,7 +1732,7 @@ class TestStdioInterpreterResolution:
         entry = self._register_stdio(
             tmp_path, app_env, monkeypatch,
             {"command": "python3",
-             "args": ["-cimport server", "-m", "kiro_crew.x"]},
+             "args": ["-cimport server", "-m", "efm_go.x"]},
             setup=lambda root: created.append(_fake_venv_python(root)),
         )
         assert entry["command"] == str(created[0])
@@ -1759,7 +1759,7 @@ class TestStdioInterpreterResolution:
     ):
         # `D:missing` carries no separator but names a location; it is never
         # rewritten AND it must not silently skip the unresolvable diagnostic.
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.bridges"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.bridges"):
             entry = self._register_stdio(
                 tmp_path, app_env, monkeypatch, {"command": "D:missing", "args": []},
             )
@@ -1774,7 +1774,7 @@ class TestStdioInterpreterResolution:
         # This path supplies the package root through PYTHONPATH, so it keeps
         # its unconditional `-s` guard even when the host interpreter normally
         # allows user-site packages.
-        # `kirocrew` is pinned to `sys.executable -m kiro_crew` by
+        # `kirocrew` is pinned to `sys.executable -m efm_go` by
         # _pin_host_cli_command BEFORE stdio resolution; the venv must not
         # override that (the host CLI is gateway code, not app code).
         entry = self._register_stdio(
@@ -1783,10 +1783,10 @@ class TestStdioInterpreterResolution:
             setup=_fake_venv_python,
         )
         assert entry["command"] == sys.executable
-        assert entry["args"][:4] == ["-s", "-P", "-m", "kiro_crew"]
+        assert entry["args"][:4] == ["-s", "-P", "-m", "efm_go"]
 
     def test_an_http_entry_is_unaffected(self, tmp_path, app_env, monkeypatch):
-        import kiro_crew.apps.backend as backend_mod
+        import efm_go.apps.backend as backend_mod
 
         monkeypatch.setattr(backend_mod, "get_app_backend_port", lambda _n: 9000)
         entry = self._register_stdio(
@@ -1820,7 +1820,7 @@ class TestStdioInterpreterResolution:
         # shutil.which from this event-loop-reachable path can block on a
         # network-mounted PATH entry.
         missing = str(tmp_path / "definitely" / "not-a-real-binary-1807")
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.bridges"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.bridges"):
             entry = self._register_stdio(
                 tmp_path, app_env, monkeypatch,
                 {"command": missing, "args": []},
@@ -1836,7 +1836,7 @@ class TestStdioInterpreterResolution:
     def test_a_bare_name_is_not_probed_and_logs_no_warning(
         self, tmp_path, app_env, monkeypatch, caplog
     ):
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.bridges"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.bridges"):
             entry = self._register_stdio(
                 tmp_path, app_env, monkeypatch,
                 {"command": "definitely-not-a-real-binary-1807", "args": []},
@@ -1852,7 +1852,7 @@ class TestStdioInterpreterResolution:
         # every task until the stall watchdog kills the gateway. With a
         # running loop the probe must go to the maintenance pool; with none
         # (this test's own direct call) it runs inline.
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         dispatched: list[tuple] = []
 
@@ -1883,7 +1883,7 @@ class TestStdioInterpreterResolution:
     def test_a_resolvable_command_logs_no_unresolvable_warning(
         self, tmp_path, app_env, monkeypatch, caplog
     ):
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.bridges"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.bridges"):
             self._register_stdio(
                 tmp_path, app_env, monkeypatch, {"command": "python3", "args": []},
                 setup=_fake_venv_python,
@@ -1891,7 +1891,7 @@ class TestStdioInterpreterResolution:
         assert "resolves to no existing executable" not in caplog.text
 
     def test_one_bad_server_does_not_block_its_siblings(self, tmp_path, app_env, monkeypatch):
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -1918,7 +1918,7 @@ class TestBackendSharesTheInterpreterPolicy:
     policy fork."""
 
     def test_venv_present_resolves_to_the_venv_interpreter(self, tmp_path):
-        from kiro_crew.apps.interpreter import resolve_app_python
+        from efm_go.apps.interpreter import resolve_app_python
 
         venv_py = _fake_venv_python(tmp_path)
         assert resolve_app_python(tmp_path) == str(venv_py)
@@ -1926,14 +1926,14 @@ class TestBackendSharesTheInterpreterPolicy:
     def test_venv_absent_resolves_to_sys_executable(self, tmp_path):
         import sys
 
-        from kiro_crew.apps.interpreter import resolve_app_python
+        from efm_go.apps.interpreter import resolve_app_python
 
         assert resolve_app_python(tmp_path) == sys.executable
 
     def test_no_app_context_resolves_to_sys_executable(self):
         import sys
 
-        from kiro_crew.apps.interpreter import resolve_app_python
+        from efm_go.apps.interpreter import resolve_app_python
 
         assert resolve_app_python(None) == sys.executable
 
@@ -1949,7 +1949,7 @@ class TestBackendSharesTheInterpreterPolicy:
         # instead of being returned as a guaranteed-EACCES spawn target.
         import sys
 
-        from kiro_crew.apps.interpreter import resolve_app_python
+        from efm_go.apps.interpreter import resolve_app_python
 
         def historical(root: Path) -> str:
             venv_python = str(root / ".venv" / "bin" / "python3")
@@ -1967,7 +1967,7 @@ class TestBackendSharesTheInterpreterPolicy:
         # helper. Grepping the source keeps this honest without spawning.
         import inspect
 
-        import kiro_crew.apps.backend as backend_mod
+        import efm_go.apps.backend as backend_mod
 
         source = inspect.getsource(backend_mod)
         assert source.count("resolve_app_python(") >= 2, (
@@ -1992,8 +1992,8 @@ class TestAbiMatchedShebangPathScript:
         (via the shim, so .pth files work) instead of dying on import."""
         import sys as _sys
 
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
@@ -2016,8 +2016,8 @@ class TestAbiMatchedShebangPathScript:
         reason="shebang launch semantics are POSIX-only",
     )
     def test_a_path_script_with_foreign_shebang_stays_direct(self, tmp_path):
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
@@ -2039,7 +2039,7 @@ class TestStaleTreeScriptSelection:
         name falls through instead and the provisioning error surfaces."""
         import sys as _sys
 
-        from kiro_crew.apps.interpreter import app_deps_dir, venv_provided_command
+        from efm_go.apps.interpreter import app_deps_dir, venv_provided_command
 
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
         deps_bin = app_deps_dir(tmp_path) / ("Scripts" if _sys.platform == "win32" else "bin")
@@ -2059,7 +2059,7 @@ class TestShebangReaderGates:
         """The shebang sniff runs on a manifest-author-controlled absolute
         path: a protected location must be refused by the sensitive-path
         gate BEFORE any read, not read-and-discarded."""
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         opened: list[str] = []
         real_open = open
@@ -2087,11 +2087,11 @@ class TestShebangReaderGates:
         where the kernel honors every flag exactly as written."""
         import sys as _sys
 
-        from kiro_crew.apps.bridges import (
+        from efm_go.apps.bridges import (
             _python_shebang_interpreter,
             resolve_stdio_command,
         )
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
@@ -2113,8 +2113,8 @@ class TestSkipFirstLineFlagUnshimmable:
         """-x skips the launched script's FIRST LINE; shimming would make
         deps_boot that script and the interpreter dies with SyntaxError on
         its severed docstring. Unshimmable: direct launch + PYTHONPATH."""
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
@@ -2135,8 +2135,8 @@ def _plant_deps_stamp(app_root, req_bytes: bytes) -> None:
     """Write the CURRENT interpreter's stamp for req_bytes: activation now
     requires it (a stampless or stale-ABI tree must not inject), so any
     fixture that expects the deps dir to reach the server plants it."""
-    import kiro_crew.apps.backend as _bk
-    from kiro_crew.apps.interpreter import app_deps_dir as _add
+    import efm_go.apps.backend as _bk
+    from efm_go.apps.interpreter import app_deps_dir as _add
 
     d = _add(app_root)
     d.mkdir(parents=True, exist_ok=True)
@@ -2152,8 +2152,8 @@ class TestStdioDepsDirExposure:
     def test_the_deps_dir_is_prepended_to_a_stdio_server_pythonpath(
         self, tmp_path, nonbundled_python_with_user_site
     ):
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
@@ -2175,7 +2175,7 @@ class TestStdioDepsDirExposure:
         )
         assert cfg["command"] == _sys.executable, cfg
         # PATH spelling, not -m: an ABI-matched path python can be the
-        # app's own venv interpreter, which cannot import kiro_crew
+        # app's own venv interpreter, which cannot import efm_go
         assert _isolated_python_args(cfg)[0].endswith("deps_boot.py"), cfg
         assert _isolated_python_args(cfg)[1] == str(app_deps_dir(tmp_path)), cfg
         assert _isolated_python_args(cfg)[2] == "server.py", cfg
@@ -2197,8 +2197,8 @@ class TestStdioDepsDirExposure:
         PYTHONPATH entry is stripped (shim XOR PYTHONPATH)."""
         import sys as _sys
 
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         deps_bin = app_deps_dir(tmp_path) / "bin"
         deps_bin.mkdir(parents=True)
@@ -2232,8 +2232,8 @@ class TestStdioDepsDirExposure:
         the shim, or its .pth-dependent imports silently die."""
         import sys as _sys
 
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         deps_bin = app_deps_dir(tmp_path) / "bin"
         deps_bin.mkdir(parents=True)
@@ -2266,8 +2266,8 @@ class TestStdioDepsDirExposure:
         exec re-launch) reads as a trampoline. An ordinary dependency shell
         wrapper that merely RUNS a python command must stay a shell script
         - runpy would parse it as python source and crash the server."""
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         deps_bin = app_deps_dir(tmp_path) / "bin"
         deps_bin.mkdir(parents=True)
@@ -2293,8 +2293,8 @@ class TestStdioDepsDirExposure:
         companion stays a direct launch."""
         import sys as _sys
 
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         deps_bin = app_deps_dir(tmp_path) / ("Scripts" if _sys.platform == "win32" else "bin")
         deps_bin.mkdir(parents=True)
@@ -2325,8 +2325,8 @@ class TestStdioDepsDirExposure:
         import sys as _sys
         import zipfile as _zipfile
 
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         deps_bin = app_deps_dir(tmp_path) / ("Scripts" if _sys.platform == "win32" else "bin")
         deps_bin.mkdir(parents=True)
@@ -2352,8 +2352,8 @@ class TestStdioDepsDirExposure:
         script would break a working launch. Only a python-shebang
         script is shimmed - everything else executes directly and keeps the
         PYTHONPATH transport."""
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         deps_bin = app_deps_dir(tmp_path) / "bin"
         deps_bin.mkdir(parents=True)
@@ -2376,8 +2376,8 @@ class TestStdioDepsDirExposure:
         owns provisioning (module-style builtins must never reach it)."""
         from types import SimpleNamespace as NS
 
-        import kiro_crew.apps.backend as bkmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bkmod
+        import efm_go.apps.bridges as brmod
 
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
         _plant_deps_stamp(tmp_path, b"requests\n")
@@ -2425,7 +2425,7 @@ class TestStdioDepsDirExposure:
             "app",
             NS(
                 mcpServers={"srv": {"command": "x"}},
-                backend=NS(entryPoint="kiro_crew.apps.builtins.demo"),
+                backend=NS(entryPoint="efm_go.apps.builtins.demo"),
             ),
         )
         # url-only servers never import from the deps dir
@@ -2440,7 +2440,7 @@ class TestStdioDepsDirExposure:
         assert calls == []
 
     def test_no_deps_dir_leaves_the_manifest_env_untouched(self, tmp_path):
-        from kiro_crew.apps.bridges import resolve_stdio_command
+        from efm_go.apps.bridges import resolve_stdio_command
 
         cfg = resolve_stdio_command(
             {"command": "python3", "args": ["server.py"]}, app_root=tmp_path
@@ -2456,8 +2456,8 @@ class TestStdioDepsDirExposure:
         misread as the target) and falls back to the PYTHONPATH transport."""
         import sys as _sys
 
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
@@ -2512,7 +2512,7 @@ class TestStdioDepsDirExposure:
         )
         assert _isolated_python_args(cfg3b)[2:] == ["-c", "import server"], cfg3b
         # -S skips site initialization, so the shim itself could never
-        # import (kiro_crew lives in site-packages) - unshimmable, keep the
+        # import (efm_go lives in site-packages) - unshimmable, keep the
         # PYTHONPATH transport; same for -E/-I and combined spellings
         # an attached -W VALUE is not a flag cluster: the uppercase letters
         # inside ignore::ImportWarning must not read as -S/-E/-I
@@ -2551,8 +2551,8 @@ class TestStdioDepsDirExposure:
         """data/ survives updates, so an update that REMOVES requirements.txt
         leaves the provisioned tree behind - a stale tree must neither
         inject removed dependency code nor route through the shim."""
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)  # tree present, no requirements.txt
         cfg = resolve_stdio_command(
@@ -2570,8 +2570,8 @@ class TestStdioDepsDirExposure:
         deps path is emitted up front - a missing PYTHONPATH entry is inert
         to Python, while omitting it strands the first registration without
         its dependencies."""
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
         _plant_deps_stamp(tmp_path, b"requests\n")
@@ -2593,7 +2593,7 @@ class TestStdioDepsDirExposure:
 
         if not hasattr(_os, "symlink"):
             pytest.skip("no symlink support")
-        import kiro_crew.apps.interpreter as imod
+        import efm_go.apps.interpreter as imod
 
         venv_bin = tmp_path / ".venv" / ("Scripts" if _sys.platform == "win32" else "bin")
         venv_bin.mkdir(parents=True)
@@ -2617,8 +2617,8 @@ class TestStdioDepsDirExposure:
         must not receive the deps PYTHONPATH - 3.12-built wheels injected
         into a foreign 3.11 would kill the server at import. Its env stays
         exactly the pre-deps status quo."""
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         (tmp_path / "requirements.txt").write_bytes(b"requests\n")
@@ -2636,42 +2636,42 @@ class TestStdioDepsDirExposure:
 
     def test_a_path_based_gateway_module_server_gets_no_deps_env(self, tmp_path):
         """The gateway-module exclusion survives the hoist: even a path-based
-        command whose args launch a kiro_crew module must not see the app
+        command whose args launch a efm_go module must not see the app
         deps dir on PYTHONPATH."""
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         cfg = resolve_stdio_command(
             {
                 "command": os.path.join("bin", "python3"),
-                "args": ["-m", "kiro_crew.apps.builtins.x"],
+                "args": ["-m", "efm_go.apps.builtins.x"],
             },
             app_root=tmp_path,
         )
         assert "env" not in cfg, cfg
 
     def test_a_gateway_module_server_never_gets_the_deps_pythonpath(self, tmp_path):
-        """An app that pip-pins its own kiro_crew copy must not shadow the
-        gateway's code: a `-m kiro_crew...` server runs the gateway's OWN
+        """An app that pip-pins its own efm_go copy must not shadow the
+        gateway's code: a `-m efm_go...` server runs the gateway's OWN
         module on the gateway's interpreter, so the app deps dir stays out of
         its PYTHONPATH entirely."""
         import sys as _sys
 
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         app_deps_dir(tmp_path).mkdir(parents=True)
         cfg = resolve_stdio_command(
-            {"command": "python3", "args": ["-m", "kiro_crew.apps.builtins.x"]},
+            {"command": "python3", "args": ["-m", "efm_go.apps.builtins.x"]},
             app_root=tmp_path,
         )
         assert cfg["command"] == _sys.executable
         assert "env" not in cfg, cfg
 
     def test_a_deps_dir_console_script_is_rewritten_and_gets_the_env(self, tmp_path):
-        from kiro_crew.apps.bridges import resolve_stdio_command
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.bridges import resolve_stdio_command
+        from efm_go.apps.interpreter import app_deps_dir
 
         scripts = "Scripts" if platform_compat.IS_WINDOWS else "bin"
         name = "my-mcp-server.exe" if platform_compat.IS_WINDOWS else "my-mcp-server"
@@ -2713,8 +2713,8 @@ class TestMCPProperties:
         """**Validates: Requirements 8.1, 8.2**"""
         import uuid
 
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / f"mcp-{uuid.uuid4().hex[:8]}.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -2755,8 +2755,8 @@ class TestMCPProperties:
         assume(app_a != app_b)
         import uuid
 
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / f"mcp-iso-{uuid.uuid4().hex[:8]}.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -2789,8 +2789,8 @@ class TestBootReconcile:
         # have it scrubbed at gateway boot — else kiro-cli dials the dead port on every
         # session. start_enabled_app_backends() reconciles disabled apps before starting
         # any backend.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -2842,8 +2842,8 @@ class TestBootReconcile:
         # url behind — that's the exact shape that broke every kiro-cli session. The
         # health-gated path calls _gate_mcp_registration(healthy=False) on health failure,
         # which scrubs the entry. (Closes the disabled-only asymmetry the reviewer flagged.)
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -2869,8 +2869,8 @@ class TestBootReconcile:
     def test_enabled_app_healthy_registers_with_live_port(self, tmp_path, app_env, monkeypatch):
         # The complement: once /health passes, _gate_mcp_registration(healthy=True) writes the
         # HTTP MCP url with the confirmed live port (rewriting the manifest's illustrative one).
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -2891,8 +2891,8 @@ class TestBootReconcile:
         # Review scenario: the boot loop must NOT register MCP servers for a freshly
         # spawned (healthy=False) enabled app — registration is deferred to the health-check
         # loop. Registering here is what could leave a dead url for a never-healthy app.
-        import kiro_crew.apps.backend as backend_mod
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.backend as backend_mod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "mcp.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -2945,7 +2945,7 @@ class TestCronServiceBridge:
     def test_boot_default_off_registers_no_third_party_crons(self, tmp_path, app_env, monkeypatch):
         from unittest.mock import MagicMock, patch
 
-        import kiro_crew.apps.execution as execution_mod
+        import efm_go.apps.execution as execution_mod
 
         self._write_app_crons(
             tmp_path,
@@ -2959,7 +2959,7 @@ class TestCronServiceBridge:
         )
         mock_sdk = MagicMock()
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", MagicMock()))
 
         assert result == []
@@ -2968,7 +2968,7 @@ class TestCronServiceBridge:
     def test_boot_explicit_allow_registers_third_party_crons(self, tmp_path, app_env, monkeypatch):
         from unittest.mock import MagicMock, patch
 
-        import kiro_crew.apps.execution as execution_mod
+        import efm_go.apps.execution as execution_mod
 
         self._write_app_crons(
             tmp_path,
@@ -2984,7 +2984,7 @@ class TestCronServiceBridge:
         mock_sdk.list_jobs.return_value = []
         mock_sdk.add_job_if_absent_async = AsyncMock(return_value=MagicMock(id="job-id"))
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", MagicMock()))
 
         assert result == ["test-app/refresh"]
@@ -2996,8 +2996,8 @@ class TestCronServiceBridge:
     ):
         from unittest.mock import MagicMock
 
-        import kiro_crew.apps.bridges as bridges_mod
-        import kiro_crew.apps.execution as execution_mod
+        import efm_go.apps.bridges as bridges_mod
+        import efm_go.apps.execution as execution_mod
 
         app_root = app_env["home"] / "apps" / "test-app"
         app_root.mkdir(parents=True, exist_ok=True)
@@ -3025,8 +3025,8 @@ class TestCronServiceBridge:
     async def test_boot_disarms_orphaned_app_cron_owner(self, app_env, monkeypatch):
         from unittest.mock import MagicMock
 
-        import kiro_crew.apps.bridges as bridges_mod
-        import kiro_crew.apps.execution as execution_mod
+        import efm_go.apps.bridges as bridges_mod
+        import efm_go.apps.execution as execution_mod
 
         events = []
         monkeypatch.setattr(bridges_mod, "list_apps", lambda: [])
@@ -3064,8 +3064,8 @@ class TestCronServiceBridge:
     async def test_boot_keeps_shipped_builtin_app_cron_armed(self, tmp_path, app_env, monkeypatch):
         from unittest.mock import MagicMock
 
-        import kiro_crew.apps.bridges as bridges_mod
-        import kiro_crew.apps.execution as execution_mod
+        import efm_go.apps.bridges as bridges_mod
+        import efm_go.apps.execution as execution_mod
 
         shipped = tmp_path / "shipped-builtins"
         shipped_app = shipped / "builtin-app"
@@ -3107,8 +3107,8 @@ class TestCronServiceBridge:
     ):
         from unittest.mock import MagicMock
 
-        import kiro_crew.apps.bridges as bridges_mod
-        import kiro_crew.apps.execution as execution_mod
+        import efm_go.apps.bridges as bridges_mod
+        import efm_go.apps.execution as execution_mod
 
         app_root = app_env["home"] / "apps" / "third-party-app"
         app_root.mkdir(parents=True)
@@ -3133,7 +3133,7 @@ class TestCronServiceBridge:
 
     @pytest.mark.asyncio
     async def test_execution_disarm_audit_failure_is_best_effort(self, monkeypatch):
-        import kiro_crew.apps.bridges as bridges_mod
+        import efm_go.apps.bridges as bridges_mod
 
         def _audit_failure(**kwargs):
             raise OSError("audit unavailable")
@@ -3155,7 +3155,7 @@ class TestCronServiceBridge:
     def test_registers_cron_with_all_fields(self, tmp_path, app_env, monkeypatch):
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {
@@ -3180,7 +3180,7 @@ class TestCronServiceBridge:
         mock_sdk.list_jobs.return_value = []
         mock_sdk.add_job_if_absent_async = AsyncMock(return_value=MagicMock(id="abc123"))
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert result == ["test-app/refresh"]
@@ -3206,7 +3206,7 @@ class TestCronServiceBridge:
         """A def that names no zone keeps today's config-then-UTC fallback."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         self._write_app_crons(
             tmp_path,
@@ -3219,7 +3219,7 @@ class TestCronServiceBridge:
         mock_sdk.list_jobs.return_value = []
         mock_sdk.add_job_if_absent_async = AsyncMock(return_value=MagicMock(id="abc123"))
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         kwargs = mock_sdk.add_job_if_absent_async.call_args.kwargs
@@ -3230,7 +3230,7 @@ class TestCronServiceBridge:
         """A manifest cron with enabled:false is passed through as enabled=False."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {
@@ -3250,7 +3250,7 @@ class TestCronServiceBridge:
         mock_sdk.list_jobs.return_value = []
         mock_sdk.add_job_if_absent_async = AsyncMock(return_value=MagicMock(id="abc123"))
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert result == ["test-app/nightly-run"]
@@ -3260,7 +3260,7 @@ class TestCronServiceBridge:
         """Pre-existing app-crons.json without the enabled key registers active."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {
@@ -3278,7 +3278,7 @@ class TestCronServiceBridge:
         mock_sdk.list_jobs.return_value = []
         mock_sdk.add_job_if_absent_async = AsyncMock(return_value=MagicMock(id="abc123"))
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert mock_sdk.add_job_if_absent_async.call_args.kwargs["enabled"] is True
@@ -3292,7 +3292,7 @@ class TestCronServiceBridge:
         """
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {
@@ -3316,7 +3316,7 @@ class TestCronServiceBridge:
         mock_sdk = MagicMock()
         mock_sdk.list_jobs.return_value = [existing]
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert result == []
@@ -3329,7 +3329,7 @@ class TestCronServiceBridge:
         """Apps declaring command-type crons get them registered as command jobs."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {
@@ -3354,7 +3354,7 @@ class TestCronServiceBridge:
         mock_sdk.list_jobs.return_value = []
         mock_sdk.add_job_if_absent_async = AsyncMock(return_value=MagicMock(id="cmd123"))
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert result == ["test-app/collect"]
@@ -3380,7 +3380,7 @@ class TestCronServiceBridge:
         """Commands blocked by _vet_shell_command are skipped with SEL audit."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {
@@ -3395,7 +3395,7 @@ class TestCronServiceBridge:
         mock_sdk = MagicMock()
         mock_sdk.list_jobs.return_value = []
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert result == []
@@ -3405,7 +3405,7 @@ class TestCronServiceBridge:
         """Scripts outside ~/.kirocrew/crons/ are rejected at registration."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {
@@ -3420,7 +3420,7 @@ class TestCronServiceBridge:
         mock_sdk = MagicMock()
         mock_sdk.list_jobs.return_value = []
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert result == []
@@ -3429,7 +3429,7 @@ class TestCronServiceBridge:
     def test_idempotent_skips_existing(self, tmp_path, app_env, monkeypatch):
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [{"name": "test-app/refresh", "every": 600, "message": "go"}]
         self._write_app_crons(tmp_path, "test-app", cron_defs)
@@ -3440,14 +3440,14 @@ class TestCronServiceBridge:
         mock_sdk = MagicMock()
         mock_sdk.list_jobs.return_value = [existing_job]
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert result == []
         mock_sdk.add_job_if_absent_async.assert_not_called()
 
     def test_returns_empty_when_no_cron_service(self, tmp_path, app_env):
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         result = _run(register_app_crons_with_service("test-app", None))
         assert result == []
@@ -3455,7 +3455,7 @@ class TestCronServiceBridge:
     def test_returns_empty_when_no_app_crons_file(self, tmp_path, app_env):
         from unittest.mock import MagicMock
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         result = _run(register_app_crons_with_service("nonexistent-app", MagicMock()))
         assert result == []
@@ -3463,7 +3463,7 @@ class TestCronServiceBridge:
     def test_handles_malformed_entry_gracefully(self, tmp_path, app_env, monkeypatch):
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {"name": "", "every": 600, "message": "bad"},  # empty name — skipped
@@ -3476,14 +3476,14 @@ class TestCronServiceBridge:
         mock_sdk.list_jobs.return_value = []
         mock_sdk.add_job_if_absent_async = AsyncMock(return_value=MagicMock(id="x"))
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         assert result == ["test-app/good"]
 
     def test_register_crons_serializes_all_fields(self, tmp_path, app_env):
         """Verify _register_crons writes all CronEntry fields to app-crons.json."""
-        from kiro_crew.apps.bridges import _register_crons, load_app_cron_defs
+        from efm_go.apps.bridges import _register_crons, load_app_cron_defs
 
         manifest = AppManifest(
             name="test-app",
@@ -3494,7 +3494,7 @@ class TestCronServiceBridge:
             crons=[],
         )
         # Manually construct a CronEntry with all fields set
-        from kiro_crew.apps.manifest import CronEntry
+        from efm_go.apps.manifest import CronEntry
 
         entry = CronEntry(
             name="refresh",
@@ -3528,7 +3528,7 @@ class TestCronServiceBridge:
         """Exception from CronSDK.add_job is caught, logged, and execution continues."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import register_app_crons_with_service
+        from efm_go.apps.bridges import register_app_crons_with_service
 
         cron_defs = [
             {"name": "test-app/bad", "every": 600, "message": "x"},
@@ -3542,7 +3542,7 @@ class TestCronServiceBridge:
         # First call raises, second succeeds
         mock_sdk.add_job_if_absent_async = AsyncMock(side_effect=[RuntimeError("boom"), MagicMock(id="ok")])
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(register_app_crons_with_service("test-app", mock_cron_service))
 
         # Failed entry skipped, good entry registered
@@ -3554,20 +3554,20 @@ class TestCronServiceDeregister:
     """Tests for deregister_app_crons_from_service — scheduler cleanup helper."""
 
     def test_returns_zero_when_no_cron_service(self, tmp_path, app_env):
-        from kiro_crew.apps.bridges import deregister_app_crons_from_service
+        from efm_go.apps.bridges import deregister_app_crons_from_service
 
         assert _run(deregister_app_crons_from_service("test-app", None)) == 0
 
     def test_calls_remove_all_and_returns_count(self, tmp_path, app_env):
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import deregister_app_crons_from_service
+        from efm_go.apps.bridges import deregister_app_crons_from_service
 
         mock_cron_service = MagicMock()
         mock_sdk = MagicMock()
         mock_sdk.remove_all_async = AsyncMock(return_value=3)
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(deregister_app_crons_from_service("test-app", mock_cron_service))
 
         assert result == 3
@@ -3576,13 +3576,13 @@ class TestCronServiceDeregister:
     def test_returns_zero_on_exception(self, tmp_path, app_env):
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.apps.bridges import deregister_app_crons_from_service
+        from efm_go.apps.bridges import deregister_app_crons_from_service
 
         mock_cron_service = MagicMock()
         mock_sdk = MagicMock()
         mock_sdk.remove_all_async = AsyncMock(side_effect=RuntimeError("scheduler unavailable"))
 
-        with patch("kiro_crew.apps.bridges.CronSDK", return_value=mock_sdk):
+        with patch("efm_go.apps.bridges.CronSDK", return_value=mock_sdk):
             result = _run(deregister_app_crons_from_service("test-app", mock_cron_service))
 
         assert result == 0  # exception swallowed, zero returned
@@ -3601,7 +3601,7 @@ class TestBuiltinAgentNamesAreNamespaced:
 
     def _builtin_dirs(self):
 
-        import kiro_crew.apps.builtins as builtins_pkg
+        import efm_go.apps.builtins as builtins_pkg
 
         root = Path(builtins_pkg.__file__).parent
         return [p for p in root.iterdir() if (p / "app.json").is_file()]
@@ -3640,7 +3640,7 @@ class TestUserAgentEditsSurviveRefresh:
     """
 
     def test_user_keys_win_and_owned_keys_are_refreshed(self) -> None:
-        from kiro_crew.apps.bridges import _preserve_user_agent_edits
+        from efm_go.apps.bridges import _preserve_user_agent_edits
 
         prior = {
             "name": "app--agent",
@@ -3665,7 +3665,7 @@ class TestUserAgentEditsSurviveRefresh:
         assert out["prompt"] == "file:///new/path.md"
 
     def test_no_prior_file_is_a_no_op(self) -> None:
-        from kiro_crew.apps.bridges import _preserve_user_agent_edits
+        from efm_go.apps.bridges import _preserve_user_agent_edits
 
         fresh = {"name": "a", "model": "auto"}
         assert _preserve_user_agent_edits("a.json", None, fresh) == fresh
@@ -3680,7 +3680,7 @@ class TestUserAgentEditsSurviveRefresh:
         provenance here to tell a hand edit from last boot's template copy, so the
         line is drawn by meaning: containment is refreshed, preference is kept.
         """
-        from kiro_crew.apps.bridges import _preserve_user_agent_edits
+        from efm_go.apps.bridges import _preserve_user_agent_edits
 
         prior = {
             "name": "app--agent",
@@ -3703,7 +3703,7 @@ class TestUserAgentEditsSurviveRefresh:
     def test_a_corrupt_prior_file_does_not_fail_the_refresh(self, tmp_path) -> None:
         """An unreadable file must not block registration — it means "nothing to
         preserve", not "abort"."""
-        from kiro_crew.apps.bridges import _read_agent_config
+        from efm_go.apps.bridges import _read_agent_config
 
         broken = tmp_path / "a.json"
         broken.write_text("{not json", encoding="utf-8")
@@ -3723,7 +3723,7 @@ class TestUserAgentEditsSurviveRefresh:
         decision; adding one to the template without deciding is the bug this
         guard exists to surface.
         """
-        from kiro_crew.apps.bridges import _FRAMEWORK_OWNED_AGENT_KEYS
+        from efm_go.apps.bridges import _FRAMEWORK_OWNED_AGENT_KEYS
 
         assert _FRAMEWORK_OWNED_AGENT_KEYS == {
             "name",
@@ -3750,7 +3750,7 @@ class TestUserAgentEditsSurviveRefresh:
         """
         import json
 
-        from kiro_crew.apps.bridges import _FRAMEWORK_OWNED_AGENT_KEYS
+        from efm_go.apps.bridges import _FRAMEWORK_OWNED_AGENT_KEYS
 
         # Keys a user is MEANT to be able to pin by hand.
         # Keys a user is MEANT to be able to pin by hand. `welcomeMessage` is
@@ -3766,7 +3766,7 @@ class TestUserAgentEditsSurviveRefresh:
         preferences = {
             "description", "model", "toolsSettings", "$schema", "welcomeMessage", "skills",
         }
-        root = _REPO_ROOT / "src/kiro_crew/apps/builtins"
+        root = _REPO_ROOT / "src/efm_go/apps/builtins"
         templates = sorted(root.glob("*/agents/*.json"))
         if not templates:
             # Same reasoning as the namespacing guard above: nothing ships an
@@ -3804,8 +3804,8 @@ class TestBuiltinDeclaredResourcesActuallyRegister:
         """
         import dataclasses
 
-        from kiro_crew.apps.discovery import _manifest_to_builtin_dict
-        from kiro_crew.apps.manifest import AppManifest
+        from efm_go.apps.discovery import _manifest_to_builtin_dict
+        from efm_go.apps.manifest import AppManifest
 
         declared = {f.name for f in dataclasses.fields(AppManifest)}
         # ``extra`` is the catch-all bag, splatted into the dict by key.
@@ -3863,9 +3863,9 @@ class TestBuiltinDeclaredResourcesActuallyRegister:
         """A builtin resolves resource paths against the packaged dir, not $HOME."""
         import json as _json
 
-        from kiro_crew.apps.bridges import _app_resource_root
-        from kiro_crew.apps.discovery import _get_builtins_dir
-        from kiro_crew.apps.manager import get_app, register_builtin_apps
+        from efm_go.apps.bridges import _app_resource_root
+        from efm_go.apps.discovery import _get_builtins_dir
+        from efm_go.apps.manager import get_app, register_builtin_apps
 
         register_builtin_apps()
         packaged = _get_builtins_dir()
@@ -3908,8 +3908,8 @@ class TestAppEventBusIsActuallyWired:
     def test_dashboard_state_exposes_the_broadcast_method_the_gateway_passes(self):
         import inspect
 
-        from kiro_crew.dashboard import server as server_mod
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard import server as server_mod
+        from efm_go.dashboard.state import DashboardState
 
         src = inspect.getsource(server_mod)
         # The app backend waves hand it over from a server_runtime owner.
@@ -3924,7 +3924,7 @@ class TestAppEventBusIsActuallyWired:
             )
 
     def test_context_has_no_event_bus_without_a_broadcast_fn(self, tmp_path):
-        from kiro_crew.apps.context import build_app_context
+        from efm_go.apps.context import build_app_context
 
         ctx = build_app_context(
             "probe", tmp_path, permissions={"events": ["probe:thing"]}, broadcast_fn=None
@@ -3932,7 +3932,7 @@ class TestAppEventBusIsActuallyWired:
         assert ctx.events is None
 
     def test_context_gets_an_event_bus_when_a_broadcast_fn_is_supplied(self, tmp_path):
-        from kiro_crew.apps.context import build_app_context
+        from efm_go.apps.context import build_app_context
 
         sent: list[dict] = []
         ctx = build_app_context(
@@ -3960,7 +3960,7 @@ class TestNeutralizeEntryShape:
     """
 
     def test_neutralize_copies_the_full_spec_from_the_global_file(self, monkeypatch):
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(
             bridges,
@@ -3977,7 +3977,7 @@ class TestNeutralizeEntryShape:
         assert "@some-server" not in out["tools"]
 
     def test_server_without_a_global_spec_is_skipped_not_emitted_bare(self, monkeypatch):
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(bridges, "_global_mcp_specs", lambda: {})
         agent = {"name": "a", "tools": [], "mcpServers": {}}
@@ -3988,7 +3988,7 @@ class TestNeutralizeEntryShape:
 
     def test_every_emitted_entry_has_a_command(self, monkeypatch):
         """The invariant itself, over a mixed grant+neutralize merge."""
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(bridges, "_global_mcp_specs", lambda: {"n1": {"command": "c1"}})
         agent = {
@@ -4023,7 +4023,7 @@ class TestAppPromptPathIsContained:
     """
 
     def _call(self, tmp_path, raw):
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         app_root = tmp_path / "app"
         app_root.mkdir(exist_ok=True)
@@ -4031,7 +4031,7 @@ class TestAppPromptPathIsContained:
         return bridges._apply_agent_prompt({}, "a", policy, "someapp", app_root), app_root
 
     def test_a_path_outside_the_app_is_dropped(self, tmp_path, monkeypatch):
-        from kiro_crew.apps import bridges, manager
+        from efm_go.apps import bridges, manager
 
         monkeypatch.setattr(manager, "app_data_dir", lambda n: tmp_path / "data")
         monkeypatch.setattr(bridges, "app_data_dir", lambda n: tmp_path / "data")
@@ -4041,7 +4041,7 @@ class TestAppPromptPathIsContained:
         assert "prompt" not in merged  # escaping path refused
 
     def test_a_path_inside_the_app_root_is_kept(self, tmp_path, monkeypatch):
-        from kiro_crew.apps import bridges, manager
+        from efm_go.apps import bridges, manager
 
         monkeypatch.setattr(manager, "app_data_dir", lambda n: tmp_path / "data")
         monkeypatch.setattr(bridges, "app_data_dir", lambda n: tmp_path / "data")
@@ -4052,7 +4052,7 @@ class TestAppPromptPathIsContained:
         assert merged["prompt"] == f"file://{prompt.resolve()}"
 
     def test_a_symlink_escaping_the_app_is_refused(self, tmp_path, monkeypatch):
-        from kiro_crew.apps import bridges, manager
+        from efm_go.apps import bridges, manager
 
         monkeypatch.setattr(manager, "app_data_dir", lambda n: tmp_path / "data")
         monkeypatch.setattr(bridges, "app_data_dir", lambda n: tmp_path / "data")
@@ -4083,14 +4083,14 @@ class TestRebuildPreservesTheLiveMcpSpec:
     """
 
     def test_live_registered_spec_wins_over_the_manifest(self, monkeypatch):
-        from kiro_crew import agent
+        from efm_go import agent
 
         class _M:
             mcpServers = {"srv": {"url": "http://127.0.0.1:9100/mcp"}}  # illustrative
 
         monkeypatch.setattr(agent, "_ceiling_filtered_spec", lambda ref, spec, *, audit=True: spec)
-        import kiro_crew.apps.bridges as bridges
-        import kiro_crew.apps.manager as manager
+        import efm_go.apps.bridges as bridges
+        import efm_go.apps.manager as manager
 
         monkeypatch.setattr(manager, "list_apps", lambda: [{"name": "someapp"}])
         monkeypatch.setattr(manager, "is_app_enabled", lambda n: True)
@@ -4104,15 +4104,15 @@ class TestRebuildPreservesTheLiveMcpSpec:
         assert out["someapp:srv"]["url"] == "http://127.0.0.1:54321/mcp"
 
     def test_http_server_with_no_live_entry_is_skipped(self, monkeypatch):
-        from kiro_crew import agent
+        from efm_go import agent
 
         class _M:
             mcpServers = {"srv": {"url": "http://127.0.0.1:9100/mcp"}}
             backend = SimpleNamespace(entryPoint="backend.py")
 
         monkeypatch.setattr(agent, "_ceiling_filtered_spec", lambda ref, spec, *, audit=True: spec)
-        import kiro_crew.apps.bridges as bridges
-        import kiro_crew.apps.manager as manager
+        import efm_go.apps.bridges as bridges
+        import efm_go.apps.manager as manager
 
         monkeypatch.setattr(manager, "list_apps", lambda: [{"name": "someapp"}])
         monkeypatch.setattr(manager, "is_app_enabled", lambda n: True)
@@ -4122,14 +4122,14 @@ class TestRebuildPreservesTheLiveMcpSpec:
         assert "someapp:srv" not in out  # dead-port URL never written
 
     def test_stdio_server_falls_back_to_the_manifest(self, monkeypatch):
-        from kiro_crew import agent
+        from efm_go import agent
 
         class _M:
             mcpServers = {"srv": {"command": "run", "args": ["x"]}}
 
         monkeypatch.setattr(agent, "_ceiling_filtered_spec", lambda ref, spec, *, audit=True: spec)
-        import kiro_crew.apps.bridges as bridges
-        import kiro_crew.apps.manager as manager
+        import efm_go.apps.bridges as bridges
+        import efm_go.apps.manager as manager
 
         monkeypatch.setattr(manager, "list_apps", lambda: [{"name": "someapp"}])
         monkeypatch.setattr(manager, "is_app_enabled", lambda n: True)
@@ -4149,7 +4149,7 @@ class TestLegacyScrubIsLocked:
     def test_scrub_holds_the_legacy_file_lock(self) -> None:
         import inspect
 
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         src = inspect.getsource(bridges_mod._scrub_legacy_shared_mcp)
         assert "with _mcp_lock(target=_LEGACY_SHARED_MCP_PATH):" in src
@@ -4157,7 +4157,7 @@ class TestLegacyScrubIsLocked:
     def test_scrub_removes_only_the_apps_entries(self, tmp_path, monkeypatch) -> None:
         import json
 
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         legacy = tmp_path / "mcp.json"
         legacy.write_text(
@@ -4180,7 +4180,7 @@ class TestReregisterRefreshesAgents:
     """
 
     def test_reregister_refreshes_agents_after_registering(self, monkeypatch) -> None:
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         calls: list[str] = []
         monkeypatch.setattr(bridges_mod, "_registration_source", lambda n: (object(), "/app/root"))
@@ -4212,7 +4212,7 @@ class TestMcpEnableHandlersOffloadTheSync:
     def test_handlers_offload_sync_to_agent(self) -> None:
         import re
 
-        src = (_REPO_ROOT / "src/kiro_crew/dashboard/handlers/mcp.py").read_text(encoding="utf-8")
+        src = (_REPO_ROOT / "src/efm_go/dashboard/handlers/mcp.py").read_text(encoding="utf-8")
         # No bare synchronous call to a PUBLIC sync-to-agent function inside an
         # async handler: every such invocation is wrapped in asyncio.to_thread.
         # The `_unlocked` variants are the sync locking-wrapper's own delegation
@@ -4239,7 +4239,7 @@ class TestRegisterPrunesUpgradedAwayResources:
     def test_stale_app_agent_and_server_are_pruned(self, tmp_path, app_env) -> None:
         import json as _json
 
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         src = _make_app_source(tmp_path)  # declares my-agent, no mcpServers
         install_app(src)
@@ -4262,7 +4262,7 @@ class TestRegisterPrunesUpgradedAwayResources:
 
         # The off-loop boot reconcile is the one path that prunes. Ensure the app
         # is enabled so reconcile processes it (it skips disabled apps).
-        from kiro_crew.apps.manager import enable_app
+        from efm_go.apps.manager import enable_app
 
         enable_app("test-app")
         bridges_mod.reconcile_enabled_app_resources()
@@ -4283,7 +4283,7 @@ class TestRegisterNeverDeletesBeforeReplacement:
     """
 
     def test_a_legacy_symlink_survives_a_failed_rewrite(self, tmp_path, app_env, monkeypatch):
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -4317,7 +4317,7 @@ class TestPruneAbortsOnUnreadableAgent:
     """
 
     def test_unreadable_agent_aborts_the_agent_prune(self, tmp_path, app_env, monkeypatch):
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -4344,7 +4344,7 @@ class TestPruneAbortsOnUnreadableAgent:
         cannot-read != removed situation: the agent must be RETAINED (treated
         as present), never pruned out of its last-good materialized config.
         """
-        from kiro_crew.apps import bridges as bridges_mod
+        from efm_go.apps import bridges as bridges_mod
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -4368,7 +4368,7 @@ class TestMalformedConfigIsNotClobbered:
     whole configuration."""
 
     def test_strict_read_raises_on_malformed_existing(self, tmp_path, monkeypatch):
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "kirocrew.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -4382,7 +4382,7 @@ class TestMalformedConfigIsNotClobbered:
             bmod._read_mcp_json_unlocked(strict=True)
 
     def test_register_does_not_overwrite_a_malformed_config(self, tmp_path, app_env, monkeypatch):
-        import kiro_crew.apps.bridges as bmod
+        import efm_go.apps.bridges as bmod
 
         mcp_path = tmp_path / "kirocrew.json"
         monkeypatch.setattr(bmod, "_mcp_json_path", lambda: mcp_path)
@@ -4414,7 +4414,7 @@ class TestShippedAgentTemplatesAreRenderedByTheGateway:
     """
 
     def test_placeholders_resolve_to_gateway_computed_values(self, tmp_path, app_env):
-        from kiro_crew.apps.bridges import _placeholder_values
+        from efm_go.apps.bridges import _placeholder_values
 
         values = _placeholder_values("pptx-maker")
         assert set(values) == {
@@ -4434,12 +4434,12 @@ class TestShippedAgentTemplatesAreRenderedByTheGateway:
     def test_an_unknown_app_resolves_nothing(self, tmp_path, app_env):
         """Fail-closed: adding a placeholder to a new app's config is inert until its
         values are named, rather than silently registering an unrendered config."""
-        from kiro_crew.apps.bridges import _placeholder_values
+        from efm_go.apps.bridges import _placeholder_values
 
         assert _placeholder_values("some-other-app") == {}
 
     def test_a_template_is_rendered_into_the_data_home(self, tmp_path, app_env):
-        from kiro_crew.apps.bridges import _render_shipped_agent
+        from efm_go.apps.bridges import _render_shipped_agent
 
         shipped = tmp_path / "package" / "pptx-maker" / "agents"
         shipped.mkdir(parents=True)
@@ -4462,7 +4462,7 @@ class TestShippedAgentTemplatesAreRenderedByTheGateway:
     def test_the_install_dir_copy_is_never_read(self, tmp_path, app_env):
         """The whole point of the redesign: an attacker-written copy in the install dir
         has no influence, because it is not consulted."""
-        from kiro_crew.apps.bridges import _render_shipped_agent
+        from efm_go.apps.bridges import _render_shipped_agent
 
         shipped = tmp_path / "package" / "pptx-maker" / "agents"
         shipped.mkdir(parents=True)
@@ -4481,7 +4481,7 @@ class TestShippedAgentTemplatesAreRenderedByTheGateway:
         assert rendered["command"] != "/tmp/attacker-binary"
 
     def test_a_config_with_no_placeholder_is_returned_untouched(self, tmp_path, app_env):
-        from kiro_crew.apps.bridges import _render_shipped_agent
+        from efm_go.apps.bridges import _render_shipped_agent
 
         shipped = tmp_path / "package" / "pptx-maker" / "agents"
         shipped.mkdir(parents=True)
@@ -4492,7 +4492,7 @@ class TestShippedAgentTemplatesAreRenderedByTheGateway:
 
     def test_an_unresolvable_placeholder_registers_nothing(self, tmp_path, app_env):
         """Better to register no agent than one naming a literal `{ENGINE_ROOT}`."""
-        from kiro_crew.apps.bridges import _render_shipped_agent
+        from efm_go.apps.bridges import _render_shipped_agent
 
         shipped = tmp_path / "package" / "unknown-app" / "agents"
         shipped.mkdir(parents=True)
@@ -4506,7 +4506,7 @@ class TestShippedAgentTemplatesAreRenderedByTheGateway:
         must be escaped or the render is invalid JSON (or a mangled separator)."""
         from unittest import mock
 
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         shipped = tmp_path / "package" / "pptx-maker" / "agents"
         shipped.mkdir(parents=True)
@@ -4531,7 +4531,7 @@ class TestRegisterAgentsSnapshotUpkeep:
         # Removing an app's agent files must drop them from the resolver's
         # snapshot. Otherwise a disabled app's agent stays dispatchable in memory
         # and a slot still bound to it hands kiro-cli a name whose config is gone.
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -4547,7 +4547,7 @@ class TestRegisterAgentsSnapshotUpkeep:
         assert calls == ["refresh"]
 
     def test_deregister_without_removals_does_not_refresh(self, monkeypatch, tmp_path):
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -4565,7 +4565,7 @@ class TestRegisterAgentsSnapshotUpkeep:
         # follows a prune) writes nothing. Skipping the rescan there would leave
         # the removed name dispatchable in memory, and kiro-cli would silently
         # fall back to its own default for a name it cannot load.
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         calls: list[str] = []
         monkeypatch.setattr(
@@ -4607,7 +4607,7 @@ class TestRefreshAppAgentsReportsIoFailures:
         )
 
     def test_an_io_failure_is_collected(self, monkeypatch, tmp_path):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         self._wire(monkeypatch, brmod, tmp_path)
 
         def _fake(app_name, manifest, app_root, io_failures=None):
@@ -4622,7 +4622,7 @@ class TestRefreshAppAgentsReportsIoFailures:
 
     def test_a_permanent_skip_collects_nothing(self, monkeypatch, tmp_path):
         # An unsafe agent name or malformed spec registers nothing and never will.
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         self._wire(monkeypatch, brmod, tmp_path)
         monkeypatch.setattr(
             brmod, "_register_agents",
@@ -4636,7 +4636,7 @@ class TestRefreshAppAgentsReportsIoFailures:
     def test_a_self_managed_app_is_never_materialized(self, monkeypatch, tmp_path):
         # `resources="app"` means the app registers its own agents; the gateway
         # publishing them too is duplicate dispatchable configuration.
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         self._wire(monkeypatch, brmod, tmp_path)
         monkeypatch.setattr(brmod, "get_app", lambda name: {"resources": "app"})
         monkeypatch.setattr(
@@ -4650,7 +4650,7 @@ class TestRefreshAppAgentsReportsIoFailures:
 
     def test_a_denied_app_has_its_agents_scrubbed_not_rewritten(self, monkeypatch, tmp_path):
         # Rewriting a revoked app's agents would make them dispatchable again.
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         self._wire(monkeypatch, brmod, tmp_path)
         monkeypatch.setattr(brmod, "_registration_denied", lambda name, action, app_root: "revoked")
         scrubbed: list[str] = []
@@ -4675,8 +4675,8 @@ class TestDemotionKeepsBackendIndependentServers:
     """
 
     def test_the_unhealthy_reconcile_scrubs_http_and_keeps_stdio(self, monkeypatch, tmp_path):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         calls: dict[str, object] = {}
 
@@ -4706,7 +4706,7 @@ class TestDemotionKeepsBackendIndependentServers:
         # mirroring _collect_app_mcp_servers.
         import inspect
 
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         src = inspect.getsource(brmod._register_mcp_servers)
         assert "servers.pop(namespaced, None)" in src
         assert "if is_http and not resolved_port and manifest.backend.entryPoint:" in src
@@ -4716,7 +4716,7 @@ class TestScrubFallsBackWhenTheManifestCannotSay:
     """No manifest → remove everything, rather than keep a dead url out of ignorance."""
 
     def test_an_unresolvable_manifest_scrubs_every_entry(self, monkeypatch):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(brmod, "_registration_source", lambda n: (None, brmod.Path(".")))
         removed: list[str] = []
@@ -4735,7 +4735,7 @@ class TestScrubFallsBackWhenTheManifestCannotSay:
     def test_a_manifest_declaring_no_servers_also_scrubs_everything(self, monkeypatch):
         # A stale `<app>:` entry with nothing declaring it is exactly the shape that
         # should not survive; there is no independent server to protect.
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         empty = SimpleNamespace(mcpServers={})
         monkeypatch.setattr(brmod, "_registration_source", lambda n: (empty, brmod.Path(".")))
@@ -4764,7 +4764,7 @@ class TestLifecycleWritersShareTheHealthSerialization:
         # the honest probe — it fails only while someone actually holds it.
         import threading
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         result: list[bool] = []
 
         def _probe():
@@ -4778,7 +4778,7 @@ class TestLifecycleWritersShareTheHealthSerialization:
         return result[0]
 
     def test_mcp_registration_runs_under_the_guard(self, monkeypatch):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         held: list[bool] = []
         monkeypatch.setattr(
             brmod,
@@ -4800,7 +4800,7 @@ class TestLifecycleWritersShareTheHealthSerialization:
         assert held == [True]
 
     def test_mcp_deregistration_runs_under_the_guard(self, monkeypatch):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         held: list[bool] = []
         monkeypatch.setattr(
             brmod,
@@ -4815,7 +4815,7 @@ class TestLifecycleWritersShareTheHealthSerialization:
     def test_agent_materialization_runs_under_the_guard(self, monkeypatch, tmp_path):
         # The READ is inside too, not just the write: an agent copies the ambient spec,
         # so a read before a scrub and a write after it is the interleave that matters.
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         held: list[bool] = []
         monkeypatch.setattr(brmod, "_kiro_agents_dir", lambda: tmp_path)
         monkeypatch.setattr(
@@ -4830,7 +4830,7 @@ class TestLifecycleWritersShareTheHealthSerialization:
         # The health transition holds the lock and then calls straight into these
         # writers. A non-re-entrant lock would deadlock the watch thread here, which is
         # why it is an RLock — pinned so nobody "simplifies" it back to Lock.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         with bmod._health_reconcile_lock:
             assert bmod._health_reconcile_lock.acquire(blocking=False)
@@ -4851,7 +4851,7 @@ class TestRenderFailureIsClassifiedByCause:
         return src
 
     def test_a_write_failure_is_collected(self, monkeypatch, tmp_path):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         src = self._template(tmp_path, '{"name": "a", "root": "{ENGINE_ROOT}"}')
         monkeypatch.setattr(brmod, "_placeholder_values", lambda n: {"{ENGINE_ROOT}": "/x"})
         monkeypatch.setattr(brmod, "_kiro_agents_dir", lambda: tmp_path / "agents")
@@ -4865,7 +4865,7 @@ class TestRenderFailureIsClassifiedByCause:
         assert collected == [str(src)]
 
     def test_an_unresolved_placeholder_is_not_collected(self, monkeypatch, tmp_path):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         src = self._template(tmp_path, '{"name": "a", "root": "{ENGINE_ROOT}"}')
         monkeypatch.setattr(brmod, "_placeholder_values", lambda n: {})  # nothing resolves
 
@@ -4874,7 +4874,7 @@ class TestRenderFailureIsClassifiedByCause:
         assert collected == []  # permanent: retrying never converges
 
     def test_invalid_rendered_json_is_not_collected(self, monkeypatch, tmp_path):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         src = self._template(tmp_path, '{"name": "a", "root": "{ENGINE_ROOT}"')  # unbalanced
         monkeypatch.setattr(brmod, "_placeholder_values", lambda n: {"{ENGINE_ROOT}": "/x"})
@@ -4896,7 +4896,7 @@ class TestScrubNeverDeletesMaterializedAgents:
     """
 
     def test_an_unreadable_manifest_keeps_the_agents(self, monkeypatch):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(brmod, "_registration_source", lambda n: (None, brmod.Path(".")))
         monkeypatch.setattr(brmod, "_deregister_mcp_servers", lambda n: 1)
@@ -4908,7 +4908,7 @@ class TestScrubNeverDeletesMaterializedAgents:
         assert brmod.scrub_backend_mcp_url("unreadable") == []
 
     def test_a_manifest_declaring_no_servers_keeps_them_too(self, monkeypatch):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(
             brmod, "_registration_source",
@@ -4924,7 +4924,7 @@ class TestScrubNeverDeletesMaterializedAgents:
 
     def test_the_mcp_entry_is_still_scrubbed(self, monkeypatch):
         # Keeping the agents must not turn into keeping the dead url as well.
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(brmod, "_registration_source", lambda n: (None, brmod.Path(".")))
         removed: list[str] = []
@@ -4945,7 +4945,7 @@ class TestUnreadableManifestIsNotASilentRegistration:
     """
 
     def test_an_unreadable_manifest_is_collected(self, monkeypatch):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(brmod, "_registration_source", lambda n: (None, brmod.Path(".")))
         monkeypatch.setattr(brmod, "_registration_denied", lambda name, action, app_root: None)
@@ -4956,7 +4956,7 @@ class TestUnreadableManifestIsNotASilentRegistration:
 
     def test_a_manifest_declaring_no_servers_is_not_collected(self, monkeypatch):
         # Readable and simply empty: nothing to register, and retrying never changes it.
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(
             brmod, "_registration_source",
@@ -4980,7 +4980,7 @@ class TestScrubDoesNotRematerializeAgents:
     """
 
     def test_the_scrub_touches_mcp_only(self, monkeypatch):
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         manifest = SimpleNamespace(mcpServers={"srv": {"command": "x"}}, agents=["a.json"])
         monkeypatch.setattr(brmod, "_registration_source", lambda n: (manifest, brmod.Path(".")))
@@ -4999,7 +4999,7 @@ class TestScrubDoesNotRematerializeAgents:
     def test_a_denied_app_still_gets_a_full_removal(self, monkeypatch):
         # The admission gate `reregister_app_mcp_servers` applied has to survive the
         # switch: nothing of a denied app stays reachable, not even its stdio servers.
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         manifest = SimpleNamespace(mcpServers={"srv": {"command": "x"}}, agents=[])
         monkeypatch.setattr(brmod, "_registration_source", lambda n: (manifest, brmod.Path(".")))

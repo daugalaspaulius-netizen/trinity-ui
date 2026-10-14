@@ -25,8 +25,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.acp.client import _apply_pod_home_remap
+from efm_go import security
+from efm_go.acp.client import _apply_pod_home_remap
 
 
 def _pin_home(monkeypatch: pytest.MonkeyPatch, home: Path) -> Path:
@@ -341,7 +341,7 @@ class TestTheStagedIdentityStoreIsFencedFromToolCalls:
 
     def test_every_table_row_is_in_the_fence(self) -> None:
         """One table. A row that is not fenced would be staged and readable."""
-        from kiro_crew import identity_stores
+        from efm_go import identity_stores
 
         fenced = set(security._SENSITIVE_HOME_DIRS)
         missing = [d for d in identity_stores.fenced_home_dirs() if d not in fenced]
@@ -387,7 +387,7 @@ class TestTheStagedIdentityStoreIsFencedFromToolCalls:
         self, tmp_path: Path, monkeypatch
     ) -> None:
         """macOS and Windows layouts too -- the pod's platform is not the fence's."""
-        from kiro_crew import identity_stores
+        from efm_go import identity_stores
 
         os_home = tmp_path / "pod-os-home"
         monkeypatch.setenv("KIROCREW_POD", "1")
@@ -407,7 +407,7 @@ class TestTheStagedIdentityStoreIsFencedFromToolCalls:
         rather than protecting anything. This is the pod-home variant of the same
         assertion -- the fence added above must not have leaked into a mask tier.
         """
-        from kiro_crew import identity_stores, sandbox
+        from efm_go import identity_stores, sandbox
 
         store_dirs = set(identity_stores.fenced_home_dirs())
         for tier_name in ("_STRICT_DIRS", "_CC_DIRS", "_STANDARD_DIRS"):

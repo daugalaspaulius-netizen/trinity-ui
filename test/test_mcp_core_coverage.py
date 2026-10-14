@@ -1,4 +1,4 @@
-"""Coverage tests for ``kiro_crew.mcp_core`` helpers and thin tool bodies.
+"""Coverage tests for ``efm_go.mcp_core`` helpers and thin tool bodies.
 
 Focus areas (the largest coverage gaps):
 
@@ -28,9 +28,9 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
-from kiro_crew import mcp_core
-from kiro_crew.history import INCOGNITO_MEMORY_MODES
-from kiro_crew.mcp_core import (
+from efm_go import mcp_core
+from efm_go.history import INCOGNITO_MEMORY_MODES
+from efm_go.mcp_core import (
     _call_tool,
     _casefold_match_span,
     _do_select_crew,
@@ -42,7 +42,7 @@ from kiro_crew.mcp_core import (
     _validate_args,
     _ws_bucket,
 )
-from kiro_crew.skill_runtime.search import SkillSearchReport
+from efm_go.skill_runtime.search import SkillSearchReport
 
 
 class _FakeResponse:
@@ -145,18 +145,18 @@ class TestHttpErrorBody:
 class TestVerbHelpers:
     def test_success_decodes_json_body(self, verb: str):
         fn = getattr(mcp_core, verb)
-        with patch("kiro_crew.mcp_core.loopback_urlopen", return_value=_FakeResponse({"ok": True})):
+        with patch("efm_go.mcp_core.loopback_urlopen", return_value=_FakeResponse({"ok": True})):
             assert fn("/api/thing") == {"ok": True}
 
     def test_http_error_is_decoded_through_http_error_body(self, verb: str):
         fn = getattr(mcp_core, verb)
         err = _http_error(404, b'{"error": "not found"}')
-        with patch("kiro_crew.mcp_core.loopback_urlopen", side_effect=err):
+        with patch("efm_go.mcp_core.loopback_urlopen", side_effect=err):
             assert fn("/api/thing") == {"error": "not found"}
 
     def test_generic_exception_becomes_error_dict(self, verb: str):
         fn = getattr(mcp_core, verb)
-        with patch("kiro_crew.mcp_core.loopback_urlopen", side_effect=RuntimeError("boom")):
+        with patch("efm_go.mcp_core.loopback_urlopen", side_effect=RuntimeError("boom")):
             assert fn("/api/thing") == {"error": "boom"}
 
     def test_non_latin1_session_key_short_circuits(
@@ -165,7 +165,7 @@ class TestVerbHelpers:
         fn = getattr(mcp_core, verb)
         monkeypatch.setattr(mcp_core, "_resolve_session_key", lambda: "dashboard:chat—1")
         with patch(
-            "kiro_crew.mcp_core.loopback_urlopen", side_effect=AssertionError("must not be called")
+            "efm_go.mcp_core.loopback_urlopen", side_effect=AssertionError("must not be called")
         ):
             out = fn("/api/thing")
         assert "invalid in HTTP headers" in out["error"]
@@ -176,7 +176,7 @@ class TestVerbHelperBodies:
         for verb, method in (("_patch", "PATCH"), ("_put", "PUT")):
             fn = getattr(mcp_core, verb)
             with patch(
-                "kiro_crew.mcp_core.loopback_urlopen", return_value=_FakeResponse({"ok": True})
+                "efm_go.mcp_core.loopback_urlopen", return_value=_FakeResponse({"ok": True})
             ) as m:
                 fn("/api/thing", {"a": 1})
             req = m.call_args[0][0]
@@ -186,7 +186,7 @@ class TestVerbHelperBodies:
 
     def test_delete_without_body_sends_no_content_type(self):
         with patch(
-            "kiro_crew.mcp_core.loopback_urlopen", return_value=_FakeResponse({"ok": True})
+            "efm_go.mcp_core.loopback_urlopen", return_value=_FakeResponse({"ok": True})
         ) as m:
             mcp_core._delete("/api/thing")
         req = m.call_args[0][0]
@@ -195,7 +195,7 @@ class TestVerbHelperBodies:
 
     def test_delete_with_body_sends_json(self):
         with patch(
-            "kiro_crew.mcp_core.loopback_urlopen", return_value=_FakeResponse({"ok": True})
+            "efm_go.mcp_core.loopback_urlopen", return_value=_FakeResponse({"ok": True})
         ) as m:
             mcp_core._delete("/api/thing", {"rule": "x"})
         req = m.call_args[0][0]
@@ -205,25 +205,25 @@ class TestVerbHelperBodies:
 class TestPostTransportClassification:
     def test_connection_refused_is_not_a_transport_error(self):
         err = urllib.error.URLError(ConnectionRefusedError("refused"))
-        with patch("kiro_crew.mcp_core.loopback_urlopen", side_effect=err):
+        with patch("efm_go.mcp_core.loopback_urlopen", side_effect=err):
             out = mcp_core._post("/api/spawn", {})
         assert "transport_error" not in out
         assert out["error"]
 
     def test_other_urlerror_is_flagged_transport_error(self):
         err = urllib.error.URLError(TimeoutError("timed out"))
-        with patch("kiro_crew.mcp_core.loopback_urlopen", side_effect=err):
+        with patch("efm_go.mcp_core.loopback_urlopen", side_effect=err):
             out = mcp_core._post("/api/spawn", {})
         assert out["transport_error"] is True
 
     def test_unexpected_exception_is_flagged_transport_error(self):
-        with patch("kiro_crew.mcp_core.loopback_urlopen", side_effect=RuntimeError("read timeout")):
+        with patch("efm_go.mcp_core.loopback_urlopen", side_effect=RuntimeError("read timeout")):
             out = mcp_core._post("/api/spawn", {})
         assert out == {"error": "read timeout", "transport_error": True}
 
     def test_http_error_is_not_flagged_transport_error(self):
         with patch(
-            "kiro_crew.mcp_core.loopback_urlopen",
+            "efm_go.mcp_core.loopback_urlopen",
             side_effect=_http_error(400, b'{"error": "nope"}'),
         ):
             out = mcp_core._post("/api/spawn", {})
@@ -762,7 +762,7 @@ class TestWorkflowReadIdentity:
     @pytest.mark.parametrize("tool", ["workflow_status", "workflow_result", "workflow_list"])
     @pytest.mark.parametrize("refused", [False, True])
     def test_reads_forward_exact_verified_identity(self, tool, refused):
-        from kiro_crew.mcp_tools.workflows import HANDLERS
+        from efm_go.mcp_tools.workflows import HANDLERS
 
         response = (
             {"error": "foreign run refused"}
@@ -933,7 +933,7 @@ class TestSkillSearch:
     session-less CLI call falls back to the local loader."""
 
     def test_exact_read_uses_json_and_retains_signed_session(self, monkeypatch):
-        from kiro_crew.validation import MAX_SKILL_KEY_CHARS
+        from efm_go.validation import MAX_SKILL_KEY_CHARS
 
         key = "nested/" + "x" * (MAX_SKILL_KEY_CHARS - len("nested/"))
         seen = []
@@ -1474,7 +1474,7 @@ class TestValidateArgs:
         assert cleaned["run_id"] == "r1"
 
     def test_unknown_field_is_rejected(self):
-        from kiro_crew.validation import ValidationError
+        from efm_go.validation import ValidationError
 
         with pytest.raises(ValidationError):
             _validate_args("workflow_status", {"run_id": "r1", "junk": "x"})
@@ -1486,7 +1486,7 @@ class TestValidateArgs:
         assert _validate_args("memory_recall", raw) == raw
 
     def test_invalid_run_id_pattern_is_rejected(self):
-        from kiro_crew.validation import ValidationError
+        from efm_go.validation import ValidationError
 
         with pytest.raises(ValidationError):
             _validate_args("workflow_status", {"run_id": "bad id/../etc"})

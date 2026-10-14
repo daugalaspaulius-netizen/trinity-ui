@@ -43,7 +43,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.builtins.auto_research import handlers as h
+from efm_go.apps.builtins.auto_research import handlers as h
 
 BASE = "/api/apps/auto-research"
 
@@ -2066,7 +2066,7 @@ class TestEmergentExploration:
 
     @staticmethod
     def _seed_pending(cid: str, texts: list[str]) -> None:
-        from kiro_crew.apps.builtins.auto_research import subquestion_queue as sq
+        from efm_go.apps.builtins.auto_research import subquestion_queue as sq
 
         d = h._campaign_dir(cid)
         queue = sq.load_queue(d)

@@ -1,8 +1,8 @@
 # Profiling (debug-only)
 
-Kiro Crew ships aggregate duration histograms (`kiro_crew.metrics`, off by
+Kiro Crew ships aggregate duration histograms (`efm_go.metrics`, off by
 default) and a stall detector that dumps thread stacks when the event loop wedges
-(`kiro_crew.dashboard.loop_watchdog`). Neither attributes time to call paths.
+(`efm_go.dashboard.loop_watchdog`). Neither attributes time to call paths.
 `kirocrew perf sample` fills that gap: it turns a window of execution into
 **folded stacks**, the format speedscope, flamegraph.pl and Perfetto all import.
 
@@ -29,7 +29,7 @@ right tool for "why is this one operation slow".
 
 ```bash
 KIROCREW_DEBUG=1 kirocrew perf sample \
-  --call kiro_crew.cli_doctor:_doctor \
+  --call efm_go.cli_doctor:_doctor \
   --interval 0.002 \
   --output /tmp/doctor.folded
 ```
@@ -166,7 +166,7 @@ processes are listed.
 Each line is `outermost;...;innermost <sample-count>`, hottest first:
 
 ```
-run (kiro_crew/cli.py:702);search (kiro_crew/history.py:412) 184
+run (efm_go/cli.py:702);search (efm_go/history.py:412) 184
 ```
 
 Open it at <https://speedscope.app> (local, nothing is uploaded) or pipe it to

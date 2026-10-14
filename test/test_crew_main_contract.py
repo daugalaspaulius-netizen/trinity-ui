@@ -1,7 +1,7 @@
 """The root card's contract: folded numbers, three model sentences, nothing else.
 
-``mypy src/kiro_crew/`` checks both ends of :func:`build_crew_main` -- the fold renders in,
-:class:`~kiro_crew.crew_main_contract.CrewMainDerived` out. These cases cover what a type
+``mypy src/efm_go/`` checks both ends of :func:`build_crew_main` -- the fold renders in,
+:class:`~efm_go.crew_main_contract.CrewMainDerived` out. These cases cover what a type
 checker cannot: that no branch of the provider leaves a field unanswered, that absence is
 three-state in WORDS rather than a zero, that no value is a percentage, that a model can
 reach no derived field, and that a card whose model-written part carries a number is
@@ -18,7 +18,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.crew_main_contract import (
+from efm_go.crew_main_contract import (
     CARD_FIELDS,
     DERIVED_FIELDS,
     FOLD_UNREADABLE,
@@ -32,14 +32,14 @@ from kiro_crew.crew_main_contract import (
     card_data_payload,
     merge_crew_main,
 )
-from kiro_crew.dashboard import card_lifecycle
-from kiro_crew.dashboard.card_lifecycle import (
+from efm_go.dashboard import card_lifecycle
+from efm_go.dashboard.card_lifecycle import (
     _ROOT_PROMPT,
     _model_wrote_number,
     _root_card_output,
     is_root_session,
 )
-from kiro_crew.dashboard.dynamic_cards import (
+from efm_go.dashboard.dynamic_cards import (
     MAX_DATA_BYTES,
     MAX_HTML_BYTES,
     CardBudget,
@@ -67,7 +67,7 @@ def _isolate_session_tree(monkeypatch):
     ``is_root_session`` reads that projection, which is a process singleton keyed to one
     store, so a case here must not leave a fold behind for the next file to read.
     """
-    from kiro_crew.crew_log import session_tree_projection
+    from efm_go.crew_log import session_tree_projection
 
     session_tree_projection.reset_for_tests()
     # Seeded over the case's own empty store: the root gate refuses an unseeded tree.
@@ -140,7 +140,7 @@ class _State:
 
 
 def _lifecycle(*slots: _Slot, enabled: bool = False, log: object = None):
-    from kiro_crew.dashboard.card_lifecycle import CardLifecycle
+    from efm_go.dashboard.card_lifecycle import CardLifecycle
 
     return CardLifecycle(_State(*slots, log=log), enabled=enabled)
 
@@ -477,7 +477,7 @@ def test_the_published_card_fits_the_host_caps_at_their_worst() -> None:
 
 
 def test_every_field_name_is_one_the_host_accepts() -> None:
-    from kiro_crew.dashboard.dynamic_cards import _FIELD_NAME
+    from efm_go.dashboard.dynamic_cards import _FIELD_NAME
 
     for field in CARD_FIELDS:
         assert _FIELD_NAME.fullmatch(field), field
@@ -534,7 +534,7 @@ class _Node:
 
 def _with_tree(monkeypatch, nodes: dict[str, _Node]) -> None:
     """Stand in for the in-memory session-tree projection ``is_root_session`` reads."""
-    from kiro_crew.crew_log import session_tree_projection
+    from efm_go.crew_log import session_tree_projection
 
     monkeypatch.setattr(
         session_tree_projection,
@@ -584,8 +584,8 @@ def test_an_empty_tree_leaves_an_ordinary_tab_as_root(monkeypatch) -> None:
 
 def test_an_unseeded_tree_is_not_read_as_root_and_asks_for_a_seed(monkeypatch) -> None:
     """Before the first seed an adopted slot's edge is not folded yet, so no card is queued."""
-    from kiro_crew.crew_log import session_tree_projection
-    from kiro_crew.dashboard import state as dashboard_state
+    from efm_go.crew_log import session_tree_projection
+    from efm_go.dashboard import state as dashboard_state
 
     asks: list[int] = []
     monkeypatch.setattr(dashboard_state, "_request_lineage_seed", lambda: asks.append(1))
@@ -615,7 +615,7 @@ def test_no_card_is_generated_while_the_crew_log_is_off(monkeypatch) -> None:
 
 def test_an_unreadable_tree_falls_back_to_the_cheap_reading(monkeypatch) -> None:
     """A broken projection must cost the wider reading, never the panel or the turn."""
-    from kiro_crew.crew_log import session_tree_projection
+    from efm_go.crew_log import session_tree_projection
 
     def boom():
         raise RuntimeError("tree unavailable")
@@ -741,7 +741,7 @@ async def test_shutdown_settles_both_tasks(monkeypatch) -> None:
 @pytest.fixture
 def _real_log(tmp_path, monkeypatch):
     """A crew log store of this test's own, written by the REAL emitter."""
-    from kiro_crew.crew_log import emit
+    from efm_go.crew_log import emit
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -778,7 +778,7 @@ def test_a_slot_with_no_unit_reads_not_recorded_rather_than_zero(_real_log) -> N
 
 
 def test_units_the_store_cannot_rank_read_as_unreadable(monkeypatch) -> None:
-    from kiro_crew.crew_log import emit
+    from efm_go.crew_log import emit
 
     monkeypatch.setattr(emit, "slot_previous_store", lambda slot: ("", False, False))
     reads = card_lifecycle._read_card_folds("root")
@@ -862,8 +862,8 @@ def test_a_tool_called_in_an_earlier_unit_of_the_slot_is_listed(_real_log) -> No
 def test_a_chain_cut_short_never_licenses_a_never_called_claim(
     _real_log, monkeypatch, ended: str, incomplete: bool
 ) -> None:
-    from kiro_crew.crew_log import read
-    from kiro_crew.crew_log.session_tree import ChainReading, SlotChain
+    from efm_go.crew_log import read
+    from efm_go.crew_log.session_tree import ChainReading, SlotChain
 
     emit = _real_log
     emit.on_session_opened("unit-new", slot="root", agent="default", memory="global")
@@ -883,9 +883,9 @@ def test_a_chain_cut_short_never_licenses_a_never_called_claim(
 def test_a_slot_with_no_unit_has_a_whole_empty_list_and_an_unranked_one_has_none(
     monkeypatch,
 ) -> None:
-    from kiro_crew.crew_log import projection as projections
-    from kiro_crew.crew_log import read
-    from kiro_crew.crew_log.session_tree import ChainReading, SlotChain
+    from efm_go.crew_log import projection as projections
+    from efm_go.crew_log import read
+    from efm_go.crew_log.session_tree import ChainReading, SlotChain
 
     no_unit = card_lifecycle._read_card_tools("root", {"no_unit": True})
     assert card_lifecycle._tool_record(no_unit)["tools_whole"] is True
@@ -958,7 +958,7 @@ def test_an_oldest_unit_that_does_not_state_it_is_first_is_a_gap(_real_log, flag
 def test_the_refresh_path_never_reads_the_tool_chain(_real_log, monkeypatch) -> None:
     # Numbers are re-bound on every log growth with no model call; tool names are
     # for the prompt only, so the chain walk must stay off that path.
-    from kiro_crew.crew_log import read
+    from efm_go.crew_log import read
 
     emit = _real_log
     emit.on_session_opened("unit-r", slot="root", agent="default", memory="global")
@@ -999,7 +999,7 @@ async def test_a_log_commit_with_no_transcript_row_re_binds_the_numbers(monkeypa
     # The turn's last entries land AFTER the row that ended it, so nothing but the
     # writer's growth signal says the folds moved. A card bound at that row would
     # otherwise keep saying a turn is running.
-    from kiro_crew.crew_log import projection
+    from efm_go.crew_log import projection
 
     reads = {"now": _reads()}
     lifecycle, root, _, prompts = _wire(monkeypatch, reads, [_reply(lede="Reviewing.")])
@@ -1025,7 +1025,7 @@ async def test_a_log_commit_with_no_transcript_row_re_binds_the_numbers(monkeypa
 async def test_a_workers_report_re_binds_the_conductors_numbers(monkeypatch) -> None:
     # A worker's report lands in the WORKER's log, whose header names the worker's slot,
     # which has no card. The conductor's board folds that log, so it must re-bind.
-    from kiro_crew.crew_log import projection
+    from efm_go.crew_log import projection
 
     bound = {"state": "open", "status": "progress", "worker_session_key": "worker"}
     reads = {"now": _reads(work={"items": [dict(bound, status="question")], "omitted": 0})}
@@ -1066,7 +1066,7 @@ def test_a_binding_the_binder_never_fills_does_not_count(html: str) -> None:
 
 
 def test_the_growth_signal_reaches_only_the_current_producer(monkeypatch) -> None:
-    from kiro_crew.crew_log import emit
+    from efm_go.crew_log import emit
 
     registered: list[object] = []
     monkeypatch.setattr(card_lifecycle, "crew_log_enabled", lambda: True)

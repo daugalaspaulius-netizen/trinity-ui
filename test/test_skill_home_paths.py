@@ -51,8 +51,8 @@ def _is_migration_prose(line: str) -> bool:
 
 def _skill_files() -> list[Path]:
     """Every skill-authored file: top-level skills/, packaged builtin_skills/, plus app-bundled skills/."""
-    roots = [REPO_ROOT / "skills", REPO_ROOT / "src" / "kiro_crew" / "builtin_skills"]
-    roots += sorted((REPO_ROOT / "src" / "kiro_crew" / "apps" / "builtins").glob("*/skills"))
+    roots = [REPO_ROOT / "skills", REPO_ROOT / "src" / "efm_go" / "builtin_skills"]
+    roots += sorted((REPO_ROOT / "src" / "efm_go" / "apps" / "builtins").glob("*/skills"))
     files: list[Path] = []
     for root in roots:
         if not root.is_dir():
@@ -129,8 +129,8 @@ def test_migration_exemption_is_narrow() -> None:
 # runtime write-path guard (``test_runtime_home_write_paths.py``) covers code,
 # this covers prose, and neither covers a brand-new description string.
 AGENT_INSTRUCTION_FILES = (
-    "src/kiro_crew/config/prompt.md",
-    "src/kiro_crew/mcp_cron.py",
+    "src/efm_go/config/prompt.md",
+    "src/efm_go/mcp_cron.py",
     "AUTOSDE.yaml",
     "website/AUTOSDE.yaml",
 )
@@ -168,13 +168,13 @@ def test_agent_instruction_surfaces_do_not_name_the_legacy_home() -> None:
 def test_shipped_user_docs_do_not_name_the_legacy_home() -> None:
     """The docs that ship to users must state the current data home.
 
-    ``src/kiro_crew/docs/`` is packaged and surfaced in-product, so a stale path
+    ``src/efm_go/docs/`` is packaged and surfaced in-product, so a stale path
     there sends a user to a directory that does not exist -- or has them create
     it. Top-level ``docs/`` is deliberately NOT covered: it holds dated design
     records, RFCs and plans that describe the layout as it was when written, and
     rewriting those would falsify history.
     """
-    root = REPO_ROOT / "src" / "kiro_crew" / "docs"
+    root = REPO_ROOT / "src" / "efm_go" / "docs"
     if not root.is_dir():
         pytest.skip("shipped docs directory not present")
 

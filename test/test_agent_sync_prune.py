@@ -7,10 +7,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.agent_discovery import AgentInfo
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.config.sections import MemoryConfig
-from kiro_crew.memory_stores import (
+from efm_go.agent_discovery import AgentInfo
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.config.sections import MemoryConfig
+from efm_go.memory_stores import (
     UnknownMemoryStore,
     provision_member_memory,
     require_member_memory_store,
@@ -48,7 +48,7 @@ async def _run_sync(cfg: KiroCrewConfig, aim_agents_list: list[AgentInfo]) -> di
     existing called/not-called assertions keep their meaning) and stores the
     mutated document on ``cfg.written_doc``.
     """
-    from kiro_crew.dashboard.handlers.agents import _do_agents_sync
+    from efm_go.dashboard.handlers.agents import _do_agents_sync
 
     request = MagicMock()
     request.get.return_value = "dashboard"
@@ -63,13 +63,13 @@ async def _run_sync(cfg: KiroCrewConfig, aim_agents_list: list[AgentInfo]) -> di
         return result
 
     with (
-        patch("kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load", return_value=cfg),
-        patch("kiro_crew.dashboard.handlers.agents.list_agents", return_value=aim_agents_list),
+        patch("efm_go.dashboard.handlers.agents.KiroCrewConfig.load", return_value=cfg),
+        patch("efm_go.dashboard.handlers.agents.list_agents", return_value=aim_agents_list),
         patch(
-            "kiro_crew.dashboard.handlers.agents.update_config_locked",
+            "efm_go.dashboard.handlers.agents.update_config_locked",
             new=_fake_update_config_locked,
         ),
-        patch("kiro_crew.dashboard.handlers.agents._sel", return_value=sel_mock),
+        patch("efm_go.dashboard.handlers.agents._sel", return_value=sel_mock),
     ):
         response = await _do_agents_sync(request)
 
@@ -201,7 +201,7 @@ class TestAgentSyncPrune:
 
     @pytest.mark.asyncio
     async def test_package_prune_preserves_memory_without_rebinding_new_member(self):
-        from kiro_crew.dashboard.handlers.agents import _do_agents_sync
+        from efm_go.dashboard.handlers.agents import _do_agents_sync
 
         cfg = KiroCrewConfig.load()
         cfg.agents["stale-package"] = KiroCrewAgentConfig(
@@ -215,10 +215,10 @@ class TestAgentSyncPrune:
         request.app = {}
         with (
             patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents",
+                "efm_go.dashboard.handlers.agents.list_agents",
                 return_value=[_make_aim_agent("live")],
             ),
-            patch("kiro_crew.dashboard.handlers.agents._sel", return_value=MagicMock()),
+            patch("efm_go.dashboard.handlers.agents._sel", return_value=MagicMock()),
         ):
             response = await _do_agents_sync(request)
         assert json.loads(response.body)["pruned"] == ["stale-package"]
@@ -276,8 +276,8 @@ class TestSyncRefusesCredentialShapedNames:
         assert retired_store in cfg.memory_stores
         assert fresh == "default"
         assert cfg.written_doc["memory_stores"] == {}
-        from kiro_crew.memory_stores import memory_stores_root
-        from kiro_crew.vector_memory import read_member_database_identity
+        from efm_go.memory_stores import memory_stores_root
+        from efm_go.vector_memory import read_member_database_identity
 
         assert (
             read_member_database_identity(memory_stores_root() / retired_store / "memory.db")[1]
@@ -293,7 +293,7 @@ class TestAgentSyncFsCheckIsOffloaded:
     def test_the_on_disk_check_is_awaited_off_loop(self) -> None:
         import inspect
 
-        from kiro_crew.dashboard.handlers import agents
+        from efm_go.dashboard.handlers import agents
 
         src = inspect.getsource(agents._do_agents_sync)
         assert "await asyncio.to_thread(" in src
@@ -307,7 +307,7 @@ class TestPruneOnlySnapshotMatchedEntries:
 
     @pytest.mark.asyncio
     async def test_agent_added_or_changed_after_snapshot_survives_stale_prune(self):
-        from kiro_crew.dashboard.handlers.agents import _do_agents_sync
+        from efm_go.dashboard.handlers.agents import _do_agents_sync
 
         cfg = _make_config({"stale": KiroCrewAgentConfig(kiro_agent="stale-spec", source="aim")})
         request = MagicMock()
@@ -332,16 +332,16 @@ class TestPruneOnlySnapshotMatchedEntries:
             return result
 
         with (
-            patch("kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load", return_value=cfg),
+            patch("efm_go.dashboard.handlers.agents.KiroCrewConfig.load", return_value=cfg),
             patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents",
+                "efm_go.dashboard.handlers.agents.list_agents",
                 return_value=[_make_aim_agent("unrelated")],
             ),
             patch(
-                "kiro_crew.dashboard.handlers.agents.update_config_locked",
+                "efm_go.dashboard.handlers.agents.update_config_locked",
                 new=_fake_update_config_locked,
             ),
-            patch("kiro_crew.dashboard.handlers.agents._sel", return_value=MagicMock()),
+            patch("efm_go.dashboard.handlers.agents._sel", return_value=MagicMock()),
         ):
             await _do_agents_sync(request)
 

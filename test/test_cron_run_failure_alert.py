@@ -1,6 +1,6 @@
 """A failed script/command cron must tell the user WHY, not only the log.
 
-Regression cover for kirodotdev/KiroCrew#4157: the script and command cron
+Regression cover for efmleads.com#4157: the script and command cron
 branches signal failure by mutating the job and returning normally, so they
 never reached the message path's failure alert. The reason lived in the gateway
 log and in a dashboard field nobody reads while waiting for a notification that
@@ -16,8 +16,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.cron import CronJob, CronSchedule
-from kiro_crew.slack.gateway import _FAILURE_REMINDER_SECS
+from efm_go.cron import CronJob, CronSchedule
+from efm_go.slack.gateway import _FAILURE_REMINDER_SECS
 
 # The reason from the issue: a startup guard raising before the script body runs.
 CONFLICT = (
@@ -28,7 +28,7 @@ CONFLICT = (
 
 def _make_gw():
     """A GatewayOrchestrator with only the attributes the cron callback touches."""
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
     gw.sessions = MagicMock()
@@ -101,10 +101,10 @@ async def _run_script(gw, job, script_result=None, *, vet_reason=None, side_effe
         {"side_effect": side_effect} if side_effect is not None else {"return_value": script_result}
     )
     with (
-        patch("kiro_crew.slack.gateway.CronService") as mock_cron_cls,
-        patch("kiro_crew.slack.gateway.run_script_sandboxed", **mock_kw),
-        patch("kiro_crew.slack.gateway.vet_job_at_fire_time", return_value=vet_reason),
-        patch("kiro_crew.slack.gateway.sel"),
+        patch("efm_go.slack.gateway.CronService") as mock_cron_cls,
+        patch("efm_go.slack.gateway.run_script_sandboxed", **mock_kw),
+        patch("efm_go.slack.gateway.vet_job_at_fire_time", return_value=vet_reason),
+        patch("efm_go.slack.gateway.sel"),
     ):
 
         def capture_cron(on_job=None, **kw):
@@ -127,15 +127,15 @@ async def _run_command(gw, job, cmd_result=None, *, vet_reason=None, side_effect
         {"side_effect": side_effect} if side_effect is not None else {"return_value": cmd_result}
     )
     gate = (
-        patch("kiro_crew.slack.gateway.vet_job_at_fire_time", return_value=vet_reason)
+        patch("efm_go.slack.gateway.vet_job_at_fire_time", return_value=vet_reason)
         if vet_reason is not None
         else nullcontext()
     )
     with (
-        patch("kiro_crew.slack.gateway.CronService") as mock_cron_cls,
-        patch("kiro_crew.slack.gateway.run_command_sandboxed", **mock_kw),
+        patch("efm_go.slack.gateway.CronService") as mock_cron_cls,
+        patch("efm_go.slack.gateway.run_command_sandboxed", **mock_kw),
         gate,
-        patch("kiro_crew.slack.gateway.sel"),
+        patch("efm_go.slack.gateway.sel"),
     ):
 
         def capture_cron(on_job=None, **kw):
@@ -164,10 +164,10 @@ async def _run_message_callback_raising(gw, job, exc):
         raise exc
 
     with (
-        patch("kiro_crew.slack.gateway.stream_and_collect", fake_stream),
-        patch("kiro_crew.slack.gateway.CronService") as mock_cron_cls,
-        patch("kiro_crew.slack.gateway.sel"),
-        patch("kiro_crew.slack.gateway.vet_job_at_fire_time", return_value=None),
+        patch("efm_go.slack.gateway.stream_and_collect", fake_stream),
+        patch("efm_go.slack.gateway.CronService") as mock_cron_cls,
+        patch("efm_go.slack.gateway.sel"),
+        patch("efm_go.slack.gateway.vet_job_at_fire_time", return_value=None),
     ):
 
         def capture_cron(on_job=None, **kw):

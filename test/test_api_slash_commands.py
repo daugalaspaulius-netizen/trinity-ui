@@ -15,7 +15,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.dashboard.chat_utils import (
     _BLOCKED_SLASH_COMMANDS,
     _SLASH_COMMANDS,
     SLASH_COMMAND_DESCRIPTIONS,
@@ -27,7 +27,7 @@ def _fake_config(provider: str):
 
 
 def _make_app() -> web.Application:
-    from kiro_crew.dashboard.handlers.agents import api_slash_commands
+    from efm_go.dashboard.handlers.agents import api_slash_commands
 
     app = web.Application()
     app.router.add_get("/api/slash-commands", api_slash_commands)
@@ -36,7 +36,7 @@ def _make_app() -> web.Application:
 
 async def _get(provider: str):
     with patch(
-        "kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load",
+        "efm_go.dashboard.handlers.agents.KiroCrewConfig.load",
         return_value=_fake_config(provider),
     ):
         async with TestClient(TestServer(_make_app())) as client:
@@ -91,7 +91,7 @@ class TestApiSlashCommands:
         provider = SimpleNamespace(_slash_commands=["compact", "tangent", "quit", "help"])
         state = SimpleNamespace(sessions=SimpleNamespace(active_providers=lambda: [provider]))
         with patch(
-            "kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load",
+            "efm_go.dashboard.handlers.agents.KiroCrewConfig.load",
             return_value=_fake_config("claude_code"),
         ):
             app = _make_app()

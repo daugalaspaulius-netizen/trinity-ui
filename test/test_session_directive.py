@@ -12,7 +12,7 @@ that makes subagent isolation structural rather than cryptographic.
 
 import pytest
 
-from kiro_crew import session_directive as sd
+from efm_go import session_directive as sd
 
 # One representative argument payload per directive kind. ``args`` is opaque to
 # the protocol (it is just round-tripped as JSON), so any dict suffices.

@@ -37,9 +37,9 @@ from unittest import mock
 import pytest
 from skill_script_helpers import load_skill_script, no_bytecode
 
-import kiro_crew.dashboard_templates.parity as parity
-from kiro_crew.crew_log.projection import FOLD_NAMES
-from kiro_crew.dashboard_templates import (
+import efm_go.dashboard_templates.parity as parity
+from efm_go.crew_log.projection import FOLD_NAMES
+from efm_go.dashboard_templates import (
     MAX_CARD_DATA_BYTES,
     MAX_CARD_FIELDS,
     NOT_SAID,
@@ -52,7 +52,7 @@ from kiro_crew.dashboard_templates import (
     read_int,
     read_text,
 )
-from kiro_crew.dashboard_templates.parity import (
+from efm_go.dashboard_templates.parity import (
     CONTROL_TAGS,
     ExtractionRefused,
     contract_keys,
@@ -62,15 +62,15 @@ from kiro_crew.dashboard_templates.parity import (
     html_fields,
     outbound_references,
 )
-from kiro_crew.dashboard_templates.registry import REGISTRY, html_path, spec_for
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.dashboard_templates.registry import REGISTRY, html_path, spec_for
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / "src" / "kiro_crew" / "dashboard_templates"
+PACKAGE = ROOT / "src" / "efm_go" / "dashboard_templates"
 SCAFFOLD = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "dashboard-template"
@@ -842,7 +842,7 @@ class TestTheContractReader:
         module.write_text(
             "from __future__ import annotations\n"
             "from typing import NotRequired, TypedDict\n"
-            "from kiro_crew.dashboard_templates import Unsaid\n\n" + declaration,
+            "from efm_go.dashboard_templates import Unsaid\n\n" + declaration,
             encoding="utf-8",
         )
         name = f"leaky_contract_{spelling}"
@@ -1262,7 +1262,7 @@ class TestTheRegistry:
         past the html cap passes every other gate in this file and is dropped WHOLE by the
         host, which is the failure this package exists to prevent.
         """
-        host = importlib.import_module("kiro_crew.dashboard.dynamic_cards")
+        host = importlib.import_module("efm_go.dashboard.dynamic_cards")
         for slug, spec in REGISTRY.items():
             page = html_path(slug).read_text(encoding="utf-8")
             contract_module = importlib.import_module(spec.contract.__module__)
@@ -1574,9 +1574,9 @@ class TestTheScaffoldedTemplateHoldsTheInvariants:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text, encoding="utf-8")
 
-        pkg = tmp_path / "src" / "kiro_crew" / "dashboard_templates"
-        contract_name = f"kiro_crew.dashboard_templates.{self.SLUG}_contract"
-        provider_name = f"kiro_crew.dashboard_templates.{self.SLUG}_provider"
+        pkg = tmp_path / "src" / "efm_go" / "dashboard_templates"
+        contract_name = f"efm_go.dashboard_templates.{self.SLUG}_contract"
+        provider_name = f"efm_go.dashboard_templates.{self.SLUG}_provider"
         with no_bytecode():
             contract = load_skill_script(contract_name, pkg / f"{self.SLUG}_contract.py")
             sys.modules[contract_name] = contract
@@ -1624,7 +1624,7 @@ class TestTheScaffoldedTemplateHoldsTheInvariants:
         together, judged on html bytes, data bytes, field count and every field name at
         once. A template born over a cap would be dropped whole on first render.
         """
-        host = importlib.import_module("kiro_crew.dashboard.dynamic_cards")
+        host = importlib.import_module("efm_go.dashboard.dynamic_cards")
         card = emitted.build({}, emitted.empty_judgment, captured_at=self.STAMP)
         accepted = host.normalize_card({"html": emitted.page, "data": card_data(card)})
         assert accepted is not None, "the host refuses the scaffold's own template"
@@ -1809,7 +1809,7 @@ class TestTheRestatedHostLimits:
     @staticmethod
     def _host() -> Any:
         """The host card normalizer. Imported per call so a stub can be injected."""
-        return importlib.import_module("kiro_crew.dashboard.dynamic_cards")
+        return importlib.import_module("efm_go.dashboard.dynamic_cards")
 
     def test_the_field_cap_is_the_hosts_real_boundary(self) -> None:
         """Pinned against behaviour because the host names no constant for it.
@@ -1873,11 +1873,11 @@ class TestTheRestatedHostLimits:
         no Python stub can make it lie. Its own failure is proven by the file's content
         rather than by injection.
         """
-        stub = types.ModuleType("kiro_crew.dashboard.dynamic_cards")
+        stub = types.ModuleType("efm_go.dashboard.dynamic_cards")
         stub.MAX_DATA_BYTES = MAX_CARD_DATA_BYTES + 1  # type: ignore[attr-defined]
         stub._FIELD_NAME = re.compile(r"zzz\Z")  # type: ignore[attr-defined]
         stub.normalize_card = lambda raw, previous=None: None  # type: ignore[attr-defined]
-        monkeypatch.setitem(sys.modules, "kiro_crew.dashboard.dynamic_cards", stub)
+        monkeypatch.setitem(sys.modules, "efm_go.dashboard.dynamic_cards", stub)
 
         for case in (
             self.test_the_field_cap_is_the_hosts_real_boundary,
@@ -1895,7 +1895,7 @@ class TestTheRestatedHostLimits:
         """
         host = self._host()
         assert callable(getattr(host, "normalize_card", None)), (
-            "kiro_crew.dashboard.dynamic_cards imports but has no normalize_card; "
+            "efm_go.dashboard.dynamic_cards imports but has no normalize_card; "
             "_host() is pointed at the wrong module"
         )
         assert Path(host.__file__).name == "dynamic_cards.py"
@@ -1914,7 +1914,7 @@ class TestWhatShips:
     def _declared_globs() -> list[str]:
         cfg = configparser.ConfigParser()
         cfg.read(ROOT / "setup.cfg", encoding="utf-8")
-        raw = cfg.get("options.package_data", "kiro_crew", fallback="")
+        raw = cfg.get("options.package_data", "efm_go", fallback="")
         return [
             line.strip()
             for line in raw.splitlines()
@@ -1928,7 +1928,7 @@ class TestWhatShips:
         start failing only once the first template arrived -- charged to whoever added
         it. The declaration is what has to exist now.
         """
-        pkg = ROOT / "src" / "kiro_crew"
+        pkg = ROOT / "src" / "efm_go"
         probe = (PACKAGE / "example.html").relative_to(pkg).as_posix()
         assert any(fnmatch(probe, glob) for glob in self._declared_globs()), (
             "no [options.package_data] glob covers this package's .html pages, so pip "
@@ -1958,7 +1958,7 @@ class TestWhichCheckoutItWritesInto:
 
     @staticmethod
     def _fake_checkout(root: Path) -> Path:
-        (root / "src" / "kiro_crew").mkdir(parents=True)
+        (root / "src" / "efm_go").mkdir(parents=True)
         return root
 
     def test_the_working_directorys_checkout_wins(
@@ -2031,7 +2031,7 @@ class TestTheScaffoldCli:
         """
         mod = _scaffold()
         root = tmp_path
-        (root / "src" / "kiro_crew").mkdir(parents=True)
+        (root / "src" / "efm_go").mkdir(parents=True)
         files = mod.emit("x_board", "work", mod.parse_fields(["open:fraction:calls"]), root)
         real = os.open
 
@@ -2075,7 +2075,7 @@ class TestTheScaffoldCli:
         """
         mod = _scaffold()
         root = tmp_path
-        (root / "src" / "kiro_crew").mkdir(parents=True)
+        (root / "src" / "efm_go").mkdir(parents=True)
         first = mod.emit("x_board", "tools", mod.parse_fields(["open:fraction:calls"]), root)
         second = mod.emit(
             "x_board", "approvals", mod.parse_fields(["pending:fraction:requested"]), root
@@ -2099,7 +2099,7 @@ class TestTheScaffoldCli:
         """
         mod = _scaffold()
         root = tmp_path
-        (root / "src" / "kiro_crew").mkdir(parents=True)
+        (root / "src" / "efm_go").mkdir(parents=True)
         files = mod.emit("x_board", "tools", mod.parse_fields(["open:fraction:calls"]), root)
         target = list(files)[-1]
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -2126,7 +2126,7 @@ class TestTheScaffoldCli:
         """
         mod = _scaffold()
         root = tmp_path
-        (root / "src" / "kiro_crew").mkdir(parents=True)
+        (root / "src" / "efm_go").mkdir(parents=True)
         files = mod.emit("x_board", "tools", mod.parse_fields(["open:fraction:calls"]), root)
         mod.publish(root, files, force=False)
         changed = {path: text + "\n# changed\n" for path, text in files.items()}
@@ -2138,7 +2138,7 @@ class TestTheScaffoldCli:
         the file that stopped it alone -- that file belongs to whoever wrote it first."""
         mod = _scaffold()
         root = tmp_path
-        (root / "src" / "kiro_crew").mkdir(parents=True)
+        (root / "src" / "efm_go").mkdir(parents=True)
         files = mod.emit("x_board", "tools", mod.parse_fields(["open:fraction:calls"]), root)
         targets = list(files)
         targets[-1].parent.mkdir(parents=True, exist_ok=True)
@@ -2163,12 +2163,12 @@ class TestTheScaffoldCli:
         while still printing the in-repo path.
         """
         root = tmp_path / "checkout"
-        (root / "src" / "kiro_crew").mkdir(parents=True)
+        (root / "src" / "efm_go").mkdir(parents=True)
         outside = tmp_path / "outside"
         outside.mkdir()
         victim = outside / "victim.py"
         victim.write_text("do not touch\n", encoding="utf-8")
-        pkg = root / "src" / "kiro_crew" / "dashboard_templates"
+        pkg = root / "src" / "efm_go" / "dashboard_templates"
         if planted == "file":
             pkg.mkdir()
             (pkg / "x_board_contract.py").symlink_to(victim)
@@ -2204,7 +2204,7 @@ class TestTheScaffoldCli:
         ]
         assert commands, "SKILL.md documents no runnable scaffold command in a bash block"
         root = tmp_path / "checkout"
-        (root / "src" / "kiro_crew").mkdir(parents=True)
+        (root / "src" / "efm_go").mkdir(parents=True)
         for command in commands:
             argv = shlex.split(command)
             index = next(i for i, token in enumerate(argv) if token.endswith("scaffold.py"))

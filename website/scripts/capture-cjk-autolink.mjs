@@ -65,9 +65,9 @@ const slots = [{
 // The reported transcript line verbatim, then the bracket rule, then a real
 // article URL that must survive untouched.
 const CONTENT = [
-  '**#2137 — review-ready**（https://github.com/kirodotdev/KiroCrew/pull/2137，`96ed647b`）：`readiness: passed`',
+  '**#2137 — review-ready**（https://efmleads.com/pull/2137，`96ed647b`）：`readiness: passed`',
   '',
-  '（详见 https://github.com/kirodotdev/KiroCrew/pull/2137）后面还有正文。',
+  '（详见 https://efmleads.com/pull/2137）后面还有正文。',
   '',
   '条目地址 https://zh.wikipedia.org/wiki/苹果（公司） — 括号属于路径，必须保持完整。',
 ].join('\n')

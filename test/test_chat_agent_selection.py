@@ -14,43 +14,43 @@ from chat_test_helpers import _make_app_with_agent_routes, _make_state, drain_ba
 from dashboard_owner_helpers import as_owner
 from test_members_dm_thread import _make_members_app
 
-from kiro_crew.agent_discovery import AgentInfo
-from kiro_crew.config import live
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, resolve_agent_bindings
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard import chat_handlers, chat_runner
-from kiro_crew.dashboard.chat_persistence import (
+from efm_go.agent_discovery import AgentInfo
+from efm_go.config import live
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, resolve_agent_bindings
+from efm_go.context import ContextBuilder
+from efm_go.dashboard import chat_handlers, chat_runner
+from efm_go.dashboard.chat_persistence import (
     _apply_recent_session,
     _rehydrate_slot_from_history,
     rehydrate_slot_from_history_async,
 )
-from kiro_crew.dashboard.handlers import agents
-from kiro_crew.execution_context import read_session_execution
-from kiro_crew.member_memory_auth import read_private_session_store
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_stores import (
+from efm_go.dashboard.handlers import agents
+from efm_go.execution_context import read_session_execution
+from efm_go.member_memory_auth import read_private_session_store
+from efm_go.memory import MemoryStore
+from efm_go.memory_stores import (
     UnknownMemoryStore,
     persist_member_config,
     provision_member_memory,
 )
-from kiro_crew.providers.base import (
+from efm_go.providers.base import (
     EVENT_AGENT_SWITCHED,
     EVENT_COMPLETE,
     EVENT_TEXT_CHUNK,
     LLMEvent,
 )
-from kiro_crew.session_agent_selection import (
+from efm_go.session_agent_selection import (
     record_agent_selection,
     resolve_session_agent_bindings,
     session_agent_selection_kind,
 )
-from kiro_crew.skills import SkillsLoader
+from efm_go.skills import SkillsLoader
 
 TEMPLATE = "kirocrew-conductor"
 
 
 def test_global_session_binding_matches_equivalent_alias(monkeypatch):
-    from kiro_crew import execution_context, session_agent_selection
+    from efm_go import execution_context, session_agent_selection
 
     cfg = KiroCrewConfig()
     cfg.agents = {
@@ -80,7 +80,7 @@ def test_global_session_binding_matches_equivalent_alias(monkeypatch):
 @pytest.fixture
 def pruned_marker(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.crewmate_prune_migration.removed_crewmate_names",
+        "efm_go.crewmate_prune_migration.removed_crewmate_names",
         lambda: frozenset({"synced-agent"}),
     )
 
@@ -103,7 +103,7 @@ def test_resume_after_crewmate_prune_resolves_installed_agent(monkeypatch, prune
     selection never takes the installed-agent lookup, so without the fallback
     every resumed turn is refused with "Crew Member ... is unavailable".
     """
-    from kiro_crew import execution_context, session_agent_selection
+    from efm_go import execution_context, session_agent_selection
 
     cfg = KiroCrewConfig()
     cfg.agents = {"kirocrew": KiroCrewAgentConfig(kiro_agent="kirocrew")}
@@ -111,7 +111,7 @@ def test_resume_after_crewmate_prune_resolves_installed_agent(monkeypatch, prune
     record = _pruned_crewmate_record(execution_context)
     monkeypatch.setattr(session_agent_selection, "read_session_execution", lambda _: record)
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name == "synced-agent" else "",
     )
 
@@ -134,7 +134,7 @@ def test_resume_after_crewmate_prune_keeps_refusing_owned_members(
     monkeypatch, pruned_marker, store, member_id
 ):
     """Only the identity-less, Global-store shape the prune removes falls back."""
-    from kiro_crew import execution_context, session_agent_selection
+    from efm_go import execution_context, session_agent_selection
 
     cfg = KiroCrewConfig()
     cfg.agents = {"kirocrew": KiroCrewAgentConfig(kiro_agent="kirocrew")}
@@ -142,7 +142,7 @@ def test_resume_after_crewmate_prune_keeps_refusing_owned_members(
     record = _pruned_crewmate_record(execution_context, store=store, member_id=member_id)
     monkeypatch.setattr(session_agent_selection, "read_session_execution", lambda _: record)
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name == "synced-agent" else "",
     )
 
@@ -155,7 +155,7 @@ def test_resume_after_crewmate_prune_keeps_refusing_owned_members(
 
 def test_resume_after_crewmate_prune_refuses_uninstalled_agent(monkeypatch, pruned_marker):
     """The fallback reaches only an agent that is still installed."""
-    from kiro_crew import execution_context, session_agent_selection
+    from efm_go import execution_context, session_agent_selection
 
     cfg = KiroCrewConfig()
     cfg.agents = {"kirocrew": KiroCrewAgentConfig(kiro_agent="kirocrew")}
@@ -163,7 +163,7 @@ def test_resume_after_crewmate_prune_refuses_uninstalled_agent(monkeypatch, prun
     record = _pruned_crewmate_record(execution_context)
     monkeypatch.setattr(session_agent_selection, "read_session_execution", lambda _: record)
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent", lambda name, project_dir=None: ""
+        "efm_go.config.loader._materialized_kiro_agent", lambda name, project_dir=None: ""
     )
 
     bindings = resolve_session_agent_bindings(
@@ -204,7 +204,7 @@ async def _template_chat(tmp_path, monkeypatch, *, first_turn=True):
     # Keep discovery and the actual sync/config/private-store publication real;
     # the installed template catalog and provider are the external boundaries.
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: TEMPLATE if name == TEMPLATE else "",
     )
     monkeypatch.setattr(
@@ -256,7 +256,7 @@ async def test_slot_create_cannot_overwrite_later_same_name_member(tmp_path, mon
     assert TEMPLATE not in cfg.agents
     cfg.save()
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: TEMPLATE if name == TEMPLATE else "",
     )
     monkeypatch.setattr(
@@ -274,7 +274,7 @@ async def test_slot_create_cannot_overwrite_later_same_name_member(tmp_path, mon
     )
     state = _turn_state(tmp_path, monkeypatch)
     state.sessions.reset = AsyncMock(return_value=True)
-    monkeypatch.setattr("kiro_crew.llm_helpers._slot_switch_session_locks", {})
+    monkeypatch.setattr("efm_go.llm_helpers._slot_switch_session_locks", {})
     key = "dashboard:create-owner-race"
     writer_started, release_writer, writer_finished = (threading.Event() for _ in range(3))
     later_lock_attempted = asyncio.Event()
@@ -388,7 +388,7 @@ async def test_slot_create_can_replace_existing_protected_history_selection(tmp_
     key = "dashboard:template-chat"
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     assert await asyncio.to_thread(session_agent_selection_kind, key, TEMPLATE) == "template"
@@ -475,7 +475,7 @@ async def test_live_provider_switch_preserves_selection_after_restore(tmp_path, 
     key = "dashboard:template-chat"
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     provider = state.sessions.get_or_create.return_value[0]
@@ -522,7 +522,7 @@ async def test_interrupted_provider_switch_restores_selection(
     key = "dashboard:template-chat"
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     before = read_session_execution(key).to_record()
@@ -627,7 +627,7 @@ async def test_restored_agent_conflict_cannot_replace_protected_selection(
     key = "dashboard:template-chat"
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     protected = read_session_execution(key).to_record()
@@ -688,7 +688,7 @@ async def test_malformed_canonical_selection_refuses_before_provider_start(
 ):
     state, slot, _ = await _template_chat(tmp_path, monkeypatch)
     key = "dashboard:template-chat"
-    from kiro_crew.history import ConversationLog
+    from efm_go.history import ConversationLog
 
     await asyncio.to_thread(ConversationLog().update_metadata, key, {"execution_context": damage})
     state.sessions.get_or_create.reset_mock()
@@ -767,7 +767,7 @@ async def test_prewarm_publication_retains_newer_owner_agent_pick(
     later_agent = "kirocrew-worker"
     key = "dashboard:template-chat"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     state.sessions.reset = AsyncMock(return_value=True)
@@ -812,7 +812,7 @@ async def test_cancelled_prewarm_cannot_overwrite_owner_pick(tmp_path, monkeypat
     later_agent = "kirocrew-worker"
     key = "dashboard:template-chat"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     cfg = KiroCrewConfig.load()
@@ -875,7 +875,7 @@ async def test_live_agent_change_requires_observed_selection_revision(
     key = "dashboard:template-chat"
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     cfg = KiroCrewConfig.load()
@@ -931,7 +931,7 @@ async def test_failed_agent_history_write_keeps_prior_selection(tmp_path, monkey
     key = "dashboard:template-chat"
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     state.sessions.reset = AsyncMock(return_value=True)
@@ -1102,7 +1102,7 @@ async def test_non_owner_switch_keeps_durable_selection(tmp_path, monkeypatch, s
         "default": "",
     }[selection]
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     state.sessions.reset = AsyncMock(return_value=True)
@@ -1219,7 +1219,7 @@ async def test_cancelled_agent_history_write_drains_before_restore(
     key = "dashboard:template-chat"
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     state.sessions.reset = AsyncMock(return_value=True)
@@ -1314,14 +1314,14 @@ async def test_cancelled_agent_history_write_drains_before_restore(
 @pytest.mark.parametrize("restore", ["open", "recent", "resume", "async"])
 async def test_cancelled_agent_switch_with_failed_history_restore(tmp_path, monkeypatch, restore):
     """A failed rollback must not leave an empty conversation unresumable."""
-    from kiro_crew.history import HistoryLockTimeout
+    from efm_go.history import HistoryLockTimeout
 
     state, slot, _ = await asyncio.wait_for(
         _template_chat(tmp_path, monkeypatch, first_turn=False), 20
     )
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
     state.sessions.reset = AsyncMock(return_value=True)
@@ -1470,10 +1470,10 @@ async def test_cancelled_owner_writer_cannot_overwrite_later_choice(
     key = "dashboard:template-chat"
     later_agent = TEMPLATE if later_choice == "same_name_template" else "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
-    monkeypatch.setattr("kiro_crew.llm_helpers._slot_switch_session_locks", {})
+    monkeypatch.setattr("efm_go.llm_helpers._slot_switch_session_locks", {})
     state.sessions.reset = AsyncMock(return_value=True)
     app = _make_app_with_agent_routes(state)
     loop_thread = threading.get_ident()
@@ -1648,10 +1648,10 @@ async def test_cancelled_rebound_cleanup_finishes_before_later_owner(
     rebound_key = "task:rebound-cleanup"
     later_agent = "kirocrew-worker"
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in (TEMPLATE, later_agent) else "",
     )
-    monkeypatch.setattr("kiro_crew.llm_helpers._slot_switch_session_locks", {})
+    monkeypatch.setattr("efm_go.llm_helpers._slot_switch_session_locks", {})
     state.sessions.reset = AsyncMock(return_value=True)
     app = _make_app_with_agent_routes(state)
     loop_thread = threading.get_ident()
@@ -1935,7 +1935,7 @@ async def test_prewarmed_session_is_kept_when_the_chat_is_not_provably_empty(
     tmp_path, monkeypatch, obstacle
 ):
     """Only a provably empty chat may lose its pre-warm; each check fails closed."""
-    from kiro_crew.dashboard.chat_persistence import release_prewarmed_session
+    from efm_go.dashboard.chat_persistence import release_prewarmed_session
 
     state, _ = await asyncio.to_thread(
         _prewarmed_member_state, tmp_path, monkeypatch, sid="acp-prewarm-sid"
@@ -1969,9 +1969,9 @@ async def test_restricted_member_session_persists_transcript_but_no_owner_record
     ``agent`` under the retained mode -- the same live-only carrier the session
     ran under before the restart.
     """
-    from kiro_crew.dashboard.chat_persistence import restore_recent_sessions
-    from kiro_crew.execution_context import _LIVE_EXECUTIONS, _live_key
-    from kiro_crew.history import ConversationLog
+    from efm_go.dashboard.chat_persistence import restore_recent_sessions
+    from efm_go.execution_context import _LIVE_EXECUTIONS, _live_key
+    from efm_go.history import ConversationLog
 
     cfg = KiroCrewConfig.load()
     cfg.agents["writer"] = KiroCrewAgentConfig(kiro_agent="kirocrew")

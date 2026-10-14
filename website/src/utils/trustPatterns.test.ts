@@ -64,7 +64,7 @@ describe('truncateCommandLabel — label only, never the pattern', () => {
     // The whole point of raising the budget from 64: a realistic long command
     // (a `gh api …/contents/…` path is ~100 chars) is the user's basis for an
     // exact-string grant and must be readable whole, not elided.
-    const cmd = 'gh api repos/kirodotdev/KiroCrew/contents/website/src/config/production.json --jq .content.sha'
+    const cmd = 'gh api repos/efmleads.com/contents/website/src/config/production.json --jq .content.sha'
     expect(cmd.length).toBeGreaterThan(64)
     expect(truncateCommandLabel(cmd)).toBe(cmd)
   })
@@ -73,7 +73,7 @@ describe('truncateCommandLabel — label only, never the pattern', () => {
     // Same first 42 chars (the old head cut) and same last 23 chars (covering
     // the old 21-char tail cut), differing only in the middle: under max=64
     // these rendered one identical label on an exact-string consent control.
-    const head = 'gh api repos/kirodotdev/KiroCrew/contents/'
+    const head = 'gh api repos/efmleads.com/contents/'
     const tail = '.json --jq .content.sha'
     const production = `${head}website/src/config/production${tail}`
     const staging = `${head}website/test/fixtures/staging${tail}`
@@ -95,7 +95,7 @@ describe('truncateCommandLabel — label only, never the pattern', () => {
     // The defect head-truncation leaves behind: a longer shared path pushes the
     // distinguishing filename past any fixed head budget, so the two collide
     // again. Middle-ellipsis keeps the tail, where they actually differ.
-    const base = `gh api repos/kirodotdev/KiroCrew/contents/${'deeply/nested/path/segment/'.repeat(9)}`
+    const base = `gh api repos/efmleads.com/contents/${'deeply/nested/path/segment/'.repeat(9)}`
     const config = `${base}config.json --jq .sha`
     const secrets = `${base}secrets.json --jq .sha`
     expect(base.length).toBeGreaterThan(256)
@@ -110,7 +110,7 @@ describe('truncateCommandLabel — label only, never the pattern', () => {
     // elided middle. Raising the ceiling moved this cliff to pathological
     // lengths; it did not remove it. This test is the honest record of that —
     // and it reddens if the cut arithmetic changes silently.
-    const head = `gh api repos/kirodotdev/KiroCrew/contents/${'deeply/nested/path/segment/'.repeat(6)}`.slice(0, 170)
+    const head = `gh api repos/efmleads.com/contents/${'deeply/nested/path/segment/'.repeat(6)}`.slice(0, 170)
     const tail = `common/suffix/${'seg/'.repeat(15)}file.json --jq .content.sha`.slice(-85)
     expect(tail).toHaveLength(85) // shorter, and the differing middle leaks into the kept tail
     const one = `${head}MIDDLE-ONE-${'x'.repeat(40)}${tail}`

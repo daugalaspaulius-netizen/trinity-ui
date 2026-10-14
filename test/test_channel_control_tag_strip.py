@@ -23,15 +23,15 @@ from test_slack_renderer import _RecSlack
 from test_telegram import FakeClient as TelegramFake
 from test_webex_renderer import FakeClient as WebexFake
 
-from kiro_crew.constants import split_trailing_protocol_suffix, strip_control_comments
-from kiro_crew.discord.renderer import DiscordRenderer
-from kiro_crew.discord.transport import DISCORD_CAPABILITIES
-from kiro_crew.slack.handler import _filter_options_brackets, _resolve_comment_hold
-from kiro_crew.slack.renderer import SlackRenderer
-from kiro_crew.telegram.renderer import TelegramRenderer
-from kiro_crew.telegram.transport import TELEGRAM_CAPABILITIES
-from kiro_crew.webex.renderer import WebexRenderer
-from kiro_crew.webex.transport import WEBEX_CAPABILITIES
+from efm_go.constants import split_trailing_protocol_suffix, strip_control_comments
+from efm_go.discord.renderer import DiscordRenderer
+from efm_go.discord.transport import DISCORD_CAPABILITIES
+from efm_go.slack.handler import _filter_options_brackets, _resolve_comment_hold
+from efm_go.slack.renderer import SlackRenderer
+from efm_go.telegram.renderer import TelegramRenderer
+from efm_go.telegram.transport import TELEGRAM_CAPABILITIES
+from efm_go.webex.renderer import WebexRenderer
+from efm_go.webex.transport import WEBEX_CAPABILITIES
 
 TAG = "<!-- keep-visible -->"
 DELIVER = "<!-- deliver:slack -->"
@@ -269,7 +269,7 @@ class TestDiscordRenderer:
     def _renderer(self, monkeypatch: pytest.MonkeyPatch) -> tuple[DiscordRenderer, DiscordFake]:
         cli = DiscordFake()
         r = DiscordRenderer(cli, "chan1", DISCORD_CAPABILITIES, session_key="sk")  # type: ignore[arg-type]
-        monkeypatch.setattr("kiro_crew.discord.renderer._EDIT_THROTTLE_S", 0.0)
+        monkeypatch.setattr("efm_go.discord.renderer._EDIT_THROTTLE_S", 0.0)
         return r, cli
 
     @pytest.mark.asyncio
@@ -320,7 +320,7 @@ class TestTelegramRenderer:
     def _renderer(self, monkeypatch: pytest.MonkeyPatch) -> tuple[TelegramRenderer, TelegramFake]:
         cli = TelegramFake()
         r = TelegramRenderer(cli, 55, TELEGRAM_CAPABILITIES, session_key="telegram:1:0")  # type: ignore[arg-type]
-        monkeypatch.setattr("kiro_crew.telegram.renderer._EDIT_THROTTLE_S", 0.0)
+        monkeypatch.setattr("efm_go.telegram.renderer._EDIT_THROTTLE_S", 0.0)
         return r, cli
 
     @pytest.mark.asyncio

@@ -24,12 +24,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard.server import (
+from efm_go.dashboard.server import (
     _armed_unattended_loops,
     _notify_unattended_expiry,
     _unattended_expiry_text,
 )
-from kiro_crew.safety_override import SafetyOverride, reset_singleton
+from efm_go.safety_override import SafetyOverride, reset_singleton
 
 
 @pytest.fixture(autouse=True)
@@ -41,7 +41,7 @@ def _reset_singleton():
 
 def _quiet_sel():
     """Silence the SEL sink the way the sibling suites do."""
-    return patch("kiro_crew.safety_override.sel", return_value=MagicMock())
+    return patch("efm_go.safety_override.sel", return_value=MagicMock())
 
 
 def _fake_state() -> SimpleNamespace:
@@ -64,11 +64,11 @@ class TestWhichLoopsCount:
         about a run that is not running, and this test fails.
         """
         svc = _svc_with(_loop(active=True), _loop(active=False))
-        with patch("kiro_crew.dashboard.server._autonudge_get", return_value=svc):
+        with patch("efm_go.dashboard.server._autonudge_get", return_value=svc):
             assert len(_armed_unattended_loops()) == 1
 
     def test_no_service_means_no_loops(self) -> None:
-        with patch("kiro_crew.dashboard.server._autonudge_get", return_value=None):
+        with patch("efm_go.dashboard.server._autonudge_get", return_value=None):
             assert _armed_unattended_loops() == []
 
     def test_an_enumeration_failure_reads_as_no_loops(self) -> None:
@@ -79,7 +79,7 @@ class TestWhichLoopsCount:
         """
         svc = MagicMock()
         svc.list_all.side_effect = RuntimeError("registry unavailable")
-        with patch("kiro_crew.dashboard.server._autonudge_get", return_value=svc):
+        with patch("efm_go.dashboard.server._autonudge_get", return_value=svc):
             assert _armed_unattended_loops() == []
 
 
@@ -91,8 +91,8 @@ class TestBothSurfacesAreNotified:
 
     def _drive(self, state, svc):
         async def _run():
-            with patch("kiro_crew.dashboard.server._autonudge_get", return_value=svc):
-                with patch("kiro_crew.dashboard.server._dm_owner") as dm:
+            with patch("efm_go.dashboard.server._autonudge_get", return_value=svc):
+                with patch("efm_go.dashboard.server._dm_owner") as dm:
                     dm.return_value = asyncio.sleep(0)
                     _notify_unattended_expiry(state, "dashboard")
                     # Let the scheduled DM task run to completion.
@@ -158,7 +158,7 @@ class TestBothSurfacesAreNotified:
         """
         state = _fake_state()
         svc = _svc_with(_loop())
-        with patch("kiro_crew.dashboard.server._autonudge_get", return_value=svc):
+        with patch("efm_go.dashboard.server._autonudge_get", return_value=svc):
             _notify_unattended_expiry(state, "dashboard")
         assert state.notify.call_count == 1
 
@@ -205,7 +205,7 @@ class TestTheExpiryCallbackFiresExactlyOnce:
         anchor = override._activated_at
 
         with _quiet_sel(), patch(
-            "kiro_crew.safety_override.time.monotonic", return_value=anchor + 700
+            "efm_go.safety_override.time.monotonic", return_value=anchor + 700
         ):
             for _ in range(5):
                 assert override.is_active() is False
@@ -223,7 +223,7 @@ class TestTheExpiryCallbackFiresExactlyOnce:
         with _quiet_sel():
             override.activate_declared()
         with _quiet_sel(), patch(
-            "kiro_crew.safety_override.time.monotonic",
+            "efm_go.safety_override.time.monotonic",
             return_value=override._activated_at + 30 * 24 * 3600,
         ):
             assert override.is_active() is True
@@ -264,7 +264,7 @@ class TestPolicyRevocationSuppressesTheUnFollowableRemedy:
     """
 
     def test_policy_source_drops_the_remedy_and_names_the_cause(self) -> None:
-        from kiro_crew.safety_override import POLICY_REVOKED_SOURCE
+        from efm_go.safety_override import POLICY_REVOKED_SOURCE
 
         body = _unattended_expiry_text(2, POLICY_REVOKED_SOURCE)
         assert "organization policy" in body
@@ -296,7 +296,7 @@ class TestTheNoticeHasItsOwnChannel:
         """Mutation: remove `system.safety_override` from `SYSTEM_CHANNELS` -- the
         note silently lands on `system.agent` and this test fails.
         """
-        from kiro_crew.notifications.bus import _FALLBACK_CHANNEL, payload_from_legacy
+        from efm_go.notifications.bus import _FALLBACK_CHANNEL, payload_from_legacy
 
         payload = payload_from_legacy("safety_override", "t", "b")
         assert payload.channel == "system.safety_override"
@@ -308,7 +308,7 @@ class TestTheNoticeHasItsOwnChannel:
         """
         state = _fake_state()
         svc = _svc_with(_loop())
-        with patch("kiro_crew.dashboard.server._autonudge_get", return_value=svc):
+        with patch("efm_go.dashboard.server._autonudge_get", return_value=svc):
             _notify_unattended_expiry(state, "dashboard")
         assert state.notify.call_args.args[0] == "safety_override"
 
@@ -317,7 +317,7 @@ class TestTheNoticeHasItsOwnChannel:
         (`system.approval`); this is the report about it. Asserted so an escalation
         to critical is a deliberate edit rather than a drift.
         """
-        from kiro_crew.notifications.bus import SYSTEM_CHANNELS
+        from efm_go.notifications.bus import SYSTEM_CHANNELS
 
         assert SYSTEM_CHANNELS["system.safety_override"] == SYSTEM_CHANNELS["system.skills"]
         assert SYSTEM_CHANNELS["system.safety_override"] != SYSTEM_CHANNELS["system.approval"]

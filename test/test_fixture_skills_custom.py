@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from contextlib import closing
 
-from kiro_crew.skills import _BUILTIN_SKILLS_DIR, SkillsLoader, _iter_skill_files
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go.skills import _BUILTIN_SKILLS_DIR, SkillsLoader, _iter_skill_files
+from efm_go.testing.fixtures import seeded_home
 
 _DESCRIPTION = (
     "Classify a red test as a real regression, a flake, or an environment "

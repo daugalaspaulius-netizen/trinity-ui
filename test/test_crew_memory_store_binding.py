@@ -10,10 +10,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.cli import main
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.config.sections import MemoryStoreConfig
-from kiro_crew.memory_stores import (
+from efm_go.cli import main
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.config.sections import MemoryStoreConfig
+from efm_go.memory_stores import (
     DEFAULT_MEMORY_STORE,
     memory_store_binding_defect,
     memory_store_dir_for,
@@ -46,13 +46,13 @@ NON_STRINGS = [None, 7, ["work"], {"work": 1}]
 def _owner_caller(monkeypatch: pytest.MonkeyPatch) -> None:
     """Exercise the agent handlers past their independent owner-auth boundary."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
 
 def _crud_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import (
+    from efm_go.dashboard.handlers import (
         api_kirocrew_agent_delete,
         api_kirocrew_agent_update,
         api_kirocrew_agents_create,
@@ -91,7 +91,7 @@ def _store_warnings(caplog: pytest.LogCaptureFixture) -> list[str]:
     with no installed kiro agents and names the same crew — lands in the same list.
     A substring match on the crew name would find that one instead.
     """
-    return [r.getMessage() for r in caplog.records if r.name == "kiro_crew.memory_stores"]
+    return [r.getMessage() for r in caplog.records if r.name == "efm_go.memory_stores"]
 
 
 class TestTheBindingPredicate:
@@ -234,7 +234,7 @@ class TestDashboardMemberBinding:
 
     @pytest.mark.asyncio
     async def test_failed_delete_save_preserves_the_member_binding(self, monkeypatch):
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         cfg = KiroCrewConfig.load()
         cfg.agents["reviewer"] = KiroCrewAgentConfig()
@@ -247,7 +247,7 @@ class TestDashboardMemberBinding:
             raise OSError("read only")
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.agents.update_config_locked",
+            "efm_go.dashboard.handlers.agents.update_config_locked",
             fail_after_mutation,
         )
 
@@ -261,7 +261,7 @@ class TestDashboardMemberBinding:
 
     @pytest.mark.asyncio
     async def test_delete_with_a_lost_ack_keeps_committed_config_and_database(self, monkeypatch):
-        from kiro_crew.config.loader import config_path, write_config_atomically
+        from efm_go.config.loader import config_path, write_config_atomically
 
         cfg = KiroCrewConfig.load()
         cfg.agents["reviewer"] = KiroCrewAgentConfig()
@@ -276,7 +276,7 @@ class TestDashboardMemberBinding:
             raise OSError("original writer lost its completion signal")
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.agents.update_config_locked",
+            "efm_go.dashboard.handlers.agents.update_config_locked",
             competitor_commits_then_writer_reports_failure,
         )
         async with TestClient(TestServer(_crud_app())) as client:
@@ -354,7 +354,7 @@ class TestTheCliRefusesAMalformedBinding:
         # the parser rather than the guard.
         argv = ["kirocrew", "agent", "create", "--name", "reviewer", f"--memory-store={bad}"]
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", argv),
             pytest.raises(SystemExit) as exc,
         ):
@@ -373,7 +373,7 @@ class TestTheCliRefusesAMalformedBinding:
         # ``update`` takes the crew name positionally.
         argv = ["kirocrew", "agent", "update", "default", f"--memory-store={bad}"]
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", argv),
             pytest.raises(SystemExit) as exc,
         ):
@@ -387,7 +387,7 @@ class TestTheCliRefusesAMalformedBinding:
         cfg_path = _cli_config(tmp_path)
         argv = ["kirocrew", "agent", "update", "default", "--memory-store=ghost"]
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", argv),
             pytest.raises(SystemExit) as exc,
         ):
@@ -398,7 +398,7 @@ class TestTheCliRefusesAMalformedBinding:
 
     def test_delete_preserves_the_member_database(self, tmp_path, monkeypatch):
         cfg_path = _cli_config(tmp_path)
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_path)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_path)
         cfg = KiroCrewConfig.load()
         cfg.agents["reviewer"] = KiroCrewAgentConfig()
         store = provision_member_memory(cfg, "reviewer")
@@ -432,7 +432,7 @@ class TestWhyAMalformedBindingHadToBeRefused:
         cfg_path.write_text(json.dumps(payload), encoding="utf-8")
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", ["kirocrew", "agent", "list"]),
             pytest.raises(TypeError),
         ):

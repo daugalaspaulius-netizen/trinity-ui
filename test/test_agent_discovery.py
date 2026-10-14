@@ -18,8 +18,8 @@ from types import SimpleNamespace
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import agent_state
-from kiro_crew.agent_discovery import (
+from efm_go import agent_state
+from efm_go.agent_discovery import (
     SCOPE_GLOBAL,
     SCOPE_PROJECT,
     AgentInfo,
@@ -37,7 +37,7 @@ from kiro_crew.agent_discovery import (
 # a negative "logged no warning" assertion must filter by logger: an unrelated
 # neighbour's asyncio "Task was destroyed" record otherwise lands in the window
 # and fails the assertion depending on how the suite is sharded.
-_DISCOVERY_LOGGER = "kiro_crew.agent_discovery"
+_DISCOVERY_LOGGER = "efm_go.agent_discovery"
 
 
 @pytest.fixture
@@ -145,7 +145,7 @@ class TestProjectScopeDiscovery:
     def test_sensitive_project_dir_yields_no_agents(self, tmp_path, monkeypatch):
         """A project path the security gate rejects must not be scanned at all."""
         monkeypatch.setattr(
-            "kiro_crew.agent_discovery.is_sensitive_path",
+            "efm_go.agent_discovery.is_sensitive_path",
             lambda p: str(p) == str(tmp_path / "secret"),
         )
         proj = tmp_path / "secret"
@@ -168,7 +168,7 @@ class TestProjectScopeDiscovery:
         protected, while the recorded outcome said denied. The user-level scope
         still lists, and the one refusal still owes exactly one denial row.
         """
-        import kiro_crew.agent_discovery as ad
+        import efm_go.agent_discovery as ad
 
         d = _agents_dir(fake_home)
         (d / "user-level.json").write_text(json.dumps({"name": "user-level"}))
@@ -179,7 +179,7 @@ class TestProjectScopeDiscovery:
         protected = tmp_path / "protected"
         (_project_agents_dir(protected) / "a.json").write_text(json.dumps({"name": "a"}))
         monkeypatch.setattr(
-            "kiro_crew.agent_discovery.is_sensitive_path",
+            "efm_go.agent_discovery.is_sensitive_path",
             lambda p: str(p) == str(protected),
         )
         real_signature = ad._dir_signature
@@ -224,7 +224,7 @@ class TestProjectScopeDiscovery:
         pin below passes just as well while a redundant guard sits there
         agreeing, and only starts failing once the answers diverge.
         """
-        import kiro_crew.agent_discovery as ad
+        import efm_go.agent_discovery as ad
 
         d = _agents_dir(fake_home)
         (d / "user-level.json").write_text(json.dumps({"name": "user-level"}))
@@ -261,7 +261,7 @@ class TestProjectScopeDiscovery:
         The invariant is the conjunction: a call must never both record a denial
         for a scope and stat under it.
         """
-        import kiro_crew.agent_discovery as ad
+        import efm_go.agent_discovery as ad
 
         d = _agents_dir(fake_home)
         (d / "user-level.json").write_text(json.dumps({"name": "user-level"}))
@@ -325,7 +325,7 @@ class TestProjectScopeDiscovery:
             return str(p) == str(secret)
 
         clear_list_agents_cache()
-        import kiro_crew.agent_discovery as ad
+        import efm_go.agent_discovery as ad
 
         original = ad.is_sensitive_canonical_path
         ad.is_sensitive_canonical_path = _sensitive
@@ -368,7 +368,7 @@ class TestProjectAgentNameCache:
         under the caller-supplied dir) before `project_agent_files` rejected
         sensitivity — probing a protected tree, and silently: no SEL denial.
         """
-        import kiro_crew.agent_discovery as ad
+        import efm_go.agent_discovery as ad
 
         # Named "protected", not "secret": CodeQL's clear-text-logging query
         # treats a variable named `secret` as a credential and then follows this
@@ -377,7 +377,7 @@ class TestProjectAgentNameCache:
         protected = tmp_path / "protected"
         (_project_agents_dir(protected) / "a.json").write_text(json.dumps({"name": "a"}))
         monkeypatch.setattr(
-            "kiro_crew.agent_discovery.is_sensitive_path",
+            "efm_go.agent_discovery.is_sensitive_path",
             lambda p: str(p) == str(protected),
         )
         monkeypatch.setattr(
@@ -407,7 +407,7 @@ class TestProjectAgentNameCache:
         taken, a refusal would record a denial for a tree this very call had
         just statted.
         """
-        import kiro_crew.agent_discovery as ad
+        import efm_go.agent_discovery as ad
 
         proj = tmp_path / "proj"
         (_project_agents_dir(proj) / "a.json").write_text(json.dumps({"name": "a"}))
@@ -456,7 +456,7 @@ class TestProjectAgentNameCache:
         clear_project_agent_cache()
         assert project_agent_names(str(proj)) == frozenset({"a"})
 
-        import kiro_crew.agent_discovery as ad
+        import efm_go.agent_discovery as ad
 
         monkeypatch.setattr(
             ad, "_read_agent_spec", lambda p: pytest.fail("re-read a spec on a warm cache")
@@ -500,7 +500,7 @@ class TestListAgentsRobustness:
         "agent config" was slurped whole into memory during a cache warm. The
         read now goes through hooks.safe_read_file_bytes, whose cap refuses it.
         """
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "MAX_FILE_BYTES", 64)
         d = _agents_dir(fake_home)
@@ -677,7 +677,7 @@ class TestSpecModelCoercion:
         # Stub the seam at ``safe_context_call``: it is what ``_with_edition_agents``
         # funnels the platform lookup through, so this needs no platform context.
         monkeypatch.setattr(
-            "kiro_crew.platform.context.safe_context_call",
+            "efm_go.platform.context.safe_context_call",
             lambda *_a, **_kw: [
                 {"name": "edition-foreign", "model": {"id": "anthropic:claude-opus-4-8"}}
             ],
@@ -761,7 +761,7 @@ class TestSpecModelCoercion:
         d = tmp_path / "agents"
         d.mkdir()
         monkeypatch.setattr(
-            "kiro_crew.platform.context.safe_context_call",
+            "efm_go.platform.context.safe_context_call",
             lambda *_a, **_kw: [
                 {"name": {"id": "nope"}, "model": "auto"},
                 {"name": "usable", "model": "auto"},
@@ -899,7 +899,7 @@ class TestListAgentsDedup:
         (agents_dir / "local-MyPkg-myagent.json").write_text(
             json.dumps({"name": "myagent", "model": "auto"}), encoding="utf-8"
         )
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.agent_discovery"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.agent_discovery"):
             agents = list_agents(agents_dir=agents_dir)
         dupes = [a for a in agents if a.name == "myagent"]
         assert len(dupes) == 1
@@ -928,7 +928,7 @@ class TestListAgentsDedup:
         (agents_dir / "BbbPkg-myagent.json").write_text(
             json.dumps({"name": "myagent", "model": "auto"}), encoding="utf-8"
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent_discovery"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent_discovery"):
             agents = list_agents(agents_dir=agents_dir)
         dupes = [a for a in agents if a.name == "myagent"]
         assert len(dupes) == 1
@@ -1143,7 +1143,7 @@ class TestSystematicScanFailureWarning:
         """A spec that parses but whose row construction raises still ends in
         "discovery listed nothing" — the warning must cover that path too, so
         the parsed counter means "produced a row", not "JSON loaded"."""
-        import kiro_crew.agent_discovery as mod
+        import efm_go.agent_discovery as mod
 
         d = _agents_dir(fake_home)
         (d / "parses.json").write_text(json.dumps({"name": "parses"}))
@@ -1241,7 +1241,7 @@ class TestSpecByDeclaredName:
         import gc
         import weakref
 
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         class _Spec(dict):
             """A dict that can be weakly referenced."""

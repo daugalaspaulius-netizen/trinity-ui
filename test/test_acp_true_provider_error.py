@@ -28,7 +28,7 @@ Two changes are pinned here:
 
 import pytest
 
-from kiro_crew.acp.client import (
+from efm_go.acp.client import (
     _format_acp_error,
     _is_transient_raw_error,
     _provider_detail,

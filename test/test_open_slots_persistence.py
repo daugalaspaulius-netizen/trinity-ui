@@ -8,7 +8,7 @@ snapshots the live ``_slots`` keys to ``<config_dir>/open_slots.json`` on
 every flush + shutdown, and ``restore_open_slots`` reads it back on startup
 before the legacy mtime restore runs.
 
-Path resolution goes through ``kiro_crew.config.loader.config_dir`` (the
+Path resolution goes through ``efm_go.config.loader.config_dir`` (the
 canonical helper used by every other dashboard persistence path -- session
 metadata, vector memory, agent metadata, secretary, etc.) so the snapshot
 honors ``KIROCREW_HOME``. These tests set ``KIROCREW_HOME`` to ``tmp_path``
@@ -35,13 +35,13 @@ import pytest
 from chat_test_helpers import _make_state
 from windows_sim import builtin_open_sharing_violation
 
-from kiro_crew.dashboard.chat_persistence import (
+from efm_go.dashboard.chat_persistence import (
     _rehydrate_slot_from_history,
     restore_open_slots,
     restore_open_slots_async,
 )
-from kiro_crew.dashboard.chat_utils import _history_key_for
-from kiro_crew.dashboard.state import DashboardState
+from efm_go.dashboard.chat_utils import _history_key_for
+from efm_go.dashboard.state import DashboardState
 
 
 def _seed_session(state, slot_key: str, *, closed: bool = False) -> None:
@@ -194,7 +194,7 @@ def test_persist_open_slots_handles_write_failure_gracefully(tmp_path, monkeypat
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     state = _make_state(tmp_path / "sessions")
     state.get_or_create_slot("chat-1-foo")
-    with patch("kiro_crew.atomic_write.os.fchmod", side_effect=OSError("read-only filesystem")):
+    with patch("efm_go.atomic_write.os.fchmod", side_effect=OSError("read-only filesystem")):
         # Should not raise
         state._persist_open_slots()
 
@@ -272,7 +272,7 @@ def test_restore_open_slots_rolls_back_partial_slot_on_rehydrate_failure(tmp_pat
     # Patch _rehydrate_slot_from_history so that it leaks a partial slot
     # (mirroring the real partial-state path) and then raises. Without the
     # rollback in restore_open_slots, the partial slot would persist.
-    from kiro_crew.dashboard import chat_persistence as cp_mod
+    from efm_go.dashboard import chat_persistence as cp_mod
 
     def _failing_rehydrate(state_arg, slot_name):
         # Mimic the real failure mode: register an empty slot via
@@ -536,7 +536,7 @@ def test_restore_open_slots_rollback_also_discards_restricted_keys(tmp_path, mon
     snapshot_path.write_text(json.dumps({"keys": ["chat-1-incognito"], "ts": 0.0}))
 
     state2 = _make_state(tmp_path / "sessions")
-    from kiro_crew.dashboard import chat_persistence as cp_mod
+    from efm_go.dashboard import chat_persistence as cp_mod
 
     def _failing_rehydrate(state_arg, slot_name):
         # Mimic the real failure mode for an INCOGNITO session: register the
@@ -614,7 +614,7 @@ def test_restart_restore_paths_converge_on_one_slot(tmp_path, monkeypatch):
     restore_recent_sessions walk is what produces two identical sidebar sessions
     after a gateway restart.
     """
-    from kiro_crew.dashboard.chat_persistence import restore_recent_sessions
+    from efm_go.dashboard.chat_persistence import restore_recent_sessions
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     state = _make_state(tmp_path / "sessions")
@@ -837,7 +837,7 @@ def test_restore_reads_transcript_before_backfilling_tab_id(tmp_path, monkeypatc
         json.dumps({"keys": [f"chat-{i}-race" for i in range(n)], "ts": 0.0})
     )
 
-    import kiro_crew.dashboard.chat_persistence as chat_persistence
+    import efm_go.dashboard.chat_persistence as chat_persistence
 
     state2 = _make_state(tmp_path / "sessions")
     log = state2.conversation_log
@@ -1118,7 +1118,7 @@ def _poisoned_slots() -> list[dict]:
 
 def test_ws_frame_serialization_failure_names_the_offender():
     """The dashboard-user WS frame annotates its dump failure with the offender."""
-    from kiro_crew.dashboard.state import _slots_ws_frame
+    from efm_go.dashboard.state import _slots_ws_frame
 
     with pytest.raises(TypeError) as excinfo:
         _slots_ws_frame(
@@ -1139,7 +1139,7 @@ def test_ws_frame_serialization_failure_names_the_offender():
 
 def test_ws_frame_failure_outside_slots_exonerates_the_slot_list():
     """A clean-slots note is evidence too: the offender is in the envelope extras."""
-    from kiro_crew.dashboard.state import _slots_ws_frame
+    from efm_go.dashboard.state import _slots_ws_frame
 
     with pytest.raises(TypeError) as excinfo:
         _slots_ws_frame(
@@ -1159,7 +1159,7 @@ def test_ws_frame_failure_outside_slots_exonerates_the_slot_list():
 
 def test_ws_frame_healthy_roundtrip_unchanged():
     """Benign control: the wrapped dump produces the same frame."""
-    from kiro_crew.dashboard.state import _slots_ws_frame
+    from efm_go.dashboard.state import _slots_ws_frame
 
     frame = json.loads(
         _slots_ws_frame(
@@ -1190,7 +1190,7 @@ async def test_rest_slots_get_serialization_failure_names_the_offender(tmp_path,
     """GET /api/chat/slots annotates its dump failure instead of a bare TypeError."""
     from aiohttp.test_utils import make_mocked_request
 
-    from kiro_crew.dashboard.chat_handlers import api_chat_slots
+    from efm_go.dashboard.chat_handlers import api_chat_slots
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     state = _make_state(tmp_path / "sessions")
@@ -1239,7 +1239,7 @@ async def test_ws_connect_snapshot_failure_is_logged_with_the_offender(
     """
     import logging
 
-    from kiro_crew.dashboard import ws as dashboard_ws
+    from efm_go.dashboard import ws as dashboard_ws
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
 
@@ -1290,7 +1290,7 @@ async def test_ws_connect_snapshot_failure_is_logged_with_the_offender(
     monkeypatch.setattr(dashboard_ws, "_check_ws_origin", lambda request: None)
     monkeypatch.setattr(dashboard_ws.web, "WebSocketResponse", lambda **kwargs: fake_ws)
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.ws"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.ws"):
         result = await dashboard_ws.api_ws(Request())  # type: ignore[arg-type]
 
     assert result is fake_ws
@@ -1306,7 +1306,7 @@ async def test_ws_connect_snapshot_failure_is_logged_with_the_offender(
 
 def test_note_helper_path_label_and_degradation():
     """The path label lands in every message; a shape surprise degrades, never raises."""
-    from kiro_crew.dashboard.state import _slots_serialization_note
+    from efm_go.dashboard.state import _slots_serialization_note
 
     assert _slots_serialization_note([], path="x") == (
         "[x] slot list fails serialization; no offending entry found"
@@ -1357,7 +1357,7 @@ def test_flush_during_async_restore_does_not_truncate_snapshot(tmp_path, monkeyp
         return await real_sleep(delay, *a, **kw)
 
     with patch(
-        "kiro_crew.dashboard.chat_persistence.asyncio.sleep", side_effect=flushing_sleep
+        "efm_go.dashboard.chat_persistence.asyncio.sleep", side_effect=flushing_sleep
     ):
         restored = asyncio.run(restore_open_slots_async(state2))
 
@@ -1406,7 +1406,7 @@ def test_restoring_flag_cleared_even_if_restore_raises(tmp_path, monkeypatch):
 
     state2 = _make_state(tmp_path / "sessions")
     with patch(
-        "kiro_crew.dashboard.chat_persistence._build_kiro_model_map",
+        "efm_go.dashboard.chat_persistence._build_kiro_model_map",
         side_effect=RuntimeError("boom"),
     ):
         with pytest.raises(RuntimeError):
@@ -1610,7 +1610,7 @@ def test_pre_restore_transient_seed_read_failure_preserves_seed(tmp_path, monkey
 
     # Simulate a transient read failure (seed exists but is momentarily
     # unreadable) distinct from a genuinely-absent file.
-    from kiro_crew.dashboard.state import _persistence_for
+    from efm_go.dashboard.state import _persistence_for
 
     monkeypatch.setattr(
         _persistence_for(state),
@@ -1829,7 +1829,7 @@ def test_read_messages_reraises_after_exhausting_retries(tmp_path, monkeypatch):
     on exhaustion so rehydrate rolls back and the fallback restore can retry.
     Transient failures are still absorbed (see the companion test above).
     """
-    from kiro_crew.history import _METADATA_READ_ATTEMPTS
+    from efm_go.history import _METADATA_READ_ATTEMPTS
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     state = _make_state(tmp_path / "sessions")
@@ -2008,7 +2008,7 @@ def test_metadata_failure_is_reported_above_debug(tmp_path, monkeypatch, caplog)
 
     state2 = _make_state(tmp_path / "sessions")
     victim = state2.conversation_log._path(_history_key_for("chat-1-logged")).name
-    with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_persistence"):
+    with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_persistence"):
         with builtin_open_sharing_violation(match=victim, times=3):
             restore_open_slots(state2)
 
@@ -2123,7 +2123,7 @@ def _record_restore_threads(monkeypatch, state):
     Wraps the REAL implementations so the restore still completes end to end and
     the assertions are about placement, not about a stub's behaviour.
     """
-    from kiro_crew.dashboard import chat_persistence
+    from efm_go.dashboard import chat_persistence
 
     log = state.conversation_log
     assert log is not None
@@ -2536,7 +2536,7 @@ def test_missing_created_at_falls_through_to_restoring(tmp_path, monkeypatch):
     state2 = _make_state(tmp_path / "sessions")
     log = state2.conversation_log
     key = _history_key_for("chat-1-legacy")
-    from kiro_crew.dashboard import chat_persistence as cp
+    from efm_go.dashboard import chat_persistence as cp
 
     # The session is PRESENT (so the absence arm cannot fire) and the pre-read
     # metadata carries no ``created_at`` — the legacy-transcript shape. The
@@ -2555,7 +2555,7 @@ def test_a_never_persisted_key_is_not_treated_as_a_deletion(tmp_path, monkeypatc
     """An absent key is a new conversation, not something that was deleted."""
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     state = _make_state(tmp_path / "sessions")
-    from kiro_crew.dashboard import chat_persistence as cp
+    from efm_go.dashboard import chat_persistence as cp
 
     assert cp._deletion_during_read(
         state.conversation_log, "dashboard:never-existed", {}, None
@@ -2584,7 +2584,7 @@ def test_a_tab_closed_during_the_open_slot_read_is_not_restored(tmp_path, monkey
     log = state2.conversation_log
     real_chained = log.read_messages_chained
 
-    from kiro_crew.dashboard import channel_slots
+    from efm_go.dashboard import channel_slots
 
     def _close_then_read(key):
         if "chat-2-dismissed" in key:
@@ -2619,7 +2619,7 @@ def test_an_older_close_does_not_block_an_open_slot_restore(tmp_path, monkeypatc
     )
 
     state2 = _make_state(tmp_path / "sessions")
-    from kiro_crew.dashboard import channel_slots
+    from efm_go.dashboard import channel_slots
 
     # The close must land STRICTLY before the driver's own ``started =
     # time.time()``, and a real sleep does not guarantee that: on Windows under

@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 #: Methods that commit something to a persistent memory store.
 _WRITE_PRIMITIVES = frozenset(
@@ -46,7 +46,7 @@ _WRITE_PRIMITIVES = frozenset(
 )
 
 #: Automatic writers that MUST be behind the persistence switch, as
-#: ``<module path relative to src/kiro_crew>::<enclosing function>``. Each is
+#: ``<module path relative to src/efm_go>::<enclosing function>``. Each is
 #: gated at its entry point; see test_memory_context_toggles.py for the
 #: behavioural assertions.
 GATED_AUTOMATIC = {

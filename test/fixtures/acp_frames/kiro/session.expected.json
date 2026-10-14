@@ -32,7 +32,7 @@
   {
     "action": "subagent_activity",
     "events": [],
-    "frame": "_kiro.dev/session/update",
+    "frame": "_efm.go/session/update",
     "session_update": "tool_call_chunk"
   },
   {

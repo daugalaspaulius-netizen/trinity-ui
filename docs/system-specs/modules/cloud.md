@@ -2,7 +2,7 @@
 
 ## Overview
 
-`src/kiro_crew/cloud/` runs KiroCrew on the user's **own** AWS EC2 instance with a
+`src/efm_go/cloud/` runs KiroCrew on the user's **own** AWS EC2 instance with a
 single command. It provisions a CloudFormation stack, ships an available local
 checkout (or clones the public repo from packaged installs), signs `kiro-cli` in
 over SSM, and opens the dashboard through an SSM port-forward. Command surface
@@ -1072,7 +1072,7 @@ always runs on the Linux EC2 box, never on Windows.
 the launcher's managed client venv; the EC2 bootstrap includes that extra by
 default regardless of this client-side flag.
 
-`kirocrew cloud launch` runs `python -m kiro_crew`, which imports the whole CLI —
+`kirocrew cloud launch` runs `python -m efm_go`, which imports the whole CLI —
 including gateway/cron/session modules (plus `apps/bridges` and the PTY
 `dashboard/handlers/terminal`) that use POSIX `fcntl` (`flock` for advisory
 locks, `ioctl` for PTY control). **All** such modules on the CLI import path

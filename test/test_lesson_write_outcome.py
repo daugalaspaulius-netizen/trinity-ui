@@ -23,9 +23,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from body_stream_helpers import attach_body
 
-from kiro_crew.history import ConversationLog
-from kiro_crew.model_registry import MODEL_ID_LITERAL_PATTERN
-from kiro_crew.vector_memory import (
+from efm_go.history import ConversationLog
+from efm_go.model_registry import MODEL_ID_LITERAL_PATTERN
+from efm_go.vector_memory import (
     LessonWriteOutcome,
     LessonWriteResult,
     VectorMemoryStore,
@@ -272,7 +272,7 @@ class TestVolatileLessonWriteBoundary:
     def test_jsonl_context_hides_legacy_sentence_boundary_pin(self, tmp_path) -> None:
         import json as _json
 
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         (tmp_path / "lessons.jsonl").write_text(
             _json.dumps(
@@ -293,8 +293,8 @@ class TestVolatileLessonWriteBoundary:
         assert "gpt-5.6-sol" not in store.get_context()
 
     def test_onboarding_reports_sentence_boundary_jsonl_directive_rejected(self, tmp_path) -> None:
-        from kiro_crew import onboarding_import
-        from kiro_crew.learn import LessonStore
+        from efm_go import onboarding_import
+        from efm_go.learn import LessonStore
 
         item = onboarding_import._Item(
             "codex",
@@ -353,7 +353,7 @@ class TestVolatileLessonWriteBoundary:
             store.close()
 
     def test_automatic_jsonl_save_reports_refusal(self, tmp_path) -> None:
-        from kiro_crew.learn import Lesson, LessonStore
+        from efm_go.learn import Lesson, LessonStore
 
         store = LessonStore(base_dir=tmp_path)
         outcome = store.save(
@@ -412,7 +412,7 @@ class TestVolatileLessonWriteBoundary:
             store.close()
 
     def test_vector_context_hides_key_confirmed_legacy_negative_pin(self, tmp_path) -> None:
-        from kiro_crew.vector_memory import _LESSON_NEGATIVE_SEP, _lesson_key
+        from efm_go.vector_memory import _LESSON_NEGATIVE_SEP, _lesson_key
 
         rule = "automatic selection is safest"
         store = _store(tmp_path)
@@ -434,7 +434,7 @@ class TestVolatileLessonWriteBoundary:
             store.close()
 
     def test_vector_context_keeps_key_confirmed_legacy_version_reference(self, tmp_path) -> None:
-        from kiro_crew.vector_memory import _LESSON_NEGATIVE_SEP, _lesson_key
+        from efm_go.vector_memory import _LESSON_NEGATIVE_SEP, _lesson_key
 
         rule = "check streaming compatibility before release"
         negative = "assume gpt-5.6-sol supports the streaming flag"
@@ -463,8 +463,8 @@ class TestVolatileLessonWriteBoundary:
     ) -> None:
         import json as _json
 
-        from kiro_crew.dashboard.handlers import cron
-        from kiro_crew.vector_memory import _LESSON_NEGATIVE_SEP, _lesson_key
+        from efm_go.dashboard.handlers import cron
+        from efm_go.vector_memory import _LESSON_NEGATIVE_SEP, _lesson_key
 
         rule = "automatic selection is safest"
         store = _store(tmp_path)
@@ -507,7 +507,7 @@ class TestVolatileLessonWriteBoundary:
     def test_jsonl_context_hides_preexisting_volatile_lesson(self, tmp_path) -> None:
         import json as _json
 
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         (tmp_path / "lessons.jsonl").write_text(
             _json.dumps(
@@ -528,8 +528,8 @@ class TestVolatileLessonWriteBoundary:
         assert "gpt-5.6-sol" not in store.get_context()
 
     def test_jsonl_consolidation_does_not_count_a_refusal(self, tmp_path) -> None:
-        from kiro_crew.history import HistoryConsolidator
-        from kiro_crew.learn import LessonStore
+        from efm_go.history import HistoryConsolidator
+        from efm_go.learn import LessonStore
 
         store = LessonStore(base_dir=tmp_path)
         consolidator = HistoryConsolidator(
@@ -537,15 +537,15 @@ class TestVolatileLessonWriteBoundary:
             memory=MagicMock(),
             lesson_store=store,
         )
-        with patch("kiro_crew.history_consolidation._HISTORY_LOGGER.info") as info:
+        with patch("efm_go.history_consolidation._HISTORY_LOGGER.info") as info:
             consolidator._save_lessons([{"rule": self.VOLATILE_IDENTITY, "category": "knowledge"}])
 
         assert store.load_all() == []
         info.assert_not_called()
 
     def test_onboarding_reports_volatile_jsonl_directive_rejected(self, tmp_path) -> None:
-        from kiro_crew import onboarding_import
-        from kiro_crew.learn import LessonStore
+        from efm_go import onboarding_import
+        from efm_go.learn import LessonStore
 
         item = onboarding_import._Item(
             "codex",
@@ -562,8 +562,8 @@ class TestVolatileLessonWriteBoundary:
         assert outcome.status == "rejected"
 
     def test_onboarding_reports_volatile_vector_directive_rejected(self, tmp_path) -> None:
-        from kiro_crew import onboarding_import
-        from kiro_crew.learn import LessonStore
+        from efm_go import onboarding_import
+        from efm_go.learn import LessonStore
 
         vector_store = _store(tmp_path)
         try:
@@ -608,7 +608,7 @@ class TestVolatileLessonWriteBoundary:
         )[1].split('echo "::endgroup::"', 1)[0]
 
         assert MODEL_ID_LITERAL_PATTERN in model_gate
-        assert "from kiro_crew.model_registry" not in model_gate
+        assert "from efm_go.model_registry" not in model_gate
 
 
 class TestDurableModelVersionReferences:
@@ -669,7 +669,7 @@ class TestDurableModelVersionReferences:
         category: str,
         negative: str | None,
     ) -> None:
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         store = _store(tmp_path)
 
@@ -708,8 +708,8 @@ class TestDurableModelVersionReferences:
             store.close()
 
     def test_consolidation_keeps_durable_version_references(self, tmp_path: Path) -> None:
-        from kiro_crew.history import HistoryConsolidator
-        from kiro_crew.learn import LessonStore
+        from efm_go.history import HistoryConsolidator
+        from efm_go.learn import LessonStore
 
         store = LessonStore(base_dir=tmp_path)
         consolidator = HistoryConsolidator(
@@ -755,8 +755,8 @@ class TestDurableModelVersionReferences:
     def test_onboarding_keeps_durable_version_reference(
         self, tmp_path: Path, use_vector_store: bool, rule: str
     ) -> None:
-        from kiro_crew import onboarding_import
-        from kiro_crew.learn import LessonStore
+        from efm_go import onboarding_import
+        from efm_go.learn import LessonStore
 
         jsonl_store = LessonStore(base_dir=tmp_path)
         vector_store = _store(tmp_path) if use_vector_store else None
@@ -784,7 +784,7 @@ class TestDurableModelVersionReferences:
                 vector_store.close()
 
     def test_tool_description_states_the_narrow_boundary(self) -> None:
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         descriptor = next(item for item in learn.schemas() if item["name"] == "learn_add")
         description = descriptor["description"]
@@ -977,7 +977,7 @@ class TestCliLearnAddReportsTheOutcome:
     def _run(self, tmp_path, negative=None, rule="prefer ruff over flake8", pre=None):
         import argparse
 
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         store = _store(tmp_path)
         if pre is not None:
@@ -1135,7 +1135,7 @@ class TestLessonsRouteReportsTheOutcome:
         return request, state
 
     async def _post(self, result):
-        from kiro_crew.dashboard.handlers import cron
+        from efm_go.dashboard.handlers import cron
 
         request, state = self._request()
         vs = MagicMock()
@@ -1169,7 +1169,7 @@ class TestLessonsRouteReportsTheOutcome:
         }
 
     async def test_dashboard_post_refuses_volatile_identity(self, tmp_path) -> None:
-        from kiro_crew.dashboard.handlers import cron
+        from efm_go.dashboard.handlers import cron
 
         request, state = self._request("The active model identity is gpt-5.6-sol.")
         store = _store(tmp_path)
@@ -1198,8 +1198,8 @@ class TestLessonsRouteReportsTheOutcome:
     async def test_jsonl_fallback_refuses_volatile_negative_clause(self, tmp_path) -> None:
         import json as _json
 
-        from kiro_crew.dashboard.handlers import cron
-        from kiro_crew.learn import LessonStore
+        from efm_go.dashboard.handlers import cron
+        from efm_go.learn import LessonStore
 
         request, state = self._request(
             "use automatic model selection",
@@ -1236,8 +1236,8 @@ class TestLessonsRouteReportsTheOutcome:
         """
         import json as _json
 
-        from kiro_crew.dashboard.handlers import cron
-        from kiro_crew.lesson_validation import LESSON_APPLIES_ON_TOPIC
+        from efm_go.dashboard.handlers import cron
+        from efm_go.lesson_validation import LESSON_APPLIES_ON_TOPIC
 
         store = _store(tmp_path)
         try:
@@ -1307,9 +1307,9 @@ class TestLessonsRouteReportsTheOutcome:
         """
         import json as _json
 
-        from kiro_crew.dashboard.handlers import cron
-        from kiro_crew.learn import _MAX_LESSONS_TOTAL, Lesson, LessonStore
-        from kiro_crew.lesson_validation import (
+        from efm_go.dashboard.handlers import cron
+        from efm_go.learn import _MAX_LESSONS_TOTAL, Lesson, LessonStore
+        from efm_go.lesson_validation import (
             LESSON_APPLIES_ALWAYS,
             LESSON_REFUSED_AT_CAPACITY,
             contains_volatile_lesson_fact,
@@ -1356,8 +1356,8 @@ class TestLessonsRouteReportsTheOutcome:
     async def test_list_marks_legacy_volatile_jsonl_row_withheld(self, tmp_path) -> None:
         import json as _json
 
-        from kiro_crew.dashboard.handlers import cron
-        from kiro_crew.learn import LessonStore
+        from efm_go.dashboard.handlers import cron
+        from efm_go.learn import LessonStore
 
         (tmp_path / "lessons.jsonl").write_text(
             _json.dumps(
@@ -1401,7 +1401,7 @@ class TestLessonsRouteReportsTheOutcome:
     async def test_list_marks_legacy_string_vector_row_withheld(self, tmp_path) -> None:
         import json as _json
 
-        from kiro_crew.dashboard.handlers import cron
+        from efm_go.dashboard.handlers import cron
 
         store = _store(tmp_path)
         try:
@@ -1443,7 +1443,7 @@ class TestLessonsRouteReportsTheOutcome:
     async def test_list_marks_legacy_mapping_negative_pin_withheld(self, tmp_path) -> None:
         import json as _json
 
-        from kiro_crew.dashboard.handlers import cron
+        from efm_go.dashboard.handlers import cron
 
         store = _store(tmp_path)
         try:
@@ -1526,7 +1526,7 @@ class TestLessonsRouteReportsTheOutcome:
 
     async def test_jsonl_branch_reports_that_store_own_outcome(self):
         """The JSONL store's three words reach the body unchanged."""
-        from kiro_crew.dashboard.handlers import cron
+        from efm_go.dashboard.handlers import cron
 
         request, state = self._request()
         state.lessons.save_or_enrich.return_value = "unchanged"
@@ -1553,7 +1553,7 @@ class TestLearnAddVolatileSessionFactBoundary:
 
     @staticmethod
     def _call(rule: str, response: dict | None = None):
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         with (
             patch.object(learn.mcp_core, "_post", return_value=response or {"ok": True}) as post,
@@ -1604,7 +1604,7 @@ class TestLearnAddVolatileSessionFactBoundary:
         )
 
     def test_descriptor_warns_before_the_model_calls_the_tool(self) -> None:
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         descriptor = next(item for item in learn.schemas() if item["name"] == "learn_add")
         description = descriptor["description"]
@@ -1615,7 +1615,7 @@ class TestLearnAddVolatileSessionFactBoundary:
 
 class TestLearnListWithheldRows:
     def test_withheld_reason_is_visible(self) -> None:
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         with patch.object(
             learn.mcp_core,
@@ -1639,7 +1639,7 @@ class TestLearnAddToolReportsTheOutcome:
     """The MCP tool told the model "Saved lesson" for a refused write."""
 
     def _call(self, response):
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         with (
             patch.object(learn.mcp_core, "_post", return_value=response),
@@ -1959,7 +1959,7 @@ class TestSupersedeReachesTheSurfacesAHumanReads:
         assert body["superseded"] == ["never force push to a shared branch"]
 
     def _tool_call(self, response):
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         with (
             patch.object(learn.mcp_core, "_post", return_value=response),
@@ -2020,7 +2020,7 @@ class TestASupersededRuleIsSanitizedBeforeItIsShown:
         """
         import argparse
 
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         store = _store(tmp_path)
         # A stored general rule carrying an OSC window-title payload and a CSI clear.
@@ -2075,7 +2075,7 @@ class TestASupersededRuleIsSanitizedBeforeItIsShown:
         import io
         from contextlib import redirect_stdout
 
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         store = _store(tmp_path)
@@ -2118,7 +2118,7 @@ class TestASupersededRuleIsSanitizedBeforeItIsShown:
         import io
         from contextlib import redirect_stdout
 
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         split = "AKIA\x1b[0mIOSFODNN7EXAMPLE"
@@ -2207,7 +2207,7 @@ class TestASupersededRuleIsSanitizedBeforeItIsShown:
             try:
                 store.write_lesson(stored, "tool")
                 caplog.clear()
-                with caplog.at_level(logging.DEBUG, logger="kiro_crew.vector_memory"):
+                with caplog.at_level(logging.DEBUG, logger="efm_go.vector_memory"):
                     result = store.write_lesson(submitted, "tool")
                 emitted = [r.getMessage() for r in caplog.records]
                 assert emitted, f"{label}: no log record, so this asserts nothing"
@@ -2292,7 +2292,7 @@ class TestSupersedeRecordIsDurableAndAttributable:
             store.close()
 
     def test_supersede_tombstone_reads_apart_from_an_explicit_forget(self, tmp_path) -> None:
-        from kiro_crew import memory_record_metadata as meta
+        from efm_go import memory_record_metadata as meta
 
         store = _store(tmp_path)
         try:
@@ -2341,7 +2341,7 @@ class TestSupersedeRecordIsDurableAndAttributable:
         store = _store(tmp_path)
         try:
             caplog.clear()
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.vector_memory"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.vector_memory"):
                 self._supersede(store)
             supersede_lines = [
                 r for r in caplog.records if r.getMessage().startswith("Lesson supersede:")
@@ -2358,8 +2358,8 @@ class TestSupersedeRecordIsDurableAndAttributable:
         status 'forgotten', operation 'forget' (never 'supersede'), and a null audit
         new_value.
         """
-        from kiro_crew import memory_record_metadata as meta
-        from kiro_crew.vector_memory import _lesson_key
+        from efm_go import memory_record_metadata as meta
+        from efm_go.vector_memory import _lesson_key
 
         store = _store(tmp_path)
         try:
@@ -2413,7 +2413,7 @@ class TestSupersedeRecordIsDurableAndAttributable:
         splicing rule text into it) is refused at delete_semantic rather than
         written to the disk-persisted audit row.
         """
-        from kiro_crew.vector_memory import _lesson_key
+        from efm_go.vector_memory import _lesson_key
 
         store = _store(tmp_path)
         try:
@@ -2437,7 +2437,7 @@ class TestSupersedeRecordIsDurableAndAttributable:
         commit. A supersede is the opposite -- its attribution event is atomic, so
         the same failure rolls the whole supersede back and the row survives.
         """
-        from kiro_crew.vector_memory import _lesson_key
+        from efm_go.vector_memory import _lesson_key
 
         store = _store(tmp_path)
         try:
@@ -2456,7 +2456,7 @@ class TestSupersedeRecordIsDurableAndAttributable:
 
     def test_a_supersede_rolls_back_when_its_attribution_event_fails(self, tmp_path) -> None:
         """A supersede is atomic: a failed attribution event keeps the row alive."""
-        from kiro_crew.vector_memory import _lesson_key
+        from efm_go.vector_memory import _lesson_key
 
         store = _store(tmp_path)
         try:

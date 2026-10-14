@@ -39,7 +39,7 @@ continues to index the stable English text. Run `npm run gen:settings` after
 changing a setting label or its translation key.
 
 That command writes **two** artifacts: the UI registry, and
-`src/kiro_crew/docs/settings-registry.generated.json` — the agent-facing
+`src/efm_go/docs/settings-registry.generated.json` — the agent-facing
 enumeration bundled into the Python docs package, so the agent can answer "where
 is that setting?" with a working deep link. Both are byte-matched against a live
 extraction by `settingsRegistry.test.ts`, so regenerating is not optional. The
@@ -261,7 +261,7 @@ wrong.
 
 An app's `displayName`, `description`, `highlights[]`, `useCases[]`,
 `configuration[]`, and `ui.pages[0].label` live in
-`src/kiro_crew/apps/builtins/<app>/app.json` on the **Python** side, and the App Store
+`src/efm_go/apps/builtins/<app>/app.json` on the **Python** side, and the App Store
 components interpolate them raw. So they were English in every locale, and the nav rail
 read `Papyrus` while that app's own page header was translated.
 
@@ -382,7 +382,7 @@ registry a reviewer has to go look up.
 
 The sidebar's **By name** folder order is the standing example, and a deliberate
 one. `naturalNameCompare` in `src/utils/folderTree.ts` and `_chat_folder_natural_key`
-in `src/kiro_crew/mcp_dashboard.py` sort the same way, operation for operation:
+in `src/efm_go/mcp_dashboard.py` sort the same way, operation for operation:
 only ASCII `A`-`Z` is case-folded, runs of ASCII digits compare by value
 (`01.` < `02.` < `10.`), and every other character compares by UTF-16 code unit.
 Not `compareText`, not `Intl.Collator`, not Python's `locale.strxfrm`.

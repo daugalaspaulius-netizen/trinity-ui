@@ -18,7 +18,7 @@ import sys
 
 import pytest
 
-from kiro_crew import crash_guard
+from efm_go import crash_guard
 
 
 @pytest.fixture(autouse=True)
@@ -90,7 +90,7 @@ class TestUnclosedConnectionDowngrade:
 
         import logging
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.crash_guard"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.crash_guard"):
             crash_guard._asyncio_exception_handler(
                 loop, {"message": "Unclosed connection"}
             )
@@ -112,7 +112,7 @@ class TestUnclosedConnectionDowngrade:
 
         import logging
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.crash_guard"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.crash_guard"):
             crash_guard._asyncio_exception_handler(
                 loop, {"message": "Unclosed client session"}
             )
@@ -132,7 +132,7 @@ class TestUnclosedConnectionDowngrade:
 
         import logging
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.crash_guard"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.crash_guard"):
             crash_guard._asyncio_exception_handler(
                 loop, {"message": "Some other problem"}
             )
@@ -157,7 +157,7 @@ class TestWindowsProactorShutdownDowngrade:
 
         import logging
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.crash_guard"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.crash_guard"):
             crash_guard._asyncio_exception_handler(
                 loop,
                 {
@@ -185,7 +185,7 @@ class TestWindowsProactorShutdownDowngrade:
 
         import logging
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.crash_guard"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.crash_guard"):
             crash_guard._asyncio_exception_handler(
                 loop,
                 {

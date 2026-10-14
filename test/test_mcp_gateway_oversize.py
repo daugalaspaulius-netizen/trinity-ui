@@ -17,8 +17,8 @@ import time
 from unittest.mock import patch
 
 from conftest import make_dir_link
-from kiro_crew import platform_compat as pc
-from kiro_crew.mcp_gateway.spill import (
+from efm_go import platform_compat as pc
+from efm_go.mcp_gateway.spill import (
     cleanup_old_spill_files,
     maybe_spill_response,
 )
@@ -249,35 +249,35 @@ class TestNonToolResultPassthrough:
 class TestConfigOverrides:
     def test_read_limit_env_override(self):
         """KIROCREW_MCP_READ_LIMIT env var overrides the default."""
-        from kiro_crew.mcp_gateway import pool
+        from efm_go.mcp_gateway import pool
         with patch.dict(os.environ, {"KIROCREW_MCP_READ_LIMIT": "8388608"}):
             val = pool._resolve_read_buffer_limit()
         assert val == 8388608
 
     def test_read_limit_env_invalid_uses_default(self):
         """Invalid KIROCREW_MCP_READ_LIMIT falls back to default."""
-        from kiro_crew.mcp_gateway import pool
+        from efm_go.mcp_gateway import pool
         with patch.dict(os.environ, {"KIROCREW_MCP_READ_LIMIT": "not_a_number"}):
             val = pool._resolve_read_buffer_limit()
         assert val == pool._DEFAULT_READ_BUFFER_LIMIT
 
     def test_read_limit_env_too_small_uses_default(self):
         """KIROCREW_MCP_READ_LIMIT below 1024 falls back to default."""
-        from kiro_crew.mcp_gateway import pool
+        from efm_go.mcp_gateway import pool
         with patch.dict(os.environ, {"KIROCREW_MCP_READ_LIMIT": "100"}):
             val = pool._resolve_read_buffer_limit()
         assert val == pool._DEFAULT_READ_BUFFER_LIMIT
 
     def test_spill_threshold_env_override(self):
         """KIROCREW_MCP_SPILL_THRESHOLD env var overrides the default."""
-        from kiro_crew.mcp_gateway import pool
+        from efm_go.mcp_gateway import pool
         with patch.dict(os.environ, {"KIROCREW_MCP_SPILL_THRESHOLD": "1048576"}):
             val = pool._resolve_spill_threshold()
         assert val == 1048576
 
     def test_spill_threshold_zero_disables(self):
         """KIROCREW_MCP_SPILL_THRESHOLD=0 disables spilling."""
-        from kiro_crew.mcp_gateway import pool
+        from efm_go.mcp_gateway import pool
         with patch.dict(os.environ, {"KIROCREW_MCP_SPILL_THRESHOLD": "0"}):
             val = pool._resolve_spill_threshold()
         assert val == 0
@@ -289,40 +289,40 @@ class TestConfigOverrides:
     # no-op; oversize responses kept being fast-failed). The
     # resolvers now consult the config value when the env var is unset.
     def test_read_buffer_limit_reads_config_when_env_unset(self, monkeypatch):
-        import kiro_crew.mcp_gateway.pool as pool
+        import efm_go.mcp_gateway.pool as pool
 
         monkeypatch.delenv("KIROCREW_MCP_READ_LIMIT", raising=False)
         with patch(
-            "kiro_crew.config.loader._raw_config",
+            "efm_go.config.loader._raw_config",
             return_value={"mcp_gateway": {"read_buffer_limit_bytes": 134217728}},
         ):
             assert pool._resolve_read_buffer_limit() == 134217728
 
     def test_spill_threshold_reads_config_when_env_unset(self, monkeypatch):
-        import kiro_crew.mcp_gateway.pool as pool
+        import efm_go.mcp_gateway.pool as pool
 
         monkeypatch.delenv("KIROCREW_MCP_SPILL_THRESHOLD", raising=False)
         with patch(
-            "kiro_crew.config.loader._raw_config",
+            "efm_go.config.loader._raw_config",
             return_value={"mcp_gateway": {"response_spill_threshold_bytes": 1048576}},
         ):
             assert pool._resolve_spill_threshold() == 1048576
 
     def test_env_var_still_beats_config(self, monkeypatch):
-        import kiro_crew.mcp_gateway.pool as pool
+        import efm_go.mcp_gateway.pool as pool
 
         monkeypatch.setenv("KIROCREW_MCP_READ_LIMIT", "2048")
         with patch(
-            "kiro_crew.config.loader._raw_config",
+            "efm_go.config.loader._raw_config",
             return_value={"mcp_gateway": {"read_buffer_limit_bytes": 999999}},
         ):
             assert pool._resolve_read_buffer_limit() == 2048
 
     def test_default_when_neither_env_nor_config(self, monkeypatch):
-        import kiro_crew.mcp_gateway.pool as pool
+        import efm_go.mcp_gateway.pool as pool
 
         monkeypatch.delenv("KIROCREW_MCP_READ_LIMIT", raising=False)
-        with patch("kiro_crew.config.loader._raw_config", return_value={}):
+        with patch("efm_go.config.loader._raw_config", return_value={}):
             assert pool._resolve_read_buffer_limit() == pool._DEFAULT_READ_BUFFER_LIMIT
 
 

@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import kiro_crew.subagent as subagent_module
-from kiro_crew.subagent import SubagentInfo, SubagentManager
+import efm_go.subagent as subagent_module
+from efm_go.subagent import SubagentInfo, SubagentManager
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 

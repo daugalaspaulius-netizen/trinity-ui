@@ -7,7 +7,7 @@
 # codebase legitimately persists its own gateway secret to a 0600 file.
 #
 # Test mode ignores the rule's `paths:` filters, so this file does not need
-# to live under src/kiro_crew/. The normal scan never reads this directory
+# to live under src/efm_go/. The normal scan never reads this directory
 # (.semgrepignore), so the deliberately vulnerable code here cannot trip the
 # SAST job itself.
 

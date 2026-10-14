@@ -1,9 +1,9 @@
-"""The serviceless ``crons.json`` readers and the run-identity helpers, through ``kiro_crew.cron``.
+"""The serviceless ``crons.json`` readers and the run-identity helpers, through ``efm_go.cron``.
 
 ``kirocrew doctor``, the Agent templates delete guard, the skill lifecycle and the
 dashboard count read the store with no scheduler running
-(:mod:`kiro_crew.cron_service.readers`). Each case writes a store, points
-``kiro_crew.cron.config_dir`` at it -- the seam those readers go through -- and
+(:mod:`efm_go.cron_service.readers`). Each case writes a store, points
+``efm_go.cron.config_dir`` at it -- the seam those readers go through -- and
 asks the reader what a caller would.
 """
 
@@ -15,8 +15,8 @@ from typing import Any
 
 import pytest
 
-import kiro_crew.cron as cron
-from kiro_crew.cron import CronJob, CronStoreUnreadable
+import efm_go.cron as cron
+from efm_go.cron import CronJob, CronStoreUnreadable
 
 
 def _record(job_id: str, **fields: Any) -> dict[str, Any]:

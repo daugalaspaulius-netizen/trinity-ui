@@ -9,12 +9,12 @@ from pathlib import Path
 
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.config.loader as loader
+import efm_go.config.loader as loader
 
 
 def test_save_denies_non_loopback(monkeypatch) -> None:
     """Config writes are loopback-only: remote sessions are read-only."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     monkeypatch.setattr(mod, "is_direct_local_request", lambda req: False)
     req = make_mocked_request(
@@ -29,7 +29,7 @@ def test_save_denies_non_loopback(monkeypatch) -> None:
 
 def test_save_denies_forwarded_loopback_request() -> None:
     """A reverse-proxied request (loopback peer + XFF) cannot plant tokens."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     req = make_mocked_request(
         "PUT",
@@ -75,7 +75,7 @@ def _accept_token(monkeypatch, mod) -> None:
 
 def test_save_persists_token_and_config(tmp_path: Path, monkeypatch) -> None:
     """Token lands in .env (0600), config in config.json, environ synced."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
@@ -104,7 +104,7 @@ def test_save_persists_token_and_config(tmp_path: Path, monkeypatch) -> None:
 
 def test_save_rejects_malformed_token(tmp_path: Path, monkeypatch) -> None:
     """A token that doesn't match <bot_id>:<secret> fails before any write."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     status_body, env = _client_put(mod, monkeypatch, tmp_path, {"bot_token": "not-a-token"})
@@ -116,7 +116,7 @@ def test_save_rejects_malformed_token(tmp_path: Path, monkeypatch) -> None:
 
 def test_save_rejects_token_telegram_refuses(tmp_path: Path, monkeypatch) -> None:
     """A token Telegram rejects (Unauthorized) fails the save; nothing written."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     async def _reject(token):
         return "Unauthorized"
@@ -131,7 +131,7 @@ def test_save_rejects_token_telegram_refuses(tmp_path: Path, monkeypatch) -> Non
 
 def test_save_proceeds_with_warning_when_telegram_unreachable(tmp_path: Path, monkeypatch) -> None:
     """Being offline must not block a save — token stored, warning returned."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     async def _unreachable(token):
         raise ConnectionError("no route to api.telegram.org")
@@ -145,7 +145,7 @@ def test_save_proceeds_with_warning_when_telegram_unreachable(tmp_path: Path, mo
 
 
 def test_save_rejects_non_numeric_user_ids(tmp_path: Path, monkeypatch) -> None:
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     status_body, _ = _client_put(mod, monkeypatch, tmp_path, {"allowed_user_ids": ["@username"]})
@@ -160,7 +160,7 @@ def test_clear_also_removes_legacy_config_token(tmp_path: Path, monkeypatch) -> 
     The gateway falls back to that field when .env is empty, so leaving it
     behind would resurrect the removed credential on the next restart.
     """
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     env = tmp_path / ".env"
@@ -184,7 +184,7 @@ def test_clear_also_removes_legacy_config_token(tmp_path: Path, monkeypatch) -> 
 def test_replace_also_removes_legacy_config_token(tmp_path: Path, monkeypatch) -> None:
     """Setting a new .env token must purge the legacy config.json token so the
     old credential cannot shadow-survive a later .env clear."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     cfg = tmp_path / "config.json"
@@ -203,7 +203,7 @@ def test_legacy_purge_is_persisted_before_env_write(tmp_path: Path, monkeypatch)
     bot_token removal) must land BEFORE the .env update. A crash between the
     two must never leave .env cleared while the legacy fallback survives to
     resurrect the revoked credential on restart."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     order: list[str] = []
@@ -235,7 +235,7 @@ def test_legacy_purge_is_persisted_before_env_write(tmp_path: Path, monkeypatch)
 
 def test_clear_flag_must_be_strict_boolean(tmp_path: Path, monkeypatch) -> None:
     """Truthy non-bool clear flags (e.g. "false", 1) must not delete the token."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     env = tmp_path / ".env"
@@ -252,7 +252,7 @@ def test_clear_flag_must_be_strict_boolean(tmp_path: Path, monkeypatch) -> None:
 
 def test_restart_required_only_on_actual_change(tmp_path: Path, monkeypatch) -> None:
     """Only a change the running gateway cannot adopt flags restart_required."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     cfg = tmp_path / "config.json"
@@ -284,7 +284,7 @@ def test_restart_required_only_on_actual_change(tmp_path: Path, monkeypatch) -> 
 
 
 def test_soft_threshold_bounds(tmp_path: Path, monkeypatch) -> None:
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     for bad in (0, 101, "80", True):
@@ -297,7 +297,7 @@ def test_soft_threshold_bounds(tmp_path: Path, monkeypatch) -> None:
 
 def test_get_masks_token_and_reports_state(tmp_path: Path, monkeypatch) -> None:
     """GET returns presence + masked preview, never the raw token."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text(f"TELEGRAM_BOT_TOKEN={VALID_TOKEN}\n", encoding="utf-8")
@@ -327,7 +327,7 @@ def test_get_masks_token_and_reports_state(tmp_path: Path, monkeypatch) -> None:
 
 def test_get_returns_forum_fields_as_strings(tmp_path: Path, monkeypatch) -> None:
     """GET serializes forum config; negative chat_ids come back as strings."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     cfg = tmp_path / "config.json"
     cfg.write_text(
@@ -355,7 +355,7 @@ def test_get_returns_forum_fields_as_strings(tmp_path: Path, monkeypatch) -> Non
 
 def test_save_persists_forum_fields_with_negative_ids(tmp_path: Path, monkeypatch) -> None:
     """PUT accepts allow_forum + negative chat_ids and stores canonical ints."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     status_body, _ = _client_put(
@@ -382,7 +382,7 @@ def test_save_persists_forum_fields_with_negative_ids(tmp_path: Path, monkeypatc
 
 def test_save_rejects_non_boolean_allow_forum(tmp_path: Path, monkeypatch) -> None:
     """allow_forum must be a strict boolean; a string is rejected before write."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     status_body, _ = _client_put(mod, monkeypatch, tmp_path, {"allow_forum": "true"})
@@ -394,7 +394,7 @@ def test_save_rejects_non_boolean_allow_forum(tmp_path: Path, monkeypatch) -> No
 
 def test_save_rejects_garbage_forum_chat_ids(tmp_path: Path, monkeypatch) -> None:
     """Non-integer chat ids (and a bare minus) are rejected; nothing written."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     _accept_token(monkeypatch, mod)
     for bad in ("@supergroup", "-", "12.5", "-100abc"):

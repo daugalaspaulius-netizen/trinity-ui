@@ -217,12 +217,12 @@ describe('AboutPanel download states', () => {
   // same update after relaunch, leaving users with no next step. These pin the
   // escape hatch and its reassurance, so neither can be dropped silently.
   it('offers a platform-correct manual download once the update is staged', async () => {
-    const { setState } = mountWithStates({ downloadUrl: 'https://download.crew.kiro.dev/desktop/nightly/latest/KiroCrew.dmg' })
+    const { setState } = mountWithStates({ downloadUrl: 'https://efmleads.com/desktop/nightly/latest/KiroCrew.dmg' })
     setState({ state: 'downloaded', version: '9.9.9' })
     const fallback = await screen.findByTestId('update-manual-fallback')
     const link = fallback.querySelector('a') as HTMLAnchorElement
     expect(link.getAttribute('href')).toBe(
-      'https://download.crew.kiro.dev/desktop/nightly/latest/KiroCrew.dmg',
+      'https://efmleads.com/desktop/nightly/latest/KiroCrew.dmg',
     )
     expect(link.target).toBe('_blank')
     // Reinstalling over the top must not read as destructive.
@@ -230,22 +230,22 @@ describe('AboutPanel download states', () => {
   })
 
   it('renders whatever lane the main process resolved (Linux AppImage)', async () => {
-    const { setState } = mountWithStates({ downloadUrl: 'https://download.crew.kiro.dev/desktop/stable/latest/KiroCrew-x86_64.AppImage' })
+    const { setState } = mountWithStates({ downloadUrl: 'https://efmleads.com/desktop/stable/latest/KiroCrew-x86_64.AppImage' })
     setState({ state: 'downloaded', version: '9.9.9' })
     const link = (await screen.findByTestId('update-manual-fallback')).querySelector('a')
     expect(link?.getAttribute('href')).toBe(
-      'https://download.crew.kiro.dev/desktop/stable/latest/KiroCrew-x86_64.AppImage',
+      'https://efmleads.com/desktop/stable/latest/KiroCrew-x86_64.AppImage',
     )
   })
 
   it('offers the manual download when the download itself failed', async () => {
-    const { setState } = mountWithStates({ downloadUrl: 'https://download.crew.kiro.dev/desktop/nightly/latest/KiroCrew.dmg' })
+    const { setState } = mountWithStates({ downloadUrl: 'https://efmleads.com/desktop/nightly/latest/KiroCrew.dmg' })
     setState({ state: 'error', phase: 'download', code: 'integrity', version: '9.9.9' })
     expect(await screen.findByTestId('update-manual-fallback')).toBeTruthy()
   })
 
   it('does not preempt the primary action while the update is only discovered', async () => {
-    const { setState } = mountWithStates({ downloadUrl: 'https://download.crew.kiro.dev/desktop/nightly/latest/KiroCrew.dmg' })
+    const { setState } = mountWithStates({ downloadUrl: 'https://efmleads.com/desktop/nightly/latest/KiroCrew.dmg' })
     setState({ state: 'found', version: '9.9.9' })
     await screen.findByTestId('update-card')
     expect(screen.queryByTestId('update-manual-fallback')).toBeNull()
@@ -264,7 +264,7 @@ describe('AboutPanel download states', () => {
   // and hides the manual-reinstall link at the exact moment it exists for.
   it('keeps an INSTALL failure in the card, labelled honestly, with the escape hatch', async () => {
     const { setState } = mountWithStates({
-      downloadUrl: 'https://download.crew.kiro.dev/desktop/nightly/latest/KiroCrew.dmg',
+      downloadUrl: 'https://efmleads.com/desktop/nightly/latest/KiroCrew.dmg',
     })
     setState({ state: 'error', phase: 'install', code: 'unknown', message: 'ShipIt failed', version: '9.9.9' })
     const row = await screen.findByTestId('update-download-error')
@@ -277,7 +277,7 @@ describe('AboutPanel download states', () => {
 
   it('renders the fallback sentence from ONE template so clause order is translatable', async () => {
     const { setState } = mountWithStates({
-      downloadUrl: 'https://download.crew.kiro.dev/desktop/nightly/latest/KiroCrew.dmg',
+      downloadUrl: 'https://efmleads.com/desktop/nightly/latest/KiroCrew.dmg',
     })
     setState({ state: 'downloaded', version: '9.9.9' })
     const fallback = await screen.findByTestId('update-manual-fallback')

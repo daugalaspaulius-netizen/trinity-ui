@@ -13,7 +13,7 @@ import time
 
 import pytest
 
-from kiro_crew.knowledge.store import KnowledgeStore, SimpleDiGraph
+from efm_go.knowledge.store import KnowledgeStore, SimpleDiGraph
 
 
 @pytest.fixture()
@@ -290,7 +290,7 @@ class TestLoopReadersMaterialiseOffLoop:
     def test_the_handler_offloads_the_materialisation(self, handler_name):
         import inspect
 
-        from kiro_crew.dashboard.handlers import knowledge as handlers
+        from efm_go.dashboard.handlers import knowledge as handlers
 
         src = inspect.getsource(getattr(handlers, handler_name))
         assert (
@@ -301,7 +301,7 @@ class TestLoopReadersMaterialiseOffLoop:
     def test_the_offload_precedes_every_graph_read(self, handler_name):
         import inspect
 
-        from kiro_crew.dashboard.handlers import knowledge as handlers
+        from efm_go.dashboard.handlers import knowledge as handlers
 
         src = inspect.getsource(getattr(handlers, handler_name))
         offload = src.index("asyncio.to_thread(store.ensure_graph_loaded)")

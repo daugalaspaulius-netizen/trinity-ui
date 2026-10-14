@@ -1,6 +1,6 @@
 """Characterization contract for the Research Lab campaign engine.
 
-These tests pin what callers of ``kiro_crew.apps.builtins.auto_research.handlers``
+These tests pin what callers of ``efm_go.apps.builtins.auto_research.handlers``
 observe -- the names the module exposes, the patch seams tests and tools rely
 on, the route table, the SQLite schema and payload shapes, and the concurrency
 rules that keep one campaign's transitions ordered -- independently of which
@@ -38,10 +38,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.builtins.auto_research import handlers as h
+from efm_go.apps.builtins.auto_research import handlers as h
 
 BASE = "/api/apps/auto-research"
-_HANDLERS_LOGGER = "kiro_crew.apps.builtins.auto_research.handlers"
+_HANDLERS_LOGGER = "efm_go.apps.builtins.auto_research.handlers"
 
 # Every name ``handlers`` exposes to importers and patches, minus the stdlib
 # modules and typing helpers imported only for its own use.
@@ -90,29 +90,29 @@ _handle_grill_tree register_routes
 # Collaborators ``handlers`` imported: (defining module, attribute) whose object
 # ``handlers.<name>`` must still be, so a patch of either spelling is one patch.
 _IMPORTED_IDENTITIES = {
-    "_sq": ("kiro_crew.apps.builtins.auto_research", "subquestion_queue"),
-    "AUTO_RESEARCH_APP": ("kiro_crew.apps.builtins.auto_research.session_keys", None),
-    "is_campaign_id": ("kiro_crew.apps.builtins.auto_research.session_keys", None),
-    "is_research_slot_key": ("kiro_crew.apps.builtins.auto_research.session_keys", None),
-    "research_slot_key": ("kiro_crew.apps.builtins.auto_research.session_keys", None),
-    "RESEARCH_WORKFLOW_SOURCE": ("kiro_crew.apps.builtins.auto_research.workflow_template", None),
-    "build_workflow_args": ("kiro_crew.apps.builtins.auto_research.workflow_template", None),
-    "is_app_enabled": ("kiro_crew.apps.manager", None),
-    "AUTONUDGE_STOP_REASON": ("kiro_crew.autonudge", None),
-    "_autonudge_instance": ("kiro_crew.autonudge", "get_instance"),
-    "data_home": ("kiro_crew.config.paths", None),
-    "slot_history_key": ("kiro_crew.dashboard.chat_utils", None),
-    "ImportChunkBudgetError": ("kiro_crew.knowledge.ingestion", None),
-    "LLMPool": ("kiro_crew.knowledge.llm_pool", None),
-    "_extract_json_of_type": ("kiro_crew.llm_helpers", None),
-    "OnLoopDBGuard": ("kiro_crew.on_loop_db", None),
-    "is_link_or_junction": ("kiro_crew.platform_compat", None),
-    "unlink_link_or_junction": ("kiro_crew.platform_compat", None),
-    "ArtifactNotFoundError": ("kiro_crew.artifacts", None),
-    "ArtifactStore": ("kiro_crew.artifacts", None),
-    "redact_credentials": ("kiro_crew.security", None),
-    "redact_exfiltration_urls": ("kiro_crew.security", None),
-    "sel": ("kiro_crew.sel", None),
+    "_sq": ("efm_go.apps.builtins.auto_research", "subquestion_queue"),
+    "AUTO_RESEARCH_APP": ("efm_go.apps.builtins.auto_research.session_keys", None),
+    "is_campaign_id": ("efm_go.apps.builtins.auto_research.session_keys", None),
+    "is_research_slot_key": ("efm_go.apps.builtins.auto_research.session_keys", None),
+    "research_slot_key": ("efm_go.apps.builtins.auto_research.session_keys", None),
+    "RESEARCH_WORKFLOW_SOURCE": ("efm_go.apps.builtins.auto_research.workflow_template", None),
+    "build_workflow_args": ("efm_go.apps.builtins.auto_research.workflow_template", None),
+    "is_app_enabled": ("efm_go.apps.manager", None),
+    "AUTONUDGE_STOP_REASON": ("efm_go.autonudge", None),
+    "_autonudge_instance": ("efm_go.autonudge", "get_instance"),
+    "data_home": ("efm_go.config.paths", None),
+    "slot_history_key": ("efm_go.dashboard.chat_utils", None),
+    "ImportChunkBudgetError": ("efm_go.knowledge.ingestion", None),
+    "LLMPool": ("efm_go.knowledge.llm_pool", None),
+    "_extract_json_of_type": ("efm_go.llm_helpers", None),
+    "OnLoopDBGuard": ("efm_go.on_loop_db", None),
+    "is_link_or_junction": ("efm_go.platform_compat", None),
+    "unlink_link_or_junction": ("efm_go.platform_compat", None),
+    "ArtifactNotFoundError": ("efm_go.artifacts", None),
+    "ArtifactStore": ("efm_go.artifacts", None),
+    "redact_credentials": ("efm_go.security", None),
+    "redact_exfiltration_urls": ("efm_go.security", None),
+    "sel": ("efm_go.sel", None),
     "web": ("aiohttp", "web"),
     "asyncio": ("asyncio", ""),
 }
@@ -328,7 +328,7 @@ class TestHistoricNamespace:
 
     def test_dir_and_the_package_still_expose_the_route_entry_point(self):
         assert "register_routes" in dir(h)
-        package = importlib.import_module("kiro_crew.apps.builtins.auto_research")
+        package = importlib.import_module("efm_go.apps.builtins.auto_research")
         assert package.register_routes is h.register_routes
 
     def test_a_star_import_binds_every_public_historic_name(self):

@@ -19,11 +19,11 @@ from oauth_url_corpus import OPERATOR_EXTENSION_OAUTH_URLS
 from test_connections_mint import _FS_ATTRS, _FS_NAMES, _called_names
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import security
-from kiro_crew.agent_files import AGENT_FILENAME
-from kiro_crew.connections import mint, tool_aliases, warm
-from kiro_crew.connections.mint import _mints
-from kiro_crew.connections.registry import Provider
+from efm_go import security
+from efm_go.agent_files import AGENT_FILENAME
+from efm_go.connections import mint, tool_aliases, warm
+from efm_go.connections.mint import _mints
+from efm_go.connections.registry import Provider
 
 
 @pytest.fixture(autouse=True)
@@ -236,7 +236,7 @@ def _warm_engine_trees() -> list[tuple[str, ast.Module]]:
     coroutines, and a coroutine that moved into an owner still owes the same invariant. Reading
     the facade alone would silently drop both.
     """
-    from kiro_crew.connections import warm_runtime
+    from efm_go.connections import warm_runtime
 
     owners = sorted(Path(warm_runtime.__file__).parent.glob("*.py"))
     assert len(owners) > 1, "warm_runtime moved; this guard is reading the wrong tree"
@@ -459,7 +459,7 @@ def test_private_generation_specs_are_not_offered_by_agent_discovery(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """The picker refuses the sensitive run tree even when it is passed as a project."""
-    from kiro_crew import agent_discovery
+    from efm_go import agent_discovery
 
     work_dir = warm._create_warm_generation_dir()
     private_agents = warm._warm_generation_agents_dir(work_dir)
@@ -1210,7 +1210,7 @@ def test_a_sensitive_symlink_at_the_spec_path_never_reaches_the_plan(
     _agents_dir: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     """RED before the migration: the linked file's veto excluded the provider."""
-    from kiro_crew import agent_discovery
+    from efm_go import agent_discovery
 
     target = tmp_path / "protected.json"
     # A DIVERGENT auth shape, so being read is observable: it would veto the provider.
@@ -1234,7 +1234,7 @@ def test_a_refused_spec_plans_as_though_nothing_were_configured(
     _agents_dir: Path, monkeypatch: pytest.MonkeyPatch
 ):
     """Refusal degrades exactly like an absent file -- it never fails the planner."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     monkeypatch.setattr(hooks, "MAX_FILE_BYTES", 256)
     (_agents_dir / AGENT_FILENAME).write_text(
@@ -1277,7 +1277,7 @@ def test_a_sensitive_symlink_at_a_warm_spec_path_is_never_judged_ours(
     _agents_dir: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
     """RED before the migration: the link was followed, read as ours, and swept."""
-    from kiro_crew import agent_discovery
+    from efm_go import agent_discovery
 
     target = tmp_path / "protected.json"
     stem = f"{warm._WARM_AGENT_PREFIX}notion"
@@ -1301,7 +1301,7 @@ def test_an_oversized_spec_at_a_warm_spec_path_is_never_judged_ours(
     _agents_dir: Path, monkeypatch: pytest.MonkeyPatch
 ):
     """The cap is consulted here too: past it, ours-shaped contents still read as foreign."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     monkeypatch.setattr(hooks, "MAX_FILE_BYTES", 256)
     stem = f"{warm._WARM_AGENT_PREFIX}notion"
@@ -1959,7 +1959,7 @@ async def test_reaper_audits_the_grant_scan_before_replacement_warm(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """A page-owned re-arm acts on the same credential observation as premint."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     assert warm._GRANT_PRESENCE_READ_ID in hooks._AUDIT_ONLY_READ_IDS
     provider = _provider("linear")
@@ -2129,7 +2129,7 @@ async def _rearm_registry():
     Awaiting is the point. Cancelling each task and then clearing the registry synchronously
     drops the only reference to a task that has not yet observed its own cancellation, so the
     loop closes on it, its ``finally`` never runs, and the leak is the exact one
-    :func:`~kiro_crew.connections.warm._settle_invalidation_rearms` exists to close -- a test
+    :func:`~efm_go.connections.warm._settle_invalidation_rearms` exists to close -- a test
     harness must not reproduce the defect its subject fixes.
 
     Delegated to that production function rather than re-implementing cancel-then-gather here,
@@ -2276,7 +2276,7 @@ async def test_the_invalidation_rearm_audits_the_grant_scan_it_acts_on(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """It acts on a credential-store observation, so it owes the same SEL record as premint."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     assert warm._GRANT_PRESENCE_READ_ID in hooks._AUDIT_ONLY_READ_IDS
     events: list[tuple[Any, ...]] = []

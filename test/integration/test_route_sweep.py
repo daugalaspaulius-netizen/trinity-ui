@@ -88,7 +88,7 @@ HELD_OPEN: dict[str, str] = {
 #: developer machine it fails to resolve rather than exercising their account,
 #: and the route is judged by its own tests, not by this sweep.
 REACHES_NETWORK: dict[str, str] = {
-    "/api/apps/registry": "fetches the official app catalog (apps.crew.kiro.dev)",
+    "/api/apps/registry": "fetches the official app catalog (apps.efmleads.com)",
     "/api/cloud/preflight": "shells the aws CLI (sts, iam) against the operator's profile",
     "/api/deploy/profiles": "shells `aws configure list-profiles`; the CLI's start-up on a "
     "host that has it is not bounded by this sweep",

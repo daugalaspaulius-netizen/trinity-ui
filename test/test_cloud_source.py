@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew.cloud import aws, source
+from efm_go.cloud import aws, source
 
 
 class _FakeGroup:
@@ -98,7 +98,7 @@ class TestRepoRoot:
         # which itself may sit inside this checkout (a developer's
         # `TMPDIR=./tmp`) -- where install.sh + setup.cfg ARE above it. The
         # walk is lexical on the resolved path, so existence is not required.
-        fake_module = Path("/kc-wheel-install-no-markers/site-packages/kiro_crew/cloud/source.py")
+        fake_module = Path("/kc-wheel-install-no-markers/site-packages/efm_go/cloud/source.py")
         monkeypatch.setattr(source, "__file__", str(fake_module))
         with pytest.raises(aws.AWSError, match="source root"):
             source.repo_root()
@@ -339,7 +339,7 @@ class TestBuildTarball:
         import tarfile as _tf
         import tempfile as _tmp
 
-        import kiro_crew.cloud.source as _src
+        import efm_go.cloud.source as _src
 
         created: list[str] = []
         real_ntf = _tmp.NamedTemporaryFile
@@ -651,7 +651,7 @@ class TestTarballStagingDirectory:
         resolved home per process, so both caches are cleared alongside ``$HOME``
         or this would read whichever home the process resolved first.
         """
-        from kiro_crew.config import paths as config_paths
+        from efm_go.config import paths as config_paths
 
         real_home = tmp_path / "local" / "home" / "u"
         real_home.mkdir(mode=0o700, parents=True)
@@ -1709,7 +1709,7 @@ class TestEnsureInstanceBoundary:
     def test_reuses_existing_boundary_when_content_matches(self, monkeypatch):
         # An existing boundary is reused (never re-versioned) ONLY after its
         # content is verified to match the fixed document.
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: _ACCT12)
         calls = []
@@ -1751,7 +1751,7 @@ class TestEnsureInstanceBoundary:
         # The compare is canonical JSON (sort_keys), so the same document with its
         # dict KEYS in a different order (as AWS may return them) still matches and
         # is reused — we don't spuriously reject our own boundary over key order.
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: _ACCT12)
         monkeypatch.setattr(aws, "run_aws", lambda args, *a, **k: (0, "{}", ""))
@@ -1771,7 +1771,7 @@ class TestEnsureInstanceBoundary:
         assert source.ensure_instance_boundary("dev", "us-east-1") == iam.boundary_arn(_ACCT12)
 
     def test_creates_when_absent_with_fixed_document(self, monkeypatch):
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: "123456789012")
         created = {}
@@ -1800,7 +1800,7 @@ class TestEnsureInstanceBoundary:
         # get-policy says absent, but a concurrent launch created it first →
         # create-policy returns EntityAlreadyExists → we VERIFY content matches
         # ours, then treat as success.
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: _ACCT12)
 
@@ -1847,7 +1847,7 @@ class TestEnsureCrewBoundary:
     """T3's creator, and the evidence it does not reimplement the instance one."""
 
     def test_creates_when_absent_from_the_content_fixed_document(self, monkeypatch):
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: _ACCT12)
         created = {}
@@ -1873,7 +1873,7 @@ class TestEnsureCrewBoundary:
             assert verb not in argv
 
     def test_reuses_an_existing_boundary_only_after_verifying_content(self, monkeypatch):
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: _ACCT12)
         calls = []
@@ -1919,7 +1919,7 @@ class TestEnsureCrewBoundary:
         kirocrew boundary is present" rather than "this exact content" would accept
         it and cap a four-action role with a twenty-action ceiling.
         """
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: _ACCT12)
         monkeypatch.setattr(aws, "run_aws", lambda args, *a, **k: (0, "{}", ""))
@@ -1934,7 +1934,7 @@ class TestEnsureCrewBoundary:
             source.ensure_crew_boundary("dev", "us-east-1")
 
     def test_a_lost_create_race_is_verified_before_it_counts_as_success(self, monkeypatch):
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: _ACCT12)
 
@@ -1989,7 +1989,7 @@ class TestEnsureCrewBoundary:
         checking the documents differ is what stops a shared core from being shared
         by handing both lanes the same expected content.
         """
-        from kiro_crew.cloud import iam
+        from efm_go.cloud import iam
 
         monkeypatch.setattr(source, "_account_id", lambda *a: _ACCT12)
         monkeypatch.setattr(aws, "run_aws", lambda args, *a, **k: (0, "{}", ""))

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.secrets.vault import SecretValue
-from kiro_crew.wakatime import service
-from kiro_crew.wakatime.client import DEFAULT_API_BASE
+from efm_go.secrets.vault import SecretValue
+from efm_go.wakatime import service
+from efm_go.wakatime.client import DEFAULT_API_BASE
 
 
 class _FakeWakaCfg:

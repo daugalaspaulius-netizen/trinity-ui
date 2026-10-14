@@ -13,10 +13,10 @@ import asyncio
 import numpy as np
 import pytest
 
-from kiro_crew.stt import engine as engine_mod
-from kiro_crew.stt import models
-from kiro_crew.stt import session as session_mod
-from kiro_crew.stt import telemetry, vad
+from efm_go.stt import engine as engine_mod
+from efm_go.stt import models
+from efm_go.stt import session as session_mod
+from efm_go.stt import telemetry, vad
 
 SR = vad.SAMPLE_RATE_HZ
 

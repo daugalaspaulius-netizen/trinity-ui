@@ -32,13 +32,13 @@ from typing import Any, Callable
 
 import pytest
 
-from kiro_crew import agent_panel
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.crew_log import store
-from kiro_crew.crew_log.entry_types import (
+from efm_go import agent_panel
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.crew_log import store
+from efm_go.crew_log.entry_types import (
     PANEL_CREW_KEY_LIMIT,
     PANEL_ENTRY_TYPE,
     PANEL_FOLD_NAME,
@@ -363,8 +363,8 @@ def test_the_recorded_order_beats_a_backward_header_clock(monkeypatch):
 
     So the order comes from what the appends RECORDED, the way the work fold's does.
     """
-    from kiro_crew.crew_log import store
-    from kiro_crew.crew_log.store import session_units_for_slot
+    from efm_go.crew_log import store
+    from efm_go.crew_log.store import session_units_for_slot
 
     older = "acp-fleet-clock-older"
     newer = "acp-fleet-clock-newer"

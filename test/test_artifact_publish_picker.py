@@ -14,7 +14,7 @@ import pytest
 
 
 def _fake_provider(name: str, *, available: bool, installable: bool):
-    from kiro_crew.publish_provider import (
+    from efm_go.publish_provider import (
         Capability,
         DiscoveryModel,
         KindSupport,
@@ -42,7 +42,7 @@ class TestPickerIncludesInstallable:
 
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.dashboard.handlers import artifacts as handlers
+        from efm_go.dashboard.handlers import artifacts as handlers
 
         ready = _fake_provider("ready", available=True, installable=False)
         heals = _fake_provider("heals", available=False, installable=True)
@@ -69,7 +69,7 @@ class TestPickerPublicReachable:
 
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.dashboard.handlers import artifacts as handlers
+        from efm_go.dashboard.handlers import artifacts as handlers
 
         private = _fake_provider("private", available=True, installable=False)
         private.public_reachable = False
@@ -92,8 +92,8 @@ class TestPickerPublicReachable:
 
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.dashboard.handlers import artifacts as handlers
-        from kiro_crew.publish_provider import PublishProvider
+        from efm_go.dashboard.handlers import artifacts as handlers
+        from efm_go.publish_provider import PublishProvider
 
         class Undeclared(PublishProvider):
             name = "undeclared"

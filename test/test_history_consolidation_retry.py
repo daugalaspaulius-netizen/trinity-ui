@@ -21,15 +21,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from windows_sim import replace_sharing_violation
 
-from kiro_crew import atomic_write as aw
-from kiro_crew import history as history_mod
-from kiro_crew import platform_compat
-from kiro_crew.dashboard.chat_persistence import (
+from efm_go import atomic_write as aw
+from efm_go import history as history_mod
+from efm_go import platform_compat
+from efm_go.dashboard.chat_persistence import (
     _rehydrate_slot_from_history,
     _save_slot_to_history,
 )
-from kiro_crew.dashboard.state import DashboardState
-from kiro_crew.history import (
+from efm_go.dashboard.state import DashboardState
+from efm_go.history import (
     _CONSOLIDATION_BACKOFF_BASE_SECS,
     _CONSOLIDATION_MAX_ATTEMPTS,
     _SESSION_MAX_BYTES,
@@ -43,8 +43,8 @@ KEY = "dashboard:chat-retry"
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", ["persistent", "incognito", "temporary"])
 async def test_consolidation_captures_execution_off_loop(tmp_path, monkeypatch, mode):
-    from kiro_crew import execution_context
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go import execution_context
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
     captured = execution_context.ExecutionContext(
         None, execution_context.MemoryStoreRef("default"), "template", "kirocrew", mode
@@ -101,7 +101,7 @@ class TestTheLineIsValidatedWithTheRows:
     async def test_a_line_tightened_before_the_snapshot_refuses_without_a_model_turn(
         self, tmp_path, monkeypatch, mode
     ):
-        from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+        from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
         log = _seed_log(tmp_path)
         c = _make_consolidator(log)
@@ -125,7 +125,7 @@ class TestTheLineIsValidatedWithTheRows:
     async def test_a_line_tightened_during_the_model_turn_discards_the_result(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+        from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
         log = _seed_log(tmp_path)
         c = _make_consolidator(log)
@@ -164,7 +164,7 @@ class TestTheLineIsValidatedWithTheRows:
     async def test_a_line_tightened_before_history_publication_refuses_the_write(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+        from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
         log = _seed_log(tmp_path)
         c = _make_consolidator(log)
@@ -182,9 +182,9 @@ class TestTheLineIsValidatedWithTheRows:
     async def test_a_line_tightened_before_member_publication_refuses_the_atomic_write(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-        from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+        from efm_go.context import ContextBuilder
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
         log = _seed_log(tmp_path)
         vectors = MagicMock()
@@ -200,9 +200,9 @@ class TestTheLineIsValidatedWithTheRows:
             "persistent",
         )
         monkeypatch.setattr(
-            "kiro_crew.execution_context.read_session_execution", lambda _key: execution
+            "efm_go.execution_context.read_session_execution", lambda _key: execution
         )
-        monkeypatch.setattr("kiro_crew.memory_stores.memory_store_version", lambda _store: 2)
+        monkeypatch.setattr("efm_go.memory_stores.memory_store_version", lambda _store: 2)
         monkeypatch.setattr(ContextBuilder, "ensure_store", AsyncMock(return_value=vectors))
         c = _make_consolidator(log)
         monkeypatch.setattr(ContextBuilder, "get_memory_for", lambda **_kwargs: c._memory)
@@ -219,7 +219,7 @@ class TestTheLineIsValidatedWithTheRows:
     @pytest.mark.asyncio
     async def test_an_unreadable_line_under_the_snapshot_lock_refuses(self, tmp_path, monkeypatch):
         """Fail closed: rows whose contract cannot be read are not derived from."""
-        from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+        from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
         log = _seed_log(tmp_path)
         c = _make_consolidator(log)
@@ -271,8 +271,8 @@ class TestTheLineIsValidatedWithTheRows:
 async def test_persistence_disabled_after_extraction_refuses_before_marking(
     tmp_path, monkeypatch, result
 ):
-    from kiro_crew import history_consolidation
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go import history_consolidation
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
     log = _seed_log(tmp_path)
     c = _make_consolidator(log)
@@ -301,7 +301,7 @@ async def test_persistence_disabled_after_extraction_refuses_before_marking(
 
 @pytest.mark.asyncio
 async def test_persistence_flip_after_first_commit_finishes_the_run(tmp_path, monkeypatch):
-    from kiro_crew import history_consolidation
+    from efm_go import history_consolidation
 
     log = _seed_log(tmp_path)
     c = _make_consolidator(log)
@@ -337,8 +337,8 @@ async def test_persistence_flip_after_first_commit_finishes_the_run(tmp_path, mo
 
 @pytest.mark.asyncio
 async def test_cas_refused_first_publication_does_not_arm_commit_latch(tmp_path, monkeypatch):
-    from kiro_crew import history_consolidation
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go import history_consolidation
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
     log = _seed_log(tmp_path)
     c = _make_consolidator(log)
@@ -429,7 +429,7 @@ async def test_a_refused_hold_after_the_first_commit_marks_the_span(
     mark_consolidated = MagicMock(wraps=log.mark_consolidated)
     monkeypatch.setattr(log, "mark_consolidated", mark_consolidated)
 
-    with caplog.at_level("WARNING", logger="kiro_crew.history"):
+    with caplog.at_level("WARNING", logger="efm_go.history"):
         outcome = await asyncio.wait_for(c._consolidate(KEY, include_history=True), 10)
 
     assert outcome is None
@@ -472,7 +472,7 @@ async def test_a_refused_hold_before_the_first_commit_still_refuses_the_run(
     mark_consolidated = MagicMock(wraps=log.mark_consolidated)
     monkeypatch.setattr(log, "mark_consolidated", mark_consolidated)
 
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
     outcome = await asyncio.wait_for(c._consolidate(KEY, include_history=True), 10)
 
@@ -512,10 +512,10 @@ async def test_a_marker_failure_after_a_refused_later_hold_is_charged(tmp_path, 
 
 @pytest.mark.asyncio
 async def test_persistence_rechecked_inside_member_publication_hold(tmp_path, monkeypatch):
-    from kiro_crew import history_consolidation
-    from kiro_crew.context import ContextBuilder
-    from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go import history_consolidation
+    from efm_go.context import ContextBuilder
+    from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
     log = _seed_log(tmp_path)
     vectors = MagicMock()
@@ -531,9 +531,9 @@ async def test_persistence_rechecked_inside_member_publication_hold(tmp_path, mo
         "persistent",
     )
     monkeypatch.setattr(
-        "kiro_crew.execution_context.read_session_execution", lambda _key: execution
+        "efm_go.execution_context.read_session_execution", lambda _key: execution
     )
-    monkeypatch.setattr("kiro_crew.memory_stores.memory_store_version", lambda _store: 2)
+    monkeypatch.setattr("efm_go.memory_stores.memory_store_version", lambda _store: 2)
     monkeypatch.setattr(ContextBuilder, "ensure_store", AsyncMock(return_value=vectors))
     c = _make_consolidator(log)
     monkeypatch.setattr(ContextBuilder, "get_memory_for", lambda **_kwargs: c._memory)
@@ -579,8 +579,8 @@ async def test_persistence_rechecked_inside_member_publication_hold(tmp_path, mo
 async def test_persistence_rechecked_inside_v1_vector_publication_hold(
     tmp_path, monkeypatch, result, blocked_writer
 ):
-    from kiro_crew import history_consolidation
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go import history_consolidation
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
     log = _seed_log(tmp_path)
     vectors = MagicMock()
@@ -614,8 +614,8 @@ async def test_persistence_rechecked_inside_v1_vector_publication_hold(
 
 @pytest.mark.asyncio
 async def test_persistence_rechecked_inside_skill_publication_hold(tmp_path, monkeypatch):
-    from kiro_crew import history_consolidation
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go import history_consolidation
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
 
     log = _seed_log(tmp_path)
     loader = MagicMock()
@@ -678,12 +678,12 @@ async def test_consolidate_refuses_a_channel_thread_whose_map_entry_was_pruned(
     """
     from types import SimpleNamespace
 
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
-    from kiro_crew.messaging import privacy_mode
-    from kiro_crew.session_map import SessionMap
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go.messaging import privacy_mode
+    from efm_go.session_map import SessionMap
 
-    monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
+    monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
     live_key = "telegram:kirocrew:direct:4242"
     log = _seed_default_log(live_key)  # three turns before the modifier
     sm = SessionMap()
@@ -733,13 +733,13 @@ async def test_a_legacy_privacy_flag_is_kept_by_prune_and_stamped_by_the_startup
     """
     import threading
 
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
-    from kiro_crew.messaging import privacy_mode
-    from kiro_crew.session_map import SessionMap
+    from efm_go.history import ConversationLog
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go.messaging import privacy_mode
+    from efm_go.session_map import SessionMap
 
-    monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
+    monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
     live_key = "telegram:kirocrew:direct:4242"
     log = _seed_default_log(live_key)
     assert "memory_mode" not in log.get_metadata(live_key), "premise: legacy header, no mode"
@@ -800,11 +800,11 @@ async def test_a_legacy_privacy_flag_is_kept_by_prune_and_stamped_by_the_startup
 async def test_pending_extraction_rechecks_its_actual_transcript(
     tmp_path, monkeypatch, version, seed_source, assistant_value, mutation
 ):
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-    from kiro_crew.context import ContextBuilder
-    from kiro_crew.history_consolidation import _CONSOLIDATION_REFUSED
-    from kiro_crew.memory_stores import memory_store_dir_for, provision_member_memory
-    from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.context import ContextBuilder
+    from efm_go.history_consolidation import _CONSOLIDATION_REFUSED
+    from efm_go.memory_stores import memory_store_dir_for, provision_member_memory
+    from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
     store_name = None
     directory = tmp_path / "global"
@@ -828,7 +828,7 @@ async def test_pending_extraction_rechecks_its_actual_transcript(
         with history_mod.allow_on_loop_persist():
             log.append(KEY, "user", quote)
         c = _make_consolidator(log, vector_store=vectors)
-        monkeypatch.setattr("kiro_crew.context.store_of_session", lambda *_: store_name)
+        monkeypatch.setattr("efm_go.context.store_of_session", lambda *_: store_name)
         monkeypatch.setattr(ContextBuilder, "ensure_store", AsyncMock(return_value=vectors))
         monkeypatch.setattr(ContextBuilder, "get_memory_for", lambda *a, **kw: c._memory)
         monkeypatch.setattr(ContextBuilder, "get_lessons_for", lambda *a, **kw: None)
@@ -1371,7 +1371,7 @@ class TestHostileMetadataDoesNotBreakTheGate:
     @pytest.mark.asyncio
     async def test_the_manual_trigger_does_not_500_on_hostile_metadata(self, tmp_path):
         """The gate runs inside a request handler — a raise there is a 500."""
-        from kiro_crew.dashboard.handlers.memory import api_memory_consolidate
+        from efm_go.dashboard.handlers.memory import api_memory_consolidate
 
         log = _seed_log(tmp_path)
         _plant_raw_meta(log, KEY, '"consolidation_attempts": 1e309')
@@ -1482,12 +1482,12 @@ class TestOnlyASentTurnConsumesTheCap:
 
     @pytest.mark.asyncio
     async def test_memory_binding_failure_arms_durable_backoff_without_spending(self, tmp_path):
-        from kiro_crew.memory_stores import UnknownMemoryStore
+        from efm_go.memory_stores import UnknownMemoryStore
 
         log = _seed_log(tmp_path)
         c = _make_consolidator(log)
         with (
-            patch("kiro_crew.context.store_of_session", side_effect=UnknownMemoryStore("missing")),
+            patch("efm_go.context.store_of_session", side_effect=UnknownMemoryStore("missing")),
             patch.object(c, "_call_llm", AsyncMock()) as call,
             pytest.raises(UnknownMemoryStore, match="missing"),
         ):
@@ -2005,7 +2005,7 @@ class TestForeignWritersCannotEraseTheAccounting:
 
     def test_a_dashboard_slot_save_preserves_the_retry_accounting(self, tmp_path, monkeypatch):
         """The save rebuilds the whole metadata line from the slot's own state."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         log = ConversationLog(base_dir=tmp_path)
         log.init()
         for i in range(3):
@@ -2039,7 +2039,7 @@ class TestForeignWritersCannotEraseTheAccounting:
 
     def test_a_slot_owned_field_is_still_cleared_by_omission(self, tmp_path, monkeypatch):
         """Preserving unowned keys must not make the slot's own state unclearable."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         log = ConversationLog(base_dir=tmp_path)
         log.init()
         log.append("dashboard:chat1", "user", "m0")
@@ -2089,7 +2089,7 @@ class TestAnEditedTranscriptEarnsAFreshBudget:
         for a span whose wait has already elapsed (so eligibility turns purely on
         the budget), positive for one still serving it.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         log = ConversationLog(base_dir=tmp_path)
         log.init()
         log.append("dashboard:chat1", "user", "ask")
@@ -2465,7 +2465,7 @@ class TestEveryEntryPointRespectsTheAccounting:
 
     @pytest.mark.asyncio
     async def test_manual_dashboard_trigger_refuses_inside_the_backoff(self, tmp_path):
-        from kiro_crew.dashboard.handlers.memory import api_memory_consolidate
+        from efm_go.dashboard.handlers.memory import api_memory_consolidate
 
         log = _seed_log(tmp_path)
         c = _make_consolidator(log)
@@ -2506,7 +2506,7 @@ class TestTheManualTriggerClaimsAtomically:
 
     @pytest.mark.asyncio
     async def test_concurrent_triggers_dispatch_only_once(self, tmp_path):
-        from kiro_crew.dashboard.handlers.memory import api_memory_consolidate
+        from efm_go.dashboard.handlers.memory import api_memory_consolidate
 
         log = _seed_log(tmp_path)
         c = _make_consolidator(log)
@@ -2536,7 +2536,7 @@ class TestTheManualTriggerClaimsAtomically:
     @pytest.mark.asyncio
     async def test_a_refused_trigger_releases_its_claim(self, tmp_path):
         """A 429 must not leave the key claimed, or the span is wedged forever."""
-        from kiro_crew.dashboard.handlers.memory import api_memory_consolidate
+        from efm_go.dashboard.handlers.memory import api_memory_consolidate
 
         log = _seed_log(tmp_path)
         c = _make_consolidator(log)

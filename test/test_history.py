@@ -13,9 +13,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from windows_sim import builtin_open_sharing_violation
 
-from kiro_crew import history, history_search
-from kiro_crew.atomic_write import atomic_write
-from kiro_crew.history import (
+from efm_go import history, history_search
+from efm_go.atomic_write import atomic_write
+from efm_go.history import (
     _CONSOLIDATION_THRESHOLD,
     _METADATA_CACHE_MAX,
     _SESSION_KEEP_LINES,
@@ -402,7 +402,7 @@ class TestRecentFromSource:
                 _tick["n"] += 1
                 return _base + _dt.timedelta(seconds=_tick["n"])
 
-        monkeypatch.setattr("kiro_crew.history.datetime", _IncDateTime)
+        monkeypatch.setattr("efm_go.history.datetime", _IncDateTime)
 
         log = ConversationLog(base_dir=tmp_path)
         # Append in different sessions — timestamps are strictly ordered.
@@ -416,7 +416,7 @@ class TestRecentFromSource:
 
 class TestSessionManagerCompaction:
     def test_sliding_window_splits_messages(self, tmp_path):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog(base_dir=tmp_path)
         log.init()
@@ -432,7 +432,7 @@ class TestSessionManagerCompaction:
         assert recent[0]["content"] == "msg-6"
 
     def test_sliding_window_all_recent_when_few(self, tmp_path):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog(base_dir=tmp_path)
         log.init()
@@ -655,14 +655,14 @@ class TestSearchSessions:
     def test_matches_query_with_json_escaped_chars(self, tmp_path):
         """Query containing backslash/quote must match despite JSON escaping.
 
-        Regression: file paths like ``src\\kiro_crew`` are stored in JSONL
-        as ``src\\\\kiro_crew`` (escaped).  A raw-line substring fast-path
+        Regression: file paths like ``src\\efm_go`` are stored in JSONL
+        as ``src\\\\efm_go`` (escaped).  A raw-line substring fast-path
         would miss them; parsing every line ensures the needle is compared
         against the un-escaped ``content`` value.
         """
         log = ConversationLog(base_dir=tmp_path)
-        log.append("alpha", "user", r"edited src\kiro_crew\history.py today")
-        results = log.search_sessions(r"src\kiro_crew")
+        log.append("alpha", "user", r"edited src\efm_go\history.py today")
+        results = log.search_sessions(r"src\efm_go")
         assert [s["key"] for s in results] == ["alpha"]
 
     def test_case_insensitive_unicode(self, tmp_path):
@@ -1008,7 +1008,7 @@ class TestSearchSessions:
         Files outside the window must not appear in results even if they
         would score higher, bounding per-search I/O.
         """
-        monkeypatch.setattr("kiro_crew.history._SEARCH_SCAN_WINDOW", 2)
+        monkeypatch.setattr("efm_go.history._SEARCH_SCAN_WINDOW", 2)
         log = ConversationLog(base_dir=tmp_path)
         # Oldest: strong match (would win on score if scanned)
         log.append("old-strong", "user", "apollo apollo apollo apollo apollo")
@@ -1557,7 +1557,7 @@ class TestForgeReferenceSearch:
         log.append(
             "url_only",
             "assistant",
-            "opened https://github.com/kirodotdev/KiroCrew/pull/4411 for app sync",
+            "opened https://efmleads.com/pull/4411 for app sync",
         )
         log.append("hash_form", "assistant", "babysitting PR #4411 to green")
         log.append("prose_form", "assistant", "rebased pr 4411 onto main")
@@ -1578,9 +1578,9 @@ class TestForgeReferenceSearch:
             "PR 4411",
             "pr4411",
             "pull/4411",
-            "https://github.com/kirodotdev/KiroCrew/pull/4411",
-            "https://github.com/kirodotdev/KiroCrew/pull/4411/files",
-            "kirodotdev/KiroCrew#4411",
+            "https://efmleads.com/pull/4411",
+            "https://efmleads.com/pull/4411/files",
+            "efmleads.com#4411",
             "(#4411)",
             "#4411.",
         ],
@@ -2287,7 +2287,7 @@ class TestProviderSearchRefSeam:
 
         history_search.register_search_ref_resolver(greedy)
 
-        for query in ("#4411", "pull/4411", "https://github.com/kirodotdev/KiroCrew/pull/4411"):
+        for query in ("#4411", "pull/4411", "https://efmleads.com/pull/4411"):
             needle = self._needle(query)
             assert needle.text == "#4411", query
             assert "pull/4411" in needle.alts, query
@@ -2608,8 +2608,8 @@ class TestRecencyBoost:
 
 class TestArchive:
     def test_rotate_archives_dropped_lines(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.history._SESSION_MAX_BYTES", 100)
-        monkeypatch.setattr("kiro_crew.history._SESSION_KEEP_LINES", 3)
+        monkeypatch.setattr("efm_go.history._SESSION_MAX_BYTES", 100)
+        monkeypatch.setattr("efm_go.history._SESSION_KEEP_LINES", 3)
         log = ConversationLog(base_dir=tmp_path)
         for i in range(20):
             log.append("t1", "user", f"message number {i} with enough text to exceed limits")
@@ -2638,8 +2638,8 @@ class TestArchive:
         import os
         import time
 
-        import kiro_crew.history as history_mod
-        from kiro_crew.history import _cleanup_old_archives
+        import efm_go.history as history_mod
+        from efm_go.history import _cleanup_old_archives
 
         history_mod._last_cleanup = 0.0  # reset rate-limit so cleanup actually runs
         adir = tmp_path / "archive"
@@ -2657,7 +2657,7 @@ class TestArchive:
         assert new.exists()
 
     def test_archive_empty_lines_noop(self, tmp_path):
-        from kiro_crew.history import _archive_lines
+        from efm_go.history import _archive_lines
 
         result = _archive_lines("k", [], reason="rotate", base=tmp_path)
         assert result is None
@@ -2665,7 +2665,7 @@ class TestArchive:
 
     def test_same_second_conflict_suffixes_filename(self, tmp_path):
         """Multiple archives for same key in same second must not clobber each other."""
-        from kiro_crew.history import _archive_lines
+        from efm_go.history import _archive_lines
 
         p1 = _archive_lines("k", ["line1\n"], reason="rotate", base=tmp_path)
         p2 = _archive_lines("k", ["line2\n"], reason="rotate", base=tmp_path)
@@ -2677,8 +2677,8 @@ class TestArchive:
         assert "line3" in p3.read_text(encoding="utf-8")
 
     def test_cleanup_old_archives_noop_when_dir_missing(self, tmp_path):
-        import kiro_crew.history as history_mod
-        from kiro_crew.history import _cleanup_old_archives
+        import efm_go.history as history_mod
+        from efm_go.history import _cleanup_old_archives
 
         history_mod._last_cleanup = 0.0
         removed = _cleanup_old_archives(retention_days=7, base=tmp_path)
@@ -2689,8 +2689,8 @@ class TestArchive:
         import os
         import time
 
-        import kiro_crew.history as history_mod
-        from kiro_crew.history import _cleanup_old_archives
+        import efm_go.history as history_mod
+        from efm_go.history import _cleanup_old_archives
 
         history_mod._last_cleanup = 0.0
         adir = tmp_path / "archive"
@@ -2708,8 +2708,8 @@ class TestArchive:
         import os
         import time
 
-        import kiro_crew.history as history_mod
-        from kiro_crew.history import _cleanup_old_archives
+        import efm_go.history as history_mod
+        from efm_go.history import _cleanup_old_archives
 
         monkeypatch.setattr(history_mod, "_resolve_retention_days", lambda: 7)
         history_mod._last_cleanup = 0.0
@@ -2733,8 +2733,8 @@ class TestArchive:
         """
         import time
 
-        import kiro_crew.history as history_mod
-        from kiro_crew.history import _cleanup_old_archives
+        import efm_go.history as history_mod
+        from efm_go.history import _cleanup_old_archives
 
         def _boom() -> int:
             raise AssertionError("config must not be loaded on a throttled call")
@@ -2751,8 +2751,8 @@ class TestArchive:
         """Explicit negative disables without touching config, even when throttled."""
         import time
 
-        import kiro_crew.history as history_mod
-        from kiro_crew.history import _cleanup_old_archives
+        import efm_go.history as history_mod
+        from efm_go.history import _cleanup_old_archives
 
         def _boom() -> int:
             raise AssertionError("config must not be loaded for explicit negative")
@@ -2772,8 +2772,8 @@ class TestArchive:
         first call should resolve config once; the immediate next call must be
         throttled and NOT resolve config again.
         """
-        import kiro_crew.history as history_mod
-        from kiro_crew.history import _cleanup_old_archives
+        import efm_go.history as history_mod
+        from efm_go.history import _cleanup_old_archives
 
         calls = {"n": 0}
 
@@ -2791,7 +2791,7 @@ class TestArchive:
 
     def test_safe_key_sanitizes_unsafe_chars(self, tmp_path):
         """Keys with slashes/colons must be sanitized into safe filenames."""
-        from kiro_crew.history import _archive_lines, _safe_key
+        from efm_go.history import _archive_lines, _safe_key
 
         assert _safe_key("slack:C123/456") == "slack_C123_456"
         p = _archive_lines("slack:C123/456", ["x\n"], reason="rotate", base=tmp_path)
@@ -2801,8 +2801,8 @@ class TestArchive:
 
     def test_multiple_rotations_produce_multiple_archives(self, tmp_path, monkeypatch):
         """A session that keeps growing across multiple rotate cycles produces multiple archive files."""
-        monkeypatch.setattr("kiro_crew.history._SESSION_MAX_BYTES", 200)
-        monkeypatch.setattr("kiro_crew.history._SESSION_KEEP_LINES", 2)
+        monkeypatch.setattr("efm_go.history._SESSION_MAX_BYTES", 200)
+        monkeypatch.setattr("efm_go.history._SESSION_KEEP_LINES", 2)
         log = ConversationLog(base_dir=tmp_path)
         for _ in range(3):
             # Each round writes enough to trigger a rotate
@@ -2813,7 +2813,7 @@ class TestArchive:
 
     def test_archive_header_is_valid_json_metadata_line(self, tmp_path):
         """First line of archive is a JSON metadata row; remaining lines are original message jsonl."""
-        from kiro_crew.history import _archive_lines
+        from efm_go.history import _archive_lines
 
         p = _archive_lines("k", ['{"role":"user","content":"a"}\n', '{"role":"assistant","content":"b"}\n'], reason="rotate", base=tmp_path)
         lines = p.read_text(encoding="utf-8").splitlines()
@@ -2833,7 +2833,7 @@ class TestArchiveDashboardAPI:
         pytest.importorskip("aiohttp")
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import (
+        from efm_go.dashboard.handlers import (
             api_session_archive_list,
             api_session_archive_read,
         )
@@ -2850,7 +2850,7 @@ class TestArchiveDashboardAPI:
         import os
         import time
 
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         sessions = tmp_path / "sessions"
         archive = sessions / "archive"
@@ -2905,7 +2905,7 @@ class TestArchiveDashboardAPI:
     async def test_list_empty_when_no_archive_dir(self, tmp_path, monkeypatch):
         from aiohttp.test_utils import TestClient, TestServer
 
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         sessions = tmp_path / "sessions"
         sessions.mkdir()
@@ -2996,7 +2996,7 @@ class TestArchiveOnlyDropped:
         log.append("t1", "assistant", "B")
         log.append("t1", "user", "C")
         # Read back the three message lines so we can feed them exactly to rewrite_session
-        from kiro_crew.history import _safe_key
+        from efm_go.history import _safe_key
 
         path = tmp_path / f"{_safe_key('t1')}.jsonl"
         lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln and '"_type"' not in ln]
@@ -3031,7 +3031,7 @@ class TestConsolidationToolPolicy:
 
     @pytest.mark.asyncio
     async def test_call_llm_rejects_tools(self):
-        from kiro_crew.llm_helpers import ToolApprovalPolicy
+        from efm_go.llm_helpers import ToolApprovalPolicy
 
         provider = MagicMock()
         sessions = MagicMock()
@@ -3048,7 +3048,7 @@ class TestConsolidationToolPolicy:
             return {"ok": True}
 
         # Patch where it is USED — history.py imports the symbol at module top.
-        with patch("kiro_crew.history.stream_and_collect_json", side_effect=_fake_scj):
+        with patch("efm_go.history.stream_and_collect_json", side_effect=_fake_scj):
             result = await consolidator._call_llm("some prompt")
 
         assert result == {"ok": True}
@@ -3226,7 +3226,7 @@ class TestConsolidationDoesNotBlockLoop:
         """The LLM lessons array is capped like semantic/episodic: each
         write_lesson can perform up to 6 blocking embeds, so an uncapped list
         would occupy a worker thread for minutes."""
-        from kiro_crew.vector_memory import _MAX_LESSONS_PER_CONSOLIDATION
+        from efm_go.vector_memory import _MAX_LESSONS_PER_CONSOLIDATION
 
         vector_store = MagicMock()
         vector_store.write_lesson.return_value = True
@@ -3251,7 +3251,7 @@ class TestStopEventContextInjection:
         """context.py emits the system note for resolved stop events."""
         import json
 
-        from kiro_crew.context import _build_stop_event_notes
+        from efm_go.context import _build_stop_event_notes
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("sess1", "user", "hello")
@@ -3272,7 +3272,7 @@ class TestStopEventContextInjection:
         """At most 3 stop event notes are injected."""
         import json
 
-        from kiro_crew.context import _build_stop_event_notes
+        from efm_go.context import _build_stop_event_notes
 
         log = ConversationLog(base_dir=tmp_path)
         for i in range(5):
@@ -3294,7 +3294,7 @@ class TestStopEventContextInjection:
         """Unresolved stop_events (state=stopping) are not injected."""
         import json
 
-        from kiro_crew.context import _build_stop_event_notes
+        from efm_go.context import _build_stop_event_notes
 
         log = ConversationLog(base_dir=tmp_path)
         stop_data = json.dumps({
@@ -3322,7 +3322,7 @@ class TestCancelledTurnPreambleInstruction:
     def test_preamble_forbids_standalone_acknowledgment(self, tmp_path):
         import json
 
-        from kiro_crew.context import build_cancelled_turn_preamble
+        from efm_go.context import build_cancelled_turn_preamble
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("sess1", "user", "please refactor the parser")
@@ -3355,7 +3355,7 @@ class TestAutoSkillHelpers:
     """Module-level helpers for auto-skill eligibility."""
 
     def test_count_tool_call_messages(self):
-        from kiro_crew.history import _count_tool_call_messages
+        from efm_go.history import _count_tool_call_messages
 
         messages = [
             {"role": "user", "content": "hi"},
@@ -3368,7 +3368,7 @@ class TestAutoSkillHelpers:
         assert _count_tool_call_messages(messages) == 3
 
     def test_count_handles_malformed_tools(self):
-        from kiro_crew.history import _count_tool_call_messages
+        from efm_go.history import _count_tool_call_messages
 
         messages = [
             {"role": "assistant", "content": "x", "tools": "not-a-list"},
@@ -3378,7 +3378,7 @@ class TestAutoSkillHelpers:
         assert _count_tool_call_messages(messages) == 0
 
     def test_session_touched_sensitive_true_for_aws(self):
-        from kiro_crew.history import _session_touched_sensitive
+        from efm_go.history import _session_touched_sensitive
 
         messages = [
             {"role": "assistant", "content": "", "tools": ["Reading ~/.aws/credentials"]},
@@ -3386,7 +3386,7 @@ class TestAutoSkillHelpers:
         assert _session_touched_sensitive(messages) is True
 
     def test_session_touched_sensitive_true_for_imds(self):
-        from kiro_crew.history import _session_touched_sensitive
+        from efm_go.history import _session_touched_sensitive
 
         messages = [
             {"role": "assistant", "content": "", "tools": ["curl 169.254.169.254/latest/..."]},
@@ -3394,7 +3394,7 @@ class TestAutoSkillHelpers:
         assert _session_touched_sensitive(messages) is True
 
     def test_session_touched_sensitive_false_for_normal_tools(self):
-        from kiro_crew.history import _session_touched_sensitive
+        from efm_go.history import _session_touched_sensitive
 
         messages = [
             {"role": "assistant", "content": "", "tools": ["Running: ls /tmp", "fs_read"]},
@@ -3408,7 +3408,7 @@ class TestDashboardSchemaToolCallCounting:
 
     def test_count_dashboard_role_tool_messages(self):
         """Dashboard pipeline records tool calls as role='tool' messages."""
-        from kiro_crew.history import _count_tool_call_messages
+        from efm_go.history import _count_tool_call_messages
 
         messages = [
             {"role": "user", "content": "find info on grading"},
@@ -3423,7 +3423,7 @@ class TestDashboardSchemaToolCallCounting:
 
     def test_sensitive_detection_dashboard_schema(self):
         """Sensitive paths in dashboard tool content are detected."""
-        from kiro_crew.history import _session_touched_sensitive
+        from efm_go.history import _session_touched_sensitive
 
         messages = [
             {"role": "assistant", "content": "Reading credentials."},
@@ -3434,7 +3434,7 @@ class TestDashboardSchemaToolCallCounting:
 
     def test_sensitive_false_for_normal_dashboard_tools(self):
         """Normal dashboard tool messages don't trigger sensitive detection."""
-        from kiro_crew.history import _session_touched_sensitive
+        from efm_go.history import _session_touched_sensitive
 
         messages = [
             {"role": "tool", "content": "🔧 Running: @builder-mcp/ReadInternalWebsites"},
@@ -3444,7 +3444,7 @@ class TestDashboardSchemaToolCallCounting:
 
     def test_mixed_schema_no_double_count(self):
         """Sessions mixing legacy tools field and dashboard role='tool' count correctly."""
-        from kiro_crew.history import _count_tool_call_messages
+        from efm_go.history import _count_tool_call_messages
 
         messages = [
             {"role": "assistant", "content": "step 1", "tools": ["fs_read"]},
@@ -3464,8 +3464,8 @@ class TestProcessAutoSkillsIntegration:
     @pytest.mark.asyncio
     async def test_consolidator_default_off_never_writes(self, tmp_path):
         """With auto_skills_enabled=False (default), no skill writes happen."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3503,8 +3503,8 @@ class TestProcessAutoSkillsIntegration:
 
     @pytest.mark.asyncio
     async def test_consolidator_on_creates_auto_skill(self, tmp_path):
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3553,8 +3553,8 @@ class TestProcessAutoSkillsIntegration:
 
     @pytest.mark.asyncio
     async def test_sensitive_session_skipped_even_when_enabled(self, tmp_path):
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3598,8 +3598,8 @@ class TestProcessAutoSkillsIntegration:
     @pytest.mark.asyncio
     async def test_credentials_in_llm_output_are_redacted_before_write(self, tmp_path):
         """If the LLM returns a procedure with an AWS key, it's redacted before disk write."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3645,8 +3645,8 @@ class TestProcessAutoSkillsIntegration:
 
     @pytest.mark.asyncio
     async def test_similarity_dedup_skips_near_duplicate(self, tmp_path):
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3697,8 +3697,8 @@ class TestProcessAutoSkillsIntegration:
 
         This is the regression test that would have caught the schema mismatch bug.
         """
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3749,8 +3749,8 @@ class TestProcessAutoSkillsIntegration:
     async def test_consolidator_stages_when_approval_required(self, tmp_path):
         """With approval_required (the default), a new skill goes to the pending
         queue — not live — and is audited with outcome='staged'."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3794,8 +3794,8 @@ class TestProcessAutoSkillsIntegration:
     @pytest.mark.asyncio
     async def test_script_bearing_candidate_always_stages(self, tmp_path):
         """A clean script forces staging even when approval_required=False."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3834,8 +3834,8 @@ class TestProcessAutoSkillsIntegration:
     @pytest.mark.asyncio
     async def test_dangerous_script_dropped_but_skill_staged(self, tmp_path):
         """A script failing the static validator is dropped; the skill still stages."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3876,8 +3876,8 @@ class TestAutoSkillSELAudit:
     @pytest.mark.asyncio
     async def test_refine_namespace_lock_rejection_emits_sel(self, tmp_path):
         """When LLM tries to refine a hand-authored skill, SEL must log rejection."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3922,7 +3922,7 @@ class TestAutoSkillSELAudit:
             recorded.append(kwargs)
 
         with patch.object(consolidator, "_call_llm", side_effect=fake_llm):
-            with patch("kiro_crew.history.sel") as mock_sel:
+            with patch("efm_go.history.sel") as mock_sel:
                 mock_sel.return_value.log_tool_invocation = fake_log
                 await consolidator._consolidate("dashboard:chat-refine", include_history=True)
 
@@ -3943,8 +3943,8 @@ class TestAutoSkillSELAudit:
     @pytest.mark.asyncio
     async def test_create_path_failure_emits_sel(self, tmp_path):
         """When create_auto_skill returns None (invalid slug / oversize), SEL must log rejection."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -3981,7 +3981,7 @@ class TestAutoSkillSELAudit:
             recorded.append(kwargs)
 
         with patch.object(consolidator, "_call_llm", side_effect=fake_llm):
-            with patch("kiro_crew.history.sel") as mock_sel:
+            with patch("efm_go.history.sel") as mock_sel:
                 mock_sel.return_value.log_tool_invocation = fake_log
                 await consolidator._consolidate("dashboard:chat-bad-slug", include_history=True)
 
@@ -4007,8 +4007,8 @@ class TestAutoSkillSELAuditCompleteness:
     @pytest.mark.asyncio
     async def test_create_empty_after_redaction_emits_sel(self, tmp_path):
         """If LLM returns new_skill but redaction strips everything, emit rejection audit."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4045,7 +4045,7 @@ class TestAutoSkillSELAuditCompleteness:
             recorded.append(kwargs)
 
         with patch.object(consolidator, "_call_llm", side_effect=fake_llm):
-            with patch("kiro_crew.history.sel") as mock_sel:
+            with patch("efm_go.history.sel") as mock_sel:
                 mock_sel.return_value.log_tool_invocation = fake_log
                 await consolidator._consolidate("dashboard:chat-empty", include_history=True)
 
@@ -4061,8 +4061,8 @@ class TestAutoSkillSELAuditCompleteness:
     @pytest.mark.asyncio
     async def test_refine_empty_after_redaction_emits_sel(self, tmp_path):
         """Same gap on refine path: empty fields after redaction must audit."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import AutoSkillProvenance, SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import AutoSkillProvenance, SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4110,7 +4110,7 @@ class TestAutoSkillSELAuditCompleteness:
             recorded.append(kwargs)
 
         with patch.object(consolidator, "_call_llm", side_effect=fake_llm):
-            with patch("kiro_crew.history.sel") as mock_sel:
+            with patch("efm_go.history.sel") as mock_sel:
                 mock_sel.return_value.log_tool_invocation = fake_log
                 await consolidator._consolidate(
                     "dashboard:chat-refine-empty", include_history=True
@@ -4127,8 +4127,8 @@ class TestAutoSkillSELAuditCompleteness:
     @pytest.mark.asyncio
     async def test_refine_update_failed_emits_sel(self, tmp_path):
         """When update_auto_skill returns False (oversized / missing), audit the rejection."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import (
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import (
             AUTO_SKILL_MAX_PROCEDURE_CHARS,
             AutoSkillProvenance,
             SkillsLoader,
@@ -4181,7 +4181,7 @@ class TestAutoSkillSELAuditCompleteness:
             recorded.append(kwargs)
 
         with patch.object(consolidator, "_call_llm", side_effect=fake_llm):
-            with patch("kiro_crew.history.sel") as mock_sel:
+            with patch("efm_go.history.sel") as mock_sel:
                 mock_sel.return_value.log_tool_invocation = fake_log
                 await consolidator._consolidate("dashboard:chat-oversize", include_history=True)
 
@@ -4208,7 +4208,7 @@ class TestConsolidationPromptJsonShape:
         """Extract the new_skill shape example and verify balanced quotes."""
         import inspect
 
-        from kiro_crew.history import HistoryConsolidator
+        from efm_go.history import HistoryConsolidator
 
         src = inspect.getsource(HistoryConsolidator._run_skill_detection)
         # Find the new_skill prompt key block — it's a concatenated string
@@ -4242,8 +4242,8 @@ class TestConsolidationPromptJsonShape:
         import asyncio as _asyncio
         from unittest.mock import patch
 
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4325,8 +4325,8 @@ class TestSkillDetectionFullWindow:
         import asyncio as _asyncio
         from unittest.mock import patch
 
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4370,8 +4370,8 @@ class TestSkillDetectionFullWindow:
     @pytest.mark.asyncio
     async def test_restricted_line_discards_candidate_before_publication(self, tmp_path, caplog):
         """A mode tightening during extraction wins before skill staging."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4402,7 +4402,7 @@ class TestSkillDetectionFullWindow:
             }
 
         c._event_loop = asyncio.get_running_loop()
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.history"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.history"):
             with patch.object(c, "_call_llm", side_effect=fake_llm):
                 await c._run_skill_detection(key)
 
@@ -4411,8 +4411,8 @@ class TestSkillDetectionFullWindow:
         assert "transcript became restricted during extraction" in caplog.text
 
     def test_lock_timeout_discards_candidate_before_publication(self, tmp_path, monkeypatch):
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4455,8 +4455,8 @@ class TestSkillDetectionFullWindow:
         import asyncio as _asyncio
         from unittest.mock import patch
 
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4500,8 +4500,8 @@ class TestSkillDetectionFullWindow:
         import asyncio as _asyncio
         from unittest.mock import patch
 
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4571,8 +4571,8 @@ class TestSkillDetectionFullWindow:
         import json as _json
         from unittest.mock import patch
 
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4617,8 +4617,8 @@ class TestConsolidateSession:
     @pytest.mark.asyncio
     async def test_consolidate_session_fires_for_eligible(self, tmp_path):
         """consolidate_session triggers consolidation for sessions with messages."""
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4665,7 +4665,7 @@ class TestConsolidateSession:
     @pytest.mark.asyncio
     async def test_consolidate_session_skips_empty(self, tmp_path):
         """consolidate_session does nothing for sessions with no messages."""
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4682,7 +4682,7 @@ class TestConsolidateSession:
     @pytest.mark.asyncio
     async def test_consolidate_session_skips_already_running(self, tmp_path):
         """consolidate_session doesn't double-trigger for the same session."""
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4701,7 +4701,7 @@ class TestConsolidateSession:
     @pytest.mark.asyncio
     async def test_consolidate_session_skips_sensitive(self, tmp_path):
         """consolidate_session skips sessions that touched sensitive paths."""
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4720,7 +4720,7 @@ class TestConsolidateSession:
     @pytest.mark.asyncio
     async def test_consolidate_session_on_done_logs_exception(self, tmp_path):
         """_on_done callback logs warning when consolidation task raises."""
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4745,7 +4745,7 @@ class TestConsolidateSession:
     @pytest.mark.asyncio
     async def test_consolidate_now_skips_sensitive(self, tmp_path):
         """consolidate_now skips sessions that touched sensitive paths."""
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4762,7 +4762,7 @@ class TestConsolidateSession:
     @pytest.mark.asyncio
     async def test_consolidate_now_happy_path(self, tmp_path):
         """consolidate_now calls _consolidate for eligible sessions."""
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4779,7 +4779,7 @@ class TestConsolidateSession:
     @pytest.mark.asyncio
     async def test_consolidate_now_skips_empty(self, tmp_path):
         """consolidate_now does nothing for sessions with no unconsolidated messages."""
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -4802,7 +4802,7 @@ class TestLRUCache:
     """Unit tests for the bounded _LRUCache primitive backing the caches."""
 
     def test_hit_returns_value(self):
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=4)
         c["a"] = 1
@@ -4810,14 +4810,14 @@ class TestLRUCache:
         assert c["a"] == 1
 
     def test_miss_returns_default(self):
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=4)
         assert c.get("missing") is None
         assert c.get("missing", 42) == 42
 
     def test_eviction_is_deterministic_lru(self):
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=3)
         c["a"] = 1
@@ -4829,7 +4829,7 @@ class TestLRUCache:
         assert set(c._data.keys()) == {"b", "c", "d"}
 
     def test_get_marks_recently_used(self):
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=3)
         c["a"] = 1
@@ -4843,7 +4843,7 @@ class TestLRUCache:
         assert "a" in c
 
     def test_setitem_update_marks_recently_used(self):
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=3)
         c["a"] = 1
@@ -4855,7 +4855,7 @@ class TestLRUCache:
         assert c.get("a") == 10
 
     def test_pop_and_contains_and_len(self):
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=4)
         c["a"] = 1
@@ -4868,7 +4868,7 @@ class TestLRUCache:
         assert len(c) == 1
 
     def test_clear(self):
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=4)
         c["a"] = 1
@@ -4877,7 +4877,7 @@ class TestLRUCache:
         assert len(c) == 0
 
     def test_maxsize_zero_disables_bound(self):
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=0)
         for i in range(1000):
@@ -4902,7 +4902,7 @@ class TestConversationLogCacheBounded:
         # constructor parameter: the production default deliberately does not follow
         # ``cache_max`` down, and a kwarg only tests pass is production API surface
         # with no product consumer. The eviction invariant under test is unchanged.
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         log = ConversationLog(base_dir=tmp_path)
         log._meta_cache = _LRUCache(3)
@@ -5100,7 +5100,7 @@ class TestLRUCacheConcurrency:
     def test_get_pop_interleave_no_exception(self):
         import threading
 
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=64)
         errors: list[BaseException] = []
@@ -5163,7 +5163,7 @@ class TestLRUCacheConcurrency:
     def test_getitem_pop_interleave_no_exception(self):
         import threading
 
-        from kiro_crew.history import _LRUCache
+        from efm_go.history import _LRUCache
 
         c: _LRUCache[int] = _LRUCache(maxsize=32)
         for i in range(32):
@@ -5530,8 +5530,8 @@ async def test_dedupe_candidate_falls_back_to_lexical_without_judge_model(tmp_pa
     """No judge_model configured → _dedupe_candidate uses lexical find_similar."""
     from unittest.mock import MagicMock
 
-    from kiro_crew.history import HistoryConsolidator
-    from kiro_crew.skills import AutoSkillProvenance, SkillsLoader
+    from efm_go.history import HistoryConsolidator
+    from efm_go.skills import AutoSkillProvenance, SkillsLoader
 
     skills = SkillsLoader(skills_path=tmp_path / "skills", install_builtins=False)
     skills.create_auto_skill(
@@ -5558,8 +5558,8 @@ async def test_dedupe_candidate_uses_judge_when_configured(tmp_path):
     async judge, bridged from the worker thread back onto the loop."""
     from unittest.mock import MagicMock
 
-    from kiro_crew.history import HistoryConsolidator
-    from kiro_crew.skills import AutoSkillProvenance, SkillsLoader
+    from efm_go.history import HistoryConsolidator
+    from efm_go.skills import AutoSkillProvenance, SkillsLoader
 
     skills = SkillsLoader(skills_path=tmp_path / "skills", install_builtins=False)
     skills.create_auto_skill(
@@ -5590,8 +5590,8 @@ async def test_dedupe_candidate_uses_judge_when_configured(tmp_path):
 async def test_all_invalid_scripts_are_rejected_when_approval_disabled(tmp_path):
     """A candidate whose supplied scripts all fail validation is rejected
     instead of being auto-published or queued against the user's opt-out."""
-    from kiro_crew.memory import MemoryStore
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.memory import MemoryStore
+    from efm_go.skills import SkillsLoader
 
     conv_log = ConversationLog(base_dir=tmp_path / "sessions")
     conv_log.init()
@@ -5663,7 +5663,7 @@ class TestMetadataReadSurvivesATransientSharingViolation:
         the crash-loop the async restore exists to prevent. So on the loop the
         retry must be immediate, and it must still recover the metadata.
         """
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("s1", "user", "hello", agent="my-agent")
@@ -5685,7 +5685,7 @@ class TestMetadataReadSurvivesATransientSharingViolation:
     def test_the_retry_does_sleep_off_the_event_loop(self, tmp_path):
         """Off the loop the pause is safe and worth taking -- a sharing violation
         clears in milliseconds, so retrying instantly would usually just fail."""
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("s1", "user", "hello", agent="my-agent")
@@ -5708,7 +5708,7 @@ class TestMetadataReadSurvivesATransientSharingViolation:
         log.append("s1", "user", "hello", agent="my-agent")
         log._meta_cache.pop("s1", None)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.history"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.history"):
             with builtin_open_sharing_violation(match="s1.jsonl", times=99):
                 meta = log.get_metadata("s1")
 
@@ -5867,7 +5867,7 @@ class TestConsolidationValueGuard:
         )
 
     def _store(self, tmp_path):
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "mem.db")
         store.init()
@@ -5907,7 +5907,7 @@ class TestConsolidationValueGuard:
         store = self._store(tmp_path)
         c = self._consolidator(store)
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.history"):
+        with caplog.at_level(logging.INFO, logger="efm_go.history"):
             c._write_structured_memory(
                 {"semantic": [{"key": "project.alpha.status", "confidence": 1.0}]}, "sess-1"
             )
@@ -5958,7 +5958,7 @@ class TestConsolidationValueGuard:
         store = self._store(tmp_path)
         c = self._consolidator(store)
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.history"):
+        with caplog.at_level(logging.INFO, logger="efm_go.history"):
             c._write_structured_memory(
                 {"semantic": [{"key": "project.alpha.status", "value": "", "confidence": 1.0}]},
                 "sess-1",
@@ -5977,7 +5977,7 @@ class TestConsolidationValueGuard:
         store = self._store(tmp_path)
         c = self._consolidator(store)
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.history"):
+        with caplog.at_level(logging.INFO, logger="efm_go.history"):
             c._write_structured_memory(
                 {"semantic": [{"key": "project.alpha.status", "value": "v", "confidence": 0.1}]},
                 "sess-1",
@@ -6008,7 +6008,7 @@ class TestConsolidationDoesNotImpersonateUser:
         )
 
     def _store(self, tmp_path):
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "mem.db")
         store.init()
@@ -6094,7 +6094,7 @@ class TestConsolidationEmbedBreaker:
 
     @staticmethod
     def _store(tmp_path):
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "mem.db")
         store.init()
@@ -6117,7 +6117,7 @@ class TestConsolidationEmbedBreaker:
         self, tmp_path, caplog, monkeypatch
     ) -> None:
         """N items cost one embed attempt, not N."""
-        from kiro_crew import history_consolidation
+        from efm_go import history_consolidation
 
         store = self._store(tmp_path)
         calls = []
@@ -6130,7 +6130,7 @@ class TestConsolidationEmbedBreaker:
         store.embed_fn = slow_embed
         monkeypatch.setattr(history_consolidation, "_EMBED_BUDGET_SECS_PER_PASS", 0.01)
         try:
-            with caplog.at_level(logging.INFO, logger="kiro_crew.history"):
+            with caplog.at_level(logging.INFO, logger="efm_go.history"):
                 self._consolidator(store)._write_structured_memory(
                     {"episodic": self._episodes(5)}, "sess-1"
                 )
@@ -6186,7 +6186,7 @@ class TestConsolidationEmbedBreaker:
         self, tmp_path, monkeypatch
     ) -> None:
         """Every row a pass writes embeds inline, so both tiers latch together."""
-        from kiro_crew import history_consolidation
+        from efm_go import history_consolidation
 
         store = self._store(tmp_path)
         calls = []
@@ -6233,8 +6233,8 @@ class TestConsolidationEmbedBreaker:
         is the cheaper loss: the transcript is still on disk, the evicted row is
         not.
         """
-        from kiro_crew import history_consolidation
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go import history_consolidation
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "mem.db", episodic_max=2)
         store.init()
@@ -6332,7 +6332,7 @@ class TestConsolidationLessonScope:
         )
 
     def _store(self, tmp_path):
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "mem.db")
         store.init()
@@ -6361,14 +6361,14 @@ class TestConsolidationLessonScope:
                     {
                         "rule": "Run the scoped gate before pushing here",
                         "category": "tool",
-                        "repo_scope": "src/kiro_crew",
+                        "repo_scope": "src/efm_go",
                     }
                 ]
             )
 
             [lesson] = store.get_lessons()
             value = json.loads(lesson["value_json"])
-            assert value["repo_scope"] == "src/kiro_crew"
+            assert value["repo_scope"] == "src/efm_go"
             assert lesson["source"] == "consolidation"
         finally:
             store.close()
@@ -6391,7 +6391,7 @@ class TestConsolidationLessonScope:
 
     def test_jsonl_fallback_forwards_scope_canonicalised(self, tmp_path) -> None:
         """The no-vector-store path stores the scope too, canonicalised by save()."""
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         lesson_store = LessonStore(base_dir=tmp_path)
         c = self._jsonl_consolidator(lesson_store)
@@ -6399,13 +6399,13 @@ class TestConsolidationLessonScope:
         c._save_lessons(
             [
                 # Trailing slash: save() canonicalises before storing.
-                {"rule": "Pin the vitest worker count here", "repo_scope": "src/kiro_crew/"},
+                {"rule": "Pin the vitest worker count here", "repo_scope": "src/efm_go/"},
                 {"rule": "A rule with no scope stays global"},
             ]
         )
 
         by_rule = {le.rule: le for le in lesson_store.load_all()}
-        assert by_rule["Pin the vitest worker count here"].repo_scope == "src/kiro_crew"
+        assert by_rule["Pin the vitest worker count here"].repo_scope == "src/efm_go"
         assert by_rule["A rule with no scope stays global"].repo_scope is None
 
     def test_whitespace_only_scope_is_global_not_refused(self, tmp_path) -> None:
@@ -6428,7 +6428,7 @@ class TestConsolidationLessonScope:
         store = self._store(tmp_path)
         try:
             self._consolidator(store)._save_lessons(
-                [{"rule": "Scoped to a list, somehow", "repo_scope": ["src/kiro_crew"]}]
+                [{"rule": "Scoped to a list, somehow", "repo_scope": ["src/efm_go"]}]
             )
 
             assert store.get_lessons() == []
@@ -6439,7 +6439,7 @@ class TestConsolidationLessonScope:
         """LessonStore.save never checks admissibility, so the consolidation seam
         must -- an absolute path stored as a scope would render nowhere while
         suppressing the store (see project_scope.scope_is_admissible)."""
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         lesson_store = LessonStore(base_dir=tmp_path)
         c = self._jsonl_consolidator(lesson_store)
@@ -6453,13 +6453,13 @@ class TestConsolidationLessonScope:
     def test_non_string_scope_refused_on_jsonl_fallback_too(self, tmp_path) -> None:
         """The silent-widening cell on the fallback path: a non-string scope must
         refuse the lesson there too, not canonicalise to a global write."""
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         lesson_store = LessonStore(base_dir=tmp_path)
         c = self._jsonl_consolidator(lesson_store)
 
         c._save_lessons(
-            [{"rule": "Scoped to a list, somehow", "repo_scope": ["src/kiro_crew"]}]
+            [{"rule": "Scoped to a list, somehow", "repo_scope": ["src/efm_go"]}]
         )
 
         assert lesson_store.load_all() == []
@@ -6482,7 +6482,7 @@ class TestConsolidationLessonScope:
         try:
             self._consolidator(store)._save_lessons(
                 [
-                    {"rule": "Scoped to a list, somehow", "repo_scope": ["src/kiro_crew"]},
+                    {"rule": "Scoped to a list, somehow", "repo_scope": ["src/efm_go"]},
                     {"rule": "A clean global lesson survives the batch"},
                 ]
             )
@@ -6511,7 +6511,7 @@ class TestConsolidationLessonApplies:
     _jsonl_consolidator = staticmethod(TestConsolidationLessonScope._jsonl_consolidator)
 
     def _store(self, tmp_path):
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "mem.db")
         store.init()
@@ -6561,7 +6561,7 @@ class TestConsolidationLessonApplies:
         # each other, or the dedup pass (not the tier seam) decides which lands.
         store.embed_fn = lambda text: [1.0, 0.0] if "Misspelled" in text else [0.0, 1.0]
         try:
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.history"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.history"):
                 self._consolidator(store)._save_lessons(
                     [
                         {"rule": "Misspelled tier still lands", "applies": "Directive"},
@@ -6579,7 +6579,7 @@ class TestConsolidationLessonApplies:
             store.close()
 
     def test_tier_round_trips_on_jsonl_fallback(self, tmp_path) -> None:
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         lesson_store = LessonStore(base_dir=tmp_path)
         c = self._jsonl_consolidator(lesson_store)
@@ -6609,12 +6609,12 @@ class TestConsolidationLessonApplies:
     def test_misspelled_tier_logs_and_lands_unstated_on_jsonl_fallback(
         self, tmp_path, caplog
     ) -> None:
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         lesson_store = LessonStore(base_dir=tmp_path)
         c = self._jsonl_consolidator(lesson_store)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.history"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.history"):
             c._save_lessons([{"rule": "Misspelled on the fallback path", "applies": "ALWAYS "}])
         # Case and surrounding whitespace are canonicalised, not refused.
         [lesson] = lesson_store.load_all()
@@ -6622,7 +6622,7 @@ class TestConsolidationLessonApplies:
         assert not any("unrecognized applies tier" in r.getMessage() for r in caplog.records)
 
         caplog.clear()
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.history"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.history"):
             c._save_lessons([{"rule": "Truly misspelled on the fallback path", "applies": 7}])
         by_rule = {le.rule: le for le in lesson_store.load_all()}
         assert by_rule["Truly misspelled on the fallback path"].applies is None
@@ -6633,7 +6633,7 @@ class TestConsolidationLessonApplies:
         """The prompt the code actually builds names the field and the two
         literals, tells the model to decide from what the user said, and to omit
         the field when it cannot tell -- the same instruction ``learn_add`` carries."""
-        from kiro_crew.memory import MemoryStore
+        from efm_go.memory import MemoryStore
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -6676,7 +6676,7 @@ class TestInterruptedTurnPreamble:
         ]
 
     def test_restores_the_newest_opener_and_its_partial_answer(self):
-        from kiro_crew.context import build_interrupted_turn_preamble
+        from efm_go.context import build_interrupted_turn_preamble
 
         rows = self._rows()
         current = {"role": "inject", "content": "resume"}
@@ -6691,7 +6691,7 @@ class TestInterruptedTurnPreamble:
         assert "first request" not in out and "first answer" not in out
 
     def test_a_second_resume_press_still_finds_the_interrupted_opener(self):
-        from kiro_crew.context import build_interrupted_turn_preamble
+        from efm_go.context import build_interrupted_turn_preamble
 
         rows = self._rows()
         rows.append({"role": "inject", "content": "resume (first press)"})
@@ -6705,15 +6705,15 @@ class TestInterruptedTurnPreamble:
         assert "resume (first press)" not in out
 
     def test_no_opener_restores_nothing(self):
-        from kiro_crew.context import build_interrupted_turn_preamble
+        from efm_go.context import build_interrupted_turn_preamble
 
         current = {"role": "inject", "content": "resume"}
         assert build_interrupted_turn_preamble([current], current=current) == ""
         assert build_interrupted_turn_preamble([]) == ""
 
     def test_the_block_is_attributed_by_the_context_scanner(self):
-        from kiro_crew.context import build_interrupted_turn_preamble
-        from kiro_crew.context_blocks import split_blocks
+        from efm_go.context import build_interrupted_turn_preamble
+        from efm_go.context_blocks import split_blocks
 
         out = build_interrupted_turn_preamble(self._rows())
         blocks = split_blocks(out + "\n\n[REPLY FORMAT RULES]\nx\n")
@@ -6725,8 +6725,8 @@ class TestInterruptedTurnPreamble:
         # would restore the already-answered request before it as "the most
         # recent request". A recovery inject (an earlier Resume press) continues
         # the turn and is walked past.
-        from kiro_crew.context import build_interrupted_turn_preamble
-        from kiro_crew.dashboard.state import TURN_OPENING_INJECT_KINDS
+        from efm_go.context import build_interrupted_turn_preamble
+        from efm_go.dashboard.state import TURN_OPENING_INJECT_KINDS
 
         rows = [
             {"role": "user", "content": "answered request"},
@@ -6757,7 +6757,7 @@ class TestInterruptedTurnPreamble:
         # The frame claims the request inside it is the one to carry on with, so
         # a copy planted in transcript text is neutralized by the egress scrub,
         # and a marker inside the restored payload cannot survive either.
-        from kiro_crew.context import (
+        from efm_go.context import (
             _neutralize_structural_markers,
             build_interrupted_turn_preamble,
         )
@@ -6775,8 +6775,8 @@ class TestInterruptedTurnPreamble:
 
     def test_only_a_user_opener_is_called_the_users_request(self):
         # An automated delivery must not be framed as something the user typed.
-        from kiro_crew.context import build_interrupted_turn_preamble
-        from kiro_crew.dashboard.state import TURN_OPENING_INJECT_KINDS
+        from efm_go.context import build_interrupted_turn_preamble
+        from efm_go.dashboard.state import TURN_OPENING_INJECT_KINDS
 
         user = build_interrupted_turn_preamble([{"role": "user", "content": "ship it"}])
         assert "the user's most recent request" in user

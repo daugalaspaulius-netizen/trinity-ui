@@ -124,7 +124,7 @@ function SetupShell({
               asideHeadline || i18nT('components.kiroPrerequisiteGate.your_crew_is_almost_ready'),
             panelBody:
               asideBody
-              || i18nT('components.kiroPrerequisiteGate.install_kiro_cli_sign_in_once_and_kiro_crew_will'),
+              || i18nT('components.kiroPrerequisiteGate.install_kiro_cli_sign_in_once_and_efm_go_will'),
             panelFootnote: i18nT(
               'components.kiroPrerequisiteGate.secure_setup_on_your_gateway_host',
             ),
@@ -235,7 +235,7 @@ function OwnerSetupRequired({
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted">
           {authRequired
             ? i18nT('api.client.stale_owner_session_sign_in_again')
-            : i18nT('components.kiroPrerequisiteGate.ask_the_kiro_crew_owner_to_install_kiro_cli_and')}
+            : i18nT('components.kiroPrerequisiteGate.ask_the_efm_go_owner_to_install_kiro_cli_and')}
         </p>
         {/* "Check again" re-probes readiness, which cannot change for this
             viewer until they sign back in — a retry that cannot succeed is a
@@ -314,7 +314,7 @@ function SetupStatusError({
 // AppArmor profile `service install` writes. Linked from the gate so the screen
 // is a starting point rather than a dead end (issue #1660).
 const SANDBOX_DOCS_URL =
-  'https://github.com/kirodotdev/KiroCrew/blob/main/docs/guides/install.md' +
+  'https://efmleads.com/blob/main/docs/guides/install.md' +
   '#linux-the-agent-sandbox-and-unprivileged-user-namespaces'
 
 /**
@@ -574,7 +574,7 @@ function SandboxUnavailable({
     failureKind === 'transient'
       ? i18nT('components.kiroPrerequisiteGate.the_check_hit_a_temporary_limit_and_was_not_cach')
       : failureKind === 'foreign_sandbox'
-        ? i18nT('components.kiroPrerequisiteGate.another_sandbox_already_confines_kiro_crew_so_it')
+        ? i18nT('components.kiroPrerequisiteGate.another_sandbox_already_confines_efm_go_so_it')
         : remedy === 'apparmor_userns'
           ? i18nT('components.kiroPrerequisiteGate.this_host_allows_user_namespaces_but_the_kernel_d')
           : remedy === 'mount_denied'
@@ -588,7 +588,7 @@ function SandboxUnavailable({
   return (
     <SetupShell
       asideHeadline={i18nT('components.kiroPrerequisiteGate.sandbox_unavailable')}
-      asideBody={i18nT('components.kiroPrerequisiteGate.kiro_crew_isolates_the_agent_in_an_os_level_sand')}
+      asideBody={i18nT('components.kiroPrerequisiteGate.efm_go_isolates_the_agent_in_an_os_level_sand')}
       footer={
         <Btn type="button" disabled={retrying} onClick={onRetry}>
           <RefreshCw className={`lucide-inline ${retrying ? 'animate-spin' : ''}`} />
@@ -754,7 +754,7 @@ function AgentSpecsMissing({
   return (
     <SetupShell
       asideHeadline={i18nT('components.kiroPrerequisiteGate.agent_specs_missing')}
-      asideBody={i18nT('components.kiroPrerequisiteGate.kiro_crew_installs_the_agent_specs_kiro_cli_load')}
+      asideBody={i18nT('components.kiroPrerequisiteGate.efm_go_installs_the_agent_specs_kiro_cli_load')}
     >
       <>
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-danger/10 text-danger">
@@ -764,10 +764,10 @@ function AgentSpecsMissing({
           {i18nT('components.kiroPrerequisiteGate.agent_specs_missing')}
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-text-strong">
-          {i18nT('components.kiroPrerequisiteGate.kiro_crew_s_agent_specs_are_not_installed')}
+          {i18nT('components.kiroPrerequisiteGate.efm_go_s_agent_specs_are_not_installed')}
         </h1>
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted">
-          {i18nT('components.kiroPrerequisiteGate.kiro_crew_writes_its_own_agent_specs_where_kiro')}
+          {i18nT('components.kiroPrerequisiteGate.efm_go_writes_its_own_agent_specs_where_kiro')}
         </p>
         <div className="mt-5 w-full max-w-lg text-left">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
@@ -831,7 +831,7 @@ function AgentSpecsRejected({
   return (
     <SetupShell
       asideHeadline={i18nT('components.kiroPrerequisiteGate.agent_specs_rejected')}
-      asideBody={i18nT('components.kiroPrerequisiteGate.kiro_crew_installs_the_agent_specs_kiro_cli_load')}
+      asideBody={i18nT('components.kiroPrerequisiteGate.efm_go_installs_the_agent_specs_kiro_cli_load')}
     >
       <>
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-danger/10 text-danger">
@@ -841,7 +841,7 @@ function AgentSpecsRejected({
           {i18nT('components.kiroPrerequisiteGate.agent_specs_rejected')}
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-text-strong">
-          {i18nT('components.kiroPrerequisiteGate.kiro_cli_will_not_load_kiro_crew_s_agent_specs')}
+          {i18nT('components.kiroPrerequisiteGate.kiro_cli_will_not_load_efm_go_s_agent_specs')}
         </h1>
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted">
           {i18nT('components.kiroPrerequisiteGate.the_files_are_on_disk_but_kiro_cli_refuses_them')}
@@ -892,7 +892,7 @@ function AgentSpecsRejected({
             <code> outside the catalog: a translator must not be able to alter a
             string the user pastes into a shell, and prose cannot be copied. */}
         <p className="mt-4 max-w-lg text-[13px] leading-relaxed text-muted">
-          {i18nT('components.kiroPrerequisiteGate.repair_rewrites_the_specs_kiro_crew_owns')}
+          {i18nT('components.kiroPrerequisiteGate.repair_rewrites_the_specs_efm_go_owns')}
         </p>
         <ul className="mt-3 w-full max-w-lg list-none space-y-2 text-left">
           <li className="text-sm leading-relaxed text-muted">
@@ -1089,7 +1089,7 @@ function KiroInstallCommands({ platform }: { platform: string }) {
             </p>
           )}
           <CopyCommand>
-            <code>curl -fsSL https://cli.kiro.dev/install | bash</code>
+            <span>EFM Go šito diegimo nebedaro.</span>
           </CopyCommand>
         </div>
       )}
@@ -1099,7 +1099,7 @@ function KiroInstallCommands({ platform }: { platform: string }) {
             {i18nT('components.kiroPrerequisiteGate.install_command_windows')}
           </p>
           <CopyCommand>
-            <code>irm &apos;https://cli.kiro.dev/install.ps1&apos; | iex</code>
+            <span>EFM Go šito diegimo nebedaro.</span>
           </CopyCommand>
         </div>
       )}

@@ -32,10 +32,10 @@ rather than line numbers because every line reference taken from a checkout 962
 commits behind had moved:
 
 - **The manifest field exists and nothing reads it.**
-  `src/kiro_crew/apps/manifest.py::UISidebar` declares `section: str = "Apps"` and
+  `src/efm_go/apps/manifest.py::UISidebar` declares `section: str = "Apps"` and
   `order: int = 10`, is a field of `UIConfig` (`UIConfig.sidebar`), round-trips
   through `to_dict`/`from_dict`, and the `ui` key is described in
-  `src/kiro_crew/apps/manager.py`. A grep for `ui.sidebar` across `website/src`
+  `src/efm_go/apps/manager.py`. A grep for `ui.sidebar` across `website/src`
   returns **zero hits**, and the object returned by
   `website/src/appNav.ts::appNavTarget` carries neither `section` nor `order`. The
   manifest promises placement control that the frontend silently discards.

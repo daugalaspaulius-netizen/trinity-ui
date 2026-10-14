@@ -25,11 +25,11 @@ from types import SimpleNamespace
 import aiohttp
 import pytest
 
-from kiro_crew.dashboard import handlers_instances as hi
-from kiro_crew.dashboard.slot_projection import resolved_row_identity
-from kiro_crew.dashboard.state import MAX_LIVE_SLOTS, _ChatSlot
-from kiro_crew.instances.constants import PEER_SLOTS_REPLY_MAX_BYTES
-from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+from efm_go.dashboard import handlers_instances as hi
+from efm_go.dashboard.slot_projection import resolved_row_identity
+from efm_go.dashboard.state import MAX_LIVE_SLOTS, _ChatSlot
+from efm_go.instances.constants import PEER_SLOTS_REPLY_MAX_BYTES
+from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
 
 class _Req:
@@ -887,7 +887,7 @@ class TestTheRowCountIsBoundedNotOnlyTheByteCount:
         than the tail.
         """
         _enable_instances(monkeypatch)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers_instances.MAX_LIVE_SLOTS", 3)
+        monkeypatch.setattr("efm_go.dashboard.handlers_instances.MAX_LIVE_SLOTS", 3)
         mgr = _manager(body=_rows("a", "b", "c", "d", "e"))
 
         resp = await hi.api_instances_chat_slots(_request(_state(mgr)))
@@ -904,7 +904,7 @@ class TestTheRowCountIsBoundedNotOnlyTheByteCount:
         to stop, so it is asserted directly on the call count.
         """
         _enable_instances(monkeypatch)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers_instances.MAX_LIVE_SLOTS", 3)
+        monkeypatch.setattr("efm_go.dashboard.handlers_instances.MAX_LIVE_SLOTS", 3)
         seen: list[object] = []
         real = hi._clean_peer_slot
 
@@ -928,7 +928,7 @@ class TestTheRowCountIsBoundedNotOnlyTheByteCount:
         sidebar for a reason no count in the audit line explains.
         """
         _enable_instances(monkeypatch)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers_instances.MAX_LIVE_SLOTS", 2)
+        monkeypatch.setattr("efm_go.dashboard.handlers_instances.MAX_LIVE_SLOTS", 2)
         mgr = _manager(body=_rows("peer-chat-9", "peer-a", "peer-b"))
         state = _state(mgr, {"chat-1": _remote_slot()})
 
@@ -939,7 +939,7 @@ class TestTheRowCountIsBoundedNotOnlyTheByteCount:
     async def test_a_reply_exactly_at_the_row_cap_is_untouched(self, monkeypatch):
         """A ceiling, not an off-by-one exclusion — same rule as the byte cap."""
         _enable_instances(monkeypatch)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers_instances.MAX_LIVE_SLOTS", 3)
+        monkeypatch.setattr("efm_go.dashboard.handlers_instances.MAX_LIVE_SLOTS", 3)
         mgr = _manager(body=_rows("a", "b", "c"))
 
         data = await _body(await hi.api_instances_chat_slots(_request(_state(mgr))))
@@ -1043,7 +1043,7 @@ class TestAuthorization:
         subject with an empty app, so `_guard` alone would let them through."""
         _enable_instances(monkeypatch)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers_instances.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers_instances.is_owner_dashboard_request",
             lambda _r: False,
         )
 
@@ -1060,7 +1060,7 @@ class TestAuthorization:
         _enable_instances(monkeypatch)
         mgr = _manager()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers_instances.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers_instances.is_owner_dashboard_request",
             lambda _r: False,
         )
 
@@ -1075,7 +1075,7 @@ class TestRouteRegistration:
     def test_chat_slots_resolves_to_its_own_handler_not_the_proxy(self):
         from aiohttp import web
 
-        from kiro_crew.dashboard.routes import connections
+        from efm_go.dashboard.routes import connections
 
         app = web.Application()
         connections.register(app)
@@ -1108,7 +1108,7 @@ class TestRouteRegistration:
         doing it while the property under test held."""
         from aiohttp import web
 
-        from kiro_crew.dashboard.routes import connections
+        from efm_go.dashboard.routes import connections
 
         app = web.Application()
         connections.register(app)

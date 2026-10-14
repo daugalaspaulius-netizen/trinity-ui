@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.hooks import (
+from efm_go.hooks import (
     HOOK_EVENT_AGENT_SPAWN,
     HOOK_EVENT_PRE_TOOL_USE,
     HOOK_EVENT_USER_PROMPT_SUBMIT,
@@ -36,7 +36,7 @@ from kiro_crew.hooks import (
     ScriptHookStore,
     validate_hook_fields,
 )
-from kiro_crew.validation import (
+from efm_go.validation import (
     ALLOWED_HOOK_EVENTS,
     HOOK_CREATE_SCHEMA,
     HOOK_UPDATE_SCHEMA,
@@ -140,7 +140,7 @@ class TestTheVocabulary:
         reading the split from a tuple: the delivery round flips one set and the
         dashboard mark follows.
         """
-        from kiro_crew.acp import kas_wire
+        from efm_go.acp import kas_wire
 
         requested = {
             pascal for camel, pascal in TWINS.items() if camel in kas_wire.ACP_HOOK_TRIGGERS
@@ -375,13 +375,13 @@ class TestTheRefusalsThatMustSurvive:
         """
         import inspect
 
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         fire_src = inspect.getsource(hooks_mod.ScriptHookStore.fire)
         assert "enabled" in fire_src, "fire must keep filtering on enabled"
 
         handler = Path(__file__).resolve().parent.parent / (
-            "src/kiro_crew/dashboard/handlers/hooks.py"
+            "src/efm_go/dashboard/handlers/hooks.py"
         )
         body = handler.read_text(encoding="utf-8")
         start = body.index("async def api_hook_test")
@@ -586,13 +586,13 @@ class TestTheKiroCliSpecBoundary:
     """
 
     def test_the_new_triggers_are_not_valid_kiro_cli_events(self) -> None:
-        from kiro_crew.agent import _CREW_ONLY_HOOK_EVENTS, _VALID_HOOK_EVENTS
+        from efm_go.agent import _CREW_ONLY_HOOK_EVENTS, _VALID_HOOK_EVENTS
 
         assert _CREW_ONLY_HOOK_EVENTS == frozenset(TWINS)
         assert not _CREW_ONLY_HOOK_EVENTS & _VALID_HOOK_EVENTS
 
     def test_the_generation_filter_strips_them(self) -> None:
-        from kiro_crew.agent import _kiro_hooks_only
+        from efm_go.agent import _kiro_hooks_only
 
         hooks = {"agentSpawn": [{"command": "/bin/true"}]}
         hooks.update({camel: [{"command": "/bin/true"}] for camel in TWINS})
@@ -611,8 +611,8 @@ class TestTheKiroCliSpecBoundary:
         """
         import logging
 
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go import agent as agent_mod
+        from efm_go.agent import _apply_user_kiro_hooks
 
         sel_calls: list[tuple[str, str, str]] = []
         monkeypatch.setattr(
@@ -628,7 +628,7 @@ class TestTheKiroCliSpecBoundary:
                 "kiro_hooks_autoimport": False,
             }
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         assert config["hooks"] == {}
@@ -651,8 +651,8 @@ class TestTheKiroCliSpecBoundary:
         import logging
         import stat
 
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go import agent as agent_mod
+        from efm_go.agent import _apply_user_kiro_hooks
 
         pascal = TWINS[camel]
         hooks_dir = tmp_path / "hooks"
@@ -671,7 +671,7 @@ class TestTheKiroCliSpecBoundary:
 
         config: dict = {"hooks": {}}
         mc_cfg = {"agent": {"kiro_hooks": {}, "kiro_hooks_autoimport": True}}
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         assert camel not in config["hooks"]

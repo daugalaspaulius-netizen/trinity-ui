@@ -14,10 +14,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.apps.discovery import _manifest_to_builtin_dict
-from kiro_crew.apps.manager import APP_MANIFEST_FILENAME, apps_dir, enable_app, install_app
-from kiro_crew.apps.manifest import AppManifest
-from kiro_crew.apps.routes import (
+from efm_go.apps.discovery import _manifest_to_builtin_dict
+from efm_go.apps.manager import APP_MANIFEST_FILENAME, apps_dir, enable_app, install_app
+from efm_go.apps.manifest import AppManifest
+from efm_go.apps.routes import (
     _provider_is_configured,
     collect_publish_providers,
     register_app_routes,
@@ -154,15 +154,15 @@ def _setup_env(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(home))
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
 
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
 
     bmod._processes.clear()
     bmod._allocated_ports.clear()
     monkeypatch.setattr(
-        "kiro_crew.apps.execution.third_party_execution_allowed", lambda: True
+        "efm_go.apps.execution.third_party_execution_allowed", lambda: True
     )
     return home
 
@@ -288,7 +288,7 @@ def test_save_registry_concurrent_no_lost_updates(tmp_path, monkeypatch):
     import threading
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-    from kiro_crew.deploy import profiles as profiles_mod
+    from efm_go.deploy import profiles as profiles_mod
 
     n_threads = 10
     barrier = threading.Barrier(n_threads)

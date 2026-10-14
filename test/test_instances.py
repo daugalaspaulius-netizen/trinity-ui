@@ -29,15 +29,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 # ── config flag + constants ────────────────────────────────────────────────
 
 
 class TestConfig:
     def test_defaults_off_and_tunables(self):
-        from kiro_crew.config.loader import InstancesConfig
-        from kiro_crew.instances.constants import (
+        from efm_go.config.loader import InstancesConfig
+        from efm_go.instances.constants import (
             DEFAULT_CONNECT_TIMEOUT_SECS,
             DEFAULT_MINT_TIMEOUT_SECS,
             DEFAULT_TUNNEL_BASE_PORT,
@@ -56,7 +56,7 @@ class TestConfig:
         assert c.mint_timeout_secs is None
 
     def test_clamps_out_of_range(self):
-        from kiro_crew.config.loader import InstancesConfig
+        from efm_go.config.loader import InstancesConfig
 
         # 0 is a legal value (automatic), so only a negative cap is clamped, and
         # it falls back to automatic rather than to the tightest possible cap.
@@ -65,13 +65,13 @@ class TestConfig:
         assert c.tunnel_base_port == 7778
 
     def test_zero_warm_set_cap_is_kept_as_automatic(self):
-        from kiro_crew.config.loader import InstancesConfig
+        from efm_go.config.loader import InstancesConfig
 
         assert InstancesConfig(warm_set_cap=0).warm_set_cap == 0
 
     def test_roundtrip_and_schema(self):
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.config.schema import SCHEMA_REGISTRY
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.config.schema import SCHEMA_REGISTRY
 
         d = KiroCrewConfig().to_dict()
         assert d["instances"] == {
@@ -109,7 +109,7 @@ class TestConfig:
     def test_recovery_knobs_parse_from_config_file(self, tmp_path, monkeypatch):
         import json
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(
@@ -123,14 +123,14 @@ class TestConfig:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         cfg = KiroCrewConfig.load()
         assert cfg.instances.max_recovery_attempts == 12
         assert cfg.instances.recover_backoff_max_secs == 45.0
         assert cfg.instances.probe_failure_threshold == 5
 
     def test_recovery_knob_clamps(self):
-        from kiro_crew.config.loader import InstancesConfig
+        from efm_go.config.loader import InstancesConfig
 
         c = InstancesConfig(
             max_recovery_attempts=0, recover_backoff_max_secs=0, probe_failure_threshold=0
@@ -142,7 +142,7 @@ class TestConfig:
         # Upper bound: a pathological max_recovery_attempts is clamped down to the
         # ceiling (warned, not silently dropped) so it can't spin a near-infinite
         # self-heal loop. The boundary value itself is left untouched.
-        from kiro_crew.instances.constants import MAX_RECOVERY_ATTEMPTS_CEILING
+        from efm_go.instances.constants import MAX_RECOVERY_ATTEMPTS_CEILING
 
         assert MAX_RECOVERY_ATTEMPTS_CEILING == 100
         assert (
@@ -159,7 +159,7 @@ class TestConfig:
         # recover_backoff_max_secs has the same two-sided guard: a pathological
         # pacing is clamped down to the ceiling so the attempt cap can't be stretched
         # into a multi-day wall-clock window; the boundary value is left untouched.
-        from kiro_crew.instances.constants import RECOVER_BACKOFF_MAX_CEILING_SECS
+        from efm_go.instances.constants import RECOVER_BACKOFF_MAX_CEILING_SECS
 
         assert RECOVER_BACKOFF_MAX_CEILING_SECS == 300.0
         assert (
@@ -174,8 +174,8 @@ class TestConfig:
         )
 
     def test_connect_timeout_default_and_clamps(self):
-        from kiro_crew.config.loader import InstancesConfig
-        from kiro_crew.instances.constants import (
+        from efm_go.config.loader import InstancesConfig
+        from efm_go.instances.constants import (
             CONNECT_TIMEOUT_CEILING_SECS,
             DEFAULT_CONNECT_TIMEOUT_SECS,
         )
@@ -212,11 +212,11 @@ class TestConfig:
     def test_connect_timeout_parses_from_config_file(self, tmp_path, monkeypatch):
         import json
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"instances": {"connect_timeout_secs": 45.0}}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         cfg = KiroCrewConfig.load()
         assert cfg.instances.connect_timeout_secs == 45.0
 
@@ -233,8 +233,8 @@ class TestConfig:
         assert cfg.instances.connect_timeout_secs == 15.0
 
     def test_mint_timeout_default_and_clamps(self):
-        from kiro_crew.config.loader import InstancesConfig
-        from kiro_crew.instances.constants import (
+        from efm_go.config.loader import InstancesConfig
+        from efm_go.instances.constants import (
             DEFAULT_MINT_TIMEOUT_SECS,
             MINT_TIMEOUT_CEILING_SECS,
             MINT_TIMEOUT_FLOOR_SECS,
@@ -275,11 +275,11 @@ class TestConfig:
     def test_mint_timeout_parses_from_config_file(self, tmp_path, monkeypatch):
         import json
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"instances": {"mint_timeout_secs": 60.0}}))
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
         cfg = KiroCrewConfig.load()
         assert cfg.instances.mint_timeout_secs == 60.0
 
@@ -301,13 +301,13 @@ class TestConfig:
 
 class TestPortAllocator:
     def test_rejects_bad_base(self):
-        from kiro_crew.instances.port_allocator import PortAllocator
+        from efm_go.instances.port_allocator import PortAllocator
 
         with pytest.raises(ValueError):
             PortAllocator(base_port=0)
 
     def test_skips_bound_and_excluded(self):
-        from kiro_crew.instances.port_allocator import PortAllocator
+        from efm_go.instances.port_allocator import PortAllocator
 
         # Bind an OS-assigned free port so the test never collides with a port
         # something else already holds (the old hard-coded base was flaky).
@@ -331,7 +331,7 @@ class TestPortAllocator:
         settings alive. ``preferred`` well above ``base`` must win over the
         first-free port.
         """
-        from kiro_crew.instances.port_allocator import PortAllocator
+        from efm_go.instances.port_allocator import PortAllocator
 
         # Two OS-assigned free ports; the higher one is the "recorded" one.
         socks = []
@@ -354,7 +354,7 @@ class TestPortAllocator:
         holds (``exclude``) or one outside the allocator's range must not be
         handed back — allocation falls through to first-free instead.
         """
-        from kiro_crew.instances.port_allocator import PortAllocator
+        from efm_go.instances.port_allocator import PortAllocator
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(("127.0.0.1", 0))
@@ -382,7 +382,7 @@ class TestPortAllocator:
         sockets can both listen there, so the probe uses SO_EXCLUSIVEADDRUSE
         and this test runs unchanged on the Windows matrix as the live proof.
         """
-        from kiro_crew.instances.port_allocator import _is_port_free
+        from efm_go.instances.port_allocator import _is_port_free
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # The occupier sets SO_REUSEADDR too (as ssh does); the probe must still
@@ -437,8 +437,8 @@ class TestPortAllocator:
         it too (OpenSSH's -L listener does), reads the port as free, and the
         forward becomes a second listener that never gets the traffic.
         """
-        import kiro_crew.instances.port_allocator as pa
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.port_allocator as pa
+        from efm_go import platform_compat as pc
 
         calls: list = []
         monkeypatch.setattr(pc, "IS_WINDOWS", True)
@@ -451,8 +451,8 @@ class TestPortAllocator:
         assert calls[-2:] == [("bind", ("127.0.0.1", 7778)), ("close",)]
 
     def test_windows_probe_reads_exclusive_bind_refusal_as_in_use(self, monkeypatch):
-        import kiro_crew.instances.port_allocator as pa
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.port_allocator as pa
+        from efm_go import platform_compat as pc
 
         calls: list = []
         monkeypatch.setattr(pc, "IS_WINDOWS", True)
@@ -467,8 +467,8 @@ class TestPortAllocator:
 
     def test_windows_probe_without_the_constant_sets_no_reuse_option(self, monkeypatch):
         """No SO_EXCLUSIVEADDRUSE in this build: plain bind, never SO_REUSEADDR."""
-        import kiro_crew.instances.port_allocator as pa
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.port_allocator as pa
+        from efm_go import platform_compat as pc
 
         calls: list = []
         monkeypatch.setattr(pc, "IS_WINDOWS", True)
@@ -479,8 +479,8 @@ class TestPortAllocator:
 
     def test_posix_probe_still_sets_reuseaddr_only(self, monkeypatch):
         """POSIX probe unchanged: SO_REUSEADDR, so TIME_WAIT is not a false positive."""
-        import kiro_crew.instances.port_allocator as pa
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.port_allocator as pa
+        from efm_go import platform_compat as pc
 
         calls: list = []
         monkeypatch.setattr(pc, "IS_WINDOWS", False)
@@ -491,7 +491,7 @@ class TestPortAllocator:
         assert opts == [("setsockopt", socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)]
 
     def test_is_port_free_true_for_unbound_port(self):
-        from kiro_crew.instances.port_allocator import _is_port_free
+        from efm_go.instances.port_allocator import _is_port_free
 
         # Grab an OS-assigned port, then release it — it is now free to bind.
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -509,7 +509,7 @@ class TestPortAllocator:
         client's resolver and the platform's bind precedence pick. The probe must
         therefore clear every loopback address, not just IPv4.
         """
-        from kiro_crew.instances.port_allocator import _is_addr_free, _is_port_free
+        from efm_go.instances.port_allocator import _is_addr_free, _is_port_free
 
         s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
@@ -534,7 +534,7 @@ class TestPortAllocator:
         Without this, a host with IPv6 compiled in but ::1 not configured would
         see every candidate port as occupied and connect would never allocate one.
         """
-        import kiro_crew.instances.port_allocator as pa
+        import efm_go.instances.port_allocator as pa
 
         real_socket = socket.socket
 
@@ -578,7 +578,7 @@ class TestPortAllocator:
         cause. So it propagates, which is also what the pre-dual-stack code did
         (a creation error was never caught).
         """
-        import kiro_crew.instances.port_allocator as pa
+        import efm_go.instances.port_allocator as pa
 
         real_socket = socket.socket
 
@@ -609,7 +609,7 @@ class TestPortAllocator:
         Failing closed here would refuse every candidate port on such a host and
         `connect` would never allocate one.
         """
-        import kiro_crew.instances.port_allocator as pa
+        import efm_go.instances.port_allocator as pa
 
         real_socket = socket.socket
 
@@ -628,7 +628,7 @@ class TestPortAllocator:
 
     def test_allocate_skips_port_held_on_one_loopback_family(self, monkeypatch):
         """The allocator climbs past a port the aggregate probe rejects."""
-        import kiro_crew.instances.port_allocator as pa
+        import efm_go.instances.port_allocator as pa
 
         base = 41000
         monkeypatch.setattr(
@@ -642,7 +642,7 @@ class TestPortAllocator:
 
 class TestTokenMint:
     def test_parse(self):
-        from kiro_crew.instances.token_mint import parse_token_from_stdout
+        from efm_go.instances.token_mint import parse_token_from_stdout
 
         assert parse_token_from_stdout("http://localhost:7777?token=eyJa.b\n") == "eyJa.b"
         assert parse_token_from_stdout("https://h/?x=1&token=TOK&y=2") == "TOK"
@@ -650,13 +650,13 @@ class TestTokenMint:
 
     @pytest.mark.parametrize("bad", ["abc", "20", "0h", "-1h", "20s", "99999h"])
     def test_ttl_rejects(self, bad):
-        from kiro_crew.instances.token_mint import TokenMintError, _validate_ttl
+        from efm_go.instances.token_mint import TokenMintError, _validate_ttl
 
         with pytest.raises(TokenMintError):
             _validate_ttl(bad)
 
     def test_command_builders(self):
-        from kiro_crew.instances.token_mint import build_remote_token_command
+        from efm_go.instances.token_mint import build_remote_token_command
 
         # empty remote_bin -> candidate-ladder path (build_remote_command -> build_candidate_command)
         assert 'exec "$b" token --ttl 20h;' in build_remote_token_command("", ttl="20h")
@@ -669,14 +669,14 @@ class TestTokenMint:
         with_port = build_remote_token_command("~/bin/kirocrew", ttl="20h", port=7879)
         assert '"$HOME/bin/kirocrew" token --ttl 20h --port 7879' in with_port
         # invalid port is rejected (kept out of the shell command unvalidated)
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances.token_mint import TokenMintError
 
         with pytest.raises(TokenMintError):
             build_remote_token_command("", ttl="20h", port=99999)
 
     def test_token_command_prefers_run_marker_for_port(self):
-        from kiro_crew.config.paths import CONFIG_DIR_NAME, LEGACY_CONFIG_DIR_NAME
-        from kiro_crew.instances.token_mint import (
+        from efm_go.config.paths import CONFIG_DIR_NAME, LEGACY_CONFIG_DIR_NAME
+        from efm_go.instances.token_mint import (
             build_candidate_command,
             build_remote_token_command,
         )
@@ -722,7 +722,7 @@ class TestTokenMint:
 
         # the sibling remote-exec path (restart, via run_remote_kirocrew) also
         # prefers the marker when the caller passes the remote port.
-        from kiro_crew.instances.token_mint import build_remote_command
+        from efm_go.instances.token_mint import build_remote_command
 
         restart = build_remote_command("", "restart", marker_port=7781)
         assert "gateway-7781.bin" in restart and 'exec "$__kb" restart;' in restart
@@ -731,7 +731,7 @@ class TestTokenMint:
         assert "for __mk in" not in pinned_restart and "gateway-" not in pinned_restart
 
     def test_ssh_argv_shape(self):
-        from kiro_crew.instances.token_mint import _build_ssh_argv
+        from efm_go.instances.token_mint import _build_ssh_argv
 
         argv = _build_ssh_argv("cd-1", "echo hi")
         assert argv[0] == "ssh" and argv[-2] == "cd-1"
@@ -758,7 +758,7 @@ class TestTokenMint:
         assert "ConnectTimeout=1" in argv
 
     def test_mint_success_and_no_token_in_logs(self, monkeypatch, caplog):
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         class FakeProc:
             returncode = 0
@@ -776,7 +776,7 @@ class TestTokenMint:
         assert "SECRETJWT" not in caplog.text
 
     def test_mint_nonzero_exit_raises(self, monkeypatch):
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         class FakeProc:
             returncode = 127
@@ -812,7 +812,7 @@ class TestTokenMint:
         stderr-only message degraded to a useless ``<no stderr>`` and someone
         had to SSH in to find out why.
         """
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         self._fake_proc(
             monkeypatch,
@@ -828,7 +828,7 @@ class TestTokenMint:
         assert "<no stderr>" in msg  # stderr genuinely was empty — still reported
 
     def test_unparseable_output_surfaces_stdout_tail(self, monkeypatch):
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         self._fake_proc(monkeypatch, 0, b"Gateway returned empty token\n", b"")
         with pytest.raises(tm.TokenMintError) as excinfo:
@@ -851,7 +851,7 @@ class TestTokenMint:
         tokens unscrubbed, so the segment count is asserted explicitly and
         ``test_bare_token_scrubbed_at_every_segment_count`` pins the full range.
         """
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         minted = "eyJzdWIiOiJvd25lciIsImV4cCI6MTIzfQ.c2lnbmF0dXJlLWJ5dGVz"
         assert minted.count(".") == 1
@@ -879,7 +879,7 @@ class TestTokenMint:
         Five segments is the compact-JWE shape: a pattern capped lower would
         match a prefix and leave ``.ciphertext.tag`` in the surfaced error.
         """
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         bare = "eyJhbGciOiJIUzI1NiJ9" + "".join(f".seg{i}" for i in range(segments - 1))
         self._fake_proc(monkeypatch, 1, f"{bare}\nwhy it died\n".encode(), b"")
@@ -891,7 +891,7 @@ class TestTokenMint:
         assert "why it died" in msg
 
     def test_stdout_tail_is_bounded_and_absent_when_stdout_empty(self, monkeypatch):
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         # bounded: only the TAIL is carried (the reason is printed last). The
         # reason sits on its own line, as a real remote prints it — the scan
@@ -921,7 +921,7 @@ class TestTokenMint:
         "only ever built on a failure path" invariant the helper documents. This
         locks the invariant to control flow instead of a comment.
         """
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         calls: list[str] = []
         monkeypatch.setattr(
@@ -947,7 +947,7 @@ class TestTokenMint:
         same payload, GIL-bound). Asserting on the *input length* handed to the
         redactors instead of on wall-clock keeps this deterministic.
         """
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         seen: list[int] = []
         real = tm.redact
@@ -973,7 +973,7 @@ class TestTokenMint:
         the tail when the scrubbers shrink the text around it, which the third
         case below pins.
         """
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         secret = "eyJ" + "A" * 3000 + ".SIGNATURE-MUST-NOT-APPEAR"
         for stdout in (f"noise\n{secret}\n", secret):  # with and without a trailing newline
@@ -1020,7 +1020,7 @@ class TestRunMarker:
         import sys
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         # Fabricate a venv layout: <venv>/bin/{python,kirocrew}
         bindir = tmp_path / "venv" / "bin"
@@ -1060,7 +1060,7 @@ class TestRunMarker:
         import sys
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         bindir = tmp_path / "venv2" / "bin"
         bindir.mkdir(parents=True)  # no sibling 'kirocrew' launcher
@@ -1076,7 +1076,7 @@ class TestRunMarker:
 
     def test_mint_clause_ignores_an_empty_marker(self):
         """...and inert for mint: the exec is guarded on a non-empty -x path."""
-        from kiro_crew.instances.token_mint import build_candidate_command
+        from efm_go.instances.token_mint import build_candidate_command
 
         cmd = build_candidate_command("status", marker_port=7000)
         assert '[ -n "$__kb" ] && [ -x "$__kb" ]' in cmd
@@ -1091,8 +1091,8 @@ class TestRunMarker:
         and ``.bin`` sidecars, which ``atomic_write(mode=0o600)`` cannot.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import platform_compat
-        from kiro_crew.instances import run_marker
+        from efm_go import platform_compat
+        from efm_go.instances import run_marker
 
         seen: list[str] = []
         # Re-patch over the session-wide Windows stub in conftest so this
@@ -1110,8 +1110,8 @@ class TestRunMarker:
         on — is what the caller depends on, so the raise is absorbed here.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import platform_compat
-        from kiro_crew.instances import run_marker
+        from efm_go import platform_compat
+        from efm_go.instances import run_marker
 
         def _refuse(_path):
             raise OSError("lockdown refused")
@@ -1141,7 +1141,7 @@ class TestRunMarkerDiscovery:
 
     def test_no_run_dir_yields_no_ports_and_creates_nothing(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         assert run_marker.marker_ports() == []
         # Discovery is read-only: a client merely looking for a gateway must not
@@ -1150,7 +1150,7 @@ class TestRunMarkerDiscovery:
 
     def test_lists_sorted_ports_and_ignores_non_markers(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         self._marker(tmp_path, "gateway-6776.bin")
         self._marker(tmp_path, "gateway-5476.bin")
@@ -1180,7 +1180,7 @@ class TestRunMarkerDiscovery:
         future caller from reaching for the unsafe check.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         assert not hasattr(run_marker, "port_is_live")
         assert not hasattr(run_marker, "live_marker_ports")
@@ -1188,7 +1188,7 @@ class TestRunMarkerDiscovery:
     def test_read_pid_rejects_junk_and_missing(self, tmp_path, monkeypatch):
         """The sidecar is an identity claim, so parse it strictly."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         assert run_marker.read_pid(6776) is None  # absent
         d = tmp_path / "run"
@@ -1200,7 +1200,7 @@ class TestRunMarkerDiscovery:
         assert run_marker.read_pid(6776) == 4242
 
     def test_explicit_pid_reader_is_bounded_ascii_decimal_and_read_only(self, tmp_path):
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         path = tmp_path / "missing" / "gateway.pid"
         assert run_marker._read_pid_path(path) is None
@@ -1222,7 +1222,7 @@ class TestRunMarkerDiscovery:
         record this gateway wrote, instead of answering ``None`` and denying a
         gateway that genuinely is ours.
         """
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         pid_file = tmp_path / "gateway-7999.pid"
         pid_file.write_bytes(b"4242\n")
@@ -1257,7 +1257,7 @@ class TestRunMarkerDiscovery:
         An older client venv sharing this data home is the caller that breaks.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         run_marker.write_marker(7999)
         pid_file = run_marker.pid_path(7999)
@@ -1286,8 +1286,8 @@ class TestRunMarkerDiscovery:
         1-second granularity lets a pid recycled inside the same second forge an
         identical value.
         """
-        from kiro_crew import platform_compat
-        from kiro_crew.instances import run_marker
+        from efm_go import platform_compat
+        from efm_go.instances import run_marker
 
         monkeypatch.setattr(platform_compat, "get_process_start_id", lambda pid: "1730.000042")
         assert run_marker.pid_start_token(4242) == "1730.000042"
@@ -1327,7 +1327,7 @@ class TestRunMarkerDiscovery:
         """read_launcher returns the recorded path, None for absent/empty, and
         never creates run/ (read-only, like read_pid)."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         assert run_marker.read_launcher(6776) is None  # absent
         assert not (tmp_path / "run").exists()  # read never materialises run/
@@ -1349,7 +1349,7 @@ class TestRunMarkerDiscovery:
         import sys
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         bindir = tmp_path / "venv" / "bin"
         bindir.mkdir(parents=True)
@@ -1377,7 +1377,7 @@ class TestRunMarkerDiscovery:
     def test_prune_keeps_unrelated_files(self, tmp_path, monkeypatch):
         """Pruning targets only this module's own marker/pid pairs."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.instances import run_marker
+        from efm_go.instances import run_marker
 
         d = tmp_path / "run"
         d.mkdir(parents=True, exist_ok=True)
@@ -1398,7 +1398,7 @@ class TestRunMarkerDiscovery:
 class TestValidation:
     @pytest.mark.parametrize("good", ["cd-1-alias", "user@host.example.com", "h_1"])
     def test_ssh_host_accept(self, good):
-        from kiro_crew.instances.validation import validate_ssh_host
+        from efm_go.instances.validation import validate_ssh_host
 
         assert validate_ssh_host(good) == good
 
@@ -1406,13 +1406,13 @@ class TestValidation:
         "bad", ["-oProxyCommand=x", "a b", "a;b", "a$b", "a@b@c", "", "@h", "h@", "`x`"]
     )
     def test_ssh_host_reject(self, bad):
-        from kiro_crew.instances.validation import SshValidationError, validate_ssh_host
+        from efm_go.instances.validation import SshValidationError, validate_ssh_host
 
         with pytest.raises(SshValidationError):
             validate_ssh_host(bad)
 
     def test_remote_bin(self):
-        from kiro_crew.instances.validation import SshValidationError, validate_remote_bin
+        from efm_go.instances.validation import SshValidationError, validate_remote_bin
 
         assert validate_remote_bin("") == ""
         assert validate_remote_bin("~/.local/bin/kirocrew") == "~/.local/bin/kirocrew"
@@ -1426,12 +1426,12 @@ class TestValidation:
 
 class TestRegistry:
     def _reg(self, tmp_path):
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         return InstancesRegistry(path=tmp_path / "instances.json")
 
     def test_crud_and_collision(self, tmp_path):
-        from kiro_crew.instances.registry import DuplicateInstanceError
+        from efm_go.instances.registry import DuplicateInstanceError
 
         reg = self._reg(tmp_path)
         a = reg.add(name="Cloud Desktop 1", ssh_host="cd-1-alias")
@@ -1443,7 +1443,7 @@ class TestRegistry:
         assert len(reg.list()) == 2
 
     def test_update_validation_and_hints(self, tmp_path):
-        from kiro_crew.instances.registry import InstanceNotFoundError, InvalidInstanceError
+        from efm_go.instances.registry import InstanceNotFoundError, InvalidInstanceError
 
         reg = self._reg(tmp_path)
         reg.add(name="CD", ssh_host="cd-1", instance_id="cd-1")
@@ -1489,7 +1489,7 @@ class TestRegistry:
         assert "token" not in raw.lower()
 
     def test_env_home_path(self, tmp_path, monkeypatch):
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         assert InstancesRegistry().path == tmp_path / "instances.json"
@@ -1500,7 +1500,7 @@ class TestRegistry:
         Callers construct a registry per request, so a lock owned by the object
         serialises nothing between them.
         """
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         first = self._reg(tmp_path)
         second = self._reg(tmp_path)
@@ -1521,7 +1521,7 @@ class TestRegistry:
         Both waits are bounded, so the serialised case simply times out and
         proceeds rather than hanging.
         """
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         path = tmp_path / "instances.json"
         writer = InstancesRegistry(path)
@@ -1573,8 +1573,8 @@ def _patch_port_probe(monkeypatch, *, manager_free: bool = True, allocator_free:
     conflict case models a TOCTOU loss, where allocation succeeds and the
     re-probe then finds that port taken.
     """
-    import kiro_crew.instances.port_allocator as pa
-    import kiro_crew.instances.ssh_tunnel_manager as stm
+    import efm_go.instances.port_allocator as pa
+    import efm_go.instances.ssh_tunnel_manager as stm
 
     monkeypatch.setattr(stm, "_is_port_free", lambda port, host="127.0.0.1": manager_free)
     monkeypatch.setattr(pa, "_is_port_free", lambda port, host="127.0.0.1": allocator_free)
@@ -1680,7 +1680,7 @@ class _FakeTunnel:
         aws_profile="",
         aws_region="",
     ):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         self.iid = iid
         self.stopped = False
@@ -1717,7 +1717,7 @@ class TestSshTunnelArgvCompression:
         _patch_port_probe(monkeypatch)
 
     def test_compression_flag_present_by_default(self):
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
 
         argv = _build_ssh_tunnel_argv("host-a", 7779, 7879)
         assert "-C" in argv
@@ -1726,7 +1726,7 @@ class TestSshTunnelArgvCompression:
         assert argv[0] == "ssh" and argv[-1] == "host-a"
 
     def test_compression_flag_omitted_when_disabled(self):
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
 
         argv = _build_ssh_tunnel_argv("host-a", 7779, 7879, compression=False)
         assert "-C" not in argv
@@ -1739,8 +1739,8 @@ class TestSshTunnelArgvCompression:
         # The manager must thread ssh_compression to the tunnel factory on
         # connect() -- that flag is what _build_ssh_tunnel_argv uses to add/omit
         # -C. Drive a real connect and assert the captured value both ways.
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager, TunnelState
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager, TunnelState
 
         captured: dict = {}
 
@@ -1850,7 +1850,7 @@ class TestSshTunnelMultiplexing:
     )
 
     def test_tunnel_argv_pins_multiplexing_off(self):
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
 
         argv = _build_ssh_tunnel_argv("host-a", 7779, 7879)
         assert "ControlPath=none" in argv
@@ -1869,7 +1869,7 @@ class TestSshTunnelMultiplexing:
         so the assertions above test the pins rather than restating ssh's
         defaults.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
 
         args = _ssh_args(_build_ssh_tunnel_argv(self._HOST, 7779, 7879))
         pinned = _ssh_effective_config(tmp_path, self._ADVERSARIAL_CONFIG, args, self._HOST)
@@ -1897,7 +1897,7 @@ class TestSshTunnelMultiplexing:
         The keyword is invented so no OpenSSH release knows it, which keeps the
         result independent of platform and version.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
 
         cfg = tmp_path / "ssh_config"
         cfg.write_text(
@@ -1927,7 +1927,7 @@ class TestSshTunnelMultiplexing:
         ssh-config alias path for identity, port, and bastion reachability, so
         pinning must not turn the argv into a general ssh_config override.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
 
         config = (
             self._ADVERSARIAL_CONFIG
@@ -1957,8 +1957,8 @@ class TestSshTunnelManager:
         _patch_port_probe(monkeypatch)
 
     def _mgr(self, tmp_path, *, mint=None, factory=_FakeTunnel):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -1979,7 +1979,7 @@ class TestSshTunnelManager:
 
     @pytest.mark.asyncio
     async def test_connect_persists_and_idempotent(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -2011,7 +2011,7 @@ class TestSshTunnelManager:
         holds the lower port, moving the origin and the settings behind it. The
         preference keeps both put.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager, TunnelState
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager, TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="A", ssh_host="a-alias", instance_id="a")
@@ -2045,7 +2045,7 @@ class TestSshTunnelManager:
         idempotent connect would hand the same (stalled) forwarder back. The
         rebuild must stop the old child, spawn a new one, keep the user's
         connect intent, and answer CONNECTED with a live token."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -2077,7 +2077,7 @@ class TestSshTunnelManager:
         every other connect failure: ERROR status with the reason, retained for
         last_error, and the old tunnel is left tracked and intact — nothing is
         removed unless the stop succeeded."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -2105,7 +2105,7 @@ class TestSshTunnelManager:
         connect intent: for an absent tunnel it answers DISCONNECTED, spawns
         nothing, mints nothing, and leaves was_connected exactly as the user
         last set it (here: cleared by an explicit disconnect)."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -2134,7 +2134,7 @@ class TestSshTunnelManager:
     async def test_connect_only_if_connected_answers_a_live_tunnel_like_plain_connect(
         self, tmp_path
     ):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -2155,7 +2155,7 @@ class TestSshTunnelManager:
 
     @pytest.mark.asyncio
     async def test_connect_rebuild_with_no_tunnel_is_a_plain_connect(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -2180,7 +2180,7 @@ class TestSshTunnelManager:
             asyncio.run(mgr.connect("ghost"))
 
     def test_validation_failure(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="Bad", ssh_host="-obadhost", instance_id="bad")  # registry ok; manager rejects
@@ -2189,7 +2189,7 @@ class TestSshTunnelManager:
         assert mgr.status("bad") is None and mgr.get_token("bad") == ""
 
     def test_tunnel_failure(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         def failing(*a, **k):
             t = _FakeTunnel(*a, **k)
@@ -2202,8 +2202,8 @@ class TestSshTunnelManager:
         assert st.state == TunnelState.ERROR and mgr.get_token("cd-1") == ""
 
     def test_mint_failure_tears_down(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.token_mint import TokenMintError
 
         async def bad_mint(
             host,
@@ -2241,7 +2241,7 @@ class TestSshTunnelManager:
         # Regression: connect() records the allocated local_port, but
         # disconnect() must reset it to the unallocated sentinel. Otherwise the
         # freed port stays recorded and reads as reserved forever.
-        from kiro_crew.instances.registry import _UNALLOCATED_PORT
+        from efm_go.instances.registry import _UNALLOCATED_PORT
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1", instance_id="cd-1")
@@ -2261,7 +2261,7 @@ class TestSshTunnelManager:
     async def test_disconnect_clears_stale_port_without_live_tunnel(self, tmp_path):
         # A port left recorded by an unclean prior exit (no live tunnel tracked)
         # must still be clearable via disconnect, so the user can recover.
-        from kiro_crew.instances.registry import _UNALLOCATED_PORT
+        from efm_go.instances.registry import _UNALLOCATED_PORT
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1", instance_id="cd-1")
@@ -2273,7 +2273,7 @@ class TestSshTunnelManager:
 
     @pytest.mark.asyncio
     async def test_token_validates_status_mapping(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as m
+        from efm_go.instances import ssh_tunnel_manager as m
 
         class _Resp:
             def __init__(self, status):
@@ -2314,7 +2314,7 @@ class TestSshTunnelManager:
 
     @pytest.mark.asyncio
     async def test_token_validates_denies_on_error(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as m
+        from efm_go.instances import ssh_tunnel_manager as m
 
         class _BoomSess:
             def __init__(self, *a, **k):
@@ -2447,7 +2447,7 @@ def _enable(tmp_path: Path, monkeypatch, *, enabled=True, warm_set_cap=None):
     if warm_set_cap is not None:
         section["warm_set_cap"] = warm_set_cap
     (tmp_path / "config.json").write_text(json.dumps({"instances": section}))
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     loader._invalidate_config_cache()
 
@@ -2475,7 +2475,7 @@ class TestValidatorsRejectEmbeddedNewlines:
             path = (
                 Path(__file__).resolve().parents[1]
                 / "src"
-                / "kiro_crew"
+                / "efm_go"
                 / "instances"
                 / f"{mod}.py"
             )
@@ -2500,8 +2500,8 @@ class TestValidatorsRejectEmbeddedNewlines:
         given. What must not happen is a guard accepting the value and passing the
         newline through unchanged.
         """
-        from kiro_crew.instances import validation
-        from kiro_crew.instances.registry import (
+        from efm_go.instances import validation
+        from efm_go.instances.registry import (
             InstancesRegistry,
             InvalidInstanceError,
             validate_ttl,
@@ -2533,8 +2533,8 @@ class TestReconfigureAtomicity:
     """`reconfigure` must serialize against everything else taking the lock."""
 
     def _manager(self, tmp_path):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(tmp_path / "instances.json")
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -2745,12 +2745,12 @@ class TestReconfigureAtomicity:
 
 class TestHandlers:
     def _reg(self, tmp_path):
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         return InstancesRegistry(path=tmp_path / "instances.json")
 
     def test_disabled_returns_403(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch, enabled=False)
         r = asyncio.run(handlers.api_instances_list(_FakeReq(_State(self._reg(tmp_path)))))
@@ -2762,7 +2762,7 @@ class TestHandlers:
         # below share the status and must still be reported.  Dropping or renaming
         # the code silently re-breaks the spurious-error-report defect, so it is
         # asserted here rather than left to the SPA's fixture to assume.
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch, enabled=False)
         r = asyncio.run(handlers.api_instances_list(_FakeReq(_State(self._reg(tmp_path)))))
@@ -2771,7 +2771,7 @@ class TestHandlers:
     def test_slack_origin_denial_carries_no_benign_code(self, tmp_path, monkeypatch):
         # The converse guard: a denial the dashboard must REPORT may not wear the
         # benign code, or it would be swallowed with the routine one.
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         req = _FakeReq(_State(self._reg(tmp_path)), headers={"X-Session-Key": "slack:T:C"})
@@ -2780,7 +2780,7 @@ class TestHandlers:
         assert _body(r).get("code") != "instances_disabled"
 
     def test_slack_origin_rejected(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         req = _FakeReq(_State(self._reg(tmp_path)), headers={"X-Session-Key": "slack:T:C"})
@@ -2788,7 +2788,7 @@ class TestHandlers:
         assert r.status == 403 and "owner-only" in _body(r)["error"]
 
     def test_unauthenticated_rejected(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         # No authenticated user (require_auth would have set request["user"]).
@@ -2797,7 +2797,7 @@ class TestHandlers:
         assert r.status == 401 and "authentication required" in _body(r)["error"]
 
     def test_add_list_includes_cap(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -2830,7 +2830,7 @@ class TestHandlers:
         every restart. Here 3 are registered and only 2 are connected; the cap
         must still be 3.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -2842,7 +2842,7 @@ class TestHandlers:
         assert b["warm_set_cap"] == 3
 
     def test_automatic_cap_serves_ten_and_then_stops_growing(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -2861,7 +2861,7 @@ class TestHandlers:
         Forgetting that edit reintroduces the eviction above, so the cap has to
         rise on its own when the fleet grows.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -2874,7 +2874,7 @@ class TestHandlers:
 
     def test_explicit_cap_is_served_even_below_the_registered_count(self, tmp_path, monkeypatch):
         """An operator's own number is the budget and is not widened for them."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch, warm_set_cap=1)
         reg = self._reg(tmp_path)
@@ -2884,7 +2884,7 @@ class TestHandlers:
         assert _body(asyncio.run(handlers.api_instances_list(_FakeReq(state))))["warm_set_cap"] == 1
 
     def test_list_active_reflects_manager_running(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -2895,7 +2895,7 @@ class TestHandlers:
         assert _body(r)["active"] is False
 
     def test_add_invalid_ssh_host_400(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         r = asyncio.run(
@@ -2906,8 +2906,8 @@ class TestHandlers:
         assert r.status == 400
 
     def test_connect_returns_token_but_list_does_not_leak(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -2964,8 +2964,8 @@ class TestHandlers:
         next connect first. So the frozen port can name a forward that now belongs
         to another crew, and the pane would load that one holding this crew's token.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3008,8 +3008,8 @@ class TestHandlers:
         live status ERROR with the port unchanged, so comparing ports alone still
         agrees while there is no forward left to load.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3045,8 +3045,8 @@ class TestHandlers:
         forwarded as ``rebuild=True`` and nothing else about the response changes.
         Without the flag the manager is called with its plain positional
         contract, so every existing caller (and fake) keeps working."""
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3096,8 +3096,8 @@ class TestHandlers:
         as `warm-declined` — never the 502 a real connect failure gets. A live
         tunnel is answered exactly like a plain connect. Combining it with
         ``rebuild`` is a 400."""
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3155,7 +3155,7 @@ class TestHandlers:
         so it must leave the same ``instances_connect`` / ``denied`` SEL line —
         an owner hand-crafting the pair must not be the one connect outcome the
         audit trail cannot see."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3189,8 +3189,8 @@ class TestHandlers:
         assert "mutually exclusive" in events[0]["error"]
 
     def test_connect_remints_when_stored_token_stale(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3227,8 +3227,8 @@ class TestHandlers:
         assert mgr.refreshed == ["cd-1"]
 
     def test_connect_502_when_stale_and_remint_fails(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3274,8 +3274,8 @@ class TestHandlers:
         last ladder run, so a stale ``ok`` must not be published as this call's
         reason.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3327,7 +3327,7 @@ class TestHandlers:
         assert _body(stale_ok)["code"] == "instance_connect_failed"
 
     def test_connect_missing_manager_and_unknown_id_carry_codes(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3351,7 +3351,7 @@ class TestHandlers:
         assert ghost.status == 404 and _body(ghost)["code"] == "instance_not_found"
 
     def test_status_404(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         r = asyncio.run(
@@ -3362,7 +3362,7 @@ class TestHandlers:
         assert r.status == 404
 
     def test_status_diagnose_runs_ladder(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3409,8 +3409,8 @@ class TestHandlers:
         unit test built records via ``reg.add`` directly and so could not see it;
         an isolated-pod run against the real endpoint did.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.registry import DEFAULT_REMOTE_PORT
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.registry import DEFAULT_REMOTE_PORT
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3420,7 +3420,7 @@ class TestHandlers:
         assert reg.get("cd-1").remote_port == DEFAULT_REMOTE_PORT == 5476
 
     def test_add_duplicate_and_bad_body(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         state = _State(self._reg(tmp_path))
@@ -3443,7 +3443,7 @@ class TestHandlers:
         different user actions — rename versus correct — and a client that cannot
         tell them apart has to match on prose.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         state = _State(self._reg(tmp_path))
@@ -3472,7 +3472,7 @@ class TestHandlers:
         assert rejected.status == 400 and _body(rejected)["code"] == "instance_invalid"
 
     def test_update_paths(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3523,7 +3523,7 @@ class TestHandlers:
         400 specifically, because coercing the value would store a port or a name
         the caller never asked for.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3557,7 +3557,7 @@ class TestHandlers:
         """
         import inspect
 
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         src = inspect.getsource(handlers.api_instances_update)
         assert "allowed = set(_PATCH_FIELD_TYPES)" in src
@@ -3569,7 +3569,7 @@ class TestHandlers:
         under the new label. The edit must tear it down, and must keep
         ``was_connected`` — that flag records an explicit user disconnect, which an
         edit is not, and clearing it would drop the crew out of the switcher."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3621,8 +3621,8 @@ class TestHandlers:
         through is persisted happily and then fails at the next connect, blaming
         the tunnel for a value the edit should have refused — so the registry
         enforces the same bound the minters do."""
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.registry import InvalidInstanceError
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.registry import InvalidInstanceError
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3649,7 +3649,7 @@ class TestHandlers:
         """A rejected save must not cost the user their connection: the proposed
         record is validated before the teardown, so a typo answers 400 with the
         crew still connected."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3690,7 +3690,7 @@ class TestHandlers:
         """``disconnect()`` clears the persisted intent whether or not it tracked
         a live tunnel, and reports False in that case. Restoring only on a True
         return would drop the crew out of the switcher."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3732,8 +3732,8 @@ class TestHandlers:
         the new coordinates."""
         import time as _time
 
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3781,7 +3781,7 @@ class TestHandlers:
         """An explicit Disconnect landing while a transport edit is in flight must
         win. The edit's teardown preserves intent rather than restoring a snapshot
         of it, so the user's disconnect is not overwritten."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3833,7 +3833,7 @@ class TestHandlers:
         whether its tunnel is CONNECTED or still CONNECTING when the write lands
         decides whether anything notices — so the handler must not persist on its
         own when a manager is present."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3891,7 +3891,7 @@ class TestHandlers:
         the one the user reaches. So the edit aborts, nothing is written, and the
         caller is told to disconnect and retry.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3934,7 +3934,7 @@ class TestHandlers:
     ):
         """A rename does not change how the tunnel is opened, so dropping the
         connection for it would be a self-inflicted outage."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -3971,8 +3971,8 @@ class TestHandlers:
         assert mgr.disconnected == []
 
     def test_rename_persists_in_instances_json_and_survives_reload(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.registry import InstancesRegistry
 
         _enable(tmp_path, monkeypatch)
         path = tmp_path / "instances.json"
@@ -3991,8 +3991,8 @@ class TestHandlers:
         assert InstancesRegistry(path=path).get("crew-1").name == "New name"
 
     def test_blank_rename_is_rejected_without_changing_the_stored_name(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.registry import InstancesRegistry
 
         _enable(tmp_path, monkeypatch)
         path = tmp_path / "instances.json"
@@ -4010,7 +4010,7 @@ class TestHandlers:
         assert InstancesRegistry(path=path).get("crew-1").name == "Keep me"
 
     def test_remove_success_and_404(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -4031,7 +4031,7 @@ class TestHandlers:
         tunnel for the record mid-delete. A successful removal must disconnect
         AGAIN afterwards: the record is gone by then, so connect refuses new
         attempts and the sweep tears down whatever slipped in."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -4060,8 +4060,8 @@ class TestHandlers:
         assert mgr.live is False, "the racing reconnect's tunnel survived the removal"
 
     def test_connect_503_404_and_502(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.dashboard import handlers_instances as handlers
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -4096,7 +4096,7 @@ class TestHandlers:
         assert r.status == 502 and _body(r)["error"] == "boom"
 
     def test_disconnect_reports_was_connected(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
 
@@ -4112,7 +4112,7 @@ class TestHandlers:
         assert r.status == 200 and _body(r)["was_connected"] is True
 
     def test_restart_paths(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -4157,7 +4157,7 @@ class TestHandlers:
         assert r.status == 502
 
     def test_audit_failure_never_breaks_request(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
 
@@ -4176,8 +4176,8 @@ class TestHandlers:
         # (CLI, script, agent) rewrite the fields Stop/Start/Delete use to
         # resolve an EC2 stack launched by Kiro Crew — doing so strands a running,
         # billing instance with no dashboard path to reach it.
-        from kiro_crew.cloud import launch_job as lj
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.cloud import launch_job as lj
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -4240,7 +4240,7 @@ class TestHandlers:
         # edit through and strand a launched, billing instance. The PATCH
         # refuses the edit instead of persisting one it
         # could not verify was safe.
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -4285,7 +4285,7 @@ class TestHandlers:
 
 class TestTokenMintGeneric:
     def test_ttl_to_seconds(self):
-        from kiro_crew.instances.token_mint import TokenMintError, ttl_to_seconds
+        from efm_go.instances.token_mint import TokenMintError, ttl_to_seconds
 
         assert ttl_to_seconds("20h") == 72000
         assert ttl_to_seconds("30m") == 1800
@@ -4293,7 +4293,7 @@ class TestTokenMintGeneric:
             ttl_to_seconds("bad")
 
     def test_generic_builders_and_token_delegation(self):
-        from kiro_crew.instances.token_mint import (
+        from efm_go.instances.token_mint import (
             build_candidate_command,
             build_remote_command,
             build_remote_token_command,
@@ -4312,7 +4312,7 @@ class TestTokenMintGeneric:
         that never got written) was invisible. The failure branch now diagnoses
         each candidate to stderr before exiting 127.
         """
-        from kiro_crew.instances.token_mint import build_candidate_command
+        from efm_go.instances.token_mint import build_candidate_command
 
         cmd = build_candidate_command("token")
 
@@ -4335,7 +4335,7 @@ class TestTokenMintGeneric:
         assert not_found < diagnosis < exit_127
 
     def test_run_remote_kirocrew(self, monkeypatch):
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         class FakeProc:
             returncode = 0
@@ -4354,7 +4354,7 @@ class TestTokenMintGeneric:
         """The fail-fast 10s ConnectTimeout default must not silently
         override a caller-supplied budget -- a restart on a slow-proxy host
         needs the same connect budget the mint itself gets."""
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         class FakeProc:
             returncode = 0
@@ -4376,7 +4376,7 @@ class TestTokenMintGeneric:
     def test_run_remote_kirocrew_redacts_stderr(self, monkeypatch):
         # Proxy-controlled stderr carrying a credential is redacted before return,
         # so a caller logging the tail cannot leak it.
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         class FakeProc:
             returncode = 255
@@ -4404,7 +4404,7 @@ class TestTokenMintGeneric:
         a credential distinguishes the two orders. This test fails if the
         composition is ever reversed again.
         """
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         class FakeProc:
             returncode = 255
@@ -4433,7 +4433,7 @@ class TestTokenMintGeneric:
         the raised TokenMintError even with the composed helper in place. Pins
         that the generic redactors see the window before the token scrubs.
         """
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         stdout = b"fail: see https://evil.example.com/x?token=AKIAIOSFODNN7EXAMPLE now"
 
@@ -4482,7 +4482,7 @@ class TestTokenMintGeneric:
             return -9
 
     def test_mint_timeout_reaps_child_via_communicate_not_wait(self, monkeypatch):
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         proc = self._HangProc()
 
@@ -4505,7 +4505,7 @@ class TestTokenMintGeneric:
         assert proc.wait_calls == 0
 
     def test_run_remote_kirocrew_timeout_reaps_child_via_communicate_not_wait(self, monkeypatch):
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import token_mint as tm
 
         proc = self._HangProc()
 
@@ -4531,7 +4531,7 @@ class TestTokenMintGeneric:
 
 class TestDiagnostics:
     def _set_probes(self, monkeypatch, ssh, remote, local):
-        from kiro_crew.instances import diagnostics as diag
+        from efm_go.instances import diagnostics as diag
 
         async def _ssh(h, connect_timeout_secs=10.0):
             return ssh
@@ -4547,7 +4547,7 @@ class TestDiagnostics:
         monkeypatch.setattr(diag, "_probe_local_forward", _loc)
 
     def test_ladder_first_broken_link(self, monkeypatch):
-        from kiro_crew.instances.diagnostics import (
+        from efm_go.instances.diagnostics import (
             NOT_CONNECTED,
             OK,
             REMOTE_DOWN,
@@ -4571,13 +4571,13 @@ class TestDiagnostics:
         assert asyncio.run(diagnose_instance("cd-1-alias", 7777, 0)).code == NOT_CONNECTED
 
     def test_invalid_host_short_circuits(self):
-        from kiro_crew.instances.diagnostics import UNKNOWN, diagnose_instance
+        from efm_go.instances.diagnostics import UNKNOWN, diagnose_instance
 
         r = asyncio.run(diagnose_instance("-obadhost", 7777, 7778))
         assert r.code == UNKNOWN and r.probes == []
 
     def test_probe_helpers_via_mocked_subprocess(self, monkeypatch):
-        from kiro_crew.instances import diagnostics as diag
+        from efm_go.instances import diagnostics as diag
 
         class FakeProc:
             def __init__(self, rc, out=b""):
@@ -4627,7 +4627,7 @@ class TestDiagnostics:
         already tuned instances.connect_timeout_secs for must not be
         misreported as unreachable just because the probe never saw that
         tuning."""
-        from kiro_crew.instances import diagnostics as diag
+        from efm_go.instances import diagnostics as diag
 
         captured = {}
 
@@ -4673,7 +4673,7 @@ class TestDiagnostics:
         assert captured["kw"].get("stdin") is asyncio.subprocess.DEVNULL
 
     def test_probe_local_forward(self):
-        from kiro_crew.instances import diagnostics as diag
+        from efm_go.instances import diagnostics as diag
 
         # no port -> False without connecting
         assert asyncio.run(diag._probe_local_forward(0)) is False
@@ -4707,7 +4707,7 @@ class _ResilTunnel:
         aws_profile="",
         aws_region="",
     ):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         self._S = TunnelState
         self.transport = transport
@@ -4726,7 +4726,7 @@ class _ResilTunnel:
 
 class TestTunnelStatus:
     def test_to_dict_includes_diagnosis_only_when_set(self):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         # no diagnosis -> key absent
         d = TunnelStatus("cd-1", TunnelState.CONNECTED, local_port=7778, remote_port=7777).to_dict()
@@ -4747,7 +4747,7 @@ class TestTunnelStatus:
         """
         import asyncio as aio
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
 
         entered = aio.Event()
         release = aio.Event()
@@ -4785,7 +4785,7 @@ class TestTunnelStatus:
         """
         import asyncio as aio
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
 
         class _Boom(_SshTunnel):
             async def _terminate(self):
@@ -4814,8 +4814,8 @@ class TestSelfHealRefreshRestart:
         _patch_port_probe(monkeypatch)
 
     def _mgr(self, tmp_path, *, mint=None, factory=_ResilTunnel):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -4836,7 +4836,7 @@ class TestSelfHealRefreshRestart:
 
     @pytest.mark.asyncio
     async def test_recover_tier1_then_tier2(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -4863,7 +4863,7 @@ class TestSelfHealRefreshRestart:
         is down from resetting its budget every rebuild and churning forever,
         while a single slow post-rebuild probe cannot ratchet the budget down
         permanently — the next good probe clears it."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -4896,8 +4896,8 @@ class TestSelfHealRefreshRestart:
     async def test_probe_loop_fires_on_healthy_on_a_successful_probe(self, tmp_path):
         """Wiring guard: a successful _forward_alive in the probe loop must fire
         the _on_healthy seam so the manager can clear the attempt counter."""
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
 
         stm_interval = stm._PROBE_INTERVAL
         healthy: list[str] = []
@@ -4925,7 +4925,7 @@ class TestSelfHealRefreshRestart:
         assert healthy == ["cd-1"]
 
     def test_recover_releases_lock_during_io(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         started = asyncio.Event()
         release = asyncio.Event()
@@ -4959,7 +4959,7 @@ class TestSelfHealRefreshRestart:
 
     @pytest.mark.asyncio
     async def test_recover_attempt_cap_then_diagnose(self, tmp_path, monkeypatch):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         def failing(*a, **k):
             t = _ResilTunnel(*a, **k)
@@ -4983,7 +4983,7 @@ class TestSelfHealRefreshRestart:
 
     @pytest.mark.asyncio
     async def test_rebuild_stops_old_before_replace(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -5002,7 +5002,7 @@ class TestSelfHealRefreshRestart:
 
     @pytest.mark.asyncio
     async def test_connect_stops_stale_tunnel_before_replace(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         # Use the _FakeTunnel (tracks .stopped) for this manager.
         reg, mgr = self._mgr(tmp_path, factory=_FakeTunnel)
@@ -5017,7 +5017,7 @@ class TestSelfHealRefreshRestart:
 
     @pytest.mark.asyncio
     async def test_wait_until_ready_rejects_child_that_dies_during_probe(self):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
 
         class _Proc:
             def __init__(self):
@@ -5042,7 +5042,7 @@ class TestSelfHealRefreshRestart:
         assert "post-quantum" not in t.status.error.lower()
 
     def test_exit_error_strips_post_quantum_noise(self):
-        from kiro_crew.instances.ssh_tunnel_manager import _SshTunnel
+        from efm_go.instances.ssh_tunnel_manager import _SshTunnel
 
         t = _SshTunnel("cd-1", "h", 1, 2)
         t._stderr_buf = (
@@ -5061,7 +5061,7 @@ class TestSelfHealRefreshRestart:
         assert t._exit_error(255) == "ssh exited with code 255"
 
     def test_exit_error_classifies_wssh_transport_vs_auth(self):
-        from kiro_crew.instances.ssh_tunnel_manager import _SshTunnel
+        from efm_go.instances.ssh_tunnel_manager import _SshTunnel
 
         t = _SshTunnel("cd-1", "h", 1, 2)
 
@@ -5092,7 +5092,7 @@ class TestSelfHealRefreshRestart:
         assert "auth failed" in t._exit_error(255).lower()
 
     def test_recover_backoff_grows_and_caps(self):
-        from kiro_crew.instances.ssh_tunnel_manager import (
+        from efm_go.instances.ssh_tunnel_manager import (
             _RECOVER_BACKOFF_MAX_SECS,
             _recover_backoff_secs,
         )
@@ -5214,7 +5214,7 @@ class TestSelfHealRefreshRestart:
         timestamp and ttl would be overwritten by a mint it never requested,
         and the stale rebuild would replace its live tunnel.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr, arm, started, release, fail_next = self._tier2_rig(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -5256,7 +5256,7 @@ class TestSelfHealRefreshRestart:
         replacement before start() reports failure, so an undisturbed tier 2
         always sees the Phase 1 stamp plus exactly one.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr, _arm, _started, _release, fail_next = self._tier2_rig(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -5284,7 +5284,7 @@ class TestSelfHealRefreshRestart:
         is the ONLY thing that clears the counter. Asserting the reset after that
         seam runs — not after a manual pop — pins the real production reset: were
         the reset deleted from `_on_tunnel_healthy`, the final assert reds."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr, _arm, _started, _release, fail_next = self._tier2_rig(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -5317,7 +5317,7 @@ class TestSelfHealRefreshRestart:
         expected generation stale, so the gated install refuses and the
         recovery stands down.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         arm = asyncio.Event()
         parked = asyncio.Event()
@@ -5363,7 +5363,7 @@ class TestSelfHealRefreshRestart:
         and connect's tunnel, token and record stay exactly as connect left
         them.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         arm = asyncio.Event()
         parked = asyncio.Event()
@@ -5412,7 +5412,7 @@ class TestSelfHealRefreshRestart:
         reaps the rebuild's own tunnel and stands the recovery down instead of
         leaving an untracked forwarder holding its port.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         arm = asyncio.Event()
         parked = asyncio.Event()
@@ -5460,7 +5460,7 @@ class TestSelfHealRefreshRestart:
         epoch before its stop awaits — so its gated install refuses and no
         child is spawned after cleanup.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         arm = asyncio.Event()
         parked = asyncio.Event()
@@ -5510,7 +5510,7 @@ class TestSelfHealRefreshRestart:
         pins the property that decision rests on: a recovery whose mint
         returns after the disconnect stores no token and reinstalls no tunnel.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr, arm, started, release, fail_next = self._tier2_rig(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -5576,7 +5576,7 @@ class TestSelfHealRefreshRestart:
         assert seen[-1] == 9001  # proactive refresh re-mints with the same port
 
     def test_restart_remote(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -5616,7 +5616,7 @@ class TestSelfHealRefreshRestart:
         under a minute, not silently inherit the full tunable -- diagnose()
         must cap what it forwards, not pass the configured value straight
         through."""
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -5625,7 +5625,7 @@ class TestSelfHealRefreshRestart:
 
         async def fake_diagnose(ssh_host, remote_port, local_port, connect_timeout_secs=10.0):
             captured["connect_timeout_secs"] = connect_timeout_secs
-            from kiro_crew.instances.diagnostics import OK, DiagnosisResult
+            from efm_go.instances.diagnostics import OK, DiagnosisResult
 
             return DiagnosisResult(OK, "ok", [])
 
@@ -5636,8 +5636,8 @@ class TestSelfHealRefreshRestart:
         assert captured["connect_timeout_secs"] < 90.0
 
     def test_probe_loop_tears_down_after_threshold(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
 
         monkeypatch.setattr(stm, "_PROBE_INTERVAL", 0.01)
 
@@ -5677,8 +5677,8 @@ class TestSelfHealRefreshRestart:
         asyncio.run(main())
 
     def test_sshtunnel_start_success_then_stop(self, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, _SshTunnel
 
         monkeypatch.setattr(stm, "_PROBE_INTERVAL", 0)  # no probe-loop task
 
@@ -5742,7 +5742,7 @@ class TestInstancesStartupHooks:
     def _state(self):
         from unittest.mock import MagicMock
 
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         return DashboardState(
             sessions=MagicMock(), crons=MagicMock(), lessons=MagicMock(), start_time=0.0
@@ -5751,7 +5751,7 @@ class TestInstancesStartupHooks:
     def test_register_then_freeze_then_startup_creates_manager(self, tmp_path, monkeypatch):
         from aiohttp import web
 
-        from kiro_crew.dashboard.server import _register_instances_hooks
+        from efm_go.dashboard.server import _register_instances_hooks
 
         _enable(tmp_path, monkeypatch, enabled=True)
         app = web.Application()
@@ -5781,7 +5781,7 @@ class TestInstancesStartupHooks:
     def test_disabled_skips_manager_creation(self, tmp_path, monkeypatch):
         from aiohttp import web
 
-        from kiro_crew.dashboard.server import _register_instances_hooks
+        from efm_go.dashboard.server import _register_instances_hooks
 
         _enable(tmp_path, monkeypatch, enabled=False)
         app = web.Application()
@@ -5804,7 +5804,7 @@ class TestPortMirror:
 
     @staticmethod
     def _mgr(reg, factory, monkeypatch, *, port_free=True):
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         # Allocation must still succeed when ``port_free`` is False: that case
         # models the TOCTOU loss where the port is taken between allocating it
@@ -5826,8 +5826,8 @@ class TestPortMirror:
 
     @pytest.mark.asyncio
     async def test_local_port_allocated_not_mirrored(self, tmp_path, monkeypatch):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         captured: dict = {}
 
@@ -5855,8 +5855,8 @@ class TestPortMirror:
         This is the case mirroring made impossible — and the shipped defaults put
         every stock pair in it.
         """
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         seen: dict[str, int] = {}
 
@@ -5892,8 +5892,8 @@ class TestPortMirror:
         port. connect() therefore PREFERS the recorded port: here the base port
         is free and lower, yet the recorded one is returned.
         """
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         captured: dict = {}
 
@@ -5927,8 +5927,8 @@ class TestPortMirror:
         """
         import time
 
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         captured: dict = {}
 
@@ -5969,8 +5969,8 @@ class TestPortMirror:
         recorded port another row records stays reserved and unpreferred, and the
         crew takes a different port.
         """
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         captured: dict = {}
 
@@ -6008,8 +6008,8 @@ class TestPortMirror:
         back at the very port the rebuild is escaping. Gating on the rebuild flag
         keeps the recorded port unpreferred regardless.
         """
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1", remote_port=7900)
@@ -6040,8 +6040,8 @@ class TestPortMirror:
 
     @pytest.mark.asyncio
     async def test_port_conflict_hard_fails(self, tmp_path, monkeypatch):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         captured: dict = {}
 
@@ -6069,8 +6069,8 @@ class TestLastError:
         _patch_port_probe(monkeypatch)
 
     def _mgr(self, tmp_path, *, mint=None, factory=_FakeTunnel):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -6113,7 +6113,7 @@ class TestLastError:
 
     @pytest.mark.asyncio
     async def test_retained_on_mint_failure_after_teardown(self, tmp_path):
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances.token_mint import TokenMintError
 
         async def bad_mint(
             host,
@@ -6134,8 +6134,8 @@ class TestLastError:
 
     @pytest.mark.asyncio
     async def test_cleared_on_successful_connect(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.token_mint import TokenMintError
 
         calls = {"n": 0}
 
@@ -6163,7 +6163,7 @@ class TestLastError:
 
     @pytest.mark.asyncio
     async def test_cleared_on_explicit_disconnect(self, tmp_path):
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances.token_mint import TokenMintError
 
         async def bad_mint(
             host,
@@ -6193,8 +6193,8 @@ class TestStatusForRetainedError:
         _patch_port_probe(monkeypatch)
 
     def _mgr(self, tmp_path, *, mint=None, factory=_FakeTunnel):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -6217,8 +6217,8 @@ class TestStatusForRetainedError:
     async def test_surfaces_error_when_no_live_tunnel(self, tmp_path):
         import types
 
-        from kiro_crew.dashboard.handlers_instances import _status_for
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.dashboard.handlers_instances import _status_for
+        from efm_go.instances.token_mint import TokenMintError
 
         async def bad_mint(
             host,
@@ -6244,7 +6244,7 @@ class TestStatusForRetainedError:
     async def test_disconnected_when_no_tunnel_and_no_error(self, tmp_path):
         import types
 
-        from kiro_crew.dashboard.handlers_instances import _status_for
+        from efm_go.dashboard.handlers_instances import _status_for
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1", instance_id="cd-1")
@@ -6256,7 +6256,7 @@ class TestStatusForRetainedError:
     async def test_live_tunnel_status_wins(self, tmp_path):
         import types
 
-        from kiro_crew.dashboard.handlers_instances import _status_for
+        from efm_go.dashboard.handlers_instances import _status_for
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1", instance_id="cd-1")
@@ -6277,8 +6277,8 @@ class TestStartupRevive:
         _patch_port_probe(monkeypatch)
 
     def _mgr(self, tmp_path, *, mint=None, factory=_FakeTunnel):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -6299,8 +6299,8 @@ class TestStartupRevive:
 
     @pytest.mark.asyncio
     async def test_revives_all_was_connected(self, tmp_path):
-        import kiro_crew.dashboard.server as server
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.dashboard.server as server
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="A", ssh_host="host-a", instance_id="a", remote_port=7777)
@@ -6318,9 +6318,9 @@ class TestStartupRevive:
 
     @pytest.mark.asyncio
     async def test_some_fail_isolated_and_intent_preserved(self, tmp_path):
-        import kiro_crew.dashboard.server as server
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
-        from kiro_crew.instances.token_mint import TokenMintError
+        import efm_go.dashboard.server as server
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.token_mint import TokenMintError
 
         async def mint(
             host,
@@ -6353,7 +6353,7 @@ class TestStartupRevive:
 
     @pytest.mark.asyncio
     async def test_noop_when_none_intended(self, tmp_path):
-        import kiro_crew.dashboard.server as server
+        import efm_go.dashboard.server as server
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="A", ssh_host="host-a", instance_id="a")  # was_connected False
@@ -6376,7 +6376,7 @@ class TestStartupRevive:
 
         from aiohttp import web
 
-        import kiro_crew.dashboard.server as server
+        import efm_go.dashboard.server as server
 
         cfg = types.SimpleNamespace(
             instances=types.SimpleNamespace(
@@ -6454,7 +6454,7 @@ class TestSsmValidation:
     """Injection-safe validation of the SSM-transport inputs."""
 
     def test_valid_targets(self):
-        from kiro_crew.instances.validation import validate_ssm_target
+        from efm_go.instances.validation import validate_ssm_target
 
         assert validate_ssm_target("i-0123456789abcdef0") == "i-0123456789abcdef0"
         assert validate_ssm_target("mi-0123456789abcdef0") == "mi-0123456789abcdef0"
@@ -6475,14 +6475,14 @@ class TestSsmValidation:
         ],
     )
     def test_rejects_bad_targets(self, bad):
-        from kiro_crew.instances.validation import SsmValidationError, validate_ssm_target
+        from efm_go.instances.validation import SsmValidationError, validate_ssm_target
 
         with pytest.raises(SsmValidationError):
             validate_ssm_target(bad)
 
     def test_profile_and_region(self):
 
-        from kiro_crew.instances.validation import (
+        from efm_go.instances.validation import (
             SsmValidationError,
             validate_aws_profile,
             validate_aws_region,
@@ -6507,7 +6507,7 @@ class TestSsmValidation:
 
     def test_ssm_run_as_accepts_unix_usernames_and_defaults_when_empty(self):
         """Empty means "the default user", never an empty ``sudo -u``."""
-        from kiro_crew.instances.validation import validate_ssm_run_as
+        from efm_go.instances.validation import validate_ssm_run_as
 
         assert validate_ssm_run_as("ubuntu") == "ubuntu"
         assert validate_ssm_run_as("ec2-user") == "ec2-user"
@@ -6519,7 +6519,7 @@ class TestSsmValidation:
 
     def test_ssm_run_as_rejects_injection_and_bad_usernames(self):
         """It is interpolated into `sudo -u <user> -i` on the remote box."""
-        from kiro_crew.instances.validation import SsmValidationError, validate_ssm_run_as
+        from efm_go.instances.validation import SsmValidationError, validate_ssm_run_as
 
         for bad in (
             "root; rm -rf /",
@@ -6563,7 +6563,7 @@ class TestEcsTargetValidation:
         ],
     )
     def test_accepts_well_formed_ecs_targets(self, good):
-        from kiro_crew.instances.validation import validate_ssm_target
+        from efm_go.instances.validation import validate_ssm_target
 
         assert validate_ssm_target(good) == good
 
@@ -6574,13 +6574,13 @@ class TestEcsTargetValidation:
         stripped form passes, so returning the caller's original instead of the
         stripped one would hand back the newline the pattern just refused.
         """
-        from kiro_crew.instances.validation import validate_ssm_target
+        from efm_go.instances.validation import validate_ssm_target
 
         assert validate_ssm_target(f"  {_ECS_OK}\n") == _ECS_OK
 
     def test_ec2_ids_still_accepted_after_widening(self):
         """Widening for Fargate must not disturb the EC2/SSM-managed lane."""
-        from kiro_crew.instances.validation import validate_ssm_target
+        from efm_go.instances.validation import validate_ssm_target
 
         assert validate_ssm_target("i-0123456789abcdef0") == "i-0123456789abcdef0"
         assert validate_ssm_target("mi-0123456789abcdef0") == "mi-0123456789abcdef0"
@@ -6595,7 +6595,7 @@ class TestEcsTargetValidation:
         out. Pinned as its own named test so a future edit back to ``\\d`` fails
         here with an explanation rather than in a security review.
         """
-        from kiro_crew.instances.validation import SsmValidationError, validate_ssm_target
+        from efm_go.instances.validation import SsmValidationError, validate_ssm_target
 
         vector = f"ecs:c_{_ECS_TASK_ID}_{_ECS_TASK_ID}-\u0661234567890"
         with pytest.raises(SsmValidationError):
@@ -6603,7 +6603,7 @@ class TestEcsTargetValidation:
 
     def test_ecs_target_rejects_trailing_newline_via_z_anchor(self):
         """``\\Z`` not ``$``: ``$`` also matches just before a trailing newline."""
-        from kiro_crew.instances.validation import (
+        from efm_go.instances.validation import (
             _ECS_TARGET_RE,
             SsmValidationError,
             validate_ssm_target,
@@ -6616,7 +6616,7 @@ class TestEcsTargetValidation:
             validate_ssm_target(f"{_ECS_OK}\nwhoami")
 
     def test_rejects_values_over_the_length_bound(self):
-        from kiro_crew.instances.validation import (
+        from efm_go.instances.validation import (
             _MAX_SSM_TARGET_LEN,
             SsmValidationError,
             validate_ssm_target,
@@ -6641,7 +6641,7 @@ class TestEcsTargetValidation:
         future hardcoded number fails here instead of quietly shrinking the accept
         set.
         """
-        from kiro_crew.instances.validation import (
+        from efm_go.instances.validation import (
             _ECS_TARGET_RE,
             ssm_target_matches,
             validate_ssm_target,
@@ -6655,7 +6655,7 @@ class TestEcsTargetValidation:
 
     def test_the_bound_is_the_longest_value_the_pattern_accepts(self):
         """Derivation check: the constant equals the longest legal target's length."""
-        from kiro_crew.instances.validation import (
+        from efm_go.instances.validation import (
             _ECS_TARGET_RE,
             _MAX_SSM_TARGET_LEN,
             ssm_target_matches,
@@ -6676,7 +6676,7 @@ class TestEcsTargetValidation:
         no normalisation. Asserted because "normalise before validating" is a
         plausible-sounding change that would silently open the charset.
         """
-        from kiro_crew.instances.validation import SsmValidationError, validate_ssm_target
+        from efm_go.instances.validation import SsmValidationError, validate_ssm_target
 
         fullwidth = f"ecs:\uff43luster_{_ECS_TASK_ID}_{_ECS_RUNTIME_ID}"
         with pytest.raises(SsmValidationError):
@@ -6742,7 +6742,7 @@ class TestEcsTargetValidation:
         makes that safe is asserted in
         :meth:`test_pattern_rejects_surrounding_whitespace` instead.
         """
-        from kiro_crew.instances.validation import SsmValidationError, validate_ssm_target
+        from efm_go.instances.validation import SsmValidationError, validate_ssm_target
 
         with pytest.raises(SsmValidationError):
             validate_ssm_target(vector)
@@ -6761,7 +6761,7 @@ class TestEcsTargetValidation:
         would match, and any caller reaching the pattern without the validator's
         strip would pass a newline through.
         """
-        from kiro_crew.instances.validation import ssm_target_matches, validate_ssm_target
+        from efm_go.instances.validation import ssm_target_matches, validate_ssm_target
 
         assert not ssm_target_matches(whitespace_variant)
         assert validate_ssm_target(whitespace_variant) == _ECS_OK
@@ -6776,7 +6776,7 @@ class TestEcsTargetValidation:
         """
         import re
 
-        from kiro_crew.instances.validation import ssm_target_matches
+        from efm_go.instances.validation import ssm_target_matches
 
         naive = re.compile(r"^ecs:.+_.+_.+$")
         dangerous = {
@@ -6822,7 +6822,7 @@ class TestSsmTargetShapeHasOneDefinition:
         """
         from pathlib import Path
 
-        from kiro_crew.instances import registry
+        from efm_go.instances import registry
 
         source = Path(registry.__file__).read_text(encoding="utf-8")
         # The EC2/SSM-managed shape's hex class, and the ECS shape's cluster bound.
@@ -6833,7 +6833,7 @@ class TestSsmTargetShapeHasOneDefinition:
         assert "ssm_target_matches" in source
 
     def test_registry_and_validator_agree_on_every_shape(self):
-        from kiro_crew.instances.validation import (
+        from efm_go.instances.validation import (
             SsmValidationError,
             ssm_target_matches,
             validate_ssm_target,
@@ -6852,7 +6852,7 @@ class TestSsmTargetShapeHasOneDefinition:
 
     def test_registry_accepts_an_ecs_target_for_a_fargate_record(self, tmp_path):
         """End of the seam: a record carrying an ECS target must persist."""
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
         inst = reg.add(name="Fargate crew", connection_method="fargate", ssm_target=_ECS_OK)
@@ -6862,7 +6862,7 @@ class TestSsmTargetShapeHasOneDefinition:
         assert reloaded is not None and reloaded.ssm_target == _ECS_OK
 
     def test_registry_still_refuses_a_malformed_target(self, tmp_path):
-        from kiro_crew.instances.registry import InstancesRegistry, InvalidInstanceError
+        from efm_go.instances.registry import InstancesRegistry, InvalidInstanceError
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
         with pytest.raises(InvalidInstanceError):
@@ -6877,7 +6877,7 @@ class TestSsmRegistry:
     """Registry support for connection_method + the SSM coordinate fields."""
 
     def _reg(self, tmp_path):
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         return InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -6929,7 +6929,7 @@ class TestSsmRegistry:
         assert reloaded.provisioner_id == "aws_ec2"
 
     def test_ssm_requires_target_and_ssh_requires_host(self, tmp_path):
-        from kiro_crew.instances.registry import InvalidInstanceError
+        from efm_go.instances.registry import InvalidInstanceError
 
         reg = self._reg(tmp_path)
         # ssm without a target is invalid...
@@ -6965,7 +6965,7 @@ class TestSsmRegistry:
     def test_aws_profile_allows_plus_and_rejects_metacharacters(self, tmp_path):
         """The record check accepts '+' (SSO-derived profile names) but still
         refuses whitespace and shell metacharacters, mirroring validation.py."""
-        from kiro_crew.instances.registry import InvalidInstanceError
+        from efm_go.instances.registry import InvalidInstanceError
 
         reg = self._reg(tmp_path)
         inst = reg.add(
@@ -7000,7 +7000,7 @@ class TestSsmRegistry:
         empty "default chain" value is handled by the `if self.aws_profile`
         guard at the registry check site.
         """
-        from kiro_crew.instances import registry, validation
+        from efm_go.instances import registry, validation
 
         assert registry._AWS_PROFILE_RE is validation._AWS_PROFILE_RE
 
@@ -7013,7 +7013,7 @@ class TestSsmRegistry:
         file has no key at all, and a file with an explicit empty string would
         fail validation, so BOTH must resolve to the default.
         """
-        from kiro_crew.instances.registry import Instance
+        from efm_go.instances.registry import Instance
 
         assert Instance.from_dict({"id": "a", "name": "A"}).ssm_run_as == "ec2-user"
         assert Instance.from_dict({"id": "a", "ssm_run_as": ""}).ssm_run_as == "ec2-user"
@@ -7033,7 +7033,7 @@ class TestSsmRegistry:
 
     def test_ssm_run_as_is_validated_on_add(self, tmp_path):
         """User input reaches `sudo -u` on the remote box, so it is validated."""
-        from kiro_crew.instances.registry import InvalidInstanceError
+        from efm_go.instances.registry import InvalidInstanceError
 
         reg = self._reg(tmp_path)
         with pytest.raises(InvalidInstanceError):
@@ -7050,7 +7050,7 @@ class TestSsmRegistry:
 
         UX-review finding: the pattern flowed verbatim into the Settings form.
         """
-        from kiro_crew.instances.registry import InvalidInstanceError
+        from efm_go.instances.registry import InvalidInstanceError
 
         reg = self._reg(tmp_path)
         with pytest.raises(InvalidInstanceError) as e:
@@ -7072,7 +7072,7 @@ class TestSsmTunnelArgv:
     def _bare_resolver(self, monkeypatch):
         """Pin the shared aws-CLI resolver to the bare name so the
         argv-shape assertions stay deterministic across hosts."""
-        from kiro_crew.cloud import ssm
+        from efm_go.cloud import ssm
 
         monkeypatch.setattr(ssm, "resolve_aws_bin", lambda: "aws")
 
@@ -7081,8 +7081,8 @@ class TestSsmTunnelArgv:
         probes the filesystem — start() must run it in a worker thread, never
         on the gateway event loop (a stalled network mount on PATH would
         otherwise freeze every request)."""
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.ssh_tunnel_manager import _SshTunnel
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.ssh_tunnel_manager import _SshTunnel
 
         seen: dict = {}
 
@@ -7145,7 +7145,7 @@ class TestSsmTunnelArgv:
         assert seen["on_loop"] is False  # built in a worker thread, not on the loop
 
     def test_argv_shape(self):
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssm_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssm_tunnel_argv
 
         argv = _build_ssm_tunnel_argv(
             "i-0123456789abcdef0", 7777, 7777, profile="dev", region="eu-west-2"
@@ -7160,14 +7160,14 @@ class TestSsmTunnelArgv:
         assert all(isinstance(a, str) for a in argv)
 
     def test_omits_empty_profile_and_region(self):
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssm_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssm_tunnel_argv
 
         argv = _build_ssm_tunnel_argv("i-0123456789abcdef0", 7777, 7777)
         assert "--profile" not in argv and "--region" not in argv
 
     def test_ssh_argv_unchanged_for_ssh_instances(self):
         """Regression guard: the SSH argv must not gain SSM flags."""
-        from kiro_crew.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
+        from efm_go.instances.ssh_tunnel_manager import _build_ssh_tunnel_argv
 
         argv = _build_ssh_tunnel_argv("dev-1", 7777, 7777)
         assert argv[0] == "ssh" and "-N" in argv
@@ -7189,7 +7189,7 @@ class TestSsmTunnelProcessGroup:
     """
 
     def _tunnel(self, transport):
-        from kiro_crew.instances.ssh_tunnel_manager import _SshTunnel
+        from efm_go.instances.ssh_tunnel_manager import _SshTunnel
 
         return _SshTunnel(
             instance_id="i1",
@@ -7203,7 +7203,7 @@ class TestSsmTunnelProcessGroup:
     @pytest.mark.asyncio
     async def test_ssm_spawn_passes_both_isolation_kwargs(self, monkeypatch):
         """POSIX gets setsid; Windows gets CREATE_NEW_PROCESS_GROUP."""
-        import kiro_crew.instances.ssh_tunnel_manager as mod
+        import efm_go.instances.ssh_tunnel_manager as mod
 
         seen = {}
 
@@ -7229,7 +7229,7 @@ class TestSsmTunnelProcessGroup:
     @pytest.mark.asyncio
     async def test_ssh_spawn_gets_no_process_group(self, monkeypatch):
         """Regression guard: the SSH transport's spawn is unchanged."""
-        import kiro_crew.instances.ssh_tunnel_manager as mod
+        import efm_go.instances.ssh_tunnel_manager as mod
 
         seen = {}
 
@@ -7256,8 +7256,8 @@ class TestSsmTunnelProcessGroup:
         ``ProxyCommand`` (an SSM connect helper looks the plugin up by name), so
         it gets the same appended dirs — once its own head resolves absolutely.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as mod
-        from kiro_crew.deploy import engine
+        import efm_go.instances.ssh_tunnel_manager as mod
+        from efm_go.deploy import engine
 
         seen = {}
 
@@ -7306,7 +7306,7 @@ class TestSsmTunnelProcessGroup:
 
     def test_teardown_routes_through_the_platform_shim(self, monkeypatch):
         """Not raw os.killpg — that leaves the plugin alive on Windows."""
-        import kiro_crew.instances.ssh_tunnel_manager as mod
+        import efm_go.instances.ssh_tunnel_manager as mod
 
         calls = []
         monkeypatch.setattr(
@@ -7319,7 +7319,7 @@ class TestSsmTunnelProcessGroup:
 
     def test_teardown_reports_undelivered_instead_of_raising(self, monkeypatch):
         """The shim propagates; a failure must degrade to the single-proc kill."""
-        import kiro_crew.instances.ssh_tunnel_manager as mod
+        import efm_go.instances.ssh_tunnel_manager as mod
 
         for exc in (ProcessLookupError, PermissionError, OSError, ValueError):
 
@@ -7346,8 +7346,8 @@ class TestSsmTransportSelection:
         _patch_port_probe(monkeypatch)
 
     def _mgr(self, tmp_path, *, mint=None, connect_timeout_secs=None):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         async def ok_mint(
             host,
@@ -7383,8 +7383,8 @@ class TestSsmTransportSelection:
         ],
     )
     def test_connect_timeout_matrix(self, tmp_path, configured, ssh_expected, ssm_expected):
-        from kiro_crew.config.loader import InstancesConfig
-        from kiro_crew.instances.constants import (
+        from efm_go.config.loader import InstancesConfig
+        from efm_go.instances.constants import (
             CONNECT_TIMEOUT_CEILING_SECS,
             DEFAULT_CONNECT_TIMEOUT_SECS,
             DEFAULT_SSM_CONNECT_TIMEOUT_SECS,
@@ -7415,8 +7415,8 @@ class TestSsmTransportSelection:
 
     @pytest.mark.asyncio
     async def test_ssm_instance_uses_ssm_transport_and_ssm_mint(self, tmp_path, monkeypatch):
-        import kiro_crew.instances.ssh_tunnel_manager as mod
-        from kiro_crew.instances.constants import DEFAULT_SSM_CONNECT_TIMEOUT_SECS
+        import efm_go.instances.ssh_tunnel_manager as mod
+        from efm_go.instances.constants import DEFAULT_SSM_CONNECT_TIMEOUT_SECS
 
         seen = {}
 
@@ -7427,7 +7427,7 @@ class TestSsmTransportSelection:
 
         monkeypatch.setattr(mod, "mint_remote_token_ssm", fake_ssm_mint)
         # The plugin presence check must not gate the unit test.
-        monkeypatch.setattr("kiro_crew.cloud.ssm.session_manager_plugin_installed", lambda: True)
+        monkeypatch.setattr("efm_go.cloud.ssm.session_manager_plugin_installed", lambda: True)
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(
@@ -7455,8 +7455,8 @@ class TestSsmTransportSelection:
     @pytest.mark.asyncio
     async def test_mint_timeout_threads_to_ssh_mint(self, tmp_path):
         """A configured instances.mint_timeout_secs reaches the ssh mint call."""
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         seen = {}
 
@@ -7488,10 +7488,10 @@ class TestSsmTransportSelection:
     @pytest.mark.asyncio
     async def test_mint_timeout_ssm_default_and_override(self, tmp_path, monkeypatch):
         """SSM mint keeps its higher default; an explicit override wins for it too."""
-        import kiro_crew.instances.ssh_tunnel_manager as mod
-        from kiro_crew.instances.constants import DEFAULT_SSM_MINT_TIMEOUT_SECS
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        import efm_go.instances.ssh_tunnel_manager as mod
+        from efm_go.instances.constants import DEFAULT_SSM_MINT_TIMEOUT_SECS
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         seen = {}
 
@@ -7500,7 +7500,7 @@ class TestSsmTransportSelection:
             return "SSM_TOKEN"
 
         monkeypatch.setattr(mod, "mint_remote_token_ssm", fake_ssm_mint)
-        monkeypatch.setattr("kiro_crew.cloud.ssm.session_manager_plugin_installed", lambda: True)
+        monkeypatch.setattr("efm_go.cloud.ssm.session_manager_plugin_installed", lambda: True)
 
         def add_ssm(reg, iid, port):
             reg.add(
@@ -7544,7 +7544,7 @@ class TestSsmTransportSelection:
         """
         import threading
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         loop_thread = threading.get_ident()
         ran_on: dict = {}
@@ -7553,7 +7553,7 @@ class TestSsmTransportSelection:
             ran_on["thread"] = threading.get_ident()
             return False  # short-circuit: no tunnel spawn, error status asserted
 
-        monkeypatch.setattr("kiro_crew.cloud.ssm.session_manager_plugin_installed", _probe)
+        monkeypatch.setattr("efm_go.cloud.ssm.session_manager_plugin_installed", _probe)
         reg, mgr = self._mgr(tmp_path)
         reg.add(
             name="EC2",
@@ -7571,9 +7571,9 @@ class TestSsmTransportSelection:
 
     @pytest.mark.asyncio
     async def test_ssm_connect_fails_clean_without_plugin(self, tmp_path, monkeypatch):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
-        monkeypatch.setattr("kiro_crew.cloud.ssm.session_manager_plugin_installed", lambda: False)
+        monkeypatch.setattr("efm_go.cloud.ssm.session_manager_plugin_installed", lambda: False)
         reg, mgr = self._mgr(tmp_path)
         reg.add(
             name="EC2",
@@ -7594,7 +7594,7 @@ class TestSsmTransportSelection:
         """A registry record hand-edited to a bad target must not reach argv."""
         import dataclasses
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(
@@ -7657,7 +7657,7 @@ class TestSsmMintOutputRedaction:
     @staticmethod
     def _patch_failing_mint(monkeypatch, stdout: str):
         """Make the send-command chokepoint report a partially-successful mint."""
-        from kiro_crew.cloud import ssm as cloud_ssm
+        from efm_go.cloud import ssm as cloud_ssm
 
         def fake_run_command(target, command, profile, region, **kwargs):
             return cloud_ssm.CommandResult(status="Failed", stdout=stdout, stderr="", exit_code=1)
@@ -7675,7 +7675,7 @@ class TestSsmMintOutputRedaction:
         assertion is on the real boundary (the exception text), not on the helper
         in isolation.
         """
-        from kiro_crew.instances import ssm_token_mint as sm
+        from efm_go.instances import ssm_token_mint as sm
 
         stdout = f"starting mint\n{stdout_template.format(token=secret)}\n"
         self._patch_failing_mint(monkeypatch, stdout)
@@ -7700,8 +7700,8 @@ class TestSsmMintOutputRedaction:
         new token shape, the SSM side cannot silently stay behind: this fails
         instead of a leak going unnoticed.
         """
-        from kiro_crew.instances import ssm_token_mint as sm
-        from kiro_crew.instances import token_mint as tm
+        from efm_go.instances import ssm_token_mint as sm
+        from efm_go.instances import token_mint as tm
 
         text = f"starting mint\n{stdout_template.format(token=secret)}\n"
         assert secret not in tm._redacted_output_tail(
@@ -7717,7 +7717,7 @@ class TestSsmDiagnostics:
 
     @pytest.mark.asyncio
     async def test_unreachable_node_is_first_rung(self, monkeypatch):
-        import kiro_crew.instances.diagnostics as diag
+        import efm_go.instances.diagnostics as diag
 
         async def no_node(*a, **k):
             return False
@@ -7731,7 +7731,7 @@ class TestSsmDiagnostics:
 
     @pytest.mark.asyncio
     async def test_remote_down_then_not_connected_then_ok(self, monkeypatch):
-        import kiro_crew.instances.diagnostics as diag
+        import efm_go.instances.diagnostics as diag
 
         async def node_ok(*a, **k):
             return True
@@ -7762,7 +7762,7 @@ class TestSsmDiagnostics:
 
     @pytest.mark.asyncio
     async def test_invalid_target_short_circuits(self):
-        import kiro_crew.instances.diagnostics as diag
+        import efm_go.instances.diagnostics as diag
 
         res = await diag.diagnose_instance_ssm("-oProxyCommand=evil", 7777, 7777)
         assert res.code == diag.UNKNOWN
@@ -7773,7 +7773,7 @@ class TestSsmExitErrorClassification:
     """SSM stderr must be classified with SSM vocabulary, not ssh's."""
 
     def _tunnel(self, stderr):
-        from kiro_crew.instances.ssh_tunnel_manager import _SshTunnel
+        from efm_go.instances.ssh_tunnel_manager import _SshTunnel
 
         t = _SshTunnel("ec2", "", 7777, 7777, transport="ssm", ssm_target="i-0123456789abcdef0")
         t._stderr_buf = stderr
@@ -7802,7 +7802,7 @@ class TestSsmExitErrorClassification:
 
     def test_ssh_classification_unchanged(self):
         """Regression guard: the ssh classifier still owns ssh instances."""
-        from kiro_crew.instances.ssh_tunnel_manager import _SshTunnel
+        from efm_go.instances.ssh_tunnel_manager import _SshTunnel
 
         t = _SshTunnel("dev", "dev-1", 7777, 7777)
         t._stderr_buf = "Permission denied (publickey)."
@@ -7818,13 +7818,13 @@ class TestForwarderPidHints:
 
     @pytest.fixture(autouse=True)
     def _free_ports(self, monkeypatch):
-        import kiro_crew.instances.ssh_tunnel_manager as stm
+        import efm_go.instances.ssh_tunnel_manager as stm
 
         monkeypatch.setattr(stm, "_is_port_free", lambda port, host="127.0.0.1": True)
 
     def _mgr(self, tmp_path, *, factory=_FakeTunnel):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -7844,7 +7844,7 @@ class TestForwarderPidHints:
         )
 
     def test_registry_field_default_roundtrip_and_validation(self, tmp_path):
-        from kiro_crew.instances.registry import Instance, InvalidInstanceError
+        from efm_go.instances.registry import Instance, InvalidInstanceError
 
         # Older registry files have no keys -> sentinel defaults.
         old = Instance.from_dict({"id": "a", "name": "A"})
@@ -7872,9 +7872,9 @@ class TestForwarderPidHints:
 
     @pytest.mark.asyncio
     async def test_connect_persists_forwarder_identity(self, tmp_path, monkeypatch):
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         # A REAL pid (our own), so the recorded start-time identity is the
         # genuine platform value rather than "".
@@ -7925,7 +7925,7 @@ class TestForwarderPidHints:
     async def test_mark_recovered_refreshes_forwarder_identity(self, tmp_path):
         """A rebuild replaces the child; the recorded identity must move with
         it, or the replacement leaks unrecorded at the next hard-kill."""
-        from kiro_crew import platform_compat as pc
+        from efm_go import platform_compat as pc
 
         def factory(*a, **k):
             t = _FakeTunnel(*a, **k)
@@ -7958,8 +7958,8 @@ class TestForwarderPidHints:
         desyncs ``forwarder_sig`` — a MAC over the port — so the orphan reclaim
         refuses the very child this write exists to record.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
 
         my_pid = os.getpid()
         key = b"k" * 32
@@ -8007,8 +8007,8 @@ class TestForwarderPidHints:
         field can slip past; comparing the recorded KEY SETS is what fails when
         the two writes disagree.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
 
         monkeypatch.setattr(stm, "_reclaim_identity_key", lambda: b"k" * 32)
         # Pin the start time: on a host where reading it fails (a sandbox that
@@ -8067,7 +8067,7 @@ def _route_pinned_kill_to_kill_pid(monkeypatch):
     The real ``kill_pid_pinned`` opens a handle to the (fake) pid on Windows and
     refuses, so the signal-sequence tests below would see no signal there.
     """
-    from kiro_crew import platform_compat as pc
+    from efm_go import platform_compat as pc
 
     monkeypatch.setattr(pc, "kill_pid_pinned", lambda pid, start, sig: pc.kill_pid(pid, sig))
 
@@ -8081,7 +8081,7 @@ class TestForwarderOrphanState:
     START = "1000"
 
     def _patch(self, monkeypatch, *, windows, ppid, parent_start=None, parent_exists=True):
-        from kiro_crew import platform_compat as pc
+        from efm_go import platform_compat as pc
 
         seen: list = []
         monkeypatch.setattr(pc, "IS_WINDOWS", windows)
@@ -8101,7 +8101,7 @@ class TestForwarderOrphanState:
 
     @pytest.mark.parametrize(("ppid", "orphaned"), [(1, True), (777, False), (-1, False)])
     def test_posix_is_exactly_reparented_to_init(self, monkeypatch, ppid, orphaned):
-        from kiro_crew.instances.ssh_tunnel_manager import _forwarder_orphan_state
+        from efm_go.instances.ssh_tunnel_manager import _forwarder_orphan_state
 
         seen = self._patch(
             monkeypatch, windows=False, ppid=ppid, parent_start="1", parent_exists=False
@@ -8112,7 +8112,7 @@ class TestForwarderOrphanState:
         assert seen == []
 
     def test_windows_parent_gone_is_orphaned(self, monkeypatch):
-        from kiro_crew.instances.ssh_tunnel_manager import _forwarder_orphan_state
+        from efm_go.instances.ssh_tunnel_manager import _forwarder_orphan_state
 
         self._patch(
             monkeypatch, windows=True, ppid=self.PARENT, parent_start=None, parent_exists=False
@@ -8121,14 +8121,14 @@ class TestForwarderOrphanState:
         assert _forwarder_orphan_state(self.FWD, self.START) == (True, self.PARENT)
 
     def test_windows_parent_alive_and_older_is_refused(self, monkeypatch):
-        from kiro_crew.instances.ssh_tunnel_manager import _forwarder_orphan_state
+        from efm_go.instances.ssh_tunnel_manager import _forwarder_orphan_state
 
         self._patch(monkeypatch, windows=True, ppid=self.PARENT, parent_start="999")
 
         assert _forwarder_orphan_state(self.FWD, self.START) == (False, self.PARENT)
 
     def test_windows_parent_pid_reused_by_later_process_is_orphaned(self, monkeypatch):
-        from kiro_crew.instances.ssh_tunnel_manager import _forwarder_orphan_state
+        from efm_go.instances.ssh_tunnel_manager import _forwarder_orphan_state
 
         self._patch(monkeypatch, windows=True, ppid=self.PARENT, parent_start="1001")
 
@@ -8136,14 +8136,14 @@ class TestForwarderOrphanState:
 
     @pytest.mark.parametrize("parent_start", ["1000", "garbage", "Mon Oct  5 05:56:00 2026"])
     def test_windows_unsettled_order_is_refused(self, monkeypatch, parent_start):
-        from kiro_crew.instances.ssh_tunnel_manager import _forwarder_orphan_state
+        from efm_go.instances.ssh_tunnel_manager import _forwarder_orphan_state
 
         self._patch(monkeypatch, windows=True, ppid=self.PARENT, parent_start=parent_start)
 
         assert _forwarder_orphan_state(self.FWD, self.START) == (False, self.PARENT)
 
     def test_windows_parent_exists_but_unreadable_is_refused(self, monkeypatch):
-        from kiro_crew.instances.ssh_tunnel_manager import _forwarder_orphan_state
+        from efm_go.instances.ssh_tunnel_manager import _forwarder_orphan_state
 
         self._patch(
             monkeypatch, windows=True, ppid=self.PARENT, parent_start=None, parent_exists=True
@@ -8153,7 +8153,7 @@ class TestForwarderOrphanState:
 
     @pytest.mark.parametrize("ppid", [-1, 0])
     def test_windows_unreadable_parent_pid_is_refused(self, monkeypatch, ppid):
-        from kiro_crew.instances.ssh_tunnel_manager import _forwarder_orphan_state
+        from efm_go.instances.ssh_tunnel_manager import _forwarder_orphan_state
 
         seen = self._patch(monkeypatch, windows=True, ppid=ppid, parent_exists=False)
 
@@ -8179,8 +8179,8 @@ class TestOrphanForwarderReclaim:
     """
 
     def _mgr(self, tmp_path, *, base_port):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -8243,7 +8243,7 @@ class TestOrphanForwarderReclaim:
     @staticmethod
     def _fake_orphan(monkeypatch):
         """Make the orphan gate see every pid as init-reparented (test scope)."""
-        from kiro_crew import platform_compat as pc
+        from efm_go import platform_compat as pc
 
         monkeypatch.setattr(pc, "get_ppid", lambda pid: 1)
 
@@ -8258,7 +8258,7 @@ class TestOrphanForwarderReclaim:
         compare_digest gate) fully real while making signatures computable by
         the test exactly the way the pre-kill gateway would have.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as stm
+        import efm_go.instances.ssh_tunnel_manager as stm
 
         monkeypatch.setattr(stm, "_reclaim_identity_key", lambda: cls._TEST_IDENTITY_KEY)
 
@@ -8289,10 +8289,10 @@ class TestOrphanForwarderReclaim:
     async def test_hard_kill_leaked_forwarder_is_reclaimed_by_pid(self, tmp_path, monkeypatch):
         """hard-kill -> restart -> reconnect: the recorded child is terminated
         and its port released; connect then succeeds."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.port_allocator import _is_port_free
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.port_allocator import _is_port_free
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         proc, port, argv = self._spawn_port_holder()
         try:
@@ -8359,8 +8359,8 @@ class TestOrphanForwarderReclaim:
         check is real, and the argv handed to the identity check is compared
         with the one ``_SshTunnel`` spawns for the same instance.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew.instances import token_mint
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go.instances import token_mint
 
         head = str(tmp_path / "bin" / "ssh")
         monkeypatch.setattr(token_mint, "resolve_ssh_bin", lambda: head)
@@ -8410,9 +8410,9 @@ class TestOrphanForwarderReclaim:
         the grace (identity re-confirmed before the destructive escalation)."""
         import signal as signal_mod
 
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         code = (
             "import signal, socket, sys, time\n"
@@ -8471,9 +8471,9 @@ class TestOrphanForwarderReclaim:
         missing or wrong — authorizes nothing, even with the orphan gate open
         and the argv matching. Only the gateway can mint the signature (its
         key derives from the deny-listed SEL trust root)."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         proc, port, argv = self._spawn_port_holder()
         try:
@@ -8513,9 +8513,9 @@ class TestOrphanForwarderReclaim:
         (real pid, real start time, matching argv). The orphan gate must
         refuse it: a process whose parent is alive belongs to a running
         gateway and is never a hard-kill leak."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         # Direct child of the test process == a live parent (this process).
         proc, port, argv = self._spawn_port_holder()
@@ -8552,8 +8552,8 @@ class TestOrphanForwarderReclaim:
         whose argv happens to match, but its start-time identity does not.
         Nothing may be signalled — the start-time pin is what defeats a
         recycled pid running an identical command line."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         proc, port, argv = self._spawn_port_holder()
         try:
@@ -8588,8 +8588,8 @@ class TestOrphanForwarderReclaim:
         manager did not spawn (its argv is not the forward command line). It
         must be left alone even with a matching start time and an open orphan
         gate."""
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         proc, port, _argv = self._spawn_port_holder()
         try:
@@ -8628,8 +8628,8 @@ class TestOrphanForwarderReclaim:
         (on POSIX that delegates straight to ``kill_pid``). A Windows SSM forwarder
         is not signalled at all: the group signal there is an unpinned
         ``taskkill /T``, and ending the wrapper alone strands its plugin child."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
 
         pinned: list = []
         bare: list = []
@@ -8677,8 +8677,8 @@ class TestOrphanForwarderReclaim:
         ``IS_WINDOWS`` is flipped only inside the wrapped call, so nothing else
         in ``connect`` takes a Windows code path on a POSIX host.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
 
         real_state = stm._forwarder_orphan_state
         fake_ppid = self._FAKE_PARENT_PID
@@ -8731,9 +8731,9 @@ class TestOrphanForwarderReclaim:
         The worker itself is replaced by a recorder, so this runs on every
         platform: the kill and the exact-argv read are pinned by their own tests
         (``_verify_and_reclaim_forwarder`` and ``TestProcessArgvMatchesExact``)."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         proc, port, argv = self._spawn_port_holder()
         try:
@@ -8779,9 +8779,9 @@ class TestOrphanForwarderReclaim:
         this gateway or a second one on the box. Refused, and the miss is logged."""
         import logging
 
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         proc, port, argv = self._spawn_port_holder()
         try:
@@ -8819,9 +8819,9 @@ class TestOrphanForwarderReclaim:
     ):
         """With the orphan gate OPEN on either platform's test, a forged MAC, a
         start-time mismatch or a foreign argv still signals nothing."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         proc, port, argv = self._spawn_port_holder()
         try:
@@ -8853,7 +8853,7 @@ class TestOrphanForwarderReclaim:
     async def test_unrecorded_port_holder_is_never_signalled(self, tmp_path):
         """No recorded identity -> no candidate: the reclaim never scans the
         process table for whoever holds the port."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         proc, port, _argv = self._spawn_port_holder()
         try:
@@ -8873,9 +8873,9 @@ class TestOrphanForwarderReclaim:
         """A free recorded port means nothing leaked: the recorded pid is not
         signalled even when its identity WOULD match (e.g. the pid was
         recycled onto an innocent process while nothing holds the port)."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         code = "import sys, time; sys.stdout.write('R'); sys.stdout.flush(); time.sleep(120)"
         argv = [sys.executable, "-c", code]
@@ -8927,8 +8927,8 @@ class TestOrphanForwarderReclaim:
         families here would report a fully reclaimed forwarder as ``not_gone``
         and record that wrong outcome in the SEL audit.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
 
         squatter = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         squatter.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
@@ -8963,8 +8963,8 @@ class TestOrphanForwarderReclaim:
         start-time identity during the TERM grace (exit + recycle inside a
         poll gap, which pid_exists cannot observe), the destructive SIGKILL is
         withheld — leak-not-mis-kill."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
 
         delivered: list[int] = []
         starts = iter(["identity-A", "identity-B"])  # pre-TERM, then re-check
@@ -8990,8 +8990,8 @@ class TestOrphanForwarderReclaim:
         poll gap) is NOT a safe SIGKILL fall-through: getpgid on a recycled
         pid would resolve the REPLACEMENT process. No verified identity, no
         SIGKILL."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
 
         delivered: list[int] = []
         starts = iter(["identity-A", None])  # pre-TERM ok; re-check: pid gone
@@ -9025,8 +9025,8 @@ class TestOrphanForwarderReclaim:
         same-second pid reuse can keep it matching — the argv half of the
         re-check is what breaks the tie. argv mismatch at escalation time
         withholds the SIGKILL."""
-        import kiro_crew.instances.ssh_tunnel_manager as stm
-        from kiro_crew import platform_compat as pc
+        import efm_go.instances.ssh_tunnel_manager as stm
+        from efm_go import platform_compat as pc
 
         delivered: list[int] = []
         argv_answers = iter([True, False])  # pre-TERM ok; re-check: different argv
@@ -9061,8 +9061,8 @@ class TestProxyRequest:
         _patch_port_probe(monkeypatch)
 
     def _mgr(self, tmp_path, *, mint=None, factory=_FakeTunnel):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -9107,7 +9107,7 @@ class TestProxyRequest:
 
     @pytest.mark.asyncio
     async def test_not_connected_raises_typed_error(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         _reg, mgr = self._mgr(tmp_path)
         with pytest.raises(ProxyRequestError) as ei:
@@ -9120,7 +9120,7 @@ class TestProxyRequest:
     async def test_success_sends_port_scoped_cookie_and_refuses_redirects(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.instances import ssh_tunnel_manager as m
+        from efm_go.instances import ssh_tunnel_manager as m
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9158,7 +9158,7 @@ class TestProxyRequest:
 
     @pytest.mark.asyncio
     async def test_401_gets_exactly_one_remint_retry(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as m
+        from efm_go.instances import ssh_tunnel_manager as m
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9191,7 +9191,7 @@ class TestProxyRequest:
 
     @pytest.mark.asyncio
     async def test_session_is_exchanged_once_per_minted_link(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as m
+        from efm_go.instances import ssh_tunnel_manager as m
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9217,7 +9217,7 @@ class TestProxyRequest:
     async def test_failed_exchange_sends_no_link_and_remints(self, tmp_path, monkeypatch):
         """A link whose exchange fails is never sent as a cookie; the
         peer's refusal drives the single re-mint, whose fresh link exchanges."""
-        from kiro_crew.instances import ssh_tunnel_manager as m
+        from efm_go.instances import ssh_tunnel_manager as m
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9296,8 +9296,8 @@ class TestProxyRequest:
         """An exchange the peer never answered is not a refusal: the request is
         not sent credential-less, the single re-mint is not spent on it, and
         the caller learns the exchange failed rather than "peer rejected"."""
-        from kiro_crew.instances import ssh_tunnel_manager as m
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances import ssh_tunnel_manager as m
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9334,8 +9334,8 @@ class TestProxyRequest:
         """A peer that answered 500 to the link did not refuse it: the request
         is not sent credential-less, the single re-mint is not spent on it,
         and the caller learns the exchange failed rather than "peer rejected"."""
-        from kiro_crew.instances import ssh_tunnel_manager as m
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances import ssh_tunnel_manager as m
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9371,8 +9371,8 @@ class TestProxyRequest:
         """A peer that answered 401/403 to the link is the case a re-mint fixes:
         the request goes out without a cookie, the 403 drives ONE re-mint,
         and a second refusal is the typed credential failure."""
-        from kiro_crew.instances import ssh_tunnel_manager as m
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances import ssh_tunnel_manager as m
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9439,7 +9439,7 @@ class TestProxyRequest:
     async def test_link_is_exchanged_at_connect_while_fresh(self, tmp_path, monkeypatch):
         """A request made after the link's click window still carries a
         session, with no re-mint on the request path."""
-        from kiro_crew.instances import ssh_tunnel_manager as m
+        from efm_go.instances import ssh_tunnel_manager as m
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9468,8 +9468,8 @@ class TestProxyRequest:
     ):
         """Where a re-mint cannot run, the session obtained at mint time
         still authenticates every peer request kind."""
-        from kiro_crew.instances import ssh_tunnel_manager as m
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances import ssh_tunnel_manager as m
+        from efm_go.instances.token_mint import TokenMintError
 
         mints = {"fail": False}
 
@@ -9531,7 +9531,7 @@ class TestProxyRequest:
     async def test_exchange_link_keeps_the_session_cookie_the_peer_sets(self):
         from aiohttp import web
 
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager, _PeerUnavailable
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager, _PeerUnavailable
 
         seen: list = []
 
@@ -9589,8 +9589,8 @@ class TestProxyRequest:
         """
         from aiohttp import web
 
-        from kiro_crew.instances import ssh_tunnel_manager as m
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances import ssh_tunnel_manager as m
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         peer_delay = 0.3
         monkeypatch.setattr(m, "_TOKEN_PROBE_TIMEOUT", peer_delay / 6)
@@ -9618,8 +9618,8 @@ class TestProxyRequest:
 
     @pytest.mark.asyncio
     async def test_persistent_401_raises_unauthorized_not_a_loop(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as m
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances import ssh_tunnel_manager as m
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9651,8 +9651,8 @@ class TestProxyRequest:
         through to the caller as a bare peer 401 — the UI would read "the chat
         endpoint said no" instead of a credential failure, with no coded error.
         """
-        from kiro_crew.instances import ssh_tunnel_manager as m
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances import ssh_tunnel_manager as m
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9679,8 +9679,8 @@ class TestProxyRequest:
 
     @pytest.mark.asyncio
     async def test_transport_error_maps_to_unreachable(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as m
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances import ssh_tunnel_manager as m
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9725,8 +9725,8 @@ class TestPeerRequestSharedDance:
         _patch_port_probe(monkeypatch)
 
     def _mgr(self, tmp_path):
-        from kiro_crew.instances.registry import InstancesRegistry
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.registry import InstancesRegistry
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
 
@@ -9757,7 +9757,7 @@ class TestPeerRequestSharedDance:
 
     @pytest.mark.asyncio
     async def test_peer_cookie_header_refuses_when_no_credential(self, tmp_path):
-        from kiro_crew.instances.ssh_tunnel_manager import _PeerUnavailable
+        from efm_go.instances.ssh_tunnel_manager import _PeerUnavailable
 
         _reg, mgr = self._mgr(tmp_path)
         with pytest.raises(_PeerUnavailable) as ei:
@@ -9773,7 +9773,7 @@ class TestPeerRequestSharedDance:
         helper's `kind` would be tidier and wrong — this is the drift guard that
         catches it, and it is the reason the codes are literals at each site.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         _reg, mgr = self._mgr(tmp_path)
 
@@ -9793,7 +9793,7 @@ class TestPeerRequestSharedDance:
     @pytest.mark.asyncio
     async def test_each_caller_keeps_its_own_no_credential_code(self, tmp_path):
         """Same split for the missing-credential condition, on a LIVE tunnel."""
-        from kiro_crew.instances.ssh_tunnel_manager import ProxyRequestError
+        from efm_go.instances.ssh_tunnel_manager import ProxyRequestError
 
         reg, mgr = self._mgr(tmp_path)
         reg.add(name="CD", ssh_host="cd-1-alias", instance_id="cd-1")
@@ -9824,7 +9824,7 @@ class TestPeerRequestSharedDance:
         """
         import inspect
 
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         params = inspect.signature(SshTunnelManager.proxy_request).parameters
         assert "timeout" not in params
@@ -9852,10 +9852,10 @@ class TestProxyHandlerPolicy:
         # The proxy requires the positively-identified OWNER (same bar as
         # federated search); the fake request has no real token subject, so
         # satisfy the gate explicitly. The deny path has its own test below.
-        from kiro_crew.dashboard.handlers import source_providers as sp
+        from efm_go.dashboard.handlers import source_providers as sp
 
         monkeypatch.setattr(sp, "is_owner_dashboard_request", lambda r: True)
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
         state = _State(reg, manager if manager != "stub" else object())
@@ -9875,7 +9875,7 @@ class TestProxyHandlerPolicy:
         handler now returns from the except block, so exactly one write is
         attempted after the reset: none.
         """
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         writes: list[str] = []
 
@@ -9906,7 +9906,7 @@ class TestProxyHandlerPolicy:
                     content=types.SimpleNamespace(iter_any=_chunks),
                 )
 
-        from kiro_crew.dashboard import handlers_instances as hi
+        from efm_go.dashboard import handlers_instances as hi
 
         req = self._req(tmp_path, monkeypatch, path="api/chat/stream", manager=_Mgr())
         req.body_exists = False
@@ -9919,8 +9919,8 @@ class TestProxyHandlerPolicy:
     async def test_non_owner_identity_is_refused(self, tmp_path, monkeypatch):
         """A Slack-minted dashboard identity passes _guard but must NOT reach
         the peer: the proxy executes with the owner's manager-held credential."""
-        from kiro_crew.dashboard.handlers import source_providers as sp
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers import source_providers as sp
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="api/chat/slots")
         monkeypatch.setattr(sp, "is_owner_dashboard_request", lambda r: False)
@@ -9931,7 +9931,7 @@ class TestProxyHandlerPolicy:
 
     @pytest.mark.asyncio
     async def test_disabled_feature_is_403(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="api/chat/slots", enabled=False)
         resp = await api_instances_proxy(req)
@@ -9939,7 +9939,7 @@ class TestProxyHandlerPolicy:
 
     @pytest.mark.asyncio
     async def test_traversal_is_refused_before_any_url_is_built(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="api/../etc/passwd")
         resp = await api_instances_proxy(req)
@@ -9947,7 +9947,7 @@ class TestProxyHandlerPolicy:
 
     @pytest.mark.asyncio
     async def test_non_api_path_is_refused(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="assets/main.js")
         resp = await api_instances_proxy(req)
@@ -9959,7 +9959,7 @@ class TestProxyHandlerPolicy:
         """The allowlist subsumes the old explicit deny: `api/instances` is not
         an allowed prefix, so one hub still cannot chain through a peer into a
         third machine's SSH control plane."""
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="api/instances/other/proxy/api/status")
         resp = await api_instances_proxy(req)
@@ -9972,7 +9972,7 @@ class TestProxyHandlerPolicy:
         reply passes the content-type gate, so a deny-only policy would carry
         a minted peer token back through the hub in-band. The allowlist is the
         no-remote-credential-on-hub invariant, pinned here rather than in prose."""
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="api/token/local")
         resp = await api_instances_proxy(req)
@@ -9994,7 +9994,7 @@ class TestProxyHandlerPolicy:
         """The vet policy is a positive prefix allowlist (`api/chat` today):
         anything the feature never asked for is refused by default instead of
         proxied silently — including every future sensitive peer endpoint."""
-        from kiro_crew.dashboard.handlers_instances import (
+        from efm_go.dashboard.handlers_instances import (
             _PROXY_PATH_DENIED_REASON,
             _proxy_canonical_path,
         )
@@ -10006,7 +10006,7 @@ class TestProxyHandlerPolicy:
     def test_bare_chat_prefix_itself_is_forwarded(self):
         """`POST /api/chat` is the primary send route the feature rides on —
         the prefix itself must pass, not only paths strictly beneath it."""
-        from kiro_crew.dashboard.handlers_instances import _proxy_canonical_path
+        from efm_go.dashboard.handlers_instances import _proxy_canonical_path
 
         assert _proxy_canonical_path("api/chat") == ("api/chat", "")
         assert _proxy_canonical_path("/api/chat/") == ("api/chat", "")
@@ -10016,7 +10016,7 @@ class TestProxyHandlerPolicy:
         own SSE broadcast, carrying session-list and slot-state changes while the
         per-turn reply streams back from `api/chat`. It is a leaf endpoint, so
         the bare prefix is the whole surface this row grants."""
-        from kiro_crew.dashboard.handlers_instances import _proxy_canonical_path
+        from efm_go.dashboard.handlers_instances import _proxy_canonical_path
 
         assert _proxy_canonical_path("api/stream") == ("api/stream", "")
         assert _proxy_canonical_path("/api/stream/") == ("api/stream", "")
@@ -10039,7 +10039,7 @@ class TestProxyHandlerPolicy:
         Protocols` to pass the reply content-type gate that exists to stop a peer
         serving active content onto the authenticated hub origin.
         """
-        from kiro_crew.dashboard.handlers_instances import (
+        from efm_go.dashboard.handlers_instances import (
             _PROXY_PATH_DENIED_REASON,
             _proxy_canonical_path,
         )
@@ -10055,7 +10055,7 @@ class TestProxyHandlerPolicy:
         at `api`) guards the fail-open edits an exact pin alone would also
         catch — kept separate so the failure message names the broken
         invariant."""
-        from kiro_crew.dashboard.handlers_instances import _PROXY_ALLOWED_PREFIXES
+        from efm_go.dashboard.handlers_instances import _PROXY_ALLOWED_PREFIXES
 
         assert _PROXY_ALLOWED_PREFIXES == (("api", "chat"), ("api", "stream"))
         for prefix in _PROXY_ALLOWED_PREFIXES:
@@ -10069,7 +10069,7 @@ class TestProxyHandlerPolicy:
         """Even if a bad edit ships an empty or one-segment row, the vet must
         not widen: rows shallower than two segments are ignored, so the
         policy degrades to refusing more, never to forwarding more."""
-        from kiro_crew.dashboard import handlers_instances as hi
+        from efm_go.dashboard import handlers_instances as hi
 
         monkeypatch.setattr(hi, "_PROXY_ALLOWED_PREFIXES", ((), ("api",)))
         path, reason = hi._proxy_canonical_path("api/token/local")
@@ -10095,7 +10095,7 @@ class TestProxyHandlerPolicy:
         Decoding to a fixed point before vetting is what closes the class —
         so this is parametrized over depth rather than pinned to one payload.
         """
-        from kiro_crew.dashboard.handlers_instances import _proxy_canonical_path
+        from efm_go.dashboard.handlers_instances import _proxy_canonical_path
 
         path, reason = _proxy_canonical_path(raw)
         assert path == ""
@@ -10105,7 +10105,7 @@ class TestProxyHandlerPolicy:
         """The forwarded path is constructed, not merely approved: a caller
         cannot get one string past the policy and a different one onto the
         wire."""
-        from kiro_crew.dashboard.handlers_instances import _proxy_canonical_path
+        from efm_go.dashboard.handlers_instances import _proxy_canonical_path
 
         assert _proxy_canonical_path("/api/chat/slots/") == ("api/chat/slots", "")
         assert _proxy_canonical_path("api/%63hat/slots") == ("api/chat/slots", "")
@@ -10124,7 +10124,7 @@ class TestProxyHandlerPolicy:
         ],
     )
     def test_only_plainly_named_segments_are_forwarded(self, raw, expect):
-        from kiro_crew.dashboard.handlers_instances import _proxy_canonical_path
+        from efm_go.dashboard.handlers_instances import _proxy_canonical_path
 
         path, reason = _proxy_canonical_path(raw)
         assert path == ""
@@ -10132,7 +10132,7 @@ class TestProxyHandlerPolicy:
 
     @pytest.mark.asyncio
     async def test_disallowed_method_is_405(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="api/chat/slots", method="OPTIONS")
         resp = await api_instances_proxy(req)
@@ -10140,7 +10140,7 @@ class TestProxyHandlerPolicy:
 
     @pytest.mark.asyncio
     async def test_missing_manager_is_503(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="api/chat/slots", manager=None)
         resp = await api_instances_proxy(req)
@@ -10151,7 +10151,7 @@ class TestProxyHandlerPolicy:
         """The browser's ?token= is the HUB's credential — it must never
         cross the tunnel (a peer receiving it holds a replayable credential
         for this gateway)."""
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         captured: dict = {}
 
@@ -10174,7 +10174,7 @@ class TestProxyHandlerPolicy:
 
     @pytest.mark.asyncio
     async def test_error_bodies_carry_machine_readable_codes(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         req = self._req(tmp_path, monkeypatch, path="assets/x.js")
         assert _body(await api_instances_proxy(req))["code"] == "proxy_path_denied"
@@ -10193,10 +10193,10 @@ class TestProxyRedactsPeerReplies:
 
     def _req(self, tmp_path, monkeypatch, *, path, chunks, content_type):
         _enable(tmp_path, monkeypatch)
-        from kiro_crew.dashboard.handlers import source_providers as sp
+        from efm_go.dashboard.handlers import source_providers as sp
 
         monkeypatch.setattr(sp, "is_owner_dashboard_request", lambda r: True)
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         async def _iter():
             for c in chunks:
@@ -10220,7 +10220,7 @@ class TestProxyRedactsPeerReplies:
     def test_every_forwarded_content_type_has_a_redaction_path(self):
         """The proxy redacts JSON and SSE only, so it may forward nothing else:
         a third allowed type would reach the window unredacted."""
-        from kiro_crew.dashboard.handlers_instances import _PROXY_RESP_ALLOW_CONTENT_TYPES
+        from efm_go.dashboard.handlers_instances import _PROXY_RESP_ALLOW_CONTENT_TYPES
 
         assert _PROXY_RESP_ALLOW_CONTENT_TYPES == frozenset(
             {"application/json", "text/event-stream"}
@@ -10228,7 +10228,7 @@ class TestProxyRedactsPeerReplies:
 
     @pytest.mark.asyncio
     async def test_json_body_strings_are_redacted(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         doc = {"messages": [{"role": "assistant", "content": f"key {self.SECRET} here"}]}
         raw = json.dumps(doc).encode()
@@ -10247,7 +10247,7 @@ class TestProxyRedactsPeerReplies:
 
     @pytest.mark.asyncio
     async def test_json_escape_cannot_hide_a_secret(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         hidden = '{"content": "\\u0041' + self.SECRET[1:] + '"}'
         req = self._req(
@@ -10262,7 +10262,7 @@ class TestProxyRedactsPeerReplies:
 
     @pytest.mark.asyncio
     async def test_too_deeply_nested_json_is_refused_not_forwarded(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         deep = (b"[" * 200_000) + b'"' + self.SECRET.encode() + b'"' + (b"]" * 200_000)
         req = self._req(
@@ -10278,7 +10278,7 @@ class TestProxyRedactsPeerReplies:
 
     @pytest.mark.asyncio
     async def test_a_leading_bom_cannot_hide_an_escaped_secret(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         body = '\ufeff{"content": "\\u0041' + self.SECRET[1:] + '"}'
         req = self._req(
@@ -10293,7 +10293,7 @@ class TestProxyRedactsPeerReplies:
 
     @pytest.mark.asyncio
     async def test_json_python_cannot_decode_is_refused_not_forwarded(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers_instances import api_instances_proxy
+        from efm_go.dashboard.handlers_instances import api_instances_proxy
 
         body = '{"n": ' + "9" * 5000 + ', "content": "\\u0041' + self.SECRET[1:] + '"}'
         req = self._req(
@@ -10309,7 +10309,7 @@ class TestProxyRedactsPeerReplies:
 
     @pytest.mark.asyncio
     async def test_oversized_json_is_refused_not_forwarded(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as hi
+        from efm_go.dashboard import handlers_instances as hi
 
         monkeypatch.setattr(hi, "PROXY_REDACT_BUFFER_MAX_BYTES", 16)
         req = self._req(
@@ -10325,7 +10325,7 @@ class TestProxyRedactsPeerReplies:
 
     @pytest.mark.asyncio
     async def test_sse_frames_are_redacted_across_chunk_splits(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as hi
+        from efm_go.dashboard import handlers_instances as hi
 
         writes: list[bytes] = []
 
@@ -10369,7 +10369,7 @@ class TestRedactSseEvent:
     SECRET = "AKIA" + "IOSFODNN7EXAMPLE"
 
     def test_secret_split_over_data_lines_behind_an_escape_is_redacted(self):
-        from kiro_crew.dashboard.handlers_instances import _redact_sse_event
+        from efm_go.dashboard.handlers_instances import _redact_sse_event
 
         event = (
             'event: chat_message\ndata: {"slot": "s1",\ndata: "content": "\\u0041'
@@ -10385,7 +10385,7 @@ class TestRedactSseEvent:
 
     @pytest.mark.asyncio
     async def test_a_bom_split_across_chunks_is_stripped(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as hi
+        from efm_go.dashboard import handlers_instances as hi
 
         writes: list[bytes] = []
 
@@ -10419,7 +10419,7 @@ class TestRedactSseEvent:
 
     @pytest.mark.asyncio
     async def test_cr_line_ends_are_framed_before_redaction(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as hi
+        from efm_go.dashboard import handlers_instances as hi
 
         writes: list[bytes] = []
 
@@ -10452,7 +10452,7 @@ class TestRedactSseEvent:
 
     @pytest.mark.asyncio
     async def test_a_completed_event_over_the_cap_is_dropped(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as hi
+        from efm_go.dashboard import handlers_instances as hi
 
         writes: list[bytes] = []
 
@@ -10490,7 +10490,7 @@ class TestRedactSseEvent:
 
 class TestSlugifyHashFallback:
     def test_non_ascii_names_derive_distinct_stable_ids(self) -> None:
-        from kiro_crew.instances.registry import _ID_RE, _slugify
+        from efm_go.instances.registry import _ID_RE, _slugify
 
         chinese = _slugify("\u5f00\u53d1\u673a")
         arabic = _slugify("\u062e\u0627\u062f\u0645 \u0627\u0644\u062a\u0637\u0648\u064a\u0631")
@@ -10500,6 +10500,6 @@ class TestSlugifyHashFallback:
         assert _ID_RE.match(chinese)
 
     def test_ascii_names_are_unchanged(self) -> None:
-        from kiro_crew.instances.registry import _slugify
+        from efm_go.instances.registry import _slugify
 
         assert _slugify("Dev Box 2") == "dev-box-2"

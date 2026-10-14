@@ -245,7 +245,7 @@ the same report without creating a duplicate; it owns only page-local recovery.
 When no custom `piper_binary` is configured and the gateway interpreter has a
 compatible Piper Python API, `streaming_piper_reply()` uses the dashboard's
 `PiperRuntime`. API capability probing runs off the event loop and never loads
-a voice in the gateway. The owned `python -m kiro_crew.piper_worker` subprocess
+a voice in the gateway. The owned `python -m efm_go.piper_worker` subprocess
 loads `PiperVoice` once and serves serial requests over stdin/stdout. Every
 bounded frame has a type and request identity; PCM additionally carries its
 sample rate. Explicit `ready`, `done`, and `error` frames establish lifecycle and

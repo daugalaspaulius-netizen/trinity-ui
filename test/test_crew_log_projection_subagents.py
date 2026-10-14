@@ -21,10 +21,10 @@ from unittest.mock import patch
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.dashboard.handlers import crew_log as routes
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog
+from efm_go.crew_log import projection as crew_log
+from efm_go.dashboard.handlers import crew_log as routes
 
 SESSION = "s-subagents"
 GATEWAY = "gateway"
@@ -201,7 +201,7 @@ async def test_the_route_serves_the_fold_with_no_route_change():
     request.match_info["id"] = SESSION
     request.match_info["name"] = "subagents"
     with patch(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         return_value=True,
     ):
         response = await routes.api_session_crew_log_projection(request)

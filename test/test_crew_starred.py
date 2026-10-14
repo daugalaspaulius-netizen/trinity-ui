@@ -23,14 +23,14 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.config.paths import config_dir
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.config.paths import config_dir
 
 
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -64,7 +64,7 @@ class TestConfigField:
 
 
 def _crud_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
+    from efm_go.dashboard.handlers import api_kirocrew_agent_update
 
     app = web.Application()
     app.router.add_put("/api/agents/{name}", api_kirocrew_agent_update)
@@ -115,7 +115,7 @@ class TestUpdateEndpoint:
         staged picture and then 400 without rolling it back. Pinned by asserting
         the config is never loaded on the rejection path."""
         with patch(
-            "kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load",
+            "efm_go.dashboard.handlers.agents.KiroCrewConfig.load",
             side_effect=AssertionError("config loaded on a rejected request"),
         ):
             async with TestClient(TestServer(_crud_app())) as client:
@@ -128,7 +128,7 @@ class TestUpdateEndpoint:
 
 
 def _members_app(state) -> web.Application:
-    from kiro_crew.dashboard.handlers.members import api_members
+    from efm_go.dashboard.handlers.members import api_members
 
     @web.middleware
     async def _auth(request: web.Request, handler):
@@ -155,7 +155,7 @@ class TestRosterExposesFilterKeys:
             degraded_sections=frozenset(),
         )
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
             async with TestClient(TestServer(_members_app(state))) as client:
                 resp = await client.get("/api/members")
                 assert resp.status == 200
@@ -171,7 +171,7 @@ class TestRosterExposesFilterKeys:
         `has_dm_message` (the DM thread holds a non-metadata row) are the two
         booleans the page lists rows on. The member id itself never joins the
         allowlist; a created member's slug is its id already."""
-        from kiro_crew import members as members_mod
+        from efm_go import members as members_mod
 
         member_id = "m-0123456789abcdef"
         fake = SimpleNamespace(
@@ -189,7 +189,7 @@ class TestRosterExposesFilterKeys:
             degraded_sections=frozenset(),
         )
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
             # `chatted` has a real message; `opened` has only a metadata line
             # (its thread was opened, nothing was said).
             for name in ("chatted", "opened"):
@@ -221,7 +221,7 @@ class TestRosterExposesFilterKeys:
         """The message probe runs before the mtime gate: a bound thread whose
         file cannot be stat'd is unreadable, and an unreadable thread must
         never hide its row."""
-        from kiro_crew import members as members_mod
+        from efm_go import members as members_mod
 
         fake = SimpleNamespace(
             agents={"chatted": KiroCrewAgentConfig(kiro_agent="chatted", source="radar-app")},
@@ -230,7 +230,7 @@ class TestRosterExposesFilterKeys:
             degraded_sections=frozenset(),
         )
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
             slug = members_mod.member_slug("chatted", fake)
             members_mod.write_dm_binding(slug, member="chatted", slot_key=f"member-{slug}")
             state.conversation_log.append(
@@ -258,14 +258,14 @@ class TestRosterExposesFilterKeys:
             degraded_sections=frozenset(),
         )
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
             async with TestClient(TestServer(_members_app(state))) as client:
                 body = await (await client.get("/api/members")).json()
         assert body["members"][0]["source"] == "package"
         assert raw not in json.dumps(body) or raw == ""
 
     def test_normalize_member_source_vocabulary(self):
-        from kiro_crew.dashboard.handlers.members import normalize_member_source
+        from efm_go.dashboard.handlers.members import normalize_member_source
 
         assert normalize_member_source("kirocrew") == "kirocrew"
         assert normalize_member_source("builtin") == "builtin"

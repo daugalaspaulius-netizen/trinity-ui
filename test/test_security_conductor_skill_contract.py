@@ -28,7 +28,7 @@ import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SKILL_DIR = REPO_ROOT / "src" / "kiro_crew" / "builtin_skills" / "security-conductor"
+SKILL_DIR = REPO_ROOT / "src" / "efm_go" / "builtin_skills" / "security-conductor"
 SKILL_MD = SKILL_DIR / "SKILL.md"
 ROE_JSON = SKILL_DIR / "rules-of-engagement.json"
 

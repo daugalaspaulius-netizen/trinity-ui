@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp.runtime import (
+from efm_go.acp.runtime import (
     _MCP_PROGRESS_NAME_CAP,
     _MCP_PROGRESS_NAME_LEN_CAP,
     AcpRequestTimeout,
@@ -25,7 +25,7 @@ from kiro_crew.acp.runtime import (
     AcpRuntimeError,
     _capped_names,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     METHOD_MCP_OAUTH_REQUEST,
     METHOD_MCP_SERVER_INIT_FAILURE,
     METHOD_MCP_SERVER_INITIALIZED,
@@ -183,7 +183,7 @@ async def test_session_load_timeout_names_the_servers_that_never_reported(monkey
     rt = _runtime()
     rt._can_load_session = True
     monkeypatch.setattr(
-        "kiro_crew.acp.runtime.pooled_session_servers",
+        "efm_go.acp.runtime.pooled_session_servers",
         lambda *_a, **_k: _roster("alpha", "beta"),
     )
     _stage(rt, METHOD_MCP_SERVER_INITIALIZED, "alpha")
@@ -220,7 +220,7 @@ async def test_an_empty_session_id_is_one_failed_start_sample(monkeypatch):
     adaptive controller, never a success followed by a failure."""
     samples: list[dict] = []
     monkeypatch.setattr(
-        "kiro_crew.acp.runtime._record_session_start",
+        "efm_go.acp.runtime._record_session_start",
         lambda t0, *, ok, attributable_timeout=False: samples.append(
             {"ok": ok, "attributable_timeout": attributable_timeout}
         ),
@@ -260,7 +260,7 @@ def test_capped_names_summarizes_the_tail_instead_of_listing_a_whole_fleet():
 async def test_a_newline_in_a_server_name_cannot_forge_a_log_line():
     """The summary goes into a logger.warning; a name must not add a line to it."""
     rt = _runtime()
-    forged = "beta\n2026-08-18 00:00:00 ERROR kiro_crew: injected"
+    forged = "beta\n2026-08-18 00:00:00 ERROR efm_go: injected"
     _stage(rt, METHOD_MCP_SERVER_INITIALIZED, "alpha")
     _timeout(rt)
 

@@ -18,18 +18,18 @@ import pytest
 from aiohttp import web
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import chat_slack
-from kiro_crew.dashboard.chat_slack import (
+from efm_go.dashboard import chat_slack
+from efm_go.dashboard.chat_slack import (
     SlackLinkError,
     auto_link_eligible,
     link_slot_to_slack,
     maybe_auto_link_slack,
 )
-from kiro_crew.dashboard.state import SlotOrigin
+from efm_go.dashboard.state import SlotOrigin
 
 
 def _slack_state(tmp_path, monkeypatch, *, owner: str | None = "U123"):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     state.slack_client = MagicMock()
     state.slack_client.open_dm = AsyncMock(return_value="D_OWNER")
@@ -311,12 +311,12 @@ class TestHook:
         from test_slack_mirror_unlink import _fake_provider, _make_slack_client
         from test_slack_mirror_unlink import _make_state as _mirror_state
 
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.session_map import SessionMap
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.session_map import SessionMap
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
         state = _mirror_state(tmp_path, SessionMap())
         state.slack_client = _make_slack_client()
         state.slack_client.open_dm = AsyncMock(return_value="D_OWNER")
@@ -375,12 +375,12 @@ class TestHook:
         from test_slack_mirror_unlink import _fake_provider, _make_slack_client
         from test_slack_mirror_unlink import _make_state as _mirror_state
 
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.session_map import SessionMap
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.session_map import SessionMap
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
         state = _mirror_state(tmp_path, SessionMap())
         state.slack_client = _make_slack_client()
         state.slack_client.post_message = AsyncMock(return_value="echo-ts")
@@ -605,7 +605,7 @@ class TestSharedHelper:
 
 class TestConfig:
     def test_default_is_off_with_no_target_field(self):
-        from kiro_crew.config.section_builders import _build_slack_config
+        from efm_go.config.section_builders import _build_slack_config
 
         cfg = _build_slack_config({})
         assert cfg.auto_link_sessions is False
@@ -613,7 +613,7 @@ class TestConfig:
         assert not hasattr(cfg, "auto_link_channel")
 
     def test_enabled_must_be_a_real_bool(self):
-        from kiro_crew.config.section_builders import _build_slack_config
+        from efm_go.config.section_builders import _build_slack_config
 
         assert _build_slack_config({"auto_link_sessions": "true"}).auto_link_sessions is False
         assert _build_slack_config({"auto_link_sessions": 1}).auto_link_sessions is False
@@ -621,8 +621,8 @@ class TestConfig:
 
 
 def _config_app(tmp_path, monkeypatch):
-    import kiro_crew.dashboard.handlers.messaging as mod
-    from kiro_crew.config import loader
+    import efm_go.dashboard.handlers.messaging as mod
+    from efm_go.config import loader
 
     env = tmp_path / ".env"
     env.write_text("", encoding="utf-8")
@@ -707,7 +707,7 @@ class TestSendHandlerHook:
         state.get_or_create_slot("s1", origin=SlotOrigin.USER)
         _settings(monkeypatch, enabled=True)
         monkeypatch.setattr(chat_slack, "_spawn_slack_backfill", lambda *a, **_k: None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
         seen: dict = {}
 
         async def fake_run_chat(st, sl, msg, *, _directive_user_origin):
@@ -716,7 +716,7 @@ class TestSendHandlerHook:
             sl.append("assistant", "reply")
             sl.append("done", "", "done", broadcast=False)
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post("/api/chat", json={"message": "hello", "slot": "s1"})
             await resp.text()
@@ -735,7 +735,7 @@ class TestSendHandlerHook:
             chat_slack, "vet_and_audit", lambda *a, **k: SimpleNamespace(permitted=True)
         )
         monkeypatch.setattr(chat_slack, "_spawn_slack_backfill", lambda *a, **_k: None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
         posting = asyncio.Event()
         release = asyncio.Event()
         dispatches: list[str] = []
@@ -751,7 +751,7 @@ class TestSendHandlerHook:
             sl.append("done", "", "done", broadcast=False)
 
         state.slack_client.post_message = AsyncMock(side_effect=_blocked_post)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", _run)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", _run)
         async with TestClient(TestServer(_make_app(state))) as client:
             first_request = asyncio.create_task(
                 client.post("/api/chat", json={"message": "first", "slot": "s1"})
@@ -778,15 +778,15 @@ class TestSendHandlerHook:
 
         state = _slack_state(tmp_path, monkeypatch)
         state.get_or_create_slot("s1", origin=SlotOrigin.USER)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
         run_chat = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", run_chat)
 
         async def _close_slot(st, sl):
             st._slots.pop(sl.key, None)
             return False
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.maybe_auto_link_slack", _close_slot)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.maybe_auto_link_slack", _close_slot)
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post("/api/chat", json={"message": "hello", "slot": "s1"})
             body = await resp.json()
@@ -804,10 +804,10 @@ class TestSendHandlerHook:
 
         state = _slack_state(tmp_path, monkeypatch)
         state.get_or_create_slot("s1", origin=SlotOrigin.USER)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
         state.sessions.stop_turn = AsyncMock(return_value="idle")
         run_chat = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", run_chat)
         holding = asyncio.Event()
         release = asyncio.Event()
 
@@ -816,7 +816,7 @@ class TestSendHandlerHook:
             await release.wait()
             return False
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.maybe_auto_link_slack", _hold)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.maybe_auto_link_slack", _hold)
         async with TestClient(TestServer(_make_app(state))) as client:
             send = asyncio.create_task(
                 client.post("/api/chat?ws=1", json={"message": "hello", "slot": "s1"})
@@ -845,7 +845,7 @@ class TestSendHandlerHook:
 
         state = _slack_state(tmp_path, monkeypatch)
         state.get_or_create_slot("s1", origin=SlotOrigin.USER)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
         state.sessions.stop_turn = AsyncMock(return_value="idle")
         started: list[str] = []
         reserved_during_drain: list[bool] = []
@@ -857,10 +857,10 @@ class TestSendHandlerHook:
             started.append(sl._queue[0]["content"])
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._start_next_queued_turn",
+            "efm_go.dashboard.chat_handlers._start_next_queued_turn",
             AsyncMock(side_effect=_drain),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", AsyncMock())
         holding = asyncio.Event()
         release = asyncio.Event()
 
@@ -869,7 +869,7 @@ class TestSendHandlerHook:
             await release.wait()
             return False
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.maybe_auto_link_slack", _hold)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.maybe_auto_link_slack", _hold)
         async with TestClient(TestServer(_make_app(state))) as client:
             send = asyncio.create_task(
                 client.post("/api/chat?ws=1", json={"message": "first", "slot": "s1"})
@@ -894,16 +894,16 @@ class TestSendHandlerHook:
         state = _slack_state(tmp_path, monkeypatch)
         state.get_or_create_slot("s1", origin=SlotOrigin.USER)
         _settings(monkeypatch, enabled=True)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
 
         async def fake_run_chat(st, sl, msg, **_kw):
             sl.append("assistant", "reply")
             sl.append("done", "", "done", broadcast=False)
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
         # The app reaches this user session through its sessionApproval grant.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.slot_ownership.read_session_grant",
+            "efm_go.dashboard.slot_ownership.read_session_grant",
             AsyncMock(return_value=True),
         )
         app = _make_app(state)

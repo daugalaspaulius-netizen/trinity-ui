@@ -26,8 +26,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.cron_script import run_script_sandboxed
-from kiro_crew.platform import PROFILE_ENTERPRISE
+from efm_go.cron_script import run_script_sandboxed
+from efm_go.platform import PROFILE_ENTERPRISE
 
 
 @pytest.fixture(autouse=True)
@@ -66,12 +66,12 @@ def _spawns_real_child(monkeypatch):
     on child behavior would pass or fail on host configuration rather than on the
     preamble. Mirrors ``test_cron_script.py``'s ``_passthrough_sandbox``: bypass
     the wrap, and put ``src/`` on ``PYTHONPATH`` so the fresh interpreter can
-    import ``kiro_crew`` when the checkout is not a packaged install.
+    import ``efm_go`` when the checkout is not a packaged install.
     """
     src_dir = str(Path(__file__).resolve().parents[1] / "src")
     existing = os.environ.get("PYTHONPATH", "")
     monkeypatch.setenv("PYTHONPATH", src_dir + (os.pathsep + existing if existing else ""))
-    monkeypatch.setattr("kiro_crew.cron_script.wrap_argv", lambda argv, **k: (list(argv), None))
+    monkeypatch.setattr("efm_go.cron_script.wrap_argv", lambda argv, **k: (list(argv), None))
 
 
 _STOP = "stop before spawn"
@@ -92,7 +92,7 @@ def _capture_launcher(script_path: str) -> str:
         captured["launcher"] = Path(argv[1]).read_text()
         raise RuntimeError(_STOP)
 
-    with patch("kiro_crew.cron_script.wrap_argv", _capture):
+    with patch("efm_go.cron_script.wrap_argv", _capture):
         with pytest.raises(RuntimeError, match=_STOP):
             run_script_sandboxed(script_path + ":run", "job-id")
 
@@ -107,7 +107,7 @@ def _child_profile(monkeypatch, profile: str) -> None:
     PARENT's own ``current_context()`` fail closed long before it spawns
     anything, so the override goes on the child env the launcher builds.
     """
-    from kiro_crew import cron_script
+    from efm_go import cron_script
 
     real = cron_script._clean_cron_env
 
@@ -135,14 +135,14 @@ class TestLauncherPreambleOrdering:
 
     def test_launcher_boots_the_platform(self, _cron_home):
         launcher = self._launcher(_cron_home)
-        assert "from kiro_crew.platform.bootstrap import boot_platform" in launcher
+        assert "from efm_go.platform.bootstrap import boot_platform" in launcher
         assert "boot_platform(KiroCrewConfig.load())" in launcher
 
     def test_boot_is_after_syspath_strip_and_before_scriptcontext(self, _cron_home):
         launcher = self._launcher(_cron_home)
         strip = launcher.index("sys.path[:] = [p for p in sys.path")
         boot = launcher.index("boot_platform(KiroCrewConfig.load())")
-        script_context = launcher.index("from kiro_crew.cron_script import ScriptContext")
+        script_context = launcher.index("from efm_go.cron_script import ScriptContext")
         assert strip < boot < script_context, (
             "boot_platform must run after the sys.path strip and before the "
             f"ScriptContext import (strip={strip}, boot={boot}, ctx={script_context})"
@@ -162,8 +162,8 @@ class TestChildArrivesBooted:
     PROBE = (
         "import json\n"
         "def run(ctx):\n"
-        "    from kiro_crew.platform import bootstrap\n"
-        "    from kiro_crew.platform.context import current_context\n"
+        "    from efm_go.platform import bootstrap\n"
+        "    from efm_go.platform.context import current_context\n"
         "    raise SystemExit(\n"
         "        json.dumps(\n"
         "            {'booted': bootstrap._BOOTED, 'profile': current_context().profile}\n"
@@ -210,7 +210,7 @@ class TestNonStandaloneFailsAtLaunchNotMidScript:
             _cron_home,
             "def run(ctx):\n"
             f"    open({str(sentinel)!r}, 'w').close()\n"
-            "    from kiro_crew.platform.context import current_context\n"
+            "    from efm_go.platform.context import current_context\n"
             "    current_context()\n",
         )
         result = run_script_sandboxed(script_path + ":run", "job-id", timeout=60)

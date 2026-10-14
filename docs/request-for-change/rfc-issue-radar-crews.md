@@ -15,11 +15,11 @@ superseded-by: []
 # RFC: Issue Radar Crews — autonomous issue workers with a public claim ledger
 
 Status: partial — the crew ledger and its agent surface are implemented in
-`src/kiro_crew/apps/builtins/issue_radar/backend/crew_runtime.py`,
-`src/kiro_crew/apps/builtins/issue_radar/backend/crew_store.py`,
-`src/kiro_crew/apps/builtins/issue_radar/backend/crew_routes.py`, and the Issue
+`src/efm_go/apps/builtins/issue_radar/backend/crew_runtime.py`,
+`src/efm_go/apps/builtins/issue_radar/backend/crew_store.py`,
+`src/efm_go/apps/builtins/issue_radar/backend/crew_routes.py`, and the Issue
 Radar Crews UI under `website/src/apps/issue-radar/`; the two agent ledger tools
-live in `src/kiro_crew/mcp_tools/apps.py`. This audit did not re-classify every
+live in `src/efm_go/mcp_tools/apps.py`. This audit did not re-classify every
 later phase of the RFC. The body below remains the historical
 design record and differs from the shipped implementation where later safety
 work superseded a mechanism (for example, a scoped `SafetyOverride` replaces
@@ -58,9 +58,9 @@ human, so there would be nothing for one to show.
 
 Two companion documents carry the detail this one deliberately does not repeat:
 
-- `src/kiro_crew/apps/builtins/issue_radar/backend/crew_brief.md` — the crew's
+- `src/efm_go/apps/builtins/issue_radar/backend/crew_brief.md` — the crew's
   behavioural contract, delivered to the model verbatim.
-- `src/kiro_crew/apps/builtins/issue_radar/backend/crew_ledger_spec.md` — record
+- `src/efm_go/apps/builtins/issue_radar/backend/crew_ledger_spec.md` — record
   schemas, the phase enum, the event log, and the two MCP tools.
 
 ## 2. Why, and the honest ceiling
@@ -103,7 +103,7 @@ per-crew page therefore shows *phase and next step*, not a velocity number.
 | Workspace | one git worktree per issue |
 
 The closest existing precedent is `auto_research`
-(`src/kiro_crew/apps/builtins/auto_research/campaign/agent_mode.py`): an app-owned
+(`src/efm_go/apps/builtins/auto_research/campaign/agent_mode.py`): an app-owned
 dashboard slot, an autonudge loop, per-slot trust, a STOP sentinel, and a TTL
 watchdog. That launch sequence is the one to copy.
 

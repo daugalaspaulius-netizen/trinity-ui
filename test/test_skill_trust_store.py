@@ -1,4 +1,4 @@
-"""Per-directory consent store for project skills (``kiro_crew.skill_trust``).
+"""Per-directory consent store for project skills (``efm_go.skill_trust``).
 
 The gate must fail CLOSED on every unreadable/malformed/ambiguous input: a
 ``SKILL.md`` enters the agent's context and can instruct it to run anything, so
@@ -18,8 +18,8 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from kiro_crew import platform_compat, skill_trust
-from kiro_crew.config.loader import KiroCrewConfig, SkillsConfig
+from efm_go import platform_compat, skill_trust
+from efm_go.config.loader import KiroCrewConfig, SkillsConfig
 
 pytestmark = pytest.mark.skipif(
     not skill_trust.project_skill_traversal_supported(),
@@ -501,7 +501,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
     """A grant names ONE directory; discovery must not reach outside it."""
 
     def test_a_symlinked_skills_root_is_refused(self, tmp_path, monkeypatch):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         # `.kiro/skills` is a link OUT of the project the operator trusted.
         outside = tmp_path / "outside" / "skills"
@@ -533,7 +533,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         list_skills and the injected "Available Skills" index, which tells the
         agent to cat that path.
         """
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         outside = tmp_path / "outside"
         outside.mkdir(parents=True)
@@ -557,7 +557,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
 
     def test_a_symlinked_subdirectory_inside_a_real_root_is_refused(self, tmp_path):
         """Same escape one level up: the skill DIRECTORY is the link."""
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         outside = tmp_path / "outside" / "smuggled-dir"
         outside.mkdir(parents=True)
@@ -582,8 +582,8 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         self, tmp_path, monkeypatch
     ):
         """Walking a project link must not resolve a target that could be UNC."""
-        from kiro_crew import skills as skills_mod
-        from kiro_crew.skills import SkillsLoader
+        from efm_go import skills as skills_mod
+        from efm_go.skills import SkillsLoader
 
         outside = tmp_path / "outside" / "linked"
         outside.mkdir(parents=True)
@@ -612,8 +612,8 @@ class TestConsentCoversOnlyTheGrantedDirectory:
 
     def test_a_linked_project_skills_root_is_refused_before_resolution(self, tmp_path, monkeypatch):
         """The root link itself may target UNC and must not be probed."""
-        from kiro_crew import skills as skills_mod
-        from kiro_crew.skills import SkillsLoader
+        from efm_go import skills as skills_mod
+        from efm_go.skills import SkillsLoader
 
         outside = tmp_path / "outside"
         outside.mkdir()
@@ -641,7 +641,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         self, project, monkeypatch
     ):
         """os.walk may follow a Windows reparse target just to classify it."""
-        from kiro_crew import skills as skills_mod
+        from efm_go import skills as skills_mod
 
         genuine = project / ".kiro" / "skills" / "genuine"
         genuine.mkdir(parents=True, exist_ok=True)
@@ -662,7 +662,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
 
     def test_a_confined_walk_scans_only_open_directory_descriptors(self, project, monkeypatch):
         """Every traversed component stays pinned to a no-follow handle."""
-        from kiro_crew import skills as skills_mod
+        from efm_go import skills as skills_mod
 
         genuine = project / ".kiro" / "skills" / "genuine"
         genuine.mkdir(parents=True, exist_ok=True)
@@ -689,7 +689,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         self, project, tmp_path, monkeypatch
     ):
         """A caller cannot use confinement mode to open an unrelated tree."""
-        from kiro_crew import skills as skills_mod
+        from efm_go import skills as skills_mod
 
         project_key = skill_trust.canonical_key(project)
         assert project_key is not None
@@ -706,7 +706,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         self, project, tmp_path, monkeypatch
     ):
         """O_NOFOLLOW closes the exact race reported by review."""
-        from kiro_crew import skills as skills_mod
+        from efm_go import skills as skills_mod
 
         category = project / ".kiro" / "skills" / "category"
         genuine = category / "genuine"
@@ -750,7 +750,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         self, project, tmp_path, monkeypatch
     ):
         """Unsupported platforms never resolve or traverse a project path."""
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "genuine"
         skill_dir.mkdir(parents=True)
@@ -793,8 +793,8 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         rather than by copying. The GLOBAL tree keeps the allowance, which is what
         the second half of this test holds fixed.
         """
-        from kiro_crew import skills as skills_mod
-        from kiro_crew.skills import SkillsLoader
+        from efm_go import skills as skills_mod
+        from efm_go.skills import SkillsLoader
 
         provider = tmp_path / "provider"
         (provider / "vendor-skill").mkdir(parents=True)
@@ -838,7 +838,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         """
         import logging
 
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         outside = tmp_path / "outside" / "skills"
         (outside / "smuggled").mkdir(parents=True)
@@ -855,7 +855,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         skill_trust.grant_project_trust(project)
         loader = SkillsLoader(skills_path=tmp_path / "home-skills", install_builtins=False)
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.skills"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.skills"):
             names = {n for n, _, _ in loader._iter(project)}
 
         assert "smuggled" not in names
@@ -864,7 +864,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         ), f"no refusal logged; records={[r.getMessage() for r in caplog.records]}"
 
     def test_a_real_in_project_skills_dir_still_loads(self, tmp_path):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         project = tmp_path / "proj2"
         d = project / ".kiro" / "skills" / "genuine"
@@ -879,7 +879,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         assert "GENUINE BODY" in (loader.load_skill("genuine", project) or "")
 
     def test_confined_walk_stops_before_python_recursion_can_fail(self, monkeypatch):
-        from kiro_crew import skills as skills_mod
+        from efm_go import skills as skills_mod
 
         class FakeEntry:
             name = "nested"
@@ -923,7 +923,7 @@ class TestConsentCoversOnlyTheGrantedDirectory:
         and is skipped, contributing neither a body nor a pointer. The match
         would appear to succeed while injecting nothing at all.
         """
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         project = tmp_path / "proj3"
         d = project / ".kiro" / "skills" / "triggered"
@@ -967,7 +967,7 @@ class TestRequestingSlotProject:
         records consent for a directory this chat will never load from, and the
         catalog advertises skills whose $token expands to nothing.
         """
-        from kiro_crew.dashboard.handlers._shared import (
+        from efm_go.dashboard.handlers._shared import (
             active_project_dir,
             requesting_slot_project,
         )
@@ -982,7 +982,7 @@ class TestRequestingSlotProject:
         assert requesting_slot_project(state, "dashboard:chat-1") is None
 
     def test_a_bound_chat_resolves_to_its_own_project(self, tmp_path):
-        from kiro_crew.dashboard.handlers._shared import requesting_slot_project
+        from efm_go.dashboard.handlers._shared import requesting_slot_project
 
         a, b = tmp_path / "A", tmp_path / "B"
         a.mkdir()
@@ -994,7 +994,7 @@ class TestRequestingSlotProject:
 
     def test_no_session_key_resolves_to_no_project(self, tmp_path):
         """Without a key there is no requesting chat, so there is no answer."""
-        from kiro_crew.dashboard.handlers._shared import requesting_slot_project
+        from efm_go.dashboard.handlers._shared import requesting_slot_project
 
         project_p = tmp_path / "P"
         project_p.mkdir()
@@ -1016,7 +1016,7 @@ class TestCachedPathsCannotEscapeAfterVetting:
         containment-checks the descriptor it actually read, so the swap is caught
         on the inode rather than on the stale path string.
         """
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "legit"
         skill_dir.mkdir(parents=True)
@@ -1052,7 +1052,7 @@ class TestCachedPathsCannotEscapeAfterVetting:
         self, project, tmp_path, monkeypatch
     ):
         """Metadata reaches the no-link reader before any path-following stat."""
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "legit"
         skill_dir.mkdir(parents=True)
@@ -1196,7 +1196,7 @@ class TestRevokeIsNotBlockedByItsAudit:
         skill_trust.grant_project_trust(project)
         monkeypatch.setattr(skill_trust, "sel", lambda: _Boom())
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.skill_trust"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.skill_trust"):
             assert skill_trust.revoke_project_trust(project) is True
 
         messages = "\n".join(record.getMessage() for record in caplog.records)
@@ -1217,8 +1217,8 @@ class TestOversizedProjectSkillIsSkipped:
         since a pinned body is re-read each time. The global skills path applies
         no cap at all and cannot abort a turn, so skipping is the closer parity.
         """
-        from kiro_crew import hooks
-        from kiro_crew.skills import SkillsLoader
+        from efm_go import hooks
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "huge"
         skill_dir.mkdir(parents=True)
@@ -1241,7 +1241,7 @@ class TestEnumeratedMetadataIsAlsoConfined:
 
     def _swapped_project(self, project, tmp_path):
         """A project whose vetted SKILL.md is replaced by a link out of it."""
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "legit"
         skill_dir.mkdir(parents=True)
@@ -1309,7 +1309,7 @@ class TestConfinementMapSharesTheCacheLifetime:
     """The recorded roots are dropped with the caches they belong to."""
 
     def test_invalidating_the_caches_clears_the_recorded_roots(self, project, tmp_path):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "legit"
         skill_dir.mkdir(parents=True)
@@ -1340,7 +1340,7 @@ class TestEveryEnumeratedPathHasARecordedRoot:
     """
 
     def test_every_enumerated_path_has_a_recorded_root(self, project, tmp_path):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         # A project skill AND a global one, so both branches are covered.
         proj_skill = project / ".kiro" / "skills" / "from-project"
@@ -1377,7 +1377,7 @@ class TestEveryEnumeratedPathHasARecordedRoot:
 
     def test_an_in_project_symlinked_skill_directory_is_refused(self, project):
         """Project directory links are pruned even when their target stays inside."""
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         # The real skill lives outside .kiro/skills but inside the project.
         real = project / "shared" / "aliased"
@@ -1411,7 +1411,7 @@ class TestOneEnforcementPointForEnumeratedReads:
         import ast
         import pathlib
 
-        src_path = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew/skills.py"
+        src_path = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go/skills.py"
         tree = ast.parse(src_path.read_text(encoding="utf-8"))
 
         wanted = {"_cached_frontmatter", "load_skill", "_read_enumerated_skill_bytes"}
@@ -1462,8 +1462,8 @@ class TestOneEnforcementPointForEnumeratedReads:
 
     def test_a_confined_refusal_is_not_reopened(self, tmp_path, monkeypatch):
         """A replaced project file must degrade without a second failing open."""
-        from kiro_crew import skills as skills_mod
-        from kiro_crew.skills import SkillsLoader
+        from efm_go import skills as skills_mod
+        from efm_go.skills import SkillsLoader
 
         monkeypatch.setattr(skills_mod, "safe_read_file_bytes_nolink", lambda *_a, **_kw: None)
         loader = SkillsLoader(skills_path=tmp_path / "home-skills", install_builtins=False)
@@ -1488,7 +1488,7 @@ class TestCrlfSkillFilesParseLikeTextMode:
     """
 
     def _crlf_project_skill(self, project, tmp_path):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "crlf"
         skill_dir.mkdir(parents=True)
@@ -1527,7 +1527,7 @@ class TestCrlfSkillFilesParseLikeTextMode:
         frontmatter key is found at column 0 -- the same silent outcome as the
         CRLF case, reached a different way.
         """
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "crmac"
         skill_dir.mkdir(parents=True)
@@ -1552,7 +1552,7 @@ class TestCrlfSkillFilesParseLikeTextMode:
 
 class TestProjectSkillDecodeFailures:
     def test_invalid_utf8_metadata_does_not_abort_project_skill_listing(self, project, tmp_path):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "invalid-utf8"
         skill_dir.mkdir(parents=True)
@@ -1578,7 +1578,7 @@ class TestLockFailuresAreFailClosed:
     """
 
     def test_listing_degrades_when_the_store_cannot_be_locked(self, project, monkeypatch):
-        from kiro_crew import skill_trust as st
+        from efm_go import skill_trust as st
 
         skill_trust.grant_project_trust(project)
         assert skill_trust.list_trusted_projects(), "precondition: a grant is listed"
@@ -1592,7 +1592,7 @@ class TestLockFailuresAreFailClosed:
         assert skill_trust.list_trusted_projects() == []
 
     def test_a_grant_refuses_when_the_store_cannot_be_locked(self, project, monkeypatch):
-        from kiro_crew import skill_trust as st
+        from efm_go import skill_trust as st
 
         def boom(*_a, **_kw):
             raise OSError("permission denied")
@@ -1608,7 +1608,7 @@ class TestLockFailuresAreFailClosed:
     def test_mutators_normalize_store_write_failures(
         self, project, tmp_path, monkeypatch, operation
     ):
-        from kiro_crew import skill_trust as st
+        from efm_go import skill_trust as st
 
         if operation == "revoke":
             skill_trust.grant_project_trust(project)
@@ -1635,7 +1635,7 @@ class TestLockFailuresAreFailClosed:
         reads directly and fails closed on OSError, so a lock-path failure must not
         turn "may this load" into an exception on a hot path.
         """
-        from kiro_crew import skill_trust as st
+        from efm_go import skill_trust as st
 
         skill_trust.grant_project_trust(project)
         skill_trust.reset_cache_for_tests()
@@ -1655,9 +1655,9 @@ class TestCatalogOnlyOffersLoadableWorkspaceSkills:
 
     def test_an_escaped_skill_is_not_listed_as_trusted(self, project, tmp_path, monkeypatch):
         """Project catalog assembly never routes through the unconfined scanner."""
-        from kiro_crew.dashboard.handlers import _shared
-        from kiro_crew.dashboard.handlers._shared import collect_skills_blocking
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers._shared import collect_skills_blocking
+        from efm_go.skills import SkillsLoader
 
         outside = tmp_path / "outside" / "escaped"
         outside.mkdir(parents=True)
@@ -1707,8 +1707,8 @@ class TestCatalogOnlyOffersLoadableWorkspaceSkills:
 
     def test_a_genuine_workspace_row_is_still_marked_trusted(self, project, tmp_path):
         """The filter must not cost the marking it exists to protect."""
-        from kiro_crew.dashboard.handlers._shared import collect_skills_blocking
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.dashboard.handlers._shared import collect_skills_blocking
+        from efm_go.skills import SkillsLoader
 
         skills_root = project / ".kiro" / "skills" / "genuine"
         skills_root.mkdir(parents=True)
@@ -1723,8 +1723,8 @@ class TestCatalogOnlyOffersLoadableWorkspaceSkills:
         assert row.get("trusted") is True, row
 
     def test_a_genuine_untrusted_workspace_row_is_offered_for_consent(self, project, tmp_path):
-        from kiro_crew.dashboard.handlers._shared import collect_skills_blocking
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.dashboard.handlers._shared import collect_skills_blocking
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "genuine"
         skill_dir.mkdir(parents=True)
@@ -1739,8 +1739,8 @@ class TestCatalogOnlyOffersLoadableWorkspaceSkills:
         assert row.get("trusted") is False, row
 
     def test_a_workspace_row_shadowed_by_a_global_skill_is_not_offered(self, project, tmp_path):
-        from kiro_crew.dashboard.handlers._shared import collect_skills_blocking
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.dashboard.handlers._shared import collect_skills_blocking
+        from efm_go.skills import SkillsLoader
 
         project_skill = project / ".kiro" / "skills" / "same-name"
         project_skill.mkdir(parents=True)
@@ -1761,8 +1761,8 @@ class TestCatalogOnlyOffersLoadableWorkspaceSkills:
         assert workspace == []
 
     def test_project_metadata_is_redacted_before_reaching_the_dashboard(self, project, tmp_path):
-        from kiro_crew.dashboard.handlers._shared import collect_skills_blocking
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.dashboard.handlers._shared import collect_skills_blocking
+        from efm_go.skills import SkillsLoader
 
         skill_dir = project / ".kiro" / "skills" / "hostile"
         skill_dir.mkdir(parents=True)
@@ -1791,7 +1791,7 @@ class TestCatalogOnlyOffersLoadableWorkspaceSkills:
 
 class TestTrustEndpointAuthorization:
     def test_owner_authorization_is_audited(self, monkeypatch):
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go.dashboard.handlers import prompts
 
         audit = SimpleNamespace(log_api_access=Mock())
         monkeypatch.setattr(
@@ -1810,7 +1810,7 @@ class TestTrustEndpointAuthorization:
 
     @pytest.mark.asyncio
     async def test_non_owner_is_refused_by_every_trust_endpoint(self, monkeypatch):
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go.dashboard.handlers import prompts
 
         audit = SimpleNamespace(log_api_access=Mock())
 
@@ -1844,7 +1844,7 @@ class TestTrustEndpointAuthorization:
 class TestTrustGrantHandler:
     @pytest.mark.asyncio
     async def test_no_project_returns_a_coded_400(self, monkeypatch):
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go.dashboard.handlers import prompts
 
         request = SimpleNamespace(
             app={"state": object()},
@@ -1862,7 +1862,7 @@ class TestTrustGrantHandler:
 
     @pytest.mark.asyncio
     async def test_full_store_returns_a_coded_409_without_evicting(self, project, monkeypatch):
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go.dashboard.handlers import prompts
 
         entries = [
             {"path": f"/synthetic/project-{i}", "granted_at": i}
@@ -1892,8 +1892,8 @@ class TestTrustGrantHandler:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("operation", ["grant", "revoke"])
     async def test_write_failure_returns_a_coded_409(self, project, monkeypatch, operation):
-        from kiro_crew import skill_trust as st
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go import skill_trust as st
+        from efm_go.dashboard.handlers import prompts
 
         monkeypatch.setattr(
             st,
@@ -1934,7 +1934,7 @@ class TestEnforcementIsAudited:
 
     @staticmethod
     def _recorder(monkeypatch):
-        from kiro_crew import skills as skills_mod
+        from efm_go import skills as skills_mod
 
         calls: list[dict] = []
 
@@ -1946,7 +1946,7 @@ class TestEnforcementIsAudited:
         return calls
 
     def test_admitting_a_trusted_project_is_audited(self, project, tmp_path, monkeypatch):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         calls = self._recorder(monkeypatch)
         skill_trust.grant_project_trust(project)
@@ -1963,7 +1963,7 @@ class TestEnforcementIsAudited:
 
     def test_withholding_an_untrusted_project_is_audited(self, tmp_path, monkeypatch):
         """The half an operator debugging a dead `$token` actually needs."""
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         calls = self._recorder(monkeypatch)
         untrusted = tmp_path / "no-grant"
@@ -1986,7 +1986,7 @@ class TestEnforcementIsAudited:
         hot-path cost on a path that runs on every message, so the record is
         written on first use per (directory, outcome).
         """
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         calls = self._recorder(monkeypatch)
         skill_trust.grant_project_trust(project)
@@ -2004,8 +2004,8 @@ class TestEnforcementIsAudited:
 
     def test_an_audit_failure_does_not_break_loading(self, project, tmp_path, monkeypatch):
         """A record must never be able to stop a turn."""
-        from kiro_crew import skills as skills_mod
-        from kiro_crew.skills import SkillsLoader
+        from efm_go import skills as skills_mod
+        from efm_go.skills import SkillsLoader
 
         class _Boom:
             def log_governance_decision(self, **_kwargs):
@@ -2024,8 +2024,8 @@ class TestEnforcementIsAudited:
 
     def test_a_failed_audit_is_retried_until_it_is_recorded(self, project, tmp_path, monkeypatch):
         """A transient SEL failure must not suppress the enforcement record forever."""
-        from kiro_crew import skills as skills_mod
-        from kiro_crew.skills import SkillsLoader
+        from efm_go import skills as skills_mod
+        from efm_go.skills import SkillsLoader
 
         attempts = 0
 
@@ -2054,7 +2054,7 @@ class TestReviewedProjectConfirmation:
     """Consent is recorded only for the directory the operator actually reviewed."""
 
     def test_a_matching_reviewed_key_grants(self, project):
-        from kiro_crew.dashboard.handlers.prompts import _grant_reviewed_project
+        from efm_go.dashboard.handlers.prompts import _grant_reviewed_project
 
         key = _grant_reviewed_project(project, skill_trust.canonical_key(project), session_key="t")
         assert key == skill_trust.canonical_key(project)
@@ -2062,7 +2062,7 @@ class TestReviewedProjectConfirmation:
 
     def test_a_non_identical_reviewed_key_is_refused(self, project):
         """The confirmation is an opaque echo, never another path to resolve."""
-        from kiro_crew.dashboard.handlers.prompts import (
+        from efm_go.dashboard.handlers.prompts import (
             _grant_reviewed_project,
             _ReviewedProjectChanged,
         )
@@ -2074,7 +2074,7 @@ class TestReviewedProjectConfirmation:
 
     def test_an_unmatched_network_path_is_never_resolved(self, project, monkeypatch):
         """Client-controlled confirmation text must not trigger an SMB probe."""
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go.dashboard.handlers import prompts
 
         canonical_key = skill_trust.canonical_key
 
@@ -2090,7 +2090,7 @@ class TestReviewedProjectConfirmation:
 
     def test_a_reviewed_alias_cannot_retarget_before_the_grant(self, tmp_path, monkeypatch):
         """The grant must persist the key compared, not resolve the alias again."""
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go.dashboard.handlers import prompts
 
         reviewed = tmp_path / "reviewed"
         unreviewed = tmp_path / "unreviewed"
@@ -2168,7 +2168,7 @@ class TestReviewedProjectConfirmation:
 
     def test_a_changed_project_refuses_and_records_nothing(self, project, tmp_path):
         """The slot moved between rendering the dialog and clicking Trust."""
-        from kiro_crew.dashboard.handlers.prompts import (
+        from efm_go.dashboard.handlers.prompts import (
             _grant_reviewed_project,
             _ReviewedProjectChanged,
         )
@@ -2186,7 +2186,7 @@ class TestReviewedProjectConfirmation:
         assert skill_trust.is_project_trusted(other) is False
 
     def test_an_absent_expected_key_is_refused(self, project):
-        from kiro_crew.dashboard.handlers.prompts import (
+        from efm_go.dashboard.handlers.prompts import (
             _grant_reviewed_project,
             _ReviewedProjectChanged,
         )
@@ -2196,7 +2196,7 @@ class TestReviewedProjectConfirmation:
         assert skill_trust.is_project_trusted(project) is False
 
     def test_a_project_alias_retargeted_after_snapshot_is_refused(self, tmp_path):
-        from kiro_crew.dashboard.handlers.prompts import (
+        from efm_go.dashboard.handlers.prompts import (
             _grant_reviewed_project,
             _ReviewedProjectChanged,
             _trust_snapshot,
@@ -2233,7 +2233,7 @@ class TestReviewedProjectConfirmation:
 
         src_path = (
             _pathlib.Path(__file__).resolve().parents[1]
-            / "src/kiro_crew/dashboard/handlers/prompts.py"
+            / "src/efm_go/dashboard/handlers/prompts.py"
         )
         tree = ast.parse(src_path.read_text(encoding="utf-8"))
 
@@ -2260,7 +2260,7 @@ class TestTriggeredProjectSkillsReachThePrompt:
     """A match must produce a body (or a pointer), not just a log line."""
 
     def _project_with_triggered_skill(self, project, tmp_path, *, inject: bool):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         opt_out = "" if inject else "inject_on_trigger: false\n"
         skill_dir = project / ".kiro" / "skills" / "deploys"
@@ -2315,7 +2315,7 @@ class TestTriggeredProjectSkillsReachThePrompt:
 
     def test_an_untrusted_project_skill_still_contributes_nothing(self, tmp_path):
         """Wiring the project through must not bypass consent."""
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         untrusted = tmp_path / "no-grant"
         skill_dir = untrusted / ".kiro" / "skills" / "deploys"
@@ -2341,7 +2341,7 @@ class TestProjectSkillsIndexConfinement:
 
     @pytest.mark.parametrize("budget", [None, 100_000])
     def test_on_demand_project_skill_is_injected_without_a_path(self, project, tmp_path, budget):
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         skill_file = project / ".kiro" / "skills" / "release" / "SKILL.md"
         skill_file.parent.mkdir(parents=True)
@@ -2362,7 +2362,7 @@ class TestProjectSkillsIndexConfinement:
 
     def test_project_bodies_stop_at_the_skills_section_budget(self, project, tmp_path):
         """Many large confined bodies must not be accumulated before truncation."""
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         for name in ("alpha", "beta", "gamma"):
             skill_file = project / ".kiro" / "skills" / name / "SKILL.md"

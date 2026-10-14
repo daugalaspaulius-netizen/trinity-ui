@@ -89,7 +89,7 @@ class TestRuleFamilies:
         assert self._lines(source) == [2]
 
     def test_flags_kwargs_forwarding_wrappers(self) -> None:
-        source = "from kiro_crew.sandbox import run_limited\nrun_limited(['git'], text=True)\n"
+        source = "from efm_go.sandbox import run_limited\nrun_limited(['git'], text=True)\n"
         assert self._lines(source)
 
     def test_flags_encoding_none(self) -> None:
@@ -121,7 +121,7 @@ class TestRuleFamilies:
     def test_utf8_text_splat_is_compliant(self) -> None:
         source = (
             "import subprocess\n"
-            "from kiro_crew.subprocess_utf8 import UTF8_TEXT\n"
+            "from efm_go.subprocess_utf8 import UTF8_TEXT\n"
             "subprocess.run(['git'], **UTF8_TEXT)\n"
         )
         assert self._lines(source) == []
@@ -250,7 +250,7 @@ class TestBaselineRatchet:
         the PR added nothing. Both calls are pinned now and the
         baseline entry is pruned; this pins the file at zero so it can never
         silently re-enter the list."""
-        rel = "src/kiro_crew/cli_server.py"
+        rel = "src/efm_go/cli_server.py"
         violations = gate._violations_in_source((ROOT / rel).read_text(encoding="utf-8"))
         assert violations == []
         assert rel not in gate._read_baseline(BASELINE)

@@ -31,15 +31,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew import mcp_dashboard
-from kiro_crew.crew_log import emit
-from kiro_crew.crew_log import session_tree_projection as stp
-from kiro_crew.crew_log.session_tree import OpenedRecord
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.handlers import session_control as handlers_sc
-from kiro_crew.mcp_tools.dashboard_client import InMemoryDashboardClient
-from kiro_crew.mcp_tools.table import Caller, ToolContext
+from efm_go import mcp_dashboard
+from efm_go.crew_log import emit
+from efm_go.crew_log import session_tree_projection as stp
+from efm_go.crew_log.session_tree import OpenedRecord
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.handlers import session_control as handlers_sc
+from efm_go.mcp_tools.dashboard_client import InMemoryDashboardClient
+from efm_go.mcp_tools.table import Caller, ToolContext
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +56,7 @@ def _tree_on(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "crewhome"))
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     monkeypatch.setattr(
-        "kiro_crew.executors.maintenance_executor",
+        "efm_go.executors.maintenance_executor",
         lambda: type("_NoPool", (), {"submit": staticmethod(lambda *a, **k: None)}),
     )
     stp.reset_for_tests()
@@ -218,7 +218,7 @@ class TestThePersistedBirthRoster:
         metadata carries titles, so creator equality must be checked before a row
         is exposed.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")
@@ -274,7 +274,7 @@ class TestTheDurableReadsQuality:
         _child(state, "chat-2", caller)
         _recorded("chat-7", caller.key)
         monkeypatch.setattr(
-            "kiro_crew.crew_log.session_tree_projection.SessionTreeProjection."
+            "efm_go.crew_log.session_tree_projection.SessionTreeProjection."
             "seeded_for_current_store",
             property(lambda _self: False),
         )
@@ -297,7 +297,7 @@ class TestTheDurableReadsQuality:
         is what a live-only list looked like before this verb existed. Discarding it
         would throw away every `gone` row over one unreadable unit.
         """
-        from kiro_crew.crew_log.session_tree import TreeReading
+        from efm_go.crew_log.session_tree import TreeReading
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")
@@ -650,7 +650,7 @@ class TestTheRoute:
 
 class TestRosterRetentionBounds:
     def test_a_persisted_roster_overflow_is_bounded_and_reported(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         cap = 3
         monkeypatch.setattr(sc, "MAX_SESSION_STATUS_ROWS", cap, raising=False)
@@ -739,7 +739,7 @@ class TestRosterRetentionBounds:
         assert detail["history_omitted"] == 0
 
     def test_a_persisted_title_is_truncated_when_the_row_is_retained(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         title_cap = 12
         monkeypatch.setattr(sc, "MAX_SESSION_STATUS_TITLE_CHARS", title_cap, raising=False)

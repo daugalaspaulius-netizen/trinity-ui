@@ -41,9 +41,9 @@ import pytest
 from test_chat_runner_coverage import _drive, _runner_state, _slot
 from test_chat_send_agent_model_default import _config, _pin_sync_accessors, _turn_state
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.crew_log import crew_log_path, emit, session_tree, store
-from kiro_crew.crew_log.session_tree import (
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.crew_log import crew_log_path, emit, session_tree, store
+from efm_go.crew_log.session_tree import (
     EDGE_LEGACY,
     EDGE_NAMED,
     EDGE_NONE,
@@ -56,10 +56,10 @@ from kiro_crew.crew_log.session_tree import (
     fold_slot_head,
     slot_chain_head,
 )
-from kiro_crew.crew_log.store import crew_log_dir
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_runner import _eager_spawn, _slot_predecessor_store
-from kiro_crew.dashboard.state import CrewLogPrevious, _ChatSlot
+from efm_go.crew_log.store import crew_log_dir
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_runner import _eager_spawn, _slot_predecessor_store
+from efm_go.dashboard.state import CrewLogPrevious, _ChatSlot
 
 PREDECESSOR = "sid-the-slot-was-writing"
 PREWARMED = "sid-the-prefetch-allocated"
@@ -1323,8 +1323,8 @@ os.environ["KIROCREW_HOME"] = sys.argv[1]
 os.environ["KIROCREW_CREW_LOG"] = "1"
 SLOT, MAPPED = sys.argv[2], sys.argv[3]
 
-from kiro_crew.dashboard.chat_runner import _slot_predecessor_store
-from kiro_crew.dashboard.state import CrewLogPrevious, _ChatSlot
+from efm_go.dashboard.chat_runner import _slot_predecessor_store
+from efm_go.dashboard.state import CrewLogPrevious, _ChatSlot
 
 
 class Sessions:

@@ -1,6 +1,6 @@
 """Mutation pins for the load-bearing lines in ``taskq.store`` that carried no test.
 
-Five lines in ``kiro_crew.taskq.store`` carry invariants that no other test
+Five lines in ``efm_go.taskq.store`` carry invariants that no other test
 observes: delete any one of them and the whole suite stays green. This file pins
 those five -- the reachable ones, whose silent removal loses or double-runs work.
 Lines whose invariant is unreachable are deliberately left unpinned, because a
@@ -27,10 +27,10 @@ from pathlib import Path
 import pytest
 from overload_fakes import Clock, open_task_store
 
-from kiro_crew.taskq import lanes, model
-from kiro_crew.taskq.model import InvalidTransition
-from kiro_crew.taskq.store import TaskStore
-from kiro_crew.taskq.waits import WaitRecord
+from efm_go.taskq import lanes, model
+from efm_go.taskq.model import InvalidTransition
+from efm_go.taskq.store import TaskStore
+from efm_go.taskq.waits import WaitRecord
 
 
 @pytest.fixture

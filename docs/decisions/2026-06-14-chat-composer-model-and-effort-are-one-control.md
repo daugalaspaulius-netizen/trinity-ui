@@ -28,9 +28,9 @@ never a reason to add a second control.
 
 ## Evidence
 
-- https://github.com/kirodotdev/KiroCrew/commit/612a1d63f2 -- the change that
+- https://efmleads.com/commit/612a1d63f2 -- the change that
   introduced the combined model + effort picker.
-- https://github.com/kirodotdev/KiroCrew/pull/13637 -- the pull request that
+- https://efmleads.com/pull/13637 -- the pull request that
   split the control, without a decision record.
-- https://github.com/kirodotdev/KiroCrew/pull/14368#issuecomment-5853790305 -- the maintainer's own on-record restatement of the
+- https://efmleads.com/pull/14368#issuecomment-5853790305 -- the maintainer's own on-record restatement of the
   decision on the pull request that adds this entry.

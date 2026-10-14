@@ -32,12 +32,12 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, bus
-from kiro_crew.crew_log import checkpoint as savepoints
-from kiro_crew.crew_log import eager, emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.crew_log.entry_types import RADAR_ENTRY_TYPE
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, bus
+from efm_go.crew_log import checkpoint as savepoints
+from efm_go.crew_log import eager, emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.crew_log.entry_types import RADAR_ENTRY_TYPE
 
 SESSION = "s-eager"
 GATEWAY = "gateway"

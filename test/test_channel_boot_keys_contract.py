@@ -3,8 +3,8 @@
 Two places declare "this channel field cannot be adopted by the running
 transport", and nothing in the code ties them together:
 
-* the RUNTIME path -- each :class:`~kiro_crew.messaging.registry.ChannelDescriptor`
-  in ``kiro_crew.channels`` declares ``boot_keys``, which
+* the RUNTIME path -- each :class:`~efm_go.messaging.registry.ChannelDescriptor`
+  in ``efm_go.channels`` declares ``boot_keys``, which
   ``registry.changed_boot_keys`` reads to decide an IN-PROCESS channel restart
   (``GatewayOrchestrator._on_channel_config_change`` -> ``restart_channel``);
 * the UI path -- ``dashboard.channel_folders.channel_restart_required`` answers a
@@ -54,11 +54,11 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.channels import builtin_channel_descriptors
-from kiro_crew.config import schema
-from kiro_crew.dashboard.channel_folders import channel_restart_required
-from kiro_crew.messaging import registry
-from kiro_crew.messaging.registry import ChannelDescriptor
+from efm_go.channels import builtin_channel_descriptors
+from efm_go.config import schema
+from efm_go.dashboard.channel_folders import channel_restart_required
+from efm_go.messaging import registry
+from efm_go.messaging.registry import ChannelDescriptor
 
 #: The channel fields the docs mark ``restart=True`` -- messaging.md,
 #: "``restart_required`` is answered from schema metadata": "The exceptions, and

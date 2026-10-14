@@ -28,10 +28,10 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from dashboard_owner_helpers import NoConfiguredOwner
 
-from kiro_crew import mcp_core
-from kiro_crew.apps.builtins.issue_radar.backend import routes as ir_routes
-from kiro_crew.dashboard.token_auth import token_auth_middleware
-from kiro_crew.validation import MCP_CORE_SCHEMAS, ValidationError, validate_tool_args
+from efm_go import mcp_core
+from efm_go.apps.builtins.issue_radar.backend import routes as ir_routes
+from efm_go.dashboard.token_auth import token_auth_middleware
+from efm_go.validation import MCP_CORE_SCHEMAS, ValidationError, validate_tool_args
 
 TOOL = "issue_radar_record_investigation"
 RECORD_PATH = "/api/apps/issue-radar/investigation"
@@ -45,7 +45,7 @@ class TestGatewayPathIsReachableWithTheInternalSecret(unittest.TestCase):
     """Without this entry the tool's PUT gets the same 403 the prompt did."""
 
     def test_record_path_is_a_mixed_internal_path(self):
-        from kiro_crew.dashboard.server import _MIXED_INTERNAL_API_PATHS
+        from efm_go.dashboard.server import _MIXED_INTERNAL_API_PATHS
 
         assert RECORD_PATH in _MIXED_INTERNAL_API_PATHS
 
@@ -58,7 +58,7 @@ class TestGatewayPathIsReachableWithTheInternalSecret(unittest.TestCase):
         secret. Those write to GitHub/GitLab; the record route is local triage
         state only.
         """
-        from kiro_crew.dashboard.server import (
+        from efm_go.dashboard.server import (
             _MIXED_INTERNAL_API_PATHS,
             _STRICT_INTERNAL_API_PATHS,
         )
@@ -260,11 +260,11 @@ class TestFindingsAreRedactedBeforePersisting(unittest.TestCase):
         captured, _ = self._call(
             verdict="bug",
             root_cause="off-by-one in _parse_item_number",
-            summary="See https://github.com/kirodotdev/KiroCrew/issues/1039 for the thread.",
+            summary="See https://efmleads.com/issues/1039 for the thread.",
         )
         findings = captured["body"]["findings"]
         assert findings["root_cause"] == "off-by-one in _parse_item_number"
-        assert "github.com/kirodotdev/KiroCrew/issues/1039" in findings["summary"]
+        assert "efmleads.com/issues/1039" in findings["summary"]
 
 
 class TestMiddlewareDecision:
@@ -288,7 +288,7 @@ class TestMiddlewareDecision:
         return req
 
     def _mw(self, secret: str = "s3cret"):
-        from kiro_crew.dashboard.server import (
+        from efm_go.dashboard.server import (
             _MIXED_INTERNAL_API_PATHS,
             _STRICT_INTERNAL_API_PATHS,
         )

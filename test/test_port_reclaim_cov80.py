@@ -1,4 +1,4 @@
-"""Coverage for the platform-specific edges of :mod:`kiro_crew.dashboard.port_reclaim`.
+"""Coverage for the platform-specific edges of :mod:`efm_go.dashboard.port_reclaim`.
 
 ``test_port_reclaim.py`` covers the outcome matrix with every collaborator
 injected. Untested there: the POSIX ``lsof`` lookup and its three degrade paths,
@@ -17,8 +17,8 @@ import subprocess
 
 import pytest
 
-import kiro_crew.cli_server as cli_server
-from kiro_crew.dashboard import port_reclaim as pr
+import efm_go.cli_server as cli_server
+from efm_go.dashboard import port_reclaim as pr
 
 
 async def _unhealthy(_port: int, _timeout: float) -> bool:

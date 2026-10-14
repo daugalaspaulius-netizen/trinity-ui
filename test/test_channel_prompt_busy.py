@@ -29,9 +29,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import channel as channel_mod
-from kiro_crew.acp.client import AcpError, AcpPromptBusy
-from kiro_crew.channel import (
+from efm_go import channel as channel_mod
+from efm_go.acp.client import AcpError, AcpPromptBusy
+from efm_go.channel import (
     Channel,
     _reacquire_cleared_session,
     _recover_busy_agent,
@@ -39,9 +39,9 @@ from kiro_crew.channel import (
     _stream_task,
     run_channel_agent,
 )
-from kiro_crew.llm_helpers import is_prompt_busy
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.session import SessionManager
+from efm_go.llm_helpers import is_prompt_busy
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.session import SessionManager
 
 
 def _make_agent():

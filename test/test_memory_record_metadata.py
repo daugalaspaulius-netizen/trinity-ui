@@ -9,11 +9,11 @@ from unittest.mock import MagicMock
 import pytest
 from member_memory_helpers import declare_v2_store
 
-from kiro_crew import memory_record_metadata as meta
-from kiro_crew import memory_stores, vector_memory
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.history_consolidation import HistoryConsolidator
-from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+from efm_go import memory_record_metadata as meta
+from efm_go import memory_stores, vector_memory
+from efm_go._sqlite_compat import sqlite3
+from efm_go.history_consolidation import HistoryConsolidator
+from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
 
 def _bare_writer() -> HistoryConsolidator:
@@ -758,7 +758,7 @@ def test_true_but_older_user_quote_cannot_override_a_newer_owner_fact(store):
 
 
 def test_outbound_redaction_discovers_both_extension_tables(store, tmp_path):
-    from kiro_crew import snapshot_redact
+    from efm_go import snapshot_redact
 
     secret = "ghp_" + "A" * 36
     fact(store)
@@ -788,8 +788,8 @@ def test_outbound_redaction_discovers_both_extension_tables(store, tmp_path):
 
 
 def test_bulk_episode_edit_invalidates_live_and_saved_faiss_vectors(store):
-    from kiro_crew import memory_edit
-    from kiro_crew import vector_memory as vm
+    from efm_go import memory_edit
+    from efm_go import vector_memory as vm
 
     if not (vm._HAS_FAISS and vm._HAS_NUMPY):
         pytest.skip("optional FAISS is required for the actual persisted index regression")
@@ -824,7 +824,7 @@ def test_bulk_episode_edit_invalidates_live_and_saved_faiss_vectors(store):
 
 
 def test_another_process_vector_edit_cannot_reuse_old_faiss_scores_after_restart(store):
-    from kiro_crew import vector_memory as vm
+    from efm_go import vector_memory as vm
 
     if not (vm._HAS_FAISS and vm._HAS_NUMPY):
         pytest.skip("optional FAISS is required for the actual persisted index regression")

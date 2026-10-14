@@ -18,15 +18,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from overload_fakes import settle_depth_emits, settle_store_writes
 
-import kiro_crew.subagent as subagent_mod
-from kiro_crew.dashboard import chat_utils
-from kiro_crew.subagent import SubagentInfo, SubagentManager
-from kiro_crew.subagent_manager.admission import (
+import efm_go.subagent as subagent_mod
+from efm_go.dashboard import chat_utils
+from efm_go.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent_manager.admission import (
     TASK_STORE_UNAVAILABLE_CODE,
     SpawnAdmissionCoordinator,
 )
-from kiro_crew.taskq import model
-from kiro_crew.taskq.store import TaskStore, TaskStoreUnavailable
+from efm_go.taskq import model
+from efm_go.taskq.store import TaskStore, TaskStoreUnavailable
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -131,7 +131,7 @@ async def _drain_until_terminal(mgr: SubagentManager, store: TaskStore, *, total
 
 @pytest.fixture
 def quiet():
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         yield
 
 
@@ -525,7 +525,7 @@ async def test_a_terminal_write_the_store_refused_still_resumes_the_parent(
     purpose (a schema drift, a driver bug), so the pin is about the ESCAPE and
     not about ``TaskStoreUnavailable`` being spelled twice.
     """
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", pump_off_loop)
     mgr = await _manager(max_concurrent=2)
@@ -572,8 +572,8 @@ async def test_a_fenced_settle_propagates_unless_a_live_owner_holds_the_row(
     Both settle paths, because each reads the row in a frame of its own: the
     inline write, and the one posted to the writer thread (production's).
     """
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
-    from kiro_crew.taskq.waits import WaitRecord
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go.taskq.waits import WaitRecord
 
     monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", pump_off_loop)
     mgr = await _manager(max_concurrent=4)
@@ -793,7 +793,7 @@ def _no_store_read(store: TaskStore):
 
 
 def _probe_says_done(mgr: SubagentManager, agent_id: str) -> bool:
-    from kiro_crew.apps.spawn_sdk import build_done_probe
+    from efm_go.apps.spawn_sdk import build_done_probe
 
     return build_done_probe(mgr)(agent_id)
 
@@ -1075,7 +1075,7 @@ async def test_stop_all_between_claim_and_start_keeps_the_row_stopped(
     record: a live run the parent had been told was stopped, which the
     running sweep never sees.
     """
-    from kiro_crew.taskq import KIND_SUBAGENT
+    from efm_go.taskq import KIND_SUBAGENT
 
     mgr, params = await _popped_row(monkeypatch)
     store: TaskStore = mgr._taskq
@@ -1556,7 +1556,7 @@ async def test_a_row_with_an_empty_stage_owner_still_refills_and_starts(
 
 def test_a_store_outage_mid_retirement_still_reports_every_committed_cancel() -> None:
     """Rows cancelled before the outage are reported; no stage row is dispatched."""
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
+    from efm_go.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
 
     def _row(row_id: str, owner: str = "") -> SimpleNamespace:
         params = {"task": row_id, "_stage_boundary_owner": owner} if owner else {"task": row_id}
@@ -1583,7 +1583,7 @@ def test_a_store_outage_mid_retirement_still_reports_every_committed_cancel() ->
 
 def test_a_stage_row_an_outage_left_queued_arms_a_retry_pass() -> None:
     """The retry wake is armed even when the rest of the refill touches no store."""
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
+    from efm_go.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
 
     wakes: list[float] = []
     reported: list[dict] = []
@@ -1754,7 +1754,7 @@ async def test_an_unreadable_overflow_keeps_the_attached_children_guard_closed(q
 async def test_task_queue_disabled_keeps_legacy_queue(
     quiet, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     real_load = KiroCrewConfig.load
 

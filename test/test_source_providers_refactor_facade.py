@@ -1,10 +1,10 @@
 """The source-provider handler keeps its whole historical surface over its owners.
 
-``kiro_crew.dashboard.handlers.source_providers`` is imported by name from dozens of
+``efm_go.dashboard.handlers.source_providers`` is imported by name from dozens of
 production modules, reached as ``sp.<name>`` by more, and patched through as a module
 attribute by the test suite. Every name it defined, and every import callers reach
 through it, is therefore part of its contract, private names included. Its owners now live in
-``kiro_crew.dashboard.source_providers``; these tests pin that a read through the
+``efm_go.dashboard.source_providers``; these tests pin that a read through the
 handler answers from the owner, that a write through it reaches every caller, and
 that the owners keep the one-way import order that makes both true.
 """
@@ -24,8 +24,8 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.dashboard.handlers import source_providers as sp
-from kiro_crew.dashboard.source_providers import LOGGER_NAME
+from efm_go.dashboard.handlers import source_providers as sp
+from efm_go.dashboard.source_providers import LOGGER_NAME
 
 #: Every module-level name the handler bound before its owners moved out of it,
 #: its standard-library and typing imports included. A name dropped here is a

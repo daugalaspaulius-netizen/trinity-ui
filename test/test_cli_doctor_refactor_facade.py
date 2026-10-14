@@ -1,6 +1,6 @@
-"""``kiro_crew.cli_doctor`` stays the doctor's one import path and patch target.
+"""``efm_go.cli_doctor`` stays the doctor's one import path and patch target.
 
-The report's sections moved into the :mod:`kiro_crew.doctor_checks` families. What
+The report's sections moved into the :mod:`efm_go.doctor_checks` families. What
 every caller, test and doc still reaches is this module, so these tests pin what
 that promise needs:
 
@@ -12,7 +12,7 @@ that promise needs:
 * a star import still carries every public name;
 * the families read what this module binds through it, never through a second
   binding of their own, which is what makes the previous property structural; and
-* the families stay off the ``kiro_crew.cli`` import every command pays.
+* the families stay off the ``efm_go.cli`` import every command pays.
 """
 
 from __future__ import annotations
@@ -30,13 +30,13 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import cli_doctor, doctor_checks
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go import cli_doctor, doctor_checks
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _SRC = Path(cli_doctor.__file__).resolve().parent
 _REPO = _SRC.parents[1]
 
-#: Every name ``kiro_crew.cli_doctor`` bound before the sections moved, with what it
+#: Every name ``efm_go.cli_doctor`` bound before the sections moved, with what it
 #: was: a module, a function or class imported from elsewhere (and from where), a
 #: value, or a function the doctor defined itself.
 _BASE_NAMES: dict[str, str] = {
@@ -44,19 +44,19 @@ _BASE_NAMES: dict[str, str] = {
     "AGENT_FILENAME": "value:str",
     "CRED_DISCORD_BOT_TOKEN": "value:str",
     "CU_MCP_SERVER": "value:str",
-    "DefaultCapabilityManager": "class:kiro_crew.platform.defaults",
+    "DefaultCapabilityManager": "class:efm_go.platform.defaults",
     "KAS_RELAY_ENGINE": "value:str",
     "KAS_RELAY_ENGINE_FLAG": "value:str",
     "KIRO_AGENTS_DIR": "value:NoneType",
     "KIRO_CLI_BIN": "value:str",
-    "KiroCrewConfig": "class:kiro_crew.config.loader",
+    "KiroCrewConfig": "class:efm_go.config.loader",
     "LEGACY_CONFIG_DIR_NAME": "value:str",
     "MIN_NODE_VERSION": "value:tuple",
-    "McpServerInfo": "class:kiro_crew.mcp_discovery",
+    "McpServerInfo": "class:efm_go.mcp_discovery",
     "NATIVE_SKILL_ALIAS_PREFIX": "value:str",
     "PATH_ONLY_INSTALL_NOTE": "value:str",
     "Path": "class:pathlib",
-    "PlatformCompositionError": "class:kiro_crew.platform.context",
+    "PlatformCompositionError": "class:efm_go.platform.context",
     "SPEC_PERMISSIONS_MIN_VERSION": "value:tuple",
     "UTF8_TEXT": "value:mappingproxy",
     "_ALWAYS_ON_MCPS": "value:tuple",
@@ -86,7 +86,7 @@ _BASE_NAMES: dict[str, str] = {
     "_STRICT_IDENTITY_SERVERS": "value:tuple",
     "_TMPFS_FREE_INODES_FLOOR": "value:int",
     "_TMPFS_FREE_PCT_WARN": "value:float",
-    "_agent": "module:kiro_crew.agent",
+    "_agent": "module:efm_go.agent",
     "_agent_spec_model_problems": "own-func",
     "_agents_dir": "own-func",
     "_aws_auto_refreshes": "own-func",
@@ -146,7 +146,7 @@ _BASE_NAMES: dict[str, str] = {
     "_doctor_trust_root": "own-func",
     "_doctor_unresolved_mcp_refs": "own-func",
     "_doctor_whatsapp": "own-func",
-    "_find_ffmpeg": "func:kiro_crew.transcribe",
+    "_find_ffmpeg": "func:efm_go.transcribe",
     "_format_job_labels": "own-func",
     "_format_model_pin_problem": "own-func",
     "_gateway_memory_lines": "own-func",
@@ -163,117 +163,117 @@ _BASE_NAMES: dict[str, str] = {
     "_open_slot_agent_names": "own-func",
     "_os_fix_hint": "own-func",
     "_plat": "module:platform",
-    "_platform_libs_dirname": "func:kiro_crew.embeddings",
+    "_platform_libs_dirname": "func:efm_go.embeddings",
     "_print_wrapped": "own-func",
     "_process_apparmor_confinement": "own-func",
     "_process_userns_vantage_confined": "own-func",
-    "_read_agent_spec": "func:kiro_crew.agent_discovery",
-    "_read_gateway_pid": "func:kiro_crew.cli_perf",
+    "_read_agent_spec": "func:efm_go.agent_discovery",
+    "_read_gateway_pid": "func:efm_go.cli_perf",
     "_read_linux_proc_self": "own-func",
     "_report_kas_backend": "own-func",
     "_report_kas_spec_permissions": "own-func",
     "_report_node": "own-func",
-    "_resolve_model_url": "func:kiro_crew.embeddings",
+    "_resolve_model_url": "func:efm_go.embeddings",
     "_runtime_tmpfs_roots": "own-func",
     "_safe_display": "own-func",
     "_scan_cli_installer_residue": "own-func",
     "_service_profile_applies": "own-func",
-    "_source_checkout_root": "func:kiro_crew._bootstrap",
+    "_source_checkout_root": "func:efm_go._bootstrap",
     "_spec_gate_closed": "own-func",
     "_strict_agent_json_specs": "own-func",
     "_swap_total_kib": "own-func",
     "_tmpfs_usage": "own-func",
-    "_valid_override_home": "func:kiro_crew.config.paths",
+    "_valid_override_home": "func:efm_go.config.paths",
     "_venv_deps_ok": "own-func",
-    "acp_id_correction": "func:kiro_crew.model_registry",
-    "agent_spec_path": "func:kiro_crew.agent",
-    "agent_state": "module:kiro_crew.agent_state",
+    "acp_id_correction": "func:efm_go.model_registry",
+    "agent_spec_path": "func:efm_go.agent",
+    "agent_state": "module:efm_go.agent_state",
     "annotations": "value:_Feature",
-    "apparmor": "module:kiro_crew.service.apparmor",
+    "apparmor": "module:efm_go.service.apparmor",
     "asyncio": "module:asyncio",
-    "atomic_write": "func:kiro_crew.atomic_write",
-    "attribute_dump": "func:kiro_crew.stall_attribution",
-    "availability_detail": "func:kiro_crew.transcribe",
-    "bind_capability_manager": "func:kiro_crew.platform.capability_bound",
-    "build_kas_argv": "func:kiro_crew.acp.kas_transport",
-    "common_service": "module:kiro_crew.service.common",
-    "config_dir": "func:kiro_crew.config.paths",
-    "credential_vendor_server_ids": "func:kiro_crew.deny_guidance",
-    "current_context": "func:kiro_crew.platform.context",
-    "data_home": "func:kiro_crew.config.paths",
-    "default_model_path": "func:kiro_crew.embeddings",
-    "dep_sync": "module:kiro_crew.dep_sync",
-    "describe": "func:kiro_crew.stall_attribution",
-    "diagnostics": "module:kiro_crew.diagnostics",
-    "doctor_dead_paths": "func:kiro_crew.doctor_deadpath",
-    "dump_age_seconds": "func:kiro_crew.dashboard.crash_dump_store",
-    "dump_first_stack_lines": "func:kiro_crew.dashboard.crash_dump_store",
-    "dump_superseded": "func:kiro_crew.dashboard.crash_dump_store",
-    "dumps_with_stacks": "func:kiro_crew.dashboard.crash_dump_store",
-    "ensure_ffmpeg_in_path": "func:kiro_crew.transcribe",
-    "env_path": "func:kiro_crew.config.loader",
-    "format_node_version": "func:kiro_crew.constants",
-    "get_dumps_dir": "func:kiro_crew.dashboard.crash_dump_store",
-    "install_url": "module:kiro_crew.discord.install_url",
-    "installed_kiro_cli_version": "func:kiro_crew.kiro_cli",
-    "intent_probe": "module:kiro_crew.discord.intent_probe",
-    "is_agent_spec_name": "func:kiro_crew.agent_spec_format",
-    "is_claude_code": "func:kiro_crew.agent_sdk.provider_identity",
-    "is_dispatchable_member_name": "func:kiro_crew.members",
-    "is_local_only": "func:kiro_crew.dashboard.urls",
-    "is_registered_agent_name": "func:kiro_crew.validation",
-    "is_sensitive_path": "func:kiro_crew.security.paths",
-    "job_pause_state_from_disk": "func:kiro_crew.cron",
+    "atomic_write": "func:efm_go.atomic_write",
+    "attribute_dump": "func:efm_go.stall_attribution",
+    "availability_detail": "func:efm_go.transcribe",
+    "bind_capability_manager": "func:efm_go.platform.capability_bound",
+    "build_kas_argv": "func:efm_go.acp.kas_transport",
+    "common_service": "module:efm_go.service.common",
+    "config_dir": "func:efm_go.config.paths",
+    "credential_vendor_server_ids": "func:efm_go.deny_guidance",
+    "current_context": "func:efm_go.platform.context",
+    "data_home": "func:efm_go.config.paths",
+    "default_model_path": "func:efm_go.embeddings",
+    "dep_sync": "module:efm_go.dep_sync",
+    "describe": "func:efm_go.stall_attribution",
+    "diagnostics": "module:efm_go.diagnostics",
+    "doctor_dead_paths": "func:efm_go.doctor_deadpath",
+    "dump_age_seconds": "func:efm_go.dashboard.crash_dump_store",
+    "dump_first_stack_lines": "func:efm_go.dashboard.crash_dump_store",
+    "dump_superseded": "func:efm_go.dashboard.crash_dump_store",
+    "dumps_with_stacks": "func:efm_go.dashboard.crash_dump_store",
+    "ensure_ffmpeg_in_path": "func:efm_go.transcribe",
+    "env_path": "func:efm_go.config.loader",
+    "format_node_version": "func:efm_go.constants",
+    "get_dumps_dir": "func:efm_go.dashboard.crash_dump_store",
+    "install_url": "module:efm_go.discord.install_url",
+    "installed_kiro_cli_version": "func:efm_go.kiro_cli",
+    "intent_probe": "module:efm_go.discord.intent_probe",
+    "is_agent_spec_name": "func:efm_go.agent_spec_format",
+    "is_claude_code": "func:efm_go.agent_sdk.provider_identity",
+    "is_dispatchable_member_name": "func:efm_go.members",
+    "is_local_only": "func:efm_go.dashboard.urls",
+    "is_registered_agent_name": "func:efm_go.validation",
+    "is_sensitive_path": "func:efm_go.security.paths",
+    "job_pause_state_from_disk": "func:efm_go.cron",
     "json": "module:json",
-    "kiro_agents_dir": "func:kiro_crew.config.paths",
+    "kiro_agents_dir": "func:efm_go.config.paths",
     "logger": "value:Logger",
     "logging": "module:logging",
-    "machine_hostname": "func:kiro_crew.dashboard.urls",
-    "may_skip_gate_now": "func:kiro_crew.platform.governance",
-    "mcp_governance_may_apply": "func:kiro_crew.kiro_cli",
-    "model_file_present": "func:kiro_crew.embeddings",
-    "newest_dump_with_stacks": "func:kiro_crew.dashboard.crash_dump_store",
-    "node_too_old_message": "func:kiro_crew.constants",
-    "node_version_meets_floor": "func:kiro_crew.constants",
-    "normalize_agent_model": "func:kiro_crew.config.sections",
+    "machine_hostname": "func:efm_go.dashboard.urls",
+    "may_skip_gate_now": "func:efm_go.platform.governance",
+    "mcp_governance_may_apply": "func:efm_go.kiro_cli",
+    "model_file_present": "func:efm_go.embeddings",
+    "newest_dump_with_stacks": "func:efm_go.dashboard.crash_dump_store",
+    "node_too_old_message": "func:efm_go.constants",
+    "node_version_meets_floor": "func:efm_go.constants",
+    "normalize_agent_model": "func:efm_go.config.sections",
     "os": "module:os",
-    "parse_dashboard_url": "func:kiro_crew.dashboard.urls",
-    "parse_node_version": "func:kiro_crew.constants",
-    "pip_install_channel_available": "func:kiro_crew.extras",
-    "pip_install_command": "func:kiro_crew.extras",
-    "pip_install_command_for": "func:kiro_crew.extras",
-    "platform_compat": "module:kiro_crew.platform_compat",
-    "platform_context": "module:kiro_crew.platform.context",
-    "probe_server": "func:kiro_crew.mcp_discovery",
-    "project_agent_files": "func:kiro_crew.agent_discovery",
-    "project_agent_name": "func:kiro_crew.agent_discovery",
-    "project_agents_dir": "func:kiro_crew.config.paths",
-    "render_doctor_section": "func:kiro_crew.config.superseded_defaults",
-    "resolve_agent_bindings": "func:kiro_crew.config.loader",
-    "resolve_custom_model": "func:kiro_crew.embeddings",
-    "resolve_effective_model": "func:kiro_crew.config.loader",
-    "resolve_kiro_cli": "func:kiro_crew.kiro_cli",
-    "safe_context_call": "func:kiro_crew.platform.context",
-    "sandbox": "module:kiro_crew.sandbox",
-    "sel": "func:kiro_crew.sel",
-    "service_controller": "module:kiro_crew.service.controller",
-    "service_linux": "module:kiro_crew.service.linux",
+    "parse_dashboard_url": "func:efm_go.dashboard.urls",
+    "parse_node_version": "func:efm_go.constants",
+    "pip_install_channel_available": "func:efm_go.extras",
+    "pip_install_command": "func:efm_go.extras",
+    "pip_install_command_for": "func:efm_go.extras",
+    "platform_compat": "module:efm_go.platform_compat",
+    "platform_context": "module:efm_go.platform.context",
+    "probe_server": "func:efm_go.mcp_discovery",
+    "project_agent_files": "func:efm_go.agent_discovery",
+    "project_agent_name": "func:efm_go.agent_discovery",
+    "project_agents_dir": "func:efm_go.config.paths",
+    "render_doctor_section": "func:efm_go.config.superseded_defaults",
+    "resolve_agent_bindings": "func:efm_go.config.loader",
+    "resolve_custom_model": "func:efm_go.embeddings",
+    "resolve_effective_model": "func:efm_go.config.loader",
+    "resolve_kiro_cli": "func:efm_go.kiro_cli",
+    "safe_context_call": "func:efm_go.platform.context",
+    "sandbox": "module:efm_go.sandbox",
+    "sel": "func:efm_go.sel",
+    "service_controller": "module:efm_go.service.controller",
+    "service_linux": "module:efm_go.service.linux",
     "shlex": "module:shlex",
     "shutil": "module:shutil",
-    "signing_health": "func:kiro_crew.session_pid_sig",
-    "spec_permissions_supported": "func:kiro_crew.kiro_cli",
-    "stdlib_shadow": "module:kiro_crew.stdlib_shadow",
-    "stt": "module:kiro_crew.stt",
+    "signing_health": "func:efm_go.session_pid_sig",
+    "spec_permissions_supported": "func:efm_go.kiro_cli",
+    "stdlib_shadow": "module:efm_go.stdlib_shadow",
+    "stt": "module:efm_go.stt",
     "subprocess": "module:subprocess",
-    "sweep_agents_dir": "func:kiro_crew.agents_janitor",
+    "sweep_agents_dir": "func:efm_go.agents_janitor",
     "sys": "module:sys",
     "tempfile": "module:tempfile",
     "textwrap": "module:textwrap",
-    "unhealthy_jobs_from_disk": "func:kiro_crew.cron",
-    "unsandboxed_exec_declared": "func:kiro_crew.config.loader",
+    "unhealthy_jobs_from_disk": "func:efm_go.cron",
+    "unsandboxed_exec_declared": "func:efm_go.config.loader",
     "urllib": "module:urllib",
-    "verify_vendored_libs": "func:kiro_crew.embeddings",
-    "warm_backend": "func:kiro_crew.sandbox",
+    "verify_vendored_libs": "func:efm_go.embeddings",
+    "warm_backend": "func:efm_go.sandbox",
 }
 
 
@@ -390,7 +390,7 @@ def test_a_patch_here_lands_on_the_family_and_is_undone(name: str) -> None:
 
 def test_a_patch_of_a_name_this_module_binds_reaches_a_family_reader(capsys) -> None:
     """The other direction: a family reads what this module binds through it."""
-    from kiro_crew.doctor_checks import access
+    from efm_go.doctor_checks import access
 
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(cli_doctor, "signing_health", lambda: (True, Path("/pinned/key")))
@@ -410,7 +410,7 @@ def test_a_loaded_family_is_read_without_calling_import_module() -> None:
     With it refused outright, a name whose family is already loaded still reads,
     writes and restores through the facade.
     """
-    from kiro_crew.doctor_checks import render
+    from efm_go.doctor_checks import render
 
     name = "_safe_display"
     original = getattr(render, name)
@@ -461,7 +461,7 @@ def test_the_facade_reads_no_reexported_name_as_a_bare_global() -> None:
 def test_the_bare_global_scan_can_fail() -> None:
     sample = sorted(cli_doctor._EXPORTS)[0]
     assert _bare_loads(f"def f():\n    return {sample}\n") == [(2, sample)]
-    assert _bare_loads(f"from kiro_crew.doctor_checks.x import (\n    {sample},\n)\n") == []
+    assert _bare_loads(f"from efm_go.doctor_checks.x import (\n    {sample},\n)\n") == []
 
 
 # ── One home per name ─────────────────────────────────────────────────────────
@@ -476,7 +476,7 @@ def test_no_family_holds_a_second_binding_of_a_facade_name() -> None:
     }
     # Imports the sections made inside their own bodies before the move, kept as
     # they were: at the time a patch on this module did not reach them either.
-    kept_as_they_were = {("kiro_crew.doctor_checks.workload", "data_home")}
+    kept_as_they_were = {("efm_go.doctor_checks.workload", "data_home")}
     offenders: list[str] = []
     for module in _family_modules():
         tree = ast.parse(inspect.getsource(module))
@@ -494,7 +494,7 @@ def test_no_family_holds_a_second_binding_of_a_facade_name() -> None:
                     continue
                 if source == cli_doctor.__name__ or source.startswith(doctor_checks.__name__):
                     offenders.append(f"{module.__name__} imports {bound} from {source}")
-                elif source.startswith("kiro_crew") and bound in facade_names:
+                elif source.startswith("efm_go") and bound in facade_names:
                     offenders.append(f"{module.__name__} imports {bound} from {source}")
     assert offenders == []
 
@@ -543,14 +543,14 @@ def test_the_package_names_every_family() -> None:
 # ── Import weight ─────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("entry", ["kiro_crew.cli", "kiro_crew.cli_doctor"])
+@pytest.mark.parametrize("entry", ["efm_go.cli", "efm_go.cli_doctor"])
 def test_importing_the_cli_loads_no_family(entry: str, tmp_path: Path) -> None:
     """``cli.py`` imports ``_doctor`` at module scope for every command, including
     the long-lived MCP stdio servers, so a family imported from here would be paid
     by all of them."""
     code = (
         f"import sys, {entry}\n"
-        "loaded = sorted(m for m in sys.modules if m.startswith('kiro_crew.doctor_checks'))\n"
+        "loaded = sorted(m for m in sys.modules if m.startswith('efm_go.doctor_checks'))\n"
         "print(','.join(loaded))\n"
     )
     result = subprocess.run(

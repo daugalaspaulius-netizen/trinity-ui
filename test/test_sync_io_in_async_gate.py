@@ -30,7 +30,7 @@ CI = ROOT / ".github" / "workflows" / "ci.yml"
 PROFILE = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"
@@ -412,7 +412,7 @@ class TestExemplarStaysClean:
         # dashboard/handlers/memory.py is the control case: it wraps every
         # store call in asyncio.to_thread while handlers/knowledge.py next door
         # does not. It must never appear in the baseline.
-        rel = "src/kiro_crew/dashboard/handlers/memory.py"
+        rel = "src/efm_go/dashboard/handlers/memory.py"
         source = (ROOT / rel).read_text(encoding="utf-8")
         assert gate._violations_in_source(source) == []
         assert rel not in gate._read_baseline(BASELINE)

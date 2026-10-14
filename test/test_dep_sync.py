@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import dep_sync
+from efm_go import dep_sync
 
 _SETUP_CFG = textwrap.dedent("""
     [options]
@@ -63,7 +63,7 @@ def _preconditions_ok(request):
 
 def _origin_inside(target_py):
     """A probe answer that resolves inside whatever repo the test passed."""
-    return str(Path(_origin_inside.repo) / "src" / "kiro_crew" / "__init__.py")
+    return str(Path(_origin_inside.repo) / "src" / "efm_go" / "__init__.py")
 
 
 def test_normalize_folds_the_spellings_pep503_treats_as_one():
@@ -393,21 +393,21 @@ def test_console_script_target_prefers_the_pyproject_declaration(repo):
     """`scripts` is not dynamic here, so pyproject is what builds the wrapper."""
     (repo / "pyproject.toml").write_text(
         '[project]\nname = "kirocrew"\ndynamic = ["dependencies"]\n\n'
-        '[project.scripts]\nkirocrew = "kiro_crew.new:main"\n',
+        '[project.scripts]\nkirocrew = "efm_go.new:main"\n',
         encoding="utf-8",
     )
 
-    assert dep_sync.console_script_target(repo, "kirocrew") == "kiro_crew.new:main"
+    assert dep_sync.console_script_target(repo, "kirocrew") == "efm_go.new:main"
 
 
 def test_console_script_target_falls_back_to_setup_cfg(repo):
     (repo / "setup.cfg").write_text(
         _SETUP_CFG + "\n\n[options.entry_points]\nconsole_scripts =\n"
-        "    kirocrew = kiro_crew.old:main\n",
+        "    kirocrew = efm_go.old:main\n",
         encoding="utf-8",
     )
 
-    assert dep_sync.console_script_target(repo, "kirocrew") == "kiro_crew.old:main"
+    assert dep_sync.console_script_target(repo, "kirocrew") == "efm_go.old:main"
 
 
 def test_console_script_target_reports_a_removal_rather_than_reading_a_stale_copy(repo):
@@ -420,12 +420,12 @@ def test_console_script_target_reports_a_removal_rather_than_reading_a_stale_cop
     """
     (repo / "setup.cfg").write_text(
         _SETUP_CFG + "\n\n[options.entry_points]\nconsole_scripts =\n"
-        "    kirocrew = kiro_crew.old:main\n",
+        "    kirocrew = efm_go.old:main\n",
         encoding="utf-8",
     )
     (repo / "pyproject.toml").write_text(
         '[project]\nname = "kirocrew"\ndynamic = ["dependencies"]\n\n'
-        '[project.scripts]\nsomething-else = "kiro_crew.other:main"\n',
+        '[project.scripts]\nsomething-else = "efm_go.other:main"\n',
         encoding="utf-8",
     )
 
@@ -436,7 +436,7 @@ def test_console_script_target_reads_no_scripts_table_as_a_removal_too(repo):
     """No `scripts` and not dynamic is the same statement: setuptools builds none."""
     (repo / "setup.cfg").write_text(
         _SETUP_CFG + "\n\n[options.entry_points]\nconsole_scripts =\n"
-        "    kirocrew = kiro_crew.old:main\n",
+        "    kirocrew = efm_go.old:main\n",
         encoding="utf-8",
     )
     (repo / "pyproject.toml").write_text(
@@ -451,7 +451,7 @@ def test_console_script_target_still_reads_setup_cfg_when_scripts_is_dynamic(rep
     """A field listed as dynamic is still setup.cfg's to declare."""
     (repo / "setup.cfg").write_text(
         _SETUP_CFG + "\n\n[options.entry_points]\nconsole_scripts =\n"
-        "    kirocrew = kiro_crew.old:main\n",
+        "    kirocrew = efm_go.old:main\n",
         encoding="utf-8",
     )
     (repo / "pyproject.toml").write_text(
@@ -459,7 +459,7 @@ def test_console_script_target_still_reads_setup_cfg_when_scripts_is_dynamic(rep
         encoding="utf-8",
     )
 
-    assert dep_sync.console_script_target(repo, "kirocrew") == "kiro_crew.old:main"
+    assert dep_sync.console_script_target(repo, "kirocrew") == "efm_go.old:main"
 
 
 def test_rejected_specs_refuses_paths_archives_and_the_project_itself():
@@ -467,7 +467,7 @@ def test_rejected_specs_refuses_paths_archives_and_the_project_itself():
     for hostile in [".", "./local", "/abs/path", r"C:\pkgs\x", "file:./x", "x.whl", "-e"]:
         assert dep_sync.rejected_specs([hostile]), hostile
 
-    # Only spellings PEP 503 actually folds onto this project's name. `kiro_crew`
+    # Only spellings PEP 503 actually folds onto this project's name. `efm_go`
     # normalizes to `kiro-crew`, which is a DIFFERENT distribution, so it is not
     # claimed here.
     for spelling in [
@@ -487,7 +487,7 @@ def test_installed_package_origin_reports_where_the_package_resolves():
 
     class _Proc:
         returncode = 0
-        stdout = "/checkouts/main/src/kiro_crew/__init__.py\n"
+        stdout = "/checkouts/main/src/efm_go/__init__.py\n"
 
     with patch.object(dep_sync.subprocess, "run", return_value=_Proc()):
         origin = dep_sync.installed_package_origin(Path("py"))
@@ -508,7 +508,7 @@ def test_installed_package_origin_is_none_when_the_package_is_absent():
 def test_venv_serving_another_checkout_is_reported(tmp_path):
     """The harm this guards: upgrading a runtime another checkout is served by."""
     reason = dep_sync.venv_not_mapped_to(
-        str(tmp_path / "other" / "src" / "kiro_crew" / "__init__.py"), tmp_path / "main"
+        str(tmp_path / "other" / "src" / "efm_go" / "__init__.py"), tmp_path / "main"
     )
 
     assert reason is not None
@@ -523,14 +523,14 @@ def test_an_unresolvable_package_is_not_taken_as_a_match(tmp_path):
 
 def test_a_venv_serving_this_checkout_passes(tmp_path):
     repo = tmp_path / "main"
-    origin = repo / "src" / "kiro_crew" / "__init__.py"
+    origin = repo / "src" / "efm_go" / "__init__.py"
 
     assert dep_sync.venv_not_mapped_to(str(origin), repo) is None
 
 
 def test_a_sibling_directory_sharing_the_prefix_does_not_count_as_inside(tmp_path):
     """`<repo>-wt` starts with `<repo>` as a string but is a different checkout."""
-    sibling = tmp_path / "main-wt" / "src" / "kiro_crew" / "__init__.py"
+    sibling = tmp_path / "main-wt" / "src" / "efm_go" / "__init__.py"
 
     assert dep_sync.venv_not_mapped_to(str(sibling), tmp_path / "main") is not None
 
@@ -630,7 +630,7 @@ def test_main_refuses_a_venv_serving_another_checkout(repo, capsys):
         patch.object(
             dep_sync,
             "installed_package_origin",
-            return_value="/checkouts/other/src/kiro_crew/__init__.py",
+            return_value="/checkouts/other/src/efm_go/__init__.py",
         ),
         patch.object(dep_sync, "subprocess") as sp,
     ):
@@ -672,9 +672,9 @@ def test_main_reports_a_repointed_console_script_after_installing(repo, capsys):
     _origin_inside.repo = repo
 
     with (
-        patch.object(dep_sync, "console_script_target", return_value="kiro_crew.new:main"),
+        patch.object(dep_sync, "console_script_target", return_value="efm_go.new:main"),
         patch.object(
-            dep_sync, "installed_console_script_target", return_value="kiro_crew.old:main"
+            dep_sync, "installed_console_script_target", return_value="efm_go.old:main"
         ),
         patch.object(dep_sync.subprocess, "run", return_value=_Proc()),
     ):
@@ -682,8 +682,8 @@ def test_main_reports_a_repointed_console_script_after_installing(repo, capsys):
 
     assert rc == 1
     err = capsys.readouterr().err
-    assert "kiro_crew.new:main" in err
-    assert "kiro_crew.old:main" in err
+    assert "efm_go.new:main" in err
+    assert "efm_go.old:main" in err
     assert "No dependency was installed" not in err
 
 
@@ -704,7 +704,7 @@ def test_main_reports_a_removed_console_script_as_a_removal(repo, capsys):
     with (
         patch.object(dep_sync, "console_script_target", return_value=dep_sync.SCRIPT_REMOVED),
         patch.object(
-            dep_sync, "installed_console_script_target", return_value="kiro_crew.old:main"
+            dep_sync, "installed_console_script_target", return_value="efm_go.old:main"
         ),
         patch.object(dep_sync.subprocess, "run", return_value=_Proc()),
     ):
@@ -713,7 +713,7 @@ def test_main_reports_a_removed_console_script_as_a_removal(repo, capsys):
     assert rc == 1
     err = capsys.readouterr().err
     assert "no longer declared" in err
-    assert "kiro_crew.old:main" in err
+    assert "efm_go.old:main" in err
     assert "repointed to" not in err
     assert "No dependency was installed" not in err
 
@@ -728,7 +728,7 @@ def test_main_tolerates_an_unreadable_installed_entry_point(repo):
     _origin_inside.repo = repo
 
     with (
-        patch.object(dep_sync, "console_script_target", return_value="kiro_crew.cli:main"),
+        patch.object(dep_sync, "console_script_target", return_value="efm_go.cli:main"),
         patch.object(dep_sync, "installed_console_script_target", return_value=None),
         patch.object(dep_sync.subprocess, "run", return_value=_Proc()),
     ):
@@ -942,7 +942,7 @@ def test_sync_or_reinstall_fails_when_package_unimportable_after_pip_ok(tmp_path
     # _probe_interpreter owns the -I, neutral-CWD, and PYTHONPATH isolation
     # contract. Calling it here prevents a source checkout in the parent process
     # from satisfying a postcondition about the target venv.
-    import_probe.assert_called_once_with(Path("/venv/bin/python"), "import kiro_crew", timeout=None)
+    import_probe.assert_called_once_with(Path("/venv/bin/python"), "import efm_go", timeout=None)
 
 
 def test_sync_or_reinstall_fails_when_import_probe_times_out(tmp_path):
@@ -974,7 +974,7 @@ def test_sync_or_reinstall_fails_when_import_probe_times_out(tmp_path):
 
     assert rc == 1
     assert any("import check timed out" in m for m, _ in messages)
-    import_probe.assert_called_once_with(Path("/venv/bin/python"), "import kiro_crew", timeout=7)
+    import_probe.assert_called_once_with(Path("/venv/bin/python"), "import efm_go", timeout=7)
 
 
 def test_sync_or_reinstall_repairs_absent_package_in_verified_project_venv(tmp_path):
@@ -1426,10 +1426,10 @@ def test_installed_package_origin_fails_closed_on_an_unrunnable_interpreter(tmp_
 
 
 def _decoy_package(tmp_path):
-    """A directory holding a decoy ``kiro_crew`` package, as a checkout's src/ does."""
+    """A directory holding a decoy ``efm_go`` package, as a checkout's src/ does."""
     decoy = tmp_path / "decoy-src"
-    (decoy / "kiro_crew").mkdir(parents=True)
-    (decoy / "kiro_crew" / "__init__.py").write_text("", encoding="utf-8")
+    (decoy / "efm_go").mkdir(parents=True)
+    (decoy / "efm_go" / "__init__.py").write_text("", encoding="utf-8")
     return decoy
 
 
@@ -1437,7 +1437,7 @@ def test_origin_probe_ignores_a_decoy_package_in_the_callers_cwd(tmp_path, monke
     """The probe describes the venv, never the caller's working directory.
 
     The reproduction from the field: the caller (the Dev Fleet backend) runs
-    with its CWD inside a checkout's ``src/``, which contains ``kiro_crew/``.
+    with its CWD inside a checkout's ``src/``, which contains ``efm_go/``.
     An unisolated ``python -c`` puts that CWD at ``sys.path[0]``, so
     ``find_spec`` resolves the decoy for ANY target interpreter and the guard
     refuses a healthy venv. The probe's answer must not be the decoy.
@@ -1577,7 +1577,7 @@ def test_sync_captures_pip_output_instead_of_writing_it_to_stderr(tmp_path, caps
 
 
 def test_module_imports_stdlib_only():
-    """The invariant ``kiro_crew._bootstrap`` depends on, enforced.
+    """The invariant ``efm_go._bootstrap`` depends on, enforced.
 
     That caller reaches for this module precisely when a declared dependency is
     missing from the venv, so a third-party import here would fail in exactly the

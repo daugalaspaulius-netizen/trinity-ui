@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.monitoring import models
-from kiro_crew.monitoring.decision import decide_monitor
-from kiro_crew.monitoring.models import (
+from efm_go.monitoring import models
+from efm_go.monitoring.decision import decide_monitor
+from efm_go.monitoring.models import (
     DEFAULT_MONITOR_COALESCE_SECS,
     DEFAULT_MONITOR_REALERT_SECS,
     MONITOR_REVISION_KEY_SPACE,

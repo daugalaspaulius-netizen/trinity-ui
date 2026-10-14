@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from kiro_crew import agent_state
+from efm_go import agent_state
 
 
 def test_lifts_when_unset():
@@ -153,7 +153,7 @@ def test_get_fork_info_ignores_non_string_values():
     Written straight to the sidecar so the type guard is exercised without
     set_fork_info's str() coercion masking it.
     """
-    from kiro_crew import agent_state as _st
+    from efm_go import agent_state as _st
 
     _st._write({"weird": {_st._FORKED_FROM: 123, _st._PRIVATE_TO: ["c"]}})
     assert agent_state.get_fork_info("weird") is None

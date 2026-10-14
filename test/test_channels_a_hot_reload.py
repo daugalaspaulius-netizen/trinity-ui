@@ -64,13 +64,13 @@ from _hot_reload_helpers import (
     sel_outcomes,
 )
 
-from kiro_crew.config import live
-from kiro_crew.discord.transport import DiscordTransport
-from kiro_crew.discord.transport_dispatch import DiscordDispatcher
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.telegram.transport import TelegramTransport
-from kiro_crew.telegram.transport_dispatch import TelegramDispatcher
-from kiro_crew.webex.transport import WebexTransport
+from efm_go.config import live
+from efm_go.discord.transport import DiscordTransport
+from efm_go.discord.transport_dispatch import DiscordDispatcher
+from efm_go.messaging.transport import InboundMessage
+from efm_go.telegram.transport import TelegramTransport
+from efm_go.telegram.transport_dispatch import TelegramDispatcher
+from efm_go.webex.transport import WebexTransport
 
 CASES = channel_cases()
 
@@ -263,7 +263,7 @@ def test_an_unreadable_config_falls_back_to_the_boot_copy(case: ChannelCase, mon
     """A threshold is not an authorization decision, so a turn keeps running."""
     d = case.make_dispatcher(soft=80, hard=95)
     monkeypatch.setattr(
-        "kiro_crew.config.loader.KiroCrewConfig.load",
+        "efm_go.config.loader.KiroCrewConfig.load",
         staticmethod(lambda *a, **k: (_ for _ in ()).throw(OSError("boom"))),
     )
     assert case.read_thresholds(d) == case.expected_thresholds(80, 95)
@@ -280,7 +280,7 @@ def test_dm_scope_is_boot_only(case: ChannelCase) -> None:
     session persisted there. So the field is ``restart=True`` and the dispatchers
     read the boot copy: a live change is invisible before AND after ``/new``.
     """
-    from kiro_crew.config.schema import requires_restart
+    from efm_go.config.schema import requires_restart
 
     assert requires_restart("messaging.dm_scope")
     assert case.dm_scope_probe is not None

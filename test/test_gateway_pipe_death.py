@@ -27,7 +27,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.client import AcpProcessDied
+from efm_go.acp.client import AcpProcessDied
 
 PARENT_KEY = "C123:ts.death"
 
@@ -56,8 +56,8 @@ def _gateway_with_on_done():
     orch.slack.open_dm = AsyncMock(return_value="D_U1")
     orch.slack.post_message = AsyncMock()
     orch.slack.post_blocks = AsyncMock(return_value="ts")
-    with patch("kiro_crew.slack.handler.is_yolo_mode", return_value=False):
-        with patch("kiro_crew.slack.gateway.SubagentManager") as mock_sm:
+    with patch("efm_go.slack.handler.is_yolo_mode", return_value=False):
+        with patch("efm_go.slack.gateway.SubagentManager") as mock_sm:
             mgr = MagicMock()
             mgr.start_reaper = MagicMock()
             mgr.running = []
@@ -112,7 +112,7 @@ class TestGatewayAcpProcessDiedInjection:
         info = _finished_subagent()
 
         with patch(
-            "kiro_crew.slack.gateway.stream_and_collect",
+            "efm_go.slack.gateway.stream_and_collect",
             new_callable=AsyncMock,
             side_effect=AcpProcessDied("pipe broken"),
         ):
@@ -138,7 +138,7 @@ class TestGatewayAcpProcessDiedInjection:
         info = _finished_subagent()
 
         with patch(
-            "kiro_crew.slack.gateway.stream_and_collect",
+            "efm_go.slack.gateway.stream_and_collect",
             new_callable=AsyncMock,
             side_effect=AcpProcessDied("pipe broken"),
         ):

@@ -17,8 +17,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import webhooks
-from kiro_crew.dashboard.handlers import hooks as H
+from efm_go import webhooks
+from efm_go.dashboard.handlers import hooks as H
 
 
 @pytest.fixture()
@@ -860,7 +860,7 @@ class TestOneTurnPerSessionKey:
         """
         from dataclasses import replace as dataclass_replace
 
-        from kiro_crew.execution_context import (
+        from efm_go.execution_context import (
             MemoryStoreRef,
             bind_session_execution,
             execution_for_store,
@@ -1754,7 +1754,7 @@ class TestDeliveryPathTypeSafety:
 
     def test_the_redactor_really_does_raise_on_a_non_string(self):
         """Pins the premise, so this stays a real guard and not a style rule."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         with pytest.raises(TypeError):
             redact_exfiltration_urls(123)  # type: ignore[arg-type]

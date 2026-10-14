@@ -1,8 +1,8 @@
-"""A patch on ``kiro_crew.snapshot`` of a helper a test replaces reaches every call site.
+"""A patch on ``efm_go.snapshot`` of a helper a test replaces reaches every call site.
 
 The owner modules read each helper, driver and limit in ``LATE_BOUND`` through
 ``snapshot_components._facade()`` when they use it, so a patch of one of those names on the
-facade reaches the owners' call sites too, ``kiro_crew.snapshot`` stays a plain module, and
+facade reaches the owners' call sites too, ``efm_go.snapshot`` stays a plain module, and
 undoing a patch is plain attribute assignment. Every other name an owner uses resolves in
 that owner's own globals, so a patch of it on the facade reaches the facade's code only.
 
@@ -11,7 +11,7 @@ lives in an owner, so a patch that stops reaching that call site fails here by n
 than turning a failure-injection test elsewhere into a pass that proves nothing. The tests
 after them pin the late binding itself: which names go through the facade, that every use
 of them does, and that the facade stays a plain module with nothing to mirror. The last
-ones scan ``test/`` and every ``tests`` package under ``src/kiro_crew`` and fail on a patch
+ones scan ``test/`` and every ``tests`` package under ``src/efm_go`` and fail on a patch
 no call site sees: a facade patch of a name an owner reads itself, or an owner patch of a
 ``LATE_BOUND`` name.
 """
@@ -35,9 +35,9 @@ import pytest
 from test_snapshot import _make_snapshot, _setup_fake_kirocrew, unpinnable_argv
 
 from conftest import requires_o_nofollow
-from kiro_crew import snapshot as snap
-from kiro_crew import snapshot_archive, snapshot_components, snapshot_merge, snapshot_restore
-from kiro_crew.jsonl_util import OversizedRecord
+from efm_go import snapshot as snap
+from efm_go import snapshot_archive, snapshot_components, snapshot_merge, snapshot_restore
+from efm_go.jsonl_util import OversizedRecord
 
 _OWNERS = (snapshot_components, snapshot_archive, snapshot_restore, snapshot_merge)
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -104,7 +104,7 @@ def test_a_facade_spy_sees_the_replace_transaction_call_it(
 ) -> None:
     callers = _spy(monkeypatch, name)
     assert _replace(bundle) == 0
-    assert "kiro_crew.snapshot_restore" in callers, f"snapshot.{name} never reached the owner"
+    assert "efm_go.snapshot_restore" in callers, f"snapshot.{name} never reached the owner"
 
 
 def test_a_facade_failure_injection_reaches_the_rollback(
@@ -116,7 +116,7 @@ def test_a_facade_failure_injection_reaches_the_rollback(
     monkeypatch.setattr(snap, "_do_replace_mutations", fail)
     callers = _spy(monkeypatch, "_restore_everything_from_rollback")
     assert _replace(bundle) == 1
-    assert callers == ["kiro_crew.snapshot_restore"]
+    assert callers == ["efm_go.snapshot_restore"]
     assert "Your previous state was put back" in capsys.readouterr().out
 
 
@@ -133,7 +133,7 @@ def test_a_facade_clock_names_the_rollback_directory(
 
     monkeypatch.setattr(snap, "datetime", _Clock)
     assert _replace(bundle) == 0
-    assert "kiro_crew.snapshot_restore" in callers
+    assert "efm_go.snapshot_restore" in callers
 
 
 def test_a_facade_gateway_probe_is_the_one_restore_asks(
@@ -162,7 +162,7 @@ def test_a_facade_spy_sees_the_staging_call_it(
 ) -> None:
     callers = _spy(monkeypatch, name)
     assert snap.snapshot_main([str(tmp_path / "out"), *unpinnable_argv()]) == 0
-    assert "kiro_crew.snapshot_archive" in callers, f"snapshot.{name} never reached the owner"
+    assert "efm_go.snapshot_archive" in callers, f"snapshot.{name} never reached the owner"
 
 
 def test_a_facade_sqlite_driver_captures_the_databases(
@@ -181,7 +181,7 @@ def test_a_facade_sqlite_driver_captures_the_databases(
 
     monkeypatch.setattr(snap, "sqlite3", _Driver())
     assert snap.snapshot_main([str(tmp_path / "out"), *unpinnable_argv()]) == 0
-    assert "kiro_crew.snapshot_archive" in callers
+    assert "efm_go.snapshot_archive" in callers
 
 
 @pytest.mark.parametrize("copy", ["_copytree_safe", "_copy_tree_no_overwrite"])
@@ -221,7 +221,7 @@ def test_a_facade_data_home_bounds_the_tree_root_check(
 
     monkeypatch.setattr(snap, "_mc_dir", mc_dir)
     assert snap.safe_tree_root(home / "workspace", what="component root") == home / "workspace"
-    assert callers == ["kiro_crew.snapshot_components"]
+    assert callers == ["efm_go.snapshot_components"]
 
 
 # ── Reading an archive ───────────────────────────────────────────────────────
@@ -262,7 +262,7 @@ def test_a_facade_spy_sees_the_notification_merge_call_it(
 ) -> None:
     callers = _spy(monkeypatch, name)
     snap._merge_notifications(*_notification_files(tmp_path, _BUNDLE_RECORD))
-    assert "kiro_crew.snapshot_merge" in callers, f"snapshot.{name} never reached the owner"
+    assert "efm_go.snapshot_merge" in callers, f"snapshot.{name} never reached the owner"
 
 
 @requires_o_nofollow
@@ -293,7 +293,7 @@ def test_a_facade_source_cap_is_the_one_the_copy_enforces(
 # ── The late binding itself ──────────────────────────────────────────────────
 
 #: The names the owner modules read through the facade when they use them: every helper,
-#: driver and limit a test replaces on ``kiro_crew.snapshot`` and an owner calls or reads.
+#: driver and limit a test replaces on ``efm_go.snapshot`` and an owner calls or reads.
 LATE_BOUND = frozenset(
     {
         "_MAX_ARCHIVE_BYTES",
@@ -460,11 +460,11 @@ def test_the_facade_resolver_looks_the_facade_up_and_never_imports_it(
     owner function runs; with no facade loaded there is nothing to resolve, and the lookup
     says so instead of importing it.
     """
-    stand_in = ModuleType("kiro_crew.snapshot")
-    monkeypatch.setitem(sys.modules, "kiro_crew.snapshot", stand_in)
+    stand_in = ModuleType("efm_go.snapshot")
+    monkeypatch.setitem(sys.modules, "efm_go.snapshot", stand_in)
     with mock.patch("importlib.import_module", side_effect=AssertionError("imported")):
         assert snapshot_components._facade() is stand_in
-    monkeypatch.delitem(sys.modules, "kiro_crew.snapshot")
+    monkeypatch.delitem(sys.modules, "efm_go.snapshot")
     with pytest.raises(KeyError):
         snapshot_components._facade()
 
@@ -473,7 +473,7 @@ def test_the_facade_is_a_plain_module_the_type_checker_sees_whole() -> None:
     """No module ``__getattr__`` and no class swap: there is nothing to mirror and no stale copy.
 
     Every name the facade exposed before the split is bound in its namespace by an import or
-    a definition, so mypy resolves ``kiro_crew.snapshot.<name>`` against the real object with
+    a definition, so mypy resolves ``efm_go.snapshot.<name>`` against the real object with
     no ``TYPE_CHECKING`` guard.
     """
     from test_snapshot_refactor_contracts import FACADE_NAMES
@@ -497,7 +497,7 @@ _MISSING = object()
 def _names_owners_read_directly() -> frozenset[str]:
     """Facade names an owner function reads from its own globals, bound to the same object.
 
-    A patch of one of these on ``kiro_crew.snapshot`` rebinds the facade's name only: the
+    A patch of one of these on ``efm_go.snapshot`` rebinds the facade's name only: the
     owner keeps calling what its own global holds.
     """
     names: set[str] = set()
@@ -528,7 +528,7 @@ def _patched_module(dotted: str) -> str | None:
         return dotted
     parts = dotted.split(".")
     module = _STEMS.get(parts[-1])
-    if module is None or (parts[0] != "kiro_crew" and parts[0] not in sys.modules):
+    if module is None or (parts[0] != "efm_go" and parts[0] not in sys.modules):
         return None
     for cut in range(len(parts) - 1, 0, -1):
         try:
@@ -815,7 +815,7 @@ def _wrong_target(hits: list[tuple[str, int, str, str]]) -> list[tuple[str, int,
 
 
 def _scanned_files() -> list[Path]:
-    roots = [_REPO_ROOT / "test", *(_REPO_SRC / "kiro_crew").rglob("tests")]
+    roots = [_REPO_ROOT / "test", *(_REPO_SRC / "efm_go").rglob("tests")]
     return sorted({f for root in roots if root.is_dir() for f in root.rglob("*.py")})
 
 
@@ -838,7 +838,7 @@ _PREMISE_PATCHES = frozenset(
         (
             "test/test_snapshot_refactor_ownership.py",
             "test_a_helper_patched_on_the_facade_is_the_one_its_owner_calls",
-            "kiro_crew.snapshot_restore",
+            "efm_go.snapshot_restore",
             "_do_replace_mutations",
         ),
     }
@@ -848,9 +848,9 @@ _PREMISE_PATCHES = frozenset(
 def test_no_patch_targets_a_module_whose_call_sites_do_not_read_it() -> None:
     """A patch of a name no call site reads from the patched module proves nothing.
 
-    Scans every Python file under ``test/`` and every ``tests`` package in ``src/kiro_crew``
-    that can name the facade or an owner: one that spells ``kiro_crew.snapshot`` or
-    ``kiro_crew.snapshot_<owner>``, imports such a name, or reads it as an attribute. On the
+    Scans every Python file under ``test/`` and every ``tests`` package in ``src/efm_go``
+    that can name the facade or an owner: one that spells ``efm_go.snapshot`` or
+    ``efm_go.snapshot_<owner>``, imports such a name, or reads it as an attribute. On the
     facade, a patch of a name an owner reads from its own globals fails; so does, on an
     owner, a patch of a ``LATE_BOUND`` name, which the owners read through the facade. A
     patch whose name the scan cannot resolve is allowed only at the sites in
@@ -859,7 +859,7 @@ def test_no_patch_targets_a_module_whose_call_sites_do_not_read_it() -> None:
     """
     word = r"snapshot(?:_(?:archive|components|merge|restore))?\b"
     mentions = re.compile(
-        rf"kiro_crew\.{word}|\.{word}|\bimport\s+[^\n(]*\b{word}|\bimport\s*\([^)]*\b{word}"
+        rf"efm_go\.{word}|\.{word}|\bimport\s+[^\n(]*\b{word}|\bimport\s*\([^)]*\b{word}"
     )
     found: list[tuple[str, str, int, str, str]] = []
     for path in _scanned_files():
@@ -886,7 +886,7 @@ def test_the_names_owners_read_directly_include_the_tree_root_check() -> None:
     assert direct.isdisjoint(LATE_BOUND)
 
 
-_ALIAS = "from kiro_crew import snapshot as snap\nfrom unittest import mock\n"
+_ALIAS = "from efm_go import snapshot as snap\nfrom unittest import mock\n"
 
 
 @pytest.mark.parametrize(
@@ -898,7 +898,7 @@ _ALIAS = "from kiro_crew import snapshot as snap\nfrom unittest import mock\n"
             ["safe_tree_root"],
         ),
         (
-            _ALIAS + 'monkeypatch.setattr("kiro_crew.snapshot.safe_tree_root", None)\n',
+            _ALIAS + 'monkeypatch.setattr("efm_go.snapshot.safe_tree_root", None)\n',
             ["safe_tree_root"],
         ),
         (_ALIAS + 'monkeypatch.delattr(snap, "safe_tree_root")\n', ["safe_tree_root"]),
@@ -907,46 +907,46 @@ _ALIAS = "from kiro_crew import snapshot as snap\nfrom unittest import mock\n"
             _ALIAS + 'mock.patch.object(target=snap, attribute="safe_tree_root")\n',
             ["safe_tree_root"],
         ),
-        (_ALIAS + 'mock.patch(target="kiro_crew.snapshot.safe_tree_root")\n', ["safe_tree_root"]),
+        (_ALIAS + 'mock.patch(target="efm_go.snapshot.safe_tree_root")\n', ["safe_tree_root"]),
         (
             "from unittest.mock import patch as P\n"
-            '@P("kiro_crew.snapshot.safe_tree_root")\ndef test_x():\n    pass\n',
+            '@P("efm_go.snapshot.safe_tree_root")\ndef test_x():\n    pass\n',
             ["safe_tree_root"],
         ),
         (
             "import unittest.mock as um\n"
-            'um.patch.multiple("kiro_crew.snapshot", safe_tree_root=None, create=True)\n',
+            'um.patch.multiple("efm_go.snapshot", safe_tree_root=None, create=True)\n',
             ["safe_tree_root"],
         ),
         (
-            "from unittest import mock as M\nimport kiro_crew.snapshot as s\n"
+            "from unittest import mock as M\nimport efm_go.snapshot as s\n"
             'M.patch.object(s, "safe_tree_root", create=True)\n',
             ["safe_tree_root"],
         ),
         (
-            "import kiro_crew.snapshot\nfrom unittest import mock\n"
-            'mock.patch(f"{kiro_crew.snapshot.__name__}.safe_tree_root")\n',
+            "import efm_go.snapshot\nfrom unittest import mock\n"
+            'mock.patch(f"{efm_go.snapshot.__name__}.safe_tree_root")\n',
             ["safe_tree_root"],
         ),
         (_ALIAS + 'mock.patch(f"{snap.__name__}.safe_tree_root")\n', ["safe_tree_root"]),
         (
-            'FACADE = "kiro_crew.snapshot"\nfrom unittest import mock\n'
+            'FACADE = "efm_go.snapshot"\nfrom unittest import mock\n'
             'mock.patch(f"{FACADE}.safe_tree_root")\nmock.patch(FACADE + ".safe_tree_root")\n',
             ["safe_tree_root", "safe_tree_root"],
         ),
         (
             "import importlib\n"
-            's = importlib.import_module("kiro_crew.snapshot")\nt = s\n'
+            's = importlib.import_module("efm_go.snapshot")\nt = s\n'
             'monkeypatch.setattr(t, "safe_tree_root", None)\n',
             ["safe_tree_root"],
         ),
         (
-            'import sys\ns = sys.modules["kiro_crew.snapshot"]\n'
+            'import sys\ns = sys.modules["efm_go.snapshot"]\n'
             'monkeypatch.setattr(s, "safe_tree_root", None)\n',
             ["safe_tree_root"],
         ),
         (
-            "from kiro_crew.apps.builtins.aws_control.backend import backup\nbk = backup\n"
+            "from efm_go.apps.builtins.aws_control.backend import backup\nbk = backup\n"
             'monkeypatch.setattr(bk.snapshot, "safe_tree_root", None)\n',
             ["safe_tree_root"],
         ),
@@ -962,25 +962,25 @@ _ALIAS = "from kiro_crew import snapshot as snap\nfrom unittest import mock\n"
             [_DYNAMIC],
         ),
         (_ALIAS + "monkeypatch.setattr(snap, name, None)\n", [_DYNAMIC]),
-        (_ALIAS + 'mock.patch(f"kiro_crew.snapshot.{name}")\n', [_DYNAMIC]),
+        (_ALIAS + 'mock.patch(f"efm_go.snapshot.{name}")\n', [_DYNAMIC]),
         (_ALIAS + "mock.patch.multiple(snap, **values)\n", [_DYNAMIC]),
         (
-            "from kiro_crew import snapshot_archive\n"
+            "from efm_go import snapshot_archive\n"
             'monkeypatch.setattr(snapshot_archive, "_copytree_safe", None)\n',
             ["_copytree_safe"],
         ),
         (
             "from unittest import mock\n"
-            'mock.patch("kiro_crew.snapshot_restore._do_replace_mutations")\n',
+            'mock.patch("efm_go.snapshot_restore._do_replace_mutations")\n',
             ["_do_replace_mutations"],
         ),
         (
-            "import kiro_crew.snapshot_merge as m\nfrom unittest import mock\n"
+            "import efm_go.snapshot_merge as m\nfrom unittest import mock\n"
             'mock.patch.object(m, "strict_raw_records")\n',
             ["strict_raw_records"],
         ),
         (
-            "from kiro_crew import snapshot_restore\n"
+            "from efm_go import snapshot_restore\n"
             "monkeypatch.setattr(snapshot_restore, name, None)\n",
             [_DYNAMIC],
         ),
@@ -998,15 +998,15 @@ def test_the_patch_scan_flags_a_patch_no_call_site_sees(source: str, flagged: li
         _ALIAS + "def test_x(monkeypatch, fast):\n"
         '    method = "_copytree_safe" if fast else "_restage_databases"\n'
         "    monkeypatch.setattr(snap, method, None)\n",
-        _ALIAS + 'mock.patch("kiro_crew.snapshot._MAX_ARCHIVE_MEMBERS", 1, create=True)\n',
+        _ALIAS + 'mock.patch("efm_go.snapshot._MAX_ARCHIVE_MEMBERS", 1, create=True)\n',
         _ALIAS + 'mock.patch.object(snap, "restore_main")\n',
-        "from kiro_crew import snapshot_restore\n"
+        "from efm_go import snapshot_restore\n"
         'monkeypatch.setattr(snapshot_restore, "safe_tree_root", None)\n',
         _ALIAS + 'monkeypatch.setattr(snap.pinned_fs, "open_dir", None)\n',
-        _ALIAS + 'mock.patch("kiro_crew.snapshot.os.open")\n',
+        _ALIAS + 'mock.patch("efm_go.snapshot.os.open")\n',
         _ALIAS + "monkeypatch.setattr(other, name, None)\n",
-        _ALIAS + 'mock.patch(f"kiro_crew.{name}")\n',
-        'from unittest import mock\nmock.patch("kiro_crew.snapshot_restore.safe_tree_root")\n',
+        _ALIAS + 'mock.patch(f"efm_go.{name}")\n',
+        'from unittest import mock\nmock.patch("efm_go.snapshot_restore.safe_tree_root")\n',
     ],
 )
 def test_the_patch_scan_leaves_a_patch_that_reaches_its_call_site(source: str) -> None:

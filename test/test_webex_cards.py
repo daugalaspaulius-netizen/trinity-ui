@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.webex.cards — Adaptive Cards, Webex's Block Kit analogue.
+"""Tests for efm_go.webex.cards — Adaptive Cards, Webex's Block Kit analogue.
 
 The properties that matter here are not "does the JSON look right" but the two
 security ones: a press must not be able to inject text, and a press on a card
@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from kiro_crew.webex.cards import (
+from efm_go.webex.cards import (
     CARD_CONTENT_TYPE,
     CARD_VERSION,
     KEY_CHOICE,
@@ -29,7 +29,7 @@ from kiro_crew.webex.cards import (
     read_press,
     usable_choices,
 )
-from kiro_crew.webex.renderer import _safe_tool_label
+from efm_go.webex.renderer import _safe_tool_label
 
 
 def _actions(card: dict) -> list[dict]:

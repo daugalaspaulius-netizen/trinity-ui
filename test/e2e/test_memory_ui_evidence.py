@@ -210,20 +210,20 @@ def toolchain() -> tuple[Path, str]:
 
 @pytest.fixture()
 def fake_backend(monkeypatch) -> Iterator[None]:
-    from kiro_crew.testing import fake_acp_backend
+    from efm_go.testing import fake_acp_backend
 
     monkeypatch.setenv("KIROCREW_KIRO_BIN", str(fake_acp_backend.__file__))
     yield
 
 
 def _patch_config(home: Path, mutate: Callable[[dict], dict]) -> None:
-    from kiro_crew.config.loader import update_config_locked
+    from efm_go.config.loader import update_config_locked
 
     update_config_locked(home / "config.json", mutate=mutate)
 
 
 def test_missing_custom_model_with_legacy_vectors(toolchain, fake_backend, tmp_path) -> None:
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing.harness import spawn_feature_gateway
 
     website, node_dir = toolchain
     with spawn_feature_gateway(fixture="minimal", approval="reads") as gw:
@@ -250,7 +250,7 @@ def test_missing_custom_model_with_legacy_vectors(toolchain, fake_backend, tmp_p
 
 
 def test_missing_custom_model_without_legacy_vectors(toolchain, fake_backend, tmp_path) -> None:
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing.harness import spawn_feature_gateway
 
     website, node_dir = toolchain
     with spawn_feature_gateway(fixture="minimal", approval="reads") as gw:
@@ -276,7 +276,7 @@ def test_missing_custom_model_without_legacy_vectors(toolchain, fake_backend, tm
 
 
 def test_known_model_configured_but_not_serving(toolchain, fake_backend, tmp_path) -> None:
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing.harness import spawn_feature_gateway
 
     website, node_dir = toolchain
     with spawn_feature_gateway(fixture="minimal", approval="reads") as gw:
@@ -303,7 +303,7 @@ def test_known_model_configured_but_not_serving(toolchain, fake_backend, tmp_pat
 
 
 def test_deferred_repair_reports_three_units(toolchain, fake_backend, tmp_path) -> None:
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing.harness import spawn_feature_gateway
 
     website, node_dir = toolchain
     with spawn_feature_gateway(fixture="minimal", approval="reads") as gw:
@@ -339,7 +339,7 @@ def test_deferred_repair_reports_three_units(toolchain, fake_backend, tmp_path) 
 def test_bundled_download_exhausts_retries(
     toolchain, fake_backend, tmp_path, monkeypatch, closed_loopback_port
 ) -> None:
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing.harness import spawn_feature_gateway
 
     website, node_dir = toolchain
     port = closed_loopback_port

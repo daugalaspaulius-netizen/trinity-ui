@@ -156,7 +156,7 @@ async def _agents_dir(*, secs: float = 30.0) -> Path:
     that writes beside the managed specs waits for ``kirocrew.json`` first, or
     it races the writer for the directory itself.
     """
-    from kiro_crew.config.paths import kiro_agents_dir
+    from efm_go.config.paths import kiro_agents_dir
 
     directory = kiro_agents_dir()
     deadline = time.monotonic() + secs

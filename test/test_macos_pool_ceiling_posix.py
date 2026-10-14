@@ -125,7 +125,7 @@ class TestTheMacOsPoolCeiling:
                 "LANE_MAX_LIVE_RUNS": ceiling,
                 "LANE_OCCUPANCY_MAX_READS": reads_cap,
                 "RUN_ATTEMPT": attempt,
-                "GITHUB_REPOSITORY": "kirodotdev/KiroCrew",
+                "GITHUB_REPOSITORY": "efmleads.com",
                 "GITHUB_RUN_ID": "999",
                 "GITHUB_OUTPUT": str(out_file),
             },

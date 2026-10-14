@@ -293,5 +293,5 @@ for development use only, gated behind dev-workspace detection.
 - an upstream min-version gate
 - the managed distribution mechanism — distribution and recall mechanisms
 - [Kiro Crew Security Deep Dive](../architecture/security-deep-dive.md) — Defense-in-depth architecture
-- [Kiro Crew apps/version.py](../../src/kiro_crew/apps/version.py) — Existing `check_min_version` implementation
+- [Kiro Crew apps/version.py](../../src/efm_go/apps/version.py) — Existing `check_min_version` implementation
 - YOLO Override Governance (related compliance work)

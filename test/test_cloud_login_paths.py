@@ -17,9 +17,9 @@ import sys
 
 import pytest
 
-from kiro_crew.cloud import login
-from kiro_crew.cloud.login_target import KiroLoginTarget
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.cloud import login
+from efm_go.cloud.login_target import KiroLoginTarget
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 # The guard runs on a POSIX remote instance; the two tests that execute it need
 # a POSIX bash plus POSIX mode bits and symlinks, so they skip elsewhere.

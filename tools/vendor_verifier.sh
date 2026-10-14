@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT="${1:-/opt/efm/kirocrew-ui}"
-SRC="$ROOT/src/kiro_crew"
+SRC="$ROOT/src/efm_go"
 
 python3 - "$ROOT" "$SRC" <<'PYEOF'
 import os, sys, io, tokenize

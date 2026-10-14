@@ -19,14 +19,14 @@ import importlib
 
 import pytest
 
-from kiro_crew import mcp_discovery
-from kiro_crew.mcp_caller import POOLING_REQUIRES_TENANT_NONCE
-from kiro_crew.mcp_discovery import (
+from efm_go import mcp_discovery
+from efm_go.mcp_caller import POOLING_REQUIRES_TENANT_NONCE
+from efm_go.mcp_discovery import (
     _MANAGED_SERVER_TOOL_MODULES,
     managed_server_is_session_bound,
 )
-from kiro_crew.mcp_gateway.gatewayd import REGISTERED_CAPABILITIES
-from kiro_crew.mcp_gateway.stub import must_degrade_nonce_blind
+from efm_go.mcp_gateway.gatewayd import REGISTERED_CAPABILITIES
+from efm_go.mcp_gateway.stub import must_degrade_nonce_blind
 
 #: Managed server name -> the function that starts its stdio loop. Separate from
 #: the discovery map because that map points at the module whose ``_list_tools``

@@ -30,7 +30,7 @@ import pathlib
 import socket
 import warnings
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 _MAX_WORKERS_ENV = "KIROCREW_MAX_TEST_WORKERS"
 _SLOT_DIR_ENV = "KIROCREW_TEST_SLOT_DIR"

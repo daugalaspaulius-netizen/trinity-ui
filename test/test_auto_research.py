@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.apps.builtins.auto_research.handlers import (
+from efm_go.apps.builtins.auto_research.handlers import (
     DEFAULT_DEPTH_DECAY,
     DEFAULT_EXECUTION_MODE,
     DEFAULT_MAX_SUBQUESTIONS_PER_ROUND,
@@ -48,11 +48,11 @@ def _isolate(tmp_path: Path):
     """Isolate DB and research dir per test."""
     with (
         patch(
-            "kiro_crew.apps.builtins.auto_research.handlers.DB_PATH",
+            "efm_go.apps.builtins.auto_research.handlers.DB_PATH",
             tmp_path / "test.db",
         ),
         patch(
-            "kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR",
+            "efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR",
             tmp_path / "research",
         ),
     ):
@@ -75,7 +75,7 @@ class TestPathValidation:
         assert not _validate_campaign_id("")
 
     def test_worker_slot_key_contract(self):
-        from kiro_crew.apps.builtins.auto_research.session_keys import (
+        from efm_go.apps.builtins.auto_research.session_keys import (
             is_owned_research_slot,
             is_research_slot_key,
             research_slot_key,
@@ -89,7 +89,7 @@ class TestPathValidation:
         assert not is_research_slot_key("research-a1b2c3d4-extra")
 
     def test_safe_dir_rejects_invalid(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             assert _safe_campaign_dir("../etc") is None
             assert _safe_campaign_dir("a1b2c3d4") is not None
 
@@ -203,7 +203,7 @@ class TestValidation:
     def test_overlength_model_rejected_not_truncated(self):
         # A sliced id would be a different string that is never served (silent
         # fallback); the create must be refused with an error naming the cap.
-        from kiro_crew.apps.builtins.auto_research.handlers import _campaign_model
+        from efm_go.apps.builtins.auto_research.handlers import _campaign_model
 
         long_id = "m" * 200
         r = validate_campaign(
@@ -224,7 +224,7 @@ class TestStagnation:
         assert not check_stagnation("a1b2c3d4")
 
     def test_fewer_than_5(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = tmp_path / "a1b2c3d4" / "findings"
             d.mkdir(parents=True)
             for i in range(4):
@@ -232,7 +232,7 @@ class TestStagnation:
             assert not check_stagnation("a1b2c3d4")
 
     def test_5_zeros_stagnant(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = tmp_path / "a1b2c3d4" / "findings"
             d.mkdir(parents=True)
             for i in range(5):
@@ -240,7 +240,7 @@ class TestStagnation:
             assert check_stagnation("a1b2c3d4")
 
     def test_recent_finding_not_stagnant(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = tmp_path / "a1b2c3d4" / "findings"
             d.mkdir(parents=True)
             for i in range(4):
@@ -249,7 +249,7 @@ class TestStagnation:
             assert not check_stagnation("a1b2c3d4")
 
     def test_malformed_json_safe(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = tmp_path / "a1b2c3d4" / "findings"
             d.mkdir(parents=True)
             for i in range(4):
@@ -269,7 +269,7 @@ class TestCycleFileMatching:
         return d
 
     def test_canonical_names_matched(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = self._findings_dir(tmp_path)
             (d / "cycle_000.json").write_text(json.dumps({"cycle": 0, "new_findings_count": 1}))
             (d / "cycle_001.json").write_text(json.dumps({"cycle": 1, "new_findings_count": 1}))
@@ -277,7 +277,7 @@ class TestCycleFileMatching:
 
     def test_near_miss_names_matched(self, tmp_path: Path):
         # Unpadded, dash separator, and mixed case all map to a real cycle.
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = self._findings_dir(tmp_path)
             (d / "cycle_0.json").write_text(json.dumps({"cycle": 0, "new_findings_count": 1}))
             (d / "cycle-1.json").write_text(json.dumps({"cycle": 1, "new_findings_count": 1}))
@@ -287,7 +287,7 @@ class TestCycleFileMatching:
     def test_duplicate_name_variants_deduped_by_cycle_number(self, tmp_path: Path):
         # Two name variants of the SAME logical cycle must count once, not twice
         # (else total_cycles/cycle_offset inflate and a finding surfaces twice).
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = self._findings_dir(tmp_path)
             (d / "cycle_001.json").write_text(json.dumps({"cycle": 1, "new_findings_count": 1}))
             (d / "cycle-1.json").write_text(json.dumps({"cycle": 1, "new_findings_count": 1}))
@@ -297,7 +297,7 @@ class TestCycleFileMatching:
 
     def test_non_cycle_files_ignored(self, tmp_path: Path):
         # A descriptive name (the 02dfaefd incident) and unrelated json are skipped.
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = self._findings_dir(tmp_path)
             (d / "cycle_000.json").write_text(json.dumps({"cycle": 0, "new_findings_count": 1}))
             (d / "01-kiroom-vs-kirocrew.md").write_text("# not a cycle file")
@@ -306,7 +306,7 @@ class TestCycleFileMatching:
 
     def test_orders_by_cycle_number_not_lexically(self, tmp_path: Path):
         # Regression: lexical sort puts cycle_10 before cycle_2; integer sort fixes it.
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = self._findings_dir(tmp_path)
             for n in (2, 10, 1):
                 (d / f"cycle_{n}.json").write_text(
@@ -316,7 +316,7 @@ class TestCycleFileMatching:
 
     def test_stagnation_counts_near_miss_names(self, tmp_path: Path):
         # 5 zero-finding cycles under near-miss names still trips stagnation.
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = self._findings_dir(tmp_path)
             for i in range(5):
                 (d / f"cycle-{i}.json").write_text(json.dumps({"new_findings_count": 0}))
@@ -327,7 +327,7 @@ class TestCycleFileMatching:
         # widen the exfiltration surface — a finding under a near-miss name is
         # still LLM-authored content, so get_findings() must run the SAME
         # credential + exfil-URL redaction on it as on a canonical-named file.
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = self._findings_dir(tmp_path)
             # 40+ char base64-ish blob in the query = exfil-shaped URL, which the
             # URL leg redacts wholesale (domain included). A plain source URL is
@@ -357,24 +357,24 @@ class TestCycleFileMatching:
 
 class TestFileInterface:
     def test_write_status(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             write_status("a1b2c3d4", "running")
             d = json.loads((tmp_path / "a1b2c3d4" / "status.json").read_text(encoding="utf-8"))
             assert d["status"] == "running"
 
     def test_write_status_rejects_invalid(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             write_status("../etc", "running")
             assert not (tmp_path / ".." / "etc").exists()
 
     def test_write_guidance(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             write_status("a1b2c3d4", "running")
             write_guidance("a1b2c3d4", "focus on X")
             assert (tmp_path / "a1b2c3d4" / "guidance.txt").read_text(encoding="utf-8") == "focus on X"
 
     def test_get_findings_sorted(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             d = tmp_path / "a1b2c3d4" / "findings"
             d.mkdir(parents=True)
             (d / "cycle_002.json").write_text(json.dumps({"cycle": 2, "new_findings_count": 1}))
@@ -463,7 +463,7 @@ class TestCRUD:
         assert get_campaign("../etc") is None
 
     def test_delete_removes_row_and_dir(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _campaign_dir,
             delete_campaign,
         )
@@ -478,12 +478,12 @@ class TestCRUD:
         assert not _safe_campaign_dir(cid).exists()
 
     def test_delete_missing(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import delete_campaign
+        from efm_go.apps.builtins.auto_research.handlers import delete_campaign
 
         assert "error" in delete_campaign("a1b2c3d4")
 
     def test_parallel_workers_stored_and_in_brief(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _campaign_dir,
             _get_db,
             _write_brief,
@@ -565,7 +565,7 @@ class TestStalledCampaignVerdict:
         return p
 
     def test_verified_finding_completes(self, _isolate: Path):
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         f = self._write_finding(
             _isolate, 3, {"summary": "done", "verification": {"passed": True}}
@@ -575,7 +575,7 @@ class TestStalledCampaignVerdict:
         assert message is None
 
     def test_done_marker_with_findings_is_deliberate_stop(self, _isolate: Path):
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         # verification null — exactly what a self-stopped worker leaves behind.
         f = self._write_finding(
@@ -591,8 +591,8 @@ class TestStalledCampaignVerdict:
     ):
         """A source-owned tombstone is sufficient and short-circuits the
         LLM-written marker fallback."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AUTONUDGE_STOP_REASON
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AUTONUDGE_STOP_REASON
 
         f = self._write_finding(
             _isolate, 9, {"summary": "final synthesis", "verification": None}
@@ -613,8 +613,8 @@ class TestStalledCampaignVerdict:
     def test_stop_tombstone_without_readable_findings_stays_failed(self):
         """A deterministic stop source must not claim findings were preserved
         when the worker produced no readable result."""
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
-        from kiro_crew.autonudge import AUTONUDGE_STOP_REASON
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.autonudge import AUTONUDGE_STOP_REASON
 
         status, _ = _stalled_campaign_verdict(
             self.CID,
@@ -626,7 +626,7 @@ class TestStalledCampaignVerdict:
     def test_no_marker_and_unverified_is_a_real_stall(self, _isolate: Path):
         """The exact case GPT review flagged: a worker session deleted mid-run
         (loop removed by error cleanup, no marker written) must stay FAILED."""
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         f = self._write_finding(_isolate, 2, {"summary": "partial"})
         status, message = _stalled_campaign_verdict(self.CID, [f])
@@ -636,14 +636,14 @@ class TestStalledCampaignVerdict:
     def test_no_findings_fails_even_with_marker(self, _isolate: Path):
         """A worker that produced nothing did not 'finish' — the marker alone
         must not launder a dead campaign into STOPPED."""
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         self._write_done(_isolate)
         status, _ = _stalled_campaign_verdict(self.CID, [])
         assert status == CampaignStatus.FAILED
 
     def test_verified_wins_over_marker(self, _isolate: Path):
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         f = self._write_finding(
             _isolate, 5, {"summary": "done", "verification": {"passed": True}}
@@ -653,7 +653,7 @@ class TestStalledCampaignVerdict:
         assert status == CampaignStatus.COMPLETE
 
     def test_verification_failed_flag_does_not_complete(self, _isolate: Path):
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         f = self._write_finding(
             _isolate, 4, {"summary": "not there yet", "verification": {"passed": False}}
@@ -666,7 +666,7 @@ class TestStalledCampaignVerdict:
         or a marker without a non-empty string reason must read as absent
         (conservative FAILED), never raise into the watchdog or launder a
         stall into STOPPED."""
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         f = self._write_finding(_isolate, 2, {"summary": "partial"})
         for payload in (
@@ -686,7 +686,7 @@ class TestStalledCampaignVerdict:
     def test_unreadable_finding_falls_back_to_failed(self, _isolate: Path):
         """_read_finding_file returns {} on parse error — verdict must not crash
         and must stay conservative."""
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         d = _isolate / "research" / self.CID / "findings"
         d.mkdir(parents=True, exist_ok=True)
@@ -701,7 +701,7 @@ class TestStalledCampaignVerdict:
         of the watchdog and leave the campaign RUNNING forever. With no
         readable finding on disk, even a valid done marker must NOT produce
         STOPPED — its "findings are preserved" promise would be false."""
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _read_finding_file,
             _stalled_campaign_verdict,
         )
@@ -722,7 +722,7 @@ class TestStalledCampaignVerdict:
     def test_marker_with_malformed_only_finding_fails(self, _isolate: Path):
         """Valid marker + sole UNPARSEABLE cycle file → FAILED, not STOPPED:
         no readable finding exists, so 'findings are preserved' would lie."""
-        from kiro_crew.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
+        from efm_go.apps.builtins.auto_research.handlers import _stalled_campaign_verdict
 
         d = _isolate / "research" / self.CID / "findings"
         d.mkdir(parents=True, exist_ok=True)
@@ -737,7 +737,7 @@ class TestStalledCampaignVerdict:
         """A LINK at the marker path is rejected by the reader outright — a
         marker symlinked to an unbounded source (e.g. /dev/zero) must never
         become an uncapped read inside the gateway."""
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _read_worker_done,
             _stalled_campaign_verdict,
         )
@@ -760,7 +760,7 @@ class TestStalledCampaignVerdict:
     def test_oversized_marker_is_ignored(self, _isolate: Path):
         """A marker larger than the read cap is treated as absent — bounded
         read, never truncated-and-parsed into a valid-looking payload."""
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _WORKER_DONE_MAX_BYTES,
             _read_worker_done,
         )
@@ -777,7 +777,7 @@ class TestStalledCampaignVerdict:
         """_launch_loop clears worker_done.json (via _clear_worker_done_marker)
         so a resumed run's genuine stall is not misclassified as STOPPED by the
         previous run's marker."""
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _clear_worker_done_marker,
             _read_worker_done,
         )
@@ -792,7 +792,7 @@ class TestStalledCampaignVerdict:
     def test_clear_marker_tolerates_rogue_directory(self, _isolate: Path):
         """The campaign dir is LLM-writable: a DIRECTORY named worker_done.json
         must be removed, not raise IsADirectoryError out of _launch_loop."""
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _clear_worker_done_marker,
             _read_worker_done,
         )
@@ -810,7 +810,7 @@ class TestStalledCampaignVerdict:
     def test_clear_marker_symlink_removes_link_not_target(self, _isolate: Path):
         """A symlink at the marker path is unlinked — its target's contents
         must never be recursively deleted."""
-        from kiro_crew.apps.builtins.auto_research.handlers import _clear_worker_done_marker
+        from efm_go.apps.builtins.auto_research.handlers import _clear_worker_done_marker
 
         campaign_dir = _isolate / "research" / self.CID
         campaign_dir.mkdir(parents=True, exist_ok=True)
@@ -827,7 +827,7 @@ class TestStalledCampaignVerdict:
         """Non-UTF-8 bytes in either LLM-written file must not raise
         UnicodeDecodeError out of the watchdog — both readers fall back to
         their conservative defaults and the verdict stays FAILED."""
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _read_finding_file,
             _read_worker_done,
             _stalled_campaign_verdict,
@@ -862,7 +862,7 @@ class TestStalledCampaignVerdict:
 # --- Redaction ---
 class TestRedaction:
     def test_redact_finding_with_security_module(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _redact_finding
+        from efm_go.apps.builtins.auto_research.handlers import _redact_finding
 
         # Should not crash even if security module has issues
         finding = {
@@ -874,7 +874,7 @@ class TestRedaction:
         assert "summary" in result
 
     def test_redact_finding_handles_non_string_values(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _redact_finding
+        from efm_go.apps.builtins.auto_research.handlers import _redact_finding
 
         finding = {"cycle": 1, "new_findings_count": 3, "summary": "test"}
         result = _redact_finding(finding)
@@ -882,7 +882,7 @@ class TestRedaction:
         assert result["new_findings_count"] == 3
 
     def test_redact_finding_handles_list_values(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _redact_finding
+        from efm_go.apps.builtins.auto_research.handlers import _redact_finding
 
         finding = {"sources_checked": ["http://a.com", "http://b.com"], "sources_empty": []}
         result = _redact_finding(finding)
@@ -894,13 +894,13 @@ class TestRedaction:
 
 class TestAudit:
     def test_audit_does_not_crash(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _audit
+        from efm_go.apps.builtins.auto_research.handlers import _audit
 
         # Should not raise even if sel module is unavailable
         _audit("test_operation", "a1b2c3d4")
 
     def test_audit_with_extras(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _audit
+        from efm_go.apps.builtins.auto_research.handlers import _audit
 
         _audit("campaign_created", "a1b2c3d4", extra_field="value")
 
@@ -914,7 +914,7 @@ class TestHandlerValidation:
         assert "error" in result
 
     def test_write_guidance_rejects_invalid(self, tmp_path: Path):
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
+        with patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path):
             write_guidance("../etc", "text")
             # Should not create any file outside research dir
             assert not (tmp_path / ".." / "etc" / "guidance.txt").exists()
@@ -950,7 +950,7 @@ class TestRequireAuth:
     def test_returns_none_when_user_present(self):
         from unittest.mock import MagicMock
 
-        from kiro_crew.apps.builtins.auto_research.handlers import _require_auth
+        from efm_go.apps.builtins.auto_research.handlers import _require_auth
 
         request = MagicMock()
         request.get.return_value = "user123"
@@ -960,7 +960,7 @@ class TestRequireAuth:
     def test_returns_401_when_no_user(self):
         from unittest.mock import MagicMock
 
-        from kiro_crew.apps.builtins.auto_research.handlers import _require_auth
+        from efm_go.apps.builtins.auto_research.handlers import _require_auth
 
         request = MagicMock()
         request.get.return_value = None
@@ -972,7 +972,7 @@ class TestRequireAuth:
         # Raw token alone (without middleware-set user) is rejected — no fail-open.
         from unittest.mock import MagicMock
 
-        from kiro_crew.apps.builtins.auto_research.handlers import _require_auth
+        from efm_go.apps.builtins.auto_research.handlers import _require_auth
 
         request = MagicMock()
         request.get.return_value = None
@@ -986,7 +986,7 @@ class TestRequireAuth:
 
 class TestRedactionNested:
     def test_recursive_nested_dict(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _redact_finding
+        from efm_go.apps.builtins.auto_research.handlers import _redact_finding
 
         finding = {"metadata": {"nested": "value", "deep": {"level": "data"}}, "cycle": 1}
         result = _redact_finding(finding)
@@ -994,14 +994,14 @@ class TestRedactionNested:
         assert isinstance(result["metadata"]["deep"], dict)
 
     def test_recursive_list_of_dicts(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _redact_finding
+        from efm_go.apps.builtins.auto_research.handlers import _redact_finding
 
         finding = {"items": [{"name": "a"}, {"name": "b"}], "cycle": 1}
         result = _redact_finding(finding)
         assert len(result["items"]) == 2
 
     def test_mixed_list(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _redact_finding
+        from efm_go.apps.builtins.auto_research.handlers import _redact_finding
 
         finding = {"mixed": ["text", 42, {"k": "v"}, ["nested"]]}
         result = _redact_finding(finding)
@@ -1016,7 +1016,7 @@ class TestHTTPHandlers:
     def app(self, tmp_path: Path):
         from aiohttp import web
 
-        from kiro_crew.apps.builtins.auto_research.handlers import register_routes
+        from efm_go.apps.builtins.auto_research.handlers import register_routes
 
         @web.middleware
         async def _inject_user(request, handler):
@@ -1025,11 +1025,11 @@ class TestHTTPHandlers:
 
         with (
             patch(
-                "kiro_crew.apps.builtins.auto_research.handlers.DB_PATH",
+                "efm_go.apps.builtins.auto_research.handlers.DB_PATH",
                 tmp_path / "t.db",
             ),
             patch(
-                "kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR",
+                "efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR",
                 tmp_path / "r",
             ),
         ):
@@ -1042,8 +1042,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post(
@@ -1057,11 +1057,11 @@ class TestHTTPHandlers:
     async def test_nudge_resumes_needs_input(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post(
@@ -1082,11 +1082,11 @@ class TestHTTPHandlers:
     async def test_report_endpoint(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post(
@@ -1104,8 +1104,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post(
@@ -1125,8 +1125,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post(
@@ -1147,11 +1147,11 @@ class TestHTTPHandlers:
     async def test_delete_campaign(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post(
@@ -1171,8 +1171,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post(
@@ -1192,8 +1192,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post(
@@ -1217,7 +1217,7 @@ class TestHTTPHandlers:
         """Old stop evidence is removed before the watchdog can see RUNNING."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         observed = []
 
@@ -1229,8 +1229,8 @@ class TestHTTPHandlers:
             observed.append(("launch", prepared, get_campaign(cid)["status"]))
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
             patch.object(h, "_prepare_loop_launch", side_effect=_prepare),
             patch.object(h, "_launch_loop", side_effect=_launch),
         ):
@@ -1258,8 +1258,8 @@ class TestHTTPHandlers:
         """Terminal settlement finishes before Resume publishes its new run."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AUTONUDGE_STOP_REASON, AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AUTONUDGE_STOP_REASON, AutoNudgeService
 
         svc = AutoNudgeService(base_dir=tmp_path / "autonudge")
         await svc.start()
@@ -1350,8 +1350,8 @@ class TestHTTPHandlers:
         self, _isolate: Path, monkeypatch
     ):
         """A watchdog observation cannot settle a later run generation."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AutoNudgeService
 
         campaign = create_campaign(
             {
@@ -1404,8 +1404,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post(
@@ -1423,8 +1423,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post(
@@ -1442,8 +1442,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post(
@@ -1460,9 +1460,9 @@ class TestHTTPHandlers:
     async def test_add_question(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        from efm_go.apps.builtins.auto_research import handlers as h
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns", json={
                     "question": "How do teams handle rate limiting?",
@@ -1487,8 +1487,8 @@ class TestHTTPHandlers:
     async def test_add_question_empty(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns", json={
                     "question": "How do teams handle rate limiting?",
@@ -1502,8 +1502,8 @@ class TestHTTPHandlers:
     async def test_add_question_not_found(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns/deadbeef/questions",
                                  json={"text": "Something"})
@@ -1513,8 +1513,8 @@ class TestHTTPHandlers:
     async def test_to_knowledge_no_findings(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns", json={
                     "question": "How do teams handle rate limiting?",
@@ -1528,9 +1528,9 @@ class TestHTTPHandlers:
     async def test_to_knowledge_no_pipeline(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        from efm_go.apps.builtins.auto_research import handlers as h
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns", json={
                     "question": "How do teams handle rate limiting?",
@@ -1546,7 +1546,7 @@ class TestHTTPHandlers:
     async def test_to_knowledge_redacts_before_ingest(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         # Mock knowledge store + pipeline so the handler reaches the ingest path.
         added: dict = {}
@@ -1565,8 +1565,8 @@ class TestHTTPHandlers:
 
         app["state"] = SimpleNamespace(knowledge_store=_FakeStore())
         app["knowledge_pipeline"] = SimpleNamespace(ingest_file=AsyncMock())
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns", json={
                     "question": "How do teams handle rate limiting?",
@@ -1590,8 +1590,8 @@ class TestHTTPHandlers:
         # never a 503 for a status probe.
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post("/api/apps/auto-research/campaigns", json={
                     "question": "How do teams handle rate limiting?", "sources": ["web"]})
@@ -1604,7 +1604,7 @@ class TestHTTPHandlers:
     async def test_knowledge_status_true_and_false(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         present = {"v": False}
 
@@ -1613,8 +1613,8 @@ class TestHTTPHandlers:
                 return {"id": "sid9"} if present["v"] else None
 
         app["state"] = SimpleNamespace(knowledge_store=_FakeStore())
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post("/api/apps/auto-research/campaigns", json={
                     "question": "How do teams handle rate limiting?", "sources": ["web"]})
@@ -1638,8 +1638,8 @@ class TestHTTPHandlers:
         # pool whose send() raises, deterministically exercising the fallback.
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.artifacts import ArtifactStore
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.artifacts import ArtifactStore
 
         class _RaisingPool:
             async def send(self, *a: object, **k: object) -> str:
@@ -1648,11 +1648,11 @@ class TestHTTPHandlers:
             async def shutdown(self) -> None:
                 pass
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.LLMPool",
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.LLMPool",
                    lambda *a, **k: _RaisingPool()), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.ArtifactStore",
+             patch("efm_go.apps.builtins.auto_research.handlers.ArtifactStore",
                    return_value=ArtifactStore(root=tmp_path / "artifacts")):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns", json={
@@ -1688,8 +1688,8 @@ class TestHTTPHandlers:
         # redacted on this path.
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.artifacts import ArtifactStore
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.artifacts import ArtifactStore
 
         class _FakePool:
             async def send(self, prompt: str, timeout: float = 0) -> str:
@@ -1702,11 +1702,11 @@ class TestHTTPHandlers:
             async def shutdown(self) -> None:
                 pass
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.LLMPool",
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.LLMPool",
                    lambda *a, **k: _FakePool()), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.ArtifactStore",
+             patch("efm_go.apps.builtins.auto_research.handlers.ArtifactStore",
                    return_value=ArtifactStore(root=tmp_path / "artifacts")):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns", json={
@@ -1729,8 +1729,8 @@ class TestHTTPHandlers:
         # spawning a duplicate on every click; the persisted slug is reused.
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.artifacts import ArtifactStore
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.artifacts import ArtifactStore
 
         store = ArtifactStore(root=tmp_path / "artifacts")
 
@@ -1741,11 +1741,11 @@ class TestHTTPHandlers:
             async def shutdown(self) -> None:
                 pass
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.LLMPool",
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.LLMPool",
                    lambda *a, **k: _RaisingPool()), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.ArtifactStore",
+             patch("efm_go.apps.builtins.auto_research.handlers.ArtifactStore",
                    return_value=store):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post("/api/apps/auto-research/campaigns", json={
@@ -1773,8 +1773,8 @@ class TestHTTPHandlers:
     async def test_report_status(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.artifacts import ArtifactStore
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.artifacts import ArtifactStore
 
         store = ArtifactStore(root=tmp_path / "artifacts")
 
@@ -1785,11 +1785,11 @@ class TestHTTPHandlers:
             async def shutdown(self) -> None:
                 pass
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.LLMPool",
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.LLMPool",
                    lambda *a, **k: _RaisingPool()), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.ArtifactStore",
+             patch("efm_go.apps.builtins.auto_research.handlers.ArtifactStore",
                    return_value=store):
             async with TestClient(TestServer(app)) as c:
                 cr = await c.post("/api/apps/auto-research/campaigns", json={
@@ -1810,8 +1810,8 @@ class TestHTTPHandlers:
     async def test_to_artifact_no_findings(self, app, tmp_path: Path):
         from aiohttp.test_utils import TestClient, TestServer
 
-        with patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
-             patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
+        with patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"), \
+             patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"):
             async with TestClient(TestServer(app)) as c:
                 r = await c.post("/api/apps/auto-research/campaigns", json={
                     "question": "How do teams handle rate limiting?",
@@ -1825,12 +1825,12 @@ class TestHTTPHandlers:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research.handlers import register_routes
+        from efm_go.apps.builtins.auto_research.handlers import register_routes
 
         # No middleware → no user set → handlers must reject with 401
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             no_auth_app = web.Application()
             register_routes(no_auth_app)
@@ -1843,8 +1843,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 r = await c.get("/api/apps/auto-research/campaigns/ZZZZZZZZ")
@@ -1855,8 +1855,8 @@ class TestHTTPHandlers:
         from aiohttp.test_utils import TestClient, TestServer
 
         with (
-            patch("kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
-            patch("kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
+            patch("efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"),
+            patch("efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"),
         ):
             async with TestClient(TestServer(app)) as c:
                 r = await c.patch(
@@ -1874,7 +1874,7 @@ class TestUpdateNonexistent:
 
 class TestRedactCampaignFields:
     def test_redacts_sub_questions_and_sources_json(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _redact_campaign
+        from efm_go.apps.builtins.auto_research.handlers import _redact_campaign
 
         c = _redact_campaign(
             {
@@ -1894,7 +1894,7 @@ class TestRedactCampaignFields:
         assert c["success_criteria"] == "done when build passes"
 
     def test_handles_malformed_json_fields(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _redact_campaign
+        from efm_go.apps.builtins.auto_research.handlers import _redact_campaign
 
         c = _redact_campaign({"sub_questions": "not json{", "sources": "[bad"})
         # Malformed fields left untouched, no crash.
@@ -1909,8 +1909,8 @@ class TestLoopLaunch:
     async def test_launch_clears_tombstone_before_slow_marker_cleanup(self, monkeypatch):
         """A crash after settlement but before loop removal must not let the
         previous run's source tombstone stop a resumed run again."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AUTONUDGE_STOP_REASON
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AUTONUDGE_STOP_REASON
 
         order = []
         svc = MagicMock()
@@ -1930,7 +1930,7 @@ class TestLoopLaunch:
 
     @pytest.mark.asyncio
     async def test_launch_arms_autonudge(self, monkeypatch):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         c = create_campaign(
             {"question": "Research question about something here", "sources": ["web"]}
@@ -1954,7 +1954,7 @@ class TestLoopLaunch:
         # The campaign's explicit model pick must reach the worker slot both at
         # creation (get_or_create_slot kwarg) and on resume (explicit re-pin:
         # the factory only applies kwargs when it CREATES the slot).
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         c = create_campaign(
             {
@@ -1977,7 +1977,7 @@ class TestLoopLaunch:
     async def test_launch_defaults_to_inherit_model(self, monkeypatch):
         # No explicit pick -> '' is threaded through, meaning the slot inherits
         # the research agent's / backend's default resolution.
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         c = create_campaign(
             {"question": "Research question about something here", "sources": ["web"]}
@@ -1998,7 +1998,7 @@ class TestLoopLaunch:
         # "user"), so the LLM auto-titler never fires and the slot would show
         # the "New Session…" placeholder. _launch_loop must title it from the
         # campaign's human name, lock _titled, and push a live update.
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         c = create_campaign(
             {
@@ -2026,7 +2026,7 @@ class TestLoopLaunch:
     async def test_launch_title_persist_failure_still_arms_worker(self, monkeypatch):
         # Title persistence is best-effort: a set_title I/O failure must NOT
         # propagate and leave the campaign running without its worker armed.
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         c = create_campaign(
             {"question": "Research question about something here", "sources": ["web"]}
@@ -2046,7 +2046,7 @@ class TestLoopLaunch:
         # The campaign name is user-controlled. If the security redactors are
         # unavailable (_HAS_SECURITY False), the title MUST fall back to the
         # non-user-derived key rather than persisting/broadcasting raw input.
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         c = create_campaign(
             {
@@ -2068,7 +2068,7 @@ class TestLoopLaunch:
 
     @pytest.mark.asyncio
     async def test_launch_writes_brief(self, monkeypatch):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         c = create_campaign(
             {
@@ -2092,14 +2092,14 @@ class TestLoopLaunch:
 
     @pytest.mark.asyncio
     async def test_launch_noop_without_service(self, monkeypatch):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         monkeypatch.setattr(h, "_autonudge_instance", lambda: None)
         await h._launch_loop(SimpleNamespace(app={}), "a1b2c3d4")  # must not raise
 
     @pytest.mark.asyncio
     async def test_stop_removes_loop(self, monkeypatch):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         svc = MagicMock()
         svc.remove = AsyncMock()
@@ -2110,7 +2110,7 @@ class TestLoopLaunch:
 
     @pytest.mark.asyncio
     async def test_pause_deactivates_loop(self, monkeypatch):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         svc = MagicMock()
         svc.update = AsyncMock()
@@ -2127,7 +2127,7 @@ class TestSuspendResearchLoopsWhileDisabled:
 
     @pytest.mark.asyncio
     async def test_deactivates_research_loops_and_clears_trust(self, monkeypatch):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         svc = MagicMock()
         svc.update = AsyncMock()
@@ -2148,7 +2148,7 @@ class TestSuspendResearchLoopsWhileDisabled:
 
     @pytest.mark.asyncio
     async def test_idempotent_when_already_inactive_and_untrusted(self, monkeypatch):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         svc = MagicMock()
         svc.update = AsyncMock()
@@ -2165,7 +2165,7 @@ class TestSuspendResearchLoopsWhileDisabled:
 
     @pytest.mark.asyncio
     async def test_no_autonudge_service_is_safe(self, monkeypatch):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         monkeypatch.setattr(h, "_autonudge_instance", lambda: None)
         # Must not raise when the service is unavailable.
@@ -2177,7 +2177,7 @@ class TestSuspendResearchLoopsWhileDisabled:
 
 class TestResearchAgentInstall:
     def test_installs_kirocrew_research(self, monkeypatch, tmp_path):
-        from kiro_crew import agent
+        from efm_go import agent
 
         monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", tmp_path)
         monkeypatch.setattr(
@@ -2197,7 +2197,7 @@ class TestResearchAgentInstall:
         Derived from the governance maps rather than hardcoding the four names,
         so the assertion keeps holding if the template (or the map) changes.
         """
-        from kiro_crew.platform.governance import _FLOOR_GATE_SCOPES, BUILTIN_TOOL_SCOPES
+        from efm_go.platform.governance import _FLOOR_GATE_SCOPES, BUILTIN_TOOL_SCOPES
 
         return {
             name
@@ -2209,7 +2209,7 @@ class TestResearchAgentInstall:
         """Install with the REAL build_agent_config — the fix under test lives
         inside it, so stubbing it (as the identity test above does) would
         bypass exactly the path under test."""
-        from kiro_crew import agent
+        from efm_go import agent
 
         monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", tmp_path)
         agent._install_research_agent()
@@ -2237,7 +2237,7 @@ class TestResearchAgentInstall:
         hooks AFTER the floor runs — so a stock install gains no new prompt
         and the unattended research loop is not handed a stall.
         """
-        from kiro_crew import agent
+        from efm_go import agent
 
         data = self._install_real(monkeypatch, tmp_path)
         shipped_tools = set(agent.get_shipped_tools()["tools"])
@@ -2249,7 +2249,7 @@ class TestResearchAgentInstall:
     def test_withhold_leaves_the_standard_sel_record(self, monkeypatch, tmp_path):
         """Withholding is a permission DECISION — same event, same feed as the
         other ``allowedTools`` writers (``mcp_auto_approve_withheld``)."""
-        from kiro_crew import agent
+        from efm_go import agent
 
         events: list[dict] = []
         monkeypatch.setattr(
@@ -2265,7 +2265,7 @@ class TestResearchAgentInstall:
 
     def test_audit_failure_never_fails_the_install(self, monkeypatch, tmp_path):
         """Best-effort audit: SEL being unavailable must not break the install."""
-        from kiro_crew import agent
+        from efm_go import agent
 
         def _broken_sel():
             raise RuntimeError("SEL unavailable")
@@ -2281,7 +2281,7 @@ class TestResearchAgentInstall:
 
 class TestUnresponsiveDeadline:
     def test_generous_floor_and_scaling(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _FIRST_CYCLE_GRACE_SECS,
             _unresponsive_deadline,
         )
@@ -2297,7 +2297,7 @@ class TestWatchdogStopTombstone:
     @pytest.mark.asyncio
     async def test_terminal_status_persistence_runs_off_event_loop(self, monkeypatch):
         """SQLite/sidecar persistence cannot block the watchdog's event loop."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         monkeypatch.setattr(
             h,
@@ -2338,8 +2338,8 @@ class TestWatchdogStopTombstone:
     @pytest.mark.asyncio
     async def test_cancellation_waits_for_persisted_loop_removal(self, tmp_path, monkeypatch):
         """Shutdown cannot split terminal status from durable loop cleanup."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AutoNudgeService
 
         cid = "a1b2c3d4"
         svc = AutoNudgeService(base_dir=tmp_path)
@@ -2394,8 +2394,8 @@ class TestWatchdogStopTombstone:
         loop while settlement is still finishing its persistence work. Cleanup
         must not re-resolve the slot and remove that replacement.
         """
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AutoNudgeService
 
         cid = "a1b2c3d4"
         slot_key = f"research-{cid}"
@@ -2442,8 +2442,8 @@ class TestWatchdogStopTombstone:
     @pytest.mark.asyncio
     async def test_cancellation_propagates_after_status_write_failure(self, tmp_path, monkeypatch):
         """A failed status write cannot swallow watchdog shutdown."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AutoNudgeService
 
         cid = "a1b2c3d4"
         svc = AutoNudgeService(base_dir=tmp_path)
@@ -2494,8 +2494,8 @@ class TestWatchdogStopTombstone:
         inline settlement loop onto ``_settle_before_cancellation`` (or any
         later refactor of it) cannot silently drop the reporting path.
         """
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AutoNudgeService
 
         cid = "a1b2c3d4"
         svc = AutoNudgeService(base_dir=tmp_path)
@@ -2549,8 +2549,8 @@ class TestWatchdogStopTombstone:
         self, _isolate: Path, monkeypatch
     ):
         """A terminal SQLite commit cannot retain a restartable loop."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AutoNudgeService
 
         campaign = create_campaign(
             {
@@ -2619,8 +2619,8 @@ class TestWatchdogStopTombstone:
         self, _isolate: Path, monkeypatch
     ):
         """A transient final store failure is retried to durable removal."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AutoNudgeService
 
         campaign = create_campaign(
             {
@@ -2682,8 +2682,8 @@ class TestWatchdogStopTombstone:
         self, _isolate: Path, monkeypatch
     ):
         """A terminal cleanup failure cannot leave restartable persisted work."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AutoNudgeService
 
         campaign = create_campaign(
             {
@@ -2758,8 +2758,8 @@ class TestWatchdogStopTombstone:
         self, _isolate: Path, monkeypatch
     ):
         """A resume gets one poll for launch to remove prior-run stop evidence."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AUTONUDGE_STOP_REASON
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AUTONUDGE_STOP_REASON
 
         campaign = create_campaign(
             {
@@ -2814,8 +2814,8 @@ class TestWatchdogStopTombstone:
     ):
         """A stop tombstone waits for the worker turn, then outranks expiry
         handling instead of being revived like an app-disable pause."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
-        from kiro_crew.autonudge import AUTONUDGE_STOP_REASON
+        from efm_go.apps.builtins.auto_research import handlers as h
+        from efm_go.autonudge import AUTONUDGE_STOP_REASON
 
         campaign = create_campaign(
             {
@@ -2946,7 +2946,7 @@ class TestAutoApprovePersist:
 
 class TestClarificationQuestions:
     def test_pending_question_surfaced(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _campaign_dir
+        from efm_go.apps.builtins.auto_research.handlers import _campaign_dir
 
         c = create_campaign(
             {"question": "Research question about something here", "sources": ["web"]}
@@ -2957,7 +2957,7 @@ class TestClarificationQuestions:
         assert get_campaign(c["id"])["pending_question"] == "Which framework should I assume?"
 
     def test_brief_question_mode(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _campaign_dir,
             _get_db,
             _write_brief,
@@ -2989,7 +2989,7 @@ class TestUnattendedQuestionEnforcement:
     """Code-enforced guarantee: unattended campaigns never pause for input."""
 
     def _seed(self, tmp_path: Path):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         d = tmp_path / "a1b2c3d4"
         d.mkdir()
@@ -3009,7 +3009,7 @@ class TestUnattendedQuestionEnforcement:
             assert (d / "questions.json").exists()  # preserved for the user
 
     def test_no_question_no_pause(self, tmp_path: Path):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         (tmp_path / "a1b2c3d4").mkdir()
         with patch.object(h, "RESEARCH_DIR", tmp_path):
@@ -3025,7 +3025,7 @@ class TestSqliteIsolation:
         isolation the first connection's implicit transaction would leak the
         lock and the second connection's write would block/raise.
         """
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         camp = h.create_campaign(
             {
@@ -3079,7 +3079,7 @@ class TestSqliteIsolation:
 
     def test_isolation_level_is_none(self, tmp_path: Path):
         """Verify _get_db returns a connection with isolation_level=None."""
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         db = h._get_db()
         assert db.isolation_level is None
@@ -3091,7 +3091,7 @@ class TestForkAndGrillTreeHTTP:
     def app(self, tmp_path: Path):
         from aiohttp import web
 
-        from kiro_crew.apps.builtins.auto_research.handlers import register_routes
+        from efm_go.apps.builtins.auto_research.handlers import register_routes
 
         @web.middleware
         async def _inject_user(request, handler):
@@ -3100,11 +3100,11 @@ class TestForkAndGrillTreeHTTP:
 
         with (
             patch(
-                "kiro_crew.apps.builtins.auto_research.handlers.DB_PATH",
+                "efm_go.apps.builtins.auto_research.handlers.DB_PATH",
                 tmp_path / "t.db",
             ),
             patch(
-                "kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR",
+                "efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR",
                 tmp_path / "r",
             ),
         ):
@@ -3116,7 +3116,7 @@ class TestForkAndGrillTreeHTTP:
     async def test_fork_creates_child_with_parent_link(self, app):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         parent = h.create_campaign(
             {
@@ -3155,7 +3155,7 @@ class TestForkAndGrillTreeHTTP:
         )
 
     def test_fork_name_helper(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _fork_name
+        from efm_go.apps.builtins.auto_research.handlers import _fork_name
 
         # Prefixes, caps at 50 chars, and never double-prefixes a re-fork.
         assert _fork_name("Migrate auth").startswith("Forked: ")
@@ -3174,7 +3174,7 @@ class TestForkAndGrillTreeHTTP:
     async def test_fork_incomplete_parent_409(self, app):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         parent = h.create_campaign(
             {
@@ -3194,7 +3194,7 @@ class TestForkAndGrillTreeHTTP:
     async def test_grill_tree_returns_persisted_tree(self, app):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         tree = [{"id": "n1", "kind": "research", "text": "sub q", "origin": "grill"}]
         camp = h.create_campaign(
@@ -3217,7 +3217,7 @@ class TestForkAndGrillTreeHTTP:
     async def test_grill_tree_redacts_node_text(self, app):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         tree = [{"id": "n1", "kind": "research", "text": "leaked AKIAIOSFODNN7EXAMPLE in node"}]
         camp = h.create_campaign(
@@ -3243,7 +3243,7 @@ class TestForkAndGrillTreeHTTP:
         unredacted."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         camp = h.create_campaign(
             {
@@ -3272,7 +3272,7 @@ class TestForkAndGrillTreeHTTP:
         secret buried inside a nested list must not be served unredacted."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         camp = h.create_campaign(
             {
@@ -3301,7 +3301,7 @@ class TestForkAndGrillTreeHTTP:
         never served unredacted (fail-closed)."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         camp = h.create_campaign(
             {
@@ -3328,7 +3328,7 @@ class TestForkAndGrillTreeHTTP:
     async def test_grill_tree_empty_when_absent(self, app):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         camp = h.create_campaign(
             {
@@ -3357,7 +3357,7 @@ class TestForkAndGrillTreeHTTP:
 
 class TestWatchdogFindingHelpers:
     def test_list_cycle_files_sorted_newest_last(self):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         camp = h.create_campaign(
             {
@@ -3377,12 +3377,12 @@ class TestWatchdogFindingHelpers:
         assert files[-1].name == "cycle_012.json"
 
     def test_list_cycle_files_invalid_id_empty(self):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         assert h._list_cycle_files("../../etc") == []
 
     def test_read_finding_file_redacts(self, tmp_path: Path):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         p = tmp_path / "cycle_001.json"
         p.write_text(json.dumps({"summary": "leaked AKIAIOSFODNN7EXAMPLE here"}))
@@ -3390,7 +3390,7 @@ class TestWatchdogFindingHelpers:
         assert "AKIAIOSFODNN7EXAMPLE" not in json.dumps(out)
 
     def test_read_finding_file_bad_json_returns_empty(self, tmp_path: Path):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         p = tmp_path / "cycle_001.json"
         p.write_text("not json{{{")
@@ -3402,7 +3402,7 @@ class TestWatchdogFindingHelpers:
 
 class TestGrillParse:
     def test_parses_clarifier_and_research(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _parse_grill_nodes
+        from efm_go.apps.builtins.auto_research.handlers import _parse_grill_nodes
 
         raw = (
             'ok: [{"kind":"clarifier","text":"Prod or explore?","recommended":"prod"},'
@@ -3415,13 +3415,13 @@ class TestGrillParse:
         ]
 
     def test_drops_bad_and_empty(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _parse_grill_nodes
+        from efm_go.apps.builtins.auto_research.handlers import _parse_grill_nodes
 
         raw = '[{"kind":"bogus","text":"x"},{"kind":"research","text":""},{"text":"no kind"}]'
         assert _parse_grill_nodes(raw) == []
 
     def test_garbage_returns_empty(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _parse_grill_nodes
+        from efm_go.apps.builtins.auto_research.handlers import _parse_grill_nodes
 
         assert _parse_grill_nodes("no json here") == []
 
@@ -3429,7 +3429,7 @@ class TestGrillParse:
         # The old outermost find('[') .. rfind(']') span ran from the "[1]:"
         # marker to the trailing "[12]." citation, so the slice never parsed
         # and a valid payload was silently lost.
-        from kiro_crew.apps.builtins.auto_research.handlers import _parse_grill_nodes
+        from efm_go.apps.builtins.auto_research.handlers import _parse_grill_nodes
 
         raw = (
             'Expanding item [1]: [{"kind":"research","text":"How is it stored?"}] '
@@ -3440,7 +3440,7 @@ class TestGrillParse:
     def test_two_different_node_arrays_refuse_the_guess(self):
         # The shared extractor's ambiguity contract: two DIFFERENT node-shaped
         # arrays mean the caller cannot know which is the real payload.
-        from kiro_crew.apps.builtins.auto_research.handlers import _parse_grill_nodes
+        from efm_go.apps.builtins.auto_research.handlers import _parse_grill_nodes
 
         raw = (
             'For example [{"kind":"research","text":"Example?"}] but my answer is '
@@ -3450,7 +3450,7 @@ class TestGrillParse:
 
     def test_fenced_reply_is_accepted(self):
         # Fence markers are just prose to the shared scanner.
-        from kiro_crew.apps.builtins.auto_research.handlers import _parse_grill_nodes
+        from efm_go.apps.builtins.auto_research.handlers import _parse_grill_nodes
 
         raw = '```json\n[{"kind":"research","text":"How is it stored?"}]\n```'
         assert _parse_grill_nodes(raw) == [{"kind": "research", "text": "How is it stored?"}]
@@ -3458,12 +3458,12 @@ class TestGrillParse:
     def test_nesting_bomb_degrades_to_no_nodes(self):
         # A RecursionError from the stdlib decoder must not escape into the
         # grill-expand handler (it would surface as HTTP 500, not empty nodes).
-        from kiro_crew.apps.builtins.auto_research.handlers import _parse_grill_nodes
+        from efm_go.apps.builtins.auto_research.handlers import _parse_grill_nodes
 
         assert _parse_grill_nodes("[" * 100_000) == []
 
     def test_node_depth(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _node_depth
+        from efm_go.apps.builtins.auto_research.handlers import _node_depth
 
         tree = [{"id": "n0", "parent": None}, {"id": "n1", "parent": "n0"}]
         assert _node_depth(tree, "n0") == 0
@@ -3473,7 +3473,7 @@ class TestGrillParse:
 
 class TestGrillBrief:
     def test_scope_block_checklist_and_origin(self, tmp_path: Path):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         cfg = {
             "question": "Should we migrate auth to BigWeaver?",
@@ -3503,7 +3503,7 @@ class TestGrillBrief:
         assert "- Latency under load? _(emergent)_" in brief
 
     def test_no_subquestions_brief_is_not_contradictory(self, tmp_path: Path):
-        from kiro_crew.apps.builtins.auto_research import handlers as h
+        from efm_go.apps.builtins.auto_research import handlers as h
 
         cid = h.create_campaign(
             {
@@ -3531,7 +3531,7 @@ class TestGrillBrief:
 
 class TestGrillSuggestedCycles:
     def test_suggested_max_cycles(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import validate_campaign
+        from efm_go.apps.builtins.auto_research.handlers import validate_campaign
 
         v = validate_campaign(
             {
@@ -3568,7 +3568,7 @@ class TestGrillHTTP:
     def app(self, tmp_path: Path):
         from aiohttp import web
 
-        from kiro_crew.apps.builtins.auto_research.handlers import register_routes
+        from efm_go.apps.builtins.auto_research.handlers import register_routes
 
         @web.middleware
         async def _inject_user(request, handler):
@@ -3576,9 +3576,9 @@ class TestGrillHTTP:
             return await handler(request)
 
         with patch(
-            "kiro_crew.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"
+            "efm_go.apps.builtins.auto_research.handlers.DB_PATH", tmp_path / "t.db"
         ), patch(
-            "kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"
+            "efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR", tmp_path / "r"
         ):
             a = web.Application(middlewares=[_inject_user])
             register_routes(a)
@@ -3689,7 +3689,7 @@ class TestGrillHTTP:
 
     @pytest.mark.asyncio
     async def test_expand_requires_auth(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _handle_grill_expand
+        from efm_go.apps.builtins.auto_research.handlers import _handle_grill_expand
 
         request = MagicMock()
         request.get.return_value = None  # no authenticated user
@@ -3954,7 +3954,7 @@ class TestResearchBackendInfra:
         # The per-cycle nudge must point the agent at the real campaign dir
         # (resolves via config_dir()/KIROCREW_HOME), NOT a hardcoded ~/.kirocrew
         # literal — otherwise a dev gateway is aimed at the prod home.
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _RESEARCH_NUDGE,
             _campaign_dir,
         )
@@ -3984,7 +3984,7 @@ class TestPromptTrustBoundary:
     before it is fed back into fresh LLM prompts."""
 
     def test_fence_untrusted_wraps_with_unique_nonce(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import _fence_untrusted
+        from efm_go.apps.builtins.auto_research.handlers import _fence_untrusted
 
         a = _fence_untrusted("payload")
         b = _fence_untrusted("payload")
@@ -3995,7 +3995,7 @@ class TestPromptTrustBoundary:
         assert a != b
 
     def test_report_prompt_fences_findings(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _UNTRUSTED_DATA_NOTICE,
             _build_report_prompt,
         )
@@ -4010,7 +4010,7 @@ class TestPromptTrustBoundary:
 
     @pytest.mark.asyncio
     async def test_grill_prompt_fences_question_and_tree(self):
-        from kiro_crew.apps.builtins.auto_research.handlers import (
+        from efm_go.apps.builtins.auto_research.handlers import (
             _UNTRUSTED_DATA_NOTICE,
             _grill_expand_children,
         )
@@ -4032,10 +4032,10 @@ class TestPromptTrustBoundary:
         assert question in prompt and "malicious node text" in prompt
 
     def test_workflow_source_fences_untrusted_and_still_validates(self):
-        from kiro_crew.apps.builtins.auto_research.workflow_template import (
+        from efm_go.apps.builtins.auto_research.workflow_template import (
             RESEARCH_WORKFLOW_SOURCE,
         )
-        from kiro_crew.workflows.validate import validate
+        from efm_go.workflows.validate import validate
 
         # The sandboxed source cannot import uuid, so it uses static DATA markers
         # (the issue_radar pattern) plus an explicit never-as-instructions notice.

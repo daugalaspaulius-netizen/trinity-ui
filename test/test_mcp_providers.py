@@ -11,14 +11,14 @@ import json
 
 import pytest
 
-from kiro_crew.mcp_providers import official as official_mod
-from kiro_crew.mcp_providers.base import (
+from efm_go.mcp_providers import official as official_mod
+from efm_go.mcp_providers.base import (
     McpSearchResult,
     ProviderRegistry,
     ProviderUnavailableError,
 )
-from kiro_crew.mcp_providers.capability import CapabilityProvider
-from kiro_crew.mcp_providers.official import (
+from efm_go.mcp_providers.capability import CapabilityProvider
+from efm_go.mcp_providers.official import (
     OfficialRegistryProvider,
     translate_install_plan,
 )
@@ -596,7 +596,7 @@ def _result(provider: str, ident: str) -> McpSearchResult:
 class TestRegistryFanOut:
     @pytest.mark.asyncio
     async def test_slow_provider_dropped_fast_provider_survives(self, monkeypatch):
-        from kiro_crew.mcp_providers import base as base_mod
+        from efm_go.mcp_providers import base as base_mod
 
         monkeypatch.setattr(base_mod, "_SEARCH_TIMEOUT_SECS", 0.05)
         registry = ProviderRegistry()
@@ -607,7 +607,7 @@ class TestRegistryFanOut:
 
     @pytest.mark.asyncio
     async def test_search_outcomes_report_timeout_without_dropping_results(self, monkeypatch):
-        from kiro_crew.mcp_providers import base as base_mod
+        from efm_go.mcp_providers import base as base_mod
 
         monkeypatch.setattr(base_mod, "_SEARCH_TIMEOUT_SECS", 0.05)
         registry = ProviderRegistry()

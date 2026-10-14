@@ -15,8 +15,8 @@ from pathlib import Path
 import pytest
 
 from conftest import host_abs
-from kiro_crew import env as env_mod
-from kiro_crew import platform_compat
+from efm_go import env as env_mod
+from efm_go import platform_compat
 
 
 def _fake_node_bin(d: Path) -> Path:

@@ -32,7 +32,7 @@ const READY_PREREQ = {
   ready: true,
   initial_setup_complete: true,
   repair_required: false,
-  docs_url: 'https://kiro.dev/cli/',
+  docs_url: 'https://efmleads.com/cli/',
   login_command: 'kiro-cli login',
   sso_login_command: 'kiro-cli login --use-device-flow --license pro',
   setup_allowed: true,

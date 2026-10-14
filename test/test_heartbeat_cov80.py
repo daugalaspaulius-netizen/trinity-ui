@@ -27,7 +27,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.heartbeat import (
+from efm_go.heartbeat import (
     _HEADER,
     HeartbeatService,
     _extract_tasks,
@@ -42,7 +42,7 @@ from kiro_crew.heartbeat import (
 @pytest.fixture()
 def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Redirect ``heartbeat_path()`` at a tmp workspace."""
-    monkeypatch.setattr("kiro_crew.heartbeat.workspace_dir", lambda: tmp_path / "ws")
+    monkeypatch.setattr("efm_go.heartbeat.workspace_dir", lambda: tmp_path / "ws")
     return tmp_path / "ws"
 
 
@@ -63,7 +63,7 @@ class _ImmediateExecutor:
 @pytest.fixture()
 def inline_executor(monkeypatch: pytest.MonkeyPatch) -> None:
     """Make ``loop.run_in_executor`` synchronous by handing back the real loop's default."""
-    monkeypatch.setattr("kiro_crew.heartbeat.maintenance_executor", lambda: None)
+    monkeypatch.setattr("efm_go.heartbeat.maintenance_executor", lambda: None)
 
 
 class TestStartStop:
@@ -114,7 +114,7 @@ class TestLoop:
         """A set shutdown event ends the loop without ever beating."""
         event = asyncio.Event()
         event.set()
-        monkeypatch.setattr("kiro_crew.heartbeat.shutdown_event", event)
+        monkeypatch.setattr("efm_go.heartbeat.shutdown_event", event)
         svc = HeartbeatService(_memory(), interval=3600)
         beats: list[int] = []
         monkeypatch.setattr(svc, "_beat", lambda: beats.append(1))  # never awaited
@@ -127,7 +127,7 @@ class TestLoop:
     ) -> None:
         """Shutdown arriving mid-wait exits immediately — it does not wait out the interval."""
         event = asyncio.Event()
-        monkeypatch.setattr("kiro_crew.heartbeat.shutdown_event", event)
+        monkeypatch.setattr("efm_go.heartbeat.shutdown_event", event)
         svc = HeartbeatService(_memory(), interval=3600)
         beats: list[int] = []
         monkeypatch.setattr(svc, "_beat", lambda: beats.append(1))  # never awaited
@@ -145,7 +145,7 @@ class TestLoop:
     ) -> None:
         """The wait timing out is the normal wake-up: tick increments, _beat runs."""
         event = asyncio.Event()
-        monkeypatch.setattr("kiro_crew.heartbeat.shutdown_event", event)
+        monkeypatch.setattr("efm_go.heartbeat.shutdown_event", event)
         svc = HeartbeatService(_memory(), interval=0.001)  # type: ignore[arg-type]
         beats: list[int] = []
 
@@ -163,7 +163,7 @@ class TestLoop:
     ) -> None:
         """A raising _beat must not kill the loop — it keeps ticking."""
         event = asyncio.Event()
-        monkeypatch.setattr("kiro_crew.heartbeat.shutdown_event", event)
+        monkeypatch.setattr("efm_go.heartbeat.shutdown_event", event)
         svc = HeartbeatService(_memory(), interval=0.001)  # type: ignore[arg-type]
         calls: list[int] = []
 
@@ -210,9 +210,9 @@ class TestBeat:
     ) -> None:
         cfg = MagicMock()
         cfg.memory.history_max_days = 11
-        monkeypatch.setattr("kiro_crew.heartbeat.KiroCrewConfig.load", staticmethod(lambda: cfg))
+        monkeypatch.setattr("efm_go.heartbeat.KiroCrewConfig.load", staticmethod(lambda: cfg))
         sel_obj = MagicMock()
-        monkeypatch.setattr("kiro_crew.heartbeat.sel", lambda: sel_obj)
+        monkeypatch.setattr("efm_go.heartbeat.sel", lambda: sel_obj)
 
         mem = _memory()
         svc = HeartbeatService(mem)
@@ -232,10 +232,10 @@ class TestBeat:
         """A raising SEL prune must not abort the beat, so consolidation still runs."""
         cfg = MagicMock()
         cfg.memory.history_max_days = 3
-        monkeypatch.setattr("kiro_crew.heartbeat.KiroCrewConfig.load", staticmethod(lambda: cfg))
+        monkeypatch.setattr("efm_go.heartbeat.KiroCrewConfig.load", staticmethod(lambda: cfg))
         sel_obj = MagicMock()
         sel_obj.prune.side_effect = RuntimeError("zibble")
-        monkeypatch.setattr("kiro_crew.heartbeat.sel", lambda: sel_obj)
+        monkeypatch.setattr("efm_go.heartbeat.sel", lambda: sel_obj)
 
         consolidator = MagicMock()
         svc = HeartbeatService(_memory(), consolidator=consolidator)

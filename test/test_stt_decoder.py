@@ -1,4 +1,4 @@
-"""The digest-verified ffmpeg decoder store (``kiro_crew.stt.decoder``).
+"""The digest-verified ffmpeg decoder store (``efm_go.stt.decoder``).
 
 Every test here is offline: the network fetch is replaced at
 ``models.stream_pinned_payload``, which is the ONE seam both the whisper weights
@@ -24,10 +24,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat as _pc
-from kiro_crew import transcribe
-from kiro_crew.stt import decoder
-from kiro_crew.stt import models as stt_models
+from efm_go import platform_compat as _pc
+from efm_go import transcribe
+from efm_go.stt import decoder
+from efm_go.stt import models as stt_models
 
 # ── helpers ──────────────────────────────────────────────────────────────
 

@@ -28,9 +28,9 @@ import logging
 
 import pytest
 
-from kiro_crew.config import loader as L
-from kiro_crew.config import validation
-from kiro_crew.config.loader import _KNOWN_CONFIG_SECTIONS, CONFIG_RESERVED_TOP_KEYS, KiroCrewConfig
+from efm_go.config import loader as L
+from efm_go.config import validation
+from efm_go.config.loader import _KNOWN_CONFIG_SECTIONS, CONFIG_RESERVED_TOP_KEYS, KiroCrewConfig
 
 _UNRECOGNIZED = "unrecognized top-level keys"
 
@@ -43,7 +43,7 @@ class TestAppOwnedSectionsAreNotUnrecognized:
     @pytest.mark.skipif(not validation._HAS_JSONSCHEMA, reason="jsonschema not installed")
     def test_dev_fleet_section_is_not_reported(self, caplog: pytest.LogCaptureFixture) -> None:
         data = {"agent": {"provider": "acp"}, "dev_fleet": {"repo_path": "/opt/kc"}}
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data(data)
         assert _unrecognized_warnings(caplog) == []
 
@@ -53,7 +53,7 @@ class TestAppOwnedSectionsAreNotUnrecognized:
     ) -> None:
         # Excluding the app-owned set must not widen into silencing real typos.
         data = {"dev_fleet": {"repo_path": "/opt/kc"}, "totally_unknown_key": 1}
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data(data)
         warnings = _unrecognized_warnings(caplog)
         assert warnings and "totally_unknown_key" in warnings[0]
@@ -70,7 +70,7 @@ class TestAppOwnedSectionsAreNotUnrecognized:
         discovery on anything else, so a scalar written by hand must keep the one
         warning that says it is being ignored.
         """
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             validation.validate_config_data({"agent": {"provider": "acp"}, "dev_fleet": malformed})
         warnings = _unrecognized_warnings(caplog)
         assert warnings and "dev_fleet" in warnings[0]
@@ -88,7 +88,7 @@ class TestAppOwnedSectionsAreNotUnrecognized:
         monkeypatch.setattr(L, "config_dir", lambda: tmp_path)
         monkeypatch.setattr(L, "config_local_path", lambda: tmp_path / "config.local.json")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             KiroCrewConfig.load()
         assert _unrecognized_warnings(caplog) == []
 
@@ -123,7 +123,7 @@ class TestEveryAppOwnedKeyHasAReader:
         assert validation._APP_OWNED_TOP_KEYS == frozenset({"dev_fleet"})
 
     def test_dev_fleet_reads_repo_path_from_the_config_file(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.apps.builtins.dev_fleet import repository as repository_mod
+        from efm_go.apps.builtins.dev_fleet import repository as repository_mod
 
         (tmp_path / "config.json").write_text(json.dumps({"dev_fleet": {"repo_path": "/opt/kc"}}))
         monkeypatch.setattr(L, "config_dir", lambda: tmp_path)

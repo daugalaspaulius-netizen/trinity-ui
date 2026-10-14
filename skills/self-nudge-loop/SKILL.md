@@ -7,7 +7,7 @@ tags: [skill, kirocrew, autonudge, autonomy, loop]
 # Self-Nudge Loop
 
 ## Overview
-`AutoNudgeService` (in `kiro_crew.autonudge`) keeps a single chat session working toward a goal by re-feeding a nudge on its persisted deadline, deferred while a user turn is active. Unlike `cron_add`, the nudge runs in the same session — warm memory, same tools, same conversation history. State persists across gateway restarts via `~/.kiro/crew/autonudge.json`.
+`AutoNudgeService` (in `efm_go.autonudge`) keeps a single chat session working toward a goal by re-feeding a nudge on its persisted deadline, deferred while a user turn is active. Unlike `cron_add`, the nudge runs in the same session — warm memory, same tools, same conversation history. State persists across gateway restarts via `~/.kiro/crew/autonudge.json`.
 
 ## Usage
 Use when the user wants:

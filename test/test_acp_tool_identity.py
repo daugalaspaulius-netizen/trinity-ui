@@ -29,9 +29,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew import session_directive
-from kiro_crew.acp._dispatch import _build_tool_call_event, _kiro_mcp_server_name
-from kiro_crew.acp.types import (
+from efm_go import session_directive
+from efm_go.acp._dispatch import _build_tool_call_event, _kiro_mcp_server_name
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_SUBAGENT_ACTIVITY,
     EVENT_SUBAGENT_LIST,
@@ -131,8 +131,8 @@ class TestClientToolCallEventIdentityProvenance:
     silently revoke the verified-identity half on the legacy client path."""
 
     def test_inline_tool_call_builder_sets_identity_flag(self) -> None:
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import AcpPromptStats, JsonRpcMessage
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import AcpPromptStats, JsonRpcMessage
 
         client = AcpClient.__new__(AcpClient)  # avoid spawning a real process
         client._tool_call_inputs = {}
@@ -221,7 +221,7 @@ async def _drive(
     applied_result: str | None = "[applied]",
 ):
     """Stream *events* through _run_chat; optionally stub the directive applier."""
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     async def _stream(_msg):
         for ev in events:
@@ -270,7 +270,7 @@ class TestProviderConversionPreservesIdentity:
     AcpEvents straight into the runner still passes. This is that guard."""
 
     def test_to_llm_event_preserves_canonical_tool_identity(self) -> None:
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         src = AcpEvent(
             kind=EVENT_TOOL_CALL,
@@ -288,7 +288,7 @@ class TestProviderConversionPreservesIdentity:
         the conversion (compared on a fully-populated event)."""
         import dataclasses
 
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         src = AcpEvent(
             kind=EVENT_TOOL_CALL,
@@ -352,7 +352,7 @@ class TestChatRunnerDirectiveSeam:
         that shape like a generic tool-only turn injects a continuation, which asks
         the model to finish the same request and can post the same card repeatedly.
         """
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state = _stub_state(tmp_path)
         state.post_question_card = AsyncMock(return_value=1)
@@ -449,7 +449,7 @@ class TestChatRunnerDirectiveSeam:
     async def test_queued_automation_provenance_reaches_next_turn(self, tmp_path, monkeypatch):
         """A busy app-owned request cannot become user-origin when its queue
         entry is drained after the destination slot becomes idle."""
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state = _stub_state(tmp_path)
         slot = state.get_or_create_slot("app-slot")
@@ -633,7 +633,7 @@ class TestChatRunnerDirectiveSeam:
         `_redact_tool_field` before it reaches broadcast_ws / the persisted
         transcript (backend-security-controls). Pattern-independent: we spy the
         redactor and assert the applier's return value flows through it."""
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         seen: list[str] = []
         _orig_redact = chat_runner._redact_tool_field
@@ -683,7 +683,7 @@ class TestChatRunnerDirectiveSeam:
         Before the fix this logged ``decode FAILED … effect dropped`` ~10x/day on
         this host -- a line whose purpose is to catch a rawOutput-envelope
         escaping regression."""
-        from kiro_crew.mcp_core import _call_tool
+        from efm_go.mcp_core import _call_tool
 
         rejection = _call_tool("monitor_start", {"message": "x" * 9000})
         assert rejection.startswith("Error:")

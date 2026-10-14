@@ -117,24 +117,24 @@ def _stopped_key(state) -> str:
 
 
 def api_chat_slot_stop_h():
-    from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+    from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
     return api_chat_slot_stop
 
 
 async def _run(handler, state, query=None, caller_app=""):
-    with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+    with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
         mock_sel.return_value.log_tool_invocation = MagicMock()
         mock_sel.return_value.log = MagicMock()
         mock_sel.return_value.log_api_access = MagicMock()
-        with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+        with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
             return await handler(_request(state, query, caller_app))
 
 
 class TestStopAddressesTheRunningSession:
     @pytest.mark.asyncio
     async def test_soft_stop_on_a_linked_slot_cancels_the_channel_session(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         state = _FakeState(_FakeSlot(linked=LINKED_KEY))
         await _run(api_chat_slot_stop, state)
@@ -145,7 +145,7 @@ class TestStopAddressesTheRunningSession:
     async def test_hard_kill_on_a_linked_slot_cancels_the_channel_session(self):
         """The escalation path is the one a user reaches when the soft stop did
         nothing, so it must not repeat the same mis-addressing."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(linked=LINKED_KEY)
         slot._stop_state = "soft_pending"
@@ -158,7 +158,7 @@ class TestStopAddressesTheRunningSession:
 
     @pytest.mark.asyncio
     async def test_interrupt_on_a_linked_slot_cancels_the_channel_session(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         # /interrupt refuses an empty queue (400, "use /stop instead"), so the
         # slot needs a queued message to reach the cancel at all.
@@ -176,7 +176,7 @@ class TestUnlinkedSlotsAreUnchanged:
 
     @pytest.mark.asyncio
     async def test_soft_stop_still_uses_the_dashboard_key(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         state = _FakeState(_FakeSlot())
         await _run(api_chat_slot_stop, state)
@@ -185,7 +185,7 @@ class TestUnlinkedSlotsAreUnchanged:
 
     @pytest.mark.asyncio
     async def test_hard_kill_still_uses_the_dashboard_key(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         slot._stop_state = "soft_pending"
@@ -198,7 +198,7 @@ class TestUnlinkedSlotsAreUnchanged:
 
     @pytest.mark.asyncio
     async def test_interrupt_still_uses_the_dashboard_key(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot._queue = [{"queue_id": "q1", "content": "next"}]
@@ -235,7 +235,7 @@ class TestAppTokensCannotCancelForeignSlots:
 
     @pytest.mark.asyncio
     async def test_app_token_cannot_stop_a_dashboard_owned_linked_slot(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(linked=LINKED_KEY)  # dashboard-owned: _app == ""
         state = _FakeState(slot)
@@ -244,7 +244,7 @@ class TestAppTokensCannotCancelForeignSlots:
 
     @pytest.mark.asyncio
     async def test_app_a_cannot_stop_app_bs_slot(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(linked=LINKED_KEY, app="app-b")
         state = _FakeState(slot)
@@ -255,7 +255,7 @@ class TestAppTokensCannotCancelForeignSlots:
     async def test_the_hard_kill_path_cannot_bypass_the_guard(self):
         """The escalation branch clears the queue and drops pending steers
         before it reaches stop_turn, so the guard must precede it."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(linked=LINKED_KEY)
         slot._stop_state = "soft_pending"
@@ -275,7 +275,7 @@ class TestAppTokensCannotCancelForeignSlots:
 
     @pytest.mark.asyncio
     async def test_app_token_cannot_interrupt_a_foreign_slot(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot(linked=LINKED_KEY)
         slot._queue = [{"queue_id": "q1", "content": "next"}]
@@ -310,7 +310,7 @@ class TestAppTokensCannotCancelForeignSlots:
 
     @pytest.mark.asyncio
     async def test_an_owned_channel_linked_slot_is_refused_on_interrupt_too(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot(linked=LINKED_KEY, app="app-a")
         slot._queue = [{"queue_id": "q1", "content": "next"}]
@@ -361,7 +361,7 @@ class TestAppTokensCannotCancelForeignSlots:
         auto-research and spec-builder pass ``app=``, neither with a link), so
         the owning-app case is exercised on the shape that actually exists. The
         rule is ownership, not linkage, matching api_chat_slot_continue."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(app="auto-research")
         state = _FakeState(slot)
@@ -373,7 +373,7 @@ class TestAppTokensCannotCancelForeignSlots:
     @pytest.mark.asyncio
     async def test_dashboard_user_is_not_treated_as_an_app(self):
         """Empty request app = dashboard user, who reaches every slot."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(linked=LINKED_KEY, app="some-app")
         state = _FakeState(slot)
@@ -390,14 +390,14 @@ class TestAuditKeepsTheSlotIdentity:
 
     @pytest.mark.asyncio
     async def test_sel_record_is_keyed_on_the_slot_not_the_link(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         state = _FakeState(_FakeSlot(linked=LINKED_KEY))
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             log = MagicMock()
             mock_sel.return_value.log_tool_invocation = log
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 await api_chat_slot_stop(_request(state, caller_app=""))
 
         assert log.call_args.kwargs["session_key"] == "dashboard:test-slot"
@@ -417,7 +417,7 @@ class TestTheRunningTurnOwnsTheTarget:
 
     @pytest.mark.asyncio
     async def test_soft_stop_after_a_mid_turn_rebind_stops_the_running_turn(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         # The turn started on the slot's own session ...
@@ -435,7 +435,7 @@ class TestTheRunningTurnOwnsTheTarget:
     @pytest.mark.asyncio
     async def test_the_hard_escalation_follows_the_same_turn(self):
         """The second press must not retarget where the first one could not."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         slot._active_turn_session_key = "dashboard:test-slot"
@@ -449,7 +449,7 @@ class TestTheRunningTurnOwnsTheTarget:
 
     @pytest.mark.asyncio
     async def test_interrupt_after_a_mid_turn_rebind_stops_the_running_turn(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot._active_turn_session_key = "dashboard:test-slot"
@@ -458,11 +458,11 @@ class TestTheRunningTurnOwnsTheTarget:
         state = _FakeState(slot)
         request = _request(state, caller_app="")
         request.content_length = 0
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
             mock_sel.return_value.log_api_access = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 await api_chat_slot_interrupt(request)
 
         assert _stopped_key(state) == "dashboard:test-slot"
@@ -475,7 +475,7 @@ class TestTheRunningTurnOwnsTheTarget:
         identity IS the channel session — the cancel reaches it because that is
         where the turn runs, not because the slot happens to be linked now.
         """
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(linked=LINKED_KEY)
         slot._active_turn_session_key = LINKED_KEY
@@ -489,7 +489,7 @@ class TestTheRunningTurnOwnsTheTarget:
     async def test_an_app_may_still_stop_its_own_turn_after_a_rebind(self):
         """Authorization reads the same target, so mutable routing cannot
         lock an app out of the turn it legitimately started."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(app="auto-research")
         slot._active_turn_session_key = "dashboard:test-slot"
@@ -505,7 +505,7 @@ class TestTheRunningTurnOwnsTheTarget:
         """The security boundary is unchanged: the guard now tests the key the
         cancel will actually use, and a turn running on a channel session the
         app does not own is still refused."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(linked=LINKED_KEY, app="auto-research")
         slot._active_turn_session_key = LINKED_KEY
@@ -521,7 +521,7 @@ class TestTheRunningTurnOwnsTheTarget:
     async def test_an_idle_slot_falls_back_to_its_routing(self):
         """No turn in flight means no captured identity — and a slot restored
         from disk has none either, because the field is runtime-only."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot(linked=LINKED_KEY)
         assert slot._active_turn_session_key == ""
@@ -547,7 +547,7 @@ class TestTheAuthorizedSessionCannotMoveMidFlight:
     async def test_interrupt_cancels_the_session_the_guard_cleared(self):
         """The app owns an unbound slot; the guard allows it; the slot is bound
         during the body await. The cancel must still address the cleared key."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot(app="auto-research")
         slot._queue.append({"queue_id": "q1", "content": "next"})
@@ -564,11 +564,11 @@ class TestTheAuthorizedSessionCannotMoveMidFlight:
                     yield chunk
 
         request.content = _BindingPayload(b"{}")
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
             mock_sel.return_value.log_api_access = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 await api_chat_slot_interrupt(request)
 
         assert (
@@ -578,18 +578,18 @@ class TestTheAuthorizedSessionCannotMoveMidFlight:
     @pytest.mark.asyncio
     async def test_a_legitimately_linked_slot_is_still_addressed_by_its_link(self):
         """The snapshot must not degrade the fix this PR exists for."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot(linked=LINKED_KEY)
         slot._queue.append({"queue_id": "q1", "content": "next"})
         state = _FakeState(slot)
         request = _request(state, caller_app="")
         request.content_length = 0
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
             mock_sel.return_value.log_api_access = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 await api_chat_slot_interrupt(request)
 
         assert _stopped_key(state) == LINKED_KEY

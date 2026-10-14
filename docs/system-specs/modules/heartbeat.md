@@ -2,7 +2,7 @@
 
 ## Overview
 
-The heartbeat service (`kiro_crew/heartbeat.py`) runs periodic background tasks on a configurable interval (default 60s).
+The heartbeat service (`efm_go/heartbeat.py`) runs periodic background tasks on a configurable interval (default 60s).
 
 ## Responsibilities
 

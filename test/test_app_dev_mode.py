@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.dev_mode — app dev-mode live reload."""
+"""Tests for efm_go.apps.dev_mode — app dev-mode live reload."""
 from __future__ import annotations
 
 import json
@@ -10,7 +10,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
 from conftest import make_dir_link
-from kiro_crew.apps.dev_mode import (
+from efm_go.apps.dev_mode import (
     _read_dev_sentinel,
     _reconcile_sentinel_from_installed,
     _scan_installed_dev_apps,
@@ -19,13 +19,13 @@ from kiro_crew.apps.dev_mode import (
     is_dev_mode_cached,
     set_dev_mode,
 )
-from kiro_crew.apps.manager import (
+from efm_go.apps.manager import (
     APP_MANIFEST_FILENAME,
     _read_installed,
     install_app,
     update_app,
 )
-from kiro_crew.apps.routes import register_app_routes
+from efm_go.apps.routes import register_app_routes
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +36,7 @@ def _reset_dev_cache():
     reset a dev app enabled in one test would leak into the next and flip an
     unrelated Cache-Control assertion.
     """
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
     dev_mode._set_dev_cache(set())
     yield
     dev_mode._set_dev_cache(set())
@@ -64,14 +64,14 @@ def _setup_env(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(home))
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
     # Operator-process baseline for the runtime human-vs-agent check:
     # the TEST process may itself run inside an agent sandbox (developer
     # machines, agent-driven CI), which would otherwise make every
     # confirmed-grant test refuse. Tests that exercise the agent-side refusal
     # re-set the marker / re-patch the probe explicitly.
-    import kiro_crew.sandbox as sandbox_mod
+    import efm_go.sandbox as sandbox_mod
 
     monkeypatch.delenv("KIROCREW_SANDBOX_ACTIVE", raising=False)
     monkeypatch.setattr(sandbox_mod, "_macos_sandbox_state", lambda: None)
@@ -145,7 +145,7 @@ def test_set_dev_mode_rejects_builtin(tmp_path, monkeypatch):
     install_app(str(_make_app_source(tmp_path)))
     meta = _read_installed("dev-mode-app")
     meta.origin = "builtin"
-    from kiro_crew.apps.manager import _write_installed
+    from efm_go.apps.manager import _write_installed
     _write_installed("dev-mode-app", meta)
     result = set_dev_mode("dev-mode-app", True)
     assert "builtin" in result["error"]
@@ -200,8 +200,8 @@ def test_set_dev_mode_writes_metadata_under_lock(tmp_path, monkeypatch):
     """
     from contextlib import contextmanager
 
-    import kiro_crew.apps.dev_mode as dev_mode
-    from kiro_crew.apps.manager import _write_installed
+    import efm_go.apps.dev_mode as dev_mode
+    from efm_go.apps.manager import _write_installed
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -234,7 +234,7 @@ def test_uninstall_clears_dev_sentinel(tmp_path, monkeypatch):
     Regression guard for the MEDIUM finding: a stale sentinel entry would make a
     different app reinstalled under the same name inherit dev-mode serving.
     """
-    from kiro_crew.apps.manager import uninstall_app
+    from efm_go.apps.manager import uninstall_app
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -255,7 +255,7 @@ def test_load_dev_apps_filters_stale_entries(tmp_path, monkeypatch):
     the sentinel (e.g. crash mid-uninstall), a reinstall under that name with
     dev:false must not be treated as a dev app.
     """
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -424,7 +424,7 @@ async def test_watch_loop_broadcasts_reload_on_edit(tmp_path, monkeypatch):
     """
     import asyncio
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -497,7 +497,7 @@ async def test_stop_dev_mode_watcher_awaits_cancellation(tmp_path, monkeypatch):
     it fully unwound, and clear the module global so a fresh init can start
     cleanly.
     """
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     monkeypatch.setattr(dev_mode, "POLL_INTERVAL_SECS", 0.02)
@@ -529,7 +529,7 @@ async def test_watch_loop_no_ui_walk_when_no_dev_apps(tmp_path, monkeypatch):
     """
     import asyncio
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))  # installed but NOT in dev mode
@@ -565,7 +565,7 @@ async def test_watch_loop_picks_up_out_of_process_toggle(tmp_path, monkeypatch):
     """
     import asyncio
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -651,7 +651,7 @@ def test_update_app_preserves_dev_flag(tmp_path, monkeypatch):
     # this asserts the dataclasses.replace guard matches the real scope of the
     # fix (all persisted metadata), not merely the ``dev`` flag that surfaced
     # it — so a future field added to InstalledApp can't silently regress.
-    from kiro_crew.apps.manager import _write_installed
+    from efm_go.apps.manager import _write_installed
     meta0 = _read_installed("dev-mode-app")
     meta0.enabled = False
     meta0.installedAt = "2020-01-01T00:00:00Z"
@@ -717,7 +717,7 @@ def test_reconcile_sentinel_adds_missing_entry(tmp_path, monkeypatch):
     # touching the sentinel (as a snapshot restore or hand-edit would).
     meta = _read_installed("dev-mode-app")
     meta.dev = True
-    from kiro_crew.apps.manager import _write_installed
+    from efm_go.apps.manager import _write_installed
     _write_installed("dev-mode-app", meta)
     assert _read_dev_sentinel() == set(), "sentinel is stale/missing the entry"
 
@@ -729,7 +729,7 @@ def test_reconcile_sentinel_adds_missing_entry(tmp_path, monkeypatch):
 
 def test_reconcile_sentinel_drops_stale_entry(tmp_path, monkeypatch):
     """Reconcile also removes a sentinel entry not backed by a dev-mode install."""
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -762,8 +762,8 @@ def test_reconcile_scans_inside_lock_preserves_racing_toggle(tmp_path, monkeypat
     """
     from contextlib import contextmanager
 
-    import kiro_crew.apps.dev_mode as dev_mode
-    from kiro_crew.apps.manager import _write_installed
+    import efm_go.apps.dev_mode as dev_mode
+    from efm_go.apps.manager import _write_installed
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -802,7 +802,7 @@ def test_set_dev_mode_writes_and_revokes_the_grant(tmp_path, monkeypatch):
     grant binds the ui root's resolved path at toggle time."""
     import os
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -828,8 +828,8 @@ def test_reconcile_never_launders_a_forged_dev_flag_into_a_grant(tmp_path, monke
     grant record the reconcile never creates, so the forged flag buys watching
     and no-store serving at most, never an out-of-install ui root.
     """
-    import kiro_crew.apps.dev_mode as dev_mode
-    from kiro_crew.apps.manager import _write_installed
+    import efm_go.apps.dev_mode as dev_mode
+    from efm_go.apps.manager import _write_installed
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -864,7 +864,7 @@ def test_reconcile_prunes_grants_for_absent_apps_but_keeps_live_ones(
     """
     import os
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -886,7 +886,7 @@ def test_reconcile_prunes_grants_for_absent_apps_but_keeps_live_ones(
 
 def test_uninstall_revokes_the_grant(tmp_path, monkeypatch):
     """``remove_dev_app`` (the uninstall hook) revokes the operator grant."""
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -911,7 +911,7 @@ def test_disable_revokes_the_grant_FIRST(tmp_path, monkeypatch):
     making the metadata write (the SECOND step) blow up and checking the
     grant is already gone.
     """
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -935,7 +935,7 @@ def test_enable_refuses_to_bind_a_sensitive_escaping_root(tmp_path, monkeypatch)
     grantable — not even by the real operator: no dev workflow legitimately
     serves credential stores over the unauthenticated UI route. The toggle is
     rolled back whole (no grant, no metadata flag, no sentinel entry)."""
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -972,7 +972,7 @@ def test_a_refused_reenable_preserves_prior_dev_state(tmp_path, monkeypatch):
     """
     import shutil
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
     from conftest import make_dir_link
 
     _setup_env(tmp_path, monkeypatch)
@@ -1006,7 +1006,7 @@ def test_enable_refuses_a_root_CONTAINING_sensitive_leaves(tmp_path, monkeypatch
     extension."""
     import shutil
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
     from conftest import make_dir_link
 
     _setup_env(tmp_path, monkeypatch)
@@ -1035,7 +1035,7 @@ def _repoint_ui_outside(tmp_path, dirname="external-src"):
     """Replace the installed ui/ with a link to a benign out-of-install tree."""
     import shutil
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     app_ui = dev_mode.apps_dir() / "dev-mode-app" / "ui"
     shutil.rmtree(app_ui)
@@ -1057,7 +1057,7 @@ def test_enable_out_of_install_root_requires_confirmation(tmp_path, monkeypatch)
     """
     import os
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -1093,7 +1093,7 @@ def test_out_of_install_confirmation_decisions_are_SEL_audited(tmp_path, monkeyp
     """
     from types import SimpleNamespace
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -1141,7 +1141,7 @@ def test_confirmation_cannot_override_the_sensitivity_screen(tmp_path, monkeypat
     only answers the benign-escape case. An operator who confirms a sensitive
     root is still refused — no dev workflow legitimately serves credential
     stores over the unauthenticated UI route."""
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -1160,7 +1160,7 @@ def test_an_unconfirmed_refusal_preserves_prior_dev_state(tmp_path, monkeypatch)
     already in dev mode on its in-install root keeps its metadata, sentinel
     entry, and OLD grant when an unconfirmed re-toggle over a repointed root
     is refused."""
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -1190,7 +1190,7 @@ async def test_dev_endpoint_never_confirms_out_of_install_roots(tmp_path, monkey
     never mint the grant. (Confirmation is CLI-only: the host process
     boundary is what proves the operator.)
     """
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -1234,7 +1234,7 @@ def test_confirm_flag_refused_from_agent_sandboxed_process(tmp_path, monkeypatch
     """
     from types import SimpleNamespace
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -1269,8 +1269,8 @@ def test_confirm_flag_refused_when_kernel_reports_confinement(tmp_path, monkeypa
     """The kernel's own sandbox verdict refuses the flag even with a scrubbed
     environment — ``env -u KIROCREW_SANDBOX_ACTIVE`` does not launder an
     agent shell into an operator terminal."""
-    import kiro_crew.apps.dev_mode as dev_mode
-    import kiro_crew.sandbox as sandbox_mod
+    import efm_go.apps.dev_mode as dev_mode
+    import efm_go.sandbox as sandbox_mod
 
     _setup_env(tmp_path, monkeypatch)  # marker scrubbed by the baseline
     install_app(str(_make_app_source(tmp_path)))
@@ -1300,7 +1300,7 @@ def test_confirm_flag_refused_when_grant_record_sealed(tmp_path, monkeypatch):
     """
     import os
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -1341,7 +1341,7 @@ def test_sealed_grant_record_refuses_every_toggle_atomically(tmp_path, monkeypat
     import os
     from types import SimpleNamespace
 
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))
@@ -1378,7 +1378,7 @@ def test_reconcile_materializes_the_grant_record(tmp_path, monkeypatch):
     mode must not leave the record creatable from inside an agent sandbox.
     An empty record reads as "no grants".
     """
-    import kiro_crew.apps.dev_mode as dev_mode
+    import efm_go.apps.dev_mode as dev_mode
 
     _setup_env(tmp_path, monkeypatch)
     install_app(str(_make_app_source(tmp_path)))

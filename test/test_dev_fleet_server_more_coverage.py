@@ -23,8 +23,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.apps.builtins.dev_fleet import (
+from efm_go import platform_compat
+from efm_go.apps.builtins.dev_fleet import (
     fleet_state,
     gateway_service,
     http_api,
@@ -355,8 +355,8 @@ async def test_repo_owner_name_none_when_url_unparseable(monkeypatch):
 @pytest.mark.asyncio
 async def test_repo_owner_name_parses_ssh_url(monkeypatch):
     monkeypatch.setattr(repository, "_upstream_remote", AsyncMock(return_value="origin"))
-    _run_cmd_queue(monkeypatch, [(0, "git@github.com:kirodotdev/KiroCrew.git\n", "")])
-    assert await fleet_state._repo_owner_name() == "kirodotdev/KiroCrew"
+    _run_cmd_queue(monkeypatch, [(0, "git@github.com:efmleads.com.git\n", "")])
+    assert await fleet_state._repo_owner_name() == "efmleads.com"
 
 
 @pytest.mark.asyncio

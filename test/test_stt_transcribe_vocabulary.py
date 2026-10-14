@@ -28,11 +28,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import web
 
-import kiro_crew.dashboard.handlers.core as core
-from kiro_crew import aws_consent
-from kiro_crew import transcribe as tr
-from kiro_crew.config import sections
-from kiro_crew.config.loader import KiroCrewConfig, config_path
+import efm_go.dashboard.handlers.core as core
+from efm_go import aws_consent
+from efm_go import transcribe as tr
+from efm_go.config import sections
+from efm_go.config.loader import KiroCrewConfig, config_path
 
 # ── helpers ──────────────────────────────────────────────────────────────
 
@@ -180,7 +180,7 @@ def test_an_unusable_stored_name_degrades_to_none(stored: object, monkeypatch, c
 
 def test_the_degrade_notice_deduplicates_the_last_value(monkeypatch, caplog) -> None:
     monkeypatch.setattr(sections, "_LAST_WARNED_TRANSCRIBE_VOCABULARY", None)
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.config.sections"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.config.sections"):
         _write_stt(transcribe_vocabulary="not valid")
         KiroCrewConfig.load()
         KiroCrewConfig.load()
@@ -193,7 +193,7 @@ def test_the_degrade_notice_deduplicates_the_last_value(monkeypatch, caplog) -> 
 
 def test_the_degrade_notice_memory_is_bounded(monkeypatch, caplog) -> None:
     monkeypatch.setattr(sections, "_LAST_WARNED_TRANSCRIBE_VOCABULARY", None)
-    with caplog.at_level(logging.CRITICAL, logger="kiro_crew.config.sections"):
+    with caplog.at_level(logging.CRITICAL, logger="efm_go.config.sections"):
         for index in range(1000):
             assert sections._validated_transcribe_vocabulary(f"not valid {index}") == ""
 
@@ -279,7 +279,7 @@ def test_an_empty_profile_uses_the_default_chain(monkeypatch) -> None:
 def test_stops_after_the_page_cap(monkeypatch, caplog) -> None:
     endless = [{"Vocabularies": [_vocab(f"v{i}")], "NextToken": "more"} for i in range(50)]
     fake = _FakeTranscribe(pages=endless).install(monkeypatch)
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.transcribe"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.transcribe"):
         listing = tr.list_custom_vocabularies("", "us-east-1")
     assert len(fake.requests) == tr._VOCABULARY_MAX_PAGES
     assert len(listing.vocabularies) == tr._VOCABULARY_MAX_PAGES

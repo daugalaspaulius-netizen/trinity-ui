@@ -1,7 +1,7 @@
 """The owning app reaches the ``GET /api/crons`` wire, and nothing else does.
 
 A cron job an installed app created is tagged ``created_by = "app:<name>"`` by
-:class:`~kiro_crew.apps.cron_sdk.CronSDK`, but the dashboard could not see it: the
+:class:`~efm_go.apps.cron_sdk.CronSDK`, but the dashboard could not see it: the
 listing serializer names its fields one by one and ``created_by`` was not among
 them. Without that attribution the dashboard can tell a job is running or has
 failed, yet not whose it is.
@@ -21,9 +21,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.apps.cron_sdk import APP_OWNER_PREFIX, app_owner_name, owner_tag
-from kiro_crew.cron import CronJob, CronSchedule
-from kiro_crew.dashboard.handlers.cron import api_crons
+from efm_go.apps.cron_sdk import APP_OWNER_PREFIX, app_owner_name, owner_tag
+from efm_go.cron import CronJob, CronSchedule
+from efm_go.dashboard.handlers.cron import api_crons
 
 
 def _request_with_job(**job_kw) -> MagicMock:

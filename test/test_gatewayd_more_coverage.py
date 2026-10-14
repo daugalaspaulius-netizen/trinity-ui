@@ -29,9 +29,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.mcp_gateway import gatewayd as gw
-from kiro_crew.mcp_gateway.backend import Backend, BackendGone, _PendingRequest
-from kiro_crew.mcp_gateway.pool import BackendUnavailable, PoolAtCapacity, PoolKey
+from efm_go.mcp_gateway import gatewayd as gw
+from efm_go.mcp_gateway.backend import Backend, BackendGone, _PendingRequest
+from efm_go.mcp_gateway.pool import BackendUnavailable, PoolAtCapacity, PoolKey
 
 pytestmark = pytest.mark.xdist_group("mcp_gateway")
 
@@ -331,8 +331,8 @@ class TestControlFrames:
     async def test_app_call_is_refused_and_audited_when_the_feature_is_off(
         self, peer_ok, monkeypatch
     ):
-        from kiro_crew.mcp_gateway import app_call as app_call_mod
-        from kiro_crew.mcp_gateway import backend as backend_mod
+        from efm_go.mcp_gateway import app_call as app_call_mod
+        from efm_go.mcp_gateway import backend as backend_mod
 
         monkeypatch.setattr(backend_mod, "_mcp_apps_enabled", lambda: False)
         audits: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
@@ -362,8 +362,8 @@ class TestControlFrames:
 
     @pytest.mark.asyncio
     async def test_app_call_is_forwarded_when_the_feature_is_on(self, peer_ok, monkeypatch):
-        from kiro_crew.mcp_gateway import app_call as app_call_mod
-        from kiro_crew.mcp_gateway import backend as backend_mod
+        from efm_go.mcp_gateway import app_call as app_call_mod
+        from efm_go.mcp_gateway import backend as backend_mod
 
         monkeypatch.setattr(backend_mod, "_mcp_apps_enabled", lambda: True)
         handled = AsyncMock(return_value={"type": "app-call-result", "ok": True})
@@ -410,7 +410,7 @@ class TestControlFrames:
         itself with the prefix would inherit both exemptions and be served tools
         the model is meant not to see. The prefix is the gateway's own; refuse it
         at registration."""
-        from kiro_crew.mcp_gateway.backend import INTERNAL_STUB_PREFIXES
+        from efm_go.mcp_gateway.backend import INTERNAL_STUB_PREFIXES
 
         assert INTERNAL_STUB_PREFIXES  # a silently empty tuple would pass vacuously
         for prefix in INTERNAL_STUB_PREFIXES:
@@ -434,7 +434,7 @@ class TestControlFrames:
         record of -- the operator sees a denial that never happened rather than
         one that did.
         """
-        from kiro_crew.mcp_gateway.backend import INTERNAL_STUB_PREFIXES
+        from efm_go.mcp_gateway.backend import INTERNAL_STUB_PREFIXES
 
         audited: list[str] = []
         monkeypatch.setattr(gw, "_audit_reserved_stub_prefix_denied", audited.append)

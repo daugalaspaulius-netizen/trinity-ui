@@ -373,7 +373,7 @@ There are two listing surfaces, and they take different paths:
 
 **The official App Store catalog** is the store's inventory, and it is
 maintainer-curated. Its authoring repository is
-[kirodotdev/KiroCrewApps](https://github.com/kirodotdev/KiroCrewApps), which is
+[efmleads.comApps](https://efmleads.comApps), which is
 public to read and not publicly writable: you can read
 `catalog/official-registry.json` to see the authored shape your entry will take,
 but outside authors do not open the listing pull request themselves — there is no
@@ -389,7 +389,7 @@ exactly and read update availability from the published entry's `version` field,
 so republishing a revised entry is also how an update reaches users.
 
 To request a listing, open an **App Store listing request** issue using the
-[listing request template](https://github.com/kirodotdev/KiroCrew/issues/new?template=app-store-listing.yml).
+[listing request template](https://efmleads.com/issues/new?template=app-store-listing.yml).
 Provide the git source, the ref to pin, the display name, a summary, the
 category/tags, and author credit, and confirm the section 14 review checklist.
 A maintainer picks it up and authors the catalog entry with full author credit.
@@ -397,7 +397,7 @@ A maintainer picks it up and authors the catalog entry with full author credit.
 alternative, but it is a maintainer-only org-visibility decision, not something
 an author can do.)
 
-**The bundled seed** (`src/kiro_crew/apps/app-registry.json` in the Kiro Crew
+**The bundled seed** (`src/efm_go/apps/app-registry.json` in the Kiro Crew
 repo) is the catalog's offline snapshot, not the listing surface: it is what a
 client falls back to when the catalog host is unreachable. Entries here ride the
 Kiro Crew release train: a seed change follows the normal contribution flow and
@@ -638,9 +638,9 @@ useful to Kiro Crew users.
 | Enable | `POST /api/apps/{name}/enable`, or `kirocrew app enable <name>` |
 | Live reload | `kirocrew app dev <name>` |
 | Update local copy | `POST /api/apps/{name}/update` |
-| List a registry app | Official catalog: open an [App Store listing request](https://github.com/kirodotdev/KiroCrew/issues/new?template=app-store-listing.yml) issue (maintainer-curated). Bundled seed or a federated registry: add an entry to `app-registry.json`, open a pull request |
+| List a registry app | Official catalog: open an [App Store listing request](https://efmleads.com/issues/new?template=app-store-listing.yml) issue (maintainer-curated). Bundled seed or a federated registry: add an entry to `app-registry.json`, open a pull request |
 | User install | Apps page, Discover, Install |
 | Ship an update | Bump `version`, push |
 
 Bugs and feature requests: [GitHub
-issues](https://github.com/kirodotdev/KiroCrew/issues).
+issues](https://efmleads.com/issues).

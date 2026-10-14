@@ -24,10 +24,10 @@ from pathlib import Path
 import pytest
 from aiohttp import web
 
-from kiro_crew.apps import hooks_integration as hooks_mod
-from kiro_crew.apps.context import build_app_context
-from kiro_crew.apps.lifecycle import LifecycleDispatcher
-from kiro_crew.apps.route_registry import RouteRegistry
+from efm_go.apps import hooks_integration as hooks_mod
+from efm_go.apps.context import build_app_context
+from efm_go.apps.lifecycle import LifecycleDispatcher
+from efm_go.apps.route_registry import RouteRegistry
 
 
 def _app_info(name: str, hooks: dict[str, str]) -> dict:
@@ -141,7 +141,7 @@ async def test_the_handle_is_the_same_object_a_route_handler_would_see(tmp_path,
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     # Same allowance the other hook tests make: loading an app's Python is gated
     # on operator trust, which is not the property under test here.
-    monkeypatch.setattr("kiro_crew.apps.execution.third_party_execution_allowed", lambda: True)
+    monkeypatch.setattr("efm_go.apps.execution.third_party_execution_allowed", lambda: True)
     gateway_app = web.Application()
     registry = RouteRegistry(gateway_app)
     monkeypatch.setattr(hooks_mod, "_route_registry", registry)
@@ -151,7 +151,7 @@ async def test_the_handle_is_the_same_object_a_route_handler_would_see(tmp_path,
     (app_root / "app" / "__init__.py").write_text("", encoding="utf-8")
     (app_root / "app" / "hooks.py").write_text(
         "from aiohttp import web\n"
-        "from kiro_crew.apps.route_registry import AppRoute\n"
+        "from efm_go.apps.route_registry import AppRoute\n"
         "\n"
         "\n"
         "async def _ping(request, context):\n"
@@ -297,7 +297,7 @@ def test_the_gate_predicate_is_shared_not_copied():
     again, so the predicate is asserted to be importable and authoritative rather
     than left as a convention.
     """
-    from kiro_crew.apps.context import http_app_for_manifest
+    from efm_go.apps.context import http_app_for_manifest
 
     gateway_app = web.Application()
     assert (
@@ -361,7 +361,7 @@ class TestTeardownReadsTheEnableItIsTearingDown:
     @pytest.fixture(autouse=True)
     def _clean_caches(self, tmp_path, monkeypatch):
         """Both caches are process-global; a leaked entry would fake a pass here."""
-        from kiro_crew.apps.module_loader import clear_all_shutdown_callables
+        from efm_go.apps.module_loader import clear_all_shutdown_callables
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         clear_all_shutdown_callables()
@@ -425,7 +425,7 @@ class TestTeardownReadsTheEnableItIsTearingDown:
 
     def test_a_reload_invalidates_the_recorded_grant(self):
         """A record from enable v1 must not describe the app loaded by enable v2."""
-        from kiro_crew.apps.module_loader import cached_http_app_grant, unload_app_modules
+        from efm_go.apps.module_loader import cached_http_app_grant, unload_app_modules
 
         gateway_app = web.Application()
         dispatcher = LifecycleDispatcher(http_app=gateway_app)
@@ -465,7 +465,7 @@ class TestTeardownReadsTheEnableItIsTearingDown:
         asserted rather than left to a comment, because dropping one of the two
         lines is exactly the drift this guards.
         """
-        from kiro_crew.apps.module_loader import (
+        from efm_go.apps.module_loader import (
             cache_http_app_grant,
             cache_shutdown_callable,
             cached_http_app_grant,

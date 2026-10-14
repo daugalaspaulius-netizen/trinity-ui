@@ -24,25 +24,25 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.acp.client import AcpClient, AcpError
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.session_provider import AcpSessionProvider
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, JsonRpcMessage
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard import session_health as sh
-from kiro_crew.dashboard.chat import _run_chat
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.acp.client import AcpClient, AcpError
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.session_provider import AcpSessionProvider
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, JsonRpcMessage
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard import session_health as sh
+from efm_go.dashboard.chat import _run_chat
+from efm_go.dashboard.chat_utils import (
     SYNTHETIC_RECOVERY_KIND,
     TRANSIENT_NOTICE_GIVE_UP,
     TRANSIENT_NOTICE_META_KEY,
 )
-from kiro_crew.dashboard.session_control import containment_meta
-from kiro_crew.dashboard.state import REFUSAL_RECOVERY_PREFIX, DashboardState, _ChatSlot
-from kiro_crew.history import ConversationLog
-from kiro_crew.hooks import ToolHookResult
-from kiro_crew.providers.acp import AcpProvider
-from kiro_crew.providers.base import LLMEvent, LLMProvider
-from kiro_crew.recovery import ladder as lad
+from efm_go.dashboard.session_control import containment_meta
+from efm_go.dashboard.state import REFUSAL_RECOVERY_PREFIX, DashboardState, _ChatSlot
+from efm_go.history import ConversationLog
+from efm_go.hooks import ToolHookResult
+from efm_go.providers.acp import AcpProvider
+from efm_go.providers.base import LLMEvent, LLMProvider
+from efm_go.recovery import ladder as lad
 
 
 class _Runtime:
@@ -432,7 +432,7 @@ async def _turn_interrupted_during_the_backoff(tmp_path, key, deliver):
     try:
         with patch.object(chat_runner, "_recovery_delay", _seam):
             with patch.object(lad, "emit_histogram", _histogram):
-                with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+                with patch("efm_go.dashboard.chat.sel") as mock_sel:
                     mock_sel.return_value = MagicMock()
                     await _run_chat(state, slot, "hello")
                     if slot.task:
@@ -622,7 +622,7 @@ async def _transient_turn_interrupted_during_the_backoff(tmp_path, key, deliver,
         deliver(state, slot)
 
     with patch.object(chat_runner, "_recovery_delay", _seam):
-        with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             await _run_chat(state, slot, "hello")
             if slot.task:
@@ -859,7 +859,7 @@ class TestStructuralTerminalSlotFlag:
         state, _client = self._malformed_state(tmp_path)
         slot = _RecordingSlot("chat-1-malformed")
         assert slot._last_turn_structural_terminal is False
-        with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             # A self-driven nudge fire is the only producer that may set the
             # flag (the fire path passes _directive_self_wake=True); the loop id
@@ -897,7 +897,7 @@ class TestStructuralTerminalSlotFlag:
         plain terminal error and the loop re-fired the same doomed context every
         interval until ``max_cycles``.
         """
-        from kiro_crew.acp.transport_errors import _raise_acp_error
+        from efm_go.acp.transport_errors import _raise_acp_error
 
         state, client = _l1_state(tmp_path)
         client.last_infra_error = None
@@ -916,7 +916,7 @@ class TestStructuralTerminalSlotFlag:
         client.stream = MagicMock(side_effect=_raise_oversized)
         slot = _RecordingSlot("chat-1-oversized")
         assert slot._last_turn_structural_terminal is False
-        with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             await _run_chat(
                 state,
@@ -950,7 +950,7 @@ class TestStructuralTerminalSlotFlag:
         """
         state, _client = self._malformed_state(tmp_path)
         slot = _RecordingSlot("chat-1-human-malformed")
-        with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             await _run_chat(state, slot, "a human message that trips the parser")
             if slot.task:
@@ -980,7 +980,7 @@ class TestStructuralTerminalSlotFlag:
         slot._last_turn_structural_terminal = True
         slot._last_turn_structural_terminal_loop_id = "loop-stale"
         slot._last_turn_structural_terminal_loop_gen = 5
-        with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             await _run_chat(state, slot, "a fresh human message")
             if slot.task:
@@ -1000,7 +1000,7 @@ class _RecordingNudgeSvc:
     """Records ``notify_cycle_failed`` calls so a runner-level test can assert
     the real call-site (not the helper) charged or did not charge.
 
-    Patched in as ``kiro_crew.autonudge.get_instance``'s return value, which is
+    Patched in as ``efm_go.autonudge.get_instance``'s return value, which is
     exactly what ``_note_cycle_failure`` resolves at call time.
     """
 
@@ -1048,8 +1048,8 @@ class TestTheRunnerCallSitesChargeTheFailedCycle:
         svc = _RecordingNudgeSvc()
         slot = _RecordingSlot("chat-1-dispatched")
         with (
-            patch("kiro_crew.dashboard.chat.sel") as mock_sel,
-            patch("kiro_crew.autonudge.get_instance", return_value=svc),
+            patch("efm_go.dashboard.chat.sel") as mock_sel,
+            patch("efm_go.autonudge.get_instance", return_value=svc),
         ):
             mock_sel.return_value = MagicMock()
             await _run_chat(
@@ -1084,8 +1084,8 @@ class TestTheRunnerCallSitesChargeTheFailedCycle:
         svc2 = _RecordingNudgeSvc()
         slot2 = _RecordingSlot("chat-1-predispatch")
         with (
-            patch("kiro_crew.dashboard.chat.sel") as mock_sel,
-            patch("kiro_crew.autonudge.get_instance", return_value=svc2),
+            patch("efm_go.dashboard.chat.sel") as mock_sel,
+            patch("efm_go.autonudge.get_instance", return_value=svc2),
         ):
             mock_sel.return_value = MagicMock()
             await _run_chat(
@@ -1123,8 +1123,8 @@ class TestTheRunnerCallSitesChargeTheFailedCycle:
         svc = _RecordingNudgeSvc()
         slot = _RecordingSlot("chat-1-acp-arm")
         with (
-            patch("kiro_crew.dashboard.chat.sel") as mock_sel,
-            patch("kiro_crew.autonudge.get_instance", return_value=svc),
+            patch("efm_go.dashboard.chat.sel") as mock_sel,
+            patch("efm_go.autonudge.get_instance", return_value=svc),
         ):
             mock_sel.return_value = MagicMock()
             await _run_chat(
@@ -1178,8 +1178,8 @@ class TestTheRunnerCallSitesChargeTheFailedCycle:
         try:
             with (
                 patch.object(chat_runner, "_recovery_delay", new=AsyncMock()),
-                patch("kiro_crew.dashboard.chat.sel") as mock_sel,
-                patch("kiro_crew.autonudge.get_instance", return_value=svc),
+                patch("efm_go.dashboard.chat.sel") as mock_sel,
+                patch("efm_go.autonudge.get_instance", return_value=svc),
             ):
                 mock_sel.return_value = MagicMock()
                 await _run_chat(
@@ -1241,8 +1241,8 @@ class TestTheRunnerCallSitesChargeTheFailedCycle:
         slot = _RecordingSlot("chat-1-acp-transient")
         with (
             patch.object(chat_runner, "_recovery_delay", new=AsyncMock()),
-            patch("kiro_crew.dashboard.chat.sel") as mock_sel,
-            patch("kiro_crew.autonudge.get_instance", return_value=svc),
+            patch("efm_go.dashboard.chat.sel") as mock_sel,
+            patch("efm_go.autonudge.get_instance", return_value=svc),
         ):
             mock_sel.return_value = MagicMock()
             await _run_chat(

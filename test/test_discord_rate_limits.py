@@ -23,8 +23,8 @@ import aiohttp
 import pytest
 from multidict import CIMultiDict
 
-from kiro_crew.discord import client as dc
-from kiro_crew.discord.client import (
+from efm_go.discord import client as dc
+from efm_go.discord.client import (
     _BREAKER_COOLOFF_SECS,
     _DEFAULT_RETRY_AFTER_SECS,
     _INVALID_LIMIT,
@@ -47,7 +47,7 @@ from kiro_crew.discord.client import (
     _is_global_limit_exempt,
     _route_key,
 )
-from kiro_crew.messaging.outbound_files import OutboundFile
+from efm_go.messaging.outbound_files import OutboundFile
 
 _TOKEN = "bot-secret"
 #: Longer than the client's literal-segment ceiling, so it collapses like a
@@ -518,7 +518,7 @@ class TestInvalidRequestBreaker:
         headers: dict[str, str],
     ) -> None:
         harness = _harness(monkeypatch, [])
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.discord.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.discord.client"):
             for _ in range(_INVALID_LIMIT):
                 harness.client._note_invalid(status, CIMultiDict(headers))
             assert harness.client._breaker_until > harness.clock.now
@@ -561,7 +561,7 @@ class TestInvalidRequestBreaker:
             harness.client._note_invalid(403, CIMultiDict())
         assert not await harness.client.api_json("POST", "/channels/9/typing", {})
         harness.clock.now += _BREAKER_COOLOFF_SECS
-        with caplog.at_level(logging.INFO, logger="kiro_crew.discord.client"):
+        with caplog.at_level(logging.INFO, logger="efm_go.discord.client"):
             assert await harness.client.api_json("POST", "/channels/9/typing", {})
         assert "breaker closed" in caplog.text
         assert list(harness.client._invalid_hits) == []
@@ -647,7 +647,7 @@ class TestClassification:
         exc: BaseException,
     ) -> None:
         harness = _harness(monkeypatch, [exc, exc, exc])
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.discord.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.discord.client"):
             result = await harness.client.api_json("POST", "/channels/9111/messages", {})
         assert result.outcome == DISCORD_TRANSIENT and result.retryable
         assert result.status == 0 and result.detail == type(exc).__name__

@@ -1,6 +1,6 @@
 # Capturing a harness's `/compact` evidence
 
-`ACP_BACKENDS_COMPACT` in `src/kiro_crew/agent_sdk/backends.py` decides whether Kiro
+`ACP_BACKENDS_COMPACT` in `src/efm_go/agent_sdk/backends.py` decides whether Kiro
 Crew offers a manual `/compact` on a backend at all. A harness joins that set on a
 DRIVEN capture, never on its source: the bar opencode and goose met is a live session
 whose `usage_update.used` was seen to fall below its pre-compact peak.
@@ -32,7 +32,7 @@ as a corpus fixture and prints a verdict.
 ## What you have to bring
 
 Kiro Crew authenticates none of these harnesses. Each resolves its own provider from
-its own store, which is why `src/kiro_crew/agent_sdk/backend_install.py` probes no
+its own store, which is why `src/efm_go/agent_sdk/backend_install.py` probes no
 credential and why this script cannot either. So the one prerequisite the script cannot
 give you is a harness that can reach a model.
 
@@ -171,7 +171,7 @@ Commit the `.jsonl` and the generated `.expected.json` together.
 row per file and a short section per thing a capture establishes. Add both: the row names
 the frame classes, the section names what the `used` series shows.
 
-**3. The capability sets.** In `src/kiro_crew/agent_sdk/backends.py`:
+**3. The capability sets.** In `src/efm_go/agent_sdk/backends.py`:
 
 - add the id to `ACP_BACKENDS_COMPACT`;
 - add it to `ACP_BACKENDS_INLINE_COMPACTION` as well **if** the compaction finished
@@ -188,7 +188,7 @@ the frame classes, the section names what the `used` series shows.
 
 **4. The backend card's unmeasured cell.** The Settings > Agent Harness card renders
 three marks per line — available, not available, and NOT MEASURED — and the third one is
-the only per-harness table in `src/kiro_crew/agent_sdk/backend_cards.py`:
+the only per-harness table in `src/efm_go/agent_sdk/backend_cards.py`:
 `DECLARED_UNMEASURED`. It holds one entry, pi's `manual_compact` cell, citing
 `ACP_BACKENDS_COMPACT`'s own words. A capture is what that cell was waiting for, so
 delete the entry for the harness you drove.
@@ -256,7 +256,7 @@ and the finding in the comment; leave the memberships alone.
 ## When the harness refuses
 
 Exit 3 means the harness answered an auth or provider error rather than a turn, and the
-script prints that harness's own remedy from `src/kiro_crew/agent_sdk/host_auth.py` —
+script prints that harness's own remedy from `src/efm_go/agent_sdk/host_auth.py` —
 the same text the dashboard shows. Nothing in Kiro Crew can sign a harness in for you.
 
 The two errors this guide exists because of:

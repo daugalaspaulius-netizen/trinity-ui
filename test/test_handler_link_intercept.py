@@ -23,7 +23,7 @@ class TestLinkToDashboardCommand:
 
     @pytest.mark.asyncio
     async def test_no_dashboard_state(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         with (
@@ -45,7 +45,7 @@ class TestLinkToDashboardCommand:
 
     @pytest.mark.asyncio
     async def test_not_in_thread(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds = MagicMock()
@@ -69,7 +69,7 @@ class TestLinkToDashboardCommand:
 
     @pytest.mark.asyncio
     async def test_empty_thread_returns_error(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds = MagicMock()
@@ -77,7 +77,7 @@ class TestLinkToDashboardCommand:
             patch.object(handler, "_dashboard_state", ds),
             patch.object(handler, "is_allowed_user", return_value=True),
             patch(
-                "kiro_crew.slack.interactions._import_thread_to_slot",
+                "efm_go.slack.interactions._import_thread_to_slot",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
@@ -97,7 +97,7 @@ class TestLinkToDashboardCommand:
 
     @pytest.mark.asyncio
     async def test_unauthorized_user_blocked(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         with patch.object(handler, "is_allowed_user", return_value=False):
@@ -116,7 +116,7 @@ class TestLinkToDashboardCommand:
 
     @pytest.mark.asyncio
     async def test_success_emits_sel_audit(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds = MagicMock()
@@ -131,7 +131,7 @@ class TestLinkToDashboardCommand:
                 patch.object(handler, "_dashboard_state", ds),
                 patch.object(handler, "is_allowed_user", return_value=True),
                 patch(
-                    "kiro_crew.slack.interactions._import_thread_to_slot",
+                    "efm_go.slack.interactions._import_thread_to_slot",
                     new_callable=AsyncMock,
                     return_value=slot,
                 ),
@@ -163,7 +163,7 @@ class TestLinkedThreadIntercept:
 
     @pytest.mark.asyncio
     async def test_unauthorized_user_denied_with_sel(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds = MagicMock()
@@ -196,7 +196,7 @@ class TestLinkedThreadIntercept:
 
     @pytest.mark.asyncio
     async def test_authorized_routes_to_slot_not_running(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         slot = MagicMock()
@@ -212,7 +212,7 @@ class TestLinkedThreadIntercept:
         with (
             patch.object(handler, "_dashboard_state", ds),
             patch.object(handler, "is_allowed_user", return_value=True),
-            patch("kiro_crew.dashboard.chat._run_chat", new_callable=AsyncMock) as mock_run_chat,
+            patch("efm_go.dashboard.chat._run_chat", new_callable=AsyncMock) as mock_run_chat,
         ):
             await handler.handle_message(
                 slack,
@@ -231,7 +231,7 @@ class TestLinkedThreadIntercept:
     @pytest.mark.asyncio
     async def test_redact_for_ui_original_for_llm(self):
         """Verify redacted text goes to UI (slot.append) but original goes to LLM (_run_chat)."""
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         slot = MagicMock()
@@ -247,7 +247,7 @@ class TestLinkedThreadIntercept:
         with (
             patch.object(handler, "_dashboard_state", ds),
             patch.object(handler, "is_allowed_user", return_value=True),
-            patch("kiro_crew.dashboard.chat._run_chat", new_callable=AsyncMock) as mock_run_chat,
+            patch("efm_go.dashboard.chat._run_chat", new_callable=AsyncMock) as mock_run_chat,
             patch.object(
                 handler, "redact_exfiltration_urls", return_value=("[REDACTED-URL]", True)
             ),
@@ -274,7 +274,7 @@ class TestLinkedThreadIntercept:
 
     @pytest.mark.asyncio
     async def test_authorized_queues_when_running(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         slot = MagicMock()
@@ -287,7 +287,7 @@ class TestLinkedThreadIntercept:
             assert directive_channel_origin is True
             # The linked-thread enqueue stamps the admission-time containment
             # snapshot so the drain can re-assert it at delivery.
-            from kiro_crew.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
+            from efm_go.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
 
             assert isinstance(meta, dict) and QUEUED_CONTAINMENT_META_KEY in meta
             slot._queue.append({"id": "test", "content": content})
@@ -302,7 +302,7 @@ class TestLinkedThreadIntercept:
         with (
             patch.object(handler, "_dashboard_state", ds),
             patch.object(handler, "is_allowed_user", return_value=True),
-            patch("kiro_crew.dashboard.chat._run_chat", new_callable=AsyncMock) as mock_run_chat,
+            patch("efm_go.dashboard.chat._run_chat", new_callable=AsyncMock) as mock_run_chat,
         ):
             await handler.handle_message(
                 slack,
@@ -328,7 +328,7 @@ class TestTransportLinkedThreadIntercept:
 
     @pytest.mark.asyncio
     async def test_transport_authorized_routes_to_slot(self):
-        from kiro_crew.slack import handler, transport_dispatch
+        from efm_go.slack import handler, transport_dispatch
 
         slack = _make_slack()
         slot = MagicMock()
@@ -347,7 +347,7 @@ class TestTransportLinkedThreadIntercept:
         with (
             patch.object(handler, "_dashboard_state", ds),
             patch.object(handler, "is_allowed_user", return_value=True),
-            patch("kiro_crew.dashboard.chat._run_chat", new_callable=AsyncMock) as mock_run_chat,
+            patch("efm_go.dashboard.chat._run_chat", new_callable=AsyncMock) as mock_run_chat,
         ):
             await transport_dispatch.handle_message_transport(
                 slack,
@@ -365,7 +365,7 @@ class TestTransportLinkedThreadIntercept:
 
     @pytest.mark.asyncio
     async def test_transport_unauthorized_denied(self):
-        from kiro_crew.slack import handler, transport_dispatch
+        from efm_go.slack import handler, transport_dispatch
 
         slack = _make_slack()
         _slot = MagicMock(key="slot1")
@@ -424,7 +424,7 @@ class TestSessionsKeywordFallThrough:
 
     @pytest.mark.asyncio
     async def test_bare_sessions_falls_through_not_routed(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds, slot = self._linked_ds()
@@ -444,14 +444,14 @@ class TestSessionsKeywordFallThrough:
 
     @pytest.mark.asyncio
     async def test_non_exact_sessions_text_still_routed(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds, slot = self._linked_ds()
         with (
             patch.object(handler, "_dashboard_state", ds),
             patch.object(handler, "is_allowed_user", return_value=True),
-            patch("kiro_crew.dashboard.chat._run_chat", new_callable=AsyncMock),
+            patch("efm_go.dashboard.chat._run_chat", new_callable=AsyncMock),
         ):
             result = await handler.maybe_route_linked_thread(
                 "sessions please", "slack:t1", "U1", "C1", slack, "t1"
@@ -463,7 +463,7 @@ class TestSessionsKeywordFallThrough:
 
     @pytest.mark.asyncio
     async def test_unauthorized_sessions_still_denied(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds, slot = self._linked_ds()
@@ -491,14 +491,14 @@ class TestSessionsKeywordFallThrough:
 
     @pytest.mark.asyncio
     async def test_pinned_options_answer_sessions_still_delivered(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds, slot = self._linked_ds()
         with (
             patch.object(handler, "_dashboard_state", ds),
             patch.object(handler, "is_allowed_user", return_value=True),
-            patch("kiro_crew.dashboard.chat._run_chat", new_callable=AsyncMock),
+            patch("efm_go.dashboard.chat._run_chat", new_callable=AsyncMock),
         ):
             result = await handler.maybe_route_linked_thread(
                 "sessions",
@@ -518,7 +518,7 @@ class TestSessionsKeywordFallThrough:
 
     @pytest.mark.asyncio
     async def test_handle_message_reaches_sessions_command_when_linked(self):
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         slack = _make_slack()
         ds, slot = self._linked_ds()

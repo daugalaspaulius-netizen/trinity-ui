@@ -24,7 +24,7 @@ skip() { echo -e "  ${YELLOW}⊘ SKIP${NC}: $1"; ((SKIP++)); }
 sandbox_run() {
     local sandbox_mode="${KIROCREW_SANDBOX_MODE:-auto}"
     python3 -c "
-from kiro_crew.sandbox import wrap_argv
+from efm_go.sandbox import wrap_argv
 import subprocess, sys
 argv, cleanup = wrap_argv(sys.argv[1:], '$sandbox_mode')
 try:
@@ -57,7 +57,7 @@ sys.exit(1)
 # Run redact_credentials check
 check_redaction() {
     python3 -c "
-from kiro_crew.security import redact_credentials
+from efm_go.security import redact_credentials
 import sys
 text = sys.argv[1]
 result, warnings = redact_credentials(text)

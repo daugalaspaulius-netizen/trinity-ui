@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from unittest.mock import patch
 
-from kiro_crew.apps.builtins.auto_improvement.spine.proposer import Proposer
+from efm_go.apps.builtins.auto_improvement.spine.proposer import Proposer
 
 
 @dataclass

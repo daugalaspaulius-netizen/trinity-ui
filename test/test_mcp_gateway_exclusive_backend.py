@@ -21,8 +21,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.mcp_gateway.backend import Backend
-from kiro_crew.mcp_gateway.pool import BackendPool, PoolAtCapacity, PoolKey
+from efm_go.mcp_gateway.backend import Backend
+from efm_go.mcp_gateway.pool import BackendPool, PoolAtCapacity, PoolKey
 
 pytestmark = pytest.mark.xdist_group("mcp_gateway")
 
@@ -514,8 +514,8 @@ class _RecordingPool:
 
 
 async def _drive_handler(monkeypatch: pytest.MonkeyPatch, *, poolable: bool) -> _RecordingPool:
-    from kiro_crew.mcp_gateway import gatewayd as gw
-    from kiro_crew.mcp_gateway import socketsec
+    from efm_go.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_gateway import socketsec
 
     monkeypatch.setattr(socketsec, "PEER_IDENTITY_SUPPORTED", True)
     monkeypatch.setattr(
@@ -594,7 +594,7 @@ def _install_hazard_sink(
     caller that overrides one is describing a DIFFERENT program -- which is the
     whole point of the identity-checked read.
     """
-    from kiro_crew.mcp_gateway import hazards
+    from efm_go.mcp_gateway import hazards
 
     ledger = hazards.HazardLedger(tmp_path / hazards.HAZARDS_FILENAME)
     ledger.record(
@@ -671,7 +671,7 @@ async def test_clearing_the_record_lets_the_server_pool_again(
     ``observed-hazards.json``, start). An online socket verb for it was descoped
     from this change -- see the PR discussion.
     """
-    from kiro_crew.mcp_gateway import hazards
+    from efm_go.mcp_gateway import hazards
 
     _install_hazard_sink(monkeypatch, tmp_path)
 
@@ -689,7 +689,7 @@ async def test_clearing_a_server_with_nothing_recorded_reports_no_change(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """False is the honest answer, not an error: there was nothing to forget."""
-    from kiro_crew.mcp_gateway import hazards
+    from efm_go.mcp_gateway import hazards
 
     _install_hazard_sink(monkeypatch, tmp_path)
 

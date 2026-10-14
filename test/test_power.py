@@ -6,8 +6,8 @@ import asyncio
 
 import pytest
 
-from kiro_crew import platform_compat, power
-from kiro_crew.power import SleepInhibitor
+from efm_go import platform_compat, power
+from efm_go.power import SleepInhibitor
 
 
 class _FakeProc:
@@ -288,7 +288,7 @@ class _FakeState:
 
 
 def _patch_prevent_sleep_flag(monkeypatch, enabled: bool):  # type: ignore[no-untyped-def]
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     class _Dash:
         prevent_sleep = enabled
@@ -318,8 +318,8 @@ def test_should_prevent_sleep_no_sessions(monkeypatch):  # type: ignore[no-untyp
 
 
 def test_prevent_sleep_is_editable_and_defaults_off():
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
     assert _EDITABLE_CONFIG.get("dashboard.prevent_sleep") == {"type": "bool"}
     assert KiroCrewConfig().dashboard.prevent_sleep is False

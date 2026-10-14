@@ -85,10 +85,10 @@ _BACKEND_GUARDS = (
     "test/test_windows_signing_contract.py",
     "test/test_meetings_routes.py",
     # Under the third testpath root -- these were silently unscanned until
-    # src/kiro_crew/apps/builtins was added to _BACKEND_ROOTS.
-    "src/kiro_crew/apps/builtins/design_critique/tests/test_manifest.py",
-    "src/kiro_crew/apps/builtins/crew_companion/tests/test_manifest.py",
-    "src/kiro_crew/apps/builtins/ops_mission_control/tests/test_routes.py",
+    # src/efm_go/apps/builtins was added to _BACKEND_ROOTS.
+    "src/efm_go/apps/builtins/design_critique/tests/test_manifest.py",
+    "src/efm_go/apps/builtins/crew_companion/tests/test_manifest.py",
+    "src/efm_go/apps/builtins/ops_mission_control/tests/test_routes.py",
 )
 
 _FRONTEND_GUARDS = (
@@ -244,14 +244,14 @@ def test_unreadable_file_is_treated_as_cross_surface(selector, tmp_path) -> None
 def test_pure_backend_file_is_classified_single_surface(selector, tmp_path) -> None:
     """A file with no other-surface reference is skippable (the actual saving)."""
     pure = tmp_path / "test_pure.py"
-    pure.write_text("from kiro_crew import config\n\n\ndef test_x():\n    assert config\n")
+    pure.write_text("from efm_go import config\n\n\ndef test_x():\n    assert config\n")
     assert selector._is_cross_surface(pure, selector._BACKEND_FOREIGN) is False
 
 
 def test_frontend_escape_patterns_are_detected(selector, tmp_path) -> None:
     """Both escape styles must be caught -- the string form AND the segment form."""
     literal = tmp_path / "a.test.ts"
-    literal.write_text("import x from '../../../src/kiro_crew/connections/registry.json'\n")
+    literal.write_text("import x from '../../../src/efm_go/connections/registry.json'\n")
     assert selector._is_cross_surface(literal, selector._FRONTEND_FOREIGN) is True
 
     segments = tmp_path / "b.test.js"
@@ -270,7 +270,7 @@ def test_backend_owned_config_references_are_cross_surface(selector, tmp_path) -
     backend-owned (the one exception, website/AUTOSDE.yaml, only makes the
     match over-broad, which costs CI time), and a spec reaches them through
     a pre-computed root constant -- no ``../../../`` escape and no
-    ``kiro_crew`` marker on the referencing line:
+    ``efm_go`` marker on the referencing line:
 
         const version = readFileSync(join(REPO_ROOT, 'pyproject.toml'), ...)
 
@@ -590,7 +590,7 @@ def test_windows_filter_is_scoped_to_the_test_root(tmp_path, monkeypatch) -> Non
     # wise be must-run: the only difference between them is where they live.
     guard = "assert Path('website/src/utils/sanitize.ts').is_file()\n"
     _seed(tmp_path / "test" / "test_snapshot.py", guard)
-    app_suite = "src/kiro_crew/apps/builtins/demo/tests/test_snapshot.py"
+    app_suite = "src/efm_go/apps/builtins/demo/tests/test_snapshot.py"
     _seed(tmp_path / app_suite, guard)
 
     selected = selector.collect("backend")
@@ -607,8 +607,8 @@ def test_windows_filter_is_scoped_to_the_test_root(tmp_path, monkeypatch) -> Non
 # --- container image test suite: image-only-dependency collection guard ---------
 #
 # The crew container image's test suite lives under
-# ``src/kiro_crew/apps/builtins/aws_control/crew/runtime/container_tests`` and is
-# reached by ``setup.cfg``'s ``testpaths = ... src/kiro_crew/apps/builtins``. Four
+# ``src/efm_go/apps/builtins/aws_control/crew/runtime/container_tests`` and is
+# reached by ``setup.cfg``'s ``testpaths = ... src/efm_go/apps/builtins``. Four
 # of its modules ``import httpx`` (and one ``fastapi``/``uvicorn``) at module top
 # level -- deps that ``container/requirements.txt`` marks "Container runtime only.
 # These must NOT become dependencies of the Kiro Crew app itself", so the app's own
@@ -621,7 +621,7 @@ def test_windows_filter_is_scoped_to_the_test_root(tmp_path, monkeypatch) -> Non
 _CONTAINER_CONFTEST = (
     _REPO_ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "apps"
     / "builtins"
     / "aws_control"

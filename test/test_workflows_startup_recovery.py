@@ -7,10 +7,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-from kiro_crew.taskrunner import TaskRunner
-from kiro_crew.workflows.service import WorkflowService
-from kiro_crew.workflows.store import WorkflowRunStore
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+from efm_go.taskrunner import TaskRunner
+from efm_go.workflows.service import WorkflowService
+from efm_go.workflows.store import WorkflowRunStore
 
 
 @pytest.mark.asyncio
@@ -54,7 +54,7 @@ async def test_service_restore_yields_until_complete(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("failure", ["missing-identity", "bad-context", "oserror"])
 def test_snapshot_read_failure_preserves_original_registry(tmp_path, monkeypatch, caplog, failure):
-    from kiro_crew import workflow_memory
+    from efm_go import workflow_memory
 
     path = tmp_path / "runs.json"
     execution = ExecutionContext(
@@ -111,7 +111,7 @@ def test_synchronous_service_restores_before_return(tmp_path):
 
 @pytest.mark.asyncio
 async def test_async_restore_keeps_handles_on_loop_and_eviction_off_loop(tmp_path, monkeypatch):
-    from kiro_crew.workflows.registry import RunHandle, RunRegistry
+    from efm_go.workflows.registry import RunHandle, RunRegistry
 
     store = WorkflowRunStore(base_dir=tmp_path / "workflows")
     registry = RunRegistry(max_runs=1, store=store)

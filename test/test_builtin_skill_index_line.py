@@ -24,10 +24,10 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew
-from kiro_crew.skills import _SHORT_DESC_CHARS, SkillsLoader
+import efm_go
+from efm_go.skills import _SHORT_DESC_CHARS, SkillsLoader
 
-PKG = Path(kiro_crew.__file__).resolve().parent
+PKG = Path(efm_go.__file__).resolve().parent
 BUILTIN = PKG / "builtin_skills"
 
 # Phrases a description uses to say WHEN the skill applies. Case-insensitive.

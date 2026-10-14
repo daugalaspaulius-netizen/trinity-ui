@@ -31,7 +31,7 @@ const BODY = [
   'broadcast no longer blocks the event loop, and the panel follows the shared',
   'split preference.',
   '',
-  fence('src/kiro_crew/dashboard/chat_runner.py', [
+  fence('src/efm_go/dashboard/chat_runner.py', [
     '@@ -140,7 +140,9 @@',
     ' def flush_segment(self, seg):',
     '     if not seg.lines:',
@@ -43,7 +43,7 @@ const BODY = [
   '',
   'Broadcast path:',
   '',
-  fence('src/kiro_crew/dashboard/state.py', [
+  fence('src/efm_go/dashboard/state.py', [
     '@@ -88,3 +88,4 @@',
     '     def broadcast(self, event):',
     '-        self._queue.put(event)',

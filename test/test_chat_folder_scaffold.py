@@ -28,8 +28,8 @@ from chat_test_helpers import _make_state
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from kiro_crew.dashboard import chat_folder_scaffold
-from kiro_crew.dashboard.chat_folder_scaffold import (
+from efm_go.dashboard import chat_folder_scaffold
+from efm_go.dashboard.chat_folder_scaffold import (
     MAX_REPORTED_UNKNOWN,
     STATUS_EMPTY,
     STATUS_OK,
@@ -37,7 +37,7 @@ from kiro_crew.dashboard.chat_folder_scaffold import (
     api_chat_folders_scaffold,
     api_chat_folders_scan,
 )
-from kiro_crew.dashboard.chat_folders import (
+from efm_go.dashboard.chat_folders import (
     FolderCreateError,
     FolderOwnershipError,
     create_folder_record,
@@ -56,13 +56,13 @@ def _make_scaffold_app(state: Any) -> web.Application:
 
 @pytest.fixture
 def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path / "home")
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path / "home")
     (tmp_path / "home").mkdir()
     # The endpoints are gated on the app being enabled (it ships off by
     # default); every test here is about what an ENABLED app does, so the gate
     # is opened once for the suite and closed again only by the disabled-app test.
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_folder_scaffold.is_app_enabled", lambda name: True
+        "efm_go.dashboard.chat_folder_scaffold.is_app_enabled", lambda name: True
     )
     return _make_state(tmp_path)
 
@@ -85,10 +85,10 @@ class TestDisabledApp:
             asked.append(name)
             return False
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_folder_scaffold.is_app_enabled", _disabled)
+        monkeypatch.setattr("efm_go.dashboard.chat_folder_scaffold.is_app_enabled", _disabled)
         events: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.sel",
+            "efm_go.dashboard.chat_folder_scaffold.sel",
             lambda: mock.Mock(log_api_access=lambda **kw: events.append(kw)),
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
@@ -803,7 +803,7 @@ class TestScaffoldPartialFailure:
             return await create_folder_record(state_arg, **kwargs)
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.create_folder_record", _refuse_web
+            "efm_go.dashboard.chat_folder_scaffold.create_folder_record", _refuse_web
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
             status, body = await _scaffold(client, root, [root / "api", root / "web"])
@@ -839,11 +839,11 @@ class TestScaffoldPartialFailure:
             return await create_folder_record(state_arg, **kwargs)
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.create_folder_record", _refuse_web
+            "efm_go.dashboard.chat_folder_scaffold.create_folder_record", _refuse_web
         )
         events: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.sel",
+            "efm_go.dashboard.chat_folder_scaffold.sel",
             lambda: mock.Mock(log_api_access=lambda **kw: events.append(kw)),
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
@@ -867,7 +867,7 @@ class TestScaffoldPartialFailure:
             return await create_folder_record(state_arg, **kwargs)
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.create_folder_record", _fail_web
+            "efm_go.dashboard.chat_folder_scaffold.create_folder_record", _fail_web
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
             status, body = await _scaffold(client, root, [root / "api", root / "web"])
@@ -888,7 +888,7 @@ class TestScaffoldPartialFailure:
             raise FolderCreateError("name required")
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.create_folder_record", _refuse
+            "efm_go.dashboard.chat_folder_scaffold.create_folder_record", _refuse
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
             status, body = await _scaffold(client, root, [root / "api", root / "web"])
@@ -923,7 +923,7 @@ class TestScaffoldPartialFailure:
             return tree
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold._scan_off_loop", _scan_then_swap
+            "efm_go.dashboard.chat_folder_scaffold._scan_off_loop", _scan_then_swap
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
             status, body = await _scaffold(client, root, [root / "api", root / "web"])
@@ -955,7 +955,7 @@ class TestScaffoldPartialFailure:
             return tree
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold._scan_off_loop", _scan_then_swap
+            "efm_go.dashboard.chat_folder_scaffold._scan_off_loop", _scan_then_swap
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
             status, body = await _scaffold(client, root, [root / "api"])
@@ -1054,11 +1054,11 @@ class TestAdditiveScaffold:
         ]
 
         with (
-            mock.patch("kiro_crew.dashboard.state.config_dir", lambda: home),
+            mock.patch("efm_go.dashboard.state.config_dir", lambda: home),
             # This test builds its own state rather than using the `state`
             # fixture, so the enablement gate is opened here the same way.
             mock.patch(
-                "kiro_crew.dashboard.chat_folder_scaffold.is_app_enabled", lambda name: True
+                "efm_go.dashboard.chat_folder_scaffold.is_app_enabled", lambda name: True
             ),
         ):
             state = _make_state(base)
@@ -1103,19 +1103,19 @@ class TestRouteRegistration:
     scan route is ever dropped."""
 
     def test_facade_reexports_the_scan_handler(self) -> None:
-        from kiro_crew.dashboard import chat
+        from efm_go.dashboard import chat
 
         assert chat.api_chat_folders_scan is api_chat_folders_scan
 
     def test_facade_reexports_the_scaffold_handler(self) -> None:
-        from kiro_crew.dashboard import chat
+        from efm_go.dashboard import chat
 
         assert chat.api_chat_folders_scaffold is api_chat_folders_scaffold
 
     def test_route_table_registers_the_scan_route(self) -> None:
         import inspect
 
-        from kiro_crew.dashboard.routes import sessions
+        from efm_go.dashboard.routes import sessions
 
         source = inspect.getsource(sessions)
         assert (
@@ -1125,7 +1125,7 @@ class TestRouteRegistration:
     def test_route_table_registers_the_scaffold_route(self) -> None:
         import inspect
 
-        from kiro_crew.dashboard.routes import sessions
+        from efm_go.dashboard.routes import sessions
 
         source = inspect.getsource(sessions)
         assert (
@@ -1216,7 +1216,7 @@ class TestScaffoldOwnership:
         Mutation guard: drop the ``allow_create`` call and the burst all
         returns 200.
         """
-        from kiro_crew.dashboard import create_rate_limit
+        from efm_go.dashboard import create_rate_limit
 
         create_rate_limit.reset_for_tests()
         try:
@@ -1246,7 +1246,7 @@ class TestScaffoldOwnership:
     async def test_the_browser_is_not_rate_limited(self, state: Any, tmp_path: Path) -> None:
         # Same carve-out as the create route: a request without the internal
         # secret is the person's own browser.
-        from kiro_crew.dashboard import create_rate_limit
+        from efm_go.dashboard import create_rate_limit
 
         create_rate_limit.reset_for_tests()
         try:
@@ -1273,7 +1273,7 @@ class TestSensitiveRootContainment:
     ) -> None:
         root = _sibling_repos(tmp_path / "work")
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.path_contains_sensitive",
+            "efm_go.dashboard.chat_folder_scaffold.path_contains_sensitive",
             lambda p: str(p) == str(root),
         )
         # A security refusal, so the trail must say denied — pinned because the
@@ -1281,7 +1281,7 @@ class TestSensitiveRootContainment:
         # endpoint in the audit log.
         events: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.sel",
+            "efm_go.dashboard.chat_folder_scaffold.sel",
             lambda: mock.Mock(log_api_access=lambda **kw: events.append(kw)),
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
@@ -1310,7 +1310,7 @@ class TestRootReplacedAfterValidation:
         # check and the identity read is a 400, and no scan runs at all.
         root = _sibling_repos(tmp_path / "work")
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.root_identity", lambda path: None
+            "efm_go.dashboard.chat_folder_scaffold.root_identity", lambda path: None
         )
         scanned: list[str] = []
 
@@ -1318,7 +1318,7 @@ class TestRootReplacedAfterValidation:
             scanned.append(root_arg)
             raise AssertionError("scan must not run for a root with no identity")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_folder_scaffold._scan_off_loop", _never)
+        monkeypatch.setattr("efm_go.dashboard.chat_folder_scaffold._scan_off_loop", _never)
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
             for url in ("/api/project-scaffold/scan", "/api/project-scaffold/create"):
                 resp = await client.post(url, json={"root": str(root), "selected": []})
@@ -1347,10 +1347,10 @@ class TestRootReplacedAfterValidation:
             scanned.append(root_arg)
             raise AssertionError("scan must not run for a redirected root")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_folder_scaffold._scan_off_loop", _never)
+        monkeypatch.setattr("efm_go.dashboard.chat_folder_scaffold._scan_off_loop", _never)
         events: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.sel",
+            "efm_go.dashboard.chat_folder_scaffold.sel",
             lambda: mock.Mock(log_api_access=lambda **kw: events.append(kw)),
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
@@ -1389,7 +1389,7 @@ class TestRootReplacedAfterValidation:
         monkeypatch.setattr(chat_folder_scaffold, "_resolve_root", _resolve_then_swap)
         events: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_folder_scaffold.sel",
+            "efm_go.dashboard.chat_folder_scaffold.sel",
             lambda: mock.Mock(log_api_access=lambda **kw: events.append(kw)),
         )
         async with TestClient(TestServer(_make_scaffold_app(state))) as client:
@@ -1459,7 +1459,7 @@ class TestCreateValidatesOffTheLoop:
     ) -> None:
         import threading
 
-        from kiro_crew.dashboard import chat_folders as cf
+        from efm_go.dashboard import chat_folders as cf
 
         target = tmp_path / "repo"
         target.mkdir()

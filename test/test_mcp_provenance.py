@@ -12,7 +12,7 @@ import logging
 
 import pytest
 
-from kiro_crew.mcp_provenance import (
+from efm_go.mcp_provenance import (
     ABSENT,
     MARKER_KEY,
     is_marked,
@@ -116,7 +116,7 @@ class TestResolveWriteDecisions:
         purpose -- a JSON ``null`` under the name is a value the user typed, which
         is why absence needs its own signal rather than borrowing ``None``.
         """
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_provenance"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.mcp_provenance"):
             assert self._resolve(on_disk) is None
         assert "srv" in caplog.text
 
@@ -163,7 +163,7 @@ class TestResolveWriteDecisions:
         user's. The log line is the only trace, and it names the server so a
         silent divergence is diagnosable.
         """
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_provenance"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.mcp_provenance"):
             assert self._resolve({"url": "https://theirs.example.com/mcp"}) is None
         assert "srv" in caplog.text
         assert "~/.kiro/settings/mcp.json" in caplog.text
@@ -216,10 +216,10 @@ class TestOwnershipIsPerFileNotPerName:
         """PR3 consumes this signature; the marker did not change it."""
         from unittest.mock import patch
 
-        from kiro_crew.mcp_discovery import SCOPE_KIROCREW, kirocrew_managed_names
+        from efm_go.mcp_discovery import SCOPE_KIROCREW, kirocrew_managed_names
 
         with patch(
-            "kiro_crew.mcp_discovery._load_mcp_json_by_source",
+            "efm_go.mcp_discovery._load_mcp_json_by_source",
             return_value={
                 SCOPE_KIROCREW: {
                     "plain": {"url": "https://x"},

@@ -44,13 +44,13 @@ recency list; origin is a property of a row, rendered as a badge.
 assembles local slots, peer rows and the federated Older Sessions search into
 that one list. Peer rows come from the hub route
 `GET /api/instances/{id}/chat-slots` (`read_peer_slots` in
-`src/kiro_crew/dashboard/handlers_instances.py`), behind the
+`src/efm_go/dashboard/handlers_instances.py`), behind the
 `PREVIEW_INSTANCE_SESSIONS` flag (`website/src/utils/previewFlags.ts`).
 
 **Ownership.** "New chat on crew" (`create_peer_slot`) and adopt
-(`src/kiro_crew/dashboard/remote_adopt.py`) both create a **local** slot stamped
+(`src/efm_go/dashboard/remote_adopt.py`) both create a **local** slot stamped
 `executor="remote"`, `instance_id`, `remote_slot`. Each send goes through
-`relay_remote_turn` (`src/kiro_crew/dashboard/remote_relay.py`), which POSTs
+`relay_remote_turn` (`src/efm_go/dashboard/remote_relay.py`), which POSTs
 the turn to the peer, reads its SSE stream and replays every row into the
 local transcript. So one conversation has **two transcripts**: the peer's
 (authoritative, it ran the turn) and the hub's (a mirror). Adopt backfills the
@@ -63,12 +63,12 @@ slots, disagree:
 
 | Defect | Where it breaks |
 |---|---|
-| Peer approvals unanswerable — [#10618](https://github.com/kirodotdev/KiroCrew/issues/10618) | The approval card renders from the LOCAL slot projection (`pending_approval` / `approval_id`); a relayed turn never fills it, and `api_chat_slot_approve` has no local future to resolve. Recorded as *KNOWN GAP* in `relay_remote_turn`'s docstring. |
-| No resume-attach — [#14585](https://github.com/kirodotdev/KiroCrew/issues/14585) | A hub restart drops the relay reader; the peer keeps running. `selectTurnInterrupted` reads the local transcript's shape, so a live peer turn shows *Turn interrupted*. Deferred in `remote_relay.py`'s *What is deliberately NOT here*. |
+| Peer approvals unanswerable — [#10618](https://efmleads.com/issues/10618) | The approval card renders from the LOCAL slot projection (`pending_approval` / `approval_id`); a relayed turn never fills it, and `api_chat_slot_approve` has no local future to resolve. Recorded as *KNOWN GAP* in `relay_remote_turn`'s docstring. |
+| No resume-attach — [#14585](https://efmleads.com/issues/14585) | A hub restart drops the relay reader; the peer keeps running. `selectTurnInterrupted` reads the local transcript's shape, so a live peer turn shows *Turn interrupted*. Deferred in `remote_relay.py`'s *What is deliberately NOT here*. |
 | Continue / regenerate / rewind / todo refused with 409 | `remote_bound_refusal` (`remote_relay.py`), called from `chat_handlers.py`, `chat_regenerate.py`, `chat_rewind.py`, `chat_todo.py`. Each would otherwise run the turn locally and fork the transcripts. |
-| Executor lost on restore — [#10826](https://github.com/kirodotdev/KiroCrew/issues/10826) | `_apply_recent_session` (`src/kiro_crew/dashboard/chat_persistence.py`) never restores `executor` / `instance_id` / `remote_slot`; only the full rehydrate path does (`_read_executor` in `src/kiro_crew/dashboard/slot_persistence/metadata_codec.py`, which the `RECENT` purpose skips). The next send runs locally. |
-| Peer-dispatched workers need hub-side parent rewriting — [#14907](https://github.com/kirodotdev/KiroCrew/pull/14907) (merged) | A worker the peer opened cites the peer's slot key, but the hub shows the LOCAL relay slot, so `_clean_peer_parent` (`handlers_instances.py`) must map peer keys to hub keys (`hub_key`). |
-| Older peer sessions not browsable — [#7445](https://github.com/kirodotdev/KiroCrew/issues/7445) | They live under the peer's `/api/sessions`, outside `_PROXY_ALLOWED_PREFIXES` (`api/chat`, `api/stream`) in `handlers_instances.py`. |
+| Executor lost on restore — [#10826](https://efmleads.com/issues/10826) | `_apply_recent_session` (`src/efm_go/dashboard/chat_persistence.py`) never restores `executor` / `instance_id` / `remote_slot`; only the full rehydrate path does (`_read_executor` in `src/efm_go/dashboard/slot_persistence/metadata_codec.py`, which the `RECENT` purpose skips). The next send runs locally. |
+| Peer-dispatched workers need hub-side parent rewriting — [#14907](https://efmleads.com/pull/14907) (merged) | A worker the peer opened cites the peer's slot key, but the hub shows the LOCAL relay slot, so `_clean_peer_parent` (`handlers_instances.py`) must map peer keys to hub keys (`hub_key`). |
+| Older peer sessions not browsable — [#7445](https://efmleads.com/issues/7445) | They live under the peer's `/api/sessions`, outside `_PROXY_ALLOWED_PREFIXES` (`api/chat`, `api/stream`) in `handlers_instances.py`. |
 | Duplicate rows | `read_peer_slots` must filter peer slots the hub drives, because the peer lists its half of every relayed pair. Only the gateway can correlate them. |
 
 Six of the seven exist only because a local slot stands in for a peer
@@ -86,11 +86,11 @@ session. Patching each one adds a mirror for one more piece of peer state
 ## Non-goals
 
 - A new transport. The SSH/SSM tunnel, the Fargate turn API, and
-  [`rfc-outbound-instance-transport`](https://github.com/kirodotdev/KiroCrew/pull/13031)
+  [`rfc-outbound-instance-transport`](https://efmleads.com/pull/13031)
   stay as they are; this RFC only consumes "the peer is connected".
 - Syncing memory, skills or config between machines.
 - Running a crew's turn with the hub's tools or credentials. That is
-  `executor: 'remote'` subagent placement ([#12821](https://github.com/kirodotdev/KiroCrew/pull/12821)),
+  `executor: 'remote'` subagent placement ([#12821](https://efmleads.com/pull/12821)),
   a different direction of travel, and unaffected.
 
 ## Design
@@ -104,7 +104,7 @@ mapped to Kiro Crew parts:
 |---|---|
 | `Local` opens at once, never waits for SSH | Local group renders from local slots; peer groups load from `['instances']` and `/api/instances/{id}/chat-slots` independently (`useSessionSources`). |
 | One collapsible row per machine; collapsing never switches selection | New group header per instance in the chat sidebar; collapse state kept per instance id. |
-| Status badge: online / reconnecting / `! auth` / `! error` | Derived from `TunnelStatus.state` (`src/kiro_crew/instances/ssh_tunnel_manager.py`, `TunnelState`): `connected` → online, `connecting` → reconnecting, `error` → error. **Needs auth is not derivable today:** an auth failure and an unreachable host both diagnose as `ssh_unreachable`, and `DiagnosisResult` (`src/kiro_crew/instances/diagnostics.py`) carries no fix command. Wave 2 adds one structured auth outcome to the diagnosis; until then the badge shows error. |
+| Status badge: online / reconnecting / `! auth` / `! error` | Derived from `TunnelStatus.state` (`src/efm_go/instances/ssh_tunnel_manager.py`, `TunnelState`): `connected` → online, `connecting` → reconnecting, `error` → error. **Needs auth is not derivable today:** an auth failure and an unreachable host both diagnose as `ssh_unreachable`, and `DiagnosisResult` (`src/efm_go/instances/diagnostics.py`) carries no fix command. Wave 2 adds one structured auth outcome to the diagnosis; until then the badge shows error. |
 | Clicking a badge shows the last error and the fix command; no credential popup | Badge opens the existing instance card with `TunnelStatus.error` / `diagnosis`; it never prompts for credentials. A fix command is shown only once the diagnosis carries one (see the row above). |
 | Lost connection: last state stays visible, dimmed, input disabled | Keep the last `chat-slots` answer per instance in the browser's query cache (memory only, so a reload clears it); render it dimmed and read-only while not `connected`. Today the send path (`api_chat` in `chat_handlers.py`, via `peer_is_connected`) refuses a relay slot's send while the tunnel is down; that guard keys on `slot.is_remote`, so a windowed peer row (wave 3) needs its own disable. |
 | Each machine keeps its own sessions; IDs scoped per machine | A row's identity is `(instance_id, slot_key)` (`sessionRowIdentity`); no key rewriting across machines. |
@@ -142,7 +142,7 @@ cannot, so "origin" stops being a row property and becomes a container.
 every row above is a new mechanism. (b) removes mechanisms: the peer already
 serves every needed action under the prefixes the proxy admits
 (`_PROXY_ALLOWED_PREFIXES`). This is the direction issue
-[#6180](https://github.com/kirodotdev/KiroCrew/issues/6180) set out ("nothing is
+[#6180](https://efmleads.com/issues/6180) set out ("nothing is
 persisted locally").
 
 ## Recommendation
@@ -199,9 +199,9 @@ adds the one new peer read and must stay GET-only.
    filters? Proposed: a hub route, matching `/chat-slots`.
 3. **Window placement.** Render the window in the existing chat pane (local
    theme, #6180) or reuse the same-origin remote crew pane
-   ([#15720](https://github.com/kirodotdev/KiroCrew/pull/15720))? Proposed: the
+   ([#15720](https://efmleads.com/pull/15720))? Proposed: the
    chat pane; the remote pane stays for the crew's full dashboard.
-4. **Interaction with the docked sidebar** ([#16052](https://github.com/kirodotdev/KiroCrew/pull/16052),
+4. **Interaction with the docked sidebar** ([#16052](https://efmleads.com/pull/16052),
    `rfc-dashboard-chrome-shell`). Groups live inside the docked list; no
    change to the chrome proposed here.
 5. **Project / workspace on a crew chat.** What should a crew chat show, and

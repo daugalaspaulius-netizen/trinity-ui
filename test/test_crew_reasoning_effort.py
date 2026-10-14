@@ -25,14 +25,14 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, coerce_effort
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, coerce_effort
 
 
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     """Exercise the agent handlers past their independent owner-auth boundary."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
     pass  # Member routing does not depend on OS isolation.
@@ -165,7 +165,7 @@ class TestResolveSessionEffort:
         """
         import inspect
 
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         src = inspect.getsource(loader.KiroCrewConfig.create_provider_factory)
         assert "resolve_session_effort" in src
@@ -175,7 +175,7 @@ class TestResolveSessionEffort:
 
 class TestBackgroundWorkerAgents:
     def test_names_the_two_role_agents(self):
-        from kiro_crew.config.loader import BACKGROUND_WORKER_AGENTS
+        from efm_go.config.loader import BACKGROUND_WORKER_AGENTS
 
         assert BACKGROUND_WORKER_AGENTS == ("kirocrew-lite", "kirocrew-heartbeat")
 
@@ -211,7 +211,7 @@ class TestFactoryAppliesTheCrewPin:
         cfg.agent.reasoning_effort = config_effort
         for name, effort in crews.items():
             cfg.agents[name] = KiroCrewAgentConfig(kiro_agent="kirocrew", reasoning_effort=effort)
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             factory(**factory_call)
@@ -258,7 +258,7 @@ class TestFactoryAppliesTheCrewPin:
         cfg.agents["kirocrew-lite"] = KiroCrewAgentConfig(
             kiro_agent="kirocrew-lite", reasoning_effort="high"
         )
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             factory(
@@ -299,7 +299,7 @@ class TestWarmPoolBypassesACrewPin:
     effort -- so a warm hit would silently run the crew at the wrong depth."""
 
     def _service(self, cfg: KiroCrewConfig):
-        from kiro_crew.session_allocation import SessionAllocationService
+        from efm_go.session_allocation import SessionAllocationService
 
         service = SessionAllocationService.__new__(SessionAllocationService)
         service._deps = MagicMock()
@@ -338,7 +338,7 @@ class TestWarmPoolBypassesACrewPin:
     @pytest.mark.asyncio
     async def test_an_unreadable_config_pools_as_before(self):
         """Failure must not stop a session from starting."""
-        from kiro_crew.session_allocation import SessionAllocationService
+        from efm_go.session_allocation import SessionAllocationService
 
         service = SessionAllocationService.__new__(SessionAllocationService)
         service._deps = MagicMock()
@@ -355,7 +355,7 @@ class TestWarmPoolBypassesACrewPin:
         and its absence is exactly the silent-no-op this class exists to stop."""
         import inspect
 
-        from kiro_crew import session_allocation
+        from efm_go import session_allocation
 
         src = inspect.getsource(session_allocation.SessionAllocationService._get_or_create_impl)
         assert "_crew_pins_effort" in src
@@ -380,7 +380,7 @@ class TestConcurrentRefreshesInstallInOrder:
         import time
         from unittest.mock import AsyncMock
 
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         base = KiroCrewConfig()
         base.session.timeout_secs = 2
@@ -408,12 +408,12 @@ class TestConcurrentRefreshesInstallInOrder:
         with (
             patch.object(mgr, "start_pool", AsyncMock()),
             patch.object(mgr, "_retire_stale_backend_bg_runtime", AsyncMock()),
-            patch("kiro_crew.session.build_provider_factory", return_value=MagicMock()),
-            patch("kiro_crew.session.KiroCrewConfig.load", side_effect=_staggered_load),
+            patch("efm_go.session.build_provider_factory", return_value=MagicMock()),
+            patch("efm_go.session.KiroCrewConfig.load", side_effect=_staggered_load),
             # The refresh also re-adopts the warm pool's cwd, which resolves through
             # the workspace table and reads config on its own; pinning it keeps the
             # count at the two refresh reads the inversion is staged on.
-            patch("kiro_crew.session.default_project_dir", return_value="/ws"),
+            patch("efm_go.session.default_project_dir", return_value="/ws"),
         ):
             await asyncio.gather(mgr.refresh_defaults(), mgr.refresh_defaults())
 
@@ -425,7 +425,7 @@ class TestConcurrentRefreshesInstallInOrder:
 
 
 def _crud_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import (
+    from efm_go.dashboard.handlers import (
         api_kirocrew_agent_update,
         api_kirocrew_agents_create,
     )
@@ -539,7 +539,7 @@ class TestApiValidatesTheCrewPin:
 class TestResolvedEndpointReportsEffort:
     @pytest.mark.asyncio
     async def test_reports_a_crew_pin_as_pinned(self, seeded_agent):
-        from kiro_crew.dashboard.handlers import api_kirocrew_agent_resolved_model
+        from efm_go.dashboard.handlers import api_kirocrew_agent_resolved_model
 
         cfg = KiroCrewConfig.load()
         cfg.agents[seeded_agent].reasoning_effort = "max"
@@ -558,7 +558,7 @@ class TestResolvedEndpointReportsEffort:
 
     @pytest.mark.asyncio
     async def test_reports_the_global_default_as_not_pinned(self, seeded_agent):
-        from kiro_crew.dashboard.handlers import api_kirocrew_agent_resolved_model
+        from efm_go.dashboard.handlers import api_kirocrew_agent_resolved_model
 
         cfg = KiroCrewConfig.load()
         cfg.agent.reasoning_effort = "low"
@@ -579,7 +579,7 @@ class TestResolvedEndpointReportsEffort:
         """The readout must not report the chat default for a crew that runs at
         the background role effort -- that is the drift the shared resolver
         exists to prevent, and it is invisible to a crew on a normal agent."""
-        from kiro_crew.dashboard.handlers import api_kirocrew_agent_resolved_model
+        from efm_go.dashboard.handlers import api_kirocrew_agent_resolved_model
 
         cfg = KiroCrewConfig.load()
         cfg.agents[seeded_agent].kiro_agent = "kirocrew-lite"
@@ -609,7 +609,7 @@ class TestSavingAPinRefreshesSessionDefaults:
     """
 
     def _app(self, refreshed: list[str]) -> web.Application:
-        from kiro_crew.dashboard.handlers import (
+        from efm_go.dashboard.handlers import (
             api_kirocrew_agent_delete,
             api_kirocrew_agent_update,
             api_kirocrew_agents_create,
@@ -706,8 +706,8 @@ class TestSavingAPinRefreshesSessionDefaults:
     def test_the_trigger_is_derived_from_the_resolver_inputs(self):
         """Pins the shape, not the instances: `_effort_inputs` must read exactly
         the fields the chain reads, so a future field is added in one place."""
-        from kiro_crew.config.loader import KiroCrewAgentConfig as Crew
-        from kiro_crew.dashboard.handlers.agents import _effort_inputs
+        from efm_go.config.loader import KiroCrewAgentConfig as Crew
+        from efm_go.dashboard.handlers.agents import _effort_inputs
 
         assert _effort_inputs(None) is None
         base = Crew(kiro_agent="kirocrew", reasoning_effort="high")
@@ -727,7 +727,7 @@ class TestSavingAPinRefreshesSessionDefaults:
         """The write is already durable, so the save must not report failure --
         a failed refresh costs one gateway lifetime of staleness, which is what
         the behaviour was before the call existed."""
-        from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
+        from efm_go.dashboard.handlers import api_kirocrew_agent_update
 
         class _Sessions:
             async def refresh_defaults(self) -> None:
@@ -748,7 +748,7 @@ class TestSavingAPinRefreshesSessionDefaults:
     async def test_no_state_on_the_app_is_not_an_error(self, seeded_agent):
         """The handlers are mounted without dashboard state in tests and in the
         CLI-only paths; a missing session manager must be a no-op, not a 500."""
-        from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
+        from efm_go.dashboard.handlers import api_kirocrew_agent_update
 
         app = web.Application()
         app.router.add_put("/api/agents/{name}", api_kirocrew_agent_update)

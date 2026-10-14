@@ -20,7 +20,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.dashboard.handlers import core
+from efm_go.dashboard.handlers import core
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def polish(monkeypatch: pytest.MonkeyPatch):
                 raise reply
             return reply
 
-        import kiro_crew.llm_helpers as helpers
+        import efm_go.llm_helpers as helpers
 
         monkeypatch.setattr(helpers, "run_bg_oneliner", _oneliner)
 
@@ -83,7 +83,7 @@ class TestTheSwitchIsTheConsent:
     @pytest.mark.asyncio
     async def test_the_default_configuration_has_it_off(self):
         """Read from the real dataclass, not the fixture's stub."""
-        from kiro_crew.config.loader import _build_stt_config
+        from efm_go.config.loader import _build_stt_config
 
         assert _build_stt_config({}).polish is False
 

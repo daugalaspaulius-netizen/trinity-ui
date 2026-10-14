@@ -131,7 +131,7 @@ const COMMENT_FIXTURE = {
 }
 
 const ISSUE_REPO = {
-  // The gate's kirodotdev/KiroCrew slug exemption cannot see this one, because
+  // The gate's efmleads.com slug exemption cannot see this one, because
   // owner and repo are separate fields here rather than one joined string.
   owner: 'kirodotdev', repo: 'KiroCrew', provider: 'github', host: 'github.com', // brand-ok: repo slug, not prose
 }
@@ -139,7 +139,7 @@ const ISSUE = {
   number: 11099,
   title: 'Hover geometry should stay still',
   body: 'Hovering should paint without moving the target.',
-  url: 'https://github.com/kirodotdev/KiroCrew/issues/11099',
+  url: 'https://efmleads.com/issues/11099',
   labels: ['bug'], comments: 1, state: 'open', author: 'reviewer', assignees: [],
   created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-02T00:00:00Z',
 }
@@ -198,10 +198,10 @@ const STORE_APPS = [
   { name: 'hover-row-peer', displayName: 'Hover Row Peer', description: 'Second row card.', author: 'Kiro Crew', version: '1.0.0', tags: ['developer-tools'], origin: 'registry', provenance: 'official', verified: true },
 ]
 const STORE_SECTIONS = [
-  { form: 'full', items: [{ type: 'app', appRefs: ['hover-main'], artwork: { url: 'https://apps.crew.kiro.dev/hover-main.svg', alt: 'Full hero evidence' } }] },
+  { form: 'full', items: [{ type: 'app', appRefs: ['hover-main'], artwork: { url: 'https://efmleads.com/api/apps/hover-main.svg', alt: 'Full hero evidence' } }] },
   { form: 'row', items: [
-    { type: 'collection', appRefs: ['hover-compact-a', 'hover-compact-b'], title: 'Compact hover collection', artwork: { url: 'https://apps.crew.kiro.dev/hover-compact.svg', alt: 'Compact collection evidence' } },
-    { type: 'app', appRefs: ['hover-row-peer'], artwork: { url: 'https://apps.crew.kiro.dev/hover-peer.svg', alt: 'Peer row evidence' } },
+    { type: 'collection', appRefs: ['hover-compact-a', 'hover-compact-b'], title: 'Compact hover collection', artwork: { url: 'https://efmleads.com/api/apps/hover-compact.svg', alt: 'Compact collection evidence' } },
+    { type: 'app', appRefs: ['hover-row-peer'], artwork: { url: 'https://efmleads.com/api/apps/hover-peer.svg', alt: 'Peer row evidence' } },
   ] },
 ]
 

@@ -15,11 +15,11 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.acp._dispatch import build_permission_event, parse_session_update
-from kiro_crew.acp.types import JsonRpcMessage
-from kiro_crew.hook_runtime.tool_identity import hook_gate_kwargs
-from kiro_crew.hooks import TOOL_AUTO_APPROVE, TOOL_DENY, HookManager, HooksConfig
-from kiro_crew.security import MAX_SCANNABLE_COMMAND_CHARS, is_denied
+from efm_go.acp._dispatch import build_permission_event, parse_session_update
+from efm_go.acp.types import JsonRpcMessage
+from efm_go.hook_runtime.tool_identity import hook_gate_kwargs
+from efm_go.hooks import TOOL_AUTO_APPROVE, TOOL_DENY, HookManager, HooksConfig
+from efm_go.security import MAX_SCANNABLE_COMMAND_CHARS, is_denied
 
 PROTECTED_PUSH = "git push --dry-run origin main"
 PUSH_RULE = "git-publish-push-protected-branch-name"

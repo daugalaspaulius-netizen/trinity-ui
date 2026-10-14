@@ -9,10 +9,10 @@ from pathlib import Path
 import pytest
 from test_snapshot import snapshot_family_source
 
-from kiro_crew import security
-from kiro_crew import snapshot as snap
-from kiro_crew import snapshot_redact as redact
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go import security
+from efm_go import snapshot as snap
+from efm_go import snapshot_redact as redact
+from efm_go.config.loader import KiroCrewConfig
 
 
 @pytest.fixture()
@@ -49,7 +49,7 @@ class TestTheSwitchIsBeyondTheAgentsReach:
         above and needs no platform skip, since it asserts the disposition rather than
         one platform's parsing of a data-home path.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert "backup" in sandbox._CREW_HIDDEN_LEAVES
         assert redact.redaction_switch_path().parent.name == "backup"

@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.hook_reconcile — reload app hooks on out-of-process CLI mutation.
+"""Tests for efm_go.apps.hook_reconcile — reload app hooks on out-of-process CLI mutation.
 
 Feature: the CLI enable/disable/install/uninstall does not reach the
 running gateway, so backend.hooks are never reloaded.
@@ -20,9 +20,9 @@ from typing import Any
 
 import pytest
 
-import kiro_crew.apps.hook_reconcile as hr
-import kiro_crew.apps.hooks_integration as hi
-import kiro_crew.apps.teardown as teardown
+import efm_go.apps.hook_reconcile as hr
+import efm_go.apps.hooks_integration as hi
+import efm_go.apps.teardown as teardown
 
 
 @pytest.fixture(autouse=True)
@@ -481,7 +481,7 @@ async def test_degraded_app_with_retained_startup_is_torn_down(_harness, monkeyp
     task keeps running. A cleared record drops the app out of the teardown
     candidate set, so a later uninstall would orphan the task. The reconciler
     must still examine + tear down an app that answers app_has_retained_startup."""
-    import kiro_crew.apps.lifecycle as lc
+    import efm_go.apps.lifecycle as lc
 
     calls, (set_current, _, _) = _harness
     # No loaded signature recorded (degraded), but a live detached startup task.
@@ -542,7 +542,7 @@ async def test_denied_app_teardown_runs_no_shutdown_hook(_harness):
         hi.clear_loaded_hook_signature(name)
         return {}
 
-    import kiro_crew.apps.hook_reconcile as _hr
+    import efm_go.apps.hook_reconcile as _hr
 
     # Denied enable records signature-only (no manifest).
     app = _app_info("watchtower")
@@ -823,7 +823,7 @@ async def test_reload_tears_down_from_retained_not_replacement_manifest(_harness
         hi.clear_loaded_hook_signature(name)
         return {}
 
-    import kiro_crew.apps.hook_reconcile as _hr
+    import efm_go.apps.hook_reconcile as _hr
 
     # v1 loaded with an on_shutdown that v2 removes; record v1 as the handler would.
     v1 = _app_info("watchtower", version="1.0.0")
@@ -872,7 +872,7 @@ async def test_uninstalled_app_runs_shutdown_via_retained_manifest(_harness):
         hi.clear_loaded_hook_signature(name)
         return {}
 
-    import kiro_crew.apps.hook_reconcile as _hr
+    import efm_go.apps.hook_reconcile as _hr
 
     # Record the loaded manifest (as on_app_enable would), then the app vanishes.
     await hi.record_loaded_hook_signature("watchtower", _app_info("watchtower"))
@@ -897,7 +897,7 @@ async def test_uninstalled_app_with_no_retained_manifest_skips_hooks(_harness):
         hi.clear_loaded_hook_signature(name)
         return {}
 
-    import kiro_crew.apps.hook_reconcile as _hr
+    import efm_go.apps.hook_reconcile as _hr
 
     # A signature present but NO retained manifest (simulate a legacy record).
     hi._loaded_hook_signatures["watchtower"] = ("1.0.0", 0, 0)

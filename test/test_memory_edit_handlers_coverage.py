@@ -19,13 +19,13 @@ import pytest
 from aiohttp import streams, web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import memory_stores
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard.handlers import memory_edit
-from kiro_crew.memory_stores import DEFAULT_MEMORY_STORE, owned_store_path
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import memory_stores
+from efm_go._sqlite_compat import sqlite3
+from efm_go.config import loader as loader_mod
+from efm_go.context import ContextBuilder
+from efm_go.dashboard.handlers import memory_edit
+from efm_go.memory_stores import DEFAULT_MEMORY_STORE, owned_store_path
+from efm_go.vector_memory import VectorMemoryStore
 
 pytestmark = pytest.mark.xdist_group("memory_edit_handlers_coverage")
 

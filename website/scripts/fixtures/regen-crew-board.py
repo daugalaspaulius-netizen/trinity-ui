@@ -20,7 +20,7 @@ import sys
 
 sys.path.insert(0, "src")
 
-from kiro_crew.config import paths as _paths  # noqa: E402
+from efm_go.config import paths as _paths  # noqa: E402
 
 # Refuse to run against anything but a scratch home the operator chose ON
 # PURPOSE. A presence-only ``KIROCREW_HOME`` check is not enough: an override
@@ -52,8 +52,8 @@ from types import SimpleNamespace  # noqa: E402
 
 from aiohttp.test_utils import make_mocked_request  # noqa: E402
 
-from kiro_crew import work_ledger as wl  # noqa: E402
-from kiro_crew.dashboard.handlers import work_ledger_board as board  # noqa: E402
+from efm_go import work_ledger as wl  # noqa: E402
+from efm_go.dashboard.handlers import work_ledger_board as board  # noqa: E402
 
 OUT = pathlib.Path("website/scripts/fixtures")
 OWNER = "owner-subject"

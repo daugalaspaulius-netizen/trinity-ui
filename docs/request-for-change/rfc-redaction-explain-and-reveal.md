@@ -18,9 +18,9 @@ Explain why text was removed, where the original usually remains, and how to
 view it. Keep suspicious links visible, but prevent them from opening
 automatically.
 
-Related: [#8426](https://github.com/kirodotdev/KiroCrew/issues/8426),
-[#3056](https://github.com/kirodotdev/KiroCrew/issues/3056),
-[#674](https://github.com/kirodotdev/KiroCrew/issues/674).
+Related: [#8426](https://efmleads.com/issues/8426),
+[#3056](https://efmleads.com/issues/3056),
+[#674](https://efmleads.com/issues/674).
 An interactive prototype of every UI surface this document proposes is at
 [assets/redaction-explain-reveal-prototype.html](assets/redaction-explain-reveal-prototype.html)
 (a self-contained page; open it in a browser).
@@ -403,7 +403,7 @@ explains.
   chat, every messaging channel, artifacts, logs, backups — including inside
   links. Remove only the credential from a URL rather than deleting the whole
   URL, and never let the "Allow" list weaken credential rules.
-- **One exception, decided with [#13685](https://github.com/kirodotdev/KiroCrew/pull/13685):
+- **One exception, decided with [#13685](https://efmleads.com/pull/13685):
   the dashboard owner can turn the credential pass off for the files their own
   dashboard opens for them** (the chat side panel's Files tab, and the Library
   and Artifacts previews that read through the same route). This is the
@@ -431,7 +431,7 @@ explains.
   state with a warning
   and the time it was switched off. An in-viewer indicator and an auto-revert
   window were considered and are open decisions
-  ([#13741](https://github.com/kirodotdev/KiroCrew/issues/13741) tracks the
+  ([#13741](https://efmleads.com/issues/13741) tracks the
   exfiltration-URL carve-out for the same owner view on a companionless
   build).
 - Logs, audits, and backups continue to use full redaction, and they do not
@@ -459,7 +459,7 @@ explains.
    redaction cannot be turned off for (everything the agent's output reaches
    another person or service through). The one control it carries is the
    owner's credential-redaction switch for their own file views, shipped in
-   [#13685](https://github.com/kirodotdev/KiroCrew/pull/13685) as *Credential
+   [#13685](https://efmleads.com/pull/13685) as *Credential
    redaction in file views* with the fences listed under *What does not
    change*; the rules and hosts view remains read-only.
 
@@ -552,24 +552,24 @@ here is on main yet except the widget-frame CSP):
 - If a host appears in both places, should the workspace Allow list or the
   built-in exact-host exemption take priority (`exempt_exact_hosts`)?
 - **One redaction surface, not two.**
-  [#10965](https://github.com/kirodotdev/KiroCrew/pull/10965) scrubs every
+  [#10965](https://efmleads.com/pull/10965) scrubs every
   persisted row and marks a rewritten one in the transcript. That marker and
   step 2's lock tag describe the same event to the same reader, so they should
   be one component with one vocabulary; which change carries it is open.
 - **Which false-positive fixes this document absorbs.**
-  [#9811](https://github.com/kirodotdev/KiroCrew/pull/9811) (shared document
-  links), [#10192](https://github.com/kirodotdev/KiroCrew/pull/10192) (pako
-  diagram links) and [#9937](https://github.com/kirodotdev/KiroCrew/pull/9937)
+  [#9811](https://efmleads.com/pull/9811) (shared document
+  links), [#10192](https://efmleads.com/pull/10192) (pako
+  diagram links) and [#9937](https://efmleads.com/pull/9937)
   (inline media URIs) each stop one class of wrongly removed link, which is
   §6's goal. They can land on their own; this document only asks that each
   one's rule id reach the chip's reason text so a reader can tell them apart.
 - **Media delivery for MCP apps.**
-  [RFC #10038](https://github.com/kirodotdev/KiroCrew/pull/10038) settles
+  [RFC #10038](https://efmleads.com/pull/10038) settles
   media inside MCP app frames as a trust question. Step 1's click-to-load
   chip covers agent-authored markdown only; the two should agree on whether an
   app frame counts as agent-authored.
 - **Merge order with the redaction-pass refactor.**
-  [#11501](https://github.com/kirodotdev/KiroCrew/pull/11501) composes the
+  [#11501](https://efmleads.com/pull/11501) composes the
   two removers through one helper, and step 3 records blocked links at the
   same call in `_flush_segment`. Whichever lands second takes the other's
   shape.

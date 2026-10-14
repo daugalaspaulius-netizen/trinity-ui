@@ -28,16 +28,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import acp_tool_gate
-from kiro_crew.acp.client import (
+from efm_go import acp_tool_gate
+from efm_go.acp.client import (
     AcpClient,
     AcpError,
     AcpModelUnavailable,
     AcpToolGateUnroutable,
 )
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.session_handle import AcpRuntimeProtocol, AcpSessionHandle, WatchdogSettings
-from kiro_crew.acp.types import (
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.session_handle import AcpRuntimeProtocol, AcpSessionHandle, WatchdogSettings
+from efm_go.acp.types import (
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
@@ -504,9 +504,9 @@ def test_both_drivers_classify_a_config_option_rejection_alike():
     """
     import inspect
 
-    from kiro_crew.acp import client as client_mod
-    from kiro_crew.acp.client import AcpClient
-    from kiro_crew.acp.session_handle import AcpSessionHandle
+    from efm_go.acp import client as client_mod
+    from efm_go.acp.client import AcpClient
+    from efm_go.acp.session_handle import AcpSessionHandle
 
     client_src = inspect.getsource(AcpClient._push_model_config_option)
     handle_src = inspect.getsource(AcpSessionHandle._push_model_config_option)
@@ -540,8 +540,8 @@ def test_the_candidate_ladder_has_one_home():
     Two copies of an ORDER drift without a symptom -- both return candidates, and
     only a cold cache on one driver reveals which list ran.
     """
-    from kiro_crew.acp.client import AcpClient
-    from kiro_crew.acp.session_handle import AcpSessionHandle
+    from efm_go.acp.client import AcpClient
+    from efm_go.acp.session_handle import AcpSessionHandle
 
     assert hasattr(AcpClient, "_model_config_candidates")
     assert "_model_config_candidates" not in vars(AcpSessionHandle)

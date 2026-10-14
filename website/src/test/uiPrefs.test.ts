@@ -91,7 +91,7 @@ describe('uiPrefs', () => {
       // The token is a credential; theme/language/onboarding reconcile through
       // /api/config/theme, so backing them up here would fork the truth.
       for (const owned of [
-        'kiro_crew_token',
+        'efm_go_token',
         'mc-lang',
         'mc-color-theme',
         'mc-theme',
@@ -165,9 +165,9 @@ describe('uiPrefs', () => {
     })
 
     it('ignores keys outside the allowlist', async () => {
-      mockFetch(() => okJson({ prefs: { 'vc_heights_x': '{}', 'kiro_crew_token': 'leak' } }))
+      mockFetch(() => okJson({ prefs: { 'vc_heights_x': '{}', 'efm_go_token': 'leak' } }))
       expect(await hydrateUiPrefs()).toBe(0)
-      expect(localStorage.getItem('kiro_crew_token')).toBeNull()
+      expect(localStorage.getItem('efm_go_token')).toBeNull()
     })
 
     it('ignores non-string values', async () => {

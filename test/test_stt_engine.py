@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.stt import engine as engine_mod
-from kiro_crew.stt import models
+from efm_go.stt import engine as engine_mod
+from efm_go.stt import models
 
 # ── Test doubles ──
 
@@ -555,7 +555,7 @@ async def test_the_load_path_records_the_digest_stage(monkeypatch, tmp_path):
     into hash / load / first-decode. That is the shape a reviewer caught, and this
     asserts the wiring rather than the recorder.
     """
-    from kiro_crew.stt import telemetry as telemetry_mod
+    from efm_go.stt import telemetry as telemetry_mod
 
     monkeypatch.setattr(engine_mod, "_engine", None)
     monkeypatch.setattr(engine_mod, "probe", lambda: engine_mod.Availability(True))
@@ -594,7 +594,7 @@ async def test_a_first_run_download_is_not_filed_as_digest_time(monkeypatch, tmp
     hashing -- and the stage exists to name the cost paid on EVERY load. A download is
     its own stage with its own progress surface.
     """
-    from kiro_crew.stt import telemetry as telemetry_mod
+    from efm_go.stt import telemetry as telemetry_mod
 
     monkeypatch.setattr(engine_mod, "_engine", None)
     monkeypatch.setattr(engine_mod, "probe", lambda: engine_mod.Availability(True))

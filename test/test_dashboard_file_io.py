@@ -16,7 +16,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.dashboard.handlers import (
+from efm_go.dashboard.handlers import (
     _sanitize_blocks,
     api_file_read,
     api_file_write,
@@ -35,7 +35,7 @@ def _make_app() -> web.Application:
 
 @pytest.fixture
 def mock_sel():
-    with patch("kiro_crew.sel.sel") as m:
+    with patch("efm_go.sel.sel") as m:
         instance = MagicMock()
         m.return_value = instance
         yield instance
@@ -196,7 +196,7 @@ class TestFileRead:
     async def test_read_verdict_and_content_come_from_one_snapshot(
         self, tmp_path, mock_sel, home_patch, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         text = b"hello world\n"
         replacement = b"PK\x03\x04\x00\x00garbage"
@@ -247,8 +247,8 @@ class TestFileRead:
     def test_binary_extension_list_matches_the_files_app(self):
         # The endpoint's comment says the two surfaces disagreeing about what
         # "binary" means is the worst outcome; this is what makes that true.
-        from kiro_crew.apps.builtins.file_explorer.server import BINARY_EXTS
-        from kiro_crew.dashboard.handlers.files import _FILE_READ_BINARY_EXTS
+        from efm_go.apps.builtins.file_explorer.server import BINARY_EXTS
+        from efm_go.dashboard.handlers.files import _FILE_READ_BINARY_EXTS
 
         assert set(_FILE_READ_BINARY_EXTS) == set(BINARY_EXTS)
 
@@ -630,8 +630,8 @@ class TestFileWrite:
         """
         import os as _os
 
-        import kiro_crew.atomic_write as aw
-        from kiro_crew.dashboard.handlers import files as files_mod
+        import efm_go.atomic_write as aw
+        from efm_go.dashboard.handlers import files as files_mod
 
         captured: dict[str, object] = {}
         original = files_mod.atomic_write
@@ -692,7 +692,7 @@ class TestFileWrite:
         handler returns 404 (matching the steering peer's ``notfound``) and
         ``atomic_write`` is never reached.
         """
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         target = tmp_path / "real.md"
         target.write_text("protected", encoding="utf-8")
@@ -915,9 +915,9 @@ class TestSendMessage:
         state.crons.list_jobs = MagicMock(return_value=[mock_job])
         app = _make_send_app(state)
         with patch(
-            "kiro_crew.dashboard.chat_runner._run_chat", new_callable=AsyncMock
+            "efm_go.dashboard.chat_runner._run_chat", new_callable=AsyncMock
         ) as mock_run, patch(
-            "kiro_crew.dashboard.handlers.messaging.rehydrate_slot_from_history_async"
+            "efm_go.dashboard.handlers.messaging.rehydrate_slot_from_history_async"
         ) as mock_rehydrate:
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
@@ -962,7 +962,7 @@ class TestSendMessage:
         state.crons.list_jobs = MagicMock(return_value=[mock_job])
         app = _make_send_app(state)
         with patch(
-            "kiro_crew.dashboard.handlers.messaging.rehydrate_slot_from_history_async"
+            "efm_go.dashboard.handlers.messaging.rehydrate_slot_from_history_async"
         ) as mock_rehydrate:
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
@@ -1018,9 +1018,9 @@ class TestSendMessage:
         state.crons.list_jobs = MagicMock(return_value=[mock_job])
         app = _make_send_app(state)
         with patch(
-            "kiro_crew.dashboard.chat_runner._run_chat", new_callable=AsyncMock
+            "efm_go.dashboard.chat_runner._run_chat", new_callable=AsyncMock
         ) as mock_run, patch(
-            "kiro_crew.dashboard.handlers.messaging.rehydrate_slot_from_history_async",
+            "efm_go.dashboard.handlers.messaging.rehydrate_slot_from_history_async",
             return_value=mock_slot,
         ) as mock_rehydrate:
             async with TestClient(TestServer(app)) as client:
@@ -1054,7 +1054,7 @@ class TestSendMessage:
         stalling every other request. Asserted by thread identity rather than by
         the name of the function called, so the guarantee survives a rename.
         """
-        from kiro_crew.dashboard import chat_persistence
+        from efm_go.dashboard import chat_persistence
 
         state = _mock_state()
         state.get_slot = MagicMock(return_value=None)
@@ -1106,7 +1106,7 @@ class TestSendMessage:
         state.crons.list_jobs = MagicMock(return_value=[mock_job])
         app = _make_send_app(state)
         with patch(
-            "kiro_crew.dashboard.handlers.messaging.rehydrate_slot_from_history_async", return_value=None
+            "efm_go.dashboard.handlers.messaging.rehydrate_slot_from_history_async", return_value=None
         ) as mock_rehydrate:
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
@@ -1156,8 +1156,8 @@ class TestSendMessage:
         state.crons.list_jobs = MagicMock(return_value=[mock_job])
         app = _make_send_app(state)
         with patch(
-            "kiro_crew.dashboard.chat_runner._run_chat", new_callable=AsyncMock
-        ) as mock_run, patch("kiro_crew.dashboard.handlers.messaging.rehydrate_slot_from_history_async"):
+            "efm_go.dashboard.chat_runner._run_chat", new_callable=AsyncMock
+        ) as mock_run, patch("efm_go.dashboard.handlers.messaging.rehydrate_slot_from_history_async"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
                     "/api/send-message",
@@ -1180,7 +1180,7 @@ class TestSendMessage:
         state.get_slot = MagicMock()
         app = _make_send_app(state)
         with patch(
-            "kiro_crew.dashboard.handlers.messaging.rehydrate_slot_from_history_async"
+            "efm_go.dashboard.handlers.messaging.rehydrate_slot_from_history_async"
         ) as mock_rehydrate:
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
@@ -1218,7 +1218,7 @@ class TestSendMessage:
         state.crons.list_jobs = MagicMock(return_value=[mock_job])
         app = _make_send_app(state)
         with patch(
-            "kiro_crew.dashboard.handlers.messaging.rehydrate_slot_from_history_async"
+            "efm_go.dashboard.handlers.messaging.rehydrate_slot_from_history_async"
         ) as mock_rehydrate:
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(

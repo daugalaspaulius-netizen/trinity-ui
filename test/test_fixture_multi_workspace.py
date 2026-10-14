@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig, workspace_dir_for
-from kiro_crew.history import ConversationLog
-from kiro_crew.memory import MemoryStore
+from efm_go.config.loader import KiroCrewConfig, workspace_dir_for
+from efm_go.history import ConversationLog
+from efm_go.memory import MemoryStore
 
-pytest_plugins = ["kiro_crew.testing.fixtures"]
+pytest_plugins = ["efm_go.testing.fixtures"]
 
 
 @pytest.mark.parametrize("seeded_home_fixture", ["multi-workspace"], indirect=True)

@@ -22,8 +22,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import cli_commands as cc
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go import cli_commands as cc
+from efm_go.config.loader import KiroCrewConfig
 
 _QUERY_VECTOR = [0.25, 0.5, 0.75, 1.0]
 

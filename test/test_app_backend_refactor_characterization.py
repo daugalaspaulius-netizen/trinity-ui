@@ -1,7 +1,7 @@
 """Behaviour the backend's split into supervision owners must not move.
 
 Each case drives a path that crosses what are now two or more owners of
-``kiro_crew.apps.backend`` -- the process table and a writer of it, a health verdict
+``efm_go.apps.backend`` -- the process table and a writer of it, a health verdict
 and the MCP transition, the boot wave and the reap -- and pins an invariant the
 existing suites leave implicit: a generation-safety check, an ordering, or an
 identity guard. Every patch goes through the facade, as the rest of the suite's do,
@@ -20,8 +20,8 @@ from typing import Any
 
 import pytest
 
-import kiro_crew.apps.backend as bmod
-from kiro_crew.apps.backend import AppProcess, HealthProbeOutcome
+import efm_go.apps.backend as bmod
+from efm_go.apps.backend import AppProcess, HealthProbeOutcome
 
 
 class _Sel:
@@ -284,7 +284,7 @@ class TestProvisioningFailureAudit:
         root = tmp_path / "deps-app"
         root.mkdir()
         (root / "requirements.txt").symlink_to(root / "missing.txt")
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.apps.backend"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.apps.backend"):
             error = bmod.provision_app_deps("deps-app", root)
         assert "present but not a readable regular file" in error
         assert [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR] == [error]
@@ -544,7 +544,7 @@ class TestCeilingRevocationVerdicts:
 
         monkeypatch.setattr(bmod, "_rebind_adopted_owners", rebind)
 
-        import kiro_crew.apps.bridges as bridges_mod
+        import efm_go.apps.bridges as bridges_mod
 
         monkeypatch.setattr(
             bridges_mod,

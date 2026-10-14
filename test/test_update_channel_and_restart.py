@@ -21,9 +21,9 @@ from unittest.mock import DEFAULT, MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.platform import update_layout
-from kiro_crew.platform.update_layout import InstallLayout
+from efm_go.dashboard.handlers import updates
+from efm_go.platform import update_layout
+from efm_go.platform.update_layout import InstallLayout
 
 
 @pytest.fixture(autouse=True)
@@ -475,7 +475,7 @@ class TestChannelEndpoint:
         shell-out, because a command-managed host owes the caller the same
         answer regardless of what the install tree happens to look like.
         """
-        from kiro_crew.platform.update_provider import CommandProvider
+        from efm_go.platform.update_provider import CommandProvider
 
         provider = CommandProvider(check_command="check-cmd")
         with (

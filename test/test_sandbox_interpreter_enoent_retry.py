@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.sandbox — launcher-interpreter ENOENT spawn retry.
+"""Tests for efm_go.sandbox — launcher-interpreter ENOENT spawn retry.
 
 ``sys.executable`` is often a symlink into a managed install tree, and rebuilding
 that tree deletes and re-creates its entries, including the interpreter
@@ -29,10 +29,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.sandbox as sandbox_mod
-from kiro_crew import platform_compat as pc
-from kiro_crew.sandbox import _INTERPRETER_ENOENT_DELAYS, _is_transient_interpreter_enoent
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+import efm_go.sandbox as sandbox_mod
+from efm_go import platform_compat as pc
+from efm_go.sandbox import _INTERPRETER_ENOENT_DELAYS, _is_transient_interpreter_enoent
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 #: The argv ``_prepare_limited_spawn`` is stubbed to return: a launcher argv
 #: whose argv[0] is this process's own interpreter, i.e. the shape wrap_argv
@@ -75,7 +75,7 @@ def _isolated_cron_registries(monkeypatch):
     registry reads inside ``cron_script`` resolve these names at call time, so the
     functions under test see the rebound containers.
     """
-    cron = importlib.import_module("kiro_crew.cron_script")
+    cron = importlib.import_module("efm_go.cron_script")
     monkeypatch.setattr(cron, "_SPAWNING_JOBS", set())
     monkeypatch.setattr(cron, "_CANCELLED_PROC_JOBS", set())
     monkeypatch.setattr(cron, "_RUNNING_PROCS", {})
@@ -347,7 +347,7 @@ class TestCommandCronSpawnFailureIsCancellable:
 
     @pytest.fixture
     def cron(self, monkeypatch):
-        cron = importlib.import_module("kiro_crew.cron_script")
+        cron = importlib.import_module("efm_go.cron_script")
         monkeypatch.setattr(cron, "_resolve_command_shell", lambda: "/bin/sh")
         monkeypatch.setattr(cron, "wrap_argv", lambda argv, **k: (list(argv), None))
         monkeypatch.setattr(cron, "cgroup_scope_argv", lambda argv: list(argv))
@@ -465,7 +465,7 @@ class TestCommandOutputUsesLocaleDecoding:
 
     @pytest.fixture
     def cron(self, monkeypatch):
-        cron = importlib.import_module("kiro_crew.cron_script")
+        cron = importlib.import_module("efm_go.cron_script")
         monkeypatch.setattr(cron, "_resolve_command_shell", lambda: "/bin/sh")
         monkeypatch.setattr(cron, "wrap_argv", lambda argv, **k: (list(argv), None))
         monkeypatch.setattr(cron, "cgroup_scope_argv", lambda argv: list(argv))
@@ -515,7 +515,7 @@ class TestCommandOutputUsesLocaleDecoding:
 
     def test_neither_cron_spawn_pins_an_encoding(self):
         """Source-level guard: re-pinning either site fails here, at source."""
-        cron = importlib.import_module("kiro_crew.cron_script")
+        cron = importlib.import_module("efm_go.cron_script")
         source = pathlib.Path(cron.__file__).read_text(encoding="utf-8")
         tree = ast.parse(source)
         cron_spawns = [
@@ -546,7 +546,7 @@ class TestAnOverlappingWakeCostsNoFailureStrike:
 
     @pytest.fixture
     def cron(self, monkeypatch):
-        cron = importlib.import_module("kiro_crew.cron_script")
+        cron = importlib.import_module("efm_go.cron_script")
         monkeypatch.setattr(cron, "_resolve_command_shell", lambda: "/bin/sh")
         monkeypatch.setattr(cron, "wrap_argv", lambda argv, **k: (list(argv), None))
         monkeypatch.setattr(cron, "cgroup_scope_argv", lambda argv: list(argv))
@@ -586,7 +586,7 @@ class TestAnOverlappingWakeCostsNoFailureStrike:
     def test_the_consumer_treats_skipped_as_non_counting(self):
         """The status is inert unless the consumer honours it -- pin that too."""
         gateway = pathlib.Path(
-            importlib.import_module("kiro_crew.slack.gateway").__file__
+            importlib.import_module("efm_go.slack.gateway").__file__
         ).read_text(encoding="utf-8")
         # Both cron dispatch paths must intercept it before the strike branch.
         assert gateway.count('== "skipped"') == 2
@@ -609,7 +609,7 @@ class TestARefusedOverlapIsNotPersistedAsASuccessfulRun:
     """
 
     def _dispatch_source(self) -> str:
-        return pathlib.Path(importlib.import_module("kiro_crew.slack.gateway").__file__).read_text(
+        return pathlib.Path(importlib.import_module("efm_go.slack.gateway").__file__).read_text(
             encoding="utf-8"
         )
 
@@ -666,7 +666,7 @@ class TestARefusedOverlapIsNotPersistedAsASuccessfulRun:
 
         If this ever stops holding, the assertions above are guarding nothing.
         """
-        cron_src = pathlib.Path(importlib.import_module("kiro_crew.cron").__file__).read_text(
+        cron_src = pathlib.Path(importlib.import_module("efm_go.cron").__file__).read_text(
             encoding="utf-8"
         )
         assert 'if job.last_status != "error":' in cron_src
@@ -971,7 +971,7 @@ class TestTheStrictShellProbeNoLongerLatchesOnABlip:
     """
 
     def test_a_transient_blip_no_longer_caches_a_wrong_answer(self):
-        cron = importlib.import_module("kiro_crew.cron_script")
+        cron = importlib.import_module("efm_go.cron_script")
         shell = "/bin/dash"
         cron._POSIX_STRICT_CACHE.pop(shell, None)
 
@@ -1006,7 +1006,7 @@ class TestTheStrictShellProbeNoLongerLatchesOnABlip:
         unguarded final attempt raises immediately -- which is exactly the
         pre-fix shape. The wrong answer is cached, which the retry budget prevents.
         """
-        cron = importlib.import_module("kiro_crew.cron_script")
+        cron = importlib.import_module("efm_go.cron_script")
         shell = "/bin/dash"
         cron._POSIX_STRICT_CACHE.pop(shell, None)
 
@@ -1045,7 +1045,7 @@ class TestACancelDuringTheShellProbeIsNotLost:
 
     @pytest.fixture
     def cron(self):
-        cron = importlib.import_module("kiro_crew.cron_script")
+        cron = importlib.import_module("efm_go.cron_script")
 
         def _reset():
             with cron._PROCS_LOCK:
@@ -1181,7 +1181,7 @@ class TestSpawnOnlyCancellationIsReportedHonestly:
 
     @staticmethod
     def _cron_source() -> str:
-        return pathlib.Path(importlib.import_module("kiro_crew.cron").__file__).read_text(
+        return pathlib.Path(importlib.import_module("efm_go.cron").__file__).read_text(
             encoding="utf-8"
         )
 
@@ -1195,7 +1195,7 @@ class TestSpawnOnlyCancellationIsReportedHonestly:
         """
         assert "if self._sessions and is_agent_job and not killed_proc:" in self._cron_source()
 
-        cron_script = importlib.import_module("kiro_crew.cron_script")
+        cron_script = importlib.import_module("efm_go.cron_script")
         claimers = {
             node.name
             for node in ast.walk(

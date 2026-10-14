@@ -1,13 +1,13 @@
-"""Tests for kiro_crew.metrics.provider — consent gate + recorder singleton."""
+"""Tests for efm_go.metrics.provider — consent gate + recorder singleton."""
 
 import threading
 import time
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig, TelemetryConfig
-from kiro_crew.metrics.provider import MetricsRecorder, get_recorder, reset_for_testing
-from kiro_crew.metrics.provider import shutdown as provider_shutdown
+from efm_go.config.loader import KiroCrewConfig, TelemetryConfig
+from efm_go.metrics.provider import MetricsRecorder, get_recorder, reset_for_testing
+from efm_go.metrics.provider import shutdown as provider_shutdown
 
 
 def _patch_config(monkeypatch, **tel_kwargs):
@@ -83,7 +83,7 @@ def _worker_event(monkeypatch):
     left running by a prior test, so this helper does not touch
     ``_check_in_flight`` itself — see ``reset_for_testing``'s docstring.
     """
-    import kiro_crew.metrics.provider as provider_mod
+    import efm_go.metrics.provider as provider_mod
 
     done = threading.Event()
     real_worker = provider_mod._consent_worker
@@ -104,7 +104,7 @@ def test_reader_thread_reaped_when_meterprovider_init_fails(tmp_path, monkeypatc
     __init__. If a later init step (MeterProvider) raises, the reader is already
     ticking — the provider must shut it down before degrading, or an orphaned
     thread spams export WARNINGs for the whole process lifetime."""
-    import kiro_crew.metrics.provider as provider_mod
+    import efm_go.metrics.provider as provider_mod
 
     reset_for_testing()
     _patch_config(monkeypatch, enabled=True, local_dir=str(tmp_path))
@@ -139,7 +139,7 @@ def test_the_otlp_reader_is_reaped_too_when_init_fails(tmp_path, monkeypatch):
     is told turned collection off. get_recorder() rebuilds on a consent change, so
     a repeating failure would leak one per flip rather than one per process.
     """
-    import kiro_crew.metrics.provider as provider_mod
+    import efm_go.metrics.provider as provider_mod
 
     reset_for_testing()
     _patch_config(
@@ -180,7 +180,7 @@ def test_the_otlp_reader_is_reaped_too_when_init_fails(tmp_path, monkeypatch):
 def test_degrades_to_noop_when_otel_missing(monkeypatch):
     """with opentelemetry absent from the env closure, the provider
     must degrade to a no-op recorder instead of crashing the eager boot chain."""
-    import kiro_crew.metrics.provider as provider_mod
+    import efm_go.metrics.provider as provider_mod
 
     reset_for_testing()
     _patch_config(monkeypatch, enabled=True, local_dir="/tmp/does-not-matter")
@@ -199,7 +199,7 @@ def test_degrades_to_noop_when_otel_missing(monkeypatch):
 
 def _dest(endpoint, *, name="test", signals=("metrics",), **kw):
     """An OtlpDestination as an edition would supply it."""
-    from kiro_crew.platform.interfaces import OtlpDestination
+    from efm_go.platform.interfaces import OtlpDestination
 
     return OtlpDestination(name=name, endpoint=endpoint, signals=frozenset(signals), **kw)
 
@@ -208,9 +208,9 @@ def test_no_egress_destination_by_default():
     """What SHIPS yields no destination: the real config, constructed with no
     arguments, must resolve to zero OTLP destinations — egress-off is a property
     of the default provider + default config, not of a test fixture."""
-    from kiro_crew.config.loader import TelemetryConfig
-    from kiro_crew.metrics.provider import _otlp_destinations
-    from kiro_crew.platform.defaults import DefaultTelemetryProvider
+    from efm_go.config.loader import TelemetryConfig
+    from efm_go.metrics.provider import _otlp_destinations
+    from efm_go.platform.defaults import DefaultTelemetryProvider
 
     assert DefaultTelemetryProvider().otlp_destinations(TelemetryConfig()) == ()
     assert _otlp_destinations(TelemetryConfig()) == ()
@@ -221,9 +221,9 @@ def test_no_egress_destination_by_default():
 def test_default_provider_yields_one_destination_for_the_config_endpoint():
     """A non-empty telemetry.otlp_endpoint yields exactly the destination for
     that endpoint."""
-    from kiro_crew.config.loader import TelemetryConfig
-    from kiro_crew.metrics.provider import _otlp_destinations
-    from kiro_crew.platform.defaults import DefaultTelemetryProvider
+    from efm_go.config.loader import TelemetryConfig
+    from efm_go.metrics.provider import _otlp_destinations
+    from efm_go.platform.defaults import DefaultTelemetryProvider
 
     cfg = TelemetryConfig(enabled=True, otlp_endpoint="http://localhost:4318/v1/metrics")
     dests = DefaultTelemetryProvider().otlp_destinations(cfg)
@@ -239,8 +239,8 @@ def test_otlp_reader_degrades_without_logging_endpoint(monkeypatch, caplog):
     """Missing exporter degrades locally without logging credential-bearing URL."""
     import builtins
 
-    from kiro_crew.config.loader import TelemetryConfig
-    from kiro_crew.metrics.provider import _build_otlp_reader
+    from efm_go.config.loader import TelemetryConfig
+    from efm_go.metrics.provider import _build_otlp_reader
 
     real_import = builtins.__import__
 
@@ -264,8 +264,8 @@ def test_otlp_constructor_failure_never_logs_endpoint(monkeypatch, caplog):
     import sys
     import types
 
-    from kiro_crew.config.loader import TelemetryConfig
-    from kiro_crew.metrics.provider import _build_otlp_reader
+    from efm_go.config.loader import TelemetryConfig
+    from efm_go.metrics.provider import _build_otlp_reader
 
     endpoint = "https://user:super-secret@example.test/v1/metrics?token=hidden"
 
@@ -290,7 +290,7 @@ def test_otlp_constructor_failure_never_logs_endpoint(monkeypatch, caplog):
 
 def test_retention_config_defaults():
     """Retention caps default off so upgrades never delete existing shards."""
-    from kiro_crew.config.loader import TelemetryConfig
+    from efm_go.config.loader import TelemetryConfig
 
     cfg = TelemetryConfig()
     assert cfg.retention_days == 0
@@ -328,7 +328,7 @@ def test_env_var_opts_out_when_config_enabled(monkeypatch):
 
 def test_env_var_blank_defers_to_config(monkeypatch):
     """A blank/unknown env value defers to the config flag (still default-off)."""
-    from kiro_crew.metrics.provider import _consent_enabled
+    from efm_go.metrics.provider import _consent_enabled
 
     monkeypatch.setenv("KIROCREW_TELEMETRY", "   ")
     assert _consent_enabled(TelemetryConfig(enabled=False)) is False
@@ -349,7 +349,7 @@ def test_otlp_reader_built_when_endpoint_set(monkeypatch):
 
     from opentelemetry.sdk.metrics.export import MetricExporter, MetricExportResult
 
-    from kiro_crew.metrics.provider import _build_otlp_reader
+    from efm_go.metrics.provider import _build_otlp_reader
 
     # Stub the optional OTLP/HTTP exporter extra so the test never needs the
     # real package (or a network endpoint); asserts the opt-in wiring path.
@@ -412,7 +412,7 @@ class TestConsentRecheck:
 
     def _elapse_window(self, monkeypatch):
         """Push the recheck clock past its window without sleeping."""
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         monkeypatch.setattr(
             provider_mod, "_consent_checked_at", 0.0
@@ -426,7 +426,7 @@ class TestConsentRecheck:
         on a worker. The call that notices therefore returns a no-op and a later
         one returns the live recorder.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(monkeypatch, enabled=False)
@@ -457,7 +457,7 @@ class TestConsentRecheck:
         filesystem; `get_recorder()` is called on the event loop by the
         route-latency middleware for every request.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(monkeypatch, enabled=False)
@@ -496,7 +496,7 @@ class TestConsentRecheck:
         start its own worker, the recheck would see no difference and never retry,
         and recording would stay a no-op for the life of the process.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(monkeypatch, enabled=False)
@@ -557,7 +557,7 @@ class TestConsentRecheck:
         lock across it blocks every get_recorder() on the event loop on lock
         ACQUISITION — the same stall as flushing inline, one level removed.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(
@@ -609,7 +609,7 @@ class TestConsentRecheck:
         come back on when the in-flight build completed — collection the user
         explicitly stopped.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(monkeypatch, enabled=False)
@@ -651,7 +651,7 @@ class TestConsentRecheck:
             reset_for_testing()
 
     def test_disabling_out_of_band_stops_collection_and_flushes(self, tmp_path, monkeypatch):
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(
@@ -701,7 +701,7 @@ class TestConsentRecheck:
         that inline in get_recorder() — which the route-latency middleware calls in a
         finally on every request — stalls every task on the loop.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(
@@ -756,7 +756,7 @@ class TestConsentRecheck:
     def test_unchanged_consent_does_not_rebuild(self, tmp_path, monkeypatch):
         # A rebuild tears down the exporter and its reader thread, so an idle
         # recheck that finds no change must leave the live recorder alone.
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(
@@ -819,7 +819,7 @@ class TestConsentRecheck:
         defers the next one by a full window — leaving the setting unapplied for up
         to `_CONSENT_RECHECK_SECS` even though the user already changed it.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(monkeypatch, enabled=False)
@@ -880,7 +880,7 @@ class TestConsentRecheck:
 
     def test_recheck_clock_is_stamped_after_a_failed_read(self, monkeypatch):
         """A failing read must not turn every later call into a fresh read."""
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(monkeypatch, enabled=False)
@@ -919,7 +919,7 @@ class TestConsentRecheck:
         to return it, a shutdown landing between the guard and the return would hand
         back None from a `-> MetricsRecorder` signature.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(
@@ -981,7 +981,7 @@ class TestConsentRecheck:
         would block until the 30s reader join finished. Holding the lock is therefore
         the same defect as flushing inline, one level removed.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(
@@ -1059,7 +1059,7 @@ class TestResetForTestingWaitsOutInFlightWorker:
         wait loop, so the ordering is established by that signal rather than
         a guessed delay.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(monkeypatch, enabled=False)
@@ -1134,7 +1134,7 @@ class TestResetForTestingWaitsOutInFlightWorker:
         this wait exists to prevent: a test would proceed believing it has a
         clean state while a stale worker can still mutate module globals.
         """
-        import kiro_crew.metrics.provider as provider_mod
+        import efm_go.metrics.provider as provider_mod
 
         reset_for_testing()
         _patch_config(monkeypatch, enabled=False)

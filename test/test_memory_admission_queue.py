@@ -22,15 +22,15 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app, _make_state
 
-from kiro_crew.dashboard.chat_handlers import api_chat_slot_continue
-from kiro_crew.dashboard.chat_runner import (
+from efm_go.dashboard.chat_handlers import api_chat_slot_continue
+from efm_go.dashboard.chat_runner import (
     MEMORY_PREPARATION_PARKED_TEXT,
     _run_chat,
     _start_next_queued_turn,
 )
-from kiro_crew.dashboard.chat_utils import CRON_NOTIFICATION_KIND
-from kiro_crew.dashboard.state import CRON_NOTIFY_PREFIX
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+from efm_go.dashboard.chat_utils import CRON_NOTIFICATION_KIND
+from efm_go.dashboard.state import CRON_NOTIFY_PREFIX
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
 # Short enough to keep the suite fast, long enough that the "after the grace
 # period" checks below really are after it.
@@ -38,8 +38,8 @@ _GRACE = 0.2
 
 
 def _state_with_pending_memory(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.memory_startup.MEMORY_ADMISSION_WAIT_SECONDS", _GRACE)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.memory_startup.MEMORY_ADMISSION_WAIT_SECONDS", _GRACE)
     state = _make_state(tmp_path)
     state.context_builder = None
     state.consolidator = None
@@ -215,7 +215,7 @@ class _SetEvent:
 
 
 def _stopping() -> None:
-    from kiro_crew.memory_startup import MemoryStartupUnavailable
+    from efm_go.memory_startup import MemoryStartupUnavailable
 
     raise MemoryStartupUnavailable("Memory startup is stopping. Retry after restart.")
 
@@ -234,9 +234,9 @@ async def test_preparation_ending_without_ready_memory_keeps_the_queue(
     try:
         await _start_next_queued_turn(state, slot)
         if ending == "shutdown":
-            monkeypatch.setattr("kiro_crew.dashboard.chat_runner.shutdown_event", _SetEvent())
+            monkeypatch.setattr("efm_go.dashboard.chat_runner.shutdown_event", _SetEvent())
         else:
-            monkeypatch.setattr("kiro_crew.memory_startup.require_memory_prepared", _stopping)
+            monkeypatch.setattr("efm_go.memory_startup.require_memory_prepared", _stopping)
         _finish_preparation(state)
         await _settle(state, slot)
     finally:

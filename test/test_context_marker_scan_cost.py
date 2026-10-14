@@ -3,7 +3,7 @@
 import random
 import unicodedata
 
-from kiro_crew import context
+from efm_go import context
 
 
 def _reference_spans(text, patterns):

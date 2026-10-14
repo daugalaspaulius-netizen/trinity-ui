@@ -19,7 +19,7 @@ from typing import Any
 import pytest
 from skill_script_helpers import load_skill_script
 
-from kiro_crew.crew_log.projection import (
+from efm_go.crew_log.projection import (
     _FOLDS,
     FOLD_NAMES,
     INTERNAL_PROJECTION_NAMES,
@@ -27,7 +27,7 @@ from kiro_crew.crew_log.projection import (
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "fold_catalogue.py"
-SKILL_DIR = ROOT / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev" / "dashboard-template"
+SKILL_DIR = ROOT / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev" / "dashboard-template"
 JSON_PATH = SKILL_DIR / "folds.json"
 MARKDOWN_PATH = SKILL_DIR / "FOLDS.md"
 

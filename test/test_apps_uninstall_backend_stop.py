@@ -33,7 +33,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from dashboard_owner_helpers import owner_claims
 
-from kiro_crew import cli_commands as cc
+from efm_go import cli_commands as cc
 
 
 def _ns(**kw: Any) -> argparse.Namespace:
@@ -76,14 +76,14 @@ class TestCliUninstallDelegatesToTheGateway:
 
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="secret"),
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen", side_effect=_open),
-            patch("kiro_crew.cli_commands.uninstall_app") as local_uninstall,
-            patch("kiro_crew.cli_commands.deregister_app") as local_deregister,
-            patch("kiro_crew.cli_commands._cleanup_app_crons_from_scheduler"),
-            patch("kiro_crew.cli_commands.trust_grant_removal_blocked", return_value=""),
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="secret"),
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen", side_effect=_open),
+            patch("efm_go.cli_commands.uninstall_app") as local_uninstall,
+            patch("efm_go.cli_commands.deregister_app") as local_deregister,
+            patch("efm_go.cli_commands._cleanup_app_crons_from_scheduler"),
+            patch("efm_go.cli_commands.trust_grant_removal_blocked", return_value=""),
         ):
             cc._handle_app(_ns(app_action="uninstall", name="demo", purge_data=purge_data))
         local_deregister.assert_not_called()
@@ -116,14 +116,14 @@ class TestCliFileOnlyUninstallDoesNotClaimAStop:
 
     def _drive(self, *, entry_point: str, recorded_port: int | None = None) -> str:
         with (
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value=""),
-            patch("kiro_crew.cli_commands.trust_grant_removal_blocked", return_value=""),
-            patch("kiro_crew.cli_commands._cleanup_app_crons_from_scheduler"),
-            patch("kiro_crew.cli_commands.deregister_app"),
-            patch("kiro_crew.cli_commands.get_app_manifest", return_value=_manifest(entry_point)),
-            patch("kiro_crew.cli_commands.recorded_backend_port", return_value=recorded_port),
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value=""),
+            patch("efm_go.cli_commands.trust_grant_removal_blocked", return_value=""),
+            patch("efm_go.cli_commands._cleanup_app_crons_from_scheduler"),
+            patch("efm_go.cli_commands.deregister_app"),
+            patch("efm_go.cli_commands.get_app_manifest", return_value=_manifest(entry_point)),
+            patch("efm_go.cli_commands.recorded_backend_port", return_value=recorded_port),
             patch(
-                "kiro_crew.cli_commands.uninstall_app",
+                "efm_go.cli_commands.uninstall_app",
                 return_value=MagicMock(ok=True, message="Uninstalled demo", error=""),
             ),
         ):
@@ -162,11 +162,11 @@ class TestCliFileOnlyUninstallDoesNotClaimAStop:
 
     def test_an_unreadable_manifest_is_reported_rather_than_assumed_clean(self) -> None:
         """Not knowing is not the same as knowing there is nothing to stop."""
-        with patch("kiro_crew.cli_commands.get_app_manifest", side_effect=ValueError("bad json")):
+        with patch("efm_go.cli_commands.get_app_manifest", side_effect=ValueError("bad json")):
             assert cc._app_declares_backend("demo") is True
 
     def test_a_missing_manifest_is_reported_rather_than_assumed_clean(self) -> None:
-        with patch("kiro_crew.cli_commands.get_app_manifest", return_value=None):
+        with patch("efm_go.cli_commands.get_app_manifest", return_value=None):
             assert cc._app_declares_backend("demo") is True
 
 
@@ -213,26 +213,26 @@ class TestUninstallHandlerStopsAndObservesTheBackend:
             return 0
 
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=fake_app),
+            patch("efm_go.apps.routes.get_app", return_value=fake_app),
             patch(
-                "kiro_crew.apps.routes.uninstall_app",
+                "efm_go.apps.routes.uninstall_app",
                 return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True, "name": "test-app"}),
             ),
-            patch("kiro_crew.apps.routes._deregister_crons_with_retry", side_effect=_crons),
-            patch("kiro_crew.apps.routes.recorded_backend_port", side_effect=_recorded),
-            patch("kiro_crew.apps.routes.stop_app_backend", side_effect=_stop),
-            patch("kiro_crew.apps.routes.unstopped_backend_port", side_effect=_unstopped),
-            patch("kiro_crew.apps.routes.deregister_app", return_value=None) as deregister,
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes._deregister_crons_with_retry", side_effect=_crons),
+            patch("efm_go.apps.routes.recorded_backend_port", side_effect=_recorded),
+            patch("efm_go.apps.routes.stop_app_backend", side_effect=_stop),
+            patch("efm_go.apps.routes.unstopped_backend_port", side_effect=_unstopped),
+            patch("efm_go.apps.routes.deregister_app", return_value=None) as deregister,
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
             patch(
-                "kiro_crew.apps.routes.classify_and_clean_for_uninstall",
+                "efm_go.apps.routes.classify_and_clean_for_uninstall",
                 return_value={"removable": [], "shared": [], "userInstalled": []},
             ),
             patch(
-                "kiro_crew.apps.routes.clean_dependencies", new_callable=AsyncMock, return_value=[]
+                "efm_go.apps.routes.clean_dependencies", new_callable=AsyncMock, return_value=[]
             ),
         ):
-            from kiro_crew.apps.routes import handle_uninstall_app
+            from efm_go.apps.routes import handle_uninstall_app
 
             resp = await handle_uninstall_app(request)
         assert resp.status == 200, resp.status
@@ -366,15 +366,15 @@ class TestACronWriteFailureAbortsBeforeAnythingDestructive:
         request.json = AsyncMock(return_value={})
 
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=fake_app),
-            patch("kiro_crew.apps.routes._deregister_crons_with_retry", side_effect=exc),
-            patch("kiro_crew.apps.routes._run_lifecycle_script", new_callable=AsyncMock) as script,
-            patch("kiro_crew.apps.routes.uninstall_app") as uninstall,
-            patch("kiro_crew.apps.routes.deregister_app") as deregister,
-            patch("kiro_crew.apps.routes.stop_app_backend") as stop,
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes.get_app", return_value=fake_app),
+            patch("efm_go.apps.routes._deregister_crons_with_retry", side_effect=exc),
+            patch("efm_go.apps.routes._run_lifecycle_script", new_callable=AsyncMock) as script,
+            patch("efm_go.apps.routes.uninstall_app") as uninstall,
+            patch("efm_go.apps.routes.deregister_app") as deregister,
+            patch("efm_go.apps.routes.stop_app_backend") as stop,
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
         ):
-            from kiro_crew.apps.routes import handle_uninstall_app
+            from efm_go.apps.routes import handle_uninstall_app
 
             resp = await handle_uninstall_app(request)
             uninstall.assert_not_called()
@@ -416,28 +416,28 @@ class TestTheDisablePathKeepsItsExistingDisposition:
         return MagicMock(return_value=sdk)
 
     async def test_an_unexpected_write_failure_is_still_answered_as_zero(self) -> None:
-        from kiro_crew.apps.bridges import deregister_app_crons_from_service
+        from efm_go.apps.bridges import deregister_app_crons_from_service
 
         with (
-            patch("kiro_crew.apps.bridges.CronSDK", self._failing_sdk(OSError(28, "ENOSPC"))),
-            patch("kiro_crew.apps.bridges.sel", return_value=MagicMock()),
+            patch("efm_go.apps.bridges.CronSDK", self._failing_sdk(OSError(28, "ENOSPC"))),
+            patch("efm_go.apps.bridges.sel", return_value=MagicMock()),
         ):
             assert await deregister_app_crons_from_service("demo", MagicMock()) == 0
 
     async def test_the_reporting_entry_point_raises_on_the_same_failure(self) -> None:
         """The two entry points differ on exactly this input, which is the point."""
-        from kiro_crew.apps.bridges import deregister_app_crons_reporting_failures
+        from efm_go.apps.bridges import deregister_app_crons_reporting_failures
 
         with (
-            patch("kiro_crew.apps.bridges.CronSDK", self._failing_sdk(OSError(28, "ENOSPC"))),
-            patch("kiro_crew.apps.bridges.sel", return_value=MagicMock()),
+            patch("efm_go.apps.bridges.CronSDK", self._failing_sdk(OSError(28, "ENOSPC"))),
+            patch("efm_go.apps.bridges.sel", return_value=MagicMock()),
         ):
             with pytest.raises(OSError):
                 await deregister_app_crons_reporting_failures("demo", MagicMock())
 
     async def test_an_app_that_owned_nothing_is_still_zero_on_both(self) -> None:
         """Zero stays the honest answer when it is true, on both entry points."""
-        from kiro_crew.apps.bridges import (
+        from efm_go.apps.bridges import (
             deregister_app_crons_from_service,
             deregister_app_crons_reporting_failures,
         )
@@ -445,8 +445,8 @@ class TestTheDisablePathKeepsItsExistingDisposition:
         sdk = MagicMock()
         sdk.remove_all_async = AsyncMock(return_value=0)
         with (
-            patch("kiro_crew.apps.bridges.CronSDK", MagicMock(return_value=sdk)),
-            patch("kiro_crew.apps.bridges.sel", return_value=MagicMock()),
+            patch("efm_go.apps.bridges.CronSDK", MagicMock(return_value=sdk)),
+            patch("efm_go.apps.bridges.sel", return_value=MagicMock()),
         ):
             assert await deregister_app_crons_from_service("demo", MagicMock()) == 0
             assert await deregister_app_crons_reporting_failures("demo", MagicMock()) == 0

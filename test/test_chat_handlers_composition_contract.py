@@ -1,8 +1,8 @@
 """The chat HTTP handlers keep their surface and contracts while their owners move.
 
-``kiro_crew.dashboard.chat_handlers`` is the dashboard chat API's import path and its
+``efm_go.dashboard.chat_handlers`` is the dashboard chat API's import path and its
 patch surface. Part of what it defined now lives in the modules of
-``kiro_crew.dashboard.chat_api``, one responsibility each, and ``chat_api.compose``
+``efm_go.dashboard.chat_api``, one responsibility each, and ``chat_api.compose``
 runs every function they define on the facade's globals. These tests pin:
 
 * the surface: every name the facade bound before the split still resolves on it, the
@@ -37,9 +37,9 @@ from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 from source_corpus import repo_files_named, repo_root
 
-import kiro_crew.dashboard.chat_handlers as ch
-from kiro_crew.dashboard import chat_api, slot_ownership
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+import efm_go.dashboard.chat_handlers as ch
+from efm_go.dashboard import chat_api, slot_ownership
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _FACADE = ch.__name__
 _FACADE_PATH = Path(ch.__file__).resolve()
@@ -235,8 +235,8 @@ def test_a_fresh_interpreter_sees_every_base_public_name(tmp_path: Path) -> None
     assert len(public) > 200
     script = """
         import sys
-        import kiro_crew.dashboard.chat_handlers as ch
-        from kiro_crew.dashboard import chat
+        import efm_go.dashboard.chat_handlers as ch
+        from efm_go.dashboard import chat
         missing = [n for n in sys.argv[1:] if not hasattr(ch, n)]
         assert missing == [], missing
         foreign = [n for n in sys.argv[1:] if hasattr(chat, n) and getattr(chat, n) is not getattr(ch, n)]
@@ -256,7 +256,7 @@ def test_a_fresh_interpreter_sees_every_base_public_name(tmp_path: Path) -> None
 
 def test_every_route_still_dispatches_to_the_facade_handler() -> None:
     """The route table names the same handlers, and each is the facade's object."""
-    from kiro_crew.dashboard import routes
+    from efm_go.dashboard import routes
 
     app = web.Application()
     routes.register_all(app)
@@ -272,7 +272,7 @@ def test_every_route_still_dispatches_to_the_facade_handler() -> None:
 
 
 def test_the_runner_seams_are_the_runner_objects() -> None:
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     assert [
         name for name in _RUNNER_SEAMS if getattr(ch, name) is not getattr(chat_runner, name)
@@ -280,7 +280,7 @@ def test_the_runner_seams_are_the_runner_objects() -> None:
 
 
 def test_the_chat_facade_reexports_the_handler_objects() -> None:
-    from kiro_crew.dashboard import chat
+    from efm_go.dashboard import chat
 
     tree = ast.parse(Path(chat.__file__).read_text(encoding="utf-8"))
     names = [
@@ -381,7 +381,7 @@ def test_the_resume_records_keep_their_fields() -> None:
 async def test_resume_reads_the_restore_inputs_off_the_event_loop(tmp_path, monkeypatch) -> None:
     """The provider config and the effort marker are disk reads, taken on a worker
     thread before the slot is built, and the marker vouches only for the effort it read."""
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     loop_thread = threading.get_ident()
     seen: list[tuple[str, bool, object]] = []
     real_cfg, real_marker = ch._load_restore_cfg, ch._has_validated_effort_marker
@@ -477,7 +477,7 @@ def test_conductor_wake_is_imported_where_it_wakes() -> None:
             if isinstance(node, (ast.Import, ast.ImportFrom, ast.If, ast.Try))
             for name in _module_level_imports(ast.Module(body=[node], type_ignores=[]))
         }
-        assert "kiro_crew.conductor_wake" not in module_level, path.name
+        assert "efm_go.conductor_wake" not in module_level, path.name
         for node in tree.body:
             if (
                 isinstance(node, ast.AsyncFunctionDef)
@@ -489,7 +489,7 @@ def test_conductor_wake_is_imported_where_it_wakes() -> None:
                     if isinstance(inner, ast.ImportFrom)
                     for alias in inner.names
                 }
-                assert "kiro_crew.conductor_wake" in local
+                assert "efm_go.conductor_wake" in local
                 holders.append(path.name)
     assert len(holders) == 1
 
@@ -795,7 +795,7 @@ def test_a_facade_definition_stays_in_the_facade_file(name: str) -> None:
 
 
 def test_the_owners_log_as_the_facade() -> None:
-    """Log capture keyed to ``kiro_crew.dashboard.chat_handlers`` keeps seeing the
+    """Log capture keyed to ``efm_go.dashboard.chat_handlers`` keeps seeing the
     moved sites: an owner function logs through the facade's ``logger``."""
     assert ch.logger.name == _FACADE
     readers = [
@@ -805,7 +805,7 @@ def test_the_owners_log_as_the_facade() -> None:
 
 
 def test_every_owner_function_runs_on_the_facade_globals() -> None:
-    """A patch of ``kiro_crew.dashboard.chat_handlers.<name>`` reaches an owner
+    """A patch of ``efm_go.dashboard.chat_handlers.<name>`` reaches an owner
     function only because the function reads the facade's globals, not its own."""
     labels = {label for label, _ in _owner_functions()}
     assert len(labels) >= sum(
@@ -965,7 +965,7 @@ def _owner_runtime_edges(source: str, package: str) -> list[int]:
 #: agent-SDK boundary check counts a type-only edge too, so an owner names an ACP or
 #: provider type through the facade; and nothing but the runner imports a
 #: ``chat_turn`` module.
-_OWNER_FORBIDDEN = ("kiro_crew.acp", "kiro_crew.providers", "kiro_crew.dashboard.chat_turn")
+_OWNER_FORBIDDEN = ("efm_go.acp", "efm_go.providers", "efm_go.dashboard.chat_turn")
 
 
 @pytest.mark.parametrize(
@@ -974,14 +974,14 @@ _OWNER_FORBIDDEN = ("kiro_crew.acp", "kiro_crew.providers", "kiro_crew.dashboard
         ("from . import resume\n", True),
         ("from .resume import resume_slot_from_history\n", True),
         ("from .. import chat_handlers\n", True),
-        ("from kiro_crew.dashboard import chat_handlers\n", True),
-        ("import kiro_crew.dashboard.chat_handlers as handlers\n", True),
-        ("def f():\n    from kiro_crew.dashboard.chat_handlers import sel\n", True),
-        ("import importlib\nimportlib.import_module('kiro_crew.dashboard.chat_handlers')\n", True),
-        ("__import__('kiro_crew.dashboard.chat_api.resume')\n", True),
-        ("if TYPE_CHECKING:\n    from kiro_crew.dashboard.chat_handlers import sel\n", False),
-        ("from kiro_crew.dashboard import chat_utils\n", False),
-        ("import kiro_crew.dashboard.chat_handlers_elsewhere\n", False),
+        ("from efm_go.dashboard import chat_handlers\n", True),
+        ("import efm_go.dashboard.chat_handlers as handlers\n", True),
+        ("def f():\n    from efm_go.dashboard.chat_handlers import sel\n", True),
+        ("import importlib\nimportlib.import_module('efm_go.dashboard.chat_handlers')\n", True),
+        ("__import__('efm_go.dashboard.chat_api.resume')\n", True),
+        ("if TYPE_CHECKING:\n    from efm_go.dashboard.chat_handlers import sel\n", False),
+        ("from efm_go.dashboard import chat_utils\n", False),
+        ("import efm_go.dashboard.chat_handlers_elsewhere\n", False),
     ],
 )
 def test_the_owner_edge_check_sees_every_spelling(source: str, flagged: bool) -> None:
@@ -992,7 +992,7 @@ def test_nothing_but_the_facade_imports_an_owner() -> None:
     """The facade is the one import path and the one patch surface, so no
     production module reaches past it."""
     importers = []
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         resolved = path.resolve()
         if _OWNER_DIR in resolved.parents or resolved == _FACADE_PATH or "_vendor" in path.parts:
             continue
@@ -1024,10 +1024,10 @@ def test_no_owner_imports_an_acp_provider_or_turn_module() -> None:
         if any(_within(target, forbidden) for forbidden in _OWNER_FORBIDDEN)
     ]
     assert offenders == []
-    probe = "if TYPE_CHECKING:\n    from kiro_crew.providers.acp import AcpProvider\n"
+    probe = "if TYPE_CHECKING:\n    from efm_go.providers.acp import AcpProvider\n"
     assert [t for _, t in _import_targets(ast.parse(probe), _OWNER_PACKAGE)][
         0
-    ] == "kiro_crew.providers.acp"
+    ] == "efm_go.providers.acp"
 
 
 def _run_child(tmp_path: Path, script: str, *args: str) -> None:
@@ -1049,8 +1049,8 @@ def test_a_fresh_facade_import_loads_every_owner(tmp_path: Path) -> None:
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.chat_handlers
-        missing = [n for n in sys.argv[1:] if f"kiro_crew.dashboard.chat_api.{n}" not in sys.modules]
+        import efm_go.dashboard.chat_handlers
+        missing = [n for n in sys.argv[1:] if f"efm_go.dashboard.chat_api.{n}" not in sys.modules]
         assert missing == [], missing
         print("ok")
         """,
@@ -1063,10 +1063,10 @@ def test_a_second_facade_import_recomposes_the_owners_onto_it(tmp_path: Path) ->
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.chat_handlers as first
-        del sys.modules["kiro_crew.dashboard.chat_handlers"]
-        import kiro_crew.dashboard.chat_handlers as second
-        from kiro_crew.dashboard.chat_api import resume
+        import efm_go.dashboard.chat_handlers as first
+        del sys.modules["efm_go.dashboard.chat_handlers"]
+        import efm_go.dashboard.chat_handlers as second
+        from efm_go.dashboard.chat_api import resume
         fn = second.resume_slot_from_history
         assert second is not first
         assert fn.__globals__ is vars(second)
@@ -1081,7 +1081,7 @@ def test_a_star_import_carries_the_moved_public_names(tmp_path: Path) -> None:
     assert not hasattr(ch, "__all__")
     probe = tmp_path / "chat_handlers_star_probe.py"
     probe.write_text(
-        "from kiro_crew.dashboard.chat_handlers import *  # noqa: F401,F403\n", encoding="utf-8"
+        "from efm_go.dashboard.chat_handlers import *  # noqa: F401,F403\n", encoding="utf-8"
     )
     spec = importlib.util.spec_from_file_location("chat_handlers_star_probe", probe)
     assert spec is not None and spec.loader is not None
@@ -1100,7 +1100,7 @@ def test_a_star_import_carries_the_moved_public_names(tmp_path: Path) -> None:
 
 _PATCH_CALLS = ("setattr", "patch.object", "delattr")
 _MULTIPLE_OPTIONS = frozenset({"spec", "create", "spec_set", "autospec", "new_callable"})
-_FACADE_STRING = re.compile(r"""^kiro_crew\.dashboard\.chat_handlers\.(\w+)$""")
+_FACADE_STRING = re.compile(r"""^efm_go\.dashboard\.chat_handlers\.(\w+)$""")
 
 
 def _facade_aliases(tree: ast.Module) -> set[str]:
@@ -1109,7 +1109,7 @@ def _facade_aliases(tree: ast.Module) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             aliases |= {a.asname for a in node.names if a.name == _FACADE and a.asname}
-        elif isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.dashboard":
+        elif isinstance(node, ast.ImportFrom) and node.module == "efm_go.dashboard":
             aliases |= {a.asname or a.name for a in node.names if a.name == "chat_handlers"}
     changed = True
     while changed:
@@ -1219,7 +1219,7 @@ def _patched_names_in(text: str) -> set[str]:
                 for target in targets:
                     if isinstance(target, ast.Attribute) and ast.unparse(target.value) in aliases:
                         found.add(target.attr)
-    found |= set(re.findall(r"""["']kiro_crew\.dashboard\.chat_handlers\.(\w+)["']""", text))
+    found |= set(re.findall(r"""["']efm_go\.dashboard\.chat_handlers\.(\w+)["']""", text))
     return found
 
 
@@ -1293,17 +1293,17 @@ def _captured_names(source: str) -> set[str]:
 def test_the_patch_scan_reads_every_spelling() -> None:
     planted = (
         "import importlib, sys\n"
-        "import kiro_crew.dashboard.chat_handlers as handlers\n"
-        "from kiro_crew.dashboard import chat_handlers as ch\n"
-        "facade = importlib.import_module('kiro_crew.dashboard.chat_handlers')\n"
+        "import efm_go.dashboard.chat_handlers as handlers\n"
+        "from efm_go.dashboard import chat_handlers as ch\n"
+        "facade = importlib.import_module('efm_go.dashboard.chat_handlers')\n"
         "alias = facade\n"
-        "held = sys.modules['kiro_crew.dashboard.chat_handlers']\n"
+        "held = sys.modules['efm_go.dashboard.chat_handlers']\n"
         "def test(monkeypatch):\n"
         "    monkeypatch.setattr(handlers, 'first', 1)\n"
         "    monkeypatch.setattr(ch, 'second', 2)\n"
         "    patch.object(alias, 'third')\n"
         "    ch.fourth = 4\n"
-        "    monkeypatch.setattr('kiro_crew.dashboard.chat_handlers.fifth', 5)\n"
+        "    monkeypatch.setattr('efm_go.dashboard.chat_handlers.fifth', 5)\n"
         "    monkeypatch.setattr(ch.Shared, 'attr', 7)\n"
         "    monkeypatch.setattr(other, 'not_the_facade', 8)\n"
         "    monkeypatch.delattr(ch, 'sixth')\n"
@@ -1311,7 +1311,7 @@ def test_the_patch_scan_reads_every_spelling() -> None:
         "    patch.multiple(held, eighth=1, create=True)\n"
         "@pytest.mark.parametrize('which', ['ninth', 'tenth'])\n"
         "def test_param(which):\n"
-        "    patch(f'kiro_crew.dashboard.chat_handlers.{which}')\n"
+        "    patch(f'efm_go.dashboard.chat_handlers.{which}')\n"
     )
     assert _patched_names_in(planted) == {
         "first",
@@ -1326,7 +1326,7 @@ def test_the_patch_scan_reads_every_spelling() -> None:
         "tenth",
     }
     dynamic = (
-        "from kiro_crew.dashboard import chat_handlers as ch\n"
+        "from efm_go.dashboard import chat_handlers as ch\n"
         "def test(monkeypatch, name):\n"
         "    monkeypatch.setattr(ch, name, 1)\n"
     )
@@ -1339,7 +1339,7 @@ def test_the_capture_scan_flags_what_an_owner_evaluates_when_it_loads() -> None:
         "from typing import TYPE_CHECKING\n"
         "import asyncio as aio\n"
         "if TYPE_CHECKING:\n"
-        "    from kiro_crew.dashboard.chat_handlers import sel\n"
+        "    from efm_go.dashboard.chat_handlers import sel\n"
         "LIMIT = _CAP * 2\n"
         "def f(x=_DEFAULT, *, y=_KW):\n"
         "    return sel(), save_slot_off_loop\n"
@@ -1386,9 +1386,9 @@ def test_no_owner_captures_a_name_tests_rebind_on_the_facade() -> None:
 #: their dirty flags, and the approval-resolved broadcasts. An owner that grew one
 #: would move it out of such a guard's sight, so each stays in the facade.
 _STAYS_IN_THE_FACADE = (
-    r"(?m)^from kiro_crew\.acp\.client import AcpModelUnavailable$",
-    r"(?m)^from kiro_crew\.providers\.acp import AcpProvider$",
-    r"(?m)^from kiro_crew\.providers\.base import LLMProvider$",
+    r"(?m)^from efm_go\.acp\.client import AcpModelUnavailable$",
+    r"(?m)^from efm_go\.providers\.acp import AcpProvider$",
+    r"(?m)^from efm_go\.providers\.base import LLMProvider$",
     r"safety_override\(\)\.activate",
     r"deny_non_owner_remote_operation\(",
     r"_apply_remote_pick\(\s*request",

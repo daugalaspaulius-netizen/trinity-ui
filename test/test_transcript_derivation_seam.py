@@ -30,8 +30,8 @@ from collections import Counter
 
 import pytest
 
-from kiro_crew import history as history_mod
-from kiro_crew.history import (
+from efm_go import history as history_mod
+from efm_go.history import (
     ConversationLog,
     HistoryLockTimeout,
     TranscriptBusy,
@@ -65,71 +65,71 @@ PLAIN_READS = frozenset(
 PLUMBING: frozenset[tuple[str, str]] = frozenset(
     {
         # An app reading its own slot's conversation for the user.
-        ("kiro_crew/apps/builtins/spec_builder/backend/runtime.py", "read_messages"),
+        ("efm_go/apps/builtins/spec_builder/backend/runtime.py", "read_messages"),
         # Channel file migration: moves rows between stems, derives nothing.
-        ("kiro_crew/channel_transcript_migration.py", "read_messages"),
+        ("efm_go/channel_transcript_migration.py", "read_messages"),
         # SEL audit log `recent`, not a transcript.
-        ("kiro_crew/cli_commands.py", "recent"),
+        ("efm_go/cli_commands.py", "recent"),
         # The live session's OWN rows into its OWN prompt / compaction.
-        ("kiro_crew/context.py", "read_messages"),
-        ("kiro_crew/context.py", "read_messages_chained"),
-        ("kiro_crew/context.py", "recent"),
-        ("kiro_crew/dashboard/channel_slots.py", "read_messages"),
+        ("efm_go/context.py", "read_messages"),
+        ("efm_go/context.py", "read_messages_chained"),
+        ("efm_go/context.py", "recent"),
+        ("efm_go/dashboard/channel_slots.py", "read_messages"),
         # The chat handlers' resume and slot-detail owners, composed into
         # chat_handlers: the same resume and render reads it made.
-        ("kiro_crew/dashboard/chat_api/resume.py", "read_messages_chained"),
-        ("kiro_crew/dashboard/chat_api/slot_detail.py", "read_messages_chained"),
-        ("kiro_crew/dashboard/chat_api/slot_detail.py", "read_messages_chained_full"),
-        ("kiro_crew/dashboard/chat_backfill.py", "read_messages_chained"),
-        ("kiro_crew/dashboard/chat_backfill.py", "recent"),
-        ("kiro_crew/dashboard/chat_fork.py", "read_messages_chained"),
-        ("kiro_crew/dashboard/chat_fork.py", "read_messages_chained_full"),
+        ("efm_go/dashboard/chat_api/resume.py", "read_messages_chained"),
+        ("efm_go/dashboard/chat_api/slot_detail.py", "read_messages_chained"),
+        ("efm_go/dashboard/chat_api/slot_detail.py", "read_messages_chained_full"),
+        ("efm_go/dashboard/chat_backfill.py", "read_messages_chained"),
+        ("efm_go/dashboard/chat_backfill.py", "recent"),
+        ("efm_go/dashboard/chat_fork.py", "read_messages_chained"),
+        ("efm_go/dashboard/chat_fork.py", "read_messages_chained_full"),
         # ``selection.recent`` -- a mirror selection field, not a transcript read.
-        ("kiro_crew/dashboard/chat_mirror.py", "recent"),
-        ("kiro_crew/dashboard/chat_persistence.py", "read_messages_chained"),
-        ("kiro_crew/dashboard/chat_rewind.py", "read_messages_chained"),
-        ("kiro_crew/dashboard/chat_runner.py", "recent"),
-        ("kiro_crew/dashboard/chat_slack.py", "recent"),
-        ("kiro_crew/dashboard/chat_threads.py", "read_messages_chained"),
-        ("kiro_crew/dashboard/cron_inject.py", "read_messages"),
+        ("efm_go/dashboard/chat_mirror.py", "recent"),
+        ("efm_go/dashboard/chat_persistence.py", "read_messages_chained"),
+        ("efm_go/dashboard/chat_rewind.py", "read_messages_chained"),
+        ("efm_go/dashboard/chat_runner.py", "recent"),
+        ("efm_go/dashboard/chat_slack.py", "recent"),
+        ("efm_go/dashboard/chat_threads.py", "read_messages_chained"),
+        ("efm_go/dashboard/cron_inject.py", "read_messages"),
         # Rendering the transcript's own artifacts / rows to its user.
-        ("kiro_crew/dashboard/handlers/artifacts.py", "read_messages"),
+        ("efm_go/dashboard/handlers/artifacts.py", "read_messages"),
         # SEL audit log `recent`, not a transcript.
-        ("kiro_crew/dashboard/handlers/core.py", "recent"),
-        ("kiro_crew/dashboard/handlers/cron.py", "read_messages"),
-        ("kiro_crew/dashboard/handlers/session_control.py", "read_messages"),
+        ("efm_go/dashboard/handlers/core.py", "recent"),
+        ("efm_go/dashboard/handlers/cron.py", "read_messages"),
+        ("efm_go/dashboard/handlers/session_control.py", "read_messages"),
         # The History browser showing the user their own transcript. Its
         # list_sessions(summarize=true) leg goes through the seam (derive_recent).
-        ("kiro_crew/dashboard/handlers/sessions.py", "read_messages"),
-        ("kiro_crew/decisions/points/compaction_keep.py", "read_messages"),
+        ("efm_go/dashboard/handlers/sessions.py", "read_messages"),
+        ("efm_go/decisions/points/compaction_keep.py", "read_messages"),
         # Thread diagnostics probe `recent`, not a transcript.
-        ("kiro_crew/diag/threads.py", "recent"),
-        ("kiro_crew/discord/session_resume.py", "recent"),
+        ("efm_go/diag/threads.py", "recent"),
+        ("efm_go/discord/session_resume.py", "recent"),
         # SEL `recent`, not a transcript.
-        ("kiro_crew/feature_videos.py", "recent"),
+        ("efm_go/feature_videos.py", "recent"),
         # The log and its read projection ARE the plain reads.
-        ("kiro_crew/history.py", "_read_messages"),
-        ("kiro_crew/history.py", "_read_messages_locked"),
-        ("kiro_crew/history.py", "_recent_via_tail"),
-        ("kiro_crew/history.py", "read_file_change_messages"),
-        ("kiro_crew/history.py", "read_messages"),
-        ("kiro_crew/history.py", "read_messages_chained"),
-        ("kiro_crew/history.py", "read_messages_chained_full"),
-        ("kiro_crew/history.py", "recent"),
-        ("kiro_crew/history.py", "recent_chained"),
-        ("kiro_crew/history.py", "sliding_window"),
+        ("efm_go/history.py", "_read_messages"),
+        ("efm_go/history.py", "_read_messages_locked"),
+        ("efm_go/history.py", "_recent_via_tail"),
+        ("efm_go/history.py", "read_file_change_messages"),
+        ("efm_go/history.py", "read_messages"),
+        ("efm_go/history.py", "read_messages_chained"),
+        ("efm_go/history.py", "read_messages_chained_full"),
+        ("efm_go/history.py", "recent"),
+        ("efm_go/history.py", "recent_chained"),
+        ("efm_go/history.py", "sliding_window"),
         # Scheduling counts only (`len(...)`); the rows it consolidates come from
         # the gated snapshot and skill detection goes through derive_messages.
-        ("kiro_crew/history_consolidation.py", "_read_messages"),
-        ("kiro_crew/history_projection.py", "_read_messages"),
-        ("kiro_crew/history_projection.py", "_read_messages_locked"),
-        ("kiro_crew/history_projection.py", "_recent_via_tail"),
-        ("kiro_crew/history_projection.py", "read_messages_chained"),
-        ("kiro_crew/slack/gateway.py", "read_messages"),
+        ("efm_go/history_consolidation.py", "_read_messages"),
+        ("efm_go/history_projection.py", "_read_messages"),
+        ("efm_go/history_projection.py", "_read_messages_locked"),
+        ("efm_go/history_projection.py", "_recent_via_tail"),
+        ("efm_go/history_projection.py", "read_messages_chained"),
+        ("efm_go/slack/gateway.py", "read_messages"),
         # A yes/no "does this session already have turns" check on its OWN
         # transcript, gating a write to that transcript; no rows leave.
-        ("kiro_crew/slack/thread_parent.py", "recent"),
-        ("kiro_crew/teams/session_resume.py", "recent"),
+        ("efm_go/slack/thread_parent.py", "recent"),
+        ("efm_go/teams/session_resume.py", "recent"),
     }
 )
 
@@ -159,7 +159,7 @@ class TestTheFence:
         """
         found = _plain_read_sites()
         # The chat_api owners are in the sweep, not beside it.
-        assert {rel for rel, _ in found if rel.startswith("kiro_crew/dashboard/chat_api/")}
+        assert {rel for rel, _ in found if rel.startswith("efm_go/dashboard/chat_api/")}
         unnamed = sorted(found - PLUMBING)
         assert not unnamed, f"plain transcript reads not named as plumbing: {unnamed}"
 
@@ -170,11 +170,11 @@ class TestTheFence:
     def test_the_known_derivers_do_not_use_plain_reads(self):
         """The consumers this seam exists for are not merely fenced -- they are off it."""
         derivers = {
-            "kiro_crew/dashboard/chat_summary.py",
-            "kiro_crew/dashboard/session_transfer.py",
-            "kiro_crew/dashboard/session_export.py",
-            "kiro_crew/suggestions.py",
-            "kiro_crew/mcp_tools/sessions.py",
+            "efm_go/dashboard/chat_summary.py",
+            "efm_go/dashboard/session_transfer.py",
+            "efm_go/dashboard/session_export.py",
+            "efm_go/suggestions.py",
+            "efm_go/mcp_tools/sessions.py",
         }
         offenders = sorted(site for site in _plain_read_sites() if site[0] in derivers)
         assert not offenders, offenders
@@ -204,61 +204,61 @@ _PUBLISH_NAMES = frozenset(
 )
 _PUBLISH_MODULES = frozenset(
     {
-        "kiro_crew/dashboard/chat_summary.py",
-        "kiro_crew/dashboard/handlers/sessions.py",
-        "kiro_crew/dashboard/session_export.py",
-        "kiro_crew/dashboard/handlers_instances.py",
-        "kiro_crew/history_consolidation.py",
+        "efm_go/dashboard/chat_summary.py",
+        "efm_go/dashboard/handlers/sessions.py",
+        "efm_go/dashboard/session_export.py",
+        "efm_go/dashboard/handlers_instances.py",
+        "efm_go/history_consolidation.py",
     }
 )
 _EXPECTED_PUBLISHERS = Counter(
     {
         (
-            "kiro_crew/dashboard/chat_summary.py",
+            "efm_go/dashboard/chat_summary.py",
             "_publish_if_derivation_is_allowed",
             "set_cached_intent_summary",
         ): 1,
         (
-            "kiro_crew/dashboard/handlers/sessions.py",
+            "efm_go/dashboard/handlers/sessions.py",
             "_publish_if_derivation_is_allowed",
             "set_cached_summary",
         ): 1,
-        ("kiro_crew/history_consolidation.py", "_write_preferences", "write_preferences"): 1,
-        ("kiro_crew/history_consolidation.py", "_write_projects", "write_projects"): 1,
+        ("efm_go/history_consolidation.py", "_write_preferences", "write_preferences"): 1,
+        ("efm_go/history_consolidation.py", "_write_projects", "write_projects"): 1,
         (
-            "kiro_crew/history_consolidation.py",
+            "efm_go/history_consolidation.py",
             "_apply_member_consolidation",
             "apply_consolidation",
         ): 1,
         (
-            "kiro_crew/history_consolidation.py",
+            "efm_go/history_consolidation.py",
             "_append_history_under_hold",
             "append_history",
         ): 1,
         (
-            "kiro_crew/history_consolidation.py",
+            "efm_go/history_consolidation.py",
             "_write_structured_memory",
             "propose_semantic_delete",
         ): 1,
         (
-            "kiro_crew/history_consolidation.py",
+            "efm_go/history_consolidation.py",
             "_write_structured_memory",
             "delete_semantic",
         ): 1,
-        ("kiro_crew/history_consolidation.py", "_write_structured_memory", "set_semantic"): 1,
-        ("kiro_crew/history_consolidation.py", "_save_lessons", "write_lesson"): 1,
-        ("kiro_crew/history_consolidation.py", "_write_structured_memory", "write_episodic"): 1,
-        ("kiro_crew/history_consolidation.py", "_stage_skill_update", "stage_skill_candidate"): 1,
-        ("kiro_crew/history_consolidation.py", "_process_auto_skills", "stage_skill_candidate"): 1,
-        ("kiro_crew/history_consolidation.py", "_process_auto_skills", "create_auto_skill"): 1,
-        ("kiro_crew/history_consolidation.py", "_process_auto_skills", "update_auto_skill"): 1,
+        ("efm_go/history_consolidation.py", "_write_structured_memory", "set_semantic"): 1,
+        ("efm_go/history_consolidation.py", "_save_lessons", "write_lesson"): 1,
+        ("efm_go/history_consolidation.py", "_write_structured_memory", "write_episodic"): 1,
+        ("efm_go/history_consolidation.py", "_stage_skill_update", "stage_skill_candidate"): 1,
+        ("efm_go/history_consolidation.py", "_process_auto_skills", "stage_skill_candidate"): 1,
+        ("efm_go/history_consolidation.py", "_process_auto_skills", "create_auto_skill"): 1,
+        ("efm_go/history_consolidation.py", "_process_auto_skills", "update_auto_skill"): 1,
         (
-            "kiro_crew/dashboard/session_export.py",
+            "efm_go/dashboard/session_export.py",
             "api_chat_slot_export",
             "build_transfer_bundle_async",
         ): 1,
         (
-            "kiro_crew/dashboard/handlers_instances.py",
+            "efm_go/dashboard/handlers_instances.py",
             "api_instances_send_session",
             "build_transfer_bundle_async",
         ): 1,
@@ -269,12 +269,12 @@ _EXPECTED_PUBLISHERS = Counter(
 # response commit or awaited tunnel send; the ordering is pinned below.
 _PUBLICATION_ALLOWLIST = {
     (
-        "kiro_crew/dashboard/session_export.py",
+        "efm_go/dashboard/session_export.py",
         "api_chat_slot_export",
         "build_transfer_bundle_async",
     ): "bundle assembly awaits; the response commit revalidates afterwards",
     (
-        "kiro_crew/dashboard/handlers_instances.py",
+        "efm_go/dashboard/handlers_instances.py",
         "api_instances_send_session",
         "build_transfer_bundle_async",
     ): "bundle assembly awaits; the tunnel send revalidates afterwards",
@@ -381,12 +381,12 @@ class TestThePublicationFence:
         assert all(reason.strip() for reason in _PUBLICATION_ALLOWLIST.values())
 
     def test_the_skill_guard_is_the_publication_seam(self):
-        calls = _calls_in_function("kiro_crew/history_consolidation.py", "_skill_publication_guard")
+        calls = _calls_in_function("efm_go/history_consolidation.py", "_skill_publication_guard")
         assert len(calls.get("_publication_hold_checked", [])) == 1
         assert not calls.get("publication_hold")
         assert not calls.get("derivation_hold")
         checked = _calls_in_function(
-            "kiro_crew/history_consolidation.py", "_publication_hold_checked"
+            "efm_go/history_consolidation.py", "_publication_hold_checked"
         )
         assert len(checked.get("publication_hold", [])) == 1
         assert len(checked.get("_persistence_disabled", [])) == 1
@@ -402,7 +402,7 @@ class TestThePublicationFence:
             "_try_embed",
         }
         offenders: list[tuple[str, int, str]] = []
-        for rel in sorted(_PUBLISH_MODULES | {"kiro_crew/history.py"}):
+        for rel in sorted(_PUBLISH_MODULES | {"efm_go/history.py"}):
             tree = ast.parse((SRC / rel).read_text(encoding="utf-8"), filename=rel)
             for node in ast.walk(tree):
                 if not isinstance(node, (ast.With, ast.AsyncWith)):
@@ -430,12 +430,12 @@ class TestThePublicationFence:
         ("rel", "function", "commit"),
         [
             (
-                "kiro_crew/dashboard/session_export.py",
+                "efm_go/dashboard/session_export.py",
                 "api_chat_slot_export",
                 "_StagedExport",
             ),
             (
-                "kiro_crew/dashboard/handlers_instances.py",
+                "efm_go/dashboard/handlers_instances.py",
                 "api_instances_send_session",
                 "send_session_bundle",
             ),
@@ -468,7 +468,7 @@ class TestThePublicationFence:
     def test_consolidation_embedding_precedes_the_publication_hold(
         self, function, embed_call, write_call
     ):
-        calls = _calls_in_function("kiro_crew/history_consolidation.py", function)
+        calls = _calls_in_function("efm_go/history_consolidation.py", function)
         assert len(calls[embed_call]) == len(calls[write_call]) == 1
         assert calls["_publication_hold_checked"]
         holds_before_write = [
@@ -481,17 +481,17 @@ class TestThePublicationFence:
         ("rel", "function", "write_call"),
         [
             (
-                "kiro_crew/dashboard/chat_handlers.py",
+                "efm_go/dashboard/chat_handlers.py",
                 "_persist_handover_tail",
                 "save_slot_off_loop",
             ),
             (
-                "kiro_crew/dashboard/chat_runner.py",
+                "efm_go/dashboard/chat_runner.py",
                 "_persist_tool_result_rows",
                 "save_slot_off_loop",
             ),
             (
-                "kiro_crew/dashboard/chat_title.py",
+                "efm_go/dashboard/chat_title.py",
                 "_persist_title",
                 "to_thread",
             ),

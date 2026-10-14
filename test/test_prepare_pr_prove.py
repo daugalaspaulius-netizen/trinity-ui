@@ -28,7 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PROVE = str(
     REPO_ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"

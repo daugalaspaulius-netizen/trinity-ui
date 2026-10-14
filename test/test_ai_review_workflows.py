@@ -43,7 +43,7 @@ REVIEW_PROMPTS = ROOT / ".github" / "review-prompts"
 PREPARE_PR_SKILL = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"
@@ -52,7 +52,7 @@ PREPARE_PR_SKILL = (
 PREPARE_PR_FINDINGS = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"
@@ -520,7 +520,7 @@ class TestForkStage2ExactHeadIdentity:
                 {
                     "PATH": _stub_path(tmp_path),
                     "GH_TOKEN": "stub",
-                    "REPO": "kirodotdev/KiroCrew",
+                    "REPO": "efmleads.com",
                     "WR_HEAD_SHA": self._SHA,
                     "WR_HEAD_REPO": self._REPO if repo is None else repo,
                     "WR_HEAD_REF": self._REF if ref is None else ref,
@@ -656,7 +656,7 @@ class TestForkStage2ExactHeadIdentity:
                     {
                         "PATH": _stub_path(tmp_path),
                         "GH_TOKEN": "stub",
-                        "REPO": "kirodotdev/KiroCrew",
+                        "REPO": "efmleads.com",
                         "WR_HEAD_SHA": wr[0],
                         "WR_HEAD_REPO": wr[1],
                         "WR_HEAD_REF": wr[2],
@@ -2165,18 +2165,18 @@ class TestFirstPrinciplesScopeGateBehavior:
         [
             # A plain FIX of existing backend code now RUNS: judging whether it
             # reached the cause is this lane's whole point.
-            ("src/kiro_crew/session.py", True),
+            ("src/efm_go/session.py", True),
             ("website/src/pages/Thing.tsx", True),
             ("config/defaults.json", True),
             ("scripts/check_brand_name.py", True),
             # This lane reviews its own kind of change too.
             (".github/workflows/first-principles-review.yml", True),
             # A mixed diff runs on the strength of its one source file.
-            ("docs/guides/x.md\nsrc/kiro_crew/session.py", True),
+            ("docs/guides/x.md\nsrc/efm_go/session.py", True),
             # Capability-free diffs skip: tests ship no capability, and docs,
             # screenshots and generated files never match at all.
             ("test/test_session.py", False),
-            ("src/kiro_crew/apps/builtins/meetings/tests/test_routes.py", False),
+            ("src/efm_go/apps/builtins/meetings/tests/test_routes.py", False),
             ("website/src/pages/Thing.test.tsx", False),
             ("docs/ci/ci-and-reviews.md", False),
             ("temp-screenshots/feature/shot.png", False),
@@ -2650,7 +2650,7 @@ class TestUxScopeGateSurvivesAWideDiff:
         # The UI file comes FIRST so `grep -q` can answer immediately -- the
         # worst case for the writer, and the one that manufactured 141.
         touched = "website/src/App.tsx\n" + "\n".join(
-            f"src/kiro_crew/module_{i}.py" for i in range(tail_files)
+            f"src/efm_go/module_{i}.py" for i in range(tail_files)
         )
         # Via a FILE, not the environment: a 200k-line value blows past the
         # execve argument/environment limit (E2BIG) long before it reaches the
@@ -2690,7 +2690,7 @@ class TestUxScopeGateSurvivesAWideDiff:
         bash = _bash()
         if bash is None:
             pytest.skip("the scope gate runs only under Bash")
-        touched = "src/kiro_crew/session.py\ndocs/ci/ci-and-reviews.md"
+        touched = "src/efm_go/session.py\ndocs/ci/ci-and-reviews.md"
         github_output = tmp_path / "github_output"
         github_output.touch()  # the Actions runtime pre-creates $GITHUB_OUTPUT
         script = (
@@ -5306,7 +5306,7 @@ class TestForkLaneStrandedRunSweeps:
                 {
                     "PATH": _stub_path(tmp_path),
                     "GH_TOKEN": "stub",
-                    "REPO": "kirodotdev/KiroCrew",
+                    "REPO": "efmleads.com",
                     "HEAD": "a" * 40,
                     "CHECK_ID": "",
                     "PR": "77",
@@ -7693,7 +7693,7 @@ class TestBlockAdjudicationContract:
         )
         harness = tmp_path / "harness.md"
         harness.write_text(
-            "BLOCKING src/kiro_crew/sandbox.py:44 -- the adapted harness"
+            "BLOCKING src/efm_go/sandbox.py:44 -- the adapted harness"
             " skips the seam.\n"
             "Chain: added branch -> seam widened -> third harness gains a"
             " capability.\n"
@@ -7715,7 +7715,7 @@ class TestBlockAdjudicationContract:
         # a class decision, not an any-AUTOSDE-id match.
         event_loop = tmp_path / "event_loop.md"
         event_loop.write_text(
-            "BLOCKING src/kiro_crew/thing.py:9 -- a sync read on the loop.\n"
+            "BLOCKING src/efm_go/thing.py:9 -- a sync read on the loop.\n"
             "Chain: large file -> loop stalls -> requests time out.\n"
             "Anchor: no-blocking-call-on-event-loop\n"
             "Fix: asyncio.to_thread it.\n",
@@ -11157,20 +11157,20 @@ class TestDesignTakeAwayCheck:
         block = self._block(DESIGN_LANES[0])
         named = (
             "website/src/",
-            "src/kiro_crew/dashboard/chat_runner.py",
-            "src/kiro_crew/session_agent_selection.py",
-            "src/kiro_crew/subagent_manager/",
-            "src/kiro_crew/subagent_persistence.py",
-            "src/kiro_crew/cron_script.py",
-            "src/kiro_crew/cron_service/",
-            "src/kiro_crew/apps/",
-            "src/kiro_crew/context_assembly/",
-            "src/kiro_crew/execution_context.py",
+            "src/efm_go/dashboard/chat_runner.py",
+            "src/efm_go/session_agent_selection.py",
+            "src/efm_go/subagent_manager/",
+            "src/efm_go/subagent_persistence.py",
+            "src/efm_go/cron_script.py",
+            "src/efm_go/cron_service/",
+            "src/efm_go/apps/",
+            "src/efm_go/context_assembly/",
+            "src/efm_go/execution_context.py",
             ".github/workflows/release.yml",
             "packaging/",
         )
         for path in named:
-            leaf = path.removeprefix("src/kiro_crew/")
+            leaf = path.removeprefix("src/efm_go/")
             assert leaf in block, f"the sweep no longer names {leaf}; update this list"
             assert (root / path).exists(), f"the sweep names {path}, which does not exist"
 
@@ -12131,7 +12131,7 @@ def _review_contract_module():
         "_review_contract_under_test",
         ROOT
         / "src"
-        / "kiro_crew"
+        / "efm_go"
         / "builtin_skills"
         / "kirocrew-dev"
         / "kirocrew-prepare-pr"
@@ -12265,10 +12265,10 @@ class TestForkLaneSurfacesAnUnstampedReviewBody:
     def _findings_body(self, stamp: str | None) -> str:
         """A complete review with two findings; ``stamp`` None means unstamped."""
         body = (
-            "BLOCKING -- src/kiro_crew/apps/builtins/thing/app.json:2 -- new built-in app\n"
+            "BLOCKING -- src/efm_go/apps/builtins/thing/app.json:2 -- new built-in app\n"
             "Anchor: no-new-builtin-apps\n"
             "\n"
-            "BLOCKING -- src/kiro_crew/dashboard/chat_folders.py:618 -- blocking call on the loop\n"
+            "BLOCKING -- src/efm_go/dashboard/chat_folders.py:618 -- blocking call on the loop\n"
             "Anchor: no-blocking-call-on-event-loop\n"
             "\n"
             f"[BLOCK-MERGE] {self.HEAD}\n"
@@ -12914,7 +12914,7 @@ class TestTheScopeSurfaceIsResolvedOnce:
         # extraction contract: the fork lane's sed drops anything else, so a
         # reformatted entry narrows the surface it resolves rather than failing.
         assert len(surface) >= 8, surface
-        assert "src/kiro_crew/security/" in surface
+        assert "src/efm_go/security/" in surface
         assert "scripts/deny_diff.py" in surface
 
     def test_the_fork_lane_extracts_that_list_and_spells_none_of_it(self) -> None:

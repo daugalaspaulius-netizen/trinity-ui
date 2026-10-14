@@ -42,7 +42,7 @@ import { fileURLToPath } from 'node:url'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const WEB = join(HERE, '..')
 const REPO = join(WEB, '..')
-const BUILTINS = join(REPO, 'src', 'kiro_crew', 'apps', 'builtins')
+const BUILTINS = join(REPO, 'src', 'efm_go', 'apps', 'builtins')
 const TABLE = join(WEB, 'src', 'components', 'appstore', 'appManifest.ts')
 const EN = join(WEB, 'src', 'i18n', 'locales', 'en.json')
 

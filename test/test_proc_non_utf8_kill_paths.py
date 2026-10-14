@@ -30,10 +30,10 @@ from unittest.mock import MagicMock
 import pytest
 from non_utf8_comm import BAD_COMM, comm_is_settable, renamed_child, script_named_child, write_stat
 
-from kiro_crew import _process_group_supervisor as supervisor
-from kiro_crew import platform_compat, runtime_reconcile
-from kiro_crew import session_pid as sp
-from kiro_crew.acp import runtime_process_tree as tree
+from efm_go import _process_group_supervisor as supervisor
+from efm_go import platform_compat, runtime_reconcile
+from efm_go import session_pid as sp
+from efm_go.acp import runtime_process_tree as tree
 
 live = pytest.mark.skipif(not comm_is_settable(), reason="needs a real Linux /proc")
 

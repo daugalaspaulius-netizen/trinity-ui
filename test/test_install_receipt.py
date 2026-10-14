@@ -14,9 +14,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import beacon
-from kiro_crew.apps import install_receipt, manager, registry
-from kiro_crew.apps.manager import AppResult
+from efm_go import beacon
+from efm_go.apps import install_receipt, manager, registry
+from efm_go.apps.manager import AppResult
 
 _SECRET = "0123456789abcdef" * 4  # 64-hex receipt-only secret
 _BEACON_ID = "0123456789abcdef0123456789abcdef"  # a heartbeat id, for independence checks

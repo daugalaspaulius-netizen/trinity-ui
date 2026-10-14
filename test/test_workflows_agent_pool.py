@@ -15,7 +15,7 @@ import asyncio
 import pytest
 from overload_fakes import settle_dependency_park, settle_store_writes
 
-from kiro_crew.workflows.agent_pool import _WorkflowSessionWorker, build_pooled_agent_fn
+from efm_go.workflows.agent_pool import _WorkflowSessionWorker, build_pooled_agent_fn
 
 
 class _FakeProvider:
@@ -100,9 +100,9 @@ async def _fake_stream(provider, prompt, **kwargs):
 
 @pytest.fixture(autouse=True)
 def _patch_stream(monkeypatch):
-    monkeypatch.setattr("kiro_crew.workflows.agent_pool.stream_and_collect", _fake_stream)
+    monkeypatch.setattr("efm_go.workflows.agent_pool.stream_and_collect", _fake_stream)
     # redaction is a no-op passthrough for these tests
-    monkeypatch.setattr("kiro_crew.workflows.agent_pool.redact", lambda t: t)
+    monkeypatch.setattr("efm_go.workflows.agent_pool.redact", lambda t: t)
 
 
 @pytest.mark.asyncio
@@ -378,7 +378,7 @@ async def test_pooled_is_faster_than_cold_start_per_call():
     async def _stream(provider, prompt, **kwargs):
         return f"[{provider.tag}] {prompt}"
 
-    import kiro_crew.workflows.agent_pool as ap
+    import efm_go.workflows.agent_pool as ap
 
     _orig = ap.stream_and_collect
     ap.stream_and_collect = _stream  # type: ignore[assignment]
@@ -420,7 +420,7 @@ _SIX_AGENTS = (
 
 async def _run_service(pool_agents: bool, sessions) -> None:
     """Drive one real WorkflowService run of _SIX_AGENTS to terminal state."""
-    from kiro_crew.workflows.service import WorkflowService
+    from efm_go.workflows.service import WorkflowService
 
     svc = WorkflowService(sessions=sessions, persist=False, pool_agents=pool_agents)
     out = await svc.start(_SIX_AGENTS, name="six")
@@ -446,8 +446,8 @@ async def test_end_to_end_service_pooled_cold_starts_fewer_sessions(monkeypatch)
 
     # Both the pooled path (agent_pool) and the un-pooled path (agent_exec, used
     # by service when pool_agents=False) call their module-local stream_and_collect.
-    import kiro_crew.workflows.agent_exec as ae
-    import kiro_crew.workflows.agent_pool as ap
+    import efm_go.workflows.agent_exec as ae
+    import efm_go.workflows.agent_pool as ap
 
     monkeypatch.setattr(ap, "stream_and_collect", _stream)
     monkeypatch.setattr(ae, "stream_and_collect", _stream)
@@ -484,13 +484,13 @@ async def test_send_message_enforces_timeout(monkeypatch):
         await asyncio.sleep(3600)  # never returns within the test's timeout
         return "unreachable"
 
-    monkeypatch.setattr("kiro_crew.workflows.agent_pool.stream_and_collect", _hang)
+    monkeypatch.setattr("efm_go.workflows.agent_pool.stream_and_collect", _hang)
 
     sessions = _FakeSessions()
     agent_fn, pool = build_pooled_agent_fn(sessions, run_id="to1", max_workers=2)
     # Drive the worker directly so we control the timeout value (the pool's
     # default is 1800s — too long to wait on in a unit test).
-    from kiro_crew.workflows.agent_pool import _WorkflowSessionWorker
+    from efm_go.workflows.agent_pool import _WorkflowSessionWorker
 
     worker = _WorkflowSessionWorker(sessions, key="wf-pool:to1:0", agent=None, model=None, cwd=None)
     await worker.start()
@@ -510,11 +510,11 @@ async def test_worker_pool_send_timeout_reaches_worker(monkeypatch):
         await asyncio.sleep(3600)
         return "unreachable"
 
-    monkeypatch.setattr("kiro_crew.workflows.agent_pool.stream_and_collect", _hang)
+    monkeypatch.setattr("efm_go.workflows.agent_pool.stream_and_collect", _hang)
 
     sessions = _FakeSessions()
-    from kiro_crew.acp.worker_pool import WorkerPool
-    from kiro_crew.workflows.agent_pool import _WorkflowSessionWorker
+    from efm_go.acp.worker_pool import WorkerPool
+    from efm_go.workflows.agent_pool import _WorkflowSessionWorker
 
     ids = iter(range(100))
 
@@ -566,7 +566,7 @@ async def test_no_extra_env_pin_stays_none():
 def test_max_turns_constant_is_shared_with_agent_exec():
     """agent_pool must reuse agent_exec._MAX_TURNS_PER_STEP (one source of truth),
     not hand-duplicate it — else the pooled and per-call ceilings can diverge."""
-    from kiro_crew.workflows import agent_exec, agent_pool
+    from efm_go.workflows import agent_exec, agent_pool
 
     assert agent_pool._MAX_TURNS_PER_STEP is agent_exec._MAX_TURNS_PER_STEP
 
@@ -596,7 +596,7 @@ class _Peak:
 
 
 def _admission(cap: int, *, mode: str = "aimd", store=None):
-    from kiro_crew.taskq.adapters.runner import RunnerAdmission, RunnerLane
+    from efm_go.taskq.adapters.runner import RunnerAdmission, RunnerLane
 
     return RunnerAdmission(store, lane=RunnerLane(cap, mode=mode))
 
@@ -604,7 +604,7 @@ def _admission(cap: int, *, mode: str = "aimd", store=None):
 @pytest.mark.asyncio
 async def test_worker_pool_honours_the_effective_cap_beneath_max_workers():
     """The lane's effective cap, not the pool's max_workers, is the live bound."""
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     sessions = _FakeSessions()
     agent_fn, pool = build_pooled_agent_fn(sessions, run_id="cap1", max_workers=4)
@@ -623,7 +623,7 @@ async def test_worker_pool_honours_the_effective_cap_beneath_max_workers():
 @pytest.mark.asyncio
 async def test_worker_pool_follows_a_cap_change_mid_run():
     """set_effective_cap (the adaptive controller's actuator) lowers the bound live."""
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     sessions = _FakeSessions()
     agent_fn, pool = build_pooled_agent_fn(sessions, run_id="cap2", max_workers=4)
@@ -656,7 +656,7 @@ async def test_worker_pool_follows_a_cap_change_mid_run():
 
 @pytest.mark.asyncio
 async def test_worker_pool_fixed_mode_ignores_the_actuator():
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     sessions = _FakeSessions()
     agent_fn, pool = build_pooled_agent_fn(sessions, run_id="fix", max_workers=4)
@@ -674,9 +674,9 @@ async def test_worker_pool_fixed_mode_ignores_the_actuator():
 @pytest.mark.asyncio
 async def test_workflow_agent_calls_are_rows_in_the_launching_sessions_lane(tmp_path):
     """Every ctx.agent() call is a workflow_agent row: written before it runs, settled after."""
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq import model as m
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     store = TaskStore(tmp_path / "tasks.db", network_fs=False).open()
     try:
@@ -709,9 +709,9 @@ async def test_workflow_agent_calls_are_rows_in_the_launching_sessions_lane(tmp_
 
 @pytest.mark.asyncio
 async def test_workflow_agent_failure_settles_the_row_failed(tmp_path):
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq import model as m
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     store = TaskStore(tmp_path / "tasks.db", network_fs=False).open()
     try:
@@ -732,11 +732,11 @@ async def test_workflow_agent_failure_settles_the_row_failed(tmp_path):
 @pytest.mark.asyncio
 async def test_workflow_agent_rate_limit_waits_then_retries(tmp_path):
     """A 429 parks the call in waiting_dependency (slot released) and re-runs it on wake."""
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.adapters.runner import RunnerAdmission, RunnerLane
-    from kiro_crew.taskq.dependency import KIND_RATE_LIMITED, SIGNAL_ATTR, DependencySignal
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq import model as m
+    from efm_go.taskq.adapters.runner import RunnerAdmission, RunnerLane
+    from efm_go.taskq.dependency import KIND_RATE_LIMITED, SIGNAL_ATTR, DependencySignal
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     now = {"t": 100.0}
     store = TaskStore(tmp_path / "tasks.db", network_fs=False, clock=lambda: now["t"]).open()
@@ -779,9 +779,9 @@ async def test_a_cancelled_call_waiting_for_a_lane_slot_leaves_no_queued_row(tmp
     call waits for its lane slot: the row was already accepted, so it must be
     settled -- ``workflow_agent`` has no dispatcher and a workflow resumes only
     through its own registry, never by re-dispatching one call row."""
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq import model as m
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     store = TaskStore(tmp_path / "tasks.db", network_fs=False).open()
     try:
@@ -825,11 +825,11 @@ async def test_a_cancelled_call_waiting_for_a_lane_slot_leaves_no_queued_row(tmp
 async def test_a_cancelled_call_parked_on_a_dependency_leaves_no_orphan_wait(tmp_path):
     """Same for a call parked in ``waiting_dependency``: the coroutine that was
     waiting for the scope's wake is the only thing that could have resumed it."""
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.adapters.runner import RunnerAdmission, RunnerLane
-    from kiro_crew.taskq.dependency import KIND_RATE_LIMITED, SIGNAL_ATTR, DependencySignal
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq import model as m
+    from efm_go.taskq.adapters.runner import RunnerAdmission, RunnerLane
+    from efm_go.taskq.dependency import KIND_RATE_LIMITED, SIGNAL_ATTR, DependencySignal
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     now = {"t": 100.0}
     store = TaskStore(tmp_path / "tasks.db", network_fs=False, clock=lambda: now["t"]).open()
@@ -872,10 +872,10 @@ async def test_service_attach_settles_a_call_row_that_was_never_claimed(tmp_path
     """Crash after accept: the row is ``queued`` under a dead incarnation, which
     the boot reconciler never examines. The attach sweep gives it an explicit
     terminal state, and a repeat sweep settles nothing twice."""
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.reconcile import reconcile_on_boot
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.service import WorkflowService
+    from efm_go.taskq import model as m
+    from efm_go.taskq.reconcile import reconcile_on_boot
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.service import WorkflowService
 
     path = tmp_path / "tasks.db"
     store_a = TaskStore(path, network_fs=False).open()
@@ -904,9 +904,9 @@ async def test_service_attach_settles_a_call_row_that_was_never_claimed(tmp_path
 @pytest.mark.asyncio
 async def test_service_attach_settles_orphaned_workflow_agent_rows(tmp_path):
     """A workflow restarts through its registry: orphaned call rows never re-dispatch."""
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.service import WorkflowService
+    from efm_go.taskq import model as m
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.service import WorkflowService
 
     store = TaskStore(tmp_path / "tasks.db", network_fs=False).open()
     try:
@@ -944,10 +944,10 @@ async def test_workflow_agent_call_writes_its_row_off_loop(tmp_path, monkeypatch
     site that slips back onto the loop reds here rather than costing an operator
     a contended ``BEGIN IMMEDIATE`` on the gateway's only loop.
     """
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq import store as store_mod
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq import model as m
+    from efm_go.taskq import store as store_mod
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     store = TaskStore(tmp_path / "tasks.db", network_fs=False).open()
     try:
@@ -985,10 +985,10 @@ async def test_a_workflow_call_whose_running_mark_is_refused_never_runs(tmp_path
     owner, so the call ends instead of running under it."""
     import sqlite3
 
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.adapters.runner import RunnerAdmissionRefused
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq import model as m
+    from efm_go.taskq.adapters.runner import RunnerAdmissionRefused
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     class _LockedOnRunning(TaskStore):
         """A REAL store whose FILE another connection locks for the ``running``
@@ -1036,10 +1036,10 @@ async def test_a_nested_agent_call_is_refused_not_parked_behind_its_ancestor(tmp
     worker. ``accept`` hands back a row that already exists and is still
     claimable (the resume path), which is how the parentage is recorded.
     """
-    from kiro_crew.taskq import model as m
-    from kiro_crew.taskq.adapters.runner import RunnerAdmissionRefused
-    from kiro_crew.taskq.store import TaskStore
-    from kiro_crew.workflows.agent_pool import admitted_agent_fn
+    from efm_go.taskq import model as m
+    from efm_go.taskq.adapters.runner import RunnerAdmissionRefused
+    from efm_go.taskq.store import TaskStore
+    from efm_go.workflows.agent_pool import admitted_agent_fn
 
     store = TaskStore(tmp_path / "tasks.db", network_fs=False).open()
     try:
@@ -1063,7 +1063,7 @@ async def test_a_nested_agent_call_is_refused_not_parked_behind_its_ancestor(tmp
         assert call.done(), "the nested call parked behind its own ancestor's slot"
         with pytest.raises(RunnerAdmissionRefused):
             call.result()
-        from kiro_crew.taskq.adapters.runner import RunnerLaneSelfBlocked
+        from efm_go.taskq.adapters.runner import RunnerLaneSelfBlocked
 
         assert isinstance(call.exception(), RunnerLaneSelfBlocked)
         assert calls == [], "the nested call ran without a slot"

@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.apps.manager as mgr
-from kiro_crew.apps.discovery import _get_builtins_dir, discover_builtin_apps
-from kiro_crew.apps.manager import _validate_builtin_app
+import efm_go.apps.manager as mgr
+from efm_go.apps.discovery import _get_builtins_dir, discover_builtin_apps
+from efm_go.apps.manager import _validate_builtin_app
 
 APP_NAME = "projects"
 

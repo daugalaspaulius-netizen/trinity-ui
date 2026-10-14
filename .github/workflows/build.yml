@@ -34,7 +34,7 @@ jobs:
     # is the macOS desktop build only. With the variable unset a push to main
     # builds everything.
     if: github.event_name != 'push' || vars.MERGE_QUEUE_ENABLED != 'true'
-    runs-on: ${{ github.repository == 'kirodotdev/KiroCrew' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
+    runs-on: ${{ github.repository == 'efmleads.com' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,9 +60,9 @@ jobs:
 
       - name: Stage frontend into package
         run: |
-          rm -rf src/kiro_crew/static/dist
-          mkdir -p src/kiro_crew/static
-          cp -R website/dist src/kiro_crew/static/dist
+          rm -rf src/efm_go/static/dist
+          mkdir -p src/efm_go/static
+          cp -R website/dist src/efm_go/static/dist
 
       # Build the sdist too, not just the wheel: `--wheel` alone reads
       # package_data and never evaluates MANIFEST.in, so a MANIFEST regression
@@ -182,7 +182,7 @@ jobs:
           if ($pbs.Count -lt 1) {
             throw "uv installed no cpython-3.12 windows-x86_64 interpreter under $(uv python dir)."
           }
-          $out = "website/electron/backend-dist/kirocrew-backend"
+          $out = "website/electron/backend-dist/efm-go-backend"
           New-Item -ItemType Directory -Force (Split-Path $out) | Out-Null
           Copy-Item -Recurse -LiteralPath $pbs[0].FullName -Destination $out
           # PBS marks itself externally managed; pip refuses to install into it
@@ -200,10 +200,10 @@ jobs:
           # resolves relative to the bundle wherever it lands.
           New-Item -ItemType Directory -Force (Join-Path $out "bin") | Out-Null
           Set-Content -Encoding ascii -LiteralPath (Join-Path $out "bin\kirocrew.cmd") `
-            -Value @('@echo off', '"%~dp0..\python.exe" -s -P -m kiro_crew %*')
+            -Value @('@echo off', '"%~dp0..\python.exe" -s -P -m efm_go %*')
           # Self-containment gate, same as the packaging script's: a missing
           # dependency must fail here, not at gateway boot.
-          & $python -s -P -m kiro_crew --version
+          & $python -s -P -m efm_go --version
           if ($LASTEXITCODE -ne 0) {
             throw "the bundled backend is NOT self-contained under PYTHONNOUSERSITE=1."
           }
@@ -211,7 +211,7 @@ jobs:
           # which is what the script's pyc floor then verifies survived into the
           # installed artifact.
           $env:PYTHONDONTWRITEBYTECODE = "1"
-          & $python -s packaging/precompile_windows.py --root $out --module kiro_crew.cli_server
+          & $python -s packaging/precompile_windows.py --root $out --module efm_go.cli_server
           if ($LASTEXITCODE -ne 0) { throw "precompiling the gateway import closure failed." }
           Remove-Item Env:PYTHONDONTWRITEBYTECODE
 
@@ -228,7 +228,7 @@ jobs:
       # -MinStartupPycs 750 rather than the script's 1000 default: that default
       # describes the FULL release bundle, which also carries the voice extras
       # (pywhispercpp, numpy) this job omits. Measured on the core closure of
-      # kiro_crew.cli_server, precompile emits about 990 sources, so 750 is a
+      # efm_go.cli_server, precompile emits about 990 sources, so 750 is a
       # floor with headroom for the win32 closure differing from the measured one
       # while still catching what the assertion exists for: bytecode filtered out
       # of the artifact, or the launcher redirecting imports into an empty user
@@ -270,7 +270,7 @@ jobs:
   # (build-desktop.yml) still ships every platform unconditionally.
   desktop-matrix:
     name: Resolve desktop matrix
-    runs-on: ${{ github.repository == 'kirodotdev/KiroCrew' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
+    runs-on: ${{ github.repository == 'efmleads.com' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || github.event_name == 'merge_group' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
     permissions:
       contents: read
       pull-requests: read

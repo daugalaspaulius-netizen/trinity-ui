@@ -1,12 +1,12 @@
-"""Both arms of kiro_crew.testing.links.make_dir_link, on every platform."""
+"""Both arms of efm_go.testing.links.make_dir_link, on every platform."""
 
 import sys
 import types
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.testing.links import make_dir_link
+from efm_go import platform_compat
+from efm_go.testing.links import make_dir_link
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="a real symlink needs a privilege there")

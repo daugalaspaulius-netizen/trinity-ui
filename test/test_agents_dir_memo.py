@@ -1,11 +1,11 @@
 """The agents-directory revision and the memo pinned to it, shared by the two
 ``spec_by_declared_name`` callers.
 
-:func:`kiro_crew.agent_discovery.agents_dir_revision` is a stat-only fingerprint
+:func:`efm_go.agent_discovery.agents_dir_revision` is a stat-only fingerprint
 strong enough to pin a read answer to: it answers ``None`` whenever entry
 metadata could miss a rewrite (a symlinked spec, a fresh edit inside the racy
 window, a directory past the entry cap, a platform whose ``ctime`` is creation
-time). :class:`kiro_crew.agent_discovery.AgentsDirMemo` holds the store and hit
+time). :class:`efm_go.agent_discovery.AgentsDirMemo` holds the store and hit
 rules once, so the tool-policy read and the KAS projection cannot drift apart.
 
 The KAS tests pin the second caller: a KAS session start resolves its agent by
@@ -27,8 +27,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import agent_discovery
-from kiro_crew.acp import kas_agents
+from efm_go import agent_discovery
+from efm_go.acp import kas_agents
 
 AGENT = "reviewer"
 

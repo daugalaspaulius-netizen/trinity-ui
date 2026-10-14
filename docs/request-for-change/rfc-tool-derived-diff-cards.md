@@ -14,7 +14,7 @@ superseded-by: []
 # RFC: Tool-Derived Diff Cards — structured diffs as the primary file-change display
 
 - Status: in-progress — the dashboard promotion and the runtime-selected
-  prompt rule ship with [#5012](https://github.com/kirodotdev/KiroCrew/pull/5012);
+  prompt rule ship with [#5012](https://efmleads.com/pull/5012);
   the messaging `OutputEvent` extension (§3.3) is unstarted.
 - Author: zezhexu
 - Created: 2026-08-21

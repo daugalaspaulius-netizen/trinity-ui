@@ -27,8 +27,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.apps.builtins.mochi import hooks
-from kiro_crew.apps.builtins.mochi.queue_poller import QueuePoller
+from efm_go.apps.builtins.mochi import hooks
+from efm_go.apps.builtins.mochi.queue_poller import QueuePoller
 
 
 class TestOwnerLoopNeverAwaitsPoll:
@@ -117,7 +117,7 @@ class TestWatchlistMtimeWatch:
 
 class TestNeutralizeDisablesServer:
     def test_neutralize_entry_is_disabled_and_keeps_tool_deny(self, monkeypatch):
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(
             bridges, "_global_mcp_specs", lambda: {"amb": {"command": "amb-cmd", "args": []}}
@@ -137,7 +137,7 @@ class TestNeutralizeDisablesServer:
 
 class TestManagedRefsMaterialized:
     def test_managed_tool_refs_get_specs(self):
-        from kiro_crew.apps.bridges import _materialize_managed_refs
+        from efm_go.apps.bridges import _materialize_managed_refs
 
         data: dict[str, Any] = {"tools": ["fs_read", "@kirocrew-cron", "@kirocrew-core"]}
         _materialize_managed_refs(data)
@@ -145,7 +145,7 @@ class TestManagedRefsMaterialized:
         assert data["mcpServers"]["kirocrew-core"]["args"][-1] == "mcp-core"
 
     def test_existing_entry_is_not_overwritten(self):
-        from kiro_crew.apps.bridges import _materialize_managed_refs
+        from efm_go.apps.bridges import _materialize_managed_refs
 
         data: dict[str, Any] = {
             "tools": ["@kirocrew-cron"],
@@ -155,7 +155,7 @@ class TestManagedRefsMaterialized:
         assert data["mcpServers"]["kirocrew-cron"]["command"] == "custom"
 
     def test_unreferenced_managed_servers_stay_out(self):
-        from kiro_crew.apps.bridges import _materialize_managed_refs
+        from efm_go.apps.bridges import _materialize_managed_refs
 
         data: dict[str, Any] = {"tools": ["fs_read"]}
         _materialize_managed_refs(data)
@@ -181,16 +181,16 @@ class TestNamespacedAgentFileCheck:
     """
 
     def test_namespaced_file_with_matching_name_counts(self, tmp_path, monkeypatch):
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.dashboard.handlers.agents import _namespaced_agent_file_exists
+        import efm_go.agent as agent_mod
+        from efm_go.dashboard.handlers.agents import _namespaced_agent_file_exists
 
         monkeypatch.setattr(agent_mod, "KIRO_AGENTS_DIR", tmp_path)
         (tmp_path / "someapp--helper.json").write_text(json.dumps({"name": "helper"}))
         assert _namespaced_agent_file_exists("helper") is True
 
     def test_name_mismatch_does_not_count(self, tmp_path, monkeypatch):
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.dashboard.handlers.agents import _namespaced_agent_file_exists
+        import efm_go.agent as agent_mod
+        from efm_go.dashboard.handlers.agents import _namespaced_agent_file_exists
 
         monkeypatch.setattr(agent_mod, "KIRO_AGENTS_DIR", tmp_path)
         # File name pattern matches but the JSON name field is different —
@@ -199,8 +199,8 @@ class TestNamespacedAgentFileCheck:
         assert _namespaced_agent_file_exists("helper") is False
 
     def test_unreadable_file_does_not_count(self, tmp_path, monkeypatch):
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.dashboard.handlers.agents import _namespaced_agent_file_exists
+        import efm_go.agent as agent_mod
+        from efm_go.dashboard.handlers.agents import _namespaced_agent_file_exists
 
         monkeypatch.setattr(agent_mod, "KIRO_AGENTS_DIR", tmp_path)
         (tmp_path / "someapp--helper.json").write_text("{not json")
@@ -216,7 +216,7 @@ class TestMergeWriteHonorsConcurrentReset:
     """
 
     def test_merge_write_writes_nothing_when_queue_reset_concurrently(self, tmp_path):
-        from kiro_crew.apps.builtins.mochi.queue_poller import QueuePoller
+        from efm_go.apps.builtins.mochi.queue_poller import QueuePoller
 
         class _CB:
             pass

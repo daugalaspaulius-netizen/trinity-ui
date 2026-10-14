@@ -25,8 +25,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp.session_handle import AcpSessionHandle, WatchdogSettings
-from kiro_crew.acp.types import (
+from efm_go.acp.session_handle import AcpSessionHandle, WatchdogSettings
+from efm_go.acp.types import (
     METHOD_REQUEST_PERMISSION,
     METHOD_SESSION_UPDATE,
     STOP_REASON_TOOL_STALL,
@@ -308,7 +308,7 @@ async def test_rejecting_also_ends_the_human_wait():
 
 
 def _make_manager():
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     cfg = MagicMock()
     cfg.session.pool_size = 0
@@ -502,7 +502,7 @@ def test_the_notice_states_the_duration_and_floors_at_one_minute():
     """The duration is the point — it is what separates this from a slow turn.
     Flooring at 1 matters because integer division of a minutes-scale threshold
     would otherwise render "0 min", which only reads as a bug."""
-    from kiro_crew.dashboard.state import stuck_turn_notice
+    from efm_go.dashboard.state import stuck_turn_notice
 
     assert "10 min" in stuck_turn_notice(600.0)
     assert "1 min" in stuck_turn_notice(59.0)  # floored, never "0 min"
@@ -512,7 +512,7 @@ def test_the_notice_states_the_duration_and_floors_at_one_minute():
 def test_the_notice_promises_no_remedy_it_did_not_perform():
     """The hook cancels nothing, so the notice must not imply recovery is under
     way — what the turn is blocked on is not knowable from where it was seen."""
-    from kiro_crew.dashboard.state import stuck_turn_notice
+    from efm_go.dashboard.state import stuck_turn_notice
 
     text = stuck_turn_notice(600.0).lower()
     assert "nothing has been cancelled" in text
@@ -529,8 +529,8 @@ def test_the_dashboard_subscribes_to_the_hook():
     """
     import inspect
 
-    from kiro_crew.dashboard import state as state_mod
-    from kiro_crew.session import SessionManager
+    from efm_go.dashboard import state as state_mod
+    from efm_go.session import SessionManager
 
     src = inspect.getsource(state_mod.DashboardState)
     assert "self.sessions.on_stuck_turn = " in src, "dashboard no longer subscribes"

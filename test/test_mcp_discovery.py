@@ -17,8 +17,8 @@ import pytest
 from stray_line_helpers import STRAY_LINES, too_deep_line
 
 from conftest import host_abs
-from kiro_crew import mcp_cleanup, platform_compat
-from kiro_crew.mcp_discovery import (
+from efm_go import mcp_cleanup, platform_compat
+from efm_go.mcp_discovery import (
     MCP_CLIENT_PROTOCOL_VERSION,
     MCP_REDACTED_HEADER_VALUE,
     SCOPE_CC_GLOBAL,
@@ -43,7 +43,7 @@ from kiro_crew.mcp_discovery import (
     probe_server,
     sync_to_agent_config,
 )
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 
 def _clear_cache() -> None:
@@ -79,7 +79,7 @@ def _passthrough_sandbox(monkeypatch):
     def _passthrough(argv, *a, env=None, **k):
         return list(argv), dict(env if env is not None else _os.environ), None
 
-    monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _passthrough)
+    monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _passthrough)
 
 
 class TestMcpServerInfo:
@@ -176,13 +176,13 @@ class TestListServers:
         kiro_dir.mkdir(parents=True)
         installed = {"mcpServers": {"kirocrew-cron": {"command": "kirocrew", "args": ["mcp-cron"]}}}
         (kiro_dir / "kirocrew.json").write_text(json.dumps(installed))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         # The installed-config branch resolves ``kiro_agents_dir()``, which reads
         # ``Path.home`` in ``config.paths`` -- NOT the name patched above. Point the
         # binding this module holds at the tmp tree instead, or the assertion below is
         # answered by whatever the operator's own ~/.kiro/agents happens to contain.
-        monkeypatch.setattr("kiro_crew.mcp_discovery.kiro_agents_dir", lambda: kiro_dir)
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "nope.json",))
+        monkeypatch.setattr("efm_go.mcp_discovery.kiro_agents_dir", lambda: kiro_dir)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "nope.json",))
         servers = list_servers()
         names = {s.name for s in servers}
         assert "kirocrew-cron" in names
@@ -205,8 +205,8 @@ class TestListServers:
 
     def test_list_empty_no_config(self, tmp_path, monkeypatch) -> None:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "nope.json",))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "nope.json",))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         servers = list_servers()
         assert servers == []
 
@@ -220,7 +220,7 @@ class TestListServers:
         mcp_json.write_text(
             json.dumps({"mcpServers": {"ext-srv": {"command": "b", "args": ["--x"]}}})
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         servers = list_servers()
         names = {s.name for s in servers}
         assert "agent-srv" in names
@@ -237,7 +237,7 @@ class TestListServers:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(json.dumps({"mcpServers": {"shared": {"command": "mcp-cmd"}}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         servers = list_servers()
         shared = [s for s in servers if s.name == "shared"]
         assert len(shared) == 1
@@ -263,8 +263,8 @@ class TestListServers:
         }
         (agent_dir / "defaults.json").write_text(json.dumps(cfg))
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "nope.json",))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "nope.json",))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         servers = list_servers()
         names = [s.name for s in servers]
         assert names.count("playwright-mcp") == 1
@@ -283,8 +283,8 @@ class TestListServers:
         }
         (agent_dir / "defaults.json").write_text(json.dumps(cfg))
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "x",))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "x",))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         servers = list_servers()
         names = {s.name for s in servers}
         assert "enabled-srv" in names
@@ -299,7 +299,7 @@ class TestListServers:
         in the KiroCrew scope; the table's enable action is the consent
         step, so the row must exist."""
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(
             json.dumps(
@@ -311,7 +311,7 @@ class TestListServers:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         servers = list_servers()
         by_name = {s.name: s for s in servers}
         assert "active" in by_name
@@ -338,8 +338,8 @@ class TestListServers:
             json.dumps({"mcpServers": {"pending": {"command": "a", "disabled": True}}})
         )
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         servers = [s for s in list_servers() if s.name == "pending"]
         assert len(servers) == 1
         assert servers[0].disabled is True
@@ -349,22 +349,22 @@ class TestListServers:
         """Consent-disabled rows are excluded from probing — a probe would
         spawn the server process the user has not yet consented to run."""
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(
             json.dumps(
                 {"mcpServers": {"pending": {"command": "definitely-not-run", "disabled": True}}}
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         probed: list[str] = []
 
         async def fake_probe(server):
             probed.append(server.name)
             return server
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", fake_probe)
-        from kiro_crew.mcp_discovery import probe_all
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", fake_probe)
+        from efm_go.mcp_discovery import probe_all
 
         await probe_all()
         assert "pending" not in probed
@@ -402,11 +402,11 @@ class TestListServers:
         )
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES",
+            "efm_go.mcp_discovery._MCP_SOURCES",
             ((store, SCOPE_KIROCREW), (shared_mcp, shared_scope)),
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         by_name = {s.name: s for s in list_servers()}
         assert set(by_name) == {"github", "figma"}
         assert by_name["figma"].disabled is True
@@ -455,11 +455,11 @@ class TestListServers:
         )
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES",
+            "efm_go.mcp_discovery._MCP_SOURCES",
             ((store, SCOPE_KIROCREW), (shared_mcp, shared_scope)),
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         by_name = {s.name: s for s in list_servers()}
         assert set(by_name) == {"broken", "remote", "flood", "fine", "leaky"}
         for row in by_name.values():
@@ -499,13 +499,13 @@ class TestListServers:
         shared_mcp.write_text(json.dumps({"mcpServers": servers}))
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES",
+            "efm_go.mcp_discovery._MCP_SOURCES",
             ((store, SCOPE_KIROCREW), (shared_mcp, SCOPE_KIRO_GLOBAL)),
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_reported", set())
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_cap_reached", False)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_reported", set())
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_cap_reached", False)
         return shared_mcp
 
     @staticmethod
@@ -583,9 +583,9 @@ class TestListServers:
             s.status = "ok"
             return s
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", fake_probe)
-        monkeypatch.setattr("kiro_crew.mcp_discovery._spawn_excluded", lambda: set())
-        from kiro_crew.mcp_discovery import probe_all
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", fake_probe)
+        monkeypatch.setattr("efm_go.mcp_discovery._spawn_excluded", lambda: set())
+        from efm_go.mcp_discovery import probe_all
 
         rows = {s.name: s for s in await probe_all()}
         assert probed == ["github"], (value, probed)
@@ -633,13 +633,13 @@ class TestListServers:
         )
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES",
+            "efm_go.mcp_discovery._MCP_SOURCES",
             ((store, SCOPE_KIROCREW), (shared_mcp, SCOPE_KIRO_GLOBAL)),
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_reported", set())
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_cap_reached", False)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_reported", set())
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_cap_reached", False)
         rows = {s.name: s for s in list_servers()}
         assert {n for n, s in rows.items() if s.disabled} == {"figma", "linear", "github"}
         # A real ``true`` somewhere: the switch is the story.
@@ -685,13 +685,13 @@ class TestListServers:
         )
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES",
+            "efm_go.mcp_discovery._MCP_SOURCES",
             ((store, SCOPE_KIROCREW), (shared_mcp, SCOPE_CC_GLOBAL)),
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_reported", set())
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_cap_reached", False)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_reported", set())
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_cap_reached", False)
         rows = {s.name: s for s in list_servers()}
         assert rows["figma"].disabled is True
         assert rows["figma"].disabled_reason == "invalid"
@@ -709,7 +709,7 @@ class TestListServers:
         in the store is, to it, a store-only disable: without the row's verdict it
         offered the consent step, whose Apply lifted the store flag and left the
         provider-global one standing. Store-only stays a consent row."""
-        from kiro_crew.dashboard.handlers.mcp import _stamp_config_state
+        from efm_go.dashboard.handlers.mcp import _stamp_config_state
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir(exist_ok=True)
@@ -731,11 +731,11 @@ class TestListServers:
         )
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES",
+            "efm_go.mcp_discovery._MCP_SOURCES",
             ((store, SCOPE_KIROCREW), (cc_global, SCOPE_CC_GLOBAL)),
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (store, cc_global))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (store, cc_global))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         rows = {s.name: s for s in list_servers()}
         assert rows["figma"].disabled is True and rows["figma"].disabled_in_shared is True
         assert rows["weather"].disabled is True and rows["weather"].disabled_in_shared is False
@@ -791,13 +791,13 @@ class TestListServers:
         )
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES",
+            "efm_go.mcp_discovery._MCP_SOURCES",
             ((store, SCOPE_KIROCREW), (shared_mcp, SCOPE_KIRO_GLOBAL)),
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_reported", set())
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_cap_reached", False)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (store, shared_mcp))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_reported", set())
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_cap_reached", False)
         with caplog.at_level(logging.WARNING):
             rows = {s.name: s for s in list_servers()}
         # Step 1 mutes the agent entry (no scope copy, so no row -- as for a
@@ -867,7 +867,7 @@ class TestListServers:
         reported individually -- not a line per refused server, and nothing on a
         re-read. A refused pair gets no entry anywhere, so the cap bounds the
         retention itself, not just the count of lines."""
-        monkeypatch.setattr("kiro_crew.mcp_cleanup.INVALID_DISABLED_LEDGER_CAP", 3)
+        monkeypatch.setattr("efm_go.mcp_cleanup.INVALID_DISABLED_LEDGER_CAP", 3)
         servers = {f"s{i}": {"command": "npx", "disabled": f"no-{i}"} for i in range(5)}
         self._seed_shared_scope(tmp_path, monkeypatch, None, servers=servers)
         with caplog.at_level(logging.WARNING):
@@ -973,7 +973,7 @@ class TestListServers:
         rather than vanish until the next page load. Enabled rows are probed
         exactly as before, and the order is ``list_servers``' own."""
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(
             json.dumps(
@@ -986,7 +986,7 @@ class TestListServers:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         spawned: list[str] = []
 
         async def fake_probe(server):
@@ -995,8 +995,8 @@ class TestListServers:
             server.status = "ok"
             return server
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", fake_probe)
-        from kiro_crew.mcp_discovery import probe_all
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", fake_probe)
+        from efm_go.mcp_discovery import probe_all
 
         rows = await probe_all()
         assert [s.name for s in rows] == ["alpha", "pending", "zulu"]
@@ -1015,13 +1015,13 @@ class TestListServers:
         """The early return for an empty spawn set still reports the disabled
         rows -- a config of nothing but disabled servers is not an empty panel."""
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(
             json.dumps({"mcpServers": {"pending": {"command": "x", "disabled": True}}})
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
-        from kiro_crew.mcp_discovery import probe_all
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        from efm_go.mcp_discovery import probe_all
 
         rows = await probe_all()
         assert [(s.name, s.status) for s in rows] == [("pending", "disabled")]
@@ -1036,8 +1036,8 @@ class TestListServers:
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(json.dumps({"mcpServers": {"srv": {"command": "b"}}}))
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         assert not any(s.name == "srv" for s in list_servers())
 
     def test_dashboard_disabled_server_keeps_a_disabled_row(self, tmp_path, monkeypatch) -> None:
@@ -1059,11 +1059,11 @@ class TestListServers:
         kiro_mcp.write_text(json.dumps({"mcpServers": {"srv": {"disabled": True}}}))
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES",
+            "efm_go.mcp_discovery._MCP_SOURCES",
             ((store, SCOPE_KIROCREW), (kiro_mcp, SCOPE_KIRO_GLOBAL)),
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (store, kiro_mcp))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (store, kiro_mcp))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         rows = [s for s in list_servers() if s.name == "srv"]
         assert len(rows) == 1
         assert rows[0].disabled is True
@@ -1083,8 +1083,8 @@ class TestListServers:
             json.dumps({"mcpServers": {"srv": {"disabled": True, "disabledTools": ["t1"]}}})
         )
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         servers = list_servers()
         assert len(servers) == 1
         assert servers[0].disabled_tools == ["t1"]
@@ -1103,8 +1103,8 @@ class TestListServers:
         }
         (agent_dir / "defaults.json").write_text(json.dumps(cfg))
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "x",))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "x",))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         servers = list_servers()
         assert len(servers) == 1
         s = servers[0]
@@ -1134,7 +1134,7 @@ class TestListServers:
                 {"mcpServers": {"shared": {"command": "kirocrew"}, "mc-only": {"command": "m"}}}
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (kiro_mcp, kirocrew_mcp))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (kiro_mcp, kirocrew_mcp))
 
         servers = list_servers()
         names = {s.name for s in servers}
@@ -1156,7 +1156,7 @@ class TestListServers:
         bad.write_text("{invalid json")
         good = tmp_path / "good.json"
         good.write_text(json.dumps({"mcpServers": {"srv": {"command": "x"}}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (bad, good))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (bad, good))
 
         servers = list_servers()
         assert any(s.name == "srv" for s in servers)
@@ -1173,7 +1173,7 @@ class TestListServers:
         bad.write_text(json.dumps({"mcpServers": ["not", "a", "dict"]}))
         good = tmp_path / "good.json"
         good.write_text(json.dumps({"mcpServers": {"srv": {"command": "x"}}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (bad, good))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (bad, good))
 
         servers = list_servers()
         assert any(s.name == "srv" for s in servers)
@@ -1190,16 +1190,16 @@ class TestListServers:
         blocked.write_text("{}")
         good = tmp_path / "good.json"
         good.write_text(json.dumps({"mcpServers": {"srv": {"command": "x"}}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (blocked, good))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (blocked, good))
 
-        original = __import__("kiro_crew.hooks", fromlist=["safe_read_file"]).safe_read_file
+        original = __import__("efm_go.hooks", fromlist=["safe_read_file"]).safe_read_file
 
         def _mock_safe_read(path: str) -> str:
             if "blocked" in path:
                 raise PermissionError("Blocked: sensitive path")
             return original(path)
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.safe_read_file", _mock_safe_read)
+        monkeypatch.setattr("efm_go.mcp_discovery.safe_read_file", _mock_safe_read)
 
         servers = list_servers()
         assert any(s.name == "srv" for s in servers)
@@ -1221,7 +1221,7 @@ class TestExtraScopeSeam:
         cc = tmp_path / "cc.json"
         cc.write_text(json.dumps({"mcpServers": {"companion-srv": {"command": "x"}}}))
         # OSS default: seam contributes nothing.
-        monkeypatch.setattr("kiro_crew.mcp_discovery._extra_scope_sources", lambda: [])
+        monkeypatch.setattr("efm_go.mcp_discovery._extra_scope_sources", lambda: [])
 
         by_source = _load_mcp_json_by_source()
         assert by_source.get("ccGlobal") == {}
@@ -1238,7 +1238,7 @@ class TestExtraScopeSeam:
         cc = tmp_path / "cc.json"
         cc.write_text(json.dumps({"mcpServers": {"companion-srv": {"command": "x"}}}))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._extra_scope_sources", lambda: [(cc, "ccGlobal")]
+            "efm_go.mcp_discovery._extra_scope_sources", lambda: [(cc, "ccGlobal")]
         )
 
         by_source = _load_mcp_json_by_source()
@@ -1261,7 +1261,7 @@ class TestExtraScopeSeam:
         vendor = tmp_path / "vendor.json"
         vendor.write_text(json.dumps({"mcpServers": {"vendor-srv": {"command": "x"}}}))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._extra_scope_sources",
+            "efm_go.mcp_discovery._extra_scope_sources",
             lambda: [(vendor, "vendorGlobal")],
         )
 
@@ -1316,11 +1316,11 @@ class TestExtraScopeSeam:
             )
         )
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES", ((kiro_mcp, SCOPE_KIRO_GLOBAL),)
+            "efm_go.mcp_discovery._MCP_SOURCES", ((kiro_mcp, SCOPE_KIRO_GLOBAL),)
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (kiro_mcp,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (kiro_mcp,))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._extra_scope_sources", lambda: [(cc_mcp, "ccGlobal")]
+            "efm_go.mcp_discovery._extra_scope_sources", lambda: [(cc_mcp, "ccGlobal")]
         )
 
         server = next(s for s in list_servers() if s.name == "shared-srv")
@@ -1347,7 +1347,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         new = discover_servers_to_sync()
         assert len(new) == 1
         assert new[0].name == "brand-new"
@@ -1372,7 +1372,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         result = discover_servers_to_sync()
 
@@ -1403,7 +1403,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         result = discover_servers_to_sync()
 
@@ -1436,7 +1436,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         result = discover_servers_to_sync()
 
@@ -1464,7 +1464,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         result = discover_servers_to_sync()
 
@@ -1492,7 +1492,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         result = discover_servers_to_sync()
 
@@ -1517,7 +1517,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         result = discover_servers_to_sync()
 
@@ -1537,7 +1537,7 @@ class TestDiscoverNew:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(json.dumps({"mcpServers": {"remote": entry}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         assert discover_servers_to_sync() == []
 
@@ -1568,7 +1568,7 @@ class TestDiscoverNew:
         mcp_json = tmp_path / "mcp.json"
         spec = {"url": "https://mcp.example.com/v1", **spec_extra}
         mcp_json.write_text(json.dumps({"mcpServers": {"remote": spec}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         result = discover_servers_to_sync()
 
@@ -1584,7 +1584,7 @@ class TestDiscoverNew:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(json.dumps({"mcpServers": {"srv": {"command": "a"}}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         new = discover_servers_to_sync()
         assert new == []
 
@@ -1599,7 +1599,7 @@ class TestDiscoverNew:
         mcp_json.write_text(
             json.dumps({"mcpServers": {"srv": {"command": "a", "env": {"KEY": "val"}}}})
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         result = discover_servers_to_sync()
         assert len(result) == 1
         assert result[0].name == "srv"
@@ -1614,7 +1614,7 @@ class TestDiscoverNew:
         strings would flag every synced server on every refresh, re-syncing
         forever.
         """
-        from kiro_crew.env import spec_env_path
+        from efm_go.env import spec_env_path
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -1626,12 +1626,12 @@ class TestDiscoverNew:
         mcp_json.write_text(
             json.dumps({"mcpServers": {"srv": {"command": "a", "env": {"PATH": "/opt/shims"}}}})
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         assert discover_servers_to_sync() == []
 
     def test_discover_flags_changed_path_fragment(self, tmp_path, monkeypatch) -> None:
         """A genuinely edited env.PATH still triggers a re-sync."""
-        from kiro_crew.env import spec_env_path
+        from efm_go.env import spec_env_path
 
         # Spelled for the host (conftest.host_abs): a fragment that fails
         # ``os.path.isabs`` is dropped by the expansion, and from Python 3.13 a bare
@@ -1647,7 +1647,7 @@ class TestDiscoverNew:
         mcp_json.write_text(
             json.dumps({"mcpServers": {"srv": {"command": "a", "env": {"PATH": new}}}})
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         result = discover_servers_to_sync()
         assert len(result) == 1
         assert result[0].env == {"PATH": new}
@@ -1663,7 +1663,7 @@ class TestDiscoverNew:
         mcp_json.write_text(
             json.dumps({"mcpServers": {"srv": {"command": "a", "env": {"KEY": "val"}}}})
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         result = discover_servers_to_sync()
         assert result == []
 
@@ -1678,7 +1678,7 @@ class TestDiscoverNew:
         mcp_json.write_text(
             json.dumps({"mcpServers": {"srv": {"command": "a", "env": {"NEW": "val"}}}})
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         result = discover_servers_to_sync()
         assert result == []
 
@@ -1714,7 +1714,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         result = discover_servers_to_sync()
         assert result == []
 
@@ -1736,7 +1736,7 @@ class TestDiscoverNew:
                 }
             )
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         result = discover_servers_to_sync()
         assert len(result) == 1
         assert result[0].name == "enabled-srv"
@@ -1751,7 +1751,7 @@ class TestDiscoverNew:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(json.dumps({"mcpServers": {"srv": {"command": "my-server"}}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         result = discover_servers_to_sync()
         assert result == []
 
@@ -1771,7 +1771,7 @@ class TestDiscoverNew:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(json.dumps({"mcpServers": {"srv": {"command": "my-server"}}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         assert discover_servers_to_sync() == []
 
         shutil.rmtree(pinned.parent)
@@ -1796,7 +1796,7 @@ class TestSyncTriggerMatchesTheMerge:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(json.dumps({"mcpServers": {"srv": source_spec}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
         return mcp_json
 
     def test_local_timeout_change_fires(self, tmp_path, monkeypatch) -> None:
@@ -1860,7 +1860,7 @@ class TestSyncTriggerMatchesTheMerge:
         other = tmp_path / "other-mcp.json"
         other.write_text(json.dumps({"mcpServers": {"srv": {"command": "a", "disabled": True}}}))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._extra_scope_sources", lambda: [(other, "ccGlobal")]
+            "efm_go.mcp_discovery._extra_scope_sources", lambda: [(other, "ccGlobal")]
         )
         assert discover_servers_to_sync() == []
 
@@ -1870,7 +1870,7 @@ class TestSyncTriggerMatchesTheMerge:
         Narrowing ``agent._SOURCE_OWNED_MCP_KEYS`` must silence the trigger for the
         dropped key in the same commit, which is only true if the trigger imports it.
         """
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         self._write(
             tmp_path, monkeypatch, {"command": "a", "timeout": 60}, {"command": "a", "timeout": 120}
@@ -1883,13 +1883,13 @@ class TestSyncTriggerMatchesTheMerge:
 
 class TestCommandsDiverged:
     def test_identical_commands(self) -> None:
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged("foo", "foo") is False
 
     def test_short_vs_resolved_path(self, tmp_path) -> None:
         """A bare name and the live absolute path it resolved to are one server."""
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         pinned = _make_executable(tmp_path / "bin" / "deep-research")
         assert _commands_diverged("deep-research", str(pinned)) is False
@@ -1901,7 +1901,7 @@ class TestCommandsDiverged:
         directory that held it, so a name-only comparison can never propose the
         re-sync that would repair the entry.
         """
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         pinned = _make_executable(tmp_path / "tools" / "deep-research" / "1.0.1" / "deep-research")
         assert _commands_diverged("deep-research", str(pinned)) is False
@@ -1915,7 +1915,7 @@ class TestCommandsDiverged:
     )
     def test_present_but_non_executable_pin_diverges(self, tmp_path) -> None:
         """A pin the process cannot execute is as unusable as an absent one."""
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         pinned = _make_executable(tmp_path / "bin" / "srv")
         pinned.chmod(0o444)
@@ -1923,25 +1923,25 @@ class TestCommandsDiverged:
 
     def test_distinct_existing_paths_sharing_a_basename_diverge(self, tmp_path) -> None:
         """Two live files with one name are two servers, not two spellings of one."""
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         first = _make_executable(tmp_path / "a" / "srv")
         second = _make_executable(tmp_path / "b" / "srv")
         assert _commands_diverged(str(first), str(second)) is True
 
     def test_resolved_vs_short(self) -> None:
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged("/usr/bin/server", "server") is False
 
     def test_genuinely_different_commands(self) -> None:
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged("old-server", "new-server") is True
 
     def test_distinct_absolute_paths_sharing_a_basename_diverge(self) -> None:
         """Two different binaries with the same file name are NOT the same server."""
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged("/opt/a/bin/srv", "/opt/b/bin/srv") is True
 
@@ -1952,7 +1952,7 @@ class TestCommandsDiverged:
         name that ``PATH`` lookup turned into ``/usr/bin/srv`` — treating it as
         one would silently skip syncing a genuinely changed command.
         """
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged("bin/srv", "/usr/bin/srv") is True
         assert _commands_diverged("./srv", "/usr/bin/srv") is True
@@ -1968,7 +1968,7 @@ class TestCommandsDiverged:
         Only the ``shutil.which``-resolved (rooted) side may shed its suffix;
         folding it off both sides would collapse distinct executables.
         """
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged("foo.bat", r"C:\x\foo.cmd") is True
         assert _commands_diverged("myserver.js", r"C:\x\myserver.exe") is True
@@ -1984,7 +1984,7 @@ class TestCommandsDiverged:
         ``shutil.which`` spells the extension as ``PATHEXT`` does. Treating that as
         divergence would re-sync and reset every session on every startup.
         """
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         monkeypatch.setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
         # A real file, because the resolved side is now probed for liveness: a
@@ -2000,7 +2000,7 @@ class TestCommandsDiverged:
         reason="Windows-only: paths are case-insensitive and accept either separator.",
     )
     def test_separator_and_case_variants_do_not_diverge(self) -> None:
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged(r"C:\tools\srv.exe", "C:/Tools/SRV.exe") is False
 
@@ -2014,7 +2014,7 @@ class TestCommandsDiverged:
         ``ntpath.isabs('/usr/bin/srv')`` is False (no drive), so a rooted-path check
         alone would read the whole string as a bare command name.
         """
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged("srv", "/usr/bin/srv") is False
         assert _commands_diverged(r"\tools\srv", "srv") is False
@@ -2027,7 +2027,7 @@ class TestCommandsDiverged:
         neither may be reported as a vanished pin -- doing so would re-sync a
         portable config on every pass.
         """
-        from kiro_crew.mcp_discovery import _pinned_command_missing
+        from efm_go.mcp_discovery import _pinned_command_missing
 
         foreign = r"C:\tools\nope\srv" if not platform_compat.IS_WINDOWS else "/usr/bin/nope/srv"
         assert _pinned_command_missing(foreign) is False
@@ -2038,7 +2038,7 @@ class TestCommandsDiverged:
         reason="POSIX-only: filenames are case-sensitive there, unlike Windows.",
     )
     def test_case_differing_commands_diverge_on_posix(self) -> None:
-        from kiro_crew.mcp_discovery import _commands_diverged
+        from efm_go.mcp_discovery import _commands_diverged
 
         assert _commands_diverged("Server", "/usr/bin/server") is True
 
@@ -2077,7 +2077,7 @@ class TestSyncToAgentConfig:
 
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2098,12 +2098,12 @@ class TestSyncToAgentConfig:
         }
         config_path = kiro_dir / "kirocrew.json"
         config_path.write_text(json.dumps(cfg))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         monkeypatch.setattr("shutil.which", lambda x, **kw: None)
 
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2117,12 +2117,12 @@ class TestSyncToAgentConfig:
         kiro_dir = tmp_path / ".kiro" / "agents"
         kiro_dir.mkdir(parents=True)
         config_path = kiro_dir / "kirocrew.json"
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         monkeypatch.setattr("shutil.which", lambda x, **kw: None)
 
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2138,12 +2138,12 @@ class TestSyncToAgentConfig:
         cfg: dict = {"mcpServers": {}, "tools": [], "allowedTools": []}
         config_path = kiro_dir / "kirocrew.json"
         config_path.write_text(json.dumps(cfg))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         monkeypatch.setattr("shutil.which", lambda x, **kw: None)
 
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2183,7 +2183,7 @@ class TestSyncToAgentConfig:
 
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2206,12 +2206,12 @@ class TestSyncToAgentConfig:
         }
         config_path = kiro_dir / "kirocrew.json"
         config_path.write_text(json.dumps(cfg))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         monkeypatch.setattr("shutil.which", lambda x, **kw: None)
 
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2241,12 +2241,12 @@ class TestSyncToAgentConfig:
         }
         config_path = kiro_dir / "kirocrew.json"
         config_path.write_text(json.dumps(cfg))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         monkeypatch.setattr("shutil.which", lambda x, **kw: None)
 
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2270,13 +2270,13 @@ class TestSyncToAgentConfig:
         }
         config_path = kiro_dir / "kirocrew.json"
         config_path.write_text(json.dumps(cfg))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         monkeypatch.setattr("shutil.which", lambda x, **kw: None)
 
         # install_agent() is called internally — mock it to verify delegation
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2302,12 +2302,12 @@ class TestSyncToAgentConfig:
         }
         config_path = kiro_dir / "kirocrew.json"
         config_path.write_text(json.dumps(cfg))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         monkeypatch.setattr("shutil.which", lambda x, **kw: None)
 
         install_called = []
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: install_called.append(True) or config_path,
         )
 
@@ -2347,7 +2347,7 @@ class TestSyncToAgentConfig:
         config_path.write_text(json.dumps({"mcpServers": {}, "tools": [], "allowedTools": []}))
 
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent",
+            "efm_go.agent.install_agent",
             lambda **kw: config_path,
         )
 
@@ -2356,7 +2356,7 @@ class TestSyncToAgentConfig:
         mcp_json.write_text(
             json.dumps({"mcpServers": {"disabled-srv": {"command": "x", "disabled": True}}})
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
         disabled_srv = McpServerInfo(name="disabled-srv", command="x")
         sync_to_agent_config([disabled_srv])
@@ -2641,8 +2641,8 @@ class TestProbeCache:
         cfg = {"mcpServers": {"my-srv": {"command": "cmd"}}}
         (agent_dir / "defaults.json").write_text(json.dumps(cfg))
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "x",))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "x",))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
 
         # Before probe: unknown
         servers = list_servers()
@@ -2681,8 +2681,8 @@ class TestProbeIdentityWiring:
         agent_dir.mkdir(exist_ok=True)
         (agent_dir / "defaults.json").write_text(json.dumps({"mcpServers": {"srv": spec}}))
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "absent",))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (tmp_path / "absent",))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
 
     def test_edited_command_is_not_served_by_list_servers(self, tmp_path, monkeypatch) -> None:
         """The user-visible bug, end to end.
@@ -2916,7 +2916,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "ok"
@@ -2959,7 +2959,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "ok"
@@ -2981,7 +2981,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "error"
@@ -3007,7 +3007,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "needs_auth"
@@ -3031,7 +3031,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "needs_auth"
@@ -3053,7 +3053,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "error"
@@ -3083,7 +3083,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "error"
@@ -3091,7 +3091,7 @@ class TestProbeRemote:
 
     def test_needs_authorization_predicate(self) -> None:
         """Unit-level truth table for _needs_authorization."""
-        from kiro_crew.mcp_discovery import _needs_authorization
+        from efm_go.mcp_discovery import _needs_authorization
 
         # Tokenless 401 → authenticate.
         assert _needs_authorization(401, {}, {}) is True
@@ -3109,7 +3109,7 @@ class TestProbeRemote:
 
     def test_a_real_oauth_challenge_is_recognised(self) -> None:
         """The two pieces of evidence that make a 401 an OAuth challenge."""
-        from kiro_crew.mcp_discovery import _is_bearer_challenge
+        from efm_go.mcp_discovery import _is_bearer_challenge
 
         assert _is_bearer_challenge(
             'Bearer resource_metadata="https://mcp.example.ai/.well-known/'
@@ -3147,7 +3147,7 @@ class TestProbeRemote:
         An http or javascript metadata URL from an unauthenticated endpoint is not
         evidence of anything, so it does not count toward recognition.
         """
-        from kiro_crew.mcp_discovery import _is_bearer_challenge
+        from efm_go.mcp_discovery import _is_bearer_challenge
 
         assert _is_bearer_challenge(challenge) is False
 
@@ -3171,8 +3171,8 @@ class TestProbeRemote:
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session),
-            patch("kiro_crew.mcp_discovery._runtime_grant_present", AsyncMock(return_value=False)),
+            patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session),
+            patch("efm_go.mcp_discovery._runtime_grant_present", AsyncMock(return_value=False)),
         ):
             result = await _probe_remote(server)
 
@@ -3200,8 +3200,8 @@ class TestProbeRemote:
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session),
-            patch("kiro_crew.mcp_discovery._runtime_grant_present", AsyncMock(return_value=True)),
+            patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session),
+            patch("efm_go.mcp_discovery._runtime_grant_present", AsyncMock(return_value=True)),
         ):
             result = await _probe_remote(server)
 
@@ -3240,8 +3240,8 @@ class TestProbeRemote:
 
         grant_lookup = AsyncMock(return_value=False)
         with (
-            patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session),
-            patch("kiro_crew.mcp_discovery._runtime_grant_present", grant_lookup),
+            patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session),
+            patch("efm_go.mcp_discovery._runtime_grant_present", grant_lookup),
         ):
             result = await _probe_remote(server)
 
@@ -3261,7 +3261,7 @@ class TestProbeRemote:
 
     def test_the_probe_cache_round_trips_the_authorization_evidence(self) -> None:
         """The panel is served from this cache, so the evidence has to survive it."""
-        from kiro_crew.mcp_discovery import _cache_probe, probe_metadata
+        from efm_go.mcp_discovery import _cache_probe, probe_metadata
 
         server = McpServerInfo(
             name="cached-remote",
@@ -3300,8 +3300,8 @@ class TestProbeRemote:
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session),
-            patch("kiro_crew.mcp_discovery._runtime_grant_present", AsyncMock(return_value=None)),
+            patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session),
+            patch("efm_go.mcp_discovery._runtime_grant_present", AsyncMock(return_value=None)),
         ):
             result = await _probe_remote(server)
 
@@ -3322,10 +3322,10 @@ class TestProbeRemote:
         what turns a row into "Sign-in required". Without the opt-in that acted-on
         access leaves no trail at all.
         """
-        from kiro_crew.mcp_discovery import _runtime_grant_present
+        from efm_go.mcp_discovery import _runtime_grant_present
 
         lookup = AsyncMock(return_value=False)
-        with patch("kiro_crew.mcp_discovery.grant_observed", lookup):
+        with patch("efm_go.mcp_discovery.grant_observed", lookup):
             assert await _runtime_grant_present("https://example.com/mcp", "remote") is False
 
         lookup.assert_awaited_once_with("https://example.com/mcp", audit_absence=True)
@@ -3344,8 +3344,8 @@ class TestProbeRemote:
         in-process ``sys.modules`` check would always find it.
         """
         probe = (
-            "import sys; import kiro_crew.mcp_discovery;"
-            " print('MINT' if 'kiro_crew.connections.mint' in sys.modules else 'CLEAN')"
+            "import sys; import efm_go.mcp_discovery;"
+            " print('MINT' if 'efm_go.connections.mint' in sys.modules else 'CLEAN')"
         )
         out = subprocess.run(
             [sys.executable, "-c", probe], capture_output=True, timeout=180, **UTF8_TEXT
@@ -3381,7 +3381,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "needs_auth"
@@ -3397,14 +3397,14 @@ class TestProbeRemote:
         The probe's own failure path therefore names the server, never the url —
         this line lands in gateway.log, which is not a credential store.
         """
-        from kiro_crew.mcp_discovery import _runtime_grant_present
+        from efm_go.mcp_discovery import _runtime_grant_present
 
         secret_url = "https://user:sup3r-secret@mcp.example.com/mcp?token=abcd1234"
 
         # ``None`` is what an unreadable cache home resolves to: ``grant_presence``
         # classifies the failed stat itself, so nothing raises out to this caller.
-        with patch("kiro_crew.mcp_discovery.grant_observed", AsyncMock(return_value=None)):
-            with caplog.at_level(logging.DEBUG, logger="kiro_crew.mcp_discovery"):
+        with patch("efm_go.mcp_discovery.grant_observed", AsyncMock(return_value=None)):
+            with caplog.at_level(logging.DEBUG, logger="efm_go.mcp_discovery"):
                 present = await _runtime_grant_present(secret_url, "higgsfield")
 
         # None, not False: the lookup could not answer, and the payload must not
@@ -3427,7 +3427,7 @@ class TestProbeRemote:
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "error"
@@ -3437,7 +3437,7 @@ class TestProbeRemote:
         """probe_server dispatches to _probe_remote for url-based servers."""
         server = McpServerInfo(name="remote", url="https://example.com/mcp")
 
-        with patch("kiro_crew.mcp_discovery._probe_remote", new_callable=AsyncMock) as mock_remote:
+        with patch("efm_go.mcp_discovery._probe_remote", new_callable=AsyncMock) as mock_remote:
             mock_remote.return_value = server
             result = await probe_server(server)
 
@@ -3449,7 +3449,7 @@ class TestProbeRemote:
         """probe_server does NOT dispatch to _probe_remote for command-based servers."""
         server = McpServerInfo(name="local", command="nonexistent-cmd-xyz")
 
-        with patch("kiro_crew.mcp_discovery._probe_remote", new_callable=AsyncMock) as mock_remote:
+        with patch("efm_go.mcp_discovery._probe_remote", new_callable=AsyncMock) as mock_remote:
             result = await probe_server(server)
 
         mock_remote.assert_not_awaited()
@@ -3510,9 +3510,9 @@ class TestProbeServerConsentGate:
         server = McpServerInfo(name="held", command="true", disabled=True)
 
         with (
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/bin/true"),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/bin/true"),
             patch(
-                "kiro_crew.mcp_discovery.create_subprocess_limited",
+                "efm_go.mcp_discovery.create_subprocess_limited",
                 new_callable=AsyncMock,
             ) as mock_spawn,
         ):
@@ -3531,7 +3531,7 @@ class TestProbeServerConsentGate:
         """
         server = McpServerInfo(name="held-remote", url="https://example.com/mcp", disabled=True)
 
-        with patch("kiro_crew.mcp_discovery._probe_remote", new_callable=AsyncMock) as mock_remote:
+        with patch("efm_go.mcp_discovery._probe_remote", new_callable=AsyncMock) as mock_remote:
             result = await probe_server(server)
 
         mock_remote.assert_not_awaited()
@@ -3549,9 +3549,9 @@ class TestProbeServerConsentGate:
         server.disabled = "yes"  # type: ignore[assignment]
 
         with (
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/bin/true"),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/bin/true"),
             patch(
-                "kiro_crew.mcp_discovery.create_subprocess_limited",
+                "efm_go.mcp_discovery.create_subprocess_limited",
                 new_callable=AsyncMock,
             ) as mock_spawn,
         ):
@@ -3577,7 +3577,7 @@ class TestProbeServerConsentGate:
         _cache_probe(probed)
 
         disabled = McpServerInfo(name="was-ok", command="true", disabled=True)
-        with patch("kiro_crew.mcp_discovery.shutil.which", return_value="/bin/true"):
+        with patch("efm_go.mcp_discovery.shutil.which", return_value="/bin/true"):
             await probe_server(disabled)
 
         status, tools, *_rest = _get_cached("was-ok")
@@ -3640,7 +3640,7 @@ class TestProbeTempContainment:
         # configured volume instead of ENOSPC-ing the data home.
         import sys
 
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         server = McpServerInfo(
             name="declared-temp",
@@ -3669,8 +3669,8 @@ class TestProbeTempContainment:
         import sys
         from pathlib import Path
 
-        from kiro_crew import sandbox
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go import sandbox
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -3684,7 +3684,7 @@ class TestProbeTempContainment:
             captured_wrap.update(k)
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
 
         server = McpServerInfo(
             name="sealed-declared-temp",
@@ -3693,7 +3693,7 @@ class TestProbeTempContainment:
             env={"TMPDIR": str(sealed)},
         )
         with patch(
-            "kiro_crew.mcp_discovery.create_subprocess_limited",
+            "efm_go.mcp_discovery.create_subprocess_limited",
             new_callable=AsyncMock,
             side_effect=OSError("stop after env capture"),
         ) as spawn_mock:
@@ -3722,8 +3722,8 @@ class TestProbeTempContainment:
         # platform default instead of the sealed path.
         import sys
 
-        from kiro_crew import sandbox
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go import sandbox
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -3735,7 +3735,7 @@ class TestProbeTempContainment:
         def _wrap(argv, *a, env=None, **k):
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
 
         server = McpServerInfo(
             name="sealed-alloc-fail",
@@ -3744,7 +3744,7 @@ class TestProbeTempContainment:
             env={"TMPDIR": str(sealed)},
         )
         with patch(
-            "kiro_crew.mcp_discovery.create_subprocess_limited",
+            "efm_go.mcp_discovery.create_subprocess_limited",
             new_callable=AsyncMock,
             side_effect=OSError("stop after env capture"),
         ) as spawn_mock:
@@ -3771,8 +3771,8 @@ class TestProbeTempContainment:
         """
         import sys
 
-        from kiro_crew import sandbox
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go import sandbox
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -3783,7 +3783,7 @@ class TestProbeTempContainment:
         def _wrap(argv, *a, env=None, **k):
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
 
         server = McpServerInfo(
             name="sealed-declared-temp-case",
@@ -3792,7 +3792,7 @@ class TestProbeTempContainment:
             env={declared_key: str(sealed)},
         )
         with patch(
-            "kiro_crew.mcp_discovery.create_subprocess_limited",
+            "efm_go.mcp_discovery.create_subprocess_limited",
             new_callable=AsyncMock,
             side_effect=OSError("stop after env capture"),
         ) as spawn_mock:
@@ -3820,8 +3820,8 @@ class TestProbeTempContainment:
         # declared TMP would win the lookup by spelling luck.
         import sys
 
-        from kiro_crew import sandbox
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go import sandbox
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -3835,7 +3835,7 @@ class TestProbeTempContainment:
         def _wrap(argv, *a, env=None, **k):
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
         monkeypatch.setenv("TMPDIR", "/ambient/tmpdir")
         monkeypatch.setenv("TMP", "/ambient/tmp")
         monkeypatch.setenv("TEMP", "/ambient/temp")
@@ -3847,7 +3847,7 @@ class TestProbeTempContainment:
             env={"tmpdir": str(chosen)},
         )
         with patch(
-            "kiro_crew.mcp_discovery.create_subprocess_limited",
+            "efm_go.mcp_discovery.create_subprocess_limited",
             new_callable=AsyncMock,
             side_effect=OSError("stop after env capture"),
         ) as spawn_mock:
@@ -3873,8 +3873,8 @@ class TestProbeTempContainment:
         import sys
         from pathlib import Path
 
-        from kiro_crew import sandbox
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go import sandbox
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -3882,7 +3882,7 @@ class TestProbeTempContainment:
         monkeypatch.setattr(sandbox, "config_dir", lambda: home)
         declared = home / "run" / "custom-tmp"
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery.classify_declared_temp_path",
+            "efm_go.mcp_discovery.classify_declared_temp_path",
             MagicMock(side_effect=OSError("data home does not resolve to a real directory")),
         )
         captured_wrap: dict = {}
@@ -3891,7 +3891,7 @@ class TestProbeTempContainment:
             captured_wrap.update(k)
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
 
         server = McpServerInfo(
             name="check-raises",
@@ -3901,7 +3901,7 @@ class TestProbeTempContainment:
         )
         with caplog.at_level(logging.WARNING):
             with patch(
-                "kiro_crew.mcp_discovery.create_subprocess_limited",
+                "efm_go.mcp_discovery.create_subprocess_limited",
                 new_callable=AsyncMock,
                 side_effect=OSError("stop after env capture"),
             ) as spawn_mock:
@@ -3937,21 +3937,21 @@ class TestProbeTempContainment:
         # looking in the wrong place.
         import sys
 
-        from kiro_crew import sandbox
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go import sandbox
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
         monkeypatch.setattr(bt, "config_dir", lambda: home)
         monkeypatch.setattr(sandbox, "config_dir", lambda: home)
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery.classify_declared_temp_path", MagicMock(return_value=cause)
+            "efm_go.mcp_discovery.classify_declared_temp_path", MagicMock(return_value=cause)
         )
 
         def _wrap(argv, *a, env=None, **k):
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
         server = McpServerInfo(
             name="refused-" + cause,
             command=sys.executable,
@@ -3960,7 +3960,7 @@ class TestProbeTempContainment:
         )
         with caplog.at_level(logging.WARNING):
             with patch(
-                "kiro_crew.mcp_discovery.create_subprocess_limited",
+                "efm_go.mcp_discovery.create_subprocess_limited",
                 new_callable=AsyncMock,
                 side_effect=OSError("stop after env capture"),
             ) as spawn_mock:
@@ -3981,22 +3981,22 @@ class TestProbeTempContainment:
     ) -> None:
         import sys
 
-        from kiro_crew import sandbox
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go import sandbox
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
         monkeypatch.setattr(bt, "config_dir", lambda: home)
         monkeypatch.setattr(sandbox, "config_dir", lambda: home)
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery.classify_declared_temp_path",
+            "efm_go.mcp_discovery.classify_declared_temp_path",
             MagicMock(return_value="sealed"),
         )
 
         def _wrap(argv, *a, env=None, **k):
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
         declared = "/declared/tmp\nFORGED"
         server = McpServerInfo(
             name="newline-refusal",
@@ -4006,7 +4006,7 @@ class TestProbeTempContainment:
         )
         with caplog.at_level(logging.WARNING):
             with patch(
-                "kiro_crew.mcp_discovery.create_subprocess_limited",
+                "efm_go.mcp_discovery.create_subprocess_limited",
                 new_callable=AsyncMock,
                 side_effect=OSError("stop after env capture"),
             ):
@@ -4031,7 +4031,7 @@ class TestProbeTempContainment:
         # (a side effect of patching IS_POSIX) leaks nothing.
         import sys
 
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -4088,7 +4088,7 @@ class TestProbeTempContainment:
         # on POSIX the finally would double-cover it and mask a regression.
         import sys
 
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -4109,7 +4109,7 @@ class TestProbeTempContainment:
 
         server = McpServerInfo(name="spawnfail", command=sys.executable, args=["-c", "pass"])
         with patch(
-            "kiro_crew.mcp_discovery.create_subprocess_limited",
+            "efm_go.mcp_discovery.create_subprocess_limited",
             new_callable=AsyncMock,
             side_effect=OSError("spawn failed"),
         ):
@@ -4128,7 +4128,7 @@ class TestProbeTempContainment:
         # allocated. Mirrors the backend chokepoint's pruning.
         import sys
 
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -4142,7 +4142,7 @@ class TestProbeTempContainment:
             env={"TMP": str(tmp_path / "chosen")},
         )
         with patch(
-            "kiro_crew.mcp_discovery.create_subprocess_limited",
+            "efm_go.mcp_discovery.create_subprocess_limited",
             new_callable=AsyncMock,
             side_effect=OSError("stop after env capture"),
         ) as spawn_mock:
@@ -4172,7 +4172,7 @@ class TestProbeTempContainment:
         import sys
         from pathlib import Path
 
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -4194,11 +4194,11 @@ class TestProbeTempContainment:
             captured_wrap.update(k)
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
 
         server = McpServerInfo(name="order-lock", command=sys.executable, args=["-c", "pass"])
         with patch(
-            "kiro_crew.mcp_discovery.create_subprocess_limited",
+            "efm_go.mcp_discovery.create_subprocess_limited",
             new_callable=AsyncMock,
             side_effect=OSError("stop after env capture"),
         ) as spawn_mock:
@@ -4228,7 +4228,7 @@ class TestProbeTempContainment:
         # must still run -- wrapped, with inherited temp and no carve-out.
         import sys
 
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -4245,7 +4245,7 @@ class TestProbeTempContainment:
             captured_wrap.update(k)
             return list(argv), dict(env if env is not None else os.environ), None
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap)
 
         server = McpServerInfo(name="alloc-fail", command=sys.executable, args=["-c", "pass"])
         result = await probe_server(server)
@@ -4287,7 +4287,7 @@ class TestProbeTempContainment:
             },
         )
         with patch(
-            "kiro_crew.mcp_discovery.create_subprocess_limited",
+            "efm_go.mcp_discovery.create_subprocess_limited",
             new_callable=AsyncMock,
             side_effect=OSError("stop after env capture"),
         ) as spawn_mock:
@@ -4311,7 +4311,7 @@ class TestProbeTempContainment:
         # tree-faithful, so the probe's finally DOES reclaim its private dir.
         import sys
 
-        from kiro_crew.mcp_gateway import backend_tmp as bt
+        from efm_go.mcp_gateway import backend_tmp as bt
 
         home = tmp_path / "home"
         home.mkdir()
@@ -4350,8 +4350,8 @@ class TestProbeServerProcessCleanup:
         server = McpServerInfo(name="test", command="echo")
 
         with (
-            patch("kiro_crew.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
         ):
             proc.stdout = AsyncMock()
             proc.stdout.readline = AsyncMock(return_value=b"")
@@ -4367,8 +4367,8 @@ class TestProbeServerProcessCleanup:
         server = McpServerInfo(name="test", command="echo")
 
         with (
-            patch("kiro_crew.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
         ):
             proc.stdout = AsyncMock()
             proc.stdout.readline = AsyncMock(return_value=b"")
@@ -4386,8 +4386,8 @@ class TestProbeServerProcessCleanup:
         server = McpServerInfo(name="test", command="echo")
 
         with (
-            patch("kiro_crew.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
         ):
             proc.stdout = AsyncMock()
             proc.stdout.readline = AsyncMock(return_value=b"")
@@ -4405,8 +4405,8 @@ class TestProbeServerProcessCleanup:
         server = McpServerInfo(name="test", command="echo")
 
         with (
-            patch("kiro_crew.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
         ):
             proc.stdout = AsyncMock()
             proc.stdout.readline = AsyncMock(return_value=b"")
@@ -4423,7 +4423,7 @@ class TestProbeServerProcessCleanup:
         ``install_agent`` agree — a divergence here is what let a server report
         healthy on the dashboard and fail in a session.
         """
-        from kiro_crew.env import spec_env_path
+        from efm_go.env import spec_env_path
 
         # Spelled for the host (conftest.host_abs): the declared entry passes
         # through the ``os.path.isabs`` filter in env._spec_path_entries, and from
@@ -4439,8 +4439,8 @@ class TestProbeServerProcessCleanup:
             return proc
 
         with (
-            patch("kiro_crew.mcp_discovery.asyncio.create_subprocess_exec", side_effect=_spawn),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.asyncio.create_subprocess_exec", side_effect=_spawn),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
         ):
             proc.stdout = AsyncMock()
             proc.stdout.readline = AsyncMock(return_value=b"")
@@ -4457,7 +4457,7 @@ class TestInstallAgentRemote:
     """Test that install_agent preserves remote url-based MCP servers."""
 
     def test_install_preserves_remote_server(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.agent import install_agent
+        from efm_go.agent import install_agent
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -4477,12 +4477,12 @@ class TestInstallAgentRemote:
         }
         (kiro_dir / "kirocrew.json").write_text(json.dumps(existing))
 
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir)
         monkeypatch.setattr(
-            "kiro_crew.agent._KIRO_MCP_JSON", tmp_path / "nonexistent_kiro_mcp.json"
+            "efm_go.agent._KIRO_MCP_JSON", tmp_path / "nonexistent_kiro_mcp.json"
         )
-        monkeypatch.setattr("kiro_crew.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
-        monkeypatch.setattr("kiro_crew.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
+        monkeypatch.setattr("efm_go.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
+        monkeypatch.setattr("efm_go.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: None)
 
         install_agent()
@@ -4494,7 +4494,7 @@ class TestInstallAgentRemote:
 
     def test_install_merges_kiro_mcp_json(self, tmp_path, monkeypatch) -> None:
         """install_agent picks up servers from ~/.kiro/settings/mcp.json."""
-        from kiro_crew.agent import install_agent
+        from efm_go.agent import install_agent
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -4511,10 +4511,10 @@ class TestInstallAgentRemote:
             json.dumps({"mcpServers": {"deepwiki": {"url": "https://mcp.deepwiki.com/mcp"}}})
         )
 
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir)
-        monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
-        monkeypatch.setattr("kiro_crew.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
-        monkeypatch.setattr("kiro_crew.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir)
+        monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
+        monkeypatch.setattr("efm_go.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
+        monkeypatch.setattr("efm_go.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: None)
 
         install_agent()
@@ -4529,25 +4529,25 @@ class TestGetProbeTimeout:
 
     def test_get_probe_timeout_reads_config(self) -> None:
         """_get_probe_timeout() returns the config value when available."""
-        from kiro_crew.mcp_discovery import _get_probe_timeout
+        from efm_go.mcp_discovery import _get_probe_timeout
 
         mock_cfg = MagicMock()
         mock_cfg.dashboard.mcp_probe_timeout_secs = 45
         mock_cls = MagicMock()
         mock_cls.load.return_value = mock_cfg
 
-        with patch("kiro_crew.config.loader.KiroCrewConfig", mock_cls):
+        with patch("efm_go.config.loader.KiroCrewConfig", mock_cls):
             result = _get_probe_timeout()
         assert result == 45
 
     def test_get_probe_timeout_fallback(self) -> None:
         """_get_probe_timeout() returns 15 when config is unavailable."""
-        from kiro_crew.mcp_discovery import _PROBE_TIMEOUT_SECS, _get_probe_timeout
+        from efm_go.mcp_discovery import _PROBE_TIMEOUT_SECS, _get_probe_timeout
 
         mock_cls = MagicMock()
         mock_cls.load.side_effect = RuntimeError("no config")
 
-        with patch("kiro_crew.config.loader.KiroCrewConfig", mock_cls):
+        with patch("efm_go.config.loader.KiroCrewConfig", mock_cls):
             result = _get_probe_timeout()
         assert result == _PROBE_TIMEOUT_SECS
         assert result == 15
@@ -4581,7 +4581,7 @@ class TestProbeServerTimeout:
 
         with (
             patch("asyncio.create_subprocess_exec", return_value=mock_proc),
-            patch("kiro_crew.config.loader.KiroCrewConfig") as mock_cls,
+            patch("efm_go.config.loader.KiroCrewConfig") as mock_cls,
         ):
             mock_cfg = MagicMock()
             mock_cfg.dashboard.mcp_probe_timeout_secs = 42
@@ -4614,7 +4614,7 @@ class TestProbeServerTimeout:
 
         with (
             patch("asyncio.create_subprocess_exec", return_value=mock_proc),
-            patch("kiro_crew.config.loader.KiroCrewConfig") as mock_cls,
+            patch("efm_go.config.loader.KiroCrewConfig") as mock_cls,
         ):
             mock_cls.load.side_effect = RuntimeError("corrupt config")
 
@@ -4633,7 +4633,7 @@ class TestProbeRemoteTimeout:
         server = McpServerInfo(name="remote", url="https://example.com/mcp")
 
         with (
-            patch("kiro_crew.config.loader.KiroCrewConfig") as mock_cls,
+            patch("efm_go.config.loader.KiroCrewConfig") as mock_cls,
             patch("aiohttp.ClientSession") as mock_session_cls,
         ):
             mock_cfg = MagicMock()
@@ -4662,7 +4662,7 @@ class TestFixStaleManagedCommand:
     The managed invocation is delegated to ``_kirocrew_mcp_invocation`` (the
     single source of truth), which returns a runnable ``(command, args)`` —
     either a standalone ``kirocrew`` binary (POSIX ``bin/kirocrew`` / Windows
-    ``Scripts\\kirocrew.exe``) or the ``<interpreter> -m kiro_crew <sub>``
+    ``Scripts\\kirocrew.exe``) or the ``<interpreter> -m efm_go <sub>``
     fallback. ``_fix_stale_managed_command`` must rewrite BOTH command and args
     onto the spec (rewriting only the command silently dropped the fallback's
     args and spawned a bare ``kirocrew`` that isn't on PATH — the Windows
@@ -4670,7 +4670,7 @@ class TestFixStaleManagedCommand:
 
     @pytest.fixture(autouse=True)
     def _reset_cache(self):
-        import kiro_crew.mcp_discovery as _d
+        import efm_go.mcp_discovery as _d
 
         _d._resolved_managed_invocation = {}
         yield
@@ -4678,11 +4678,11 @@ class TestFixStaleManagedCommand:
 
     def test_rewrites_command_and_args_from_invocation(self):
         """Both command and args come from _kirocrew_mcp_invocation."""
-        from kiro_crew.mcp_discovery import _fix_stale_managed_command
+        from efm_go.mcp_discovery import _fix_stale_managed_command
 
         spec = {"command": "/stale/bin/kirocrew", "args": ["mcp-core"]}
         with patch(
-            "kiro_crew.agent._kirocrew_mcp_invocation",
+            "efm_go.agent._kirocrew_mcp_invocation",
             return_value=("/usr/local/bin/kirocrew", ["mcp-core"]),
         ) as inv:
             _fix_stale_managed_command("kirocrew-core", spec)
@@ -4691,37 +4691,37 @@ class TestFixStaleManagedCommand:
         assert spec["args"] == ["mcp-core"]
 
     def test_applies_python_dash_m_fallback_with_args(self):
-        """When no standalone binary resolves, the python -s -m kiro_crew fallback
+        """When no standalone binary resolves, the python -s -m efm_go fallback
         (command + its args) is applied. On Windows, rewriting the command alone
         would leave a bare 'kirocrew' that isn't on PATH."""
-        from kiro_crew.mcp_discovery import _fix_stale_managed_command
+        from efm_go.mcp_discovery import _fix_stale_managed_command
 
         spec = {"command": "kirocrew", "args": []}
         with patch(
-            "kiro_crew.agent._kirocrew_mcp_invocation",
-            return_value=("/venv/Scripts/python.exe", ["-s", "-m", "kiro_crew", "mcp-cron"]),
+            "efm_go.agent._kirocrew_mcp_invocation",
+            return_value=("/venv/Scripts/python.exe", ["-s", "-m", "efm_go", "mcp-cron"]),
         ):
             _fix_stale_managed_command("kirocrew-cron", spec)
         assert spec["command"] == "/venv/Scripts/python.exe"
-        assert spec["args"] == ["-s", "-m", "kiro_crew", "mcp-cron"]
+        assert spec["args"] == ["-s", "-m", "efm_go", "mcp-cron"]
 
     def test_maps_each_managed_server_to_its_subcommand(self):
-        from kiro_crew.mcp_discovery import _fix_stale_managed_command
+        from efm_go.mcp_discovery import _fix_stale_managed_command
 
         for name, sub in (("kirocrew-core", "mcp-core"), ("kirocrew-cron", "mcp-cron")):
             spec = {"command": "x", "args": []}
             with patch(
-                "kiro_crew.agent._kirocrew_mcp_invocation", return_value=("/bin/kirocrew", [sub])
+                "efm_go.agent._kirocrew_mcp_invocation", return_value=("/bin/kirocrew", [sub])
             ) as inv:
                 _fix_stale_managed_command(name, spec)
             inv.assert_called_once_with(sub)
             assert spec["args"] == [sub]
 
     def test_skips_non_managed_server(self):
-        from kiro_crew.mcp_discovery import _fix_stale_managed_command
+        from efm_go.mcp_discovery import _fix_stale_managed_command
 
         spec = {"command": "/nonexistent/path/other", "args": []}
-        with patch("kiro_crew.agent._kirocrew_mcp_invocation") as inv:
+        with patch("efm_go.agent._kirocrew_mcp_invocation") as inv:
             _fix_stale_managed_command("other-server", spec)
         inv.assert_not_called()
         assert spec["command"] == "/nonexistent/path/other"
@@ -4729,10 +4729,10 @@ class TestFixStaleManagedCommand:
     def test_caches_resolution_across_calls(self):
         """The invocation is resolved once and reused (no repeated subprocess
         work on every list_servers() call)."""
-        from kiro_crew.mcp_discovery import _fix_stale_managed_command
+        from efm_go.mcp_discovery import _fix_stale_managed_command
 
         with patch(
-            "kiro_crew.agent._kirocrew_mcp_invocation", return_value=(sys.executable, ["mcp-core"])
+            "efm_go.agent._kirocrew_mcp_invocation", return_value=(sys.executable, ["mcp-core"])
         ) as inv:
             _fix_stale_managed_command("kirocrew-core", {"command": "x", "args": []})
             _fix_stale_managed_command("kirocrew-core", {"command": "y", "args": []})
@@ -4743,7 +4743,7 @@ class TestFixStaleManagedCommand:
         again: it is evicted and the spec is re-resolved to the current one."""
         import shutil as _shutil
 
-        from kiro_crew.mcp_discovery import _fix_stale_managed_command
+        from efm_go.mcp_discovery import _fix_stale_managed_command
 
         old_install = tmp_path / "0.8.0.4"
         old_bin = old_install / "bin" / "kirocrew"
@@ -4751,7 +4751,7 @@ class TestFixStaleManagedCommand:
         old_bin.write_text("#!/bin/sh\n")
         new_bin = tmp_path / "0.8.0.6" / "bin" / "kirocrew"
         with patch(
-            "kiro_crew.agent._kirocrew_mcp_invocation",
+            "efm_go.agent._kirocrew_mcp_invocation",
             side_effect=[(str(old_bin), ["mcp-core"]), (str(new_bin), ["mcp-core"])],
         ) as inv:
             first = {"command": "x", "args": []}
@@ -4765,10 +4765,10 @@ class TestFixStaleManagedCommand:
 
     def test_resolution_failure_leaves_spec_untouched(self):
         """If invocation resolution raises, the spec is left as-is (no crash)."""
-        from kiro_crew.mcp_discovery import _fix_stale_managed_command
+        from efm_go.mcp_discovery import _fix_stale_managed_command
 
         spec = {"command": "/old/kirocrew", "args": ["mcp-core"]}
-        with patch("kiro_crew.agent._kirocrew_mcp_invocation", side_effect=RuntimeError("boom")):
+        with patch("efm_go.agent._kirocrew_mcp_invocation", side_effect=RuntimeError("boom")):
             _fix_stale_managed_command("kirocrew-core", spec)
         assert spec["command"] == "/old/kirocrew"
 
@@ -4778,7 +4778,7 @@ class TestSharedServerToolsRegistration:
 
     def test_shared_servers_added_to_tools_and_allowedtools(self, tmp_path, monkeypatch) -> None:
         """Enabled shared servers appear in both tools and allowedTools."""
-        from kiro_crew.agent import rebuild_agent_config
+        from efm_go.agent import rebuild_agent_config
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -4801,10 +4801,10 @@ class TestSharedServerToolsRegistration:
             )
         )
 
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir)
-        monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
-        monkeypatch.setattr("kiro_crew.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
-        monkeypatch.setattr("kiro_crew.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir)
+        monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
+        monkeypatch.setattr("efm_go.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
+        monkeypatch.setattr("efm_go.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: "/usr/bin/srv")
 
         rebuild_agent_config()
@@ -4816,7 +4816,7 @@ class TestSharedServerToolsRegistration:
 
     def test_disabled_shared_server_removed_from_tools(self, tmp_path, monkeypatch) -> None:
         """Disabled shared server is removed from tools/allowedTools."""
-        from kiro_crew.agent import rebuild_agent_config
+        from efm_go.agent import rebuild_agent_config
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -4848,10 +4848,10 @@ class TestSharedServerToolsRegistration:
             )
         )
 
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir)
-        monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
-        monkeypatch.setattr("kiro_crew.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
-        monkeypatch.setattr("kiro_crew.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir)
+        monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
+        monkeypatch.setattr("efm_go.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
+        monkeypatch.setattr("efm_go.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: "/usr/bin/srv")
 
         rebuild_agent_config()
@@ -4875,7 +4875,7 @@ class TestSharedServerToolsRegistration:
         listing uses: a headless install rebuilds without a dashboard read, and
         would otherwise strip the mount silently. One line per (server, value
         shape) whichever path reports first, so a second rebuild is quiet."""
-        from kiro_crew.agent import rebuild_agent_config
+        from efm_go.agent import rebuild_agent_config
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -4901,13 +4901,13 @@ class TestSharedServerToolsRegistration:
             json.dumps({"mcpServers": {"my-srv": {"command": "srv", "disabled": value}}})
         )
 
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir)
-        monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
-        monkeypatch.setattr("kiro_crew.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
-        monkeypatch.setattr("kiro_crew.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir)
+        monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
+        monkeypatch.setattr("efm_go.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
+        monkeypatch.setattr("efm_go.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: "/usr/bin/srv")
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_reported", set())
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_cap_reached", False)
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_reported", set())
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_cap_reached", False)
 
         with caplog.at_level(logging.WARNING):
             rebuild_agent_config()
@@ -4942,7 +4942,7 @@ class TestSharedServerToolsRegistration:
         server every surface calls muted. Red under the non-boolean-only
         coercion: the merged ``false`` passed the ``isinstance(..., bool)`` check
         and was emitted as ``disabled: false``."""
-        from kiro_crew.agent import rebuild_agent_config
+        from efm_go.agent import rebuild_agent_config
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -4972,14 +4972,14 @@ class TestSharedServerToolsRegistration:
             json.dumps({"mcpServers": {"my-srv": {"command": "srv", "disabled": False}}})
         )
 
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir)
-        monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
-        monkeypatch.setattr("kiro_crew.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
-        monkeypatch.setattr("kiro_crew.agent._user_dir", lambda: store_dir)
-        monkeypatch.setattr("kiro_crew.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir)
+        monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
+        monkeypatch.setattr("efm_go.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
+        monkeypatch.setattr("efm_go.agent._user_dir", lambda: store_dir)
+        monkeypatch.setattr("efm_go.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: "/usr/bin/srv")
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_reported", set())
-        monkeypatch.setattr("kiro_crew.mcp_cleanup._invalid_disabled_cap_reached", False)
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_reported", set())
+        monkeypatch.setattr("efm_go.mcp_cleanup._invalid_disabled_cap_reached", False)
 
         rebuild_agent_config()
 
@@ -4988,7 +4988,7 @@ class TestSharedServerToolsRegistration:
         assert rendered.get("disabled") is True, rendered
         assert "@my-srv" not in data.get("allowedTools", [])
         # The predicate itself, in isolation: any mute wins over any ``false``.
-        from kiro_crew.mcp_cleanup import mcp_entries_muted
+        from efm_go.mcp_cleanup import mcp_entries_muted
 
         assert mcp_entries_muted([{"disabled": False}, {"disabled": None}]) is True
         assert mcp_entries_muted([{"disabled": False}, {"command": "x"}]) is False
@@ -4996,7 +4996,7 @@ class TestSharedServerToolsRegistration:
 
     def test_reenabled_server_added_back(self, tmp_path, monkeypatch) -> None:
         """Server re-enabled in mcp.json gets added back to tools/allowedTools."""
-        from kiro_crew.agent import rebuild_agent_config
+        from efm_go.agent import rebuild_agent_config
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -5028,10 +5028,10 @@ class TestSharedServerToolsRegistration:
             )
         )
 
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir)
-        monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
-        monkeypatch.setattr("kiro_crew.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
-        monkeypatch.setattr("kiro_crew.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir)
+        monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
+        monkeypatch.setattr("efm_go.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
+        monkeypatch.setattr("efm_go.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: "/usr/bin/srv")
 
         rebuild_agent_config()
@@ -5043,7 +5043,7 @@ class TestSharedServerToolsRegistration:
 
     def test_disabled_removal_no_tools_key(self, tmp_path, monkeypatch) -> None:
         """Disabled removal doesn't crash when config has no tools key."""
-        from kiro_crew.agent import rebuild_agent_config
+        from efm_go.agent import rebuild_agent_config
 
         agent_dir = tmp_path / "agents"
         agent_dir.mkdir()
@@ -5066,10 +5066,10 @@ class TestSharedServerToolsRegistration:
             )
         )
 
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir)
-        monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
-        monkeypatch.setattr("kiro_crew.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
-        monkeypatch.setattr("kiro_crew.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir)
+        monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", settings_dir / "mcp.json")
+        monkeypatch.setattr("efm_go.agent._CC_MCP_JSON", tmp_path / "nonexistent_cc.json")
+        monkeypatch.setattr("efm_go.agent._KIROCREW_BIN", "/usr/bin/kirocrew")
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: None)
 
         rebuild_agent_config()
@@ -5089,7 +5089,7 @@ class TestProbeServerStderrCapture:
     async def test_stderr_captured_when_child_exits_before_response(self, tmp_path) -> None:
         """Child writes to stderr and exits without speaking MCP → stderr
         tail is appended to `server.error`."""
-        from kiro_crew.mcp_discovery import probe_server
+        from efm_go.mcp_discovery import probe_server
 
         stub = tmp_path / "broken-server.sh"
         stub.write_text(
@@ -5098,7 +5098,7 @@ class TestProbeServerStderrCapture:
         stub.chmod(0o755)
 
         server = McpServerInfo(name="broken", command=str(stub))
-        with patch("kiro_crew.config.loader.KiroCrewConfig") as mock_cls:
+        with patch("efm_go.config.loader.KiroCrewConfig") as mock_cls:
             mock_cfg = MagicMock()
             mock_cfg.dashboard.mcp_probe_timeout_secs = 2
             mock_cls.load.return_value = mock_cfg
@@ -5113,7 +5113,7 @@ class TestProbeServerStderrCapture:
     async def test_successful_probe_does_not_mention_stderr(self, tmp_path) -> None:
         """Healthy server's benign stderr warnings must not bleed into
         `server.error`."""
-        from kiro_crew.mcp_discovery import probe_server
+        from efm_go.mcp_discovery import probe_server
 
         stub = tmp_path / "noisy-ok-server.sh"
         stub.write_text(
@@ -5131,7 +5131,7 @@ class TestProbeServerStderrCapture:
         stub.chmod(0o755)
 
         server = McpServerInfo(name="noisy-ok", command=str(stub))
-        with patch("kiro_crew.config.loader.KiroCrewConfig") as mock_cls:
+        with patch("efm_go.config.loader.KiroCrewConfig") as mock_cls:
             mock_cfg = MagicMock()
             mock_cfg.dashboard.mcp_probe_timeout_secs = 3
             mock_cls.load.return_value = mock_cfg
@@ -5146,7 +5146,7 @@ class TestProbeServerStderrCapture:
     async def test_stderr_tail_is_bounded(self, tmp_path) -> None:
         """Very large stderr is truncated so it cannot explode logs or
         dashboard responses."""
-        from kiro_crew.mcp_discovery import probe_server
+        from efm_go.mcp_discovery import probe_server
 
         stub = tmp_path / "verbose-broken.sh"
         stub.write_text(
@@ -5159,7 +5159,7 @@ class TestProbeServerStderrCapture:
         stub.chmod(0o755)
 
         server = McpServerInfo(name="verbose", command=str(stub))
-        with patch("kiro_crew.config.loader.KiroCrewConfig") as mock_cls:
+        with patch("efm_go.config.loader.KiroCrewConfig") as mock_cls:
             mock_cfg = MagicMock()
             mock_cfg.dashboard.mcp_probe_timeout_secs = 2
             mock_cls.load.return_value = mock_cfg
@@ -5174,7 +5174,7 @@ class TestProbeServerStderrCapture:
     async def test_credential_in_stderr_is_redacted(self, tmp_path) -> None:
         """stderr is untrusted output — credentials and exfiltration URLs
         must be scrubbed before they land in `server.error`."""
-        from kiro_crew.mcp_discovery import probe_server
+        from efm_go.mcp_discovery import probe_server
 
         stub = tmp_path / "leaky-server.sh"
         stub.write_text(
@@ -5185,7 +5185,7 @@ class TestProbeServerStderrCapture:
         stub.chmod(0o755)
 
         server = McpServerInfo(name="leaky", command=str(stub))
-        with patch("kiro_crew.config.loader.KiroCrewConfig") as mock_cls:
+        with patch("efm_go.config.loader.KiroCrewConfig") as mock_cls:
             mock_cfg = MagicMock()
             mock_cfg.dashboard.mcp_probe_timeout_secs = 2
             mock_cls.load.return_value = mock_cfg
@@ -5204,7 +5204,7 @@ class TestProbeServerStderrCapture:
         agent.sandbox_allow_unsandboxed_exec; the old 200-char cap discarded
         it, so a Windows user saw '...Probe detail: not Linux. I' and no fix.
         """
-        from kiro_crew.mcp_discovery import _PROBE_ERROR_MAX_CHARS, probe_server
+        from efm_go.mcp_discovery import _PROBE_ERROR_MAX_CHARS, probe_server
 
         # A credential early in the message must be REDACTED (not merely
         # truncated away): raising the cap must not widen a disclosure hole.
@@ -5220,12 +5220,12 @@ class TestProbeServerStderrCapture:
 
         # Resolve the command, then fail at the sandbox chokepoint with the long
         # message — the real path a Windows host takes with no sandbox backend.
-        monkeypatch.setattr("kiro_crew.mcp_discovery.shutil.which", lambda *a, **k: "/usr/bin/srv")
+        monkeypatch.setattr("efm_go.mcp_discovery.shutil.which", lambda *a, **k: "/usr/bin/srv")
 
         def boom(*_a: object, **_k: object) -> object:
             raise RuntimeError(long_msg)
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.sandboxed_spawn_argv", boom)
+        monkeypatch.setattr("efm_go.mcp_discovery.sandboxed_spawn_argv", boom)
         result = await probe_server(server)
 
         assert result.status == "error"
@@ -5272,7 +5272,7 @@ class TestProbeStdioMalformedResponse:
 
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: "/usr/bin/srv")
         with patch(
-            "kiro_crew.mcp_discovery.asyncio.create_subprocess_exec",
+            "efm_go.mcp_discovery.asyncio.create_subprocess_exec",
             AsyncMock(return_value=proc),
         ):
             result = asyncio.run(probe_server(server))
@@ -5294,7 +5294,7 @@ class TestProbeStdioMalformedResponse:
 
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: "/usr/bin/srv")
         with patch(
-            "kiro_crew.mcp_discovery.asyncio.create_subprocess_exec",
+            "efm_go.mcp_discovery.asyncio.create_subprocess_exec",
             AsyncMock(return_value=proc),
         ):
             result = asyncio.run(probe_server(server))
@@ -5314,7 +5314,7 @@ class TestProbeStdioMalformedResponse:
 
         monkeypatch.setattr("shutil.which", lambda cmd, path=None: "/usr/bin/srv")
         with patch(
-            "kiro_crew.mcp_discovery.asyncio.create_subprocess_exec",
+            "efm_go.mcp_discovery.asyncio.create_subprocess_exec",
             AsyncMock(return_value=proc),
         ):
             result = asyncio.run(probe_server(server))
@@ -5388,7 +5388,7 @@ class TestReadStdioJsonrpcResponse:
     @pytest.mark.asyncio
     async def test_banner_flood_capped(self) -> None:
         """More than _MAX_BANNER_LINES junk lines → give up (None), don't hang."""
-        from kiro_crew.mcp_discovery import _MAX_BANNER_LINES
+        from efm_go.mcp_discovery import _MAX_BANNER_LINES
 
         lines = [b"noise\n"] * (_MAX_BANNER_LINES + 5)
         lines.append(b'{"jsonrpc":"2.0","id":1,"result":{}}\n')
@@ -5427,7 +5427,7 @@ class TestReadStdioJsonrpcResponse:
     async def test_non_object_json_lines_do_not_count_toward_cap(self) -> None:
         """A server printing a JSON progress counter before it answers is not a
         flood: valid JSON is bounded by the timeout, like a notification."""
-        from kiro_crew.mcp_discovery import _MAX_BANNER_LINES
+        from efm_go.mcp_discovery import _MAX_BANNER_LINES
 
         progress = [f"{n}\n".encode() for n in range(1, 2 * _MAX_BANNER_LINES + 1)]
         stream = _make_stream([*progress, b'{"jsonrpc":"2.0","id":1,"result":{}}\n'])
@@ -5438,7 +5438,7 @@ class TestReadStdioJsonrpcResponse:
     @pytest.mark.asyncio
     async def test_notifications_do_not_count_toward_cap(self) -> None:
         """>_MAX_BANNER_LINES JSON-RPC notifications must NOT trip the banner cap."""
-        from kiro_crew.mcp_discovery import _MAX_BANNER_LINES
+        from efm_go.mcp_discovery import _MAX_BANNER_LINES
 
         notif = b'{"jsonrpc":"2.0","method":"notifications/progress","params":{}}\n'
         lines = [notif] * (_MAX_BANNER_LINES + 10)
@@ -5451,7 +5451,7 @@ class TestReadStdioJsonrpcResponse:
     @pytest.mark.asyncio
     async def test_blank_lines_do_not_count_toward_cap(self) -> None:
         """>_MAX_BANNER_LINES blank lines must NOT trip the banner cap."""
-        from kiro_crew.mcp_discovery import _MAX_BANNER_LINES
+        from efm_go.mcp_discovery import _MAX_BANNER_LINES
 
         lines = [b"\n"] * (_MAX_BANNER_LINES + 10)
         lines.append(b'{"jsonrpc":"2.0","id":3,"result":{}}\n')
@@ -5463,7 +5463,7 @@ class TestReadStdioJsonrpcResponse:
     @pytest.mark.asyncio
     async def test_cap_boundary_exact(self) -> None:
         """Exactly _MAX_BANNER_LINES junk lines still lets the response through."""
-        from kiro_crew.mcp_discovery import _MAX_BANNER_LINES
+        from efm_go.mcp_discovery import _MAX_BANNER_LINES
 
         lines = [b"noise\n"] * _MAX_BANNER_LINES
         lines.append(b'{"jsonrpc":"2.0","id":7,"result":{}}\n')
@@ -5475,7 +5475,7 @@ class TestReadStdioJsonrpcResponse:
     @pytest.mark.asyncio
     async def test_cap_boundary_one_over(self) -> None:
         """One junk line past the cap drops the response (returns None)."""
-        from kiro_crew.mcp_discovery import _MAX_BANNER_LINES
+        from efm_go.mcp_discovery import _MAX_BANNER_LINES
 
         lines = [b"noise\n"] * (_MAX_BANNER_LINES + 1)
         lines.append(b'{"jsonrpc":"2.0","id":7,"result":{}}\n')
@@ -5516,8 +5516,8 @@ class TestProbeServerBannerTolerance:
         server = McpServerInfo(name="local-chorus-mcp", command="local-chorus-mcp")
 
         with (
-            patch("kiro_crew.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/local-chorus-mcp"),
+            patch("efm_go.mcp_discovery.asyncio.create_subprocess_exec", return_value=proc),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/local-chorus-mcp"),
         ):
             result = await probe_server(server)
 
@@ -5548,7 +5548,7 @@ class TestProbeGroupReap:
     @pytest.mark.asyncio
     async def test_spawn_uses_start_new_session_on_posix(self) -> None:
         """The probe child must be its own session/process-group leader."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         if not platform_compat.IS_POSIX:
             pytest.skip("POSIX-only spawn flag")
@@ -5557,11 +5557,11 @@ class TestProbeGroupReap:
 
         with (
             patch(
-                "kiro_crew.mcp_discovery.asyncio.create_subprocess_exec",
+                "efm_go.mcp_discovery.asyncio.create_subprocess_exec",
                 return_value=proc,
             ) as mock_exec,
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
-            patch("kiro_crew.mcp_discovery.os.killpg"),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.os.killpg"),
         ):
             await probe_server(server)
 
@@ -5574,7 +5574,7 @@ class TestProbeGroupReap:
         MCP-tree accumulation)."""
         import signal as _signal
 
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         if not platform_compat.IS_POSIX:
             pytest.skip("killpg is POSIX-only")
@@ -5583,11 +5583,11 @@ class TestProbeGroupReap:
 
         with (
             patch(
-                "kiro_crew.mcp_discovery.asyncio.create_subprocess_exec",
+                "efm_go.mcp_discovery.asyncio.create_subprocess_exec",
                 return_value=proc,
             ),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
-            patch("kiro_crew.mcp_discovery.os.killpg") as mock_killpg,
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.os.killpg") as mock_killpg,
         ):
             await probe_server(server)
 
@@ -5596,7 +5596,7 @@ class TestProbeGroupReap:
     @pytest.mark.asyncio
     async def test_teardown_tolerates_empty_group(self) -> None:
         """ESRCH (group already empty) must not surface as a probe error."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         if not platform_compat.IS_POSIX:
             pytest.skip("killpg is POSIX-only")
@@ -5605,11 +5605,11 @@ class TestProbeGroupReap:
 
         with (
             patch(
-                "kiro_crew.mcp_discovery.asyncio.create_subprocess_exec",
+                "efm_go.mcp_discovery.asyncio.create_subprocess_exec",
                 return_value=proc,
             ),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
-            patch("kiro_crew.mcp_discovery.os.killpg", side_effect=ProcessLookupError),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.os.killpg", side_effect=ProcessLookupError),
         ):
             result = await probe_server(server)
 
@@ -5619,7 +5619,7 @@ class TestProbeGroupReap:
     @pytest.mark.asyncio
     async def test_teardown_refuses_non_int_pid(self) -> None:
         """Mock/sentinel pids must never coerce into killpg(1) == init."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         if not platform_compat.IS_POSIX:
             pytest.skip("killpg is POSIX-only")
@@ -5629,11 +5629,11 @@ class TestProbeGroupReap:
 
         with (
             patch(
-                "kiro_crew.mcp_discovery.asyncio.create_subprocess_exec",
+                "efm_go.mcp_discovery.asyncio.create_subprocess_exec",
                 return_value=proc,
             ),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
-            patch("kiro_crew.mcp_discovery.os.killpg") as mock_killpg,
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/echo"),
+            patch("efm_go.mcp_discovery.os.killpg") as mock_killpg,
         ):
             await probe_server(server)
 
@@ -5645,7 +5645,7 @@ class TestProbeGroupReap:
         answers must leave NO survivors after the probe returns."""
         import time as _time
 
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         if not platform_compat.IS_POSIX:
             pytest.skip("process groups are POSIX-only")
@@ -5660,13 +5660,13 @@ class TestProbeGroupReap:
         )
         script.chmod(0o755)
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery._get_probe_timeout", lambda: 1)
+        monkeypatch.setattr("efm_go.mcp_discovery._get_probe_timeout", lambda: 1)
         # The child deliberately never exits, so `probe_server`'s teardown pays its
         # graceful-exit budget AND its post-SIGKILL budget in full (2 x 5s) before
         # reaching the process-group reap this test is about. Shrink both: the reap
         # is what is asserted, and waiting out the real budget made this the single
         # slowest test in the suite at 12s.
-        monkeypatch.setattr("kiro_crew.mcp_discovery._PROBE_TEARDOWN_WAIT_SECS", 0.5)
+        monkeypatch.setattr("efm_go.mcp_discovery._PROBE_TEARDOWN_WAIT_SECS", 0.5)
         server = McpServerInfo(name="fake", command=str(script))
         result = await probe_server(server)
         assert result.status == "error"  # timed out, as designed
@@ -5710,10 +5710,10 @@ class TestDisabledIsCrossScope:
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         kiro_mcp = tmp_path / "kiro-mcp.json"
         kiro_mcp.write_text(json.dumps({"mcpServers": {"srv": global_spec}}), encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (kiro_mcp,))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (kiro_mcp,))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES", ((kiro_mcp, SCOPE_KIRO_GLOBAL),)
+            "efm_go.mcp_discovery._MCP_SOURCES", ((kiro_mcp, SCOPE_KIRO_GLOBAL),)
         )
 
     def test_kiro_global_disable_marks_an_agent_introduced_row(self, tmp_path, monkeypatch) -> None:
@@ -5760,7 +5760,7 @@ class TestDisabledIsCrossScope:
         # Patch the actual spawn primitive (the stdio path is inline in
         # probe_server, not a helper), so this asserts on the real side effect
         # consent gates rather than on a stand-in.
-        monkeypatch.setattr("kiro_crew.mcp_discovery.create_subprocess_limited", _no_spawn)
+        monkeypatch.setattr("efm_go.mcp_discovery.create_subprocess_limited", _no_spawn)
         row = next(s for s in list_servers() if s.name == "srv")
         out = await probe_server(row)
         assert out.status == "disabled"
@@ -5786,10 +5786,10 @@ class TestDisabledIsCrossScope:
             ),
             encoding="utf-8",
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (kiro_mcp,))
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (kiro_mcp,))
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_SOURCES", ((kiro_mcp, SCOPE_KIRO_GLOBAL),)
+            "efm_go.mcp_discovery._MCP_SOURCES", ((kiro_mcp, SCOPE_KIRO_GLOBAL),)
         )
         rows = {s.name: s for s in list_servers()}
         assert "playwright-mcp" in rows
@@ -5813,7 +5813,7 @@ class TestWindowsTeardownOffLoop:
     def test_kill_process_tree_is_offloaded(self) -> None:
         import inspect
 
-        from kiro_crew import mcp_discovery
+        from efm_go import mcp_discovery
 
         src = inspect.getsource(mcp_discovery.probe_server)
         assert "kill_process_tree" in src, "teardown moved -- retarget this guard"
@@ -5838,8 +5838,8 @@ class TestProbeSandboxUnavailable:
 
     @pytest.mark.asyncio
     async def test_sandbox_refusal_is_reported_as_a_probe_limitation(self, monkeypatch) -> None:
-        import kiro_crew.mcp_discovery as md
-        from kiro_crew.sandbox import SandboxUnavailableError
+        import efm_go.mcp_discovery as md
+        from efm_go.sandbox import SandboxUnavailableError
 
         monkeypatch.setattr(md, "_probe_sandbox_warned", set())
 
@@ -5854,8 +5854,8 @@ class TestProbeSandboxUnavailable:
         # (their tools are read in-process), so they cannot exercise this branch.
         server = McpServerInfo(name="playwright-mcp", command="node")
         with (
-            patch("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _refuse),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/node"),
+            patch("efm_go.mcp_discovery.sandboxed_spawn_argv", _refuse),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/node"),
         ):
             result = await probe_server(server)
 
@@ -5883,8 +5883,8 @@ class TestProbeSandboxUnavailable:
 
         server = McpServerInfo(name="kirocrew-core", command="kirocrew", args=["mcp-core"])
         with (
-            patch("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _wrap),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/kirocrew"),
+            patch("efm_go.mcp_discovery.sandboxed_spawn_argv", _wrap),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/kirocrew"),
         ):
             await probe_server(server)
 
@@ -5901,8 +5901,8 @@ class TestProbeSandboxUnavailable:
         sandbox could not confine anything on this host anyway — hence fallback,
         never primary.
         """
-        import kiro_crew.mcp_discovery as md
-        from kiro_crew.sandbox import SandboxUnavailableError
+        import efm_go.mcp_discovery as md
+        from efm_go.sandbox import SandboxUnavailableError
 
         monkeypatch.setattr(md, "_managed_in_process_warned", set())
 
@@ -5912,8 +5912,8 @@ class TestProbeSandboxUnavailable:
         for name, expect_tools in (("kirocrew-core", True), ("kirocrew-cron", True)):
             server = McpServerInfo(name=name, command="kirocrew", args=["mcp-x"])
             with (
-                patch("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _refuse),
-                patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/kirocrew"),
+                patch("efm_go.mcp_discovery.sandboxed_spawn_argv", _refuse),
+                patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/kirocrew"),
             ):
                 result = await probe_server(server)
 
@@ -5924,15 +5924,15 @@ class TestProbeSandboxUnavailable:
     async def test_a_third_party_server_gets_no_declaration_fallback(self) -> None:
         """Only OUR OWN servers have a declaration to read; a third-party one keeps
         the honest probe-limitation error."""
-        from kiro_crew.sandbox import SandboxUnavailableError
+        from efm_go.sandbox import SandboxUnavailableError
 
         def _refuse(*args, **kwargs):
             raise SandboxUnavailableError("no backend", kind="no_backend", detail="not Linux")
 
         server = McpServerInfo(name="playwright-mcp", command="node")
         with (
-            patch("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _refuse),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/node"),
+            patch("efm_go.mcp_discovery.sandboxed_spawn_argv", _refuse),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/node"),
         ):
             result = await probe_server(server)
 
@@ -5950,7 +5950,7 @@ class TestProbeSandboxUnavailable:
         """
         import logging
 
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
         monkeypatch.setattr(md, "_probe_sandbox_warned", set())
         with caplog.at_level(logging.WARNING, logger=md.logger.name):
@@ -5976,14 +5976,14 @@ class TestFirstPartyManagedArgv:
     _INVOCATION = (sys.executable, ["mcp-core"])
 
     def _patch_invocation(self, monkeypatch) -> None:
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
         monkeypatch.setattr(md, "_resolved_managed_invocation", {"kirocrew-core": self._INVOCATION})
         # Default install: the package-derived managed env is empty.
-        monkeypatch.setattr("kiro_crew.agent._managed_mcp_env", lambda: {})
+        monkeypatch.setattr("efm_go.agent._managed_mcp_env", lambda: {})
 
     def test_self_derived_managed_argv_is_first_party(self, monkeypatch) -> None:
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
         self._patch_invocation(monkeypatch)
         assert md._is_first_party_managed_argv(
@@ -5994,7 +5994,7 @@ class TestFirstPartyManagedArgv:
         """A managed NAME with user-config command text (the mcp.json-sourced
         case, which ``_fix_stale_managed_command`` never re-resolves) must keep
         the full fail-close + opt-in behavior."""
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
         self._patch_invocation(monkeypatch)
         assert not md._is_first_party_managed_argv(
@@ -6009,7 +6009,7 @@ class TestFirstPartyManagedArgv:
         what code runs), and ``probe_server`` merges the spec's env into the
         child environment — so any key this package did not derive disqualifies
         the spec from the unconfined carve-out."""
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
         self._patch_invocation(monkeypatch)
         assert not md._is_first_party_managed_argv(
@@ -6023,11 +6023,11 @@ class TestFirstPartyManagedArgv:
         """Under an override home the managed spec legitimately carries exactly
         the ``KIROCREW_HOME`` pin this package derived — that must still count
         as first-party, and any EXTRA key alongside it must not."""
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
         self._patch_invocation(monkeypatch)
         pin = {"KIROCREW_HOME": "/data/override-home"}
-        monkeypatch.setattr("kiro_crew.agent._managed_mcp_env", lambda: dict(pin))
+        monkeypatch.setattr("efm_go.agent._managed_mcp_env", lambda: dict(pin))
         assert md._is_first_party_managed_argv(
             "kirocrew-core", self._INVOCATION[0], list(self._INVOCATION[1]), dict(pin)
         )
@@ -6043,36 +6043,36 @@ class TestFirstPartyManagedArgv:
         )
 
     def test_the_interpreter_fallback_is_never_first_party(self, monkeypatch) -> None:
-        """`python -s -m kiro_crew` still prepends the child's CWD to sys.path
-        (3.10 has no -P), so a planted `kiro_crew/` tree in an untrusted cwd
+        """`python -s -m efm_go` still prepends the child's CWD to sys.path
+        (3.10 has no -P), so a planted `efm_go/` tree in an untrusted cwd
         would shadow the install — only a resolved console-script binary
         qualifies."""
         import sys
 
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
-        fallback = (sys.executable, ["-s", "-m", "kiro_crew", "mcp-core"])
+        fallback = (sys.executable, ["-s", "-m", "efm_go", "mcp-core"])
         monkeypatch.setattr(md, "_resolved_managed_invocation", {"kirocrew-core": fallback})
-        monkeypatch.setattr("kiro_crew.agent._managed_mcp_env", lambda: {})
+        monkeypatch.setattr("efm_go.agent._managed_mcp_env", lambda: {})
         assert not md._is_first_party_managed_argv(
             "kirocrew-core", fallback[0], list(fallback[1]), {}
         )
 
     def test_third_party_server_is_never_first_party(self, monkeypatch) -> None:
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
         self._patch_invocation(monkeypatch)
         assert not md._is_first_party_managed_argv("playwright-mcp", "node", [], {})
 
     def test_resolution_failure_fails_toward_not_first_party(self, monkeypatch) -> None:
-        import kiro_crew.mcp_discovery as md
+        import efm_go.mcp_discovery as md
 
         monkeypatch.setattr(md, "_resolved_managed_invocation", {})
 
         def _boom(subcommand):
             raise RuntimeError("no install")
 
-        monkeypatch.setattr("kiro_crew.agent._kirocrew_mcp_invocation", _boom)
+        monkeypatch.setattr("efm_go.agent._kirocrew_mcp_invocation", _boom)
         assert not md._is_first_party_managed_argv(
             "kirocrew-core", self._INVOCATION[0], list(self._INVOCATION[1]), {}
         )
@@ -6092,8 +6092,8 @@ class TestFirstPartyManagedArgv:
             name="kirocrew-core", command=self._INVOCATION[0], args=list(self._INVOCATION[1])
         )
         with (
-            patch("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _capture),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value=self._INVOCATION[0]),
+            patch("efm_go.mcp_discovery.sandboxed_spawn_argv", _capture),
+            patch("efm_go.mcp_discovery.shutil.which", return_value=self._INVOCATION[0]),
         ):
             await probe_server(server)
 
@@ -6112,8 +6112,8 @@ class TestFirstPartyManagedArgv:
 
         server = McpServerInfo(name="playwright-mcp", command="node")
         with (
-            patch("kiro_crew.mcp_discovery.sandboxed_spawn_argv", _capture),
-            patch("kiro_crew.mcp_discovery.shutil.which", return_value="/usr/bin/node"),
+            patch("efm_go.mcp_discovery.sandboxed_spawn_argv", _capture),
+            patch("efm_go.mcp_discovery.shutil.which", return_value="/usr/bin/node"),
         ):
             await probe_server(server)
 
@@ -6209,7 +6209,7 @@ class TestProbeHeaderReferenceExpansion:
         )
 
         mock_session = self._session_returning(self._resp(401))
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         sent = mock_session.post.call_args_list[0].kwargs["headers"]
@@ -6235,7 +6235,7 @@ class TestProbeHeaderReferenceExpansion:
         )
 
         mock_session = self._session_returning(self._resp(401))
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         sent = mock_session.post.call_args_list[0].kwargs["headers"]
@@ -6256,7 +6256,7 @@ class TestProbeHeaderReferenceExpansion:
         )
 
         mock_session = self._session_returning(self._resp(401))
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         sent = mock_session.post.call_args_list[0].kwargs["headers"]
@@ -6292,7 +6292,7 @@ class TestProbeHeaderReferenceExpansion:
             },
         )
         mock_session = self._session_returning(init_resp)
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "error"
@@ -6331,7 +6331,7 @@ class TestProbeHeaderReferenceExpansion:
             },
         )
         mock_session = self._session_returning(init_resp)
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "error"
@@ -6369,7 +6369,7 @@ class TestProbeHeaderReferenceExpansion:
             },
         )
         mock_session = self._session_returning(init_resp)
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=mock_session):
             result = await _probe_remote(server)
 
         assert result.status == "error"
@@ -6381,7 +6381,7 @@ class TestProbeHeaderReferenceExpansion:
         """An Authorization value still carrying ``${VAR}`` is not a supplied
         credential: the premise behind "any auth key present means a credential
         was rejected" does not hold, so a 401 is an authenticate prompt."""
-        from kiro_crew.mcp_discovery import _needs_authorization
+        from efm_go.mcp_discovery import _needs_authorization
 
         assert _needs_authorization(401, {}, {"Authorization": "Bearer ${TOKEN}"}) is True
         assert (
@@ -6412,8 +6412,8 @@ class TestQuarantinedServersAreNotSpawned:
 
     @pytest.fixture(autouse=True)
     def _store(self, tmp_path, monkeypatch):
-        from kiro_crew import mcp_quarantine
-        from kiro_crew.mcp_discovery import _quarantine_warned
+        from efm_go import mcp_quarantine
+        from efm_go.mcp_discovery import _quarantine_warned
 
         monkeypatch.setattr(mcp_quarantine, "_STORE_PATH", tmp_path / "quarantine.json")
         monkeypatch.setattr(mcp_quarantine, "threshold", lambda: self.LIMIT)
@@ -6427,10 +6427,10 @@ class TestQuarantinedServersAreNotSpawned:
     def _wedged_config(tmp_path: Path, monkeypatch) -> None:
         """Point discovery at one enabled server and nothing else."""
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.mcp_discovery.Path.home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.mcp_discovery.Path.home", lambda: tmp_path)
         mcp_json = tmp_path / "mcp.json"
         mcp_json.write_text(json.dumps({"mcpServers": {"wedged": {"command": "hangs-forever"}}}))
-        monkeypatch.setattr("kiro_crew.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
+        monkeypatch.setattr("efm_go.mcp_discovery._MCP_JSON_PATHS", (mcp_json,))
 
     @staticmethod
     def _always_times_out(spawned: list[str]):
@@ -6453,8 +6453,8 @@ class TestQuarantinedServersAreNotSpawned:
         ones were spawned. This helper must do the same, or it tests a caller that
         does not exist and hides what the real one does with an unprobed row.
         """
-        from kiro_crew import mcp_quarantine
-        from kiro_crew.mcp_discovery import probe_all
+        from efm_go import mcp_quarantine
+        from efm_go.mcp_discovery import probe_all
 
         probed = await probe_all()
         mcp_quarantine.record_verdicts([(s.name, s.status, s.error) for s in probed])
@@ -6472,7 +6472,7 @@ class TestQuarantinedServersAreNotSpawned:
         """
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
 
         results = [await self._pass(monkeypatch, spawned) for _ in range(self.LIMIT + 2)]
 
@@ -6498,11 +6498,11 @@ class TestQuarantinedServersAreNotSpawned:
         count would climb with no handshake behind it, and raising the threshold
         afterwards could never release the server.
         """
-        from kiro_crew import mcp_quarantine
+        from efm_go import mcp_quarantine
 
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
 
         for _ in range(self.LIMIT + 3):
             probed = await self._pass(monkeypatch, spawned)
@@ -6526,12 +6526,12 @@ class TestQuarantinedServersAreNotSpawned:
         A ledger keyed by server name alone would stay silent here for the life of
         the process, which is the failure mode warn-once must not become.
         """
-        from kiro_crew import mcp_quarantine
-        from kiro_crew.mcp_discovery import _quarantine_warned
+        from efm_go import mcp_quarantine
+        from efm_go.mcp_discovery import _quarantine_warned
 
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
 
         with caplog.at_level(logging.WARNING):
             for _ in range(self.LIMIT + 1):
@@ -6556,7 +6556,7 @@ class TestQuarantinedServersAreNotSpawned:
         """One warning for the whole wedge, naming both ways back out."""
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
 
         with caplog.at_level(logging.WARNING):
             for _ in range(self.LIMIT + 3):
@@ -6575,11 +6575,11 @@ class TestQuarantinedServersAreNotSpawned:
     @pytest.mark.asyncio
     async def test_clearing_the_quarantine_restores_spawning(self, tmp_path, monkeypatch) -> None:
         """The operator reset that already ships is the reopen path."""
-        from kiro_crew import mcp_quarantine
+        from efm_go import mcp_quarantine
 
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
         for _ in range(self.LIMIT + 1):
             await self._pass(monkeypatch, spawned)
         assert spawned == ["wedged"] * self.LIMIT
@@ -6599,7 +6599,7 @@ class TestQuarantinedServersAreNotSpawned:
         """
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
         for _ in range(self.LIMIT - 1):
             await self._pass(monkeypatch, spawned)
 
@@ -6610,10 +6610,10 @@ class TestQuarantinedServersAreNotSpawned:
             _cache_probe(server)
             return server
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", healthy)
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", healthy)
         await self._pass(monkeypatch, spawned)
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
         spawned.clear()
         for _ in range(self.LIMIT - 1):
             await self._pass(monkeypatch, spawned)
@@ -6626,12 +6626,12 @@ class TestQuarantinedServersAreNotSpawned:
         An operator who turns the feature off has to get the pre-change behaviour
         back, not a silent exclusion whose badge has been hidden.
         """
-        from kiro_crew import mcp_quarantine
+        from efm_go import mcp_quarantine
 
         monkeypatch.setattr(mcp_quarantine, "threshold", lambda: 0)
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
 
         for _ in range(self.LIMIT + 2):
             await self._pass(monkeypatch, spawned)
@@ -6650,7 +6650,7 @@ class TestQuarantinedServersAreNotSpawned:
         and negatives but passes a large finite value through, so nothing on this
         path may hand a stored number to an API with a platform range.
         """
-        from kiro_crew import mcp_quarantine
+        from efm_go import mcp_quarantine
 
         store = tmp_path / "quarantine.json"
         store.write_text(
@@ -6666,7 +6666,7 @@ class TestQuarantinedServersAreNotSpawned:
         monkeypatch.setattr(mcp_quarantine, "_STORE_PATH", store)
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
 
         probed = await self._pass(monkeypatch, spawned)
 
@@ -6675,7 +6675,7 @@ class TestQuarantinedServersAreNotSpawned:
     @pytest.mark.asyncio
     async def test_unreadable_store_still_probes(self, tmp_path, monkeypatch) -> None:
         """Fail OPEN: one bad file must not become a fleet-wide probe outage."""
-        from kiro_crew import mcp_quarantine
+        from efm_go import mcp_quarantine
 
         def boom():
             raise OSError("store unreadable")
@@ -6683,7 +6683,7 @@ class TestQuarantinedServersAreNotSpawned:
         monkeypatch.setattr(mcp_quarantine, "snapshot", boom)
         self._wedged_config(tmp_path, monkeypatch)
         spawned: list[str] = []
-        monkeypatch.setattr("kiro_crew.mcp_discovery.probe_server", self._always_times_out(spawned))
+        monkeypatch.setattr("efm_go.mcp_discovery.probe_server", self._always_times_out(spawned))
 
         for _ in range(self.LIMIT + 2):
             await self._pass(monkeypatch, spawned)
@@ -6750,7 +6750,7 @@ class TestProtocolVersionNegotiation:
         replies = [_http_reply(200, _refusal(["2025-03-26", "2024-11-05"])), _http_reply(200, ok)]
         session = self._session([*replies, _http_reply(202), _http_reply(200, tools)])
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=session):
             result = await _probe_remote(server)
 
         assert result.status == "ok"
@@ -6766,7 +6766,7 @@ class TestProtocolVersionNegotiation:
         boom = {"jsonrpc": "2.0", "id": 1, "error": {"code": -32000, "message": "boom"}}
         session = self._session([_http_reply(200, boom)])
 
-        with patch("kiro_crew.mcp_discovery.aiohttp.ClientSession", return_value=session):
+        with patch("efm_go.mcp_discovery.aiohttp.ClientSession", return_value=session):
             result = await _probe_remote(server)
 
         assert (result.status, result.error) == ("error", "boom")

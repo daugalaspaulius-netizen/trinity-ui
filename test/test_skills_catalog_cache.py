@@ -32,7 +32,7 @@ from aiohttp.test_utils import TestClient, TestServer
 # this fix under unrelated reformatting.
 from test_skill_browser import _make_app, _write_skill  # type: ignore[import-not-found]
 
-from kiro_crew.dashboard.handlers import prompts
+from efm_go.dashboard.handlers import prompts
 
 
 @pytest.fixture(autouse=True)
@@ -246,13 +246,13 @@ class TestCrossAgentIsolationEndToEnd:
         # computed at import time off the REAL home, so $HOME alone would leave
         # it reading the operator's own ~/.kiro/agents and skipping the filter.
         monkeypatch.setattr(
-            "kiro_crew.agent_discovery._KIRO_AGENTS_DIR", tmp_path / ".kiro" / "agents"
+            "efm_go.agent_discovery._KIRO_AGENTS_DIR", tmp_path / ".kiro" / "agents"
         )
         return tmp_path
 
     @staticmethod
     def _state() -> MagicMock:
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         # A real loader, not a bare MagicMock: _get_skills treats any attribute
         # as "already built", and a mock would be serialized into the response.

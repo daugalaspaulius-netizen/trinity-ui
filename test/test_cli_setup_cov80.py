@@ -24,16 +24,16 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.skills as skills_module
-from kiro_crew import pinned_fs
-from kiro_crew.cli_setup import (
+import efm_go.skills as skills_module
+from efm_go import pinned_fs
+from efm_go.cli_setup import (
     _find_electron_dir,
     _fix_shell_profiles,
     _remove_retired_conductor_skill,
     _setup_slash_command,
     _setup_whatsapp,
 )
-from kiro_crew.skills import RETIRED_CONDUCTOR_SKILL_SHA256
+from efm_go.skills import RETIRED_CONDUCTOR_SKILL_SHA256
 
 _STALE = 'export PATH="$HOME/.kirocrew-app/bin:$PATH"\n'
 
@@ -136,12 +136,12 @@ class TestSetupSlashCommand:
     @pytest.fixture()
     def cfg_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         target = tmp_path / "config.json"
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: target)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: target)
         return target
 
     @staticmethod
     def _answer(monkeypatch: pytest.MonkeyPatch, value: str | None) -> None:
-        monkeypatch.setattr("kiro_crew.cli_setup._input_or_skip", lambda prompt: value)
+        monkeypatch.setattr("efm_go.cli_setup._input_or_skip", lambda prompt: value)
 
     def _saved(self, cfg_file: Path) -> str:
         return json.loads(cfg_file.read_text(encoding="utf-8"))["slack"]["command"]
@@ -246,14 +246,14 @@ class TestSetupWhatsApp:
     @pytest.fixture()
     def cfg_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         target = tmp_path / "config.json"
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: target)
-        monkeypatch.setattr("kiro_crew.config.paths.data_home", lambda: tmp_path / "home")
-        monkeypatch.setattr("kiro_crew.whatsapp.client.neonize_available", lambda: True)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: target)
+        monkeypatch.setattr("efm_go.config.paths.data_home", lambda: tmp_path / "home")
+        monkeypatch.setattr("efm_go.whatsapp.client.neonize_available", lambda: True)
         return target
 
     @staticmethod
     def _answer(monkeypatch: pytest.MonkeyPatch, value: str | None) -> None:
-        monkeypatch.setattr("kiro_crew.cli_setup._input_or_skip", lambda prompt: value)
+        monkeypatch.setattr("efm_go.cli_setup._input_or_skip", lambda prompt: value)
 
     def test_yes_enables_the_channel_and_keeps_the_rest_of_the_config(
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch
@@ -297,7 +297,7 @@ class TestSetupWhatsApp:
     def test_a_missing_extra_is_named_with_its_install_command(
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        monkeypatch.setattr("kiro_crew.whatsapp.client.neonize_available", lambda: False)
+        monkeypatch.setattr("efm_go.whatsapp.client.neonize_available", lambda: False)
         self._answer(monkeypatch, "y")
 
         _setup_whatsapp()
@@ -381,7 +381,7 @@ class TestRemoveRetiredConductorSkill:
     def skills_root(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         root = tmp_path / "skills"
         root.mkdir()
-        monkeypatch.setattr("kiro_crew.skills.skills_dir", lambda: root)
+        monkeypatch.setattr("efm_go.skills.skills_dir", lambda: root)
         return root
 
     @pytest.mark.parametrize("fixture", ["select-crew-v2.md", "select-crew-v1.md"])
@@ -579,7 +579,7 @@ class TestRemoveRetiredConductorSkill:
             # coverage or hygiene plugin). Only PRODUCTION re-resolving the name
             # is the defect; a bystander normalising a path it was handed is not,
             # so the verdict is keyed on who asked.
-            if str(path).endswith("conductor") and _asking_module().startswith("kiro_crew"):
+            if str(path).endswith("conductor") and _asking_module().startswith("efm_go"):
                 pytest.fail("the conductor path was re-resolved by name")
             return real_realpath(path, *args, **kwargs)
 

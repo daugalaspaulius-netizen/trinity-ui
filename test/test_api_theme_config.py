@@ -10,8 +10,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew.config.loader import KiroCrewConfig, _invalidate_config_cache
-from kiro_crew.dashboard.handlers import core as core_mod
+from efm_go.config.loader import KiroCrewConfig, _invalidate_config_cache
+from efm_go.dashboard.handlers import core as core_mod
 
 
 def _make_cfg(

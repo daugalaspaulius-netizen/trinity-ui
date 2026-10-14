@@ -1,4 +1,4 @@
-"""Tests for :mod:`kiro_crew.session_token_sig` — the signed token -> key mapping.
+"""Tests for :mod:`efm_go.session_token_sig` — the signed token -> key mapping.
 
 The mapping file lives in ``config_dir()``, which is same-uid agent-writable, so
 the strict identity path must not trust it bare. These tests lock in the contract:
@@ -22,13 +22,13 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import session_pid_sig, session_token_sig
+from efm_go import session_pid_sig, session_token_sig
 
 SESSION_KEY = "dashboard:chat-7-123456"
 OTHER_KEY = "dashboard:chat-9-999999"
 TOKEN = "a" * 64
 OTHER_TOKEN = "b" * 64
-LOGGER_NAME = "kiro_crew.session_token_sig"
+LOGGER_NAME = "efm_go.session_token_sig"
 
 
 def _path_for(cfg, token: str):
@@ -44,7 +44,7 @@ def cfg(tmp_path):
     """Isolated mapping dir with a valid SEL trust-root key.
 
     Four patches, and each one is needed because the module deliberately SHARES
-    two helpers with :mod:`kiro_crew.session_pid_sig` rather than copying them:
+    two helpers with :mod:`efm_go.session_pid_sig` rather than copying them:
 
     * ``session_token_sig.config_dir`` — where this protocol's files go;
     * ``session_pid_sig.sel_hmac_key_path`` — read by the SHARED

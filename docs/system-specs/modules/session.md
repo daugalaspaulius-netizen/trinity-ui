@@ -905,8 +905,8 @@ against sweep completeness, and are torn down at `close_all`.
   `ACP_BACKENDS_COMPACT` — kiro-cli, claude, codex, opencode and goose. They divide by WHERE
   the
   done signal lands, which is `ACP_BACKENDS_INLINE_COMPACTION`: kiro-cli sends a
-  `/compact` **prompt** (`session/prompt` + `_kiro.dev/compaction/status` watch —
-  never the string form of `_kiro.dev/commands/execute`, which kiro-cli 2.14.0
+  `/compact` **prompt** (`session/prompt` + `_efm.go/compaction/status` watch —
+  never the string form of `_efm.go/commands/execute`, which kiro-cli 2.14.0
   exits rc=0 on) and its result arrives afterwards, while claude, codex, opencode and
   goose finish the whole compaction inside the prompt turn. claude and opencode emit no
   status at all, and goose emits only a `Compaction complete` chunk; codex reports the compaction as a `tool_call` pair marked
@@ -2393,7 +2393,7 @@ when a switch is detected (stored SID exists AND providers differ).
 (`build_session_replay` and the thread-history fallback in
 `build_session_context`) — hand
 each row out through
-`kiro_crew.image_refs.strip_image_refs`, which replaces every local image
+`efm_go.image_refs.strip_image_refs`, which replaces every local image
 reference with `[image not carried into this context]`. Markdown references go
 through the attachment store's own `iter_local_refs`; bare paths go through the
 inliner's own `_PATH_RE`, narrowed to paths outside code spans that stand alone
@@ -2951,7 +2951,7 @@ only when a `mirror` `ChannelLink` exists on the dashboard-side key:
   or thread target) records none. Because `session_map.json` is writable by
   in-sandbox code, such a row carries an `admission` — HMAC-SHA256 over the
   canonical session key and the whole location under a key derived from the
-  sandbox-masked `token_signing.key` (`kiro_crew.mirror_admission`) — minted ONLY
+  sandbox-masked `token_signing.key` (`efm_go.mirror_admission`) — minted ONLY
   by those two creation paths before they hand the link over. `set_mirror_link`
   never mints or repairs one: it stores the caller's bytes verbatim, so a rollback
   that re-sets a row it read back keeps a verifying admission byte-for-byte and can
@@ -3379,7 +3379,7 @@ Practical rules when you add or change a removal path:
 
 `test/metrics/test_session_duration.py::TestEveryRegistryRemovalRecordsAnEnd`
 enforces this. It is fail-closed and discovers its own scope: an AST walk over
-every module under `src/kiro_crew` that mentions `_sessions`, recognising the
+every module under `src/efm_go` that mentions `_sessions`, recognising the
 `pop`, `del` and `clear` spellings, so a new removal path anywhere fails the gate
 the day it lands rather than waiting to be added to a list. A container that
 merely shares the attribute name can be exempted with a stated reason, and the
@@ -3505,7 +3505,7 @@ configs.
 ## Orphaned MCP Server Cleanup
 
 `_cleanup_orphaned_mcp_servers()` kills MCP server processes that survived
-session teardown.  kiro-cli-chat spawns MCP servers (kiro_crew mcp-core/cron,
+session teardown.  kiro-cli-chat spawns MCP servers (efm_go mcp-core/cron,
 the internal MCP server, slack-mcp) in separate process groups.  When a
 session dies, `killpg` only reaches the kiro-cli process group — MCP servers
 in other groups get reparented to init and leak memory.
@@ -3692,10 +3692,10 @@ provably unreachable regardless of who launched it.
 - **Sweep-side reap (defense in depth)**: `_is_sweepable_orphan_gatewayd` is
   a fourth positive-identity path in the untracked orphan sweep. It overrides
   the `_GATEWAY_MARKERS` exclusion only for a structural
-  `-m kiro_crew.mcp_gateway.gatewayd` argv whose `--socket` path is gone
+  `-m efm_go.mcp_gateway.gatewayd` argv whose `--socket` path is gone
   (NUL-separated argv only — the space-joined `ps` fallback cannot delimit
   paths safely and fails closed, so the path is effectively Linux-only).
-  `kiro_crew.cli` / `kiro_crew.__main__` stay unconditionally excluded. The
+  `efm_go.cli` / `efm_go.__main__` stay unconditionally excluded. The
   kill is TERM-first (`_kill_orphan_gatewayd`) so the daemon drains its own
   pooled backends, escalating to `killpg` SIGKILL only after the daemon's full
   `TOTAL_SHUTDOWN_BUDGET_SECS` (shared with the supervisor's SIGTERM→SIGKILL
@@ -4219,7 +4219,7 @@ is permanent for this gateway process; see the cleanup bounds and recovery
 procedure in [platform-compat](../common/platform-compat.md#windows-session-tree-teardown).
 
 All process liveness/kill/PID-file-lock operations in `session.py` and
-`session_pid.py` go through `kiro_crew.platform_compat` so KiroCrew runs natively on
+`session_pid.py` go through `efm_go.platform_compat` so KiroCrew runs natively on
 Windows as well as macOS/Linux. The critical correctness reason is that
 **`os.kill(pid, 0)` is NOT a liveness probe on Windows — it terminates the process** —
 so every liveness check uses `platform_compat.pid_exists(pid)` (or the tri-state
@@ -4527,7 +4527,7 @@ same expensive-start bound even when they bypass this manager or a worker pool.
 Queued cancellation returns the permit, and runtime startup retains its existing
 subprocess cleanup on cancellation or failure. Both queues are ordered by start
 priority: `get_or_create(..., start_priority=)` names it and defaults to
-BACKGROUND (rule: `kiro_crew.start_priority`). `_start_sem`
+BACKGROUND (rule: `efm_go.start_priority`). `_start_sem`
 (`session_allocation.new_cold_start_semaphore`) carries a reserve on top of the
 background width that only a FOREGROUND start may hold, and the identity sweep's
 barrier is `_start_sem.drain()`. The claimers, the guarantee and its bounds:

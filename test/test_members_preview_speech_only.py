@@ -22,14 +22,14 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew import members
-from kiro_crew.config.sections import KiroCrewAgentConfig
-from kiro_crew.dashboard.system_notices import is_speech_row
-from kiro_crew.eventlog import types
-from kiro_crew.eventlog.members_projections import RosterProjection
-from kiro_crew.eventlog.service import get_service, set_service
-from kiro_crew.eventlog.types import Event
-from kiro_crew.history import ConversationLog
+from efm_go import members
+from efm_go.config.sections import KiroCrewAgentConfig
+from efm_go.dashboard.system_notices import is_speech_row
+from efm_go.eventlog import types
+from efm_go.eventlog.members_projections import RosterProjection
+from efm_go.eventlog.service import get_service, set_service
+from efm_go.eventlog.types import Event
+from efm_go.history import ConversationLog
 
 KEY = "dashboard:member-radar"
 
@@ -169,7 +169,7 @@ def _fresh_eventlog(tmp_path, monkeypatch):
 
 
 def _members_app(state) -> web.Application:
-    from kiro_crew.dashboard.handlers.members import api_members
+    from efm_go.dashboard.handlers.members import api_members
 
     @web.middleware
     async def _auth(request, handler):
@@ -201,7 +201,7 @@ class TestLegacyMachineryPreviewIsCorrectedOnRead:
             memory_stores={},
             degraded_sections=frozenset(),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         members.write_dm_binding(slug, member=CREW, slot_key=f"member-{slug}")
@@ -242,7 +242,7 @@ class TestLegacyMachineryPreviewIsCorrectedOnRead:
             memory_stores={},
             degraded_sections=frozenset(),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         members.write_dm_binding(slug, member=CREW, slot_key=f"member-{slug}")
@@ -278,7 +278,7 @@ class TestLegacyMachineryPreviewIsCorrectedOnRead:
             memory_stores={},
             degraded_sections=frozenset(),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         members.write_dm_binding(slug, member=CREW, slot_key=f"member-{slug}")
@@ -324,7 +324,7 @@ class TestReconcileIsCompareAndAppend:
     decided, re-checked under the per-slug write lock."""
 
     def test_predicate_compares_only_the_two_fields_it_rewrites(self) -> None:
-        from kiro_crew.eventlog_hooks import _preview_is_still_at
+        from efm_go.eventlog_hooks import _preview_is_still_at
 
         then = {types.PROJ_ROSTER: {"last_message": "a", "last_active_ts": 1.0, "status": "idle"}}
         same = {types.PROJ_ROSTER: {"last_message": "a", "last_active_ts": 1.0, "status": "busy"}}
@@ -340,7 +340,7 @@ class TestReconcileIsCompareAndAppend:
         assert _preview_is_still_at({types.PROJ_ROSTER: {"name": "x"}}, {})
 
     def test_refused_when_the_roster_moved_and_applied_when_it_did_not(self) -> None:
-        from kiro_crew.eventlog_hooks import reconcile_member_preview
+        from efm_go.eventlog_hooks import reconcile_member_preview
 
         slug = members.slug_for_name(CREW)
         svc = get_service()
@@ -362,7 +362,7 @@ class TestReconcileIsCompareAndAppend:
 
 
 def _redaction_chain(text: str) -> str:
-    from kiro_crew import history as _h
+    from efm_go import history as _h
 
     text, _ = _h.redact_exfiltration_urls(text)
     text, _ = _h.redact_credentials(text)
@@ -387,7 +387,7 @@ class TestLivePreviewEqualsTheRosterRead:
         ],
     )
     def test_formatted_message_folds_to_the_read(self, tmp_path: Path, content) -> None:
-        from kiro_crew.eventlog_hooks import member_message_payload
+        from efm_go.eventlog_hooks import member_message_payload
 
         log = ConversationLog(tmp_path / "hist")
         log.append("k", "assistant", content)
@@ -397,7 +397,7 @@ class TestLivePreviewEqualsTheRosterRead:
         assert read and "AKIA" not in read
 
     def test_machinery_and_say_nothing_rows_carry_no_preview(self) -> None:
-        from kiro_crew.eventlog_hooks import member_message_payload
+        from efm_go.eventlog_hooks import member_message_payload
 
         for role, content, meta in [
             ("tool", "\U0001f527 gh api ...", None),
@@ -426,7 +426,7 @@ class TestStructuredLegacySpeechIsSpeech:
     list, or the roster read would call it machinery and blank the quote."""
 
     def test_cold_read_and_live_payload_quote_the_text_blocks(self, tmp_path: Path) -> None:
-        from kiro_crew.eventlog_hooks import member_message_payload
+        from efm_go.eventlog_hooks import member_message_payload
 
         log = ConversationLog(tmp_path / "hist")
         content = [
@@ -442,7 +442,7 @@ class TestStructuredLegacySpeechIsSpeech:
         assert payload == {"ts": 5.0, "preview": read}
 
     def test_structured_content_with_no_text_is_not_speech(self) -> None:
-        from kiro_crew.eventlog_hooks import member_message_payload
+        from efm_go.eventlog_hooks import member_message_payload
 
         assert member_message_payload(
             "assistant", [{"type": "image", "url": "x"}], None, 5.0, sanitize=_redaction_chain
@@ -491,7 +491,7 @@ class TestAnEmptyReadThatRanOutOfWindowIsNotAuthority:
             memory_stores={},
             degraded_sections=frozenset(),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         members.write_dm_binding(slug, member=CREW, slot_key=f"member-{slug}")
@@ -529,7 +529,7 @@ class TestEnvelopeClassifiersFollowTheRealWriters:
 
     @pytest.mark.parametrize("status", ["finished", "failed", "cancelled"])
     def test_workflow_completion_envelope_as_written_is_not_speech(self, status: str) -> None:
-        from kiro_crew.dashboard.workflow_inject import _summarize
+        from efm_go.dashboard.workflow_inject import _summarize
 
         snapshot = {
             "name": "deep-research",
@@ -551,7 +551,7 @@ class TestEnvelopeClassifiersFollowTheRealWriters:
         # The gateway stamps SUBAGENT_COMPLETION_META_KEY with these fields
         # (slack/gateway.py, "Structured header facts for the dashboard card");
         # the classifier keys on the stamp before any header regex.
-        from kiro_crew.constants import SUBAGENT_COMPLETION_META_KEY, SUBAGENT_COMPLETION_PREFIX
+        from efm_go.constants import SUBAGENT_COMPLETION_META_KEY, SUBAGENT_COMPLETION_PREFIX
 
         meta = {SUBAGENT_COMPLETION_META_KEY: {"kind": "single", "agentId": "w-1", "outcome": "ok"}}
         text = f"{SUBAGENT_COMPLETION_PREFIX}\nreworded header line\n\nDone."
@@ -571,7 +571,7 @@ class TestAnUnflushedSlotIsNotCorrectedFromDisk:
     def test_predicate_mirrors_the_slot_window_gates(self) -> None:
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.handlers.members import _slot_has_unflushed_rows
+        from efm_go.dashboard.handlers.members import _slot_has_unflushed_rows
 
         clean = SimpleNamespace(
             messages=[1, 2], _disk_window_len=2, _pending_rewrite=False, _dirty_flag=False
@@ -607,7 +607,7 @@ class TestAnUnflushedSlotIsNotCorrectedFromDisk:
             memory_stores={},
             degraded_sections=frozenset(),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         slot_key = f"member-{slug}"
@@ -617,7 +617,7 @@ class TestAnUnflushedSlotIsNotCorrectedFromDisk:
         state.conversation_log.append(key, "assistant", "Older speech.")
         # The live slot holds one more row than the last flush persisted: the
         # NEW speech, whose member/message event has already been emitted.
-        from kiro_crew.members import DM_SLOT_MODE
+        from efm_go.members import DM_SLOT_MODE
 
         slot = state.get_or_create_slot(slot_key, agent=CREW, mode=DM_SLOT_MODE)
         slot.append("assistant", "Newer speech.", "msg msg-a")
@@ -665,7 +665,7 @@ class TestAnUnflushedSlotIsNotCorrectedFromDisk:
         and generation) must refuse the stale disk quote."""
         from types import SimpleNamespace
 
-        from kiro_crew.members import DM_SLOT_MODE
+        from efm_go.members import DM_SLOT_MODE
 
         cfg = SimpleNamespace(
             agents={CREW: KiroCrewAgentConfig(kiro_agent="kirocrew")},
@@ -673,7 +673,7 @@ class TestAnUnflushedSlotIsNotCorrectedFromDisk:
             memory_stores={},
             degraded_sections=frozenset(),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         slot_key = f"member-{slug}"
@@ -712,7 +712,7 @@ class TestAnUnflushedSlotIsNotCorrectedFromDisk:
     def test_generation_moves_on_append_flush_and_edit(self) -> None:
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.handlers.members import _slot_flush_generation
+        from efm_go.dashboard.handlers.members import _slot_flush_generation
 
         assert _slot_flush_generation(None) is None
         base = SimpleNamespace(messages=[1, 2], _disk_window_len=2, _dirty_gen=0)

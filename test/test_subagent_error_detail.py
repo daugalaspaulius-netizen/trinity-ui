@@ -12,9 +12,9 @@ import sqlite3
 
 import pytest
 
-from kiro_crew.dashboard.chat_runner import _MAX_NATIVE_CARD_ERROR, _clip_card_error
-from kiro_crew.process_identity import MAX_ERROR_DETAIL_LEN
-from kiro_crew.subagent import (
+from efm_go.dashboard.chat_runner import _MAX_NATIVE_CARD_ERROR, _clip_card_error
+from efm_go.process_identity import MAX_ERROR_DETAIL_LEN
+from efm_go.subagent import (
     _MAX_ERROR_CHAIN,
     SubagentInfo,
     SubagentManager,
@@ -25,7 +25,7 @@ from kiro_crew.subagent import (
 @pytest.fixture()
 def agent_root(tmp_path, monkeypatch):
     """Point persistence at a temp directory."""
-    monkeypatch.setattr("kiro_crew.subagent_persistence._SUBAGENTS_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.subagent_persistence._SUBAGENTS_DIR", tmp_path)
     return tmp_path
 
 
@@ -107,7 +107,7 @@ class TestTombstoneCarriesTheReason:
 
     def test_records_the_specific_reason_not_just_the_bucket(self, agent_root):
         """``cause`` is a bucket; without ``detail`` the reason dies with the process."""
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         create_agent_folder("deadbeef", task="t")
         info = SubagentInfo(id="deadbeef", task="t")
@@ -120,7 +120,7 @@ class TestTombstoneCarriesTheReason:
         assert tomb["detail"] == "sqlite3.InterfaceError: bad parameter or other API misuse"
 
     def test_absent_error_yields_an_empty_detail(self, agent_root):
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         create_agent_folder("nodetail", task="t")
         SubagentManager._write_tombstone(SubagentInfo(id="nodetail", task="t"), "reaped")
@@ -128,7 +128,7 @@ class TestTombstoneCarriesTheReason:
         assert self._tombstone(agent_root, "nodetail")["detail"] == ""
 
     def test_detail_is_bounded(self, agent_root):
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         create_agent_folder("longone", task="t")
         info = SubagentInfo(id="longone", task="t")
@@ -151,7 +151,7 @@ class TestTombstoneResolvesRecoveryAction:
         return tomb["recovery_action"]
 
     def test_a_retrievable_result_makes_recovery_a_read(self, agent_root):
-        from kiro_crew.subagent_persistence import create_agent_folder, update_state
+        from efm_go.subagent_persistence import create_agent_folder, update_state
 
         create_agent_folder("withresult", task="t")
         (agent_root / "withresult" / "result.txt").write_text("the answer", encoding="utf-8")
@@ -165,7 +165,7 @@ class TestTombstoneResolvesRecoveryAction:
 
     def test_a_result_without_the_complete_flag_is_a_fragment(self, agent_root):
         """A non-empty file without the flag is an opening sentence, not an answer."""
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         create_agent_folder("fragmented", task="t")
         (agent_root / "fragmented" / "result.txt").write_text(
@@ -177,7 +177,7 @@ class TestTombstoneResolvesRecoveryAction:
         assert self._recovery(agent_root, "fragmented") == "partial_result"
 
     def test_no_result_still_owes_the_user_a_notification(self, agent_root):
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         create_agent_folder("noresult", task="t")
 
@@ -187,7 +187,7 @@ class TestTombstoneResolvesRecoveryAction:
 
     def test_an_empty_result_file_is_not_a_result(self, agent_root):
         """The rule is non-empty, not merely present: a 0-byte file recovers nothing."""
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         create_agent_folder("emptyresult", task="t")
         (agent_root / "emptyresult" / "result.txt").write_text("", encoding="utf-8")
@@ -205,7 +205,7 @@ class TestTerminalArmUsesTheDescription:
         import asyncio
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         sessions = MagicMock()
         sessions.release = MagicMock()
@@ -222,8 +222,8 @@ class TestTerminalArmUsesTheDescription:
 
         with (
             patch.object(manager, "_run_inner", _raise_sqlite_misuse),
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(manager, "_fire_event", new_callable=AsyncMock),
             patch.object(manager, "_on_done", new_callable=AsyncMock),
         ):
@@ -271,7 +271,7 @@ class TestClipCardError:
         """Pins the call site: the native card is where the clip is applied."""
         from unittest.mock import MagicMock
 
-        from kiro_crew.dashboard.chat_runner import _native_subagent_sync
+        from efm_go.dashboard.chat_runner import _native_subagent_sync
 
         state = MagicMock()
         state.broadcast_ws = MagicMock()

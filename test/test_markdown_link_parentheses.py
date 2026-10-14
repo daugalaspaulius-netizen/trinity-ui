@@ -23,15 +23,15 @@ import time
 import pytest
 
 from conftest import assert_rejected_without_backtracking
-from kiro_crew import preview_text, voice_reply
-from kiro_crew.constants import md_link_destination
-from kiro_crew.dashboard.handlers import artifacts as artifact_handlers
-from kiro_crew.deploy import render as deploy_render
-from kiro_crew.discord.renderer import _redact_transformed as discord_redact_transformed
-from kiro_crew.imessage import plaintext as imessage_plaintext
-from kiro_crew.imessage.plaintext import to_plaintext
-from kiro_crew.messaging import display_safety
-from kiro_crew.messaging.display_safety import (
+from efm_go import preview_text, voice_reply
+from efm_go.constants import md_link_destination
+from efm_go.dashboard.handlers import artifacts as artifact_handlers
+from efm_go.deploy import render as deploy_render
+from efm_go.discord.renderer import _redact_transformed as discord_redact_transformed
+from efm_go.imessage import plaintext as imessage_plaintext
+from efm_go.imessage.plaintext import to_plaintext
+from efm_go.messaging import display_safety
+from efm_go.messaging.display_safety import (
     _MD_LINK,
     _REDACTION_TAG,
     DISPLAY_SETTLING_PASSES,
@@ -42,25 +42,25 @@ from kiro_crew.messaging.display_safety import (
     canonicalize_display,
     redact_for_display,
 )
-from kiro_crew.messaging.outbound_files import _walk_destination
-from kiro_crew.messaging.renderer import _default_redactor, count_redaction_tags
-from kiro_crew.messaging.split import _flattened_for_any_cut
-from kiro_crew.security import (
+from efm_go.messaging.outbound_files import _walk_destination
+from efm_go.messaging.renderer import _default_redactor, count_redaction_tags
+from efm_go.messaging.split import _flattened_for_any_cut
+from efm_go.security import (
     CREDENTIAL_REDACTION_TAGS,
     EXFILTRATION_REDACTION_TAG_PREFIX,
     redact_credentials,
     redact_exfiltration_urls,
 )
-from kiro_crew.slack import format as slack_format
-from kiro_crew.slack.format import render_one_for_slack
-from kiro_crew.telegram import renderer as telegram_renderer
-from kiro_crew.telegram.renderer import (
+from efm_go.slack import format as slack_format
+from efm_go.slack.format import render_one_for_slack
+from efm_go.telegram import renderer as telegram_renderer
+from efm_go.telegram.renderer import (
     _display_safe,
     _md_to_telegram_html,
     _strip_md,
 )
-from kiro_crew.whatsapp import renderer as whatsapp_renderer
-from kiro_crew.whatsapp.renderer import to_whatsapp_text
+from efm_go.whatsapp import renderer as whatsapp_renderer
+from efm_go.whatsapp.renderer import to_whatsapp_text
 
 #: Real URL shapes an answer cites: a Wikipedia disambiguation page and an MSDN
 #: versioned page. Both carry one balanced pair, which is what CommonMark allows.
@@ -1916,7 +1916,7 @@ class TestPlainReadingSharesTelegramFallbacksPasses:
     _REVIEW = (
         "Telegram's _strip_md gained, lost or reordered a pass: decide whether the pass "
         "can join two halves of a key and, if so, add it to TELEGRAM_FALLBACK_PASSES in "
-        "kiro_crew.messaging.display_safety, which _plain_reading applies."
+        "efm_go.messaging.display_safety, which _plain_reading applies."
     )
 
     def test_the_shared_passes_are_the_named_patterns_in_order(self):

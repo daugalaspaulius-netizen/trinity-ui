@@ -22,15 +22,15 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from body_stream_helpers import BodyStreamPayload
 
-from kiro_crew.dashboard.handlers.taskrunner import (
+from efm_go.dashboard.handlers.taskrunner import (
     api_taskrunner_execute_plan,
     api_taskrunner_start,
 )
-from kiro_crew.hooks import TOOL_AUTO_APPROVE, TOOL_DENY, ToolHookResult
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.safety_override import reset_singleton, safety_override
-from kiro_crew.task_models import Project
-from kiro_crew.taskrunner import Step, StepStatus, TaskRun, TaskRunner, _auto_approve_scope
+from efm_go.hooks import TOOL_AUTO_APPROVE, TOOL_DENY, ToolHookResult
+from efm_go.providers.base import LLMEvent
+from efm_go.safety_override import reset_singleton, safety_override
+from efm_go.task_models import Project
+from efm_go.taskrunner import Step, StepStatus, TaskRun, TaskRunner, _auto_approve_scope
 
 
 @pytest.fixture(autouse=True)
@@ -130,7 +130,7 @@ class TestSettersSetAutoApprove:
         runner._runs = {"t1": run}
         # Prevent the background _execute task from actually running.
         with patch(
-            "kiro_crew.taskrunner.asyncio.create_task",
+            "efm_go.taskrunner.asyncio.create_task",
             side_effect=_discard_scheduled_coroutine,
         ):
             await runner.execute_plan("t1", auto_approve=True)
@@ -144,7 +144,7 @@ class TestSettersSetAutoApprove:
         run.tasks = [Step(index=1, title="A", description="d")]
         runner._runs = {"t1": run}
         with patch(
-            "kiro_crew.taskrunner.asyncio.create_task",
+            "efm_go.taskrunner.asyncio.create_task",
             side_effect=_discard_scheduled_coroutine,
         ):
             await runner.execute_plan("t1")
@@ -264,7 +264,7 @@ class TestAutoApproveExecution:
         step = Step(index=1, title="Write", description="d")
         run.tasks = [step]
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True):
+        with patch("efm_go.task_executor.self_review", return_value=True):
             success = await runner._execute_single_task(run, step)
 
         assert success is True
@@ -287,7 +287,7 @@ class TestAutoApproveExecution:
         step = Step(index=1, title="Write", description="d")
         run.tasks = [step]
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True):
+        with patch("efm_go.task_executor.self_review", return_value=True):
             await runner._execute_single_task(run, step)
 
         # Trust lapsed → not auto-approved (rejected via deny-by-default) and revoked.
@@ -308,7 +308,7 @@ class TestAutoApproveExecution:
         step = Step(index=1, title="Write", description="d")
         run.tasks = [step]
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True):
+        with patch("efm_go.task_executor.self_review", return_value=True):
             await runner._execute_single_task(run, step)
 
         provider.reject_tool.assert_awaited_with("req-1")
@@ -346,7 +346,7 @@ class TestAutoApproveRespectsHookDeny:
         step = Step(index=1, title="Delete", description="d")
         run.tasks = [step]
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True):
+        with patch("efm_go.task_executor.self_review", return_value=True):
             await runner._execute_single_task(run, step)
 
         # Deny-list is evaluated BEFORE auto-approve, so the tool is rejected
@@ -376,8 +376,8 @@ class TestAutoApproveRespectsHookDeny:
         step = Step(index=1, title="Read", description="d")
         run.tasks = [step]
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True), patch(
-            "kiro_crew.task_executor.sel"
+        with patch("efm_go.task_executor.self_review", return_value=True), patch(
+            "efm_go.task_executor.sel"
         ) as mock_sel:
             await runner._execute_single_task(run, step)
 
@@ -458,7 +458,7 @@ class TestAutoApproveProvenanceGating:
     """
 
     async def _auto_approve_passed(self, tmp_path: Path, source: str, auto_approve: bool, request_app: str = ""):
-        from kiro_crew.execution_context import execution_for_store
+        from efm_go.execution_context import execution_for_store
 
         runner = MagicMock()
         runner._work_dir = tmp_path
@@ -553,7 +553,7 @@ class TestAutoApproveProvenanceGating:
 
         boom = MagicMock()
         boom.log_tool_invocation.side_effect = RuntimeError("sel backend down: SECRET-INTERNAL-DETAIL")
-        with patch("kiro_crew.dashboard.handlers.taskrunner._sel", return_value=boom):
+        with patch("efm_go.dashboard.handlers.taskrunner._sel", return_value=boom):
             resp = await api_taskrunner_execute_plan(req)
 
         # No unsanitized 500 escapes; the request succeeds.
@@ -582,7 +582,7 @@ class TestInlineSpecCleanup:
     never the handler's to delete."""
 
     async def _start(self, tmp_path: Path, body: dict, raising: bool):
-        from kiro_crew.execution_context import execution_for_store
+        from efm_go.execution_context import execution_for_store
 
         runner = MagicMock()
         runner._work_dir = str(tmp_path)

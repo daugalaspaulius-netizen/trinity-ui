@@ -121,7 +121,7 @@ const SubagentProgressBar = memo(function SubagentProgressBar({ slot }: { slot: 
   const waitText = queuedWaitText(queuedReason)
   // Only top-level (managed) subagents belong in the chip — its count must
   // match the "spawned N" prose. Native kiro-cli sub-agents (native:* ids,
-  // surfaced from _kiro.dev/subagent/list_update) are nested UNDER a managed
+  // surfaced from _efm.go/subagent/list_update) are nested UNDER a managed
   // agent, not launched by this session's spawn_run, so counting them inflated
   // the histogram past what was actually spawned (e.g. 4 spawned → 9 tracked).
   // They remain fully visible in the Subagents activity sidebar.

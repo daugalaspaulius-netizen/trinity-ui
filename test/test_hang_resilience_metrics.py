@@ -18,9 +18,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.runtime import AcpRuntime, JsonRpcMessage
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.metrics import events as metric_events
+from efm_go.acp.runtime import AcpRuntime, JsonRpcMessage
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.metrics import events as metric_events
 
 
 def _make_runtime():
@@ -72,12 +72,12 @@ def recorded(monkeypatch):
     # Patch at the SOURCE module; the emitting modules import the function by
     # name, so patch their bound references too.
     for mod in (
-        "kiro_crew.metrics.events",
-        "kiro_crew.acp.runtime",
-        "kiro_crew.acp.session_handle",
-        "kiro_crew.subagent",
-        "kiro_crew.session",
-        "kiro_crew.dashboard.chat_runner",
+        "efm_go.metrics.events",
+        "efm_go.acp.runtime",
+        "efm_go.acp.session_handle",
+        "efm_go.subagent",
+        "efm_go.session",
+        "efm_go.dashboard.chat_runner",
     ):
         monkeypatch.setattr(f"{mod}.emit_counter", _fake, raising=False)
     return calls
@@ -86,7 +86,7 @@ def recorded(monkeypatch):
 def test_emit_counter_never_raises():
     """Telemetry must never break the instrumented path."""
     with patch(
-        "kiro_crew.metrics.provider.get_recorder",
+        "efm_go.metrics.provider.get_recorder",
         side_effect=RuntimeError("recorder down"),
     ):
         metric_events.emit_counter("kirocrew.test", {"a": 1})  # no raise
@@ -145,7 +145,7 @@ async def test_routed_child_permission_emits_routed(recorded):
             (
                 json.dumps(
                     {
-                        "method": "_kiro.dev/subagent/list_update",
+                        "method": "_efm.go/subagent/list_update",
                         "params": {"subagents": [{"sessionId": "child-a"}]},
                     }
                 )
@@ -198,11 +198,11 @@ async def test_subagent_child_reject_emits_denied(recorded):
     point of the series; a parent-origin refusal is not (child series only)."""
     import logging
 
-    from kiro_crew.agent_sdk.spec_hooks import TurnSpecHooks
-    from kiro_crew.hooks import TOOL_DENY, ToolHookResult
-    from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
-    from kiro_crew.subagent import SubagentInfo, SubagentManager
-    from kiro_crew.tool_permission import AcpWire, Ask, bail, settle
+    from efm_go.agent_sdk.spec_hooks import TurnSpecHooks
+    from efm_go.hooks import TOOL_DENY, ToolHookResult
+    from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+    from efm_go.subagent import SubagentInfo, SubagentManager
+    from efm_go.tool_permission import AcpWire, Ask, bail, settle
 
     client = MagicMock()
     client.reject_tool = AsyncMock()
@@ -215,7 +215,7 @@ async def test_subagent_child_reject_emits_denied(recorded):
             parent_policy="",
             consult=lambda event: ToolHookResult(action=TOOL_DENY, reason="denied"),
             sel=MagicMock(),
-            log=logging.getLogger("kiro_crew.subagent"),
+            log=logging.getLogger("efm_go.subagent"),
         )
         child = LLMEvent(
             kind=EVENT_PERMISSION_REQUEST, request_id=9, title="t", sub_session_id="child-a"
@@ -238,7 +238,7 @@ def test_dashboard_ceiling_emits_timeout_cause(recorded):
     callback) must emit the cause metric from the slot's stashed snapshot.
     (Its lazy `from metrics.events import emit_counter` picks up the
     `recorded` fixture's patch at call time.)"""
-    from kiro_crew.dashboard import turn_dispatch
+    from efm_go.dashboard import turn_dispatch
 
     class _DoneTask:
         def cancelled(self):
@@ -274,7 +274,7 @@ def test_terminal_children_do_not_count_as_announced():
     children_announced. Exercises the real close_all safety net to pin the
     hazard: it force-marks every entry done, so the snapshot MUST be taken
     before it runs (terminal entries also linger for reconnect replay)."""
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     state = MagicMock()
     slot = MagicMock()

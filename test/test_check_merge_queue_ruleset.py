@@ -15,7 +15,7 @@ assert _spec is not None and _spec.loader is not None
 gate = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(gate)
 
-# The shape `gh api repos/kirodotdev/KiroCrew/rules/branches/main` returns while
+# The shape `gh api repos/efmleads.com/rules/branches/main` returns while
 # the queue is not required: every rule main carries except `merge_queue`.
 _LIVE_WITHOUT_QUEUE = [
     {"type": "repository_visibility", "ruleset_id": 5369255},
@@ -118,7 +118,7 @@ def test_the_workflow_runs_on_a_schedule_and_never_on_a_push_or_pr() -> None:
 
 def test_the_workflow_runs_the_script_with_the_queue_variable() -> None:
     job = yaml.safe_load(_WORKFLOW.read_text(encoding="utf-8"))["jobs"]["check"]
-    assert job["if"] == "${{ github.repository == 'kirodotdev/KiroCrew' }}"
+    assert job["if"] == "${{ github.repository == 'efmleads.com' }}"
     step = job["steps"][-1]
     assert step["env"]["MERGE_QUEUE_ENABLED"] == "${{ vars.MERGE_QUEUE_ENABLED }}"
     assert "rules/branches/main" in step["run"]

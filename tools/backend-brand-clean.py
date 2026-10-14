@@ -83,31 +83,31 @@ for relpath, records in sorted(by_file.items()):
 print("\n=== VENDOR_REWIRE_REMOVE ===")
 
 vendor_fixes = {
-    "src/kiro_crew/platform/update_layout.py": [
+    "src/efm_go/platform/update_layout.py": [
         ('return "https://updates.crew.kiro.dev", "https://download.crew.kiro.dev"',
          'return "", ""'),
     ],
-    "src/kiro_crew/apps/official_catalog.py": [
+    "src/efm_go/apps/official_catalog.py": [
         ('OFFICIAL_CATALOG_BASE = "https://apps.crew.kiro.dev/"',
          'OFFICIAL_CATALOG_BASE = "https://efmleads.com/api/apps/"'),
     ],
-    "src/kiro_crew/diagnostics.py": [
+    "src/efm_go/diagnostics.py": [
         ('_ISSUE_REPO = "kirodotdev/KiroCrew"',
          '_ISSUE_REPO = "efmleads/efm-go"'),
     ],
-    "src/kiro_crew/cloud/ec2.py": [
+    "src/efm_go/cloud/ec2.py": [
         ('PUBLIC_REPO_URL = "https://github.com/kirodotdev/KiroCrew.git"',
          'PUBLIC_REPO_URL = "https://github.com/efmleads/efm-go.git"'),
     ],
-    "src/kiro_crew/service/linux.py": [
+    "src/efm_go/service/linux.py": [
         ('"Documentation=https://github.com/kirodotdev/KiroCrew\\n"',
          '"Documentation=https://github.com/efmleads/efm-go\\n" # EFM'),
     ],
-    "src/kiro_crew/doctor_checks/access.py": [
-        ('"https://github.com/kirodotdev/KiroCrew/blob/main/src/kiro_crew/docs/blocked-commands.md"',
+    "src/efm_go/doctor_checks/access.py": [
+        ('"https://github.com/kirodotdev/KiroCrew/blob/main/src/efm_go/docs/blocked-commands.md"',
          '"https://github.com/efmleads/efm-go/blob/main/docs/blocked-commands.md"'),
     ],
-    "src/kiro_crew/sandbox.py": [
+    "src/efm_go/sandbox.py": [
         ('kirodotdev/KiroCrew/main/docker/seccomp/kirocrew-seccomp.json',
          'efmleads/efm-go/main/docker/seccomp/efm-go-seccomp.json'),
     ],

@@ -2,11 +2,11 @@
 # ──────────────────────────────────────────────────────────────────────
 # Playwright CLI installer (no pre-existing Node/npm required).
 #
-#   curl -fsSL https://raw.githubusercontent.com/kirodotdev/KiroCrew/main/playwright-cli.sh | sh
-#   curl -fsSL https://raw.githubusercontent.com/kirodotdev/KiroCrew/main/playwright-cli.sh | sh -s -- --version 0.1.18
+#   curl -fsSL https://raw.githubusercontent.com/efmleads.com/main/playwright-cli.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/efmleads.com/main/playwright-cli.sh | sh -s -- --version 0.1.18
 #
 # Read before you run (many enterprises forbid piping a script into a shell):
-#   curl -fsSLO https://raw.githubusercontent.com/kirodotdev/KiroCrew/main/playwright-cli.sh
+#   curl -fsSLO https://raw.githubusercontent.com/efmleads.com/main/playwright-cli.sh
 #   less playwright-cli.sh
 #   sh playwright-cli.sh --version 0.1.18
 #
@@ -98,7 +98,7 @@ ISOLATED_NPMRC=0
 
 # The package itself declares engines.node >= 18, but the floor that matters is
 # the one Kiro Crew's own browsing requires of this CLI: MIN_NODE_MAJOR in
-# src/kiro_crew/browser_cli/install.py, currently 20. Accepting 18 here would
+# src/efm_go/browser_cli/install.py, currently 20. Accepting 18 here would
 # install a CLI the product then refuses to drive, leaving the user with a tool
 # that works at the shell and not in the app. A test binds these two numbers
 # together so the pair cannot drift. What gets INSTALLED when nothing is usable is

@@ -15,17 +15,17 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.dashboard.chat_compaction_notice import notice_text
-from kiro_crew.messaging.queue_drain import (
+from efm_go.config import KiroCrewConfig
+from efm_go.dashboard.chat_compaction_notice import notice_text
+from efm_go.messaging.queue_drain import (
     QUEUED_CHANNEL_KEY,
     QUEUED_OWNER_KEY,
     entries_queued_by,
     register_drain,
     reset_drains,
 )
-from kiro_crew.session import SessionManager
-from kiro_crew.session_compaction import COMPACT_OUTCOME_WAITING_FOR_SUBAGENTS
+from efm_go.session import SessionManager
+from efm_go.session_compaction import COMPACT_OUTCOME_WAITING_FOR_SUBAGENTS
 
 
 async def _no_events(_command: str):
@@ -309,7 +309,7 @@ async def test_a_successor_that_fails_to_start_keeps_the_old_session(slack_drain
 @pytest.mark.asyncio
 async def test_a_restart_records_one_recycled_end(monkeypatch, fail_start):
     """The old session's end is recorded once; a failed start re-opens its record."""
-    import kiro_crew.session_compaction as sc
+    import efm_go.session_compaction as sc
 
     mgr, key, runs, order, _notices = await _setup()
     calls: list[tuple[str, str]] = []

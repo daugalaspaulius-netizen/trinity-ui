@@ -15,13 +15,13 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.chat_handlers import (
+from efm_go.dashboard.chat_handlers import (
     _is_interrupted,
     api_chat_slot_continue,
     session_start_failure_streak,
 )
-from kiro_crew.dashboard.chat_utils import SESSION_START_FAILED_KIND, SYNTHETIC_RECOVERY_KIND
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard.chat_utils import SESSION_START_FAILED_KIND, SYNTHETIC_RECOVERY_KIND
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
 
 def _make_app(state: DashboardState) -> web.Application:
@@ -59,8 +59,8 @@ def _patched(monkeypatch):
     mock_sel.log_tool_invocation = MagicMock()
     started = AsyncMock(return_value=True)
     with (
-        patch("kiro_crew.dashboard.chat_handlers.sel", return_value=mock_sel),
-        patch("kiro_crew.dashboard.chat_handlers._start_next_queued_turn", started),
+        patch("efm_go.dashboard.chat_handlers.sel", return_value=mock_sel),
+        patch("efm_go.dashboard.chat_handlers._start_next_queued_turn", started),
     ):
         yield started
 

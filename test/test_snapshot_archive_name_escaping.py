@@ -13,7 +13,7 @@ import tarfile
 import pytest
 from test_snapshot import snapshot_family_source
 
-from kiro_crew import snapshot as snap
+from efm_go import snapshot as snap
 
 # A cursor-up plus carriage return: enough to overwrite the line printed above it.
 EVIL = "\x1b[1A\rinnocent-looking"

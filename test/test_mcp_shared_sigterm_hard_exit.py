@@ -14,7 +14,7 @@ import threading
 
 import pytest
 
-from kiro_crew import mcp_shared
+from efm_go import mcp_shared
 
 
 class _Stream:

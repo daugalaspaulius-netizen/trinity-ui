@@ -24,7 +24,7 @@ from types import SimpleNamespace
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.session_transfer import (
+from efm_go.dashboard.session_transfer import (
     BUNDLE_VERSION,
     _validate_bundle,
     build_transfer_bundle_async,
@@ -58,7 +58,7 @@ class _OwnerReq(SimpleNamespace):
 
 def _export_gz(document) -> bytes:
     """The compressed export of *document*, staged, read and removed."""
-    from kiro_crew.dashboard.session_export import _stage_export
+    from efm_go.dashboard.session_export import _stage_export
 
     path = _stage_export(document)
     try:
@@ -69,7 +69,7 @@ def _export_gz(document) -> bytes:
 
 def _serialise(bundle):
     """The production serialiser, writing under the per-test egress dir."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     return st.write_bundle_file(bundle, compress=False)
 
@@ -104,7 +104,7 @@ def _isolate_import_tmp(tmp_path_factory, monkeypatch):
     Arriving bodies stream to disk before they are parsed; without this they would
     land under the real crew home. ``tmp_path_factory`` is pytest-managed, so
     nothing leaks (conftest's tmp-residue watchdog would otherwise flag it)."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     d = tmp_path_factory.mktemp("kc-import")
     monkeypatch.setattr(st, "_import_tmp_dir", lambda: d)
@@ -127,7 +127,7 @@ class _PersistentLine:
 
     def derive_messages_chained(self, key):
         """The derivation seam, as the real log implements it: line, then rows."""
-        from kiro_crew.history import TranscriptWithheld, is_incognito_transcript
+        from efm_go.history import TranscriptWithheld, is_incognito_transcript
 
         meta, readable = self.get_metadata_status(key)
         if not readable or is_incognito_transcript(meta.get("memory_mode")):
@@ -136,7 +136,7 @@ class _PersistentLine:
 
     @contextlib.contextmanager
     def publication_hold(self, key, *, expected_keys=None):
-        from kiro_crew.history import TranscriptBusy, TranscriptWithheld, is_incognito_transcript
+        from efm_go.history import TranscriptBusy, TranscriptWithheld, is_incognito_transcript
 
         meta, readable = self.get_metadata_status(key)
         if not readable:
@@ -259,8 +259,8 @@ async def test_send_handler_sends_each_turn_exactly_once(monkeypatch):
     carry in-place edits. So this asserts the invariant that actually matters:
     every turn appears exactly once.
     """
-    from kiro_crew.dashboard import handlers_instances as hi
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import handlers_instances as hi
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(
         hi.KiroCrewConfig,
@@ -319,7 +319,7 @@ async def test_send_handler_sends_each_turn_exactly_once(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_send_handler_revalidates_the_line_before_the_tunnel_post(monkeypatch):
-    from kiro_crew.dashboard import handlers_instances as hi
+    from efm_go.dashboard import handlers_instances as hi
 
     monkeypatch.setattr(
         hi.KiroCrewConfig,
@@ -330,7 +330,7 @@ async def test_send_handler_revalidates_the_line_before_the_tunnel_post(monkeypa
     class _TightensAtCommit(_FakeLog):
         @contextlib.contextmanager
         def publication_hold(self, _key, *, expected_keys=None):
-            from kiro_crew.history import TranscriptWithheld
+            from efm_go.history import TranscriptWithheld
 
             raise TranscriptWithheld("fake: tightened before tunnel send")
             yield
@@ -362,9 +362,9 @@ async def test_send_handler_revalidates_the_line_before_the_tunnel_post(monkeypa
 
 @pytest.mark.asyncio
 async def test_send_refuses_if_assembled_chain_loses_a_member(tmp_path, monkeypatch):
-    from kiro_crew.dashboard import handlers_instances as hi
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.history import ConversationLog
+    from efm_go.dashboard import handlers_instances as hi
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.history import ConversationLog
 
     monkeypatch.setattr(
         hi.KiroCrewConfig,
@@ -416,7 +416,7 @@ async def test_send_refuses_if_assembled_chain_loses_a_member(tmp_path, monkeypa
 async def test_build_bundle_async_offloads_the_blocking_read_to_a_thread():
     """The transcript read is large synchronous file IO; running it on the event
     loop stalls every task and starves the watchdog heartbeat."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     msgs = [{"role": "user", "content": "hi", "ts": ""}]
     slot = _slot(msgs)
@@ -449,7 +449,7 @@ async def test_import_offloads_agent_resolution_and_skips_it_when_unhinted(monke
     Also asserts the common case pays no thread hop: an empty hint resolves
     without touching disk at all.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     offloaded: list[object] = []
     real_to_thread = st.asyncio.to_thread
@@ -499,7 +499,7 @@ async def test_send_bundle_remints_once_when_the_peer_rejects_the_credential():
     """A retained credential can go stale while the tunnel stays CONNECTED, which
     is the condition ``token_validates`` exists for. One re-mint retry turns that
     into a transparent success instead of a spurious rejection."""
-    from kiro_crew.instances.ssh_tunnel_manager import (
+    from efm_go.instances.ssh_tunnel_manager import (
         SshTunnelManager,
         TunnelState,
         TunnelStatus,
@@ -558,7 +558,7 @@ async def test_send_bundle_remints_once_when_the_peer_rejects_the_credential():
             sent.append(cookie)
             return _Resp(403 if "stale" in cookie else 200)
 
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     original = mod.aiohttp.ClientSession
     mod.aiohttp.ClientSession = lambda *a, **k: _Session()  # type: ignore[assignment]
@@ -580,7 +580,7 @@ async def test_bundle_refuses_while_a_rewrite_is_still_owed():
     rewrite is written. Until then disk holds the pre-edit transcript and is
     longer than the resident window, so the boundary slice appends nothing and a
     bundle would carry turns the user explicitly rewound away."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     kept = {"role": "user", "content": "kept", "ts": ""}
     rewound = {"role": "assistant", "content": "rewound away", "ts": ""}
@@ -600,7 +600,7 @@ async def test_bundle_refuses_while_a_rewrite_is_still_owed():
 async def test_import_refuses_when_the_durable_save_fails(monkeypatch):
     """A swallowed write failure would ack a transfer that only exists in memory,
     so a restart before the next flush would lose the imported session."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -641,7 +641,7 @@ async def test_bundle_redacts_assistant_content_on_the_way_out():
 def test_session_transfer_is_registered_as_an_egress_sink():
     """It emits transcript content off-host, so the posture panel must count it
     as an output boundary rather than allowlisting it as non-egress."""
-    from kiro_crew.security_posture import (
+    from efm_go.security_posture import (
         _REDACTION_SINKS,
         NON_EGRESS_REDACTION_MODULES,
     )
@@ -676,7 +676,7 @@ async def test_bundle_refuses_when_the_boundary_is_ahead_of_the_window():
     adjusting the boundary. A transfer started during that turn would ship only
     the on-disk turns and still answer 200.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     persisted = [
         {"role": "user", "content": "u1", "ts": ""},
@@ -706,7 +706,7 @@ async def test_bundle_reads_the_transcript_key_not_the_session_key():
     ``chat_utils`` documents the split: transcript paths use
     ``slot_history_key``.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     reads: list[str] = []
 
@@ -743,7 +743,7 @@ async def test_bundle_flushes_a_dirty_slot_so_in_place_edits_travel(monkeypatch)
     advances the boundary, unlike the ``_resumed_count`` slice this originally
     used.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     edited = {"role": "assistant", "content": "the NEW variant", "ts": ""}
     disk = {"messages": [{"role": "assistant", "content": "the old variant", "ts": ""}]}
@@ -775,7 +775,7 @@ async def test_bundle_flushes_a_dirty_slot_so_in_place_edits_travel(monkeypatch)
 @pytest.mark.asyncio
 async def test_bundle_refuses_when_the_pre_bundle_flush_fails(monkeypatch):
     """An unpersistable source must fail the transfer, not ship a stale copy."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     msgs = [{"role": "user", "content": "hi", "ts": ""}]
     slot = _slot(msgs)
@@ -800,7 +800,7 @@ async def test_send_refuses_an_app_that_does_not_own_the_slot(monkeypatch):
     404, not 403: a slot owned by another app must be indistinguishable from one
     that does not exist (CWE-204), matching chat_fork.
     """
-    from kiro_crew.dashboard import handlers_instances as hi
+    from efm_go.dashboard import handlers_instances as hi
 
     monkeypatch.setattr(
         hi.KiroCrewConfig,
@@ -861,7 +861,7 @@ async def test_import_broadcasts_the_rollback_so_no_phantom_slot_remains(monkeyp
     fold the slot was published at creation, so a rollback had to broadcast its
     removal; the fold removed the early publish, and with it the need.)
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     pushes = {"n": 0}
@@ -891,7 +891,7 @@ async def test_bundle_refuses_when_the_slot_never_settles(monkeypatch):
     """An edit landing inside the flush spends an attempt rather than being
     trusted. A slot that keeps changing exhausts the budget and is refused —
     the transfer never ships a transcript it could not pin down."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     msgs = [{"role": "assistant", "content": "old variant", "ts": ""}]
     slot = _slot(msgs)
@@ -921,7 +921,7 @@ async def test_retry_reflushes_so_it_cannot_serialize_a_superseded_variant(monke
     Re-reading disk without flushing again would serialize the superseded
     content — the exact staleness the flush exists to prevent.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     disk: list = [{"role": "assistant", "content": "old variant", "ts": ""}]
     slot = _slot(disk)
@@ -1073,7 +1073,7 @@ async def _identity_exchange(url, link, cookie_name):
 
 @pytest.mark.asyncio
 async def test_send_bundle_refuses_when_peer_not_connected():
-    from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+    from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
     mgr = SshTunnelManager.__new__(SshTunnelManager)
     # The generation map: this carrier re-reads the forward it resolved
@@ -1089,7 +1089,7 @@ async def test_send_bundle_refuses_when_peer_not_connected():
 
 @pytest.mark.asyncio
 async def test_send_bundle_refuses_when_no_credential_is_held():
-    from kiro_crew.instances.ssh_tunnel_manager import (
+    from efm_go.instances.ssh_tunnel_manager import (
         SshTunnelManager,
         TunnelState,
         TunnelStatus,
@@ -1114,8 +1114,8 @@ async def test_send_bundle_refuses_when_no_credential_is_held():
 
 @pytest.mark.asyncio
 async def test_send_bundle_reports_an_unreachable_peer_without_leaking_the_bundle(monkeypatch):
-    from kiro_crew.instances import ssh_tunnel_manager as mod
-    from kiro_crew.instances.ssh_tunnel_manager import (
+    from efm_go.instances import ssh_tunnel_manager as mod
+    from efm_go.instances.ssh_tunnel_manager import (
         SshTunnelManager,
         TunnelState,
         TunnelStatus,
@@ -1206,7 +1206,7 @@ async def test_send_bundle_names_an_older_peer_when_the_importer_is_missing(stat
     405 is the shape a real pre-importer peer produces: the path falls through
     to ``/api/chat/slots/{slot}``, which is registered GET/DELETE only.
     """
-    from kiro_crew.instances.ssh_tunnel_manager import (
+    from efm_go.instances.ssh_tunnel_manager import (
         SshTunnelManager,
         TunnelState,
         TunnelStatus,
@@ -1230,7 +1230,7 @@ async def test_send_bundle_names_an_older_peer_when_the_importer_is_missing(stat
     mgr.refresh_token = _no_remint  # type: ignore[method-assign]
     session_cls, posts = _peer_answering(status)
 
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     original = mod.aiohttp.ClientSession
     mod.aiohttp.ClientSession = lambda *a, **k: session_cls()  # type: ignore[assignment]
@@ -1258,7 +1258,7 @@ def test_importer_never_answers_404_or_405():
     """
     from pathlib import Path
 
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     source = Path(st.__file__).read_text(encoding="utf-8")
     assert "status=404" not in source
@@ -1277,7 +1277,7 @@ async def test_import_creates_a_new_slot_with_no_project(monkeypatch):
     ``_materialise_slot_from_history``, which never sets a project. The assertion
     is that the resulting slot is a fresh, unscoped copy.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     created: dict = {}
     slot = await _run_import(
@@ -1313,7 +1313,7 @@ async def test_import_creates_a_new_slot_with_no_project(monkeypatch):
 async def test_import_response_never_carries_a_credential(monkeypatch):
     """instances.md §6: connect + refresh-token are the ONLY token-crossing
     routes. A transfer response must not become a third."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     resp = await _run_import(st, monkeypatch, _valid())
     body = json.loads(resp.body)
@@ -1324,7 +1324,7 @@ async def test_import_response_never_carries_a_credential(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_import_rejects_an_unknown_version_over_http(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     resp = await _run_import(st, monkeypatch, _valid(bundle_version=42))
     assert resp.status == 400
@@ -1333,7 +1333,7 @@ async def test_import_rejects_an_unknown_version_over_http(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_import_rejects_invalid_json(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     request = _make_request(state, None, raw="{not json")
@@ -1345,7 +1345,7 @@ async def test_import_rejects_invalid_json(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_import_refuses_past_the_slot_cap(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     state._slots = {f"s{i}": object() for i in range(500)}
@@ -1359,7 +1359,7 @@ async def test_import_refuses_past_the_slot_cap(monkeypatch):
 async def test_import_redacts_assistant_content_but_not_the_users_own_words(monkeypatch):
     """Matches the fork path: inbound assistant text is redacted, the human's
     own turn is left verbatim so their words are never corrupted."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     secret = "AKIAIOSFODNN7EXAMPLE"
     resp_slot = await _run_import(
@@ -1381,7 +1381,7 @@ async def test_import_redacts_assistant_content_but_not_the_users_own_words(monk
 
 @pytest.mark.asyncio
 async def test_import_drops_an_agent_the_target_does_not_have(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_resolve_agent", lambda _n: "")
     created = {}
@@ -1401,7 +1401,7 @@ async def test_import_redacts_off_the_loop_before_construction(monkeypatch):
     is free to service other turns. This pins that the redaction pass is
     dispatched to a thread rather than run inline on the loop.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     offloaded = []
     real_to_thread = asyncio.to_thread
@@ -1433,9 +1433,9 @@ async def test_import_persists_every_row_of_a_bundle_over_the_window(monkeypatch
     row trimmed the oldest ones out of the window before the save, and nothing
     else held them, so they were lost.
     """
-    from kiro_crew.dashboard import chat_persistence as cp
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.history import ConversationLog
+    from efm_go.dashboard import chat_persistence as cp
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.history import ConversationLog
 
     log = ConversationLog(base_dir=tmp_path / "sessions")
 
@@ -1461,9 +1461,9 @@ async def test_import_persists_every_row_of_a_bundle_over_the_window(monkeypatch
 async def test_a_failed_save_removes_the_import_prefix(monkeypatch, tmp_path):
     """The prefix is written just before the save; a save that fails must not
     leave it behind as a stray transcript of an import that was refused."""
-    from kiro_crew.dashboard import chat_persistence as cp
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.history import ConversationLog
+    from efm_go.dashboard import chat_persistence as cp
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.history import ConversationLog
 
     log = ConversationLog(base_dir=tmp_path / "sessions")
     seen: list = []
@@ -1490,8 +1490,8 @@ async def test_a_cancelled_import_never_publishes_its_prefix(monkeypatch, tmp_pa
     rows."""
     import threading
 
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.history import ConversationLog
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.history import ConversationLog
 
     log = ConversationLog(base_dir=tmp_path / "sessions")
     writing, release, done = threading.Event(), threading.Event(), threading.Event()
@@ -1533,9 +1533,9 @@ async def test_a_cancel_after_the_prefix_landed_removes_it(monkeypatch, tmp_path
     save's worker cannot be stopped and reads the prefix back as it writes, so
     nothing is removed while it runs; once it finishes, the transcript it
     published is removed, never left as an orphan or a truncated copy."""
-    from kiro_crew.dashboard import chat_persistence as cp
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.history import ConversationLog
+    from efm_go.dashboard import chat_persistence as cp
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.history import ConversationLog
 
     log = ConversationLog(base_dir=tmp_path / "sessions")
     saving, release = asyncio.Event(), asyncio.Event()
@@ -1577,7 +1577,7 @@ def test_the_import_prefix_is_streamed_not_joined(tmp_path):
     reserved, on exactly the large imports it admits."""
     import tracemalloc
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     n, width = 4000, 2000
     rows = [
@@ -1614,7 +1614,7 @@ def test_the_prefix_rename_runs_outside_the_publication_lock(monkeypatch, tmp_pa
     """The cancellation arm takes the publication lock on the event loop, so the
     worker never holds it across the rename (whose Windows retry sleeps). A
     cancellation that lands while the rename runs still removes the file."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     publication = st._PrefixPublication()
     real_replace = st.replace_with_retry
@@ -1638,7 +1638,7 @@ def test_the_prefix_rename_runs_outside_the_publication_lock(monkeypatch, tmp_pa
 
 def test_a_failed_prefix_write_leaves_no_file(monkeypatch, tmp_path):
     """A write that fails part-way leaves neither the target nor its staged copy."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     calls = {"n": 0}
     real = st._build_message_entry_uncached
@@ -1670,7 +1670,7 @@ async def test_import_does_not_arm_the_disk_delete_won_guard(monkeypatch):
     metadata and has no pre-existing file, so setting the observed bit would arm
     the guard against a disk read that never happened.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     slot = await _run_import(st, monkeypatch, _valid(), return_slot=True)
     assert slot._disk_meta_observed is False, (
@@ -1690,8 +1690,8 @@ async def test_imported_rows_are_replayed_silently_not_broadcast(monkeypatch):
     peer content to every client and retire live question cards. Every appended
     row must therefore carry ``broadcast=False``.
     """
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.dashboard.chat_handlers import _ChatSlot
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.dashboard.chat_handlers import _ChatSlot
 
     seen_broadcast: list[bool] = []
     real_append = _ChatSlot.append
@@ -1725,7 +1725,7 @@ async def test_imported_rows_carry_a_minted_mid(monkeypatch):
     rows land permanently id-less and drop out of every mid-keyed feature
     (row-identity dedup, the non-legacy Fork path).
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     msgs = [
         {"role": "user", "content": "q", "ts": ""},
@@ -1753,7 +1753,7 @@ def _sessions(sid):
 def test_layer_b_bundle_carries_the_context_when_the_session_has_one(monkeypatch, tmp_path):
     """Layer B is what makes an imported session RESUME instead of replaying a
     lossy transcript prefix, so it must ride along when the session has one."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     sid = "11111111-2222-3333-4444-555555555555"
     (tmp_path / f"{sid}.json").write_text(
@@ -1773,7 +1773,7 @@ def test_layer_b_bundle_carries_the_context_when_the_session_has_one(monkeypatch
 def test_layer_b_is_absent_when_the_session_has_no_kiro_context(monkeypatch, tmp_path):
     """A brand-new slot (or a pruned map entry) has no Layer B; the transfer must
     degrade to transcript-only rather than fail."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
 
@@ -1782,7 +1782,7 @@ def test_layer_b_is_absent_when_the_session_has_no_kiro_context(monkeypatch, tmp
 
 def test_layer_b_absent_when_the_files_were_pruned(monkeypatch, tmp_path):
     """A map entry can outlive its files; a missing pair is not an error."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
 
@@ -1791,7 +1791,7 @@ def test_layer_b_absent_when_the_files_were_pruned(monkeypatch, tmp_path):
 
 def test_events_jsonl_loadable_accepts_valid_and_rejects_truncated():
     """Structural check only -- it must never rewrite what it inspects."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     blob = (
         json.dumps({"kind": "Prompt", "data": {"content": "hi", "n": 1}})
@@ -1817,7 +1817,7 @@ def test_events_jsonl_validation_holds_one_record_at_a_time():
     admission, so validating them must not materialise every record at once."""
     import tracemalloc
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     records = 200_000
     blob = "{}\n" * records
@@ -1836,7 +1836,7 @@ def test_events_jsonl_validation_holds_one_record_at_a_time():
 async def test_unparseable_layer_b_degrades_to_transcript_only(monkeypatch, tmp_path):
     """End-to-end on the send side: a crash-truncated source blob must produce a
     bundle with no Layer B rather than one the peer cannot load."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     sid = "eeeeeeee-1111-2222-3333-555555555555"
     (tmp_path / f"{sid}.json").write_text(json.dumps({"session_id": sid}), encoding="utf-8")
@@ -1849,7 +1849,7 @@ async def test_unparseable_layer_b_degrades_to_transcript_only(monkeypatch, tmp_
 @pytest.mark.asyncio
 async def test_import_refuses_unparseable_layer_b_from_the_peer(monkeypatch, tmp_path):
     """The sender is not trusted: an unparseable blob must not be installed."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
 
@@ -1858,7 +1858,7 @@ async def test_import_refuses_unparseable_layer_b_from_the_peer(monkeypatch, tmp
 
 
 def test_events_jsonl_handles_empty_and_blank():
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     assert st._events_jsonl_is_loadable("") is True
     assert st._events_jsonl_is_loadable("\n\n") is True
@@ -1907,7 +1907,7 @@ def test_layer_b_leaves_the_conversation_byte_exact_on_egress(monkeypatch, tmp_p
     """Layer B ships verbatim. Redacting it and transplanting it cannot both hold:
     the thinking-block signature covers the content, so a scrub invalidates the
     conversation the transfer exists to carry."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     sid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
     events = json.dumps({"kind": "AssistantMessage", "data": {"text": "ok"}}) + "\n"
@@ -1930,7 +1930,7 @@ async def test_layer_b_is_skipped_while_a_turn_is_in_flight(monkeypatch):
     turn persists. A mid-turn bundle would therefore pair a transcript that SHOWS
     the prompt with a context that lacks it, and the peer would resume the model
     behind its own visible transcript. Degrade to transcript-only instead."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     msgs = [{"role": "user", "content": "hi", "ts": ""}]
     slot = _slot(msgs)
@@ -1950,7 +1950,7 @@ async def test_layer_b_is_skipped_while_a_turn_is_in_flight(monkeypatch):
 @pytest.mark.asyncio
 async def test_layer_b_travels_when_the_slot_is_idle(monkeypatch, tmp_path):
     """The positive case: an idle slot still carries its context."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     sid = "cccccccc-1111-2222-3333-444444444444"
     (tmp_path / f"{sid}.json").write_text(json.dumps({"session_id": sid}), encoding="utf-8")
@@ -1974,7 +1974,7 @@ async def test_layer_b_eligibility_is_recomputed_on_snapshot_retry(monkeypatch):
     once up front, the retry would ship the new prompt alongside the pre-turn
     Layer B — the exact skew the mid-turn check exists to prevent, reintroduced
     through the retry path."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     msgs = [{"role": "user", "content": "persisted", "ts": ""}]
     slot = _slot(msgs)
@@ -2012,7 +2012,7 @@ async def test_imported_tab_is_marked_when_it_arrived_transcript_only(monkeypatc
     """The sender's row is ephemeral (component state in a menu that closes), but
     the consequence is felt later on the RECEIVING machine. The tab title is the
     surface that persists and sits where the loss will be discovered."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_write_layer_b_files", lambda *_a, **_k: None)
     monkeypatch.setattr(st, "_join_layer_b", lambda *_a, **_k: False)
@@ -2025,7 +2025,7 @@ async def test_imported_tab_is_marked_when_it_arrived_transcript_only(monkeypatc
 
 @pytest.mark.asyncio
 async def test_imported_tab_is_not_marked_when_layer_b_landed(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_write_layer_b_files", lambda *_a, **_k: "sid")
     monkeypatch.setattr(st, "_join_layer_b", lambda *_a, **_k: True)
@@ -2040,7 +2040,7 @@ async def test_imported_tab_is_not_marked_when_layer_b_landed(monkeypatch):
 async def test_a_v1_import_is_not_marked_transcript_only(monkeypatch):
     """A v1 bundle carries no context by construction — the copy is exactly what
     was sent, so flagging it would cry wolf."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     slot = await _run_import(st, monkeypatch, _valid(bundle_version=1), return_slot=True)
 
@@ -2054,7 +2054,7 @@ def test_read_layer_b_takes_a_sid_not_the_live_manager():
     reach the map."""
     import inspect
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     params = inspect.signature(st._read_layer_b).parameters
     assert list(params) == ["sid"]
@@ -2064,7 +2064,7 @@ def test_read_layer_b_takes_a_sid_not_the_live_manager():
 
 
 def test_resolve_layer_b_sid_is_the_loop_side_lookup():
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     assert st._resolve_layer_b_sid(_sessions("the-sid"), "dashboard:slot-1") == "the-sid"
     assert st._resolve_layer_b_sid(_sessions(None), "dashboard:slot-1") == ""
@@ -2072,7 +2072,7 @@ def test_resolve_layer_b_sid_is_the_loop_side_lookup():
 
 
 def test_resolve_layer_b_sid_swallows_lookup_failure():
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     def _boom(_k):
         raise RuntimeError("map unreadable")
@@ -2083,7 +2083,7 @@ def test_resolve_layer_b_sid_swallows_lookup_failure():
 def test_layer_b_envelope_rewrite_neutralises_the_source_host():
     """The conversation state (what makes resume work) is kept verbatim; only the
     fields that reference the SOURCE host are rewritten."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     env = {
         "session_id": "old-sid",
@@ -2123,7 +2123,7 @@ def test_layer_b_envelope_rewrite_neutralises_the_source_host():
 
 def test_layer_b_rewrite_tolerates_a_minimal_envelope():
     """A peer on a different kiro-cli build may omit whole subtrees."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     out = st._rewrite_layer_b_envelope({}, "fresh-sid", "")
 
@@ -2137,7 +2137,7 @@ def test_write_layer_b_files_writes_a_fresh_sid_and_never_touches_the_map(monkey
     which races the event loop's own map writes."""
     import inspect
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
 
@@ -2165,7 +2165,7 @@ def test_write_layer_b_files_writes_a_fresh_sid_and_never_touches_the_map(monkey
 
 
 def test_write_layer_b_files_returns_none_on_failure(monkeypatch, tmp_path):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     def _boom():
         raise OSError("no dir")
@@ -2184,7 +2184,7 @@ def test_join_layer_b_goes_through_the_live_manager():
     cannot be constructed, and the body's own comments legitimately mention the
     hazard they prevent.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     assert not hasattr(st, "SessionMap"), "session_transfer must not import SessionMap"
     recorded: dict = {}
@@ -2199,7 +2199,7 @@ def test_join_layer_b_goes_through_the_live_manager():
 
 
 def test_join_layer_b_without_a_live_manager_is_a_clean_no():
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     assert st._join_layer_b(None, "k", "sid") is False
 
@@ -2207,7 +2207,7 @@ def test_join_layer_b_without_a_live_manager_is_a_clean_no():
 def test_join_layer_b_is_best_effort():
     """A join failure must NOT fail an already-persisted import — the session
     still opens as the transcript-only copy."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     def _boom(*_a, **_k):
         raise OSError("map write failed")
@@ -2216,7 +2216,7 @@ def test_join_layer_b_is_best_effort():
 
 
 def test_bundle_includes_layer_b_when_present():
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     msgs = [{"role": "user", "content": "hi", "ts": ""}]
     bundle = st._assemble_bundle(
@@ -2230,7 +2230,7 @@ def test_bundle_includes_layer_b_when_present():
 
 
 def test_bundle_omits_layer_b_when_the_session_has_none():
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     bundle = st._assemble_bundle(
         [{"role": "user", "content": "hi", "ts": ""}], "t", "", "mac", None
@@ -2277,7 +2277,7 @@ def test_validate_rejects_a_malformed_layer_b(layer_b, code):
 @pytest.mark.asyncio
 async def test_import_materialises_layer_b_so_the_session_resumes(monkeypatch):
     """End-to-end on the receiving side: a v2 bundle must land a joined Layer B."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     calls: dict = {}
 
@@ -2304,7 +2304,7 @@ async def test_import_materialises_layer_b_so_the_session_resumes(monkeypatch):
 async def test_import_still_succeeds_when_layer_b_cannot_be_materialised(monkeypatch):
     """Best-effort: the transcript copy already persisted, so a Layer B failure
     must not turn a landed import into an error."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_write_layer_b_files", lambda *_a, **_k: None)
     monkeypatch.setattr(st, "_join_layer_b", lambda *_a, **_k: False)
@@ -2316,7 +2316,7 @@ async def test_import_still_succeeds_when_layer_b_cannot_be_materialised(monkeyp
 
 @pytest.mark.asyncio
 async def test_import_of_a_v1_bundle_does_not_touch_layer_b(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     called = {"n": 0}
 
@@ -2336,7 +2336,7 @@ async def test_import_reports_session_load_when_layer_b_landed(monkeypatch):
     """The sender must be able to tell a full copy from a degraded one — without
     this the feature's own failure mode (a silently lossy copy) shows the same
     green "Sent" as a successful resume."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_write_layer_b_files", lambda *_a, **_k: "new-sid")
     monkeypatch.setattr(st, "_join_layer_b", lambda *_a, **_k: True)
@@ -2354,7 +2354,7 @@ async def test_a_carried_bundle_resumes_and_its_tab_is_not_marked_transcript_onl
     through ``session/load`` and must NOT wear the "transcript only" suffix -- the
     suffix is for a degraded copy, and a carried export is not degraded.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_write_layer_b_files", lambda *_a, **_k: "new-sid")
     monkeypatch.setattr(st, "_join_layer_b", lambda *_a, **_k: True)
@@ -2369,7 +2369,7 @@ async def test_a_carried_bundle_resumes_and_its_tab_is_not_marked_transcript_onl
 
 @pytest.mark.asyncio
 async def test_import_reports_prefix_when_layer_b_failed(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_write_layer_b_files", lambda *_a, **_k: None)
     monkeypatch.setattr(st, "_join_layer_b", lambda *_a, **_k: False)
@@ -2382,7 +2382,7 @@ async def test_import_reports_prefix_when_layer_b_failed(monkeypatch):
 async def test_import_reports_prefix_for_a_v1_bundle(monkeypatch):
     """A v1 bundle carries no context by construction, so "prefix" is the honest
     answer rather than an error."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     resp = await _run_import(st, monkeypatch, _valid(bundle_version=1))
 
@@ -2394,7 +2394,7 @@ async def test_send_bundle_downgrades_to_v1_when_the_peer_refuses_v2():
     """Gaining Layer B must not REMOVE the ability to send to a not-yet-upgraded
     peer: an older peer refuses bundle_version 2 outright, so retry once with the
     transcript-only v1 shape it has always accepted."""
-    from kiro_crew.instances.ssh_tunnel_manager import (
+    from efm_go.instances.ssh_tunnel_manager import (
         SshTunnelManager,
         TunnelState,
         TunnelStatus,
@@ -2444,7 +2444,7 @@ async def test_send_bundle_downgrades_to_v1_when_the_peer_refuses_v2():
                 return _Resp(400, {"code": "transfer_version_unsupported"})
             return _Resp(200, {"key": "remote-1", "resume_mode": "prefix"})
 
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     original = mod.aiohttp.ClientSession
     mod.aiohttp.ClientSession = lambda *a, **k: _Session()  # type: ignore[assignment]
@@ -2467,7 +2467,7 @@ async def test_send_bundle_downgrades_to_v1_when_the_peer_refuses_v2():
 @pytest.mark.asyncio
 async def test_send_bundle_downgrades_only_once():
     """A peer that refuses BOTH versions must surface an error, not spin."""
-    from kiro_crew.instances.ssh_tunnel_manager import (
+    from efm_go.instances.ssh_tunnel_manager import (
         SshTunnelManager,
         TunnelState,
         TunnelStatus,
@@ -2512,7 +2512,7 @@ async def test_send_bundle_downgrades_only_once():
             posts["n"] += 1
             return _Resp()
 
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     original = mod.aiohttp.ClientSession
     mod.aiohttp.ClientSession = lambda *a, **k: _Session()  # type: ignore[assignment]
@@ -2532,7 +2532,7 @@ def _size_refusing_peer(refusal_code: str):
     """A manager whose peer refuses any bundle carrying Layer B with *refusal_code*,
     the way an importer that still enforces the size ceilings does. Returns the
     manager, the list of posted bundles, and the fake ``ClientSession`` factory."""
-    from kiro_crew.instances.ssh_tunnel_manager import (
+    from efm_go.instances.ssh_tunnel_manager import (
         SshTunnelManager,
         TunnelState,
         TunnelStatus,
@@ -2587,7 +2587,7 @@ async def test_send_bundle_drops_layer_b_when_an_older_peer_refuses_the_size(cod
     """This side sends Layer B whatever its size, but a peer on an older release
     enforces a ceiling and refuses the whole bundle. That peer accepts the
     session transcript-only, so resend it that way rather than fail it."""
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     mgr, seen, session_factory = _size_refusing_peer(code)
     original = mod.aiohttp.ClientSession
@@ -2612,7 +2612,7 @@ async def test_send_bundle_drops_layer_b_when_an_older_peer_refuses_the_size(cod
 async def test_send_bundle_surfaces_a_size_refusal_without_layer_b():
     """A bundle that has no Layer B to drop is refused as it was: the fallback
     retries once, only when there is something to take out."""
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     mgr, seen, _ = _size_refusing_peer("transfer_bundle_too_large")
 
@@ -2662,7 +2662,7 @@ async def test_layer_b_lands_before_the_transcript_is_persisted(monkeypatch):
     context and the later join binds to nothing — the silent context loss this
     feature exists to prevent. So the join must be written FIRST.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     order: list[str] = []
 
@@ -2689,7 +2689,7 @@ async def test_failed_save_rolls_back_the_layer_b_join(monkeypatch):
     """Because the join now precedes the save, a rollback has to undo it — else
     the map keeps an entry for a tab that does not exist and the
     ``<sid>.{json,jsonl}`` pair lingers until a prune sweeps it."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     forgotten: list[str] = []
     monkeypatch.setattr(st, "_write_layer_b_files", lambda *_a, **_k: "new-sid")
@@ -2709,7 +2709,7 @@ async def test_failed_save_rolls_back_the_layer_b_join(monkeypatch):
 
 
 def test_unlink_layer_b_files_removes_the_pair(tmp_path, monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     sid = "dddddddd-eeee-ffff-0000-111111111111"
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
@@ -2723,7 +2723,7 @@ def test_unlink_layer_b_files_removes_the_pair(tmp_path, monkeypatch):
 
 
 def test_forget_layer_b_join_returns_the_sid_for_file_cleanup():
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     dropped: list[str] = []
     live = SimpleNamespace(forget_conversation=lambda key: (dropped.append(key), "old-sid")[1])
@@ -2733,7 +2733,7 @@ def test_forget_layer_b_join_returns_the_sid_for_file_cleanup():
 
 
 def test_forget_layer_b_join_is_silent_without_a_live_manager():
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     assert st._forget_layer_b_join(None, "k") == ""  # must not raise
 
@@ -2752,7 +2752,7 @@ async def test_slot_is_unreachable_until_construction_finishes(monkeypatch):
     Retracting is safe here because import mints its own key (no concurrent
     same-key request can target it), unlike a client-supplied resume key.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     seen_registered: list[bool] = []
     seen_under_construction: list[bool] = []
@@ -2796,7 +2796,7 @@ async def test_send_bundle_downgrades_a_v2_bundle_that_has_no_layer_b():
     """A session with no kiro-cli context ships v2 with NO ``layer_b`` key. Gating
     the downgrade on Layer B presence would skip exactly those transfers and fail
     them against a v1 peer, so the gate is the VERSION."""
-    from kiro_crew.instances.ssh_tunnel_manager import (
+    from efm_go.instances.ssh_tunnel_manager import (
         SshTunnelManager,
         TunnelState,
         TunnelStatus,
@@ -2845,7 +2845,7 @@ async def test_send_bundle_downgrades_a_v2_bundle_that_has_no_layer_b():
                 return _Resp(400, {"code": "transfer_version_unsupported"})
             return _Resp(200, {"key": "remote-1"})
 
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     original = mod.aiohttp.ClientSession
     mod.aiohttp.ClientSession = lambda *a, **k: _Session()  # type: ignore[assignment]
@@ -2921,7 +2921,7 @@ def _stub_state(st, monkeypatch, save=None):
     # happens to touch would silently diverge from the production slot; a real
     # one cannot. get_or_create_slot below mints the key the same way the real
     # one does (name=None -> a fresh key).
-    from kiro_crew.dashboard.chat_handlers import _ChatSlot
+    from efm_go.dashboard.chat_handlers import _ChatSlot
 
     def _get_or_create(name=None, *_a, **kwargs):
         s = _ChatSlot(name or "imported-1", agent=kwargs.get("agent", ""))
@@ -3018,7 +3018,7 @@ async def _run_import(
 ):
     state = state if state is not None else _stub_state(st, monkeypatch, save=save)
     if created is not None:
-        from kiro_crew.dashboard.chat_handlers import _ChatSlot
+        from efm_go.dashboard.chat_handlers import _ChatSlot
 
         def _get_or_create(name=None, *_a, **kwargs):
             created.clear()
@@ -3057,7 +3057,7 @@ def test_layer_b_is_read_in_full_without_a_size_cap(monkeypatch, tmp_path):
     context window is copied, not silently dropped, so a resumable session stays
     resumable however big its context is.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     sid = "big"
     (tmp_path / f"{sid}.json").write_text(json.dumps({"session_id": sid}), encoding="utf-8")
@@ -3078,7 +3078,7 @@ def test_imported_layer_b_is_owner_only(monkeypatch, tmp_path):
     result. Default umask 022 would publish the imported copy at 0644 for any
     other local user to read.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     d = tmp_path / "cli"  # absent, so this call is the one that creates it
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: d)
@@ -3102,7 +3102,7 @@ def test_import_does_not_repermission_kiro_clis_existing_dir(monkeypatch, tmp_pa
     would mutate posture on a directory the feature does not own. The FILES are
     owner-only either way, which is what actually contains the context.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     d = tmp_path / "cli"
     d.mkdir()
@@ -3128,7 +3128,7 @@ def test_layer_b_write_leaves_no_temp_file_behind(monkeypatch, tmp_path):
     deterministic ``<name>.tmp``, which is what made concurrent writers race to
     ENOENT. Pin that only the two real files remain.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
 
@@ -3161,7 +3161,7 @@ def test_validate_carries_the_skipped_flag_through():
 
 def test_mid_turn_bundle_announces_that_it_withheld_context():
     """An absent ``layer_b`` is ambiguous on the wire; the sender disambiguates."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     skipped = st._assemble_bundle([], "t", "", "mac", None, True)
     never_had = st._assemble_bundle([], "t", "", "mac", None, False)
@@ -3182,7 +3182,7 @@ async def test_imported_tab_is_marked_when_the_sender_withheld_layer_b(monkeypat
     never had a context by ``test_import_creates_a_new_slot_with_no_project``
     (plain ``_valid()``, no flag -> no suffix).
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     bundle = _valid(layer_b_skipped=True)
     bundle.pop("layer_b", None)
@@ -3203,7 +3203,7 @@ def test_retracted_import_slot_still_counts_against_the_cap():
     total that excluded every other import in flight -- and all of them would be
     waved past a cap that was already full.
     """
-    from kiro_crew.dashboard.state import DashboardState
+    from efm_go.dashboard.state import DashboardState
 
     state = DashboardState.__new__(DashboardState)
     state._slots = {"chat-1": object()}
@@ -3228,7 +3228,7 @@ async def test_import_releases_the_construction_count_on_every_exit(monkeypatch)
     Drives the failure path (the durable save refuses, which returns 503 from
     inside the ``try``) and asserts the release happened anyway.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     async def _boom(*_a, **_k):
         raise RuntimeError("disk gone")
@@ -3246,7 +3246,7 @@ async def test_import_releases_the_construction_count_on_every_exit(monkeypatch)
 async def test_import_releases_the_construction_count_on_success(monkeypatch):
     """The success path publishes the slot and stops counting it separately, so
     the total does not double-count a landed import."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     resp = await st.api_chat_slot_import(_make_request(state, _valid()))
@@ -3264,7 +3264,7 @@ def test_a_mapped_but_unreadable_layer_b_is_reported_as_withheld(monkeypatch):
     -- otherwise the imported tab looks like a complete copy with no resumable
     context behind it. An empty sid stays silent: there was nothing to carry.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_read_chained_history", lambda _state, key: ([], (key,)))
     monkeypatch.setattr(st, "_read_layer_b", lambda _sid: None)
@@ -3295,8 +3295,8 @@ def test_layer_b_is_discarded_when_owner_lockdown_fails(monkeypatch, tmp_path):
     at ``platform_compat.restrict_to_owner`` -- the module-level function the
     helper calls -- not at a name in this module.
     """
-    from kiro_crew import platform_compat
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go import platform_compat
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
 
@@ -3325,8 +3325,8 @@ def test_layer_b_lockdown_precedes_content(monkeypatch, tmp_path):
     payload byte existed yet. A post-write stat passes on the buggy ordering
     too, so it would not be a regression test.
     """
-    from kiro_crew import platform_compat
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go import platform_compat
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
     sizes: list[int] = []
@@ -3360,7 +3360,7 @@ def test_import_preserves_the_thinking_signature_verbatim(monkeypatch, tmp_path)
     Asserts on the byte-level file content, not on the in-memory dict, because the
     file is what kiro-cli reads.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
     sig = _THINKING_ENVELOPE["session_state"]["conversation_metadata"]["user_turn_metadatas"][0][
@@ -3394,7 +3394,7 @@ def test_layer_b_write_leaves_no_half_pair_when_the_second_write_fails(monkeypat
     """The pair is written one file at a time. A failure on the SECOND write left
     the first behind: an orphan no join references, that ``_read_layer_b`` will not
     load (it needs both), and that nothing else cleans up."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "kiro_sessions_dir", lambda: tmp_path)
     real_write = st.atomic_write
@@ -3423,7 +3423,7 @@ async def test_import_rolls_back_layer_b_on_cancellation(monkeypatch):
     """``CancelledError`` is a BaseException, so the ordinary ``except Exception``
     never saw it -- a shutdown after the join left an orphaned map entry and files
     behind a slot that never publishes."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     forgotten: list[str] = []
     unlinked: list[str] = []
@@ -3464,7 +3464,7 @@ async def test_a_refusal_cleans_layer_b_when_the_delete_left_no_replacement(monk
     Mutation-checked: collapsing the two cases back into one ``else`` leaves
     ``unlinked`` empty here while the replacement test below still passes.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     forgotten: list[str] = []
     unlinked: list[str] = []
@@ -3509,7 +3509,7 @@ async def test_a_refusal_leaves_a_replacement_s_layer_b_alone(monkeypatch):
     object unlinks the replacement's files here, while the absent test above
     still passes.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     forgotten: list[str] = []
     unlinked: list[str] = []
@@ -3555,7 +3555,7 @@ async def test_a_refusal_leaves_a_foreign_join_mapping_alone(monkeypatch):
     presence test, forgets the foreign mapping here while the own-sid test above
     still passes.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     forgotten: list[str] = []
     unlinked: list[str] = []
@@ -3600,7 +3600,7 @@ async def test_a_refusal_without_layer_b_forgets_no_mapping(monkeypatch):
 
     Mutation-checked: dropping the guard forgets the squatting mapping here.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     forgotten: list[str] = []
     unlinked: list[str] = []
@@ -3632,7 +3632,7 @@ async def test_slot_cap_is_rechecked_after_the_pre_creation_awaits(monkeypatch):
     Simulated by filling the map DURING the awaited agent resolution -- exactly
     what a sibling request would do.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -3667,7 +3667,7 @@ async def test_import_accepts_the_exact_bytes_the_export_endpoint_writes(monkeyp
     refuses the real file. ``GET .../export`` answers ``application/gzip``; the
     importer read ``request.json()`` and rejected those bytes as malformed JSON.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     resp = await _run_import(st, monkeypatch, None, gz=_export_gz(_valid()))
 
@@ -3680,7 +3680,7 @@ async def test_import_still_accepts_a_plain_json_body(monkeypatch):
     """The tunnel's server-to-server caller posts uncompressed JSON and must not
     break: the sender is an independently-updated install, so a receiver that
     started demanding gzip would refuse every peer that has not shipped this."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     resp = await _run_import(st, monkeypatch, _valid())
 
@@ -3693,7 +3693,7 @@ async def test_import_sniffs_the_magic_and_not_the_content_type(monkeypatch):
     for the type — often ``application/octet-stream``, sometimes nothing. The
     stub request carries NO content type at all, so a handler that branched on
     the header could not reach the gzip path this asserts."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     request = _make_request(_stub_state(st, monkeypatch), None, gz=_export_gz(_valid()))
     assert not hasattr(request, "content_type")
@@ -3711,7 +3711,7 @@ async def test_import_refuses_a_corrupt_gzip_with_its_own_code(monkeypatch):
     ``transfer_invalid_json`` it would go looking for a syntax error in a
     document it never wrote by hand.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     truncated = _export_gz(_valid())[: len(_export_gz(_valid())) // 2]
     resp = await _run_import(st, monkeypatch, None, gz=truncated)
@@ -3723,7 +3723,7 @@ async def test_import_refuses_a_corrupt_gzip_with_its_own_code(monkeypatch):
 @pytest.mark.asyncio
 async def test_import_still_refuses_plain_garbage_as_bad_json(monkeypatch):
     """Bytes that are neither gzip nor JSON keep the code they always had."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     resp = await st.api_chat_slot_import(_make_request(state, None, raw="{not json"))
@@ -3738,7 +3738,7 @@ async def test_import_has_no_size_ceiling(monkeypatch):
     decompressed body imports successfully — the owner's decision that a transfer
     is never blocked by size.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     huge = _valid(
         messages=[{"role": "user", "content": "x" * 4_000_000, "ts": ""} for _ in range(8)]
@@ -3762,7 +3762,7 @@ def test_import_never_reads_the_whole_body_into_memory():
     import ast
     from pathlib import Path as _Path
 
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     tree = ast.parse(_Path(st.__file__).read_text(encoding="utf-8"))
     targets = {
@@ -3802,7 +3802,7 @@ async def test_concurrent_expansions_are_bounded_and_the_excess_is_refused(monke
     presence of a semaphore: the gunzip is replaced with one that records how
     many are inside it at once.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_expansion_lock", None)
     monkeypatch.setattr(st, "_expansion_slots", None)
@@ -3859,7 +3859,7 @@ async def test_the_expansion_permit_outlives_the_decompression(monkeypatch):
     immediately and they all pile into redaction together, which is precisely the
     sum the bound exists to prevent.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_expansion_lock", None)
     monkeypatch.setattr(st, "_expansion_slots", None)
@@ -3911,7 +3911,7 @@ async def test_the_transcript_only_mark_reads_layer_b_skipped_not_absence(monkey
       (the export's default-off posture, or a mid-turn source). Marked.
     * Layer B present — full fidelity, not marked.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     never_had = await _run_import(st, monkeypatch, None, gz=_export_gz(_valid()), return_slot=True)
     assert "transcript only" not in never_had.title
@@ -3949,8 +3949,8 @@ async def test_an_exported_file_installs_with_no_step_in_between(tmp_path):
     from aiohttp.test_utils import TestClient, TestServer
     from chat_test_helpers import _make_state
 
-    from kiro_crew.dashboard.session_export import api_chat_slot_export
-    from kiro_crew.dashboard.session_transfer import api_chat_slot_import
+    from efm_go.dashboard.session_export import api_chat_slot_export
+    from efm_go.dashboard.session_transfer import api_chat_slot_import
 
     state = _make_state(tmp_path)
     # Make the SOURCE session auto-approving, so the exported file genuinely
@@ -4040,7 +4040,7 @@ async def test_a_body_past_the_server_client_max_size_still_imports(tmp_path):
     from aiohttp.test_utils import TestClient, TestServer
     from chat_test_helpers import _make_state
 
-    from kiro_crew.dashboard.session_transfer import api_chat_slot_import
+    from efm_go.dashboard.session_transfer import api_chat_slot_import
 
     app = web.Application(client_max_size=1024)
     app["state"] = _make_state(tmp_path)
@@ -4104,7 +4104,7 @@ async def test_a_plain_json_arrival_is_filed_under_imported_from_sender(monkeypa
     This is the changed default the RFC exists for — a peer-pushed session used
     to land at the top level.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     resp = await st.api_chat_slot_import(_make_request(state, _valid(origin="mac")))
@@ -4127,7 +4127,7 @@ async def test_a_gzipped_arrival_is_filed_exactly_like_the_plain_one(monkeypatch
     folders plus one shared child id — a per-format destination would show up as
     two children or two groups.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -4149,7 +4149,7 @@ async def test_an_app_scoped_arrival_lands_unfiled_and_creates_no_folder(monkeyp
     """RFC §5.1. The folder store has a global ceiling, so an app token that
     could create a folder per arrival could loop imports with distinct origins
     until the person is refused a folder of their own."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     request = _make_request(state, _valid(origin="mac"))
@@ -4174,8 +4174,8 @@ async def test_filing_identity_comes_from_the_shared_caller_rule(monkeypatch):
     handler's ``effective_request_app`` back to ``request.get("app", "")`` files
     this arrival and reddens the assertion below.
     """
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.dashboard.chat_handlers import _ChatSlot
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.dashboard.chat_handlers import _ChatSlot
 
     state = _stub_state(st, monkeypatch)
     # A slot an app owns, named by the caller's own session key. Nothing about
@@ -4199,7 +4199,7 @@ async def test_filing_identity_comes_from_the_shared_caller_rule(monkeypatch):
 async def test_a_second_arrival_from_one_sender_lands_beside_the_first(monkeypatch):
     """The RFC's first acceptance bullet: not in a second folder of the same
     name."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -4233,8 +4233,8 @@ async def test_a_landed_arrival_records_the_row_it_shares(monkeypatch):
     Mutation-checked: dropping the call reddens the shared-row assertion, and
     dropping the ``not in created_folders`` condition reddens the first import's.
     """
-    from kiro_crew.dashboard import arrival_folders as af
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import arrival_folders as af
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -4282,8 +4282,8 @@ async def test_a_delete_landing_in_the_shared_row_mark_refuses(monkeypatch):
     Mutation-checked: moving the mark back below the witness makes this read 200,
     and so does dropping the witness call.
     """
-    from kiro_crew.dashboard import arrival_folders as af
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import arrival_folders as af
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -4339,7 +4339,7 @@ async def test_a_mark_that_cannot_be_recorded_unfiles_the_session(monkeypatch):
     Mutation-checked: making the mark's failure path report success, or dropping
     the unfiling branch, both leave the stale ``folder_id`` on the slot.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -4366,7 +4366,7 @@ async def test_a_mark_that_cannot_be_recorded_unfiles_the_session(monkeypatch):
 async def test_a_recorded_mark_leaves_the_session_filed(monkeypatch):
     """The companion. Without it the unfiling could fire unconditionally and this
     would still look correct, because an unfiled session is also a valid state."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -4384,7 +4384,7 @@ async def test_a_recorded_mark_leaves_the_session_filed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_two_senders_get_two_children_under_one_group(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -4404,7 +4404,7 @@ async def test_two_senders_get_two_children_under_one_group(monkeypatch):
 async def test_a_bundle_with_no_sender_is_filed_under_the_group(monkeypatch):
     """A missing ``origin`` names no peer, so inventing "from unknown" would make
     an absent field look like one."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     resp = await st.api_chat_slot_import(_make_request(state, _valid(origin="")))
@@ -4425,7 +4425,7 @@ async def test_placement_is_resolved_after_the_slot_exists(monkeypatch):
     import left the store empty. Mutation-checked: moving the filing call up to
     the ``meta`` construction reddens this.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     calls = {"n": 0}
@@ -4455,7 +4455,7 @@ async def test_a_folder_deleted_during_finalisation_leaves_no_dangling_id(monkey
     removing the post-registration re-check leaves ``folder_id`` pointing at a
     row that is gone, which this test reads as ``<dangling>``.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     saved: list[str] = []
 
@@ -4489,7 +4489,7 @@ async def test_a_refused_repair_save_is_not_reported_as_a_landed_import(monkeypa
     Mutation-checked: dropping the ``if not`` around the repair save makes this
     read 200 with ``ok: true`` and the slot still in ``_slots``.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     calls: list[bool] = []
     pushes: list[int] = []
@@ -4539,7 +4539,7 @@ async def test_the_finalisation_saves_are_pinned_to_this_slot(monkeypatch):
     Mutation-checked: dropping ``expected_slot_name`` from the repair save reddens
     this.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     seen: list[dict] = []
 
@@ -4577,7 +4577,7 @@ async def test_a_close_at_the_repair_saves_commit_boundary_is_not_a_deletion(mon
 
     Mutation-checked: treating every ``False`` as a deletion makes this read 409.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     calls: list[bool] = []
 
@@ -4625,7 +4625,7 @@ async def test_a_close_during_the_folder_check_is_not_undone_by_the_repair(monke
     the flag, and writing it with ``_slot_still_ours`` polarity (an absent key
     counting as still ours) does exactly the same, because a close pops first.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     saves: list[str] = []
     archived = {"closed": False}
@@ -4687,7 +4687,7 @@ async def test_a_delete_during_the_folder_check_is_not_reported_as_landed(monkey
     Mutation-checked: deleting the witness call makes this read 200 with
     ``ok: true`` and the slot still registered.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     pushes: list[int] = []
     existed: list[bool] = []
@@ -4729,7 +4729,7 @@ async def test_the_delete_witness_runs_on_the_ordinary_success_path(monkeypatch)
     is consulted on the plain import too -- folder intact, nothing deleted, 200 --
     which is exactly the path the older code returned ``ok`` on without asking.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     asked: list[str] = []
     state = _stub_state(st, monkeypatch)
@@ -4761,7 +4761,7 @@ async def test_the_witness_still_runs_when_the_repair_save_reported_success(monk
     exception does, and the session was deleted underneath. An ``elif`` answers
     200; the unconditional check answers 409. This test is the difference.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     saves: list[bool] = []
 
@@ -4796,7 +4796,7 @@ async def test_a_refused_import_takes_back_the_folder_it_created(monkeypatch):
 
     Mutation-checked: dropping the rollback call leaves the folders in the store.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     async def _save_fails(*_a, **_k):
         raise OSError("sessions dir is not writable")
@@ -4823,7 +4823,7 @@ async def test_a_refusal_discloses_a_transcript_it_cannot_remove(monkeypatch):
     Mutation-checked: answering the plain code regardless makes this read
     ``transfer_import_deleted`` with a body promising nothing was kept.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     monkeypatch.setattr(st, "session_was_deleted", lambda _s, _slot: True)
@@ -4844,7 +4844,7 @@ async def test_a_refusal_discloses_a_transcript_it_cannot_remove(monkeypatch):
 async def test_a_refusal_still_promises_a_clean_slate_when_the_file_is_gone(monkeypatch):
     """The companion, and what keeps the disclosure from swallowing the plain
     case: when the transcript really is gone, the refusal says so plainly."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
     monkeypatch.setattr(st, "session_was_deleted", lambda _s, _slot: True)
@@ -4869,7 +4869,7 @@ async def test_a_refusal_leaves_a_same_key_replacement_alone(monkeypatch):
 
     Mutation-checked: removing the identity guard pops the replacement.
     """
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     forgotten: list[str] = []
     state = _stub_state(st, monkeypatch)
@@ -4899,7 +4899,7 @@ async def test_a_refusal_leaves_a_same_key_replacement_alone(monkeypatch):
 async def test_a_folder_store_failure_leaves_the_session_filed_nowhere(monkeypatch):
     """RFC §5.6. Filing is convenience; the transcript is the payload, so a store
     failure must not fail an import that works today."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _stub_state(st, monkeypatch)
 
@@ -4931,7 +4931,7 @@ async def test_a_restricted_on_disk_line_withholds_the_bundle(line_mode):
     line on disk decides. A same-key recreation of a closed restricted tab, or a
     writer tightening the line while this slot still reads persistent, both
     reach here with a slot the callers' own gate lets through."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _state(MSGS)
     state.conversation_log.metadata = {"memory_mode": line_mode}
@@ -4943,7 +4943,7 @@ async def test_a_restricted_on_disk_line_withholds_the_bundle(line_mode):
 @pytest.mark.asyncio
 async def test_an_unreadable_on_disk_line_withholds_the_bundle():
     """Fail closed: a builder that cannot see the contract ships nothing."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _state(MSGS)
     state.conversation_log.readable = False
@@ -4955,7 +4955,7 @@ async def test_an_unreadable_on_disk_line_withholds_the_bundle():
 @pytest.mark.asyncio
 async def test_a_line_tightened_during_the_read_withholds_the_bundle():
     """The gate is asked again AFTER the read, so a tightening in between is caught."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     state = _state(MSGS)
     log = state.conversation_log
@@ -4977,8 +4977,8 @@ async def test_a_line_tightened_during_the_read_withholds_the_bundle():
 async def test_send_handler_refuses_a_slot_whose_line_is_restricted(monkeypatch):
     """The tunnel send maps the builder's refusal to its own slot-gate answer, so a
     persistent slot over a restricted file sends nothing to the peer."""
-    from kiro_crew.dashboard import handlers_instances as hi
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import handlers_instances as hi
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(
         hi.KiroCrewConfig,
@@ -5032,9 +5032,9 @@ async def test_send_handler_refuses_a_slot_whose_line_is_restricted(monkeypatch)
 @pytest.mark.asyncio
 async def test_send_handler_maps_a_busy_transcript_to_the_retryable_503(monkeypatch):
     """A lock the seam could not take is 'retry', not 'not persistent'."""
-    from kiro_crew.dashboard import handlers_instances as hi
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.history import TranscriptBusy
+    from efm_go.dashboard import handlers_instances as hi
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.history import TranscriptBusy
 
     monkeypatch.setattr(
         hi.KiroCrewConfig,
@@ -5088,8 +5088,8 @@ async def test_send_handler_maps_a_busy_transcript_to_the_retryable_503(monkeypa
 async def test_send_handler_rechecks_the_privacy_line_before_the_request(monkeypatch):
     """A line that tightens after the pre-send check, while the body serialises,
     is caught by the recheck the send runs just before the request."""
-    from kiro_crew.dashboard import handlers_instances as hi
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import handlers_instances as hi
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(
         hi.KiroCrewConfig,
@@ -5183,7 +5183,7 @@ class _JsonReply:
 async def test_gzip_is_sniffed_across_a_one_byte_first_chunk(tmp_path, chunks):
     """The gzip magic is two bytes; a network chunk can be one. Deciding from a
     one-byte prefix would read every such gzip body as plain JSON."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     dst = tmp_path / "body"
     is_gzip, total = await st._stream_request_to_file(
@@ -5197,7 +5197,7 @@ async def test_gzip_is_sniffed_across_a_one_byte_first_chunk(tmp_path, chunks):
 
 @pytest.mark.asyncio
 async def test_a_body_shorter_than_the_magic_is_kept_whole(tmp_path):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     dst = tmp_path / "body"
     is_gzip, total = await st._stream_request_to_file(
@@ -5213,7 +5213,7 @@ async def test_the_temp_file_is_opened_and_closed_off_the_event_loop(tmp_path, m
     """A close flushes, so it is as able to stall the loop as a write is."""
     import threading
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     loop_thread = threading.get_ident()
     seen: dict[str, int] = {}
@@ -5261,7 +5261,7 @@ _MIB = 1024 * 1024
 
 @pytest.mark.asyncio
 async def test_a_large_import_waits_for_memory_instead_of_being_refused(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     readings = iter([10, 10, 10_000])  # short, short, then freed
     _fake_memory(st, monkeypatch, total_mib=100_000, available=readings)
@@ -5274,7 +5274,7 @@ async def test_a_large_import_waits_for_memory_instead_of_being_refused(monkeypa
 
 @pytest.mark.asyncio
 async def test_a_wait_past_the_budget_is_refused_as_retryable(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _fake_memory(st, monkeypatch, total_mib=100_000, available=iter(lambda: 1, None))
     monkeypatch.setattr(st, "SESSION_IMPORT_MEMORY_WAIT_SECS", 0.01)
@@ -5287,7 +5287,7 @@ async def test_a_wait_past_the_budget_is_refused_as_retryable(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_a_document_larger_than_the_host_is_refused_without_waiting(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     # One reading only: a second, which a wait would take, fails the test.
     _fake_memory(st, monkeypatch, total_mib=100, available=iter([100]))
@@ -5301,7 +5301,7 @@ async def test_a_document_larger_than_the_host_is_refused_without_waiting(monkey
 async def test_a_second_import_waits_for_the_first_ones_reservation(monkeypatch):
     """Both see the same free memory; the reservation is what stops them both
     parsing at once."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _fake_memory(st, monkeypatch, total_mib=100_000, available=iter(lambda: 400, None))
     monkeypatch.setattr(st, "SESSION_IMPORT_MEMORY_WAIT_SECS", 5.0)
@@ -5333,7 +5333,7 @@ async def test_a_second_import_waits_for_the_first_ones_reservation(monkeypatch)
 
 @pytest.mark.asyncio
 async def test_an_unreadable_host_is_not_gated(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _fake_memory(st, monkeypatch, total_mib=0, available=iter(lambda: 0, None))
 
@@ -5343,7 +5343,7 @@ async def test_an_unreadable_host_is_not_gated(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_the_import_route_answers_a_session_the_host_cannot_hold(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _fake_memory(st, monkeypatch, total_mib=0, available=iter(lambda: 1, None))
     monkeypatch.setattr(st.platform_compat, "host_total_mib", lambda: 1)
@@ -5366,7 +5366,7 @@ def test_the_streaming_writer_matches_json_dumps_byte_for_byte(tmp_path):
     log long enough to cross many chunk boundaries."""
     import io
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     events = '{"a":"é 😀"}\r\n' + "x中😀" * 200_000 + "\n"
     bundle = {
@@ -5387,7 +5387,7 @@ def test_the_streaming_writer_matches_json_dumps_byte_for_byte(tmp_path):
 
 
 def test_the_layer_b_snapshot_is_the_log_byte_for_byte(tmp_path, monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     src = _events_file(tmp_path, '{"k":1}\r\n\n{"k":"中"}\n')
     snap = st._snapshot_events_file(src)
@@ -5396,7 +5396,7 @@ def test_the_layer_b_snapshot_is_the_log_byte_for_byte(tmp_path, monkeypatch):
 
 
 def test_an_unparseable_log_leaves_no_snapshot_behind(tmp_path):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     src = _events_file(tmp_path, '{"k":1}\n{"k":\n')
 
@@ -5405,7 +5405,7 @@ def test_an_unparseable_log_leaves_no_snapshot_behind(tmp_path):
 
 
 def test_a_failed_assembly_releases_the_snapshot(tmp_path, monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     sid = "s1"
     (tmp_path / f"{sid}.json").write_text(json.dumps({"session_id": sid}), encoding="utf-8")
@@ -5427,8 +5427,8 @@ def test_a_failed_assembly_releases_the_snapshot(tmp_path, monkeypatch):
 async def test_send_bundle_uploads_the_serialised_file_and_removes_it(tmp_path):
     """With a serialiser the peer receives the file's bytes, never ``json=``;
     each attempt's file is gone afterwards, the retry's included."""
-    import kiro_crew.instances.ssh_tunnel_manager as mod
-    from kiro_crew.dashboard import session_transfer as st
+    import efm_go.instances.ssh_tunnel_manager as mod
+    from efm_go.dashboard import session_transfer as st
 
     mgr, _seen, _ = _size_refusing_peer("transfer_layer_b_too_large")
     posted: list[bytes] = []
@@ -5506,7 +5506,7 @@ def test_decompression_stops_before_the_volume_fills(tmp_path, monkeypatch):
     once the volume is down to its headroom."""
     import gzip as _gzip
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     src = tmp_path / "body.gz"
     src.write_bytes(_gzip.compress(b"x" * (4 * st._CHUNK_BYTES)))
@@ -5518,7 +5518,7 @@ def test_decompression_stops_before_the_volume_fills(tmp_path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_a_plain_body_stops_before_the_volume_fills(tmp_path, monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _low_disk(st, monkeypatch)
     chunks = [b"{" + b" " * 1000] * 4
@@ -5531,7 +5531,7 @@ async def test_a_plain_body_stops_before_the_volume_fills(tmp_path, monkeypatch)
 
 @pytest.mark.asyncio
 async def test_the_import_route_answers_507_when_the_volume_is_full(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _low_disk(st, monkeypatch)
     resp = await _run_import(st, monkeypatch, _valid())
@@ -5542,7 +5542,7 @@ async def test_the_import_route_answers_507_when_the_volume_is_full(monkeypatch)
 
 @pytest.mark.asyncio
 async def test_an_unreadable_volume_is_not_gated(tmp_path, monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     def _raise(_p):
         raise OSError("no statvfs")
@@ -5559,7 +5559,7 @@ async def test_an_unreadable_volume_is_not_gated(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_an_upload_the_peer_stops_reading_times_out(tmp_path, monkeypatch):
     """No total timeout, but no progress for ``_TRANSFER_TIMEOUT`` ends it."""
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     monkeypatch.setattr(mod, "_TRANSFER_TIMEOUT", 0.05)
     body = tmp_path / "body.json"
@@ -5578,7 +5578,7 @@ async def test_an_upload_the_peer_stops_reading_times_out(tmp_path, monkeypatch)
 
 @pytest.mark.asyncio
 async def test_a_finished_upload_leaves_the_reply_wait_to_the_read_timeout(tmp_path, monkeypatch):
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     monkeypatch.setattr(mod, "_TRANSFER_TIMEOUT", 0.05)
     body = tmp_path / "body.json"
@@ -5595,7 +5595,7 @@ async def test_a_finished_upload_leaves_the_reply_wait_to_the_read_timeout(tmp_p
 
 @pytest.mark.asyncio
 async def test_a_session_too_big_for_the_host_names_the_budget(monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st.platform_compat, "host_total_mib", lambda: 2048)
     monkeypatch.setattr(st, "_MEMORY_HEADROOM_BYTES", 1024 * _MIB)
@@ -5611,9 +5611,9 @@ async def test_a_session_too_big_for_the_host_names_the_budget(monkeypatch):
 async def test_a_publication_refusal_releases_the_layer_b_snapshot(monkeypatch, refusal):
     """The refusal returns before the send, so the snapshot the bundle carries
     must be removed there too, or every refused attempt leaves one on disk."""
-    from kiro_crew.dashboard import handlers_instances as hi
-    from kiro_crew.dashboard import session_transfer as st
-    from kiro_crew.history import TranscriptBusy, TranscriptWithheld
+    from efm_go.dashboard import handlers_instances as hi
+    from efm_go.dashboard import session_transfer as st
+    from efm_go.history import TranscriptBusy, TranscriptWithheld
 
     monkeypatch.setattr(
         hi.KiroCrewConfig,
@@ -5667,7 +5667,7 @@ async def test_a_publication_refusal_releases_the_layer_b_snapshot(monkeypatch, 
 async def test_a_temp_file_the_volume_cannot_create_is_a_coded_507(monkeypatch, fail_on):
     import gzip as _gzip
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     real = st._new_import_temp
     calls = {"n": 0}
@@ -5696,7 +5696,7 @@ def test_a_second_gzip_member_is_refused_wherever_the_first_ends(tmp_path, monke
     import gzip as _gzip
     import zlib as _zlib
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     first = _gzip.compress(b'{"a":1}')
     monkeypatch.setattr(st, "_CHUNK_BYTES", len(first) if aligned else len(first) + 3)
@@ -5729,7 +5729,7 @@ def _marks_outside_strings(doc: str) -> int:
 def test_the_document_measure_counts_messages_across_chunk_boundaries(tmp_path, monkeypatch):
     """Every message is counted exactly once, including one whose key straddles
     a read boundary, and the count never has to hold the document."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     doc = json.dumps(_valid(messages=[{"role": "user", "content": "x", "ts": ""}] * 50))
     p = tmp_path / "doc.json"
@@ -5743,7 +5743,7 @@ def test_the_document_measure_counts_messages_across_chunk_boundaries(tmp_path, 
 def test_the_value_count_skips_marks_inside_strings(tmp_path, monkeypatch):
     """Code-dense text and an embedded log carry ``{ [ , :`` in their content;
     those build no values and must not reserve for them, at any chunk size."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     content = 'def f(a, b): return {"k": [a, b]}  \\ ' + '{"ev":"x","n":[1,2]}\n' * 20
     doc = json.dumps({"messages": [{"role": "user", "content": content}] * 5, "tail": "\\"})
@@ -5759,7 +5759,7 @@ def test_the_value_count_skips_marks_inside_strings(tmp_path, monkeypatch):
 def test_the_measure_splits_escape_runs_at_any_chunk_boundary(tmp_path, monkeypatch):
     """Odd and even backslash runs straddling a chunk boundary keep their quotes
     paired, so the value count matches the unchunked count."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     doc = json.dumps(
         {"messages": [{"content": "a" + "\\" * n + '"' + "{,:"} for n in range(9)], "k": [1, 2]}
@@ -5777,7 +5777,7 @@ def test_a_long_backslash_run_is_measured_in_bounded_memory(tmp_path, monkeypatc
     measure runs before the memory admission, so it must not accumulate it."""
     import tracemalloc
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     chunk = 4096
     monkeypatch.setattr(st, "_CHUNK_BYTES", chunk)
@@ -5808,7 +5808,7 @@ def test_the_parse_factor_follows_the_widest_character(
 ):
     """One wide character makes CPython store the whole decoded text, and the
     string holding it, at that width; the reservation has to follow."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     doc = json.dumps(
         {"messages": [{"role": "user", "content": "x" * 100 + text}]}, ensure_ascii=ensure_ascii
@@ -5823,7 +5823,7 @@ def test_the_parse_factor_follows_the_widest_character(
 @pytest.mark.asyncio
 async def test_many_short_messages_are_reserved_for_by_count_not_only_by_size(monkeypatch):
     """Their objects outweigh their text, so the reservation grows with the count."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _fake_memory(st, monkeypatch, total_mib=100_000, available=iter(lambda: 100_000, None))
 
@@ -5835,7 +5835,7 @@ async def test_many_short_messages_are_reserved_for_by_count_not_only_by_size(mo
 async def test_the_import_route_counts_messages_into_the_reservation(monkeypatch):
     """A document small by size but heavy by count is refused on a host that
     the size-only estimate would have admitted."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     body = _valid(messages=[{"role": "user", "content": "x", "ts": ""}] * 2000)
     size = len(json.dumps(body).encode())
@@ -5852,7 +5852,7 @@ async def test_the_import_route_counts_messages_into_the_reservation(monkeypatch
 async def test_a_forward_replaced_during_serialisation_gets_nothing(tmp_path):
     """Serialising a large session is the longest await before the request, so a
     tunnel replaced inside it must not receive the body or the credential."""
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     mgr, seen, session_factory = _size_refusing_peer("unused")
 
@@ -5879,7 +5879,7 @@ async def test_a_forward_replaced_during_serialisation_gets_nothing(tmp_path):
 async def test_a_source_withheld_during_serialisation_gets_nothing(tmp_path):
     """The caller's recheck runs after serialising, before the request: a privacy
     line tightened while a large session serialised must stop the send."""
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     mgr, seen, session_factory = _size_refusing_peer("unused")
     order: list[str] = []
@@ -5911,7 +5911,7 @@ async def test_a_source_withheld_during_serialisation_gets_nothing(tmp_path):
 
 
 def test_a_log_that_cannot_be_opened_leaves_no_descriptor(tmp_path, monkeypatch):
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     opened: list[int] = []
     real_mkstemp = st.tempfile.mkstemp
@@ -5934,7 +5934,7 @@ async def test_a_body_smaller_than_the_check_interval_is_still_checked(tmp_path,
     """The headroom holds for every body, not only those past the first interval."""
     import gzip as _gzip
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st.shutil, "disk_usage", lambda _p: SimpleNamespace(free=0))
     assert st._DISK_CHECK_EVERY_CHUNKS > 1
@@ -5953,7 +5953,7 @@ async def test_a_body_smaller_than_the_check_interval_is_still_checked(tmp_path,
 async def test_a_container_heavy_document_is_reserved_for_by_its_values(monkeypatch):
     """An array of empty objects carries no messages and costs about 24 times its
     text; the value count is what reserves for it."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _fake_memory(st, monkeypatch, total_mib=100_000, available=iter(lambda: 100_000, None))
 
@@ -5965,7 +5965,7 @@ async def test_a_container_heavy_document_is_reserved_for_by_its_values(monkeypa
 async def test_the_import_route_reserves_for_a_messageless_container_flood(monkeypatch):
     """A document with no ``role`` key at all but many empty objects is refused on
     a host that a text-and-message estimate would have admitted."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     body = _valid(messages=[{"role": "user", "content": "x", "ts": ""}])
     body["filler"] = [{}] * 20000
@@ -5984,7 +5984,7 @@ async def test_one_emoji_raises_the_imports_reservation(monkeypatch, emoji, stat
     """A single character past the BMP widens the whole parse, so a host that
     fits the ASCII estimate with room to spare must refuse the same document
     carrying one emoji rather than admit it and run out of memory."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     body = _valid(messages=[{"role": "user", "content": "x" * (2 * _MIB) + emoji, "ts": ""}])
     size = len(json.dumps(body).encode())
@@ -6013,7 +6013,7 @@ async def test_a_sender_that_goes_quiet_is_cut_off(tmp_path, monkeypatch, sent):
     """No total deadline, but a no-progress one: a stalled upload cannot hold
     its connection and temp file forever, whether it went quiet before its first
     chunk or after some."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "DEFAULT_SESSION_TRANSFER_TIMEOUT_SECS", 0.05)
     task = asyncio.create_task(
@@ -6030,7 +6030,7 @@ async def test_a_sender_that_goes_quiet_is_cut_off(tmp_path, monkeypatch, sent):
 async def test_an_upload_in_flight_holds_no_arrival_permit(tmp_path, monkeypatch):
     """Slow senders must not fill the permits every other import waits on; the
     permit is taken only once the body is on disk."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_expansion_lock", None)
     monkeypatch.setattr(st, "_expansion_slots", None)
@@ -6054,7 +6054,7 @@ async def test_an_upload_in_flight_holds_no_arrival_permit(tmp_path, monkeypatch
 async def test_uploads_past_the_cap_are_refused_before_a_file_is_opened(monkeypatch):
     """Each in-flight upload holds a staging descriptor before the arrival permit,
     so the number streaming at once is capped and the slot is released after."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_MAX_CONCURRENT_UPLOADS", 2)
     monkeypatch.setattr(st, "_uploads_in_flight", 0)
@@ -6095,7 +6095,7 @@ async def test_uploads_past_the_cap_are_refused_before_a_file_is_opened(monkeypa
 async def test_a_cleanup_failure_after_a_committed_send_keeps_the_success(monkeypatch):
     """The peer committed the import; failing to remove the staged body must not
     turn that into an error whose retry would duplicate the session."""
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     mgr, seen, session_factory = _size_refusing_peer("unused")
 
@@ -6116,7 +6116,7 @@ async def test_a_cleanup_failure_after_a_committed_send_keeps_the_success(monkey
 async def test_a_cgroup_limit_below_the_host_refuses_what_the_pod_cannot_hold(monkeypatch):
     """A gateway under a 4 GiB unit limit on a far larger host: the unit's limit,
     not the host's RAM, decides whether the document can ever fit."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     _fake_memory(
         st,
@@ -6135,7 +6135,7 @@ async def test_a_cgroup_limit_below_the_host_refuses_what_the_pod_cannot_hold(mo
 async def test_a_full_cgroup_waits_rather_than_failing_open(monkeypatch):
     """No headroom left under the cgroup reads as zero available, which waits;
     it is not the unreadable-host reading that lets everything through."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     headroom = iter([0, 0, 4096 * _MIB])
     _fake_memory(st, monkeypatch, total_mib=100_000, available=iter(lambda: 100_000, None))
@@ -6148,8 +6148,8 @@ async def test_a_full_cgroup_waits_rather_than_failing_open(monkeypatch):
 def test_the_cgroup_limit_is_the_tightest_on_the_process_ancestry(tmp_path, monkeypatch):
     """The walk reads every level from the process's cgroup up to the mount and
     keeps the smallest finite limit; ``max`` at a level does not constrain."""
-    from kiro_crew import subagent
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go import subagent
+    from efm_go.dashboard import session_transfer as st
 
     mount = tmp_path / "cg"
     leaf = mount / "system.slice" / "gateway.service"
@@ -6168,7 +6168,7 @@ def test_the_cgroup_limit_is_the_tightest_on_the_process_ancestry(tmp_path, monk
 async def test_a_peer_reply_is_read_under_a_cap_and_never_buffered_past_it(monkeypatch):
     """A peer that keeps sending is cut off at the cap: the reader stops pulling
     and the reply reads as ``{}``, so the gateway never buffers it without end."""
-    import kiro_crew.instances.ssh_tunnel_manager as mod
+    import efm_go.instances.ssh_tunnel_manager as mod
 
     monkeypatch.setattr(mod, "_TRANSFER_REPLY_MAX_BYTES", 1000)
     pulled = {"n": 0}
@@ -6191,7 +6191,7 @@ async def test_a_peer_reply_is_read_under_a_cap_and_never_buffered_past_it(monke
 def test_staging_sweep_removes_only_files_older_than_this_process(monkeypatch, tmp_path):
     """Crash orphans are reclaimed; a live transfer's file, a symlink target and a
     subdirectory are never touched."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     started = 1_000_000.0
     monkeypatch.setattr(st, "_PROCESS_STARTED_AT", started)
@@ -6236,7 +6236,7 @@ def test_staging_sweep_removes_only_files_older_than_this_process(monkeypatch, t
 def test_a_symlinked_staging_dir_is_never_swept(monkeypatch, tmp_path):
     """A link planted where the staging directory should be must not turn the
     sweep onto the files it points at."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     started = 1_000_000.0
     monkeypatch.setattr(st, "_PROCESS_STARTED_AT", started)
@@ -6260,7 +6260,7 @@ def test_a_symlinked_staging_dir_is_never_swept(monkeypatch, tmp_path):
 def test_staging_helpers_sweep_orphans_on_first_use(monkeypatch, tmp_path, helper, leaf):
     import importlib.util
 
-    from kiro_crew.dashboard import session_transfer as patched
+    from efm_go.dashboard import session_transfer as patched
 
     # The autouse isolation fixture replaces both helpers on the imported module,
     # so load a private copy whose helpers are the real ones.
@@ -6320,7 +6320,7 @@ def test_the_reservation_covers_the_measured_parse_peak(tmp_path, shape):
     object sizes or in the estimate fails here rather than in a gateway."""
     import tracemalloc
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     p = tmp_path / "doc.json"
     p.write_text(_adversarial_documents()[shape], encoding="utf-8")
@@ -6341,7 +6341,7 @@ async def test_concurrent_uploads_share_one_disk_headroom(tmp_path, monkeypatch)
     """Arrivals stream outside every permit, so each write counts against the free
     space the others are already cleared to use; the headroom holds however many
     arrive at once."""
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     chunk = st._CHUNK_BYTES
     # Room for exactly two in-flight chunks above the headroom.
@@ -6365,7 +6365,7 @@ async def test_a_reserved_write_releases_when_the_write_finishes(tmp_path, monke
     cannot drop the reservation while the worker is still writing."""
     import threading
 
-    from kiro_crew.dashboard import session_transfer as st
+    from efm_go.dashboard import session_transfer as st
 
     monkeypatch.setattr(st, "_disk_inflight", 0)
     monkeypatch.setattr(st.shutil, "disk_usage", lambda _p: SimpleNamespace(free=1 << 62))

@@ -17,7 +17,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from kiro_crew.dashboard.chat_handlers import _TURN_OPENER_ROLES
+from efm_go.dashboard.chat_handlers import _TURN_OPENER_ROLES
 
 _TS_GROUPING = (
     Path(__file__).resolve().parents[1]
@@ -49,7 +49,7 @@ class TestTurnBoundaryMirrorsFrontendGrouping:
         py_source = (
             Path(__file__).resolve().parents[1]
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "dashboard"
             / "chat_handlers.py"
         ).read_text(encoding="utf-8")

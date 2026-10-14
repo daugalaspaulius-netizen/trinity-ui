@@ -24,8 +24,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent_state
-from kiro_crew.security import (
+from efm_go import agent_state
+from efm_go.security import (
     is_sensitive_path,
     is_sensitive_write_path,
     write_protected_home_paths,
@@ -84,7 +84,7 @@ class TestAgentStateSidecarWriteProtection:
         # so the sidecar must sit in BOTH seal
         # lists — the read-only seal for a present file and the Linux
         # pre-create seal for an absent one.
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert "agent_model_state.json" in sandbox._CREW_READONLY_LEAVES
         assert "agent_model_state.json" in sandbox._CREW_PRECREATE_READONLY_FILE_LEAVES
@@ -101,8 +101,8 @@ class TestAgentStateSidecarWriteProtection:
         # covered by the same directory seal. Resolved per spawn (never a
         # hard-coded literal), and the dir is pre-created so the Linux mount
         # seal has a target on an install where it does not exist yet.
-        from kiro_crew import sandbox
-        from kiro_crew.config.paths import kiro_agents_dir
+        from efm_go import sandbox
+        from efm_go.config.paths import kiro_agents_dir
 
         # ``normpath`` on the expected side because the resolver normalizes too, so a
         # ``..``-bearing KIRO_HOME cannot false-red this.

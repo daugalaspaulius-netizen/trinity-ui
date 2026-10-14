@@ -249,8 +249,8 @@ carry the partial-parse flag with it to stay honest.
 this process can enforce: `pdfplumber` exposes no length limit, and the allocation
 is the parsed character list itself, so any check runs after the memory is already
 committed — a 25 MB input can decompress to orders of magnitude more text. The
-pass therefore hands the bytes to `kiro_crew.pdf_extract.extract_pdf_segments`,
-which spawns `python -m kiro_crew.pdf_extract_child` under the `extractor` rlimit
+pass therefore hands the bytes to `efm_go.pdf_extract.extract_pdf_segments`,
+which spawns `python -m efm_go.pdf_extract_child` under the `extractor` rlimit
 profile (`RLIMIT_AS` 1 GiB, `RLIMIT_CPU` 60 s; a Job object with the same memory
 number on Windows, failing closed when it cannot attach; the child's own peak-RSS
 watchdog at the same number on macOS, where `RLIMIT_AS` is not enforced; see
@@ -389,13 +389,13 @@ shows literally — the same trade-off inline file mentions make.
 
 | File | Role |
 |---|---|
-| `src/kiro_crew/dashboard/handlers/files.py` | Facade the routes bind; `api_file_grep` endpoint; `_run_path_probe` |
-| `src/kiro_crew/dashboard/file_api/search.py` | `api_file_search` endpoint, fuzzy scorer, walk fallback |
-| `src/kiro_crew/dashboard/file_api/path_complete.py` | `api_path_complete` endpoint, lexical containment walk, no-follow per-component open |
-| `src/kiro_crew/dashboard/file_api/grep.py` | rg argv + stdin pattern channel, python fallback, document pass |
+| `src/efm_go/dashboard/handlers/files.py` | Facade the routes bind; `api_file_grep` endpoint; `_run_path_probe` |
+| `src/efm_go/dashboard/file_api/search.py` | `api_file_search` endpoint, fuzzy scorer, walk fallback |
+| `src/efm_go/dashboard/file_api/path_complete.py` | `api_path_complete` endpoint, lexical containment walk, no-follow per-component open |
+| `src/efm_go/dashboard/file_api/grep.py` | rg argv + stdin pattern channel, python fallback, document pass |
 | `website/src/pages/chat/FileBrowserRail.tsx` | Files tab: Name/Content toggle, result rows, status row |
 | `website/src/api/fileGrep.ts` | `/api/file-grep` client and result types |
-| `src/kiro_crew/dashboard/file_index.py` | `FileIndex`, `FileIndexRegistry` |
+| `src/efm_go/dashboard/file_index.py` | `FileIndex`, `FileIndexRegistry` |
 | `website/src/components/FilePickerMenu.tsx` | Picker UI, `kind` propagation, trailing-slash insertion, `pathMode` |
 | `website/src/components/composerTokens.ts` | Caret-relative `@` / `$` / `./` token matchers and the shared token replace |
 | `website/src/components/ChatInput.tsx` | Composer wiring: mounts the trigger pickers and the preview strip |

@@ -3,7 +3,7 @@
 
 WHY THIS EXISTS
 ---------------
-``kiro_crew.security.paths`` caches the protected-anchor set for
+``efm_go.security.paths`` caches the protected-anchor set for
 ``_HOME_TARGETS_TTL_SECS``.  That constant was chosen against an IDLE
 interpreter, where one rebuild costs about 2ms, so a 0.1s expiry spends about
 2% of the wall clock rebuilding.  Under contention the SAME rebuild costs
@@ -45,7 +45,7 @@ WHAT IT MEASURES
 
 HOW TO RUN
 ----------
-From a checkout, with an interpreter that can import ``kiro_crew``::
+From a checkout, with an interpreter that can import ``efm_go``::
 
     KIROCREW_HOME="$SOME_SCRATCH_DIR" \\
       PYTHONPATH=src python scripts/measure_path_gate_ttl.py ksweep \\
@@ -92,8 +92,8 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from kiro_crew import security
-from kiro_crew.security import paths as gate
+from efm_go import security
+from efm_go.security import paths as gate
 
 #: Load levels the sweep walks.  Chosen to bracket the transition: an idle
 #: interpreter, the single sibling the raised rebuild budget was sized for, and
@@ -235,7 +235,7 @@ def measure_rebuild(hogs: int, samples: int) -> RebuildRow:
 
 def _candidate_files(limit: int) -> list[str]:
     """Ordinary project files to gate, which no correct gate ever refuses."""
-    root = Path(__file__).resolve().parent.parent / "src" / "kiro_crew" / "security"
+    root = Path(__file__).resolve().parent.parent / "src" / "efm_go" / "security"
     files = sorted(str(path) for path in root.rglob("*.py"))
     if not files:  # pragma: no cover - a checkout always has these
         raise SystemExit(f"no candidate files under {root}")

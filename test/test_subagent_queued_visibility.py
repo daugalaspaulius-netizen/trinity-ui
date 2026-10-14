@@ -14,10 +14,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from overload_fakes import mock_ctx, mock_sessions, wait_taskq_open
 
-import kiro_crew.subagent as subagent_mod
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.subagent import QUEUED_REASON_LOW_MEMORY, SubagentManager
-from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+import efm_go.subagent as subagent_mod
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.subagent import QUEUED_REASON_LOW_MEMORY, SubagentManager
+from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -102,8 +102,8 @@ async def test_a_deferred_spawn_is_readable_until_it_starts(monkeypatch) -> None
 def test_a_listing_past_the_cap_says_it_is_partial(tmp_path) -> None:
     """One row past the cap is read so a full page and a cut-off one differ: a
     truncated tail read as complete says accepted spawns were never accepted."""
-    from kiro_crew import taskq
-    from kiro_crew.subagent_manager.admission.taskq_bridge import (
+    from efm_go import taskq
+    from efm_go.subagent_manager.admission.taskq_bridge import (
         QUEUED_LISTING_CAP,
         _read_queued_rows,
     )
@@ -142,13 +142,13 @@ def test_a_listing_past_the_cap_says_it_is_partial(tmp_path) -> None:
 
 
 def _store(tmp_path):
-    from kiro_crew import taskq
+    from efm_go import taskq
 
     return taskq.TaskStore(tmp_path / "t.db").open()
 
 
 def _row(row_id: str, session: str = "dash:vis", **params):
-    from kiro_crew import taskq
+    from efm_go import taskq
 
     return taskq.TaskRecord(
         id=row_id,
@@ -171,7 +171,7 @@ def _bridge_view(queue_wait=None):
     """The bridge methods that shape a row, on a stand-in for the coordinator."""
     import types
 
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
+    from efm_go.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
 
     fake = types.SimpleNamespace(
         _manager=types.SimpleNamespace(
@@ -187,8 +187,8 @@ def test_a_claimed_unregistered_row_is_counted_and_listed(tmp_path) -> None:
     ``admitted``: accepted work no run exists for. The count, the listing and
     the by-id read all include it, so the synthesis gates, spawn_list and
     spawn_status agree."""
-    from kiro_crew import taskq
-    from kiro_crew.subagent_manager.admission.taskq_bridge import (
+    from efm_go import taskq
+    from efm_go.subagent_manager.admission.taskq_bridge import (
         _read_queued_row,
         _read_queued_rows,
     )
@@ -216,7 +216,7 @@ def test_the_queued_count_includes_a_retained_claim(tmp_path) -> None:
     retained ``admitted`` row no run is registered for counts."""
     import types
 
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
+    from efm_go.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
 
     store = _store(tmp_path)
     try:
@@ -244,7 +244,7 @@ async def test_the_chip_count_includes_a_retained_claim(tmp_path) -> None:
     ``admitted`` row counts until a run registers for it."""
     import types
 
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
+    from efm_go.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
 
     store = _store(tmp_path)
     try:
@@ -283,7 +283,7 @@ async def test_the_chip_count_includes_a_retained_claim(tmp_path) -> None:
 def test_a_started_run_waiting_to_go_on_is_resuming_not_unstarted(
     tmp_path, state, attempts, resuming
 ) -> None:
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _read_queued_rows
+    from efm_go.subagent_manager.admission.taskq_bridge import _read_queued_rows
 
     store = _store(tmp_path)
     try:
@@ -305,7 +305,7 @@ def test_an_old_deferral_sentence_does_not_describe_a_later_wait(tmp_path) -> No
     claim, so it is not reported. The control keeps it."""
     import time
 
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _read_queued_rows
+    from efm_go.subagent_manager.admission.taskq_bridge import _read_queued_rows
 
     store = _store(tmp_path)
     sentence = "low memory: 1.1 GB available, need 4 GB"
@@ -326,7 +326,7 @@ def test_an_old_deferral_sentence_does_not_describe_a_later_wait(tmp_path) -> No
 def test_an_apps_listing_is_its_own_rows_before_the_cap(tmp_path) -> None:
     """The app filter runs in the store read, before the cap: 105 other-app rows
     neither hide the caller's own row nor mark its page partial."""
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _read_queued_rows
+    from efm_go.subagent_manager.admission.taskq_bridge import _read_queued_rows
 
     store = _store(tmp_path)
     try:
@@ -346,8 +346,8 @@ def test_an_apps_listing_is_its_own_rows_before_the_cap(tmp_path) -> None:
 async def test_an_unreadable_store_makes_the_listing_partial() -> None:
     import types
 
-    from kiro_crew import taskq
-    from kiro_crew.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
+    from efm_go import taskq
+    from efm_go.subagent_manager.admission.taskq_bridge import _TaskqBridgeMixin
 
     async def _down(*_a, **_kw):
         raise taskq.TaskStoreUnavailable("locked")
@@ -368,7 +368,7 @@ def test_in_memory_pending_work_is_the_arms_whole_view() -> None:
     """The arm's in-memory terms, on the real manager: a window entry, another
     child whose task is still live (its report waits on teardown), a live
     follow-up watcher -- and never the asking child's own task."""
-    from kiro_crew.subagent import SubagentInfo
+    from efm_go.subagent import SubagentInfo
 
     loop = asyncio.new_event_loop()
     try:
@@ -417,8 +417,8 @@ async def test_a_run_registered_during_the_queued_lookup_answers_from_the_regist
     import json
     import types
 
-    import kiro_crew.subagent_persistence as sp
-    from kiro_crew.dashboard.handlers.messaging import api_spawn_status
+    import efm_go.subagent_persistence as sp
+    from efm_go.dashboard.handlers.messaging import api_spawn_status
 
     monkeypatch.setattr(sp, "_SUBAGENTS_DIR", tmp_path / "subagents")
     (tmp_path / "subagents").mkdir()
@@ -452,8 +452,8 @@ async def test_a_run_registered_during_the_queued_lookup_answers_from_the_regist
 async def test_a_folder_with_no_recorded_ending_is_not_done(tmp_path, monkeypatch) -> None:
     import json
 
-    import kiro_crew.subagent_persistence as sp
-    from kiro_crew.dashboard.handlers.messaging import api_spawn_status
+    import efm_go.subagent_persistence as sp
+    from efm_go.dashboard.handlers.messaging import api_spawn_status
 
     monkeypatch.setattr(sp, "_SUBAGENTS_DIR", tmp_path / "subagents")
     (tmp_path / "subagents").mkdir()
@@ -473,8 +473,8 @@ async def test_a_folder_with_no_recorded_ending_is_not_done(tmp_path, monkeypatc
 async def test_a_control_on_a_queued_id_says_queued_not_not_found(route) -> None:
     import json
 
-    from kiro_crew.dashboard.handlers import messaging
-    from kiro_crew.subagent_manager.admission.types import QueuedRun
+    from efm_go.dashboard.handlers import messaging
+    from efm_go.subagent_manager.admission.types import QueuedRun
 
     subagents = MagicMock()
     subagents.get = MagicMock(return_value=None)
@@ -496,15 +496,15 @@ async def test_the_list_route_reads_no_store_unless_asked() -> None:
     ``queued``: without ``?queued=1`` the route does not touch the task store."""
     import json
 
-    from kiro_crew.dashboard.handlers.messaging import api_spawn_list
+    from efm_go.dashboard.handlers.messaging import api_spawn_list
 
     subagents = MagicMock(all_agents=[])
     subagents.queued_runs_async = AsyncMock(side_effect=AssertionError("store read"))
     state = MagicMock(subagents=subagents)
     with patch(
-        "kiro_crew.dashboard.handlers.messaging.read_panel_records",
+        "efm_go.dashboard.handlers.messaging.read_panel_records",
         return_value=__import__(
-            "kiro_crew.subagent_persistence", fromlist=["PanelRecords"]
+            "efm_go.subagent_persistence", fromlist=["PanelRecords"]
         ).PanelRecords([], 0, False),
     ):
         body = json.loads((await api_spawn_list(_Req(state))).body)
@@ -521,9 +521,9 @@ async def test_each_spawn_is_listed_once_live_then_queued_then_persisted() -> No
     import json
     import types
 
-    from kiro_crew.dashboard.handlers import messaging
-    from kiro_crew.subagent_manager.admission.types import QueuedRun, QueuedRunListing
-    from kiro_crew.subagent_persistence import PanelRecords
+    from efm_go.dashboard.handlers import messaging
+    from efm_go.subagent_manager.admission.types import QueuedRun, QueuedRunListing
+    from efm_go.subagent_persistence import PanelRecords
 
     live = types.SimpleNamespace(
         id="live1",
@@ -577,11 +577,11 @@ async def test_collecting_a_member_whose_announce_already_queued_settles_it(tmp_
     it and the 'set empty, disarm' path would never fire again."""
     from chat_test_helpers import _make_state
 
-    from kiro_crew.constants import SUBAGENT_COMPLETION_META_KEY
-    from kiro_crew.dashboard.chat_utils import SUBAGENT_COMPLETION_KIND
-    from kiro_crew.dashboard.handlers.messaging import api_spawn_mark_collected
-    from kiro_crew.subagent import SubagentDelivery
-    from kiro_crew.subagent_completion_meta import single_completion_meta
+    from efm_go.constants import SUBAGENT_COMPLETION_META_KEY
+    from efm_go.dashboard.chat_utils import SUBAGENT_COMPLETION_KIND
+    from efm_go.dashboard.handlers.messaging import api_spawn_mark_collected
+    from efm_go.subagent import SubagentDelivery
+    from efm_go.subagent_completion_meta import single_completion_meta
 
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("chat-1")
@@ -605,7 +605,7 @@ async def test_collecting_a_member_whose_announce_already_queued_settles_it(tmp_
 
 
 def test_spawn_list_never_says_none_running_over_a_partial_queue() -> None:
-    from kiro_crew.mcp_tools import spawn as spawn_tools
+    from efm_go.mcp_tools import spawn as spawn_tools
 
     answer = {"agents": [], "queued_truncated": True}
     with (
@@ -637,7 +637,7 @@ def test_no_child_probe_spells_a_slots_session_key_by_hand() -> None:
         "has_pending_work_for_async",
         "has_in_memory_pending_work_for",
     }
-    src = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+    src = Path(__file__).resolve().parents[1] / "src" / "efm_go"
     offenders: list[str] = []
     for path in sorted(src.rglob("*.py")):
         text = path.read_text(encoding="utf-8")
@@ -680,8 +680,8 @@ def test_a_row_refused_at_drain_answers_its_failure_not_not_found() -> None:
 
 
 def test_a_row_this_build_cannot_read_is_an_outage_not_a_crash(tmp_path) -> None:
-    from kiro_crew import taskq
-    from kiro_crew.subagent_manager.admission.taskq_bridge import (
+    from efm_go import taskq
+    from efm_go.subagent_manager.admission.taskq_bridge import (
         _read_queued_row,
         _read_queued_rows,
     )
@@ -711,8 +711,8 @@ async def test_an_unreadable_queue_answers_503_not_404() -> None:
     the status route answers a retryable 503, never a definitive 404."""
     import json
 
-    from kiro_crew.dashboard.handlers.messaging import api_spawn_status
-    from kiro_crew.subagent_manager.admission.types import QueuedReadUnavailable
+    from efm_go.dashboard.handlers.messaging import api_spawn_status
+    from efm_go.subagent_manager.admission.types import QueuedReadUnavailable
 
     subagents = MagicMock(get=MagicMock(return_value=None))
     subagents.queued_run_async = AsyncMock(side_effect=QueuedReadUnavailable("locked"))
@@ -727,7 +727,7 @@ async def test_collected_ids_are_bounded_and_known(tmp_path) -> None:
     the cap in total: an id no completion will match is never evicted."""
     from chat_test_helpers import _make_state
 
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     state = _make_state(tmp_path)
     slot = state.get_or_create_slot("chat-1")

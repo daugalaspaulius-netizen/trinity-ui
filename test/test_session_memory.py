@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import resource_status as sm_rs
-from kiro_crew.dashboard import session_memory as sm
+from efm_go import resource_status as sm_rs
+from efm_go.dashboard import session_memory as sm
 
 
 class _FakeSlot:
@@ -370,7 +370,7 @@ class _SelfShapedProvider:
 def _manager():
     from unittest.mock import MagicMock
 
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     cfg = MagicMock()
     cfg.session.pool_size = 0
@@ -387,7 +387,7 @@ def test_runtime_pids_resolves_both_provider_shapes() -> None:
     silently reported pid=None for the latter, so those sessions rendered as
     "unknown memory" forever -- invisible because chat sessions use the other shape.
     """
-    from kiro_crew.session import _Session
+    from efm_go.session import _Session
 
     mgr = _manager()
     mgr._sessions["dashboard:nested"] = _Session(provider=_ClientShapedProvider(4242))
@@ -404,7 +404,7 @@ def test_runtime_pids_resolves_both_provider_shapes() -> None:
 
 def test_runtime_pids_reports_unknown_when_there_is_no_runtime() -> None:
     """A non-ACP provider has no runtime at all -- that is unknown, not a crash."""
-    from kiro_crew.session import _Session
+    from efm_go.session import _Session
 
     mgr = _manager()
     mgr._sessions["dashboard:plain"] = _Session(provider=object())
@@ -427,7 +427,7 @@ async def test_background_session_records_the_agent_it_runs_as() -> None:
     """
     from unittest.mock import MagicMock
 
-    from kiro_crew.session import BACKGROUND_AGENT, BACKGROUND_KEY, SessionManager
+    from efm_go.session import BACKGROUND_AGENT, BACKGROUND_KEY, SessionManager
 
     factory_saw: list[str] = []
 
@@ -523,7 +523,7 @@ def test_slot_spend_sums_credits_and_counts_turns(
     from datetime import datetime, timezone
     from pathlib import Path
 
-    from kiro_crew.dashboard.handlers import usage
+    from efm_go.dashboard.handlers import usage
 
     tmp = Path(str(tmp_path))
     now = datetime.now(timezone.utc)
@@ -556,7 +556,7 @@ def test_slot_spend_returns_empty_for_no_shards(
     """A slot with no rows means credits=None and turns=None in the payload."""
     from pathlib import Path
 
-    from kiro_crew.dashboard.handlers import usage
+    from efm_go.dashboard.handlers import usage
 
     tmp = Path(str(tmp_path))
     tmp.mkdir(exist_ok=True)
@@ -578,7 +578,7 @@ def test_slot_spend_drops_nan_and_infinity(
     from datetime import datetime, timezone
     from pathlib import Path
 
-    from kiro_crew.dashboard.handlers import usage
+    from efm_go.dashboard.handlers import usage
 
     tmp = Path(str(tmp_path))
     now = datetime.now(timezone.utc)
@@ -616,7 +616,7 @@ def test_slot_spend_cache_expires_as_the_cutoff_moves(
     from datetime import datetime, timedelta, timezone
     from pathlib import Path
 
-    from kiro_crew.dashboard.handlers import usage
+    from efm_go.dashboard.handlers import usage
 
     tmp = Path(str(tmp_path))
     real_now = datetime.now(timezone.utc)
@@ -668,7 +668,7 @@ def test_slot_spend_excludes_non_session_slots(
     from datetime import datetime, timezone
     from pathlib import Path
 
-    from kiro_crew.dashboard.handlers import usage
+    from efm_go.dashboard.handlers import usage
 
     tmp = Path(str(tmp_path))
     now = datetime.now(timezone.utc)
@@ -698,7 +698,7 @@ def test_slot_spend_cache_invalidates_on_shard_growth(
     from datetime import datetime, timezone
     from pathlib import Path
 
-    from kiro_crew.dashboard.handlers import usage
+    from efm_go.dashboard.handlers import usage
 
     tmp = Path(str(tmp_path))
     now = datetime.now(timezone.utc)
@@ -747,7 +747,7 @@ def test_slot_spend_window_matches_cost_breakdown_window() -> None:
     # Both use the same constant; this pinning test catches any drift.
     import inspect
 
-    from kiro_crew.dashboard.handlers import usage
+    from efm_go.dashboard.handlers import usage
 
     sig = inspect.signature(usage.cost_breakdown)
     cost_default = sig.parameters["days"].default
@@ -771,7 +771,7 @@ def test_slot_spend_applies_per_row_timestamp_cutoff(
     from datetime import datetime, timedelta, timezone
     from pathlib import Path
 
-    from kiro_crew.dashboard.handlers import usage
+    from efm_go.dashboard.handlers import usage
 
     tmp = Path(str(tmp_path))
     now = datetime.now(timezone.utc)
@@ -802,7 +802,7 @@ def test_slot_spend_applies_per_row_timestamp_cutoff(
 
 
 def tree_cap() -> int:
-    from kiro_crew.crew_log.session_tree import TREE_UNIT_CAP
+    from efm_go.crew_log.session_tree import TREE_UNIT_CAP
 
     return TREE_UNIT_CAP
 
@@ -811,8 +811,8 @@ def _crew_log_with_parent(
     monkeypatch: pytest.MonkeyPatch, tmp_path, *, creator_running: bool
 ) -> None:
     """A creator log and a child log whose session/opened cites it."""
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     monkeypatch.setenv("KIROCREW_CREW_LOG", "1")
@@ -898,13 +898,13 @@ async def test_logs_past_the_scan_cap_are_counted_on_the_payload_not_dropped_sil
     # neither read nor cached, and the payload says how many, on every sample.
     # The live rows' own logs are admitted first, so what goes unread is a
     # closed session's log and every row on screen still folds.
-    from kiro_crew.crew_log import session_tree as tree_mod
+    from efm_go.crew_log import session_tree as tree_mod
 
     _crew_log_with_parent(monkeypatch, tmp_path, creator_running=True)
     # A third, closed session's log sorts first in the store: with a cap of two
     # it is what goes unread, because the live rows name their own units.
-    from kiro_crew import crew_log as lg
-    from kiro_crew.crew_log import CrewLog
+    from efm_go import crew_log as lg
+    from efm_go.crew_log import CrewLog
 
     closed = CrewLog.create(
         lg.KIND_SESSION, "a-closed", owner="raymond", agent="kirocrew", slot="z"
@@ -1053,7 +1053,7 @@ def test_the_claim_union_matches_the_sweeps_own_sources() -> None:
     import inspect
     import re
 
-    from kiro_crew import session_cleanup
+    from efm_go import session_cleanup
 
     body = inspect.getsource(session_cleanup.SessionCleanup._active_pids)
     sweep_sources = set(re.findall(r"_owner\.(_\w+)\(\)", body))

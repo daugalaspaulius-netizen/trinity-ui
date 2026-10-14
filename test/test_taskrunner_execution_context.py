@@ -6,16 +6,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.execution_context import (
+from efm_go.execution_context import (
     ExecutionContext,
     MemoryStoreRef,
     bind_session_execution,
     read_session_execution,
 )
-from kiro_crew.history import ConversationLog
-from kiro_crew.task_models import PROGRESS_FILE, Project, Task
-from kiro_crew.task_reporter import save_progress
-from kiro_crew.taskrunner import TaskRunner
+from efm_go.history import ConversationLog
+from efm_go.task_models import PROGRESS_FILE, Project, Task
+from efm_go.task_reporter import save_progress
+from efm_go.taskrunner import TaskRunner
 
 
 def member_execution(member="alpha", mode="persistent"):
@@ -100,7 +100,7 @@ def test_legacy_run_recovers_runtime_identity_without_global_fallback(tmp_path, 
         ),
     )
     monkeypatch.setattr(
-        "kiro_crew.taskrunner.capture_session_execution",
+        "efm_go.taskrunner.capture_session_execution",
         lambda key: legacy if key == runtime_key else None,
     )
     runner._runs_path().write_text(

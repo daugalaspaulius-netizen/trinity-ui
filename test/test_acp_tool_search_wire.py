@@ -18,9 +18,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.harness import harness_for
-from kiro_crew.acp.runtime import AcpRuntime, AcpToolSurfaceBindingError, AcpWorkspaceBindingError
-from kiro_crew.acp.types import (
+from efm_go.acp.harness import harness_for
+from efm_go.acp.runtime import AcpRuntime, AcpToolSurfaceBindingError, AcpWorkspaceBindingError
+from efm_go.acp.types import (
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
@@ -30,7 +30,7 @@ from kiro_crew.acp.types import (
     ACP_BACKENDS_TOOL_SEARCH_OVERLAY,
     KAS_CLIENT_CAPABILITIES,
 )
-from kiro_crew.agent_sdk.tool_search import (
+from efm_go.agent_sdk.tool_search import (
     TOOL_SEARCH_DEFAULT_MIN_PCT,
     TOOL_SEARCH_DEFAULT_MIN_TOKENS,
     ToolSearchSettings,
@@ -38,7 +38,7 @@ from kiro_crew.agent_sdk.tool_search import (
     spec_grants_tool_search,
     with_client_meta_settings,
 )
-from kiro_crew.providers.acp import AcpProvider
+from efm_go.providers.acp import AcpProvider
 
 # ── the grant predicate ──
 
@@ -190,7 +190,7 @@ class TestMembership:
 
 
 def _build_provider(backend: str, **kwargs) -> AcpProvider:
-    with patch("kiro_crew.providers.acp.AcpClient"):
+    with patch("efm_go.providers.acp.AcpClient"):
         provider = AcpProvider(acp_backend=backend, **kwargs)
     provider._client = MagicMock()
     provider._client.backend = backend
@@ -238,7 +238,7 @@ class TestProviderChannels:
         class _Stop(Exception):
             pass
 
-        monkeypatch.setattr("kiro_crew.providers.acp.AcpRuntime", _Runtime)
+        monkeypatch.setattr("efm_go.providers.acp.AcpRuntime", _Runtime)
         provider = _build_provider(backend, tool_search=True)
         provider._client._work_dir = MagicMock()
         provider._client._agent = "kirocrew"
@@ -295,9 +295,9 @@ class TestProviderChannels:
             return next(runtimes)
 
         with (
-            patch("kiro_crew.providers.acp.AcpRuntime", side_effect=build),
+            patch("efm_go.providers.acp.AcpRuntime", side_effect=build),
             patch(
-                "kiro_crew.providers.acp.AcpSessionProvider",
+                "efm_go.providers.acp.AcpSessionProvider",
                 side_effect=lambda handle, runtime, **kw: MagicMock(
                     _handle=handle, _runtime=runtime, resumed=False
                 ),
@@ -315,7 +315,7 @@ class TestProviderChannels:
 
 class TestEveryKasCapableConstructorThreadsTheSetting:
     def test_companion_runtime_kwargs_mirror_the_parent_setting(self):
-        from kiro_crew.session_allocation import _collect_parent_runtime_kwargs
+        from efm_go.session_allocation import _collect_parent_runtime_kwargs
 
         settings = ToolSearchSettings(True, 5, 50_000)
         provider = MagicMock()
@@ -335,7 +335,7 @@ class TestEveryKasCapableConstructorThreadsTheSetting:
     def test_the_capability_is_declared_on_the_provider_contract(self):
         """H14: read off ``LLMProvider``, never probed for a private name. The base
         answers None; the ACP provider answers its resolved settings."""
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         assert "tool_search_settings" in vars(LLMProvider)
         assert isinstance(vars(LLMProvider)["tool_search_settings"], property)
@@ -347,7 +347,7 @@ class TestEveryKasCapableConstructorThreadsTheSetting:
         assert provider.tool_search_settings is None
 
     def test_companion_runtime_kwargs_stay_silent_without_a_toggle(self):
-        from kiro_crew.session_allocation import _collect_parent_runtime_kwargs
+        from efm_go.session_allocation import _collect_parent_runtime_kwargs
 
         provider = MagicMock()
         provider._client = MagicMock(backend=ACP_BACKEND_KAS)
@@ -362,7 +362,7 @@ class TestEveryKasCapableConstructorThreadsTheSetting:
         derived from the same ``agent.tool_search*`` config as the foreground."""
         import inspect
 
-        from kiro_crew import session_background
+        from efm_go import session_background
 
         source = inspect.getsource(session_background)
         assert "tool_search=ToolSearchSettings.from_config(" in source
@@ -373,7 +373,7 @@ class TestProjectedSpawnSpecRead:
         """A checkout that skipped setup has no managed spec yet; reading it as
         absent would decide "no loader" for the process while the projection,
         moments later, materializes a spec that grants one."""
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         calls: list[str] = []
         monkeypatch.setattr(
@@ -397,7 +397,7 @@ class TestProjectedSpawnSpecRead:
     def test_a_derived_snapshot_is_used_without_any_read(self, monkeypatch):
         from types import SimpleNamespace
 
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         monkeypatch.setattr(
             runtime_mod,
@@ -415,7 +415,7 @@ class TestProjectedSpawnSpecRead:
         assert rt._projected_spawn_spec() == {"tools": ["fs_read"]}
 
     def test_an_unreadable_spec_grants_nothing(self, monkeypatch):
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         monkeypatch.setattr(runtime_mod, "ensure_agent_materialized", lambda agent: None)
         monkeypatch.setattr(
@@ -483,7 +483,7 @@ class TestLoaderReachabilityOnSharedProcess:
         """``create_session`` and ``load_session`` both take their payload from
         ``_kas_custom_agents``; judging it there is what makes a resumed session
         on a deferral-enabled process as safe as a new one."""
-        from kiro_crew.acp.harness.base import SessionExtras
+        from efm_go.acp.harness.base import SessionExtras
 
         rt = _bare_runtime(agent="kirocrew", wire=self.ON)
         rt._mcp_gateway_overlay = None

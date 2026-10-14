@@ -27,9 +27,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.handlers import api_sessions_clear, api_sessions_clearable_count
-from kiro_crew.dashboard.handlers.sessions import _clearable_history_keys, api_session_delete
-from kiro_crew.history import ConversationLog
+from efm_go.dashboard.handlers import api_sessions_clear, api_sessions_clearable_count
+from efm_go.dashboard.handlers.sessions import _clearable_history_keys, api_session_delete
+from efm_go.history import ConversationLog
 
 CLOSED_AT = 1_700_000_000.0
 
@@ -50,7 +50,7 @@ class _FakeSlot:
 
 
 def _history_key_for(key: str) -> str:
-    from kiro_crew.dashboard.chat import _history_key_for as _hkf
+    from efm_go.dashboard.chat import _history_key_for as _hkf
 
     return _hkf(key)
 
@@ -227,7 +227,7 @@ async def test_unparseable_metadata_is_excluded_from_count_and_bulk_delete(
 
     assert status == 200
     assert body == {"sessions": 0}
-    with patch("kiro_crew.dashboard.handlers.sel"):
+    with patch("efm_go.dashboard.handlers.sel"):
         resp = await api_sessions_clear(_request(state))
     assert resp.status == 200
     clear_body = json.loads(resp.body)
@@ -261,7 +261,7 @@ async def test_an_individual_delete_excludes_and_reports_unparseable_metadata(
     # Slot/provider teardown has its own coverage. Keep the HTTP handler and the
     # locked transcript deletion real, including the metadata readability check.
     with patch(
-        "kiro_crew.dashboard.handlers.sessions._remove_slot_for_history_key",
+        "efm_go.dashboard.handlers.sessions._remove_slot_for_history_key",
         new_callable=AsyncMock,
     ) as remove_slot:
         response = await api_session_delete(request)
@@ -307,10 +307,10 @@ async def test_count_and_bulk_delete_resolve_the_same_set() -> None:
     # cleared keys is what keeps that mistake from coming back silently.
     with (
         patch(
-            "kiro_crew.dashboard.handlers.sessions._remove_slot_for_history_key",
+            "efm_go.dashboard.handlers.sessions._remove_slot_for_history_key",
             new_callable=AsyncMock,
         ) as remove_slot,
-        patch("kiro_crew.dashboard.handlers.sel"),
+        patch("efm_go.dashboard.handlers.sel"),
     ):
         resp = await api_sessions_clear(_request(delete_state))
     assert resp.status == 200

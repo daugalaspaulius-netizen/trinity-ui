@@ -9,7 +9,7 @@ from aiohttp import web
 from body_stream_helpers import attach_body
 from dashboard_owner_helpers import owner_claims
 
-from kiro_crew.platform.interfaces import McpScope
+from efm_go.platform.interfaces import McpScope
 
 
 class _NoSyncLock:
@@ -49,7 +49,7 @@ def _make_request(body: dict) -> MagicMock:
 
 class TestSetKirocrewEntry:
     def test_adds_entry_when_enabling_with_spec(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "kirocrew.mcp.json"
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", mc_path)
@@ -60,7 +60,7 @@ class TestSetKirocrewEntry:
         }
 
     def test_disables_existing(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "kirocrew.mcp.json"
         mc_path.write_text(json.dumps({"mcpServers": {"srv": {"command": "x"}}}))
@@ -72,7 +72,7 @@ class TestSetKirocrewEntry:
         )
 
     def test_enabling_disabled_removes_flag(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "kirocrew.mcp.json"
         mc_path.write_text(json.dumps({"mcpServers": {"srv": {"command": "x", "disabled": True}}}))
@@ -84,7 +84,7 @@ class TestSetKirocrewEntry:
         )
 
     def test_disabling_missing_with_spec_seeds_entry(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "kirocrew.mcp.json"
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", mc_path)
@@ -96,7 +96,7 @@ class TestSetKirocrewEntry:
 
 class TestSetScopeEntry:
     def test_adds_when_enabling_absent(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         kpath = tmp_path / "kiro.json"
         action = mcp_mod._set_scope_entry(kpath, "srv", enabled=True, spec={"command": "c"})
@@ -106,7 +106,7 @@ class TestSetScopeEntry:
         }
 
     def test_removes_when_disabling_present(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         kpath = tmp_path / "kiro.json"
         kpath.write_text(
@@ -119,7 +119,7 @@ class TestSetScopeEntry:
         assert "other" in servers  # untouched
 
     def test_enabling_already_present_noop(self, tmp_path):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         kpath = tmp_path / "kiro.json"
         kpath.write_text(json.dumps({"mcpServers": {"srv": {"command": "c"}}}))
@@ -127,7 +127,7 @@ class TestSetScopeEntry:
         assert action == "noop"
 
     def test_disabling_absent_noop(self, tmp_path):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         kpath = tmp_path / "kiro.json"
         action = mcp_mod._set_scope_entry(kpath, "srv", enabled=False)
@@ -135,7 +135,7 @@ class TestSetScopeEntry:
 
     def test_enabling_without_spec_missing(self, tmp_path, monkeypatch):
         """When no spec can be found anywhere, the helper returns missing_spec."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         kpath = tmp_path / "kiro.json"
         monkeypatch.setattr(mcp_mod, "_find_server_spec_anywhere", lambda name: None)
@@ -153,7 +153,7 @@ class TestApplyEndpoint:
     @pytest.mark.asyncio
     async def test_preservation_kiro_to_kirocrew(self, tmp_path, monkeypatch):
         """Turning Kiro off when server was only in Kiro copies to KiroCrew first."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         # Real files: only kiro global has slack-mcp initially.
         mc_path = tmp_path / "kirocrew.mcp.json"
@@ -176,7 +176,7 @@ class TestApplyEndpoint:
             lambda name: ({"command": "slack", "args": []} if name == "slack-mcp" else None),
         )
         # Stub rebuild_agent_config — we only care about file writes here.
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         # No-op the lock to simplify testing.
         class _NoLock:
@@ -216,7 +216,7 @@ class TestApplyEndpoint:
 
     @pytest.mark.asyncio
     async def test_uninstall_removes_from_all_three(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "kirocrew.mcp.json"
         kiro_path = tmp_path / "kiro_global.json"
@@ -232,11 +232,11 @@ class TestApplyEndpoint:
         # looks up `aim` via shutil.which; returning None short-circuits
         # the subprocess.run call entirely.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._capability_manager",
+            "efm_go.dashboard.handlers._shared._capability_manager",
             lambda: MagicMock(**{"available.return_value": False}),
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         class _NoLock:
             async def __aenter__(self):
@@ -268,7 +268,7 @@ class TestApplyEndpoint:
         Red before Phase 0: the companion uninstall ran, the scope answered
         ``ambiguous`` inside an ``ok: true`` response the table read as applied,
         and ``mcp_uninstall`` was logged ``ok`` with both configurations kept."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "kirocrew.mcp.json"
         kiro_path = tmp_path / "kiro_global.json"
@@ -290,10 +290,10 @@ class TestApplyEndpoint:
             side_effect=AssertionError("companion uninstall ran for a refused change")
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._capability_manager", lambda: manager
+            "efm_go.dashboard.handlers._shared._capability_manager", lambda: manager
         )
         rebuild = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", rebuild)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", rebuild)
         sel = MagicMock()
         monkeypatch.setattr(mcp_mod, "sel", lambda: sel)
 
@@ -342,7 +342,7 @@ class TestApplyEndpoint:
         409 before the first scope write. Red under the uninstall-only pre-check:
         the store write landed, the global answered ``ambiguous`` inside an
         ``ok: true`` response, and the table cleared the pending change."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "kirocrew.mcp.json"
         kiro_path = tmp_path / "kiro_global.json"
@@ -358,11 +358,11 @@ class TestApplyEndpoint:
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", list)
         monkeypatch.setattr(mcp_mod, "kiro_agents_dir", lambda: tmp_path / "agents")
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._capability_manager",
+            "efm_go.dashboard.handlers._shared._capability_manager",
             lambda: MagicMock(**{"available.return_value": False}),
         )
         rebuild = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", rebuild)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", rebuild)
         sel = MagicMock()
         monkeypatch.setattr(mcp_mod, "sel", lambda: sel)
 
@@ -401,7 +401,7 @@ class TestApplyEndpoint:
         ``kiroGlobal: removed`` with no error and the uninstall is logged ``ok``.
         Red under resolve-at-purge: the scope answered ``ambiguous`` after the
         companion package was already gone, and the pinned entry stayed."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "kirocrew.mcp.json"
         kiro_path = tmp_path / "kiro_global.json"
@@ -434,9 +434,9 @@ class TestApplyEndpoint:
         manager = MagicMock(**{"available.return_value": True})
         manager.uninstall_mcp = AsyncMock(return_value=MagicMock(ok=True))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._capability_manager", lambda: manager
+            "efm_go.dashboard.handlers._shared._capability_manager", lambda: manager
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
         sel = MagicMock()
         monkeypatch.setattr(mcp_mod, "sel", lambda: sel)
 
@@ -466,7 +466,7 @@ class TestApplyEndpoint:
 
     @pytest.mark.asyncio
     async def test_calls_rebuild_agent_config_once(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "mc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", tmp_path / "kiro.json")
@@ -477,12 +477,12 @@ class TestApplyEndpoint:
         # uninstall c` as a real subprocess if `aim` is on PATH in CI.
         # Return None from shutil.which to short-circuit that path.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._capability_manager",
+            "efm_go.dashboard.handlers._shared._capability_manager",
             lambda: MagicMock(**{"available.return_value": False}),
         )
 
         rebuild = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", rebuild)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", rebuild)
 
         class _NoLock:
             async def __aenter__(self):
@@ -546,7 +546,7 @@ class TestHostileNameRejection:
         The scope files must NOT be created/touched, and the handler must
         NOT call ``subprocess.run`` or mutate ``rebuild_agent_config``.
         """
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "mc.json"
         kiro_path = tmp_path / "kiro.json"
@@ -556,12 +556,12 @@ class TestHostileNameRejection:
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [McpScope("cc", cc_path, None)])
         # Trap: if the handler tries to shell out despite the name-gate, fail loudly.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._capability_manager",
+            "efm_go.dashboard.handlers._shared._capability_manager",
             lambda: pytest.fail("_capability_manager must not be reached for invalid name"),
         )
 
         rebuild = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", rebuild)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", rebuild)
 
         class _NoLock:
             async def __aenter__(self):
@@ -594,7 +594,7 @@ class TestHostileNameRejection:
         """Invalid tool-override names are dropped; the server's scope
         changes still apply, and the handler reports ``tools_rejected``.
         """
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "mc.json"
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", mc_path)
@@ -604,11 +604,11 @@ class TestHostileNameRejection:
         )
         monkeypatch.setattr(mcp_mod, "_find_server_spec_anywhere", lambda n: {"command": "x"})
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._capability_manager",
+            "efm_go.dashboard.handlers._shared._capability_manager",
             lambda: MagicMock(**{"available.return_value": False}),
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         class _NoLock:
             async def __aenter__(self):
@@ -664,7 +664,7 @@ class TestMcpNameValidator:
         ],
     )
     def test_accepts_well_formed_names(self, name):
-        from kiro_crew.dashboard.handlers.mcp import _is_valid_mcp_name
+        from efm_go.dashboard.handlers.mcp import _is_valid_mcp_name
 
         assert _is_valid_mcp_name(name) is True
 
@@ -679,7 +679,7 @@ class TestMcpNameValidator:
         ],
     )
     def test_rejects_malformed_names(self, name):
-        from kiro_crew.dashboard.handlers.mcp import _is_valid_mcp_name
+        from efm_go.dashboard.handlers.mcp import _is_valid_mcp_name
 
         assert _is_valid_mcp_name(name) is False
 
@@ -692,7 +692,7 @@ class TestApplyAcceptsAppProvidedName:
         This is the shape ``GET /api/mcp-gateway/servers`` hands the client, so
         the sibling write endpoints must accept it back.
         """
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         mc_path = tmp_path / "mc.json"
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", mc_path)
@@ -700,10 +700,10 @@ class TestApplyAcceptsAppProvidedName:
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
         monkeypatch.setattr(mcp_mod, "_find_server_spec_anywhere", lambda n: {"command": "x"})
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._capability_manager",
+            "efm_go.dashboard.handlers._shared._capability_manager",
             lambda: MagicMock(**{"available.return_value": False}),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         class _NoLock:
             async def __aenter__(self):
@@ -758,7 +758,7 @@ class TestApplyBodyCeiling:
         The change-count cap runs only after decoding, so the byte ceiling is
         what stops an arbitrarily large body from being buffered whole.
         """
-        from kiro_crew.dashboard.handlers.mcp import (
+        from efm_go.dashboard.handlers.mcp import (
             _MCP_APPLY_MAX_BODY_BYTES,
             _do_mcp_apply,
         )
@@ -776,7 +776,7 @@ class TestSetStubNameGate:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("bad_name", [":bad", "../evil"])
     async def test_rejects_malformed_single_name(self, bad_name):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         request = _make_stub_request({"name": bad_name, "stub": True})
         resp = await mcp_mod.api_mcp_gateway_set_stub(request)
@@ -785,7 +785,7 @@ class TestSetStubNameGate:
 
     @pytest.mark.asyncio
     async def test_rejects_malformed_batch_name(self):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         request = _make_stub_request({"names": ["good-name", ":bad"], "stub": True})
         resp = await mcp_mod.api_mcp_gateway_set_stub(request)
@@ -795,15 +795,15 @@ class TestSetStubNameGate:
     @pytest.mark.asyncio
     async def test_accepts_app_provided_colon_name(self, tmp_path, monkeypatch):
         """The stub toggle accepts ``<app>:<server>`` and persists it."""
-        import kiro_crew.config.loader as loader_mod
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        import efm_go.config.loader as loader_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         cfg = tmp_path / "config.json"
         cfg.write_text("{}")
         monkeypatch.setattr(loader_mod, "config_path", lambda: cfg)
         monkeypatch.setattr(mcp_mod, "_local_overlay_section", lambda: {})
 
-        from kiro_crew.mcp_gateway import launch_approval
+        from efm_go.mcp_gateway import launch_approval
 
         name = "auto-improvement:auto-improvement"
         expected_launch = launch_approval.launch_pair(
@@ -821,7 +821,7 @@ class TestSetStubNameGate:
         written = json.loads(cfg.read_text())["mcp_gateway"]
         # The click is recorded as a decision over the roster, so the colon name
         # has to survive into `stub_overrides` and resolve into the effective set.
-        from kiro_crew.config.loader import _resolve_stub_servers
+        from efm_go.config.loader import _resolve_stub_servers
 
         assert written["stub_overrides"] == {"auto-improvement:auto-improvement": True}
         assert _resolve_stub_servers(written) == ["auto-improvement:auto-improvement"]
@@ -836,7 +836,7 @@ class TestGlobalScopesEndpoint:
     @pytest.mark.asyncio
     async def test_default_returns_no_extra_scopes(self, monkeypatch, tmp_path) -> None:
         """OSS default: no provider scopes → the UI shows only the core Kiro badge."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
         resp = await mcp_mod.api_mcp_global_scopes(_make_request({}))
@@ -846,7 +846,7 @@ class TestGlobalScopesEndpoint:
     @pytest.mark.asyncio
     async def test_companion_scope_is_surfaced(self, monkeypatch, tmp_path) -> None:
         """A companion scope is returned as {id: '<id>Global', label} for the badge."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         monkeypatch.setattr(
             mcp_mod,
@@ -860,7 +860,7 @@ class TestGlobalScopesEndpoint:
     @pytest.mark.asyncio
     async def test_label_falls_back_to_id(self, monkeypatch, tmp_path) -> None:
         """An empty label falls back to the scope id."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         monkeypatch.setattr(
             mcp_mod, "_extra_mcp_scopes", lambda: [McpScope("cc", tmp_path / "cc.json")]
@@ -874,7 +874,7 @@ class TestApplyBatchCap:
     async def test_rejects_oversized_batch(self) -> None:
         """/api/mcp/apply caps its batch so the process-wide MCP lock is never
         held for timeout×N seconds (LIVENESS — _MCP_APPLY_MAX_CHANGES)."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         oversized = [{"name": f"srv-{i}"} for i in range(mcp_mod._MCP_APPLY_MAX_CHANGES + 1)]
         resp = await mcp_mod.api_mcp_apply(_make_request({"changes": oversized}))
@@ -884,12 +884,12 @@ class TestApplyBatchCap:
     @pytest.mark.asyncio
     async def test_accepts_batch_at_cap(self, monkeypatch, tmp_path) -> None:
         """A batch exactly at the cap is not rejected by the size guard."""
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "kc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", tmp_path / "kiro.json")
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         class _NoLock:
             async def __aenter__(self):
@@ -912,7 +912,7 @@ class TestBoundedCapabilityManager:
         the MCP lock indefinitely (arbiter: enforce LIVENESS once, not per site)."""
         import asyncio
 
-        from kiro_crew.platform import capability_bound
+        from efm_go.platform import capability_bound
 
         class _Hanging:
             def available(self) -> bool:
@@ -930,7 +930,7 @@ class TestBoundedCapabilityManager:
     async def test_reads_delegate_value(self, monkeypatch) -> None:
         """Read ops delegate their value through (available is sync/unwrapped;
         list ops return the inner result unchanged)."""
-        from kiro_crew.platform import capability_bound
+        from efm_go.platform import capability_bound
 
         class _Inner:
             def available(self) -> bool:
@@ -951,7 +951,7 @@ class TestBoundedCapabilityManager:
         (arbiter follow-up: symmetric liveness)."""
         import asyncio
 
-        from kiro_crew.platform import capability_bound
+        from efm_go.platform import capability_bound
 
         class _Hanging:
             def available(self) -> bool:
@@ -971,13 +971,13 @@ class TestBoundedCapabilityManager:
         (in the phase BEFORE the MCP file lock is taken) and records it."""
         from unittest.mock import AsyncMock
 
-        from kiro_crew.dashboard.handlers import _shared
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "kc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", tmp_path / "kiro.json")
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         class _NoLock:
             async def __aenter__(self):
@@ -1011,15 +1011,15 @@ class TestBoundedCapabilityManager:
         import asyncio as _asyncio
         from unittest.mock import AsyncMock
 
-        from kiro_crew.dashboard.handlers import _shared
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "kc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", tmp_path / "kiro.json")
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
         # Tiny budget so the hanging op blows the phase deadline immediately.
-        from kiro_crew.platform import capability_bound
+        from efm_go.platform import capability_bound
 
         monkeypatch.setattr(capability_bound, "CAPABILITY_UNINSTALL_TIMEOUT", 0.01)
 
@@ -1061,8 +1061,8 @@ class TestUninstallCrashWindowCleanup:
         uninstall's config removal runs — the finally sweep still purges it."""
         from unittest.mock import AsyncMock
 
-        from kiro_crew.dashboard.handlers import _shared
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         kiro_path = tmp_path / "kiro.json"
         # Both a normal toggle server 'a' and an uninstall target 'gone' are in
@@ -1073,7 +1073,7 @@ class TestUninstallCrashWindowCleanup:
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "kc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", kiro_path)
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         class _NoLock:
             async def __aenter__(self):
@@ -1127,9 +1127,9 @@ class TestUninstallCrashWindowCleanup:
         import asyncio as _asyncio
         from unittest.mock import AsyncMock
 
-        from kiro_crew.dashboard.handlers import _shared
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
-        from kiro_crew.platform import capability_bound
+        from efm_go.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import mcp as mcp_mod
+        from efm_go.platform import capability_bound
 
         kiro_path = tmp_path / "kiro.json"
         kiro_path.write_text(
@@ -1138,7 +1138,7 @@ class TestUninstallCrashWindowCleanup:
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "kc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", kiro_path)
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
         monkeypatch.setattr(capability_bound, "CAPABILITY_UNINSTALL_TIMEOUT", 0.01)
 
         class _NoLock:
@@ -1190,8 +1190,8 @@ class TestUninstallCrashWindowCleanup:
         import asyncio as _asyncio
         from unittest.mock import AsyncMock
 
-        from kiro_crew.dashboard.handlers import _shared
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         kiro_path = tmp_path / "kiro.json"
         # Two uninstall targets: 'done' completes in Phase 1, 'pending' is still
@@ -1202,7 +1202,7 @@ class TestUninstallCrashWindowCleanup:
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "kc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", kiro_path)
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         class _NoLock:
             async def __aenter__(self):
@@ -1275,15 +1275,15 @@ class TestUninstallCrashWindowCleanup:
         import threading
         from unittest.mock import AsyncMock
 
-        from kiro_crew.dashboard.handlers import _shared
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         kiro_path = tmp_path / "kiro.json"
         kiro_path.write_text(json.dumps({"mcpServers": {"a": {"command": "x"}, "gone": {}}}))
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "kc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", kiro_path)
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
 
         class _NoLock:
             async def __aenter__(self):
@@ -1337,13 +1337,13 @@ class TestApplyMutex:
         import asyncio as _asyncio
         from unittest.mock import AsyncMock
 
-        from kiro_crew.dashboard.handlers import _shared
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", tmp_path / "kc.json")
         monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", tmp_path / "kiro.json")
         monkeypatch.setattr(mcp_mod, "_extra_mcp_scopes", lambda: [])
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp.rebuild_agent_config", lambda: None)
         # Reset the module-global apply lock so a permit a crashed earlier test
         # left held can't leak in (LoopBoundLock rebinds per loop on its own).
         monkeypatch.setattr(mcp_mod, "_apply_lock", mcp_mod.LoopBoundLock())

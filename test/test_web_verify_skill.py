@@ -10,12 +10,12 @@ joints; drop any of them and the loop goes quiet without a test failing.
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILLS = ROOT / "src" / "kiro_crew" / "builtin_skills"
+SKILLS = ROOT / "src" / "efm_go" / "builtin_skills"
 WEB_VERIFY = SKILLS / "web-verify" / "SKILL.md"
 WEB_BROWSE = SKILLS / "web-browse" / "SKILL.md"
 WEB_PREVIEW = SKILLS / "web-preview" / "SKILL.md"
 PREPARE_PR = SKILLS / "kirocrew-dev" / "kirocrew-prepare-pr" / "SKILL.md"
-PROMPT = ROOT / "src" / "kiro_crew" / "config" / "prompt.md"
+PROMPT = ROOT / "src" / "efm_go" / "config" / "prompt.md"
 
 
 def test_web_verify_skill_exists_with_frontmatter() -> None:

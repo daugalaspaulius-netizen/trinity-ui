@@ -14,7 +14,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers import api_outbox_notify
+from efm_go.dashboard.handlers import api_outbox_notify
 
 
 def _make_app(state=None) -> web.Application:
@@ -173,7 +173,7 @@ def _make_state_with_empty_slot(has_reader=True):
 
 @pytest.fixture
 def mock_sel():
-    with patch("kiro_crew.dashboard.handlers.files._sel") as m:
+    with patch("efm_go.dashboard.handlers.files._sel") as m:
         instance = MagicMock()
         m.return_value = instance
         yield instance
@@ -205,7 +205,7 @@ def outbox(tmp_path):
     odir = base / "outbox"
     odir.mkdir()
     try:
-        with patch("kiro_crew.config.loader.outbox_dir", return_value=odir):
+        with patch("efm_go.config.loader.outbox_dir", return_value=odir):
             yield odir
     finally:
         shutil.rmtree(base, ignore_errors=True)
@@ -605,7 +605,7 @@ class TestOutboxNotifySlotTargeting:
 
         cold.append = MagicMock(side_effect=fake_append_cold)
         with patch(
-            "kiro_crew.dashboard.handlers.files.rehydrate_slot_from_history_async",
+            "efm_go.dashboard.handlers.files.rehydrate_slot_from_history_async",
             new_callable=AsyncMock,
             return_value=cold,
         ) as mock_rehydrate:
@@ -640,7 +640,7 @@ class TestOutboxNotifySlotTargeting:
         job = MagicMock(id="daily-digest", session_key="dashboard:chat-gone")
         state.crons.list_jobs = MagicMock(return_value=[job])
         with patch(
-            "kiro_crew.dashboard.handlers.files.rehydrate_slot_from_history_async",
+            "efm_go.dashboard.handlers.files.rehydrate_slot_from_history_async",
             new_callable=AsyncMock,
             return_value=None,
         ) as mock_rehydrate:
@@ -787,7 +787,7 @@ class TestOutboxNotifyRedaction:
         # shim (which runs both the exfil-URL and credential passes and applies
         # a loaded companion's extra regexes). Patch that one shim.
         with patch(
-            "kiro_crew.dashboard.handlers.files.redact",
+            "efm_go.dashboard.handlers.files.redact",
             side_effect=lambda s: s.replace("http://evil.com", "[REDACTED_URL]"),
         ) as mock_redact:
             async with TestClient(TestServer(_make_app(state))) as client:

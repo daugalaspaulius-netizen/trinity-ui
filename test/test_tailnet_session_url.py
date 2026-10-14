@@ -37,8 +37,8 @@ def _stub_serve_state(monkeypatch, *, published: bool | None, detail: str = "ser
     carries a bearer session, so it may only be handed out when this dashboard is the
     verified service behind that name.
     """
-    from kiro_crew import cli_server
-    from kiro_crew.dashboard.tailnet_serve import ServeState
+    from efm_go import cli_server
+    from efm_go.dashboard.tailnet_serve import ServeState
 
     monkeypatch.setattr(
         cli_server.tailnet_serve,
@@ -49,7 +49,7 @@ def _stub_serve_state(monkeypatch, *, published: bool | None, detail: str = "ser
 
 def _run(monkeypatch, capsys, *, name: str | None, published: bool | None = True):
     """Drive the real printer with the Tailscale lookups stubbed."""
-    from kiro_crew import cli_server
+    from efm_go import cli_server
 
     monkeypatch.setattr(
         cli_server, "tailnet_origin", lambda: (f"https://{name}" if name else None)
@@ -77,7 +77,7 @@ class TestTheTailnetUrlIsPrinted:
     def test_the_lookup_is_skipped_entirely_when_disabled(self, home, monkeypatch, capsys):
         """`tailnet_origin()` shells out with a multi-second timeout, and this command
         is run constantly in the foreground."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         called: list[int] = []
         monkeypatch.setattr(
@@ -125,7 +125,7 @@ class TestTheGovernanceCeilingIsHonoured:
     """
 
     def test_no_tailnet_url_when_policy_pins_it_off(self, home, monkeypatch, capsys):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         _write_cfg(home, enabled=True)
         monkeypatch.setattr(cli_server, "is_governance_pinned_off", lambda **_k: True)
@@ -149,7 +149,7 @@ class TestTheGovernanceCeilingIsHonoured:
         The helper's own contract reserves that argument for ENFORCEMENT call sites; this
         is a read-shaped question on a command run constantly in the foreground.
         """
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         _write_cfg(home, enabled=True)
         seen: list[dict] = []

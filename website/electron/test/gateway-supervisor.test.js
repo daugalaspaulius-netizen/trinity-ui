@@ -828,7 +828,7 @@ async function spawnedSuccessor(built) {
 const SUCCESSOR_READY_TIMEOUT_MS = 60_000;
 const SUCCESSOR_POLL_MS = 500;
 
-const BUNDLED_BIN = "/virtual/resources/backend-dist/kirocrew-backend-x64/bin/kirocrew";
+const BUNDLED_BIN = "/virtual/resources/backend-dist/efm-go-backend-x64/bin/kirocrew";
 
 test("a bundled gateway that exits with the stale-asset status is respawned from a fresh probe", async () => {
   const { supervisor, spawnCalls, logs, state } = staleBundleHarness();
@@ -2235,7 +2235,7 @@ test("linux refuses the respawn too, where unverifiedIncumbent is false by desig
 
 const INSTALLING_PROBE_MS = 5000;
 const INSTALLING_COMPLETE_LINGER_MS = 700;
-const BUNDLE_ROOT = "/virtual/resources/backend-dist/kirocrew-backend-x64";
+const BUNDLE_ROOT = "/virtual/resources/backend-dist/efm-go-backend-x64";
 const BUNDLE_BIN = `${BUNDLE_ROOT}/bin/kirocrew`;
 const BUNDLE_LIB = `${BUNDLE_ROOT}/lib/python3.12`;
 const { REQUIRED_STDLIB_PARTS, SPAWN_MARKER } = require(path.join(__dirname, "..", "bundle-integrity.js"));
@@ -3013,7 +3013,7 @@ function staleWarningHarness({ response = 0, parentPid = 99 } = {}) {
     execFileFn(file, args, _options, callback) {
       if (file.endsWith("lsof")) callback(null, "123", "");
       else if (args.includes("ppid=")) callback(null, String(parentPid), "");
-      else callback(null, "/virtual/resources/backend-dist/bin/python -m kiro_crew gateway", "");
+      else callback(null, "/virtual/resources/backend-dist/bin/python -m efm_go gateway", "");
     },
     dialog: { async showMessageBox(options) { dialogs.push(options); return { response }; } },
   });

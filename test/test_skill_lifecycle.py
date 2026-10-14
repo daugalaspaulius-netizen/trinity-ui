@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from kiro_crew.skills import AutoSkillProvenance, SkillsLoader
+from efm_go.skills import AutoSkillProvenance, SkillsLoader
 
 
 def _iso(days_ago: float) -> str:
@@ -125,7 +125,7 @@ def test_pin_write_failure_preserves_skill(loader, monkeypatch):
     atomic_write leaves the original content intact on error."""
     import pathlib
 
-    import kiro_crew.skills as S
+    import efm_go.skills as S
 
     name = _mk(loader, "keepme", created_days_ago=1)
     skill_file = pathlib.Path(loader._dir / name / "SKILL.md")

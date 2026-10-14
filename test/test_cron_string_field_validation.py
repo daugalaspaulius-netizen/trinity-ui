@@ -22,12 +22,12 @@ import dataclasses
 
 import pytest
 
-from kiro_crew.cron import (
+from efm_go.cron import (
     _CRON_STRING_FIELD_CAPS,
     CronJob,
     CronService,
 )
-from kiro_crew.validation import (
+from efm_go.validation import (
     CHANNEL_MAX_LEN,
     CRON_ADD_SCHEMA,
     MAX_CRON_MESSAGE,
@@ -43,7 +43,7 @@ _VALIDATED_FIELD_NAMES: frozenset[str] = frozenset(name for name, _ in _CRON_STR
 
 @pytest.fixture(autouse=True)
 def _isolate_cron_store(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.cron._DEFAULT_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.cron._DEFAULT_DIR", tmp_path)
     yield
 
 

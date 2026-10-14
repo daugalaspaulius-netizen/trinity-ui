@@ -18,7 +18,7 @@ superseded-by: []
   adapters, `monitor_watch` / `monitor_update` / `monitor_stop`, dashboard
   controls and the babysit migration all ship. Current behaviour is owned by
   [`../system-specs/modules/monitor-architecture.md`](../system-specs/modules/monitor-architecture.md)
-  and the implementation under `src/kiro_crew/monitoring/`.
+  and the implementation under `src/efm_go/monitoring/`.
 
 ## Summary
 
@@ -576,8 +576,8 @@ Suggested title: `feat: add durable monitor decisions`
 
 Primary areas:
 
-- `src/kiro_crew/monitoring/` for typed observations, outcomes, and pure policy;
-- `src/kiro_crew/autonudge.py` for optional versioned monitor persistence;
+- `src/efm_go/monitoring/` for typed observations, outcomes, and pure policy;
+- `src/efm_go/autonudge.py` for optional versioned monitor persistence;
 - `test/test_monitor_decision.py` and persistence compatibility tests;
 - the AutoNudge system specification.
 
@@ -754,7 +754,7 @@ Suggested title: `feat: monitor pull requests across source providers`
 Primary areas:
 
 - provider-neutral probe result, readiness facts, classifier, and adapter
-  registry under `src/kiro_crew/monitoring/`;
+  registry under `src/efm_go/monitoring/`;
 - GitLab, Azure DevOps Services, and Bitbucket Cloud target parsers and probes;
 - hardened provider execution, protected credentials, redaction, and security
   posture registration;

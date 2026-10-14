@@ -14,8 +14,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import kiro_crew.apps.manager as mgr
-from kiro_crew.apps.discovery import discover_builtin_apps
+import efm_go.apps.manager as mgr
+from efm_go.apps.discovery import discover_builtin_apps
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _APP_ASSETS_DIR = _REPO_ROOT / "website" / "public" / "app-assets"

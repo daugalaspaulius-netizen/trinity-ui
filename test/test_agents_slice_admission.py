@@ -28,11 +28,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import kiro_crew.resource_status as rs
-import kiro_crew.sandbox as sb
-import kiro_crew.subagent as sa
-from kiro_crew.acp import runtime as runtime_mod
-from kiro_crew.acp.runtime import (
+import efm_go.resource_status as rs
+import efm_go.sandbox as sb
+import efm_go.subagent as sa
+from efm_go.acp import runtime as runtime_mod
+from efm_go.acp.runtime import (
     _INITIALIZE_TIMEOUT,
     _REQUEST_TIMEOUT,
     AcpRequestTimeout,
@@ -365,7 +365,7 @@ class TestInitializeHandshakeUnderThrottle:
         """The parent timeout says "retry"; overload must not, or every retry
         layer respawns a fresh kiro-cli into the same throttled slice and the
         cold start is paid again with no more memory than the last time."""
-        from kiro_crew.llm_helpers import acp_error_is_transient
+        from efm_go.llm_helpers import acp_error_is_transient
 
         assert AcpRequestTimeout.transient is True
         assert AcpRuntimeOverloaded.transient is False

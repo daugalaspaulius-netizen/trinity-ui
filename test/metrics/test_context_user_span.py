@@ -11,10 +11,10 @@ drive the REAL assembly to prove the reported slice IS the user's text.
 
 from __future__ import annotations
 
-from kiro_crew.context import ContextBuilder
-from kiro_crew.hooks import HookResult
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.context import ContextBuilder
+from efm_go.hooks import HookResult
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 
 def _make_builder(tmp_path):

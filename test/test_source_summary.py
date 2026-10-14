@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.knowledge.ingestion import IngestionPipeline
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.knowledge.ingestion import IngestionPipeline
+from efm_go.knowledge.store import KnowledgeStore
 
 
 @pytest.fixture()

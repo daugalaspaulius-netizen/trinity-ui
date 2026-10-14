@@ -47,12 +47,12 @@ adding a subsystem. The positions this RFC takes, one line each:
    the user already performed the drag and a broken hook must not make the board
    unusable. This mirrors `rfc-mcp-lifecycle-event-log.md`'s "observability, not
    audit" posture and answers, for tag hooks, the same fail-open question
-   [#7339](https://github.com/kirodotdev/KiroCrew/issues/7339) answers for
+   [#7339](https://efmleads.com/issues/7339) answers for
    `PreToolUse`.
 4. **Re-entrancy** is settled now, not deferred: the event carries **advisory
    provenance**, following the in-repo precedent that `Stop` self-limits by
    advisory `hook_continuation_count` / `stop_hook_active`
-   (`src/kiro_crew/hooks.py:3089-3097`) rather than an enforced cap.
+   (`src/efm_go/hooks.py:3089-3097`) rather than an enforced cap.
 5. **Placement** is a **sixth `HOOK_EVENTS` entry** (a `SessionTagsChanged`
    script-hook event), because the ask is to *run an automation now* on the
    transition, which is precisely what the script-hook engine does, not to
@@ -62,15 +62,15 @@ adding a subsystem. The positions this RFC takes, one line each:
 
 ### Current state
 
-- `HOOK_EVENTS` (`src/kiro_crew/hooks.py:93-99`, with the constants at
+- `HOOK_EVENTS` (`src/efm_go/hooks.py:93-99`, with the constants at
   `:86-90`) and `ALLOWED_HOOK_EVENTS`
-  (`src/kiro_crew/validation.py:92-94`) carry **exactly five** events -
+  (`src/efm_go/validation.py:92-94`) carry **exactly five** events -
   `AgentSpawn`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`. All
   five are agent-turn lifecycle events; none fires when a tag moves outside a
   turn. A tag change has no agent and no turn.
 - The tag writers mutate `slot.tags`, persist, and call `push_slots_update()` to
   the browser. That push is a client render signal; nothing server-side consumes
-  it. Verified: `api_chat_slot_tags` (`src/kiro_crew/dashboard/chat_tags.py:507`,
+  it. Verified: `api_chat_slot_tags` (`src/efm_go/dashboard/chat_tags.py:507`,
   writes `slot.tags` at `:562`) and `api_chat_slot_drop` (`:902`, writes at
   `:983`) both end in a `push_slots_update()` with no server-side consumer of the
   transition.
@@ -90,22 +90,22 @@ adding a subsystem. The positions this RFC takes, one line each:
 
 Three neighbouring issues sit around this one; none asks for it:
 
-- **[#3456](https://github.com/kirodotdev/KiroCrew/issues/3456)** (open), expose
+- **[#3456](https://efmleads.com/issues/3456)** (open), expose
   session tagging as an MCP tool. That is the **write** direction: let an agent
   set its own tag. This RFC is the **read** direction: let something react once a
   tag is set. They compose (#3456 lets an agent mark itself Done, this lets Done
   mean something) but neither implies the other.
-- **[#1487](https://github.com/kirodotdev/KiroCrew/issues/1487)** (open) -
+- **[#1487](https://efmleads.com/issues/1487)** (open) -
   project-level `.kiro/hooks/*.kiro.hook` with new `promptSubmit` / `agentStop` /
   `userTriggered` triggers. Same *category* of ask (an event surface), and its
   reaction raised a trust question about executing hook definitions that arrive
   inside a project checkout. **That concern does not apply here**: hook
   definitions live in a single global, user-authored store
-  (`_HOOKS_FILE = "hooks.json"`, `src/kiro_crew/hooks.py:2729`), not per-agent and
+  (`_HOOKS_FILE = "hooks.json"`, `src/efm_go/hooks.py:2729`), not per-agent and
   not from a checkout.
-- **[#1861](https://github.com/kirodotdev/KiroCrew/issues/1861)** (closed,
+- **[#1861](https://efmleads.com/issues/1861)** (closed,
   completed), an agent auto-tags its own session from context, shipped as
-  `src/kiro_crew/dashboard/chat_auto_tag.py`. Relevant because that path
+  `src/efm_go/dashboard/chat_auto_tag.py`. Relevant because that path
   **deliberately never applies status/workflow tags**: the `NEVER apply
   status/workflow tags` guard sits at `chat_auto_tag.py:101-108` (comment at
   `:102`, the `if existing.get("status"): return` guard immediately below, and
@@ -120,14 +120,14 @@ Three neighbouring issues sit around this one; none asks for it:
   `hooks.json` store (`hooks.py:2729`) is not.
 - **No new capability surface.** Script hooks are already governance-gated by
   `capabilities.script_hooks`, default OFF, via
-  `_script_hooks_capability_denied` (`src/kiro_crew/hook_runtime/governance_gate.py:163-198`, checked
-  inside `run_script_hook` (`src/kiro_crew/hooks.py:2488`, the `asyncio.to_thread` call
+  `_script_hooks_capability_denied` (`src/efm_go/hook_runtime/governance_gate.py:163-198`, checked
+  inside `run_script_hook` (`src/efm_go/hooks.py:2488`, the `asyncio.to_thread` call
   at line 2509)). A tag-change hook rides that same gate;
   the capability surface does not widen.
 - **Dispatch from an HTTP handler with no agent turn is already supported.**
-  `api_hook_test` (`src/kiro_crew/dashboard/handlers/hooks.py:307`) calls
+  `api_hook_test` (`src/efm_go/dashboard/handlers/hooks.py:307`) calls
   `run_script_hook` (`:337`) with a synthesized payload, and `run_script_hook`
-  (`src/kiro_crew/hooks.py:2488`) builds a default `hook_event` itself when passed
+  (`src/efm_go/hooks.py:2488`) builds a default `hook_event` itself when passed
   `None` (`hooks.py:2527-2528`), requiring no session and no agent config. A tag-write
   handler firing a hook is the same shape.
 
@@ -143,12 +143,12 @@ Three neighbouring issues sit around this one; none asks for it:
 ## Non-goals
 
 - **Not a write/tagging capability.** Letting an agent set its own tag is
-  [#3456](https://github.com/kirodotdev/KiroCrew/issues/3456).
+  [#3456](https://efmleads.com/issues/3456).
 - **Not a change to `chat_auto_tag`'s never-status rule**
   (`chat_auto_tag.py:101-108`). This RFC observes status tags; it does not make
   the auto-tagger write them.
 - **Not project-checkout hook trust.** New trigger sources arriving with a
-  checkout are [#1487](https://github.com/kirodotdev/KiroCrew/issues/1487); this
+  checkout are [#1487](https://efmleads.com/issues/1487); this
   reuses the existing global store and adds no new trust decision.
 - **Not an audit trail.** This is observability that *runs an automation*, not a
   tamper-evident record. SEL remains the audit trail and is untouched.
@@ -198,7 +198,7 @@ denied by the capability gate leaves the tag write exactly as it landed.
 This is the same posture `rfc-mcp-lifecycle-event-log.md` takes for the
 lifecycle log, *"this log is observability, not audit"*, and it answers, for
 tag hooks, the same fail-open question that
-[#7339](https://github.com/kirodotdev/KiroCrew/issues/7339) answers for
+[#7339](https://efmleads.com/issues/7339) answers for
 `PreToolUse`. An emitter that needs fail-closed semantics belongs in SEL, not
 here.
 
@@ -216,7 +216,7 @@ This follows the settled in-repo precedent: `Stop` controls its own re-entrancy
 with **advisory** signals, not an enforced cap. `hook_continuation_count` (the
 depth of the current continuation run) and `stop_hook_active` (its boolean
 shorthand) are stamped on the `Stop` payload unconditionally
-(`src/kiro_crew/hooks.py:3089-3097`) precisely so a hook *may* self-limit while a
+(`src/efm_go/hooks.py:3089-3097`) precisely so a hook *may* self-limit while a
 real gate hook checks its own condition and ignores them. The comment there is
 explicit: *"Kiro's Stop contract defines no cap ... a hook may self-limit,
 diagnose, or surface the count."* We adopt the same stance: the runtime provides
@@ -268,7 +268,7 @@ A *new event other automations subscribe to* is exactly that, the payload shape
 and semantics are the contract, and reversing them after anyone subscribes is the
 cost the issue itself flags. That is why this is an RFC and not a plain feature
 PR, even though the *mechanism* is small. The contrast is
-[#3952](https://github.com/kirodotdev/KiroCrew/pull/3952), which landed
+[#3952](https://efmleads.com/pull/3952), which landed
 contract-level hook-*matcher* work as a plain feature PR with no RFC: matcher
 semantics tune an existing event's dispatch; they do not add a new event surface
 for others to build on. The design questions (payload, scope, failure, re-entrancy)
@@ -421,7 +421,7 @@ and the emit helper.
   new behavior.
 - **No new trust decision.** Hook definitions remain in the global user-authored
   `hooks.json` (`hooks.py:2729`); nothing executes definitions that arrive with a
-  project checkout (the [#1487](https://github.com/kirodotdev/KiroCrew/issues/1487)
+  project checkout (the [#1487](https://efmleads.com/issues/1487)
   concern does not apply).
 - **Minimal payload.** The event carries the session key and status tag ids
   only: no transcript, no tool arguments, no environment.

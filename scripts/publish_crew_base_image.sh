@@ -144,7 +144,7 @@ esac
 # The lock sits beside the directory it protects, so it is scoped to exactly what
 # is shared: one checkout. A run killed outright leaves it behind, which is why the
 # refusal names the directory and the one command that clears it.
-readonly PUBLISH_STAGING_DIR="${SCRIPT_DIR}/../src/kiro_crew/apps/builtins/aws_control/crew/runtime"
+readonly PUBLISH_STAGING_DIR="${SCRIPT_DIR}/../src/efm_go/apps/builtins/aws_control/crew/runtime"
 readonly PUBLISH_LOCK="${PUBLISH_STAGING_DIR}/.publish-crew-base-image.lock"
 mkdir -p "${PUBLISH_STAGING_DIR}"
 if ! mkdir "${PUBLISH_LOCK}" 2>/dev/null; then

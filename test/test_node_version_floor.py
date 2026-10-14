@@ -15,9 +15,9 @@ from contextlib import redirect_stdout
 
 import pytest
 
-from kiro_crew import cli as kc_cli
-from kiro_crew import cli_doctor, constants
-from kiro_crew.constants import (
+from efm_go import cli as kc_cli
+from efm_go import cli_doctor, constants
+from efm_go.constants import (
     MIN_NODE_VERSION,
     node_too_old_message,
     node_version_meets_floor,

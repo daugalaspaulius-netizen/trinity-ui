@@ -21,7 +21,7 @@ import yaml
 from installer_test_helpers import run_bounded
 from skill_script_helpers import load_skill_script
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / "packaging" / "signing" / "cli-manifest.py"

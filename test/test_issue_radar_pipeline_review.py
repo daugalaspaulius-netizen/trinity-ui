@@ -13,8 +13,8 @@ from pathlib import Path
 import pytest
 from aiohttp import web
 
-from kiro_crew.apps.builtins.issue_radar.backend import pipeline_fold as fold
-from kiro_crew.apps.builtins.issue_radar.backend import pipeline_routes as routes
+from efm_go.apps.builtins.issue_radar.backend import pipeline_fold as fold
+from efm_go.apps.builtins.issue_radar.backend import pipeline_routes as routes
 
 # --------------------------------------------------------------------------
 # The issue cache is a WRAPPER; the fields live under `detail`.
@@ -88,7 +88,7 @@ def test_reader_size_refusal_becomes_a_fold_error(
     HTTP 500. Both halves are covered: the effective limit is the smaller of the
     two, AND the reader's exception is translated.
     """
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     target = tmp_path / "audit.jsonl"
     target.write_text("{}\n", encoding="utf-8")
@@ -107,7 +107,7 @@ def test_reader_size_refusal_becomes_a_fold_error(
 
 def test_the_effective_ceiling_is_never_above_the_readers(tmp_path: Path) -> None:
     """A caller asking for more than the reader allows gets the reader's limit."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     oversized = tmp_path / "big.jsonl"
     oversized.write_bytes(b"x" * (hooks.MAX_FILE_BYTES + 1024))

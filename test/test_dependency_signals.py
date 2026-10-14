@@ -6,12 +6,12 @@ from email.utils import formatdate
 
 import pytest
 
-from kiro_crew.acp.client import AcpError
-from kiro_crew.monitoring import github_pull_request, github_workflow_run
-from kiro_crew.monitoring.models import ProviderErrorKind
-from kiro_crew.taskq import dependency
-from kiro_crew.taskq.adapters import acp_provider, github, http
-from kiro_crew.taskq.dependency import (
+from efm_go.acp.client import AcpError
+from efm_go.monitoring import github_pull_request, github_workflow_run
+from efm_go.monitoring.models import ProviderErrorKind
+from efm_go.taskq import dependency
+from efm_go.taskq.adapters import acp_provider, github, http
+from efm_go.taskq.dependency import (
     KIND_AUTH_FAILED,
     KIND_CONCURRENCY_EXCEEDED,
     KIND_DEPENDENCY_UNAVAILABLE,
@@ -360,7 +360,7 @@ class TestAmbiguousDeliveryIsNeverADependency:
         """A stdin-stall death whose attribution folds in a retained "HTTP 429"
         stderr line would read as rate_limited, and the dependency retry would
         replay a prompt the live child may already have run."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         text = "Runtime process died during prompt — stderr_tail: HTTP 429 Too Many Requests"
         assert classify_exception(AcpProcessDied(text)) is not None

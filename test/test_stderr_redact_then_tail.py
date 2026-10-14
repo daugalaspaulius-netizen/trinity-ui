@@ -32,14 +32,14 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from test_theme_clone_stderr_redact_before_bound import _find_slice_before_redact_offenders
 
-import kiro_crew.apps.builtins.dev_fleet.gateway_service as gateway_service
-import kiro_crew.apps.builtins.ops_mission_control.backend.providers.github_issues as github_issues
-import kiro_crew.cli_setup as cli_setup
-import kiro_crew.dashboard.tailnet as tailnet
-import kiro_crew.env as env_mod
-import kiro_crew.voice_reply as voice_reply
-from kiro_crew.apps.builtins.ops_mission_control.backend.models import ACTION_COMMENT, Signal
-from kiro_crew.hooks import (
+import efm_go.apps.builtins.dev_fleet.gateway_service as gateway_service
+import efm_go.apps.builtins.ops_mission_control.backend.providers.github_issues as github_issues
+import efm_go.cli_setup as cli_setup
+import efm_go.dashboard.tailnet as tailnet
+import efm_go.env as env_mod
+import efm_go.voice_reply as voice_reply
+from efm_go.apps.builtins.ops_mission_control.backend.models import ACTION_COMMENT, Signal
+from efm_go.hooks import (
     HOOK_EVENT_PRE_TOOL_USE,
     HOOK_EVENT_USER_PROMPT_SUBMIT,
     ScriptHook,
@@ -320,7 +320,7 @@ class TestHookLastErrorAnchor:
         # These tests exercise the last_error cut, not host sandbox discovery: a
         # host without a sandbox backend (Windows CI) otherwise fails closed
         # with exit -1 before the hook runs.
-        monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
 
     @pytest.mark.asyncio
     async def test_a_crashed_hook_keeps_the_tail_of_its_stderr(self, tmp_path):
@@ -403,7 +403,7 @@ def test_no_stderr_slice_precedes_redaction_in_converted_modules(module_path: Pa
 
 def _hook_fire_block() -> str:
     """The hook-result loop in chat_runner's ``_fire`` closure, by its anchors."""
-    import kiro_crew.dashboard.chat_runner as chat_runner
+    import efm_go.dashboard.chat_runner as chat_runner
 
     text = Path(chat_runner.__file__).read_text(encoding="utf-8")
     start = text.index('logger.info("Hook %s stdout: %s", r.hook_name, r.stdout[:200])')
@@ -428,7 +428,7 @@ def test_chat_runner_hook_excerpts_anchor_by_exit_semantics() -> None:
 
 def test_slack_pip_failure_logs_keep_the_redacted_tail() -> None:
     """Both pip-failure logs in the Slack gateway bound the REDACTED text at its tail."""
-    import kiro_crew.slack.gateway as slack_gateway
+    import efm_go.slack.gateway as slack_gateway
 
     text = Path(slack_gateway.__file__).read_text(encoding="utf-8")
     assert 'logger.error("Dep repair failed: %s", dep_err[-500:])' in text

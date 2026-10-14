@@ -24,8 +24,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import sel as sel_mod
-from kiro_crew.apps.builtins.pptx_maker.backend import engine, routes
+from efm_go import sel as sel_mod
+from efm_go.apps.builtins.pptx_maker.backend import engine, routes
 
 _BASE = "/api/apps/pptx-maker"
 _OWNER = "owner-user"

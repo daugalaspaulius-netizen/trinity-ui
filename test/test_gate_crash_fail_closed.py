@@ -14,9 +14,9 @@ import inspect
 
 import pytest
 
-from kiro_crew import hooks as hooks_mod
-from kiro_crew.hooks import TOOL_DENY, HookManager
-from kiro_crew.platform.context import PlatformCompositionError
+from efm_go import hooks as hooks_mod
+from efm_go.hooks import TOOL_DENY, HookManager
+from efm_go.platform.context import PlatformCompositionError
 
 
 def _crash_the_deny_tier(monkeypatch: pytest.MonkeyPatch, exc: BaseException) -> None:

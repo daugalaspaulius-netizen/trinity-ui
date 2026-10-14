@@ -20,7 +20,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers._shared import (
+from efm_go.dashboard.handlers._shared import (
     SKILL_FILE_MAX_BYTES,
     SKILL_TREE_MAX_ENTRIES,
     _agent_loads_skill,
@@ -419,7 +419,7 @@ class TestAnnotateSkillsWithAgents:
             for n in ("s1", "s2", "s3", "s4", "s5")
         ]
 
-        import kiro_crew.dashboard.handlers._shared as shared
+        import efm_go.dashboard.handlers._shared as shared
 
         calls = {"n": 0}
         real = shared._load_parsed_agents
@@ -759,7 +759,7 @@ class TestResolveSkillRoot:
 
 
 def _make_app(state):
-    from kiro_crew.dashboard.handlers import api_skill_file, api_skill_tree, api_skills
+    from efm_go.dashboard.handlers import api_skill_file, api_skill_tree, api_skills
 
     app = web.Application()
     app["state"] = state
@@ -842,7 +842,7 @@ class TestEndpoints:
         events.  Failed access (traversal/sensitive-path) is a probing signal."""
         _write_skill(fake_home / ".kiro" / "skills", "demo")
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: sel_mock)
 
         state = MagicMock(_slots={}, context_builder=None)
         async with TestClient(TestServer(_make_app(state))) as client:
@@ -863,12 +863,12 @@ class TestEndpoints:
         """Route collision regression: a nested skill whose last path segment
         is literally ``tree`` (``utils/tree``) must reach the detail endpoint,
         not the tree browser.  The ``/-/`` separator keeps them distinct."""
-        from kiro_crew.dashboard.handlers import (
+        from efm_go.dashboard.handlers import (
             api_skill_detail,
             api_skill_file,
             api_skill_tree,
         )
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         # A real skill literally named ``utils/tree`` under the kirocrew root.
         _write_skill(fake_home / ".kiro" / "crew" / "skills", "utils/tree", description="edge")
@@ -918,13 +918,13 @@ class TestApiSkillsAgentScoping:
         the same override in ``test_agent_template_skills.py``'s fixture.
         """
         monkeypatch.setattr(
-            "kiro_crew.agent_discovery._KIRO_AGENTS_DIR",
+            "efm_go.agent_discovery._KIRO_AGENTS_DIR",
             fake_home / ".kiro" / "agents",
         )
 
     @staticmethod
     def _state() -> MagicMock:
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.skills import SkillsLoader
 
         # A real SkillsLoader, not a bare MagicMock: `_get_skills` treats
         # `hasattr(state, "_standalone_skills")` as "already built", but a
@@ -1131,7 +1131,7 @@ class TestSessionScopedSkillResolution:
         metadata. An app caller must therefore own that exact slot; a foreign,
         unscoped, missing, or absent slot key is indistinguishable from missing.
         """
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go.dashboard.handlers import prompts
 
         project = tmp_path / "foreign-project"
         _write_skill(
@@ -1201,8 +1201,8 @@ class TestSessionScopedSkillResolution:
         self, fake_home, tmp_path, monkeypatch
     ):
         """An owned slot without a project must not inherit another slot's project."""
-        from kiro_crew.dashboard.handlers import api_skill_detail, prompts
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.dashboard.handlers import api_skill_detail, prompts
+        from efm_go.skills import SkillsLoader
 
         project = tmp_path / "foreign-project"
         _write_skill(project / ".kiro" / "skills", "foreign-skill")
@@ -1273,7 +1273,7 @@ class TestPackageSkillDetailReadsThroughTheGate:
 
     @staticmethod
     def _wire(monkeypatch, path: Path) -> None:
-        from kiro_crew.dashboard.handlers import prompts
+        from efm_go.dashboard.handlers import prompts
 
         loader = MagicMock()
         loader.load_skill = lambda _name: None
@@ -1290,7 +1290,7 @@ class TestPackageSkillDetailReadsThroughTheGate:
 
     @pytest.mark.asyncio
     async def test_a_hardlinked_package_skill_is_not_served(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import api_skill_detail
+        from efm_go.dashboard.handlers import api_skill_detail
 
         secret = tmp_path / "credentials"
         secret.write_text("# aws_secret_access_key = SHOULD-NOT-APPEAR\n", encoding="utf-8")
@@ -1314,7 +1314,7 @@ class TestPackageSkillDetailReadsThroughTheGate:
 
     @pytest.mark.asyncio
     async def test_an_ordinary_package_skill_is_still_served(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import api_skill_detail
+        from efm_go.dashboard.handlers import api_skill_detail
 
         real = tmp_path / "pkg" / "SKILL.md"
         real.parent.mkdir(parents=True)
@@ -1334,8 +1334,8 @@ class TestPackageSkillDetailReadsThroughTheGate:
         line says only THAT bytes were withheld: the gate judges and reads
         through one descriptor and answers a bare ``None``.
         """
-        from kiro_crew.dashboard import handlers as handlers_pkg
-        from kiro_crew.dashboard.handlers import api_skill_detail
+        from efm_go.dashboard import handlers as handlers_pkg
+        from efm_go.dashboard.handlers import api_skill_detail
 
         secret = tmp_path / "credentials"
         secret.write_text("# aws_secret_access_key = SHOULD-NOT-APPEAR\n", encoding="utf-8")
@@ -1372,7 +1372,7 @@ class TestPackageSkillDetailReadsThroughTheGate:
         """
         import threading
 
-        from kiro_crew.dashboard.handlers import api_skill_detail, prompts
+        from efm_go.dashboard.handlers import api_skill_detail, prompts
 
         real = tmp_path / "pkg" / "SKILL.md"
         real.parent.mkdir(parents=True)
@@ -1440,7 +1440,7 @@ class TestSymlinkedSkillLeafContainment:
 
     def test_edition_root_leaf_symlink_escape_refused(self, fake_home, tmp_path, monkeypatch):
         """An edition skill root is a plain root here — no leaf allowance."""
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         outside = self._outside(tmp_path)
         edition_root = tmp_path / "edition" / "skills"
@@ -1453,7 +1453,7 @@ class TestSymlinkedSkillLeafContainment:
 
     def test_extra_path_root_leaf_symlink_escape_refused(self, fake_home, tmp_path, monkeypatch):
         """Same for a user-configured ``skills.extra_paths`` root."""
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         outside = self._outside(tmp_path)
         extra_root = tmp_path / "extra" / "skills"
@@ -1473,7 +1473,7 @@ class TestSymlinkedSkillLeafContainment:
         like any other root, so the same containment applies before the branch
         returns.
         """
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         outside = self._outside(tmp_path)
         pkg_root = tmp_path / "edition-pkgs"
@@ -1487,7 +1487,7 @@ class TestSymlinkedSkillLeafContainment:
 
     def test_package_prefix_contained_skill_still_resolves(self, fake_home, tmp_path, monkeypatch):
         """The edition-package path itself keeps working."""
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         pkg_root = tmp_path / "edition-pkgs"
         skill = pkg_root / "pkg" / "real"
@@ -1508,7 +1508,7 @@ class TestSymlinkedSkillLeafContainment:
         app DECLARES that directory as a skill, read from the same manifest the
         bridge registers from.
         """
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         app_root = fake_home / ".kiro" / "crew" / "apps" / "demo-app"
         app_skill = app_root / "skills" / "appy"
@@ -1537,7 +1537,7 @@ class TestSymlinkedSkillLeafContainment:
         An app tree also holds that app's data, tokens and rendered configs, so
         admitting the root would turn a planted link into a reader for them.
         """
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         app_root = fake_home / ".kiro" / "crew" / "apps" / "demo-app"
         declared = app_root / "skills" / "appy"
@@ -1725,7 +1725,7 @@ class TestSkillFileIsReadThroughAPinnedDescriptor:
         """Deterministic check-to-use race: the swap happens inside the
         sensitive-path guard, i.e. after containment was verified and before
         the bytes are read."""
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         outside = tmp_path / "outside"
         outside.mkdir()
@@ -1821,7 +1821,7 @@ class TestTheAdmittedSkillRootCannotBeRedefined:
         bytes are read / the entries are returned, which makes the swap land in
         the window under test without depending on timing.
         """
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         real_guard = _shared.is_sensitive_path
         swapped: list[str] = []

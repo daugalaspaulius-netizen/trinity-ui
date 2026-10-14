@@ -44,7 +44,7 @@ ROOT = Path(__file__).resolve().parent.parent
 ADVISOR = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "apps"
     / "builtins"
     / "personal_shopper"
@@ -105,7 +105,7 @@ def test_advisor_prompt_states_the_limit_as_a_capability() -> None:
 
 def test_escalation_routes_name_tools_that_really_exist() -> None:
     """Guard the guard: a typo in a route name would make its message unreachable."""
-    mochi = ROOT / "src/kiro_crew/apps/builtins/mochi/agents/mochi.json"
+    mochi = ROOT / "src/efm_go/apps/builtins/mochi/agents/mochi.json"
     mochi_tools = set(json.loads(mochi.read_text(encoding="utf-8"))["tools"])
     # mochi is the reference spec for how a fully-capable agent spells these.
     assert "execute_bash" in mochi_tools

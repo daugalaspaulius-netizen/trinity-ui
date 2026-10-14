@@ -48,7 +48,7 @@ function rowLabel(name: string): string {
  * below — measured in the shipped bundle it is 63% of a digit's ink height
  * against 73% for 'x', which next to bold lining figures reads as a typo rather
  * than a suffix. And kiro spells it 'x' everywhere itself: `kiro-cli chat
- * --list-models` prints `2.20x` and kiro.dev's comparison table writes `2.2x`.
+ * --list-models` prints `2.20x` and the comparison table writes `2.2x`.
  * Matching the product beats typographic correctness for a value users will
  * cross-reference against those surfaces.
  */
@@ -59,7 +59,7 @@ const SUFFIX = 'x'
  * decimal, at most two. 1 -> "1.0", 2.2 -> "2.2", 0.25 -> "0.25", 0.05 -> "0.05".
  *
  * Minimum one decimal so the column reads as a consistent set of rates rather
- * than a mix of "1" and "2.2" — this matches kiro.dev's own comparison table,
+ * than a mix of "1" and "2.2" — this matches the comparison table,
  * which writes 1.0x / 2.2x / 0.25x / 0.05x.
  *
  * Routed through `fmtNumber`, NOT `toFixed`. The digits land inside translated

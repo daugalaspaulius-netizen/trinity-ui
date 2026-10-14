@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS = ROOT / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev"
+SKILLS = ROOT / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev"
 PREPARE = SKILLS / "kirocrew-prepare-pr" / "SKILL.md"
 
 

@@ -12,9 +12,9 @@ import uuid
 
 import pytest
 
-from kiro_crew.cron import CronService
-from kiro_crew.mcp_cron import _call_tool_inner, _validate_args
-from kiro_crew.validation import ValidationError
+from efm_go.cron import CronService
+from efm_go.mcp_cron import _call_tool_inner, _validate_args
+from efm_go.validation import ValidationError
 
 # ── Fixtures ──
 

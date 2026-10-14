@@ -8,8 +8,8 @@ import time
 
 import pytest
 
-from kiro_crew import platform_compat, skill_usage
-from kiro_crew.skill_usage import (
+from efm_go import platform_compat, skill_usage
+from efm_go.skill_usage import (
     _MAX_AGE_SECS,
     SkillUsageLedger,
 )

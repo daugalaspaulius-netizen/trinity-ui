@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.dashboard.state import DashboardState
-from kiro_crew.history import ConversationLog
-from kiro_crew.hooks import HOOK_EVENT_AGENT_SPAWN, HOOK_EVENT_USER_PROMPT_SUBMIT, ScriptHookStore
+from efm_go.dashboard.state import DashboardState
+from efm_go.history import ConversationLog
+from efm_go.hooks import HOOK_EVENT_AGENT_SPAWN, HOOK_EVENT_USER_PROMPT_SUBMIT, ScriptHookStore
 
 
 def _provider_mock() -> AsyncMock:
@@ -91,11 +91,11 @@ class TestAgentSpawnHookInjection:
 
     @pytest.mark.asyncio
     async def test_not_injected_on_existing_session(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import LLMEvent
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
 
         state = _make_state(tmp_path)
         hook_store = ScriptHookStore(config_dir=tmp_path)
@@ -141,11 +141,11 @@ class TestHookSessionKeyForwarding:
 
     @pytest.mark.asyncio
     async def test_session_key_passed_to_fire(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import LLMEvent
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
 
         state = _make_state(tmp_path)
         # Mock the hook store so we can inspect the kwargs passed to fire().

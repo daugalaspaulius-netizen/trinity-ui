@@ -16,13 +16,13 @@ import json
 from pathlib import Path
 from unittest import mock
 
-from kiro_crew.deploy import engine, profiles
-from kiro_crew.validation import validate_field
+from efm_go.deploy import engine, profiles
+from efm_go.validation import validate_field
 
 REPO = Path(__file__).resolve().parents[1]
-HANDLERS = (REPO / "src" / "kiro_crew" / "deploy" / "handlers.py").read_text(encoding="utf-8")
+HANDLERS = (REPO / "src" / "efm_go" / "deploy" / "handlers.py").read_text(encoding="utf-8")
 BASE_STACK = (
-    REPO / "src" / "kiro_crew" / "deploy" / "skills" / "artifact-deploy"
+    REPO / "src" / "efm_go" / "deploy" / "skills" / "artifact-deploy"
     / "templates" / "base-stack.yaml"
 ).read_text(encoding="utf-8")
 
@@ -33,7 +33,7 @@ class TestF1EmptyProfileName:
         # because the pattern check is skipped on empty and required is not
         # set. If this ever starts raising, the explicit guards are welcome
         # redundancy — but the guards must never be removed on that basis.
-        from kiro_crew.deploy.handlers import _PROFILE_SPEC
+        from efm_go.deploy.handlers import _PROFILE_SPEC
         assert validate_field("", _PROFILE_SPEC) == ""
 
     def test_handler_rejects_empty_name_before_side_effects(self):

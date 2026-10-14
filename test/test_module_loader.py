@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from skill_script_helpers import no_bytecode
 
-from kiro_crew.apps.module_loader import (
+from efm_go.apps.module_loader import (
     _module_namespace,
     cache_shutdown_callable,
     clear_shutdown_callable,
@@ -39,7 +39,7 @@ def _create_app_module(app_dir: Path, module_path: str, content: str) -> None:
 def _explicit_third_party_execution_admission(monkeypatch) -> None:
     """Most loader tests exercise isolation, so opt them in explicitly."""
     monkeypatch.setattr(
-        "kiro_crew.apps.execution.third_party_execution_allowed", lambda: True
+        "efm_go.apps.execution.third_party_execution_allowed", lambda: True
     )
 
 
@@ -113,7 +113,7 @@ def register_routes(ctx):
     def test_third_party_load_warns_once(self, tmp_path: Path, caplog) -> None:
         import logging
 
-        import kiro_crew.apps.module_loader as ml
+        import efm_go.apps.module_loader as ml
 
         ml._warned_third_party_apps.discard("evil-app")
         app_dir = self._make_app(tmp_path)
@@ -129,7 +129,7 @@ def register_routes(ctx):
     def test_builtin_load_does_not_warn(self, caplog) -> None:
         import logging
 
-        import kiro_crew.apps.module_loader as ml
+        import efm_go.apps.module_loader as ml
 
         # The deploy_web builtin ships a backend module; loading it must not warn.
         builtins = ml._BUILTINS_DIR
@@ -167,10 +167,10 @@ def register_routes(ctx):
         return app_dir
 
     def test_third_party_denied_when_gate_off(self, tmp_path: Path, monkeypatch) -> None:
-        import kiro_crew.apps.module_loader as ml
+        import efm_go.apps.module_loader as ml
 
         monkeypatch.setattr(
-            "kiro_crew.apps.execution.third_party_execution_allowed", lambda: False
+            "efm_go.apps.execution.third_party_execution_allowed", lambda: False
         )
         ml._warned_third_party_apps.discard("evil-app")
         app_dir = self._make_app(tmp_path)
@@ -183,7 +183,7 @@ def register_routes(ctx):
         unload_app_modules("evil-app")
 
     def test_third_party_allowed_with_explicit_admission(self, tmp_path: Path) -> None:
-        import kiro_crew.apps.module_loader as ml
+        import efm_go.apps.module_loader as ml
 
         ml._warned_third_party_apps.discard("evil-app")
         app_dir = self._make_app(tmp_path)
@@ -193,11 +193,11 @@ def register_routes(ctx):
         unload_app_modules("evil-app")
 
     def test_builtin_load_not_blocked_by_gate(self, monkeypatch) -> None:
-        import kiro_crew.apps.module_loader as ml
+        import efm_go.apps.module_loader as ml
 
         # Gate closed, but builtins are trusted — they must still load.
         monkeypatch.setattr(
-            "kiro_crew.apps.execution.third_party_execution_allowed", lambda: False
+            "efm_go.apps.execution.third_party_execution_allowed", lambda: False
         )
         app_dir = ml._BUILTINS_DIR / "deploy_web"
         if not (app_dir / "handlers.py").is_file():
@@ -682,7 +682,7 @@ def test_deploy_skill_install_copy_fallback(tmp_path, monkeypatch):
     """When symlinking fails (Windows/restricted FS), skills are copied — never skipped."""
     from pathlib import Path
 
-    import kiro_crew.deploy as deploy_pkg
+    import efm_go.deploy as deploy_pkg
 
     monkeypatch.setattr(deploy_pkg, "config_dir", lambda: tmp_path)
 
@@ -700,7 +700,7 @@ def test_deploy_skill_install_preserves_user_placed_dir(tmp_path, monkeypatch):
     """A user-placed directory without .kirocrew-managed marker is never removed."""
     from pathlib import Path
 
-    import kiro_crew.deploy as deploy_pkg
+    import efm_go.deploy as deploy_pkg
 
     monkeypatch.setattr(deploy_pkg, "config_dir", lambda: tmp_path)
 
@@ -729,7 +729,7 @@ def test_deploy_skill_install_replaces_managed_dir(tmp_path, monkeypatch):
     """A directory WITH .kirocrew-managed marker is replaced on refresh."""
     from pathlib import Path
 
-    import kiro_crew.deploy as deploy_pkg
+    import efm_go.deploy as deploy_pkg
 
     monkeypatch.setattr(deploy_pkg, "config_dir", lambda: tmp_path)
 
@@ -832,7 +832,7 @@ def test_clear_all_shutdown_callables_drops_the_whole_cache():
     unload_app_modules, so it must drop the whole shutdown cache -- otherwise a
     callable captured this generation survives into an in-process restart and
     could stop a NEWLY loaded worker."""
-    import kiro_crew.apps.module_loader as ml
+    import efm_go.apps.module_loader as ml
 
     ml._shutdown_callables.clear()
     ml.cache_shutdown_callable("app-a", lambda ctx: None)

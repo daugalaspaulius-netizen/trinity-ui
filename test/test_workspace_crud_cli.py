@@ -15,14 +15,14 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import platform_compat
-from kiro_crew.cli import main
+from efm_go import platform_compat
+from efm_go.cli import main
 
 
 @pytest.fixture(autouse=True)
 def _mock_sel():
     """Mock SEL logging for all workspace CLI tests."""
-    with unittest.mock.patch("kiro_crew.sel.sel"):
+    with unittest.mock.patch("efm_go.sel.sel"):
         yield
 
 
@@ -72,8 +72,8 @@ class TestWorkspaceArgparse:
             ("delete", ["kirocrew", "workspace", "delete", "staging"]),
         ]:
             with (
-                unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-                unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
+                unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+                unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
                 unittest.mock.patch("sys.argv", argv),
             ):
                 # Should not raise SystemExit(2) (argparse error)
@@ -95,12 +95,12 @@ class TestWorkspaceArgparse:
         """Req 6.2: create accepts --dir."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
             # cli_commands binds config_dir at import, so the loader patch above
             # does not reach it. Create now materializes its directory, so that
             # binding has to point at a real one.
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 [
@@ -129,9 +129,9 @@ class TestWorkspaceArgparse:
         """
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "create", "--name", "newws"],
@@ -151,9 +151,9 @@ class TestWorkspaceArgparse:
         target.mkdir()
         platform_compat.symlink_or_junction(str(target), str(tmp_path / "linked"))
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "create", "--name", "newws", "--dir", "linked"],
@@ -173,11 +173,11 @@ class TestWorkspaceArgparse:
         # Create the source workspace directory so copytree has something to copy
         (tmp_path / "workspace-staging").mkdir(parents=True, exist_ok=True)
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
             # cli_commands binds config_dir at import, so the loader patch above
             # does not reach it -- and this create now does real filesystem work.
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 [
@@ -204,9 +204,9 @@ class TestWorkspaceArgparse:
         # because a declared-but-missing workspace refuses every private member.
         (tmp_path / "new-path").mkdir()
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "update", "staging", "--dir", "new-path"],
@@ -224,9 +224,9 @@ class TestWorkspaceArgparse:
         (tmp_path / "a-file").write_text("not a directory", encoding="utf-8")
         for target in ("never-created", "a-file"):
             with (
-                unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-                unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-                unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+                unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+                unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+                unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
                 unittest.mock.patch(
                     "sys.argv",
                     ["kirocrew", "workspace", "update", "staging", "--dir", target],
@@ -243,7 +243,7 @@ class TestWorkspaceArgparse:
         """Req 6.4: delete accepts positional name."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "delete", "staging"],
@@ -264,9 +264,9 @@ class TestWorkspaceDispatch:
         """Req 6.5: workspace command dispatches to _handle_workspace."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", ["kirocrew", "workspace", "list"]),
-            unittest.mock.patch("kiro_crew.cli_commands._handle_workspace") as mock_handler,
+            unittest.mock.patch("efm_go.cli_commands._handle_workspace") as mock_handler,
         ):
             main()
         mock_handler.assert_called_once()
@@ -284,7 +284,7 @@ class TestWorkspaceList:
         """Req 5.1: formatted table with * marker for default workspace."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", ["kirocrew", "workspace", "list"]),
         ):
             main()
@@ -312,7 +312,7 @@ class TestWorkspaceCreate:
         """Req 5.4: duplicate name → stderr + exit 1."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "create", "--name", "default"],
@@ -331,7 +331,7 @@ class TestWorkspaceCreate:
         """Req 5.5: copy_from with non-existent source → stderr + exit 1."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 [
@@ -365,11 +365,11 @@ class TestWorkspaceCreate:
         (tmp_path / "workspace-staging" / "notes.md").write_text("source", encoding="utf-8")
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
-                "kiro_crew.config.loader.write_config_atomically",
+                "efm_go.config.loader.write_config_atomically",
                 side_effect=OSError("no space left on device"),
             ),
             unittest.mock.patch(
@@ -403,9 +403,9 @@ class TestWorkspaceCreate:
         with (
             # Windows ``expanduser`` reads USERPROFILE, not HOME (test_agent_spec_hardened_reads).
             unittest.mock.patch.dict("os.environ", {"HOME": str(home), "USERPROFILE": str(home)}),
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=crew),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=crew),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=crew),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=crew),
             unittest.mock.patch(
                 "sys.argv",
                 [
@@ -442,9 +442,9 @@ class TestWorkspaceCreate:
         with (
             # Windows ``expanduser`` reads USERPROFILE, not HOME (test_agent_spec_hardened_reads).
             unittest.mock.patch.dict("os.environ", {"HOME": str(home), "USERPROFILE": str(home)}),
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=crew),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=crew),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=crew),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=crew),
             unittest.mock.patch(
                 "sys.argv",
                 [
@@ -478,7 +478,7 @@ class TestWorkspaceUpdate:
         """Req 5.7: non-existent name → stderr + exit 1."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "update", "nonexistent", "--dir", "/x"],
@@ -504,7 +504,7 @@ class TestWorkspaceDelete:
         """Req 5.9: delete default workspace → stderr + exit 1."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "delete", "default"],
@@ -532,7 +532,7 @@ class TestWorkspaceDelete:
         cfg_path = _write_config(tmp_path, data)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "delete", "oncall"],
@@ -552,7 +552,7 @@ class TestWorkspaceDelete:
         """Req 5.11: non-existent workspace → stderr + exit 1."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "delete", "nonexistent"],
@@ -582,9 +582,9 @@ class TestWorkspaceDirContainmentMessage:
     ) -> None:
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "create", "--name", "ws1", "--dir", bad_dir],
@@ -605,9 +605,9 @@ class TestWorkspaceDirContainmentMessage:
     ) -> None:
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "update", "staging", "--dir", "/etc"],
@@ -626,9 +626,9 @@ class TestWorkspaceDirContainmentMessage:
         """The fix is diagnostics-only — a legitimate relative name must still work."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "create", "--name", "ws2", "--dir", "workspace-ws2"],
@@ -650,9 +650,9 @@ class TestWorkspaceDirContainmentMessage:
         """
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "create", "--name", "tildews", "--dir", bad_dir],
@@ -673,9 +673,9 @@ class TestWorkspaceDirContainmentMessage:
         bad_dir = "~nosuchuser_kc/x"
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 [
@@ -708,7 +708,7 @@ class TestWorkspaceDirContainmentMessage:
         through while the plain absolute form was refused. Containment is now a
         STRICT descendant test, decided in the one place that expands.
         """
-        from kiro_crew import cli_commands as cc
+        from efm_go import cli_commands as cc
 
         monkeypatch.setattr(cc, "config_dir", lambda: tmp_path)
         monkeypatch.setenv("HOME", str(tmp_path.parent))
@@ -730,9 +730,9 @@ class TestWorkspaceDirContainmentMessage:
         """End-to-end: `--dir <data-home root>` exits 1, no traceback."""
         cfg_path = _write_config(tmp_path, _base_config())
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "create", "--name", "rootws", "--dir", str(tmp_path)],
@@ -771,7 +771,7 @@ class TestWorkspaceDirContainmentMessage:
         the literal ``~/.kiro/crew`` / ``~/.kirocrew`` prefixes rather than
         ``config_dir()``, so a tmp_path home would not exercise the gate at all.
         """
-        from kiro_crew import cli_commands as cc
+        from efm_go import cli_commands as cc
 
         home = Path.home() / ".kiro" / "crew"
         monkeypatch.setattr(cc, "config_dir", lambda: home)
@@ -780,7 +780,7 @@ class TestWorkspaceDirContainmentMessage:
     @pytest.mark.parametrize("ok_dir", ["workspace", "workspace-ok", "ws/nested/ok"])
     def test_ordinary_workspace_dirs_still_allowed(self, monkeypatch, ok_dir: str) -> None:
         """The keystone screen must not block legitimate workspace dirs."""
-        from kiro_crew import cli_commands as cc
+        from efm_go import cli_commands as cc
 
         home = Path.home() / ".kiro" / "crew"
         monkeypatch.setattr(cc, "config_dir", lambda: home)
@@ -788,7 +788,7 @@ class TestWorkspaceDirContainmentMessage:
 
     def test_guard_fails_closed_on_unresolvable_path(self, monkeypatch, tmp_path: Path) -> None:
         """Any resolution failure returns False (deny), never propagates."""
-        from kiro_crew import cli_commands as cc
+        from efm_go import cli_commands as cc
 
         monkeypatch.setattr(cc, "config_dir", lambda: tmp_path)
 
@@ -812,9 +812,9 @@ class TestWorkspaceDirContainmentMessage:
         cfg_path = _write_config(tmp_path, _base_config())
         inside = str(tmp_path / "ws-inside")
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "workspace", "create", "--name", "insidews", "--dir", inside],
@@ -847,12 +847,12 @@ class TestCliCrudIsLockedDelta:
 
     def _run(self, argv: list[str], cfg_path: Path, tmp_path: Path) -> None:
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
             # cli_commands binds config_dir at import, so the loader patch above
             # does not reach it. Create now materializes its directory, so that
             # binding has to point at a real one.
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch("sys.argv", ["kirocrew", *argv]),
         ):
             main()
@@ -900,7 +900,7 @@ class TestCliCrudIsLockedDelta:
         # Simulate a racer: the name is free in the CLI's snapshot but taken
         # by the time the locked read runs. Patch the loader's snapshot load
         # to hide the workspace from the pre-check only.
-        import kiro_crew.cli_commands as cli_commands_module
+        import efm_go.cli_commands as cli_commands_module
 
         original_mutator_runner = cli_commands_module._locked_config_write
 
@@ -911,8 +911,8 @@ class TestCliCrudIsLockedDelta:
             original_mutator_runner(mutate, **kwargs)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
             unittest.mock.patch.object(
                 cli_commands_module, "_locked_config_write", _inject_racer_then_run
             ),
@@ -943,7 +943,7 @@ class TestCliRound8Hardening:
         data = _base_config()
         cfg_path = _write_config(tmp_path, data)
 
-        import kiro_crew.cli_commands as cc
+        import efm_go.cli_commands as cc
 
         original = cc._locked_config_write
 
@@ -954,8 +954,8 @@ class TestCliRound8Hardening:
             original(mutate, **kwargs)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
             unittest.mock.patch.object(cc, "_locked_config_write", _racer_selects_default_then_run),
             unittest.mock.patch("sys.argv", ["kirocrew", "workspace", "delete", "staging"]),
             pytest.raises(SystemExit) as exc_info,
@@ -975,8 +975,8 @@ class TestCliRound8Hardening:
         data["default_agent"] = "spare"
         cfg_path = _write_config(tmp_path, data)
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
             unittest.mock.patch("sys.argv", ["kirocrew", "agent", "delete", "spare"]),
             pytest.raises(SystemExit) as exc_info,
         ):
@@ -994,7 +994,7 @@ class TestCliRound8Hardening:
         (src / "loser-file.md").write_text("x", encoding="utf-8")
         cfg_path = _write_config(tmp_path, _base_config())
 
-        import kiro_crew.cli_commands as cc
+        import efm_go.cli_commands as cc
 
         original = cc._locked_config_write
 
@@ -1008,9 +1008,9 @@ class TestCliRound8Hardening:
             original(mutate, **kwargs)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path),
-            unittest.mock.patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path),
+            unittest.mock.patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             unittest.mock.patch.object(cc, "_locked_config_write", _racer_takes_name_then_run),
             unittest.mock.patch(
                 "sys.argv",

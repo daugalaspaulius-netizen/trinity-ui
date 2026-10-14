@@ -32,15 +32,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.mcp_core as mcp_core
-from kiro_crew import autonudge_authz as authz
-from kiro_crew import session_directive
-from kiro_crew.autonudge import AutoNudgeService, NudgeLoop
-from kiro_crew.autonudge_authz import MAX_BANNER_CHARS
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.mcp_core import _call_tool_inner
-from kiro_crew.slack import gateway as gw
-from kiro_crew.validation import ValidationError
+import efm_go.mcp_core as mcp_core
+from efm_go import autonudge_authz as authz
+from efm_go import session_directive
+from efm_go.autonudge import AutoNudgeService, NudgeLoop
+from efm_go.autonudge_authz import MAX_BANNER_CHARS
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.mcp_core import _call_tool_inner
+from efm_go.slack import gateway as gw
+from efm_go.validation import ValidationError
 
 # ── Fire-path harness (mirrors test_autonudge_dashboard_fire.py) ──
 
@@ -152,7 +152,7 @@ async def _fire_full(loop: NudgeLoop, *, ledger: str = "") -> tuple[str, str, di
     with (
         patch.object(gw, "spawn_guarded_turn", _spawn),
         patch.object(gw, "compose_nudge_body", new=AsyncMock(side_effect=_compose)),
-        patch("kiro_crew.dashboard.chat._run_chat", new=run_chat),
+        patch("efm_go.dashboard.chat._run_chat", new=run_chat),
     ):
         assert await orch._fire_dashboard_nudge(loop) is True
         await asyncio.gather(*spawned)
@@ -772,7 +772,7 @@ class TestRestSurface:
     def _app(self, monkeypatch, fake_svc):
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import autonudge as _handler
+        from efm_go.dashboard.handlers import autonudge as _handler
 
         monkeypatch.setattr(_handler, "_autonudge_get", lambda: fake_svc)
         state = MagicMock()
@@ -1131,14 +1131,14 @@ class TestMonitorToolsCanSetTheBanner:
         silently dropped, which is the defect class already fixed once on this PR
         in the slot-close restore path.
         """
-        from kiro_crew.dashboard import session_directive_apply as sda
+        from efm_go.dashboard import session_directive_apply as sda
 
         svc = MagicMock()
         authz = AsyncMock(return_value=(SimpleNamespace(id="loop-1"), None, 200))
         with (
             patch.object(sda, "_binding", return_value="chat-9-1"),
-            patch("kiro_crew.autonudge.get_instance", return_value=svc),
-            patch("kiro_crew.autonudge_authz.authorize_and_add_nudge", authz),
+            patch("efm_go.autonudge.get_instance", return_value=svc),
+            patch("efm_go.autonudge_authz.authorize_and_add_nudge", authz),
         ):
             await sda._monitor_start(
                 MagicMock(),
@@ -1467,7 +1467,7 @@ class TestARealProducerSetsTheBanner:
     def test_the_goal_command_passes_a_banner_to_add(self) -> None:
         import inspect
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         src = inspect.getsource(chat_runner)
         assert (
@@ -1478,7 +1478,7 @@ class TestARealProducerSetsTheBanner:
         """``add`` does not validate, so an unbounded objective would be cleared on load."""
         import inspect
 
-        from kiro_crew.autonudge import AutoNudgeService
+        from efm_go.autonudge import AutoNudgeService
 
         assert "banner" in inspect.signature(AutoNudgeService.add).parameters
         src = inspect.getsource(AutoNudgeService.add)

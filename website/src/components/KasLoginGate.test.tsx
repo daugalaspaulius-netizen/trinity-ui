@@ -19,16 +19,16 @@ vi.mock('../api/client', async importOriginal => {
       kasLoginBeginDevice: vi.fn().mockResolvedValue({
         login_id: 'login-1',
         user_code: 'ABCD-EFGH',
-        verification_uri_complete: 'https://app.kiro.dev/account/device?user_code=ABCD-EFGH',
+        verification_uri_complete: 'https://efmleads.com/account/device?user_code=ABCD-EFGH',
         expires_at: '2099-01-01T00:00:00Z',
       }),
       kasLoginPoll: vi.fn().mockResolvedValue({ status: 'pending' }),
       kasLoginBeginLoopback: vi.fn().mockResolvedValue({
         login_id: 'lb-1',
         user_code: '',
-        verification_uri_complete: 'https://app.kiro.dev/signin?state=s1',
+        verification_uri_complete: 'https://efmleads.com/signin?state=s1',
         expires_at: '2099-01-01T00:00:00Z',
-        auth_url: 'https://app.kiro.dev/signin?state=s1',
+        auth_url: 'https://efmleads.com/signin?state=s1',
         port: 3128,
       }),
       kasLoginCancel: vi.fn().mockResolvedValue({ ok: true }),
@@ -102,7 +102,7 @@ describe('KasLoginGate', () => {
     ).toBeInTheDocument()
     // Step 1's link is rendered as a copyable block, verbatim.
     expect(
-      screen.getByText('https://app.kiro.dev/account/device?user_code=ABCD-EFGH'),
+      screen.getByText('https://efmleads.com/account/device?user_code=ABCD-EFGH'),
     ).toBeInTheDocument()
   })
 
@@ -268,7 +268,7 @@ describe('KasLoginGate', () => {
     expect(kasLoginBeginLoopback).toHaveBeenCalledWith('google')
     expect(kasLoginBeginDevice).not.toHaveBeenCalled()
     expect(openSpy).toHaveBeenCalledWith(
-      'https://app.kiro.dev/signin?state=s1',
+      'https://efmleads.com/signin?state=s1',
       '_blank',
       'noopener,noreferrer',
     )

@@ -27,17 +27,17 @@ import json
 from pathlib import Path
 from typing import Callable, cast
 
-import kiro_crew.slack.gateway as gateway_mod
-from kiro_crew.apps.manifest import CronEntry
-from kiro_crew.cron import CronService
-from kiro_crew.platform import governance
-from kiro_crew.platform.governance import (
+import efm_go.slack.gateway as gateway_mod
+from efm_go.apps.manifest import CronEntry
+from efm_go.cron import CronService
+from efm_go.platform import governance
+from efm_go.platform.governance import (
     TIER_ENV,
     TIER_HOME,
     load_security_policy,
     resolve,
 )
-from kiro_crew.sandbox import scrub_agent_subprocess_env
+from efm_go.sandbox import scrub_agent_subprocess_env
 
 #: The two governance trust-root path variables under test.
 _POLICY_PATH_VARS = ("KIROCREW_SECURITY_POLICY", "KIROCREW_ADMISSION_POLICY")
@@ -60,7 +60,7 @@ def _cron_env_seam() -> Callable[[dict[str, str] | None], dict[str, str]]:
     """The gateway's cron ``env`` filter, or a failure naming what is missing."""
     seam = getattr(gateway_mod, _SEAM, None)
     assert seam is not None, (
-        f"kiro_crew.slack.gateway exposes no {_SEAM}: nothing screens a cron job's "
+        f"efm_go.slack.gateway exposes no {_SEAM}: nothing screens a cron job's "
         "declared env before it becomes the scheduled session's extra_env"
     )
     return cast(Callable[[dict[str, str] | None], dict[str, str]], seam)

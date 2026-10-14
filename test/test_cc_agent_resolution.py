@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from conftest import requires_symlinks
-from kiro_crew.slack.handler import _list_all_agent_names, _resolve_cc_agent_name
+from efm_go.slack.handler import _list_all_agent_names, _resolve_cc_agent_name
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -134,7 +134,7 @@ class TestResolveCcAgentName:
         link.symlink_to(secret)
 
         # Force the hooks layer to treat the secret target as sensitive.
-        import kiro_crew.hooks as hooks
+        import efm_go.hooks as hooks
 
         real_is_sensitive = hooks.is_sensitive_path
 
@@ -167,7 +167,7 @@ class TestListAllAgentNames:
         # Monkey-patch Path.home temporarily
         import unittest.mock
 
-        with unittest.mock.patch("kiro_crew.slack.handler.Path.home", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.slack.handler.Path.home", return_value=tmp_path):
             # kiro agents dir needs to be at tmp_path / ".kiro" / "agents"
             kiro_agents = tmp_path / ".kiro" / "agents"
             kiro_agents.mkdir(parents=True)
@@ -182,7 +182,7 @@ class TestListAllAgentNames:
 
         import unittest.mock
 
-        with unittest.mock.patch("kiro_crew.slack.handler.Path.home", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.slack.handler.Path.home", return_value=tmp_path):
             kiro_agents = tmp_path / ".kiro" / "agents"
             kiro_agents.mkdir(parents=True)
             result = _list_all_agent_names(cc_plugins_dir=cc_dir)
@@ -195,7 +195,7 @@ class TestListAllAgentNames:
         nonexistent = tmp_path / "does-not-exist"
         import unittest.mock
 
-        with unittest.mock.patch("kiro_crew.slack.handler.Path.home", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.slack.handler.Path.home", return_value=tmp_path):
             kiro_agents = tmp_path / ".kiro" / "agents"
             kiro_agents.mkdir(parents=True)
             result = _list_all_agent_names(cc_plugins_dir=nonexistent)
@@ -212,7 +212,7 @@ class TestListAllAgentNames:
 
         import unittest.mock
 
-        with unittest.mock.patch("kiro_crew.slack.handler.Path.home", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.slack.handler.Path.home", return_value=tmp_path):
             kiro_agents = tmp_path / ".kiro" / "agents"
             kiro_agents.mkdir(parents=True)
             result = _list_all_agent_names(cc_plugins_dir=cc_dir)
@@ -231,7 +231,7 @@ class TestListAllAgentNames:
 
         import unittest.mock
 
-        with unittest.mock.patch("kiro_crew.slack.handler.Path.home", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.slack.handler.Path.home", return_value=tmp_path):
             kiro_agents = tmp_path / ".kiro" / "agents"
             kiro_agents.mkdir(parents=True)
             result = _list_all_agent_names(cc_plugins_dir=cc_dir)
@@ -251,7 +251,7 @@ class TestListAllAgentNames:
 
         import unittest.mock
 
-        with unittest.mock.patch("kiro_crew.slack.handler.Path.home", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.slack.handler.Path.home", return_value=tmp_path):
             kiro_agents = tmp_path / ".kiro" / "agents"
             kiro_agents.mkdir(parents=True)
             (kiro_agents / "kirocrew-lite.json").write_text(
@@ -273,7 +273,7 @@ class TestListAllAgentNames:
 
         import unittest.mock
 
-        with unittest.mock.patch("kiro_crew.slack.handler.Path.home", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.slack.handler.Path.home", return_value=tmp_path):
             kiro_agents = tmp_path / ".kiro" / "agents"
             kiro_agents.mkdir(parents=True)
             # Create a kiro agent JSON with same stem

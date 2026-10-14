@@ -21,16 +21,16 @@ import json
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import chat_persistence as cp
-from kiro_crew.dashboard.slot_buffers import (
+from efm_go.dashboard import chat_persistence as cp
+from efm_go.dashboard.slot_buffers import (
     sanitize_restored_deferred_notes,
     serialize_deferred_notes,
 )
-from kiro_crew.dashboard.slot_persistence import metadata_codec as codec
-from kiro_crew.dashboard.slot_persistence import metadata_line
-from kiro_crew.dashboard.source_providers.contract import source_ref_identity_key
-from kiro_crew.dashboard.state import durable_queue_entries
-from kiro_crew.history import SLOT_OWNED_META_KEYS
+from efm_go.dashboard.slot_persistence import metadata_codec as codec
+from efm_go.dashboard.slot_persistence import metadata_line
+from efm_go.dashboard.source_providers.contract import source_ref_identity_key
+from efm_go.dashboard.state import durable_queue_entries
+from efm_go.history import SLOT_OWNED_META_KEYS
 
 K1 = source_ref_identity_key(("github", "github.com", "o", "r", 1, "", "change", ""))
 K2 = source_ref_identity_key(("github", "github.com", "o", "r", 2, "", "change", ""))
@@ -197,7 +197,7 @@ _BASE_MERGE_ORDER = (
 
 
 def _state(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     state._tags = [{"id": "t1"}, {"id": "t2"}]
     state._tags_authoritative = True

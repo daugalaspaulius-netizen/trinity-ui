@@ -26,12 +26,12 @@ stays "New chat".
 
 ## Evidence
 
-- https://github.com/kirodotdev/KiroCrew/pull/94 — introduced the "New" label
+- https://efmleads.com/pull/94 — introduced the "New" label
   (commit 872523ef36).
-- https://github.com/kirodotdev/KiroCrew/pull/12291 — the reversal this entry
+- https://efmleads.com/pull/12291 — the reversal this entry
   records as a regression.
-- https://github.com/kirodotdev/KiroCrew/issues/11998 — the nightly friction
+- https://efmleads.com/issues/11998 — the nightly friction
   report that drove it.
-- https://github.com/kirodotdev/KiroCrew/pull/13194#issuecomment-5807378325 —
+- https://efmleads.com/pull/13194#issuecomment-5807378325 —
   the maintainer's dated statement of the decision (2026-09-24), the record this
   entry's reaffirmation rests on.

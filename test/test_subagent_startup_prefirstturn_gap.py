@@ -31,7 +31,7 @@ from __future__ import annotations
 import time
 from unittest.mock import MagicMock
 
-from kiro_crew.subagent import (
+from efm_go.subagent import (
     _STARTUP_TIMEOUT_SECS,
     _WAVE_STUCK_SECS,
     SubagentInfo,

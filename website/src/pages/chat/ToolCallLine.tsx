@@ -409,7 +409,7 @@ export default memo(function ToolCallLine({ message, running: _running, slot, on
   //
   // The `running` and newest-tool-row guards below are containment for a session
   // identity that resolves per RUNTIME rather than per ACP session; the cure is
-  // tracked in https://github.com/kirodotdev/KiroCrew/issues/2347.
+  // tracked in https://efmleads.com/issues/2347.
   const isWaitTool = isWaitToolTitle(toolName)
   const waitSlotKey = useAppSelector(s => slot ?? s.chat.activeSlot)
   const waitState = useAppSelector(s => {

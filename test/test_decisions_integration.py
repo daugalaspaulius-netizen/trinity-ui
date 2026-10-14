@@ -32,9 +32,9 @@ import time
 
 import pytest
 
-from kiro_crew import decisions as core
-from kiro_crew.decisions.points import skills_select as sel
-from kiro_crew.decisions.types import Answer
+from efm_go import decisions as core
+from efm_go.decisions.points import skills_select as sel
+from efm_go.decisions.types import Answer
 
 BASELINE = "matcher"
 WIDENED = "unrelated"
@@ -79,10 +79,10 @@ def _close_skills_loaders(close_skills_loaders):
 
 def _builder(tmp_path, skills_root, *, cap=3, conversation_log=None):
     """A real ContextBuilder. MUST be called on the loop, as production does."""
-    from kiro_crew.context import ContextBuilder
-    from kiro_crew.learn import LessonStore
-    from kiro_crew.memory import MemoryStore
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.context import ContextBuilder
+    from efm_go.learn import LessonStore
+    from efm_go.memory import MemoryStore
+    from efm_go.skills import SkillsLoader
 
     loader = SkillsLoader(skills_path=skills_root, install_builtins=False)
     loader._max_triggered = cap
@@ -166,7 +166,7 @@ async def test_the_audit_row_records_the_selection_that_was_injected(
     from unittest.mock import MagicMock
 
     fake_sel = MagicMock()
-    monkeypatch.setattr("kiro_crew.skills.sel", lambda: fake_sel)
+    monkeypatch.setattr("efm_go.skills.sel", lambda: fake_sel)
     monkeypatch.setattr(core, "decide", _Recorder(value))
     builder = _builder(tmp_path, tree)
 
@@ -271,7 +271,7 @@ async def test_a_project_skill_is_offered_only_once_the_project_is_trusted(
     Both halves are asserted because the untrusted half alone would also pass if
     the project layout below were simply wrong.
     """
-    from kiro_crew import skill_trust
+    from efm_go import skill_trust
 
     if trusted and not skill_trust.project_skill_traversal_supported():
         pytest.skip("project skills require no-follow directory-descriptor traversal")
@@ -351,7 +351,7 @@ def test_a_builder_with_no_loop_keeps_the_baseline(tmp_path, tree, enabled, monk
 
 def _transcript(tmp_path, *rows):
     """A real ``ConversationLog`` holding *rows* for the session ``_message`` uses."""
-    from kiro_crew.history import ConversationLog
+    from efm_go.history import ConversationLog
 
     log = ConversationLog(base_dir=tmp_path / "sessions")
     log.init()

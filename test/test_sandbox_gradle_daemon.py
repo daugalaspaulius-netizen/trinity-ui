@@ -9,7 +9,7 @@ that context and adopts the daemon. The launcher therefore disables the daemon
 for builds it starts, so none is left behind.
 
 The guard lives in ``scrub_env``, the launcher stage that writes the environment
-the agent inherits (``kiro_crew.sandbox_launcher_program``). These tests run that
+the agent inherits (``efm_go.sandbox_launcher_program``). These tests run that
 stage on a plain dict handed to a ``Launch``, so the guard that runs is the shipped
 one and the process environment is never touched; a whole child run
 (``run_child``) with a recording libc shows the flag is in place when the agent is
@@ -23,9 +23,9 @@ import sys
 import pytest
 from test_sandbox_launcher_program import RecordingLibc, payload, rendered_payload
 
-import kiro_crew.sandbox as sandbox_mod
-from kiro_crew import sandbox_launcher_program
-from kiro_crew.sandbox import _build_launcher_script
+import efm_go.sandbox as sandbox_mod
+from efm_go import sandbox_launcher_program
+from efm_go.sandbox import _build_launcher_script
 
 program = sandbox_launcher_program
 

@@ -22,9 +22,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import (
+from efm_go.acp.client import AcpClient
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import (
     EVENT_TEXT_CHUNK,
     EVENT_TOOL_RESULT,
     METHOD_SESSION_UPDATE,
@@ -185,8 +185,8 @@ async def test_client_overlapping_tools_keep_tool_watchdog(monkeypatch, first):
 async def test_client_jsonl_result_retires_call_at_every_flush(monkeypatch, tmp_path, trigger):
     client = AcpClient()
     client._session_id = SESSION
-    monkeypatch.setattr("kiro_crew.acp.client.kiro_sessions_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.acp.client.error_is_refusal_terminal", lambda *_: True)
+    monkeypatch.setattr("efm_go.acp.client.kiro_sessions_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.acp.client.error_is_refusal_terminal", lambda *_: True)
     monkeypatch.setattr(client, "_emit_tool_interrupted_sel", lambda *_: None)
     jsonl_path = tmp_path / f"{SESSION}.jsonl"
 
@@ -257,7 +257,7 @@ async def test_client_jsonl_result_retires_call_at_every_flush(monkeypatch, tmp_
 @pytest.mark.asyncio
 @pytest.mark.parametrize("first", ["a", "b"])
 async def test_client_jsonl_results_keep_other_calls_active(monkeypatch, first):
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     client = AcpClient()
     second = "b" if first == "a" else "a"

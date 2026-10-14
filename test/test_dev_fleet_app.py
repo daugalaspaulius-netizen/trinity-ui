@@ -23,15 +23,15 @@ import yarl
 from aiohttp import web  # noqa: F401  (used by builtin re-shell tests)
 from aiohttp.test_utils import TestClient, TestServer  # noqa: F401
 
-import kiro_crew.apps.builtins.dev_fleet.server as mod
-from kiro_crew import platform_compat
-from kiro_crew.apps.builtins.dev_fleet import fleet_state as fleet_state_mod
-from kiro_crew.apps.builtins.dev_fleet import http_api as http_api_mod
-from kiro_crew.apps.builtins.dev_fleet import live as live_mod
-from kiro_crew.apps.builtins.dev_fleet import npm_preflight
-from kiro_crew.apps.builtins.dev_fleet import repository as repository_mod
-from kiro_crew.apps.builtins.dev_fleet import runtime as runtime_mod
-from kiro_crew.apps.builtins.dev_fleet import worktree_ops as worktree_ops_mod
+import efm_go.apps.builtins.dev_fleet.server as mod
+from efm_go import platform_compat
+from efm_go.apps.builtins.dev_fleet import fleet_state as fleet_state_mod
+from efm_go.apps.builtins.dev_fleet import http_api as http_api_mod
+from efm_go.apps.builtins.dev_fleet import live as live_mod
+from efm_go.apps.builtins.dev_fleet import npm_preflight
+from efm_go.apps.builtins.dev_fleet import repository as repository_mod
+from efm_go.apps.builtins.dev_fleet import runtime as runtime_mod
+from efm_go.apps.builtins.dev_fleet import worktree_ops as worktree_ops_mod
 
 # These Dev Fleet make-live / cancel / sync / build tests assert POSIX-only
 # behaviour that has no Windows equivalent: os.geteuid, the ``.venv/bin`` layout
@@ -57,7 +57,7 @@ def _venv_maps_to_the_synced_checkout():
     ``test_sync_refuses_a_venv_that_serves_another_checkout``, which patches it
     back to a refusal, and the logic behind it lives in ``test/test_dep_sync.py``.
     """
-    from kiro_crew import dep_sync
+    from efm_go import dep_sync
 
     with patch.object(dep_sync, "installed_package_origin", return_value="<stubbed>"), \
          patch.object(dep_sync, "venv_not_mapped_to", return_value=None):
@@ -66,7 +66,7 @@ def _venv_maps_to_the_synced_checkout():
 
 # --- worktree porcelain parsing ---
 def test_parse_worktree_porcelain_basic():
-    from kiro_crew.apps.builtins.dev_fleet.server import _parse_worktree_porcelain
+    from efm_go.apps.builtins.dev_fleet.server import _parse_worktree_porcelain
 
     raw = textwrap.dedent("""\
         worktree /home/user/kirocrew
@@ -92,7 +92,7 @@ def test_parse_worktree_porcelain_basic():
 
 
 def test_parse_worktree_porcelain_empty():
-    from kiro_crew.apps.builtins.dev_fleet.server import _parse_worktree_porcelain
+    from efm_go.apps.builtins.dev_fleet.server import _parse_worktree_porcelain
 
     assert _parse_worktree_porcelain("") == []
 
@@ -105,7 +105,7 @@ def test_parse_worktree_porcelain_captures_locked():
     already run, so a removal path that only learns about it from the failure
     has already destroyed whatever it cleaned.
     """
-    from kiro_crew.apps.builtins.dev_fleet.server import _parse_worktree_porcelain
+    from efm_go.apps.builtins.dev_fleet.server import _parse_worktree_porcelain
 
     raw = textwrap.dedent("""\
         worktree /home/user/kirocrew
@@ -132,7 +132,7 @@ def test_parse_worktree_porcelain_captures_locked():
 
 def test_parse_worktree_porcelain_captures_prunable():
     """`prunable` marks a record whose checkout directory is gone."""
-    from kiro_crew.apps.builtins.dev_fleet.server import _parse_worktree_porcelain
+    from efm_go.apps.builtins.dev_fleet.server import _parse_worktree_porcelain
 
     raw = textwrap.dedent("""\
         worktree /home/user/kirocrew
@@ -165,7 +165,7 @@ async def test_discover_worktrees_drops_prunable():
     git keeps reporting the admin record until `git worktree prune` runs, so
     without this filter the ghost row survives every refresh.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     stdout = textwrap.dedent("""\
         worktree /home/user/kirocrew
@@ -193,7 +193,7 @@ async def test_discover_worktrees_drops_prunable():
 @pytest.mark.asyncio
 async def test_discover_worktrees_keeps_prunable_main():
     """The primary checkout anchors is_main and is never filtered out."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     stdout = textwrap.dedent("""\
         worktree /home/user/kirocrew
@@ -216,7 +216,7 @@ async def test_discover_worktrees_keeps_prunable_main():
 
 # --- PR status ---
 def test_pr_status_merged():
-    from kiro_crew.apps.builtins.dev_fleet.server import _is_pr_merged
+    from efm_go.apps.builtins.dev_fleet.server import _is_pr_merged
 
     assert _is_pr_merged({"state": "MERGED", "number": 42}) is True
     assert _is_pr_merged({"state": "OPEN", "number": 42}) is False
@@ -227,10 +227,10 @@ def test_pr_status_merged():
 # --- shipped detection (git cherry parsing) ---
 @pytest.mark.asyncio
 async def test_git_ahead_counts_plus_lines():
-    from kiro_crew.apps.builtins.dev_fleet.server import _git_ahead
+    from efm_go.apps.builtins.dev_fleet.server import _git_ahead
 
     cherry_output = "+ abc1234\n+ def5678\n- ghi9012\n"
-    with patch("kiro_crew.apps.builtins.dev_fleet.repository._git", new_callable=AsyncMock) as mock_git:
+    with patch("efm_go.apps.builtins.dev_fleet.repository._git", new_callable=AsyncMock) as mock_git:
         mock_git.return_value = cherry_output
         result = await _git_ahead("/fake/path")
     assert result == 2
@@ -238,9 +238,9 @@ async def test_git_ahead_counts_plus_lines():
 
 @pytest.mark.asyncio
 async def test_git_ahead_returns_none_on_failure():
-    from kiro_crew.apps.builtins.dev_fleet.server import _git_ahead
+    from efm_go.apps.builtins.dev_fleet.server import _git_ahead
 
-    with patch("kiro_crew.apps.builtins.dev_fleet.repository._git", new_callable=AsyncMock) as mock_git:
+    with patch("efm_go.apps.builtins.dev_fleet.repository._git", new_callable=AsyncMock) as mock_git:
         mock_git.return_value = None
         result = await _git_ahead("/fake/path")
     assert result is None
@@ -250,7 +250,7 @@ async def test_git_ahead_returns_none_on_failure():
 @pytest.mark.asyncio
 async def test_prunable_merged_clean():
     """PR merged + clean -> ok:true WITHOUT requiring ahead==0 (squash-safe)."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(fleet_state_mod, "_pr_status_cached", new_callable=AsyncMock, return_value={"state": "MERGED"}), \
          patch.object(repository_mod, "_own_commits_count", new_callable=AsyncMock, return_value=3), \
@@ -270,7 +270,7 @@ async def test_prunable_merged_squash_sim():
     This is the core bug fix: old code would see ahead>0 and reject with
     'merged_new_commits'. New code does NOT check ahead at all.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(fleet_state_mod, "_pr_status_cached", new_callable=AsyncMock, return_value={"state": "MERGED"}), \
          patch.object(repository_mod, "_own_commits_count", new_callable=AsyncMock, return_value=5), \
@@ -285,7 +285,7 @@ async def test_prunable_merged_squash_sim():
 
 @pytest.mark.asyncio
 async def test_prunable_merged_dirty_rejected():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(fleet_state_mod, "_pr_status_cached", new_callable=AsyncMock, return_value={"state": "MERGED"}), \
          patch.object(repository_mod, "_own_commits_count", new_callable=AsyncMock, return_value=3), \
@@ -298,7 +298,7 @@ async def test_prunable_merged_dirty_rejected():
 
 @pytest.mark.asyncio
 async def test_prunable_active_unmerged():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(fleet_state_mod, "_pr_status_cached", new_callable=AsyncMock, return_value={"state": "OPEN"}), \
          patch.object(repository_mod, "_own_commits_count", new_callable=AsyncMock, return_value=5), \
@@ -313,7 +313,7 @@ async def test_prunable_active_unmerged():
 @pytest.mark.asyncio
 async def test_remove_refuses_when_branch_oid_diverged():
     """Squash-safe race guard: branch OID != PR headRefOid -> refuse removal."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     full_head = "a" * 40
     cache = AsyncMock(return_value={"state": "MERGED"})
@@ -336,7 +336,7 @@ async def test_remove_refuses_when_branch_oid_diverged():
 @pytest.mark.asyncio
 async def test_remove_succeeds_when_oid_matches():
     """Squash-safe race guard passes when OIDs match."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(repository_mod, "_find_worktree", new_callable=AsyncMock,
                       return_value=({"path": "/fake/wt", "branch": "feat-x", "is_main": False}, None)), \
@@ -357,8 +357,8 @@ async def test_remove_succeeds_when_oid_matches():
 @pytest.mark.asyncio
 async def test_remove_proceeds_when_session_bus_absent():
     """An absent backend is checked off-loop and leaves no live pod to protect."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
-    from kiro_crew.pod.runtime import PodBackendAbsent
+    import efm_go.apps.builtins.dev_fleet.server as mod
+    from efm_go.pod.runtime import PodBackendAbsent
 
     event_loop_thread = threading.get_ident()
     backend_threads: list[int] = []
@@ -388,7 +388,7 @@ async def test_remove_proceeds_when_session_bus_absent():
 @pytest.mark.asyncio
 async def test_remove_refuses_stale_explicit_bus_address(monkeypatch):
     """A stale explicit bus address must never authorize worktree removal."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     detail = "Failed to connect to bus: No such file or directory"
     monkeypatch.setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/4242/stale-bus")
@@ -440,7 +440,7 @@ async def test_remove_refuses_stale_explicit_bus_address(monkeypatch):
 @pytest.mark.asyncio
 async def test_remove_still_fails_on_non_pod_exceptions():
     """Non-PodError exceptions (e.g. OSError, TimeoutError) still refuse removal."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(repository_mod, "_find_worktree", new_callable=AsyncMock,
                       return_value=({"path": "/fake/wt", "branch": "feat-x", "is_main": False}, None)), \
@@ -758,7 +758,7 @@ async def test_remove_names_the_home_it_cannot_reclaim(tmp_path, caplog):
     stays -- but at a level the operator sees, carrying the path and the verb
     that reclaims it.
     """
-    from kiro_crew.pod.runtime import PodBackendAbsent
+    from efm_go.pod.runtime import PodBackendAbsent
 
     with ExitStack() as stack:
         for cm in _remove_stubs(
@@ -948,7 +948,7 @@ def test_reclaim_falls_back_to_the_return_code_when_stderr_is_empty(tmp_path):
 # --- _upstream_remote fallback + override ---
 @pytest.mark.asyncio
 async def test_upstream_remote_fallback_to_origin():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     repository_mod._UPSTREAM_REMOTE = None
     with patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(1, "", "not configured")):
@@ -959,7 +959,7 @@ async def test_upstream_remote_fallback_to_origin():
 
 @pytest.mark.asyncio
 async def test_upstream_remote_reads_config():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     repository_mod._UPSTREAM_REMOTE = None
     with patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(0, "kirocrew\n", "")):
@@ -980,7 +980,7 @@ async def test_resolve_base_branch_clears_cached_upstream_remote():
     the stale value and re-seeds the cache with the remote THIS resolution used, so
     later reads and sync target the resolved remote rather than a stale or wrong one.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     # Save every module global this test mutates: _resolve_base_branch writes
     # BASE_BRANCH and _BASE_BRANCH_POSITIVE, which other tests read at their default.
@@ -1022,15 +1022,15 @@ async def test_sync_script_emits_step_markers():
     proven by execution in test_dev_fleet_sync_runner.py. Here we pin that the
     sync invokes the runner by path and that the module still emits the marker.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
-    from kiro_crew.apps.builtins.dev_fleet import sync_runner
+    import efm_go.apps.builtins.dev_fleet.server as mod
+    from efm_go.apps.builtins.dev_fleet import sync_runner
 
     repository_mod._UPSTREAM_REMOTE = "origin"
     worktree_ops_mod._SYNC_RID = None
     with patch.object(repository_mod, "_git", new_callable=AsyncMock, return_value="main"), \
          patch.object(worktree_ops_mod, "_venv_python", return_value=Path("/fake/.venv/bin/python")), \
          patch.object(runtime_mod, "_trusted_bin", side_effect=lambda n: f"/usr/bin/{n}"), \
-         patch("kiro_crew.apps.builtins.dev_fleet.worktree_ops.sandboxed_spawn_argv",
+         patch("efm_go.apps.builtins.dev_fleet.worktree_ops.sandboxed_spawn_argv",
                side_effect=lambda cmd, mode, env=None: (cmd, env or {}, None)), \
          patch.object(runtime_mod, "_start_run", new_callable=AsyncMock, return_value="run-123") as mock_start:
         async with mod._SYNC_LOCK:
@@ -1050,7 +1050,7 @@ async def test_sync_script_emits_step_markers():
 
 
 # --- Windows: a write-locked console script must not be handed to pip ---
-# The probe itself moved to kiro_crew.dep_sync with the substitute it feeds, and
+# The probe itself moved to efm_go.dep_sync with the substitute it feeds, and
 # its tests moved with it (test/test_dep_sync.py). What stays here is the sync's
 # use of the result: which install step gets built.
 
@@ -1234,7 +1234,7 @@ async def _run_sync(mod, locked):
          patch.object(worktree_ops_mod, "_venv_python", return_value=Path("/fake/.venv/bin/python")), \
          patch.object(runtime_mod, "_trusted_bin", side_effect=lambda n: f"/usr/bin/{n}"), \
          patch.object(worktree_ops_mod.dep_sync, "locked_console_scripts", return_value=locked), \
-         patch("kiro_crew.apps.builtins.dev_fleet.worktree_ops.sandboxed_spawn_argv",
+         patch("efm_go.apps.builtins.dev_fleet.worktree_ops.sandboxed_spawn_argv",
                side_effect=lambda cmd, mode, env=None: (cmd, env or {}, None)), \
          patch.object(runtime_mod, "_start_run", new_callable=AsyncMock, return_value="run-123") as mock_start:
         async with mod._SYNC_LOCK:
@@ -1270,8 +1270,8 @@ async def test_sync_substitutes_a_dependency_only_install_when_a_script_is_locke
     own console script. Refusing the whole sync instead left the single-checkout
     Windows layout — the ordinary one — with no working Pull+build at all.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
-    from kiro_crew import dep_sync
+    import efm_go.apps.builtins.dev_fleet.server as mod
+    from efm_go import dep_sync
 
     result, cmd, steps = await _run_sync(mod, [r"C:\repo\.venv\Scripts\kirocrew.exe"])
 
@@ -1284,7 +1284,7 @@ async def test_sync_substitutes_a_dependency_only_install_when_a_script_is_locke
     argv_flat = " ".join(install["argv"])
     assert "dep_sync.py" in argv_flat
     assert "-e" not in install["argv"]
-    # It must NOT be run as `-m kiro_crew...dep_sync`. That would import the
+    # It must NOT be run as `-m efm_go...dep_sync`. That would import the
     # module from the working tree after the merge has landed, pulling the whole
     # package __init__ chain with it, so a revision that raises the
     # `requires-python` floor with newer syntax would SyntaxError while being
@@ -1310,8 +1310,8 @@ async def test_sync_keeps_the_editable_reinstall_when_nothing_is_locked():
     cannot refresh a console script, so anywhere pip can do the whole job, it
     should.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
-    from kiro_crew import dep_sync
+    import efm_go.apps.builtins.dev_fleet.server as mod
+    from efm_go import dep_sync
 
     result, cmd, steps = await _run_sync(mod, [])
 
@@ -1337,7 +1337,7 @@ async def test_every_step_gets_a_utf8_pin_in_its_environment():
     utf-8 pin). What stays here is the module contract: run_step assigns the
     pin onto every step's env before spawning.
     """
-    from kiro_crew.apps.builtins.dev_fleet import sync_runner
+    from efm_go.apps.builtins.dev_fleet import sync_runner
 
     src = Path(sync_runner.__file__).read_text(encoding="utf-8")
     run_step_body = src.split("def run_step(", 1)[1].split("\ndef ", 1)[0]
@@ -1355,7 +1355,7 @@ async def test_every_step_gets_a_utf8_pin_in_its_environment():
 @pytest.mark.asyncio
 async def test_sync_runs_every_step_when_nothing_is_locked():
     """Control: an unlocked venv gets the full sync, reinstall included."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     result, cmd, steps = await _run_sync(mod, [])
 
@@ -1379,8 +1379,8 @@ async def test_sync_refuses_a_venv_that_serves_another_checkout(locked):
     guarded one. Parametrized over both branches because that asymmetry is
     exactly the bug: a fix that only covers the one it was found on is not one.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
-    from kiro_crew import dep_sync
+    import efm_go.apps.builtins.dev_fleet.server as mod
+    from efm_go import dep_sync
 
     with patch.object(
         dep_sync,
@@ -1406,8 +1406,8 @@ async def test_sync_runner_pins_utf8_stdout_before_its_first_print():
     encodes with the process locale codepage — a mismatch that mangles or kills
     any non-ASCII print. Pinned before the step loop so no print predates it.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
-    from kiro_crew.apps.builtins.dev_fleet import sync_runner
+    import efm_go.apps.builtins.dev_fleet.server as mod
+    from efm_go.apps.builtins.dev_fleet import sync_runner
 
     _, cmd, _ = await _run_sync(mod, [])
 
@@ -1483,28 +1483,28 @@ def test_pythonioencoding_saves_a_step_child_that_prints_a_non_ascii_path():
 # --- repo owner/name parsing ---
 @pytest.mark.asyncio
 async def test_repo_owner_name_ssh():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     fleet_state_mod._OWNER_REPO = None
-    with patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(0, "git@github.com:kirodotdev/KiroCrew.git\n", "")):
+    with patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(0, "git@github.com:efmleads.com.git\n", "")):
         result = await mod._repo_owner_name()
-    assert result == "kirodotdev/KiroCrew"
+    assert result == "efmleads.com"
 
 
 @pytest.mark.asyncio
 async def test_repo_owner_name_https():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     fleet_state_mod._OWNER_REPO = None
-    with patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(0, "https://github.com/kirodotdev/KiroCrew.git\n", "")):
+    with patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(0, "https://efmleads.com.git\n", "")):
         result = await mod._repo_owner_name()
-    assert result == "kirodotdev/KiroCrew"
+    assert result == "efmleads.com"
 
 
 # --- _find_worktree ambiguity rejection ---
 @pytest.mark.asyncio
 async def test_find_worktree_ambiguous():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     wts = [
         {"path": "/a/feature-x", "is_main": False},
@@ -1518,7 +1518,7 @@ async def test_find_worktree_ambiguous():
 
 @pytest.mark.asyncio
 async def test_find_worktree_not_found():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(repository_mod, "_discover_worktrees", new_callable=AsyncMock, return_value=[]):
         result, err = await mod._find_worktree("nope")
@@ -1530,7 +1530,7 @@ async def test_find_worktree_not_found():
 @pytest.mark.asyncio
 async def test_worktree_remove_force_must_be_bool():
     """The /worktree/remove handler rejects non-boolean force."""
-    from kiro_crew.apps.builtins.dev_fleet.server import api_dev_fleet_worktree_remove
+    from efm_go.apps.builtins.dev_fleet.server import api_dev_fleet_worktree_remove
 
     # Build a mock request with non-bool force
     async def fake_json():
@@ -1540,7 +1540,7 @@ async def test_worktree_remove_force_must_be_bool():
     request.json = fake_json
     request.content_length = 100
 
-    with patch("kiro_crew.apps.builtins.dev_fleet.repository._valid_worktree_names", new_callable=AsyncMock, return_value={"test-wt"}):
+    with patch("efm_go.apps.builtins.dev_fleet.repository._valid_worktree_names", new_callable=AsyncMock, return_value={"test-wt"}):
         resp = await api_dev_fleet_worktree_remove(request)
     assert resp.status == 400
     body = json.loads(resp.body)
@@ -1552,7 +1552,7 @@ async def test_worktree_remove_force_must_be_bool():
 async def test_sync_returns_409_when_already_running():
     import asyncio
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     # Inject a fake running sync with a live task + process
     worktree_ops_mod._SYNC_RID = "fake123"
@@ -1582,7 +1582,7 @@ async def test_sync_returns_409_when_already_running():
 
 # --- redaction ---
 def test_redact_applied():
-    from kiro_crew.apps.builtins.dev_fleet.server import _redact
+    from efm_go.apps.builtins.dev_fleet.server import _redact
 
     # Should not crash on normal strings
     assert _redact("hello world") == "hello world"
@@ -1595,7 +1595,7 @@ def test_redact_applied():
 @pytest.mark.asyncio
 async def test_disk_name_derivation_from_path():
     """_disk() derives worktree name from w['path']."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     mod._DISK.update({"status": "idle", "total_mb": None, "per": {}})
 
@@ -1622,7 +1622,7 @@ async def test_disk_name_derivation_from_path():
 
 # --- _build_pending (server-side truth for build-pending chip) ---
 def test_build_pending_false_when_dist_older():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     original_start = mod._START_EPOCH
     # Set start epoch far in the future so dist mtime is always older
@@ -1640,7 +1640,7 @@ def test_build_pending_true_when_dist_newer():
     import tempfile
     from pathlib import Path
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     # Create a temp dir to act as dist
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -1663,7 +1663,7 @@ def test_build_pending_false_when_dist_missing():
     import tempfile
     from pathlib import Path
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     original_start = mod._START_EPOCH
     fleet_state_mod._START_EPOCH = 0  # very old — would be pending IF dist existed
@@ -1701,7 +1701,7 @@ async def test_fleet_build_does_not_bake_run_pointers():
     pointers; this pins that there is only one owner, so a future edit cannot
     quietly reintroduce a second, staler one.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     worktree_ops_mod._SYNC_RID = "test-rid-abc"
     try:
@@ -1726,7 +1726,7 @@ async def test_fleet_build_does_not_bake_run_pointers():
 
 @pytest.mark.asyncio
 async def test_fleet_includes_build_pending():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(repository_mod, "_discover_worktrees", new_callable=AsyncMock, return_value=[
         {"path": "/fake/main", "head": "abc1234", "branch": "main", "is_main": True}
@@ -1784,7 +1784,7 @@ def _fake_sel_capture(events):
 @pytest.mark.asyncio
 async def test_mutation_denied_emits_sel_event(monkeypatch):
     """A rejected worktree remove emits exactly one SEL event with outcome=denied."""
-    from kiro_crew.apps.builtins.dev_fleet.server import api_dev_fleet_worktree_remove
+    from efm_go.apps.builtins.dev_fleet.server import api_dev_fleet_worktree_remove
 
     events: list = []
     monkeypatch.setattr(runtime_mod, "_sel", lambda: _fake_sel_capture(events)())
@@ -1804,7 +1804,7 @@ async def test_mutation_denied_emits_sel_event(monkeypatch):
     request.can_read_body = True
 
     with patch(
-        "kiro_crew.apps.builtins.dev_fleet.repository._valid_worktree_names",
+        "efm_go.apps.builtins.dev_fleet.repository._valid_worktree_names",
         new_callable=AsyncMock, return_value={"other"},
     ):
         resp = await api_dev_fleet_worktree_remove(request)
@@ -1819,7 +1819,7 @@ async def test_mutation_denied_emits_sel_event(monkeypatch):
 @pytest.mark.asyncio
 async def test_mutation_success_emits_sel_event(monkeypatch):
     """A successful pod action emits exactly one SEL event with outcome=success."""
-    from kiro_crew.apps.builtins.dev_fleet.server import api_dev_fleet_pod_down
+    from efm_go.apps.builtins.dev_fleet.server import api_dev_fleet_pod_down
 
     events: list = []
     monkeypatch.setattr(runtime_mod, "_sel", lambda: _fake_sel_capture(events)())
@@ -1839,10 +1839,10 @@ async def test_mutation_success_emits_sel_event(monkeypatch):
     request.can_read_body = True
 
     with patch(
-        "kiro_crew.apps.builtins.dev_fleet.repository._find_worktree",
+        "efm_go.apps.builtins.dev_fleet.repository._find_worktree",
         new_callable=AsyncMock, return_value=({"name": "feature-x"}, None),
     ), patch(
-        "kiro_crew.apps.builtins.dev_fleet.worktree_ops._pod_down",
+        "efm_go.apps.builtins.dev_fleet.worktree_ops._pod_down",
         new_callable=AsyncMock, return_value={"ok": True},
     ):
         resp = await api_dev_fleet_pod_down(request)
@@ -1856,7 +1856,7 @@ async def test_mutation_success_emits_sel_event(monkeypatch):
 @pytest.mark.asyncio
 async def test_worktree_remove_non_string_name_is_400(monkeypatch):
     """A list-valued 'name' must be a 400, not a TypeError->500 (Codex R17 #2)."""
-    from kiro_crew.apps.builtins.dev_fleet.server import api_dev_fleet_worktree_remove
+    from efm_go.apps.builtins.dev_fleet.server import api_dev_fleet_worktree_remove
 
     monkeypatch.setattr(runtime_mod, "_sel", lambda: _fake_sel_capture([])())
 
@@ -1884,7 +1884,7 @@ async def test_worktree_remove_non_string_name_is_400(monkeypatch):
 async def test_mutation_ok_false_audited_as_denied(monkeypatch):
     """A refused operation reported as {"ok": false} with HTTP 200 must be
     audited as denied, never success (Codex R18 #1)."""
-    from kiro_crew.apps.builtins.dev_fleet.server import api_dev_fleet_worktree_remove
+    from efm_go.apps.builtins.dev_fleet.server import api_dev_fleet_worktree_remove
 
     events: list = []
     monkeypatch.setattr(runtime_mod, "_sel", lambda: _fake_sel_capture(events)())
@@ -1904,10 +1904,10 @@ async def test_mutation_ok_false_audited_as_denied(monkeypatch):
     request.can_read_body = True
 
     with patch(
-        "kiro_crew.apps.builtins.dev_fleet.repository._valid_worktree_names",
+        "efm_go.apps.builtins.dev_fleet.repository._valid_worktree_names",
         new_callable=AsyncMock, return_value={"feature-x"},
     ), patch(
-        "kiro_crew.apps.builtins.dev_fleet.worktree_ops._worktree_remove",
+        "efm_go.apps.builtins.dev_fleet.worktree_ops._worktree_remove",
         new_callable=AsyncMock,
         return_value={"ok": False, "error": "worktree is dirty"},
     ):
@@ -1921,7 +1921,7 @@ async def test_mutation_ok_false_audited_as_denied(monkeypatch):
 @pytest.mark.asyncio
 async def test_run_record_includes_started():
     """New run records carry a 'started' timestamp for FE reattach (Codex R18 #2)."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     before = time.time()
     rid = await mod._start_run("test-label", ["true"])
@@ -1941,7 +1941,7 @@ async def test_run_record_includes_started():
 def test_escalation_cleanup_skips_symlinked_app_dir(tmp_path, monkeypatch):
     """A symlinked escalated app dir must never be followed/deleted — the
     link target lives outside the apps tree (Codex R19 #2)."""
-    import kiro_crew.apps.manager as mgr
+    import efm_go.apps.manager as mgr
 
     apps_root = tmp_path / "apps"
     apps_root.mkdir()
@@ -1970,7 +1970,7 @@ def test_escalation_cleanup_skips_symlinked_app_dir(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_pod_guard_rejects_foreign_pinned_checkout(monkeypatch, tmp_path):
     """A pod pinned to another repository's checkout must refuse the operation."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     ours = tmp_path / "repo-a" / "kirocrew-wt-feature"
     ours.mkdir(parents=True)
@@ -1990,7 +1990,7 @@ async def test_pod_guard_rejects_foreign_pinned_checkout(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_pod_guard_allows_matching_or_unpinned(monkeypatch, tmp_path):
     """Matching pin or no pin at all proceeds."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     ours = tmp_path / "kirocrew-wt-feature"
     ours.mkdir()
@@ -2014,7 +2014,7 @@ async def test_pod_guard_allows_matching_or_unpinned(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_pod_guard_fails_closed_on_pin_read_error(monkeypatch, tmp_path):
     """Cannot read the pin state -> refuse the pod operation."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     ours = tmp_path / "kirocrew-wt-feature"
     ours.mkdir()
@@ -2032,7 +2032,7 @@ async def test_pod_guard_fails_closed_on_pin_read_error(monkeypatch, tmp_path):
 async def test_pod_guard_denies_pin_file_without_checkout(monkeypatch, tmp_path):
     """A pin file that exists but has no verifiable CHECKOUT is ambiguous
     pod identity -> deny (Codex R23 #2)."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     ours = tmp_path / "kirocrew-wt-feature"
     ours.mkdir()
@@ -2050,7 +2050,7 @@ async def test_pod_guard_denies_pin_file_without_checkout(monkeypatch, tmp_path)
 def test_read_pin_strict_propagates_read_errors(tmp_path):
     """_read_pin_strict must raise (not return empty) when the pin file
     exists but cannot be read."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     pods = tmp_path / "pods"
     pods.mkdir()
@@ -2077,7 +2077,7 @@ def test_read_pin_strict_propagates_read_errors(tmp_path):
 
 def test_escalation_cleanup_skips_symlinked_meta_file(tmp_path, monkeypatch):
     """A symlinked installed.json must never be read (Codex R23 #1)."""
-    import kiro_crew.apps.manager as mgr
+    import efm_go.apps.manager as mgr
 
     apps_root = tmp_path / "apps"
     apps_root.mkdir()
@@ -2103,7 +2103,7 @@ def test_escalation_cleanup_skips_symlinked_meta_file(tmp_path, monkeypatch):
 # --- credential-free build env + pin symlink hardening (Codex R24) ---
 def test_build_env_excludes_credentials(monkeypatch):
     """Build/CLI subprocess env must be allowlisted — gateway tokens excluded."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-secret")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "aws-secret")
@@ -2139,7 +2139,7 @@ def test_build_env_passes_npm_registry_but_drops_credential_shaped_keys(monkeypa
     build``) so both resolve against the same registry. A credential-shaped
     variable next to it must still be dropped by the same allowlist.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     monkeypatch.setenv("NPM_CONFIG_REGISTRY", "https://registry.npmjs.org")
     monkeypatch.setenv("NPM_CONFIG__AUTHTOKEN", "npm-secret-token")
@@ -2161,7 +2161,7 @@ def test_build_env_rejects_npm_registry_values_that_smuggle_credentials(monkeypa
     and an unrelated credential-shaped variable next to it is still dropped
     too.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     dropped = (
         "https://u:tok@registry.example/",  # userinfo
@@ -2257,7 +2257,7 @@ def test_build_env_carries_systemroot_on_windows(monkeypatch):
 
 def test_read_pin_strict_rejects_symlinked_env(tmp_path):
     """A symlinked pin file must raise, never be read (Codex R24 #2)."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     pods = tmp_path / "pods"
     pods.mkdir()
@@ -2279,7 +2279,7 @@ def test_read_pin_strict_rejects_symlinked_env(tmp_path):
 
 def test_read_pin_strict_rejects_escape(tmp_path):
     """A pin path resolving outside pods_dir must raise."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     pods = tmp_path / "pods"
     pods.mkdir()
@@ -2299,7 +2299,7 @@ def test_read_pin_strict_rejects_escape(tmp_path):
 @pytest.mark.asyncio
 async def test_completed_runs_are_evicted_beyond_cap():
     """Completed run records are bounded; running entries survive (Codex R28)."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     async with mod._RUNS_LOCK:
         saved = dict(mod._RUNS)
@@ -2335,7 +2335,7 @@ async def test_completed_runs_are_evicted_beyond_cap():
 @pytest.mark.asyncio
 async def test_pod_guard_denies_active_unpinned_pod(tmp_path):
     """No pin + ACTIVE unit under the name = unattributable foreign pod -> deny."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     ours = tmp_path / "kirocrew-wt-feature"
     ours.mkdir()
@@ -2360,7 +2360,7 @@ async def test_pod_guard_denies_active_unpinned_pod(tmp_path):
 
 def test_escalation_cleanup_keeps_dir_when_data_present(tmp_path, monkeypatch):
     """Non-empty data/ -> whole dir kept, no partial deletion (R29 #2)."""
-    import kiro_crew.apps.manager as mgr
+    import efm_go.apps.manager as mgr
 
     apps_root = tmp_path / "apps"
     apps_root.mkdir()
@@ -2382,7 +2382,7 @@ def test_escalation_cleanup_keeps_dir_when_data_present(tmp_path, monkeypatch):
 
 def test_escalation_cleanup_removes_empty_builtin_via_pinned_fd(tmp_path, monkeypatch):
     """No data/ -> dir removed through the pinned descriptor (R29 #2)."""
-    import kiro_crew.apps.manager as mgr
+    import efm_go.apps.manager as mgr
 
     apps_root = tmp_path / "apps"
     apps_root.mkdir()
@@ -2443,7 +2443,7 @@ async def test_run_cmd_pins_git_protocols(monkeypatch):
     """Every _run_cmd spawn env carries the full git neutralizer set so an
     ext:: origin / malicious fsmonitor / hooksPath / credential.helper /
     sshCommand from agent-writable .git/config is refused by git itself."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     captured = {}
 
@@ -2458,7 +2458,7 @@ async def test_run_cmd_pins_git_protocols(monkeypatch):
 
 
 def test_build_env_pins_git_protocols():
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     env = mod._build_env()
     _assert_git_neutralizers(env)
@@ -2521,7 +2521,7 @@ async def test_start_run_readline_overrun_kills_process_tree(monkeypatch):
     """When the output stream loop raises (e.g. a single line exceeding the
     64 KiB asyncio stream limit), the still-running subprocess tree is
     killed instead of being orphaned past its run record."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     killed: list[int] = []
 
@@ -2590,7 +2590,7 @@ async def test_sync_fetch_standard_merge_strict(monkeypatch):
     "standard" while the checkout-performing ff-merge (which executes
     repo-controlled smudge filters / merge drivers) runs "strict" with
     credential dirs hidden, like the pip/npm build steps."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     captured: list[tuple[list, str]] = []
 
@@ -2623,7 +2623,7 @@ async def test_sync_fetch_standard_merge_strict(monkeypatch):
 @pytest.mark.asyncio
 async def test_removal_refuses_when_commit_races_verdict():
     """A commit pushed after merge causes OID divergence -> refuse non-forced removal."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with patch.object(repository_mod, "_find_worktree", new_callable=AsyncMock,
                       return_value=({"path": "/x/wt-feat", "branch": "feat-x",
@@ -2650,7 +2650,7 @@ async def test_removal_refuses_when_commit_races_verdict():
 async def test_owner_repo_failure_not_cached_forever():
     """A transient owner/repo lookup failure retries after the TTL instead
     of disabling PR status until gateway restart; success is cached."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     lookups = AsyncMock(side_effect=[None, "own/repo"])
     fleet_state_mod._OWNER_REPO = None
@@ -2676,7 +2676,7 @@ async def test_owner_repo_failure_not_cached_forever():
 def test_escalation_cleanup_fails_closed_without_dirfd(tmp_path, monkeypatch):
     """Platforms without dir_fd primitives cannot pin validation to the
     deletion, so cleanup must be skipped entirely (fail closed)."""
-    import kiro_crew.apps.manager as mgr
+    import efm_go.apps.manager as mgr
 
     apps_root = tmp_path / "apps"
     apps_root.mkdir()
@@ -2700,7 +2700,7 @@ def test_escalation_cleanup_swapped_entry_survives(tmp_path, monkeypatch):
     pinned inode."""
     import os as _os
 
-    import kiro_crew.apps.manager as mgr
+    import efm_go.apps.manager as mgr
 
     apps_root = tmp_path / "apps"
     apps_root.mkdir()
@@ -3179,7 +3179,7 @@ async def test_fleet_handler_missing_repo_returns_error_payload():
 def _make_checkout(root: Path) -> Path:
     """Create a directory carrying every Kiro Crew checkout marker."""
     (root / ".git").mkdir(parents=True)
-    (root / "src" / "kiro_crew").mkdir(parents=True)
+    (root / "src" / "efm_go").mkdir(parents=True)
     (root / "pyproject.toml").write_text("[project]\nname = 'kiro-crew'\n")
     return root
 
@@ -3699,7 +3699,7 @@ def test_backend_spawn_env_includes_kirocrew_home(monkeypatch):
     """The app backend must resolve the SAME config home as the gateway:
     minimal_env() strips KIROCREW_HOME, so spawn must re-inject it or the
     backend reads the wrong .app_secret and every proxied call 401s."""
-    import kiro_crew.apps.registry as registry
+    import efm_go.apps.registry as registry
 
     monkeypatch.setenv("KIROCREW_HOME", "/tmp/some-pod-home")
     env = registry.minimal_env(KIROCREW_HOME="/tmp/some-pod-home")
@@ -3713,7 +3713,7 @@ def test_backend_spawn_env_passes_project_dir(monkeypatch):
     (e.g. dev-fleet worktree discovery) need the gateway's source checkout."""
     import inspect
 
-    import kiro_crew.apps.backend as backend_mod
+    import efm_go.apps.backend as backend_mod
 
     src = inspect.getsource(backend_mod)
     assert 'KIROCREW_HOME=str(config_dir())' in src
@@ -3868,7 +3868,7 @@ async def test_restart_gateway_audited():
     (the backend does not expose it — see gateway_routes.py)."""
     import inspect
 
-    from kiro_crew.apps.builtins.dev_fleet import gateway_routes
+    from efm_go.apps.builtins.dev_fleet import gateway_routes
 
     assert not hasattr(mod, "api_dev_fleet_restart_gateway")
     fn = gateway_routes.handle_restart_gateway
@@ -3922,7 +3922,7 @@ def _mk_make_live_wt(tmp_path, *, venv: bool = False, dist: bool = False,
         kcbin.write_text("#!/bin/sh\n")
         kcbin.chmod(0o755 if venv_exec else 0o644)
     if dist:
-        dd = wt / "src" / "kiro_crew" / "static" / "dist"
+        dd = wt / "src" / "efm_go" / "static" / "dist"
         dd.mkdir(parents=True, exist_ok=True)
         (dd / "index.html").write_text("<html></html>")
     return wt
@@ -4402,7 +4402,7 @@ async def test_make_live_already_live_space_path(monkeypatch, tmp_path):
     kc = vb / "kirocrew"
     kc.write_text("#!/bin/sh\n")
     kc.chmod(0o755)
-    dd = wt / "src" / "kiro_crew" / "static" / "dist"
+    dd = wt / "src" / "efm_go" / "static" / "dist"
     dd.mkdir(parents=True)
     (dd / "index.html").write_text("<html></html>")
     _stub_make_live(monkeypatch, wt, live=str(wt.resolve()))
@@ -4417,7 +4417,7 @@ def test_make_live_route_registered_and_audited():
 
     from aiohttp import web as _web
 
-    from kiro_crew.apps.builtins.dev_fleet import gateway_routes
+    from efm_go.apps.builtins.dev_fleet import gateway_routes
 
     backend_paths = [getattr(r.resource, "canonical", None) for r in mod.create_app().router.routes()]
     assert "/api/make-live" not in backend_paths
@@ -4435,7 +4435,7 @@ def test_in_pod_tristate(monkeypatch, tmp_path):
     """_in_pod is tri-state: True inside a pod home, False outside, and None
     when the config home cannot be resolved (fail-closed at the source — the
     previous fail-OPEN False would have let a pod cut the live gateway)."""
-    import kiro_crew.config.loader as cfg_loader
+    import efm_go.config.loader as cfg_loader
 
     pod_home = tmp_path / ".kirocrew-pods" / "kirocrew-wt-x"
     pod_home.mkdir(parents=True)
@@ -4667,7 +4667,7 @@ async def test_make_live_escapes_special_char_worktree(monkeypatch, tmp_path):
     _kc = wt / ".venv" / "bin" / "kirocrew"
     _kc.write_text("#!/bin/sh\n")
     _kc.chmod(0o755)
-    dd = wt / "src" / "kiro_crew" / "static" / "dist"
+    dd = wt / "src" / "efm_go" / "static" / "dist"
     dd.mkdir(parents=True)
     (dd / "index.html").write_text("<html></html>")
     ptr_dir = tmp_path / "ptr"
@@ -5098,7 +5098,7 @@ async def test_live_worktree_path_prefers_pointer_over_service(monkeypatch, tmp_
     (target_wt / ".venv" / "bin").mkdir(parents=True)
     (target_wt / ".venv" / "bin" / "kirocrew").write_text("#!/bin/sh\n")
     (target_wt / ".venv" / "bin" / "kirocrew").chmod(0o755)
-    (target_wt / "src" / "kiro_crew").mkdir(parents=True)
+    (target_wt / "src" / "efm_go").mkdir(parents=True)
 
     # Write a real pointer file that points at target_wt.
     ptr_dir = tmp_path / "ptr"
@@ -5138,7 +5138,7 @@ async def test_live_worktree_path_reports_running_image_while_staged(monkeypatch
     (target_wt / ".venv" / "bin").mkdir(parents=True)
     (target_wt / ".venv" / "bin" / "kirocrew").write_text("#!/bin/sh\n")
     (target_wt / ".venv" / "bin" / "kirocrew").chmod(0o755)
-    (target_wt / "src" / "kiro_crew").mkdir(parents=True)
+    (target_wt / "src" / "efm_go").mkdir(parents=True)
     running_wt = tmp_path / "kirocrew-running"
     running_wt.mkdir(parents=True)
 
@@ -5168,7 +5168,7 @@ async def test_live_worktree_path_honours_pointer_when_checkout_unknown(monkeypa
     (target_wt / ".venv" / "bin").mkdir(parents=True)
     (target_wt / ".venv" / "bin" / "kirocrew").write_text("#!/bin/sh\n")
     (target_wt / ".venv" / "bin" / "kirocrew").chmod(0o755)
-    (target_wt / "src" / "kiro_crew").mkdir(parents=True)
+    (target_wt / "src" / "efm_go").mkdir(parents=True)
 
     ptr_file = tmp_path / "ptr" / "live_target.json"
     ptr_file.parent.mkdir(parents=True)
@@ -5521,7 +5521,7 @@ async def test_cancel_invalid_target_is_a_refusal_not_a_crash(monkeypatch, tmp_p
     running, other, ptr = _stage_a_cutover(monkeypatch, tmp_path)
 
     def explode(_checkout):
-        raise live_mod.live_target.InvalidTarget("no src/kiro_crew in target")
+        raise live_mod.live_target.InvalidTarget("no src/efm_go in target")
 
     monkeypatch.setattr(live_mod.live_target, "write_target", explode)
 
@@ -5625,7 +5625,7 @@ def test_running_checkout_resolves_this_checkout():
     which is what makes it authoritative where a service definition is not."""
     got = mod._running_checkout()
     assert got is not None
-    assert (got / "src" / "kiro_crew").is_dir()
+    assert (got / "src" / "efm_go").is_dir()
 
 
 @pytest.mark.asyncio
@@ -5928,7 +5928,7 @@ async def test_sync_stages_dist_on_a_stock_checkout(monkeypatch):
     """The staging step is part of the sync on a stock checkout.
 
     `npm run build` writes website/dist while the dashboard serves
-    src/kiro_crew/static/dist; without this step Pull+Build reports success and
+    src/efm_go/static/dist; without this step Pull+Build reports success and
     the gateway keeps serving the previous bundle.
     """
     monkeypatch.setattr(worktree_ops_mod.frontend, "edition_configured", lambda: False)
@@ -6177,11 +6177,11 @@ async def test_upstream_remote_rejects_option_injection(monkeypatch):
 
 def test_find_cli_is_module_invocation_only(nonbundled_python_without_user_site):
     """No filesystem resolution: a planted `kirocrew` shim must never become
-    the pod CLI. Always our interpreter + the RUNNABLE ``kiro_crew`` package
-    entry (its __main__), never ``kiro_crew.cli`` (no __main__ guard -> #220)."""
+    the pod CLI. Always our interpreter + the RUNNABLE ``efm_go`` package
+    entry (its __main__), never ``efm_go.cli`` (no __main__ guard -> #220)."""
     import sys as _sys
 
-    assert mod._find_cli() == [_sys.executable, "-s", "-P", "-m", "kiro_crew"]
+    assert mod._find_cli() == [_sys.executable, "-s", "-P", "-m", "efm_go"]
 
     import subprocess as _sp
 
@@ -6350,7 +6350,7 @@ async def test_prunable_merged_unverified_when_oid_lookup_fails():
 def test_strict_sandbox_hides_gh_config():
     """.config/gh (the gh helper's token store) must be hidden from the
     strict tier where worktree-controlled code executes."""
-    import kiro_crew.sandbox as sandbox_mod
+    import efm_go.sandbox as sandbox_mod
 
     assert ".config/gh" in sandbox_mod._STRICT_DIRS
     assert ".config/gh" not in sandbox_mod._STANDARD_DIRS
@@ -6359,7 +6359,7 @@ def test_strict_sandbox_hides_gh_config():
 @_POSIX_ONLY
 def test_build_preexec_raises_nofile_ceiling(monkeypatch):
     """Build-class spawns get a 65536 NOFILE ceiling (default 1024 EMFILEs vite)."""
-    import kiro_crew.sandbox as sandbox_mod
+    import efm_go.sandbox as sandbox_mod
 
     monkeypatch.setattr(sandbox_mod, "_BUILD_RESOURCE_PREEXEC", sandbox_mod._UNSET)
     captured: dict = {}
@@ -6368,7 +6368,7 @@ def test_build_preexec_raises_nofile_ceiling(monkeypatch):
         captured.update((cfg or {}).get("resource_limits") or {})
         return lambda: None
 
-    monkeypatch.setattr("kiro_crew.security.apply_resource_limits", fake_apply)
+    monkeypatch.setattr("efm_go.security.apply_resource_limits", fake_apply)
     fn = sandbox_mod.build_resource_limit_preexec()
     assert fn is not None
     assert captured["max_open_files"] >= 65536
@@ -6378,11 +6378,11 @@ def test_build_preexec_raises_nofile_ceiling(monkeypatch):
 def test_build_preexec_tolerates_malformed_config(monkeypatch):
     """A junk operator value ("lots") must not raise — the spawn falls back
     to the ceiling instead of leaving Dev Fleet unable to start."""
-    import kiro_crew.sandbox as sandbox_mod
+    import efm_go.sandbox as sandbox_mod
 
     monkeypatch.setattr(sandbox_mod, "_BUILD_RESOURCE_PREEXEC", sandbox_mod._UNSET)
     monkeypatch.setattr(
-        "kiro_crew.config.loader._raw_config",
+        "efm_go.config.loader._raw_config",
         lambda: {"resource_limits": {"max_open_files": "lots"}},
     )
     captured: dict = {}
@@ -6391,21 +6391,21 @@ def test_build_preexec_tolerates_malformed_config(monkeypatch):
         captured.update((cfg or {}).get("resource_limits") or {})
         return lambda: None
 
-    monkeypatch.setattr("kiro_crew.security.apply_resource_limits", fake_apply)
+    monkeypatch.setattr("efm_go.security.apply_resource_limits", fake_apply)
     assert sandbox_mod.build_resource_limit_preexec() is not None
     assert captured["max_open_files"] == sandbox_mod._BUILD_NOFILE_CEILING
 
 
 def test_build_pending_dist_path_is_package_static_dist():
-    """The dist probe must resolve to kiro_crew/static/dist — the parent-chain
+    """The dist probe must resolve to efm_go/static/dist — the parent-chain
     silently broke when this module moved from dashboard/handlers/."""
     import pathlib
 
     root = pathlib.Path(mod.__file__).resolve().parents[3]
-    assert root.name == "kiro_crew"
+    assert root.name == "efm_go"
     assert mod._build_pending() in (True, False)
     probed = root / "static" / "dist"
-    assert probed.parts[-3:] == ("kiro_crew", "static", "dist")
+    assert probed.parts[-3:] == ("efm_go", "static", "dist")
 
 
 @pytest.mark.asyncio
@@ -6506,7 +6506,7 @@ def test_gateway_unit_resolves_pod_instance(monkeypatch, tmp_path):
     pod_home = tmp_path / ".kirocrew-pods" / "kirocrew-wt-feature"
     pod_home.mkdir(parents=True)
     monkeypatch.setenv("KIROCREW_HOME", str(pod_home))
-    from kiro_crew.config import loader as cfg_loader
+    from efm_go.config import loader as cfg_loader
     if hasattr(cfg_loader, "_config_dir_cache"):
         monkeypatch.setattr(cfg_loader, "_config_dir_cache", None, raising=False)
     assert mod._gateway_unit_name() == "kirocrew-pod@kirocrew-wt-feature.service"
@@ -6658,10 +6658,10 @@ def test_pick_summary_falls_back_to_latest_when_all_bumps():
 # --- html origin parsing (issue link base) ---
 def test_parse_html_repo_base_variants():
     p = mod._parse_html_repo_base
-    assert p("git@github.com:kirodotdev/KiroCrew.git") == "https://github.com/kirodotdev/KiroCrew"
-    assert p("https://github.com/kirodotdev/KiroCrew.git") == "https://github.com/kirodotdev/KiroCrew"
-    assert p("https://github.com/kirodotdev/KiroCrew") == "https://github.com/kirodotdev/KiroCrew"
-    assert p("ssh://git@github.com/kirodotdev/KiroCrew.git") == "https://github.com/kirodotdev/KiroCrew"
+    assert p("git@github.com:efmleads.com.git") == "https://efmleads.com"
+    assert p("https://efmleads.com.git") == "https://efmleads.com"
+    assert p("https://efmleads.com") == "https://efmleads.com"
+    assert p("ssh://git@efmleads.com.git") == "https://efmleads.com"
     assert p("") is None
     assert p("not a url") is None
 
@@ -6700,13 +6700,13 @@ async def test_build_context_parses_pr_body_and_commits():
     with patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"), \
          patch.object(repository_mod, "_git", new_callable=AsyncMock, return_value=log), \
          patch.object(fleet_state_mod, "_html_repo_base", new_callable=AsyncMock,
-                      return_value="https://github.com/kirodotdev/KiroCrew"), \
+                      return_value="https://efmleads.com"), \
          patch.object(repository_mod, "_load_dev_fleet_cfg",
                       return_value={"ticket_url_template": "https://t.corp/{id}"}):
         ctx = await mod._build_context("feat/thing", "/wt/thing", {"_body": "Closes #147\nsee #12"})
     # ordered-unique across pr body + commit subjects + commit bodies
     assert [i["number"] for i in ctx["issues"]] == [147, 12, 99]
-    assert ctx["issues"][0]["url"] == "https://github.com/kirodotdev/KiroCrew/issues/147"
+    assert ctx["issues"][0]["url"] == "https://efmleads.com/issues/147"
     assert [t["id"] for t in ctx["tickets"]] == ["TT-5"]
     assert ctx["tickets"][0]["url"] == "https://t.corp/TT-5"
     assert ctx["summary"] == "feat(dev-fleet): surface context"
@@ -7051,7 +7051,7 @@ async def test_build_state_is_reported_even_where_pods_cannot_run(tmp_path):
     exe = binp / ("kirocrew.exe" if platform_compat.IS_WINDOWS else "kirocrew")
     exe.write_text("#!/bin/sh\n")
     exe.chmod(0o755)
-    (wt / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True)
+    (wt / "src" / "efm_go" / "static" / "dist").mkdir(parents=True)
 
     fleet = await _fleet_with(
         [
@@ -7085,7 +7085,7 @@ async def test_main_checkout_build_state_is_probed(tmp_path):
     exe = binp / ("kirocrew.exe" if platform_compat.IS_WINDOWS else "kirocrew")
     exe.write_text("#!/bin/sh\n")
     exe.chmod(0o755)
-    (main_co / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True)
+    (main_co / "src" / "efm_go" / "static" / "dist").mkdir(parents=True)
 
     fleet = await _fleet_with(
         [{"path": str(main_co), "branch": "main", "is_main": True}],
@@ -7105,18 +7105,18 @@ async def test_main_checkout_build_state_is_probed(tmp_path):
 # =============================================================================
 # Regression: _find_cli must target a RUNNABLE entry point
 # =============================================================================
-def test_find_cli_targets_kiro_crew_package(nonbundled_python_without_user_site):
-    """_find_cli must invoke the ``kiro_crew`` package (its __main__), not
-    ``kiro_crew.cli`` — the latter has no __main__ guard and no-ops silently."""
+def test_find_cli_targets_efm_go_package(nonbundled_python_without_user_site):
+    """_find_cli must invoke the ``efm_go`` package (its __main__), not
+    ``efm_go.cli`` — the latter has no __main__ guard and no-ops silently."""
     import sys
 
-    assert mod._find_cli() == [sys.executable, "-s", "-P", "-m", "kiro_crew"]
+    assert mod._find_cli() == [sys.executable, "-s", "-P", "-m", "efm_go"]
 
 
-def test_kiro_crew_module_entry_actually_runs():
+def test_efm_go_module_entry_actually_runs():
     """The entry point _find_cli uses must actually run main() and emit output.
 
-    Guards the root cause of #220: ``python -m kiro_crew.cli`` imported the
+    Guards the root cause of #220: ``python -m efm_go.cli`` imported the
     module, ran no main(), and exited 0 with EMPTY output — so every pod op was
     a silent no-op reported as success. A runnable entry prints usage on --help.
     """
@@ -7124,7 +7124,7 @@ def test_kiro_crew_module_entry_actually_runs():
     import sys
 
     proc = subprocess.run(
-        [sys.executable, "-m", "kiro_crew", "--help"],
+        [sys.executable, "-m", "efm_go", "--help"],
         capture_output=True, text=True, timeout=90,
     )
     assert proc.returncode == 0
@@ -7733,17 +7733,17 @@ def test_register_skills_creates_symlinks_for_bundled_skills(tmp_path, monkeypat
     a second app-bridged copy would drift and be loaded nondeterministically
     against it.
     """
-    from kiro_crew.apps.bridges import _register_skills
-    from kiro_crew.apps.manifest import AppManifest
+    from efm_go.apps.bridges import _register_skills
+    from efm_go.apps.manifest import AppManifest
 
     fake_config = tmp_path / "config"
     fake_config.mkdir()
     monkeypatch.setattr(
-        "kiro_crew.apps.bridges.config_dir", lambda: fake_config
+        "efm_go.apps.bridges.config_dir", lambda: fake_config
     )
 
     app_root = Path(__file__).resolve().parent.parent / (
-        "src/kiro_crew/apps/builtins/dev_fleet"
+        "src/efm_go/apps/builtins/dev_fleet"
     )
 
     manifest = AppManifest(
@@ -7777,17 +7777,17 @@ def test_register_skills_creates_symlinks_for_bundled_skills(tmp_path, monkeypat
 
 def test_register_skills_tolerates_missing_feature_demo_recording(tmp_path, monkeypatch):
     """feature-demo-recording absence must not crash skill registration."""
-    from kiro_crew.apps.bridges import _register_skills
-    from kiro_crew.apps.manifest import AppManifest
+    from efm_go.apps.bridges import _register_skills
+    from efm_go.apps.manifest import AppManifest
 
     fake_config = tmp_path / "config"
     fake_config.mkdir()
     monkeypatch.setattr(
-        "kiro_crew.apps.bridges.config_dir", lambda: fake_config
+        "efm_go.apps.bridges.config_dir", lambda: fake_config
     )
 
     app_root = Path(__file__).resolve().parent.parent / (
-        "src/kiro_crew/apps/builtins/dev_fleet"
+        "src/efm_go/apps/builtins/dev_fleet"
     )
 
     manifest = AppManifest(
@@ -7856,7 +7856,7 @@ def test_own_checkout_path_resolves_this_worktree():
     own = mod._own_checkout_path()
     assert own is not None
     from pathlib import Path
-    assert (Path(own) / "src" / "kiro_crew").is_dir()
+    assert (Path(own) / "src" / "efm_go").is_dir()
 
 
 # =============================================================================
@@ -7865,14 +7865,14 @@ def test_own_checkout_path_resolves_this_worktree():
 
 
 def test_parse_step_marker_index_and_label():
-    from kiro_crew.apps.builtins.dev_fleet.server import _parse_step_marker
+    from efm_go.apps.builtins.dev_fleet.server import _parse_step_marker
 
     assert _parse_step_marker("::step::0::Pull") == (0, "Pull")
     assert _parse_step_marker("::step::3::pip install") == (3, "pip install")
 
 
 def test_parse_step_marker_non_marker_and_partial():
-    from kiro_crew.apps.builtins.dev_fleet.server import _parse_step_marker
+    from efm_go.apps.builtins.dev_fleet.server import _parse_step_marker
 
     assert _parse_step_marker("regular build output") == (None, None)
     assert _parse_step_marker("::step::") == (None, None)  # no index or label
@@ -8338,7 +8338,7 @@ def test_declared_platforms_all_resolve_to_a_real_sys_platform():
     so a declaration can claim a platform the gate rejects. `windows` was in
     exactly that state until the mapping row landed.
     """
-    from kiro_crew.apps.manifest import PlatformConfig
+    from efm_go.apps.manifest import PlatformConfig
 
     manifest = json.loads(
         (Path(mod.__file__).parent / "app.json").read_text(encoding="utf-8")
@@ -8431,7 +8431,7 @@ async def test_sync_builds_and_stages_under_one_lock_holder(monkeypatch, tmp_pat
 
 def test_kill_tree_reaps_a_descendant_that_escaped_the_process_group():
     """A new-session descendant is outside the group, so killpg alone misses it."""
-    from kiro_crew.apps.builtins.dev_fleet import server as dev
+    from efm_go.apps.builtins.dev_fleet import server as dev
 
     killed: list[int] = []
 
@@ -8454,7 +8454,7 @@ def test_kill_tree_enumerates_descendants_before_killing_anything():
     A kill reparents survivors to init and erases the PPID links, so a snapshot
     taken after the kill cannot see the processes that escaped.
     """
-    from kiro_crew.apps.builtins.dev_fleet import server as dev
+    from efm_go.apps.builtins.dev_fleet import server as dev
 
     events: list[str] = []
 
@@ -8475,7 +8475,7 @@ def test_kill_tree_enumerates_descendants_before_killing_anything():
 
 def test_kill_tree_survives_an_already_dead_descendant():
     """The group kill usually reaps descendants; a dead pid must not raise."""
-    from kiro_crew.apps.builtins.dev_fleet import server as dev
+    from efm_go.apps.builtins.dev_fleet import server as dev
 
     def _kill(pid, *a, **k):
         if pid == 222:
@@ -8556,7 +8556,7 @@ def test_serving_install_reason_names_both_installs_and_a_remedy(tmp_path):
     assert reason is not None
     # Both sides must be named — one path alone does not identify the mismatch.
     assert tmp_path.name in reason
-    assert "kiro_crew" in reason
+    assert "efm_go" in reason
     assert "Make live" in reason
     # Problem first, action before the paths: a warn banner that leads with two
     # absolute paths and buries the remedy at the end gets skimmed.
@@ -8659,7 +8659,7 @@ async def test_serving_install_reason_recomputes_when_the_checkout_set_changes(
 async def test_force_remove_refuses_dirty_unmerged_worktree():
     """force=True must NOT destroy a dirty tree whose PR
     is unmerged — that combination is unrecoverable data loss."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -8693,7 +8693,7 @@ async def test_force_remove_refuses_dirty_merged_worktree():
     even when the PR IS merged — containment proves commits are shipped but
     says nothing about working-tree edits. --force bypasses git's dirty check
     and would irrecoverably destroy uncommitted edits."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -8737,7 +8737,7 @@ async def test_ancestry_gate_skips_ref_delete_when_not_ancestor():
     """When cached PR status wrongly says MERGED but the branch OID is NOT an
     ancestor of the base branch AND containment also fails at the ref-delete
     gate, the ref must survive (fail-closed gate)."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     git_calls: list[tuple] = []
 
@@ -8796,7 +8796,7 @@ async def test_ancestry_gate_skips_ref_delete_when_not_ancestor():
 @pytest.mark.asyncio
 async def test_ancestry_gate_allows_ref_delete_when_ancestor():
     """When PR is merged and branch OID IS an ancestor of base, ref IS deleted."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     git_calls: list[tuple] = []
     deleted_refs: list[str] = []
@@ -8854,7 +8854,7 @@ async def test_empty_branch_ref_survives_when_pr_not_merged():
     merged: an empty branch may simply not have been pushed yet, and the ref
     is the only local pointer to those commits (recoverable > irrecoverable).
     Regression test for kirodotdev#1554."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     deleted_refs: list[str] = []
 
@@ -8902,7 +8902,7 @@ async def test_removal_audit_log_emitted(caplog):
     """Successful removal emits a structured audit line with verdict fields."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -8928,7 +8928,7 @@ async def test_removal_audit_log_emitted(caplog):
         patch.object(runtime_mod, "_POD_AVAILABLE", False),
         patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(0, "", "")),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=False)
 
@@ -8952,7 +8952,7 @@ async def test_removal_invalidates_disk_cache():
     cache alongside evicting the fleet row, so the next poll re-aggregates
     instead of serving pre-removal totals for the rest of the TTL.
     """
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -8989,7 +8989,7 @@ async def test_removal_invalidates_disk_cache():
 @pytest.mark.asyncio
 async def test_start_run_invokes_on_finish_at_terminal_state():
     """_start_run's on_finish fires once when the run finishes."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     calls: list[int] = []
     rid = await mod._start_run("finish-test", ["true"], on_finish=lambda: calls.append(1))
@@ -9010,7 +9010,7 @@ async def test_start_run_invokes_on_finish_at_terminal_state():
 async def test_pod_provision_registers_disk_invalidation(monkeypatch):
     """Provisioning builds .venv/dist inside the measured worktree, so the
     provision run must carry the disk-cache invalidation hook."""
-    import kiro_crew.apps.builtins.dev_fleet.worktree_ops as wt_ops
+    import efm_go.apps.builtins.dev_fleet.worktree_ops as wt_ops
 
     captured: dict = {}
 
@@ -9041,7 +9041,7 @@ async def test_force_refuse_audit_log_emitted(caplog):
     """The dirty+unmerged force refusal also emits an audit line."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9061,7 +9061,7 @@ async def test_force_refuse_audit_log_emitted(caplog):
         ),
         patch.object(repository_mod, "_own_commits_count", new_callable=AsyncMock, return_value=3),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9083,7 +9083,7 @@ async def test_force_remove_refuses_unknown_dirty_state(caplog):
     Without the guard it falls through (fail-open)."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9103,7 +9103,7 @@ async def test_force_remove_refuses_unknown_dirty_state(caplog):
         ),
         patch.object(repository_mod, "_own_commits_count", new_callable=AsyncMock, return_value=3),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9125,7 +9125,7 @@ async def test_force_remove_refuses_stale_merged_cache(caplog):
     — must refuse. Without this fix the guard is bypassed entirely."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9153,7 +9153,7 @@ async def test_force_remove_refuses_stale_merged_cache(caplog):
         # verdict_oid pin succeeds so we reach the fresh-MERGED gate
         patch.object(repository_mod, "_git", new_callable=AsyncMock, return_value="abc123def456"),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9173,7 +9173,7 @@ async def test_force_remove_fresh_merged_refuses_dirty(caplog):
     says nothing about working-tree edits."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9204,7 +9204,7 @@ async def test_force_remove_fresh_merged_refuses_dirty(caplog):
         patch.object(runtime_mod, "_POD_AVAILABLE", False),
         patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(0, "", "")),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9226,7 +9226,7 @@ async def test_force_remove_fresh_merged_refuses_unknown_dirty(caplog):
     action=refused_unverifiable_merged."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9257,7 +9257,7 @@ async def test_force_remove_fresh_merged_refuses_unknown_dirty(caplog):
         patch.object(runtime_mod, "_POD_AVAILABLE", False),
         patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, return_value=(0, "", "")),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9277,7 +9277,7 @@ async def test_force_remove_clean_merged_proceeds():
     """Control: force=True + dirty=False + MERGED → removal proceeds WITHOUT --force.
     Clean-tree force removals on merged branches proceed but drop --force so git's
     own dirty check guards the TOCTOU window (round-6 fix)."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     run_cmd_calls: list[list[str]] = []
 
@@ -9333,7 +9333,7 @@ async def test_squash_merge_ref_deletion():
     """Squash-merge regression: PR merged, ancestry check fails (squash merge),
     containment check passes → ref IS deleted. Without this, squash-merged refs
     accumulated forever because ancestry is the only gate that passed."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     deleted_refs: list[str] = []
 
@@ -9410,7 +9410,7 @@ async def test_toctou_clean_unmerged_force_omits_git_force(caplog):
     'unmerged_clean_no_git_force' is emitted."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     captured_cmds: list[list[str]] = []
 
@@ -9482,7 +9482,7 @@ async def test_toctou_git_refusal_returns_error_with_audit(caplog):
     and emits the refused_dirty_at_removal audit line."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     async def _failing_run_cmd(cmd, **kwargs):
         if "worktree" in cmd and "remove" in cmd:
@@ -9512,7 +9512,7 @@ async def test_toctou_git_refusal_returns_error_with_audit(caplog):
         patch.object(runtime_mod, "_POD_AVAILABLE", False),
         patch.object(runtime_mod, "_run_cmd", new_callable=AsyncMock, side_effect=_failing_run_cmd),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9534,7 +9534,7 @@ async def test_containment_refuses_uncontained_fresh_head(caplog):
     force removal must be refused with refused_uncontained_fresh_head audit."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9568,7 +9568,7 @@ async def test_containment_refuses_uncontained_fresh_head(caplog):
         # Containment fails — new commits not in old PR head
         patch.object(fleet_state_mod, "_head_contained_in_pr", new_callable=AsyncMock, return_value=False),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9591,7 +9591,7 @@ async def test_containment_allows_when_contained():
 
     Pre-round-5 behavior was to allow this removal — the current contract
     refuses it to prevent irrecoverable loss of uncommitted edits."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9645,7 +9645,7 @@ async def test_containment_pin_falsy_refuses_unpinnable(caplog):
     skipped containment when pinned_oid was falsy."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9667,7 +9667,7 @@ async def test_containment_pin_falsy_refuses_unpinnable(caplog):
         # rev-parse fails → returns None (transient git lock contention)
         patch.object(repository_mod, "_git", new_callable=AsyncMock, return_value=None),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9685,7 +9685,7 @@ async def test_containment_pin_empty_string_refuses_unpinnable(caplog):
     """Same as above but rev-parse returns empty string (another falsy form)."""
     import logging
 
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9707,7 +9707,7 @@ async def test_containment_pin_empty_string_refuses_unpinnable(caplog):
         # rev-parse returns empty string (another failure mode)
         patch.object(repository_mod, "_git", new_callable=AsyncMock, return_value=""),
         patch.object(repository_mod, "_upstream_remote", new_callable=AsyncMock, return_value="origin"),
-        caplog.at_level(logging.INFO, logger="kiro_crew.apps.builtins.dev_fleet.server"),
+        caplog.at_level(logging.INFO, logger="efm_go.apps.builtins.dev_fleet.server"),
     ):
         result = await mod._worktree_remove("feat-x", force=True)
 
@@ -9722,7 +9722,7 @@ async def test_containment_pin_empty_string_refuses_unpinnable(caplog):
 async def test_dirty_unmerged_message_does_not_promise_force_override():
     """Message regression: the non-forced dirty refusal does not say
     'use force to override' since force is also refused for dirty+unmerged."""
-    import kiro_crew.apps.builtins.dev_fleet.server as mod
+    import efm_go.apps.builtins.dev_fleet.server as mod
 
     with (
         patch.object(
@@ -9764,7 +9764,7 @@ def _fg(tmp_path: Path, *, port: int = 7777, pid: int = 4242,
         ports: "list[int] | None" = None, pids: "dict[int, int] | None" = None,
         confined: "str | None" = None):
     """A ForegroundBackend wired to fakes. Returns (backend, spawned_argvs)."""
-    from kiro_crew.apps.builtins.dev_fleet import gateway_service as gs
+    from efm_go.apps.builtins.dev_fleet import gateway_service as gs
 
     spawned: list[list[str]] = []
 
@@ -9860,7 +9860,7 @@ def test_default_confinement_detects_sandbox_marker(monkeypatch):
     """KIROCREW_SANDBOX_ACTIVE — the launcher-exported in-sandbox marker — is
     detected as confinement (checked before the cgroup read, so this is
     deterministic on any host)."""
-    from kiro_crew.apps.builtins.dev_fleet import gateway_service as gs
+    from efm_go.apps.builtins.dev_fleet import gateway_service as gs
 
     monkeypatch.setenv("KIROCREW_SANDBOX_ACTIVE", "1")
     reason = gs.default_confinement()
@@ -10470,7 +10470,7 @@ async def test_a_stashed_tree_is_recovered_before_any_step_runs(monkeypatch):
     halves of leftover-state reconciliation therefore happen before the loop.
     """
     monkeypatch.setattr(worktree_ops_mod.frontend, "edition_configured", lambda: False)
-    from kiro_crew.apps.builtins.dev_fleet import sync_runner
+    from efm_go.apps.builtins.dev_fleet import sync_runner
 
     _, cmd, steps = await _run_sync(mod, [])
     assert cmd is not None
@@ -10504,7 +10504,7 @@ async def test_the_failure_cause_is_never_taken_from_child_output(monkeypatch):
     So the diagnosis is derived from the EXIT CODE, which a step's own child
     cannot choose, and nothing is parsed out of the stream.
     """
-    from kiro_crew.apps.builtins.dev_fleet import sync_runner
+    from efm_go.apps.builtins.dev_fleet import sync_runner
 
     _, cmd, _ = await _run_sync(mod, [])
     assert cmd is not None
@@ -10569,7 +10569,7 @@ async def test_only_the_preflight_step_may_assert_a_diagnosis(monkeypatch):
     # demoted from every other step) is driven by execution in
     # test_dev_fleet_sync_runner.py (TestDemoteReserved, TestRunSteps). Here we
     # pin that the gateway passes the reserved set and the trusted label IN, so
-    # the runner needs to import nothing from kiro_crew and the two cannot
+    # the runner needs to import nothing from efm_go and the two cannot
     # drift from the modules that own them.
     assert "--reserved" in cmd
     reserved = sorted(npm_preflight.RESERVED_EXIT_CODES)
@@ -10937,8 +10937,8 @@ async def test_preflight_runs_a_snapshot_not_the_editable_source(monkeypatch):
     """The probe must execute a private COPY by path, never import the checkout.
 
     Two distinct holes close here. ``-c`` puts the cwd -- the checkout -- first on
-    ``sys.path``, so an untracked ``kiro_crew/`` package at its root would win;
-    ``-I`` fixes that. But the install is EDITABLE, so ``import kiro_crew...``
+    ``sys.path``, so an untracked ``efm_go/`` package at its root would win;
+    ``-I`` fixes that. But the install is EDITABLE, so ``import efm_go...``
     resolves into the checkout's own ``src/`` tree even under ``-I``, and this
     step is trusted to assert a failure cause precisely BECAUSE its binary is
     ours. Importing the tree being synced put the boundary's own key under the
@@ -10967,7 +10967,7 @@ async def test_preflight_runs_a_snapshot_not_the_editable_source(monkeypatch):
     # A script path, and NOT one inside the checkout.
     script = [str(x) for x in argv if str(x).endswith("npm_preflight.py")]
     assert len(script) == 1, argv
-    assert "/src/kiro_crew/" not in script[0], (
+    assert "/src/efm_go/" not in script[0], (
         f"{script[0]} is the editable source itself, not a snapshot"
     )
     # Isolated, with the flags ahead of the script path -- after it they would be
@@ -11127,7 +11127,7 @@ async def test_every_stash_presence_gate_uses_lexists(monkeypatch):
     this pins the shape so the gates cannot silently revert.
     """
     monkeypatch.setattr(worktree_ops_mod.frontend, "edition_configured", lambda: False)
-    from kiro_crew.apps.builtins.dev_fleet import sync_runner
+    from efm_go.apps.builtins.dev_fleet import sync_runner
 
     _, cmd, _ = await _run_sync(mod, [])
     assert cmd is not None

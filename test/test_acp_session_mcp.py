@@ -18,15 +18,15 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew.acp import client as client_mod
-from kiro_crew.acp import session_mcp
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.types import ACP_BACKEND_CLAUDE
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
-from kiro_crew.providers.mirrors import claude_code as claude_mirror
-from kiro_crew.providers.mirrors import registry as mirrors_registry
-from kiro_crew.providers.mirrors.claude_code import ClaudeCodeMirror
+from efm_go import agent as agent_mod
+from efm_go.acp import client as client_mod
+from efm_go.acp import session_mcp
+from efm_go.acp.client import AcpClient
+from efm_go.acp.types import ACP_BACKEND_CLAUDE
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.providers.mirrors import claude_code as claude_mirror
+from efm_go.providers.mirrors import registry as mirrors_registry
+from efm_go.providers.mirrors.claude_code import ClaudeCodeMirror
 
 _CORE = {"command": "/opt/kirocrew", "args": ["mcp-core"]}
 _CRON = {"command": "/opt/kirocrew", "args": ["mcp-cron"]}
@@ -38,14 +38,14 @@ def _pinned_kiro_cli_version(monkeypatch):
 
     A client start here materialises the agent spec (``ensure_agent_materialized``
     -> ``rebuild_agent_config`` -> ``_write_derived_permissions``), which reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``:
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``:
     one real ``kiro-cli --version`` spawn per binary identity, process-cached, so
     whichever test in the worker starts first pays it against the HOST's install
     with the checkout as the child's cwd. Pinned to the floor release, as
     ``test_agent.py`` and the generated-writer suites pin it.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -71,7 +71,7 @@ def isolated_seed_provenance(monkeypatch):
     LATER test's client (pytest truncates long test names to one shared
     tmp-dir prefix, so paths can even collide) is correctly refused against.
     """
-    from kiro_crew.acp import seed_provenance
+    from efm_go.acp import seed_provenance
 
     monkeypatch.setattr(seed_provenance, "_RECORDS", {})
     monkeypatch.setattr(seed_provenance, "_LIVE", {})
@@ -706,7 +706,7 @@ class TestClientSeam:
         agents_dir,
         pooled,
     ):
-        from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER
+        from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER
 
         _write_spec(
             agents_dir,
@@ -1148,7 +1148,7 @@ class TestClientSeam:
         and with the substitute model inline, never with the first attempt's
         envelope.
         """
-        from kiro_crew import model_registry
+        from efm_go import model_registry
 
         substitute = "global.anthropic.claude-sonnet-4-6[1m]"
         monkeypatch.setattr(
@@ -1818,7 +1818,7 @@ class TestClientSeam:
 
     def _overlay_with_a_stub(self, root: Path) -> Path:
         """A user-level overlay holding one broker stub for ``kirocrew``."""
-        from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER
+        from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER
 
         overlay = root / "mcp-gateway" / "agents"
         overlay.mkdir(parents=True)
@@ -1978,7 +1978,7 @@ class TestLocalSettingsSeed:
 
     The CROSS-SESSION half of the same rule -- recognizing a seed a killed session
     left behind, by the digest recorded in
-    :mod:`kiro_crew.acp.seed_provenance` -- lives in
+    :mod:`efm_go.acp.seed_provenance` -- lives in
     ``test_acp_seed_provenance.py``.
     """
 
@@ -2008,12 +2008,12 @@ class TestLocalSettingsSeed:
         (see ``test_seed_omits_both_model_keys_on_a_cold_cache``). Tests that assert
         on those keys therefore have to stand in for a captured ``session/new``.
         """
-        from kiro_crew import model_registry
+        from efm_go import model_registry
 
         monkeypatch.setattr(model_registry, "_ADVERTISED_MODELS", {"claude_code": list(ids)})
 
     def test_seed_writes_the_model_allowlist(self, tmp_path, monkeypatch):
-        from kiro_crew import model_registry
+        from efm_go import model_registry
 
         self._advertised(monkeypatch)
         client = self._client(tmp_path)
@@ -2037,7 +2037,7 @@ class TestLocalSettingsSeed:
         beside it is the same failure by another route. Writing neither leaves the
         adapter on its own list, which already carries the versioned ids.
         """
-        from kiro_crew import model_registry
+        from efm_go import model_registry
 
         monkeypatch.setattr(model_registry, "_ADVERTISED_MODELS", {})
         client = self._client(tmp_path, model="claude-opus-5", permission_mode="default")
@@ -2053,7 +2053,7 @@ class TestLocalSettingsSeed:
         # The exact shape observed in the field: "model": "claude-opus-5" beside an
         # allowlist that contains no Opus 5 entry, which resolves to 200K. The two
         # keys are now written together or not at all.
-        from kiro_crew import model_registry
+        from efm_go import model_registry
 
         monkeypatch.setattr(model_registry, "_ADVERTISED_MODELS", {})
         client = self._client(tmp_path, model="claude-opus-5")
@@ -2093,7 +2093,7 @@ class TestLocalSettingsSeed:
         # its live claim, which the create path now refuses to author under.
         auto._claude_settings_authored = False
         path.unlink()
-        from kiro_crew.acp import seed_provenance
+        from efm_go.acp import seed_provenance
 
         seed_provenance.release(path, auto._seed_owner)
         pinned = self._client(tmp_path, model="claude-sonnet-4-5")

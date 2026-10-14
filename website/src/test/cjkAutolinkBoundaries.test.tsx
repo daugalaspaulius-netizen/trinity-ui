@@ -656,10 +656,10 @@ describe('fixCjkAutolinkBoundaries — rendered output', () => {
     // When the agent uses [text](url) syntax instead of bare URLs, GFM autolink
     // is never triggered — the URL lives inside the parentheses of a proper link
     // node, so CJK punctuation around it cannot be swallowed.
-    const src = 'PR：[PR #3739](https://github.com/kirodotdev/KiroCrew/pull/3739)（commit `e6b4bf448`）'
+    const src = 'PR：[PR #3739](https://efmleads.com/pull/3739)（commit `e6b4bf448`）'
     const { container } = renderMd(src)
     const a = container.querySelector('a')
-    expect(a?.getAttribute('href')).toBe('https://github.com/kirodotdev/KiroCrew/pull/3739')
+    expect(a?.getAttribute('href')).toBe('https://efmleads.com/pull/3739')
     expect(a?.textContent).toBe('PR #3739')
     // The surrounding text must NOT be swallowed into the link.
     expect(container.textContent).toContain('（commit')

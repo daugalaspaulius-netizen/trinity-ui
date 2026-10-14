@@ -24,9 +24,9 @@ from unittest.mock import MagicMock
 import pytest
 from source_corpus import candidate_sources, src_root
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.messaging.renderer import TEXT_CHUNK, OutputEvent
-from kiro_crew.messaging.turn_ceiling import (
+from efm_go.config import KiroCrewConfig
+from efm_go.messaging.renderer import TEXT_CHUNK, OutputEvent
+from efm_go.messaging.turn_ceiling import (
     DEFAULT_MAX_TURNS,
     DEFAULT_WINDOW_SECS,
     ENV_MAX_TURNS,
@@ -45,8 +45,8 @@ from kiro_crew.messaging.turn_ceiling import (
     shared_ceiling,
     surface_of,
 )
-from kiro_crew.session import SessionManager
-from kiro_crew.slack.renderer import _split_trailing_word
+from efm_go.session import SessionManager
+from efm_go.slack.renderer import _split_trailing_word
 
 # ───────────────────────── behaviour ─────────────────────────
 
@@ -203,7 +203,7 @@ class TestTheCapSaysWhatItDropped:
 
     def test_the_drop_is_said_out_loud(self, caplog: pytest.LogCaptureFixture) -> None:
         ceiling = _ceiling(max_turns=1, max_tracked=1)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.messaging.turn_ceiling"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.messaging.turn_ceiling"):
             for index in range(3):
                 key = f"slack:C-loud-{index}"
                 ceiling.check(key)
@@ -218,7 +218,7 @@ class TestTheCapSaysWhatItDropped:
         continuously; one announcement per event would itself be the flood. The
         COUNTS stay exact -- only how often they are spoken is bounded."""
         ceiling = _ceiling(max_turns=10, max_tracked=1)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.messaging.turn_ceiling"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.messaging.turn_ceiling"):
             for index in range(200):
                 ceiling.check(f"slack:C-flood-{index}")
         said = [r for r in caplog.records if "tracking cap reached" in r.getMessage()]
@@ -860,7 +860,7 @@ class TestTheCeilingItselfIsBounded:
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
     ) -> None:
         monkeypatch.setenv(ENV_MAX_TURNS, str(MAX_CONFIGURABLE_CEILING * 100))
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.messaging.turn_ceiling"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.messaging.turn_ceiling"):
             ConversationTurnCeiling()
         assert any("retained-window maximum" in r.getMessage() for r in caplog.records)
 

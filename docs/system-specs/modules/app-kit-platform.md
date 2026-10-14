@@ -3068,7 +3068,7 @@ installed apps (`refreshAppNav` in `website/src/App.tsx`).
 This is a different mechanism from the MCP App (SEP-1865) `srcdoc` iframes, which
 load their own ESM runtime from a CDN through an import map and are confined by
 the response CSP. §13 covers their token scoping;
-`src/kiro_crew/docs/mcp-apps.md` covers the iframe contract itself.
+`src/efm_go/docs/mcp-apps.md` covers the iframe contract itself.
 
 Writers: `website/src/components/AppHost.tsx`, `apps/manifest.py` (the manifest
 `entry` field), `apps/routes.py` (static UI serving),
@@ -3084,7 +3084,7 @@ identity, and Stop/Delete revocation — is specified in
 [security](security.md) under "Spec Builder's decision record". This section
 records which module owns which part, so a change lands in its owner.
 
-| Module under `src/kiro_crew/apps/builtins/spec_builder/backend/` | Owns |
+| Module under `src/efm_go/apps/builtins/spec_builder/backend/` | Owns |
 |---|---|
 | `routes.py` | Route registration and the enabled-app gate |
 | `handlers.py` | The route facade, plus every response that projects stored or agent-writable values through the app redactor: list, detail, settings, repo info, browse, messages, and the duplicate adapter |
@@ -3131,7 +3131,7 @@ the store listing, and the install transaction. That behaviour is specified in �
 validation & refresh". This section records which module owns which part, so a
 change lands in its owner.
 
-| Module under `src/kiro_crew/apps/` | Owns |
+| Module under `src/efm_go/apps/` | Owns |
 |---|---|
 | `registry.py` | The facade: the only import path and patch surface, plus the build step (`_run_app_build`) and the two index-entry name gates (`_admit_cached_index_entries`, `_admit_fetched_index_entries`) |
 | `registry_pipeline/subprocess_env.py` | The environments registry children start with: `minimal_env`, the credential-free `anonymous_git_env`, and the `detectInstalled` probe env |
@@ -3155,10 +3155,10 @@ security handler and the platform defaults keep one import path.
 
 Every patch seam stays on the facade. A write to `registry.<name>` reaches every
 module that binds that name, and each owner reads its own bindings, so a
-`monkeypatch.setattr(registry, ...)` or `mock.patch("kiro_crew.apps.registry.<name>")`
+`monkeypatch.setattr(registry, ...)` or `mock.patch("efm_go.apps.registry.<name>")`
 reaches the call site in whichever owner makes the call. That holds because every
 module holding a name holds the same object, every owner logs through the
-`kiro_crew.apps.registry` logger, and `importlib.reload(registry)` reloads each owner
+`efm_go.apps.registry` logger, and `importlib.reload(registry)` reloads each owner
 in layer order. `mock.patch(..., create=True)` on a forwarded name is the one
 spelling the facade cannot undo, and a guard refuses it.
 
@@ -3190,7 +3190,7 @@ MCP transition and restart, and the boot wave. That behaviour is specified in §
 [security](security.md). This section records which module owns which part, so a
 change lands in its owner.
 
-| Module under `src/kiro_crew/apps/` | Owns |
+| Module under `src/efm_go/apps/` | Owns |
 |---|---|
 | `backend.py` | The facade: the only import path and patch surface, plus the spawn transaction (`start_app_backend`, `_start_app_backend`, `_clear_failed_spawn_state`, and `_start_app_backend_body` with the entry-point classification, child environment, sandbox wrap, and spawn and adoption records it builds) and `_pid_alive` |
 | `backend_runtime/tracking.py` | The process table: `AppProcess`, `_processes` under `_lock`, the STARTING placeholder's owner (`_spawn_publication_owner`), `_restart_attempts`, the lifecycle generation (`_advance_lifecycle_locked`), `_health_reconcile_lock`, the cross-process spawn flock, the wait on an in-flight spawn, the table reads the proxy and routes use, and `running_spawned_backend_pids`, the read the runtime reconciler's membership uses |
@@ -3217,13 +3217,13 @@ and the dashboard server keep one import path.
 
 Every patch seam stays on the facade. A write to `backend.<name>` reaches every module
 that binds that name, and each owner reads its own bindings, so a
-`monkeypatch.setattr(bmod, ...)` or `mock.patch("kiro_crew.apps.backend.<name>")`
+`monkeypatch.setattr(bmod, ...)` or `mock.patch("efm_go.apps.backend.<name>")`
 reaches the call site in whichever owner makes the call. The mutable state is one
 object per name, defined once in its owner and imported by the owners that act on it,
 so `bmod._processes.clear()` empties the table every owner reads and replacing it
 through the facade reaches every holder. The two flags rebound with `global` each have
 one holder: `_warned_unconfined_cache` in `backend.py` and `_DEV_FLEET_DEFERRED` in
-`startup.py`. Every owner logs through the `kiro_crew.apps.backend` logger, and
+`startup.py`. Every owner logs through the `efm_go.apps.backend` logger, and
 `importlib.reload(backend)` reloads each owner in layer order.
 `mock.patch(..., create=True)` on a forwarded name is the one spelling the facade
 cannot undo, and a guard refuses it. The lock order is unchanged: `_health_reconcile_lock`

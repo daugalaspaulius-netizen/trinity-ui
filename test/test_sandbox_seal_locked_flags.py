@@ -2,7 +2,7 @@
 
 Inside an unprivileged user namespace the kernel treats a mount's nosuid / nodev /
 noexec bits as locked (``MNT_LOCK_*``) and rejects with EPERM any remount whose
-flag set would clear them. The bind :func:`~kiro_crew.sandbox_launcher_program.seal_readonly`
+flag set would clear them. The bind :func:`~efm_go.sandbox_launcher_program.seal_readonly`
 creates inherits those bits — locks included — from its source mount, so a remount
 carrying only ``MS_RDONLY`` is refused on hosts whose ``/tmp`` (or ``/home``) is mounted
 ``nosuid,nodev``: the systemd ``tmp.mount`` default on Amazon Linux 2023, Fedora
@@ -12,7 +12,7 @@ flags via ``statvfs`` and the sealing remount ORs them back in — re-asserting 
 bit already in force can only keep restrictions, never widen access.
 
 Three layers here, each driving the launcher program module itself
-(``kiro_crew.sandbox_launcher_program``, the program a sandboxed spawn runs):
+(``efm_go.sandbox_launcher_program``, the program a sandboxed spawn runs):
 
 - unit: ``_locked_mount_flags``'s ``f_flag`` → ``MS_*`` mapping, ``statvfs`` patched;
 - integration: :func:`seal_readonly`'s remount receives the helper's bits OR'd in,
@@ -46,7 +46,7 @@ from types import SimpleNamespace
 import pytest
 from test_sandbox_launcher_program import RecordingLibc, launch, payload
 
-from kiro_crew import sandbox_launcher_program as program
+from efm_go import sandbox_launcher_program as program
 
 _LINUX_ONLY = pytest.mark.skipif(sys.platform != "linux", reason="Linux namespace launcher only")
 
@@ -224,7 +224,7 @@ def _outer_script() -> str:
 def _inner_script() -> str:
     """Stage 2, the nested namespace: control, then the launcher program's seal.
 
-    The seal is :func:`~kiro_crew.sandbox_launcher_program.seal_readonly` itself: the
+    The seal is :func:`~efm_go.sandbox_launcher_program.seal_readonly` itself: the
     program file is loaded by path (``argv[2]``, the module this test process
     imported) and driven with its own libc and the plan in ``argv[3]``, so the code
     under test is the code that ships.

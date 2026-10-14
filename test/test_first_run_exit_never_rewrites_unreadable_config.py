@@ -23,9 +23,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import web
 
-from kiro_crew.config.loader import config_path
-from kiro_crew.dashboard.handlers import core as core_mod
-from kiro_crew.dashboard.handlers import onboarding_import as onboarding_mod
+from efm_go.config.loader import config_path
+from efm_go.dashboard.handlers import core as core_mod
+from efm_go.dashboard.handlers import onboarding_import as onboarding_mod
 
 _UNREADABLE = b'{"dashboard": {"theme_mode": "light", "onboarded": tr'
 

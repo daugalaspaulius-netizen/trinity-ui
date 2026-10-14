@@ -1,4 +1,4 @@
-"""Start priority (``kiro_crew.start_priority``): the primitive and who claims it.
+"""Start priority (``efm_go.start_priority``): the primitive and who claims it.
 
 The primitive's ordering, reserve and drain are pinned directly. Each queue that
 uses it is pinned by the priority that reaches ``PrioritySemaphore.acquire``, each
@@ -23,20 +23,20 @@ from unittest.mock import MagicMock
 import pytest
 from test_session import _mock_provider_factory
 
-import kiro_crew.acp.runtime as runtime_mod
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.runtime_start import _ColdStartAdmission
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.dashboard.chat_runner import _actor_for_queue_items, _turn_start_priority
-from kiro_crew.messaging.dispatch import ChannelTurn
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.session import SessionManager
-from kiro_crew.session_allocation import (
+import efm_go.acp.runtime as runtime_mod
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.runtime_start import _ColdStartAdmission
+from efm_go.config import KiroCrewConfig
+from efm_go.dashboard.chat_runner import _actor_for_queue_items, _turn_start_priority
+from efm_go.messaging.dispatch import ChannelTurn
+from efm_go.messaging.transport import InboundMessage
+from efm_go.session import SessionManager
+from efm_go.session_allocation import (
     FOREGROUND_COLD_START_RESERVE,
     MAX_CONCURRENT_COLD_STARTS,
     new_cold_start_semaphore,
 )
-from kiro_crew.start_priority import (
+from efm_go.start_priority import (
     _FOREGROUND_BYPASS_LIMIT,
     START_QUEUE_ADMISSION,
     START_QUEUE_COLD_START,
@@ -57,7 +57,7 @@ T = TypeVar("T")
 #: Upper bound on a wait a real signal ends. Shared with test_session_start_gate.py.
 SETTLE_BACKSTOP = 10.0
 
-_SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+_SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 
 async def until(predicate: Callable[[], bool], what: str) -> None:
@@ -546,7 +546,7 @@ def test_a_dashboard_turn_is_foreground_only_when_a_person_sent_it(flags, expect
     ],
 )
 def test_queue_entries_resolve_through_the_real_actor_rule(item, expected, monkeypatch):
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     kind = item.get("kind")
     if kind:
@@ -954,7 +954,7 @@ class _Request(dict):
     ],
 )
 def test_a_slot_action_arms_its_eager_spawn_by_who_asked(request_fields, expected):
-    from kiro_crew.dashboard.request_priority import owner_start_priority
+    from efm_go.dashboard.request_priority import owner_start_priority
 
     assert owner_start_priority(_Request("", **request_fields)) is expected
 
@@ -1148,9 +1148,9 @@ def test_the_startup_deadline_covers_every_phase_the_clock_runs_through():
     wait, pausing only in a queue -- so the window must include the ``initialize``
     budget, once per handshake round of a retried start, or the watchdog reaps a
     start whose own budgets have not expired."""
-    from kiro_crew.config import live as _live
-    from kiro_crew.constants import INITIALIZE_TIMEOUT_SECS
-    from kiro_crew.subagent import (
+    from efm_go.config import live as _live
+    from efm_go.constants import INITIALIZE_TIMEOUT_SECS
+    from efm_go.subagent import (
         _STARTUP_COLLECT_GRACE_SECS,
         _STARTUP_LAUNCH_MARGIN_SECS,
         SubagentManager,

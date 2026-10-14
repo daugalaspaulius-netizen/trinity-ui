@@ -41,9 +41,9 @@ from pathlib import Path
 import pytest
 from test_sandbox_launcher_program import CoveringLibc, launch, refusal
 
-from kiro_crew import sandbox
-from kiro_crew import sandbox_launcher_program as program
-from kiro_crew import sandbox_plan
+from efm_go import sandbox
+from efm_go import sandbox_launcher_program as program
+from efm_go import sandbox_plan
 
 
 @pytest.fixture(autouse=True)

@@ -137,7 +137,7 @@ def _resolve_node18_dir() -> str | None:
 def _resolve_website_dir() -> Path | None:
     """Locate the in-tree ``website`` root (with ``playwright/`` + ``node_modules``).
 
-    Mirrors ``kiro_crew.frontend`` dist resolution: the canonical frontend lives
+    Mirrors ``efm_go.frontend`` dist resolution: the canonical frontend lives
     in-tree at ``<repo-root>/website``. ``test/`` sits at the repo root, so the
     website is a sibling of this file's parent directory.
     """
@@ -177,8 +177,8 @@ def test_dashboard_playwright_suite() -> None:
     # instead of needing real model access. acp/client.py reads
     # KIROCREW_KIRO_BIN and, when set, spawns it as the agent binary; the
     # harness gateway inherits os.environ at spawn time.
-    from kiro_crew.testing import fake_acp_backend
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing import fake_acp_backend
+    from efm_go.testing.harness import spawn_feature_gateway
 
     prev_kiro_bin = os.environ.get("KIROCREW_KIRO_BIN")
     os.environ["KIROCREW_KIRO_BIN"] = str(fake_acp_backend.__file__)
@@ -186,7 +186,7 @@ def test_dashboard_playwright_suite() -> None:
         with tempfile.TemporaryDirectory() as tmp:
             report = Path(tmp) / "playwright-results.json"
             with spawn_feature_gateway(fixture="minimal", approval="reads") as gw:
-                from kiro_crew.config.loader import update_config_locked
+                from efm_go.config.loader import update_config_locked
 
                 # A new-member API request already provisions private memory, so
                 # it cannot represent an existing install's uninitialized alias.

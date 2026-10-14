@@ -13,7 +13,7 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
 
-@pytest.mark.parametrize("module", ["kiro_crew.dashboard.handlers", "kiro_crew.subagent_manager"])
+@pytest.mark.parametrize("module", ["efm_go.dashboard.handlers", "efm_go.subagent_manager"])
 def test_import_does_not_load_task_queue(tmp_path, module):
     env = dict(os.environ)
     env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
@@ -24,9 +24,9 @@ def test_import_does_not_load_task_queue(tmp_path, module):
             "-B",
             "-c",
             "import importlib, sys; importlib.import_module(sys.argv[1]); "
-            "assert 'kiro_crew.dashboard.handlers.tasks' not in sys.modules; "
-            "assert 'kiro_crew.taskq' not in sys.modules; "
-            "assert 'kiro_crew.taskq.store' not in sys.modules",
+            "assert 'efm_go.dashboard.handlers.tasks' not in sys.modules; "
+            "assert 'efm_go.taskq' not in sys.modules; "
+            "assert 'efm_go.taskq.store' not in sys.modules",
             module,
         ],
         cwd=tmp_path,
@@ -51,8 +51,8 @@ def test_import_does_not_load_task_queue(tmp_path, module):
     ],
 )
 async def test_task_route_wrapper_calls_real_handler(monkeypatch, name):
-    from kiro_crew.dashboard import handlers
-    from kiro_crew.dashboard.handlers import tasks
+    from efm_go.dashboard import handlers
+    from efm_go.dashboard.handlers import tasks
 
     request = make_mocked_request("GET", "/api/tasks")
     response = web.json_response({"ok": True})
@@ -64,7 +64,7 @@ async def test_task_route_wrapper_calls_real_handler(monkeypatch, name):
 
 @pytest.mark.asyncio
 async def test_lazy_task_list_serves_disabled_response():
-    from kiro_crew.dashboard import handlers
+    from efm_go.dashboard import handlers
 
     app = web.Application()
     app["state"] = SimpleNamespace(subagents=None)
@@ -76,8 +76,8 @@ async def test_lazy_task_list_serves_disabled_response():
 def test_lazy_slack_probe_keeps_the_original_binding(monkeypatch):
     from unittest.mock import Mock
 
-    from kiro_crew.dashboard.handlers import files
-    from kiro_crew.slack import handler
+    from efm_go.dashboard.handlers import files
+    from efm_go.slack import handler
 
     probe = Mock(return_value=True)
     monkeypatch.setattr(handler, "is_tracked_channel", probe)

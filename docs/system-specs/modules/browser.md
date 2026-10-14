@@ -1079,9 +1079,9 @@ absent) and 16 (browser download blocked).
 
 ### Related
 
-- [web-browse](../../../src/kiro_crew/builtin_skills/web-browse/SKILL.md) for
+- [web-browse](../../../src/efm_go/builtin_skills/web-browse/SKILL.md) for
   opening a page so the user can see it.
-- [web-verify](../../../src/kiro_crew/builtin_skills/web-verify/SKILL.md) for
+- [web-verify](../../../src/efm_go/builtin_skills/web-verify/SKILL.md) for
   screenshotting a front-end change as evidence.
 - [mcp](../../architecture/mcp.md) for MCP registration, transport, and trust
   boundaries. The `browser` tool is a thin native-panel command proxy; the

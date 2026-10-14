@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.cli import _resolve_gateway_args
+from efm_go.cli import _resolve_gateway_args
 
 # ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -311,7 +311,7 @@ class TestIsReadOnlyTool:
         ],
     )
     def test_known_read_verbs_match(self, title):
-        from kiro_crew.slack.gateway import _is_read_only_tool
+        from efm_go.slack.gateway import _is_read_only_tool
 
         assert _is_read_only_tool(title) is True
 
@@ -329,7 +329,7 @@ class TestIsReadOnlyTool:
         ],
     )
     def test_write_verbs_do_not_match(self, title):
-        from kiro_crew.slack.gateway import _is_read_only_tool
+        from efm_go.slack.gateway import _is_read_only_tool
 
         assert _is_read_only_tool(title) is False
 
@@ -348,23 +348,23 @@ class TestIsReadOnlyTool:
     )
     def test_compound_read_write_verbs_rejected(self, title):
         """Denylist catches tools whose read-verb prefix masks a write capability."""
-        from kiro_crew.slack.gateway import _is_read_only_tool
+        from efm_go.slack.gateway import _is_read_only_tool
 
         assert _is_read_only_tool(title) is False
 
     def test_empty_string_not_match(self):
-        from kiro_crew.slack.gateway import _is_read_only_tool
+        from efm_go.slack.gateway import _is_read_only_tool
 
         assert _is_read_only_tool("") is False
 
     def test_whitespace_only_not_match(self):
-        from kiro_crew.slack.gateway import _is_read_only_tool
+        from efm_go.slack.gateway import _is_read_only_tool
 
         assert _is_read_only_tool("   ") is False
         assert _is_read_only_tool("\t\n") is False
 
     def test_handles_punctuation_separators(self):
-        from kiro_crew.slack.gateway import _is_read_only_tool
+        from efm_go.slack.gateway import _is_read_only_tool
 
         # First token before space/colon/underscore/dash/paren counts.
         assert _is_read_only_tool("read(file.txt)") is True
@@ -372,7 +372,7 @@ class TestIsReadOnlyTool:
 
     def test_substring_inside_token_does_not_match(self):
         """`set` token-equality check must not match the longer token `setter`."""
-        from kiro_crew.slack.gateway import _is_read_only_tool
+        from efm_go.slack.gateway import _is_read_only_tool
 
         # `read_setter_field` has read prefix; tokens are
         # ["read", "setter", "field"]. None equal an entry in

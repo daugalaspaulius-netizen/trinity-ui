@@ -25,23 +25,23 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import model_registry
-from kiro_crew.acp.client import (
+from efm_go import model_registry
+from efm_go.acp.client import (
     DEFAULT_MODEL,
     AcpClient,
     AcpError,
     AcpModelUnavailable,
     _jsonrpc_error_code,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KIRO,
     JsonRpcMessage,
 )
-from kiro_crew.agent_sdk import backends as sdk_backends
-from kiro_crew.agent_sdk.capabilities import capabilities_for
-from kiro_crew.dashboard.handlers import agents
+from efm_go.agent_sdk import backends as sdk_backends
+from efm_go.agent_sdk.capabilities import capabilities_for
+from efm_go.dashboard.handlers import agents
 
 #: What codex-acp puts on the wire at ``session/new``: no ``models`` object, the
 #: list lives in the ``model`` select. Values are the ids the adapter accepts back.

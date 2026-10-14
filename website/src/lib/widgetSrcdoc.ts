@@ -19,8 +19,8 @@
 //
 // The LLM output is already scanned by redact_exfiltration_urls() and
 // redact_credentials() in the backend's response pipeline before reaching
-// the frontend (see kiro_crew/dashboard/handlers/artifacts.py:_serialize
-// and kiro_crew/chat.py streaming).
+// the frontend (see efm_go/dashboard/handlers/artifacts.py:_serialize
+// and efm_go/chat.py streaming).
 //
 // Theme vars pass through sanitizeCssValue() (char allowlist + dangerous-
 // function denylist + 200-char cap) before reaching this module, so the

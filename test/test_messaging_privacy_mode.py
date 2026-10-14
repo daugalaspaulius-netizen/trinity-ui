@@ -21,8 +21,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.messaging import privacy_mode
-from kiro_crew.session_map import SessionMap
+from efm_go.messaging import privacy_mode
+from efm_go.session_map import SessionMap
 
 #: A key in a namespace that is NOT Slack. The whole point of the hoist.
 _TG_KEY = "telegram:kirocrew:direct:4242"
@@ -44,8 +44,8 @@ def session_map(tmp_path, monkeypatch):
     A second instance reading the same directory IS the restart: it shares no
     in-memory state with the first, only the file on disk.
     """
-    monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
+    monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", tmp_path / "kiro")
     return SessionMap
 
 
@@ -467,8 +467,8 @@ class TestTranscriptHeaderDurability:
 
     @staticmethod
     def _log(seed: bool = True):
-        from kiro_crew import history as history_mod
-        from kiro_crew.history import ConversationLog
+        from efm_go import history as history_mod
+        from efm_go.history import ConversationLog
 
         log = ConversationLog()
         log.init()
@@ -509,7 +509,7 @@ class TestTranscriptHeaderDurability:
         under a header that already carries the mode. Mutation: switch the
         stamp to ``require_existing=True`` — red.
         """
-        from kiro_crew import history as history_mod
+        from efm_go import history as history_mod
 
         log = self._log(seed=False)
         assert not log.has_log(_TG_KEY), "premise: no transcript yet"
@@ -565,8 +565,8 @@ class TestTranscriptHeaderDurability:
         applies). Mutation: compare the raw string -- the header reads
         ``incognito``.
         """
-        from kiro_crew import history as history_mod
-        from kiro_crew.history import transcript_privacy_mode
+        from efm_go import history as history_mod
+        from efm_go.history import transcript_privacy_mode
 
         log = self._log()
         with history_mod.allow_on_loop_persist():
@@ -600,7 +600,7 @@ class TestTranscriptHeaderDurability:
         message was NOT processed. Patched on the class, because the module
         builds its own ``ConversationLog``.
         """
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         self._log()
         monkeypatch.setattr(
@@ -635,7 +635,7 @@ class TestTranscriptHeaderDurability:
     def _raw_first_line(text: str):
         """A transcript whose first line is *text* -- written raw, as a foreign or
         damaged writer would leave it."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog()
         log.init()
@@ -745,7 +745,7 @@ class TestTranscriptHeaderDurability:
         under a notice that said only "this message was not processed", and the
         next turns ran persistent. Mutation: roll back to ``False`` -- red.
         """
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = self._log()
         sm = session_map()
@@ -786,7 +786,7 @@ class TestTranscriptHeaderDurability:
         (``['allowed'] == []``): a mode is announced whose header write has not
         happened.
         """
-        from kiro_crew.history import ConversationLog, transcript_privacy_mode
+        from efm_go.history import ConversationLog, transcript_privacy_mode
 
         log = self._log()
         entered = asyncio.Event()
@@ -865,7 +865,7 @@ class TestDashboardGateReach:
     def test_a_telegram_incognito_session_is_restricted(self):
         """Mutation: narrow the branch back to ``sk.startswith("slack:")`` — red
         here while the Slack case below stays green."""
-        from kiro_crew.dashboard.handlers._shared import _is_restricted_session
+        from efm_go.dashboard.handlers._shared import _is_restricted_session
 
         privacy_mode.mark_incognito(_TG_KEY)
         state, request = self._state_and_request(_TG_KEY)
@@ -873,14 +873,14 @@ class TestDashboardGateReach:
 
     def test_a_telegram_temporary_session_blocks_reads(self):
         """Mutation: narrow ``_blocks_reads_session``'s branch — red."""
-        from kiro_crew.dashboard.handlers._shared import _blocks_reads_session
+        from efm_go.dashboard.handlers._shared import _blocks_reads_session
 
         privacy_mode.mark_temporary(_TG_KEY)
         state, request = self._state_and_request(_TG_KEY)
         assert _blocks_reads_session(state, request) is True
 
     def test_the_slack_answers_are_unchanged(self):
-        from kiro_crew.dashboard.handlers._shared import (
+        from efm_go.dashboard.handlers._shared import (
             _blocks_reads_session,
             _is_restricted_session,
         )
@@ -895,7 +895,7 @@ class TestDashboardGateReach:
     def test_an_incognito_session_still_serves_reads(self):
         """Incognito blocks writes only; widening the reach must not also widen
         what each mode means."""
-        from kiro_crew.dashboard.handlers._shared import (
+        from efm_go.dashboard.handlers._shared import (
             _blocks_reads_session,
             _is_restricted_session,
         )
@@ -912,7 +912,7 @@ class TestDashboardGateReach:
         because a dashboard slot that shares a name with a marked channel key
         would start answering off the channel trackers.
         """
-        from kiro_crew.dashboard.handlers._shared import _is_restricted_session
+        from efm_go.dashboard.handlers._shared import _is_restricted_session
 
         key = "dashboard:chat-1"
         privacy_mode.mark_incognito(key)
@@ -978,7 +978,7 @@ class TestPrivateConversationCap:
     async def test_a_new_flag_past_the_cap_is_refused_and_nothing_is_written(
         self, audits, session_map, monkeypatch
     ):
-        import kiro_crew.session_map as session_map_mod
+        import efm_go.session_map as session_map_mod
 
         monkeypatch.setattr(session_map_mod, "PRIVACY_ROW_CAP", 3)
         sm = session_map()
@@ -1031,7 +1031,7 @@ class TestPrivateConversationCap:
         self, audits, session_map, monkeypatch
     ):
         """``!temporary`` on a thread already incognito adds no row: admitted."""
-        import kiro_crew.session_map as session_map_mod
+        import efm_go.session_map as session_map_mod
 
         monkeypatch.setattr(session_map_mod, "PRIVACY_ROW_CAP", 3)
         sm = session_map()
@@ -1051,7 +1051,7 @@ class TestPrivateConversationCap:
 
     @pytest.mark.asyncio
     async def test_an_over_long_key_is_refused_at_the_same_gate(self, audits, session_map):
-        import kiro_crew.session_map as session_map_mod
+        import efm_go.session_map as session_map_mod
 
         sm = session_map()
         key = "telegram:kirocrew:direct:" + "9" * session_map_mod.PRIVACY_ROW_KEY_MAX
@@ -1102,7 +1102,7 @@ class TestPrivateConversationCap:
         assert privacy_mode._pending == {}, "a refused (mode, key) must not stay held"
 
     def test_the_cap_is_the_trackers_bound(self):
-        import kiro_crew.session_map as session_map_mod
+        import efm_go.session_map as session_map_mod
 
         assert session_map_mod.PRIVACY_ROW_CAP == privacy_mode.PRIVACY_LRU_MAX == 10_000
 
@@ -1114,8 +1114,8 @@ class TestReservations:
 
     @staticmethod
     def _seed_header():
-        from kiro_crew import history as history_mod
-        from kiro_crew.history import ConversationLog
+        from efm_go import history as history_mod
+        from efm_go.history import ConversationLog
 
         log = ConversationLog()
         log.init()
@@ -1339,7 +1339,7 @@ class TestReservations:
         """Reserve incognito (row, header and mark all standing), then release with
         the header restore replaced by *writer*; hand back the release's verdict
         and the state the assertions read."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = self._seed_header()
         sm = session_map()
@@ -1424,7 +1424,7 @@ class TestReservations:
         clear is never reached, the row stands, and the restart hydrates the
         mode. Mutation: clear the row ahead of the header (the earlier order) --
         red: ``hydrated=False, row=False, header='incognito'``."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = self._seed_header()
         sm = session_map()
@@ -1668,7 +1668,7 @@ class TestReservations:
         then ``gate`` awaited -- and then runs the real write (or raises
         *then_raise*) and sets ``done``; every other write runs untouched.
         Returns ``(stand_in, in_write, gate, done)``."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         real = ConversationLog.update_metadata_if
         in_write, gate, done = threading.Event(), threading.Event(), threading.Event()
@@ -1731,7 +1731,7 @@ class TestReservations:
         header nothing claims. Under the session's lock the second release waits
         for the first's whole sequence. Mutation: drop the lock -- red, the header
         reads ``incognito`` and ``inco_done_early`` is True."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log, sm, sessions, temp, inco = await self._reserve_both_modes(session_map)
         gated, in_write, gate, _done = self._gate_the_restore_to("incognito")
@@ -1769,7 +1769,7 @@ class TestReservations:
         outcome. The premise pins the ORDER: while the header restore is in
         flight the row still says the mode -- the record a restart hydrates from
         is loosened last."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = self._seed_header()
         sm = session_map()
@@ -1826,7 +1826,7 @@ class TestReservations:
         off the mark, returns at once, and the release then drops row, header
         and mark under it (``marked=False, row=False, applied=False``).
         """
-        from kiro_crew.history import transcript_privacy_mode
+        from efm_go.history import transcript_privacy_mode
 
         log = self._seed_header()
         sm = session_map()
@@ -2204,9 +2204,9 @@ class TestPublishOnlyThroughTheCommitPrimitive:
         import re
         from pathlib import Path
 
-        import kiro_crew
+        import efm_go
 
-        root = Path(kiro_crew.__file__).resolve().parent
+        root = Path(efm_go.__file__).resolve().parent
         publish = re.compile(
             r"(privacy_mode\.mark\(|\bmark_temporary\(|\bmark_incognito\(|_mark_temporary\(|_mark_incognito\()"
         )
@@ -2235,7 +2235,7 @@ class TestAHeaderAlreadyAtTheModeIsNotRewritten:
     async def test_reapplying_after_a_restart_writes_the_header_once(
         self, audits, session_map, monkeypatch
     ):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = TestTranscriptHeaderDurability._log()
         writes: list[str] = []

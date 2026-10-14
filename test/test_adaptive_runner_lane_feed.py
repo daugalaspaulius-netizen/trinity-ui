@@ -18,8 +18,8 @@ from unittest.mock import AsyncMock
 import pytest
 from overload_fakes import Clock
 
-from kiro_crew.adaptive.controller import AdaptiveController, HostSample
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.adaptive.controller import AdaptiveController, HostSample
+from efm_go.config.loader import KiroCrewConfig
 
 pytestmark = pytest.mark.timeout(30)
 
@@ -146,7 +146,7 @@ class TestRunnerLaneFeedsTheExecTrack:
         the cap is pinned low here to watch the climb.)"""
         from dataclasses import replace
 
-        from kiro_crew.adaptive.policy import AdaptivePolicy
+        from efm_go.adaptive.policy import AdaptivePolicy
 
         mgr = FakeManager(user_max=64)
         lane = FakeLane()

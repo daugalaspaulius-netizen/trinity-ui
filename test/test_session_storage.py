@@ -25,10 +25,10 @@ from typing import Callable
 
 import pytest
 
-from kiro_crew import session_storage
-from kiro_crew.config import paths
-from kiro_crew.history import ConversationLog, transcript_stem
-from kiro_crew.session_storage import SessionIndex, SessionStorageError
+from efm_go import session_storage
+from efm_go.config import paths
+from efm_go.history import ConversationLog, transcript_stem
+from efm_go.session_storage import SessionIndex, SessionStorageError
 
 _NOW = 1_700_000_000.0
 _DAY = 86400.0
@@ -183,8 +183,8 @@ def _crew_log(unit_id: str, slot: str, *, closed: bool = True) -> int:
     """
     from crew_log_type_helpers import minimal_data
 
-    from kiro_crew.crew_log import CrewLog
-    from kiro_crew.crew_log.schema import KIND_SESSION
+    from efm_go.crew_log import CrewLog
+    from efm_go.crew_log.schema import KIND_SESSION
 
     log = CrewLog.create(KIND_SESSION, unit_id, owner="default", agent="kirocrew", slot=slot)
     log.append("session/opened", minimal_data(KIND_SESSION, "session/opened"), src="gateway")
@@ -199,8 +199,8 @@ def _crew_log(unit_id: str, slot: str, *, closed: bool = True) -> int:
 
 
 def _crew_log_exists(unit_id: str) -> bool:
-    from kiro_crew.crew_log import CrewLog
-    from kiro_crew.crew_log.schema import KIND_SESSION
+    from efm_go.crew_log import CrewLog
+    from efm_go.crew_log.schema import KIND_SESSION
 
     return CrewLog.exists(KIND_SESSION, unit_id)
 
@@ -241,7 +241,7 @@ class TestCrewLogsAreTheSessions:
     def test_trash_stages_them_outside_the_batch_and_restore_puts_them_back(
         self, stores: tuple[Path, Path]
     ) -> None:
-        from kiro_crew.crew_log.store import crew_log_trash_root
+        from efm_go.crew_log.store import crew_log_trash_root
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -270,7 +270,7 @@ class TestCrewLogsAreTheSessions:
     def test_emptying_the_trash_removes_the_staged_crew_logs(
         self, stores: tuple[Path, Path]
     ) -> None:
-        from kiro_crew.crew_log.store import crew_log_trash_root
+        from efm_go.crew_log.store import crew_log_trash_root
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -291,8 +291,8 @@ class TestCrewLogsAreTheSessions:
     ) -> None:
         from crew_log_type_helpers import minimal_data
 
-        from kiro_crew.crew_log import CrewLog
-        from kiro_crew.crew_log.schema import KIND_SESSION
+        from efm_go.crew_log import CrewLog
+        from efm_go.crew_log.schema import KIND_SESSION
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -321,7 +321,7 @@ class TestCrewLogsAreTheSessions:
         Read as empty, the restore would put the transcript back, drop the manifest
         entry, and leave the staged units with nothing that lists or restores them.
         """
-        from kiro_crew.crew_log.store import crew_log_trash_root
+        from efm_go.crew_log.store import crew_log_trash_root
 
         crew_home, _ = stores
         live = crew_home / "sessions" / "dashboard_chat-1.jsonl"
@@ -365,7 +365,7 @@ class TestCrewLogsAreTheSessions:
         attached to no row. So an incomplete crew-log scan refuses the whole move; the
         storage report, a read, still answers with what it could list.
         """
-        from kiro_crew.crew_log import store as crew_store
+        from efm_go.crew_log import store as crew_store
 
         crew_home, _ = stores
         live = crew_home / "sessions" / "dashboard_chat-1.jsonl"
@@ -434,7 +434,7 @@ class TestCrewLogsAreTheSessions:
         """
         import threading
 
-        from kiro_crew.crew_log import store as crew_store
+        from efm_go.crew_log import store as crew_store
 
         crew_home, _ = stores
         live = crew_home / "sessions" / "dashboard_chat-1.jsonl"
@@ -483,7 +483,7 @@ class TestCrewLogsAreTheSessions:
     ) -> None:
         import threading
 
-        from kiro_crew.crew_log import store as crew_store
+        from efm_go.crew_log import store as crew_store
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -518,8 +518,8 @@ class TestCrewLogsAreTheSessions:
         """
         from crew_log_type_helpers import minimal_data
 
-        from kiro_crew.crew_log import CrewLog
-        from kiro_crew.crew_log.schema import KIND_SESSION
+        from efm_go.crew_log import CrewLog
+        from efm_go.crew_log.schema import KIND_SESSION
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -568,9 +568,9 @@ class TestCrewLogsAreTheSessions:
         """
         from crew_log_type_helpers import minimal_data
 
-        from kiro_crew.crew_log import CrewLog
-        from kiro_crew.crew_log import store as crew_store
-        from kiro_crew.crew_log.schema import KIND_SESSION
+        from efm_go.crew_log import CrewLog
+        from efm_go.crew_log import store as crew_store
+        from efm_go.crew_log.schema import KIND_SESSION
 
         failing = {"on": False}
         handles: list = []
@@ -598,8 +598,8 @@ class TestCrewLogsAreTheSessions:
 
     @staticmethod
     def _held(unit_id: str) -> bool:
-        from kiro_crew.crew_log.schema import KIND_SESSION
-        from kiro_crew.crew_log.store import TRASH_HOLD_FILE, unit_dir_for
+        from efm_go.crew_log.schema import KIND_SESSION
+        from efm_go.crew_log.store import TRASH_HOLD_FILE, unit_dir_for
 
         directory = unit_dir_for(KIND_SESSION, unit_id)
         return directory is not None and (directory / TRASH_HOLD_FILE).exists()
@@ -614,7 +614,7 @@ class TestCrewLogsAreTheSessions:
         and restoring the session once the failure has passed makes it whole and lets
         the unit age out again.
         """
-        from kiro_crew.crew_log import store as crew_store
+        from efm_go.crew_log import store as crew_store
 
         crew_home, _ = stores
         live = crew_home / "sessions" / "dashboard_chat-1.jsonl"
@@ -654,7 +654,7 @@ class TestCrewLogsAreTheSessions:
         unheld unit is collectable. Once the restore commits the holds are released and
         the same sweep collects them, so the hold lasts exactly as long as the restore.
         """
-        from kiro_crew.crew_log import store as crew_store
+        from efm_go.crew_log import store as crew_store
 
         crew_home, _ = stores
         live = crew_home / "sessions" / "dashboard_chat-1.jsonl"
@@ -693,8 +693,8 @@ class TestCrewLogsAreTheSessions:
         Published with a hold that is not on disk, a power loss would bring the unit back
         unheld and the sweep could expire it while its transcript is still in the trash.
         """
-        from kiro_crew.crew_log import store as crew_store
-        from kiro_crew.crew_log.store import crew_log_trash_root
+        from efm_go.crew_log import store as crew_store
+        from efm_go.crew_log.store import crew_log_trash_root
 
         crew_home, _ = stores
         live = crew_home / "sessions" / "dashboard_chat-1.jsonl"
@@ -723,7 +723,7 @@ class TestCrewLogsAreTheSessions:
     def test_emptying_the_batch_releases_a_held_unit(
         self, stores: tuple[Path, Path], monkeypatch
     ) -> None:
-        from kiro_crew.crew_log.store import crew_log_trash_root
+        from efm_go.crew_log.store import crew_log_trash_root
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -746,8 +746,8 @@ class TestCrewLogsAreTheSessions:
         self, stores: tuple[Path, Path]
     ) -> None:
         """The manifest is agent-writable; its uid must never become a ``..`` path."""
-        from kiro_crew.crew_log.schema import KIND_SESSION
-        from kiro_crew.crew_log.store import crew_log_root, crew_log_trash_root
+        from efm_go.crew_log.schema import KIND_SESSION
+        from efm_go.crew_log.store import crew_log_root, crew_log_trash_root
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -778,7 +778,7 @@ class TestCrewLogsAreTheSessions:
         self, stores: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A failed move puts the crew logs back; one it cannot is listed, never lost."""
-        from kiro_crew.crew_log.store import crew_log_trash_root
+        from efm_go.crew_log.store import crew_log_trash_root
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -830,7 +830,7 @@ class TestCrewLogsAreTheSessions:
     def test_empty_refuses_a_batch_holding_crew_logs_its_manifest_does_not_list(
         self, stores: tuple[Path, Path]
     ) -> None:
-        from kiro_crew.crew_log.store import crew_log_trash_root
+        from efm_go.crew_log.store import crew_log_trash_root
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -852,7 +852,7 @@ class TestCrewLogsAreTheSessions:
         self, stores: tuple[Path, Path]
     ) -> None:
         """The batch directory is agent-writable; its absence approves nothing."""
-        from kiro_crew.crew_log.store import crew_log_trash_root
+        from efm_go.crew_log.store import crew_log_trash_root
 
         crew_home, _ = stores
         _transcript(crew_home, "dashboard_chat-1", size=50, age_days=40)
@@ -2570,7 +2570,7 @@ class TestManifestPersistenceFailure:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A crash after publish must not expose manifest bytes still only in cache."""
-        from kiro_crew import atomic_write as atomic_write_module
+        from efm_go import atomic_write as atomic_write_module
 
         batch = tmp_path / "batch"
         batch.mkdir()
@@ -2660,7 +2660,7 @@ class TestTrashBatchNamesAreLogSafe:
     ) -> None:
         self._make_forged_dir(self._FORGED)
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.session_storage"):
             assert session_storage.list_trash() == []
 
         messages = [
@@ -2690,7 +2690,7 @@ class TestTrashBatchNamesAreLogSafe:
         except OSError:
             pytest.skip("this filesystem refuses a newline in a directory name")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert session_storage.list_trash() == []
 
         messages = [
@@ -2752,7 +2752,7 @@ class TestTrashBatchNamesAreLogSafe:
                 session_storage, "_summarize_manifest", lambda batch, parsed=parsed: parsed
             )
 
-            with caplog.at_level(logging.DEBUG, logger="kiro_crew.session_storage"):
+            with caplog.at_level(logging.DEBUG, logger="efm_go.session_storage"):
                 assert session_storage.list_trash() == []
 
             rendered = [record.getMessage() for record in caplog.records]
@@ -2818,7 +2818,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
         batch_id, batch = self._staged(kiro_home)
         self._forge_uid(batch, files=["not-an-object"])
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert session_storage.restore(batch_id) == 0
 
         self._assert_escaped(
@@ -2838,7 +2838,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
         # and the move, so the batch keeps its entry.
         monkeypatch.setattr(session_storage, "_move_file_exclusive", lambda src, dst: False)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert session_storage.restore(batch_id) == 0
 
         self._assert_escaped(
@@ -2862,7 +2862,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
 
         monkeypatch.setattr(session_storage, "_move_file_exclusive", _refuse)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert session_storage.restore(batch_id) == 0
 
         self._assert_escaped(
@@ -2888,7 +2888,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
 
         monkeypatch.setattr(session_storage, "_append_entry", _refuse)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             with pytest.raises(SessionStorageError):
                 session_storage.move_to_trash(
                     ["aaaa1111"], reason="manual", index=_index(), now=_NOW
@@ -2915,7 +2915,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
             raise SessionStorageError(f"could not read all of {batch.name!r}")
 
         monkeypatch.setattr(session_storage, "_unlisted_files", _refuse)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             session_storage._discard_restored_batch(forged, None)
         self._assert_escaped(
             self._carrying(caplog, "keeping trash batch"), self._FORGED_NAME, "unreadable-scan"
@@ -2925,7 +2925,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
         monkeypatch.setattr(
             session_storage, "_unlisted_files", lambda batch: [forged / "orphan.jsonl"]
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             session_storage._discard_restored_batch(forged, None)
         self._assert_escaped(
             self._carrying(caplog, "keeping trash batch"), self._FORGED_NAME, "leftover-files"
@@ -2940,7 +2940,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
             def exists() -> bool:
                 return True
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert (
                 session_storage._incomplete_if_present(_ForgedBatch())
                 == session_storage.SKIP_INCOMPLETE
@@ -2970,7 +2970,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
             raise SessionStorageError("could not read all of it")
 
         monkeypatch.setattr(session_storage, "_unlisted_files", _refuse)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert session_storage.empty_trash() == 0
         self._assert_escaped(
             self._carrying(caplog, "refusing to empty"), self._FORGED_NAME, "unreadable-batch"
@@ -2980,7 +2980,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
         monkeypatch.setattr(
             session_storage, "_unlisted_files", lambda batch: [forged / "orphan.jsonl"]
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert session_storage.empty_trash() == 0
         self._assert_escaped(
             self._carrying(caplog, "refusing to empty"), self._FORGED_NAME, "leftover-files"
@@ -2990,7 +2990,7 @@ class TestUntrustedNamesAreLogSafeOutsideListTrash:
         caplog.clear()
         outside = tmp_path / self._FORGED_NAME
         monkeypatch.setattr(session_storage, "_batch_dir", lambda batch_id: outside)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert session_storage.empty_trash() == 0
         messages = self._carrying(caplog, "outside the trash root")
         assert messages, "the outside-the-root site did not log at all"
@@ -4288,7 +4288,7 @@ class TestCotenantNamesAreLogSafe:
         pod = self._make_forged_pod(self._pod_root(tmp_path, monkeypatch))
         (pod / "session_map.json").write_text("not json{", encoding="utf-8")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             _protected, refusals = session_storage.cotenant_sids()
 
         assert [name for name, _why in refusals] == [self._FORGED]
@@ -4307,7 +4307,7 @@ class TestCotenantNamesAreLogSafe:
         # which is exactly the unreadable-map warning path under test.
         (pod / "session_map.json").write_bytes(b"\xff\xfe\xfa")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             _protected, refusals = session_storage.cotenant_sids()
 
         assert [name for name, _why in refusals] == [self._FORGED]
@@ -4331,7 +4331,7 @@ class TestCotenantNamesAreLogSafe:
         # resolved path (newline included) into the traceback rendering.
         monkeypatch.setattr(session_storage.hooks, "is_sensitive_path", lambda p: True)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             _protected, refusals = session_storage.cotenant_sids()
 
         assert [name for name, _why in refusals] == [self._FORGED]
@@ -4364,7 +4364,7 @@ class TestCotenantNamesAreLogSafe:
             caplog.clear()
             monkeypatch.setattr(session_storage.hooks, "safe_read_file", _read)
 
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
                 _protected, refusals = session_storage.cotenant_sids()
 
             assert [name for name, _why in refusals] == [self._FORGED]
@@ -6866,7 +6866,7 @@ class TestSingleTrashPass:
     def test_report_payload_reads_each_manifest_exactly_once(
         self, stores: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import session_storage as handler
+        from efm_go.dashboard.handlers import session_storage as handler
 
         _, kiro_home = stores
         self._two_batches(kiro_home)
@@ -6888,7 +6888,7 @@ class TestSingleTrashPass:
     ) -> None:
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.handlers import session_storage as handler
+        from efm_go.dashboard.handlers import session_storage as handler
 
         _, kiro_home = stores
         self._two_batches(kiro_home)
@@ -7049,7 +7049,7 @@ class TestManifestReaders:
             "more garbage {",
         ]
         batch = self._batch(tmp_path, lines)
-        with caplog.at_level("WARNING", logger="kiro_crew.session_storage"):
+        with caplog.at_level("WARNING", logger="efm_go.session_storage"):
             summary = session_storage._summarize_manifest(batch)
         assert summary is not None and summary[1] == 1
         warnings = [r for r in caplog.records if "unparseable" in r.getMessage()]
@@ -7067,7 +7067,7 @@ class TestManifestReaders:
             '{"uid": "trunc',
         ]
         batch = self._batch(tmp_path, lines, terminated=False)
-        with caplog.at_level("WARNING", logger="kiro_crew.session_storage"):
+        with caplog.at_level("WARNING", logger="efm_go.session_storage"):
             summary = session_storage._summarize_manifest(batch)
         assert summary is not None and summary[1] == 1
         assert not [r for r in caplog.records if "unparseable" in r.getMessage()]
@@ -7197,7 +7197,7 @@ class TestManifestReaders:
         batch = tmp_path / self._BATCH_ID
         batch.mkdir(parents=True, exist_ok=True)
         (batch / session_storage.MANIFEST_NAME).write_text(blob, encoding="utf-8")
-        with caplog.at_level("WARNING", logger="kiro_crew.session_storage"):
+        with caplog.at_level("WARNING", logger="efm_go.session_storage"):
             summary = session_storage._summarize_manifest(batch)
         assert summary is not None and summary[1] == 0
         assert [r for r in caplog.records if "unparseable" in r.getMessage()]
@@ -7332,7 +7332,7 @@ class TestReclaimHoldsTheSessionLockAcrossTheIndexPurge:
     ) -> None:
         import threading
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         crew_home, kiro_home = stores
         _cli_half(kiro_home, "aaaa1111", log_bytes=2048, age_days=40)

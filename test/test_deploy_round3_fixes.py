@@ -14,7 +14,7 @@ from aiohttp import web
 
 def test_scan_detects_base64_encoded_akia():
     """F1: A base64-encoded AKIA key is detected by scan_content."""
-    from kiro_crew.deploy.scan import scan_content
+    from efm_go.deploy.scan import scan_content
 
     # "AKIAIOSFODNN7EXAMPLE" base64-encoded
     raw_key = "AKIAIOSFODNN7EXAMPLE"
@@ -27,7 +27,7 @@ def test_scan_detects_base64_encoded_akia():
 
 def test_scan_detects_bare_40_char_secret():
     """F1: A bare 40-char base64-alphabet AWS secret key is detected."""
-    from kiro_crew.deploy.scan import scan_content
+    from efm_go.deploy.scan import scan_content
 
     # Simulated AWS secret key: 40 chars of base64 alphabet
     bare_secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
@@ -73,7 +73,7 @@ def internal_secret_headers() -> dict[str, str]:
 @pytest.mark.asyncio
 async def test_pending_dismiss_403_internal_secret(tmp_path):
     """F2: dismiss rejects internal-secret callers (via @_internal_denied decorator)."""
-    from kiro_crew.deploy.handlers import _handle_pending_dismiss
+    from efm_go.deploy.handlers import _handle_pending_dismiss
 
     req = _FakeReq(
         match_info={"id": "fake-id"},
@@ -88,7 +88,7 @@ async def test_pending_dismiss_403_internal_secret(tmp_path):
 @pytest.mark.asyncio
 async def test_pending_dismiss_403_restricted_session(monkeypatch, tmp_path):
     """F2: dismiss rejects restricted sessions."""
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     req = _FakeReq(
         match_info={"id": "fake-id"},
@@ -97,7 +97,7 @@ async def test_pending_dismiss_403_restricted_session(monkeypatch, tmp_path):
 
     # Patch _is_restricted_session to return True for our state
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers._shared._is_restricted_session",
+        "efm_go.dashboard.handlers._shared._is_restricted_session",
         lambda state, request: True,
     )
     resp = await handlers._handle_pending_dismiss(req)
@@ -109,11 +109,11 @@ async def test_pending_dismiss_403_restricted_session(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_pending_dismiss_200_normal(monkeypatch, tmp_path):
     """F2: dismiss succeeds for normal cookie-auth caller and records audit."""
-    from kiro_crew.deploy import handlers, pending
+    from efm_go.deploy import handlers, pending
 
     # Patch restricted session check to pass
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers._shared._is_restricted_session",
+        "efm_go.dashboard.handlers._shared._is_restricted_session",
         lambda state, request: False,
     )
 
@@ -143,7 +143,7 @@ async def test_pending_dismiss_200_normal(monkeypatch, tmp_path):
 
 def test_compat_map_has_sites_not_list():
     """F3: The compat map maps 'sites' (real old endpoint) not 'list' (bogus)."""
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     # Access the map inside register_routes by importing and inspecting
     # We verify the compat map keys via a simulated register_routes call
@@ -167,7 +167,7 @@ def test_compat_static_map_contents():
     # Check the router resolves old paths to correct new targets.
     import inspect
 
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     # Extract the map by reading the source
     source = inspect.getsource(handlers.register_routes)
@@ -185,14 +185,14 @@ def test_compat_static_map_contents():
 @pytest.mark.asyncio
 async def test_ttl_hours_string_rejected(monkeypatch, tmp_path):
     """F4: ttl_hours as string "12" → 400."""
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     async def _fake_resolve(p):
         return ("prof", "us-west-2")
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers._resolve_profile", _fake_resolve)
-    monkeypatch.setattr("kiro_crew.deploy.handlers._HAS_ARTIFACTS", True)
-    monkeypatch.setattr("kiro_crew.deploy.handlers.validate_field", lambda v, spec: v)
+    monkeypatch.setattr("efm_go.deploy.handlers._resolve_profile", _fake_resolve)
+    monkeypatch.setattr("efm_go.deploy.handlers._HAS_ARTIFACTS", True)
+    monkeypatch.setattr("efm_go.deploy.handlers.validate_field", lambda v, spec: v)
 
     class FakeArt:
         kind = "html"
@@ -203,9 +203,9 @@ async def test_ttl_hours_string_rejected(monkeypatch, tmp_path):
         def get(self, slug: str):
             return FakeArt()
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers.get_default_store", lambda: FakeStore())
+    monkeypatch.setattr("efm_go.deploy.handlers.get_default_store", lambda: FakeStore())
     staged = str(tmp_path / "x")
-    monkeypatch.setattr("kiro_crew.deploy.handlers._stage_artifact_html",
+    monkeypatch.setattr("efm_go.deploy.handlers._stage_artifact_html",
                         lambda kind, content, name: ([], staged, 42))
 
     status, body = await handlers._do_deploy({
@@ -218,14 +218,14 @@ async def test_ttl_hours_string_rejected(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_ttl_hours_float_rejected(monkeypatch, tmp_path):
     """F4: ttl_hours as float 12.5 → 400."""
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     async def _fake_resolve(p):
         return ("prof", "us-west-2")
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers._resolve_profile", _fake_resolve)
-    monkeypatch.setattr("kiro_crew.deploy.handlers._HAS_ARTIFACTS", True)
-    monkeypatch.setattr("kiro_crew.deploy.handlers.validate_field", lambda v, spec: v)
+    monkeypatch.setattr("efm_go.deploy.handlers._resolve_profile", _fake_resolve)
+    monkeypatch.setattr("efm_go.deploy.handlers._HAS_ARTIFACTS", True)
+    monkeypatch.setattr("efm_go.deploy.handlers.validate_field", lambda v, spec: v)
 
     class FakeArt:
         kind = "html"
@@ -236,9 +236,9 @@ async def test_ttl_hours_float_rejected(monkeypatch, tmp_path):
         def get(self, slug: str):
             return FakeArt()
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers.get_default_store", lambda: FakeStore())
+    monkeypatch.setattr("efm_go.deploy.handlers.get_default_store", lambda: FakeStore())
     staged = str(tmp_path / "x")
-    monkeypatch.setattr("kiro_crew.deploy.handlers._stage_artifact_html",
+    monkeypatch.setattr("efm_go.deploy.handlers._stage_artifact_html",
                         lambda kind, content, name: ([], staged, 42))
 
     status, body = await handlers._do_deploy({
@@ -251,14 +251,14 @@ async def test_ttl_hours_float_rejected(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_ttl_hours_bool_rejected(monkeypatch, tmp_path):
     """F4: ttl_hours as bool True → 400."""
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     async def _fake_resolve(p):
         return ("prof", "us-west-2")
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers._resolve_profile", _fake_resolve)
-    monkeypatch.setattr("kiro_crew.deploy.handlers._HAS_ARTIFACTS", True)
-    monkeypatch.setattr("kiro_crew.deploy.handlers.validate_field", lambda v, spec: v)
+    monkeypatch.setattr("efm_go.deploy.handlers._resolve_profile", _fake_resolve)
+    monkeypatch.setattr("efm_go.deploy.handlers._HAS_ARTIFACTS", True)
+    monkeypatch.setattr("efm_go.deploy.handlers.validate_field", lambda v, spec: v)
 
     class FakeArt:
         kind = "html"
@@ -269,9 +269,9 @@ async def test_ttl_hours_bool_rejected(monkeypatch, tmp_path):
         def get(self, slug: str):
             return FakeArt()
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers.get_default_store", lambda: FakeStore())
+    monkeypatch.setattr("efm_go.deploy.handlers.get_default_store", lambda: FakeStore())
     staged = str(tmp_path / "x")
-    monkeypatch.setattr("kiro_crew.deploy.handlers._stage_artifact_html",
+    monkeypatch.setattr("efm_go.deploy.handlers._stage_artifact_html",
                         lambda kind, content, name: ([], staged, 42))
 
     status, body = await handlers._do_deploy({
@@ -284,14 +284,14 @@ async def test_ttl_hours_bool_rejected(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_ttl_hours_int_ok(monkeypatch, tmp_path):
     """F4: ttl_hours as int 12 → passes validation (hits confirm gate)."""
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     async def _fake_resolve(p):
         return ("prof", "us-west-2")
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers._resolve_profile", _fake_resolve)
-    monkeypatch.setattr("kiro_crew.deploy.handlers._HAS_ARTIFACTS", True)
-    monkeypatch.setattr("kiro_crew.deploy.handlers.validate_field", lambda v, spec: v)
+    monkeypatch.setattr("efm_go.deploy.handlers._resolve_profile", _fake_resolve)
+    monkeypatch.setattr("efm_go.deploy.handlers._HAS_ARTIFACTS", True)
+    monkeypatch.setattr("efm_go.deploy.handlers.validate_field", lambda v, spec: v)
 
     class FakeArt:
         kind = "html"
@@ -302,9 +302,9 @@ async def test_ttl_hours_int_ok(monkeypatch, tmp_path):
         def get(self, slug: str):
             return FakeArt()
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers.get_default_store", lambda: FakeStore())
+    monkeypatch.setattr("efm_go.deploy.handlers.get_default_store", lambda: FakeStore())
     staged = str(tmp_path / "x")
-    monkeypatch.setattr("kiro_crew.deploy.handlers._stage_artifact_html",
+    monkeypatch.setattr("efm_go.deploy.handlers._stage_artifact_html",
                         lambda kind, content, name: ([], staged, 42))
 
     status, body = await handlers._do_deploy({
@@ -321,14 +321,14 @@ async def test_ttl_hours_int_ok(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_webapp_artifact_returns_400(monkeypatch):
     """F5: Deploying a webapp-kind artifact returns 400 with explanation."""
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     async def _fake_resolve(p):
         return ("prof", "us-west-2")
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers._resolve_profile", _fake_resolve)
-    monkeypatch.setattr("kiro_crew.deploy.handlers._HAS_ARTIFACTS", True)
-    monkeypatch.setattr("kiro_crew.deploy.handlers.validate_field", lambda v, spec: v)
+    monkeypatch.setattr("efm_go.deploy.handlers._resolve_profile", _fake_resolve)
+    monkeypatch.setattr("efm_go.deploy.handlers._HAS_ARTIFACTS", True)
+    monkeypatch.setattr("efm_go.deploy.handlers.validate_field", lambda v, spec: v)
 
     class FakeArt:
         kind = "webapp"
@@ -339,7 +339,7 @@ async def test_webapp_artifact_returns_400(monkeypatch):
         def get(self, slug: str):
             return FakeArt()
 
-    monkeypatch.setattr("kiro_crew.deploy.handlers.get_default_store", lambda: FakeStore())
+    monkeypatch.setattr("efm_go.deploy.handlers.get_default_store", lambda: FakeStore())
 
     status, body = await handlers._do_deploy({
         "site_id": "s", "artifact_slug": "my-webapp",
@@ -355,8 +355,8 @@ async def test_webapp_artifact_returns_400(monkeypatch):
 @pytest.mark.asyncio
 async def test_list_concurrent_bounded(monkeypatch):
     """F6: site listing runs concurrently but bounded, with per-profile error isolation."""
-    from kiro_crew.deploy import engine, handlers
-    from kiro_crew.deploy import profiles as profiles_mod
+    from efm_go.deploy import engine, handlers
+    from efm_go.deploy import profiles as profiles_mod
 
     max_inflight = 0
     current_inflight = 0
@@ -397,7 +397,7 @@ def test_lifecycle_persistent_rejects_string_false():
     """The string "false" is truthy — must be rejected, not coerced."""
     import pytest
 
-    from kiro_crew.validation import ValidationError, _validate_artifact_save
+    from efm_go.validation import ValidationError, _validate_artifact_save
     bad = {"webapp_metadata": {"lifecycle": {"persistent": "false"}}}
     with pytest.raises(ValidationError):
         _validate_artifact_save(bad)
@@ -408,7 +408,7 @@ def test_lifecycle_persistent_rejects_string_false():
 def test_lifecycle_ttl_hours_strict_int_bounds():
     import pytest
 
-    from kiro_crew.validation import ValidationError, _validate_artifact_save
+    from efm_go.validation import ValidationError, _validate_artifact_save
     for bad_val in ("12", 12.5, True, -1, 9001):
         with pytest.raises(ValidationError):
             _validate_artifact_save(
@@ -419,7 +419,7 @@ def test_lifecycle_ttl_hours_strict_int_bounds():
 # --- F2 addendum: dismiss rejects internal-secret callers (hand-added) -------
 
 def test_pending_dismiss_denies_internal_secret():
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     class _Req:
         headers = {"X-Internal-Secret": "s"}

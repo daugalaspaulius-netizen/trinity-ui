@@ -16,15 +16,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.mcp_cleanup import mcp_entry_is_muted, mcp_entry_is_registry_governed
-from kiro_crew.mcp_gateway import rewriter
-from kiro_crew.mcp_gateway.hashing import (
+from efm_go.mcp_cleanup import mcp_entry_is_muted, mcp_entry_is_registry_governed
+from efm_go.mcp_gateway import rewriter
+from efm_go.mcp_gateway.hashing import (
     expand_stub_flags,
     hash_effective_env,
     is_secret_env_key,
 )
-from kiro_crew.mcp_gateway.manager import is_credential_env_key
-from kiro_crew.mcp_gateway.rewriter import (
+from efm_go.mcp_gateway.manager import is_credential_env_key
+from efm_go.mcp_gateway.rewriter import (
     _WRAPPER_MARKER,
     _expand_env_map,
     _expand_env_placeholders,
@@ -33,7 +33,7 @@ from kiro_crew.mcp_gateway.rewriter import (
     env_sidecar_dir_for_stubs,
     env_sidecar_name,
 )
-from kiro_crew.sandbox import scrub_agent_denied_env
+from efm_go.sandbox import scrub_agent_denied_env
 
 
 class TestSettingsInjection:
@@ -74,7 +74,7 @@ class TestSettingsInjection:
         key; matching only the raw name would silently fail to inject a
         stubbed slash-named server."""
         spec = {"mcpServers": {"npm:@playwright/mcp": {"command": sys.executable}}}
-        from kiro_crew.mcp_gateway.rewriter import mcp_server_alias
+        from efm_go.mcp_gateway.rewriter import mcp_server_alias
 
         alias = mcp_server_alias("npm:@playwright/mcp")
         assert alias != "npm:@playwright/mcp"
@@ -120,7 +120,7 @@ class TestSettingsInjection:
         appears anywhere under the overlay tree, and the real settings
         file is byte-identical afterwards.
         """
-        from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+        from efm_go.mcp_gateway.rewriter import rewrite_agents
 
         source_dir = tmp_path / "agents"
         source_dir.mkdir()
@@ -378,7 +378,7 @@ def test_private_server_with_declared_env_is_not_warned_about(tmp_path: Path, ca
             },
         },
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         new_spec, wrapped = _rewrite(
             spec,
             tmp_path,
@@ -406,7 +406,7 @@ def test_shared_server_with_declared_env_is_still_warned_about(tmp_path: Path, c
             "needs-env": {"command": sys.executable, "env": {"REGION": "us-west-2"}},
         },
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         _rewrite(spec, tmp_path, stub_servers=frozenset({"needs-env"}))
 
     msgs = [r.getMessage() for r in caplog.records if "declares" in r.getMessage()]
@@ -430,7 +430,7 @@ def test_unresolvable_bare_command_is_not_stubbed(tmp_path: Path, caplog) -> Non
             },
         },
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         new_spec, wrapped = _rewrite(spec, tmp_path, stub_servers=frozenset({"ghost"}))
 
     entry = new_spec["mcpServers"]["ghost"]
@@ -479,7 +479,7 @@ def test_env_declaring_server_is_declassified_when_forwarding_is_off(
             },
         },
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         off_spec, off_wrapped = _rewrite(
             spec, tmp_path, stub_servers=frozenset({"needs-env"}), forward_env=False
         )
@@ -540,7 +540,7 @@ def test_spec_env_path_wins_over_augmented_host_path(tmp_path: Path, monkeypatch
     delegates to it rather than hand-rolling the composition."""
     import os as _os
 
-    from kiro_crew.mcp_gateway import rewriter as _rw
+    from efm_go.mcp_gateway import rewriter as _rw
 
     spec_dir = tmp_path / "spec-bin"
     host_dir = tmp_path / "host-bin"
@@ -574,7 +574,7 @@ def test_spec_env_path_wins_over_augmented_host_path(tmp_path: Path, monkeypatch
 def test_non_string_env_path_does_not_abort_the_rewrite(tmp_path: Path) -> None:
     """A hand-edited spec can carry ``"PATH": 7``; joining it would TypeError
     out of the rewrite pass and disable pooling for every agent."""
-    from kiro_crew.mcp_gateway import rewriter as _rw
+    from efm_go.mcp_gateway import rewriter as _rw
 
     resolved = _rw._resolve_target_command(
         "kirocrew-test-definitely-missing-cmd", {"PATH": 7}, None
@@ -586,7 +586,7 @@ def test_dead_absolute_command_is_not_stubbed(tmp_path: Path) -> None:
     """An absolute path that does not exist (or is not executable) fails the
     same predicate the agent-config resolver applies — no stub, so the failure
     surfaces in the session instead of a per-session pooled-spawn ENOENT."""
-    from kiro_crew.mcp_gateway import rewriter as _rw
+    from efm_go.mcp_gateway import rewriter as _rw
 
     assert _rw._resolve_target_command(str(tmp_path / "gone-mcp"), {}, None) == ""
     live = Path(sys.executable)
@@ -598,7 +598,7 @@ def test_windows_authored_path_key_is_honoured(tmp_path: Path, monkeypatch) -> N
     ``"PATH"`` lookup would ignore the operator's pin."""
     import os as _os
 
-    from kiro_crew.mcp_gateway import rewriter as _rw
+    from efm_go.mcp_gateway import rewriter as _rw
 
     spec_dir = tmp_path / "spec-bin"
     spec_dir.mkdir()
@@ -665,7 +665,7 @@ def test_rewriter_calls_restrict_to_owner_on_windows(tmp_path: Path, monkeypatch
     """
     from unittest.mock import patch
 
-    from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+    from efm_go.mcp_gateway.rewriter import rewrite_agents
 
     # Scaffold a minimal agent spec with an env var (triggers sidecar write).
     source_dir = tmp_path / "agents"
@@ -696,26 +696,26 @@ def test_rewriter_calls_restrict_to_owner_on_windows(tmp_path: Path, monkeypatch
         made_owner_dirs.append(p)
 
     # Simulate Windows: IS_POSIX=False, IS_WINDOWS=True.
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_POSIX", False)
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_POSIX", False)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
     # The spec read and the source fingerprint both go through the hardened
     # no-reparse open, which under the simulated flag would call the real Win32
     # API; this test is about the lockdown of what gets WRITTEN, so read the
     # fixture plainly at both seams.
     monkeypatch.setattr(
-        "kiro_crew.agent_discovery._read_spec_bytes", lambda real: Path(real).read_bytes()
+        "efm_go.agent_discovery._read_spec_bytes", lambda real: Path(real).read_bytes()
     )
-    monkeypatch.setattr("kiro_crew.hooks.safe_read_file_bytes", lambda raw: Path(raw).read_bytes())
+    monkeypatch.setattr("efm_go.hooks.safe_read_file_bytes", lambda raw: Path(raw).read_bytes())
     # Forwarding ON or the env-declaring fixture is declassified and no sidecar
     # write happens at all.
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.forward_declared_env_enabled", lambda: True)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.forward_declared_env_enabled", lambda: True)
     with (
         patch(
-            "kiro_crew.mcp_gateway.rewriter.platform_compat.restrict_to_owner",
+            "efm_go.mcp_gateway.rewriter.platform_compat.restrict_to_owner",
             side_effect=_mock_restrict,
         ),
         patch(
-            "kiro_crew.mcp_gateway.rewriter.platform_compat.make_owner_only_dir",
+            "efm_go.mcp_gateway.rewriter.platform_compat.make_owner_only_dir",
             side_effect=_mock_make_owner_only_dir,
         ),
     ):
@@ -761,12 +761,12 @@ def test_rewriter_overlay_dirs_are_traversable_on_posix(tmp_path: Path) -> None:
     Regression test for GPT 5.6 finding: restrict_to_owner applies 0o600 to
     directories, removing the execute bit needed for traversal.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if not platform_compat.IS_POSIX:
         pytest.skip("POSIX-only: directory execute bit semantics")
 
-    from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+    from efm_go.mcp_gateway.rewriter import rewrite_agents
 
     source_dir = tmp_path / "agents"
     source_dir.mkdir()
@@ -816,8 +816,8 @@ def test_overlay_lockdown_precedes_content(tmp_path: Path, monkeypatch) -> None:
     existed yet. A post-write stat passes on the buggy ordering too, so it
     would not be a regression test.
     """
-    from kiro_crew import platform_compat
-    from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+    from efm_go import platform_compat
+    from efm_go.mcp_gateway.rewriter import rewrite_agents
 
     source_dir = tmp_path / "agents"
     _spec_with_env(source_dir)
@@ -832,7 +832,7 @@ def test_overlay_lockdown_precedes_content(tmp_path: Path, monkeypatch) -> None:
             sizes_by_dir.setdefault(p.parent.name, []).append(os.stat(p).st_size)
         return real_restrict(target)
 
-    monkeypatch.setattr("kiro_crew.platform_compat.restrict_to_owner", _measuring)
+    monkeypatch.setattr("efm_go.platform_compat.restrict_to_owner", _measuring)
     rewrite_agents(
         source_dir=source_dir,
         overlay_dir=overlay_dir,
@@ -884,12 +884,12 @@ def test_env_sidecar_directory_goes_through_make_owner_only_dir(
     """
     from unittest.mock import patch
 
-    from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+    from efm_go.mcp_gateway.rewriter import rewrite_agents
 
     # Sidecar machinery is under test, not pooling classification: forwarding
     # must be ON or the env-declaring fixture is declassified and no sidecar
     # is ever written.
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.forward_declared_env_enabled", lambda: True)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.forward_declared_env_enabled", lambda: True)
 
     source_dir = tmp_path / "agents"
     _spec_with_env(source_dir)
@@ -901,7 +901,7 @@ def test_env_sidecar_directory_goes_through_make_owner_only_dir(
         made.append(p)
 
     with patch(
-        "kiro_crew.mcp_gateway.rewriter.platform_compat.make_owner_only_dir",
+        "efm_go.mcp_gateway.rewriter.platform_compat.make_owner_only_dir",
         side_effect=_mock_make_owner_only_dir,
     ):
         rewrite_agents(
@@ -931,12 +931,12 @@ def test_failed_sidecar_protection_leaves_no_readable_credentials(
     """
     from unittest.mock import patch
 
-    from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+    from efm_go.mcp_gateway.rewriter import rewrite_agents
 
     # Sidecar machinery is under test, not pooling classification: forwarding
     # must be ON or the env-declaring fixture is declassified and no sidecar
     # is ever written.
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.forward_declared_env_enabled", lambda: True)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.forward_declared_env_enabled", lambda: True)
 
     source_dir = tmp_path / "agents"
     _spec_with_env(source_dir)
@@ -954,21 +954,21 @@ def test_failed_sidecar_protection_leaves_no_readable_credentials(
         if Path(path).parent.name == "env":
             raise OSError("SetNamedSecurityInfoW: access denied")
 
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_POSIX", False)
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_POSIX", False)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
     # Same as the lockdown test above: keep the hardened spec read and source
     # fingerprint off the real Win32 open the simulated flag would select.
     monkeypatch.setattr(
-        "kiro_crew.agent_discovery._read_spec_bytes", lambda real: Path(real).read_bytes()
+        "efm_go.agent_discovery._read_spec_bytes", lambda real: Path(real).read_bytes()
     )
-    monkeypatch.setattr("kiro_crew.hooks.safe_read_file_bytes", lambda raw: Path(raw).read_bytes())
+    monkeypatch.setattr("efm_go.hooks.safe_read_file_bytes", lambda raw: Path(raw).read_bytes())
     with (
         patch(
-            "kiro_crew.mcp_gateway.rewriter.platform_compat.restrict_to_owner",
+            "efm_go.mcp_gateway.rewriter.platform_compat.restrict_to_owner",
             side_effect=_fail_only_for_the_sidecar,
         ),
         patch(
-            "kiro_crew.mcp_gateway.rewriter.platform_compat.make_owner_only_dir",
+            "efm_go.mcp_gateway.rewriter.platform_compat.make_owner_only_dir",
             side_effect=_mock_make_owner_only_dir,
         ),
     ):
@@ -1008,9 +1008,9 @@ def test_stub_fingerprint_is_the_module_on_the_launch_line(tmp_path: Path) -> No
     fail loudly — it reports zero stubs for a runtime that is carrying them,
     which is precisely the reading this pair of columns exists to give.
     """
-    from kiro_crew import subagent
-    from kiro_crew.dashboard import session_memory
-    from kiro_crew.mcp_gateway import STUB_MODULE, rewriter
+    from efm_go import subagent
+    from efm_go.dashboard import session_memory
+    from efm_go.mcp_gateway import STUB_MODULE, rewriter
 
     source_dir = tmp_path / "agents"
     overlay_dir = tmp_path / "overlay"
@@ -1075,7 +1075,7 @@ def test_expand_env_unresolved_placeholder_is_warned_by_name(monkeypatch, caplog
 
     monkeypatch.delenv("NOPE", raising=False)
     monkeypatch.setenv("MYVAR", "resolved-value")
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         out = _expand_env_map({"A": "${env:NOPE}", "B": "${MYVAR}", "C": "${X\nY}"}, server="srv")
     assert out == {"A": "${NOPE}", "B": "resolved-value", "C": "${X\nY}"}
     msgs = [r.getMessage() for r in caplog.records if "is unset" in r.getMessage()]
@@ -1285,8 +1285,8 @@ def test_wrapped_argv_is_cmd_safe_under_a_spaced_interpreter_path(
     exe = _program_files_interpreter(tmp_path)
     short = exe.replace("Program Files", "PROGRA~1").replace("Kiro Crew", "KIROCR~1")
     monkeypatch.setattr(sys, "executable", exe)
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
-    monkeypatch.setattr("kiro_crew.platform_compat.short_path_name", lambda p: short)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.platform_compat.short_path_name", lambda p: short)
 
     spec = {"name": "agent-a", "mcpServers": {"svc": {"command": exe}}}
     new_spec, wrapped = _rewrite(spec, tmp_path, stub_servers=frozenset({"svc"}))
@@ -1309,14 +1309,14 @@ def test_wrapped_command_kept_and_warned_when_no_short_form_exists(
 
     exe = _program_files_interpreter(tmp_path)
     monkeypatch.setattr(sys, "executable", exe)
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
-    monkeypatch.setattr("kiro_crew.platform_compat.short_path_name", lambda p: "")
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.platform_compat.short_path_name", lambda p: "")
 
     spec = {
         "name": "agent-a",
         "mcpServers": {"svc": {"command": exe}, "svc2": {"command": exe}},
     }
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.rewriter"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.rewriter"):
         new_spec, wrapped = _rewrite(spec, tmp_path, stub_servers=frozenset({"svc", "svc2"}))
 
     assert wrapped == 2
@@ -1333,9 +1333,9 @@ def test_wrapped_command_kept_and_warned_when_no_short_form_exists(
 def test_short_form_still_unsafe_falls_back_to_the_original(monkeypatch) -> None:
     """A short form that itself carries a metacharacter is not an improvement;
     the original spelling is kept for the guard to report."""
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.short_path_name", lambda p: r"C:\PROGRA%1\py.exe"
+        "efm_go.platform_compat.short_path_name", lambda p: r"C:\PROGRA%1\py.exe"
     )
     original = r"C:\Program Files\py.exe"
     assert rewriter._cmd_safe_command(original) == original
@@ -1351,8 +1351,8 @@ def test_cmd_safe_command_reresolves_short_form_on_every_call(monkeypatch) -> No
         calls.append(path)
         return next(short_forms)
 
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
-    monkeypatch.setattr("kiro_crew.platform_compat.short_path_name", _next_short_form)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.platform_compat.short_path_name", _next_short_form)
 
     assert rewriter._cmd_safe_command(original) == r"C:\PROGRA~1\py.exe"
     assert rewriter._cmd_safe_command(original) == r"C:\PROGRA~2\py.exe"
@@ -1363,9 +1363,9 @@ def test_parenthesised_path_is_normalised_too(monkeypatch) -> None:
     """``(`` and ``)`` are cmd.exe grouping characters and become live the
     moment quote-stripping unquotes the line -- ``C:\\Program Files (x86)\\``
     is the everyday spelling of this hazard."""
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.short_path_name", lambda p: r"C:\PROGRA~2\py.exe"
+        "efm_go.platform_compat.short_path_name", lambda p: r"C:\PROGRA~2\py.exe"
     )
     assert rewriter._cmd_safe_command(r"C:\Program Files (x86)\py.exe") == r"C:\PROGRA~2\py.exe"
     assert rewriter._cmd_safe_command(r"C:\Kiro(dev)\py.exe") == r"C:\PROGRA~2\py.exe"
@@ -1373,8 +1373,8 @@ def test_parenthesised_path_is_normalised_too(monkeypatch) -> None:
 
 def test_delayed_expansion_path_is_normalised_too(monkeypatch) -> None:
     """``!NAME!`` spans are expanded when cmd.exe delayed expansion is enabled."""
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
-    monkeypatch.setattr("kiro_crew.platform_compat.short_path_name", lambda p: r"C:\TOOLS~1\py.exe")
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.platform_compat.short_path_name", lambda p: r"C:\TOOLS~1\py.exe")
     assert rewriter._cmd_safe_command(r"C:\Tools!beta\py.exe") == r"C:\TOOLS~1\py.exe"
 
 
@@ -1388,12 +1388,12 @@ def test_cmd_safe_command_is_inert_on_posix() -> None:
 def test_already_safe_command_is_returned_unchanged(monkeypatch) -> None:
     """A metacharacter-free path is never rewritten -- no API call, no churn in
     the overlay bytes (the rewrite fingerprint depends on them)."""
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.IS_WINDOWS", True)
 
     def _boom(path: str) -> str:
         raise AssertionError("short-path resolution must not run for safe paths")
 
-    monkeypatch.setattr("kiro_crew.platform_compat.short_path_name", _boom)
+    monkeypatch.setattr("efm_go.platform_compat.short_path_name", _boom)
     assert rewriter._cmd_safe_command(r"C:\Python312\python.exe") == r"C:\Python312\python.exe"
 
 
@@ -1431,7 +1431,7 @@ def test_short_path_name_two_call_protocol(monkeypatch) -> None:
     return '' on every Windows host and silently disable the launch fix."""
     import ctypes
 
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(
         ctypes,
@@ -1447,7 +1447,7 @@ def test_short_path_name_returns_empty_on_api_failure(monkeypatch) -> None:
     fabricated path, never an exception."""
     import ctypes
 
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(ctypes, "WinDLL", _fake_windll(_FakeKernel32(None)), raising=False)
     assert platform_compat.short_path_name(r"C:\gone\py.exe") == ""
@@ -1460,7 +1460,7 @@ def test_short_path_name_returns_empty_when_buffer_reported_too_small(
     trusted (the path changed between calls): '' rather than a torn value."""
     import ctypes
 
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(
         ctypes,
@@ -1546,7 +1546,7 @@ class TestRewriterDecodesJsonAsUtf8:
     def test_agent_spec_round_trips_a_character_outside_the_code_page(self, tmp_path: Path) -> None:
         import locale
 
-        from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+        from efm_go.mcp_gateway.rewriter import rewrite_agents
 
         needle = self._unrepresentable_char()
         if not needle:
@@ -1607,7 +1607,7 @@ class TestRewriterDecodesJsonAsUtf8:
         the blast radius this asserts against. Runs on every platform, because
         the bytes are invalid under UTF-8 rather than under a code page.
         """
-        from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+        from efm_go.mcp_gateway.rewriter import rewrite_agents
 
         source_dir = tmp_path / "agents"
         source_dir.mkdir()
@@ -1644,7 +1644,7 @@ class TestRewriterDecodesJsonAsUtf8:
         reaching a release through a green Linux shard. It also covers the
         settings-file read, which has no cheap behavioural harness.
         """
-        from kiro_crew.mcp_gateway import rewriter as rw
+        from efm_go.mcp_gateway import rewriter as rw
 
         source = Path(rw.__file__).read_text(encoding="utf-8")
         offenders = _unencoded_json_reads(source)

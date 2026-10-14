@@ -1,6 +1,6 @@
 """Local stand-ins for the channel turn pipeline's collaborators.
 
-The pipeline (:class:`kiro_crew.messaging.dispatch.ChannelTurns`) is tested
+The pipeline (:class:`efm_go.messaging.dispatch.ChannelTurns`) is tested
 through its own interface with the real ``TurnDriver`` behind it. Only the
 collaborators it is handed are substituted, each by one stand-in:
 
@@ -23,8 +23,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, Callable
 
-from kiro_crew import session_directive
-from kiro_crew.acp.types import (
+from efm_go import session_directive
+from efm_go.acp.types import (
     EVENT_COMPACTION_STATUS,
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
@@ -36,11 +36,11 @@ from kiro_crew.acp.types import (
     STOP_REASON_END_TURN,
     AcpEvent,
 )
-from kiro_crew.agent_sdk.backends import ACP_BACKEND_KIRO
-from kiro_crew.discord.client import EDIT_FAILED, EDIT_OK
-from kiro_crew.hooks import HOOK_REPLY, TOOL_DENY
-from kiro_crew.messaging.renderer import DONE, OutputEvent, Renderer
-from kiro_crew.session_allocation import SessionBusyError, SessionClosingError
+from efm_go.agent_sdk.backends import ACP_BACKEND_KIRO
+from efm_go.discord.client import EDIT_FAILED, EDIT_OK
+from efm_go.hooks import HOOK_REPLY, TOOL_DENY
+from efm_go.messaging.renderer import DONE, OutputEvent, Renderer
+from efm_go.session_allocation import SessionBusyError, SessionClosingError
 
 #: A capability set no renderer reads in these tests.
 CAPABILITIES = SimpleNamespace(max_buttons=0, supports_edit=False)

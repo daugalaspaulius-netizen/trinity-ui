@@ -1,4 +1,4 @@
-"""The shared hardened gh runner (``kiro_crew.github_runner``).
+"""The shared hardened gh runner (``efm_go.github_runner``).
 
 One module now owns trusted-binary resolution, the minimal child environment,
 and the SEL-audited spawn chokepoint for every ``gh``-spawning surface (the
@@ -38,7 +38,7 @@ pytestmark = pytest.mark.skipif(
     reason="asserts the POSIX branch's messages and fixtures (see test_windows_acl.py)",
 )
 
-from kiro_crew import github_runner as runner  # noqa: E402
+from efm_go import github_runner as runner  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -325,7 +325,7 @@ class TestGhEnv:
         base, the gh passthrough, or one of the fixed pins — nothing else."""
         monkeypatch.setenv("GH_TOKEN", "gho_token")
         monkeypatch.setenv("SOME_RANDOM_SECRET", "boom")
-        from kiro_crew.apps import registry
+        from efm_go.apps import registry
 
         allowed = (
             set(registry._SAFE_ENV_KEYS)
@@ -472,7 +472,7 @@ class TestRunGh:
             def log_api_access(self, **kwargs):
                 events.append(kwargs)
 
-        monkeypatch.setattr("kiro_crew.sel.sel", lambda: _FakeSel())
+        monkeypatch.setattr("efm_go.sel.sel", lambda: _FakeSel())
         runner._audit_run("core:issue-radar", "gh api repos/o/r", "ok")
 
         assert events == [
@@ -490,7 +490,7 @@ class TestRunGh:
     def test_unavailable_audit_refuses_the_spawn(self, monkeypatch):
         """Audit-or-deny: with SEL storage unusable, gh must NOT run unaudited."""
         monkeypatch.setattr(
-            "kiro_crew.sel.sel", mock.Mock(side_effect=RuntimeError("sel down"))
+            "efm_go.sel.sel", mock.Mock(side_effect=RuntimeError("sel down"))
         )
         with mock.patch.object(runner.subprocess, "run", return_value=_proc()) as spawn:
             with pytest.raises(runner.SetupError, match="refusing to run gh unaudited"):
@@ -513,7 +513,7 @@ class TestRunGh:
                     raise RuntimeError("sel went away mid-call")
 
         flaky = _FlakySel()
-        monkeypatch.setattr("kiro_crew.sel.sel", lambda: flaky)
+        monkeypatch.setattr("efm_go.sel.sel", lambda: flaky)
         with mock.patch.object(runner.subprocess, "run", return_value=_proc()):
             proc = runner.run_gh(
                 ["/usr/bin/gh", "api", "user"], timeout=5, audit_caller="core:test"
@@ -527,7 +527,7 @@ class TestRunGh:
 
 class TestReExports:
     def test_source_providers_validation_is_the_shared_function(self):
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         assert (
             source_providers._validate_provider_executable
@@ -543,12 +543,12 @@ class TestReExports:
         )
 
     def test_github_client_url_parser_is_the_shared_function(self):
-        from kiro_crew.apps.builtins.issue_radar.backend import github_client
+        from efm_go.apps.builtins.issue_radar.backend import github_client
 
         assert github_client.parse_github_repo_url is runner.parse_github_repo_url
 
     def test_repo_url_error_is_one_class_across_layers(self):
-        from kiro_crew.apps.builtins.issue_radar.backend import errors, github_client
+        from efm_go.apps.builtins.issue_radar.backend import errors, github_client
 
         assert errors.RepoUrlError is runner.RepoUrlError
         assert github_client.RepoUrlError is runner.RepoUrlError
@@ -559,7 +559,7 @@ class TestReExports:
         """D3 lock-in: the sidebar's gh key set cannot drift from the
         app-side passthrough — it derives from the runner's canonical list,
         minus the enterprise tokens its github.com-pinned child can never use."""
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         assert source_providers._PROVIDER_AUTH_ENV_KEYS["gh"] == frozenset(
             runner.GH_ENV_PASSTHROUGH

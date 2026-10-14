@@ -136,7 +136,7 @@ def _evaluate(
             "PR_BODY": body,
             "PR_DRAFT": "true" if draft else "false",
             "GITHUB_OUTPUT": str(output),
-            "GITHUB_REPOSITORY": "kirodotdev/KiroCrew",
+            "GITHUB_REPOSITORY": "efmleads.com",
         }
     )
     env.pop("PR_CALLER", None)
@@ -182,7 +182,7 @@ def test_an_empty_description_reports_every_required_section(tmp_path: Path) -> 
         assert section in outputs["summary"]
     # The section is missing, so its Goal line is not reported separately.
     assert "**Goal:**" not in outputs["summary"]
-    assert "https://github.com/kirodotdev/KiroCrew/blob/main/.github/PULL_REQUEST_TEMPLATE.md" in (
+    assert "https://efmleads.com/blob/main/.github/PULL_REQUEST_TEMPLATE.md" in (
         outputs["summary"]
     )
 
@@ -543,7 +543,7 @@ def _publish(
     env.update(
         {
             "GH_TOKEN": "x",
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             "HEAD": "deadbeef",
             "PR_NUMBER": pr_number,
             "CONCLUSION": "failure",
@@ -574,7 +574,7 @@ def test_the_check_run_is_published_against_the_pr_head(tmp_path: Path) -> None:
 
     args, proc = _publish(tmp_path, [])
     assert proc.returncode == 0, proc.stderr
-    assert "repos/kirodotdev/KiroCrew/check-runs" in args
+    assert "repos/efmleads.com/check-runs" in args
     assert "head_sha=deadbeef" in args
     assert "name=Fork PR Description" in args
     assert "conclusion=failure" in args
@@ -600,7 +600,7 @@ def test_my_own_row_is_patched_not_duplicated(tmp_path: Path) -> None:
     args, proc = _publish(tmp_path, [("fork-pr-description:5528", "424242")])
     assert proc.returncode == 0, proc.stderr
     assert "PATCH" in args
-    assert "repos/kirodotdev/KiroCrew/check-runs/424242" in args
+    assert "repos/efmleads.com/check-runs/424242" in args
     assert "POST" not in args
 
 

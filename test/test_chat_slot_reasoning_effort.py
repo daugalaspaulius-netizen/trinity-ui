@@ -11,12 +11,12 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew
-from kiro_crew.dashboard import chat_handlers, chat_persistence
-from kiro_crew.dashboard.chat import api_chat_slot_reasoning_effort
-from kiro_crew.dashboard.chat_handlers import api_chat_slot_selection_capabilities
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.providers.acp import AcpProvider
+import efm_go
+from efm_go.dashboard import chat_handlers, chat_persistence
+from efm_go.dashboard.chat import api_chat_slot_reasoning_effort
+from efm_go.dashboard.chat_handlers import api_chat_slot_selection_capabilities
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.providers.acp import AcpProvider
 
 
 def _make_app(state: DashboardState) -> web.Application:
@@ -209,7 +209,7 @@ class TestSlotSelectionCapabilities:
                 return False
 
         manager = SimpleNamespace(
-            peer_version=AsyncMock(return_value=(True, kiro_crew.__version__)),
+            peer_version=AsyncMock(return_value=(True, efm_go.__version__)),
             proxy_request=MagicMock(return_value=_Proxy()),
         )
         state.instances_manager = manager
@@ -248,7 +248,7 @@ class TestSlotSelectionCapabilities:
                 return False
 
         state.instances_manager = SimpleNamespace(
-            peer_version=AsyncMock(return_value=(True, kiro_crew.__version__)),
+            peer_version=AsyncMock(return_value=(True, efm_go.__version__)),
             proxy_request=MagicMock(return_value=_Proxy()),
         )
         monkeypatch.setattr(chat_handlers, "deny_non_owner_remote_operation", lambda *_args: None)
@@ -268,7 +268,7 @@ class TestSlotSelectionCapabilities:
         slot.remote_slot = "peer-chat-9"
         state = _mock_state(slot)
         state.instances_manager = SimpleNamespace(
-            peer_version=AsyncMock(return_value=(True, kiro_crew.__version__)),
+            peer_version=AsyncMock(return_value=(True, efm_go.__version__)),
             proxy_request=MagicMock(side_effect=ConnectionError("peer offline")),
         )
         monkeypatch.setattr(chat_handlers, "deny_non_owner_remote_operation", lambda *_args: None)
@@ -455,7 +455,7 @@ class TestChatSlotReasoningEffort:
         # handler restores the prior effort first — the acting tab keeps its
         # old store value on a non-2xx, and the probe has proven the
         # surviving session still runs it.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.reasoning_effort = "high"
@@ -482,7 +482,7 @@ class TestChatSlotReasoningEffort:
         # helper's probe compares instance IDENTITY, so a different registered
         # provider is NOT the unpopped old session — the switch is committed
         # and the answer is 200 + warning.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.reasoning_effort = "high"
@@ -714,7 +714,7 @@ class TestChatSlotReasoningEffortLiveProvider:
 
     @pytest.mark.asyncio
     async def test_live_effort_capable_model_uses_change_effort_no_reset(self):
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=True)
@@ -740,7 +740,7 @@ class TestChatSlotReasoningEffortLiveProvider:
         # its entry back. Committing the cleared slot value would show "default"
         # over that overlay, and resetting would re-read the same level, so the
         # handler commits neither and answers a retryable 409.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=True)
@@ -763,7 +763,7 @@ class TestChatSlotReasoningEffortLiveProvider:
     async def test_live_clear_applied_live_skips_reset(self):
         # clear_effort returns True only when a default was applied LIVE
         # (kiro with a workspace default) → no session reset needed.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=True)
@@ -786,7 +786,7 @@ class TestChatSlotReasoningEffortLiveProvider:
         # clear_effort returns False (claude, or kiro with no workspace default)
         # → the running session can't be reset to default live, so the handler
         # MUST reset the session so a cold start re-resolves the true default.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=True)
@@ -806,7 +806,7 @@ class TestChatSlotReasoningEffortLiveProvider:
 
     @pytest.mark.asyncio
     async def test_non_effort_capable_model_persists_without_live_or_reset(self):
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=False)
@@ -827,7 +827,7 @@ class TestChatSlotReasoningEffortLiveProvider:
 
     @pytest.mark.asyncio
     async def test_live_change_failure_falls_back_to_reset(self):
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=True)
@@ -849,7 +849,7 @@ class TestChatSlotReasoningEffortLiveProvider:
         # (change_effort's response wait would race the in-flight prompt read
         # loop on the same process). The override is persisted on the slot and
         # applies on the next turn; no live push, no session reset.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=True)
@@ -876,7 +876,7 @@ class TestChatSlotReasoningEffortLiveProvider:
     @pytest.mark.asyncio
     async def test_active_turn_defers_clear_too(self):
         # Clearing to default while a turn is active is likewise deferred.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=True)
@@ -902,7 +902,7 @@ class TestChatSlotReasoningEffortLiveProvider:
     @pytest.mark.asyncio
     async def test_no_active_turn_pushes_live(self):
         # Contrast: with no active turn the handler pushes change_effort live.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.supports_effort = MagicMock(return_value=True)
@@ -928,7 +928,7 @@ class TestValidateReasoningEffortPersistence:
 
     @pytest.mark.parametrize("level", ["", "low", "medium", "high", "xhigh", "max"])
     def test_passes_through_allowlisted(self, level: str):
-        from kiro_crew.dashboard.chat_persistence import _validate_reasoning_effort
+        from efm_go.dashboard.chat_persistence import _validate_reasoning_effort
         assert _validate_reasoning_effort(level) == level
 
     @pytest.mark.parametrize(
@@ -936,11 +936,11 @@ class TestValidateReasoningEffortPersistence:
         ["LOW", "; rm -rf /", "max --evil-flag", "../../../etc", "extreme", " low"],
     )
     def test_discards_disallowed(self, tampered: str):
-        from kiro_crew.dashboard.chat_persistence import _validate_reasoning_effort
+        from efm_go.dashboard.chat_persistence import _validate_reasoning_effort
         assert _validate_reasoning_effort(tampered) == ""
 
     def test_discards_non_string(self):
-        from kiro_crew.dashboard.chat_persistence import _validate_reasoning_effort
+        from efm_go.dashboard.chat_persistence import _validate_reasoning_effort
         assert _validate_reasoning_effort(5) == ""
         assert _validate_reasoning_effort(None) == ""
         assert _validate_reasoning_effort(["max"]) == ""

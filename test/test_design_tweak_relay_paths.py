@@ -15,7 +15,7 @@ import time
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from kiro_crew.apps.builtins.design_tweak.backend import server
+from efm_go.apps.builtins.design_tweak.backend import server
 
 # ---------------------------------------------------------------------------
 # Probe class: drives _DevProxyHandler without a real socket.

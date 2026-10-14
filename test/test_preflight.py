@@ -7,10 +7,10 @@ from typing import Callable, List
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.context import PlatformCompositionError, set_context
-from kiro_crew.preflight import run_preflight_checks
+from efm_go.config import KiroCrewConfig
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.context import PlatformCompositionError, set_context
+from efm_go.preflight import run_preflight_checks
 
 
 class _StubIdentity:
@@ -71,7 +71,7 @@ class TestRunPreflightChecks:
         def _boom() -> None:
             raise RuntimeError("boom")
 
-        with caplog.at_level("WARNING", logger="kiro_crew.preflight"):
+        with caplog.at_level("WARNING", logger="efm_go.preflight"):
             run_preflight_checks([_boom, lambda: calls.append("after")])
         # The failing check is logged and the NEXT check still runs.
         assert calls == ["after"]

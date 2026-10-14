@@ -39,10 +39,10 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew import acp_tool_gate, sandbox, security
-from kiro_crew.acp import client as acp_client
-from kiro_crew.acp._dispatch import GATE_ENVELOPE_MARKER, build_permission_event, gate_envelope
-from kiro_crew.acp.client import (
+from efm_go import acp_tool_gate, sandbox, security
+from efm_go.acp import client as acp_client
+from efm_go.acp._dispatch import GATE_ENVELOPE_MARKER, build_permission_event, gate_envelope
+from efm_go.acp.client import (
     _READBACK_FAULT_MAX_SHAPES,
     _READBACK_FAULT_SHAPES,
     _READBACK_STDERR_SCAN_CHARS,
@@ -64,8 +64,8 @@ from kiro_crew.acp.client import (
     _seal_pi_gate_extension,
     pi_gate_extension_path,
 )
-from kiro_crew.acp.types import JsonRpcMessage
-from kiro_crew.acp_backends import (
+from efm_go.acp.types import JsonRpcMessage
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_DEEPSEEK,
@@ -82,12 +82,12 @@ from kiro_crew.acp_backends import (
     gate_probe_command_for,
     routing_for,
 )
-from kiro_crew.acp_tool_gate import gate_extension_issue
-from kiro_crew.agent_sdk import backend_cards
-from kiro_crew.config.paths import config_dir
-from kiro_crew.effort import EFFORT_LEVELS
-from kiro_crew.instances import run_marker
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.acp_tool_gate import gate_extension_issue
+from efm_go.agent_sdk import backend_cards
+from efm_go.config.paths import config_dir
+from efm_go.effort import EFFORT_LEVELS
+from efm_go.instances import run_marker
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _ENV_PI_ACP_BIN = "PI_ACP_BIN"
 _ENV_PI_COMMAND = "PI_ACP_PI_COMMAND"
@@ -390,11 +390,11 @@ class TestGateLauncher:
         path = Path(pi_gate_extension_path())
         assert path.is_file()
         assert path.suffix == ".ts"
-        rel = path.relative_to(ROOT / "src" / "kiro_crew").as_posix()
+        rel = path.relative_to(ROOT / "src" / "efm_go").as_posix()
         setup_cfg = (ROOT / "setup.cfg").read_text(encoding="utf-8")
         manifest = (ROOT / "MANIFEST.in").read_text(encoding="utf-8")
         assert "agent_sdk/gate_extensions/*/*.ts" in setup_cfg, rel
-        assert "src/kiro_crew/agent_sdk/gate_extensions *.ts" in manifest, rel
+        assert "src/efm_go/agent_sdk/gate_extensions *.ts" in manifest, rel
 
     def test_the_extension_and_the_host_agree_on_the_vocabulary(self):
         """The probe name and the envelope marker are spelled once each, on both sides."""
@@ -447,7 +447,7 @@ class TestGateLauncher:
     def test_the_checkout_is_pinned_lf_as_well(self):
         """Belt two: git is told not to translate the file, so the bytes match on every clone."""
         attrs = (ROOT / ".gitattributes").read_text(encoding="utf-8")
-        assert "src/kiro_crew/agent_sdk/gate_extensions/**/*.ts text eol=lf" in attrs
+        assert "src/efm_go/agent_sdk/gate_extensions/**/*.ts text eol=lf" in attrs
 
     def test_the_extension_never_drops_the_arguments_it_forwards(self):
         """An oversize call is bounded value by value or refused, never sent without its keys.
@@ -489,7 +489,7 @@ class TestSealedExtension:
         self, monkeypatch, tmp_path
     ):
         self._run_dir(monkeypatch, tmp_path)
-        tampered = tmp_path / "kiro_crew_tool_gate.ts"
+        tampered = tmp_path / "efm_go_tool_gate.ts"
         tampered.write_text("export default function () {}\n", encoding="utf-8")
         monkeypatch.setattr(acp_client, "pi_gate_extension_path", lambda: str(tampered))
         with pytest.raises(PiGateExtensionTampered):
@@ -580,7 +580,7 @@ class TestAdapterVersionIsNamedAtHandshake:
 
     def test_a_release_is_named_once_per_process(self, tmp_path, caplog):
         """A gateway on a newer adapter is told once, not on every session."""
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             self._client(tmp_path, "0.0.34")._note_pi_adapter_version()
             self._client(tmp_path, "0.0.34")._note_pi_adapter_version()
             self._client(tmp_path, "0.0.35")._note_pi_adapter_version()
@@ -588,7 +588,7 @@ class TestAdapterVersionIsNamedAtHandshake:
         assert len(hits) == 2
 
     def test_the_verified_release_is_silent(self, tmp_path, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             self._client(tmp_path, acp_client.PI_ACP_VERIFIED_VERSION)._note_pi_adapter_version()
         assert not [r for r in caplog.records if "gate extension contract" in r.getMessage()]
 
@@ -596,7 +596,7 @@ class TestAdapterVersionIsNamedAtHandshake:
     def test_another_or_unknown_release_is_logged_with_both_versions(
         self, tmp_path, caplog, version
     ):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             self._client(tmp_path, version)._note_pi_adapter_version()
         hits = [
             r.getMessage() for r in caplog.records if "gate extension contract" in r.getMessage()
@@ -606,7 +606,7 @@ class TestAdapterVersionIsNamedAtHandshake:
         assert (version or "unknown") in hits[0]
 
     def test_other_harnesses_are_untouched(self, tmp_path, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             self._client(tmp_path, "9.9.9", ACP_BACKEND_OPENCODE)._note_pi_adapter_version()
         assert not caplog.records
 
@@ -856,7 +856,7 @@ class TestReadbackParsing:
 class TestTheIssueVocabulary:
     """``gate_extension_issue`` owns what counts as loaded."""
 
-    EXT = "/site/kiro_crew/agent_sdk/gate_extensions/pi/kiro_crew_tool_gate.ts"
+    EXT = "/site/efm_go/agent_sdk/gate_extensions/pi/efm_go_tool_gate.ts"
 
     def test_the_probe_from_crews_file_is_no_issue(self):
         assert (
@@ -1416,7 +1416,7 @@ def test_only_the_gated_session_hands_the_parser_a_nonce(tmp_path) -> None:
 
 
 def test_the_backend_declares_the_verified_mechanism() -> None:
-    from kiro_crew.agent_sdk import tool_gate
+    from efm_go.agent_sdk import tool_gate
 
     assert routing_for(ACP_BACKEND_PI) is Routing.VERIFIED_GATE_EXTENSION
     assert tool_gate.is_enforced(ACP_BACKEND_PI)
@@ -2105,7 +2105,7 @@ class TestTheEffortChannel:
         push that indexed the ladder with the RAW level would send pi a value it
         never advertised and rest on an unchecked guess about the answer.
         """
-        from kiro_crew.providers import acp as provider_module
+        from efm_go.providers import acp as provider_module
 
         body = inspect.getsource(provider_module.AcpProvider._set_effort_config_option)
 
@@ -2116,9 +2116,9 @@ class TestTheEffortChannel:
     def test_every_effort_write_site_resolves_the_value(self) -> None:
         """Four sites write a level; one writing it raw is the divergence the resolver
         exists to prevent -- the session runs a level the UI does not report."""
-        from kiro_crew.acp import client as client_module
-        from kiro_crew.knowledge import llm_pool
-        from kiro_crew.providers import acp as provider_module
+        from efm_go.acp import client as client_module
+        from efm_go.knowledge import llm_pool
+        from efm_go.providers import acp as provider_module
 
         assert "effort_config_option_value(" in inspect.getsource(
             provider_module.AcpProvider._set_effort_config_option
@@ -2136,7 +2136,7 @@ PI_MODEL = "ollama/llama3.2:3b"
 
 def _pi_provider(tmp_path, *, model: str = PI_MODEL, options=None):
     """An ``AcpProvider`` on pi with a session's config options already stored."""
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.providers.acp import AcpProvider
 
     provider = AcpProvider(acp_backend=ACP_BACKEND_PI, work_dir=tmp_path, model=model)
     provider._client._acp_config_options = (
@@ -2158,7 +2158,7 @@ class TestTheEffortControlIsReachableOnThisHarness:
 
     def test_the_registry_does_not_recognise_the_model_pi_normally_serves(self) -> None:
         """The premise, stated so the tests below cannot pass for the wrong reason."""
-        from kiro_crew.effort import model_supports_effort
+        from efm_go.effort import model_supports_effort
 
         assert model_supports_effort(PI_MODEL) is False
 
@@ -2197,7 +2197,7 @@ class TestTheEffortControlIsReachableOnThisHarness:
     ) -> None:
         """The other arm. kiro-cli refuses effort per model, so the name test is right
         there -- and a non-member must not inherit the advertised-option answer."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = AcpProvider(acp_backend=ACP_BACKEND_KIRO, work_dir=tmp_path)
         provider._client._model = PI_MODEL
@@ -2244,7 +2244,7 @@ class TestTheEffortControlIsReachableOnThisHarness:
         ``change_effort`` and ``clear_effort`` gated on the model test directly, so a
         pi user could be shown a dropdown whose every write was declined.
         """
-        from kiro_crew.providers import acp as provider_module
+        from efm_go.providers import acp as provider_module
 
         for method in ("change_effort", "clear_effort"):
             body = inspect.getsource(getattr(provider_module.AcpProvider, method))
@@ -2256,7 +2256,7 @@ class TestTheEffortControlIsReachableOnThisHarness:
 
     def test_the_shared_resolver_keeps_its_registry_behaviour_untouched(self) -> None:
         """Every existing caller omits ``levels``, so the model registry still answers."""
-        from kiro_crew.effort import resolve_effort_for_model
+        from efm_go.effort import resolve_effort_for_model
 
         assert resolve_effort_for_model("claude-opus-4.8", {"claude-opus-4.8": "max"}) == "max"
         assert resolve_effort_for_model(PI_MODEL, {PI_MODEL: "high"}) is None
@@ -2278,12 +2278,12 @@ class TestAPersistedLevelSurvivesAColdStart:
         """The kwargs the provider factory would construct AcpProvider with."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.agent.provider = "acp"
         cfg.agent.acp_backend = backend
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             factory(
@@ -2360,7 +2360,7 @@ class TestTheFoldAndTheFilterAgree:
 
     def test_the_resolution_hands_the_fold_in_rather_than_applying_it_after(self) -> None:
         """Order is the property, so it is pinned at the seam rather than inferred."""
-        from kiro_crew.providers import acp as provider_module
+        from efm_go.providers import acp as provider_module
 
         body = inspect.getsource(provider_module.AcpProvider._resolve_effort)
 
@@ -2368,7 +2368,7 @@ class TestTheFoldAndTheFilterAgree:
 
     def test_the_shared_resolver_folds_before_it_checks(self) -> None:
         """Directly, on the resolver: a fold applied after the check cannot pass this."""
-        from kiro_crew.effort import resolve_effort_for_model
+        from efm_go.effort import resolve_effort_for_model
 
         fold = {"max": "xhigh"}.get
 
@@ -2415,7 +2415,7 @@ class TestThePushNeverNeedsARefusal:
         descent from that point down Crew's ladder. The ladder is what a refusal
         would walk, so it counts as emittable even when the first write succeeds.
         """
-        from kiro_crew.effort import EFFORT_LEVELS
+        from efm_go.effort import EFFORT_LEVELS
 
         target = effort_config_option_value(ACP_BACKEND_PI, level)
         try:
@@ -2426,7 +2426,7 @@ class TestThePushNeverNeedsARefusal:
 
     def test_every_crew_level_emits_only_values_pi_advertised(self) -> None:
         """Crew's whole ladder, including the two levels pi does not have."""
-        from kiro_crew.effort import EFFORT_LEVELS
+        from efm_go.effort import EFFORT_LEVELS
 
         advertised = {o["value"] for o in _pi_thought_level_option()["options"]}
 
@@ -2451,7 +2451,7 @@ class TestThePushNeverNeedsARefusal:
         requested level raw -- fails here rather than quietly reintroducing the
         dependency on an unmeasured refusal shape.
         """
-        from kiro_crew.providers import acp as provider_module
+        from efm_go.providers import acp as provider_module
 
         body = inspect.getsource(provider_module.AcpProvider._set_effort_config_option)
 
@@ -2611,7 +2611,7 @@ def _signed_out_startup_client(backend: str, spawns: list[int]) -> AcpClient:
 
 
 def test_a_signed_out_pi_names_the_fix_and_is_not_retried() -> None:
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.agent_sdk import host_auth
 
     spawns: list[int] = []
     client = _signed_out_startup_client(ACP_BACKEND_PI, spawns)

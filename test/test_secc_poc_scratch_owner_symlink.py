@@ -36,9 +36,9 @@ from typing import get_args
 
 import pytest
 
-from kiro_crew import agent_scratch as sc
-from kiro_crew import platform_compat
-from kiro_crew.mcp_gateway import backend_tmp as bt
+from efm_go import agent_scratch as sc
+from efm_go import platform_compat
+from efm_go.mcp_gateway import backend_tmp as bt
 
 #: Only for a case that links a FILE. A Windows directory JUNCTION needs no
 #: privilege and every DIRECTORY-link case uses one via
@@ -55,7 +55,7 @@ CHILD_PID = 4242
 
 @pytest.fixture
 def scratch_root(monkeypatch, tmp_path: Path) -> Path:
-    """Point :mod:`kiro_crew.agent_scratch` at a fabricated data home."""
+    """Point :mod:`efm_go.agent_scratch` at a fabricated data home."""
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setattr(sc, "config_dir", lambda: home)
@@ -64,7 +64,7 @@ def scratch_root(monkeypatch, tmp_path: Path) -> Path:
 
 @pytest.fixture
 def backend_tmp_root(monkeypatch, tmp_path: Path) -> Path:
-    """Point :mod:`kiro_crew.mcp_gateway.backend_tmp` at a fabricated data home."""
+    """Point :mod:`efm_go.mcp_gateway.backend_tmp` at a fabricated data home."""
     home = tmp_path / "backend-home"
     home.mkdir()
     monkeypatch.setattr(bt, "config_dir", lambda: home)
@@ -529,8 +529,8 @@ class TestTheSweepNeverJudgesAnOwnerThroughALink:
 
 #: The two spawn chokepoints that must reap a child which planted a link.
 SPAWNERS = (
-    Path("src/kiro_crew/acp/client.py"),
-    Path("src/kiro_crew/acp/runtime.py"),
+    Path("src/efm_go/acp/client.py"),
+    Path("src/efm_go/acp/runtime.py"),
 )
 
 

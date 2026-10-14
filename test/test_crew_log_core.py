@@ -19,13 +19,13 @@ import threading
 import pytest
 from crew_log_type_helpers import minimal_data
 
-from kiro_crew import crew_log as lg
-from kiro_crew import sandbox
-from kiro_crew.config import paths
-from kiro_crew.config.paths import data_home, ensure_data_home
-from kiro_crew.crew_log import CrewLog, CrewLogError, Ref, lease, store
-from kiro_crew.security.paths import is_sensitive_path
-from kiro_crew.session_ledger import _store_name
+from efm_go import crew_log as lg
+from efm_go import sandbox
+from efm_go.config import paths
+from efm_go.config.paths import data_home, ensure_data_home
+from efm_go.crew_log import CrewLog, CrewLogError, Ref, lease, store
+from efm_go.security.paths import is_sensitive_path
+from efm_go.session_ledger import _store_name
 
 CREW = "qa"
 SESSION = "s-7f3a"
@@ -1816,7 +1816,7 @@ def test_repair_refuses_to_close_past_a_damaged_real_completion(caplog):
     path.write_bytes(b"".join(lines))
     before = path.read_bytes()
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.crew_log.store"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.crew_log.store"):
         CrewLog.open(lg.KIND_SESSION, SESSION, repair=True)
 
     assert (
@@ -2448,7 +2448,7 @@ def test_the_log_root_is_restricted_even_when_the_home_cannot_be(tmp_path, monke
     # mode is the ONLY boundary left, because an unreadable parent is not there to
     # do the work -- and every lazily created crew log directory below it would keep
     # the process umask.
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     home = tmp_path / "home"
     home.mkdir()
@@ -2597,7 +2597,7 @@ def test_repair_drops_a_chunk_group_whose_citing_entry_never_landed(caplog):
     path = lg.crew_log_path(lg.KIND_SESSION, SESSION)
     assert "message/chunk" in path.read_text(encoding="utf-8")
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.crew_log.store"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.crew_log.store"):
         CrewLog.open(lg.KIND_SESSION, SESSION, repair=True)
 
     body = path.read_text(encoding="utf-8")
@@ -2783,7 +2783,7 @@ def test_a_group_cites_the_seqs_it_was_actually_allocated():
     ``plan_group_seqs`` served) makes the citation name the intruder's seq and reddens
     the equality below.
     """
-    from kiro_crew.crew_log import store as store_mod
+    from efm_go.crew_log import store as store_mod
 
     session = _session()
     session.append("turn/started", {"turn": 1, "actor": "user", "depth": 0}, src="acp")
@@ -2863,7 +2863,7 @@ def test_repair_leaves_the_file_alone_when_a_record_cannot_be_accounted_for(capl
     )
     before = path.read_bytes()
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.crew_log.store"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.crew_log.store"):
         CrewLog.open(lg.KIND_SESSION, SESSION, repair=True)
 
     body = path.read_bytes()

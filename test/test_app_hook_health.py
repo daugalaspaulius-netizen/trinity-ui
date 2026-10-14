@@ -17,9 +17,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.apps.hooks_integration as hooks_mod
-import kiro_crew.apps.routes as routes_mod
-from kiro_crew.apps.route_registry import RouteRegistry
+import efm_go.apps.hooks_integration as hooks_mod
+import efm_go.apps.routes as routes_mod
+from efm_go.apps.route_registry import RouteRegistry
 
 
 @pytest.fixture(autouse=True)
@@ -62,7 +62,7 @@ def _arm_startup(
     monkeypatch.setattr(hooks_mod, "list_apps", lambda: [info])
     monkeypatch.setattr(hooks_mod, "_app_hook_root", lambda _name: app_dir)
     monkeypatch.setattr(hooks_mod, "app_execution_denied", lambda *a, **kw: "")
-    monkeypatch.setattr("kiro_crew.apps.execution.third_party_execution_allowed", lambda: True)
+    monkeypatch.setattr("efm_go.apps.execution.third_party_execution_allowed", lambda: True)
 
 
 class TestStartupPublishesHookHealth:
@@ -140,7 +140,7 @@ class TestStartupPublishesHookHealth:
         monkeypatch.setattr(hooks_mod, "list_apps", lambda: [info])
         monkeypatch.setattr(hooks_mod, "_app_hook_root", lambda _name: app_dir)
         monkeypatch.setattr(hooks_mod, "app_execution_denied", lambda *a, **kw: "")
-        monkeypatch.setattr("kiro_crew.apps.execution.third_party_execution_allowed", lambda: True)
+        monkeypatch.setattr("efm_go.apps.execution.third_party_execution_allowed", lambda: True)
         monkeypatch.setattr(
             hooks_mod,
             "_build_app_context_from_info",
@@ -200,7 +200,7 @@ class TestStartupPublishesHookHealth:
         monkeypatch.setattr(hooks_mod, "list_apps", lambda: [info])
         monkeypatch.setattr(hooks_mod, "_app_hook_root", lambda _name: app_dir)
         monkeypatch.setattr(hooks_mod, "app_execution_denied", lambda *a, **kw: "")
-        monkeypatch.setattr("kiro_crew.apps.execution.third_party_execution_allowed", lambda: True)
+        monkeypatch.setattr("efm_go.apps.execution.third_party_execution_allowed", lambda: True)
         monkeypatch.setattr(
             hooks_mod,
             "_build_app_context_from_info",

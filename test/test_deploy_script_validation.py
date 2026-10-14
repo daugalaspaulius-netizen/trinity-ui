@@ -11,7 +11,7 @@ import pytest
 SCRIPTS_DIR = (
     Path(__file__).parent.parent
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "deploy"
     / "skills"
     / "artifact-deploy"
@@ -118,7 +118,7 @@ class TestAwsSpawnFlow:
     nonzero CLI exit propagates as the script's own exit code with stderr shown.
 
     ``run_limited`` / ``sandboxed_spawn_argv`` are imported function-locally from
-    ``kiro_crew.sandbox`` (the fail-closed import), so the patch point is the
+    ``efm_go.sandbox`` (the fail-closed import), so the patch point is the
     sandbox module itself, not the script module.
     """
 
@@ -133,7 +133,7 @@ class TestAwsSpawnFlow:
         return p
 
     def _patch(self, monkeypatch, profile_file, run):
-        import kiro_crew.sandbox as sandbox
+        import efm_go.sandbox as sandbox
 
         monkeypatch.setattr(
             sandbox, "sandboxed_spawn_argv", lambda cmd: (list(cmd), {}, str(profile_file))
@@ -192,8 +192,8 @@ class TestAwsHelperResolvesAbsolutely:
         reason="fallback install dirs are POSIX literals; dead on Windows by design",
     )
     def test_cmd_head_absolute_under_minimal_path(self, mod, monkeypatch, tmp_path):
-        from kiro_crew import github_runner, sandbox
-        from kiro_crew.deploy import engine
+        from efm_go import github_runner, sandbox
+        from efm_go.deploy import engine
 
         fake_aws = tmp_path / "aws"
         fake_aws.write_text("#!/bin/sh\n")
@@ -213,7 +213,7 @@ class TestAwsHelperResolvesAbsolutely:
         def fake_run_limited(argv, **kwargs):
             return SimpleNamespace(returncode=0, stdout="{}", stderr="")
 
-        # The helper imports these lazily from kiro_crew.sandbox at call time,
+        # The helper imports these lazily from efm_go.sandbox at call time,
         # so patching the sandbox module attributes intercepts the spawn.
         monkeypatch.setattr(sandbox, "sandboxed_spawn_argv", fake_spawn_argv)
         monkeypatch.setattr(sandbox, "run_limited", fake_run_limited)

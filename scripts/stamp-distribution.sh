@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Write src/kiro_crew/_build_info.py so a packaged build reports which install
+# Write src/efm_go/_build_info.py so a packaged build reports which install
 # path it came from in the usage beacon's `dist` field.
 #
 # WHY A GENERATED MODULE, not an env var: `KIROCREW_DISTRIBUTION` is inherited by
@@ -29,7 +29,7 @@ case "$DIST" in
 esac
 
 if [ -z "$PKG_DIR" ]; then
-  PKG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/src/kiro_crew"
+  PKG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/src/efm_go"
 fi
 
 if [ ! -d "$PKG_DIR" ]; then

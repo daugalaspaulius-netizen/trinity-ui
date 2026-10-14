@@ -6,7 +6,7 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from kiro_crew.dashboard.server import (
+from efm_go.dashboard.server import (
     _dispatch_override_expiry_notification,
     _dispatch_owner_dm,
     _dm_owner,
@@ -27,7 +27,7 @@ def test_dispatch_skipped_when_disabled() -> None:
     """notify_override_expiry=False skips the DM and schedules no task."""
     state = _make_state()
     factory = MagicMock()
-    with patch("kiro_crew.dashboard.server.KiroCrewConfig.load", return_value=_cfg(False)):
+    with patch("efm_go.dashboard.server.KiroCrewConfig.load", return_value=_cfg(False)):
         scheduled = _dispatch_override_expiry_notification(state, factory, "slack")
 
     assert scheduled is False
@@ -44,7 +44,7 @@ def test_dispatch_schedules_when_enabled() -> None:
         async def _noop(source: str) -> None:
             return None
 
-        with patch("kiro_crew.dashboard.server.KiroCrewConfig.load", return_value=_cfg(True)):
+        with patch("efm_go.dashboard.server.KiroCrewConfig.load", return_value=_cfg(True)):
             scheduled = _dispatch_override_expiry_notification(state, _noop, "slack")
         # A task was registered (tracked to prevent GC); drain it to completion.
         assert len(state._background_tasks) == 1
@@ -58,7 +58,7 @@ def test_dispatch_skipped_without_event_loop() -> None:
     """No running event loop → skipped gracefully (returns False)."""
     state = _make_state()
     factory = MagicMock()
-    with patch("kiro_crew.dashboard.server.KiroCrewConfig.load", return_value=_cfg(True)):
+    with patch("efm_go.dashboard.server.KiroCrewConfig.load", return_value=_cfg(True)):
         scheduled = _dispatch_override_expiry_notification(state, factory, "slack")
 
     assert scheduled is False
@@ -87,8 +87,8 @@ class TestOverrideExpiryDmWording:
         # imported from safety_override — the EMITTING end of the contract — so
         # a re-spelling there cannot silently strand this branch (round-trip
         # assertion, not a copied literal).
-        from kiro_crew.dashboard.server import _override_expiry_dm_text
-        from kiro_crew.safety_override import POLICY_REVOKED_SOURCE
+        from efm_go.dashboard.server import _override_expiry_dm_text
+        from efm_go.safety_override import POLICY_REVOKED_SOURCE
 
         text = _override_expiry_dm_text(POLICY_REVOKED_SOURCE)
         assert "organization policy" in text
@@ -97,7 +97,7 @@ class TestOverrideExpiryDmWording:
         assert "re-authorize" not in text
 
     def test_non_policy_sources_keep_the_legacy_text_byte_identical(self) -> None:
-        from kiro_crew.dashboard.server import _override_expiry_dm_text
+        from efm_go.dashboard.server import _override_expiry_dm_text
 
         for source in ("slack", "dashboard", "config", "declared", ""):
             assert _override_expiry_dm_text(source) == self._LEGACY_TEXT
@@ -106,8 +106,8 @@ class TestOverrideExpiryDmWording:
         """End-to-end through the module-level notify function: the seam this fix
         added (source travelling from the expiry callback into the DM body) is
         asserted as a composition, not two separately-stubbed halves."""
-        from kiro_crew.dashboard.server import _notify_slack_override_expired
-        from kiro_crew.safety_override import POLICY_REVOKED_SOURCE
+        from efm_go.dashboard.server import _notify_slack_override_expired
+        from efm_go.safety_override import POLICY_REVOKED_SOURCE
 
         state = _slack_state()
         asyncio.run(_notify_slack_override_expired(state, POLICY_REVOKED_SOURCE))
@@ -116,7 +116,7 @@ class TestOverrideExpiryDmWording:
         assert "/kirocrew yolo" not in body
 
     def test_the_slack_notify_path_keeps_the_legacy_text_for_a_ttl_lapse(self) -> None:
-        from kiro_crew.dashboard.server import _notify_slack_override_expired
+        from efm_go.dashboard.server import _notify_slack_override_expired
 
         state = _slack_state()
         asyncio.run(_notify_slack_override_expired(state, "slack"))
@@ -134,7 +134,7 @@ class TestOverrideExpiryDmWording:
             async def _record(source: str) -> None:
                 seen.append(source)
 
-            with patch("kiro_crew.dashboard.server.KiroCrewConfig.load", return_value=_cfg(True)):
+            with patch("efm_go.dashboard.server.KiroCrewConfig.load", return_value=_cfg(True)):
                 assert _dispatch_override_expiry_notification(state, _record, "policy") is True
             await asyncio.gather(*list(state._background_tasks))
             assert seen == ["policy"]
@@ -146,7 +146,7 @@ class TestOverrideExpiryDmWording:
         DM for a policy revocation exactly as for a TTL lapse."""
         state = _make_state()
         factory = MagicMock()
-        with patch("kiro_crew.dashboard.server.KiroCrewConfig.load", return_value=_cfg(False)):
+        with patch("efm_go.dashboard.server.KiroCrewConfig.load", return_value=_cfg(False)):
             assert _dispatch_override_expiry_notification(state, factory, "policy") is False
         factory.assert_not_called()
 
@@ -195,11 +195,11 @@ class TestDmOwner:
         state = _slack_state()
         with (
             patch(
-                "kiro_crew.dashboard.server.redact_exfiltration_urls",
+                "efm_go.dashboard.server.redact_exfiltration_urls",
                 return_value=("no-exfil", []),
             ) as m_exfil,
             patch(
-                "kiro_crew.dashboard.server.redact_credentials",
+                "efm_go.dashboard.server.redact_credentials",
                 return_value=("REDACTED", []),
             ) as m_cred,
         ):
@@ -361,11 +361,11 @@ class TestOwnerNoticeReachesNonSlackChannels:
         state.channel_transports = {"teams": transport}
         with (
             patch(
-                "kiro_crew.dashboard.server.redact_exfiltration_urls",
+                "efm_go.dashboard.server.redact_exfiltration_urls",
                 return_value=("no-exfil", []),
             ),
             patch(
-                "kiro_crew.dashboard.server.redact_credentials",
+                "efm_go.dashboard.server.redact_credentials",
                 return_value=("REDACTED", []),
             ),
         ):

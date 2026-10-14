@@ -15,8 +15,8 @@ import pytest
 from test_snapshot import _setup_fake_kirocrew, unpinnable_argv
 
 from conftest import make_dir_link
-from kiro_crew import snapshot as snap_mod
-from kiro_crew.snapshot import restore_main, snapshot_main
+from efm_go import snapshot as snap_mod
+from efm_go.snapshot import restore_main, snapshot_main
 
 
 @pytest.fixture
@@ -469,7 +469,7 @@ class TestReplaceDoesNotKeepAnIndexTheArchiveOmits:
         duplicated rather than imported. A divergence would mean the redaction pass drops an
         index that replace then leaves stale -- silently. This fails instead.
         """
-        from kiro_crew import snapshot_redact
+        from efm_go import snapshot_redact
 
         assert snap_mod._DERIVED_INDEXES == snapshot_redact._DERIVED_INDEXES
 

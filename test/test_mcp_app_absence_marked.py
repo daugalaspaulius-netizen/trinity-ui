@@ -22,16 +22,16 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew import mcp_apps_render
-from kiro_crew.acp.types import (
+from efm_go import mcp_apps_render
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_TEXT_CHUNK,
     EVENT_TOOL_CALL,
     EVENT_TOOL_RESULT,
     AcpEvent,
 )
-from kiro_crew.dashboard import chat_persistence
-from kiro_crew.dashboard.chat_utils import effective_session_key, session_key_for
+from efm_go.dashboard import chat_persistence
+from efm_go.dashboard.chat_utils import effective_session_key, session_key_for
 
 TOOL_CALL_ID = "tc-app-1"
 
@@ -81,7 +81,7 @@ def _stub_state(tmp_path):
 
 
 async def _drive(state, slot, events):
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     async def _stream(_msg):
         for ev in events:
@@ -1188,7 +1188,7 @@ class TestACollapsedCallIdFlagsNothing:
         If the detector stops matching these, every assertion below would pass
         for the wrong reason, so the premise fails the test loudly instead.
         """
-        from kiro_crew.dashboard.chat_utils import _redact_tool_field
+        from efm_go.dashboard.chat_utils import _redact_tool_field
 
         assert self.ID_APP != self.ID_OTHER, "the two ids must really differ"
         left = _redact_tool_field(self.ID_APP)
@@ -1330,7 +1330,7 @@ class TestACollapsedCallIdFlagsNothing:
         must keep flagging its own row -- otherwise the fix above would have
         turned the feature off rather than made it honest.
         """
-        from kiro_crew.dashboard.chat_utils import _redact_tool_field
+        from efm_go.dashboard.chat_utils import _redact_tool_field
 
         assert (
             _redact_tool_field(TOOL_CALL_ID) == TOOL_CALL_ID
@@ -1370,7 +1370,7 @@ class TestAnIdThatAlreadyIsTheRedactionTag:
     @staticmethod
     def _tag() -> str:
         """The redaction tag, taken from the module that writes it."""
-        from kiro_crew.security.redaction import REDACTED_CREDENTIAL_TAG
+        from efm_go.security.redaction import REDACTED_CREDENTIAL_TAG
 
         return REDACTED_CREDENTIAL_TAG
 
@@ -1379,7 +1379,7 @@ class TestAnIdThatAlreadyIsTheRedactionTag:
 
     def _premise(self) -> str:
         """Both halves of the collision, asserted rather than assumed."""
-        from kiro_crew.dashboard.chat_utils import _redact_tool_field
+        from efm_go.dashboard.chat_utils import _redact_tool_field
 
         tag = self._tag()
         assert self.ID_APP != tag, "the two ids must really differ before redaction"
@@ -1486,7 +1486,7 @@ class TestTheRetainedIdentityKeyIsBounded:
     """
 
     def test_the_key_is_a_fixed_width_digest_however_long_the_id(self):
-        from kiro_crew.dashboard.chat_runner import _MAX_TCID_LEN, _tcid_identity_key
+        from efm_go.dashboard.chat_runner import _MAX_TCID_LEN, _tcid_identity_key
 
         short = _tcid_identity_key("tool-call-1")
         assert len(short) == 16, f"an ordinary id must key to 16 chars, got {len(short)}"
@@ -1499,7 +1499,7 @@ class TestTheRetainedIdentityKeyIsBounded:
         )
 
     def test_an_over_long_id_names_nothing(self):
-        from kiro_crew.dashboard.chat_runner import _MAX_TCID_LEN, _tcid_identity_key
+        from efm_go.dashboard.chat_runner import _MAX_TCID_LEN, _tcid_identity_key
 
         assert _tcid_identity_key("x" * (_MAX_TCID_LEN + 1)) == "", (
             "an id past the tracking length cannot be told from another that shares "
@@ -1510,8 +1510,8 @@ class TestTheRetainedIdentityKeyIsBounded:
 
     def test_the_key_matches_what_the_reader_computes(self):
         """Both ends must agree, or the gate reads unambiguous for a collapsed id."""
-        from kiro_crew.dashboard.chat_runner import _tcid_identity_key
-        from kiro_crew.dashboard.chat_utils import _redact_tool_field
+        from efm_go.dashboard.chat_runner import _tcid_identity_key
+        from efm_go.dashboard.chat_utils import _redact_tool_field
 
         raw = f"eyJhbGciOiJIUzI1NiJ9.{'d' * 30}.{'s' * 20}"
         once = _redact_tool_field(raw)
@@ -1522,7 +1522,7 @@ class TestTheRetainedIdentityKeyIsBounded:
 
     @pytest.mark.asyncio
     async def test_an_over_long_id_flags_no_row(self, tmp_path, spool):
-        from kiro_crew.dashboard.chat_runner import _MAX_TCID_LEN
+        from efm_go.dashboard.chat_runner import _MAX_TCID_LEN
 
         over_long = "z" * (_MAX_TCID_LEN + 1)
 
@@ -1571,7 +1571,7 @@ class TestTheTrackedSourcesAreBounded:
     """
 
     def test_the_bound_is_finite(self):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         cap = chat_runner._MAX_TCID_SOURCES
         assert isinstance(cap, int) and cap > 0, "the bound must be a positive int"
@@ -1583,8 +1583,8 @@ class TestTheTrackedSourcesAreBounded:
         Lowering the cap rather than driving hundreds of events keeps the test
         fast and pins the mechanism rather than the number.
         """
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat_utils import _redact_tool_field
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat_utils import _redact_tool_field
 
         assert (
             _redact_tool_field(TOOL_CALL_ID) == TOOL_CALL_ID

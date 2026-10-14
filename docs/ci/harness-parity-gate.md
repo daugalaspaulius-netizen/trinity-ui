@@ -2,7 +2,7 @@
 
 Kiro Crew drives one first-class agent harness — `kiro-cli` — and adapts the
 others. This gate is the mechanical half of that rule: it reads the lines a
-change ADDS under `src/kiro_crew/` and fails on any that let a harness other
+change ADDS under `src/efm_go/` and fails on any that let a harness other
 than Kiro inherit something by default. The invariants it enforces, and the
 judgment-only ones it cannot, are catalogued in
 [../system-specs/modules/harness-parity.md](../system-specs/modules/harness-parity.md).
@@ -61,9 +61,9 @@ checks out was computed against that exact commit, so the diff cannot pick up
   contain one and truncating there would hide the real call site behind it.
 - **`scripts/check_harness_parity.py` and `test/test_harness_parity.py`**, which
   spell every forbidden form out literally.
-- **`src/kiro_crew/agent_sdk/backends.py`**, for the `vocabulary-home` rule
+- **`src/efm_go/agent_sdk/backends.py`**, for the `vocabulary-home` rule
   only. It is the module those definitions are supposed to live in;
-  `src/kiro_crew/acp/types.py` re-exports them.
+  `src/efm_go/acp/types.py` re-exports them.
 
 ## Escape hatch
 

@@ -21,12 +21,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew import session_ledger as sl
-from kiro_crew.crew_log import CrewLog, eager
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.crew_log import store
+from efm_go import crew_log as lg
+from efm_go import session_ledger as sl
+from efm_go.crew_log import CrewLog, eager
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.crew_log import store
 
 SLOT = "chat-1"
 SESSION = "acp-1"
@@ -497,7 +497,7 @@ def test_a_subagent_entry_does_not_stop_the_fold(caplog):
     assert types.index("subagent/spawned") > types.index(sl.LEDGER_ENTRY_TYPE)
 
     crew_log.forget_slot_folds()
-    with caplog.at_level("WARNING", logger="kiro_crew.session_ledger"):
+    with caplog.at_level("WARNING", logger="efm_go.session_ledger"):
         state = sl.read_state(SLOT)
     assert state.get("goal") == "ship the declared types"
     assert "folding this slot's crew logs failed" not in caplog.text
@@ -525,7 +525,7 @@ def test_the_synthetic_entry_carries_the_src_the_emitter_writes():
 
 
 def test_the_declared_event_kinds_are_the_writers_own():
-    from kiro_crew.crew_log.entry_types import SESSION_ENTRY_TYPES
+    from efm_go.crew_log.entry_types import SESSION_ENTRY_TYPES
 
     declared = SESSION_ENTRY_TYPES[sl.LEDGER_ENTRY_TYPE]
     (kind_field,) = [f for f in declared.fields if f.name == "event_kind"]
@@ -836,7 +836,7 @@ def test_a_carry_whose_append_may_still_be_queued_keeps_its_claim():
     """
     _legacy_document(SLOT, goal="owed")
     _unit()
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     real_flush = crew_log_emit.flush
     real_seq = sl._unit_last_seq
@@ -876,7 +876,7 @@ def test_a_carry_the_queue_drained_without_releases_its_claim():
     """
     _legacy_document(SLOT, goal="owed")
     _unit()
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     real = crew_log_emit.on_ledger_recorded
     crew_log_emit.on_ledger_recorded = lambda *a, **kw: None  # type: ignore[assignment]
@@ -941,7 +941,7 @@ def test_the_recorded_order_beats_a_backward_header_clock():
 
 def test_the_public_slot_fold_applies_the_same_exclusions():
     """The HTTP projection route must not serve a different answer from read_state."""
-    from kiro_crew.crew_log import projection as proj
+    from efm_go.crew_log import projection as proj
 
     _unit(SESSION)
     sl.record(SLOT, session_id=SESSION, goal="deleted conversation")
@@ -2171,7 +2171,7 @@ def test_the_tombstone_is_settled_inside_the_exclusion_hold():
     of an exclusion this call is about to take back. Holding the lock across both is
     what makes there be no intermediate state to rely on.
     """
-    from kiro_crew.platform_compat import try_acquire_lock
+    from efm_go.platform_compat import try_acquire_lock
 
     _unit(SESSION)
     sl.record(SLOT, session_id=SESSION, goal="g")

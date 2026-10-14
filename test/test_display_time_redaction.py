@@ -28,14 +28,14 @@ import pathlib
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard.chat_persistence import (
+from efm_go.dashboard.chat_persistence import (
     _attach_variants,
     _build_history_prefix,
     _build_message_entry,
     _rehydrate_slot_from_history,
     restore_recent_sessions,
 )
-from kiro_crew.dashboard.chat_utils import _history_key_for, _prepare_messages
+from efm_go.dashboard.chat_utils import _history_key_for, _prepare_messages
 
 # A credential shape `redact_credentials` catches, kept in one place so a change
 # to the detector surfaces as one failure rather than six.
@@ -128,7 +128,7 @@ def test_history_prefix_redacts_assistant_content(tmp_path, monkeypatch) -> None
 
 def test_history_prefix_keeps_user_text() -> None:
     """User turns are the prompt's own history; redacting them would corrupt it."""
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.state import _ChatSlot
 
     slot = _ChatSlot("chat-1-u")
     slot.append("user", "my own note", "msg msg-u", broadcast=False)
@@ -145,8 +145,8 @@ def test_history_prefix_keeps_user_text() -> None:
 
 def test_side_chat_parent_snapshot_redacts_assistant_content() -> None:
     """The side-chat prompt embeds parent turns, so it is an egress path."""
-    from kiro_crew.dashboard.side_context import _format_parent_snapshot
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.side_context import _format_parent_snapshot
+    from efm_go.dashboard.state import _ChatSlot
 
     slot = _ChatSlot("chat-1-side")
     slot.append("assistant", f"here is {SECRET}", "msg msg-a", broadcast=False)
@@ -158,8 +158,8 @@ def test_side_chat_parent_snapshot_redacts_assistant_content() -> None:
 
 def test_side_chat_parent_snapshot_keeps_user_text() -> None:
     """Same carve-out as the history prefix: the user's own words must survive."""
-    from kiro_crew.dashboard.side_context import _format_parent_snapshot
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.side_context import _format_parent_snapshot
+    from efm_go.dashboard.state import _ChatSlot
 
     slot = _ChatSlot("chat-1-sideu")
     slot.append("user", "my own question", "msg msg-u", broadcast=False)
@@ -203,7 +203,7 @@ def test_restore_recent_sessions_does_not_broadcast_either(tmp_path, monkeypatch
 
     monkeypatch.setattr(state2, "get_or_create_slot", _spy)
 
-    from kiro_crew.dashboard.chat_persistence import restore_recent_sessions
+    from efm_go.dashboard.chat_persistence import restore_recent_sessions
 
     restored = restore_recent_sessions(state2, window_minutes=0)
     assert restored == 1, "precondition: the session was restored"
@@ -374,8 +374,8 @@ def test_oauth_completion_redacts_restored_meta_before_broadcast() -> None:
     banner directly rather than round-tripping through disk, because a real save
     would have redacted it; the point is the re-emit, not the disk state.
     """
-    from kiro_crew.dashboard.chat_runner import _mark_mcp_oauth_completed
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.chat_runner import _mark_mcp_oauth_completed
+    from efm_go.dashboard.state import _ChatSlot
 
     slot = _ChatSlot("chat-1-oauth")
     slot.append(
@@ -483,7 +483,7 @@ def test_a_legitimate_url_from_a_dead_child_is_withdrawn() -> None:
 
 def test_oauth_url_gate_still_blocks_a_tampered_url() -> None:
     """Dropping the exfil heuristic must not open the two gates that matter."""
-    from kiro_crew.dashboard.chat_utils import _redact_meta_for_role
+    from efm_go.dashboard.chat_utils import _redact_meta_for_role
 
     # 1. Non-http(s) scheme: must never reach an <a href>.
     out = _redact_meta_for_role(
@@ -512,8 +512,8 @@ def test_oauth_completion_preserves_a_legitimate_url() -> None:
     The lesson worth keeping: a shared helper cannot be judged safe from one call
     site. The gate now matches `security.oauth_url_contains_credential` for every caller.
     """
-    from kiro_crew.dashboard.chat_runner import _mark_mcp_oauth_completed
-    from kiro_crew.dashboard.state import _ChatSlot
+    from efm_go.dashboard.chat_runner import _mark_mcp_oauth_completed
+    from efm_go.dashboard.state import _ChatSlot
 
     legit = (
         "https://accounts.google.com/o/oauth2/v2/auth?"
@@ -599,7 +599,7 @@ def test_ws_broadcast_leaves_user_content_raw(tmp_path, monkeypatch) -> None:
 
 
 def test_redact_display_content_redacts_a_str_leaf() -> None:
-    from kiro_crew.dashboard.chat_utils import redact_display_content
+    from efm_go.dashboard.chat_utils import redact_display_content
 
     out = redact_display_content(f"key {SECRET}")
     assert isinstance(out, str)
@@ -608,7 +608,7 @@ def test_redact_display_content_redacts_a_str_leaf() -> None:
 
 def test_redact_display_content_recurses_nested_containers() -> None:
     """A credential leaf nested in list/dict/tuple gets the same form as the str path."""
-    from kiro_crew.dashboard.chat_utils import redact_display_content
+    from efm_go.dashboard.chat_utils import redact_display_content
 
     leaf = f"key {SECRET}"
     expected = redact_display_content(leaf)
@@ -625,7 +625,7 @@ def test_redact_display_content_redacts_dict_keys_on_the_wire_text() -> None:
     could collapse two distinct keys into one), but the final pass over the
     serialized wire string covers them — a credential-shaped key must not
     reach the dashboard raw."""
-    from kiro_crew.dashboard.chat_utils import redact_display_content
+    from efm_go.dashboard.chat_utils import redact_display_content
 
     key = f"key-{SECRET}"
     out = redact_display_content({key: None, "i": 3, "f": 1.5, "b": True})
@@ -640,7 +640,7 @@ def test_redact_display_content_redacts_dict_keys_on_the_wire_text() -> None:
 
 def test_redact_display_content_does_not_mutate_input() -> None:
     """Rows are shared by reference; the helper must return new containers."""
-    from kiro_crew.dashboard.chat_utils import redact_display_content
+    from efm_go.dashboard.chat_utils import redact_display_content
 
     original = [{"text": f"key {SECRET}"}]
     snapshot = json.dumps(original)
@@ -677,7 +677,7 @@ def test_prepare_messages_serializes_user_structured_content_unredacted() -> Non
 def test_serialize_wire_content_turns_none_into_empty_text() -> None:
     """None is the absent-content shape a hand-edited row can carry; the wire
     contract is string-for-every-row, and its display rendering is empty."""
-    from kiro_crew.dashboard.chat_utils import serialize_wire_content
+    from efm_go.dashboard.chat_utils import serialize_wire_content
 
     assert serialize_wire_content(None) == ""
     assert serialize_wire_content("keep") == "keep"
@@ -736,7 +736,7 @@ def test_ws_broadcast_serializes_user_structured_content_unredacted(
 
 def test_build_stream_chunk_serializes_structured_content() -> None:
     """The SSE/relay chunk builder shares the guard: redacted and wire-safe."""
-    from kiro_crew.dashboard.chat_utils import _build_stream_chunk
+    from efm_go.dashboard.chat_utils import _build_stream_chunk
 
     rec = json.loads(
         _build_stream_chunk(
@@ -867,7 +867,7 @@ def test_cron_hydrate_tolerates_structured_content(tmp_path, monkeypatch) -> Non
     Its ``if not content: continue`` skip does not cover this: a non-empty
     structured value is truthy, so it reaches the redaction call either way.
     """
-    from kiro_crew.dashboard.cron_inject import hydrate_slot_from_history
+    from efm_go.dashboard.cron_inject import hydrate_slot_from_history
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     state = _make_state(tmp_path / "sessions")

@@ -21,8 +21,8 @@ from unittest.mock import patch
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
-from kiro_crew.metrics import inventory_gauges as ig
-from kiro_crew.metrics.schema import validate_name
+from efm_go.metrics import inventory_gauges as ig
+from efm_go.metrics.schema import validate_name
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -84,7 +84,7 @@ def _nudge_service(tmp_path, active_flags):
     classes means a rename fails at this line. Construction alone touches no event
     loop -- only `start()` does -- so this stays safe in a sync test.
     """
-    from kiro_crew.autonudge import AutoNudgeService, NudgeLoop
+    from efm_go.autonudge import AutoNudgeService, NudgeLoop
 
     service = AutoNudgeService(base_dir=tmp_path)
     for i, active in enumerate(active_flags):
@@ -99,7 +99,7 @@ def _nudge_service(tmp_path, active_flags):
 
 
 def test_active_crons_counts_only_unpaused_jobs(tmp_path, monkeypatch):
-    from kiro_crew import cron
+    from efm_go import cron
 
     monkeypatch.setattr(cron, "_DEFAULT_DIR", tmp_path, raising=False)
     _write_crons(
@@ -115,7 +115,7 @@ def test_active_crons_counts_only_unpaused_jobs(tmp_path, monkeypatch):
 
 
 def test_active_crons_missing_store_is_a_genuine_zero(tmp_path, monkeypatch):
-    from kiro_crew import cron
+    from efm_go import cron
 
     ig.reset_for_testing()
     try:
@@ -137,7 +137,7 @@ def test_active_crons_unparseable_store_is_a_gap_AND_a_counted_fault(tmp_path, m
     confusion probe.failures exists to resolve -- so the present-but-unreadable
     case counts a failure, unlike the missing-store case above.
     """
-    from kiro_crew import cron
+    from efm_go import cron
 
     ig.reset_for_testing()
     try:
@@ -151,7 +151,7 @@ def test_active_crons_unparseable_store_is_a_gap_AND_a_counted_fault(tmp_path, m
 
 def test_unparseable_crons_publishes_the_failure_series_and_no_count(tmp_path, monkeypatch):
     """End to end: the fault is visible as DATA, not only as a missing gauge."""
-    from kiro_crew import cron
+    from efm_go import cron
 
     ig.reset_for_testing()
     try:
@@ -172,21 +172,21 @@ def test_unparseable_crons_publishes_the_failure_series_and_no_count(tmp_path, m
 
 def test_monitor_loops_counts_armed_loops_only(tmp_path):
     service = _nudge_service(tmp_path, [True, False, True])
-    with patch("kiro_crew.autonudge.get_instance", return_value=service):
+    with patch("efm_go.autonudge.get_instance", return_value=service):
         assert ig.read_active_monitor_loops() == 2
 
 
 def test_monitor_loops_service_absent_yields_none_but_running_empty_yields_zero(tmp_path):
     """The None-vs-zero split this module exists to preserve, on one probe."""
-    with patch("kiro_crew.autonudge.get_instance", return_value=None):
+    with patch("efm_go.autonudge.get_instance", return_value=None):
         assert ig.read_active_monitor_loops() is None
-    with patch("kiro_crew.autonudge.get_instance", return_value=_nudge_service(tmp_path, [])):
+    with patch("efm_go.autonudge.get_instance", return_value=_nudge_service(tmp_path, [])):
         assert ig.read_active_monitor_loops() == 0
 
 
 def test_monitor_loop_probe_reads_the_real_registry_shape(tmp_path):
     """Pin the two private names the probe reaches into, so a rename fails here."""
-    from kiro_crew.autonudge import AutoNudgeService, NudgeLoop
+    from efm_go.autonudge import AutoNudgeService, NudgeLoop
 
     service = AutoNudgeService(base_dir=tmp_path)
     assert isinstance(service._loops, dict), "AutoNudgeService._loops is no longer a dict"
@@ -200,7 +200,7 @@ def test_monitor_loop_probe_reads_the_real_registry_shape(tmp_path):
 
 
 def test_installed_skills_counts_the_loader_listing(tmp_path):
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.skills import SkillsLoader
 
     for name in ("alpha", "beta", "gamma"):
         skill = tmp_path / name
@@ -301,7 +301,7 @@ def test_ttl_cached_never_propagates_a_probe_exception():
 
 
 def test_memory_migrated_reports_the_config_bit():
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     cfg = KiroCrewConfig()
     cfg.memory.migrated = True
@@ -319,7 +319,7 @@ def test_every_declared_toggle_resolves_against_a_real_config():
     runtime behavior (a missing series beats a fabricated "off") but would hide a
     typo forever. This is the ratchet that makes the omission observable.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     cfg = KiroCrewConfig()
     for key, section_name, field_name in ig.CONFIG_TOGGLES:
@@ -342,7 +342,7 @@ def test_config_toggle_keys_are_unique_and_exclude_the_tautologies():
 
 
 def test_config_toggles_reports_zero_and_one():
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     cfg = KiroCrewConfig()
     with patch.object(KiroCrewConfig, "load", return_value=cfg):
@@ -353,7 +353,7 @@ def test_config_toggles_reports_zero_and_one():
 
 
 def test_config_toggles_omits_an_unresolvable_key():
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     cfg = KiroCrewConfig()
     with patch.object(ig, "CONFIG_TOGGLES", (("ghost", "telemetry", "no_such_field"),)):
@@ -375,7 +375,7 @@ def _make_knowledge_db(root, source_count):
     permanently CACHED gap indistinguishable from "never ingested". Going through
     the real store makes this test the place a schema rename fails.
     """
-    from kiro_crew.knowledge.store import KnowledgeStore
+    from efm_go.knowledge.store import KnowledgeStore
 
     db_dir = root / "workspace" / "knowledge"
     db_dir.mkdir(parents=True)
@@ -399,7 +399,7 @@ def test_knowledge_documents_counts_sources(tmp_path):
     _make_knowledge_db(tmp_path, 12)
     ig.reset_for_testing()
     try:
-        with patch("kiro_crew.config.paths.config_dir", return_value=tmp_path):
+        with patch("efm_go.config.paths.config_dir", return_value=tmp_path):
             assert ig.read_knowledge_documents() == 12, (
                 f"the probe could not count {ig.KNOWLEDGE_SOURCES_TABLE!r} in a schema "
                 "KnowledgeStore itself created; read_knowledge_documents would gap forever"
@@ -412,7 +412,7 @@ def test_knowledge_probe_never_creates_the_database(tmp_path):
     """A telemetry probe must not bring a subsystem into existence."""
     ig.reset_for_testing()
     try:
-        with patch("kiro_crew.config.paths.config_dir", return_value=tmp_path):
+        with patch("efm_go.config.paths.config_dir", return_value=tmp_path):
             assert ig.read_knowledge_documents() is None
         assert not (tmp_path / "workspace" / "knowledge" / "knowledge.db").exists()
         assert not (tmp_path / "workspace").exists()
@@ -450,7 +450,7 @@ def test_knowledge_probe_opens_read_only(tmp_path):
     ig.reset_for_testing()
     try:
         with (
-            patch("kiro_crew.config.paths.config_dir", return_value=tmp_path),
+            patch("efm_go.config.paths.config_dir", return_value=tmp_path),
             patch.object(sqlite3, "connect", _spy),
         ):
             assert ig.read_knowledge_documents() == 1, "the probe did not run"
@@ -461,7 +461,7 @@ def test_knowledge_probe_opens_read_only(tmp_path):
 
 
 def test_lessons_counts_saved_lessons(tmp_path):
-    from kiro_crew.learn import Lesson, LessonStore
+    from efm_go.learn import Lesson, LessonStore
 
     store = LessonStore(base_dir=tmp_path)
     store.save(Lesson(ts="2026-01-01T00:00:00Z", rule="always X", category="preference"))
@@ -475,7 +475,7 @@ def test_lessons_counts_saved_lessons(tmp_path):
 
 
 def test_lessons_absent_file_is_a_genuine_zero(tmp_path):
-    from kiro_crew.learn import LessonStore
+    from efm_go.learn import LessonStore
 
     ig.reset_for_testing()
     try:
@@ -491,21 +491,21 @@ def test_lessons_absent_file_is_a_genuine_zero(tmp_path):
 
 
 def test_mcp_classes_split_managed_from_user_added():
-    from kiro_crew.mcp_discovery import _MANAGED_SERVER_NAMES
+    from efm_go.mcp_discovery import _MANAGED_SERVER_NAMES
 
     managed = sorted(_MANAGED_SERVER_NAMES)
     assert managed, "the managed-server constant must not be empty"
     agent_cfg = {"mcpServers": {name: {} for name in managed[:2]}}
     by_source = {"user": {"acme-internal-tool": {}, "some-other-server": {}}}
-    with patch("kiro_crew.mcp_discovery._load_agent_config", return_value=agent_cfg):
-        with patch("kiro_crew.mcp_discovery._load_mcp_json_by_source", return_value=by_source):
+    with patch("efm_go.mcp_discovery._load_agent_config", return_value=agent_cfg):
+        with patch("efm_go.mcp_discovery._load_mcp_json_by_source", return_value=by_source):
             classes = ig.read_mcp_server_classes()
     assert classes == {ig.MCP_CLASS_FIRST_PARTY: 2, ig.MCP_CLASS_THIRD_PARTY: 2}
 
 
 def test_mcp_classes_empty_roster_yields_none():
-    with patch("kiro_crew.mcp_discovery._load_agent_config", return_value={}):
-        with patch("kiro_crew.mcp_discovery._load_mcp_json_by_source", return_value={}):
+    with patch("efm_go.mcp_discovery._load_agent_config", return_value={}):
+        with patch("efm_go.mcp_discovery._load_mcp_json_by_source", return_value={}):
             assert ig.read_mcp_server_classes() is None
 
 
@@ -513,7 +513,7 @@ def test_mcp_first_party_set_is_the_installer_constant_not_a_local_copy():
     """Reusing mcp_discovery's constant is what stops a silent drift."""
     import inspect
 
-    from kiro_crew.mcp_discovery import _MANAGED_SERVER_NAMES
+    from efm_go.mcp_discovery import _MANAGED_SERVER_NAMES
 
     source = inspect.getsource(ig.read_mcp_server_classes)
     assert "_MANAGED_SERVER_NAMES" in source
@@ -603,10 +603,10 @@ def test_no_mcp_server_name_reaches_any_attribute():
     """The privacy ratchet: a user's roster classifies, then is discarded."""
     secret = "acme-confidential-internal-mcp"
     with patch(
-        "kiro_crew.mcp_discovery._load_agent_config",
+        "efm_go.mcp_discovery._load_agent_config",
         return_value={"mcpServers": {secret: {}}},
     ):
-        with patch("kiro_crew.mcp_discovery._load_mcp_json_by_source", return_value={}):
+        with patch("efm_go.mcp_discovery._load_mcp_json_by_source", return_value={}):
             metrics = _collect()
     points = metrics.get(ig.GAUGE_MCP_SERVERS) or []
     assert points, "the MCP gauge must still publish a count"
@@ -784,7 +784,7 @@ def test_reporter_claim_is_unconditional():
     import ast
     from pathlib import Path
 
-    from kiro_crew.slack import gateway as gateway_mod
+    from efm_go.slack import gateway as gateway_mod
 
     tree = ast.parse(Path(gateway_mod.__file__).read_text(encoding="utf-8"))
     branching = (ast.If, ast.IfExp, ast.For, ast.AsyncFor, ast.While, ast.Match)
@@ -823,12 +823,12 @@ def _enable_telemetry(monkeypatch):
 
 
 def test_live_build_registers_inventory_gauges(monkeypatch):
-    from kiro_crew.metrics import provider as provider_mod
+    from efm_go.metrics import provider as provider_mod
 
     _enable_telemetry(monkeypatch)
     provider_mod.reset_for_testing()
     try:
-        with patch("kiro_crew.metrics.inventory_gauges.register_inventory_gauges") as register:
+        with patch("efm_go.metrics.inventory_gauges.register_inventory_gauges") as register:
             rec = provider_mod.get_recorder()
             assert rec.enabled
             register.assert_called_once()
@@ -837,13 +837,13 @@ def test_live_build_registers_inventory_gauges(monkeypatch):
 
 
 def test_gauge_registration_failure_keeps_telemetry_alive(monkeypatch):
-    from kiro_crew.metrics import provider as provider_mod
+    from efm_go.metrics import provider as provider_mod
 
     _enable_telemetry(monkeypatch)
     provider_mod.reset_for_testing()
     try:
         with patch(
-            "kiro_crew.metrics.inventory_gauges.register_inventory_gauges",
+            "efm_go.metrics.inventory_gauges.register_inventory_gauges",
             side_effect=RuntimeError("boom"),
         ):
             rec = provider_mod.get_recorder()
@@ -854,16 +854,16 @@ def test_gauge_registration_failure_keeps_telemetry_alive(monkeypatch):
 
 def test_inventory_failure_does_not_cost_the_process_gauges(monkeypatch):
     """Separate try blocks: one subsystem's probe cannot dark the other's."""
-    from kiro_crew.metrics import provider as provider_mod
+    from efm_go.metrics import provider as provider_mod
 
     _enable_telemetry(monkeypatch)
     provider_mod.reset_for_testing()
     try:
         with patch(
-            "kiro_crew.metrics.inventory_gauges.register_inventory_gauges",
+            "efm_go.metrics.inventory_gauges.register_inventory_gauges",
             side_effect=RuntimeError("boom"),
         ):
-            with patch("kiro_crew.metrics.process_gauges.register_process_gauges") as process:
+            with patch("efm_go.metrics.process_gauges.register_process_gauges") as process:
                 rec = provider_mod.get_recorder()
                 assert rec.enabled
                 process.assert_called_once()

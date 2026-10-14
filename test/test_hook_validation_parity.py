@@ -20,7 +20,7 @@ import json
 
 import pytest
 
-from kiro_crew.hooks import (
+from efm_go.hooks import (
     HOOK_EVENT_AGENT_SPAWN,
     HOOK_EVENT_PRE_TOOL_USE,
     HOOK_EVENT_STOP,
@@ -34,7 +34,7 @@ from kiro_crew.hooks import (
     _has_global_inline_flags,
     validate_hook_fields,
 )
-from kiro_crew.webhooks import WebhookStoreUnreadable
+from efm_go.webhooks import WebhookStoreUnreadable
 
 
 def _valid(**overrides) -> dict:

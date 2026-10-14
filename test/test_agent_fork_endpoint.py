@@ -17,16 +17,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew import agent_state
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_path
-from kiro_crew.dashboard.handlers.agents import api_agent_fork
+from efm_go import agent_state
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_path
+from efm_go.dashboard.handlers.agents import api_agent_fork
 
 
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     """Run past the owner boundary; owner-auth has its own coverage elsewhere."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -67,7 +67,7 @@ async def test_fork_happy_path(tmp_path):
     _write_template(agents_dir, "mytemplate")
     _seed_config("design-crew", "mytemplate")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "design-crew"}))
 
     assert resp.status == 200
@@ -101,7 +101,7 @@ async def test_fork_copies_model_managed(tmp_path):
     _seed_config("crew-a", "mytemplate")
     agent_state.set_model_managed("mytemplate", True)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "crew-a"}))
 
     assert resp.status == 200
@@ -118,7 +118,7 @@ async def test_fork_collision_gets_numeric_suffix(tmp_path):
     # Crew name "design crew" sanitizes to "design-crew", which is taken.
     _seed_config("design crew", "mytemplate")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "design crew"}))
 
     assert resp.status == 200
@@ -136,7 +136,7 @@ async def test_fork_idempotent_second_call(tmp_path):
     _write_template(agents_dir, "mytemplate")
     _seed_config("c", "mytemplate")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         first = await api_agent_fork(_fork_request("mytemplate", {"crew": "c"}))
         assert first.status == 200
         # The crew now points at its copy "c"; a repeat fork-before-edit call
@@ -156,7 +156,7 @@ async def test_fork_unknown_template_404(tmp_path):
     agents_dir.mkdir()
     _seed_config("crew-a", "whatever")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("nonexistent", {"crew": "crew-a"}))
 
     assert resp.status == 404
@@ -170,7 +170,7 @@ async def test_fork_unknown_crew_404(tmp_path):
     _write_template(agents_dir, "mytemplate")
     _seed_config("crew-a", "mytemplate")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "ghost-crew"}))
 
     assert resp.status == 404
@@ -183,7 +183,7 @@ async def test_fork_invalid_json_400(tmp_path):
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", None, bad_json=True))
 
     assert resp.status == 400
@@ -194,7 +194,7 @@ async def test_fork_non_object_body_400(tmp_path):
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", ["not", "an", "object"]))
 
     assert resp.status == 400
@@ -205,7 +205,7 @@ async def test_fork_missing_crew_400(tmp_path):
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "   "}))
 
     assert resp.status == 400
@@ -222,7 +222,7 @@ async def test_fork_stale_binding_409(tmp_path):
     _write_template(agents_dir, "newtemplate")
     _seed_config("design-crew", "newtemplate")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("oldtemplate", {"crew": "design-crew"}))
 
     assert resp.status == 409
@@ -241,7 +241,7 @@ async def test_fork_bounds_overlong_crew_name(tmp_path):
     _write_template(agents_dir, "mytemplate")
     _seed_config(crew, "mytemplate")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": crew}))
 
     assert resp.status == 200
@@ -261,9 +261,9 @@ async def test_fork_bookkeeping_failure_compensates(tmp_path):
     _seed_config("design-crew", "mytemplate")
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch(
-            "kiro_crew.dashboard.handlers.agents.agent_state.set_fork_info",
+            "efm_go.dashboard.handlers.agents.agent_state.set_fork_info",
             side_effect=RuntimeError("sidecar unavailable"),
         ),
     ):
@@ -293,7 +293,7 @@ async def test_fork_name_skips_another_crews_dangling_binding(tmp_path):
     cfg.default_agent = "alpha"
     cfg.save()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "alpha"}))
 
     assert resp.status == 200
@@ -307,7 +307,7 @@ async def test_fork_name_skips_another_crews_dangling_binding(tmp_path):
 async def test_fork_name_skips_the_legacy_default_agent_fallback(tmp_path):
     """`agent.default_agent` — the legacy global fallback — is a resolvable
     reference like any binding: a dangling one must not capture the new copy."""
-    from kiro_crew.config.loader import config_path, update_config_locked
+    from efm_go.config.loader import config_path, update_config_locked
 
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
@@ -320,7 +320,7 @@ async def test_fork_name_skips_the_legacy_default_agent_fallback(tmp_path):
 
     update_config_locked(config_path(), mutate=_inject_fallback)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "design-crew"}))
 
     assert resp.status == 200
@@ -356,9 +356,9 @@ async def test_fork_rollback_keeps_a_foreign_bound_copy(tmp_path):
         raise RuntimeError("sidecar unavailable")
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch(
-            "kiro_crew.dashboard.handlers.agents.agent_state.set_fork_info",
+            "efm_go.dashboard.handlers.agents.agent_state.set_fork_info",
             side_effect=_bind_then_fail,
         ),
     ):
@@ -379,8 +379,8 @@ async def test_fork_suffixes_past_reserved_windows_basename(tmp_path):
     agents_dir.mkdir()
     _write_template(agents_dir, "mytemplate")
     _seed_config("con", "mytemplate")
-    from kiro_crew.agent import agents_spec_lock
-    from kiro_crew.dashboard.handlers import agents
+    from efm_go.agent import agents_spec_lock
+    from efm_go.dashboard.handlers import agents
 
     # Include the real advisory-lock file in the pre-operation snapshot.
     with agents_spec_lock(agents_dir):
@@ -388,7 +388,7 @@ async def test_fork_suffixes_past_reserved_windows_basename(tmp_path):
     before = {p.name: p.read_bytes() for p in agents_dir.iterdir()}
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch.object(agents, "_write_spec_file", wraps=agents._write_spec_file) as writer,
     ):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "con"}))
@@ -421,7 +421,7 @@ async def test_fork_suffixes_past_the_kas_reserved_ids(tmp_path, crew):
     _seed_config(crew, "kirocrew")
     assert not (agents_dir / f"{crew}.json").exists()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("kirocrew", {"crew": crew}))
 
     assert resp.status == 200
@@ -445,7 +445,7 @@ async def test_fork_reserved_id_match_is_case_sensitive(tmp_path):
     _write_template(agents_dir, "kirocrew")
     _seed_config("Default", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("kirocrew", {"crew": "Default"}))
 
     assert resp.status == 200
@@ -464,7 +464,7 @@ async def test_fork_suffixes_past_managed_agent_stems_even_when_absent(tmp_path)
     _seed_config("kirocrew-lite", "mytemplate")
     assert not (agents_dir / "kirocrew-lite.json").exists()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "kirocrew-lite"}))
 
     assert resp.status == 200
@@ -479,11 +479,11 @@ def test_write_spec_file_unlinks_failed_create(tmp_path):
     name — the failed exclusive create is unlinked."""
     from unittest.mock import ANY  # noqa: F401 — parity with module style
 
-    from kiro_crew.dashboard.handlers.agents import _write_spec_file
+    from efm_go.dashboard.handlers.agents import _write_spec_file
 
     dest = tmp_path / "newspec.json"
     with patch(
-        "kiro_crew.dashboard.handlers.agents.sanitize_agent_config_governance",
+        "efm_go.dashboard.handlers.agents.sanitize_agent_config_governance",
         side_effect=RuntimeError("disk full mid-serialize"),
     ):
         with pytest.raises(RuntimeError):
@@ -533,7 +533,7 @@ async def test_fork_prunes_stale_sidecar_state_on_reused_name(tmp_path):
     agent_state.set_cc_model("design-crew", "stale-model-pin")
     agent_state.set_model_managed("design-crew", True)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "design-crew"}))
 
     assert resp.status == 200
@@ -552,7 +552,7 @@ async def test_fork_clears_a_stale_refresh_failure(tmp_path, monkeypatch):
     rebind sees an uncorroborated fork and records it as failed; the endpoint
     re-runs the refresh after the rebind persisted, so the committed fork is
     re-corroborated instead of left blocked at the spawn gate."""
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
@@ -562,7 +562,7 @@ async def test_fork_clears_a_stale_refresh_failure(tmp_path, monkeypatch):
     # in the failure set before the endpoint returns.
     monkeypatch.setattr(agent_mod, "_fork_refresh_failed", frozenset({"design-crew"}))
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_fork(_fork_request("mytemplate", {"crew": "design-crew"}))
         assert resp.status == 200
         # The post-rebind refresh rebuilt the failure set with the binding

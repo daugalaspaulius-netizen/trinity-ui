@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from kiro_crew.deploy.iam import boundary_policy_document, policy_document
+from efm_go.deploy.iam import boundary_policy_document, policy_document
 
 _TEMPLATES = (
     Path(__file__).resolve().parents[1]
-    / "src/kiro_crew/deploy/skills/artifact-deploy/templates"
+    / "src/efm_go/deploy/skills/artifact-deploy/templates"
 )
 
 

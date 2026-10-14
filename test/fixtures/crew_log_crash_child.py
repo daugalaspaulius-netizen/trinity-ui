@@ -26,8 +26,8 @@ import sys
 import time
 from pathlib import Path
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, emit
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, emit
 
 SESSION = "crash-child-session"
 

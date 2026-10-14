@@ -307,7 +307,7 @@ export function GlobalHotkeyRow() {
   if (!hotkey) return null
   return (
     <ShortcutRow
-      label={i18nT('components.shortcutsModal.show_or_focus_the_kiro_crew_window')}
+      label={i18nT('components.shortcutsModal.show_or_focus_the_efm_go_window')}
       keys={formatAcceleratorKeys(hotkey.accelerator, IS_MAC)}
     />
   )
@@ -398,7 +398,7 @@ export default function ShortcutsModal({ onClose }: { onClose: () => void }) {
   const showGlobalHotkey = useMemo(() => {
     if (!globalHotkey) return false
     if (!normalizedQuery) return true
-    const label = i18nT('components.shortcutsModal.show_or_focus_the_kiro_crew_window').toLowerCase()
+    const label = i18nT('components.shortcutsModal.show_or_focus_the_efm_go_window').toLowerCase()
     const sectionName = i18nT('components.shortcutsModal.desktop_app').toLowerCase()
     const keys = formatAcceleratorKeys(globalHotkey.accelerator, IS_MAC).join(' ').toLowerCase()
     return (

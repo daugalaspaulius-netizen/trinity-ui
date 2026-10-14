@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import mcp_core, mcp_cron, mcp_dashboard
-from kiro_crew.mcp_tool_titles import _table, declared_tool_title, with_titles
+from efm_go import mcp_core, mcp_cron, mcp_dashboard
+from efm_go.mcp_tool_titles import _table, declared_tool_title, with_titles
 
 _SERVERS = {
     "kirocrew-core": mcp_core,

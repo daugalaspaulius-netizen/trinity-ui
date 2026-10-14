@@ -1,4 +1,4 @@
-"""Coverage for the thinly-tested command dispatchers in ``kiro_crew.cli_server``.
+"""Coverage for the thinly-tested command dispatchers in ``efm_go.cli_server``.
 
 Everything here injects a fake at the seam the product actually reaches:
 
@@ -26,18 +26,18 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_server, kiro_cli, platform_compat
-from kiro_crew.config.loader import _DEFAULT_PORT
-from kiro_crew.dashboard.handlers.core import DASHBOARD_HTML_NOT_FOUND_MARKER
-from kiro_crew.gateway_lock import LockHolder, LockProbeError
-from kiro_crew.platform.update_layout import InstallLayout
-from kiro_crew.service import linux as svc_linux
-from kiro_crew.service import macos as svc_macos
-from kiro_crew.service.common import Platform, RestartReport
+from efm_go import cli_server, kiro_cli, platform_compat
+from efm_go.config.loader import _DEFAULT_PORT
+from efm_go.dashboard.handlers.core import DASHBOARD_HTML_NOT_FOUND_MARKER
+from efm_go.gateway_lock import LockHolder, LockProbeError
+from efm_go.platform.update_layout import InstallLayout
+from efm_go.service import linux as svc_linux
+from efm_go.service import macos as svc_macos
+from efm_go.service.common import Platform, RestartReport
 
 
 class _SelRecorder:
-    """Stand-in for :func:`kiro_crew.sel.sel` that records audit calls."""
+    """Stand-in for :func:`efm_go.sel.sel` that records audit calls."""
 
     def __init__(self) -> None:
         self.calls: list[dict] = []
@@ -1038,7 +1038,7 @@ class TestGateway:
             saved = 0
 
         monkeypatch.setattr(cli_server, "KiroCrewConfig", _Cfg)
-        monkeypatch.setattr("kiro_crew.cli._node_ok", lambda: True)
+        monkeypatch.setattr("efm_go.cli._node_ok", lambda: True)
         return captured, _Cfg
 
     def test_flags_are_forwarded_to_run_gateway(self, gw) -> None:
@@ -1064,14 +1064,14 @@ class TestGateway:
     def test_missing_dist_warns_but_still_starts(self, gw, monkeypatch, caplog) -> None:
         captured, _ = gw
         monkeypatch.setattr(cli_server, "ensure_dev_dist_symlink", lambda: None)
-        with caplog.at_level("WARNING", logger="kiro_crew.cli_server"):
+        with caplog.at_level("WARNING", logger="efm_go.cli_server"):
             asyncio.run(cli_server._gateway(no_dashboard=False))
         assert any("dist/ not found" in r.message for r in caplog.records)
         assert "kw" in captured
 
     def test_the_dist_is_resolved_off_the_event_loop(self, gw, monkeypatch) -> None:
         """An edition start waits for the staging lock; on the loop thread that wait is skipped."""
-        from kiro_crew.atomic_write import on_event_loop
+        from efm_go.atomic_write import on_event_loop
 
         seen: list[bool] = []
         monkeypatch.setattr(
@@ -1092,8 +1092,8 @@ class TestGateway:
 
     def test_stale_node_triggers_ensure_node(self, gw, monkeypatch) -> None:
         calls: list[str] = []
-        monkeypatch.setattr("kiro_crew.cli._node_ok", lambda: False)
-        monkeypatch.setattr("kiro_crew.cli._ensure_node", lambda *a: calls.append("ensured"))
+        monkeypatch.setattr("efm_go.cli._node_ok", lambda: False)
+        monkeypatch.setattr("efm_go.cli._ensure_node", lambda *a: calls.append("ensured"))
         asyncio.run(cli_server._gateway(no_dashboard=True))
         assert calls == ["ensured"]
 
@@ -1101,7 +1101,7 @@ class TestGateway:
         self, gw, monkeypatch, caplog
     ) -> None:
         monkeypatch.setattr(cli_server, "activate_mise", lambda: ["PATH"])
-        with caplog.at_level("INFO", logger="kiro_crew.cli_server"):
+        with caplog.at_level("INFO", logger="efm_go.cli_server"):
             asyncio.run(cli_server._gateway(no_dashboard=True))
         assert any("Activated mise" in r.message for r in caplog.records)
 
@@ -1113,7 +1113,7 @@ class TestGateway:
             raise OSError("read-only Application Support")
 
         monkeypatch.setattr(svc_macos, "ensure_live_program", boom)
-        with caplog.at_level("WARNING", logger="kiro_crew.cli_server"):
+        with caplog.at_level("WARNING", logger="efm_go.cli_server"):
             asyncio.run(cli_server._gateway(no_dashboard=True))
         assert any("live-gateway launcher" in r.message for r in caplog.records)
         assert "kw" in captured  # the gateway still started
@@ -1169,7 +1169,7 @@ class _Result:
 @pytest.fixture
 def taskrunner_env(monkeypatch, tmp_path):
     """Replace every collaborator ``_run_task`` constructs, and expose the spies."""
-    from kiro_crew.config import KiroCrewConfig
+    from efm_go.config import KiroCrewConfig
 
     state: dict = {"vector": None, "sessions": None, "runner_kwargs": None, "observed": []}
 
@@ -1285,7 +1285,7 @@ class TestRunTask:
         # The live config watcher only fires on change, so the boot value
         # must reach the consolidator, or markdown memory is rewritten on a
         # migrated install.
-        from kiro_crew.config import KiroCrewConfig
+        from efm_go.config import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.memory.migrated = True
@@ -1513,7 +1513,7 @@ class _GitStub:
         if Path(argv[0]).name == "kiro-cli":
             # The pinned absolute path is argv0, never the bare name.
             return subprocess.CompletedProcess(argv, 0, "", "")
-        if argv[1:] == ["-I", "-X", "utf8", "-c", "import kiro_crew"]:
+        if argv[1:] == ["-I", "-X", "utf8", "-c", "import efm_go"]:
             # The full-reinstall success contract probes the target interpreter
             # in isolation from the caller's CWD and PYTHONPATH.
             return subprocess.CompletedProcess(argv, 0, b"", b"")
@@ -1538,15 +1538,15 @@ def git_checkout(monkeypatch, tmp_path):
     # exercises the git path with a fabricated tree the test process does not
     # run from, so provenance is declared rather than derived.
     monkeypatch.setattr(
-        "kiro_crew.platform.update_capability.running_from_checkout",
+        "efm_go.platform.update_capability.running_from_checkout",
         lambda root, **kw: True,
     )
     monkeypatch.setattr(
-        "kiro_crew.platform.update_governance.resolve_remote_url",
-        lambda p, remote="", branch="": "https://github.com/kirodotdev/KiroCrew.git",
+        "efm_go.platform.update_governance.resolve_remote_url",
+        lambda p, remote="", branch="": "https://efmleads.com.git",
     )
     monkeypatch.setattr(
-        "kiro_crew.platform.update_governance.update_blocked_reason", lambda url: ""
+        "efm_go.platform.update_governance.update_blocked_reason", lambda url: ""
     )
     monkeypatch.setattr(cli_server.shutil, "which", lambda name: None)
     # The optional kiro-cli step spawns only a PINNED install (resolved with the
@@ -1555,7 +1555,7 @@ def git_checkout(monkeypatch, tmp_path):
     # one explicitly.
     monkeypatch.setattr(kiro_cli, "resolve_kiro_cli", lambda **kw: None)
     monkeypatch.setattr(cli_server, "build_frontend_sync", lambda p: None)
-    monkeypatch.setattr("kiro_crew.cli._ensure_node", lambda *a: None)
+    monkeypatch.setattr("efm_go.cli._ensure_node", lambda *a: None)
     # Pin the install ROUTE. The real probe reads the test interpreter's own
     # Scripts dir, so on a Windows dev box running from a checkout these tests
     # would silently take the dependency-only branch instead of the reinstall
@@ -1603,7 +1603,7 @@ class TestUpdateGitPath:
 
         monkeypatch.setattr(subprocess, "run", _run)
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_blocked_reason",
+            "efm_go.platform.update_governance.update_blocked_reason",
             lambda url: "remote not on the fleet allowlist",
         )
         with pytest.raises(SystemExit) as exc:
@@ -1674,7 +1674,7 @@ class TestUpdateGitPath:
         self, monkeypatch, git_checkout, capsys
     ) -> None:
         """A failed `git show` is not "no floor declared": the reset must not run."""
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         stub = _GitStub()
         stub.show_fails = True
@@ -1696,7 +1696,7 @@ class TestUpdateGitPath:
         `reset --hard` had already moved the checkout to code this interpreter
         cannot import -- the stranded state every later run then repeats.
         """
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         stub = _GitStub()
         stub.show_out = b'[project]\nname = "kirocrew"\nrequires-python = ">=3.12"\n'
@@ -1723,7 +1723,7 @@ class TestUpdateGitPath:
     def test_a_venv_that_meets_the_incoming_floor_still_resets(
         self, monkeypatch, git_checkout, capsys
     ) -> None:
-        from kiro_crew import dep_sync
+        from efm_go import dep_sync
 
         stub = _GitStub()
         stub.show_out = b'[project]\nname = "kirocrew"\nrequires-python = ">=3.12"\n'
@@ -2064,8 +2064,8 @@ class TestUpdateWheelDispatch:
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
         # Both bindings: the capability derives WHO owns the update from the
         # stamp, and cli_server names the layout kind from its own import.
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "wheel")
-        monkeypatch.setattr("kiro_crew.cli_server.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.cli_server.distribution", lambda: "wheel")
         seen: list[InstallLayout] = []
         monkeypatch.setattr(cli_server, "_update_wheel", lambda layout: seen.append(layout))
         cli_server._update()
@@ -2076,8 +2076,8 @@ class TestUpdateWheelDispatch:
 
     def test_unknown_distribution_defaults_to_wheel(self, monkeypatch) -> None:
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "")
-        monkeypatch.setattr("kiro_crew.cli_server.distribution", lambda: "")
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "")
+        monkeypatch.setattr("efm_go.cli_server.distribution", lambda: "")
         seen: list[InstallLayout] = []
         monkeypatch.setattr(cli_server, "_update_wheel", lambda layout: seen.append(layout))
         cli_server._update()
@@ -2098,16 +2098,16 @@ _LAYOUT = InstallLayout(
 def wheel_feed(monkeypatch):
     """Pin the CDN bases, channel, and installer command; return a payload setter."""
     monkeypatch.setattr(
-        "kiro_crew.platform.update_layout.cdn_bases",
+        "efm_go.platform.update_layout.cdn_bases",
         lambda: ("https://cdn.example.com", "https://cdn.example.com"),
     )
-    monkeypatch.setattr("kiro_crew.platform.update_layout.release_channel", lambda: "stable")
+    monkeypatch.setattr("efm_go.platform.update_layout.release_channel", lambda: "stable")
     monkeypatch.setattr(
-        "kiro_crew.platform.update_layout.wheel_update_command",
+        "efm_go.platform.update_layout.wheel_update_command",
         lambda channel=None: "curl -fsSL https://cdn.example.com/cli.sh | sh",
     )
     monkeypatch.setattr(
-        "kiro_crew.platform.update_governance.update_blocked_reason", lambda url: ""
+        "efm_go.platform.update_governance.update_blocked_reason", lambda url: ""
     )
 
     def _no_network(*a, **k):
@@ -2128,7 +2128,7 @@ class TestUpdateWheelFeedValidation:
 
     def test_pinned_feed_base_blocks_the_update(self, monkeypatch, wheel_feed, capsys) -> None:
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_blocked_reason",
+            "efm_go.platform.update_governance.update_blocked_reason",
             lambda url: "source pinned to an internal mirror",
         )
         with pytest.raises(SystemExit) as exc:
@@ -2140,11 +2140,11 @@ class TestUpdateWheelFeedValidation:
         self, monkeypatch, wheel_feed, capsys
     ) -> None:
         monkeypatch.setattr(
-            "kiro_crew.platform.update_layout.cdn_bases",
+            "efm_go.platform.update_layout.cdn_bases",
             lambda: ("https://feed.example.com", "https://artifacts.example.com"),
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_blocked_reason",
+            "efm_go.platform.update_governance.update_blocked_reason",
             lambda url: "" if "feed" in url else "artifact host not allowed",
         )
         with pytest.raises(SystemExit) as exc:
@@ -2156,7 +2156,7 @@ class TestUpdateWheelFeedValidation:
         self, monkeypatch, wheel_feed, capsys
     ) -> None:
         monkeypatch.setattr(
-            "kiro_crew.platform.update_layout.cdn_bases",
+            "efm_go.platform.update_layout.cdn_bases",
             lambda: ("https://cdn.example.com;id", "https://cdn.example.com"),
         )
         with pytest.raises(SystemExit) as exc:
@@ -2263,7 +2263,7 @@ class TestUpdateWheelInstaller:
         # These tests exercise the installer re-run, which is the path a pipx
         # install takes. A plain-pip install refuses before it (covered in
         # test_update_wheel_dispatch.py), so pin the pipx shape here.
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: False)
         monkeypatch.setattr(wheel_engine, "running_from_pipx", lambda: True)
@@ -2371,8 +2371,8 @@ class TestUpdateWheelInstaller:
         installer command embeds the CDN base — with a token-bearing
         KIROCREW_CDN_BASE either would land credentials in terminal history.
         """
-        from kiro_crew.platform import wheel_engine
-        from kiro_crew.platform.wheel_engine import WheelUpdateError
+        from efm_go.platform import wheel_engine
+        from efm_go.platform.wheel_engine import WheelUpdateError
 
         # _update_wheel imports these from wheel_engine lazily (kept off the
         # gateway boot path), so patch the SOURCE module, not cli_server —
@@ -2387,7 +2387,7 @@ class TestUpdateWheelInstaller:
 
         monkeypatch.setattr(wheel_engine, "apply_wheel_update", _boom)
         monkeypatch.setattr(
-            "kiro_crew.platform.update_layout.wheel_update_command",
+            "efm_go.platform.update_layout.wheel_update_command",
             lambda channel=None: (
                 "curl -fsSL https://user:tok-SECRET99@cdn.example.com/cli.sh | sh"
             ),
@@ -2410,7 +2410,7 @@ class TestUpdateWheelInstaller:
         operator-facing failure path (redacted message + fallback command +
         exit 1).
         """
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
 
@@ -2431,7 +2431,7 @@ class TestUpdateWheelInstaller:
         """The managed venv takes the shared path: the memory snapshot runs as the
         engine's last step before promotion, and a promotion that moves the launcher
         a userns AppArmor profile applies to prints how to re-attach it."""
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         monkeypatch.setattr(wheel_apply, "userns_reattach_needed", lambda _version: True)
@@ -2460,7 +2460,7 @@ class TestUpdateWheelInstaller:
     ) -> None:
         """An unsigned feed version that cannot name a tree is refused by the REAL
         engine as an update failure: an exit, never a traceback, nothing built."""
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         wheel_feed(
             b'{"schema": "kirocrew-cli-artifact-manifest-v1", '
@@ -2486,7 +2486,7 @@ class TestUpdateWheelInstaller:
     ) -> None:
         """The AppArmor probe names the promoted tree too, so it runs inside the
         failure handling rather than ahead of it."""
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
 
@@ -2516,7 +2516,7 @@ class TestUpdateWheelInstaller:
     ) -> None:
         """The installer re-run would race the other update's promotion (busy), or
         perform exactly the un-copied update the snapshot refusal stops."""
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
 
@@ -2533,7 +2533,7 @@ class TestUpdateWheelInstaller:
 
     def test_an_incompatible_release_names_the_installer_rerun(self, monkeypatch, capsys) -> None:
         """Only the installer moves an install onto a Python the release accepts."""
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
 
@@ -2554,7 +2554,7 @@ class TestUpdateWheelInstaller:
     def test_shadow_children_get_this_shells_environment_and_memory_is_checked_first(
         self, monkeypatch, capsys
     ) -> None:
-        from kiro_crew.platform import wheel_apply, wheel_engine
+        from efm_go.platform import wheel_apply, wheel_engine
 
         monkeypatch.setattr(wheel_engine, "running_from_managed_venv", lambda: True)
         seen: dict[str, object] = {}
@@ -2593,7 +2593,7 @@ class TestUpdateWheelInstaller:
     def test_already_latest_returns_without_running_the_installer(
         self, monkeypatch, wheel_feed, capsys
     ) -> None:
-        from kiro_crew import __version__ as local_version
+        from efm_go import __version__ as local_version
 
         wheel_feed(
             b'{"schema": "kirocrew-cli-artifact-manifest-v1", "channel": "stable", '

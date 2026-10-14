@@ -31,8 +31,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import skills as skills_mod
-from kiro_crew.skills import (
+from efm_go import skills as skills_mod
+from efm_go.skills import (
     _PROVENANCE_MARKER,
     _ensure_builtin_skills,
     _skill_tree_fingerprint,
@@ -107,7 +107,7 @@ class TestEnsureOwnerRwxDirs:
         self, readonly_source: Path
     ) -> None:
         # Keep the platform-only helper local to the behavior it exercises.
-        from kiro_crew.platform_compat import ensure_owner_rwx_dirs
+        from efm_go.platform_compat import ensure_owner_rwx_dirs
 
         skill = _make_skill_tree(readonly_source, "alpha")
         os.chmod(skill / "SKILL.md", 0o444)
@@ -132,7 +132,7 @@ class TestDeployRegisterCoreSkills:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
     ) -> None:
         """Red-before: on main this raised PermissionError and killed startup."""
-        import kiro_crew.deploy as deploy_pkg
+        import efm_go.deploy as deploy_pkg
 
         source_root = tmp_path / "deploy-src"
         source_root.mkdir()
@@ -297,7 +297,7 @@ class TestBuiltinSyncFromReadonlySource:
 
 class TestDeployManagedReplacement:
     def _install_once(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-        import kiro_crew.deploy as deploy_pkg
+        import efm_go.deploy as deploy_pkg
 
         source_root = tmp_path / "deploy-src"
         if not source_root.exists():
@@ -316,7 +316,7 @@ class TestDeployManagedReplacement:
         """A managed copy carrying read-only files (preserved from a read-only
         source) is removed via rmtree_force on refresh, so the startup path
         does not depend on plain rmtree's mode handling."""
-        import kiro_crew.deploy as deploy_pkg
+        import efm_go.deploy as deploy_pkg
 
         installed = self._install_once(tmp_path, monkeypatch)
         os.chmod(installed / "SKILL.md", 0o444)
@@ -334,7 +334,7 @@ class TestDeployManagedReplacement:
     ) -> None:
         """rmtree_force never raises; a tree that survives it is a genuinely
         failed install and must keep the fail-loud contract."""
-        import kiro_crew.deploy as deploy_pkg
+        import efm_go.deploy as deploy_pkg
 
         self._install_once(tmp_path, monkeypatch)
         monkeypatch.setattr(deploy_pkg, "rmtree_force", lambda _p: False)
@@ -355,7 +355,7 @@ class TestDeployLinkMigrationIsJunctionAware:
     ``copytree`` crashed on the surviving entry."""
 
     def _wire(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-        import kiro_crew.deploy as deploy_pkg
+        import efm_go.deploy as deploy_pkg
 
         source_root = tmp_path / "deploy-src"
         source_root.mkdir()
@@ -372,8 +372,8 @@ class TestDeployLinkMigrationIsJunctionAware:
         """Built with the product's own link helper, so each platform exercises
         the shape it actually produces. The link is detached (never followed) and
         replaced by a managed copy; whatever it pointed at is untouched."""
-        import kiro_crew.deploy as deploy_pkg
-        from kiro_crew import platform_compat
+        import efm_go.deploy as deploy_pkg
+        from efm_go import platform_compat
 
         link = self._wire(tmp_path, monkeypatch)
         target = tmp_path / "an-app-skill"
@@ -395,8 +395,8 @@ class TestDeployLinkMigrationIsJunctionAware:
     def test_a_dangling_link_is_removed_and_the_copy_lands(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.deploy as deploy_pkg
-        from kiro_crew import platform_compat
+        import efm_go.deploy as deploy_pkg
+        from efm_go import platform_compat
 
         link = self._wire(tmp_path, monkeypatch)
         gone = tmp_path / "removed-target"
@@ -425,8 +425,8 @@ class TestDeployLinkMigrationIsJunctionAware:
         old ``is_symlink()`` test the entry was judged a user-placed directory
         (no marker), the skill was skipped, and no copy landed. The two tests
         above exercise the real shape on the Windows shards."""
-        import kiro_crew.deploy as deploy_pkg
-        from kiro_crew import platform_compat
+        import efm_go.deploy as deploy_pkg
+        from efm_go import platform_compat
 
         link = self._wire(tmp_path, monkeypatch)
         link.mkdir()  # an empty real dir standing in for the junction entry

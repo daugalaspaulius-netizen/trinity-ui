@@ -5,7 +5,7 @@ we welcome issues and pull requests.
 
 ## Reporting Bugs and Requesting Features
 
-Open a [GitHub issue](https://github.com/kirodotdev/KiroCrew/issues). Before you
+Open a [GitHub issue](https://efmleads.com/issues). Before you
 do, search the open issues, because the fastest resolution is often a thread that
 already exists.
 
@@ -21,7 +21,7 @@ it leaves room for an answer nobody had thought of.
 
 ## Finding Something to Work On
 
-Start with the [open issues](https://github.com/kirodotdev/KiroCrew/issues). Issues
+Start with the [open issues](https://efmleads.com/issues). Issues
 carry an `area:` label naming the subsystem they land in — `area: dashboard`,
 `area: agents`, `area: cron` and so on — so you can filter to the part of the
 codebase you want to work in, and a type label (`bug`, `enhancement`,
@@ -55,7 +55,7 @@ steps manually:
 # Fork the repo on GitHub, then clone your fork
 git clone https://github.com/<your-username>/KiroCrew.git
 cd KiroCrew
-git remote add upstream https://github.com/kirodotdev/KiroCrew.git
+git remote add upstream https://efmleads.com.git
 
 make build
 source .venv/bin/activate
@@ -80,7 +80,7 @@ Slack path.
 ## Development Skills (agents and humans)
 
 The contributor workflow is codified as agent-loadable skills in
-[`src/kiro_crew/builtin_skills/kirocrew-dev/`](src/kiro_crew/builtin_skills/kirocrew-dev/)
+[`src/efm_go/builtin_skills/kirocrew-dev/`](src/efm_go/builtin_skills/kirocrew-dev/)
 — the canonical definition of how code gets written, tested, and reviewed here:
 
 - **`kirocrew-worktree-dev`** — the HARD RULE workflow: every change in a git
@@ -124,7 +124,7 @@ KIROCREW_HOME=.kirocrew-dev KIROCREW_PORT=6777 kirocrew gateway
 ```
 
 Browse at `http://localhost:6777`. The backend serves the built frontend assets directly.
-When `src/kiro_crew/static/dist` links to `website/dist` (what `make build` and the
+When `src/efm_go/static/dist` links to `website/dist` (what `make build` and the
 gateway set up for a stock checkout), a hand-run `npm run build` is live as soon as it
 finishes, on a running gateway too; under an edition `static/dist` links to a private
 copy, which only the next stage replaces. See the runtime dist resolution notes in
@@ -186,23 +186,23 @@ Key entry points:
 
 | File | Purpose |
 |------|---------|
-| `src/kiro_crew/cli.py` | CLI entrypoint (argparse) |
-| `src/kiro_crew/session.py` | Conversation session management |
-| `src/kiro_crew/providers/` | LLM provider layer. ACP only — `agent.provider` is fixed to `acp` |
-| `src/kiro_crew/acp/client.py` | ACP JSON-RPC client (stdio) |
-| `src/kiro_crew/slack/gateway.py` | Slack Socket Mode gateway |
-| `src/kiro_crew/slack/handler.py` | Message handling, tool approval |
-| `src/kiro_crew/dashboard/` | Web dashboard (aiohttp backend) |
-| `src/kiro_crew/mcp_core.py` | `kirocrew-core` MCP server: answers `tools/list` and dispatches calls |
-| `src/kiro_crew/mcp_tools/` | `kirocrew-core` tools, one module per domain (`schemas()` + `HANDLERS`) |
-| `src/kiro_crew/mcp_cron.py` | MCP tools: cron scheduling |
-| `src/kiro_crew/context.py` | Context builder (memory, skills, history) |
-| `src/kiro_crew/subagent.py` | Subagent lifecycle and timeout |
-| `src/kiro_crew/autonudge.py` | Reactive same-session self-nudge service |
-| `src/kiro_crew/snapshot.py` | Portable snapshot and restore |
-| `src/kiro_crew/apps/` | App Kit platform (manifest, manager, registry, routes) |
-| `src/kiro_crew/eval/` | Multi-session eval harness |
-| `src/kiro_crew/config/` | Shipped agent config (`defaults.json`) and default system prompt (`prompt.md`); overrides are in [Agent Config Files](src/kiro_crew/docs/agents.md#agent-config-files) |
+| `src/efm_go/cli.py` | CLI entrypoint (argparse) |
+| `src/efm_go/session.py` | Conversation session management |
+| `src/efm_go/providers/` | LLM provider layer. ACP only — `agent.provider` is fixed to `acp` |
+| `src/efm_go/acp/client.py` | ACP JSON-RPC client (stdio) |
+| `src/efm_go/slack/gateway.py` | Slack Socket Mode gateway |
+| `src/efm_go/slack/handler.py` | Message handling, tool approval |
+| `src/efm_go/dashboard/` | Web dashboard (aiohttp backend) |
+| `src/efm_go/mcp_core.py` | `kirocrew-core` MCP server: answers `tools/list` and dispatches calls |
+| `src/efm_go/mcp_tools/` | `kirocrew-core` tools, one module per domain (`schemas()` + `HANDLERS`) |
+| `src/efm_go/mcp_cron.py` | MCP tools: cron scheduling |
+| `src/efm_go/context.py` | Context builder (memory, skills, history) |
+| `src/efm_go/subagent.py` | Subagent lifecycle and timeout |
+| `src/efm_go/autonudge.py` | Reactive same-session self-nudge service |
+| `src/efm_go/snapshot.py` | Portable snapshot and restore |
+| `src/efm_go/apps/` | App Kit platform (manifest, manager, registry, routes) |
+| `src/efm_go/eval/` | Multi-session eval harness |
+| `src/efm_go/config/` | Shipped agent config (`defaults.json`) and default system prompt (`prompt.md`); overrides are in [Agent Config Files](src/efm_go/docs/agents.md#agent-config-files) |
 | `skills/` | On-demand skill definitions (see [skills/README.md](skills/README.md)) |
 | `website/` | React + Vite frontend SPA |
 
@@ -220,15 +220,15 @@ a doc nobody updated is worse than no doc, because readers still trust it.
 
 The five steps — find the one owning doc, edit rather than add, update every
 index, no changelog narration, run `./scripts/docs-lint.sh` — plus the
-`src/kiro_crew/docs/` filenames-are-an-API caveat are in
+`src/efm_go/docs/` filenames-are-an-API caveat are in
 [The rule for changing docs](docs/README.md#the-rule-for-changing-docs).
 
 ## Extending Kiro Crew
 
 - **Skills** — a skill is a directory holding a `SKILL.md`. See [skills/README.md](skills/README.md) for the format and where skills are installed
-- **MCP tools** — a `kirocrew-core` tool is a `schemas()` descriptor plus a `HANDLERS` entry in `src/kiro_crew/mcp_tools/<domain>.py`; cron tools live in `mcp_cron.py`. See [MCP](docs/architecture/mcp.md#a-kirocrew-core-tool-has-two-halves). Every LLM-facing command must have an MCP tool
-- **Hooks** — see [Steering files, prompts and hooks](src/kiro_crew/docs/steering-and-hooks.md)
-- **Lessons** — self-learned from corrections and stored in the memory store (`lessons.jsonl` is a legacy fallback); see [Memory & Learning](src/kiro_crew/docs/memory-and-learning.md#lessons)
+- **MCP tools** — a `kirocrew-core` tool is a `schemas()` descriptor plus a `HANDLERS` entry in `src/efm_go/mcp_tools/<domain>.py`; cron tools live in `mcp_cron.py`. See [MCP](docs/architecture/mcp.md#a-kirocrew-core-tool-has-two-halves). Every LLM-facing command must have an MCP tool
+- **Hooks** — see [Steering files, prompts and hooks](src/efm_go/docs/steering-and-hooks.md)
+- **Lessons** — self-learned from corrections and stored in the memory store (`lessons.jsonl` is a legacy fallback); see [Memory & Learning](src/efm_go/docs/memory-and-learning.md#lessons)
 
 ## Tests
 
@@ -404,7 +404,7 @@ removal request stays honored.
 
 ## Questions?
 
-Open a [GitHub issue](https://github.com/kirodotdev/KiroCrew/issues) or start a
+Open a [GitHub issue](https://efmleads.com/issues) or start a
 discussion in the repository.
 
 ## Security Issues

@@ -38,9 +38,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import aws_consent
-from kiro_crew.apps.builtins.aws_control.backend import accounts as accounts_mod
-from kiro_crew.apps.builtins.aws_control.backend import routes as routes_mod
+from efm_go import aws_consent
+from efm_go.apps.builtins.aws_control.backend import accounts as accounts_mod
+from efm_go.apps.builtins.aws_control.backend import routes as routes_mod
 
 BASE = "/api/apps/aws-control"
 
@@ -450,8 +450,8 @@ class TestConsentExtension:
         assert aws_consent.SERVICE_TRANSCRIBE in aws_consent.GATED_SERVICES
 
     def test_effective_target_names_the_default_chain_when_registry_is_empty(self):
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
-        from kiro_crew.deploy import profiles as deploy_profiles
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.deploy import profiles as deploy_profiles
 
         with mock.patch.object(deploy_profiles, "resolve_profile", return_value=None):
             target = asyncio.run(consent_handlers._effective_target(aws_consent.SERVICE_S3))
@@ -492,7 +492,7 @@ class TestConsentTargetTracksTheOperation:
         )
 
     def test_a_broken_default_does_not_hide_the_accounts_healthy_key(self):
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
 
         snapshot = self._broken_default_snapshot()
         with mock.patch.object(accounts_mod, "list_accounts", AsyncMock(return_value=snapshot)):
@@ -505,7 +505,7 @@ class TestConsentTargetTracksTheOperation:
         A change to the resolution policy has to move both sides or fail here —
         the drift this class exists to catch.
         """
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
 
         snapshot = self._broken_default_snapshot()
         with mock.patch.object(accounts_mod, "list_accounts", AsyncMock(return_value=snapshot)):
@@ -515,7 +515,7 @@ class TestConsentTargetTracksTheOperation:
                 assert card == operation
 
     def test_a_healthy_default_still_wins_over_its_siblings(self):
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
 
         snapshot = _snapshot_of(
             _registry([_entry("first"), _entry("chosen", region="ap-south-1")], default="chosen"),
@@ -534,8 +534,8 @@ class TestConsentTargetTracksTheOperation:
         Picking any healthy key in the registry would let the card offer a
         confirmation for someone else's account — a wrong bill, not a dead end.
         """
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
-        from kiro_crew.deploy import profiles as deploy_profiles
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.deploy import profiles as deploy_profiles
 
         snapshot = _snapshot_of(
             _registry(
@@ -562,8 +562,8 @@ class TestConsentTargetTracksTheOperation:
         surface is the default's own STS error — that is what tells the reader
         the account has to be reconnected.
         """
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
-        from kiro_crew.deploy import profiles as deploy_profiles
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.deploy import profiles as deploy_profiles
 
         snapshot = _snapshot_of(
             _registry([_entry("broken", account=self.ACCOUNT)], default="broken"),
@@ -581,8 +581,8 @@ class TestConsentTargetTracksTheOperation:
 
     def test_a_default_that_resolves_to_no_account_falls_back_too(self):
         """A default in the unresolved pseudo-row names no account to filter within."""
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
-        from kiro_crew.deploy import profiles as deploy_profiles
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.deploy import profiles as deploy_profiles
 
         snapshot = _snapshot_of(
             _registry([_entry("mystery"), _entry("good")], default="mystery"),
@@ -607,8 +607,8 @@ class TestConsentTargetTracksTheOperation:
         registry directly, so it has to be scrubbed on the same side of the
         return or a profile named after a secret reaches the card's JSON verbatim.
         """
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
-        from kiro_crew.deploy import profiles as deploy_profiles
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.deploy import profiles as deploy_profiles
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         snapshot = _snapshot_of(
@@ -636,8 +636,8 @@ class TestConsentTargetTracksTheOperation:
         registry read to fall back on, and an unscrubbed one must not take its
         place.
         """
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
-        from kiro_crew.deploy import profiles as deploy_profiles
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.deploy import profiles as deploy_profiles
 
         with mock.patch.object(
             accounts_mod,
@@ -655,7 +655,7 @@ class TestConsentTargetTracksTheOperation:
         account's healthy sibling skips on every wake, forever, with only a log
         line to say so.
         """
-        from kiro_crew.apps.builtins.aws_control import hooks
+        from efm_go.apps.builtins.aws_control import hooks
 
         snapshot = self._broken_default_snapshot()
         gated: list[tuple[str, str]] = []
@@ -681,7 +681,7 @@ class TestConsentTargetTracksTheOperation:
         assert gated[0] == operation
 
     def test_the_nightly_loop_skips_when_no_key_is_healthy(self):
-        from kiro_crew.apps.builtins.aws_control import hooks
+        from efm_go.apps.builtins.aws_control import hooks
 
         snapshot = _snapshot_of(
             _registry([_entry("broken", account=self.ACCOUNT)], default="broken"),
@@ -702,8 +702,8 @@ class TestConsentTargetTracksTheOperation:
 
     def test_the_voice_services_do_not_touch_the_account_snapshot(self):
         """Polly and Transcribe read their own config; only s3/ce use the registry."""
-        from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
-        from kiro_crew.slack.handler import _vc
+        from efm_go.dashboard.handlers import aws_consent as consent_handlers
+        from efm_go.slack.handler import _vc
 
         swept = AsyncMock(side_effect=AssertionError("voice must not sweep the registry"))
         with (
@@ -725,13 +725,13 @@ class TestConsentTargetTracksTheOperation:
 
 class TestStorageValidation:
     def test_good_keys_pass(self):
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         for key in ("a.txt", "photos 2026/img (1).png", "a/b/c.tar.gz", "x_y" * 3):
             assert storage.validate_key(key) is None, key
 
     def test_hostile_keys_are_refused(self):
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         for key in (
             "",
@@ -749,7 +749,7 @@ class TestStorageValidation:
             assert storage.validate_key(key) is not None, key
 
     def test_section_prefixes_cover_exactly_the_three_sections(self):
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         assert storage.SECTION_PREFIXES == {
             "library": "artifacts/",
@@ -758,7 +758,7 @@ class TestStorageValidation:
         }
 
     def test_presign_clamps_expiry_to_the_sigv4_ceiling(self):
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         seen: dict[str, str] = {}
 
@@ -773,8 +773,8 @@ class TestStorageValidation:
             assert seen["expires"] == "60"
 
     def test_find_drive_refuses_ambiguity(self):
-        from kiro_crew.apps.builtins.aws_control.backend import storage
-        from kiro_crew.deploy.engine import AWSError
+        from efm_go.apps.builtins.aws_control.backend import storage
+        from efm_go.deploy.engine import AWSError
 
         two = json.dumps(
             {
@@ -789,7 +789,7 @@ class TestStorageValidation:
                 storage.find_drive("p", "us-east-1", account="111122223333")
 
     def test_find_drive_ignores_foreign_naming(self):
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         # Round-10 pin: neither an unrelated name NOR a bucket that merely
         # STARTS with our prefix ("kirocrew-drive-company-data") is adopted --
@@ -934,7 +934,7 @@ class TestDriveGuards:
         with (
             mock.patch.object(routes_mod, "is_app_enabled", return_value=True),
             mock.patch(
-                "kiro_crew.dashboard.handlers._shared._is_restricted_session",
+                "efm_go.dashboard.handlers._shared._is_restricted_session",
                 return_value=True,
             ),
         ):
@@ -1015,13 +1015,13 @@ class TestDriveGuards:
 class TestShares:
     @pytest.fixture(autouse=True)
     def _isolated_store(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         monkeypatch.setattr(shares, "_store_path", lambda: tmp_path / "shares.json")
         yield
 
     def test_ledger_records_metadata_never_the_url(self, tmp_path):
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         record = shares.record_share(
             account=ACCOUNT,
@@ -1044,7 +1044,7 @@ class TestShares:
         import contextlib
         from pathlib import Path
 
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         kept = shares.record_share(
             account=ACCOUNT, section="drive", key="live.txt", expires_secs=3600
@@ -1075,7 +1075,7 @@ class TestShares:
         # A mint that cannot be recorded must not answer as though it were.
         from pathlib import Path
 
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         shares.record_share(account=ACCOUNT, section="drive", key="live.txt", expires_secs=3600)
         store = tmp_path / "shares.json"
@@ -1092,7 +1092,7 @@ class TestShares:
 
     def test_a_missing_share_store_is_still_a_first_write(self, tmp_path):
         # Absent is the one failure where [] is the truth.
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         assert not (tmp_path / "shares.json").exists()
         shares.record_share(account=ACCOUNT, section="drive", key="first.txt", expires_secs=3600)
@@ -1105,7 +1105,7 @@ class TestShares:
         # record of live presigned URLs, which are unrevokable bearer grants.
         import json as _json
 
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         corrupt = '[{"id": "recoverable-share", "key": "live.txt"}'  # truncated
         (tmp_path / "shares.json").write_text(corrupt, encoding="utf-8")
@@ -1127,7 +1127,7 @@ class TestShares:
         # it would slip past every corruption clause at the callers.
         import json as _json
 
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         (tmp_path / "shares.json").write_bytes(b"\xff\xfe not utf8")
         with pytest.raises(_json.JSONDecodeError):
@@ -1143,7 +1143,7 @@ class TestShares:
         # to [] would let the rewrite destroy a document nobody could read.
         import json as _json
 
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         (tmp_path / "shares.json").write_text('{"not": "a list"}', encoding="utf-8")
         with pytest.raises(_json.JSONDecodeError):
@@ -1160,7 +1160,7 @@ class TestShares:
         # shape must refuse; the deliberate expiry drop stays retention.
         import json as _json
 
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         for damaged in (
             "a-damaged-row-that-is-not-an-object",
@@ -1185,7 +1185,7 @@ class TestShares:
         # crosses into responses and logs.
         import json as _json
 
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         (tmp_path / "shares.json").write_text(
             _json.dumps([{"id": "x", "key": "leakable-object-key.pdf"}]), encoding="utf-8"
@@ -1200,7 +1200,7 @@ class TestShares:
         # parseable stamp in the past is the deliberate drop, not a refusal.
         import json as _json
 
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         (tmp_path / "shares.json").write_text(
             _json.dumps([{"id": "dead", "key": "old.txt", "expiresAt": "2000-01-01T00:00:00"}]),
@@ -1210,7 +1210,7 @@ class TestShares:
         assert [e["key"] for e in shares.list_shares(ACCOUNT)] == ["new.txt"]
 
     def test_expired_shares_are_pruned_and_forget_removes(self):
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         dead = shares.record_share(account=ACCOUNT, section="drive", key="old.txt", expires_secs=60)
         # Backdate the expiry.
@@ -1231,7 +1231,7 @@ class TestShares:
         # only exit was the user pressing forget per row. The row STAYS -- the
         # ledger records that an unexpired URL was minted, which a delete does
         # not undo -- and gains the flag the Access section renders.
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         shares.record_share(account=ACCOUNT, section="drive", key="gone.txt", expires_secs=3600)
         shares.record_share(
@@ -1254,7 +1254,7 @@ class TestShares:
         # The row stores a SECTION plus a key; the object is at the section's
         # prefix. Matching on the bare key would find nothing in a listing of
         # real keys and mark every row missing.
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         row = {"id": "sh-1", "section": "drive", "key": "a.txt"}
         # Compared as WHOLE LISTS rather than indexed and subscripted. A
@@ -1268,7 +1268,7 @@ class TestShares:
     def test_a_row_naming_no_real_section_is_marked(self):
         # A section with no prefix cannot address an object, so no listing can
         # ever back the row. Reporting that beats rendering it as reachable.
-        from kiro_crew.apps.builtins.aws_control.backend import shares
+        from efm_go.apps.builtins.aws_control.backend import shares
 
         row = {"id": "sh-1", "section": "nowhere", "key": "a.txt"}
         assert shares.mark_missing_objects([row], {"nowhere/a.txt"}) == [
@@ -1284,13 +1284,13 @@ class TestShares:
 class TestCosts:
     @pytest.fixture(autouse=True)
     def _isolated_cache(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.aws_control.backend import costs
+        from efm_go.apps.builtins.aws_control.backend import costs
 
         monkeypatch.setattr(costs, "_cache_path", lambda account: tmp_path / f"{account}.json")
         yield
 
     def test_fetch_parses_groups_and_caches(self):
-        from kiro_crew.apps.builtins.aws_control.backend import costs
+        from efm_go.apps.builtins.aws_control.backend import costs
 
         ce_payload = json.dumps(
             {
@@ -1316,7 +1316,7 @@ class TestCosts:
         assert cached is not None and costs.is_fresh(cached)
 
     def test_stale_cache_is_not_fresh(self):
-        from kiro_crew.apps.builtins.aws_control.backend import costs
+        from efm_go.apps.builtins.aws_control.backend import costs
 
         assert not costs.is_fresh(None)
         assert not costs.is_fresh({"fetchedAt": "2000-01-01T00:00:00+00:00"})
@@ -1352,7 +1352,7 @@ class TestCosts:
 class TestBackup:
     @pytest.fixture(autouse=True)
     def _isolated_state(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         monkeypatch.setattr(backup, "_state_path", lambda: tmp_path / "backup.json")
         yield
@@ -1405,7 +1405,7 @@ class TestBackup:
     def test_nightly_due_logic(self, tmp_path):
         import datetime as dt
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         assert not backup.due_for_nightly(ACCOUNT)  # toggle off
         backup.set_nightly(ACCOUNT, True)
@@ -1419,7 +1419,7 @@ class TestBackup:
         # Two accounts must not share a nightly toggle or run records —
         # switching the default account cannot make one console report
         # the other account's backups.
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         other = "444455556666"
         backup.set_nightly(ACCOUNT, True)
@@ -1436,7 +1436,7 @@ class TestBackup:
 
 class TestDriveIamTier:
     def test_drive_tier_is_self_contained_and_scoped(self):
-        from kiro_crew.deploy import iam
+        from efm_go.deploy import iam
 
         doc = iam.policy_document(tier="drive")
         sids = [s["Sid"] for s in doc["Statement"]]
@@ -1472,7 +1472,7 @@ class TestDriveIamTier:
         assert not any("cloudfront" in json.dumps(s).lower() for s in doc["Statement"])
 
     def test_static_tier_is_unchanged_by_the_drive_tier(self):
-        from kiro_crew.deploy import iam
+        from efm_go.deploy import iam
 
         doc = iam.policy_document(tier="static")
         assert not any(s["Sid"].startswith("Drive") for s in doc["Statement"])
@@ -1699,7 +1699,7 @@ class TestLibraryScan:
     def test_credential_bearing_artifact_is_refused(self, tmp_path, monkeypatch):
         from types import SimpleNamespace as NS
 
-        from kiro_crew.apps.builtins.aws_control.backend import library
+        from efm_go.apps.builtins.aws_control.backend import library
 
         monkeypatch.setattr(library, "_ledger_path", lambda: tmp_path / "library.json")
         fake_artifact = NS(
@@ -1725,7 +1725,7 @@ class TestLibraryScan:
         # refused at push, before any byte reaches the bucket.
         from types import SimpleNamespace as NS
 
-        from kiro_crew.apps.builtins.aws_control.backend import library
+        from efm_go.apps.builtins.aws_control.backend import library
 
         monkeypatch.setattr(library, "_ledger_path", lambda: tmp_path / "library.json")
         beacon = (
@@ -1755,7 +1755,7 @@ class TestStateShapeGuards:
     """Round-9 pins: corrupted persisted JSON reads as empty, never a 500."""
 
     def test_costs_cache_decoding_to_a_list_reads_as_no_cache(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.aws_control.backend import costs
+        from efm_go.apps.builtins.aws_control.backend import costs
 
         monkeypatch.setattr(costs, "_cache_path", lambda account: tmp_path / "c.json")
         (tmp_path / "c.json").write_text('["not", "a", "dict"]', encoding="utf-8")
@@ -1764,7 +1764,7 @@ class TestStateShapeGuards:
     def test_backup_state_with_scalar_accounts_reads_as_empty(self, tmp_path, monkeypatch):
         import json as _json
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         monkeypatch.setattr(backup, "_state_path", lambda: tmp_path / "backup.json")
         (tmp_path / "backup.json").write_text(
@@ -1898,7 +1898,7 @@ class TestRound16Hardening:
         # would make the next retry upload a duplicate).
         import json as _json
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         monkeypatch.setattr(backup, "_state_path", lambda: tmp_path / "backup.json")
         (tmp_path / "backup.json").write_text(
@@ -1946,7 +1946,7 @@ class TestRound17Hardening:
     """Round-17 pins: no link following in backup/restore, whole-field egress."""
 
     def test_archive_does_not_walk_a_symlinked_directory(self, tmp_path):
-        from kiro_crew.apps.builtins.aws_control.backend import backup as _bk
+        from efm_go.apps.builtins.aws_control.backend import backup as _bk
 
         if not _bk._CAN_PIN_TRAVERSAL:
             pytest.skip(
@@ -1955,7 +1955,7 @@ class TestRound17Hardening:
             )
         import tarfile as _tarfile
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         # A secret outside the tree, reachable only through a planted link.
         outside = tmp_path / "outside"
@@ -1979,7 +1979,7 @@ class TestRound17Hardening:
         assert not any("credentials" in n for n in names)
 
     def test_restore_refuses_a_symlinked_destination(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         staging = tmp_path / "restore"
         staging.mkdir(parents=True)
@@ -2010,7 +2010,7 @@ class TestRound17Hardening:
     def test_restore_writes_through_a_temp_file_then_replaces(self, tmp_path, monkeypatch):
         from pathlib import Path
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         monkeypatch.setattr(backup, "app_data_dir", lambda name: tmp_path)
         seen: list[str] = []
@@ -2051,7 +2051,7 @@ class TestRound17Hardening:
         with an OSError instead of staging anything. Only a co-tenant or the console
         can place such a name: this app's own writer produces short fixed ones.
         """
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         longest = "x" * 255
         name = backup._staging_name(f"snapshots/{'a' * 32}/{longest}")
@@ -2070,7 +2070,7 @@ class TestRound17Hardening:
         """
         from pathlib import Path
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         monkeypatch.setattr(backup, "app_data_dir", lambda name: tmp_path)
         keys = [f"snapshots/{'a' * 32}/same.tar.gz", f"snapshots/{'b' * 32}/same.tar.gz"]
@@ -2119,8 +2119,8 @@ class TestRound18Hardening:
         # DIRECTORY is fenced, not that one name, because an atomic write goes
         # through a temporary in the same directory before the rename -- fencing
         # only the final name leaves a writable path to the same bytes.
-        from kiro_crew import security
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go import security
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         assert backup.STATE_DIR_LEAF in security._CREW_SECRET_LEAVES
         # The leaf is always '/'-joined (a catalog key, not a local path), so
@@ -2133,7 +2133,7 @@ class TestRound18Hardening:
         )
 
     def test_restore_refuses_a_symlinked_staging_directory(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         # An agent plants `restore` as a link to somewhere outside app storage.
         elsewhere = tmp_path / "elsewhere"
@@ -2166,7 +2166,7 @@ class TestRound19Hardening:
     presign refuses a key that is not in the drive."""
 
     def test_archive_streams_from_a_descriptor_not_a_reopened_path(self, tmp_path):
-        from kiro_crew.apps.builtins.aws_control.backend import backup as _bk
+        from efm_go.apps.builtins.aws_control.backend import backup as _bk
 
         if not _bk._CAN_PIN_TRAVERSAL:
             pytest.skip(
@@ -2178,7 +2178,7 @@ class TestRound19Hardening:
         # call it: everything after the single O_NOFOLLOW open comes off the fd.
         import tarfile as _tarfile
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         root = tmp_path / "sessions"
         root.mkdir()
@@ -2202,7 +2202,7 @@ class TestRound19Hardening:
             assert member.read() == b"line\n"
 
     def test_non_regular_entries_are_skipped_by_fstat(self, tmp_path):
-        from kiro_crew.apps.builtins.aws_control.backend import backup as _bk
+        from efm_go.apps.builtins.aws_control.backend import backup as _bk
 
         if not _bk._CAN_PIN_TRAVERSAL:
             pytest.skip(
@@ -2221,7 +2221,7 @@ class TestRound19Hardening:
         if not hasattr(os, "mkfifo"):
             pytest.skip("no FIFOs on this platform")
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         root = tmp_path / "sessions"
         root.mkdir()
@@ -2277,7 +2277,7 @@ class TestRound21Partition:
         # `arn:aws:s3:::` prefix dropped the drive we created ourselves on
         # GovCloud and China, so the console reported no drive and a second
         # confirm would mint a second billable bucket.
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         name = "kirocrew-drive-abc123def456"
         payload = json.dumps(
@@ -2287,7 +2287,7 @@ class TestRound21Partition:
             assert storage.find_drive("p", "us-west-2", account="111122223333") == name
 
     def test_a_non_s3_arn_is_still_rejected(self):
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         payload = json.dumps(
             {
@@ -2302,7 +2302,7 @@ class TestRound21Partition:
             assert storage.find_drive("p", "us-west-2", account="111122223333") is None
 
     def test_drive_policy_arns_are_partition_neutral(self):
-        from kiro_crew.deploy import iam
+        from efm_go.deploy import iam
 
         doc = iam.policy_document(tier="drive")
         arns = [
@@ -2324,20 +2324,20 @@ class TestRound22Hardening:
     build before it can upload."""
 
     def test_teardown_refuses_an_upload_that_has_not_started(self):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         # Everything else authorizes; only the teardown signal is set. A worker
         # thread cannot be killed, so this gate is what makes disabling the app
         # stop a backup that is still building its archive.
         with (
             mock.patch(
-                "kiro_crew.deploy.engine._checked",
+                "efm_go.deploy.engine._checked",
                 return_value=json.dumps({"Account": ACCOUNT}),
             ),
-            mock.patch("kiro_crew.apps.manager.is_app_enabled", return_value=True),
-            mock.patch("kiro_crew.aws_consent.is_granted", return_value=(True, "")),
+            mock.patch("efm_go.apps.manager.is_app_enabled", return_value=True),
+            mock.patch("efm_go.aws_consent.is_granted", return_value=(True, "")),
             mock.patch(
-                "kiro_crew.aws_consent.read_grant",
+                "efm_go.aws_consent.read_grant",
                 return_value=SimpleNamespace(account=ACCOUNT),
             ),
         ):
@@ -2363,7 +2363,7 @@ class TestRound22Hardening:
                 backup.clear_stop()
 
     def test_reenabling_clears_the_teardown_signal(self):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         backup.signal_stop()
         assert backup._STOP.is_set()
@@ -2371,7 +2371,7 @@ class TestRound22Hardening:
         assert not backup._STOP.is_set()
 
     def test_nightly_backup_emits_sel_records(self):
-        from kiro_crew.apps.builtins.aws_control import hooks
+        from efm_go.apps.builtins.aws_control import hooks
 
         with (
             mock.patch.object(
@@ -2402,7 +2402,7 @@ class TestRound22Hardening:
         assert "invoked" in outcomes and "succeeded" in outcomes
 
     def test_nightly_backup_failure_is_audited(self):
-        from kiro_crew.apps.builtins.aws_control import hooks
+        from efm_go.apps.builtins.aws_control import hooks
 
         with (
             mock.patch.object(
@@ -2435,7 +2435,7 @@ class TestRound23Junctions:
     """Round-23 pin: link checks are junction-aware, not islink-only."""
 
     def test_root_link_is_refused_before_any_traversal(self, tmp_path):
-        from kiro_crew.apps.builtins.aws_control.backend import backup as _bk
+        from efm_go.apps.builtins.aws_control.backend import backup as _bk
 
         if not _bk._CAN_PIN_TRAVERSAL:
             pytest.skip(
@@ -2444,7 +2444,7 @@ class TestRound23Junctions:
             )
         import tarfile as _tarfile
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         root = tmp_path / "sessions"
         root.mkdir()
@@ -2455,7 +2455,7 @@ class TestRound23Junctions:
                 assert backup._add_tree(tar, root, "crew") == 0
 
     def test_restore_uses_the_junction_aware_predicate(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         base = tmp_path / "appdata"
         (base / "restore").mkdir(parents=True)
@@ -2491,7 +2491,7 @@ class TestRound24Hardening:
         import os
         import tarfile as _tarfile
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         if not backup._CAN_PIN_TRAVERSAL:
             pytest.skip("platform has no openat; the name-based fallback is covered above")
@@ -2528,7 +2528,7 @@ class TestRound24Hardening:
         ]
 
     def test_pinned_traversal_refuses_a_symlinked_subdirectory(self, tmp_path):
-        from kiro_crew.apps.builtins.aws_control.backend import backup as _bk
+        from efm_go.apps.builtins.aws_control.backend import backup as _bk
 
         if not _bk._CAN_PIN_TRAVERSAL:
             pytest.skip(
@@ -2537,7 +2537,7 @@ class TestRound24Hardening:
             )
         import tarfile as _tarfile
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         outside = tmp_path / "outside"
         outside.mkdir()
@@ -2558,7 +2558,7 @@ class TestRound24Hardening:
     def test_depth_ceiling_prunes_instead_of_exhausting_descriptors(self, tmp_path):
         import tarfile as _tarfile
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         # The ceiling is a property of the PINNED descent specifically: it holds
         # one descriptor per level, so a pathological tree could exhaust the
@@ -2590,7 +2590,7 @@ class TestRound24Hardening:
         # Trimming first can cut a credential in half, and a half token matches
         # no redaction pattern - so the fragment survives every later pass. The
         # secret is placed so that a naive `err[:200]` would split it.
-        from kiro_crew.deploy import engine
+        from efm_go.deploy import engine
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         padded = "x" * 190 + secret + " trailing context"
@@ -2618,12 +2618,12 @@ class TestRound26Hardening:
         )
         return (
             mock.patch(
-                "kiro_crew.deploy.engine._checked",
+                "efm_go.deploy.engine._checked",
                 return_value=json.dumps({"Account": ACCOUNT}),
             ),
-            mock.patch("kiro_crew.apps.manager.is_app_enabled", return_value=True),
-            mock.patch("kiro_crew.aws_consent.is_granted", return_value=(True, "")),
-            mock.patch("kiro_crew.aws_consent.read_grant", return_value=grant),
+            mock.patch("efm_go.apps.manager.is_app_enabled", return_value=True),
+            mock.patch("efm_go.aws_consent.is_granted", return_value=(True, "")),
+            mock.patch("efm_go.aws_consent.read_grant", return_value=grant),
         )
 
     def test_grant_for_another_account_refuses_the_upload(self):
@@ -2632,7 +2632,7 @@ class TestRound26Hardening:
         # points back at A. `is_granted` matches profile+region and says yes, and
         # the live probe says A -- but the consent on file belongs to B, so the
         # owner never approved S3 use for A. Refuse.
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         p1, p2, p3, p4 = self._authorizing_env("999988887777")
         with p1, p2, p3, p4:
@@ -2647,7 +2647,7 @@ class TestRound26Hardening:
                 )
 
     def test_grant_naming_no_account_refuses_the_upload(self):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         p1, p2, p3, p4 = self._authorizing_env("")
         with p1, p2, p3, p4:
@@ -2662,7 +2662,7 @@ class TestRound26Hardening:
                 )
 
     def test_matching_grant_account_allows_the_upload(self):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         p1, p2, p3, p4 = self._authorizing_env(ACCOUNT)
         with p1, p2, p3, p4:
@@ -2676,16 +2676,16 @@ class TestRound26Hardening:
             )  # no raise
 
     def test_grant_withdrawn_mid_build_refuses_the_upload(self):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         with (
             mock.patch(
-                "kiro_crew.deploy.engine._checked",
+                "efm_go.deploy.engine._checked",
                 return_value=json.dumps({"Account": ACCOUNT}),
             ),
-            mock.patch("kiro_crew.apps.manager.is_app_enabled", return_value=True),
-            mock.patch("kiro_crew.aws_consent.is_granted", return_value=(True, "")),
-            mock.patch("kiro_crew.aws_consent.read_grant", return_value=None),
+            mock.patch("efm_go.apps.manager.is_app_enabled", return_value=True),
+            mock.patch("efm_go.aws_consent.is_granted", return_value=(True, "")),
+            mock.patch("efm_go.aws_consent.read_grant", return_value=None),
         ):
             backup.clear_stop()
             with pytest.raises(RuntimeError, match="withdrawn"):
@@ -3368,7 +3368,7 @@ class TestRound29Hardening:
         # unless the query says otherwise, and this app would cache that as one
         # account's bill. The filter is what makes the figure mean what the page
         # claims. Asserting on the argv is the only way to pin it.
-        from kiro_crew.apps.builtins.aws_control.backend import costs
+        from efm_go.apps.builtins.aws_control.backend import costs
 
         monkeypatch.setattr(costs, "_cache_path", lambda account: tmp_path / "c.json")
         payload = json.dumps({"ResultsByTime": []})
@@ -3442,7 +3442,7 @@ class TestRound29Hardening:
         # ~/.aws/config is operator-writable text and this value flows into an
         # argv, so a non-region string must read as "declares none" rather than
         # being trusted.
-        from kiro_crew.apps.builtins.aws_control.backend import accounts
+        from efm_go.apps.builtins.aws_control.backend import accounts
 
         for bad in ("not a region", "us-west-2; rm -rf ~", ""):
             with mock.patch.object(accounts.engine, "run_aws", return_value=(0, bad, "")):
@@ -3461,7 +3461,7 @@ class TestRound36Hardening:
         # so it escapes the try/except entirely and would raise TypeError on the
         # aware subtraction that sits OUTSIDE the guard -- in the nightly loop,
         # every wake, so a backup the owner enabled silently never ran.
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         with (
             mock.patch.object(backup, "nightly_enabled", return_value=True),
@@ -3479,7 +3479,7 @@ class TestRound36Hardening:
         # UTC, the same treatment costs.is_fresh and shares._prune already apply.
         import datetime as _dt
 
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         recent = _dt.datetime.now(_dt.timezone.utc).replace(tzinfo=None).isoformat()
         with (
@@ -3491,7 +3491,7 @@ class TestRound36Hardening:
             assert backup.due_for_nightly(ACCOUNT) is False
 
     def test_a_non_string_last_run_reads_as_due(self):
-        from kiro_crew.apps.builtins.aws_control.backend import backup
+        from efm_go.apps.builtins.aws_control.backend import backup
 
         for bad in (5, ["2026-01-01"], None, {}):
             with (
@@ -3506,7 +3506,7 @@ class TestRound36Hardening:
         # _PROFILE_RE is a shell-safety gate, not a secret gate: it admits
         # [A-Za-z0-9._@=+-] up to 128 chars, so an access key id passes it and
         # would render verbatim into the guidance card and the clipboard.
-        from kiro_crew.apps.builtins.aws_control.backend import accounts
+        from efm_go.apps.builtins.aws_control.backend import accounts
 
         key = "AKIAIOSFODNN7EXAMPLE"
         plan = accounts.reconnect_plan(accounts.KIND_SSO, key)
@@ -3515,7 +3515,7 @@ class TestRound36Hardening:
         assert plan["command"].startswith("aws sso login --profile ")
 
     def test_an_ordinary_profile_name_survives_the_reconnect_command(self):
-        from kiro_crew.apps.builtins.aws_control.backend import accounts
+        from efm_go.apps.builtins.aws_control.backend import accounts
 
         plan = accounts.reconnect_plan(accounts.KIND_SSO, "team-prod")
         assert plan["command"] == "aws sso login --profile team-prod"

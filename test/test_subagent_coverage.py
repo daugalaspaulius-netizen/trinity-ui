@@ -1,4 +1,4 @@
-"""Coverage tests for ``kiro_crew.subagent`` helpers and manager bookkeeping.
+"""Coverage tests for ``efm_go.subagent`` helpers and manager bookkeeping.
 
 Focused on the module-level probes (memory / CPU / cgroup readers, env
 parsing, agent + governance vetting) and the ``SubagentManager`` bookkeeping
@@ -22,8 +22,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from conftest import absent_sysconf
-from kiro_crew import subagent as sa
-from kiro_crew.subagent import SubagentDelivery, SubagentInfo, SubagentManager
+from efm_go import subagent as sa
+from efm_go.subagent import SubagentDelivery, SubagentInfo, SubagentManager
 
 # ── Fixtures / builders ───────────────────────────────────────────────────
 
@@ -126,14 +126,14 @@ def _verdict(permitted: bool, reason: str = "") -> SimpleNamespace:
 class TestVetSpawnGovernance:
     def test_permitted_returns_none(self) -> None:
         with patch(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             return_value=_verdict(True),
         ):
             assert sa._vet_spawn_governance("dash:1", "scout") is None
 
     def test_capability_disabled_returns_reason(self) -> None:
         with patch(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             return_value=_verdict(False, "spawn off for this app"),
         ):
             assert sa._vet_spawn_governance("dash:1", "", app="notes") == "spawn off for this app"
@@ -146,17 +146,17 @@ class TestVetSpawnGovernance:
             return _verdict(not item.startswith("agents:"))
 
         with patch(
-            "kiro_crew.platform.governance_profiles.governance_permits", side_effect=_permits
+            "efm_go.platform.governance_profiles.governance_permits", side_effect=_permits
         ):
             reason = sa._vet_spawn_governance("dash:1", "scout")
         assert reason == "agent 'scout' not permitted by spawn policy"
         assert "agents:scout" in calls
 
     def test_composition_error_propagates(self) -> None:
-        from kiro_crew.platform.context import PlatformCompositionError
+        from efm_go.platform.context import PlatformCompositionError
 
         with patch(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             side_effect=PlatformCompositionError("bad platform"),
         ):
             with pytest.raises(PlatformCompositionError):
@@ -166,11 +166,11 @@ class TestVetSpawnGovernance:
         audit = MagicMock()
         with (
             patch(
-                "kiro_crew.platform.governance_profiles.governance_permits",
+                "efm_go.platform.governance_profiles.governance_permits",
                 side_effect=RuntimeError("store down"),
             ),
             patch(
-                "kiro_crew.platform.governance_profiles.audit_governance_degraded",
+                "efm_go.platform.governance_profiles.audit_governance_degraded",
                 audit,
             ),
         ):
@@ -182,11 +182,11 @@ class TestVetSpawnGovernance:
     def test_audit_failure_still_fails_closed(self) -> None:
         with (
             patch(
-                "kiro_crew.platform.governance_profiles.governance_permits",
+                "efm_go.platform.governance_profiles.governance_permits",
                 side_effect=RuntimeError("store down"),
             ),
             patch(
-                "kiro_crew.platform.governance_profiles.audit_governance_degraded",
+                "efm_go.platform.governance_profiles.audit_governance_degraded",
                 side_effect=RuntimeError("audit down"),
             ),
         ):
@@ -263,32 +263,32 @@ class TestSubagentRolePins:
         cfg = MagicMock()
         cfg.agent.role_models = {"subagent": " sonnet "}
         with (
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg),
-            patch("kiro_crew.config.loader.normalize_agent_model", side_effect=str.strip),
+            patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg),
+            patch("efm_go.config.loader.normalize_agent_model", side_effect=str.strip),
         ):
             assert sa._subagent_default_model() == "sonnet"
 
     def test_model_pin_never_raises(self) -> None:
         with patch(
-            "kiro_crew.config.loader.KiroCrewConfig.load", side_effect=RuntimeError("no config")
+            "efm_go.config.loader.KiroCrewConfig.load", side_effect=RuntimeError("no config")
         ):
             assert sa._subagent_default_model() == ""
 
     def test_effort_pin_returns_string(self) -> None:
         cfg = MagicMock()
         cfg.agent.role_efforts = {"subagent": "high"}
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg):
             assert sa._subagent_default_effort() == "high"
 
     def test_effort_pin_rejects_non_string(self) -> None:
         cfg = MagicMock()
         cfg.agent.role_efforts = {"subagent": 3}
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg):
             assert sa._subagent_default_effort() == ""
 
     def test_effort_pin_never_raises(self) -> None:
         with patch(
-            "kiro_crew.config.loader.KiroCrewConfig.load", side_effect=RuntimeError("no config")
+            "efm_go.config.loader.KiroCrewConfig.load", side_effect=RuntimeError("no config")
         ):
             assert sa._subagent_default_effort() == ""
 
@@ -340,8 +340,8 @@ class TestCheckMemoryAvailable:
         f = tmp_path / "meminfo"
         f.write_text("MemAvailable:    8388608 kB\n")
         with (
-            patch("kiro_crew.hooks.safe_read_file", side_effect=AssertionError),
-            patch("kiro_crew.hooks.is_sensitive_path", side_effect=AssertionError),
+            patch("efm_go.hooks.safe_read_file", side_effect=AssertionError),
+            patch("efm_go.hooks.is_sensitive_path", side_effect=AssertionError),
         ):
             assert sa.check_memory_available(min_gb=4.0, path=str(f)) == (True, 8.0)
 
@@ -1241,7 +1241,7 @@ class TestStaggerGate:
 class TestNotifyInjectionFailed:
     def test_parent_without_a_tab_is_skipped(self) -> None:
         mgr = _manager(on_event=AsyncMock())
-        with patch("kiro_crew.dashboard.chat_utils.dashboard_slot_key", return_value=""):
+        with patch("efm_go.dashboard.chat_utils.dashboard_slot_key", return_value=""):
             mgr.notify_injection_failed(_info(parent_session_key="cron:1"))
 
     @pytest.mark.asyncio
@@ -1255,7 +1255,7 @@ class TestNotifyInjectionFailed:
         result.write_text("hello", newline="\n")
         mgr = _manager(on_event=_on_event)
         info = _info(parent_session_key="dash:1", result_path=str(result))
-        with patch("kiro_crew.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
+        with patch("efm_go.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
             mgr.notify_injection_failed(info)
         await asyncio.sleep(0)
         await asyncio.sleep(0)
@@ -1271,7 +1271,7 @@ class TestNotifyInjectionFailed:
 
         mgr = _manager(on_event=_on_event)
         info = _info(parent_session_key="dash:1", result_path=str(tmp_path / "absent.txt"))
-        with patch("kiro_crew.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
+        with patch("efm_go.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
             mgr.notify_injection_failed(info)
         await asyncio.sleep(0)
         await asyncio.sleep(0)
@@ -1280,7 +1280,7 @@ class TestNotifyInjectionFailed:
     def test_lookup_failure_is_swallowed(self) -> None:
         mgr = _manager(on_event=AsyncMock())
         with patch(
-            "kiro_crew.dashboard.chat_utils.dashboard_slot_key",
+            "efm_go.dashboard.chat_utils.dashboard_slot_key",
             side_effect=RuntimeError("no dashboard"),
         ):
             mgr.notify_injection_failed(_info(parent_session_key="dash:1"))
@@ -1300,7 +1300,7 @@ class TestNotifyInjectionFailed:
         mgr = _manager(on_event=_on_event)
         info = _info(parent_session_key="dash:1")
         mgr._teardown_cancelled_ids.add(info.id)
-        with patch("kiro_crew.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
+        with patch("efm_go.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
             mgr.notify_injection_failed(info)
         await asyncio.sleep(0)
         await asyncio.sleep(0)
@@ -1317,7 +1317,7 @@ class TestNotifyInjectionFailed:
         parent's conversation minutes after the teardown. The member is therefore
         skipped at the source, in the expiry scan.
         """
-        import kiro_crew.subagent as _facade
+        import efm_go.subagent as _facade
 
         mgr = _manager(on_done=AsyncMock())
         held = _info(parent_session_key="dash:1")
@@ -1380,7 +1380,7 @@ class TestNotifyInjectionFailed:
         left. A read must not extend an entry's life either, or the TTL stops describing
         what is retained.
         """
-        from kiro_crew.subagent import _AgingIdSet
+        from efm_go.subagent import _AgingIdSet
 
         ids = _AgingIdSet(3600.0)
         ids.update(str(n) for n in range(10_000))
@@ -1388,11 +1388,11 @@ class TestNotifyInjectionFailed:
         assert "0" in ids
 
         aged = _AgingIdSet(1.0)
-        with patch("kiro_crew.subagent.time.monotonic", return_value=1_000.0):
+        with patch("efm_go.subagent.time.monotonic", return_value=1_000.0):
             aged.update(["old-1", "old-2"])
-        with patch("kiro_crew.subagent.time.monotonic", return_value=1_000.5):
+        with patch("efm_go.subagent.time.monotonic", return_value=1_000.5):
             assert "old-1" in aged  # a read does not refresh it
-        with patch("kiro_crew.subagent.time.monotonic", return_value=1_100.0):
+        with patch("efm_go.subagent.time.monotonic", return_value=1_100.0):
             aged.add("new-1")
         assert list(aged) == ["new-1"]
 
@@ -1505,7 +1505,7 @@ class TestNotifyInjectionFailed:
         the person takes. An hour let a later teardown prune its mark while it waited, and
         the completion then injected into whatever the key served by then.
         """
-        from kiro_crew.subagent import _TEARDOWN_GATE_TTL_SECS
+        from efm_go.subagent import _TEARDOWN_GATE_TTL_SECS
 
         assert _TEARDOWN_GATE_TTL_SECS >= 86400.0, (
             "the backstop is shorter than a person plausibly takes to answer an approval, "
@@ -1523,7 +1523,7 @@ class TestNotifyInjectionFailed:
         mgr = _manager(on_event=_on_event)
         mgr._teardown_cancelled_ids.add("some-other-agent")
         info = _info(parent_session_key="dash:1")
-        with patch("kiro_crew.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
+        with patch("efm_go.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
             mgr.notify_injection_failed(info)
         await asyncio.sleep(0)
         await asyncio.sleep(0)
@@ -1619,7 +1619,7 @@ class TestInjectionNoticeDoesNotContradictItsReason:
             seen.append(extra)
 
         mgr = _manager(on_event=_on_event)
-        with patch("kiro_crew.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
+        with patch("efm_go.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
             mgr.notify_injection_failed(info, reason=reason)
         await asyncio.sleep(0)
         await asyncio.sleep(0)
@@ -1680,7 +1680,7 @@ class TestNotifyInjectionFailedOutcomeCopy:
             seen.append(extra)
 
         mgr = _manager(on_event=_on_event)
-        with patch("kiro_crew.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
+        with patch("efm_go.dashboard.chat_utils.dashboard_slot_key", return_value="slot-1"):
             mgr.notify_injection_failed(info)
         await asyncio.sleep(0)
         await asyncio.sleep(0)
@@ -2237,12 +2237,12 @@ class TestShouldUseSessionSharing:
         mgr = _manager()
         cfg = MagicMock()
         cfg.agent.session_sharing = False
-        with patch("kiro_crew.subagent.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.subagent.KiroCrewConfig.load", return_value=cfg):
             assert mgr._should_use_session_sharing(_info(parent_session_key="dash:1")) is False
 
     def test_config_failure_fails_closed(self) -> None:
         mgr = _manager()
-        with patch("kiro_crew.subagent.KiroCrewConfig.load", side_effect=RuntimeError):
+        with patch("efm_go.subagent.KiroCrewConfig.load", side_effect=RuntimeError):
             assert mgr._should_use_session_sharing(_info(parent_session_key="dash:1")) is False
 
     @pytest.mark.parametrize(
@@ -2254,21 +2254,21 @@ class TestShouldUseSessionSharing:
         cfg = MagicMock()
         cfg.agent.session_sharing = True
         info = _info(parent_session_key="dash:1", **override)
-        with patch("kiro_crew.subagent.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.subagent.KiroCrewConfig.load", return_value=cfg):
             assert mgr._should_use_session_sharing(info) is False
 
     def test_parentless_spawn_excluded(self) -> None:
         mgr = _manager()
         cfg = MagicMock()
         cfg.agent.session_sharing = True
-        with patch("kiro_crew.subagent.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.subagent.KiroCrewConfig.load", return_value=cfg):
             assert mgr._should_use_session_sharing(_info()) is False
 
     def test_eligible_parent_accepted(self) -> None:
         mgr = _manager()
         cfg = MagicMock()
         cfg.agent.session_sharing = True
-        with patch("kiro_crew.subagent.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.subagent.KiroCrewConfig.load", return_value=cfg):
             assert mgr._should_use_session_sharing(_info(parent_session_key="dash:1")) is True
 
 
@@ -2305,12 +2305,12 @@ class TestIsCcProvider:
 
     @staticmethod
     def _provider(backend: str) -> SimpleNamespace:
-        from kiro_crew.agent_sdk.capabilities import capabilities_for
+        from efm_go.agent_sdk.capabilities import capabilities_for
 
         return SimpleNamespace(capabilities=capabilities_for(backend))
 
     def test_claude_seam_routes_to_the_claude_home(self) -> None:
-        from kiro_crew.acp_backends import ACP_BACKEND_CLAUDE
+        from efm_go.acp_backends import ACP_BACKEND_CLAUDE
 
         assert SubagentManager._is_cc_provider(self._provider(ACP_BACKEND_CLAUDE)) is True
 

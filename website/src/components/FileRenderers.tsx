@@ -324,7 +324,7 @@ export const PdfViewer = memo(function PdfViewer({ filePath }: { filePath: strin
  *      install command — the product does not install system packages from a
  *      browser request, so the honest answer is to say what is missing.
  *   1. **Text preview** — for .docx and .pptx the backend can extract plaintext
- *      via `kiro_crew.doc_parser` (defusedxml-hardened, no python-docx /
+ *      via `efm_go.doc_parser` (defusedxml-hardened, no python-docx /
  *      python-pptx dep). A .docx renders as one scrollable pre; a .pptx
  *      comes back slide by slide (`slides`) and renders as a slide outline —
  *      one card per slide under a notice that this is the deck's TEXT, not

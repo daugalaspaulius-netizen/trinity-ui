@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 DEFAULTS_JSON = (
-    Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "config" / "defaults.json"
+    Path(__file__).resolve().parents[1] / "src" / "efm_go" / "config" / "defaults.json"
 )
 SH = shutil.which("sh")
 

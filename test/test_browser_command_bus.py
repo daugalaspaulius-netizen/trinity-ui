@@ -12,7 +12,7 @@ import asyncio
 
 import pytest
 
-from kiro_crew.browser.command_bus import (
+from efm_go.browser.command_bus import (
     DEFAULT_PANEL_TTL_S,
     BrowserCommandBus,
     NoPanelError,

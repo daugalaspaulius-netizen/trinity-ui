@@ -2,8 +2,7 @@
 # ──────────────────────────────────────────────────────────────────────
 # KiroCrew CLI installer (channel / wheel based).
 #
-#   curl -fsSL https://download.crew.kiro.dev/cli.sh | sh
-#   curl -fsSL https://download.crew.kiro.dev/cli.sh | sh -s -- --channel nightly
+#   The foreign curl installer is gone. Set KIROCREW_CDN_BASE to the EFM feed.
 #
 # Installs the prebuilt `kirocrew` wheel for a release channel. It resolves the
 # channel feed, verifies its RSA-SHA256 signature against the public key pinned
@@ -50,8 +49,14 @@ unset PYTHONPATH PYTHONHOME
 # (latest-cli.json), ARTIFACT_BASE serves the bytes (wheels, cli-manifest.json).
 # Both are aliases of the same distribution today; --cdn / KIROCREW_CDN_BASE
 # overrides BOTH (test / alternate-CDN escape hatch).
-FEED_BASE="${KIROCREW_CDN_BASE:-https://updates.crew.kiro.dev}"
-ARTIFACT_BASE="${KIROCREW_CDN_BASE:-https://download.crew.kiro.dev}"
+# EFM Go: the foreign download CDN is disconnected.
+# Both bases stay empty unless KIROCREW_CDN_BASE names the EFM feed.
+FEED_BASE="${KIROCREW_CDN_BASE:-}"
+ARTIFACT_BASE="${KIROCREW_CDN_BASE:-}"
+if [ -z "$FEED_BASE" ] || [ -z "$ARTIFACT_BASE" ]; then
+  echo "efm-go: Kiro download CDN is disconnected. Set KIROCREW_CDN_BASE to the EFM feed." >&2
+  exit 1
+fi
 CHANNEL="${KIROCREW_CHANNEL:-stable}"
 PIN_VERSION=""
 # Three states: "" = undecided (fall back to the persisted python-mode marker,
@@ -101,8 +106,8 @@ while [ $# -gt 0 ]; do
       cat <<'EOF'
 KiroCrew CLI installer (channel / wheel based).
 
-  curl -fsSL https://download.crew.kiro.dev/cli.sh | sh
-  curl -fsSL https://download.crew.kiro.dev/cli.sh | sh -s -- --channel nightly
+  EFM Go does not install from a foreign curl address.
+  Set KIROCREW_CDN_BASE to the EFM feed, then run this script from a checkout.
 
 Installs the prebuilt `kirocrew` wheel for a release channel: resolves the
 channel feed, verifies its signature against the installer-pinned public key,
@@ -777,7 +782,7 @@ manifest_miss() {
   # claiming it there would blame policy for an outage.
   if [ "$1" = 22 ] && [ -n "$PIN_VERSION" ]; then
     echo "kirocrew-install: '$PIN_VERSION' cannot be pinned: it either predates signed CLI manifests or was never published." >&2
-    echo "kirocrew-install: Pinning policy and the minimum pinnable release: https://github.com/kirodotdev/KiroCrew/blob/main/docs/guides/install.md#pinning-an-exact-version" >&2
+    echo "efm-go: pin an exact version with --version. The foreign install guide is disconnected." >&2
     echo "kirocrew-install: Re-run without --version to install the current $CHANNEL release." >&2
   fi
   err "signed CLI manifest not found at $MANIFEST_URL"
@@ -1166,7 +1171,7 @@ else
   umask "$_KC_PREV_UMASK"
   # Keep the stable launch path (`${VENV}-current`) naming the tree that holds
   # the LAST-INSTALLED version. The gateway's shadow-venv updater
-  # (kiro_crew/platform/wheel_engine.py) promotes this same symlink to a fresh
+  # (efm_go/platform/wheel_engine.py) promotes this same symlink to a fresh
   # versioned tree; a later re-run of this installer writes into the fixed
   # $VENV again, so without this repoint the stable link would keep naming the
   # older versioned tree and a gateway restart would resurrect it. Replaced
@@ -1211,7 +1216,7 @@ except OSError:
   #      recursively deleted by a routine reinstall.
   #   2. `bin/kirocrew` present — proves it is OUR managed environment rather
   #      than some unrelated venv the user parked in the data home.
-  #   3. The new environment imports `kiro_crew` — proves the replacement works
+  #   3. The new environment imports `efm_go` — proves the replacement works
   #      before the old one goes away.
   # Plus: not a symlink, and no overlap with the new tree.
   #
@@ -1231,7 +1236,7 @@ except OSError:
       echo "WARNING: could not canonicalize $_OLD_VENV or $VENV; leaving $_OLD_VENV in place." >&2
     elif _is_within "$_NEW_CANON" "$_OLD_CANON" || _is_within "$_OLD_CANON" "$_NEW_CANON"; then
       : # overlapping trees — removing either would damage the new installation
-    elif "$VENV/bin/python" -c 'import kiro_crew' >/dev/null 2>&1; then
+    elif "$VENV/bin/python" -c 'import efm_go' >/dev/null 2>&1; then
       echo "Removing the superseded in-data-home venv at $_OLD_VENV ..."
       rm -rf "$_OLD_VENV"
     else

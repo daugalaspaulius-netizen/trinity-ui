@@ -4,11 +4,11 @@ The pure contract-semantics slice for the Zoom connector (`W11` in the
 [connector-capability-manifest](connector-capability-manifest.md) DAG): the
 identity, paging, processing-state, and error/redaction logic a later Zoom
 adapter reuses, with **zero network, zero auth, zero dispatch**. It owns
-`src/kiro_crew/connections/vendors/zoom/` and is deliberately a leaf of pure
+`src/efm_go/connections/vendors/zoom/` and is deliberately a leaf of pure
 functions and data — it constructs no HTTP client, no OAuth token, no meeting,
 and no dispatch path. Auth, binding, dispatch, approval, and the ambiguous-write
 decision belong to the shared control plane (`W01`,
-`src/kiro_crew/connections/control_plane/`); this slice **consumes** that real
+`src/efm_go/connections/control_plane/`); this slice **consumes** that real
 interface — folding its generic error taxonomy, error envelope, redaction
 discipline, credential-mode axis, and opaque pagination cursor into
 `control_plane` — and never builds a second runtime, copies the anchor, or

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from kiro_crew.config.loader import KiroCrewConfig, SkillsConfig
-from kiro_crew.skills import SkillsLoader
+from efm_go.config.loader import KiroCrewConfig, SkillsConfig
+from efm_go.skills import SkillsLoader
 
 
 def test_crystallize_builtin_present_and_triggers(tmp_path):
@@ -38,10 +38,10 @@ def test_crystallize_gates_on_recurrence_like_the_auto_pass():
     """
     from pathlib import Path
 
-    import kiro_crew
+    import efm_go
 
     body = (
-        Path(kiro_crew.__file__).parent / "builtin_skills" / "crystallize" / "SKILL.md"
+        Path(efm_go.__file__).parent / "builtin_skills" / "crystallize" / "SKILL.md"
     ).read_text(encoding="utf-8")
     text = " ".join(body.split())
 

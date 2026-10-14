@@ -12,7 +12,7 @@
 
 /** Where the shipped docs are published. Same base the Security and Discord
  *  settings panels link to. */
-const DOCS_BASE = 'https://github.com/kirodotdev/KiroCrew/blob/main/src/kiro_crew/docs'
+const DOCS_BASE = 'https://efmleads.com/go/docs'
 
 /** A plain docs filename and nothing else. */
 const DOC_FILENAME_RE = /^[a-z0-9][a-z0-9._-]*\.md$/i

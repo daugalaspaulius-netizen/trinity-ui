@@ -35,8 +35,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.dashboard import tailnet_serve
-from kiro_crew.dashboard.tailnet_serve import ServeState
+from efm_go.dashboard import tailnet_serve
+from efm_go.dashboard.tailnet_serve import ServeState
 
 _PORT = 5476
 _CLI = "/usr/bin/tailscale"

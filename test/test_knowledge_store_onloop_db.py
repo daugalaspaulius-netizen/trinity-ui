@@ -32,9 +32,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import on_loop_db
-from kiro_crew.knowledge.store import _ON_LOOP_DB_GUARD, KnowledgeStore
-from kiro_crew.on_loop_db import (
+from efm_go import on_loop_db
+from efm_go.knowledge.store import _ON_LOOP_DB_GUARD, KnowledgeStore
+from efm_go.on_loop_db import (
     STORE_STRICT_ENV,
     STRICT_ENV,
     OnLoopDBGuard,
@@ -99,7 +99,7 @@ class TestOnLoopGuard:
         that would turn a slow query into a failed request."""
         monkeypatch.setenv("KIROCREW_STRICT_ON_LOOP_STORE", "0")
         st = opened(await asyncio.to_thread(KnowledgeStore, str(tmp_path / "k.db")))
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             assert st.db.execute("SELECT 1").fetchone()[0] == 1
         assert any("event loop" in r.message for r in caplog.records)
 
@@ -107,7 +107,7 @@ class TestOnLoopGuard:
     async def test_on_loop_warning_is_throttled(self, tmp_path, monkeypatch, caplog, opened):
         monkeypatch.setenv("KIROCREW_STRICT_ON_LOOP_STORE", "0")
         st = opened(await asyncio.to_thread(KnowledgeStore, str(tmp_path / "k.db")))
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             for _ in range(3):
                 st.db.execute("SELECT 1").fetchone()
         assert sum("event loop" in r.message for r in caplog.records) == 1
@@ -124,7 +124,7 @@ class TestOnLoopGuard:
         async def _take() -> None:
             guard.check()
 
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             asyncio.run(_take())
         assert any("probe store" in r.message for r in caplog.records)
 
@@ -197,7 +197,7 @@ class TestDevModeDeparture:
         monkeypatch.delenv("KIROCREW_STRICT_ON_LOOP_STORE", raising=False)
         monkeypatch.setenv("KIROCREW_DEV_MODE", "1")
         st = opened(await asyncio.to_thread(KnowledgeStore, str(tmp_path / "k.db")))
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             assert st.db.execute("SELECT 1").fetchone()[0] == 1  # must NOT raise
         assert any("event loop" in r.message for r in caplog.records)
 
@@ -291,7 +291,7 @@ class TestConstructionOnLoopIsSanctioned:
         """Only THIS guard's records: construction runs dozens of migration
         statements that may legitimately log through other loggers, and
         ``caplog.records`` captures every logger at the handler."""
-        return [r for r in caplog.records if r.name == "kiro_crew.on_loop_db"]
+        return [r for r in caplog.records if r.name == "efm_go.on_loop_db"]
 
     @pytest.mark.asyncio
     async def test_construction_on_loop_emits_no_warning(
@@ -302,7 +302,7 @@ class TestConstructionOnLoopIsSanctioned:
         probe is wired lives in ``test_reader_after_construction_still_warns``,
         which sees the same logger fire for a real reader take.)"""
         monkeypatch.setenv(STORE_STRICT_ENV, "0")
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             opened(KnowledgeStore(str(tmp_path / "k.db")))
         assert not self._guard_records(caplog)
 
@@ -325,7 +325,7 @@ class TestConstructionOnLoopIsSanctioned:
         reader paths. A genuine on-loop take right after construction warns --
         which also proves the suppression left the throttle clock untouched."""
         monkeypatch.setenv(STORE_STRICT_ENV, "0")
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             st = opened(KnowledgeStore(str(tmp_path / "k.db")))
             assert not self._guard_records(caplog), "construction itself must stay silent"
             st.get_item("does-not-exist")
@@ -343,7 +343,7 @@ class TestConstructionOnLoopIsSanctioned:
                     raise RuntimeError("boom")
             guard.check()  # must warn: the opt-out ended with the block
 
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             asyncio.run(_probe())
         assert sum("probe store" in r.message for r in caplog.records) == 1
 
@@ -452,7 +452,7 @@ class TestStrictSwitchDoesNotDrift:
     ]
 
     def test_agrees_with_history_when_dev_mode_is_armed(self, monkeypatch):
-        from kiro_crew.history import on_loop_persist_strict
+        from efm_go.history import on_loop_persist_strict
 
         for env in self.CASES:
             for var in ("KIROCREW_STRICT_ON_LOOP_PERSIST", "KIROCREW_DEV_MODE"):

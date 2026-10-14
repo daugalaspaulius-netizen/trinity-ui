@@ -14,13 +14,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.channel import (
+from efm_go.channel import (
     CHANNEL_AGENT_BLOCKED_DISPATCH_OPERATIONS,
     CHANNEL_AGENT_BLOCKED_DISPATCH_TOOLS,
     CHANNEL_AGENT_BLOCKED_TOOLS,
     _stream_task,
 )
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST
 
 
 def _make_agent():
@@ -62,7 +62,7 @@ def test_blocked_tools_cover_both_messaging_tools():
 @pytest.mark.parametrize("tool", ["send_message", "send_notification"])
 async def test_blocked_tool_rejected_even_on_trusted_channel(monkeypatch, tool):
     sel_mock = MagicMock()
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel_mock)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel_mock)
     events = [
         SimpleNamespace(
             kind=EVENT_PERMISSION_REQUEST,
@@ -119,7 +119,7 @@ async def test_blocked_tool_rejected_even_on_trusted_channel(monkeypatch, tool):
     ],
 )
 def test_blocked_tool_matcher_precision(rendered, expected):
-    from kiro_crew.channel import _blocked_tool_named
+    from efm_go.channel import _blocked_tool_named
 
     assert _blocked_tool_named(rendered) is expected
 
@@ -136,7 +136,7 @@ def test_every_session_control_tool_is_contained():
     nothing into an existing conversation, but it puts a persistent,
     sidebar-visible session outside the containment this list holds.
     """
-    from kiro_crew.mcp_dashboard import SESSION_CONTROL_TOOLS
+    from efm_go.mcp_dashboard import SESSION_CONTROL_TOOLS
 
     missing = sorted(set(SESSION_CONTROL_TOOLS) - set(CHANNEL_AGENT_BLOCKED_TOOLS))
     assert not missing, f"session-control tools reachable from a channel agent: {missing}"
@@ -197,7 +197,7 @@ def test_blocked_operations_are_real_operations_of_their_tool():
     would be silently dead. The tool's validator holds the authoritative surface,
     so the pair is asserted against it rather than against a second spelling.
     """
-    from kiro_crew.validation import OPS_MISSION_CONTROL_ALLOWED_CALLS
+    from efm_go.validation import OPS_MISSION_CONTROL_ALLOWED_CALLS
 
     for tool, operations in CHANNEL_AGENT_BLOCKED_DISPATCH_OPERATIONS.items():
         assert tool == "ops_mission_control_api", f"no known surface for {tool}"
@@ -237,7 +237,7 @@ def test_observe_and_teardown_verbs_stay_reachable(tool):
 @pytest.mark.parametrize("tool", list(CHANNEL_AGENT_BLOCKED_DISPATCH_TOOLS))
 async def test_dispatch_verb_rejected_even_on_trusted_channel(monkeypatch, tool):
     sel_mock = MagicMock()
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel_mock)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel_mock)
     events = [
         SimpleNamespace(
             kind=EVENT_PERMISSION_REQUEST,
@@ -281,14 +281,14 @@ async def test_dispatch_verb_rejected_even_on_trusted_channel(monkeypatch, tool)
     ],
 )
 def test_dispatch_verb_matcher_precision(rendered, expected):
-    from kiro_crew.channel import _blocked_tool_named
+    from efm_go.channel import _blocked_tool_named
 
     assert _blocked_tool_named(rendered) is expected
 
 
 def test_session_pin_is_contained():
     """Pinning rearranges the person's sidebar, the reason the tree verbs are blocked."""
-    from kiro_crew.channel import _blocked_tool_named
+    from efm_go.channel import _blocked_tool_named
 
     assert "chat_session_pin" in CHANNEL_AGENT_BLOCKED_TOOLS
     assert _blocked_tool_named("kirocrew-dashboard___chat_session_pin") is True

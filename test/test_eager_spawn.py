@@ -16,20 +16,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.agent_sdk.backends import ACP_BACKEND_KAS
-from kiro_crew.config import live
-from kiro_crew.config.loader import (
+from efm_go.agent_sdk.backends import ACP_BACKEND_KAS
+from efm_go.config import live
+from efm_go.config.loader import (
     KiroCrewAgentConfig,
     KiroCrewConfig,
     MemoryStoreConfig,
     ResolvedBindings,
 )
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_runner import _eager_spawn, schedule_eager_spawn
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-from kiro_crew.session import FirstTurnState
-from kiro_crew.start_priority import StartPriority
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_runner import _eager_spawn, schedule_eager_spawn
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+from efm_go.session import FirstTurnState
+from efm_go.start_priority import StartPriority
 
 
 @pytest.fixture(autouse=True)
@@ -193,7 +193,7 @@ class TestScheduleEagerSpawn:
         def _load(data: dict, name: str):
             tmp = tmp_path / name
             tmp.write_text(json.dumps(data))
-            with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+            with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
                 return chat_runner.KiroCrewConfig.load()
 
         assert _load({"session": {"eager_spawn": False}}, "off.json").session.eager_spawn is False
@@ -327,8 +327,8 @@ class TestEagerSpawn:
 
     @pytest.mark.asyncio
     async def test_private_assignment_blocks_legacy_speculation_without_slot_metadata(self):
-        from kiro_crew.member_memory_auth import bind_private_session_store
-        from kiro_crew.memory_stores import provision_member_memory
+        from efm_go.member_memory_auth import bind_private_session_store
+        from efm_go.memory_stores import provision_member_memory
 
         slot = _ChatSlot("private-history")
         slot.agent = "legacy"
@@ -483,7 +483,7 @@ class TestEagerSpawn:
     async def test_resumable_key_refusal_is_clean(self):
         """SpeculativeResumeRefused is an expected outcome, not an error: the
         real first turn must be the one that resumes."""
-        from kiro_crew.session import SpeculativeResumeRefused
+        from efm_go.session import SpeculativeResumeRefused
 
         slot = _ChatSlot("t1")
         state = _mock_state(slot)
@@ -591,7 +591,7 @@ class TestTtftMetric:
 
     def test_emits_histogram_with_attribution_attrs(self):
         rec = MagicMock()
-        with patch("kiro_crew.metrics.provider.get_recorder", return_value=rec):
+        with patch("efm_go.metrics.provider.get_recorder", return_value=rec):
             chat_runner._emit_ttft_metric(0.0, "dashboard:chat-1-x", is_new=True, resumed=False)
         assert rec.histogram.call_count == 1
         name = rec.histogram.call_args.args[0]
@@ -603,7 +603,7 @@ class TestTtftMetric:
 
     def test_recorder_failure_is_swallowed(self):
         """Best-effort: a metrics outage must never break the chat stream."""
-        with patch("kiro_crew.metrics.provider.get_recorder", side_effect=RuntimeError("boom")):
+        with patch("efm_go.metrics.provider.get_recorder", side_effect=RuntimeError("boom")):
             chat_runner._emit_ttft_metric(0.0, "dashboard:chat-1-x", is_new=False, resumed=True)
 
 
@@ -626,7 +626,7 @@ class TestSpeculativeGetOrCreate:
 
     @pytest.fixture
     def cfg(self):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         c = KiroCrewConfig()
         c.agent.provider = "acp"
@@ -638,7 +638,7 @@ class TestSpeculativeGetOrCreate:
         """A speculative creator registers is_new=True; the next real
         get_or_create claims it (was_new=True) and consumes it. This is the
         end-to-end invariant that keeps first-turn context injection alive."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:eager-x"
@@ -659,7 +659,7 @@ class TestSpeculativeGetOrCreate:
     async def test_speculative_claim_does_not_consume(self, cfg):
         """A speculative call landing on an already-armed live session must
         read the flag without consuming it (repeat eager signals)."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:eager-y"
@@ -679,11 +679,11 @@ class TestSpeculativeGetOrCreate:
         .jsonl in the (patched, isolated) kiro sessions dir or the guard is
         never exercised.
         """
-        from kiro_crew.session import SessionManager, SpeculativeResumeRefused
+        from efm_go.session import SessionManager, SpeculativeResumeRefused
 
         sessions_dir = tmp_path / "kiro-sessions"
         sessions_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.session_map._kiro_sessions_dir", lambda: sessions_dir)
+        monkeypatch.setattr("efm_go.session_map._kiro_sessions_dir", lambda: sessions_dir)
         sid = "prior-sid-1234"
         (sessions_dir / f"{sid}.json").write_text("{}")
         (sessions_dir / f"{sid}.jsonl").write_text("x" * 32)
@@ -703,7 +703,7 @@ class TestSpeculativeGetOrCreate:
         not a hardcoded False."""
         import asyncio
 
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:eager-race"
@@ -735,7 +735,7 @@ class TestSpeculativeGetOrCreate:
         still receives was_new=True."""
         import asyncio
 
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:eager-cancel"
@@ -767,7 +767,7 @@ class TestProjectSetWiring:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.chat import api_chat_slot_agent
+        from efm_go.dashboard.chat import api_chat_slot_agent
 
         slot = _ChatSlot("t1")
         state = MagicMock(spec=DashboardState)
@@ -785,11 +785,11 @@ class TestProjectSetWiring:
         app.router.add_post("/api/chat/slots/{slot}/agent", api_chat_slot_agent)
         with (
             patch(
-                "kiro_crew.dashboard.chat_handlers._reset_slot_session_or_warn",
+                "efm_go.dashboard.chat_handlers._reset_slot_session_or_warn",
                 new=AsyncMock(return_value=True),
             ),
-            patch("kiro_crew.dashboard.chat_handlers.save_slot_off_loop", new=AsyncMock()),
-            patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn") as sched,
+            patch("efm_go.dashboard.chat_handlers.save_slot_off_loop", new=AsyncMock()),
+            patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn") as sched,
         ):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post("/api/chat/slots/t1/agent", json={"agent": "kirocrew"})
@@ -803,7 +803,7 @@ class TestProjectSetWiring:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.chat import api_chat_slot_project
+        from efm_go.dashboard.chat import api_chat_slot_project
 
         slot = _ChatSlot("t1")
         state = MagicMock(spec=DashboardState)
@@ -813,8 +813,8 @@ class TestProjectSetWiring:
         app["state"] = state
         app.router.add_post("/api/chat/slots/{slot}/project", api_chat_slot_project)
         with (
-            patch("kiro_crew.dashboard.chat_handlers._save_recent_project"),
-            patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn") as sched,
+            patch("efm_go.dashboard.chat_handlers._save_recent_project"),
+            patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn") as sched,
         ):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
@@ -830,7 +830,7 @@ class TestProjectSetWiring:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.chat import api_chat_slot_project
+        from efm_go.dashboard.chat import api_chat_slot_project
 
         slot = _ChatSlot("t1")
         slot.project = str(tmp_path)
@@ -841,8 +841,8 @@ class TestProjectSetWiring:
         app["state"] = state
         app.router.add_post("/api/chat/slots/{slot}/project", api_chat_slot_project)
         with (
-            patch("kiro_crew.dashboard.chat_handlers._save_recent_project"),
-            patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn") as sched,
+            patch("efm_go.dashboard.chat_handlers._save_recent_project"),
+            patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn") as sched,
         ):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.post(
@@ -858,7 +858,7 @@ class TestSpeculativeResumeHandover:
 
     @pytest.fixture
     def cfg(self):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         c = KiroCrewConfig()
         c.agent.provider = "acp"
@@ -870,7 +870,7 @@ class TestSpeculativeResumeHandover:
         SessionMap.get does not self-prune it (mirrors the refusal test)."""
         sessions_dir = tmp_path / "kiro-sessions"
         sessions_dir.mkdir(exist_ok=True)
-        monkeypatch.setattr("kiro_crew.session_map._kiro_sessions_dir", lambda: sessions_dir)
+        monkeypatch.setattr("efm_go.session_map._kiro_sessions_dir", lambda: sessions_dir)
         (sessions_dir / f"{sid}.json").write_text("{}")
         (sessions_dir / f"{sid}.jsonl").write_text("x" * 32)
         mgr._session_map.set(key, sid)
@@ -882,7 +882,7 @@ class TestSpeculativeResumeHandover:
         creator performs the load and, when it actually resumes, registers
         with the first-turn flag armed. (A load that does NOT resume is
         rejected pre-registration — pinned by TestSpecResumeFallbackMapGuard.)"""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         def factory(session_key=None, agent=None, channel_id=None, **kwargs):
             m = AsyncMock()
@@ -897,7 +897,7 @@ class TestSpeculativeResumeHandover:
             m.client._session_id = "prior-sid-a"
             return m
 
-        monkeypatch.setattr("kiro_crew.providers.acp.AcpProvider", object)
+        monkeypatch.setattr("efm_go.providers.acp.AcpProvider", object)
         mgr = SessionManager(cfg, provider_factory=factory)
         key = "dashboard:prefetch-a"
         self._resumable(mgr, key, tmp_path, monkeypatch)
@@ -915,7 +915,7 @@ class TestSpeculativeResumeHandover:
         """The load-observed resumed=True is armed at registration and handed
         to the first real claimant exactly once — the invariant that keeps the
         real first turn's history-injection decision correct."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         sid = "prior-sid-9999"
 
@@ -935,9 +935,9 @@ class TestSpeculativeResumeHandover:
         # get_or_create gates the resumed sample on isinstance(provider,
         # AcpProvider); widen the class so the stub passes without spawning a
         # real ACP process.
-        monkeypatch.setattr("kiro_crew.providers.acp.AcpProvider", object)
+        monkeypatch.setattr("efm_go.providers.acp.AcpProvider", object)
 
-        from kiro_crew.session import SessionManager  # noqa: F811
+        from efm_go.session import SessionManager  # noqa: F811
 
         mgr = SessionManager(cfg, provider_factory=factory)
         key = "dashboard:prefetch-b"
@@ -964,7 +964,7 @@ class TestSpeculativeResumeHandover:
     async def test_speculative_claimant_reads_resumed_without_consuming(self, cfg):
         """A repeat speculative call on an armed session must not consume
         either marker (repeat focus signals)."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:prefetch-c"
@@ -980,7 +980,7 @@ class TestSpeculativeResumeHandover:
     async def test_fresh_speculative_create_does_not_arm_resumed(self, cfg):
         """No mapping → the speculative creator starts fresh and must not
         claim a resume it never performed."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:prefetch-d"
@@ -1010,7 +1010,7 @@ class TestIllegalFirstTurnStateUnrepresentable:
         """The old fields are gone from ``_Session``: with one field there is
         no second marker to desynchronize, and the old constructor kwargs are
         rejected rather than silently accepted."""
-        from kiro_crew.session import _Session
+        from efm_go.session import _Session
 
         sess = _Session(provider=AsyncMock())
         assert not hasattr(sess, "is_new")
@@ -1024,7 +1024,7 @@ class TestRemoveIfUnclaimed:
 
     @pytest.fixture
     def cfg(self):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         c = KiroCrewConfig()
         c.agent.provider = "acp"
@@ -1033,7 +1033,7 @@ class TestRemoveIfUnclaimed:
 
     @pytest.mark.asyncio
     async def test_removes_armed_idle_session_and_preserves_map(self, cfg):
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:ttl-a"
@@ -1050,7 +1050,7 @@ class TestRemoveIfUnclaimed:
 
     @pytest.mark.asyncio
     async def test_noops_after_real_claim(self, cfg):
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:ttl-b"
@@ -1065,7 +1065,7 @@ class TestRemoveIfUnclaimed:
     async def test_noops_while_semaphore_held(self, cfg):
         """A claimant mid-acquire (semaphore held) must never lose the
         session under it."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         key = "dashboard:ttl-c"
@@ -1076,7 +1076,7 @@ class TestRemoveIfUnclaimed:
 
     @pytest.mark.asyncio
     async def test_noops_on_missing_key(self, cfg):
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg, provider_factory=_stub_factory())
         assert await mgr.remove_if_unclaimed("dashboard:absent") is False
@@ -1327,7 +1327,7 @@ class TestFreshSpawnPopulationCap:
     async def test_the_cap_is_the_shared_resource_status_ceiling(self):
         """One number, owned by resource_status: the ample-host allowance IS the
         fixed cap, so the two cannot drift apart."""
-        from kiro_crew import resource_status
+        from efm_go import resource_status
 
         assert chat_runner._RESUME_PREFETCH_MAX_LIVE == resource_status.PREWARM_MAX_LIVE
         assert resource_status.prewarm_allowance(64.0) == chat_runner._RESUME_PREFETCH_MAX_LIVE
@@ -1840,12 +1840,12 @@ class TestResumableHint:
 
     @pytest.fixture
     def smap(self, tmp_path, monkeypatch):
-        from kiro_crew.session_map import SessionMap
+        from efm_go.session_map import SessionMap
 
         sessions_dir = tmp_path / "kiro-sessions"
         sessions_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.session_map._kiro_sessions_dir", lambda: sessions_dir)
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_map._kiro_sessions_dir", lambda: sessions_dir)
         return SessionMap(), sessions_dir
 
     def test_hint_true_for_entry_even_without_files(self, smap):
@@ -1884,7 +1884,7 @@ class TestSlotFocusedFrame:
 
     @pytest.mark.asyncio
     async def test_resumable_focus_schedules_resume_prefetch(self):
-        from kiro_crew.dashboard.ws import _handle_slot_focused
+        from efm_go.dashboard.ws import _handle_slot_focused
 
         slot = _ChatSlot("t1")
         state = self._state(slot)
@@ -1898,7 +1898,7 @@ class TestSlotFocusedFrame:
 
     @pytest.mark.asyncio
     async def test_focus_change_cancels_previous_prefetch(self):
-        from kiro_crew.dashboard.ws import _handle_slot_focused
+        from efm_go.dashboard.ws import _handle_slot_focused
 
         slot = _ChatSlot("t1")
         state = self._state(slot)
@@ -1914,7 +1914,7 @@ class TestSlotFocusedFrame:
 
     @pytest.mark.asyncio
     async def test_blur_cancels_and_schedules_nothing(self):
-        from kiro_crew.dashboard.ws import _handle_slot_focused
+        from efm_go.dashboard.ws import _handle_slot_focused
 
         slot = _ChatSlot("t1")
         state = self._state(slot)
@@ -1928,7 +1928,7 @@ class TestSlotFocusedFrame:
 
     @pytest.mark.asyncio
     async def test_live_session_schedules_nothing(self):
-        from kiro_crew.dashboard.ws import _handle_slot_focused
+        from efm_go.dashboard.ws import _handle_slot_focused
 
         slot = _ChatSlot("t1")
         state = self._state(slot, has_session=True)
@@ -1958,7 +1958,7 @@ class TestSlotFocusedFrame:
         create-armed FRESH spawn and then no-op, silently gutting fresh eager
         spawn for every new slot. The handler must check the hint itself and
         leave the pending task untouched."""
-        from kiro_crew.dashboard.ws import _handle_slot_focused
+        from efm_go.dashboard.ws import _handle_slot_focused
 
         slot = _ChatSlot("t1")
         state = self._state(slot, resumable=None)
@@ -1976,7 +1976,7 @@ class TestSlotFocusedFrame:
 
     @pytest.mark.asyncio
     async def test_running_turn_schedules_nothing(self):
-        from kiro_crew.dashboard.ws import _handle_slot_focused
+        from efm_go.dashboard.ws import _handle_slot_focused
 
         slot = _ChatSlot("t1")
         # slot.running derives from slot.task being a live task.
@@ -1994,7 +1994,7 @@ class TestSlotFocusedFrame:
     async def test_non_owner_socket_schedules_nothing_and_cancels_nothing(self):
         """An app-scoped socket must not start owner-session processes or
         cancel another arm's prefetch — the frame is ignored entirely."""
-        from kiro_crew.dashboard.ws import _handle_slot_focused
+        from efm_go.dashboard.ws import _handle_slot_focused
 
         slot = _ChatSlot("t1")
         state = self._state(slot)
@@ -2040,14 +2040,14 @@ class TestSlotReadFrame:
         return MagicMock(spec=DashboardState)
 
     def test_owner_read_broadcasts_to_owner_clients(self):
-        from kiro_crew.dashboard.ws import _handle_slot_read
+        from efm_go.dashboard.ws import _handle_slot_read
 
         state = self._state()
         assert _handle_slot_read(state, "t1", owner=True) is True
         state.broadcast_ws_owners.assert_called_once_with("slot_read", {"slot": "t1"})
 
     def test_read_watermark_is_relayed_opaquely(self):
-        from kiro_crew.dashboard.ws import _handle_slot_read
+        from efm_go.dashboard.ws import _handle_slot_read
 
         state = self._state()
         assert _handle_slot_read(state, "t1", "2026-09-10T00:00:00Z", owner=True) is True
@@ -2058,7 +2058,7 @@ class TestSlotReadFrame:
     def test_junk_read_watermark_is_dropped_but_frame_relays(self):
         """A bad watermark degrades to a watermark-less relay (receivers apply
         their conservative default) rather than dropping the read gesture."""
-        from kiro_crew.dashboard.ws import _handle_slot_read
+        from efm_go.dashboard.ws import _handle_slot_read
 
         for junk in (42, "", "x" * 65, {"ts": "y"}):
             state = self._state()
@@ -2067,14 +2067,14 @@ class TestSlotReadFrame:
 
     def test_non_owner_frame_is_ignored(self):
         """An app-scoped socket must not clear the user's badges."""
-        from kiro_crew.dashboard.ws import _handle_slot_read
+        from efm_go.dashboard.ws import _handle_slot_read
 
         state = self._state()
         assert _handle_slot_read(state, "t1", owner=False) is False
         state.broadcast_ws_owners.assert_not_called()
 
     def test_junk_slot_keys_are_ignored(self):
-        from kiro_crew.dashboard.ws import _handle_slot_read
+        from efm_go.dashboard.ws import _handle_slot_read
 
         state = self._state()
         for junk in (None, "", 42, {"slot": "x"}, "k" * 513):
@@ -2085,7 +2085,7 @@ class TestSlotReadFrame:
         """No liveness check on purpose: a read of a just-deleted slot must
         still clear stale badges in other windows (their unread drain only
         prunes keys missing from a later slots snapshot)."""
-        from kiro_crew.dashboard.ws import _handle_slot_read
+        from efm_go.dashboard.ws import _handle_slot_read
 
         state = self._state()
         state.get_slot = MagicMock(return_value=None)
@@ -2098,7 +2098,7 @@ class TestSpecResumeFallbackMapGuard:
 
     @pytest.fixture
     def cfg(self):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         c = KiroCrewConfig()
         c.agent.provider = "acp"
@@ -2107,12 +2107,12 @@ class TestSpecResumeFallbackMapGuard:
 
     @pytest.mark.asyncio
     async def test_fallback_keeps_original_sid(self, cfg, tmp_path, monkeypatch):
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         old_sid = "real-transcript-sid"
         sessions_dir = tmp_path / "kiro-sessions"
         sessions_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.session_map._kiro_sessions_dir", lambda: sessions_dir)
+        monkeypatch.setattr("efm_go.session_map._kiro_sessions_dir", lambda: sessions_dir)
         (sessions_dir / f"{old_sid}.json").write_text("{}")
         (sessions_dir / f"{old_sid}.jsonl").write_text("x" * 32)
 
@@ -2129,12 +2129,12 @@ class TestSpecResumeFallbackMapGuard:
             m.client._session_id = "empty-fallback-sid"
             return m
 
-        monkeypatch.setattr("kiro_crew.providers.acp.AcpProvider", object)
+        monkeypatch.setattr("efm_go.providers.acp.AcpProvider", object)
         mgr = SessionManager(cfg, provider_factory=factory)
         key = "dashboard:fallback-a"
         mgr._session_map.set(key, old_sid)
 
-        from kiro_crew.session import SpeculativeResumeRefused
+        from efm_go.session import SpeculativeResumeRefused
 
         # A failed speculative resume is rejected BEFORE registration: no
         # claimable fallback session may ever exist — a real turn queued
@@ -2157,12 +2157,12 @@ class TestSpecResumeFallbackMapGuard:
         session (resumed=True) and skip the history replay, losing the prior
         context. Classification must key on the caller's ``speculative_resume``
         opt-in, which no branch mutates."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         old_sid = "real-transcript-sid"
         sessions_dir = tmp_path / "kiro-sessions"
         sessions_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.session_map._kiro_sessions_dir", lambda: sessions_dir)
+        monkeypatch.setattr("efm_go.session_map._kiro_sessions_dir", lambda: sessions_dir)
         (sessions_dir / f"{old_sid}.json").write_text("{}")
         (sessions_dir / f"{old_sid}.jsonl").write_text("x" * 32)
 
@@ -2179,15 +2179,15 @@ class TestSpecResumeFallbackMapGuard:
             m.client._session_id = "empty-fallback-sid"
             return m
 
-        monkeypatch.setattr("kiro_crew.providers.acp.AcpProvider", object)
+        monkeypatch.setattr("efm_go.providers.acp.AcpProvider", object)
         # Force the switch branch: resume_sid is cleared and the stored sid
         # wiped, exactly the mutation the classification must be immune to.
-        monkeypatch.setattr("kiro_crew.session.detect_provider_switch", lambda *a: True)
+        monkeypatch.setattr("efm_go.session.detect_provider_switch", lambda *a: True)
         mgr = SessionManager(cfg, provider_factory=factory)
         key = "dashboard:fallback-switch"
         mgr._session_map.set(key, old_sid)
 
-        from kiro_crew.session import SpeculativeResumeRefused
+        from efm_go.session import SpeculativeResumeRefused
 
         # The provider-switch branch clears resume_sid mid-flight; the
         # rejection must key on the caller's opt-in and fire anyway, so the
@@ -2208,12 +2208,12 @@ class TestSpecResumeFallbackMapGuard:
         through it). It must kill the orphaned provider via the executor
         dispatch, never inline — _sync_kill_provider blocks the event loop
         (os.waitpid / taskkill)."""
-        from kiro_crew.session import SessionManager, SpeculativeResumeRefused
+        from efm_go.session import SessionManager, SpeculativeResumeRefused
 
         old_sid = "real-transcript-sid"
         sessions_dir = tmp_path / "kiro-sessions"
         sessions_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.session_map._kiro_sessions_dir", lambda: sessions_dir)
+        monkeypatch.setattr("efm_go.session_map._kiro_sessions_dir", lambda: sessions_dir)
         (sessions_dir / f"{old_sid}.json").write_text("{}")
         (sessions_dir / f"{old_sid}.jsonl").write_text("x" * 32)
 
@@ -2230,7 +2230,7 @@ class TestSpecResumeFallbackMapGuard:
             m.client._session_id = "empty-fallback-sid"
             return m
 
-        monkeypatch.setattr("kiro_crew.providers.acp.AcpProvider", object)
+        monkeypatch.setattr("efm_go.providers.acp.AcpProvider", object)
         mgr = SessionManager(cfg, provider_factory=factory)
         key = "dashboard:kill-dispatch"
         mgr._session_map.set(key, old_sid)

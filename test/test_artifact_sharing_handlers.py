@@ -21,16 +21,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import artifacts as art_mod
-from kiro_crew import publish_sync
-from kiro_crew.artifacts import ArtifactNotFoundError, ArtifactStore, ArtifactValidationError
-from kiro_crew.dashboard.handlers import artifacts as art_handlers
-from kiro_crew.dashboard.handlers.artifacts import (
+from efm_go import artifacts as art_mod
+from efm_go import publish_sync
+from efm_go.artifacts import ArtifactNotFoundError, ArtifactStore, ArtifactValidationError
+from efm_go.dashboard.handlers import artifacts as art_handlers
+from efm_go.dashboard.handlers.artifacts import (
     _validate_sharing_body,
     api_artifact_unpublish,
     api_artifact_update_sharing,
 )
-from kiro_crew.publish_provider import DEFAULT_PROVIDER
+from efm_go.publish_provider import DEFAULT_PROVIDER
 
 # ── Fixtures (mirrors test_remote_artifacts.py) ───────────────────────────────
 

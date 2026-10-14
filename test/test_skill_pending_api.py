@@ -9,10 +9,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import pinned_fs
-from kiro_crew import skills as skills_mod
-from kiro_crew.dashboard.handlers import prompts as H
-from kiro_crew.skills import AutoSkillProvenance, PendingApprovalRefused, SkillsLoader
+from efm_go import pinned_fs
+from efm_go import skills as skills_mod
+from efm_go.dashboard.handlers import prompts as H
+from efm_go.skills import AutoSkillProvenance, PendingApprovalRefused, SkillsLoader
 
 _OMITTED = object()
 
@@ -686,7 +686,7 @@ async def test_pending_list_survives_undecodable_script(flagged_loader):
 async def test_pending_list_oversized_script_flagged_from_stat_alone(loader):
     """A script over MAX_SCRIPT_BYTES is flagged from its size (stat) without
     loading its bytes on the poll path — same verdict the validator reaches."""
-    from kiro_crew.skills_script_validator import MAX_SCRIPT_BYTES
+    from efm_go.skills_script_validator import MAX_SCRIPT_BYTES
 
     pdir = loader._pending_root() / "deploy-helper"
     sdir = pdir / "scripts"
@@ -906,7 +906,7 @@ _UNPREDICTABLE_APPROVE_REFUSALS: dict[str, str] = {
 def _approve_refusal_reasons_from_source() -> set[str]:
     """Every reason the approve path can raise, read from the SOURCE.
 
-    Walks the AST of every module in the ``kiro_crew`` package that mentions
+    Walks the AST of every module in the ``efm_go`` package that mentions
     ``PendingApprovalRefused(`` and collects the ``reason`` literal of each
     construction. This is the ground truth the classification is checked
     against — not a second hand-written list that could drift the same way

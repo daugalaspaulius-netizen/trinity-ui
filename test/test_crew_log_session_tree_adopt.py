@@ -20,11 +20,11 @@ import json
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, emit
-from kiro_crew.crew_log import session_tree_projection as stp
-from kiro_crew.crew_log import store as crew_store
-from kiro_crew.crew_log.session_tree import (
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, emit
+from efm_go.crew_log import session_tree_projection as stp
+from efm_go.crew_log import store as crew_store
+from efm_go.crew_log.session_tree import (
     EdgeRecord,
     OpenedRecord,
     SessionTree,
@@ -34,12 +34,12 @@ from kiro_crew.crew_log.session_tree import (
     latest_edges,
     log_rank_of,
 )
-from kiro_crew.crew_log.session_tree_projection import (
+from efm_go.crew_log.session_tree_projection import (
     CHECKPOINT_NAME,
     SessionTreeProjection,
 )
-from kiro_crew.crew_log.store import read_last_tree_edge
-from kiro_crew.session_ledger import _store_name
+from efm_go.crew_log.store import read_last_tree_edge
+from efm_go.session_ledger import _store_name
 
 GATEWAY = "gateway"
 
@@ -57,7 +57,7 @@ def _isolated_home(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     monkeypatch.setattr(
-        "kiro_crew.executors.maintenance_executor",
+        "efm_go.executors.maintenance_executor",
         lambda: type("_NoPool", (), {"submit": staticmethod(lambda *a, **k: None)}),
     )
     stp.reset_for_tests()
@@ -105,7 +105,7 @@ def _opened(handle: CrewLog, slot: str, *, parent: str | None = None) -> None:
 
 
 def _checkpoint_path():
-    from kiro_crew.crew_log.store import crew_log_root
+    from efm_go.crew_log.store import crew_log_root
 
     return crew_log_root(lg.KIND_SESSION) / "projections" / CHECKPOINT_NAME
 
@@ -219,7 +219,7 @@ def test_an_adoption_naming_a_parent_with_no_log_keeps_the_citation_unfollowed()
 
 
 def _entry(entry_type: str, data: dict, *, at: int = 7) -> object:
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     return Entry(type=entry_type, data=data, src=GATEWAY, seq=2, time=at)
 
@@ -243,7 +243,7 @@ def test_a_release_needs_no_parent_and_folds_as_no_parent():
 def test_an_over_long_key_is_refused_rather_than_truncated():
     """A truncated slot key is a DIFFERENT key: it matches nothing, or it matches
     another session."""
-    from kiro_crew.validation import MAX_SHORT_STRING
+    from efm_go.validation import MAX_SHORT_STRING
 
     long_slot = "x" * (MAX_SHORT_STRING + 1)
     assert edge_record(long_slot, "s-a", _entry("session/released", {})) is None
@@ -437,7 +437,7 @@ def test_the_cold_read_finds_a_decision_the_tail_window_cannot_reach():
     missing edge but a wrong one: the fold falls back to the creating edge and shows the
     session under a parent that released it, with nothing to correct it.
     """
-    from kiro_crew.crew_log.store import _TAIL_WINDOW, find_last_tree_edge, read_last_tree_edge
+    from efm_go.crew_log.store import _TAIL_WINDOW, find_last_tree_edge, read_last_tree_edge
 
     handle = _log("s-a", "A")
     _opened(handle, "A")
@@ -806,7 +806,7 @@ def test_a_store_that_cannot_be_listed_is_not_answered_as_no_decision(monkeypatc
     """
     from pathlib import Path
 
-    from kiro_crew.crew_log.store import find_last_tree_edge
+    from efm_go.crew_log.store import find_last_tree_edge
 
     handle = _log("s-a", "A")
     _opened(handle, "A")
@@ -908,7 +908,7 @@ def test_a_failed_stat_in_the_whole_file_scan_is_not_answered_as_no_decision(mon
     """
     from pathlib import Path
 
-    from kiro_crew.crew_log.store import _TAIL_WINDOW, find_last_tree_edge, read_last_tree_edge
+    from efm_go.crew_log.store import _TAIL_WINDOW, find_last_tree_edge, read_last_tree_edge
 
     handle = _log("s-a", "A")
     _opened(handle, "A")

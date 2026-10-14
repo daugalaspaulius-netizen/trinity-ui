@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.browser_cli import install, launch, snapshots, view
+from efm_go import platform_compat
+from efm_go.browser_cli import install, launch, snapshots, view
 
 
 @pytest.fixture()
@@ -248,7 +248,7 @@ class TestAppTokensCannotArmBrowsing:
         return asyncio.run(handler(req))
 
     def test_the_token_write_refuses_an_app_token(self):
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         resp = self._run(
             msg.api_browser_token_put,
@@ -257,13 +257,13 @@ class TestAppTokensCannotArmBrowsing:
         assert resp.status == 403
 
     def test_the_install_refuses_an_app_token(self):
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         resp = self._run(msg.api_browser_install_start, self._app_request("/api/browser/install"))
         assert resp.status == 403
 
     def test_the_engine_download_refuses_an_app_token(self):
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         resp = self._run(
             msg.api_browser_engine_install,
@@ -368,7 +368,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """The actual bug: a non-owner with no app identity passes through."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         sel_mock = MagicMock()
         with patch.object(msg, "_sel", return_value=sel_mock):
@@ -382,7 +382,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """A non-owner cannot start CLI setup, which runs registry code on the host."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         with patch.object(msg, "_sel", return_value=MagicMock()):
             resp = self._run(
@@ -395,7 +395,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """A non-owner cannot start an engine download."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         with patch.object(msg, "_sel", return_value=MagicMock()):
             resp = self._run(
@@ -408,7 +408,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """A caller with empty user and empty app is refused."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         sel_mock = MagicMock()
         with patch.object(msg, "_sel", return_value=sel_mock):
@@ -422,7 +422,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """The configured owner passes through the gate."""
         from unittest.mock import patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         # Patch dependencies that run AFTER the gate passes
         with (
@@ -446,7 +446,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """SEL records the denial with a meaningful caller identity."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         sel_mock = MagicMock()
         with patch.object(msg, "_sel", return_value=sel_mock):
@@ -469,7 +469,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         sel_mock = MagicMock()
         with (
@@ -494,7 +494,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """App tokens still audit as 'app:<name>'."""
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         sel_mock = MagicMock()
         req = self._app_token_request("/api/browser/token", {"token": "x"})
@@ -511,7 +511,7 @@ class TestBrowserMutationsAreOwnerOnly:
         """api_browser_install_get has no owner gate — apps can read status."""
         from unittest.mock import patch
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         req = self._app_token_request("/api/browser/install")
 
@@ -538,7 +538,7 @@ class TestTheViewDoesNotOutliveTheGateway:
         """
         import inspect
 
-        from kiro_crew.dashboard import server
+        from efm_go.dashboard import server
 
         src = inspect.getsource(server)
         assert "_browser_view_shutdown" in src
@@ -577,7 +577,7 @@ class TestOneInstallSlotIsNotAFoldedLie:
         import asyncio
         import contextlib
 
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         async def _drive():
             state = type("S", (), {})()
@@ -638,7 +638,7 @@ def _drive_install_error(monkeypatch, handler_name: str, body: dict | None = Non
     """
     import asyncio
 
-    from kiro_crew.dashboard.handlers import messaging as msg
+    from efm_go.dashboard.handlers import messaging as msg
 
     monkeypatch.setattr(msg.browser_cli_install, "detect", lambda: {"installed": True})
     monkeypatch.setattr(msg.browser_cli_token, "has_token", lambda: False)
@@ -691,7 +691,7 @@ class TestARecoveredStepIsNotReportedAsAnError:
     }
 
     def _last_error(self, monkeypatch, result):
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         monkeypatch.setattr(msg.browser_cli_install, "install", lambda on_stage=None: result)
         return _drive_install_error(monkeypatch, "api_browser_install_start")
@@ -786,7 +786,7 @@ class TestInstallErrorStringsGetNpmAwareRedaction:
         assert "[REDACTED" in error
 
     def test_a_cli_install_exception_masks_a_bare_authtoken(self, monkeypatch: pytest.MonkeyPatch):
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         def _boom(on_stage=None):
             raise RuntimeError(f"npm config set {self._NPM_LINE} failed")
@@ -797,7 +797,7 @@ class TestInstallErrorStringsGetNpmAwareRedaction:
     def test_an_engine_install_exception_masks_a_bare_authtoken(
         self, monkeypatch: pytest.MonkeyPatch
     ):
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         def _boom(engine, on_stage=None):
             raise RuntimeError(f"npm config set {self._NPM_LINE} failed")
@@ -812,7 +812,7 @@ class TestInstallErrorStringsGetNpmAwareRedaction:
     ):
         """The ``error`` fallback never passes through ``_step``'s stderr scrub,
         so its redaction happens ONLY at the handler."""
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         failed = {
             "ok": False,
@@ -843,7 +843,7 @@ class TestInstallErrorStringsGetNpmAwareRedaction:
         and its `@` after it: the test fails on any pre-redaction cut at 8000
         and passes on redact-then-truncate.
         """
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         filler = f"//r.example/:_authToken={'z' * 200}\n"
         head = filler * 35  # 7875 chars, ends with a newline so the URL owns its line
@@ -864,7 +864,7 @@ class TestInstallErrorStringsGetNpmAwareRedaction:
 
     def test_the_inline_credential_url_case_still_masks(self, monkeypatch: pytest.MonkeyPatch):
         """No regression: the shape the OLD redactor did catch stays caught."""
-        from kiro_crew.dashboard.handlers import messaging as msg
+        from efm_go.dashboard.handlers import messaging as msg
 
         def _boom(on_stage=None):
             raise RuntimeError("proxy https://user:sup3rs3cret@proxy.example.com/ refused")
@@ -885,7 +885,7 @@ def test_non_object_json_is_a_validation_error_not_a_500():
     """
     import inspect
 
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     for name in ("api_browser_token_put", "api_browser_engine_install"):
         src = inspect.getsource(getattr(messaging, name))
@@ -903,7 +903,7 @@ def test_every_browser_route_has_a_deliberate_app_token_stance():
     """
     import inspect
 
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     # Stance per route:
     #   "owner"    -> must call _deny_non_owner_browser_request (dashboard owner)
@@ -962,7 +962,7 @@ class TestTokenIsOwnerRestricted:
     ):
         from unittest.mock import patch
 
-        from kiro_crew.browser_cli import token
+        from efm_go.browser_cli import token
 
         monkeypatch.setattr(token, "config_dir", lambda: tmp_path)
 
@@ -989,7 +989,7 @@ class TestViewSubprocessesReceiveNodeEnv:
     def test_spawn_passes_env_to_popen(self, monkeypatch: pytest.MonkeyPatch):
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.browser_cli import view as view_mod
+        from efm_go.browser_cli import view as view_mod
 
         fake_env = {"PATH": "/nvm/bin:/usr/bin", "HOME": "/home/test"}
         monkeypatch.setattr(view_mod, "cli_env", lambda: fake_env)
@@ -1021,7 +1021,7 @@ class TestViewSubprocessesReceiveNodeEnv:
     def test_stop_does_not_invoke_subprocess_run(self, monkeypatch: pytest.MonkeyPatch):
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.browser_cli import view as view_mod
+        from efm_go.browser_cli import view as view_mod
 
         fake_env = {"PATH": "/nvm/bin:/usr/bin", "HOME": "/home/test"}
         monkeypatch.setattr(view_mod, "cli_env", lambda: fake_env)
@@ -1058,7 +1058,7 @@ class TestStopGuardsAgainstUnownedProcesses:
     ):
         from unittest.mock import patch
 
-        from kiro_crew.browser_cli import view as view_mod
+        from efm_go.browser_cli import view as view_mod
 
         monkeypatch.setattr(view_mod, "cli_path", lambda: "/n/pw")
         # No owned process.
@@ -1074,7 +1074,7 @@ class TestStopGuardsAgainstUnownedProcesses:
     ):
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.browser_cli import view as view_mod
+        from efm_go.browser_cli import view as view_mod
 
         monkeypatch.setattr(view_mod, "cli_path", lambda: "/n/pw")
         monkeypatch.setattr(view_mod, "cli_env", lambda: {"PATH": "/usr/bin"})
@@ -1108,7 +1108,7 @@ class TestStopGuardsAgainstUnownedProcesses:
     ):
         from unittest.mock import MagicMock
 
-        from kiro_crew.browser_cli import view as view_mod
+        from efm_go.browser_cli import view as view_mod
 
         monkeypatch.setattr(view_mod, "cli_path", lambda: "/n/pw")
         monkeypatch.setattr(view_mod, "cli_env", lambda: {"PATH": "/usr/bin"})
@@ -1139,7 +1139,7 @@ class TestStopGuardsAgainstUnownedProcesses:
     def test_stop_is_idempotent_across_two_calls(self, monkeypatch: pytest.MonkeyPatch):
         from unittest.mock import MagicMock
 
-        from kiro_crew.browser_cli import view as view_mod
+        from efm_go.browser_cli import view as view_mod
 
         monkeypatch.setattr(view_mod, "cli_path", lambda: "/n/pw")
         monkeypatch.setattr(view_mod, "cli_env", lambda: {"PATH": "/usr/bin"})

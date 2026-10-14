@@ -13,7 +13,7 @@ from typing import Any, Generator
 
 import pytest
 
-from kiro_crew.messaging.status_reactions import (
+from efm_go.messaging.status_reactions import (
     LadderTimings,
     PhaseReactionLadder,
     StallEmojis,
@@ -21,9 +21,9 @@ from kiro_crew.messaging.status_reactions import (
     merge_phase_emojis,
     phase_for_tool_title,
 )
-from kiro_crew.messaging.status_reactions import tool_to_phase as shared_tool_to_phase
-from kiro_crew.slack import handler as handler_mod
-from kiro_crew.slack.handler import (
+from efm_go.messaging.status_reactions import tool_to_phase as shared_tool_to_phase
+from efm_go.slack import handler as handler_mod
+from efm_go.slack.handler import (
     StatusReactionController,
     _tool_to_phase,
 )
@@ -1136,8 +1136,8 @@ class TestImportDoesNotCreateTheDataHome:
         "        sys.stderr.write(''.join(traceback.format_stack(limit=12)[:-1]))\n"
         "sys.addaudithook(hook)\n"
         "import json\n"
-        "import kiro_crew.slack.handler as h\n"
-        "from kiro_crew.config import paths\n"
+        "import efm_go.slack.handler as h\n"
+        "from efm_go.config import paths\n"
         "print(json.dumps(h._PHASE_EMOJIS))\n"
         "sys.exit(1 if paths._default_home().exists() != (sys.argv[2] == 'seeded') else 0)\n"
     )

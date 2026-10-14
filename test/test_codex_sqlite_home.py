@@ -17,14 +17,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew import sandbox as sandbox_mod
-from kiro_crew.acp import client as client_mod
-from kiro_crew.acp import runtime as runtime_mod
-from kiro_crew.acp.harness import SpawnContext
-from kiro_crew.acp.harness import codex as codex_mod
-from kiro_crew.acp.harness import harness_for
-from kiro_crew.acp.types import ACP_BACKEND_CODEX, ACP_BACKEND_KIRO
+from efm_go import agent as agent_mod
+from efm_go import sandbox as sandbox_mod
+from efm_go.acp import client as client_mod
+from efm_go.acp import runtime as runtime_mod
+from efm_go.acp.harness import SpawnContext
+from efm_go.acp.harness import codex as codex_mod
+from efm_go.acp.harness import harness_for
+from efm_go.acp.types import ACP_BACKEND_CODEX, ACP_BACKEND_KIRO
 
 SQLITE_HOME = "CODEX_SQLITE_HOME"
 

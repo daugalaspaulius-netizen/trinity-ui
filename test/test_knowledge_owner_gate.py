@@ -15,9 +15,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers import knowledge as kh
-from kiro_crew.dashboard.handlers.source_providers import is_owner_dashboard_request
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.dashboard.handlers import knowledge as kh
+from efm_go.dashboard.handlers.source_providers import is_owner_dashboard_request
+from efm_go.knowledge.store import KnowledgeStore
 
 OWNER = "U0OWNER"
 NON_OWNER = "U0NONOWNER"

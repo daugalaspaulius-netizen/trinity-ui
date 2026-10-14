@@ -22,11 +22,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.dashboard import server as srv
-from kiro_crew.knowledge import ingestion as ingestion_mod
-from kiro_crew.knowledge import store as store_mod
-from kiro_crew.knowledge.ingestion import IngestionPipeline
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.dashboard import server as srv
+from efm_go.knowledge import ingestion as ingestion_mod
+from efm_go.knowledge import store as store_mod
+from efm_go.knowledge.ingestion import IngestionPipeline
+from efm_go.knowledge.store import KnowledgeStore
 
 # The store binds ``pysqlite3`` when it is installed, so both the raw reads and
 # the connect patch below go through the SAME module the store uses.
@@ -334,7 +334,7 @@ class TestGatewayKick:
             srv._kick_knowledge_orphan_reclaim(state)
             await asyncio.gather(*state._background_tasks)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.server"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.server"):
             asyncio.run(run())
         assert any("orphan reclaim failed" in r.message for r in caplog.records)
 
@@ -468,7 +468,7 @@ class TestSweepWaitsForIngestion:
             _insert_orphan_source(store, "orphan")
             worker = _kick_worker(store, timeout=0.2)
             with store.ingestion_in_flight():
-                with caplog.at_level("WARNING", logger="kiro_crew.knowledge.store"):
+                with caplog.at_level("WARNING", logger="efm_go.knowledge.store"):
                     started = time.monotonic()
                     worker()
                 assert time.monotonic() - started < 5
@@ -663,7 +663,7 @@ class TestWatcherReReadsUnderTheGate:
         is gone instead of ingesting items for a deleted source."""
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.knowledge.watcher import KnowledgeWatcher
+        from efm_go.knowledge.watcher import KnowledgeWatcher
 
         store = KnowledgeStore(str(tmp_path / "k.db"))
         try:

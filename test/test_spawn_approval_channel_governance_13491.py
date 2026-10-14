@@ -36,8 +36,8 @@ import pytest
 # dispatcher factory) so this suite exercises a REAL registered hook.
 from test_telegram import _dispatcher  # noqa: E402
 
-from kiro_crew.messaging import spawn_approval_delivery as seam
-from kiro_crew.telegram.renderer import TelegramApprovalDecider
+from efm_go.messaging import spawn_approval_delivery as seam
+from efm_go.telegram.renderer import TelegramApprovalDecider
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -66,7 +66,7 @@ def _short_prompt_wait(monkeypatch: pytest.MonkeyPatch) -> None:
     under a deny would park every assertion below on the real approval timeout
     (minutes) and surface as a suite-wide hang instead of a failed assertion.
     """
-    import kiro_crew.telegram.renderer as renderer_mod
+    import efm_go.telegram.renderer as renderer_mod
 
     monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 0.2)
 
@@ -85,7 +85,7 @@ def _press_lands_inside_the_window(
     press resolves nothing. A press that lands returns at once, so this costs no
     time; one that never resolves still fails by name well inside ``--timeout``.
     """
-    import kiro_crew.telegram.renderer as renderer_mod
+    import efm_go.telegram.renderer as renderer_mod
 
     monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 30.0)
 

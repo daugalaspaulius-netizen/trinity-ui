@@ -18,18 +18,18 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import (
+from efm_go import (
     mcp_cleanup,
     onboarding_import,
     onboarding_plan,
     onboarding_scan,
     onboarding_sources,
 )
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.onboarding_sources import lineage as lineage_source
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.context import reset_context, set_context
-from kiro_crew.platform.interfaces import ImportSource
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.onboarding_sources import lineage as lineage_source
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.context import reset_context, set_context
+from efm_go.platform.interfaces import ImportSource
 
 
 def _provider_of(*sources: ImportSource):
@@ -69,7 +69,7 @@ def _isolate_mcp_host_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     in a worker reaches the operator's real files. A test that patches these names
     itself still wins, because its own patch runs after this one.
     """
-    mcp_handlers = importlib.import_module("kiro_crew.dashboard.handlers.mcp")
+    mcp_handlers = importlib.import_module("efm_go.dashboard.handlers.mcp")
     global_mcp = tmp_path / "host-kiro-settings" / "mcp.json"
     monkeypatch.setattr(mcp_handlers, "_GLOBAL_MCP_JSON", global_mcp)
     monkeypatch.setattr(mcp_handlers, "_MCP_LOCK_PATH", global_mcp.with_suffix(".lock"))
@@ -155,7 +155,7 @@ class TestRegistration:
         The handler projects a skipped entry whose source was never scanned and
         gives it a placeholder name, so an unknown id does not render blank.
         """
-        from kiro_crew.dashboard.handlers import onboarding_import as handler
+        from efm_go.dashboard.handlers import onboarding_import as handler
 
         response = handler._scan_response(
             {
@@ -187,7 +187,7 @@ class TestRegistration:
         A hardcoded copy in the handler would let a source be known to the engine
         yet rejected by the API, so the id set derives from the one registry.
         """
-        from kiro_crew.dashboard.handlers import onboarding_import as handler
+        from efm_go.dashboard.handlers import onboarding_import as handler
 
         _install(_lineage_source())
         assert "predecessor" in frozenset(handler._backend()._sources())
@@ -386,7 +386,7 @@ class TestNormalization:
         one that imports nothing and gives no reason why.
         """
         _install(_lineage_source(id="quick"))
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.onboarding_import"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.onboarding_import"):
             ids = tuple(onboarding_import._sources())
         assert "reserved" in caplog.text
         assert "quick" not in ids
@@ -443,7 +443,7 @@ class TestMalformedContributions:
     )
     def test_dropped_with_a_warning(self, overrides, reason, caplog):
         _install(_lineage_source(**overrides))
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.onboarding_import"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.onboarding_import"):
             ids = tuple(onboarding_import._sources())
         assert reason in caplog.text
         # The builtins survive intact, and a shadowing id keeps its builtin.
@@ -828,7 +828,7 @@ class TestHostileDescriptorsCannotCrashDiscovery:
 
         base = build_default_context(KiroCrewConfig())
         set_context(dataclasses.replace(base, import_sources=_Provider()))
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.onboarding_import"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.onboarding_import"):
             ids = tuple(onboarding_import._sources())
         assert ("codex", "claude_code", "gemini", "openclaw", "hermes") == ids
 

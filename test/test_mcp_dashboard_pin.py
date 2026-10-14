@@ -14,10 +14,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import mcp_dashboard
-from kiro_crew.mcp_dashboard import TABLE, _list_tools
-from kiro_crew.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
-from kiro_crew.mcp_tools.table import Caller, ToolContext
+from efm_go import mcp_dashboard
+from efm_go.mcp_dashboard import TABLE, _list_tools
+from efm_go.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
+from efm_go.mcp_tools.table import Caller, ToolContext
 
 _SLOTS = [
     {"key": "chat-1-100", "title": "Caller", "pinned": False},

@@ -54,7 +54,7 @@ function renderProvider(seed?: unknown) {
   // key also carries the fetch state ('open').
   if (seed !== undefined) {
     client.setQueryData(
-      ['issue-radar', 'pulls', 'github:github.com:kirodotdev/Kiro', 'open'], seed,
+      ['issue-radar', 'pulls', 'github:github.com:efmleads.com', 'open'], seed,
     )
   }
   render(

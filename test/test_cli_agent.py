@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.cli import main
+from efm_go.cli import main
 
 
 def _write_config(tmp_path: Path, data: dict) -> Path:
@@ -45,7 +45,7 @@ class TestAgentList:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", ["kirocrew", "agent", "list"]),
         ):
             main()
@@ -69,7 +69,7 @@ class TestAgentList:
         cfg_path = _write_config(tmp_path, data)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", ["kirocrew", "agent", "list"]),
         ):
             main()
@@ -86,7 +86,7 @@ class TestAgentCreate:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "agent", "create", "--name", "research"],
@@ -113,7 +113,7 @@ class TestAgentCreate:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "agent", "create", "--name", "default"],
@@ -132,7 +132,7 @@ class TestAgentCreate:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "agent", "create", "--name", "Release Writer"],
@@ -153,7 +153,7 @@ class TestAgentCreate:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "agent", "create", "--name", "scribe", "--display-name", "Scribe"],
@@ -170,7 +170,7 @@ class TestAgentCreate:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 [
@@ -196,7 +196,7 @@ class TestAgentCreate:
         cfg_path = _write_config(tmp_path, _base_config())
         name = "https://user:password@example.com"
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 [
@@ -223,8 +223,8 @@ class TestAgentUpdate:
     """Test ``kirocrew agent update``."""
 
     def test_template_update_retains_a_concurrent_workspace_edit(self, tmp_path: Path) -> None:
-        from kiro_crew.config.loader import update_config_locked
-        from kiro_crew.memory_stores import persist_member_config
+        from efm_go.config.loader import update_config_locked
+        from efm_go.memory_stores import persist_member_config
 
         data = _base_config()
         data["agents"]["research"] = {
@@ -243,9 +243,9 @@ class TestAgentUpdate:
             return persist_member_config(*args, **kwargs)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
-                "kiro_crew.cli_commands.persist_member_config",
+                "efm_go.cli_commands.persist_member_config",
                 side_effect=publish_after_concurrent_edit,
             ),
             unittest.mock.patch(
@@ -266,7 +266,7 @@ class TestAgentUpdate:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "agent", "update", "nonexistent", "--kiro-agent", "x"],
@@ -291,7 +291,7 @@ class TestAgentUpdate:
         cfg_path = _write_config(tmp_path, data)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "agent", "update", "research", "--kiro-agent", "dr. eggbot"],
@@ -313,7 +313,7 @@ class TestAgentDelete:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch(
                 "sys.argv",
                 ["kirocrew", "agent", "delete", "default"],
@@ -348,7 +348,7 @@ class TestAgentResetModel:
         The containment assert makes a lapse fail loudly rather than write into a
         real agents directory.
         """
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents_dir = tmp_path / "kiro-agents"
         agents_dir.mkdir(parents=True, exist_ok=True)
@@ -365,7 +365,7 @@ class TestAgentResetModel:
     def test_reset_clears_the_pin_and_keeps_the_rest_of_the_spec(
         self, tmp_path: Path, monkeypatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        from kiro_crew import agent_state
+        from efm_go import agent_state
 
         spec = self._isolated_spec(tmp_path, monkeypatch, "claude-opus-4.8")
 
@@ -407,7 +407,7 @@ class TestAgentResetModel:
         cfg_path = _write_config(tmp_path, _base_config())
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_path),
             unittest.mock.patch("sys.argv", ["kirocrew", "agent", "list"]),
         ):
             main()

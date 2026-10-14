@@ -24,7 +24,7 @@ from skill_script_helpers import load_skill_script, no_bytecode
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / ".github" / "scripts" / "issue_gate_refs.py"
-REPO = "kirodotdev/KiroCrew"
+REPO = "efmleads.com"
 
 
 @pytest.fixture(scope="module")
@@ -56,8 +56,8 @@ class TestWhatCounts:
 
     def test_qualified_and_url_targets_for_this_repo_count(self, module, grammar):
         body = (
-            "Fixes kirodotdev/KiroCrew#100\n"
-            "Resolves https://github.com/kirodotdev/KiroCrew/issues/200\n"
+            "Fixes efmleads.com#100\n"
+            "Resolves https://efmleads.com/issues/200\n"
         )
         assert _declared(module, grammar, body) == ["100", "200"]
 
@@ -111,9 +111,9 @@ class TestWhatDoesNotCount:
     @pytest.mark.parametrize(
         "url",
         [
-            "https://example.com/kirodotdev/KiroCrew/issues/100",
-            "https://github.com.evil.example/kirodotdev/KiroCrew/issues/100",
-            "http://gitlab.com/kirodotdev/KiroCrew/issues/100",
+            "https://example.com/efmleads.com/issues/100",
+            "https://github.com.evil.example/efmleads.com/issues/100",
+            "http://gitlab.com/efmleads.com/issues/100",
         ],
     )
     def test_url_on_another_host_is_not_a_github_declaration(self, module, grammar, url):
@@ -122,9 +122,9 @@ class TestWhatDoesNotCount:
     @pytest.mark.parametrize(
         "url",
         [
-            "https://github.com/kirodotdev/KiroCrew/issues/100",
-            "http://github.com/kirodotdev/KiroCrew/issues/100",
-            "https://www.github.com/kirodotdev/KiroCrew/issues/100",
+            "https://efmleads.com/issues/100",
+            "http://efmleads.com/issues/100",
+            "https://www.efmleads.com/issues/100",
         ],
     )
     def test_github_host_url_still_counts(self, module, grammar, url):

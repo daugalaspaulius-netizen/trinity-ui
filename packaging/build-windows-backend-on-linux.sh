@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Stage a Windows python-build-standalone backend under
-# website/electron/backend-dist/kirocrew-backend/ from a Linux host.
+# website/electron/backend-dist/efm-go-backend/ from a Linux host.
 #
 # Native Windows builds should keep using packaging/build-desktop.sh — that
 # path executes python.exe natively. This script exists because EFM Go's
@@ -24,7 +24,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 ELECTRON_DIR="$ROOT/website/electron"
-OUT="$ELECTRON_DIR/backend-dist/kirocrew-backend"
+OUT="$ELECTRON_DIR/backend-dist/efm-go-backend"
 PBS_KEY="${PBS_KEY:-cpython-3.12-windows-x86_64-none}"
 PBS_PATTERN="${PBS_PATTERN:-cpython-3.12*-windows-x86_64-none}"
 WORK="${WORK:-/tmp/efm-wp34-win-backend}"
@@ -128,22 +128,22 @@ python3 -m pip install \
 log "Installing kirocrew wheel (no deps)…"
 python3 -m pip install --target "$sp" --no-deps --no-compile --upgrade "$WHEEL"
 
-log "Staging dashboard dist into kiro_crew/static/dist…"
-mkdir -p "$sp/kiro_crew/static"
-rm -rf "$sp/kiro_crew/static/dist"
-cp -R "$ROOT/website/dist" "$sp/kiro_crew/static/dist"
-[ -f "$sp/kiro_crew/static/dist/index.html" ] || {
+log "Staging dashboard dist into efm_go/static/dist…"
+mkdir -p "$sp/efm_go/static"
+rm -rf "$sp/efm_go/static/dist"
+cp -R "$ROOT/website/dist" "$sp/efm_go/static/dist"
+[ -f "$sp/efm_go/static/dist/index.html" ] || {
   echo "ERROR: dashboard dist not staged" >&2
   exit 1
 }
 
 if [ -x "$ROOT/scripts/stamp-distribution.sh" ]; then
-  bash "$ROOT/scripts/stamp-distribution.sh" source "$sp/kiro_crew" || true
+  bash "$ROOT/scripts/stamp-distribution.sh" source "$sp/efm_go" || true
 fi
 
 log "Writing relocatable bin/kirocrew.cmd launcher…"
 mkdir -p "$OUT/bin"
-printf '@echo off\r\n"%%~dp0..\\python.exe" -s -P -m kiro_crew %%*\r\n' > "$OUT/bin/kirocrew.cmd"
+printf '@echo off\r\n"%%~dp0..\\python.exe" -s -P -m efm_go %%*\r\n' > "$OUT/bin/kirocrew.cmd"
 chmod +x "$OUT/bin/kirocrew.cmd"
 
 log "Pruning bundle…"
@@ -153,10 +153,10 @@ log "Pruning bundle…"
   find Lib/site-packages -type d \( -name tests -o -name test \) -prune -exec rm -rf {} + 2>/dev/null || true
   rm -rf Lib/test Lib/idlelib Lib/tkinter Lib/turtledemo Lib/ensurepip Lib/lib2to3 \
          include libs tcl \
-         Lib/site-packages/kiro_crew/_vendor/llama_cpp_libs/linux_aarch64 \
-         Lib/site-packages/kiro_crew/_vendor/llama_cpp_libs/linux_x86_64 \
-         Lib/site-packages/kiro_crew/_vendor/llama_cpp_libs/macos_arm64 \
-         Lib/site-packages/kiro_crew/_vendor/llama_cpp_libs/macos_x86_64 \
+         Lib/site-packages/efm_go/_vendor/llama_cpp_libs/linux_aarch64 \
+         Lib/site-packages/efm_go/_vendor/llama_cpp_libs/linux_x86_64 \
+         Lib/site-packages/efm_go/_vendor/llama_cpp_libs/macos_arm64 \
+         Lib/site-packages/efm_go/_vendor/llama_cpp_libs/macos_x86_64 \
          2>/dev/null || true
   rm -f DLLs/_tkinter.pyd DLLs/tcl*.dll DLLs/tk*.dll 2>/dev/null || true
 )
@@ -179,12 +179,12 @@ fi
 if command -v wine >/dev/null 2>&1; then
   export WINEPREFIX="${WINEPREFIX:-/tmp/efm-wine-wp34}"
   export WINEDEBUG="${WINEDEBUG:--all}"
-  log "Wine smoke: python.exe -m kiro_crew --version…"
+  log "Wine smoke: python.exe -m efm_go --version…"
   mkdir -p "$WINEPREFIX"
-  if wine "$OUT/python.exe" -s -P -m kiro_crew --version; then
-    echo "    wine kiro_crew --version OK"
+  if wine "$OUT/python.exe" -s -P -m efm_go --version; then
+    echo "    wine efm_go --version OK"
   else
-    echo "    WARN: wine could not run kiro_crew --version (CopyFile2/other). The Windows host still runs python.exe natively."
+    echo "    WARN: wine could not run efm_go --version (CopyFile2/other). The Windows host still runs python.exe natively."
   fi
 fi
 

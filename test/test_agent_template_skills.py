@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.agent_discovery import (
+from efm_go.agent_discovery import (
     _extract_skills,
     agent_skill_globs,
     clear_list_agents_cache,
@@ -30,8 +30,8 @@ from kiro_crew.agent_discovery import (
     list_agents,
     skill_resource_uris,
 )
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard.handlers._shared import (
+from efm_go.context import ContextBuilder
+from efm_go.dashboard.handlers._shared import (
     agent_skill_keys,
     agent_unmanaged_skill_uris,
     apply_skill_mapping,
@@ -40,9 +40,9 @@ from kiro_crew.dashboard.handlers._shared import (
     skill_uri_for_key,
     walk_skill_catalog,
 )
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 
 @pytest.fixture(autouse=True)
@@ -52,7 +52,7 @@ def _owner_caller(monkeypatch):
     its own enumerate-the-invariant coverage in
     test_agents_endpoints_owner_auth.py."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -71,7 +71,7 @@ def fake_home(tmp_path, monkeypatch):
     # ``_KIRO_AGENTS_DIR`` is computed at import time from the real home, so the
     # Path.home patch alone does not redirect the default-argument lookups that
     # agent_skill_globs / list_agents use.
-    monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", tmp_path / ".kiro" / "agents")
+    monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", tmp_path / ".kiro" / "agents")
     return tmp_path
 
 
@@ -330,7 +330,7 @@ class TestEnumerateSkillCatalog:
         creds = fake_home / ".aws"
         _make_skill(creds, "looks-legit")
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared._skill_key_roots",
+            "efm_go.dashboard.handlers._shared._skill_key_roots",
             lambda state, session_key="": [("kiro-user/", creds)],
         )
         assert enumerate_skill_catalog(_State()) == {}
@@ -571,8 +571,8 @@ class TestPatchRejectionLeavesStateIntact:
     def test_unknown_skill_does_not_freeze_the_model(self, fake_home, monkeypatch):
         import asyncio
 
-        from kiro_crew import agent_state
-        from kiro_crew.dashboard.handlers import agents as agents_handlers
+        from efm_go import agent_state
+        from efm_go.dashboard.handlers import agents as agents_handlers
 
         _make_skill(fake_home / ".kiro" / "skills", "one")
         d = _agents_dir(fake_home)
@@ -580,7 +580,7 @@ class TestPatchRejectionLeavesStateIntact:
         (d / "victim.json").write_text(json.dumps(spec), encoding="utf-8")
 
         monkeypatch.setattr(agents_handlers, "KIRO_AGENTS_DIR", d, raising=False)
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", d, raising=False)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", d, raising=False)
 
         managed_calls: list[tuple[str, bool]] = []
         monkeypatch.setattr(
@@ -609,11 +609,11 @@ class TestPatchRejectionLeavesStateIntact:
         follows raised TypeError, surfacing as HTTP 500."""
         import asyncio
 
-        from kiro_crew.dashboard.handlers import agents as agents_handlers
+        from efm_go.dashboard.handlers import agents as agents_handlers
 
         d = _agents_dir(fake_home)
         (d / "victim.json").write_text(json.dumps({"name": "victim"}), encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", d, raising=False)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", d, raising=False)
 
         for body in (["skills"], "skills", 42):
             request = _FakeRequest("PATCH", {"name": "victim"}, body, _State())
@@ -644,7 +644,7 @@ class TestPatchReordersManagedSkills:
     THREE = "skill://~/.kiro/skills/three/SKILL.md"
 
     def _agent(self, fake_home: Path, monkeypatch, resources: list) -> Path:
-        from kiro_crew.dashboard.handlers import agents as agents_handlers
+        from efm_go.dashboard.handlers import agents as agents_handlers
 
         _make_skill(fake_home / ".kiro" / "skills", "one")
         _make_skill(fake_home / ".kiro" / "skills", "two")
@@ -657,14 +657,14 @@ class TestPatchReordersManagedSkills:
             encoding="utf-8",
         )
         monkeypatch.setattr(agents_handlers, "KIRO_AGENTS_DIR", d, raising=False)
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", d, raising=False)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", d, raising=False)
         return cfg
 
     @staticmethod
     def _patch(skills: list[str]):
         import asyncio
 
-        from kiro_crew.dashboard.handlers import agents as agents_handlers
+        from efm_go.dashboard.handlers import agents as agents_handlers
 
         request = _FakeRequest("PATCH", {"name": "victim"}, {"skills": skills}, _RefreshingState())
         resp = asyncio.run(agents_handlers.api_agent_detail(request))
@@ -736,7 +736,7 @@ class TestPatchReordersManagedSkills:
         the absent URI would write it back into slot 0 and push the last carried URI
         off the end -- named last, the absent URI would fall off the pairing unseen.
         """
-        from kiro_crew.dashboard.handlers import agents as agents_handlers
+        from efm_go.dashboard.handlers import agents as agents_handlers
 
         cfg = self._agent(fake_home, monkeypatch, [self.ONE, self.TWO, self.THREE])
         _make_skill(fake_home / ".kiro" / "skills", "three")
@@ -771,7 +771,7 @@ class TestPatchReordersManagedSkills:
         has to carry it as well: the skills editor takes the reply as its next state,
         and a reply missing the addition would have the editor's next toggle unmap it.
         """
-        from kiro_crew.dashboard.handlers import agents as agents_handlers
+        from efm_go.dashboard.handlers import agents as agents_handlers
 
         cfg = self._agent(fake_home, monkeypatch, [self.ONE, self.TWO])
         _make_skill(fake_home / ".kiro" / "skills", "three")
@@ -834,7 +834,7 @@ class TestPatchReordersManagedSkills:
         again, or the skills editor's next toggle unmaps a skill the written spec carries.
         Two walks here, and only here.
         """
-        from kiro_crew.dashboard.handlers import agents as agents_handlers
+        from efm_go.dashboard.handlers import agents as agents_handlers
 
         cfg = self._agent(fake_home, monkeypatch, [self.ONE, self.TWO])
         _settle(fake_home / ".kiro" / "skills")
@@ -873,7 +873,7 @@ class TestPatchReordersManagedSkills:
     @staticmethod
     def _count_walks(monkeypatch) -> dict[str, int]:
         """Count every walk of the skill roots, whichever caller asks for it."""
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         real_walk = _shared.walk_skill_catalog
         walks = {"n": 0}
@@ -891,14 +891,14 @@ class TestExtraSkillPathsAreAbsolute:
         """A relative ``skills.extra_paths`` entry would key the catalog by a
         relative root, so the persisted ``skill://`` URI would resolve against
         whatever cwd the next session starts in."""
-        from kiro_crew.dashboard.handlers._shared import _skill_key_roots
+        from efm_go.dashboard.handlers._shared import _skill_key_roots
 
         class _Cfg:
             class skills:
                 extra_paths = ["relative/skills"]
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers._shared.KiroCrewConfig",
+            "efm_go.dashboard.handlers._shared.KiroCrewConfig",
             type("C", (), {"load": staticmethod(lambda: _Cfg)}),
         )
         roots = [root for _, root in _skill_key_roots(_State())]
@@ -1030,7 +1030,7 @@ class TestSessionContextGate:
             agent="plain", provider_type="claude_code"
         )
         assert "[Skills:]" not in ctx
-        from kiro_crew.agent_discovery import session_skill_globs
+        from efm_go.agent_discovery import session_skill_globs
 
         assert session_skill_globs("", "plain") == []
         assert session_skill_globs("", "kirocrew") is None

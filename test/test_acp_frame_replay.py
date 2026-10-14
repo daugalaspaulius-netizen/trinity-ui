@@ -72,8 +72,8 @@ from acp_frame_replay_harness import (
     snapshot_json,
 )
 
-from kiro_crew.acp._dispatch import agent_version_from_init, classify_notification
-from kiro_crew.acp_backends import (
+from efm_go.acp._dispatch import agent_version_from_init, classify_notification
+from efm_go.acp_backends import (
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
     ACP_BACKENDS_KNOWN,
@@ -365,7 +365,7 @@ def test_the_snapshot_writer_never_records_telemetry(tmp_path) -> None:
         "mod = importlib.util.module_from_spec(spec)\n"
         "spec.loader.exec_module(mod)\n"
         "import os\n"
-        "from kiro_crew.metrics.provider import get_recorder\n"
+        "from efm_go.metrics.provider import get_recorder\n"
         "print(os.environ.get('KIROCREW_TELEMETRY'), get_recorder().enabled)\n"
     )
     out = subprocess.run(
@@ -412,9 +412,9 @@ def test_a_numeric_handshake_fixture_requires_a_protocol_version_row() -> None:
     negotiate instead, and the row is still right for it -- Crew should send what the
     harness speaks.
     """
-    from kiro_crew.acp.client import _PROTOCOL_VERSION_BY_BACKEND
-    from kiro_crew.acp.harness import harness_for
-    from kiro_crew.acp_backends import ACP_BACKENDS_ACP_RUNTIME
+    from efm_go.acp.client import _PROTOCOL_VERSION_BY_BACKEND
+    from efm_go.acp.harness import harness_for
+    from efm_go.acp_backends import ACP_BACKENDS_ACP_RUNTIME
 
     # The kiro family: handed the date-stamped version by construction, and named here
     # rather than inferred so an addition is a decision a reviewer sees.

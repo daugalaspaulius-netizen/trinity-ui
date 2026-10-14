@@ -40,14 +40,14 @@ from types import ModuleType
 
 import pytest
 
-from kiro_crew import cloud, crew_log, skill_providers
-from kiro_crew.apps.builtins.papyrus import backend as papyrus_backend
-from kiro_crew.apps.builtins.papyrus.backend import gitops, store
-from kiro_crew.cloud import config as cloud_config
-from kiro_crew.cloud import ec2, fargate_engine, login_target, ssm
-from kiro_crew.cloud.fargate import identity, runtask, taskdef
-from kiro_crew.crew_log import schema as crew_log_schema
-from kiro_crew.skill_providers import github as skill_provider_github
+from efm_go import cloud, crew_log, skill_providers
+from efm_go.apps.builtins.papyrus import backend as papyrus_backend
+from efm_go.apps.builtins.papyrus.backend import gitops, store
+from efm_go.cloud import config as cloud_config
+from efm_go.cloud import ec2, fargate_engine, login_target, ssm
+from efm_go.cloud.fargate import identity, runtask, taskdef
+from efm_go.crew_log import schema as crew_log_schema
+from efm_go.skill_providers import github as skill_provider_github
 
 #: Packages whose modules validate client-supplied input on a request path.
 #: The structural walk imports every module in each -- recursively, so a
@@ -67,7 +67,7 @@ _VALIDATORS = (
     pytest.param(ec2._TAG_RE, "my-crew-1", id="cloud-ec2-tag"),
     pytest.param(ec2._REGION_RE, "us-east-1", id="cloud-ec2-region"),
     pytest.param(ec2._CIDR_RE, "10.0.0.0/16", id="cloud-ec2-cidr"),
-    pytest.param(ec2._REPO_RE, "https://github.com/kirodotdev/KiroCrew.git", id="cloud-ec2-repo"),
+    pytest.param(ec2._REPO_RE, "https://efmleads.com.git", id="cloud-ec2-repo"),
     pytest.param(ec2._REF_RE, "release/1.2", id="cloud-ec2-ref"),
     pytest.param(ec2._PROFILE_SPEC.pattern, "default", id="cloud-ec2-profile"),
     pytest.param(ec2._SUBNET_ID_RE, "subnet-0123456789abcdef0", id="cloud-ec2-subnet-id"),

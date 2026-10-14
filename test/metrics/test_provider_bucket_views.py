@@ -26,14 +26,14 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.dashboard.handlers.telemetry import _Hist, _other_series
-from kiro_crew.metrics import provider as provider_mod
-from kiro_crew.metrics.events import (
+from efm_go.dashboard.handlers.telemetry import _Hist, _other_series
+from efm_go.metrics import provider as provider_mod
+from efm_go.metrics.events import (
     NON_MS_HISTOGRAM_UNITS,
     PROCESS_CPU_UTILIZATION,
     PROCESS_RSS_SAMPLED,
 )
-from kiro_crew.metrics.provider import (
+from efm_go.metrics.provider import (
     _CPU_RATIO_BUCKETS,
     _CREDIT_BUCKETS,
     _FAST_BUCKETS_MS,
@@ -45,7 +45,7 @@ from kiro_crew.metrics.provider import (
     _USD_BUCKETS,
     histogram_bounds,
 )
-from kiro_crew.metrics.turns import TURN_COST_METRIC, TURN_CREDITS_METRIC
+from efm_go.metrics.turns import TURN_COST_METRIC, TURN_CREDITS_METRIC
 
 # One xdist worker for the whole module: every test here derives from ONE module-cached
 # scan of src/ (rglob + ast.parse, ~30s). Under `--dist loadgroup` an unmarked module is
@@ -133,7 +133,7 @@ def _emitted_histogram_names() -> set[str]:
 
 @lru_cache(maxsize=1)
 def _sampler_histogram_names() -> frozenset[str]:
-    """Instruments passed to ``kiro_crew.metrics.events.emit_histogram``.
+    """Instruments passed to ``efm_go.metrics.events.emit_histogram``.
 
     The sampler-cadence series (loop lag, queue depth, recovery duration) are
     recorded through that helper with a constant imported from ``events.py``,
@@ -637,7 +637,7 @@ class TestAggregatorReadsRealPercentiles:
     """End-to-end: the fix must change what the Telemetry page reports."""
 
     def test_turn_percentiles_are_no_longer_pinned_to_the_ceiling(self):
-        from kiro_crew.dashboard.handlers.telemetry import _pct_from_buckets
+        from efm_go.dashboard.handlers.telemetry import _pct_from_buckets
 
         # The same sample read against the startup boundaries and the turn ones.
         old_bounds = _STARTUP_BUCKETS_MS  # the catch-all's shared array

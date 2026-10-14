@@ -32,7 +32,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.loopback_http import build_loopback_opener, loopback_urlopen
+from efm_go.loopback_http import build_loopback_opener, loopback_urlopen
 
 CANARY = "canary-not-a-real-secret"
 SECRET_HEADER = "X-Internal-Secret"
@@ -231,7 +231,7 @@ class TestNoNewBareLoopbackSender:
     SECRET_HEADERS = ("X-Internal-Secret", "X-Local-Secret")
 
     def test_no_bare_urlopen_in_a_secret_sending_module(self):
-        src = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        src = Path(__file__).resolve().parent.parent / "src" / "efm_go"
         assert src.is_dir(), f"source tree not found at {src}"
 
         offenders: list[str] = []
@@ -250,7 +250,7 @@ class TestNoNewBareLoopbackSender:
 
         assert offenders == [], (
             "these call sites send a secret header from a module that also uses a bare "
-            "urlopen; route them through kiro_crew.loopback_http.loopback_urlopen, or add "
+            "urlopen; route them through efm_go.loopback_http.loopback_urlopen, or add "
             "an EXTERNAL_MARKERS entry if the target is genuinely external:\n  "
             + "\n  ".join(offenders)
         )

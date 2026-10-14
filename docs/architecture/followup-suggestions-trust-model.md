@@ -1,7 +1,7 @@
 # Follow-up suggestions: trust model
 
 The user-facing behaviour of the follow-up card — what it offers and what it
-will not do — is [`src/kiro_crew/docs/followup-suggestions.md`](../../src/kiro_crew/docs/followup-suggestions.md).
+will not do — is [`src/efm_go/docs/followup-suggestions.md`](../../src/efm_go/docs/followup-suggestions.md).
 This document is the design record for the gates behind it.
 
 ## Trust model
@@ -52,7 +52,7 @@ with no app identity to check.
   to create the worktree manually. Both scopes git reads inside a repo are probed:
   `--local` (`.git/config`) and, whenever `extensions.worktreeConfig` is on,
   `--worktree` — probe first, classify a failed probe after
-  (`kiro_crew.git_worktree_scope`): a probe that fails because the per-worktree
+  (`efm_go.git_worktree_scope`): a probe that fails because the per-worktree
   `config.worktree` was never created is a healthy empty scope and proceeds, and
   any other failure refuses. `--local` alone does not report worktree-scoped keys,
   and for a linked worktree that file lives under `<common>/worktrees/<id>`, not
@@ -119,12 +119,12 @@ Both endpoints emit SEL audit records.
 
 | Layer | Path |
 | --- | --- |
-| Tool declaration + dispatch | `src/kiro_crew/mcp_tools/control.py` |
-| Directive marker codec | `src/kiro_crew/session_directive.py` |
-| Directive applier (the effect) | `src/kiro_crew/dashboard/session_directive_apply.py` |
-| Arg schema | `src/kiro_crew/validation.py` |
-| Card endpoint | `src/kiro_crew/dashboard/chat_handlers.py` |
-| Worktree endpoint | `src/kiro_crew/dashboard/handlers/worktree.py` |
+| Tool declaration + dispatch | `src/efm_go/mcp_tools/control.py` |
+| Directive marker codec | `src/efm_go/session_directive.py` |
+| Directive applier (the effect) | `src/efm_go/dashboard/session_directive_apply.py` |
+| Arg schema | `src/efm_go/validation.py` |
+| Card endpoint | `src/efm_go/dashboard/chat_handlers.py` |
+| Worktree endpoint | `src/efm_go/dashboard/handlers/worktree.py` |
 | WS event → state | `website/src/hooks/useWebSocket.ts` (routes the frame), `website/src/hooks/websocket/composerCards.ts` (validates it), `website/src/store/chat/composerCards.ts` (the reducer) |
 | Card UI | `website/src/components/FollowUpCard.tsx` |
 | Render site | `website/src/pages/ChatPage.tsx` |

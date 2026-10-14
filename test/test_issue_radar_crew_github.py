@@ -20,7 +20,7 @@ import json
 import unittest
 from unittest import mock
 
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh
 
 MARKER = (
     "<!-- kirocrew-crew id=c_7f3a phase=implementing pr=2271 "

@@ -17,10 +17,10 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app, _make_state
 
-from kiro_crew.dashboard import revocation_gen, token_auth
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.dashboard.state import DashboardState, SlotOrigin
-from kiro_crew.dashboard.websocket_hub import SLOT_PATCH_WS_FLAG
+from efm_go.dashboard import revocation_gen, token_auth
+from efm_go.dashboard.handlers import updates
+from efm_go.dashboard.state import DashboardState, SlotOrigin
+from efm_go.dashboard.websocket_hub import SLOT_PATCH_WS_FLAG
 
 
 @pytest.fixture(autouse=True)
@@ -53,7 +53,7 @@ class _WS:
 
 @pytest.fixture
 def state(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     return DashboardState(
         sessions=MagicMock(count=0),
         crons=MagicMock(),
@@ -216,7 +216,7 @@ class TestSlotRemoved:
                     {"slot": "conductor", "key": None} if row["key"] == "worker" else None
                 )
 
-        monkeypatch.setattr("kiro_crew.dashboard.state._attach_slot_parents", fake_attach)
+        monkeypatch.setattr("efm_go.dashboard.state._attach_slot_parents", fake_attach)
 
         state.push_slot_removed("conductor")
 
@@ -260,8 +260,8 @@ _FENCE = "slot-patch-fence"
 
 @pytest.fixture
 def e2e_state(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     monkeypatch.setattr(token_auth, "_get_secret", lambda: b"slot-patch-test-signing-key")
     monkeypatch.setattr(token_auth, "_state", token_auth.TokenStateManager())
     monkeypatch.setattr(token_auth, "_app_perms_cache", {})
@@ -269,7 +269,7 @@ def e2e_state(tmp_path, monkeypatch):
     monkeypatch.setattr(revocation_gen, "_gen", 0)
     stopped = asyncio.Event()
     monkeypatch.setattr(updates, "shutdown_event", stopped)
-    monkeypatch.setattr("kiro_crew.dashboard.ws.shutdown_event", stopped)
+    monkeypatch.setattr("efm_go.dashboard.ws.shutdown_event", stopped)
     st = _make_state(tmp_path)
     st.get_or_create_slot(_SLOT, origin=SlotOrigin.USER)
     monkeypatch.setattr(st, "status_snapshot", lambda **_kwargs: {})
@@ -300,11 +300,11 @@ async def _frames_until_fence(socket) -> list[dict]:
 async def test_pin_reaches_a_capable_tab_as_a_patch_and_an_old_tab_as_a_list(
     e2e_state, monkeypatch
 ):
-    from kiro_crew.dashboard.chat import api_chat_slot_pin
-    from kiro_crew.dashboard.ws import api_ws
+    from efm_go.dashboard.chat import api_chat_slot_pin
+    from efm_go.dashboard.ws import api_ws
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.ws.load_declared_events_for_connect",
+        "efm_go.dashboard.ws.load_declared_events_for_connect",
         lambda _app: (True, frozenset()),
     )
 
@@ -388,8 +388,8 @@ async def test_pin_reaches_a_capable_tab_as_a_patch_and_an_old_tab_as_a_list(
 
 @pytest.mark.asyncio
 async def test_folder_move_uses_a_full_list_only_when_it_unhides_the_folder(e2e_state):
-    from kiro_crew.dashboard.chat_folders import api_chat_slot_folder
-    from kiro_crew.dashboard.ws import api_ws
+    from efm_go.dashboard.chat_folders import api_chat_slot_folder
+    from efm_go.dashboard.ws import api_ws
 
     hidden_folder = "hidden-folder"
     visible_folder = "visible-folder"

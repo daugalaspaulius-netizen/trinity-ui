@@ -2,8 +2,8 @@
 """check_brand_name.py — gate the product name's spelling on lines a change adds.
 
 The product is **Kiro Crew**: two words, a space between them, capital ``K``.
-Everything else in the tree — the GitHub repo ``kirodotdev/KiroCrew``, the
-``kirocrew`` CLI, the ``kiro_crew`` Python package, ``KIROCREW_*`` environment
+Everything else in the tree — the GitHub repo ``efmleads.com``, the
+``kirocrew`` CLI, the ``efm_go`` Python package, ``KIROCREW_*`` environment
 variables, the ``KiroCrew.dmg`` artifact — is an *identifier*, and identifiers
 keep the spelling their system gave them. Only the **prose** name is gated.
 
@@ -219,7 +219,7 @@ SKIP_DIRS = (
     # docs/system-specs/common/code-style.md excludes _vendor/ from every linter,
     # and it holds native libraries
     # whose suffixes (`.0`, `.dylib`) no extension list will ever fully enumerate.
-    "src/kiro_crew/_vendor/",
+    "src/efm_go/_vendor/",
 )
 SKIP_SUFFIXES = (
     ".lock",
@@ -258,7 +258,7 @@ SKIP_PATHS = (
 # Generated artifacts. Counted by the whole-tree report, never enforced.
 #
 # The locale catalogs are machine-translated and carry ~85 joined spellings each;
-# `tips_catalog.json` is derived from `src/kiro_crew/docs/*.md`, and
+# `tips_catalog.json` is derived from `src/efm_go/docs/*.md`, and
 # `settings-registry.generated.json` from `website/src/pages/settings/**` via
 # `npm run gen:settings`. All are JSON, so none offers a line the `brand-ok` comment
 # could sit on, and all re-emit their lines wholesale when regenerated or re-indented
@@ -268,8 +268,8 @@ SKIP_PATHS = (
 # the artifact.
 GENERATED_PATHS = (
     re.compile(r"^website/src/i18n/locales/(?!en\.json$|en\.manual\.json$)[\w-]+\.json$"),
-    re.compile(r"^src/kiro_crew/data/tips_catalog\.json$"),
-    re.compile(r"^src/kiro_crew/docs/settings-registry\.generated\.json$"),
+    re.compile(r"^src/efm_go/data/tips_catalog\.json$"),
+    re.compile(r"^src/efm_go/docs/settings-registry\.generated\.json$"),
 )
 
 
@@ -542,9 +542,9 @@ PROBES: tuple[tuple[str, str, bool], ...] = (
     ("uncapitalised", "Install kiro crew first.", True),
     ("cli-command", "Run `kirocrew serve` to start it.", False),
     ("env-var", 'os.environ["KIROCREW_HOME"]', False),
-    ("module", "from kiro_crew.config import loader", False),
-    ("repo-slug", "https://github.com/kirodotdev/KiroCrew/issues", False),
-    ("wrapped-slug", "see [docs](https://github.com/kirodotdev/KiroCrew/issues)", False),
+    ("module", "from efm_go.config import loader", False),
+    ("repo-slug", "https://efmleads.com/issues", False),
+    ("wrapped-slug", "see [docs](https://efmleads.com/issues)", False),
     ("url-query", "https://example.com/d?app=KiroCrew&v=2", False),
     ("markup-after-url", '<a href="https://example.com/">KiroCrew</a>', True),
     ("url-then-prose", "https://example.com/x is where KiroCrew lives", True),
@@ -800,8 +800,8 @@ def report(violations: Iterable[Violation], *, enforcing: bool, base: str | None
     if enforcing:
         print(
             "\nIdentifiers keep their own spelling and are already exempt: the "
-            "kirodotdev/KiroCrew slug, KiroCrew.dmg-style artifacts, the KiroCrew Nightly "
-            "channel, KIROCREW_* env vars, the kirocrew CLI, kiro_crew imports, and "
+            "efmleads.com slug, KiroCrew.dmg-style artifacts, the KiroCrew Nightly "
+            "channel, KIROCREW_* env vars, the kirocrew CLI, efm_go imports, and "
             "fenced/inline code in markdown. For anything else that genuinely needs the "
             "joined form, add a 'brand-ok' comment on the line."
             "\n\nOne case wants a reword rather than a substitution: a hyphenated compound. "

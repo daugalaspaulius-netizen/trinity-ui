@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
-from kiro_crew.config.loader import DEFAULT_MODEL, KiroCrewConfig
+from efm_go.config.loader import DEFAULT_MODEL, KiroCrewConfig
 
 
 class TestAcpPerAgentModel:

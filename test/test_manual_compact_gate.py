@@ -25,8 +25,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.acp.session_provider import AcpSessionProvider
-from kiro_crew.acp_backends import (
+from efm_go.acp.session_provider import AcpSessionProvider
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_GOOSE,
@@ -37,9 +37,9 @@ from kiro_crew.acp_backends import (
     ACP_BACKENDS_COMPACT,
     ACP_BACKENDS_KNOWN,
 )
-from kiro_crew.dashboard.chat_runner import _run_chat
-from kiro_crew.providers.acp import AcpProvider
-from kiro_crew.providers.base import LLMProvider
+from efm_go.dashboard.chat_runner import _run_chat
+from efm_go.providers.acp import AcpProvider
+from efm_go.providers.base import LLMProvider
 
 
 class TestCompactCapabilitySet:
@@ -177,7 +177,7 @@ class TestDashboardManualCompactGate:
         state, slot = _state_and_slot(tmp_path, client)
         # A live KAS session exists for this slot's key: the gate must peek it
         # (authoritative over config) without creating anything.
-        from kiro_crew.dashboard.chat_runner import effective_session_key
+        from efm_go.dashboard.chat_runner import effective_session_key
 
         state.sessions._sessions = {effective_session_key(slot): SimpleNamespace(provider=client)}
 
@@ -205,7 +205,7 @@ class TestDashboardManualCompactGate:
         state, slot = _state_and_slot(tmp_path, client)
         state.sessions._sessions = {}  # real dict, no live session
 
-        from kiro_crew.dashboard import chat_runner as cr
+        from efm_go.dashboard import chat_runner as cr
 
         _cfg = SimpleNamespace(agent=SimpleNamespace(provider="acp", acp_backend=ACP_BACKEND_KAS))
         with patch.object(cr.KiroCrewConfig, "load", staticmethod(lambda: _cfg)):
@@ -225,7 +225,7 @@ class TestDashboardManualCompactGate:
         client.manual_compact_unsupported_backend = None
         dispatched = _empty_stream(client)
         state, slot = _state_and_slot(tmp_path, client)
-        from kiro_crew.dashboard.chat_runner import effective_session_key
+        from efm_go.dashboard.chat_runner import effective_session_key
 
         state.sessions._sessions = {effective_session_key(slot): SimpleNamespace(provider=client)}
 
@@ -244,7 +244,7 @@ class TestDashboardManualCompactGate:
         dispatched = _empty_stream(client)
         client.wait_for_compaction = AsyncMock(return_value={"type": "completed", "summary": ""})
         state, slot = _state_and_slot(tmp_path, client)
-        from kiro_crew.dashboard.chat_runner import effective_session_key
+        from efm_go.dashboard.chat_runner import effective_session_key
 
         state.sessions._sessions = {effective_session_key(slot): SimpleNamespace(provider=client)}
 

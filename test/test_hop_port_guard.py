@@ -17,9 +17,9 @@ import time
 
 import pytest
 
-from kiro_crew.instances import hop_port_guard as hop_port_guard_module
-from kiro_crew.instances.hop_port_guard import HopPortGuard
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.instances import hop_port_guard as hop_port_guard_module
+from efm_go.instances.hop_port_guard import HopPortGuard
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 # Binds the way the real competitors do: OpenSSH's forward listener and this repo's
 # own availability probe both set SO_REUSEADDR, so a hold that only refuses a plain
@@ -174,7 +174,7 @@ class TestAnotherProcessCannotTakeAHeldPort:
         squatter = _squat()
         port = squatter.getsockname()[1]
         try:
-            with caplog.at_level(logging.DEBUG, logger="kiro_crew.instances.hop_port_guard"):
+            with caplog.at_level(logging.DEBUG, logger="efm_go.instances.hop_port_guard"):
                 assert guard.hold(port, time.time() + 300) is False
                 first = [r for r in caplog.records if r.levelno == logging.ERROR]
                 assert len(first) == 1, f"expected one ERROR for the first failure: {first}"
@@ -251,7 +251,7 @@ class TestAnotherProcessCannotTakeAHeldPort:
         import inspect
         import textwrap
 
-        from kiro_crew.instances import hop_port_guard
+        from efm_go.instances import hop_port_guard
 
         src = textwrap.dedent(inspect.getsource(hop_port_guard.HopPortGuard.hold))
         tree = ast.parse(src)
@@ -497,7 +497,7 @@ class TestNothingReadsTheCredential:
         import ast
         import inspect
 
-        from kiro_crew.instances import hop_port_guard
+        from efm_go.instances import hop_port_guard
 
         tree = ast.parse(inspect.getsource(hop_port_guard))
         reads = [

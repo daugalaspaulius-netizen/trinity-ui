@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.workflows.runner import WorkflowRunner
+from efm_go.workflows.runner import WorkflowRunner
 
 pytestmark = pytest.mark.asyncio
 

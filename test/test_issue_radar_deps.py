@@ -34,11 +34,11 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from off_loop_helpers import off_loop
 
-from kiro_crew.apps.builtins.issue_radar.backend import crew_runtime as cr
-from kiro_crew.apps.builtins.issue_radar.backend import crew_store as cs
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh
-from kiro_crew.apps.builtins.issue_radar.backend import provider, routes, store
-from kiro_crew.crew_log import projection as crew_log_projection
+from efm_go.apps.builtins.issue_radar.backend import crew_runtime as cr
+from efm_go.apps.builtins.issue_radar.backend import crew_store as cs
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh
+from efm_go.apps.builtins.issue_radar.backend import provider, routes, store
+from efm_go.crew_log import projection as crew_log_projection
 
 OWNER, REPO = "o", "r"
 
@@ -1349,7 +1349,7 @@ class SweepDepUnblockTest(unittest.IsolatedAsyncioTestCase):
         self.key = provider.key_from_parts(OWNER, REPO)
         # A crew's ledger is the fold of its own crew log, so seeding a work item
         # records into the unit its slot runs on, as the write route does.
-        from kiro_crew.crew_log import emit as crew_log_emit
+        from efm_go.crew_log import emit as crew_log_emit
 
         home = tempfile.TemporaryDirectory()
         self.addCleanup(home.cleanup)
@@ -1363,8 +1363,8 @@ class SweepDepUnblockTest(unittest.IsolatedAsyncioTestCase):
         self.addCleanup(crew_log_emit.drain_for_shutdown, 2.0)
 
     def _seed_item(self, crew_id: str, number: int, phase: str) -> None:
-        from kiro_crew.crew_log.schema import KIND_SESSION
-        from kiro_crew.crew_log.store import CrewLog
+        from efm_go.crew_log.schema import KIND_SESSION
+        from efm_go.crew_log.store import CrewLog
 
         sid = f"acp-{crew_id}"
         CrewLog.create(

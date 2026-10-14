@@ -9,8 +9,8 @@ import pytest
 from overload_fakes import Clock, open_task_store
 from overload_fakes import task_record as _rec
 
-from kiro_crew.taskq import model
-from kiro_crew.taskq.store import DEFAULT_DISPATCH_WINDOW, TaskStore
+from efm_go.taskq import model
+from efm_go.taskq.store import DEFAULT_DISPATCH_WINDOW, TaskStore
 
 
 @pytest.fixture

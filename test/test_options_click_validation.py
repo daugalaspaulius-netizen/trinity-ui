@@ -19,14 +19,14 @@ from unittest.mock import MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.dashboard.chat_utils import (
     mint_options_token,
     options_control_is_stale,
 )
-from kiro_crew.history import ConversationLog
-from kiro_crew.llm_helpers import save_conversation_turn_off_loop
-from kiro_crew.slack.format import build_options_blocks
-from kiro_crew.slack.outbound import decode_options_token, encode_options_token
+from efm_go.history import ConversationLog
+from efm_go.llm_helpers import save_conversation_turn_off_loop
+from efm_go.slack.format import build_options_blocks
+from efm_go.slack.outbound import decode_options_token, encode_options_token
 
 THREAD = "1786230097.467939"
 OWNER = f"slack:{THREAD}"
@@ -135,7 +135,7 @@ class TestTheTurnIsDurableBeforeItsControlGoesOut:
         """
         import inspect
 
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         src = inspect.getsource(gateway)
         persist = src.find("await save_conversation_turn_off_loop(\n", src.find("subagent"))
@@ -163,7 +163,7 @@ class TestTheTurnIsDurableBeforeItsControlGoesOut:
         """
         import inspect
 
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         src = inspect.getsource(handler.handle_message)
         assert "if options and thread_ts" not in src, (
@@ -188,7 +188,7 @@ class TestTheTurnIsDurableBeforeItsControlGoesOut:
         """
         import inspect
 
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         src = inspect.getsource(handler.handle_message)
         persist = src.find("save_conversation_turn_off_loop(")
@@ -253,7 +253,7 @@ class TestTheAnswerGoesToTheConversationThatAsked:
         """
         import inspect
 
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         src = inspect.getsource(interactions)
         assert src.count("_asker = decode_options_token(") == 2, (
@@ -273,7 +273,7 @@ class TestTheAnswerGoesToTheConversationThatAsked:
         """
         import inspect
 
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         src = inspect.getsource(interactions)
         assert src.count("_route_pinned = _asker_key is not None") == 2, (
@@ -296,7 +296,7 @@ class TestTheAnswerGoesToTheConversationThatAsked:
         """
         import inspect
 
-        from kiro_crew.slack import handler
+        from efm_go.slack import handler
 
         src = inspect.getsource(handler)
         assert "if thread_owner_key is None and not route_pinned:" in src, (

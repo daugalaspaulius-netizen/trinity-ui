@@ -18,9 +18,9 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.eval.bench.safepath as safepath
-from kiro_crew.eval.bench import datasets
-from kiro_crew.eval.bench.corpus import (
+import efm_go.eval.bench.safepath as safepath
+from efm_go.eval.bench import datasets
+from efm_go.eval.bench.corpus import (
     CAT_SINGLE_HOP,
     BenchInstance,
     BenchQuery,
@@ -28,17 +28,17 @@ from kiro_crew.eval.bench.corpus import (
     BenchTurn,
     Corpus,
 )
-from kiro_crew.eval.bench.ingest import IngestConfig
-from kiro_crew.eval.bench.retrieval import RetrievalConfig
-from kiro_crew.eval.bench.run import RunResult, run_retrieval, write_report
-from kiro_crew.eval.bench.safepath import (
+from efm_go.eval.bench.ingest import IngestConfig
+from efm_go.eval.bench.retrieval import RetrievalConfig
+from efm_go.eval.bench.run import RunResult, run_retrieval, write_report
+from efm_go.eval.bench.safepath import (
     UnsafePathError,
     guard_output_dir,
     guard_read_path,
     guard_write_path,
     read_text_nofollow,
 )
-from kiro_crew.eval.bench.toy_embedder import TOY_EMBEDDER_ID, toy_embed_fn
+from efm_go.eval.bench.toy_embedder import TOY_EMBEDDER_ID, toy_embed_fn
 
 
 @pytest.fixture()
@@ -238,7 +238,7 @@ def _result() -> RunResult:
         backend="sqlite_cosine",
         embedder=TOY_EMBEDDER_ID,
         metrics=__import__(
-            "kiro_crew.eval.bench.retrieval", fromlist=["RetrievalAggregate"]
+            "efm_go.eval.bench.retrieval", fromlist=["RetrievalAggregate"]
         ).RetrievalAggregate(),
     )
 
@@ -298,7 +298,7 @@ def test_the_corpus_cache_root_is_gated_too(
 
 
 def test_the_file_adapters_gate_their_caller_supplied_path(fake_home: Path) -> None:
-    from kiro_crew.eval.bench.adapters import load_locomo_file, load_longmemeval_file
+    from efm_go.eval.bench.adapters import load_locomo_file, load_longmemeval_file
 
     victim = fake_home / ".aws" / "credentials"
     victim.write_text("[default]\n")
@@ -342,13 +342,13 @@ def test_a_non_resident_embedder_prints_a_refusal_not_a_traceback(
     It existed to print a good message and was not caught, so the normal state of
     such a host produced a traceback from the CLI.
     """
-    from kiro_crew import cli_bench
-    from kiro_crew.eval.bench.ingest import IngestError
+    from efm_go import cli_bench
+    from efm_go.eval.bench.ingest import IngestError
 
     def _boom(*_a: object, **_k: object) -> None:
         raise IngestError("the embedding model is not resident")
 
-    monkeypatch.setattr("kiro_crew.eval.bench.run.prepare_embedder", _boom)
+    monkeypatch.setattr("efm_go.eval.bench.run.prepare_embedder", _boom)
     monkeypatch.setattr(cli_bench, "_load_corpus", lambda key: _tiny_corpus())  # noqa: ARG005
     rc = cli_bench.bench_cmd(_retrieval_args(out_dir=str(tmp_path)))
     out = capsys.readouterr().out
@@ -365,7 +365,7 @@ def test_a_refused_report_write_does_not_discard_the_measurement(
 
     Reported as such rather than as a failed run — the numbers are on stdout.
     """
-    from kiro_crew import cli_bench
+    from efm_go import cli_bench
 
     monkeypatch.setattr(cli_bench, "_load_corpus", lambda key: _tiny_corpus())  # noqa: ARG005
     rc = cli_bench.bench_cmd(_retrieval_args(toy_embedder=True, out_dir=str(fake_home / ".aws")))

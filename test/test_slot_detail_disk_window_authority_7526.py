@@ -15,7 +15,7 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app, _make_state
 
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard.state import _ChatSlot
 
 SETTLED = 12
 OLDER = 4  # rows above the live window -> _disk_older_count

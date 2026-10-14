@@ -12,9 +12,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import autonudge as _an
-from kiro_crew import autonudge_authz as _autonudge_mod
-from kiro_crew.autonudge import (
+from efm_go import autonudge as _an
+from efm_go import autonudge_authz as _autonudge_mod
+from efm_go.autonudge import (
     APPROVAL_STALL_REASON,
     AUTONUDGE_STOP_REASON,
     CYCLE_CAP_REASON,
@@ -27,9 +27,9 @@ from kiro_crew.autonudge import (
     NudgeLoop,
     runtime_budget_exceeded,
 )
-from kiro_crew.dashboard.handlers.autonudge import render_nudge_message
-from kiro_crew.monitoring.decision import monitor_budget_reason
-from kiro_crew.monitoring.models import (
+from efm_go.dashboard.handlers.autonudge import render_nudge_message
+from efm_go.monitoring.decision import monitor_budget_reason
+from efm_go.monitoring.models import (
     MONITOR_STATE_VERSION,
     MonitorBudgets,
     MonitorOutcome,
@@ -63,7 +63,7 @@ def _reading(state: str = "MERGED", *, status: str = "ok", head: str = "a" * 40)
     the kernel verdict would test a state the code cannot reach: the fetcher emits no
     terminal observation, so no kernel verdict is ever TERMINAL.
     """
-    from kiro_crew.probes import gh_pr
+    from efm_go.probes import gh_pr
 
     return gh_pr.PrObservation(
         repo="acme/widgets",
@@ -221,7 +221,7 @@ async def test_add_and_fire_on_idle(svc, monkeypatch):
     svc._on_fire = on_fire
     # Patch asyncio.sleep inside the service's _timer to a no-op so the
     # test exercises the real fire path without waiting _MIN_IDLE_SECS.
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -359,7 +359,7 @@ async def test_a_work_ledger_watch_arms_through_the_service_and_gates_on_itself(
     ``_monitor_tick_is_quiet`` would then refuse to poll a loop that looks armed.
     The subject is the ``slot_key``, which no reading of the message can recover.
     """
-    from kiro_crew.autonudge_service.subject import loop_subject
+    from efm_go.autonudge_service.subject import loop_subject
 
     service = AutoNudgeService(base_dir=tmp_path)
     loop = await service.add(
@@ -518,7 +518,7 @@ async def test_a_long_quiet_streak_is_delivered_anyway(tmp_path, monkeypatch):
     a moving base -- is invisible to it. Inference cannot read that intent out of
     the wording, so the bound is what keeps the design honest.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     fired: list[NudgeLoop] = []
 
@@ -571,7 +571,7 @@ async def test_an_unusable_instruction_mid_poll_discards_the_verdict(tmp_path, m
     What is still reachable is an edit that stops naming a subject at all. The
     verdict must not settle the watch then either.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -613,7 +613,7 @@ async def test_the_tick_recovers_the_host_from_the_instruction(tmp_path, monkeyp
     """
     import json
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     seen: list[str] = []
 
@@ -652,7 +652,7 @@ async def test_a_drifted_instruction_fires_instead_of_observing(tmp_path, monkey
     disagreement by guessing which one is right is how a watch ends up observing
     the wrong pull request.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     polled: list[str] = []
 
@@ -700,7 +700,7 @@ async def test_only_a_merged_subject_is_recorded_as_a_success(
     needed" about the one case that needs them most. The reading distinguishes the
     two, so the core reads its typed facts rather than delivered prose.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -743,7 +743,7 @@ async def test_a_settled_work_ledger_reaches_the_terminal_branch_and_deactivates
     must record as a SUCCESS from ``terminal_succeeded`` (not from ``merged``, which
     only a pull request ever sets).
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -794,7 +794,7 @@ async def test_a_work_ledger_recheck_confirms_from_the_verdict_not_an_observatio
     the kernel's typed terminal: classify from ``verdict.outcome``/``verdict.keys`` (an
     ``all-accepted`` ledger is a success) so the owed settlement is confirmed.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     def _ledger_settled(identity, message, probe):
         # The real work-ledger probe sets NO observation; the finish rides the kernel's
@@ -831,7 +831,7 @@ async def test_a_work_ledger_recheck_with_a_changed_class_drops_the_owed_debt(
     Mirrors the gh-pr classification-change guard: an owed ``success`` that now revalidates
     as a non-success terminal must not settle under the stale marker.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     def _ledger_rejected(identity, message, probe):
         # Terminal but NOT all-accepted -> terminal_succeeded() is False -> "blocked".
@@ -861,7 +861,7 @@ async def test_a_work_ledger_recheck_with_a_changed_class_drops_the_owed_debt(
 @pytest.mark.asyncio
 async def test_a_work_ledger_recheck_keeps_a_still_running_watch_alive(tmp_path, monkeypatch):
     """A non-terminal recheck (the ledger is still open) must not settle the watch."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     def _still_open(identity, message, probe):
         return _an.irq.Verdict(_an.irq.Outcome.QUIET, "still working", ())
@@ -974,7 +974,7 @@ async def test_the_marker_writes_do_not_release_the_lock_mid_write(tmp_path, mon
     settlements already use the non-releasing writer; these marker writes were left
     behind, and nothing pinned which writer they used.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -1030,7 +1030,7 @@ async def test_a_re_owed_claim_survives_the_backoff_re_arm(tmp_path, monkeypatch
     claim, which the sibling test pins and which is a deliberate trade: an undelivered
     observation is lost rather than charged to a later turn that did not carry it.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return False
@@ -1080,7 +1080,7 @@ async def test_the_revalidation_does_not_consume_the_ticks_dedupe_identity(tmp_p
     with a fresh comment observed HERE was marked reported and the next real tick read it
     as unchanged, losing the signal until the streak floor.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     seen: list[str] = []
 
@@ -1127,7 +1127,7 @@ async def test_a_changed_terminal_classification_does_not_settle(tmp_path, monke
     When the classification changes, the owed terminal is simply gone: the debt is dropped
     and the watch stays alive so the next tick records the real one.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -1174,7 +1174,7 @@ async def test_a_settlement_revalidates_before_it_deactivates(
     Only a fresh terminal reading settles. Anything else keeps the watch alive, because
     settling is the one action here that stops work silently.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -1218,7 +1218,7 @@ async def test_an_unobservable_subject_does_not_get_settled(tmp_path, monkeypatc
     that the subject is finished, and settling on that would be the silent stop this whole
     design resolves away from.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -1256,7 +1256,7 @@ async def test_a_retarget_does_not_overwrite_a_future_version_monitor(tmp_path):
     message retarget, so a downgraded gateway destroyed the payload before the rule
     protecting it ever applied. Same rule, second surface.
     """
-    from kiro_crew.monitoring.models import MONITOR_STATE_VERSION
+    from efm_go.monitoring.models import MONITOR_STATE_VERSION
 
     async def on_fire(loop):
         return True
@@ -1373,7 +1373,7 @@ async def test_a_floor_tick_is_charged_only_when_its_delivery_lands(tmp_path, mo
     delivery. That was declined -- the counter is the subtraction that separates a quiet
     verdict from a free tick -- and the substance adopted instead.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     outcomes = [False, True]
 
@@ -1697,7 +1697,7 @@ async def test_a_refused_wake_is_charged_once_when_its_retry_delivers(tmp_path, 
 
     Exactly once is the property: the refusal charges nothing, the retry charges one.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     outcomes = [False, True]
 
@@ -1744,7 +1744,7 @@ async def test_an_oversized_stored_pr_baseline_is_bounded_by_the_loader(tmp_path
     The bound has to be applied where the row is read, beside the four sibling judge maps
     that are already rebuilt there.
     """
-    from kiro_crew import autonudge as _an
+    from efm_go import autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -1787,7 +1787,7 @@ async def test_a_malformed_pr_baseline_never_disables_the_loop(tmp_path, stored)
     ids and a real remark then reads as already seen. The container is checked for the
     one type the writer emits, matching the sibling boundaries in this same function.
     """
-    from kiro_crew import autonudge as _an
+    from efm_go import autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -1829,7 +1829,7 @@ async def test_a_failed_clear_write_leaves_the_debt_cleared(tmp_path, monkeypatc
     "no debt" keeps the watch running, and a restart before the write lands brings the
     stale debt back, where the re-observation forced for outstanding debt clears it again.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -1889,7 +1889,7 @@ async def test_a_cancelled_settlement_still_counts_the_delivered_turn(tmp_path, 
     precedes the settlement.
     """
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -1940,7 +1940,7 @@ async def test_terminal_debt_is_re_observed_rather_than_spending_a_free_tick(tmp
     for a reopened subject lives AFTER the poll, the bypass jumped straight over it
     and the retried delivery settles a terminal state the reopen has invalidated.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     polls: list[str] = []
 
@@ -2002,7 +2002,7 @@ async def test_a_wake_keeps_the_interrupted_poll_doubt_until_delivery_settles(
     Other outcomes discharge it immediately: QUIET delivers nothing that could be lost,
     and a FALLBACK observed nothing, so the kernel committed nothing to dedupe against.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     seen_during_fire: list[bool] = []
 
@@ -2064,7 +2064,7 @@ async def test_a_reopened_subject_clears_the_owed_terminal_turn(
     observed at all, and letting an unobserved tick erase real debt would lose the
     terminal news permanently -- the opposite of "failure resolves toward spending".
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -2112,7 +2112,7 @@ async def test_an_upgraded_record_with_a_monitor_but_no_gate_is_not_polled(tmp_p
     terminal verdict DEACTIVATE it, which is the harm the opt-out exists to prevent.
     An opt-out honoured by only some paths is worse than none.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     polled: list[str] = []
 
@@ -2198,7 +2198,7 @@ async def test_a_retarget_during_lock_acquisition_does_not_crash_the_settlement(
     ACTIVE with no timer -- a watch that never ticks again. The earlier re-read
     checked the debt and the registration but not the object itself.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -2248,7 +2248,7 @@ async def test_a_failed_settlement_write_leaves_the_terminal_turn_owed(tmp_path,
     while the record still said active-and-owed, and the restart delivered the final
     turn twice.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     events: list[str] = []
 
@@ -2306,7 +2306,7 @@ async def test_the_owed_terminal_turn_settles_only_once_it_lands(tmp_path, monke
     watchable: the probe re-raises a terminal state on every tick (it is not
     deduped), which is what makes the retry converge instead of announcing forever.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return delivers
@@ -2362,7 +2362,7 @@ async def test_an_interrupted_poll_fires_on_the_next_tick(tmp_path, monkeypatch)
     would read the same state as unchanged. So the next tick fires, and the doubt is
     consumed once rather than latching.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -2416,7 +2416,7 @@ async def test_a_channel_loop_gets_a_final_turn_but_a_dashboard_loop_does_not(
     final turn so the agent reports into the thread; a dashboard loop already got the
     bell and does not need to pay for a turn.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -2469,7 +2469,7 @@ async def test_the_terminal_settlement_is_serialized_against_update(tmp_path, mo
     never ticks. ``_lock`` alone would not close this: it is not the lock ``update``
     contends for.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -2518,7 +2518,7 @@ async def test_the_terminal_transition_is_on_disk_before_the_user_is_told(tmp_pa
     therefore follow the persist -- while still preceding the deactivation, whose
     cancel reaches this very task.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     order: list[str] = []
 
@@ -2606,7 +2606,7 @@ async def test_a_failed_terminal_write_keeps_the_watch_alive(tmp_path, monkeypat
     and the tick fires instead, so the user gets a turn and the next observation
     can try again.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -2655,7 +2655,7 @@ async def test_a_retarget_under_a_terminal_verdict_is_not_settled(tmp_path, monk
     while the probe was in flight, the new subject has been observed by nothing,
     so settling the loop on that verdict would stop a live watch.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -2706,7 +2706,7 @@ async def test_a_terminal_watch_notifies_even_though_it_cancels_its_own_timer(
     fixed wall-clock wait reads a slow disk as a lost notification. The
     ``slow-disk`` case pins that: it holds every write for ``write_secs``.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     events: list[str] = []
     reasons: list[str] = []
@@ -2908,7 +2908,7 @@ async def test_an_unsupported_monitor_version_is_never_armed(tmp_path, monkeypat
     the ABSENCE of a timer -- the bug it guards would have injected the raw
     message every interval with no gate decision at all.
     """
-    from kiro_crew.monitoring.models import MONITOR_STATE_VERSION
+    from efm_go.monitoring.models import MONITOR_STATE_VERSION
 
     fired: list[NudgeLoop] = []
 
@@ -2945,7 +2945,7 @@ async def test_a_verdict_is_discarded_when_the_loop_was_retargeted_mid_poll(tmp_
     A terminal verdict about the OLD pull request must not stop a watch that has
     just been pointed at a live one.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):
         return True
@@ -2988,7 +2988,7 @@ async def test_a_refused_fire_charges_no_wake(tmp_path, monkeypatch):
     the follow-up allowance for it, so the next tick would skip its observation
     to protect work that was never started.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def refuse(loop):
         return False
@@ -3041,7 +3041,7 @@ async def test_a_terminal_verdict_leaves_no_timer_armed(tmp_path, monkeypatch):
     loop, so a re-arm on that path would poll a merged pull request forever and
     re-emit its expiry notification every tick.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):  # pragma: no cover - must not be reached
         raise AssertionError("a terminal verdict must not fire")
@@ -3126,7 +3126,7 @@ async def test_a_quiet_tick_re_arms_its_own_timer(tmp_path, monkeypatch):
     neither. Asserting only "no turn was spent" is what let this through the
     first time: a dead watch and a calm watch both spend nothing.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def on_fire(loop):  # pragma: no cover - must not be reached
         raise AssertionError("a quiet tick must not fire")
@@ -3163,7 +3163,7 @@ async def test_a_wake_buys_exactly_one_follow_up_turn_then_gating_resumes(tmp_pa
     keeps that work moving; the bound is what stops the guard from quietly
     disabling the gate altogether.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     fired: list[NudgeLoop] = []
 
@@ -3218,7 +3218,7 @@ async def test_a_quiet_probe_tick_dispatches_zero_turns(tmp_path, monkeypatch):
     deactivated on a quiet tick would end the watch on the first uneventful
     observation, which is every watch's normal state.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     fired: list[NudgeLoop] = []
 
@@ -3262,7 +3262,7 @@ async def test_a_judge_overriding_a_quiet_probe_is_not_metered_as_a_free_tick(
     before asking would overstate the saving this feature exists to report, and it
     would walk a loop that keeps delivering toward a forced floor tick it never earned.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     fired: list[NudgeLoop] = []
 
@@ -3300,7 +3300,7 @@ async def test_a_judge_overriding_a_quiet_probe_is_not_metered_as_a_free_tick(
 
 @pytest.mark.asyncio
 async def test_a_waking_probe_tick_dispatches_exactly_one_turn(tmp_path, monkeypatch):
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     fired: list[NudgeLoop] = []
 
@@ -3364,7 +3364,7 @@ async def test_a_monitor_whose_kind_has_no_probe_fires_exactly_as_before(tmp_pat
 
 @pytest.mark.asyncio
 async def test_a_probe_that_raises_still_fires_rather_than_going_silent(tmp_path, monkeypatch):
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     fired: list[NudgeLoop] = []
 
@@ -3394,7 +3394,7 @@ async def test_a_probe_that_raises_still_fires_rather_than_going_silent(tmp_path
 
 @pytest.mark.asyncio
 async def test_a_terminal_subject_stops_the_loop_without_a_turn(tmp_path, monkeypatch):
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     fired: list[NudgeLoop] = []
 
@@ -3426,7 +3426,7 @@ async def test_a_terminal_subject_stops_the_loop_without_a_turn(tmp_path, monkey
 
 @pytest.mark.asyncio
 async def test_max_cycles_deactivates(svc, monkeypatch):
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3452,7 +3452,7 @@ async def test_max_cycles_emits_expired_event(svc, monkeypatch):
     line plus an ``updated`` event indistinguishable from the user pressing
     Stop, so a capped-out loop looked the same as the agent stopping itself.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3479,7 +3479,7 @@ async def test_no_expired_event_on_manual_deactivate(svc, monkeypatch):
     ``expired`` drives a user-visible notification, so overloading it onto
     every deactivation would notify the user about their own Stop click.
     """
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3497,7 +3497,7 @@ async def test_no_expired_event_on_manual_deactivate(svc, monkeypatch):
 @pytest.mark.asyncio
 async def test_unlimited_loop_never_expires(svc, monkeypatch):
     """max_cycles=0 means unlimited — the cap branch must not fire at all."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3522,7 +3522,7 @@ async def test_unlimited_loop_never_expires(svc, monkeypatch):
 def test_runtime_budget_exceeded_predicate():
     """Direct contract of the shared predicate: 0 = unlimited, missing
     created_ts never trips (no anchor to measure from), boundary is >=."""
-    from kiro_crew.autonudge import runtime_budget_exceeded
+    from efm_go.autonudge import runtime_budget_exceeded
 
     base = NudgeLoop(id="x", slot_key="s", message="m", created_ts=1000.0)
     # No budget → never exceeded, however old the loop is.
@@ -3545,7 +3545,7 @@ async def test_runtime_budget_deactivates_and_emits_expired(svc, monkeypatch):
     """A spent wall-clock budget stops the loop BEFORE it buys another turn,
     with the same terminal treatment as the cycle cap: deactivate (not
     remove) + ``expired`` so the user-visible notification fires."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3577,7 +3577,7 @@ async def test_runtime_budget_deactivates_and_emits_expired(svc, monkeypatch):
 @pytest.mark.asyncio
 async def test_runtime_budget_unspent_fires_normally(svc, monkeypatch):
     """A loop within its budget behaves exactly like an unbudgeted one."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3603,7 +3603,7 @@ async def test_runtime_budget_unspent_fires_normally(svc, monkeypatch):
 @pytest.mark.asyncio
 async def test_runtime_budget_zero_is_unlimited(svc, monkeypatch):
     """max_runtime_secs=0 means unlimited — an arbitrarily old loop still fires."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3652,7 +3652,7 @@ async def test_stopped_reason_records_why_and_clears_on_revival(svc, monkeypatch
     'cycle_cap'/'runtime_budget', a plain update(active=False) tags 'manual',
     and any revival clears the tag. This is what lets revival logic refuse to
     resume a manual pause whose budget has since elapsed."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3901,7 +3901,7 @@ async def test_budget_expiring_mid_turn_deactivates_post_delivery(svc, monkeypat
     in-flight turn — but once a slow turn ENDS with the budget spent, the loop
     deactivates immediately (tagged runtime_budget, expired emitted) instead
     of arming another idle cycle. Channel loops must not self-re-arm."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -3965,9 +3965,9 @@ async def test_load_leaves_an_inactive_loop_with_an_over_ceiling_budget_untouche
     svc._loops[loop.id].next_due_ts = 0.0
     svc._save()
     svc.stop()
-    monkeypatch.setattr("kiro_crew.monitoring.limits.runtime_ceiling_secs", lambda: 3600)
+    monkeypatch.setattr("efm_go.monitoring.limits.runtime_ceiling_secs", lambda: 3600)
     restored = AutoNudgeService(base_dir=svc._base_dir)
-    with caplog.at_level(logging.INFO, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.INFO, logger="efm_go.autonudge"):
         restored._load()
     try:
         row = restored.get_by_id(loop.id)
@@ -3990,7 +3990,7 @@ async def test_load_keeps_an_active_loop_with_an_over_ceiling_budget_running(svc
     loop = await svc.add(slot_key="chat-1-123", message="go", max_runtime_secs=7200)
     created_ts = loop.created_ts
     svc.stop()
-    monkeypatch.setattr("kiro_crew.monitoring.limits.runtime_ceiling_secs", lambda: 3600)
+    monkeypatch.setattr("efm_go.monitoring.limits.runtime_ceiling_secs", lambda: 3600)
     restored = AutoNudgeService(base_dir=svc._base_dir)
     restored._load()
     try:
@@ -4029,9 +4029,9 @@ async def test_load_keeps_an_active_structured_monitor_with_an_over_ceiling_budg
     )
     created_ts = loop.monitor.created_ts
     svc.stop()
-    monkeypatch.setattr("kiro_crew.monitoring.limits.runtime_ceiling_secs", lambda: 3600)
+    monkeypatch.setattr("efm_go.monitoring.limits.runtime_ceiling_secs", lambda: 3600)
     restored = AutoNudgeService(base_dir=svc._base_dir)
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.autonudge"):
         restored._load()
     try:
         row = restored.get_by_id(loop.id)
@@ -4064,7 +4064,7 @@ async def test_stop_sentinel_keeps_the_record_finished(svc, tmp_path, monkeypatc
     to its empty form. Every other effect of the old removal is kept: the timer
     is gone, the stop line names the reason, the file is left where the agent
     wrote it, and nothing announces a stop-short (``expired``)."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -4079,7 +4079,7 @@ async def test_stop_sentinel_keeps_the_record_finished(svc, tmp_path, monkeypatc
     )
     sentinel.write_text("halt")
     svc._cancel_timer(loop.id)
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.autonudge"):
         await svc._timer(loop)
     kept = svc.get_by_slot("chat-1-123")
     assert kept is not None and kept.id == loop.id
@@ -4143,7 +4143,7 @@ async def test_a_stop_file_finish_is_revived_only_once_the_file_is_gone(svc, tmp
     re-arm is declined (and writes nothing); once the operator deletes the file
     the same re-arm runs the loop again. A finished watch has no file to lift
     and stays finished."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -4180,7 +4180,7 @@ async def test_a_finished_loop_is_displaced_by_a_new_arm_not_by_a_create(svc, tm
     stopped one goal through its stop file can arm the next, as it could when
     the row was removed. The popover's create-only POST still meets the row and
     refuses, so Clear stays the person's step."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     await svc.start()
     loop = await svc.add(slot_key="chat-1-123", message="go", idle_secs=15)
@@ -4576,7 +4576,7 @@ async def test_replace_stopped_preserves_a_quarantined_monitor_record(svc):
     """``_load()`` quarantines a malformed monitor payload as BLOCKED precisely
     to retain the raw record for inspection — a directive re-arm deleting it
     would destroy the only copy of the corrupt state."""
-    from kiro_crew.monitoring.models import MONITOR_STOP_INVALID_RECORD
+    from efm_go.monitoring.models import MONITOR_STOP_INVALID_RECORD
 
     existing = await svc.add_monitor(
         slot_key="chat-1-123",
@@ -4755,7 +4755,7 @@ async def test_disabled_when_flag_off(tmp_path, monkeypatch):
     await svc.start()
     # Service is a no-op when flag is off — add/remove still work on the in-memory
     # dict but timers never arm. Verify via the enabled() helper.
-    from kiro_crew.autonudge import enabled
+    from efm_go.autonudge import enabled
 
     assert not enabled()
 
@@ -4788,7 +4788,7 @@ async def test_skip_when_delivery_returns_false(svc, monkeypatch):
     re-arm the timer with a backoff so the loop self-heals."""
     import asyncio
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     real_sleep = asyncio.sleep  # capture before patching
     sleep_calls: list[float] = []
@@ -4841,7 +4841,7 @@ async def test_fire_callback_exception_does_not_deactivate(svc, monkeypatch):
     re-arming with a backoff."""
     import asyncio
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     real_sleep = asyncio.sleep  # capture before patching
     sleep_calls: list[float] = []
@@ -4882,7 +4882,7 @@ async def test_rearm_backoff_escalates_on_consecutive_failures(svc, monkeypatch)
     so a never-delivering loop backs off instead of hammering."""
     import asyncio
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     sleep_calls: list[float] = []
     real_sleep = asyncio.sleep
@@ -4930,7 +4930,7 @@ async def test_failure_log_rate_limited_to_once_per_streak(svc, monkeypatch):
     failure of a streak, not every re-arm (log-spam fix)."""
     import asyncio
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     sleep_calls: list[float] = []
 
@@ -4972,7 +4972,7 @@ async def test_failure_streak_resets_on_delivery(svc, monkeypatch):
     backoff ramp fresh."""
     import asyncio
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     sleep_calls: list[float] = []
 
@@ -5019,7 +5019,7 @@ async def test_fire_removed_loop_does_not_rearm_orphan(svc, monkeypatch):
     re-arm path must NOT resurrect it with a fresh timer (orphan)."""
     import asyncio as _asyncio
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     real_sleep = _asyncio.sleep  # capture before patching
     sleep_calls: list[float] = []
@@ -5058,7 +5058,7 @@ async def test_fire_removed_loop_does_not_rearm_orphan(svc, monkeypatch):
 @pytest.mark.asyncio
 async def test_delivered_bumps_cycle_count(svc, monkeypatch):
     """When _on_fire returns True, cycle_count bumps and 'fired' event emits."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -5103,7 +5103,7 @@ def test_render_nudge_message():
 
 
 def test_is_channel_key():
-    from kiro_crew.autonudge import is_channel_key
+    from efm_go.autonudge import is_channel_key
 
     assert is_channel_key("slack:1700000000.123456")
     assert is_channel_key("discord:kirocrew:direct:42")
@@ -5137,7 +5137,7 @@ def test_proactive_channel_namespaces_are_channel_keys(key):
     jump link pointing at no slot — even though each of those transports declares
     ``supports_proactive_send=True``.
     """
-    from kiro_crew.autonudge import is_channel_key
+    from efm_go.autonudge import is_channel_key
 
     assert is_channel_key(key)
 
@@ -5156,8 +5156,8 @@ def test_wecom_is_classified_because_it_gained_a_proactive_send_path():
     loops with nowhere to deliver, and a flipped capability with no entry leaves a
     channel that CAN be nudged unreachable.
     """
-    from kiro_crew.autonudge import is_channel_key
-    from kiro_crew.wecom.transport import WECOM_CAPABILITIES
+    from efm_go.autonudge import is_channel_key
+    from efm_go.wecom.transport import WECOM_CAPABILITIES
 
     assert WECOM_CAPABILITIES.supports_proactive_send is True
     assert is_channel_key("wecom:kirocrew:direct:oUserOpenId")
@@ -5168,9 +5168,9 @@ def test_channel_key_prefixes_mirror_the_shipped_namespaces():
 
     Deriving it would make ``autonudge`` — imported at module scope by
     ``mcp_core`` (every MCP server process) and by the dashboard chat layer —
-    name ``kiro_crew.messaging.link``, whose package ``__init__`` pulls the
+    name ``efm_go.messaging.link``, whose package ``__init__`` pulls the
     driver/renderer/transport layer and with it the ACP client, agent, hooks,
-    artifacts, metrics and sqlite: 48 extra ``kiro_crew`` modules to obtain one
+    artifacts, metrics and sqlite: 48 extra ``efm_go`` modules to obtain one
     tuple of string literals. This assertion buys the drift protection that
     import would have bought, at no import cost.
 
@@ -5181,8 +5181,8 @@ def test_channel_key_prefixes_mirror_the_shipped_namespaces():
     unlisted key reads as a dashboard slot and stops being re-armed silently.
     Undeliverability belongs to the ladder; see ``_CHANNEL_KEY_PREFIXES``.
     """
-    from kiro_crew.autonudge import _CHANNEL_KEY_PREFIXES
-    from kiro_crew.messaging.link import CHANNEL_SESSION_NAMESPACES
+    from efm_go.autonudge import _CHANNEL_KEY_PREFIXES
+    from efm_go.messaging.link import CHANNEL_SESSION_NAMESPACES
 
     assert {p.rstrip(":") for p in _CHANNEL_KEY_PREFIXES} == set(CHANNEL_SESSION_NAMESPACES)
 
@@ -5200,7 +5200,7 @@ async def test_unrouted_channel_namespace_degrades_instead_of_raising(svc, monke
     """
     import asyncio as _asyncio
 
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     real_sleep = _asyncio.sleep  # capture before patching
     sleep_calls: list[float] = []
@@ -5258,9 +5258,9 @@ async def test_cross_surface_ladder_still_refuses_unroutable_channels(tmp_path):
 
     from chat_test_helpers import _make_state
 
-    from kiro_crew.dashboard.chat_runner import _deliver_cross_surface_reply
-    from kiro_crew.messaging.link import ChannelLink
-    from kiro_crew.messaging.transport import TransportCapabilities
+    from efm_go.dashboard.chat_runner import _deliver_cross_surface_reply
+    from efm_go.messaging.link import ChannelLink
+    from efm_go.messaging.transport import TransportCapabilities
 
     state = _make_state(tmp_path)
 
@@ -5298,7 +5298,7 @@ def test_binding_key_for_does_not_widen_with_the_classifier():
     that is removed on its first fire), which is strictly worse than the clean "not
     supported from this session type" refusal it replaces.
     """
-    from kiro_crew.autonudge import binding_key_for, is_channel_key
+    from efm_go.autonudge import binding_key_for, is_channel_key
 
     for key in (
         "weixin:kirocrew:direct:oUserOpenId",
@@ -5331,7 +5331,7 @@ async def test_channel_loop_self_rearms_after_delivered_fire(svc, monkeypatch):
         return True
 
     svc._on_fire = on_fire
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     _real_sleep = _an.asyncio.sleep
 
@@ -5372,7 +5372,7 @@ async def test_dashboard_loop_does_not_self_rearm(svc, monkeypatch):
         return True
 
     svc._on_fire = on_fire
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -5394,7 +5394,7 @@ class TestAutonudgeDisabledSettingLink:
     def _app(self, monkeypatch):
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import autonudge as _handler
+        from efm_go.dashboard.handlers import autonudge as _handler
 
         monkeypatch.setattr(_handler, "_autonudge_get", lambda: None)
         app = web.Application(middlewares=[_owner_dashboard_identity()])
@@ -5452,7 +5452,7 @@ class TestAutonudgeStartIntCoercion:
 
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import autonudge as _handler
+        from efm_go.dashboard.handlers import autonudge as _handler
 
         monkeypatch.setattr(_handler, "_autonudge_get", lambda: fake_svc)
         state = MagicMock()
@@ -5561,7 +5561,7 @@ class TestAutonudgeUpdateChokepoint:
     def _client_app(self, monkeypatch, fake_svc):
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import autonudge as _handler
+        from efm_go.dashboard.handlers import autonudge as _handler
 
         monkeypatch.setattr(_handler, "_autonudge_get", lambda: fake_svc)
         app = web.Application(middlewares=[_owner_dashboard_identity()])
@@ -5711,7 +5711,7 @@ class TestAutonudgeUpdateChokepoint:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew import autonudge_authz as _authz
+        from efm_go import autonudge_authz as _authz
 
         svc = MagicMock()
         svc.update = AsyncMock(return_value=None)
@@ -5737,7 +5737,7 @@ class TestAutonudgeUpdateChokepoint:
 
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew import autonudge_authz as _authz
+        from efm_go import autonudge_authz as _authz
 
         svc = self._fake_svc()
         app = self._client_app(monkeypatch, svc)
@@ -6884,7 +6884,7 @@ def test_a_webex_session_is_nudge_able():
     denied or deleted on its first cycle while reporting itself healthy — which is
     exactly why these rosters are narrow.
     """
-    from kiro_crew.autonudge import binding_key_for, is_channel_key
+    from efm_go.autonudge import binding_key_for, is_channel_key
 
     key = "webex:kirocrew:direct:kyle@example.com"
     assert is_channel_key(key)
@@ -6903,7 +6903,7 @@ def test_the_channels_without_a_fire_adapter_stay_excluded():
     channel key, deliberately, so that a loop whose transport is momentarily
     absent is not misread as a dashboard slot and silently stops re-arming.
     """
-    from kiro_crew.autonudge import binding_key_for, is_channel_key
+    from efm_go.autonudge import binding_key_for, is_channel_key
 
     for channel in ("wecom", "teams", "weixin", "imessage"):
         key = f"{channel}:kirocrew:direct:someone"
@@ -6917,7 +6917,7 @@ def test_a_unified_scope_key_is_never_bindable():
     It counts as a channel key (so the fixed-interval timer applies) but has no
     single conversation to deliver to, so a loop must not bind there.
     """
-    from kiro_crew.autonudge import binding_key_for, is_channel_key
+    from efm_go.autonudge import binding_key_for, is_channel_key
 
     assert is_channel_key("unified:kirocrew")
     assert binding_key_for("unified:kirocrew") is None
@@ -6930,7 +6930,7 @@ def test_every_nudge_able_channel_has_a_fire_adapter():
     was added to ``binding_key_for`` while ``_fire`` still handled only slack and
     discord, so an armed Webex loop was DELETED on its first cycle.
     """
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     for prefix in ("slack:", "discord:", "webex:"):
         channel = prefix.rstrip(":")

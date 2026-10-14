@@ -32,12 +32,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import llm_helpers, task_executor, task_planner
-from kiro_crew.agent_sdk.spec_hooks import TurnSpecHooks
-from kiro_crew.context import ContextBuilder
-from kiro_crew.hooks import TOOL_ALLOW, TOOL_DENY, HookManager, ToolHookResult
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.task_models import Project, Task
+from efm_go import llm_helpers, task_executor, task_planner
+from efm_go.agent_sdk.spec_hooks import TurnSpecHooks
+from efm_go.context import ContextBuilder
+from efm_go.hooks import TOOL_ALLOW, TOOL_DENY, HookManager, ToolHookResult
+from efm_go.providers.base import LLMEvent
+from efm_go.task_models import Project, Task
 
 _GENERIC = "User denied tool execution"
 _TAG = "[Kiro Crew host notice]"
@@ -45,7 +45,7 @@ _TAG = "[Kiro Crew host notice]"
 #: is the fingerprint that must be absent from every surface-policy notice.
 _POLICY_GUIDANCE = "allowed alternative"
 _SURFACE_CLAUSE = "tool policy of the surface"
-_SRC = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew"
+_SRC = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go"
 
 
 # ── Doubles ──────────────────────────────────────────────────────────────────

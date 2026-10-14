@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.apps.builtins.meetings.backend.domain import session as sess
+from efm_go.apps.builtins.meetings.backend.domain import session as sess
 
 _OPEN = "<<<UNTRUSTED_CALENDAR_EVENT"
 _CLOSE = ">>>END_UNTRUSTED_CALENDAR_EVENT"
@@ -218,7 +218,7 @@ def test_attachment_label_gets_the_full_screen(audit) -> None:
 
 
 def test_calendar_precreate_never_carries_attachments(tmp_path) -> None:
-    from kiro_crew.apps.builtins.meetings.backend import calendar_poller, store
+    from efm_go.apps.builtins.meetings.backend import calendar_poller, store
 
     root = tmp_path
     assert calendar_poller._precreate_one("evt-1", "Q3 sync", root) is True

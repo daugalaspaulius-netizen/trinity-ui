@@ -19,16 +19,16 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import chat_runner as cr
-from kiro_crew.dashboard.chat_utils import effective_session_key
-from kiro_crew.dashboard.recovery_replays import ReplayFamily
+from efm_go.dashboard import chat_runner as cr
+from efm_go.dashboard.chat_utils import effective_session_key
+from efm_go.dashboard.recovery_replays import ReplayFamily
 
 _CF = ReplayFamily.CONTENT_FILTER
 _CF_REPLAY = frozenset({_CF})
 
 
 def _state(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     state.broadcast_ws = MagicMock()
     state.push_slots_update = MagicMock()

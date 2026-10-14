@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import json
 
-from kiro_crew.config.loader import config_path
-from kiro_crew.context import ContextBuilder
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.config.loader import config_path
+from efm_go.context import ContextBuilder
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 
 def _seed_profile(role: str = "", tech: str = "", other: str = "") -> None:

@@ -14,7 +14,7 @@ import json
 import os
 from pathlib import Path
 
-from kiro_crew.history import ConversationLog
+from efm_go.history import ConversationLog
 
 
 class OpenCounter:

@@ -29,8 +29,8 @@ Guidance:
     from windows_sim import colliding_clock, read_sharing_violation
 
     def test_no_dupe_under_colliding_ts(tmp_path):
-        with colliding_clock("kiro_crew.history"):
-            ...  # every datetime.now() in kiro_crew.history returns ONE instant
+        with colliding_clock("efm_go.history"):
+            ...  # every datetime.now() in efm_go.history returns ONE instant
 
 Extending: keep each simulator small, name the real Windows behaviour it mimics
 in its docstring, and add a self-test in ``test_windows_sim.py``.
@@ -101,7 +101,7 @@ def colliding_clock(
     Mimics a burst of operations completing within one coarse Windows clock tick,
     so every ``datetime.now().isoformat()`` stamp COLLIDES — the condition behind
     the history colliding-timestamp bugs. *module_path* is the dotted module that
-    does ``from datetime import datetime`` (e.g. ``"kiro_crew.history"``).
+    does ``from datetime import datetime`` (e.g. ``"efm_go.history"``).
 
     Yields the fixed instant.
     """

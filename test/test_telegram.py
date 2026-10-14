@@ -23,23 +23,23 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from conftest import CREDENTIAL_STRADDLE_SHAPES, assert_rejected_without_backtracking
-from kiro_crew.acp.client import AcpError
-from kiro_crew.acp.types import EVENT_COMPACTION_STATUS, EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.dashboard.token_auth import parse_duration
-from kiro_crew.messaging import driver as messaging_driver
-from kiro_crew.messaging.commands import parse_dashboard_ttl
-from kiro_crew.messaging.display_safety import (
+from efm_go.acp.client import AcpError
+from efm_go.acp.types import EVENT_COMPACTION_STATUS, EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.dashboard.token_auth import parse_duration
+from efm_go.messaging import driver as messaging_driver
+from efm_go.messaging.commands import parse_dashboard_ttl
+from efm_go.messaging.display_safety import (
     canonicalize_display,
     joins_to_a_credential,
     severs_a_credential,
 )
-from kiro_crew.messaging.link import (
+from efm_go.messaging.link import (
     UNBIND_REASON_UNSPECIFIED,
     ChannelLink,
     legacy_dashboard_mirror_key,
 )
-from kiro_crew.messaging.queue_drain import person_tag
-from kiro_crew.messaging.renderer import (
+from efm_go.messaging.queue_drain import person_tag
+from efm_go.messaging.renderer import (
     DONE,
     STEER_CONSUMED,
     TEXT_CHUNK,
@@ -47,13 +47,13 @@ from kiro_crew.messaging.renderer import (
     OutputEvent,
     session_provenance_tag,
 )
-from kiro_crew.messaging.session_resume import RoutingDecision
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.session import BACKGROUND_KEY, _opt_out_key
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.session_map import ConversationOwnershipConflict
-from kiro_crew.telegram import renderer as telegram_renderer
-from kiro_crew.telegram.client import (
+from efm_go.messaging.session_resume import RoutingDecision
+from efm_go.messaging.transport import InboundMessage
+from efm_go.session import BACKGROUND_KEY, _opt_out_key
+from efm_go.session_allocation import SessionClosingError
+from efm_go.session_map import ConversationOwnershipConflict
+from efm_go.telegram import renderer as telegram_renderer
+from efm_go.telegram.client import (
     TELEGRAM_CHUNK_LIMIT,
     TELEGRAM_MAX_TEXT,
     TelegramClient,
@@ -62,7 +62,7 @@ from kiro_crew.telegram.client import (
     _record_api_duration,
     truncate_html_safe,
 )
-from kiro_crew.telegram.commands import (
+from efm_go.telegram.commands import (
     COMMAND_SPEC,
     ConversationState,
     bot_command_payload,
@@ -73,7 +73,7 @@ from kiro_crew.telegram.commands import (
     parse_dashboard_argument,
     parse_mid_turn_override,
 )
-from kiro_crew.telegram.renderer import (
+from efm_go.telegram.renderer import (
     TelegramApprovalDecider,
     TelegramRenderer,
     _default_redactor,
@@ -93,13 +93,13 @@ from kiro_crew.telegram.renderer import (
     build_inline_keyboard,
     safe_split_offset,
 )
-from kiro_crew.telegram.transport import (
+from efm_go.telegram.transport import (
     TELEGRAM_CAPABILITIES,
     TelegramInboundMessage,
     TelegramTransport,
     forum_gate_outcome,
 )
-from kiro_crew.telegram.transport_dispatch import (
+from efm_go.telegram.transport_dispatch import (
     _MODEL_PICKER_TTL_SECS,
     _NOT_A_SENDER,
     _STEER_ACK_EMOJI,
@@ -154,7 +154,7 @@ def _drop_live_config_snapshot():
     after it in the same worker.
     """
     yield
-    from kiro_crew.config import live
+    from efm_go.config import live
 
     live.reset_for_tests()
 
@@ -172,8 +172,8 @@ def _prime_live(cfg: Any) -> None:
     Call it again after mutating ``d.cfg`` mid-test -- the snapshot is a copy,
     not a view.
     """
-    from kiro_crew.config import live
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config import live
+    from efm_go.config.loader import KiroCrewConfig
 
     base = KiroCrewConfig()
     sections = {}
@@ -940,7 +940,7 @@ class TestCommandCatalogue:
     def test_malformed_row_is_dropped_not_sent(self, monkeypatch: Any) -> None:
         # Telegram rejects the WHOLE array on one bad row, so a malformed entry
         # must be skipped rather than cost the user the entire menu.
-        from kiro_crew.telegram import commands as tg_commands
+        from efm_go.telegram import commands as tg_commands
 
         monkeypatch.setattr(
             tg_commands,
@@ -1167,7 +1167,7 @@ class TestApiDurationMetric:
 
         # Patch the name in the CLIENT's namespace: get_recorder is imported at
         # module scope there, so patching metrics.provider would not be seen.
-        monkeypatch.setattr("kiro_crew.telegram.client.get_recorder", lambda: _Rec(), raising=True)
+        monkeypatch.setattr("efm_go.telegram.client.get_recorder", lambda: _Rec(), raising=True)
         return seen
 
     def test_long_poll_is_not_recorded(self, monkeypatch: Any) -> None:
@@ -2773,7 +2773,7 @@ def _deny_channel_profile(monkeypatch, tmp_path, allow=("slack",)):
     store so the next resolve sees the profile."""
     import json
 
-    from kiro_crew.platform import governance_profiles as gp
+    from efm_go.platform import governance_profiles as gp
 
     pdir = tmp_path / "profiles"
     pdir.mkdir(exist_ok=True)
@@ -2795,7 +2795,7 @@ class TestDispatcher:
         # A channels DENY must stop handle_message from driving a turn. This
         # locks the Telegram inbound chokepoint — removing the gate makes this
         # test fail (a turn would run).
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         _deny_channel_profile(monkeypatch, tmp_path)
         d, cli, sess = _dispatcher({7})
@@ -2815,7 +2815,7 @@ class TestDispatcher:
     def test_channels_deny_drops_callback_approval(self, tmp_path, monkeypatch) -> None:
         # A callback press must not resolve a pending tool approval on a denied
         # channel. This locks the on_callback gate.
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         _deny_channel_profile(monkeypatch, tmp_path)
         d, cli, _ = _dispatcher({7})
@@ -2853,7 +2853,7 @@ class TestDispatcher:
         # pending approval as refused (False) — a reject is a denial, and dropping
         # it would strand the pending future until timeout. Only APPROVE is gated
         # out.
-        from kiro_crew.platform import governance_profiles as gp
+        from efm_go.platform import governance_profiles as gp
 
         _deny_channel_profile(monkeypatch, tmp_path)
         d, cli, _ = _dispatcher({7})
@@ -2945,7 +2945,7 @@ class TestDispatcher:
         self, tmp_path, monkeypatch
     ) -> None:
         """The durable inbound spool receives the refused message."""
-        from kiro_crew.messaging import inbound_spool as S
+        from efm_go.messaging import inbound_spool as S
 
         monkeypatch.setattr(S, "data_home", lambda: tmp_path)
         d, _cli, sess = _dispatcher({7})
@@ -2972,7 +2972,7 @@ class TestDispatcher:
         private message is written verbatim to ``refused.jsonl``. The same
         predicate that gates the durable-history write gates this one.
         """
-        from kiro_crew.messaging import inbound_spool as S
+        from efm_go.messaging import inbound_spool as S
 
         monkeypatch.setattr(S, "data_home", lambda: tmp_path)
         d, _cli, sess = _dispatcher({7})
@@ -3469,7 +3469,7 @@ class TestClientSession:
         # Concurrent _api callers (polling loop + handler tasks) must share ONE
         # ClientSession — the double-checked lock in _ensure_session prevents a
         # leaked duplicate.
-        import kiro_crew.telegram.client as client_mod
+        import efm_go.telegram.client as client_mod
 
         created = {"n": 0}
 
@@ -3494,7 +3494,7 @@ class TestTelegramTokenRedaction:
     """#1 — a Telegram bot token echoed in output must be scrubbed."""
 
     def test_bot_token_is_redacted(self) -> None:
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         token = "8412345678:AAExampleSecretTokenValue_1234567890abcd"
         cleaned, warnings = redact_credentials(f"my token is {token} ok")
@@ -3503,7 +3503,7 @@ class TestTelegramTokenRedaction:
         assert warnings  # at least one redaction warning recorded
 
     def test_benign_short_colon_pairs_not_redacted(self) -> None:
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         # Too few digits (<6) and too-short suffix (<30) to match the token
         # shape — must not be over-redacted.
@@ -3516,7 +3516,7 @@ class TestConfigMasking:
     """#5 — sensitive config fields are masked in the API response only."""
 
     def test_bot_token_masked_in_response(self) -> None:
-        from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK, _masked_config_dict
+        from efm_go.dashboard.handlers.core import _SENSITIVE_MASK, _masked_config_dict
 
         class _Cfg:
             def to_dict(self) -> dict:
@@ -3534,7 +3534,7 @@ class TestConfigMasking:
         assert out["telegram"]["allowed_user_ids"] == [7]
 
     def test_empty_token_not_masked(self) -> None:
-        from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK, _masked_config_dict
+        from efm_go.dashboard.handlers.core import _SENSITIVE_MASK, _masked_config_dict
 
         class _Cfg:
             def to_dict(self) -> dict:
@@ -3558,7 +3558,7 @@ class TestTelegramMidTurn:
         second turn -- deferring without looping just strands it until the user
         happens to send something else.
         """
-        from kiro_crew.messaging.attachments import IngestLimits
+        from efm_go.messaging.attachments import IngestLimits
 
         cap = IngestLimits().max_attachments
         d, cli, sess = _dispatcher({7})
@@ -3850,7 +3850,7 @@ class TestTelegramMidTurn:
         """A busy session in steer mode, a ``/incognito`` message, and a provider
         whose steer answers *steer_result* (a bool, or an exception to raise).
         Returns the dispatcher, the client and the provider's steer log."""
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         privacy_mode.reset()
         d, cli, sess = _dispatcher({7})
@@ -3892,7 +3892,7 @@ class TestTelegramMidTurn:
         through the same producer -- never that the mode was not applied (a
         message the backend records would then run unprotected). RED-BEFORE:
         the raise released the mode and announced "not made incognito"."""
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess, sent_at_steer, go = self._incognito_steer(RuntimeError("acp gone"))
         with pytest.raises(RuntimeError, match="acp gone"):
@@ -3916,7 +3916,7 @@ class TestTelegramMidTurn:
         RED-BEFORE: the bare ``await commit(...)`` in the ``except BaseException``
         arm let the sender's error escape, so its ``raise`` never ran and the
         caller saw the notice failure instead of the steer's."""
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess, sent_at_steer, go = self._incognito_steer(RuntimeError("acp gone"))
         notices: list[str] = []
@@ -3944,7 +3944,7 @@ class TestTelegramMidTurn:
         and runs at the drain, where the modifier is applied and announced. This
         path says nothing about the mode -- a confirmation here, for a message
         that has not run, would be false -- and takes the reservation back."""
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess, sent_at_steer, go = self._incognito_steer(False)
         asyncio.run(go())
@@ -3958,7 +3958,7 @@ class TestTelegramMidTurn:
     def test_a_steer_that_lands_is_confirmed_once_after_it_landed(self) -> None:
         """The confirmation follows the steer's result: one notice, sent AFTER the
         provider reported the message in the turn -- never before it."""
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess, sent_at_steer, go = self._incognito_steer(True)
         asyncio.run(go())
@@ -4071,7 +4071,7 @@ class TestTelegramMidTurn:
         # profile load: otherwise whichever checks arrive while the first load is
         # in progress are denied before they ever reach the receipt queue.
         monkeypatch.setattr(
-            "kiro_crew.telegram.transport_dispatch.channel_inbound_permitted",
+            "efm_go.telegram.transport_dispatch.channel_inbound_permitted",
             AsyncMock(return_value=True),
         )
 
@@ -4366,9 +4366,9 @@ class TestAutomaticOriginMirror:
         from aiohttp import web
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.crew_log import emit, projection
-        from kiro_crew.crew_log.resolve import unit_for_session_key
-        from kiro_crew.dashboard.handlers import work_ledger as ledger_routes
+        from efm_go.crew_log import emit, projection
+        from efm_go.crew_log.resolve import unit_for_session_key
+        from efm_go.dashboard.handlers import work_ledger as ledger_routes
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
         monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
@@ -4430,7 +4430,7 @@ class TestAutomaticOriginMirror:
         ``previous_sid``, consumed after ``get_or_create`` returns, so the successor's
         log cites the one it replaces. A store without the accessor hands over
         nothing, never a raise."""
-        from kiro_crew.crew_log import emit as crew_log_emit
+        from efm_go.crew_log import emit as crew_log_emit
 
         opened: list[tuple[str, str]] = []
         monkeypatch.setattr(
@@ -4461,8 +4461,8 @@ class TestAutomaticOriginMirror:
         its repr."""
         from types import SimpleNamespace
 
-        from kiro_crew.crew_log import emit as crew_log_emit
-        from kiro_crew.dashboard.channel_slots import channel_slot_name
+        from efm_go.crew_log import emit as crew_log_emit
+        from efm_go.dashboard.channel_slots import channel_slot_name
 
         stated: list[str] = []
         monkeypatch.setattr(
@@ -4564,9 +4564,9 @@ class TestAutomaticOriginMirror:
         # session with no thread. The STORE reads that row as no mirror (a Slack
         # mirror is never synthesized without a thread), so the first turn's bind
         # lands; a Slack binding that names a thread is deliberate and is left alone.
-        from kiro_crew.session_map import SessionMap
+        from efm_go.session_map import SessionMap
 
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
         store = SessionMap()
         d, _cli, sess = _dispatcher({7})
         sess.get_mirror_link = store.get_mirror_link
@@ -4694,8 +4694,8 @@ class TestAutomaticOriginMirror:
 def test_receipt_text_caps_displayed_items() -> None:
     # A large mid-turn burst must not grow the rendered receipt unbounded: only
     # the first _RECEIPT_MAX_ITEMS are listed verbatim; the count stays true.
-    from kiro_crew.messaging.queue_receipt import RECEIPT_MAX_ITEMS as _RECEIPT_MAX_ITEMS
-    from kiro_crew.messaging.queue_receipt import receipt_text as _receipt_text
+    from efm_go.messaging.queue_receipt import RECEIPT_MAX_ITEMS as _RECEIPT_MAX_ITEMS
+    from efm_go.messaging.queue_receipt import receipt_text as _receipt_text
 
     texts = [f"msg number {i}" for i in range(_RECEIPT_MAX_ITEMS + 3)]
     out = _receipt_text(texts)
@@ -5003,13 +5003,13 @@ class TestForumConfig:
         import unittest.mock
         from pathlib import Path
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
             tmp = Path(f.name)
         try:
-            with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+            with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
                 return KiroCrewConfig.load()
         finally:
             tmp.unlink(missing_ok=True)
@@ -5223,7 +5223,7 @@ class TestDrainSenderIdentity:
 
     def test_a_senders_own_surplus_is_still_counted(self) -> None:
         """The guard against fixing the count by always reporting zero."""
-        from kiro_crew.telegram.transport_dispatch import _MAX_COLLAPSE
+        from efm_go.telegram.transport_dispatch import _MAX_COLLAPSE
 
         d, _cli, sess = _dispatcher({7}, dm_scope="unified")
         deferred: list[int] = []
@@ -5653,7 +5653,7 @@ class TestRichMessageAvailabilityLatch:
     """sendRichMessage learns whether the server implements the method."""
 
     def _client(self):
-        from kiro_crew.telegram.client import TelegramClient
+        from efm_go.telegram.client import TelegramClient
 
         return TelegramClient(token="12345:testtoken")
 
@@ -5700,7 +5700,7 @@ class TestRichMessageAvailabilityLatch:
         # 400 is ambiguous: a wrong payload shape fails EVERY call, while one
         # oversized table fails only itself. Latch on the streak so a single bad
         # message cannot disable rich rendering for the whole process.
-        from kiro_crew.telegram.client import _RICH_400_LATCH
+        from efm_go.telegram.client import _RICH_400_LATCH
 
         c = self._client()
         self._stub(c, monkeypatch, [400] * _RICH_400_LATCH)
@@ -5713,7 +5713,7 @@ class TestRichMessageAvailabilityLatch:
     def test_a_successful_send_clears_the_400_streak(self, monkeypatch) -> None:
         # Two unrelated bad tables spread over a session must not accumulate
         # into a latch when good tables send in between.
-        from kiro_crew.telegram.client import _RICH_400_LATCH
+        from efm_go.telegram.client import _RICH_400_LATCH
 
         c = self._client()
         self._stub(c, monkeypatch, [400, None] * _RICH_400_LATCH)
@@ -5727,7 +5727,7 @@ class TestClientHealth:
     """get_me auth gate + on_status polling-health callback."""
 
     def _client(self):
-        from kiro_crew.telegram.client import TelegramClient
+        from efm_go.telegram.client import TelegramClient
 
         return TelegramClient(token="12345:testtoken")
 
@@ -5743,7 +5743,7 @@ class TestClientHealth:
         assert result["username"] == "kirocrew_bot"
 
     def test_get_me_raises_auth_error_on_rejection(self, monkeypatch) -> None:
-        from kiro_crew.telegram.client import TelegramAuthError
+        from efm_go.telegram.client import TelegramAuthError
 
         client = self._client()
 
@@ -5846,7 +5846,7 @@ class TestTelegramSessionPidPublish:
         sess._pid = 4242  # SessionManager.get_pid -> kiro-cli host PID
 
         async def _go() -> None:
-            with patch("kiro_crew.telegram.transport_dispatch.publish_turn_identity") as pub:
+            with patch("efm_go.telegram.transport_dispatch.publish_turn_identity") as pub:
                 await d.handle_message(
                     InboundMessage(
                         channel_type="telegram",
@@ -5917,7 +5917,7 @@ class TestYoloCommand:
     """/yolo drives the SAME process-wide grant as the dashboard and Slack."""
 
     def _reset(self) -> Any:
-        from kiro_crew.safety_override import safety_override
+        from efm_go.safety_override import safety_override
 
         so = safety_override()
         if so.is_active():
@@ -6004,7 +6004,7 @@ class TestYoloCommand:
                 return "ok"
 
         try:
-            with patch("kiro_crew.telegram.transport_dispatch.TurnDriver", _Recorder):
+            with patch("efm_go.telegram.transport_dispatch.TurnDriver", _Recorder):
                 asyncio.run(d.handle_message(_dm("hi")))
             predicate = captured[0]
             assert predicate is not None
@@ -6626,7 +6626,7 @@ class TestQueuedOriginRecord:
     """
 
     def test_origin_kwargs_has_the_exact_shape(self) -> None:
-        from kiro_crew.messaging.queue_drain import (
+        from efm_go.messaging.queue_drain import (
             QUEUED_CHANNEL_KEY,
             QUEUED_OWNER_KEY,
             owner_token,
@@ -6646,8 +6646,8 @@ class TestQueuedOriginRecord:
         assert _origin_kwargs(origin) is not first, "each entry gets its own dict"
 
     def test_the_owner_token_is_the_sender_key_without_the_handle(self) -> None:
-        from kiro_crew.messaging.queue_drain import owner_token
-        from kiro_crew.telegram.transport_dispatch import _entry_owner
+        from efm_go.messaging.queue_drain import owner_token
+        from efm_go.telegram.transport_dispatch import _entry_owner
 
         assert _entry_owner(_tg_origin(7, 70, username="ray")) == owner_token(
             "telegram", ("7", "70", "", "private")
@@ -6712,7 +6712,7 @@ class TestPartialDrainInAForumTopic:
         asyncio.run(_go())
 
     def test_one_members_drain_leaves_the_other_members_line(self) -> None:
-        from kiro_crew.messaging.queue_receipt import receipt_text
+        from efm_go.messaging.queue_receipt import receipt_text
 
         d, cli, sess = _dispatcher({7, 8})
         self._queue_in_topic(d, sess, (7, "alice asked"), (8, "bob asked"))
@@ -6731,7 +6731,7 @@ class TestPartialDrainInAForumTopic:
         assert not d._queue.has_receipt(self._KEY)
 
     def test_own_deferred_decides_which_of_a_members_lines_drop(self) -> None:
-        from kiro_crew.messaging.queue_receipt import receipt_text
+        from efm_go.messaging.queue_receipt import receipt_text
 
         d, cli, sess = _dispatcher({7, 8})
         self._queue_in_topic(d, sess, (7, "a"), (8, "b"), (7, "c"))
@@ -6748,7 +6748,7 @@ class TestPartialDrainInAForumTopic:
         ]
 
     def test_each_iteration_flips_with_its_own_owner_and_chat(self) -> None:
-        from kiro_crew.telegram.transport_dispatch import _entry_owner
+        from efm_go.telegram.transport_dispatch import _entry_owner
 
         d, _cli, sess = _dispatcher({7, 8}, dm_scope="unified")
         key = TestDrainSenderIdentity._KEY
@@ -6899,7 +6899,7 @@ class TestMidTurnPrivacyTransaction:
 
     @pytest.fixture(autouse=True)
     def _reset_modes(self) -> Any:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         privacy_mode.reset()
         yield
@@ -6907,12 +6907,12 @@ class TestMidTurnPrivacyTransaction:
 
     @staticmethod
     def _unconfirmed() -> str:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         return f"{privacy_mode.NOTICE_INCOGNITO} {privacy_mode.NOTICE_UNCONFIRMED_SUFFIX}"
 
     def test_a_cancelled_steer_keeps_the_mode_and_reraises_the_cancellation(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess, _at_steer, go = TestTelegramMidTurn._incognito_steer(asyncio.CancelledError())
         notes: list[str] = []
@@ -6927,7 +6927,7 @@ class TestMidTurnPrivacyTransaction:
         assert sess.queued == [] and cli.reactions == [] and notes == []
 
     def test_a_cancelled_steer_whose_notice_fails_still_raises_the_cancellation(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess, _at_steer, go = TestTelegramMidTurn._incognito_steer(asyncio.CancelledError())
 
@@ -6943,7 +6943,7 @@ class TestMidTurnPrivacyTransaction:
         assert sess.queued == []
 
     def test_a_base_exception_from_the_steer_is_reraised_as_itself(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         class _Halt(BaseException):
             pass
@@ -6963,7 +6963,7 @@ class TestMidTurnPrivacyTransaction:
 
     def _record(self, monkeypatch: Any, d: Any, cli: Any, sess: Any, steer_result: Any) -> list:
         """Log reserve/steer/commit/release, sends, the chip and the reaction in order."""
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         log: list[tuple[Any, ...]] = []
         real_reserve, real_commit, real_release = (
@@ -7024,7 +7024,7 @@ class TestMidTurnPrivacyTransaction:
         )
 
     def test_a_landed_steer_commits_then_notes_then_reacts(self, monkeypatch: Any) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         sess._busy = True
@@ -7100,7 +7100,7 @@ class TestMidTurnPrivacyTransaction:
     def test_a_landed_steer_whose_notice_fails_propagates_before_chip_and_reaction(
         self,
     ) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess, _at_steer, go = TestTelegramMidTurn._incognito_steer(True)
         notes: list[str] = []
@@ -7118,7 +7118,7 @@ class TestMidTurnPrivacyTransaction:
         assert list(privacy_mode._tracker("incognito")) != []
 
     def test_an_already_marked_key_steers_without_a_notice(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         sess._busy = True
@@ -7131,7 +7131,7 @@ class TestMidTurnPrivacyTransaction:
         assert cli.reactions == [(12, _STEER_ACK_EMOJI)]
 
     def test_a_reserve_refusal_returns_without_rerun_or_queue(self, monkeypatch: Any) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         sess._busy = True
@@ -7159,7 +7159,7 @@ class TestMidTurnPrivacyTransaction:
     def test_no_reservation_when_the_steer_is_unavailable(
         self, monkeypatch: Any, dead_turn: bool
     ) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         sess._busy = True
@@ -7179,7 +7179,7 @@ class TestMidTurnPrivacyTransaction:
         assert not privacy_mode.is_incognito(self._KEY)
 
     def test_the_steer_capability_is_read_once_before_the_reservation(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         class _Probe:
             def __init__(self) -> None:
@@ -7240,7 +7240,7 @@ class TestMidTurnPrivacyTransaction:
     def test_a_bare_modifier_refusal_sends_nothing_more_and_runs_nothing(
         self, monkeypatch: Any, mode: str
     ) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         calls: list[tuple[str, str, dict[str, Any]]] = []
@@ -7266,7 +7266,7 @@ class TestMidTurnPrivacyTransaction:
 
     @pytest.mark.parametrize("mode", ["temporary", "incognito"])
     def test_a_bare_modifier_confirms_exactly_once_each_time(self, mode: str) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         literal = {
             "temporary": "🔒 Temporary mode ON — this thread won't read or save memory.",
@@ -7281,7 +7281,7 @@ class TestMidTurnPrivacyTransaction:
         assert [t for t, _ in cli.sent] == [literal, literal]
 
     def test_a_bare_modifier_while_busy_applies_without_steer_or_queue(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         sess._busy = True
@@ -7293,7 +7293,7 @@ class TestMidTurnPrivacyTransaction:
         assert sess.queued == [] and sess._gp.steered == [] and cli.reactions == []
 
     def test_a_turn_path_refusal_runs_nothing(self, monkeypatch: Any) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         monkeypatch.setattr(
@@ -7313,7 +7313,7 @@ class TestMidTurnPrivacyTransaction:
         assert sess.successes == [] and sess.released == []
 
     def test_the_turn_path_hydrates_then_applies_then_acquires(self, monkeypatch: Any) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         log: list[tuple[Any, ...]] = []
@@ -7350,7 +7350,7 @@ class TestMidTurnPrivacyTransaction:
         assert "Answer: summarise this" in (cli.final_text() or "")
 
     def test_an_already_marked_key_runs_the_turn_without_a_notice(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         d, cli, sess = _dispatcher({7})
         privacy_mode.mark_incognito(self._KEY)
@@ -7490,7 +7490,7 @@ class TestQueueOrSteerDecision:
         ]
 
     def test_an_enqueue_miss_reruns_the_original_message(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         privacy_mode.reset()
         try:
@@ -7578,7 +7578,7 @@ class TestQueueOrSteerDecision:
         assert [t for t, _ in cli.sent] == ["⏳ Queued (1): “later”"]
 
     def test_a_busy_option_press_is_refused_byte_exact(self) -> None:
-        from kiro_crew.telegram import transport_dispatch as td
+        from efm_go.telegram import transport_dispatch as td
 
         busy = (
             "🔘 That conversation is busy with another turn, so your choice was NOT "
@@ -7602,8 +7602,8 @@ class TestQueueOrSteerDecision:
         assert sess.queued == [] and sess._gp.steered == []
 
     def test_a_press_staled_by_rotation_runs_nothing(self, monkeypatch: Any) -> None:
-        from kiro_crew.messaging import privacy_mode
-        from kiro_crew.telegram import transport_dispatch as td
+        from efm_go.messaging import privacy_mode
+        from efm_go.telegram import transport_dispatch as td
 
         stale = (
             "🔘 These buttons belong to a conversation this chat has since moved away "
@@ -7637,7 +7637,7 @@ class TestQueueOrSteerDecision:
         assert d._conv.current_gen(route) == 1
 
     def test_an_untagged_press_is_refused_byte_exact(self) -> None:
-        from kiro_crew.telegram import transport_dispatch as td
+        from efm_go.telegram import transport_dispatch as td
 
         untagged = (
             "🔘 These buttons predate a session-safety update, so which conversation "
@@ -7659,7 +7659,7 @@ def _facade_audits(monkeypatch: Any) -> list[dict[str, Any]]:
     """Capture every SEL row the dispatcher writes, through its own module binding."""
     rows: list[dict[str, Any]] = []
     monkeypatch.setattr(
-        "kiro_crew.telegram.transport_dispatch.sel",
+        "efm_go.telegram.transport_dispatch.sel",
         lambda: SimpleNamespace(log_api_access=lambda **kw: rows.append(kw)),
     )
     return rows
@@ -7854,7 +7854,7 @@ class TestModelPickerOutcomes:
     def test_apply_then_audit_then_one_edit(self, monkeypatch: Any) -> None:
         order: list[Any] = []
         monkeypatch.setattr(
-            "kiro_crew.telegram.transport_dispatch.sel",
+            "efm_go.telegram.transport_dispatch.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kw: order.append("audit")),
         )
         d, cli, _sess = self._post()
@@ -8032,7 +8032,7 @@ class TestCallbackRouting:
             order.append(f"gov:{channel}")
             return False
 
-        monkeypatch.setattr("kiro_crew.telegram.transport_dispatch.channel_inbound_permitted", _gov)
+        monkeypatch.setattr("efm_go.telegram.transport_dispatch.channel_inbound_permitted", _gov)
         d, cli, _sess = _dispatcher({7})
 
         async def _ack(callback_query_id: str, text: str = "") -> None:
@@ -8050,7 +8050,7 @@ class TestCallbackRouting:
             calls.append(channel)
             return False
 
-        monkeypatch.setattr("kiro_crew.telegram.transport_dispatch.channel_inbound_permitted", _gov)
+        monkeypatch.setattr("efm_go.telegram.transport_dispatch.channel_inbound_permitted", _gov)
         d, cli, _sess = _dispatcher({7})
         asyncio.run(d.on_callback(_press("a:rq1:n1:0")))
         assert calls == [] and cli.edits[-1][1] == "⌛ This approval already expired."
@@ -8065,7 +8065,7 @@ class TestCallbackRouting:
         async def _gov(channel: str) -> bool:
             return allow["value"]
 
-        monkeypatch.setattr("kiro_crew.telegram.transport_dispatch.channel_inbound_permitted", _gov)
+        monkeypatch.setattr("efm_go.telegram.transport_dispatch.channel_inbound_permitted", _gov)
         d, cli, sess = TestModelPicker()._with_models()
         asyncio.run(d.handle_message(_dm("/model")))
         allow["value"] = False
@@ -8154,7 +8154,7 @@ class TestCallbackRouting:
         assert sess.successes == []
 
     def test_an_untagged_press_is_refused_before_its_label_is_read(self) -> None:
-        from kiro_crew.telegram import transport_dispatch as td
+        from efm_go.telegram import transport_dispatch as td
 
         for data in ("opt:0", "opt:0:"):
             d, cli, _sess = _dispatcher({7})
@@ -8223,7 +8223,7 @@ class TestCallbackRouting:
             calls.append(channel)
             return True
 
-        monkeypatch.setattr("kiro_crew.telegram.transport_dispatch.channel_inbound_permitted", _gov)
+        monkeypatch.setattr("efm_go.telegram.transport_dispatch.channel_inbound_permitted", _gov)
         d, cli, _sess = _dispatcher({7})
         for data in ("noop", "", "zzz", "x:1"):
             asyncio.run(d.on_callback(_press(data)))
@@ -8238,7 +8238,7 @@ class TestTurnLifecycleCharacterization:
     _KEY = "telegram:kirocrew:direct:7"
 
     def test_a_failure_reason_is_bounded_and_scrubbed(self) -> None:
-        from kiro_crew.memory_stores import UnknownMemoryStore
+        from efm_go.memory_stores import UnknownMemoryStore
 
         assert _user_safe_failure_reason(AcpError("x" * 500, transient=False)) == "⚠️ " + "x" * 500
         assert _user_safe_failure_reason(AcpError("x" * 501, transient=False)) == (
@@ -8267,8 +8267,8 @@ class TestTurnLifecycleCharacterization:
         assert _user_safe_failure_reason(_Unprintable("x", transient=False)) is None
 
     def _instrument(self, monkeypatch: Any, d: Any, sess: Any, stream: Any = None) -> list:
-        from kiro_crew.messaging import auto_title
-        from kiro_crew.telegram import transport_dispatch as td
+        from efm_go.messaging import auto_title
+        from efm_go.telegram import transport_dispatch as td
 
         events: list[tuple[Any, ...]] = []
         monkeypatch.setattr(auto_title, "try_claim", lambda _key: False)
@@ -8426,7 +8426,7 @@ class TestTurnLifecycleCharacterization:
         assert sess.failures == [] and sess.successes == []
 
     def test_close_gets_the_failure_reason_the_turn_classified(self, monkeypatch: Any) -> None:
-        from kiro_crew.memory_stores import UnknownMemoryStore
+        from efm_go.memory_stores import UnknownMemoryStore
 
         cases = [
             (AcpError("model not in your plan", transient=False), "⚠️ model not in your plan"),
@@ -8452,7 +8452,7 @@ class TestTurnLifecycleCharacterization:
     def test_a_landed_turn_clears_the_shared_death_streak_after_record_success(
         self, monkeypatch: Any
     ) -> None:
-        from kiro_crew import runtime_death
+        from efm_go import runtime_death
 
         runtime_death._reset_for_tests()
         try:
@@ -8478,7 +8478,7 @@ class TestTurnLifecycleCharacterization:
                         runtime_death.shared_deaths(TestTurnLifecycleCharacterization._KEY)
                     )
 
-            monkeypatch.setattr("kiro_crew.telegram.transport_dispatch.Stats", _Stats)
+            monkeypatch.setattr("efm_go.telegram.transport_dispatch.Stats", _Stats)
             asyncio.run(d.handle_message(_dm("hi")))
             assert at_success == [2] and counted == [0]
             assert runtime_death.shared_deaths(self._KEY) == 0
@@ -8620,7 +8620,7 @@ class TestCommandReplies:
     )
 
     def test_new_replies(self) -> None:
-        from kiro_crew.messaging.session_resume import ResumeReleaseError
+        from efm_go.messaging.session_resume import ResumeReleaseError
 
         d, cli, sess = _dispatcher({7})
         reserved: list[str] = []
@@ -8706,7 +8706,7 @@ class TestCommandReplies:
         assert cli.sent[-1][0] == "✅ Context compacted." and cli.edits == []
 
     def test_link_and_unlink_replies(self) -> None:
-        from kiro_crew.messaging.session_resume import ResumeReleaseError
+        from efm_go.messaging.session_resume import ResumeReleaseError
 
         d, cli, sess = _dispatcher({7})
         asyncio.run(d._handle_link(self._ROUTE, 7, resumed_key="dashboard:x"))
@@ -8740,7 +8740,7 @@ class TestCommandReplies:
         recorder = SimpleNamespace(
             inc_message_received=lambda: seen.append("received"), summary=lambda: "S-42"
         )
-        monkeypatch.setattr("kiro_crew.telegram.transport_dispatch.Stats", lambda: recorder)
+        monkeypatch.setattr("efm_go.telegram.transport_dispatch.Stats", lambda: recorder)
         d, cli, _sess = _dispatcher({7})
         asyncio.run(d.handle_message(_dm("/status")))
         assert cli.sent == [("S-42", None)] and seen == ["received"]
@@ -8783,7 +8783,7 @@ class TestCommandReplies:
         assert len(cli.sent) == 1 and cli.send_threads == [4]
 
     def test_bare_directives_and_override_payloads(self) -> None:
-        from kiro_crew.messaging import privacy_mode
+        from efm_go.messaging import privacy_mode
 
         usage = "Those take a message: /queue <msg> or /steer <msg>."
         d, cli, sess = _dispatcher({7})

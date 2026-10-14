@@ -1,6 +1,6 @@
 """Security contract of ``api_chat_mode``.
 
-``api_chat_mode`` (``src/kiro_crew/dashboard/chat_handlers.py``) carried three
+``api_chat_mode`` (``src/efm_go/dashboard/chat_handlers.py``) carried three
 defects, all in the ordering between slot validation and global mutation:
 
 1. ``trust_reads`` silently widened to EVERY slot when the named slot did not
@@ -37,22 +37,22 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard import chat_persistence, chat_runner, session_control
-from kiro_crew.dashboard.chat_delivery import TURN_ACTOR_META_KEY, queue_for_next_turn
-from kiro_crew.dashboard.chat_handlers import (
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard import chat_persistence, chat_runner, session_control
+from efm_go.dashboard.chat_delivery import TURN_ACTOR_META_KEY, queue_for_next_turn
+from efm_go.dashboard.chat_handlers import (
     api_chat,
     api_chat_mode,
     api_chat_slot_approve,
 )
-from kiro_crew.dashboard.chat_title import (
+from efm_go.dashboard.chat_title import (
     _counts_as_user_turn,
     _maybe_auto_title,
     _rehydrated_refresh_mark,
     maybe_refresh_title,
 )
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.dashboard.chat_utils import (
     CRON_NOTIFICATION_KIND,
     CRON_NOTIFY_PREFIX,
     MCP_APP_MESSAGE_KIND,
@@ -60,18 +60,18 @@ from kiro_crew.dashboard.chat_utils import (
     TURN_END_WIRE_CLS,
     _dequeue_next_message,
 )
-from kiro_crew.dashboard.handlers.sessions import api_approval_resolve
-from kiro_crew.dashboard.slot_ownership import app_may_control_session
-from kiro_crew.dashboard.slot_queue_repository import (
+from efm_go.dashboard.handlers.sessions import api_approval_resolve
+from efm_go.dashboard.slot_ownership import app_may_control_session
+from efm_go.dashboard.slot_queue_repository import (
     durable_queue_entries,
     sanitize_restored_queue,
 )
-from kiro_crew.dashboard.state import SlotOrigin, row_mid
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.safety_override import (
+from efm_go.dashboard.state import SlotOrigin, row_mid
+from efm_go.providers.base import LLMEvent
+from efm_go.safety_override import (
     reset_singleton,
 )
-from kiro_crew.safety_override import safety_override as real_safety_override
+from efm_go.safety_override import safety_override as real_safety_override
 
 
 @web.middleware
@@ -125,7 +125,7 @@ def _isolate_safety_override():
 
 @pytest.fixture
 def state(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     st = _make_state(tmp_path)
     st.broadcast_ws = MagicMock()
     st.push_slots_update = MagicMock()
@@ -242,7 +242,7 @@ def test_app_keeps_own_slot_send_without_session_grant(state) -> None:
 async def test_app_without_session_approval_grant_is_denied(state) -> None:
     state.get_or_create_slot("s1")
     with patch(
-        "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+        "efm_go.apps.permissions.app_can_manage_session_approvals",
         return_value=False,
     ):
         async with _app_client(state) as client:
@@ -260,7 +260,7 @@ _THEME_FIELDS = {
     "theme_consent": True,
     "theme_consent_sha": _CONSENT_SHA,
 }
-_GRANT_CHECK = "kiro_crew.apps.permissions.app_can_manage_session_approvals"
+_GRANT_CHECK = "efm_go.apps.permissions.app_can_manage_session_approvals"
 #: The fields a send on a session the app does not own must leave as it found them.
 _settings = attrgetter("agent", "color_theme", "theme_consent", "theme_consent_sha")
 
@@ -297,8 +297,8 @@ async def _app_send(state, body: dict, *, granted: bool = True) -> _Sent:
     grant_check = MagicMock(return_value=granted)
     with (
         patch(_GRANT_CHECK, grant_check),
-        patch("kiro_crew.dashboard.chat_handlers._run_chat", new=run_chat),
-        patch("kiro_crew.dashboard.chat_handlers._maybe_auto_title", new=title),
+        patch("efm_go.dashboard.chat_handlers._run_chat", new=run_chat),
+        patch("efm_go.dashboard.chat_handlers._maybe_auto_title", new=title),
     ):
         async with _app_client(state) as client:
             resp = await client.post("/api/chat?ws=1", json={"message": "hi", **body})
@@ -338,7 +338,7 @@ async def test_app_on_user_slot_cannot_change_its_settings(
     before = _settings(slot)
     audit = MagicMock()
 
-    with patch("kiro_crew.dashboard.chat_handlers.sel", return_value=audit):
+    with patch("efm_go.dashboard.chat_handlers.sel", return_value=audit):
         sent = await _app_send(state, {"slot": "s1", **body})
 
     assert sent.status == 403
@@ -374,7 +374,7 @@ async def test_app_on_agent_bound_user_slot_sends_a_turn(state, body: dict) -> N
     before = _settings(slot)
     audit = MagicMock()
 
-    with patch("kiro_crew.dashboard.chat_handlers.sel", return_value=audit):
+    with patch("efm_go.dashboard.chat_handlers.sel", return_value=audit):
         sent = await _app_send(state, {"slot": "s1", **body})
 
     assert sent.status == 200, sent.data
@@ -449,7 +449,7 @@ def test_every_api_chat_body_key_is_classified() -> None:
     Classifying it settings-bearing puts it under
     ``test_settings_bearing_body_keys_never_reach_a_user_slot``.
     """
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     tree = ast.parse(inspect.getsource(chat_handlers))
     functions = {
@@ -483,7 +483,7 @@ async def test_app_on_user_slot_cannot_run_a_harness_slash_command(state, messag
     slot = _user_slot(state, agent="researcher")
     audit = MagicMock()
 
-    with patch("kiro_crew.dashboard.chat_handlers.sel", return_value=audit):
+    with patch("efm_go.dashboard.chat_handlers.sel", return_value=audit):
         sent = await _app_send(state, {"slot": "s1", "message": message})
 
     assert sent.status == 403
@@ -646,7 +646,7 @@ async def test_end_of_turn_title_ignores_an_apps_turn_on_a_user_slot(state) -> N
     slot.append("assistant", "reply")
     generate = AsyncMock(return_value="An App Title")
 
-    with patch("kiro_crew.dashboard.chat_title._generate_title_via_kiro", new=generate):
+    with patch("efm_go.dashboard.chat_title._generate_title_via_kiro", new=generate):
         await _maybe_auto_title(state, slot)
 
     generate.assert_not_called()
@@ -663,9 +663,9 @@ async def test_title_refresh_counts_only_the_users_turns(state, actor: str, refr
     generate = AsyncMock(return_value="")
 
     with (
-        patch("kiro_crew.dashboard.chat_title._generate_refreshed_title", new=generate),
-        patch("kiro_crew.dashboard.chat_title._title_refresh_every", return_value=0),
-        patch("kiro_crew.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
+        patch("efm_go.dashboard.chat_title._generate_refreshed_title", new=generate),
+        patch("efm_go.dashboard.chat_title._title_refresh_every", return_value=0),
+        patch("efm_go.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
     ):
         await maybe_refresh_title(state, slot)
 
@@ -690,9 +690,9 @@ async def test_the_title_fallback_never_takes_an_apps_text(state) -> None:
     generate = AsyncMock(return_value="")  # the titler SKIPs
 
     with (
-        patch("kiro_crew.dashboard.chat_title._generate_title_via_kiro", new=generate),
-        patch("kiro_crew.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
-        patch("kiro_crew.dashboard.chat_title.maybe_suggest_folder", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_title._generate_title_via_kiro", new=generate),
+        patch("efm_go.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
+        patch("efm_go.dashboard.chat_title.maybe_suggest_folder", new=AsyncMock()),
     ):
         await _maybe_auto_title(state, slot)
 
@@ -712,9 +712,9 @@ async def test_the_reply_to_an_apps_turn_is_not_the_users_answered_turn(state) -
     generate = AsyncMock(return_value="")
 
     with (
-        patch("kiro_crew.dashboard.chat_title._generate_title_via_kiro", new=generate),
-        patch("kiro_crew.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
-        patch("kiro_crew.dashboard.chat_title.maybe_suggest_folder", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_title._generate_title_via_kiro", new=generate),
+        patch("efm_go.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
+        patch("efm_go.dashboard.chat_title.maybe_suggest_folder", new=AsyncMock()),
     ):
         await _maybe_auto_title(state, slot)
 
@@ -732,9 +732,9 @@ async def test_the_title_refresh_prompt_leaves_out_an_apps_turn(state) -> None:
     generate = AsyncMock(return_value="")
 
     with (
-        patch("kiro_crew.dashboard.chat_title._generate_refreshed_title", new=generate),
-        patch("kiro_crew.dashboard.chat_title._title_refresh_every", return_value=0),
-        patch("kiro_crew.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
+        patch("efm_go.dashboard.chat_title._generate_refreshed_title", new=generate),
+        patch("efm_go.dashboard.chat_title._title_refresh_every", return_value=0),
+        patch("efm_go.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
     ):
         await maybe_refresh_title(state, slot)
 
@@ -787,8 +787,8 @@ async def test_app_send_refused_when_the_slot_closes_during_the_permission_read(
     run_chat = AsyncMock()
     with (
         patch(_GRANT_CHECK, gated_grant),
-        patch("kiro_crew.dashboard.chat_handlers._run_chat", new=run_chat),
-        patch("kiro_crew.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_handlers._run_chat", new=run_chat),
+        patch("efm_go.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
     ):
         async with _app_client(state) as client:
             send = asyncio.create_task(
@@ -837,9 +837,9 @@ async def test_app_send_refused_when_the_slot_is_relinked_during_the_command_rea
     with (
         patch(_GRANT_CHECK, return_value=True),
         patch.object(KiroCrewConfig, "load", staticmethod(gated_load)),
-        patch("kiro_crew.dashboard.chat_handlers._run_chat", new=run_chat),
-        patch("kiro_crew.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
-        patch("kiro_crew.dashboard.chat_handlers.sel", return_value=audit),
+        patch("efm_go.dashboard.chat_handlers._run_chat", new=run_chat),
+        patch("efm_go.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_handlers.sel", return_value=audit),
     ):
         async with _app_client(state) as client:
             send = asyncio.create_task(
@@ -877,8 +877,8 @@ async def test_app_sse_stream_stops_at_the_end_of_its_turn(state) -> None:
 
     with (
         patch(_GRANT_CHECK, return_value=True),
-        patch("kiro_crew.dashboard.chat_handlers._run_chat", new=turn_then_queued_follow_up),
-        patch("kiro_crew.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_handlers._run_chat", new=turn_then_queued_follow_up),
+        patch("efm_go.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
     ):
         async with _app_client(state) as client:
             resp = await client.post("/api/chat", json={"slot": "s1", "message": "hi"})
@@ -913,8 +913,8 @@ async def test_app_sse_stream_skips_a_row_queued_for_a_later_turn(state) -> None
 
     with (
         patch(_GRANT_CHECK, return_value=True),
-        patch("kiro_crew.dashboard.chat_handlers._run_chat", new=turn_with_a_cron_queued_meanwhile),
-        patch("kiro_crew.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_handlers._run_chat", new=turn_with_a_cron_queued_meanwhile),
+        patch("efm_go.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
     ):
         async with _app_client(state) as client:
             resp = await client.post("/api/chat", json={"slot": "s1", "message": "hi"})
@@ -941,8 +941,8 @@ async def test_a_slot_owners_sse_stream_skips_the_turn_boundary(state) -> None:
         s.append("done", "", "done")
 
     with (
-        patch("kiro_crew.dashboard.chat_handlers._run_chat", new=two_turns),
-        patch("kiro_crew.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_handlers._run_chat", new=two_turns),
+        patch("efm_go.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
     ):
         async with _app_client(state) as client:
             resp = await client.post("/api/chat", json={"slot": "s1", "message": "hi"})
@@ -963,8 +963,8 @@ async def test_a_failed_sse_prepare_releases_the_reader(state) -> None:
 
     with (
         patch.object(web, "StreamResponse", _PrepareFails),
-        patch("kiro_crew.dashboard.chat_handlers._run_chat", new=AsyncMock()),
-        patch("kiro_crew.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_handlers._run_chat", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
     ):
         async with _app_client(state) as client:
             with contextlib.suppress(aiohttp.ClientError):
@@ -1223,7 +1223,7 @@ async def test_app_with_grant_can_set_user_slot_mode(
         slot._trust = True
         slot._trust_reads = True
     with patch(
-        "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+        "efm_go.apps.permissions.app_can_manage_session_approvals",
         return_value=True,
     ):
         async with _app_client(state) as client:
@@ -1238,7 +1238,7 @@ async def test_app_with_grant_can_set_user_slot_mode(
 async def test_app_non_yolo_mode_target_boundary(state, target: str, allowed: bool) -> None:
     slot = _make_app_control_target(state, target)
     with patch(
-        "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+        "efm_go.apps.permissions.app_can_manage_session_approvals",
         return_value=True,
     ):
         async with _app_client(state) as client:
@@ -1253,10 +1253,10 @@ async def test_app_cannot_arm_global_yolo_even_with_grant(state) -> None:
     override = _FakeOverride()
     with (
         patch(
-            "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+            "efm_go.apps.permissions.app_can_manage_session_approvals",
             return_value=True,
         ),
-        patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override),
+        patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override),
     ):
         async with _app_client(state) as client:
             resp = await client.post("/api/chat/mode", json={"mode": "yolo", "slot": "s1"})
@@ -1276,10 +1276,10 @@ async def test_app_normal_does_not_revoke_global_yolo(state) -> None:
     override.active = True
     with (
         patch(
-            "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+            "efm_go.apps.permissions.app_can_manage_session_approvals",
             return_value=True,
         ),
-        patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override),
+        patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override),
     ):
         async with _app_client(state) as client:
             resp = await client.post("/api/chat/mode", json={"mode": "normal", "slot": "s1"})
@@ -1300,10 +1300,10 @@ async def test_app_mode_change_requires_explicit_slot(state, body: dict) -> None
     audit = MagicMock()
     with (
         patch(
-            "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+            "efm_go.apps.permissions.app_can_manage_session_approvals",
             return_value=True,
         ),
-        patch("kiro_crew.dashboard.chat_handlers.sel", return_value=audit),
+        patch("efm_go.dashboard.chat_handlers.sel", return_value=audit),
     ):
         async with _app_client(state) as client:
             resp = await client.post("/api/chat/mode", json=body)
@@ -1328,10 +1328,10 @@ async def test_app_with_grant_can_resolve_user_slot_approval(state) -> None:
     audit = MagicMock()
     with (
         patch(
-            "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+            "efm_go.apps.permissions.app_can_manage_session_approvals",
             return_value=True,
         ),
-        patch("kiro_crew.dashboard.chat_handlers.sel", return_value=audit),
+        patch("efm_go.dashboard.chat_handlers.sel", return_value=audit),
     ):
         async with _app_client(state) as client:
             resp = await client.post(
@@ -1351,7 +1351,7 @@ async def test_app_approval_target_boundary(state, target: str, allowed: bool, a
     future = asyncio.get_running_loop().create_future()
     slot._approval_futures["req-1"] = future
     with patch(
-        "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+        "efm_go.apps.permissions.app_can_manage_session_approvals",
         return_value=True,
     ):
         async with _app_client(state) as client:
@@ -1380,7 +1380,7 @@ async def test_app_never_resolves_state_level_approvals(state, target: str, acti
     state._approval_futures["req-state"] = future
     state._pending_approvals["req-state"] = {"id": "req-state", "slot": "s1", "source": "subagent"}
     with patch(
-        "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+        "efm_go.apps.permissions.app_can_manage_session_approvals",
         return_value=True,
     ):
         async with _app_client(state) as client:
@@ -1563,7 +1563,7 @@ async def test_dashboard_coordinator_target_without_an_instance_is_refused(state
 def test_coordinator_records_carry_a_distinct_instance_per_request():
     """The request id is the caller's and can recur; the instance is minted here,
     once per request, so two requests sharing an id are told apart."""
-    from kiro_crew.dashboard.interaction_coordinator import ApprovalCoordinator
+    from efm_go.dashboard.interaction_coordinator import ApprovalCoordinator
 
     class _State:
         _APPROVAL_TIMEOUT = 0.01
@@ -1787,14 +1787,14 @@ async def test_app_yolo_approval_is_refused_and_audited_as_the_app(state) -> Non
     audit = MagicMock()
     with (
         patch(
-            "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+            "efm_go.apps.permissions.app_can_manage_session_approvals",
             return_value=True,
         ),
         patch(
-            "kiro_crew.dashboard.chat_handlers.safety_override",
+            "efm_go.dashboard.chat_handlers.safety_override",
             return_value=override,
         ),
-        patch("kiro_crew.dashboard.chat_handlers.sel", return_value=audit),
+        patch("efm_go.dashboard.chat_handlers.sel", return_value=audit),
     ):
         async with _app_client(state) as client:
             resp = await client.post(
@@ -1816,7 +1816,7 @@ async def test_app_trust_does_not_persist_linked_channel_trust(state) -> None:
     channel = MagicMock(trusted=False)
     state.channel_manager = MagicMock(_channels={"ch1": channel})
     with patch(
-        "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+        "efm_go.apps.permissions.app_can_manage_session_approvals",
         return_value=True,
     ):
         async with _app_client(state) as client:
@@ -1835,7 +1835,7 @@ async def test_app_normal_does_not_clear_linked_channel_trust(state) -> None:
     channel = MagicMock(trusted=True)
     state.channel_manager = MagicMock(_channels={"ch1": channel})
     with patch(
-        "kiro_crew.apps.permissions.app_can_manage_session_approvals",
+        "efm_go.apps.permissions.app_can_manage_session_approvals",
         return_value=True,
     ):
         async with _app_client(state) as client:
@@ -1859,7 +1859,7 @@ async def test_trust_reads_unknown_slot_is_400_and_revokes_nothing(state) -> Non
     state.get_or_create_slot("s1")
     state.get_or_create_slot("s2")
     override = _FakeOverride(active=True)
-    with patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override):
+    with patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override):
         async with _client(state) as client:
             resp = await client.post(
                 "/api/chat/mode", json={"mode": "trust_reads", "slot": "ghost"}
@@ -1894,7 +1894,7 @@ async def test_falsy_non_string_slot_key_is_rejected_for_trust(state) -> None:
     state.get_or_create_slot("s1")
     state.get_or_create_slot("s2")
     override = _FakeOverride(active=True)
-    with patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override):
+    with patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override):
         async with _client(state) as client:
             for bad in ([], {}, 0, False):
                 resp = await client.post("/api/chat/mode", json={"mode": "trust", "slot": bad})
@@ -1909,7 +1909,7 @@ async def test_falsy_non_string_slot_key_is_rejected_for_trust(state) -> None:
 async def test_falsy_non_string_slot_key_is_rejected_for_trust_reads(state) -> None:
     state.get_or_create_slot("s1")
     override = _FakeOverride(active=True)
-    with patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override):
+    with patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override):
         async with _client(state) as client:
             resp = await client.post("/api/chat/mode", json={"mode": "trust_reads", "slot": []})
             assert resp.status == 400
@@ -1932,7 +1932,7 @@ async def test_rejected_normal_request_leaves_the_global_grant_active(state) -> 
     """
     state.get_or_create_slot("s1")
     override = _FakeOverride(active=True)
-    with patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override):
+    with patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override):
         async with _client(state) as client:
             resp = await client.post("/api/chat/mode", json={"mode": "normal", "slot": " "})
             assert resp.status == 400
@@ -1945,7 +1945,7 @@ async def test_rejected_normal_request_leaves_the_global_grant_active(state) -> 
 async def test_rejected_trust_request_leaves_the_global_grant_active(state) -> None:
     state.get_or_create_slot("s1")
     override = _FakeOverride(active=True)
-    with patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override):
+    with patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override):
         async with _client(state) as client:
             resp = await client.post("/api/chat/mode", json={"mode": "trust", "slot": "ghost"})
             assert resp.status == 400
@@ -1958,7 +1958,7 @@ async def test_rejected_trust_reads_does_not_touch_existing_slots(state) -> None
     state.get_or_create_slot("s1")
     state.get_or_create_slot("s2")
     with patch(
-        "kiro_crew.dashboard.chat_handlers.safety_override",
+        "efm_go.dashboard.chat_handlers.safety_override",
         return_value=_FakeOverride(active=True),
     ):
         async with _client(state) as client:
@@ -2030,7 +2030,7 @@ async def test_named_slot_trust_reads_leaves_an_active_grant_live(state) -> None
     state.get_or_create_slot("s1")
     state.get_or_create_slot("s2")
     override = _FakeOverride(active=True)
-    with patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override):
+    with patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override):
         async with _client(state) as client:
             resp = await client.post("/api/chat/mode", json={"mode": "trust_reads", "slot": "s1"})
             assert resp.status == 200
@@ -2046,7 +2046,7 @@ async def test_named_slot_trust_leaves_an_active_grant_live(state) -> None:
     state.get_or_create_slot("s1")
     state.get_or_create_slot("s2")
     override = _FakeOverride(active=True)
-    with patch("kiro_crew.dashboard.chat_handlers.safety_override", return_value=override):
+    with patch("efm_go.dashboard.chat_handlers.safety_override", return_value=override):
         async with _client(state) as client:
             resp = await client.post("/api/chat/mode", json={"mode": "trust", "slot": "s1"})
             assert resp.status == 200
@@ -2100,7 +2100,7 @@ async def test_deactivate_runs_off_the_event_loop(state) -> None:
             return False
 
     with patch(
-        "kiro_crew.dashboard.chat_handlers.safety_override",
+        "efm_go.dashboard.chat_handlers.safety_override",
         return_value=_TrackingOverride(),
     ):
         async with _client(state) as client:
@@ -2143,7 +2143,7 @@ async def test_a_held_app_recovery_cannot_extend_a_later_apps_stream(state, monk
 
 @pytest.mark.asyncio
 async def test_restored_recovery_identity_cannot_continue_a_live_stream(state) -> None:
-    from kiro_crew.dashboard.slot_queue_repository import RESTORED_QUEUE_KEY
+    from efm_go.dashboard.slot_queue_repository import RESTORED_QUEUE_KEY
 
     slot = _user_slot(state)
     slot.queue_insert(
@@ -2177,9 +2177,9 @@ async def test_restored_app_turn_titles_only_an_app_owned_slot(state, owned: boo
     generate = AsyncMock(return_value="")
 
     with (
-        patch("kiro_crew.dashboard.chat_title._generate_title_via_kiro", new=generate),
-        patch("kiro_crew.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
-        patch("kiro_crew.dashboard.chat_title.maybe_suggest_folder", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_title._generate_title_via_kiro", new=generate),
+        patch("efm_go.dashboard.chat_title._persist_title", new=AsyncMock(return_value=True)),
+        patch("efm_go.dashboard.chat_title.maybe_suggest_folder", new=AsyncMock()),
     ):
         await _maybe_auto_title(state, slot)
 
@@ -2195,7 +2195,7 @@ async def test_restored_app_turn_titles_only_an_app_owned_slot(state, owned: boo
 @pytest.mark.parametrize("restored_first", [False, True])
 @pytest.mark.asyncio
 async def test_restored_and_fresh_queue_rows_never_merge(state, restored_first: bool) -> None:
-    from kiro_crew.dashboard.chat_title import _titling_messages
+    from efm_go.dashboard.chat_title import _titling_messages
 
     slot = _user_slot(state)
     restored = sanitize_restored_queue([{"id": "old", "content": "restored app request"}])
@@ -2252,8 +2252,8 @@ async def test_app_sse_backstop_rejects_a_foreign_user_row_without_turn_end(
 
     with (
         patch(_GRANT_CHECK, return_value=True),
-        patch("kiro_crew.dashboard.chat_handlers._run_chat", new=without_boundary),
-        patch("kiro_crew.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
+        patch("efm_go.dashboard.chat_handlers._run_chat", new=without_boundary),
+        patch("efm_go.dashboard.chat_handlers._maybe_auto_title", new=AsyncMock()),
     ):
         async with _app_client(state) as client:
             resp = await client.post("/api/chat", json={"slot": "s1", "message": "own request"})

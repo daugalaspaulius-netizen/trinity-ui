@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import RecoveryCard, { INJECT_KIND_OPENS_TURN, injectOpensTurn, parseRecoveryMessage, resolveInjectCard } from '../pages/chat/RecoveryCard'
 
-// Verbatim prefixes from src/kiro_crew/dashboard/state.py. The separator is an
+// Verbatim prefixes from src/efm_go/dashboard/state.py. The separator is an
 // em dash, not a hyphen — a mismatch is exactly the drift this suite guards.
 const REFUSAL = '[Tool refusal — automatic recovery]'
 const STALLED = '[Stalled turn — automatic recovery]'
@@ -396,7 +396,7 @@ describe('ChatPage – recovery card wiring', () => {
   })
 })
 
-/** Verbatim from SUBAGENT_SYNTHESIS_PREFIX in src/kiro_crew/dashboard/state.py. */
+/** Verbatim from SUBAGENT_SYNTHESIS_PREFIX in src/efm_go/dashboard/state.py. */
 const SYNTHESIS = '[SYSTEM] Sub-agent synthesis:'
 
 describe('parseRecoveryMessage – sub-agent synthesis', () => {

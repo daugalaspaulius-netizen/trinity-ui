@@ -23,7 +23,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 
 def _make_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import api_collection_status
+    from efm_go.dashboard.handlers import api_collection_status
 
     app = web.Application()
     app.router.add_get("/api/telemetry/collection", api_collection_status)
@@ -133,7 +133,7 @@ class TestCollectionStatusEndpoint:
         # A diagnostic must never 500, and it must fail toward "off" so the UI
         # never claims collection is on when that cannot be proven.
         with patch(
-            "kiro_crew.config.loader.KiroCrewConfig.load", side_effect=OSError("boom")
+            "efm_go.config.loader.KiroCrewConfig.load", side_effect=OSError("boom")
         ):
             async with TestClient(TestServer(_make_app())) as c:
                 body = await _get(c)

@@ -2,7 +2,7 @@
 
 Targets uncovered helper branches, pod-guard refusals, request-handler
 validation, the audit decorator's non-success paths, and the lifecycle
-hooks of ``kiro_crew.apps.builtins.dev_fleet.server``.
+hooks of ``efm_go.apps.builtins.dev_fleet.server``.
 
 Everything is injected: no real git, no real subprocess, no network, and no
 writes outside ``tmp_path``. Where the module reads its config home the
@@ -29,8 +29,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.apps.builtins.dev_fleet.server as mod
-from kiro_crew.apps.builtins.dev_fleet import (
+import efm_go.apps.builtins.dev_fleet.server as mod
+from efm_go.apps.builtins.dev_fleet import (
     fleet_state,
     gateway_service,
     http_api,
@@ -128,7 +128,7 @@ def test_load_dev_fleet_cfg_overlay_wins(monkeypatch, tmp_path):
     (tmp_path / "config.local.json").write_text(
         json.dumps({"dev_fleet": {"a": 2, "b": 3}}), encoding="utf-8", newline="\n"
     )
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
 
     assert repository._load_dev_fleet_cfg() == {"a": 2, "keep": "yes", "b": 3}
 
@@ -139,7 +139,7 @@ def test_load_dev_fleet_cfg_ignores_unusable_files(monkeypatch, tmp_path):
     (tmp_path / "config.local.json").write_text(
         json.dumps({"dev_fleet": "nope"}), encoding="utf-8", newline="\n"
     )
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
 
     assert repository._load_dev_fleet_cfg() == {}
 
@@ -150,7 +150,7 @@ def test_load_dev_fleet_cfg_config_dir_failure_is_empty(monkeypatch):
     def _boom():
         raise RuntimeError("no home")
 
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", _boom)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", _boom)
     assert repository._load_dev_fleet_cfg() == {}
 
 
@@ -219,7 +219,7 @@ async def test_load_fallback_repos_collects_ancestor_remotes(monkeypatch):
             # pre-rename name, not a fork of upstream under another owner — so
             # its ancestor main still qualifies as a fallback repo.
             if remote == "origin":
-                return 0, "git@github.com:kirodotdev/KiroCrew.git\n", ""
+                return 0, "git@github.com:efmleads.com.git\n", ""
             return 0, "git@github.com:someone/kirocrew-old.git\n", ""
         return 1, "", "unexpected"
 
@@ -253,7 +253,7 @@ async def test_load_fallback_repos_skips_duplicate_upstream_alias(monkeypatch):
             return 0, "", ""  # identical refs -> trivially an ancestor
         if "get-url" in cmd:
             # Both remotes point at the SAME upstream repository.
-            return 0, "https://github.com/kirodotdev/KiroCrew.git\n", ""
+            return 0, "https://efmleads.com.git\n", ""
         return 1, "", "unexpected"
 
     monkeypatch.setattr(repository, "_repo", lambda: "/fake/repo")
@@ -280,7 +280,7 @@ async def test_load_fallback_repos_recognizes_scp_and_git_suffix_as_same(monkeyp
         if "get-url" in cmd:
             remote = cmd[-1]
             if remote == "kirocrew":
-                return 0, "https://github.com/kirodotdev/KiroCrew.git\n", ""
+                return 0, "https://efmleads.com.git\n", ""
             return 0, "git@github.com:KiroDotDev/kirocrew\n", ""
         return 1, "", "unexpected"
 
@@ -304,7 +304,7 @@ async def test_load_fallback_repos_dedupes_multiple_aliases_of_one_repo(monkeypa
         if "get-url" in cmd:
             remote = cmd[-1]
             if remote == "kirocrew":
-                return 0, "https://github.com/kirodotdev/KiroCrew.git\n", ""
+                return 0, "https://efmleads.com.git\n", ""
             if remote == "old-a":
                 return 0, "git@github.com:someone/kirocrew-old.git\n", ""
             return 0, "https://github.com/someone/KiroCrew-Old\n", ""  # same repo, other spelling
@@ -336,7 +336,7 @@ async def test_load_fallback_repos_skips_same_named_fork(monkeypatch):
         if "get-url" in cmd:
             remote = cmd[-1]
             if remote == "kirocrew":
-                return 0, "https://github.com/kirodotdev/KiroCrew.git\n", ""
+                return 0, "https://efmleads.com.git\n", ""
             # Same repo NAME, different owner — a fork, not a pre-rename repo.
             return 0, "git@github.com:someone/KiroCrew.git\n", ""
         return 1, "", "unexpected"
@@ -364,7 +364,7 @@ async def test_load_fallback_repos_keeps_renamed_repo_alongside_a_fork(monkeypat
         if "get-url" in cmd:
             remote = cmd[-1]
             if remote == "kirocrew":
-                return 0, "https://github.com/kirodotdev/KiroCrew.git\n", ""
+                return 0, "https://efmleads.com.git\n", ""
             if remote == "fork":
                 return 0, "git@github.com:someone/KiroCrew.git\n", ""
             return 0, "git@github.com:kirodotdev/kirocrew-old.git\n", ""
@@ -379,7 +379,7 @@ async def test_load_fallback_repos_keeps_renamed_repo_alongside_a_fork(monkeypat
 
 def test_normalize_repo_identity_spellings_and_host():
     """Same repo across https/scp/.git spellings is one identity; host matters."""
-    https = repository._normalize_repo_identity("https://github.com/kirodotdev/KiroCrew.git")
+    https = repository._normalize_repo_identity("https://efmleads.com.git")
     scp = repository._normalize_repo_identity("git@github.com:KiroDotDev/kirocrew")
     assert https == scp == ("github.com", "kirodotdev/kirocrew")
     # Same owner/repo on a different forge is a DISTINCT identity.
@@ -2511,13 +2511,13 @@ async def test_hmac_denial_survives_audit_sink_failure(monkeypatch, caplog):
 # gateway identity helpers
 # --------------------------------------------------------------------------
 def test_gateway_unit_name_defaults_to_live_unit(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path / "home")
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path / "home")
     assert live._gateway_unit_name() == live._LIVE_GATEWAY_UNIT
 
 
 def test_gateway_unit_name_uses_pod_instance(monkeypatch, tmp_path):
     home = tmp_path / ".kirocrew-pods" / "feat"
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: home)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: home)
     assert live._gateway_unit_name() == "kirocrew-pod@feat.service"
 
 
@@ -2525,29 +2525,29 @@ def test_gateway_unit_name_falls_back_when_home_unresolvable(monkeypatch):
     def _boom():
         raise RuntimeError("no home")
 
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", _boom)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", _boom)
     assert live._gateway_unit_name() == live._LIVE_GATEWAY_UNIT
 
 
 def test_gateway_label_defaults_to_live_agent(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path / "home")
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path / "home")
     assert live._gateway_label() == live._LIVE_GATEWAY_LABEL
 
 
 def test_gateway_label_uses_pod_agent(monkeypatch, tmp_path):
-    launchd = pytest.importorskip("kiro_crew.pod.launchd")
-    pod_config = pytest.importorskip("kiro_crew.pod.config")
+    launchd = pytest.importorskip("efm_go.pod.launchd")
+    pod_config = pytest.importorskip("efm_go.pod.config")
     home = tmp_path / ".kirocrew-pods" / "feat"
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: home)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: home)
     monkeypatch.delenv("KIROCREW_POD_UNIT_PREFIX", raising=False)
     expected = f"{launchd.LABEL_PREFIX}.{pod_config.DEFAULT_UNIT_PREFIX}.feat"
     assert live._gateway_label() == expected
 
 
 def test_gateway_label_honours_unit_prefix_override(monkeypatch, tmp_path):
-    launchd = pytest.importorskip("kiro_crew.pod.launchd")
+    launchd = pytest.importorskip("efm_go.pod.launchd")
     home = tmp_path / ".kirocrew-pods" / "feat"
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: home)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: home)
     monkeypatch.setenv("KIROCREW_POD_UNIT_PREFIX", "altplane")
     assert live._gateway_label() == f"{launchd.LABEL_PREFIX}.altplane.feat"
 
@@ -2558,7 +2558,7 @@ def test_gateway_label_honours_unit_prefix_override(monkeypatch, tmp_path):
 )
 def test_in_pod_detection(monkeypatch, tmp_path, home_parts, expected):
     monkeypatch.setattr(
-        "kiro_crew.config.loader.config_dir", lambda: tmp_path.joinpath(*home_parts)
+        "efm_go.config.loader.config_dir", lambda: tmp_path.joinpath(*home_parts)
     )
     assert live._in_pod() is expected
 
@@ -2567,7 +2567,7 @@ def test_in_pod_is_none_when_home_unresolvable(monkeypatch):
     def _boom():
         raise RuntimeError("no home")
 
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", _boom)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", _boom)
     assert live._in_pod() is None
 
 
@@ -2872,7 +2872,7 @@ def test_dir_size_bytes_does_not_follow_a_directory_link():
     for one specific path, and asserts ``is_link_or_junction`` -- not
     ``is_dir`` -- is what the walk consults before recursing into it.
     """
-    import kiro_crew.apps.builtins.dev_fleet.fleet_state as fleet_state_mod
+    import efm_go.apps.builtins.dev_fleet.fleet_state as fleet_state_mod
 
     with tempfile.TemporaryDirectory() as tmp:
         base = Path(tmp)
@@ -2942,7 +2942,7 @@ def test_main_fails_closed_when_platform_cannot_compose(monkeypatch):
     whose companion cannot compose must not fall through to serving the backend
     with no security overlay.
     """
-    from kiro_crew.platform.context import PlatformCompositionError
+    from efm_go.platform.context import PlatformCompositionError
 
     def _boom(_cfg):
         raise PlatformCompositionError("companion missing")

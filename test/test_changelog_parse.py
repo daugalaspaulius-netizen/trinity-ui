@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.changelog import base_version, build_release_list, parse_sections, running_release
+from efm_go.changelog import base_version, build_release_list, parse_sections, running_release
 
 # Shaped after the repo's real CHANGELOG.md: an em dash in the heading, a title
 # and preamble before the first section, and h3 subsections inside the body.

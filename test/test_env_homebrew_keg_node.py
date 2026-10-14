@@ -12,7 +12,7 @@ import os
 
 import pytest
 
-from kiro_crew import env as env_mod
+from efm_go import env as env_mod
 
 
 @pytest.fixture

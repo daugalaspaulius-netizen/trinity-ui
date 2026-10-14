@@ -33,8 +33,8 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 
 from conftest import requires_o_nofollow, requires_symlinks
-from kiro_crew.apps import registry as reg_mod
-from kiro_crew.apps.registry import (
+from efm_go.apps import registry as reg_mod
+from efm_go.apps.registry import (
     _TRUST_INDEX,
     _TRUST_OWNER,
     _blob_cache_dir,
@@ -52,11 +52,11 @@ from kiro_crew.apps.registry import (
     _servable_art_path,
     _store_art_cache_path,
 )
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.defaults import DefaultAppsLoader
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.defaults import DefaultAppsLoader
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 FORGE = "https://forge.example.com/org/app-registry.git"
 SIBLING = "https://forge.example.com/org/some-private-app.git"
@@ -1091,8 +1091,8 @@ from pathlib import Path
 # real home: refuse to import anything unless the home is under the test's tmp_path.
 root = Path(sys.argv[1]).resolve()
 assert root in Path.home().resolve().parents, f"the probe's home {Path.home()} is not isolated"
-from kiro_crew.apps import routes
-from kiro_crew.apps.registry_pipeline import indexes, store_art
+from efm_go.apps import routes
+from efm_go.apps.registry_pipeline import indexes, store_art
 print(json.dumps({
     "path": routes._SAFE_PATH_RE is store_art._SAFE_PATH_RE,
     "branch": indexes._SAFE_BRANCH_RE is store_art._SAFE_BRANCH_RE,
@@ -1279,7 +1279,7 @@ class TestWarmth:
             _entry(name="b", gitUrl=f"{SIBLING[:-4]}-b.git", repo=f"{SIBLING[:-4]}-b.git"),
         ]
 
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.registry"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.registry"):
             fetched = await asyncio.wait_for(_prewarm_owner_tier_store_assets(reg, rows), timeout=3)
 
         assert fetched == 1
@@ -1429,7 +1429,7 @@ class TestLfsPointerIsUnobtainable:
         manifest = dict(MANIFEST, iconPath="ui/icon.svg", heroImage="ui/hero.png", screenshots=[])
         entry = _entry()
 
-        with caplog.at_level("INFO", logger="kiro_crew.apps.registry"):
+        with caplog.at_level("INFO", logger="efm_go.apps.registry"):
             written, unobtainable = _copy_declared_art(entry, clone, manifest)
 
         # The real image landed; the LFS pointer did not and is recorded unobtainable.
@@ -1457,7 +1457,7 @@ class TestLfsPointerIsUnobtainable:
         )
         entry = _entry()
 
-        with caplog.at_level("INFO", logger="kiro_crew.apps.registry"):
+        with caplog.at_level("INFO", logger="efm_go.apps.registry"):
             written, unobtainable = _copy_declared_art(entry, clone, manifest)
 
         assert written == 0
@@ -1989,7 +1989,7 @@ class TestManifestSizeCap:
 
 class TestRewarmAgeGuard:
     def test_a_non_positive_window_is_refused(self):
-        from kiro_crew.apps.registry_pipeline import store_art
+        from efm_go.apps.registry_pipeline import store_art
 
         # A manifest TTL that does not exceed the index TTL is the misconfiguration
         # that turns every fresh fetch into a full credentialed re-clone.
@@ -1999,7 +1999,7 @@ class TestRewarmAgeGuard:
             store_art._check_rewarm_age(100.0, 200.0)
 
     def test_a_positive_window_is_accepted(self):
-        from kiro_crew.apps.registry_pipeline import store_art
+        from efm_go.apps.registry_pipeline import store_art
 
         # Negative control: a manifest TTL wider than the index TTL passes, so the
         # guard is observing the sign of the difference and not always raising.
@@ -2020,7 +2020,7 @@ class TestFetchRefHooksNeutralizer:
 
     @staticmethod
     async def _run_fetch(monkeypatch, tmp_path, neutralize=True):
-        from kiro_crew.apps.registry_pipeline import checkout as co
+        from efm_go.apps.registry_pipeline import checkout as co
 
         spawned: list[list[str]] = []
 
@@ -2584,7 +2584,7 @@ class TestPinnedDestinationPublish:
         which silently succeeds on a junction/symlink root) and writes nothing into the
         link target. Forced on POSIX by monkeypatching the pinned-walk probe, so the
         Windows arm runs here too."""
-        import kiro_crew.pinned_fs as pinned_fs
+        import efm_go.pinned_fs as pinned_fs
 
         reg = _pin_registry(monkeypatch, _TRUST_OWNER)
         assert reg is not None
@@ -2607,7 +2607,7 @@ class TestPinnedDestinationPublish:
         """Negative control: the SAME by-name arm, given a REAL (unlinked) blob root,
         writes the bytes — so the refusal above is the linked root, not the arm being
         inert."""
-        import kiro_crew.pinned_fs as pinned_fs
+        import efm_go.pinned_fs as pinned_fs
 
         reg = _pin_registry(monkeypatch, _TRUST_OWNER)
         assert reg is not None
@@ -2650,7 +2650,7 @@ class TestPrewarmBatchBounds:
             for i in range(1000)
         ]
 
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.registry"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.registry"):
             fetched = await _prewarm_owner_tier_store_assets(reg, rows)
 
         assert fetched == 5
@@ -2788,7 +2788,7 @@ class TestPrewarmRowFieldCap:
         # A valid repo key (so it passes the provenance gate) but an over-length branch.
         entry = _entry(branch="b" * 100)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.registry"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.registry"):
             assert await _prewarm_owner_tier_store_assets(reg, [entry]) == 0
 
         assert calls == [], "a field-rejected row must not be cloned"
@@ -2816,7 +2816,7 @@ class TestPrewarmRowFieldCap:
 
 class TestRewarmAgeDerivation:
     def test_the_module_constant_is_the_checkers_return(self):
-        from kiro_crew.apps.registry_pipeline import caches, store_art
+        from efm_go.apps.registry_pipeline import caches, store_art
 
         assert store_art._REWARM_AGE == store_art._check_rewarm_age(
             caches._MANIFEST_CACHE_TTL, caches._EXTERNAL_REGISTRY_CACHE_TTL
@@ -2825,7 +2825,7 @@ class TestRewarmAgeDerivation:
         assert store_art._REWARM_AGE > 0
 
     def test_the_checker_returns_the_window(self):
-        from kiro_crew.apps.registry_pipeline import store_art
+        from efm_go.apps.registry_pipeline import store_art
 
         assert store_art._check_rewarm_age(200.0, 100.0) == 100.0
 
@@ -3074,7 +3074,7 @@ class TestBlobCacheReclaim:
         deep = _make_blob_file("a/b/c/d/e/deep.png", age_past_cutoff=3600)
         assert deep.is_file()
 
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.registry"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.registry"):
             reg_mod._gc_blob_cache_dir()
 
         assert deep.is_file(), "a file past the depth ceiling must not be reclaimed"
@@ -3226,7 +3226,7 @@ class TestPerRowScreenshotCap:
         _fake_fetch(monkeypatch, tree, manifest)
         entry = _entry()
 
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.registry"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.registry"):
             assert await _prewarm_owner_tier_store_assets(reg, [entry]) == 1
 
             # The first `cap` screenshots landed; the extras were never read or cached.
@@ -3318,7 +3318,7 @@ class TestBoundedPostBudgetCleanup:
         try:
             # The outer wait is the lost-run guard: a missing bound fails by name
             # rather than hanging. The bound under test is ``elapsed`` below.
-            with caplog.at_level("WARNING", logger="kiro_crew.apps.registry"):
+            with caplog.at_level("WARNING", logger="efm_go.apps.registry"):
                 fetched = await _settled(
                     _prewarm_owner_tier_store_assets(reg, [entry]), "the budgeted prewarm"
                 )

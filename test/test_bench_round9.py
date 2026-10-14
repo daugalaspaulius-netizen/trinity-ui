@@ -23,13 +23,13 @@ from pathlib import Path
 import pytest
 import yaml
 
-from kiro_crew.eval.bench.corpus import BenchInstance, BenchSession, BenchTurn
-from kiro_crew.eval.bench.datasets import CorpusFetchError
-from kiro_crew.eval.bench.errors import BenchRefusal
-from kiro_crew.eval.bench.ingest import IngestConfig, IngestError, ingest_instance
-from kiro_crew.eval.bench.retrieval import RetrievalNotMeasurable
-from kiro_crew.eval.bench.run import compare_reports
-from kiro_crew.eval.bench.safepath import UnsafePathError
+from efm_go.eval.bench.corpus import BenchInstance, BenchSession, BenchTurn
+from efm_go.eval.bench.datasets import CorpusFetchError
+from efm_go.eval.bench.errors import BenchRefusal
+from efm_go.eval.bench.ingest import IngestConfig, IngestError, ingest_instance
+from efm_go.eval.bench.retrieval import RetrievalNotMeasurable
+from efm_go.eval.bench.run import compare_reports
+from efm_go.eval.bench.safepath import UnsafePathError
 
 WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "memory-benchmark.yml"
 
@@ -81,12 +81,12 @@ def test_every_refusal_type_inherits_the_one_base(refusal: type) -> None:
 
 def test_the_dispatch_reports_a_refusal_instead_of_raising(monkeypatch) -> None:
     """Any subcommand: the floor is the dispatch, not the handler."""
-    from kiro_crew import cli_bench
+    from efm_go import cli_bench
 
     def refuse(*_a: object, **_k: object):
         raise UnsafePathError("refusing to use that cache directory: protected location")
 
-    monkeypatch.setattr("kiro_crew.eval.bench.datasets.ensure", refuse)
+    monkeypatch.setattr("efm_go.eval.bench.datasets.ensure", refuse)
     args = argparse.Namespace(bench_action="fetch", corpus="locomo10")
 
     rc = cli_bench.bench_cmd(args)
@@ -100,7 +100,7 @@ def test_the_dispatch_reports_a_refusal_instead_of_raising(monkeypatch) -> None:
 
 def test_a_new_refusal_type_needs_no_cli_change() -> None:
     """The property that makes this an enforcement point rather than a fix."""
-    from kiro_crew import cli_bench
+    from efm_go import cli_bench
 
     class FutureRefusal(BenchRefusal):
         pass
@@ -108,7 +108,7 @@ def test_a_new_refusal_type_needs_no_cli_change() -> None:
     def refuse(*_a: object, **_k: object):
         raise FutureRefusal("a refusal invented after the CLI was written")
 
-    import kiro_crew.eval.bench.datasets as datasets_mod
+    import efm_go.eval.bench.datasets as datasets_mod
 
     original = datasets_mod.ensure
     datasets_mod.ensure = refuse  # type: ignore[assignment]
@@ -224,7 +224,7 @@ def test_a_changed_environment_refuses() -> None:
 
 
 def test_the_environment_identity_records_what_can_move_a_number() -> None:
-    from kiro_crew.eval.bench.run import _environment_identity
+    from efm_go.eval.bench.run import _environment_identity
 
     identity = _environment_identity()
     assert set(identity) == {"python", "platform", "sqlite", "numpy"}

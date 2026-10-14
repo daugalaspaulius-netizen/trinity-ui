@@ -13,8 +13,8 @@ from copy import deepcopy
 
 import pytest
 
-from kiro_crew.connections import get_provider
-from kiro_crew.connections.oauth_clients import (
+from efm_go.connections import get_provider
+from efm_go.connections.oauth_clients import (
     CONFIG_CLIENTS_KEY,
     CONFIG_ROOT_KEY,
     ResolvedOAuthClient,
@@ -29,7 +29,7 @@ from kiro_crew.connections.oauth_clients import (
     validate_client_id,
     validate_client_secret,
 )
-from kiro_crew.mcp_utils import KIRO_OAUTH_KEY
+from efm_go.mcp_utils import KIRO_OAUTH_KEY
 
 GITHUB_MCP_URL = "https://api.githubcopilot.com/mcp/"
 GITHUB_REDIRECT_URI = "http://127.0.0.1:48101/callback"
@@ -602,7 +602,7 @@ def test_provider_for_server_returns_a_copy_not_the_registry_object():
 
 
 def test_strip_removes_only_the_three_owned_keys_and_keeps_siblings():
-    from kiro_crew.connections.oauth_clients import strip_preregistered_oauth_client
+    from efm_go.connections.oauth_clients import strip_preregistered_oauth_client
 
     entry = {
         "url": GITHUB_MCP_URL,
@@ -620,7 +620,7 @@ def test_strip_removes_only_the_three_owned_keys_and_keeps_siblings():
 
 
 def test_strip_drops_the_oauth_mapping_when_nothing_is_left():
-    from kiro_crew.connections.oauth_clients import strip_preregistered_oauth_client
+    from efm_go.connections.oauth_clients import strip_preregistered_oauth_client
 
     out = strip_preregistered_oauth_client(
         {"url": GITHUB_MCP_URL, "oauth": {"clientId": "old", "clientSecret": "retired"}}
@@ -629,7 +629,7 @@ def test_strip_drops_the_oauth_mapping_when_nothing_is_left():
 
 
 def test_strip_is_a_no_op_without_an_oauth_block():
-    from kiro_crew.connections.oauth_clients import strip_preregistered_oauth_client
+    from efm_go.connections.oauth_clients import strip_preregistered_oauth_client
 
     assert strip_preregistered_oauth_client({"url": GITHUB_MCP_URL}) == {"url": GITHUB_MCP_URL}
 
@@ -638,7 +638,7 @@ def test_strip_is_a_no_op_without_an_oauth_block():
 
 
 def test_redaction_masks_every_client_secret_and_nothing_else():
-    from kiro_crew.mcp_utils import OAUTH_CLIENT_SECRET_REDACTED, redact_oauth_client_secrets
+    from efm_go.mcp_utils import OAUTH_CLIENT_SECRET_REDACTED, redact_oauth_client_secrets
 
     spec = {
         "name": "kirocrew",
@@ -661,7 +661,7 @@ def test_redaction_masks_every_client_secret_and_nothing_else():
 
 
 def test_restoring_a_marker_takes_the_on_disk_value_or_drops_it():
-    from kiro_crew.mcp_utils import (
+    from efm_go.mcp_utils import (
         OAUTH_CLIENT_SECRET_REDACTED,
         redact_oauth_client_secrets,
         restore_redacted_oauth_client_secrets,
@@ -687,7 +687,7 @@ def test_restoring_a_marker_refuses_when_the_url_moved():
     """A secret is bound to the endpoint it was issued for: an entry whose ``url``
     was edited alongside the marker drops the key instead of inheriting the secret
     stored for the old endpoint."""
-    from kiro_crew.mcp_utils import (
+    from efm_go.mcp_utils import (
         OAUTH_CLIENT_SECRET_REDACTED,
         restore_redacted_oauth_client_secrets,
     )
@@ -717,13 +717,13 @@ def test_rebuild_leaves_an_unmanaged_hand_authored_client_untouched(monkeypatch)
     authenticate at all. Unmanaged means verbatim, for apply and strip alike; the
     vault must not even be opened.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     def _must_not_resolve(*_a, **_k):  # pragma: no cover - the assertion
         raise AssertionError("an unmanaged entry must not consult the operator client")
 
     monkeypatch.setattr(
-        "kiro_crew.connections.oauth_clients.resolve_oauth_client", _must_not_resolve
+        "efm_go.connections.oauth_clients.resolve_oauth_client", _must_not_resolve
     )
     hand_authored = {
         "url": GITHUB_MCP_URL,
@@ -738,13 +738,13 @@ def test_rebuild_leaves_an_unmanaged_hand_authored_client_untouched(monkeypatch)
 
 
 def test_rebuild_strips_a_cleared_client_only_from_a_managed_entry(monkeypatch):
-    from kiro_crew import agent
+    from efm_go import agent
 
     monkeypatch.setattr(
-        "kiro_crew.connections.oauth_clients.resolve_oauth_client", lambda *a, **k: None
+        "efm_go.connections.oauth_clients.resolve_oauth_client", lambda *a, **k: None
     )
     monkeypatch.setattr(agent, "_load_json", lambda *_a, **_k: {})
-    monkeypatch.setattr("kiro_crew.secrets.SecretVault", lambda *_a, **_k: object())
+    monkeypatch.setattr("efm_go.secrets.SecretVault", lambda *_a, **_k: object())
     stale = {
         "url": GITHUB_MCP_URL,
         "oauth": {"clientId": "retired", "clientSecret": "retired", "issuer": "https://i"},
@@ -765,9 +765,9 @@ def test_rebuild_binds_the_client_at_write_time_not_at_the_server_pass(tmp_path,
     import contextlib
     import json
 
-    from kiro_crew import agent as agent_mod
-    from kiro_crew.apps import bridges
-    from kiro_crew.connections import oauth_clients as oc
+    from efm_go import agent as agent_mod
+    from efm_go.apps import bridges
+    from efm_go.connections import oauth_clients as oc
 
     project = tmp_path / "project" / "agents"
     project.mkdir(parents=True)
@@ -826,13 +826,13 @@ def test_rebuild_strips_the_client_from_a_managed_provider_whose_url_moved(monke
     old secret to the replacement endpoint. The client is bound to the endpoint
     it was registered for, so a moved URL retires it from this entry.
     """
-    from kiro_crew import agent
+    from efm_go import agent
 
     def _must_not_resolve(*_a, **_k):  # pragma: no cover - the assertion
         raise AssertionError("a moved URL must not consult the operator client")
 
     monkeypatch.setattr(
-        "kiro_crew.connections.oauth_clients.resolve_oauth_client", _must_not_resolve
+        "efm_go.connections.oauth_clients.resolve_oauth_client", _must_not_resolve
     )
     moved = {
         "url": "https://mcp.example.test/github",
@@ -852,7 +852,7 @@ def test_find_server_spec_strips_the_projected_client_from_the_rendered_spec(tmp
     """A scope toggle copying the rendered `github` entry must not carry the secret."""
     import json
 
-    from kiro_crew.dashboard.handlers import mcp as mcp_handlers
+    from efm_go.dashboard.handlers import mcp as mcp_handlers
 
     agents = tmp_path / "agents"
     agents.mkdir()
@@ -890,7 +890,7 @@ def test_scrub_removes_a_projected_client_copy_from_every_scope(tmp_path, monkey
     """Copies made before the strip-on-copy rule are purged on the next mutation."""
     import json
 
-    from kiro_crew.dashboard.handlers import mcp as mcp_handlers
+    from efm_go.dashboard.handlers import mcp as mcp_handlers
 
     store = tmp_path / "mcp.json"
     kiro_global = tmp_path / "kiro-mcp.json"
@@ -942,7 +942,7 @@ def test_scrub_refuses_to_call_an_unreadable_scope_clean(tmp_path, monkeypatch):
 
     import pytest
 
-    from kiro_crew.dashboard.handlers import mcp as mcp_handlers
+    from efm_go.dashboard.handlers import mcp as mcp_handlers
 
     store = tmp_path / "mcp.json"
     store.write_text("{not json", encoding="utf-8")

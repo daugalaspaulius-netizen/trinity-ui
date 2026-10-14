@@ -225,8 +225,8 @@ jobs:
         # sed -i.bak / rm -f are bash-isms.
         shell: bash
         run: |
-          sed -i.bak "s/__version__ = \".*\"/__version__ = \"${STAMP_VERSION}\"/" src/kiro_crew/__init__.py
-          rm -f src/kiro_crew/__init__.py.bak
+          sed -i.bak "s/__version__ = \".*\"/__version__ = \"${STAMP_VERSION}\"/" src/efm_go/__init__.py
+          rm -f src/efm_go/__init__.py.bak
           # Stamp the Electron app: app.getVersion() (from package.json via
           # electron-builder) must equal the feed version for the
           # auto-updater's compare gate.
@@ -235,14 +235,14 @@ jobs:
 
       # Scoped as tightly as the role allows: 1-hour session, assumable only
       # from main / environment:prod, and its only permission is sts:AssumeRole
-      # onto the artifact role behind an ExternalId gate. Declared in
-      # KiroCrewPublishCDK lib/windows-signer-stack.ts.
+      # onto an artifact role. The foreign signer is disconnected;
+      # the five names below stay empty until our own signing exists.
       #
       # Skips on a fork or when the secret is absent, which -- together with
       # the env gate on the WINDOWS_SIGNING_* values below -- leaves the
       # installer unsigned rather than failing the build.
       - name: Configure AWS credentials for Windows signing
-        if: env.HAS_WINDOWS_SIGNING
+        if: false
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ secrets.AWS_WINDOWS_SIGNING_ROLE_ARN }}
@@ -256,9 +256,7 @@ jobs:
         # takes the same two-file version+sha contract as macOS/Linux.
         shell: bash
         run: |
-          KIRO_CLI_VERSION="$(tr -d '[:space:]' < packaging/kiro-cli-version)"
-          echo "Bundling kiro-cli ${KIRO_CLI_VERSION} (packaging/kiro-cli-version)"
-          KIRO_CLI_VERSION="${KIRO_CLI_VERSION}" bash packaging/build-desktop.sh
+          bash packaging/build-desktop.sh
         env:
           # There is no certificate on the runner: the private key lives in the
           # signing service. Signing goes through the custom hook
@@ -272,13 +270,13 @@ jobs:
           # ungated partial set would make it try to sign without credentials
           # and fail the build instead of skipping. The values themselves are
           # not secret (bucket and role names); only the role ARN is a secret.
-          WINDOWS_SIGNING_UNSIGNED_BUCKET: ${{ env.HAS_WINDOWS_SIGNING && 'kirocrew-windows-unsigned-116101834266' || '' }}
-          WINDOWS_SIGNING_SIGNED_BUCKET: ${{ env.HAS_WINDOWS_SIGNING && 'kirocrew-windows-signed-116101834266' || '' }}
-          WINDOWS_SIGNING_PROFILE_ID: ${{ env.HAS_WINDOWS_SIGNING && 'KiroCrewWindowsExe' || '' }}
-          WINDOWS_SIGNING_ARTIFACT_ROLE: ${{ env.HAS_WINDOWS_SIGNING && 'arn:aws:iam::116101834266:role/KiroCrewWindows-ArtifactAccessRole' || '' }}
+          WINDOWS_SIGNING_UNSIGNED_BUCKET: ''
+          WINDOWS_SIGNING_SIGNED_BUCKET: ''
+          WINDOWS_SIGNING_PROFILE_ID: ''
+          WINDOWS_SIGNING_ARTIFACT_ROLE: ''
           # Equals the Signer application name; ArtifactAccessRole's trust
           # policy requires it as sts:ExternalId.
-          WINDOWS_SIGNING_EXTERNAL_ID: ${{ env.HAS_WINDOWS_SIGNING && 'KiroCrewWindows' || '' }}
+          WINDOWS_SIGNING_EXTERNAL_ID: ''
 
       # The installer and its blockmap are one artifact in two files: without
       # the .blockmap, electron-updater silently falls back to a FULL download

@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard.state import DashboardState
+from efm_go.dashboard.state import DashboardState
 
 
 @pytest.fixture(autouse=True)
@@ -30,7 +30,7 @@ def sync_event_loop():
 
 @pytest.fixture
 def state(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     return DashboardState(
         sessions=MagicMock(count=0),
         crons=MagicMock(),
@@ -43,8 +43,8 @@ def state(monkeypatch, tmp_path):
 def test_status_remains_available_during_scoped_memory_recovery(
     state: DashboardState, tmp_path, phase: str
 ) -> None:
-    from kiro_crew.learn import Lesson, LessonStore
-    from kiro_crew.memory_startup import MemoryStartup
+    from efm_go.learn import Lesson, LessonStore
+    from efm_go.memory_startup import MemoryStartup
 
     state.lessons = LessonStore(base_dir=tmp_path / "status-lessons")
     state.lessons.save(Lesson("2026-09-08", "Keep the accepted decision", "knowledge"))
@@ -404,7 +404,7 @@ class TestSlotEffectiveAgent:
         ``load()`` left behind, so a developer host with a real agent called
         "researcher" would answer differently from CI.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         monkeypatch.setattr(
             loader,
@@ -415,7 +415,7 @@ class TestSlotEffectiveAgent:
         monkeypatch.setattr(loader, "_MATERIALIZED_AGENTS_READY", ready)
 
     def test_honored_alias_reports_nothing(self, monkeypatch) -> None:
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -431,7 +431,7 @@ class TestSlotEffectiveAgent:
 
     def test_materialized_kiro_agent_reports_nothing(self, monkeypatch) -> None:
         """An app agent lives in ~/.kiro/agents, never in config.agents."""
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -443,7 +443,7 @@ class TestSlotEffectiveAgent:
         assert slot.to_dict()["effective_agent"] == ""
 
     def test_unresolvable_agent_names_the_fallback(self, monkeypatch) -> None:
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -458,7 +458,7 @@ class TestSlotEffectiveAgent:
         assert d["agent"] == "deleted-app"
 
     def test_blank_agent_reports_nothing(self, monkeypatch) -> None:
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -470,8 +470,8 @@ class TestSlotEffectiveAgent:
 
     def test_cold_materialized_snapshot_reports_nothing(self, monkeypatch) -> None:
         """The boot window. A cold snapshot cannot see app agents that DO exist."""
-        import kiro_crew.config.loader as loader
-        from kiro_crew.dashboard.state import _ChatSlot
+        import efm_go.config.loader as loader
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -485,7 +485,7 @@ class TestSlotEffectiveAgent:
 
     def test_cold_alias_snapshot_reports_nothing(self, monkeypatch) -> None:
         """No load() has published yet, so there is no fallback name to name."""
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -499,7 +499,7 @@ class TestSlotEffectiveAgent:
 
     def test_agent_equal_to_the_fallback_reports_nothing(self, monkeypatch) -> None:
         """Nothing diverged: the name requested IS the one answering."""
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         self._pin(
             monkeypatch,
@@ -511,9 +511,9 @@ class TestSlotEffectiveAgent:
 
     def test_project_declared_agent_reports_nothing(self, monkeypatch) -> None:
         """A project's own .kiro scope resolves the name; that is not divergence."""
-        import kiro_crew.agent_discovery as discovery
-        import kiro_crew.config.loader as loader
-        from kiro_crew.dashboard.state import _ChatSlot
+        import efm_go.agent_discovery as discovery
+        import efm_go.config.loader as loader
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -537,8 +537,8 @@ class TestSlotEffectiveAgent:
 
     def test_cold_project_cache_reports_nothing(self, monkeypatch) -> None:
         """An uncached project is not evidence of absence."""
-        import kiro_crew.agent_discovery as discovery
-        from kiro_crew.dashboard.state import _ChatSlot
+        import efm_go.agent_discovery as discovery
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -558,9 +558,9 @@ class TestSlotEffectiveAgent:
         event loop for every slots frame, so reaching either one would be a
         per-frame stall — the kind the loop-stall watchdog blames on chat.
         """
-        import kiro_crew.agent_discovery as discovery
-        import kiro_crew.config.loader as loader
-        from kiro_crew.dashboard.state import _ChatSlot
+        import efm_go.agent_discovery as discovery
+        import efm_go.config.loader as loader
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -583,8 +583,8 @@ class TestSlotEffectiveAgent:
 
     def test_project_lookup_failure_reports_nothing(self, monkeypatch) -> None:
         """A broken cache read is "no evidence", never an exception into a frame."""
-        import kiro_crew.agent_discovery as discovery
-        from kiro_crew.dashboard.state import _ChatSlot
+        import efm_go.agent_discovery as discovery
+        from efm_go.dashboard.state import _ChatSlot
 
         self._pin(
             monkeypatch,
@@ -603,7 +603,7 @@ class TestSlotEffectiveAgent:
 
     def test_load_publishes_the_alias_snapshot(self, monkeypatch) -> None:
         """`load()` is the publisher, so the resolver never reads config.json."""
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         monkeypatch.setattr(
             loader, "_CONFIG_AGENT_ALIAS_SNAPSHOT", (frozenset(), "", False)
@@ -623,7 +623,7 @@ class TestSlotEffectiveAgent:
         """
         import dataclasses
 
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         self._pin(
             monkeypatch,
@@ -651,7 +651,7 @@ class TestSlotEffectiveAgent:
         with a stale fallback name, and the fix for that would be a mutex acquired
         once per slot per frame on the event loop.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         monkeypatch.setattr(
             loader, "_CONFIG_AGENT_ALIAS_SNAPSHOT", (frozenset(), "", False)
@@ -671,7 +671,7 @@ class TestChatSlotStopState:
     """Tests for _ChatSlot._stop_state and _stopping property."""
 
     def test_stop_state_default_idle(self) -> None:
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot("s1")
         assert slot._stop_state == "idle"
@@ -680,7 +680,7 @@ class TestChatSlotStopState:
         assert slot._native_subagent_output == {}
 
     def test_stopping_property_reflects_stop_state(self) -> None:
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot("s1")
         slot._stop_state = "soft_pending"
@@ -691,7 +691,7 @@ class TestChatSlotStopState:
         assert slot._stopping is False
 
     def test_stopping_setter_compat(self) -> None:
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot("s1")
         slot._stopping = True
@@ -700,7 +700,7 @@ class TestChatSlotStopState:
         assert slot._stop_state == "idle"
 
     def test_to_dict_includes_stop_state(self) -> None:
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot("s1")
         d = slot.to_dict()
@@ -725,7 +725,7 @@ class TestSubagentProbeWiring:
         sweep runs on."""
         import inspect
 
-        from kiro_crew.dashboard.chat_utils import wire_session_subagent_probe
+        from efm_go.dashboard.chat_utils import wire_session_subagent_probe
 
         wire_session_subagent_probe(state)
         state.sessions.set_subagent_probe.assert_called_once()
@@ -784,7 +784,7 @@ class TestSubagentProbeWiring:
         """start_dashboard AND start_api_server wire the probe after the state exists."""
         import inspect
 
-        from kiro_crew.dashboard import server
+        from efm_go.dashboard import server
 
         for fn in (server.start_dashboard, server.start_api_server):
             src = inspect.getsource(fn)
@@ -835,7 +835,7 @@ class TestCompactCallbackWiring:
         cb = self._captured_callback(state)
 
         with patch(
-            "kiro_crew.dashboard.state.deliver_channel_compaction_notice",
+            "efm_go.dashboard.state.deliver_channel_compaction_notice",
             new_callable=AsyncMock,
         ) as deliver:
             await cb("slack:1785370133.085469", 92.0, success=True)
@@ -857,7 +857,7 @@ class TestCompactCallbackWiring:
         cb = self._captured_callback(state)
 
         with patch(
-            "kiro_crew.dashboard.state.deliver_channel_compaction_notice",
+            "efm_go.dashboard.state.deliver_channel_compaction_notice",
             new_callable=AsyncMock,
             side_effect=RuntimeError("transport exploded"),
         ):
@@ -920,7 +920,7 @@ class TestCompactCallbackWiring:
     async def test_callback_broadcast_runs_even_if_append_fails(
         self, state: DashboardState, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         ws = MagicMock(closed=False)
         ws.send_str = AsyncMock()
@@ -1005,16 +1005,16 @@ class TestOwnerSourceStatusTransport:
         slot = state.get_or_create_slot("chat-1")
         slot.append("assistant", f"opened {source_url}", "msg")
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers._session_card_chips_snapshot",
+            "efm_go.dashboard.handlers.source_providers._session_card_chips_snapshot",
             True,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.state._cached_check_status",
+            "efm_go.dashboard.state._cached_check_status",
             lambda url: {"ci": "passed", "state": "OPEN"} if url == source_url else None,
         )
-        monkeypatch.setattr("kiro_crew.dashboard.state._repo_is_public", lambda url: True)
-        monkeypatch.setattr("kiro_crew.dashboard.state._audit_public_status_grant", lambda url: None)
-        monkeypatch.setattr("kiro_crew.dashboard.state._audit_public_status_denied", lambda url: None)
+        monkeypatch.setattr("efm_go.dashboard.state._repo_is_public", lambda url: True)
+        monkeypatch.setattr("efm_go.dashboard.state._audit_public_status_grant", lambda url: None)
+        monkeypatch.setattr("efm_go.dashboard.state._audit_public_status_denied", lambda url: None)
         monkeypatch.setattr(state, "is_yolo_active", lambda: False)
         sent: list[tuple[object, dict]] = []
         monkeypatch.setattr(
@@ -1094,7 +1094,7 @@ class TestOwnerSourceStatusTransport:
         derived views are byte-for-byte what a full per-audience pass yields, so
         the optimization can never ship a view that a full pass would not.
         """
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         public_url = "https://github.com/acme/public/pull/1"
         private_url = "https://github.com/acme/private/pull/2"
@@ -1104,18 +1104,18 @@ class TestOwnerSourceStatusTransport:
         slot_b.append("assistant", f"opened {private_url} [OPTIONS: yes | no]", "msg")
         state.get_or_create_slot("chat-c")  # no links at all
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers._session_card_chips_snapshot",
+            "efm_go.dashboard.handlers.source_providers._session_card_chips_snapshot",
             True,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.state._cached_check_status",
+            "efm_go.dashboard.state._cached_check_status",
             lambda url: {"ci": "passed", "state": "OPEN"},
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.state._repo_is_public", lambda url: url == public_url
+            "efm_go.dashboard.state._repo_is_public", lambda url: url == public_url
         )
-        monkeypatch.setattr("kiro_crew.dashboard.state._audit_public_status_grant", lambda url: None)
-        monkeypatch.setattr("kiro_crew.dashboard.state._audit_public_status_denied", lambda url: None)
+        monkeypatch.setattr("efm_go.dashboard.state._audit_public_status_grant", lambda url: None)
+        monkeypatch.setattr("efm_go.dashboard.state._audit_public_status_denied", lambda url: None)
         monkeypatch.setattr(state, "is_yolo_active", lambda: False)
         monkeypatch.setattr(state, "_spawn_ws_send", lambda client, message: None)
 
@@ -1210,7 +1210,7 @@ class TestOwnerSourceStatusTransport:
         # The per-app filter must remove credential-backed chip status even when
         # the general list carries it (widened for dashboard users). Slot
         # metadata stays; ci/state/mergeable go.
-        from kiro_crew.dashboard.ws_event_scope import _strip_source_link_status
+        from efm_go.dashboard.ws_event_scope import _strip_source_link_status
 
         slot = {
             "key": "chat-1",
@@ -1248,9 +1248,9 @@ class TestOwnerSourceStatusTransport:
     async def test_websocket_initial_status_and_refresh_are_owner_only(
         self, monkeypatch, claims, owner_request
     ) -> None:
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard import ws_event_scope
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws_event_scope
+        from efm_go.dashboard.handlers import source_providers
 
         # An app token only exists for an INSTALLED, enabled app, so that is the
         # world this test runs in. The connect path resolves enablement off-loop
@@ -1388,9 +1388,9 @@ class TestOwnerSourceStatusTransport:
         run the operator's credentials, so only the owner's connection may
         trigger them. The non-owner renders the owner-populated
         caches read-only."""
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard import ws_event_scope
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws_event_scope
+        from efm_go.dashboard.handlers import source_providers
 
         monkeypatch.setattr(ws_event_scope, "is_app_enabled", lambda _name: True)
         monkeypatch.setattr(ws_event_scope, "get_app_manifest", lambda _name: None)
@@ -1485,7 +1485,7 @@ class TestPeriodicCheckStatusRefresh:
     """
 
     def test_ttl_alias_matches_cache_ttl(self) -> None:
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         assert source_providers.CHECK_STATUS_TTL_SECS == source_providers._CHECK_TTL_SECS
 
@@ -1515,8 +1515,8 @@ class TestPeriodicCheckStatusRefresh:
 
     @pytest.mark.asyncio
     async def test_owner_ws_loop_schedules_ttl_paced_refreshes(self, monkeypatch) -> None:
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.handlers import source_providers
 
         url = "https://github.com/acme/repo/pull/248"
         state = MagicMock()
@@ -1597,8 +1597,8 @@ class TestPeriodicCheckStatusRefresh:
         """An operator adding or revoking a self-managed host changes which links
         are chips at all, and slot extraction is synchronous -- so the periodic
         loop must push explicitly instead of waiting for message activity."""
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.handlers import source_providers
 
         state = MagicMock()
         state.owner_id = "U_OWNER"
@@ -1682,7 +1682,7 @@ class TestPeriodicCheckStatusRefresh:
         """The WS `slots` envelope is rebuilt key-by-key in `_broadcast`, so an
         unforwarded field is silently dropped — which would leave the client with
         no way to notice an allowlist change now that polling was removed."""
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         sent: list[str] = []
 
@@ -1719,8 +1719,8 @@ class TestPeriodicCheckStatusRefresh:
         """Slot source-link extraction is synchronous and cannot load the
         allowlist, so a self-hosted MR chip would be missing from the very first
         sidebar push unless the snapshot is warmed first."""
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.handlers import source_providers
 
         order: list[str] = []
         state = MagicMock()
@@ -1790,9 +1790,9 @@ class TestPeriodicCheckStatusRefresh:
         """An app token renders no chip status (public or private), so it must
         not spawn the periodic provider driver. Only owner or dashboard-user
         connections do."""
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard import ws_event_scope
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard import ws_event_scope
+        from efm_go.dashboard.handlers import source_providers
 
         state = MagicMock()
         state.owner_id = "U_OWNER"
@@ -1862,8 +1862,8 @@ class TestPeriodicCheckStatusRefresh:
         chip status READ-ONLY from the owner-populated caches, so it must NOT
         start the periodic driver — both the status and visibility refreshes run
         the operator's credentials and are owner-only."""
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.handlers import source_providers
 
         state = MagicMock()
         state.owner_id = "U_OWNER"
@@ -1933,8 +1933,8 @@ class TestPeriodicCheckStatusRefresh:
         the driver must rotate which URLs it submits first so every chip is
         eventually refreshed instead of the same slot-order prefix winning
         every TTL (deterministic starvation of newer slots)."""
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.handlers import source_providers
 
         urls = [
             "https://github.com/acme/repo/pull/1",
@@ -2017,8 +2017,8 @@ class TestPeriodicCheckStatusRefresh:
         """Findings #2: a single transient failure inside a refresh round must
         be logged and swallowed so the driver keeps running, rather than
         silently dying and reverting to the frozen-chip bug it fixes."""
-        from kiro_crew.dashboard import ws as dashboard_ws
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import ws as dashboard_ws
+        from efm_go.dashboard.handlers import source_providers
 
         url = "https://github.com/acme/repo/pull/248"
         state = MagicMock()
@@ -2120,7 +2120,7 @@ class TestTurnBoundarySourceStatus:
         assert state.source_link_urls_for_slot("nope") == []
 
     def test_turn_boundary_forces_refresh_for_owner(self, state: DashboardState, monkeypatch) -> None:
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         slot = state.get_or_create_slot("chat-a")
         slot.append("assistant", "opened https://github.com/acme/repo/pull/7", broadcast=False)
@@ -2141,7 +2141,7 @@ class TestTurnBoundarySourceStatus:
     ) -> None:
         """Status is credential-backed and only owners render it, so a headless
         or non-owner gateway must not spawn provider subprocesses per turn."""
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         slot = state.get_or_create_slot("chat-a")
         slot.append("assistant", "opened https://github.com/acme/repo/pull/7", broadcast=False)
@@ -2160,8 +2160,8 @@ class TestTurnBoundarySourceStatus:
         dashboard-user window open (no owner window), NEITHER the credentialed
         status read NOR the visibility probe fires — both run the operator's
         credentials and are owner-only. A non-owner audience triggers nothing."""
-        from kiro_crew.dashboard import state as state_mod  # noqa: F401
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import state as state_mod  # noqa: F401
+        from efm_go.dashboard.handlers import source_providers
 
         slot = state.get_or_create_slot("chat-a")
         slot.append(
@@ -2199,7 +2199,7 @@ class TestTurnBoundarySourceStatus:
     ) -> None:
         """A status refresh is best-effort telemetry; it must never be able to
         break the turn-completion path it hangs off."""
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         slot = state.get_or_create_slot("chat-a")
         slot.append("assistant", "opened https://github.com/acme/repo/pull/7", broadcast=False)
@@ -2247,8 +2247,8 @@ class TestTurnBoundarySourceStatus:
         """
         from aiohttp import web
 
-        from kiro_crew.dashboard import server
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard import server
+        from efm_go.dashboard.handlers import source_providers
 
         source_providers._status_delta_sinks.clear()
         app = web.Application()

@@ -10,12 +10,12 @@ from pathlib import Path
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.chat_handlers import api_chat_mode, api_chat_slot_approve
-from kiro_crew.dashboard.handlers.cron import api_crons, api_lessons
-from kiro_crew.dashboard.handlers.memory import api_memory_episodic_search
-from kiro_crew.dashboard.handlers.messaging import api_spawn_list
-from kiro_crew.dashboard.routes import register_all
-from kiro_crew.dashboard.server import _register_mcp_routes
+from efm_go.dashboard.chat_handlers import api_chat_mode, api_chat_slot_approve
+from efm_go.dashboard.handlers.cron import api_crons, api_lessons
+from efm_go.dashboard.handlers.memory import api_memory_episodic_search
+from efm_go.dashboard.handlers.messaging import api_spawn_list
+from efm_go.dashboard.routes import register_all
+from efm_go.dashboard.server import _register_mcp_routes
 
 _CLIENT_SOURCE = (
     Path(__file__).parents[1] / "packages" / "kirocrew-client-py" / "kirocrew_client" / "client.py"

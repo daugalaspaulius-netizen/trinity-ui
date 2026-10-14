@@ -22,10 +22,10 @@ import pytest
 from _hot_reload_helpers import change
 from _hot_reload_helpers import write_config as _write
 
-from kiro_crew.config import live
-from kiro_crew.config.live import ConfigWatch
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.subagent import _STALL_IDLE_SECS, _TIMEOUT_SECS, SubagentInfo, SubagentManager
+from efm_go.config import live
+from efm_go.config.live import ConfigWatch
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.subagent import _STALL_IDLE_SECS, _TIMEOUT_SECS, SubagentInfo, SubagentManager
 
 
 def _mgr(max_concurrent: int = 4) -> SubagentManager:
@@ -50,7 +50,7 @@ def _lane_only_admission(mgr: SubagentManager) -> Any:
     pinned admitted because the factory reads the real host probe, which would
     otherwise turn an admission into a defer on a loaded machine.
     """
-    from kiro_crew.taskq.adapters.runner import runner_admission_for
+    from efm_go.taskq.adapters.runner import runner_admission_for
 
     store, mgr._taskq = mgr._taskq, None
     if store is not None:
@@ -129,14 +129,14 @@ class TestReconfigureDerivesEveryField:
         mgr = _mgr(max_concurrent=4)
         fresh = KiroCrewConfig()
         fresh.agent.max_subagents = 0  # auto sentinel
-        with patch("kiro_crew.subagent.resolve_max_subagents", return_value=11) as resolve:
+        with patch("efm_go.subagent.resolve_max_subagents", return_value=11) as resolve:
             mgr.apply_limits(fresh)
         resolve.assert_called_once_with(fresh)
         assert mgr.max_concurrent == 11
 
     def test_cap_resolution_failure_keeps_the_current_cap(self) -> None:
         mgr = _mgr(max_concurrent=4)
-        with patch("kiro_crew.subagent.resolve_max_subagents", side_effect=RuntimeError("x")):
+        with patch("efm_go.subagent.resolve_max_subagents", side_effect=RuntimeError("x")):
             mgr.apply_limits(KiroCrewConfig())
         assert mgr.max_concurrent == 4
 
@@ -154,7 +154,7 @@ class TestReconfigureDerivesEveryField:
         mgr = _mgr(max_concurrent=4)
         fresh = KiroCrewConfig()
         fresh.session.pool_size = 5
-        with patch("kiro_crew.subagent.resolve_max_subagents", return_value=6):
+        with patch("efm_go.subagent.resolve_max_subagents", return_value=6):
             await _dispatch(fresh, "session.pool_size")
         assert mgr.max_concurrent == 6
 
@@ -164,7 +164,7 @@ class TestReconfigureDerivesEveryField:
         mgr = _mgr(max_concurrent=4)
         fresh = KiroCrewConfig()
         fresh.agent.spawn_min_memory_gb = 0.0
-        with patch("kiro_crew.subagent.resolve_max_subagents", return_value=7):
+        with patch("efm_go.subagent.resolve_max_subagents", return_value=7):
             await _dispatch(fresh, "agent.spawn_min_memory_gb")
         assert mgr.max_concurrent == 7
 
@@ -176,14 +176,14 @@ class TestReconfigureDerivesEveryField:
         mgr = _mgr(max_concurrent=4)
         # First reconfigure establishes the sizing snapshot.
         baseline = KiroCrewConfig()
-        with patch("kiro_crew.subagent.resolve_max_subagents", return_value=4) as resolve:
+        with patch("efm_go.subagent.resolve_max_subagents", return_value=4) as resolve:
             await _dispatch(baseline, "agent.completion_keep")
         resolve.assert_called_once()
 
         # Second reload changes only a non-sizing path -- same sizing fields.
         changed = KiroCrewConfig()
         changed.agent.completion_keep = "tail"
-        with patch("kiro_crew.subagent.resolve_max_subagents") as resolve2:
+        with patch("efm_go.subagent.resolve_max_subagents") as resolve2:
             await _dispatch(changed, "agent.completion_keep")
         resolve2.assert_not_called()
         assert mgr.max_concurrent == 4
@@ -193,12 +193,12 @@ class TestReconfigureDerivesEveryField:
     async def test_a_sizing_change_still_calls_resolve(self) -> None:
         mgr = _mgr(max_concurrent=4)
         baseline = KiroCrewConfig()
-        with patch("kiro_crew.subagent.resolve_max_subagents", return_value=4):
+        with patch("efm_go.subagent.resolve_max_subagents", return_value=4):
             await _dispatch(baseline, "agent.completion_keep")
 
         sized = KiroCrewConfig()
         sized.agent.max_subagents = 9
-        with patch("kiro_crew.subagent.resolve_max_subagents", return_value=9) as resolve:
+        with patch("efm_go.subagent.resolve_max_subagents", return_value=9) as resolve:
             await _dispatch(sized, "agent.max_subagents")
         resolve.assert_called_once_with(sized)
         assert mgr.max_concurrent == 9
@@ -317,7 +317,7 @@ class TestCapChangeVersusAdaptiveClamp:
         mgr.set_effective_cap(1)
         fresh = KiroCrewConfig()
         fresh.agent.max_subagents = 6
-        with patch("kiro_crew.subagent.resolve_max_subagents", return_value=6):
+        with patch("efm_go.subagent.resolve_max_subagents", return_value=6):
             await _dispatch(fresh, "agent.max_subagents")
             # A second, unrelated reload takes the "sizing unchanged" path and
             # must keep the USER cap, not adopt the adaptive value as ceiling.
@@ -462,9 +462,9 @@ class TestEndToEndThroughConfigWatch:
         local = tmp_path / "config.local.json"
         _write(cfg_file, {"agent": {"max_subagents": 4, "subagent_max_turns": 50}})
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
-            patch("kiro_crew.config.loader.config_local_path", return_value=local),
-            patch("kiro_crew.config.live._WATCH", ConfigWatch(poll_interval_secs=0.05)),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_local_path", return_value=local),
+            patch("efm_go.config.live._WATCH", ConfigWatch(poll_interval_secs=0.05)),
         ):
             watch = live.watch()
             mgr = _mgr(max_concurrent=4)

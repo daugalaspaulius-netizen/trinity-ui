@@ -33,7 +33,7 @@ system is built, see [../architecture/](../architecture/README.md).
 | [oauth-app-registration/microsoft-365.md](oauth-app-registration/microsoft-365.md) | Why there is no Microsoft 365 Connections entry today, what Microsoft offers instead, and the optional Microsoft Entra ID app registration to prepare in advance. |
 | [custom-llm-backend.md](custom-llm-backend.md) | Pointing the agent at your own Anthropic-compatible endpoint (DeepSeek, a self-hosted gateway) via the `claude` harness: the `acp_backend` switch, the two binaries it needs, the `ANTHROPIC_*` environment routing, model selection, and what stays on the Kiro account. |
 | [telemetry-otlp-export.md](telemetry-otlp-export.md) | Pushing Kiro Crew's OpenTelemetry metrics to a collector and on to CloudWatch, Datadog, or any OTLP-compatible backend: the two separate consent switches, collector config samples, the temporality setting that decides whether a backend accepts the data, what is and is not exported, and how to verify the path end to end. |
-| — | Other chat channels (Discord, Telegram, Teams, Webex, WeCom, Weixin, WhatsApp, Feishu, iMessage) are documented in [../../src/kiro_crew/docs/](../../src/kiro_crew/docs/README.md); the channel-neutral transport contract is [messaging.md](../system-specs/modules/messaging.md). |
+| — | Other chat channels (Discord, Telegram, Teams, Webex, WeCom, Weixin, WhatsApp, Feishu, iMessage) are documented in [../../src/efm_go/docs/](../../src/efm_go/docs/README.md); the channel-neutral transport contract is [messaging.md](../system-specs/modules/messaging.md). |
 
 `assets/` holds the copy-pasteable service unit, launchd plist, and setup script
 that [remote-and-mobile.md](remote-and-mobile.md) refers to, plus an example
@@ -42,4 +42,4 @@ that [remote-and-mobile.md](remote-and-mobile.md) refers to, plus an example
 [enterprise-mcp-governance.md](enterprise-mcp-governance.md) refer to.
 
 End-user feature documentation is not here: it ships in the package under
-[`../../src/kiro_crew/docs/`](../../src/kiro_crew/docs/README.md).
+[`../../src/efm_go/docs/`](../../src/efm_go/docs/README.md).

@@ -1,6 +1,6 @@
 """Tests for posture-gated admission control.
 
-Covers :func:`kiro_crew.resource_status.admission_check` (critical refuses;
+Covers :func:`efm_go.resource_status.admission_check` (critical refuses;
 ample/tight/unknown admit; off-switch; fail-open), the cron scheduler's
 critical-posture deferral in ``_on_timer`` (deferred jobs are not marked
 failed, fire on recovery, one INFO per episode; manual triggers are never
@@ -26,11 +26,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from overload_fakes import wait_taskq_open
 
-from kiro_crew import resource_status as rs
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.constants import DEFAULT_SUBAGENT_QUEUE_MAX_WAIT_SECS
-from kiro_crew.cron import CronService
-from kiro_crew.subagent import _UNLEARNED_DEDICATED_START_GB
+from efm_go import resource_status as rs
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.constants import DEFAULT_SUBAGENT_QUEUE_MAX_WAIT_SECS
+from efm_go.cron import CronService
+from efm_go.subagent import _UNLEARNED_DEDICATED_START_GB
 
 #: The macOS pressure hold's bound under the default config: the
 #: ``agent.subagent_queue_max_wait_secs`` default, which a fresh manager boots on.
@@ -208,8 +208,8 @@ class TestCronAdmissionDeferral:
         job = svc._jobs[0]
         job.last_run_ts = time.time() - 120
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.cron"):
-            with patch("kiro_crew.cron.admission_check", return_value=_refused()):
+        with caplog.at_level(logging.INFO, logger="efm_go.cron"):
+            with patch("efm_go.cron.admission_check", return_value=_refused()):
                 await svc._on_timer()
                 await svc._on_timer()
 
@@ -223,7 +223,7 @@ class TestCronAdmissionDeferral:
         assert len(infos) == 1  # one INFO per episode, not per tick
 
         # Recovery: the same job fires on the next admitted tick.
-        with patch("kiro_crew.cron.admission_check", return_value=_admitted()):
+        with patch("efm_go.cron.admission_check", return_value=_admitted()):
             await svc._on_timer()
             run_task = svc._claims[job.id].task
         assert run_task is not None
@@ -235,8 +235,8 @@ class TestCronAdmissionDeferral:
         # A NEW critical episode logs its own INFO line.
         job.last_run_ts = time.time() - 120
         caplog.clear()
-        with caplog.at_level(logging.INFO, logger="kiro_crew.cron"):
-            with patch("kiro_crew.cron.admission_check", return_value=_refused()):
+        with caplog.at_level(logging.INFO, logger="efm_go.cron"):
+            with patch("efm_go.cron.admission_check", return_value=_refused()):
                 await svc._on_timer()
         assert any(
             "deferring" in r.getMessage() for r in caplog.records if r.levelno == logging.INFO
@@ -255,7 +255,7 @@ class TestCronAdmissionDeferral:
         svc.add_job("manual", "msg", every_secs=3600)
         job_id = svc._jobs[0].id
 
-        with patch("kiro_crew.cron.admission_check", return_value=_refused()):
+        with patch("efm_go.cron.admission_check", return_value=_refused()):
             ran = await svc.run_job(job_id)
 
         assert ran is True
@@ -274,7 +274,7 @@ class TestCronAdmissionDeferral:
         svc.add_job("open", "msg", every_secs=60)
         svc._jobs[0].last_run_ts = time.time() - 120
 
-        with patch("kiro_crew.cron.admission_check", return_value=_admitted()):
+        with patch("efm_go.cron.admission_check", return_value=_admitted()):
             await svc._on_timer()
         await _wait_for(lambda: "open" in executed)
         await svc.stop()
@@ -285,7 +285,7 @@ class TestCronAdmissionDeferral:
 
 class TestSpawnAdmissionGate:
     def _mgr(self):
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         sessions = MagicMock()
         sessions.get_agent_selection.return_value = ("template", "")
@@ -314,14 +314,14 @@ class TestSpawnAdmissionGate:
         mgr._spawn_stagger_secs = 3600.0
         posture = MagicMock(return_value=_refused())
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.resource_status.cached_admission_check", posture),
-            patch("kiro_crew.resource_status.admission_check", posture),
+            patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.resource_status.cached_admission_check", posture),
+            patch("efm_go.resource_status.admission_check", posture),
             # A posture read through the subagent module counts too; create=True
             # because the module does not define the name.
-            patch("kiro_crew.subagent.cached_admission_check", posture, create=True),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.cached_admission_check", posture, create=True),
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
@@ -341,10 +341,10 @@ class TestSpawnAdmissionGate:
         """An admitted decision falls through to the next guard (cwd here)."""
         mgr = self._mgr()
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.validate_cwd", return_value=("", "not allowed")),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.validate_cwd", return_value=("", "not allowed")),
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cwd_allowed_roots = []
@@ -369,10 +369,10 @@ class TestSpawnAdmissionGate:
         mgr._last_spawn_ts = time.monotonic()
         mgr._spawn_stagger_secs = 3600.0
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(True, -1.0)),
-            patch("kiro_crew.platform_compat.IS_LINUX", True),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.check_memory_available", return_value=(True, -1.0)),
+            patch("efm_go.platform_compat.IS_LINUX", True),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
@@ -417,7 +417,7 @@ class TestSpawnAdmissionGate:
         A settled worker already sits inside the free-memory reading and owes
         nothing.
         """
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = self._mgr()
         mgr._agents["heavy"] = SubagentInfo(
@@ -430,9 +430,9 @@ class TestSpawnAdmissionGate:
             return True, 32.0
 
         with (
-            patch("kiro_crew.subagent.check_memory_available", side_effect=memory_check),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.check_memory_available", side_effect=memory_check),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = configured
@@ -447,9 +447,9 @@ class TestSpawnAdmissionGate:
         mgr = self._mgr()
         assert mgr._taskq is not None
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(False, 3.0)),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.check_memory_available", return_value=(False, 3.0)),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
@@ -507,10 +507,10 @@ class TestSpawnAdmissionGate:
             with contextlib.ExitStack() as stack:
                 if memory is not None:
                     stack.enter_context(
-                        patch("kiro_crew.subagent.check_memory_available", return_value=memory)
+                        patch("efm_go.subagent.check_memory_available", return_value=memory)
                     )
-                mock_cfg = stack.enter_context(patch("kiro_crew.subagent.KiroCrewConfig"))
-                mock_sel = stack.enter_context(patch("kiro_crew.subagent.sel"))
+                mock_cfg = stack.enter_context(patch("efm_go.subagent.KiroCrewConfig"))
+                mock_sel = stack.enter_context(patch("efm_go.subagent.sel"))
                 mock_cfg.load.return_value.agent.spawn_min_memory_gb = floor_gb
                 mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
                 mock_sel.return_value.log_tool_invocation = MagicMock()
@@ -566,14 +566,14 @@ class TestSpawnAdmissionGate:
     @staticmethod
     def _level(monkeypatch: pytest.MonkeyPatch, level: int | None) -> None:
         """Fake the kernel's answer under the floor's own reader (the fresh read)."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         monkeypatch.setattr(platform_compat, "memory_pressure_level", lambda: level)
 
     @staticmethod
     def _busy(mgr, **fields: Any) -> None:
         """Give *mgr* one live dedicated child: a runtime of ours the hold can wait on."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr._agents["busy"] = SubagentInfo(
             id="busy", task="w", parent_session_key="sess-0", _pid=4242, **fields
@@ -597,7 +597,7 @@ class TestSpawnAdmissionGate:
     def test_pressure_holds_a_start_in_the_capacity_window(
         self, monkeypatch: pytest.MonkeyPatch, level: int
     ) -> None:
-        from kiro_crew.subagent_wait_reasons import MEMORY_PRESSURE_DETAIL
+        from efm_go.subagent_wait_reasons import MEMORY_PRESSURE_DETAIL
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -697,7 +697,7 @@ class TestSpawnAdmissionGate:
     def test_an_unknown_agent_is_refused_before_the_hold(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.subagent import AGENT_NOT_FOUND_CODE
+        from efm_go.subagent import AGENT_NOT_FOUND_CODE
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -713,7 +713,7 @@ class TestSpawnAdmissionGate:
         """No durable row to defer, but a capacity-style wait needs none: a
         temporary spawn waits in the in-memory queue exactly as a capacity-held
         one does, instead of being refused."""
-        from kiro_crew.subagent_wait_reasons import MEMORY_PRESSURE_DETAIL
+        from efm_go.subagent_wait_reasons import MEMORY_PRESSURE_DETAIL
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -730,7 +730,7 @@ class TestSpawnAdmissionGate:
 
     def test_a_held_member_keeps_its_asking_turn(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """The hold exits through the capacity queue, which pins the turn that asked."""
-        from kiro_crew.crew_log import emit as crew_log_emit
+        from efm_go.crew_log import emit as crew_log_emit
 
         pinned: list[tuple[str, str, int]] = []
         monkeypatch.setattr(crew_log_emit, "enabled", lambda: True)
@@ -751,7 +751,7 @@ class TestSpawnAdmissionGate:
     def test_a_shared_wave_never_holds_itself(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Shared-priced starts are not runtimes the hold waits on, so a wave of
         plain shared spawns at WARN with nothing dedicated running all pass it."""
-        from kiro_crew.subagent import _SharingPlan
+        from efm_go.subagent import _SharingPlan
 
         mgr = self._mgr()
         mgr._spawn_stagger_secs = 0.0
@@ -778,7 +778,7 @@ class TestSpawnAdmissionGate:
     ) -> None:
         """A shared start skips the kiro-cli process but still launches a fresh
         copy of the agent's MCP servers, so it is held while a dedicated one runs."""
-        from kiro_crew.subagent import _SharingPlan
+        from efm_go.subagent import _SharingPlan
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -804,7 +804,7 @@ class TestSpawnAdmissionGate:
                 for r in caplog.records
             )
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.subagent"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.subagent"):
             self._level(monkeypatch, 2)
             for _ in range(3):
                 self._spawn_capturing_queued(mgr, memory=(True, 8.0))
@@ -824,10 +824,10 @@ class TestSpawnAdmissionGate:
     ) -> None:
 
         mgr = self._mgr()
-        with patch("kiro_crew.subagent.sel") as mock_sel:
+        with patch("efm_go.subagent.sel") as mock_sel:
             assert mgr._memory_pressure_holds("r1", 2, parent_session_key="sess-1") == "held"
             mgr._pressure_holds["r1"] = time.monotonic() - _HOLD_BOUND_SECS - 1
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.subagent"):
                 assert mgr._memory_pressure_holds("r1", 2, parent_session_key="sess-1") == "expired"
             # Stays expired, and is said once.
             assert mgr._memory_pressure_holds("r1", 2, parent_session_key="sess-1") == "expired"
@@ -844,7 +844,7 @@ class TestSpawnAdmissionGate:
         """Past its bound a held row does not proceed into the pressure it waited
         on: the next pump pass ends it, never started, its row failed and its
         parent's depth back to 0."""
-        from kiro_crew.subagent_wait_reasons import MEMORY_PRESSURE_NEVER_STARTED
+        from efm_go.subagent_wait_reasons import MEMORY_PRESSURE_NEVER_STARTED
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -869,7 +869,7 @@ class TestSpawnAdmissionGate:
     def test_an_approved_start_past_its_bound_is_ended_never_started(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -900,9 +900,9 @@ class TestSpawnAdmissionGate:
         """The floor reader, the posture verdict, config and SEL, patched for a
         test that drives several spawns and pump passes on one loop."""
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = floor_gb
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
@@ -912,7 +912,7 @@ class TestSpawnAdmissionGate:
     def _starting_mgr(self, monkeypatch: pytest.MonkeyPatch, *, shared: bool) -> tuple[Any, list]:
         """A manager whose admitted starts register and stay live (a run that
         never returns), priced *shared* or dedicated, with no stagger."""
-        from kiro_crew.subagent import _SharingPlan
+        from efm_go.subagent import _SharingPlan
 
         mgr = self._mgr()
         mgr._spawn_stagger_secs = 0.0
@@ -942,12 +942,12 @@ class TestSpawnAdmissionGate:
         start pay the bound in turn, and does not let them into the pressure
         either: each start the hold would keep is ended at once, never started.
         Once the level eases, the next episode holds again."""
-        from kiro_crew.subagent_wait_reasons import MEMORY_PRESSURE_NEVER_STARTED
+        from efm_go.subagent_wait_reasons import MEMORY_PRESSURE_NEVER_STARTED
 
         mgr = self._mgr()
         self._busy(mgr)
         self._level(monkeypatch, 2)
-        with self._gate_patches(), caplog.at_level(logging.WARNING, logger="kiro_crew.subagent"):
+        with self._gate_patches(), caplog.at_level(logging.WARNING, logger="efm_go.subagent"):
             assert mgr._memory_pressure_hold() == 2
             mgr._pressure_episode_since = time.monotonic() - _HOLD_BOUND_SECS - 1
             assert mgr._memory_pressure_hold() == 2
@@ -955,7 +955,7 @@ class TestSpawnAdmissionGate:
             said = [r for r in caplog.records if "until it eases" in r.getMessage()]
             assert len(said) == 1
         caplog.clear()
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.subagent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.subagent"):
             info, _events, sel_mock = self._spawn_capturing_queued(mgr, memory=(True, 8.0))
         assert info is not None and info.done is True and info.queued is False
         assert info.error == MEMORY_PRESSURE_NEVER_STARTED
@@ -992,7 +992,7 @@ class TestSpawnAdmissionGate:
         """Reads are sampled; a gap longer than a few recheck intervals is a break
         nobody saw, so the next read starts a fresh episode instead of finding a
         spent one and ending a start that never waited."""
-        from kiro_crew.subagent import _PRESSURE_EPISODE_MAX_GAP_SECS
+        from efm_go.subagent import _PRESSURE_EPISODE_MAX_GAP_SECS
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -1013,7 +1013,7 @@ class TestSpawnAdmissionGate:
         between it starts, so the pick must not have audited it as never started."""
 
         mgr = self._mgr()
-        with patch("kiro_crew.subagent.sel") as mock_sel:
+        with patch("efm_go.subagent.sel") as mock_sel:
             mgr._pressure_holds["r1"] = time.monotonic() - _HOLD_BOUND_SECS - 1
             verdict = mgr._memory_pressure_holds("r1", 2, commit_expiry=False)
         assert verdict == "expired"
@@ -1037,7 +1037,7 @@ class TestSpawnAdmissionGate:
         once the key is reloaded to 60, and 0 lifts the bound again."""
         mgr = self._mgr()
         assert mgr._subagent_queue_max_wait_secs == DEFAULT_SUBAGENT_QUEUE_MAX_WAIT_SECS
-        with patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.sel"):
             mgr._pressure_holds["r1"] = time.monotonic() - 61
             assert mgr._memory_pressure_holds("r1", 2, commit_expiry=False) == "held"
             self._reload_max_wait(mgr, 60)
@@ -1099,7 +1099,7 @@ class TestSpawnAdmissionGate:
         """The slot release pumps the window and the pick lets the held roots go,
         with no recheck timer and no admit wait in between; while our runtime
         runs, the pick passes over them without even re-entering the gate."""
-        from kiro_crew.subagent import _SharingPlan
+        from efm_go.subagent import _SharingPlan
 
         mgr, started = self._starting_mgr(monkeypatch, shared=True)
         self._level(monkeypatch, 2)
@@ -1160,10 +1160,10 @@ class TestSpawnAdmissionGate:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Nothing finishes, the level drops: only the recheck timer can notice."""
-        from kiro_crew import subagent_wait_reasons
+        from efm_go import subagent_wait_reasons
 
         monkeypatch.setattr(subagent_wait_reasons, "MEMORY_PRESSURE_RECHECK_SECS", 0.05)
-        monkeypatch.setattr("kiro_crew.subagent.MEMORY_PRESSURE_RECHECK_SECS", 0.05)
+        monkeypatch.setattr("efm_go.subagent.MEMORY_PRESSURE_RECHECK_SECS", 0.05)
         mgr, started = self._starting_mgr(monkeypatch, shared=True)
         self._busy(mgr)
         self._level(monkeypatch, 2)
@@ -1281,7 +1281,7 @@ class TestSpawnAdmissionGate:
     ) -> None:
         """The child exemption must hold at release too: a pressure-held root at
         the head of the released starts is passed over, not waited on."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -1316,7 +1316,7 @@ class TestSpawnAdmissionGate:
     ) -> None:
         """An approved start stopped while it waited, queued behind a held root,
         is popped and its waiter woken now, not when the root's hold ends."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -1349,7 +1349,7 @@ class TestSpawnAdmissionGate:
 
     def test_an_approved_start_is_held_at_release(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A prompt answered after the hold began must not launch past it."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = self._mgr()
         self._busy(mgr)
@@ -1367,7 +1367,7 @@ class TestSpawnAdmissionGate:
                     "parent_session_key": info.parent_session_key,
                 }
             )
-            with patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.sel"):
                 held = mgr._admission._release_admitted_start_impl()
                 waiting = not fut.done()
                 self._level(monkeypatch, 1)
@@ -1402,8 +1402,8 @@ class TestSpawnAdmissionGate:
 
         async def drain() -> Any:
             with (
-                patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-                patch("kiro_crew.subagent.sel") as mock_sel,
+                patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+                patch("efm_go.subagent.sel") as mock_sel,
             ):
                 started = mgr.spawn(**params, _from_queue=True)
                 await asyncio.sleep(0)
@@ -1423,8 +1423,8 @@ class TestSpawnAdmissionGate:
         """The floor fails open on an unmeasurable host, but never silently: the
         macOS twin of Linux's ``memory_check_unavailable``. The hold still applies,
         and its audit records the figure as unknown, not as -1."""
-        import kiro_crew.subagent as subagent_mod
-        from kiro_crew import platform_compat
+        import efm_go.subagent as subagent_mod
+        from efm_go import platform_compat
 
         for name in ("LINUX", "WINDOWS", "MACOS"):
             monkeypatch.setattr(platform_compat, "IS_" + name, name == "MACOS")
@@ -1446,8 +1446,8 @@ class TestSpawnAdmissionGate:
         the kernel level are faked. The floor check runs the real
         ``check_memory_available``, and the level is read fresh through the real
         ``read_memory_pressure_level``."""
-        import kiro_crew.subagent as subagent_mod
-        from kiro_crew import platform_compat
+        import efm_go.subagent as subagent_mod
+        from efm_go import platform_compat
 
         for name in ("LINUX", "WINDOWS", "MACOS"):
             monkeypatch.setattr(platform_compat, "IS_" + name, name == "MACOS")
@@ -1467,7 +1467,7 @@ class TestSpawnAdmissionGate:
         """On the coroutine pump the held row is passed over by the pick: no store
         defer is written, the label stays the pressure reason, and the row stays
         queued and due for the next pass."""
-        from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+        from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
         monkeypatch.setattr(SpawnAdmissionCoordinator, "open_store_off_loop", True)
         monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", True)
@@ -1482,9 +1482,9 @@ class TestSpawnAdmissionGate:
             mgr._on_event = on_event
             park = MagicMock(wraps=mgr._admission.park_defer)
             with (
-                patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-                patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-                patch("kiro_crew.subagent.sel"),
+                patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+                patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+                patch("efm_go.subagent.sel"),
                 patch.object(type(mgr._admission), "park_defer", park),
             ):
                 mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
@@ -1511,7 +1511,7 @@ class TestSpawnAdmissionGate:
         returned. The label must ride on THAT emit: published earlier, a row the
         store turned out not to hold (refused, not queued) would leave a memory
         label on the parent for its other, capacity-queued rows to wear."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         mgr = self._mgr()
         store = mgr._taskq
@@ -1578,7 +1578,7 @@ def _load_from_dict(data: dict, tmp_path: Path) -> KiroCrewConfig:
     """Write *data* to a config file under *tmp_path* and load it."""
     tmp = tmp_path / "config.json"
     tmp.write_text(json.dumps(data))
-    with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+    with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
         return KiroCrewConfig.load()
 
 
@@ -1677,7 +1677,7 @@ class TestCronExprPassthrough:
             manual.append(svc._claim_run(job.id, "manual"))  # a manual run claims it
             return _admitted()
 
-        with patch("kiro_crew.cron.admission_check", side_effect=claiming_check):
+        with patch("efm_go.cron.admission_check", side_effect=claiming_check):
             await svc._on_timer()
         # The scan claims what it dispatches before it returns, so a duplicate
         # would already have replaced the manual claim.
@@ -1709,7 +1709,7 @@ class TestCronExprPassthrough:
             job.last_run_ts = time.time()  # manual run ran to completion
             return _admitted()
 
-        with patch("kiro_crew.cron.admission_check", side_effect=completing_check):
+        with patch("efm_go.cron.admission_check", side_effect=completing_check):
             await svc._on_timer()
         # The scan claims what it dispatches before it returns, and a run releases
         # its claim only after its callback ran: one of the two shows a re-fire.
@@ -1736,7 +1736,7 @@ class TestCronExprPassthrough:
             job.message = "new-message"
             return _admitted()
 
-        with patch("kiro_crew.cron.admission_check", side_effect=editing_check):
+        with patch("efm_go.cron.admission_check", side_effect=editing_check):
             await svc._on_timer()
         await _wait_for(lambda: len(executed) == 1)
         assert executed == ["new-message"]
@@ -1758,8 +1758,8 @@ class TestCronExprPassthrough:
         svc.add_job("expr-job", "msg", cron_expr="* * * * *")
 
         with (
-            patch("kiro_crew.cron.admission_check", return_value=_refused()),
-            patch("kiro_crew.cron.cron_expr_matches", return_value=True),
+            patch("efm_go.cron.admission_check", return_value=_refused()),
+            patch("efm_go.cron.cron_expr_matches", return_value=True),
         ):
             await svc._on_timer()
         await _wait_for(lambda: "expr-job" in executed)
@@ -1785,8 +1785,8 @@ class TestCronExprPassthrough:
         interval_job.last_run_ts = time.time() - 120
 
         with (
-            patch("kiro_crew.cron.admission_check", return_value=_refused()),
-            patch("kiro_crew.cron.cron_expr_matches", return_value=True),
+            patch("efm_go.cron.admission_check", return_value=_refused()),
+            patch("efm_go.cron.cron_expr_matches", return_value=True),
         ):
             await svc._on_timer()
         # The tick claims what it dispatches before it returns.
@@ -1796,7 +1796,7 @@ class TestCronExprPassthrough:
         assert interval_job.last_status is None  # untouched: still due
 
         # Recovery: the deferred interval job fires on its own.
-        with patch("kiro_crew.cron.admission_check", return_value=_admitted()):
+        with patch("efm_go.cron.admission_check", return_value=_admitted()):
             await svc._on_timer()
         await _wait_for(lambda: "interval" in executed)
         await svc.stop()
@@ -1807,7 +1807,7 @@ class TestCronExprPassthrough:
         # at zero delay — a busy loop of scans and admission probes on a host
         # already under memory pressure. During an episode the re-arm delay
         # is floored at the poll cadence.
-        from kiro_crew.cron import _TIMER_POLL_SECS
+        from efm_go.cron import _TIMER_POLL_SECS
 
         svc = CronService(base_dir=tmp_path, on_job=AsyncMock())
         await svc.start()
@@ -1816,12 +1816,12 @@ class TestCronExprPassthrough:
 
         assert svc._effective_delay() < 1.0  # overdue: due immediately
 
-        with patch("kiro_crew.cron.admission_check", return_value=_refused()):
+        with patch("efm_go.cron.admission_check", return_value=_refused()):
             await svc._on_timer()  # opens the episode, defers the job
         assert svc._admission_deferring is True
         assert svc._effective_delay() == _TIMER_POLL_SECS  # floored
 
-        with patch("kiro_crew.cron.admission_check", return_value=_admitted()):
+        with patch("efm_go.cron.admission_check", return_value=_admitted()):
             await svc._on_timer()  # recovery closes the episode
         assert svc._admission_deferring is False
         await svc.stop()
@@ -1842,7 +1842,7 @@ class TestCronExprPassthrough:
         job = svc._jobs[0]
         job.last_run_ts = time.time() - 120
 
-        from kiro_crew.cron import CronSchedule
+        from efm_go.cron import CronSchedule
 
         def editing_check(cfg: object | None = None):
             job.schedule = CronSchedule(kind="cron", cron_expr="* * * * *")
@@ -1850,8 +1850,8 @@ class TestCronExprPassthrough:
             return _refused()
 
         with (
-            patch("kiro_crew.cron.admission_check", side_effect=editing_check),
-            patch("kiro_crew.cron.cron_expr_matches", return_value=True),
+            patch("efm_go.cron.admission_check", side_effect=editing_check),
+            patch("efm_go.cron.cron_expr_matches", return_value=True),
         ):
             await svc._on_timer()
         await _wait_for(lambda: "morph" in executed)  # fired, not deferred
@@ -1866,7 +1866,7 @@ class TestCronExprPassthrough:
         # duplicate completion injection and wave/orchestration counters
         # double-count the failure. Exercises the REAL spawn path (no stubs)
         # so both potential announce sites are live.
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         announced: list = []
 
@@ -1894,10 +1894,10 @@ class TestCronExprPassthrough:
         mgr._emit_queue_depth = MagicMock()
 
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent._vet_spawn_governance", return_value="spawning is disabled"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent._vet_spawn_governance", return_value="spawning is disabled"),
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
@@ -1931,17 +1931,17 @@ class TestCronExprPassthrough:
         job = svc._jobs[0]
         job.last_run_ts = time.time() - 7200
 
-        with patch("kiro_crew.cron.admission_check", return_value=_refused()):
+        with patch("efm_go.cron.admission_check", return_value=_refused()):
             await svc._on_timer()
         assert executed == []  # deferred
 
         # Manual run during the episode completes the work.
-        with patch("kiro_crew.cron.admission_check", return_value=_refused()):
+        with patch("efm_go.cron.admission_check", return_value=_refused()):
             assert await svc.run_job(job.id) is True
         await _wait_for(lambda: executed == ["interval"])
         job.last_run_ts = time.time()  # manual run marked it
 
-        with patch("kiro_crew.cron.admission_check", return_value=_admitted()):
+        with patch("efm_go.cron.admission_check", return_value=_admitted()):
             await svc._on_timer()
         # The recovery tick claims what it dispatches before it returns.
         assert job.id not in svc._claims, "the recovery tick replayed the job"
@@ -1971,7 +1971,7 @@ class TestALearnedWholeTreePeakNeverPricesAStart:
     def test_a_132_gb_learned_p90_leaves_the_bar_at_floor_plus_the_start_price(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         log = tmp_path / "subagents" / "cost_samples.jsonl"
@@ -2002,9 +2002,9 @@ class TestALearnedWholeTreePeakNeverPricesAStart:
             return (85.9 >= min_gb, 85.9)
 
         with (
-            patch("kiro_crew.subagent.check_memory_available", side_effect=_check),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.check_memory_available", side_effect=_check),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.sel"),
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
@@ -2018,7 +2018,7 @@ class TestALearnedWholeTreePeakNeverPricesAStart:
 
 
 def _row(**fields: Any) -> Any:
-    from kiro_crew.subagent import SubagentInfo
+    from efm_go.subagent import SubagentInfo
 
     return SubagentInfo(id=str(fields.pop("id", "r")), task="t", **fields)
 
@@ -2066,7 +2066,7 @@ def _row(**fields: Any) -> Any:
 def test_owns_dedicated_runtime(
     rows: list[dict[str, Any]], claims: dict[str, tuple[float, bool]], owns: bool
 ) -> None:
-    from kiro_crew.subagent import _owns_dedicated_runtime
+    from efm_go.subagent import _owns_dedicated_runtime
 
     assert _owns_dedicated_runtime([_row(**r) for r in rows], claim_prices=claims) is owns
 
@@ -2075,8 +2075,8 @@ def test_a_defer_write_outage_answers_still_queued_never_refused() -> None:
     """A ``TaskStoreUnavailable`` leaves the row QUEUED and due: announcing a
     refusal would give one id a refusal now and a completion when the pump starts
     it later."""
-    from kiro_crew import taskq
-    from kiro_crew.subagent import SubagentInfo, SubagentManager
+    from efm_go import taskq
+    from efm_go.subagent import SubagentInfo, SubagentManager
 
     sessions = MagicMock()
     sessions.get_agent_selection.return_value = ("template", "")
@@ -2116,7 +2116,7 @@ def test_a_defer_write_outage_answers_still_queued_never_refused() -> None:
 
 
 def test_a_queued_stop_drops_what_the_process_kept_for_the_start() -> None:
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     sessions = MagicMock()
     sessions.get_agent_selection.return_value = ("template", "")
@@ -2142,17 +2142,17 @@ def test_the_user_docs_state_the_hold_bounds_the_code_uses() -> None:
     ``agent.subagent_queue_max_wait_secs``, so the docs name that key and its
     default, and the config field and its configuration.md row carry the same
     default."""
-    from kiro_crew.config.sections import AgentConfig
-    from kiro_crew.subagent_wait_reasons import MEMORY_PRESSURE_RECHECK_SECS
+    from efm_go.config.sections import AgentConfig
+    from efm_go.subagent_wait_reasons import MEMORY_PRESSURE_RECHECK_SECS
 
     root = Path(__file__).resolve().parents[1]
     minutes = DEFAULT_SUBAGENT_QUEUE_MAX_WAIT_SECS // 60
     assert AgentConfig().subagent_queue_max_wait_secs == DEFAULT_SUBAGENT_QUEUE_MAX_WAIT_SECS
-    doc = (root / "src/kiro_crew/docs/subagents.md").read_text(encoding="utf-8")
+    doc = (root / "src/efm_go/docs/subagents.md").read_text(encoding="utf-8")
     assert f"every {MEMORY_PRESSURE_RECHECK_SECS} seconds" in doc
     hold = next(line for line in doc.splitlines() if line.startswith("- **macOS memory pressure**"))
     assert f"after `agent.subagent_queue_max_wait_secs` ({minutes} minutes by default)" in hold
-    reference = (root / "src/kiro_crew/docs/configuration.md").read_text(encoding="utf-8")
+    reference = (root / "src/efm_go/docs/configuration.md").read_text(encoding="utf-8")
     row = next(
         line
         for line in reference.splitlines()
@@ -2176,7 +2176,7 @@ def test_the_user_docs_state_the_hold_bounds_the_code_uses() -> None:
 def test_the_card_and_the_gate_agree_on_the_never_started_prefix() -> None:
     """The run card headlines a wholly never-started wave by matching the gate's
     terminal error, so the two spellings must not drift."""
-    from kiro_crew.subagent_wait_reasons import MEMORY_PRESSURE_NEVER_STARTED
+    from efm_go.subagent_wait_reasons import MEMORY_PRESSURE_NEVER_STARTED
 
     phrases = json.loads(
         (Path(__file__).resolve().parents[1] / "website/src/lib/backendPhrases.json").read_text(
@@ -2189,9 +2189,9 @@ def test_the_card_and_the_gate_agree_on_the_never_started_prefix() -> None:
 def test_event_loop_spawns_validate_the_agent_off_the_loop(monkeypatch: pytest.MonkeyPatch) -> None:
     """``spawn_async`` and the coroutine pump take the agent-directory scan off
     the loop and hand the gate the answer; the gate never walks it on the loop."""
-    import kiro_crew.subagent as subagent_mod
-    from kiro_crew.subagent import SubagentManager
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    import efm_go.subagent as subagent_mod
+    from efm_go.subagent import SubagentManager
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     monkeypatch.setattr(SpawnAdmissionCoordinator, "open_store_off_loop", True)
     monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", True)
@@ -2212,9 +2212,9 @@ def test_event_loop_spawns_validate_the_agent_off_the_loop(monkeypatch: pytest.M
         await wait_taskq_open(mgr)
         mgr._spawn_stagger_secs = 60.0  # the second spawn queues for the stagger
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.sel"),
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
@@ -2242,8 +2242,8 @@ def test_event_loop_spawns_validate_the_agent_off_the_loop(monkeypatch: pytest.M
 def test_an_app_spawn_proves_ownership_off_the_loop(monkeypatch: pytest.MonkeyPatch) -> None:
     """App ownership walks the agents directory too, so the gate must read the
     off-loop answer instead of calling it on the loop."""
-    import kiro_crew.subagent as subagent_mod
-    from kiro_crew.subagent import SubagentManager
+    import efm_go.subagent as subagent_mod
+    from efm_go.subagent import SubagentManager
 
     threads: list[bool] = []
 
@@ -2261,9 +2261,9 @@ def test_an_app_spawn_proves_ownership_off_the_loop(monkeypatch: pytest.MonkeyPa
             sessions=sessions, ctx_builder=MagicMock(), on_done=MagicMock(), max_concurrent=3
         )
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.sel"),
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5
@@ -2283,8 +2283,8 @@ def test_the_off_loop_check_keys_on_the_app_the_gate_settles_on(
     the captured execution's app (``resolve_spawn_execution``), so the off-loop
     answer must be computed and keyed for that app or the gate walks the agents
     directory on the loop after all."""
-    import kiro_crew.subagent as subagent_mod
-    from kiro_crew.subagent import SubagentManager
+    import efm_go.subagent as subagent_mod
+    from efm_go.subagent import SubagentManager
 
     asked: list[str] = []
     monkeypatch.setattr(
@@ -2313,8 +2313,8 @@ def test_the_off_loop_agent_check_keys_on_the_canonical_cwd(
     agents directory on the loop."""
     import os
 
-    import kiro_crew.subagent as subagent_mod
-    from kiro_crew.subagent import SubagentManager
+    import efm_go.subagent as subagent_mod
+    from efm_go.subagent import SubagentManager
 
     real = tmp_path / "real"
     real.mkdir()
@@ -2335,9 +2335,9 @@ def test_the_off_loop_agent_check_keys_on_the_canonical_cwd(
             sessions=sessions, ctx_builder=MagicMock(), on_done=MagicMock(), max_concurrent=3
         )
         with (
-            patch("kiro_crew.subagent.check_memory_available", return_value=(True, 8.0)),
-            patch("kiro_crew.subagent.KiroCrewConfig") as mock_cfg,
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.check_memory_available", return_value=(True, 8.0)),
+            patch("efm_go.subagent.KiroCrewConfig") as mock_cfg,
+            patch("efm_go.subagent.sel"),
         ):
             mock_cfg.load.return_value.agent.spawn_min_memory_gb = 4.0
             mock_cfg.load.return_value.agent.subagent_cost_gb = 0.5

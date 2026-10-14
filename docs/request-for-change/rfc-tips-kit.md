@@ -18,7 +18,7 @@ superseded-by: []
 - **Baseline correction:** the claim that the engine "never analyzes the daily history" is imprecise — `tips.py:504` already reads `memory/history/*.md` and feeds it to the LLM. What is missing is deterministic pattern detection over a wider window. Also unmentioned: `_TIP_ALLOWED_FIELDS` (`tips.py:515`) excludes `action`, so LLM-authored executable targets require widening that projection first.
 - Author: zezhexu
 - Created: 2026-07-29
-- Related: `src/kiro_crew/tips.py` (the feature-tips engine this RFC extends), rfc-federated-app-platform.md (App Store install path), rfc-local-notification-bus.md + rfc-notification-bridge.md (delivery seam), `cron.py` (scheduling target)
+- Related: `src/efm_go/tips.py` (the feature-tips engine this RFC extends), rfc-federated-app-platform.md (App Store install path), rfc-local-notification-bus.md + rfc-notification-bridge.md (delivery seam), `cron.py` (scheduling target)
 
 ## Summary
 

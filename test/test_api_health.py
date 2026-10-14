@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.handlers import core as core_mod
-from kiro_crew.dashboard.origin import mark_audit_claimed
+from efm_go.dashboard.handlers import core as core_mod
+from efm_go.dashboard.origin import mark_audit_claimed
 
 
 def _probe_req(remote: str = "127.0.0.1", headers=None) -> web.Request:
@@ -27,7 +27,7 @@ async def test_health_returns_ok_with_identity() -> None:
     shell's cross-app instance guard: nightly and production apps share
     ~/.kirocrew and the gateway port, so the shell must be able to tell
     WHICH KiroCrew-family gateway owns the port."""
-    from kiro_crew import __version__
+    from efm_go import __version__
 
     resp = await core_mod.api_health(_probe_req())
     assert resp.status == 200
@@ -63,7 +63,7 @@ async def test_rebound_loopback_health_omits_build_identity() -> None:
 async def test_direct_local_health_with_served_host_keeps_identity() -> None:
     """The desktop cross-app guard path (loopback + real served Host) still
     receives identity after the check_host gate was added."""
-    from kiro_crew import __version__
+    from efm_go import __version__
 
     req = _probe_req(headers={"Host": "127.0.0.1:5476"})
     req.app = {"allowed_origins": {"http://localhost:5476"}}
@@ -78,7 +78,7 @@ async def test_direct_local_health_carries_the_gateway_id() -> None:
     """Remote Crew chaining reads this field through the loopback end of a tunnel
     it just opened, which IS a direct-local request, to tell whether the far end is
     this gateway (a loop) or a different one."""
-    from kiro_crew.gateway_identity import gateway_id
+    from efm_go.gateway_identity import gateway_id
 
     req = _probe_req(headers={"Host": "127.0.0.1:5476"})
     req.app = {"allowed_origins": {"http://localhost:5476"}}
@@ -135,7 +135,7 @@ async def test_forwarded_loopback_health_omits_build_identity() -> None:
 @pytest.mark.asyncio
 async def test_live_alias_returns_ok() -> None:
     """/api/live is a liveness alias mirroring /api/health identity fields."""
-    from kiro_crew import __version__
+    from efm_go import __version__
 
     resp = await core_mod.api_live(_probe_req())
     assert resp.status == 200
@@ -235,7 +235,7 @@ async def test_ready_returns_503_when_sessions_missing() -> None:
 
 def test_probes_are_auth_bypassed() -> None:
     """Probe endpoints must be reachable without a token (rec #6)."""
-    import kiro_crew.dashboard.token_auth as ta
+    import efm_go.dashboard.token_auth as ta
 
     for path in ("/api/health", "/api/live", "/api/ready"):
         assert path in ta._BYPASS_EXACT
@@ -249,7 +249,7 @@ async def test_public_probe_contract_frozen_minimal_anonymous_surface_and_status
     payloads, and the readiness status plus ``ready`` boolean. Readiness
     diagnostics are intentionally not frozen so internal checks can evolve.
     """
-    import kiro_crew.dashboard.token_auth as ta
+    import efm_go.dashboard.token_auth as ta
 
     paths = ("/api/health", "/api/live", "/api/ready")
     assert all(path in ta._BYPASS_EXACT for path in paths)
@@ -279,7 +279,7 @@ async def test_public_probe_contract_frozen_minimal_anonymous_surface_and_status
     shutdown = asyncio.Event()
     shutdown.set()
     state.ready = True
-    with patch("kiro_crew.shutdown_event", shutdown):
+    with patch("efm_go.shutdown_event", shutdown):
         response = await core_mod.api_ready(serving)
         assert response.status == 503
         assert json.loads(response.body)["ready"] is False
@@ -292,7 +292,7 @@ async def test_public_probe_contract_frozen_minimal_anonymous_surface_and_status
 # readiness must reflect the ACTUAL lifecycle state, not just "subsystems wired".
 # The process-wide shutdown_event is the single trigger for graceful stop
 # (SIGTERM/SIGINT handler AND POST /api/shutdown both set it). api_ready does a
-# function-local `from kiro_crew import shutdown_event`, so patching the source
+# function-local `from efm_go import shutdown_event`, so patching the source
 # attribute swaps the event the handler observes.
 
 
@@ -306,7 +306,7 @@ async def test_ready_returns_503_during_shutdown() -> None:
     ev.set()  # a stop has been requested
     state = MagicMock()
     state.sessions = MagicMock()
-    with patch("kiro_crew.shutdown_event", ev):
+    with patch("efm_go.shutdown_event", ev):
         resp = await core_mod.api_ready(_req_with_state(state))
     assert resp.status == 503
     body = json.loads(resp.body)
@@ -323,7 +323,7 @@ async def test_ready_omits_shutdown_marker_while_serving() -> None:
     ev = asyncio.Event()  # never set → not shutting down
     state = MagicMock()
     state.sessions = MagicMock()
-    with patch("kiro_crew.shutdown_event", ev):
+    with patch("efm_go.shutdown_event", ev):
         resp = await core_mod.api_ready(_req_with_state(state))
     assert resp.status == 200
     body = json.loads(resp.body)
@@ -339,7 +339,7 @@ async def test_ready_shutdown_precedes_subsystem_state() -> None:
     ev = asyncio.Event()
     ev.set()
     # State missing AND shutting down: still 503, and the shutdown marker is set.
-    with patch("kiro_crew.shutdown_event", ev):
+    with patch("efm_go.shutdown_event", ev):
         resp = await core_mod.api_ready(_req_with_state(None))
     assert resp.status == 503
     body = json.loads(resp.body)
@@ -355,7 +355,7 @@ async def test_live_stays_200_during_shutdown() -> None:
     keeps a liveness-based supervisor from killing the process mid-drain."""
     ev = asyncio.Event()
     ev.set()
-    with patch("kiro_crew.shutdown_event", ev):
+    with patch("efm_go.shutdown_event", ev):
         resp = await core_mod.api_live(_probe_req())
     assert resp.status == 200
     body = json.loads(resp.body)
@@ -370,7 +370,7 @@ async def test_ready_recovers_when_shutdown_flag_cleared() -> None:
     ev = asyncio.Event()
     state = MagicMock()
     state.sessions = MagicMock()
-    with patch("kiro_crew.shutdown_event", ev):
+    with patch("efm_go.shutdown_event", ev):
         ev.set()
         draining = await core_mod.api_ready(_req_with_state(state))
         assert draining.status == 503
@@ -393,7 +393,7 @@ async def test_ready_recovers_when_shutdown_flag_cleared() -> None:
 
 
 def _host_barrier_app() -> web.Application:
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     app = web.Application(
         middlewares=[server_mod._make_host_validation_middleware("dashboard_user")]
@@ -468,7 +468,7 @@ def _entrypoint_and_chain_source(func) -> str:
     """
     import inspect
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     installer = {
         "start_dashboard": server_mod._install_dashboard_middlewares,
@@ -490,7 +490,7 @@ def test_both_servers_install_the_shared_host_barrier() -> None:
     shared factory (the single exemption point the chain tests above cover),
     and neither may re-grow a private inline copy that could drop or widen
     the exemption independently."""
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     dashboard_src = _entrypoint_and_chain_source(server_mod.start_dashboard)
     api_src = _entrypoint_and_chain_source(server_mod.start_api_server)
@@ -512,7 +512,7 @@ def test_both_servers_install_the_shared_deny_audit_boundary() -> None:
     on one entrypoint only, the headless server would silently keep the old
     per-site guarantee while the dashboard had the structural one — the exact
     drift the shared factories exist to prevent."""
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     for func, name in (
         (server_mod.start_dashboard, "start_dashboard"),
@@ -547,7 +547,7 @@ def test_every_middleware_denial_is_audited_off_the_loop() -> None:
     import importlib
     import inspect
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     helper = inspect.getsource(server_mod._audit_denied)
     # The healthy path is a direct enqueue: no unconditional hop. The hop that
@@ -623,8 +623,8 @@ def test_every_middleware_denial_is_audited_off_the_loop() -> None:
     # boundary adds a second, generic entry for the same refusal. These two do;
     # ws.py deliberately does not, because it audits nothing of its own.
     for module, path in (
-        ("kiro_crew.dashboard.stt_stream", "stt_stream"),
-        ("kiro_crew.dashboard.handlers.terminal", "handlers/terminal"),
+        ("efm_go.dashboard.stt_stream", "stt_stream"),
+        ("efm_go.dashboard.handlers.terminal", "handlers/terminal"),
     ):
         mod = importlib.import_module(module)
         src = inspect.getsource(mod)
@@ -660,7 +660,7 @@ class _SelSpy:
 
 def _boundary_app(*inner: object) -> web.Application:
     """The deny-audit boundary outermost, then whatever barrier is under test."""
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     app = web.Application(
         middlewares=[server_mod._make_deny_audit_middleware("dashboard_user"), *inner]
@@ -688,7 +688,7 @@ async def test_a_forgetful_pre_audit_refusal_is_still_audited_by_position(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     spy = _SelSpy()
     monkeypatch.setattr(server_mod, "sel", lambda: spy)
@@ -735,7 +735,7 @@ async def test_a_pre_audit_refusal_on_a_cold_sel_is_audited_off_the_loop(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     spy = _SelSpy()
     monkeypatch.setattr(server_mod, "sel", lambda: spy)
@@ -771,7 +771,7 @@ async def test_a_barrier_that_audits_itself_is_not_recorded_twice(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     spy = _SelSpy()
     monkeypatch.setattr(server_mod, "sel", lambda: spy)
@@ -799,7 +799,7 @@ async def test_a_refusal_the_audit_middleware_logs_itself_is_not_doubled(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     spy = _SelSpy()
     monkeypatch.setattr(server_mod, "sel", lambda: spy)
@@ -836,7 +836,7 @@ async def test_a_refusal_the_audit_middleware_does_not_log_is_recorded_here(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     spy = _SelSpy()
     monkeypatch.setattr(server_mod, "sel", lambda: spy)
@@ -876,7 +876,7 @@ async def test_the_record_names_the_authenticated_caller_not_the_static_label(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     def _authed(identity: dict) -> object:
         @web.middleware
@@ -928,7 +928,7 @@ def test_audit_actor_marks_a_request_that_arrived_through_a_forwarder(header: st
     """
     from aiohttp.test_utils import make_mocked_request
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     request = make_mocked_request("POST", "/api/sessions", headers={header: "203.0.113.7"})
     assert server_mod.audit_actor(request, "dashboard_user") == "dashboard_user_via_proxy"
@@ -943,7 +943,7 @@ def test_audit_actor_leaves_a_direct_request_under_its_own_label() -> None:
     """
     from aiohttp.test_utils import make_mocked_request
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     request = make_mocked_request("POST", "/api/sessions")
     assert server_mod.audit_actor(request, "dashboard_user") == "dashboard_user"
@@ -958,7 +958,7 @@ def test_audit_actor_files_an_app_token_request_under_the_app() -> None:
     """
     from aiohttp.test_utils import make_mocked_request
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     app_request = make_mocked_request("POST", "/api/chat/slots/s1/regenerate")
     app_request["app"] = "crew-keyboard"
@@ -984,7 +984,7 @@ def test_audit_actor_keeps_the_transport_of_an_internal_call_made_for_an_app() -
     """
     from aiohttp.test_utils import make_mocked_request
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     internal = make_mocked_request("POST", "/api/chat/slots/s1/note")
     internal["app"] = "crew-keyboard"
@@ -1008,7 +1008,7 @@ async def test_a_forwarded_refusal_is_not_recorded_as_the_person(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     @web.middleware
     async def ws_origin_refuses(request: web.Request, handler: object) -> web.StreamResponse:
@@ -1041,7 +1041,7 @@ async def test_a_forwarded_refusal_keeps_the_authenticated_identity_it_renames(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     @web.middleware
     async def sets_identity(request: web.Request, handler: object) -> web.StreamResponse:
@@ -1072,7 +1072,7 @@ def test_both_request_audit_middlewares_attribute_through_audit_actor() -> None:
     call, which is where a forwarded action was mistaken for the owner's own. A
     re-grown flat literal there would be invisible to every test above.
     """
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     for func, label in (
         (server_mod.start_dashboard, "dashboard_user"),
@@ -1100,9 +1100,9 @@ def test_every_self_auditing_raised_refusal_claims_the_request() -> None:
     import re
     from pathlib import Path
 
-    import kiro_crew
+    import efm_go
 
-    root = Path(kiro_crew.__file__).parent
+    root = Path(efm_go.__file__).parent
     raise_re = re.compile(r"raise web\.HTTP(?:Forbidden|Unauthorized)\(")
     found = 0
     for path in sorted(root.rglob("*.py")):
@@ -1136,7 +1136,7 @@ async def test_the_boundary_ignores_outcomes_that_are_not_refusals(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     spy = _SelSpy()
     monkeypatch.setattr(server_mod, "sel", lambda: spy)
@@ -1166,7 +1166,7 @@ async def test_an_audit_failure_never_turns_the_refusal_into_a_500(
     """
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     def _explode():
         raise RuntimeError("trust root unusable")
@@ -1193,7 +1193,7 @@ def test_both_servers_warm_the_kiro_readiness_probe() -> None:
     """
     import inspect
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     for func, name in (
         (server_mod.start_dashboard, "start_dashboard"),
@@ -1238,7 +1238,7 @@ def test_api_server_resolves_bind_address_via_shared_helper() -> None:
     image binds loopback and is unreachable through a published port."""
     import inspect
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     src = inspect.getsource(server_mod.start_api_server)
     assert "bind_address_for(local_only)" in src
@@ -1257,7 +1257,7 @@ async def test_a_pre_audit_refusal_names_the_app_once(
     """The boundary passes its transport label; ``audit_actor`` adds the app."""
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     spy = _SelSpy()
     monkeypatch.setattr(server_mod, "sel", lambda: spy)

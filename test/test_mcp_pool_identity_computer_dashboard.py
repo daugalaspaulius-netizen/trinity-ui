@@ -36,10 +36,10 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import mcp_computer, mcp_dashboard
-from kiro_crew.mcp_caller import CallerContext, set_current_caller
-from kiro_crew.mcp_tools.dashboard_client import InMemoryDashboardClient
-from kiro_crew.mcp_tools.table import GatewayCaller, ToolContext
+from efm_go import mcp_computer, mcp_dashboard
+from efm_go.mcp_caller import CallerContext, set_current_caller
+from efm_go.mcp_tools.dashboard_client import InMemoryDashboardClient
+from efm_go.mcp_tools.table import GatewayCaller, ToolContext
 
 
 @pytest.fixture(autouse=True)

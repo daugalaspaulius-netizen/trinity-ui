@@ -24,17 +24,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from test_task_runner_compaction import _compacting_provider_factory, _managed
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.cron import CronJob, CronSchedule
-from kiro_crew.dashboard.chat_utils import effective_session_key
-from kiro_crew.dashboard.state import _ChatSlot
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.taskrunner import Step, StepStatus, TaskRun, TaskRunner
+from efm_go.config import KiroCrewConfig
+from efm_go.cron import CronJob, CronSchedule
+from efm_go.dashboard.chat_utils import effective_session_key
+from efm_go.dashboard.state import _ChatSlot
+from efm_go.providers.base import LLMEvent
+from efm_go.taskrunner import Step, StepStatus, TaskRun, TaskRunner
 
 
 @pytest.fixture
 def gw_and_cb() -> tuple[Any, Callable[[], Any], Callable[..., Any]]:
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
     gw.sessions = MagicMock()
@@ -80,11 +80,11 @@ def _job(**kw: Any) -> CronJob:
 
 def _run(gw: Any, get_cb: Callable[[], Any], capture_cron: Any, job: CronJob, stream: Any) -> Any:
     with (
-        patch("kiro_crew.slack.gateway.stream_and_collect", side_effect=stream),
-        patch("kiro_crew.slack.gateway.redact_exfiltration_urls", return_value=("", False)),
-        patch("kiro_crew.slack.gateway.redact_credentials", return_value=("", False)),
+        patch("efm_go.slack.gateway.stream_and_collect", side_effect=stream),
+        patch("efm_go.slack.gateway.redact_exfiltration_urls", return_value=("", False)),
+        patch("efm_go.slack.gateway.redact_credentials", return_value=("", False)),
         patch(
-            "kiro_crew.slack.gateway.CronService.create", new=AsyncMock(side_effect=capture_cron)
+            "efm_go.slack.gateway.CronService.create", new=AsyncMock(side_effect=capture_cron)
         ),
     ):
 
@@ -228,7 +228,7 @@ class TestSingleAgentCronTurn:
         # replacement (fresh session-start context) and lands; the outer
         # finally must not re-arm that replacement -- it would re-inject a
         # second time on the next turn. Mirrors the transient-retry arm.
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         gw, get_cb, capture_cron = gw_and_cb
         calls = {"n": 0}
@@ -344,7 +344,7 @@ async def _run_one_task(sessions: MagicMock, ctx: MagicMock, tmp_path: Path) -> 
     run = TaskRun(spec_path=str(tmp_path / "t.md"), spec_content="s", status="running")
     step = Step(index=1, title="Write", description="d")
     run.tasks = [step]
-    with patch("kiro_crew.task_executor.self_review", return_value=True):
+    with patch("efm_go.task_executor.self_review", return_value=True):
         await runner._execute_single_task(run, step)
     return step
 

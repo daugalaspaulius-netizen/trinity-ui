@@ -31,7 +31,7 @@ import pytest
 from aiohttp import web
 
 from conftest import requires_symlinks
-from kiro_crew.dashboard.handlers import api_agent_config
+from efm_go.dashboard.handlers import api_agent_config
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +39,7 @@ def _owner_caller(monkeypatch):
     """Run as the dashboard owner: the owner boundary on this endpoint has its
     own enumerate-the-invariant coverage in test_agents_endpoints_owner_auth.py."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -239,36 +239,36 @@ async def _put(
         _managed_map.update(managed_specs)
 
     patches = [
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": [], "allowedTools": []},
         ),
         # Patched at the AGENTS binding, not at bridges: the handler imports
         # ``_mcp_lock as _agent_file_lock`` at module scope, so a patch on the
         # source module would not reach the already-bound name.
-        patch("kiro_crew.dashboard.handlers.agents._agent_file_lock", file_lock),
+        patch("efm_go.dashboard.handlers.agents._agent_file_lock", file_lock),
         # ``apps_dir`` is patched in BOTH modules on purpose: the handler binds it
         # at module scope, while the real ``app_enabled_state`` resolves the
         # metadata path through manager's own copy.
         patch(
-            "kiro_crew.dashboard.handlers.agents.apps_dir",
+            "efm_go.dashboard.handlers.agents.apps_dir",
             return_value=_handler_apps_root,
         ),
-        patch("kiro_crew.apps.manager.apps_dir", return_value=_apps_root),
-        patch("kiro_crew.dashboard.handlers.agents._registration_source", _reg_source),
-        patch("kiro_crew.agent._MANAGED_MCP_SERVERS", _managed_map),
-        patch("kiro_crew.agent._extra_mcp_servers", return_value=dict(extra_managed or {})),
-        patch("kiro_crew.dashboard.handlers.mcp._get_mcp_lock", lock),
-        patch("kiro_crew.connections.ownership.spec_census", _census),
+        patch("efm_go.apps.manager.apps_dir", return_value=_apps_root),
+        patch("efm_go.dashboard.handlers.agents._registration_source", _reg_source),
+        patch("efm_go.agent._MANAGED_MCP_SERVERS", _managed_map),
+        patch("efm_go.agent._extra_mcp_servers", return_value=dict(extra_managed or {})),
+        patch("efm_go.dashboard.handlers.mcp._get_mcp_lock", lock),
+        patch("efm_go.connections.ownership.spec_census", _census),
     ]
     if not govern:
         patches.append(
             patch(
-                "kiro_crew.platform.governance.sanitize_agent_config_governance",
+                "efm_go.platform.governance.sanitize_agent_config_governance",
                 lambda config: None,
             )
         )
@@ -1088,8 +1088,8 @@ def test_both_app_root_walks_agree_a_dangling_link_is_not_absence(tmp_path):
     "not absence". A later edit to either module's screens fails here instead of
     silently moving one answer.
     """
-    from kiro_crew.apps.manager import list_apps_with_skips
-    from kiro_crew.dashboard.handlers.agents import (
+    from efm_go.apps.manager import list_apps_with_skips
+    from efm_go.dashboard.handlers.agents import (
         AppOwnershipUnreadable,
         _app_declared_server_names,
     )
@@ -1098,7 +1098,7 @@ def test_both_app_root_walks_agree_a_dangling_link_is_not_absence(tmp_path):
     apps_root.mkdir()
     (apps_root / "demo").symlink_to(apps_root / "no-such-app-root")
 
-    with patch("kiro_crew.apps.manager.apps_dir", return_value=apps_root):
+    with patch("efm_go.apps.manager.apps_dir", return_value=apps_root):
         listing = list_apps_with_skips()
     assert listing.apps == [], "a dangling root carries no readable record"
     assert listing.complete is False, (
@@ -1107,7 +1107,7 @@ def test_both_app_root_walks_agree_a_dangling_link_is_not_absence(tmp_path):
     )
 
     with (
-        patch("kiro_crew.dashboard.handlers.agents.apps_dir", return_value=apps_root),
+        patch("efm_go.dashboard.handlers.agents.apps_dir", return_value=apps_root),
         pytest.raises(AppOwnershipUnreadable) as caught,
     ):
         _app_declared_server_names()
@@ -1168,8 +1168,8 @@ def test_both_app_root_walks_agree_a_link_to_a_file_is_not_absence(tmp_path):
     what makes it the discriminating case: each reader has to reach "not absence"
     from the entry's own link-ness rather than from a raised error.
     """
-    from kiro_crew.apps.manager import list_apps_with_skips
-    from kiro_crew.dashboard.handlers.agents import (
+    from efm_go.apps.manager import list_apps_with_skips
+    from efm_go.dashboard.handlers.agents import (
         AppOwnershipUnreadable,
         _app_declared_server_names,
     )
@@ -1180,7 +1180,7 @@ def test_both_app_root_walks_agree_a_link_to_a_file_is_not_absence(tmp_path):
     target.write_text("not an app root", encoding="utf-8")
     (apps_root / "demo").symlink_to(target)
 
-    with patch("kiro_crew.apps.manager.apps_dir", return_value=apps_root):
+    with patch("efm_go.apps.manager.apps_dir", return_value=apps_root):
         listing = list_apps_with_skips()
     assert listing.apps == [], "a link to a file carries no readable record"
     assert (
@@ -1188,7 +1188,7 @@ def test_both_app_root_walks_agree_a_link_to_a_file_is_not_absence(tmp_path):
     ), "the manager counts a link-ish non-directory as an app the listing DROPPED"
 
     with (
-        patch("kiro_crew.dashboard.handlers.agents.apps_dir", return_value=apps_root),
+        patch("efm_go.dashboard.handlers.agents.apps_dir", return_value=apps_root),
         pytest.raises(AppOwnershipUnreadable) as caught,
     ):
         _app_declared_server_names()
@@ -1319,7 +1319,7 @@ async def test_preserved_entries_go_through_the_governance_filter(tmp_path, monk
     straight to disk — reopening the bypass that filter exists to close. Ordering
     the merge ahead of the filter makes that unrepresentable.
     """
-    import kiro_crew.platform.governance as gov
+    import efm_go.platform.governance as gov
 
     monkeypatch.setattr(gov, "may_skip_gate_now", lambda ref: ref != "@demo:notes")
 

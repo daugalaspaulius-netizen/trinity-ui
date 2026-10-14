@@ -20,8 +20,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.cli_commands import _cron
-from kiro_crew.history import ConversationLog
+from efm_go.cli_commands import _cron
+from efm_go.history import ConversationLog
 
 
 def _job(job_id="abc12345", *, session_key="", created_by=""):
@@ -53,8 +53,8 @@ class TestCronListOwnership:
 
     def test_list_marks_a_job_with_no_owning_session(self, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.list_jobs.return_value = [_job()]
             _cron(argparse.Namespace(cron_action="list"))
@@ -67,8 +67,8 @@ class TestCronListOwnership:
 
     def test_list_shows_the_owning_session_key(self, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.list_jobs.return_value = [
                 _job(session_key="dashboard:chat-3-1712793600")
@@ -82,8 +82,8 @@ class TestCronListOwnership:
         """``created_by`` is a separate, namespaced provenance tag (``app:*`` /
         ``import:*``) and is NOT the owner -- printing both keeps them distinct."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.list_jobs.return_value = [
                 _job(created_by="import:slack-reminders")
@@ -97,8 +97,8 @@ class TestCronListOwnership:
 class TestCronAdopt:
     def test_adopt_reports_the_delivery_consequence(self, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.adopt_job.return_value = True
@@ -111,8 +111,8 @@ class TestCronAdopt:
 
     def test_session_of_adds_the_prefix_the_consumers_strip(self):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.adopt_job.return_value = True
@@ -133,8 +133,8 @@ class TestCronAdopt:
         stored = {}
 
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.adopt_job.side_effect = lambda jid, sk: stored.setdefault(jid, sk) or True
@@ -147,8 +147,8 @@ class TestCronAdopt:
         operator pasting a full key into ``--session-of`` is not double-prefixed
         into an undeliverable ``dashboard:dashboard:...``."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.adopt_job.return_value = True
@@ -157,8 +157,8 @@ class TestCronAdopt:
 
     def test_release_clears_the_owner(self, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.adopt_job.return_value = True
@@ -168,8 +168,8 @@ class TestCronAdopt:
 
     def test_missing_job_exits_nonzero(self):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.adopt_job.return_value = False
             with pytest.raises(SystemExit) as exc:
@@ -181,8 +181,8 @@ class TestCronAdopt:
         """A blank target must NOT fall through to the release path: that would
         turn a typo into a silent hand-back to operator-only management."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             with pytest.raises(SystemExit) as exc:
@@ -192,8 +192,8 @@ class TestCronAdopt:
 
     def test_adopt_is_audited(self):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             _cron(_adopt_args(session_of="dashboard:chat-3"))
@@ -215,9 +215,9 @@ class TestAdoptTargetVisibility:
 
     def _run_adopt_with_known(self, known):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands.ConversationLog") as mock_log_cls,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands.ConversationLog") as mock_log_cls,
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             mock_log_cls.return_value.has_log.return_value = known
@@ -254,11 +254,11 @@ class TestAdoptTargetVisibility:
         drives the real lookup. It fails if the two halves disagree, which a
         mocked assertion on the call argument cannot.
         """
-        monkeypatch.setattr("kiro_crew.history._sessions_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.history._sessions_dir", lambda: tmp_path)
         ConversationLog(base_dir=tmp_path).append("dashboard:chat-9-1712799999", "user", "hello")
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             _cron(_adopt_args(session_of="chat-9-1712799999"))
@@ -266,10 +266,10 @@ class TestAdoptTargetVisibility:
 
     def test_a_real_absent_session_still_warns(self, capsys, tmp_path, monkeypatch):
         """The warning must survive the fix: a typo is still worth catching."""
-        monkeypatch.setattr("kiro_crew.history._sessions_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.history._sessions_dir", lambda: tmp_path)
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             _cron(_adopt_args(session_of="chat-9-typo"))
@@ -296,11 +296,11 @@ class TestAdoptTargetVisibility:
         asks for ``dashboard_slack_<ts>.jsonl``, which never exists, so the
         false warning this PR removes would come straight back for this key.
         """
-        monkeypatch.setattr("kiro_crew.history._sessions_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.history._sessions_dir", lambda: tmp_path)
         ConversationLog(base_dir=tmp_path).append("slack_1785370133.085469", "user", "hello")
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             _cron(_adopt_args(session_of="dashboard:slack_1785370133.085469"))
@@ -316,11 +316,11 @@ class TestAdoptTargetVisibility:
         the stacked prefix, which is why resolving through it is what keeps the
         check honest for this spelling.
         """
-        monkeypatch.setattr("kiro_crew.history._sessions_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.history._sessions_dir", lambda: tmp_path)
         ConversationLog(base_dir=tmp_path).append("dashboard:chat-9-1712799999", "user", "hello")
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             _cron(_adopt_args(session_of="dashboard_chat-9-1712799999"))
@@ -329,9 +329,9 @@ class TestAdoptTargetVisibility:
     def test_a_failing_lookup_stays_quiet(self, capsys):
         """Cannot-tell is not evidence of a typo -- never cry wolf."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands.ConversationLog", side_effect=OSError("no dir")),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands.ConversationLog", side_effect=OSError("no dir")),
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             _cron(_adopt_args(session_of="chat-9"))
@@ -339,8 +339,8 @@ class TestAdoptTargetVisibility:
 
     def test_release_does_not_warn(self, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             _cron(_adopt_args(release=True))
@@ -359,9 +359,9 @@ class TestAdoptNamespaceHonesty:
 
     def _adopt(self, target):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands.ConversationLog") as mock_log_cls,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands.ConversationLog") as mock_log_cls,
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             mock_log_cls.return_value.has_log.return_value = True
@@ -385,9 +385,9 @@ class TestAdoptNamespaceHonesty:
         """The history lookup only knows dashboard slots, so a `slack:` key must
         not be run through it and reported as a typo."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
-            patch("kiro_crew.cli_commands.ConversationLog") as mock_log_cls,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
+            patch("efm_go.cli_commands.ConversationLog") as mock_log_cls,
         ):
             mock_svc_cls.return_value.adopt_job.return_value = True
             mock_log_cls.return_value.has_log.return_value = False
@@ -408,7 +408,7 @@ class TestAdoptIsDeniedFromBash:
     """
 
     def _rule(self):
-        from kiro_crew.security import BUILTIN_DENIED_RULES
+        from efm_go.security import BUILTIN_DENIED_RULES
 
         return next(
             (r for r in BUILTIN_DENIED_RULES if r.id == "self-protection-cron-adopt"),
@@ -431,7 +431,7 @@ class TestAdoptIsDeniedFromBash:
             "KIROCREW_HOME=/tmp kirocrew cron adopt abc123 --session-of chat-3",
             # The module spelling, which is how the CLI is invoked from a venv.
             # `kiro.?crew` covers it because `.` matches the underscore.
-            "python3 -m kiro_crew cron adopt abc123 --release",
+            "python3 -m efm_go cron adopt abc123 --release",
             # Interposed top-level flags. The CLI really accepts these before a
             # subcommand (`--verbose`/`-v` is a repeatable count and `--no-jail`
             # is declared on the top-level parser as well as the jailed
@@ -501,14 +501,14 @@ class TestAdoptIsDeniedFromBash:
     def test_the_real_gate_denies_it_not_just_the_regex(self, command):
         """Assert through ``is_denied`` -- the function the PreToolUse gate calls --
         so the test proves enforcement rather than only pattern shape."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security.is_denied(
             command, denied_regexes=[r.pattern for r in security.BUILTIN_DENIED_RULES]
         ), command
 
     def test_the_real_gate_still_allows_reading_the_list(self):
-        from kiro_crew import security
+        from efm_go import security
 
         assert not security.is_denied(
             "kirocrew cron list",
@@ -520,7 +520,7 @@ class TestAdoptJobService:
     """``adopt_job`` is the only writer of ``session_key`` outside creation."""
 
     def test_adopt_and_release_persist(self, tmp_path):
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         job = svc.add_job(name="nightly", message="sweep", every_secs=3600)
@@ -535,7 +535,7 @@ class TestAdoptJobService:
         assert CronService(base_dir=tmp_path).get_job(job.id).session_key == ""
 
     def test_adopt_missing_id_returns_false(self, tmp_path):
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         assert svc.adopt_job("deadbeef", "dashboard:chat-1") is False
@@ -548,7 +548,7 @@ class TestAdoptJobService:
         repoint where any job delivers. The CLI -- the one surface that is not
         itself a session -- is deliberately the only writer.
         """
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         job = svc.add_job(name="nightly", message="sweep", every_secs=3600)

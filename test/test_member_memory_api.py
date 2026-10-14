@@ -16,9 +16,9 @@ from member_memory_helpers import DOCUMENT_CREDENTIAL, document_store
 from member_memory_helpers import env as _member_env
 from member_memory_helpers import request, seed_body
 
-from kiro_crew import hooks, mcp_core, memory_schema, memory_stores
-from kiro_crew.config import loader
-from kiro_crew.dashboard.handlers import (
+from efm_go import hooks, mcp_core, memory_schema, memory_stores
+from efm_go.config import loader
+from efm_go.dashboard.handlers import (
     cron,
     memory,
     memory_admin,
@@ -26,9 +26,9 @@ from kiro_crew.dashboard.handlers import (
     memory_member,
     taskrunner,
 )
-from kiro_crew.mcp_tools import learn
-from kiro_crew.memory import MemoryStore
-from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+from efm_go.mcp_tools import learn
+from efm_go.memory import MemoryStore
+from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
 pytestmark = pytest.mark.xdist_group("member_memory_api")
 
@@ -57,7 +57,7 @@ def _close_standalone_vector(state) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("target", ["", "bob"])
 async def test_spawn_inherits_member_or_uses_explicit_target(env, target):
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     cfg = loader.KiroCrewConfig.load()
     cfg.agents["bob"].triggers = "review"
@@ -94,7 +94,7 @@ async def test_spawn_inherits_member_or_uses_explicit_target(env, target):
 async def test_internal_spawn_parent_must_match_caller_identity(
     env, monkeypatch, identity, parent_session
 ):
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     env.state.subagents = SimpleNamespace(spawn=mock.Mock())
     response = await messaging.api_spawn(
@@ -112,7 +112,7 @@ async def test_internal_spawn_parent_must_match_caller_identity(
 
 @pytest.mark.asyncio
 async def test_private_taskrunner_start_forwards_protected_origin(env):
-    from kiro_crew.execution_context import read_session_execution
+    from efm_go.execution_context import read_session_execution
 
     runner = SimpleNamespace(
         _work_dir=env.home / "tasks",
@@ -165,7 +165,7 @@ async def test_taskrunner_status_uses_ordinary_internal_transport(env):
 
 @pytest.mark.asyncio
 async def test_named_v1_continuation_retains_its_parent_store(env, monkeypatch):
-    from kiro_crew.context import inherit_session_memory
+    from efm_go.context import inherit_session_memory
 
     cfg = loader.KiroCrewConfig.load()
     cfg.memory_stores["legacy-team"] = loader.MemoryStoreConfig(memory_version=1)
@@ -176,21 +176,21 @@ async def test_named_v1_continuation_retains_its_parent_store(env, monkeypatch):
     env.state.conversation_log.update_metadata = lambda key, fields: env.metadata.setdefault(
         key, {}
     ).update(fields)
-    monkeypatch.setattr("kiro_crew.context.prepare_store_vectors", mock.AsyncMock())
+    monkeypatch.setattr("efm_go.context.prepare_store_vectors", mock.AsyncMock())
 
     inherited = await inherit_session_memory(
         env.state.context_builder, "dashboard:legacy", "taskrunner:legacy-child"
     )
 
     assert inherited == "legacy-team"
-    from kiro_crew.execution_context import read_session_execution
+    from efm_go.execution_context import read_session_execution
 
     assert read_session_execution("taskrunner:legacy-child").store.legacy_name == "legacy-team"
 
 
 def test_schedule_freezes_inherited_or_explicit_member_and_rejects_missing_identity(env):
-    from kiro_crew.cron import CronJob, bind_cron_memory
-    from kiro_crew.history import ConversationLog
+    from efm_go.cron import CronJob, bind_cron_memory
+    from efm_go.history import ConversationLog
 
     own = CronJob(id="own", name="own", message="work", session_key="dashboard:alice")
     bind_cron_memory(own)
@@ -427,8 +427,8 @@ async def test_member_history_put_preserves_redacted_sqlite_authority(env):
 
 @pytest.mark.asyncio
 async def test_unsigned_transcript_cannot_claim_or_mint_private_memory(env, monkeypatch):
-    from kiro_crew import member_memory_auth
-    from kiro_crew.context import prepare_store_vectors, store_of_session
+    from efm_go import member_memory_auth
+    from efm_go.context import prepare_store_vectors, store_of_session
 
     forged_key = "slack:forged-private-assignment"
     env.metadata[forged_key] = {"memory_store": "member-bob"}
@@ -508,7 +508,7 @@ async def test_legacy_transformations_refuse_private_store_without_touching_glob
 
 @pytest.mark.asyncio
 async def test_owner_can_stage_restore_of_lost_member_directory_and_see_pending_refusal(env):
-    from kiro_crew import memory_backup
+    from efm_go import memory_backup
 
     tier = env.tiers["member-alice"]
     tier.set_semantic("project.database", "PostgreSQL", 1.0, "user_explicit")
@@ -717,7 +717,7 @@ async def test_seed_returns_truthful_partial_results_if_a_later_copy_fails(
 
 @pytest.mark.asyncio
 async def test_failed_copy_provenance_cannot_be_committed_by_a_later_write(env, monkeypatch):
-    from kiro_crew import memory_schema
+    from efm_go import memory_schema
 
     source, destination = env.tiers[""], env.tiers["member-alice"]
     source.set_semantic("project.database", "PostgreSQL", 1.0, "user_explicit")
@@ -787,7 +787,7 @@ async def test_owner_can_preview_a_selected_private_store(env):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("owner", [True, False])
 async def test_global_v1_recall_uses_the_same_explicit_tool_route(env, monkeypatch, owner):
-    from kiro_crew import member_memory_auth
+    from efm_go import member_memory_auth
 
     await document_store(env, "")
     env.tiers[""].set_semantic("project.database", "PostgreSQL V1FACT", 1.0, "user_explicit")
@@ -985,7 +985,7 @@ async def test_episode_bulk_correction_owner_gate_and_stale_selection(env, store
 
 @pytest.mark.asyncio
 async def test_pending_restore_status_survives_refresh_and_owner_can_cancel(env):
-    from kiro_crew import memory_backup
+    from efm_go import memory_backup
 
     tier = env.tiers["member-alice"]
     tier.set_semantic("project.database", "PostgreSQL", 1.0, "user_explicit")
@@ -1069,7 +1069,7 @@ async def test_episode_copy_retry_after_correction_and_forgetting_does_not_resur
 )
 @pytest.mark.parametrize("target_store", ["", "member-bob"])
 async def test_private_spawn_sibling_routes_refuse_foreign_runs(env, handler_name, target_store):
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     # Fail at the scope boundary before status reads, provider work or mutations.
     env.state.subagents = SimpleNamespace(
@@ -1091,7 +1091,7 @@ async def test_private_spawn_sibling_routes_refuse_foreign_runs(env, handler_nam
 @pytest.mark.asyncio
 @pytest.mark.parametrize("claimed", ["", "dashboard:owner", "subagent:unknown"])
 async def test_private_continue_authenticates_parent_before_cwd_read(env, claimed):
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     env.state.subagents = SimpleNamespace()
     req = request(env, body={"task": "continue", "parent_session": claimed}, internal=True)
@@ -1103,7 +1103,7 @@ async def test_private_continue_authenticates_parent_before_cwd_read(env, claime
 
 @pytest.mark.asyncio
 async def test_spawn_list_follows_origin_including_cross_member_delegation(env):
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     def row(name, store):
         return SimpleNamespace(
@@ -1161,7 +1161,7 @@ async def test_run_controls_fail_closed_for_a_caller_with_no_session_identity(en
     with a reason that names the identity gap; it keeps reaching a run no session
     started (the host operator's own CLI run), which is the only run it can own.
     """
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     rows = {r.id: r for r in _spawn_rows()}
     env.state.subagents = SimpleNamespace(get=rows.get, all_agents=list(rows.values()))
@@ -1186,12 +1186,12 @@ async def test_an_unknown_run_is_owned_by_nobody(env):
     started it, so an internal caller with no identity is refused rather than
     matched against an empty parent. A harness-native child is owned by the
     dashboard slot that tracks its card, and by nothing else."""
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     rows = {r.id: r for r in _spawn_rows()}
     env.state.subagents = SimpleNamespace(get=rows.get, all_agents=list(rows.values()))
     env.state._native_cards = {"native:abc": {"slot": "owner-slot", "session_id": "s"}}
-    with mock.patch("kiro_crew.dashboard.handlers.messaging.read_state", return_value=None):
+    with mock.patch("efm_go.dashboard.handlers.messaging.read_state", return_value=None):
         req = request(env, body={"message": "x"}, internal=True, session="")
         req.match_info["agent_id"] = "never-seen"
         refusal = await messaging._spawn_scope_refusal(req)
@@ -1213,7 +1213,7 @@ async def test_a_persisted_run_is_owned_by_its_recorded_parent(env):
     field is ``parent_session``: the recorded owner is admitted, an identity-less
     caller is refused, a record without the field owns nobody, and a persisted
     CLI run (empty parent) is still the one thing an identity-less caller reaches."""
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     env.state.subagents = SimpleNamespace(get=lambda _id: None, all_agents=[])
     records = {
@@ -1222,7 +1222,7 @@ async def test_a_persisted_run_is_owned_by_its_recorded_parent(env):
         "no-field": {"task": "x"},
     }
     with mock.patch(
-        "kiro_crew.dashboard.handlers.messaging.read_state",
+        "efm_go.dashboard.handlers.messaging.read_state",
         side_effect=lambda rid: records.get(rid),
     ):
         for run_id, session, admitted in (
@@ -1246,7 +1246,7 @@ async def test_a_sessions_own_kiro_cli_process_still_controls_its_runs(env, monk
     (here through its ``KIROCREW_SESSION_KEY`` source), and that value is the
     ``X-Session-Key`` the fence compares against the run's parent. The same chain
     with no source resolves to no identity and is refused."""
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     rows = {r.id: r for r in _spawn_rows()}
     env.state.subagents = SimpleNamespace(get=rows.get, all_agents=list(rows.values()))
@@ -1276,11 +1276,11 @@ async def test_a_global_memory_session_still_only_controls_its_own_runs(env):
     """Resolving to Global memory is not ownership: a verified session with no
     private store takes the same ownership check as a private-memory one, so it
     controls only the runs it started."""
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     rows = {r.id: r for r in _spawn_rows()}
     env.state.subagents = SimpleNamespace(get=rows.get, all_agents=list(rows.values()))
-    with mock.patch("kiro_crew.execution_context.read_session_execution", return_value=None):
+    with mock.patch("efm_go.execution_context.read_session_execution", return_value=None):
         req = request(env, body={"message": "steer"}, internal=True, session="dashboard:other")
         req.match_info["agent_id"] = "owned-run"
         refusal = await messaging._spawn_scope_refusal(req)
@@ -1296,7 +1296,7 @@ async def test_a_global_memory_session_still_only_controls_its_own_runs(env):
 async def test_spawn_list_shows_an_identity_less_caller_only_unowned_runs(env):
     """The list must not hand out the run ids, task text and parent keys that the
     control routes would refuse to act on for the same caller."""
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     rows = _spawn_rows()
     env.state.subagents = SimpleNamespace(
@@ -1309,7 +1309,7 @@ async def test_spawn_list_shows_an_identity_less_caller_only_unowned_runs(env):
 
 def _queued_registry(*queued, truncated=False):
     """A registry holding only accepted spawns that have not started yet."""
-    from kiro_crew.subagent_manager.admission.types import QueuedRunListing
+    from efm_go.subagent_manager.admission.types import QueuedRunListing
 
     by_id = {q.id: q for q in queued}
 
@@ -1331,7 +1331,7 @@ def _queued_registry(*queued, truncated=False):
 
 
 def _queued(run_id, parent, **kw):
-    from kiro_crew.subagent_manager.admission.types import QueuedRun
+    from efm_go.subagent_manager.admission.types import QueuedRun
 
     return QueuedRun(id=run_id, task=f"task {run_id}", parent_session_key=parent, **kw)
 
@@ -1341,7 +1341,7 @@ async def test_a_queued_run_is_owned_by_its_rows_session_and_reported_queued(env
     """A spawn the gate deferred has no run and no folder. Its row's session key
     owns it, so the caller that was told "queued" can read it (and nobody else
     can), and the status route answers ``queued`` instead of 404."""
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     env.state.subagents = _queued_registry(
         _queued(
@@ -1353,7 +1353,7 @@ async def test_a_queued_run_is_owned_by_its_rows_session_and_reported_queued(env
         )
     )
     with mock.patch(
-        "kiro_crew.dashboard.handlers.messaging.read_state",
+        "efm_go.dashboard.handlers.messaging.read_state",
         side_effect=AssertionError("a queued id has no run folder to read"),
     ):
         for session, admitted in (("dashboard:alice", True), ("dashboard:bob", False), ("", False)):
@@ -1379,7 +1379,7 @@ async def test_spawn_list_names_the_callers_own_queued_runs_apart_from_its_runs(
     """Queued spawns are listed under ``queued`` -- not in ``agents``, whose
     readers take a not-done entry for a run in progress -- and within the same
     caller bound as the run rows."""
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     env.state.subagents = _queued_registry(
         _queued("q-alice", "dashboard:alice"), _queued("q-bob", "dashboard:bob")
@@ -1449,7 +1449,7 @@ async def test_spawn_list_names_the_callers_own_queued_runs_apart_from_its_runs(
 @pytest.mark.asyncio
 async def test_the_dashboard_owner_still_sees_and_controls_every_run(env):
     """Cookie-authenticated owner surface: no ``internal_auth``, no ownership fence."""
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     rows = _spawn_rows()
     env.state.subagents = SimpleNamespace(
@@ -1519,7 +1519,7 @@ async def test_private_caller_cannot_use_owner_cron_aggregate_routes(env, handle
     ],
 )
 async def test_private_caller_cannot_read_owner_session_aggregate_routes(env, handler_name):
-    from kiro_crew.dashboard.handlers import sessions
+    from efm_go.dashboard.handlers import sessions
 
     response = await getattr(sessions, handler_name)(
         request(env, body={"keys": ["dashboard:owner"]}, internal=True)
@@ -1541,7 +1541,7 @@ async def test_private_caller_cannot_read_owner_session_aggregate_routes(env, ha
 def test_history_tools_preserve_retention_without_member_confidentiality(
     env, monkeypatch, tool, arguments
 ):
-    from kiro_crew.mcp_tools import sessions
+    from efm_go.mcp_tools import sessions
 
     env.bind_session("dashboard:bob", "member-bob")
     for key, label in [
@@ -1586,7 +1586,7 @@ def test_history_tools_preserve_retention_without_member_confidentiality(
     ],
 )
 async def test_private_chat_control_cannot_create_or_relabel_unbound_slots(env, path, method):
-    from kiro_crew.dashboard.handlers._shared import private_chat_route_refusal
+    from efm_go.dashboard.handlers._shared import private_chat_route_refusal
 
     app = web.Application()
     app["state"] = env.state
@@ -1605,7 +1605,7 @@ async def test_private_chat_control_cannot_create_or_relabel_unbound_slots(env, 
 
 @pytest.mark.asyncio
 async def test_private_followup_card_can_only_target_its_own_bound_tab(env):
-    from kiro_crew.dashboard.handlers._shared import private_chat_route_refusal
+    from efm_go.dashboard.handlers._shared import private_chat_route_refusal
 
     env.state._slots["alice"] = SimpleNamespace(
         key="alice", memory_store="member-alice", linked_session_key=""
@@ -1648,7 +1648,7 @@ async def test_session_callbacks_use_the_ordinary_transport_identity(
     handler_name,
     claimed,
 ):
-    from kiro_crew.dashboard.handlers import sessions
+    from efm_go.dashboard.handlers import sessions
 
     provider = SimpleNamespace(touch_activity=mock.Mock())
     env.state.sessions = SimpleNamespace(
@@ -1681,7 +1681,7 @@ async def test_session_callbacks_use_the_ordinary_transport_identity(
 
 @pytest.mark.asyncio
 async def test_internal_chat_middleware_refuses_member_before_slot_creation(env):
-    from kiro_crew.dashboard.token_auth import token_auth_middleware
+    from efm_go.dashboard.token_auth import token_auth_middleware
 
     app = web.Application()
     app["state"] = env.state
@@ -1747,10 +1747,10 @@ async def test_member_history_oversized_document_is_unavailable_without_overwrit
 async def test_markdown_only_facts_reachable_from_agent_recall(
     env, monkeypatch, mode, vector_available, question, on_teardown
 ):
-    from kiro_crew import context, member_memory_auth
-    from kiro_crew.hooks import HookManager
-    from kiro_crew.learn import LessonStore
-    from kiro_crew.skills import SkillsLoader
+    from efm_go import context, member_memory_auth
+    from efm_go.hooks import HookManager
+    from efm_go.learn import LessonStore
+    from efm_go.skills import SkillsLoader
 
     store = await document_store(env, "")
     store.write_projects("# Active Projects\nNotebookquartz task belongs to the synthetic project.")
@@ -1823,7 +1823,7 @@ async def test_markdown_only_facts_reachable_from_agent_recall(
 
 @pytest.mark.asyncio
 async def test_markdown_recall_is_bound_to_named_v1_not_global(env, monkeypatch):
-    from kiro_crew import member_memory_auth
+    from efm_go import member_memory_auth
 
     cfg = loader.KiroCrewConfig.load()
     cfg.memory_stores["legacy-notebook"] = loader.MemoryStoreConfig(memory_version=1)

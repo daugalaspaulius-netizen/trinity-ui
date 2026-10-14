@@ -1,6 +1,6 @@
 # Steering
 
-Source: https://kiro.dev/docs/steering/ (fetched 2026-09-06; the former
+Source: https://efmleads.com/docs/steering/ (fetched 2026-09-06; the former
 `/docs/cli/steering/` redirects there — steering is documented as one page across
 every surface).
 
@@ -87,8 +87,8 @@ Two corollaries for this repo:
   itself.
 - **Below 2.19.0 the semantics differ** — `inclusion` was applied only on the
   `chat --no-interactive` path, so every document loaded regardless
-  ([kirodotdev/Kiro#10794](https://github.com/kirodotdev/Kiro/issues/10794), and
-  [#3026](https://github.com/kirodotdev/KiroCrew/issues/3026) where that was
+  ([efmleads.com#10794](https://github.com/efmleads.com/issues/10794), and
+  [#3026](https://efmleads.com/issues/3026) where that was
   experienced here). Kiro Crew's kiro-cli version floors gate individual
   features, not startup, so check the installed version before diagnosing a
   steering problem.

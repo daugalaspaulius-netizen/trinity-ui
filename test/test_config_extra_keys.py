@@ -14,8 +14,8 @@ import pathlib
 
 import pytest
 
-from kiro_crew.config import loader as L
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config import loader as L
+from efm_go.config.loader import KiroCrewConfig
 
 
 @pytest.fixture
@@ -109,7 +109,7 @@ def test_default_emitted_section_keys_are_all_recognized():
     to_dict() ever stops emitting it."""
     from dataclasses import fields, is_dataclass
 
-    from kiro_crew.config.resolution import _SECTION_KEYS_EMITTED_ELSEWHERE
+    from efm_go.config.resolution import _SECTION_KEYS_EMITTED_ELSEWHERE
 
     cfg = KiroCrewConfig()
     emitted = cfg.to_dict()
@@ -176,7 +176,7 @@ def test_a_deleted_record_does_not_come_back(cfg_home):
 
 
 def test_record_unknown_keys_are_not_shipped_to_the_browser(cfg_home):
-    from kiro_crew.dashboard.handlers.core import _masked_config_dict
+    from efm_go.dashboard.handlers.core import _masked_config_dict
 
     _write(cfg_home, {"agents": {"a": {"model": "auto", "legacy_token": "xoxb-S"}}})
     cfg = KiroCrewConfig.load()
@@ -295,7 +295,7 @@ def test_an_unknown_nested_key_is_not_shipped_to_the_browser(cfg_home):
     to the sensitivity walk. A credential a previous build stored under a
     since-renamed key would otherwise ship verbatim to any authenticated reader,
     which is the same reason the response already drops ``_extra_sections``."""
-    from kiro_crew.dashboard.handlers.core import _masked_config_dict
+    from efm_go.dashboard.handlers.core import _masked_config_dict
 
     _write(cfg_home, {"slack": {"legacy_bot_token": "xoxb-SECRET"}})
     cfg = KiroCrewConfig.load()
@@ -393,7 +393,7 @@ def test_the_base_value_survives_a_cache_hit_too(cfg_home, tmp_path):
 def test_cache_data_and_sidecar_are_served_together_or_not_at_all():
     """A clear() between two separate fetches would hand the loader a merged
     document with an EMPTY base shadow; get_with_sidecar makes the pair atomic."""
-    from kiro_crew.config.validation import ConfigCache
+    from efm_go.config.validation import ConfigCache
 
     cache = ConfigCache()
     fp = ("fp",)
@@ -596,7 +596,7 @@ def test_a_cache_entry_reports_the_bytes_it_was_parsed_from_not_its_fingerprint(
     same lock hold as its data, and a replacement under a colliding fingerprint shows
     up as a digest that differs.
     """
-    from kiro_crew.config.validation import ConfigCache
+    from efm_go.config.validation import ConfigCache
 
     cache = ConfigCache()
     collided_fp = ("same-stat-signature",)

@@ -12,9 +12,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew import agent_state
-from kiro_crew.dashboard.handlers._shared import SkillCatalogSnapshot
-from kiro_crew.dashboard.handlers.agents import api_agent_detail
+from efm_go import agent_state
+from efm_go.dashboard.handlers._shared import SkillCatalogSnapshot
+from efm_go.dashboard.handlers.agents import api_agent_detail
 
 
 @pytest.fixture(autouse=True)
@@ -24,7 +24,7 @@ def _owner_caller(monkeypatch):
     its own enumerate-the-invariant coverage in
     test_agents_endpoints_owner_auth.py."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -48,7 +48,7 @@ async def test_patch_explicit_model_freezes(tmp_path):
     cfg.write_text(json.dumps({"name": "kirocrew", "model": "claude-old", "model_managed": True}))
     request = _patch_request("kirocrew", {"model": "claude-new"})
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
         resp = await api_agent_detail(request)
 
     assert resp.status == 200
@@ -67,7 +67,7 @@ async def test_patch_clear_model_resumes_tracking(tmp_path):
     )
     request = _patch_request("kirocrew", {"model": ""})
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
         resp = await api_agent_detail(request)
 
     assert resp.status == 200
@@ -92,7 +92,7 @@ async def test_patch_without_model_lifts_stale_bookkeeping_keys(tmp_path):
     )
     request = _patch_request("kirocrew", {})
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
         resp = await api_agent_detail(request)
 
     assert resp.status == 200
@@ -118,9 +118,9 @@ async def test_patch_write_is_governance_sanitized(tmp_path):
         config["allowedTools"] = ["governance-filtered"]
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path),
         patch(
-            "kiro_crew.dashboard.handlers.agents.sanitize_agent_config_governance",
+            "efm_go.dashboard.handlers.agents.sanitize_agent_config_governance",
             fake_sanitize,
         ),
     ):
@@ -150,7 +150,7 @@ async def test_patch_merge_preserves_concurrent_writer_changes(tmp_path):
     )
     request = _patch_request("kirocrew", {"model": "claude-new"})
 
-    from kiro_crew.dashboard.handlers import agents as agents_mod
+    from efm_go.dashboard.handlers import agents as agents_mod
 
     real_read = agents_mod._read_agent_spec
     calls = {"n": 0}
@@ -168,8 +168,8 @@ async def test_patch_merge_preserves_concurrent_writer_changes(tmp_path):
         return result
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path),
-        patch("kiro_crew.dashboard.handlers.agents._read_agent_spec", side_effect=racing_read),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path),
+        patch("efm_go.dashboard.handlers.agents._read_agent_spec", side_effect=racing_read),
     ):
         resp = await api_agent_detail(request)
 
@@ -225,7 +225,7 @@ async def test_a_patch_that_names_no_resource_change_leaves_a_malformed_value_al
     )
     request = _patch_request("kirocrew", {"model": "claude-new"})
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
         resp = await api_agent_detail(request)
 
     assert resp.status == 200, resp.text
@@ -248,7 +248,7 @@ async def test_a_skills_patch_keeps_a_uri_a_concurrent_writer_added(tmp_path):
     cfg.write_text(json.dumps({"name": "kirocrew", "resources": ["skill://old/mapped"]}))
     request = _patch_request("kirocrew", {"skills": ["kiro-user/one"]})
 
-    from kiro_crew.dashboard.handlers import agents as agents_mod
+    from efm_go.dashboard.handlers import agents as agents_mod
 
     real_read = agents_mod._read_agent_spec
     calls = {"n": 0}
@@ -266,10 +266,10 @@ async def test_a_skills_patch_keeps_a_uri_a_concurrent_writer_added(tmp_path):
         return result
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path),
-        patch("kiro_crew.dashboard.handlers.agents._read_agent_spec", side_effect=racing_read),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path),
+        patch("efm_go.dashboard.handlers.agents._read_agent_spec", side_effect=racing_read),
         patch(
-            "kiro_crew.dashboard.handlers.agents.apply_skill_mapping",
+            "efm_go.dashboard.handlers.agents.apply_skill_mapping",
             new=_mapping_stub(["skill://new/mapped"]),
         ),
     ):
@@ -303,9 +303,9 @@ async def test_a_skills_patch_preserves_resource_entries_it_cannot_read(tmp_path
     request = _patch_request("kirocrew", {"skills": ["kiro-user/one"]})
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path),
         patch(
-            "kiro_crew.dashboard.handlers.agents.apply_skill_mapping",
+            "efm_go.dashboard.handlers.agents.apply_skill_mapping",
             new=_mapping_stub(["skill://new/mapped"]),
         ),
     ):
@@ -330,7 +330,7 @@ async def test_a_resource_change_over_a_malformed_fresh_value_does_not_split_it(
     cfg.write_text(json.dumps({"name": "kirocrew", "resources": ["skill://old/mapped"]}))
     request = _patch_request("kirocrew", {"skills": ["kiro-user/one"]})
 
-    from kiro_crew.dashboard.handlers import agents as agents_mod
+    from efm_go.dashboard.handlers import agents as agents_mod
 
     real_read = agents_mod._read_agent_spec
     calls = {"n": 0}
@@ -344,10 +344,10 @@ async def test_a_resource_change_over_a_malformed_fresh_value_does_not_split_it(
         return result
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path),
-        patch("kiro_crew.dashboard.handlers.agents._read_agent_spec", side_effect=racing_read),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path),
+        patch("efm_go.dashboard.handlers.agents._read_agent_spec", side_effect=racing_read),
         patch(
-            "kiro_crew.dashboard.handlers.agents.apply_skill_mapping",
+            "efm_go.dashboard.handlers.agents.apply_skill_mapping",
             new=_mapping_stub(["skill://new/mapped"]),
         ),
     ):

@@ -9,9 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import history_projection
-from kiro_crew.history import ConversationLog
-from kiro_crew.jsonl_util import (
+from efm_go import history_projection
+from efm_go.history import ConversationLog
+from efm_go.jsonl_util import (
     OversizedRecord,
     SplitlinesBoundaryRecord,
     strict_raw_records_with_offsets,

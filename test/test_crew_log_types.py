@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.crew_log import (
+from efm_go.crew_log import (
     CODE_BAD_DATA_FIELD,
     SESSION_ENTRY_TYPES,
     CrewLog,
@@ -28,16 +28,16 @@ from kiro_crew.crew_log import (
     declaration_for,
     emit,
 )
-from kiro_crew.crew_log import entry_types as reg
-from kiro_crew.crew_log import (
+from efm_go.crew_log import entry_types as reg
+from efm_go.crew_log import (
     render_markdown,
 )
-from kiro_crew.crew_log import store as store_mod
-from kiro_crew.crew_log import (
+from efm_go.crew_log import store as store_mod
+from efm_go.crew_log import (
     validate_data,
 )
-from kiro_crew.crew_log import writer as writer_mod
-from kiro_crew.crew_log.store import (
+from efm_go.crew_log import writer as writer_mod
+from efm_go.crew_log.store import (
     STOP_REASON_INTERRUPTED,
     TOOL_STATUS_UNKNOWN,
     _closer_entries,
@@ -372,7 +372,7 @@ def test_only_a_vocabulary_the_writer_clamps_is_enforced():
     assert {spec_type for spec_type, _ in closed} <= emitted
 
 
-#: The append primitives in :mod:`kiro_crew.crew_log.emit` and its durable writer,
+#: The append primitives in :mod:`efm_go.crew_log.emit` and its durable writer,
 #: each mapped to the index of the positional argument that names the entry type.
 #:
 #: Keyed on the CALLEE rather than on any type-shaped literal, because emit.py also
@@ -1090,16 +1090,16 @@ def test_the_cli_prints_the_tables_and_refuses_anything_else(capsys):
 
 
 def test_the_module_runs_as_a_command():
-    # `python -m kiro_crew.crew_log.entry_types --markdown` is the documented form,
+    # `python -m efm_go.crew_log.entry_types --markdown` is the documented form,
     # so the module has to be importable AS a script and not only as a library.
     root = Path(__file__).resolve().parents[1]
-    # The venv this suite runs under may have ``kiro_crew`` installed from a
+    # The venv this suite runs under may have ``efm_go`` installed from a
     # different checkout, so point the child at THIS tree's ``src`` -- the test is
     # about the module having a working entry point, not about it being installed.
     env = dict(os.environ)
     env["PYTHONPATH"] = str(root / "src")
     result = subprocess.run(
-        [sys.executable, "-m", "kiro_crew.crew_log.entry_types", "--markdown"],
+        [sys.executable, "-m", "efm_go.crew_log.entry_types", "--markdown"],
         cwd=root,
         env=env,
         capture_output=True,

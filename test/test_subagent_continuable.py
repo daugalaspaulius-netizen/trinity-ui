@@ -22,9 +22,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.subagent import SUCCESSOR_UNKNOWN, SubagentInfo, SubagentManager
-from kiro_crew.subagent_manager.continuation import ContinuationCoordinator
-from kiro_crew.subagent_persistence import create_agent_folder, write_run_agent
+from efm_go.subagent import SUCCESSOR_UNKNOWN, SubagentInfo, SubagentManager
+from efm_go.subagent_manager.continuation import ContinuationCoordinator
+from efm_go.subagent_persistence import create_agent_folder, write_run_agent
 
 # ``SubagentManager.spawn`` refuses -- registering no task -- while the host
 # looks short of memory, which is the runner's state, not this test's input.
@@ -119,8 +119,8 @@ def _stop_reason(info: SubagentInfo) -> str:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("continuation", [False, True])
 async def test_run_execution_publication_is_off_loop(monkeypatch, continuation):
-    from kiro_crew import execution_context, subagent_persistence
-    from kiro_crew.subagent import _RunCreditAccounting
+    from efm_go import execution_context, subagent_persistence
+    from efm_go.subagent import _RunCreditAccounting
 
     manager = _manager()
     manager.dependency_coordinator_async = AsyncMock(return_value=None)
@@ -164,7 +164,7 @@ async def test_run_execution_publication_is_off_loop(monkeypatch, continuation):
 
 class TestSessionManagerContinuable:
     def _sessions(self):  # type: ignore[no-untyped-def]
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         with patch.object(SessionManager, "__init__", lambda self: None):
             mgr = SessionManager()  # type: ignore[call-arg]
@@ -187,7 +187,7 @@ class TestSessionManagerContinuable:
         session.provider.session_id = "sid-1"
         mgr._sessions["subagent:abc"] = session
         mgr.mark_continuable("subagent:abc")
-        with patch("kiro_crew.session.asyncio.ensure_future") as ensure:
+        with patch("efm_go.session.asyncio.ensure_future") as ensure:
             mgr.release("subagent:abc", cleanup=True)
         ensure.assert_not_called()
         session.semaphore.release.assert_called_once()
@@ -198,7 +198,7 @@ class TestSessionManagerContinuable:
         session.provider.session_id = "sid-1"
         mgr._sessions["subagent:abc"] = session
         with patch(
-            "kiro_crew.session.asyncio.ensure_future",
+            "efm_go.session.asyncio.ensure_future",
             side_effect=lambda coro: coro.close(),
         ) as ensure:
             mgr.release("subagent:abc", cleanup=True)
@@ -222,7 +222,7 @@ class TestKeepThreading:
     async def test_keep_marks_continuable_and_skips_sharing(self) -> None:
         sessions = _mock_sessions()
         manager = _manager(sessions)
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             info = manager.spawn("task", keep=True)
             assert info is not None and not info.error
             assert info.keep is True
@@ -238,7 +238,7 @@ class TestKeepThreading:
         """Retain-by-default: even non-keep runs keep session files."""
         sessions = _mock_sessions()
         manager = _manager(sessions)
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             info = manager.spawn("task")
             assert info is not None and not info.error
             await manager._tasks[info.id]
@@ -247,13 +247,13 @@ class TestKeepThreading:
 
     @pytest.mark.asyncio
     async def test_conversation_key_overrides_session_key(self) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         await asyncio.to_thread(sp.create_agent_folder, "origrun1", memory_mode="persistent")
         await asyncio.to_thread(sp.write_run_agent, "origrun1", "")
         sessions = _mock_sessions(resumed=True)
         manager = _manager(sessions)
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             info = manager.spawn("follow-up", keep=True, conversation_key="subagent:origrun1")
             assert info is not None and not info.error
             await manager._tasks[info.id]
@@ -270,7 +270,7 @@ class TestContinueConversation:
         manager = _manager()
         live = SubagentInfo(id="orig1234", task="t")
         manager._agents["orig1234"] = live  # not done → busy
-        with patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.sel"):
             info = manager.continue_conversation("orig1234", "more work")
         assert info is not None and info.done
         assert info.error.startswith("conversation_busy")
@@ -280,8 +280,8 @@ class TestContinueConversation:
         sessions.resumable_sid = MagicMock(return_value=None)
         manager = _manager(sessions)
         with (
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent.read_state", return_value=None),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent.read_state", return_value=None),
         ):
             info = manager.continue_conversation("deadbeef", "more work")
         assert info is not None and info.done
@@ -293,7 +293,7 @@ class TestContinueConversation:
         manager = _manager(sessions)
         with (
             patch(
-                "kiro_crew.subagent_persistence.promote_retention", side_effect=OSError("disk busy")
+                "efm_go.subagent_persistence.promote_retention", side_effect=OSError("disk busy")
             ),
             patch.object(manager, "spawn") as spawn,
         ):
@@ -309,7 +309,7 @@ class TestContinueConversation:
         sessions = _mock_sessions()
         manager = _manager(sessions)
         with (
-            patch("kiro_crew.subagent.update_state", return_value=False),
+            patch("efm_go.subagent.update_state", return_value=False),
             patch.object(manager, "spawn") as spawn,
         ):
             info = manager.continue_conversation("skiprun", "follow-up")
@@ -319,7 +319,7 @@ class TestContinueConversation:
         spawn.assert_not_called()
 
     def test_retryable_promotion_preserves_existing_retention(self) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         create_agent_folder("kept-run")
         sessions = _mock_sessions()
@@ -328,7 +328,7 @@ class TestContinueConversation:
         manager._conversations["subagent:kept-run"] = 123.0
         with (
             patch(
-                "kiro_crew.subagent_persistence.promote_retention",
+                "efm_go.subagent_persistence.promote_retention",
                 return_value=sp.RetentionPromotionResult.RETRYABLE,
             ),
             patch.object(manager, "spawn") as spawn,
@@ -341,7 +341,7 @@ class TestContinueConversation:
         spawn.assert_not_called()
 
     def test_concurrent_promotions_use_direct_return_values(self) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         manager = _manager(_mock_sessions())
         for agent_id in ("retry-thread", "promoted-thread"):
@@ -363,7 +363,7 @@ class TestContinueConversation:
             threading.Thread(target=promote, args=(agent_id,))
             for agent_id in ("retry-thread", "promoted-thread")
         ]
-        with patch("kiro_crew.subagent.update_state", side_effect=state_writer):
+        with patch("efm_go.subagent.update_state", side_effect=state_writer):
             for thread in threads:
                 thread.start()
             for thread in threads:
@@ -387,9 +387,9 @@ class TestContinueConversation:
         manager = _manager(sessions)
         state = {"session_id": "sid-from-state", "provider": "acp", "cwd": "/tmp/x"}
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent.read_state", return_value=state),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent.read_state", return_value=state),
             patch.object(manager, "_promote_conversation", return_value=object()) as promote,
         ):
             info = manager.continue_conversation("origrun2", "follow-up")
@@ -408,8 +408,8 @@ class TestContinueConversation:
         manager = _manager(sessions)
         state = {"session_id": "sid-stale", "provider": "acp", "cwd": ""}
         with (
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent.read_state", return_value=state),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent.read_state", return_value=state),
         ):
             info = manager.continue_conversation("stalerun", "follow-up")
         assert info is not None and info.done
@@ -417,15 +417,15 @@ class TestContinueConversation:
 
     @pytest.mark.asyncio
     async def test_continue_dispatches_new_run_on_same_key(self) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         await asyncio.to_thread(sp.create_agent_folder, "origrun1", memory_mode="persistent")
         await asyncio.to_thread(sp.write_run_agent, "origrun1", "")
         sessions = _mock_sessions(resumed=True)
         manager = _manager(sessions)
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(manager, "_promote_conversation", return_value=object()),
         ):
             info = manager.continue_conversation("origrun1", "follow-up work")
@@ -441,7 +441,7 @@ class TestContinueConversation:
     async def test_continuation_fails_closed_when_not_resumed(self) -> None:
         """session/load falling back to a fresh session must NOT execute the
         follow-up context-free — the run fails with a typed resume_failed."""
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         await asyncio.to_thread(sp.create_agent_folder, "origrun9", memory_mode="persistent")
         await asyncio.to_thread(sp.write_run_agent, "origrun9", "")
@@ -450,8 +450,8 @@ class TestContinueConversation:
         provider.session_id = "sid-resume-fresh"
         manager = _manager(sessions)
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(manager, "_promote_conversation", return_value=object()),
         ):
             info = manager.continue_conversation("origrun9", "follow-up work")
@@ -480,7 +480,7 @@ class TestContinuationAgentInheritance:
         sessions = _mock_sessions()
         sessions.get_agent.return_value = None
         manager = _manager(sessions)
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             info = manager.spawn("initial task", parent_session_key="dashboard:owner")
             assert info is not None and info.done
         assert "effective agent template is invalid" in info.error
@@ -492,17 +492,17 @@ class TestContinuationAgentInheritance:
     async def test_chained_override_preserves_original_template(
         self, restart: bool, original_agent: str
     ) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         sessions = _mock_sessions()
         sessions.get_agent.return_value = original_agent
         manager = _manager(sessions)
         manager._spawn_stagger_secs = 0
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
+                "efm_go.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
             ),
         ):
             original = manager.spawn(
@@ -547,7 +547,7 @@ class TestContinuationAgentInheritance:
     async def test_override_cannot_establish_missing_lineage(self, authority: str) -> None:
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         directory = await asyncio.to_thread(sp.create_agent_folder, "original", agent="worker")
         path = directory / "state.json"
@@ -562,7 +562,7 @@ class TestContinuationAgentInheritance:
             path.mkdir()
         sessions = _mock_sessions(resumed=True)
         manager = _manager(sessions)
-        with patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.sel"):
             followup = manager.continue_conversation("original", "next turn", agent="other-worker")
         assert followup is not None and followup.error
         assert "memory_unavailable" in followup.error
@@ -575,7 +575,7 @@ class TestContinuationAgentInheritance:
     ) -> None:
         from types import SimpleNamespace
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         await asyncio.to_thread(
             sp.create_agent_folder, "original", agent="worker", app="example-app"
@@ -591,18 +591,18 @@ class TestContinuationAgentInheritance:
             return name, "", ""
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent._validate_agent", side_effect=validate),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent._validate_agent", side_effect=validate),
             patch(
-                "kiro_crew.subagent.list_agents",
+                "efm_go.subagent.list_agents",
                 return_value=[
                     SimpleNamespace(name=name, filename=f"example-app--{name}.json")
                     for name in ("worker", "other-worker")
                 ],
             ),
             patch(
-                "kiro_crew.subagent._vet_spawn_governance",
+                "efm_go.subagent._vet_spawn_governance",
                 side_effect=lambda parent, agent, app="": (
                     "worker denied" if agent == "worker" and refusal == "spawn-policy" else None
                 ),
@@ -640,14 +640,14 @@ class TestContinuationAgentInheritance:
     async def test_private_override_chain_retains_memory_authority(
         self, restart: bool, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.subagent_persistence as sp
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-        from kiro_crew.history import ConversationLog
-        from kiro_crew.member_memory_auth import (
+        import efm_go.subagent_persistence as sp
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.history import ConversationLog
+        from efm_go.member_memory_auth import (
             bind_private_session_store,
             private_memory_store_for_session,
         )
-        from kiro_crew.memory_stores import provision_member_memory
+        from efm_go.memory_stores import provision_member_memory
 
         # No provider process is launched; only the OS capability probe is
         # modeled. Store provisioning, delegation and protected bindings are real.
@@ -671,10 +671,10 @@ class TestContinuationAgentInheritance:
         manager._spawn_stagger_secs = 0
         manager._ctx_builder.conversation_log = history
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
+                "efm_go.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
             ),
         ):
             original = manager.spawn(
@@ -739,7 +739,7 @@ class TestContinuationAgentInheritance:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("continuation", [False, True])
     async def test_inherited_template_obeys_spawn_scope(self, continuation: bool) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         sessions = _mock_sessions(resumed=continuation)
         sessions.get_agent.return_value = "worker"
@@ -748,13 +748,13 @@ class TestContinuationAgentInheritance:
             await asyncio.to_thread(sp.create_agent_folder, "original", agent="worker")
             await asyncio.to_thread(sp.write_run_agent, "original", "worker")
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
+                "efm_go.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
             ),
             patch(
-                "kiro_crew.subagent._vet_spawn_governance",
+                "efm_go.subagent._vet_spawn_governance",
                 side_effect=lambda parent, agent, app="": (
                     "worker denied" if agent == "worker" else None
                 ),
@@ -777,7 +777,7 @@ class TestContinuationAgentInheritance:
     @pytest.mark.parametrize("live", [True, False])
     @pytest.mark.parametrize("override", ["", "other-worker"])
     async def test_resume_retains_worker_template(self, live: bool, override: str) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         await asyncio.to_thread(sp.create_agent_folder, "original", agent="worker")
         await asyncio.to_thread(sp.write_run_agent, "original", "worker")
@@ -789,10 +789,10 @@ class TestContinuationAgentInheritance:
                 id="original", task="first task", agent="worker", done=True
             )
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
+                "efm_go.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
             ),
             patch.object(manager, "_promote_conversation", return_value=object()),
         ):
@@ -811,12 +811,12 @@ class TestContinuationAgentInheritance:
     async def test_implicit_spawn_records_template_for_restart(
         self, state_agent: str | None
     ) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         sessions = _mock_sessions()
         sessions.get_agent.return_value = "worker"
         manager = _manager(sessions)
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             info = manager.spawn("first task", parent_session_key="dashboard:worker", keep=True)
             assert info is not None and not info.error
             await asyncio.wait_for(manager._tasks[info.id], timeout=10)
@@ -831,10 +831,10 @@ class TestContinuationAgentInheritance:
         restored_sessions.get_agent.return_value = "conductor"
         restored = _manager(restored_sessions)
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
+                "efm_go.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
             ),
             patch.object(restored, "_promote_conversation", return_value=object()),
         ):
@@ -848,7 +848,7 @@ class TestContinuationAgentInheritance:
 
     @pytest.mark.asyncio
     async def test_recorded_default_does_not_inherit_new_parent(self) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         await asyncio.to_thread(sp.create_agent_folder, "original", agent="")
         await asyncio.to_thread(sp.write_run_agent, "original", "")
@@ -856,8 +856,8 @@ class TestContinuationAgentInheritance:
         sessions.get_agent.return_value = "conductor"
         manager = _manager(sessions)
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch.object(manager, "_promote_conversation", return_value=object()),
         ):
             info = manager.continue_conversation(
@@ -870,7 +870,7 @@ class TestContinuationAgentInheritance:
 
     @pytest.mark.asyncio
     async def test_unavailable_recorded_template_refuses_allocation(self) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         await asyncio.to_thread(sp.create_agent_folder, "original", agent="removed-worker")
         await asyncio.to_thread(sp.write_run_agent, "original", "removed-worker")
@@ -878,10 +878,10 @@ class TestContinuationAgentInheritance:
         sessions.get_agent.return_value = "conductor"
         manager = _manager(sessions)
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent",
+                "efm_go.subagent._validate_agent",
                 return_value=("", "agent 'removed-worker' not found", "agent_not_found"),
             ),
             patch.object(manager, "_promote_conversation", return_value=object()),
@@ -898,17 +898,17 @@ class TestContinuationAgentInheritance:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("override", ["", "worker"])
     async def test_legacy_template_requires_explicit_override(self, override: str) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         await asyncio.to_thread(sp.create_agent_folder, "original", agent="conductor")
         sessions = _mock_sessions(resumed=True)
         sessions.get_agent.return_value = "conductor"
         manager = _manager(sessions)
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
+                "efm_go.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
             ),
             patch.object(manager, "_promote_conversation", return_value=object()),
         ):
@@ -923,7 +923,7 @@ class TestContinuationAgentInheritance:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("lineage", ["initial", "known", "unknown"])
     async def test_template_publication_failure_refuses_allocation(self, lineage: str) -> None:
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         if lineage != "initial":
             await asyncio.to_thread(sp.create_agent_folder, "original", agent="worker")
@@ -932,10 +932,10 @@ class TestContinuationAgentInheritance:
         sessions = _mock_sessions()
         manager = _manager(sessions)
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
+                "efm_go.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
             ),
             patch.object(
                 type(manager._run_events),
@@ -965,16 +965,16 @@ def continuation_runtime(tmp_path, monkeypatch):
     import uuid
     from types import SimpleNamespace
 
-    from kiro_crew import agent, agent_state, session
-    from kiro_crew.agent_capabilities import CapabilityService, prepare_member_capabilities
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, WorkspaceConfig
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.member_memory_auth import (
+    from efm_go import agent, agent_state, session
+    from efm_go.agent_capabilities import CapabilityService, prepare_member_capabilities
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, WorkspaceConfig
+    from efm_go.history import ConversationLog
+    from efm_go.member_memory_auth import (
         bind_private_session_store,
         private_memory_store_for_session,
     )
-    from kiro_crew.memory_stores import provision_member_memory
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent, LLMProvider
+    from efm_go.memory_stores import provision_member_memory
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent, LLMProvider
 
     home, specs, project, native = (
         tmp_path / name for name in ("home", "agents", "project", "native")
@@ -984,11 +984,11 @@ def continuation_runtime(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(home))
     monkeypatch.setenv("KIRO_HOME", str(tmp_path / "kiro"))
     monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", specs)
-    monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", specs)
+    monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", specs)
     # Model resolution and the native provider must read the same agent specs.
-    monkeypatch.setattr("kiro_crew.config.loader.kiro_agents_dir", lambda: specs)
+    monkeypatch.setattr("efm_go.config.loader.kiro_agents_dir", lambda: specs)
     monkeypatch.setattr(agent_state, "_state_path", lambda: home / "agent_model_state.json")
-    monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", native)
+    monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", native)
     # Keep real V2 provisioning, ownership, delegation and binding checks.
     for name in ("worker", "member-parent"):
         (specs / f"{name}.json").write_text(
@@ -1158,8 +1158,8 @@ def continuation_runtime(tmp_path, monkeypatch):
 
 class TestContinuationTemplateNamespace:
     def test_parent_selection_snapshot_keeps_allocation_namespace(self):
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         cfg = KiroCrewConfig()
         sessions = SessionManager(cfg)
@@ -1179,8 +1179,8 @@ class TestContinuationTemplateNamespace:
     def test_present_parent_with_unavailable_selection_refuses(self, agent, member):
         from types import SimpleNamespace
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         sessions = SessionManager(KiroCrewConfig())
         sessions._sessions["parent"] = SimpleNamespace(agent=agent, capability_member=member)
@@ -1192,13 +1192,13 @@ class TestContinuationTemplateNamespace:
     async def test_retained_template_survives_same_named_member_enrollment(
         self, continuation_runtime, restart
     ):
-        from kiro_crew import subagent_persistence as sp
-        from kiro_crew.member_memory_auth import private_memory_store_for_session
+        from efm_go import subagent_persistence as sp
+        from efm_go.member_memory_auth import private_memory_store_for_session
 
         world = continuation_runtime
         sessions, manager = world.new_manager()
         try:
-            with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
                 original = manager.spawn(
                     "original task",
                     parent_session_key=world.parent,
@@ -1266,7 +1266,7 @@ class TestContinuationTemplateNamespace:
             monkeypatch.setattr(manager, "_should_use_session_sharing", lambda info: True)
             monkeypatch.setattr(manager, "_create_shared_session", shared)
         try:
-            with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
                 child = manager.spawn(
                     "use the explicit template",
                     agent="worker",
@@ -1292,13 +1292,13 @@ class TestContinuationTemplateNamespace:
     @pytest.mark.parametrize("override", ["", "worker"])
     @pytest.mark.parametrize("queued", [False, True])
     async def test_named_crew_keeps_member_identity(self, continuation_runtime, override, queued):
-        from kiro_crew import subagent_persistence as sp
+        from efm_go import subagent_persistence as sp
 
         world = continuation_runtime
         generation, store = await asyncio.to_thread(world.enroll_collision)
         sessions, manager = world.new_manager()
         try:
-            with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
                 if queued:
                     manager._running_count = manager.max_concurrent
                 child = manager.spawn(
@@ -1356,9 +1356,9 @@ class TestContinuationTemplateNamespace:
 
         from test_handlers_messaging_coverage import _Req, _state
 
-        from kiro_crew import subagent_persistence as sp
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.dashboard.handlers.messaging import api_spawn
+        from efm_go import subagent_persistence as sp
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.dashboard.handlers.messaging import api_spawn
 
         world = continuation_runtime
         generation, store = await asyncio.to_thread(world.enroll_collision)
@@ -1372,7 +1372,7 @@ class TestContinuationTemplateNamespace:
         sessions, manager = world.new_manager()
         state = _state(subagents=manager, sessions=sessions, conversation_log=world.history)
         try:
-            with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
                 response = await api_spawn(
                     _Req(
                         state,
@@ -1405,13 +1405,13 @@ class TestContinuationTemplateNamespace:
     async def test_queued_named_crew_revalidates_identity(
         self, continuation_runtime, monkeypatch, override, fault
     ):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         world = continuation_runtime
         _generation, store = await asyncio.to_thread(world.enroll_collision)
         sessions, manager = world.new_manager()
         try:
-            with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
                 manager._running_count = manager.max_concurrent
                 queued = manager.spawn(
                     "queued member task",
@@ -1424,7 +1424,7 @@ class TestContinuationTemplateNamespace:
                 params = manager._queue.pop(0)
                 if fault == "governance":
                     monkeypatch.setattr(
-                        "kiro_crew.subagent._vet_spawn_governance",
+                        "efm_go.subagent._vet_spawn_governance",
                         lambda parent, agent, **kw: "member denied" if agent == "worker" else "",
                     )
                 else:
@@ -1460,7 +1460,7 @@ class TestContinuationTemplateNamespace:
         world = continuation_runtime
         generation, peer_store = await asyncio.to_thread(world.enroll_collision)
         sessions, manager = world.new_manager()
-        from kiro_crew.member_memory_auth import bind_private_session_store
+        from efm_go.member_memory_auth import bind_private_session_store
 
         parent = "slack:C123:123.456"
         await asyncio.to_thread(bind_private_session_store, parent, peer_store)
@@ -1471,7 +1471,7 @@ class TestContinuationTemplateNamespace:
             )
             sessions.release(parent)
             assert sessions.get_agent(parent) == "worker"
-            with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
                 child = manager.spawn(
                     "inherit the parent",
                     parent_session_key=parent,
@@ -1496,7 +1496,7 @@ class TestContinuationTemplateNamespace:
     ):
         import json
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         world = continuation_runtime
         await asyncio.to_thread(world.enroll_collision)
@@ -1519,7 +1519,7 @@ class TestContinuationTemplateNamespace:
             monkeypatch.setattr(manager, "_should_use_session_sharing", lambda info: True)
             monkeypatch.setattr(manager, "_create_shared_session", shared)
         try:
-            with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
                 child = manager.spawn(
                     "use the selected template and its model",
                     agent="worker",
@@ -1552,16 +1552,16 @@ class TestContinuationTemplateNamespace:
     async def test_member_continuation_adopts_generation_after_template_override(
         self, continuation_runtime, monkeypatch, restart
     ):
-        from kiro_crew import subagent_persistence as sp
-        from kiro_crew.member_memory_auth import (
+        from efm_go import subagent_persistence as sp
+        from efm_go.member_memory_auth import (
             bind_private_session_store,
             private_memory_store_for_session,
         )
-        from kiro_crew.subagent import _vet_spawn_governance
+        from efm_go.subagent import _vet_spawn_governance
 
         world = continuation_runtime
         governance = MagicMock(wraps=_vet_spawn_governance)
-        monkeypatch.setattr("kiro_crew.subagent._vet_spawn_governance", governance)
+        monkeypatch.setattr("efm_go.subagent._vet_spawn_governance", governance)
         generation, store = await asyncio.to_thread(world.enroll_collision)
         sessions, manager = world.new_manager()
         parent = "slack:C123:123.456"
@@ -1578,7 +1578,7 @@ class TestContinuationTemplateNamespace:
             shared = AsyncMock(side_effect=AssertionError("member bypassed preparation"))
             monkeypatch.setattr(manager, "_should_use_session_sharing", lambda info: True)
             monkeypatch.setattr(manager, "_create_shared_session", shared)
-            with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+            with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
                 original = manager.spawn(
                     "member task", parent_session_key=parent, memory_store=store, cwd=world.project
                 )
@@ -1647,8 +1647,8 @@ class TestContinuationTemplateNamespace:
     async def test_retained_member_cannot_fall_back_or_change_authority(
         self, continuation_runtime, monkeypatch, fault
     ):
-        from kiro_crew import subagent_persistence as sp
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go import subagent_persistence as sp
+        from efm_go.config.loader import KiroCrewConfig
 
         world = continuation_runtime
         _, store = await asyncio.to_thread(world.enroll_collision)
@@ -1660,7 +1660,7 @@ class TestContinuationTemplateNamespace:
         manager._ctx_builder.conversation_log = world.history
         if fault == "governance":
             monkeypatch.setattr(
-                "kiro_crew.subagent._vet_spawn_governance",
+                "efm_go.subagent._vet_spawn_governance",
                 lambda parent, agent, app="": "member denied" if agent == "worker" else None,
             )
         else:
@@ -1674,7 +1674,7 @@ class TestContinuationTemplateNamespace:
                 cfg.save()
 
             await asyncio.to_thread(change_member)
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             followup = manager.continue_conversation("member-run", "follow-up", cwd=world.project)
             assert followup is not None
             if not followup.done:
@@ -1691,11 +1691,11 @@ class TestContinuationTemplateNamespace:
 
     @pytest.mark.asyncio
     async def test_missing_member_never_becomes_same_named_template(self, continuation_runtime):
-        from kiro_crew import subagent_persistence as sp
+        from efm_go import subagent_persistence as sp
 
         world = continuation_runtime
         # worker.json exists, but worker is not a configured member.
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
         execution = ExecutionContext(
             None, MemoryStoreRef("default"), "member", "worker", selection_name="worker"
@@ -1704,7 +1704,7 @@ class TestContinuationTemplateNamespace:
         sessions = _mock_sessions(resumed=True)
         manager = _manager(sessions)
         manager._ctx_builder.conversation_log = world.history
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             followup = manager.continue_conversation("member-run", "follow-up", cwd=world.project)
             assert followup is not None and followup.done
         assert "selected member is unavailable" in followup.error
@@ -1713,7 +1713,7 @@ class TestContinuationTemplateNamespace:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("override", [None, "caller-model"])
     async def test_unenrolled_member_keeps_its_model_pin(self, continuation_runtime, override):
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
 
         world = continuation_runtime
 
@@ -1750,7 +1750,7 @@ class TestContinuationTemplateNamespace:
     async def test_legacy_namespace_never_becomes_new_template_authority(self, legacy):
         import json
 
-        from kiro_crew import subagent_persistence as sp
+        from efm_go import subagent_persistence as sp
 
         directory = await asyncio.to_thread(sp.create_agent_folder, "legacy", agent=legacy)
         path = directory / "state.json"
@@ -1761,10 +1761,10 @@ class TestContinuationTemplateNamespace:
         manager = _manager(sessions)
         manager._spawn_stagger_secs = 0
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             patch(
-                "kiro_crew.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
+                "efm_go.subagent._validate_agent", side_effect=lambda name, cwd: (name, "", "")
             ),
         ):
             target = "legacy"
@@ -1807,7 +1807,7 @@ class TestSteerRun:
         sessions.get_provider = MagicMock(return_value=provider)
         manager = _manager(sessions)
         manager._agents["a1"] = SubagentInfo(id="a1", task="t")
-        with patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.sel"):
             ok, detail = await manager.steer_run("a1", "course correct")
         assert ok and detail == "ok"
         provider.steer.assert_awaited_once_with("course correct")
@@ -1821,7 +1821,7 @@ class TestSteerRun:
         info._session_sharing = True
         info._shared_provider = shared
         manager._agents["a1"] = info
-        with patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.sel"):
             ok, _ = await manager.steer_run("a1", "adjust")
         assert ok
         shared.steer.assert_awaited_once_with("adjust")
@@ -1847,7 +1847,7 @@ class TestSteerRun:
         """A live run with no reachable session now gets the startup
         grace, then the typed ``session_starting`` refusal (retryable) —
         not the old terminal bare ``no_session``."""
-        import kiro_crew.subagent as subagent_mod
+        import efm_go.subagent as subagent_mod
 
         sessions = _mock_sessions()
         sessions.get_provider = MagicMock(return_value=None)
@@ -1886,7 +1886,7 @@ class TestReleaseAndSweep:
         )
         ok, detail = manager.release_conversation("qc1")
         assert not ok and detail.startswith("conversation_busy")
-        with patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.sel"):
             info = manager.continue_conversation("qc1", "another follow-up")
         assert info is not None and info.done
         assert info.error.startswith("conversation_busy")
@@ -1905,7 +1905,7 @@ class TestReleaseAndSweep:
         sessions = _mock_sessions()
         manager = _manager(sessions)
         manager._conversations["subagent:c1"] = time.time()
-        with patch("kiro_crew.subagent._cleanup_session_files_sync") as cleanup:
+        with patch("efm_go.subagent._cleanup_session_files_sync") as cleanup:
             ok, detail = manager.release_conversation("c1")
         assert ok and detail == "released"
         cleanup.assert_called_once_with("sid-123", "acp")
@@ -1925,7 +1925,7 @@ class TestReleaseAndSweep:
         now = time.time()
         manager._conversations["subagent:old1"] = now - 7 * 3600  # expired
         manager._conversations["subagent:new1"] = now - 60  # fresh
-        with patch("kiro_crew.subagent._cleanup_session_files_sync"):
+        with patch("efm_go.subagent._cleanup_session_files_sync"):
             manager._sweep_conversations(now)
         assert "subagent:old1" not in manager._conversations
         assert "subagent:new1" in manager._conversations
@@ -1957,7 +1957,7 @@ class TestKeepTranscript:
     """AcpSessionHandle.destroy() honors keep_transcript (shared arm)."""
 
     def _handle(self):  # type: ignore[no-untyped-def]
-        from kiro_crew.acp.session_handle import AcpSessionHandle
+        from efm_go.acp.session_handle import AcpSessionHandle
 
         with patch.object(AcpSessionHandle, "__init__", lambda self: None):
             h = AcpSessionHandle()  # type: ignore[call-arg]
@@ -2015,7 +2015,7 @@ class TestKeepTranscript:
     # rather than asserting on a mock, so they measure the file, not the call.
 
     def _handle_with_transcript(self, tmp_path, sid="sid-cancel"):  # type: ignore[no-untyped-def]
-        from kiro_crew.acp.session_handle import AcpSessionHandle
+        from efm_go.acp.session_handle import AcpSessionHandle
 
         with patch.object(AcpSessionHandle, "__init__", lambda self: None):
             h = AcpSessionHandle()  # type: ignore[call-arg]
@@ -2036,7 +2036,7 @@ class TestKeepTranscript:
         h, sessions, files = self._handle_with_transcript(tmp_path)
         h._runtime.terminate_session = AsyncMock(side_effect=asyncio.CancelledError())
 
-        with patch("kiro_crew.acp.session_handle.kiro_sessions_dir", lambda: sessions):
+        with patch("efm_go.acp.session_handle.kiro_sessions_dir", lambda: sessions):
             with pytest.raises(asyncio.CancelledError):
                 await h.destroy()
 
@@ -2050,7 +2050,7 @@ class TestKeepTranscript:
         h, sessions, files = self._handle_with_transcript(tmp_path, sid="sid-raise")
         h._runtime.terminate_session = AsyncMock(side_effect=RuntimeError("boom"))
 
-        with patch("kiro_crew.acp.session_handle.kiro_sessions_dir", lambda: sessions):
+        with patch("efm_go.acp.session_handle.kiro_sessions_dir", lambda: sessions):
             with pytest.raises(RuntimeError):
                 await h.destroy()
 
@@ -2063,7 +2063,7 @@ class TestKeepTranscript:
         h.keep_transcript = True
         h._runtime.terminate_session = AsyncMock(side_effect=asyncio.CancelledError())
 
-        with patch("kiro_crew.acp.session_handle.kiro_sessions_dir", lambda: sessions):
+        with patch("efm_go.acp.session_handle.kiro_sessions_dir", lambda: sessions):
             with pytest.raises(asyncio.CancelledError):
                 await h.destroy()
 
@@ -2079,7 +2079,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         owner_id = "promotion-race"
         continuation_id = "promotion-race-child"
@@ -2160,7 +2160,7 @@ class TestPersistenceGuards:
         assert not (sp.read_state(owner_id) or {}).get("keep")
 
     def test_unrelated_retention_lock_does_not_block_promotion(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         blocked_id = "retention-lock-blocked"
         promoted_id = "retention-lock-independent"
@@ -2179,7 +2179,7 @@ class TestPersistenceGuards:
         assert (sp.read_state(promoted_id) or {}).get("keep") is True
 
     def test_same_agent_retention_lock_is_retryable(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "promotion-retention-contention"
         sp.create_agent_folder(agent_id, task="original")
@@ -2198,7 +2198,7 @@ class TestPersistenceGuards:
     def test_promotion_retries_while_off_loop_writer_lock_is_held(
         self, tmp_path
     ) -> None:  # type: ignore[no-untyped-def]
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "promotion-writer-contention"
         sp.create_agent_folder(agent_id, task="original")
@@ -2234,7 +2234,7 @@ class TestPersistenceGuards:
     def test_off_loop_promotion_uses_writer_lock_without_self_deadlock(
         self, tmp_path
     ) -> None:  # type: ignore[no-untyped-def]
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "promotion-off-loop"
         sp.create_agent_folder(agent_id, task="original")
@@ -2258,7 +2258,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         malformed_id = "a-malformed-owner"
         valid_id = "z-valid-run"
@@ -2305,7 +2305,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         deep_id = "a-deep-tombstone"
         valid_id = "z-valid-after-deep"
@@ -2344,7 +2344,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         corrupt_id = "a-corrupt-protected"
         valid_id = "z-valid-after-protected"
@@ -2387,7 +2387,7 @@ class TestPersistenceGuards:
         import json
         from unittest.mock import call
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "cancel-recovery-generations"
         sp.create_agent_folder(agent_id, task="t")
@@ -2452,7 +2452,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "untrusted-sidecar"
         own_sid = "sid-owned-by-run"
@@ -2508,7 +2508,7 @@ class TestPersistenceGuards:
         import json
         import time
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "unsupported-cleanup-retry"
         sp.create_agent_folder(agent_id, task="t")
@@ -2548,7 +2548,7 @@ class TestPersistenceGuards:
         import json
         import time
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "legacy-untrusted-sid"
         sp.create_agent_folder(agent_id, task="t")
@@ -2590,7 +2590,7 @@ class TestPersistenceGuards:
         import json
         import time
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = f"hard-ceiling-{trusted_generation}"
         sp.create_agent_folder(agent_id, task="t")
@@ -2628,7 +2628,7 @@ class TestPersistenceGuards:
         import json
         import time
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "stale-false-after-promotion"
         sp.create_agent_folder(agent_id, task="t")
@@ -2669,7 +2669,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "cleanup-store-lockdown"
         sp.create_agent_folder(agent_id, task="t")
@@ -2696,7 +2696,7 @@ class TestPersistenceGuards:
     def test_cleanup_store_parse_failure_never_rewrites_history(
         self, tmp_path
     ) -> None:  # type: ignore[no-untyped-def]
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "cleanup-store-corrupt"
         sp.create_agent_folder(agent_id, task="t")
@@ -2725,7 +2725,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "forged-tombstone-retention"
         sp.create_agent_folder(agent_id, task="t")
@@ -2755,7 +2755,7 @@ class TestPersistenceGuards:
     def test_tombstone_prune_keeps_files_for_keep_runs(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "keeprun1"
         sp.create_agent_folder(agent_id, task="t")
@@ -2777,7 +2777,7 @@ class TestPersistenceGuards:
     def test_continuation_prune_honors_original_release(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         original_id = "original-run"
         continuation_id = "continuation-run"
@@ -2817,7 +2817,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         original_id = "partial-state-owner"
         continuation_id = "partial-state-continuation"
@@ -2873,7 +2873,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         owner_id = "protected-retention-owner"
         continuation_id = f"protected-owner-{bool(writable_key)}"
@@ -2921,7 +2921,7 @@ class TestPersistenceGuards:
     ) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         owner_id = "unreadable-sidecar-owner"
         child_id = "unreadable-sidecar-child"
@@ -2959,7 +2959,7 @@ class TestPersistenceGuards:
     def test_continuation_prune_owner_missing_keep_is_nonretained(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         original_id = "owner-missing-keep"
         continuation_id = "continuation-missing-keep"
@@ -3001,7 +3001,7 @@ class TestPersistenceGuards:
         import json
         import time
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         original_id = "owner-corrupt"
         continuation_id = "continuation-corrupt-owner"
@@ -3045,7 +3045,7 @@ class TestPersistenceGuards:
     def test_tombstone_prune_cleans_files_for_plain_runs(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
         import json
 
-        import kiro_crew.subagent_persistence as sp
+        import efm_go.subagent_persistence as sp
 
         agent_id = "plainrun"
         sp.create_agent_folder(agent_id, task="t")
@@ -3074,8 +3074,8 @@ class TestContinuationMemoryMode:
     @pytest.mark.parametrize("original", ["persistent", "incognito", "temporary"])
     @pytest.mark.parametrize("requested", ["persistent", "incognito", "temporary"])
     async def test_fresh_manager_restores_and_tightens_original_mode(self, original, requested):
-        from kiro_crew.messaging.privacy_mode import strictest
-        from kiro_crew.subagent_persistence import (
+        from efm_go.messaging.privacy_mode import strictest
+        from efm_go.subagent_persistence import (
             read_run_agent_selection,
             read_run_app,
             read_run_memory_mode,
@@ -3141,7 +3141,7 @@ class TestContinuationMemoryMode:
 
     @pytest.mark.asyncio
     async def test_missing_original_policy_never_allocates_provider(self):
-        from kiro_crew.subagent_persistence import _agent_dir, create_agent_folder
+        from efm_go.subagent_persistence import _agent_dir, create_agent_folder
 
         await asyncio.to_thread(
             create_agent_folder, "missing-resume-policy", memory_mode="persistent"
@@ -3182,7 +3182,7 @@ class TestContinuationMemoryMode:
 
 @pytest.mark.asyncio
 async def test_cancelled_resume_drains_mode_publication_before_returning(monkeypatch):
-    from kiro_crew import subagent_persistence as persistence
+    from efm_go import subagent_persistence as persistence
 
     persistence.create_agent_folder("cancel-mode-original", memory_mode="incognito")
     persistence.create_agent_folder("cancel-mode-current", memory_mode="temporary")
@@ -3239,9 +3239,9 @@ async def test_the_continuation_path_takes_no_store_call_on_the_loop(monkeypatch
     coroutine caller's loop for the whole hold -- measured 0 of ~95 due 10ms
     heartbeat ticks served through the sync entry against 91 through this one.
     """
-    from kiro_crew.subagent_manager import admission as admission_mod
-    from kiro_crew.subagent_persistence import create_agent_folder
-    from kiro_crew.taskq import store as store_mod
+    from efm_go.subagent_manager import admission as admission_mod
+    from efm_go.subagent_persistence import create_agent_folder
+    from efm_go.taskq import store as store_mod
 
     monkeypatch.setattr(admission_mod.SpawnAdmissionCoordinator, "pump_off_loop", True)
     create_agent_folder("no-loop-db", task="original", memory_mode="persistent")
@@ -3289,7 +3289,7 @@ def test_a_stale_resume_entry_does_not_hold_a_conversation() -> None:
     continuation and every release of the conversation with a
     ``conversation_busy`` naming a run that is already done.
     """
-    from kiro_crew.subagent_persistence import create_agent_folder
+    from efm_go.subagent_persistence import create_agent_folder
 
     create_agent_folder("resume-held", task="original", memory_mode="persistent")
     manager = _manager(_mock_sessions(resumed=True))
@@ -3326,9 +3326,9 @@ async def test_the_followup_watcher_dispatches_no_store_call_on_the_loop(monkeyp
     ``_deliver_followups`` calls: swapping that one line to the sync entry
     leaves the other pin green.
     """
-    from kiro_crew.subagent_manager import admission as admission_mod
-    from kiro_crew.subagent_persistence import create_agent_folder
-    from kiro_crew.taskq import store as store_mod
+    from efm_go.subagent_manager import admission as admission_mod
+    from efm_go.subagent_persistence import create_agent_folder
+    from efm_go.taskq import store as store_mod
 
     monkeypatch.setattr(admission_mod.SpawnAdmissionCoordinator, "pump_off_loop", True)
     create_agent_folder("followup-conv", task="original", memory_mode="persistent")
@@ -3370,7 +3370,7 @@ async def test_the_followup_watcher_dispatches_no_store_call_on_the_loop(monkeyp
 @pytest.mark.asyncio
 @pytest.mark.parametrize("moved_pool", [False, True], ids=["same-default", "changed-default"])
 async def test_default_cwd_continuation_does_not_request_override(tmp_path, moved_pool):
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     project = tmp_path / "original-project"
     project.mkdir()
@@ -3389,7 +3389,7 @@ async def test_default_cwd_continuation_does_not_request_override(tmp_path, move
     provider.cwd = str(project)
     manager = _manager(sessions)
     manager._spawn_stagger_secs = 0
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         original = manager.spawn("first task", keep=True)
         assert original is not None and not original.error
         await asyncio.wait_for(manager._tasks[original.id], 10)
@@ -3414,8 +3414,8 @@ async def test_default_cwd_continuation_does_not_request_override(tmp_path, move
 @pytest.mark.asyncio
 @pytest.mark.parametrize("valid_metadata", [True, False], ids=["verified", "mismatch"])
 async def test_channel_spawn_carries_verified_member_store(continuation_runtime, valid_metadata):
-    from kiro_crew.member_memory_auth import bind_private_session_store
-    from kiro_crew.messaging.commands import _spawn_off_loop
+    from efm_go.member_memory_auth import bind_private_session_store
+    from efm_go.messaging.commands import _spawn_off_loop
 
     world = continuation_runtime
     generation, store = await asyncio.to_thread(world.enroll_collision)
@@ -3433,7 +3433,7 @@ async def test_channel_spawn_carries_verified_member_store(continuation_runtime,
             await asyncio.to_thread(
                 world.history.update_metadata, parent, {"memory_store": "default"}
             )
-        with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
             child = await _spawn_off_loop(manager, "delegated task", parent)
             assert child is not None and not child.error
             await asyncio.wait_for(manager._tasks[child.id], 10)
@@ -3453,7 +3453,7 @@ class TestRestrictedRunStateLifetime:
     async def test_terminal_state_waits_for_report_then_only_keeps_original(
         self, mode, kept, followup
     ):
-        from kiro_crew import subagent_persistence as persistence
+        from efm_go import subagent_persistence as persistence
 
         manager = _manager()
         entered, finish = asyncio.Event(), asyncio.Event()
@@ -3496,7 +3496,7 @@ class TestRestrictedRunStateLifetime:
             assert (persistence.read_state(run_id) is not None) == (kept and not followup)
             if kept:
                 assert persistence.read_state(original) is not None
-                with patch("kiro_crew.subagent._cleanup_session_files_sync"):
+                with patch("efm_go.subagent._cleanup_session_files_sync"):
                     assert manager.release_conversation(original)[0]
                 assert persistence.read_state(original) is None
             assert not (persistence._subagents_dir() / run_id).exists()
@@ -3507,7 +3507,7 @@ class TestRestrictedRunStateLifetime:
     @pytest.mark.parametrize("mode", ["incognito", "temporary"])
     @pytest.mark.parametrize("sid", [None, "sid-123"])
     def test_release_removes_evicted_original_without_deleting_persistent_files(self, mode, sid):
-        from kiro_crew import subagent_persistence as persistence
+        from efm_go import subagent_persistence as persistence
 
         manager = _manager()
         manager._sessions.forget_conversation.return_value = sid
@@ -3515,13 +3515,13 @@ class TestRestrictedRunStateLifetime:
         persistent = persistence.create_agent_folder("durable", task="durable task") / "state.json"
         before = persistent.read_bytes()
         manager._conversations["subagent:original"] = time.time()
-        with patch("kiro_crew.subagent._cleanup_session_files_sync"):
+        with patch("efm_go.subagent._cleanup_session_files_sync"):
             manager.release_conversation("original")
         assert persistence.read_state("original") is None
         assert persistent.read_bytes() == before
 
     def test_busy_release_preserves_original_and_queued_child(self):
-        from kiro_crew import subagent_persistence as persistence
+        from efm_go import subagent_persistence as persistence
 
         manager = _manager()
         persistence.create_agent_folder("original", task="private task", memory_mode="temporary")
@@ -3531,7 +3531,7 @@ class TestRestrictedRunStateLifetime:
 
     @pytest.mark.asyncio
     async def test_abandoned_writer_keeps_state_until_it_lands_after_eviction(self):
-        from kiro_crew import subagent_persistence as persistence
+        from efm_go import subagent_persistence as persistence
 
         manager = _manager()
         info = SubagentInfo(id="late-writer", task="private", memory_mode="temporary")
@@ -3546,8 +3546,8 @@ class TestRestrictedRunStateLifetime:
             return real_update(*args, **kwargs)
 
         with (
-            patch("kiro_crew.subagent.update_state", side_effect=update),
-            patch("kiro_crew.subagent._STATE_DRAIN_TIMEOUT", 0),
+            patch("efm_go.subagent.update_state", side_effect=update),
+            patch("efm_go.subagent._STATE_DRAIN_TIMEOUT", 0),
         ):
             writer = asyncio.create_task(manager._write_state_off_loop(info, "late", turns=3))
             try:
@@ -3573,7 +3573,7 @@ class TestRestrictedRunStateLifetime:
 
     @pytest.mark.parametrize("tightened", [False, True])
     def test_late_delivery_does_not_persist_released_restricted_payload(self, tightened):
-        from kiro_crew import subagent_persistence as persistence
+        from efm_go import subagent_persistence as persistence
 
         manager = _manager()
         folder = persistence.create_agent_folder(
@@ -3582,7 +3582,7 @@ class TestRestrictedRunStateLifetime:
         if tightened:
             persistence.tighten_run_memory_mode("released", "temporary")
             persistence.update_state("released", task="restricted follow-up")
-        with patch("kiro_crew.subagent._cleanup_session_files_sync"):
+        with patch("efm_go.subagent._cleanup_session_files_sync"):
             manager.release_conversation("released")
         persistence.mark_delivered("released")
         assert not (folder / "tombstone.json").exists()
@@ -3620,9 +3620,9 @@ class TestSharedBindIdentityLabel:
         the failure this test exists to catch. The backend is carried by the runtime,
         which is where the provider reads it from in production too.
         """
-        from kiro_crew.acp.session_provider import AcpSessionProvider
-        from kiro_crew.subagent_manager.run import RunEventCoordinator
-        from kiro_crew.subagent_persistence import _live_cleanup_identities
+        from efm_go.acp.session_provider import AcpSessionProvider
+        from efm_go.subagent_manager.run import RunEventCoordinator
+        from efm_go.subagent_persistence import _live_cleanup_identities
 
         manager = _manager()
         info = SubagentInfo(id=f"bind{len(backend)}", task="t")
@@ -3642,8 +3642,8 @@ class TestSharedBindIdentityLabel:
         with (
             patch.object(RunEventCoordinator, "_remember_identity_off_loop", remembered),
             # ``run.py``'s ``*_impl`` bodies resolve their globals through
-            # ``kiro_crew.subagent``, so that is where the name has to be replaced.
-            patch("kiro_crew.subagent.AcpSessionProvider", lambda *a, **k: provider),
+            # ``efm_go.subagent``, so that is where the name has to be replaced.
+            patch("efm_go.subagent.AcpSessionProvider", lambda *a, **k: provider),
         ):
             await manager._run_events._bind_shared_handle_impl(
                 info, "subagent:bind", runtime, handle
@@ -3657,7 +3657,7 @@ class TestSharedBindIdentityLabel:
 
     @pytest.mark.asyncio
     async def test_a_codex_shared_session_is_labelled_codex(self) -> None:
-        from kiro_crew.acp.types import ACP_BACKEND_CODEX, PROVIDER_LABEL_CODEX
+        from efm_go.acp.types import ACP_BACKEND_CODEX, PROVIDER_LABEL_CODEX
 
         info, live, remembered = await self._bound(ACP_BACKEND_CODEX)
         assert info._session_provider == PROVIDER_LABEL_CODEX
@@ -3673,7 +3673,7 @@ class TestSharedBindIdentityLabel:
         """Not a swap. ``ACP_BACKEND_KIRO`` IS the empty string, so a truthiness test
         on the backend would have sent kiro itself down the wrong branch -- the same
         trap this file's sibling PR fell into once."""
-        from kiro_crew.acp.types import ACP_BACKEND_KIRO, PROVIDER_LABEL_DEFAULT
+        from efm_go.acp.types import ACP_BACKEND_KIRO, PROVIDER_LABEL_DEFAULT
 
         info, live, _ = await self._bound(ACP_BACKEND_KIRO)
         assert info._session_provider == PROVIDER_LABEL_DEFAULT

@@ -15,10 +15,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.cron import CronJob, CronSchedule
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-from kiro_crew.llm_helpers import ToolApprovalPolicy
-from kiro_crew.subagent_persistence import create_agent_folder
+from efm_go.cron import CronJob, CronSchedule
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+from efm_go.llm_helpers import ToolApprovalPolicy
+from efm_go.subagent_persistence import create_agent_folder
 
 
 @pytest.fixture(autouse=True)
@@ -48,7 +48,7 @@ class TestCronApprovalModeGateway:
 
     def _run_cron_callback(self, approval_mode: str) -> dict:
         """Invoke the real _cron_callback closure and capture stream_and_collect kwargs."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
         gw.sessions = MagicMock()
@@ -86,8 +86,8 @@ class TestCronApprovalModeGateway:
 
         captured_cb = None
 
-        with patch("kiro_crew.slack.gateway.stream_and_collect", fake_stream), patch(
-            "kiro_crew.slack.gateway.CronService"
+        with patch("efm_go.slack.gateway.stream_and_collect", fake_stream), patch(
+            "efm_go.slack.gateway.CronService"
         ) as mock_cron_cls:
 
             def capture_cron(on_job=None, **kw):
@@ -129,7 +129,7 @@ class TestCronApprovalModeExtraEnv:
         self, approval_mode: str, job_env: dict | None = None
     ) -> dict:
         """Invoke the real _cron_callback closure and capture get_or_create kwargs."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
         gw.ctx_builder = MagicMock()
@@ -168,8 +168,8 @@ class TestCronApprovalModeExtraEnv:
 
         captured_cb = None
 
-        with patch("kiro_crew.slack.gateway.stream_and_collect", AsyncMock(return_value="done")), patch(
-            "kiro_crew.slack.gateway.CronService"
+        with patch("efm_go.slack.gateway.stream_and_collect", AsyncMock(return_value="done")), patch(
+            "efm_go.slack.gateway.CronService"
         ) as mock_cron_cls:
 
             def capture_cron(on_job=None, **kw):
@@ -236,12 +236,12 @@ class TestCronApprovalModeValidation:
     """Validation schema accepts valid values, rejects invalid."""
 
     def _simulate_tool_call(self, tool_name: str, arguments: dict) -> str:
-        from kiro_crew.mcp_cron import _call_tool_locally as _call_tool
+        from efm_go.mcp_cron import _call_tool_locally as _call_tool
 
         return _call_tool(tool_name, arguments)
 
     def test_valid_auto(self) -> None:
-        with patch("kiro_crew.mcp_cron.CronService") as mock_svc:
+        with patch("efm_go.mcp_cron.CronService") as mock_svc:
             job = MagicMock()
             job.id = "v1"
             job.name = "test"
@@ -263,7 +263,7 @@ class TestCronApprovalModeValidation:
         assert mock_svc.return_value.add_job.call_args.kwargs["approval_mode"] == "auto"
 
     def test_valid_empty(self) -> None:
-        with patch("kiro_crew.mcp_cron.CronService") as mock_svc:
+        with patch("efm_go.mcp_cron.CronService") as mock_svc:
             job = MagicMock()
             job.id = "v2"
             job.name = "test"
@@ -293,19 +293,19 @@ class TestSessionApprovalPolicy:
     """Session-level approval policy storage and retrieval."""
 
     def test_session_stores_policy(self) -> None:
-        from kiro_crew.session import _Session
+        from efm_go.session import _Session
 
         sess = _Session(provider=MagicMock(), approval_policy="auto")
         assert sess.approval_policy == "auto"
 
     def test_session_default_empty(self) -> None:
-        from kiro_crew.session import _Session
+        from efm_go.session import _Session
 
         sess = _Session(provider=MagicMock())
         assert sess.approval_policy == ""
 
     def test_no_parent_session_defaults_empty(self) -> None:
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         cfg = MagicMock()
         cfg.session.pool_size = 0
@@ -320,8 +320,8 @@ class TestSubagentInheritsPolicy:
 
     def _run_inner_and_capture(self, parent_policy: str, parent_session_key: str = "parent-key") -> dict:
         """Invoke the real _run_inner and capture get_or_create kwargs."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
-        from kiro_crew.subagent import SubagentInfo, SubagentManager
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.subagent import SubagentInfo, SubagentManager
 
         sessions = MagicMock()
         sessions.get_pid = MagicMock(return_value=None)
@@ -369,7 +369,7 @@ class TestSubagentInheritsPolicy:
         # With default config (approval_mode="auto"), empty parent policy
         # on a parentless subagent falls back to "auto" via config fallback.
         with patch(
-            "kiro_crew.subagent.KiroCrewConfig.load",
+            "efm_go.subagent.KiroCrewConfig.load",
             return_value=MagicMock(agent=MagicMock(approval_mode="auto")),
         ):
             captured = self._run_inner_and_capture("", parent_session_key="")
@@ -377,9 +377,9 @@ class TestSubagentInheritsPolicy:
 
     def _run_inner_with_tool_event(self, parent_policy: str, on_tool_approval=None, parent_session_key: str = "parent-key") -> MagicMock:
         """Invoke _run_inner with a PERMISSION_REQUEST event and return the mock client."""
-        from kiro_crew.hooks import TOOL_ALLOW, ToolHookResult
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, LLMEvent
-        from kiro_crew.subagent import SubagentInfo, SubagentManager
+        from efm_go.hooks import TOOL_ALLOW, ToolHookResult
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, LLMEvent
+        from efm_go.subagent import SubagentInfo, SubagentManager
 
         sessions = MagicMock()
         sessions.get_pid = MagicMock(return_value=None)
@@ -421,7 +421,7 @@ class TestSubagentInheritsPolicy:
         )
 
         create_agent_folder(info.id, task=info.task, execution_context=info.execution_context)
-        with patch("kiro_crew.subagent.sel"):
+        with patch("efm_go.subagent.sel"):
             asyncio.run(runner._run_inner(info, "subagent:sub1"))
         return mock_client
 
@@ -434,7 +434,7 @@ class TestSubagentInheritsPolicy:
         # With interactive approval_mode, empty parent policy stays empty
         # and falls through to deny-by-default.
         with patch(
-            "kiro_crew.subagent.KiroCrewConfig.load",
+            "efm_go.subagent.KiroCrewConfig.load",
             return_value=MagicMock(agent=MagicMock(approval_mode="interactive")),
         ):
             client = self._run_inner_with_tool_event("", on_tool_approval=None, parent_session_key="")
@@ -444,7 +444,7 @@ class TestSubagentInheritsPolicy:
     def test_empty_policy_with_parent_stays_empty(self) -> None:
         """When a real parent exists but returns empty policy, config fallback must NOT activate."""
         with patch(
-            "kiro_crew.subagent.KiroCrewConfig.load",
+            "efm_go.subagent.KiroCrewConfig.load",
             return_value=MagicMock(agent=MagicMock(approval_mode="auto")),
         ):
             captured = self._run_inner_and_capture("", parent_session_key="parent-key")
@@ -453,7 +453,7 @@ class TestSubagentInheritsPolicy:
     def test_deny_by_default_with_parent_rejects_tool(self) -> None:
         """With a real parent returning empty policy, tool calls are still denied."""
         with patch(
-            "kiro_crew.subagent.KiroCrewConfig.load",
+            "efm_go.subagent.KiroCrewConfig.load",
             return_value=MagicMock(agent=MagicMock(approval_mode="auto")),
         ):
             client = self._run_inner_with_tool_event(
@@ -467,7 +467,7 @@ class TestCronSubagentInjection:
     """_subagent_done injects results into cron sessions and resets correctly."""
 
     def _build_gw(self):  # type: ignore[no-untyped-def]
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
         gw.sessions = MagicMock()
@@ -493,7 +493,7 @@ class TestCronSubagentInjection:
     def _init_and_get_done_cb(self, gw):  # type: ignore[no-untyped-def]
         captured_done = None
 
-        with patch("kiro_crew.slack.gateway.SubagentManager") as mock_cls:
+        with patch("efm_go.slack.gateway.SubagentManager") as mock_cls:
 
             def capture_mgr(**kwargs):  # type: ignore[no-untyped-def]
                 nonlocal captured_done
@@ -513,22 +513,22 @@ class TestCronSubagentInjection:
     def _patches(self, stream_rv="ok"):  # type: ignore[no-untyped-def]
         return (
             patch(
-                "kiro_crew.slack.gateway.stream_and_collect",
+                "efm_go.slack.gateway.stream_and_collect",
                 AsyncMock(return_value=stream_rv),
             ),
             patch(
-                "kiro_crew.slack.gateway.redact_exfiltration_urls",
+                "efm_go.slack.gateway.redact_exfiltration_urls",
                 return_value=(stream_rv, False),
             ),
             patch(
-                "kiro_crew.slack.gateway.redact_credentials",
+                "efm_go.slack.gateway.redact_credentials",
                 return_value=(stream_rv, False),
             ),
         )
 
     def test_cron_injection_happy_path(self) -> None:
         """Subagent result is injected into cron session and session is reset."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         gw = self._build_gw()
         done_cb = self._init_and_get_done_cb(gw)
@@ -551,7 +551,7 @@ class TestCronSubagentInjection:
 
     def test_cron_injection_defers_reset_when_others_running(self) -> None:
         """Session is NOT reset when other subagents are still running."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         gw = self._build_gw()
         done_cb = self._init_and_get_done_cb(gw)
@@ -575,7 +575,7 @@ class TestCronSubagentInjection:
 
     def test_cron_injection_failure_still_cleans_up(self) -> None:
         """On injection failure, counter is cleaned up and session is reset."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         gw = self._build_gw()
         done_cb = self._init_and_get_done_cb(gw)
@@ -591,16 +591,16 @@ class TestCronSubagentInjection:
 
         p2, p3 = (
             patch(
-                "kiro_crew.slack.gateway.redact_exfiltration_urls",
+                "efm_go.slack.gateway.redact_exfiltration_urls",
                 return_value=("", False),
             ),
             patch(
-                "kiro_crew.slack.gateway.redact_credentials",
+                "efm_go.slack.gateway.redact_credentials",
                 return_value=("", False),
             ),
         )
         with patch(
-            "kiro_crew.slack.gateway.stream_and_collect",
+            "efm_go.slack.gateway.stream_and_collect",
             AsyncMock(side_effect=RuntimeError("boom")),
         ), p2, p3:
             asyncio.run(done_cb(info))
@@ -612,7 +612,7 @@ class TestCronSubagentInjection:
 
     def test_cron_injection_defers_reset_when_others_injecting(self) -> None:
         """Session is NOT reset when another subagent is mid-injection."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         gw = self._build_gw()
         done_cb = self._init_and_get_done_cb(gw)
@@ -639,7 +639,7 @@ class TestCronSubagentInjection:
 
     def test_cron_injection_get_or_create_failure_no_release(self) -> None:
         """When get_or_create fails, release is NOT called but counter is cleaned up."""
-        from kiro_crew.subagent import SubagentInfo
+        from efm_go.subagent import SubagentInfo
 
         gw = self._build_gw()
         done_cb = self._init_and_get_done_cb(gw)
@@ -654,11 +654,11 @@ class TestCronSubagentInjection:
 
         p2, p3 = (
             patch(
-                "kiro_crew.slack.gateway.redact_exfiltration_urls",
+                "efm_go.slack.gateway.redact_exfiltration_urls",
                 return_value=("", False),
             ),
             patch(
-                "kiro_crew.slack.gateway.redact_credentials",
+                "efm_go.slack.gateway.redact_credentials",
                 return_value=("", False),
             ),
         )
@@ -674,7 +674,7 @@ class TestNoCronsFlag:
     """Gateway --no-crons flag skips cron scheduler startup."""
 
     def _make_gateway(self, *, no_crons: bool = False):
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
         gw.sessions = MagicMock()
@@ -695,7 +695,7 @@ class TestNoCronsFlag:
 
     def test_no_crons_skips_start(self) -> None:
         gw = self._make_gateway(no_crons=True)
-        with patch("kiro_crew.slack.gateway.CronService") as mock_cls:
+        with patch("efm_go.slack.gateway.CronService") as mock_cls:
             svc = MagicMock()
             svc.start = AsyncMock()
             mock_cls.return_value = svc
@@ -706,8 +706,8 @@ class TestNoCronsFlag:
 
     def test_default_starts_crons_after_app_reconcile(self) -> None:
         gw = self._make_gateway(no_crons=False)
-        with patch("kiro_crew.slack.gateway.CronService") as mock_cls, patch(
-            "kiro_crew.apps.bridges.reconcile_app_crons_for_execution",
+        with patch("efm_go.slack.gateway.CronService") as mock_cls, patch(
+            "efm_go.apps.bridges.reconcile_app_crons_for_execution",
             new_callable=AsyncMock,
         ) as reconcile:
             svc = MagicMock()
@@ -720,8 +720,8 @@ class TestNoCronsFlag:
 
     def test_reconcile_failure_leaves_cron_scheduler_stopped(self) -> None:
         gw = self._make_gateway(no_crons=False)
-        with patch("kiro_crew.slack.gateway.CronService") as mock_cls, patch(
-            "kiro_crew.apps.bridges.reconcile_app_crons_for_execution",
+        with patch("efm_go.slack.gateway.CronService") as mock_cls, patch(
+            "efm_go.apps.bridges.reconcile_app_crons_for_execution",
             new_callable=AsyncMock,
             side_effect=OSError("cron store unavailable"),
         ):
@@ -734,7 +734,7 @@ class TestNoCronsFlag:
 
     def test_init_stores_no_crons(self) -> None:
         """GatewayOrchestrator.__init__ stores _no_crons attribute."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         cfg = MagicMock()
         cfg.load_credentials.return_value = {}
@@ -747,7 +747,7 @@ class TestNoCronsFlag:
 
     def test_init_defaults_no_crons_false(self) -> None:
         """GatewayOrchestrator.__init__ defaults _no_crons to False."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         cfg = MagicMock()
         cfg.load_credentials.return_value = {}
@@ -760,14 +760,14 @@ class TestNoCronsFlag:
 
     def test_run_gateway_passes_no_crons(self) -> None:
         """run_gateway forwards no_crons to GatewayOrchestrator."""
-        from kiro_crew.slack.gateway import run_gateway
+        from efm_go.slack.gateway import run_gateway
 
         cfg = MagicMock()
         with (
             # The aggregate-cgroup-ceiling apply shells out to systemctl —
             # a host-service mutation the rootdir guard refuses; stub it.
-            patch("kiro_crew.slack.gateway.ensure_agents_slice_limits", return_value=True),
-            patch("kiro_crew.slack.gateway.GatewayOrchestrator") as mock_cls,
+            patch("efm_go.slack.gateway.ensure_agents_slice_limits", return_value=True),
+            patch("efm_go.slack.gateway.GatewayOrchestrator") as mock_cls,
         ):
             mock_orch = MagicMock()
             mock_orch.run = AsyncMock()
@@ -786,8 +786,8 @@ class TestNoCronsFlag:
 
     def test_cli_gateway_passes_no_crons(self, monkeypatch, tmp_path) -> None:
         """CLI _gateway function forwards no_crons to run_gateway."""
-        from kiro_crew import cli_server
-        from kiro_crew.cli_server import _gateway
+        from efm_go import cli_server
+        from efm_go.cli_server import _gateway
 
         # ``_gateway`` runs the gateway-boot toolchain probes before it reaches
         # ``run_gateway``: ``activate_mise`` merges the host's mise environment
@@ -796,13 +796,13 @@ class TestNoCronsFlag:
         # so both seams are pinned, as are the dist-symlink and launchd reconcile
         # steps that would otherwise touch the install tree.
         monkeypatch.setattr(cli_server, "activate_mise", lambda: [])
-        monkeypatch.setattr("kiro_crew.cli._node_ok", lambda: True)
+        monkeypatch.setattr("efm_go.cli._node_ok", lambda: True)
         monkeypatch.setattr(cli_server, "ensure_dev_dist_symlink", lambda: tmp_path / "dist")
         monkeypatch.setattr(cli_server, "_should_reconcile_launchd_launcher", lambda: False)
-        with patch("kiro_crew.cli_server.config_path") as mock_cp, patch(
-            "kiro_crew.cli_server.KiroCrewConfig"
+        with patch("efm_go.cli_server.config_path") as mock_cp, patch(
+            "efm_go.cli_server.KiroCrewConfig"
         ) as mock_cfg_cls, patch(
-            "kiro_crew.cli_server.run_gateway", new_callable=AsyncMock
+            "efm_go.cli_server.run_gateway", new_callable=AsyncMock
         ) as mock_run:
             mock_cp.return_value.exists.return_value = True
             mock_cfg_cls.load.return_value = MagicMock()
@@ -815,10 +815,10 @@ class TestNoCronsFlag:
         import sys
 
         with patch.object(sys, "argv", ["kirocrew", "gateway", "--no-crons"]):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
-            with patch("kiro_crew.cli_server._gateway", new_callable=AsyncMock) as mock_gw, patch(
-                "kiro_crew.cli.asyncio"
+            with patch("efm_go.cli_server._gateway", new_callable=AsyncMock) as mock_gw, patch(
+                "efm_go.cli.asyncio"
             ) as mock_asyncio:
                 mock_asyncio.run = MagicMock()
                 main()
@@ -833,9 +833,9 @@ class TestSubagentRoleModelForcesDedicatedPath:
     override would silently no-op on the default (session-sharing) path."""
 
     def _run(self, *, role_models=None, role_efforts=None):
-        from kiro_crew.config.loader import AgentConfig, KiroCrewConfig
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
-        from kiro_crew.subagent import SubagentInfo, SubagentManager
+        from efm_go.config.loader import AgentConfig, KiroCrewConfig
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.subagent import SubagentInfo, SubagentManager
 
         sessions = MagicMock()
         sessions.get_pid = MagicMock(return_value=None)
@@ -877,7 +877,7 @@ class TestSubagentRoleModelForcesDedicatedPath:
         with (
             patch.object(runner, "_create_shared_session", shared),
             patch.object(runner, "_should_use_session_sharing", return_value=True),
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
+            patch("efm_go.config.loader.KiroCrewConfig.load", classmethod(lambda c: cfg)),
         ):
             asyncio.run(runner._run_inner(info, "subagent:sub1"))
         return captured, shared

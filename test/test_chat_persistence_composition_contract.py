@@ -1,8 +1,8 @@
-"""The composition contract of ``kiro_crew.dashboard.chat_persistence``.
+"""The composition contract of ``efm_go.dashboard.chat_persistence``.
 
 The dashboard slot save and restore are split between the facade, which keeps the
 orchestration and the process-wide state, and the owners in
-``kiro_crew.dashboard.slot_persistence``. This file pins what that split must not
+``efm_go.dashboard.slot_persistence``. This file pins what that split must not
 change:
 
 * the surface: every name the facade bound before the split still resolves on it,
@@ -37,14 +37,14 @@ import pytest
 from chat_test_helpers import _make_state
 from source_corpus import repo_files_named, repo_root
 
-import kiro_crew
-from kiro_crew.dashboard import chat_persistence as cp
-from kiro_crew.history import HUMAN_TURN_META_KEY
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+import efm_go
+from efm_go.dashboard import chat_persistence as cp
+from efm_go.history import HUMAN_TURN_META_KEY
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
-FACADE = "kiro_crew.dashboard.chat_persistence"
+FACADE = "efm_go.dashboard.chat_persistence"
 FACADE_PATH = Path(cp.__file__).resolve()
-OWNER_PACKAGE = "kiro_crew.dashboard.slot_persistence"
+OWNER_PACKAGE = "efm_go.dashboard.slot_persistence"
 OWNER_DIR = FACADE_PATH.with_name("slot_persistence")
 
 #: The owners the facade composes. Adding or removing one changes the
@@ -187,129 +187,129 @@ _FACADE_DEFINED = frozenset(
 
 #: Every name it IMPORTED there, with the module and attribute it came from.
 _FACADE_IMPORTS: dict[str, tuple[str, str | None]] = {
-    "ARTIFACT_SLUG_RE": ("kiro_crew.validation", "ARTIFACT_SLUG_RE"),
-    "ATTACHMENT_LIST_MAX_ITEMS": ("kiro_crew.dashboard.chat_delivery", "ATTACHMENT_LIST_MAX_ITEMS"),
-    "ATTACHMENT_PATH_MAX_LEN": ("kiro_crew.dashboard.chat_delivery", "ATTACHMENT_PATH_MAX_LEN"),
-    "AUTOCOMPACT_PCT_MAX": ("kiro_crew.config.loader", "AUTOCOMPACT_PCT_MAX"),
-    "AUTOCOMPACT_PCT_MIN": ("kiro_crew.config.loader", "AUTOCOMPACT_PCT_MIN"),
+    "ARTIFACT_SLUG_RE": ("efm_go.validation", "ARTIFACT_SLUG_RE"),
+    "ATTACHMENT_LIST_MAX_ITEMS": ("efm_go.dashboard.chat_delivery", "ATTACHMENT_LIST_MAX_ITEMS"),
+    "ATTACHMENT_PATH_MAX_LEN": ("efm_go.dashboard.chat_delivery", "ATTACHMENT_PATH_MAX_LEN"),
+    "AUTOCOMPACT_PCT_MAX": ("efm_go.config.loader", "AUTOCOMPACT_PCT_MAX"),
+    "AUTOCOMPACT_PCT_MIN": ("efm_go.config.loader", "AUTOCOMPACT_PCT_MIN"),
     "Any": ("typing", "Any"),
-    "CHAT_ENTRY_CACHE_BYTES_DEFAULT": ("kiro_crew.config.loader", "CHAT_ENTRY_CACHE_BYTES_DEFAULT"),
+    "CHAT_ENTRY_CACHE_BYTES_DEFAULT": ("efm_go.config.loader", "CHAT_ENTRY_CACHE_BYTES_DEFAULT"),
     "CHAT_ENTRY_CACHE_ENTRIES_DEFAULT": (
-        "kiro_crew.config.loader",
+        "efm_go.config.loader",
         "CHAT_ENTRY_CACHE_ENTRIES_DEFAULT",
     ),
-    "ConversationLog": ("kiro_crew.history", "ConversationLog"),
-    "DashboardState": ("kiro_crew.dashboard.state", "DashboardState"),
-    "EFFORT_LEVELS": ("kiro_crew.effort", "EFFORT_LEVELS"),
-    "EFFORT_VALUES": ("kiro_crew.effort", "EFFORT_VALUES"),
-    "EXECUTION_CONTEXT_KEY": ("kiro_crew.execution_context", "EXECUTION_CONTEXT_KEY"),
-    "HUMAN_TURN_META_KEY": ("kiro_crew.history", "HUMAN_TURN_META_KEY"),
-    "ImageBudget": ("kiro_crew.chat_attachments", "ImageBudget"),
+    "ConversationLog": ("efm_go.history", "ConversationLog"),
+    "DashboardState": ("efm_go.dashboard.state", "DashboardState"),
+    "EFFORT_LEVELS": ("efm_go.effort", "EFFORT_LEVELS"),
+    "EFFORT_VALUES": ("efm_go.effort", "EFFORT_VALUES"),
+    "EXECUTION_CONTEXT_KEY": ("efm_go.execution_context", "EXECUTION_CONTEXT_KEY"),
+    "HUMAN_TURN_META_KEY": ("efm_go.history", "HUMAN_TURN_META_KEY"),
+    "ImageBudget": ("efm_go.chat_attachments", "ImageBudget"),
     "Iterable": ("collections.abc", "Iterable"),
     "Iterator": ("collections.abc", "Iterator"),
-    "KiroCrewConfig": ("kiro_crew.config.loader", "KiroCrewConfig"),
-    "MEMORY_MODES": ("kiro_crew.execution_context", "MEMORY_MODES"),
-    "METADATA_LINE_CORRUPT": ("kiro_crew.history", "METADATA_LINE_CORRUPT"),
+    "KiroCrewConfig": ("efm_go.config.loader", "KiroCrewConfig"),
+    "MEMORY_MODES": ("efm_go.execution_context", "MEMORY_MODES"),
+    "METADATA_LINE_CORRUPT": ("efm_go.history", "METADATA_LINE_CORRUPT"),
     "Mapping": ("collections.abc", "Mapping"),
     "OrderedDict": ("collections", "OrderedDict"),
     "Path": ("pathlib", "Path"),
-    "ROWS_ONLY_DEFERRED_META_KEYS": ("kiro_crew.history", "ROWS_ONLY_DEFERRED_META_KEYS"),
-    "ROWS_ONLY_OWNED_META_KEYS": ("kiro_crew.history", "ROWS_ONLY_OWNED_META_KEYS"),
-    "SLOT_OWNED_META_KEYS": ("kiro_crew.history", "SLOT_OWNED_META_KEYS"),
-    "STRICTEST_MEMORY_MODE": ("kiro_crew.execution_context", "STRICTEST_MEMORY_MODE"),
-    "UnknownMemoryStore": ("kiro_crew.memory_stores", "UnknownMemoryStore"),
-    "_ChatSlot": ("kiro_crew.dashboard.state", "_ChatSlot"),
-    "_MAX_DISMISSED_SOURCE_LINKS": ("kiro_crew.dashboard.state", "_MAX_DISMISSED_SOURCE_LINKS"),
-    "_TITLE_ORIGINS": ("kiro_crew.dashboard.chat_title", "_TITLE_ORIGINS"),
-    "_TRANSIENT_ROLES": ("kiro_crew.dashboard.state", "_TRANSIENT_ROLES"),
-    "_archive_lines": ("kiro_crew.history", "_archive_lines"),
-    "_normalize_model": ("kiro_crew.dashboard.chat_utils", "_normalize_model"),
-    "_normalize_slot_key": ("kiro_crew.dashboard.state", "_normalize_slot_key"),
-    "_note_authorized_elsewhere": ("kiro_crew.dashboard.state", "_note_authorized_elsewhere"),
-    "_redact_meta_for_role": ("kiro_crew.dashboard.chat_utils", "_redact_meta_for_role"),
-    "_rehydrated_refresh_mark": ("kiro_crew.dashboard.chat_title", "_rehydrated_refresh_mark"),
-    "_sync_dashboard_slots": ("kiro_crew.dashboard.chat_utils", "_sync_dashboard_slots"),
-    "agent_model_map": ("kiro_crew.agent_discovery", "agent_model_map"),
+    "ROWS_ONLY_DEFERRED_META_KEYS": ("efm_go.history", "ROWS_ONLY_DEFERRED_META_KEYS"),
+    "ROWS_ONLY_OWNED_META_KEYS": ("efm_go.history", "ROWS_ONLY_OWNED_META_KEYS"),
+    "SLOT_OWNED_META_KEYS": ("efm_go.history", "SLOT_OWNED_META_KEYS"),
+    "STRICTEST_MEMORY_MODE": ("efm_go.execution_context", "STRICTEST_MEMORY_MODE"),
+    "UnknownMemoryStore": ("efm_go.memory_stores", "UnknownMemoryStore"),
+    "_ChatSlot": ("efm_go.dashboard.state", "_ChatSlot"),
+    "_MAX_DISMISSED_SOURCE_LINKS": ("efm_go.dashboard.state", "_MAX_DISMISSED_SOURCE_LINKS"),
+    "_TITLE_ORIGINS": ("efm_go.dashboard.chat_title", "_TITLE_ORIGINS"),
+    "_TRANSIENT_ROLES": ("efm_go.dashboard.state", "_TRANSIENT_ROLES"),
+    "_archive_lines": ("efm_go.history", "_archive_lines"),
+    "_normalize_model": ("efm_go.dashboard.chat_utils", "_normalize_model"),
+    "_normalize_slot_key": ("efm_go.dashboard.state", "_normalize_slot_key"),
+    "_note_authorized_elsewhere": ("efm_go.dashboard.state", "_note_authorized_elsewhere"),
+    "_redact_meta_for_role": ("efm_go.dashboard.chat_utils", "_redact_meta_for_role"),
+    "_rehydrated_refresh_mark": ("efm_go.dashboard.chat_title", "_rehydrated_refresh_mark"),
+    "_sync_dashboard_slots": ("efm_go.dashboard.chat_utils", "_sync_dashboard_slots"),
+    "agent_model_map": ("efm_go.agent_discovery", "agent_model_map"),
     "annotations": ("__future__", "annotations"),
     "apply_pending_slot_memory_mode": (
-        "kiro_crew.dashboard.chat_utils",
+        "efm_go.dashboard.chat_utils",
         "apply_pending_slot_memory_mode",
     ),
     "asyncio": ("asyncio", None),
-    "atomic_write": ("kiro_crew.atomic_write", "atomic_write"),
-    "canonical_memory_mode": ("kiro_crew.execution_context", "canonical_memory_mode"),
-    "carry_provenance": ("kiro_crew.history", "carry_provenance"),
-    "carry_unowned_metadata": ("kiro_crew.history", "carry_unowned_metadata"),
+    "atomic_write": ("efm_go.atomic_write", "atomic_write"),
+    "canonical_memory_mode": ("efm_go.execution_context", "canonical_memory_mode"),
+    "carry_provenance": ("efm_go.history", "carry_provenance"),
+    "carry_unowned_metadata": ("efm_go.history", "carry_unowned_metadata"),
     "chain": ("itertools", "chain"),
     "committed_filtered_note_ids": (
-        "kiro_crew.dashboard.slot_buffers",
+        "efm_go.dashboard.slot_buffers",
         "committed_filtered_note_ids",
     ),
-    "config_dir": ("kiro_crew.config.loader", "config_dir"),
+    "config_dir": ("efm_go.config.loader", "config_dir"),
     "deque": ("collections", "deque"),
     "drop_committed_restored_notes": (
-        "kiro_crew.dashboard.slot_buffers",
+        "efm_go.dashboard.slot_buffers",
         "drop_committed_restored_notes",
     ),
     "drop_records_without_placeholders": (
-        "kiro_crew.dashboard.chat_utils",
+        "efm_go.dashboard.chat_utils",
         "drop_records_without_placeholders",
     ),
-    "durable_row_count": ("kiro_crew.dashboard.state", "durable_row_count"),
-    "effective_session_key": ("kiro_crew.dashboard.chat_utils", "effective_session_key"),
-    "file_lock": ("kiro_crew.platform_compat", "file_lock"),
+    "durable_row_count": ("efm_go.dashboard.state", "durable_row_count"),
+    "effective_session_key": ("efm_go.dashboard.chat_utils", "effective_session_key"),
+    "file_lock": ("efm_go.platform_compat", "file_lock"),
     "hashlib": ("hashlib", None),
-    "is_channel_session_key": ("kiro_crew.messaging.link", "is_channel_session_key"),
-    "is_stop_event_row": ("kiro_crew.dashboard.state", "is_stop_event_row"),
-    "is_turn_interrupted": ("kiro_crew.dashboard.state", "is_turn_interrupted"),
+    "is_channel_session_key": ("efm_go.messaging.link", "is_channel_session_key"),
+    "is_stop_event_row": ("efm_go.dashboard.state", "is_stop_event_row"),
+    "is_turn_interrupted": ("efm_go.dashboard.state", "is_turn_interrupted"),
     "islice": ("itertools", "islice"),
     "json": ("json", None),
-    "kiro_agents_dir_path": ("kiro_crew.agent", "kiro_agents_dir_path"),
-    "latest_transcript_ts": ("kiro_crew.history", "latest_transcript_ts"),
+    "kiro_agents_dir_path": ("efm_go.agent", "kiro_agents_dir_path"),
+    "latest_transcript_ts": ("efm_go.history", "latest_transcript_ts"),
     "logging": ("logging", None),
-    "mcp_apps_render": ("kiro_crew", "mcp_apps_render"),
-    "model_registry": ("kiro_crew", "model_registry"),
-    "named_store_or_empty": ("kiro_crew.memory_stores", "named_store_or_empty"),
+    "mcp_apps_render": ("efm_go", "mcp_apps_render"),
+    "model_registry": ("efm_go", "model_registry"),
+    "named_store_or_empty": ("efm_go.memory_stores", "named_store_or_empty"),
     "os": ("os", None),
-    "persist_inline_images": ("kiro_crew.chat_attachments", "persist_inline_images"),
+    "persist_inline_images": ("efm_go.chat_attachments", "persist_inline_images"),
     "queue_persist_signature": (
-        "kiro_crew.dashboard.slot_queue_repository",
+        "efm_go.dashboard.slot_queue_repository",
         "queue_persist_signature",
     ),
     "re": ("re", None),
-    "read_session_execution": ("kiro_crew.execution_context", "read_session_execution"),
-    "redact_credentials": ("kiro_crew.security", "redact_credentials"),
-    "redact_display_content": ("kiro_crew.dashboard.chat_utils", "redact_display_content"),
-    "redact_exfiltration_urls": ("kiro_crew.security", "redact_exfiltration_urls"),
-    "redact_log_via_context": ("kiro_crew.platform.context", "redact_log_via_context"),
-    "row_mid": ("kiro_crew.dashboard.state", "row_mid"),
-    "same_text_modulo_images": ("kiro_crew.chat_attachments", "same_text_modulo_images"),
+    "read_session_execution": ("efm_go.execution_context", "read_session_execution"),
+    "redact_credentials": ("efm_go.security", "redact_credentials"),
+    "redact_display_content": ("efm_go.dashboard.chat_utils", "redact_display_content"),
+    "redact_exfiltration_urls": ("efm_go.security", "redact_exfiltration_urls"),
+    "redact_log_via_context": ("efm_go.platform.context", "redact_log_via_context"),
+    "row_mid": ("efm_go.dashboard.state", "row_mid"),
+    "same_text_modulo_images": ("efm_go.chat_attachments", "same_text_modulo_images"),
     "sanitize_restored_deferred_notes": (
-        "kiro_crew.dashboard.slot_buffers",
+        "efm_go.dashboard.slot_buffers",
         "sanitize_restored_deferred_notes",
     ),
     "sanitize_restored_queue": (
-        "kiro_crew.dashboard.slot_queue_repository",
+        "efm_go.dashboard.slot_queue_repository",
         "sanitize_restored_queue",
     ),
-    "sel": ("kiro_crew.sel", "sel"),
-    "serialize_deferred_notes": ("kiro_crew.dashboard.slot_buffers", "serialize_deferred_notes"),
+    "sel": ("efm_go.sel", "sel"),
+    "serialize_deferred_notes": ("efm_go.dashboard.slot_buffers", "serialize_deferred_notes"),
     "session_agent_selection_name": (
-        "kiro_crew.session_agent_selection",
+        "efm_go.session_agent_selection",
         "session_agent_selection_name",
     ),
-    "session_key_for": ("kiro_crew.dashboard.chat_utils", "session_key_for"),
-    "slot_closed_since": ("kiro_crew.dashboard.channel_slots", "slot_closed_since"),
-    "slot_history_key": ("kiro_crew.dashboard.chat_utils", "slot_history_key"),
-    "slot_transcript_key": ("kiro_crew.dashboard.chat_utils", "slot_transcript_key"),
-    "stricter_memory_mode": ("kiro_crew.execution_context", "stricter_memory_mode"),
+    "session_key_for": ("efm_go.dashboard.chat_utils", "session_key_for"),
+    "slot_closed_since": ("efm_go.dashboard.channel_slots", "slot_closed_since"),
+    "slot_history_key": ("efm_go.dashboard.chat_utils", "slot_history_key"),
+    "slot_transcript_key": ("efm_go.dashboard.chat_utils", "slot_transcript_key"),
+    "stricter_memory_mode": ("efm_go.execution_context", "stricter_memory_mode"),
     "threading": ("threading", None),
     "time": ("time", None),
-    "transcript_sort_key": ("kiro_crew.history", "transcript_sort_key"),
-    "union_deferred_notes": ("kiro_crew.dashboard.slot_buffers", "union_deferred_notes"),
-    "update_metadata_off_loop": ("kiro_crew.history", "update_metadata_off_loop"),
+    "transcript_sort_key": ("efm_go.history", "transcript_sort_key"),
+    "union_deferred_notes": ("efm_go.dashboard.slot_buffers", "union_deferred_notes"),
+    "update_metadata_off_loop": ("efm_go.history", "update_metadata_off_loop"),
     "with_bounded_redaction_records": (
-        "kiro_crew.dashboard.chat_utils",
+        "efm_go.dashboard.chat_utils",
         "with_bounded_redaction_records",
     ),
 }
@@ -627,7 +627,7 @@ class TestEagerOwners:
             f"print(json.dumps(sorted(m for m in sys.modules if m.startswith({OWNER_PACKAGE + '.'!r}))))\n"
         )
         env = dict(os.environ)
-        src = str(Path(kiro_crew.__file__).resolve().parents[1])
+        src = str(Path(efm_go.__file__).resolve().parents[1])
         env["PYTHONPATH"] = src + os.pathsep + env.get("PYTHONPATH", "")
         out = subprocess.run(
             [sys.executable, "-c", probe],
@@ -654,7 +654,7 @@ class TestEagerOwners:
             extra = [
                 f"{line}: {module}"
                 for line, module in _module_scope_imports(ast.parse(source))
-                if module.startswith(("kiro_crew", ".")) and module not in facade
+                if module.startswith(("efm_go", ".")) and module not in facade
             ]
             if extra:
                 offenders[stem] = extra
@@ -667,8 +667,8 @@ class TestEagerOwners:
 
 #: Every spelling a test uses to reach the facade module.
 _MENTIONS_THE_FACADE = re.compile(
-    r"kiro_crew\.dashboard\.chat_persistence\b"
-    r"|from kiro_crew\.dashboard import [^\n]*\bchat_persistence\b"
+    r"efm_go\.dashboard\.chat_persistence\b"
+    r"|from efm_go\.dashboard import [^\n]*\bchat_persistence\b"
 )
 _PATCH_CALLS = ("setattr", "patch.object", "delattr")
 
@@ -677,7 +677,7 @@ def _facade_aliases(tree: ast.AST) -> set[str]:
     """Local names bound to the facade in *tree*, resolved to a fixed point."""
     aliases = {FACADE}
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.dashboard":
+        if isinstance(node, ast.ImportFrom) and node.module == "efm_go.dashboard":
             aliases |= {a.asname or a.name for a in node.names if a.name == "chat_persistence"}
         elif isinstance(node, ast.Import):
             aliases |= {a.asname for a in node.names if a.name == FACADE and a.asname}
@@ -730,7 +730,7 @@ def _patched_names_in(text: str) -> set[str]:
             for target in targets:
                 if isinstance(target, ast.Attribute) and ast.unparse(target.value) in aliases:
                     found.add(target.attr)
-    found |= set(re.findall(r"""["']kiro_crew\.dashboard\.chat_persistence\.(\w+)["']""", text))
+    found |= set(re.findall(r"""["']efm_go\.dashboard\.chat_persistence\.(\w+)["']""", text))
     return found
 
 
@@ -798,7 +798,7 @@ class TestPlacement:
                 if not isinstance(node, ast.ImportFrom):
                     continue
                 assert node.module != FACADE, f"{stem}:{node.lineno} imports a facade name"
-                if node.module == "kiro_crew.dashboard" and "chat_persistence" in [
+                if node.module == "efm_go.dashboard" and "chat_persistence" in [
                     a.name for a in node.names
                 ]:
                     assert node.col_offset > 0, f"{stem}:{node.lineno} imports the facade early"
@@ -868,17 +868,17 @@ class TestPlacement:
     def test_the_patch_scan_reads_every_spelling(self) -> None:
         planted = (
             "import importlib\n"
-            "import kiro_crew.dashboard.chat_persistence as pm\n"
-            "from kiro_crew.dashboard import chat_persistence as cpm\n"
-            "facade = importlib.import_module('kiro_crew.dashboard.chat_persistence')\n"
+            "import efm_go.dashboard.chat_persistence as pm\n"
+            "from efm_go.dashboard import chat_persistence as cpm\n"
+            "facade = importlib.import_module('efm_go.dashboard.chat_persistence')\n"
             "alias = facade\n"
             "def test(monkeypatch):\n"
             "    monkeypatch.setattr(pm, 'first', 1)\n"
             "    monkeypatch.setattr(cpm, 'second', 2)\n"
             "    patch.object(alias, 'third')\n"
             "    cpm.fourth = 4\n"
-            "    monkeypatch.setattr('kiro_crew.dashboard.chat_persistence.fifth', 5)\n"
-            "    monkeypatch.setattr('kiro_crew.dashboard.chat_persistence.Shared.attr', 6)\n"
+            "    monkeypatch.setattr('efm_go.dashboard.chat_persistence.fifth', 5)\n"
+            "    monkeypatch.setattr('efm_go.dashboard.chat_persistence.Shared.attr', 6)\n"
             "    monkeypatch.setattr(cpm.Shared, 'attr', 7)\n"
             "    monkeypatch.setattr(other, 'not_facade', 8)\n"
             "    monkeypatch.delattr(cpm, 'sixth')\n"
@@ -895,12 +895,12 @@ class TestPlacement:
     def test_the_seam_scan_catches_a_planted_bare_read(self) -> None:
         planted = (
             "def f(path: 'atomic_write') -> 'sel':\n"
-            "    from kiro_crew.dashboard import chat_persistence as cp\n"
+            "    from efm_go.dashboard import chat_persistence as cp\n"
             "    good = cp.atomic_write(path, '')\n"
             "    return atomic_write(path, ''), sel\n"
             "def g():\n"
-            "    from kiro_crew.security import redact_credentials\n"
-            "    from kiro_crew.config.loader import config_dir as home\n"
+            "    from efm_go.security import redact_credentials\n"
+            "    from efm_go.config.loader import config_dir as home\n"
             "    return redact_credentials, home\n"
         )
         seams = {"atomic_write", "sel", "redact_credentials", "config_dir"}
@@ -1056,7 +1056,7 @@ class TestPatchReach:
     def test_the_note_filter_and_its_audit_go_through_the_facade(self, monkeypatch) -> None:
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.slot_persistence import write_guards
+        from efm_go.dashboard.slot_persistence import write_guards
 
         audited: list[dict] = []
         monkeypatch.setattr(cp, "_note_authorized_elsewhere", lambda meta, key: bool(meta))
@@ -1263,7 +1263,7 @@ def _scenario_refusals(state) -> dict:
 
 
 def _run(name: str, tmp_path, monkeypatch, caplog) -> dict:
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     scenario = globals()[f"_scenario_{name}"]
     params = inspect.signature(scenario).parameters

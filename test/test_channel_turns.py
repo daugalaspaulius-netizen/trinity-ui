@@ -1,6 +1,6 @@
 """The channel turn pipeline, tested through its own interface.
 
-:class:`~kiro_crew.messaging.dispatch.ChannelTurns` owns the sequence every
+:class:`~efm_go.messaging.dispatch.ChannelTurns` owns the sequence every
 channel dispatcher runs around the ``TurnDriver``: the governance backstop, the
 mute substitution, the hook short-circuit, the claim, the crew-log opener, the
 identity publish, the build, the driver, the compaction replay, the accounting,
@@ -8,7 +8,7 @@ the ledger, the refusal ladder and the finalize order. A bug in any of them is a
 bug in every channel at once, so each is pinned here by what a caller can
 observe: what the session manager was asked, in order (one ledger), what the
 provider was prompted with, what the renderer showed, what the ledger adapter was
-handed, and the :class:`~kiro_crew.messaging.dispatch.TurnOutcome`.
+handed, and the :class:`~efm_go.messaging.dispatch.TurnOutcome`.
 
 The real ``TurnDriver`` runs behind every case, and the collaborators the
 pipeline is HANDED are the fakes in ``channel_turn_fakes``. A few process-wide
@@ -31,7 +31,7 @@ too, each because the real one would leave the test or make it unobservable:
 
 Behaviours a dispatcher still diverges on are parametrized over ``drift``: the
 default and Discord's declared
-:data:`~kiro_crew.messaging.dispatch.DISCORD_DRIFT`; ``TestTheDiscordLeg`` runs
+:data:`~efm_go.messaging.dispatch.DISCORD_DRIFT`; ``TestTheDiscordLeg`` runs
 Discord's cases on its real renderer.
 """
 
@@ -62,19 +62,19 @@ from channel_turn_fakes import (
     tool_call,
 )
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     STOP_REASON_CANCELLED,
     STOP_REASON_COMPACTION_FAILED,
     STOP_REASON_STALE_RECOVER,
 )
-from kiro_crew.agent_sdk.backends import ACP_BACKEND_CLAUDE
-from kiro_crew.discord.renderer import DiscordRenderer
-from kiro_crew.discord.transport import DISCORD_CAPABILITIES
-from kiro_crew.hooks import TOOL_DENY
-from kiro_crew.memory_stores import UnknownMemoryStore
-from kiro_crew.messaging import dispatch as D
-from kiro_crew.messaging import turn_ceiling
-from kiro_crew.messaging.dispatch import (
+from efm_go.agent_sdk.backends import ACP_BACKEND_CLAUDE
+from efm_go.discord.renderer import DiscordRenderer
+from efm_go.discord.transport import DISCORD_CAPABILITIES
+from efm_go.hooks import TOOL_DENY
+from efm_go.memory_stores import UnknownMemoryStore
+from efm_go.messaging import dispatch as D
+from efm_go.messaging import turn_ceiling
+from efm_go.messaging.dispatch import (
     DISCORD_DRIFT,
     TOOLLESS_TURN_AGENT,
     TOOLLESS_TURN_REFUSAL_NOTE,
@@ -90,12 +90,12 @@ from kiro_crew.messaging.dispatch import (
     drive_turn,
     exchange_writer,
 )
-from kiro_crew.messaging.inbound_spool import InboundRoute
-from kiro_crew.messaging.link import ChannelLink
-from kiro_crew.messaging.turn_ceiling import ConversationTurnCeiling
-from kiro_crew.monitoring.models import MonitorDispatchResult
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.start_priority import StartPriority
+from efm_go.messaging.inbound_spool import InboundRoute
+from efm_go.messaging.link import ChannelLink
+from efm_go.messaging.turn_ceiling import ConversationTurnCeiling
+from efm_go.monitoring.models import MonitorDispatchResult
+from efm_go.session_allocation import SessionClosingError
+from efm_go.start_priority import StartPriority
 
 KEY = "weixin:agentA:direct:userA"
 CONV = "weixin:userA"

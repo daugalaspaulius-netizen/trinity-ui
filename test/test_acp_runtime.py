@@ -35,10 +35,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from spawn_test_helpers import strip_spawn_shim
 
-from kiro_crew.acp import runtime as runtime_mod
-from kiro_crew.acp.client import _OVERSIZE_DRAIN_MAX_BYTES
-from kiro_crew.acp.harness import SessionExtras
-from kiro_crew.acp.runtime import (
+from efm_go.acp import runtime as runtime_mod
+from efm_go.acp.client import _OVERSIZE_DRAIN_MAX_BYTES
+from efm_go.acp.harness import SessionExtras
+from efm_go.acp.runtime import (
     _REQUEST_TIMEOUT,
     _SESSION_NEW_TIMEOUT,
     _TERMINATE_TIMEOUT,
@@ -48,8 +48,8 @@ from kiro_crew.acp.runtime import (
     AcpSessionHandle,
     _ColdStartAdmission,
 )
-from kiro_crew.acp.session_handle import NATIVE_CHILD_ROSTER_CAP
-from kiro_crew.acp.types import (
+from efm_go.acp.session_handle import NATIVE_CHILD_ROSTER_CAP
+from efm_go.acp.types import (
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
     EVENT_COMPLETE,
@@ -71,11 +71,11 @@ from kiro_crew.acp.types import (
     METHOD_SET_MODE,
     JsonRpcMessage,
 )
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
-from kiro_crew.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
-from kiro_crew.metrics.events import CHILD_PERMISSION_DENIED
-from kiro_crew.start_priority import StartPriority
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+from efm_go.metrics.events import CHILD_PERMISSION_DENIED
+from efm_go.start_priority import StartPriority
 
 # ── Harness ──
 
@@ -88,14 +88,14 @@ def _pinned_kiro_cli_version(monkeypatch):
     ``rebuild_agent_config``) and a worker install writes one
     (``_install_worker_agent`` -> ``_write_worker_spec``); both end in
     ``_write_derived_permissions``, which reads ``installed_kiro_cli_version``
-    function-locally from ``kiro_crew.kiro_cli``: one real ``kiro-cli --version``
+    function-locally from ``efm_go.kiro_cli``: one real ``kiro-cli --version``
     spawn per binary identity, process-cached, so whichever test in the worker
     writes a spec first pays it against the HOST's install with the checkout as
     the child's cwd. Pinned to the floor release, as ``test_agent.py`` and the
     generated-writer suites pin it.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -105,8 +105,8 @@ def kas_readiness_wire(monkeypatch, tmp_path):
     """Real demux and session startup; only the subprocess and clock are fake."""
     from types import SimpleNamespace
 
-    import kiro_crew.acp.runtime as runtime_mod
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.runtime as runtime_mod
+    import efm_go.acp.session_handle as sh
 
     rt, reader, proc = _make_runtime()
     rt._acp_backend = ACP_BACKEND_KAS
@@ -264,7 +264,7 @@ def kas_readiness_wire(monkeypatch, tmp_path):
                     continue
                 # A tokened element launches the managed invocation, never the
                 # spec's (KAS spawns it; gatewayd's own-binary check never runs).
-                from kiro_crew.agent import _managed_mcp_env, managed_mcp_spec_entry
+                from efm_go.agent import _managed_mcp_env, managed_mcp_spec_entry
 
                 managed = managed_mcp_spec_entry(name, include_opt_in=True)
                 assert element["command"] == managed["command"]
@@ -316,9 +316,9 @@ def kas_readiness_wire(monkeypatch, tmp_path):
 async def test_derived_worker_identity_keeps_freshness_and_readiness(
     kas_readiness_wire, monkeypatch, tmp_path, resume, revoked
 ):
-    from kiro_crew import agent, agent_state
-    from kiro_crew.acp.harness import harness_for
-    from kiro_crew.config import paths as paths_mod
+    from efm_go import agent, agent_state
+    from efm_go.acp.harness import harness_for
+    from efm_go.config import paths as paths_mod
 
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
@@ -418,8 +418,8 @@ async def test_session_cwd_is_bound_through_real_create_and_load(
     wrapper that every caller actually holds must forward it rather than
     returning ``self._client._work_dir``.
     """
-    from kiro_crew.acp.session_provider import AcpSessionProvider
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.acp.session_provider import AcpSessionProvider
+    from efm_go.providers.acp import AcpProvider
 
     wire = kas_readiness_wire
     # The fixture starts the runtime in tmp_path and the session also opens
@@ -486,7 +486,7 @@ async def test_kas_readiness_delays_prompt_until_active_managed_tools(
     kas_readiness_wire, monkeypatch, resume, pre_ready
 ):
     """The first prompt cannot race core when startup takes more than six seconds."""
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     monkeypatch.setattr(sh, "_MCP_DRAIN_NO_REPORT_CEILING", 6.0)
     wire = kas_readiness_wire
@@ -566,7 +566,7 @@ async def test_kas_readiness_delays_prompt_until_active_managed_tools(
     ],
 )
 async def test_kas_readiness_refuses_failure_or_missing_report(kas_readiness_wire, resume, state):
-    from kiro_crew.acp.session_handle import AcpRequestTimeout
+    from efm_go.acp.session_handle import AcpRequestTimeout
 
     wire = kas_readiness_wire
     reader_task = await _start_reader(wire.runtime)
@@ -673,7 +673,7 @@ async def test_kas_default_managed_core_is_hoisted_and_ready_on_provenance_less_
     Exposure comes from the connected entry's own catalog when it carries one
     (2.18.0 through 2.22.0 all do), and only otherwise from a tag frame.
     """
-    from kiro_crew.acp.kas_agents import to_client_custom_agent
+    from efm_go.acp.kas_agents import to_client_custom_agent
 
     wire = kas_readiness_wire
     projected = to_client_custom_agent(
@@ -782,7 +782,7 @@ async def test_kas_readiness_respects_projected_tool_restrictions(
     The last case is the one with an exposed tool: its connected catalog is the
     exposure evidence, so no tag frame is needed (none arrives on 2.22.0).
     """
-    from kiro_crew.acp.kas_agents import to_client_custom_agent
+    from efm_go.acp.kas_agents import to_client_custom_agent
 
     wire = kas_readiness_wire
     projected = to_client_custom_agent(
@@ -861,7 +861,7 @@ async def test_kas_readiness_preserves_external_init_side_effects(
         )
     reader_task = await _start_reader(wire.runtime)
     start = None
-    caplog.set_level("INFO", logger="kiro_crew.acp.session_handle")
+    caplog.set_level("INFO", logger="efm_go.acp.session_handle")
     try:
         start = await wire.handshake(resume, pre_frames=[oauth], injected=None if managed else [])
         # The pre-mode OAuth frame is still captured; it cannot arm readiness.
@@ -882,7 +882,7 @@ async def test_kas_readiness_preserves_external_init_side_effects(
         _feed(
             wire.reader,
             {
-                "method": "_kiro.dev/mcp/server_init_failure",
+                "method": "_efm.go/mcp/server_init_failure",
                 "params": {
                     "sessionId": "ready-session",
                     "serverName": "external-failed",
@@ -923,7 +923,7 @@ def _fast_no_report_ceiling(monkeypatch):
     the module constant at call time precisely so this patch takes effect.
     Tests that exercise the ceiling itself pass an explicit value instead.
     """
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     monkeypatch.setattr(sh, "_MCP_DRAIN_NO_REPORT_CEILING", 0.05, raising=False)
 
@@ -935,7 +935,7 @@ def _spawn_client_mod():
     module's re-export would leave the real filesystem search running while the
     test believed it was stubbed.
     """
-    import kiro_crew.acp.client as client_mod
+    import efm_go.acp.client as client_mod
 
     return client_mod
 
@@ -1372,7 +1372,7 @@ async def test_missing_agent_spec_error_reaches_caller_actionable(tmp_path):
     rt._pending_requests[7] = fut
     task = await _start_reader(rt)
     try:
-        with patch("kiro_crew.acp.runtime.kiro_agents_dir", return_value=tmp_path):
+        with patch("efm_go.acp.runtime.kiro_agents_dir", return_value=tmp_path):
             _feed(
                 reader,
                 {
@@ -1553,7 +1553,7 @@ async def test_an_oversize_reply_fails_its_awaited_request_with_the_size_and_lim
     say) must fail that request at once naming the frame size and the limit --
     not surface minutes later as a session/new timeout blamed on MCP servers.
     The reader keeps routing afterwards."""
-    from kiro_crew.acp.session_handle import AcpFrameTooLarge
+    from efm_go.acp.session_handle import AcpFrameTooLarge
 
     rt, _, proc = _make_runtime()
     reader = asyncio.StreamReader(limit=256)
@@ -1611,7 +1611,7 @@ async def test_an_oversize_session_start_reply_is_a_tagged_start_failure(monkeyp
     """A self-driving caller counts start failures by ``session_start_failed`` to back
     off; an oversize session/new or session/load reply is one, and it is not
     transient -- the same request gets the same reply."""
-    from kiro_crew.acp.session_handle import AcpFrameTooLarge
+    from efm_go.acp.session_handle import AcpFrameTooLarge
 
     rt, _, _ = _make_runtime()
     rt._can_load_session = True
@@ -1631,7 +1631,7 @@ async def test_an_oversize_session_start_reply_is_a_tagged_start_failure(monkeyp
             )
     assert excinfo.value.session_start_failed is True
     assert excinfo.value.transient is False
-    from kiro_crew.llm_helpers import acp_error_is_transient
+    from efm_go.llm_helpers import acp_error_is_transient
 
     assert acp_error_is_transient(excinfo.value) is False
 
@@ -1641,8 +1641,8 @@ async def test_an_oversize_session_new_reply_releases_its_start_permit(monkeypat
     """The start gate admits a few session starts at once and has no reaper, so a
     start that fails on an oversize reply must give its slot back -- otherwise two
     such failures block every later ``create_session`` on the loop."""
-    from kiro_crew.acp import runtime_start
-    from kiro_crew.acp.session_handle import AcpFrameTooLarge
+    from efm_go.acp import runtime_start
+    from efm_go.acp.session_handle import AcpFrameTooLarge
 
     released: list[str] = []
     recorded: list[bool] = []
@@ -1815,8 +1815,8 @@ def test_runtime_reuses_clients_oversize_drain_helper():
     """The consume-prefix-and-retry drain must have ONE definition. A second copy
     is how two read paths drift apart (they already disagreed once, when only one
     of them killed the process)."""
-    import kiro_crew.acp.client as client_mod
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.client as client_mod
+    import efm_go.acp.runtime as runtime_mod
 
     assert runtime_mod._drain_oversize_line is client_mod._drain_oversize_line
     assert runtime_mod.OversizeLineUnrecoverable is client_mod.OversizeLineUnrecoverable
@@ -1835,8 +1835,8 @@ def test_runtime_uses_clients_augmented_kiro_bin_resolver():
     exist."""
     import inspect
 
-    import kiro_crew.acp.client as client_mod
-    from kiro_crew.acp.harness import KasHarness, KiroHarness
+    import efm_go.acp.client as client_mod
+    from efm_go.acp.harness import KasHarness, KiroHarness
 
     assert hasattr(client_mod, "_resolve_kiro_bin_for_spawn")
     for harness in (KiroHarness, KasHarness):
@@ -1869,7 +1869,7 @@ async def test_runtime_missing_kiro_bin_reports_the_directories_it_searched(back
     Both spawn branches are covered because both resolve the same binary and both
     have to answer the same question.
     """
-    import kiro_crew.acp.client as client_mod
+    import efm_go.acp.client as client_mod
 
     searched = [os.path.join(os.sep, "managed-bin"), os.path.join(os.sep, "path-bin")]
     unsearched = os.path.join(os.sep, "never-checked")
@@ -1912,7 +1912,7 @@ async def _wait_for_queued(admission: _ColdStartAdmission, expected: int) -> Non
 
 @pytest.mark.asyncio
 async def test_cold_start_admission_caps_simultaneous_runtime_spawns(monkeypatch):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     admission = _ColdStartAdmission(limit=2)
     monkeypatch.setattr(runtime_mod, "_cold_start_admission", lambda: admission)
@@ -1952,7 +1952,7 @@ async def test_cold_start_admission_caps_simultaneous_runtime_spawns(monkeypatch
 
 @pytest.mark.asyncio
 async def test_cold_start_cancellation_releases_active_admission_slot(monkeypatch):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     admission = _ColdStartAdmission(limit=1)
     monkeypatch.setattr(runtime_mod, "_cold_start_admission", lambda: admission)
@@ -1983,7 +1983,7 @@ async def test_cold_start_cancellation_releases_active_admission_slot(monkeypatc
 
 @pytest.mark.asyncio
 async def test_cold_start_queued_cancellation_does_not_consume_slot(monkeypatch):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     admission = _ColdStartAdmission(limit=1)
     monkeypatch.setattr(runtime_mod, "_cold_start_admission", lambda: admission)
@@ -2019,7 +2019,7 @@ async def test_cold_start_queued_cancellation_does_not_consume_slot(monkeypatch)
 
 @pytest.mark.asyncio
 async def test_cold_start_exception_releases_admission_slot(monkeypatch):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     admission = _ColdStartAdmission(limit=1)
     monkeypatch.setattr(runtime_mod, "_cold_start_admission", lambda: admission)
@@ -2039,7 +2039,7 @@ async def test_cold_start_exception_releases_admission_slot(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_runtime_spawn_retries_one_creation_failure_after_backoff(monkeypatch):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     process = MagicMock()
     sleep = AsyncMock()
@@ -2053,7 +2053,7 @@ async def test_runtime_spawn_retries_one_creation_failure_after_backoff(monkeypa
 
 
 def test_cold_start_admission_registry_releases_contended_closed_loop(monkeypatch):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     monkeypatch.setattr(
         runtime_mod,
@@ -2099,7 +2099,7 @@ async def test_runtime_spawn_passes_installed_path_through_exact_wrappers(
     monkeypatch,
     project_skills,
 ):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     monkeypatch.setenv("KIROCREW_NATIVE_SKILL_PROJECTION", "1" if project_skills else "0")
     macos_dir = tmp_path / "Kiro CLI.app" / "Contents" / "MacOS"
@@ -2207,7 +2207,7 @@ async def test_bound_macos_runtime_hands_sessions_the_verified_pathname(monkeypa
     identity. The earlier "/dev/fd/<n>" spelling is not resolvable on macOS -- the
     only platform that binds -- so it reached the peer as an unusable cwd.
     """
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     runtime = AcpRuntime(work_dir=tmp_path)
     runtime._bound_workspace_fd = 71
@@ -2224,7 +2224,7 @@ async def test_bound_macos_runtime_hands_sessions_the_verified_pathname(monkeypa
 
 @pytest.mark.asyncio
 async def test_bound_macos_runtime_rejects_descendant_session_workspace(monkeypatch, tmp_path):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     runtime = AcpRuntime(work_dir=tmp_path)
     runtime._bound_workspace_fd = 71
@@ -2240,7 +2240,7 @@ async def test_bound_macos_runtime_rejects_descendant_session_workspace(monkeypa
 
 @pytest.mark.asyncio
 async def test_bound_macos_runtime_rejects_different_session_workspace(monkeypatch, tmp_path):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     runtime = AcpRuntime(work_dir=tmp_path)
     runtime._bound_workspace_fd = 72
@@ -2257,7 +2257,7 @@ async def test_bound_macos_runtime_rejects_different_session_workspace(monkeypat
 
 @pytest.mark.asyncio
 async def test_kill_cancellation_still_releases_bound_workspace(monkeypatch, tmp_path):
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     runtime = AcpRuntime(work_dir=tmp_path)
     runtime._bound_workspace_fd = 73
@@ -2343,7 +2343,7 @@ def _track_untracks(monkeypatch, rt_mod, *, pid_exists: bool):
 @pytest.mark.asyncio
 async def test_observed_exit_retires_registry_entries_once_reaped(monkeypatch):
     """EOF on a root that the child watcher then reaps: both entries are dropped."""
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     rt, reader, proc = _make_runtime()
     rt._spawn_start_token = "tok-4242"
@@ -2374,7 +2374,7 @@ async def test_observed_exit_keeps_tracking_while_the_root_still_runs(monkeypatc
     """A closed stdout is not an exit. A root that never exits within the reap
     window, or one whose pid still answers after the wait, stays tracked -- an
     untracked live process is invisible to every reaper for the host's uptime."""
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     # Wait times out: the process closed its pipe and kept running.
     rt, reader, proc = _make_runtime()
@@ -2411,7 +2411,7 @@ async def test_eof_inside_an_oversize_line_retires_the_same_way(monkeypatch):
     """The other observed-EOF return: stdout closes mid-oversize-line. Same
     confirmed exit, same retirement -- a sibling left to the sweep would carry
     the very 300s window the empty-line branch closes."""
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     rt, reader, proc = _make_runtime()
     rt._spawn_start_token = "tok-4242"
@@ -2460,7 +2460,7 @@ def _neuter_kill_side_effects(monkeypatch, proc):
     so a stand-in awaiting without the bound turns a test whose child never
     exits into a hang instead of a failure.
     """
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     proc.wait = AsyncMock(return_value=0)
 
@@ -2494,7 +2494,7 @@ async def test_deliberate_kill_logs_info_and_still_fails_pending_futures(caplog,
     fut: asyncio.Future = asyncio.get_event_loop().create_future()
     rt._pending_requests[7] = fut
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(expected=True)
 
     records = _death_records(caplog)
@@ -2517,7 +2517,7 @@ async def test_kill_default_is_unexpected_and_warns(caplog, monkeypatch):
     rt, _, proc = _make_runtime()
     _neuter_kill_side_effects(monkeypatch, proc)
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill()
 
     assert [r.levelname for r in _death_records(caplog)] == ["WARNING"]
@@ -2535,7 +2535,7 @@ async def test_kill_reason_lands_in_death_log_and_summary(caplog, monkeypatch):
     rt, _, proc = _make_runtime()
     _neuter_kill_side_effects(monkeypatch, proc)
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(expected=True, reason="warm mint teardown")
 
     records = _death_records(caplog)
@@ -2574,7 +2574,7 @@ async def test_death_summary_redacts_credentials_from_stderr_tail(caplog, monkey
     secret = "ghp_0123456789abcdefghijklmnopqrstuvwxyzAB"
     rt._stderr_lines = [f"auth error: token {secret} rejected"]
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(expected=True, reason="warm mint teardown")
 
     summary = rt.death_summary()
@@ -2598,7 +2598,7 @@ async def test_kill_refuses_info_downgrade_when_process_already_exited(caplog, m
     _neuter_kill_side_effects(monkeypatch, proc)
     proc.returncode = 1  # process already exited on its own; _dead still False
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(expected=True)
 
     records = _death_records(caplog)
@@ -2618,7 +2618,7 @@ async def test_unexpected_process_exit_still_warns_with_diagnostic_shape(caplog)
     rt._pending_requests[3] = fut
     task = await _start_reader(rt)
     try:
-        with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+        with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
             reader.feed_eof()  # empty readline → process exited
             with pytest.raises(AcpRuntimeDead):
                 await asyncio.wait_for(fut, timeout=1.0)
@@ -2660,7 +2660,7 @@ async def test_kill_of_live_runtime_labels_the_unreaped_returncode(caplog, monke
     _neuter_kill_side_effects(monkeypatch, proc)
     assert proc.returncode is None  # live: nothing has reaped it
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(reason="displaced by a new allocation")
 
     msg = _death_records(caplog)[0].getMessage()
@@ -2689,7 +2689,7 @@ async def test_kill_amends_the_summary_once_the_reap_completes(
 
     proc.wait = _wait
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(expected=expected, reason="warm mint teardown")
 
     summary = rt.death_summary()
@@ -2723,7 +2723,7 @@ async def test_reap_amendment_leaves_the_stderr_tail_untouched(caplog, monkeypat
 
     proc.wait = _wait
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(reason="displaced by a new allocation")
 
     summary = rt.death_summary()
@@ -2754,7 +2754,7 @@ async def test_reap_amendment_leaves_the_reason_untouched(caplog, monkeypatch):
 
     proc.wait = _wait
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(reason="reaping a dead runtime")
 
     summary = rt.death_summary()
@@ -2773,7 +2773,7 @@ async def test_the_windows_branch_amends_the_summary_too(caplog, monkeypatch):
     a turn's error and a cron's ``last_error``."""
     import logging
 
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     rt, _, proc = _make_runtime()
     _neuter_kill_side_effects(monkeypatch, proc)
@@ -2785,7 +2785,7 @@ async def test_the_windows_branch_amends_the_summary_too(caplog, monkeypatch):
 
     proc.wait = _wait
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(expected=True, reason="warm mint teardown")
 
     summary = rt.death_summary()
@@ -2808,7 +2808,7 @@ async def test_a_slow_windows_drain_is_one_warning_and_keeps_the_process(caplog,
     """
     import logging
 
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     rt, _, proc = _make_runtime()
     _neuter_kill_side_effects(monkeypatch, proc)
@@ -2820,7 +2820,7 @@ async def test_a_slow_windows_drain_is_one_warning_and_keeps_the_process(caplog,
 
     monkeypatch.setattr(rt_mod.platform_compat, "terminate_windows_asyncio_tree", _drain_is_slow)
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         with pytest.raises(rt_mod.platform_compat.WindowsTreeDrainPending):
             await rt.kill(reason="failed session setup cleanup")
 
@@ -2829,7 +2829,7 @@ async def test_a_slow_windows_drain_is_one_warning_and_keeps_the_process(caplog,
     records = [
         r
         for r in caplog.records
-        if r.name == "kiro_crew.acp.runtime" and "cleanup sweep" in r.getMessage()
+        if r.name == "efm_go.acp.runtime" and "cleanup sweep" in r.getMessage()
     ]
     assert len(records) == 1, [r.getMessage() for r in caplog.records]
     assert records[0].levelname == "WARNING"
@@ -2837,7 +2837,7 @@ async def test_a_slow_windows_drain_is_one_warning_and_keeps_the_process(caplog,
     assert "4242" in records[0].getMessage()
     assert "3 member" in records[0].getMessage()
     assert not [
-        r for r in caplog.records if r.name == "kiro_crew.acp.runtime" and r.exc_info
+        r for r in caplog.records if r.name == "efm_go.acp.runtime" and r.exc_info
     ], "a slow drain still logged a traceback"
 
 
@@ -2849,7 +2849,7 @@ async def test_an_unconfirmed_windows_drain_leaves_the_placeholder(caplog, monke
     tree was never drained would state an exit this runtime cannot vouch for."""
     import logging
 
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     rt, _, proc = _make_runtime()
     _neuter_kill_side_effects(monkeypatch, proc)
@@ -2860,7 +2860,7 @@ async def test_an_unconfirmed_windows_drain_leaves_the_placeholder(caplog, monke
 
     monkeypatch.setattr(rt_mod.platform_compat, "terminate_windows_asyncio_tree", _drain_fails)
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         with pytest.raises(OSError):
             await rt.kill(reason="warm mint teardown")
 
@@ -2883,7 +2883,7 @@ async def test_no_amendment_when_the_status_was_already_known(caplog, monkeypatc
     proc.returncode = 1  # already exited: the status was read at mark time
     rt._stderr_lines = ["child said [returncode=<not reaped>] on its way out"]
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(reason="reaping a dead runtime")
 
     summary = rt.death_summary()
@@ -2904,7 +2904,7 @@ async def test_kill_keeps_the_label_when_no_status_ever_arrives(caplog, monkeypa
     ``test_an_unconfirmed_windows_drain_leaves_the_placeholder``."""
     import logging
 
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     rt, _, proc = _make_runtime()
     _neuter_kill_side_effects(monkeypatch, proc)
@@ -2920,8 +2920,8 @@ async def test_kill_keeps_the_label_when_no_status_ever_arrives(caplog, monkeypa
 
     proc.wait = _never
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
-        from kiro_crew import platform_compat
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
+        from efm_go import platform_compat
 
         if platform_compat.IS_WINDOWS:
             # The owned-handle drain cannot confirm an exit. It preserves the
@@ -2947,7 +2947,7 @@ async def test_death_of_a_never_spawned_runtime_says_no_process(caplog, monkeypa
     _neuter_kill_side_effects(monkeypatch, proc)
     rt._process = None  # spawn never completed
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         await rt.kill(reason="reaping a dead shared subagent runtime before respawn")
 
     msg = _death_records(caplog)[0].getMessage()
@@ -2964,7 +2964,7 @@ async def test_reader_crash_on_a_running_child_does_not_print_returncode_none(ca
 
     rt, _, _ = _make_runtime()
 
-    with caplog.at_level(logging.INFO, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.INFO, logger="efm_go.acp.runtime"):
         rt._mark_dead("reader crash: boom")
 
     msg = _death_records(caplog)[0].getMessage()
@@ -3059,7 +3059,7 @@ def test_exit_reason_redacts_credentials_and_exfil_urls_in_a_proven_cause():
     """Redaction is unconditional and lands BEFORE the cut, so a long line
     cannot leave a secret's first half in the shown prefix. Asserted on a line
     that DOES earn the cause slot, since that is the text the card carries."""
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     rt, _reader, _proc = _make_runtime()
     payload = "A" * 80
@@ -3083,7 +3083,7 @@ def test_exit_reason_redacts_the_demoted_tail_too(caplog):
     """The debug log is a real sink, so the line demoted to it is redacted on
     the same pass -- a secret must not survive by being merely unpromoted."""
     rt, _reader, _proc = _make_runtime()
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._stderr_lines = ["boom Authorization: Bearer AKIAIOSFODNN7EXAMPLE"]
         rt._exit_reason(1)
     assert "exit stderr tail" in caplog.text
@@ -3091,7 +3091,7 @@ def test_exit_reason_redacts_the_demoted_tail_too(caplog):
 
 
 def test_exit_reason_cause_is_bounded_to_one_line():
-    from kiro_crew.acp import runtime as rt_mod
+    from efm_go.acp import runtime as rt_mod
 
     assert rt_mod._STDERR_REASON_TAIL_CHARS == 200
     rt, _reader, _proc = _make_runtime()
@@ -3109,7 +3109,7 @@ def test_exit_reason_enospc_hint_survives_the_tail_cap():
     """The signature is matched on the whole line and the HINT is appended after
     the cut, so a line long enough to be trimmed cannot push the operator's
     pointer out of the message that pointer is the whole purpose of."""
-    from kiro_crew.acp import runtime as rt_mod
+    from efm_go.acp import runtime as rt_mod
 
     rt, _reader, _proc = _make_runtime()
     rt._stderr_lines = ["z" * rt_mod._STDERR_REASON_TAIL_CHARS + " No space left on device"]
@@ -3171,7 +3171,7 @@ async def test_send_request_on_dead_runtime_raises():
 
 @pytest.mark.asyncio
 async def test_handle_destroy_terminates_and_unregisters_session():
-    """destroy() must evict the session on kiro-cli via _kiro.dev/session/terminate
+    """destroy() must evict the session on kiro-cli via _efm.go/session/terminate
     (freeing its transcript/context in the shared multiplexed process) AND
     unregister the local queue. A local-only unregister would leak the session
     in kiro-cli's in-memory map for the process's whole lifetime — the
@@ -3191,7 +3191,7 @@ async def test_handle_destroy_terminates_and_unregisters_session():
 
 @pytest.mark.asyncio
 async def test_terminate_session_sends_bounded_terminate_for_target_only():
-    """terminate_session issues _kiro.dev/session/terminate for exactly the
+    """terminate_session issues _efm.go/session/terminate for exactly the
     target sessionId with a bounded timeout (teardown can't stall on an
     unresponsive runtime), and unregisters ONLY that session — a co-tenant
     session on the shared runtime is untouched (unlike kill())."""
@@ -3265,7 +3265,7 @@ async def test_is_stale_none_when_fresh_and_small(monkeypatch):
         called["n"] += 1
         return 999999.0  # would be "stale" if ever consulted
 
-    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_tree_mb", _boom)
+    monkeypatch.setattr("efm_go.acp.runtime._get_rss_tree_mb", _boom)
     assert await rt._is_stale() is None
     assert called["n"] == 0  # young runtime never probes RSS
 
@@ -3278,7 +3278,7 @@ async def test_is_stale_none_when_old_but_small_rss(monkeypatch):
     rt._max_age_secs = 6 * 3600
     rt._spawn_monotonic = time.monotonic() - 600.0  # older than the probe band
     rt._max_rss_mb = 500.0
-    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_tree_mb", lambda pid, depth=None: 10.0)
+    monkeypatch.setattr("efm_go.acp.runtime._get_rss_tree_mb", lambda pid, depth=None: 10.0)
     assert await rt._is_stale() is None
 
 
@@ -3298,7 +3298,7 @@ async def test_is_stale_rss_when_tree_over_threshold(monkeypatch):
     rt._max_age_secs = 6 * 3600
     rt._spawn_monotonic = time.monotonic() - 600.0  # old enough to probe
     rt._max_rss_mb = 100.0
-    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_tree_mb", lambda pid, depth=None: 250.0)
+    monkeypatch.setattr("efm_go.acp.runtime._get_rss_tree_mb", lambda pid, depth=None: 250.0)
     assert await rt._is_stale() == "rss"
 
 
@@ -3324,7 +3324,7 @@ async def test_the_declared_reclaim_scope_reaches_the_probe(monkeypatch):
         seen.append(depth)
         return 250.0
 
-    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_tree_mb", _probe)
+    monkeypatch.setattr("efm_go.acp.runtime._get_rss_tree_mb", _probe)
     assert await rt._is_stale() is None
     assert seen == [1]
 
@@ -3342,7 +3342,7 @@ async def test_an_unbounded_scope_is_the_default_and_is_passed_as_such(monkeypat
         seen.append(depth)
         return 250.0
 
-    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_tree_mb", _probe)
+    monkeypatch.setattr("efm_go.acp.runtime._get_rss_tree_mb", _probe)
     assert await rt._is_stale() == "rss"
     assert seen == [None]
 
@@ -3350,30 +3350,30 @@ async def test_an_unbounded_scope_is_the_default_and_is_passed_as_such(monkeypat
 def test_a_forking_sandbox_backend_adds_one_generation():
     """``self._pid`` is the launcher there, not the adapter the harness counts from.
 
-    The probe is patched in the module that CALLS it, not in ``kiro_crew.sandbox``:
+    The probe is patched in the module that CALLS it, not in ``efm_go.sandbox``:
     the harness binds the name at import, so patching the definition site leaves the
     real backend probe in place and the assertion reads this host instead of the case.
     """
-    from kiro_crew.acp.harness.codex import _sandbox_wrapper_generations
+    from efm_go.acp.harness.codex import _sandbox_wrapper_generations
 
-    with patch("kiro_crew.acp.harness.codex.detect_backend", return_value="namespace"):
+    with patch("efm_go.acp.harness.codex.detect_backend", return_value="namespace"):
         assert _sandbox_wrapper_generations("standard") == 1
 
 
 @pytest.mark.parametrize("backend", ["sandbox-exec", "none"])
 def test_an_execing_or_absent_backend_adds_none(backend):
     """Both leave the adapter AS ``self._pid``, so a declared depth is already right."""
-    from kiro_crew.acp.harness.codex import _sandbox_wrapper_generations
+    from efm_go.acp.harness.codex import _sandbox_wrapper_generations
 
-    with patch("kiro_crew.acp.harness.codex.detect_backend", return_value=backend):
+    with patch("efm_go.acp.harness.codex.detect_backend", return_value=backend):
         assert _sandbox_wrapper_generations("standard") == 0
 
 
 def test_a_failed_probe_answers_zero_and_can_only_under_count():
     """Fail-safe direction: an offset too small reaches the ceiling late, never early."""
-    from kiro_crew.acp.harness.codex import _sandbox_wrapper_generations
+    from efm_go.acp.harness.codex import _sandbox_wrapper_generations
 
-    with patch("kiro_crew.acp.harness.codex.detect_backend", side_effect=OSError("boom")):
+    with patch("efm_go.acp.harness.codex.detect_backend", side_effect=OSError("boom")):
         assert _sandbox_wrapper_generations("standard") == 0
 
 
@@ -3414,7 +3414,7 @@ async def test_a_bounded_scope_is_offset_by_the_launcher_generation(monkeypatch)
         seen.append(depth)
         return 100.0
 
-    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_tree_mb", _probe)
+    monkeypatch.setattr("efm_go.acp.runtime._get_rss_tree_mb", _probe)
     assert await rt._is_stale() is None
     assert seen == [2]
 
@@ -3438,7 +3438,7 @@ async def test_the_offset_does_not_touch_an_unbounded_scope(monkeypatch):
         seen.append(depth)
         return 250.0
 
-    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_tree_mb", _probe)
+    monkeypatch.setattr("efm_go.acp.runtime._get_rss_tree_mb", _probe)
     assert await rt._is_stale() == "rss"
     assert seen == [None]
 
@@ -3456,7 +3456,7 @@ async def test_an_unreadable_bounded_measurement_does_not_recycle(monkeypatch):
     rt._spawn_monotonic = time.monotonic() - 600.0
     rt._max_rss_mb = 1.0
     rt._max_rss_depth = 1
-    monkeypatch.setattr("kiro_crew.acp.runtime._get_rss_tree_mb", lambda pid, depth=None: None)
+    monkeypatch.setattr("efm_go.acp.runtime._get_rss_tree_mb", lambda pid, depth=None: None)
     assert await rt._is_stale() is None
 
 
@@ -3483,7 +3483,7 @@ def test_get_rss_mb_real_process():
     positive MiB value; a nonexistent PID returns None. Skips where the
     platform can't introspect RSS (no /proc AND ps blocked, e.g. a locked-down
     macOS sandbox) — _get_rss_mb returns None there by design."""
-    from kiro_crew.acp.runtime import _get_rss_mb
+    from efm_go.acp.runtime import _get_rss_mb
 
     rss = _get_rss_mb(os.getpid())
     if rss is None:
@@ -3501,7 +3501,7 @@ def test_get_rss_tree_mb_real_process():
     calls.  The deterministic root-plus-descendants arithmetic is covered with
     fixed values in ``test_platform_compat_coverage.py``.
     """
-    from kiro_crew.acp.runtime import _get_rss_tree_mb
+    from efm_go.acp.runtime import _get_rss_tree_mb
 
     tree = _get_rss_tree_mb(os.getpid())
     if tree is None:
@@ -3721,7 +3721,7 @@ async def test_prompt_resets_turn_done_when_cancelled_while_building_blocks():
     rt.send_request = AsyncMock(return_value=1)
 
     with patch(
-        "kiro_crew.acp.session_handle.build_prompt_blocks",
+        "efm_go.acp.session_handle.build_prompt_blocks",
         side_effect=asyncio.CancelledError(),
     ):
         gen = handle.prompt("hi", timeout=3.0)
@@ -3753,7 +3753,7 @@ async def test_handle_wait_turn_done_timeout():
 
 def _recorded_request(request_id):
     """The event the handle builds for a permission request it routes."""
-    from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
+    from efm_go.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
 
     return AcpEvent(kind=EVENT_PERMISSION_REQUEST, request_id=request_id, title="notes.txt")
 
@@ -3897,7 +3897,7 @@ async def test_dispatch_permission_request():
     so the permission event resolves ``is_shell=True`` — the signal chat_runner's
     trust-mode gate needs to waive the tool-name length cap on shell commands.
     """
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_PERMISSION_REQUEST,
         METHOD_REQUEST_PERMISSION,
         METHOD_SESSION_UPDATE,
@@ -3981,7 +3981,7 @@ async def test_a_spec_disabled_tool_is_refused_before_the_event_is_yielded():
     consumer that auto-approves on hooks or trust must not get the chance, and a
     human must not be asked to re-decide what the agent spec settled.
     """
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_PERMISSION_REQUEST,
         METHOD_REQUEST_PERMISSION,
         METHOD_SESSION_UPDATE,
@@ -4055,7 +4055,7 @@ async def test_a_spec_disabled_tool_is_refused_before_the_event_is_yielded():
 @pytest.mark.asyncio
 async def test_a_tool_the_deny_set_does_not_name_still_reaches_the_consumer():
     """The refusal is narrow: a set that names another tool changes nothing."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_PERMISSION_REQUEST,
         METHOD_REQUEST_PERMISSION,
         METHOD_SESSION_UPDATE,
@@ -4124,7 +4124,7 @@ async def test_an_unidentifiable_mcp_approval_never_reaches_the_consumer():
     yielded: the consumer auto-approves by hook glob and in trust mode, and this
     session's spec switched a tool off.
     """
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_PERMISSION_REQUEST,
         METHOD_REQUEST_PERMISSION,
     )
@@ -4220,7 +4220,7 @@ async def test_reject_tool_prefers_recorded_reject_option():
 @pytest.mark.asyncio
 async def test_dispatch_tool_call_and_result():
     """Tool call + tool result notifications yield correct events."""
-    from kiro_crew.acp.types import EVENT_TOOL_CALL, EVENT_TOOL_RESULT
+    from efm_go.acp.types import EVENT_TOOL_CALL, EVENT_TOOL_RESULT
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4282,8 +4282,8 @@ async def test_tool_stall_cancels_session_not_runtime(monkeypatch):
     """A dispatched tool that goes silent must be recovered by a session-scoped
     session/cancel (so co-tenant sessions on the shared runtime survive), NOT by
     killing the runtime process. The turn ends with stop_reason 'tool_stall'."""
-    from kiro_crew.acp.session_handle import WatchdogSettings
-    from kiro_crew.acp.types import EVENT_COMPLETE
+    from efm_go.acp.session_handle import WatchdogSettings
+    from efm_go.acp.types import EVENT_COMPLETE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4328,8 +4328,8 @@ async def test_tool_stall_recovery_completes_even_if_cancel_fails(monkeypatch):
     """If session/cancel raises or times out (an unresponsive runtime is likely
     right after a stall), the watchdog must still complete the turn — the
     bounded wait_for + except must not let recovery hang or bubble."""
-    from kiro_crew.acp.session_handle import WatchdogSettings
-    from kiro_crew.acp.types import EVENT_COMPLETE
+    from efm_go.acp.session_handle import WatchdogSettings
+    from efm_go.acp.types import EVENT_COMPLETE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4367,7 +4367,7 @@ async def test_tool_stall_recovery_completes_even_if_cancel_fails(monkeypatch):
 @pytest.mark.asyncio
 async def test_dispatch_thinking_chunk():
     """agent_thought_chunk yields EVENT_THINKING_CHUNK."""
-    from kiro_crew.acp.types import EVENT_THINKING_CHUNK
+    from efm_go.acp.types import EVENT_THINKING_CHUNK
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4403,7 +4403,7 @@ async def test_dispatch_thinking_chunk():
 @pytest.mark.asyncio
 async def test_dispatch_compaction_and_clear():
     """Compaction and clear notifications yield appropriate events."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_CLEAR_STATUS,
         EVENT_COMPACTION_STATUS,
         METHOD_CLEAR_STATUS,
@@ -4450,7 +4450,7 @@ async def test_dispatch_compaction_completed_resets_context_stats():
     """A completed compaction in the prompt dispatch loop must drop the stale
     context-usage counts (regression: the meter froze at the pre-compaction
     value because context_tokens_from_usage=True blocked fresh metadata)."""
-    from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, AcpPromptStats
+    from efm_go.acp.types import METHOD_COMPACTION_STATUS, AcpPromptStats
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4496,7 +4496,7 @@ async def test_dispatch_compaction_completed_resets_context_stats():
 async def test_wait_for_compaction_drain_path_resets_context_stats():
     """The async-after-end_turn drain path in wait_for_compaction bypasses the
     prompt dispatch loop, so it must drop the stale counts itself."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         METHOD_COMPACTION_STATUS,
         AcpPromptStats,
         JsonRpcMessage,
@@ -4537,7 +4537,7 @@ async def test_wait_for_compaction_drain_failed_with_empty_summary_carries_the_r
     """kiro-cli's ``summary`` is empty on failure, so the drain path carries the
     reason the payload names -- read by the same extractor the dispatch loop
     uses -- and a manual /compact names its cause the way auto-compaction does."""
-    from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+    from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
     rt, _reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4562,8 +4562,8 @@ async def test_wait_for_compaction_drain_failed_with_empty_summary_carries_the_r
 async def test_wait_for_compaction_drain_failed_without_a_reason_reports_the_fallback():
     """No summary and no reason-bearing key: the drain result carries the
     extractor's own generic text, the same line the streaming notice shows."""
-    from kiro_crew.acp.transport_errors import compaction_failure_detail
-    from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+    from efm_go.acp.transport_errors import compaction_failure_detail
+    from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
     rt, _reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4583,7 +4583,7 @@ async def test_wait_for_compaction_drain_failed_with_a_credential_shaped_summary
     """A backend-echoed failure summary is LLM-influenced text, so the drain
     result carries it scrubbed -- the same ``redact_text`` the client wait path
     applies -- before the dashboard or a channel mirror shows it."""
-    from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+    from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
     rt, _reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4610,7 +4610,7 @@ async def test_wait_for_compaction_drain_failed_with_a_credential_shaped_summary
 async def test_wait_for_compaction_drain_applies_post_compaction_metadata():
     """kiro emits the real post-compaction pct ~1s after the completed status;
     the drain path must capture it and derive against the KEPT served window."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         METHOD_COMPACTION_STATUS,
         AcpPromptStats,
         JsonRpcMessage,
@@ -4633,7 +4633,7 @@ async def test_wait_for_compaction_drain_applies_post_compaction_metadata():
     )
     q["sA"].put_nowait(
         JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={"sessionId": "sA", "contextUsagePercentage": 5.0},
         )
     )
@@ -4651,7 +4651,7 @@ async def test_wait_for_compaction_drain_applies_post_compaction_metadata():
 async def test_post_compaction_drain_requeues_frames_before_poison():
     """Death during the grace drain: buffered frames must be re-queued BEFORE
     the poison sentinel, or recovery would see death first and strand them."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         METHOD_COMPACTION_STATUS,
         AcpPromptStats,
         JsonRpcMessage,
@@ -4691,7 +4691,7 @@ async def test_outer_buffered_frame_restored_before_poison_from_nested_drain():
     grace drain — separate buffers restored at different times would park the
     frame behind the death sentinel and its consumer would see AcpProcessDied
     despite a completed command."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         METHOD_COMPACTION_STATUS,
         AcpPromptStats,
         JsonRpcMessage,
@@ -4729,7 +4729,7 @@ async def test_drain_passes_metering_frames_through_for_next_turn_billing():
     on the between-turns auto-compact path the credits would land in a stats
     window nothing reads and be wiped by the next prompt's re-init. The frame
     is re-queued untouched so the next turn's dispatch loop bills it."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         METHOD_COMPACTION_STATUS,
         AcpPromptStats,
         JsonRpcMessage,
@@ -4745,7 +4745,7 @@ async def test_drain_passes_metering_frames_through_for_next_turn_billing():
         context_tokens_from_usage=True,
     )
     metering = JsonRpcMessage(
-        method="_kiro.dev/metadata",
+        method="_efm.go/metadata",
         params={"sessionId": "sA", "meteringUsage": [{"unit": "credit", "amount": 0.5}]},
     )
     q["sA"].put_nowait(
@@ -4757,7 +4757,7 @@ async def test_drain_passes_metering_frames_through_for_next_turn_billing():
     q["sA"].put_nowait(metering)
     q["sA"].put_nowait(
         JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={"sessionId": "sA", "contextUsagePercentage": 5.0},
         )
     )
@@ -4777,7 +4777,7 @@ async def test_drain_passes_metering_frames_through_for_next_turn_billing():
 async def test_wait_for_compaction_cached_result_applies_post_compaction_metadata():
     """The mid-turn cached path (compact() captured the completed status while
     draining its own prompt) must also grace-drain for the metadata."""
-    from kiro_crew.acp.types import AcpPromptStats, JsonRpcMessage
+    from efm_go.acp.types import AcpPromptStats, JsonRpcMessage
 
     rt, _reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4792,7 +4792,7 @@ async def test_wait_for_compaction_cached_result_applies_post_compaction_metadat
     handle._compact_result = {"type": "completed", "summary": "ok"}
     q["sA"].put_nowait(
         JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={"sessionId": "sA", "contextUsagePercentage": 5.0},
         )
     )
@@ -4821,7 +4821,7 @@ async def test_wait_for_compaction_timeout_restores_a_concurrent_frame():
     this race -- only that the reader does not drop a concurrent frame on the
     timeout path.)
     """
-    from kiro_crew.acp.types import AcpPromptStats, JsonRpcMessage
+    from efm_go.acp.types import AcpPromptStats, JsonRpcMessage
 
     rt, _reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4851,7 +4851,7 @@ async def test_wait_for_compaction_timeout_restores_a_concurrent_frame():
 @pytest.mark.asyncio
 async def test_dispatch_agent_switched():
     """Agent switched notification yields EVENT_AGENT_SWITCHED."""
-    from kiro_crew.acp.types import EVENT_AGENT_SWITCHED, METHOD_AGENT_SWITCHED
+    from efm_go.acp.types import EVENT_AGENT_SWITCHED, METHOD_AGENT_SWITCHED
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4887,7 +4887,7 @@ async def test_dispatch_agent_switched():
 @pytest.mark.asyncio
 async def test_dispatch_mcp_oauth_request():
     """MCP OAuth request notification yields EVENT_MCP_OAUTH_REQUEST."""
-    from kiro_crew.acp.types import EVENT_MCP_OAUTH_REQUEST, METHOD_MCP_OAUTH_REQUEST
+    from efm_go.acp.types import EVENT_MCP_OAUTH_REQUEST, METHOD_MCP_OAUTH_REQUEST
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4926,7 +4926,7 @@ async def test_dispatch_mcp_oauth_request():
 @pytest.mark.asyncio
 async def test_dispatch_mcp_server_initialized():
     """MCP server initialized yields EVENT_MCP_SERVER_INITIALIZED."""
-    from kiro_crew.acp.types import EVENT_MCP_SERVER_INITIALIZED, METHOD_MCP_SERVER_INITIALIZED
+    from efm_go.acp.types import EVENT_MCP_SERVER_INITIALIZED, METHOD_MCP_SERVER_INITIALIZED
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -4962,7 +4962,7 @@ async def test_dispatch_mcp_server_initialized():
 @pytest.mark.asyncio
 async def test_dispatch_mcp_server_init_failure():
     """MCP server init failure yields EVENT_MCP_SERVER_INIT_FAILURE."""
-    from kiro_crew.acp.types import EVENT_MCP_SERVER_INIT_FAILURE, METHOD_MCP_SERVER_INIT_FAILURE
+    from efm_go.acp.types import EVENT_MCP_SERVER_INIT_FAILURE, METHOD_MCP_SERVER_INIT_FAILURE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5032,7 +5032,7 @@ async def test_dispatch_unknown_server_request_gets_error_response():
 @pytest.mark.asyncio
 async def test_dispatch_tool_call_update_raw_output():
     """tool_call_update with rawOutput yields EVENT_TOOL_RESULT."""
-    from kiro_crew.acp.types import EVENT_TOOL_RESULT
+    from efm_go.acp.types import EVENT_TOOL_RESULT
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5072,7 +5072,7 @@ async def test_dispatch_tool_call_update_raw_output():
 @pytest.mark.asyncio
 async def test_dispatch_tool_call_update_refinement():
     """tool_call_update with title but no content yields EVENT_TOOL_CALL_UPDATE."""
-    from kiro_crew.acp.types import EVENT_TOOL_CALL_UPDATE
+    from efm_go.acp.types import EVENT_TOOL_CALL_UPDATE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5156,7 +5156,7 @@ async def test_dispatch_cost_and_prompt_tokens_reach_event_complete():
     surfaced on EVENT_COMPLETE.usage. Two turns
     prove the delta: turn 2 is billed only its own movement of the cumulative
     counter, and its own token counts."""
-    from kiro_crew.acp.types import EVENT_COMPLETE
+    from efm_go.acp.types import EVENT_COMPLETE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5287,9 +5287,9 @@ def test_handle_update_malformed_usage_is_noop(used, size):
 
 @pytest.mark.asyncio
 async def test_dispatch_metadata_credits():
-    """_kiro.dev/metadata meteringUsage(unit=credit) accumulates into last_prompt_stats
+    """_efm.go/metadata meteringUsage(unit=credit) accumulates into last_prompt_stats
     and is propagated onto EVENT_COMPLETE; non-credit units are ignored."""
-    from kiro_crew.acp.types import EVENT_COMPLETE, METHOD_METADATA
+    from efm_go.acp.types import EVENT_COMPLETE, METHOD_METADATA
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5333,7 +5333,7 @@ async def test_dispatch_metadata_credits():
 async def test_dispatch_metadata_credits_robust():
     """Non-numeric / missing meteringUsage values and metadata with no meteringUsage
     are handled without raising; credits stays 0."""
-    from kiro_crew.acp.types import METHOD_METADATA
+    from efm_go.acp.types import METHOD_METADATA
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5371,7 +5371,7 @@ async def test_dispatch_metadata_credits_robust():
 async def test_metadata_credits_routed_per_session():
     """Concurrent sessions on one runtime each accrue only their own kiro credits —
     metadata notifications are demuxed by sessionId, no cross-talk."""
-    from kiro_crew.acp.types import METHOD_METADATA
+    from efm_go.acp.types import METHOD_METADATA
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA", "sB")
@@ -5425,7 +5425,7 @@ async def test_metadata_credits_routed_per_session():
 @pytest.mark.asyncio
 async def test_dispatch_subagent_list():
     """Subagent list notification yields EVENT_SUBAGENT_LIST."""
-    from kiro_crew.acp.types import EVENT_SUBAGENT_LIST, METHOD_SUBAGENT_LIST_UPDATE
+    from efm_go.acp.types import EVENT_SUBAGENT_LIST, METHOD_SUBAGENT_LIST_UPDATE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5466,7 +5466,7 @@ async def test_dispatch_subagent_activity_tool():
     registered session), so the reader would correctly drop it. We inject it
     straight into the parent's queue to exercise the dispatch branch.
     """
-    from kiro_crew.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
+    from efm_go.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5505,7 +5505,7 @@ async def test_dispatch_subagent_activity_tool():
 @pytest.mark.asyncio
 async def test_dispatch_subagent_activity_text():
     """Subagent activity with agent_message_chunk yields text event."""
-    from kiro_crew.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
+    from efm_go.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5547,7 +5547,7 @@ async def test_dispatch_subagent_activity_text():
 async def test_dispatch_subagent_activity_text_is_redacted():
     """Sub-agent streamed text is LLM output surfaced on the dashboard, so it
     MUST be scrubbed (credentials + exfil URLs) before being yielded."""
-    from kiro_crew.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
+    from efm_go.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5591,14 +5591,14 @@ async def test_dispatch_subagent_activity_ignores_this_session():
     """The extension spelling naming THIS session yields no sub-agent activity.
 
     kiro-cli carries the parent turn's own ``tool_call_chunk`` on
-    ``_kiro.dev/session/update`` with ``params.sessionId`` set to the parent's
+    ``_efm.go/session/update`` with ``params.sessionId`` set to the parent's
     session -- the same method a child's update arrives on -- so the sessionId is
     the only thing separating the two. Treating the parent's frame as a child's
     puts a sub-agent on the session the user is already watching, with that
     session's own id, once per tool call. Recorded live in
     ``test/fixtures/acp_frames/kiro/session.jsonl``.
     """
-    from kiro_crew.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
+    from efm_go.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5639,7 +5639,7 @@ async def test_dispatch_subagent_activity_ignores_this_session():
 @pytest.mark.asyncio
 async def test_dispatch_subagent_activity_ignores_this_session_text():
     """Same scoping for the text carrier, so one guard cannot cover half the shape."""
-    from kiro_crew.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
+    from efm_go.acp.types import EVENT_SUBAGENT_ACTIVITY, METHOD_KIRO_SESSION_UPDATE
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5681,7 +5681,7 @@ async def test_dispatch_subagent_activity_ignores_this_session_text():
 @pytest.mark.asyncio
 async def test_prompt_error_response_raises():
     """An error response for the prompt request raises AcpError."""
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5707,7 +5707,7 @@ async def test_prompt_transient_error_sets_transient_flag():
     """A transient backend 5xx error response (a mid-stream InternalServerError
     surfaced as JSON-RPC -32603) raises AcpError with transient=True, so the
     chat_runner / llm_helpers retry ladder fires instead of a bare error card."""
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5747,7 +5747,7 @@ async def test_prompt_transient_error_sets_transient_flag():
 async def test_prompt_auth_error_not_transient():
     """An auth error response raises AcpError with transient=False so it fails
     fast — a retry cannot fix an expired/denied credential."""
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5785,7 +5785,7 @@ async def test_wait_for_response_transient_error_sets_flag():
     backend 5xx (a -32603 InternalServerError) as transient=True, so
     request/response turns (session/new, set_mode, cancel, …) share the same
     retry eligibility. Covers the second kiro raise site."""
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
     rt, _, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -5879,7 +5879,7 @@ async def test_one_session_errors_others_unaffected():
     """When one session's turn errors, the other concurrent session still
     completes normally — failures are isolated per session.
     """
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sOk", "sErr")
@@ -5939,7 +5939,7 @@ async def test_interleaved_tool_calls_routed_per_session():
     """tool_call frames for two concurrent sessions are each delivered only to
     the originating session's stream.
     """
-    from kiro_crew.acp.types import EVENT_TOOL_CALL
+    from efm_go.acp.types import EVENT_TOOL_CALL
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA", "sB")
@@ -6014,7 +6014,7 @@ async def test_destroyed_session_stops_receiving_frames():
     """
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA", "sB")
-    # destroy() now round-trips _kiro.dev/session/terminate; no reader is running
+    # destroy() now round-trips _efm.go/session/terminate; no reader is running
     # yet here, so ack it instantly to avoid the bounded terminate timeout.
     rt._send_and_await = AsyncMock(return_value={})  # type: ignore[method-assign]
     h_a = AcpSessionHandle("sA", q["sA"], rt)
@@ -6279,8 +6279,8 @@ class TestAcpRuntimePidTracking:
         proc.wait = AsyncMock(return_value=0)
 
         calls: dict[str, list[int]] = {"pid": [], "session": []}
-        import kiro_crew.acp.runtime as rt_mod
-        import kiro_crew.session_pid as pid_mod
+        import efm_go.acp.runtime as rt_mod
+        import efm_go.session_pid as pid_mod
 
         def untrack(kind, pid):
             calls[kind].append(pid)
@@ -6319,7 +6319,7 @@ class TestAcpRuntimePidTracking:
         proc.wait = AsyncMock(return_value=0)
         rt._spawn_start_token = "tok-a"
 
-        import kiro_crew.acp.runtime as rt_mod
+        import efm_go.acp.runtime as rt_mod
 
         if rt_mod.platform_compat.IS_WINDOWS:
             pytest.skip("the Windows owned drain retires under its pin; covered separately")
@@ -6354,7 +6354,7 @@ class TestAcpRuntimePidTracking:
         proc.wait = AsyncMock(return_value=0)
         rt._spawn_start_token = "tok-a"
 
-        import kiro_crew.acp.runtime as rt_mod
+        import efm_go.acp.runtime as rt_mod
 
         if rt_mod.platform_compat.IS_WINDOWS:
             pytest.skip("the Windows owned drain retires under its pin; covered separately")
@@ -6387,7 +6387,7 @@ class TestAcpRuntimePidTracking:
         proc.wait = AsyncMock(return_value=0)
 
         calls: dict[str, list[int]] = {"pid": [], "session": []}
-        import kiro_crew.acp.runtime as rt_mod
+        import efm_go.acp.runtime as rt_mod
 
         monkeypatch.setattr(rt_mod, "_untrack_pid", lambda p: calls["pid"].append(p))
         monkeypatch.setattr(rt_mod, "_untrack_session_pid", lambda p: calls["session"].append(p))
@@ -6479,8 +6479,8 @@ class TestRuntimeMemberDispatchDisabled:
     @staticmethod
     def _switch_off(monkeypatch, tmp_path, *, disabled: bool):
         """Write the switch where the dashboard's own MCP action writes it."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.members import MEMBER_DISPATCH_SERVER
+        import efm_go.agent as agent_mod
+        from efm_go.members import MEMBER_DISPATCH_SERVER
 
         settings = tmp_path / "mcp.json"
         entry = {"disabled": True} if disabled else {}
@@ -6520,8 +6520,8 @@ class TestRuntimeMemberDispatchDisabled:
         against a literal, because that function is the decider the array's own
         projection uses and these two must not come apart.
         """
-        from kiro_crew.acp.runtime import _disable_check_scope
-        from kiro_crew.agent_sdk.backends import overlay_project_scope
+        from efm_go.acp.runtime import _disable_check_scope
+        from efm_go.agent_sdk.backends import overlay_project_scope
 
         for backend in ("kas", "codex", "kiro", "opencode", "claude"):
             assert _disable_check_scope(backend, "/work") == overlay_project_scope(
@@ -6545,7 +6545,7 @@ class TestRuntimeMemberDispatchDisabled:
         payload: ``create_session`` enters that seam for every host (it answers None for a
         non-KAS one), so the decision is observable without a KAS session to drive.
         """
-        from kiro_crew.acp.harness.base import SessionExtras
+        from efm_go.acp.harness.base import SessionExtras
 
         self._switch_off(monkeypatch, tmp_path, disabled=disabled)
         rt, _, _ = _make_runtime()
@@ -6577,7 +6577,7 @@ class TestRuntimeMemberDispatchDisabled:
         """
         import inspect
 
-        from kiro_crew.acp.runtime import AcpRuntime
+        from efm_go.acp.runtime import AcpRuntime
 
         for method in (AcpRuntime.create_session, AcpRuntime.load_session):
             source = inspect.getsource(method)
@@ -6589,8 +6589,8 @@ class TestRuntimeMemberDispatchDisabled:
     @pytest.mark.parametrize("path", ["create", "load"])
     async def test_both_paths_pass_that_scope(self, monkeypatch, path):
         """Not just the helper: the value each path actually hands the reader."""
-        from kiro_crew.acp import runtime as runtime_mod
-        from kiro_crew.members import MEMBER_DISPATCH_SERVER, MEMBER_PANEL_SERVER
+        from efm_go.acp import runtime as runtime_mod
+        from efm_go.members import MEMBER_DISPATCH_SERVER, MEMBER_PANEL_SERVER
 
         seen: list[tuple[str, object]] = []
 
@@ -6681,7 +6681,7 @@ class TestAcpRuntimeLoadSession:
     """load_session() must mirror AcpClient._initialize_session's resume path:
     issue session/load DIRECTLY (no session/new first) under the ORIGINAL sid,
     with the same cwd + mcpServers (pooled stubs and managed direct tools)
-    + _kiro.dev/session_file _meta. The double-session
+    + _efm.go/session_file _meta. The double-session
     drift it replaces produced stopReason='refusal'."""
 
     @pytest.mark.asyncio
@@ -6720,7 +6720,7 @@ class TestAcpRuntimeLoadSession:
             "sessionId": "sid-123",
             "cwd": "/work",
             "mcpServers": servers,
-            "_meta": {"_kiro.dev/session_file": "/home/u/.kiro/sessions/cli/sid-123.json"},
+            "_meta": {"_efm.go/session_file": "/home/u/.kiro/sessions/cli/sid-123.json"},
         }
         # Handle adopts the ORIGINAL sid and its queue is registered.
         assert handle.session_id == "sid-123"
@@ -6739,7 +6739,7 @@ class TestAcpRuntimeLoadSession:
         create_session does, so the first prompt after a resume cannot fail with
         "no access to model".
         """
-        from kiro_crew.acp.types import ACP_BACKEND_KIRO, METHOD_SET_MODEL
+        from efm_go.acp.types import ACP_BACKEND_KIRO, METHOD_SET_MODEL
 
         rt, _, _ = _make_runtime()
         rt._can_load_session = True
@@ -6805,7 +6805,7 @@ class TestAcpRuntimeLoadSession:
         the requested mode genuinely absent on resume, and the mode guard then
         refused the load rather than silently running the backend default.
         """
-        from kiro_crew.acp._dispatch import build_session_new_params
+        from efm_go.acp._dispatch import build_session_new_params
 
         rt, _, _ = _make_runtime()
         rt._can_load_session = True
@@ -6818,7 +6818,7 @@ class TestAcpRuntimeLoadSession:
             return {}
 
         async def _fake_agents(agent, *, member_dispatch=False, crew_panel=False, session_key=""):
-            from kiro_crew.acp.harness import SessionExtras
+            from efm_go.acp.harness import SessionExtras
 
             return SessionExtras(custom_agents=[{"id": agent, "prompt": "p", "tools": []}])
 
@@ -6865,7 +6865,7 @@ class TestAcpRuntimeLoadSession:
             return {}
 
         async def _fake_agents(agent, *, member_dispatch=False, crew_panel=False, session_key=""):
-            from kiro_crew.acp.harness import SessionExtras
+            from efm_go.acp.harness import SessionExtras
 
             return SessionExtras(custom_agents=[{"id": agent, "prompt": "p", "tools": []}])
 
@@ -6874,7 +6874,7 @@ class TestAcpRuntimeLoadSession:
             # array that was not in the roster the caller passed in.
             return agents, list(servers) + [{"name": "hoisted", "command": "/bin/h"}]
 
-        import kiro_crew.acp.runtime as runtime_mod
+        import efm_go.acp.runtime as runtime_mod
 
         reported: list[list] = []
         monkeypatch.setattr(rt, "_send_and_await", _fake_send)
@@ -6922,7 +6922,7 @@ class TestAcpRuntimeLoadSession:
             return {}
 
         async def _fake_agents(agent, *, member_dispatch=False, crew_panel=False, session_key=""):
-            from kiro_crew.acp.harness import SessionExtras
+            from efm_go.acp.harness import SessionExtras
 
             return SessionExtras(
                 custom_agents=[
@@ -6988,7 +6988,7 @@ class TestAcpRuntimeLoadSession:
             return {}
 
         async def _fake_agents(agent, *, member_dispatch=False, crew_panel=False, session_key=""):
-            from kiro_crew.acp.harness import SessionExtras
+            from efm_go.acp.harness import SessionExtras
 
             return SessionExtras(custom_agents=[{"id": agent, "prompt": "p", "tools": []}])
 
@@ -6999,7 +6999,7 @@ class TestAcpRuntimeLoadSession:
         await rt.load_session("/t.json", "sid-both", cwd="/work", agent="kirocrew")
 
         meta = sent[0][1]["_meta"]
-        assert meta["_kiro.dev/session_file"] == "/t.json"
+        assert meta["_efm.go/session_file"] == "/t.json"
         assert "kiro" in meta
 
     @pytest.mark.asyncio
@@ -7023,7 +7023,7 @@ class TestAcpRuntimeLoadSession:
             return {}
 
         async def _fake_agents(agent, *, member_dispatch=False, crew_panel=False, session_key=""):
-            from kiro_crew.acp.harness import SessionExtras
+            from efm_go.acp.harness import SessionExtras
 
             calls.append(agent)
             return SessionExtras(custom_agents=[{"id": agent, "prompt": "p", "tools": []}])
@@ -7034,7 +7034,7 @@ class TestAcpRuntimeLoadSession:
         await rt.load_session("/t.json", "sid-kiro", cwd="/work", agent="kirocrew")
 
         assert calls == []
-        assert sent[0][1]["_meta"] == {"_kiro.dev/session_file": "/t.json"}
+        assert sent[0][1]["_meta"] == {"_efm.go/session_file": "/t.json"}
 
     @pytest.mark.asyncio
     async def test_load_session_params_match_acp_client(self, monkeypatch):
@@ -7064,7 +7064,7 @@ class TestAcpRuntimeLoadSession:
             "sessionId": "sid",
             "cwd": "/w",
             "mcpServers": servers,
-            "_meta": {"_kiro.dev/session_file": "/k/sid.json"},
+            "_meta": {"_efm.go/session_file": "/k/sid.json"},
         }
         assert captured == expected
 
@@ -7105,7 +7105,7 @@ class TestAcpRuntimeLoadSession:
         Asserts on the EMITTED mcpServers of both requests: load_session must
         carry exactly the entries create_session injects for the same agent +
         overlay. Mutating the fix back to [] fails the first assert."""
-        from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER
+        from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER
 
         overlay = tmp_path / "agents"
         overlay.mkdir()
@@ -7182,7 +7182,7 @@ class TestAcpRuntimeLoadSession:
         run via asyncio.to_thread, not on the loop thread."""
         import threading
 
-        import kiro_crew.acp.runtime as rt_mod
+        import efm_go.acp.runtime as rt_mod
 
         rt, _, _ = _make_runtime()
         rt._can_load_session = True
@@ -7221,8 +7221,8 @@ class TestAcpRuntimeLoadSession:
         import ast
         import inspect
 
-        import kiro_crew.acp.client as client_mod
-        import kiro_crew.acp.runtime as rt_mod
+        import efm_go.acp.client as client_mod
+        import efm_go.acp.runtime as rt_mod
 
         _SEND_FUNCS = {"_send_request", "_send_and_await"}
         # All THREE session-creating verbs. ``session/resume`` is the standard
@@ -7359,7 +7359,7 @@ async def test_create_session_registers_queue_on_success(monkeypatch):
 @pytest.mark.asyncio
 async def test_create_session_buffers_oauth_emitted_before_response():
     """OAuth emitted during session/new survives until the provider can drain it."""
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     rt, reader, _ = _make_runtime()
     reader_task = await _start_reader(rt)
@@ -7443,7 +7443,7 @@ async def test_steer_notifications_yield_steer_events():
     """steering_* session/update frames classify as "steer" and yield the
     EVENT_STEER_* events. Without a steer branch in classify_notification the
     shared demux path never surfaces mid-turn steer."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_STEER_CLEARED,
         EVENT_STEER_CONSUMED,
         EVENT_STEER_QUEUED,
@@ -7513,7 +7513,7 @@ async def test_tool_interrupted_marker_synthesizes_complete(monkeypatch):
     must synthesize EVENT_COMPLETE so the turn does not hang until the 2h prompt
     timeout, and must emit the SEL audit. No prompt response is fed here — the
     turn MUST still terminate."""
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     sel_mock = MagicMock()
     monkeypatch.setattr(sh, "sel", lambda: sel_mock)
@@ -7583,7 +7583,7 @@ async def test_unresponsive_cancel_unblocks_without_killing_runtime():
         # Backdate the cancel so the grace window has already elapsed.
         handle._cancel_ts = time.monotonic() - (handle._cancel_grace_secs + 1)
         # Wake the loop so it re-checks the cancel guard at the top of the while.
-        _feed(reader, {"method": "_kiro.dev/metadata", "params": {"sessionId": "sA"}})
+        _feed(reader, {"method": "_efm.go/metadata", "params": {"sessionId": "sA"}})
         await asyncio.wait_for(driver, timeout=3.0)
 
         assert events[-1].kind == EVENT_COMPLETE
@@ -7617,7 +7617,7 @@ async def test_drain_init_consumes_init_frames_and_captures_config():
     q["sA"].put_nowait(
         JsonRpcMessage.from_dict(
             {
-                "method": "_kiro.dev/mcp/server_initialized",
+                "method": "_efm.go/mcp/server_initialized",
                 "params": {"sessionId": "sA", "serverName": "builder-mcp"},
             }
         )
@@ -7642,7 +7642,7 @@ async def test_drain_init_repoisons_on_dead_runtime():
 def _mcp_initialized_frame(session_id: str, server: str) -> JsonRpcMessage:
     return JsonRpcMessage.from_dict(
         {
-            "method": "_kiro.dev/mcp/server_initialized",
+            "method": "_efm.go/mcp/server_initialized",
             "params": {"sessionId": session_id, "serverName": server},
         }
     )
@@ -7651,7 +7651,7 @@ def _mcp_initialized_frame(session_id: str, server: str) -> JsonRpcMessage:
 def _metadata_frame(session_id: str) -> JsonRpcMessage:
     return JsonRpcMessage.from_dict(
         {
-            "method": "_kiro.dev/metadata",
+            "method": "_efm.go/metadata",
             "params": {"sessionId": session_id, "contextUsagePercentage": 1.0},
         }
     )
@@ -7660,7 +7660,7 @@ def _metadata_frame(session_id: str) -> JsonRpcMessage:
 def _mcp_failure_frame(session_id: str, server: str, error: str) -> JsonRpcMessage:
     return JsonRpcMessage.from_dict(
         {
-            "method": "_kiro.dev/mcp/server_init_failure",
+            "method": "_efm.go/mcp/server_init_failure",
             "params": {"sessionId": session_id, "serverName": server, "error": error},
         }
     )
@@ -7852,7 +7852,7 @@ async def test_drain_init_waits_past_idle_window_for_first_mcp_report(monkeypatc
     registration frame. A server that stays silent past the idle window and
     THEN reports is still observed — non-MCP frames (metadata) that arrive
     immediately after set_mode must not arm the shortcut either."""
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     monkeypatch.setattr(sh, "_MCP_DRAIN_NO_REPORT_CEILING", 5.0, raising=False)
     rt, _, _ = _make_runtime()
@@ -7964,7 +7964,7 @@ async def test_drain_init_ignores_pre_switch_reports_still_waits_for_new_agent(m
     PARENT mode's servers; their staged registration frames must not arm the
     idle shortcut for a session that was then mode-SWITCHED — the switched-to
     agent's own slow server, reporting after set_mode, must still be observed."""
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     monkeypatch.setattr(sh, "_MCP_DRAIN_NO_REPORT_CEILING", 5.0, raising=False)
     rt, _, _ = _make_runtime()
@@ -8005,14 +8005,14 @@ async def test_reader_retains_mcp_registration_frames_during_init():
                 _feed(
                     reader,
                     {
-                        "method": "_kiro.dev/mcp/server_initialized",
+                        "method": "_efm.go/mcp/server_initialized",
                         "params": {"sessionId": "sid-warm", "serverName": "core"},
                     },
                 )
                 _feed(
                     reader,
                     {
-                        "method": "_kiro.dev/mcp/server_init_failure",
+                        "method": "_efm.go/mcp/server_init_failure",
                         "params": {"sessionId": "sid-warm", "serverName": "broken"},
                     },
                 )
@@ -8033,8 +8033,8 @@ async def test_reader_retains_mcp_registration_frames_during_init():
             assert frame is not None
             methods.append(frame.method)
         assert methods == [
-            "_kiro.dev/mcp/server_initialized",
-            "_kiro.dev/mcp/server_init_failure",
+            "_efm.go/mcp/server_initialized",
+            "_efm.go/mcp/server_init_failure",
         ]
         # Staging area was emptied by the transfer.
         assert not rt._pending_init_notifications
@@ -8049,7 +8049,7 @@ async def test_reader_retains_mcp_registration_frames_during_init():
 def test_backfill_context_window_from_pct(monkeypatch):
     """#5b: pct-only metadata (kiro 2.10+) backfills window/used tokens from the
     model registry; no-op once a real usage_update set the window."""
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     # The backfill only fires for a KNOWN window (has_known_window) and resolves
     # via the central model_window authority, so mock both for the fake model.
@@ -8062,7 +8062,7 @@ def test_backfill_context_window_from_pct(monkeypatch):
     handle._track_metadata(
         JsonRpcMessage.from_dict(
             {
-                "method": "_kiro.dev/metadata",
+                "method": "_efm.go/metadata",
                 "params": {"contextUsagePercentage": 25},
             }
         )
@@ -8083,7 +8083,7 @@ def test_backfill_context_window_from_pct(monkeypatch):
     handle2._track_metadata(
         JsonRpcMessage.from_dict(
             {
-                "method": "_kiro.dev/metadata",
+                "method": "_efm.go/metadata",
                 "params": {"contextUsagePercentage": 80},
             }
         )
@@ -8123,7 +8123,7 @@ def test_session_handle_usage_update_sets_flag_and_metadata_cannot_clobber():
     handle._track_metadata(
         JsonRpcMessage.from_dict(
             {
-                "method": "_kiro.dev/metadata",
+                "method": "_efm.go/metadata",
                 "params": {"contextUsagePercentage": 73},
             }
         )
@@ -8136,7 +8136,7 @@ def test_backfill_context_window_clamps_malformed_pct(monkeypatch):
     """A degenerate metadata percentage (huge finite / inf / NaN) must not
     overflow round() and abort the turn on the shared-runtime path; derived
     used stays in [0, window]."""
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     monkeypatch.setattr(sh.model_registry, "has_known_window", lambda mid: True)
     monkeypatch.setattr(sh.model_registry, "model_window", lambda mid, **kw: 200000)
@@ -8149,7 +8149,7 @@ def test_backfill_context_window_clamps_malformed_pct(monkeypatch):
         handle._track_metadata(
             JsonRpcMessage.from_dict(
                 {
-                    "method": "_kiro.dev/metadata",
+                    "method": "_efm.go/metadata",
                     "params": {"contextUsagePercentage": bad},
                 }
             )
@@ -8169,7 +8169,7 @@ def test_backfill_context_window_no_model_is_safe(monkeypatch):
     handle._track_metadata(
         JsonRpcMessage.from_dict(
             {
-                "method": "_kiro.dev/metadata",
+                "method": "_efm.go/metadata",
                 "params": {"contextUsagePercentage": 30},
             }
         )
@@ -8185,7 +8185,7 @@ def test_backfill_uses_resolved_model_id_from_session_config(monkeypatch):
     """#5b (parity): store_session_config captures currentModelId into
     _resolved_model_id, so context-window backfill works even when the user
     never called set_model — and _model stays empty (no pinning)."""
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     monkeypatch.setattr(sh.model_registry, "has_known_window", lambda mid: True)
     monkeypatch.setattr(sh.model_registry, "model_window", lambda mid, **kw: 300000)
@@ -8200,7 +8200,7 @@ def test_backfill_uses_resolved_model_id_from_session_config(monkeypatch):
     handle._track_metadata(
         JsonRpcMessage.from_dict(
             {
-                "method": "_kiro.dev/metadata",
+                "method": "_efm.go/metadata",
                 "params": {"contextUsagePercentage": 40},
             }
         )
@@ -8213,7 +8213,7 @@ def test_backfill_uses_resolved_model_id_from_session_config(monkeypatch):
 async def test_send_command_redacts_output(monkeypatch):
     """#send_command (parity): the command response text is redacted before
     return, matching AcpClient.send_command."""
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     # send_command now applies the explicit two-pass redactors (parity with
     # AcpClient.send_command), not the redact_text helper.
@@ -8277,8 +8277,8 @@ async def test_stream_translates_runtime_dead_to_process_died():
     """#2: AcpSessionProvider.stream translates AcpRuntimeDead (an
     AcpRuntimeError, which chat_runner does NOT catch) into AcpProcessDied so
     the caller's AcpProcessDied handler fires (parity with AcpClient)."""
-    from kiro_crew.acp.client import AcpProcessDied
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.client import AcpProcessDied
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     rt = MagicMock()
     rt.saw_not_logged_in = MagicMock(return_value=False)
@@ -8301,8 +8301,8 @@ async def test_stream_translates_runtime_dead_to_process_died():
 async def test_stream_translates_auth_failure_to_auth_required():
     """#1: when stderr shows 'not logged in', a runtime death surfaces as
     AcpAuthRequired (non-retryable login prompt) rather than AcpProcessDied."""
-    from kiro_crew.acp.client import AcpAuthRequired
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.client import AcpAuthRequired
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     rt = MagicMock()
     rt.saw_not_logged_in = MagicMock(return_value=True)
@@ -8362,7 +8362,7 @@ async def test_handle_steer_stamps_write_time_and_provider_passes_it_through():
 
     rt.send_request = _send_request
     handle = AcpSessionHandle("sA", asyncio.Queue(), rt)
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     prov = AcpSessionProvider.__new__(AcpSessionProvider)
     prov._handle = handle
@@ -8391,7 +8391,7 @@ async def test_provider_cancel_session_accepts_and_forwards_grace():
     """Blocker #1: AcpSessionProvider.cancel_session must accept grace_secs
     (AcpProvider.cancel calls it with grace_secs=) and forward it to the
     handle — otherwise a kiro-path cancel raises TypeError."""
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     rt, _, _ = _make_runtime()
     rt.send_notification = AsyncMock()  # type: ignore[method-assign]
@@ -8422,7 +8422,7 @@ async def test_dispatch_mcp_oauth_guard_and_dedup():
     """Shared-path mcp_oauth_request mirrors AcpClient (R5 fix): unsafe-scheme
     URLs and empty serverName are dropped; duplicates deduped; a matching
     server_initialized discards the dedupe entry so a later retry re-emits."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_MCP_OAUTH_REQUEST,
         METHOD_MCP_OAUTH_REQUEST,
         METHOD_MCP_SERVER_INITIALIZED,
@@ -8531,7 +8531,7 @@ async def test_set_model_rebases_context_stats(monkeypatch):
     last_prompt_stats to the new model's window and clears the authoritative
     usage flag, so the next metadata pct backfills against the NEW model
     instead of being gated forever by the old model's usage_update."""
-    from kiro_crew import model_registry
+    from efm_go import model_registry
 
     monkeypatch.setattr(model_registry, "has_known_window", lambda mid: True)
     monkeypatch.setattr(model_registry, "model_window", lambda mid, **kw: 272_000)
@@ -8578,9 +8578,9 @@ def test_store_session_config_syncs_effort_levels(monkeypatch):
     import types
 
     calls = []
-    fake = types.ModuleType("kiro_crew.dashboard.chat_persistence")
+    fake = types.ModuleType("efm_go.dashboard.chat_persistence")
     fake.update_reasoning_effort_values = lambda levels: calls.append(levels)
-    monkeypatch.setitem(sys.modules, "kiro_crew.dashboard.chat_persistence", fake)
+    monkeypatch.setitem(sys.modules, "efm_go.dashboard.chat_persistence", fake)
     rt = MagicMock()
     rt.is_alive.return_value = True
     h = AcpSessionHandle("sA", asyncio.Queue(), rt)
@@ -8599,7 +8599,7 @@ async def test_stale_turn_probes_then_signals_recovery():
     which orphaned the wedged turn until the user's next message collided with
     'prompt already in progress'. (Stale DETECTION → probe is covered by
     test_acp_stale_recovery.py::test_genuine_stale_probes_via_cancel.)"""
-    from kiro_crew.acp.types import EVENT_COMPLETE, STOP_REASON_STALE_RECOVER
+    from efm_go.acp.types import EVENT_COMPLETE, STOP_REASON_STALE_RECOVER
 
     rt, reader, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -8638,8 +8638,8 @@ def test_build_permission_event_sets_raw_tool_params():
     the governance keystone (hooks.on_tool_call sensitive-path / write-protected
     checks) enforces on the shared-runtime path even when the display title
     hides the path."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     raw_cache = {"tc-1": {"path": "/home/u/.ssh/id_rsa", "content": "x"}}
     msg = JsonRpcMessage.from_dict(
@@ -8665,8 +8665,8 @@ def test_build_permission_event_sets_raw_tool_params():
 
 def test_build_permission_event_raw_params_none_without_cache():
     """No cache entry + no inline dict → raw_tool_params stays None (no crash)."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     msg = JsonRpcMessage.from_dict(
         {
@@ -8682,8 +8682,8 @@ def test_build_permission_event_raw_params_none_without_cache():
 @pytest.mark.parametrize("redaction_cache", [None, {}])
 def test_cached_input_without_redaction_provenance_fails_closed(redaction_cache):
     """Unknown cached-input provenance may display, but cannot grant trust."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     msg = JsonRpcMessage.from_dict(
         {
@@ -8713,8 +8713,8 @@ def test_build_permission_event_recovers_mcp_server_name_from_cache():
     hooks.on_tool_call's app-own-server auto-approve can fire on the dashboard
     permission path. Without this the event's mcp_server_name is always "" and
     the feature is inert."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     mcp_cache = {"tc-1": "mochi:mochi"}
     msg = JsonRpcMessage.from_dict(
@@ -8736,8 +8736,8 @@ def test_build_permission_event_recovers_mcp_server_name_from_cache():
 def test_build_permission_event_mcp_server_name_empty_without_cache():
     """No cache / no entry → mcp_server_name stays "" (fail-closed: the app-own
     auto-approve never matches on a forged title with no trusted server name)."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     msg = JsonRpcMessage.from_dict(
         {
@@ -8756,8 +8756,8 @@ def test_build_permission_event_recovers_tool_name_from_cache():
     preceding tool_call via tool_name_cache. This is what lets the
     app-own-server auto-approve rebuild the canonical mcp__<server>__<tool> and
     govern the real tool on the permission path."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     name_cache = {"tc-1": "perform_pet_action"}
     msg = JsonRpcMessage.from_dict(
@@ -8783,8 +8783,8 @@ def test_build_permission_event_recovers_tool_name_from_cache():
 def test_build_permission_event_tool_name_empty_without_cache():
     """No cache / no entry → tool_name stays "" (fail-closed: the app-own-server
     auto-approve cannot identify the tool to govern it, so it never fires)."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     msg = JsonRpcMessage.from_dict(
         {
@@ -8849,7 +8849,7 @@ def test_shared_handle_permission_inherits_origin_bound_tool_identity():
 
 def test_shared_handle_structured_non_shell_reprompt_keeps_argument_provenance():
     """Shared transport retains display and raw params across a re-prompt."""
-    from kiro_crew.trust_patterns import approval_command
+    from efm_go.trust_patterns import approval_command
 
     rt, _, _ = _make_runtime()
     handle = AcpSessionHandle("sA", asyncio.Queue(), rt)
@@ -8912,7 +8912,7 @@ def test_shared_handle_structured_non_shell_reprompt_keeps_argument_provenance()
 @pytest.mark.parametrize("raw_input", ["/etc/secret", ["/etc/secret"]])
 def test_shared_non_dict_non_shell_reprompt_cannot_become_durable_tool_trust(raw_input):
     """String/list rawInput remains visible to the repeat trust gate."""
-    from kiro_crew.trust_patterns import approval_command
+    from efm_go.trust_patterns import approval_command
 
     rt, _, _ = _make_runtime()
     handle = AcpSessionHandle("sA", asyncio.Queue(), rt)
@@ -8973,8 +8973,8 @@ def test_build_permission_event_non_string_option_entries_skipped():
     transport — the same class of crash AcpClient's copy guards against.
     Non-dict entries and non-string label/kind must be skipped/coerced while
     valid entries still parse."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     msg = JsonRpcMessage.from_dict(
         {
@@ -9004,7 +9004,7 @@ def test_mark_dead_unregisters_protected_pid():
     """Regression (PR #21 follow-up): _mark_dead must release the sweep-protection
     shield on ANY death path (not just kill()), else the dead PID lingers in
     _PROTECTED_PIDS forever and could shield a recycled-orphan from the sweep."""
-    from kiro_crew.session_pid import _protected_pids, register_protected_pid
+    from efm_go.session_pid import _protected_pids, register_protected_pid
 
     rt, _, _ = _make_runtime()
     rt._pid = 515151
@@ -9024,7 +9024,7 @@ def test_protected_runtime_pid_lands_in_sweep_active_set():
     PID land in the sweep's active set (so phase-2 never confirms them orphans) —
     the KiroCrew analog of the upstream project's end-to-end guard.
     """
-    from kiro_crew.session_pid import (
+    from efm_go.session_pid import (
         _collect_active_pids,
         register_protected_pid,
         unregister_protected_pid,
@@ -9060,7 +9060,7 @@ def test_periodic_sweep_skips_protected_runtime_pid():
     """
     from unittest.mock import patch
 
-    from kiro_crew.session_pid import (
+    from efm_go.session_pid import (
         _collect_active_pids,
         _sweep_pid_entries,
         register_protected_pid,
@@ -9092,7 +9092,7 @@ async def test_runtime_spawn_scrubs_sensitive_env_on_default_auto(monkeypatch):
     This parent-side enforcement is what protects raw Windows Kiro delegation;
     POSIX launchers apply the same sensitive/Python scrub inline.
     """
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "0000:FAKE-telegram")
     monkeypatch.setenv("WECOM_BOT_ID", "FAKE-wecom-bot")
@@ -9167,7 +9167,7 @@ async def test_runtime_spawn_names_its_own_browser_session(monkeypatch):
     is the drift guard: without it a subagent's ``goto`` lands in whatever page
     the parent was reading, and its ``close`` takes the parent's browser down.
     """
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     monkeypatch.delenv("PLAYWRIGHT_CLI_SESSION", raising=False)
     captured: dict[str, object] = {}
@@ -9244,12 +9244,12 @@ async def test_unknown_session_drops_aggregate_into_one_counted_record(caplog):
     """N drops of the same (sid, method) inside one window → ONE record, count N."""
     import logging
 
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     rt, reader, _ = _make_runtime()
     task = await _start_reader(rt)
     try:
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
             for _ in range(5):
                 _feed(reader, {"method": "session/update", "params": {"sessionId": "ghost"}})
             await _drain(reader)
@@ -9284,7 +9284,7 @@ async def test_two_unknown_sessions_are_counted_separately(caplog):
     rt, reader, _ = _make_runtime()
     task = await _start_reader(rt)
     try:
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
             for _ in range(3):
                 _feed(reader, {"method": "session/update", "params": {"sessionId": "sid-aaa"}})
             for _ in range(2):
@@ -9323,12 +9323,12 @@ async def test_no_session_broadcast_drops_are_counted(caplog):
     """With zero registered sessions every global frame drops — same shape."""
     import logging
 
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     rt, reader, _ = _make_runtime()
     task = await _start_reader(rt)
     try:
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
             for _ in range(4):
                 _feed(reader, {"method": "mcp/status", "params": {}})
             await _drain(reader)
@@ -9349,7 +9349,7 @@ def test_drop_counter_state_does_not_leak_between_intervals(caplog):
 
     rt, _reader, _ = _make_runtime()
 
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._note_dropped_frame("sid-x", "session/update")
         rt._note_dropped_frame("sid-x", "session/update")
         rt._flush_dropped_frames()
@@ -9370,12 +9370,12 @@ def test_drop_counter_map_is_bounded(caplog):
     """A wide fan-out of distinct keys flushes early instead of growing."""
     import logging
 
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     rt, _reader, _ = _make_runtime()
     cap = runtime_mod._DROP_SUMMARY_MAX_KEYS
 
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         for i in range(cap * 3):
             rt._note_dropped_frame(f"sid-{i}", "session/update")
             assert len(rt._dropped_frames) <= cap
@@ -9386,7 +9386,7 @@ def test_drop_counter_map_is_bounded(caplog):
 
 def test_drop_counter_truncates_backend_controlled_key_text():
     """A pathological sessionId/method cannot be retained at full length."""
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     rt, _reader, _ = _make_runtime()
     limit = runtime_mod._DROP_SUMMARY_KEY_MAX_CHARS
@@ -9408,7 +9408,7 @@ def test_drop_key_is_redacted_before_the_retention_cap(caplog):
     """
     import logging
 
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     rt, _reader, _ = _make_runtime()
     limit = runtime_mod._DROP_SUMMARY_KEY_MAX_CHARS
@@ -9422,7 +9422,7 @@ def test_drop_key_is_redacted_before_the_retention_cap(caplog):
     for part in (session_id, method):
         assert "AKIA" not in part and len(part) <= limit
 
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._flush_dropped_frames()
     records = _drop_records(caplog)
     assert records, "the flush must still report the drop"
@@ -9431,8 +9431,8 @@ def test_drop_key_is_redacted_before_the_retention_cap(caplog):
 
 def test_drop_key_over_the_redact_input_cap_keeps_only_its_length():
     """A multi-KB key half never reaches the redactor and retains no content."""
-    import kiro_crew.acp._dispatch as acp_dispatch
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp._dispatch as acp_dispatch
+    import efm_go.acp.runtime as runtime_mod
 
     rt, _reader, _ = _make_runtime()
     huge = "ghp_" + "A" * (acp_dispatch._REQUEST_ID_REDACT_INPUT_CAP + 40)
@@ -9513,7 +9513,7 @@ def test_drop_counter_placeholder_appears_in_flushed_summary(caplog):
 
     rt, _reader, _ = _make_runtime()
 
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._note_dropped_frame(12345, 123)
         rt._flush_dropped_frames()
 
@@ -9538,7 +9538,7 @@ class TestToolPurposeExtraction:
         }
 
     def test_snake_case_key(self):
-        from kiro_crew.acp._dispatch import _build_tool_call_event
+        from efm_go.acp._dispatch import _build_tool_call_event
 
         event = _build_tool_call_event(
             self._update({"command": "node kc-shot.mjs", "__tool_use_purpose": "check harness"}),
@@ -9547,7 +9547,7 @@ class TestToolPurposeExtraction:
         assert event.tool_purpose == "check harness"
 
     def test_camel_case_key(self):
-        from kiro_crew.acp._dispatch import _build_tool_call_event
+        from efm_go.acp._dispatch import _build_tool_call_event
 
         event = _build_tool_call_event(
             self._update({"command": "node kc-shot.mjs", "__toolUsePurpose": "check harness"}),
@@ -9556,13 +9556,13 @@ class TestToolPurposeExtraction:
         assert event.tool_purpose == "check harness"
 
     def test_no_purpose_key_yields_empty(self):
-        from kiro_crew.acp._dispatch import _build_tool_call_event
+        from efm_go.acp._dispatch import _build_tool_call_event
 
         event = _build_tool_call_event(self._update({"command": "node kc-shot.mjs"}), None)
         assert event.tool_purpose == ""
 
     def test_blank_and_non_string_values_ignored(self):
-        from kiro_crew.acp._dispatch import extract_tool_purpose
+        from efm_go.acp._dispatch import extract_tool_purpose
 
         assert extract_tool_purpose({"__tool_use_purpose": "   "}) == ""
         assert extract_tool_purpose({"__toolUsePurpose": 123}) == ""
@@ -9632,8 +9632,8 @@ async def test_create_session_refusal_explains_a_derived_readonly_spec(tmp_path,
     The refusal must say that and name the base agent -- the setup hint sent the
     user to a command that cannot create the file. The spec is published by the
     real publisher, because the owner marker on it is what the wording keys on."""
-    from kiro_crew import agent as agent_mod
-    from kiro_crew.dashboard import side_readonly_spec as srs
+    from efm_go import agent as agent_mod
+    from efm_go.dashboard import side_readonly_spec as srs
 
     monkeypatch.setattr(agent_mod, "KIRO_AGENTS_DIR", tmp_path)
     monkeypatch.setattr(srs, "_refresh_materialized_snapshot", lambda: None)
@@ -9780,7 +9780,7 @@ async def test_activate_mode_bracketed_allows_the_launched_agent_every_start():
     ``spawn_agent_name`` (the shared runtime never sets one). A shared runtime
     starts many sessions as the same agent over its life, so the allowance holds
     on every start and nothing is consumed."""
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "kirocrew"
@@ -9799,7 +9799,7 @@ async def test_activate_mode_bracketed_allows_the_launched_agent_every_start():
     rt._send_and_await = AsyncMock(side_effect=_send)  # type: ignore[method-assign]
 
     with patch(
-        "kiro_crew.acp.skill_projection.prepare_native_skill_projection",
+        "efm_go.acp.skill_projection.prepare_native_skill_projection",
         return_value=refreshed,
     ):
         await rt._activate_mode_bracketed(
@@ -9820,7 +9820,7 @@ async def test_activate_mode_bracketed_refresh_still_rejects_a_foreign_mode():
     """The launched-agent allowance is narrow: only ``self._agent`` passes with no
     view. A session start naming some OTHER unprepared mode still raises through the
     strict resolver -- an agent cannot escape its launch scope."""
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "kirocrew"
@@ -9831,7 +9831,7 @@ async def test_activate_mode_bracketed_refresh_still_rejects_a_foreign_mode():
     rt.terminate_session = AsyncMock()  # type: ignore[method-assign]
 
     with patch(
-        "kiro_crew.acp.skill_projection.prepare_native_skill_projection",
+        "efm_go.acp.skill_projection.prepare_native_skill_projection",
         return_value=refreshed,
     ):
         with pytest.raises(ValueError, match="no prepared skill discovery view"):
@@ -9856,7 +9856,7 @@ async def test_two_shared_sessions_both_start_as_the_launched_agent():
     exactly as for the first: the allowance is per-start, not consumed by the first
     start. Both back-to-back starts send set_mode for the launched agent, with no
     prepared view, and neither raises."""
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "kirocrew"
@@ -9875,7 +9875,7 @@ async def test_two_shared_sessions_both_start_as_the_launched_agent():
     rt._send_and_await = AsyncMock(side_effect=_send)  # type: ignore[method-assign]
 
     with patch(
-        "kiro_crew.acp.skill_projection.prepare_native_skill_projection",
+        "efm_go.acp.skill_projection.prepare_native_skill_projection",
         return_value=refreshed,
     ):
         for session_id in ("s1", "s2"):
@@ -9898,7 +9898,7 @@ def test_resolve_start_alias_keeps_the_launch_agent_and_stays_strict_otherwise()
     the initial resolution AND both supersession re-checks. It keeps the launched
     agent's authored name with no prepared view, and takes the strict resolver for
     every other mode (which raises for an unprepared one)."""
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "kirocrew"
@@ -9921,7 +9921,7 @@ def test_refuse_if_view_superseded_keeps_an_unchanged_launch_agent():
     launch-agent-aware resolver keeps the unchanged launch agent here: the launched
     agent's authored name is still its name in the newer view, so nothing is
     superseded and no raise occurs."""
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "kirocrew"
@@ -9948,7 +9948,7 @@ async def test_create_session_spawn_agent_guard_skipped_on_kas_backend():
     the agent travels over the wire and is activated by set_mode, which Guard (A)
     covers, so an advertised list without the runtime agent must not fail closed
     here."""
-    from kiro_crew.acp.types import ACP_BACKEND_KAS
+    from efm_go.acp.types import ACP_BACKEND_KAS
 
     rt, _, _ = _make_runtime()
     rt._agent = "kirocrew"
@@ -9973,7 +9973,7 @@ async def test_verify_spawn_agent_active_accepts_a_projected_agent_via_the_frame
     this guard sees names the DECLARED name, and the plain ``current == spawn_agent``
     comparison accepts it -- no alias-matching set in the guard is needed.
     """
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "kirocrew"
@@ -9998,7 +9998,7 @@ async def test_verify_spawn_agent_active_accepts_a_no_view_launch_agent_under_it
     agent the backend advertises under its own name is a valid session, not a
     substitution.
     """
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "kiro_default"
@@ -10024,7 +10024,7 @@ async def test_verify_spawn_agent_active_still_fails_closed_on_substitution_with
     reported current mode matches neither the declared name nor anything framing
     maps to it, so the guard still terminates and raises.
     """
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "kirocrew"
@@ -10049,7 +10049,7 @@ async def test_verify_spawn_agent_active_still_fails_closed_when_declared_name_i
     guard still terminates and raises -- the plain comparison does not loosen the
     substitution check.
     """
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     rt, _, _ = _make_runtime()
     rt._agent = "custom"
@@ -10101,7 +10101,7 @@ async def test_create_session_sets_mode_when_no_modes_advertised():
 def test_mode_available_helper():
     """Unit: the guard predicate. Empty modes ⇒ attempt (True); advertised ⇒
     membership test."""
-    from kiro_crew.acp.runtime import AcpRuntime
+    from efm_go.acp.runtime import AcpRuntime
 
     assert AcpRuntime._mode_available("kirocrew", _new_resp(None)) is True
     assert (
@@ -10122,7 +10122,7 @@ def test_advertised_mode_origin_reads_the_v3_stamp_and_nothing_else():
     """The v3 engine stamps ``_meta.kiro.resource.source.origin`` per mode;
     ``client`` is a definition Crew sent, ``bundled`` the engine's own. Any
     other shape -- no stamp, an older engine, an odd entry -- reads as ''."""
-    from kiro_crew.acp._dispatch import advertised_mode_origin
+    from efm_go.acp._dispatch import advertised_mode_origin
 
     def stamped(mode_id, origin):
         return {
@@ -10153,8 +10153,8 @@ def test_activation_refusal_is_a_harness_seam_kas_reads_the_stamp_kiro_answers_n
     so an unmeasured value must not deny every crewmate); the spawn-time
     hosts answer None for every response, so the Kiro path carries no
     branch."""
-    from kiro_crew.acp.harness.kas import KasHarness
-    from kiro_crew.acp.harness.kiro import KiroHarness
+    from efm_go.acp.harness.kas import KasHarness
+    from efm_go.acp.harness.kiro import KiroHarness
 
     def stamped(origin):
         return _new_resp(
@@ -10166,7 +10166,7 @@ def test_activation_refusal_is_a_harness_seam_kas_reads_the_stamp_kiro_answers_n
         )
 
     kas = KasHarness()
-    with caplog.at_level("WARNING", logger="kiro_crew.acp.harness.kas"):
+    with caplog.at_level("WARNING", logger="efm_go.acp.harness.kas"):
         refusal = kas.activation_refusal("plan", stamped("bundled"))
     assert refusal and refusal.startswith("Rename this crewmate's template: “plan” is reserved")
     assert " -- " not in refusal
@@ -10178,7 +10178,7 @@ def test_activation_refusal_is_a_harness_seam_kas_reads_the_stamp_kiro_answers_n
     )
     # An unmeasured positive stamp is NOT a refusal: logged once, activated.
     caplog.clear()
-    with caplog.at_level("WARNING", logger="kiro_crew.acp.harness.kas"):
+    with caplog.at_level("WARNING", logger="efm_go.acp.harness.kas"):
         assert kas.activation_refusal("plan", stamped("custom")) is None
     assert any(
         "unmeasured" in r.getMessage() and "origin='custom'" in r.getMessage()
@@ -10199,7 +10199,7 @@ def test_parse_session_modes_shapes():
     """The shared parser: absent/odd `modes` ⇒ ([], '', False); a present
     availableModes list ⇒ advertised=True (even when empty); id read from
     id → modeId → value fallbacks."""
-    from kiro_crew.acp._dispatch import parse_session_modes
+    from efm_go.acp._dispatch import parse_session_modes
 
     assert parse_session_modes({}) == ([], "", False)
     assert parse_session_modes({"modes": "nonsense"}) == ([], "", False)
@@ -10361,7 +10361,7 @@ async def test_session_start_budget_follows_config(monkeypatch):
     constant. Resolved once per runtime and cached thereafter."""
     from types import SimpleNamespace
 
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     fake_cfg = SimpleNamespace(agent=SimpleNamespace(session_start_timeout_secs=240))
     monkeypatch.setattr(KiroCrewConfig, "load", classmethod(lambda cls: fake_cfg))
@@ -10393,7 +10393,7 @@ def test_runtime_construction_never_touches_config(monkeypatch):
     synchronous disk read + schema validation on a cache miss, so the budget
     must resolve lazily (off-loop) on first session start — never at
     construction."""
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     def _boom(cls):
         raise AssertionError("config must not be consulted at construction")
@@ -10409,8 +10409,8 @@ def test_resolve_session_start_timeout_floors_and_falls_back(monkeypatch):
     failure degrades to the default instead of breaking runtime construction."""
     from types import SimpleNamespace
 
-    from kiro_crew.acp.runtime import _resolve_session_start_timeout
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.acp.runtime import _resolve_session_start_timeout
+    from efm_go.config.loader import KiroCrewConfig
 
     # Below-floor value (belt-and-braces: the loader clamp already prevents
     # this on disk, but a degraded load must not shrink the budget either).
@@ -10475,7 +10475,7 @@ def _stub_sel_for_permission_tests(request, monkeypatch):
     ):
         yield
         return
-    import kiro_crew.sel as sel_mod
+    import efm_go.sel as sel_mod
 
     class _StubSel:
         def log_tool_invocation(self, **kwargs):  # noqa: D401 - stub
@@ -10506,7 +10506,7 @@ async def test_unroutable_permission_request_is_auto_rejected(caplog):
     rt, reader, proc = _make_runtime()
     task = await _start_reader(rt)
     try:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.runtime"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.runtime"):
             _feed(
                 reader,
                 {
@@ -10658,7 +10658,7 @@ async def test_subagent_list_update_snapshots_child_ids():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {
                     "subagents": [
                         {"sessionId": "child-a", "sessionName": "correctness"},
@@ -10675,7 +10675,7 @@ async def test_subagent_list_update_snapshots_child_ids():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-b"}]},
             },
         )
@@ -10702,7 +10702,7 @@ async def test_known_subagent_permission_routes_to_slot_queue():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -10748,7 +10748,7 @@ async def test_unannounced_session_permission_still_auto_rejected():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -10788,7 +10788,7 @@ async def test_ambiguous_multi_session_runtime_falls_back_to_reject():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -10836,7 +10836,7 @@ async def test_announced_child_session_update_routes_for_cache_population():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -10899,7 +10899,7 @@ async def test_unannounced_child_session_update_still_drops():
 @pytest.mark.asyncio
 async def test_announced_child_kiro_session_update_routes_for_cache_population():
     """kiro-cli 2.21.x emits child updates under the extension method
-    `_kiro.dev/session/update`. The announced-child single-owner branch must
+    `_efm.go/session/update`. The announced-child single-owner branch must
     admit it under the exact same guard as plain `session/update`, or the
     consumer's caches never see the child's command bytes and identity, the
     permission gate reads the child as UNVERIFIED, and every auto-approve
@@ -10914,14 +10914,14 @@ async def test_announced_child_kiro_session_update_routes_for_cache_population()
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
         _feed(
             reader,
             {
-                "method": "_kiro.dev/session/update",
+                "method": "_efm.go/session/update",
                 "params": {
                     "sessionId": "child-a",
                     "update": {
@@ -10946,7 +10946,7 @@ async def test_announced_child_kiro_session_update_routes_for_cache_population()
         while not queues["parent-session"].empty():
             frames.append(queues["parent-session"].get_nowait())
         routed = [f for f in frames if f.method == METHOD_KIRO_SESSION_UPDATE]
-        assert routed, "child _kiro.dev/session/update must reach the slot queue"
+        assert routed, "child _efm.go/session/update must reach the slot queue"
         assert (routed[0].params or {}).get("sessionId") == "child-a"
         # Not answered by the runtime, not counted as a drop.
         proc.stdin.write.assert_not_called()
@@ -10967,7 +10967,7 @@ async def test_unannounced_child_kiro_session_update_still_drops():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/session/update",
+                "method": "_efm.go/session/update",
                 "params": {
                     "sessionId": "never-announced",
                     "update": {"sessionUpdate": "tool_call"},
@@ -10975,7 +10975,7 @@ async def test_unannounced_child_kiro_session_update_still_drops():
             },
         )
         await _drain(reader)
-        assert rt._dropped_frames == {("never-announced", "_kiro.dev/session/update"): 1}
+        assert rt._dropped_frames == {("never-announced", "_efm.go/session/update"): 1}
         assert q["parent-session"].empty()
     finally:
         await _stop_reader(task)
@@ -10995,11 +10995,11 @@ async def test_between_turns_child_update_is_dropped_not_queued():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
-        for method in ("session/update", "_kiro.dev/session/update"):
+        for method in ("session/update", "_efm.go/session/update"):
             _feed(
                 reader,
                 {
@@ -11017,7 +11017,7 @@ async def test_between_turns_child_update_is_dropped_not_queued():
         await _drain(reader)
         assert rt._dropped_frames == {
             ("child-a", "session/update"): 1,
-            ("child-a", "_kiro.dev/session/update"): 1,
+            ("child-a", "_efm.go/session/update"): 1,
         }
         while not queues["parent-session"].empty():
             frame = queues["parent-session"].get_nowait()
@@ -11038,14 +11038,14 @@ async def test_multi_session_child_kiro_session_update_stays_dropped():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
         _feed(
             reader,
             {
-                "method": "_kiro.dev/session/update",
+                "method": "_efm.go/session/update",
                 "params": {
                     "sessionId": "child-a",
                     "update": {
@@ -11057,7 +11057,7 @@ async def test_multi_session_child_kiro_session_update_stays_dropped():
             },
         )
         await _drain(reader)
-        assert rt._dropped_frames == {("child-a", "_kiro.dev/session/update"): 1}
+        assert rt._dropped_frames == {("child-a", "_efm.go/session/update"): 1}
         # The roster announce itself broadcasts to every queue; the child's
         # update must reach NONE of them.
         for sid in ("session-1", "session-2"):
@@ -11079,7 +11079,7 @@ async def test_session_swap_on_warm_runtime_does_not_inherit_child_routing():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -11193,7 +11193,7 @@ async def test_roster_overflow_warns_once_per_episode_not_once_per_frame(caplog)
     roster = [{"sessionId": f"c-{i}"} for i in range(NATIVE_CHILD_ROSTER_CAP + overflow)]
     statuses = ("running", "pending", "completed")
 
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._snapshot_subagent_sessions({"subagents": roster})
         truncation = [r for r in caplog.records if "recognition cap" in r.getMessage()]
         assert len(truncation) == 1
@@ -11222,7 +11222,7 @@ async def test_roster_overflow_warns_once_per_episode_not_once_per_frame(caplog)
         assert rt._roster_overflow_peak == overflow
 
     caplog.clear()
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._snapshot_subagent_sessions({"subagents": roster[:8]})
     assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
     assert rt._subagent_roster_overflow == 0
@@ -11248,7 +11248,7 @@ async def test_repeated_roster_truncation_folds_into_one_throttled_summary(caplo
     """
     import logging
 
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     rt, _, _ = _make_runtime()
     _register(rt, "parent-session")
@@ -11258,7 +11258,7 @@ async def test_repeated_roster_truncation_folds_into_one_throttled_summary(caplo
             "subagents": [{"sessionId": f"c-{i}"} for i in range(NATIVE_CHILD_ROSTER_CAP + extra)]
         }
 
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._snapshot_subagent_sessions(_over(40))  # the loud one, opens the window
         for extra in (40, 77, 40, 12):
             rt._snapshot_subagent_sessions(_over(extra))
@@ -11306,7 +11306,7 @@ async def test_a_truncation_after_the_roster_recovers_is_loud_again(caplog):
     def _loud() -> list[str]:
         return [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
 
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._snapshot_subagent_sessions(over)
         rt._snapshot_subagent_sessions(over)
         assert len(_loud()) == 1
@@ -11345,7 +11345,7 @@ async def test_unroutable_permission_reason_follows_the_last_roster_snapshot():
     `error` field and the `child_permission_denied` metric — not on the private
     counter alone.
     """
-    import kiro_crew.sel as sel_mod
+    import efm_go.sel as sel_mod
 
     audited: list[dict] = []
     denied: list[dict] = []
@@ -11364,7 +11364,7 @@ async def test_unroutable_permission_reason_follows_the_last_roster_snapshot():
     try:
         with (
             patch.object(sel_mod, "sel", lambda: _CapturingSel()),
-            patch("kiro_crew.acp.runtime.emit_counter", _spy_counter),
+            patch("efm_go.acp.runtime.emit_counter", _spy_counter),
         ):
             # Snapshotted by direct call, not fed as a frame: a roster naming
             # NATIVE_CHILD_ROSTER_CAP children serialises past this reader's
@@ -11467,7 +11467,7 @@ def test_child_low_fidelity_requires_structured_security_context():
     """A rendered-diff tool_input alone is NOT fidelity: the child gate
     requires cache-provenance structured params, a resolved shell
     classification, and (for shells) a recoverable command."""
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     # Child edit refinement: diff text cached, no structured params → LOW.
     ev = AcpEvent(kind="permission_request", sub_session_id="child-a", tool_input="--- a\n+++ b")
@@ -11521,7 +11521,7 @@ def test_child_mcp_identity_trusted_isolates_verified_identity():
     """The identity half of the fidelity split: verified server/tool pair on a
     child event whose ARGUMENTS never reached the cache. Each requirement is
     individually load-bearing (fail-closed on its own cache miss)."""
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     def _ev(**overrides):
         base: dict = dict(
@@ -11573,7 +11573,7 @@ def test_mcp_identity_trusted_defaults_false():
     """The provenance flag is opt-in at trusted population sites only: a bare
     construction (the shape any future untrusted path would produce) reads
     False."""
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     assert AcpEvent(kind="permission_request").mcp_identity_trusted is False
 
@@ -11583,7 +11583,7 @@ def test_child_unconditional_grant_eligible_matches_consumer_shapes():
     ``not child_low_fidelity or child_mcp_identity_trusted`` — pinned across
     every fidelity/identity combination the three approval surfaces
     (dashboard runner, Slack gateway, subagent manager) can see."""
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     # Full-fidelity child (low_fidelity False): eligible regardless of identity.
     full = AcpEvent(
@@ -11657,7 +11657,7 @@ def test_remote_mcp_empty_rawinput_keeps_identity_through_dispatch():
     tool_call frame with EMPTY/absent rawInput leaves the params cache empty
     (low fidelity) while the _meta.kiro identity still reaches the permission
     event's trusted fields — the split the grant paths rely on."""
-    from kiro_crew.acp._dispatch import build_permission_event, parse_session_update
+    from efm_go.acp._dispatch import build_permission_event, parse_session_update
 
     for raw_input_shape in ({}, None):
         caches: dict = {
@@ -11714,7 +11714,7 @@ def test_permission_event_cache_miss_does_not_earn_identity_flag():
     preceding tool_call) must read mcp_identity_trusted False — the flag
     reports where the values CAME FROM, so a future inline fallback that
     populates the identity fields on a miss stays untrusted."""
-    from kiro_crew.acp._dispatch import build_permission_event
+    from efm_go.acp._dispatch import build_permission_event
 
     class _Msg:
         id = 91
@@ -11785,7 +11785,7 @@ def test_permission_event_cache_miss_does_not_earn_identity_flag():
     assert event4.mcp_identity_trusted is True
 
 
-# ── Child `_kiro.dev/session/update` through the session handle ──────────────
+# ── Child `_efm.go/session/update` through the session handle ──────────────
 #
 # The runtime routing tests above prove the frame REACHES the slot queue; these
 # prove the handle then runs it through the same child-frame parser as plain
@@ -11796,7 +11796,7 @@ def test_permission_event_cache_miss_does_not_earn_identity_flag():
 
 def _make_handle_for_child_frames():
     """A session handle over a mocked runtime, driven via _dispatch_events."""
-    from kiro_crew.acp.session_handle import AcpSessionHandle
+    from efm_go.acp.session_handle import AcpSessionHandle
 
     queue: asyncio.Queue = asyncio.Queue()
     rt = MagicMock()
@@ -11855,7 +11855,7 @@ def _child_permission_frame(tcid: str = "tc-child-1", req_id: int = 90) -> JsonR
 
 @pytest.mark.asyncio
 async def test_child_kiro_session_update_populates_caches_and_retags():
-    """A child `_kiro.dev/session/update` tool_call frame runs through the
+    """A child `_efm.go/session/update` tool_call frame runs through the
     shared child-frame parser: the origin-scoped caches capture raw params,
     shell classification, and the `_meta.kiro` identity, and the parsed event
     is re-tagged as subagent activity — never as parent transcript."""
@@ -11880,7 +11880,7 @@ async def test_child_kiro_session_update_populates_caches_and_retags():
 
 @pytest.mark.asyncio
 async def test_child_kiro_session_update_identity_flips_permission_trust():
-    """End-to-end through the handle: the child's `_kiro.dev/session/update`
+    """End-to-end through the handle: the child's `_efm.go/session/update`
     tool_call populates the caches, so the SUBSEQUENT permission request for
     the same toolCallId carries verified MCP identity — the flag every
     unconditional auto-approve path reads."""
@@ -11935,7 +11935,7 @@ async def test_child_steer_echo_never_settles_parent_steer_ledger():
     another session, or a child's steering_consumed surfaces as a PARENT
     steer lifecycle event and can settle a pending user steer the parent
     backend never consumed. An own-session steer echo still yields."""
-    from kiro_crew.acp.types import EVENT_STEER_CONSUMED
+    from efm_go.acp.types import EVENT_STEER_CONSUMED
 
     def _steer_frame(sid: str) -> JsonRpcMessage:
         return JsonRpcMessage(
@@ -12005,7 +12005,7 @@ async def test_child_tool_call_chunk_stays_fail_closed_but_visible():
 
 @pytest.mark.asyncio
 async def test_own_session_kiro_session_update_is_not_child_activity():
-    """A `_kiro.dev/session/update` frame naming THIS session is not a child frame.
+    """A `_efm.go/session/update` frame naming THIS session is not a child frame.
 
     kiro-cli carries the parent turn's OWN tool-call chunk on the extension
     method, under the parent's own sessionId and the parent's own toolCallId --
@@ -12041,7 +12041,7 @@ async def test_between_turns_child_permission_is_answered_not_queued():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -12087,7 +12087,7 @@ async def test_pending_non_prompt_request_does_not_enable_routing():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -12123,7 +12123,7 @@ async def test_notice_yield_abandonment_clears_turn_state():
     handle permanently turn-active (mark_turn_active leaked True /
     _turn_done cleared) — the notice loop must live inside the same
     try/finally as the dispatch loop."""
-    from kiro_crew.acp.types import EVENT_SUBAGENT_ACTIVITY
+    from efm_go.acp.types import EVENT_SUBAGENT_ACTIVITY
 
     rt, _, _ = _make_runtime()
     q = _register(rt, "sA")
@@ -12229,7 +12229,7 @@ async def test_pre_turn_drain_counts_discarded_frames_without_logging_content(ca
             )
         )
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.session_handle"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.session_handle"):
         gen = handle.prompt("hi", timeout=0.2)
         with contextlib.suppress(StopAsyncIteration, asyncio.TimeoutError, Exception):
             await asyncio.wait_for(gen.__anext__(), timeout=1.0)
@@ -12250,7 +12250,7 @@ async def _drain_warning_lines(handle, caplog):
     import contextlib
     import logging
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.session_handle"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.session_handle"):
         gen = handle.prompt("hi", timeout=0.2)
         with contextlib.suppress(StopAsyncIteration, asyncio.TimeoutError, Exception):
             await asyncio.wait_for(gen.__anext__(), timeout=1.0)
@@ -12749,7 +12749,7 @@ async def test_prompt_warns_when_the_stream_ends_without_a_terminal_event(caplog
     import contextlib
     import logging
 
-    from kiro_crew.acp.types import EVENT_TEXT_CHUNK, AcpEvent
+    from efm_go.acp.types import EVENT_TEXT_CHUNK, AcpEvent
 
     _MARK = "ended without a terminal completion event"
 
@@ -12763,7 +12763,7 @@ async def test_prompt_warns_when_the_stream_ends_without_a_terminal_event(caplog
         yield AcpEvent(kind=EVENT_TEXT_CHUNK, text="partial")
 
     handle._dispatch_events = _no_terminal  # type: ignore[method-assign]
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.session_handle"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.session_handle"):
         async for _ev in handle.prompt("hi", timeout=0.2):
             pass
     assert any(_MARK in rec.getMessage() for rec in caplog.records)
@@ -12776,7 +12776,7 @@ async def test_prompt_warns_when_the_stream_ends_without_a_terminal_event(caplog
     handle2 = AcpSessionHandle("sB", q2["sB"], rt2)
     rt2.send_request = AsyncMock(return_value=9)
     handle2._dispatch_events = _no_terminal  # type: ignore[method-assign]
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.session_handle"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.session_handle"):
         gen = handle2.prompt("hi", timeout=0.2)
         with contextlib.suppress(StopAsyncIteration):
             await gen.__anext__()
@@ -12792,8 +12792,8 @@ def test_missing_kind_is_not_a_resolved_shell_classification():
     classification: the miss-default False would otherwise read as a RESOLVED
     non-shell on the later permission frame (shell_classified=True), skipping
     the low-fidelity downgrade without any classification having happened."""
-    from kiro_crew.acp._dispatch import _build_tool_call_event, build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import _build_tool_call_event, build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     shell_cache: dict[str, bool] = {}
     raw_cache: dict[str, dict] = {}
@@ -12841,8 +12841,8 @@ def test_trusted_mcp_transport_earns_identity_trust_without_a_classification():
     child_low_fidelity stays True, keeping every content-matching auto-approve
     path (title-keyed auto_approve_tools) gated against the agent-authored
     title."""
-    from kiro_crew.acp._dispatch import _build_tool_call_event, build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import _build_tool_call_event, build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     shell_cache: dict[str, bool] = {}
     raw_cache: dict[str, dict] = {}
@@ -12898,8 +12898,8 @@ def test_trusted_mcp_transport_never_waives_a_reported_shell_kind():
     waive a shell check: an execute-kind frame still caches True even with a
     server name, so the command-bytes gates keep firing -- and the identity
     split stays closed for it."""
-    from kiro_crew.acp._dispatch import _build_tool_call_event, build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import _build_tool_call_event, build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     shell_cache: dict[str, bool] = {}
     server_cache: dict[str, str] = {}
@@ -12944,8 +12944,8 @@ def test_inline_mcp_server_name_on_a_permission_frame_earns_no_classification():
     """The agent-reachable permission payload is not a provenance channel: an
     inline `_meta`/`mcpServerName` there cannot manufacture the identity trust
     that only the preceding tool_call's cache write can grant."""
-    from kiro_crew.acp._dispatch import build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     shell_cache: dict[str, bool] = {}
     msg = JsonRpcMessage.from_dict(
@@ -12980,8 +12980,8 @@ def test_shared_permission_event_carries_redaction_provenance_without_secret():
     command trust needs the separate boolean while the removed bytes stay out
     of the event's display input.
     """
-    from kiro_crew.acp._dispatch import _build_tool_call_event, build_permission_event
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import _build_tool_call_event, build_permission_event
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     input_cache: dict[str, str] = {}
     redacted_cache: dict[str, bool] = {}
@@ -13036,8 +13036,8 @@ def test_refinement_fills_raw_params_cache_for_following_permission():
     permission frame full-provenance (raw_params_trusted=True) — this is the
     path that keeps backends streaming an empty initial rawInput out of the
     low-fidelity downgrade. Pins the required frame ordering explicitly."""
-    from kiro_crew.acp._dispatch import build_permission_event, parse_session_update
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event, parse_session_update
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     shell_cache: dict[str, bool] = {}
     raw_cache: dict[str, dict] = {}
@@ -13092,7 +13092,7 @@ async def test_fidelity_unaware_consumer_gate_rejects_and_audits():
     a low-fidelity child permission request reaching _dispatch_events on a
     handle whose consumer never opted in must be REJECTED (answered, never
     yielded as a permission event) and SEL-audited."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_PERMISSION_REQUEST,
         METHOD_REQUEST_PERMISSION,
     )
@@ -13123,7 +13123,7 @@ async def test_fidelity_unaware_consumer_gate_rejects_and_audits():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -13170,7 +13170,7 @@ async def test_aware_consumer_receives_kindless_mcp_child_permission():
     a kindless MCP child call -- yielded with the trusted transport identity
     attached -- instead of the handle rejecting it as
     `child_low_fidelity_unaware_consumer`."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_PERMISSION_REQUEST,
         METHOD_REQUEST_PERMISSION,
         METHOD_SESSION_UPDATE,
@@ -13204,7 +13204,7 @@ async def test_aware_consumer_receives_kindless_mcp_child_permission():
         _feed(
             reader,
             {
-                "method": "_kiro.dev/subagent/list_update",
+                "method": "_efm.go/subagent/list_update",
                 "params": {"subagents": [{"sessionId": "child-a"}]},
             },
         )
@@ -13470,8 +13470,8 @@ def test_cross_session_toolcallid_replay_does_not_inherit_provenance():
     cache keys are origin-scoped, so cross-session replay misses and the
     request stays low fidelity, while a SAME-origin repeat frame still
     resolves."""
-    from kiro_crew.acp._dispatch import build_permission_event, parse_session_update
-    from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION
+    from efm_go.acp._dispatch import build_permission_event, parse_session_update
+    from efm_go.acp.types import METHOD_REQUEST_PERMISSION
 
     shell_cache: dict[str, bool] = {}
     raw_cache: dict[str, dict] = {}
@@ -14070,20 +14070,20 @@ class TestParseAdvertisedModels:
     session-init snapshot are directly comparable."""
 
     def test_models_object_shape(self):
-        from kiro_crew.acp.session_handle import parse_advertised_models
+        from efm_go.acp.session_handle import parse_advertised_models
 
         out = parse_advertised_models(_PROBE_RESP)
         assert [m["modelId"] for m in out] == ["auto", "claude-opus-5"]
         assert all(set(m) == {"modelId", "name", "description"} for m in out)
 
     def test_bare_list_shape(self):
-        from kiro_crew.acp.session_handle import parse_advertised_models
+        from efm_go.acp.session_handle import parse_advertised_models
 
         out = parse_advertised_models({"availableModels": [{"modelId": "claude-sonnet-4"}]})
         assert [m["modelId"] for m in out] == ["claude-sonnet-4"]
 
     def test_absent_or_malformed_yields_empty(self):
-        from kiro_crew.acp.session_handle import parse_advertised_models
+        from efm_go.acp.session_handle import parse_advertised_models
 
         assert parse_advertised_models({}) == []
         assert parse_advertised_models({"models": {"availableModels": "nope"}}) == []
@@ -14149,7 +14149,7 @@ class TestStoreSessionConfigParseConsolidation:
         ``parse_advertised_models`` AND call it with the checked-binding
         envelope — a restored inline walk, a whole-response re-resolution, or
         a wrong envelope all fail this pin."""
-        import kiro_crew.acp.session_handle as sh
+        import efm_go.acp.session_handle as sh
 
         sentinel = [
             {"modelId": "sentinel-a", "name": "A", "description": ""},
@@ -14168,7 +14168,7 @@ class TestStoreSessionConfigParseConsolidation:
         assert calls == [{"models": {"availableModels": [{"modelId": "real"}]}}]
 
     def test_bare_list_branch_delegates_to_canonical_parser(self, monkeypatch):
-        import kiro_crew.acp.session_handle as sh
+        import efm_go.acp.session_handle as sh
 
         sentinel = [
             {"modelId": "sentinel-a", "name": "A", "description": ""},
@@ -14473,7 +14473,7 @@ async def test_probe_deadline_timeout_raises_revalidating_but_probe_completes():
     re-polls rather than caching the un-revalidated snapshot as live), and the
     probe is NOT cancelled — it keeps running to completion and replaces the
     snapshot, so the next read serves the corrected list."""
-    from kiro_crew.acp.session_handle import EntitlementRevalidating
+    from efm_go.acp.session_handle import EntitlementRevalidating
 
     rt, _, _ = _make_runtime()
     rt._spawn_monotonic = time.monotonic() - 3600.0
@@ -14493,7 +14493,7 @@ async def test_probe_deadline_timeout_raises_revalidating_but_probe_completes():
         ]
 
     rt.probe_advertised_models = AsyncMock(side_effect=_slow)  # type: ignore[method-assign]
-    from kiro_crew.acp import session_handle as _sh
+    from efm_go.acp import session_handle as _sh
 
     with patch.object(_sh, "_READ_PATH_PROBE_DEADLINE_SECS", 0.01):
         with pytest.raises(EntitlementRevalidating):
@@ -14519,7 +14519,7 @@ async def test_in_flight_probe_is_awaited_not_bypassed_on_the_next_poll():
     would serve as a live 200 the frontend caches). It re-awaits the same task,
     so it raises EntitlementRevalidating again; only once the probe lands does a
     read return the corrected list."""
-    from kiro_crew.acp.session_handle import EntitlementRevalidating
+    from efm_go.acp.session_handle import EntitlementRevalidating
 
     rt, _, _ = _make_runtime()
     rt._spawn_monotonic = time.monotonic() - 3600.0
@@ -14537,7 +14537,7 @@ async def test_in_flight_probe_is_awaited_not_bypassed_on_the_next_poll():
         ]
 
     rt.probe_advertised_models = AsyncMock(side_effect=_slow)  # type: ignore[method-assign]
-    from kiro_crew.acp import session_handle as _sh
+    from efm_go.acp import session_handle as _sh
 
     with patch.object(_sh, "_READ_PATH_PROBE_DEADLINE_SECS", 0.01):
         # First read: starts the probe, times out, raises.

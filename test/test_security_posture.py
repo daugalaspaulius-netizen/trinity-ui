@@ -21,10 +21,10 @@ import re
 
 import pytest
 
-import kiro_crew.validation as validation
-from kiro_crew import security, security_posture
-from kiro_crew import sel as _sel_mod
-from kiro_crew.security_posture import (
+import efm_go.validation as validation
+from efm_go import security, security_posture
+from efm_go import sel as _sel_mod
+from efm_go.security_posture import (
     _CONTROLS,
     PostureItem,
     build_posture_snapshot,
@@ -446,7 +446,7 @@ class TestDerivation:
         exactly that stays green. Discovering them means a NEW registry fails here
         until it is added to ``security_posture._SCHEMA_REGISTRY_NAMES``.
         """
-        from kiro_crew import security_posture
+        from efm_go import security_posture
 
         discovered = set(_mcp_schema_registry_names())
         assert discovered, "no MCP_*_SCHEMAS registries found in validation"
@@ -482,7 +482,7 @@ class TestDerivation:
         assert str(security.exfil_query_min_len()) in labels
 
     def test_token_auth_ttls_come_from_the_enforcing_module(self, snapshot):
-        from kiro_crew.dashboard.token_auth import LINK_WINDOW_SECS, MAX_SESSION_TTL_SECS
+        from efm_go.dashboard.token_auth import LINK_WINDOW_SECS, MAX_SESSION_TTL_SECS
 
         control = self._control(snapshot, "token_auth")
         details = " ".join(i["detail"] for i in control["items"])
@@ -642,7 +642,7 @@ class TestEndpoint:
         import json
         from unittest.mock import MagicMock
 
-        from kiro_crew.dashboard.handlers.core import api_security_posture
+        from efm_go.dashboard.handlers.core import api_security_posture
 
         resp = await api_security_posture(MagicMock())
         assert resp.status == 200
@@ -663,13 +663,13 @@ class TestEndpoint:
         import importlib
         import inspect
 
-        from kiro_crew.dashboard import handlers
-        from kiro_crew.dashboard import routes as routes_pkg
-        from kiro_crew.dashboard import server
+        from efm_go.dashboard import handlers
+        from efm_go.dashboard import routes as routes_pkg
+        from efm_go.dashboard import server
 
         assert hasattr(handlers, "api_security_posture")
         src = inspect.getsource(server) + "".join(
-            inspect.getsource(importlib.import_module(f"kiro_crew.dashboard.routes.{name}"))
+            inspect.getsource(importlib.import_module(f"efm_go.dashboard.routes.{name}"))
             for name in routes_pkg.REGISTRAR_NAMES
         )
         assert '"/api/security/posture"' in src
@@ -681,7 +681,7 @@ class TestEndpoint:
         # survived while the real number reached 16).
         import inspect
 
-        from kiro_crew.dashboard.handlers import core
+        from efm_go.dashboard.handlers import core
 
         src = inspect.getsource(core.api_security_stats)
         assert "posture_counts_async" in src
@@ -696,7 +696,7 @@ class TestEndpoint:
         ``/api/security/stats`` and ``/api/security/posture`` could disagree, which
         is the drift this whole change removes.
         """
-        from kiro_crew.security_posture import posture_counts, posture_counts_async
+        from efm_go.security_posture import posture_counts, posture_counts_async
 
         assert posture_counts() == build_posture_snapshot()["counts"]
         assert await posture_counts_async() == posture_counts()
@@ -845,7 +845,7 @@ class TestOmissionDetection:
 
         Guards the drift the previous hand-typed 8-tuple had already suffered.
         """
-        from kiro_crew import sel as sel_mod
+        from efm_go import sel as sel_mod
 
         # Every source _infer_source can return must be in the published tuple...
         probes = {
@@ -917,7 +917,7 @@ class TestOmissionDetection:
         """Each advertised auth control must have its enforcement present."""
         import inspect
 
-        from kiro_crew.dashboard import token_auth
+        from efm_go.dashboard import token_auth
 
         src = inspect.getsource(token_auth)
         for marker in (
@@ -1221,8 +1221,8 @@ class TestPostureClaimsMatchEnforcement:
         name rejects an unknown field, an unregistered one returns the caller's
         dict untouched, which is what makes the old universal claim false.
         """
-        from kiro_crew import mcp_computer, mcp_core
-        from kiro_crew.validation import ValidationError
+        from efm_go import mcp_computer, mcp_core
+        from efm_go.validation import ValidationError
 
         payload = {"UNKNOWN_FIELD": "z" * 4096}
         passed_through = mcp_core._validate_args("browser", dict(payload))
@@ -1245,7 +1245,7 @@ class TestPostureClaimsMatchEnforcement:
         assert not summary.startswith("Every MCP tool call is checked")
 
     def test_denied_command_summary_names_shipped_vs_enforced(self, snapshot) -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         control = self._control(snapshot, "denied_commands")
         summary = " ".join(control["summary"].split())
@@ -1283,7 +1283,7 @@ class TestPostureClaimsMatchEnforcement:
         """The summary attests over the dispatchers; all three that fall open
         must be named, or the claim re-rots the moment a schemaless tool lands.
         """
-        from kiro_crew import mcp_dashboard
+        from efm_go import mcp_dashboard
 
         control = self._control(snapshot, "tool_schemas")
         summary = " ".join(control["summary"].split())

@@ -19,10 +19,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.dashboard.handlers.knowledge import _validate_knowledge_bundle
-from kiro_crew.knowledge import store as store_module
-from kiro_crew.knowledge.agent_source import remove_document
-from kiro_crew.knowledge.store import (
+from efm_go.dashboard.handlers.knowledge import _validate_knowledge_bundle
+from efm_go.knowledge import store as store_module
+from efm_go.knowledge.agent_source import remove_document
+from efm_go.knowledge.store import (
     BUNDLE_STATE_KEY_COL,
     KnowledgeBundleError,
     KnowledgeStore,

@@ -23,9 +23,9 @@ import pytest
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
-import kiro_crew.config.loader as loader_module
-from kiro_crew import platform_compat
-from kiro_crew.config.loader import (
+import efm_go.config.loader as loader_module
+from efm_go import platform_compat
+from efm_go.config.loader import (
     _HAS_JSONSCHEMA,
     STT_PROVIDER_LOCAL,
     AgentConfig,
@@ -49,13 +49,13 @@ from kiro_crew.config.loader import (
     validate_kiro_agent_references,
     workspace_dir_for,
 )
-from kiro_crew.memory_stores import (
+from efm_go.memory_stores import (
     UnknownMemoryStore,
     memory_store_name_defect,
     provision_member_memory,
 )
-from kiro_crew.stt import limits as stt_limits
-from kiro_crew.stt import models as stt_models
+from efm_go.stt import limits as stt_limits
+from efm_go.stt import models as stt_models
 
 
 @pytest.mark.parametrize("enabled,keep", [(False, 30), (True, 2)])
@@ -91,7 +91,7 @@ def test_memory_backup_enabled_requires_json_boolean_without_jsonschema(
     tmp_path, monkeypatch, memory_data, expected
 ):
     """The shipped runtime still enforces the config field's bool contract."""
-    from kiro_crew.config import validation
+    from efm_go.config import validation
 
     path = tmp_path / "config.json"
     path.write_text(json.dumps({"memory": memory_data}), encoding="utf-8")
@@ -105,7 +105,7 @@ def test_memory_backup_enabled_requires_json_boolean_without_jsonschema(
 
 
 # Logger used by the loader module — needed for capturing warnings in tests
-logger = logging.getLogger("kiro_crew.config.loader")
+logger = logging.getLogger("efm_go.config.loader")
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +147,7 @@ def _load_from_dict(data: object) -> KiroCrewConfig:
 
     try:
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path",
+            "efm_go.config.loader.config_path",
             return_value=tmp,
         ):
             return KiroCrewConfig.load()
@@ -166,11 +166,11 @@ def _load_absent_config() -> KiroCrewConfig:
         missing_local = Path(d) / "config.local.json"
         with (
             unittest.mock.patch(
-                "kiro_crew.config.loader.config_path",
+                "efm_go.config.loader.config_path",
                 return_value=missing,
             ),
             unittest.mock.patch(
-                "kiro_crew.config.loader.config_local_path",
+                "efm_go.config.loader.config_local_path",
                 return_value=missing_local,
             ),
         ):
@@ -190,7 +190,7 @@ def _load_from_raw_string(content: str) -> KiroCrewConfig:
 
     try:
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path",
+            "efm_go.config.loader.config_path",
             return_value=tmp,
         ):
             return KiroCrewConfig.load()
@@ -213,10 +213,10 @@ def _load_from_dict_with_logs(data: object) -> tuple[KiroCrewConfig, list[str]]:
 
     try:
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path",
+            "efm_go.config.loader.config_path",
             return_value=tmp,
         ):
-            logger = logging.getLogger("kiro_crew.config.loader")
+            logger = logging.getLogger("efm_go.config.loader")
             messages: list[str] = []
             original_warning = logger.warning
 
@@ -245,7 +245,7 @@ def test_max_subagents_defaults_to_auto_sentinel() -> None:
     computed cap that never regresses below the legacy floor of 3. An explicit
     positive value is preserved verbatim.
     """
-    from kiro_crew.subagent import resolve_max_subagents
+    from efm_go.subagent import resolve_max_subagents
 
     # Bare dataclass default.
     assert KiroCrewConfig().agent.max_subagents == 0
@@ -288,7 +288,7 @@ def test_ssh_auth_sock_forward_is_not_an_agent_config_field() -> None:
     """
     import dataclasses
 
-    from kiro_crew.config.sections import AgentConfig
+    from efm_go.config.sections import AgentConfig
 
     field_names = {f.name for f in dataclasses.fields(AgentConfig)}
     assert "sandbox_forward_ssh_auth_sock" not in field_names
@@ -399,8 +399,8 @@ def _saved_agent_section(tmp_path, monkeypatch, cfg) -> dict:
     """Run ``cfg.save()`` against a tmp config dir and return the agent section written."""
     main = tmp_path / "config.json"
     local = tmp_path / "config.local.json"
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: main)
-    monkeypatch.setattr("kiro_crew.config.loader.config_local_path", lambda: local)
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: main)
+    monkeypatch.setattr("efm_go.config.loader.config_local_path", lambda: local)
     cfg.save()
     return json.loads(main.read_text(encoding="utf-8")).get("agent", {})
 
@@ -441,8 +441,8 @@ def test_save_preserves_the_exec_permission_once_declared(tmp_path, monkeypatch)
             json.dumps({"agent": {"sandbox_allow_unsandboxed_exec": declared}}),
             encoding="utf-8",
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda m=main: m)
-        monkeypatch.setattr("kiro_crew.config.loader.config_local_path", lambda ll=local: ll)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda m=main: m)
+        monkeypatch.setattr("efm_go.config.loader.config_local_path", lambda ll=local: ll)
         cfg = KiroCrewConfig()
         cfg.agent.sandbox_allow_unsandboxed_exec = declared
         cfg.save()
@@ -1182,7 +1182,7 @@ class TestConfigLoaderProperties:
 
         **Validates: Requirements 8.2**
         """
-        from kiro_crew.config import schema as schema_mod
+        from efm_go.config import schema as schema_mod
 
         # Find and temporarily mark slack.command as deprecated
         target_entry = None
@@ -1733,7 +1733,7 @@ class TestAgentWorkspaceBindingsProperties:
 
         try:
             with unittest.mock.patch(
-                "kiro_crew.config.loader.config_path",
+                "efm_go.config.loader.config_path",
                 return_value=tmp,
             ):
                 result = workspace_dir_for(ws_name)
@@ -1872,8 +1872,8 @@ class TestAgentWorkspaceBindingsProperties:
             encoding="utf-8",
         )
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=home),
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=home),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_file),
         ):
             cfg = KiroCrewConfig.load()
 
@@ -2557,7 +2557,7 @@ class TestMultiAgentMigrationEdgeCases:
 
         try:
             with unittest.mock.patch(
-                "kiro_crew.config.loader.config_path",
+                "efm_go.config.loader.config_path",
                 return_value=tmp,
             ):
                 cfg = KiroCrewConfig.load()
@@ -2615,7 +2615,7 @@ class TestMultiAgentMigrationEdgeCases:
         """
         import tempfile
 
-        from kiro_crew.cli_chat import _ensure_default_agent_in_config
+        from efm_go.cli_chat import _ensure_default_agent_in_config
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_config = Path(tmpdir) / "config.json"
@@ -2624,11 +2624,11 @@ class TestMultiAgentMigrationEdgeCases:
 
             with (
                 unittest.mock.patch(
-                    "kiro_crew.config.loader.config_path",
+                    "efm_go.config.loader.config_path",
                     return_value=tmp_config,
                 ),
                 unittest.mock.patch(
-                    "kiro_crew.cli_chat.config_path",
+                    "efm_go.cli_chat.config_path",
                     return_value=tmp_config,
                 ),
             ):
@@ -2710,7 +2710,7 @@ class TestReactionsEmptyStringFiltering:
     def test_empty_string_reaction_filtered(self, tmp_path: Path) -> None:
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"slack": {"reactions": {"done": "", "error": "boom"}}}))
-        with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
             cfg = KiroCrewConfig.load()
         # Empty string should be dropped
         assert "done" not in cfg.slack.reactions
@@ -2724,7 +2724,7 @@ class TestReactionsNullSuppression:
     def test_null_reaction_preserved(self, tmp_path: Path) -> None:
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"slack": {"reactions": {"done": None, "error": "boom"}}}))
-        with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
             cfg = KiroCrewConfig.load()
         # null should be preserved (distinct from absent key)
         assert "done" in cfg.slack.reactions
@@ -2738,7 +2738,7 @@ class TestReactionsNullSuppression:
         cfg_file.write_text(
             json.dumps({"slack": {"reactions": {"done": 42, "error": True, "tool": "ok"}}})
         )
-        with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
             cfg = KiroCrewConfig.load()
         assert "done" not in cfg.slack.reactions
         assert "error" not in cfg.slack.reactions
@@ -2756,7 +2756,7 @@ def _loaded_stt(tmp_path: Path, section: dict) -> SttConfig:
     """
     cfg_file = tmp_path / "config.json"
     cfg_file.write_text(json.dumps({"stt": section}))
-    with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+    with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
         return KiroCrewConfig.load().stt
 
 
@@ -2808,7 +2808,7 @@ class TestSttStreamingDefaultsOn:
     def test_missing_stt_key_loads_streaming_true(self, tmp_path: Path) -> None:
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({}))
-        with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
             cfg = KiroCrewConfig.load()
         assert cfg.stt.streaming is True
 
@@ -2876,7 +2876,7 @@ class TestSttRetiredProviders:
 
     @pytest.mark.parametrize("retired", loader_module._RETIRED_STT_PROVIDERS)
     def test_retired_provider_degrades_to_local(self, retired: str, caplog) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             assert _validated_stt_provider(retired) == STT_PROVIDER_LOCAL
         assert retired in caplog.text
         assert "retired" in caplog.text
@@ -2896,7 +2896,7 @@ class TestSttRetiredProviders:
         chose does not exist. The absence of that generic line is the assertion:
         it is what shows the degrade ran first.
         """
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             caplog.clear()
             stt = _loaded_stt(tmp_path, {"provider": "parakeet"})
         assert stt.provider == STT_PROVIDER_LOCAL
@@ -2916,7 +2916,7 @@ class TestSttRetiredProviders:
         because "mlx is not one of local/apple/transcribe/off" answers the wrong
         question for someone who had it working yesterday. A typo also lands on
         ``off`` rather than ``local``: ``test_stt_provider_off`` carries why."""
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             assert _validated_stt_provider("whispr") == "off"
         assert "whispr" in caplog.text
         for selectable in loader_module._VALID_STT_PROVIDERS:
@@ -2931,7 +2931,7 @@ class TestSttRetiredProviders:
         session and buries everything else. The retirement is per-install
         information: saying it once is what makes it readable.
         """
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             for _ in range(25):
                 assert _validated_stt_provider("whisper") == STT_PROVIDER_LOCAL
         assert caplog.text.count("retired") == 1
@@ -2939,7 +2939,7 @@ class TestSttRetiredProviders:
     def test_each_distinct_unusable_provider_still_gets_its_own_line(self, caplog) -> None:
         """Deduplication is per VALUE, not a single global latch -- otherwise the
         first bad value would silence the explanation for every later one."""
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             assert _validated_stt_provider("whisper") == STT_PROVIDER_LOCAL
             assert _validated_stt_provider("parakeet") == STT_PROVIDER_LOCAL
             assert _validated_stt_provider("whispr") == "off"
@@ -2985,7 +2985,7 @@ class TestSttRemovedFieldsAreInert:
         """
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"stt": dict(self._LEGACY_SECTION)}))
-        with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
             cfg = KiroCrewConfig.load()
         assert cfg.degraded_sections == frozenset()
 
@@ -3006,7 +3006,7 @@ class TestSttRemovedFieldsAreInert:
         nothing behind it."""
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"stt": dict(self._LEGACY_SECTION)}))
-        with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+        with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
             written = KiroCrewConfig.load().to_dict()["stt"]
         assert set(written).isdisjoint(_REMOVED_STT_FIELDS)
         assert written["provider"] == STT_PROVIDER_LOCAL
@@ -3053,12 +3053,12 @@ class TestSttModelCatalog:
         assert set(loader_module._VALID_STT_MODELS) == {m.name for m in stt_models.CATALOG}
 
     def test_an_unknown_name_degrades_to_the_default(self, caplog) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.stt.models"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.stt.models"):
             assert _validated_stt_model("ggml-enormous") == stt_models.DEFAULT_MODEL
         assert "ggml-enormous" in caplog.text
 
     def test_a_non_string_or_empty_name_degrades_to_the_default(self, caplog) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             assert _validated_stt_model(7) == stt_models.DEFAULT_MODEL
             assert _validated_stt_model("") == stt_models.DEFAULT_MODEL
             assert _validated_stt_model(None) == stt_models.DEFAULT_MODEL
@@ -3084,7 +3084,7 @@ class TestSttIntervalClamps:
     available shape: the operator sees their choice, and the recogniser runs a
     different one.
 
-    Every bound here is read from ``kiro_crew.stt.limits``, which owns them. A
+    Every bound here is read from ``efm_go.stt.limits``, which owns them. A
     literal in a test is how the two copies drift apart without either side
     noticing, and this test is what would have to notice.
     """
@@ -3104,13 +3104,13 @@ class TestSttIntervalClamps:
         silence is the observable proof that the two floors are one number rather
         than two that happen to match today.
         """
-        from kiro_crew.stt.vad import Endpointer
+        from efm_go.stt.vad import Endpointer
 
         stt = _loaded_stt(tmp_path, {"silence_ms": 1})
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.stt.vad"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.stt.vad"):
             caplog.clear()
             Endpointer(silence_ms=stt.silence_ms)
-        assert [r.message for r in caplog.records if r.name == "kiro_crew.stt.vad"] == []
+        assert [r.message for r in caplog.records if r.name == "efm_go.stt.vad"] == []
 
     def test_a_numeric_string_is_coerced_and_then_clamped(self, tmp_path: Path) -> None:
         """Older writers stored these as strings, and the raw-dict bounds pass skips
@@ -3190,21 +3190,21 @@ class TestSoftStopBudget:
 
     def test_soft_stop_budget_too_low(self, caplog) -> None:
         """AgentConfig clamps soft_stop_budget_secs below 0.5 to 0.5 with a warning."""
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             cfg = AgentConfig(soft_stop_budget_secs=0.1)
         assert cfg.soft_stop_budget_secs == 0.5
         assert "out of range" in caplog.text
 
     def test_soft_stop_budget_too_high(self, caplog) -> None:
         """AgentConfig clamps soft_stop_budget_secs above 60.0 to 60.0 with a warning."""
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             cfg = AgentConfig(soft_stop_budget_secs=120.0)
         assert cfg.soft_stop_budget_secs == 60.0
         assert "out of range" in caplog.text
 
     def test_soft_stop_budget_appears_in_schema(self) -> None:
         """Generated config baseline includes soft_stop_budget_secs."""
-        from kiro_crew.config.schema import SCHEMA_REGISTRY
+        from efm_go.config.schema import SCHEMA_REGISTRY
 
         paths = [e.path for e in SCHEMA_REGISTRY]
         assert "agent.soft_stop_budget_secs" in paths
@@ -3356,7 +3356,7 @@ class TestWidgetDensityRoundTrip:
 
         cfg = _load_from_dict({"dashboard": {"widget_density": "less"}})
         cfg_file = tmp_path / "config.json"
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+        with patch("efm_go.config.loader.config_path", return_value=cfg_file):
             cfg.save()
             loaded = KiroCrewConfig.load()
         assert loaded.dashboard.widget_density == "less"
@@ -3393,7 +3393,7 @@ class TestDefaultMemoryModeRoundTrip:
             return data
 
         with unittest.mock.patch(
-            "kiro_crew.config.loader._validate_config_data",
+            "efm_go.config.loader._validate_config_data",
             side_effect=assert_normalized,
         ):
             cfg = _load_from_dict({"dashboard": {"default_memory_mode": "surprise"}})
@@ -3402,7 +3402,7 @@ class TestDefaultMemoryModeRoundTrip:
 
     def test_locked_write_invalidates_unchanged_fingerprint_cache(self, tmp_path: Path) -> None:
         """A successful PUT-equivalent write must be visible with a coarse fingerprint."""
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             _invalidate_config_cache,
             update_config_locked,
             write_config_atomically,
@@ -3422,12 +3422,12 @@ class TestDefaultMemoryModeRoundTrip:
         _invalidate_config_cache()
         try:
             with (
-                unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
+                unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_file),
                 unittest.mock.patch(
-                    "kiro_crew.config.loader.config_local_path", return_value=local_file
+                    "efm_go.config.loader.config_local_path", return_value=local_file
                 ),
                 unittest.mock.patch(
-                    "kiro_crew.config.loader._config_fingerprint",
+                    "efm_go.config.loader._config_fingerprint",
                     return_value=(("coarse-filesystem", 1, 1, 0o600),),
                 ),
             ):
@@ -3448,7 +3448,7 @@ class TestDefaultMemoryModeRoundTrip:
 
     def test_inflight_reader_cannot_restore_stale_cache_after_write(self, tmp_path: Path) -> None:
         """A pre-write read cannot publish after a same-fingerprint write completes."""
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             _invalidate_config_cache,
             update_config_locked,
             write_config_atomically,
@@ -3492,12 +3492,12 @@ class TestDefaultMemoryModeRoundTrip:
 
         try:
             with (
-                unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
+                unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_file),
                 unittest.mock.patch(
-                    "kiro_crew.config.loader.config_local_path", return_value=local_file
+                    "efm_go.config.loader.config_local_path", return_value=local_file
                 ),
                 unittest.mock.patch(
-                    "kiro_crew.config.loader._config_fingerprint",
+                    "efm_go.config.loader._config_fingerprint",
                     return_value=(("coarse-filesystem", 1, 1, 0o600),),
                 ),
                 unittest.mock.patch.object(Path, "read_text", read_then_wait),
@@ -3532,7 +3532,7 @@ class TestDefaultMemoryModeRoundTrip:
 
         cfg = _load_from_dict({"dashboard": {"default_memory_mode": "temporary"}})
         cfg_file = tmp_path / "config.json"
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+        with patch("efm_go.config.loader.config_path", return_value=cfg_file):
             cfg.save()
             loaded = KiroCrewConfig.load()
         assert loaded.dashboard.default_memory_mode == "temporary"
@@ -3566,7 +3566,7 @@ class TestArchiveRetentionDays:
 
         cfg = _load_from_dict({"session": {"archive_retention_days": 60}})
         cfg_file = tmp_path / "config.json"
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+        with patch("efm_go.config.loader.config_path", return_value=cfg_file):
             cfg.save()
             loaded = KiroCrewConfig.load()
         assert loaded.session.archive_retention_days == 60
@@ -3582,7 +3582,7 @@ class TestArchiveRetentionDays:
         checks the schema shape directly, so it fails everywhere if the
         ``nullable`` marker regresses, not only where jsonschema is installed.
         """
-        from kiro_crew.config.schema import JSON_SCHEMA
+        from efm_go.config.schema import JSON_SCHEMA
 
         node = JSON_SCHEMA["properties"]["session"]["properties"]["archive_retention_days"]
         assert (
@@ -3591,7 +3591,7 @@ class TestArchiveRetentionDays:
 
     def test_validation_preserves_null(self) -> None:
         """When jsonschema runs, ``null`` must survive validation (not be stripped)."""
-        from kiro_crew.config import validation
+        from efm_go.config import validation
 
         if not validation._HAS_JSONSCHEMA:
             pytest.skip("jsonschema not installed on this interpreter")
@@ -3606,7 +3606,7 @@ class TestConfigCache:
     @pytest.fixture(autouse=True)
     def _reset_cache(self):
         # Each test starts with a clean module-level cache and leaves one behind.
-        from kiro_crew.config.loader import _invalidate_config_cache
+        from efm_go.config.loader import _invalidate_config_cache
 
         _invalidate_config_cache()
         yield
@@ -3640,12 +3640,12 @@ class TestConfigCache:
             return real_validate(data)
 
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
             patch(
-                "kiro_crew.config.loader.config_local_path",
+                "efm_go.config.loader.config_local_path",
                 return_value=tmp_path / "config.local.json",
             ),
-            patch("kiro_crew.config.loader._validate_config_data", _counting),
+            patch("efm_go.config.loader._validate_config_data", _counting),
         ):
             KiroCrewConfig.load()
             KiroCrewConfig.load()
@@ -3661,8 +3661,8 @@ class TestConfigCache:
         cfg_file = tmp_path / "config.json"
         local = tmp_path / "config.local.json"
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
-            patch("kiro_crew.config.loader.config_local_path", return_value=local),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_local_path", return_value=local),
         ):
             self._write(cfg_file, {"agent": {"model": "model-a"}})
             first = KiroCrewConfig.load()
@@ -3681,7 +3681,7 @@ class TestConfigCache:
         import os as _os
         from unittest.mock import patch
 
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             _config_fingerprint,
             update_config_locked,
             write_config_atomically,
@@ -3694,8 +3694,8 @@ class TestConfigCache:
             "dashboard": {"default_memory_mode": "incognito"},
         }
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
-            patch("kiro_crew.config.loader.config_local_path", return_value=local),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_local_path", return_value=local),
         ):
             write_config_atomically(cfg_file, document)
             before_stat = cfg_file.stat()
@@ -3733,8 +3733,8 @@ class TestConfigCache:
         cfg_file = tmp_path / "config.json"
         local = tmp_path / "config.local.json"
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
-            patch("kiro_crew.config.loader.config_local_path", return_value=local),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_local_path", return_value=local),
         ):
             self._write(cfg_file, {"agent": {"yolo": False}})
             cfg = KiroCrewConfig.load()
@@ -3752,8 +3752,8 @@ class TestConfigCache:
         cfg_file = tmp_path / "config.json"
         local = tmp_path / "config.local.json"
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
-            patch("kiro_crew.config.loader.config_local_path", return_value=local),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_local_path", return_value=local),
         ):
             self._write(cfg_file, {"agent": {"model": "orig-model"}})
             first = KiroCrewConfig.load()
@@ -3794,8 +3794,8 @@ class TestConfigCache:
             return content
 
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
-            patch("kiro_crew.config.loader.config_local_path", return_value=local),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_local_path", return_value=local),
             patch.object(Path, "read_text", _read_then_write),
         ):
             first = KiroCrewConfig.load()  # reads v0, writer swaps to v1 mid-read
@@ -3803,8 +3803,8 @@ class TestConfigCache:
             assert first.agent.model == "v0"
         # Next load must re-read and see v1 — NOT serve stale v0 from a poisoned cache.
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
-            patch("kiro_crew.config.loader.config_local_path", return_value=local),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_local_path", return_value=local),
         ):
             second = KiroCrewConfig.load()
         assert second.agent.model == "v1", "stale config served from poisoned cache"
@@ -3894,23 +3894,23 @@ class TestSecurityBoundClamping:
     """The loader clamps out-of-range resource-limit knobs read from disk."""
 
     def test_subagent_auto_max_clamped_to_ceiling(self) -> None:
-        from kiro_crew.config.loader import SUBAGENT_AUTO_MAX_CEILING
+        from efm_go.config.loader import SUBAGENT_AUTO_MAX_CEILING
 
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             cfg = _load_from_dict({"agent": {"subagent_auto_max": 200}})
         assert cfg.agent.subagent_auto_max == SUBAGENT_AUTO_MAX_CEILING == 64
 
     def test_subagent_auto_max_floored_to_min(self) -> None:
         """A value below the auto-size floor (3) is clamped UP to 3 with a
         warning, mirroring the > ceiling clamp."""
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             cfg = _load_from_dict({"agent": {"subagent_auto_max": 1}})
         assert cfg.agent.subagent_auto_max == 3
 
     def test_max_subagents_clamped_to_ceiling(self) -> None:
-        from kiro_crew.config.loader import SUBAGENT_AUTO_MAX_CEILING
+        from efm_go.config.loader import SUBAGENT_AUTO_MAX_CEILING
 
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             cfg = _load_from_dict({"agent": {"max_subagents": 200}})
         assert cfg.agent.max_subagents == SUBAGENT_AUTO_MAX_CEILING == 64
 
@@ -3918,10 +3918,10 @@ class TestSecurityBoundClamping:
         """An explicit pin of 1 or 2 is normalized UP to the fixed-pin floor (3):
         a sub-3 pin would silently disable auto-sizing and run below the default.
         The auto sentinel (0) and in-range pins (>= 3) are left untouched."""
-        from kiro_crew.config.loader import MAX_SUBAGENTS_FIXED_FLOOR
+        from efm_go.config.loader import MAX_SUBAGENTS_FIXED_FLOOR
 
         assert MAX_SUBAGENTS_FIXED_FLOOR == 3
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             for pinned in (1, 2):
                 cfg = _load_from_dict({"agent": {"max_subagents": pinned}})
                 assert cfg.agent.max_subagents == 3
@@ -3931,9 +3931,9 @@ class TestSecurityBoundClamping:
             assert _load_from_dict({"agent": {"max_subagents": 8}}).agent.max_subagents == 8
 
     def test_subagent_max_turns_clamped_to_ceiling(self) -> None:
-        from kiro_crew.config.loader import SUBAGENT_MAX_TURNS_CEILING
+        from efm_go.config.loader import SUBAGENT_MAX_TURNS_CEILING
 
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             cfg = _load_from_dict({"agent": {"subagent_max_turns": 99999}})
         assert cfg.agent.subagent_max_turns == SUBAGENT_MAX_TURNS_CEILING == 1000
 
@@ -3945,7 +3945,7 @@ class TestSecurityBoundClamping:
         Asserted for the int form (the raw-dict clamp) and the numeric-string
         form (which that clamp skips and only the coercion site bounds).
         """
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             assert (
                 _load_from_dict({"agent": {"subagent_timeout_secs": 0}}).agent.subagent_timeout_secs
                 == 0
@@ -3969,18 +3969,18 @@ class TestSecurityBoundClamping:
             )
 
     def test_subagent_timeout_clamped_to_bounds(self) -> None:
-        from kiro_crew.config.loader import SUBAGENT_TIMEOUT_MAX, SUBAGENT_TIMEOUT_MIN
+        from efm_go.config.loader import SUBAGENT_TIMEOUT_MAX, SUBAGENT_TIMEOUT_MIN
 
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             hi = _load_from_dict({"agent": {"subagent_timeout_secs": 999999}})
             lo = _load_from_dict({"agent": {"subagent_timeout_secs": 1}})
         assert hi.agent.subagent_timeout_secs == SUBAGENT_TIMEOUT_MAX == 86400
         assert lo.agent.subagent_timeout_secs == SUBAGENT_TIMEOUT_MIN == 60
 
     def test_pool_size_clamped_to_max(self) -> None:
-        from kiro_crew.config.loader import POOL_SIZE_MAX
+        from efm_go.config.loader import POOL_SIZE_MAX
 
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             cfg = _load_from_dict({"session": {"pool_size": 1000}})
         assert cfg.session.pool_size == POOL_SIZE_MAX == 10
 
@@ -3992,24 +3992,24 @@ class TestSecurityBoundClamping:
         assert cfg.dashboard.chat_entry_cache_max_bytes == 32 * 1024 * 1024
 
     def test_chat_entry_cache_max_entries_clamped_at_both_ends(self) -> None:
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             CHAT_ENTRY_CACHE_ENTRIES_MAX,
             CHAT_ENTRY_CACHE_ENTRIES_MIN,
         )
 
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             low = _load_from_dict({"dashboard": {"chat_entry_cache_max_entries": 1}})
             high = _load_from_dict({"dashboard": {"chat_entry_cache_max_entries": 10**9}})
         assert low.dashboard.chat_entry_cache_max_entries == CHAT_ENTRY_CACHE_ENTRIES_MIN == 256
         assert high.dashboard.chat_entry_cache_max_entries == CHAT_ENTRY_CACHE_ENTRIES_MAX == 262144
 
     def test_chat_entry_cache_max_bytes_clamped_at_both_ends(self) -> None:
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             CHAT_ENTRY_CACHE_BYTES_MAX,
             CHAT_ENTRY_CACHE_BYTES_MIN,
         )
 
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             low = _load_from_dict({"dashboard": {"chat_entry_cache_max_bytes": 1024}})
             high = _load_from_dict({"dashboard": {"chat_entry_cache_max_bytes": 10**12}})
         assert low.dashboard.chat_entry_cache_max_bytes == CHAT_ENTRY_CACHE_BYTES_MIN
@@ -4045,23 +4045,23 @@ class TestSecurityBoundClamping:
         """A value below the floor is clamped UP: a session-start budget under
         the backend's 30s OAuth authorization wait recreates the race the
         dedicated budget exists to prevent."""
-        from kiro_crew.config.loader import SESSION_START_TIMEOUT_MIN
+        from efm_go.config.loader import SESSION_START_TIMEOUT_MIN
 
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             cfg = _load_from_dict({"agent": {"session_start_timeout_secs": 10}})
         assert cfg.agent.session_start_timeout_secs == SESSION_START_TIMEOUT_MIN == 90
 
     def test_session_start_timeout_clamped_to_max(self) -> None:
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             cfg = _load_from_dict({"agent": {"session_start_timeout_secs": 99999}})
-        from kiro_crew.config.loader import SESSION_START_TIMEOUT_MAX
+        from efm_go.config.loader import SESSION_START_TIMEOUT_MAX
 
         assert cfg.agent.session_start_timeout_secs == SESSION_START_TIMEOUT_MAX == 900
 
     def test_full_pentest_reproduction_clamped(self) -> None:
         """The exact tester payload is clamped, and to_dict() (what the GET API
         serializes) reports the clamped values, not the inflated ones."""
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             cfg = _load_from_dict(
                 {
                     "agent": {
@@ -4092,7 +4092,7 @@ class TestSecurityBoundClamping:
         dataclass with NO coercion at all, and ``subagent_auto_max``/
         ``pool_size`` are ``_safe_int``-coerced but without bounds -- all
         four let a numeric-string value bypass the declared ceiling entirely."""
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             POOL_SIZE_MAX,
             SUBAGENT_AUTO_MAX_CEILING,
             SUBAGENT_MAX_TURNS_CEILING,
@@ -4151,7 +4151,7 @@ class TestSecurityBoundClamping:
         assert not (cfg.agent.subagent_max_turns > 999)  # must not raise TypeError
 
     def test_in_range_values_unchanged(self) -> None:
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event") as mock_event:
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event") as mock_event:
             cfg = _load_from_dict(
                 {
                     "agent": {
@@ -4169,7 +4169,7 @@ class TestSecurityBoundClamping:
         mock_event.assert_not_called()
 
     def test_boundary_values_not_clamped(self) -> None:
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event") as mock_event:
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event") as mock_event:
             cfg = _load_from_dict(
                 {
                     "agent": {"subagent_auto_max": 64, "subagent_max_turns": 1000},
@@ -4182,14 +4182,14 @@ class TestSecurityBoundClamping:
         mock_event.assert_not_called()
 
     def test_clamp_logs_warning(self) -> None:
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event"):
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event"):
             _, logs = _load_from_dict_with_logs({"agent": {"subagent_auto_max": 200}})
         assert any(
             "subagent_auto_max" in m and "out of range" in m for m in logs
         ), f"expected clamp warning, got: {logs}"
 
     def test_clamp_emits_security_event(self) -> None:
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event") as mock_event:
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event") as mock_event:
             _load_from_dict({"agent": {"subagent_auto_max": 200}})
         mock_event.assert_called_once()
         args = mock_event.call_args.args
@@ -4201,10 +4201,10 @@ class TestSecurityBoundClamping:
         """The clamp skips non-int values, leaving them exactly as-is. Asserted
         against ``_clamp_security_bounds`` directly so the outcome is
         deterministic regardless of jsonschema availability."""
-        from kiro_crew.config.loader import _clamp_security_bounds
+        from efm_go.config.loader import _clamp_security_bounds
 
         data = {"agent": {"subagent_max_turns": "lots"}}
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event") as mock_event:
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event") as mock_event:
             _clamp_security_bounds(data)
         assert data["agent"]["subagent_max_turns"] == "lots"
         mock_event.assert_not_called()
@@ -4212,18 +4212,18 @@ class TestSecurityBoundClamping:
     def test_bool_value_not_clamped(self) -> None:
         """A JSON true/false (bool is an int subclass) is not a numeric bound
         value: the clamp leaves it untouched and fires no event."""
-        from kiro_crew.config.loader import _clamp_security_bounds
+        from efm_go.config.loader import _clamp_security_bounds
 
         data = {"agent": {"max_subagents": True}}
-        with unittest.mock.patch("kiro_crew.config.loader._log_config_clamp_event") as mock_event:
+        with unittest.mock.patch("efm_go.config.loader._log_config_clamp_event") as mock_event:
             _clamp_security_bounds(data)
         assert data["agent"]["max_subagents"] is True
         mock_event.assert_not_called()
 
     def test_log_config_clamp_event_is_best_effort(self) -> None:
-        from kiro_crew.config.loader import _log_config_clamp_event
+        from efm_go.config.loader import _log_config_clamp_event
 
-        with unittest.mock.patch("kiro_crew.sel.sel", side_effect=RuntimeError("SEL down")):
+        with unittest.mock.patch("efm_go.sel.sel", side_effect=RuntimeError("SEL down")):
             _log_config_clamp_event("agent.subagent_auto_max", 200, 64, 1, 64)
 
 
@@ -4238,13 +4238,13 @@ class TestAutocompactPctLoadClamp:
     """
 
     def test_above_range_clamped_to_max(self) -> None:
-        from kiro_crew.config.loader import AUTOCOMPACT_PCT_MAX
+        from efm_go.config.loader import AUTOCOMPACT_PCT_MAX
 
         cfg = _load_from_dict({"session": {"autocompact_pct": 500}})
         assert cfg.session.autocompact_pct == AUTOCOMPACT_PCT_MAX == 90.0
 
     def test_negative_clamped_to_min(self) -> None:
-        from kiro_crew.config.loader import AUTOCOMPACT_PCT_MIN
+        from efm_go.config.loader import AUTOCOMPACT_PCT_MIN
 
         cfg = _load_from_dict({"session": {"autocompact_pct": -10}})
         assert cfg.session.autocompact_pct == AUTOCOMPACT_PCT_MIN == 5.0
@@ -4262,7 +4262,7 @@ class TestAutocompactPctLoadClamp:
         """An omitted key takes the module default, not a clamp bound. Asserted
         against the constant rather than a literal so the two cannot drift: a
         ``load()`` fallback restated as its own literal still fails here."""
-        from kiro_crew.config.loader import DEFAULT_AUTOCOMPACT_PCT
+        from efm_go.config.loader import DEFAULT_AUTOCOMPACT_PCT
 
         cfg = _load_from_dict({})
         assert cfg.session.autocompact_pct == DEFAULT_AUTOCOMPACT_PCT
@@ -4272,8 +4272,8 @@ class TestAutocompactPctLoadClamp:
         ``session.autocompact_pct`` must BE the loader's clamp constants — the
         same objects, not two sets of literals that can drift apart (the drift
         is exactly how the load path lost the range in the first place)."""
-        from kiro_crew.config.loader import AUTOCOMPACT_PCT_MAX, AUTOCOMPACT_PCT_MIN
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.config.loader import AUTOCOMPACT_PCT_MAX, AUTOCOMPACT_PCT_MIN
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         spec = _EDITABLE_CONFIG["session.autocompact_pct"]
         assert spec["type"] == "float"
@@ -4348,7 +4348,7 @@ class TestConfigWriteProtection:
     """config.json / config.local.json are WRITE-protected (reads allowed)."""
 
     def test_config_json_is_write_protected(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         # Data home moved to ~/.kiro/crew; the legacy ~/.kirocrew stays gated too.
         assert is_sensitive_write_path("~/.kiro/crew/config.json")
@@ -4357,7 +4357,7 @@ class TestConfigWriteProtection:
         assert is_sensitive_write_path(str(Path.home() / ".kirocrew" / "config.json"))
 
     def test_config_local_json_is_write_protected(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         assert is_sensitive_write_path("~/.kiro/crew/config.local.json")
         assert is_sensitive_write_path(str(Path.home() / ".kiro" / "crew" / "config.local.json"))
@@ -4365,7 +4365,7 @@ class TestConfigWriteProtection:
         assert is_sensitive_write_path(str(Path.home() / ".kirocrew" / "config.local.json"))
 
     def test_config_json_reads_still_allowed(self) -> None:
-        from kiro_crew.security import is_sensitive_bash_command, is_sensitive_path
+        from efm_go.security import is_sensitive_bash_command, is_sensitive_path
 
         assert is_sensitive_path("~/.kiro/crew/config.json") is False
         assert is_sensitive_bash_command("cat ~/.kiro/crew/config.json") is None
@@ -4373,14 +4373,14 @@ class TestConfigWriteProtection:
         assert is_sensitive_bash_command("cat ~/.kirocrew/config.json") is None
 
     def test_write_protection_superset_of_sensitive(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         assert is_sensitive_write_path("~/.aws/credentials")
         assert is_sensitive_write_path("~/.kiro/crew/security_policy.json")
         assert is_sensitive_write_path("~/.kirocrew/security_policy.json")
 
     def test_non_config_kirocrew_file_not_write_protected(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         assert is_sensitive_write_path("~/.kiro/crew/sessions.db") is False
         assert is_sensitive_write_path("~/.kirocrew/sessions.db") is False
@@ -4390,7 +4390,7 @@ class TestConfigEditToolBlocked:
     """The file-edit tool gate (HookManager.on_tool_call) denies edits to config."""
 
     def _hooks(self):
-        from kiro_crew.hooks import HookManager, HooksConfig
+        from efm_go.hooks import HookManager, HooksConfig
 
         return HookManager(HooksConfig())
 
@@ -4507,7 +4507,7 @@ class TestTelegramAllowedUserIdsGuard:
 
 class TestMessagingConfigValidation:
     def test_normalizes_bad_scope_mode_and_clamps_resets(self) -> None:
-        from kiro_crew.config.loader import MessagingConfig
+        from efm_go.config.loader import MessagingConfig
 
         c = MessagingConfig(
             dm_scope="bogus",
@@ -4521,7 +4521,7 @@ class TestMessagingConfigValidation:
         assert c.daily_reset_hour == -1
 
     def test_keeps_valid_values(self) -> None:
-        from kiro_crew.config.loader import MessagingConfig
+        from efm_go.config.loader import MessagingConfig
 
         c = MessagingConfig(
             dm_scope="unified",
@@ -4734,7 +4734,7 @@ class TestKnowledgeAutoIngest:
     def test_new_keys_are_dashboard_editable(self) -> None:
         # A key absent from the allowlist is rejected by PATCH /api/config/kirocrew,
         # so its toggle would render and then fail to save.
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         for key in (
             "knowledge.auto_add_documents",
@@ -4811,7 +4811,7 @@ class TestKnowledgePoolIdleTtl:
     def test_integral_float_preserves_legacy_coercion(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.config.validation as validation
+        import efm_go.config.validation as validation
 
         monkeypatch.setattr(validation, "_HAS_JSONSCHEMA", False)
 
@@ -4821,7 +4821,7 @@ class TestKnowledgePoolIdleTtl:
     def test_non_integral_float_falls_back_to_default(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.config.validation as validation
+        import efm_go.config.validation as validation
 
         monkeypatch.setattr(validation, "_HAS_JSONSCHEMA", False)
 
@@ -4862,7 +4862,7 @@ class TestSaveRoundTripPreservesAllSections:
             json.dump(cfg_data, f)
             tmp = Path(f.name)
         try:
-            with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+            with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
                 KiroCrewConfig.load()  # migration write-back save fires
             after = json.loads(tmp.read_text(encoding="utf-8"))
             assert after.get("knowledge", {}).get("pool_idle_ttl_secs") == 0
@@ -4928,7 +4928,7 @@ class TestOrchestratorWatchdogThemeAreParsed:
         negative value is clamped to 0 — never an instant-cancel window, never
         a crashed load. jsonschema is disabled so the raw values reach the
         _safe_float guards (with it enabled, validation strips them first)."""
-        import kiro_crew.config.validation as validation
+        import efm_go.config.validation as validation
 
         monkeypatch.setattr(validation, "_HAS_JSONSCHEMA", False)
 
@@ -4971,7 +4971,7 @@ class TestOrchestratorWatchdogThemeAreParsed:
         surface (Slack/cron — see _resolve_model_for_agent's surface
         convention) is covered by crew-namespace membership; a non-crew name
         (a kiro template) yields "" so no override can attach to it."""
-        import kiro_crew.providers.acp as acp_mod
+        import efm_go.providers.acp as acp_mod
 
         captured: list[dict] = []
 
@@ -5033,7 +5033,7 @@ class TestOrchestratorWatchdogThemeAreParsed:
     def test_import_onboarded_string_false_falls_back_without_jsonschema(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.config.validation as validation
+        import efm_go.config.validation as validation
 
         monkeypatch.setattr(validation, "_HAS_JSONSCHEMA", False)
 
@@ -5044,7 +5044,7 @@ class TestOrchestratorWatchdogThemeAreParsed:
     def test_invalid_import_onboarded_inherits_onboarded_without_jsonschema(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.config.validation as validation
+        import efm_go.config.validation as validation
 
         monkeypatch.setattr(validation, "_HAS_JSONSCHEMA", False)
 
@@ -5111,7 +5111,7 @@ class TestMalformedConfigNeverBricksLoad:
     def test_numeric_strings_preserve_legacy_coercion_without_jsonschema(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.config.validation as validation
+        import efm_go.config.validation as validation
 
         monkeypatch.setattr(validation, "_HAS_JSONSCHEMA", False)
 
@@ -5373,7 +5373,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # snapshot from a sibling test would be read instead of the tmpdir under
         # test. Left cold on purpose — these tests run synchronously (no event
         # loop), where the lookup is allowed to build it lazily.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         loader._MATERIALIZED_AGENTS = frozenset()
         loader._MATERIALIZED_STEMS = {}
@@ -5391,8 +5391,8 @@ class TestAppAgentDispatch(unittest.TestCase):
         # A package installs `KiroPkg-captain.json` declaring "captain", and kiro-cli
         # lists only "captain". A crewmate that recorded the FILE name dispatches
         # the declared agent, and its row is not edited.
-        import kiro_crew.config.loader as loader
-        from kiro_crew.config.loader import KiroCrewAgentConfig
+        import efm_go.config.loader as loader
+        from efm_go.config.loader import KiroCrewAgentConfig
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"KiroPkg-captain.json": {"name": "captain"}})
@@ -5413,10 +5413,10 @@ class TestAppAgentDispatch(unittest.TestCase):
         # conversation, and a spawn inheriting the parent's member selection.
         from types import SimpleNamespace
 
-        import kiro_crew.config.loader as loader
-        from kiro_crew import execution_context as ec
-        from kiro_crew.config.loader import KiroCrewAgentConfig
-        from kiro_crew.subagent_manager.admission.gate import _GateMixin
+        import efm_go.config.loader as loader
+        from efm_go import execution_context as ec
+        from efm_go.config.loader import KiroCrewAgentConfig
+        from efm_go.subagent_manager.admission.gate import _GateMixin
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"KiroPkg-captain.json": {"name": "captain"}})
@@ -5456,7 +5456,7 @@ class TestAppAgentDispatch(unittest.TestCase):
                     ).kiro_agent
                     == "captain"
                 )
-                from kiro_crew import session_agent_selection as sas
+                from efm_go import session_agent_selection as sas
 
                 with unittest.mock.patch.object(sas, "read_session_execution", lambda _k: stale):
                     session = sas.resolve_session_agent_bindings(
@@ -5493,7 +5493,7 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_stem_mapping_never_overrides_a_declared_name(self):
         # Only a name kiro-cli does not know is mapped: a declared name, a stem two
         # configs share, and an unknown name all pass through unchanged.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(
@@ -5513,8 +5513,8 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_file_name_bound_crewmate_takes_the_background_role_effort(self):
         # The role set holds declared names; a crew that recorded a background
         # worker's FILE name runs that worker, so it takes the role effort too.
-        import kiro_crew.config.loader as loader
-        from kiro_crew.config.loader import KiroCrewAgentConfig
+        import efm_go.config.loader as loader
+        from efm_go.config.loader import KiroCrewAgentConfig
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"Pkg-kirocrew-lite.json": {"name": "kirocrew-lite"}})
@@ -5533,10 +5533,10 @@ class TestAppAgentDispatch(unittest.TestCase):
         # _resolve_named_agent_model already matches the file stem, so the file
         # name finds the pin the declared name finds, and the factory selection
         # both feed answers the same for either spelling.
-        import kiro_crew.config.loader as loader
-        from kiro_crew import subagent
-        from kiro_crew.config.loader import KiroCrewAgentConfig
-        from kiro_crew.session import _session_model
+        import efm_go.config.loader as loader
+        from efm_go import subagent
+        from efm_go.config.loader import KiroCrewAgentConfig
+        from efm_go.session import _session_model
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(
@@ -5560,7 +5560,7 @@ class TestAppAgentDispatch(unittest.TestCase):
                 assert subagent._spawn_effective_model(None, "pkg") == selected
 
     def _config(self):
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             KiroCrewAgentConfig,
             KiroCrewConfig,
             MemoryStoreConfig,
@@ -5588,7 +5588,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # inside keeps the app's bare name, and app panels bind the slot to that
         # bare name. Before this fix the bare name was not a KiroCrew alias, so it
         # fell through to default_agent and the DEFAULT agent answered.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"mochi--mochi.json": {"name": "mochi"}})
@@ -5602,7 +5602,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # `mochi--mochi` is not listed at all. Trusting the stem would hand
         # kiro-cli a name it cannot resolve, and it would fall back to its own
         # default silently -- the invisible mismatch this change exists to remove.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"mochi--mochi.json": {"name": "mochi"}})
@@ -5613,7 +5613,7 @@ class TestAppAgentDispatch(unittest.TestCase):
 
     def test_stem_is_used_when_no_name_is_declared(self):
         # With no `name` the stem is the only identifier, so it is trusted there.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"solo.json": {"description": "no name field"}})
@@ -5623,7 +5623,7 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_genuinely_unknown_agent_still_falls_back_to_default(self):
         # Unchanged behavior: a name nothing declares must NOT be passed through
         # to kiro-cli.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"mochi--mochi.json": {"name": "mochi"}})
@@ -5634,8 +5634,8 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_alias_still_wins_over_materialized_file(self):
         # A KiroCrew alias keeps full control of the binding (and the directory is
         # not even scanned for it).
-        import kiro_crew.config.loader as loader
-        from kiro_crew.config.loader import KiroCrewAgentConfig
+        import efm_go.config.loader as loader
+        from efm_go.config.loader import KiroCrewAgentConfig
 
         cfg = self._config()
         cfg.agents["mochi"] = KiroCrewAgentConfig(kiro_agent="explicitly-bound")
@@ -5648,7 +5648,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         assert r.memory_store_name == private_store
 
     def test_non_object_json_in_agents_dir_is_skipped(self):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = Path(td) / "agents"
@@ -5672,7 +5672,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # resolve_agent_bindings) and an app agent takes it on EVERY turn, so it
         # must touch the filesystem zero times: no glob, no reads, not even a
         # stat. The snapshot is refreshed only off-loop.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"mochi--mochi.json": {"name": "mochi"}})
@@ -5690,7 +5690,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # Enabling an app writes its agent configs and then refreshes the
         # snapshot (bridges._register_agents), so a freshly registered app agent
         # dispatches immediately instead of after a gateway restart.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"other--other.json": {"name": "other"}})
@@ -5716,8 +5716,8 @@ class TestAppAgentDispatch(unittest.TestCase):
         # (`evil.json` -> `~/.aws/credentials`) must not be read by a boot refresh.
         # Reads go through hooks.safe_read_file, and a refused path is skipped
         # without taking the rest of the directory down with it.
-        import kiro_crew.config.loader as loader
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.config.loader as loader
+        import efm_go.hooks as hooks_mod
 
         real = hooks_mod.safe_read_file
         refused: list[str] = []
@@ -5750,7 +5750,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # removal, would reinstall the deleted name — and the next turn would hand
         # kiro-cli a config that is gone. The interleaving is driven exactly:
         # a newer refresh completes from inside the older one's scan.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         def _older_scan_that_is_overtaken(_p):
             with unittest.mock.patch.object(
@@ -5777,8 +5777,8 @@ class TestAppAgentDispatch(unittest.TestCase):
         # value re-resolves as that alias and dispatches its target instead — the
         # advertised-vs-answering mismatch, reintroduced by the substitution meant
         # to prevent it. `resolved_alias` round-trips to the same bindings.
-        import kiro_crew.config.loader as loader
-        from kiro_crew.config.loader import KiroCrewAgentConfig
+        import efm_go.config.loader as loader
+        from efm_go.config.loader import KiroCrewAgentConfig
 
         cfg = self._config()
         cfg.agents["default"] = KiroCrewAgentConfig(kiro_agent="worker")
@@ -5806,7 +5806,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # it, the registration publishes, then the stale scan finishes and assigns.
         # A plain replace would drop the published name and un-dispatch a freshly
         # enabled app. Simulated by publishing from inside the scan.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         def _scan_that_races(_p):
             # Stands in for "the directory as it looked before the write".
@@ -5825,7 +5825,7 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_refresh_replaces_when_no_publish_intervened(self):
         # Without an intervening publish the refresh is authoritative, so removals
         # take effect — a union-always policy would make deleted agents immortal.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         loader.publish_materialized_agents({"gone"})
         assert loader.resolve_agent_bindings(self._config(), agent_name="gone").kiro_agent == "gone"
@@ -5845,7 +5845,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # created in that window is normalized to the default AND stored — the
         # slot would stay bound to the wrong agent. Publishing must therefore be
         # immediate and touch nothing on disk.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         def _explode(_p):
             raise AssertionError("publish must not scan the filesystem")
@@ -5863,7 +5863,7 @@ class TestAppAgentDispatch(unittest.TestCase):
             assert loader.resolve_agent_bindings(cfg, agent_name="nope").kiro_agent == "kirocrew"
 
     def test_publish_ignores_empty_input(self):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         loader.publish_materialized_agents([])
         assert loader._MATERIALIZED_AGENTS_READY is False
@@ -5878,7 +5878,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         import asyncio
         import threading
 
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         scan_threads: list[int] = []
         real_scan = loader._scan_materialized_index
@@ -5912,7 +5912,7 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_registration_refresh_runs_inline_without_a_loop(self):
         # In a synchronous context (CLI, the boot warm already on an executor)
         # there is no loop to protect, so the refresh happens immediately.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"mochi--mochi.json": {"name": "mochi"}})
@@ -5926,7 +5926,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # turn, so this is the safety net, not the expected path.
         import asyncio
 
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"mochi--mochi.json": {"name": "mochi"}})
@@ -5951,7 +5951,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # the project dir as cwd) but is not a Kiro Crew alias, so without the
         # project scope it fell through to default_agent and the DEFAULT agent
         # answered a session the user bound to the repo's own agent.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             agents = self._agents_dir(Path(td), {})
@@ -5967,7 +5967,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # Without the project dir there is no second scope to search, so the same
         # agent must still fall back — the pre-existing contract for callers that
         # have no session context.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             agents = self._agents_dir(Path(td), {})
@@ -5980,7 +5980,7 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_alias_still_wins_over_a_project_agent(self):
         # An explicit Kiro Crew alias is authored config; it must not be displaced by
         # a file that happens to share its name.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             agents = self._agents_dir(Path(td), {})
@@ -5994,7 +5994,7 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_unknown_name_still_falls_back_with_a_project_dir(self):
         # The project scope widens where a name can be found; it must not make an
         # unknown name dispatchable.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             agents = self._agents_dir(Path(td), {})
@@ -6009,7 +6009,7 @@ class TestAppAgentDispatch(unittest.TestCase):
     def test_user_level_hit_does_no_project_filesystem_io(self):
         # The hot path must stay filesystem-free: a name already in the snapshot
         # must not trigger the project probe, even when a project dir is supplied.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             d = self._agents_dir(Path(td), {"mochi--mochi.json": {"name": "mochi"}})
@@ -6032,8 +6032,8 @@ class TestAppAgentDispatch(unittest.TestCase):
         # would otherwise stall every turn of a project-bound session.
         import asyncio
 
-        import kiro_crew.agent_discovery as ad
-        import kiro_crew.config.loader as loader
+        import efm_go.agent_discovery as ad
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             agents = self._agents_dir(Path(td), {})
@@ -6055,8 +6055,8 @@ class TestAppAgentDispatch(unittest.TestCase):
         # project-bound session dispatches its own agent on the very first turn.
         import asyncio
 
-        import kiro_crew.agent_discovery as ad
-        import kiro_crew.config.loader as loader
+        import efm_go.agent_discovery as ad
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             agents = self._agents_dir(Path(td), {})
@@ -6084,7 +6084,7 @@ class TestAppAgentDispatch(unittest.TestCase):
         # unrelated RuntimeError on newer runtimes) instead of seeing the error.
         # The offloaded half is deliberately NOT exercised here -- reproducing it
         # would hang the suite on the very runtime the bug affects.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with self.assertRaises(StopIteration):
             loader.resolve_agent_bindings(unittest.mock.MagicMock(), "anything", None)
@@ -6093,8 +6093,8 @@ class TestAppAgentDispatch(unittest.TestCase):
         # kiro-cli cannot activate a name declared only in
         # <project>/.kiro/*.agent-spec.json, so resolution must NOT dispatch it --
         # otherwise the slot advertises an agent that fails at set_mode.
-        import kiro_crew.agent_discovery as ad
-        import kiro_crew.config.loader as loader
+        import efm_go.agent_discovery as ad
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             agents = self._agents_dir(Path(td), {})
@@ -6122,7 +6122,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     not evidence of a removal."""
 
     def setUp(self):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         loader._MATERIALIZED_AGENTS = frozenset()
         loader._MATERIALIZED_STEMS = {}
@@ -6150,7 +6150,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         return config, agents_dir
 
     def _patched(self, config: Path, agents_dir: Path):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         return (
             unittest.mock.patch.object(loader, "config_path", lambda: config),
@@ -6165,7 +6165,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # The owner made the ``pkg`` crew (running ``captain``) the default, then
         # the package was uninstalled. The landed refresh points the default back
         # at ``default``; the row stays, since the template may come back.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6175,11 +6175,11 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
                 {"kirocrew.json": {"name": "kirocrew"}, "captain.json": {"name": "captain"}},
             )
             p1, p2 = self._patched(config, d)
-            with p1, p2, unittest.mock.patch("kiro_crew.sel.sel") as sel:
+            with p1, p2, unittest.mock.patch("efm_go.sel.sel") as sel:
                 loader.refresh_materialized_agents(heal_default=True)
                 assert self._on_disk(config)["default_agent"] == "pkg"
                 (d / "captain.json").unlink()
-                with self.assertLogs("kiro_crew.config.loader", level="WARNING") as logs:
+                with self.assertLogs("efm_go.config.loader", level="WARNING") as logs:
                     loader.refresh_materialized_agents(heal_default=True)
             on_disk = self._on_disk(config)
         assert on_disk["default_agent"] == "default"
@@ -6193,7 +6193,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     def test_file_name_binding_counts_as_the_declared_agent(self):
         # A row that recorded the FILE name is healthy while that file declares
         # its agent, and dangling once the file is gone.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6214,7 +6214,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
                 assert self._on_disk(config)["default_agent"] == "default"
 
     def test_healthy_default_is_untouched(self):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6232,7 +6232,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     def test_cold_empty_or_failed_snapshot_acts_on_nothing(self):
         # No scan has landed, the scan found no agent at all, or the scan failed:
         # none of these says anything about one template, so nothing is written.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6262,7 +6262,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     def test_managed_template_is_left_to_its_own_self_heal(self):
         # A missing ``kirocrew.json`` is regenerated before spawn, so a default
         # bound to it -- explicitly or by an empty binding -- is not dangling.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         for bound in ("kirocrew", ""):
             with tempfile.TemporaryDirectory() as td:
@@ -6278,7 +6278,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
                 assert self._on_disk(config)["default_agent"] == "mine"
 
     def test_missing_default_alias_invents_no_target(self):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6298,7 +6298,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # A PUT that repointed the default between the check and the locked
         # read-modify-write is not overwritten: the mutate re-derives both
         # conditions on the document it actually holds.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6333,7 +6333,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
             assert self._on_disk(config)["default_agent"] == "other"
 
     def test_unreadable_config_is_untouched(self):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6359,7 +6359,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # A non-owner catalog fetch or a lazy lookup refreshes without healing.
         # When one of those is the first to see the file gone, the owner's next
         # refresh must still reset the default it left dangling.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6381,7 +6381,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # The directory is user-writable, so the names it has ever declared are
         # bounded where they are kept. Past the count bound the removals seen
         # longest ago go first; a name the directory still declares is kept.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6414,7 +6414,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # Declared names and file-name bindings are one snapshot: past the bound
         # the drop is counted once for both, and an unchanged directory does not
         # report it again on the next refresh.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(Path(td), {"default": {"kiro_agent": "kirocrew"}}, "default", {})
@@ -6438,7 +6438,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
             assert len(evidence_lines(warning.call_args_list)) == 1
 
     def test_a_name_past_the_length_bound_is_not_kept_as_evidence(self):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         long_name = "x" * (loader._MATERIALIZED_SEEN_NAME_MAX_CHARS + 1)
         with tempfile.TemporaryDirectory() as td:
@@ -6461,7 +6461,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # The reset writes the owner's config, so a plain refresh -- the kind a
         # turn, a lookup or an app registration triggers -- records the removal
         # and leaves the file alone; only an opted-in refresh writes it.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6484,7 +6484,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # named ``captain.json`` that declares ``pilot`` must not turn a binding
         # to ``captain`` into a dispatch of ``pilot``; without the edition agent
         # the same file name still maps to the agent it declares.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         edition = types.SimpleNamespace(
             agent_catalog=types.SimpleNamespace(builtin_agents=lambda: [{"name": "captain"}])
@@ -6502,12 +6502,12 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
                 assert loader._MATERIALIZED_STEMS == {"captain": "pilot"}
                 assert loader.dispatch_kiro_agent("captain") == "pilot"
                 with unittest.mock.patch(
-                    "kiro_crew.platform.context.current_context", lambda: edition
+                    "efm_go.platform.context.current_context", lambda: edition
                 ):
                     assert loader.dispatch_kiro_agent("captain") == "captain"
 
     def test_the_file_name_map_is_bounded_where_it_is_built_and_reported_once(self):
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         long_name = "n" * (loader._MATERIALIZED_SEEN_NAME_MAX_CHARS + 1)
         files = {"kirocrew.json": {"name": "kirocrew"}, "long-target.json": {"name": long_name}}
@@ -6543,7 +6543,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # file is still there: the default must not be reset on that scan, and
         # once the file reads again nothing has changed. A real removal still
         # resets on the next complete scan.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6573,7 +6573,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # spec) installs its snapshot before the complete one's healer reads.
         # The healer reads the INSTALLED snapshot, so it must see that snapshot
         # is partial and leave the default alone.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6594,7 +6594,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # The healer checked a complete snapshot, then a partial one was
         # installed while it waited for the config lock: the locked mutate
         # re-reads the installed snapshot and declines.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6634,7 +6634,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # declares ``reviewer``, and kiro-cli resolves ``--agent`` against the
         # project first, so the default still dispatches there: the removal of
         # the global namesake must not reset it.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -6670,7 +6670,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     def _project_home(self, root: Path, workspace_dir: str, project_spec: str | None):
         """``pkg`` -> ``reviewer`` in workspace ``proj``, global ``reviewer.json`` present,
         and a checkout at ``root / "proj"`` whose ``reviewer.json`` holds *project_spec*."""
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         project = root / "proj"
         (project / ".kiro" / "agents").mkdir(parents=True)
@@ -6696,7 +6696,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     def test_a_relative_workspace_is_placed_under_the_data_home(self):
         # A relative ``dir`` is placed by ``workspace_dir_from_entry`` under the
         # data home, not the gateway's cwd; the checkout there still declares it.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -6711,7 +6711,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     def test_a_workspace_spec_that_cannot_be_read_is_not_evidence_either(self):
         # The checkout's spec is torn: the project scan is partial, so it cannot
         # show the template is gone from there, and the healer declines.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -6730,7 +6730,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     def test_a_row_repointed_at_another_workspace_inside_the_locked_write_is_kept(self):
         # The healer checked workspace ``proj`` (empty), then the row was moved to
         # a workspace that was never checked while it waited for the config lock.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -6767,7 +6767,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
         # edition) declares: it dispatches, though no file in this directory
         # names it. Neither the boot refresh nor a later one may repoint the
         # owner's default on that absence.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6785,7 +6785,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
     def test_a_removed_file_whose_agent_the_edition_supplies_is_not_reset(self):
         # The file went, but the edition contributes an agent of the same name,
         # so the default still dispatches.
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         with tempfile.TemporaryDirectory() as td:
             config, d = self._home(
@@ -6799,7 +6799,7 @@ class TestDanglingDefaultAgentReset(unittest.TestCase):
                 loader.refresh_materialized_agents(heal_default=True)
                 (d / "captain.json").unlink()
                 with unittest.mock.patch(
-                    "kiro_crew.platform.context.current_context",
+                    "efm_go.platform.context.current_context",
                     lambda: types.SimpleNamespace(
                         agent_catalog=types.SimpleNamespace(
                             builtin_agents=lambda: [{"name": "captain"}]
@@ -6883,7 +6883,7 @@ class TestUnsatisfiableSubagentCwdRoots(unittest.TestCase):
         bak = tmp.with_suffix(".json.bak")
         try:
             with unittest.mock.patch(
-                "kiro_crew.config.loader.config_path",
+                "efm_go.config.loader.config_path",
                 return_value=tmp,
             ):
                 cfg = KiroCrewConfig.load()
@@ -7000,7 +7000,7 @@ class TestUpdateConfigLocked:
         """Control: interleaved RMW without the lock loses one update."""
         import threading
 
-        from kiro_crew.config.loader import read_config_for_update, write_config_atomically
+        from efm_go.config.loader import read_config_for_update, write_config_atomically
 
         cfg = tmp_path / "config.json"
         cfg.write_text(json.dumps({"counter": 0}))
@@ -7039,7 +7039,7 @@ class TestUpdateConfigLocked:
         """Deterministic interleave through update_config_locked preserves both keys."""
         import threading
 
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         cfg.write_text(json.dumps({"counter": 0}))
@@ -7086,7 +7086,7 @@ class TestUpdateConfigLocked:
 
     def test_fail_closed_unreadable_config(self, tmp_path: Path) -> None:
         """A mutate over an unreadable config raises ConfigReadError; file untouched."""
-        from kiro_crew.config.loader import ConfigReadError, update_config_locked
+        from efm_go.config.loader import ConfigReadError, update_config_locked
 
         cfg = tmp_path / "config.json"
         corrupt_content = "not valid json {{{"
@@ -7106,7 +7106,7 @@ class TestUpdateConfigLocked:
         if platform.system() == "Windows":
             pytest.skip("POSIX mode test")
 
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         cfg.write_text(json.dumps({"x": 1}))
@@ -7121,7 +7121,7 @@ class TestUpdateConfigLocked:
 
     def test_mutate_returning_none_skips_write(self, tmp_path: Path) -> None:
         """When mutate returns None, the file is not rewritten."""
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         original = json.dumps({"unchanged": True})
@@ -7138,7 +7138,7 @@ class TestUpdateConfigLocked:
 
     def test_lockfile_is_sidecar(self, tmp_path: Path) -> None:
         """The lockfile is a sidecar (.lock suffix), not the config itself."""
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         cfg.write_text("{}")
@@ -7150,7 +7150,7 @@ class TestUpdateConfigLocked:
 
     def test_stamp_meta_default(self, tmp_path: Path) -> None:
         """With stamp_meta=True (default), a meta block is added."""
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         cfg.write_text("{}")
@@ -7165,7 +7165,7 @@ class TestUpdateConfigLocked:
 
     def test_new_file_creation(self, tmp_path: Path) -> None:
         """update_config_locked works when the config file does not yet exist."""
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         # File does not exist yet
@@ -7177,7 +7177,7 @@ class TestUpdateConfigLocked:
 
     def test_on_corrupt_fail_is_default(self, tmp_path: Path) -> None:
         """Default on_corrupt='fail' raises ConfigReadError; file untouched."""
-        from kiro_crew.config.loader import ConfigReadError, update_config_locked
+        from efm_go.config.loader import ConfigReadError, update_config_locked
 
         cfg = tmp_path / "config.json"
         corrupt = "not json {{{"
@@ -7190,7 +7190,7 @@ class TestUpdateConfigLocked:
 
     def test_on_corrupt_reset_writes_from_empty(self, tmp_path: Path) -> None:
         """on_corrupt='reset' invokes mutate with {} and writes the result."""
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         cfg.write_text("broken {{")
@@ -7208,7 +7208,7 @@ class TestUpdateConfigLocked:
             pytest.skip("POSIX mode test")
         import stat
 
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         cfg.write_text("corrupt!")
@@ -7236,7 +7236,7 @@ class TestUpdateConfigLocked:
         """
         import threading
 
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         cfg.write_text("corrupt file {{{")
@@ -7285,7 +7285,7 @@ class TestUpdateConfigLocked:
 
     def test_on_corrupt_reset_non_dict_file(self, tmp_path: Path) -> None:
         """on_corrupt='reset' also handles a file that is valid JSON but not a dict."""
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = tmp_path / "config.json"
         cfg.write_text('"just a string"')
@@ -7314,8 +7314,8 @@ class TestMigrationBackupContainment:
 
     def _load_with(self, home: Path, cfg_file: Path) -> KiroCrewConfig:
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=home),
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
+            unittest.mock.patch("efm_go.config.loader.config_dir", return_value=home),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_file),
         ):
             return KiroCrewConfig.load()
 
@@ -7381,7 +7381,7 @@ class TestMigrationBackupContainment:
         cfg_file.write_text(original, encoding="utf-8")
 
         with unittest.mock.patch(
-            "kiro_crew.config.loader.shutil.copy2",
+            "efm_go.config.loader.shutil.copy2",
             side_effect=OSError("backup target is read-only"),
         ):
             cfg = self._load_with(home, cfg_file)
@@ -7506,7 +7506,7 @@ class TestTransportThresholdConsistency:
         Leaving jsonschema installed here (as CI does) makes this pass against a
         hand-rolled clamp too, which is exactly the mistake that hides the bug.
         """
-        import kiro_crew.config.validation as validation
+        import efm_go.config.validation as validation
 
         monkeypatch.setattr(validation, "_HAS_JSONSCHEMA", False)
         payload: dict = {"soft_threshold_pct": 90.0}

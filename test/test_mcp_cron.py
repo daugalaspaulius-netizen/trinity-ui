@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.mcp_cron import _call_tool_inner
+from efm_go.mcp_cron import _call_tool_inner
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +33,7 @@ class TestCronAddChannelCapture:
         )
         assert "Added job" in result
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         jobs = svc.list_jobs()
@@ -52,7 +52,7 @@ class TestCronAddChannelCapture:
             {"name": job_name, "message": "hello", "every": 120},
         )
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         jobs = svc.list_jobs()
@@ -76,7 +76,7 @@ class TestCronAddChannelCapture:
         crons_file = tmp_path / "crons.json"
         assert crons_file.exists(), "crons.json not written to KIROCREW_HOME directory"
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         jobs = svc.list_jobs()
@@ -98,7 +98,7 @@ class TestCronAddModel:
         )
         assert "Added job" in result
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         matching = [j for j in svc.list_jobs() if j.name == job_name]
@@ -117,7 +117,7 @@ class TestCronAddModel:
         )
         assert "Added job" in result
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         matching = [j for j in svc.list_jobs() if j.name == job_name]
@@ -143,7 +143,7 @@ class TestCronAddModel:
         )
         assert "Added job" in result
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         matching = [j for j in svc.list_jobs() if j.name == job_name]
@@ -160,7 +160,7 @@ class TestCronAddModel:
             "cron_add",
             {"name": job_name, "message": "go", "every": 120},
         )
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         job = next(j for j in svc.list_jobs() if j.name == job_name)
@@ -185,7 +185,7 @@ class TestCronAddModel:
             "cron_add",
             {"name": job_name, "message": "go", "every": 120, "model": "sonnet"},
         )
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         job = next(j for j in svc.list_jobs() if j.name == job_name)
@@ -215,7 +215,7 @@ class TestCronAddModel:
             "cron_add",
             {"name": job_name, "message": "go", "every": 120},
         )
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=tmp_path)
         job = next(j for j in svc.list_jobs() if j.name == job_name)
@@ -241,7 +241,7 @@ class TestCronAddPersistenceOwner:
         monkeypatch.setenv("KIROCREW_SESSION_KEY", "dashboard:slot9")
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         # Count _save() calls made during the create. The old fold path saved
         # TWICE (add_job's first save + the post-hoc svc._save()); the fix saves
@@ -310,7 +310,7 @@ class TestCronAddPersistenceOwner:
         assert "Added job" in result
         assert "Invalid approval_mode" not in result
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         matching = [j for j in CronService(base_dir=tmp_path).list_jobs() if j.name == job_name]
         assert len(matching) == 1
@@ -340,8 +340,8 @@ class TestCronRemoveAudit:
             def log_tool_invocation(self, **kw):
                 events.append(kw)
 
-        import kiro_crew.cron as cron_mod
-        import kiro_crew.mcp_cron as mcp_cron_mod
+        import efm_go.cron as cron_mod
+        import efm_go.mcp_cron as mcp_cron_mod
 
         monkeypatch.setattr(mcp_cron_mod, "sel", lambda: _FakeSel())
         monkeypatch.setattr(cron_mod, "sel", SimpleNamespace(sel=lambda: _FakeSel()))
@@ -355,7 +355,7 @@ class TestCronRemoveAudit:
         result = _call_tool_inner("cron_add", {"name": job_name, "message": "hello", "every": 120})
         assert "Added job" in result
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         jobs = [j for j in CronService(base_dir=tmp_path).list_jobs() if j.name == job_name]
         assert len(jobs) == 1
@@ -397,14 +397,14 @@ class TestCronRemoveAudit:
         result = _call_tool_inner("cron_add", {"name": job_name, "message": "hello", "every": 120})
         assert "Added job" in result
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         jobs = [j for j in CronService(base_dir=tmp_path).list_jobs() if j.name == job_name]
         assert len(jobs) == 1
         jid = jobs[0].id
 
-        import kiro_crew.cron as cron_mod
-        import kiro_crew.mcp_cron as mcp_cron_mod
+        import efm_go.cron as cron_mod
+        import efm_go.mcp_cron as mcp_cron_mod
 
         def _raising_sel():
             raise RuntimeError("SEL trust root unavailable")
@@ -424,7 +424,7 @@ class TestCronSubFloorTimeoutWarning:
     """
 
     def _reload(self, tmp_path, name):
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         matching = [j for j in CronService(base_dir=tmp_path).list_jobs() if j.name == name]
         assert len(matching) == 1, f"expected exactly one job named {name}"
@@ -432,7 +432,7 @@ class TestCronSubFloorTimeoutWarning:
 
     def test_cron_add_sub_floor_timeout_secs_warns(self, monkeypatch, tmp_path):
         """A sub-floor timeout_secs is stored verbatim and flagged in the reply."""
-        from kiro_crew.cron import _JOB_TIMEOUT_SECS
+        from efm_go.cron import _JOB_TIMEOUT_SECS
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
@@ -448,7 +448,7 @@ class TestCronSubFloorTimeoutWarning:
 
     def test_cron_add_at_floor_timeout_secs_no_warn(self, monkeypatch, tmp_path):
         """A timeout_secs at the floor is honored without the caveat note."""
-        from kiro_crew.cron import _JOB_TIMEOUT_SECS
+        from efm_go.cron import _JOB_TIMEOUT_SECS
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
@@ -471,7 +471,7 @@ class TestCronSubFloorTimeoutWarning:
 
     def test_cron_update_sub_floor_timeout_secs_warns(self, monkeypatch, tmp_path):
         """Lowering timeout_secs below the floor via cron_update also warns."""
-        from kiro_crew.cron import _JOB_TIMEOUT_SECS
+        from efm_go.cron import _JOB_TIMEOUT_SECS
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
@@ -486,7 +486,7 @@ class TestCronSubFloorTimeoutWarning:
 
     def test_cron_update_at_floor_timeout_secs_no_warn(self, monkeypatch, tmp_path):
         """A cron_update at the floor updates without the caveat note."""
-        from kiro_crew.cron import _JOB_TIMEOUT_SECS
+        from efm_go.cron import _JOB_TIMEOUT_SECS
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)

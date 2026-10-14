@@ -8,6 +8,7 @@ import ErrorNotice from '../../components/ErrorNotice'
 import { useBranding } from '../../hooks/useBranding'
 import { useGatewayPlatform } from '../../hooks/useGatewayPlatform'
 import { api } from '../../api/client'
+import { hideKiroPath } from '../../efm/paths'
 import { fileIcon, colorForExt } from '../../utils/fileIcons'
 import { useFileMenuItems, visibleFileMenuItems, FolderRowActions } from '../../apps/fileMenuContributions'
 import { reportForError } from '../../utils/errorReport'
@@ -524,7 +525,7 @@ export default function FolderPanel({ path, projectDir, onClose, onFileOpen, onA
         )}
       </div>
       <div className={showTree ? 'flex-1 min-h-0 flex flex-col py-1.5' : 'flex-1 overflow-y-auto px-2 py-1.5'}>
-        <div className={`shrink-0 text-[10.5px] text-muted/80 font-mono truncate pb-1.5 ${showTree ? 'px-3' : 'px-2'}`} title={cwd}>{cwd}</div>
+        <div className={`shrink-0 text-[10.5px] text-muted/80 font-mono truncate pb-1.5 ${showTree ? 'px-3' : 'px-2'}`} title={hideKiroPath(cwd)}>{hideKiroPath(cwd)}</div>
         {treeMode && (
           // `hidden` while the matches stand in for a truncated tree, never
           // unmounted: the expansion lives in the mounted tree's model.

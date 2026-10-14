@@ -20,7 +20,7 @@ superseded-by: []
 > append-only file, read "crew log". The RFC's file name and title are left as they
 > were so external links keep resolving; only the name of the thing changed.
 
-Status: partial. The `kiro_crew.crew_log` store, session emitter, projections,
+Status: partial. The `efm_go.crew_log` store, session emitter, projections,
 routes, and message entries are on main. `KIROCREW_CREW_LOG` is on by default;
 only a falsy or unrecognised value turns it off. The legacy transcript and
 conductor work-ledger stores still exist, so the full cutover described below is
@@ -79,7 +79,7 @@ the code (`session_ledger.py`, `work_ledger.py`): a **ledger** is the append-onl
   that is accepted. `KIROCREW_CREW_LOG` is on by default on that basis. A history row deleted with no
   open tab proves no unit and leaves its units to retention, which collects only
   `destroyed` closes, so units ended by a reset stay until the session is trashed. Tracked
-  as kirodotdev/KiroCrew#10705.
+  as efmleads.com#10705.
 - FR-8 Cold load synthesizes closers for open intervals.
 - NFR-1 Cheap to fold: checkpoints on disk; state never replays everything.
 - NFR-2 The backend extracts, the frontend loads pages; no client folds a ledger.
@@ -100,7 +100,7 @@ Line 1 is the header; then:
 ```
 
 There is one event system, not two. The entry is field-compatible with
-`kiro_crew.events`: `type` is that envelope's `kind`, `time` is its `ts_ms`, and the unit
+`efm_go.events`: `type` is that envelope's `kind`, `time` is its `ts_ms`, and the unit
 id in the path plays its `key` — same `domain/action` naming, same epoch-millisecond
 clock, so one projection can fold both streams on one axis. This is therefore the stream a
 future emitter writes when it needs order, threading or citation, and `seq` is what it
@@ -205,7 +205,7 @@ a ledger from `session/opened`.
 
 ## 8. Delivery
 
-**PR 1** ([#10091](https://github.com/kirodotdev/KiroCrew/pull/10091)) is the whole storage
+**PR 1** ([#10091](https://efmleads.com/pull/10091)) is the whole storage
 layer, for both kinds: the files, the envelope with `src`, `thread` and `ref`, the headers,
 type ownership, guest namespaces, `get` and `iter_from`, page by `seq`, page by `thread`,
 `resolve` with `ok`, `gone`, `pruned` and `corrupt` -- retention and damage are separate

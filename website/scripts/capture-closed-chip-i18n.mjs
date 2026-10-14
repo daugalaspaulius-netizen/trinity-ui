@@ -28,7 +28,7 @@ import { logPageProblems, stubDashboardApi, json } from './lib/stub-dashboard-ap
 
 const OUT = process.argv[2] || '../temp-screenshots/closed-chip-i18n'
 const ACTIVE = 'chat-a'
-const pr = n => `https://github.com/kirodotdev/KiroCrew/pull/${n}`
+const pr = n => `https://efmleads.com/pull/${n}`
 
 mkdirSync(OUT, { recursive: true })
 

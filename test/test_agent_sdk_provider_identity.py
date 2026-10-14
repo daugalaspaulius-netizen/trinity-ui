@@ -5,7 +5,7 @@ them is a provider identity check. This test pins that separation so a future
 sweep cannot quietly merge them:
 
 1. **The provider-identity axis** — ``agent.provider``, asked through
-   :func:`kiro_crew.agent_sdk.provider_identity.is_claude_code`. The eleven
+   :func:`efm_go.agent_sdk.provider_identity.is_claude_code`. The eleven
    branches that would spell the literal inline route through it instead, and
    :func:`test_no_converted_file_compares_the_literal` keeps them there.
 2. **The session-map provider label** — ``PROVIDER_LABEL_CLAUDE``. Equal in
@@ -33,14 +33,14 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.agent_sdk.provider_identity import (
+from efm_go.agent_sdk.provider_identity import (
     PROVIDER_ACP,
     PROVIDER_CLAUDE_CODE,
     is_claude_code,
 )
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
-SRC = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 #: Files whose provider-identity branches were converted. Each must ask the
 #: predicate and must not compare the literal.
@@ -91,13 +91,13 @@ def test_config_value_and_session_map_label_agree() -> None:
     moves one of them the failure names both rather than silently rewriting
     session-map entries.
     """
-    from kiro_crew.acp.types import PROVIDER_LABEL_CLAUDE
+    from efm_go.acp.types import PROVIDER_LABEL_CLAUDE
 
     assert PROVIDER_CLAUDE_CODE == PROVIDER_LABEL_CLAUDE
 
 
 def test_module_is_dependency_free() -> None:
-    """No ``kiro_crew`` imports, so this module cannot be the one that closes a cycle.
+    """No ``efm_go`` imports, so this module cannot be the one that closes a cycle.
 
     Consumers include ``context.py`` and ``chat_runner.py``. If this module ever
     imports back into the package, one of those import graphs closes a loop.
@@ -114,16 +114,16 @@ def test_module_is_dependency_free() -> None:
             imported.append(node.module)
         elif isinstance(node, ast.Import):
             imported.extend(alias.name for alias in node.names)
-    assert [m for m in imported if m.startswith("kiro_crew")] == []
+    assert [m for m in imported if m.startswith("efm_go")] == []
 
 
 def test_importing_this_module_does_not_load_the_acp_package() -> None:
-    """Importing the predicate must not pull ``kiro_crew.acp`` into the process.
+    """Importing the predicate must not pull ``efm_go.acp`` into the process.
 
     Importing this submodule DOES execute the ``agent_sdk`` package ``__init__``,
     so ``backend_install`` and ``drivers.acp`` load -- that is expected and is
     asserted here so the cost is visible rather than surprising. What must NOT
-    load is ``kiro_crew.acp`` itself, which stays out only because
+    load is ``efm_go.acp`` itself, which stays out only because
     ``drivers/acp.py`` defers those imports into function bodies.
 
     The static boundary gate cannot catch a regression here: if the driver
@@ -137,12 +137,12 @@ def test_importing_this_module_does_not_load_the_acp_package() -> None:
     probe = (
         "import sys\n"
         f"sys.path.insert(0, {str(SRC.parent)!r})\n"
-        "from kiro_crew.agent_sdk.provider_identity import is_claude_code\n"
+        "from efm_go.agent_sdk.provider_identity import is_claude_code\n"
         "assert is_claude_code('claude_code') is True\n"
         "loaded = {\n"
-        "    'backend_install': 'kiro_crew.agent_sdk.backend_install' in sys.modules,\n"
-        "    'drivers_acp': 'kiro_crew.agent_sdk.drivers.acp' in sys.modules,\n"
-        "    'acp': 'kiro_crew.acp' in sys.modules,\n"
+        "    'backend_install': 'efm_go.agent_sdk.backend_install' in sys.modules,\n"
+        "    'drivers_acp': 'efm_go.agent_sdk.drivers.acp' in sys.modules,\n"
+        "    'acp': 'efm_go.acp' in sys.modules,\n"
         "}\n"
         "print(repr(loaded))\n"
     )
@@ -156,7 +156,7 @@ def test_importing_this_module_does_not_load_the_acp_package() -> None:
     loaded = ast.literal_eval(result.stdout.strip().splitlines()[-1])
 
     assert loaded["acp"] is False, (
-        "importing agent_sdk.provider_identity loaded kiro_crew.acp; "
+        "importing agent_sdk.provider_identity loaded efm_go.acp; "
         "drivers/acp.py must keep deferring its ACP imports into function bodies, "
         "or every SDK consumer pays the ACP package at import time"
     )

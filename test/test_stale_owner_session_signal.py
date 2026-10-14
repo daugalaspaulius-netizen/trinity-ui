@@ -25,7 +25,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 
-from kiro_crew.dashboard.handlers import source_providers as source
+from efm_go.dashboard.handlers import source_providers as source
 
 STALE = source.STALE_OWNER_SESSION_CODE
 
@@ -193,7 +193,7 @@ async def test_owner_matching_caller_is_unaffected(monkeypatch) -> None:
 def test_chat_gate_labels_stale_bootstrap_denial() -> None:
     """The Trust/YOLO switch gate (chat mode / slot approve / worktree /
     followup all share ``deny_non_dashboard_caller``)."""
-    from kiro_crew.dashboard import chat_handlers as ch
+    from efm_go.dashboard import chat_handlers as ch
 
     request = _mocked_request()
     with patch.object(ch, "sel", return_value=MagicMock()):
@@ -202,7 +202,7 @@ def test_chat_gate_labels_stale_bootstrap_denial() -> None:
 
 
 def test_chat_gate_keeps_generic_denial_for_plain_non_owner() -> None:
-    from kiro_crew.dashboard import chat_handlers as ch
+    from efm_go.dashboard import chat_handlers as ch
 
     request = _mocked_request(user="U_SOMEONE_ELSE")
     with patch.object(ch, "sel", return_value=MagicMock()):
@@ -211,7 +211,7 @@ def test_chat_gate_keeps_generic_denial_for_plain_non_owner() -> None:
 
 
 def test_ask_question_gate_labels_stale_bootstrap_denial() -> None:
-    from kiro_crew.dashboard.handlers import ask_question as aq
+    from efm_go.dashboard.handlers import ask_question as aq
 
     request = _mocked_request()
     with patch.object(aq, "sel", return_value=MagicMock()):
@@ -220,7 +220,7 @@ def test_ask_question_gate_labels_stale_bootstrap_denial() -> None:
 
 
 def test_browser_gate_labels_stale_bootstrap_denial() -> None:
-    from kiro_crew.dashboard.handlers import messaging as msg
+    from efm_go.dashboard.handlers import messaging as msg
 
     request = _mocked_request()
     with patch.object(msg, "_sel", return_value=MagicMock()):
@@ -229,7 +229,7 @@ def test_browser_gate_labels_stale_bootstrap_denial() -> None:
 
 
 def test_cloud_gate_labels_stale_bootstrap_denial() -> None:
-    from kiro_crew.dashboard import handlers_cloud as cloud
+    from efm_go.dashboard import handlers_cloud as cloud
 
     request = _mocked_request()
     with patch.object(cloud, "_audit", MagicMock()):
@@ -242,7 +242,7 @@ def test_cloud_gate_labels_stale_bootstrap_denial() -> None:
 
 @pytest.mark.asyncio
 async def test_mcp_apps_gate_labels_stale_bootstrap_denial() -> None:
-    from kiro_crew.dashboard.handlers import mcp_apps
+    from efm_go.dashboard.handlers import mcp_apps
 
     @web.middleware
     async def fake_auth(request, handler):
@@ -269,7 +269,7 @@ async def test_mcp_apps_gate_labels_stale_bootstrap_denial() -> None:
 
 @pytest.mark.asyncio
 async def test_agents_gate_labels_stale_bootstrap_denial() -> None:
-    from kiro_crew.dashboard.handlers import agents
+    from efm_go.dashboard.handlers import agents
 
     request = _mocked_request()
     with patch.object(agents, "_sel", return_value=MagicMock()):
@@ -280,7 +280,7 @@ async def test_agents_gate_labels_stale_bootstrap_denial() -> None:
 
 @pytest.mark.asyncio
 async def test_aws_consent_gate_labels_stale_bootstrap_denial() -> None:
-    from kiro_crew.dashboard.handlers import aws_consent as consent_handlers
+    from efm_go.dashboard.handlers import aws_consent as consent_handlers
 
     request = _mocked_request()
     with patch.object(consent_handlers.aws_consent, "audit_decision", MagicMock()):
@@ -293,7 +293,7 @@ async def test_aws_consent_gate_labels_stale_bootstrap_denial() -> None:
 async def test_instances_search_gate_labels_stale_bootstrap_denial(monkeypatch) -> None:
     """The federated-search deny site, driven through the real handler with the
     route's outer feature gate passed so the owner check is what answers."""
-    from kiro_crew.dashboard import handlers_instances as hi
+    from efm_go.dashboard import handlers_instances as hi
 
     monkeypatch.setattr(hi, "_guard", lambda request, operation: None)
     monkeypatch.setattr(hi, "_audit", MagicMock())

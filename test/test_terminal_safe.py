@@ -2,7 +2,7 @@
 
 import pytest
 
-from kiro_crew.terminal_safe import normalize_for_scanning, safe_terminal_line
+from efm_go.terminal_safe import normalize_for_scanning, safe_terminal_line
 
 
 def test_removes_osc_broad_csi_two_byte_escape_and_controls() -> None:

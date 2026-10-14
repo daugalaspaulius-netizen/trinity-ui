@@ -30,8 +30,8 @@ from body_stream_helpers import BodyStreamPayload
 from dashboard_owner_helpers import owner_claims
 
 from conftest import host_abs
-from kiro_crew.dashboard.handlers import mcp as mcp_mod
-from kiro_crew.mcp_discovery import McpServerInfo
+from efm_go.dashboard.handlers import mcp as mcp_mod
+from efm_go.mcp_discovery import McpServerInfo
 
 # ── harness ─────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ def _request(
             and isinstance(body.get("name"), str)
             and "expected_launch" not in body
         ):
-            from kiro_crew.mcp_gateway import launch_approval
+            from efm_go.mcp_gateway import launch_approval
 
             env_hash = launch_approval.env_fingerprint({})
             expected = launch_approval.launch_pair(
@@ -107,7 +107,7 @@ def _effective_stubs(section: dict[str, Any]) -> list[str]:
     toggle behaviour should assert. Reads the production resolver so these tests
     cannot drift from the runtime's own answer.
     """
-    from kiro_crew.config.loader import _resolve_stub_servers
+    from efm_go.config.loader import _resolve_stub_servers
 
     return _resolve_stub_servers(section)
 
@@ -168,7 +168,7 @@ def _read_global(sandbox: SimpleNamespace) -> dict[str, Any]:
 
 def _known(monkeypatch: pytest.MonkeyPatch, *names: str) -> None:
     """Make ``list_servers()`` report ``names`` as configured somewhere."""
-    import kiro_crew.mcp_discovery as disc
+    import efm_go.mcp_discovery as disc
 
     rows = [McpServerInfo(name=n, command="/bin/true") for n in names]
     monkeypatch.setattr(disc, "list_servers", lambda *a, **k: list(rows))
@@ -509,7 +509,7 @@ class TestToggleAll:
 @pytest.fixture
 def no_capability_manager(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """Pin the capability-manager seam to 'unavailable' (a vanilla machine)."""
-    from kiro_crew.dashboard.handlers import _shared
+    from efm_go.dashboard.handlers import _shared
 
     mgr = MagicMock()
     mgr.available.return_value = False
@@ -556,7 +556,7 @@ class TestRemove:
         self, sandbox: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """An erroring package manager must not block the config removal."""
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         mgr = MagicMock()
         mgr.available.return_value = True
@@ -573,7 +573,7 @@ class TestRemove:
     async def test_capability_manager_success_is_reported_ok(
         self, sandbox: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import _shared
+        from efm_go.dashboard.handlers import _shared
 
         mgr = MagicMock()
         mgr.available.return_value = True
@@ -771,7 +771,7 @@ class TestServerDetail:
 @pytest.fixture
 def agents_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Redirect ``kiro_agents_dir_path()`` at a tmp agents directory."""
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     d = tmp_path / "agents"
     d.mkdir(parents=True, exist_ok=True)
@@ -787,7 +787,7 @@ def identity_bindings(monkeypatch: pytest.MonkeyPatch) -> None:
     default, so ``/api/mcp/active`` would always take the global-scope branch
     and the per-agent branch would be unreachable.
     """
-    import kiro_crew.config.loader as loader
+    import efm_go.config.loader as loader
 
     monkeypatch.setattr(
         loader,
@@ -835,7 +835,7 @@ class TestActive:
         self, sandbox: SimpleNamespace, agents_dir: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A broken resolver must not 500 — the query name is used verbatim."""
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         monkeypatch.setattr(
             loader,
@@ -875,7 +875,7 @@ class TestActive:
         provider global is in neither map. Both are off for the sessions, so
         both answer ``enabled: false`` here. Red under the shared-file-only read,
         which answered ``true`` for each."""
-        import kiro_crew.mcp_discovery as disc
+        import efm_go.mcp_discovery as disc
 
         _write_global(sandbox, {"on": {"command": "x"}})
         store = mcp_mod._kirocrew_mcp_json()
@@ -904,7 +904,7 @@ class TestActive:
         self, sandbox: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A Kiro Crew agent name bound to ``kirocrew`` reads the global scope."""
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         monkeypatch.setattr(
             loader,
@@ -945,7 +945,7 @@ class TestProbe:
     async def test_live_probe_overlays_enabled_and_disabled_tools(
         self, sandbox: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.mcp_discovery as disc
+        import efm_go.mcp_discovery as disc
 
         _write_global(
             sandbox,
@@ -975,7 +975,7 @@ class TestProbe:
     async def test_live_probe_tolerates_a_missing_global_config(
         self, sandbox: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.mcp_discovery as disc
+        import efm_go.mcp_discovery as disc
 
         sandbox.global_json.unlink(missing_ok=True)
         monkeypatch.setattr(disc, "probe_all", AsyncMock(return_value=[_probed("on")]))
@@ -992,7 +992,7 @@ class TestProbe:
         (consent) row and a row ``list_servers`` flagged disabled from another
         scope both read disabled, and ``kirocrewManaged`` rides along so the
         Edit action does not vanish between a probe and the next GET."""
-        import kiro_crew.mcp_discovery as disc
+        import efm_go.mcp_discovery as disc
 
         _write_global(sandbox, {"on": {"command": "x"}})
         store = mcp_mod._kirocrew_mcp_json()
@@ -1048,7 +1048,7 @@ class TestProbe:
         """A hand-edited store whose ``mcpServers`` is a list must not turn the
         probe response into a 500 after the fan-out already ran: it reads as an
         empty map, so the row keeps the state the other sources give it."""
-        import kiro_crew.mcp_discovery as disc
+        import efm_go.mcp_discovery as disc
 
         _write_global(sandbox, {"on": {"command": "x"}})
         store = mcp_mod._kirocrew_mcp_json()
@@ -1434,7 +1434,7 @@ class TestProbe:
         goes, in every scope and in the rendered agent file. Red under
         ``name not in servers``: both scopes answered ``noop`` and the
         definitions stayed while the table reported the row removed."""
-        import kiro_crew.dashboard.handlers.mcp as handler
+        import efm_go.dashboard.handlers.mcp as handler
 
         store = mcp_mod._kirocrew_mcp_json()
         store.parent.mkdir(parents=True, exist_ok=True)
@@ -1472,7 +1472,7 @@ class TestProbe:
         ``team/foo`` byte for byte; the row the survivor then stands for is
         uninstalled by its own, second, Uninstall. Red under the collision set
         ``_config_keys_for`` returned: one Uninstall deleted both configurations."""
-        import kiro_crew.dashboard.handlers.mcp as handler
+        import efm_go.dashboard.handlers.mcp as handler
 
         survivor = {"command": "uvx", "args": ["team-foo-server", "--port", "9"], "env": {"A": "1"}}
         store = mcp_mod._kirocrew_mcp_json()
@@ -1505,7 +1505,7 @@ class TestProbe:
         nothing says which the row is, so the scope reports ``ambiguous`` and the
         file is untouched byte for byte -- a guess either way edits or deletes a
         server the user did not name."""
-        import kiro_crew.dashboard.handlers.mcp as handler
+        import efm_go.dashboard.handlers.mcp as handler
 
         _write_global(
             sandbox,
@@ -1530,7 +1530,7 @@ class TestProbe:
         other read of a store is the read-only preflight, which runs BEFORE the
         lock and decides nothing about presence. With reads and writes adjacent
         under one lock, nothing a dashboard writer does can land between them."""
-        import kiro_crew.dashboard.handlers.mcp as handler
+        import efm_go.dashboard.handlers.mcp as handler
 
         store = mcp_mod._kirocrew_mcp_json()
         store.parent.mkdir(parents=True, exist_ok=True)
@@ -1607,7 +1607,7 @@ class TestProbe:
         read resolves the alias and removes it. Red under the pinned design: the
         pinned key ``team-foo`` is absent from the file, so the store answers
         ``noop`` and the server the user uninstalled stays configured."""
-        import kiro_crew.dashboard.handlers.mcp as handler
+        import efm_go.dashboard.handlers.mcp as handler
 
         _write_global(sandbox, {"team-foo": {"command": "a"}})
         agents_dir = tmp_path / "agents"
@@ -1630,7 +1630,7 @@ class TestProbe:
         stood for -- the preflight's key, the one tie the read cannot break alone
         -- is the one removed. A read that stays ambiguous with no usable
         tiebreaker writes nothing to that store."""
-        import kiro_crew.dashboard.handlers.mcp as handler
+        import efm_go.dashboard.handlers.mcp as handler
 
         _write_global(sandbox, {"npm:@team/foo": {"command": "a"}})
         agents_dir = tmp_path / "agents"
@@ -1791,7 +1791,7 @@ class TestSharingToggleFreezesTheLegacyAlias:
         every alias entry and share it — that is the unrequested topology change
         this design exists to make opt-in.
         """
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(mcp_mod, "is_gateway_supported", lambda: True)
@@ -1820,7 +1820,7 @@ class TestSharingToggleFreezesTheLegacyAlias:
         private" — the whole middle state this PR adds — becomes unreachable for
         exactly the migrated operator. Turning sharing off narrows sharing only.
         """
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(mcp_mod, "is_gateway_supported", lambda: True)
@@ -1846,7 +1846,7 @@ class TestSharingToggleFreezesTheLegacyAlias:
         """Key presence, not truthiness: an operator who cleared ``stub_servers``
         chose to stub nothing, and a stale ``poolable_servers`` must not revive
         the servers they just cleared."""
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(mcp_mod, "is_gateway_supported", lambda: True)
@@ -1924,7 +1924,7 @@ class TestLocalOverlayOwnsTheStubKeys:
         endpoint writes, so the write can actually land. (An overlay that owns
         ``enabled`` is the refusal case covered by the next test.)
         """
-        from kiro_crew.config.loader import config_local_path, config_path
+        from efm_go.config.loader import config_local_path, config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(mcp_mod, "is_gateway_supported", lambda: True)
@@ -1955,7 +1955,7 @@ class TestLocalOverlayOwnsTheStubKeys:
         """When the overlay itself defines the key we are about to write, a base
         write cannot take effect — the overlay wins the deep merge. Reporting
         success would be the same lie as a 200 with ``applied: false``."""
-        from kiro_crew.config.loader import config_local_path, config_path
+        from efm_go.config.loader import config_local_path, config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(mcp_mod, "is_gateway_supported", lambda: True)
@@ -1977,7 +1977,7 @@ class TestLocalOverlayOwnsTheStubKeys:
     ) -> None:
         """Same invariant on the other writer: stubbing one server must not drop
         an allowlist that lives in the overlay."""
-        from kiro_crew.config.loader import config_local_path, config_path
+        from efm_go.config.loader import config_local_path, config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         base = config_path()
@@ -2004,7 +2004,7 @@ class TestLocalOverlayOwnsTheStubKeys:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Overlay owns ``stub_servers`` -> the row toggle cannot land either."""
-        from kiro_crew.config.loader import config_local_path, config_path
+        from efm_go.config.loader import config_local_path, config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         base = config_path()
@@ -2032,7 +2032,7 @@ class TestLocalOverlayOwnsTheStubKeys:
         value -- the silent never-takes-effect failure the guard exists to prevent,
         reintroduced by relocating the write.
         """
-        from kiro_crew.config.loader import config_local_path, config_path
+        from efm_go.config.loader import config_local_path, config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         base = config_path()
@@ -2063,7 +2063,7 @@ class TestLocalOverlayOwnsTheStubKeys:
         """The loader logs and ignores an unparseable overlay, so this path must
         agree with it. Letting the error escape would turn a broken user file into
         a 500 on a settings click."""
-        from kiro_crew.config.loader import config_local_path, config_path
+        from efm_go.config.loader import config_local_path, config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(mcp_mod, "is_gateway_supported", lambda: True)
@@ -2099,7 +2099,7 @@ class TestGatewayEnableErrors:
     async def test_corrupt_config_json_is_500(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(mcp_mod, "is_gateway_supported", lambda: True)
@@ -2119,7 +2119,7 @@ class TestGatewayEnableErrors:
     async def test_non_object_section_is_500(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(mcp_mod, "is_gateway_supported", lambda: True)
@@ -2163,7 +2163,7 @@ class TestGatewayEnableErrors:
 @pytest.fixture
 def routed_allowlist(monkeypatch: pytest.MonkeyPatch):
     """Pin ``KiroCrewConfig.load().mcp_gateway.stub_servers``."""
-    import kiro_crew.config.loader as loader
+    import efm_go.config.loader as loader
 
     def _set(names: list[str], *, enabled: bool = False, forward_declared_env: bool = False) -> None:
         # ``socket_path`` is part of the real ``McpGatewayConfig`` and the
@@ -2219,7 +2219,7 @@ class TestGatewayServers:
         stub but not co-tenancy is written while sharing is off and skipped once it
         is on, with no guard, expectation or retry in between.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         cfg_path = tmp_path / "config.json"
         agents = tmp_path / "agents"
@@ -2228,16 +2228,16 @@ class TestGatewayServers:
             json.dumps({"name": "alpha", "mcpServers": {"a-mcp": {"command": "run"}}}),
             encoding="utf-8",
         )
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "KIRO_AGENTS_DIR", agents)
         # Patch the LOADER's name: the handler re-imports ``config_path`` from
-        # ``kiro_crew.config.loader`` inside the function body, so patching this
+        # ``efm_go.config.loader`` inside the function body, so patching this
         # module's copy is silently ignored.
         monkeypatch.setattr(loader, "config_path", lambda: cfg_path)
         # Supports a stub, does not support co-tenancy -- the case where the two
         # sharing states must disagree.
-        from kiro_crew.mcp_gateway.shareability import ShareVerdict, Strength
+        from efm_go.mcp_gateway.shareability import ShareVerdict, Strength
 
         monkeypatch.setattr(
             mcp_mod,
@@ -2289,7 +2289,7 @@ class TestGatewayServers:
         let the batch report a stub whose backend is left direct. The sharing switch
         beside it is already read this way.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(
@@ -2334,7 +2334,7 @@ class TestGatewayServers:
         an operator with a stub they explicitly asked to drop, on the grounds that
         the evidence for keeping it had weakened.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(
@@ -2358,12 +2358,12 @@ class TestGatewayServers:
         looking at, so it needs no verdict lookup; and an older dashboard served
         from a previous build sends no such field. Neither may be filtered.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(json.dumps({"mcp_gateway": {"enabled": True, "stub_servers": []}}))
         # Patch the LOADER's name: the handler re-imports ``config_path`` from
-        # ``kiro_crew.config.loader`` inside the function body, so patching this
+        # ``efm_go.config.loader`` inside the function body, so patching this
         # module's copy is silently ignored.
         monkeypatch.setattr(loader, "config_path", lambda: cfg_path)
         monkeypatch.setattr(
@@ -2404,7 +2404,7 @@ class TestGatewayServers:
         ``write_config_atomically`` would reopen the window silently, since every
         behavioural test still passes with the lock removed.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(json.dumps({"mcp_gateway": {"enabled": True, "stub_servers": []}}))
@@ -2446,7 +2446,7 @@ class TestGatewayServers:
         distinguishes the two is whether the write had FINISHED by the time
         cancellation was observable.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(json.dumps({"mcp_gateway": {"enabled": True, "stub_servers": []}}))
@@ -2499,8 +2499,8 @@ class TestGatewayServers:
         offloaded write runs is what a behavioural test cannot see: removing
         ``_get_config_lock`` leaves every stub assertion in this file passing.
         """
-        import kiro_crew.config.loader as loader
-        from kiro_crew.dashboard.handlers.agents import _get_config_lock
+        import efm_go.config.loader as loader
+        from efm_go.dashboard.handlers.agents import _get_config_lock
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(json.dumps({"mcp_gateway": {"enabled": True, "stub_servers": []}}))
@@ -2574,7 +2574,7 @@ class TestGatewayServers:
     async def test_missing_agents_dir_yields_no_rows(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, routed_allowlist
     ) -> None:
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         routed_allowlist([])
         monkeypatch.setattr(agent_mod, "KIRO_AGENTS_DIR", tmp_path / "absent")
@@ -2631,7 +2631,7 @@ class TestGatewayServers:
     async def test_denylisted_server_can_never_be_pooled(
         self, agents_dir: Path, monkeypatch: pytest.MonkeyPatch, routed_allowlist
     ) -> None:
-        from kiro_crew.mcp_gateway import rewriter
+        from efm_go.mcp_gateway import rewriter
 
         monkeypatch.setattr(rewriter, "UNPOOLABLE_SERVERS", frozenset({"never-mcp"}))
         routed_allowlist(["never-mcp"])
@@ -2776,7 +2776,7 @@ class TestGatewaySetStub:
     async def test_corrupt_config_json_is_500(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -2792,7 +2792,7 @@ class TestGatewaySetStub:
     async def test_non_object_section_is_500(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -2815,7 +2815,7 @@ class TestGatewaySetStub:
         reports. Answering ``applied: false`` alone would drop the client onto its
         fault branch and blame the gateway for a change that is safely saved.
         """
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         resp = await mcp_mod.api_mcp_gateway_set_stub(
@@ -2874,7 +2874,7 @@ class TestGatewaySetStub:
         enabling one server would persist only that server and silently unstub
         everything the migration was preserving.
         """
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -2899,7 +2899,7 @@ class TestGatewaySetStub:
     ) -> None:
         """The same guard the resolver applies: a gateway that was off ran no
         stub, so its inert allowlist must not be revived by a toggle either."""
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -2921,7 +2921,7 @@ class TestGatewaySetStub:
     async def test_removal_dedupes_and_drops_non_string_entries(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -2955,7 +2955,7 @@ class TestGatewaySetStub:
         change. So an operator who toggles a server back to what the roster says is
         asking to follow the roster again, and the entry must go.
         """
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -2992,7 +2992,7 @@ class TestGatewaySetStub:
         The operator turns one shipped server off; the edition then ships another.
         The new server must arrive, and the one they turned off must stay off.
         """
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -3043,7 +3043,7 @@ class TestGatewaySetStub:
     async def test_apply_failure_is_500_and_audited(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         sel = MagicMock()
         monkeypatch.setattr(mcp_mod, "sel", lambda: sel)
@@ -3124,7 +3124,7 @@ class TestGatewaySetStubBatch:
     async def test_adds_every_name_in_one_write(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -3148,7 +3148,7 @@ class TestGatewaySetStubBatch:
     async def test_removes_every_name_and_leaves_the_rest(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         monkeypatch.setattr(mcp_mod, "sel", lambda: MagicMock())
         path = config_path()
@@ -3336,8 +3336,8 @@ class TestMeasureProgressPayload:
         ``AttributeError`` with nothing measured. The healthy row is measured and
         the readout closes clean; the disabled row is never spawned.
         """
-        import kiro_crew.mcp_discovery as disc
-        import kiro_crew.mcp_gateway.evaluate as ev
+        import efm_go.mcp_discovery as disc
+        import efm_go.mcp_gateway.evaluate as ev
 
         runtime = tmp_path / "runtime"
         runtime.mkdir()
@@ -3390,7 +3390,7 @@ class TestStubEligibility:
     @staticmethod
     def _verdict(monkeypatch: pytest.MonkeyPatch, *, stub: bool, share: bool) -> None:
         """Pin the verdict so these test the RULE, not the engine behind it."""
-        from kiro_crew.mcp_gateway.shareability import ShareVerdict, Strength
+        from efm_go.mcp_gateway.shareability import ShareVerdict, Strength
 
         monkeypatch.setattr(
             mcp_mod,
@@ -3480,7 +3480,7 @@ class TestStubEligibility:
         makes the assertion unfalsifiable, and the day a name is added is exactly
         when this needs to already work.
         """
-        import kiro_crew.mcp_gateway.rewriter as rewriter_mod
+        import efm_go.mcp_gateway.rewriter as rewriter_mod
 
         monkeypatch.setattr(rewriter_mod, "UNPOOLABLE_SERVERS", frozenset({"walled-mcp"}))
         self._spec(agents_dir, {"walled-mcp": {"command": "run"}})
@@ -3503,8 +3503,8 @@ class TestStubEligibility:
         ``VerdictCache.get`` with the CURRENT identity, where a mismatch reads as
         no measurement.
         """
-        from kiro_crew.mcp_gateway.evaluate import identity_for
-        from kiro_crew.mcp_gateway.verdict_cache import CachedPreflight, load_cache
+        from efm_go.mcp_gateway.evaluate import identity_for
+        from efm_go.mcp_gateway.verdict_cache import CachedPreflight, load_cache
 
         runtime = tmp_path / "runtime"
         runtime.mkdir()
@@ -3593,8 +3593,8 @@ class TestStubEligibility:
         command+args launch hash cannot see, so this fails if eligibility consults
         that proxy instead of the full identity.
         """
-        from kiro_crew.mcp_gateway.evaluate import identity_for
-        from kiro_crew.mcp_gateway.verdict_cache import CachedPreflight, load_cache
+        from efm_go.mcp_gateway.evaluate import identity_for
+        from efm_go.mcp_gateway.verdict_cache import CachedPreflight, load_cache
 
         runtime = tmp_path / "runtime"
         runtime.mkdir()
@@ -3708,9 +3708,9 @@ class TestShareabilityRefusesAProbeFromBeforeAnEdit:
     async def test_the_stub_write_passes_the_edit_check_through(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        import kiro_crew.agent as agent_mod
-        import kiro_crew.config.loader as loader
-        from kiro_crew.mcp_gateway.shareability import ShareVerdict, Strength
+        import efm_go.agent as agent_mod
+        import efm_go.config.loader as loader
+        from efm_go.mcp_gateway.shareability import ShareVerdict, Strength
 
         cfg_path = tmp_path / "config.json"
         agents = tmp_path / "agents"
@@ -3750,7 +3750,7 @@ class TestShareabilityRefusesAProbeFromBeforeAnEdit:
     def test_probe_currency_compares_against_the_current_config(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.mcp_discovery as disc
+        import efm_go.mcp_discovery as disc
 
         disc._probe_cache.clear()
         try:

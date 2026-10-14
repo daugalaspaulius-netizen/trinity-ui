@@ -11,22 +11,22 @@ from unittest.mock import Mock
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import context as context_module
-from kiro_crew import pinned_fs
-from kiro_crew.agent_sdk.provider_identity import PROVIDER_ACP, PROVIDER_CLAUDE_CODE
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.context import CONTEXT_GROUP_LESSONS, ContextBuilder
-from kiro_crew.learn import LessonStore
-from kiro_crew.member_essential_context import MemberEssentialContextError
-from kiro_crew.members import slug_for_name, write_member_rules
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_stores import (
+from efm_go import context as context_module
+from efm_go import pinned_fs
+from efm_go.agent_sdk.provider_identity import PROVIDER_ACP, PROVIDER_CLAUDE_CODE
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.context import CONTEXT_GROUP_LESSONS, ContextBuilder
+from efm_go.learn import LessonStore
+from efm_go.member_essential_context import MemberEssentialContextError
+from efm_go.members import slug_for_name, write_member_rules
+from efm_go.memory import MemoryStore
+from efm_go.memory_stores import (
     UnknownMemoryStore,
     memory_store_dir_for,
     persist_member_config,
     provision_member_memory,
 )
-from kiro_crew.skills import SkillsLoader
+from efm_go.skills import SkillsLoader
 
 
 @pytest.fixture(autouse=True)
@@ -64,8 +64,8 @@ def env(tmp_path, monkeypatch):
     # The host floor pins these hooks separately from the lazy KIRO_HOME path.
     # Keep template readers on the same test-owned root as template writers.
     agents = home / ".kiro" / "agents"
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents)
-    monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", agents)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents)
+    monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", agents)
     cfg = KiroCrewConfig.load()
     cfg.agents["writer"] = KiroCrewAgentConfig(
         kiro_agent="writer-template", description="A careful bilingual writer"
@@ -102,7 +102,7 @@ def env(tmp_path, monkeypatch):
         (project / path).write_text(body, encoding="utf-8")
     write_member_rules(slug_for_name("writer"), member="writer", text="Do not publish drafts.")
     forbidden = Mock(side_effect=AssertionError("essential context performed retrieval"))
-    from kiro_crew.vector_memory import open_member_database
+    from efm_go.vector_memory import open_member_database
 
     tier = open_member_database(
         memory_store_dir_for(store) / "memory.db",
@@ -223,7 +223,7 @@ def test_oversized_guide_is_left_out_by_name_instead_of_refusing_the_turn(env):
 async def test_profile_save_rejects_oversized_candidate_without_replacing_anchors(env, document):
     from member_memory_helpers import request
 
-    from kiro_crew.dashboard.handlers import memory as handlers
+    from efm_go.dashboard.handlers import memory as handlers
 
     state = SimpleNamespace(
         context_builder=env.builder,
@@ -252,8 +252,8 @@ async def test_profile_save_rejects_oversized_candidate_without_replacing_anchor
 
 
 def test_profile_preflight_includes_the_other_anchor_without_persisting_candidate(env):
-    from kiro_crew.config.sections import WorkspaceConfig
-    from kiro_crew.dashboard.handlers.memory import _validate_private_profile_update
+    from efm_go.config.sections import WorkspaceConfig
+    from efm_go.dashboard.handlers.memory import _validate_private_profile_update
 
     cfg = KiroCrewConfig.load()
     cfg.workspaces["writer-project"] = WorkspaceConfig(dir=str(env.project))
@@ -377,7 +377,7 @@ def test_cold_member_prompt_never_constructs_learned_memory(env, monkeypatch):
 def test_execution_namespace_controls_member_prompt_identity(env, entrypoint, selection):
     from dataclasses import replace
 
-    from kiro_crew.execution_context import execution_for_store, resolve_member_execution
+    from efm_go.execution_context import execution_for_store, resolve_member_execution
 
     config = KiroCrewConfig.load()
     template = "writer" if selection == "colliding-alias" else "critic-runtime"
@@ -459,7 +459,7 @@ def _template_delegate(config):
     """
     from dataclasses import replace
 
-    from kiro_crew.execution_context import resolve_member_execution
+    from efm_go.execution_context import resolve_member_execution
 
     return replace(
         resolve_member_execution(config, "writer"),
@@ -520,7 +520,7 @@ def test_member_at_its_desk_gets_its_whole_desk(env, entrypoint):
     """The counterpart: a member turn the caller names as the DESK keeps all four
     layers, protocol included. ``member=`` is what the dashboard passes for a
     ``mode == "member"`` slot -- the pinned DM thread."""
-    from kiro_crew.execution_context import resolve_member_execution
+    from efm_go.execution_context import resolve_member_execution
 
     execution = resolve_member_execution(KiroCrewConfig.load(), "writer")
     options = dict(execution_context=execution, project=str(env.project), member="writer")
@@ -563,7 +563,7 @@ def test_member_selected_off_its_desk_keeps_identity_and_rules_but_not_the_desk(
     DM thread it is not in. Pinned on every lifecycle the section is rebuilt for
     and on both entry points.
     """
-    from kiro_crew.execution_context import resolve_member_execution
+    from efm_go.execution_context import resolve_member_execution
 
     execution = resolve_member_execution(KiroCrewConfig.load(), "writer")
     base = dict(execution_context=execution, project=str(env.project))
@@ -587,8 +587,8 @@ def test_a_delegate_with_memory_withheld_gets_no_layer_four_placeholder_either(e
     briefing is missing and not to fill the gap; the delegate on the same store
     keeps identity and rules and gets no `[CURRENT ASSIGNMENT` line of any kind.
     """
-    from kiro_crew.context import CONTEXT_GROUP_PROJECT
-    from kiro_crew.execution_context import resolve_member_execution
+    from efm_go.context import CONTEXT_GROUP_PROJECT
+    from efm_go.execution_context import resolve_member_execution
 
     config = KiroCrewConfig.load()
     options = dict(project=str(env.project), context_groups=frozenset({CONTEXT_GROUP_PROJECT}))
@@ -620,8 +620,8 @@ def test_spawn_agent_delegate_of_a_member_is_the_same_delegate(env):
     layers -- one predicate, both delegate paths."""
     from unittest.mock import MagicMock
 
-    from kiro_crew.execution_context import resolve_member_execution
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.execution_context import resolve_member_execution
+    from efm_go.subagent import SubagentManager
 
     config = KiroCrewConfig.load()
     parent = resolve_member_execution(config, "writer")
@@ -663,7 +663,7 @@ def test_a_member_with_no_persisted_id_keeps_its_rules_when_session_create_names
     """
     from dataclasses import replace
 
-    from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+    from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
     config = KiroCrewConfig.load()
     config.agents["scribe"] = KiroCrewAgentConfig(
@@ -709,8 +709,8 @@ def test_a_member_with_no_persisted_id_spawns_a_plain_template_child(env):
     """
     from unittest.mock import MagicMock
 
-    from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+    from efm_go.subagent import SubagentManager
 
     config = KiroCrewConfig.load()
     config.agents["scribe"] = KiroCrewAgentConfig(
@@ -760,7 +760,7 @@ def test_a_member_with_no_persisted_id_spawns_a_plain_template_child(env):
 
 @pytest.mark.parametrize("other_v2", [False, True])
 def test_captured_member_id_wins_over_another_members_alias(env, other_v2):
-    from kiro_crew.execution_context import resolve_member_execution
+    from efm_go.execution_context import resolve_member_execution
 
     config = KiroCrewConfig.load()
     execution = resolve_member_execution(config, "writer")
@@ -787,7 +787,7 @@ def test_captured_member_id_wins_over_another_members_alias(env, other_v2):
 @pytest.mark.parametrize("entrypoint", ["message", "session"])
 @pytest.mark.parametrize("replacement_v2", [False, True])
 def test_deleted_captured_member_never_renders_replacement_persona(env, entrypoint, replacement_v2):
-    from kiro_crew.execution_context import resolve_member_execution
+    from efm_go.execution_context import resolve_member_execution
 
     config = KiroCrewConfig.load()
     captured = resolve_member_execution(config, "writer")
@@ -849,9 +849,9 @@ def test_strict_member_section_and_profile_validation_refuse_deleted_id(env):
 async def test_workflow_cold_prompt_prepares_only_optional_lessons(env, monkeypatch, available):
     import asyncio
 
-    from kiro_crew import embeddings
-    from kiro_crew.execution_context import resolve_member_execution
-    from kiro_crew.workflow_memory import WorkflowScope
+    from efm_go import embeddings
+    from efm_go.execution_context import resolve_member_execution
+    from efm_go.workflow_memory import WorkflowScope
 
     vectors = {}
     monkeypatch.setattr(context_module, "_memory_stores", {})
@@ -937,7 +937,7 @@ def test_nonrecursive_glob_does_not_expand_declared_scope(env):
 
 
 def test_unreadable_project_template_does_not_fall_back_to_another_soul(env, monkeypatch):
-    from kiro_crew import agent
+    from efm_go import agent
 
     spec = env.project / ".kiro" / "agents" / "writer-template.json"
     spec.write_bytes(b"\xff")
@@ -954,9 +954,9 @@ def test_unreadable_project_template_does_not_fall_back_to_another_soul(env, mon
 def test_global_template_cannot_import_managed_memory_or_peer_briefing(env, monkeypatch, leaf):
     from pathlib import Path
 
-    from kiro_crew import agent
-    from kiro_crew.config import config_dir
-    from kiro_crew.member_essential_context import documents_for_member
+    from efm_go import agent
+    from efm_go.config import config_dir
+    from efm_go.member_essential_context import documents_for_member
 
     path = config_dir() / leaf
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -988,7 +988,7 @@ def test_runtime_override_keeps_the_memory_owners_soul(env):
 def test_literal_steering_prefix_does_not_enumerate_unrelated_project_root(env, monkeypatch):
     from pathlib import Path
 
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     original = essentials.os.scandir
 
@@ -1019,7 +1019,7 @@ def test_matches_admits_a_declared_root_reached_through_a_symlink(env, tmp_path)
     ordinary ``$HOME`` layout on hosts where ``/home/<user>`` links elsewhere,
     where it refused EVERY essential source for every private member.
     """
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     linked_root = tmp_path / "linked-root"
     linked_root.symlink_to(env.project, target_is_directory=True)
@@ -1036,7 +1036,7 @@ def test_matches_admits_a_declared_root_reached_through_a_symlink(env, tmp_path)
 )
 def test_read_admits_a_document_under_a_symlinked_root(env, tmp_path):
     """The containment check compares real paths, so either spelling admits."""
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     linked_root = tmp_path / "linked-root"
     linked_root.symlink_to(env.project, target_is_directory=True)
@@ -1052,7 +1052,7 @@ def test_read_admits_a_document_under_a_symlinked_root(env, tmp_path):
 )
 def test_symlinked_root_still_refuses_a_document_outside_it(env, tmp_path):
     """Normalizing the root's spelling must not widen what the root contains."""
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     outside = tmp_path / "outside.md"
     outside.write_text("OUTSIDE_SECRET", encoding="utf-8")
@@ -1078,7 +1078,7 @@ def test_absolute_resource_in_realpath_spelling_admits_under_a_linked_root(env, 
     ``relative_to`` then called a resource genuinely inside the root outside it
     and refused every absolute essential source on such a host.
     """
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     linked_root = tmp_path / "linked-root"
     linked_root.symlink_to(env.project, target_is_directory=True)
@@ -1099,7 +1099,7 @@ def test_absolute_resource_in_realpath_spelling_admits_under_a_linked_root(env, 
 )
 def test_absolute_resource_outside_a_linked_root_is_still_refused(env, tmp_path):
     """Accepting the root's other spelling must not admit a sibling of the root."""
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     outside = tmp_path / "outside-guide.md"
     outside.write_text("OUTSIDE_SECRET", encoding="utf-8")
@@ -1116,7 +1116,7 @@ def test_absolute_resource_in_link_spelling_admits_under_a_resolved_root(env, tm
     the template records the resource through the ``$HOME`` link, so neither
     spelling of the root is a lexical prefix of the declaration.
     """
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     linked_root = tmp_path / "linked-root"
     make_dir_link(linked_root, env.project)
@@ -1130,7 +1130,7 @@ def test_absolute_resource_in_link_spelling_admits_under_a_resolved_root(env, tm
 
 def test_link_spelled_resource_still_refuses_outside_and_links_below_root(env, tmp_path):
     """Matching the root's link spelling admits neither a sibling nor a link below it."""
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     outside = tmp_path / "outside"
     outside.mkdir()
@@ -1166,8 +1166,8 @@ def test_owner_cleared_empty_anchors_are_valid_but_missing_source_refuses(env):
 
 
 def test_default_workspace_guides_are_allowed_without_its_global_memory(env):
-    from kiro_crew.config import config_dir
-    from kiro_crew.member_essential_context import documents_for_member
+    from efm_go.config import config_dir
+    from efm_go.member_essential_context import documents_for_member
 
     project = config_dir() / "workspace"
     project.mkdir(parents=True, exist_ok=True)
@@ -1231,7 +1231,7 @@ def test_refused_workspace_root_is_never_resolved(env, monkeypatch, tmp_path):
     ``realpath`` on such a root IS the outbound SMB probe, so the isolation
     check must compare it lexically instead of resolving it.
     """
-    from kiro_crew import member_essential_context as mec
+    from efm_go import member_essential_context as mec
 
     refused = Path("//share-host/ws-share/workspace")
     real_validate = mec.validate_file_path
@@ -1276,8 +1276,8 @@ def test_refused_workspace_root_is_never_resolved(env, monkeypatch, tmp_path):
 def test_inherited_product_prompt_uses_session_start_not_essentials(
     env, tmp_path, monkeypatch, source, spec_uses_stub, fresh, options
 ):
-    from kiro_crew import agent
-    from kiro_crew.config import config_dir
+    from efm_go import agent
+    from efm_go.config import config_dir
 
     package = tmp_path / "installed-package" / "config"
     development = tmp_path / "checkout"
@@ -1325,7 +1325,7 @@ def test_managed_stub_reaches_owner_session_start(env, tmp_path, monkeypatch):
     """A private-owner fork whose spec carries the native stub resolves to the
     product contract at session start via the owner-template load, not the stub
     text (see agent-spec-fields.md → Prompt)."""
-    from kiro_crew import agent
+    from efm_go import agent
 
     package = tmp_path / "installed-package" / "config"
     monkeypatch.setattr(agent, "_BUNDLED_CFG_DIR", package)
@@ -1358,7 +1358,7 @@ def test_managed_stub_reaches_owner_session_start(env, tmp_path, monkeypatch):
 
 def test_stale_installed_product_prompt_uses_current_session_start(env, tmp_path, monkeypatch):
     """A prior bundled gateway's URI remains managed after its install changes."""
-    from kiro_crew import agent
+    from efm_go import agent
 
     package = tmp_path / "current-package" / "config"
     monkeypatch.setattr(agent, "_BUNDLED_CFG_DIR", package)
@@ -1367,7 +1367,7 @@ def test_stale_installed_product_prompt_uses_current_session_start(env, tmp_path
     (package / "prompt.md").write_text("CURRENT_PRODUCT_PROMPT", encoding="utf-8")
     stale = (
         "file:///Applications/KiroCrew.app/Contents/Resources/backend-dist/"
-        "kirocrew-backend-arm64/lib/python3.12/site-packages/kiro_crew/config/prompt.md"
+        "efm-go-backend-arm64/lib/python3.12/site-packages/efm_go/config/prompt.md"
     )
     spec = env.project / ".kiro" / "agents" / "writer-template.json"
     spec.write_text(json.dumps({"name": "writer-template", "prompt": stale}), encoding="utf-8")
@@ -1429,8 +1429,8 @@ def test_unmanaged_prompt_outside_root_is_not_exempted_by_name(env, tmp_path, te
 def test_managed_source_resolves_each_declared_root_once_per_call(tmp_path, monkeypatch):
     from collections import Counter
 
-    from kiro_crew import member_essential_context as mec
-    from kiro_crew.config.loader import WorkspaceConfig
+    from efm_go import member_essential_context as mec
+    from efm_go.config.loader import WorkspaceConfig
 
     cfg = KiroCrewConfig.load()
     cfg.workspaces["second"] = WorkspaceConfig(dir=str(tmp_path / "second"))
@@ -1466,7 +1466,7 @@ def test_managed_source_resolves_each_declared_root_once_per_call(tmp_path, monk
     ],
 )
 def test_managed_source_keeps_every_admin_root_protected(tmp_path, monkeypatch, root_index, leaf):
-    from kiro_crew import member_essential_context as mec
+    from efm_go import member_essential_context as mec
 
     home = tmp_path / "host"
     home.mkdir()
@@ -1477,8 +1477,8 @@ def test_managed_source_keeps_every_admin_root_protected(tmp_path, monkeypatch, 
 
 
 def test_managed_source_rechecks_workspace_configuration_between_calls(tmp_path):
-    from kiro_crew import member_essential_context as mec
-    from kiro_crew.config.loader import WorkspaceConfig
+    from efm_go import member_essential_context as mec
+    from efm_go.config.loader import WorkspaceConfig
 
     candidate = mec.config_dir() / "custom-project" / "guide.txt"
     cfg = KiroCrewConfig.load()
@@ -1493,8 +1493,8 @@ def test_managed_source_rechecks_workspace_configuration_between_calls(tmp_path)
 
 @pytest.mark.parametrize("placement", ["ancestor", "equal", "protected-child"])
 def test_workspace_overlap_does_not_admit_admin_state(tmp_path, placement):
-    from kiro_crew import member_essential_context as mec
-    from kiro_crew.config.loader import WorkspaceConfig
+    from efm_go import member_essential_context as mec
+    from efm_go.config.loader import WorkspaceConfig
 
     admin = mec.config_dir()
     workspace = {
@@ -1514,7 +1514,7 @@ def test_workspace_overlap_does_not_admit_admin_state(tmp_path, placement):
     os.name == "nt", reason="Windows rejects linked ancestors at the existing path gate"
 )
 def test_managed_source_rechecks_admin_symlink_target_between_calls(tmp_path, monkeypatch):
-    from kiro_crew import member_essential_context as mec
+    from efm_go import member_essential_context as mec
 
     home = tmp_path / "host"
     (home / ".kiro").mkdir(parents=True)
@@ -1535,7 +1535,7 @@ def test_managed_source_rechecks_admin_symlink_target_between_calls(tmp_path, mo
 
 
 def test_managed_source_never_resolves_unvalidated_candidate(tmp_path, monkeypatch):
-    from kiro_crew import member_essential_context as mec
+    from efm_go import member_essential_context as mec
 
     candidate = Path("//untrusted-candidate/guide.txt")
     original = os.path.realpath
@@ -1551,8 +1551,8 @@ def test_managed_source_never_resolves_unvalidated_candidate(tmp_path, monkeypat
 @pytest.mark.parametrize("pattern", ["*/AGENTS.md", "**/AGENTS.md"])
 @pytest.mark.parametrize("leaf", ["memory", "memory_index", "lessons", ".lessons"])
 def test_workspace_glob_excludes_managed_subtrees_before_scanning(env, monkeypatch, pattern, leaf):
-    from kiro_crew import member_essential_context as essentials
-    from kiro_crew.config import config_dir
+    from efm_go import member_essential_context as essentials
+    from efm_go.config import config_dir
 
     project = config_dir() / "workspace"
     managed = project / leaf
@@ -1585,8 +1585,8 @@ def test_workspace_glob_excludes_managed_subtrees_before_scanning(env, monkeypat
 
 @pytest.mark.parametrize("resource", ["memory/AGENTS.md", "memory/*.md", "memory/**/AGENTS.md"])
 def test_workspace_explicit_managed_prefix_still_refuses(env, resource):
-    from kiro_crew.config import config_dir
-    from kiro_crew.member_essential_context import documents_for_member
+    from efm_go.config import config_dir
+    from efm_go.member_essential_context import documents_for_member
 
     project = config_dir() / "workspace"
     (project / "memory").mkdir(parents=True, exist_ok=True)
@@ -1602,7 +1602,7 @@ def test_workspace_explicit_managed_prefix_still_refuses(env, resource):
 
 
 def test_glob_keeps_memory_named_directory_in_an_ordinary_project(env):
-    from kiro_crew.member_essential_context import documents_for_member
+    from efm_go.member_essential_context import documents_for_member
 
     memory = env.project / "memory"
     memory.mkdir()
@@ -1622,7 +1622,7 @@ def test_document_cap_ignores_on_demand_resource_schemes(env):
     demand and are never read here, so a template with one guide and seventy
     skills loads exactly one document and must not be refused as oversized.
     """
-    from kiro_crew.member_essential_context import (
+    from efm_go.member_essential_context import (
         documents_for_member,
         projected_resource_documents,
     )
@@ -1643,7 +1643,7 @@ def test_document_cap_ignores_on_demand_resource_schemes(env):
 
 
 def test_document_cap_still_bounds_declared_file_resources(env):
-    from kiro_crew.member_essential_context import (
+    from efm_go.member_essential_context import (
         documents_for_member,
         projected_resource_documents,
     )
@@ -1668,7 +1668,7 @@ def test_object_form_declaration_reaches_the_launch_document_path(env):
     such a template could not start: the launch-document build refused the spec
     before the child process existed.
     """
-    from kiro_crew.member_essential_context import kiro_launch_documents
+    from efm_go.member_essential_context import kiro_launch_documents
 
     resources = [
         "file://declared-guide.md",
@@ -1695,7 +1695,7 @@ def test_object_form_declaration_is_admitted_and_read_by_nobody(env):
     No path is derived from the entry, so a readable directory of markdown
     behind ``source`` contributes no text.
     """
-    from kiro_crew.member_essential_context import (
+    from efm_go.member_essential_context import (
         documents_for_member,
         projected_resource_documents,
     )
@@ -1729,7 +1729,7 @@ def test_object_form_source_cannot_widen_the_admitted_roots(env):
     also declared alone, so admission depends neither on an optional key nor on
     a ``file://`` sibling.
     """
-    from kiro_crew.member_essential_context import (
+    from efm_go.member_essential_context import (
         documents_for_member,
         kiro_launch_documents,
         projected_resource_documents,
@@ -1764,7 +1764,7 @@ def test_object_form_source_cannot_widen_the_admitted_roots(env):
 
 def test_object_form_declarations_do_not_spend_the_document_budget(env):
     """An entry nothing reads cannot exhaust the budget for entries that are read."""
-    from kiro_crew.member_essential_context import documents_for_member
+    from efm_go.member_essential_context import documents_for_member
 
     knowledge_bases = [
         {"type": "knowledgeBase", "source": f"file://kb-{index}", "name": f"kb-{index}"}
@@ -1786,7 +1786,7 @@ def test_resources_still_refuse_an_entry_that_is_neither_uri_nor_object(env, mal
     kiro-cli refuses the same shapes (``resource must be a string (file:// or
     skill://) or an object``). Asserted on the refusal, not its wording.
     """
-    from kiro_crew.member_essential_context import (
+    from efm_go.member_essential_context import (
         documents_for_member,
         projected_resource_documents,
     )
@@ -1939,14 +1939,14 @@ def test_cyclic_kiro_home_keeps_inherited_guides(operator_steering, monkeypatch)
     os.symlink(loop, loop)
     monkeypatch.setenv("KIRO_HOME", str(loop))
 
-    from kiro_crew.acp import skill_projection
+    from efm_go.acp import skill_projection
 
     assert skill_projection.inherits_default_resources(env.project) is True
     assert _OPERATOR_RULE in _snapshot_bodies(env)
 
 
 def test_launch_documents_follow_the_workspace_opt_out(operator_steering):
-    from kiro_crew.member_essential_context import kiro_launch_documents
+    from efm_go.member_essential_context import kiro_launch_documents
 
     env = operator_steering
 
@@ -2004,7 +2004,7 @@ def test_opt_out_binds_only_a_session_kiro_cli_serves(operator_steering, provide
 
 def _count_setting_reads(monkeypatch) -> list[object]:
     """Record every call of the one settings reader behind the verdict."""
-    from kiro_crew.agent_sdk.drivers import acp as acp_driver
+    from efm_go.agent_sdk.drivers import acp as acp_driver
 
     reads: list[object] = []
     real = acp_driver.inherits_default_resources
@@ -2049,7 +2049,7 @@ def test_documents_for_member_takes_the_verdict_and_never_reads_the_setting(
     operator_steering, monkeypatch
 ):
     """The snapshot reader is a consumer: without the caller's verdict it inherits."""
-    from kiro_crew.member_essential_context import documents_for_member
+    from efm_go.member_essential_context import documents_for_member
 
     env = operator_steering
     _write_kiro_settings(env.project / ".kiro", {"chat.disableInheritingDefaultResources": True})
@@ -2102,7 +2102,7 @@ def test_folder_declared_steering_trees_reach_an_opted_out_member_once(operator_
 @_needs_pinned_walk
 def test_opted_out_folder_dedup_does_not_resolve_source_labels(operator_steering, monkeypatch):
     """Canonical dedup does not re-resolve the collector's emitted labels."""
-    from kiro_crew import member_essential_context as essential_context
+    from efm_go import member_essential_context as essential_context
 
     env = operator_steering
     _declare_project_steering_in_template(env)
@@ -2332,7 +2332,7 @@ def test_a_refused_declared_source_still_refuses_when_the_envelope_is_over_budge
 
 def test_guides_whose_names_do_not_fit_are_counted_by_the_short_notice():
     """When the core leaves no room to list every left-out guide, they are counted."""
-    from kiro_crew.context_assembly.member import _fit_member_guides_into_envelope
+    from efm_go.context_assembly.member import _fit_member_guides_into_envelope
 
     guides = [(f"/project/context/{'n' * 200}-{i}.md", "g") for i in range(40)]
     core = ("template#prompt", "c" * 63_200)

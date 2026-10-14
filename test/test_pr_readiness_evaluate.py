@@ -182,7 +182,7 @@ def _run_json(
                 {
                     "id": run_id,
                     "run_attempt": run_attempt,
-                    "head_repository": {"full_name": "kirodotdev/KiroCrew"},
+                    "head_repository": {"full_name": "efmleads.com"},
                     "head_branch": "feat/x",
                     "path": (
                         "dynamic/github-code-scanning/codeql"
@@ -206,7 +206,7 @@ def _runs_json(name: str, runs: list[dict]) -> str:
         {
             "workflow_runs": [
                 {
-                    "head_repository": {"full_name": "kirodotdev/KiroCrew"},
+                    "head_repository": {"full_name": "efmleads.com"},
                     "head_branch": "feat/x",
                     "path": (
                         "dynamic/github-code-scanning/codeql"
@@ -251,12 +251,12 @@ class Runner:
             "FIXTURES": str(self.fixtures),
             "RUNNER_TEMP": str(self.temp),
             "GITHUB_OUTPUT": str(self.output),
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             # Every non-CI lane file, for the stub's consolidated runs read.
             "LANE_FILES": " ".join(f for f in _lane_files() if f != "ci.yml"),
             "PR": "2650",
             "SHA": "a686d96a83859a73eb93b322de04b21bdea5f093",
-            "HEAD_REPO": "kirodotdev/KiroCrew",
+            "HEAD_REPO": "efmleads.com",
             "HEAD_REF": "feat/x",
             "DRAFT": "false",
             "FORK": "false",
@@ -1656,7 +1656,7 @@ def _whole_design_lanes() -> tuple[str, ...]:
     contract = (
         WORKFLOW.parents[2]
         / "src"
-        / "kiro_crew"
+        / "efm_go"
         / "builtin_skills"
         / "kirocrew-dev"
         / "kirocrew-prepare-pr"

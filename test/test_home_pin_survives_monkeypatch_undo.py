@@ -30,8 +30,8 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.config.loader import config_dir
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.config.loader import config_dir
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -74,7 +74,7 @@ def test_a_test_can_still_override_the_pin_with_its_own_setenv(
     """
     mine = tmp_path / "my-home"
     monkeypatch.setenv("KIROCREW_HOME", str(mine))
-    import kiro_crew.config.paths as paths
+    import efm_go.config.paths as paths
 
     monkeypatch.setattr(paths, "_resolved_home", None, raising=False)
     assert config_dir().resolve() == mine.resolve()
@@ -88,8 +88,8 @@ def test_shared_undo_preserves_every_host_path_and_spawn_guard(monkeypatch) -> N
     """
     import asyncio.base_events
 
-    from kiro_crew import agent_state, sandbox, subagent_persistence
-    from kiro_crew.config import paths
+    from efm_go import agent_state, sandbox, subagent_persistence
+    from efm_go.config import paths
 
     root = _load_root_conftest()
     targets = [
@@ -296,13 +296,13 @@ def test_the_deprecated_home_is_guarded_too() -> None:
 def test_the_guarded_homes_match_what_the_product_resolves() -> None:
     """The conftest's literals must name the homes the product actually uses.
 
-    The guard cannot import ``kiro_crew`` (the rootdir conftest is imported before
+    The guard cannot import ``efm_go`` (the rootdir conftest is imported before
     every collection), so it spells the two paths literally. This is the cross-check
     that keeps them honest: a future data-home move would otherwise update
     ``config.paths`` and leave a fail-open guard naming a directory nobody uses.
     """
     root = _load_root_conftest()
-    from kiro_crew.config import paths
+    from efm_go.config import paths
 
     with mock.patch.dict(os.environ, {}, clear=False):
         os.environ.pop("KIROCREW_HOME", None)

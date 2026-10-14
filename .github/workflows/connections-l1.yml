@@ -51,14 +51,14 @@ jobs:
           entry="$(command -v kirocrew || true)"
           shebang="$(sed -n '1s/^#!//p' "$entry" 2>/dev/null || true)"
           case "$shebang" in
-            /*python*) "$shebang" -c 'import kiro_crew.connections.l1_smoke' 2>/dev/null && python_bin="$shebang" || true ;;
+            /*python*) "$shebang" -c 'import efm_go.connections.l1_smoke' 2>/dev/null && python_bin="$shebang" || true ;;
           esac
-          if [ -z "$python_bin" ] && python3 -c 'import kiro_crew.connections.l1_smoke' 2>/dev/null; then python_bin=python3; fi
+          if [ -z "$python_bin" ] && python3 -c 'import efm_go.connections.l1_smoke' 2>/dev/null; then python_bin=python3; fi
           if [ -z "$python_bin" ]; then
-            echo "::error::no interpreter with kiro_crew.connections.l1_smoke found (checked the kirocrew entry point's shebang, then python3) -- is the installed release older than this module?"
+            echo "::error::no interpreter with efm_go.connections.l1_smoke found (checked the kirocrew entry point's shebang, then python3) -- is the installed release older than this module?"
             exit 1
           fi
-          "$python_bin" -m kiro_crew.connections.l1_smoke \
+          "$python_bin" -m efm_go.connections.l1_smoke \
             --report connections-l1-report.json \
             --min-exercised 1
 

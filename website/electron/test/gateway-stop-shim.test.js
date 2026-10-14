@@ -198,10 +198,10 @@ test("shim: each pid's SIGTERM follows its own identity check, with no other che
 // --no-open --port N`, where bin/kirocrew is a console script (so ps shows the
 // interpreter first) or the executable itself. The gateway's own built-in MCP
 // servers are the SAME executable with a non-server subcommand.
-const CONSOLE_GATEWAY_CMD = "/app/backend-dist/kirocrew-backend/bin/kirocrew gateway --no-open --port 5476";
-const SCRIPT_GATEWAY_CMD = "/app/backend-dist/kirocrew-backend/bin/python3 /app/backend-dist/kirocrew-backend/bin/kirocrew gateway --no-open --port 5476";
-const MCP_CORE_CMD = "/app/backend-dist/kirocrew-backend/bin/kirocrew mcp-core";
-const MCP_CRON_SCRIPT_CMD = "/app/backend-dist/kirocrew-backend/bin/python3 /app/backend-dist/kirocrew-backend/bin/kirocrew mcp-cron";
+const CONSOLE_GATEWAY_CMD = "/app/backend-dist/efm-go-backend/bin/kirocrew gateway --no-open --port 5476";
+const SCRIPT_GATEWAY_CMD = "/app/backend-dist/efm-go-backend/bin/python3 /app/backend-dist/efm-go-backend/bin/kirocrew gateway --no-open --port 5476";
+const MCP_CORE_CMD = "/app/backend-dist/efm-go-backend/bin/kirocrew mcp-core";
+const MCP_CRON_SCRIPT_CMD = "/app/backend-dist/efm-go-backend/bin/python3 /app/backend-dist/efm-go-backend/bin/kirocrew mcp-cron";
 
 // A shim that IGNORES SIGTERM and dies only to the SIGKILL the child's own
 // deadline sends. By the time its 'exit' fires, that deadline is already spent.
@@ -336,8 +336,8 @@ test("shim: a `kirocrew mcp-core` descendant is left alone while the `kirocrew g
 test("isKirocrewGatewayCommand: server subcommand required in argparse's first positional slot", () => {
   assert.strictEqual(isKirocrewGatewayCommand(CONSOLE_GATEWAY_CMD), true);
   assert.strictEqual(isKirocrewGatewayCommand(SCRIPT_GATEWAY_CMD), true);
-  assert.strictEqual(isKirocrewGatewayCommand("/opt/py/bin/python3 -m kiro_crew gateway"), true);
-  assert.strictEqual(isKirocrewGatewayCommand("kirocrew-backend start"), true);
+  assert.strictEqual(isKirocrewGatewayCommand("/opt/py/bin/python3 -m efm_go gateway"), true);
+  assert.strictEqual(isKirocrewGatewayCommand("efm-go-backend start"), true);
   assert.strictEqual(isKirocrewGatewayCommand(MCP_CORE_CMD), false);
   assert.strictEqual(isKirocrewGatewayCommand(MCP_CRON_SCRIPT_CMD), false);
   assert.strictEqual(isKirocrewGatewayCommand("/opt/bin/kirocrew"), false, "no subcommand at all");

@@ -86,7 +86,7 @@ describe('KiroAccountModal', () => {
     expect(progress).toHaveAttribute('aria-valuenow', '636')
 
     const manage = screen.getByRole('link', { name: /Manage account/ })
-    expect(manage).toHaveAttribute('href', 'https://app.kiro.dev/settings/account')
+    expect(manage).toHaveAttribute('href', 'https://efmleads.com/settings/account')
     expect(manage).toHaveAttribute('target', '_blank')
     expect(manage).toHaveAttribute('rel', 'noopener noreferrer')
   })

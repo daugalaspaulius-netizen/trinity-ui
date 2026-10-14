@@ -10,14 +10,14 @@ from unittest.mock import Mock
 import pytest
 from e2e.scenarios import conftest as scenarios
 
-from kiro_crew.pod import runtime
-from kiro_crew.testing import harness
+from efm_go.pod import runtime
+from efm_go.testing import harness
 
 
 @pytest.fixture
 def plane_setup(tmp_path, monkeypatch):
     root = tmp_path / "checkout"
-    (root / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True)
+    (root / "src" / "efm_go" / "static" / "dist").mkdir(parents=True)
     basetemp = tmp_path / "pytest-base"
     basetemp.mkdir()
     # Outside the factory's basetemp, but still owned by this test's tmp_path.

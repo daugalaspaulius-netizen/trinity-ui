@@ -1,7 +1,7 @@
 """Tests for KiroCrew package."""
 
-import kiro_crew
+import efm_go
 
 
 def test_version():
-    assert kiro_crew.__version__
+    assert efm_go.__version__

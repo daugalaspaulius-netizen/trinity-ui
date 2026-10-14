@@ -5,7 +5,7 @@ two argv-floor predicates and none of those was the action the predicate exists
 to stop:
 
 * ``_is_credential_mint`` denied every inline Python program (``python -c``,
-  ``python - <<'PY'``) that MENTIONED ``kiro_crew`` -- usually as the path of the
+  ``python - <<'PY'``) that MENTIONED ``efm_go`` -- usually as the path of the
   file a patch script was editing -- or used ``getattr``/``eval``/``importlib``
   anywhere.  143 denials; 1 command contained the word ``token``; 0 minted.
 * ``_is_self_kill`` read every brace group (``--jq '{state}'``, ``awk '{print $1}'``)
@@ -30,9 +30,9 @@ from typing import TypeVar
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.security import argv_floor, inline_payload
-from kiro_crew.security.shell_normalizer import _glob_could_expand_to, _glob_to_regex
+from efm_go import security
+from efm_go.security import argv_floor, inline_payload
+from efm_go.security.shell_normalizer import _glob_could_expand_to, _glob_to_regex
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 _MINT = "credential-exfil-kirocrew-token"
@@ -127,7 +127,7 @@ def _own_host_seed_connects_nothing(monkeypatch) -> Iterator[list[tuple[int, obj
 
 
 class _ProductTree:
-    """The product modules under ``src/kiro_crew``, parsed on demand.
+    """The product modules under ``src/efm_go``, parsed on demand.
 
     The tree is ~60 MB of source: parsing all of it is eleven seconds and a
     gigabyte of AST, and the two derivations below each did so on their own.
@@ -146,7 +146,7 @@ class _ProductTree:
 
     def __init__(self, src: Path) -> None:
         self.paths: dict[str, Path] = {}
-        for path in sorted((src / "kiro_crew").rglob("*.py")):
+        for path in sorted((src / "efm_go").rglob("*.py")):
             rel = path.relative_to(src).with_suffix("")
             # Vendored code and the tree's own tests (``tests/``, ``container_tests/``,
             # ``test_*.py``) are not producers: a fixture that writes a fake ``.secret``
@@ -243,14 +243,14 @@ class TestInlinePayloadNamesTheMintSurface:
         [
             # A patch script editing a product file: the package appears only as a path.
             "python3 - <<'PY'\nfrom pathlib import Path\n"
-            "p = Path('src/kiro_crew/platform/governance.py')\n"
+            "p = Path('src/efm_go/platform/governance.py')\n"
             "s = p.read_text()\np.write_text(s.replace('a', 'b'))\nPY",
             # A syntax check of a product file.
-            "python3 -c \"import ast; ast.parse(open('src/kiro_crew/security.py').read())\"",
+            "python3 -c \"import ast; ast.parse(open('src/efm_go/security.py').read())\"",
             # A dev one-liner importing an unrelated product module.
-            "python3 -c 'from kiro_crew.acp._dispatch import parse_session_update as f; "
+            "python3 -c 'from efm_go.acp._dispatch import parse_session_update as f; "
             "import inspect; print(inspect.signature(f))'",
-            ".venv/bin/python -c 'from kiro_crew.platform.governance import BreakGlass; "
+            ".venv/bin/python -c 'from efm_go.platform.governance import BreakGlass; "
             "print(BreakGlass)'",
             # Loading a test module by path -- importlib is not a mint.
             "cd /w/kirocrew-wt-x && python3 -c 'import importlib.util, pathlib; "
@@ -258,27 +258,27 @@ class TestInlinePayloadNamesTheMintSurface:
             's = importlib.util.spec_from_file_location("t", p); print(s)\'',
             # getattr / eval / exec / b64decode one-liners next to a product path.
             "cd /w/kirocrew-wt-x && python3 -c \"import json; print(getattr(json, 'dumps'))\"",
-            "python3 -c 'print(eval(\"1+1\"))' src/kiro_crew/x.py",
+            "python3 -c 'print(eval(\"1+1\"))' src/efm_go/x.py",
             "python3 - <<'EOF'\nimport base64\nprint(base64.b64decode('aGVsbG8='))\nEOF",
             # A mention of the credential words outside an import is a mention.
-            "python3 -c \"print('kiro_crew docs mention the token verb')\"",
+            "python3 -c \"print('efm_go docs mention the token verb')\"",
             "python3 -c \"print('the gateway keeps its secret in .local_secret')\"",
             "python3 -c 'import secrets; print(secrets.token_hex(8))'",
             # ``secrets`` (the stdlib module) next to a product import is not the word.
-            "python3 -c 'import secrets; from kiro_crew.acp import client; print(secrets)'",
+            "python3 -c 'import secrets; from efm_go.acp import client; print(secrets)'",
             # A product module named ``secrets`` is a path or an import, not the reader word.
             'python3 -c "from pathlib import Path; '
-            "p = Path('src/kiro_crew/dashboard/handlers/secrets.py'); print(p.read_text()[:10])\"",
-            "python3 -c 'from kiro_crew.dashboard.handlers import secrets; print(secrets)'",
-            # The bare package import reaches nothing: kiro_crew/__init__ imports no CLI.
-            "python3 -c 'import kiro_crew; print(kiro_crew.__file__)'",
+            "p = Path('src/efm_go/dashboard/handlers/secrets.py'); print(p.read_text()[:10])\"",
+            "python3 -c 'from efm_go.dashboard.handlers import secrets; print(secrets)'",
+            # The bare package import reaches nothing: efm_go/__init__ imports no CLI.
+            "python3 -c 'import efm_go; print(efm_go.__file__)'",
             # A dynamic runner handed some OTHER name is generic code, even next to a product
             # import or a product path: ``__import__("os").environ`` is a common idiom.
-            "python3 -c \"import runpy; runpy.run_path('src/kiro_crew/../../scripts/x.py')\"",
+            "python3 -c \"import runpy; runpy.run_path('src/efm_go/../../scripts/x.py')\"",
             "python3 -c \"import runpy; runpy.run_module(mod_name='json', run_name='__main__')\"",
             "python3 -c \"import importlib; m = importlib.import_module('json'); "
-            "print(m.dumps({'p': 'src/kiro_crew/x.py'}))\"",
-            "python3 - <<'PY'\nfrom kiro_crew.acp.client import _opencode_agent_permissions\n"
+            "print(m.dumps({'p': 'src/efm_go/x.py'}))\"",
+            "python3 - <<'PY'\nfrom efm_go.acp.client import _opencode_agent_permissions\n"
             "env = {**__import__('os').environ, 'X': '1'}\nPY",
             # A code loader on some OTHER file is a patch-script idiom; the program name in a
             # subprocess argv is the interpreter-argv companion rule's business, not a load.
@@ -293,8 +293,8 @@ class TestInlinePayloadNamesTheMintSurface:
             # A loader string is asked the SAME questions as the payload, so the same
             # things stay allowed inside it: an unrelated product import with no
             # credential word, and a product path with no import at all.
-            "python -c \"exec('from kiro_crew.acp import client; print(client)')\"",
-            "python -c \"exec('print(open(\\\\'src/kiro_crew/x.py\\\\').read()[:10])')\"",
+            "python -c \"exec('from efm_go.acp import client; print(client)')\"",
+            "python -c \"exec('print(open(\\\\'src/efm_go/x.py\\\\').read()[:10])')\"",
             # A loader on one file and the program name as PROSE in the next statement are
             # two allowed idioms; the name has to sit inside the loader's own statement.
             "python3 -c \"import runpy; runpy.run_path('scripts/collect_env.py'); print('kirocrew env snapshot done')\"",
@@ -309,81 +309,81 @@ class TestInlinePayloadNamesTheMintSurface:
         "cmd",
         [
             # The CLI dispatch, in every import spelling.
-            "python -c 'import kiro_crew.cli as c; c.main()'",
-            "python -c 'from kiro_crew import cli; cli.main()'",
-            "python -c 'from kiro_crew.cli import main; main()'",
-            "python -c 'import kiro_crew.__main__'",
+            "python -c 'import efm_go.cli as c; c.main()'",
+            "python -c 'from efm_go import cli; cli.main()'",
+            "python -c 'from efm_go.cli import main; main()'",
+            "python -c 'import efm_go.__main__'",
             # The module implementing the token subcommand, and the token producers.
-            "python -c 'from kiro_crew.cli_server import _token; _token(None)'",
-            "python -c 'from kiro_crew.dashboard.token_auth import generate_token'",
-            "python -c 'import kiro_crew.dashboard.token_secret as s; print(s._get_secret())'",
-            "python -c 'from kiro_crew.dashboard import token_auth'",
-            "python -c 'from kiro_crew.instances.token_mint import build_remote_token_command'",
+            "python -c 'from efm_go.cli_server import _token; _token(None)'",
+            "python -c 'from efm_go.dashboard.token_auth import generate_token'",
+            "python -c 'import efm_go.dashboard.token_secret as s; print(s._get_secret())'",
+            "python -c 'from efm_go.dashboard import token_auth'",
+            "python -c 'from efm_go.instances.token_mint import build_remote_token_command'",
             # The SECOND credential: the internal secret ``/api/token/local`` accepts, read
             # through product code past the sensitive-path floor that fences the file.
-            "python -c 'from kiro_crew.config.loader import read_local_secret; "
+            "python -c 'from efm_go.config.loader import read_local_secret; "
             "print(read_local_secret(5476))'",
-            "python -c 'from kiro_crew.instances import run_marker; print(run_marker.read_secret(5476))'",
+            "python -c 'from efm_go.instances import run_marker; print(run_marker.read_secret(5476))'",
             # ... and the module whose PATH names it.
-            "python -c 'from kiro_crew.dashboard import token_secret'",
+            "python -c 'from efm_go.dashboard import token_secret'",
             # The whole route: import the reader, present the secret to the mint endpoint.
             # Both the reader's name and the endpoint carry the word.
             "python3 - <<'PY'\nimport urllib.request\n"
-            "from kiro_crew.config.loader import read_local_secret\n"
+            "from efm_go.config.loader import read_local_secret\n"
             "s = read_local_secret(5476)\n"
             "r = urllib.request.Request('http://127.0.0.1:5476/api/token/local', "
             "headers={'X-Internal-Secret': s})\nprint(urllib.request.urlopen(r).read())\nPY",
             # The package anywhere in an ``import`` list is imported.
-            "python -c 'import os, kiro_crew.instances.run_marker as r; print(r.read_secret(5476))'",
-            "python -c 'import sys, os, kiro_crew.config.loader as l; print(l.read_local_secret(1))'",
+            "python -c 'import os, efm_go.instances.run_marker as r; print(r.read_secret(5476))'",
+            "python -c 'import sys, os, efm_go.config.loader as l; print(l.read_local_secret(1))'",
             # ... across a Python line continuation, which joins the lines before the
             # statement is read.
-            "python -c 'import os, \\\nkiro_crew.config.loader as l; print(l.read_local_secret(1))'",
-            "python -c 'from kiro_crew.config.loader \\\n    import read_local_secret; print(read_local_secret(1))'",
+            "python -c 'import os, \\\nefm_go.config.loader as l; print(l.read_local_secret(1))'",
+            "python -c 'from efm_go.config.loader \\\n    import read_local_secret; print(read_local_secret(1))'",
             # A decoded literal is asked the same questions as the payload.
-            # (``import kiro_crew.instances.run_marker as r; print(r.read_secret(5476))``)
+            # (``import efm_go.instances.run_marker as r; print(r.read_secret(5476))``)
             "python -c 'import base64; exec(base64.b64decode("
             '"aW1wb3J0IGtpcm9fY3Jldy5pbnN0YW5jZXMucnVuX21hcmtlciBhcyByOyBwcmludChyLnJlYWRfc2VjcmV0KDU0NzYpKQ=="))\'',
-            # (``runpy.run_module('kiro_crew', run_name='__main__')``)
+            # (``runpy.run_module('efm_go', run_name='__main__')``)
             "python -c 'import base64; exec(base64.b64decode("
             '"cnVucHkucnVuX21vZHVsZSgna2lyb19jcmV3JywgcnVuX25hbWU9J19fbWFpbl9fJyk="))\'',
             # The reader's name spelled in pieces is folded before matching.
-            'python -c "from kiro_crew.config import loader; '
+            'python -c "from efm_go.config import loader; '
             "print(getattr(loader, 'read_local_' + 'secret')(5476))\"",
             # The price of the word: a product import next to a variable named ``secret``.
-            "python3 -c 'from kiro_crew.acp._frame_record import scrub_frame; "
+            "python3 -c 'from efm_go.acp._frame_record import scrub_frame; "
             'secret = "Basic abc="; print(scrub_frame({"Authorization": secret}))\'',
             # The stdin forms of the same.
-            "python3 - <<'PY'\nfrom kiro_crew.dashboard.token_auth import generate_token\nPY",
-            "python3 < src/kiro_crew/cli.py",
-            "echo 'import kiro_crew.cli' | python3 -",
+            "python3 - <<'PY'\nfrom efm_go.dashboard.token_auth import generate_token\nPY",
+            "python3 < src/efm_go/cli.py",
+            "echo 'import efm_go.cli' | python3 -",
             # A module name split across concatenated pieces is folded before matching.
-            "python -c \"__import__('kiro_crew.c' + 'li').cli.main()\"",
-            "python -c \"m = 'kiro_crew.' + 'cli_server'; __import__(m)\"",
-            # ``python -m kiro_crew token`` spelled as a dynamic runner call: the package
+            "python -c \"__import__('efm_go.c' + 'li').cli.main()\"",
+            "python -c \"m = 'efm_go.' + 'cli_server'; __import__(m)\"",
+            # ``python -m efm_go token`` spelled as a dynamic runner call: the package
             # name is bare (no dotted surface) and ``__main__`` is a separate literal, so
             # only the runner-plus-package-name reach catches it.
             "python3 -c \"import runpy,sys; sys.argv=['x','token']; "
-            "runpy.run_module('kiro_crew', run_name='__main__')\"",
-            "python3 -c \"import runpy; runpy.run_module('kiro_crew', run_name='__main__')\"",
-            "python3 -c \"import importlib; importlib.import_module('kiro_crew').cli.main()\"",
-            "python3 -c \"__import__('kiro_crew')\"",
+            "runpy.run_module('efm_go', run_name='__main__')\"",
+            "python3 -c \"import runpy; runpy.run_module('efm_go', run_name='__main__')\"",
+            "python3 -c \"import importlib; importlib.import_module('efm_go').cli.main()\"",
+            "python3 -c \"__import__('efm_go')\"",
             # The name as a keyword argument, in either order.
-            "python3 -c \"import runpy; runpy.run_module(mod_name='kiro_crew', run_name='__main__')\"",
-            "python3 -c \"import runpy; runpy.run_module(run_name='__main__', mod_name='kiro_crew')\"",
+            "python3 -c \"import runpy; runpy.run_module(mod_name='efm_go', run_name='__main__')\"",
+            "python3 -c \"import runpy; runpy.run_module(run_name='__main__', mod_name='efm_go')\"",
             # ... and behind a NESTED call in an earlier argument.
-            "python3 -c \"import runpy; runpy.run_module(run_name=str('__main__'), mod_name='kiro_crew')\"",
-            "python3 -c \"import importlib; importlib.import_module(package=None, name=str('kiro_crew')).cli.main()\"",
-            "python3 -c \"import importlib; importlib.import_module(name='kiro_crew').cli.main()\"",
-            "python3 -c \"__import__(name='kiro_crew')\"",
+            "python3 -c \"import runpy; runpy.run_module(run_name=str('__main__'), mod_name='efm_go')\"",
+            "python3 -c \"import importlib; importlib.import_module(package=None, name=str('efm_go')).cli.main()\"",
+            "python3 -c \"import importlib; importlib.import_module(name='efm_go').cli.main()\"",
+            "python3 -c \"__import__(name='efm_go')\"",
             # The argument spelled in pieces is folded before the runner is matched.
             "python3 -c \"import runpy; runpy.run_module('kiro_' + 'crew', run_name='__main__')\"",
-            "python3 - <<'PY'\nimport runpy\nrunpy.run_module('kiro_crew', run_name='__main__')\nPY",
+            "python3 - <<'PY'\nimport runpy\nrunpy.run_module('efm_go', run_name='__main__')\nPY",
             # The mint hidden in a base64 literal is decoded and read.
             "python -c 'import base64; exec(base64.b64decode(\"aW1wb3J0IGtpcm9fY3Jldy5jbGk=\"))'",
             "python -c 'import os,base64; os.system(base64.b64decode(\"a2lyb2NyZXcgdG9rZW4=\").decode())'",
             # The INSTALLED CONSOLE SCRIPT run through a code loader: its text is
-            # ``kiro_crew._bootstrap.main()``, the dispatch, against a ``sys.argv`` the payload
+            # ``efm_go._bootstrap.main()``, the dispatch, against a ``sys.argv`` the payload
             # chose.  Resolved by ``which``, by path, by ``runpy.run_path``, folded, in a
             # heredoc, and one base64 decode away.
             "python3 -c \"import sys,shutil; sys.argv=['x','token']; exec(open(shutil.which('kirocrew')).read())\"",
@@ -402,14 +402,14 @@ class TestInlinePayloadNamesTheMintSurface:
             # same questions, with its string delimiters peeled.  Single quotes, double
             # quotes, a raw prefix, a triple-quoted heredoc body, nested through
             # ``compile``, and the import-list form.
-            "python -c \"exec('from kiro_crew.config.loader import read_local_secret; "
+            "python -c \"exec('from efm_go.config.loader import read_local_secret; "
             "print(read_local_secret(5476))')\"",
-            "python -c 'exec(\"from kiro_crew.config.loader import read_local_secret; "
+            "python -c 'exec(\"from efm_go.config.loader import read_local_secret; "
             "print(read_local_secret(5476))\")'",
-            "python -c \"exec(r'from kiro_crew.config.loader import read_local_secret')\"",
-            "python -c \"exec(compile('import os, kiro_crew.config.loader as l; "
+            "python -c \"exec(r'from efm_go.config.loader import read_local_secret')\"",
+            "python -c \"exec(compile('import os, efm_go.config.loader as l; "
             "l.read_local_secret(1)', 'x', 'exec'))\"",
-            "python3 - <<'PY'\nexec('''\nfrom kiro_crew.config.loader import read_local_secret\n"
+            "python3 - <<'PY'\nexec('''\nfrom efm_go.config.loader import read_local_secret\n"
             "print(read_local_secret(1))\n''')\nPY",
             # Python allows a NEWLINE inside parentheses, so the load is still ONE
             # statement when spelled across lines -- and a ``;`` inside a comment is not a
@@ -477,9 +477,9 @@ class TestInlinePayloadNamesTheMintSurface:
     def test_a_loader_string_is_asked_the_payload_questions(self):
         # The statement inside the string begins after the quote; the delimiters are peeled
         # so the statement-start anchor sees it.  Nested loaders recurse.
-        wrapped = "exec('from kiro_crew.config.loader import read_local_secret; f()')"
-        nested = "exec(compile('import kiro_crew.config.loader as l; l.read_local_secret(1)', 'x', 'exec'))"
-        plain = "exec('from kiro_crew.acp import client')"
+        wrapped = "exec('from efm_go.config.loader import read_local_secret; f()')"
+        nested = "exec(compile('import efm_go.config.loader as l; l.read_local_secret(1)', 'x', 'exec'))"
+        plain = "exec('from efm_go.acp import client')"
         assert inline_payload._inline_payload_reaches_cli(wrapped)
         assert inline_payload._inline_payload_reaches_cli(nested)
         assert not inline_payload._inline_payload_reaches_cli(plain)
@@ -494,46 +494,46 @@ class TestInlinePayloadNamesTheMintSurface:
         )
 
     def test_the_verb_gated_module_form_is_untouched(self):
-        # `-m kiro_crew token` and `-c <payload naming the package> token` keep their own
+        # `-m efm_go token` and `-c <payload naming the package> token` keep their own
         # verb-gated check; the inline gate is the addition for the verb-less forms.
-        assert _rule_of("python -m kiro_crew token") == _MINT
-        assert _rule_of("python -c 'from kiro_crew.acp import x' token") == _MINT
-        assert _rule_of("python -m kiro_crew doctor") is None
+        assert _rule_of("python -m efm_go token") == _MINT
+        assert _rule_of("python -c 'from efm_go.acp import x' token") == _MINT
+        assert _rule_of("python -m efm_go doctor") is None
 
     def test_base64_literals_are_decoded_from_the_command_as_submitted(self):
         """The floor reads a lower-cased view; base64 is case-sensitive and does not survive it."""
         raw = "python -c 'exec(b64decode(\"aW1wb3J0IGtpcm9fY3Jldy5jbGk=\"))'"
-        assert inline_payload._decoded_b64_literals(raw) == ("import kiro_crew.cli",)
+        assert inline_payload._decoded_b64_literals(raw) == ("import efm_go.cli",)
         # The lower-cased literal decodes to noise, never to the name -- which is why
         # ``is_denied`` hands the mint predicate the raw text, and why a caller with only
         # the lower-cased text sees the literal fold in nothing.
-        assert not any("kiro_crew" in d for d in inline_payload._decoded_b64_literals(raw.lower()))
+        assert not any("efm_go" in d for d in inline_payload._decoded_b64_literals(raw.lower()))
         assert not argv_floor._is_credential_mint(raw.lower())
         assert argv_floor._is_credential_mint(raw.lower(), raw_text=raw)
 
     def test_string_concatenation_is_folded_before_matching(self):
-        assert "kiro_crew.cli" in inline_payload._fold_inline_literals(
-            "__import__('kiro_crew.c' + 'li')"
+        assert "efm_go.cli" in inline_payload._fold_inline_literals(
+            "__import__('efm_go.c' + 'li')"
         )
-        assert "kiro_crew.cli_server" in inline_payload._fold_inline_literals(
+        assert "efm_go.cli_server" in inline_payload._fold_inline_literals(
             "x = 'kiro_' + 'crew.' + 'cli_server'"
         )
         # Python concatenates across quote kinds, so the fold does too.
-        assert "kiro_crew.cli" in inline_payload._fold_inline_literals("'kiro_crew.c' + \"li\"")
+        assert "efm_go.cli" in inline_payload._fold_inline_literals("'efm_go.c' + \"li\"")
         # A ``+`` between a literal and a NAME is not folded; nothing is invented.
-        assert "kiro_crew.cli" not in inline_payload._fold_inline_literals("'kiro_crew.c' + li")
+        assert "efm_go.cli" not in inline_payload._fold_inline_literals("'efm_go.c' + li")
         # Implicit concatenation -- adjacent literals with nothing but whitespace between
         # them -- is the same join in Python, so it is the same fold.
-        assert "kiro_crew.cli" in inline_payload._fold_inline_literals("'kiro_crew.c' 'li'")
-        assert "kiro_crew.cli" in inline_payload._fold_inline_literals("'kiro_crew.c'  \"li\"")
+        assert "efm_go.cli" in inline_payload._fold_inline_literals("'efm_go.c' 'li'")
+        assert "efm_go.cli" in inline_payload._fold_inline_literals("'efm_go.c'  \"li\"")
         # A comma is two arguments, not one string.
-        assert "kiro_crew.cli" not in inline_payload._fold_inline_literals("'kiro_crew.c', 'li'")
+        assert "efm_go.cli" not in inline_payload._fold_inline_literals("'efm_go.c', 'li'")
         assert (
             _rule_of("python -c \"import importlib; importlib.import_module('kiro_' 'crew.cli')\"")
             == _MINT
         )
-        assert _rule_of("python -c \"m='kiro_crew.c' 'li'; __import__(m)\"") == _MINT
-        assert _rule_of("python -c \"print('kiro_crew' ' docs mention token')\"") is None
+        assert _rule_of("python -c \"m='efm_go.c' 'li'; __import__(m)\"") == _MINT
+        assert _rule_of("python -c \"print('efm_go' ' docs mention token')\"") is None
 
     def test_the_fold_and_decode_are_complete(self):
         """No count cap an attacker can pad past: a 500-piece name folds whole, and the
@@ -552,7 +552,7 @@ class TestInlinePayloadNamesTheMintSurface:
             for n in range(200)
         )
         assert len(inline_payload._decoded_b64_literals(handed)) == 200
-        pieces = " + ".join(f"'{c}'" for c in "kiro_crew.cli")
+        pieces = " + ".join(f"'{c}'" for c in "efm_go.cli")
         assert _rule_of(f'python -c "__import__({pieces})"') == _MINT
         decoys = ", ".join(f"'{'QUJD' * 4}'" for _ in range(70))
         assert (
@@ -568,16 +568,16 @@ class TestInlinePayloadNamesTheMintSurface:
         [
             # A product import INSIDE a code loader's string runs exactly as the bare
             # statement does.
-            "python -c \"exec('from kiro_crew.config.loader import read_local_secret; print(read_local_secret(5476))')\"",
-            "python -c \"exec('import os, kiro_crew.config.loader as l; print(l.read_local_secret(1))')\"",
-            "python -c \"eval(compile('from kiro_crew.instances import run_marker; run_marker.read_secret(1)', 'x', 'exec'))\"",
+            "python -c \"exec('from efm_go.config.loader import read_local_secret; print(read_local_secret(5476))')\"",
+            "python -c \"exec('import os, efm_go.config.loader as l; print(l.read_local_secret(1))')\"",
+            "python -c \"eval(compile('from efm_go.instances import run_marker; run_marker.read_secret(1)', 'x', 'exec'))\"",
         ],
     )
     def test_a_product_import_inside_a_loader_string_is_denied(self, cmd):
         assert _rule_of(cmd) == _MINT, cmd
 
     def test_a_quoted_import_without_a_loader_is_prose(self):
-        assert _rule_of("python -c \"print('from kiro_crew.acp import x; token docs')\"") is None
+        assert _rule_of("python -c \"print('from efm_go.acp import x; token docs')\"") is None
 
     def test_the_mint_surface_covers_every_token_producer_in_the_tree(self, product_tree):
         """Every module that can produce a dashboard token is in reach of the gate -- derived
@@ -640,7 +640,7 @@ class TestInlinePayloadNamesTheMintSurface:
                 if used & key_names and used & opens:
                     seeds.add(mod)
                     break
-        assert seeds == {"kiro_crew.dashboard.token_secret"}, seeds
+        assert seeds == {"efm_go.dashboard.token_secret"}, seeds
 
         def importers_of(targets: set[str], names: set[str] | None = None) -> list[tuple[str, str]]:
             # Every ``from X import y [as z]`` in the tree for each target X: the re-export
@@ -677,7 +677,7 @@ class TestInlinePayloadNamesTheMintSurface:
         for mod, seed_names in list(hop1_producers.items()):
             hop1_producers[mod] = producers_in(mod, seed_names) | seed_names
         assert "generate_token" in hop1_producers.get(
-            "kiro_crew.dashboard.token_auth", set()
+            "efm_go.dashboard.token_auth", set()
         ), hop1_producers
         # Hop 2: every module that imports one of those producers.
         hop2 = [
@@ -735,7 +735,7 @@ class TestInlinePayloadNamesTheMintSurface:
             assert inline_payload._inline_payload_reaches_cli(
                 f"import {entry_module}"
             ), entry_module
-            assert re.match(r"kiro_crew\.", entry_module), entry_module
+            assert re.match(r"efm_go\.", entry_module), entry_module
 
     def test_the_credential_word_covers_every_local_secret_reader_in_the_tree(self, product_tree):
         """Every function that READS the internal secret is in reach of the gate -- derived
@@ -782,8 +782,8 @@ class TestInlinePayloadNamesTheMintSurface:
                 if used & file_names:
                     readers.append((mod, node.name))
         # The derivation reaches the two readers the gate was narrowed past.
-        assert ("kiro_crew.config.loader", "read_local_secret") in readers, readers
-        assert ("kiro_crew.instances.run_marker", "read_secret") in readers, readers
+        assert ("efm_go.config.loader", "read_local_secret") in readers, readers
+        assert ("efm_go.instances.run_marker", "read_secret") in readers, readers
         # Namers that hand no credential to a caller.  A NEW name landing here has to be
         # added with its reason, or carry ``secret`` / ``token`` so the gate covers it.
         not_readers = {
@@ -806,23 +806,23 @@ class TestInlinePayloadNamesTheMintSurface:
 
     def test_a_mention_is_not_a_reach(self):
         for mention in (
-            "import kiro_crew",
-            "from kiro_crew.acp import client",
-            "from kiro_crew.security import is_denied",
-            "path = 'src/kiro_crew/cli_help.py'",
-            "print('kiro_crew tokens')",
-            "import kiro_crew.clients",
+            "import efm_go",
+            "from efm_go.acp import client",
+            "from efm_go.security import is_denied",
+            "path = 'src/efm_go/cli_help.py'",
+            "print('efm_go tokens')",
+            "import efm_go.clients",
             # `cli` as a fragment of another word after a product import is not the module.
-            "from kiro_crew import security as s; print('restart is blocked by kiro-cli')",
-            "from kiro_crew.acp import client; print(client.cli_help)",
+            "from efm_go import security as s; print('restart is blocked by kiro-cli')",
+            "from efm_go.acp import client; print(client.cli_help)",
             # the verb in a string with no product import
             "print('kirocrew token docs')",
             # a product import next to `tokens` (LLM tokens), not `token`
-            "from kiro_crew.acp import client; print(client.max_tokens)",
+            "from efm_go.acp import client; print(client.max_tokens)",
             # a product import next to the stdlib `secrets` module, not `secret`
-            "import secrets; from kiro_crew.acp import client; print(secrets.choice('ab'))",
+            "import secrets; from efm_go.acp import client; print(secrets.choice('ab'))",
             # the package later in an import list, with no credential word
-            "import os, kiro_crew.acp.client as c; print(c)",
+            "import os, efm_go.acp.client as c; print(c)",
         ):
             assert not inline_payload._inline_payload_reaches_cli(mention), mention
 
@@ -894,7 +894,7 @@ class TestBraceExpansionMirrorsBash:
         aborts.  Past ``_BRACE_NESTING_CAP`` a group reads as ``.*`` -- the fail-closed
         direction -- and the command is still judged.
         """
-        from kiro_crew.security.shell_normalizer import _BRACE_NESTING_CAP
+        from efm_go.security.shell_normalizer import _BRACE_NESTING_CAP
 
         # Literal groups all the way down: bash leaves every one of them literal, so
         # the word starts with ``{`` and cannot be the program -- and the gate says so
@@ -911,7 +911,7 @@ class TestBraceExpansionMirrorsBash:
         # conservatively.
         # (Nested alternations also spend the alternation budget, so "under" is under
         # both caps.)
-        from kiro_crew.security.shell_normalizer import _BRACE_GROUP_BUDGET
+        from efm_go.security.shell_normalizer import _BRACE_GROUP_BUDGET
 
         levels = min(_BRACE_NESTING_CAP, _BRACE_GROUP_BUDGET) - 1
         under = "{a," * levels + "b" + "}" * levels
@@ -940,7 +940,7 @@ class TestBraceExpansionMirrorsBash:
         pair lookup per ``{``, whether it re-derives the table or rescans a suffix)
         reads 16x for 4x the input and fails here at any size, on any host.
         """
-        from kiro_crew.security import shell_normalizer
+        from efm_go.security import shell_normalizer
 
         assert shell_normalizer._brace_pairs("{a,{b}}c{") == {0: 6, 3: 5}
         assert _glob_to_regex("{{{kirocrew") == re.escape("{{{kirocrew")
@@ -1037,7 +1037,7 @@ class TestBraceExpansionMirrorsBash:
         exit.  Past ``_BRACE_GROUP_BUDGET`` a group reads as ``.*``, so the word is judged
         as "could be anything" -- over-matching a protected name, never missing one.
         """
-        from kiro_crew.security.shell_normalizer import _BRACE_GROUP_BUDGET
+        from efm_go.security.shell_normalizer import _BRACE_GROUP_BUDGET
 
         def judge() -> None:
             for shape in ("{*,*}", "{*,**}", "{*,a*}"):
@@ -1113,7 +1113,7 @@ class TestAGlobArgumentIsNotAKillProgram:
             # A glob among a file mover's arguments is a path, whatever follows the
             # operator glued to it.
             "cp $KIROCREW_SCRATCH/retro/*; gh api repos/o/KiroCrew/issues/1/comments",
-            "S=$KIROCREW_SCRATCH; mkdir -p $S/r; cp /tmp/a.txt $S/r/*; git diff origin/main -- src/kiro_crew",
+            "S=$KIROCREW_SCRATCH; mkdir -p $S/r; cp /tmp/a.txt $S/r/*; git diff origin/main -- src/efm_go",
         ],
     )
     def test_glob_argument_next_to_a_product_path_is_allowed(self, cmd):
@@ -1131,7 +1131,7 @@ class TestAGlobArgumentIsNotAKillProgram:
             # the whole word as ``.*``.
             "tar czf logs_$(hostname)_*.tar.gz -C /w/kirocrew-scratch/logs .",
             "zip -q /tmp/bench.zip bench_`hostname`_*.json /w/kirocrew-scratch/notes.md",
-            "gh run download 12345678 --pattern coverage_$(hostname)_* --repo kirodotdev/KiroCrew",
+            "gh run download 12345678 --pattern coverage_$(hostname)_* --repo efmleads.com",
             "install -m 644 report_$(hostname)_*.log /w/kirocrew-scratch/archive/",
             # The Windows spellings: a PowerShell ``$()`` subexpression is the same opener.
             "Copy-Item report_$(hostname)_*.log \\\\nas\\kirocrew\\archive\\",
@@ -1229,9 +1229,9 @@ class TestAGlobArgumentIsNotAKillProgram:
     @pytest.mark.parametrize(
         "cmd",
         [
-            "ls $(pwd)/src/kiro_crew",
+            "ls $(pwd)/src/efm_go",
             "echo $(date) kirocrew docs",
-            "cp $(git rev-parse --show-toplevel)/src/kiro_crew/x.py /tmp/",
+            "cp $(git rev-parse --show-toplevel)/src/efm_go/x.py /tmp/",
             # A substitution INSIDE a filename glob: the word reads as ``.*`` (so it
             # "could be" the verb), but it is a filename under a mover, and the body
             # (``hostname``) is harmless.  Confirmed newly-refused by the scope review

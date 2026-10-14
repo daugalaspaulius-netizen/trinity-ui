@@ -11,8 +11,8 @@ import json
 
 import pytest
 
-from kiro_crew.cloud.config import DEFAULT_REGION, CloudConfig
-from kiro_crew.cloud.launch_state import LaunchState, state_path
+from efm_go.cloud.config import DEFAULT_REGION, CloudConfig
+from efm_go.cloud.launch_state import LaunchState, state_path
 
 
 class TestTheLaunchRecord:
@@ -102,7 +102,7 @@ class TestTheReadIsBoundedBeforeItAllocates:
     """
 
     def test_an_oversized_record_is_refused(self, tmp_path):
-        from kiro_crew.cloud.launch_state import _MAX_FILE_BYTES
+        from efm_go.cloud.launch_state import _MAX_FILE_BYTES
 
         p = tmp_path / "cloud_launch_state.json"
         # Sparse, so the test costs no disk: the file reports its full size and the read is
@@ -127,7 +127,7 @@ class TestTheReadIsBoundedBeforeItAllocates:
         """
         import os as _os
 
-        from kiro_crew.cloud.launch_state import _MAX_FILE_BYTES
+        from efm_go.cloud.launch_state import _MAX_FILE_BYTES
 
         p = tmp_path / "cloud_launch_state.json"
         with open(p, "wb") as fh:
@@ -161,7 +161,7 @@ class TestTheReadIsBoundedBeforeItAllocates:
 
     def test_a_record_at_exactly_the_ceiling_still_reads(self, tmp_path):
         """The allowed size is allowed: a document exactly at the limit is not refused."""
-        from kiro_crew.cloud.launch_state import _MAX_FILE_BYTES
+        from efm_go.cloud.launch_state import _MAX_FILE_BYTES
 
         p = tmp_path / "cloud_launch_state.json"
         body = {"profile": "p", "region": "us-east-1", "last_tag": "kc-a1b2c3"}
@@ -183,7 +183,7 @@ class TestTheReadIsBoundedBeforeItAllocates:
         bytes are a COMPLETE, valid record and the file continues past them, so reading one byte
         further is the only thing that refuses it instead of adopting the prefix.
         """
-        from kiro_crew.cloud.launch_state import _MAX_FILE_BYTES
+        from efm_go.cloud.launch_state import _MAX_FILE_BYTES
 
         p = tmp_path / "cloud_launch_state.json"
         body = {"profile": "p", "region": "us-east-1", "last_tag": "kc-prefix"}
@@ -305,7 +305,7 @@ class TestTheOperatorsFileIsNeverWritten:
         two review findings this replaces were both about what that writer had to do when the
         operator's file was not in a state it could use.
         """
-        import kiro_crew.cloud.config as config_mod
+        import efm_go.cloud.config as config_mod
 
         assert not hasattr(CloudConfig, "save")
         assert not hasattr(CloudConfig, "apply_update")
@@ -324,7 +324,7 @@ class TestTheOperatorsFileIsNeverWritten:
         import ast
         import inspect
 
-        import kiro_crew.cloud.config as config_mod
+        import efm_go.cloud.config as config_mod
 
         tree = ast.parse(inspect.getsource(config_mod))
         called = set()
@@ -403,7 +403,7 @@ class TestTheOperatorsFileIsNeverWritten:
         ``destroy --yes`` deletes. Interactive ``destroy`` describes the instance and asks
         first; ``--yes`` is exactly the path that does not.
         """
-        from kiro_crew.security.paths import is_sensitive_write_path
+        from efm_go.security.paths import is_sensitive_write_path
 
         assert is_sensitive_write_path(path) is True
 
@@ -412,7 +412,7 @@ class TestTheOperatorsFileIsNeverWritten:
         enough: it covers an agent's file-edit tool, while a sandboxed shell's
         ``open(..., "w")`` reaches the path however the write is spelled, and pre-creation is
         what gives the mount seal a file to bind to when none exists yet."""
-        from kiro_crew.sandbox import (
+        from efm_go.sandbox import (
             _CREW_PRECREATE_READONLY_FILE_LEAVES,
             _CREW_READONLY_LEAVES,
         )
@@ -430,7 +430,7 @@ class TestTheOperatorsFileIsNeverWritten:
         called from ``LaunchState.load``), where the cost is the command that would have acted
         on a forged tag.
         """
-        from kiro_crew.sandbox import _CREW_NOFOLLOW_READONLY_FILE_LEAVES
+        from efm_go.sandbox import _CREW_NOFOLLOW_READONLY_FILE_LEAVES
 
         assert "cloud_launch_state.json" not in _CREW_NOFOLLOW_READONLY_FILE_LEAVES
 
@@ -474,7 +474,7 @@ class TestTheTwoProductWritersAreSerialised:
         """A launch that records its tag between ``clear_tag``'s read and its write must not be
         overwritten. Forced deterministically: the record lands from inside the lock's own
         critical section, which is where an unlocked implementation leaves the window."""
-        import kiro_crew.cloud.launch_state as ls
+        import efm_go.cloud.launch_state as ls
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         p = tmp_path / "cloud_launch_state.json"
@@ -513,7 +513,7 @@ class TestTheTwoProductWritersAreSerialised:
         import inspect
         import textwrap
 
-        import kiro_crew.cloud.launch_state as ls
+        import efm_go.cloud.launch_state as ls
 
         for method in (LaunchState.record, LaunchState.try_clear_tag):
             tree = ast.parse(textwrap.dedent(inspect.getsource(method)))
@@ -545,7 +545,7 @@ class TestTheTwoProductWritersAreSerialised:
         could not be taken, so a launch recording its tag in between had its pointer erased by
         a destroy that never saw it -- the failure the lock was added for.
         """
-        import kiro_crew.cloud.launch_state as ls
+        import efm_go.cloud.launch_state as ls
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         p = tmp_path / "cloud_launch_state.json"
@@ -567,8 +567,8 @@ class TestTheTwoProductWritersAreSerialised:
         mount costs a pointer, never a command. The spawn-path refusal this PR downgraded had no
         caller in that position, which is the difference rather than a preference.
         """
-        import kiro_crew.cloud.launch_state as ls
-        from kiro_crew.cloud import wizard
+        import efm_go.cloud.launch_state as ls
+        from efm_go.cloud import wizard
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         warnings: list[str] = []
@@ -599,7 +599,7 @@ class TestTheTwoProductWritersAreSerialised:
         lock and watching which helper it calls, because the platform where the difference
         shows cannot be the platform this test runs on.
         """
-        import kiro_crew.cloud.launch_state as ls
+        import efm_go.cloud.launch_state as ls
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         p = tmp_path / "cloud_launch_state.json"
@@ -625,7 +625,7 @@ class TestTheTwoProductWritersAreSerialised:
         inside the hold must be refused. That is the exclusion itself rather than a call to
         something named like a lock.
         """
-        import kiro_crew.cloud.launch_state as ls
+        import efm_go.cloud.launch_state as ls
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         p = tmp_path / "cloud_launch_state.json"
@@ -673,7 +673,7 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
 
     @pytest.mark.parametrize("shape", ("symlink", "hardlink"))
     def test_the_read_that_every_verb_goes_through_refuses(self, tmp_path, monkeypatch, shape):
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         self._aliased_record(tmp_path, shape)
@@ -705,8 +705,8 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         """
         import os
 
-        import kiro_crew.cloud.launch_state as ls
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        import efm_go.cloud.launch_state as ls
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         LaunchState.record(profile="p", region="us-east-1", last_tag="kc-mine")
@@ -752,8 +752,8 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         """
         import os
 
-        import kiro_crew.cloud.launch_state as ls
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        import efm_go.cloud.launch_state as ls
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         if not getattr(os, "O_NOFOLLOW", 0):
             pytest.skip(
@@ -801,8 +801,8 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         import errno as _errno
         import os as _os
 
-        import kiro_crew.cloud.launch_state as ls
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        import efm_go.cloud.launch_state as ls
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         LaunchState.record(profile="p", region="us-east-1", last_tag="kc-mine")
@@ -856,7 +856,7 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         import errno as _errno
         import os as _os
 
-        import kiro_crew.cloud.launch_state as ls
+        import efm_go.cloud.launch_state as ls
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         LaunchState.record(profile="p", region="us-east-1", last_tag="kc-gone")
@@ -887,7 +887,7 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         passing against an implementation that kept only the by-name check -- which is the
         state being fixed, and which reads as green on every other test in this class.
         """
-        import kiro_crew.cloud.launch_state as ls
+        import efm_go.cloud.launch_state as ls
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         LaunchState.record(profile="p", region="us-east-1", last_tag="kc-ok")
@@ -913,7 +913,7 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         as it is in ``load``. The refusal is affordable because nothing has been provisioned
         and nothing is billing -- the same reason that caller's own abort is affordable.
         """
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         p = self._aliased_record(tmp_path, shape)
@@ -930,8 +930,8 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         operator never wrote, and a later ``destroy`` with no ``--tag`` resolves it. So the
         property pinned is that this caller does not answer True.
         """
-        from kiro_crew.cloud import wizard
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go.cloud import wizard
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         self._aliased_record(tmp_path, shape)
@@ -954,8 +954,8 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         """
         import shlex
 
-        from kiro_crew import platform_compat
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go import platform_compat
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         p = self._aliased_record(tmp_path, shape)
@@ -980,7 +980,7 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         reads ``IS_WINDOWS`` leaves its Windows branch measurable on Windows alone, which is how
         a `rm 'C:\\Users\\...'` remedy reached CI.
         """
-        from kiro_crew.sandbox import _delete_file_command
+        from efm_go.sandbox import _delete_file_command
 
         win = _delete_file_command(r"C:\Users\me\AppData\cloud_launch_state.json", windows=True)
         assert win == 'del "C:\\Users\\me\\AppData\\cloud_launch_state.json"'
@@ -1005,8 +1005,8 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         the path separators are still POSIX here -- and it is what turns "the renderer has a
         Windows branch" into "the refusal uses it".
         """
-        import kiro_crew.sandbox as sandbox_mod
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        import efm_go.sandbox as sandbox_mod
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         monkeypatch.setattr(sandbox_mod.platform_compat, "IS_WINDOWS", True)
@@ -1028,7 +1028,7 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         notice. Here the crew home holds a perfectly ordinary record and the file actually
         read is the aliased one.
         """
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
         LaunchState.record(profile="p", region="us-east-1", last_tag="kc-mine")
@@ -1065,7 +1065,7 @@ class TestAnAliasedRecordIsRefusedWhereItsTagIsConsumed:
         so refusing there costs a stow / chezmoi / ``rsync --link-dest`` host every chat, cron
         and subagent for an exposure that is one command's. The warn stays a warn.
         """
-        import kiro_crew.sandbox as sandbox_mod
+        import efm_go.sandbox as sandbox_mod
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         self._aliased_record(tmp_path, shape)
@@ -1097,7 +1097,7 @@ class TestTheLegacyFallbackIsGuardedToo:
     def test_an_aliased_config_is_refused_when_the_record_is_the_precreated_stub(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         self._aliased_config(tmp_path)
@@ -1109,7 +1109,7 @@ class TestTheLegacyFallbackIsGuardedToo:
 
     def test_an_aliased_config_is_refused_when_the_record_is_absent(self, tmp_path, monkeypatch):
         """The other way the fallback is reached, so the fix cannot depend on the stub existing."""
-        from kiro_crew.sandbox import SandboxCeilingUnsealable
+        from efm_go.sandbox import SandboxCeilingUnsealable
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         self._aliased_config(tmp_path)

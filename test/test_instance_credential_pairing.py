@@ -19,9 +19,9 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.dashboard import server as dashboard_server
-from kiro_crew.dashboard import token_auth
-from kiro_crew.instances import run_marker
+from efm_go.dashboard import server as dashboard_server
+from efm_go.dashboard import token_auth
+from efm_go.instances import run_marker
 
 
 @pytest.fixture()
@@ -29,7 +29,7 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     # config_dir memoises on (env value, resolved home); clear it so the temp
     # home is honoured rather than a value cached by an earlier test.
-    from kiro_crew.config import paths
+    from efm_go.config import paths
 
     monkeypatch.setattr(paths, "_config_dir_memo", None, raising=False)
     # Which listener addresses this PROCESS published is in-process state (one
@@ -411,7 +411,7 @@ class TestListenerKeyedCredentialFile:
         import ast
         from pathlib import Path as _Path
 
-        src = _Path(__file__).resolve().parent.parent / "src" / "kiro_crew" / "slack" / "gateway.py"
+        src = _Path(__file__).resolve().parent.parent / "src" / "efm_go" / "slack" / "gateway.py"
         tree = ast.parse(src.read_text(encoding="utf-8"))
         worker = [
             fn
@@ -440,7 +440,7 @@ class TestListenerKeyedCredentialFile:
         import ast
         from pathlib import Path as _Path
 
-        root = _Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        root = _Path(__file__).resolve().parent.parent / "src" / "efm_go"
         offenders: list[str] = []
         for py in root.rglob("*.py"):
             try:
@@ -698,17 +698,17 @@ class TestSharedFileIsNotClobberedWhileASiblingServes:
         # credential at all -- the guard must key on the ownership proof, not on
         # the file's presence.
         run_marker.write_marker(5476)
-        with mock.patch("kiro_crew.port_resolution._gateway_owns_port", return_value=False):
+        with mock.patch("efm_go.port_resolution._gateway_owns_port", return_value=False):
             assert dashboard_server._live_sibling_port(7811) is None
 
     def test_a_verified_live_marker_is_a_sibling(self, home: Path) -> None:
         run_marker.write_marker(5476)
-        with mock.patch("kiro_crew.port_resolution._gateway_owns_port", return_value=True):
+        with mock.patch("efm_go.port_resolution._gateway_owns_port", return_value=True):
             assert dashboard_server._live_sibling_port(7811) == 5476
 
     def test_own_port_is_never_its_own_sibling(self, home: Path) -> None:
         run_marker.write_marker(5476)
-        with mock.patch("kiro_crew.port_resolution._gateway_owns_port", return_value=True):
+        with mock.patch("efm_go.port_resolution._gateway_owns_port", return_value=True):
             assert dashboard_server._live_sibling_port(5476) is None
 
     def test_discovery_failure_does_not_block_startup(self, home: Path) -> None:
@@ -718,7 +718,7 @@ class TestSharedFileIsNotClobberedWhileASiblingServes:
 
 class TestClientReadsTheCredentialForThePortItDials:
     def test_per_port_beats_the_shared_file(self, home: Path) -> None:
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         (home / ".local_secret").write_text("newcomer-that-replaced-the-file")
         dashboard_server._write_secret_file(run_marker.secret_path(5476), "owner-of-5476")
@@ -728,14 +728,14 @@ class TestClientReadsTheCredentialForThePortItDials:
     def test_falls_back_to_shared_file_for_a_gateway_without_a_per_port_file(
         self, home: Path
     ) -> None:
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         (home / ".local_secret").write_text("older-gateway")
         with mock.patch.object(mcp_core, "_api_port", return_value=5476):
             assert mcp_core._internal_secret() == "older-gateway"
 
     def test_no_credential_anywhere_yields_empty_not_an_exception(self, home: Path) -> None:
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         with mock.patch.object(mcp_core, "_api_port", return_value=5476):
             assert mcp_core._internal_secret() == ""
@@ -747,7 +747,7 @@ class TestClientReadsTheCredentialForThePortItDials:
         Before the fix the client read the shared file and sent the newcomer's
         credential to the incumbent; now each port resolves to its own owner.
         """
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         shared = home / ".local_secret"
         with mock.patch.object(dashboard_server, "_live_sibling_port", return_value=None):
@@ -776,7 +776,7 @@ class TestPruneKeepsALiveSibling:
         """
         run_marker.write_marker(5476)
         dashboard_server._write_secret_file(run_marker.secret_path(5476), "incumbent")
-        with mock.patch("kiro_crew.port_resolution._gateway_owns_port", return_value=False):
+        with mock.patch("efm_go.port_resolution._gateway_owns_port", return_value=False):
             run_marker.prune_markers(keep_port=7811)
         assert run_marker.marker_ports() == []
         assert run_marker.read_secret(5476) == "incumbent"
@@ -785,7 +785,7 @@ class TestPruneKeepsALiveSibling:
         run_marker.write_marker(5476)
         dashboard_server._write_secret_file(run_marker.secret_path(5476), "incumbent")
         with mock.patch(
-            "kiro_crew.port_resolution._gateway_owns_port",
+            "efm_go.port_resolution._gateway_owns_port",
             side_effect=OSError("no listener tooling"),
         ):
             run_marker.prune_markers(keep_port=7811)
@@ -797,7 +797,7 @@ class TestPruneKeepsALiveSibling:
         # credential writer needs to leave its credential alone.
         run_marker.write_marker(5476)
         dashboard_server._write_secret_file(run_marker.secret_path(5476), "alive")
-        with mock.patch("kiro_crew.port_resolution._gateway_owns_port", return_value=True):
+        with mock.patch("efm_go.port_resolution._gateway_owns_port", return_value=True):
             run_marker.prune_markers(keep_port=7811)
         assert run_marker.marker_ports() == [5476]
         assert run_marker.read_secret(5476) == "alive"
@@ -805,7 +805,7 @@ class TestPruneKeepsALiveSibling:
     def test_unverifiable_ownership_still_prunes(self, home: Path) -> None:
         run_marker.write_marker(5476)
         with mock.patch(
-            "kiro_crew.port_resolution._gateway_owns_port",
+            "efm_go.port_resolution._gateway_owns_port",
             side_effect=OSError("no /proc"),
         ):
             run_marker.prune_markers(keep_port=7811)
@@ -823,7 +823,7 @@ class TestPruneKeepsALiveSibling:
         run_marker.write_marker(5476)
         dashboard_server._write_secret_file(run_marker.secret_path(5476), "incumbent")
         with mock.patch(
-            "kiro_crew.port_resolution._gateway_owns_port",
+            "efm_go.port_resolution._gateway_owns_port",
             side_effect=OSError("ownership unverifiable on this host"),
         ):
             run_marker.prune_markers(keep_port=7811)
@@ -904,7 +904,7 @@ class TestEveryToolGetsTheExplanation:
         exc = urllib.error.HTTPError(
             "http://127.0.0.1/api/x", code, "Forbidden", {}, io.BytesIO(payload)
         )
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         return mcp_core._http_error_body(exc)
 
@@ -921,7 +921,7 @@ class TestEveryToolGetsTheExplanation:
         assert out["error"] == "Forbidden"
 
     def test_learn_add_surfaces_the_rewritten_message(self) -> None:
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         rewritten = self._body(b'{"error": "Forbidden", "code": "internal_auth_mismatch"}')
         with (
@@ -946,27 +946,27 @@ class TestTheSharedHelperOwnsThePairing:
     """
 
     def test_helper_prefers_the_per_port_credential(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         (home / ".local_secret").write_text("shared-replaced-by-newcomer")
         dashboard_server._write_secret_file(run_marker.secret_path(5476), "owner-of-5476")
         assert read_local_secret(5476) == "owner-of-5476"
 
     def test_helper_falls_back_to_the_shared_file(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         (home / ".local_secret").write_text("older-gateway")
         assert read_local_secret(5476) == "older-gateway"
 
     def test_helper_returns_empty_when_nothing_is_readable(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         assert read_local_secret(5476) == ""
 
     def test_port_is_required_so_a_call_site_cannot_omit_the_dial_target(self) -> None:
         import inspect
 
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         param = inspect.signature(read_local_secret).parameters["port"]
         assert param.default is inspect.Parameter.empty, (
@@ -985,7 +985,7 @@ class TestTheSharedHelperOwnsThePairing:
         """
         import pathlib
 
-        src = pathlib.Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        src = pathlib.Path(__file__).resolve().parent.parent / "src" / "efm_go"
         offenders = []
         for path in src.rglob("*.py"):
             for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -1004,7 +1004,7 @@ class TestTheSharedHelperOwnsThePairing:
         """
         import pathlib
 
-        src = pathlib.Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        src = pathlib.Path(__file__).resolve().parent.parent / "src" / "efm_go"
         allowed = {pathlib.Path("config/loader.py")}
         # dashboard/server.py composes its server_runtime owners into one namespace,
         # so the two are read as one module.
@@ -1029,12 +1029,12 @@ class TestTheSharedHelperOwnsThePairing:
         )
 
     def test_mcp_core_delegates_rather_than_reimplementing(self, home: Path) -> None:
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         with (
             mock.patch.object(mcp_core, "_api_port", return_value=7811),
             mock.patch(
-                "kiro_crew.mcp_core.read_local_secret", return_value="from-helper"
+                "efm_go.mcp_core.read_local_secret", return_value="from-helper"
             ) as helper,
         ):
             assert mcp_core._internal_secret() == "from-helper"
@@ -1043,7 +1043,7 @@ class TestTheSharedHelperOwnsThePairing:
         helper.assert_called_once_with(7811, dial_host="127.0.0.1")
 
     def test_cron_trigger_pairs_its_credential_with_the_port(self, home: Path) -> None:
-        from kiro_crew import cron_trigger
+        from efm_go import cron_trigger
 
         shared = home / ".local_secret"
         shared.write_text("shared-replaced-by-newcomer")
@@ -1079,7 +1079,7 @@ class TestTheSharedHelperOwnsThePairing:
         default whose request errors clearly -- failing closed rather than writing to
         a stranger.
         """
-        from kiro_crew.apps.builtins.code_review_sage.sage_lib import review_driver
+        from efm_go.apps.builtins.code_review_sage.sage_lib import review_driver
 
         with mock.patch.dict(os.environ, {}, clear=True):
             with mock.patch.object(
@@ -1116,7 +1116,7 @@ class TestTheSharedHelperOwnsThePairing:
         different one and the call would 403. The parent therefore injects the port it
         minted for, and the child prefers it.
         """
-        from kiro_crew import cron_script
+        from efm_go import cron_script
 
         job = mock.Mock()
 
@@ -1139,7 +1139,7 @@ class TestTheSharedHelperOwnsThePairing:
         the caller named a file would authenticate with whichever generation wrote
         last. It does NOT outrank the per-port read -- see the companion test.
         """
-        from kiro_crew import cron_trigger
+        from efm_go import cron_trigger
 
         (home / ".local_secret").write_text("ambient-home-of-this-process")
         explicit = tmp_path / "pod-home-secret"
@@ -1178,7 +1178,7 @@ class TestTheSharedHelperOwnsThePairing:
         flipping this order -- flipping it would make both callers prefer the
         home-wide file and reinstate the bug.
         """
-        from kiro_crew import cron_trigger
+        from efm_go import cron_trigger
 
         dashboard_server._write_secret_file(run_marker.secret_path(9999), "per-port")
         named = tmp_path / "named-secret"
@@ -1224,7 +1224,7 @@ class TestFrameRelayNeverCredentialsASiblingGateway:
     def test_ingress_follows_the_bound_port_not_the_configured_one(
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.computer_use import screencast
+        from efm_go.computer_use import screencast
 
         # The shape of the bug: config names the sibling, the bound port is ours.
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "7811")
@@ -1238,7 +1238,7 @@ class TestFrameRelayNeverCredentialsASiblingGateway:
     def test_the_credential_matches_the_port_the_frame_is_posted_to(
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.computer_use import screencast
+        from efm_go.computer_use import screencast
 
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "7811")
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
@@ -1262,8 +1262,8 @@ class TestFrameRelayNeverCredentialsASiblingGateway:
         it was written for, and it silently stopped every ordinary default-port
         install from mirroring. ``test_computer_use_api`` caught it.
         """
-        from kiro_crew.computer_use import screencast
-        from kiro_crew.port_resolution import resolve_client_port_ex
+        from efm_go.computer_use import screencast
+        from efm_go.port_resolution import resolve_client_port_ex
 
         monkeypatch.delenv("KIROCREW_BOUND_PORT", raising=False)
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
@@ -1279,7 +1279,7 @@ class TestFrameRelayNeverCredentialsASiblingGateway:
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Both read the same resolver, so no input can split them apart."""
-        from kiro_crew.computer_use import screencast
+        from efm_go.computer_use import screencast
 
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "7811")
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
@@ -1303,7 +1303,7 @@ class TestFrameRelayNeverCredentialsASiblingGateway:
         ``--port auto`` leaves both set, and the frame would carry 5476's own valid
         credential -- so that sibling ACCEPTS the capture rather than refusing it.
         """
-        from kiro_crew.computer_use import screencast
+        from efm_go.computer_use import screencast
 
         monkeypatch.setenv("KIROCREW_PORT", "5476")  # inherited, names the sibling
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "7811")  # what we actually bound
@@ -1322,7 +1322,7 @@ class TestFrameRelayNeverCredentialsASiblingGateway:
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Preferring the bound port must not disable the dev-instance override."""
-        from kiro_crew.computer_use import screencast
+        from efm_go.computer_use import screencast
 
         monkeypatch.setenv("KIROCREW_PORT", "6777")
         monkeypatch.delenv("KIROCREW_BOUND_PORT", raising=False)
@@ -1334,7 +1334,7 @@ class TestFrameRelayNeverCredentialsASiblingGateway:
     def test_a_malformed_bound_port_falls_through_instead_of_raising(
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.computer_use import screencast
+        from efm_go.computer_use import screencast
 
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "not-a-port")
         monkeypatch.setenv("KIROCREW_PORT", "6777")
@@ -1360,7 +1360,7 @@ class TestCronDialsTheGatewayItRunsUnderNotASibling:
     def test_bound_port_wins_over_an_inherited_kirocrew_port(
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import cron_script
+        from efm_go import cron_script
 
         monkeypatch.setenv("KIROCREW_PORT", "5476")  # inherited, the sibling
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "7811")  # what we actually bound
@@ -1369,7 +1369,7 @@ class TestCronDialsTheGatewayItRunsUnderNotASibling:
     def test_the_credential_is_read_for_the_dialed_port(
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import cron_script
+        from efm_go import cron_script
 
         monkeypatch.setenv("KIROCREW_PORT", "5476")
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "7811")
@@ -1384,7 +1384,7 @@ class TestCronDialsTheGatewayItRunsUnderNotASibling:
     def test_kirocrew_port_still_decides_when_no_port_was_bound(
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import cron_script
+        from efm_go import cron_script
 
         monkeypatch.setenv("KIROCREW_PORT", "6777")
         monkeypatch.delenv("KIROCREW_BOUND_PORT", raising=False)
@@ -1393,7 +1393,7 @@ class TestCronDialsTheGatewayItRunsUnderNotASibling:
     def test_a_malformed_bound_port_falls_through(
         self, home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import cron_script
+        from efm_go import cron_script
 
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "not-a-port")
         monkeypatch.setenv("KIROCREW_PORT", "6777")
@@ -1414,7 +1414,7 @@ class TestTheServingResolverIsTheOneGatewaySideChokepoint:
     def test_bound_port_beats_an_inherited_kirocrew_port(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.port_resolution import resolve_serving_port
+        from efm_go.port_resolution import resolve_serving_port
 
         monkeypatch.setenv("KIROCREW_PORT", "5476")
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "7811")
@@ -1423,14 +1423,14 @@ class TestTheServingResolverIsTheOneGatewaySideChokepoint:
     def test_kirocrew_port_still_decides_with_no_bound_port(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.port_resolution import resolve_serving_port
+        from efm_go.port_resolution import resolve_serving_port
 
         monkeypatch.setenv("KIROCREW_PORT", "6777")
         monkeypatch.delenv("KIROCREW_BOUND_PORT", raising=False)
         assert resolve_serving_port() == 6777
 
     def test_a_malformed_bound_port_falls_through(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.port_resolution import resolve_serving_port
+        from efm_go.port_resolution import resolve_serving_port
 
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "not-a-port")
         monkeypatch.setenv("KIROCREW_PORT", "6777")
@@ -1439,7 +1439,7 @@ class TestTheServingResolverIsTheOneGatewaySideChokepoint:
     def test_every_in_gateway_consumer_routes_through_it(self) -> None:
         # A grep-level guard: the three in-gateway consumers must not reach for the
         # client resolver directly, or the sibling bug returns one file at a time.
-        src = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        src = Path(__file__).resolve().parents[1] / "src" / "efm_go"
         offenders = []
         for rel in (
             "computer_use/screencast.py",
@@ -1467,7 +1467,7 @@ class TestReviewDriverDoesNotGuessASiblingPort:
     def test_no_named_port_fails_closed_instead_of_guessing_5476(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps.builtins.code_review_sage.sage_lib import review_driver
+        from efm_go.apps.builtins.code_review_sage.sage_lib import review_driver
 
         monkeypatch.setattr(review_driver, "_RESOLVED_BASE", "", raising=False)
         monkeypatch.setattr(review_driver, "_candidate_ports", lambda: [])
@@ -1481,7 +1481,7 @@ class TestReviewDriverDoesNotGuessASiblingPort:
     def test_a_named_port_is_still_used_as_the_fallback(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps.builtins.code_review_sage.sage_lib import review_driver
+        from efm_go.apps.builtins.code_review_sage.sage_lib import review_driver
 
         monkeypatch.setattr(review_driver, "_RESOLVED_BASE", "", raising=False)
         monkeypatch.setattr(review_driver, "_candidate_ports", lambda: [7811])
@@ -1495,7 +1495,7 @@ class TestReviewDriverDoesNotGuessASiblingPort:
         # dialled family is uncovered or run/ is unreadable), _local_secret must
         # return that refusal directly. Falling through to crew_home()/.local_secret
         # would send a DIFFERENT listener's credential -- the desync this closes.
-        from kiro_crew.apps.builtins.code_review_sage.sage_lib import review_driver
+        from efm_go.apps.builtins.code_review_sage.sage_lib import review_driver
 
         crew_home = tmp_path / "crew_home"
         crew_home.mkdir()
@@ -1503,7 +1503,7 @@ class TestReviewDriverDoesNotGuessASiblingPort:
         monkeypatch.setattr(review_driver.store, "crew_home", lambda: crew_home)
         # The shared resolver is present and refuses.
         monkeypatch.setattr(
-            "kiro_crew.config.loader.read_local_secret",
+            "efm_go.config.loader.read_local_secret",
             lambda port, dial_host=None: "",
         )
         assert review_driver._local_secret(7811) == ""
@@ -1511,14 +1511,14 @@ class TestReviewDriverDoesNotGuessASiblingPort:
     def test_local_secret_returns_the_helper_value_when_it_resolves(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        from kiro_crew.apps.builtins.code_review_sage.sage_lib import review_driver
+        from efm_go.apps.builtins.code_review_sage.sage_lib import review_driver
 
         crew_home = tmp_path / "crew_home"
         crew_home.mkdir()
         (crew_home / ".local_secret").write_text("home-wide-secret", encoding="utf-8")
         monkeypatch.setattr(review_driver.store, "crew_home", lambda: crew_home)
         monkeypatch.setattr(
-            "kiro_crew.config.loader.read_local_secret",
+            "efm_go.config.loader.read_local_secret",
             lambda port, dial_host=None: "listener-secret",
         )
         assert review_driver._local_secret(7811) == "listener-secret"
@@ -1600,7 +1600,7 @@ class TestReadLocalSecretDialHost:
     """
 
     def test_dial_host_prefers_the_listener_entry(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # Port-keyed says one thing, the dialled listener says another. A caller
         # that names its host must get the LISTENER'S value, not the port file's.
@@ -1609,7 +1609,7 @@ class TestReadLocalSecretDialHost:
         assert read_local_secret(5476, dial_host="127.0.0.1") == "listener-keyed"
 
     def test_dial_host_fails_closed_when_another_family_is_published(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # The port-keyed AND shared files exist, and the gateway published a
         # listener entry for the OTHER family (::1). A caller dialling 127.0.0.1
@@ -1621,7 +1621,7 @@ class TestReadLocalSecretDialHost:
         assert read_local_secret(5476, dial_host="127.0.0.1") == ""
 
     def test_dial_host_falls_back_when_no_listener_entry_exists(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # A gateway that published NO listener entry for this port (older gateway,
         # or one that could not name its bound address) has no other listener's
@@ -1633,7 +1633,7 @@ class TestReadLocalSecretDialHost:
     def test_dial_host_falls_back_to_shared_for_a_pre_per_listener_gateway(
         self, home: Path
     ) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # No per-port file and no listener entry -- a gateway predating the whole
         # per-listener publish. The shared file is the only credential, and a
@@ -1642,7 +1642,7 @@ class TestReadLocalSecretDialHost:
         assert read_local_secret(5476, dial_host="127.0.0.1") == "shared-secret"
 
     def test_no_dial_host_keeps_port_keyed_read(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # A caller that structurally cannot name a host keeps the pre-existing
         # port-keyed-then-shared resolution.
@@ -1650,13 +1650,13 @@ class TestReadLocalSecretDialHost:
         assert read_local_secret(5476) == "port-keyed"
 
     def test_no_dial_host_falls_back_to_shared(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         (home / ".local_secret").write_text("shared-secret", encoding="utf-8")
         assert read_local_secret(5476) == "shared-secret"
 
     def test_round_trip_through_the_real_publisher(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # End to end: a gateway bound to both families publishes via the real
         # writer; a caller dialling either literal or the ambiguous name reads the
@@ -1700,7 +1700,7 @@ class TestHasListenerEntriesIsThreeValued:
             assert run_marker.has_listener_entries(5476) is None
 
     def test_dial_host_fails_closed_when_run_dir_is_unreadable(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # The port-keyed and shared files are readable, but run/ enumeration
         # raises. Because absence of a covering listener entry is UNPROVEN, the
@@ -1733,14 +1733,14 @@ class TestSingleFamilyGatewayAuthenticatesTheV4LiteralDial:
     """
 
     def test_wildcard_bind_covers_the_v4_literal_dial(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # A --slack-only / container gateway binds 0.0.0.0 and publishes one entry.
         _publish_listener(home, 5476, "0.0.0.0", "wild")
         assert read_local_secret(5476, dial_host="127.0.0.1") == "wild"
 
     def test_v4_only_bind_covers_the_v4_literal_dial(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # An IPv6-less host: only the v4 entry is published. A v4-literal dial is
         # covered; no squatter can be on a v6 the host cannot even offer.
@@ -1748,7 +1748,7 @@ class TestSingleFamilyGatewayAuthenticatesTheV4LiteralDial:
         assert read_local_secret(5476, dial_host="127.0.0.1") == "v4only"
 
     def test_v4_literal_still_fails_closed_when_only_v6_is_published(self, home: Path) -> None:
-        from kiro_crew.config.loader import read_local_secret
+        from efm_go.config.loader import read_local_secret
 
         # A ::1-only gateway. A v4-literal dial finds the v4 family uncovered while
         # a listener MAP exists -> fail closed, no port-keyed fallback to a v4
@@ -1758,7 +1758,7 @@ class TestSingleFamilyGatewayAuthenticatesTheV4LiteralDial:
         assert read_local_secret(5476, dial_host="127.0.0.1") == ""
 
     def test_review_driver_base_dials_the_v4_literal(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.apps.builtins.code_review_sage.sage_lib import review_driver
+        from efm_go.apps.builtins.code_review_sage.sage_lib import review_driver
 
         monkeypatch.setattr(review_driver, "_RESOLVED_BASE", "", raising=False)
         monkeypatch.setattr(review_driver, "_candidate_ports", lambda: [7811])

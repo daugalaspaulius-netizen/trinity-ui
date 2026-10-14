@@ -22,8 +22,8 @@ import asyncio
 import types
 from unittest.mock import MagicMock, patch
 
-from kiro_crew import subagent as sa
-from kiro_crew.mcp_tools import spawn as spawn_tools
+from efm_go import subagent as sa
+from efm_go.mcp_tools import spawn as spawn_tools
 
 
 def _agents(*names: str) -> list[types.SimpleNamespace]:

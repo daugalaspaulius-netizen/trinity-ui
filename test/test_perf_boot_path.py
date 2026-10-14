@@ -28,13 +28,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import kiro_crew
-from kiro_crew.config import paths
-from kiro_crew.dashboard import handlers_channel
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.slack.gateway import GatewayOrchestrator
+import efm_go
+from efm_go.config import paths
+from efm_go.dashboard import handlers_channel
+from efm_go.dashboard.handlers import updates
+from efm_go.slack.gateway import GatewayOrchestrator
 
-_SRC = str(Path(kiro_crew.__file__).resolve().parents[1])
+_SRC = str(Path(efm_go.__file__).resolve().parents[1])
 
 
 def _probe(snippet: str) -> dict:
@@ -121,7 +121,7 @@ class TestOtelSdkImportIsDeferred:
     def test_provider_import_does_not_load_otel_sdk(self) -> None:
         result = _probe(
             "import json, sys\n"
-            "import kiro_crew.metrics.provider as p\n"
+            "import efm_go.metrics.provider as p\n"
             "print(json.dumps({\n"
             "    'sdk': 'opentelemetry.sdk.metrics' in sys.modules,\n"
             "    'available': p._OTEL_AVAILABLE,\n"
@@ -137,7 +137,7 @@ class TestOtelSdkImportIsDeferred:
     def test_disabled_recorder_does_not_load_otel_sdk(self) -> None:
         result = _probe(
             "import json, sys\n"
-            "import kiro_crew.metrics.provider as p\n"
+            "import efm_go.metrics.provider as p\n"
             "rec = p.get_recorder()\n"
             "print(json.dumps({\n"
             "    'sdk': 'opentelemetry.sdk.metrics' in sys.modules,\n"
@@ -151,7 +151,7 @@ class TestOtelSdkImportIsDeferred:
         """The deferral must not break the opt-in path."""
         result = _probe(
             "import json, sys\n"
-            "import kiro_crew.metrics.provider as p\n"
+            "import efm_go.metrics.provider as p\n"
             f"import os; os.environ['KIROCREW_HOME'] = {str(tmp_path)!r}\n"
             "os.environ['KIROCREW_TELEMETRY'] = '1'\n"
             "rec = p.get_recorder()\n"
@@ -239,10 +239,10 @@ class TestDashboardImportIsLeaf:
     def test_importing_urls_pulls_no_handler_tree_and_no_aiohttp(self) -> None:
         result = _probe(
             "import json, sys\n"
-            "from kiro_crew.dashboard.urls import parse_dashboard_url\n"
+            "from efm_go.dashboard.urls import parse_dashboard_url\n"
             "print(json.dumps({\n"
-            "    'server': 'kiro_crew.dashboard.server' in sys.modules,\n"
-            "    'handlers': 'kiro_crew.dashboard.handlers' in sys.modules,\n"
+            "    'server': 'efm_go.dashboard.server' in sys.modules,\n"
+            "    'handlers': 'efm_go.dashboard.handlers' in sys.modules,\n"
             "    'aiohttp': 'aiohttp' in sys.modules,\n"
             "    'parsed': list(parse_dashboard_url('http://h:9999')),\n"
             "}))\n"
@@ -262,11 +262,11 @@ class TestDashboardImportIsLeaf:
         against once closed a boot-order cycle through session_control."""
         result = _probe(
             "import json, sys\n"
-            "import kiro_crew.dashboard.server\n"
-            "import kiro_crew.dashboard.chat_folders\n"
+            "import efm_go.dashboard.server\n"
+            "import efm_go.dashboard.chat_folders\n"
             "print(json.dumps({\n"
-            "    'mcp_apps': 'kiro_crew.dashboard.handlers.mcp_apps' in sys.modules,\n"
-            "    'backend': 'kiro_crew.mcp_gateway.backend' in sys.modules,\n"
+            "    'mcp_apps': 'efm_go.dashboard.handlers.mcp_apps' in sys.modules,\n"
+            "    'backend': 'efm_go.mcp_gateway.backend' in sys.modules,\n"
             "}))\n"
         )
         assert result["mcp_apps"] is False, "mcp_apps must load on first request, not at boot"
@@ -275,10 +275,10 @@ class TestDashboardImportIsLeaf:
     def test_importing_origin_pulls_no_handler_tree(self) -> None:
         result = _probe(
             "import json, sys\n"
-            "import kiro_crew.dashboard.origin as o\n"
+            "import efm_go.dashboard.origin as o\n"
             "print(json.dumps({\n"
-            "    'server': 'kiro_crew.dashboard.server' in sys.modules,\n"
-            "    'handlers': 'kiro_crew.dashboard.handlers' in sys.modules,\n"
+            "    'server': 'efm_go.dashboard.server' in sys.modules,\n"
+            "    'handlers': 'efm_go.dashboard.handlers' in sys.modules,\n"
             "    'aiohttp': 'aiohttp' in sys.modules,\n"
             "    'modules': len(sys.modules),\n"
             "    'reexports_ok': all(hasattr(o, n) for n in (\n"
@@ -308,9 +308,9 @@ class TestDashboardImportIsLeaf:
     def test_lazy_package_attributes_still_resolve(self) -> None:
         result = _probe(
             "import json\n"
-            "from kiro_crew.dashboard import (start_dashboard, start_api_server,\n"
+            "from efm_go.dashboard import (start_dashboard, start_api_server,\n"
             "    DashboardState, _ChatSlot, _fmt_duration)\n"
-            "import kiro_crew.dashboard as d\n"
+            "import efm_go.dashboard as d\n"
             "print(json.dumps({\n"
             "    'callables': all(callable(x) for x in (start_dashboard,\n"
             "        start_api_server, DashboardState, _ChatSlot, _fmt_duration)),\n"
@@ -325,9 +325,9 @@ class TestDashboardImportIsLeaf:
         optional numpy/faiss imports, ~175ms) for one enum on one error branch."""
         result = _probe(
             "import json, sys\n"
-            "import kiro_crew.dashboard.handlers.memory  # noqa: F401\n"
+            "import efm_go.dashboard.handlers.memory  # noqa: F401\n"
             "print(json.dumps({\n"
-            "    'vector_memory': 'kiro_crew.vector_memory' in sys.modules,\n"
+            "    'vector_memory': 'efm_go.vector_memory' in sys.modules,\n"
             "    'snowballstemmer': 'snowballstemmer' in sys.modules,\n"
             "}))\n"
         )
@@ -368,11 +368,11 @@ class TestFolderWatcherScanQueryCount:
 
     @pytest.mark.asyncio
     async def test_pause_check_and_last_seen_are_not_per_file(self, tmp_path: Path, opened) -> None:
-        from kiro_crew.knowledge.folder_watcher import (
+        from efm_go.knowledge.folder_watcher import (
             _PAUSE_RECHECK_FILES,
             FolderWatcher,
         )
-        from kiro_crew.knowledge.store import KnowledgeStore
+        from efm_go.knowledge.store import KnowledgeStore
 
         n_files = 40
         assert n_files < _PAUSE_RECHECK_FILES  # so one up-front check suffices
@@ -433,8 +433,8 @@ class TestFolderWatcherScanQueryCount:
     @pytest.mark.asyncio
     async def test_last_seen_is_still_written(self, tmp_path: Path, opened) -> None:
         """The batching must not drop the touches it defers."""
-        from kiro_crew.knowledge.folder_watcher import FolderWatcher
-        from kiro_crew.knowledge.store import KnowledgeStore
+        from efm_go.knowledge.folder_watcher import FolderWatcher
+        from efm_go.knowledge.store import KnowledgeStore
 
         vault = tmp_path / "vault"
         vault.mkdir()
@@ -474,8 +474,8 @@ class TestFolderWatcherScanQueryCount:
     @pytest.mark.asyncio
     async def test_pause_still_stops_a_scan(self, tmp_path: Path, opened) -> None:
         """Bounding the re-check must not remove the pause path."""
-        from kiro_crew.knowledge.folder_watcher import FolderWatcher
-        from kiro_crew.knowledge.store import KnowledgeStore
+        from efm_go.knowledge.folder_watcher import FolderWatcher
+        from efm_go.knowledge.store import KnowledgeStore
 
         vault = tmp_path / "vault"
         vault.mkdir()
@@ -625,14 +625,14 @@ class TestOptionalMcpServersAreNotImportedByTheCli:
     def test_importing_cli_does_not_pull_the_mcp_server_modules(self) -> None:
         got = _probe(
             "import json, sys\n"
-            "import kiro_crew.cli\n"
+            "import efm_go.cli\n"
             "print(json.dumps({\n"
-            "    'dashboard': 'kiro_crew.mcp_dashboard' in sys.modules,\n"
-            "    'computer': 'kiro_crew.mcp_computer' in sys.modules,\n"
+            "    'dashboard': 'efm_go.mcp_dashboard' in sys.modules,\n"
+            "    'computer': 'efm_go.mcp_computer' in sys.modules,\n"
             "}))\n"
         )
         assert got["dashboard"] is False, (
-            "kiro_crew.mcp_dashboard is imported at cli module scope — move it "
+            "efm_go.mcp_dashboard is imported at cli module scope — move it "
             "into the mcp-dashboard dispatch branch (importlib) so a "
             "default-disabled server costs gateway boot nothing"
         )
@@ -651,10 +651,10 @@ class TestPanelSubsystemIsNotLoadedAtBoot:
     def test_handlers_import_does_not_load_agent_panel(self) -> None:
         result = _probe(
             "import json, sys\n"
-            "import kiro_crew.dashboard.handlers  # noqa: F401\n"
+            "import efm_go.dashboard.handlers  # noqa: F401\n"
             "print(json.dumps({\n"
-            "    'panel': 'kiro_crew.agent_panel' in sys.modules,\n"
-            "    'members': 'kiro_crew.dashboard.handlers.members' in sys.modules,\n"
+            "    'panel': 'efm_go.agent_panel' in sys.modules,\n"
+            "    'members': 'efm_go.dashboard.handlers.members' in sys.modules,\n"
             "}))\n"
         )
         # Pin the assumption the guard rests on: the boot chain really does pull
@@ -666,4 +666,4 @@ class TestPanelSubsystemIsNotLoadedAtBoot:
         )
         assert (
             result["panel"] is False
-        ), "importing the dashboard handlers must not load kiro_crew.agent_panel"
+        ), "importing the dashboard handlers must not load efm_go.agent_panel"

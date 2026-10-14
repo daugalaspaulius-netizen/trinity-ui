@@ -9,13 +9,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.cron import CronJob, CronService, resolve_cron_memory
-from kiro_crew.history import ConversationLog
-from kiro_crew.member_memory_auth import bind_private_session_store
-from kiro_crew.memory_stores import UnknownMemoryStore, provision_member_memory
-from kiro_crew.subagent import SubagentInfo, SubagentManager
-from kiro_crew.subagent_persistence import (
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.cron import CronJob, CronService, resolve_cron_memory
+from efm_go.history import ConversationLog
+from efm_go.member_memory_auth import bind_private_session_store
+from efm_go.memory_stores import UnknownMemoryStore, provision_member_memory
+from efm_go.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent_persistence import (
     create_agent_folder,
     read_run_memory_store,
 )
@@ -25,8 +25,8 @@ pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
 @pytest.mark.asyncio
 async def test_task_continuations_keep_protected_member_after_restart(member_stores):
-    from kiro_crew.context import inherit_session_memory, store_of_session
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.context import inherit_session_memory, store_of_session
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, reviewer = member_stores
     origin = "dashboard:task-owner"
@@ -54,8 +54,8 @@ async def test_task_continuations_keep_protected_member_after_restart(member_sto
 
 @pytest.mark.asyncio
 async def test_task_continuation_refuses_tampered_parent_before_child_binding(member_stores):
-    from kiro_crew.context import inherit_session_memory
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.context import inherit_session_memory
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, reviewer = member_stores
     parent, child = "task:tampered:runtime", "task:tampered:task1"
@@ -71,8 +71,8 @@ async def test_task_continuation_refuses_tampered_parent_before_child_binding(me
 
 @pytest.mark.asyncio
 async def test_unbound_legacy_task_continuation_keeps_global_memory():
-    from kiro_crew.context import inherit_session_memory
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.context import inherit_session_memory
+    from efm_go.member_memory_auth import read_private_session_store
 
     builder = SimpleNamespace(conversation_log=ConversationLog(), ensure_store=AsyncMock())
     child = "task:legacy:task1"
@@ -83,9 +83,9 @@ async def test_unbound_legacy_task_continuation_keeps_global_memory():
 
 @pytest.mark.asyncio
 async def test_private_task_failure_lesson_never_uses_global_provider_or_store(member_stores):
-    from kiro_crew.context import store_of_session
-    from kiro_crew.task_models import Project, Task
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.context import store_of_session
+    from efm_go.task_models import Project, Task
+    from efm_go.taskrunner import TaskRunner
 
     writer, _ = member_stores
     runtime = "taskrunner:failed-private:runtime"
@@ -102,7 +102,7 @@ async def test_private_task_failure_lesson_never_uses_global_provider_or_store(m
         lesson_store=global_lessons,
         consolidator=SimpleNamespace(_vector_store=global_vectors),
     )
-    from kiro_crew.execution_context import read_session_execution
+    from efm_go.execution_context import read_session_execution
 
     run = Project(
         spec_path="spec.md",
@@ -132,8 +132,8 @@ async def test_private_task_failure_lesson_never_uses_global_provider_or_store(m
 
 @pytest.mark.asyncio
 async def test_private_task_review_refuses_corruption_before_provider(member_stores):
-    from kiro_crew.task_executor import self_review
-    from kiro_crew.task_models import Project, Task
+    from efm_go.task_executor import self_review
+    from efm_go.task_models import Project, Task
 
     writer, reviewer = member_stores
     runtime = "taskrunner:broken-review:runtime"
@@ -155,15 +155,15 @@ async def test_private_task_review_refuses_corruption_before_provider(member_sto
 async def test_registered_private_hook_prepares_its_member_on_later_delivery(member_stores):
     from dataclasses import replace
 
-    from kiro_crew.context import store_of_session
-    from kiro_crew.dashboard.handlers.hooks import _load_hook_execution, _run_hook_inner
-    from kiro_crew.execution_context import (
+    from efm_go.context import store_of_session
+    from efm_go.dashboard.handlers.hooks import _load_hook_execution, _run_hook_inner
+    from efm_go.execution_context import (
         bind_session_execution,
         clear_session_execution,
         read_session_execution,
     )
-    from kiro_crew.mcp_caller import CallerContext
-    from kiro_crew.mcp_tools import control
+    from efm_go.mcp_caller import CallerContext
+    from efm_go.mcp_tools import control
 
     writer, _ = member_stores
     origin, hook_key = "dashboard:hook-owner", f"hook:{writer}:private-report"
@@ -179,7 +179,7 @@ async def test_registered_private_hook_prepares_its_member_on_later_delivery(mem
     caller = CallerContext(session_key=origin, from_gateway=True)
     with (
         patch.object(control.mcp_core, "_resolve_session_key_strict", return_value=origin),
-        patch("kiro_crew.mcp_caller.current_caller", return_value=caller),
+        patch("efm_go.mcp_caller.current_caller", return_value=caller),
         patch.object(control.mcp_core, "_api_base", return_value="http://127.0.0.1:7788"),
         patch.object(control.mcp_core, "sel", return_value=MagicMock()),
     ):
@@ -198,7 +198,7 @@ async def test_registered_private_hook_prepares_its_member_on_later_delivery(mem
     config = KiroCrewConfig.load()
     config.agents["writer"].kiro_agent = "later-template"
     config.save()
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.member_memory_auth import read_private_session_store
 
     assert read_private_session_store("hook:private-report") is None
     builder = SimpleNamespace(conversation_log=log, ensure_store=AsyncMock(return_value=object()))
@@ -218,8 +218,8 @@ async def test_registered_private_hook_prepares_its_member_on_later_delivery(mem
 @pytest.mark.parametrize("mode", ["incognito", "temporary"])
 @pytest.mark.parametrize("member", [True, False])
 def test_restricted_hook_registration_never_persists_summary(member_stores, mode, member):
-    from kiro_crew.execution_context import bind_session_execution, execution_for_store
-    from kiro_crew.mcp_tools import control
+    from efm_go.execution_context import bind_session_execution, execution_for_store
+    from efm_go.mcp_tools import control
 
     writer, _ = member_stores
     key = "dashboard:restricted-hook"
@@ -244,14 +244,14 @@ def test_history_fields_cannot_grant_private_assignment(
 ):
     from chat_test_helpers import _make_state
 
-    from kiro_crew.dashboard.channel_slots import surface_channel_session
-    from kiro_crew.dashboard.chat_persistence import (
+    from efm_go.dashboard.channel_slots import surface_channel_session
+    from efm_go.dashboard.chat_persistence import (
         _apply_recent_session,
         _rehydrate_slot_from_history,
     )
-    from kiro_crew.dashboard.chat_utils import effective_session_key
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.dashboard.chat_utils import effective_session_key
+    from efm_go.execution_context import read_session_execution
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     cfg = KiroCrewConfig.load()
@@ -302,8 +302,8 @@ async def test_http_resume_cannot_authorize_private_transcript(tmp_path, member_
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.execution_context import read_session_execution
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     state = _make_state(tmp_path)
@@ -315,7 +315,7 @@ async def test_http_resume_cannot_authorize_private_transcript(tmp_path, member_
     # on the destination is enough to fail the rename outright.
     await asyncio.to_thread(state.conversation_log.append, key, "user", "ordinary V1 history")
     await asyncio.to_thread(state.conversation_log.update_metadata, key, {"agent": "writer"})
-    with patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"):
+    with patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             response = await client.post("/api/chat/slots/resume-private/resume", json={"key": key})
             assert response.status == 200, await response.text()
@@ -336,7 +336,7 @@ async def test_owner_create_pins_private_selection_before_history_save(
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     cfg = KiroCrewConfig.load()
@@ -346,7 +346,7 @@ async def test_owner_create_pins_private_selection_before_history_save(
     payload = {"name": "owner-private"}
     if explicit:
         payload["agent"] = "writer"
-    with patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"):
+    with patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             response = await client.post("/api/chat/slots", json=payload)
             assert response.status == 200, await response.text()
@@ -361,8 +361,8 @@ async def test_owner_direct_first_send_pins_private_memory_before_user_history(
     from aiohttp.test_utils import TestClient, TestServer
     from chat_test_helpers import _make_app, _make_state, drain_background_tasks
 
-    from kiro_crew.dashboard import chat_handlers, chat_persistence
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.dashboard import chat_handlers, chat_persistence
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     cfg = KiroCrewConfig.load()
@@ -422,8 +422,8 @@ async def test_agent_pick_cannot_promote_an_existing_v1_transcript(tmp_path, mem
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.execution_context import read_session_execution
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     state = _make_state(tmp_path)
@@ -434,7 +434,7 @@ async def test_agent_pick_cannot_promote_an_existing_v1_transcript(tmp_path, mem
     await asyncio.to_thread(
         state.conversation_log.append, "dashboard:owner-pick", "assistant", "V1 context"
     )
-    with patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"):
+    with patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             response = await client.post(
                 "/api/chat/slots/owner-pick/agent",
@@ -475,8 +475,8 @@ async def test_owner_agent_pick_on_empty_chat_pins_private_memory(tmp_path, memb
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.execution_context import read_session_execution
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     state = _make_state(tmp_path)
@@ -489,7 +489,7 @@ async def test_owner_agent_pick_on_empty_chat_pins_private_memory(tmp_path, memb
     )
     assert state.conversation_log.has_log(key)
     assert not state.conversation_log.has_messages(key)
-    with patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"):
+    with patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             response = await client.post(
                 "/api/chat/slots/empty-pick/agent",
@@ -523,14 +523,14 @@ async def test_unreadable_transcript_pick_is_refused_not_silently_committed(
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.member_memory_auth import read_private_session_store
 
     state = _make_state(tmp_path)
     state.sessions.reset = AsyncMock(return_value=True)
     slot = state.get_or_create_slot("unreadable-pick", agent="default")
     key = "dashboard:unreadable-pick"
     with (
-        patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"),
+        patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"),
         patch.object(ConversationLog, "has_messages", side_effect=PermissionError("denied")),
     ):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
@@ -553,7 +553,7 @@ async def test_member_pick_on_unused_linked_or_channel_slot_captures_identity(
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     state = _make_state(tmp_path)
@@ -564,7 +564,7 @@ async def test_member_pick_on_unused_linked_or_channel_slot_captures_identity(
         slot.linked_session_key = linked_key
     else:
         slot.channel_origin = True
-    with patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"):
+    with patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             response = await client.post(
                 "/api/chat/slots/native-pick/agent", json={"agent": "writer"}
@@ -582,9 +582,9 @@ async def test_owner_agent_pick_accepts_message_racing_with_private_pin(tmp_path
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.dashboard.chat_persistence import pin_private_agent_store
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.dashboard.chat_persistence import pin_private_agent_store
+    from efm_go.execution_context import read_session_execution
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     state = _make_state(tmp_path)
@@ -602,8 +602,8 @@ async def test_owner_agent_pick_accepts_message_racing_with_private_pin(tmp_path
         return assigned_store
 
     with (
-        patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"),
-        patch("kiro_crew.dashboard.chat_handlers.pin_private_agent_store", pin_with_message),
+        patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"),
+        patch("efm_go.dashboard.chat_handlers.pin_private_agent_store", pin_with_message),
     ):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             response = await client.post(
@@ -622,7 +622,7 @@ async def test_owner_agent_pick_pin_failure_rolls_the_switch_back(tmp_path, memb
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.member_memory_auth import read_private_session_store
 
     state = _make_state(tmp_path)
     state.sessions.reset = AsyncMock(return_value=True)
@@ -630,9 +630,9 @@ async def test_owner_agent_pick_pin_failure_rolls_the_switch_back(tmp_path, memb
     prior_memory_store = slot.memory_store
     key = "dashboard:failed-pick"
     with (
-        patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"),
+        patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"),
         patch(
-            "kiro_crew.dashboard.chat_handlers.pin_private_agent_store",
+            "efm_go.dashboard.chat_handlers.pin_private_agent_store",
             AsyncMock(side_effect=UnknownMemoryStore("boom")),
         ),
     ):
@@ -664,7 +664,7 @@ async def test_member_pick_on_a_conversation_with_history_names_the_boundary(
     state.sessions.reset = AsyncMock(return_value=True)
     slot = state.get_or_create_slot("history-pick", agent="default")
     slot.messages.append({"role": "user", "content": "already talking"})
-    with patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"):
+    with patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             response = await client.post(
                 "/api/chat/slots/history-pick/agent", json={"agent": "writer"}
@@ -683,14 +683,14 @@ async def test_owner_second_member_pick_on_pinned_empty_chat_is_refused(tmp_path
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     state = _make_state(tmp_path)
     state.sessions.reset = AsyncMock(return_value=True)
     slot = state.get_or_create_slot("pinned-pick", agent="default")
     key = "dashboard:pinned-pick"
-    with patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"):
+    with patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             response = await client.post(
                 "/api/chat/slots/pinned-pick/agent", json={"agent": "writer"}
@@ -715,7 +715,7 @@ async def test_owner_agent_pick_to_v1_member_or_default_pins_nothing(tmp_path, m
     from chat_test_helpers import _make_app_with_agent_routes, _make_state
     from dashboard_owner_helpers import as_owner
 
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.member_memory_auth import read_private_session_store
 
     cfg = KiroCrewConfig.load()
     cfg.agents["legacy"] = KiroCrewAgentConfig(kiro_agent="kirocrew", triggers="legacy")
@@ -724,7 +724,7 @@ async def test_owner_agent_pick_to_v1_member_or_default_pins_nothing(tmp_path, m
     state.sessions.reset = AsyncMock(return_value=True)
     state.get_or_create_slot("v1-pick", agent="default")
     key = "dashboard:v1-pick"
-    with patch("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn"):
+    with patch("efm_go.dashboard.chat_handlers.schedule_eager_spawn"):
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             for agent in ("legacy", "default"):
                 response = await client.post("/api/chat/slots/v1-pick/agent", json={"agent": agent})
@@ -736,9 +736,9 @@ def test_metadata_only_transcript_is_not_v1_history_for_a_private_bind(tmp_path,
     """A transcript that holds only a metadata line is an empty conversation."""
     from chat_test_helpers import _make_state
 
-    from kiro_crew.dashboard.chat_persistence import _pin_private_agent_assignment
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.dashboard.chat_persistence import _pin_private_agent_assignment
+    from efm_go.execution_context import read_session_execution
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     cfg = KiroCrewConfig.load()
@@ -773,8 +773,8 @@ def test_unverifiable_transcript_never_reads_as_empty_for_a_private_bind(tmp_pat
     """Fail closed: a corrupt line is history, and an unreadable file refuses."""
     from chat_test_helpers import _make_state
 
-    from kiro_crew.dashboard.chat_persistence import _pin_private_agent_assignment
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.dashboard.chat_persistence import _pin_private_agent_assignment
+    from efm_go.member_memory_auth import read_private_session_store
 
     cfg = KiroCrewConfig.load()
     state = _make_state(tmp_path)
@@ -810,9 +810,9 @@ async def test_owner_member_open_pins_only_its_unambiguous_canonical_session(
     from chat_test_helpers import _make_state
     from test_members_dm_thread import _make_members_app
 
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.member_memory_auth import read_private_session_store
-    from kiro_crew.members import DM_SLOT_MODE, member_slot_key, write_dm_binding
+    from efm_go.execution_context import read_session_execution
+    from efm_go.member_memory_auth import read_private_session_store
+    from efm_go.members import DM_SLOT_MODE, member_slot_key, write_dm_binding
 
     writer, reviewer = member_stores
     state = _make_state(tmp_path)
@@ -861,10 +861,10 @@ def test_cron_followup_uses_job_authority_not_provider_template_alias(
 ):
     from chat_test_helpers import _make_state
 
-    from kiro_crew.dashboard.chat_utils import effective_session_key
-    from kiro_crew.dashboard.cron_inject import _bind_cron_slot
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.member_memory_auth import read_private_session_store
+    from efm_go.dashboard.chat_utils import effective_session_key
+    from efm_go.dashboard.cron_inject import _bind_cron_slot
+    from efm_go.execution_context import read_session_execution
+    from efm_go.member_memory_auth import read_private_session_store
 
     writer, _ = member_stores
     job = CronJob(id="followup", name="follow up", message="task", agent_id="writer")
@@ -929,7 +929,7 @@ def test_missing_private_resume_record_fails_instead_of_global(member_stores):
 
 
 def test_legacy_resume_without_member_binding_remains_global():
-    from kiro_crew.subagent_persistence import create_agent_folder
+    from efm_go.subagent_persistence import create_agent_folder
 
     create_agent_folder("legacy")
     assert read_run_memory_store("legacy") == ""
@@ -937,7 +937,7 @@ def test_legacy_resume_without_member_binding_remains_global():
 
 @pytest.mark.parametrize("replacement", [None, "", "default", "other"])
 def test_canonical_channel_identity_outranks_legacy_metadata(member_stores, replacement):
-    from kiro_crew.context import store_of_session
+    from efm_go.context import store_of_session
 
     writer, reviewer = member_stores
     key = "slack:member-channel-thread"
@@ -953,7 +953,7 @@ def test_canonical_channel_identity_outranks_legacy_metadata(member_stores, repl
 
 
 def test_member_session_cannot_be_rebound_and_malformed_carrier_refuses(member_stores):
-    from kiro_crew.context import store_of_session
+    from efm_go.context import store_of_session
 
     writer, reviewer = member_stores
     key = "dashboard:pinned-writer"
@@ -970,9 +970,9 @@ def test_member_session_cannot_be_rebound_and_malformed_carrier_refuses(member_s
 async def test_session_allocation_sets_member_context_and_mode_before_native_start(
     member_stores, tmp_path, monkeypatch, mode
 ):
-    from kiro_crew.execution_context import bind_session_execution, resolve_member_execution
-    from kiro_crew.providers.acp import AcpProvider
-    from kiro_crew.session import SessionManager
+    from efm_go.execution_context import bind_session_execution, resolve_member_execution
+    from efm_go.providers.acp import AcpProvider
+    from efm_go.session import SessionManager
 
     key = "cron:member-allocation"
     cfg = KiroCrewConfig.load()
@@ -1008,9 +1008,9 @@ async def test_session_allocation_sets_member_context_and_mode_before_native_sta
 
 @pytest.mark.asyncio
 async def test_private_consolidation_uses_separate_bound_process_and_cleans_it_up(member_stores):
-    from kiro_crew.llm_helpers import background_turn
-    from kiro_crew.member_memory_auth import private_memory_store_for_session
-    from kiro_crew.session import BACKGROUND_KEY
+    from efm_go.llm_helpers import background_turn
+    from efm_go.member_memory_auth import private_memory_store_for_session
+    from efm_go.session import BACKGROUND_KEY
 
     client = SimpleNamespace(last_prompt_stats=None)
     sessions = MagicMock(
@@ -1040,7 +1040,7 @@ async def test_private_consolidation_uses_separate_bound_process_and_cleans_it_u
 
 @pytest.mark.asyncio
 async def test_private_consolidation_acquire_failure_removes_generated_artifacts(member_stores):
-    from kiro_crew.llm_helpers import background_turn
+    from efm_go.llm_helpers import background_turn
 
     writer, _ = member_stores
     sessions = MagicMock(
@@ -1063,7 +1063,7 @@ async def test_private_consolidation_acquire_failure_removes_generated_artifacts
 
 @pytest.mark.asyncio
 async def test_private_consolidation_preserves_authority_when_retirement_fails(member_stores):
-    from kiro_crew.llm_helpers import background_turn
+    from efm_go.llm_helpers import background_turn
 
     writer, _ = member_stores
     client = SimpleNamespace(last_prompt_stats=None)
@@ -1077,7 +1077,7 @@ async def test_private_consolidation_preserves_authority_when_retirement_fails(m
     ):
         key = sessions.get_or_create.call_args.args[0]
     assert ConversationLog()._path(key).exists()
-    from kiro_crew.execution_context import read_session_execution
+    from efm_go.execution_context import read_session_execution
 
     assert read_session_execution(key).store.store_id == writer
     sessions.destroy.assert_not_awaited()
@@ -1085,7 +1085,7 @@ async def test_private_consolidation_preserves_authority_when_retirement_fails(m
 
 @pytest.mark.parametrize("contents", ["{truncated", "[]", "null"])
 def test_unreadable_run_without_protected_identity_cannot_become_global(contents):
-    from kiro_crew import subagent_persistence as persistence
+    from efm_go import subagent_persistence as persistence
 
     folder = persistence._agent_dir("broken-identity")
     folder.mkdir(parents=True)
@@ -1116,7 +1116,7 @@ def test_malformed_schedule_identity_never_means_global(field, bad_identity):
 @pytest.mark.parametrize("bad_identity", [None, False, 0, [], {}])
 def test_malformed_spawn_identity_is_refused_before_queueing(bad_identity):
     manager = SubagentManager(sessions=MagicMock(), ctx_builder=MagicMock())
-    with patch("kiro_crew.subagent.check_memory_available") as host_check:
+    with patch("efm_go.subagent.check_memory_available") as host_check:
         result = manager.spawn("task", memory_store=bad_identity)
     assert result.done and result.error.startswith("memory_unavailable:")
     host_check.assert_not_called()
@@ -1154,7 +1154,7 @@ def test_sandbox_schedule_inherits_binding_without_opening_private_memory(
         bind_private_session_store(origin, writer)
         ConversationLog().update_metadata(origin, {"memory_store": writer})
     with patch(
-        "kiro_crew.vector_memory.read_member_database_identity",
+        "efm_go.vector_memory.read_member_database_identity",
         side_effect=PermissionError("database unavailable"),
     ):
         job = CronService(base_dir=tmp_path / "cron").add_job(
@@ -1166,7 +1166,7 @@ def test_sandbox_schedule_inherits_binding_without_opening_private_memory(
 
 
 def test_corrupt_existing_transcript_refuses_memory_resolution_and_scheduling(tmp_path):
-    from kiro_crew.context import store_of_session
+    from efm_go.context import store_of_session
 
     log = ConversationLog()
     log.update_metadata("dashboard:broken", {"memory_store": "private-identity"})
@@ -1194,9 +1194,9 @@ def test_schedule_refuses_rebinding_without_partial_changes(tmp_path, member_sto
 async def test_linked_member_hydrates_provider_template_and_keeps_its_memory(
     member_stores, recorded_agent, monkeypatch
 ):
-    from kiro_crew.context import store_of_session
-    from kiro_crew.messaging.session_resume import persisted_session_agent
-    from kiro_crew.slack import handler
+    from efm_go.context import store_of_session
+    from efm_go.messaging.session_resume import persisted_session_agent
+    from efm_go.slack import handler
 
     # Hydration's seen set and result map form one cache. Isolate both so a
     # preceding parameter on the same xdist worker cannot skip this hydration.
@@ -1215,7 +1215,7 @@ async def test_linked_member_hydrates_provider_template_and_keeps_its_memory(
 
 
 def test_unowned_v1_agent_name_is_not_reinterpreted_as_member(member_stores):
-    from kiro_crew.messaging.session_resume import persisted_session_agent
+    from efm_go.messaging.session_resume import persisted_session_agent
 
     log = ConversationLog()
     log.update_metadata("slack:legacy", {"agent": "writer"})
@@ -1239,7 +1239,7 @@ async def test_linked_channel_refuses_private_memory_before_provider_and_display
 ):
     from test_messaging_dispatch import _CtxBuilder, _patch_pipeline, _Sessions, _turn
 
-    from kiro_crew.messaging.dispatch import drive_turn
+    from efm_go.messaging.dispatch import drive_turn
 
     _patch_pipeline(monkeypatch)
     sessions = _Sessions()
@@ -1270,7 +1270,7 @@ async def test_failed_binding_publication_blocks_an_already_scheduled_run(member
     sessions.get_or_create = AsyncMock()
     manager = SubagentManager(sessions=sessions, ctx_builder=MagicMock())
     info = SubagentInfo(id="run1", task="task", memory_store=writer)
-    with patch("kiro_crew.subagent.create_agent_folder", side_effect=OSError("disk full")):
+    with patch("efm_go.subagent.create_agent_folder", side_effect=OSError("disk full")):
         manager._log_spawned(info)
     assert info.error.startswith("memory_unavailable:")
     with pytest.raises(RuntimeError, match="could not persist"):
@@ -1295,10 +1295,10 @@ async def test_scheduled_member_passes_private_store_to_context(member_stores):
         seen.append(gateway.ctx_builder.conversation_log.get_metadata(args[0])["memory_store"])
         return MagicMock(), True, False
 
-    from kiro_crew.execution_context import execution_for_store
+    from efm_go.execution_context import execution_for_store
 
     job.execution_context = execution_for_store(writer).to_record()
-    with patch("kiro_crew.context.prepare_store_vectors", new=AsyncMock()) as prepare:
+    with patch("efm_go.context.prepare_store_vectors", new=AsyncMock()) as prepare:
         await _run_llm_callback(gateway, job, get_or_create_side_effect=acquire)
     assert seen == [writer]
     prepare.assert_not_called()
@@ -1320,7 +1320,7 @@ async def test_deleted_scheduled_member_never_starts_global_provider():
 async def test_structural_startup_failure_keeps_memory_closed_and_explains_recovery(monkeypatch):
     from test_slack_gateway import _make_orchestrator
 
-    from kiro_crew.memory_startup import (
+    from efm_go.memory_startup import (
         MemoryStartup,
         MemoryStartupUnavailable,
         require_memory_ready,
@@ -1329,24 +1329,24 @@ async def test_structural_startup_failure_keeps_memory_closed_and_explains_recov
     gateway = _make_orchestrator()
     gateway._memory_startup = MemoryStartup.begin()
     stopping = asyncio.Event()
-    monkeypatch.setattr("kiro_crew.slack.gateway.shutdown_event", stopping)
+    monkeypatch.setattr("efm_go.slack.gateway.shutdown_event", stopping)
     memory, vectors = MagicMock(), MagicMock()
     gateway.ctx_builder = SimpleNamespace(memory=memory)
     gateway.vector_memory = vectors
     try:
         with (
             patch(
-                "kiro_crew.memory_backup.apply_pending_member_restores",
+                "efm_go.memory_backup.apply_pending_member_restores",
                 side_effect=ValueError("memory configuration unreadable; previous data preserved"),
             ),
-            patch("kiro_crew.context.reset_memory_caches"),
+            patch("efm_go.context.reset_memory_caches"),
         ):
             assert await asyncio.to_thread(gateway._initialize_memory_worker) is False
         memory.init.assert_not_called()
         vectors.init.assert_not_called()
         with pytest.raises(MemoryStartupUnavailable, match="memory configuration unreadable"):
             require_memory_ready()
-        from kiro_crew.dashboard.handlers._shared import memory_startup_refusal
+        from efm_go.dashboard.handlers._shared import memory_startup_refusal
 
         refusal = memory_startup_refusal()
         assert refusal.status == 503
@@ -1357,7 +1357,7 @@ async def test_structural_startup_failure_keeps_memory_closed_and_explains_recov
         gateway._memory_startup_task.set_result(False)
         recovery_shell = asyncio.Event()
         with patch(
-            "kiro_crew.slack.gateway.logger.error",
+            "efm_go.slack.gateway.logger.error",
             side_effect=lambda *args: recovery_shell.set(),
         ):
             supervisor = asyncio.create_task(gateway._wait_for_memory_preparation())
@@ -1378,7 +1378,7 @@ async def test_structural_startup_failure_keeps_memory_closed_and_explains_recov
 def test_transient_history_cleanup_refuses_a_mismatched_protected_store(member_stores):
     from uuid import uuid4
 
-    from kiro_crew.member_memory_auth import bind_private_session_store
+    from efm_go.member_memory_auth import bind_private_session_store
 
     writer, reviewer = member_stores
     key = f"memory-consolidation:{writer}:{uuid4().hex}"
@@ -1394,14 +1394,14 @@ def test_transient_history_cleanup_refuses_a_mismatched_protected_store(member_s
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", ["persistent", "incognito", "temporary"])
 async def test_task_plan_policy_survives_fresh_gateway_context(tmp_path, monkeypatch, mode):
-    from kiro_crew.context import ContextBuilder, inherit_session_memory
-    from kiro_crew.execution_context import (
+    from efm_go.context import ContextBuilder, inherit_session_memory
+    from efm_go.execution_context import (
         ExecutionContext,
         MemoryStoreRef,
         bind_session_execution,
         read_session_execution,
     )
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.taskrunner import TaskRunner
 
     execution = ExecutionContext(None, MemoryStoreRef("default"), "template", "kirocrew", mode)
     bind_session_execution("dashboard:parent", execution)
@@ -1437,10 +1437,10 @@ async def test_task_plan_policy_survives_fresh_gateway_context(tmp_path, monkeyp
 async def test_runtime_policy_damage_refuses_even_with_persistent_history(
     tmp_path, monkeypatch, damage
 ):
-    from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-    from kiro_crew.task_models import Project
-    from kiro_crew.taskrunner import TaskRunner
-    from kiro_crew.workflow_memory import TaskSnapshotError
+    from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+    from efm_go.task_models import Project
+    from efm_go.taskrunner import TaskRunner
+    from efm_go.workflow_memory import TaskSnapshotError
 
     runner = TaskRunner(sessions=MagicMock(), work_dir=tmp_path)
     execution = ExecutionContext(

@@ -17,7 +17,7 @@ rules:
     paths:
       exclude:
         - test/*
-        - src/kiro_crew/_vendor/*
+        - src/efm_go/_vendor/*
     message: >
       Subprocess call downloads from an external URL (curl/wget).
       Supply-chain risk: build-time download of external payload can
@@ -39,7 +39,7 @@ rules:
     paths:
       exclude:
         - test/*
-        - src/kiro_crew/_vendor/*
+        - src/efm_go/_vendor/*
     message: >
       urlretrieve downloads a file from an external URL at runtime.
       If this runs during build or startup, it is a supply-chain risk.
@@ -85,7 +85,7 @@ rules:
     paths:
       exclude:
         - test/*
-        - src/kiro_crew/_vendor/*
+        - src/efm_go/_vendor/*
     message: >
       Downloaded file path passed to subprocess execution. Ensure
       the file has verified integrity (SHA-256 check) before execution.

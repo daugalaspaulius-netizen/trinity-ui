@@ -40,7 +40,7 @@ and default. The authoritative backend inventory and capability matrix are in
 | Capability | kiro-cli alone | With Kiro Crew |
 |---|---|---|
 | Sessions | One per terminal | Many concurrent (channel threads, dashboard slots, cron jobs, subagents, task steps) |
-| Surfaces | Terminal only | CLI, web dashboard, Electron desktop, and the messaging channels under [`src/kiro_crew/docs/`](../../src/kiro_crew/docs/README.md) (Slack, Discord, Telegram, Teams, WeChat and more) |
+| Surfaces | Terminal only | CLI, web dashboard, Electron desktop, and the messaging channels under [`src/efm_go/docs/`](../../src/efm_go/docs/README.md) (Slack, Discord, Telegram, Teams, WeChat and more) |
 | Persistence | Per-directory transcript | Cross-session memory (preferences, projects, daily history, lessons) |
 | Cross-session awareness | None | Sessions bound to the same Global V1 or private member V2 store share its learning; separate member stores do not cross |
 | Scheduling | None | Cron jobs (`every` / `at` / `cron` expression) with cross-process file locking |
@@ -150,10 +150,10 @@ own PreToolUse gate before kiro-cli is allowed to run it. See
 
 | Path | Purpose |
 |---|---|
-| `src/kiro_crew/` | Python backend: gateway, sessions, memory, cron, MCP servers, built-in apps |
-| `src/kiro_crew/config/defaults.json`, `prompt.md` | Bundled base agent config and system prompt |
-| `src/kiro_crew/builtin_skills/` | Skills bundled into the package, copied to the data home on start |
-| `src/kiro_crew/static/dist/` | Staged frontend bundle served by the backend |
+| `src/efm_go/` | Python backend: gateway, sessions, memory, cron, MCP servers, built-in apps |
+| `src/efm_go/config/defaults.json`, `prompt.md` | Bundled base agent config and system prompt |
+| `src/efm_go/builtin_skills/` | Skills bundled into the package, copied to the data home on start |
+| `src/efm_go/static/dist/` | Staged frontend bundle served by the backend |
 | `website/` | React + TypeScript + Tailwind dashboard (Vite) |
 | `website/electron/` | Electron desktop shell |
 | `skills/` | Checkout-only reference skills, loaded via `KIROCREW_PROJECT_DIR`; not packaged |
@@ -164,7 +164,7 @@ own PreToolUse gate before kiro-cli is allowed to run it. See
 | `test/` | pytest suite |
 
 A skill that a shipped feature depends on must live in
-`src/kiro_crew/builtin_skills/`; only `src/` is packaged, so a required skill
+`src/efm_go/builtin_skills/`; only `src/` is packaged, so a required skill
 placed in top-level `skills/` never reaches an installed user.
 
 ## Backend component map
@@ -319,7 +319,7 @@ a surface a human is watching keeps its session, a background job must not.
 
 ### Shutdown order
 
-`kiro_crew.shutdown_event` (an `asyncio.Event`) is the process-wide signal; every
+`efm_go.shutdown_event` (an `asyncio.Event`) is the process-wide signal; every
 background loop waits on it so Ctrl-C wakes them immediately instead of at the
 next poll. `_shutdown()` in `slack/gateway.py` then tears down in a deliberate
 order, and the order is load-bearing:
@@ -405,7 +405,7 @@ heartbeat prunes files older than `memory.history_max_days` (default 365) off
 disk.
 
 **Embeddings are always-on and in-process**, computed by vendored
-llama-cpp-python under `src/kiro_crew/_vendor/`. `memory.embedding_provider`
+llama-cpp-python under `src/efm_go/_vendor/`. `memory.embedding_provider`
 accepts only `llama_cpp`; there is no external embedding daemon to install or
 configure, and legacy config values are migrated to `llama_cpp` on load. The
 `EmbeddingBackend` ABC is the swap seam for other runtimes.
@@ -487,7 +487,7 @@ Depth: [`security-deep-dive.md`](security-deep-dive.md),
 
 ## Platform layer (CPP seam)
 
-`src/kiro_crew/platform/` is the **Composed Platform Providers** seam. The core
+`src/efm_go/platform/` is the **Composed Platform Providers** seam. The core
 defines extension-point Protocols (`interfaces.py`) and ships a `Default*`
 adapter for each; `PlatformContext` (`context.py`) is the frozen bundle read via
 `current_context()`. The core never imports a companion edition and never
@@ -602,7 +602,7 @@ graph TB
   serves a `text/event-stream` response for a caller that does not pass `ws=1`,
   so the SSE path remains the non-WebSocket fallback.
 - **Bundling:** the production build is staged into
-  `src/kiro_crew/static/dist/` and served by the Python backend, so a `pip`
+  `src/efm_go/static/dist/` and served by the Python backend, so a `pip`
   install ships the dashboard.
 - **Desktop:** Electron wraps the same SPA with multi-tab `WebContentsView`.
 
@@ -699,46 +699,46 @@ detail; this table is only an index.
 
 | Subsystem | Owning source | Spec |
 |---|---|---|
-| ACP client (JSON-RPC transport to kiro-cli) | `src/kiro_crew/acp/` | [acp-client.md](../system-specs/modules/acp-client.md) |
-| App Kit platform contracts | `src/kiro_crew/apps/` | [app-kit-platform.md](../system-specs/modules/app-kit-platform.md) |
-| Artifacts (persisted generated UI) | `src/kiro_crew/artifacts.py`, `artifact_store/` | [artifacts.md](../system-specs/modules/artifacts.md) |
-| Browser automation auth layer | `src/kiro_crew/browser/` | [browser.md](../system-specs/modules/browser.md) |
-| Channel history buffer | `src/kiro_crew/channel_history.py` | [channel-history.md](../system-specs/modules/channel-history.md) |
-| CLI surface | `src/kiro_crew/cli.py` | [cli.md](../system-specs/modules/cli.md) |
-| Cloud launcher (own EC2 instance) | `src/kiro_crew/cloud/` | [cloud.md](../system-specs/modules/cloud.md) |
-| Computer use (desktop GUI automation) | `src/kiro_crew/computer_use/` | [computer-use.md](../system-specs/modules/computer-use.md) |
-| Configuration (dataclasses, loader, schema) | `src/kiro_crew/config/` | [config.md](../system-specs/modules/config.md) |
-| Dev Fleet app | `src/kiro_crew/apps/builtins/dev_fleet/` | [dev-fleet.md](../system-specs/modules/dev-fleet.md) |
-| Governance model (POLICY ∩ PROFILE) | `src/kiro_crew/platform/governance.py` | [governance.md](../system-specs/modules/governance.md) |
-| Heartbeat (periodic background tasks) | `src/kiro_crew/heartbeat.py` | [heartbeat.md](../system-specs/modules/heartbeat.md) |
-| Conversation history (JSONL + consolidation) | `src/kiro_crew/history.py` | [history.md](../system-specs/modules/history.md) |
-| Instances (multi-instance over SSH) | `src/kiro_crew/instances/` | [instances.md](../system-specs/modules/instances.md) |
-| Issue Radar app | `src/kiro_crew/apps/builtins/issue_radar/` | [issue-radar.md](../system-specs/modules/issue-radar.md) |
-| Knowledge library (ingest + hybrid retrieval) | `src/kiro_crew/knowledge/` | [knowledge.md](../system-specs/modules/knowledge.md) |
-| Self-learning, cron, and dashboard API | `src/kiro_crew/learn.py`, `cron.py`, `cron_service/`, `dashboard/` | [learn-cron-dashboard.md](../system-specs/modules/learn-cron-dashboard.md) |
-| MCP Apps (interactive `ui://` rendering) | `src/kiro_crew/mcp_gateway/` | [mcp-apps.md](../system-specs/modules/mcp-apps.md) |
-| Markdown Notebook app | `src/kiro_crew/apps/builtins/md_notebook/` | [md-notebook.md](../system-specs/modules/md-notebook.md) |
-| Meetings app | `src/kiro_crew/apps/builtins/meetings/` | [meetings.md](../system-specs/modules/meetings.md) |
-| Memory, skills, and hooks | `src/kiro_crew/memory.py`, `skills.py`, `hooks.py` | [memory-skills-hooks.md](../system-specs/modules/memory-skills-hooks.md) |
-| Messaging transport abstraction | `src/kiro_crew/messaging/` | [messaging.md](../system-specs/modules/messaging.md) |
-| Metrics telemetry (default off) | `src/kiro_crew/metrics/` | [metrics.md](../system-specs/modules/metrics.md) |
-| Mochi app (desktop pet) | `src/kiro_crew/apps/builtins/mochi/` | [mochi.md](../system-specs/modules/mochi.md) |
-| Foreign-agent onboarding import | `src/kiro_crew/onboarding_import.py`, `onboarding_scan.py`, `onboarding_plan.py`, `onboarding_apply.py`, `onboarding_sources/` | [onboarding-import.md](../system-specs/modules/onboarding-import.md) |
-| Papyrus app (LaTeX authoring) | `src/kiro_crew/apps/builtins/papyrus/` | [papyrus.md](../system-specs/modules/papyrus.md) |
-| Persistent agent channels | `src/kiro_crew/channel.py` | [persistent-agent-channels.md](../system-specs/modules/persistent-agent-channels.md) |
-| Platform context (CPP seam) | `src/kiro_crew/platform/` | [platform-context.md](../system-specs/modules/platform-context.md) |
-| PPTX Maker app | `src/kiro_crew/apps/builtins/pptx_maker/` | [pptx-maker.md](../system-specs/modules/pptx-maker.md) |
-| Providers (LLMProvider ABC + ACP provider) | `src/kiro_crew/providers/` | [providers.md](../system-specs/modules/providers.md) |
-| Security controls (deny rules, paths, auth) | `src/kiro_crew/security/` | [security.md](../system-specs/modules/security.md) |
-| Security Event Log | `src/kiro_crew/sel.py` | [sel.md](../system-specs/modules/sel.md) |
-| Session manager (pool, expiry, compaction) | `src/kiro_crew/session.py` | [session.md](../system-specs/modules/session.md) |
-| Side conversations | `src/kiro_crew/dashboard/side_state.py` | [side.md](../system-specs/modules/side.md) |
-| Slack gateway and handler | `src/kiro_crew/slack/` | [slack-gateway.md](../system-specs/modules/slack-gateway.md) |
-| Subagents (parallel background agents) | `src/kiro_crew/subagent.py` | [subagent.md](../system-specs/modules/subagent.md) |
-| Task state machine | `src/kiro_crew/task.py` | [task.md](../system-specs/modules/task.md) |
-| TaskRunner (spec to plan to execution) | `src/kiro_crew/taskrunner.py` | [taskrunner.md](../system-specs/modules/taskrunner.md) |
-| Themes | `src/kiro_crew/dashboard/handlers/themes.py` | [themes.md](../system-specs/modules/themes.md) |
-| Third-party account connections | `src/kiro_crew/connections/` | [connections.md](../system-specs/modules/connections.md) |
+| ACP client (JSON-RPC transport to kiro-cli) | `src/efm_go/acp/` | [acp-client.md](../system-specs/modules/acp-client.md) |
+| App Kit platform contracts | `src/efm_go/apps/` | [app-kit-platform.md](../system-specs/modules/app-kit-platform.md) |
+| Artifacts (persisted generated UI) | `src/efm_go/artifacts.py`, `artifact_store/` | [artifacts.md](../system-specs/modules/artifacts.md) |
+| Browser automation auth layer | `src/efm_go/browser/` | [browser.md](../system-specs/modules/browser.md) |
+| Channel history buffer | `src/efm_go/channel_history.py` | [channel-history.md](../system-specs/modules/channel-history.md) |
+| CLI surface | `src/efm_go/cli.py` | [cli.md](../system-specs/modules/cli.md) |
+| Cloud launcher (own EC2 instance) | `src/efm_go/cloud/` | [cloud.md](../system-specs/modules/cloud.md) |
+| Computer use (desktop GUI automation) | `src/efm_go/computer_use/` | [computer-use.md](../system-specs/modules/computer-use.md) |
+| Configuration (dataclasses, loader, schema) | `src/efm_go/config/` | [config.md](../system-specs/modules/config.md) |
+| Dev Fleet app | `src/efm_go/apps/builtins/dev_fleet/` | [dev-fleet.md](../system-specs/modules/dev-fleet.md) |
+| Governance model (POLICY ∩ PROFILE) | `src/efm_go/platform/governance.py` | [governance.md](../system-specs/modules/governance.md) |
+| Heartbeat (periodic background tasks) | `src/efm_go/heartbeat.py` | [heartbeat.md](../system-specs/modules/heartbeat.md) |
+| Conversation history (JSONL + consolidation) | `src/efm_go/history.py` | [history.md](../system-specs/modules/history.md) |
+| Instances (multi-instance over SSH) | `src/efm_go/instances/` | [instances.md](../system-specs/modules/instances.md) |
+| Issue Radar app | `src/efm_go/apps/builtins/issue_radar/` | [issue-radar.md](../system-specs/modules/issue-radar.md) |
+| Knowledge library (ingest + hybrid retrieval) | `src/efm_go/knowledge/` | [knowledge.md](../system-specs/modules/knowledge.md) |
+| Self-learning, cron, and dashboard API | `src/efm_go/learn.py`, `cron.py`, `cron_service/`, `dashboard/` | [learn-cron-dashboard.md](../system-specs/modules/learn-cron-dashboard.md) |
+| MCP Apps (interactive `ui://` rendering) | `src/efm_go/mcp_gateway/` | [mcp-apps.md](../system-specs/modules/mcp-apps.md) |
+| Markdown Notebook app | `src/efm_go/apps/builtins/md_notebook/` | [md-notebook.md](../system-specs/modules/md-notebook.md) |
+| Meetings app | `src/efm_go/apps/builtins/meetings/` | [meetings.md](../system-specs/modules/meetings.md) |
+| Memory, skills, and hooks | `src/efm_go/memory.py`, `skills.py`, `hooks.py` | [memory-skills-hooks.md](../system-specs/modules/memory-skills-hooks.md) |
+| Messaging transport abstraction | `src/efm_go/messaging/` | [messaging.md](../system-specs/modules/messaging.md) |
+| Metrics telemetry (default off) | `src/efm_go/metrics/` | [metrics.md](../system-specs/modules/metrics.md) |
+| Mochi app (desktop pet) | `src/efm_go/apps/builtins/mochi/` | [mochi.md](../system-specs/modules/mochi.md) |
+| Foreign-agent onboarding import | `src/efm_go/onboarding_import.py`, `onboarding_scan.py`, `onboarding_plan.py`, `onboarding_apply.py`, `onboarding_sources/` | [onboarding-import.md](../system-specs/modules/onboarding-import.md) |
+| Papyrus app (LaTeX authoring) | `src/efm_go/apps/builtins/papyrus/` | [papyrus.md](../system-specs/modules/papyrus.md) |
+| Persistent agent channels | `src/efm_go/channel.py` | [persistent-agent-channels.md](../system-specs/modules/persistent-agent-channels.md) |
+| Platform context (CPP seam) | `src/efm_go/platform/` | [platform-context.md](../system-specs/modules/platform-context.md) |
+| PPTX Maker app | `src/efm_go/apps/builtins/pptx_maker/` | [pptx-maker.md](../system-specs/modules/pptx-maker.md) |
+| Providers (LLMProvider ABC + ACP provider) | `src/efm_go/providers/` | [providers.md](../system-specs/modules/providers.md) |
+| Security controls (deny rules, paths, auth) | `src/efm_go/security/` | [security.md](../system-specs/modules/security.md) |
+| Security Event Log | `src/efm_go/sel.py` | [sel.md](../system-specs/modules/sel.md) |
+| Session manager (pool, expiry, compaction) | `src/efm_go/session.py` | [session.md](../system-specs/modules/session.md) |
+| Side conversations | `src/efm_go/dashboard/side_state.py` | [side.md](../system-specs/modules/side.md) |
+| Slack gateway and handler | `src/efm_go/slack/` | [slack-gateway.md](../system-specs/modules/slack-gateway.md) |
+| Subagents (parallel background agents) | `src/efm_go/subagent.py` | [subagent.md](../system-specs/modules/subagent.md) |
+| Task state machine | `src/efm_go/task.py` | [task.md](../system-specs/modules/task.md) |
+| TaskRunner (spec to plan to execution) | `src/efm_go/taskrunner.py` | [taskrunner.md](../system-specs/modules/taskrunner.md) |
+| Themes | `src/efm_go/dashboard/handlers/themes.py` | [themes.md](../system-specs/modules/themes.md) |
+| Third-party account connections | `src/efm_go/connections/` | [connections.md](../system-specs/modules/connections.md) |
 
 This table indexes the principal subsystems, not every spec.
 [`../system-specs/modules/README.md`](../system-specs/modules/README.md) is the

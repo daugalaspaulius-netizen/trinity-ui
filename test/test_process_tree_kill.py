@@ -10,9 +10,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
-from kiro_crew.subagent import SubagentManager
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
+from efm_go.subagent import SubagentManager
 
 # ── Helpers ──
 
@@ -86,11 +86,11 @@ class TestResetProcessTreeKill:
         await mgr.get_or_create("t1")
 
         with (
-            patch("kiro_crew.session.os.kill") as mock_kill,
-            patch("kiro_crew.session.os.killpg") as mock_killpg,
-            patch("kiro_crew.session.os.getpgid", return_value=12345),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children") as mock_sweep,
+            patch("efm_go.session.os.kill") as mock_kill,
+            patch("efm_go.session.os.killpg") as mock_killpg,
+            patch("efm_go.session.os.getpgid", return_value=12345),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children") as mock_sweep,
         ):
             # os.kill(pid, 0) succeeds → process survived shutdown
             mock_kill.return_value = None
@@ -109,11 +109,11 @@ class TestResetProcessTreeKill:
         await mgr.get_or_create("t1")
 
         with (
-            patch("kiro_crew.session.os.kill") as mock_kill,
-            patch("kiro_crew.session.os.killpg", side_effect=OSError),
-            patch("kiro_crew.session.os.getpgid", return_value=12345),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.session.os.kill") as mock_kill,
+            patch("efm_go.session.os.killpg", side_effect=OSError),
+            patch("efm_go.session.os.getpgid", return_value=12345),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
         ):
             mock_kill.return_value = None
             await mgr.reset("t1")
@@ -132,11 +132,11 @@ class TestResetProcessTreeKill:
         await mgr.get_or_create("t1")
 
         with (
-            patch("kiro_crew.session.os.kill", side_effect=ProcessLookupError),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[12347, 12348]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=999),
-            patch("kiro_crew.acp.client._read_basename", return_value=b"node"),
-            patch("kiro_crew.acp.client._kill_escaped_children") as mock_sweep,
+            patch("efm_go.session.os.kill", side_effect=ProcessLookupError),
+            patch("efm_go.acp.client._get_child_pids", return_value=[12347, 12348]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=999),
+            patch("efm_go.acp.client._read_basename", return_value=b"node"),
+            patch("efm_go.acp.client._kill_escaped_children") as mock_sweep,
         ):
             await mgr.reset("t1")
 
@@ -161,7 +161,7 @@ class TestResetProcessTreeKill:
         mgr = SessionManager(cfg, provider_factory=_provider_factory(provider))
         await mgr.get_or_create("t1")
 
-        with patch("kiro_crew.session.os.kill") as mock_kill:
+        with patch("efm_go.session.os.kill") as mock_kill:
             await mgr.reset("t1")
 
         mock_kill.assert_not_called()
@@ -174,7 +174,7 @@ class TestResetProcessTreeKill:
         mgr = SessionManager(cfg, provider_factory=_provider_factory(provider))
         await mgr.get_or_create("t1")
 
-        with patch("kiro_crew.session.os.kill") as mock_kill:
+        with patch("efm_go.session.os.kill") as mock_kill:
             await mgr.reset("t1")
 
         mock_kill.assert_not_called()
@@ -201,7 +201,7 @@ class TestSigkillSessionProcessTree:
     The kill acts on the handle its caller took BEFORE the reset (pid, recorded
     start id, recorded children) and never reads the session map; it returns
     None once the group has been signalled or there was nothing to kill, and
-    the failure otherwise. The kill itself is ``kiro_crew.process_identity``'s,
+    the failure otherwise. The kill itself is ``efm_go.process_identity``'s,
     shared with the cron reaper: once the leader is gone it decides by the tree
     the leader led, so the two tree probes -- the POSIX process-group probe and
     the Windows exact-tree cleanup pin -- are pinned "gone" for this class (no
@@ -212,8 +212,8 @@ class TestSigkillSessionProcessTree:
     @pytest.fixture(autouse=True)
     def _no_tree_behind_the_leader(self):
         with (
-            patch("kiro_crew.platform_compat.pgroup_exists", return_value=False),
-            patch("kiro_crew.platform_compat.windows_tree_cleanup_pending", return_value=False),
+            patch("efm_go.platform_compat.pgroup_exists", return_value=False),
+            patch("efm_go.platform_compat.windows_tree_cleanup_pending", return_value=False),
         ):
             yield
 
@@ -249,12 +249,12 @@ class TestSigkillSessionProcessTree:
         mgr = self._make_manager(pid=54321, child_pids={54322: 100})
 
         with (
-            patch("kiro_crew.subagent.os.killpg") as mock_killpg,
-            patch("kiro_crew.subagent.os.getpgid", return_value=54321),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children") as mock_sweep,
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID),
+            patch("efm_go.subagent.os.killpg") as mock_killpg,
+            patch("efm_go.subagent.os.getpgid", return_value=54321),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children") as mock_sweep,
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID),
         ):
             result = await mgr._sigkill_session(
                 "subagent:test1", _subagent_handle(mgr, "subagent:test1")
@@ -278,13 +278,13 @@ class TestSigkillSessionProcessTree:
         mgr = self._make_manager(pid=54321)
 
         with (
-            patch("kiro_crew.subagent.os.killpg", side_effect=PermissionError(1, "EPERM")),
-            patch("kiro_crew.subagent.os.kill") as mock_kill,
-            patch("kiro_crew.subagent.os.getpgid", return_value=54321),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID),
+            patch("efm_go.subagent.os.killpg", side_effect=PermissionError(1, "EPERM")),
+            patch("efm_go.subagent.os.kill") as mock_kill,
+            patch("efm_go.subagent.os.getpgid", return_value=54321),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID),
         ):
             result = await mgr._sigkill_session(
                 "subagent:test1", _subagent_handle(mgr, "subagent:test1")
@@ -299,13 +299,13 @@ class TestSigkillSessionProcessTree:
         mgr = self._make_manager(pid=54321, child_pids={54322: 100})
 
         with (
-            patch("kiro_crew.subagent.os.killpg"),
-            patch("kiro_crew.subagent.os.getpgid", return_value=54321),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[54323]),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID),
-            patch("kiro_crew.acp.client._read_basename", return_value=b"node"),
-            patch("kiro_crew.acp.client._kill_escaped_children") as mock_sweep,
+            patch("efm_go.subagent.os.killpg"),
+            patch("efm_go.subagent.os.getpgid", return_value=54321),
+            patch("efm_go.acp.client._get_child_pids", return_value=[54323]),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID),
+            patch("efm_go.acp.client._read_basename", return_value=b"node"),
+            patch("efm_go.acp.client._kill_escaped_children") as mock_sweep,
         ):
             await mgr._sigkill_session("subagent:test1", _subagent_handle(mgr, "subagent:test1"))
 
@@ -324,10 +324,10 @@ class TestSigkillSessionProcessTree:
         mgr = self._make_manager(pid=54321, child_pids={54322: 100})
 
         with (
-            patch("kiro_crew.subagent.os.killpg") as mock_killpg,
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="9999999"),
-            patch("kiro_crew.acp.client._kill_escaped_children") as mock_sweep,
+            patch("efm_go.subagent.os.killpg") as mock_killpg,
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="9999999"),
+            patch("efm_go.acp.client._kill_escaped_children") as mock_sweep,
         ):
             result = await mgr._sigkill_session(
                 "subagent:test1", _subagent_handle(mgr, "subagent:test1")
@@ -344,11 +344,11 @@ class TestSigkillSessionProcessTree:
         mgr = self._make_manager(pid=54321, child_pids={54322: 100}, start_time=None)
 
         with (
-            patch("kiro_crew.subagent.os.killpg") as mock_killpg,
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=False),
-            patch("kiro_crew.acp.client._kill_escaped_children") as mock_sweep,
+            patch("efm_go.subagent.os.killpg") as mock_killpg,
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.platform_compat.pid_exists", return_value=False),
+            patch("efm_go.acp.client._kill_escaped_children") as mock_sweep,
         ):
             result = await mgr._sigkill_session(
                 "subagent:test1", _subagent_handle(mgr, "subagent:test1")
@@ -371,7 +371,7 @@ class TestSigkillSessionProcessTree:
             is_yolo=lambda: True,
         )
 
-        with patch("kiro_crew.subagent.os.killpg") as mock_killpg:
+        with patch("efm_go.subagent.os.killpg") as mock_killpg:
             assert mgr._retain_process_handles("nonexistent", "subagent:nonexistent") == []
             result = await mgr._sigkill_session("subagent:nonexistent", None)
 
@@ -396,7 +396,7 @@ class TestSigkillSessionProcessTree:
             is_yolo=lambda: True,
         )
 
-        with patch("kiro_crew.subagent.os.killpg") as mock_killpg:
+        with patch("efm_go.subagent.os.killpg") as mock_killpg:
             handles = mgr._retain_process_handles("test1", "subagent:test1")
             result = await mgr._sigkill_sessions("subagent:test1", handles)
 

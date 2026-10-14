@@ -27,7 +27,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import NoConfiguredOwner, as_owner
 
-from kiro_crew.dashboard.handlers import (
+from efm_go.dashboard.handlers import (
     api_member_thread,
     api_workspaces,
     api_workspaces_create,
@@ -77,10 +77,10 @@ def cfg_env(tmp_path, monkeypatch):
             }
         )
     )
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: cfg_dir)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.config_dir", lambda: cfg_dir)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.files.data_home", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: cfg_dir)
+    monkeypatch.setattr("efm_go.dashboard.handlers.config_dir", lambda: cfg_dir)
+    monkeypatch.setattr("efm_go.dashboard.handlers.files.data_home", lambda: tmp_path)
     return cfg_dir
 
 
@@ -88,8 +88,8 @@ def cfg_env(tmp_path, monkeypatch):
 def _quiet_sel():
     """Keep both the handlers' success audit and the gate's denial audit off disk."""
     with (
-        patch("kiro_crew.dashboard.handlers.sel") as handler_sel,
-        patch("kiro_crew.sel.sel") as gate_sel,
+        patch("efm_go.dashboard.handlers.sel") as handler_sel,
+        patch("efm_go.sel.sel") as gate_sel,
     ):
         handler_sel.return_value = MagicMock()
         gate_sel.return_value = MagicMock()

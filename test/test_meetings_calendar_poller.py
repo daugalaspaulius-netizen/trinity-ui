@@ -30,12 +30,12 @@ from meetings_helpers import (  # noqa: F401
     root_fixture,
 )
 
-from kiro_crew.apps.builtins.meetings.backend import calendar_poller as poller
-from kiro_crew.apps.builtins.meetings.backend import calendar_sync
-from kiro_crew.apps.builtins.meetings.backend import constants as k
-from kiro_crew.apps.builtins.meetings.backend import store
-from kiro_crew.apps.builtins.meetings.backend.providers import calendar as cal
-from kiro_crew.apps.builtins.meetings.backend.routes import _common
+from efm_go.apps.builtins.meetings.backend import calendar_poller as poller
+from efm_go.apps.builtins.meetings.backend import calendar_sync
+from efm_go.apps.builtins.meetings.backend import constants as k
+from efm_go.apps.builtins.meetings.backend import store
+from efm_go.apps.builtins.meetings.backend.providers import calendar as cal
+from efm_go.apps.builtins.meetings.backend.routes import _common
 
 BASE = k.API_BASE
 
@@ -291,7 +291,7 @@ class TestPollOnce:
 
 class TestLoopAndHooks:
     def test_register_routes_installs_the_hooks_in_teardown_order(self, root: Path):
-        from kiro_crew.apps.builtins.meetings.backend import routes as routes_pkg
+        from efm_go.apps.builtins.meetings.backend import routes as routes_pkg
 
         app = make_app(root)
         assert poller.start_poller in app.on_startup

@@ -8,7 +8,7 @@
 #  in YOUR OWN AWS account and opens the dashboard.
 #
 #  This is the thin cold-start bootstrapper: all interesting logic lives in
-#  the Python `kiro_crew.cloud` module (testable, cross-platform). It NEVER
+#  the Python `efm_go.cloud` module (testable, cross-platform). It NEVER
 #  stores AWS credentials — the aws CLI resolves them from your profile/SSO.
 #
 #  Usage (from a clone):   bash cloud-install.sh [--size <tier>] [--non-interactive] [--voice]

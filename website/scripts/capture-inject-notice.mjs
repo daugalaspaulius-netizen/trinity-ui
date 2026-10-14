@@ -34,7 +34,7 @@ mkdirSync(OUT, { recursive: true })
 /** The cards are what the shots are of, so every load waits for one to mount. */
 const CARD_WAIT = { selector: '[data-testid="recovery-card"]' }
 
-// Verbatim wire values from src/kiro_crew/dashboard/state.py. Matched with
+// Verbatim wire values from src/efm_go/dashboard/state.py. Matched with
 // startsWith and then sliced off, so a mismatch here is real drift.
 const SYNTHESIS = '[SYSTEM] Sub-agent synthesis:'
 

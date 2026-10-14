@@ -21,8 +21,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.apps.builtins.issue_radar.backend import pipeline_fold as fold
-from kiro_crew.apps.builtins.issue_radar.backend import pipeline_routes as routes
+from efm_go.apps.builtins.issue_radar.backend import pipeline_fold as fold
+from efm_go.apps.builtins.issue_radar.backend import pipeline_routes as routes
 
 #: The repositories these route tests name. Connected by the ``enabled`` fixture, so
 #: the handlers get past the host app's authorization gate and each test can reach
@@ -533,7 +533,7 @@ def test_the_route_prefix_is_derived_from_the_host_app() -> None:
     never run. Deriving it from one constant is what makes that drift impossible;
     this test is what stops someone replacing the derivation with a literal.
     """
-    from kiro_crew.apps.builtins.issue_radar.backend import store
+    from efm_go.apps.builtins.issue_radar.backend import store
 
     assert routes.APP_NAME == store.APP_NAME
     assert routes.PREFIX == f"/api/apps/{store.APP_NAME}/pipeline"

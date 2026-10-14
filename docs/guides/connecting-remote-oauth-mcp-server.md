@@ -138,13 +138,13 @@ trigger. kiro-cli connects to the server, is met with a `401`, and runs OAuth
 itself
 ([../architecture/design-notes/mcp-oauth-ownership.md](../architecture/design-notes/mcp-oauth-ownership.md),
 "Path A"). There is no command to type: kiro-cli owns the OAuth chain end to
-end, and Kiro Crew's only view of it is the one-directional `_kiro.dev/*`
+end, and Kiro Crew's only view of it is the one-directional `_efm.go/*`
 notifications.
 
 **The authorization URL is never printed into the transcript as text**, so a
 session that comes up with no visible mention of the server is not a silent
 failure. kiro-cli hands the URL to Kiro Crew over the ACP notification
-`_kiro.dev/mcp/oauth_request`
+`_efm.go/mcp/oauth_request`
 ([../reference/kiro-cli/acp.md](../reference/kiro-cli/acp.md), "MCP server
 events"), and Kiro Crew renders it as an **inline banner** in chat — a lock
 icon, `miro requires authentication.`, and an **Authorize** link that opens the
@@ -436,5 +436,5 @@ the token bytes or their live validity visible to Kiro Crew.
   priority.
 - [enterprise-mcp-governance.md](enterprise-mcp-governance.md) — when an
   enterprise MCP registry, rather than OAuth, is why a server will not connect.
-- [../../src/kiro_crew/docs/troubleshooting.md](../../src/kiro_crew/docs/troubleshooting.md)
+- [../../src/efm_go/docs/troubleshooting.md](../../src/efm_go/docs/troubleshooting.md)
   — the user-facing "MCP tools not working" checklist.

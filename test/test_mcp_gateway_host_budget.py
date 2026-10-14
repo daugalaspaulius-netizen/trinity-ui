@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.mcp_gateway import host_budget as hb
+from efm_go.mcp_gateway import host_budget as hb
 
 
 def _budget(**limits: int) -> hb.HostBudget:

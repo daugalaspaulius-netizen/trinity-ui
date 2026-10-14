@@ -19,22 +19,22 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.security import (
+from efm_go import security
+from efm_go.security import (
     _GIT_PUBLISH_RULE_PATTERNS,
     BUILTIN_DENIED_RULES,
     BUILTIN_DENY_PATTERNS,
     DeniedCommandRule,
 )
-from kiro_crew.security import argv_floor as _argv_floor
-from kiro_crew.security import (
+from efm_go.security import argv_floor as _argv_floor
+from efm_go.security import (
     builtin_denied_rules,
     compute_effective_denied,
     is_denied,
     is_safe_user_regex,
 )
-from kiro_crew.security import perm_verb_mention as _perm_verb_mention
-from kiro_crew.security import (
+from efm_go.security import perm_verb_mention as _perm_verb_mention
+from efm_go.security import (
     pinned_builtin_command_ids,
 )
 
@@ -131,12 +131,12 @@ class TestCatalog:
         searched the pattern directly and would have gone green on a floor that had stopped
         running at all.
 
-        The module form is why the union matters. `python -m kiro_crew token` mints the
+        The module form is why the union matters. `python -m efm_go token` mints the
         identical token, but its argv PROGRAM is the interpreter and the underscored import
         name is not a console-script spelling — so neither the command-position regex nor
         `_is_self_program` saw it. `_is_self_module_invocation` closes it structurally.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         effective = list(
             security.compute_effective_denied(security.BUILTIN_DENIED_RULES, (), False, (), ())
@@ -149,62 +149,62 @@ class TestCatalog:
             "kirocrew -v --no-jail token",
             "kiro-crew token",
             # The module form, in the spellings a shell accepts.
-            "python -m kiro_crew token",
-            "python3 -m kiro_crew token --port 6777",
-            "python -mkiro_crew token",
-            "python -m kiro_crew pod token",
+            "python -m efm_go token",
+            "python3 -m efm_go token --port 6777",
+            "python -mefm_go token",
+            "python -m efm_go pod token",
             # Interpreter flags that take a SEPARATE operand. The first version of the module
             # check stopped at the first token not starting with `-`, so the operand (`dev`)
             # ended the scan and the mint went through one flag deeper. Review caught it.
-            "python -X dev -m kiro_crew token",
-            "python -W ignore -m kiro_crew token",
-            "python -Q new -m kiro_crew token",
-            "python -X utf8 -X dev -m kiro_crew token",
-            "python3 -B -X dev -m kiro_crew pod token",
+            "python -X dev -m efm_go token",
+            "python -W ignore -m efm_go token",
+            "python -Q new -m efm_go token",
+            "python -X utf8 -X dev -m efm_go token",
+            "python3 -B -X dev -m efm_go pod token",
             # ATTACHED operands are one token and need no skip — covered because the
             # separate-operand fix must not break them.
-            "python -Xdev -m kiro_crew token",
-            "python -Wignore -m kiro_crew token",
+            "python -Xdev -m efm_go token",
+            "python -Wignore -m efm_go token",
             # `-x` is a real flag that takes NO operand, and the skip set is lowercased (the
             # floor sees an already-lowercased command, so `-X` arrives as `-x`). A bare `-m`
             # after it must still register as the marker rather than be eaten as an operand.
-            "python -x -m kiro_crew token",
+            "python -x -m efm_go token",
             # `-c` is the same escape one flag over: an inline program that imports the
             # package reaches the identical mint. Two defects had to be fixed together —
             # the module check read the payload as a script name and bailed, and the verb
             # scan treated the `;` INSIDE the quoted payload as a command separator, ending
             # one token before `token`. Both found in review.
-            'python -c "from kiro_crew.cli import main; main()" token',
-            "python3 -c 'import kiro_crew.cli; kiro_crew.cli.main()' token",
-            'python -c "from kiro_crew import cli; cli.main()" token --port 6777',
+            'python -c "from efm_go.cli import main; main()" token',
+            "python3 -c 'import efm_go.cli; efm_go.cli.main()' token",
+            'python -c "from efm_go import cli; cli.main()" token --port 6777',
             # Attached spelling: payload inside the same token.
-            'python -c"import kiro_crew.cli;kiro_crew.cli.main()" token',
+            'python -c"import efm_go.cli;efm_go.cli.main()" token',
             # Behind an interpreter flag that takes a separate operand.
-            'python -X dev -c "import kiro_crew.cli; kiro_crew.cli.main()" token',
+            'python -X dev -c "import efm_go.cli; efm_go.cli.main()" token',
             # Reached without a literal `import` statement.
-            "python -c \"__import__('kiro_crew.cli').cli.main()\" token",
+            "python -c \"__import__('efm_go.cli').cli.main()\" token",
             # NO `token` ARGV WORD AT ALL. An inline payload is arbitrary Python running with
             # the interpreter's authority, so it can BUILD the verb instead of passing it —
             # which is why the `-c` form is denied on the IMPORT rather than on the verb. The
             # verb requirement holds everywhere else (`kirocrew doctor` is legitimate) but is
             # not enforceable here. Found in review (GPT 5.6).
             "python -c \"import sys; sys.argv.append('token'); "
-            'from kiro_crew.cli import main; main()"',
-            'python -c "from kiro_crew.cli import main; import sys; '
+            'from efm_go.cli import main; main()"',
+            'python -c "from efm_go.cli import main; import sys; '
             "sys.argv=['x','token']; main()\"",
-            "python -c \"from kiro_crew.cli import main; main(['token'])\"",
-            'python -c "import kiro_crew.cli as c; c.main()"',
-            'python -X dev -c "import kiro_crew.cli"',
+            "python -c \"from efm_go.cli import main; main(['token'])\"",
+            'python -c "import efm_go.cli as c; c.main()"',
+            'python -X dev -c "import efm_go.cli"',
             # STDIN forms: `python -` and a bare interpreter read the program from stdin, so a
             # heredoc body or a pipe producer reaches the CLI with nothing in argv. The program
             # text is visible on the command line, and matching the import THERE -- in the
             # heredoc body, the redirected file, or the pipe producer, and nowhere else in the
             # frame (see TestStdinProgramTextScoping) -- is the same fail-closed call.
-            "python - <<'PY'\nfrom kiro_crew.cli import main; main()\nPY",
-            "python3 - <<EOF\nimport kiro_crew.cli\nEOF",
-            "echo 'from kiro_crew.cli import main; main()' | python -",
-            "python -X dev - <<'PY'\nimport kiro_crew.cli\nPY",
-            "python << 'PY'\nimport kiro_crew.cli; kiro_crew.cli.main()\nPY",
+            "python - <<'PY'\nfrom efm_go.cli import main; main()\nPY",
+            "python3 - <<EOF\nimport efm_go.cli\nEOF",
+            "echo 'from efm_go.cli import main; main()' | python -",
+            "python -X dev - <<'PY'\nimport efm_go.cli\nPY",
+            "python << 'PY'\nimport efm_go.cli; efm_go.cli.main()\nPY",
         ):
             assert security.is_denied(
                 blocked, denied_regexes=effective
@@ -218,8 +218,8 @@ class TestCatalog:
             "echo kirocrew token",
             "pytest test/test_token_auth.py",
             # The product as a module, but not the mint verb.
-            "python -m kiro_crew gateway",
-            "python -X dev -m kiro_crew gateway",
+            "python -m efm_go gateway",
+            "python -X dev -m efm_go gateway",
             # A flag operand that happens to look like a path, and a script that is not the
             # product: neither is a module invocation.
             "python -X dev script.py token",
@@ -234,13 +234,13 @@ class TestCatalog:
             "python - <<'PY'\nprint(1)\nPY",
             "echo 'print(1)' | python -",
             # The import name is in a FILENAME being catted to stdin, not the program itself,
-            # and `\bkiro_crew\b` does not match inside `kiro_crew_notes`.
-            "cat kiro_crew_notes.txt | python -",
+            # and `\befm_go\b` does not match inside `efm_go_notes`.
+            "cat efm_go_notes.txt | python -",
             "python -c 'import json; print(json.dumps({}))'",
             "python -c 'import sys; print(sys.version)'",
             # Mentions the import name as DATA for another program, not as code we will run.
-            "grep -r kiro_crew src/",
-            "echo 'import kiro_crew.cli' > /tmp/note.txt",
+            "grep -r efm_go src/",
+            "echo 'import efm_go.cli' > /tmp/note.txt",
         ):
             assert not security.is_denied(
                 allowed, denied_regexes=effective
@@ -337,7 +337,7 @@ class TestSelfProtectionFlagInterposition:
 
     @staticmethod
     def _effective():
-        from kiro_crew import security
+        from efm_go import security
 
         return list(
             security.compute_effective_denied(security.BUILTIN_DENIED_RULES, (), False, (), ())
@@ -351,7 +351,7 @@ class TestSelfProtectionFlagInterposition:
         )
 
     def test_every_ungated_floor_has_a_template_and_no_row(self):
-        from kiro_crew import security
+        from efm_go import security
 
         assert set(self._UNGATED_TEMPLATES) == set(security._SELF_PROTECTION_UNGATED_FLOOR_IDS)
         # Disjoint by construction: an id in both sets would gate a floor on a
@@ -364,7 +364,7 @@ class TestSelfProtectionFlagInterposition:
         )
 
     def test_bare_and_flag_interposed_forms_are_all_denied(self):
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for rule_id, template in {**self._TEMPLATES, **self._UNGATED_TEMPLATES}.items():
@@ -380,7 +380,7 @@ class TestSelfProtectionFlagInterposition:
                 ), f"{rule_id}: flag-interposed form not denied: {cmd!r}"
 
     def test_cloud_flag_interposition_denied_for_every_lifecycle_subcommand(self):
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for sub in ("destroy", "stop", "start", "launch", "connect", "tunnel", "login", "logout"):
@@ -397,7 +397,7 @@ class TestSelfProtectionFlagInterposition:
         word sitting AFTER an unrelated subcommand (direct or module form) --
         stay allowed.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for allowed in (
@@ -411,9 +411,9 @@ class TestSelfProtectionFlagInterposition:
             "kirocrew doctor restart",
             "kirocrew gateway status restart",
             "kirocrew cloud status destroy",
-            "python -m kiro_crew doctor restart",
-            "python -m kiro_crew gateway status restart",
-            "python -m kiro_crew cloud status destroy",
+            "python -m efm_go doctor restart",
+            "python -m efm_go gateway status restart",
+            "python -m efm_go cloud status destroy",
         ):
             assert not security.is_denied(
                 allowed, denied_regexes=effective
@@ -434,7 +434,7 @@ class TestSelfProtectionFlagInterposition:
         quietly re-acquire an entry for a deleted row (a ratchet may only
         tighten); the row that entry names must also EXIST.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         # Exact set, not a per-entry property: an alias for a deleted row (or any
         # other addition) fails here until this line is changed on purpose.
@@ -459,7 +459,7 @@ class TestSelfProtectionFlagInterposition:
 
     def test_legacy_alias_spellings_stay_out_of_the_enforced_catalog(self):
         """Aliases are lookup-only: not enforced, not built-in, not in the golden."""
-        from kiro_crew import security
+        from efm_go import security
 
         golden = json.loads(_GOLDEN.read_text(encoding="utf-8"))
         golden_patterns = {g["pattern"] for g in golden}
@@ -518,7 +518,7 @@ class TestSelfProtectionFlagInterposition:
         }
 
     def test_self_protection_subcommands_denied_under_every_shell_dressing(self):
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for rule_id, words in self._SUBCOMMANDS.items():
@@ -538,11 +538,11 @@ class TestSelfProtectionFlagInterposition:
         "kirocrew file-delivery --help",
         "kirocrew file-delivery -h",
         "kirocrew -v file-delivery --help",
-        "python -m kiro_crew file-delivery --help",
+        "python -m efm_go file-delivery --help",
     )
 
     def test_the_file_delivery_floor_allows_the_forms_that_dispatch_nothing(self):
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for cmd in self._FILE_DELIVERY_NON_DISPATCHING:
@@ -565,8 +565,8 @@ class TestSelfProtectionFlagInterposition:
         import ast
         import inspect
 
-        from kiro_crew import cli
-        from kiro_crew.security import argv_floor
+        from efm_go import cli
+        from efm_go.security import argv_floor
 
         tree = ast.parse(inspect.getsource(cli))
         choices: "list[str] | None" = None
@@ -629,7 +629,7 @@ class TestSelfProtectionFlagInterposition:
         return cmds
 
     def test_self_protection_denied_under_the_full_quoting_cross(self):
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for rule_id, words in self._SUBCOMMANDS.items():
@@ -654,7 +654,7 @@ class TestSelfProtectionFlagInterposition:
         floor re-added to the gated set would be gated on a row lookup again,
         which is the silent-allow trap the ungated set exists to remove.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert set(self._SUBCOMMANDS) == set(security._SELF_PROTECTION_UNGATED_FLOOR_IDS), (
             "every ungated kirocrew-subcommand floor must register its words in "
@@ -681,7 +681,7 @@ class TestSelfProtectionFlagInterposition:
         """A redirection is removed from argv by the shell and can sit anywhere in
         a simple command, so it must not shift the leading subcommand.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for cmd in (
@@ -705,7 +705,7 @@ class TestSelfProtectionFlagInterposition:
         bash passes, so a flag or the verb hidden in them must not slip past the
         floor -- shlex leaves the ``$`` and does not decode ANSI-C escapes.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for cmd in (
@@ -720,51 +720,51 @@ class TestSelfProtectionFlagInterposition:
             ), f"$-quoted self-protection form not denied: {cmd!r}"
 
     def test_self_protection_module_form_denied_under_shell_dressing(self):
-        """``python -m kiro_crew <subcommand>`` dispatches the same self-action. The
-        escaped module form (``python -m kiro_crew -\\v restart``) slips past the
+        """``python -m efm_go <subcommand>`` dispatches the same self-action. The
+        escaped module form (``python -m efm_go -\\v restart``) slips past the
         interpreter-position regex, so the floor resolves the module name and checks
         the operands after it.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         for cmd in (
-            "python -m kiro_crew restart",
-            r"python -m kiro_crew -\v restart",  # escaped: regex misses, floor catches
-            r"python -mkiro_crew -\v restart",  # attached -m spelling
-            r"python -m kiro_crew \update",
-            "python -m kiro_crew gateway restart",
-            r"python -m kiro_crew -\v cloud destroy",
+            "python -m efm_go restart",
+            r"python -m efm_go -\v restart",  # escaped: regex misses, floor catches
+            r"python -mefm_go -\v restart",  # attached -m spelling
+            r"python -m efm_go \update",
+            "python -m efm_go gateway restart",
+            r"python -m efm_go -\v cloud destroy",
         ):
             assert security.is_denied(
                 cmd, denied_regexes=effective
             ), f"module-form self-protection not denied: {cmd!r}"
         # benign module invocations stay allowed at the floor (not a targeted subcommand)
-        assert not security._is_self_restart("python -m kiro_crew status")
-        assert not security._is_self_cloud_destructive("python -m kiro_crew cloud status")
+        assert not security._is_self_restart("python -m efm_go status")
+        assert not security._is_self_cloud_destructive("python -m efm_go cloud status")
         assert not security._is_self_restart("python -m pytest test/test_restart.py")
 
     def test_self_protection_module_form_denied_under_version_launchers(self):
-        """Every interpreter launcher spelling of ``-m kiro_crew`` dispatches the
+        """Every interpreter launcher spelling of ``-m efm_go`` dispatches the
         same self-action.
 
         The spellings come from ``security._PYTHON_PROGRAM_RE``: version-suffixed
         binaries, the Windows ``py`` launcher (its version selector is an
         interpreter flag taking no operand), interpreter flags with separate
-        operands (``-X dev``), and the attached ``-mkiro_crew`` form. Each is
+        operands (``-X dev``), and the attached ``-mefm_go`` form. Each is
         crossed with a bare and flag-interposed tail plus the full quoting
         cross from ``_quoting_cross``, so every launcher cell the retired
         TestCatalog matrix asserted survives here.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         effective = self._effective()
         launchers = (
-            "python -m kiro_crew",
-            "python3 -B -m kiro_crew",
-            "python3.12 -X dev -m kiro_crew",
-            "py -3.12 -m kiro_crew",
-            "python -mkiro_crew",
+            "python -m efm_go",
+            "python3 -B -m efm_go",
+            "python3.12 -X dev -m efm_go",
+            "py -3.12 -m efm_go",
+            "python -mefm_go",
         )
         for launcher in launchers:
             for rule_id, words in self._SUBCOMMANDS.items():
@@ -779,8 +779,8 @@ class TestSelfProtectionFlagInterposition:
         # The same launchers running a benign subcommand (or another program
         # entirely) stay allowed -- the launcher spelling is not the trigger.
         for allowed in (
-            "py -3.12 -m kiro_crew status",
-            "python3.12 -X dev -m kiro_crew doctor",
+            "py -3.12 -m efm_go status",
+            "python3.12 -X dev -m efm_go doctor",
             "python3 -B -m pytest test/test_restart.py",
         ):
             assert not security.is_denied(
@@ -791,7 +791,7 @@ class TestSelfProtectionFlagInterposition:
         """The floor matches a real subcommand invocation, not a mention, a
         benign subcommand, or a different rule's verb.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert not security._is_self_restart("kirocrew -v status")
         assert not security._is_self_cloud_destructive("kirocrew cloud status")
@@ -906,13 +906,13 @@ class TestProductNameAnywhereIsNotADenial:
             # A method name in a search of the product's own tree -- the seven
             # legacy rows refused every one of these.
             "grep -rn get_secret_value src/",
-            "grep -rn read_secret src/kiro_crew",
+            "grep -rn read_secret src/efm_go",
             "grep -rn delete_stack .",
             "grep -rn terminate_instances src/",
             "grep -rn drop_table src/",
             "grep -rn delete_table src/",
             "grep -rn delete_bucket src/",
-            "sed -n '/delete_bucket/p' src/kiro_crew/cloud/__init__.py",
+            "sed -n '/delete_bucket/p' src/efm_go/cloud/__init__.py",
         ):
             assert is_denied(allowed, denied_regexes=effective) is None, allowed
 
@@ -921,7 +921,7 @@ class TestProductNameAnywhereIsNotADenial:
         for denied, rule_id in (
             ("kirocrew restart", "self-protection-restart"),
             ("kirocrew -v update", "self-protection-update"),
-            ("python -m kiro_crew gateway restart", "self-protection-gateway-restart"),
+            ("python -m efm_go gateway restart", "self-protection-gateway-restart"),
             ("kirocrew cloud destroy", "self-protection-cloud"),
             # Shell dressing the deleted regex could see through only by
             # matching the name anywhere: the floor reads the argv instead.
@@ -1090,14 +1090,14 @@ class TestLazyPossessiveGapSplit:
     """
 
     def test_split_absorbs_lazy_and_possessive_modifier(self):
-        from kiro_crew.security import _split_deny_frags
+        from efm_go.security import _split_deny_frags
 
         assert _split_deny_frags(r"curl.*?evil\.example") == ["curl", r"evil\.example"]
         assert _split_deny_frags(r"rm.*+secret") == ["rm", "secret"]
         assert _split_deny_frags(r"a.*?b.*c.*+d") == ["a", "b", "c", "d"]
 
     def test_lazy_gap_rule_still_matches_end_to_end(self):
-        from kiro_crew.security import _DenyMatcher
+        from efm_go.security import _DenyMatcher
 
         m = _DenyMatcher(r"curl.*?evil\.example")
         assert m._disabled is False
@@ -1107,7 +1107,7 @@ class TestLazyPossessiveGapSplit:
     def test_lazy_user_deny_blocks_via_is_denied(self):
         # A user-authored lazy pattern accepted by is_safe_user_regex must
         # actually deny the matching command (not silently allow it).
-        from kiro_crew.security import is_safe_user_regex
+        from efm_go.security import is_safe_user_regex
 
         pattern = r"curl.*?evil\.example"
         assert is_safe_user_regex(pattern) is True
@@ -1130,7 +1130,7 @@ class TestGreedyFragmentUnderConsume:
     def test_greedy_gap_pattern_still_matches(self):
         import re
 
-        from kiro_crew.security import _DenyMatcher
+        from efm_go.security import _DenyMatcher
 
         pattern = r"rm .+.*--no-preserve-root"
         target = "rm x--no-preserve-root"
@@ -1143,7 +1143,7 @@ class TestGreedyFragmentUnderConsume:
         assert m.match("ls -la") is False
 
     def test_greedy_gap_user_deny_blocks_via_is_denied(self):
-        from kiro_crew.security import is_safe_user_regex
+        from efm_go.security import is_safe_user_regex
 
         pattern = r"rm .+.*--no-preserve-root"
         assert is_safe_user_regex(pattern) is True
@@ -1151,7 +1151,7 @@ class TestGreedyFragmentUnderConsume:
         assert is_denied("echo hello", denied_regexes=[pattern]) is None
 
     def test_underconsume_detector(self):
-        from kiro_crew.security import _frags_can_underconsume
+        from efm_go.security import _frags_can_underconsume
 
         # Non-final greedy variable-width tail → unsafe (route to bounded).
         assert _frags_can_underconsume(["rm .+", "--no-preserve-root"]) is True
@@ -1181,7 +1181,7 @@ class TestUserPatternExactSemantics:
     def test_alternation_before_gap_matches(self):
         import re
 
-        from kiro_crew.security import _DenyMatcher
+        from efm_go.security import _DenyMatcher
 
         pattern = r"(ab|a).*b"
         assert re.search(pattern, "ab", re.IGNORECASE) is not None
@@ -1191,7 +1191,7 @@ class TestUserPatternExactSemantics:
         assert m.match("ab") is True
 
     def test_user_alternation_deny_blocks_via_is_denied(self):
-        from kiro_crew.security import is_safe_user_regex
+        from efm_go.security import is_safe_user_regex
 
         pattern = r"(ab|a).*b"
         assert is_safe_user_regex(pattern) is True
@@ -1202,7 +1202,7 @@ class TestUserPatternExactSemantics:
         # Even a pattern the fragment splitter COULD handle is routed to the
         # exact engine when it is not a built-in — no reliance on the splitter's
         # fidelity for user input.
-        from kiro_crew.security import _DenyMatcher
+        from efm_go.security import _DenyMatcher
 
         m = _DenyMatcher(r"curl.*evil")  # simple, fragmentable, but user-supplied
         assert m._bounded is True
@@ -1211,7 +1211,7 @@ class TestUserPatternExactSemantics:
     def test_builtins_keep_fragment_fast_path(self):
         # A representative non-alternation built-in stays on the linear fragment
         # path (not bounded) — preserving the ReDoS-safe fast path for the 137.
-        from kiro_crew.security import (
+        from efm_go.security import (
             BUILTIN_DENIED_RULES,
             _DenyMatcher,
             _has_top_level_alternation,
@@ -1238,7 +1238,7 @@ class TestUserPatternExactSemantics:
         # keeping. What still needs the bounded engine, and so still truncates: a
         # pattern whose fragments can over-consume across a ``.*`` gap, where the
         # linear matcher would UNDER-match and let a denied command through.
-        from kiro_crew.security import _DENY_FALLBACK_SCAN_MAX_CHARS, _DenyMatcher
+        from efm_go.security import _DENY_FALLBACK_SCAN_MAX_CHARS, _DenyMatcher
 
         # Built-in floor: full-input (no truncation) — a >cap prefix in the SAME
         # segment does not hide a destructive built-in.
@@ -1440,7 +1440,7 @@ class TestIsDeniedReDoSResistance:
         The small-size absolute CPU budget stays as the catastrophic-blowup backstop for cost
         added outside the matcher, where this trace cannot see it.
         """
-        from kiro_crew.security import _DENY_MATCHER_CACHE, _deny_matcher
+        from efm_go.security import _DENY_MATCHER_CACHE, _deny_matcher
 
         builds = (
             lambda n: "get_credentials " + ("python boto3 " * n),
@@ -1674,7 +1674,7 @@ class TestUserRegexReDoSGate:
         inherit the built-in scrub: wrapping the fragment in an outer quantifier
         nests its ``*`` and backtracks catastrophically.  Only a COMPLETE
         built-in pattern is exempt."""
-        from kiro_crew.security import (
+        from efm_go.security import (
             _DANGEROUS_AWS_FLAG_RUN,
             _LINEARIZED_AWS_FLAG_RUN,
         )
@@ -1942,7 +1942,7 @@ class TestBuiltinRuleMatcherShape:
         assert unsafe == [], f"these built-ins would be DISABLED at runtime: {unsafe}"
 
     def test_no_regex_tier_matcher_is_disabled(self):
-        from kiro_crew.security import _deny_matcher
+        from efm_go.security import _deny_matcher
 
         disabled = [r.id for r in self._regex_tier_rules() if _deny_matcher(r.pattern)._disabled]
         assert disabled == [], f"these built-ins match nothing: {disabled}"
@@ -1951,7 +1951,7 @@ class TestBuiltinRuleMatcherShape:
         # Both rules were narrowed away from ``.*``-gapped co-occurrence, so each
         # reduces to a single fragment matched with exact ``re.search`` over the
         # WHOLE command — not the length-capped bounded scan.
-        from kiro_crew.security import _deny_matcher
+        from efm_go.security import _deny_matcher
 
         for rule_id in (_RULE_KILL, _RULE_MINT):
             matcher = _deny_matcher(_rule_pattern(rule_id))
@@ -1992,7 +1992,7 @@ class TestSelfProtectionFloorIsAdditive:
         """
         import re as _re
 
-        from kiro_crew.security import _is_credential_mint, _is_self_kill
+        from efm_go.security import _is_credential_mint, _is_self_kill
 
         predicate = _is_self_kill if rule_id == _RULE_KILL else _is_credential_mint
         rx = _re.compile(_rule_pattern(rule_id), _re.IGNORECASE)
@@ -2017,7 +2017,7 @@ class TestSelfProtectionFloorIsAdditive:
     def test_tokenizer_failure_does_not_allow_a_mint(self, monkeypatch):
         # Simulate the floor's tokenizer failing outright.  The command must
         # still be denied, by the regex half of the union.
-        import kiro_crew.security as sec
+        import efm_go.security as sec
 
         def _boom(_cmd):
             raise ValueError("simulated tokenizer failure")
@@ -2036,7 +2036,7 @@ class TestSelfProtectionFloorIsAdditive:
         """
         import os as _os
 
-        from kiro_crew.security import normalize_shell_command
+        from efm_go.security import normalize_shell_command
 
         monkeypatch.setattr(_os.path, "expanduser", lambda _p: r"C:\Users\runneradmin")
         # The guard is that this RETURNS rather than raising.
@@ -2716,7 +2716,7 @@ class TestReverseShellNcIsCommandTokenAnchored:
         # No top-level ``.*`` gap, so the row is one fragment matched with exact
         # ``re.search`` over the WHOLE command, never the length-capped scan --
         # a padded command cannot slip the needle past a bound.
-        from kiro_crew.security import _deny_matcher
+        from efm_go.security import _deny_matcher
 
         pattern = _rule_pattern(self._RULE)
         assert is_safe_user_regex(pattern)
@@ -2877,7 +2877,7 @@ class TestPermissionVerbMentionNarrowing:
             f"grep -rnE '{_CM}|/etc/' src/ | uniq f",
             # The mode row carries no path, so it is reached by a search that
             # names the mode instead.  Auditing THIS very file was refused by it.
-            f"grep -n '{_CM} 777' src/kiro_crew/security/denied_rules.py",
+            f"grep -n '{_CM} 777' src/efm_go/security/denied_rules.py",
         ],
     )
     def test_inert_mention_allowed(self, cmd):
@@ -3201,7 +3201,7 @@ class TestPermissionVerbMentionNarrowing:
         under revision to admit flag spellings, and a tail-keyed selector would
         have dropped it on that rebase with no test noticing.
         """
-        from kiro_crew.security.denied_rules import (
+        from efm_go.security.denied_rules import (
             _PERM_VERB_MENTION_PATTERNS,
             _PERM_VERB_MENTION_RULES,
             _PERM_VERB_MENTION_VERBS,
@@ -3229,8 +3229,8 @@ class TestPermissionVerbMentionNarrowing:
         into another category: ``is_denied`` consults the argv predicate only after
         this membership test.
         """
-        from kiro_crew.security import _perm_verb_mention_narrows
-        from kiro_crew.security.denied_rules import _PERM_VERB_MENTION_PATTERNS
+        from efm_go.security import _perm_verb_mention_narrows
+        from efm_go.security.denied_rules import _PERM_VERB_MENTION_PATTERNS
 
         text = f"grep -rn '{_CM}|/etc/' src/"
         # The predicate itself says "inert mention" for this text …
@@ -3303,8 +3303,8 @@ class TestPermissionVerbMentionNarrowing:
         tokens.  Delegating produced a live bypass, so the predicate now compares
         the token against the operator tokens the tokenizer hands over alone.
         """
-        from kiro_crew.security.perm_verb_mention import _uncut_control_operator
-        from kiro_crew.security.shell_normalizer import _ends_argv
+        from efm_go.security.perm_verb_mention import _uncut_control_operator
+        from efm_go.security.shell_normalizer import _ends_argv
 
         # The gap: an operator glued inside a word, whichever operator it is.
         assert _uncut_control_operator("/etc/profile.d&") is True
@@ -3326,7 +3326,7 @@ class TestPermissionVerbMentionNarrowing:
         assert _uncut_control_operator("/etc/profile.d") is False
         # A quoted alternation is masked BEFORE the question is asked, which is
         # what keeps the exemption this PR exists to grant.
-        from kiro_crew.security.perm_verb_mention import _mask_quoted_operators
+        from efm_go.security.perm_verb_mention import _mask_quoted_operators
 
         assert _uncut_control_operator(_mask_quoted_operators(f"'{_CM}|{_CO}'")) is False
         # A duplication carries an ``&`` that starts no command, so the refusal
@@ -3344,7 +3344,7 @@ class TestPermissionVerbMentionNarrowing:
         normalized deny view is built on -- so coverage tracks that view rather
         than a hand-listed set of glue spellings.
         """
-        from kiro_crew.security.perm_verb_mention import _frame_voids_perm_verb_mention
+        from efm_go.security.perm_verb_mention import _frame_voids_perm_verb_mention
 
         for spelling in (
             'ch""mod 777 ~/.ssh/id_rsa',
@@ -3368,7 +3368,7 @@ class TestPermissionVerbMentionNarrowing:
             f"grep -rnE '{_CM}|/etc/' src/ | uniq -c | head",
             f"grep -rn {_CM} /etc/cron.d",
             f"grep -nE '{_CM}|{_CO}' /etc/profile.d",
-            f"grep -n '{_CM} 777' src/kiro_crew/security/denied_rules.py",
+            f"grep -n '{_CM} 777' src/efm_go/security/denied_rules.py",
         ):
             assert _frame_voids_perm_verb_mention(spelling) is False, spelling
 
@@ -3381,7 +3381,7 @@ class TestPermissionVerbMentionNarrowing:
         An audit never puts a glob or an expansion in program position, so the
         refusal does not reach one.
         """
-        from kiro_crew.security.perm_verb_mention import _frame_voids_perm_verb_mention
+        from efm_go.security.perm_verb_mention import _frame_voids_perm_verb_mention
 
         for spelling in (
             "ch?od 777 ~/.ssh/id_rsa",
@@ -3409,7 +3409,7 @@ class TestPermissionVerbMentionNarrowing:
         exist -- no wrapper is an accepted data consumer -- instead of asking a
         hand-kept wrapper list to stay complete.
         """
-        from kiro_crew.security.perm_verb_mention import _deglues_to_perm_verb
+        from efm_go.security.perm_verb_mention import _deglues_to_perm_verb
 
         assert _deglues_to_perm_verb(f'ch""{_CM[2:]}') is True
         assert _deglues_to_perm_verb("ch''mod") is True
@@ -3460,7 +3460,7 @@ class TestPermissionVerbMentionNarrowing:
         """
         import shlex
 
-        from kiro_crew.security.perm_verb_mention import (
+        from efm_go.security.perm_verb_mention import (
             _PERM_VERB_MENTION_PROGRAMS,
             _SECOND_OPERAND_WRITER_PROGRAMS,
             _writes_a_second_operand,
@@ -3488,7 +3488,7 @@ class TestPermissionVerbMentionNarrowing:
 
     def test_double_quoted_literal_refuses_expansion_machinery(self):
         """The mask covers ``"..."`` only when nothing inside it can run."""
-        from kiro_crew.security.perm_verb_mention import _double_quoted_literal
+        from efm_go.security.perm_verb_mention import _double_quoted_literal
 
         assert _double_quoted_literal('"a|b"') is True
         assert _double_quoted_literal('"a;b&c"') is True
@@ -4725,7 +4725,7 @@ class TestCredentialMintSegmentScoping:
         "cmd",
         [
             f"cd /workplace/x/{_NAME}-wt-y && pytest test/test_{_TOK}_auth.py",
-            f"cd /workplace/x/{_NAME}-wt-y && grep -n mint src/kiro_crew/{_TOK}_auth.py",
+            f"cd /workplace/x/{_NAME}-wt-y && grep -n mint src/efm_go/{_TOK}_auth.py",
             f"tail -20 /tmp/{_NAME}-gw.log | sed 's/{_TOK}=.*/REDACTED/'",
             f"KIROCREW_HOME=/tmp/h ./bin/{_NAME} gateway  # banner prints the auth {_TOK}",
             f"cat /tmp/{_NAME}-dev/config.json  # contains a {_TOK} field",
@@ -4763,7 +4763,7 @@ class TestSelfFloorShortCircuit:
     """
 
     def _descent_calls(self, monkeypatch, text: str) -> int:
-        from kiro_crew import security
+        from efm_go import security
 
         calls = {"n": 0}
         real = security._self_token_frames
@@ -4804,10 +4804,10 @@ class TestSelfFloorShortCircuit:
         never matches ``kiro[-.]?crew``. The gate must answer True for all of
         them (over-matching is safe; under-matching is a bypass).
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for evasive in (
-            "python -m kiro_crew token",  # underscored module spelling
+            "python -m efm_go token",  # underscored module spelling
             "[k]irocrew token",  # one-char bracket class
             "kiro$()crew token",  # empty command substitution
             "kiro${x:-crew} token",  # parameter default
@@ -4823,7 +4823,7 @@ class TestSelfFloorShortCircuit:
 
     def test_gated_predicates_still_deny_the_obfuscation_corpus(self):
         """End-to-end: the predicates (with the gate in front) keep firing."""
-        from kiro_crew import security
+        from efm_go import security
 
         for mint in (
             "[k]irocrew token",
@@ -4838,7 +4838,7 @@ class TestSelfFloorShortCircuit:
         assert security._is_self_kill("pkill -f kirocrew")
 
     def test_gate_declines_plain_text_without_machinery(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for plain in (
             "ls -la /tmp/foo",
@@ -4855,7 +4855,7 @@ class TestSelfFloorShortCircuit:
         ``~`` must therefore be in the machinery class, or the gate opens a
         real bypass (pre-push review finding).
         """
-        from kiro_crew import security
+        from efm_go import security
 
         # expanduser reads HOME on POSIX but USERPROFILE on Windows — set
         # both so the tilde target resolves under the product tree everywhere.
@@ -4882,7 +4882,7 @@ class TestSelfFloorShortCircuit:
         concedes protects nothing, since ``python /tmp/s.py`` reads the same file
         unhindered.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         glued = "ex" + '""' + "ec"
         cmd = f'python -c "{glued}(open(chr(47)).read())"'
@@ -4900,7 +4900,7 @@ class TestSelfFloorShortCircuit:
         assert not security._is_credential_mint(cmd)
         assert security.is_denied(cmd) is None
         # The same glue around a payload that DOES name the surface is still denied.
-        reach = f"python -c \"{glued}('import kiro_crew.cli')\""
+        reach = f"python -c \"{glued}('import efm_go.cli')\""
         assert security._is_credential_mint(reach)
 
 
@@ -5040,7 +5040,7 @@ class TestSelfKillArgvWindowIsQuoteAware:
         ],
     )
     def test_pipe_still_separates_the_argv_window(self, cmd):
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._is_self_kill(cmd.format(n=_NAME).lower()) is False
 
@@ -5242,10 +5242,10 @@ class TestStdinProgramTextScoping:
     ``_has_self_importing_inline_program`` must not search that whole frame for the
     mint surface, or an unrelated neighbour's text would satisfy the check.
 
-    The REAL_STDIN_REACH payload is ``import kiro_crew.cli`` -- the smallest program
-    that reaches the mint.  A bare ``import kiro_crew`` is not one: the gate is the
+    The REAL_STDIN_REACH payload is ``import efm_go.cli`` -- the smallest program
+    that reaches the mint.  A bare ``import efm_go`` is not one: the gate is the
     mint surface (``TestInlinePayloadNamesTheMintSurface``), and the bare package
-    import reaches nothing (``kiro_crew/__init__`` imports no CLI).  What these
+    import reaches nothing (``efm_go/__init__`` imports no CLI).  What these
     fixtures pin is the CARRIER walk -- every place the shell can put a program on
     stdin -- which does not depend on the payload rule.
     """
@@ -5255,20 +5255,20 @@ class TestStdinProgramTextScoping:
     BENIGN_NEIGHBOUR = (
         # The report's own case 2, reduced: format two source files, then edit one
         # through a heredoc whose payload does not import anything.
-        "isort src/kiro_crew/mcp_core.py\npython3 - <<'PY'\nprint(1)\nPY",
+        "isort src/efm_go/mcp_core.py\npython3 - <<'PY'\nprint(1)\nPY",
         # The same shape behind the other two separators a frame preserves.
-        "isort src/kiro_crew/x.py && python3 -",
-        "black src/kiro_crew/security.py; python3 - <<'PY'\nprint(2)\nPY",
+        "isort src/efm_go/x.py && python3 -",
+        "black src/efm_go/security.py; python3 - <<'PY'\nprint(2)\nPY",
         # Order does not matter: the neighbour may follow the interpreter too.
-        "python3 - <<PY\nprint(1)\nPY\nisort src/kiro_crew/x.py",
+        "python3 - <<PY\nprint(1)\nPY\nisort src/efm_go/x.py",
         # A here-string whose payload is harmless, next to a product-named path.
-        "isort src/kiro_crew/x.py\npython3 - <<<'print(1)'",
+        "isort src/efm_go/x.py\npython3 - <<<'print(1)'",
         # A substitution operand whose text is harmless, next to a product-named path.
-        "isort src/kiro_crew/x.py\npython3 - <<<$(printf %s 'print(1)')",
+        "isort src/efm_go/x.py\npython3 - <<<$(printf %s 'print(1)')",
         # A stdin redirect belonging to ANOTHER command, with no interpreter in play.
-        "isort src/kiro_crew/x.py\ncat < notes.txt",
+        "isort src/efm_go/x.py\ncat < notes.txt",
         # A pipe that does NOT feed this interpreter (it consumes its output).
-        "python3 - <<PY\nprint(1)\nPY\n| grep kiro_crew",
+        "python3 - <<PY\nprint(1)\nPY\n| grep efm_go",
     )
 
     # Every way the shell can put a PROGRAM on a simple command's stdin, at every
@@ -5278,99 +5278,99 @@ class TestStdinProgramTextScoping:
     # The program is the minimal mint reach, an import of the CLI module.
     REAL_STDIN_REACH = (
         # Heredoc body, in every spelling of the marker.
-        "python3 - <<'PY'\nimport kiro_crew.cli\nPY",
-        "python3 - <<-PY\nimport kiro_crew.cli\nPY",
-        "python3 - << PY\nimport kiro_crew.cli\nPY",
-        "python << 'PY'\nimport kiro_crew.cli\nPY",
+        "python3 - <<'PY'\nimport efm_go.cli\nPY",
+        "python3 - <<-PY\nimport efm_go.cli\nPY",
+        "python3 - << PY\nimport efm_go.cli\nPY",
+        "python << 'PY'\nimport efm_go.cli\nPY",
         # An unterminated heredoc runs to the end of the frame (over-block, not under).
-        "python3 - <<PY\nimport kiro_crew.cli\n",
+        "python3 - <<PY\nimport efm_go.cli\n",
         # A body LINE that merely CONTAINS the tag word is not a closing delimiter:
         # bash closes only on a line holding it ALONE, and line structure does not
         # survive tokenizing, so the body must end at the LAST occurrence of the tag.
         # `# EOF` is an ordinary Python comment and was enough to close it early.
-        "python3 - <<EOF\n# EOF\nimport kiro_crew.cli\nEOF",
-        "python3 - <<EOF\nx = 1  # EOF\nimport kiro_crew.cli\nEOF",
-        "python3 - <<PY\nprint('PY')\nimport kiro_crew.cli\nPY",
+        "python3 - <<EOF\n# EOF\nimport efm_go.cli\nEOF",
+        "python3 - <<EOF\nx = 1  # EOF\nimport efm_go.cli\nEOF",
+        "python3 - <<PY\nprint('PY')\nimport efm_go.cli\nPY",
         # A command AFTER the closing tag is a NEW command, not this interpreter's
         # script argument -- reading it as one made the detector answer False and
         # skipped the branch entirely, leaving the heredoc payload unscanned.
-        "python3 <<PY\nimport kiro_crew.cli\nPY\necho ok",
-        "python3 - <<PY\nimport kiro_crew.cli\nPY; echo ok",
-        "python3 - <<PY\nimport kiro_crew.cli\nPY && echo ok",
+        "python3 <<PY\nimport efm_go.cli\nPY\necho ok",
+        "python3 - <<PY\nimport efm_go.cli\nPY; echo ok",
+        "python3 - <<PY\nimport efm_go.cli\nPY && echo ok",
         # HERE-STRING: the operand itself is the program on stdin. `<<<` also starts with
         # `<<`, so reading it as a heredoc made the payload a delimiter and dropped it.
-        "python3 - <<<'import kiro_crew.cli'",
-        "python3 -<<<'import kiro_crew.cli'",
-        "python3 <<<'import kiro_crew.cli'",
-        "python3 - <<< 'import kiro_crew.cli'",
-        "python3 - <<<$'import kiro_crew.cli'",
+        "python3 - <<<'import efm_go.cli'",
+        "python3 -<<<'import efm_go.cli'",
+        "python3 <<<'import efm_go.cli'",
+        "python3 - <<< 'import efm_go.cli'",
+        "python3 - <<<$'import efm_go.cli'",
         # Pipe producer -- the left side writes this interpreter's stdin.  Every
         # spacing spelling, because the tokenizer splits on whitespace only, so the
         # operator glues into a neighbouring word and `|` is often NOT its own token.
-        "echo 'import kiro_crew.cli' | python3 -",
-        "echo 'import kiro_crew.cli'|python3 -",
-        "echo 'import kiro_crew.cli' |python3 -",
-        "echo 'import kiro_crew.cli'| python3 -",
-        "cat src/kiro_crew/cli.py | python3 -",
-        "cat src/kiro_crew/cli.py|python3 -",
-        "printf 'import kiro_crew.cli'|python3",
-        "echo 'import kiro_crew.cli' | python3",
+        "echo 'import efm_go.cli' | python3 -",
+        "echo 'import efm_go.cli'|python3 -",
+        "echo 'import efm_go.cli' |python3 -",
+        "echo 'import efm_go.cli'| python3 -",
+        "cat src/efm_go/cli.py | python3 -",
+        "cat src/efm_go/cli.py|python3 -",
+        "printf 'import efm_go.cli'|python3",
+        "echo 'import efm_go.cli' | python3",
         # Stdin redirect -- the file's CONTENT becomes the program.
-        "python3 - < src/kiro_crew/cli.py",
-        "python3 -<src/kiro_crew/cli.py",
-        "python3 - 0< src/kiro_crew/cli.py",
+        "python3 - < src/efm_go/cli.py",
+        "python3 -<src/efm_go/cli.py",
+        "python3 - 0< src/efm_go/cli.py",
         # Process substitution and command substitution -- the operand is one shell WORD
         # whose text carries whitespace, so it spans tokens to its closing delimiter.
-        "python3 - < <(echo 'import kiro_crew.cli')",
-        'python3 - <<<$(printf %s "import kiro_crew.cli")',
-        "python3 - <<<`printf %s 'import kiro_crew.cli'`",
-        'python3 - <<<"${x:-import kiro_crew.cli}"',
-        'python3 - < $(printf %s "src/kiro_crew/cli.py")',
-        "python3 - <<<$(cat src/kiro_crew/cli.py)",
+        "python3 - < <(echo 'import efm_go.cli')",
+        'python3 - <<<$(printf %s "import efm_go.cli")',
+        "python3 - <<<`printf %s 'import efm_go.cli'`",
+        'python3 - <<<"${x:-import efm_go.cli}"',
+        'python3 - < $(printf %s "src/efm_go/cli.py")',
+        "python3 - <<<$(cat src/efm_go/cli.py)",
         # A QUOTED delimiter inside the substitution: quoting is stripped before this
         # code sees the tokens, so balancing the count is not decidable and the operand
         # must span to the LAST closer.
-        "python3 - <<<$(true ')'; printf %s \"import kiro_crew.cli\")",
-        'python3 - <<<$(echo ")" ; printf %s "import kiro_crew.cli")',
+        "python3 - <<<$(true ')'; printf %s \"import efm_go.cli\")",
+        'python3 - <<<$(echo ")" ; printf %s "import efm_go.cli")',
         # A split operand with NO `-`, where the detector must consume the whole operand
         # rather than read the substitution's second token as a script path.
-        'python <<< $(printf %s "import kiro_crew.cli")',
-        'python3 <<< $(printf %s "import kiro_crew.cli")',
-        'python3 < $(printf %s "src/kiro_crew/cli.py")',
+        'python <<< $(printf %s "import efm_go.cli")',
+        'python3 <<< $(printf %s "import efm_go.cli")',
+        'python3 < $(printf %s "src/efm_go/cli.py")',
         # A redirection may appear ANYWHERE in a simple command, before the program
         # name included.  These are ordinary bash and reach the identical mint.
-        "<<'PY' python -\nimport kiro_crew.cli\nPY",
-        "<<PY python3 -\nimport kiro_crew.cli\nPY",
-        "<src/kiro_crew/cli.py python3 -",
-        "< src/kiro_crew/cli.py python3 -",
-        "<<<'import kiro_crew.cli' python3 -",
+        "<<'PY' python -\nimport efm_go.cli\nPY",
+        "<<PY python3 -\nimport efm_go.cli\nPY",
+        "<src/efm_go/cli.py python3 -",
+        "< src/efm_go/cli.py python3 -",
+        "<<<'import efm_go.cli' python3 -",
         # ... a marker and its BODY may straddle the program name, so the carrier walk
         # cannot be split per side of the interpreter without losing the association.
-        "<<EOF python -\nimport kiro_crew.cli\nEOF",
-        "<<EOF python3 -\nimport kiro_crew.cli\nEOF",
-        "<< EOF python -\nimport kiro_crew.cli\nEOF",
+        "<<EOF python -\nimport efm_go.cli\nEOF",
+        "<<EOF python3 -\nimport efm_go.cli\nEOF",
+        "<< EOF python -\nimport efm_go.cli\nEOF",
         # ... including GLUED to the program name with no space at all, which is one
         # single token: `python3<<<'…'`.  Excluding the interpreter's own token from the
         # walk is what missed these.
-        'python3<<<"import kiro_crew.cli"',
-        "python3<<<'import kiro_crew.cli'",
-        "python3<src/kiro_crew/cli.py",
-        "python3<<PY\nimport kiro_crew.cli\nPY",
-        "python3<<-PY\nimport kiro_crew.cli\nPY",
-        "python<<<'import kiro_crew.cli'",
-        "python<<EOF\nimport kiro_crew.cli\nEOF",
-        "python3<<EOF\nimport kiro_crew.cli\nEOF",
+        'python3<<<"import efm_go.cli"',
+        "python3<<<'import efm_go.cli'",
+        "python3<src/efm_go/cli.py",
+        "python3<<PY\nimport efm_go.cli\nPY",
+        "python3<<-PY\nimport efm_go.cli\nPY",
+        "python<<<'import efm_go.cli'",
+        "python<<EOF\nimport efm_go.cli\nEOF",
+        "python3<<EOF\nimport efm_go.cli\nEOF",
     )
 
     def test_benign_neighbour_no_longer_reads_as_a_mint(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for cmd in self.BENIGN_NEIGHBOUR:
             assert not security._is_credential_mint(cmd.lower()), f"frame contamination: {cmd!r}"
             assert security.is_denied(cmd) is None, f"frame contamination: {cmd!r}"
 
     def test_real_stdin_reach_stays_denied(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for cmd in self.REAL_STDIN_REACH:
             assert security.is_denied(cmd) is not None, f"stdin reach not blocked: {cmd!r}"
@@ -5381,17 +5381,17 @@ class TestStdinProgramTextScoping:
         Asserted on the helper directly, so the SCOPE is pinned rather than only its
         effect on one deny verdict.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         tokens = security.normalize_shell_command(
-            "isort src/kiro_crew/mcp_core.py\npython3 - <<'PY'\nprint(1)\nPY"
+            "isort src/efm_go/mcp_core.py\npython3 - <<'PY'\nprint(1)\nPY"
         )
         i = tokens.index("python3")
         assert list(security._stdin_program_text(tokens, i)) == ["print(1)"]
 
-        piped = security.normalize_shell_command("echo 'import kiro_crew' | python3 -")
+        piped = security.normalize_shell_command("echo 'import efm_go' | python3 -")
         j = piped.index("python3")
-        assert "import kiro_crew" in list(security._stdin_program_text(piped, j))
+        assert "import efm_go" in list(security._stdin_program_text(piped, j))
 
     def test_bare_interpreter_with_a_heredoc_is_recognised_as_reading_stdin(self):
         """``python << 'PY' … PY`` (no ``-``) really does read its program from stdin.
@@ -5404,20 +5404,20 @@ class TestStdinProgramTextScoping:
         the import anywhere in the frame.  Once the scan is scoped to real carriers
         that accident stops covering it, so the detector has to be right.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for cmd, expect_stdin in (
-            ("python << 'PY'\nimport kiro_crew\nPY", True),
-            ("python <<PY\nimport kiro_crew\nPY", True),
-            ("python <<-PY\nimport kiro_crew\nPY", True),
-            ("python <<<'import kiro_crew'", True),
-            ("python <<< 'import kiro_crew'", True),
-            ('python <<< $(printf %s "import kiro_crew")', True),
+            ("python << 'PY'\nimport efm_go\nPY", True),
+            ("python <<PY\nimport efm_go\nPY", True),
+            ("python <<-PY\nimport efm_go\nPY", True),
+            ("python <<<'import efm_go'", True),
+            ("python <<< 'import efm_go'", True),
+            ('python <<< $(printf %s "import efm_go")', True),
             ("python < prog.py", True),
             ("python script.py", False),
             ("python script.py < input.txt", False),
             ("python -c 'print(1)'", False),
-            ("python -m kiro_crew gateway", False),
+            ("python -m efm_go gateway", False),
         ):
             frame = security.normalize_shell_command(cmd)
             i = next(
@@ -5438,19 +5438,19 @@ class TestStdinProgramTextScoping:
         token is a visible refusal.  If this assertion ever flips, the tightening that
         did it must be checked against the no-space spellings above.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         # The over-yield is still there: the left side of the pipe is handed over as
         # program text ...
-        frame = security.normalize_shell_command("grep kiro_crew.cli src | head; python3 -")
+        frame = security.normalize_shell_command("grep efm_go.cli src | head; python3 -")
         i = frame.index("python3")
-        assert any("kiro_crew.cli" in t for t in security._stdin_program_text(frame, i))
+        assert any("efm_go.cli" in t for t in security._stdin_program_text(frame, i))
         # ... and when that text names the mint surface the command is denied.
-        assert security.is_denied("grep kiro_crew.cli src | head; python3 -") is not None
+        assert security.is_denied("grep efm_go.cli src | head; python3 -") is not None
         # A left side that only MENTIONS the package is not a reach, so the same
         # over-yield now costs nothing: the payload gate asks for the mint surface,
         # not for the package name.
-        assert security.is_denied("grep kiro_crew src | head; python3 -") is None
+        assert security.is_denied("grep efm_go src | head; python3 -") is None
 
     def test_rule_does_not_fire_on_its_own_pattern_text(self):
         """Quoting this rule must not trip it.
@@ -5460,7 +5460,7 @@ class TestStdinProgramTextScoping:
         This pins that the exemption holds in practice, so discussing,
         documenting or testing the rule by quoting it stays possible.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         rule = next(
             r for r in security.BUILTIN_DENIED_RULES if r.id == "credential-exfil-kirocrew-token"
@@ -5490,7 +5490,7 @@ class TestDevModeConfirmFlagIsAgentInaccessible:
     """
 
     def test_the_flag_is_denied_in_direct_and_nested_forms(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for cmd in (
             "kirocrew app dev my-app --confirm-out-of-install-root",
@@ -5504,7 +5504,7 @@ class TestDevModeConfirmFlagIsAgentInaccessible:
         """Quoting splits the flag in RAW text but the shell strips it, so the
         de-quoted argv still carries the accepted flag -- the argv floor must
         deny every spelling the raw-text regex cannot see."""
-        from kiro_crew import security
+        from efm_go import security
 
         for cmd in (
             "kirocrew app dev my-app --confirm-out-of-install-'root'",
@@ -5521,7 +5521,7 @@ class TestDevModeConfirmFlagIsAgentInaccessible:
     def test_ordinary_dev_toggles_stay_allowed(self):
         """The rule targets the attestation flag, not the dev-mode verb —
         in-install dev-mode toggles remain an ordinary agent operation."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security.is_denied("kirocrew app dev my-app") is None
         assert security.is_denied("kirocrew app dev my-app --off") is None
@@ -5552,25 +5552,25 @@ class TestSelfModuleIndexIsLinear:
 
     # Every branch of the scan, with the index it must return for the interpreter at 0.
     SHAPES: "list[tuple[list[str], object]]" = [
-        (["python", "-m", "kiro_crew", "restart"], 2),
-        (["python", "-mkiro_crew", "restart"], 1),
+        (["python", "-m", "efm_go", "restart"], 2),
+        (["python", "-mefm_go", "restart"], 1),
         # A -m<something-else> is an ordinary interpreter flag: the scan must CONTINUE
         # past it rather than stop, or the real module flag after it is never seen.
-        (["python", "-mjson", "-m", "kiro_crew"], 3),
-        (["python", "-msomething", "-mkiro_crew"], 2),
-        (["python", "-u", "-O", "-m", "kiro_crew"], 4),
+        (["python", "-mjson", "-m", "efm_go"], 3),
+        (["python", "-msomething", "-mefm_go"], 2),
+        (["python", "-u", "-O", "-m", "efm_go"], 4),
         # -m present but the module is not ours, and -m as the final token.
         (["python", "-m", "json"], None),
         (["python", "-m"], None),
         (["python"], None),
         (["python", "-mjson"], None),
         # Quoting and dotted submodules the normalizer resolves.
-        (["python", "-m", "'kiro_crew'"], 2),
-        (["python", "-m", "kiro_crew.cli"], 2),
+        (["python", "-m", "'efm_go'"], 2),
+        (["python", "-m", "efm_go.cli"], 2),
     ]
 
     def test_the_returned_index_is_unchanged(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for tokens, expected in self.SHAPES:
             scan = security._self_module_flag_scan(list(tokens))
@@ -5581,7 +5581,7 @@ class TestSelfModuleIndexIsLinear:
         stale or mismatched table would answer differently from one built for the call.
         Pinned at every interpreter position, since that reuse is the whole optimization.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for tokens, expected in self.SHAPES:
             shared = security._self_module_flag_scan(list(tokens))
@@ -5598,31 +5598,31 @@ class TestSelfModuleIndexIsLinear:
         quadratic. A type error is the point."""
         import inspect
 
-        from kiro_crew import security
+        from efm_go import security
 
         for fn in (security._self_module_name_index, security._self_program_index):
             param = inspect.signature(fn).parameters["scan"]
             assert param.default is inspect.Parameter.empty, fn.__name__
 
     def test_the_floor_verdicts_are_unchanged(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for text in (
             "kirocrew restart",
-            "python -m kiro_crew restart",
-            "python -mkiro_crew restart",
-            "python -mjson -m kiro_crew restart",
-            "python -msomething -m kiro_crew restart",
-            "python -u -O -m kiro_crew restart",
-            "python -m 'kiro_crew' restart",
-            "python -m kiro_crew -v restart",
-            "python python -m kiro_crew restart",
+            "python -m efm_go restart",
+            "python -mefm_go restart",
+            "python -mjson -m efm_go restart",
+            "python -msomething -m efm_go restart",
+            "python -u -O -m efm_go restart",
+            "python -m 'efm_go' restart",
+            "python -m efm_go -v restart",
+            "python python -m efm_go restart",
         ):
             assert security._is_self_restart(text), text
 
         for text in (
             "kirocrew doctor",
-            "python -m kiro_crew",
+            "python -m efm_go",
             "python restart",
             "python -m pytest test/test_restart.py",
             "echo kirocrew restart",
@@ -5630,12 +5630,12 @@ class TestSelfModuleIndexIsLinear:
             assert not security._is_self_restart(text), text
 
     def test_the_stop_predicate_matches_the_handling(self):
-        from kiro_crew import security
+        from efm_go import security
 
-        for token in ("-m", "-mkiro_crew", "-mkiro_crew.cli"):
+        for token in ("-m", "-mefm_go", "-mefm_go.cli"):
             assert security._is_self_module_flag(token), token
         # Not a stop: the scan has to keep going past these.
-        for token in ("-mjson", "-msomething", "python", "-u", "", "kiro_crew"):
+        for token in ("-mjson", "-msomething", "python", "-u", "", "efm_go"):
             assert not security._is_self_module_flag(token), token
 
     def test_the_scan_is_linear_not_quadratic(self, monkeypatch):
@@ -5675,7 +5675,7 @@ class TestSelfModuleIndexIsLinear:
         """
         import time
 
-        from kiro_crew import security
+        from efm_go import security
 
         def build(n: int) -> str:
             return " ".join(["python"] * n + ["kirocrew", "restart"])
@@ -5749,7 +5749,7 @@ class TestSelfModuleIndexIsLinear:
     def test_the_padded_shape_that_does_not_open_the_gate_stays_cheap(self):
         """Pins the reason the reported reproduction did not reproduce: without a
         product word the floor's keyword gate stays shut and nothing is scanned."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert not security._self_floor_can_fire("python restart")
         assert security._self_floor_can_fire("python kirocrew")
@@ -5898,7 +5898,7 @@ class TestPythonStdinDetectorStepsOverOutputRedirects:
         """None when the word has no `>`, or already starts with one -- a leading file
         descriptor belongs to the redirect, and the shell reads digits as an fd only when
         they are the whole prefix (`2>err` is fd 2; `x2>err` is the word `x2`)."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._redirect_glue_point("-u>") == 2
         assert security._redirect_glue_point("-u>/dev/null") == 2
@@ -5911,7 +5911,7 @@ class TestPythonStdinDetectorStepsOverOutputRedirects:
         """``{fd}>`` is an automatic descriptor; ``{a,b}`` is a brace EXPANSION the shell
         resolves before redirect parsing. Only an identifier may sit in the braces, or an
         ordinary argument could be swallowed as a redirect."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._output_redirect_scan("{fd}>&1") == ("1", 7)
         assert security._output_redirect_scan("{fd}>") == ("", 5)
@@ -5919,13 +5919,13 @@ class TestPythonStdinDetectorStepsOverOutputRedirects:
             assert security._output_redirect_scan(token) is None, token
 
     def test_a_program_on_stdin_is_detected_through_an_output_redirect(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for tokens in self.READS_STDIN:
             assert security._python_reads_stdin(list(tokens)) is True, tokens
 
     def test_a_script_or_inline_program_still_wins(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for tokens in self.SUPPLIES_PROGRAM_ELSEWHERE:
             assert security._python_reads_stdin(list(tokens)) is False, tokens
@@ -5934,7 +5934,7 @@ class TestPythonStdinDetectorStepsOverOutputRedirects:
         """Three distinct answers. A glued target ends at the word's end; an empty target
         at the word's end means the target is the NEXT token; an end short of the word
         means another operator followed and must be re-examined, not eaten."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._output_redirect_scan("2>&1") == ("1", 4)
         assert security._output_redirect_scan(">out.txt") == ("out.txt", 8)
@@ -5974,7 +5974,7 @@ class TestPythonStdinDetectorStepsOverOutputRedirects:
         at a time. Asserted here so the boundary is a test rather than a comment:
         descriptors are digits, ``&``, ``{name}`` and ``*``; modifiers are ``&``, ``|``
         and ``!``."""
-        from kiro_crew import security
+        from efm_go import security
 
         for descriptor in ("", "2", "12", "&", "*", "{fd}"):
             for operator in (">", ">>"):
@@ -6019,7 +6019,7 @@ class TestPythonStdinDetectorStepsOverOutputRedirects:
         """
         import time
 
-        from kiro_crew import security
+        from efm_go import security
 
         # Backstop budget, measured BEFORE instrumenting (the tracing wrapper below
         # would bill its own overhead against it). The input is built OUTSIDE the
@@ -6084,9 +6084,9 @@ class TestPythonStdinDetectorStepsOverOutputRedirects:
     def test_the_floor_denies_the_stdin_program_behind_a_redirect(self):
         """The end-to-end property: these are credential-mint attempts whose program
         rides in on stdin, and each was ALLOWED before this change."""
-        from kiro_crew import security
+        from efm_go import security
 
-        payload = "from kiro_crew.cli import main; main()"
+        payload = "from efm_go.cli import main; main()"
         for cmd in (
             f"python 2>&1 <<< '{payload}'",
             f"python 1>&2 <<< '{payload}'",
@@ -6123,9 +6123,9 @@ class TestPythonStdinDetectorStepsOverOutputRedirects:
             assert security._is_credential_mint(cmd.lower()), cmd
 
     def test_the_floor_still_allows_the_ordinary_shapes(self):
-        from kiro_crew import security
+        from efm_go import security
 
-        payload = "from kiro_crew.cli import main; main()"
+        payload = "from efm_go.cli import main; main()"
         for cmd in (
             "python script.py",
             f"python script.py <<< '{payload}'",
@@ -6163,9 +6163,9 @@ class TestOutputRedirectScanQuoting:
         the quotes; the scan sees ``2>a)(b<<<``). Measured in bash: each spelling
         runs the here-string program. On the uncorrected walk ``is_denied``
         returned None for all three."""
-        from kiro_crew import security
+        from efm_go import security
 
-        prog = "'from kiro_crew.cli import main; main()'"
+        prog = "'from efm_go.cli import main; main()'"
         assert security.is_denied(f"python3 2>'a)(b'<<< {prog}") is not None
         assert security.is_denied(f"python3 2>a{{b<<<{prog}") is not None
         assert security.is_denied(f'python3 > "a{{b" <<< {prog}') is not None
@@ -6178,7 +6178,7 @@ class TestOutputRedirectScanQuoting:
         error), and a bare ``{`` is an ordinary filename character (measured:
         ``python 2>a{b<<<'<program>'`` runs the program), so neither may hold
         the span open past the operator."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._output_redirect_scan("2>a)(b<<<") == ("a)(b", 6)
         assert security._output_redirect_scan("2>a{b<<<x") == ("a{b", 5)
@@ -6194,7 +6194,7 @@ class TestOutputRedirectScanQuoting:
         the here-string program (and the glued ``2>'a)(b'<<<'<program>'``
         likewise), so the target must end before the operator, where bash ends
         it."""
-        from kiro_crew import security
+        from efm_go import security
 
         # The issue's measured case: end was 19 (past the `<<<`), now 8.
         assert security._output_redirect_scan("> 'a(b' <<< payload") == (" 'a(b' ", 8)
@@ -6221,7 +6221,7 @@ class TestOutputRedirectScanQuoting:
         the PID-parameter spelling (``$$'`` is not ANSI-C) and a quote inside
         backticks (bash tolerates it unterminated there) at their pre-fix
         boundaries."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._output_redirect_scan("2>a'b<<<x") == ("a'b", 5)
         assert security._python_reads_stdin(["2>a'b<<<", "'prog'"]) is True
@@ -6233,7 +6233,7 @@ class TestOutputRedirectScanQuoting:
         substitution span still holds the walk open, a real backtick region
         still toggles, and an unterminated quote or trailing backslash is
         ordinary data to the end of the text."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._output_redirect_scan("2>$( (x)>y )") == ("$( (x)>y )", 12)
         assert security._output_redirect_scan("2>`echo>x`") == ("`echo>x`", 10)
@@ -6246,7 +6246,7 @@ class TestOutputRedirectScanQuoting:
         de-quoted tokens the production frame actually carries: with the target
         absorbing the glued ``<<<``, ``_python_reads_stdin`` answered False and
         the program on stdin went unscanned."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._python_reads_stdin(["2>'a)(b'<<<", "'prog'"]) is True
         assert security._python_reads_stdin(["2>'a(b'<<<", "'prog'"]) is True
@@ -6301,7 +6301,7 @@ class TestNestedPayloadExtractionIsLinear:
     ]
 
     def test_the_payload_set_is_unchanged(self):
-        from kiro_crew import security
+        from efm_go import security
 
         for tokens, expected in self.SHAPES:
             assert security._nested_shell_payloads(list(tokens)) == expected, tokens
@@ -6345,7 +6345,7 @@ class TestNestedPayloadExtractionIsLinear:
         line events, not algorithmic cost, and the counts see
         every cost shape this function can otherwise regress to.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         real_stop_tables = security._next_stop_indexes
         real_basename = security._program_basename
@@ -6452,7 +6452,7 @@ class TestNestedPayloadExtractionIsLinear:
         line events, not algorithmic cost; the counts are the
         guard.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         real_stop_tables = security._next_stop_indexes
         real_dash = security._is_not_double_dash
@@ -6504,7 +6504,7 @@ class TestNestedPayloadExtractionIsLinear:
         """The precomputed index and the branch taken at that index are two places
         that must agree.  Each predicate is therefore asserted to hold exactly on the
         tokens its handler knows how to process."""
-        from kiro_crew import security
+        from efm_go import security
 
         for token in ("-c", "-lc", "--command"):
             assert security._is_shell_command_flag(token), token
@@ -6541,7 +6541,7 @@ class TestNestedPayloadExtractionIsLinear:
             assert security._is_not_double_dash(token), token
 
     def test_the_index_table_reads_as_no_such_token_past_the_end(self):
-        from kiro_crew import security
+        from efm_go import security
 
         table = security._next_stop_indexes(["a", "-c", "b"], lambda t: t == "-c")
         assert table == [1, 1, 3, 3], table
@@ -6595,7 +6595,7 @@ class TestDenyMatchingIsQuoteNormalized:
         its own, this test fails loudly and the cross above stops proving
         anything.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setattr(
             security, "_deny_segment_views", lambda segment, emit_self=True: (segment.lower(),)
@@ -6697,7 +6697,7 @@ class TestDenyMatchingIsQuoteNormalized:
         already in ``operation``, so what the extra field adds is WHICH segment
         normalized into the match (Design Review suggestion).
         """
-        from kiro_crew import security
+        from efm_go import security
 
         events: list[dict] = []
         monkeypatch.setattr(
@@ -6739,7 +6739,7 @@ class TestDenyMatchingIsQuoteNormalized:
         and pinned here so the gap is findable instead of implied.  When it is
         closed, this test is the one that must flip.
         """
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         target = hooks._search_deny_target(
             {
@@ -6782,7 +6782,7 @@ class TestDenyMatchingIsQuoteNormalized:
         descended into rather than skipped -- deciding from one recovered index
         would not be sound, because a short synthesized payload can also be a
         coincidental substring of an unrelated token."""
-        from kiro_crew import security
+        from efm_go import security
 
         # Synthesized payload, no token position: the destructive one is still
         # denied rather than exempted away.
@@ -6799,7 +6799,7 @@ class TestDenyMatchingIsQuoteNormalized:
         guard, and the raw view is already present before any of them runs -- so a
         failure costs the extra match and nothing else.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         def _boom(*_a: object, **_k: object) -> object:
             raise RuntimeError("payload walk exploded")
@@ -6848,7 +6848,7 @@ class TestDenyMatchingIsQuoteNormalized:
         """
         import os
 
-        from kiro_crew import security
+        from efm_go import security
 
         home = os.path.expanduser("~")
         assert security.normalize_shell_command("cat $HOME/x") == ["cat", f"{home}/x"]
@@ -6864,7 +6864,7 @@ class TestDenyMatchingIsQuoteNormalized:
         the SHARED escape decoder rather than in this view, so it also closes a
         live bypass of the credential-mint floor -- see the sibling test below.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._decode_printf_escapes(r"\u002d\u0072\u0066") == "-rf"
         assert security._decode_printf_escapes(r"\U0000002d\U00000072") == "-r"
@@ -6882,7 +6882,7 @@ class TestDenyMatchingIsQuoteNormalized:
         character replaces the two the shell passes, and ``rm -$'\\u0072f' /``
         escaped the rule that way (BLOCKING from the GPT 5.6 lane).
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._decode_printf_escapes(r"\u0072f") == "rf"
         assert security._decode_printf_escapes(r"\u002d1234") == "-1234"
@@ -6897,7 +6897,7 @@ class TestDenyMatchingIsQuoteNormalized:
         mapping produces a separator, and the ordinary case-insensitive matching
         must still work.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         # Splitting commutes with lowercasing.
         mixed = "LS -la && RM -RF / ; Echo Done"
@@ -6919,7 +6919,7 @@ class TestDenyMatchingIsQuoteNormalized:
         walked past an un-disableable rule while its ``\\x`` twin was refused.  Both
         spellings must read as the same word.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for spelling in (
             "kirocrew $'\\u0074\\u006f\\u006b\\u0065\\u006e'",
@@ -6933,7 +6933,7 @@ class TestDenyMatchingIsQuoteNormalized:
         """A decoded lone surrogate is not a character bash can pass either, and it
         would travel into the SEL audit record whose JSON encoder raises on it --
         turning a denial into a crash.  Left encoded, like NUL."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._decode_printf_escapes(r"\ud800") == r"\ud800"
         assert security._decode_printf_escapes(r"\u0000") == r"\u0000"
@@ -6952,7 +6952,7 @@ class TestDenyMatchingIsQuoteNormalized:
         So the fold applies unquoted and inside double quotes, and preserves
         single-quoted and ANSI-C spans.  ``$"..."`` follows the double-quote rule.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         fold = security._fold_line_continuations
         assert fold("A\\\nA BB") == "AA BB"
@@ -7004,7 +7004,7 @@ class TestDenyMatchingIsQuoteNormalized:
         These assertions document what reusing it here would have done, so the
         one-line shortcut is not reached for again.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         blunt = security._shell_join_continuations
         assert blunt('"r\\\nm" -rf /') == '"rm" -rf /'  # agrees with bash here...
@@ -7036,7 +7036,7 @@ class TestDenyMatchingIsQuoteNormalized:
         collapses it to whitespace and invents a separator bash never passed.  One
         left-to-right pass makes that impossible.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         decode = security._decode_ansi_c_body
         assert decode(r"\\n") == "\\n"  # backslash + n, NOT whitespace
@@ -7067,7 +7067,7 @@ class TestDenyMatchingIsQuoteNormalized:
     def test_the_whole_command_walk_emits_no_view_of_itself(self):
         """``emit_self=False`` is what keeps the whole-command walk from fabricating
         a command across separators -- it contributes payload views only."""
-        from kiro_crew import security
+        from efm_go import security
 
         cmd = "echo one\ntrue && bash -c 'rm -rf \"/\"'"
         views = security._deny_segment_views(cmd, False)
@@ -7089,7 +7089,7 @@ class TestDenyMatchingIsQuoteNormalized:
         and runs the destructive command (measured: ``bash -c $"\\r\\mAA"`` executes
         ``rmAA``).
         """
-        from kiro_crew import security
+        from efm_go import security
 
         decode = security._decode_shell_quoted_literals
         # Locale: the $ goes, the double-quoted text is left for shlex.
@@ -7114,7 +7114,7 @@ class TestDenyMatchingIsQuoteNormalized:
         with ``?`` special-cased to 0x7F.  An XOR-0x40 guess gets ``\\c0`` wrong --
         bash yields 0x10, not the letter ``p``.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         decode = security._decode_ansi_c_body
         # Every control result takes the same normalization to a space as the named
@@ -7153,7 +7153,7 @@ class TestDenyMatchingIsQuoteNormalized:
         """
         import time
 
-        from kiro_crew import security
+        from efm_go import security
 
         pattern = security._ANSI_C_QUOTE_RE.pattern
         assert "[^'\\\\]" in pattern and '[^\\"\\\\]' in pattern, pattern
@@ -7173,7 +7173,7 @@ class TestDenyMatchingIsQuoteNormalized:
         dashboard-readable log.  BLOCKING from the GPT 5.6 lane on the new
         ``raw_segment`` field; the older ``segment`` field carried the same hazard.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         captured: list[object] = []
 
@@ -7204,7 +7204,7 @@ class TestDenyMatchingIsQuoteNormalized:
         bash passes ``m``, so ``$'r\\555' -rf /`` ran while the view matched nothing
         (BLOCKING from the GPT 5.6 lane).
         """
-        from kiro_crew import security
+        from efm_go import security
 
         decode = security._decode_ansi_c_body
         assert decode(r"\555") == "m"
@@ -7225,7 +7225,7 @@ class TestDenyMatchingIsQuoteNormalized:
         normalized to a one-byte argument instead of ``chmod 777 /tmp/x`` and a
         rule on the decoded spelling missed (BLOCKING from the GPT 5.6 lane).
         """
-        from kiro_crew import security
+        from efm_go import security
 
         decode = security._decode_ansi_c_body
         assert decode(r"\06777") == "777"
@@ -7242,7 +7242,7 @@ class TestDenyMatchingIsQuoteNormalized:
         non-ASCII target keeps both characters, as bash does for an undefined
         spelling.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._decode_ansi_c_body("\\c\u00df") == "\\c\u00df"
         assert is_denied("echo $'\\c\u00df'") is None
@@ -7263,7 +7263,7 @@ class TestDenyMatchingIsQuoteNormalized:
         ``$'dd\\0junk' if=/dev/zero of=/dev/sda`` ran while the view held
         ``dd\\0junk if=`` and matched nothing (BLOCKING from the GPT 5.6 lane).
         """
-        from kiro_crew import security
+        from efm_go import security
 
         decode = security._decode_ansi_c_body
         for body in (r"AA\0junk", r"AA\400junk", r"AA\x00junk", r"AA\u0000j", r"AA\c@junk"):
@@ -7290,7 +7290,7 @@ class TestDenyMatchingIsQuoteNormalized:
         the whole catalog and is a separate decision.  Pinned so the gap is findable;
         when it is closed, the first assertion flips.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         # The catalog cannot see the flag-interposed form in ANY spelling...
         assert is_denied("rm -rf --no-preserve-root /") is None
@@ -7335,7 +7335,7 @@ class TestDenyMatchingIsQuoteNormalized:
         Raised as a stall risk by the GPT 5.6 lane; measured, skipping the duplicate
         halves the cost on a command padded with interpreter tokens.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         calls: list[tuple[str, bool]] = []
         real = security._deny_segment_views
@@ -7374,7 +7374,7 @@ class TestDenyMatchingIsQuoteNormalized:
     ):
         """Fail-closed: the raw view is matched FIRST and independently, so a
         tokenizer that raises loses only the extra match."""
-        from kiro_crew import security
+        from efm_go import security
 
         def _boom(cmd: str) -> list[str]:
             raise RuntimeError("tokenizer exploded")
@@ -7413,7 +7413,7 @@ class TestDenyMatchingIsQuoteNormalized:
     def test_views_are_deduplicated_when_normalization_changes_nothing(self):
         """A command with no quoting/escaping/padding must not pay a second
         140-rule pass."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._deny_segment_views("ls -la") == ("ls -la",)
         assert security._deny_segment_views('rm -rf "/"') == ('rm -rf "/"', "rm -rf /")
@@ -7432,7 +7432,7 @@ class TestDenyMatchingIsQuoteNormalized:
         the sensitive-path normalizer pass silently stops resolving spellings."""
         import os
 
-        from kiro_crew import security
+        from efm_go import security
 
         home = os.path.expanduser("~")
         assert security.normalize_shell_command('cat "$HOME"/.ssh/id_rsa') == [
@@ -7492,7 +7492,7 @@ class TestEmptyArgvElementDoesNotBreakTheDenyView:
         normalized view removed, every cell above is ALLOWED -- so the assertion
         above is a property of the view's render and not an incidental raw match.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setattr(
             security, "_deny_segment_views", lambda segment, emit_self=True: (segment.lower(),)
@@ -7543,7 +7543,7 @@ class TestEmptyArgvElementDoesNotBreakTheDenyView:
         the ~19 path-normalizer consumers see unchanged tokens.  Only the view
         gains a render without it.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._shell_tokens('rm -rf "" /home/x') == ["rm", "-rf", "", "/home/x"]
         assert security.normalize_shell_command('rm -rf "" /home/x') == [
@@ -7639,7 +7639,7 @@ class TestEmptyArgvElementDoesNotBreakTheDenyView:
         per-rule sweep would also need a command synthesized from each of the ~140
         rule regexes, which is not mechanical; this is.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for base in self.PROPERTY_BASES:
             expected = security._deny_segment_views(base)[-1]
@@ -7657,7 +7657,7 @@ class TestEmptyArgvElementDoesNotBreakTheDenyView:
         empty-word gap is closed (an interposed word now denies at
         every boundary -- via the protected-branch rule where the parse holds,
         via the ungated anti-obfuscation branch where it does not)."""
-        from kiro_crew import security
+        from efm_go import security
 
         for base in self.PROPERTY_BASES:
             expected_denied = security.is_denied(base) is not None
@@ -7688,7 +7688,7 @@ class TestEmptyArgvElementDoesNotBreakTheDenyView:
         ``_is_push_to_protected_branch`` -- the right treatment for a spelling
         git itself cannot run.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert is_denied("git push origin main") is not None, (
             "the protected-branch floor no longer fires on the plain spelling -- this "
@@ -7753,7 +7753,7 @@ class TestEmptyArgvElementDoesNotBreakTheDenyView:
         When that gap is closed, this test is the one that must
         flip.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for cmd in ('rm -rf " " /home/x', "rm -rf $'\\t' /home/x"):
             assert is_denied(cmd) is None, (
@@ -9197,7 +9197,7 @@ class TestSandboxEscapeSshSelf:
 
     @staticmethod
     def _hook(monkeypatch, warm):
-        from kiro_crew.dashboard import server as _server
+        from efm_go.dashboard import server as _server
 
         monkeypatch.setattr(_server, "warm_own_host_names", warm)
 
@@ -10166,7 +10166,7 @@ class TestHostAddressesPlatformReaders:
     def test_windows_reader_walks_synthetic_adapter_chain(self, monkeypatch):
         import ctypes
 
-        from kiro_crew.security import host_addresses as ha
+        from efm_go.security import host_addresses as ha
 
         keepalive: list = []
         writer = self._win_chain(keepalive)
@@ -10179,7 +10179,7 @@ class TestHostAddressesPlatformReaders:
     def test_windows_reader_error_paths_are_empty(self, monkeypatch):
         import ctypes
 
-        from kiro_crew.security import host_addresses as ha
+        from efm_go.security import host_addresses as ha
 
         monkeypatch.setattr(sys, "platform", "win32")
         # Hard error: any code other than buffer-overflow aborts the sweep.
@@ -10266,7 +10266,7 @@ class TestHostAddressesPlatformReaders:
     def test_darwin_reader_walks_synthetic_ifaddrs_chain(self, monkeypatch):
         import ctypes
 
-        from kiro_crew.security import host_addresses as ha
+        from efm_go.security import host_addresses as ha
 
         keepalive: list = []
         head = self._darwin_chain(keepalive)
@@ -10279,7 +10279,7 @@ class TestHostAddressesPlatformReaders:
     def test_darwin_reader_error_paths_are_empty(self, monkeypatch):
         import ctypes
 
-        from kiro_crew.security import host_addresses as ha
+        from efm_go.security import host_addresses as ha
 
         monkeypatch.setattr(sys, "platform", "darwin")
         fake = self._fake_libc(0, rc=-1)
@@ -10299,7 +10299,7 @@ class TestHostAddressesPlatformReaders:
     def test_linux_netlink_dump_reads_own_addresses(self, monkeypatch):
         import socket
 
-        from kiro_crew.security import host_addresses as ha
+        from efm_go.security import host_addresses as ha
 
         if sys.platform.startswith("linux") and hasattr(socket, "AF_NETLINK"):
             # Kernel-local RTM_GETADDR dump: loopback is always assigned.
@@ -10315,7 +10315,7 @@ class TestHostAddressesPlatformReaders:
         import socket
         import struct as _struct
 
-        from kiro_crew.security import host_addresses as ha
+        from efm_go.security import host_addresses as ha
 
         def msg(msg_type, payload=b"", flags=0):
             return _struct.pack("=LHHLL", 16 + len(payload), msg_type, flags, 0, 0) + payload
@@ -10370,7 +10370,7 @@ class TestHostAddressesPlatformReaders:
         import socket
         import struct as _struct
 
-        from kiro_crew.security import host_addresses as ha
+        from efm_go.security import host_addresses as ha
 
         def rec(msg_type, family, attrs):
             body = bytes([family]) + bytes(7)  # ifaddrmsg

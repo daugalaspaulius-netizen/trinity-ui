@@ -22,7 +22,7 @@ async def _owner_identity(request, handler):
 
 
 def _make_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import api_kirocrew_config_patch
+    from efm_go.dashboard.handlers import api_kirocrew_config_patch
 
     app = web.Application(middlewares=[_owner_identity])
     app["state"] = MagicMock()
@@ -75,7 +75,7 @@ def _seed_config() -> dict:
 def tmp_config(tmp_path):
     cfg_path = tmp_path / "config.json"
     cfg_path.write_text(json.dumps(_seed_config()), encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=cfg_path):
+    with patch("efm_go.config.loader.config_path", return_value=cfg_path):
         yield cfg_path
 
 
@@ -97,9 +97,9 @@ def _arm(app: web.Application, state: SimpleNamespace) -> None:
     awaits the same ``start`` from an ``on_startup`` hook of its own. Cleanup
     stops it; the suite-wide autouse fixture then drops the process watcher.
     """
-    from kiro_crew.config import live
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.dashboard.server import _register_config_watch
+    from efm_go.config import live
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.dashboard.server import _register_config_watch
 
     app["state"] = state
     state.set_dynamic_cards_enabled = MagicMock()
@@ -133,7 +133,7 @@ def _live_state(**overrides) -> SimpleNamespace:
 
 @pytest.mark.asyncio
 async def test_backend_switch_after_setup_does_not_probe(tmp_config) -> None:
-    from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+    from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
     service = MagicMock(spec=KiroPrerequisiteService)
     service.initial_setup_complete = True
@@ -154,9 +154,9 @@ async def test_selecting_installed_independent_agent_persists_first_run_completi
     tmp_config, tmp_path, monkeypatch
 ) -> None:
     """A second browser must not depend on the first browser's localStorage."""
-    from kiro_crew import sandbox
-    from kiro_crew.agent_sdk import backend_install
-    from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+    from efm_go import sandbox
+    from efm_go.agent_sdk import backend_install
+    from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
     data_home = tmp_path / "data-home"
     service = KiroPrerequisiteService(
@@ -197,9 +197,9 @@ async def test_selecting_installed_independent_agent_persists_first_run_completi
 async def test_marker_write_failure_reports_saved_config_without_claiming_setup_complete(
     tmp_config, tmp_path, monkeypatch
 ) -> None:
-    from kiro_crew import sandbox
-    from kiro_crew.agent_sdk import backend_install
-    from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+    from efm_go import sandbox
+    from efm_go.agent_sdk import backend_install
+    from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
     service = KiroPrerequisiteService(
         platform_name="linux",
@@ -238,10 +238,10 @@ async def test_marker_write_failure_reports_saved_config_without_claiming_setup_
 async def test_recheck_records_setup_after_configure_then_install(
     tmp_config, tmp_path, monkeypatch
 ) -> None:
-    from kiro_crew import sandbox
-    from kiro_crew.agent_sdk import backend_install
-    from kiro_crew.dashboard.handlers import acp_backend_status
-    from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+    from efm_go import sandbox
+    from efm_go.agent_sdk import backend_install
+    from efm_go.dashboard.handlers import acp_backend_status
+    from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
     service = KiroPrerequisiteService(
         platform_name="linux",
@@ -328,8 +328,8 @@ class TestRoleModels:
         arm that reports a malformed section as a 500. The field is not editable
         through this surface today, so the refusal is raised the way the floor
         raises it rather than provoked through the body."""
-        from kiro_crew.config import loader as loader_mod
-        from kiro_crew.config.loader import ConfigWriteRefused
+        from efm_go.config import loader as loader_mod
+        from efm_go.config.loader import ConfigWriteRefused
 
         message = (
             "agent.deepseek_env entry 'DEEPSEEK_API_KEY' holds a literal value, so the "
@@ -368,7 +368,7 @@ class TestRoleModels:
         # cycle drive it.
         app = _make_app()
         _arm(app, _live_state())
-        with patch("kiro_crew.agent.rebuild_agent_config") as rebuild:
+        with patch("efm_go.agent.rebuild_agent_config") as rebuild:
             async with TestClient(TestServer(app)) as c:
                 resp = await _patch(c, "agent.role_models.background", "claude-sonnet-4.6")
                 assert resp.status == 200
@@ -594,7 +594,7 @@ class TestFolderSortRoundTrip:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("mode", ["custom", "name", "created"])
     async def test_every_mode_round_trips_through_the_config_file(self, tmp_config, mode) -> None:
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         async with TestClient(TestServer(_make_app())) as c:
             resp = await _patch(c, "dashboard.folder_sort", mode)
@@ -607,7 +607,7 @@ class TestFolderSortRoundTrip:
     async def test_a_value_outside_the_mode_list_is_refused_and_the_file_untouched(
         self, tmp_config
     ) -> None:
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         async with TestClient(TestServer(_make_app())) as c:
             assert (await _patch(c, "dashboard.folder_sort", "name")).status == 200
@@ -622,12 +622,12 @@ class TestFolderSortRoundTrip:
         mode cannot be writable without being loadable or the other way round."""
         from dataclasses import fields
 
-        from kiro_crew.config.sections import (
+        from efm_go.config.sections import (
             FOLDER_SORT_DEFAULT,
             FOLDER_SORT_MODES,
             DashboardConfig,
         )
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         spec = _EDITABLE_CONFIG["dashboard.folder_sort"]
         assert spec == {"type": "enum", "values": list(FOLDER_SORT_MODES)}
@@ -793,7 +793,7 @@ class TestBoolValidator:
         nothing — the same false-promise-on-a-privacy-control failure the overlay
         check guards against.
         """
-        from kiro_crew.dashboard.handlers import core as core_mod
+        from efm_go.dashboard.handlers import core as core_mod
 
         monkeypatch.setattr(core_mod, "_beacon_governance_pinned_off", lambda: True)
         async with TestClient(TestServer(_make_app())) as c:
@@ -812,7 +812,7 @@ class TestBoolValidator:
         Refusing this would leave a user unable to record the stricter preference
         they already have in effect, and strand them if the policy were lifted.
         """
-        from kiro_crew.dashboard.handlers import core as core_mod
+        from efm_go.dashboard.handlers import core as core_mod
 
         monkeypatch.setattr(core_mod, "_beacon_governance_pinned_off", lambda: True)
         async with TestClient(TestServer(_make_app())) as c:
@@ -823,7 +823,7 @@ class TestBoolValidator:
     @pytest.mark.asyncio
     async def test_unpinned_host_can_still_re_enable(self, tmp_config, monkeypatch) -> None:
         """The gate must not fire on an ordinary standalone install."""
-        from kiro_crew.dashboard.handlers import core as core_mod
+        from efm_go.dashboard.handlers import core as core_mod
 
         monkeypatch.setattr(core_mod, "_beacon_governance_pinned_off", lambda: False)
         async with TestClient(TestServer(_make_app())) as c:
@@ -884,7 +884,7 @@ class TestCompletionKeepHotReload:
         ``test_subagent_config_hot_reload`` pins what it does with the change;
         this end pins that a PATCH delivers the change synchronously.
         """
-        from kiro_crew.config import live
+        from efm_go.config import live
 
         seen: list = []
         app = _make_app()
@@ -905,7 +905,7 @@ class TestCompletionKeepHotReload:
     @pytest.mark.asyncio
     async def test_chars_change_calls_setter(self, tmp_config) -> None:
         """PATCH agent.completion_keep_chars reaches the manager's applier."""
-        from kiro_crew.config import live
+        from efm_go.config import live
 
         seen: list = []
         app = _make_app()
@@ -1067,7 +1067,7 @@ class TestDefaultModelPatch:
         # test_session_config_hot_reload); this end pins that the PATCH delivers
         # the change synchronously and that the server's own appliers never
         # take the destructive provider-switch path for a default change.
-        from kiro_crew.config import live
+        from efm_go.config import live
 
         seen: list = []
         state = _live_state()
@@ -1076,7 +1076,7 @@ class TestDefaultModelPatch:
         sub = live.subscribe("agent.model", callback=seen.append, name="probe")
         try:
             with patch(
-                "kiro_crew.agent.rebuild_agent_config_reporting",
+                "efm_go.agent.rebuild_agent_config_reporting",
                 return_value=(tmp_config, True),
             ):
                 async with TestClient(TestServer(app)) as c:
@@ -1093,13 +1093,13 @@ class TestDefaultModelPatch:
     async def test_failed_spec_rebuild_surfaces_error_and_stays_pending(self, tmp_config) -> None:
         """PATCH persists first, so a failed derived-spec rebuild must be visible
         and remain queued for the watcher's automatic retry."""
-        from kiro_crew.config import live
+        from efm_go.config import live
 
         state = _live_state()
         app = _make_app()
         _arm(app, state)
         with patch(
-            "kiro_crew.agent.rebuild_agent_config_reporting",
+            "efm_go.agent.rebuild_agent_config_reporting",
             side_effect=OSError("spec directory is read-only"),
         ):
             async with TestClient(TestServer(app)) as c:
@@ -1175,7 +1175,7 @@ class TestDefaultReasoningEffortPatch:
         # test_session_config_hot_reload); this end pins that the PATCH delivers
         # the change synchronously and that the server's own appliers never
         # take the destructive provider-switch path for a default change.
-        from kiro_crew.config import live
+        from efm_go.config import live
 
         seen: list = []
         state = _live_state()
@@ -1231,14 +1231,14 @@ class TestTelemetryEnabledPatch:
         # The recorder rebuild is the telemetry applier ``metrics.provider``
         # registers at boot; arm it the way boot does and let the PATCH's
         # watcher cycle drive it.
-        from kiro_crew.metrics import provider as metrics_provider
+        from efm_go.metrics import provider as metrics_provider
 
         monkeypatch.setattr(metrics_provider, "_config_sub", None)
         app = _make_app()
         _arm(app, _live_state())
         metrics_provider.watch_config()
         try:
-            with patch("kiro_crew.metrics.provider.shutdown") as reset:
+            with patch("efm_go.metrics.provider.shutdown") as reset:
                 async with TestClient(TestServer(app)) as c:
                     assert (await _patch(c, "telemetry.enabled", True)).status == 200
         finally:
@@ -1251,14 +1251,14 @@ class TestTelemetryEnabledPatch:
     async def test_unrelated_field_leaves_the_recorder_alone(self, tmp_config) -> None:
         # Rebuilding the recorder flushes and restarts the exporter thread, so it
         # must not ride along on every unrelated config write.
-        with patch("kiro_crew.metrics.provider.shutdown") as reset:
+        with patch("efm_go.metrics.provider.shutdown") as reset:
             async with TestClient(TestServer(_make_app())) as c:
                 assert (await _patch(c, "session.timeout_secs", 600)).status == 200
         reset.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_rejected_value_leaves_the_recorder_alone(self, tmp_config) -> None:
-        with patch("kiro_crew.metrics.provider.shutdown") as reset:
+        with patch("efm_go.metrics.provider.shutdown") as reset:
             async with TestClient(TestServer(_make_app())) as c:
                 assert (await _patch(c, "telemetry.enabled", "yes")).status == 400
         reset.assert_not_called()
@@ -1267,7 +1267,7 @@ class TestTelemetryEnabledPatch:
     async def test_recorder_reset_failure_does_not_fail_the_write(self, tmp_config) -> None:
         # The value is already durable by this point; a flush that raises must not
         # report the save as failed and send the UI's switch back.
-        with patch("kiro_crew.metrics.provider.shutdown", side_effect=RuntimeError("boom")):
+        with patch("efm_go.metrics.provider.shutdown", side_effect=RuntimeError("boom")):
             async with TestClient(TestServer(_make_app())) as c:
                 assert (await _patch(c, "telemetry.enabled", True)).status == 200
         data = json.loads(tmp_config.read_text(encoding="utf-8"))
@@ -1300,10 +1300,10 @@ class TestTelemetryEnabledEgressGate:
         exported" while metrics left the machine."""
         import dataclasses
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform import build_default_context
-        from kiro_crew.platform.context import reset_context, set_context
-        from kiro_crew.platform.interfaces import OtlpDestination
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform import build_default_context
+        from efm_go.platform.context import reset_context, set_context
+        from efm_go.platform.interfaces import OtlpDestination
 
         class _EditionTelemetry:
             def record_event(self, event_type, data):
@@ -1352,9 +1352,9 @@ class TestTelemetryEnabledEgressGate:
         next build - egress the operator was told would not happen."""
         import dataclasses
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform import build_default_context
-        from kiro_crew.platform.context import reset_context, set_context
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform import build_default_context
+        from efm_go.platform.context import reset_context, set_context
 
         class _BrokenTelemetry:
             def record_event(self, event_type, data):
@@ -1397,7 +1397,7 @@ class TestTelemetryEnabledEgressGate:
     @pytest.mark.asyncio
     async def test_refused_enable_does_not_touch_the_recorder(self, tmp_config) -> None:
         self._seed_endpoint(tmp_config, "http://otel.internal:4318/v1/metrics")
-        with patch("kiro_crew.metrics.provider.shutdown") as reset:
+        with patch("efm_go.metrics.provider.shutdown") as reset:
             async with TestClient(TestServer(_make_app())) as c:
                 assert (await _patch(c, "telemetry.enabled", True)).status == 409
         reset.assert_not_called()

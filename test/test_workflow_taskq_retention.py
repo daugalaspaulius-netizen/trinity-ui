@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from kiro_crew.taskq import model
-from kiro_crew.taskq.adapters.runner import RunnerAdmission, RunnerLane
-from kiro_crew.taskq.store import TaskStore
-from kiro_crew.workflows import service
+from efm_go.taskq import model
+from efm_go.taskq.adapters.runner import RunnerAdmission, RunnerLane
+from efm_go.taskq.store import TaskStore
+from efm_go.workflows import service
 
 CANARY = "TRANSIENT_WORKFLOW_BODY"
 
@@ -106,7 +106,7 @@ async def test_restricted_workflow_keeps_pressure_and_adaptive_cap(tmp_path, mon
 async def test_restricted_workflow_dependency_retry_never_reaches_durable_coordinator(
     tmp_path, monkeypatch, mode
 ):
-    from kiro_crew.taskq.dependency import KIND_RATE_LIMITED, SIGNAL_ATTR, DependencySignal
+    from efm_go.taskq.dependency import KIND_RATE_LIMITED, SIGNAL_ATTR, DependencySignal
 
     store = TaskStore(tmp_path / "tasks.db", network_fs=False).open()
     sleeps = []

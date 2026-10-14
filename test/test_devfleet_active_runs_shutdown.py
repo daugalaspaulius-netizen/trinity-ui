@@ -26,8 +26,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.apps.builtins.dev_fleet.server as mod
-from kiro_crew.apps.builtins.dev_fleet import runtime, worktree_ops
+import efm_go.apps.builtins.dev_fleet.server as mod
+from efm_go.apps.builtins.dev_fleet import runtime, worktree_ops
 
 # ---------------------------------------------------------------------------
 # Fixture: reset all module-level state that these tests touch
@@ -183,7 +183,7 @@ async def test_run_after_snapshot_is_refused():
             return fake_proc
 
         with patch(
-            "kiro_crew.apps.builtins.dev_fleet.runtime.create_subprocess_limited",
+            "efm_go.apps.builtins.dev_fleet.runtime.create_subprocess_limited",
             side_effect=fake_create_subprocess,
         ):
             with pytest.raises(RuntimeError, match="shutdown in progress"):
@@ -276,7 +276,7 @@ async def test_start_run_refused_after_cleanup():
         return fake_proc
 
     with patch(
-        "kiro_crew.apps.builtins.dev_fleet.runtime.create_subprocess_limited",
+        "efm_go.apps.builtins.dev_fleet.runtime.create_subprocess_limited",
         side_effect=fake_create,
     ):
         with pytest.raises(RuntimeError, match="shutdown in progress"):

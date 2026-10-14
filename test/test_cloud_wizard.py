@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.cloud import aws
-from kiro_crew.cloud import connect as connect_mod
-from kiro_crew.cloud import ec2, iam, login, ssm, wizard
-from kiro_crew.cloud.launch_state import LaunchState
+from efm_go.cloud import aws
+from efm_go.cloud import connect as connect_mod
+from efm_go.cloud import ec2, iam, login, ssm, wizard
+from efm_go.cloud.launch_state import LaunchState
 
 
 def _patch_post_launch(monkeypatch, *, logged_in: bool = True) -> dict[str, list[str]]:
@@ -196,7 +196,7 @@ class TestLaunchResume:
         still opened and the crew registered (the recovery needs both), but a
         launch that did not deliver the identity it was asked for is not 0.
         Contrast: a merely NOT-signed-in box stays a warning and exits 0."""
-        from kiro_crew.cloud.login_target import KiroLoginTarget
+        from efm_go.cloud.login_target import KiroLoginTarget
 
         target = KiroLoginTarget(
             license="pro", start_url="https://example.awsapps.com/start", region="us-east-1"
@@ -249,7 +249,7 @@ class TestLaunchResume:
         That verdict is recorded like the probe's would have been: the
         operational recheck, still unknown, cannot read it down to an exit-0
         "not signed in" warning."""
-        from kiro_crew.cloud.login_target import KiroLoginTarget
+        from efm_go.cloud.login_target import KiroLoginTarget
 
         target = KiroLoginTarget(
             license="pro", start_url="https://example.awsapps.com/start", region="us-east-1"
@@ -294,8 +294,8 @@ class TestLaunchResume:
         check". That does not un-verify the mismatch: the launch still exits 1
         with the logout recovery, instead of degrading to the exit-0 "not signed
         in" warning under the wrong identity."""
-        from kiro_crew.cloud.aws import AWSError
-        from kiro_crew.cloud.login_target import KiroLoginTarget
+        from efm_go.cloud.aws import AWSError
+        from efm_go.cloud.login_target import KiroLoginTarget
 
         target = KiroLoginTarget(
             license="pro", start_url="https://example.awsapps.com/start", region="us-east-1"
@@ -349,7 +349,7 @@ class TestLaunchResume:
         launch exits 1 with the flagless recovery -- including when the human
         declines the interactive re-login, the path that otherwise reads
         as an exit-0 "not signed in" warning."""
-        from kiro_crew.cloud.login_target import KiroLoginTarget
+        from efm_go.cloud.login_target import KiroLoginTarget
 
         cfg = LaunchState(profile="dev", region="us-west-2", last_tag="kc-old")
         calls = _patch_post_launch(monkeypatch, logged_in=False)

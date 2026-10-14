@@ -160,7 +160,7 @@ beforeEach(() => {
   listUnused = []
   listManagedError = false
   listShouldFail = false
-  localStorage.setItem('kiro_crew_token', 'test-token')
+  localStorage.setItem('efm_go_token', 'test-token')
   installFetch()
 })
 
@@ -194,7 +194,7 @@ describe('SecretsPanel', () => {
     expect(screen.getByText(/KIROCREW_HOME\/config.json/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Open the secrets setup guide' })).toHaveAttribute(
       'href',
-      'https://github.com/kirodotdev/KiroCrew/blob/main/docs/guides/secrets-env.md',
+      'https://efmleads.com/blob/main/docs/guides/secrets-env.md',
     )
 
     await user.click(screen.getByRole('button', { name: 'Add secret' }))
@@ -1300,7 +1300,7 @@ describe('SecretsPanel session key', () => {
   /**
    * The panel sends the fixed `dashboard:ui` session key that the shared
    * transport (`src/api/client.ts`) uses, on every request.  It previously read
-   * `localStorage['kiro_crew_token']` — a key nothing in the app ever writes —
+   * `localStorage['efm_go_token']` — a key nothing in the app ever writes —
    * so that read always resolved to '' and was vestigial dead code.  This pins
    * the panel to the same `dashboard:ui` identity every other panel sends, and
    * guards against a regression back to a stored-token read.
@@ -1310,7 +1310,7 @@ describe('SecretsPanel session key', () => {
 
     // Even with a stray token in localStorage, the panel must NOT read it —
     // the header is the fixed dashboard:ui literal.
-    localStorage.setItem('kiro_crew_token', 'SHOULD-BE-IGNORED')
+    localStorage.setItem('efm_go_token', 'SHOULD-BE-IGNORED')
     installFetch()
 
     mount()

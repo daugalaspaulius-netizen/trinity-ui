@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_doctor
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.recovery import ladder as lad
-from kiro_crew.taskq import TaskRecord, TaskStore
+from efm_go import cli_doctor
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.recovery import ladder as lad
+from efm_go.taskq import TaskRecord, TaskStore
 
 
 @pytest.fixture(autouse=True)

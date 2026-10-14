@@ -408,7 +408,7 @@ describe("first-download installer design contract", () => {
     );
 
     const configSections = fs.readFileSync(
-      path.join(REPO_ROOT, "src", "kiro_crew", "config", "sections.py"),
+      path.join(REPO_ROOT, "src", "efm_go", "config", "sections.py"),
       "utf8",
     );
     assert.match(
@@ -477,7 +477,7 @@ describe("first-download installer design contract", () => {
     assert.match(buildScript, /DLLs\/_tkinter\.pyd DLLs\/tcl\*\.dll DLLs\/tk\*\.dll/);
     assert.match(
       buildScript,
-      /precompile_windows\.py" \\\r?\n\s*--root "\$out" --module kiro_crew\.cli_server/
+      /precompile_windows\.py" \\\r?\n\s*--root "\$out" --module efm_go\.cli_server/
     );
   });
 
@@ -545,8 +545,8 @@ describe("first-download installer design contract", () => {
     assert.match(buildScript, /ERROR: no prebuilt speech recogniser for supported target/);
     assert.match(buildScript, /macOS Intel[^\n]+legacy backend unsupported/);
     assert.doesNotMatch(buildScript, /bundling without it/);
-    assert.match(buildScript, /from kiro_crew\.stt\.engine import probe/);
-    assert.match(buildScript, /from kiro_crew\.transcribe import _packaged_ffmpeg_version_probe/);
+    assert.match(buildScript, /from efm_go\.stt\.engine import probe/);
+    assert.match(buildScript, /from efm_go\.transcribe import _packaged_ffmpeg_version_probe/);
     assert.match(buildScript, /decoder = _packaged_ffmpeg_version_probe\(\)/);
     // Both halves of the decoder verdict are pinned, because collapsing them back
     // into one boolean is the regression this shape exists to prevent.

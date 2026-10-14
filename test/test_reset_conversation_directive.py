@@ -14,8 +14,8 @@ boundary — lives in ``test_chat_runner_coverage.py::TestConsumePendingReset``.
 
 import pytest
 
-from kiro_crew import mcp_core, session_directive
-from kiro_crew.dashboard.session_directive_apply import apply_session_directive
+from efm_go import mcp_core, session_directive
+from efm_go.dashboard.session_directive_apply import apply_session_directive
 
 # ───────────────────────────── the tool ──────────────────────────────────────
 
@@ -33,7 +33,7 @@ class TestResetConversationTool:
         assert session_directive.decode(result, "reset_conversation") == {}
 
     def test_a_caller_passing_replay_is_rejected(self):
-        from kiro_crew.validation import ValidationError
+        from efm_go.validation import ValidationError
 
         with pytest.raises(ValidationError):
             mcp_core._call_tool_inner("reset_conversation", {"replay": True})

@@ -181,12 +181,12 @@ return `None` / `{}` / the input principal unchanged.
 
 **Files:**
 
-- Modify: `src/kiro_crew/platform/interfaces.py` (add dataclasses + Protocol)
-- Modify: `src/kiro_crew/platform/defaults.py` (add `DefaultAgentIdentityProvider`)
-- Modify: `src/kiro_crew/platform/context.py` (add `agent_identity` field)
-- Modify: `src/kiro_crew/platform/bootstrap.py` (wire Default)
-- Modify: `src/kiro_crew/platform/__init__.py` (exports)
-- Modify: `src/kiro_crew/platform/governance.py` (`capabilities.agentcore`)
+- Modify: `src/efm_go/platform/interfaces.py` (add dataclasses + Protocol)
+- Modify: `src/efm_go/platform/defaults.py` (add `DefaultAgentIdentityProvider`)
+- Modify: `src/efm_go/platform/context.py` (add `agent_identity` field)
+- Modify: `src/efm_go/platform/bootstrap.py` (wire Default)
+- Modify: `src/efm_go/platform/__init__.py` (exports)
+- Modify: `src/efm_go/platform/governance.py` (`capabilities.agentcore`)
 - Modify: `test/test_platform_cpp_seam_coverage.py` (and any bootstrap/context tests the coverage file names)
 - Modify: `docs/system-specs/modules/platform-context.md`
 - Modify: `docs/system-specs/modules/governance.md`
@@ -221,7 +221,7 @@ return `None` / `{}` / the input principal unchanged.
 
 - [ ] **Step 4: Grep the public tree for AWS leakage.**
 
-  Run: `rg -n "bedrock.agentcore|bedrock_agentcore|GetWorkloadAccessToken|cognito-idp" src/kiro_crew website/src`
+  Run: `rg -n "bedrock.agentcore|bedrock_agentcore|GetWorkloadAccessToken|cognito-idp" src/efm_go website/src`
   Expected: no matches.
 
 - [ ] **Step 5: Update specs and run gates.**
@@ -231,7 +231,7 @@ return `None` / `{}` / the input principal unchanged.
   the inner `posture` field (`workload` | `login`).
   Run: `black --target-version py310 <touched py>` then
   `python3 scripts/check_black_formatting.py` and
-  `mypy --platform linux src/kiro_crew`.
+  `mypy --platform linux src/efm_go`.
 
 - [ ] **Step 6: Commit.**
 
@@ -245,21 +245,21 @@ return `None` / `{}` / the input principal unchanged.
 
 **Files:**
 
-- Modify: `src/kiro_crew/cloud/iam.py`
+- Modify: `src/efm_go/cloud/iam.py`
   (`agentcore_instance_policy_document(posture)`,
   `AGENTCORE_BOUNDARY_NAME = "kirocrew-ec2-boundary-agentcore"`,
   `agentcore_boundary_policy_document(account, posture)`,
   launcher `CreateRole` / `CreatePolicy` statements accept either
   boundary name)
-- Modify: `src/kiro_crew/cloud/source.py` (create-once helper for the
+- Modify: `src/efm_go/cloud/source.py` (create-once helper for the
   new boundary name; still never `CreatePolicyVersion`)
-- Modify: `src/kiro_crew/cloud/templates/kirocrew-ec2.yaml`
+- Modify: `src/efm_go/cloud/templates/kirocrew-ec2.yaml`
   (`PermissionsBoundaryArn` `AllowedPattern` lists both names;
   `AgentCorePosture` creates `AWS::BedrockAgentCore::WorkloadIdentity`
   named `kirocrew-<StackTag>` and attaches the instance grant)
 - Modify: dashboard cloud IAM copy + `cli_cloud` `iam-policy` (labeled
   sibling document; query/flag `--instance --posture`)
-- Modify: `src/kiro_crew/agent.py` / MCP merge (`rebuild_agent_config`
+- Modify: `src/efm_go/agent.py` / MCP merge (`rebuild_agent_config`
   withholds Kiro-global, seam-global, crew-store, leftover non-managed
   when posture is `login` and the capability is on)
 - Create: `test/test_agentcore_iam_posture.py`
@@ -339,7 +339,7 @@ return `None` / `{}` / the input principal unchanged.
 
 **Files:**
 
-- Create: `src/kiro_crew/platform/agent_identity.py` (dataclasses if not
+- Create: `src/efm_go/platform/agent_identity.py` (dataclasses if not
   already in interfaces; `derive_session_principal(slot_or_session)`)
 - Create: `test/test_agent_identity_principal.py`
 - Modify: session start site(s) — the smallest existing hook that already
@@ -424,8 +424,8 @@ exists.
 
 **Files (sidecar path, if Phase 0 said yes):**
 
-- Modify: `src/kiro_crew/mcp_gateway/` rewriter / session spawn
-- Modify: `src/kiro_crew/agent.py` (`_extra_mcp_servers` merge of
+- Modify: `src/efm_go/mcp_gateway/` rewriter / session spawn
+- Modify: `src/efm_go/agent.py` (`_extra_mcp_servers` merge of
   `gateway_mcp_spec()`, URL only)
 - Create: `test/test_agentcore_gateway_inject.py`
 - Modify: `docs/architecture/mcp.md` only if the inject path needs a
@@ -433,7 +433,7 @@ exists.
 
 **Files (proxy path, if Phase 0 said no):**
 
-- Create: `src/kiro_crew/mcp_gateway/agentcore_proxy.py` (stdio MCP that
+- Create: `src/efm_go/mcp_gateway/agentcore_proxy.py` (stdio MCP that
   forwards to the Gateway URL with the session inbound token)
 - Same tests and `mcp.md` update
 
@@ -473,7 +473,7 @@ tests exist.
 
 **Files:**
 
-- Modify: `src/kiro_crew/security.py` (consent-host allowlist reuse of
+- Modify: `src/efm_go/security.py` (consent-host allowlist reuse of
   `oauth_endpoints.json`; do not add a second file unless the existing
   keystone cannot express AgentCore consent hosts)
 - Modify: dashboard handler + a small Settings / modal component
@@ -536,7 +536,7 @@ it is on `main`: there is no `agentcore` extra, `platform/agentcore_aws.py`,
   (`platform/agentcore_sigv4.py`, service `bedrock-agentcore`)
 - Login inbound: companion IdP JWT on `principal.user_jwt` when
   present; otherwise a URL-only sidecar so kiro-cli can start its
-  MCP OAuth challenge (`_kiro.dev/mcp/oauth_request`)
+  MCP OAuth challenge (`_efm.go/mcp/oauth_request`)
 - `status()` contains no token material
 - Settings catalog: `platform/agentcore_inspect.py` + owner-only
   `GET`/`POST /api/agentcore/gateway` (verify, targets, tools/list,

@@ -17,8 +17,8 @@ import uuid
 
 import pytest
 
-from kiro_crew.cron import CronService
-from kiro_crew.mcp_cron import _call_tool_inner
+from efm_go.cron import CronService
+from efm_go.mcp_cron import _call_tool_inner
 
 
 @pytest.fixture(autouse=True)

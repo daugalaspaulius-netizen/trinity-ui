@@ -26,9 +26,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard.handlers import cron
-from kiro_crew.learn import LessonStore
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go.dashboard.handlers import cron
+from efm_go.learn import LessonStore
+from efm_go.vector_memory import VectorMemoryStore
 
 pytestmark = pytest.mark.asyncio
 
@@ -153,7 +153,7 @@ async def test_jsonl_rows_carry_the_same_selector_contract(tmp_path) -> None:
 
 
 def test_mcp_learn_list_renders_the_scope_beside_the_rule() -> None:
-    from kiro_crew.mcp_tools import learn
+    from efm_go.mcp_tools import learn
 
     rows = [
         {"rule": f"{RULE} everywhere", "category": "tool", "repo_scope": "", "scope": "global"},
@@ -183,8 +183,8 @@ def test_mcp_learn_list_renders_the_scope_beside_the_rule() -> None:
 
 
 def test_mcp_learn_remove_forwards_the_tier_only_when_named() -> None:
-    from kiro_crew.mcp_tools import learn
-    from kiro_crew.validation import LEARN_REMOVE_SCHEMA, ValidationError, validate_tool_args
+    from efm_go.mcp_tools import learn
+    from efm_go.validation import LEARN_REMOVE_SCHEMA, ValidationError, validate_tool_args
 
     with patch.object(learn.mcp_core, "_delete", return_value={"ok": True}) as delete:
         learn.learn_remove(
@@ -277,7 +277,7 @@ async def test_delete_route_validates_the_tier_pair_together() -> None:
 def test_cli_learn_list_renders_the_scope_for_both_tiers(tmp_path, capsys) -> None:
     import argparse
 
-    from kiro_crew import cli_commands
+    from efm_go import cli_commands
 
     store = _store(tmp_path)
     try:
@@ -345,7 +345,7 @@ async def test_control_split_credential_scope_is_withheld_from_the_list(tmp_path
     token is still split and no consumer can rejoin it. The selector guard is independent
     of that: any control character in the selector withholds the row, which is what keeps
     a raw stored scope off the response."""
-    from kiro_crew.dashboard.handlers._shared import _redact_memory_field
+    from efm_go.dashboard.handlers._shared import _redact_memory_field
 
     scrubbed = _redact_memory_field(SPLIT_SECRET_SCOPE)
     assert "\x1b" not in scrubbed, "the scrubber removes the control character"
@@ -375,7 +375,7 @@ async def test_control_split_credential_scope_is_withheld_from_the_list(tmp_path
 
 
 async def test_credential_shaped_scope_is_withheld_from_the_list(tmp_path) -> None:
-    from kiro_crew.dashboard.handlers._shared import _redact_memory_field
+    from efm_go.dashboard.handlers._shared import _redact_memory_field
 
     # The fixture is only meaningful while the redactor actually alters it.
     assert _redact_memory_field(SECRET_SCOPE) != SECRET_SCOPE
@@ -413,7 +413,7 @@ async def test_credential_shaped_scope_is_withheld_from_the_list(tmp_path) -> No
 def test_cli_learn_list_prints_a_credential_shaped_scope_as_unusable(tmp_path, capsys) -> None:
     import argparse
 
-    from kiro_crew import cli_commands
+    from efm_go import cli_commands
 
     store = _store(tmp_path)
     try:
@@ -435,8 +435,8 @@ def test_cli_learn_list_judges_the_scope_after_stripping_terminal_controls() -> 
     """A credential split by an embedded escape sequence passes the redactor whole
     and would be reassembled by the control stripping the CLI applies before
     printing -- so the printed (stripped) text is what gets judged."""
-    from kiro_crew import cli_commands
-    from kiro_crew.security import redact
+    from efm_go import cli_commands
+    from efm_go.security import redact
 
     split = "repos/ghp_ABCDEFGHIJKLMNOPQRST\x1b[0mUVWXYZabcdefghij1234"
     assert redact(split) == split, "fixture must pass the redactor unstripped"

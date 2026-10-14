@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config import loader as cfg_loader
+from efm_go.config import loader as cfg_loader
 
 #: Bounded so a regression fails the test instead of hanging the suite.
 _TIMEOUT = 30.0
@@ -76,7 +76,7 @@ class TestAppsManagerTrustRevoke:
         renamed last. After it, B waits for the sidecar and re-reads inside its
         own hold, so both land.
         """
-        from kiro_crew.apps import manager as appmanager
+        from efm_go.apps import manager as appmanager
 
         monkeypatch.setattr(appmanager, "config_path", lambda: cfg_file)
         monkeypatch.setattr(appmanager, "config_local_path", lambda: cfg_file.parent / "local.json")
@@ -154,7 +154,7 @@ class TestAppsManagerTrustRevoke:
         sidecar exists pins that the revoke reached the primitive at all, which
         the interleave test above can only show indirectly.
         """
-        from kiro_crew.apps import manager as appmanager
+        from efm_go.apps import manager as appmanager
 
         monkeypatch.setattr(appmanager, "config_path", lambda: cfg_file)
         monkeypatch.setattr(appmanager, "config_local_path", lambda: cfg_file.parent / "local.json")
@@ -177,7 +177,7 @@ class TestAppsManagerTrustRevoke:
         every setting the file holds -- the exact loss ``read_config_for_update``
         exists to prevent -- and the old code raised here for the same reason.
         """
-        from kiro_crew.apps import manager as appmanager
+        from efm_go.apps import manager as appmanager
 
         monkeypatch.setattr(appmanager, "config_path", lambda: cfg_file)
         monkeypatch.setattr(appmanager, "config_local_path", lambda: cfg_file.parent / "local.json")
@@ -211,7 +211,7 @@ class TestSetupWizardWriters:
         step's own read and strictly before its write. That is the interleave in
         its exact worst case, with no timing to be flaky about.
         """
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         monkeypatch.setattr(cli_setup, "config_path", lambda: cfg_file)
 
@@ -241,7 +241,7 @@ class TestSetupWizardWriters:
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Same window on the step with the most prompts, hence the widest one."""
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         monkeypatch.setattr(cli_setup, "config_path", lambda: cfg_file)
 
@@ -288,7 +288,7 @@ class TestAForeignSectionIsNeverReplaced:
     def test_the_slash_command_step_leaves_a_scalar_slack_section_alone(
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         monkeypatch.setattr(cli_setup, "config_path", lambda: cfg_file)
         monkeypatch.setattr(cli_setup, "_input_or_skip", lambda _prompt: "zibble-cmd")
@@ -308,7 +308,7 @@ class TestAForeignSectionIsNeverReplaced:
     def test_the_slash_command_step_still_creates_an_absent_slack_section(
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         monkeypatch.setattr(cli_setup, "config_path", lambda: cfg_file)
         monkeypatch.setattr(cli_setup, "_input_or_skip", lambda _prompt: "zibble-cmd")
@@ -323,7 +323,7 @@ class TestAForeignSectionIsNeverReplaced:
     def test_the_dashboard_url_step_leaves_a_scalar_dashboard_section_alone(
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         monkeypatch.setattr(cli_setup, "config_path", lambda: cfg_file)
         self._seed(cfg_file, "not-an-object", "dashboard")
@@ -351,7 +351,7 @@ class TestAForeignSectionIsNeverReplaced:
     def test_the_dashboard_url_step_still_creates_an_absent_dashboard_section(
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         monkeypatch.setattr(cli_setup, "config_path", lambda: cfg_file)
         cfg_file.write_text(json.dumps({"model": "sonnet"}), encoding="utf-8")
@@ -386,7 +386,7 @@ class TestTheSeedWritesNoMetaBlock:
     def test_the_seed_adds_no_meta_key(
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import cli_chat
+        from efm_go import cli_chat
 
         monkeypatch.setattr(cli_chat, "config_path", lambda: cfg_file)
         cfg_file.write_text(json.dumps({"model": "sonnet"}), encoding="utf-8")
@@ -406,7 +406,7 @@ class TestTheSeedWritesNoMetaBlock:
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """mutate returns None, so the file is not rewritten at all."""
-        from kiro_crew import cli_chat
+        from efm_go import cli_chat
 
         monkeypatch.setattr(cli_chat, "config_path", lambda: cfg_file)
         cfg_file.write_text(
@@ -447,7 +447,7 @@ class TestARestoredGrantIsNotDuplicated:
         has been answered and strictly before its acquire. That is the window in
         its exact worst case, with no timing to be flaky about.
         """
-        from kiro_crew.apps import manager as appmanager
+        from efm_go.apps import manager as appmanager
 
         monkeypatch.setattr(appmanager, "config_path", lambda: cfg_file)
         monkeypatch.setattr(appmanager, "config_local_path", lambda: cfg_file.parent / "local.json")
@@ -491,7 +491,7 @@ class TestARestoredGrantIsNotDuplicated:
         self, cfg_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The ordinary path is unchanged: absent means append."""
-        from kiro_crew.apps import manager as appmanager
+        from efm_go.apps import manager as appmanager
 
         monkeypatch.setattr(appmanager, "config_path", lambda: cfg_file)
         monkeypatch.setattr(appmanager, "config_local_path", lambda: cfg_file.parent / "local.json")

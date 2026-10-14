@@ -1,4 +1,4 @@
-"""Coverage tests for ``kiro_crew.mcp_core`` surfaces.
+"""Coverage tests for ``efm_go.mcp_core`` surfaces.
 
 Focus areas, all confirmed uncovered before this file existed:
 
@@ -28,8 +28,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import mcp_core
-from kiro_crew.mcp_core import (
+from efm_go import mcp_core
+from efm_go.mcp_core import (
     _audit_governance_deny,
     _autonudge_binding_key,
     _call_tool_inner,
@@ -46,14 +46,14 @@ from kiro_crew.mcp_core import (
     _vet_memory_writes_governance,
     _vet_messaging_governance,
 )
-from kiro_crew.mcp_shared import ToolCancelled
+from efm_go.mcp_shared import ToolCancelled
 
-_GOV = "kiro_crew.platform.governance_profiles"
+_GOV = "efm_go.platform.governance_profiles"
 
 
 def _learn_add_properties() -> dict[str, Any]:
     """The ``learn_add`` tool's advertised input properties."""
-    from kiro_crew.mcp_tools.learn import schemas
+    from efm_go.mcp_tools.learn import schemas
 
     spec = next(s for s in schemas() if s["name"] == "learn_add")
     props: dict[str, Any] = spec["inputSchema"]["properties"]
@@ -98,7 +98,7 @@ class TestDenyChannelAgentMessaging:
 
     def test_channel_caller_is_denied_and_audited(self) -> None:
         rec = _RecordingSel()
-        with patch("kiro_crew.sel.sel", lambda: rec):
+        with patch("efm_go.sel.sel", lambda: rec):
             out = _deny_channel_agent_messaging("channel:C123:agent-1", "send_message")
         assert out is not None
         assert "send_message is not available to channel agents" in out
@@ -110,7 +110,7 @@ class TestDenyChannelAgentMessaging:
         def boom() -> Any:
             raise RuntimeError("SEL file unwritable")
 
-        with patch("kiro_crew.sel.sel", boom):
+        with patch("efm_go.sel.sel", boom):
             out = _deny_channel_agent_messaging("channel:C1:a", "send_notification")
         assert out is not None and "not available to channel agents" in out
 
@@ -166,7 +166,7 @@ class TestDenyChannelAgentDispatch:
     )
     def test_every_dispatch_verb_is_denied_and_audited(self, tool: str) -> None:
         rec = _RecordingSel()
-        with self._as("channel:C123:agent-1"), patch("kiro_crew.sel.sel", lambda: rec):
+        with self._as("channel:C123:agent-1"), patch("efm_go.sel.sel", lambda: rec):
             out = _deny_channel_agent_dispatch(tool)
         assert out is not None
         assert f"{tool} is not available to channel agents" in out
@@ -222,7 +222,7 @@ class TestDenyChannelAgentDispatch:
 
         with (
             patch.object(mcp_core, "require_strict_session_key", _record),
-            patch("kiro_crew.sel.sel", lambda: _RecordingSel()),
+            patch("efm_go.sel.sel", lambda: _RecordingSel()),
         ):
             assert _deny_channel_agent_dispatch("workflow_run") is not None
         assert calls == ["resolved"]
@@ -235,7 +235,7 @@ class TestDenyChannelAgentDispatch:
         as a spawn verb does.
         """
         rec = _RecordingSel()
-        with self._as("channel:C123:agent-1"), patch("kiro_crew.sel.sel", lambda: rec):
+        with self._as("channel:C123:agent-1"), patch("efm_go.sel.sel", lambda: rec):
             out = _deny_channel_agent_dispatch(
                 "ops_mission_control_api",
                 {"method": "POST", "path": "/rotation/arm"},
@@ -254,7 +254,7 @@ class TestDenyChannelAgentDispatch:
         """
         with (
             self._as("channel:C1:a"),
-            patch("kiro_crew.sel.sel", lambda: _RecordingSel()),
+            patch("efm_go.sel.sel", lambda: _RecordingSel()),
         ):
             out = _deny_channel_agent_dispatch(
                 "ops_mission_control_api",
@@ -319,7 +319,7 @@ class TestDenyChannelAgentDispatch:
         def boom() -> Any:
             raise RuntimeError("SEL file unwritable")
 
-        with self._as("channel:C1:a"), patch("kiro_crew.sel.sel", boom):
+        with self._as("channel:C1:a"), patch("efm_go.sel.sel", boom):
             out = _deny_channel_agent_dispatch("spawn_run")
         assert out is not None and "not available to channel agents" in out
 
@@ -336,7 +336,7 @@ class TestDenyChannelAgentDispatch:
             reached.append(name)
             return "handler ran"
 
-        with self._as("channel:C9:a"), patch("kiro_crew.sel.sel", lambda: _RecordingSel()):
+        with self._as("channel:C9:a"), patch("efm_go.sel.sel", lambda: _RecordingSel()):
             with patch.object(mcp_core, "dispatch", _sentinel):
                 out = _call_tool_inner("spawn_run", {"task": "x"})
         assert "spawn_run is not available to channel agents" in out
@@ -355,7 +355,7 @@ class TestDenyChannelAgentDispatch:
             reached.append(name)
             return "handler ran"
 
-        with self._as("channel:C9:a"), patch("kiro_crew.sel.sel", lambda: _RecordingSel()):
+        with self._as("channel:C9:a"), patch("efm_go.sel.sel", lambda: _RecordingSel()):
             with patch.object(mcp_core, "dispatch", _sentinel):
                 out = _call_tool_inner(
                     "ops_mission_control_api",
@@ -399,7 +399,7 @@ class TestAuditGovernanceDeny:
     def test_records_the_decision_fields(self) -> None:
         rec = _RecordingSel()
         decision = SimpleNamespace(rule="no-messaging", layer="policy", reason="ceiling")
-        with patch("kiro_crew.sel.sel", lambda: rec):
+        with patch("efm_go.sel.sel", lambda: rec):
             _audit_governance_deny("dashboard:chat-1-9", "send_message", "channels", decision)
         assert rec.governance == [
             {
@@ -417,7 +417,7 @@ class TestAuditGovernanceDeny:
         def boom() -> Any:
             raise RuntimeError("no disk")
 
-        with patch("kiro_crew.sel.sel", boom):
+        with patch("efm_go.sel.sel", boom):
             assert _audit_governance_deny("s", "t", "scope", object()) is None
 
 
@@ -466,7 +466,7 @@ class TestVetMessagingGovernance:
                 assert _vet_messaging_governance("dashboard:chat-1-9") is None
 
     def test_platform_composition_error_propagates(self) -> None:
-        from kiro_crew.platform.context import PlatformCompositionError
+        from efm_go.platform.context import PlatformCompositionError
 
         with patch(f"{_GOV}.vet_and_audit", side_effect=PlatformCompositionError("unbooted")):
             with pytest.raises(PlatformCompositionError):
@@ -482,7 +482,7 @@ class TestVetChannelGovernance:
         rec = _RecordingSel()
         decision = SimpleNamespace(permitted=False, rule="channels", layer="policy", reason="off")
         with patch(f"{_GOV}.governance_permits", return_value=decision) as gp:
-            with patch("kiro_crew.sel.sel", lambda: rec):
+            with patch("efm_go.sel.sel", lambda: rec):
                 out = _vet_channel_governance("dashboard:chat-1-9", "discord")
         assert out == "messaging via transport 'discord' blocked by governance policy"
         # A bare member id queries the ScopedMap ``members`` ruleset.
@@ -502,7 +502,7 @@ class TestVetChannelGovernance:
         rec = _RecordingSel()
         decision = SimpleNamespace(permitted=False, rule="channels", layer="policy", reason="off")
         with patch(f"{_GOV}.governance_permits", return_value=decision):
-            with patch("kiro_crew.sel.sel", lambda: rec):
+            with patch("efm_go.sel.sel", lambda: rec):
                 _vet_channel_governance("dashboard:chat-1-9", "slack", tool_name="update_message")
         assert rec.governance[0]["tool_name"] == "update_message:slack"
 
@@ -522,7 +522,7 @@ class TestVetChannelGovernance:
                 assert _vet_channel_governance("dashboard:chat-1-9", "slack") is None
 
     def test_platform_composition_error_propagates(self) -> None:
-        from kiro_crew.platform.context import PlatformCompositionError
+        from efm_go.platform.context import PlatformCompositionError
 
         with patch(f"{_GOV}.governance_permits", side_effect=PlatformCompositionError("unbooted")):
             with pytest.raises(PlatformCompositionError):
@@ -540,7 +540,7 @@ class TestVetMemoryWritesGovernance:
             permitted=False, rule="memory_writes", layer="profile", reason="sandboxed app"
         )
         with patch(f"{_GOV}.governance_permits", return_value=decision) as gp:
-            with patch("kiro_crew.sel.sel", lambda: rec):
+            with patch("efm_go.sel.sel", lambda: rec):
                 out = _vet_memory_writes_governance("dashboard:chat-1-9")
         assert out == "durable memory writes blocked by governance policy"
         assert gp.call_args.args == ("capabilities.memory_writes", "")
@@ -554,7 +554,7 @@ class TestVetMemoryWritesGovernance:
         assert degraded.call_args.kwargs["scope"] == "capabilities.memory_writes"
 
     def test_platform_composition_error_propagates(self) -> None:
-        from kiro_crew.platform.context import PlatformCompositionError
+        from efm_go.platform.context import PlatformCompositionError
 
         with patch(f"{_GOV}.governance_permits", side_effect=PlatformCompositionError("x")):
             with pytest.raises(PlatformCompositionError):
@@ -721,7 +721,7 @@ class TestWaitTool:
         with patch.object(mcp_core, "time", clock):
             with patch.object(mcp_core, "_resolve_session_key_strict", return_value=strict_key):
                 with patch.object(mcp_core, "_resolve_session_key", return_value="dashboard:c"):
-                    with patch("kiro_crew.mcp_tools.control.is_tool_cancelled", return_value=False):
+                    with patch("efm_go.mcp_tools.control.is_tool_cancelled", return_value=False):
                         with patch.object(mcp_core, "sel", lambda: rec):
                             with patch.object(mcp_core, "_post", post) as p:
                                 out = _call_tool_inner("wait", dict(args))
@@ -826,7 +826,7 @@ class TestWaitTool:
         rec = _RecordingSel()
         with patch.object(mcp_core, "time", clock):
             with patch.object(mcp_core, "_resolve_session_key_strict", return_value=""):
-                with patch("kiro_crew.mcp_tools.control.is_tool_cancelled", return_value=True):
+                with patch("efm_go.mcp_tools.control.is_tool_cancelled", return_value=True):
                     with patch.object(mcp_core, "sel", lambda: rec):
                         with patch.object(mcp_core, "_post", lambda *a, **k: {}):
                             with pytest.raises(ToolCancelled) as ei:
@@ -1047,10 +1047,10 @@ class TestLearnAddTool:
                             "rule": "always X",
                             "category": "preference",
                             "negative": "never Y",
-                            "repo_scope": "src/kiro_crew",
+                            "repo_scope": "src/efm_go",
                         },
                     )
-        assert out == "Saved lesson (applies only in src/kiro_crew): always X"
+        assert out == "Saved lesson (applies only in src/efm_go): always X"
         assert p.call_args.args == (
             "/api/lessons",
             {
@@ -1058,14 +1058,14 @@ class TestLearnAddTool:
                 "category": "preference",
                 "scope": "global",
                 "negative": "never Y",
-                "repo_scope": "src/kiro_crew",
+                "repo_scope": "src/efm_go",
             },
         )
 
     def test_the_advertised_repo_scope_cap_tracks_the_enforced_one(self) -> None:
         # The hint must be derived from the field the validator enforces, so a
         # future cap change cannot leave the model told an obsolete limit.
-        from kiro_crew.validation import LEARN_ADD_SCHEMA
+        from efm_go.validation import LEARN_ADD_SCHEMA
 
         enforced = next(f.max_len for f in LEARN_ADD_SCHEMA.fields if f.name == "repo_scope")
         assert _learn_add_properties()["repo_scope"]["maxLength"] == enforced
@@ -1146,7 +1146,7 @@ class TestLearnListAndRemoveTools:
         # would land on the stored "src/pkg" rows. The schema's pattern
         # refuses both before the handler runs, so the delete cannot land on
         # rows the caller never named.
-        from kiro_crew.validation import ValidationError
+        from efm_go.validation import ValidationError
 
         with pytest.raises(ValidationError):
             mcp_core._validate_args("learn_remove", {"query": "always X", "repo_scope": "/"})
@@ -1275,14 +1275,14 @@ class TestResourceStatusTool:
             if cap == "raise"
             else (lambda _c: cap)
         )
-        with patch("kiro_crew.resource_status.probe", return_value=rstatus):
-            with patch("kiro_crew.mcp_tools.spawn.KiroCrewConfig", cfg):
-                with patch("kiro_crew.mcp_tools.spawn.resolve_max_subagents", resolver):
+        with patch("efm_go.resource_status.probe", return_value=rstatus):
+            with patch("efm_go.mcp_tools.spawn.KiroCrewConfig", cfg):
+                with patch("efm_go.mcp_tools.spawn.resolve_max_subagents", resolver):
                     # A tool server owns no controller, so the live cap is an
                     # API read; every case here pins what it returns rather
                     # than reaching a gateway.
                     with patch(
-                        "kiro_crew.mcp_tools.spawn._live_adaptive_state", return_value=state
+                        "efm_go.mcp_tools.spawn._live_adaptive_state", return_value=state
                     ):
                         return _call_tool_inner("resource_status", {})
 
@@ -1351,19 +1351,19 @@ class TestLiveAdaptiveState:
     """How a tool server reaches gateway-process state at all."""
 
     def _call(self):
-        from kiro_crew.mcp_tools.spawn import _live_adaptive_state
+        from efm_go.mcp_tools.spawn import _live_adaptive_state
 
         return _live_adaptive_state()
 
     def test_the_in_process_registry_wins_and_costs_no_request(self) -> None:
-        with patch("kiro_crew.resource_status.adaptive_state", return_value={"exec_ceiling": 9}):
+        with patch("efm_go.resource_status.adaptive_state", return_value={"exec_ceiling": 9}):
             with patch.object(mcp_core, "_get") as get:
                 assert self._call() == {"exec_ceiling": 9}
         get.assert_not_called()
 
     def test_out_of_process_it_reads_the_gateway(self) -> None:
         payload = {"adaptive": {"effective_exec_cap": 2, "exec_ceiling": 64}}
-        with patch("kiro_crew.resource_status.adaptive_state", return_value=None):
+        with patch("efm_go.resource_status.adaptive_state", return_value=None):
             with patch.object(mcp_core, "_get", return_value=payload) as get:
                 assert self._call() == payload["adaptive"]
         assert get.call_args.args[0] == "/api/spawn/adaptive"
@@ -1382,12 +1382,12 @@ class TestLiveAdaptiveState:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.handlers import spawn_resume
-        from kiro_crew.dashboard.server import (
+        from efm_go.dashboard.handlers import spawn_resume
+        from efm_go.dashboard.server import (
             _MIXED_INTERNAL_API_PATHS,
             _STRICT_INTERNAL_API_PATHS,
         )
-        from kiro_crew.dashboard.token_auth import token_auth_middleware
+        from efm_go.dashboard.token_auth import token_auth_middleware
 
         secret = "s3cret"
         app = web.Application(
@@ -1403,7 +1403,7 @@ class TestLiveAdaptiveState:
         spawn_resume.setup_spawn_resume_routes(app)
         live = {"effective_exec_cap": 8, "exec_ceiling": 64, "slow_start": True}
         async with TestClient(TestServer(app)) as client:
-            with patch("kiro_crew.resource_status.adaptive_state", return_value=live):
+            with patch("efm_go.resource_status.adaptive_state", return_value=live):
                 resp = await client.get(
                     "/api/spawn/adaptive", headers={"X-Internal-Secret": secret}
                 )
@@ -1411,7 +1411,7 @@ class TestLiveAdaptiveState:
                 assert (await resp.json())["adaptive"] == live
             # No controller in this process is an ANSWER, not an error: the
             # caller renders a missing state as "could not be read".
-            with patch("kiro_crew.resource_status.adaptive_state", return_value=None):
+            with patch("efm_go.resource_status.adaptive_state", return_value=None):
                 resp = await client.get(
                     "/api/spawn/adaptive", headers={"X-Internal-Secret": secret}
                 )
@@ -1430,12 +1430,12 @@ class TestLiveAdaptiveState:
         ],
     )
     def test_no_usable_answer_is_None_not_a_guess(self, answer: Any) -> None:
-        with patch("kiro_crew.resource_status.adaptive_state", return_value=None):
+        with patch("efm_go.resource_status.adaptive_state", return_value=None):
             with patch.object(mcp_core, "_get", return_value=answer):
                 assert self._call() is None
 
     def test_a_transport_failure_is_swallowed(self) -> None:
-        with patch("kiro_crew.resource_status.adaptive_state", return_value=None):
+        with patch("efm_go.resource_status.adaptive_state", return_value=None):
             with patch.object(mcp_core, "_get", side_effect=OSError("refused")):
                 assert self._call() is None
 
@@ -1451,10 +1451,10 @@ class TestSpawnCapHint:
 
     @staticmethod
     def _spawn_run_description(*, live: int, ceiling: int) -> str:
-        from kiro_crew.mcp_tools import spawn
+        from efm_go.mcp_tools import spawn
 
         with (
-            patch("kiro_crew.resource_status.adaptive_exec_cap", return_value=live),
+            patch("efm_go.resource_status.adaptive_exec_cap", return_value=live),
             patch.object(spawn, "resolve_max_subagents", return_value=ceiling),
             patch.object(spawn.KiroCrewConfig, "load", staticmethod(lambda: object())),
         ):
@@ -1477,10 +1477,10 @@ class TestSpawnCapHint:
     def test_the_live_read_is_the_registry_and_never_a_request(self) -> None:
         """``schemas()`` runs on the gateway's own discovery cycle, where a loopback
         request would dial the gateway from inside the gateway."""
-        from kiro_crew.mcp_tools import spawn
+        from efm_go.mcp_tools import spawn
 
         with (
-            patch("kiro_crew.resource_status.adaptive_state", return_value=None),
+            patch("efm_go.resource_status.adaptive_state", return_value=None),
             patch.object(mcp_core, "_get") as get,
             patch.object(spawn, "resolve_max_subagents", return_value=5),
             patch.object(spawn.KiroCrewConfig, "load", staticmethod(lambda: object())),
@@ -1494,9 +1494,9 @@ class TestAdaptiveExecCap:
 
     @staticmethod
     def _cap(state: Any) -> int:
-        from kiro_crew.resource_status import adaptive_exec_cap
+        from efm_go.resource_status import adaptive_exec_cap
 
-        with patch("kiro_crew.resource_status.adaptive_state", return_value=state):
+        with patch("efm_go.resource_status.adaptive_state", return_value=state):
             return adaptive_exec_cap()
 
     def test_no_controller_here_is_zero(self) -> None:

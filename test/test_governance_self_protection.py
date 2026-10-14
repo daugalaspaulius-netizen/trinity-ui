@@ -14,10 +14,10 @@ import os
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.hooks import TOOL_DENY, HookManager, validate_file_path
-from kiro_crew.platform.context import PlatformCompositionError
-from kiro_crew.platform.governance import assert_governance_paths_protected
+from efm_go import security
+from efm_go.hooks import TOOL_DENY, HookManager, validate_file_path
+from efm_go.platform.context import PlatformCompositionError
+from efm_go.platform.governance import assert_governance_paths_protected
 
 # The data home moved from the top-level ``~/.kirocrew`` to ``~/.kiro/crew``.
 # The security floor gates the trust-root files under EVERY known crew-home
@@ -112,7 +112,7 @@ def test_the_named_ceiling_and_secret_leaves_are_fenced_at_the_OS_LAYER():
     one more spelling never converged -- six review rounds produced a new one each time
     (``/./``, a glued redirect, ``pushd``, an assignment, a conditional assignment).
 
-    What binds a subprocess is the OS layer in :mod:`kiro_crew.sandbox`, so that is what
+    What binds a subprocess is the OS layer in :mod:`efm_go.sandbox`, so that is what
     is pinned: every leaf named here carries a HIDDEN (bind-masked in every mode) or
     READONLY (readable in-sandbox, never writable) disposition.
 
@@ -130,7 +130,7 @@ def test_the_named_ceiling_and_secret_leaves_are_fenced_at_the_OS_LAYER():
 
     ``test_sandbox_governance_mask.py`` pins the dispositions themselves.
     """
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     fenced = sandbox._CREW_HIDDEN_LEAVES + sandbox._CREW_READONLY_LEAVES
 
@@ -153,7 +153,7 @@ def test_home_var_expansion_survives_windows_backslashes(monkeypatch):
     the expanded path are never reinterpreted as escape characters by shlex."""
     import os as _os
 
-    from kiro_crew.security import normalize_shell_command
+    from efm_go.security import normalize_shell_command
 
     win_home = r"C:\Users\runneradmin"
     monkeypatch.setattr(_os.path, "expanduser", lambda _p: win_home)

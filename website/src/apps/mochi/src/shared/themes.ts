@@ -40,7 +40,7 @@ export const FALLBACK_PALETTE: Record<string, string> = {
   '--text-faint': '#5e5966',
   '--bubble-user': 'rgba(178,127,255,0.18)',
   '--bubble-assistant': 'rgba(255,255,255,0.04)',
-  '--accent': '#8e48ff',
+  '--accent': '#00d492',
   '--accent-text': '#ffffff',
   '--accent-glow': 'rgba(142,72,255,0.3)',
   '--danger': '#f94359',

@@ -1,6 +1,6 @@
 """Structured model-side refusals: one ``RefusalInfo`` for every harness.
 
-The Kiro service declines a turn on the ``_kiro.dev/metadata`` channel
+The Kiro service declines a turn on the ``_efm.go/metadata`` channel
 (``stopReason: CONTENT_FILTERED`` + a ``refusal`` object) while the terminal
 reads ``end_turn``; Anthropic's adapter says only ``stopReason: "refusal"``.
 These tests pin that both are folded onto ``STOP_REASON_REFUSAL`` with a
@@ -15,9 +15,9 @@ import logging
 
 import pytest
 
-from kiro_crew.acp import _dispatch
-from kiro_crew.acp._dispatch import parse_metadata, parse_refusal
-from kiro_crew.acp.types import (
+from efm_go.acp import _dispatch
+from efm_go.acp._dispatch import parse_metadata, parse_refusal
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
@@ -30,7 +30,7 @@ from kiro_crew.acp.types import (
     AcpPromptStats,
     RefusalInfo,
 )
-from kiro_crew.dashboard.chat_runner import refusal_card_text
+from efm_go.dashboard.chat_runner import refusal_card_text
 
 CANNED = (
     "The selected model cannot continue this conversation. Please select a different "
@@ -79,8 +79,8 @@ class TestCapabilitySet:
         """
         import inspect
 
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.session_handle import AcpSessionHandle
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.session_handle import AcpSessionHandle
 
         for fn in (AcpClient._track_metadata, AcpSessionHandle._track_metadata):
             source = inspect.getsource(fn)
@@ -179,7 +179,7 @@ class TestClientGate:
 
     @staticmethod
     def _client(backend: str):
-        from kiro_crew.acp import client as acp_client
+        from efm_go.acp import client as acp_client
 
         c = acp_client.AcpClient.__new__(acp_client.AcpClient)
         c._acp_backend = backend
@@ -189,18 +189,18 @@ class TestClientGate:
         return c
 
     def test_kiro_records_the_refusal(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         c = self._client(ACP_BACKEND_KIRO)
-        c._track_metadata(JsonRpcMessage(method="_kiro.dev/metadata", params=dict(INCIDENT_FRAME)))
+        c._track_metadata(JsonRpcMessage(method="_efm.go/metadata", params=dict(INCIDENT_FRAME)))
         assert c.last_prompt_stats.refusal is not None
         assert c.last_prompt_stats.refusal.category == "CYBER"
 
     def test_claude_ignores_the_envelope(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         c = self._client(ACP_BACKEND_CLAUDE)
-        c._track_metadata(JsonRpcMessage(method="_kiro.dev/metadata", params=dict(INCIDENT_FRAME)))
+        c._track_metadata(JsonRpcMessage(method="_efm.go/metadata", params=dict(INCIDENT_FRAME)))
         assert c.last_prompt_stats.refusal is None
 
 
@@ -252,8 +252,8 @@ class TestEveryFieldIsScrubbed:
 
 class TestProviderForwardsRefusal:
     def test_to_llm_event_carries_refusal(self):
-        from kiro_crew.acp.types import EVENT_COMPLETE, AcpEvent
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.acp.types import EVENT_COMPLETE, AcpEvent
+        from efm_go.providers.acp import AcpProvider
 
         src = AcpEvent(
             kind=EVENT_COMPLETE,
@@ -271,8 +271,8 @@ class TestErrorFrameTerminal:
 
     @pytest.mark.asyncio
     async def test_client_yields_refusal_terminal_instead_of_raising(self, tmp_path):
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import EVENT_COMPLETE, JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import EVENT_COMPLETE, JsonRpcMessage
 
         c = acp_client.AcpClient(work_dir=tmp_path)
         c._read_new_tool_results_sync = lambda: []
@@ -280,7 +280,7 @@ class TestErrorFrameTerminal:
         async def _loop(req_id, timeout):
             yield (
                 "metadata",
-                JsonRpcMessage(method="_kiro.dev/metadata", params=dict(INCIDENT_FRAME)),
+                JsonRpcMessage(method="_efm.go/metadata", params=dict(INCIDENT_FRAME)),
             )
             yield (
                 "error",
@@ -295,8 +295,8 @@ class TestErrorFrameTerminal:
 
     @pytest.mark.asyncio
     async def test_error_without_a_refusal_still_raises(self, tmp_path):
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import JsonRpcMessage
 
         c = acp_client.AcpClient(work_dir=tmp_path)
         c._read_new_tool_results_sync = lambda: []
@@ -349,8 +349,8 @@ class TestWorkerPoolPathFoldsRefusal:
 
     @pytest.mark.asyncio
     async def test_error_terminal_returns_streamed_text_under_refusal(self, tmp_path):
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import JsonRpcMessage
 
         c = acp_client.AcpClient(work_dir=tmp_path)
 
@@ -369,7 +369,7 @@ class TestWorkerPoolPathFoldsRefusal:
             )
             yield (
                 "metadata",
-                JsonRpcMessage(method="_kiro.dev/metadata", params=dict(INCIDENT_FRAME)),
+                JsonRpcMessage(method="_efm.go/metadata", params=dict(INCIDENT_FRAME)),
             )
             yield (
                 "error",
@@ -383,15 +383,15 @@ class TestWorkerPoolPathFoldsRefusal:
 
     @pytest.mark.asyncio
     async def test_end_turn_terminal_is_folded(self, tmp_path):
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import JsonRpcMessage
 
         c = acp_client.AcpClient(work_dir=tmp_path)
 
         async def _loop(req_id, timeout):
             yield (
                 "metadata",
-                JsonRpcMessage(method="_kiro.dev/metadata", params=dict(INCIDENT_FRAME)),
+                JsonRpcMessage(method="_efm.go/metadata", params=dict(INCIDENT_FRAME)),
             )
             yield ("complete", JsonRpcMessage(id=1, result={"stopReason": STOP_REASON_END_TURN}))
 
@@ -408,8 +408,8 @@ class TestSendMessageStreamFoldsRefusal:
     async def test_error_terminal_ends_under_refusal(self, tmp_path):
         from unittest.mock import AsyncMock
 
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import JsonRpcMessage
 
         c = acp_client.AcpClient(work_dir=tmp_path)
         c.ensure_ready = AsyncMock()
@@ -418,7 +418,7 @@ class TestSendMessageStreamFoldsRefusal:
         async def _loop(req_id, timeout):
             yield (
                 "metadata",
-                JsonRpcMessage(method="_kiro.dev/metadata", params=dict(INCIDENT_FRAME)),
+                JsonRpcMessage(method="_efm.go/metadata", params=dict(INCIDENT_FRAME)),
             )
             yield (
                 "error",
@@ -439,7 +439,7 @@ class TestRefusalTerminalIsScoped:
     REFUSAL = RefusalInfo(category="CYBER")
 
     def test_bare_internal_error_after_refusal_is_the_terminal(self, caplog):
-        from kiro_crew.acp._dispatch import error_is_refusal_terminal
+        from efm_go.acp._dispatch import error_is_refusal_terminal
 
         with caplog.at_level(logging.WARNING, logger=_dispatch.logger.name):
             assert error_is_refusal_terminal(
@@ -448,7 +448,7 @@ class TestRefusalTerminalIsScoped:
         assert any("consumed as the terminal" in r.getMessage() for r in caplog.records)
 
     def test_no_recorded_refusal_means_ordinary_error(self):
-        from kiro_crew.acp._dispatch import error_is_refusal_terminal
+        from efm_go.acp._dispatch import error_is_refusal_terminal
 
         assert not error_is_refusal_terminal({"code": -32603, "message": "Internal error"}, None)
 
@@ -464,14 +464,14 @@ class TestRefusalTerminalIsScoped:
         ],
     )
     def test_other_errors_after_a_refusal_keep_their_class(self, error):
-        from kiro_crew.acp._dispatch import error_is_refusal_terminal
+        from efm_go.acp._dispatch import error_is_refusal_terminal
 
         assert not error_is_refusal_terminal(error, self.REFUSAL)
 
     @pytest.mark.asyncio
     async def test_prompt_busy_after_refusal_still_raises_prompt_busy(self, tmp_path):
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import JsonRpcMessage
 
         c = acp_client.AcpClient(work_dir=tmp_path)
         c._read_new_tool_results_sync = lambda: []
@@ -479,7 +479,7 @@ class TestRefusalTerminalIsScoped:
         async def _loop(req_id, timeout):
             yield (
                 "metadata",
-                JsonRpcMessage(method="_kiro.dev/metadata", params=dict(INCIDENT_FRAME)),
+                JsonRpcMessage(method="_efm.go/metadata", params=dict(INCIDENT_FRAME)),
             )
             yield (
                 "error",
@@ -506,8 +506,8 @@ class TestRefusalTerminalFlushesToolResults:
 
     @pytest.mark.asyncio
     async def test_pending_tool_results_precede_the_refusal_terminal(self, tmp_path):
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import EVENT_COMPLETE, AcpEvent, JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import EVENT_COMPLETE, AcpEvent, JsonRpcMessage
 
         c = acp_client.AcpClient(work_dir=tmp_path)
         pending = [
@@ -518,7 +518,7 @@ class TestRefusalTerminalFlushesToolResults:
         async def _loop(req_id, timeout):
             yield (
                 "metadata",
-                JsonRpcMessage(method="_kiro.dev/metadata", params=dict(INCIDENT_FRAME)),
+                JsonRpcMessage(method="_efm.go/metadata", params=dict(INCIDENT_FRAME)),
             )
             yield (
                 "error",

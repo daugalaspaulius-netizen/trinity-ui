@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.apps import registry
+from efm_go.apps import registry
 
 
 def _catalog(monkeypatch, rows):
@@ -77,8 +77,8 @@ class TestCatalogBuiltinRowsIntersectShippedBuiltins:
         """Discovery validates the manifest; registration wants more than that."""
         import json
 
-        from kiro_crew.apps import manager
-        from kiro_crew.apps.discovery import discover_builtin_apps
+        from efm_go.apps import manager
+        from efm_go.apps.discovery import discover_builtin_apps
 
         builtins_dir = tmp_path / "builtins"
         (builtins_dir / "authorless").mkdir(parents=True)
@@ -106,7 +106,7 @@ class TestCatalogBuiltinRowsIntersectShippedBuiltins:
 
     def test_an_installed_builtin_whose_manifest_broke_is_not_orphaned(self, tmp_path, monkeypatch):
         """Orphan detection asks a wider question and must not inherit the screen."""
-        from kiro_crew.apps import manager
+        from efm_go.apps import manager
 
         valid = {
             "name": "brokenish",
@@ -136,8 +136,8 @@ class TestCatalogBuiltinRowsIntersectShippedBuiltins:
 
     def test_shipped_builtin_names_reports_the_packages_own_builtins(self):
         """The helper reads the real shipped set, not a hand-written list."""
-        from kiro_crew.apps.discovery import discover_builtin_apps
-        from kiro_crew.apps.manager import shipped_builtin_names
+        from efm_go.apps.discovery import discover_builtin_apps
+        from efm_go.apps.manager import shipped_builtin_names
 
         discovered = {a["name"] for a in discover_builtin_apps()}
         assert discovered

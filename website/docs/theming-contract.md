@@ -123,7 +123,7 @@ parity (a parity test guards drift), then define it in **every** built-in theme:
 
 - Frontend: `ALLOWED_CSS_VARS` in `src/hooks/themeCss.ts`
 - Backend: `_THEME_CSS_VARS_SET` (built from `_THEME_CSS_VARS`) in
-  `src/kiro_crew/dashboard/theme_validate.py`
+  `src/efm_go/dashboard/theme_validate.py`
 
 Never introduce a one-off literal instead of a variable.
 
@@ -367,7 +367,7 @@ an external `url()`), both raw and after CSS escape-decoding, so an escaped toke
 cannot hide from the scoper.
 
 **Install-time forbidden selectors.** The backend has its own, independent check.
-`_THEME_CSS_FORBIDDEN` in `src/kiro_crew/dashboard/theme_validate.py` rejects a
+`_THEME_CSS_FORBIDDEN` in `src/efm_go/dashboard/theme_validate.py` rejects a
 pack outright if its `overrides.css` contains any of `iframe`, `script`,
 `[data-auth]`, `.token`, `.credential`, `#app-root`, matched case-insensitively
 against both the raw text and a comment-stripped, escape-decoded copy. The same

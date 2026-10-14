@@ -38,8 +38,8 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from dashboard_owner_helpers import NoConfiguredOwner
 
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh
-from kiro_crew.apps.builtins.issue_radar.backend import provider, routes, store
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh
+from efm_go.apps.builtins.issue_radar.backend import provider, routes, store
 
 BASE = "/api/apps/issue-radar"
 SHA = "a" * 40
@@ -598,7 +598,7 @@ class TestRegisterRoutes(unittest.TestCase):
         self.assertNotIn("merge", routes._BULK_PR_ACTIONS)
 
     def test_the_watcher_lifecycle_hooks_are_registered(self):
-        from kiro_crew.apps.builtins.issue_radar.backend import watch
+        from efm_go.apps.builtins.issue_radar.backend import watch
 
         self.assertIn(watch.start_watcher, self.app.on_startup)
         self.assertIn(watch.stop_watcher, self.app.on_cleanup)

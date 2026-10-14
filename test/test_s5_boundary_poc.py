@@ -34,7 +34,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent_scratch
+from efm_go import agent_scratch
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlink creation needs privilege")

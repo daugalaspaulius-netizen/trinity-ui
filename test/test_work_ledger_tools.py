@@ -24,9 +24,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import validation
-from kiro_crew import work_ledger as wl
-from kiro_crew.dashboard.handlers import work_ledger as routes
+from efm_go import validation
+from efm_go import work_ledger as wl
+from efm_go.dashboard.handlers import work_ledger as routes
 
 #: The real implementation, captured before the autouse fixture stubs the name.
 #: A test that drives the true branch has to reach past its own default.
@@ -602,7 +602,7 @@ async def test_accept_batch_parses_in_the_real_accept_eval():
     ids = await two_by_two()
     script = (
         Path(__file__).resolve().parents[1]
-        / "src/kiro_crew/builtin_skills/goal-conductor/scripts/accept_eval.py"
+        / "src/efm_go/builtin_skills/goal-conductor/scripts/accept_eval.py"
     )
     assert script.is_file(), script
     _, body = await _read(CONDUCTOR_A)
@@ -662,7 +662,7 @@ async def test_the_conductor_promotes_a_claim_with_the_accept_action():
         {
             "action": "accept",
             "item_id": item_id,
-            "acceptance": {"kind": "pr_checks", "pr": 4321, "repo": "kirodotdev/KiroCrew"},
+            "acceptance": {"kind": "pr_checks", "pr": 4321, "repo": "efmleads.com"},
         },
     )
     assert status == 200, body
@@ -998,7 +998,7 @@ async def test_an_outbound_mirrored_session_is_refused_like_a_channel_one(monkey
 def test_the_mirror_probe_fails_closed_on_an_unreadable_store(monkeypatch):
     """An unreadable link counts as mirrored rather than opening the boundary —
     the same direction ``session_control._has_channel_mirror`` defaults to."""
-    from kiro_crew.dashboard import session_control
+    from efm_go.dashboard import session_control
 
     _SLOTS["chat-probe"] = _Slot()
 
@@ -1176,8 +1176,8 @@ def test_the_store_directory_is_fenced_from_file_tools():
     reach every conductor's records directly — and a corrupted record reads as
     ABSENT to the store, so the loss is silent. Same treatment as the sibling
     ``ledger/`` directory, for the same reason."""
-    from kiro_crew import sandbox
-    from kiro_crew.security import is_sensitive_path
+    from efm_go import sandbox
+    from efm_go.security import is_sensitive_path
 
     for prefix in (".kiro/crew", ".kirocrew"):
         assert is_sensitive_path(f"~/{prefix}/work-ledger") is True
@@ -1211,8 +1211,8 @@ async def test_a_worker_edit_of_its_own_item_file_is_refused_and_the_store_still
     the gate (see ``is_sensitive_bash_command``); the OS sandbox mask asserted
     above is the shell-side control, so this test covers the file-tool plane.
     """
-    from kiro_crew.config.paths import data_home
-    from kiro_crew.hooks import TOOL_DENY, HookManager, HooksConfig
+    from efm_go.config.paths import data_home
+    from efm_go.hooks import TOOL_DENY, HookManager, HooksConfig
 
     ids = await two_by_two()
     item_file = wl.item_path(CONDUCTOR_A, ids["item_a"])
@@ -1261,7 +1261,7 @@ def test_the_routes_are_on_the_strict_internal_allowlist():
     """The four tools authenticate with the internal secret; without this entry the
     call falls through to cookie auth and every one fails with 403 before the
     handler's own session recognition can run."""
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     assert "/api/work-ledger" in server._STRICT_INTERNAL_API_PATHS
 
@@ -1273,7 +1273,7 @@ def test_every_route_is_registered_lazily_on_the_app():
     """
     import inspect
 
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     # server.py and the server_runtime owners it composes; the MCP route table
     # lives in one of them.
@@ -1297,10 +1297,10 @@ def test_the_handler_package_does_not_import_the_subsystem_at_boot():
     clause 5 of ``no-new-work-on-gateway-boot-path`` requires gating the IMPORT, not
     just the handler."""
     package_init = (
-        Path(__file__).resolve().parents[1] / "src/kiro_crew/dashboard/handlers/__init__.py"
+        Path(__file__).resolve().parents[1] / "src/efm_go/dashboard/handlers/__init__.py"
     )
     text = package_init.read_text(encoding="utf-8")
-    assert "from kiro_crew.dashboard.handlers.work_ledger import" not in text
+    assert "from efm_go.dashboard.handlers.work_ledger import" not in text
     for name in (
         "api_work_brief",
         "api_work_report",
@@ -1313,7 +1313,7 @@ def test_the_handler_package_does_not_import_the_subsystem_at_boot():
 def test_the_deferred_binder_resolves_each_handler():
     """The binder resolves by NAME, so a renamed handler would fail only at request
     time — this pins all four names against the module."""
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     for name in (
         "api_work_brief",

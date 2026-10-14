@@ -57,7 +57,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _PR_STATUS = (
     _REPO_ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"

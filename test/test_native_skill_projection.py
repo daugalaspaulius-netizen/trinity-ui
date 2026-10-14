@@ -22,9 +22,9 @@ from unittest.mock import AsyncMock
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.acp import skill_projection as projection
-from kiro_crew.agent_spec_format import iter_agent_spec_files
-from kiro_crew.hooks import FileTooLargeError
+from efm_go.acp import skill_projection as projection
+from efm_go.agent_spec_format import iter_agent_spec_files
+from efm_go.hooks import FileTooLargeError
 
 
 def _hold_the_prune_clock(monkeypatch):
@@ -100,7 +100,7 @@ def native_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(projection.platform_compat, "path_volume_is_remote", lambda path: False)
     monkeypatch.setattr(projection.platform_compat, "first_linked_ancestor", lambda path: None)
     monkeypatch.setattr(
-        "kiro_crew.agent.managed_mcp_spec_entry",
+        "efm_go.agent.managed_mcp_spec_entry",
         lambda name: {"command": "test-core", "args": []},
     )
     monkeypatch.setattr(
@@ -110,7 +110,7 @@ def native_tree(tmp_path, monkeypatch):
     )
     # The projection reads the settings files the control-plane mount reads;
     # point the global one into the temp tree so no test reads this host's own.
-    monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
+    monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
     return home, agents, project
 
 
@@ -268,7 +268,7 @@ def test_frame_advertises_the_launch_mode_on_the_shared_runtime_with_empty_spawn
 def test_native_agent_switch_cannot_escape_crew_scope(command):
     prepared = projection.NativeSkillProjection({"custom": "native-alias"})
     with pytest.raises(ValueError, match="agent selector"):
-        prepared.request("_kiro.dev/commands/execute", {"command": command})
+        prepared.request("_efm.go/commands/execute", {"command": command})
 
 
 def test_custom_agent_gets_only_the_scoped_search_capability(native_tree):
@@ -304,7 +304,7 @@ def test_zero_tool_confirmation_judges_the_view_kiro_loads(
     the ban for the alias kiro loads through ``--agent``. The view is captured
     when the projection is prepared, so a later edit of the authored spec does
     not change the answer."""
-    from kiro_crew.acp import client as acp_client
+    from efm_go.acp import client as acp_client
 
     _home, agents, project = native_tree
     spec = {"name": "custom", "tools": [], "resources": resources}
@@ -327,7 +327,7 @@ def test_rollback_switch_confirms_a_zero_tool_spec_through_the_authored_bracket(
     """With the projection switched off no view exists and the harness loads the
     named spec itself, so the authored spec read before the spawn and again after
     start is the confirmation; a view-only answer would leave the pool unstartable."""
-    from kiro_crew.acp import client as acp_client
+    from efm_go.acp import client as acp_client
 
     _home, _agents, project = native_tree
     project_agents = project / ".kiro" / "agents"
@@ -634,7 +634,7 @@ def test_running_projection_keeps_its_mode_until_restart(native_tree, monkeypatc
 async def test_client_spawn_uses_authored_agent_only_when_rolled_back(
     native_tree, monkeypatch, enabled
 ):
-    from kiro_crew.acp import client as client_module
+    from efm_go.acp import client as client_module
 
     home, agents, project = native_tree
     monkeypatch.setenv("KIRO_HOME", str(home))
@@ -2302,7 +2302,7 @@ def test_windows_alias_unlink_rechecks_identity_under_publication_lock(tmp_path,
 
 
 def test_projection_and_provider_serialize_workspace_settings_writes(native_tree, monkeypatch):
-    from kiro_crew.providers import acp as provider_acp
+    from efm_go.providers import acp as provider_acp
 
     _home, agents, project = native_tree
     (agents / "custom.json").write_text('{"name":"custom"}', encoding="utf-8")
@@ -2359,7 +2359,7 @@ def test_projection_and_provider_serialize_workspace_settings_writes(native_tree
 
 @requires_symlinks
 def test_workspace_settings_lock_refuses_a_planted_symlink(tmp_path):
-    from kiro_crew.workspace_cli_settings import (
+    from efm_go.workspace_cli_settings import (
         CLI_SETTINGS_LOCK_NAME,
         workspace_cli_settings_lock,
     )
@@ -2487,7 +2487,7 @@ def test_boot_drain_pause_outlasts_the_lock_poll_cap():
     lock's poll cap. A between-batch gap shorter than that cap can open and
     close while the waiter sleeps, so it never takes the lock and runs into
     the 2s acquisition ceiling instead."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     assert projection._DRAIN_BATCH_PAUSE_SECS > platform_compat._LOCK_POLL_MAX_SECS
     assert projection._DRAIN_BATCH_PAUSE_SECS < projection._PROJECTION_LOCK_TIMEOUT_SECS
@@ -3992,8 +3992,8 @@ async def test_set_mode_sends_the_fresh_alias_never_a_changed_spawn_one(
     CHANGED_ALIAS = projection.NATIVE_SKILL_ALIAS_PREFIX + "2" * 24
     OTHER_ALIAS = projection.NATIVE_SKILL_ALIAS_PREFIX + "3" * 24
 
-    import kiro_crew.agent as agent_module
-    from kiro_crew.acp import runtime as runtime_module
+    import efm_go.agent as agent_module
+    from efm_go.acp import runtime as runtime_module
 
     spawn = projection.NativeSkillProjection({"crew": SPAWN_ALIAS})
     if refreshed_alias == "same":
@@ -4489,7 +4489,7 @@ def test_an_alias_view_leaves_out_the_welcome_message_and_keeps_a_short_descript
     source.write_text(json.dumps(spec), encoding="utf-8")
     projection._DISPLAY_TEXT_WARNED.clear()
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.skill_projection"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.skill_projection"):
         prepared = projection.prepare_native_skill_projection(project)
 
     view = json.loads(_alias_file(agents, prepared).read_text(encoding="utf-8"))
@@ -4500,7 +4500,7 @@ def test_an_alias_view_leaves_out_the_welcome_message_and_keeps_a_short_descript
     assert warnings and "'custom'" in warnings[0] and source.as_posix() in warnings[0]
 
     caplog.clear()
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.skill_projection"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.skill_projection"):
         projection.prepare_native_skill_projection(project)
     assert not [r for r in caplog.records if "welcomeMessage" in r.getMessage()]
 
@@ -4515,7 +4515,7 @@ def test_a_small_description_reaches_the_alias_unchanged(native_tree):
 
 
 def test_the_display_budget_names_the_readers_frame_limit():
-    from kiro_crew.acp import runtime
+    from efm_go.acp import runtime
 
     assert projection._STDOUT_FRAME_LIMIT_BYTES == runtime._STDOUT_BUFFER_LIMIT
 
@@ -4525,7 +4525,7 @@ def test_the_display_text_warning_escapes_what_it_read_from_disk(caplog, monkeyp
     one must not forge a second log record, and a huge one stays bounded."""
     projection._DISPLAY_TEXT_WARNED.clear()
     name = "evil\nWARNING forged record" + "x" * 1000
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.skill_projection"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.skill_projection"):
         projection._warn_on_display_text({name: (64 * 1024, "/p/evil\n.json")})
     messages = [r.getMessage() for r in caplog.records]
     assert messages and all("\n" not in m for m in messages)
@@ -4545,7 +4545,7 @@ def test_the_display_text_warning_cap_holds_per_insertion(caplog, monkeypatch):
     insert past it; the rest are counted in one line instead of named."""
     projection._DISPLAY_TEXT_WARNED.clear()
     sizes = {f"a{n}": (64 * 1024, f"/p/a{n}.json") for n in range(257)}
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.skill_projection"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.skill_projection"):
         projection._warn_on_display_text(sizes)
     assert len(projection._DISPLAY_TEXT_WARNED) == projection._DISPLAY_TEXT_WARNED_MAX
     assert any("1 more agent(s)" in r.getMessage() for r in caplog.records)

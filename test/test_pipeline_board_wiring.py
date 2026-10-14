@@ -7,7 +7,7 @@ the wire is cut.
 
 Two ends, and they fail differently on purpose:
 
-* the WRITER (:func:`kiro_crew.agent_panel.publish`) refuses a payload that is not a
+* the WRITER (:func:`efm_go.agent_panel.publish`) refuses a payload that is not a
   :class:`PipelineBoardJudgment` and names the key, because the publisher is an agent
   handing over JSON and no type checker is anywhere near it. This is where ``you`` being
   the string ``"Raymond"`` stops, while the author is still present to fix the call.
@@ -27,20 +27,20 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent_panel
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.dashboard.handlers import agent_panel as panel_routes
-from kiro_crew.pipeline_board_contract import (
+from efm_go import agent_panel
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.dashboard.handlers import agent_panel as panel_routes
+from efm_go.pipeline_board_contract import (
     BOARD_TEMPLATE_ID,
     CONTRACT_VERSION,
     UNSAID,
     JudgmentError,
     validate_judgment,
 )
-from kiro_crew.work_vocab import WORK_FOLD_NAME
+from efm_go.work_vocab import WORK_FOLD_NAME
 
 SLOT = "member-pipeline-conductor"
 UNIT = "acp-pipeline-conductor"
@@ -151,7 +151,7 @@ def test_every_judgment_field_has_a_runtime_check() -> None:
     agree read ONE table. A field added to the type with no checker here would be
     accepted unvalidated, which is the hole this whole commit closes.
     """
-    from kiro_crew.pipeline_board_contract import (
+    from efm_go.pipeline_board_contract import (
         _JUDGMENT_CHECKS,
         PipelineBoardJudgment,
     )

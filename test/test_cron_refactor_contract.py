@@ -1,11 +1,11 @@
-"""The ``kiro_crew.cron`` facade over its ``kiro_crew.cron_service`` owners.
+"""The ``efm_go.cron`` facade over its ``efm_go.cron_service`` owners.
 
-The cron subsystem's owners live in ``kiro_crew/cron_service/`` behind the
-``kiro_crew.cron`` facade; this file pins what that split must not change:
+The cron subsystem's owners live in ``efm_go/cron_service/`` behind the
+``efm_go.cron`` facade; this file pins what that split must not change:
 
-* every name the module defined still resolves on ``kiro_crew.cron`` as the same
+* every name the module defined still resolves on ``efm_go.cron`` as the same
   object its owner holds, and ``CronService`` keeps every member callers use;
-* a name tests patch on ``kiro_crew.cron`` still reaches the moved code that reads
+* a name tests patch on ``efm_go.cron`` still reaches the moved code that reads
   it, and the patch undoes cleanly;
 * the ``crons.json`` bytes a save writes, and the schedule math, are what they were;
 * the owners never import the facade at import time, and read through it only the
@@ -33,11 +33,11 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-import kiro_crew.cron as cron
-from kiro_crew.cron import CronJob, CronSchedule, CronService
+import efm_go.cron as cron
+from efm_go.cron import CronJob, CronSchedule, CronService
 
 _REPO = Path(__file__).resolve().parents[1]
-_OWNER_DIR = _REPO / "src" / "kiro_crew" / "cron_service"
+_OWNER_DIR = _REPO / "src" / "efm_go" / "cron_service"
 
 #: Every name the pre-split ``cron.py`` defined (functions, classes, constants).
 _BASE_DEFINED = (
@@ -121,7 +121,7 @@ _BASE_DEFINED = (
     "validate_cron_expr",
 )
 
-#: Imported names callers and tests reach THROUGH ``kiro_crew.cron`` (as a patch
+#: Imported names callers and tests reach THROUGH ``efm_go.cron`` (as a patch
 #: target or an attribute path), which the facade therefore keeps bound.
 _BASE_REACHED_IMPORTS = (
     "KiroCrewConfig",
@@ -137,7 +137,7 @@ _BASE_REACHED_IMPORTS = (
     "time",
 )
 
-#: The names tests patch on ``kiro_crew.cron`` that code in an owner reads; each
+#: The names tests patch on ``efm_go.cron`` that code in an owner reads; each
 #: owner reads them through the facade per call. The seam test below proves each
 #: reaches its reader, and the import-direction test pins that no owner reads any
 #: other name through the facade.
@@ -155,7 +155,7 @@ _SEAMS = frozenset(
 )
 
 #: ``CronService`` members of the pre-split class that callers or tests reach.
-#: The five claim fences moved onto :class:`~kiro_crew.cron_service.claims.RunClaims`
+#: The five claim fences moved onto :class:`~efm_go.cron_service.claims.RunClaims`
 #: (``self._runs``) and are pinned separately below.
 _BASE_SERVICE_MEMBERS = (
     "__init__",
@@ -276,7 +276,7 @@ _BASE_SERVICE_MEMBERS = (
 
 def _owner_modules() -> list[ModuleType]:
     return [
-        importlib.import_module(f"kiro_crew.cron_service.{path.stem}")
+        importlib.import_module(f"efm_go.cron_service.{path.stem}")
         for path in sorted(_OWNER_DIR.glob("*.py"))
         if path.stem != "__init__"
     ]
@@ -305,7 +305,7 @@ class TestTheFacadeSurface:
 
     def test_a_star_import_still_exposes_every_public_name(self, tmp_path: Path) -> None:
         probe = tmp_path / "cron_star_probe.py"
-        probe.write_text("from kiro_crew.cron import *  # noqa: F401,F403\n", encoding="utf-8")
+        probe.write_text("from efm_go.cron import *  # noqa: F401,F403\n", encoding="utf-8")
         spec = importlib.util.spec_from_file_location("cron_star_probe", probe)
         assert spec and spec.loader
         module = importlib.util.module_from_spec(spec)
@@ -319,14 +319,14 @@ class TestTheFacadeSurface:
         So ``mock.patch`` sees each name as local and undoes a patch by writing
         the original back, and the type checker sees every name statically.
         """
-        assert type(sys.modules["kiro_crew.cron"]) is ModuleType
+        assert type(sys.modules["efm_go.cron"]) is ModuleType
         assert "__getattr__" not in vars(cron)
 
     def test_the_service_keeps_every_member_callers_reach(self) -> None:
         assert [name for name in _BASE_SERVICE_MEMBERS if not hasattr(CronService, name)] == []
 
     def test_the_claim_fences_moved_onto_the_registry(self, tmp_path: Path) -> None:
-        from kiro_crew.cron_service.claims import RunClaims
+        from efm_go.cron_service.claims import RunClaims
 
         svc = CronService(base_dir=tmp_path)
         assert isinstance(svc._runs, RunClaims)
@@ -350,8 +350,8 @@ class TestTheFacadeSurface:
     @pytest.mark.parametrize(
         "frame",
         [
-            '  File "/venv/site-packages/kiro_crew/cron_service/schedule.py", line 9 in is_due',
-            r'  File "C:\venv\Lib\site-packages\kiro_crew\cron_service\store.py", line 9 in f',
+            '  File "/venv/site-packages/efm_go/cron_service/schedule.py", line 9 in is_due',
+            r'  File "C:\venv\Lib\site-packages\efm_go\cron_service\store.py", line 9 in f',
         ],
     )
     def test_a_stall_inside_an_owner_is_still_the_cron_surface(self, frame: str) -> None:
@@ -361,29 +361,29 @@ class TestTheFacadeSurface:
         frame of its own once the helper lives in ``cron_service/``; the breaker
         and ``kirocrew doctor`` still read it as a cron stall.
         """
-        from kiro_crew.stall_attribution import classify_surface, parse_frames
+        from efm_go.stall_attribution import classify_surface, parse_frames
 
         dashboard = (
-            '  File "/venv/site-packages/kiro_crew/dashboard/handlers/cron.py", line 1 in api'
+            '  File "/venv/site-packages/efm_go/dashboard/handlers/cron.py", line 1 in api'
         )
         assert classify_surface(parse_frames([frame, dashboard])) == "cron"
 
     def test_every_owner_logs_on_the_cron_channel(self) -> None:
-        """Operators filter, and tests ``caplog``, on ``kiro_crew.cron``."""
+        """Operators filter, and tests ``caplog``, on ``efm_go.cron``."""
         for module in _owner_modules():
             logger = vars(module).get("logger")
             if logger is not None:
-                assert logger.name == "kiro_crew.cron", module.__name__
+                assert logger.name == "efm_go.cron", module.__name__
 
 
 def _function_local_facade_imports(tree: ast.Module) -> list[tuple[ast.AST, str]]:
-    """Every ``from kiro_crew import cron as <alias>`` inside a function, with its alias."""
+    """Every ``from efm_go import cron as <alias>`` inside a function, with its alias."""
     found = []
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         for inner in ast.walk(node):
-            if isinstance(inner, ast.ImportFrom) and inner.module == "kiro_crew":
+            if isinstance(inner, ast.ImportFrom) and inner.module == "efm_go":
                 for alias in inner.names:
                     if alias.name == "cron":
                         found.append((node, alias.asname or "cron"))
@@ -397,11 +397,11 @@ class TestTheOwnersReadTheSeamsThroughTheFacade:
             for node in tree.body:
                 if isinstance(node, ast.ImportFrom):
                     assert not (
-                        node.module == "kiro_crew" and any(a.name == "cron" for a in node.names)
+                        node.module == "efm_go" and any(a.name == "cron" for a in node.names)
                     ), path.name
-                    assert node.module != "kiro_crew.cron", path.name
+                    assert node.module != "efm_go.cron", path.name
                 if isinstance(node, ast.Import):
-                    assert all(a.name != "kiro_crew.cron" for a in node.names), path.name
+                    assert all(a.name != "efm_go.cron" for a in node.names), path.name
 
     def test_only_the_declared_seams_are_read_through_it(self) -> None:
         read: set[str] = set()
@@ -444,7 +444,7 @@ class TestTheOwnersReadTheSeamsThroughTheFacade:
 
 
 class TestAPatchOnTheFacadeReachesTheMovedCode:
-    """One case per seam: the patch lands on ``kiro_crew.cron``, the reader is an owner."""
+    """One case per seam: the patch lands on ``efm_go.cron``, the reader is an owner."""
 
     def test_datetime_and_get_local_tz_reach_parse_time_string(self) -> None:
         fixed = datetime(2026, 5, 14, 18, 0, 0, tzinfo=ZoneInfo("UTC"))
@@ -539,7 +539,7 @@ class TestAPatchUndoesCleanly:
     @pytest.mark.parametrize("create", [False, True])
     def test_mock_patch_restores_the_original(self, create: bool) -> None:
         original = cron.get_local_tz
-        with mock.patch("kiro_crew.cron.get_local_tz", create=create) as fake:
+        with mock.patch("efm_go.cron.get_local_tz", create=create) as fake:
             fake.return_value = ("UTC", ZoneInfo("UTC"))
             assert cron.parse_time_string("in 1 minute")
         assert cron.get_local_tz is original
@@ -629,7 +629,7 @@ def _full_record() -> dict[str, object]:
 class TestTheStoreBytesAreUnchanged:
     @staticmethod
     def _save_fixture(fixture: str, tmp_path: Path) -> bytes:
-        source = _REPO / "src" / "kiro_crew" / "tests_fixtures" / fixture / "crons.json"
+        source = _REPO / "src" / "efm_go" / "tests_fixtures" / fixture / "crons.json"
         shutil.copy(source, tmp_path / "crons.json")
         svc = CronService(base_dir=tmp_path)
         svc._save()
@@ -651,7 +651,7 @@ class TestTheStoreBytesAreUnchanged:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """What a Windows save does, forced on any host: CRLF bytes, the same LF content."""
-        from kiro_crew import atomic_write as atomic_write_module
+        from efm_go import atomic_write as atomic_write_module
 
         real = atomic_write_module.atomic_write
 

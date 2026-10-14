@@ -32,15 +32,15 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.config.sections import (
+from efm_go.config.sections import (
     DECISION_MODEL_ROUTE_DEFAULT,
     DECISION_PROVIDER_ENDPOINT_DEFAULT,
     DecisionsConfig,
 )
-from kiro_crew.decisions import log as log_mod
-from kiro_crew.decisions import outcomes
-from kiro_crew.decisions.points import model_route as mr
-from kiro_crew.decisions.types import Answer
+from efm_go.decisions import log as log_mod
+from efm_go.decisions import outcomes
+from efm_go.decisions.points import model_route as mr
+from efm_go.decisions.types import Answer
 
 # ---------------------------------------------------------------------------
 # Fixtures and doubles
@@ -71,7 +71,7 @@ def _config(*, bucket: int = 100, model_route: dict | None = None):
 def consent(tmp_path, monkeypatch):
     """A real keystone under *tmp_path*, consented by default; returns a setter."""
     path = tmp_path / "decisions_consent.json"
-    monkeypatch.setattr("kiro_crew.config.loader.decisions_consent_path", lambda: path)
+    monkeypatch.setattr("efm_go.config.loader.decisions_consent_path", lambda: path)
 
     def _set(value, endpoint=DECISION_PROVIDER_ENDPOINT_DEFAULT, history=0):
         if value is None:
@@ -127,7 +127,7 @@ class _Oracle:
 @pytest.fixture
 def install_oracle(monkeypatch):
     """Replace the one implementation ``decide`` constructs."""
-    import kiro_crew.decisions.impl_jev as impl_mod
+    import efm_go.decisions.impl_jev as impl_mod
 
     def _install(oracle):
         monkeypatch.setattr(impl_mod, "JevOracle", lambda provider: oracle)
@@ -139,7 +139,7 @@ def install_oracle(monkeypatch):
 @pytest.fixture
 def snapshot(monkeypatch):
     """Pin the live config snapshot the gate and the point both read."""
-    import kiro_crew.decisions.gate as gate_mod
+    import efm_go.decisions.gate as gate_mod
 
     def _set(cfg):
         monkeypatch.setattr(gate_mod, "_snapshot", lambda: cfg)
@@ -191,7 +191,7 @@ class TestTheQuestion:
     def test_the_message_excerpt_is_bounded_like_skills_select(self):
         """The same text answering a question about the same turn, so two different
         excerpt sizes would mean the consent text describes one of them."""
-        from kiro_crew.decisions.points import skills_select as sel
+        from efm_go.decisions.points import skills_select as sel
 
         assert mr.MAX_MESSAGE_CHARS == sel.MAX_MESSAGE_CHARS == 2000
         state = mr.build_state("x" * 5000)
@@ -261,7 +261,7 @@ class TestTheTierMap:
 
     def test_an_unreadable_section_leaves_every_tier_unpinned(self, monkeypatch):
         """Fail-closed: this value decides what a turn costs."""
-        import kiro_crew.decisions.gate as gate_mod
+        import efm_go.decisions.gate as gate_mod
 
         monkeypatch.setattr(gate_mod, "_snapshot", lambda: None)
         assert mr.tier_models() == UNPINNED_MAP
@@ -478,7 +478,7 @@ class TestPriorTurns:
     ):
         consent(True, history=500)
         snapshot(_config())
-        import kiro_crew.decisions.gate as gate_mod
+        import efm_go.decisions.gate as gate_mod
 
         # The config half of the ceiling; the keystone half is the consent above.
         monkeyed = _config()
@@ -499,7 +499,7 @@ class TestPriorTurns:
         monkeyed = SimpleNamespace(
             decisions=DecisionsConfig(history_budget_chars=500, model_route=dict(TIER_MAP))
         )
-        import kiro_crew.decisions.gate as gate_mod
+        import efm_go.decisions.gate as gate_mod
 
         gate_mod._snapshot = lambda: monkeyed  # type: ignore[assignment]
 
@@ -580,7 +580,7 @@ def registry_windows(monkeypatch):
     is False for it while ``model_window`` still answers its guessed reference,
     which is the pair :func:`known_window` exists to tell apart.
     """
-    from kiro_crew import model_registry
+    from efm_go import model_registry
 
     def _set(windows: dict[str, int]) -> None:
         monkeypatch.setattr(model_registry, "has_known_window", lambda name: name in windows)
@@ -651,7 +651,7 @@ class TestTheMessageInTheFitReading:
     def test_the_estimate_is_the_shared_divisor_and_an_empty_message_adds_nothing(self):
         """The same rough divisor the sibling points estimate with, so a reader does
         not have to learn a second one. Over-estimating costs one downgrade."""
-        from kiro_crew.decisions.points import skills_select as sel
+        from efm_go.decisions.points import skills_select as sel
 
         assert mr.CHARS_PER_TOKEN == sel.CHARS_PER_TOKEN == 4
         assert mr.prompt_tokens("x" * 400) == 100

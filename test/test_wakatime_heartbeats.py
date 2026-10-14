@@ -12,7 +12,7 @@ from typing import Any, cast
 
 import pytest
 
-from kiro_crew.wakatime import heartbeats
+from efm_go.wakatime import heartbeats
 
 
 @dataclass

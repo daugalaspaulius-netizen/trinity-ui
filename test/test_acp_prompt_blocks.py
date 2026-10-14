@@ -19,9 +19,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import hooks, imaging
-from kiro_crew.acp import prompt_blocks
-from kiro_crew.acp.prompt_blocks import (
+from efm_go import hooks, imaging
+from efm_go.acp import prompt_blocks
+from efm_go.acp.prompt_blocks import (
     _POSIX_PATH_RE,
     IMAGE_MEDIA_TYPES,
     IMAGE_SIZE_NOTE,
@@ -400,7 +400,7 @@ class TestOnePromptImageRules:
         # no note, no tally. Only a real picture that was dropped is counted.
         nowhere = "C:\\nowhere" if os.name == "nt" else "/nowhere"
         shaped = " ".join(f"{nowhere}{os.sep}n{i}.png" for i in range(50))
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.prompt_blocks"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.prompt_blocks"):
             blocks = build_prompt_blocks(
                 " ".join(map(str, paths)) + " " + shaped, max_prompt_image_blocks=2
             )
@@ -502,7 +502,7 @@ class TestOnePromptImageRules:
         over_size = build_prompt_blocks(f"see {fake} now", max_image_bytes=10)
         assert over_size == [{"type": "text", "text": f"see {fake} now"}]
 
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.prompt_blocks"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.prompt_blocks"):
             past_cap = build_prompt_blocks(f"{a} {fake}", max_prompt_image_blocks=1)
         assert past_cap[0]["text"] == f"[image: a.png] {fake}"
         assert not [r for r in caplog.records if "limit of 1 blocks" in r.getMessage()]
@@ -718,7 +718,7 @@ class TestPlatformPathGrammar:
         # would let a directory named like a picture expose its prefix again.
         # (Space, tab and parentheses overlap on purpose: they end a token yet
         # are legal inside a quoted path.)
-        from kiro_crew import image_refs
+        from efm_go import image_refs
 
         breaks = re.compile(f"[{image_refs._TOKEN_BREAK}]")
         bodies = re.compile(f"{image_refs._PATH_CHARS}|{image_refs._WINDOWS_PATH_CHARS}")
@@ -865,7 +865,7 @@ class TestUncProbeGate:
 
     def test_attacker_host_is_refused(self, monkeypatch, tmp_path):
         monkeypatch.setattr(
-            "kiro_crew.config.paths.peek_data_home", lambda: tmp_path / "home"
+            "efm_go.config.paths.peek_data_home", lambda: tmp_path / "home"
         )
         assert hooks.unc_probe_allowed(r"\\evil\share\x.png") is False
         assert hooks.unc_probe_allowed("//evil/share/x.png") is False
@@ -873,7 +873,7 @@ class TestUncProbeGate:
     def test_unc_under_a_unc_data_home_is_allowed(self, monkeypatch):
         """Roaming profile: the data home ITSELF is a UNC share."""
         monkeypatch.setattr(
-            "kiro_crew.config.paths.peek_data_home",
+            "efm_go.config.paths.peek_data_home",
             lambda: Path(r"\\fileserver\home\me\.kiro\crew"),
         )
         allowed = hooks.unc_probe_allowed(
@@ -891,7 +891,7 @@ class TestUncProbeGate:
 
     def test_sibling_share_on_same_server_is_refused(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.config.paths.peek_data_home",
+            "efm_go.config.paths.peek_data_home",
             lambda: Path(r"\\fileserver\home\me\.kiro\crew"),
         )
         if os.name == "nt":
@@ -909,8 +909,8 @@ class TestUncProbeGate:
 
     def _patch_roots(self, monkeypatch, tmp_path, agents_dir):
         """Local data home + the given agents dir, isolating the new root."""
-        monkeypatch.setattr("kiro_crew.config.paths.peek_data_home", lambda: tmp_path / "home")
-        monkeypatch.setattr("kiro_crew.config.paths.kiro_agents_dir", lambda: agents_dir)
+        monkeypatch.setattr("efm_go.config.paths.peek_data_home", lambda: tmp_path / "home")
+        monkeypatch.setattr("efm_go.config.paths.kiro_agents_dir", lambda: agents_dir)
 
     def test_unc_kiro_agents_dir_is_allowed(self, monkeypatch, tmp_path):
         """On a roaming-profile (UNC) home, a spec under the
@@ -956,9 +956,9 @@ class TestUncProbeGate:
         def boom():
             raise RuntimeError("no usable home")
 
-        monkeypatch.setattr("kiro_crew.config.paths.kiro_agents_dir", boom)
+        monkeypatch.setattr("efm_go.config.paths.kiro_agents_dir", boom)
         monkeypatch.setattr(
-            "kiro_crew.config.paths.peek_data_home",
+            "efm_go.config.paths.peek_data_home",
             lambda: Path("//fileserver/home/me/.kiro/crew"),
         )
         assert hooks.unc_probe_allowed("//fileserver/home/me/.kiro/crew/uploads/x.png") is True
@@ -976,8 +976,8 @@ class TestUncProbeGate:
             calls.append(1)
             return Path(self._UNC_KIRO_HOME + "/agents")
 
-        monkeypatch.setattr("kiro_crew.config.paths.peek_data_home", lambda: tmp_path / "home")
-        monkeypatch.setattr("kiro_crew.config.paths.kiro_agents_dir", counting_agents_dir)
+        monkeypatch.setattr("efm_go.config.paths.peek_data_home", lambda: tmp_path / "home")
+        monkeypatch.setattr("efm_go.config.paths.kiro_agents_dir", counting_agents_dir)
         assert hooks.unc_probe_allowed(self._UNC_KIRO_HOME + "/agents/foo.json") is True
         assert hooks.unc_probe_allowed(self._UNC_KIRO_HOME + "/agents/bar.json") is True
         assert hooks.unc_probe_allowed("//evil/share/x.png") is False
@@ -1002,8 +1002,8 @@ class TestUncProbeGate:
             calls.append(1)
             return Path(self._UNC_KIRO_HOME + "/crew")
 
-        monkeypatch.setattr("kiro_crew.config.paths.peek_data_home", counting_data_home)
-        monkeypatch.setattr("kiro_crew.config.paths.kiro_agents_dir", lambda: tmp_path / "agents")
+        monkeypatch.setattr("efm_go.config.paths.peek_data_home", counting_data_home)
+        monkeypatch.setattr("efm_go.config.paths.kiro_agents_dir", lambda: tmp_path / "agents")
         assert hooks.unc_probe_allowed(self._UNC_KIRO_HOME + "/crew/uploads/a.png") is True
         assert hooks.unc_probe_allowed(self._UNC_KIRO_HOME + "/crew/uploads/b.png") is True
         assert hooks.unc_probe_allowed("//evil/share/x.png") is False
@@ -1019,8 +1019,8 @@ class TestUncProbeGate:
             calls.append(1)
             raise RuntimeError("no usable home")
 
-        monkeypatch.setattr("kiro_crew.config.paths.peek_data_home", lambda: tmp_path / "home")
-        monkeypatch.setattr("kiro_crew.config.paths.kiro_agents_dir", boom)
+        monkeypatch.setattr("efm_go.config.paths.peek_data_home", lambda: tmp_path / "home")
+        monkeypatch.setattr("efm_go.config.paths.kiro_agents_dir", boom)
         assert hooks.unc_probe_allowed("//evil/share/x.png") is False
         assert hooks.unc_probe_allowed("//evil/share/y.png") is False
         assert len(calls) == 1
@@ -1091,7 +1091,7 @@ class TestUncProbeGate:
         openable on Linux, so everything downstream of the gate (realpath,
         ``O_NOFOLLOW`` open, JSON parse) runs for real.
         """
-        from kiro_crew.agent_discovery import _read_agent_spec
+        from efm_go.agent_discovery import _read_agent_spec
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -1382,7 +1382,7 @@ class TestImageEncodedBudget:
         assert prompt_blocks.MAX_IMAGE_B64_BYTES == 5 * 1024 * 1024
 
     def test_b64_len_matches_real_encoding(self):
-        from kiro_crew.imaging import _b64_len
+        from efm_go.imaging import _b64_len
 
         for n in (0, 1, 2, 3, 4, 100, 1023, 4096):
             assert _b64_len(n) == len(base64.b64encode(b"x" * n))

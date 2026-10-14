@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.hooks import (
+from efm_go.hooks import (
     HOOK_EVENT_AGENT_SPAWN,
     HOOK_EVENT_PRE_TOOL_USE,
     HOOK_EVENT_USER_PROMPT_SUBMIT,
@@ -202,7 +202,7 @@ class TestScriptHookStore:
 class TestCappedScriptHookOutput:
     @pytest.mark.asyncio
     async def test_reader_keeps_only_the_cap_but_drains_to_eof(self):
-        from kiro_crew.hooks import _read_capped_stream
+        from efm_go.hooks import _read_capped_stream
 
         reader = asyncio.StreamReader()
         reader.feed_data(b"abcdefgh")
@@ -215,7 +215,7 @@ class TestCappedScriptHookOutput:
         assert await reader.read() == b""
 
     def test_decode_marks_a_multibyte_boundary(self):
-        from kiro_crew.hooks import _HOOK_TRUNCATION_MARKER, _decode_capped
+        from efm_go.hooks import _HOOK_TRUNCATION_MARKER, _decode_capped
 
         raw = ("€" * 2).encode("utf-8")[:4]
         decoded = _decode_capped(raw, truncated=True)
@@ -226,7 +226,7 @@ class TestCappedScriptHookOutput:
 
     @pytest.mark.asyncio
     async def test_cancellation_observes_both_reader_tasks(self):
-        from kiro_crew.hooks import _communicate_capped
+        from efm_go.hooks import _communicate_capped
 
         class BlockingReader:
             def __init__(self):
@@ -262,13 +262,13 @@ class TestCappedScriptHookOutput:
 
     @pytest.mark.asyncio
     async def test_real_hook_caps_and_marks_both_streams(self, tmp_path, monkeypatch):
-        from kiro_crew.hooks import _HOOK_STREAM_CAP_BYTES, _HOOK_TRUNCATION_MARKER
+        from efm_go.hooks import _HOOK_STREAM_CAP_BYTES, _HOOK_TRUNCATION_MARKER
 
         # This test exercises real pipe draining, not host sandbox discovery.
         # Keep the subprocess real while making its isolation wrappers stable
         # across Linux, namespace-sandbox, and Windows CI environments.
-        monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
-        monkeypatch.setattr("kiro_crew.sandbox.cgroup_scope_argv", lambda argv: list(argv))
+        monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.sandbox.cgroup_scope_argv", lambda argv: list(argv))
 
         command = _script_command(
             tmp_path / "large_output.py",
@@ -300,9 +300,9 @@ class TestRunScriptHook:
 
     @pytest.fixture(autouse=True)
     def _passthrough_sandbox(self, monkeypatch):
-        # run_script_hook uses a lazy `from kiro_crew.sandbox import wrap_argv`
+        # run_script_hook uses a lazy `from efm_go.sandbox import wrap_argv`
         # inside the function. Patch the source module so macOS 26 doesn't raise.
-        monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
 
     @pytest.mark.asyncio
     async def test_successful_execution(self):
@@ -406,7 +406,7 @@ class TestRunScriptHook:
         assert HOOK_EVENT_USER_PROMPT_SUBMIT in result.stdout
 
     def test_subprocess_env_excludes_gateway_credentials(self, monkeypatch):
-        from kiro_crew.hooks import _hook_subprocess_env
+        from efm_go.hooks import _hook_subprocess_env
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         proxy_secret = "http://svc:pa55word@proxy.example.com"
@@ -436,7 +436,7 @@ class TestRunScriptHook:
         assert env["KIROCREW_HOOK_CONTEXT"] == "prompt text"
 
     def test_subprocess_env_caps_context_on_all_events(self):
-        from kiro_crew.hooks import _hook_subprocess_env
+        from efm_go.hooks import _hook_subprocess_env
 
         big = "x" * 200_000
         for event in (
@@ -484,9 +484,9 @@ class TestRunScriptHook:
         proc.stdin.close = MagicMock()
         proc.wait = AsyncMock(return_value=0)
         proc.returncode = 0
-        monkeypatch.setattr("kiro_crew.sandbox.sandboxed_spawn_argv", safe_spawn)
+        monkeypatch.setattr("efm_go.sandbox.sandboxed_spawn_argv", safe_spawn)
         create = AsyncMock(return_value=proc)
-        monkeypatch.setattr("kiro_crew.sandbox.create_subprocess_limited", create)
+        monkeypatch.setattr("efm_go.sandbox.create_subprocess_limited", create)
 
         hook = ScriptHook(
             id="safe-funnel",
@@ -541,7 +541,7 @@ class TestRunScriptHook:
         )
 
         with patch(
-            "kiro_crew.sandbox.wrap_argv",
+            "efm_go.sandbox.wrap_argv",
             side_effect=RuntimeError(f"spawn failed for {secret}"),
         ):
             result = await run_script_hook(hook, "ctx")
@@ -575,7 +575,7 @@ class TestScriptHookStoreFire:
 
     @pytest.fixture(autouse=True)
     def _passthrough_sandbox(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
 
     @pytest.mark.asyncio
     async def test_fire_enabled_hooks(self, hook_store: ScriptHookStore):
@@ -743,8 +743,8 @@ class TestRunScriptHookSpawnForm:
 
     @pytest.fixture(autouse=True)
     def _passthrough_sandbox(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
-        monkeypatch.setattr("kiro_crew.sandbox.cgroup_scope_argv", lambda argv: list(argv))
+        monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.sandbox.cgroup_scope_argv", lambda argv: list(argv))
 
     @staticmethod
     def _hook(command: str) -> ScriptHook:
@@ -791,9 +791,9 @@ class TestRunScriptHookSpawnForm:
         # offers. Patching asyncio.create_subprocess_exec instead made the
         # assertion host-dependent: green where no backend exists (Windows, this
         # box) and red on the namespace-sandbox job, which has all three.
-        monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
-        monkeypatch.setattr("kiro_crew.sandbox.cgroup_scope_argv", lambda argv: list(argv))
-        monkeypatch.setattr("kiro_crew.sandbox.create_subprocess_limited", fake_exec)
+        monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.sandbox.cgroup_scope_argv", lambda argv: list(argv))
+        monkeypatch.setattr("efm_go.sandbox.create_subprocess_limited", fake_exec)
         monkeypatch.setattr("asyncio.create_subprocess_shell", fake_shell)
         monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
 
@@ -821,12 +821,12 @@ class TestRunScriptHookSpawnForm:
         wrapper — so the code must fall back to the argv path instead.
         """
         monkeypatch.setattr(
-            "kiro_crew.sandbox.wrap_argv", lambda argv, **k: (["sandbox-exec", *argv], None)
+            "efm_go.sandbox.wrap_argv", lambda argv, **k: (["sandbox-exec", *argv], None)
         )
         # cgroup_scope_argv runs AFTER wrap_argv and prepends its own launcher on
         # a cgroup-v2 host. Pin it to a no-op so only the shared env-unset shim
         # may precede the wrapper this test installed.
-        monkeypatch.setattr("kiro_crew.sandbox.cgroup_scope_argv", lambda argv: list(argv))
+        monkeypatch.setattr("efm_go.sandbox.cgroup_scope_argv", lambda argv: list(argv))
         seen: dict[str, object] = {}
 
         fake_proc = MagicMock()
@@ -843,7 +843,7 @@ class TestRunScriptHookSpawnForm:
 
         # Capture at create_subprocess_limited so its RLIMIT shim cannot alter
         # the argv built by the shared spawn funnel (see the sibling test above).
-        monkeypatch.setattr("kiro_crew.sandbox.create_subprocess_limited", fake_exec)
+        monkeypatch.setattr("efm_go.sandbox.create_subprocess_limited", fake_exec)
         monkeypatch.setattr("asyncio.create_subprocess_shell", fake_shell)
         monkeypatch.setattr("asyncio.create_subprocess_exec", fake_exec)
 
@@ -864,7 +864,7 @@ class TestLastError:
 
     @pytest.fixture(autouse=True)
     def _passthrough_sandbox(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.sandbox.wrap_argv", lambda argv, **k: (list(argv), None))
 
     @pytest.mark.asyncio
     async def test_last_error_cleared_on_success(self):

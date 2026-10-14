@@ -89,7 +89,7 @@ const ITEM = {
   description:
     'The upload endpoint is bounded now, but /api/ws still accepts unlimited concurrent upgrades from one caller.',
   prompt:
-    'Apply the same token-bucket limiter to the WebSocket upgrade path in src/kiro_crew/dashboard/ws.py, reusing the helper, and add tests for the reject path.',
+    'Apply the same token-bucket limiter to the WebSocket upgrade path in src/efm_go/dashboard/ws.py, reusing the helper, and add tests for the reject path.',
   branch: 'feat/ws-rate-limit',
 }
 

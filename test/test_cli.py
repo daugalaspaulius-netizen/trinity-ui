@@ -17,11 +17,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.cli_commands import _cron
-from kiro_crew.cli_doctor import _doctor
-from kiro_crew.cli_server import _update
-from kiro_crew.service.common import RestartReport
+from efm_go import platform_compat
+from efm_go.cli_commands import _cron
+from efm_go.cli_doctor import _doctor
+from efm_go.cli_server import _update
+from efm_go.service.common import RestartReport
 
 
 def _add_job_kwargs(**overrides):
@@ -104,7 +104,7 @@ def _healthy_agent_file(path: Path) -> None:
     added — which is exactly how these fixtures broke when ``kirocrew-computer``
     landed.
     """
-    from kiro_crew.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
+    from efm_go.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
 
     refs = [f"@{name}" for name in KIROCREW_BIN_MCP_SERVERS]
     _write_agent_config(
@@ -145,7 +145,7 @@ def _pin_default_config(monkeypatch) -> None:
     tests asserting ``_doctor()`` does not exit would then report the host rather
     than the behaviour they name. The STT arms pin it back on for themselves.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     def _pristine() -> KiroCrewConfig:
         cfg = KiroCrewConfig()
@@ -170,7 +170,7 @@ def _doctor_reads_the_warm_probe_cache(monkeypatch):
     thing a warmed boot gives it. Nothing in this file tests the warm itself
     (``test_sandbox_backend_cache.py`` does).
     """
-    import kiro_crew.cli_doctor as _doc
+    import efm_go.cli_doctor as _doc
 
     monkeypatch.setattr(_doc, "warm_backend", lambda timeout=None: None)
 
@@ -186,7 +186,7 @@ class TestDoctor:
         """Pin the vendored-runtime probe host-independently: the brazil
         interpreter on a Mac can be darwin/x86_64 under Rosetta, where the
         vendored libs legitimately do not exist (designed degradation)."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         monkeypatch.setattr(_doc, "_load_llama_class", lambda: object)
         monkeypatch.setattr(_doc, "model_file_present", lambda path=None: False)
@@ -196,7 +196,7 @@ class TestDoctor:
         """Pin the Sandbox section host-independently: a CI runner can restrict
         user namespaces with no profile installed, which is a genuine issue on
         that HOST (doctor exits 1 for it) but not the subject of these tests."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         monkeypatch.setattr(_doc.sandbox, "detect_backend", lambda config_mode="auto": "namespace")
 
@@ -214,7 +214,7 @@ class TestDoctor:
         monkeypatch.setenv("PATH", os.environ.get("PATH", ""))
 
     def test_doctor_with_kiro(self, tmp_path, monkeypatch):
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         agent_file = tmp_path / "kirocrew.json"
         # A minimally healthy agent config so doctor walks the whole MCP
@@ -225,15 +225,15 @@ class TestDoctor:
         monkeypatch.setattr(_doc, "ensure_ffmpeg_in_path", lambda: None)
         with (
             patch(
-                "kiro_crew.cli_doctor.shutil.which",
+                "efm_go.cli_doctor.shutil.which",
                 side_effect=lambda b, **_kw: f"/usr/local/bin/{b}",
             ),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
         ):
             _doctor()
 
@@ -244,7 +244,7 @@ class TestDoctor:
         The autouse ``_hermetic_config`` fixture pins STT OFF so unrelated doctor
         tests never reach this section, so any test that wants it has to ask.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         def _cfg() -> KiroCrewConfig:
             cfg = KiroCrewConfig()
@@ -260,7 +260,7 @@ class TestDoctor:
         ffmpeg are not dependencies there. Reporting them as hard issues made
         `doctor` exit 1 on a healthy install and broke the guide's
         `doctor && gateway` chain, so they must be non-fatal notes: doctor exits 0."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         agent_file = tmp_path / "kirocrew.json"
         _healthy_agent_file(agent_file)
@@ -284,13 +284,13 @@ class TestDoctor:
             return f"C:\\tools\\{binary}.exe"
 
         with (
-            patch("kiro_crew.cli_doctor.shutil.which", side_effect=_which),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.shutil.which", side_effect=_which),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
         ):
             # Must NOT raise SystemExit(1): both STT gaps are notes on Windows.
             _doctor()
@@ -309,7 +309,7 @@ class TestDoctor:
         space, which keeps the report columns aligned — AND that the twin
         report lines can never disagree, so a one-arm edit to either site
         fails here."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         agent_file = tmp_path / "kirocrew.json"
         _healthy_agent_file(agent_file)
@@ -333,13 +333,13 @@ class TestDoctor:
             return f"/usr/local/bin/{binary}"
 
         with (
-            patch("kiro_crew.cli_doctor.shutil.which", side_effect=_which),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.shutil.which", side_effect=_which),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
         ):
             # On POSIX the two gaps are hard issues and doctor exits 1; on
             # Windows they are notes. Exit semantics are pinned elsewhere —
@@ -360,8 +360,8 @@ class TestDoctor:
         """A PlatformCompositionError from boot must be REPORTED by the doctor,
         not crash it — the doctor is the tool that diagnoses a broken setup, so
         it has to survive the very failure it explains."""
-        import kiro_crew.cli_doctor as _doc
-        from kiro_crew.platform import PlatformCompositionError
+        import efm_go.cli_doctor as _doc
+        from efm_go.platform import PlatformCompositionError
 
         agent_file = tmp_path / "kirocrew.json"
         _healthy_agent_file(agent_file)
@@ -373,15 +373,15 @@ class TestDoctor:
         monkeypatch.setattr(_doc, "ensure_ffmpeg_in_path", lambda: None)
         with (
             patch(
-                "kiro_crew.cli_doctor.shutil.which",
+                "efm_go.cli_doctor.shutil.which",
                 side_effect=lambda b, **_kw: f"/usr/local/bin/{b}",
             ),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
         ):
             # Must not raise — and must exit 1 since a composition failure is a
             # blocking issue.
@@ -401,18 +401,18 @@ class TestDoctor:
         resolver is the product's own "cannot ask" arm, so no binary is reached.
         The one spawn that resolves through no seam -- the runtime section's
         ``<venv>/bin/python3 --version`` -- is mocked like every sibling here."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         monkeypatch.setattr(_doc.platform_compat, "trusted_aws_bin", lambda: None)
         monkeypatch.setattr(_doc.platform_compat, "trusted_system_bin", lambda _name: None)
         monkeypatch.setattr(_doc.platform_compat, "trusted_git_bin", lambda: None)
         mock_run = MagicMock(returncode=0, stdout="Python 3.10.0", stderr="")
         with (
-            patch("kiro_crew.cli_doctor.shutil.which", return_value=None),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.shutil.which", return_value=None),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
         ):
             try:
                 _doctor()
@@ -426,15 +426,15 @@ class TestDoctor:
         mock_run = MagicMock(returncode=0, stdout="kiro-cli 1.0.0", stderr="")
         with (
             patch(
-                "kiro_crew.cli_doctor.shutil.which",
+                "efm_go.cli_doctor.shutil.which",
                 side_effect=lambda b, **_kw: f"/usr/local/bin/{b}",
             ),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
             patch("subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=False),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.machine_hostname", return_value="myhost"),
+            patch("efm_go.cli_doctor.is_local_only", return_value=False),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.machine_hostname", return_value="myhost"),
         ):
             try:
                 _doctor()
@@ -459,17 +459,17 @@ class TestDoctor:
         }
         with (
             patch(
-                "kiro_crew.cli_doctor.shutil.which",
+                "efm_go.cli_doctor.shutil.which",
                 side_effect=lambda b, **_kw: f"/usr/local/bin/{b}",
             ),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
-            patch("kiro_crew.cli_doctor.KiroCrewConfig.load_credentials", return_value=slack_creds),
-            patch("kiro_crew.slack.enterprise.validate_enterprise", return_value=True) as mock_ve,
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.KiroCrewConfig.load_credentials", return_value=slack_creds),
+            patch("efm_go.slack.enterprise.validate_enterprise", return_value=True) as mock_ve,
         ):
             _doctor()
         out = capsys.readouterr().out
@@ -488,17 +488,17 @@ class TestDoctor:
         slack_creds = {"SLACK_APP_TOKEN": "xapp-test", "SLACK_BOT_TOKEN": "xoxb-test"}
         with (
             patch(
-                "kiro_crew.cli_doctor.shutil.which",
+                "efm_go.cli_doctor.shutil.which",
                 side_effect=lambda b, **_kw: f"/usr/local/bin/{b}",
             ),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
-            patch("kiro_crew.cli_doctor.KiroCrewConfig.load_credentials", return_value=slack_creds),
-            patch("kiro_crew.slack.enterprise.validate_enterprise", return_value=False),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.KiroCrewConfig.load_credentials", return_value=slack_creds),
+            patch("efm_go.slack.enterprise.validate_enterprise", return_value=False),
         ):
             with pytest.raises(SystemExit) as exc:
                 _doctor()
@@ -514,9 +514,9 @@ class TestSetupWorkspaceDir:
         ws_file = tmp_path / "workspace_dir"
         ws_file.write_text("/custom/workspace\n")
         custom_dir = tmp_path / "custom"
-        monkeypatch.setattr("kiro_crew.cli_setup._workspace_dir_file", lambda: ws_file)
+        monkeypatch.setattr("efm_go.cli_setup._workspace_dir_file", lambda: ws_file)
         with patch("builtins.input", return_value=str(custom_dir)) as mock_input:
-            from kiro_crew.cli_setup import _setup_workspace_dir
+            from efm_go.cli_setup import _setup_workspace_dir
 
             _setup_workspace_dir()
         prompt = mock_input.call_args[0][0]
@@ -528,9 +528,9 @@ class TestSetupWorkspaceDir:
         ws_file = tmp_path / "workspace_dir"
         ws_file.write_text("/custom/workspace\n")
         custom_dir = tmp_path / "custom"
-        monkeypatch.setattr("kiro_crew.cli_setup._workspace_dir_file", lambda: ws_file)
+        monkeypatch.setattr("efm_go.cli_setup._workspace_dir_file", lambda: ws_file)
         with patch("builtins.input", return_value=str(custom_dir)):
-            from kiro_crew.cli_setup import _setup_workspace_dir
+            from efm_go.cli_setup import _setup_workspace_dir
 
             _setup_workspace_dir()
         output = capsys.readouterr().out
@@ -539,9 +539,9 @@ class TestSetupWorkspaceDir:
     def test_shows_default_label_when_no_saved(self, tmp_path, monkeypatch, capsys):
         ws_file = tmp_path / "no_such_file"
         custom_dir = tmp_path / "ws"
-        monkeypatch.setattr("kiro_crew.cli_setup._workspace_dir_file", lambda: ws_file)
+        monkeypatch.setattr("efm_go.cli_setup._workspace_dir_file", lambda: ws_file)
         with patch("builtins.input", return_value=str(custom_dir)):
-            from kiro_crew.cli_setup import _setup_workspace_dir
+            from efm_go.cli_setup import _setup_workspace_dir
 
             _setup_workspace_dir()
         output = capsys.readouterr().out
@@ -574,7 +574,7 @@ def _patch_path():
     mock_path_inst.parent.parent = MagicMock()
     mock_path_inst.parent.parent.__truediv__ = _truediv
     mock_path_inst.parent.parent.__str__ = lambda self: "/fake/ws"
-    return patch("kiro_crew.cli_server.Path", return_value=mock_path_inst)
+    return patch("efm_go.cli_server.Path", return_value=mock_path_inst)
 
 
 @contextlib.contextmanager
@@ -589,7 +589,7 @@ def _git_resolvable():
     test assert the host's git layout instead of the failure handling it is about.
     """
     with patch(
-        "kiro_crew.platform.update_capability.trusted_system_bin",
+        "efm_go.platform.update_capability.trusted_system_bin",
         return_value="/usr/bin/git",
     ):
         yield
@@ -606,7 +606,7 @@ class TestUpdateFailures:
     def test_git_fetch_failure_exits(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
 
@@ -635,7 +635,7 @@ class TestUpdateFailures:
     def test_pip_install_failure_exits(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
 
@@ -663,14 +663,14 @@ class TestUpdateFailures:
         with (
             _patch_path(),
             _git_resolvable(),
-            patch("kiro_crew.cli_server.shutil.which", return_value=None),
-            patch("kiro_crew.cli_server.build_frontend_sync"),
-            patch("kiro_crew.cli._ensure_node"),
+            patch("efm_go.cli_server.shutil.which", return_value=None),
+            patch("efm_go.cli_server.build_frontend_sync"),
+            patch("efm_go.cli._ensure_node"),
             # Pin the install route to the reinstall this test is about; the real
             # probe reads the test interpreter's own Scripts dir, and the origin
             # guard would otherwise run the stubbed interpreter for its answer.
-            patch("kiro_crew.dep_sync.locked_console_scripts", return_value=[]),
-            patch("kiro_crew.dep_sync.venv_not_mapped_to", return_value=None),
+            patch("efm_go.dep_sync.locked_console_scripts", return_value=[]),
+            patch("efm_go.dep_sync.venv_not_mapped_to", return_value=None),
             patch("subprocess.run", side_effect=_side_effect),
         ):
             try:
@@ -683,8 +683,8 @@ class TestUpdateFailures:
 class TestCronCli:
     def test_cron_add_with_channel(self, tmp_path):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -715,8 +715,8 @@ class TestCronCli:
 
     def test_cron_add_with_cron_expr_and_channel(self, tmp_path):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -780,8 +780,8 @@ class TestCronCli:
 
     def test_cron_add_with_approval_mode(self, tmp_path):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -819,8 +819,8 @@ class TestCronCli:
 
     def test_cron_add_with_silent(self):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -854,8 +854,8 @@ class TestCronCli:
 
     def test_cron_update_approval_mode(self, tmp_path):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -883,7 +883,7 @@ class TestCronCli:
             )
 
     def test_cron_update_whitespace_channel_skipped(self, tmp_path, capsys):
-        with patch("kiro_crew.cli_commands.CronService") as mock_svc_cls:
+        with patch("efm_go.cli_commands.CronService") as mock_svc_cls:
             mock_svc = mock_svc_cls.return_value
             mock_svc.update_job.return_value = None
             args = argparse.Namespace(
@@ -901,7 +901,7 @@ class TestCronCli:
             assert "at least one field" in out
 
     def test_cron_update_every_and_cron_exclusive(self, tmp_path, capsys):
-        with patch("kiro_crew.cli_commands.CronService"):
+        with patch("efm_go.cli_commands.CronService"):
             args = argparse.Namespace(
                 cron_action="update",
                 job_id="job1",
@@ -918,8 +918,8 @@ class TestCronCli:
 
     def test_cron_update_not_found(self, tmp_path, capsys):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.update_job.return_value = None
@@ -961,8 +961,8 @@ class TestCronCli:
     def test_cron_add_with_agent_every(self, tmp_path):
         """--agent on `cron add` with --every sets job.agent_id, persists, and audits."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = self._make_add_job_mock(job_id="ag1", every_secs=600)
@@ -1002,8 +1002,8 @@ class TestCronCli:
     def test_cron_add_with_agent_cron_expr(self, tmp_path):
         """--agent on `cron add` with --cron sets job.agent_id and persists."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = self._make_add_job_mock(
@@ -1031,8 +1031,8 @@ class TestCronCli:
     def test_cron_add_without_agent_does_not_save(self, tmp_path):
         """Empty/omitted --agent leaves job.agent_id untouched, no extra _save."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = self._make_add_job_mock(job_id="ag3", every_secs=300)
@@ -1054,8 +1054,8 @@ class TestCronCli:
     def test_cron_add_agent_whitespace_stripped(self, tmp_path):
         """Whitespace-only --agent is treated as omitted (no agent_id set)."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = self._make_add_job_mock(job_id="ag4", every_secs=300)
@@ -1077,8 +1077,8 @@ class TestCronCli:
     def test_cron_update_with_agent(self, tmp_path):
         """--agent on `cron update` passes agent_id kwarg to update_job."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -1109,8 +1109,8 @@ class TestCronCli:
     def test_cron_update_agent_empty_resets(self, tmp_path):
         """--agent '' on update resets agent_id to default (mirrors MCP cron_update)."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -1134,8 +1134,8 @@ class TestCronCli:
     def test_cron_update_agent_omitted_skipped(self, tmp_path, capsys):
         """When --agent is omitted (None), agent_id is not in update_job kwargs."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -1160,8 +1160,8 @@ class TestCronCli:
     def test_cron_add_invalid_agent_name_rejected(self, tmp_path, capsys):
         """Bad-format --agent on add is rejected with sys.exit(1) before any add_job call."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             args = argparse.Namespace(
@@ -1184,8 +1184,8 @@ class TestCronCli:
     def test_cron_update_invalid_agent_name_rejected(self, tmp_path, capsys):
         """Bad-format --agent on update is rejected with sys.exit(1) before any update_job call."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             args = argparse.Namespace(
@@ -1208,8 +1208,8 @@ class TestCronCli:
     def test_cron_update_agent_whitespace_stripped(self, tmp_path):
         """Whitespace around --agent on update is stripped before forwarding to update_job."""
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel"),
         ):
             mock_svc = mock_svc_cls.return_value
             mock_job = MagicMock()
@@ -1245,8 +1245,8 @@ class TestCronCli:
             "--agent",
             "ea-briefing",
         ]
-        with patch.object(sys, "argv", argv), patch("kiro_crew.cli_commands._cron") as mock_cron:
-            from kiro_crew.cli import main
+        with patch.object(sys, "argv", argv), patch("efm_go.cli_commands._cron") as mock_cron:
+            from efm_go.cli import main
 
             main()
             mock_cron.assert_called_once()
@@ -1268,8 +1268,8 @@ class TestCronCli:
             "--every",
             "300",
         ]
-        with patch.object(sys, "argv", argv), patch("kiro_crew.cli_commands._cron") as mock_cron:
-            from kiro_crew.cli import main
+        with patch.object(sys, "argv", argv), patch("efm_go.cli_commands._cron") as mock_cron:
+            from efm_go.cli import main
 
             main()
             ns = mock_cron.call_args[0][0]
@@ -1287,8 +1287,8 @@ class TestCronCli:
             "--agent",
             "oncall-agent",
         ]
-        with patch.object(sys, "argv", argv), patch("kiro_crew.cli_commands._cron") as mock_cron:
-            from kiro_crew.cli import main
+        with patch.object(sys, "argv", argv), patch("efm_go.cli_commands._cron") as mock_cron:
+            from efm_go.cli import main
 
             main()
             ns = mock_cron.call_args[0][0]
@@ -1308,8 +1308,8 @@ class TestCronCli:
             "--name",
             "renamed",
         ]
-        with patch.object(sys, "argv", argv), patch("kiro_crew.cli_commands._cron") as mock_cron:
-            from kiro_crew.cli import main
+        with patch.object(sys, "argv", argv), patch("efm_go.cli_commands._cron") as mock_cron:
+            from efm_go.cli import main
 
             main()
             ns = mock_cron.call_args[0][0]
@@ -1320,8 +1320,8 @@ class TestCronCli:
         # after the job vanishes from crons.json the audit trail is the only
         # way to tell a deliberate delete from data loss.
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.remove_job.return_value = True
@@ -1332,8 +1332,8 @@ class TestCronCli:
 
     def test_cron_remove_not_found_audits_not_found(self):
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.remove_job.return_value = False
@@ -1347,8 +1347,8 @@ class TestCronCli:
         # job is already removed by then, so the command must still report the
         # completed delete instead of crashing.
         with (
-            patch("kiro_crew.cli_commands.CronService") as mock_svc_cls,
-            patch("kiro_crew.cli_commands.sel") as mock_sel,
+            patch("efm_go.cli_commands.CronService") as mock_svc_cls,
+            patch("efm_go.cli_commands.sel") as mock_sel,
         ):
             mock_svc = mock_svc_cls.return_value
             mock_svc.remove_job.return_value = True
@@ -1381,9 +1381,9 @@ class TestPortEnvValidatedAtEntry:
             dispatched = []
             with (
                 patch.object(sys, "argv", ["kirocrew", "cron", "list"]),
-                patch("kiro_crew.cli_commands._cron", lambda _ns: dispatched.append(True)),
+                patch("efm_go.cli_commands._cron", lambda _ns: dispatched.append(True)),
             ):
-                from kiro_crew.cli import main
+                from efm_go.cli import main
 
                 with pytest.raises(SystemExit) as exc:
                     main()
@@ -1398,9 +1398,9 @@ class TestPortEnvValidatedAtEntry:
         dispatched = []
         with (
             patch.object(sys, "argv", ["kirocrew", "cron", "list"]),
-            patch("kiro_crew.cli_commands._cron", lambda _ns: dispatched.append(True)),
+            patch("efm_go.cli_commands._cron", lambda _ns: dispatched.append(True)),
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         assert dispatched == [True]
@@ -1434,8 +1434,8 @@ class TestSandboxActiveMarkerCleared:
             seen["marker"] = os.environ.get("KIROCREW_SANDBOX_ACTIVE")
             seen["level"] = os.environ.get("KIROCREW_SANDBOX_LEVEL")
 
-        with patch.object(sys, "argv", argv), patch("kiro_crew.cli_commands._cron", _capture):
-            from kiro_crew.cli import main
+        with patch.object(sys, "argv", argv), patch("efm_go.cli_commands._cron", _capture):
+            from efm_go.cli import main
 
             main()
         assert seen.get("marker") is None
@@ -1447,7 +1447,7 @@ class TestSandboxActiveMarkerCleared:
 class TestDirectCliOverrideAttestation:
     def test_agent_command_pins_override_before_jail_gate(self, tmp_path, monkeypatch):
         """A direct CLI agent command must pin its override before any re-exec or spawn."""
-        from kiro_crew import cli, kiro_prerequisite
+        from efm_go import cli, kiro_prerequisite
 
         executable = tmp_path / "kiro-cli"
         executable.write_bytes(b"direct CLI override")
@@ -1489,14 +1489,14 @@ class TestDirectCliOverrideAttestation:
 class TestSetupTimezone:
     def test_auto_detect_from_tz_env(self, monkeypatch):
         """TZ env var is checked before /etc/localtime."""
-        from kiro_crew.cli_setup import _detect_system_timezone
+        from efm_go.cli_setup import _detect_system_timezone
 
         monkeypatch.setenv("TZ", "Europe/London")
         assert _detect_system_timezone() == "Europe/London"
 
     def test_auto_detect_tz_env_with_colon(self, monkeypatch):
         """TZ env var with glibc colon prefix is handled."""
-        from kiro_crew.cli_setup import _detect_system_timezone
+        from efm_go.cli_setup import _detect_system_timezone
 
         monkeypatch.setenv("TZ", ":America/Chicago")
         assert _detect_system_timezone() == "America/Chicago"
@@ -1507,7 +1507,7 @@ class TestSetupTimezone:
         import sys
         import types
 
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         monkeypatch.delenv("TZ", raising=False)
         monkeypatch.setattr(cli_setup.platform_compat, "IS_WINDOWS", True)
@@ -1521,7 +1521,7 @@ class TestSetupTimezone:
         """A source checkout without tzlocal must skip-and-ask, never crash."""
         import builtins
 
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         monkeypatch.delenv("TZ", raising=False)
         monkeypatch.setattr(cli_setup.platform_compat, "IS_WINDOWS", True)
@@ -1541,7 +1541,7 @@ class TestSetupTimezone:
         sentinel). A closed/piped stdin raises _SetupAborted so the wizard exits
         cleanly at the top level rather than tracebacking at the NEXT bare
         input() call in a later step."""
-        from kiro_crew.cli_setup import _input_or_skip, _SetupAborted
+        from efm_go.cli_setup import _input_or_skip, _SetupAborted
 
         monkeypatch.setattr("builtins.input", lambda _p: "")
         assert _input_or_skip("tz: ") is None
@@ -1559,9 +1559,9 @@ class TestSetupTimezone:
         next step to traceback."""
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text("{}")
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: cfg_file)
 
-        from kiro_crew.cli_setup import _setup_timezone, _SetupAborted
+        from efm_go.cli_setup import _setup_timezone, _SetupAborted
 
         answers = iter(["Not/AZone"])
 
@@ -1572,7 +1572,7 @@ class TestSetupTimezone:
                 raise EOFError
 
         with patch("builtins.input", _input):
-            with patch("kiro_crew.cli_setup._detect_system_timezone", return_value=""):
+            with patch("efm_go.cli_setup._detect_system_timezone", return_value=""):
                 with pytest.raises(_SetupAborted):
                     _setup_timezone()
 
@@ -1584,13 +1584,13 @@ class TestSetupTimezone:
         """When /etc/localtime is a symlink, timezone is auto-detected."""
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text("{}")
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: cfg_file)
 
-        from kiro_crew.cli_setup import _setup_timezone
+        from efm_go.cli_setup import _setup_timezone
 
         with patch("builtins.input", return_value="") as mock_input:
             with patch(
-                "kiro_crew.cli_setup._detect_system_timezone",
+                "efm_go.cli_setup._detect_system_timezone",
                 return_value="America/Los_Angeles",
             ):
                 _setup_timezone()
@@ -1604,12 +1604,12 @@ class TestSetupTimezone:
         """When no auto-detect, user types timezone manually."""
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text("{}")
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: cfg_file)
 
-        from kiro_crew.cli_setup import _setup_timezone
+        from efm_go.cli_setup import _setup_timezone
 
         with patch("builtins.input", return_value="America/New_York"):
-            with patch("kiro_crew.cli_setup._detect_system_timezone", return_value=""):
+            with patch("efm_go.cli_setup._detect_system_timezone", return_value=""):
                 _setup_timezone()
 
         data = json.loads(cfg_file.read_text(encoding="utf-8"))
@@ -1619,12 +1619,12 @@ class TestSetupTimezone:
         """Empty input skips timezone setup."""
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text("{}")
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: cfg_file)
 
-        from kiro_crew.cli_setup import _setup_timezone
+        from efm_go.cli_setup import _setup_timezone
 
         with patch("builtins.input", return_value=""):
-            with patch("kiro_crew.cli_setup._detect_system_timezone", return_value=""):
+            with patch("efm_go.cli_setup._detect_system_timezone", return_value=""):
                 _setup_timezone()
 
         data = json.loads(cfg_file.read_text(encoding="utf-8"))
@@ -1634,12 +1634,12 @@ class TestSetupTimezone:
         """Invalid timezone is rejected, not saved."""
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text("{}")
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: cfg_file)
 
-        from kiro_crew.cli_setup import _setup_timezone
+        from efm_go.cli_setup import _setup_timezone
 
         with patch("builtins.input", return_value="Invalid/Timezone"):
-            with patch("kiro_crew.cli_setup._detect_system_timezone", return_value=""):
+            with patch("efm_go.cli_setup._detect_system_timezone", return_value=""):
                 _setup_timezone()
 
         data = json.loads(cfg_file.read_text(encoding="utf-8"))
@@ -1651,9 +1651,9 @@ class TestSetupTimezone:
         """Re-running setup with existing timezone keeps it on Enter."""
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"timezone": "America/Chicago"}))
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: cfg_file)
 
-        from kiro_crew.cli_setup import _setup_timezone
+        from efm_go.cli_setup import _setup_timezone
 
         with patch("builtins.input", return_value=""):
             _setup_timezone()
@@ -1665,9 +1665,9 @@ class TestSetupTimezone:
         """Corrupted config file is not overwritten."""
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text("not json {{{")
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: cfg_file)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: cfg_file)
 
-        from kiro_crew.cli_setup import _setup_timezone
+        from efm_go.cli_setup import _setup_timezone
 
         _setup_timezone()
 
@@ -1682,14 +1682,14 @@ class TestGetAlias:
 
     def test_returns_user_env(self, monkeypatch):
         monkeypatch.setenv("USER", "testuser")
-        from kiro_crew.cli_setup import _get_alias
+        from efm_go.cli_setup import _get_alias
 
         assert _get_alias() == "testuser"
 
     def test_falls_back_to_getlogin(self, monkeypatch):
         monkeypatch.delenv("USER", raising=False)
         with patch("os.getlogin", return_value="loginuser"):
-            from kiro_crew.cli_setup import _get_alias
+            from efm_go.cli_setup import _get_alias
 
             assert _get_alias() == "loginuser"
 
@@ -1699,7 +1699,7 @@ class TestGetAlias:
             patch("os.getlogin", side_effect=OSError("no tty")),
             patch("builtins.input", return_value="prompted"),
         ):
-            from kiro_crew.cli_setup import _get_alias
+            from efm_go.cli_setup import _get_alias
 
             assert _get_alias() == "prompted"
 
@@ -1709,7 +1709,7 @@ class TestGetAlias:
             patch("os.getlogin", side_effect=OSError("no tty")),
             patch("builtins.input", return_value=""),
         ):
-            from kiro_crew.cli_setup import _get_alias
+            from efm_go.cli_setup import _get_alias
 
             try:
                 _get_alias()
@@ -1724,7 +1724,7 @@ class TestManifest:
     def test_packaged_manifest_declares_complete_oauth_scopes(self):
         import yaml
 
-        from kiro_crew import slack_manifest
+        from efm_go import slack_manifest
 
         manifest = yaml.safe_load(slack_manifest.render("scope-test"))
         assert manifest["oauth_config"]["scopes"] == {
@@ -1770,11 +1770,11 @@ class TestManifest:
         """
         mock_resource = MagicMock()
         mock_resource.joinpath.return_value.read_text.return_value = content
-        return patch("kiro_crew.slack_manifest._pkg_files", return_value=mock_resource)
+        return patch("efm_go.slack_manifest._pkg_files", return_value=mock_resource)
 
     def test_renders_alias_to_stdout(self, capsys):
         with self._patch_template():
-            from kiro_crew.cli_setup import _manifest
+            from efm_go.cli_setup import _manifest
 
             _manifest(alias="alice")
         out = capsys.readouterr().out
@@ -1784,7 +1784,7 @@ class TestManifest:
     def test_writes_to_output_file(self, tmp_path):
         out_file = tmp_path / "sub" / "out.yaml"
         with self._patch_template("name: KiroCrew-{{ALIAS}}\n"):
-            from kiro_crew.cli_setup import _manifest
+            from efm_go.cli_setup import _manifest
 
             _manifest(alias="bob", output=str(out_file))
         assert out_file.exists()
@@ -1793,7 +1793,7 @@ class TestManifest:
     def test_creates_parent_dirs(self, tmp_path):
         out_file = tmp_path / "deep" / "nested" / "out.yaml"
         with self._patch_template("name: KiroCrew-{{ALIAS}}\n"):
-            from kiro_crew.cli_setup import _manifest
+            from efm_go.cli_setup import _manifest
 
             _manifest(alias="carol", output=str(out_file))
         assert out_file.exists()
@@ -1801,8 +1801,8 @@ class TestManifest:
     def test_exits_when_template_missing(self):
         mock_resource = MagicMock()
         mock_resource.joinpath.return_value.read_text.side_effect = FileNotFoundError
-        with patch("kiro_crew.slack_manifest._pkg_files", return_value=mock_resource):
-            from kiro_crew.cli_setup import _manifest
+        with patch("efm_go.slack_manifest._pkg_files", return_value=mock_resource):
+            from efm_go.cli_setup import _manifest
 
             try:
                 _manifest(alias="dave")
@@ -1811,7 +1811,7 @@ class TestManifest:
                 assert e.code == 1
 
     def test_rejects_invalid_alias(self):
-        from kiro_crew.cli_setup import _manifest
+        from efm_go.cli_setup import _manifest
 
         for bad in ["a\nb", "foo:bar", "x{{y}}", "hello world"]:
             try:
@@ -1822,7 +1822,7 @@ class TestManifest:
 
     def test_url_flag_prints_creation_link(self, capsys):
         with self._patch_template("# comment\nname: KiroCrew-{{ALIAS}}\n"):
-            from kiro_crew.cli_setup import _manifest
+            from efm_go.cli_setup import _manifest
 
             _manifest(alias="alice", url=True)
         out = capsys.readouterr().out
@@ -1841,24 +1841,24 @@ class TestLogout:
         secret_file = tmp_path / ".local_secret"
         secret_file.write_text("test-secret")
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
+            "efm_go.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
         )
 
-        from kiro_crew.cli_server import _logout
+        from efm_go.cli_server import _logout
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = b'{"ok": true}'
         mock_resp.__enter__ = MagicMock(return_value=mock_resp)
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("kiro_crew.cli_server.loopback_urlopen", return_value=mock_resp):
+        with patch("efm_go.cli_server.loopback_urlopen", return_value=mock_resp):
             _logout(5476)  # Should not raise
 
     def test_logout_gateway_not_running(self, tmp_path, monkeypatch):
         """Missing secret file means gateway not running."""
-        monkeypatch.setattr("kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "")
+        monkeypatch.setattr("efm_go.cli_server.read_local_secret", lambda _port, **_kw: "")
 
-        from kiro_crew.cli_server import _logout
+        from efm_go.cli_server import _logout
 
         try:
             _logout(5476)
@@ -1871,13 +1871,13 @@ class TestLogout:
         secret_file = tmp_path / ".local_secret"
         secret_file.write_text("test-secret")
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
+            "efm_go.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
         )
 
-        from kiro_crew.cli_server import _logout
+        from efm_go.cli_server import _logout
 
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             side_effect=urllib.error.HTTPError(None, 403, "Forbidden", {}, None),
         ):
             try:
@@ -1893,13 +1893,13 @@ class TestLogout:
         secret_file.write_text("test-secret")
         monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
+            "efm_go.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
         )
 
-        from kiro_crew.cli_server import _logout
+        from efm_go.cli_server import _logout
 
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             side_effect=urllib.error.URLError("Connection refused"),
         ):
             try:
@@ -1915,14 +1915,14 @@ class TestLogout:
         secret_file.write_text("test-secret")
         monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
 
-        from kiro_crew.cli_server import _logout
+        from efm_go.cli_server import _logout
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = b'{"ok": false, "error": "test error"}'
         mock_resp.__enter__ = MagicMock(return_value=mock_resp)
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("kiro_crew.cli_server.loopback_urlopen", return_value=mock_resp):
+        with patch("efm_go.cli_server.loopback_urlopen", return_value=mock_resp):
             try:
                 _logout(5476)
                 assert False, "should have exited"
@@ -1938,10 +1938,10 @@ class TestStatus:
 
     def test_status_auth_required(self, capsys):
         """401/403 should report gateway as running with token auth."""
-        from kiro_crew.cli_server import _status
+        from efm_go.cli_server import _status
 
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             side_effect=urllib.error.HTTPError(
                 "http://127.0.0.1:5476/api/status", 403, "Forbidden", {}, None
             ),
@@ -1953,10 +1953,10 @@ class TestStatus:
 
     def test_status_other_http_error(self, capsys):
         """Non-auth HTTP errors should report gateway as running with code."""
-        from kiro_crew.cli_server import _status
+        from efm_go.cli_server import _status
 
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             side_effect=urllib.error.HTTPError(
                 "http://127.0.0.1:5476/api/status", 500, "Internal Server Error", {}, None
             ),
@@ -1968,10 +1968,10 @@ class TestStatus:
 
     def test_status_connection_refused(self, capsys):
         """Connection refused should report gateway as not running."""
-        from kiro_crew.cli_server import _status
+        from efm_go.cli_server import _status
 
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             side_effect=urllib.error.URLError("Connection refused"),
         ):
             _status(self._make_args())
@@ -1980,7 +1980,7 @@ class TestStatus:
 
     def test_status_success(self, capsys):
         """200 OK should display stats."""
-        from kiro_crew.cli_server import _status
+        from efm_go.cli_server import _status
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = json.dumps(
@@ -1997,7 +1997,7 @@ class TestStatus:
         mock_resp.__enter__ = MagicMock(return_value=mock_resp)
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("kiro_crew.cli_server.loopback_urlopen", return_value=mock_resp):
+        with patch("efm_go.cli_server.loopback_urlopen", return_value=mock_resp):
             _status(self._make_args())
         out = capsys.readouterr().out
         assert "1h 0m" in out
@@ -2005,9 +2005,9 @@ class TestStatus:
 
     def test_status_unexpected_exception(self, capsys):
         """Non-network exceptions should report gateway as running with unexpected response."""
-        from kiro_crew.cli_server import _status
+        from efm_go.cli_server import _status
 
-        with patch("kiro_crew.cli_server.loopback_urlopen", side_effect=RuntimeError("unexpected")):
+        with patch("efm_go.cli_server.loopback_urlopen", side_effect=RuntimeError("unexpected")):
             _status(self._make_args())
         out = capsys.readouterr().out
         assert "running" in out
@@ -2025,65 +2025,65 @@ class TestIsKirocrewProcess:
 
     def _cmdline(self, value):
         return patch(
-            "kiro_crew.cli_server.platform_compat.process_command_line", return_value=value
+            "efm_go.cli_server.platform_compat.process_command_line", return_value=value
         )
 
     def test_returns_true_for_kirocrew(self):
-        from kiro_crew.cli_server import _is_kirocrew_process
+        from efm_go.cli_server import _is_kirocrew_process
 
-        with self._cmdline("python3 -m kiro_crew.dashboard"):
+        with self._cmdline("python3 -m efm_go.dashboard"):
             assert _is_kirocrew_process(1234) is True
 
     def test_returns_true_for_kirocrew_binary(self):
-        from kiro_crew.cli_server import _is_kirocrew_process
+        from efm_go.cli_server import _is_kirocrew_process
 
         with self._cmdline("/usr/bin/kirocrew start"):
             assert _is_kirocrew_process(1234) is True
 
     def test_returns_true_for_module_gateway_form(self):
         """The real service launch form
-        ``python -m kiro_crew gateway`` must be recognized. The
-        matcher must accept the dotted ``kiro_crew.gateway`` form too, or
+        ``python -m efm_go gateway`` must be recognized. The
+        matcher must accept the dotted ``efm_go.gateway`` form too, or
         ``kirocrew stop`` no-op's on service installs.
 
         Patched through the cross-platform ``process_command_line`` seam (the
         Windows port routes _is_kirocrew_process through platform_compat rather
         than calling ``subprocess.check_output`` directly)."""
-        from kiro_crew.cli_server import _is_kirocrew_process
+        from efm_go.cli_server import _is_kirocrew_process
 
         real = (
             "/Users/x/.toolbox/tools/kirocrew/3.1.0/bin/../python3.10/bin/"
-            "python3.10 -m kiro_crew gateway\n"
+            "python3.10 -m efm_go gateway\n"
         )
         with self._cmdline(real):
             assert _is_kirocrew_process(54842) is True
 
     def test_returns_true_for_windows_python_reexec(self):
         # The venv kirocrew.exe re-execs python.exe, so the gateway cmdline reads
-        # `python.exe ...\Scripts\kirocrew.exe gateway` (or `-m kiro_crew gateway`).
+        # `python.exe ...\Scripts\kirocrew.exe gateway` (or `-m efm_go gateway`).
         # The token-parser (_args_look_like_kirocrew) recognizes the console-script
-        # basename ("kirocrew"/"kirocrew.exe") and the "-m kiro_crew gateway" module
+        # basename ("kirocrew"/"kirocrew.exe") and the "-m efm_go gateway" module
         # form; assert both Windows re-exec shapes match.
-        from kiro_crew.cli_server import _is_kirocrew_process
+        from efm_go.cli_server import _is_kirocrew_process
 
-        with patch("kiro_crew.cli_server.platform_compat.IS_WINDOWS", True):
+        with patch("efm_go.cli_server.platform_compat.IS_WINDOWS", True):
             with self._cmdline(
                 r'"C:\Program Files\Python312\python.exe" '
                 r'"D:\U\.kirocrew\.venv\Scripts\kirocrew.exe" gateway --no-open'
             ):
                 assert _is_kirocrew_process(1234) is True
-            with self._cmdline(r"C:\Python312\python.exe -m kiro_crew gateway"):
+            with self._cmdline(r"C:\Python312\python.exe -m efm_go gateway"):
                 assert _is_kirocrew_process(1234) is True
 
     def test_returns_false_for_unrelated(self):
-        from kiro_crew.cli_server import _is_kirocrew_process
+        from efm_go.cli_server import _is_kirocrew_process
 
         with self._cmdline("nginx: worker process"):
             assert _is_kirocrew_process(1234) is False
 
     def test_returns_false_for_broad_match(self):
         """Editing a kirocrew file should NOT match — only gateway entry points."""
-        from kiro_crew.cli_server import _is_kirocrew_process
+        from efm_go.cli_server import _is_kirocrew_process
 
         with self._cmdline("vim /tmp/kirocrew-notes.txt"):
             assert _is_kirocrew_process(1234) is False
@@ -2091,7 +2091,7 @@ class TestIsKirocrewProcess:
     def test_returns_false_when_cmdline_unavailable(self):
         # process_command_line returns "" on any failure (dead PID, WMI/ps error);
         # _is_kirocrew_process must then fail closed (False), never raise.
-        from kiro_crew.cli_server import _is_kirocrew_process
+        from efm_go.cli_server import _is_kirocrew_process
 
         with self._cmdline(""):
             assert _is_kirocrew_process(1234) is False
@@ -2110,22 +2110,22 @@ class TestArgsLookLikeKirocrew:
         "args",
         [
             # Module-invocation form (service spawn) — the regression fix.
-            "/Users/x/.toolbox/tools/kirocrew/3.1.0/bin/../python3.10/bin/python3.10 -m kiro_crew gateway",
-            "python3 -m kiro_crew gateway",
-            "python -m kiro_crew dashboard",
-            "python3.10 -m kiro_crew start",
+            "/Users/x/.toolbox/tools/kirocrew/3.1.0/bin/../python3.10/bin/python3.10 -m efm_go gateway",
+            "python3 -m efm_go gateway",
+            "python -m efm_go dashboard",
+            "python3.10 -m efm_go start",
             # macOS framework build: the vendored interpreter's basename is
             # "Python" (capital P) — a case-sensitive startswith("python") missed
             # it, so stop/restart no-oped on macOS framework-build installs
             # (Toolbox being the common one).
             "/Library/Frameworks/Python.framework/Versions/3.10/Resources/"
-            "Python.app/Contents/MacOS/Python -m kiro_crew gateway --no-open",
-            "Python -m kiro_crew gateway",
+            "Python.app/Contents/MacOS/Python -m efm_go gateway --no-open",
+            "Python -m efm_go gateway",
             # Subcommand followed by trailing flags.
-            "python -m kiro_crew gateway --no-open --port 7777",
+            "python -m efm_go gateway --no-open --port 7777",
             # Legacy dotted-submodule form.
-            "python3 -m kiro_crew.gateway",
-            "python3 -m kiro_crew.dashboard",
+            "python3 -m efm_go.gateway",
+            "python3 -m efm_go.dashboard",
             # Console-script wrapper form.
             "/usr/local/bin/kirocrew gateway",
             "/Users/x/.toolbox/bin/kirocrew start",
@@ -2133,7 +2133,7 @@ class TestArgsLookLikeKirocrew:
         ],
     )
     def test_matches_server_launch_forms(self, args):
-        from kiro_crew.cli_server import _args_look_like_kirocrew
+        from efm_go.cli_server import _args_look_like_kirocrew
 
         assert _args_look_like_kirocrew(args) is True
 
@@ -2143,34 +2143,34 @@ class TestArgsLookLikeKirocrew:
             "",  # empty command line
             "nginx: worker process",  # unrelated daemon on the port
             "vim /tmp/kirocrew-notes.txt",  # editing a file named kirocrew*
-            "cat /var/log/kiro_crew_gateway.log",  # reading a kirocrew log file
-            "python -m kiro_crew",  # bare module, no server subcommand
-            "python -m kiro_crew run /tmp/spec.md",  # task runner — NOT a port-bound server
-            "python -m kiro_crew run gateway",  # "gateway" is a file arg to run, not the subcommand
-            "python -m kiro_crew run start",  # "start" is a file arg to run, not the subcommand
-            "python -m kiro_crew_other gateway",  # different package named kiro_crew_other
+            "cat /var/log/efm_go_gateway.log",  # reading a kirocrew log file
+            "python -m efm_go",  # bare module, no server subcommand
+            "python -m efm_go run /tmp/spec.md",  # task runner — NOT a port-bound server
+            "python -m efm_go run gateway",  # "gateway" is a file arg to run, not the subcommand
+            "python -m efm_go run start",  # "start" is a file arg to run, not the subcommand
+            "python -m efm_go_other gateway",  # different package named efm_go_other
             "/usr/bin/kirocrew",  # wrapper with no subcommand
-            "grep -m kiro_crew gateway somefile",  # "-m" is grep's flag (no python interpreter)
+            "grep -m efm_go gateway somefile",  # "-m" is grep's flag (no python interpreter)
         ],
     )
     def test_rejects_non_server_processes(self, args):
-        from kiro_crew.cli_server import _args_look_like_kirocrew
+        from efm_go.cli_server import _args_look_like_kirocrew
 
         assert _args_look_like_kirocrew(args) is False
 
     def test_unbalanced_quotes_do_not_raise(self):
         """A malformed args string (odd quote) must not raise: ``shlex.split``
         falls back to ``str.split`` and the command is still classified."""
-        from kiro_crew.cli_server import _args_look_like_kirocrew
+        from efm_go.cli_server import _args_look_like_kirocrew
 
-        assert _args_look_like_kirocrew('python -m kiro_crew gateway "') is True
+        assert _args_look_like_kirocrew('python -m efm_go gateway "') is True
 
     def test_subcommand_match_is_exact_case(self):
         """Subcommands are matched exactly (lower-case), mirroring how the CLI
         dispatches them; ``ps`` preserves argv case so this stays precise."""
-        from kiro_crew.cli_server import _args_look_like_kirocrew
+        from efm_go.cli_server import _args_look_like_kirocrew
 
-        assert _args_look_like_kirocrew("python -m kiro_crew GATEWAY") is False
+        assert _args_look_like_kirocrew("python -m efm_go GATEWAY") is False
 
 
 class TestComposedEditionGatewayModule:
@@ -2178,7 +2178,7 @@ class TestComposedEditionGatewayModule:
 
     Its launcher execs ``-m <companion module>`` so the composition root is
     entered rather than the core CLI. Keying the classifier on the literal
-    ``kiro_crew`` made ``kirocrew stop`` / ``restart`` drop the one listening pid
+    ``efm_go`` made ``kirocrew stop`` / ``restart`` drop the one listening pid
     and report "No Kiro Crew gateway currently running on port <p>" on every such
     install — the port lookup found the gateway, the classifier rejected it, and
     the graceful-API / lock-owner fallbacks never ran because they are reached
@@ -2187,7 +2187,7 @@ class TestComposedEditionGatewayModule:
 
     # The real argv observed on a composed install, verbatim.
     COMPOSED_ARGV = (
-        "/opt/kirocrew/backend-dist/kirocrew-backend-arm64/bin/python3.12 "
+        "/opt/kirocrew/backend-dist/efm-go-backend-arm64/bin/python3.12 "
         "-s -m kirocrew_companion gateway --no-open --port 5476"
     )
 
@@ -2201,15 +2201,15 @@ class TestComposedEditionGatewayModule:
 
     @pytest.fixture(autouse=True)
     def _clear_cache(self):
-        from kiro_crew.port_resolution import _gateway_module_roots
+        from efm_go.port_resolution import _gateway_module_roots
 
         _gateway_module_roots.cache_clear()
         yield
         _gateway_module_roots.cache_clear()
 
     def test_composed_module_matches_when_companion_installed(self, monkeypatch):
-        from kiro_crew.cli_server import _args_look_like_kirocrew
-        from kiro_crew.platform import discovery
+        from efm_go.cli_server import _args_look_like_kirocrew
+        from efm_go.platform import discovery
 
         monkeypatch.setattr(
             discovery,
@@ -2221,28 +2221,28 @@ class TestComposedEditionGatewayModule:
     def test_composed_module_rejected_without_the_companion(self, monkeypatch):
         """Precision is preserved: the widening comes from the INSTALLED entry
         points, so a standalone host still refuses to signal that process."""
-        from kiro_crew.cli_server import _args_look_like_kirocrew
-        from kiro_crew.platform import discovery
+        from efm_go.cli_server import _args_look_like_kirocrew
+        from efm_go.platform import discovery
 
         monkeypatch.setattr(discovery, "plugin_entry_points", lambda: [])
         assert _args_look_like_kirocrew(self.COMPOSED_ARGV) is False
 
     def test_core_module_still_matches_with_a_companion_installed(self, monkeypatch):
-        from kiro_crew.cli_server import _args_look_like_kirocrew
-        from kiro_crew.platform import discovery
+        from efm_go.cli_server import _args_look_like_kirocrew
+        from efm_go.platform import discovery
 
         monkeypatch.setattr(
             discovery,
             "plugin_entry_points",
             lambda: [self._entry_point("kirocrew_companion.compose:build_context")],
         )
-        assert _args_look_like_kirocrew("python3 -m kiro_crew gateway") is True
+        assert _args_look_like_kirocrew("python3 -m efm_go gateway") is True
 
     def test_companion_module_without_a_server_subcommand_is_refused(self, monkeypatch):
         """The subcommand gate still applies to the widened module set — a
         companion task-runner process must never be SIGTERMed by ``stop``."""
-        from kiro_crew.cli_server import _args_look_like_kirocrew
-        from kiro_crew.platform import discovery
+        from efm_go.cli_server import _args_look_like_kirocrew
+        from efm_go.platform import discovery
 
         monkeypatch.setattr(
             discovery,
@@ -2254,14 +2254,14 @@ class TestComposedEditionGatewayModule:
     def test_discovery_failure_leaves_the_core_module_matching(self, monkeypatch):
         """Entry-point discovery is best-effort: a raising probe must degrade to
         the core module rather than making ``stop`` blind everywhere."""
-        from kiro_crew.cli_server import _args_look_like_kirocrew
-        from kiro_crew.platform import discovery
+        from efm_go.cli_server import _args_look_like_kirocrew
+        from efm_go.platform import discovery
 
         def _boom():
             raise RuntimeError("metadata unreadable")
 
         monkeypatch.setattr(discovery, "plugin_entry_points", _boom)
-        assert _args_look_like_kirocrew("python3 -m kiro_crew gateway") is True
+        assert _args_look_like_kirocrew("python3 -m efm_go gateway") is True
         assert _args_look_like_kirocrew(self.COMPOSED_ARGV) is False
 
 
@@ -2287,7 +2287,7 @@ class TestDesktopGatewayIdentityParity:
     def test_server_subcommands_are_the_same_set(self):
         import re
 
-        from kiro_crew.port_resolution import _KIROCREW_SERVER_SUBCOMMANDS
+        from efm_go.port_resolution import _KIROCREW_SERVER_SUBCOMMANDS
 
         expr = self._js_constant("KIROCREW_SERVER_SUBCOMMANDS")
         js_set = set(re.findall(r'"([^"]+)"', expr))
@@ -2304,14 +2304,14 @@ class TestDesktopGatewayIdentityParity:
         assert expr.startswith("/") and expr.endswith("/"), expr
         pattern = re.compile(expr[1:-1])
         for entry_point in (
-            "kiro_crew.cli:main",
+            "efm_go.cli:main",
             "kirocrew_companion.compose:build_context",
             "kirocrew_acme2.compose:build",
         ):
             root = entry_point.split(":", 1)[0].split(".", 1)[0]
             assert pattern.fullmatch(root), root
         for rejected in (
-            "kiro_crew.dashboard",
+            "efm_go.dashboard",
             "kirocrew",
             "kirocrew_",
             "kirocrew-x",
@@ -2325,7 +2325,7 @@ class TestStop:
 
     def _mock_sel(self):
         mock = MagicMock()
-        return patch("kiro_crew.cli_commands.sel", return_value=mock)
+        return patch("efm_go.cli_commands.sel", return_value=mock)
 
     @pytest.fixture(autouse=True)
     def _no_service(self):
@@ -2341,26 +2341,26 @@ class TestStop:
         # of depending on whether ``lsof`` happens to be installed on the build
         # host.
         with (
-            patch("kiro_crew.cli_server.service_controller.stop_service", return_value=False),
+            patch("efm_go.cli_server.service_controller.stop_service", return_value=False),
             patch(
-                "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+                "efm_go.cli_server.platform_compat.listening_pid_tool_available",
                 return_value=True,
             ),
         ):
             yield
 
     def _ports(self, pids):
-        return patch("kiro_crew.cli_server.platform_compat.find_listening_pids", return_value=pids)
+        return patch("efm_go.cli_server.platform_compat.find_listening_pids", return_value=pids)
 
     def _cmdline(self, value):
         # Same cmdline for any PID queried.
         return patch(
-            "kiro_crew.cli_server.platform_compat.process_command_line", return_value=value
+            "efm_go.cli_server.platform_compat.process_command_line", return_value=value
         )
 
     def test_no_process_on_port(self, capsys):
         # No listener on the port (lsof empty / netstat no match) → nothing to stop.
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         with self._mock_sel(), self._ports([]):
             with pytest.raises(SystemExit) as exc:
@@ -2373,12 +2373,12 @@ class TestStop:
         # finds it anyway (None when it is genuinely not installed).
         return (
             patch(
-                "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+                "efm_go.cli_server.platform_compat.listening_pid_tool_available",
                 return_value=False,
             ),
-            patch("kiro_crew.cli_server.platform_compat.listening_pid_tool", return_value="lsof"),
+            patch("efm_go.cli_server.platform_compat.listening_pid_tool", return_value="lsof"),
             patch(
-                "kiro_crew.cli_server.platform_compat.tool_outside_trusted_dirs",
+                "efm_go.cli_server.platform_compat.tool_outside_trusted_dirs",
                 return_value=unpinned_at,
             ),
         )
@@ -2390,12 +2390,12 @@ class TestStop:
         that operator to install an ``lsof`` they already have sends them in
         circles, so name the path and say the pin is deliberate.
         """
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         mock_sel = MagicMock()
         available, tool, unpinned = self._tool_absent("/run/current-system/sw/bin/lsof")
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._ports([]),
             available,
             tool,
@@ -2413,12 +2413,12 @@ class TestStop:
 
     def test_a_genuinely_missing_tool_still_says_to_install_it(self, capsys):
         """Nothing on PATH means the install advice is the correct advice."""
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         mock_sel = MagicMock()
         available, tool, unpinned = self._tool_absent(None)
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._ports([]),
             available,
             tool,
@@ -2435,7 +2435,7 @@ class TestStop:
     def test_no_kirocrew_process(self, capsys):
         # A listener exists but its cmdline isn't a kirocrew gateway → refuse to kill,
         # but name the pid so the operator can see what holds the port.
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         with (
             self._mock_sel(),
@@ -2454,7 +2454,7 @@ class TestStop:
     def test_unrecognised_listener_names_a_quoted_executable_basename(self, capsys):
         # A quoted executable path is one token; the message must carry its
         # basename, not the fragment before the first space.
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         quoted = '"/opt/some tool/bin/otherd" --port 5476'
         with (
@@ -2473,7 +2473,7 @@ class TestStop:
         # argv[0] is chosen by whoever holds the port: escape sequences, OSC
         # title changes and BEL must be stripped before the name is echoed, and
         # the name is capped so it cannot flood the line.
-        from kiro_crew.cli_server import _MAX_ECHOED_NAME_LEN, _stop, _terminal_safe_name
+        from efm_go.cli_server import _MAX_ECHOED_NAME_LEN, _stop, _terminal_safe_name
 
         hostile = "/tmp/\x1b[31mred\x1b[0m\x1b]0;owned\x07" + "x" * 200
         with (
@@ -2491,7 +2491,7 @@ class TestStop:
         assert _terminal_safe_name("\x1b\x07\u200b") == ""
 
     def test_successful_stop(self, capsys):
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         # The kill is dispatched per-platform: POSIX os.kill(SIGTERM), Windows
         # platform_compat.kill_process_tree (taskkill /T /F, so the gateway's
@@ -2500,13 +2500,13 @@ class TestStop:
         ctx = [
             self._mock_sel(),
             self._ports([1234]),
-            self._cmdline("python3 -m kiro_crew.dashboard"),
+            self._cmdline("python3 -m efm_go.dashboard"),
             patch("time.sleep"),
-            patch("kiro_crew.cli_server.platform_compat.pid_exists", return_value=False),
+            patch("efm_go.cli_server.platform_compat.pid_exists", return_value=False),
         ]
         if sys.platform == "win32":
             ctx.append(
-                patch("kiro_crew.cli_server.platform_compat.kill_process_tree", return_value=True)
+                patch("efm_go.cli_server.platform_compat.kill_process_tree", return_value=True)
             )
         else:
             ctx.append(patch("os.kill"))
@@ -2521,12 +2521,12 @@ class TestStop:
         sys.platform == "win32", reason="POSIX SIGTERM/os.kill semantics; Windows uses taskkill"
     )
     def test_permission_denied(self, capsys):
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         with (
             self._mock_sel(),
             self._ports([1234]),
-            self._cmdline("python3 -m kiro_crew.dashboard"),
+            self._cmdline("python3 -m efm_go.dashboard"),
             patch("os.kill", side_effect=PermissionError),
         ):
             with pytest.raises(SystemExit) as exc:
@@ -2539,12 +2539,12 @@ class TestStop:
         reason="POSIX ProcessLookupError path; Windows liveness via pid_exists",
     )
     def test_process_already_exited(self, capsys):
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         with (
             self._mock_sel(),
             self._ports([1234]),
-            self._cmdline("python3 -m kiro_crew.dashboard"),
+            self._cmdline("python3 -m efm_go.dashboard"),
             patch("os.kill", side_effect=ProcessLookupError),
         ):
             with pytest.raises(SystemExit) as exc:
@@ -2557,7 +2557,7 @@ class TestStop:
     )
     def test_partial_permission_denied(self, capsys):
         """One PID succeeds, another is denied — reports both."""
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         def kill_side_effect(pid, sig):
             if pid == 5678:
@@ -2566,7 +2566,7 @@ class TestStop:
         with (
             self._mock_sel(),
             self._ports([1234, 5678]),
-            self._cmdline("python3 -m kiro_crew.dashboard"),
+            self._cmdline("python3 -m efm_go.dashboard"),
             patch("os.kill", side_effect=kill_side_effect),
             patch("time.sleep"),
         ):
@@ -2581,12 +2581,12 @@ class TestStop:
         # When --port is passed explicitly (cli_port is not None), the
         # systemd/launchd service short-circuit must be bypassed so the
         # kill-by-port path can target a non-default dev gateway.
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.stop_service",
+                "efm_go.cli_server.service_controller.stop_service",
                 return_value=True,
             ) as mock_stop_service,
             self._ports([]),
@@ -2605,25 +2605,25 @@ class TestStop:
     #: ``_args_look_like_kirocrew`` pattern matches.
     APP_ARGV = (
         "/Applications/KiroCrew.app/Contents/Resources/backend-dist/"
-        "kirocrew-backend-arm64/bin/python3.12 /Applications/KiroCrew.app/"
-        "Contents/Resources/backend-dist/kirocrew-backend-arm64/serve.py"
+        "efm-go-backend-arm64/bin/python3.12 /Applications/KiroCrew.app/"
+        "Contents/Resources/backend-dist/efm-go-backend-arm64/serve.py"
     )
 
     def _kill_patch(self):
         """Patch the signal call the running OS takes, and return it."""
         if sys.platform == "win32":
             return patch(
-                "kiro_crew.cli_server.platform_compat.kill_process_tree", return_value=True
+                "efm_go.cli_server.platform_compat.kill_process_tree", return_value=True
             )
         return patch("os.kill")
 
     def _endpoint(self, answers):
         """Whether the process on the port answers the authenticated shutdown."""
-        return patch("kiro_crew.cli_server._request_gateway_shutdown", return_value=answers)
+        return patch("efm_go.cli_server._request_gateway_shutdown", return_value=answers)
 
     def _proven(self, pids):
         """Which pids the identity proof vouches for as this port's gateway."""
-        return patch("kiro_crew.cli_server._verified_loopback_gateway_pids", return_value=pids)
+        return patch("efm_go.cli_server._verified_loopback_gateway_pids", return_value=pids)
 
     @staticmethod
     def _identity_inputs(
@@ -2631,21 +2631,21 @@ class TestStop:
     ):
         """Every input the identity proof reads, each independently settable."""
         return [
-            patch("kiro_crew.cli_server.platform_compat.IS_POSIX", posix),
-            patch("kiro_crew.cli_server.run_marker.read_pid_record_path", return_value=record),
-            patch("kiro_crew.cli_server.run_marker.pid_start_token", return_value=live_token),
-            patch("kiro_crew.cli_server.platform_compat.find_port_listeners", return_value=[]),
+            patch("efm_go.cli_server.platform_compat.IS_POSIX", posix),
+            patch("efm_go.cli_server.run_marker.read_pid_record_path", return_value=record),
+            patch("efm_go.cli_server.run_marker.pid_start_token", return_value=live_token),
+            patch("efm_go.cli_server.platform_compat.find_port_listeners", return_value=[]),
             patch(
-                "kiro_crew.cli_server.platform_compat.loopback_owner_pids",
+                "efm_go.cli_server.platform_compat.loopback_owner_pids",
                 return_value=list(loopback),
             ),
-            patch("kiro_crew.cli_server.platform_compat.process_owner_uid", return_value=uid),
-            patch("kiro_crew.cli_server.os.getuid", create=True, return_value=1000),
+            patch("efm_go.cli_server.platform_compat.process_owner_uid", return_value=uid),
+            patch("efm_go.cli_server.os.getuid", create=True, return_value=1000),
         ]
 
     def _proof(self, **kwargs):
         """Run the identity proof with *kwargs* overriding one input at a time."""
-        from kiro_crew.cli_server import _verified_loopback_gateway_pids
+        from efm_go.cli_server import _verified_loopback_gateway_pids
 
         with contextlib.ExitStack() as stack:
             for ctx in self._identity_inputs(**kwargs):
@@ -2680,7 +2680,7 @@ class TestStop:
 
     def test_argv_declines_the_app_spawn_shape(self):
         """The premise of the tests below, asserted rather than assumed."""
-        from kiro_crew.cli_server import _args_look_like_kirocrew
+        from efm_go.cli_server import _args_look_like_kirocrew
 
         assert _args_look_like_kirocrew(self.APP_ARGV) is False
 
@@ -2693,11 +2693,11 @@ class TestStop:
         it publishes at startup whatever its command line reads. Nothing is
         signalled, so no pid is guessed.
         """
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         mock_sel = MagicMock()
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._ports([50519]),
             self._cmdline(self.APP_ARGV),
             self._proven([50519]),
@@ -2719,11 +2719,11 @@ class TestStop:
         the port -- so the existing refusal stands, exit 1, and no pid is
         signalled. Being unrecognised is not by itself permission to act.
         """
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         mock_sel = MagicMock()
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._ports([50519]),
             self._cmdline(self.APP_ARGV),
             self._proven([50519]),
@@ -2746,15 +2746,15 @@ class TestStop:
         so a listener the proof cannot vouch for must not receive it. The stop
         refuses exactly as it does for any other unrecognised listener.
         """
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         mock_sel = MagicMock()
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._ports([50519]),
             self._cmdline(self.APP_ARGV),
             self._proven([]),
-            patch("kiro_crew.cli_server._request_gateway_shutdown") as mock_request,
+            patch("efm_go.cli_server._request_gateway_shutdown") as mock_request,
             self._kill_patch() as mock_kill,
         ):
             with pytest.raises(SystemExit) as exc:
@@ -2773,16 +2773,16 @@ class TestStop:
         the request is not made at all -- otherwise every stop would depend on an
         HTTP round trip the pid path never needed.
         """
-        from kiro_crew.cli_server import _stop
+        from efm_go.cli_server import _stop
 
         with (
             self._mock_sel(),
             self._ports([1234]),
-            self._cmdline("python3 -m kiro_crew gateway"),
+            self._cmdline("python3 -m efm_go gateway"),
             patch("time.sleep"),
-            patch("kiro_crew.cli_server.platform_compat.pid_exists", return_value=False),
-            patch("kiro_crew.cli_server._stop_mcp_gateway_daemon"),
-            patch("kiro_crew.cli_server._request_gateway_shutdown") as mock_endpoint,
+            patch("efm_go.cli_server.platform_compat.pid_exists", return_value=False),
+            patch("efm_go.cli_server._stop_mcp_gateway_daemon"),
+            patch("efm_go.cli_server._request_gateway_shutdown") as mock_endpoint,
             self._kill_patch(),
         ):
             _stop(5476)
@@ -2795,22 +2795,22 @@ class TestWaitForPidsExit:
     """Tests for the bounded ``_wait_for_pids_exit`` helper."""
 
     def test_empty_pid_list_returns_immediately(self):
-        from kiro_crew.cli_server import _wait_for_pids_exit
+        from efm_go.cli_server import _wait_for_pids_exit
 
         assert _wait_for_pids_exit([], timeout=99) == []
 
     def test_zero_timeout_still_probes_once(self):
         """A zero timeout must not skip the check and report a false all-clear."""
-        from kiro_crew.cli_server import _wait_for_pids_exit
+        from efm_go.cli_server import _wait_for_pids_exit
 
-        with patch("kiro_crew.cli_server._pid_exited", return_value=False) as mock_exited:
+        with patch("efm_go.cli_server._pid_exited", return_value=False) as mock_exited:
             assert _wait_for_pids_exit([7], timeout=0) == [7]
         mock_exited.assert_called_once_with(7)
 
     def test_returns_only_the_pids_still_alive(self):
-        from kiro_crew.cli_server import _wait_for_pids_exit
+        from efm_go.cli_server import _wait_for_pids_exit
 
-        with patch("kiro_crew.cli_server._pid_exited", side_effect=lambda p: p != 9):
+        with patch("efm_go.cli_server._pid_exited", side_effect=lambda p: p != 9):
             assert _wait_for_pids_exit([8, 9], timeout=0) == [9]
 
 
@@ -2845,11 +2845,11 @@ class TestRestart:
         :class:`TestRestartReadinessVerdict` and :class:`TestWaitGatewayReady`,
         which deliberately do NOT inherit this fixture.
         """
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
-        monkeypatch.setattr("kiro_crew.cli_server._RESTART_TOKEN_WAIT", 0)
+        monkeypatch.setattr("efm_go.cli_server._RESTART_TOKEN_WAIT", 0)
         monkeypatch.setattr(
-            "kiro_crew.cli_server._wait_gateway_ready",
+            "efm_go.cli_server._wait_gateway_ready",
             lambda *a, **kw: (cli_server._READY_OK, None),
         )
 
@@ -2866,7 +2866,7 @@ class TestRestart:
         # depend on whether the BUILD HOST runs a kirocrew service. Pin it
         # False; the denied-branch tests override it per-test.
         with patch(
-            "kiro_crew.cli_server.service_controller.is_service_active",
+            "efm_go.cli_server.service_controller.is_service_active",
             return_value=False,
         ):
             yield
@@ -2880,36 +2880,36 @@ class TestRestart:
         # pin availability True instead of depending on whether ``lsof`` is
         # installed on the build host.
         with patch(
-            "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+            "efm_go.cli_server.platform_compat.listening_pid_tool_available",
             return_value=True,
         ):
             yield
 
     def _mock_sel(self):
-        return patch("kiro_crew.cli_server.sel", return_value=MagicMock())
+        return patch("efm_go.cli_server.sel", return_value=MagicMock())
 
     def _lock_file(self, tmp_path, *, mode=0o600):
         """A real ``gateway.lock`` in a patched config dir (see ``TestStop``)."""
         path = tmp_path / "gateway.lock"
         path.write_text("50519\n")
         path.chmod(mode)
-        return patch("kiro_crew.cli_server.config_dir", return_value=tmp_path)
+        return patch("efm_go.cli_server.config_dir", return_value=tmp_path)
 
     def _lock_private(self, answer):
         """Pin the lock-permission seam (see ``TestStop._lock_private``)."""
-        return patch("kiro_crew.cli_server._lock_file_is_account_private", return_value=answer)
+        return patch("efm_go.cli_server._lock_file_is_account_private", return_value=answer)
 
     def test_service_active_restarts_via_controller(self, capsys):
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=True,
             ) as mock_restart,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
-            patch("kiro_crew.cli_server.platform_compat.find_listening_pids") as mock_ports,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server.platform_compat.find_listening_pids") as mock_ports,
         ):
             _restart(None)
         mock_restart.assert_called_once()
@@ -2928,8 +2928,8 @@ class TestRestart:
         # reads like a restart. The command must instead fail loudly and name
         # the privileged command the operator has to run themselves — the one
         # for the scope that refused, carried in the restart report.
-        from kiro_crew import cli_server
-        from kiro_crew.service.common import RESTART_REFUSED, RestartReport, ScopeRestart
+        from efm_go import cli_server
+        from efm_go.service.common import RESTART_REFUSED, RestartReport, ScopeRestart
 
         mock_sel = MagicMock()
         refused = RestartReport(
@@ -2948,18 +2948,18 @@ class TestRestart:
         )
 
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=refused,
             ),
             patch(
-                "kiro_crew.cli_server.service_controller.is_service_active",
+                "efm_go.cli_server.service_controller.is_service_active",
                 return_value=True,
             ),
-            patch("kiro_crew.cli_server.platform_compat.find_listening_pids") as mock_ports,
-            patch("kiro_crew.cli_server._stop") as mock_stop,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server.platform_compat.find_listening_pids") as mock_ports,
+            patch("efm_go.cli_server._stop") as mock_stop,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 cli_server._restart(None)
@@ -2988,8 +2988,8 @@ class TestRestart:
         # the command must print THAT and point at the user journal. It must not
         # claim a privilege problem nor hint `sudo systemctl restart kirocrew`,
         # which on this host answers "Unit kirocrew.service not found".
-        from kiro_crew import cli_server
-        from kiro_crew.service.common import RESTART_NOT_UP, RestartReport, ScopeRestart
+        from efm_go import cli_server
+        from efm_go.service.common import RESTART_NOT_UP, RestartReport, ScopeRestart
 
         mock_sel = MagicMock()
         not_up = RestartReport(
@@ -3008,17 +3008,17 @@ class TestRestart:
         )
 
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=not_up,
             ),
             patch(
-                "kiro_crew.cli_server.service_controller.is_service_active",
+                "efm_go.cli_server.service_controller.is_service_active",
                 return_value=True,
             ),
-            patch("kiro_crew.cli_server.platform_compat.find_listening_pids") as mock_ports,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server.platform_compat.find_listening_pids") as mock_ports,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 cli_server._restart(None)
@@ -3045,8 +3045,8 @@ class TestRestart:
         # installed, enabled definition. Falling through would spawn an
         # unmanaged gateway beside it; the attempted report must win over the
         # live reach check.
-        from kiro_crew import cli_server
-        from kiro_crew.service.common import RESTART_NOT_UP, RestartReport, ScopeRestart
+        from efm_go import cli_server
+        from efm_go.service.common import RESTART_NOT_UP, RestartReport, ScopeRestart
 
         mock_sel = MagicMock()
         failed = RestartReport(
@@ -3065,18 +3065,18 @@ class TestRestart:
         )
 
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=failed,
             ),
             patch(
-                "kiro_crew.cli_server.service_controller.is_service_active",
+                "efm_go.cli_server.service_controller.is_service_active",
                 return_value=False,
             ) as mock_active,
-            patch("kiro_crew.cli_server.platform_compat.find_listening_pids") as mock_ports,
-            patch("kiro_crew.cli_server._stop") as mock_stop,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server.platform_compat.find_listening_pids") as mock_ports,
+            patch("efm_go.cli_server._stop") as mock_stop,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 cli_server._restart(None)
@@ -3099,8 +3099,8 @@ class TestRestart:
         # was NOT restarted", which is false for the gateway the operator uses.
         # Exit 1 all the same: a scope still needs a hand, the shape `service
         # uninstall` gives a teardown that finished in one scope only.
-        from kiro_crew import cli_server
-        from kiro_crew.service.common import RESTART_NOT_UP, RestartReport, ScopeRestart
+        from efm_go import cli_server
+        from efm_go.service.common import RESTART_NOT_UP, RestartReport, ScopeRestart
 
         mock_sel = MagicMock()
         mixed = RestartReport(
@@ -3120,17 +3120,17 @@ class TestRestart:
         )
 
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=mixed,
             ),
             patch(
-                "kiro_crew.cli_server.service_controller.is_service_active",
+                "efm_go.cli_server.service_controller.is_service_active",
                 return_value=True,
             ),
-            patch("kiro_crew.cli_server.platform_compat.find_listening_pids") as mock_ports,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server.platform_compat.find_listening_pids") as mock_ports,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 cli_server._restart(None)
@@ -3156,8 +3156,8 @@ class TestRestart:
         # The manager stopped answering while the unit was re-read: its health is
         # unknown, so neither "exits on start" nor a restart command is honest —
         # the remedy is to look.
-        from kiro_crew import cli_server
-        from kiro_crew.service.common import RESTART_UNCONFIRMED, RestartReport, ScopeRestart
+        from efm_go import cli_server
+        from efm_go.service.common import RESTART_UNCONFIRMED, RestartReport, ScopeRestart
 
         mock_sel = MagicMock()
         unconfirmed = RestartReport(
@@ -3177,16 +3177,16 @@ class TestRestart:
         )
 
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=unconfirmed,
             ),
             patch(
-                "kiro_crew.cli_server.service_controller.is_service_active",
+                "efm_go.cli_server.service_controller.is_service_active",
                 return_value=False,
             ),
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 cli_server._restart(None)
@@ -3204,24 +3204,24 @@ class TestRestart:
         # ``restart_service()`` returning False because NO service is active
         # must keep taking the foreground path — the denied diagnostic is only
         # for a unit that is active right now yet refused the restart.
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.service_controller.is_service_active",
+                "efm_go.cli_server.service_controller.is_service_active",
                 return_value=False,
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[],
             ),
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(4321),
             ) as mock_spawn,
         ):
@@ -3234,29 +3234,29 @@ class TestRestart:
         and no gateway answers the authenticated shutdown, yet gateway.lock is
         held by the live ``holder_pid``. Every way the command could signal a
         pid is recorded so the tests can assert that none was used."""
-        from kiro_crew.gateway_lock import LockHolder
+        from efm_go.gateway_lock import LockHolder
 
         with (
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[],
             ),
-            patch("kiro_crew.cli_server.platform_compat.IS_WINDOWS", False),
-            patch("kiro_crew.cli_server._report_authenticated_shutdown", return_value=False),
+            patch("efm_go.cli_server.platform_compat.IS_WINDOWS", False),
+            patch("efm_go.cli_server._report_authenticated_shutdown", return_value=False),
             patch(
-                "kiro_crew.cli_server.lock_holder",
+                "efm_go.cli_server.lock_holder",
                 return_value=LockHolder(pid=holder_pid, alive=True, source="flock_owner"),
             ),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=kirocrew),
-            patch("kiro_crew.cli_server.os.kill") as mock_kill,
-            patch("kiro_crew.cli_server.platform_compat.kill_process_tree") as mock_tree,
-            patch("kiro_crew.cli_server._stop_mcp_gateway_daemon") as mock_daemon,
-            patch("kiro_crew.cli_server._wait_for_pids_exit") as mock_wait,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=kirocrew),
+            patch("efm_go.cli_server.os.kill") as mock_kill,
+            patch("efm_go.cli_server.platform_compat.kill_process_tree") as mock_tree,
+            patch("efm_go.cli_server._stop_mcp_gateway_daemon") as mock_daemon,
+            patch("efm_go.cli_server._wait_for_pids_exit") as mock_wait,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             yield {
                 "kill": mock_kill,
@@ -3274,11 +3274,11 @@ class TestRestart:
         signal through the lock either: a gateway neither the port nor the
         API could reach is refused and NAMED, with the manual command, so the
         operator stops it by hand and retries."""
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         mock_sel = MagicMock()
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._probe_missed_gateway(4242, kirocrew=True) as mocks,
         ):
             with pytest.raises(SystemExit) as exc:
@@ -3306,11 +3306,11 @@ class TestRestart:
         -- refuse with the same wording ``kirocrew gateway`` would give for this
         holder, audited as denied, rather than silently spawning a competitor
         the lock refuses."""
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         mock_sel = MagicMock()
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._probe_missed_gateway(99, kirocrew=False) as mocks,
         ):
             with pytest.raises(SystemExit) as exc:
@@ -3342,7 +3342,7 @@ class TestRestart:
         ``acknowledged=False`` drives the same entry with NO gateway answering
         the API, so ``_stop`` reaches the lock holder instead.
         """
-        from kiro_crew.gateway_lock import LockHolder
+        from efm_go.gateway_lock import LockHolder
 
         holder_kwargs = (
             {"side_effect": lock_probe_error}
@@ -3351,25 +3351,25 @@ class TestRestart:
         )
         with (
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+                "efm_go.cli_server.platform_compat.listening_pid_tool_available",
                 return_value=False,
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[],
             ),
-            patch("kiro_crew.cli_server.platform_compat.IS_WINDOWS", False),
-            patch("kiro_crew.cli_server.service_controller.stop_service", return_value=False),
+            patch("efm_go.cli_server.platform_compat.IS_WINDOWS", False),
+            patch("efm_go.cli_server.service_controller.stop_service", return_value=False),
             patch(
-                "kiro_crew.cli_server._report_authenticated_shutdown",
+                "efm_go.cli_server._report_authenticated_shutdown",
                 return_value=acknowledged,
             ),
-            patch("kiro_crew.cli_server.lock_holder", **holder_kwargs),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server.lock_holder", **holder_kwargs),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
         ):
             yield
 
@@ -3379,15 +3379,15 @@ class TestRestart:
         "nothing running") and restart must NOT read that as a free lock --
         it re-reads the holder, refuses too, waits on nothing and spawns
         nothing. Both refusals are audited under their own operation."""
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         mock_sel = MagicMock()
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._tool_absent_acked_shutdown(4242, acknowledged=False),
-            patch("kiro_crew.cli_server.os.kill") as mock_kill,
-            patch("kiro_crew.cli_server._wait_for_pids_exit") as mock_wait,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server.os.kill") as mock_kill,
+            patch("efm_go.cli_server._wait_for_pids_exit") as mock_wait,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 _restart(None)
@@ -3411,7 +3411,7 @@ class TestRestart:
         on an empty list and the replacement spawns while the exiting gateway
         still owns gateway.lock -- it loses the race and NO gateway remains.
         The spawn must happen only after the lock holder's pid is gone."""
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         order: list[str] = []
 
@@ -3419,7 +3419,7 @@ class TestRestart:
             order.append(f"wait:{pids}")
             return []
 
-        from kiro_crew.gateway_lock import LockHolder
+        from efm_go.gateway_lock import LockHolder
 
         def _probe(_home):
             # The holder is named before the wait; once it has exited, the
@@ -3432,10 +3432,10 @@ class TestRestart:
         with (
             self._mock_sel(),
             self._tool_absent_acked_shutdown(4242),
-            patch("kiro_crew.cli_server.lock_holder", side_effect=_probe),
-            patch("kiro_crew.cli_server._wait_for_pids_exit", side_effect=_wait),
+            patch("efm_go.cli_server.lock_holder", side_effect=_probe),
+            patch("efm_go.cli_server._wait_for_pids_exit", side_effect=_wait),
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 side_effect=lambda port: (order.append("spawn"), self._fake_proc(4321))[1],
             ),
         ):
@@ -3446,14 +3446,14 @@ class TestRestart:
         """Same entry, holder never exits within the wait: refuse with the same
         'still running' message the port-lookup path prints, non-zero exit, no
         spawn -- a replacement the lock would refuse is worse than none."""
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         mock_sel = MagicMock()
         with (
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             self._tool_absent_acked_shutdown(4242),
-            patch("kiro_crew.cli_server._wait_for_pids_exit", return_value=[4242]) as mock_wait,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server._wait_for_pids_exit", return_value=[4242]) as mock_wait,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 _restart(None)
@@ -3472,8 +3472,8 @@ class TestRestart:
         """Port tool absent and the lock probe cannot say who holds the lock:
         neither signal a guessed pid nor spawn a replacement the lock may
         refuse -- print the existing indeterminate message and exit 1."""
-        from kiro_crew.cli_server import _restart
-        from kiro_crew.gateway_lock import LockProbeError
+        from efm_go.cli_server import _restart
+        from efm_go.gateway_lock import LockProbeError
 
         with (
             self._mock_sel(),
@@ -3483,8 +3483,8 @@ class TestRestart:
                     Path("/nowhere/gateway.lock"), OSError("probe failed")
                 ),
             ),
-            patch("kiro_crew.cli_server._wait_for_pids_exit") as mock_wait,
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server._wait_for_pids_exit") as mock_wait,
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 _restart(None)
@@ -3499,23 +3499,23 @@ class TestRestart:
         # Restart should be tolerant of a crashed gateway: if the user runs
         # ``kirocrew restart`` after the gateway died, they should still
         # end up with a running gateway, not an error.
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[],
             ),
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(4321),
             ) as mock_spawn,
-            patch("kiro_crew.cli_server._stop") as mock_stop,
+            patch("efm_go.cli_server._stop") as mock_stop,
         ):
             _restart(None)
         mock_stop.assert_not_called()
@@ -3525,27 +3525,27 @@ class TestRestart:
         assert "detached" in out.lower()
 
     def test_no_service_with_running_gateway_stops_then_spawns(self, capsys):
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[1234],
             ),
             # A RUNNING gateway, per this test's name: argv classifies it, so it
             # is the incumbent by that route and the endpoint path is not
             # involved. The wait is stubbed so the assertion never depends on
             # whether pid 1234 happens to exist on the host.
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
-            patch("kiro_crew.cli_server._wait_for_pids_exit", return_value=[]),
-            patch("kiro_crew.cli_server._stop") as mock_stop,
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server._wait_for_pids_exit", return_value=[]),
+            patch("efm_go.cli_server._stop") as mock_stop,
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(5678),
             ) as mock_spawn,
         ):
@@ -3563,21 +3563,21 @@ class TestRestart:
         # the user asked for a restart, not a stop, and an exit here would
         # leave them with no running gateway at all. Verify we swallow
         # SystemExit and still spawn the replacement.
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[1234],
             ),
-            patch("kiro_crew.cli_server._stop", side_effect=SystemExit(1)) as mock_stop,
+            patch("efm_go.cli_server._stop", side_effect=SystemExit(1)) as mock_stop,
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(9999),
             ) as mock_spawn,
         ):
@@ -3595,7 +3595,7 @@ class TestRestart:
         1, leaving NO gateway running. Assert the spawn happens strictly after
         the incumbent pid is observed gone.
         """
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         # Alive for the first two probes, gone from the third.
         exited = iter([False, False, True, True, True])
@@ -3609,19 +3609,19 @@ class TestRestart:
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[1234],
             ),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
-            patch("kiro_crew.cli_server._stop"),
-            patch("kiro_crew.cli_server._pid_exited", side_effect=fake_pid_exited),
-            patch("kiro_crew.cli_server._print_token_url"),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server._stop"),
+            patch("efm_go.cli_server._pid_exited", side_effect=fake_pid_exited),
+            patch("efm_go.cli_server._print_token_url"),
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(5678),
             ) as mock_spawn,
         ):
@@ -3639,23 +3639,23 @@ class TestRestart:
         so the user ends up with nothing. Aborting leaves the (slow) gateway up
         and names the pid to force.
         """
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[1234],
             ),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
-            patch("kiro_crew.cli_server._stop"),
-            patch("kiro_crew.cli_server._pid_exited", return_value=False),
-            patch("kiro_crew.cli_server._RESTART_STOP_TIMEOUT", 0),
-            patch("kiro_crew.cli_server._spawn_detached_gateway") as mock_spawn,
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server._stop"),
+            patch("efm_go.cli_server._pid_exited", return_value=False),
+            patch("efm_go.cli_server._RESTART_STOP_TIMEOUT", 0),
+            patch("efm_go.cli_server._spawn_detached_gateway") as mock_spawn,
         ):
             with pytest.raises(SystemExit) as exc:
                 cli_server._restart(None)
@@ -3680,24 +3680,24 @@ class TestRestart:
         ``unrecognized_listener`` refusal. A stub that returned normally would
         model a stop that neither stopped nor refused.
         """
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[1234],
             ),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=False),
-            patch("kiro_crew.cli_server._stop", side_effect=SystemExit(1)) as mock_stop,
-            patch("kiro_crew.cli_server._pid_exited", return_value=False) as mock_exited,
-            patch("kiro_crew.cli_server._print_token_url"),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=False),
+            patch("efm_go.cli_server._stop", side_effect=SystemExit(1)) as mock_stop,
+            patch("efm_go.cli_server._pid_exited", return_value=False) as mock_exited,
+            patch("efm_go.cli_server._print_token_url"),
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(5678),
             ) as mock_spawn,
         ):
@@ -3718,13 +3718,13 @@ class TestRestart:
         just did), an unparameterised spawn lets the replacement bind 5476 while
         the parent waits on 6776 and prints a 6776 URL.
         """
-        from kiro_crew.cli_server import _spawn_detached_gateway
+        from efm_go.cli_server import _spawn_detached_gateway
 
-        monkeypatch.setattr("kiro_crew.cli_server.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli_server.config_dir", lambda: tmp_path)
         proc = MagicMock(pid=4321)
         with (
             patch("shutil.which", return_value="/usr/local/bin/kirocrew"),
-            patch("kiro_crew.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
+            patch("efm_go.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
         ):
             _spawn_detached_gateway(6776)
         assert mock_popen.call_args.args[0] == [
@@ -3736,25 +3736,25 @@ class TestRestart:
 
     def test_restart_passes_resolved_port_to_spawn(self, tmp_path, monkeypatch):
         """`restart` with no --port must hand its resolved port to the child."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
-        monkeypatch.setattr("kiro_crew.cli_server.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli_server.config_dir", lambda: tmp_path)
         with (
-            patch("kiro_crew.cli_server.resolve_client_port", return_value=6776),
+            patch("efm_go.cli_server.resolve_client_port", return_value=6776),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
-            patch("kiro_crew.cli_server.platform_compat.find_listening_pids", return_value=[]),
+            patch("efm_go.cli_server.platform_compat.find_listening_pids", return_value=[]),
             patch(
-                "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+                "efm_go.cli_server.platform_compat.listening_pid_tool_available",
                 return_value=True,
             ),
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(1234),
             ) as mock_spawn,
-            patch("kiro_crew.cli_server._print_token_url"),
+            patch("efm_go.cli_server._print_token_url"),
         ):
             cli_server._restart(None)
         assert mock_spawn.call_args.args[0] == 6776
@@ -3763,13 +3763,13 @@ class TestRestart:
         # When ``kirocrew`` is on PATH, the detached child must invoke it
         # directly (not via ``python -m``). This exercises the production
         # path on installed hosts.
-        from kiro_crew.cli_server import _spawn_detached_gateway
+        from efm_go.cli_server import _spawn_detached_gateway
 
-        monkeypatch.setattr("kiro_crew.cli_server.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli_server.config_dir", lambda: tmp_path)
         proc = MagicMock(pid=9999)
         with (
             patch("shutil.which", return_value="/usr/local/bin/kirocrew"),
-            patch("kiro_crew.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
+            patch("efm_go.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
         ):
             spawned = _spawn_detached_gateway()
         # The Popen HANDLE is returned, not a bare pid: restart must be able to
@@ -3803,9 +3803,9 @@ class TestRestart:
         # must respawn the one that was invoked, not whichever which() finds
         # first, or the replacement gateway composes different providers than
         # the one just stopped.
-        from kiro_crew.cli_server import _spawn_detached_gateway
+        from efm_go.cli_server import _spawn_detached_gateway
 
-        monkeypatch.setattr("kiro_crew.cli_server.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli_server.config_dir", lambda: tmp_path)
         own = tmp_path / "kirocrew"
         own.write_text("#!/bin/sh\n")
         own.chmod(0o755)
@@ -3813,18 +3813,18 @@ class TestRestart:
         proc = MagicMock(pid=7777)
         with (
             patch("shutil.which", return_value="/usr/local/bin/kirocrew"),
-            patch("kiro_crew.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
+            patch("efm_go.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
         ):
             _spawn_detached_gateway()
         assert mock_popen.call_args.args[0] == [str(own), "gateway"]
 
     def test_spawn_detached_gateway_ignores_non_kirocrew_argv0(self, tmp_path, monkeypatch):
         # argv[0] is only trusted when it names the kirocrew console script.
-        # Anything else (a test runner, a wrapper, `python -m kiro_crew restart`)
+        # Anything else (a test runner, a wrapper, `python -m efm_go restart`)
         # must fall through to the documented which()/module resolution.
-        from kiro_crew.cli_server import _spawn_detached_gateway
+        from efm_go.cli_server import _spawn_detached_gateway
 
-        monkeypatch.setattr("kiro_crew.cli_server.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli_server.config_dir", lambda: tmp_path)
         other = tmp_path / "pytest"
         other.write_text("#!/bin/sh\n")
         other.chmod(0o755)
@@ -3832,7 +3832,7 @@ class TestRestart:
         proc = MagicMock(pid=6666)
         with (
             patch("shutil.which", return_value="/usr/local/bin/kirocrew"),
-            patch("kiro_crew.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
+            patch("efm_go.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
         ):
             _spawn_detached_gateway()
         assert mock_popen.call_args.args[0] == ["/usr/local/bin/kirocrew", "gateway"]
@@ -3841,14 +3841,14 @@ class TestRestart:
         # Fails closed on a correctly-named but non-existent argv[0] (frozen
         # bundles and some launchers rewrite it), rather than handing Popen a
         # path that cannot be executed.
-        from kiro_crew.cli_server import _spawn_detached_gateway
+        from efm_go.cli_server import _spawn_detached_gateway
 
-        monkeypatch.setattr("kiro_crew.cli_server.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli_server.config_dir", lambda: tmp_path)
         monkeypatch.setattr(sys, "argv", [str(tmp_path / "ghost" / "kirocrew"), "restart"])
         proc = MagicMock(pid=5555)
         with (
             patch("shutil.which", return_value="/usr/local/bin/kirocrew"),
-            patch("kiro_crew.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
+            patch("efm_go.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
         ):
             _spawn_detached_gateway()
         assert mock_popen.call_args.args[0] == ["/usr/local/bin/kirocrew", "gateway"]
@@ -3860,9 +3860,9 @@ class TestRestart:
         # before exec, so a relative program path resolves under $HOME and raises
         # FileNotFoundError with no gateway running (_stop() already killed it).
         # Deliberately exercises the real which() rather than patching it.
-        from kiro_crew.cli_server import _spawn_detached_gateway
+        from efm_go.cli_server import _spawn_detached_gateway
 
-        monkeypatch.setattr("kiro_crew.cli_server.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli_server.config_dir", lambda: tmp_path)
         # Use the real per-platform venv console-script layout: `bin/kirocrew` on
         # POSIX, `Scripts\kirocrew.exe` on Windows. shutil.which() only accepts a
         # directory-qualified argument on Windows with a PATHEXT extension
@@ -3882,7 +3882,7 @@ class TestRestart:
         rel = os.path.join(".venv", venv_bin.name, script_name)
         monkeypatch.setattr(sys, "argv", [rel, "restart"])
         proc = MagicMock(pid=4444)
-        with patch("kiro_crew.cli_server.subprocess.Popen", return_value=proc) as mock_popen:
+        with patch("efm_go.cli_server.subprocess.Popen", return_value=proc) as mock_popen:
             _spawn_detached_gateway()
         spawned = Path(mock_popen.call_args.args[0][0])
         assert spawned.is_absolute()
@@ -3892,41 +3892,41 @@ class TestRestart:
         self, tmp_path, monkeypatch, nonbundled_python_without_user_site
     ):
         # Dev/Brazil-workspace installs may not have ``kirocrew`` on
-        # PATH globally. Fall back to ``python -s -P -m kiro_crew`` so the
+        # PATH globally. Fall back to ``python -s -P -m efm_go`` so the
         # command works regardless of install layout without loading user site
         # and without the spawn cwd (the home directory) ahead of the stdlib.
-        from kiro_crew.cli_server import _spawn_detached_gateway
+        from efm_go.cli_server import _spawn_detached_gateway
 
-        monkeypatch.setattr("kiro_crew.cli_server.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli_server.config_dir", lambda: tmp_path)
         proc = MagicMock(pid=8888)
         with (
             patch("shutil.which", return_value=None),
-            patch("kiro_crew.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
+            patch("efm_go.cli_server.subprocess.Popen", return_value=proc) as mock_popen,
         ):
             _spawn_detached_gateway()
         argv = mock_popen.call_args.args[0]
         # First arg is sys.executable (path to current Python). Just check
         # the invocation form, not the absolute path.
-        assert argv[1:] == ["-s", "-P", "-m", "kiro_crew", "gateway"]
+        assert argv[1:] == ["-s", "-P", "-m", "efm_go", "gateway"]
 
     def test_explicit_port_bypasses_service_short_circuit(self, capsys):
         # When cli_port is not None, bypass systemd: the service unit is not
         # bound to a specific port, so short-circuiting through it would
         # target the wrong gateway.
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=True,
             ) as mock_restart_service,
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(4321),
             ) as mock_spawn,
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[],
             ),
         ):
@@ -3946,35 +3946,35 @@ class TestRestart:
         answered by who is listening, so the enumerated pid is used and the
         replacement spawns only after it is gone.
         """
-        from kiro_crew.cli_server import _restart
+        from efm_go.cli_server import _restart
 
         app_argv = (
             "/Applications/KiroCrew.app/Contents/Resources/backend-dist/"
-            "kirocrew-backend-arm64/bin/python3.12 /Applications/KiroCrew.app/"
-            "Contents/Resources/backend-dist/kirocrew-backend-arm64/serve.py"
+            "efm-go-backend-arm64/bin/python3.12 /Applications/KiroCrew.app/"
+            "Contents/Resources/backend-dist/efm-go-backend-arm64/serve.py"
         )
         with (
             self._mock_sel(),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[50519],
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.process_command_line",
+                "efm_go.cli_server.platform_compat.process_command_line",
                 return_value=app_argv,
             ),
             patch(
-                "kiro_crew.cli_server._verified_loopback_gateway_pids",
+                "efm_go.cli_server._verified_loopback_gateway_pids",
                 return_value=[50519],
             ),
-            patch("kiro_crew.cli_server._request_gateway_shutdown", return_value=True),
-            patch("kiro_crew.cli_server.platform_compat.IS_WINDOWS", False),
-            patch("kiro_crew.cli_server.os.kill") as mock_kill,
-            patch("kiro_crew.cli_server._refuse_if_lock_held"),
-            patch("kiro_crew.cli_server._wait_for_pids_exit", return_value=[]) as mock_wait,
-            patch("kiro_crew.cli_server.run_marker.read_pid", return_value=None),
+            patch("efm_go.cli_server._request_gateway_shutdown", return_value=True),
+            patch("efm_go.cli_server.platform_compat.IS_WINDOWS", False),
+            patch("efm_go.cli_server.os.kill") as mock_kill,
+            patch("efm_go.cli_server._refuse_if_lock_held"),
+            patch("efm_go.cli_server._wait_for_pids_exit", return_value=[]) as mock_wait,
+            patch("efm_go.cli_server.run_marker.read_pid", return_value=None),
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=self._fake_proc(60815),
             ) as mock_spawn,
         ):
@@ -4012,39 +4012,39 @@ class TestRestartReadinessVerdict:
         loop checks its deadline only AFTER probing, so every case resolves on the
         first pass.
         """
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         mock_sel = MagicMock()
         stack = [
-            patch("kiro_crew.cli_server.sel", return_value=mock_sel),
+            patch("efm_go.cli_server.sel", return_value=mock_sel),
             patch(
-                "kiro_crew.cli_server.service_controller.restart_service",
+                "efm_go.cli_server.service_controller.restart_service",
                 return_value=RestartReport(),
             ),
             # Keep the denied-service branch out of these verdict tests (and
             # keep them off the host's real systemctl/launchctl state).
             patch(
-                "kiro_crew.cli_server.service_controller.is_service_active",
+                "efm_go.cli_server.service_controller.is_service_active",
                 return_value=False,
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 return_value=[],
             ),
             patch(
-                "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+                "efm_go.cli_server.platform_compat.listening_pid_tool_available",
                 return_value=True,
             ),
-            patch("kiro_crew.cli_server.run_marker.read_pid", side_effect=marker_pid),
-            patch("kiro_crew.cli_server._gateway_owns_port", return_value=True),
-            patch("kiro_crew.cli_server._probe_gateway_ready", return_value=ready_status),
+            patch("efm_go.cli_server.run_marker.read_pid", side_effect=marker_pid),
+            patch("efm_go.cli_server._gateway_owns_port", return_value=True),
+            patch("efm_go.cli_server._probe_gateway_ready", return_value=ready_status),
             patch(
-                "kiro_crew.cli_server._spawn_detached_gateway",
+                "efm_go.cli_server._spawn_detached_gateway",
                 return_value=MagicMock(pid=4321, poll=MagicMock(return_value=poll)),
             ),
-            patch("kiro_crew.cli_server._print_token_url"),
+            patch("efm_go.cli_server._print_token_url"),
             patch(
-                "kiro_crew.cli_server._resolve_restart_ready_timeout",
+                "efm_go.cli_server._resolve_restart_ready_timeout",
                 return_value=0 if timeout is None else timeout,
             ),
         ]
@@ -4153,55 +4153,55 @@ class TestResolveClientPort:
 
     def test_cli_flag_wins(self, monkeypatch, tmp_path):
         """An explicit --port flag must override env and config."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.setenv("KIROCREW_PORT", "9999")
         mock_cfg = MagicMock()
         mock_cfg.dashboard.url = "http://localhost:8888"
-        with patch("kiro_crew.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
+        with patch("efm_go.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
             assert resolve_client_port(12345) == 12345
 
     def test_env_var_used_when_no_cli(self, monkeypatch):
         """KIROCREW_PORT env var wins over config when no --port passed."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.setenv("KIROCREW_PORT", "6777")
         mock_cfg = MagicMock()
         mock_cfg.dashboard.url = "http://localhost:8888"
-        with patch("kiro_crew.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
+        with patch("efm_go.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
             assert resolve_client_port(None) == 6777
 
     def test_invalid_env_var_falls_through_to_config(self, monkeypatch):
         """A garbage KIROCREW_PORT must not crash; the helper falls through."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.setenv("KIROCREW_PORT", "not-a-number")
         mock_cfg = MagicMock()
         mock_cfg.dashboard.url = "http://localhost:7778"
-        with patch("kiro_crew.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
+        with patch("efm_go.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
             assert resolve_client_port(None) == 7778
 
     def test_config_url_used_when_no_cli_no_env(self, monkeypatch):
         """The port in dashboard.url must be honoured when env is unset."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
         mock_cfg = MagicMock()
         mock_cfg.dashboard.url = "http://localhost:7778"
-        with patch("kiro_crew.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
+        with patch("efm_go.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
             assert resolve_client_port(None) == 7778
 
     def test_config_url_hostname_only_falls_through_to_default(self, monkeypatch):
         """A dashboard.url without an explicit port must fall through to 5476."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
         mock_cfg = MagicMock()
         mock_cfg.dashboard.url = "http://my.host.example"
         with (
-            patch("kiro_crew.cli_server.KiroCrewConfig.load", return_value=mock_cfg),
+            patch("efm_go.cli_server.KiroCrewConfig.load", return_value=mock_cfg),
             # No gateway advertising itself — isolate from the dev box's markers.
-            patch("kiro_crew.cli_server.run_marker.marker_ports", return_value=[]),
+            patch("efm_go.cli_server.run_marker.marker_ports", return_value=[]),
         ):
             # A portless URL is not a port choice, so we continue past it; with no
             # live run-marker either, we land on the documented default.
@@ -4209,25 +4209,25 @@ class TestResolveClientPort:
 
     def test_empty_config_falls_through_to_default(self, monkeypatch):
         """No env, empty dashboard.url → 5476."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
         mock_cfg = MagicMock()
         mock_cfg.dashboard.url = ""
-        with patch("kiro_crew.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
+        with patch("efm_go.cli_server.KiroCrewConfig.load", return_value=mock_cfg):
             assert resolve_client_port(None) == 5476
 
     def test_config_load_failure_falls_through_to_default(self, monkeypatch):
         """If config loading raises, the helper must still return a usable port."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
-        with patch("kiro_crew.cli_server.KiroCrewConfig.load", side_effect=RuntimeError("boom")):
+        with patch("efm_go.cli_server.KiroCrewConfig.load", side_effect=RuntimeError("boom")):
             assert resolve_client_port(None) == 5476
 
     def test_cli_flag_zero_is_respected(self, monkeypatch):
         """Port 0 is weird but valid; it must not be coerced to None/default."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.setenv("KIROCREW_PORT", "9999")
         # cli_port=0 is explicit; the helper uses 'is not None' not truthiness.
@@ -4250,20 +4250,20 @@ class TestResolveClientPortRunMarker:
     def _cfg(self, url):
         mock_cfg = MagicMock()
         mock_cfg.dashboard.url = url
-        return patch("kiro_crew.cli_server.KiroCrewConfig.load", return_value=mock_cfg)
+        return patch("efm_go.cli_server.KiroCrewConfig.load", return_value=mock_cfg)
 
     def _markers(self, ports):
-        return patch("kiro_crew.cli_server.run_marker.marker_ports", return_value=ports)
+        return patch("efm_go.cli_server.run_marker.marker_ports", return_value=ports)
 
     def _owned(self, ports):
         """Pretend a verified KiroCrew gateway listens on each of *ports*."""
         return patch(
-            "kiro_crew.cli_server._gateway_owns_port", side_effect=lambda p: p in set(ports)
+            "efm_go.cli_server._gateway_owns_port", side_effect=lambda p: p in set(ports)
         )
 
     def test_sole_owned_marker_used_when_nothing_configured(self):
         """The bug: one gateway on 6776, no config → must not return 5476."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with self._cfg(""), self._markers([6776]), self._owned([6776]):
             assert resolve_client_port(None) == 6776
@@ -4274,27 +4274,27 @@ class TestResolveClientPortRunMarker:
         parse_dashboard_url() substitutes 5476 for a portless URL, which would
         otherwise short-circuit discovery with a value the user never wrote down.
         """
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with self._cfg("http://my.host.example"), self._markers([6776]), self._owned([6776]):
             assert resolve_client_port(None) == 6776
 
     def test_explicit_config_port_beats_marker(self):
         """An explicitly configured port is a user decision; discovery yields."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with self._cfg("http://localhost:7778"), self._markers([6776]), self._owned([6776]):
             assert resolve_client_port(None) == 7778
 
     def test_env_var_beats_marker(self, monkeypatch):
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         monkeypatch.setenv("KIROCREW_PORT", "6777")
         with self._cfg(""), self._markers([6776]), self._owned([6776]):
             assert resolve_client_port(None) == 6777
 
     def test_cli_flag_beats_marker(self):
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with self._markers([6776]) as markers:
             assert resolve_client_port(12345) == 12345
@@ -4307,7 +4307,7 @@ class TestResolveClientPortRunMarker:
         urlparse raises TypeError (NOT ValueError) on a non-str, which would
         otherwise escape and kill every client command.
         """
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         for bad in (123, ["http://localhost:7778"], {"url": 1}, True):
             with self._cfg(bad), self._markers([6776]), self._owned([6776]):
@@ -4317,7 +4317,7 @@ class TestResolveClientPortRunMarker:
             assert resolve_client_port(None) == 5476
 
     def test_no_marker_falls_through_to_default(self):
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with self._cfg(""), self._markers([]):
             assert resolve_client_port(None) == 5476
@@ -4326,7 +4326,7 @@ class TestResolveClientPortRunMarker:
         """A crashed gateway leaves its marker behind, and an unrelated process
         may since have bound that port. Trusting it would hand the local secret
         to that process, so the port must be discarded."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with self._cfg(""), self._markers([6776]), self._owned([]):
             assert resolve_client_port(None) == 5476
@@ -4334,7 +4334,7 @@ class TestResolveClientPortRunMarker:
     def test_multiple_owned_markers_refuses_to_guess(self, capsys):
         """Two gateways up → no basis to pick; fall back to the documented
         default and tell the user how to disambiguate."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with self._cfg(""), self._markers([6776, 6777]), self._owned([6776, 6777]):
             assert resolve_client_port(None) == 5476
@@ -4344,12 +4344,12 @@ class TestResolveClientPortRunMarker:
 
     def test_discovery_failure_falls_through_to_default(self):
         """A broken data home must not break client commands."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with (
             self._cfg(""),
             patch(
-                "kiro_crew.cli_server.run_marker.marker_ports",
+                "efm_go.cli_server.run_marker.marker_ports",
                 side_effect=OSError("boom"),
             ),
         ):
@@ -4357,7 +4357,7 @@ class TestResolveClientPortRunMarker:
 
     def test_malformed_config_url_still_reaches_marker(self):
         """A typo'd `dashboard.url` must not swallow the discovery step."""
-        from kiro_crew.cli_server import resolve_client_port
+        from efm_go.cli_server import resolve_client_port
 
         with self._cfg("http://[::1"), self._markers([6776]), self._owned([6776]):
             assert resolve_client_port(None) == 6776
@@ -4373,30 +4373,30 @@ class TestGatewayOwnsPort:
     """
 
     def _sidecar(self, pid):
-        return patch("kiro_crew.cli_server.run_marker.read_pid", return_value=pid)
+        return patch("efm_go.cli_server.run_marker.read_pid", return_value=pid)
 
     def _listeners(self, pids):
-        return patch("kiro_crew.cli_server.platform_compat.find_listening_pids", return_value=pids)
+        return patch("efm_go.cli_server.platform_compat.find_listening_pids", return_value=pids)
 
     def _owner(self, uid):
-        return patch("kiro_crew.cli_server.platform_compat.process_owner_uid", return_value=uid)
+        return patch("efm_go.cli_server.platform_compat.process_owner_uid", return_value=uid)
 
     def _me(self):
         return os.getuid() if hasattr(os, "getuid") else 0
 
     def _posix(self, value=True):
-        return patch("kiro_crew.cli_server.platform_compat.IS_POSIX", value)
+        return patch("efm_go.cli_server.platform_compat.IS_POSIX", value)
 
     def test_true_when_recorded_pid_holds_the_port_and_is_ours(self):
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         with (
             self._posix(),
             self._sidecar(4242),
             self._listeners([4242]),
             self._owner(self._me()),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
-            patch("kiro_crew.cli_server.os.getuid", return_value=self._me(), create=True),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server.os.getuid", return_value=self._me(), create=True),
         ):
             assert _gateway_owns_port(6776) is True
 
@@ -4406,7 +4406,7 @@ class TestGatewayOwnsPort:
         is skipped rather than trusted on partial evidence. Windows keeps --port
         / KIROCREW_PORT, which is where it was before this fallback existed.
         """
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         # Every OTHER precondition is satisfied, so the non-POSIX guard is the
         # only thing that can deny — otherwise this test would pass for the
@@ -4416,22 +4416,22 @@ class TestGatewayOwnsPort:
             self._sidecar(4242),
             self._listeners([4242]),
             self._owner(self._me()),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
-            patch("kiro_crew.cli_server.os.getuid", return_value=self._me(), create=True),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server.os.getuid", return_value=self._me(), create=True),
         ):
             assert _gateway_owns_port(6776) is False
 
     def test_false_when_listener_is_not_the_recorded_pid(self):
         """The spoofing case: an unrelated process holds the port and can name
         itself anything, but it is not the pid our own sidecar records."""
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         with (
             self._sidecar(4242),
             self._listeners([9999]),
             self._owner(self._me()),
             # Even if its argv is a perfect forgery of a gateway command line.
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
         ):
             assert _gateway_owns_port(6776) is False
 
@@ -4439,63 +4439,63 @@ class TestGatewayOwnsPort:
     def test_false_when_pid_is_owned_by_another_user(self):
         """Pid recycling into a *foreign* user's process must not be trusted,
         even though that pid does hold the port."""
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         with (
             self._sidecar(4242),
             self._listeners([4242]),
             self._owner(os.getuid() + 1),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
         ):
             assert _gateway_owns_port(6776) is False
 
     @pytest.mark.skipif(not hasattr(os, "getuid"), reason="POSIX uid gate only")
     def test_false_when_owner_uid_is_unknown_on_posix(self):
         """Cannot determine ownership → deny (fail closed), do not assume ours."""
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         with (
             self._sidecar(4242),
             self._listeners([4242]),
             self._owner(None),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=True),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=True),
         ):
             assert _gateway_owns_port(6776) is False
 
     def test_false_when_no_pid_recorded(self):
         """No sidecar / unparseable pid → nothing to prove identity with."""
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         with self._sidecar(None), self._listeners([4242]):
             assert _gateway_owns_port(6776) is False
 
     def test_false_when_pid_is_not_a_kirocrew_process(self):
         """Defense in depth kept as the last step, never as the only one."""
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         with (
             self._sidecar(4242),
             self._listeners([4242]),
             self._owner(self._me()),
-            patch("kiro_crew.cli_server._is_kirocrew_process", return_value=False),
+            patch("efm_go.cli_server._is_kirocrew_process", return_value=False),
         ):
             assert _gateway_owns_port(6776) is False
 
     def test_fails_closed_when_no_listener_or_lookup_tool(self):
         """find_listening_pids folds a missing lsof/netstat into an empty list,
         so both 'nothing there' and 'cannot tell' must deny."""
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         with self._sidecar(4242), self._listeners([]):
             assert _gateway_owns_port(6776) is False
 
     def test_fails_closed_when_lookup_raises(self):
-        from kiro_crew.cli_server import _gateway_owns_port
+        from efm_go.cli_server import _gateway_owns_port
 
         with (
             self._sidecar(4242),
             patch(
-                "kiro_crew.cli_server.platform_compat.find_listening_pids",
+                "efm_go.cli_server.platform_compat.find_listening_pids",
                 side_effect=OSError("lsof exploded"),
             ),
         ):
@@ -4514,7 +4514,7 @@ class TestCliLoopbackAddress:
     def test_cli_requests_use_the_ipv4_literal(self):
         import inspect
 
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         assert cli_server._CLI_LOOPBACK == "127.0.0.1"
         src = inspect.getsource(cli_server)
@@ -4530,7 +4530,7 @@ class TestCliLoopbackAddress:
         the SPA's per-origin localStorage is keyed on `localhost`."""
         import inspect
 
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         # The URL printing lives in _emit_session_urls, which _token calls. Inspect the
         # function that actually owns the invariant, and assert the call still happens,
@@ -4545,11 +4545,11 @@ class TestEnsurePrerequisites:
     """Tests for _ensure_prerequisites return value."""
 
     def test_returns_true_when_all_satisfied(self):
-        from kiro_crew.cli_setup import _ensure_prerequisites
+        from efm_go.cli_setup import _ensure_prerequisites
 
         with (
-            patch("kiro_crew.cli_setup.shutil.which", return_value="/usr/bin/kiro-cli"),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=MagicMock(returncode=0)),
+            patch("efm_go.cli_setup.shutil.which", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=MagicMock(returncode=0)),
         ):
             assert _ensure_prerequisites() is True
 
@@ -4560,9 +4560,9 @@ class TestEnsurePrerequisites:
         no installs and imposes no login prerequisite) and always returns True so
         setup proceeds even when the kiro-cli backend is not yet on PATH.
         """
-        from kiro_crew.cli_setup import _ensure_prerequisites
+        from efm_go.cli_setup import _ensure_prerequisites
 
-        with patch("kiro_crew.cli_setup.shutil.which", return_value=None):
+        with patch("efm_go.cli_setup.shutil.which", return_value=None):
             assert _ensure_prerequisites() is True
 
 
@@ -4590,15 +4590,15 @@ class TestDoctorStaleProjectDir:
         mock_run = MagicMock(returncode=0, stdout="kiro-cli 1.0.0", stderr="")
         with (
             patch(
-                "kiro_crew.cli_doctor.shutil.which",
+                "efm_go.cli_doctor.shutil.which",
                 side_effect=lambda b, **_kw: f"/usr/local/bin/{b}",
             ),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen"),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
             patch.dict(
                 "os.environ",
                 {"KIROCREW_PROJECT_DIR": "", "SLACK_APP_TOKEN": "", "SLACK_BOT_TOKEN": ""},
@@ -4623,7 +4623,7 @@ class TestDoctorMcpTools:
     def _mock_probe(self, results: dict[str, tuple[str, list[str], str]]):
         """Return a patch target for `probe_server` that yields per-name
         results. `results[name] = (status, tools, error)`."""
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         async def fake(target: McpServerInfo) -> McpServerInfo:
             status, tools, error = results.get(target.name, ("ok", [], ""))
@@ -4632,10 +4632,10 @@ class TestDoctorMcpTools:
             target.error = error
             return target
 
-        return patch("kiro_crew.cli_doctor.probe_server", side_effect=fake)
+        return patch("efm_go.cli_doctor.probe_server", side_effect=fake)
 
     def test_success_shows_tool_counts(self, tmp_path, capsys):
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         # Every managed server must be present or doctor reports it as a config
@@ -4656,7 +4656,7 @@ class TestDoctorMcpTools:
         assert issues == []
 
     def test_failure_shows_error_head_and_indented_stderr(self, tmp_path, capsys):
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         _write_agent_config(
@@ -4694,7 +4694,7 @@ class TestDoctorMcpTools:
     def test_missing_mcp_server_cannot_auto_fix(self, tmp_path, capsys):
         """A missing `mcpServers` entry is install-specific; doctor reports
         the user needs to re-run setup and does not attempt to probe."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         _write_agent_config(
@@ -4717,7 +4717,7 @@ class TestDoctorMcpTools:
     def test_auto_fix_adds_missing_tools_and_allowed(self, tmp_path, capsys):
         """Missing `tools` / `allowedTools` entries are added to the agent
         config and persisted in-place."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         _write_agent_config(
@@ -4746,7 +4746,7 @@ class TestDoctorMcpTools:
     def test_auto_fix_skips_write_when_shared_home_declined(self, tmp_path, capsys):
         """An instance that must not own the shared agent home reports the
         auto-fix as skipped and leaves the spec byte-identical."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         _write_agent_config(
@@ -4761,7 +4761,7 @@ class TestDoctorMcpTools:
         before = agent_path.read_bytes()
         issues: list[str] = []
         with (
-            patch("kiro_crew.agent._decline_shared_agent_home", return_value=agent_path),
+            patch("efm_go.agent._decline_shared_agent_home", return_value=agent_path),
             self._mock_probe(
                 {
                     "kirocrew-core": ("ok", [], ""),
@@ -4779,7 +4779,7 @@ class TestDoctorMcpTools:
     def test_declined_home_reports_a_forbidden_grant_without_writing(self, tmp_path, capsys):
         """A declined home leaves a ceiling-forbidden grant on disk, logs no
         SEL revoke, and reports the grant for the owning install to repair."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         refs = ["@kirocrew-core", "@kirocrew-cron"]
@@ -4796,9 +4796,9 @@ class TestDoctorMcpTools:
         issues: list[str] = []
         sel_mock = MagicMock()
         with (
-            patch("kiro_crew.agent._decline_shared_agent_home", return_value=agent_path),
-            patch("kiro_crew.cli_doctor.may_skip_gate_now", return_value=False),
-            patch("kiro_crew.cli_doctor.sel", sel_mock),
+            patch("efm_go.agent._decline_shared_agent_home", return_value=agent_path),
+            patch("efm_go.cli_doctor.may_skip_gate_now", return_value=False),
+            patch("efm_go.cli_doctor.sel", sel_mock),
             self._mock_probe({}),
         ):
             _doctor_mcp_tools(agent_path, issues)
@@ -4834,8 +4834,8 @@ class TestDoctorMcpTools:
         server it repairs, and a closed gate (the CI default — feature disabled)
         would skip the repair entirely and assert nothing.
         """
-        from kiro_crew import agent
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go import agent
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         _healthy_agent_file(agent_path)
@@ -4873,8 +4873,8 @@ class TestDoctorMcpTools:
         Gate pinned OPEN like the mint test above: the preservation rule is
         exercised on the path where doctor walks the full entry.
         """
-        from kiro_crew import agent
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go import agent
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         _healthy_agent_file(agent_path)
@@ -4892,7 +4892,7 @@ class TestDoctorMcpTools:
     def test_probe_exception_does_not_crash(self, tmp_path, capsys):
         """If `probe_server` itself raises (e.g. event-loop oddity), doctor
         prints a warning and returns cleanly instead of propagating."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         _write_agent_config(
@@ -4906,7 +4906,7 @@ class TestDoctorMcpTools:
         )
         issues: list[str] = []
         with patch(
-            "kiro_crew.cli_doctor.probe_server",
+            "efm_go.cli_doctor.probe_server",
             side_effect=RuntimeError("asyncio is on fire"),
         ):
             _doctor_mcp_tools(agent_path, issues)
@@ -4917,7 +4917,7 @@ class TestDoctorMcpTools:
         """Third-party MCPs in the agent config must not be probed — this
         keeps doctor output focused on KiroCrew's own servers and avoids
         false negatives for optional MCPs."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         _write_agent_config(
@@ -4939,7 +4939,7 @@ class TestDoctorMcpTools:
             target.tools = []
             return target
 
-        with patch("kiro_crew.cli_doctor.probe_server", side_effect=recording_probe):
+        with patch("efm_go.cli_doctor.probe_server", side_effect=recording_probe):
             _doctor_mcp_tools(agent_path, issues)
         assert probed_names == ["kirocrew-cron", "kirocrew-core"]
         out = capsys.readouterr().out
@@ -4949,7 +4949,7 @@ class TestDoctorMcpTools:
         """If kirocrew.json is truncated or otherwise unparseable, doctor
         must fall back to an empty config and surface missing-server
         errors cleanly rather than raising out of the MCP section."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         # Truncated mid-write, half-written JSON, totally broken content —
@@ -4977,7 +4977,7 @@ class TestDoctorMcpTools:
         coerce it to an empty config, say what is wrong, and report cleanly,
         same as the truncated case above — and it must never rewrite the
         user's file with the coerced empty config."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         agent_path.write_text(content)
@@ -5018,7 +5018,7 @@ class TestDoctorMcpSpecGate:
 
     def _mock_probe(self, seen: list[str]):
         """Patch ``probe_server`` to record which servers doctor launches."""
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         async def fake(target: McpServerInfo) -> McpServerInfo:
             seen.append(target.name)
@@ -5027,11 +5027,11 @@ class TestDoctorMcpSpecGate:
             target.error = ""
             return target
 
-        return patch("kiro_crew.cli_doctor.probe_server", side_effect=fake)
+        return patch("efm_go.cli_doctor.probe_server", side_effect=fake)
 
     def _pin_gate(self, gate):
         """Return a patch pinning ``kirocrew-computer``'s spec gate to *gate*."""
-        from kiro_crew import agent
+        from efm_go import agent
 
         pinned = dict(agent._MANAGED_MCP_SERVERS["kirocrew-computer"])
         pinned["spec_gate"] = gate
@@ -5042,7 +5042,7 @@ class TestDoctorMcpSpecGate:
         managed always-on server EXCEPT the gated one, refs for all of them
         (emission deliberately leaves the ``tools`` ref alone when it retracts
         the entry, so ref-present-entry-absent is the designed steady state)."""
-        from kiro_crew.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS
+        from efm_go.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS
 
         present = [n for n in ALWAYS_ON_BIN_MCP_SERVERS if n != "kirocrew-computer"]
         _write_agent_config(
@@ -5062,7 +5062,7 @@ class TestDoctorMcpSpecGate:
         exits 0), no auto-mount of the ref, and the line says WHY the server is
         absent rather than looking like a silent skip.
         """
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         self._config_without_computer(agent_path)
@@ -5084,7 +5084,7 @@ class TestDoctorMcpSpecGate:
 
     def test_gate_open_absent_entry_keeps_the_hard_error(self, tmp_path, capsys):
         """Gate open + entry absent is still a broken install and MUST fail."""
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         self._config_without_computer(agent_path)
@@ -5108,7 +5108,7 @@ class TestDoctorMcpSpecGate:
         without an internal handler; the shipped gate's swallowed-error case
         is pinned separately below.
         """
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         def explode() -> bool:
             raise RuntimeError("gate unreadable")
@@ -5137,14 +5137,14 @@ class TestDoctorMcpSpecGate:
         gate's exception contract ever changes, this test and the one above
         say exactly which behavior moved.
         """
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
+        from efm_go.cli_doctor import _doctor_mcp_tools
 
         agent_path = tmp_path / "kirocrew.json"
         self._config_without_computer(agent_path)
         issues: list[str] = []
         with (
             patch(
-                "kiro_crew.computer_use.enable_state.is_enabled",
+                "efm_go.computer_use.enable_state.is_enabled",
                 side_effect=RuntimeError("keystone unreadable"),
             ),
             self._mock_probe([]),
@@ -5164,8 +5164,8 @@ class TestDoctorMcpSpecGate:
         launch), and must not count it as an issue — the next config refresh
         retracts it.
         """
-        from kiro_crew.cli_doctor import _doctor_mcp_tools
-        from kiro_crew.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS
+        from efm_go.cli_doctor import _doctor_mcp_tools
+        from efm_go.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS
 
         agent_path = tmp_path / "kirocrew.json"
         present = list(ALWAYS_ON_BIN_MCP_SERVERS)
@@ -5201,8 +5201,8 @@ class TestDoctorMcpSpecGate:
         so counting it as expected would re-create the same unfixable
         "re-run `kirocrew setup --agent-only`" loop in this section.
         """
-        from kiro_crew import cli_doctor
-        from kiro_crew.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS
+        from efm_go import cli_doctor
+        from efm_go.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS
 
         monkeypatch.setattr(cli_doctor, "mcp_governance_may_apply", lambda: True)
 
@@ -5262,7 +5262,7 @@ class TestDoctorStt:
         machine that lacks it, which would make an exit-status assertion here report
         the runner instead of the STT arm under test.
         """
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         _pin_default_config(monkeypatch)
         monkeypatch.setattr(_doc, "_load_llama_class", lambda: object)
@@ -5281,7 +5281,7 @@ class TestDoctorStt:
         Applied last, so a test that wants the off arm asks for it explicitly
         (``enabled=False``) rather than relying on what the autouse pin left behind.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         def _cfg() -> KiroCrewConfig:
             cfg = KiroCrewConfig()
@@ -5295,7 +5295,7 @@ class TestDoctorStt:
     @staticmethod
     def _engine(monkeypatch, availability):
         """Answer the recogniser probe without depending on the optional wheel."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         monkeypatch.setattr(_doc, "availability_detail", lambda cfg=None: availability)
 
@@ -5303,11 +5303,11 @@ class TestDoctorStt:
     def _model_on_disk(monkeypatch, present):
         """Say whether the resolved catalog model is downloaded.
 
-        Patched on the ``kiro_crew.stt`` namespace the doctor actually reads. The
+        Patched on the ``efm_go.stt`` namespace the doctor actually reads. The
         real predicate compares the file's size to the catalog's, and the smallest
         entry is 77 MB, so writing one is not an option a test has.
         """
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         monkeypatch.setattr(_doc.stt, "is_present", lambda model: present)
 
@@ -5344,18 +5344,18 @@ class TestDoctorStt:
 
         code = 0
         with (
-            patch("kiro_crew.cli_doctor.shutil.which", side_effect=_which),
+            patch("efm_go.cli_doctor.shutil.which", side_effect=_which),
             patch(
-                "kiro_crew.transcribe._packaged_ffmpeg_resource",
+                "efm_go.transcribe._packaged_ffmpeg_resource",
                 return_value=packaged_decoder,
             ),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no gateway")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
-            patch("kiro_crew.slack.enterprise.validate_enterprise", return_value=True),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.slack.enterprise.validate_enterprise", return_value=True),
             patch.dict("sys.modules", modules or {}),
         ):
             try:
@@ -5367,7 +5367,7 @@ class TestDoctorStt:
     def test_doctor_stt_local_engine_and_model_ready(self, tmp_path, capsys, monkeypatch):
         """The ready state names the resolved catalog model AND where it sits, so
         an operator can see which weights a dictation will actually use."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         self._stt(monkeypatch, provider="local", model="small")
         self._engine(monkeypatch, _doc.stt.Availability(True))
@@ -5387,7 +5387,7 @@ class TestDoctorStt:
         """The weights are fetched on first use, so "not downloaded" is the normal
         first-run state and never an issue. Naming the size is the useful part,
         because that transfer is what a first dictation waits on."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         self._stt(monkeypatch, provider="local", model="base")
         self._engine(monkeypatch, _doc.stt.Availability(True))
@@ -5413,7 +5413,7 @@ class TestDoctorStt:
         no wheel", so a report that only said "speech recogniser" would send the
         user to the wrong fix.
         """
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         self._stt(monkeypatch, provider="local")
         self._engine(
@@ -5453,7 +5453,7 @@ class TestDoctorStt:
         """Reported for a cloud provider too. A Slack voice memo arrives as
         ogg/Opus and the dashboard records webm, so the only input that reaches
         any recogniser without ffmpeg is a 16 kHz mono WAV."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         self._stt(monkeypatch, provider="transcribe")
         monkeypatch.setattr(_doc._plat, "system", lambda: "Linux")
@@ -5484,7 +5484,7 @@ class TestDoctorStt:
     ):
         """A corrupt desktop payload is repaired by reinstalling the app, not by
         asking its user to manage brew, winget, apt, or a loose executable."""
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         self._stt(monkeypatch, provider="transcribe")
         monkeypatch.setattr(_doc.platform_compat, "is_bundled_interpreter", lambda: True)
@@ -5574,8 +5574,8 @@ class TestDoctorStt:
         """Reaching a not-ok state here means the operator selected a provider this
         machine does not support, which is a real configuration fault rather than a
         first-run state, so it carries its code into the summary."""
-        import kiro_crew.cli_doctor as _doc
-        from kiro_crew.transcribe import CODE_APPLE_UNSUPPORTED
+        import efm_go.cli_doctor as _doc
+        from efm_go.transcribe import CODE_APPLE_UNSUPPORTED
 
         self._stt(monkeypatch, provider="apple")
         self._engine(
@@ -5597,7 +5597,7 @@ class TestDoctorStt:
         assert code == 1
 
     def test_doctor_stt_apple_available(self, tmp_path, capsys, monkeypatch):
-        import kiro_crew.cli_doctor as _doc
+        import efm_go.cli_doctor as _doc
 
         self._stt(monkeypatch, provider="apple")
         self._engine(monkeypatch, _doc.stt.Availability(True))
@@ -5613,9 +5613,9 @@ class TestConfigDirOverride:
 
     def test_project_dir_file_uses_config_dir(self, tmp_path, monkeypatch):
         """_project_dir_file() returns path under config_dir(), not hardcoded home."""
-        monkeypatch.setattr("kiro_crew.cli.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.cli.config_dir", lambda: tmp_path)
 
-        from kiro_crew.cli import _project_dir_file
+        from efm_go.cli import _project_dir_file
 
         assert _project_dir_file() == tmp_path / "project_dir"
 
@@ -5624,16 +5624,16 @@ class TestConfigDirOverride:
         proj = tmp_path / "my_project"
         proj.mkdir()
         (proj / "skills").mkdir()
-        (proj / "src" / "kiro_crew").mkdir(parents=True)
+        (proj / "src" / "efm_go").mkdir(parents=True)
 
         config_home = tmp_path / "custom_config"
         config_home.mkdir()
         (config_home / "project_dir").write_text(str(proj) + "\n")
 
-        monkeypatch.setattr("kiro_crew.cli.config_dir", lambda: config_home)
+        monkeypatch.setattr("efm_go.cli.config_dir", lambda: config_home)
         # "CWD has no project markers" has to be pinned, not assumed of tmp_path:
         # the walk climbs every ancestor, and a temp root under a checkout (a
-        # developer's `TMPDIR=./tmp`) puts the real `skills/` + `src/kiro_crew`
+        # developer's `TMPDIR=./tmp`) puts the real `skills/` + `src/efm_go`
         # above it. The seam the walk reads is `Path.cwd()`, so it answers a
         # fabricated, marker-free location; the path is never created because
         # `resolve()` is lexical for a missing path and nothing here opens it.
@@ -5643,51 +5643,51 @@ class TestConfigDirOverride:
             classmethod(lambda cls: cls("/kc-detect-project-dir-has-no-markers/cwd")),
         )
 
-        from kiro_crew.cli import _detect_project_dir
+        from efm_go.cli import _detect_project_dir
 
         assert _detect_project_dir() == str(proj)
 
     def test_detect_project_dir_no_agents_dir(self, tmp_path, monkeypatch):
         """Detection works without a project-level agents/ dir (removed in bbbc1f6e).
 
-        Regression guard: agent config was consolidated into src/kiro_crew/config/
+        Regression guard: agent config was consolidated into src/efm_go/config/
         and the root agents/ dir deleted, which silently broke detection (and the
         dashboard changelog) while the marker still required agents/ + skills/.
         """
         proj = tmp_path / "KiroCrew"
         (proj / "skills").mkdir(parents=True)
-        (proj / "src" / "kiro_crew").mkdir(parents=True)
+        (proj / "src" / "efm_go").mkdir(parents=True)
         assert not (proj / "agents").exists()
 
-        monkeypatch.setattr("kiro_crew.cli.config_dir", lambda: tmp_path / "cfg")
+        monkeypatch.setattr("efm_go.cli.config_dir", lambda: tmp_path / "cfg")
         (tmp_path / "cfg").mkdir()
         monkeypatch.chdir(proj)
 
-        from kiro_crew.cli import _detect_project_dir
+        from efm_go.cli import _detect_project_dir
 
         assert _detect_project_dir() == str(proj.resolve())
 
     def test_logout_reads_secret_for_listener_port(self, monkeypatch):
         """_logout resolves the secret paired with the requested listener."""
         read_secret = MagicMock(return_value="test-secret")
-        monkeypatch.setattr("kiro_crew.cli_server.read_local_secret", read_secret)
+        monkeypatch.setattr("efm_go.cli_server.read_local_secret", read_secret)
 
-        from kiro_crew.cli_server import _logout
+        from efm_go.cli_server import _logout
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = b'{"ok": true}'
         mock_resp.__enter__ = MagicMock(return_value=mock_resp)
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("kiro_crew.cli_server.loopback_urlopen", return_value=mock_resp):
+        with patch("efm_go.cli_server.loopback_urlopen", return_value=mock_resp):
             _logout(5476)
         read_secret.assert_called_once_with(5476, dial_host="127.0.0.1")
 
     def test_setup_slack_tokens_writes_to_config_dir(self, tmp_path, monkeypatch):
         """_setup_slack_tokens writes .env to config_dir(), not ~/.kirocrew."""
-        monkeypatch.setattr("kiro_crew.cli_setup.env_path", lambda: tmp_path / ".env")
+        monkeypatch.setattr("efm_go.cli_setup.env_path", lambda: tmp_path / ".env")
 
-        from kiro_crew.cli_setup import _setup_slack_tokens
+        from efm_go.cli_setup import _setup_slack_tokens
 
         # Simulate user providing all tokens
         inputs = iter(["y", "xapp-test", "xoxb-test", "U12345"])
@@ -5707,11 +5707,11 @@ class TestConfigDirOverride:
         reaches it."""
         import os as os_mod
 
-        import kiro_crew.cli_setup as cs
-        from kiro_crew import platform_compat as pc
+        import efm_go.cli_setup as cs
+        from efm_go import platform_compat as pc
 
         env_file = tmp_path / ".env"
-        monkeypatch.setattr("kiro_crew.cli_setup.env_path", lambda: env_file)
+        monkeypatch.setattr("efm_go.cli_setup.env_path", lambda: env_file)
         inputs = iter(["y", "xapp-test", "xoxb-test", "U12345"])
         monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
@@ -5740,11 +5740,11 @@ class TestConfigDirOverride:
         must not abort the wizard with a traceback after the user already
         typed their tokens: the .env doctrine is enforce-and-warn, matching
         the dashboard credential writers."""
-        import kiro_crew.cli_setup as cs
-        from kiro_crew import platform_compat as pc
+        import efm_go.cli_setup as cs
+        from efm_go import platform_compat as pc
 
         env_file = tmp_path / ".env"
-        monkeypatch.setattr("kiro_crew.cli_setup.env_path", lambda: env_file)
+        monkeypatch.setattr("efm_go.cli_setup.env_path", lambda: env_file)
         inputs = iter(["y", "xapp-test", "xoxb-test", "U12345"])
         monkeypatch.setattr("builtins.input", lambda _: next(inputs))
         monkeypatch.setattr(
@@ -5764,13 +5764,13 @@ class TestConfigDirOverride:
         holds the lock — and leaves .env untouched."""
         import os as os_mod
 
-        import kiro_crew.cli_setup as cs
-        from kiro_crew import platform_compat as pc
-        from kiro_crew.secrets.migrate import _env_lock_path
+        import efm_go.cli_setup as cs
+        from efm_go import platform_compat as pc
+        from efm_go.secrets.migrate import _env_lock_path
 
         env_file = tmp_path / ".env"
         env_file.write_text("EXISTING=1\n", encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.cli_setup.env_path", lambda: env_file)
+        monkeypatch.setattr("efm_go.cli_setup.env_path", lambda: env_file)
         inputs = iter(["y", "xapp-test", "xoxb-test", "U12345"])
         monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
@@ -5797,19 +5797,19 @@ class TestSetupChannelGating:
     """
 
     def _run_setup(self, monkeypatch, tmp_path, **kwargs):
-        import kiro_crew.cli_setup as cs
+        import efm_go.cli_setup as cs
 
         calls: list[str] = []
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
         # Imported inside _setup_impl — patch at their source modules.
         monkeypatch.setattr(
-            "kiro_crew.agent.install_agent", lambda clean=False: tmp_path / "agent.json"
+            "efm_go.agent.install_agent", lambda clean=False: tmp_path / "agent.json"
         )
         # Mirror the real signature (bin_dir, *, claim_existing): the setup path
         # passes claim_existing=True, and a stub that refused it would fail here
         # for a reason that has nothing to do with channel gating.
-        monkeypatch.setattr("kiro_crew.agent.ensure_kirocrew_on_path", lambda *a, **k: None)
-        monkeypatch.setattr("kiro_crew.mcp_cleanup.clean_stale_managed_mcp", lambda: [])
+        monkeypatch.setattr("efm_go.agent.ensure_kirocrew_on_path", lambda *a, **k: None)
+        monkeypatch.setattr("efm_go.mcp_cleanup.clean_stale_managed_mcp", lambda: [])
         # Neutralize every unrelated wizard step so only the gating is under test.
         for name in (
             "_ensure_prerequisites",
@@ -5891,8 +5891,8 @@ class TestSetupChannelGating:
         import sys
 
         argv = ["kirocrew", "setup", "--whatsapp"]
-        with patch.object(sys, "argv", argv), patch("kiro_crew.cli._setup") as mock_setup:
-            from kiro_crew.cli import main
+        with patch.object(sys, "argv", argv), patch("efm_go.cli._setup") as mock_setup:
+            from efm_go.cli import main
 
             main()
             assert mock_setup.call_args.kwargs["whatsapp"] is True
@@ -5919,23 +5919,23 @@ class TestSpawnCliAuth:
 
     def test_internal_secret_reads_local_secret_file(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.cli_commands.read_local_secret", lambda _port, **_kw: "abc123"
+            "efm_go.cli_commands.read_local_secret", lambda _port, **_kw: "abc123"
         )
 
-        from kiro_crew.cli_commands import _internal_secret
+        from efm_go.cli_commands import _internal_secret
 
         assert _internal_secret(5476) == "abc123"
 
     def test_internal_secret_returns_empty_when_missing(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.cli_commands.read_local_secret", lambda _port, **_kw: "")
+        monkeypatch.setattr("efm_go.cli_commands.read_local_secret", lambda _port, **_kw: "")
 
-        from kiro_crew.cli_commands import _internal_secret
+        from efm_go.cli_commands import _internal_secret
 
         assert _internal_secret(5476) == ""
 
     def test_spawn_list_sends_internal_secret_header(self, tmp_path, monkeypatch, capsys):
         monkeypatch.setattr(
-            "kiro_crew.cli_commands.read_local_secret", lambda _port, **_kw: "test-secret-xyz"
+            "efm_go.cli_commands.read_local_secret", lambda _port, **_kw: "test-secret-xyz"
         )
 
         captured: list[urllib.request.Request] = []
@@ -5948,9 +5948,9 @@ class TestSpawnCliAuth:
             captured.append(req)
             return mock_resp
 
-        monkeypatch.setattr("kiro_crew.cli_commands.loopback_urlopen", fake_urlopen)
+        monkeypatch.setattr("efm_go.cli_commands.loopback_urlopen", fake_urlopen)
 
-        from kiro_crew.cli_commands import _spawn
+        from efm_go.cli_commands import _spawn
 
         args = argparse.Namespace(spawn_action="list", port=5476)
         _spawn(args)
@@ -5963,7 +5963,7 @@ class TestSpawnCliAuth:
 
     def test_spawn_run_sends_internal_secret_header(self, tmp_path, monkeypatch, capsys):
         monkeypatch.setattr(
-            "kiro_crew.cli_commands.read_local_secret", lambda _port, **_kw: "run-secret-abc"
+            "efm_go.cli_commands.read_local_secret", lambda _port, **_kw: "run-secret-abc"
         )
 
         captured: list[urllib.request.Request] = []
@@ -5976,9 +5976,9 @@ class TestSpawnCliAuth:
             captured.append(req)
             return mock_resp
 
-        monkeypatch.setattr("kiro_crew.cli_commands.loopback_urlopen", fake_urlopen)
+        monkeypatch.setattr("efm_go.cli_commands.loopback_urlopen", fake_urlopen)
 
-        from kiro_crew.cli_commands import _spawn_run
+        from efm_go.cli_commands import _spawn_run
 
         args = argparse.Namespace(task="do thing", fire_and_forget=True, port=5476)
         _spawn_run(args, "http://localhost:5476")
@@ -5993,7 +5993,7 @@ class TestSpawnCliAuth:
 
     def test_spawn_list_403_prints_token_required(self, tmp_path, monkeypatch, capsys):
         """A bare 403 from the gateway is reported, not masked as 'not running'."""
-        monkeypatch.setattr("kiro_crew.cli_commands.read_local_secret", lambda _port, **_kw: "")
+        monkeypatch.setattr("efm_go.cli_commands.read_local_secret", lambda _port, **_kw: "")
 
         def fake_urlopen(*_args: object, **_kwargs: object) -> None:
             raise urllib.error.HTTPError(
@@ -6004,9 +6004,9 @@ class TestSpawnCliAuth:
                 fp=None,
             )
 
-        monkeypatch.setattr("kiro_crew.cli_commands.loopback_urlopen", fake_urlopen)
+        monkeypatch.setattr("efm_go.cli_commands.loopback_urlopen", fake_urlopen)
 
-        from kiro_crew.cli_commands import _spawn
+        from efm_go.cli_commands import _spawn
 
         args = argparse.Namespace(spawn_action="list", port=5476)
         with pytest.raises(SystemExit) as excinfo:
@@ -6030,10 +6030,10 @@ class TestArtifactCli:
         # pins the whole argv -> namespace -> command hop rather than the
         # forwarding alone.
         seen: dict[str, object] = {}
-        from kiro_crew import cli
+        from efm_go import cli
 
         monkeypatch.setattr(
-            "kiro_crew.cli_commands._artifact",
+            "efm_go.cli_commands._artifact",
             lambda args: seen.update(slug=args.slug, name=args.name),
         )
         monkeypatch.setattr(
@@ -6060,13 +6060,13 @@ class TestArtifactCli:
         # AUTOSDE security-controls: --content-file must be gated by
         # is_sensitive_path() before Path.read_text(encoding="utf-8") so a user (or script)
         # cannot exfiltrate ~/.aws/credentials by piping it into an artifact.
-        from kiro_crew.cli_commands import _artifact
+        from efm_go.cli_commands import _artifact
 
-        monkeypatch.setattr("kiro_crew.cli_commands.is_sensitive_path", lambda _p: True)
+        monkeypatch.setattr("efm_go.cli_commands.is_sensitive_path", lambda _p: True)
         # Surface any HTTP call as a fatal so we can prove the function exited
         # at the security check, not at the network layer.
         monkeypatch.setattr(
-            "kiro_crew.cli_commands.loopback_urlopen",
+            "efm_go.cli_commands.loopback_urlopen",
             lambda *_a, **_kw: pytest.fail("_artifact must refuse before opening any HTTP request"),
         )
 
@@ -6088,11 +6088,11 @@ class TestArtifactCli:
     def test_update_refuses_sensitive_content_file(
         self, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.cli_commands import _artifact
+        from efm_go.cli_commands import _artifact
 
-        monkeypatch.setattr("kiro_crew.cli_commands.is_sensitive_path", lambda _p: True)
+        monkeypatch.setattr("efm_go.cli_commands.is_sensitive_path", lambda _p: True)
         monkeypatch.setattr(
-            "kiro_crew.cli_commands.loopback_urlopen",
+            "efm_go.cli_commands.loopback_urlopen",
             lambda *_a, **_kw: pytest.fail("_artifact must refuse before opening any HTTP request"),
         )
 
@@ -6122,7 +6122,7 @@ class TestMcpBuiltinDispatch:
         so register a synthetic builtin name to exercise the dispatch path
         (cli.py subparser registration + dynamic import).
         """
-        import kiro_crew.cli as cli_mod
+        import efm_go.cli as cli_mod
 
         builtin_name = "fakebuiltin"
         # Patch the registry the CLI reads when building subparsers and dispatching.
@@ -6136,7 +6136,7 @@ class TestMcpBuiltinDispatch:
         with patch("importlib.import_module", return_value=mock_module) as mock_import:
             cli_mod.main()
 
-        mock_import.assert_called_once_with(f"kiro_crew.apps.builtins.{builtin_name}.mcp_server")
+        mock_import.assert_called_once_with(f"efm_go.apps.builtins.{builtin_name}.mcp_server")
         mock_module.run_mcp_server.assert_called_once()
 
 
@@ -6145,8 +6145,8 @@ class TestProjectDirFile:
 
     def test_returns_config_dir_path(self, monkeypatch, tmp_path):
         """_project_dir_file should return config_dir() / 'project_dir'."""
-        monkeypatch.setattr("kiro_crew.cli.config_dir", lambda: tmp_path)
-        from kiro_crew.cli import _project_dir_file
+        monkeypatch.setattr("efm_go.cli.config_dir", lambda: tmp_path)
+        from efm_go.cli import _project_dir_file
 
         assert _project_dir_file() == tmp_path / "project_dir"
 
@@ -6168,13 +6168,13 @@ class TestSeedDispatch:
         mock_gateway = MagicMock(side_effect=lambda **_kw: order.append("gateway") or object())
         with (
             patch(
-                "kiro_crew.dashboard.loop_watchdog.disarm_inherited_alarm",
+                "efm_go.dashboard.loop_watchdog.disarm_inherited_alarm",
                 side_effect=lambda: order.append("disarm") or True,
             ) as disarm,
-            patch("kiro_crew.cli_server._gateway", mock_gateway),
-            patch("kiro_crew.cli.asyncio.run"),
+            patch("efm_go.cli_server._gateway", mock_gateway),
+            patch("efm_go.cli.asyncio.run"),
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         disarm.assert_called_once_with()
@@ -6190,13 +6190,13 @@ class TestSeedDispatch:
         mock_gateway = MagicMock(side_effect=lambda **_kw: order.append("gateway") or object())
         with (
             patch(
-                "kiro_crew.platform_compat.ensure_line_buffered_stdout",
+                "efm_go.platform_compat.ensure_line_buffered_stdout",
                 side_effect=lambda: order.append("line-buffer"),
             ) as line_buffer,
-            patch("kiro_crew.cli_server._gateway", mock_gateway),
-            patch("kiro_crew.cli.asyncio.run"),
+            patch("efm_go.cli_server._gateway", mock_gateway),
+            patch("efm_go.cli.asyncio.run"),
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         line_buffer.assert_called_once_with()
@@ -6209,11 +6209,11 @@ class TestSeedDispatch:
         gateway_call = object()
         mock_gateway = MagicMock(return_value=gateway_call)
         with (
-            patch("kiro_crew.cli.seed_cmd", mock_seed),
-            patch("kiro_crew.cli_server._gateway", mock_gateway),
-            patch("kiro_crew.cli.asyncio.run") as mock_run,
+            patch("efm_go.cli.seed_cmd", mock_seed),
+            patch("efm_go.cli_server._gateway", mock_gateway),
+            patch("efm_go.cli.asyncio.run") as mock_run,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         mock_seed.assert_called_once()
@@ -6224,8 +6224,8 @@ class TestSeedDispatch:
         """When seed_cmd returns non-zero, CLI should sys.exit with that code."""
         monkeypatch.setattr(sys, "argv", ["kirocrew", "gateway", "--seed", "bad"])
         mock_seed = MagicMock(return_value=1)
-        with patch("kiro_crew.cli.seed_cmd", mock_seed):
-            from kiro_crew.cli import main
+        with patch("efm_go.cli.seed_cmd", mock_seed):
+            from efm_go.cli import main
 
             with pytest.raises(SystemExit) as exc_info:
                 main()
@@ -6238,11 +6238,11 @@ class TestSeedDispatch:
         gateway_call = object()
         mock_gateway = MagicMock(return_value=gateway_call)
         with (
-            patch("kiro_crew.cli.seed_cmd", mock_seed),
-            patch("kiro_crew.cli_server._gateway", mock_gateway),
-            patch("kiro_crew.cli.asyncio.run") as mock_run,
+            patch("efm_go.cli.seed_cmd", mock_seed),
+            patch("efm_go.cli_server._gateway", mock_gateway),
+            patch("efm_go.cli.asyncio.run") as mock_run,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         mock_seed.assert_not_called()
@@ -6260,11 +6260,11 @@ class TestSeedDispatch:
         gateway_call = object()
         mock_gateway = MagicMock(return_value=gateway_call)
         with (
-            patch("kiro_crew.cli.seed_cmd", mock_seed),
-            patch("kiro_crew.cli_server._gateway", mock_gateway),
-            patch("kiro_crew.cli.asyncio.run") as mock_run,
+            patch("efm_go.cli.seed_cmd", mock_seed),
+            patch("efm_go.cli_server._gateway", mock_gateway),
+            patch("efm_go.cli.asyncio.run") as mock_run,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         mock_seed.assert_called_once()
@@ -6289,14 +6289,14 @@ class TestGatewayLockRefusalExit:
         lock_cls = MagicMock()
         lock_cls.return_value.acquire.side_effect = error
         with (
-            patch("kiro_crew.cli.GatewayLock", lock_cls),
-            patch("kiro_crew.cli_server._gateway") as mock_gateway,
-            patch("kiro_crew.cli.asyncio.run") as mock_run,
+            patch("efm_go.cli.GatewayLock", lock_cls),
+            patch("efm_go.cli_server._gateway") as mock_gateway,
+            patch("efm_go.cli.asyncio.run") as mock_run,
             # The gateway path arms faulthandler on the real stderr descriptor,
             # which a capsys-replaced stream does not have.
-            patch("kiro_crew.cli.faulthandler.enable"),
+            patch("efm_go.cli.faulthandler.enable"),
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             with pytest.raises(SystemExit) as excinfo:
                 main()
@@ -6306,7 +6306,7 @@ class TestGatewayLockRefusalExit:
         return excinfo.value.code
 
     def test_a_live_holder_refusal_exits_the_terminal_code(self, monkeypatch, tmp_path, capsys):
-        from kiro_crew.gateway_lock import LIVE_HOLDER_EXIT_CODE, GatewayLockError
+        from efm_go.gateway_lock import LIVE_HOLDER_EXIT_CODE, GatewayLockError
 
         error = GatewayLockError(
             tmp_path,
@@ -6321,7 +6321,7 @@ class TestGatewayLockRefusalExit:
         assert "another gateway already owns" in capsys.readouterr().err
 
     def test_every_other_lock_refusal_keeps_the_restartable_exit(self, monkeypatch, tmp_path):
-        from kiro_crew.gateway_lock import GatewayLockError
+        from efm_go.gateway_lock import GatewayLockError
 
         error = GatewayLockError(
             tmp_path,
@@ -6342,7 +6342,7 @@ class TestGatewayLockRefusalExit:
         port must not stand the unit down. The refusal keeps exit 1 so systemd
         retries; only a positively identified acquirer earns the terminal code.
         """
-        from kiro_crew import gateway_lock, platform_compat
+        from efm_go import gateway_lock, platform_compat
 
         (tmp_path / gateway_lock.LOCK_FILENAME).write_text("4242\n", encoding="utf-8")
         monkeypatch.setattr(platform_compat, "try_acquire_lock", lambda *a, **k: False)
@@ -6373,7 +6373,7 @@ class TestGatewayLockRefusalExit:
         bound, and a terminal exit here would park the unit `failed` with nothing
         left to relaunch once that process dies -- so the exit stays 1.
         """
-        from kiro_crew import gateway_lock, platform_compat
+        from efm_go import gateway_lock, platform_compat
 
         (tmp_path / gateway_lock.LOCK_FILENAME).write_text("16968\n", encoding="utf-8")
         monkeypatch.setattr(platform_compat, "try_acquire_lock", lambda *a, **k: False)
@@ -6567,7 +6567,7 @@ class TestGatewayLockRefusalExit:
         address on the same port, and an owner whose socket address the
         platform did not report included.
         """
-        from kiro_crew import gateway_lock, platform_compat
+        from efm_go import gateway_lock, platform_compat
 
         owner = row["owner"]
         recorded = 4242
@@ -6637,9 +6637,9 @@ class TestGatewayLockRefusalExit:
         the two fallbacks that flag can produce (loopback, the v4 wildcard) are
         probed at the same loopback address, so the flag cannot change the answer.
         """
-        from kiro_crew.cli import _diagnostic_bind_address
-        from kiro_crew.dashboard.urls import bind_address_for
-        from kiro_crew.gateway_lock import probe_host_for_bind
+        from efm_go.cli import _diagnostic_bind_address
+        from efm_go.dashboard.urls import bind_address_for
+        from efm_go.gateway_lock import probe_host_for_bind
 
         monkeypatch.setenv("KIROCREW_BIND", override)
         assert _diagnostic_bind_address() == bind_address_for(local_only=True)
@@ -6692,7 +6692,7 @@ class TestDoctorEmbeddings:
         """
         agent_file = tmp_path / "kirocrew.json"
         _healthy_agent_file(agent_file)
-        import kiro_crew.cli_doctor as doc
+        import efm_go.cli_doctor as doc
 
         if lib_path_override is None:
             # setenv FIRST so monkeypatch records a teardown action even when
@@ -6724,12 +6724,12 @@ class TestDoctorEmbeddings:
         monkeypatch.setattr(doc, "model_file_present", lambda path=None: model_present)
         default_run = MagicMock(returncode=0, stdout="kiro-cli 1.0.0", stderr="")
         with (
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=default_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=default_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
         ):
             with contextlib.suppress(SystemExit):
                 _doctor()
@@ -6855,7 +6855,7 @@ class TestDoctorEmbeddings:
 
     def test_doctor_probes_model_url_when_model_absent(self, tmp_path, capsys, monkeypatch):
         """Fork-added: with the model absent, doctor probes the resolved model URL."""
-        import kiro_crew.cli_doctor as doc
+        import efm_go.cli_doctor as doc
 
         probed: list[str] = []
 
@@ -6877,12 +6877,12 @@ class TestDoctorEmbeddings:
         monkeypatch.setattr(doc, "_resolve_model_url", lambda: "https://mirror.example/m.gguf")
         default_run = MagicMock(returncode=0, stdout="kiro-cli 1.0.0", stderr="")
         with (
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=default_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=default_run),
             patch("urllib.request.urlopen", side_effect=_fake_urlopen),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
         ):
             with contextlib.suppress(SystemExit):
                 _doctor()
@@ -6892,7 +6892,7 @@ class TestDoctorEmbeddings:
 
     def test_doctor_reports_unreachable_model_url(self, tmp_path, capsys, monkeypatch):
         """Fork-added: an unreachable model URL is flagged with a fix hint."""
-        import kiro_crew.cli_doctor as doc
+        import efm_go.cli_doctor as doc
 
         agent_file = tmp_path / "kirocrew.json"
         _healthy_agent_file(agent_file)
@@ -6901,12 +6901,12 @@ class TestDoctorEmbeddings:
         monkeypatch.setattr(doc, "_resolve_model_url", lambda: "https://mirror.example/m.gguf")
         default_run = MagicMock(returncode=0, stdout="kiro-cli 1.0.0", stderr="")
         with (
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=default_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=default_run),
             patch("urllib.request.urlopen", side_effect=urllib.error.URLError("no")),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_noop_probe_server),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_noop_probe_server),
         ):
             with contextlib.suppress(SystemExit):
                 _doctor()
@@ -6919,7 +6919,7 @@ class TestResolveRestartReadyTimeout:
     """`KIROCREW_RESTART_READY_TIMEOUT` parsing for the restart readiness deadline."""
 
     def test_unset_uses_default(self, monkeypatch):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         monkeypatch.delenv("KIROCREW_RESTART_READY_TIMEOUT", raising=False)
 
@@ -6946,7 +6946,7 @@ class TestResolveRestartReadyTimeout:
         ],
     )
     def test_env_value_is_parsed_and_clamped(self, monkeypatch, raw, expected):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         monkeypatch.setenv("KIROCREW_RESTART_READY_TIMEOUT", raw)
 
@@ -6954,7 +6954,7 @@ class TestResolveRestartReadyTimeout:
 
     @pytest.mark.parametrize("raw", ["", "   ", "90", "45.7", "15", "180", "179.2"])
     def test_unset_or_in_range_value_is_silent(self, monkeypatch, capsys, raw):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         monkeypatch.setenv("KIROCREW_RESTART_READY_TIMEOUT", raw)
 
@@ -6976,7 +6976,7 @@ class TestResolveRestartReadyTimeout:
         ],
     )
     def test_fallback_or_clamp_prints_one_stderr_line(self, monkeypatch, capsys, raw, message):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         monkeypatch.setenv("KIROCREW_RESTART_READY_TIMEOUT", raw)
 
@@ -6988,7 +6988,7 @@ class TestResolveRestartReadyTimeout:
         assert message in captured.err
 
     def test_cli_spec_states_the_current_deadline_values(self):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         spec = Path(__file__).resolve().parent.parent / "docs/system-specs/modules/cli.md"
         text = " ".join(spec.read_text(encoding="utf-8").split())
@@ -7023,12 +7023,12 @@ class TestWaitGatewayReady:
 
     def test_dead_child_short_circuits_with_its_exit_status(self):
         """A refused replacement must be reported at once, not waited out."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         probe = MagicMock(return_value=0)
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", probe),
-            patch("kiro_crew.cli_server.time.sleep") as mock_sleep,
+            patch("efm_go.cli_server._probe_gateway_ready", probe),
+            patch("efm_go.cli_server.time.sleep") as mock_sleep,
         ):
             verdict = cli_server._wait_gateway_ready(self._proc([1]), 7777, None, timeout=999)
 
@@ -7039,12 +7039,12 @@ class TestWaitGatewayReady:
 
     def test_zero_timeout_still_probes_once(self):
         """A collapsed timeout must report what is there, not a reflex failure."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         probe = MagicMock(return_value=200)
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", probe),
-            patch("kiro_crew.cli_server._replacement_is_serving", return_value=True),
+            patch("efm_go.cli_server._probe_gateway_ready", probe),
+            patch("efm_go.cli_server._replacement_is_serving", return_value=True),
         ):
             verdict = cli_server._wait_gateway_ready(self._proc([None]), 7777, None, timeout=0)
 
@@ -7052,11 +7052,11 @@ class TestWaitGatewayReady:
         probe.assert_called_once_with(7777)
 
     def test_not_ready_within_deadline_is_a_timeout(self):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         # Two polls: the loop's entry poll and the re-poll taken at the deadline
         # before the timeout verdict. Alive for both, so the verdict is TIMEOUT.
-        with patch("kiro_crew.cli_server._probe_gateway_ready", return_value=503):
+        with patch("efm_go.cli_server._probe_gateway_ready", return_value=503):
             verdict = cli_server._wait_gateway_ready(
                 self._proc([None, None]), 7777, None, timeout=0
             )
@@ -7065,12 +7065,12 @@ class TestWaitGatewayReady:
 
     def test_polls_until_the_replacement_answers(self):
         """A slow-booting gateway is waited for rather than failed."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", side_effect=[0, 503, 200]),
-            patch("kiro_crew.cli_server._replacement_is_serving", return_value=True),
-            patch("kiro_crew.cli_server.time.sleep") as mock_sleep,
+            patch("efm_go.cli_server._probe_gateway_ready", side_effect=[0, 503, 200]),
+            patch("efm_go.cli_server._replacement_is_serving", return_value=True),
+            patch("efm_go.cli_server.time.sleep") as mock_sleep,
         ):
             verdict = cli_server._wait_gateway_ready(
                 self._proc([None, None, None]), 7777, None, timeout=999
@@ -7089,10 +7089,10 @@ class TestWaitGatewayReady:
         """
         import http.client
 
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             side_effect=http.client.BadStatusLine("garbage"),
         ):
             assert cli_server._probe_gateway_ready(7777) == 0
@@ -7105,7 +7105,7 @@ class TestWaitGatewayReady:
         """
         import types
 
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         proc = MagicMock()
         # Alive for the loop's entry poll, exited by the deadline re-poll.
@@ -7127,7 +7127,7 @@ class TestWaitGatewayReady:
         fake_time = types.SimpleNamespace(monotonic=clock, sleep=lambda _seconds: None)
 
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", return_value=503),
+            patch("efm_go.cli_server._probe_gateway_ready", return_value=503),
             patch.object(cli_server, "time", fake_time),
         ):
             verdict, status = cli_server._wait_gateway_ready(proc, 7777, None, 0.0)
@@ -7146,14 +7146,14 @@ class TestWaitGatewayReady:
         return types.SimpleNamespace(monotonic=clock, sleep=lambda _seconds: None)
 
     def test_slow_boot_prints_the_still_starting_line_once(self, capsys):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         # start=0, then one reading per failed probe: before, at and past the
         # checkpoint, all inside the 60s deadline. The fourth probe is ready.
         fake_time = self._scripted_clock([0.0, 5.0, 16.0, 30.0])
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", side_effect=[503, 503, 503, 200]),
-            patch("kiro_crew.cli_server._replacement_is_serving", return_value=True),
+            patch("efm_go.cli_server._probe_gateway_ready", side_effect=[503, 503, 503, 200]),
+            patch("efm_go.cli_server._replacement_is_serving", return_value=True),
             patch.object(cli_server, "time", fake_time),
         ):
             verdict = cli_server._wait_gateway_ready(
@@ -7166,11 +7166,11 @@ class TestWaitGatewayReady:
         assert "Still starting (16s elapsed), continuing to wait..." in out
 
     def test_clamp_minimum_deadline_never_prints_the_still_starting_line(self, capsys):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         fake_time = self._scripted_clock([0.0, 5.0, 14.9, 15.0])
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", return_value=503),
+            patch("efm_go.cli_server._probe_gateway_ready", return_value=503),
             patch.object(cli_server, "time", fake_time),
         ):
             verdict = cli_server._wait_gateway_ready(
@@ -7181,11 +7181,11 @@ class TestWaitGatewayReady:
         assert "Still starting" not in capsys.readouterr().out
 
     def test_checkpoint_then_deadline_prints_once_and_times_out(self, capsys):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         fake_time = self._scripted_clock([0.0, 10.0, 20.0, 40.0, 60.0])
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", return_value=503),
+            patch("efm_go.cli_server._probe_gateway_ready", return_value=503),
             patch.object(cli_server, "time", fake_time),
         ):
             verdict = cli_server._wait_gateway_ready(self._proc([None] * 5), 7777, None, timeout=60)
@@ -7196,12 +7196,12 @@ class TestWaitGatewayReady:
         assert "Still starting (20s elapsed)" in out
 
     def test_ready_on_first_probe_prints_nothing(self, capsys):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         fake_time = self._scripted_clock([0.0, 100.0])
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", return_value=200),
-            patch("kiro_crew.cli_server._replacement_is_serving", return_value=True),
+            patch("efm_go.cli_server._probe_gateway_ready", return_value=200),
+            patch("efm_go.cli_server._replacement_is_serving", return_value=True),
             patch.object(cli_server, "time", fake_time),
         ):
             verdict = cli_server._wait_gateway_ready(self._proc([None]), 7777, None, timeout=60)
@@ -7210,12 +7210,12 @@ class TestWaitGatewayReady:
         assert "Still starting" not in capsys.readouterr().out
 
     def test_early_death_returns_without_probing_or_the_checkpoint_line(self, capsys):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         probe = MagicMock(return_value=0)
         fake_time = self._scripted_clock([0.0, 100.0])
         with (
-            patch("kiro_crew.cli_server._probe_gateway_ready", probe),
+            patch("efm_go.cli_server._probe_gateway_ready", probe),
             patch.object(cli_server, "time", fake_time),
         ):
             verdict = cli_server._wait_gateway_ready(self._proc([1]), 7777, None, timeout=60)
@@ -7233,11 +7233,11 @@ class TestWaitGatewayReady:
         report the outgoing gateway's 200 as the new one's — and with no listener
         lookup available, nothing downstream would catch it.
         """
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with (
-            patch("kiro_crew.cli_server.run_marker.read_pid", return_value=None),
-            patch("kiro_crew.cli_server.platform_compat.IS_POSIX", False),
+            patch("efm_go.cli_server.run_marker.read_pid", return_value=None),
+            patch("efm_go.cli_server.platform_compat.IS_POSIX", False),
         ):
             assert cli_server._replacement_is_serving(7777, 1234) is False
             # Also unproven when there was no prior identity to exclude.
@@ -7245,22 +7245,22 @@ class TestWaitGatewayReady:
 
     def test_unchanged_marker_pid_is_the_old_gateway(self):
         """The discriminator: same recorded pid as before the stop == not the new one."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
-        with patch("kiro_crew.cli_server.run_marker.read_pid", return_value=1234):
+        with patch("efm_go.cli_server.run_marker.read_pid", return_value=1234):
             assert cli_server._replacement_is_serving(7777, 1234) is False
 
     def test_changed_marker_pid_that_owns_the_port_is_the_replacement(self):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with (
-            patch("kiro_crew.cli_server.run_marker.read_pid", return_value=4321),
-            patch("kiro_crew.cli_server.platform_compat.IS_POSIX", True),
+            patch("efm_go.cli_server.run_marker.read_pid", return_value=4321),
+            patch("efm_go.cli_server.platform_compat.IS_POSIX", True),
             patch(
-                "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+                "efm_go.cli_server.platform_compat.listening_pid_tool_available",
                 return_value=True,
             ),
-            patch("kiro_crew.cli_server._gateway_owns_port", return_value=True) as mock_owns,
+            patch("efm_go.cli_server._gateway_owns_port", return_value=True) as mock_owns,
         ):
             assert cli_server._replacement_is_serving(7777, 1234) is True
         mock_owns.assert_called_once_with(7777)
@@ -7272,56 +7272,56 @@ class TestWaitGatewayReady:
         for a perfectly healthy gateway, so the ownership proof is only applied
         where it can pass and the marker comparison stands alone elsewhere.
         """
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with (
-            patch("kiro_crew.cli_server.run_marker.read_pid", return_value=4321),
-            patch("kiro_crew.cli_server.platform_compat.IS_POSIX", False),
-            patch("kiro_crew.cli_server._gateway_owns_port", return_value=False) as mock_owns,
+            patch("efm_go.cli_server.run_marker.read_pid", return_value=4321),
+            patch("efm_go.cli_server.platform_compat.IS_POSIX", False),
+            patch("efm_go.cli_server._gateway_owns_port", return_value=False) as mock_owns,
         ):
             assert cli_server._replacement_is_serving(7777, 1234) is True
         mock_owns.assert_not_called()
 
     def test_posix_without_a_listener_lookup_degrades_too(self):
         """No lsof/netstat means `_gateway_owns_port` can never pass — degrade."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with (
-            patch("kiro_crew.cli_server.run_marker.read_pid", return_value=4321),
-            patch("kiro_crew.cli_server.platform_compat.IS_POSIX", True),
+            patch("efm_go.cli_server.run_marker.read_pid", return_value=4321),
+            patch("efm_go.cli_server.platform_compat.IS_POSIX", True),
             patch(
-                "kiro_crew.cli_server.platform_compat.listening_pid_tool_available",
+                "efm_go.cli_server.platform_compat.listening_pid_tool_available",
                 return_value=False,
             ),
-            patch("kiro_crew.cli_server._gateway_owns_port", return_value=False) as mock_owns,
+            patch("efm_go.cli_server._gateway_owns_port", return_value=False) as mock_owns,
         ):
             assert cli_server._replacement_is_serving(7777, None) is True
         mock_owns.assert_not_called()
 
     def test_probe_targets_api_ready_not_api_health(self):
         """Readiness, not liveness: a bound socket is not a serving gateway."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         resp = MagicMock(status=200)
         resp.__enter__ = lambda s: s
         resp.__exit__ = MagicMock(return_value=False)
-        with patch("kiro_crew.cli_server.loopback_urlopen", return_value=resp) as mock_open:
+        with patch("efm_go.cli_server.loopback_urlopen", return_value=resp) as mock_open:
             assert cli_server._probe_gateway_ready(7777) == 200
         assert mock_open.call_args.args[0] == "http://127.0.0.1:7777/api/ready"
 
     def test_probe_reports_zero_when_unreachable(self):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen", side_effect=urllib.error.URLError("down")
+            "efm_go.cli_server.loopback_urlopen", side_effect=urllib.error.URLError("down")
         ):
             assert cli_server._probe_gateway_ready(7777) == 0
 
     def test_probe_reports_the_http_status_of_a_not_ready_gateway(self):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         err = urllib.error.HTTPError("u", 503, "not ready", {}, None)
-        with patch("kiro_crew.cli_server.loopback_urlopen", side_effect=err):
+        with patch("efm_go.cli_server.loopback_urlopen", side_effect=err):
             assert cli_server._probe_gateway_ready(7777) == 503
 
 
@@ -7329,13 +7329,13 @@ class TestPrintTokenUrl:
     """Tests for _print_token_url (auto-token after restart)."""
 
     def test_prints_token_on_success(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _print_token_url
+        from efm_go.cli_server import _print_token_url
 
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
+            "efm_go.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
         )
         monkeypatch.setattr(
-            "kiro_crew.cli_server.KiroCrewConfig.load",
+            "efm_go.cli_server.KiroCrewConfig.load",
             lambda: MagicMock(dashboard=MagicMock(url="")),
         )
         # Mock resolve_dashboard_host to an obviously-fake sentinel host (RFC 2606
@@ -7344,7 +7344,7 @@ class TestPrintTokenUrl:
         # A sentinel distinct from the real default ("localhost") is deliberate: it
         # would catch a regression that hardcodes "localhost" back into the URL.
         monkeypatch.setattr(
-            "kiro_crew.cli_server.resolve_dashboard_host",
+            "efm_go.cli_server.resolve_dashboard_host",
             lambda local_only=True: "canonical-host.invalid",
         )
 
@@ -7353,24 +7353,24 @@ class TestPrintTokenUrl:
         mock_resp.__enter__ = lambda s: s
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("kiro_crew.cli_server.loopback_urlopen", return_value=mock_resp):
+        with patch("efm_go.cli_server.loopback_urlopen", return_value=mock_resp):
             _print_token_url(7777)
 
         out = capsys.readouterr().out
         assert "http://canonical-host.invalid:7777?token=abc123" in out
 
     def test_prints_custom_origin(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _print_token_url
+        from efm_go.cli_server import _print_token_url
 
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
+            "efm_go.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
         )
         monkeypatch.setattr(
-            "kiro_crew.cli_server.KiroCrewConfig.load",
+            "efm_go.cli_server.KiroCrewConfig.load",
             lambda: MagicMock(dashboard=MagicMock(url="http://kirocrew.dev:7777")),
         )
         monkeypatch.setattr(
-            "kiro_crew.cli_server.dashboard_origin", lambda u: "http://kirocrew.dev:7777"
+            "efm_go.cli_server.dashboard_origin", lambda u: "http://kirocrew.dev:7777"
         )
 
         mock_resp = MagicMock()
@@ -7378,19 +7378,19 @@ class TestPrintTokenUrl:
         mock_resp.__enter__ = lambda s: s
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("kiro_crew.cli_server.loopback_urlopen", return_value=mock_resp):
+        with patch("efm_go.cli_server.loopback_urlopen", return_value=mock_resp):
             _print_token_url(7777)
 
         out = capsys.readouterr().out
         assert "http://kirocrew.dev:7777/?token=xyz789" in out
 
     def test_fallback_on_timeout(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _print_token_url
+        from efm_go.cli_server import _print_token_url
 
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
+            "efm_go.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
         )
-        monkeypatch.setattr("kiro_crew.cli_server._RESTART_TOKEN_WAIT", 0)
+        monkeypatch.setattr("efm_go.cli_server._RESTART_TOKEN_WAIT", 0)
 
         _print_token_url(7777)
 
@@ -7401,12 +7401,12 @@ class TestPrintTokenUrl:
         self, capsys, monkeypatch
     ):
         """The readiness override is fork-path only; both paths' token wait stays at 15s."""
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         monkeypatch.setenv("KIROCREW_RESTART_READY_TIMEOUT", "180")
         secret_reads: list[int] = []
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret",
+            "efm_go.cli_server.read_local_secret",
             lambda port, **_kw: secret_reads.append(port) or "",
         )
         remaining = [0.0, 14.0, 16.0, 200.0]
@@ -7427,10 +7427,10 @@ class TestPrintTokenUrl:
         assert "Still starting" not in out
 
     def test_fallback_on_no_secret(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _print_token_url
+        from efm_go.cli_server import _print_token_url
 
-        monkeypatch.setattr("kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "")
-        monkeypatch.setattr("kiro_crew.cli_server._RESTART_TOKEN_WAIT", 0)
+        monkeypatch.setattr("efm_go.cli_server.read_local_secret", lambda _port, **_kw: "")
+        monkeypatch.setattr("efm_go.cli_server._RESTART_TOKEN_WAIT", 0)
 
         _print_token_url(7777)
 
@@ -7450,7 +7450,7 @@ class TestInstallPidfdChildWatcher:
         """Run "_install_child_watcher() then asyncio.run(subprocess)" in a CLEAN
         child Python process, and assert it exits 0.
 
-        *cwd* is the caller's ``tmp_path``: the child imports ``kiro_crew`` off the
+        *cwd* is the caller's ``tmp_path``: the child imports ``efm_go`` off the
         propagated ``PYTHONPATH``, never off its working directory, so the one
         thing the process cwd could still do is let a ``-c`` child run inside the
         developer's checkout.
@@ -7472,7 +7472,7 @@ class TestInstallPidfdChildWatcher:
 
         code = textwrap.dedent("""
             import asyncio
-            from kiro_crew.cli import _install_child_watcher
+            from efm_go.cli import _install_child_watcher
 
             async def _spawn_true():
                 proc = await asyncio.create_subprocess_exec(
@@ -7489,7 +7489,7 @@ class TestInstallPidfdChildWatcher:
             )
             assert asyncio.run(_spawn_true()) == 0
             """).format(expected=expected_watcher)
-        # Propagate the runtime's import path so the child can import kiro_crew
+        # Propagate the runtime's import path so the child can import efm_go
         # (a bare subprocess would not inherit it without PYTHONPATH).
         env = dict(os.environ)
         env["PYTHONPATH"] = os.pathsep.join(p for p in sys.path if p)
@@ -7509,9 +7509,9 @@ class TestInstallPidfdChildWatcher:
     def test_installs_safe_watcher_on_macos(self, monkeypatch) -> None:
         import asyncio
 
-        from kiro_crew.cli import _install_child_watcher
+        from efm_go.cli import _install_child_watcher
 
-        monkeypatch.setattr("kiro_crew.cli.sys.platform", "darwin")
+        monkeypatch.setattr("efm_go.cli.sys.platform", "darwin")
         # On macOS (no pidfd) we install the SIGCHLD-based SafeChildWatcher to
         # eliminate the thread-per-child reaper storm, and must NOT touch the
         # Linux pidfd path. Spy on set_child_watcher; make the pidfd probe and
@@ -7525,7 +7525,7 @@ class TestInstallPidfdChildWatcher:
         def _boom(*_a) -> object:
             raise AssertionError("Linux pidfd path must not be reached on macOS")
 
-        monkeypatch.setattr("kiro_crew.cli.os.pidfd_open", _boom, raising=False)
+        monkeypatch.setattr("efm_go.cli.os.pidfd_open", _boom, raising=False)
         monkeypatch.setattr(asyncio, "PidfdChildWatcher", _boom, raising=False)
         _install_child_watcher()
         assert called == ["fake-safe-watcher"], "macOS must install SafeChildWatcher"
@@ -7533,9 +7533,9 @@ class TestInstallPidfdChildWatcher:
     def test_noop_when_safe_watcher_unavailable(self, monkeypatch) -> None:
         import asyncio
 
-        from kiro_crew.cli import _install_child_watcher
+        from efm_go.cli import _install_child_watcher
 
-        monkeypatch.setattr("kiro_crew.cli.sys.platform", "darwin")
+        monkeypatch.setattr("efm_go.cli.sys.platform", "darwin")
         # Simulate a runtime where SafeChildWatcher was removed (3.14+) or never
         # existed (Windows): the installer must leave the default watcher in
         # place rather than raise.
@@ -7548,17 +7548,17 @@ class TestInstallPidfdChildWatcher:
     def test_sets_watcher_on_linux(self, monkeypatch) -> None:
         import asyncio
 
-        from kiro_crew.cli import _install_child_watcher
+        from efm_go.cli import _install_child_watcher
 
-        monkeypatch.setattr("kiro_crew.cli.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.cli.sys.platform", "linux")
         # Kernel supports pidfd_open -> probe succeeds -> watcher installed.
         # Fully fake the probe (sentinel fd + no-op close) so no real fd is used.
         opened = []
         closed = []
         monkeypatch.setattr(
-            "kiro_crew.cli.os.pidfd_open", lambda pid: opened.append(pid) or 4242, raising=False
+            "efm_go.cli.os.pidfd_open", lambda pid: opened.append(pid) or 4242, raising=False
         )
-        monkeypatch.setattr("kiro_crew.cli.os.close", lambda fd: closed.append(fd))
+        monkeypatch.setattr("efm_go.cli.os.close", lambda fd: closed.append(fd))
         called_with = []
         monkeypatch.setattr(asyncio, "set_child_watcher", lambda w: called_with.append(w))
         monkeypatch.setattr(
@@ -7572,9 +7572,9 @@ class TestInstallPidfdChildWatcher:
     def test_falls_back_to_safe_watcher_on_old_kernel(self, monkeypatch) -> None:
         import asyncio
 
-        from kiro_crew.cli import _install_child_watcher
+        from efm_go.cli import _install_child_watcher
 
-        monkeypatch.setattr("kiro_crew.cli.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.cli.sys.platform", "linux")
         # Real 3.10 failure mode: PidfdChildWatcher.__init__ does NOT probe the
         # kernel, so the < 5.3 failure surfaces as os.pidfd_open raising OSError.
         # PidfdChildWatcher must NEVER be constructed (else the first
@@ -7586,7 +7586,7 @@ class TestInstallPidfdChildWatcher:
         def _no_pidfd(_pid):
             raise OSError(38, "Function not implemented")  # ENOSYS
 
-        monkeypatch.setattr("kiro_crew.cli.os.pidfd_open", _no_pidfd, raising=False)
+        monkeypatch.setattr("efm_go.cli.os.pidfd_open", _no_pidfd, raising=False)
         installed = []
         monkeypatch.setattr(asyncio, "set_child_watcher", lambda w: installed.append(w))
         monkeypatch.setattr(asyncio, "SafeChildWatcher", lambda: "fake-safe-watcher", raising=False)
@@ -7604,9 +7604,9 @@ class TestInstallPidfdChildWatcher:
     def test_falls_back_to_safe_watcher_when_pidfd_open_missing(self, monkeypatch) -> None:
         import asyncio
 
-        from kiro_crew.cli import _install_child_watcher
+        from efm_go.cli import _install_child_watcher
 
-        monkeypatch.setattr("kiro_crew.cli.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.cli.sys.platform", "linux")
         # The gateway startup kill scenario: a uv-managed /
         # Clang-built CPython 3.12 whose build omits the os.pidfd_open wrapper
         # (present on the system python, absent in the venv interpreter). The
@@ -7615,7 +7615,7 @@ class TestInstallPidfdChildWatcher:
         # os.waitpid reaper-thread storm starved the loop and got the gateway
         # killed by the loop-stall watchdog. It must now fall back to
         # SafeChildWatcher instead.
-        monkeypatch.delattr("kiro_crew.cli.os.pidfd_open", raising=False)
+        monkeypatch.delattr("efm_go.cli.os.pidfd_open", raising=False)
         installed = []
         monkeypatch.setattr(asyncio, "set_child_watcher", lambda w: installed.append(w))
         monkeypatch.setattr(asyncio, "SafeChildWatcher", lambda: "fake-safe-watcher", raising=False)
@@ -7717,17 +7717,17 @@ class TestChildWatcherApiRemoved:
         """Simulated removal, so 3.10-3.13 CI also protects the 3.14 code path."""
         import asyncio
 
-        from kiro_crew.cli import _install_child_watcher
+        from efm_go.cli import _install_child_watcher
 
-        monkeypatch.setattr("kiro_crew.cli.sys.platform", platform)
+        monkeypatch.setattr("efm_go.cli.sys.platform", platform)
         # A pidfd-capable kernel is the WORST case: without the guard the Linux
         # branch reaches `asyncio.set_child_watcher(asyncio.PidfdChildWatcher())`
         # and raises. Keep the probe succeeding so the regression is real.
         # Hand back a REAL fd (the real os.close then reclaims it) rather than
-        # stubbing os.close: `kiro_crew.cli.os` IS the shared os module, so a
+        # stubbing os.close: `efm_go.cli.os` IS the shared os module, so a
         # stub there would also be seen by asyncio's own internals.
         monkeypatch.setattr(
-            "kiro_crew.cli.os.pidfd_open",
+            "efm_go.cli.os.pidfd_open",
             lambda pid: os.open(os.devnull, os.O_RDONLY),
             raising=False,
         )
@@ -7754,7 +7754,7 @@ class TestChildWatcherApiRemoved:
         """
         import asyncio
 
-        from kiro_crew.cli import _install_child_watcher
+        from efm_go.cli import _install_child_watcher
 
         _install_child_watcher()  # mirror the gateway: install BEFORE run
 
@@ -7781,26 +7781,26 @@ class TestTokenCommand:
         return mock_resp
 
     def test_prints_loopback_only(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _token
+        from efm_go.cli_server import _token
 
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
+            "efm_go.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
         )
         monkeypatch.setattr(
-            "kiro_crew.cli_server.KiroCrewConfig.load",
+            "efm_go.cli_server.KiroCrewConfig.load",
             lambda: MagicMock(dashboard=MagicMock(url="")),
         )
-        monkeypatch.setattr("kiro_crew.cli_server.dashboard_origin", lambda u: "")
+        monkeypatch.setattr("efm_go.cli_server.dashboard_origin", lambda u: "")
         # Sentinel canonical host (RFC 2606 .invalid) — proves the URL is built
         # from resolve_dashboard_host's output, not a hardcoded host.
         monkeypatch.setattr(
-            "kiro_crew.cli_server.resolve_dashboard_host",
+            "efm_go.cli_server.resolve_dashboard_host",
             lambda local_only=True: "canonical-host.invalid",
         )
 
         args = argparse.Namespace(ttl="1h", port=7777)
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             return_value=self._mock_token_response("abc123"),
         ):
             _token(args)
@@ -7813,26 +7813,26 @@ class TestTokenCommand:
         assert "/?token=abc123" not in out
 
     def test_separates_custom_origin_with_blank_line(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _token
+        from efm_go.cli_server import _token
 
         monkeypatch.setattr(
-            "kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
+            "efm_go.cli_server.read_local_secret", lambda _port, **_kw: "test-secret"
         )
         monkeypatch.setattr(
-            "kiro_crew.cli_server.KiroCrewConfig.load",
+            "efm_go.cli_server.KiroCrewConfig.load",
             lambda: MagicMock(dashboard=MagicMock(url="https://kirocrew.dev:7777")),
         )
         monkeypatch.setattr(
-            "kiro_crew.cli_server.dashboard_origin", lambda u: "https://kirocrew.dev:7777"
+            "efm_go.cli_server.dashboard_origin", lambda u: "https://kirocrew.dev:7777"
         )
         monkeypatch.setattr(
-            "kiro_crew.cli_server.resolve_dashboard_host",
+            "efm_go.cli_server.resolve_dashboard_host",
             lambda local_only=True: "canonical-host.invalid",
         )
 
         args = argparse.Namespace(ttl="1h", port=7777)
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             return_value=self._mock_token_response("xyz789"),
         ):
             _token(args)
@@ -7848,26 +7848,26 @@ class TestTokenCommand:
     # ── stdout is a machine interface: failures go to stderr ─────────────────
     #
     # `_token`'s stdout is regex-parsed by the remote-mint path
-    # (kiro_crew.instances.token_mint.mint_remote_token) over SSH. Error prose on
+    # (efm_go.instances.token_mint.mint_remote_token) over SSH. Error prose on
     # stdout both breaks the Unix convention and hides the reason from a caller
     # that captures stderr — which is how a failed remote mint surfaces as
     # a bare "<no stderr>".
 
     def _stub_token_env(self, tmp_path, monkeypatch, *, secret: bool = True) -> None:
         value = "test-secret" if secret else ""
-        monkeypatch.setattr("kiro_crew.cli_server.read_local_secret", lambda _port, **_kw: value)
+        monkeypatch.setattr("efm_go.cli_server.read_local_secret", lambda _port, **_kw: value)
         monkeypatch.setattr(
-            "kiro_crew.cli_server.KiroCrewConfig.load",
+            "efm_go.cli_server.KiroCrewConfig.load",
             lambda: MagicMock(dashboard=MagicMock(url="")),
         )
-        monkeypatch.setattr("kiro_crew.cli_server.dashboard_origin", lambda u: "")
+        monkeypatch.setattr("efm_go.cli_server.dashboard_origin", lambda u: "")
         monkeypatch.setattr(
-            "kiro_crew.cli_server.resolve_dashboard_host",
+            "efm_go.cli_server.resolve_dashboard_host",
             lambda local_only=True: "canonical-host.invalid",
         )
 
     def test_invalid_ttl_error_goes_to_stderr(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _token
+        from efm_go.cli_server import _token
 
         self._stub_token_env(tmp_path, monkeypatch)
         with pytest.raises(SystemExit) as excinfo:
@@ -7878,7 +7878,7 @@ class TestTokenCommand:
         assert captured.out == ""
 
     def test_missing_secret_error_goes_to_stderr(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _token
+        from efm_go.cli_server import _token
 
         self._stub_token_env(tmp_path, monkeypatch, secret=False)
         with pytest.raises(SystemExit) as excinfo:
@@ -7889,11 +7889,11 @@ class TestTokenCommand:
         assert captured.out == ""
 
     def test_unreachable_gateway_error_goes_to_stderr(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _token
+        from efm_go.cli_server import _token
 
         self._stub_token_env(tmp_path, monkeypatch)
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen", side_effect=urllib.error.URLError("refused")
+            "efm_go.cli_server.loopback_urlopen", side_effect=urllib.error.URLError("refused")
         ):
             with pytest.raises(SystemExit) as excinfo:
                 _token(argparse.Namespace(ttl="1h", port=7777))
@@ -7903,11 +7903,11 @@ class TestTokenCommand:
         assert captured.out == ""
 
     def test_empty_token_error_goes_to_stderr(self, tmp_path, capsys, monkeypatch):
-        from kiro_crew.cli_server import _token
+        from efm_go.cli_server import _token
 
         self._stub_token_env(tmp_path, monkeypatch)
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen", return_value=self._mock_token_response("")
+            "efm_go.cli_server.loopback_urlopen", return_value=self._mock_token_response("")
         ):
             with pytest.raises(SystemExit) as excinfo:
                 _token(argparse.Namespace(ttl="1h", port=7777))
@@ -7925,11 +7925,11 @@ class TestTokenCommand:
         stdout — would silently corrupt the stream that mint_remote_token regexes
         over SSH. This pins the contract to an assertion instead.
         """
-        from kiro_crew.cli_server import _token
+        from efm_go.cli_server import _token
 
         self._stub_token_env(tmp_path, monkeypatch)
         with patch(
-            "kiro_crew.cli_server.loopback_urlopen",
+            "efm_go.cli_server.loopback_urlopen",
             return_value=self._mock_token_response("eyJa.b"),
         ):
             _token(argparse.Namespace(ttl="1h", port=7777))
@@ -7953,8 +7953,8 @@ class TestBannerBranding:
         """Collapse the ASCII art to comparable letter-ish content."""
         return "".join(banner.split())
 
-    def test_main_banner_is_kiro_crew(self):
-        from kiro_crew.cli import BANNER
+    def test_main_banner_is_efm_go(self):
+        from efm_go.cli import BANNER
 
         # figlet 'small' renders "Crew" with the distinctive `-_)` in the 'e' row
         # and `_ _` in the 'r'/'C' row; "Claw" instead carries `/ _` + `\ V  V /`.
@@ -7968,9 +7968,9 @@ class TestBannerBranding:
         both stale. They now re-export the one in constants.py; identity (`is`)
         proves there is no second literal to drift.
         """
-        from kiro_crew.cli import BANNER as MAIN
-        from kiro_crew.cli_chat import BANNER as CHAT
-        from kiro_crew.constants import BANNER as CANON
+        from efm_go.cli import BANNER as MAIN
+        from efm_go.cli_chat import BANNER as CHAT
+        from efm_go.constants import BANNER as CANON
 
         assert MAIN is CANON
         assert CHAT is CANON
@@ -7979,15 +7979,15 @@ class TestBannerBranding:
         """Guard the fix: neither module may re-inline the art."""
         from pathlib import Path
 
-        import kiro_crew.cli as cli_mod
-        import kiro_crew.cli_chat as chat_mod
+        import efm_go.cli as cli_mod
+        import efm_go.cli_chat as chat_mod
 
         for mod in (cli_mod, chat_mod):
             src = Path(mod.__file__).read_text(encoding="utf-8")
             assert "BANNER = r" not in src, f"{mod.__name__} re-inlined the banner literal"
 
-    def test_cloud_banner_is_kiro_crew_cloud(self):
-        from kiro_crew.cloud.ui import BANNER
+    def test_cloud_banner_is_efm_go_cloud(self):
+        from efm_go.cloud.ui import BANNER
 
         assert "-_)" in BANNER, "cloud banner does not render 'Crew'"
         assert "|__ ___" not in BANNER, "cloud banner still renders 'Claw'"
@@ -7995,8 +7995,8 @@ class TestBannerBranding:
         assert "\\___/\\_,_\\__,_|" in BANNER
 
     def test_no_kiroclaw_spelling_anywhere_in_banners(self):
-        from kiro_crew.cloud.ui import BANNER as CLOUD
-        from kiro_crew.constants import BANNER as MAIN
+        from efm_go.cloud.ui import BANNER as CLOUD
+        from efm_go.constants import BANNER as MAIN
 
         CHAT = MAIN
 
@@ -8044,7 +8044,7 @@ class TestChatPermissionRequest:
     @pytest.fixture(autouse=True)
     def _fresh_stdin_state(self, monkeypatch):
         """Poisoning is process-wide state; monkeypatch restores it per test."""
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         monkeypatch.setattr(cli_chat, "_stdin_poisoned", False)
 
@@ -8078,7 +8078,7 @@ class TestChatPermissionRequest:
         miss -- where nothing was classified and the gate must refuse rather than
         read the payload's own kind -- is opted into explicitly.
         """
-        from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+        from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
         return LLMEvent(
             kind=EVENT_PERMISSION_REQUEST,
@@ -8099,7 +8099,7 @@ class TestChatPermissionRequest:
     @staticmethod
     def _direct_tool_call(client, *, path="notes.md", tool_call_id="tc-direct"):
         """Populate the real direct-client provenance caches for an edit call."""
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         event = client._extract_tool_event(
             JsonRpcMessage(
@@ -8120,7 +8120,7 @@ class TestChatPermissionRequest:
 
     @staticmethod
     def _direct_permission_message(*, tool_call_id="tc-direct", inline_path=None):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         tool_call: dict[str, object] = {
             "toolCallId": tool_call_id,
@@ -8157,7 +8157,7 @@ class TestChatPermissionRequest:
             return [t for t in self.trace if t[0] in ("approve", "reject")]
 
         async def stream(self, message):
-            from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+            from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
             yield LLMEvent(kind=EVENT_TEXT_CHUNK, text="I'll check that. ")
             yield self._event
@@ -8181,8 +8181,8 @@ class TestChatPermissionRequest:
     def _gate():
         """A gate carrying the REAL HookManager: the built-in sensitive-path and
         denied-command rules are the thing under test in several cases."""
-        import kiro_crew.cli_chat as cli_chat
-        from kiro_crew.hooks import HookManager, HooksConfig
+        import efm_go.cli_chat as cli_chat
+        from efm_go.hooks import HookManager, HooksConfig
 
         return cli_chat._ToolGate(hooks=HookManager(HooksConfig.from_dict({})), agent="cli-tester")
 
@@ -8195,7 +8195,7 @@ class TestChatPermissionRequest:
         rule, the daemon-thread plumbing, the gate call and the audit ordering
         all run as production code.
         """
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         monkeypatch.setattr(sys.stdin, "isatty", lambda: tty, raising=False)
         monkeypatch.setattr(sys.stdout, "isatty", lambda: tty, raising=False)
@@ -8227,7 +8227,7 @@ class TestChatPermissionRequest:
         patched onto the real streams, so the production ``_can_prompt`` decides
         -- patching that helper would test the stub rather than the rule.
         """
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         trace: list = []
         provider = self._GatedProvider(event or self._event(), trace)
@@ -8462,7 +8462,7 @@ class TestChatPermissionRequest:
         so a synchronous implementation deadlocks and this times out rather than
         passing quietly.
         """
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         ticks, released = {"n": 0}, threading.Event()
 
@@ -8495,7 +8495,7 @@ class TestChatPermissionRequest:
     async def test_a_poisoned_session_never_starts_a_second_reader(self, monkeypatch):
         """No later entry point may race the abandoned reader for keystrokes --
         not a second permission prompt, and not the REPL."""
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         self._patch_env(monkeypatch)
         monkeypatch.setattr(cli_chat, "_stdin_poisoned", True)
@@ -8523,7 +8523,7 @@ class TestChatPermissionRequest:
         ``reject_tool`` that never returns would leave the Ctrl-C that asked for
         this teardown unable to land.
         """
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         entered = threading.Event()
 
@@ -8565,7 +8565,7 @@ class TestChatPermissionRequest:
         afford to lose, because it is what distinguishes a died-unanswered turn
         from a user who said no.
         """
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         entered = threading.Event()
         threads: list = []
@@ -8615,7 +8615,7 @@ class TestChatPermissionRequest:
         request unanswered, and the backend holds the turn open until it is
         answered, which is the hang this path exists to end.
         """
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         trace: list = []
 
@@ -8654,7 +8654,7 @@ class TestChatPermissionRequest:
         alternative is EXECUTION: a deny is already refusing, so a lost record
         cannot authorize anything, and making it audit-or-deny would turn a
         refusal into an error for no security gain."""
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         seen: dict = {}
 
@@ -8682,7 +8682,7 @@ class TestChatPermissionRequest:
     async def test_approval_audit_records_pending_then_transport_result(
         self, monkeypatch, approval_sent
     ):
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         trace: list = []
 
@@ -8747,7 +8747,7 @@ class TestChatPermissionRequest:
         Parametrised across two different refusal reasons so this pins the CLASS,
         not the single call site: every refusal path shares one helper.
         """
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         trace: list = []
 
@@ -8781,7 +8781,7 @@ class TestChatPermissionRequest:
         """The gate-deny path is the one a prompt-injected agent is most likely to
         reach, so it must not be the one where a broken audit sink turns a refusal
         into an abandoned turn."""
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         trace: list = []
 
@@ -8814,7 +8814,7 @@ class TestChatPermissionRequest:
     @pytest.mark.asyncio
     async def test_a_gate_exception_is_explicitly_rejected(self, monkeypatch, capsys):
         """A broken authorization gate cannot become an unanswered request."""
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         trace: list = []
         event = self._event(title="Check it", tool_name="fs_read")
@@ -8842,8 +8842,8 @@ class TestChatPermissionRequest:
 
     @pytest.mark.asyncio
     async def test_stream_without_a_permission_request_is_unchanged(self, capsys):
-        import kiro_crew.cli_chat as cli_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        import efm_go.cli_chat as cli_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         class _PlainProvider(self._GatedProvider):
             async def stream(self, message):
@@ -8867,7 +8867,7 @@ class TestChatPermissionRequest:
         # anything a title can influence, so it is subtracted before asserting
         # that NOTHING else escaped: that keeps this a whole-output guarantee
         # instead of narrowing it to one line.
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         title = "Read file\x1b]52;c;aGVsbG8=\x07 please"
         await self._drive(monkeypatch, event=self._event(title=title))
@@ -8922,7 +8922,7 @@ class TestChatPermissionRequest:
     @pytest.mark.asyncio
     async def test_a_prompt_render_failure_is_explicitly_rejected(self, monkeypatch, capsys):
         """A render bug is not allowed to escape between request and response."""
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         async def broken_prompt(event):
             raise UnicodeEncodeError("utf-8", "\ud800", 0, 1, "surrogate")
@@ -9096,7 +9096,7 @@ class TestChatPermissionRequest:
     async def test_a_long_path_cannot_push_the_question_off_screen(self, monkeypatch, capsys):
         # The path is attacker-influenceable text on an authorization prompt, so
         # it is capped for the same reason the command line is.
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         flood = "/tmp/" + "a" * (cli_chat._MAX_COMMAND_DISPLAY * 3)
         await self._drive(
@@ -9134,7 +9134,7 @@ class TestChatPermissionRequest:
         stops draining the backend and freezes the turn the audit is about."""
         import threading
 
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         threads: list = []
         monkeypatch.setattr(sys.stdin, "isatty", lambda: True, raising=False)
@@ -9290,7 +9290,7 @@ class TestChatPermissionRequest:
         # tty=False never renders the prompt at all, so asserting on its output
         # would pass no matter what this branch does. Escape bytes written to a
         # pipe or a redirected file are literal noise in someone's log.
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         monkeypatch.setattr(sys.stdout, "isatty", lambda: False, raising=False)
         assert cli_chat._terminal_reset() == ""
@@ -9327,8 +9327,8 @@ class TestChatPermissionRequest:
         hand-building an event with ``shell_classified=True`` would not catch a
         transport that dropped the provenance flag while copying the cache.
         """
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import ACP_BACKEND_CLAUDE
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import ACP_BACKEND_CLAUDE
 
         client = AcpClient(work_dir=tmp_path, acp_backend=ACP_BACKEND_CLAUDE)
         self._direct_tool_call(client)
@@ -9347,8 +9347,8 @@ class TestChatPermissionRequest:
         self, monkeypatch, tmp_path
     ):
         """A repeated request cannot replace trusted args with inline prose."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import ACP_BACKEND_CLAUDE
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import ACP_BACKEND_CLAUDE
 
         client = AcpClient(work_dir=tmp_path, acp_backend=ACP_BACKEND_CLAUDE)
         self._direct_tool_call(client, path="~/.ssh/id_rsa")
@@ -9369,8 +9369,8 @@ class TestChatPermissionRequest:
     @pytest.mark.asyncio
     async def test_direct_client_cache_miss_stays_fail_closed(self, monkeypatch, tmp_path):
         """Inline permission data cannot manufacture trusted provenance."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import ACP_BACKEND_CLAUDE
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import ACP_BACKEND_CLAUDE
 
         client = AcpClient(work_dir=tmp_path, acp_backend=ACP_BACKEND_CLAUDE)
         event = client._build_permission_event(
@@ -9396,8 +9396,8 @@ class TestChatPermissionRequest:
         auto-deny came from the cache write being skipped, which an event built
         with trusted identity fields would hide.
         """
-        from kiro_crew.acp._dispatch import _build_tool_call_event, build_permission_event
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp._dispatch import _build_tool_call_event, build_permission_event
+        from efm_go.acp.types import JsonRpcMessage
 
         shell_cache: dict[str, bool] = {}
         raw_cache: dict[str, dict] = {}
@@ -9455,7 +9455,7 @@ class TestChatPermissionRequest:
         unverified must be rejected before any prompt. The prompt for such an
         event would carry only the agent-authored title -- for an edit, no Path
         line -- so approval would consent to an undisclosed write."""
-        from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
+        from efm_go.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
 
         event = AcpEvent(
             kind=EVENT_PERMISSION_REQUEST,
@@ -9484,7 +9484,7 @@ class TestChatPermissionRequest:
         `_meta.kiro` identity survived the cache is presented -- the prompt
         shows the non-forgeable server/tool pair, the same args-blind consent
         contract the dashboard's interactive card provides."""
-        from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
+        from efm_go.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
 
         event = AcpEvent(
             kind=EVENT_PERMISSION_REQUEST,
@@ -9560,9 +9560,9 @@ class TestChatPermissionRequest:
         # server + tool names must reach HookManager as those fields, so a
         # governance rule naming the canonical mcp__server__tool denies the call
         # -- the backend is rejected and the human is never asked.
-        import kiro_crew.cli_chat as cli_chat
-        import kiro_crew.hooks as hooks_mod
-        from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+        import efm_go.cli_chat as cli_chat
+        import efm_go.hooks as hooks_mod
+        from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
         seen: list[str] = []
 
@@ -9609,9 +9609,9 @@ class TestChatPermissionRequest:
         # the call lands on a DIFFERENT thread than the loop's.
         import threading
 
-        import kiro_crew.cli_chat as cli_chat
-        import kiro_crew.hooks as hooks_mod
-        from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+        import efm_go.cli_chat as cli_chat
+        import efm_go.hooks as hooks_mod
+        from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
         loop_thread = threading.get_ident()
         call_threads: list[int] = []
@@ -9649,7 +9649,7 @@ class TestChatPermissionRequest:
         # rather than a resolved "not a shell tool". Labelling it ``read`` must not
         # buy it a trip to the human prompt, where the only thing on display would
         # be a title with no command behind it.
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         event = self._event(title="Read a file", tool_kind="read", shell_classified=False)
         assert cli_chat._unverifiable_shell(event) is True
@@ -9657,7 +9657,7 @@ class TestChatPermissionRequest:
     def test_a_resolved_non_shell_request_is_not_refused(self):
         # The negative control that keeps the deny narrow: a RESOLVED non-shell
         # classification is a real answer, and must still reach the prompt.
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         event = self._event(title="Read a file", tool_kind="read")
         assert cli_chat._unverifiable_shell(event) is False
@@ -9668,7 +9668,7 @@ class TestChatPermissionRequest:
         # served over /api/sel/events.
         import types as _types
 
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         trace: list = []
@@ -9706,8 +9706,8 @@ class TestDenialNoticeEncoding:
 
     _CHILD = """
 import asyncio, json, sys
-import kiro_crew.cli_chat as cli_chat
-from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+import efm_go.cli_chat as cli_chat
+from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
 print(f"encoding={sys.stderr.encoding}")
 print(f"errors={sys.stderr.errors}")
@@ -9796,8 +9796,8 @@ class TestChatProviderShutdown:
             return 0.0
 
     def _patch(self, monkeypatch, provider):
-        import kiro_crew.cli_chat as cli_chat
-        from kiro_crew.config import KiroCrewConfig
+        import efm_go.cli_chat as cli_chat
+        from efm_go.config import KiroCrewConfig
 
         monkeypatch.setattr(KiroCrewConfig, "load", staticmethod(lambda: KiroCrewConfig()))
         monkeypatch.setattr(
@@ -9810,7 +9810,7 @@ class TestChatProviderShutdown:
         # A permission prompt cancelled at the terminal raises through the turn
         # by design. The backend must still be torn down, and the cancellation
         # must still reach the caller.
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         provider = self._FakeProvider()
         self._patch(monkeypatch, provider)
@@ -9825,7 +9825,7 @@ class TestChatProviderShutdown:
 
     @pytest.mark.asyncio
     async def test_shutdown_runs_when_the_turn_raises(self, monkeypatch):
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         provider = self._FakeProvider()
         self._patch(monkeypatch, provider)
@@ -9845,7 +9845,7 @@ class TestChatProviderShutdown:
         _chat must opt in -- and BEFORE start(), or an early child permission
         frame races the handle's fail-close gate and is rejected as
         `child_low_fidelity_unaware_consumer`, the auto-deny this fix ends."""
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         provider = self._FakeProvider()
         self._patch(monkeypatch, provider)
@@ -9859,7 +9859,7 @@ class TestChatProviderShutdown:
 
     @pytest.mark.asyncio
     async def test_shutdown_runs_exactly_once_on_the_normal_path(self, monkeypatch):
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         provider = self._FakeProvider()
         self._patch(monkeypatch, provider)
@@ -9876,7 +9876,7 @@ class TestChatProviderShutdown:
         # gc.collect() collects the subprocess transports while the loop is
         # still open; a failing shutdown must not skip it, and must not replace
         # the exception already propagating.
-        import kiro_crew.cli_chat as cli_chat
+        import efm_go.cli_chat as cli_chat
 
         class _BadShutdown(self._FakeProvider):
             async def shutdown(self):

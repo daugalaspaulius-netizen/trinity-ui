@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 
-from kiro_crew.mcp_gateway import launch_resolve, rewriter
+from efm_go.mcp_gateway import launch_resolve, rewriter
 
 ENFORCE_LAUNCH_APPROVAL = True
 

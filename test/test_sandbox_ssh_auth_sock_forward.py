@@ -28,9 +28,9 @@ import sys
 import pytest
 from test_sandbox_launcher_program import launch
 
-import kiro_crew.sandbox as sb
-from kiro_crew import sandbox_launcher_program as program
-from kiro_crew.sandbox_plan import namespace_payload
+import efm_go.sandbox as sb
+from efm_go import sandbox_launcher_program as program
+from efm_go.sandbox_plan import namespace_payload
 
 
 @pytest.fixture(autouse=True)
@@ -233,7 +233,7 @@ def test_forward_is_noop_on_windows(monkeypatch):
     The opt-in must not be OFFERED on a platform where it cannot work. Pins the
     platform behaviour as a property.
     """
-    from kiro_crew import ssh_auth_sock_consent as consent
+    from efm_go import ssh_auth_sock_consent as consent
 
     monkeypatch.setattr(consent, "is_granted", lambda: True)
 
@@ -254,7 +254,7 @@ def test_forward_reads_keystone_not_agent_config(monkeypatch, tmp_path):
     its own SSH_AUTH_SOCK forwarding on. The reader must consult the keystone
     store and fail closed when it holds no explicit enable.
     """
-    from kiro_crew import ssh_auth_sock_consent as consent
+    from efm_go import ssh_auth_sock_consent as consent
 
     monkeypatch.setattr(sb.platform_compat, "IS_WINDOWS", False)
     monkeypatch.setattr(consent, "ssh_auth_sock_consent_path", lambda: tmp_path / "c.json")
@@ -282,8 +282,8 @@ def test_forward_reads_keystone_not_agent_config(monkeypatch, tmp_path):
 
 def test_keystone_leaf_is_fenced_and_sealed():
     """The consent leaf sits on both fences that keep it agent-unwritable."""
-    from kiro_crew import sandbox as _sb
-    from kiro_crew.security import paths as _sp
+    from efm_go import sandbox as _sb
+    from efm_go.security import paths as _sp
 
     assert "ssh_auth_sock_consent.json" in _sp._CREW_SECRET_LEAVES
     assert "ssh_auth_sock_consent.json" in _sb._CREW_READONLY_LEAVES

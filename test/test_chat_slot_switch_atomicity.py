@@ -20,7 +20,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.dashboard.chat import (
+from efm_go.dashboard.chat import (
     api_chat_slot_agent,
     api_chat_slot_model,
     api_chat_slot_project,
@@ -28,10 +28,10 @@ from kiro_crew.dashboard.chat import (
     api_chat_slot_workspace,
     api_chat_slots_model,
 )
-from kiro_crew.dashboard.chat_handlers import _slot_switch_session_lock
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard.chat_handlers import _slot_switch_session_lock
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
-MOD = "kiro_crew.dashboard.chat_handlers"
+MOD = "efm_go.dashboard.chat_handlers"
 
 # Valid registry aliases the model guard accepts (tests are exempt from the
 # hardcoded-model-literal gate; these mirror the ids the existing model-switch
@@ -75,11 +75,11 @@ def _mock_state(slot: _ChatSlot, provider: object = None) -> DashboardState:
 
 @pytest.fixture
 def private_switch_state():
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-    from kiro_crew.dashboard.chat_utils import effective_session_key
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.member_memory_auth import bind_private_session_store
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.dashboard.chat_utils import effective_session_key
+    from efm_go.history import ConversationLog
+    from efm_go.member_memory_auth import bind_private_session_store
+    from efm_go.memory_stores import provision_member_memory
 
     cfg = KiroCrewConfig.load()
     for name in ("writer", "reviewer"):
@@ -108,7 +108,7 @@ class TestPrivateChatMemberSwitch:
     async def test_cross_member_switch_refuses_before_any_mutation(
         self, private_switch_state, target
     ):
-        from kiro_crew.member_memory_auth import read_private_session_store
+        from efm_go.member_memory_auth import read_private_session_store
 
         state, slot, key = private_switch_state
         before = (slot.agent, slot.memory_store, slot.workspace, slot.project)
@@ -163,7 +163,7 @@ class TestPrivateChatMemberSwitch:
     async def test_unreadable_pin_refuses_without_reset(self, private_switch_state):
         state, slot, _ = private_switch_state
         with patch(
-            "kiro_crew.execution_context.read_session_execution",
+            "efm_go.execution_context.read_session_execution",
             side_effect=ValueError("invalid binding"),
         ):
             async with TestClient(TestServer(as_owner(_make_app(state)))) as client:
@@ -243,7 +243,7 @@ class TestSlotModelSwitchAtomicity:
         # sibling slot's refusal restore can already observe the landed pick
         # live, and an unstamped epoch lets that restore overwrite the user's
         # explicit choice with its recorded primary.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         class _EpochClient:
             def __init__(self):
@@ -274,7 +274,7 @@ class TestSlotModelSwitchAtomicity:
         # unlocked handler then fell through to the reset — tearing down the
         # in-flight turn mid-stream. The handler must answer busy instead:
         # no live switch, no reset, slot model untouched.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -322,7 +322,7 @@ class TestSlotModelSwitchAtomicity:
         # declines. The handler re-checks busyness in a no-await window
         # immediately before the reset: busy → rollback + 409, reset NEVER
         # entered.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -358,8 +358,8 @@ class TestSlotModelSwitchAtomicity:
         # the turn, but the live session already serves the target — rolling
         # back would publish the old model while the turn streams under the
         # new one. Success, no rollback, reset never entered.
-        from kiro_crew import model_registry
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go import model_registry
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -392,7 +392,7 @@ class TestSlotModelSwitchAtomicity:
         # — the handler must read the session client's raw served id instead,
         # or a landed switch to Auto rolls back to the old model while the
         # live session runs Auto.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -422,8 +422,8 @@ class TestSlotModelSwitchAtomicity:
         # The raw read is scoped to the Auto wire id only: when the raw served
         # id is something else, the switch to Auto did not land and the
         # fail-closed rollback + 409 stands.
-        from kiro_crew import model_registry
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go import model_registry
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -454,7 +454,7 @@ class TestSlotModelSwitchAtomicity:
         # declined and is mid-turn, the committed model is rolled back, the
         # response is the same 409 the pre-check gives, and the in-flight
         # turn survives.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -481,7 +481,7 @@ class TestSlotModelSwitchAtomicity:
         # reporting success would leave that stale process alive under the
         # new slot.model. The handler retries the reset once (the reload
         # handler's template for this exact race) and succeeds.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -502,7 +502,7 @@ class TestSlotModelSwitchAtomicity:
         # genuinely racing the retry): the handler must fail closed — roll
         # back the commit and answer 409 — never report success over a live
         # session whose model it cannot prove.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -527,7 +527,7 @@ class TestSlotModelSwitchAtomicity:
         # call site but registers only after a multi-second provider.start()),
         # so the handler fails CLOSED: rollback + 409, never a silent success
         # over a live session that may be running the old model.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -556,8 +556,8 @@ class TestSlotModelSwitchAtomicity:
         # equals the requested wire id, so slot.model is TRUTHFUL — rolling
         # back would report the old model while the turn runs the new one.
         # Success, no rollback, no second reset.
-        from kiro_crew import model_registry
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go import model_registry
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -629,7 +629,7 @@ class TestSlotModelSwitchAtomicity:
         # (idle live session), the retry's teardown throws. Same
         # committed-switch answer as the first attempt — 200 + warning +
         # slots push, no rollback to the old model.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -667,7 +667,7 @@ class TestSlotModelSwitchAtomicity:
         # success the decline ladders treat as worse than any retryable
         # error. The helper re-raises instead of
         # answering a committed-switch success it cannot vouch for.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -689,7 +689,7 @@ class TestSlotModelSwitchAtomicity:
         # IDENTITY, so a different registered provider is NOT the unpopped
         # old session — the switch is committed, the successor cold-started
         # from the committed bindings, and the answer is 200 + warning.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -871,7 +871,7 @@ class TestSlotWorkspaceSwitchAtomicity:
     @pytest.fixture(autouse=True)
     def _stub_project_dir(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.default_project_dir",
+            "efm_go.dashboard.chat_handlers.default_project_dir",
             lambda ws: f"/workspace/{ws}",
         )
 
@@ -932,7 +932,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # with skip_if_busy=True: on an atomic decline the committed
         # workspace/project pair is rolled back, the response is 409, and the
         # slipped-in turn survives.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -960,7 +960,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # rejected and only then got a 409. The model handler's early refusal
         # is copied here: a live turn at the pre-commit check answers 409 with
         # nothing committed, nothing unblocked and no reset attempted.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1010,7 +1010,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # a 409 rollback must re-mark the slot dirty or the rejected switch
         # survives a restart. Simulate the flush having cleared the flag
         # mid-transaction.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1040,7 +1040,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # The rollback is identity-scoped -- it unwinds only THIS request's
         # commit token -- so a concurrent write of a different project stands
         # while the workspace (untouched by that writer) is rolled back.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1067,7 +1067,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # The identity test distinguishes this handler's own token from a
         # concurrent write of the SAME text: with no concurrent writer, the
         # committed project (same text as the token) IS rolled back.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1089,7 +1089,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # send finished before the re-read): the handler retries once and
         # succeeds, so the stale process never survives under the new
         # bindings.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1112,7 +1112,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # actual cwd equals the committed project, so slot state is TRUTHFUL —
         # rolling back would advertise the old workspace while the live
         # process runs the new one. Success, no rollback, no teardown.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1136,7 +1136,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # Pre-check era saw no session; the decline came from a session
         # registered after the commit with a turn in flight. Fail closed:
         # both fields rolled back, 409.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1163,7 +1163,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # Two declined resets from an idle live session: exactly two
         # attempts, both fields rolled back, 409 — never success over a live
         # session whose bindings cannot be proven.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1250,7 +1250,7 @@ class TestSlotWorkspaceSwitchAtomicity:
         # (idle live session), the retry's teardown throws. Same
         # committed-switch answer — 200 + warning + slots push, no rollback
         # to the old bindings.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         slot.workspace = "old-ws"
@@ -1354,7 +1354,7 @@ class TestLinkedSlotSessionKey:
     async def test_model_switch_sees_the_linked_sessions_active_turn(self):
         # The busy probe now lands on the live linked session: an in-flight
         # channel turn answers 409 instead of a silent success over it.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -1468,7 +1468,7 @@ class TestLinkedSlotSessionKey:
         # (after the key was resolved) means whatever set_model did landed on
         # a session the slot does not run on: commit nothing, reset nothing,
         # 409 so the retry resolves the current binding.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -1557,7 +1557,7 @@ class TestLinkedSlotSessionKey:
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
         slot = _ChatSlot("test")
         slot.agent = "old-agent"
         slot.linked_session_key = "slack:123.456"
@@ -1577,7 +1577,7 @@ class TestLinkedSlotSessionKey:
         # The busy probe lands on the live linked session: an in-flight
         # channel turn answers 409 instead of tearing the turn (or a
         # captured-identity session) down.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.agent = "old-agent"
@@ -1620,7 +1620,7 @@ class TestLinkedSlotSessionKey:
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
         slot = _ChatSlot("test")
         slot.agent = "old-agent"
         state = _mock_state(slot, provider=None)
@@ -1660,7 +1660,7 @@ class TestLinkedSlotSessionKey:
         # The live-effort probe lands on the linked session, so its active
         # turn takes the defer branch (commit now, live push next turn)
         # instead of a reset against a session that never existed.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.linked_session_key = "slack:123.456"
@@ -1754,12 +1754,12 @@ class TestLinkedSlotSessionKey:
         # does not take slot._lock): the reset runs with skip_if_busy=True and
         # its atomic decline is authoritative — the committed agent is rolled
         # back, the metadata write never runs, and the in-flight turn survives.
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
         slot = _ChatSlot("test")
         slot.agent = "old-agent"
         state = _mock_state(slot)
@@ -1782,7 +1782,7 @@ class TestLinkedSlotSessionKey:
 
     @pytest.mark.asyncio
     async def test_effort_reset_declined_busy_rolls_back_and_answers_409(self):
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         slot = _ChatSlot("test")
         state = _mock_state(slot)
@@ -1812,7 +1812,7 @@ class TestLinkedSlotSessionKey:
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
         slot = _ChatSlot("test")
         slot.agent = "old-agent"
         slot.agent_kind = "member"
@@ -1854,12 +1854,12 @@ class TestLinkedSlotSessionKey:
         cfg.agents = {}
         cfg.memory_stores = {}
         cfg.default_workspace = "default"
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.warm_project_agent_names", _blocked_warm
+            "efm_go.dashboard.chat_handlers.warm_project_agent_names", _blocked_warm
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda *_args, **_kwargs: MagicMock(
                 workspace_dir="",
                 memory_store_name="",
@@ -1868,7 +1868,7 @@ class TestLinkedSlotSessionKey:
             ),
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._record_explicit_agent_selection",
+            "efm_go.dashboard.chat_handlers._record_explicit_agent_selection",
             AsyncMock(return_value=None),
         )
         slot = _ChatSlot("test")
@@ -1905,7 +1905,7 @@ class TestLinkedSlotSessionKey:
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
         slot = _ChatSlot("test")
         slot.agent = "old-agent"
         state = _mock_state(slot, provider=None)
@@ -1938,13 +1938,13 @@ class TestLinkedSlotSessionKey:
         mock_cfg = MagicMock()
         mock_cfg.agents = {}
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.warm_project_agent_names", AsyncMock()
+            "efm_go.dashboard.chat_handlers.warm_project_agent_names", AsyncMock()
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: MagicMock(
                 workspace_dir="/tmp/ws2",
                 memory_store_name="",
@@ -1955,15 +1955,15 @@ class TestLinkedSlotSessionKey:
             ),
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "ws2",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.default_project_dir",
+            "efm_go.dashboard.chat_handlers.default_project_dir",
             lambda ws: "/workspace/derived",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.cached_project_agent_names",
+            "efm_go.dashboard.chat_handlers.cached_project_agent_names",
             lambda p: frozenset(),
         )
         slot = _ChatSlot("test")
@@ -2010,7 +2010,7 @@ class TestLinkedSlotSessionKey:
             slot.linked_session_key = "cron:job-1"
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._save_recent_project", _save_and_rebind
+            "efm_go.dashboard.chat_handlers._save_recent_project", _save_and_rebind
         )
         new_dir = os.path.realpath(str(tmp_path))
         async with TestClient(TestServer(_make_app(state))) as client:
@@ -2047,7 +2047,7 @@ class TestLinkedSlotSessionKey:
         # was observable, so a 409 would claim a rollback that did not
         # happen: the slot value is committed (it is what the new binding's
         # next cold start reads) and the rebind is reported as a warning.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         state = _mock_state(slot, provider=None)
@@ -2157,7 +2157,7 @@ class TestAliasSlotSwitchSerialization:
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
         slot = _ChatSlot("alias-a")
         slot.agent = "old-agent"
         slot.linked_session_key = _LINKED_KEY
@@ -2221,7 +2221,7 @@ class TestAliasSlotSwitchSerialization:
     @pytest.mark.asyncio
     async def test_workspace_switch_waits_for_the_session_lock(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.default_project_dir",
+            "efm_go.dashboard.chat_handlers.default_project_dir",
             lambda ws: f"/workspace/{ws}",
         )
         slot = _ChatSlot("alias-a")
@@ -2345,7 +2345,7 @@ class TestSlotProjectSwitchAtomicity:
         # write queues until the switch completes.
         import os
 
-        from kiro_crew.dashboard.chat import api_chat_slot_project
+        from efm_go.dashboard.chat import api_chat_slot_project
 
         slot = _ChatSlot("test")
         slot.project = "/workspace/old-ws"
@@ -2448,7 +2448,7 @@ class TestBulkModelSwitchAtomicity:
         # that raises on the retry classifies THAT slot as failed (model
         # untouched) and the remaining slots are still processed — never a
         # 500 aborting the whole bulk switch.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot_a = _ChatSlot("a")
         slot_a.model = _MODEL_A
@@ -2521,7 +2521,7 @@ class TestBulkModelSwitchAtomicity:
         # already finished). Bulk commits AFTER the reset, so that session is
         # on the old model: the handler retries once, and on success the slot
         # is switched — never left as a silent stale process.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -2541,7 +2541,7 @@ class TestBulkModelSwitchAtomicity:
     async def test_reset_declined_twice_lands_in_skipped_running(self):
         # A second decline means another turn is genuinely racing the retry:
         # the slot lands in skipped_running with its model untouched.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -2565,7 +2565,7 @@ class TestBulkModelSwitchAtomicity:
         # skip_if_busy=skip_running and its atomic decline is authoritative:
         # the slot lands in skipped_running with its model untouched, and the
         # in-flight turn survives.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A
@@ -2590,7 +2590,7 @@ class TestBulkModelSwitchAtomicity:
         # it. The last-instant has_active_turn re-check on the effective
         # session catches it BEFORE the reset, so _reset_slot_session's
         # unblock half never runs against the live turn's pending cards.
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         slot = _ChatSlot("test")
         slot.model = _MODEL_A

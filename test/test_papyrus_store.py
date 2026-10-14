@@ -2,7 +2,7 @@
 
 Lives in the repo-level ``test/`` tree (not the app's in-package ``tests/``)
 because ``setup.cfg`` sets ``testpaths = test transfer`` — a test under
-``src/kiro_crew/apps/builtins/...`` is never collected by CI.
+``src/efm_go/apps/builtins/...`` is never collected by CI.
 
 Ported and extended from the upstream app's ``backend/tests/test_server.py``. The
 coverage target is the security- and correctness-sensitive half of the module:
@@ -34,7 +34,7 @@ from unittest import mock
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew.apps.builtins.papyrus.backend import store
+from efm_go.apps.builtins.papyrus.backend import store
 
 
 @pytest.fixture()

@@ -16,8 +16,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent, mcp_cleanup, mcp_core, mcp_discovery, mcp_work
-from kiro_crew.validation import MCP_WORK_SCHEMAS
+from efm_go import agent, mcp_cleanup, mcp_core, mcp_discovery, mcp_work
+from efm_go.validation import MCP_WORK_SCHEMAS
 
 SERVER = "kirocrew-work"
 SUBCOMMAND = "mcp-work"
@@ -111,7 +111,7 @@ def test_work_ledger_read_description_states_the_shape_a_conductor_relies_on():
 )
 def test_work_ledger_read_refuses_an_out_of_shape_filter(args):
     """Refused at the schema, before any identity is resolved or wire is touched."""
-    from kiro_crew.validation import ValidationError
+    from efm_go.validation import ValidationError
 
     with pytest.raises(ValidationError):
         mcp_work._validate_args("work_ledger_read", args)
@@ -184,7 +184,7 @@ def test_the_record_tool_advertises_the_seven_actions():
     definition = next(t for t in mcp_work._list_tools() if t["name"] == "work_ledger_record")
     actions = definition["inputSchema"]["properties"]["action"]["enum"]
     assert set(actions) == set(mcp_work.__dict__.get("_RECORD_ACTIONS", set())) or True
-    from kiro_crew.dashboard.handlers import work_ledger as routes
+    from efm_go.dashboard.handlers import work_ledger as routes
 
     assert set(actions) == routes.RECORD_ACTIONS
 
@@ -333,7 +333,7 @@ def test_the_entry_is_opt_in_everywhere_that_tracks_the_split():
 
 def test_the_server_is_registered_for_discovery_and_the_cli():
     assert mcp_discovery._MANAGED_SERVER_SUBCOMMANDS.get(SERVER) == SUBCOMMAND
-    assert mcp_discovery._MANAGED_SERVER_TOOL_MODULES.get(SERVER) == "kiro_crew.mcp_work"
+    assert mcp_discovery._MANAGED_SERVER_TOOL_MODULES.get(SERVER) == "efm_go.mcp_work"
     # The registration ratchet in test_computer_use_registration asserts these two
     # maps are the SAME key set; restated here so this server's own suite fails too.
     assert set(agent._MANAGED_MCP_SERVERS) == set(mcp_discovery._MANAGED_SERVER_SUBCOMMANDS)
@@ -342,11 +342,11 @@ def test_the_server_is_registered_for_discovery_and_the_cli():
 def test_the_cli_serves_the_subcommand():
     import inspect
 
-    from kiro_crew import cli
+    from efm_go import cli
 
     src = inspect.getsource(cli)
     assert 'sub.add_parser("mcp-work")' in src
-    assert 'importlib.import_module("kiro_crew.mcp_work").run_mcp_server()' in src
+    assert 'importlib.import_module("efm_go.mcp_work").run_mcp_server()' in src
 
 
 def test_the_server_advertises_caller_identity_and_is_classified_for_it():
@@ -401,7 +401,7 @@ def test_a_channel_agent_is_blocked_from_all_four_tools():
     """A channel agent has no dispatch relationship and no business holding one:
     reading a brief would pull a private dispatch's bar into a channel other humans
     can see, and a write would edit a conductor's record from outside it."""
-    from kiro_crew.channel import CHANNEL_AGENT_BLOCKED_TOOLS, _blocked_tool_named
+    from efm_go.channel import CHANNEL_AGENT_BLOCKED_TOOLS, _blocked_tool_named
 
     for tool in mcp_work.WORK_TOOLS:
         assert tool in CHANNEL_AGENT_BLOCKED_TOOLS
@@ -421,7 +421,7 @@ def test_session_create_states_the_caller_inheritance_rule():
     default agent": ``create_session`` falls back to the CALLER's own agent, so a
     conductor that omits it gets a second conductor — which has no ``fs_write``
     and cannot do the work."""
-    from kiro_crew import mcp_dashboard
+    from efm_go import mcp_dashboard
 
     definition = next(t for t in mcp_dashboard._tool_definitions() if t["name"] == "session_create")
     description = definition["inputSchema"]["properties"]["agent"]["description"]
@@ -437,7 +437,7 @@ def test_the_caller_inheritance_claim_matches_the_code_it_describes():
     ``session_control.create_session``; drifting apart is what made it wrong before."""
     import inspect
 
-    from kiro_crew.dashboard import session_control
+    from efm_go.dashboard import session_control
 
     src = inspect.getsource(session_control.create_session)
     assert 'getattr(caller_slot, "agent", "")' in src
@@ -623,7 +623,7 @@ def _fat_board(n: int = 8, *, chars: int = 13_000) -> dict[str, Any]:
 
 def _delivered(monkeypatch: pytest.MonkeyPatch, board: dict[str, Any]) -> str:
     """The text the model receives: the real tool call, then the real egress frame."""
-    from kiro_crew.validation import build_tool_response
+    from efm_go.validation import build_tool_response
 
     monkeypatch.setattr(mcp_core, "_resolve_session_key_strict", lambda: "chat-x")
     monkeypatch.setattr(mcp_work, "_get", lambda *a, **k: json.loads(json.dumps(board)))
@@ -634,7 +634,7 @@ def _delivered(monkeypatch: pytest.MonkeyPatch, board: dict[str, Any]) -> str:
 def test_a_110kb_board_delivers_the_newest_item_as_valid_json(monkeypatch):
     """The bug: ~110 KB came back whole, the runtime cut it at 100,000 chars, and the
     newest item -- serialized last -- was lost inside torn JSON."""
-    from kiro_crew.validation import MAX_RESPONSE_LEN
+    from efm_go.validation import MAX_RESPONSE_LEN
 
     board = _fat_board()
     assert len(json.dumps(board, indent=2)) > 105_000

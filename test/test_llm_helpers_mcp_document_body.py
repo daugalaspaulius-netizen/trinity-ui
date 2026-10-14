@@ -19,13 +19,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.sel as sel_mod
-from kiro_crew.llm_helpers import ToolApprovalPolicy, _resolve_permission
-from kiro_crew.platform.tool_paths import (
+import efm_go.sel as sel_mod
+from efm_go.llm_helpers import ToolApprovalPolicy, _resolve_permission
+from efm_go.platform.tool_paths import (
     MCP_DOCUMENT_BODY_FIELDS,
     mcp_document_body_keys,
 )
-from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
 # Built by concatenation so this file never carries the subcommand line itself.
 _CLI = "kiro" + "crew"
@@ -201,7 +201,7 @@ class TestTheBodyKeepsThePathTier:
 
     @pytest.mark.asyncio
     async def test_an_oversized_body_is_still_refused(self) -> None:
-        from kiro_crew.llm_helpers import _MAX_SCANNABLE_TOOL_INPUT_CHARS
+        from efm_go.llm_helpers import _MAX_SCANNABLE_TOOL_INPUT_CHARS
 
         body = "a" * (_MAX_SCANNABLE_TOOL_INPUT_CHARS + 1)
         approved, rows = await _resolve(_event(_params(content=body)))

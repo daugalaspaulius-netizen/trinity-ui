@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.platform_compat import probe_file_persistence
+from efm_go import platform_compat
+from efm_go.platform_compat import probe_file_persistence
 
 
 class TestProbeFilePersistence:
@@ -145,7 +145,7 @@ class TestProbeFilePersistence:
         ) -> None:
             raise OSError(errno.EPERM, "Operation not permitted")
 
-        monkeypatch.setattr("kiro_crew.atomic_write.replace_with_retry", _no_replace)
+        monkeypatch.setattr("efm_go.atomic_write.replace_with_retry", _no_replace)
         msg = probe_file_persistence(tmp_path)
         assert msg is not None
         assert "cannot atomically replace files in" in msg
@@ -158,7 +158,7 @@ class TestProbeFilePersistence:
         ) -> None:
             raise OSError(errno.EPERM, "Operation not permitted")
 
-        monkeypatch.setattr("kiro_crew.atomic_write.replace_with_retry", _no_replace)
+        monkeypatch.setattr("efm_go.atomic_write.replace_with_retry", _no_replace)
         probe_file_persistence(tmp_path)
         assert list(tmp_path.iterdir()) == []
 
@@ -170,7 +170,7 @@ class TestProbeFilePersistence:
         os.replace — otherwise a healthy Windows data home can fail preflight
         over an AV/indexer touch."""
         calls: list[tuple[str, str]] = []
-        from kiro_crew import atomic_write
+        from efm_go import atomic_write
 
         real = atomic_write.replace_with_retry
 
@@ -178,7 +178,7 @@ class TestProbeFilePersistence:
             calls.append((str(src), str(dst)))
             real(src, dst)
 
-        monkeypatch.setattr("kiro_crew.atomic_write.replace_with_retry", _spy)
+        monkeypatch.setattr("efm_go.atomic_write.replace_with_retry", _spy)
         assert probe_file_persistence(tmp_path) is None
         assert len(calls) == 1
         assert ".persistence-probe-" in calls[0][0]
@@ -201,8 +201,8 @@ class TestGatewayPreflightWiring:
     """The orchestrator must refuse to boot when the probe reports a failure."""
 
     def _orchestrator(self):  # type: ignore[no-untyped-def]
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.config import KiroCrewConfig
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         return GatewayOrchestrator(KiroCrewConfig(), no_dashboard=True, no_crons=True)
 
@@ -210,7 +210,7 @@ class TestGatewayPreflightWiring:
     async def test_run_exits_when_probe_fails(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.slack import gateway as gateway_mod
+        from efm_go.slack import gateway as gateway_mod
 
         monkeypatch.setattr(
             gateway_mod.platform_compat,
@@ -230,7 +230,7 @@ class TestGatewayPreflightWiring:
         traceback."""
         import asyncio as asyncio_mod
 
-        from kiro_crew.slack import gateway as gateway_mod
+        from efm_go.slack import gateway as gateway_mod
 
         async def _no_thread(fn, *args, **kwargs):  # type: ignore[no-untyped-def]
             raise RuntimeError("cannot schedule new futures after shutdown")
@@ -248,8 +248,8 @@ class TestGatewayPreflightWiring:
         """A broken environment must exit BEFORE the first lock consumer runs
         (the raw-traceback crash this preflight replaces happened inside
         ``cleanup_orphaned_sessions``)."""
-        from kiro_crew import session as session_mod
-        from kiro_crew.slack import gateway as gateway_mod
+        from efm_go import session as session_mod
+        from efm_go.slack import gateway as gateway_mod
 
         called: list[str] = []
         monkeypatch.setattr(

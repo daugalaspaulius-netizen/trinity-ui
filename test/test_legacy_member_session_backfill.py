@@ -19,8 +19,8 @@ from __future__ import annotations
 import pytest
 from test_member_memory_upgrade import STORE, _write_legacy_home
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.execution_context import (
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.execution_context import (
     EXECUTION_CONTEXT_KEY,
     bind_session_execution,
     capture_session_execution,
@@ -29,8 +29,8 @@ from kiro_crew.execution_context import (
     read_vouched_session_execution,
     resolve_member_execution,
 )
-from kiro_crew.history import ConversationLog
-from kiro_crew.memory_stores import (
+from efm_go.history import ConversationLog
+from efm_go.memory_stores import (
     LEGACY_MEMBER_STORE_REMEDY,
     MissingExecutionIdentity,
     UnknownMemoryStore,

@@ -47,12 +47,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp import _dispatch
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.session_provider import AcpSessionProvider
-from kiro_crew.acp.types import (
+from efm_go.acp import _dispatch
+from efm_go.acp.client import AcpClient
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.session_provider import AcpSessionProvider
+from efm_go.acp.types import (
     EVENT_COMPACTION_STATUS,
     EVENT_TOOL_CALL,
     EVENT_TOOL_CALL_UPDATE,
@@ -62,7 +62,7 @@ from kiro_crew.acp.types import (
     AcpPromptStats,
     JsonRpcMessage,
 )
-from kiro_crew.acp_backends import (
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_GOOSE,
@@ -74,12 +74,12 @@ from kiro_crew.acp_backends import (
     ACP_BACKENDS_INLINE_COMPACTION,
     ACP_BACKENDS_KNOWN,
 )
-from kiro_crew.agent_sdk.capabilities import capabilities_for
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.messaging.commands import compact_unsupported_backend
-from kiro_crew.providers.acp import AcpProvider
-from kiro_crew.session import SessionManager
-from kiro_crew.session_compaction import CompactionCoordinator, _compact_unsupported_backend
+from efm_go.agent_sdk.capabilities import capabilities_for
+from efm_go.config import KiroCrewConfig
+from efm_go.messaging.commands import compact_unsupported_backend
+from efm_go.providers.acp import AcpProvider
+from efm_go.session import SessionManager
+from efm_go.session_compaction import CompactionCoordinator, _compact_unsupported_backend
 
 
 def parse_codex_compaction_update(update: dict[str, Any]) -> str | None:

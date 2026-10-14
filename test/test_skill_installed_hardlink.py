@@ -1,7 +1,7 @@
 """A hardlinking installer's built-in app skills still load.
 
 uv (and other installers) hardlink package files out of a cache, so every file of
-an installed ``kiro_crew`` package can carry ``st_nlink > 1``. The no-link reader
+an installed ``efm_go`` package can carry ``st_nlink > 1``. The no-link reader
 refuses that shape, which left a built-in app skill listed but never loadable,
 and made an ``always: true`` one fail every session start. The reader now admits
 such a file on CONTENT: it must be a ``SKILL.md`` the distribution RECORD lists
@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.skills as skills_mod
-from kiro_crew.testing.links import make_dir_link
+import efm_go.skills as skills_mod
+from efm_go.testing.links import make_dir_link
 
 
 def _write_skill(directory: Path, body: str) -> Path:
@@ -35,7 +35,7 @@ def _record_digest(data: bytes, algorithm: str = "sha256") -> str:
 
 
 class _FakeInstall:
-    """A site dir whose ``kiro_crew`` package came from a hardlinking installer.
+    """A site dir whose ``efm_go`` package came from a hardlinking installer.
 
     The built-in app skill shares its inode with a second name (the installer's
     cache), and the distribution RECORD lists the digest the installer wrote.
@@ -45,7 +45,7 @@ class _FakeInstall:
 
     def __init__(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         site = tmp_path / "site"
-        self.package = site / "kiro_crew"
+        self.package = site / "efm_go"
         self.package.mkdir(parents=True)
         (self.package / "__init__.py").write_text("", encoding="utf-8")
         self.skill_dir = self.package / "apps" / "builtins" / "demo" / "skills" / "pinned"
@@ -70,7 +70,7 @@ class _FakeInstall:
     def write_record(self, recorded: bytes) -> None:
         rel = self.skill.relative_to(self.package.parent).as_posix()
         lines = [
-            f"kiro_crew/__init__.py,{_record_digest(b'')},0",
+            f"efm_go/__init__.py,{_record_digest(b'')},0",
             f"{rel},{_record_digest(recorded)},{len(recorded)}",
             f"{self.dist_info.name}/RECORD,,",
         ]
@@ -167,7 +167,7 @@ class TestTheRecordLookup:
         stale.mkdir()
         rel = install.skill.relative_to(install.package.parent).as_posix()
         (stale / "RECORD").write_text(
-            f"kiro_crew/__init__.py,{_record_digest(b'')},0\n"
+            f"efm_go/__init__.py,{_record_digest(b'')},0\n"
             f"{rel},{_record_digest(b'the previous release')},20\n",
             encoding="utf-8",
         )

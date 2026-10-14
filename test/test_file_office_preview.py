@@ -29,9 +29,9 @@ from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 from dashboard_owner_helpers import as_owner
 from ooxml_fixtures import docx_para, docx_table, write_docx
 
-from kiro_crew.dashboard.handlers import api_file_office_preview
-from kiro_crew.dashboard.handlers import files as files_mod
-from kiro_crew.dashboard.handlers.files import _MAX_UPLOAD_BYTES, _OFFICE_PREVIEW_CAP
+from efm_go.dashboard.handlers import api_file_office_preview
+from efm_go.dashboard.handlers import files as files_mod
+from efm_go.dashboard.handlers.files import _MAX_UPLOAD_BYTES, _OFFICE_PREVIEW_CAP
 
 
 def _make_app() -> web.Application:
@@ -43,8 +43,8 @@ def _make_app() -> web.Application:
 @pytest.fixture
 def mock_sel():
     with (
-        patch("kiro_crew.sel.sel") as m,
-        patch("kiro_crew.dashboard.handlers.files.is_sensitive_path", return_value=False),
+        patch("efm_go.sel.sel") as m,
+        patch("efm_go.dashboard.handlers.files.is_sensitive_path", return_value=False),
     ):
         instance = MagicMock()
         m.return_value = instance
@@ -84,7 +84,7 @@ def _write_pptx(path: str, slides: list[list[str]]) -> None:
 async def test_docx_preview_returns_text_and_truncated_only(tmp_path, mock_sel):
     f = tmp_path / "report.docx"
     _write_docx(str(f), ["Introduction", "First paragraph of the document."])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 200
@@ -103,7 +103,7 @@ async def test_docx_preview_carries_no_slides(tmp_path, mock_sel):
     # would make the panel probe a field that can never be populated.
     f = tmp_path / "report.docx"
     _write_docx(str(f), ["Introduction"])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 200
@@ -121,7 +121,7 @@ async def test_pptx_preview_returns_slides_beside_the_flat_text(tmp_path, mock_s
     """
     f = tmp_path / "deck.pptx"
     _write_pptx(str(f), [["Roadmap", "Q3 goals"], [], ["Risks"]])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 200
@@ -147,7 +147,7 @@ async def test_pptx_slides_share_the_preview_cap(tmp_path, mock_sel):
     f = tmp_path / "long.pptx"
     half = _OFFICE_PREVIEW_CAP // 2
     _write_pptx(str(f), [["a" * half], ["b" * half], ["c" * 10], ["d" * 10]])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 200
@@ -165,7 +165,7 @@ async def test_pptx_slides_are_redacted_before_the_cap(tmp_path, mock_sel):
     f = tmp_path / "creds.pptx"
     secret = "AKIAIOSFODNN7EXAMPLE"
     _write_pptx(str(f), [["x" * (_OFFICE_PREVIEW_CAP - 10) + secret], ["next"]])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 200
@@ -182,7 +182,7 @@ async def test_truncation_flag_set_and_text_capped(tmp_path, mock_sel):
     # One paragraph larger than the cap: extraction budget (cap + 1) keeps
     # the truncation detectable while the response text is cut to the cap.
     _write_docx(str(f), ["x" * (_OFFICE_PREVIEW_CAP + 100)])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 200
@@ -198,7 +198,7 @@ async def test_truncation_flag_set_and_text_capped(tmp_path, mock_sel):
 async def test_unsupported_extension_415_with_sel_audit(tmp_path, mock_sel):
     f = tmp_path / "legacy.xls"
     f.write_bytes(b"\xd0\xcf\x11\xe0old-ole-junk")
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 415
@@ -219,9 +219,9 @@ async def test_sensitive_path_403(tmp_path, mock_sel):
     f = tmp_path / "secrets.docx"
     _write_docx(str(f), ["top secret"])
     with (
-        patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
+        patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
         patch(
-            "kiro_crew.dashboard.handlers.files.is_sensitive_path",
+            "efm_go.dashboard.handlers.files.is_sensitive_path",
             return_value=True,
         ),
     ):
@@ -234,7 +234,7 @@ async def test_sensitive_path_403(tmp_path, mock_sel):
 
 @pytest.mark.asyncio
 async def test_forbidden_path_400(mock_sel):
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=None):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=None):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/file-office-preview?path=/etc/passwd.docx")
             assert resp.status == 400
@@ -250,7 +250,7 @@ async def test_resolve_uses_shared_helper(tmp_path, mock_sel):
     _write_docx(str(f), ["hello from project"])
     with (
         patch.dict(os.environ, {"KIROCREW_PROJECT_DIR": str(f.parent)}),
-        patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
+        patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
     ):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/file-office-preview?path=doc.docx&resolve=1")
@@ -288,7 +288,7 @@ async def test_oversized_file_413_before_any_parsing(tmp_path, mock_sel):
     f = tmp_path / "huge.docx"
     _write_docx(str(f), ["small real content"])
     os.truncate(str(f), 51 * 1024 * 1024)  # sparse: st_size > cap, no disk cost
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 413
@@ -322,8 +322,8 @@ async def test_extraction_reads_through_the_prefix_fd_and_closes_it(tmp_path, mo
         return real_extract(path, **kwargs)
 
     with (
-        patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
-        patch("kiro_crew.dashboard.handlers.files.extract_text", side_effect=_spy),
+        patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
+        patch("efm_go.dashboard.handlers.files.extract_text", side_effect=_spy),
     ):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
@@ -358,8 +358,8 @@ async def test_open_envelope_is_the_shared_prefix_and_runs_off_the_loop(tmp_path
         return real_prefix(*args, **kwargs)
 
     with (
-        patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
-        patch("kiro_crew.dashboard.handlers.files._open_checked_file", side_effect=_spy),
+        patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
+        patch("efm_go.dashboard.handlers.files._open_checked_file", side_effect=_spy),
     ):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
@@ -386,11 +386,11 @@ async def test_cancellation_is_sel_audited_and_reraised(tmp_path, mock_sel):
     request["user"] = "local-app"
     request["app"] = ""
     with (
-        patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
+        patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
         patch(
             # The parse is offloaded through the bounded transfer pool, so that
             # is the seam a cancellation arrives through.
-            "kiro_crew.dashboard.handlers.files._run_path_probe",
+            "efm_go.dashboard.handlers.files._run_path_probe",
             side_effect=asyncio.CancelledError(),
         ),
     ):
@@ -417,7 +417,7 @@ async def test_redaction_runs_before_truncation(tmp_path, mock_sel):
     secret = "AKIAIOSFODNN7EXAMPLE"
     filler = "x" * (_OFFICE_PREVIEW_CAP - 10)
     _write_docx(str(f), [filler + secret])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}")
             assert resp.status == 200
@@ -438,7 +438,7 @@ async def test_default_and_explicit_text_are_the_same_response(tmp_path, mock_se
     that never learned about the parameter cannot be affected by it."""
     f = tmp_path / "report.docx"
     _write_docx(str(f), ["Introduction", "Body."])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             implicit = await (await client.get(f"/api/file-office-preview?path={f}")).read()
             explicit = await (
@@ -454,7 +454,7 @@ async def test_unknown_format_is_refused_rather_than_answered_with_text(tmp_path
     not receive a plaintext blob to misread as structure."""
     f = tmp_path / "report.docx"
     _write_docx(str(f), ["Body."])
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}&format=html")
             assert resp.status == 400
@@ -471,7 +471,7 @@ async def test_blocks_returns_structure_and_no_text_field(tmp_path, mock_sel):
         + docx_para("Body copy.")
         + docx_table([["Region", "Total"]]),
     )
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}&format=blocks")
             assert resp.status == 200
@@ -491,7 +491,7 @@ async def test_blocks_text_is_credential_redacted(tmp_path, mock_sel):
         str(f),
         docx_para(f"key {secret} here", style="Heading1") + docx_table([[f"cell {secret}"]]),
     )
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             body = await (
                 await client.get(f"/api/file-office-preview?path={f}&format=blocks")
@@ -515,7 +515,7 @@ async def test_a_credential_split_across_two_runs_is_still_redacted(tmp_path, mo
         f"<w:p><w:r><w:t>{head}</w:t></w:r>"
         f"<w:r><w:rPr><w:b/></w:rPr><w:t>{tail}</w:t></w:r></w:p>",
     )
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             body = await (
                 await client.get(f"/api/file-office-preview?path={f}&format=blocks")
@@ -535,7 +535,7 @@ async def test_redaction_leaves_formatting_alone_when_nothing_matched(tmp_path, 
         "<w:p><w:r><w:t>plain </w:t></w:r>"
         "<w:r><w:rPr><w:b/></w:rPr><w:t>strong</w:t></w:r></w:p>",
     )
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             body = await (
                 await client.get(f"/api/file-office-preview?path={f}&format=blocks")
@@ -570,7 +570,7 @@ def test_structural_values_survive_the_walk():
 async def test_blocks_keeps_the_unsupported_format_refusal(tmp_path, mock_sel):
     f = tmp_path / "legacy.doc"
     f.write_bytes(b"\xd0\xcf\x11\xe0")
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}&format=blocks")
             assert resp.status == 415
@@ -582,8 +582,8 @@ async def test_blocks_keeps_the_sensitive_path_refusal(tmp_path, mock_sel):
     f = tmp_path / "secret.docx"
     _write_docx(str(f), ["Body."])
     with (
-        patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
-        patch("kiro_crew.dashboard.handlers.files.is_sensitive_path", return_value=True),
+        patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
+        patch("efm_go.dashboard.handlers.files.is_sensitive_path", return_value=True),
     ):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}&format=blocks")
@@ -605,7 +605,7 @@ async def test_blocks_reads_through_the_prefix_fd(tmp_path, mock_sel):
         return real(path, filename=filename, fileobj=fileobj)
 
     with (
-        patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
+        patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)),
         patch.object(files_mod, "extract_blocks", spy),
     ):
         async with TestClient(TestServer(_make_app())) as client:
@@ -622,7 +622,7 @@ async def test_empty_blocks_still_answers_200_for_the_frontend_to_fall_back(tmp_
     list by retrying in text mode, and a 500 would look like a broken endpoint."""
     f = tmp_path / "broken.docx"
     f.write_bytes(b"PK\x03\x04 truncated garbage")
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(f)):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-preview?path={f}&format=blocks")
             assert resp.status == 200
@@ -633,6 +633,6 @@ def test_the_block_character_budget_equals_the_text_preview_cap():
     """``format=blocks`` must not widen what one request extracts. The two caps
     are restated rather than imported -- doc_blocks sits below the dashboard
     handlers and cannot import from them -- so their equality is pinned here."""
-    from kiro_crew import doc_blocks
+    from efm_go import doc_blocks
 
     assert doc_blocks.MAX_CHARS == _OFFICE_PREVIEW_CAP

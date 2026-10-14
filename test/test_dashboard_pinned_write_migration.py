@@ -32,11 +32,11 @@ from types import SimpleNamespace
 
 import pytest
 
-import kiro_crew.dashboard.handlers.files as files_mod
-import kiro_crew.dashboard.handlers.prompts as prompts_mod
-import kiro_crew.dashboard.handlers.steering as steering_mod
-from kiro_crew.dashboard.handlers.files import _file_write_blocking
-from kiro_crew.dashboard.handlers.steering import (
+import efm_go.dashboard.handlers.files as files_mod
+import efm_go.dashboard.handlers.prompts as prompts_mod
+import efm_go.dashboard.handlers.steering as steering_mod
+from efm_go.dashboard.handlers.files import _file_write_blocking
+from efm_go.dashboard.handlers.steering import (
     _create_file_blocking,
     _delete_file_blocking,
     _update_file_blocking,

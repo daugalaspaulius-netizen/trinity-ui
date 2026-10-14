@@ -16,8 +16,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import kiro_crew.slack.events as events
-from kiro_crew.slack.events import _handle_slash, register_slash_command
+import efm_go.slack.events as events
+from efm_go.slack.events import _handle_slash, register_slash_command
 
 
 def _make_orch() -> MagicMock:

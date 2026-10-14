@@ -12,15 +12,15 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import cli_commands
-from kiro_crew.agent_discovery import AgentInfo
-from kiro_crew.config.loader import (
+from efm_go import cli_commands
+from efm_go.agent_discovery import AgentInfo
+from efm_go.config.loader import (
     KiroCrewAgentConfig,
     KiroCrewConfig,
     update_config_locked,
 )
-from kiro_crew.dashboard.handlers import agents as handlers
-from kiro_crew.memory_stores import (
+from efm_go.dashboard.handlers import agents as handlers
+from efm_go.memory_stores import (
     _named_store_dir,
     persist_member_config,
     provision_member_memory,
@@ -42,7 +42,7 @@ _HANDSHAKE_CEILING_SECS = 60.0
 @pytest.fixture
 def owner_gateway(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request", lambda _: True
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request", lambda _: True
     )
     pass  # Member routing does not depend on OS isolation.
     monkeypatch.setattr(handlers, "list_agents", lambda: [])
@@ -86,7 +86,7 @@ def _removed_allocation(store, owner):
 
 def _retained_allocation(store, owner):
     assert (_named_store_dir(store) / "evidence.txt").read_bytes() == b"retained allocation"
-    from kiro_crew.vector_memory import read_member_database_identity
+    from efm_go.vector_memory import read_member_database_identity
 
     member_id, stored = read_member_database_identity(_named_store_dir(store) / "memory.db")
     assert stored == store
@@ -276,8 +276,8 @@ def test_every_create_purges_the_name_inside_the_locked_mutation(owner_gateway, 
     option: it runs for the created name after the concurrency checks and
     BEFORE the record lands, and a store that cannot purge aborts the write
     with the config untouched."""
-    from kiro_crew import crew_teams
-    from kiro_crew.config import loader
+    from efm_go import crew_teams
+    from efm_go.config import loader
 
     cfg = owner_gateway
     cfg.agents["new-member"] = KiroCrewAgentConfig()
@@ -312,7 +312,7 @@ def test_every_create_purges_the_name_inside_the_locked_mutation(owner_gateway, 
 def test_after_write_runs_only_once_the_registry_write_committed(owner_gateway, monkeypatch):
     """The hook the crew-teams drop rides: never before the rename, never when
     the mutation changed nothing, and a failed write never reaches it."""
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     calls: list[bool] = []
 

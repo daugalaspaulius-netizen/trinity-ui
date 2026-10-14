@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.doc_blocks — structured block extraction for docx.
+"""Tests for efm_go.doc_blocks — structured block extraction for docx.
 
 What is pinned here is the block CONTRACT the dashboard renders against
 (heading level, list orderedness, table grid, bold/italic runs) and the one
@@ -13,8 +13,8 @@ from __future__ import annotations
 import pytest
 from ooxml_fixtures import docx_para, docx_styles_xml, docx_table, write_docx
 
-from kiro_crew import doc_blocks
-from kiro_crew.doc_blocks import extract_blocks
+from efm_go import doc_blocks
+from efm_go.doc_blocks import extract_blocks
 
 
 def _kinds(blocks: list[dict]) -> list[str]:

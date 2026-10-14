@@ -43,11 +43,11 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, AcpEvent
-from kiro_crew.hooks import TOOL_DENY
-from kiro_crew.messaging.renderer import Renderer, TransportCapabilities
-from kiro_crew.safety_override import safety_override
-from kiro_crew.session_allocation import SessionClosingError
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, AcpEvent
+from efm_go.hooks import TOOL_DENY
+from efm_go.messaging.renderer import Renderer, TransportCapabilities
+from efm_go.safety_override import safety_override
+from efm_go.session_allocation import SessionClosingError
 
 # ── Channel-neutral doubles ───────────────────────────────────────────────────
 
@@ -311,8 +311,8 @@ def _cfg(channel: str) -> SimpleNamespace:
 
 
 def _build_webex(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
-    from kiro_crew.webex import transport_dispatch as mod
-    from kiro_crew.webex.client import WebexInbound
+    from efm_go.webex import transport_dispatch as mod
+    from efm_go.webex.client import WebexInbound
 
     d = mod.WebexDispatcher(
         sessions=sessions,
@@ -330,8 +330,8 @@ def _build_webex(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
 
 
 def _build_wecom(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
-    from kiro_crew.wecom import transport_dispatch as mod
-    from kiro_crew.wecom.client import WeComInbound
+    from efm_go.wecom import transport_dispatch as mod
+    from efm_go.wecom.client import WeComInbound
 
     d = mod.WeComDispatcher(
         sessions=sessions,
@@ -350,8 +350,8 @@ def _build_wecom(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
 
 
 def _build_weixin(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
-    from kiro_crew.messaging.transport import InboundMessage
-    from kiro_crew.weixin import transport_dispatch as mod
+    from efm_go.messaging.transport import InboundMessage
+    from efm_go.weixin import transport_dispatch as mod
 
     d = mod.WeixinDispatcher(
         sessions=sessions,
@@ -372,8 +372,8 @@ def _build_weixin(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
 
 
 def _build_imessage(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
-    from kiro_crew.imessage import transport_dispatch as mod
-    from kiro_crew.imessage.client import IMessageInbound
+    from efm_go.imessage import transport_dispatch as mod
+    from efm_go.imessage.client import IMessageInbound
 
     d = mod.IMessageDispatcher(
         sessions=sessions,
@@ -389,8 +389,8 @@ def _build_imessage(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
 
 
 def _build_teams(sessions: Any, ctx: Any) -> tuple[Any, str, Any, Any]:
-    from kiro_crew.teams import transport_dispatch as mod
-    from kiro_crew.teams.client import TeamsInbound
+    from efm_go.teams import transport_dispatch as mod
+    from efm_go.teams.client import TeamsInbound
 
     d = mod.TeamsDispatcher(
         sessions=sessions,
@@ -429,8 +429,8 @@ _WIDGET_CHANNELS = frozenset({"teams", "webex"})
 #: can resolve immediately instead of waiting one out. Read per call inside the
 #: decider, so patching the module attribute is enough.
 _APPROVAL_DEADLINE_SYMBOL = {
-    "teams": "kiro_crew.teams.approvals.APPROVAL_TIMEOUT_SECS",
-    "webex": "kiro_crew.messaging.approval.APPROVAL_TIMEOUT_S",
+    "teams": "efm_go.teams.approvals.APPROVAL_TIMEOUT_SECS",
+    "webex": "efm_go.messaging.approval.APPROVAL_TIMEOUT_S",
 }
 
 
@@ -508,7 +508,7 @@ def test_the_grant_is_read_per_tool_not_snapshotted(
     message, and letting it lapse take effect never. Mutating the grant after the
     turn has already been built is what proves the closure re-reads it.
     """
-    from kiro_crew.messaging import dispatch as D
+    from efm_go.messaging import dispatch as D
 
     captured: list[Any] = []
 

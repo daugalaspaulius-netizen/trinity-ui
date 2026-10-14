@@ -1,6 +1,6 @@
 """Tests for kiro-cli Tool Search wiring in the ACP provider.
 
-Tool Search (https://kiro.dev/docs/cli/mcp/tool-search/) loads MCP tool specs
+Tool Search (https://efmleads.com/docs/cli/mcp/tool-search/) loads MCP tool specs
 on demand instead of sending every spec each turn. KiroCrew exposes it via the
 ``agent.tool_search`` config toggle and applies it by writing the kiro setting
 into the per-session ``<work_dir>/.kiro/settings/cli.json`` overlay — the same
@@ -15,8 +15,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.types import ACP_BACKEND_CLAUDE
-from kiro_crew.providers.acp import (
+from efm_go.acp.types import ACP_BACKEND_CLAUDE
+from efm_go.providers.acp import (
     TOOL_SEARCH_DEFAULT_MIN_PCT,
     TOOL_SEARCH_DEFAULT_MIN_TOKENS,
     AcpProvider,
@@ -27,7 +27,7 @@ from kiro_crew.providers.acp import (
 
 def _build_provider(backend: str) -> AcpProvider:
     """Build an AcpProvider with a mocked client (mirrors test_acp_provider.py)."""
-    with patch("kiro_crew.providers.acp.AcpClient"):
+    with patch("efm_go.providers.acp.AcpClient"):
         provider = AcpProvider(acp_backend=backend)
     provider._client = MagicMock()
     provider._client.backend = backend
@@ -143,7 +143,7 @@ class TestApplyToolSearchOverlay:
 
 class TestInitWiring:
     def test_kiro_enabled_applies_on_init(self):
-        with patch("kiro_crew.providers.acp.AcpClient") as mock_client, patch.object(
+        with patch("efm_go.providers.acp.AcpClient") as mock_client, patch.object(
             AcpProvider, "_apply_tool_search_overlay"
         ) as ats:
             mock_client.return_value.backend = ""
@@ -151,7 +151,7 @@ class TestInitWiring:
         ats.assert_called_once()
 
     def test_claude_backend_does_not_apply_on_init(self):
-        with patch("kiro_crew.providers.acp.AcpClient") as mock_client, patch.object(
+        with patch("efm_go.providers.acp.AcpClient") as mock_client, patch.object(
             AcpProvider, "_apply_tool_search_overlay"
         ) as ats:
             mock_client.return_value.backend = ACP_BACKEND_CLAUDE
@@ -164,21 +164,21 @@ class TestInitWiring:
 
 class TestConfigField:
     def test_default_is_true(self):
-        from kiro_crew.config.loader import AgentConfig
+        from efm_go.config.loader import AgentConfig
 
         assert AgentConfig().tool_search is True
 
     def test_load_reads_false_from_config(self, tmp_path):
         import unittest.mock
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(
             json.dumps({"agent": {"tool_search": False}}), encoding="utf-8"
         )
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path", return_value=cfg_file
+            "efm_go.config.loader.config_path", return_value=cfg_file
         ):
             cfg = KiroCrewConfig.load()
         assert cfg.agent.tool_search is False
@@ -186,12 +186,12 @@ class TestConfigField:
     def test_load_defaults_true_when_absent(self, tmp_path):
         import unittest.mock
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps({"agent": {}}), encoding="utf-8")
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path", return_value=cfg_file
+            "efm_go.config.loader.config_path", return_value=cfg_file
         ):
             cfg = KiroCrewConfig.load()
         assert cfg.agent.tool_search is True
@@ -202,7 +202,7 @@ class TestSchemaEntry:
     entry renders as a toggle. This locks in that agent.tool_search surfaces."""
 
     def test_tool_search_in_config_schema(self):
-        from kiro_crew.config.schema import SCHEMA_REGISTRY
+        from efm_go.config.schema import SCHEMA_REGISTRY
 
         entry = next(
             (e for e in SCHEMA_REGISTRY if e.path == "agent.tool_search"), None
@@ -295,7 +295,7 @@ class TestConfigurableThresholds:
         assert data["toolSearch.minTokens"] == 4444
 
     def test_constructor_defaults_to_kiro_thresholds(self):
-        with patch("kiro_crew.providers.acp.AcpClient") as mock_client, patch.object(
+        with patch("efm_go.providers.acp.AcpClient") as mock_client, patch.object(
             AcpProvider, "_apply_tool_search_overlay"
         ):
             mock_client.return_value.backend = ""
@@ -308,7 +308,7 @@ class TestThresholdConfigFields:
     def test_defaults_match_the_provider_constants(self):
         # The dataclass cannot import the provider module (circular), so the two
         # spellings of the default are pinned together here instead.
-        from kiro_crew.config.loader import AgentConfig
+        from efm_go.config.loader import AgentConfig
 
         assert AgentConfig().tool_search_min_pct == TOOL_SEARCH_DEFAULT_MIN_PCT
         assert AgentConfig().tool_search_min_tokens == TOOL_SEARCH_DEFAULT_MIN_TOKENS
@@ -316,7 +316,7 @@ class TestThresholdConfigFields:
     def test_load_reads_configured_values(self, tmp_path):
         import unittest.mock
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(
@@ -326,7 +326,7 @@ class TestThresholdConfigFields:
             encoding="utf-8",
         )
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path", return_value=cfg_file
+            "efm_go.config.loader.config_path", return_value=cfg_file
         ):
             cfg = KiroCrewConfig.load()
         assert cfg.agent.tool_search_min_pct == 9
@@ -335,14 +335,14 @@ class TestThresholdConfigFields:
     def test_load_survives_a_non_numeric_value(self, tmp_path):
         import unittest.mock
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(
             json.dumps({"agent": {"tool_search_min_pct": "lots"}}), encoding="utf-8"
         )
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path", return_value=cfg_file
+            "efm_go.config.loader.config_path", return_value=cfg_file
         ):
             cfg = KiroCrewConfig.load()
         assert cfg.agent.tool_search_min_pct == TOOL_SEARCH_DEFAULT_MIN_PCT
@@ -355,7 +355,7 @@ class TestThresholdConfigFields:
         ],
     )
     def test_thresholds_surface_in_config_schema(self, path, default):
-        from kiro_crew.config.schema import SCHEMA_REGISTRY
+        from efm_go.config.schema import SCHEMA_REGISTRY
 
         entry = next((e for e in SCHEMA_REGISTRY if e.path == path), None)
         assert entry is not None, f"{path} missing from config schema"

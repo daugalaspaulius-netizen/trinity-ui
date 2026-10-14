@@ -27,9 +27,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_doctor, platform_compat, sandbox
-from kiro_crew.service import apparmor
-from kiro_crew.service import linux as service_linux
+from efm_go import cli_doctor, platform_compat, sandbox
+from efm_go.service import apparmor
+from efm_go.service import linux as service_linux
 
 
 def _arm_apparmor_denial(monkeypatch: pytest.MonkeyPatch) -> None:

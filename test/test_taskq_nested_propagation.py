@@ -17,17 +17,17 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from overload_fakes import ManagerHarness, mock_ctx, mock_sessions
 
-from kiro_crew.subagent import SubagentManager
-from kiro_crew.taskq import model, waits
-from kiro_crew.taskq.store import TaskStore
-from kiro_crew.taskq.waits import WaitRecord
+from efm_go.subagent import SubagentManager
+from efm_go.taskq import model, waits
+from efm_go.taskq.store import TaskStore
+from efm_go.taskq.waits import WaitRecord
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
 
 @pytest.fixture
 def quiet():
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         yield
 
 

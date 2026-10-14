@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeftToLine, PanelLeft } from 'lucide-react'
-import { GithubIcon, DiscordIcon } from '../../components/BrandIcon'
+import { GithubIcon } from '../../components/BrandIcon'
 import type { getThemeBranding } from '../../themeBranding'
 import { i18nT } from '../../i18n/t'
 
@@ -216,7 +216,7 @@ export function RailCommunityLinks({ effectiveCollapsed, setReportProblemOpen }:
             language), the second link drops to its own line with the full
             row width instead of truncating to a third of itself. */}
         <div className="rail-community-links flex flex-wrap items-center gap-x-[5px] gap-y-0.5 flex-1 min-w-0 ml-1.5 text-[12px]">
-          {false && <a href="https://github.com/kirodotdev/KiroCrew" target="_blank" rel="noopener noreferrer" title={i18nT('app.star_kirocrew_on_github')} aria-label={i18nT('app.star_kirocrew_on_github')} className="shrink-0 rounded text-muted hover:text-text transition-colors">{i18nT('app.star_us')}</a>}
+          {false && <a href="https://efmleads.com" target="_blank" rel="noopener noreferrer" title={i18nT('app.star_kirocrew_on_github')} aria-label={i18nT('app.star_kirocrew_on_github')} className="shrink-0 rounded text-muted hover:text-text transition-colors">{i18nT('app.star_us')}</a>}
           {false && <span aria-hidden="true" className="shrink-0 opacity-40">·</span>}
           {/* "Report issue" opens the SAME diagnostics flow as Settings ›
               About › Support rather than linking to the bare issue list.
@@ -229,7 +229,6 @@ export function RailCommunityLinks({ effectiveCollapsed, setReportProblemOpen }:
               its sibling link so the row's width budget above is unchanged. */}
           <button type="button" onClick={() => setReportProblemOpen(true)} title={i18nT('app.report_a_problem_with_diagnostics')} aria-label={i18nT('app.report_a_problem_with_diagnostics')} className="min-w-0 overflow-hidden text-ellipsis rounded text-muted hover:text-text transition-colors cursor-pointer bg-transparent border-0 p-0 text-[12px]">{i18nT('app.report_issue')}</button>
         </div>
-        {false && <a href="https://kiro.dev/discord/" target="_blank" rel="noopener noreferrer" title={i18nT('app.discord_community')} aria-label={i18nT('app.kiro_discord_community')} className="flex items-center justify-center ml-1 w-6 h-6 rounded-md text-muted hover:text-text hover:bg-bg-hover transition-colors shrink-0"><DiscordIcon size={15} /></a>}
       </div>
     </div>
   )

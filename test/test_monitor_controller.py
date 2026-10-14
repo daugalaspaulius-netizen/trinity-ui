@@ -10,12 +10,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.autonudge import AutoNudgeService
-from kiro_crew.monitoring import controller as monitor_controller
-from kiro_crew.monitoring import models as monitor_models
-from kiro_crew.monitoring.controller import MonitorController, format_monitor_wake
-from kiro_crew.monitoring.github_pull_request import GitHubPullRequestProbeResult
-from kiro_crew.monitoring.models import (
+from efm_go.autonudge import AutoNudgeService
+from efm_go.monitoring import controller as monitor_controller
+from efm_go.monitoring import models as monitor_models
+from efm_go.monitoring.controller import MonitorController, format_monitor_wake
+from efm_go.monitoring.github_pull_request import GitHubPullRequestProbeResult
+from efm_go.monitoring.models import (
     DEFAULT_MONITOR_CADENCE_SECS,
     DEFAULT_MONITOR_REALERT_SECS,
     DEFAULT_MONITOR_STALL_TICKS,
@@ -855,7 +855,7 @@ async def test_a_shared_cooldown_skip_does_not_retire_a_healthy_watch(tmp_path):
     ever sent. Clearing the streak is the opposite error, so the skip must move
     neither counter.
     """
-    from kiro_crew.monitoring.github_provider_errors import REASON_SHARED_COOLDOWN
+    from efm_go.monitoring.github_provider_errors import REASON_SHARED_COOLDOWN
 
     service = AutoNudgeService(base_dir=tmp_path, on_monitor_tick=AsyncMock())
     loop = await service.add_monitor(
@@ -1492,7 +1492,7 @@ async def test_contradictory_terminal_restart_never_probes_or_dispatches(tmp_pat
 
 @pytest.mark.asyncio
 async def test_structured_timer_invokes_controller_without_legacy_cycle(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.autonudge._OVERDUE_REARM_SECS", 0)
+    monkeypatch.setattr("efm_go.autonudge._OVERDUE_REARM_SECS", 0)
     ticked = asyncio.Event()
     dispatched = AsyncMock()
     provider = _Provider(_result(MonitorObservationStatus.PENDING))

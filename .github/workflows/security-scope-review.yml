@@ -172,13 +172,13 @@ jobs:
           # fork lane would then scope a narrower surface than this one.
           # SCOPE-SURFACE-BEGIN
           surface=(
-            'src/kiro_crew/security/'
-            'src/kiro_crew/deny_guidance.py'
-            'src/kiro_crew/platform/security_authority.py'
-            'src/kiro_crew/hooks.py'
-            'src/kiro_crew/hook_runtime/'
-            'src/kiro_crew/builtin_skills/security-conductor/rules-of-engagement.json'
-            'src/kiro_crew/builtin_skills/security-conductor/golden-paths.json'
+            'src/efm_go/security/'
+            'src/efm_go/deny_guidance.py'
+            'src/efm_go/platform/security_authority.py'
+            'src/efm_go/hooks.py'
+            'src/efm_go/hook_runtime/'
+            'src/efm_go/builtin_skills/security-conductor/rules-of-engagement.json'
+            'src/efm_go/builtin_skills/security-conductor/golden-paths.json'
             'scripts/deny_diff.py'
             'scripts/scope_candidates.py'
             'scripts/scope_redact.py'
@@ -542,7 +542,7 @@ jobs:
 
             Read the committed corpus for the STYLE of a row, and to avoid
             re-proposing rows it already holds -- the BASE copy, at this checkout:
-                src/kiro_crew/builtin_skills/security-conductor/golden-paths.json
+                src/efm_go/builtin_skills/security-conductor/golden-paths.json
 
             Emit the review as your LAST message. The workflow captures it
             verbatim from the run transcript, so do NOT call any tool to post it,
@@ -972,7 +972,7 @@ jobs:
           # contracts the moment another file appeared would hand coverage over with
           # nobody's PR showing the handover. From the BASE ref for the same reason
           # the harness is -- the change must not choose what it is deduped against.
-          corpus_path="src/kiro_crew/builtin_skills/security-conductor/golden-paths.json"
+          corpus_path="src/efm_go/builtin_skills/security-conductor/golden-paths.json"
           rm -f base-corpus.json
           base_corpus=""
           if git cat-file -e "$BASE_SHA:$corpus_path" 2>/dev/null; then
@@ -1151,7 +1151,7 @@ jobs:
       #
       # This is not merely stricter -- it costs the comparison nothing. The
       # HARNESS comes from the base ref; the PRODUCT under test is each ref's OWN
-      # `kiro_crew.security`, which `deny_diff.py` materializes itself from the two
+      # `efm_go.security`, which `deny_diff.py` materializes itself from the two
       # SHAs into its own temp directory and runs as a child process. So both
       # sides are still the real classifier at their own ref, and all that moves
       # is which copy of the code does the comparing.
@@ -1175,7 +1175,7 @@ jobs:
       # package's own modules, and the child reaches them through PYTHONPATH at a
       # materialized checkout. Installing the package would add three
       # platform-dependent minutes and a resolution failure mode, and an editable
-      # install would put a SECOND copy of `kiro_crew` on the path -- which the
+      # install would put a SECOND copy of `efm_go` on the path -- which the
       # script's own tree check would then refuse.
       - name: Classify the candidates at both refs
         id: classify

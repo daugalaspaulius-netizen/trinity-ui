@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.mcp_gateway import stub
+from efm_go.mcp_gateway import stub
 
 
 class _RaisingBuffer:

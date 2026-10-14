@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_desktop, perf_sampler, platform_compat
+from efm_go import cli_desktop, perf_sampler, platform_compat
 
 
 def _doc(**over) -> dict:

@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.env."""
+"""Tests for efm_go.env."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.env as env_mod
-from kiro_crew.env import (
+import efm_go.env as env_mod
+from efm_go.env import (
     activate_mise,
     augmented_path,
     ensure_node,
@@ -68,11 +68,11 @@ def _fake_statfns(spec):
 
 
 def _patch_statfns(monkeypatch, spec, *, uid=4242):
-    """Patch os.getuid/os.lstat/os.stat in kiro_crew.env for a ccache test."""
-    monkeypatch.setattr("kiro_crew.env.os.getuid", lambda: uid)
+    """Patch os.getuid/os.lstat/os.stat in efm_go.env for a ccache test."""
+    monkeypatch.setattr("efm_go.env.os.getuid", lambda: uid)
     lstat, stat_fn = _fake_statfns(spec)
-    monkeypatch.setattr("kiro_crew.env.os.lstat", lstat)
-    monkeypatch.setattr("kiro_crew.env.os.stat", stat_fn)
+    monkeypatch.setattr("efm_go.env.os.lstat", lstat)
+    monkeypatch.setattr("efm_go.env.os.stat", stat_fn)
 
 
 class TestAugmentedPath:
@@ -317,7 +317,7 @@ class TestExtraMcpPathDirs:
         """The whole reason the value is pushed: this composition is reached from
         the event loop by every MCP probe (probe_server), so it must not
         stat/read/validate config.json."""
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         def _boom(cls):
             raise AssertionError("the search path must not load the config")
@@ -459,7 +459,7 @@ class TestContributedDirsNeverReachTheTrustedRuntime:
         assert "/opt/attacker-registered/bin" not in dirs
 
     def test_kiro_cli_search_dirs_exclude_contributed_dirs(self, tmp_path) -> None:
-        from kiro_crew.kiro_cli import known_kiro_cli_dirs
+        from efm_go.kiro_cli import known_kiro_cli_dirs
 
         dirs = known_kiro_cli_dirs("linux", tmp_path, {"PATH": "/usr/bin"})
         assert "/opt/attacker/bin" not in dirs
@@ -626,8 +626,8 @@ class TestEnsureNode:
 
 class TestResolveKrb5Ccname:
     def test_prefers_uid_ccache(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 4242)})
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
@@ -636,8 +636,8 @@ class TestResolveKrb5Ccname:
     def test_falls_back_to_username_ccache(self, monkeypatch) -> None:
         import getpass
 
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         monkeypatch.setattr(getpass, "getuser", lambda: "tuser")
         # uid path missing, username path present
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_tuser": ("reg", 4242)})
@@ -646,24 +646,24 @@ class TestResolveKrb5Ccname:
         assert env["KRB5CCNAME"] == "FILE:/tmp/krb5cc_tuser"
 
     def test_respects_existing_file_value(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 4242)})
         env = {"KRB5CCNAME": "FILE:/custom/cc"}
         resolve_krb5_ccname(env)
         assert env["KRB5CCNAME"] == "FILE:/custom/cc"  # operator override wins
 
     def test_overrides_keyring_value(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 4242)})
         env = {"KRB5CCNAME": "KEYRING:persistent:1000"}
         resolve_krb5_ccname(env)
         assert env["KRB5CCNAME"] == "FILE:/tmp/krb5cc_4242"
 
     def test_noop_when_no_cache_file(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {})
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
@@ -672,8 +672,8 @@ class TestResolveKrb5Ccname:
     def test_follows_uid_owned_symlink(self, monkeypatch) -> None:
         # sssd/systemd ship /tmp/krb5cc_<uid> as a uid-owned symlink into
         # /run/user/<uid>/krb5cc/... — follow it and trust the resolved target.
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("link", 4242, 4242)})
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
@@ -682,8 +682,8 @@ class TestResolveKrb5Ccname:
     def test_rejects_foreign_owned_symlink(self, monkeypatch) -> None:
         # A symlink owned by another uid is the attack vector — reject without
         # following (a co-tenant could point it anywhere).
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("link", 9999, 4242)})
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
@@ -691,8 +691,8 @@ class TestResolveKrb5Ccname:
 
     def test_rejects_uid_symlink_to_foreign_target(self, monkeypatch) -> None:
         # uid-owned symlink whose resolved target is owned by someone else.
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("link", 4242, 9999)})
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
@@ -700,8 +700,8 @@ class TestResolveKrb5Ccname:
 
     def test_rejects_dangling_uid_symlink(self, monkeypatch) -> None:
         # uid-owned symlink whose target does not exist.
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("link", 4242, None)})
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
@@ -710,8 +710,8 @@ class TestResolveKrb5Ccname:
     def test_rejects_foreign_owned_ccache(self, monkeypatch) -> None:
         # A regular file owned by a different uid (planted by a co-tenant on a
         # shared /tmp) must NOT be trusted.
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 9999)})
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
@@ -719,16 +719,16 @@ class TestResolveKrb5Ccname:
 
     def test_preserves_kcm_scheme(self, monkeypatch) -> None:
         # macOS default is KCM: — a stale /tmp file must NOT hijack it.
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "darwin")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", False)
+        monkeypatch.setattr("efm_go.env.sys.platform", "darwin")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", False)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 4242)})
         env = {"KRB5CCNAME": "KCM:"}
         resolve_krb5_ccname(env)
         assert env["KRB5CCNAME"] == "KCM:"
 
     def test_preserves_dir_scheme(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 4242)})
         env = {"KRB5CCNAME": "DIR:/run/user/4242/krb5cc"}
         resolve_krb5_ccname(env)
@@ -736,8 +736,8 @@ class TestResolveKrb5Ccname:
 
     def test_noop_on_non_linux(self, monkeypatch) -> None:
         # On macOS with empty KRB5CCNAME, a stale /tmp file must not be adopted.
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "darwin")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", False)
+        monkeypatch.setattr("efm_go.env.sys.platform", "darwin")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", False)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 4242)})
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
@@ -746,11 +746,11 @@ class TestResolveKrb5Ccname:
     def test_logs_resolved_path_on_success(self, monkeypatch, caplog) -> None:
         import logging
 
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 4242)})
         env: dict[str, str] = {}
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.env"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.env"):
             resolve_krb5_ccname(env)
         assert "FILE:/tmp/krb5cc_4242" in caplog.text
 
@@ -759,11 +759,11 @@ class TestResolveKrb5Ccname:
         # is distinguishable from the plain "no ccache" no-op.
         import logging
 
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {"/tmp/krb5cc_4242": ("reg", 9999)})
         env: dict[str, str] = {}
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.env"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.env"):
             resolve_krb5_ccname(env)
         assert "KRB5CCNAME" not in env
         assert "foreign-owned" in caplog.text
@@ -772,11 +772,11 @@ class TestResolveKrb5Ccname:
         # The ordinary "no ccache present" case must NOT emit a rejection log.
         import logging
 
-        monkeypatch.setattr("kiro_crew.env.sys.platform", "linux")
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", True)
+        monkeypatch.setattr("efm_go.env.sys.platform", "linux")
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", True)
         _patch_statfns(monkeypatch, {})
         env: dict[str, str] = {}
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.env"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.env"):
             resolve_krb5_ccname(env)
         assert "rejected ccache candidate" not in caplog.text
 
@@ -788,7 +788,7 @@ class TestResolveKrb5Ccname:
         to prevent: if a future refactor moves the ``getuid`` call above the
         platform check, this counter fires.
         """
-        monkeypatch.setattr("kiro_crew.env.platform_compat.IS_LINUX", False)
+        monkeypatch.setattr("efm_go.env.platform_compat.IS_LINUX", False)
         calls: list[None] = []
 
         def _getuid_boom() -> int:
@@ -798,7 +798,7 @@ class TestResolveKrb5Ccname:
         # ``raising=False`` lets this run on Windows too, where ``os.getuid``
         # doesn't exist — that's the entire crash the shim prevents, and we
         # still want to prove the resolver returns without touching it.
-        monkeypatch.setattr("kiro_crew.env.os.getuid", _getuid_boom, raising=False)
+        monkeypatch.setattr("efm_go.env.os.getuid", _getuid_boom, raising=False)
         env: dict[str, str] = {}
         resolve_krb5_ccname(env)
         assert calls == []
@@ -807,7 +807,7 @@ class TestResolveKrb5Ccname:
 
 class TestActivateMise:
     def test_noop_when_mise_absent(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: None)
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: None)
         env: dict[str, str] = {"PATH": "/usr/bin"}
         assert activate_mise(env) == []
         assert env == {"PATH": "/usr/bin"}
@@ -815,20 +815,20 @@ class TestActivateMise:
     def test_noop_when_disabled_via_env(self, monkeypatch) -> None:
         # KIROCREW_NO_MISE escape hatch short-circuits before mise is invoked.
         called = {"n": 0}
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: called.__setitem__("n", 1))
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: called.__setitem__("n", 1))
         env = {"PATH": "/usr/bin", "KIROCREW_NO_MISE": "1"}
         assert activate_mise(env) == []
         assert called["n"] == 0  # _mise_bin never consulted
 
     def test_merges_path_and_added_vars(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: "/home/u/.local/bin/mise")
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: "/home/u/.local/bin/mise")
         payload = json.dumps(
             {
                 "PATH": "/home/u/.local/share/mise/installs/node/24/bin:/usr/bin",
                 "NODE_ENV": "production",
             }
         )
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _fake_run(stdout=payload))
+        monkeypatch.setattr("efm_go.env.subprocess.run", _fake_run(stdout=payload))
         env = {"PATH": "/usr/bin"}
         changed = activate_mise(env)
         assert changed == ["NODE_ENV", "PATH"]  # sorted
@@ -836,58 +836,58 @@ class TestActivateMise:
         assert env["NODE_ENV"] == "production"
 
     def test_skips_unchanged_vars(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: "/m")
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: "/m")
         payload = json.dumps({"PATH": "/usr/bin"})  # identical to current
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _fake_run(stdout=payload))
+        monkeypatch.setattr("efm_go.env.subprocess.run", _fake_run(stdout=payload))
         env = {"PATH": "/usr/bin"}
         assert activate_mise(env) == []
 
     def test_nonzero_exit_is_noop(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: "/m")
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: "/m")
         monkeypatch.setattr(
-            "kiro_crew.env.subprocess.run", _fake_run(returncode=1, stderr="boom")
+            "efm_go.env.subprocess.run", _fake_run(returncode=1, stderr="boom")
         )
         env = {"PATH": "/usr/bin"}
         assert activate_mise(env) == []
         assert env == {"PATH": "/usr/bin"}
 
     def test_unparsable_json_is_noop(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: "/m")
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _fake_run(stdout="not json{"))
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: "/m")
+        monkeypatch.setattr("efm_go.env.subprocess.run", _fake_run(stdout="not json{"))
         env = {"PATH": "/usr/bin"}
         assert activate_mise(env) == []
 
     def test_non_dict_json_is_noop(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: "/m")
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _fake_run(stdout="[1, 2, 3]"))
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: "/m")
+        monkeypatch.setattr("efm_go.env.subprocess.run", _fake_run(stdout="[1, 2, 3]"))
         env = {"PATH": "/usr/bin"}
         assert activate_mise(env) == []
 
     def test_skips_non_string_values(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: "/m")
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: "/m")
         payload = json.dumps({"PATH": "/new", "BOGUS": 42, "ALSO": None})
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _fake_run(stdout=payload))
+        monkeypatch.setattr("efm_go.env.subprocess.run", _fake_run(stdout=payload))
         env: dict[str, str] = {}
         assert activate_mise(env) == ["PATH"]
         assert env == {"PATH": "/new"}
 
     def test_subprocess_failure_is_swallowed(self, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.env._mise_bin", lambda: "/m")
+        monkeypatch.setattr("efm_go.env._mise_bin", lambda: "/m")
 
         def _boom(*a, **k):  # noqa: ANN002, ANN003
             raise OSError("exec failed")
 
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _boom)
+        monkeypatch.setattr("efm_go.env.subprocess.run", _boom)
         env = {"PATH": "/usr/bin"}
         assert activate_mise(env) == []
         assert env == {"PATH": "/usr/bin"}
 
 
 class TestGitBuildInfo:
-    """kiro_crew.env.git_build_info reports the running checkout's branch+sha."""
+    """efm_go.env.git_build_info reports the running checkout's branch+sha."""
 
     def test_empty_when_no_project_dir(self, monkeypatch) -> None:
-        from kiro_crew.env import git_build_info
+        from efm_go.env import git_build_info
 
         git_build_info.cache_clear()
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
@@ -896,7 +896,7 @@ class TestGitBuildInfo:
 
     def test_empty_when_not_a_git_tree(self, tmp_path, monkeypatch) -> None:
         # Project dir exists but has no .git (toolbox/pip-wheel layout).
-        from kiro_crew.env import git_build_info
+        from efm_go.env import git_build_info
 
         git_build_info.cache_clear()
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
@@ -904,7 +904,7 @@ class TestGitBuildInfo:
         git_build_info.cache_clear()
 
     def test_reads_branch_and_commit(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew import env
+        from efm_go import env
 
         env.git_build_info.cache_clear()
         (tmp_path / ".git").mkdir()
@@ -914,14 +914,14 @@ class TestGitBuildInfo:
             out = "beta-braveheart\n" if "--abbrev-ref" in argv else "abc1234\n"
             return subprocess.CompletedProcess(argv, 0, stdout=out, stderr="")
 
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _run)
+        monkeypatch.setattr("efm_go.env.subprocess.run", _run)
         assert env.git_build_info() == ("beta-braveheart", "abc1234")
         env.git_build_info.cache_clear()
 
     def test_reads_in_git_worktree(self, tmp_path, monkeypatch) -> None:
         # In a git worktree, .git is a FILE ("gitdir: ...") not a directory;
         # the .exists() gate must still let git run there.
-        from kiro_crew import env
+        from efm_go import env
 
         env.git_build_info.cache_clear()
         (tmp_path / ".git").write_text("gitdir: /repo/.git/worktrees/wt\n")
@@ -931,24 +931,24 @@ class TestGitBuildInfo:
             out = "wt-branch\n" if "--abbrev-ref" in argv else "def5678\n"
             return subprocess.CompletedProcess(argv, 0, stdout=out, stderr="")
 
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _run)
+        monkeypatch.setattr("efm_go.env.subprocess.run", _run)
         assert env.git_build_info() == ("wt-branch", "def5678")
         env.git_build_info.cache_clear()
 
     def test_fails_open_on_nonzero_exit(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew import env
+        from efm_go import env
 
         env.git_build_info.cache_clear()
         (tmp_path / ".git").mkdir()
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.env.subprocess.run", _fake_run(returncode=128, stderr="fatal")
+            "efm_go.env.subprocess.run", _fake_run(returncode=128, stderr="fatal")
         )
         assert env.git_build_info() == ("", "")
         env.git_build_info.cache_clear()
 
     def test_fails_open_on_oserror(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew import env
+        from efm_go import env
 
         env.git_build_info.cache_clear()
         (tmp_path / ".git").mkdir()
@@ -957,7 +957,7 @@ class TestGitBuildInfo:
         def _boom(*a, **k):  # noqa: ANN002, ANN003 - test shim
             raise OSError("git not on PATH")
 
-        monkeypatch.setattr("kiro_crew.env.subprocess.run", _boom)
+        monkeypatch.setattr("efm_go.env.subprocess.run", _boom)
         assert env.git_build_info() == ("", "")
         env.git_build_info.cache_clear()
 
@@ -1396,7 +1396,7 @@ class TestKnownKiroCliDirsIsPureInItsHome:
         return tmp_path / "asked-home"
 
     def test_posix_dirs_never_mention_the_process_home(self, tmp_path, monkeypatch):
-        from kiro_crew.kiro_cli import known_kiro_cli_dirs
+        from efm_go.kiro_cli import known_kiro_cli_dirs
 
         process_home = tmp_path / "process-home"
         asked = self._asked_home(tmp_path)
@@ -1423,7 +1423,7 @@ class TestKnownKiroCliDirsIsPureInItsHome:
         from ``home`` directly and it was always correct. The ``augmented_path``
         extras are the ones that were being taken from the wrong account.
         """
-        from kiro_crew.kiro_cli import known_kiro_cli_dirs
+        from efm_go.kiro_cli import known_kiro_cli_dirs
 
         process_home = tmp_path / "process-home"
         asked = self._asked_home(tmp_path)
@@ -1447,7 +1447,7 @@ class TestKnownKiroCliDirsIsPureInItsHome:
         This is the control that shows the fix mirrors an existing convention
         rather than inventing one.
         """
-        from kiro_crew.kiro_cli import known_kiro_cli_dirs
+        from efm_go.kiro_cli import known_kiro_cli_dirs
 
         process_home = tmp_path / "process-home"
         asked = self._asked_home(tmp_path)
@@ -1471,7 +1471,7 @@ class TestKnownKiroCliDirsIsPureInItsHome:
         calls, a live re-read makes them disagree and the message names
         directories that were never walked.
         """
-        from kiro_crew.kiro_cli import known_kiro_cli_dirs
+        from efm_go.kiro_cli import known_kiro_cli_dirs
 
         asked = self._asked_home(tmp_path)
         monkeypatch.setattr(env_mod.os.path, "expanduser", lambda _p: str(tmp_path / "home-a"))

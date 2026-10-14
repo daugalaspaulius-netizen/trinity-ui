@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from test_start_priority import settle_tasks, until
 
-import kiro_crew.acp.runtime as runtime_mod
-from kiro_crew.acp.runtime import (
+import efm_go.acp.runtime as runtime_mod
+from efm_go.acp.runtime import (
     START_OUTCOME_ABANDONED,
     START_OUTCOME_ADOPTED,
     START_OUTCOME_TORN_DOWN,
@@ -24,8 +24,8 @@ from kiro_crew.acp.runtime import (
     AcpSessionStartTimeout,
     SessionStartGate,
 )
-from kiro_crew.acp.types import METHOD_MCP_SERVER_INITIALIZED, METHOD_SESSION_NEW
-from kiro_crew.start_priority import StartPriority
+from efm_go.acp.types import METHOD_MCP_SERVER_INITIALIZED, METHOD_SESSION_NEW
+from efm_go.start_priority import StartPriority
 
 # The run.py tests below drive ``SubagentManager.spawn``, which refuses while
 # the host looks short of memory -- the runner's state, not this test's input.
@@ -41,7 +41,7 @@ _SETTLE_BACKSTOP = 30.0
 
 @pytest.fixture(autouse=True)
 def _fast_paths(monkeypatch):
-    import kiro_crew.acp.session_handle as sh
+    import efm_go.acp.session_handle as sh
 
     monkeypatch.setattr(sh, "_MCP_DRAIN_NO_REPORT_CEILING", 0.05, raising=False)
     # Fresh gate per test, sized by the test (never by the host's config file).
@@ -204,7 +204,7 @@ async def test_a_chat_start_acquires_the_gate_ahead_of_queued_child_starts(monke
 
     The children name no priority (BACKGROUND, the default for every caller); the
     chat passes FOREGROUND as the provider does for a person's start (rule:
-    ``kiro_crew.start_priority``). The width is unchanged."""
+    ``efm_go.start_priority``). The width is unchanged."""
     rt, _, _ = _make_runtime()
     gate = await _gate()
     entered: list[str] = []
@@ -339,7 +339,7 @@ async def test_timeout_then_late_response_is_adopted(backend):
     still owns the request id; the late answer resolves it and the registered
     adopter receives a fully built handle. Same behaviour on both harnesses:
     the gate wraps create_session, which every backend's start runs through."""
-    from kiro_crew.acp.harness import SessionExtras
+    from efm_go.acp.harness import SessionExtras
 
     rt, reader, _ = _make_runtime(backend=backend)
     # This collector test models an MCP-free agent on either harness.
@@ -737,7 +737,7 @@ async def test_run_start_timeout_does_not_fall_back_to_dedicated_process():
         _wait_until_done,
     )
 
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     sessions = _mock_sessions(sharing_eligible=True)
     runtime = sessions.get_subagent_runtime.return_value
@@ -752,8 +752,8 @@ async def test_run_start_timeout_does_not_fall_back_to_dedicated_process():
     )
     with (
         _cfg_patch(session_sharing=True),
-        patch("kiro_crew.subagent.Stats"),
-        patch("kiro_crew.subagent.sel"),
+        patch("efm_go.subagent.Stats"),
+        patch("efm_go.subagent.sel"),
     ):
         info = manager.spawn("test task", parent_session_key="dashboard:slot1")
         run = manager._tasks[info.id]
@@ -780,7 +780,7 @@ async def test_run_start_timeout_continues_on_adopted_late_session():
         _wait_until_done,
     )
 
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     sessions = _mock_sessions(sharing_eligible=True)
     runtime = sessions.get_subagent_runtime.return_value
@@ -802,8 +802,8 @@ async def test_run_start_timeout_continues_on_adopted_late_session():
     )
     with (
         _cfg_patch(session_sharing=True),
-        patch("kiro_crew.subagent.Stats"),
-        patch("kiro_crew.subagent.sel"),
+        patch("efm_go.subagent.Stats"),
+        patch("efm_go.subagent.sel"),
     ):
         info = manager.spawn("test task", parent_session_key="dashboard:slot1")
         await _wait_until_done(info)

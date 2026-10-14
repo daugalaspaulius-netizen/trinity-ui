@@ -15,13 +15,13 @@ co-author panel is a real Kiro Crew chat session scoped to the paper, so the age
 edits the LaTeX while the user watches the PDF update.
 
 Ported from a standalone app by **tricatte**; see
-`src/kiro_crew/apps/builtins/papyrus/ATTRIBUTION.md` for what was kept and what
+`src/efm_go/apps/builtins/papyrus/ATTRIBUTION.md` for what was kept and what
 changed.
 
 ## Routes
 
 All routes live under `/api/apps/papyrus/` and are registered by
-`src/kiro_crew/apps/builtins/papyrus/backend/routes.py:register_routes`. Every handler is
+`src/efm_go/apps/builtins/papyrus/backend/routes.py:register_routes`. Every handler is
 wrapped in `_require_enabled`, which answers 403 `app_disabled` while the app is disabled
 and then 403 `owner_only` to anyone but the dashboard owner (see Caller authorization) —
 pinned by `test/test_papyrus_routes.py::TestRouteRegistration`, since routes are registered
@@ -338,7 +338,7 @@ an unrelated placeholder (version `0.0.0dev`, no files).
 `tectonic.py` closes that gap. **Tectonic** is one self-contained static binary
 (10-22MB) that downloads only the TeX support files a document actually needs and
 drives its own bibtex/rerun cycle, which `latex.py` already knew how to handle.
-The module follows `kiro_crew/embeddings.py`, the in-tree precedent for the same
+The module follows `efm_go/embeddings.py`, the in-tree precedent for the same
 problem (a large per-platform artifact, fetched over plain HTTPS, sha256-pinned,
 installed persistently under the data home, downloaded off the loop with retries,
 behind a status surface the UI polls).
@@ -650,7 +650,7 @@ session working", rather than a private `chat_done` subscription.
 
 ## Skill
 
-Five bundled skills under `src/kiro_crew/builtin_skills/papyrus-*/` (NOT the
+Five bundled skills under `src/efm_go/builtin_skills/papyrus-*/` (NOT the
 repo-only top-level `skills/`), so every `pip`/DMG install receives them, per the
 skill-bundling rule in `AGENTS.md`:
 
@@ -748,14 +748,14 @@ that host reports `supported: false` and keeps the manual install path.
 
 | Path | Purpose |
 |------|---------|
-| `src/kiro_crew/apps/builtins/papyrus/app.json` | Manifest (opt-in, author `tricatte`, Apache-2.0) |
+| `src/efm_go/apps/builtins/papyrus/app.json` | Manifest (opt-in, author `tricatte`, Apache-2.0) |
 | `.../papyrus/ATTRIBUTION.md` | Upstream credit + the port's diff |
 | `.../papyrus/backend/store.py` | Path-containment gate, project/file layout |
 | `.../papyrus/backend/latex.py` | Compiler discovery, the compile pipeline, log parsing |
 | `.../papyrus/backend/tectonic.py` | The managed, digest-pinned Tectonic install (pins, safe extract, provisioning job) |
 | `.../papyrus/backend/gitops.py` | Clone/status/commit/push/pull, **and** the repo-config RCE denylist (19 `-c` overrides + the attributes pin + pack-program flags + `GIT_PROXY_COMMAND`) |
 | `.../papyrus/backend/routes.py` | aiohttp handlers + `register_routes` |
-| `src/kiro_crew/builtin_skills/papyrus-writing/SKILL.md` | Base skill: conduct, paper-quality principles, LaTeX house style, project path, compile workflow |
+| `src/efm_go/builtin_skills/papyrus-writing/SKILL.md` | Base skill: conduct, paper-quality principles, LaTeX house style, project path, compile workflow |
 | `.../builtin_skills/papyrus-make-fluent/SKILL.md` | Polish English as tracked suggestions |
 | `.../builtin_skills/papyrus-latex-comments/SKILL.md` | Comment layer — `\aicomment` margin notes |
 | `.../builtin_skills/papyrus-latex-suggestions/SKILL.md` | Inline tracked edits — `\aisuggest` old→new |
@@ -792,7 +792,7 @@ that host reports `supported: false` and keeps the manual install path.
 
 The backend tests live in the repo-level `test/` tree, not an in-package
 `tests/`: `setup.cfg` sets `testpaths = test transfer`, so a test under
-`src/kiro_crew/apps/builtins/...` is never collected by CI.
+`src/efm_go/apps/builtins/...` is never collected by CI.
 
 Compiler subprocesses are mocked, so no `pdflatex` or `bibtex` is invoked and the
 suite runs on a host with no TeX installation. Several repo-config security tests use

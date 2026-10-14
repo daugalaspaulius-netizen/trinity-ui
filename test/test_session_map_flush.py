@@ -29,12 +29,12 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.session_map import SESSION_MAP_FILENAME, SessionMap
+from efm_go.session_map import SESSION_MAP_FILENAME, SessionMap
 
 
 @pytest.fixture
 def session_map(tmp_path):
-    with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+    with patch("efm_go.session_map.config_dir", return_value=tmp_path):
         yield SessionMap()
 
 
@@ -79,7 +79,7 @@ class TestDeferredFlush:
         burst itself performs ZERO renames and the settle performs exactly one,
         off the loop thread.
         """
-        import kiro_crew.session_map as mod
+        import efm_go.session_map as mod
 
         loop_thread = threading.current_thread()
         renames: list[threading.Thread] = []
@@ -168,7 +168,7 @@ class TestDeferredFlush:
         """A stale entry: ``None`` now, removal in memory now, on disk after."""
         sessions_dir = tmp_path / "kiro-sessions"
         sessions_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.session_map._KIRO_SESSIONS_DIR", sessions_dir)
+        monkeypatch.setattr("efm_go.session_map._KIRO_SESSIONS_DIR", sessions_dir)
         session_map.set("dashboard:stale", "sid-gone")
         session_map.flush()
         assert _map_file(tmp_path)["dashboard:stale"]["sid"] == "sid-gone"
@@ -400,7 +400,7 @@ class TestDeferredFlush:
     async def test_batched_save_still_writes_once_on_exit(self, session_map, tmp_path):
         """A batch on the loop stays one inline write; no redundant flush after."""
         renames: list[int] = []
-        import kiro_crew.session_map as mod
+        import efm_go.session_map as mod
 
         # Process-global patch, same caveat as above.
         real_replace = mod.os.replace

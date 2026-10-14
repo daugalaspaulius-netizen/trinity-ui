@@ -1,6 +1,6 @@
 """Subprocess-spawn audit — security-review finding 92e24570.
 
-Every subprocess spawn in ``src/kiro_crew`` must be either
+Every subprocess spawn in ``src/efm_go`` must be either
 
 * routed through the sandbox chokepoint (its enclosing function calls
   ``sandboxed_spawn_argv``, ``wrap_argv``, or the regression-pinned async
@@ -79,7 +79,7 @@ from pathlib import Path
 import pytest
 from source_corpus import candidate_sources, parsed_candidates
 
-_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+_SRC_ROOT = Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 # One xdist worker for the whole module: every test here derives from ONE module-cached
 # scan of src/ (rglob + ast.parse, ~30s). Under `--dist loadgroup` an unmarked module is
@@ -117,7 +117,7 @@ def _is_container_image_asset(path: Path) -> bool:
     ``apps/builtins/<app>/crew/runtime/**`` is the build context of a Linux image: a
     Dockerfile, the processes that image runs, and their tests. The gateway does not
     import it, which ``test_container_image_assets_are_not_imported`` pins and which the
-    tree itself enforces by assuming an installed layout where ``kiro_crew`` is absent.
+    tree itself enforces by assuming an installed layout where ``efm_go`` is absent.
 
     Its subprocess calls are the image's supervisor starting the image's own children,
     inside a container the owner's machine never runs. The sandbox chokepoint governs the
@@ -362,7 +362,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         # path resolves in the child to what it resolves to in the parent.
         "subprocess_pool/executor.py::_spawn",
         # The PDF extractor child: ONE fixed argv, ``sys.executable -P -m
-        # kiro_crew.pdf_extract_child --max-chars=N --max-pages=M`` with both
+        # efm_go.pdf_extract_child --max-chars=N --max-pages=M`` with both
         # numbers module constants of the two callers (file-grep, knowledge
         # ingest). The untrusted input -- the document -- travels on stdin, never
         # on argv, cwd or env, and the env is ``scrub_env()``. It is spawned
@@ -416,7 +416,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         # The child prints the build's compile-time feature string. It is a
         # subprocess for exactly one reason: that load can SIGILL on a CPU the build
         # was not compiled for, which kills the process it runs in, so it must not
-        # be this one (kirodotdev/KiroCrew#13179); the child zeroes its own
+        # be this one (efmleads.com#13179); the child zeroes its own
         # RLIMIT_CORE first so that death writes no core file. The interpreter is
         # the one running the gateway, like the userns probe above.
         "stt/preflight.py::_run_probe_child",
@@ -589,7 +589,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         "apps/builtins/auto_improvement/profiles/github_repo/pr_recipe.py::_gh_prefers_ssh",
         "apps/builtins/auto_improvement/profiles/github_repo/pr_recipe.py::_git",
         # Fixed `git -C <package root> rev-parse HEAD` / `git diff --quiet HEAD -- <root>`
-        # argv (shell=False). The only path is the kiro_crew package directory this
+        # argv (shell=False). The only path is the efm_go package directory this
         # process imported, derived from `__file__`; no agent-influenced input reaches
         # it, and it runs once per process (lru_cache) to name the code revision the
         # MCP gateway daemon and its owner compare.
@@ -993,7 +993,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         # PYTHONPATH/CWD answer for the interpreter under test.
         "dep_sync.py::_probe_interpreter",
         # The stale-asset watchdog's relaunch probe: `<python> -X utf8 -c "import
-        # kiro_crew.cli"` from `/`, a fixed literal. The interpreter is the one
+        # efm_go.cli"` from `/`, a fixed literal. The interpreter is the one
         # the service manager's own loaded command names, run under that unit's
         # environment, which the supervisor's relaunch would execute anyway; it
         # is unisolated on purpose, because the relaunch is.
@@ -1248,7 +1248,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         "cli_server.py::_spawn_detached_gateway",
         "cli_server.py::_update",
         # The agent-only config refresh extracted from _update: a fixed argv
-        # (`<this interpreter> -m kiro_crew setup --agent-only`) built from
+        # (`<this interpreter> -m efm_go setup --agent-only`) built from
         # sys.executable plus literals, cwd from the detected install layout —
         # no shell, no PATH lookup, nothing agent-influenced. stdin=DEVNULL
         # and TimeoutExpired handling are pinned by
@@ -1259,7 +1259,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         "cli_server.py::_update_wheel",
         "cli_setup.py::_setup_electron",
         # Cursor Motion overlay renderer: `<this interpreter> -m
-        # kiro_crew.computer_use.overlay_proc`, a fixed argv built from
+        # efm_go.computer_use.overlay_proc`, a fixed argv built from
         # sys.executable plus a module constant — no shell, no PATH lookup, and
         # nothing agent-supplied (pinned structurally by
         # test_computer_use_unsupported.py::test_overlay_spawn_is_a_fixed_module_launch).
@@ -1352,7 +1352,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         # agent-reachable input — the handler passes nothing from the request
         # body. The binary is resolved by `agent._kirocrew_mcp_invocation`, i.e.
         # the SAME install as the running gateway (or `sys.executable -m
-        # kiro_crew`), never a PATH shim the agent could plant. It exists as a
+        # efm_go`), never a PATH shim the agent could plant. It exists as a
         # subprocess precisely to keep the native ctypes probe OUT of the
         # gateway: a missing ctypes argtypes is a SIGSEGV, not an exception, and
         # in-process it would take the chat sessions, cron scheduler and Slack
@@ -1583,7 +1583,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         "pod/windows.py::_schtasks_raw",
         # The pod's own gateway. On Linux and macOS the service manager execs
         # it; Windows has no exec, so the task's wrapper spawns
-        # `<python> -m kiro_crew gateway ...` itself and supervises it. Argv is
+        # `<python> -m efm_go gateway ...` itself and supervises it. Argv is
         # the interpreter plus a fixed module and flags from the pod's config,
         # created CREATE_SUSPENDED so the Job object ceiling is applied before
         # the first instruction. It IS the product, not an agent subprocess; the
@@ -1674,7 +1674,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
         # same reason as the other boot-time self-checks above.
         "slack/gateway.py::_warn_if_kiro_cli_outdated",
         # Only spawn_feature_gateway calls this helper, for initial boot and
-        # restart. It fixes sys.executable -m kiro_crew gateway --test-mode;
+        # restart. It fixes sys.executable -m efm_go gateway --test-mode;
         # no executable/argv parameter exists. Home/env come from the isolated
         # test supervisor, never HTTP/MCP requests. Dynamic projected MCP
         # commands in workflow_memory_scenario instead use sandboxed_spawn_argv.
@@ -1830,7 +1830,7 @@ BENIGN_SPAWNS: frozenset[str] = frozenset(
 )
 
 
-# First-party fixed-argv spawn sites: every call site in ``src/kiro_crew`` that
+# First-party fixed-argv spawn sites: every call site in ``src/efm_go`` that
 # passes the ``first_party_fixed_argv`` keyword into the sandbox chokepoint
 # (``sandboxed_spawn_argv`` / ``wrap_argv``). The flag buys an UNCONFINED spawn
 # on a backend-less host (the carve-out), so "first-party" must be a
@@ -2139,10 +2139,10 @@ def test_every_spawn_is_routed_or_allowlisted():
     unrouted = _collect_unrouted_spawns()
     unexpected = unrouted - BENIGN_SPAWNS
     assert not unexpected, (
-        "New unrouted subprocess spawn(s) found in src/kiro_crew:\n  "
+        "New unrouted subprocess spawn(s) found in src/efm_go:\n  "
         + "\n  ".join(sorted(unexpected))
         + "\n\nRoute agent-influenced spawns through "
-        "kiro_crew.sandbox.sandboxed_spawn_argv (OS sandbox + scrubbed env), "
+        "efm_go.sandbox.sandboxed_spawn_argv (OS sandbox + scrubbed env), "
         "or, if the command/args/cwd are NOT agent-influenced, add the "
         "file::function key to BENIGN_SPAWNS in this test with a justification. "
         "See security-review finding 92e24570."
@@ -2228,7 +2228,7 @@ def test_every_routed_spawn_applies_resource_limits():
     assert not missing, (
         "Sandbox-routed spawn(s) missing a resource-limit preexec_fn:\n  "
         + "\n  ".join(sorted(missing))
-        + "\n\nPass preexec_fn=kiro_crew.sandbox.resource_limit_preexec() to the "
+        + "\n\nPass preexec_fn=efm_go.sandbox.resource_limit_preexec() to the "
         "spawn (kernel RLIMIT ceiling — fork bomb / FD / mem / CPU), or add the "
         "file::function key to PREEXEC_EXEMPT with a justification. "
         "See security-review finding bdf0d7e5."
@@ -2262,7 +2262,7 @@ def test_every_routed_spawn_applies_cgroup_scope():
     assert not missing, (
         "Sandbox-routed spawn(s) missing a cgroup v2 scope:\n  "
         + "\n  ".join(sorted(missing))
-        + "\n\nWrap the final argv with kiro_crew.sandbox.cgroup_scope_argv() "
+        + "\n\nWrap the final argv with efm_go.sandbox.cgroup_scope_argv() "
         "(pids.max + memory.max fork-bomb / memory-DoS ceiling), or route the "
         "spawn through sandboxed_spawn_argv which applies it. "
         "See security-review finding bdf0d7e5."
@@ -2294,11 +2294,11 @@ def test_bundled_skill_assets_are_not_imported():
     assert app_bundled, "app-bundled skill assets (apps/builtins/*/skills/**) not matched"
 
     asset_modules = {
-        "kiro_crew." + p.relative_to(_SRC_ROOT).with_suffix("").as_posix().replace("/", ".")
+        "efm_go." + p.relative_to(_SRC_ROOT).with_suffix("").as_posix().replace("/", ".")
         for p in assets
     }
     asset_packages = {
-        "kiro_crew." + p.relative_to(_SRC_ROOT).parent.as_posix().replace("/", ".") for p in assets
+        "efm_go." + p.relative_to(_SRC_ROOT).parent.as_posix().replace("/", ".") for p in assets
     }
 
     offenders: list[str] = []
@@ -2319,7 +2319,7 @@ def test_bundled_skill_assets_are_not_imported():
     assert not offenders, (
         "Gateway code imports a bundled skill asset, which the spawn audit "
         "exempts:\n  " + "\n  ".join(sorted(offenders)) + "\n\nEither move the "
-        "shared logic into a real module under src/kiro_crew (where the spawn "
+        "shared logic into a real module under src/efm_go (where the spawn "
         "audit reviews it), or drop the import."
     )
 
@@ -2333,7 +2333,7 @@ def test_container_image_assets_are_not_imported():
     gateway spawns while staying invisible to the audit.
 
     The tree also cannot be imported in practice: it assumes an installed layout where
-    ``kiro_crew`` is absent, so an import would fail at runtime rather than quietly work.
+    ``efm_go`` is absent, so an import would fail at runtime rather than quietly work.
     This test makes the premise explicit instead of leaving it to that accident.
 
     Reading these files as DATA is expected: the image build copies the tree, and tests in
@@ -2346,11 +2346,11 @@ def test_container_image_assets_are_not_imported():
     assert assets, "no container image assets found -- the exemption matches nothing"
 
     asset_modules = {
-        "kiro_crew." + p.relative_to(_SRC_ROOT).with_suffix("").as_posix().replace("/", ".")
+        "efm_go." + p.relative_to(_SRC_ROOT).with_suffix("").as_posix().replace("/", ".")
         for p in assets
     }
     asset_packages = {
-        "kiro_crew." + p.relative_to(_SRC_ROOT).parent.as_posix().replace("/", ".") for p in assets
+        "efm_go." + p.relative_to(_SRC_ROOT).parent.as_posix().replace("/", ".") for p in assets
     }
 
     offenders: list[str] = []
@@ -2372,8 +2372,8 @@ def test_container_image_assets_are_not_imported():
     assert not offenders, (
         "Gateway code imports a container image asset, which the spawn audit "
         "exempts:\n  " + "\n  ".join(sorted(offenders)) + "\n\nThat tree runs inside a "
-        "Linux image on an installed copy where kiro_crew is absent, so the import would "
-        "fail there anyway. Move the shared logic into a real module under src/kiro_crew, "
+        "Linux image on an installed copy where efm_go is absent, so the import would "
+        "fail there anyway. Move the shared logic into a real module under src/efm_go, "
         "or duplicate it deliberately and pin the copies equal by source text."
     )
 
@@ -2587,7 +2587,7 @@ def test_harness_preflight_seed_is_fixed_argv():
     assert len(calls) == 1
     expected = ast.parse(
         "subprocess.run(platform_compat.isolated_python_argv('-c', "
-        "'from kiro_crew.seed import seed; import sys; seed(sys.argv[1])', fixture, "
+        "'from efm_go.seed import seed; import sys; seed(sys.argv[1])', fixture, "
         "force_isolation=True), "
         "cwd=str(spawn_cwd), env=env, capture_output=True, text=True, "
         "encoding='utf-8', errors='replace', timeout=30)",

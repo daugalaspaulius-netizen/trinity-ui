@@ -17,9 +17,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config import loader, sections
+from efm_go.config import loader, sections
 
-_LOGGER = "kiro_crew.config.loader"
+_LOGGER = "efm_go.config.loader"
 _REAL_CONFIG = loader.KiroCrewConfig
 
 #: Section fields whose empty-section build differs from the bare dataclass ON

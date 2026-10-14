@@ -23,7 +23,7 @@ the wrapper, or of the tool it could not find.
 
 Three properties are pinned:
 
-* the daemon's PATH is built by :func:`kiro_crew.env.augmented_path` -- the same
+* the daemon's PATH is built by :func:`efm_go.env.augmented_path` -- the same
   helper the kiro-cli spawn path uses -- so the launcher dirs cannot drift apart
   between the two spawn sites,
 * that build runs OFF the event loop, because on a cold cache it globs every
@@ -46,13 +46,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import kiro_crew.env as env_mod
-from kiro_crew.env import augmented_path, emit_env, mcp_runtime_path, mcp_search_path
-from kiro_crew.mcp_gateway import gatewayd as gatewayd_mod
-from kiro_crew.mcp_gateway import manager as manager_mod
-from kiro_crew.mcp_gateway.backend import Backend
-from kiro_crew.mcp_gateway.manager import GatewayManager, GatewaySpec
-from kiro_crew.mcp_gateway.pool import BackendPool, PoolKey
+import efm_go.env as env_mod
+from efm_go.env import augmented_path, emit_env, mcp_runtime_path, mcp_search_path
+from efm_go.mcp_gateway import gatewayd as gatewayd_mod
+from efm_go.mcp_gateway import manager as manager_mod
+from efm_go.mcp_gateway.backend import Backend
+from efm_go.mcp_gateway.manager import GatewayManager, GatewaySpec
+from efm_go.mcp_gateway.pool import BackendPool, PoolKey
 
 
 def _same_dir(a: str, b: str) -> bool:

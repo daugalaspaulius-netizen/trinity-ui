@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import sandbox, security
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform import (
+from efm_go import sandbox, security
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform import (
     BASELINE_DENY,
     PROFILE_STANDALONE,
     boot_platform,
@@ -28,10 +28,10 @@ def cfg() -> KiroCrewConfig:
 def test_boot_standalone_no_signals(cfg: KiroCrewConfig, monkeypatch) -> None:
     """No env + no companion → standalone context installed."""
     monkeypatch.delenv("KIROCREW_PROFILE", raising=False)
-    monkeypatch.setattr("kiro_crew.platform.bootstrap.plugin_entry_points", lambda: [])
+    monkeypatch.setattr("efm_go.platform.bootstrap.plugin_entry_points", lambda: [])
     # Avoid a real SSO marker on the dev box flipping the profile.
     monkeypatch.setattr(
-        "kiro_crew.platform.profile.Path.home",
+        "efm_go.platform.profile.Path.home",
         lambda: _NoMarkerHome(),
     )
     ctx = boot_platform(cfg)
@@ -111,7 +111,7 @@ def test_default_agent_runtime_delegates_to_agent_first_run_setup(monkeypatch) -
     """
     calls: list[tuple] = []
     monkeypatch.setattr(
-        "kiro_crew.agent.run_first_run_setup",
+        "efm_go.agent.run_first_run_setup",
         lambda *a, **kw: calls.append((a, kw)),
     )
     current_context().agent_runtime.run_first_run_setup()
@@ -127,8 +127,8 @@ def test_gateway_first_run_setup_routes_through_the_seam(monkeypatch) -> None:
     """
     import dataclasses
 
-    from kiro_crew.platform import build_default_context, reset_context, set_context
-    from kiro_crew.platform.context import safe_context_call
+    from efm_go.platform import build_default_context, reset_context, set_context
+    from efm_go.platform.context import safe_context_call
 
     seen: list[str] = []
 
@@ -139,7 +139,7 @@ def test_gateway_first_run_setup_routes_through_the_seam(monkeypatch) -> None:
         def run_first_run_setup(self) -> None:
             seen.append("edition")
 
-    monkeypatch.setattr("kiro_crew.agent.run_first_run_setup", lambda: seen.append("core-direct"))
+    monkeypatch.setattr("efm_go.agent.run_first_run_setup", lambda: seen.append("core-direct"))
     base = build_default_context(KiroCrewConfig())
     composed = dataclasses.replace(base, agent_runtime=_EditionAgentRuntime())
     set_context(composed)

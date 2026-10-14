@@ -143,7 +143,7 @@ class Runner:
             "PATH": f"{bindir}{os.pathsep}{os.environ['PATH']}",
             "FIXTURES": str(self.fixtures),
             "GH_TOKEN": "stub",
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             "GITHUB_OUTPUT": str(self.outputs_file),
             "GITHUB_STEP_SUMMARY": str(self.summary),
             "MODEL_IDS": "test.model",
@@ -541,7 +541,7 @@ def test_model_output_cannot_forge_workflow_commands(runner: Runner) -> None:
     on stdout and into the job summary — so they must be flattened to one line
     before they get there.
     """
-    forged_label = "harmless\n::error file=src/kiro_crew/cli.py,line=1::forged"
+    forged_label = "harmless\n::error file=src/efm_go/cli.py,line=1::forged"
     assert (
         runner.triage(
             title="Please label this",

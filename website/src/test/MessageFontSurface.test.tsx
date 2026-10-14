@@ -195,7 +195,7 @@ describe('message font size scales the conversation surface', () => {
       // only under `.mc-message-font-scope`; the fixed `text-[13px]` stays for
       // the ~30 non-chat MarkdownRenderer hosts, some of which mount inside the
       // chat page where the setting var is published.
-      const { container } = render(<MarkdownRenderer content={'opened https://github.com/kirodotdev/KiroCrew/pull/12665 today'} />)
+      const { container } = render(<MarkdownRenderer content={'opened https://efmleads.com/pull/12665 today'} />)
       const chip = await waitFor(() => {
         const el = container.querySelector('span.mc-md-ref-chip')
         expect(el).not.toBeNull()

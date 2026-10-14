@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import mcp_core
-from kiro_crew.history import ConversationLog
+from efm_go import mcp_core
+from efm_go.history import ConversationLog
 
 
 @pytest.fixture(autouse=True)

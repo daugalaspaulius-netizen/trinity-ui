@@ -16,11 +16,11 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.acp.client import (
+from efm_go.acp.client import (
     _kiro_cli_bundle_binary,
     apply_pod_bundle_spawn,
 )
-from kiro_crew.acp_backends import (
+from efm_go.acp_backends import (
     ACP_BACKEND_KIRO,
     ACP_BACKENDS_INTERNAL_SANDBOX,
     ACP_BACKENDS_POD_HOME_REMAP,

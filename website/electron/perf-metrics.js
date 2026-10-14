@@ -27,7 +27,7 @@ const path = require("path");
 const ARTIFACT_NAME = "desktop-metrics.json";
 const DEBUG_ENV_VAR = "KIROCREW_DEBUG";
 
-// Kept in sync with kiro_crew.perf_sampler.profiling_enabled: the desktop and
+// Kept in sync with efm_go.perf_sampler.profiling_enabled: the desktop and
 // backend halves of the profiler must agree on what "debug" means, or the CLI
 // reads an artifact the app declined to write (or vice versa).
 const TRUTHY = new Set(["1", "true", "yes", "on"]);

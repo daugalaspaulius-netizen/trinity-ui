@@ -2,10 +2,10 @@
 
 import pytest
 
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-from kiro_crew.workflows import WorkflowEvent
-from kiro_crew.workflows.registry import RunHandle, RunRegistry, start_background_run
-from kiro_crew.workflows.store import WorkflowRunStore
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+from efm_go.workflows import WorkflowEvent
+from efm_go.workflows.registry import RunHandle, RunRegistry, start_background_run
+from efm_go.workflows.store import WorkflowRunStore
 
 
 @pytest.mark.asyncio

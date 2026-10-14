@@ -35,9 +35,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.config import loader as loader_module
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go import platform_compat
+from efm_go.config import loader as loader_module
+from efm_go.config.loader import KiroCrewConfig
 
 
 def _write_config(directory: Path, data: dict) -> Path:
@@ -275,7 +275,7 @@ class TestAsyncCallersOffload:
         the persist -- a delta RMW through update_config_locked, whose flock
         wait blocks its thread -- must run in a worker, never inline on the
         loop, and must write only the key this endpoint owns."""
-        from kiro_crew.dashboard.handlers import updates
+        from efm_go.dashboard.handlers import updates
 
         seen: dict[str, object] = {}
 
@@ -304,7 +304,7 @@ class TestAsyncCallersOffload:
 
 
 class TestNoInlineSaveOnTheEventLoop:
-    """Structural ratchet over ``src/kiro_crew``: no coroutine calls
+    """Structural ratchet over ``src/efm_go``: no coroutine calls
     ``KiroCrewConfig.save()`` inline.
 
     ``save()`` holds the sidecar advisory ``flock``; a contended
@@ -373,7 +373,7 @@ class TestNoInlineSaveOnTheEventLoop:
             stack.extend(ast.iter_child_nodes(node))
 
     def test_no_coroutine_calls_save_inline(self):
-        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go"
         offenders: list[str] = []
         for path in root.rglob("*.py"):
             if "_vendor" in path.parts:
@@ -421,7 +421,7 @@ class TestNoInlineSaveOnTheEventLoop:
 
 
 class TestNoDashboardModuleSavesTheWholeConfig:
-    """Structural ratchet over ``src/kiro_crew/dashboard``: no ``KiroCrewConfig.save``.
+    """Structural ratchet over ``src/efm_go/dashboard``: no ``KiroCrewConfig.save``.
 
     A dashboard writer is a request handler or a coroutine it starts, and
     ``save()`` publishes the snapshot its object was loaded from. When that load
@@ -493,7 +493,7 @@ class TestNoDashboardModuleSavesTheWholeConfig:
         return offenders
 
     def test_no_dashboard_module_saves_the_whole_config(self):
-        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "dashboard"
+        root = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "dashboard"
         offenders: list[str] = []
         for path in root.rglob("*.py"):
             src = path.read_text(encoding="utf-8", errors="replace")

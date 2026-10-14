@@ -20,9 +20,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.workflows.agent_exec as agent_exec
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.workflows.agent_exec import build_agent_fn
+import efm_go.workflows.agent_exec as agent_exec
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.workflows.agent_exec import build_agent_fn
 
 pytestmark = pytest.mark.asyncio
 
@@ -168,7 +168,7 @@ async def test_extra_env_run_level_pin_flows_into_get_or_create() -> None:
 
 async def test_end_to_end_through_runner() -> None:
     """A workflow's ctx.agent() reaches the model via the built agent_fn."""
-    from kiro_crew.workflows.runner import WorkflowRunner
+    from efm_go.workflows.runner import WorkflowRunner
 
     sessions = FakeSessions()
     fn = build_agent_fn(sessions, run_id="wf_e2e")
@@ -193,9 +193,9 @@ async def test_agent_step_persists_usage_row_with_surface() -> None:
 
     persist = AsyncMock()
     with (
-        patch("kiro_crew.dashboard.handlers.usage.persist_token_record_async", persist),
+        patch("efm_go.dashboard.handlers.usage.persist_token_record_async", persist),
         patch(
-            "kiro_crew.dashboard.handlers.usage.read_context_tokens",
+            "efm_go.dashboard.handlers.usage.read_context_tokens",
             MagicMock(return_value=(42, 200000)),
             create=True,
         ),
@@ -212,7 +212,7 @@ async def test_agent_step_persists_usage_row_with_surface() -> None:
 
 @pytest.mark.parametrize("opts", [{}, {"session": "chain-A"}])
 async def test_identity_is_published_before_each_agent_turn(monkeypatch, opts):
-    from kiro_crew.messaging import identity
+    from efm_go.messaging import identity
 
     sessions = FakeSessions()
     events = []

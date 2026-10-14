@@ -5,9 +5,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from kiro_crew.dashboard.chat_persistence import _prefetch_recent_session
-from kiro_crew.history import ConversationLog
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go.dashboard.chat_persistence import _prefetch_recent_session
+from efm_go.history import ConversationLog
+from efm_go.testing.fixtures import seeded_home
 
 
 def test_sessions_a_few_reaches_each_session_bucket() -> None:

@@ -10,7 +10,7 @@ import copy
 
 import pytest
 
-from kiro_crew.mcp_gateway.backend import (
+from efm_go.mcp_gateway.backend import (
     MCP_APPS_ENV_FLAG,
     MCP_APPS_EXTENSION_KEY,
     MCP_APPS_MIME_TYPE,
@@ -34,7 +34,7 @@ def _patch_pooling(monkeypatch, *, enabled: bool, apps_enabled: bool = True) -> 
     Both are pinned so these tests assert against a known config rather than
     whatever the host's config.json happens to carry.
     """
-    import kiro_crew.config.loader as loader
+    import efm_go.config.loader as loader
 
     real = loader.KiroCrewConfig.load()
     monkeypatch.setattr(real.mcp_gateway, "enabled", enabled, raising=False)
@@ -136,7 +136,7 @@ class TestFlagOff:
         feature is the low-harm outcome.
         """
         monkeypatch.delenv(MCP_APPS_ENV_FLAG, raising=False)
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         def _boom():
             raise OSError("config unreadable")

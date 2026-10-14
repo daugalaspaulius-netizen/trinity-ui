@@ -53,10 +53,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
-import kiro_crew.acp._dispatch as acp_dispatch
-import kiro_crew.acp.client as acp_client
-import kiro_crew.acp.runtime as acp_runtime
-from kiro_crew.acp.client import (
+import efm_go.acp._dispatch as acp_dispatch
+import efm_go.acp.client as acp_client
+import efm_go.acp.runtime as acp_runtime
+from efm_go.acp.client import (
     AcpClient,
     AcpProcessDied,
     _loggable_request_id,
@@ -64,8 +64,8 @@ from kiro_crew.acp.client import (
     write_notification_best_effort,
     write_response_frame_bounded,
 )
-from kiro_crew.acp.runtime import AcpRuntime, AcpRuntimeDead, AcpRuntimeStdinStalled
-from kiro_crew.acp.types import JsonRpcMessage
+from efm_go.acp.runtime import AcpRuntime, AcpRuntimeDead, AcpRuntimeStdinStalled
+from efm_go.acp.types import JsonRpcMessage
 
 # Short enough that a stalled drain fails in well under a second, long enough
 # that a healthy AsyncMock drain (resolves on the next loop tick) never trips it.
@@ -1217,7 +1217,7 @@ class TestRequestWriteNoProgressBound:
         the third stalled are unread in the same pipe the live child may still
         read, so their deaths are ambiguous deliveries; a session with no prompt
         outstanding is not, and none of them is re-typed as a throttle."""
-        from kiro_crew.acp.session_handle import AcpSessionHandle
+        from efm_go.acp.session_handle import AcpSessionHandle
 
         rt, proc = _runtime_with_stdin(stalled=True)
         handles = {}
@@ -1453,7 +1453,7 @@ class TestEveryBackendIdLogSiteIsSanitized:
     permission-answer lines, and the read-loop/permission bookkeeping lines."""
 
     SITES = {
-        "src/kiro_crew/acp/client.py": [
+        "src/efm_go/acp/client.py": [
             "to req=%s; treating the backend as dead",
             "while sending request method=%s req=%s;",
             "reject_tool: no deny option advertised for req=%s",
@@ -1465,14 +1465,14 @@ class TestEveryBackendIdLogSiteIsSanitized:
             "approve_tool: security floor rejected req=%s: %s",
             "auto-approve identity gate rejected req=%s: %s",
         ],
-        "src/kiro_crew/acp/session_handle.py": [
+        "src/efm_go/acp/session_handle.py": [
             "reject_tool: no deny option advertised for req=%s",
             "rejected permission request id=%s stranded in the ",
             "Dropping stray response frame id=%s (no waiter)",
             "id=%s for fidelity-unaware consumer (child=%s)",
             "approve_tool: security floor rejected req=%s: %s",
         ],
-        "src/kiro_crew/acp/runtime.py": [
+        "src/efm_go/acp/runtime.py": [
             "send_notification method=%s: %s; activity clock not refreshed",
             "Dropped %d unroutable frame(s) for session %s (method=%s)",
             "response to req=%s; marking runtime dead",
@@ -1483,7 +1483,7 @@ class TestEveryBackendIdLogSiteIsSanitized:
             "answer for permission request id=%s could not be written in ",
             "failed to answer unroutable permission request id=%s",
         ],
-        "src/kiro_crew/acp/_dispatch.py": [
+        "src/efm_go/acp/_dispatch.py": [
             "(req=%s tool_call_id=%s)",
         ],
     }
@@ -1589,7 +1589,7 @@ class TestProbeTeardownIsARequestForEveryHarness:
         ``_TERMINATE_TIMEOUT`` for a reply the host never sends, so adding one
         must restore a notification arm there, through
         ``write_notification_best_effort``."""
-        from kiro_crew.acp import harness
+        from efm_go.acp import harness
 
         notifying = [
             b for b in sorted(harness._HARNESSES) if harness.harness_for(b).teardown.notification

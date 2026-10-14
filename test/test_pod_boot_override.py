@@ -8,11 +8,11 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew.platform_compat import IS_POSIX
-from kiro_crew.pod import cli as pod_cli
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod import unit as unit_mod
-from kiro_crew.pod.config import PodConfig
+from efm_go.platform_compat import IS_POSIX
+from efm_go.pod import cli as pod_cli
+from efm_go.pod import runtime as rt
+from efm_go.pod import unit as unit_mod
+from efm_go.pod.config import PodConfig
 
 pytestmark = pytest.mark.skipif(
     not IS_POSIX,

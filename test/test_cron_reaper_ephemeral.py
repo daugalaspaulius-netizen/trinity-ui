@@ -23,7 +23,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.cron import CronService, _RunClaim
+from efm_go.cron import CronService, _RunClaim
 
 
 def _run() -> _RunClaim:
@@ -33,7 +33,7 @@ def _run() -> _RunClaim:
 
 @pytest.fixture(autouse=True)
 def _isolate_cron_store(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.cron._DEFAULT_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.cron._DEFAULT_DIR", tmp_path)
 
 
 class TestReaperUsesActiveSessionKey:
@@ -187,7 +187,7 @@ class TestCronCallbackDeferredResetPreservesActiveKey:
         """Source-level invariant: the unconditional clear is gone."""
         import inspect
 
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         src = inspect.getsource(gateway)
         # The buggy pattern was an indentation-dedented clear right after

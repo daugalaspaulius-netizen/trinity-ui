@@ -18,12 +18,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import folder_steering
-from kiro_crew.config import loader as L
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.resolution import DEGRADED_WHOLE_CONFIG, DEGRADED_WORKSPACES
-from kiro_crew.dashboard.chat_folders import _validate_steering_dirs
-from kiro_crew.folder_steering import (
+from efm_go import folder_steering
+from efm_go.config import loader as L
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.resolution import DEGRADED_WHOLE_CONFIG, DEGRADED_WORKSPACES
+from efm_go.dashboard.chat_folders import _validate_steering_dirs
+from efm_go.folder_steering import (
     collect_folder_steering,
     crosses_memory_silo,
     memory_silo_fence,
@@ -100,7 +100,7 @@ def test_crosses_memory_silo_clears_nothing_on_a_degraded_fence(tmp_path, monkey
 
 
 def test_fence_is_complete_and_names_configured_workspaces_on_an_intact_load(tmp_path, monkeypatch):
-    from kiro_crew.config.sections import WorkspaceConfig
+    from efm_go.config.sections import WorkspaceConfig
 
     research = tmp_path / "elsewhere" / "research-ws"
     research.mkdir(parents=True)
@@ -148,8 +148,8 @@ def test_fence_resolves_every_workspace_from_one_config_snapshot(tmp_path, monke
     therefore resolve every workspace from the snapshot it already holds and
     load exactly once.
     """
-    from kiro_crew.config import loader as L
-    from kiro_crew.config.sections import WorkspaceConfig
+    from efm_go.config import loader as L
+    from efm_go.config.sections import WorkspaceConfig
 
     research = tmp_path / "elsewhere" / "research-ws"
     research.mkdir(parents=True)

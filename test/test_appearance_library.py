@@ -27,9 +27,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.appearance_packs import store as ap
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.dashboard import appearances as shared
+from efm_go.appearance_packs import store as ap
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.dashboard import appearances as shared
 
 _PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 16
 
@@ -54,7 +54,7 @@ def _fresh_store():
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -76,8 +76,8 @@ def _seed_pack(root: Path, ident="aurora", *, extra=None, states=None):
 
 
 def _app() -> web.Application:
-    from kiro_crew.dashboard import handlers
-    from kiro_crew.dashboard.routes import agents as agents_routes
+    from efm_go.dashboard import handlers
+    from efm_go.dashboard.routes import agents as agents_routes
 
     app = web.Application()
     app["state"] = types.SimpleNamespace(conversation_log=None)
@@ -98,7 +98,7 @@ class TestTheCrewLibraryIsItsOwn:
     """
 
     def test_the_store_is_rooted_at_the_data_home(self):
-        from kiro_crew.config.paths import data_home
+        from efm_go.config.paths import data_home
 
         assert shared.library_dir() == data_home() / shared.LIBRARY_DIRNAME
         shared.get_appearance_store()
@@ -114,7 +114,7 @@ class TestTheCrewLibraryIsItsOwn:
         permanently destroy imported packs. Pinned by the SAME constant the
         store roots itself at, so a rename cannot silently unmask it.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert shared.LIBRARY_DIRNAME in sandbox._CREW_HIDDEN_LEAVES
 
@@ -128,7 +128,7 @@ class TestTheCrewLibraryIsItsOwn:
         before each spawn is what closes that; the store's own ``mkdir`` is
         ``exist_ok`` so it tolerates finding the root already there.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert shared.LIBRARY_DIRNAME in sandbox._CREW_PRECREATE_HIDDEN_DIR_LEAVES
 
@@ -139,7 +139,7 @@ class TestTheCrewLibraryIsItsOwn:
         or a prompt-injected agent's ``fs_write`` on Windows corrupts art the
         gateway then serves. Pinned via the store's own constant.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert shared.LIBRARY_DIRNAME in security._CREW_SECRET_LEAVES
         for prefix in (".kiro/crew", ".kirocrew"):
@@ -157,13 +157,13 @@ class TestTheCrewLibraryIsItsOwn:
 
     def test_the_companions_packs_are_not_read(self):
         """A pack that exists only in the Companion's directory is invisible here."""
-        from kiro_crew.apps.manager import app_dir
+        from efm_go.apps.manager import app_dir
 
         _seed_pack(app_dir("crew-companion") / "data", "companion-only")
         assert [p["id"] for p in shared.get_appearance_store().list_packs()] == [ap.DEFAULT_PACK]
 
     def test_the_companions_directory_is_never_created_or_touched(self):
-        from kiro_crew.apps.manager import app_dir
+        from efm_go.apps.manager import app_dir
 
         legacy = app_dir("crew-companion")
         assert not legacy.exists()
@@ -204,17 +204,17 @@ class TestTheCrewLibraryIsItsOwn:
         the shared owner gate, which every owner-gated app route uses. Any other
         dashboard reference, this store included, fails.
         """
-        from kiro_crew.apps.builtins.crew_companion import hooks
-        from kiro_crew.apps.builtins.crew_companion.backend import routes
+        from efm_go.apps.builtins.crew_companion import hooks
+        from efm_go.apps.builtins.crew_companion.backend import routes
 
         owner_gate = (
-            "from kiro_crew.dashboard.handlers._shared import require_owner_dashboard_request\n"
+            "from efm_go.dashboard.handlers._shared import require_owner_dashboard_request\n"
         )
         for mod in (hooks, routes):
             source = Path(mod.__file__).read_text(encoding="utf-8")
             if mod is routes:
                 source = source.replace(owner_gate, "", 1)
-            assert "kiro_crew.dashboard" not in source, mod.__name__
+            assert "efm_go.dashboard" not in source, mod.__name__
 
 
 class TestRoutesDoNotDependOnTheApp:
@@ -222,7 +222,7 @@ class TestRoutesDoNotDependOnTheApp:
     async def test_the_library_lists_while_the_companion_is_disabled(self, monkeypatch):
         """A crew's face must render while the Companion app is off."""
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.crew_companion.backend.routes.is_app_enabled",
+            "efm_go.apps.builtins.crew_companion.backend.routes.is_app_enabled",
             lambda _name: False,
         )
         _seed_pack(shared.library_dir(), "aurora")
@@ -403,7 +403,7 @@ class TestSoundRoute:
         """Run the real handler on a mocked request. No socket, no server."""
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.dashboard.handlers.appearances import api_appearance_sound
+        from efm_go.dashboard.handlers.appearances import api_appearance_sound
 
         request = make_mocked_request(
             "GET",
@@ -492,7 +492,7 @@ class TestSoundRoute:
 
     @pytest.mark.asyncio
     async def test_an_oversize_cue_is_dropped_rather_than_streamed(self):
-        from kiro_crew.appearance_packs.sounds import MAX_SOUND_BYTES
+        from efm_go.appearance_packs.sounds import MAX_SOUND_BYTES
 
         big = b"RIFF" + b"\x00" * 4 + b"WAVE" + b"\x00" * (MAX_SOUND_BYTES + 1)
         self._seed_cue(content=_b64(big))
@@ -525,7 +525,7 @@ class TestSoundRoute:
         """
         seen: list[dict] = []
         recorder = types.SimpleNamespace(log_api_access=lambda **kw: seen.append(kw))
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.appearances._sel", lambda: recorder)
+        monkeypatch.setattr("efm_go.dashboard.handlers.appearances._sel", lambda: recorder)
         self._seed_cue()
         assert (await self._fetch("aurora", "done")).status == 200
         assert "appearances.sound" in {
@@ -841,7 +841,7 @@ class TestImport:
 
     def test_the_gate_and_the_route_share_one_decode_predicate(self):
         """Structural: the handler must not grow a private ``_slot_body`` again."""
-        from kiro_crew.dashboard.handlers import appearances as handlers_mod
+        from efm_go.dashboard.handlers import appearances as handlers_mod
 
         source = Path(handlers_mod.__file__).read_text(encoding="utf-8")
         assert "def _slot_body" not in source
@@ -956,7 +956,7 @@ class TestOwnerGate:
     @pytest.fixture(autouse=True)
     def _not_the_owner(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: False,
         )
 
@@ -984,7 +984,7 @@ class TestPetdexRoute:
     @pytest.mark.asyncio
     async def test_a_hit_is_handed_back(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.appearance_packs.transfer.fetch_petdex_pet",
+            "efm_go.appearance_packs.transfer.fetch_petdex_pet",
             lambda raw: {"ok": True, "slug": "kirby", "spriteBase64": _b64(_PNG)},
         )
         async with TestClient(TestServer(_app())) as client:
@@ -999,7 +999,7 @@ class TestPetdexRoute:
         """A miss or an unreachable registry is what the import dialog shows,
         not a client error — the same contract the app's own route has."""
         monkeypatch.setattr(
-            "kiro_crew.appearance_packs.transfer.fetch_petdex_pet",
+            "efm_go.appearance_packs.transfer.fetch_petdex_pet",
             lambda raw: {"ok": False, "error": "Could not reach PetDex"},
         )
         async with TestClient(TestServer(_app())) as client:
@@ -1011,7 +1011,7 @@ class TestPetdexRoute:
     async def test_a_body_that_is_not_an_object_is_treated_as_empty(self, monkeypatch):
         seen: list[object] = []
         monkeypatch.setattr(
-            "kiro_crew.appearance_packs.transfer.fetch_petdex_pet",
+            "efm_go.appearance_packs.transfer.fetch_petdex_pet",
             lambda raw: seen.append(raw) or {"ok": False, "error": "no"},
         )
         async with TestClient(TestServer(_app())) as client:
@@ -1124,7 +1124,7 @@ class TestUntrustedSvgIsServedInert:
     @pytest.mark.asyncio
     async def test_the_policy_matches_the_one_untrusted_file_reads_use(self):
         """Two policies for one class of content is a drift waiting to happen."""
-        from kiro_crew.dashboard.handlers import appearances as handlers_mod
+        from efm_go.dashboard.handlers import appearances as handlers_mod
 
         source = Path(
             Path(handlers_mod.__file__).resolve().parents[1] / "handlers" / "files.py"
@@ -1155,7 +1155,7 @@ class TestUntrustedSvgIsServedInert:
 
 
 def handlers_svg_csp() -> str:
-    from kiro_crew.dashboard.handlers import appearances as handlers_mod
+    from efm_go.dashboard.handlers import appearances as handlers_mod
 
     return handlers_mod._SVG_CSP
 
@@ -1254,7 +1254,7 @@ class TestTheDeleteGuardCannotBeBypassedByAnIdVariant:
         """Casefold can emit combining sequences; NFC must run first."""
         import unicodedata
 
-        from kiro_crew.appearance_packs import pack_id_key
+        from efm_go.appearance_packs import pack_id_key
 
         assert pack_id_key("Aurora") == pack_id_key("aurora")
         nfc = unicodedata.normalize("NFC", "\u1100\u1161\u11a8")
@@ -1286,7 +1286,7 @@ class TestTheWearerCheckAndTheDeleteShareOneCrossProcessLock:
         import contextlib
         import threading
 
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         events: list[tuple[str, int]] = []
         real_lock = loader._config_write_lock
@@ -1349,7 +1349,7 @@ class TestTheWearerCheckAndTheDeleteShareOneCrossProcessLock:
         the two hold different flocks and exclude nothing."""
         import contextlib
 
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         real = loader.config_path()
         KiroCrewConfig.load().save()  # materialise the file so it can become a link
@@ -1394,7 +1394,7 @@ class TestAcceptedOwnerDecisionsAreAudited:
     def audited(self, monkeypatch):
         seen: list[dict] = []
         recorder = types.SimpleNamespace(log_api_access=lambda **kw: seen.append(kw))
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.appearances._sel", lambda: recorder)
+        monkeypatch.setattr("efm_go.dashboard.handlers.appearances._sel", lambda: recorder)
         return seen
 
     @pytest.mark.asyncio
@@ -1424,7 +1424,7 @@ class TestAcceptedOwnerDecisionsAreAudited:
         boom = types.SimpleNamespace(
             log_api_access=lambda **kw: (_ for _ in ()).throw(RuntimeError("sel down"))
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.appearances._sel", lambda: boom)
+        monkeypatch.setattr("efm_go.dashboard.handlers.appearances._sel", lambda: boom)
         async with TestClient(TestServer(_app())) as client:
             assert (await client.get("/api/appearances")).status == 200
 
@@ -1442,7 +1442,7 @@ class TestAnAuditNeverDecidesTheOperation:
         boom = types.SimpleNamespace(
             log_api_access=lambda **kw: (_ for _ in ()).throw(RuntimeError("sel down"))
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.appearances._sel", lambda: boom)
+        monkeypatch.setattr("efm_go.dashboard.handlers.appearances._sel", lambda: boom)
 
     @pytest.mark.asyncio
     async def test_a_delete_that_succeeded_is_not_reported_as_a_failure(self, sel_is_down):
@@ -1472,7 +1472,7 @@ class TestAnAuditNeverDecidesTheOperation:
     @pytest.mark.asyncio
     async def test_a_petdex_fetch_still_answers(self, sel_is_down, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.appearance_packs.transfer.fetch_petdex_pet",
+            "efm_go.appearance_packs.transfer.fetch_petdex_pet",
             lambda raw: {"ok": False, "error": "no"},
         )
         async with TestClient(TestServer(_app())) as client:
@@ -1488,7 +1488,7 @@ class TestAnAuditNeverDecidesTheOperation:
         routes, every time because the surface re-derived it by hand. A direct
         ``_sel().log_api_access`` here is that mistake reappearing.
         """
-        from kiro_crew.dashboard.handlers import appearances as handlers_mod
+        from efm_go.dashboard.handlers import appearances as handlers_mod
 
         source = Path(handlers_mod.__file__).read_text(encoding="utf-8")
         direct = [line for line in source.splitlines() if "_sel().log_api_access" in line]
@@ -1557,7 +1557,7 @@ class TestLibraryMutationsAreSerialized:
         assert "async with _library_lock():" in body_delete
 
     def test_the_lock_is_loop_bound_not_a_bare_asyncio_lock(self):
-        from kiro_crew.loop_lock import LoopBoundLock
+        from efm_go.loop_lock import LoopBoundLock
 
         assert isinstance(shared._library_lock(), LoopBoundLock)
 
@@ -1578,7 +1578,7 @@ class TestTheDashboardAddsNoBootPathImportOfPackTransfer:
 
     @pytest.mark.parametrize(
         "module",
-        ["kiro_crew.dashboard.appearances", "kiro_crew.dashboard.handlers.appearances"],
+        ["efm_go.dashboard.appearances", "efm_go.dashboard.handlers.appearances"],
     )
     def test_no_module_scope_app_package_import(self, module):
         import importlib
@@ -1593,7 +1593,7 @@ class TestTheDashboardAddsNoBootPathImportOfPackTransfer:
 
     @pytest.mark.parametrize(
         "module",
-        ["kiro_crew.dashboard.appearances", "kiro_crew.dashboard.handlers.appearances"],
+        ["efm_go.dashboard.appearances", "efm_go.dashboard.handlers.appearances"],
     )
     def test_no_module_scope_transfer_import(self, module):
         """The opener is what must not be built at import time."""
@@ -1619,8 +1619,8 @@ class TestTheDashboardAddsNoBootPathImportOfPackTransfer:
 
         code = (
             "import sys\n"
-            "import kiro_crew.dashboard.appearances\n"
-            "import kiro_crew.dashboard.handlers.appearances\n"
+            "import efm_go.dashboard.appearances\n"
+            "import efm_go.dashboard.handlers.appearances\n"
             "bad = [m for m in sys.modules if 'crew_companion' in m]\n"
             "bad += [m for m in sys.modules if m.endswith('appearance_packs.transfer')]\n"
             "print(sorted(bad))\n"

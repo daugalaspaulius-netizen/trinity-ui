@@ -1,7 +1,7 @@
 """Unit tests for the packaged fake ACP backend.
 
 These run in the standard pytest suite (NOT gated behind ``KIROCREW_E2E``), so
-they give coverage on ``kiro_crew.testing.fake_acp_backend`` without spawning a
+they give coverage on ``efm_go.testing.fake_acp_backend`` without spawning a
 gateway. ``test_e2e_smoke.py`` exercises the fake end-to-end through a real
 gateway subprocess; this file locks the JSON-RPC frame shapes fast, in-process.
 """
@@ -17,7 +17,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.testing import fake_acp_backend as fake
+from efm_go.testing import fake_acp_backend as fake
 
 
 def _capture(monkeypatch) -> io.StringIO:
@@ -119,7 +119,7 @@ def test_tool_call_carries_the_purpose_arg_the_host_reads(monkeypatch):
     tool pill renders instead of the literal command line. The camelCase
     spelling is deliberate: kiro-cli emits it that way on a large share of calls,
     and reading only the snake_case key silently dropped the label."""
-    from kiro_crew.acp._dispatch import extract_tool_purpose
+    from efm_go.acp._dispatch import extract_tool_purpose
 
     buf = _capture(monkeypatch)
     fake._handle(_prompt(fake.TOOL_TRIGGER))
@@ -635,7 +635,7 @@ def _kas_session(monkeypatch, buf: io.StringIO) -> str:
 
 
 def test_relay_flag_is_the_one_build_kas_argv_renders():
-    from kiro_crew.acp.kas_transport import KAS_RELAY_ENGINE_FLAG, build_kas_argv
+    from efm_go.acp.kas_transport import KAS_RELAY_ENGINE_FLAG, build_kas_argv
 
     assert fake.KAS_RELAY_FLAG == KAS_RELAY_ENGINE_FLAG
     assert fake.KAS_RELAY_FLAG in build_kas_argv("/bin/kiro-cli")
@@ -693,8 +693,8 @@ def test_kas_relay_set_mode_answers_then_reports_the_active_agent_roster(monkeyp
 
 def test_kas_relay_report_satisfies_the_host_readiness_barrier(monkeypatch):
     """The frames the fake emits are the ones KasMcpReadiness stops waiting on."""
-    from kiro_crew.acp.mcp_session_report import KasMcpReadiness, required_managed_servers
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.mcp_session_report import KasMcpReadiness, required_managed_servers
+    from efm_go.acp.types import JsonRpcMessage
 
     buf = _capture(monkeypatch)
     sid = _kas_session(monkeypatch, buf)

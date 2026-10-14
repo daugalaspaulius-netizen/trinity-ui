@@ -6,8 +6,8 @@ import asyncio
 
 import pytest
 
-from kiro_crew.instances import tunnel_keeper
-from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+from efm_go.instances import tunnel_keeper
+from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
 
 class _FakeTunnel:

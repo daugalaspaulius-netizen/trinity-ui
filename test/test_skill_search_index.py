@@ -22,14 +22,14 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import skill_search_index as skill_search_index_module
-from kiro_crew.skill_search_index import (
+from efm_go import skill_search_index as skill_search_index_module
+from efm_go.skill_search_index import (
     SKILL_SEARCH_INDEX_FILENAME,
     SkillSearchIndex,
     body_fingerprint,
     prefix_upper_bound,
 )
-from kiro_crew.skills import SkillsLoader, _namespace_groups
+from efm_go.skills import SkillsLoader, _namespace_groups
 
 pytestmark = pytest.mark.xdist_group("skill_search_index")
 

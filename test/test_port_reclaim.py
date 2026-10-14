@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.dashboard.port_reclaim.
+"""Tests for efm_go.dashboard.port_reclaim.
 
 The decision logic in :func:`reclaim_stale_gateway_port` is exercised through
 injected collaborators so no test ever shells out to ``lsof``/``ps`` or sends a
@@ -12,7 +12,7 @@ import socket
 
 import pytest
 
-from kiro_crew.dashboard import port_reclaim as pr
+from efm_go.dashboard import port_reclaim as pr
 
 # ---------------------------------------------------------------------------
 # reclaim_stale_gateway_port — outcome matrix (all collaborators injected)
@@ -248,7 +248,7 @@ async def test_terminate_returns_true_when_already_gone(monkeypatch) -> None:
         lambda pid, sig: signals.append((pid, sig)),
     )
     # Patch the liveness check used inside _terminate_pids.
-    import kiro_crew.cli_server as cli_server
+    import efm_go.cli_server as cli_server
 
     monkeypatch.setattr(cli_server, "_pid_exited", lambda _pid: True)
 
@@ -261,7 +261,7 @@ async def test_terminate_returns_true_when_already_gone(monkeypatch) -> None:
 @pytest.mark.asyncio
 async def test_terminate_escalates_to_sigkill(monkeypatch) -> None:
     signals: list[tuple[int, int]] = []
-    import kiro_crew.cli_server as cli_server
+    import efm_go.cli_server as cli_server
 
     # Survives SIGTERM, dies after SIGKILL is issued.
     state = {"alive": True}

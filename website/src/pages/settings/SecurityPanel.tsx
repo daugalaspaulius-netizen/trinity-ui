@@ -1860,7 +1860,7 @@ function GovernancePolicyViewer() {
             <ShieldCheck size={16} className="lucide-inline text-ok shrink-0 mt-0.5" />
             <div>
               <div className="text-[13px] font-semibold text-text">{i18nT('pages.settings.securityPanel.no_enterprise_policy_in_effect')}</div>
-              <div className="text-[12px] text-muted mt-0.5 leading-relaxed">{i18nT('pages.settings.securityPanel.no_policy_or_host_profile_restricts_the_host_sur')} <code className="font-mono text-[11px]">{i18nT('pages.settings.securityPanel.kiro_crew_security_policy_json')}</code> {i18nT('pages.settings.securityPanel.and_per_surface')} <code className="font-mono text-[11px]">{i18nT('pages.settings.securityPanel.profiles_json')}</code>.</div>
+              <div className="text-[12px] text-muted mt-0.5 leading-relaxed">{i18nT('pages.settings.securityPanel.no_policy_or_host_profile_restricts_the_host_sur')} <code className="font-mono text-[11px]">{i18nT('pages.settings.securityPanel.efm_go_security_policy_json')}</code> {i18nT('pages.settings.securityPanel.and_per_surface')} <code className="font-mono text-[11px]">{i18nT('pages.settings.securityPanel.profiles_json')}</code>.</div>
             </div>
           </div>
         ) : (
@@ -2034,7 +2034,7 @@ function PostureSection() {
       <SettingsCard>
         {/* Non-expandable rows: single-valued modes, not counted sets. */}
         <StatusRow icon={<Lock size={14} />} label={i18nT('pages.settings.securityPanel.process_sandbox')} value={i18nT('pages.settings.securityPanel.standard')} variant="ok"
-          href={`${CODE_BASE}/src/kiro_crew/sandbox.py`} />
+          href={`${CODE_BASE}/src/efm_go/sandbox.py`} />
         <StatusRow
           icon={yolo ? <ShieldAlert size={14} /> : <ShieldCheck size={14} />}
           label={i18nT('pages.settings.securityPanel.tool_approval')}
@@ -2326,7 +2326,7 @@ function DeniedCommandsSection({ draft, onDraftChange, noteDraft, onNoteDraftCha
         * operator reading either the built-in list or their own patterns as a
         * fence over-trusts it. Card B is where a pattern is authored, so the note
         * cannot live inside Card A. Same disclosure as the "What this tier cannot
-        * see" section of `src/kiro_crew/docs/blocked-commands.md`, which is where
+        * see" section of `src/efm_go/docs/blocked-commands.md`, which is where
         * the closure mechanism (the OS-level sandbox) is explained. */}
       <div className="text-[12px] text-muted mb-2 leading-relaxed" data-testid="denied-indirection-limit">
         {i18nT('pages.settings.securityPanel.rules_read_the_command_line_not_the_program_body')}

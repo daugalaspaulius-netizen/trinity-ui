@@ -21,8 +21,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from overload_fakes import Clock
 
-from kiro_crew.adaptive import controller as ctl_mod
-from kiro_crew.adaptive.controller import (
+from efm_go.adaptive import controller as ctl_mod
+from efm_go.adaptive.controller import (
     OUTCOME_ATTRIBUTABLE,
     OUTCOME_NON_CONGESTION,
     OUTCOME_SUCCESS,
@@ -30,7 +30,7 @@ from kiro_crew.adaptive.controller import (
     HostSample,
     classify_run_outcome,
 )
-from kiro_crew.adaptive.policy import (
+from efm_go.adaptive.policy import (
     ACTION_DECREASE,
     ACTION_FIXED,
     ACTION_HOLD,
@@ -42,10 +42,10 @@ from kiro_crew.adaptive.policy import (
     AdaptivePolicy,
     Decision,
 )
-from kiro_crew.adaptive.signals import Sample
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.mcp_gateway.admission import SpawnGate
-from kiro_crew.metrics.events import (
+from efm_go.adaptive.signals import Sample
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.mcp_gateway.admission import SpawnGate
+from efm_go.metrics.events import (
     LOOP_LAG_MS,
     PROCESS_CPU_UTILIZATION,
     PROCESS_RSS_SAMPLED,
@@ -375,7 +375,7 @@ class TestTick:
         def _boom(*_a: object, **_kw: object) -> int:  # pragma: no cover - must never be called
             raise AssertionError("the sizing helper must not bound the climb")
 
-        monkeypatch.setattr("kiro_crew.subagent.compute_max_subagents", _boom)
+        monkeypatch.setattr("efm_go.subagent.compute_max_subagents", _boom)
         host = HostSample(free_mem_mb=16_000.0, rss_mb=300.0, fd_count=50, fd_limit=1000)
         mgr = FakeManager(user_max=64)
         ctl, clock = _controller(mgr, host=host)
@@ -843,7 +843,7 @@ class TestRunOutcomeClassifier:
 
 
 def _real_manager(max_concurrent: int):
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.subagent import SubagentManager
 
     mgr = SubagentManager(
         sessions=MagicMock(), ctx_builder=MagicMock(), max_concurrent=max_concurrent
@@ -906,9 +906,9 @@ class TestSubagentManagerSeam:
 
 class TestGatewaydFrame:
     def test_set_spawn_capacity_frame_moves_the_gate(self) -> None:
-        from kiro_crew.mcp_gateway import gatewayd
-        from kiro_crew.mcp_gateway.admission import Admission
-        from kiro_crew.mcp_gateway.host_budget import HostBudget, HostBudgetLimits
+        from efm_go.mcp_gateway import gatewayd
+        from efm_go.mcp_gateway.admission import Admission
+        from efm_go.mcp_gateway.host_budget import HostBudget, HostBudgetLimits
 
         gate = SpawnGate(4, floor=1, ceiling=8)
         adm = Admission(
@@ -934,7 +934,7 @@ class TestGatewaydFrame:
 
     @pytest.mark.asyncio
     async def test_manager_set_spawn_capacity_uses_the_control_roundtrip(self) -> None:
-        from kiro_crew.mcp_gateway.manager import GatewayManager
+        from efm_go.mcp_gateway.manager import GatewayManager
 
         mgr = GatewayManager.__new__(GatewayManager)
         mgr._control_roundtrip = AsyncMock(  # type: ignore[method-assign]
@@ -957,7 +957,7 @@ class TestGatewaydFrame:
 
 class TestVisibilityAndConfig:
     def test_resource_status_renders_the_controller_state(self, monkeypatch) -> None:
-        from kiro_crew import resource_status as rs
+        from efm_go import resource_status as rs
 
         mgr = FakeManager(user_max=10)
         ctl, _ = _controller(mgr)
@@ -979,7 +979,7 @@ class TestVisibilityAndConfig:
         The regime says how the cap is heading for the user's ceiling, so a cap
         below the max reads as headroom not yet earned rather than a host limit.
         """
-        from kiro_crew import resource_status as rs
+        from efm_go import resource_status as rs
 
         joined = "\n".join(
             rs.adaptive_summary_lines(
@@ -1009,7 +1009,7 @@ class TestVisibilityAndConfig:
         """End to end: a cut on failing starts, then an idle gateway. The cap
         returns to the fresh-start value (the ceiling), and until it does the
         report names the last cut."""
-        from kiro_crew import resource_status as rs
+        from efm_go import resource_status as rs
 
         mgr = FakeManager(user_max=9)
         ctl, clock = _controller(mgr, cfg=_cfg(adaptive_slow_start=False))
@@ -1044,7 +1044,7 @@ class TestVisibilityAndConfig:
         assert any(line.startswith("  Last pressure cut:") for line in below)
 
     def test_summary_lists_recent_cap_changes(self) -> None:
-        from kiro_crew import resource_status as rs
+        from efm_go import resource_status as rs
 
         base = {
             "enabled": True,
@@ -1108,7 +1108,7 @@ class TestVisibilityAndConfig:
         assert a.adaptive_concurrency is True
         assert a.adaptive_concurrency_mode == "aimd"
         assert (a.adaptive_floor, a.adaptive_initial, a.controller_sample_secs) == (1, 4, 5)
-        from kiro_crew.adaptive.policy import params_from_config
+        from efm_go.adaptive.policy import params_from_config
 
         policy = params_from_config(cfg, exec_ceiling=10)
         assert policy.decrease_factor == 0.5
@@ -1150,7 +1150,7 @@ class TestVisibilityAndConfig:
     def test_live_paths_are_agent_keys_the_schema_knows(self) -> None:
         from dataclasses import fields
 
-        from kiro_crew.config.sections import AgentConfig
+        from efm_go.config.sections import AgentConfig
 
         known = {f.name for f in fields(AgentConfig)}
         for path in AdaptiveController.LIVE_CONFIG_PATHS:
@@ -1161,7 +1161,7 @@ class TestVisibilityAndConfig:
 def test_public_adaptive_keys_are_operational_controls_only():
     from dataclasses import fields
 
-    from kiro_crew.config.sections import AgentConfig
+    from efm_go.config.sections import AgentConfig
 
     names = {item.name for item in fields(AgentConfig)}
     assert {name for name in names if name.startswith("adaptive_")} == {

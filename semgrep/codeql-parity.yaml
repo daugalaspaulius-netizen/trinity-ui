@@ -277,9 +277,9 @@ rules:
           regex: (?i)^["'](.*_)?(password|passwd|secret|credential|api_key|apikey|private_key|privatekey)(_.*)?["']$
     paths:
       include:
-        - src/kiro_crew/**
+        - src/efm_go/**
       exclude:
-        - src/kiro_crew/_vendor/**
+        - src/efm_go/_vendor/**
     message: >
       A credential-named field is serialized to a file in clear text.
       Confirm the destination is created with 0600 permissions inside a

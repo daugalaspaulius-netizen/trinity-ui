@@ -26,11 +26,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import task_executor
-from kiro_crew.acp.types import TurnUsage
-from kiro_crew.dashboard.handlers import usage
-from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
-from kiro_crew.task_models import SESSION_PREFIX, Project, Task
+from efm_go import task_executor
+from efm_go.acp.types import TurnUsage
+from efm_go.dashboard.handlers import usage
+from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
+from efm_go.task_models import SESSION_PREFIX, Project, Task
 
 # A turn long enough that ``int(elapsed_s * 1000)`` is unambiguously >= 1 on any
 # host (asyncio.sleep is a lower bound), yet trivially short for the suite.

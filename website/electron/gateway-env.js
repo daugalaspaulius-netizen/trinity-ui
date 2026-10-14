@@ -161,40 +161,8 @@ function gatewayBytecodeEnvironment(platform, cachePath, isPackaged) {
  * @returns {NodeJS.ProcessEnv}
  */
 function bundledKiroCliEnvironment(fs, path, resourcesPath, probe) {
-  if (!resourcesPath) return {};
-  const bundledDir = path.join(resourcesPath, ...BUNDLED_KIRO_CLI_SUBDIR);
-  try {
-    if (!fs.statSync(bundledDir).isDirectory()) return {};
-  } catch {
-    return {};
-  }
-  if (probe && probe.spawnSync) {
-    const entry = path.join(
-      bundledDir,
-      BUNDLED_KIRO_CLI_ENTRY[probe.platform] || BUNDLED_KIRO_CLI_POSIX_ENTRY,
-    );
-    const result = probe.spawnSync(entry, ["--version"], {
-      env: { ...(probe.env || {}), KIRO_NO_AUTO_UPDATE: "1" },
-      timeout: BUNDLED_KIRO_CLI_PROBE_MS,
-      windowsHide: true,
-      stdio: ["ignore", "ignore", "pipe"],
-    });
-    if (result.error || result.status !== 0) {
-      const why = result.error
-        ? result.error.message
-        : `exit ${result.status}${result.signal ? ` signal ${result.signal}` : ""}`;
-      if (probe.log) {
-        probe.log(
-          `bundled kiro-cli at ${entry} does not run here (${why}); ` +
-            "falling through to the kiro-cli installed on this machine",
-        );
-      }
-      return {};
-    }
-  }
-  return { KIROCREW_BUNDLED_KIRO_DIR: bundledDir, KIRO_NO_AUTO_UPDATE: "1" };
+  return {};
 }
-
 module.exports = {
   buildGatewayEnvironment,
   bundledKiroCliEnvironment,

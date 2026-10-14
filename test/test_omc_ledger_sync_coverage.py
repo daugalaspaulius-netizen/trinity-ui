@@ -36,10 +36,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.apps.builtins.ops_mission_control.backend import ledger
-from kiro_crew.apps.builtins.ops_mission_control.backend import ledger_sync as ls
-from kiro_crew.apps.builtins.ops_mission_control.backend import providers
-from kiro_crew.apps.builtins.ops_mission_control.backend.models import LedgerEntry
+from efm_go.apps.builtins.ops_mission_control.backend import ledger
+from efm_go.apps.builtins.ops_mission_control.backend import ledger_sync as ls
+from efm_go.apps.builtins.ops_mission_control.backend import providers
+from efm_go.apps.builtins.ops_mission_control.backend.models import LedgerEntry
 
 #: The real coroutine, captured before any fixture swaps it for the fake. The handful of
 #: tests that cover ``_git``'s OWN body call this rather than the module attribute.

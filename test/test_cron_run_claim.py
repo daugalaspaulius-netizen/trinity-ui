@@ -32,9 +32,9 @@ from test_cron_reaper import (
     _refuse_unpinned_signal_async,
 )
 
-from kiro_crew import cron_script, platform_compat
-from kiro_crew.cron import _JOB_TIMEOUT_SECS, CronJob, CronSchedule, CronService, _RunClaim
-from kiro_crew.cron_history import CronHistoryStore
+from efm_go import cron_script, platform_compat
+from efm_go.cron import _JOB_TIMEOUT_SECS, CronJob, CronSchedule, CronService, _RunClaim
+from efm_go.cron_history import CronHistoryStore
 
 
 @pytest.fixture(autouse=True)
@@ -296,7 +296,7 @@ class TestASecondTeardownLeavesTheFirstAlone:
 
         svc._sessions.reset = AsyncMock(side_effect=_reset)
 
-        with patch("kiro_crew.sel.sel"), patch.object(svc, "_save"):
+        with patch("efm_go.sel.sel"), patch.object(svc, "_save"):
             first = asyncio.get_running_loop().create_task(svc.cancel("j1"))
             await asyncio.wait_for(parked.wait(), timeout=5)
             assert claim.taken and svc._claims["j1"] is claim
@@ -341,7 +341,7 @@ class TestASecondTeardownLeavesTheFirstAlone:
         svc._runs.cancelled.mark("j1", claim)
         generation_before = svc._runs.generations.get("j1", 0)
 
-        with patch("kiro_crew.sel.sel"), patch.object(svc, "_save"):
+        with patch("efm_go.sel.sel"), patch.object(svc, "_save"):
             await svc._force_reap("j1", _JOB_TIMEOUT_SECS + 60, claim=claim)
 
         assert svc._claims.get("j1") is claim, "the reap popped the cancel's taken claim"
@@ -416,7 +416,7 @@ class TestAnAbortedTeardownStillFinishesItsClaim:
             raise RuntimeError("cannot schedule new futures after shutdown")
 
         with (
-            patch("kiro_crew.sel.sel"),
+            patch("efm_go.sel.sel"),
             patch.object(svc, "_save"),
             patch.object(cron_script, "kill_running_process", _kill_raises),
         ):
@@ -448,7 +448,7 @@ class TestAnAbortedTeardownStillFinishesItsClaim:
 
         svc._sessions.reset = AsyncMock(side_effect=_reset)
 
-        with patch("kiro_crew.sel.sel"), patch.object(svc, "_save"):
+        with patch("efm_go.sel.sel"), patch.object(svc, "_save"):
             handler = asyncio.get_running_loop().create_task(svc.cancel("j1"))
             await asyncio.wait_for(parked.wait(), timeout=5)
             assert claim.taken and svc._claims["j1"] is claim
@@ -481,7 +481,7 @@ class TestAnAbortedTeardownStillFinishesItsClaim:
             raise OSError("killpg refused")
 
         with (
-            patch("kiro_crew.sel.sel"),
+            patch("efm_go.sel.sel"),
             patch.object(svc, "_save"),
             patch.object(svc, "_sigkill_session", _sigkill_raises),
         ):
@@ -568,8 +568,8 @@ class TestTheSweepReapsOnlyTheClaimItMeasured:
 
         svc._sessions.reset = AsyncMock(side_effect=_reset)
 
-        caplog.set_level(logging.WARNING, logger="kiro_crew.cron")
-        with patch("kiro_crew.sel.sel"), patch.object(svc, "_save"), _one_sweep():
+        caplog.set_level(logging.WARNING, logger="efm_go.cron")
+        with patch("efm_go.sel.sel"), patch.object(svc, "_save"), _one_sweep():
             sweep = asyncio.get_running_loop().create_task(svc._reaper_loop())
             await asyncio.wait_for(parked.wait(), timeout=5)
             assert claim_a.taken and svc._claims["j1"] is claim_a
@@ -622,7 +622,7 @@ class TestTheSweepReapsOnlyTheClaimItMeasured:
             task=_live_task(),
         )
 
-        with patch("kiro_crew.sel.sel"), patch.object(svc, "_save"):
+        with patch("efm_go.sel.sel"), patch.object(svc, "_save"):
             await svc._force_reap("j2", _JOB_TIMEOUT_SECS + 60, claim=stale)
 
         assert (
@@ -639,7 +639,7 @@ class TestTheSweepReapsOnlyTheClaimItMeasured:
         # The measured run released its claim and nothing replaced it: there
         # is no run to kill, and the job's session is not that run's any more.
         del svc._claims["j2"]
-        with patch("kiro_crew.sel.sel"), patch.object(svc, "_save"):
+        with patch("efm_go.sel.sel"), patch.object(svc, "_save"):
             await svc._force_reap("j2", _JOB_TIMEOUT_SECS + 60, claim=stale)
         svc._sessions.reset.assert_not_awaited()
         _runs, total = await svc._history.get_job_history("j2")
@@ -647,7 +647,7 @@ class TestTheSweepReapsOnlyTheClaimItMeasured:
 
         # Handed the stored claim itself, the reap proceeds as before.
         live = svc._claims["j2"] = _overdue_claim()
-        with patch("kiro_crew.sel.sel"), patch.object(svc, "_save"):
+        with patch("efm_go.sel.sel"), patch.object(svc, "_save"):
             await svc._force_reap("j2", _JOB_TIMEOUT_SECS + 60, claim=live)
         assert "j2" not in svc._claims
         assert live.task is not None

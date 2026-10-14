@@ -1,11 +1,11 @@
-"""Tests for the pure path-primitives leaf ``kiro_crew.config.paths``.
+"""Tests for the pure path-primitives leaf ``efm_go.config.paths``.
 
 These pin two properties of the config-loader decoupling refactor:
 
 1. The path primitives behave identically to their historical
-   ``kiro_crew.config.loader`` definitions (back-compat).
-2. ``kiro_crew.config.paths`` is a genuine leaf — importing it pulls in **no**
-   ``kiro_crew`` modules (in particular not the heavy ``config.loader``), so the
+   ``efm_go.config.loader`` definitions (back-compat).
+2. ``efm_go.config.paths`` is a genuine leaf — importing it pulls in **no**
+   ``efm_go`` modules (in particular not the heavy ``config.loader``), so the
    modules that only need ``config_dir()`` don't transitively load the DTOs,
    schema validation, the process-global cache, and the provider factory.
 """
@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew.config import paths
+from efm_go.config import paths
 
 
 class TestConfigDir:
@@ -35,7 +35,7 @@ class TestConfigDir:
         # patched Path.home / KIROCREW_HOME rather than a value another test cached.
         monkeypatch.setattr(paths, "_resolved_home", None)
 
-    def test_default_is_home_dotkiro_crew(
+    def test_default_is_home_dotefm_go(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
@@ -168,7 +168,7 @@ class TestCannotRestrictWarnings:
     def _refuse_only_the_home(
         monkeypatch: pytest.MonkeyPatch, home: Path, exc: BaseException
     ) -> list[Path]:
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         real = platform_compat.restrict_dir_to_owner
         refused: list[Path] = []
@@ -236,7 +236,7 @@ class TestCannotRestrictWarnings:
 
 
 class TestConfigPackageDir:
-    """``config_package_dir()`` points at the installed ``kiro_crew/config/``."""
+    """``config_package_dir()`` points at the installed ``efm_go/config/``."""
 
     def test_points_at_config_package_with_defaults_json(self) -> None:
         pkg = paths.config_package_dir()
@@ -307,26 +307,26 @@ class TestSafeDirName:
 class TestLeafPurity:
     """The whole point of the extraction: importing the leaf is cheap.
 
-    Importing ``kiro_crew.config.paths`` in a fresh interpreter must NOT import
-    ``kiro_crew.config.loader`` (or any other ``kiro_crew`` submodule). Run in a
+    Importing ``efm_go.config.paths`` in a fresh interpreter must NOT import
+    ``efm_go.config.loader`` (or any other ``efm_go`` submodule). Run in a
     subprocess so the already-warm modules in this test process don't mask a
     regression.
     """
 
-    def test_importing_paths_pulls_no_kiro_crew_modules(self) -> None:
+    def test_importing_paths_pulls_no_efm_go_modules(self) -> None:
         code = (
             "import sys\n"
-            "import kiro_crew.config.paths\n"
+            "import efm_go.config.paths\n"
             "leaked = sorted(\n"
             "    m for m in sys.modules\n"
-            "    if m.startswith('kiro_crew')\n"
-            "    and m not in {'kiro_crew', 'kiro_crew.config', 'kiro_crew.config.paths'}\n"
+            "    if m.startswith('efm_go')\n"
+            "    and m not in {'efm_go', 'efm_go.config', 'efm_go.config.paths'}\n"
             ")\n"
             "print(','.join(leaked))\n"
         )
         import os
 
-        # Ensure kiro_crew is importable in the subprocess on local dev runs
+        # Ensure efm_go is importable in the subprocess on local dev runs
         # where PYTHONPATH may not already include the src/ directory.
         src_dir = str(Path(__file__).resolve().parents[1] / "src")
         env = dict(os.environ)
@@ -339,14 +339,14 @@ class TestLeafPurity:
             env=env,
         )
         leaked = [m for m in out.stdout.strip().split(",") if m]
-        assert leaked == [], f"config.paths leaf leaked kiro_crew modules: {leaked}"
+        assert leaked == [], f"config.paths leaf leaked efm_go modules: {leaked}"
 
 
 class TestBackCompatReexport:
-    """All primitives remain importable from ``kiro_crew.config.loader``."""
+    """All primitives remain importable from ``efm_go.config.loader``."""
 
     def test_loader_reexports_match_paths(self) -> None:
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         for name in (
             "config_dir",
@@ -360,9 +360,9 @@ class TestBackCompatReexport:
             assert getattr(loader, name) is getattr(paths, name), name
 
     def test_config_package_lazy_surface(self) -> None:
-        # `from kiro_crew.config import X` still resolves the public surface
+        # `from efm_go.config import X` still resolves the public surface
         # without eagerly importing the loader at package import time.
-        import kiro_crew.config as cfg
+        import efm_go.config as cfg
 
         assert cfg.config_dir is paths.config_dir
         assert cfg.KiroCrewConfig.__name__ == "KiroCrewConfig"

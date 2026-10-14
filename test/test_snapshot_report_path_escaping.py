@@ -5,8 +5,8 @@ from __future__ import annotations
 import inspect
 import re
 
-from kiro_crew import snapshot as snap
-from kiro_crew import snapshot_redact as redact
+from efm_go import snapshot as snap
+from efm_go import snapshot_redact as redact
 
 HOSTILE = "workspace/ev\x1b[2Jil.md"
 

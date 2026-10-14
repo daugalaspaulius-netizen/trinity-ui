@@ -32,8 +32,8 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import pinned_fs
-from kiro_crew.apps.builtins.aws_control.backend import backup
+from efm_go import pinned_fs
+from efm_go.apps.builtins.aws_control.backend import backup
 
 ACCOUNT = "111122223333"
 

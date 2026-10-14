@@ -24,9 +24,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard.handlers.messaging import parent_work_supported
-from kiro_crew.mcp_tools import spawn as spawn_tools
-from kiro_crew.validation import SPAWN_RUN_SCHEMA, SPAWN_SUB_AGENTS_SCHEMA, validate_tool_args
+from efm_go.dashboard.handlers.messaging import parent_work_supported
+from efm_go.mcp_tools import spawn as spawn_tools
+from efm_go.validation import SPAWN_RUN_SCHEMA, SPAWN_SUB_AGENTS_SCHEMA, validate_tool_args
 
 
 def _tools() -> dict[str, dict]:
@@ -84,7 +84,7 @@ def test_legacy_solo_fields_are_still_accepted(schema, base, reason) -> None:
 
 def _run(tool: str, args: dict[str, Any], answer: dict | None = None):
     """Run a spawn tool; return (POSTed bodies, result text, sel mock)."""
-    from kiro_crew import mcp_core
+    from efm_go import mcp_core
 
     bodies: list[dict] = []
     sel = MagicMock()
@@ -215,8 +215,8 @@ class TestApiSpawn:
     PARENT = "dashboard:1"
 
     async def _call(self, body: dict):
-        from kiro_crew.dashboard.handlers import messaging
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.handlers import messaging
+        from efm_go.dashboard.state import _ChatSlot
 
         body = {"parent_session": self.PARENT, **body}
         mgr = MagicMock()

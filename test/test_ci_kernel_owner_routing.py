@@ -222,7 +222,7 @@ def coverage_root():
 
 
 def test_combine_requires_the_strict_lane_data_before_producing_a_report(jobs, coverage_root):
-    source = coverage_root / "src" / "kiro_crew" / "probe.py"
+    source = coverage_root / "src" / "efm_go" / "probe.py"
     source.parent.mkdir(parents=True)
     source.write_text("VALUE = 1\nOTHER = 2\n", encoding="utf-8")
     (coverage_root / "setup.cfg").write_text(
@@ -232,7 +232,7 @@ def test_combine_requires_the_strict_lane_data_before_producing_a_report(jobs, c
     staged.mkdir()
     for name, lines in ((".coverage.1", {1}), (".coverage.ipv6", {2}), (DATA_FILE, {1, 2})):
         data = CoverageData(basename=str(staged / name))
-        data.add_lines({"src/kiro_crew/probe.py": lines})
+        data.add_lines({"src/efm_go/probe.py": lines})
         data.write()
     env = _env(coverage_root)
     env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env["PATH"]

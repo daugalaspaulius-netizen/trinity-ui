@@ -24,13 +24,13 @@ import tempfile
 import unittest.mock
 from pathlib import Path
 
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     CONTEXT_WARN_MARGIN_PCT,
     DEFAULT_AUTOCOMPACT_PCT,
     KiroCrewConfig,
     SessionConfig,
 )
-from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
 
 def _load_with_session(session_block: dict) -> KiroCrewConfig:
@@ -47,7 +47,7 @@ def _load_with_session(session_block: dict) -> KiroCrewConfig:
 
     try:
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path",
+            "efm_go.config.loader.config_path",
             return_value=tmp,
         ):
             return KiroCrewConfig.load()
@@ -86,7 +86,7 @@ def _reset_published_threshold() -> None:
     that pass synthetic ticket numbers, which a real drawn ticket would outrank
     once enough loads had run in the same worker.
     """
-    from kiro_crew.config import loader as _loader
+    from efm_go.config import loader as _loader
 
     _loader._CONFIG_AUTOCOMPACT_PCT = DEFAULT_AUTOCOMPACT_PCT
     _loader._CONFIG_AUTOCOMPACT_TICKET = 0
@@ -102,8 +102,8 @@ def test_a_threshold_change_reaches_an_already_live_manager() -> None:
     ``kirocrew config set``, which never contacts the gateway -- take effect
     without a restart.
     """
-    from kiro_crew.config.loader import publish_autocompact_pct
-    from kiro_crew.session import SessionManager
+    from efm_go.config.loader import publish_autocompact_pct
+    from efm_go.session import SessionManager
 
     # Reset first so this does not depend on what an earlier test in this
     # process published, and pass explicit tickets for the same reason: the
@@ -143,7 +143,7 @@ def test_a_caller_supplied_threshold_survives_until_a_load_publishes() -> None:
     the last load in this process happened to publish. Without this, every test
     (and any embedder) handing in a tuned config would race the global.
     """
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     cfg = KiroCrewConfig()
     cfg.session.autocompact_pct = 20.0
@@ -248,9 +248,9 @@ def test_no_consumer_hardcodes_its_own_warn_threshold() -> None:
     import re
     from pathlib import Path
 
-    import kiro_crew
+    import efm_go
 
-    root = Path(kiro_crew.__file__).parent
+    root = Path(efm_go.__file__).parent
     for rel in ("session.py", "cli_chat.py"):
         src = (root / rel).read_text(encoding="utf-8")
         # The warn arm must name the shared margin.
@@ -270,7 +270,7 @@ def test_load_publishes_the_threshold_it_resolved() -> None:
     assembly loads config once per turn, so a value written by any writer is
     published without that writer knowing the gateway exists.
     """
-    from kiro_crew.config.loader import published_autocompact_pct
+    from efm_go.config.loader import published_autocompact_pct
 
     try:
         _load_with_session({"autocompact_pct": 42.0})
@@ -286,7 +286,7 @@ def test_an_older_load_cannot_republish_over_a_newer_one() -> None:
     last would leave live sessions compacting at a threshold the operator had
     already changed.
     """
-    from kiro_crew.config.loader import publish_autocompact_pct, published_autocompact_pct
+    from efm_go.config.loader import publish_autocompact_pct, published_autocompact_pct
 
     # Reset first: the tickets below are synthetic, and a higher one published by
     # an earlier test in this worker would drop every publish here.
@@ -319,7 +319,7 @@ def test_deleting_the_config_restores_the_default_threshold() -> None:
     and wins by ordinary comparison, which is the property an ordering read off
     the files' mtime cannot provide.
     """
-    from kiro_crew.config.loader import (
+    from efm_go.config.loader import (
         next_config_load_ticket,
         publish_autocompact_pct,
         published_autocompact_pct,
@@ -360,7 +360,7 @@ def test_deleting_a_newer_overlay_does_not_reinstate_its_threshold(tmp_path, mon
     created would push the base's mtime past the overlay's and mask the very
     rollback under test.
     """
-    from kiro_crew.config import loader as _loader
+    from efm_go.config import loader as _loader
 
     base = tmp_path / "config.json"
     overlay = tmp_path / "config.local.json"
@@ -410,8 +410,8 @@ def test_concurrent_publishes_never_let_an_older_ticket_win() -> None:
     """
     import threading
 
-    from kiro_crew.config import loader as _loader
-    from kiro_crew.config.loader import publish_autocompact_pct, published_autocompact_pct
+    from efm_go.config import loader as _loader
+    from efm_go.config.loader import publish_autocompact_pct, published_autocompact_pct
 
     _reset_published_threshold()
     older = KiroCrewConfig()
@@ -468,7 +468,7 @@ def test_load_publishes_without_a_second_stat_pass(tmp_path, monkeypatch) -> Non
     already fetched. One fingerprint pass per load is the contract: it serves
     the cache lookup and the pre-read TOCTOU capture.
     """
-    from kiro_crew.config import loader as _loader
+    from efm_go.config import loader as _loader
 
     cfg_file = tmp_path / "config.json"
     cfg_file.write_text(json.dumps({"session": {"autocompact_pct": 41.0}}))

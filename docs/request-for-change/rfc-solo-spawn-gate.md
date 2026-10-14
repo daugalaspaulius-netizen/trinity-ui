@@ -17,7 +17,7 @@ superseded-by: [../system-specs/modules/subagent.md]
   delegation policy becomes prompt guidance only, owned by
   [`../system-specs/modules/subagent.md`](../system-specs/modules/subagent.md).
   The removal is live in the open
-  [#13458](https://github.com/kirodotdev/KiroCrew/pull/13458); this document
+  [#13458](https://efmleads.com/pull/13458); this document
   records the decision on the base branch so that PR is judged against it.
   Once #13458 merges the status moves to `superseded`, with
   `superseded-by` naming the spec above. Grounds: local `spawn.solo` audit from 2026-09-22 to
@@ -30,7 +30,7 @@ superseded-by: [../system-specs/modules/subagent.md]
 - Author: iamwhatever
 - Created: 2026-09-18
 - Related: `test/test_spawn_single_task_gate.py` (the earlier, advisory form of
-  this rule), `src/kiro_crew/config/prompt.md` § Subagent Orchestration,
+  this rule), `src/efm_go/config/prompt.md` § Subagent Orchestration,
   [rfc-resumable-subagent-sessions.md](rfc-resumable-subagent-sessions.md)
   (`keep=` and continuable conversations, which this gate does not change)
 
@@ -188,8 +188,8 @@ review (`fresh_context`), and image-authoring (fan out only for 2+ images).
 
 ## Rollout
 
-Ships whole in [#11710](https://github.com/kirodotdev/KiroCrew/pull/11710):
-`src/kiro_crew/solo_spawn.py`, the gate blocks in `mcp_tools/spawn.py` and
+Ships whole in [#11710](https://efmleads.com/pull/11710):
+`src/efm_go/solo_spawn.py`, the gate blocks in `mcp_tools/spawn.py` and
 `dashboard/handlers/messaging.py`, the `solo_reason` field in `validation.py`,
 the spec, docs, prompt and skill updates, and 53 tests in
 `test/test_spawn_solo_gate.py`. There is no flag: the gate is on for every

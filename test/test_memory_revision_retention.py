@@ -7,17 +7,17 @@ from contextlib import closing
 
 import pytest
 
-from kiro_crew import (
+from efm_go import (
     memory_edit,
 )
-from kiro_crew import memory_record_metadata as metadata
-from kiro_crew import (
+from efm_go import memory_record_metadata as metadata
+from efm_go import (
     memory_stores,
     vector_memory,
 )
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.config import loader
-from kiro_crew.vector_memory import (
+from efm_go._sqlite_compat import sqlite3
+from efm_go.config import loader
+from efm_go.vector_memory import (
     SemanticRejectCode,
     VectorMemoryStore,
     create_member_database,

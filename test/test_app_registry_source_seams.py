@@ -21,8 +21,8 @@ import json
 
 import pytest
 
-from kiro_crew.apps import registry as reg_mod
-from kiro_crew.apps.registry import (
+from efm_go.apps import registry as reg_mod
+from efm_go.apps.registry import (
     _TRUST_INDEX,
     _TRUST_OWNER,
     _configured_registry_hosts,
@@ -33,10 +33,10 @@ from kiro_crew.apps.registry import (
     _registry_trust_tier,
     is_clone_host_trusted,
 )
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import ExternalRegistryConfig, KiroCrewConfig
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.defaults import DefaultAppsLoader
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import ExternalRegistryConfig, KiroCrewConfig
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.defaults import DefaultAppsLoader
 
 FORGE = "https://forge.example.com/org/app-registry.git"
 SIBLING = "https://forge.example.com/org/some-private-app.git"

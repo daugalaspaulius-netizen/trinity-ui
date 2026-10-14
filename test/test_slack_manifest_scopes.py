@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import yaml
 
-from kiro_crew import slack_manifest
+from efm_go import slack_manifest
 
 
 def _manifest() -> dict:

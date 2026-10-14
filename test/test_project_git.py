@@ -20,10 +20,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.dashboard.handlers.files as files_mod
-from kiro_crew import platform_compat
-from kiro_crew.dashboard.handlers import api_project_git
-from kiro_crew.dashboard.handlers.files import (
+import efm_go.dashboard.handlers.files as files_mod
+from efm_go import platform_compat
+from efm_go.dashboard.handlers import api_project_git
+from efm_go.dashboard.handlers.files import (
     _GIT_ROOT_WALK_LIMIT,
     _HEAD_READ_LIMIT,
     _git_head_path,
@@ -34,8 +34,8 @@ from kiro_crew.dashboard.handlers.files import (
     _resolve_project_git,
     _slot_project_snapshot,
 )
-from kiro_crew.security import _looks_like_secret_key, redact
-from kiro_crew.security.redaction import _SECRET_MAX_SLASHES
+from efm_go.security import _looks_like_secret_key, redact
+from efm_go.security.redaction import _SECRET_MAX_SLASHES
 
 
 @pytest.fixture
@@ -77,7 +77,7 @@ def _make_app(*known: str) -> web.Application:
 
 @pytest.fixture()
 def mock_sel():
-    with patch("kiro_crew.dashboard.handlers.sel") as m:
+    with patch("efm_go.dashboard.handlers.sel") as m:
         m.return_value = MagicMock()
         yield m.return_value
 
@@ -197,7 +197,7 @@ class TestProjectGitEndpoint:
         cfg = tmp_path / "cfg"
         cfg.mkdir()
         (cfg / "recent_projects.json").write_text(json.dumps([str(repo)]), encoding="utf-8")
-        with patch("kiro_crew.dashboard.handlers.files.config_dir", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.files.config_dir", return_value=cfg):
             async with TestClient(TestServer(_make_app())) as client:
                 resp = await client.get(f"/api/project/git?path={repo}")
                 assert resp.status == 200
@@ -219,7 +219,7 @@ class TestProjectGitEndpoint:
 
     @pytest.mark.asyncio
     async def test_sensitive_path_is_denied(self, repo, mock_sel):
-        with patch("kiro_crew.dashboard.handlers.files.is_sensitive_path", return_value=True):
+        with patch("efm_go.dashboard.handlers.files.is_sensitive_path", return_value=True):
             async with TestClient(TestServer(_make_app(str(repo)))) as client:
                 resp = await client.get(f"/api/project/git?path={repo}")
                 assert resp.status == 403
@@ -247,7 +247,7 @@ class TestKnownProjectMatching:
         cfg = tmp_path / "cfg"
         cfg.mkdir()
         (cfg / "recent_projects.json").write_text(json.dumps(["/from/recent", 7]), encoding="utf-8")
-        with patch("kiro_crew.dashboard.handlers.files.config_dir", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.files.config_dir", return_value=cfg):
             dirs = _known_project_dirs(_slot_project_snapshot(_State("/from/slot", "")))
         assert "/from/slot" in dirs
         assert "/from/recent" in dirs
@@ -258,7 +258,7 @@ class TestKnownProjectMatching:
         cfg = tmp_path / "cfg"
         cfg.mkdir()
         (cfg / "recent_projects.json").write_text("{not json", encoding="utf-8")
-        with patch("kiro_crew.dashboard.handlers.files.config_dir", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.files.config_dir", return_value=cfg):
             dirs = _known_project_dirs(_slot_project_snapshot(_State("/from/slot")))
         assert dirs == ["/from/slot"]
 
@@ -355,7 +355,7 @@ class TestNoGitSubprocess:
         head.unlink()
         head.symlink_to(target)
         with patch(
-            "kiro_crew.dashboard.handlers.files.safe_read_prefix", return_value=None
+            "efm_go.dashboard.handlers.files.safe_read_prefix", return_value=None
         ) as gated:
             info = _project_git_branch(os.path.realpath(str(repo)))
         assert gated.called, "HEAD read did not go through the hooks gate"
@@ -365,7 +365,7 @@ class TestNoGitSubprocess:
     def test_head_read_routes_through_the_hooks_gate(self, repo):
         """Pins the gate itself, independent of any particular symlink."""
         with patch(
-            "kiro_crew.dashboard.handlers.files.safe_read_prefix", return_value=None
+            "efm_go.dashboard.handlers.files.safe_read_prefix", return_value=None
         ) as gated:
             info = _project_git_branch(os.path.realpath(str(repo)))
         assert gated.called
@@ -465,7 +465,7 @@ class TestBranchRedaction:
 
     def test_other_paths_still_use_the_canonical_redactor(self):
         with patch(
-            "kiro_crew.dashboard.handlers.files.redact", return_value="masked"
+            "efm_go.dashboard.handlers.files.redact", return_value="masked"
         ) as red:
             assert files_mod._redact_project_path("/srv/project") == "masked"
         red.assert_called_once_with("/srv/project")
@@ -487,14 +487,14 @@ class TestBranchRedaction:
         self, as_darwin, path
     ):
         with patch(
-            "kiro_crew.dashboard.handlers.files.redact", return_value="masked"
+            "efm_go.dashboard.handlers.files.redact", return_value="masked"
         ) as red:
             assert files_mod._redact_project_path(path) == "masked"
         red.assert_called_once_with(path)
 
     def test_branch_name_is_routed_through_redaction(self, repo):
         with patch(
-            "kiro_crew.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
+            "efm_go.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
         ) as red:
             info = _project_git_branch(os.path.realpath(str(repo)))
         assert info["branch"] == "<trunk>"
@@ -505,7 +505,7 @@ class TestBranchRedaction:
     def test_detached_head_sha_is_routed_through_redaction(self, repo):
         _git(repo, "checkout", "-q", "--detach", "HEAD")
         with patch(
-            "kiro_crew.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
+            "efm_go.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
         ):
             info = _project_git_branch(os.path.realpath(str(repo)))
         assert info["detached"] is True
@@ -514,7 +514,7 @@ class TestBranchRedaction:
     def test_repo_root_is_routed_through_redaction(self, repo):
         """A directory NAME is agent-influenceable via set_project and is echoed."""
         with patch(
-            "kiro_crew.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
+            "efm_go.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
         ):
             info = _project_git_branch(os.path.realpath(str(repo)))
         assert info["repoRoot"].startswith("<") and info["repoRoot"].endswith(">")
@@ -524,7 +524,7 @@ class TestBranchRedaction:
         """Reachable whenever a known project is deleted between match and stat."""
         f = repo / "f.txt"
         with patch(
-            "kiro_crew.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
+            "efm_go.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
         ):
             async with TestClient(TestServer(_make_app(str(f)))) as client:
                 resp = await client.get(f"/api/project/git?path={f}")
@@ -546,7 +546,7 @@ class TestBranchRedaction:
         ]
         for known, url in cases:
             with patch(
-                "kiro_crew.dashboard.handlers.files.redact", return_value=marker
+                "efm_go.dashboard.handlers.files.redact", return_value=marker
             ):
                 async with TestClient(TestServer(_make_app(known))) as client:
                     resp = await client.get(url)
@@ -557,7 +557,7 @@ class TestBranchRedaction:
     @pytest.mark.asyncio
     async def test_response_path_is_routed_through_redaction(self, repo, mock_sel):
         with patch(
-            "kiro_crew.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
+            "efm_go.dashboard.handlers.files.redact", side_effect=lambda t: f"<{t}>"
         ):
             async with TestClient(TestServer(_make_app(str(repo)))) as client:
                 resp = await client.get(f"/api/project/git?path={repo}")
@@ -920,8 +920,8 @@ class TestResolveProjectGit:
 
     def test_sensitive_path_is_reported_without_running_git(self, repo):
         with (
-            patch("kiro_crew.dashboard.handlers.files.is_sensitive_path", return_value=True),
-            patch("kiro_crew.dashboard.handlers.files._project_git_branch") as branch,
+            patch("efm_go.dashboard.handlers.files.is_sensitive_path", return_value=True),
+            patch("efm_go.dashboard.handlers.files._project_git_branch") as branch,
         ):
             status, _base, info = _resolve_project_git(str(repo))
         assert status == "sensitive"

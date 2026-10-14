@@ -18,8 +18,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
 
 
 def _provider_factory(*, active_turn: bool):
@@ -212,7 +212,7 @@ class TestAReacquiredSessionKeepsItsTurnProtection:
 
     @pytest.mark.asyncio
     async def test_a_clear_cannot_tear_down_a_session_reacquired_mid_turn(self):
-        import kiro_crew.channel as channel_mod
+        import efm_go.channel as channel_mod
 
         mgr = SessionManager(
             KiroCrewConfig(), provider_factory=_provider_factory(active_turn=False)
@@ -311,7 +311,7 @@ class TestABackgroundSweepLeavesAListeningMemberAlone:
         Naming no mechanism, a rewrite that keeps clears working passes however it does it,
         and dismantling the arm store does not make this test wrong.
         """
-        import kiro_crew.channel as channel_mod
+        import efm_go.channel as channel_mod
 
         for helper in (
             channel_mod._reacquire_cleared_session,
@@ -356,7 +356,7 @@ class TestABackgroundSweepLeavesAListeningMemberAlone:
         import re
         from pathlib import Path
 
-        import kiro_crew.channel as channel_mod
+        import efm_go.channel as channel_mod
 
         # Explicit encoding: the default is the PLATFORM codec, and this module carries
         # non-ASCII, so a Windows runner decodes it as cp1252 and raises.

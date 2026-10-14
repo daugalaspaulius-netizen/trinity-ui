@@ -1,9 +1,9 @@
-"""Tests for kiro_crew.metrics.recorder — the MetricsRecorder facade."""
+"""Tests for efm_go.metrics.recorder — the MetricsRecorder facade."""
 
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
-from kiro_crew.metrics.recorder import MetricsRecorder
+from efm_go.metrics.recorder import MetricsRecorder
 
 
 def _recorder_with_reader():

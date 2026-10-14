@@ -1426,7 +1426,7 @@
       "sensitive": false,
       "tags": [],
       "label": "Log Level",
-      "help": "Persistent log level for the kiro_crew logger. Applied at startup; overridden by --verbose CLI flag.",
+      "help": "Persistent log level for the efm_go logger. Applied at startup; overridden by --verbose CLI flag.",
       "hasChildren": false,
       "enumValues": [
         "DEBUG",

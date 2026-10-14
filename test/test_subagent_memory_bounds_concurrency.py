@@ -36,10 +36,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from overload_fakes import Clock, ManagerHarness, mock_ctx, mock_sessions, wait_taskq_open
 
-import kiro_crew.subagent as subagent_mod
-from kiro_crew.adaptive.controller import AdaptiveController, HostSample
-from kiro_crew.adaptive.policy import AdaptivePolicy, params_from_config
-from kiro_crew.adaptive.signals import (
+import efm_go.subagent as subagent_mod
+from efm_go.adaptive.controller import AdaptiveController, HostSample
+from efm_go.adaptive.policy import AdaptivePolicy, params_from_config
+from efm_go.adaptive.signals import (
     SIGNAL_FDS,
     SIGNAL_LOOP_LAG,
     SIGNAL_MEMORY,
@@ -47,15 +47,15 @@ from kiro_crew.adaptive.signals import (
     Sample,
     SpawnGateStats,
 )
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.subagent import (
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.subagent import (
     SubagentInfo,
     SubagentManager,
     resolve_max_subagents,
     subagent_count_ceiling,
 )
-from kiro_crew.subagent_manager.admission import FairnessSettings, SpawnAdmissionCoordinator
-from kiro_crew.taskq import model
+from efm_go.subagent_manager.admission import FairnessSettings, SpawnAdmissionCoordinator
+from efm_go.taskq import model
 
 pytestmark = [pytest.mark.timeout(60), pytest.mark.usefixtures("healthy_host_memory")]
 
@@ -334,7 +334,7 @@ def test_the_count_ceiling_is_the_auto_ceiling_when_unpinned(no_memory_read) -> 
 
 
 def test_the_spawn_gate_ceiling_reaches_the_subagent_ceiling() -> None:
-    from kiro_crew.mcp_gateway.admission import derive_spawn_gate_ceiling
+    from efm_go.mcp_gateway.admission import derive_spawn_gate_ceiling
 
     cfg = KiroCrewConfig()
     configured = cfg.mcp_gateway.spawn_concurrency_max
@@ -348,7 +348,7 @@ def test_the_spawn_gate_ceiling_reaches_the_subagent_ceiling() -> None:
 
 @pytest.mark.asyncio
 async def test_twenty_backend_initializations_run_at_once_under_the_derived_ceiling() -> None:
-    from kiro_crew.mcp_gateway.admission import SpawnGate, derive_spawn_gate_ceiling
+    from efm_go.mcp_gateway.admission import SpawnGate, derive_spawn_gate_ceiling
 
     cfg = KiroCrewConfig()
     gate = SpawnGate(
@@ -368,7 +368,7 @@ async def test_twenty_backend_initializations_run_at_once_under_the_derived_ceil
 
 
 def test_the_gate_track_climbs_past_eight_on_clean_init_evidence() -> None:
-    from kiro_crew.mcp_gateway.admission import derive_spawn_gate_ceiling
+    from efm_go.mcp_gateway.admission import derive_spawn_gate_ceiling
 
     cfg = KiroCrewConfig()
     pol = AdaptivePolicy(
@@ -399,8 +399,8 @@ async def test_the_daemon_is_launched_with_the_subagent_ceiling_at_boot(tmp_path
     is 0 on the boot path, the daemon launched at the plain 8, and it clamped
     every raise the controller's gate track (given 32) asked for.
     """
-    from kiro_crew.adaptive import controller as adaptive_controller
-    from kiro_crew.slack import gateway as gw
+    from efm_go.adaptive import controller as adaptive_controller
+    from efm_go.slack import gateway as gw
 
     host_gb(40.0)
     cfg = KiroCrewConfig()
@@ -413,16 +413,16 @@ async def test_the_daemon_is_launched_with_the_subagent_ceiling_at_boot(tmp_path
     manager = MagicMock()
     manager.start = AsyncMock(return_value=False)
     with (
-        patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
+        patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
         patch(
-            "kiro_crew.slack.gateway.rewrite_kwargs",
+            "efm_go.slack.gateway.rewrite_kwargs",
             side_effect=lambda _cfg, stubs: {
                 "socket_path": tmp_path / "gw.sock",
                 "stub_servers": stubs,
             },
         ),
-        patch("kiro_crew.slack.gateway.rewrite_agents", return_value=(None, {})),
-        patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager) as mgr_cls,
+        patch("efm_go.slack.gateway.rewrite_agents", return_value=(None, {})),
+        patch("efm_go.slack.gateway.GatewayManager", return_value=manager) as mgr_cls,
     ):
         await orch._init_mcp_gateway()
     prefetch = orch._mcp_resolve_prefetch
@@ -454,9 +454,9 @@ async def test_the_boot_path_sizes_the_gate_without_probing_host_memory(tmp_path
     Mach call on macOS) is new synchronous work on the boot path; the gate needs
     only the upper bound the cap can reach.
     """
-    from kiro_crew import subagent as subagent_mod
-    from kiro_crew.adaptive import controller as adaptive_controller
-    from kiro_crew.slack import gateway as gw
+    from efm_go import subagent as subagent_mod
+    from efm_go.adaptive import controller as adaptive_controller
+    from efm_go.slack import gateway as gw
 
     probe = MagicMock(return_value=40.0)
     cfg = KiroCrewConfig()
@@ -469,16 +469,16 @@ async def test_the_boot_path_sizes_the_gate_without_probing_host_memory(tmp_path
     manager.start = AsyncMock(return_value=False)
     with (
         patch.object(subagent_mod, "_available_memory_gb", probe),
-        patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
+        patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
         patch(
-            "kiro_crew.slack.gateway.rewrite_kwargs",
+            "efm_go.slack.gateway.rewrite_kwargs",
             side_effect=lambda _cfg, stubs: {
                 "socket_path": tmp_path / "gw.sock",
                 "stub_servers": stubs,
             },
         ),
-        patch("kiro_crew.slack.gateway.rewrite_agents", return_value=(None, {})),
-        patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager) as mgr_cls,
+        patch("efm_go.slack.gateway.rewrite_agents", return_value=(None, {})),
+        patch("efm_go.slack.gateway.GatewayManager", return_value=manager) as mgr_cls,
     ):
         await orch._init_mcp_gateway()
         prefetch = orch._mcp_resolve_prefetch
@@ -503,7 +503,7 @@ async def test_the_boot_path_sizes_the_gate_without_probing_host_memory(tmp_path
 def test_the_inert_adaptive_initial_does_not_warn_on_every_launch(caplog) -> None:
     """Every save writes ``agent.adaptive_initial``, so a deprecation flag on it
     would announce itself on every load of every config."""
-    from kiro_crew.config import validation
+    from efm_go.config import validation
 
     if not validation._HAS_JSONSCHEMA:
         pytest.skip("jsonschema not installed")
@@ -515,7 +515,7 @@ def test_the_inert_adaptive_initial_does_not_warn_on_every_launch(caplog) -> Non
 
 
 def test_the_host_budget_admits_twenty_subagents_of_backends_at_40_gib(monkeypatch) -> None:
-    from kiro_crew.mcp_gateway import host_budget
+    from efm_go.mcp_gateway import host_budget
 
     monkeypatch.setattr(host_budget, "_nofile_soft_limit", lambda: 1024)
     gw = KiroCrewConfig().mcp_gateway
@@ -578,8 +578,8 @@ def test_a_provider_429_still_never_cuts_the_execution_cap() -> None:
 
 
 def test_the_prompt_figure_is_the_auto_ceiling_on_any_host(monkeypatch, host_gb) -> None:
-    from kiro_crew import resource_status
-    from kiro_crew.context import ContextBuilder
+    from efm_go import resource_status
+    from efm_go.context import ContextBuilder
 
     cfg = KiroCrewConfig()
     monkeypatch.setattr(KiroCrewConfig, "load", lambda: cfg)
@@ -594,7 +594,7 @@ def test_the_prompt_figure_is_the_auto_ceiling_on_any_host(monkeypatch, host_gb)
 
 
 def test_the_spawn_tool_names_the_figure_and_the_memory_wait(monkeypatch, host_gb) -> None:
-    from kiro_crew.mcp_tools import spawn as spawn_tools
+    from efm_go.mcp_tools import spawn as spawn_tools
 
     cfg = KiroCrewConfig()
     monkeypatch.setattr(spawn_tools.KiroCrewConfig, "load", lambda: cfg)
@@ -610,7 +610,7 @@ def test_the_spawn_tool_names_the_figure_and_the_memory_wait(monkeypatch, host_g
 
 
 def test_the_taskrunner_auto_value_is_never_zero(host_gb) -> None:
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.taskrunner import TaskRunner
 
     cfg = KiroCrewConfig()
     for gb in (-1.0, 0.5, 8.0, 200.0):

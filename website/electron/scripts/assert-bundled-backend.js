@@ -12,8 +12,8 @@ const path = require("path");
 const ELECTRON_DIR = path.join(__dirname, "..");
 
 const REQUIRED_WINDOWS_BACKEND = [
-  ["backend-dist", "kirocrew-backend", "python.exe"],
-  ["backend-dist", "kirocrew-backend", "bin", "kirocrew.cmd"],
+  ["backend-dist", "efm-go-backend", "python.exe"],
+  ["backend-dist", "efm-go-backend", "bin", "kirocrew.cmd"],
 ];
 
 function assertWindowsBackend(electronDir = ELECTRON_DIR) {
@@ -31,7 +31,7 @@ function assertWindowsBackend(electronDir = ELECTRON_DIR) {
       missing.join(", ") +
       ")." +
       hint +
-      " Stage website/electron/backend-dist/kirocrew-backend via packaging/build-desktop.sh (native Windows) or packaging/build-windows-backend-on-linux.sh (Linux+Wine), then re-run electron-builder --win. Packaged apps do not fall back to PATH."
+      " Stage website/electron/backend-dist/efm-go-backend via packaging/build-desktop.sh (native Windows) or packaging/build-windows-backend-on-linux.sh (Linux+Wine), then re-run electron-builder --win. Packaged apps do not fall back to PATH."
   );
 }
 

@@ -14,8 +14,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from kiro_crew.dashboard import chat_title
-from kiro_crew.dashboard.slot_queue_repository import (
+from efm_go.dashboard import chat_title
+from efm_go.dashboard.slot_queue_repository import (
     _ATTACHMENT_MARKERS,
     ATTACHMENT_META_KEYS,
     _marker_spans,

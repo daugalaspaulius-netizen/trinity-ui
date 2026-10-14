@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from kiro_crew.apps.manager import APP_MANIFEST_FILENAME, install_app
+from efm_go.apps.manager import APP_MANIFEST_FILENAME, install_app
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -43,10 +43,10 @@ def app_env(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(home))
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
     monkeypatch.setattr(
-        "kiro_crew.apps.execution.third_party_execution_allowed", lambda: True
+        "efm_go.apps.execution.third_party_execution_allowed", lambda: True
     )
     return {"home": home, "kiro_agents": kiro_agents}
 
@@ -61,7 +61,7 @@ class TestHandleApp:
     def test_install_and_list(self, tmp_path, app_env):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         src = _make_app_source(tmp_path)
 
@@ -70,7 +70,7 @@ class TestHandleApp:
         _handle_app(ns)  # should not raise
 
         # List
-        from kiro_crew.apps.manager import list_apps
+        from efm_go.apps.manager import list_apps
         apps = list_apps()
         assert len(apps) == 1
         assert apps[0]["name"] == "cli-test-app"
@@ -78,7 +78,7 @@ class TestHandleApp:
     def test_enable_disable(self, tmp_path, app_env):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -86,7 +86,7 @@ class TestHandleApp:
         # Enable
         ns = argparse.Namespace(app_action="enable", name="cli-test-app")
         _handle_app(ns)
-        from kiro_crew.apps.manager import _read_installed
+        from efm_go.apps.manager import _read_installed
         meta = _read_installed("cli-test-app")
         assert meta is not None
         assert meta.enabled is True
@@ -101,7 +101,7 @@ class TestHandleApp:
     def test_info(self, tmp_path, app_env, capsys):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -116,7 +116,7 @@ class TestHandleApp:
     def test_uninstall_preserves_data_by_default(self, tmp_path, app_env):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -128,7 +128,7 @@ class TestHandleApp:
         )
         _handle_app(ns)
 
-        from kiro_crew.apps.manager import get_app
+        from efm_go.apps.manager import get_app
 
         assert get_app("cli-test-app") is None
         assert data_file.read_text() == '{"saved": true}'
@@ -136,7 +136,7 @@ class TestHandleApp:
     def test_uninstall_purge_data_requires_explicit_flag(self, tmp_path, app_env):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         src = _make_app_source(tmp_path)
         install_app(src)
@@ -153,7 +153,7 @@ class TestHandleApp:
     def test_install_invalid_source(self, app_env):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         ns = argparse.Namespace(app_action="install", source="/nonexistent")
         with pytest.raises(SystemExit):
@@ -162,7 +162,7 @@ class TestHandleApp:
     def test_no_action_prints_usage(self, app_env, capsys):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         ns = argparse.Namespace(app_action=None)
         _handle_app(ns)
@@ -190,7 +190,7 @@ class TestEnableWarnsHooksNeedRestart:
     def _enable(self):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         _handle_app(argparse.Namespace(app_action="enable", name="cli-test-app"))
 
@@ -213,7 +213,7 @@ class TestEnableWarnsHooksNeedRestart:
         assert "next start" in out
         assert "restart" not in out
         # The enable itself still reports success -- the notice is additive.
-        from kiro_crew.apps.manager import _read_installed
+        from efm_go.apps.manager import _read_installed
 
         meta = _read_installed("cli-test-app")
         assert meta is not None and meta.enabled is True
@@ -239,7 +239,7 @@ class TestEnableWarnsHooksNeedRestart:
         arrive as a non-dict. The helper reports "nothing to warn about" rather
         than raising out of a successful enable.
         """
-        from kiro_crew.cli_commands import _warn_hooks_need_restart
+        from efm_go.cli_commands import _warn_hooks_need_restart
 
         install_app(_make_app_source(tmp_path))
         app_json = app_env["home"] / "apps" / "cli-test-app" / APP_MANIFEST_FILENAME
@@ -264,8 +264,8 @@ class TestEnableRegistersCrons:
     CRONS = [{"name": "poller", "every": 900, "message": "poll things", "silent": True}]
 
     def _store_job_names(self):
-        from kiro_crew.config import config_dir
-        from kiro_crew.cron import CronService
+        from efm_go.config import config_dir
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=config_dir())
         return [j.name for j in svc.list_jobs(include_disabled=True)]
@@ -273,7 +273,7 @@ class TestEnableRegistersCrons:
     def _enable(self):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         ns = argparse.Namespace(app_action="enable", name="cli-test-app")
         _handle_app(ns)
@@ -289,8 +289,8 @@ class TestEnableRegistersCrons:
         assert names == ["cli-test-app/poller"]
 
         # Ownership tag must match what disable-side cleanup removes by.
-        from kiro_crew.config import config_dir
-        from kiro_crew.cron import CronService
+        from efm_go.config import config_dir
+        from efm_go.cron import CronService
 
         svc = CronService(base_dir=config_dir())
         job = svc.list_jobs(include_disabled=True)[0]
@@ -316,9 +316,9 @@ class TestEnableRegistersCrons:
         """
         import asyncio
 
-        from kiro_crew.apps.cron_sdk import CronSDK
-        from kiro_crew.config import config_dir
-        from kiro_crew.cron import CronService
+        from efm_go.apps.cron_sdk import CronSDK
+        from efm_go.config import config_dir
+        from efm_go.cron import CronService
 
         async def _race() -> list:
             # Two independent store-backed services, as in separate processes;
@@ -345,7 +345,7 @@ class TestEnableRegistersCrons:
     def test_disable_removes_registered_crons(self, tmp_path, app_env):
         import argparse
 
-        from kiro_crew.cli_commands import _handle_app
+        from efm_go.cli_commands import _handle_app
 
         src = _make_app_source(tmp_path, crons=self.CRONS)
         install_app(src)

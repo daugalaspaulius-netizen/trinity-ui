@@ -25,7 +25,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 pytestmark = pytest.mark.skipif(
     not platform_compat.IS_POSIX, reason="POSIX process groups and a POSIX shell"
@@ -196,7 +196,7 @@ class TestTerminateAndReapSync:
 class TestCommandProviderRollsBack:
     @pytest.mark.asyncio
     async def test_cancel_arm_lets_the_apply_command_restore(self, tmp_path, reap_groups):
-        from kiro_crew.platform.update_provider import CommandProvider
+        from efm_go.platform.update_provider import CommandProvider
 
         case = _case(tmp_path)
         provider = CommandProvider(
@@ -216,8 +216,8 @@ class TestCommandProviderRollsBack:
     ):
         # ``kirocrew update`` runs ``asyncio.run(apply_policy_update())``; a
         # Ctrl-C there cancels that task, which reaches the same cancel arm.
-        from kiro_crew.platform import update_provider
-        from kiro_crew.platform.update_provider import CommandProvider, apply_policy_update
+        from efm_go.platform import update_provider
+        from efm_go.platform.update_provider import CommandProvider, apply_policy_update
 
         case = _case(tmp_path)
         provider = CommandProvider(
@@ -334,7 +334,7 @@ class TestTerminateAndReap:
 
 
 def test_the_shutdown_stop_fits_inside_the_graceful_shutdown_cap():
-    from kiro_crew.gateway_shutdown_budget import GRACEFUL_SHUTDOWN_SECS, UPDATE_INSTALLER_STOP_SECS
+    from efm_go.gateway_shutdown_budget import GRACEFUL_SHUTDOWN_SECS, UPDATE_INSTALLER_STOP_SECS
 
     # Shutdown waits for the installer before its teardown; the rest of the cap
     # must remain for that teardown.

@@ -20,7 +20,7 @@ _src_dir = os.path.join(_repo_root, "src")
 if _src_dir not in sys.path:
     sys.path.insert(0, _src_dir)
 
-from kiro_crew.config.schema import SCHEMA_REGISTRY, config_entry_to_dict  # noqa: E402
+from efm_go.config.schema import SCHEMA_REGISTRY, config_entry_to_dict  # noqa: E402
 
 
 class _SafeEncoder(json.JSONEncoder):

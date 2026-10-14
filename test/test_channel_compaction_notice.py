@@ -28,11 +28,11 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.dashboard.chat_compaction_notice import (
+from efm_go.dashboard.chat_compaction_notice import (
     deliver_channel_compaction_notice,
     notice_text,
 )
-from kiro_crew.messaging.link import ChannelLink
+from efm_go.messaging.link import ChannelLink
 
 
 class _SlackClient:
@@ -140,8 +140,8 @@ def _permit_governance():
     """
     permit = SimpleNamespace(permitted=True)
     with (
-        patch("kiro_crew.dashboard.chat_compaction_notice.vet_and_audit", return_value=permit),
-        patch("kiro_crew.platform.governance_profiles.vet_and_audit", return_value=permit),
+        patch("efm_go.dashboard.chat_compaction_notice.vet_and_audit", return_value=permit),
+        patch("efm_go.platform.governance_profiles.vet_and_audit", return_value=permit),
     ):
         yield
 
@@ -218,7 +218,7 @@ class TestSlackDelivery:
         state = _state(slack_client=client, sessions=_Sessions(slack_link=("ts-1", "C123")))
 
         with patch(
-            "kiro_crew.dashboard.chat_compaction_notice.vet_and_audit",
+            "efm_go.dashboard.chat_compaction_notice.vet_and_audit",
             return_value=SimpleNamespace(permitted=False),
         ):
             await deliver_channel_compaction_notice(state, "slack:ts-1", 90.0, success=True)
@@ -231,7 +231,7 @@ class TestSlackDelivery:
         state = _state(slack_client=client, sessions=_Sessions(slack_link=("ts-1", "C123")))
 
         with patch(
-            "kiro_crew.dashboard.chat_compaction_notice.vet_and_audit",
+            "efm_go.dashboard.chat_compaction_notice.vet_and_audit",
             return_value=SimpleNamespace(),
         ):
             await deliver_channel_compaction_notice(state, "slack:ts-1", 90.0, success=True)
@@ -243,7 +243,7 @@ class TestSlackDelivery:
         state = _state(slack_client=client, sessions=_Sessions(slack_link=("ts-1", "C123")))
 
         with patch(
-            "kiro_crew.dashboard.chat_compaction_notice.vet_and_audit",
+            "efm_go.dashboard.chat_compaction_notice.vet_and_audit",
             side_effect=RuntimeError("profile unreadable"),
         ):
             await deliver_channel_compaction_notice(state, "slack:ts-1", 90.0, success=True)
@@ -374,7 +374,7 @@ class TestTransportDelivery:
 
         # The ladder resolves vet_and_audit at its source (function-local import).
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             return_value=SimpleNamespace(permitted=False),
         ):
             await deliver_channel_compaction_notice(
@@ -431,10 +431,10 @@ class TestOriginLinkStore:
     """
 
     def _manager(self, tmp_path):
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.session import SessionManager
 
-        with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+        with patch("efm_go.session_map.config_dir", return_value=tmp_path):
             return SessionManager(KiroCrewConfig())
 
     def test_round_trip(self, tmp_path) -> None:
@@ -468,7 +468,7 @@ class TestOriginLinkStore:
         assert mgr.get_origin_link("discord:k") is None
 
     def test_bounded_against_unevicted_growth(self, tmp_path) -> None:
-        from kiro_crew.session import _MAX_ORIGIN_LINKS
+        from efm_go.session import _MAX_ORIGIN_LINKS
 
         mgr = self._manager(tmp_path)
         for i in range(_MAX_ORIGIN_LINKS + 10):

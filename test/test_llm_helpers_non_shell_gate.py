@@ -18,16 +18,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.sel as sel_mod
-from kiro_crew import llm_helpers
-from kiro_crew.llm_helpers import ToolApprovalPolicy, _resolve_permission
-from kiro_crew.platform import tool_paths
-from kiro_crew.platform.tool_paths import (
+import efm_go.sel as sel_mod
+from efm_go import llm_helpers
+from efm_go.llm_helpers import ToolApprovalPolicy, _resolve_permission
+from efm_go.platform import tool_paths
+from efm_go.platform.tool_paths import (
     DOCUMENT_BODY_KEYS,
     DOCUMENT_WRITING_TOOLS,
     command_shaped_strings,
 )
-from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
 # Prose that the full document scan refuses: the first sentence trips the
 # ``rm -rf /`` deny glob, the second names a credential path.
@@ -330,8 +330,8 @@ class TestProvenanceComesFromTheClient:
 
     @staticmethod
     def _frames(tool_call: dict, *, with_identity_caches: bool = True):
-        from kiro_crew.acp import _dispatch
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import _dispatch
+        from efm_go.acp.types import JsonRpcMessage
 
         caches: dict = dict(
             tool_input_cache={},

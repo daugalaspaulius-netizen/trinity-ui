@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.acp.client import _apply_pod_home_remap
+from efm_go.acp.client import _apply_pod_home_remap
 
 
 def _base_pod_env(tmp_path: Path) -> dict[str, str]:
@@ -96,7 +96,7 @@ class TestTheCapabilitySetIsItsOwnDecision:
     semantics it never opted into (harness-parity H6)."""
 
     def test_the_set_exists_and_is_a_subset_of_known_backends(self) -> None:
-        from kiro_crew.acp_backends import (
+        from efm_go.acp_backends import (
             ACP_BACKENDS_KNOWN,
             ACP_BACKENDS_POD_HOME_REMAP,
         )
@@ -104,7 +104,7 @@ class TestTheCapabilitySetIsItsOwnDecision:
         assert ACP_BACKENDS_POD_HOME_REMAP <= ACP_BACKENDS_KNOWN
 
     def test_membership_is_positive_and_kiro_only(self) -> None:
-        from kiro_crew.acp_backends import (
+        from efm_go.acp_backends import (
             ACP_BACKEND_CLAUDE,
             ACP_BACKEND_KAS,
             ACP_BACKEND_KIRO,
@@ -120,7 +120,7 @@ class TestTheCapabilitySetIsItsOwnDecision:
         is the conflation, so the call site may not name it for the remap."""
         import inspect
 
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         source = inspect.getsource(client_mod.AcpClient._spawn)
         remap_call = source.split("_apply_pod_home_remap(")[1].split(")")[0]
@@ -138,8 +138,8 @@ class TestTheCapabilitySetIsItsOwnDecision:
         """
         import inspect
 
-        from kiro_crew.acp import runtime as runtime_mod
-        from kiro_crew.acp.harness._common import MembershipHarness
+        from efm_go.acp import runtime as runtime_mod
+        from efm_go.acp.harness._common import MembershipHarness
 
         spawn = inspect.getsource(runtime_mod.AcpRuntime._spawn_admitted)
         remap_call = spawn.split("_apply_pod_home_remap(")[1].split(")")[0]
@@ -259,7 +259,7 @@ class TestAwsCredentialPointersAreNotExportedIntoThePod:
         the set relation instead, so a fifth member added to the provider upstream
         fails here rather than silently going unscrubbed.
         """
-        from kiro_crew.acp.client import CREDENTIAL_POINTER_ENV_VARS
+        from efm_go.acp.client import CREDENTIAL_POINTER_ENV_VARS
 
         family = {
             "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI",
@@ -304,7 +304,7 @@ class TestAwsCredentialPointersAreNotExportedIntoThePod:
         appears in both, one of the two rationales has stopped being true and the
         scrub needs re-deriving rather than a third list.
         """
-        from kiro_crew.acp.client import (
+        from efm_go.acp.client import (
             CREDENTIAL_POINTER_ENV_VARS,
             IDENTITY_STORE_ROOT_ENV_VARS,
         )
@@ -321,8 +321,8 @@ class TestAwsCredentialPointersAreNotExportedIntoThePod:
         deliberately supports (the AWS CLI and ``credential_process`` reading the
         real ``~/.aws``), so the boundary is asserted rather than assumed.
         """
-        from kiro_crew.acp.client import CREDENTIAL_POINTER_ENV_VARS
-        from kiro_crew.sandbox import scrub_agent_subprocess_env
+        from efm_go.acp.client import CREDENTIAL_POINTER_ENV_VARS
+        from efm_go.sandbox import scrub_agent_subprocess_env
 
         probe = {name: "/host/pointer" for name in CREDENTIAL_POINTER_ENV_VARS}
         probe["AWS_SECRET_ACCESS_KEY"] = "shhh"
@@ -375,7 +375,7 @@ class TestBothSpawnTransportsApplyItIdentically:
     def test_acp_client_spawn_calls_the_shared_helper(self) -> None:
         import inspect
 
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         source = inspect.getsource(client_mod.AcpClient._spawn)
         assert "_apply_pod_home_remap(" in source
@@ -384,7 +384,7 @@ class TestBothSpawnTransportsApplyItIdentically:
     def test_acp_runtime_spawn_calls_the_same_shared_helper(self) -> None:
         import inspect
 
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         source = inspect.getsource(runtime_mod.AcpRuntime._spawn_admitted)
         assert "_apply_pod_home_remap(" in source
@@ -393,8 +393,8 @@ class TestBothSpawnTransportsApplyItIdentically:
     def test_runtime_imports_the_client_defined_function_rather_than_a_copy(self) -> None:
         """Import identity, not merely name equality — a copy-pasted function
         of the same name would pass a naive check while drifting silently."""
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import client as client_mod
+        from efm_go.acp import runtime as runtime_mod
 
         assert runtime_mod._apply_pod_home_remap is client_mod._apply_pod_home_remap
 
@@ -411,7 +411,7 @@ class TestIdentityStoreRootOverridesAreScrubbed:
 
     def test_a_hostile_data_root_override_is_removed(self) -> None:
         """Red-first: the override must be GONE, so the default resolves in-pod."""
-        from kiro_crew.acp.client import IDENTITY_STORE_ROOT_ENV_VARS, _apply_pod_home_remap
+        from efm_go.acp.client import IDENTITY_STORE_ROOT_ENV_VARS, _apply_pod_home_remap
 
         env = {"KIROCREW_POD": "1", "KIROCREW_OS_HOME": "/pods/p1/os-home"}
         for var in IDENTITY_STORE_ROOT_ENV_VARS:
@@ -425,8 +425,8 @@ class TestIdentityStoreRootOverridesAreScrubbed:
 
     def test_the_scrubbed_set_is_derived_from_the_store_table(self) -> None:
         """Pinned to its source so a new platform/product row cannot be missed."""
-        from kiro_crew.acp.client import IDENTITY_STORE_ROOT_ENV_VARS
-        from kiro_crew.identity_stores import IDENTITY_STORE_ROOTS
+        from efm_go.acp.client import IDENTITY_STORE_ROOT_ENV_VARS
+        from efm_go.identity_stores import IDENTITY_STORE_ROOTS
 
         assert IDENTITY_STORE_ROOT_ENV_VARS == {
             root.env_var for root in IDENTITY_STORE_ROOTS if root.env_var
@@ -435,7 +435,7 @@ class TestIdentityStoreRootOverridesAreScrubbed:
 
     def test_a_non_pod_spawn_env_is_byte_identical(self) -> None:
         """Outside a pod nothing is scrubbed -- the override is the operator's own."""
-        from kiro_crew.acp.client import IDENTITY_STORE_ROOT_ENV_VARS, _apply_pod_home_remap
+        from efm_go.acp.client import IDENTITY_STORE_ROOT_ENV_VARS, _apply_pod_home_remap
 
         env = {"HOME": "/home/user", "XDG_DATA_HOME": "/home/user/.local/share"}
         assert _apply_pod_home_remap(dict(env), pod_home_remap=True) == env

@@ -24,7 +24,7 @@ judge's questions over one tool-less model call, `gate.py` carries `nudge.wake`
 in `DECISION_POINT_NAMES` beside `JUDGE_POINT` and the two lane names, and
 `decisions.nudge_wake.provider` and `.llm_model` are live config keys the config
 route may edit. The judge core is on main as well, from
-[#12787](https://github.com/kirodotdev/KiroCrew/pull/12787) (merged `2d5a800ee`):
+[#12787](https://efmleads.com/pull/12787) (merged `2d5a800ee`):
 `decisions/points/nudge_wake.py`, the `nudge_evidence` entry in
 `POINT_SCOPE_KEYS`, the evidence collectors, the autonudge tick hook, `judge` on
 `monitor_start` / `monitor_update` and the transcript notice are all on the base
@@ -67,7 +67,7 @@ Keep the loop. Keep the poll. On each tick, do not wake the main session; wake
 a **judge** — a fast, cheap, typed decision — that reads the new evidence and
 answers one question: does the owner need to act now? Only a yes fires the
 main session. The judge is a decision point on the shipped `decisions` seam
-(`src/kiro_crew/decisions/`, PR #11490 and successors), the same seam Joe used
+(`src/efm_go/decisions/`, PR #11490 and successors), the same seam Joe used
 for sampled skill selection (`skills.select`), risky-tool flags and model-tier
 routing. Jev (TypeSafe's System One model: state + typed questions in,
 calibrated probabilities out, ~100 ms, no strings, no hallucinated shapes) is
@@ -122,7 +122,7 @@ and judged quiet:
   the `judge` spec's where the loop arms one.
 - `since_last_tick`: a list of evidence items, each `{source, kind, age_s, text}`
   where `source` names the collector and the target (`session:chat-1751`,
-  `pr:kirodotdev/KiroCrew#12735`, `work-ledger:it_42`), `kind` is a closed set
+  `pr:efmleads.com#12735`, `work-ledger:it_42`), `kind` is a closed set
   (`transcript_tail`, `pr_state`, `pr_checks`, `pr_comment`, `pr_review`), and
   `text` is bounded per item (1 000 chars). `ledger_event` arrives with the work
   ledger collector.
@@ -157,7 +157,7 @@ Mapping, in code, not in the model:
 - `P(wake) ≥ 0.5` → **WAKE**.
 - `outcome ∈ {needs_action, needs_human}` → **WAKE**.
 - **NOT ON BASE — decided here, implemented by §8's PR H entry
-  ([#14663](https://github.com/kirodotdev/KiroCrew/pull/14663)).** That action
+  ([#14663](https://efmleads.com/pull/14663)).** That action
   backstop is narrowed: it stops overriding a `needs_owner` that answered `quiet`
   when the outcome's own confidence sits in `0.4 ≤ P < ACTION_OVERRIDE_MIN_P` (a
   proposed constant, 0.6), and the verdict is then **QUIET** naming both readings.
@@ -221,7 +221,7 @@ called nothing and answered short. The whole rule lives in one function,
 the direction that does not teach the judge to suppress.
 
 **NOT ON BASE — decided here, implemented by §8's PR H entry
-([#14663](https://github.com/kirodotdev/KiroCrew/pull/14663)).** That count is not the
+([#14663](https://efmleads.com/pull/14663)).** That count is not the
 rule it should be: counting a read the same as a write makes the label constant, and a
 label with no variance cannot tune the thresholds above. So the TOOL-CALL limb alone
 becomes "at least one dispatch that could have CHANGED something", where a dispatch is
@@ -354,7 +354,7 @@ session would not have read.
 
 ```json
 "judge": {
-  "targets": ["chat-1751-1790052364", "https://github.com/kirodotdev/KiroCrew/pull/12735"],
+  "targets": ["chat-1751-1790052364", "https://efmleads.com/pull/12735"],
   "wake_when": "a worker line starts with RULING or BLOCKED or GREEN; a PR check turns red; a bot comment raises a new finding",
   "quiet_when": "workers report WORKING with no new status; checks still running; only progress notes"
 }
@@ -743,7 +743,7 @@ answer on the cheapest lane, where a main turn carries the loop's whole context.
    and a `last_error` naming the replacement, because removing it would destroy the
    only durable record that the watch existed.
 5. PR H — calibration corrections, from two defects measured on the landed judge
-   ([#14663](https://github.com/kirodotdev/KiroCrew/pull/14663), not on base): the
+   ([#14663](https://efmleads.com/pull/14663), not on base): the
    narrowed action override §3's mapping records, gated on a new
    `ACTION_OVERRIDE_MIN_P`; and `owner_acted` counting only dispatches that could have
    changed something, which needs the per-dispatch names carried to

@@ -7,9 +7,9 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import memory_edit, memory_stores
-from kiro_crew.config import loader
-from kiro_crew.vector_memory import VectorMemoryStore, create_member_database, open_member_database
+from efm_go import memory_edit, memory_stores
+from efm_go.config import loader
+from efm_go.vector_memory import VectorMemoryStore, create_member_database, open_member_database
 
 
 @pytest.fixture(params=["v1", "v2"])
@@ -566,7 +566,7 @@ def test_malformed_selection_is_an_explicit_client_error(store, selection):
 def test_owner_records_keep_episode_source_and_copy_provenance(store, monkeypatch):
     from datetime import datetime, timedelta, timezone
 
-    from kiro_crew import memory_schema, vector_memory
+    from efm_go import memory_schema, vector_memory
 
     created_at = datetime(2026, 3, 4, 5, 6, tzinfo=timezone.utc)
     edited_at = created_at + timedelta(seconds=1)

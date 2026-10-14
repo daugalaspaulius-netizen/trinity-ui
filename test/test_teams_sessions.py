@@ -25,13 +25,13 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.history import transcript_stem
-from kiro_crew.messaging import session_resume as core
-from kiro_crew.messaging.link import ChannelLink
-from kiro_crew.session_map import ConversationOwnershipConflict
-from kiro_crew.teams.cards import KIND_SESSION
-from kiro_crew.teams.client import TeamsInbound, TeamsSendError
-from kiro_crew.teams.transport_dispatch import TeamsDispatcher
+from efm_go.history import transcript_stem
+from efm_go.messaging import session_resume as core
+from efm_go.messaging.link import ChannelLink
+from efm_go.session_map import ConversationOwnershipConflict
+from efm_go.teams.cards import KIND_SESSION
+from efm_go.teams.client import TeamsInbound, TeamsSendError
+from efm_go.teams.transport_dispatch import TeamsDispatcher
 
 _SVC = "https://smba.trafficmanager.net/teams"
 _OWNER = "owner@example.com"
@@ -298,7 +298,7 @@ class TestOwnerOnly:
     async def test_a_non_owner_is_refused_and_audited(self, monkeypatch) -> None:
         events: list[dict] = []
         monkeypatch.setattr(
-            "kiro_crew.messaging.session_resume.sel",
+            "efm_go.messaging.session_resume.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kw: events.append(kw)),
         )
         client = _Client()
@@ -572,7 +572,7 @@ class TestRoutingComesFirst:
         async def _drive(turn, **_kw):
             seen.append(turn.session_key)
 
-        monkeypatch.setattr("kiro_crew.teams.transport_dispatch.drive_turn", _drive)
+        monkeypatch.setattr("efm_go.teams.transport_dispatch.drive_turn", _drive)
         sessions = _Sessions()
         sessions.set_mirror_link(
             "dashboard:chat-1", ChannelLink("teams", "CONV"), accepts_inbound=True
@@ -598,7 +598,7 @@ class TestRoutingComesFirst:
             stopped.append(key)
             return "Stopped."
 
-        import kiro_crew.teams.transport_dispatch as mod
+        import efm_go.teams.transport_dispatch as mod
 
         real = mod.stop_running_turn
         try:
@@ -706,8 +706,8 @@ class TestAClickInAResumedConversation:
 
     @pytest.mark.asyncio
     async def test_approving_resolves_the_resumed_sessions_prompt(self) -> None:
-        from kiro_crew.teams.approvals import TeamsApprovalDecider
-        from kiro_crew.teams.cards import DECISION_APPROVE, KIND_APPROVAL
+        from efm_go.teams.approvals import TeamsApprovalDecider
+        from efm_go.teams.cards import DECISION_APPROVE, KIND_APPROVAL
 
         client = _Client()
         d, _ = self._resumed(client, _ConversationLog(_rows("Launch plan")))
@@ -736,16 +736,16 @@ class TestAClickInAResumedConversation:
 
     @pytest.mark.asyncio
     async def test_a_chip_runs_the_label_the_resumed_turn_offered(self, monkeypatch) -> None:
-        from kiro_crew.teams.cards import KIND_OPTION
-        from kiro_crew.teams.renderer import TeamsRenderer
-        from kiro_crew.teams.transport import TEAMS_CAPABILITIES
+        from efm_go.teams.cards import KIND_OPTION
+        from efm_go.teams.renderer import TeamsRenderer
+        from efm_go.teams.transport import TEAMS_CAPABILITIES
 
         seen: list[tuple[str, str]] = []
 
         async def _drive(turn, **_kw):
             seen.append((turn.session_key, turn.user_text))
 
-        monkeypatch.setattr("kiro_crew.teams.transport_dispatch.drive_turn", _drive)
+        monkeypatch.setattr("efm_go.teams.transport_dispatch.drive_turn", _drive)
         client = _Client()
         d, _ = self._resumed(client, _ConversationLog(_rows("Launch plan")))
 
@@ -772,8 +772,8 @@ class TestAClickInAResumedConversation:
         The in-flight turn keeps running under the key it started with, so BOTH keys
         have to be tried -- resolving only the resumed one would strand it.
         """
-        from kiro_crew.teams.approvals import TeamsApprovalDecider
-        from kiro_crew.teams.cards import DECISION_DENY, KIND_APPROVAL
+        from efm_go.teams.approvals import TeamsApprovalDecider
+        from efm_go.teams.cards import DECISION_DENY, KIND_APPROVAL
 
         client = _Client()
         d, _ = self._resumed(client, _ConversationLog(_rows("Launch plan")))
@@ -901,13 +901,13 @@ class TestSharedWithDiscord:
         One shared file would let one channel's row answer for the other's
         conversation -- a mis-route of somebody's transcript.
         """
-        from kiro_crew.messaging.resume_expectation import store_filename
+        from efm_go.messaging.resume_expectation import store_filename
 
         assert store_filename("teams") != store_filename("discord")
 
     def test_teams_and_discord_use_one_picker_bind_controller(self) -> None:
-        from kiro_crew.discord.session_resume import DiscordSessionResume
-        from kiro_crew.teams.session_resume import TeamsSessionResume
+        from efm_go.discord.session_resume import DiscordSessionResume
+        from efm_go.teams.session_resume import TeamsSessionResume
 
         sessions = _Sessions()
         log = _ConversationLog(_rows("Launch plan"))
@@ -926,7 +926,7 @@ class TestSharedWithDiscord:
         Telegram forum Topics are the motivating shape: recording only chat_id
         would let every Topic in one supergroup overwrite the same expectation.
         """
-        from kiro_crew.teams.session_resume import TeamsSessionResume, _TeamsResumeSurface
+        from efm_go.teams.session_resume import TeamsSessionResume, _TeamsResumeSurface
 
         client = _Client()
         sessions = _Sessions()
@@ -955,7 +955,7 @@ class TestSharedWithDiscord:
 
     def test_the_teams_card_kind_is_distinct_from_the_other_two(self) -> None:
         """So an approval press and a session press can never be confused."""
-        from kiro_crew.teams.cards import KIND_APPROVAL, KIND_OPTION
+        from efm_go.teams.cards import KIND_APPROVAL, KIND_OPTION
 
         assert len({KIND_SESSION, KIND_APPROVAL, KIND_OPTION}) == 3
 
@@ -998,7 +998,7 @@ async def test_an_empty_allow_list_lists_nothing() -> None:
 @pytest.mark.asyncio
 async def test_sessions_is_in_the_command_table_and_help() -> None:
     """One table drives the parser AND /help, so the two cannot drift."""
-    from kiro_crew.teams.commands import COMMAND_SPEC, build_help_text, parse_command
+    from efm_go.teams.commands import COMMAND_SPEC, build_help_text, parse_command
 
     assert parse_command("/sessions") == "sessions"
     assert any(canonical == "sessions" for canonical, _a, _d in COMMAND_SPEC)
@@ -1031,7 +1031,7 @@ class TestWhenListingCannotHappen:
         client = _Client()
         d = _dispatcher(_Sessions(), client, _Log(_rows("Launch plan")))
         monkeypatch.setattr(
-            "kiro_crew.messaging.session_resume.sel",
+            "efm_go.messaging.session_resume.sel",
             lambda: SimpleNamespace(
                 log_api_access=lambda **kw: rows.append((kw["operation"], kw["outcome"]))
             ),
@@ -1096,7 +1096,7 @@ class TestWhenAPressCannotTakeEffect:
     @pytest.mark.asyncio
     async def test_a_binding_that_could_not_be_recorded_binds_nothing(self) -> None:
         """The record is written BEFORE the banner, so a failed write must refuse."""
-        from kiro_crew.messaging.resume_expectation import ExpectationStoreError
+        from efm_go.messaging.resume_expectation import ExpectationStoreError
 
         client, sessions = _Client(), _Sessions()
         d = _dispatcher(sessions, client, TestPressing._log())

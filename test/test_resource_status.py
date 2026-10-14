@@ -1,6 +1,6 @@
 """Tests for the advisory resource probe and its two surfaces.
 
-Covers :mod:`kiro_crew.resource_status` (posture classification, context line,
+Covers :mod:`efm_go.resource_status` (posture classification, context line,
 disable switch, fail-open) and the ``resource_status`` pull tool wired into
 ``mcp_core`` (advertised + dispatchable).
 """
@@ -11,8 +11,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew import resource_status as rs
+from efm_go import platform_compat
+from efm_go import resource_status as rs
 
 
 def _cfg(pressure: float, critical: float) -> SimpleNamespace:
@@ -159,14 +159,14 @@ def test_summary_lines_unknown(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_tool_is_advertised() -> None:
-    from kiro_crew import mcp_core
+    from efm_go import mcp_core
 
     names = {t["name"] for t in mcp_core._list_tools()}
     assert "resource_status" in names
 
 
 def test_tool_dispatch_returns_report(monkeypatch: pytest.MonkeyPatch) -> None:
-    from kiro_crew import mcp_core
+    from efm_go import mcp_core
 
     fake = rs.ResourceStatus(
         available_gb=3.0,
@@ -205,7 +205,7 @@ def test_thresholds_clamped_when_inverted(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 def test_tool_registered_and_rejects_stray_args() -> None:
-    from kiro_crew.validation import (
+    from efm_go.validation import (
         MCP_CORE_SCHEMAS,
         ValidationError,
         validate_tool_args,
@@ -331,7 +331,7 @@ def _slice_tree(
 
 def _patch_slice(monkeypatch, slice_dir, token: str = _TOKEN) -> None:
     """Point the probe at a fake tree, through the real cgroup reader."""
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_agents_slice_cgroup_dir", lambda: slice_dir)
     monkeypatch.setattr(sandbox, "_agents_slice_name", lambda: token)
@@ -380,7 +380,7 @@ def test_slice_tasks_unparseable_ceiling_is_unreadable(tmp_path, monkeypatch) ->
 
 def test_slice_tasks_absent_slice_is_unknown(monkeypatch) -> None:
     """No slice directory (not Linux, no delegation) reads as unknown, not zero."""
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "_agents_slice_cgroup_dir", lambda: None)
     assert _REAL_SLICE_PROBE() == (-1, -1, -1)
@@ -414,7 +414,7 @@ def test_slice_tasks_unreadable_child_count_is_unknown(tmp_path, monkeypatch) ->
 
 def test_slice_tasks_probe_never_raises(monkeypatch) -> None:
     """Any failure inside the probe degrades to unknown; it must never raise."""
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     def _boom():
         raise RuntimeError("cgroup gone")
@@ -726,7 +726,7 @@ def test_summary_reports_the_level_only_where_it_is_read(monkeypatch) -> None:
 
 
 def test_tool_guidance_never_says_heavy_work_is_fine_under_pressure(monkeypatch) -> None:
-    from kiro_crew import mcp_core
+    from efm_go import mcp_core
 
     fake = rs.ResourceStatus(
         available_gb=8.0,
@@ -772,7 +772,7 @@ def test_an_unreadable_level_on_macos_is_reported_once(monkeypatch, caplog) -> N
     monkeypatch.setattr(rs, "_pressure_unreadable_reported", False)
     monkeypatch.setattr(platform_compat, "IS_MACOS", True)
     _pressure(monkeypatch, None)
-    with caplog.at_level("WARNING", logger="kiro_crew.resource_status"):
+    with caplog.at_level("WARNING", logger="efm_go.resource_status"):
         rs.probe(_cfg(4.0, 2.0))
         rs.probe(_cfg(4.0, 2.0))
         rs.read_memory_pressure_level()
@@ -785,6 +785,6 @@ def test_an_unknown_level_off_macos_says_nothing(monkeypatch, caplog) -> None:
     monkeypatch.setattr(rs, "_pressure_unreadable_reported", False)
     monkeypatch.setattr(platform_compat, "IS_MACOS", False)
     _pressure(monkeypatch, None)
-    with caplog.at_level("WARNING", logger="kiro_crew.resource_status"):
+    with caplog.at_level("WARNING", logger="efm_go.resource_status"):
         rs.probe(_cfg(4.0, 2.0))
     assert not any("memory-pressure level" in r.getMessage() for r in caplog.records)

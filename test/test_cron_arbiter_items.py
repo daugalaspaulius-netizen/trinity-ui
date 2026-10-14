@@ -30,9 +30,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.apps import bridges
-from kiro_crew.apps.cron_sdk import CronSDK, CronSyncOnLoopError
-from kiro_crew.cron import CronLoopSafetyError, CronService, CronStoreBusy
+from efm_go.apps import bridges
+from efm_go.apps.cron_sdk import CronSDK, CronSyncOnLoopError
+from efm_go.cron import CronLoopSafetyError, CronService, CronStoreBusy
 
 STRICT = "KIROCREW_STRICT_LOOP_SAFETY"
 

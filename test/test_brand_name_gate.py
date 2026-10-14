@@ -90,13 +90,13 @@ class TestExempt:
             # The systems that own the joined spelling.
             "run `kirocrew serve` to start the gateway",
             'os.environ["KIROCREW_HOME"]',
-            "from kiro_crew.config import loader",
+            "from efm_go.config import loader",
             "state lives under ~/.kiro/crew/workspace",
             "mailto:kiro-crew-security-support@example.com",
             # Repo slug and URLs.
-            "https://github.com/kirodotdev/KiroCrew/issues",
-            "git clone https://github.com/kirodotdev/KiroCrew.git",
-            "pushed to `kirodotdev/KiroCrew` itself",
+            "https://efmleads.com/issues",
+            "git clone https://efmleads.com.git",
+            "pushed to `efmleads.com` itself",
             # Path segments — each separator side alone, since a brand with a
             # separator on both sides is covered by either check.
             "built from ~/src/KiroCrew last night",
@@ -145,8 +145,8 @@ class TestUrlBoundary:
     """A URL exempts what is *inside* it, and nothing after it."""
 
     def test_wrapped_link_still_exempts_the_slug(self) -> None:
-        assert _hits("see [docs](https://github.com/kirodotdev/KiroCrew/issues)") == []
-        assert _hits("<https://github.com/kirodotdev/KiroCrew>") == []
+        assert _hits("see [docs](https://efmleads.com/issues)") == []
+        assert _hits("<https://efmleads.com>") == []
 
     def test_markup_closing_a_url_does_not_exempt_the_text_after_it(self) -> None:
         assert _hits('<a href="https://example.com/">KiroCrew</a>') == ["KiroCrew"]
@@ -279,7 +279,7 @@ class TestMarkdownCode:
         doc = [
             "Install KiroCrew:",
             "```bash",
-            "git clone https://github.com/kirodotdev/KiroCrew.git",
+            "git clone https://efmleads.com.git",
             "cd KiroCrew",
             "```",
             "Then start KiroCrew.",
@@ -341,7 +341,7 @@ class TestScope:
         assert not gate.in_scope("node_modules/foo/README.md")
         assert not gate.in_scope("assets/banner.png")
         assert not gate.in_scope("scripts/check_brand_name.py")
-        assert not gate.in_scope("src/kiro_crew/_vendor/libggml-base.so.0")
+        assert not gate.in_scope("src/efm_go/_vendor/libggml-base.so.0")
         assert not gate.in_scope("website/electron/package.json")
         assert gate.in_scope("README.md")
 
@@ -352,8 +352,8 @@ class TestScope:
             "website/src/i18n/locales/de.json",
             "website/src/i18n/locales/zh-CN.json",
             "website/src/i18n/locales/en-XA.json",
-            "src/kiro_crew/data/tips_catalog.json",
-            "src/kiro_crew/docs/settings-registry.generated.json",
+            "src/efm_go/data/tips_catalog.json",
+            "src/efm_go/docs/settings-registry.generated.json",
         ):
             assert gate.in_scope(path), path
             assert not gate.enforced(path), path
@@ -363,7 +363,7 @@ class TestScope:
             "website/src/i18n/locales/en.json",
             "website/src/i18n/locales/en.manual.json",
             "website/src/i18n/glossary.json",
-            "src/kiro_crew/docs/skills.md",
+            "src/efm_go/docs/skills.md",
             "website/src/pages/settings/NotificationsPanel.tsx",
         ):
             assert gate.enforced(path), path
@@ -371,10 +371,10 @@ class TestScope:
     def test_enforced_is_never_wider_than_in_scope(self) -> None:
         for path in (
             "website/package-lock.json",
-            "src/kiro_crew/_vendor/x.so.0",
+            "src/efm_go/_vendor/x.so.0",
             "website/electron/package.json",
             "website/src/i18n/locales/de.json",
-            "src/kiro_crew/data/tips_catalog.json",
+            "src/efm_go/data/tips_catalog.json",
         ):
             assert not (gate.enforced(path) and not gate.in_scope(path)), path
 

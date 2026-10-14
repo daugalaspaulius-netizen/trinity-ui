@@ -19,12 +19,12 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from wheel_update_test_helpers import wire_wheel_apply
 
-from kiro_crew import platform_compat
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform import wheel_engine
-from kiro_crew.platform.wheel_engine import ManagedVenvLayout
-from kiro_crew.platform_compat import IS_POSIX
-from kiro_crew.slack.gateway import GatewayOrchestrator
+from efm_go import platform_compat
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform import wheel_engine
+from efm_go.platform.wheel_engine import ManagedVenvLayout
+from efm_go.platform_compat import IS_POSIX
+from efm_go.slack.gateway import GatewayOrchestrator
 
 # The managed venv is a POSIX install shape (cli.sh), and the layout leans on an
 # atomic rename over a symlink, which Windows refuses.
@@ -46,8 +46,8 @@ def layout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ManagedVenvLayout
     (legacy / "bin").mkdir(parents=True)
     (legacy / "bin" / "kirocrew").write_text("#!/bin/sh\n", encoding="utf-8")
     (legacy / "pyvenv.cfg").write_text("", encoding="utf-8")
-    (legacy / "lib" / "kiro_crew" / "static" / "dist").mkdir(parents=True)
-    (legacy / "lib" / "kiro_crew" / "static" / "dist" / "index.html").write_text(
+    (legacy / "lib" / "efm_go" / "static" / "dist").mkdir(parents=True)
+    (legacy / "lib" / "efm_go" / "static" / "dist" / "index.html").write_text(
         "<html></html>", encoding="utf-8"
     )
     stable = tmp_path / "crew-venv-current"
@@ -75,7 +75,7 @@ def layout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ManagedVenvLayout
     # The real engine, behind the real preflight wiring.
     wire_wheel_apply(monkeypatch, apply=wheel_engine.apply_wheel_update)
     monkeypatch.setattr(
-        "kiro_crew.platform.wheel_apply.snapshot_memory_before_update", lambda: (1, "")
+        "efm_go.platform.wheel_apply.snapshot_memory_before_update", lambda: (1, "")
     )
     return managed
 
@@ -101,7 +101,7 @@ def _claim(shadow: Path) -> None:
 async def test_the_served_venv_is_never_moved_while_the_new_tree_builds(
     layout: ManagedVenvLayout, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.platform.wheel_engine import respawn_executable
+    from efm_go.platform.wheel_engine import respawn_executable
 
     orch, restart = _orchestrator(monkeypatch)
     before = _served_snapshot(layout.legacy)
@@ -134,8 +134,8 @@ async def test_a_gateway_running_through_the_link_restarts_before_it_builds(
     layout: ManagedVenvLayout, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Promoting under it would swap its own modules while a busy restart waits."""
-    from kiro_crew.platform import wheel_apply
-    from kiro_crew.platform.wheel_engine import respawn_executable
+    from efm_go.platform import wheel_apply
+    from efm_go.platform.wheel_engine import respawn_executable
 
     orch, restart = _orchestrator(monkeypatch)
     monkeypatch.setattr(wheel_apply, "relaunch_before_apply", lambda: True)

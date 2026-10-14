@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 
 def _bash_can_run_the_assembly_step() -> bool:

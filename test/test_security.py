@@ -21,8 +21,8 @@ from pathlib import Path
 import pytest
 from oauth_url_corpus import OPERATOR_EXTENSION_OAUTH_URLS
 
-from kiro_crew import cron_inflight, platform_compat, security
-from kiro_crew.security import (
+from efm_go import cron_inflight, platform_compat, security
+from efm_go.security import (
     _SECRET_KEY_LEN,
     _SECRET_MAX_SLASHES,
     REDACTED_CREDENTIAL_TAG,
@@ -342,7 +342,7 @@ class TestRedactCredentials:
         to be missed. This ratchet makes that omission fail here instead of
         silently degrading a user-facing warning.
         """
-        from kiro_crew.security import redaction
+        from efm_go.security import redaction
 
         declared = {
             name: value
@@ -367,7 +367,7 @@ class TestRedactCredentials:
         """The base64 pass must substitute a tag consumers actually look for."""
         import base64
 
-        from kiro_crew.security import (
+        from efm_go.security import (
             _REDACTED_ENCODED_CREDENTIAL_TAG,
             CREDENTIAL_REDACTION_TAGS,
         )
@@ -634,7 +634,7 @@ class TestRedactCredentials:
 
     def test_hostname_containing_eyj_not_redacted(self) -> None:
         """A dotted name with `eyJ` inside has JWT shape but no JSON-object header."""
-        from kiro_crew.security import _contains_fixed_credential, _decode_b64_safe
+        from efm_go.security import _contains_fixed_credential, _decode_b64_safe
 
         for text in ("ssh honeyJar.example.com", "https://api.honeyJar.co.uk/v1/x"):
             assert redact_credentials(text) == (text, []), text
@@ -642,7 +642,7 @@ class TestRedactCredentials:
             assert _decode_b64_safe(base64.b64encode(text.encode()).decode()) == "", text
 
     def test_jose_validated_jwt_redacted_on_every_batch_path(self) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _contains_fixed_credential,
             _decode_b64_chunk,
             _decode_b64_safe,
@@ -679,7 +679,7 @@ class TestRedactCredentials:
 
     def test_dense_eyj_header_fails_closed(self) -> None:
         """A header holding a second `eyJ` is redacted whole instead of rescanned per `eyJ`."""
-        from kiro_crew.security import _partial_jwt_tail
+        from efm_go.security import _partial_jwt_tail
 
         dense = "eyJ" * 30000 + ".x.y"
         assert redact_credentials(dense)[0] == "[REDACTED: credential]"
@@ -794,7 +794,7 @@ class TestRedactCredentials:
         digest ever changes, this fails loudly here rather than silently disabling
         redaction of the link token in production.
         """
-        from kiro_crew.dashboard.token_auth import _sign
+        from efm_go.dashboard.token_auth import _sign
 
         for payload in (b'{"sub":"x"}', b"", b"a" * 4096):
             assert len(_sign(payload)) == 43, payload[:16]
@@ -812,8 +812,8 @@ class TestRedactCredentials:
         """
         import re
 
-        from kiro_crew.dashboard.token_auth import generate_token
-        from kiro_crew.security import _CREDENTIAL_PATTERNS
+        from efm_go.dashboard.token_auth import generate_token
+        from efm_go.security import _CREDENTIAL_PATTERNS
 
         floors = re.findall(r"eyJ\[A-Za-z0-9_-\]\{(\d+),\}", _CREDENTIAL_PATTERNS.pattern)
         assert len(floors) == 1, f"expected one bounded eyJ floor, got {floors}"
@@ -967,7 +967,7 @@ class TestTokenParamValueRedaction:
 
     def test_named_percent_entity_is_case_sensitive(self) -> None:
         """Only the exact WHATWG named reference decodes to a percent sign."""
-        from kiro_crew.security.redaction import _TOKEN_PARAM_PARTIAL_RE
+        from efm_go.security.redaction import _TOKEN_PARAM_PARTIAL_RE
 
         for name in ("&PERCNT;74oken", "&PerCnt;74oken"):
             text = f"?{name}={self._OPAQUE}"
@@ -996,7 +996,7 @@ class TestTokenParamValueRedaction:
 
     def test_stream_partial_rejects_unicode_casefold_homoglyphs(self) -> None:
         """A trailing Kelvin-spelled name is not a streaming token anchor."""
-        from kiro_crew.security.redaction import _TOKEN_PARAM_PARTIAL_RE
+        from efm_go.security.redaction import _TOKEN_PARAM_PARTIAL_RE
 
         for name in ("to\u212aen", "TO\u212aEN"):
             assert _TOKEN_PARAM_PARTIAL_RE.search(f"?{name}=") is None, name
@@ -1025,7 +1025,7 @@ class TestTokenParamValueRedaction:
 
     def test_percent_encoded_name_split_mid_escape_not_leaked(self) -> None:
         """A chunk ending mid-escape holds the whole parameter until redaction."""
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         secret_head = self._OPAQUE[:8]
         secret_tail = self._OPAQUE[8:]
@@ -1043,8 +1043,8 @@ class TestTokenParamValueRedaction:
         """Every valid separator/name prefix pair stays buffered."""
         from itertools import product
 
-        from kiro_crew.security import _CRED_CLASS
-        from kiro_crew.security.redaction import _TOKEN_PARAM_PARTIAL_RE
+        from efm_go.security import _CRED_CLASS
+        from efm_go.security.redaction import _TOKEN_PARAM_PARTIAL_RE
 
         letter_spellings = (
             ("t", "%74", "%54", "&#116;", "&#84;", "&#x74;", "&#x54;", "&#37;74", "&percnt;74"),
@@ -1086,7 +1086,7 @@ class TestTokenParamValueRedaction:
 
     def test_stream_holds_complete_entity_name_parts_across_chunks(self) -> None:
         """A completed entity must not release an in-progress token name."""
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         for first_chunk, second_chunk in (
             ("?t&#111;", "ken=" + self._OPAQUE),
@@ -1103,7 +1103,7 @@ class TestTokenParamValueRedaction:
 
     def test_fully_composed_anchor_fits_stream_holdback_bound(self) -> None:
         """The longest separator plus five composed letters remains bounded."""
-        from kiro_crew.security import _STREAM_HOLDBACK_MAX
+        from efm_go.security import _STREAM_HOLDBACK_MAX
 
         def html_hex_byte(byte: str) -> str:
             return f"&#x{'0' * 8}{ord(byte):X};"
@@ -1255,7 +1255,7 @@ class TestTokenParamValueRedaction:
         assert "[REDACTED: credential]" in result
         assert secret not in result
 
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         redactor = StreamRedactor()
         emitted = [
@@ -1283,7 +1283,7 @@ class TestTokenParamValueRedaction:
 
     def test_registered_credential_tags_are_fixed_points(self) -> None:
         """Every module-owned credential-tag literal is trusted by construction."""
-        from kiro_crew.security import CREDENTIAL_REDACTION_TAGS
+        from efm_go.security import CREDENTIAL_REDACTION_TAGS
 
         for tag in CREDENTIAL_REDACTION_TAGS:
             text = f"?token={tag}"
@@ -1295,7 +1295,7 @@ class TestTokenParamValueRedaction:
         """Redaction-only: `_contains_fixed_credential` gates request-BLOCKING
         decisions in `exfil.py` and must not learn the parameter name -- a
         `?token=` URL is maskable output, never itself grounds to block."""
-        from kiro_crew.security.redaction import _contains_fixed_credential
+        from efm_go.security.redaction import _contains_fixed_credential
 
         assert not _contains_fixed_credential(f"https://h.example/?token={self._OPAQUE}")
 
@@ -1310,7 +1310,7 @@ class TestTokenParamValueRedaction:
         canonical composition (`redact` / `redact_with_findings`) runs the
         exfil pass FIRST, and this pins that pass 4 does not break it.
         """
-        from kiro_crew.security import redact
+        from efm_go.security import redact
 
         url = (
             "fetching https://collect.attacker.example/?token="
@@ -1623,7 +1623,7 @@ class TestPathWindowsAreNotBareSecrets:
     @staticmethod
     def _as_host(monkeypatch: pytest.MonkeyPatch, host_id: str | None) -> None:
         """Make *host_id* the directory id the OS reports; None is "not macOS"."""
-        from kiro_crew.security import redaction as redaction_mod
+        from efm_go.security import redaction as redaction_mod
 
         monkeypatch.setattr(redaction_mod, "_host_darwin_user_dir_id", lambda: host_id)
 
@@ -1634,8 +1634,8 @@ class TestPathWindowsAreNotBareSecrets:
         Produced by the real spooler rather than spelled here, so the directory
         name and the ``shot-<ms>-<random>.jpeg`` file name are the shipped ones.
         """
-        from kiro_crew.computer_use import service as service_mod
-        from kiro_crew.computer_use.types import AppRef, Snapshot
+        from efm_go.computer_use import service as service_mod
+        from efm_go.computer_use.types import AppRef, Snapshot
 
         monkeypatch.setattr(service_mod.tempfile, "gettempdir", lambda: str(tmp_path))
         snap = Snapshot(
@@ -1651,7 +1651,7 @@ class TestPathWindowsAreNotBareSecrets:
         return Path(produced).relative_to(tmp_path).as_posix()
 
     def test_the_darwin_fixtures_have_the_real_shape(self) -> None:
-        from kiro_crew.security import redaction as redaction_mod
+        from efm_go.security import redaction as redaction_mod
 
         for bucket, name in self.DARWIN_USER_DIR_IDS:
             assert re.fullmatch(r"[a-z0-9]{2}", bucket)
@@ -1671,7 +1671,7 @@ class TestPathWindowsAreNotBareSecrets:
         through ``/private``, as the markdown image the agent prompt asks for,
         and as the tool result's own ``Screenshot:`` line.
         """
-        from kiro_crew.computer_use.types import SCREENSHOT_DIR_NAME
+        from efm_go.computer_use.types import SCREENSHOT_DIR_NAME
 
         spooled = self._produced_spool_path(tmp_path, monkeypatch)
         assert spooled.startswith(f"{SCREENSHOT_DIR_NAME}/shot-")
@@ -1801,7 +1801,7 @@ class TestPathWindowsAreNotBareSecrets:
         begins inside the id, sharing only those bytes in place. A seeded search
         fills the rest until the heuristic accepts, which is deterministic.
         """
-        from kiro_crew.security import redaction as redaction_mod
+        from efm_go.security import redaction as redaction_mod
 
         head = name[-shared:] + "/T/"
         rng = random.Random(f"edge-key-{name}-{shared}")
@@ -1824,7 +1824,7 @@ class TestPathWindowsAreNotBareSecrets:
         ``<last-id-byte>/T/`` case; ``shared=3`` pins that a three-byte overlap
         is judged too.
         """
-        from kiro_crew.security import redaction as redaction_mod
+        from efm_go.security import redaction as redaction_mod
 
         bucket, name = self.DARWIN_USER_DIR_IDS[0]
         key = self._edge_key(name, shared)
@@ -1973,7 +1973,7 @@ class TestPathWindowsAreNotBareSecrets:
         pass. The tail piece begins at a different offset modulo four, so cut
         loose it decodes to garbage and its windows read as key-shaped.
         """
-        from kiro_crew.security import redaction as redaction_mod
+        from efm_go.security import redaction as redaction_mod
 
         bucket, name = self.DARWIN_USER_DIR_IDS[0]
         head = f"{self._darwin_root(bucket, name)}/"
@@ -2011,7 +2011,7 @@ class TestPathWindowsAreNotBareSecrets:
         self, key: str, prefix: str, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A piece's printable decode must not replace the whole run's verdict."""
-        from kiro_crew.security import redaction as redaction_mod
+        from efm_go.security import redaction as redaction_mod
 
         bucket, name = self.DARWIN_USER_DIR_IDS[0]
         self._as_host(monkeypatch, f"{bucket}/{name}")
@@ -2046,7 +2046,7 @@ class TestPathWindowsAreNotBareSecrets:
 
     def test_the_host_id_is_what_confstr_reports(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Asked once of the OS; a refusal or an off-grammar answer withholds nothing."""
-        from kiro_crew.security import redaction as redaction_mod
+        from efm_go.security import redaction as redaction_mod
 
         bucket, name = self.DARWIN_USER_DIR_IDS[0]
         calls: list[int] = []
@@ -2087,7 +2087,7 @@ class TestPathWindowsAreNotBareSecrets:
 
     @pytest.mark.skipif(sys.platform != "darwin", reason="reads the real macOS confstr")
     def test_the_real_temp_dir_survives_on_macos(self) -> None:
-        from kiro_crew.security import redaction as redaction_mod
+        from efm_go.security import redaction as redaction_mod
 
         redaction_mod._host_darwin_user_dir_id.cache_clear()
         host_id = redaction_mod._host_darwin_user_dir_id()
@@ -2532,7 +2532,7 @@ class TestSecretGateOrderIsVerdictNeutral:
     SOURCES = (
         "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
         "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ",
-        "src/kiro_crew/security/redaction/Handler2/Manager3/Factory4/Builder5x",
+        "src/efm_go/security/redaction/Handler2/Manager3/Factory4/Builder5x",
         "getUserAccountManagerFactory2BuilderHelperImpl3ServiceProvider4x",
         "0123456789abcdefABCDEF0123456789abcdefAB",
         "TheGatewayRestoredTheSessionAndReplayed12ToolCallsSeeSecurityPy",
@@ -2618,7 +2618,7 @@ class TestShannonEntropyIsBitIdentical:
     """``_shannon_entropy`` precomputes its terms, and must not move a single bit.
 
     The value feeds a ``>= _SECRET_ENTROPY_MIN`` comparison in
-    :func:`~kiro_crew.security._looks_like_secret_key`, so it decides whether a
+    :func:`~efm_go.security._looks_like_secret_key`, so it decides whether a
     token is redacted. That makes ``math.isclose`` the WRONG assertion for this
     function: a drift small enough to pass a tolerance check is still large
     enough to flip the comparison for a token sitting on the boundary, and a flip
@@ -2863,7 +2863,7 @@ class TestSandboxDeniedCommands:
 
     @staticmethod
     def _is_denied(cmd: str) -> bool:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         return is_denied(cmd) is not None
 
@@ -2976,7 +2976,7 @@ class TestKiroCliBundledDeniedCommands:
 
     @staticmethod
     def _is_denied(cmd: str) -> bool:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         return is_denied(cmd) is not None
 
@@ -2991,7 +2991,7 @@ class TestKiroCliBundledDeniedCommands:
     def test_killall_kirocrew_blocked(self) -> None:
         assert self._is_denied("sudo killall kirocrew")
 
-    def test_kill_kiro_crew_hyphenated_blocked(self) -> None:
+    def test_kill_efm_go_hyphenated_blocked(self) -> None:
         # The `.?` in the pattern covers an optional separator so agents can't
         # bypass with "kiro-crew".
         assert self._is_denied("pkill kiro-crew")
@@ -3133,7 +3133,7 @@ class TestBuiltinDenyPatterns:
         The own-host cache is reset for the test and restored after it, so the
         stub's addresses never become another test's idea of this machine.
         """
-        from kiro_crew.security import argv_floor
+        from efm_go.security import argv_floor
 
         recorded: list[tuple[int, object]] = []
         real_socket = argv_floor.socket
@@ -3163,14 +3163,14 @@ class TestBuiltinDenyPatterns:
 
     def test_allows_command_with_credential_in_path(self) -> None:
         """Commands in dirs like CredentialValidatorServiceCDK must not be blocked."""
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         cmd = "cd /home/user/src/CredentialValidatorServiceCDK && git status"
         assert is_denied(cmd) is None
 
     def test_allows_credential_in_package_name(self) -> None:
         """Package names containing 'credential' must not be blocked."""
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("ada credentials update --account 123") is None
         assert is_denied("credential-rotation-service build") is None
@@ -3187,18 +3187,18 @@ class TestBuiltinDenyPatterns:
         always-on keystone catches actual exfil), while a destructive
         ``delete-secret`` stays blocked.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("aws secretsmanager delete-secret --secret-id x") is not None
 
     def test_secret_exfil_still_blocked_by_keystone(self) -> None:
         """Dumping an AWS secret env var stays blocked (credential-exfil rule)."""
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("echo $AWS_SECRET_ACCESS_KEY") is not None
 
     def test_blocks_git_push(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # ── Real publish invocations: must remain BLOCKED ──
         assert is_denied("git push origin main") is not None
@@ -3252,7 +3252,7 @@ class TestBuiltinDenyPatterns:
         ``test_blocks_git_push`` for the bypass-attempt cases that remain
         blocked because the embedded segment IS a real publish.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # The original pain point: stash output piped into a filter.
         assert is_denied('git stash push -m "wip" 2>&1 | tail -3') is None
@@ -3281,7 +3281,7 @@ class TestBuiltinDenyPatterns:
         literal ` stash push` substring (with leading space) which this
         input lacks → outright deny on pass 1, no fall-through to pass 2.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # Concrete bypass attempt — flagged by review-bot on rev 1.
         assert is_denied("git$(echo ' ')push origin main") is not None
@@ -3304,7 +3304,7 @@ class TestBuiltinDenyPatterns:
         The fix uses ``&(?!&)`` after ``&&`` in the alternation so ``&&``
         is consumed as a single token and a lone ``&`` is split on.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # Core bypass.
         assert is_denied("git stash push & git push origin main") is not None
@@ -3339,7 +3339,7 @@ class TestBuiltinDenyPatterns:
         must fall through to the second glob and deny outright.  A ``break``
         regression would skip the second glob and falsely allow.
         """
-        import kiro_crew.security as security_module
+        import efm_go.security as security_module
 
         monkeypatch.setattr(security_module, "_DENY_EXCEPTIONS", {"*alpha*": ["* stash *"]})
         # Pass 1 sees:
@@ -3365,7 +3365,7 @@ class TestBuiltinDenyPatterns:
         approval prompt.  Anchoring ``push`` as the git subcommand fixes it
         while keeping real ``git push`` blocked.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("git commit -m 'fix: do not push secrets to remote'") is None
         assert (
@@ -3392,7 +3392,7 @@ class TestBuiltinDenyPatterns:
         the payload into a file, which is not scanned) while blocking anyone
         working ON these rules.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for verb in ("grep -rn", "egrep -r", "fgrep"):
             assert is_denied(f'{verb} "{self.ROOT_WIPE}" test/') is None, verb
@@ -3420,7 +3420,7 @@ class TestBuiltinDenyPatterns:
         current behaviour rather than xfailing it, so the boundary is explicit and
         a future segmentation fix has to update this test consciously.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied(f'grep -rln "rm-rf-root\\|{self.ROOT_WIPE}" test/') is not None
         # The same search without the alternation IS exonerated — isolating the
@@ -3435,7 +3435,7 @@ class TestBuiltinDenyPatterns:
         every execution boundary, so the destructive SEGMENT is still evaluated in
         its own right and the Pass 1 whole-string exception only defers to Pass 2.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # Bare, and behind a wrapper that DOES execute its operands.
         assert is_denied(self.ROOT_WIPE) is not None
@@ -3453,7 +3453,7 @@ class TestBuiltinDenyPatterns:
     def test_the_carve_out_does_not_exonerate_other_rules(self) -> None:
         """The exception is keyed to the two rm patterns only, so a search verb
         must not become a blanket allowlist for unrelated deny rules."""
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # A different local-destructive rule in the same segment as a search verb.
         assert is_denied("grep -rn x test/ && mkfs.ext4 /dev/sda1") is not None
@@ -3474,7 +3474,7 @@ class TestBuiltinDenyPatterns:
         longer exonerated, asserted below so the trade-off is explicit rather
         than looking like an oversight.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied(f"{self.ROOT_WIPE} /bin/grep x") is not None
         assert is_denied(f"{self.ROOT_WIPE} x/grep y") is not None
@@ -3498,7 +3498,7 @@ class TestBuiltinDenyPatterns:
         funsub. ``_exception_eligible`` now refuses any view containing a
         shell-active character, closing the class instead of chasing spellings.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # Process substitution, input and output forms, and a bare subshell.
         assert is_denied(f"grep x <({self.ROOT_WIPE}tmp/victim)") is not None
@@ -3528,7 +3528,7 @@ class TestBuiltinDenyPatterns:
         the premise true rather than merely asserted. ``grep``/``egrep``/``fgrep``
         have no flag that spawns a helper.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied(f'rg --pre sh "{self.ROOT_WIPE}tmp/victim" payload.sh') is not None
         # Dropped wholesale, not just for the executing flag: a glob cannot tell
@@ -3552,7 +3552,7 @@ class TestBuiltinDenyPatterns:
         ``_exception_eligible`` requires a single plain command, not merely one
         free of expansion openers.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied(f"grep '{self.ROOT_WIPE}tmp/victim' payload.py | python") is not None
         assert is_denied(f"grep '{self.ROOT_WIPE}' payload.sh | sh") is not None
@@ -3577,7 +3577,7 @@ class TestBuiltinDenyPatterns:
         "push" in an earlier chained segment never blocks a real
         feature-branch push, while chained protected pushes stay denied.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("git commit -m 'ready to push' && git push origin feature-x") is None
         assert is_denied("echo 'time to push' && git push origin my-feature") is None
@@ -3591,7 +3591,7 @@ class TestBuiltinDenyPatterns:
         names, grep patterns, config keys) must be ALLOWED — only an actual
         ``git push`` invocation is a publish.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("git log --grep push") is None
         assert is_denied("git config push.default current") is None
@@ -3618,7 +3618,7 @@ class TestBuiltinDenyPatterns:
         got there only because the real enumeration read them back from the
         stubbed socket, and the fixture's filter admits nothing else.
         """
-        from kiro_crew.security import argv_floor, is_denied
+        from efm_go.security import argv_floor, is_denied
 
         assert is_denied("ssh dev-dsk 'cd /workplace && git status'") is None
         assert is_denied("ssh dev-dsk 'git commit -m \"address push-back from review\"'") is None
@@ -3630,7 +3630,7 @@ class TestBuiltinDenyPatterns:
 
     def test_blocks_ssh_remote_real_git_push(self) -> None:
         """A real ``git push`` inside an ``ssh`` remote command stays BLOCKED."""
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("ssh host 'cd /repo && git push origin main'") is not None
 
@@ -3641,7 +3641,7 @@ class TestBuiltinDenyPatterns:
         revision only emitted SEL audit on the exception-granted path,
         leaving denials un-audited.
         """
-        import kiro_crew.security as security_module
+        import efm_go.security as security_module
 
         captured: list[tuple[str, str, str]] = []
 
@@ -3684,13 +3684,13 @@ class TestBuiltinDenyPatterns:
         ``aws cloudformation delete-stack`` invocation instead (see
         ``test_blocks_real_hyphenated_destructive_aws_cli``).
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("aws cloudformation delete-stack --stack-name foo") is not None
 
     def test_blocks_terminate_instance(self) -> None:
         """The real hyphenated EC2 terminate is blocked (underscore form retired)."""
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("aws ec2 terminate-instances --instance-ids i-123") is not None
 
@@ -3705,7 +3705,7 @@ class TestBuiltinDenyPatterns:
         scheduling destructive shell, so this was an exploitable gap on the
         cron command path.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("aws cloudformation delete-stack --stack-name prod") is not None
         assert is_denied("aws ec2 terminate-instances --instance-ids i-123") is not None
@@ -3719,7 +3719,7 @@ class TestBuiltinDenyPatterns:
     def test_allows_benign_aws_reads_after_deny_fix(self) -> None:
         """The hyphenated destructive patterns must not over-block benign
         AWS reads or package/command names that merely contain 'delete'/'credential'."""
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # Read-only AWS operations stay allowed.
         assert is_denied("aws ec2 describe-instances") is None
@@ -3732,17 +3732,17 @@ class TestBuiltinDenyPatterns:
         assert is_denied("get-credentials --profile default") is None
 
     def test_allows_git_status(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("git status") is None
 
     def test_allows_git_log(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("git -P log --oneline -5") is None
 
     def test_allows_cr_command(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied("cr --summary 'Fix test discovery'") is None
 
@@ -3882,7 +3882,7 @@ class TestOAuthAuthorizationUrlRedaction:
         assert diagnostic is not None
         assert diagnostic.rule == "exfil_query_length"
         assert diagnostic.parameter is None
-        with caplog.at_level("WARNING", logger="kiro_crew.security"):
+        with caplog.at_level("WARNING", logger="efm_go.security"):
             assert oauth_url_contains_credential(url) is True
         output = json.dumps(diagnostic.as_dict(), sort_keys=True) + "\n" + caplog.text
         assert raw_name not in output
@@ -3900,7 +3900,7 @@ class TestOAuthAuthorizationUrlRedaction:
         assert diagnostic.component == "query_parameter"
         assert diagnostic.parameter == "state"
 
-        with caplog.at_level("WARNING", logger="kiro_crew.security"):
+        with caplog.at_level("WARNING", logger="efm_go.security"):
             assert oauth_url_contains_credential(url) is True
 
         serialized = json.dumps(diagnostic.as_dict(), sort_keys=True)
@@ -4129,7 +4129,7 @@ class TestOAuthAuthorizationUrlRedaction:
         """
         from urllib.parse import quote
 
-        from kiro_crew.security import _MAX_URL_DECODE_PASSES
+        from efm_go.security import _MAX_URL_DECODE_PASSES
 
         encoded = quote("-----BEGIN RSA PRIVATE KEY-----", safe="-")
         for _ in range(_MAX_URL_DECODE_PASSES):
@@ -4682,7 +4682,7 @@ class TestOperatorOAuthEndpointExtension:
         a reset, tests exercising the real emit path would depend on execution
         order.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         monkeypatch.setattr(security, "_OAUTH_EXTENSION_AUDITED", set())
@@ -4696,7 +4696,7 @@ class TestOperatorOAuthEndpointExtension:
     # ── Loader: fail-soft postures ──
 
     def test_missing_file_yields_empty_set(self, ext_home: Path) -> None:
-        from kiro_crew.security import _load_operator_oauth_endpoints
+        from efm_go.security import _load_operator_oauth_endpoints
 
         assert _load_operator_oauth_endpoints() == frozenset()
 
@@ -4706,20 +4706,20 @@ class TestOperatorOAuthEndpointExtension:
         ids=["corrupt", "non-object", "string", "key-not-list"],
     )
     def test_defective_file_yields_empty_set(self, ext_home: Path, content: str) -> None:
-        from kiro_crew.security import _load_operator_oauth_endpoints
+        from efm_go.security import _load_operator_oauth_endpoints
 
         self._write_extension(ext_home, content)
         assert _load_operator_oauth_endpoints() == frozenset()
 
     def test_valid_entry_accepted_and_host_lowercased(self, ext_home: Path) -> None:
-        from kiro_crew.security import _load_operator_oauth_endpoints
+        from efm_go.security import _load_operator_oauth_endpoints
 
         self._write_extension(ext_home, [{"host": "ACME.Okta.com", "path": self.PATH}])
         assert _load_operator_oauth_endpoints() == frozenset({(self.HOST, self.PATH)})
 
     def test_hand_edit_takes_effect_without_restart(self, ext_home: Path) -> None:
         """The check-time re-read contract: no gateway restart, no stale memo."""
-        from kiro_crew.security import _load_operator_oauth_endpoints
+        from efm_go.security import _load_operator_oauth_endpoints
 
         self._write_extension(ext_home, [{"host": self.HOST, "path": self.PATH}])
         assert _load_operator_oauth_endpoints() == frozenset({(self.HOST, self.PATH)})
@@ -4779,7 +4779,7 @@ class TestOperatorOAuthEndpointExtension:
         ],
     )
     def test_hostile_host_skipped(self, ext_home: Path, host: str) -> None:
-        from kiro_crew.security import _load_operator_oauth_endpoints
+        from efm_go.security import _load_operator_oauth_endpoints
 
         self._write_extension(ext_home, [{"host": host, "path": self.PATH}])
         assert _load_operator_oauth_endpoints() == frozenset()
@@ -4810,7 +4810,7 @@ class TestOperatorOAuthEndpointExtension:
         ],
     )
     def test_hostile_path_skipped(self, ext_home: Path, path: str) -> None:
-        from kiro_crew.security import _load_operator_oauth_endpoints
+        from efm_go.security import _load_operator_oauth_endpoints
 
         self._write_extension(ext_home, [{"host": self.HOST, "path": path}])
         assert _load_operator_oauth_endpoints() == frozenset()
@@ -4827,13 +4827,13 @@ class TestOperatorOAuthEndpointExtension:
         ids=["string-entry", "int-host", "none-path", "missing-path", "empty-dict"],
     )
     def test_non_string_entry_skipped(self, ext_home: Path, entry: object) -> None:
-        from kiro_crew.security import _load_operator_oauth_endpoints
+        from efm_go.security import _load_operator_oauth_endpoints
 
         self._write_extension(ext_home, [entry])
         assert _load_operator_oauth_endpoints() == frozenset()
 
     def test_one_bad_entry_does_not_poison_the_rest(self, ext_home: Path) -> None:
-        from kiro_crew.security import _load_operator_oauth_endpoints
+        from efm_go.security import _load_operator_oauth_endpoints
 
         self._write_extension(
             ext_home,
@@ -4842,7 +4842,7 @@ class TestOperatorOAuthEndpointExtension:
         assert _load_operator_oauth_endpoints() == frozenset({(self.HOST, self.PATH)})
 
     def test_entry_cap_bounds_both_acceptance_and_iteration(self, ext_home: Path) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _ENDPOINT_EXTENSION_CAP,
             _load_operator_oauth_endpoints,
         )
@@ -4914,7 +4914,7 @@ class TestOperatorOAuthEndpointExtension:
     def test_extension_approval_emits_audit_event(
         self, ext_home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         self._write_extension(ext_home, [{"host": self.HOST, "path": self.PATH}])
         seen: list[tuple[str, str]] = []
@@ -4929,7 +4929,7 @@ class TestOperatorOAuthEndpointExtension:
     def test_builtin_approval_does_not_emit_audit_event(
         self, ext_home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         seen: list[tuple[str, str]] = []
         monkeypatch.setattr(
@@ -4947,8 +4947,8 @@ class TestOperatorOAuthEndpointExtension:
     def test_audit_event_deduped_per_endpoint_but_not_across_endpoints(
         self, ext_home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import security
-        from kiro_crew.security import exfil
+        from efm_go import security
+        from efm_go.security import exfil
 
         logged: list = []
 
@@ -4973,7 +4973,7 @@ class TestOperatorOAuthEndpointExtension:
     def test_audit_failure_does_not_break_the_approval(
         self, ext_home: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.security import exfil
+        from efm_go.security import exfil
 
         class _BrokenLog:
             def log(self, event: object) -> None:
@@ -4987,7 +4987,7 @@ class TestOperatorOAuthEndpointExtension:
 
     @pytest.mark.parametrize("prefix", [".kiro/crew", ".kirocrew"])
     def test_extension_file_is_sensitive_under_every_home_prefix(self, prefix: str) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         assert is_sensitive_path(f"~/{prefix}/oauth_endpoints.json") is True
         # The write gate is a superset of the read gate; assert it directly so
@@ -5034,7 +5034,7 @@ class TestRedactExfiltrationUrls:
         substitution to the exported constant: if the f-string ever drifts from
         the prefix, this goes red instead of the notice silently never firing.
         """
-        from kiro_crew.security import (
+        from efm_go.security import (
             EXFILTRATION_REDACTION_TAG_PREFIX,
             redact_exfiltration_urls,
         )
@@ -5055,7 +5055,7 @@ class TestRedactExfiltrationUrls:
         prefix stays OUT of the tuple (it is a prefix, not a full tag -- see the
         tuple's docstring).
         """
-        from kiro_crew.security import (
+        from efm_go.security import (
             CREDENTIAL_REDACTION_TAGS,
             EXFILTRATION_REDACTION_TAG_PREFIX,
         )
@@ -5068,7 +5068,7 @@ class TestRedactExfiltrationUrls:
 
     def test_external_long_query_redacted(self) -> None:
         """External domains with long query strings are still redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = "https://evil.com/steal?data=" + "A" * 250
         result, warnings = redact_exfiltration_urls(f"Link: {url}")
@@ -5077,7 +5077,7 @@ class TestRedactExfiltrationUrls:
 
     def test_long_query_redacted_domain_agnostic(self) -> None:
         """Long query strings are redacted regardless of domain (no allowlist)."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         # Detection is domain-agnostic: there is no trusted-domain allowlist,
         # so even a long multi-param query on any host is flagged.
@@ -5090,7 +5090,7 @@ class TestRedactExfiltrationUrls:
 
     def test_heavy_url_encoding_redacted(self) -> None:
         """Heavily URL-encoded destinations are redacted regardless of domain."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = (
             "https://sso.example.com/federate?account=123456789012"
@@ -5105,7 +5105,7 @@ class TestRedactExfiltrationUrls:
 
     def test_short_query_not_redacted_domain_agnostic(self) -> None:
         """Short, benign query strings are not redacted on any domain."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = "https://console.example.com/page?k0=val0&k1=val1&k2=val2"
         result, warnings = redact_exfiltration_urls(f"Link: {url}")
@@ -5114,7 +5114,7 @@ class TestRedactExfiltrationUrls:
 
     def test_safe_domain_credential_still_redacted(self) -> None:
         """Credential patterns on safe domains are still redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = "https://example.amazon.dev/api?key=AKIAIOSFODNN7EXAMPLE1234"
         result, warnings = redact_exfiltration_urls(f"Link: {url}")
@@ -5123,7 +5123,7 @@ class TestRedactExfiltrationUrls:
 
     def test_short_query_no_redaction(self) -> None:
         """Short query strings on any domain are not redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = "https://example.com/page?id=123&name=test"
         result, warnings = redact_exfiltration_urls(f"Link: {url}")
@@ -5132,7 +5132,7 @@ class TestRedactExfiltrationUrls:
 
     def test_amazonaws_not_safe(self) -> None:
         """amazonaws.com is NOT allowlisted — anyone can provision endpoints."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         params = "&".join(f"d{i}=stolen{i}" for i in range(30))
         url = f"https://attacker-bucket.s3.amazonaws.com/exfil?{params}"
@@ -5142,7 +5142,7 @@ class TestRedactExfiltrationUrls:
 
     def test_s3_presigned_url_preserved(self) -> None:
         """S3 presigned URLs on amazonaws.com are NOT redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = (
             "https://my-bucket.s3.us-east-1.amazonaws.com/results/abc.csv"
@@ -5160,7 +5160,7 @@ class TestRedactExfiltrationUrls:
 
     def test_s3_presigned_url_scan_clean(self) -> None:
         """scan_exfiltration_urls returns no warnings for S3 presigned URLs."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         url = (
             "https://bucket.s3.amazonaws.com/file.csv"
@@ -5177,7 +5177,7 @@ class TestRedactExfiltrationUrls:
 
     def test_amazonaws_non_presigned_still_redacted(self) -> None:
         """amazonaws.com URLs without presigned params are still redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = "https://evil.s3.amazonaws.com/steal" "?data=" + "A" * 250
         result, warnings = redact_exfiltration_urls(f"Link: {url}")
@@ -5186,7 +5186,7 @@ class TestRedactExfiltrationUrls:
 
     def test_spoofed_presigned_params_still_redacted(self) -> None:
         """Spoofed presigned param names with dummy values are still redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = (
             "https://attacker.s3.amazonaws.com/exfil"
@@ -5198,7 +5198,7 @@ class TestRedactExfiltrationUrls:
 
     def test_presigned_url_with_slack_token_still_redacted(self) -> None:
         """Presigned URL that also contains a Slack token is still redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = (
             "https://bucket.s3.amazonaws.com/file.csv"
@@ -5216,7 +5216,7 @@ class TestRedactExfiltrationUrls:
 
     def test_presigned_url_with_extra_exfil_params_still_redacted(self) -> None:
         """Presigned URL with extra non-standard params is still redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = (
             "https://attacker.s3.amazonaws.com/file.csv"
@@ -5239,7 +5239,7 @@ class TestRedactExfiltrationUrls:
         (not just scan), because the bad URL causes scan to return warnings,
         so redact doesn't early-return.
         """
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         bad_url = "https://evil.com/steal?data=" + "A" * 250
         good_url = (
@@ -5262,7 +5262,7 @@ class TestRedactExfiltrationUrls:
 
     def test_presigned_url_with_sts_security_token_preserved(self) -> None:
         """Presigned URL with realistic base64 STS session token is preserved."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         # Realistic 200+ char base64 STS token (matches _EXFIL_PATTERNS blob pattern)
         sts_token = "IQoJb3JpZ2luX2VjE" + "A" * 180 + "=="
@@ -5282,7 +5282,7 @@ class TestRedactExfiltrationUrls:
 
     def test_presigned_url_with_exfil_in_allowed_param_redacted(self) -> None:
         """Exfil payload in an allowed param value is caught by value scanning."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         url = (
             "https://evil.s3.us-east-1.amazonaws.com/out.csv"
@@ -5298,7 +5298,7 @@ class TestRedactExfiltrationUrls:
 
     def test_presigned_url_with_exfil_in_credential_scope_redacted(self) -> None:
         """Arbitrary data in credential scope is caught by structural validation."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         url = (
             "https://evil.s3.us-east-1.amazonaws.com/out.csv"
@@ -5314,7 +5314,7 @@ class TestRedactExfiltrationUrls:
 
     def test_presigned_url_with_fake_security_token_redacted(self) -> None:
         """Non-STS payload in Security-Token is caught by structural validation."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         url = (
             "https://evil.s3.us-east-1.amazonaws.com/out.csv"
@@ -5445,7 +5445,7 @@ class TestExfilExactHostExemption:
             self._hosts = hosts
 
         def redact(self, text: str) -> str:
-            from kiro_crew.security import redact
+            from efm_go.security import redact
 
             return redact(text)
 
@@ -5455,9 +5455,9 @@ class TestExfilExactHostExemption:
     def _install_exempt_hosts(self, hosts: "frozenset[str]") -> None:
         import dataclasses
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.platform.bootstrap import build_default_context
-        from kiro_crew.platform.context import set_context
+        from efm_go.config import KiroCrewConfig
+        from efm_go.platform.bootstrap import build_default_context
+        from efm_go.platform.context import set_context
 
         base = build_default_context(KiroCrewConfig())
         stub = self._StubCredentialPolicy(hosts)
@@ -5482,7 +5482,7 @@ class TestExfilExactHostExemption:
         Byte-identical to today: with no exemptions every host runs the
         heuristics, so a long base64 query is redacted regardless of host.
         """
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         url = self._long_nav_url("contoso.sharepoint.com")
         result, warnings = redact_exfiltration_urls(f"Doc: {url}")
@@ -5491,7 +5491,7 @@ class TestExfilExactHostExemption:
 
     def test_exempted_host_long_query_preserved(self) -> None:
         """An exact-member host's long base64 nav URL is NOT redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         url = self._long_nav_url("contoso.sharepoint.com")
@@ -5501,7 +5501,7 @@ class TestExfilExactHostExemption:
 
     def test_second_exempted_host_preserved(self) -> None:
         """A different exact-member host is also exempt (whole set honored)."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         url = self._long_nav_url("trusted.example.com")
@@ -5511,7 +5511,7 @@ class TestExfilExactHostExemption:
 
     def test_exempted_host_scan_clean(self) -> None:
         """scan_exfiltration_urls returns no warnings for an exempted host URL."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         url = self._long_nav_url("contoso.sharepoint.com")
@@ -5522,7 +5522,7 @@ class TestExfilExactHostExemption:
         emit, e.g. ``Contoso.SharePoint.com``) whose lowercase form is in the
         exempt set is NOT redacted. Guards against a case-sensitive ``in`` check
         that would wrongly redact a legitimate document pointer."""
-        from kiro_crew.security import redact_exfiltration_urls, scan_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls, scan_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         url = self._long_nav_url("Contoso.SharePoint.com")
@@ -5534,7 +5534,7 @@ class TestExfilExactHostExemption:
     def test_mixed_case_exempt_member_preserved(self) -> None:
         """Symmetric to the above: a mixed-case MEMBER of the exempt set still
         matches a lowercase host (both sides normalized to lowercase)."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         self._install_exempt_hosts(frozenset({"Contoso.SharePoint.com"}))
         url = self._long_nav_url("contoso.sharepoint.com")
@@ -5546,7 +5546,7 @@ class TestExfilExactHostExemption:
         """The heavy percent-encoding detector is NOT part of the exempted
         base64/length heuristics — a URL-encoded payload to an exempted host is
         still flagged and redacted."""
-        from kiro_crew.security import (
+        from efm_go.security import (
             _EXFIL_QUERY_MIN_LEN,
             redact_exfiltration_urls,
             scan_exfiltration_urls,
@@ -5564,7 +5564,7 @@ class TestExfilExactHostExemption:
 
     def test_non_exempted_tenant_still_redacted(self) -> None:
         """A non-member host is NOT exempt (exact match only, not suffix)."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         # Same registrable domain family, different subdomain — must NOT match.
@@ -5575,7 +5575,7 @@ class TestExfilExactHostExemption:
 
     def test_exempted_host_credential_query_still_redacted(self) -> None:
         """A hard AWS key in the QUERY on an exempted host is still redacted."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         url = "https://contoso.sharepoint.com/doc?key=AKIAIOSFODNN7EXAMPLE1234"
@@ -5587,7 +5587,7 @@ class TestExfilExactHostExemption:
         """BINDING: an exempted host with an AKIA key in the URL PATH is still
         redacted — the exemption narrows only the heuristics, never the
         unconditional path+query hard-credential floor."""
-        from kiro_crew.security import redact_exfiltration_urls, scan_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls, scan_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         url = "https://contoso.sharepoint.com/upload/AKIAIOSFODNN7EXAMPLE/report"
@@ -5605,7 +5605,7 @@ class TestExfilExactHostExemption:
         skipped for exempt hosts — decode-and-scan closes that gap)."""
         import base64
 
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         # An AWS key wrapped in base64 — the raw AKIA regex won't see it, and the
@@ -5621,7 +5621,7 @@ class TestExfilExactHostExemption:
         stays avoided."""
         import base64
 
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         # 60+ char base64 of plain readable text: trips the raw blob heuristic
@@ -5633,7 +5633,7 @@ class TestExfilExactHostExemption:
     def test_exempted_host_bare_secret_value_redacted(self) -> None:
         """A bare ``SecretAccessKey=<base64>`` value (no AKIA prefix) on an
         exempted host is redacted at the URL level, not silently skipped."""
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls
 
         self._install_exempt_hosts(self._EXEMPT)
         secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
@@ -5656,10 +5656,10 @@ class TestExfilExactHostExemption:
         """
         import pytest as _pytest
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform import context as context_mod
-        from kiro_crew.platform.context import reset_context
-        from kiro_crew.security import redact
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform import context as context_mod
+        from efm_go.platform.context import reset_context
+        from efm_go.security import redact
 
         calls: list[str] = []
         real_current = context_mod.current_context
@@ -5695,10 +5695,10 @@ class TestExfilExactHostExemption:
         backend spawn in gatewayd died building its own log line."""
         import dataclasses
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.platform.bootstrap import build_default_context
-        from kiro_crew.platform.context import PlatformCompositionError, set_context
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.config import KiroCrewConfig
+        from efm_go.platform.bootstrap import build_default_context
+        from efm_go.platform.context import PlatformCompositionError, set_context
+        from efm_go.security import redact_exfiltration_urls
 
         class _RaisingCredentialPolicy(self._StubCredentialPolicy):
             def exempt_exact_hosts(self) -> "frozenset[str]":
@@ -5724,12 +5724,12 @@ class TestExfilExactHostExemption:
         """
         import pytest as _pytest
 
-        from kiro_crew.platform.context import (
+        from efm_go.platform.context import (
             PlatformCompositionError,
             current_context,
             reset_context,
         )
-        from kiro_crew.security import redact
+        from efm_go.security import redact
 
         with _pytest.MonkeyPatch.context() as mp:
             mp.setenv("KIROCREW_PROFILE", "enterprise")
@@ -5757,10 +5757,10 @@ class TestExfilExactHostExemption:
         set = MORE redaction (the safe direction), never fewer exemptions."""
         import dataclasses
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.platform.bootstrap import build_default_context
-        from kiro_crew.platform.context import set_context
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.config import KiroCrewConfig
+        from efm_go.platform.bootstrap import build_default_context
+        from efm_go.platform.context import set_context
+        from efm_go.security import redact_exfiltration_urls
 
         class _BrokenCredentialPolicy(self._StubCredentialPolicy):
             def exempt_exact_hosts(self) -> "frozenset[str]":
@@ -5778,10 +5778,10 @@ class TestExfilExactHostExemption:
         the empty set via getattr rather than raising — full redaction stands."""
         import dataclasses
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.platform.bootstrap import build_default_context
-        from kiro_crew.platform.context import set_context
-        from kiro_crew.security import redact_exfiltration_urls
+        from efm_go.config import KiroCrewConfig
+        from efm_go.platform.bootstrap import build_default_context
+        from efm_go.platform.context import set_context
+        from efm_go.security import redact_exfiltration_urls
 
         class _LegacyCredentialPolicy:
             def redact(self, text: str) -> str:
@@ -6053,7 +6053,7 @@ class TestKeystonePublishArtifacts:
 
     def test_the_write_gate_stays_a_superset(self) -> None:
         """is_sensitive_write_path is documented as a superset, so it must agree."""
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         assert is_sensitive_write_path("~/.kiro/crew/tmpAB12CD34.tmp") is True
         assert is_sensitive_write_path("~/.kiro/crew/.policy.lock") is True
@@ -6171,13 +6171,13 @@ class TestHomeDirTargetsCache:
 
     @staticmethod
     def _clear() -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         security._home_targets_cache.clear()
 
     def test_cached_result_matches_uncached(self, monkeypatch, tmp_path) -> None:
         """Caching must not change WHAT is considered sensitive."""
-        from kiro_crew.security import (
+        from efm_go.security import (
             _SENSITIVE_HOME_DIRS,
             _home_dir_targets,
             _home_dir_targets_uncached,
@@ -6211,7 +6211,7 @@ class TestHomeDirTargetsCache:
         failing the final assertion instead of degrading back into a timing
         race.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv("HOME", str(tmp_path))
         self._clear()
@@ -6246,7 +6246,7 @@ class TestHomeDirTargetsCache:
         gating them. The resolved roots are part of the cache key precisely so
         this cannot wait out ``_HOME_TARGETS_TTL_SECS``.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv("HOME", str(tmp_path))
         home_a = tmp_path / "crew-a"
@@ -6310,7 +6310,7 @@ class TestHomeDirTargetsCache:
         that makes the race impossible: exactly one resolution per cache fill,
         and the builder receives those captured roots.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv("HOME", str(tmp_path))
         self._clear()
@@ -6338,7 +6338,7 @@ class TestHomeDirTargetsCache:
 
     def test_expired_entry_is_rebuilt(self, monkeypatch, tmp_path) -> None:
         """Past the TTL the set is rebuilt, so filesystem changes are picked up."""
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv("HOME", str(tmp_path))
         self._clear()
@@ -6359,7 +6359,7 @@ class TestHomeDirTargetsCache:
 
     def test_cache_dict_is_bounded(self, monkeypatch, tmp_path) -> None:
         """Churning the env key must not grow the cache without limit."""
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv("HOME", str(tmp_path))
         self._clear()
@@ -6393,14 +6393,14 @@ class TestAdaptiveHomeTargetsExpiry:
 
     @staticmethod
     def _clear() -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         security._home_targets_cache.clear()
 
     @staticmethod
     def _timed_rebuild(monkeypatch, clock: dict[str, float], cost: float) -> list[int]:
         """Replace the builder with one that "costs" *cost* frozen seconds."""
-        from kiro_crew import security
+        from efm_go import security
 
         calls: list[int] = []
         real = security._home_dir_targets_uncached
@@ -6421,7 +6421,7 @@ class TestAdaptiveHomeTargetsExpiry:
         shipped before the law existed. A ratio raised without moving the floor
         would change idle behaviour, and this catches that.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         idle_rebuild_secs = 0.002  # measured, see the class docstring
         assert security._home_targets_ttl(idle_rebuild_secs, resolution_differed=False) == (
@@ -6434,7 +6434,7 @@ class TestAdaptiveHomeTargetsExpiry:
 
     def test_the_expiry_scales_with_the_measured_cost(self) -> None:
         """Between the floor and the cap the expiry is cost times the ratio."""
-        from kiro_crew import security
+        from efm_go import security
 
         cost = 0.4  # measured under two contending threads
         assert security._home_targets_ttl(cost, resolution_differed=False) == pytest.approx(
@@ -6452,7 +6452,7 @@ class TestAdaptiveHomeTargetsExpiry:
         Without it a rebuild that succeeded just under its 8s budget would earn
         minutes of staleness, which is the trade this cap exists to bound.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         expensive = 7.5  # measured under eight contending threads
         assert expensive * security._HOME_TARGETS_TTL_COST_RATIO > (
@@ -6464,7 +6464,7 @@ class TestAdaptiveHomeTargetsExpiry:
 
     def test_a_negative_or_zero_cost_yields_the_floor(self) -> None:
         """A coarse or frozen clock must not produce a zero-length expiry."""
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._home_targets_ttl(0.0, resolution_differed=False) == (
             security._HOME_TARGETS_TTL_SECS
@@ -6482,7 +6482,7 @@ class TestAdaptiveHomeTargetsExpiry:
         any cost clamps to the floor for every input -- so there is no second
         mechanism to keep in step with this one.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert security.paths._TTL_COST_RATIO_MIN == 0.0, "0 must be an accepted value"
         monkeypatch.setattr(security, "_HOME_TARGETS_TTL_COST_RATIO", 0.0)
@@ -6498,7 +6498,7 @@ class TestAdaptiveHomeTargetsExpiry:
         costing 0.4s was rebuilt again 0.1s later, so a contended gateway spent
         most of its wall clock rebuilding; here the same build is still served.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv("HOME", str(tmp_path))
         self._clear()
@@ -6532,7 +6532,7 @@ class TestAdaptiveHomeTargetsExpiry:
         expiry shorter than the build, so the ordering is the only thing the
         assertion can be reading.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv("HOME", str(tmp_path))
         self._clear()
@@ -6558,7 +6558,7 @@ class TestAdaptiveHomeTargetsExpiry:
         than a suggestion: without it an env var could widen the stale window
         above that test's guarantee, and nothing in the module would notice.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setenv(security._TTL_MAX_SECS_ENV, "99999")
         refused = security._env_float(
@@ -6588,7 +6588,7 @@ class TestAdaptiveHomeTargetsExpiry:
         the shipped ratio and ceiling are the reviewed values, so a typo can only
         leave reviewed behaviour in place and never widen the stale window.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for raw in ("", "   ", "abc", "-5", "1e9"):
             monkeypatch.setenv(security._TTL_COST_RATIO_ENV, raw)
@@ -6614,7 +6614,7 @@ class TestAdaptiveHomeTargetsExpiry:
         happens to set no override. The live values are checked against the
         defaults separately, and only when no override is present.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         idle_rebuild_secs = 0.002  # measured, see the class docstring
         assert (
@@ -6649,7 +6649,7 @@ class TestAdaptiveHomeTargetsExpiry:
         import pathlib
         import re
 
-        from kiro_crew.security import paths
+        from efm_go.security import paths
 
         script = pathlib.Path(paths.__file__).parents[3] / "scripts" / "measure_path_gate_ttl.py"
         assert script.is_file(), f"the measurement script is missing at {script}"
@@ -6657,7 +6657,7 @@ class TestAdaptiveHomeTargetsExpiry:
         assert names, "found no gate.<private> references; the regex or the script moved"
         missing = [name for name in names if not hasattr(paths, name)]
         assert not missing, (
-            f"{script.name} reads {missing} from kiro_crew.security.paths, which no "
+            f"{script.name} reads {missing} from efm_go.security.paths, which no "
             "longer exist; update the script in the same change as the rename"
         )
 
@@ -6682,7 +6682,7 @@ class TestAdaptiveHomeTargetsExpiry:
         large enough that a long expiry would be selected if the symlink were
         ignored, so this fails loudly if the fact stops reaching the law.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         crew_home = tmp_path / "crew"
         crew_home.mkdir()
@@ -6750,7 +6750,7 @@ class TestAdaptiveHomeTargetsExpiry:
         ``conftest`` that variable points at a tmp dir outside ``HOME``, so
         ``~/.config/goose`` is not the path any build resolves here.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         crew_home = tmp_path / "crew"
         crew_home.mkdir()
@@ -6795,8 +6795,8 @@ class TestAdaptiveHomeTargetsExpiry:
         than spelled out here, so adding a sensitive LEAF keeps this passing and
         adding a resolve CALL SITE fails it.
         """
-        from kiro_crew.agent_sdk import host_auth
-        from kiro_crew.security import paths as gate
+        from efm_go.agent_sdk import host_auth
+        from efm_go.security import paths as gate
 
         crew_home = tmp_path / "crew"
         crew_home.mkdir()
@@ -6921,7 +6921,7 @@ class TestAdaptiveHomeTargetsExpiry:
         that is not a :class:`_BuiltTargets` at all. Either defaulting the other
         way would hand the long expiry to a build nobody vouched for.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         assert security._BuiltTargets({"x"}).resolution_differed is True
 
@@ -6960,7 +6960,7 @@ class TestAdaptiveHomeTargetsExpiry:
         double instead, so the pin runs everywhere: a build that says it traversed
         a symlink gets the floor even under a ratio that would ask for days.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         crew_home = tmp_path / "crew"
         crew_home.mkdir()
@@ -6983,7 +6983,7 @@ class TestAdaptiveHomeTargetsExpiry:
 
         monkeypatch.setattr(security, "_home_dir_targets_uncached", reporting)
 
-        from kiro_crew.security import paths as gate
+        from efm_go.security import paths as gate
 
         gate._home_targets_pin_state.clear()
         with caplog.at_level(logging.INFO, logger=gate.__name__):
@@ -7005,8 +7005,8 @@ class TestAdaptiveHomeTargetsExpiry:
         on every build that was handed that leaf, and a per-build line would be
         noise that gets filtered, which is the same as having none.
         """
-        from kiro_crew import security
-        from kiro_crew.security import paths as gate
+        from efm_go import security
+        from efm_go.security import paths as gate
 
         read_dirs = security._SENSITIVE_HOME_DIRS
         gate._home_targets_pin_state.clear()
@@ -7045,8 +7045,8 @@ class TestAdaptiveHomeTargetsExpiry:
         Driven through :func:`_home_dir_targets` rather than the reporter, so the
         wiring that passes the list is pinned and not only the helper.
         """
-        from kiro_crew import security
-        from kiro_crew.security import paths as gate
+        from efm_go import security
+        from efm_go.security import paths as gate
 
         crew_home = tmp_path / "crew"
         crew_home.mkdir()
@@ -7098,7 +7098,7 @@ class TestAdaptiveHomeTargetsExpiry:
         """
         import ast
 
-        from kiro_crew.security import paths as gate
+        from efm_go.security import paths as gate
 
         tree = ast.parse(Path(gate.__file__).read_text(encoding="utf-8"))
 
@@ -7155,7 +7155,7 @@ class TestAdaptiveHomeTargetsExpiry:
         ``_HOME_TARGETS_TTL_MAX_SECS``, with the clock frozen so nothing can
         expire during the test.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         real_a = tmp_path / "vol1" / "u"
         real_b = tmp_path / "vol2" / "u"
@@ -7402,13 +7402,13 @@ class TestEnvDumpGrepAwsNarrowing:
 
     @staticmethod
     def _keystone(cmd: str) -> bool:
-        from kiro_crew.security import _check_env_credential_access
+        from efm_go.security import _check_env_credential_access
 
         return _check_env_credential_access(cmd) is not None
 
     @staticmethod
     def _rule_matcher(rule_id: str):
-        from kiro_crew import security
+        from efm_go import security
 
         rule = next(r for r in security.BUILTIN_DENIED_RULES if r.id == rule_id)
         return security._deny_matcher(rule.pattern)
@@ -7418,7 +7418,7 @@ class TestEnvDumpGrepAwsNarrowing:
         return cls._rule_matcher("credential-exfil-env-grep-aws")
 
     def test_catalog_rule_and_keystone_share_one_regex(self) -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         rule = next(
             r for r in security.BUILTIN_DENIED_RULES if r.id == "credential-exfil-env-grep-aws"
@@ -7453,7 +7453,7 @@ class TestEnvDumpGrepAwsNarrowing:
         # tier is already linear on. Pinned as SHAPE, not as a duration: the tier must
         # route through ``_deny_matcher``, and no compiled duplicate may remain in the
         # raw list to reintroduce the cost behind the shared one.
-        from kiro_crew import security
+        from efm_go import security
 
         shared = {rule.pattern for rule in security._ENV_CRED_SHARED_RULES}
         assert all(compiled.pattern not in shared for compiled in security._ENV_CRED_PATTERNS)
@@ -7477,7 +7477,7 @@ class TestEnvDumpGrepAwsNarrowing:
         # was narrowed. Assert on the matcher, not on ``re.search``: the fragment path
         # is also what makes both tiers linear, and a pattern that lost it would keep
         # matching while silently becoming length-capped and superlinear.
-        from kiro_crew.security import is_safe_user_regex
+        from efm_go.security import is_safe_user_regex
 
         matcher = self._rule_matcher(rule_id)
         assert not matcher._disabled
@@ -7517,7 +7517,7 @@ class TestEnvDumpGrepAwsNarrowing:
 
     @pytest.mark.parametrize("cmd", DENIED + PRINTENV_DENIED)
     def test_full_gate_denies(self, cmd: str) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied(cmd) is not None, cmd
 
@@ -7525,7 +7525,7 @@ class TestEnvDumpGrepAwsNarrowing:
     def test_full_gate_allows(self, cmd: str) -> None:
         # The whole gate, not just the two touched tiers: a benign shape that one
         # rule stops refusing while a sibling rule still refuses it is not fixed.
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         assert is_denied(cmd) is None, cmd
 
@@ -7597,7 +7597,7 @@ class TestIsSensitiveBashCommand:
     # each of these resolves to 169.254.169.254.
 
     def test_imds_shortform_encodings_blocked(self) -> None:
-        from kiro_crew.security import _check_imds_access, canonicalize_ip
+        from efm_go.security import _check_imds_access, canonicalize_ip
 
         # Each of these genuinely resolves to 169.254.169.254 via inet_aton.
         for host in ("169.254.43518", "169.16689662", "169.254.0xA9FE", "169.0xFEA9FE"):
@@ -7607,13 +7607,13 @@ class TestIsSensitiveBashCommand:
             assert is_sensitive_bash_command(cmd) is not None, host
 
     def test_imds_plainform_still_blocked(self) -> None:
-        from kiro_crew.security import _check_imds_access
+        from efm_go.security import _check_imds_access
 
         cmd = "curl http://169.254.169.254/latest/meta-data/"
         assert _check_imds_access(cmd) is not None
 
     def test_non_imds_shortform_not_overblocked(self) -> None:
-        from kiro_crew.security import _check_imds_access, canonicalize_ip
+        from efm_go.security import _check_imds_access, canonicalize_ip
 
         # 169.254.11207422 is an ILLEGAL inet_aton form (final part > 65535); it
         # does not resolve, so it must NOT be canonicalized to IMDS or flagged.
@@ -7675,14 +7675,14 @@ class TestTheBashGateMatchesNoPaths:
         assert reason is not None and "environment" in reason
 
     def test_an_oversized_subject_is_still_refused_unscanned(self) -> None:
-        from kiro_crew.security import MAX_SCANNABLE_COMMAND_CHARS
+        from efm_go.security import MAX_SCANNABLE_COMMAND_CHARS
 
         reason = is_sensitive_bash_command("y" * (MAX_SCANNABLE_COMMAND_CHARS + 1))
         assert reason is not None and "too large to security-scan" in reason
 
     def test_the_path_matchers_are_absent(self) -> None:
         """Names, not behaviour: a reinstated matcher fails loudly here."""
-        from kiro_crew import security
+        from efm_go import security
 
         for name in (
             "_build_sensitive_regex",
@@ -7732,13 +7732,13 @@ class TestKiroAgentsDirWriteProtection:
         # compare. The claim under test is about the REAL default layout.
         monkeypatch.delenv("KIRO_HOME", raising=False)
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
-        from kiro_crew.config.paths import kiro_agents_dir
+        from efm_go.config.paths import kiro_agents_dir
 
         rel = kiro_agents_dir().relative_to(Path.home()).as_posix()
         assert security._KIRO_AGENTS_DIR == rel
 
     def test_file_edit_write_into_agents_dir_is_denied(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         home = str(Path.home())
         # Any filename (specs can be named anything), any depth, and the dir itself.
@@ -7755,7 +7755,7 @@ class TestKiroAgentsDirWriteProtection:
         assert is_sensitive_path("~/.kiro/agents") is False
 
     def test_sibling_dirs_are_not_over_blocked(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         # ``agents-backup`` shares a prefix but is a different directory.
         assert is_sensitive_write_path("~/.kiro/agents-backup/x.json") is False
@@ -7769,7 +7769,7 @@ class TestKiroAgentsDirWriteProtection:
         # destination: a relative target that resolves into the fenced dir is
         # refused regardless of spelling, and one that resolves elsewhere is not
         # over-blocked.
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         home = str(Path.home())
         # Relative target anchored at ~/.kiro resolves to ~/.kiro/agents/pwn.json.
@@ -7784,7 +7784,7 @@ class TestKiroAgentsDirWriteProtection:
         # gateway execs, so the write gate must follow it (re-anchored the same way
         # KIROCREW_HOME re-anchors the crew secrets). The default ~/.kiro/agents
         # stays covered regardless.
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         custom = tmp_path / "customkiro"
         monkeypatch.setenv("KIRO_HOME", str(custom))
@@ -7800,7 +7800,7 @@ class TestKiroAgentsDirWriteProtection:
         # The re-anchoring is keyed on the resolved KIRO_HOME, so clearing it must
         # invalidate the cached target set — otherwise a stale override would keep
         # fencing an unrelated path.
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         custom = tmp_path / "customkiro"
         monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -7822,7 +7822,7 @@ class TestKiroSettingsMcpJsonWriteProtection:
     """
 
     def test_file_edit_write_to_the_registry_is_denied(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         home = str(Path.home())
         assert is_sensitive_write_path("~/.kiro/settings/mcp.json") is True
@@ -7834,7 +7834,7 @@ class TestKiroSettingsMcpJsonWriteProtection:
         assert is_sensitive_path("~/.kiro/settings/mcp.json") is False
 
     def test_neighbours_are_not_over_blocked(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         # A LEAF, not the directory: ``settings`` holds other kiro-cli files whose
         # protection this entry has not reasoned about.
@@ -7845,7 +7845,7 @@ class TestKiroSettingsMcpJsonWriteProtection:
         assert is_sensitive_write_path("~/.kiro/settings-backup/mcp.json") is False
 
     def test_tool_gate_canonicalizes_relative_writes_to_the_registry(self) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         home = str(Path.home())
         assert is_sensitive_write_path("mcp.json", base_dir=f"{home}/.kiro/settings") is True
@@ -7858,7 +7858,7 @@ class TestKiroSettingsMcpJsonWriteProtection:
         # KIRO_HOME re-anchoring, so a third kiro-cli leaf is one tuple entry and not
         # a third arm. Pinned by adding one, because the failure mode is silent: the
         # leaf would be fenced under $HOME and writable under the override.
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         home = tmp_path / "home"
         override = tmp_path / "kirohome"
@@ -7901,7 +7901,7 @@ class TestKiroSettingsMcpJsonWriteProtection:
         # one further down the path. Without resolving the ``$HOME``-rooted form the
         # ``~``-spelled path stays fenced while the REAL file is writable, and an
         # agent simply writes the destination instead.
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         home = tmp_path / "home"
         store = tmp_path / "dotfiles" / "kirostore"
@@ -7937,7 +7937,7 @@ class TestKiroSettingsMcpJsonWriteProtection:
         # ``KIRO_HOME`` moves kiro-cli's whole user directory including ``settings``,
         # so the registry the override makes live must be fenced too. The default
         # ``$HOME``-rooted location stays covered regardless.
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         custom = tmp_path / "customkiro"
         monkeypatch.setenv("KIRO_HOME", str(custom))
@@ -7953,7 +7953,7 @@ class TestKiroSettingsMcpJsonWriteProtection:
     ) -> None:
         # The re-anchoring is keyed on the resolved override, so clearing it must
         # invalidate the cached target set.
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         custom = tmp_path / "customkiro"
         monkeypatch.delenv("KIRO_HOME", raising=False)
@@ -7975,7 +7975,7 @@ class TestDeniedCommandsKeystone:
     """
 
     def test_keystone_path_is_sensitive(self) -> None:
-        from kiro_crew.security import is_sensitive_path
+        from efm_go.security import is_sensitive_path
 
         assert is_sensitive_path("~/.kirocrew/denied_commands.json") is True
 
@@ -8173,7 +8173,7 @@ class TestSELEmittersRedactBeforeTruncate:
     def test_push_allow_event_redacts_straddling_secret(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         logged: list = []
 
@@ -8202,7 +8202,7 @@ class TestSELEmittersRedactBeforeTruncate:
     def test_injection_dropped_event_redacts_straddling_secret(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import security
+        from efm_go import security
 
         logged: list = []
 
@@ -8273,7 +8273,7 @@ class TestStreamRedactor:
 
     @staticmethod
     def _run(chunks):
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         r = StreamRedactor()
         emits = [r.feed(c) for c in chunks]
@@ -8290,7 +8290,7 @@ class TestStreamRedactor:
         assert joined == "The access key is [REDACTED: credential]"
 
     def test_char_by_char_stream(self) -> None:
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         r = StreamRedactor()
         out = "".join(r.feed(c) for c in "x AKIAIOSFODNN7EXAMPLE y") + r.flush()
@@ -8312,7 +8312,7 @@ class TestStreamRedactor:
         assert "REDACTED" in joined
 
     def test_reset_discards_buffer(self) -> None:
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         r = StreamRedactor()
         assert r.feed("AKIA") == ""  # held
@@ -8320,7 +8320,7 @@ class TestStreamRedactor:
         assert r.flush() == ""  # nothing left after reset
 
     def test_flush_empty(self) -> None:
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         assert StreamRedactor().flush() == ""
 
@@ -8328,7 +8328,7 @@ class TestStreamRedactor:
         """A pathologically long unbroken credential-class run does not grow the
         held buffer without bound: the excess beyond the cap is committed, and
         no content is lost across feed+flush."""
-        from kiro_crew.security import _STREAM_HOLDBACK_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_MAX, StreamRedactor
 
         r = StreamRedactor()
         blob = "a" * (_STREAM_HOLDBACK_MAX + 300)  # no terminator, all cred-class
@@ -8426,7 +8426,7 @@ class TestStreamRedactor:
         assert joined == "open ?token&#61;&x=1 done"
 
     def test_html_entity_equals_makes_token_anchor_strong(self) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _STREAM_HOLDBACK_JWT_MAX,
             _STREAM_HOLDBACK_MAX,
             StreamRedactor,
@@ -8452,7 +8452,7 @@ class TestStreamRedactor:
         anchor) must stay authoritative: once the withheld tail exceeds it the
         redactor stops accumulating, so the retained buffer stays bounded.
         """
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
 
         r = StreamRedactor()
         r.feed("Authorization: Bearer ")
@@ -8475,7 +8475,7 @@ class TestStreamRedactor:
         default 512-char holdback would bisect a long terminal token, emitting the
         first (len-512) chars raw before flush() redacted only the held tail.
         """
-        from kiro_crew.security import _STREAM_HOLDBACK_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_MAX, StreamRedactor
 
         payload = _jose_header(_STREAM_HOLDBACK_MAX + 800)
         jwt = f"{payload}.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6"
@@ -8494,7 +8494,7 @@ class TestStreamRedactor:
         header.key.iv.ciphertext.tag) so it escalates the cap instead of bisecting
         the >512-char JWE at the 512 floor and leaking its raw head.
         """
-        from kiro_crew.security import _STREAM_HOLDBACK_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_MAX, StreamRedactor
 
         seg = _jose_header(_STREAM_HOLDBACK_MAX + 400)
         jwe = f"{seg}.QW5rZXk.aXY.Y2lwaGVydGV4dA.dGFn"  # 5 compact JWE segments
@@ -8506,7 +8506,7 @@ class TestStreamRedactor:
         assert "[REDACTED: credential]" in emitted
 
     def test_jose_validated_jwt_split_across_chunks(self) -> None:
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         jws = TestRedactCredentials._JWT
         jwe = TestRedactCredentials._JWE_DIR
@@ -8521,7 +8521,7 @@ class TestStreamRedactor:
             ), size
 
     def test_holdback_anchor_needs_a_json_header(self) -> None:
-        from kiro_crew.security import _partial_jwt_tail
+        from efm_go.security import _partial_jwt_tail
 
         assert _partial_jwt_tail("see honeyJar.example.com") is None
         assert _partial_jwt_tail("eyJ0.honeyJar.example") is None
@@ -8539,7 +8539,7 @@ class TestStreamRedactor:
         head raw. `_BEARER_ANCHOR_PARTIAL_RE` now holds the whole anchor together
         and also escalates the cap.
         """
-        from kiro_crew.security import _STREAM_HOLDBACK_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_MAX, StreamRedactor
 
         token = "A1b2C3d4" * ((_STREAM_HOLDBACK_MAX + 400) // 8)  # opaque, no eyJ
         assert len(token) > _STREAM_HOLDBACK_MAX
@@ -8559,7 +8559,7 @@ class TestStreamRedactor:
         stream raw. `_TOKEN_PARAM_PARTIAL_RE` recognises the trailing partial
         and escalates the cap, the same remedy the opaque Bearer case got.
         """
-        from kiro_crew.security import _STREAM_HOLDBACK_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_MAX, StreamRedactor
 
         value = "Xk9fQ2mP" * ((_STREAM_HOLDBACK_MAX + 400) // 8)  # opaque, no eyJ
         assert len(value) > _STREAM_HOLDBACK_MAX
@@ -8574,7 +8574,7 @@ class TestStreamRedactor:
 
     def test_terminal_token_param_punctuation_not_split(self) -> None:
         """A legal non-credential-class byte cannot split a token value."""
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         value = "abc!Zk8qWm3v"
         r = StreamRedactor()
@@ -8585,7 +8585,7 @@ class TestStreamRedactor:
 
     def test_token_param_punctuation_at_chunk_boundary_not_split(self) -> None:
         """A chunk boundary after punctuation cannot detach a token tail."""
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         value = "abc!Zk8qWm3v"
         r = StreamRedactor()
@@ -8598,7 +8598,7 @@ class TestStreamRedactor:
 
     def test_token_param_punctuation_before_terminator_not_split(self) -> None:
         """A completed parameter spanning the commit point stays intact."""
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         r = StreamRedactor()
         emitted = r.feed("open http://h.example/?token=abc!Zk8qWm3v&next=1 done\n")
@@ -8609,7 +8609,7 @@ class TestStreamRedactor:
 
     def test_token_param_terminator_at_chunk_boundary_not_split(self) -> None:
         """A trailing terminator cannot detach a token tail across feeds."""
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         r = StreamRedactor()
         emitted = r.feed("open http://h.example/?token=abc!Zk8qWm3v&")
@@ -8621,7 +8621,7 @@ class TestStreamRedactor:
 
     def test_weak_token_name_prefix_past_ceiling_preserves_data(self) -> None:
         """A bare token-name prefix is bounded lookahead, not a credential."""
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
 
         text = "a" * (_STREAM_HOLDBACK_JWT_MAX + 200) + "?t"
         assert len(text) > 4200
@@ -8632,7 +8632,7 @@ class TestStreamRedactor:
 
     def test_complete_token_anchor_past_ceiling_still_fails_closed(self) -> None:
         """A token parameter with ``=`` keeps the existing strong-anchor drop."""
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
 
         text = "a" * (_STREAM_HOLDBACK_JWT_MAX + 200) + "?token=" + "b" * 600
         r = StreamRedactor()
@@ -8641,7 +8641,7 @@ class TestStreamRedactor:
 
     def test_forced_floor_cut_cannot_bisect_complete_token_param(self) -> None:
         """The 512-byte floor is repaired when it bisects a token value."""
-        from kiro_crew.security import _STREAM_HOLDBACK_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_MAX, StreamRedactor
 
         marker = "rawtokensuffix"
         value = "A" * 500 + marker + "B" * 6
@@ -8679,7 +8679,7 @@ class TestStreamRedactor:
         token's head raw). feed() redacts+emits the safe prefix, appends the tag,
         and DROPS the oversized tail.
         """
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
 
         jwt = _jose_header(_STREAM_HOLDBACK_JWT_MAX + 500) + ".eyJz.SflK"
         r = StreamRedactor()
@@ -8692,7 +8692,7 @@ class TestStreamRedactor:
 
     @staticmethod
     def _assert_oversized_continuation_is_hidden(head: str) -> None:
-        from kiro_crew.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
+        from efm_go.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
 
         continuation = "tail_u7-Qp9_" * 24
         redactor = StreamRedactor()
@@ -8710,28 +8710,28 @@ class TestStreamRedactor:
         assert joined.endswith(" done")
 
     def test_oversized_jwt_continuation_is_discarded(self) -> None:
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX
 
         self._assert_oversized_continuation_is_hidden(
             "eyJ" + "A" * (_STREAM_HOLDBACK_JWT_MAX + 500)
         )
 
     def test_oversized_token_param_continuation_is_discarded(self) -> None:
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX
 
         self._assert_oversized_continuation_is_hidden(
             "?token=" + "T" * (_STREAM_HOLDBACK_JWT_MAX + 500)
         )
 
     def test_oversized_bearer_continuation_is_discarded(self) -> None:
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX
 
         self._assert_oversized_continuation_is_hidden(
             "Authorization: Bearer " + "B" * (_STREAM_HOLDBACK_JWT_MAX + 500)
         )
 
     def test_jwt_discard_preserves_non_jwt_continuation(self) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _STREAM_HOLDBACK_JWT_MAX,
             REDACTED_CREDENTIAL_TAG,
             StreamRedactor,
@@ -8744,7 +8744,7 @@ class TestStreamRedactor:
         assert redactor.feed("!Important") + redactor.flush() == "!Important"
 
     def test_bearer_discard_preserves_non_bearer_continuation(self) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _STREAM_HOLDBACK_JWT_MAX,
             REDACTED_CREDENTIAL_TAG,
             StreamRedactor,
@@ -8757,7 +8757,7 @@ class TestStreamRedactor:
         assert redactor.feed("!Important") + redactor.flush() == "!Important"
 
     def test_token_param_discard_keeps_own_class_until_terminator(self) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _STREAM_HOLDBACK_JWT_MAX,
             REDACTED_CREDENTIAL_TAG,
             StreamRedactor,
@@ -8770,7 +8770,7 @@ class TestStreamRedactor:
         assert redactor.feed("!SecretTail done") + redactor.flush() == " done"
 
     def test_jwt_discard_keeps_base64url_continuation_until_terminator(self) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _STREAM_HOLDBACK_JWT_MAX,
             REDACTED_CREDENTIAL_TAG,
             StreamRedactor,
@@ -8783,7 +8783,7 @@ class TestStreamRedactor:
         assert redactor.feed("More.JWT_- done") + redactor.flush() == " done"
 
     def test_flush_while_discarding_emits_no_continuation(self) -> None:
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
 
         redactor = StreamRedactor()
         redactor.feed("?token=" + "T" * (_STREAM_HOLDBACK_JWT_MAX + 500))
@@ -8792,7 +8792,7 @@ class TestStreamRedactor:
         assert not redactor._discarding
 
     def test_reset_clears_discard_state(self) -> None:
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
 
         redactor = StreamRedactor()
         redactor.feed("?token=" + "T" * (_STREAM_HOLDBACK_JWT_MAX + 500))
@@ -8802,7 +8802,7 @@ class TestStreamRedactor:
         assert redactor.feed("visible ") + redactor.flush() == "visible "
 
     def test_complete_over_ceiling_value_with_in_buffer_terminator_commits(self) -> None:
-        from kiro_crew.security import StreamRedactor
+        from efm_go.security import StreamRedactor
 
         redactor = StreamRedactor()
         first = redactor.feed("?token=" + "T" * 5000 + " done")
@@ -8811,7 +8811,7 @@ class TestStreamRedactor:
         assert redactor.flush() == "done"
 
     def test_discard_stops_at_the_next_query_parameter(self) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _STREAM_HOLDBACK_JWT_MAX,
             REDACTED_CREDENTIAL_TAG,
             StreamRedactor,
@@ -8826,7 +8826,7 @@ class TestStreamRedactor:
         assert "TTTT" not in remainder
 
     def test_discard_stops_at_a_fragment(self) -> None:
-        from kiro_crew.security import (
+        from efm_go.security import (
             _STREAM_HOLDBACK_JWT_MAX,
             REDACTED_CREDENTIAL_TAG,
             StreamRedactor,
@@ -8842,7 +8842,7 @@ class TestStreamRedactor:
 
     def test_drop_preserves_suffix_when_the_value_ended_inside_the_buffer(self) -> None:
         """Fail-closed drops only the token region, never its benign suffix."""
-        from kiro_crew.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
+        from efm_go.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
 
         value = "A" * 5000 + "!" + "B" * 100
         redactor = StreamRedactor()
@@ -8854,7 +8854,7 @@ class TestStreamRedactor:
 
     def test_drop_arms_when_the_same_value_reaches_the_buffer_end(self) -> None:
         """The same oversized value remains sticky when its continuation is unknown."""
-        from kiro_crew.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
+        from efm_go.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
 
         value = "A" * 5000 + "!" + "B" * 100
         redactor = StreamRedactor()
@@ -8874,7 +8874,7 @@ class TestStreamRedactor:
         cut at zero, and the only thing at the buffer end is a bare name prefix
         with no ``=`` (WEAK). Nothing STRONG reaches the buffer end.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         value = "A" * 2000 + ";" + "A" * (security._STREAM_HOLDBACK_JWT_MAX - 1500)
         text = f"?token={value}&tok"
@@ -8889,7 +8889,7 @@ class TestStreamRedactor:
         The drop covers the completed value only; the WEAK prefix is HELD (the
         existing holdback), and its completion follows the weak-completion rules.
         """
-        from kiro_crew.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
+        from efm_go.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
 
         redactor = StreamRedactor()
         first = redactor.feed(self._over_ceiling_crossing_with_weak_tail())
@@ -8902,7 +8902,7 @@ class TestStreamRedactor:
 
     def test_weak_tail_never_arms_the_sticky_discard(self) -> None:
         """WEAK evidence holds bytes but never arms a drop or names a discard kind."""
-        from kiro_crew.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
+        from efm_go.security import REDACTED_CREDENTIAL_TAG, StreamRedactor
 
         redactor = StreamRedactor()
         first = redactor.feed(self._over_ceiling_crossing_with_weak_tail())
@@ -8913,7 +8913,7 @@ class TestStreamRedactor:
         assert redactor.feed(" visible") + redactor.flush() == "&tok visible"
 
     def test_drop_ending_at_terminator_does_not_suppress_next_chunk(self) -> None:
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
 
         redactor = StreamRedactor()
         first = redactor.feed("?token=" + "T" * (_STREAM_HOLDBACK_JWT_MAX + 500) + " ")
@@ -8932,7 +8932,7 @@ class TestStreamRedactor:
         anchorless run (where the 512 floor would bisect it and stream it raw):
         every byte after the bound stays dropped, in ``feed()`` and ``flush()``.
         """
-        from kiro_crew.security import (
+        from efm_go.security import (
             _STREAM_DISCARD_MAX,
             _STREAM_HOLDBACK_JWT_MAX,
             REDACTED_CREDENTIAL_TAG,
@@ -8970,7 +8970,7 @@ class TestStreamRedactor:
         O(1)) and keeps discarding; there is no permanent wedge because the next
         terminator byte still exits the discard and releases the trailing text.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setattr(security, "_STREAM_DISCARD_MAX", 64)
         tag = security.REDACTED_CREDENTIAL_TAG
@@ -9002,7 +9002,7 @@ class TestStreamRedactor:
         past the ceiling is still committed verbatim (bisected, no data loss),
         keeping the DoS bound intact without corrupting non-secret output.
         """
-        from kiro_crew.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
+        from efm_go.security import _STREAM_HOLDBACK_JWT_MAX, StreamRedactor
 
         blob = "a" * (_STREAM_HOLDBACK_JWT_MAX + 600)  # no eyJ / Bearer anchor
         r = StreamRedactor()
@@ -9019,12 +9019,12 @@ class TestScanMemoryImportGuard:
     def test_non_importerror_degrades_to_empty(self, monkeypatch) -> None:
         import builtins
 
-        from kiro_crew.security import scan_memory
+        from efm_go.security import scan_memory
 
         real_import = builtins.__import__
 
         def fake_import(name, *args, **kwargs):
-            if name == "kiro_crew.vector_memory" or name.endswith(".vector_memory"):
+            if name == "efm_go.vector_memory" or name.endswith(".vector_memory"):
                 raise OSError("simulated C-extension load failure")
             return real_import(name, *args, **kwargs)
 
@@ -9059,7 +9059,7 @@ class TestApplyResourceLimits:
         test worker itself)."""
         from unittest.mock import patch
 
-        from kiro_crew.security import _bias_child_oom_score
+        from efm_go.security import _bias_child_oom_score
 
         calls: dict = {}
 
@@ -9069,10 +9069,10 @@ class TestApplyResourceLimits:
             return 42
 
         with (
-            patch("kiro_crew.security.sys.platform", "linux"),
-            patch("kiro_crew.security.os.open", side_effect=fake_open),
-            patch("kiro_crew.security.os.write", return_value=4) as mwrite,
-            patch("kiro_crew.security.os.close") as mclose,
+            patch("efm_go.security.sys.platform", "linux"),
+            patch("efm_go.security.os.open", side_effect=fake_open),
+            patch("efm_go.security.os.write", return_value=4) as mwrite,
+            patch("efm_go.security.os.close") as mclose,
         ):
             _bias_child_oom_score()
         assert calls["path"] == "/proc/self/oom_score_adj"
@@ -9084,22 +9084,22 @@ class TestApplyResourceLimits:
         """A read-only /proc or containerized denial must never fail the spawn."""
         from unittest.mock import patch
 
-        from kiro_crew.security import _bias_child_oom_score
+        from efm_go.security import _bias_child_oom_score
 
         with (
-            patch("kiro_crew.security.sys.platform", "linux"),
-            patch("kiro_crew.security.os.open", side_effect=OSError("denied")),
+            patch("efm_go.security.sys.platform", "linux"),
+            patch("efm_go.security.os.open", side_effect=OSError("denied")),
         ):
             _bias_child_oom_score()  # must not raise
 
     def test_bias_helper_noop_off_linux(self) -> None:
         from unittest.mock import patch
 
-        from kiro_crew.security import _bias_child_oom_score
+        from efm_go.security import _bias_child_oom_score
 
         with (
-            patch("kiro_crew.security.sys.platform", "darwin"),
-            patch("kiro_crew.security.os.open") as mopen,
+            patch("efm_go.security.sys.platform", "darwin"),
+            patch("efm_go.security.os.open") as mopen,
         ):
             _bias_child_oom_score()
         mopen.assert_not_called()
@@ -9133,7 +9133,7 @@ class TestApplyResourceLimits:
         child cannot raise its own soft limit back up."""
         from unittest.mock import patch
 
-        from kiro_crew.security import helpers
+        from efm_go.security import helpers
 
         fake, calls = self._fake_resource(hard=512)
         with (
@@ -9147,7 +9147,7 @@ class TestApplyResourceLimits:
     def test_preexec_leaves_a_request_under_an_infinite_hard_cap_alone(self) -> None:
         from unittest.mock import patch
 
-        from kiro_crew.security import helpers
+        from efm_go.security import helpers
 
         fake, calls = self._fake_resource(hard=-1)
         with (
@@ -9160,7 +9160,7 @@ class TestApplyResourceLimits:
     def test_preexec_swallows_a_rejected_rlimit_so_the_spawn_proceeds(self) -> None:
         from unittest.mock import patch
 
-        from kiro_crew.security import helpers
+        from efm_go.security import helpers
 
         fake, calls = self._fake_resource(hard=512, reject=True)
         with (
@@ -9175,7 +9175,7 @@ class TestApplyResourceLimits:
         """Windows has no ``resource``; the limiter must still be a callable."""
         from unittest.mock import patch
 
-        from kiro_crew.security import helpers
+        from efm_go.security import helpers
 
         with (
             patch.object(helpers, "_resource", None),
@@ -9417,7 +9417,7 @@ class TestApplyResourceLimits:
 
     def test_none_resource_module_is_noop(self, monkeypatch) -> None:
         """On non-POSIX (resource is None) the helper returns a harmless no-op."""
-        import kiro_crew.security as sec
+        import efm_go.security as sec
 
         monkeypatch.setattr(sec, "_resource", None)
         fn = sec.apply_resource_limits({"resource_limits": {"max_processes": 1}})
@@ -9442,14 +9442,14 @@ class TestKiroCrewSlackAppCreateLink:
 
     def _payload(self, alias: str = "someone") -> str:
         """The deep-link payload as the REAL emitters build it."""
-        from kiro_crew import slack_manifest
+        from efm_go import slack_manifest
 
         return slack_manifest.render(alias, strip_comments=True)
 
     def _link(self, alias: str = "someone", **over: str) -> str:
         from urllib.parse import quote
 
-        from kiro_crew import slack_manifest
+        from efm_go import slack_manifest
 
         if not over:
             # Default case goes through the actual emitter, so a change to its
@@ -9475,8 +9475,8 @@ class TestKiroCrewSlackAppCreateLink:
         still green, which is the same "no test exercised the real URL" failure
         that hid the original bug.
         """
-        from kiro_crew import slack_manifest
-        from kiro_crew.security import redact_exfiltration_urls, scan_exfiltration_urls
+        from efm_go import slack_manifest
+        from efm_go.security import redact_exfiltration_urls, scan_exfiltration_urls
 
         url = slack_manifest.deep_link("someone")
         assert len(url.split("?", 1)[1]) >= 200  # premise: over the threshold
@@ -9485,7 +9485,7 @@ class TestKiroCrewSlackAppCreateLink:
 
     def test_manifest_link_is_not_redacted(self) -> None:
         """The real emitted link passes the general text scanner untouched."""
-        from kiro_crew.security import redact_exfiltration_urls, scan_exfiltration_urls
+        from efm_go.security import redact_exfiltration_urls, scan_exfiltration_urls
 
         url = self._link()
         assert len(url.split("?", 1)[1]) >= 200
@@ -9496,7 +9496,7 @@ class TestKiroCrewSlackAppCreateLink:
 
     def test_alias_shapes_accepted(self) -> None:
         """Any alias the emitters permit (alnum, hyphen, underscore) is accepted."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         for alias in ("a", "user99", "first-last", "with_underscore", "A1_b-2"):
             assert scan_exfiltration_urls(self._link(alias)) == [], alias
@@ -9513,8 +9513,8 @@ class TestKiroCrewSlackAppCreateLink:
         """
         from urllib.parse import quote
 
-        from kiro_crew import slack_manifest
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go import slack_manifest
+        from efm_go.security import scan_exfiltration_urls
 
         # Over ALIAS_MAX — the derived pattern refuses it, so no exemption.
         secret40 = "wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEYXY"
@@ -9533,8 +9533,8 @@ class TestKiroCrewSlackAppCreateLink:
 
     def test_mismatched_aliases_redacted(self) -> None:
         """The manifest names the alias twice; they must be the SAME alias."""
-        from kiro_crew import slack_manifest
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go import slack_manifest
+        from efm_go.security import scan_exfiltration_urls
 
         tampered = (
             slack_manifest.stripped_template()
@@ -9545,7 +9545,7 @@ class TestKiroCrewSlackAppCreateLink:
 
     def test_arbitrary_payload_redacted(self) -> None:
         """A long payload that is not the template stays redacted."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         assert scan_exfiltration_urls(self._link(payload="x" * 900)) != []
 
@@ -9556,7 +9556,7 @@ class TestKiroCrewSlackAppCreateLink:
         selection, so the carve-out cannot shield a credential even at the
         approved endpoint.
         """
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         payload = self._payload("someone") + "\nAKIAIOSFODNN7EXAMPLE\n"
         warnings = scan_exfiltration_urls(self._link(payload=payload))
@@ -9565,19 +9565,19 @@ class TestKiroCrewSlackAppCreateLink:
 
     def test_extra_parameter_redacted(self) -> None:
         """An extra query parameter refuses the exemption (exact param set)."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         assert scan_exfiltration_urls(self._link(extra="&exfil=" + "z" * 300)) != []
 
     def test_tampered_new_app_redacted(self) -> None:
         """``new_app`` must be exactly ``1``."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         assert scan_exfiltration_urls(self._link(new_app="2")) != []
 
     def test_neighbouring_endpoints_redacted(self) -> None:
         """Only the exact https host+path is eligible — no scheme/host/path drift."""
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         assert scan_exfiltration_urls(self._link(scheme="http")) != []
         assert scan_exfiltration_urls(self._link(path="/apps2")) != []
@@ -9590,7 +9590,7 @@ class TestKiroCrewSlackAppCreateLink:
         Guards the documented invariant that query-length detection has no host
         allowlist: this carve-out keys on a validated payload, not on Slack.
         """
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         url = "https://api.slack.com/api/chat.postMessage?blob=" + "A" * 250
         assert scan_exfiltration_urls(url) != []
@@ -9601,7 +9601,7 @@ class TestKiroCrewSlackAppCreateLink:
         Failing closed matters more than the convenience: an install that cannot
         prove what its own manifest looks like must not exempt a 1.9 KB payload.
         """
-        import kiro_crew.security as sec
+        import efm_go.security as sec
 
         url = self._link()
         monkeypatch.setattr(sec, "_slack_manifest_re_slot", [None])
@@ -9639,7 +9639,7 @@ class TestDashboardLinkTokenAcrossHostForms:
     )
 
     def test_token_is_redacted_on_every_host_form(self) -> None:
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         for host in self.HOST_FORMS:
             cleaned, _ = redact_credentials(f"http://{host}/?token={self._TOKEN}")
@@ -9657,7 +9657,7 @@ class TestDashboardLinkTokenAcrossHostForms:
         covers loopback links (the test above) rather than discovering later that
         redaction depended on the host pattern.
         """
-        from kiro_crew.security import scan_exfiltration_urls
+        from efm_go.security import scan_exfiltration_urls
 
         assert scan_exfiltration_urls(f"http://localhost:7778/?token={self._TOKEN}") == []
         assert scan_exfiltration_urls(f"http://127.0.0.1:7778/?token={self._TOKEN}") != []
@@ -9686,7 +9686,7 @@ class TestCronStoreProtection:
         # Drift guard: a rename of the store or sidecar dir in cron_service/store.py /
         # cron_history.py without a matching entry here would silently
         # un-fence them.
-        from kiro_crew.security import _CREW_SECRET_LEAVES
+        from efm_go.security import _CREW_SECRET_LEAVES
 
         assert "crons.json" in _CREW_SECRET_LEAVES
         assert "cron-history" in _CREW_SECRET_LEAVES
@@ -9698,7 +9698,7 @@ class TestCronStoreProtection:
 
     @pytest.mark.parametrize("prefix", [".kiro/crew", ".kirocrew"])
     def test_store_and_history_sensitive_under_every_home_prefix(self, prefix: str) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         assert is_sensitive_path(f"~/{prefix}/crons.json") is True
         assert is_sensitive_path(f"~/{prefix}/cron-history/_index.jsonl") is True
@@ -9715,7 +9715,7 @@ class TestCronStoreProtection:
         )
 
     def test_sibling_cron_names_are_not_over_blocked(self) -> None:
-        from kiro_crew.security import is_sensitive_path, is_sensitive_write_path
+        from efm_go.security import is_sensitive_path, is_sensitive_write_path
 
         # Shared-prefix names a shell might legitimately touch elsewhere.
         assert is_sensitive_path("~/projects/crontab.txt") is False
@@ -9808,7 +9808,7 @@ class TestPublishFloorNestedPayloads:
     )
 
     def test_wrapped_protected_push_denied(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in self.WRAPPED_PROTECTED:
             assert is_denied(cmd) is not None, cmd
@@ -9820,7 +9820,7 @@ class TestPublishFloorNestedPayloads:
         characters, so the glued spelling was never yielded and the publish
         floor -- whose ONLY enforcement is this walk -- never judged it.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "bash -c'git push origin main'",
@@ -9837,7 +9837,7 @@ class TestPublishFloorNestedPayloads:
         real script was never walked and the push executed. The ``-c`` branch
         already skipped the terminator; the verb branch did not.
         """
-        from kiro_crew.security import _shell_payload_sources, is_denied
+        from efm_go.security import _shell_payload_sources, is_denied
 
         assert "git push origin main" in _shell_payload_sources("eval -- 'git push origin main'")
         for cmd in (
@@ -9857,7 +9857,7 @@ class TestPublishFloorNestedPayloads:
         program alone in one word and the whole verb-and-args tail glued into the
         next.
         """
-        from kiro_crew.security import _shell_payload_sources, is_denied
+        from efm_go.security import _shell_payload_sources, is_denied
 
         assert "git push origin main" in _shell_payload_sources("eval 'git' 'push origin main'")
         for cmd in (
@@ -9869,7 +9869,7 @@ class TestPublishFloorNestedPayloads:
             assert is_denied(cmd) is not None, cmd
 
     def test_eval_join_does_not_over_block_ordinary_multi_word_eval(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "eval 'ls' '-la'",
@@ -9890,7 +9890,7 @@ class TestPublishFloorNestedPayloads:
         obfuscation, which a quoted payload is not, so a FEATURE-branch push
         inside a subshell inside a wrapper was refused.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "bash -c '(git push origin my-feature)'",
@@ -9907,7 +9907,7 @@ class TestPublishFloorNestedPayloads:
         These need the payload descent AND the quote-aware operator cut
         together: the ref is quoted inside a subshell inside a wrapper.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "bash -c '(git push origin main)'",
@@ -9929,7 +9929,7 @@ class TestPublishFloorNestedPayloads:
         the outer line deferred to was the bare word ``main``, which is not a
         publish and answers nothing.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             '"git" push eval main',
@@ -9952,7 +9952,7 @@ class TestPublishFloorNestedPayloads:
         floor checked before it learned to descend -- so a broken walk costs the
         nested coverage and nothing else.
         """
-        import kiro_crew.security as sec
+        import efm_go.security as sec
 
         def boom(*_a: object, **_k: object) -> object:
             raise RuntimeError("payload walk exploded")
@@ -9977,7 +9977,7 @@ class TestPublishFloorNestedPayloads:
         path went from denied to allowed. Both spellings are consulted now, so
         the widen-only property actually holds.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             '"/opt/my(dir)/git" push origin main',
@@ -9999,7 +9999,7 @@ class TestPublishFloorNestedPayloads:
         The outer reading defers only when a nested payload exists to defer TO.
         Glue-evasion carries no payload, so it must still be denied on the spot.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "git$(echo ' ')push origin main",
@@ -10033,7 +10033,7 @@ class TestPublishFloorNestedPayloads:
         ``test_only_one_joined_payload_is_produced_per_walk`` (one join per call)
         and ``test_a_join_produced_frame_does_not_join_again`` (no join chain).
         """
-        from kiro_crew.security import _nested_shell_payloads
+        from efm_go.security import _nested_shell_payloads
 
         def payload_chars(n: int) -> int:
             tokens = ["eval", "a", "b"] * n
@@ -10045,7 +10045,7 @@ class TestPublishFloorNestedPayloads:
 
     def test_only_one_joined_payload_is_produced_per_walk(self) -> None:
         """The bound above is what keeps it linear, so pin the bound itself."""
-        from kiro_crew.security import _nested_shell_payloads
+        from efm_go.security import _nested_shell_payloads
 
         tokens = ["eval", "git", "push origin main", "eval", "x", "y"]
         payloads = _nested_shell_payloads(list(tokens))
@@ -10065,7 +10065,7 @@ class TestPublishFloorNestedPayloads:
         0.13 s before the join existed. Frame counts are pinned instead of timings
         because they are exact: they do not grow with N at all.
         """
-        from kiro_crew.security import _deny_segment_views, _shell_payload_walk
+        from efm_go.security import _deny_segment_views, _shell_payload_walk
 
         counts = {
             n: (len(_shell_payload_walk("eval " * n)), len(_deny_segment_views("eval " * n)))
@@ -10081,7 +10081,7 @@ class TestPublishFloorNestedPayloads:
         'push origin main'`` is fused to ``git push origin main`` by the first join
         and the chain only re-derived suffixes of an answer already in hand.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "eval 'git' 'push origin main'",
@@ -10110,7 +10110,7 @@ class TestPublishFloorNestedPayloads:
         Joining them would invent a command line bash never runs, so the
         concatenation is scoped to ``eval`` alone.
         """
-        from kiro_crew.security import _nested_shell_payloads, normalize_shell_command
+        from efm_go.security import _nested_shell_payloads, normalize_shell_command
 
         for cmd in ("source setup.sh arg1 arg2", ". setup.sh arg1 arg2"):
             payloads = _nested_shell_payloads(normalize_shell_command(cmd))
@@ -10123,7 +10123,7 @@ class TestPublishFloorNestedPayloads:
         and silently broke all five of these, so the walk deliberately still
         scans every token.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "/usr/bin/git push origin main",
@@ -10136,7 +10136,7 @@ class TestPublishFloorNestedPayloads:
             assert is_denied(cmd) is not None, cmd
 
     def test_wrapped_feature_push_still_allowed(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # The floor decides protected-vs-feature, so widening DETECTION must not
         # turn ordinary work into a denial.
@@ -10147,7 +10147,7 @@ class TestPublishFloorNestedPayloads:
             assert is_denied(cmd) is None, cmd
 
     def test_wrapped_benign_not_overblocked(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "bash -c 'echo remember to push later'",
@@ -10158,7 +10158,7 @@ class TestPublishFloorNestedPayloads:
             assert is_denied(cmd) is None, cmd
 
     def test_self_protection_floor_shares_the_walk(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         # Same walk now feeds both floors; the self-protection side must not
         # regress when the publish side starts consuming it.
@@ -10170,7 +10170,7 @@ class TestPublishFloorNestedPayloads:
             assert is_denied(cmd) is not None, cmd
 
     def test_payload_sources_and_frames_agree(self) -> None:
-        from kiro_crew.security import _self_token_frames, _shell_payload_sources
+        from efm_go.security import _self_token_frames, _shell_payload_sources
 
         # The two views are projections of ONE walk, so they must stay the same
         # length -- a drift here is the class of bug this refactor removes.
@@ -10195,7 +10195,7 @@ class TestGluedShellCommandPayloadExtraction:
 
     def test_every_glued_spelling_yields_the_spaced_payload(self) -> None:
         """Glued single-quoted, double-quoted, and clustered spellings agree."""
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         spaced = _nested_shell_payloads(_shell_tokens("sh -c 'rg . /fenced/root'"))
         assert spaced == ["rg . /fenced/root"], spaced
@@ -10210,7 +10210,7 @@ class TestGluedShellCommandPayloadExtraction:
 
     def test_glued_unquoted_payload_is_extracted(self) -> None:
         """No quotes at all: ``-cwhoami`` runs ``whoami`` in a real shell."""
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         payloads = _nested_shell_payloads(_shell_tokens("bash -cwhoami"))
         assert "whoami" in payloads, payloads
@@ -10221,7 +10221,7 @@ class TestGluedShellCommandPayloadExtraction:
         The script is the NEXT token, exactly as before -- the glued reading must
         not invent a second payload out of a bare flag cluster.
         """
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         payloads = _nested_shell_payloads(_shell_tokens("bash -lc 'git status'"))
         assert payloads == ["git status"], payloads
@@ -10236,7 +10236,7 @@ class TestGluedShellCommandPayloadExtraction:
         other a bypass; extraction over-approximates instead, which this module
         documents as the safe direction.
         """
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         payloads = _nested_shell_payloads(_shell_tokens("bash -ecfoo bar"))
         assert "foo" in payloads, payloads
@@ -10249,7 +10249,7 @@ class TestGluedShellCommandPayloadExtraction:
         decoy consume the stop through which a later spaced ``-c``'s payload was
         found, turning the fix itself into a bypass.
         """
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         payloads = _nested_shell_payloads(_shell_tokens("bash -cx.sh -c 'rg . /fenced/root'"))
         assert "x.sh" in payloads, payloads
@@ -10259,7 +10259,7 @@ class TestGluedShellCommandPayloadExtraction:
         """The herestring stop is independent of the ``-c`` stop for the same
         reason: sharing one table let ``bash <<<'x' -c '<script>'`` yield only
         ``x`` while a real shell runs the script."""
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         payloads = _nested_shell_payloads(_shell_tokens("bash <<<'x' -c 'rg . /fenced/root'"))
         assert "x" in payloads, payloads
@@ -10268,7 +10268,7 @@ class TestGluedShellCommandPayloadExtraction:
     def test_uppercase_cluster_letters_still_carry_the_payload(self) -> None:
         """``-C`` (noclobber) clusters like any other flag, and the alt pass
         feeds case-PRESERVING tokens -- a lowercase-only class dropped these."""
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         for cmd in (
             "bash -Cc'rg . /fenced/root'",
@@ -10289,7 +10289,7 @@ class TestGluedShellCommandPayloadExtraction:
         instead: the run's last ``c`` (all flags) and second-to-last (a payload
         whose program starts with one ``c``, like ``cat``).
         """
-        from kiro_crew.security import (
+        from efm_go.security import (
             _nested_shell_payloads,
             _shell_c_carrier_payloads,
             _shell_tokens,
@@ -10336,7 +10336,7 @@ class TestGluedShellCommandPayloadExtraction:
         ``--command`` residual remains -- pre-existing there, and out of this
         pattern's reach.
         """
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         payloads = _nested_shell_payloads(_shell_tokens("bash -Cc --command 'rg . /fenced/root'"))
         assert "rg . /fenced/root" in payloads, payloads
@@ -10348,7 +10348,7 @@ class TestGluedShellCommandPayloadExtraction:
         local extractor yielded: a payload for EVERY ``-c`` carrier, under the
         loose recognition (any prefix before the first lowercase ``c``).
         """
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         # A glued decoy before a glued carrier (both satisfy the glued predicate).
         payloads = _nested_shell_payloads(_shell_tokens("ksh -onoclobber -c'rg . /fenced/root'"))
@@ -10369,7 +10369,7 @@ class TestGluedShellCommandPayloadExtraction:
     def test_non_alpha_cluster_prefixes_still_carry_the_payload(self) -> None:
         """The deleted local extractor tolerated ANY prefix before the first
         lowercase ``c`` (``-1c``); the loose sweep preserves that recognition."""
-        from kiro_crew.security import _nested_shell_payloads, _shell_tokens
+        from efm_go.security import _nested_shell_payloads, _shell_tokens
 
         payloads = _nested_shell_payloads(_shell_tokens("bash -1c 'rg . /fenced/root'"))
         assert "rg . /fenced/root" in payloads, payloads
@@ -10389,7 +10389,7 @@ class TestGluedShellCommandPayloadExtraction:
         """
         import time
 
-        from kiro_crew.security import _nested_shell_payloads
+        from efm_go.security import _nested_shell_payloads
 
         def elapsed(n: int) -> float:
             tokens = ["bash"] * n + ["-c" + "x" * n]
@@ -10409,7 +10409,7 @@ class TestGluedShellCommandPayloadExtraction:
 
     def test_glued_payload_reaches_the_regex_tier_views(self) -> None:
         """Consumer: the deny-view pass judges the glued payload's own text."""
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         spaced = "bash -c 'dd \"if=/dev/zero\" of=/dev/sda'"
         glued = "bash -c'dd \"if=/dev/zero\" of=/dev/sda'"
@@ -10440,7 +10440,7 @@ class TestImdsMixedBaseEncodings:
     )
 
     def test_mixed_base_imds_encodings_blocked(self) -> None:
-        from kiro_crew.security import _check_imds_access, canonicalize_ip
+        from efm_go.security import _check_imds_access, canonicalize_ip
 
         for host in self.IMDS_FORMS:
             assert canonicalize_ip(host) == "169.254.169.254", host
@@ -10457,7 +10457,7 @@ class TestImdsMixedBaseEncodings:
         IMDS. The components are plain character classes with no nested
         quantifier, so an unbounded run is linear and the cap bought nothing.
         """
-        from kiro_crew.security import _check_imds_access, canonicalize_ip
+        from efm_go.security import _check_imds_access, canonicalize_ip
 
         for host in (
             "0x0a9fea9fe",  # leading-zero hex, 9 digits
@@ -10472,7 +10472,7 @@ class TestImdsMixedBaseEncodings:
     def test_unbounded_extraction_stays_linear(self) -> None:
         import time
 
-        from kiro_crew.security import _check_imds_access
+        from efm_go.security import _check_imds_access
 
         # Guards the reason the caps are gone: unbounded runs over plain
         # character classes must not backtrack. Generous bound -- the observed
@@ -10483,7 +10483,7 @@ class TestImdsMixedBaseEncodings:
             assert time.monotonic() - start < 5.0, payload
 
     def test_mixed_base_non_imds_not_overblocked(self) -> None:
-        from kiro_crew.security import _check_imds_access, canonicalize_ip
+        from efm_go.security import _check_imds_access, canonicalize_ip
 
         # 169.0000254.169.254 is a legal mixed encoding that resolves to
         # 169.172.169.254 (0254 octal == 172), NOT to IMDS -- widening the
@@ -10518,13 +10518,13 @@ class TestGitPublishSubshellGluing:
     )
 
     def test_glued_subshell_protected_push_denied(self) -> None:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in self.GLUED_PROTECTED_PUSHES:
             assert is_denied(cmd) is not None, cmd
 
     def test_glued_subshell_push_reaches_protected_branch_check(self) -> None:
-        from kiro_crew.security import _is_push_to_protected_branch
+        from efm_go.security import _is_push_to_protected_branch
 
         # Not merely denied: the branch check must SEE the protected target, or
         # the allow-audit records a protected push as a feature-branch push.
@@ -10553,14 +10553,14 @@ class TestGitPublishSubshellGluing:
         redirection glued mid-token (``mainline)>log``) is why this cuts at the
         first operator instead of stripping the ends.
         """
-        from kiro_crew.security import _is_push_to_protected_branch, is_denied
+        from efm_go.security import _is_push_to_protected_branch, is_denied
 
         for cmd in self.GLUED_OPERATOR_PUSHES:
             assert _is_push_to_protected_branch(cmd.lower()) is True, cmd
             assert is_denied(cmd) is not None, cmd
 
     def test_cut_at_operator_preserves_a_quoted_ref(self) -> None:
-        from kiro_crew.security import _cut_at_operator
+        from efm_go.security import _cut_at_operator
 
         # Unquoted: operators are structure, so cut.
         assert _cut_at_operator("(git") == "git"
@@ -10572,7 +10572,7 @@ class TestGitPublishSubshellGluing:
         assert _cut_at_operator('"(main)"') == '"(main)"'
 
     def test_quoted_paren_ref_is_not_a_protected_branch(self) -> None:
-        from kiro_crew.security import _is_push_to_protected_branch
+        from efm_go.security import _is_push_to_protected_branch
 
         # Grouping parens are stripped BEFORE the quotes come off, so a paren the
         # user QUOTED as part of the ref name survives: a branch literally named
@@ -10601,14 +10601,14 @@ class TestGitPublishSubshellGluing:
         was allowed AND audited as ``feature_branch_push``. One quote character
         was the whole bypass.
         """
-        from kiro_crew.security import _is_push_to_protected_branch, is_denied
+        from efm_go.security import _is_push_to_protected_branch, is_denied
 
         for cmd in self.QUOTED_REF_GLUED_OPERATOR_PUSHES:
             assert _is_push_to_protected_branch(cmd.lower()) is True, cmd
             assert is_denied(cmd) is not None, cmd
 
     def test_cut_at_operator_cuts_outside_quotes_only(self) -> None:
-        from kiro_crew.security import _cut_at_operator
+        from efm_go.security import _cut_at_operator
 
         # Operator OUTSIDE the quotes is structure -> cut.
         assert _cut_at_operator("'main')") == "'main'"
@@ -10630,7 +10630,7 @@ class TestGitPublishSubshellGluing:
         second push therefore hid the first one's protected ref completely and
         turned a fail-closed segment into an allow.
         """
-        from kiro_crew.security import _git_push_args, is_denied
+        from efm_go.security import _git_push_args, is_denied
 
         assert _git_push_args('"git" push eval main git push origin my-feature') == [
             "eval",
@@ -10662,7 +10662,7 @@ class TestGitPublishSubshellGluing:
         closed because the current branch may be protected -- inherited a branch
         it never named.
         """
-        from kiro_crew.security import _git_push_args, is_denied
+        from efm_go.security import _git_push_args, is_denied
 
         # The anchor is the leading program, whatever its spelling.
         assert _git_push_args("/usr/bin/git push origin main") == ["origin", "main"]
@@ -10695,7 +10695,7 @@ class TestGitPublishSubshellGluing:
         a force push to the current branch answered for by the nested feature push
         it redirected into.
         """
-        from kiro_crew.security import _git_push_args, is_denied
+        from efm_go.security import _git_push_args, is_denied
 
         assert _git_push_args("git push --force origin 2> >(cmd)") == ["--force", "origin"]
         assert _git_push_args("git push origin my-feature 2> err.log") == [
@@ -10735,7 +10735,7 @@ class TestGitPublishSubshellGluing:
         glued or spaced, and a process substitution target is a whole command
         line skipped to its matching ``)``.
         """
-        from kiro_crew.security import _git_push_args, is_denied
+        from efm_go.security import _git_push_args, is_denied
 
         # Stepped over, so the trailing refspec survives.
         assert _git_push_args("git push origin feature 2>/dev/null main") == [
@@ -10783,7 +10783,7 @@ class TestGitPublishSubshellGluing:
         were refused only because the reader could not resolve a path-qualified
         or quoted program and fell through to the fail-closed branch.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         for cmd in (
             "/usr/bin/git push origin my-feature",
@@ -10801,14 +10801,14 @@ class TestGitPublishSubshellGluing:
         and deny a branch that is legitimately pushable. That is why the
         dequoting is done on a separate anchor view rather than on the tokens.
         """
-        from kiro_crew.security import _git_push_args, _is_push_to_protected_branch
+        from efm_go.security import _git_push_args, _is_push_to_protected_branch
 
         assert _git_push_args("git push origin '(main)'") == ["origin", "'(main)'"]
         assert _is_push_to_protected_branch("git push origin '(main)'") is False
 
     def test_quoted_operator_ref_names_stay_pushable(self) -> None:
         """The no-over-block half: these are legal, unprotected branch names."""
-        from kiro_crew.security import _is_push_to_protected_branch, is_denied
+        from efm_go.security import _is_push_to_protected_branch, is_denied
 
         for cmd in (
             "git push origin '(main)'",
@@ -10829,7 +10829,7 @@ class TestGitPublishSubshellGluing:
             "(cd /tmp; git push origin my-feature)",
             "(git push origin fix/imds-encodings)",
         ):
-            from kiro_crew.security import _is_push_to_protected_branch
+            from efm_go.security import _is_push_to_protected_branch
 
             assert _is_push_to_protected_branch(cmd.lower()) is False, cmd
 
@@ -10854,11 +10854,11 @@ class TestIdentityAuthStoreFence:
     def test_leaf_membership_uses_the_canonical_filename_constant(self) -> None:
         # Drift guard: the leaf is the constant the identity-store readers resolve,
         # so renaming the store cannot un-fence it while the readers keep working.
-        from kiro_crew.identity_stores import (
+        from efm_go.identity_stores import (
             AUTH_SQLITE_DB,
             AUTH_SQLITE_SIDECAR_SUFFIXES,
         )
-        from kiro_crew.security import _CREW_SECRET_LEAVES
+        from efm_go.security import _CREW_SECRET_LEAVES
 
         assert AUTH_SQLITE_DB in _CREW_SECRET_LEAVES
         for suffix in AUTH_SQLITE_SIDECAR_SUFFIXES:
@@ -10866,7 +10866,7 @@ class TestIdentityAuthStoreFence:
 
     @pytest.mark.parametrize("prefix", PREFIXES)
     def test_store_and_sidecars_sensitive_under_every_home_prefix(self, prefix: str) -> None:
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         for leaf in (
             "data.sqlite3",
@@ -10881,7 +10881,7 @@ class TestIdentityAuthStoreFence:
 
     def test_unrelated_databases_are_not_over_blocked(self) -> None:
         """The cost of a basename rule, which this fence deliberately does not pay."""
-        from kiro_crew.security import is_sensitive_write_path
+        from efm_go.security import is_sensitive_write_path
 
         assert is_sensitive_path("~/project/data.sqlite3") is False
         assert is_sensitive_write_path("~/project/data.sqlite3") is False
@@ -10938,7 +10938,7 @@ class TestTraversalSimulationIsGone:
         simulation is present and happens to allow this input", which is how a
         reinstated pass would slip back in under the tests above.
         """
-        from kiro_crew import security
+        from efm_go import security
 
         for name in (
             "_check_find_traversal_reaches_fence",
@@ -10997,8 +10997,8 @@ class TestARefusalNamesItsRuleAndSpan:
         the shape stops at its own ceiling for the same reason the scan does: this
         subject is by definition larger than the gate will walk on the event loop.
         """
-        from kiro_crew.security import MAX_SCANNABLE_COMMAND_CHARS
-        from kiro_crew.security.diagnostics import _MAX_CENSUS_CHARS
+        from efm_go.security import MAX_SCANNABLE_COMMAND_CHARS
+        from efm_go.security.diagnostics import _MAX_CENSUS_CHARS
 
         line = self._diagnostic("y" * (MAX_SCANNABLE_COMMAND_CHARS + 1))
         assert "rule=keystone-scan-ceiling" in line
@@ -11013,7 +11013,7 @@ class TestARefusalNamesItsRuleAndSpan:
         line is what makes the refusal attributable anyway: it names the rule id an
         operator actually toggles, and the component that decided.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         payload = "imp" + "ort " + "kiro" + "_" + "crew" + ".cli"
         reason = is_denied("pyth" + 'on -c "' + payload + '"')
@@ -11033,7 +11033,7 @@ class TestARefusalNamesItsRuleAndSpan:
         log line quoting it would put a policy body in the log on every failed
         lookup. Resolution itself is unchanged -- this names, it does not widen.
         """
-        from kiro_crew.security import BUILTIN_DENIED_RULES, _resolved_pin_ids
+        from efm_go.security import BUILTIN_DENIED_RULES, _resolved_pin_ids
 
         first = BUILTIN_DENIED_RULES[0]
         absent = "no-such-pattern-anywhere"
@@ -11056,7 +11056,7 @@ class TestARefusalNamesItsRuleAndSpan:
         for no information, and the first line is a parsed micro-format whose
         readers count on what follows it.
         """
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         reason = is_denied("r" + "m -rf /")
         assert reason is not None
@@ -11071,7 +11071,7 @@ class TestARefusalNamesItsRuleAndSpan:
         over-ceiling subject that carries a credential path, which is the one shape
         this gate still refuses with a diagnostic that spans the whole subject.
         """
-        from kiro_crew.security import MAX_SCANNABLE_COMMAND_CHARS
+        from efm_go.security import MAX_SCANNABLE_COMMAND_CHARS
 
         padding = "y" * (MAX_SCANNABLE_COMMAND_CHARS + 1)
         line = self._diagnostic("c" + "at ~/." + self.AWS + " " + padding)
@@ -11085,7 +11085,7 @@ class TestARefusalNamesItsRuleAndSpan:
         A caller passing the wrong argument -- agent text where a rule id belongs --
         yields a missing name rather than unscreened bytes on a security message.
         """
-        from kiro_crew.security import refusal_diagnostic
+        from efm_go.security import refusal_diagnostic
 
         smuggled = "c" + "at ~/." + self.AWS
         line = refusal_diagnostic(smuggled, smuggled, "abc").as_line()
@@ -11094,7 +11094,7 @@ class TestARefusalNamesItsRuleAndSpan:
 
 
 _ISSUE_HOST = "github.com"
-_ISSUE_PATH = "/kirodotdev/KiroCrew/issues/new"
+_ISSUE_PATH = "/efmleads.com/issues/new"
 # Percent-encoded prose, deliberately over _EXFIL_QUERY_MIN_LEN so the LENGTH
 # signal is the one in play, and with no 40-char run in [A-Za-z0-9+/=] and no 20
 # consecutive octets so no PATTERN signal fires. Both properties are ASSERTED by
@@ -11278,12 +11278,12 @@ class TestTrustedIssueLinkChannel:
         The other two host reads in that field are pure: ``platform.platform()`` is
         stdlib and ``beacon.distribution()`` reads a baked constant or an env var.
         """
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         monkeypatch.setattr(diagnostics, "_kiro_cli_version", lambda: "kiro-cli 2.14.2")
 
     def _bundle(self) -> object:
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         return diagnostics.BundleResult(
             zip_path=Path("/tmp/kirocrew-diagnostics-20260907.zip"),
@@ -11293,7 +11293,7 @@ class TestTrustedIssueLinkChannel:
 
     def test_the_trusted_builder_assembles_the_prefill_from_structured_fields(self) -> None:
         """Built by code from named fields, never parsed out of prose."""
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         url = diagnostics._issue_url(self._bundle(), "chat drops long links")
         assert url.startswith(f"https://github.com/{diagnostics._ISSUE_REPO}/issues/new?")
@@ -11306,7 +11306,7 @@ class TestTrustedIssueLinkChannel:
 
     def test_that_builders_output_is_what_the_dashboard_field_carries(self) -> None:
         """``github_issue_url`` is the prefilled variant, so the feature still works."""
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         result = self._bundle()
         result.github_issue_url = diagnostics._issue_url(result, "note")
@@ -11319,7 +11319,7 @@ class TestTrustedIssueLinkChannel:
         text, and that is now true with no exception. Pinned so nobody 'fixes' the
         asymmetry by reaching back into the redactor.
         """
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         url = diagnostics._issue_url(self._bundle(), "chat drops long links")
         cleaned, warnings = redact_exfiltration_urls(f"file it here: {url}")
@@ -11332,7 +11332,7 @@ class TestTrustedIssueLinkChannel:
         This is the shape the codebase already chose for paths that DO get relayed
         through prose, and it is why removing the waiver strands nothing.
         """
-        from kiro_crew import diagnostics
+        from efm_go import diagnostics
 
         url = diagnostics.terminal_issue_url(self._bundle(), "note")
         cleaned, warnings = redact_exfiltration_urls(f"file it here: {url}")
@@ -11564,7 +11564,7 @@ class TestCaseArmingRequiresCommandPosition:
         arming keeps the walk uniform with the bare ``time case`` form at the
         cost of a longer span on input bash never runs (the documented safe
         direction). ``echo -n case`` chains to ``echo`` and stays data."""
-        from kiro_crew.security.shell_normalizer import _matching_close_paren
+        from efm_go.security.shell_normalizer import _matching_close_paren
 
         for text in (
             "$(time -p case x in x) : ;; esac; pgrep -f kirocrew)",
@@ -11597,8 +11597,8 @@ class TestCaseArmingRequiresCommandPosition:
         (grammar model here, fail-closed bail in the redirect skip). Every
         membership difference is intentional and named, so an edit to one
         table trips this pin and the editor rules on the other deliberately."""
-        from kiro_crew.security.argv_floor import _SHELL_RESERVED_WORDS
-        from kiro_crew.security.shell_normalizer import _KEEPS_COMMAND_POSITION
+        from efm_go.security.argv_floor import _SHELL_RESERVED_WORDS
+        from efm_go.security.shell_normalizer import _KEEPS_COMMAND_POSITION
 
         only_reserved = _SHELL_RESERVED_WORDS - _KEEPS_COMMAND_POSITION
         only_keeps = _KEEPS_COMMAND_POSITION - _SHELL_RESERVED_WORDS
@@ -11647,7 +11647,7 @@ class TestCaseArmingRequiresCommandPosition:
         and the pattern ``)`` then closes substitution scanning early -- the
         under-scan direction the self-protection consumers cannot afford.
         """
-        from kiro_crew.security.shell_normalizer import _arms_case_context
+        from efm_go.security.shell_normalizer import _arms_case_context
 
         for keeper_split in ("th\\\nen", "i\\\nf true; then", "d\\\no"):
             head = {
@@ -11674,7 +11674,7 @@ class TestCaseArmingRequiresCommandPosition:
         can classify it) and start at the FIRST fragment, so chained walks
         (``then`` -> ``if``) resume before the whole keeper, not mid-word.
         """
-        from kiro_crew.security.shell_normalizer import _prev_word
+        from efm_go.security.shell_normalizer import _prev_word
 
         text = "th\\\nen case"
         got = _prev_word(text, text.index("case"))
@@ -11694,7 +11694,7 @@ class TestCaseArmingRequiresCommandPosition:
         keeps nothing, and the refused arm truncates the substitution body at
         the pattern ``)`` -- the under-scan direction.
         """
-        from kiro_crew.security.shell_normalizer import _arms_case_context
+        from efm_go.security.shell_normalizer import _arms_case_context
 
         for text in (
             "function time case",
@@ -11773,7 +11773,7 @@ class TestSelfTokensFoldLineContinuations:
 
         ``_self_floor_can_fire`` strips removable quote and backslash glue before
         looking for the product name. A ``\\`` + newline leaves a newline behind
-        once the backslash goes, which pushes the two halves of ``kiro_crew`` past
+        once the backslash goes, which pushes the two halves of ``efm_go`` past
         the hint's one-separator budget -- so the gate answered "provably cannot
         fire" and the whole argv scan was skipped for a command bash mints from.
         """

@@ -24,16 +24,16 @@ from test_cron_reaper import (
     _retain_torn_down,
 )
 
-from kiro_crew import platform_compat
-from kiro_crew.cron import CronJob, CronSchedule, CronService, _RunClaim
-from kiro_crew.cron_history import CronHistoryStore
-from kiro_crew.cron_script import (
+from efm_go import platform_compat
+from efm_go.cron import CronJob, CronSchedule, CronService, _RunClaim
+from efm_go.cron_history import CronHistoryStore
+from efm_go.cron_script import (
     _CANCELLED_PROC_JOBS,
     _RUNNING_PROCS,
     kill_running_process,
     run_command_sandboxed,
 )
-from kiro_crew.dashboard.handlers.cron import api_cron_cancel
+from efm_go.dashboard.handlers.cron import api_cron_cancel
 
 
 @pytest.fixture(autouse=True)
@@ -94,7 +94,7 @@ class TestCronServiceCancel:
         refresh_calls: list[str] = []
         svc._push_refresh = refresh_calls.append
 
-        with patch("kiro_crew.sel.sel") as mock_sel, patch.object(svc, "_save"):
+        with patch("efm_go.sel.sel") as mock_sel, patch.object(svc, "_save"):
             assert await svc.cancel("run1") is True
 
         assert job.last_status == "error"
@@ -135,8 +135,8 @@ class TestCronServiceCancel:
         )
 
         with patch(
-            "kiro_crew.cron_script.kill_running_process", return_value=True
-        ) as mock_kill, patch("kiro_crew.sel.sel") as mock_sel, patch.object(svc, "_save"):
+            "efm_go.cron_script.kill_running_process", return_value=True
+        ) as mock_kill, patch("efm_go.sel.sel") as mock_sel, patch.object(svc, "_save"):
             assert await svc.cancel("script1") is True
 
         mock_kill.assert_called_once_with("script1")
@@ -165,7 +165,7 @@ class TestCronServiceCancel:
             task=MagicMock(done=MagicMock(return_value=False)),
         )
 
-        with patch("kiro_crew.sel.sel"), patch.object(svc, "_save"):
+        with patch("efm_go.sel.sel"), patch.object(svc, "_save"):
             await svc.cancel("run2")
 
         assert job.consecutive_failures == 3
@@ -202,14 +202,14 @@ class TestCronServiceCancel:
         )
 
         with (
-            patch("kiro_crew.sel.sel") as mock_sel,
+            patch("efm_go.sel.sel") as mock_sel,
             patch.object(svc, "_save"),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="4821903"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="4821903"),
             _isolated_leader(),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._kill_escaped_children"),
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 side_effect=ValueError(
                     "kill_process_group: refusing broadcast/self process group 5151"
                 ),
@@ -259,14 +259,14 @@ class TestCronServiceCancel:
         )
 
         with (
-            patch("kiro_crew.sel.sel") as mock_sel,
+            patch("efm_go.sel.sel") as mock_sel,
             patch.object(svc, "_save"),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="4821903"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="4821903"),
             _isolated_leader(),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._kill_escaped_children"),
             patch(
-                "kiro_crew.platform_compat.kill_process_group", return_value=True
+                "efm_go.platform_compat.kill_process_group", return_value=True
             ) as group_kill,
         ):
             assert await svc.cancel("popped") is True
@@ -306,17 +306,17 @@ class TestCronServiceCancel:
         )
 
         with (
-            patch("kiro_crew.sel.sel") as mock_sel,
+            patch("efm_go.sel.sel") as mock_sel,
             patch.object(svc, "_save"),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="4821903"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="4821903"),
             _isolated_leader(),
             # Liveness is read after identity (see ``process_survived``); pinned so
             # the verdict does not depend on what the host runs under a made-up pid.
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.acp.client._kill_escaped_children"),
             patch(
-                "kiro_crew.platform_compat.kill_process_group", return_value=True
+                "efm_go.platform_compat.kill_process_group", return_value=True
             ) as group_kill,
         ):
             assert await svc.cancel("survived") is True
@@ -356,15 +356,15 @@ class TestCronServiceCancel:
         )
 
         with (
-            patch("kiro_crew.sel.sel") as mock_sel,
+            patch("efm_go.sel.sel") as mock_sel,
             patch.object(svc, "_save"),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="4821903"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="4821903"),
             _isolated_leader(),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.acp.client._kill_escaped_children"),
             patch(
-                "kiro_crew.platform_compat.kill_process_group", return_value=True
+                "efm_go.platform_compat.kill_process_group", return_value=True
             ) as group_kill,
         ):
             assert await svc.cancel("torn") is True
@@ -381,7 +381,7 @@ class TestCronServiceCancel:
         svc = CronService(base_dir=None, on_job=AsyncMock())
         svc._sessions = _mock_sessions()
 
-        with caplog.at_level("WARNING", logger="kiro_crew.cron"):
+        with caplog.at_level("WARNING", logger="efm_go.cron"):
             assert await svc._sigkill_sessions("cron:quiet", [], who="Cancel") is None
 
         assert "Cancel: no session found for cron:quiet" in caplog.text
@@ -438,10 +438,10 @@ class TestCronServiceCancel:
         )
 
         with (
-            patch("kiro_crew.sel.sel") as mock_sel,
+            patch("efm_go.sel.sel") as mock_sel,
             patch.object(svc, "_save"),
             patch.object(svc._history, "append", AsyncMock(side_effect=_append)),
-            patch("kiro_crew.platform_compat.kill_process_tree_async", AsyncMock()) as tree_kill,
+            patch("efm_go.platform_compat.kill_process_tree_async", AsyncMock()) as tree_kill,
         ):
             mock_sel().log_tool_invocation.side_effect = lambda **_: events.append("audit")
             assert await svc.cancel("fenced") is True
@@ -505,18 +505,18 @@ class TestCronServiceCancel:
         )
 
         with (
-            patch("kiro_crew.sel.sel") as mock_sel,
+            patch("efm_go.sel.sel") as mock_sel,
             patch.object(svc, "_save"),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="4821903"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="4821903"),
             _isolated_leader(),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.pgroup_exists", return_value=False),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.pgroup_exists", return_value=False),
+            patch("efm_go.acp.client._kill_escaped_children"),
             patch(
-                "kiro_crew.platform_compat.kill_process_group", return_value=True
+                "efm_go.platform_compat.kill_process_group", return_value=True
             ) as group_kill,
-            caplog.at_level("WARNING", logger="kiro_crew.cron"),
+            caplog.at_level("WARNING", logger="efm_go.cron"),
         ):
             assert await svc.cancel("late") is True
 
@@ -589,16 +589,16 @@ class TestCronServiceCancel:
             svc._sessions._sessions[key] = session
 
         with (
-            patch("kiro_crew.sel.sel") as mock_sel,
+            patch("efm_go.sel.sel") as mock_sel,
             patch.object(svc, "_save"),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="4821903"),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.pgroup_exists", return_value=False),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="4821903"),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.pgroup_exists", return_value=False),
             _isolated_leader(),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._kill_escaped_children"),
             patch(
-                "kiro_crew.platform_compat.kill_process_group", return_value=True
+                "efm_go.platform_compat.kill_process_group", return_value=True
             ) as group_kill,
         ):
             assert await svc.cancel("seq1") is True
@@ -639,11 +639,11 @@ class TestSubprocessRegistry:
         sessions._sessions = {"cron:guard": session}
         svc._sessions = sessions
 
-        with patch("kiro_crew.acp.client._get_child_pids", return_value=[]), \
-             patch("kiro_crew.platform_compat.get_process_start_id", return_value="12345"), \
-             patch("kiro_crew.acp.client._kill_escaped_children"), \
+        with patch("efm_go.acp.client._get_child_pids", return_value=[]), \
+             patch("efm_go.platform_compat.get_process_start_id", return_value="12345"), \
+             patch("efm_go.acp.client._kill_escaped_children"), \
              patch("os.getpgid", return_value=1, create=True), \
-             patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock(return_value=True)) as pid_kill:
+             patch("efm_go.platform_compat.kill_pid_async", AsyncMock(return_value=True)) as pid_kill:
             handles = svc._session_process_handles("cron:guard")
             assert handles and handles[0].pgid is None, "a foreign group was captured"
             handle = handles[0]
@@ -676,13 +676,13 @@ class TestSubprocessRegistry:
             result.update(run_command_sandboxed("sleep 30", timeout=60, job_id="cancelme"))
 
         with patch(
-            "kiro_crew.cron_script.wrap_argv",
+            "efm_go.cron_script.wrap_argv",
             # ``**k``, not a fixed ``mode``: this passthrough stands in for whatever
             # keyword set the caller uses, so it pins the identity behaviour under test
             # and not the wrap's signature.
             side_effect=lambda argv, **k: (argv, None),
         ), patch(
-            "kiro_crew.cron_script.cgroup_scope_argv", side_effect=lambda argv: argv
+            "efm_go.cron_script.cgroup_scope_argv", side_effect=lambda argv: argv
         ), patch(
             # The shell probe (_resolve_command_shell) also calls wrap_argv to
             # sandbox-route its POSIX-strict test. On macOS where /bin/sh is bash
@@ -690,7 +690,7 @@ class TestSubprocessRegistry:
             # and returns None, aborting before the subprocess is spawned. Patch
             # the resolver to return a known-good shell so the registry/cancel
             # mechanics under test can actually run.
-            "kiro_crew.cron_script._resolve_command_shell", return_value="/bin/sh"
+            "efm_go.cron_script._resolve_command_shell", return_value="/bin/sh"
         ):
             t = threading.Thread(target=_run)
             t.start()
@@ -729,16 +729,16 @@ class TestSubprocessRegistry:
         # don't need the sandbox.
         monkeypatch.chdir(tmp_path)  # the spawn inherits CWD; see the test above
         with patch(
-            "kiro_crew.cron_script.wrap_argv",
+            "efm_go.cron_script.wrap_argv",
             # ``**k`` for the reason the test above gives: a passthrough pins the
             # identity behaviour, not the keyword set the caller passes.
             side_effect=lambda argv, **k: (argv, None),
         ), patch(
-            "kiro_crew.cron_script.cgroup_scope_argv", side_effect=lambda argv: argv
+            "efm_go.cron_script.cgroup_scope_argv", side_effect=lambda argv: argv
         ), patch(
             # Bypass the runtime shell probe (which itself spawns a child) — the
             # test is about the registry, not shell fingerprinting.
-            "kiro_crew.cron_script._resolve_command_shell", return_value=posix_test_shell
+            "efm_go.cron_script._resolve_command_shell", return_value=posix_test_shell
         ):
             result = run_command_sandboxed("echo hi", timeout=10)
         assert result["status"] == "ok"

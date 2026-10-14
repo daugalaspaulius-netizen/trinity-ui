@@ -20,10 +20,10 @@ from unittest.mock import MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.handlers import session_control as handlers_sc
-from kiro_crew.messaging.link import ChannelLink
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.handlers import session_control as handlers_sc
+from efm_go.messaging.link import ChannelLink
 
 
 @pytest.fixture(autouse=True)

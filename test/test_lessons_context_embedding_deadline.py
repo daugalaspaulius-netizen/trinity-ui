@@ -9,14 +9,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import kiro_crew.context as context_mod
-from kiro_crew.context import ContextBuilder
-from kiro_crew.embeddings import PRIORITY_INTERACTIVE, embedding_work
-from kiro_crew.executors import run_in_embed_pool
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.vector_memory import VectorMemoryStore
+import efm_go.context as context_mod
+from efm_go.context import ContextBuilder
+from efm_go.embeddings import PRIORITY_INTERACTIVE, embedding_work
+from efm_go.executors import run_in_embed_pool
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
+from efm_go.vector_memory import VectorMemoryStore
 
 
 @pytest.mark.asyncio

@@ -22,7 +22,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.mcp_gateway import resolve_once as R
+from efm_go.mcp_gateway import resolve_once as R
 
 # --- Spec parsing -----------------------------------------------------------
 
@@ -711,7 +711,7 @@ class TestInstall:
         unbounded background process.
         """
         killed: list[tuple[int, int]] = []
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         real_kill = platform_compat.kill_process_tree_async
 
@@ -940,7 +940,7 @@ class TestSubstitutionActuallyHappens:
     """
 
     def test_a_realistic_inherited_env_still_gets_the_store(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.mcp_gateway import gatewayd as G
+        from efm_go.mcp_gateway import gatewayd as G
 
         monkeypatch.setattr(G, "_resolve_once_home", lambda: str(tmp_path))
         monkeypatch.setattr(G, "resolved_launch", lambda *_a, **_k: ("node", ["/store/cli.js"]))
@@ -958,7 +958,7 @@ class TestSubstitutionActuallyHappens:
         assert work_dir == "/tmp"
 
     def test_a_miss_passes_the_original_target_through(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.mcp_gateway import gatewayd as G
+        from efm_go.mcp_gateway import gatewayd as G
 
         monkeypatch.setattr(G, "_resolve_once_home", lambda: str(tmp_path))
         monkeypatch.setattr(G, "resolved_launch", lambda *_a, **_k: None)
@@ -967,7 +967,7 @@ class TestSubstitutionActuallyHappens:
         assert resolver(SimpleNamespace(server_name="s")) == inner
 
     def test_a_raising_store_read_never_breaks_a_launch(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.mcp_gateway import gatewayd as G
+        from efm_go.mcp_gateway import gatewayd as G
 
         def boom(*_a, **_k):
             raise RuntimeError("store on fire")
@@ -1015,7 +1015,7 @@ class TestReapInstallTree:
     async def test_reaps_via_communicate_not_wait(self, monkeypatch) -> None:
         """The reap must go through the bounded, pipe-draining ``kill_and_reap``,
         never a bare ``await proc.wait()`` that a full pipe can hang."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         proc = _ReapProbe()
         tree_kills: "list[tuple[int, int]]" = []

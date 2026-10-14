@@ -13,7 +13,7 @@ import tarfile
 import pytest
 from test_snapshot import unpinnable_argv
 
-from kiro_crew import snapshot as snap
+from efm_go import snapshot as snap
 
 
 class TestAContainedLinkRootDoesNotHalfRestore:

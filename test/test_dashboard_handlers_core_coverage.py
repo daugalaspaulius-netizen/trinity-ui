@@ -28,18 +28,18 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import extras
-from kiro_crew import transcribe as transcribe_mod
-from kiro_crew.config.loader import (
+from efm_go import extras
+from efm_go import transcribe as transcribe_mod
+from efm_go.config.loader import (
     MAX_SUBAGENTS_FIXED_FLOOR,
     SUBAGENT_AUTO_MAX_CEILING,
     SUBAGENT_MAX_TURNS_CEILING,
     config_path,
 )
-from kiro_crew.dashboard.handlers import core as core_mod
-from kiro_crew.sel import SelVerification as _SelVerification
-from kiro_crew.stt import models as stt_models
-from kiro_crew.stt.limits import MIN_PARTIAL_INTERVAL_MS, MIN_SILENCE_MS
+from efm_go.dashboard.handlers import core as core_mod
+from efm_go.sel import SelVerification as _SelVerification
+from efm_go.stt import models as stt_models
+from efm_go.stt.limits import MIN_PARTIAL_INTERVAL_MS, MIN_SILENCE_MS
 
 # ── shared helpers ───────────────────────────────────────────────────────
 
@@ -111,7 +111,7 @@ def fake_sel(monkeypatch) -> MagicMock:
     """
     recorder = MagicMock()
     recorder.dropped_events = 0
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: recorder)
+    monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: recorder)
     return recorder
 
 
@@ -194,10 +194,10 @@ class TestPageAndAssets:
         """A configured avatar pointing at a credential path is 404, never served."""
         cfg = SimpleNamespace(dashboard=SimpleNamespace(avatar="/home/u/.ssh/id_rsa"))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.KiroCrewConfig",
+            "efm_go.dashboard.handlers.KiroCrewConfig",
             SimpleNamespace(load=lambda: cfg),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_sensitive_path", lambda _p: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_sensitive_path", lambda _p: True)
         resp = await core_mod.logo(_req())
         assert resp.status == 404
 
@@ -207,12 +207,12 @@ class TestPageAndAssets:
         avatar.write_bytes(b"png")
         cfg = SimpleNamespace(dashboard=SimpleNamespace(avatar=str(avatar)))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.KiroCrewConfig",
+            "efm_go.dashboard.handlers.KiroCrewConfig",
             SimpleNamespace(load=lambda: cfg),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_sensitive_path", lambda _p: False)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_sensitive_path", lambda _p: False)
         monkeypatch.setattr(
-            "kiro_crew.hooks.validate_file_path", lambda p: str(avatar) if p else None
+            "efm_go.hooks.validate_file_path", lambda p: str(avatar) if p else None
         )
         resp = await core_mod.logo(_req())
         assert isinstance(resp, web.FileResponse)
@@ -228,11 +228,11 @@ class TestPageAndAssets:
         nightly.write_bytes(b"night")
         cfg = SimpleNamespace(dashboard=SimpleNamespace(avatar=""))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.KiroCrewConfig",
+            "efm_go.dashboard.handlers.KiroCrewConfig",
             SimpleNamespace(load=lambda: cfg),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path)
-        monkeypatch.setattr("kiro_crew.__version__", "9.9.9-nightly.20260812")
+        monkeypatch.setattr("efm_go.dashboard.handlers._STATIC_DIR", tmp_path)
+        monkeypatch.setattr("efm_go.__version__", "9.9.9-nightly.20260812")
         resp = await core_mod.logo(_req())
         assert isinstance(resp, web.FileResponse)
         assert os.path.realpath(resp._path) == os.path.realpath(nightly)
@@ -241,11 +241,11 @@ class TestPageAndAssets:
     async def test_logo_404_when_no_asset_exists(self, monkeypatch, tmp_path) -> None:
         cfg = SimpleNamespace(dashboard=SimpleNamespace(avatar=""))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.KiroCrewConfig",
+            "efm_go.dashboard.handlers.KiroCrewConfig",
             SimpleNamespace(load=lambda: cfg),
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers._STATIC_DIR", tmp_path / "empty")
-        monkeypatch.setattr("kiro_crew.__version__", "9.9.9")
+        monkeypatch.setattr("efm_go.dashboard.handlers._STATIC_DIR", tmp_path / "empty")
+        monkeypatch.setattr("efm_go.__version__", "9.9.9")
         resp = await core_mod.logo(_req())
         assert resp.status == 404
 
@@ -256,7 +256,7 @@ class TestPageAndAssets:
         <link rel="icon"> otherwise receive text/html and show no icon."""
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.dashboard.routes import realtime
+        from efm_go.dashboard.routes import realtime
 
         app = web.Application()
         realtime.register(app)
@@ -291,7 +291,7 @@ class TestSttProviders:
         must not be offered a provider it cannot select. `local` has no
         precondition at all and stays advertised everywhere."""
         monkeypatch.setattr(
-            "kiro_crew.apple_speech.availability",
+            "efm_go.apple_speech.availability",
             lambda: SimpleNamespace(ok=False),
         )
         providers = core_mod._stt_providers()
@@ -300,7 +300,7 @@ class TestSttProviders:
 
     def test_apple_appears_once_the_framework_answers_yes(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.apple_speech.availability",
+            "efm_go.apple_speech.availability",
             lambda: SimpleNamespace(ok=True),
         )
         assert "apple" in core_mod._stt_providers()
@@ -311,7 +311,7 @@ class TestSttProviders:
         (a whisper CLI on PATH, an mlx or faster-whisper wheel) that the resident
         local engine exists to remove."""
         monkeypatch.setattr(
-            "kiro_crew.apple_speech.availability",
+            "efm_go.apple_speech.availability",
             lambda: SimpleNamespace(ok=True),
         )
         offered = set(core_mod._stt_providers())
@@ -427,7 +427,7 @@ class TestSttPrereqCommands:
         than on one without, which is the whole verdict under test.
         """
         monkeypatch.setattr(
-            "kiro_crew.stt.availability",
+            "efm_go.stt.availability",
             lambda: core_mod.stt.Availability(ok, code, ""),
         )
 
@@ -1018,9 +1018,9 @@ class TestSttStatus:
     @pytest.fixture(autouse=True)
     def _quiet_probes(self, monkeypatch):
         monkeypatch.setattr(core_mod, "availability_detail", lambda _cfg: _availability(True))
-        monkeypatch.setattr("kiro_crew.stt.models.is_present", lambda _m: False)
+        monkeypatch.setattr("efm_go.stt.models.is_present", lambda _m: False)
         monkeypatch.setattr(
-            "kiro_crew.stt.engine.shared_engine", lambda *a, **k: SimpleNamespace(loaded=False)
+            "efm_go.stt.engine.shared_engine", lambda *a, **k: SimpleNamespace(loaded=False)
         )
         # The decoder probe stats the operator's real package directories and can
         # hash an 80 MB executable, so the default answer is pinned; the tests
@@ -1044,7 +1044,7 @@ class TestSttStatus:
         """
         probed = []
         monkeypatch.setattr(
-            "kiro_crew.stt.engine.WhisperEngine.capabilities",
+            "efm_go.stt.engine.WhisperEngine.capabilities",
             classmethod(lambda _cls: probed.append(1)),
         )
         _seed_stt(seeded_config, enabled=False)
@@ -1073,7 +1073,7 @@ class TestSttStatus:
     async def test_status_reports_a_present_model_as_present(
         self, seeded_config, monkeypatch, model_store
     ) -> None:
-        monkeypatch.setattr("kiro_crew.stt.models.is_present", lambda _m: True)
+        monkeypatch.setattr("efm_go.stt.models.is_present", lambda _m: True)
         body = json.loads((await core_mod.api_stt_status(_req())).body)
         assert body["model_present"] is True
         assert all(row["present"] is True for row in body["models"])
@@ -1084,7 +1084,7 @@ class TestSttStatus:
     ) -> None:
         """A materialised package attribute must not shadow the real function.
 
-        ``kiro_crew.stt`` re-exports its surface through a lazy ``__getattr__``, and
+        ``efm_go.stt`` re-exports its surface through a lazy ``__getattr__``, and
         that indirection stops working for any name the package itself comes to
         hold: a ``monkeypatch.setattr(stt, "is_present", ...)`` anywhere in the
         suite writes the original back as a real attribute on teardown, after which
@@ -1096,7 +1096,7 @@ class TestSttStatus:
         a host where the files were present, and only in a full-suite run.
         """
         monkeypatch.setattr(core_mod.stt, "is_present", lambda _m: False, raising=False)
-        monkeypatch.setattr("kiro_crew.stt.models.is_present", lambda _m: True)
+        monkeypatch.setattr("efm_go.stt.models.is_present", lambda _m: True)
         body = json.loads((await core_mod.api_stt_status(_req())).body)
         assert body["model_present"] is True
         assert all(row["present"] is True for row in body["models"])
@@ -1126,7 +1126,7 @@ class TestSttStatus:
         """Residency is what decides between a 30 ms transcription and one that
         pays a model load first, so the panel can say which the user will get."""
         monkeypatch.setattr(
-            "kiro_crew.stt.engine.shared_engine", lambda *a, **k: SimpleNamespace(loaded=True)
+            "efm_go.stt.engine.shared_engine", lambda *a, **k: SimpleNamespace(loaded=True)
         )
         assert json.loads((await core_mod.api_stt_status(_req())).body)["engine_loaded"] is True
 
@@ -1243,7 +1243,7 @@ class TestSttPrepare:
             self.requested.append(name)
             return True
 
-        monkeypatch.setattr("kiro_crew.stt.session.ensure_model", _fake_ensure)
+        monkeypatch.setattr("efm_go.stt.session.ensure_model", _fake_ensure)
 
     @pytest.mark.asyncio
     async def test_prepare_answers_202_and_starts_the_transfer(
@@ -1447,7 +1447,7 @@ class TestSttFfmpegDownload:
         """The handler is unreachable without its route, and 404 says nothing."""
         from aiohttp import web as _web
 
-        from kiro_crew.dashboard.routes import memory as memory_routes
+        from efm_go.dashboard.routes import memory as memory_routes
 
         app = _web.Application()
         memory_routes.register(app)
@@ -1487,7 +1487,7 @@ class TestSttPrewarm:
             await release.wait()
             return _availability(True)
 
-        monkeypatch.setattr("kiro_crew.stt.session.prewarm", _fake_prewarm)
+        monkeypatch.setattr("efm_go.stt.session.prewarm", _fake_prewarm)
         resp = await core_mod.api_stt_prewarm(_req())
         assert resp.status == 202
         assert json.loads(resp.body) == {"ok": True}
@@ -1509,7 +1509,7 @@ class TestSttPrewarm:
         async def _boom(**_kwargs):
             raise RuntimeError("no recogniser here")
 
-        monkeypatch.setattr("kiro_crew.stt.session.prewarm", _boom)
+        monkeypatch.setattr("efm_go.stt.session.prewarm", _boom)
         resp = await core_mod.api_stt_prewarm(_req())
         assert resp.status == 202
         outcomes = await _drain_stt_background()
@@ -1525,7 +1525,7 @@ class TestSttPrewarm:
             started.append("ran")
             return _availability(True)
 
-        monkeypatch.setattr("kiro_crew.stt.session.prewarm", _fake_prewarm)
+        monkeypatch.setattr("efm_go.stt.session.prewarm", _fake_prewarm)
         resp = await core_mod.api_stt_prewarm(_req(app_token="meetings"))
         assert resp.status == 403
         assert await _drain_stt_background() == []
@@ -1624,7 +1624,7 @@ class TestSttTranscribe:
         probe = AsyncMock(return_value=True)
         monkeypatch.setattr(core_mod, "audio_exceeds_secs", probe)
         transcribe = AsyncMock()
-        monkeypatch.setattr("kiro_crew.transcribe.transcribe_audio", transcribe)
+        monkeypatch.setattr("efm_go.transcribe.transcribe_audio", transcribe)
         field = SimpleNamespace(
             name="audio",
             filename="recording.webm",
@@ -1644,7 +1644,7 @@ class TestSttTranscribe:
         monkeypatch.setattr(core_mod, "batch_duration_cap_secs", lambda _cfg: 3600)
         monkeypatch.setattr(core_mod, "audio_exceeds_secs", AsyncMock(return_value=None))
         transcribe = AsyncMock()
-        monkeypatch.setattr("kiro_crew.transcribe.transcribe_audio", transcribe)
+        monkeypatch.setattr("efm_go.transcribe.transcribe_audio", transcribe)
         field = SimpleNamespace(
             name="audio",
             filename="recording.webm",
@@ -1663,7 +1663,7 @@ class TestSttTranscribe:
         reaches this endpoint from a microphone, so nothing upstream of it has had
         a chance to screen what was said."""
         monkeypatch.setattr(
-            "kiro_crew.transcribe.transcribe_audio",
+            "efm_go.transcribe.transcribe_audio",
             AsyncMock(return_value="the key is AKIAIOSFODNN7EXAMPLE thanks"),
         )
         field = SimpleNamespace(
@@ -1684,7 +1684,7 @@ class TestSttTranscribe:
     async def test_none_backend_result_is_a_generic_500(self, monkeypatch) -> None:
         """The backend's failure sentinel must not look like a silent recording."""
         monkeypatch.setattr(
-            "kiro_crew.transcribe.transcribe_audio",
+            "efm_go.transcribe.transcribe_audio",
             AsyncMock(return_value=None),
         )
         field = SimpleNamespace(
@@ -1705,7 +1705,7 @@ class TestSttTranscribe:
     async def test_empty_transcript_remains_a_success(self, monkeypatch) -> None:
         """A valid recording with no recognised speech remains distinguishable."""
         monkeypatch.setattr(
-            "kiro_crew.transcribe.transcribe_audio",
+            "efm_go.transcribe.transcribe_audio",
             AsyncMock(return_value=""),
         )
         field = SimpleNamespace(
@@ -1722,7 +1722,7 @@ class TestSttTranscribe:
     @pytest.mark.asyncio
     async def test_backend_failure_is_a_generic_500(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.transcribe.transcribe_audio",
+            "efm_go.transcribe.transcribe_audio",
             AsyncMock(side_effect=RuntimeError("recogniser exploded")),
         )
         field = SimpleNamespace(
@@ -1917,7 +1917,7 @@ class TestSecurityStats:
     @pytest.mark.asyncio
     async def test_counts_are_derived_from_the_posture_registry(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.security.build_denied_commands_snapshot_async",
+            "efm_go.dashboard.handlers.security.build_denied_commands_snapshot_async",
             AsyncMock(return_value={"effective_count": 42}),
         )
         monkeypatch.setattr(
@@ -1943,7 +1943,7 @@ class TestSecurityStats:
     async def test_denied_count_failure_degrades_to_zero(self, monkeypatch) -> None:
         """An unreadable denylist must not take the whole stats endpoint down."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.security.build_denied_commands_snapshot_async",
+            "efm_go.dashboard.handlers.security.build_denied_commands_snapshot_async",
             AsyncMock(side_effect=OSError("unreadable")),
         )
         monkeypatch.setattr(core_mod, "posture_counts_async", AsyncMock(return_value={}))
@@ -2033,8 +2033,8 @@ class TestAgentSettingsPut:
         ``ValueError``. The field is not editable through this surface today, so the
         refusal is raised the way the floor raises it rather than provoked through
         the body."""
-        from kiro_crew.config import loader as loader_mod
-        from kiro_crew.config.loader import ConfigWriteRefused
+        from efm_go.config import loader as loader_mod
+        from efm_go.config.loader import ConfigWriteRefused
 
         message = (
             "agent.deepseek_env entry 'DEEPSEEK_API_KEY' holds a literal value, so the "
@@ -2200,7 +2200,7 @@ class TestAgentSettingsPutLockOffload:
         """The write path must call ``update_config_locked``, not a bare
         ``write_text`` / ``os.replace``.  Patching the helper to a spy lets us
         assert it was invoked while still allowing the real write to complete."""
-        import kiro_crew.config.loader as _loader
+        import efm_go.config.loader as _loader
 
         calls: list[str] = []
         _real = _loader.update_config_locked
@@ -2356,7 +2356,7 @@ class TestFallbackModelPatch:
     async def test_pin_is_refused_while_its_revalidation_is_in_flight(
         self, seeded_config, fake_sel
     ) -> None:
-        from kiro_crew.agent_sdk.drivers.acp import EntitlementRevalidating
+        from efm_go.agent_sdk.drivers.acp import EntitlementRevalidating
 
         class _Pending:
             client = SimpleNamespace(backend="")
@@ -2449,21 +2449,21 @@ class TestAdvertisedModelGuards:
 
     def test_provider_rejection_is_surfaced(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._model_rejected_reason",
+            "efm_go.dashboard.chat_handlers._model_rejected_reason",
             lambda _v, provider=None: "display-only key",
         )
         assert core_mod._validate_role_model("fable-5-1m", _req()) == "display-only key"
 
     def test_unknown_entitlement_does_not_accuse(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._model_rejected_reason",
+            "efm_go.dashboard.chat_handlers._model_rejected_reason",
             lambda _v, provider=None: None,
         )
         assert core_mod._validate_role_model("some-model", _req(app={})) is None
 
     def test_unentitled_model_lists_usable_alternatives(self, monkeypatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._model_rejected_reason",
+            "efm_go.dashboard.chat_handlers._model_rejected_reason",
             lambda _v, provider=None: None,
         )
         state = SimpleNamespace(
@@ -2487,7 +2487,7 @@ class TestAdvertisedModelGuards:
 class TestLocalToken:
     @pytest.fixture
     def verified_owner_process(self, monkeypatch) -> None:
-        from kiro_crew import member_memory_auth as auth
+        from efm_go import member_memory_auth as auth
 
         peer_pid = 12345
         monkeypatch.setattr(auth, "_request_peer_pid", lambda _request: peer_pid)
@@ -2500,7 +2500,7 @@ class TestLocalToken:
 
     @pytest.mark.asyncio
     async def test_non_loopback_is_refused(self, monkeypatch, fake_sel) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: False)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: False)
         resp = await core_mod.api_token_local(_req(remote="203.0.113.9"))
         assert resp.status == 403
         assert json.loads(resp.body)["error"] == "loopback only"
@@ -2508,14 +2508,14 @@ class TestLocalToken:
 
     @pytest.mark.asyncio
     async def test_unconfigured_secret_is_503(self, monkeypatch, fake_sel) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         resp = await core_mod.api_token_local(_req(app={}))
         assert resp.status == 503
         assert json.loads(resp.body)["error"] == "not available"
 
     @pytest.mark.asyncio
     async def test_wrong_secret_is_refused(self, monkeypatch, fake_sel) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         resp = await core_mod.api_token_local(
             _req(app={"local_secret": "right"}, headers={"X-Local-Secret": "wrong"})
         )
@@ -2524,7 +2524,7 @@ class TestLocalToken:
 
     @pytest.mark.asyncio
     async def test_missing_secret_header_is_refused(self, monkeypatch, fake_sel) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         resp = await core_mod.api_token_local(_req(app={"local_secret": "right"}))
         assert resp.status == 403
 
@@ -2532,7 +2532,7 @@ class TestLocalToken:
     async def test_issues_credential_with_requested_ttl_and_embed_claim(
         self, monkeypatch, fake_sel, verified_owner_process
     ) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         minted: dict = {}
 
         def _generate(owner, ttl_seconds=0, extra=None):
@@ -2564,13 +2564,13 @@ class TestLocalToken:
         positive `check_peer_is_self` MATCH plus the unchanged secret check
         must mint.
         """
-        from kiro_crew.mcp_gateway.socketsec import PeerCredResult
+        from efm_go.mcp_gateway.socketsec import PeerCredResult
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.token_auth.request_is_unix_socket", lambda _r: True
+            "efm_go.dashboard.token_auth.request_is_unix_socket", lambda _r: True
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.core.check_peer_is_self",
+            "efm_go.dashboard.handlers.core.check_peer_is_self",
             lambda _s: PeerCredResult.MATCH,
         )
         monkeypatch.setattr(core_mod, "generate_token", lambda *a, **k: "issued-value")
@@ -2588,13 +2588,13 @@ class TestLocalToken:
         ("invalid secret"), not the transport check ("loopback only") -- which
         also pins that the admitted request reached past the transport gate.
         """
-        from kiro_crew.mcp_gateway.socketsec import PeerCredResult
+        from efm_go.mcp_gateway.socketsec import PeerCredResult
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.token_auth.request_is_unix_socket", lambda _r: True
+            "efm_go.dashboard.token_auth.request_is_unix_socket", lambda _r: True
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.core.check_peer_is_self",
+            "efm_go.dashboard.handlers.core.check_peer_is_self",
             lambda _s: PeerCredResult.MATCH,
         )
         resp = await core_mod.api_token_local(
@@ -2614,13 +2614,13 @@ class TestLocalToken:
         denying matters most. Deny-by-default: transport refusal even though
         the request carries the correct secret.
         """
-        from kiro_crew.mcp_gateway.socketsec import PeerCredResult
+        from efm_go.mcp_gateway.socketsec import PeerCredResult
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.token_auth.request_is_unix_socket", lambda _r: True
+            "efm_go.dashboard.token_auth.request_is_unix_socket", lambda _r: True
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.core.check_peer_is_self",
+            "efm_go.dashboard.handlers.core.check_peer_is_self",
             lambda _s: PeerCredResult.MISMATCH,
         )
         resp = await core_mod.api_token_local(
@@ -2640,13 +2640,13 @@ class TestLocalToken:
         refuse -- a platform without a peer-credential mechanism never silently
         widens this token_auth-bypassed endpoint.
         """
-        from kiro_crew.mcp_gateway.socketsec import PeerCredResult
+        from efm_go.mcp_gateway.socketsec import PeerCredResult
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.token_auth.request_is_unix_socket", lambda _r: True
+            "efm_go.dashboard.token_auth.request_is_unix_socket", lambda _r: True
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.core.check_peer_is_self",
+            "efm_go.dashboard.handlers.core.check_peer_is_self",
             lambda _s: PeerCredResult.UNVERIFIABLE,
         )
         resp = await core_mod.api_token_local(
@@ -2659,9 +2659,9 @@ class TestLocalToken:
     async def test_valid_secret_without_verified_owner_process_is_refused(
         self, monkeypatch, fake_sel
     ) -> None:
-        from kiro_crew import member_memory_auth as auth
+        from efm_go import member_memory_auth as auth
 
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         monkeypatch.setattr(auth, "_request_peer_pid", lambda _request: None)
         minted = MagicMock()
         monkeypatch.setattr(core_mod, "generate_token", minted)
@@ -2694,10 +2694,10 @@ class TestLocalToken:
         process rather than about any two processes. The app-backend escape is
         held off so one cause decides the verdict; it is covered separately.
         """
-        from kiro_crew import member_memory_auth as auth
+        from efm_go import member_memory_auth as auth
 
         peer_pid = 12345
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         monkeypatch.setattr(auth, "sys", SimpleNamespace(platform="linux"))
         monkeypatch.setattr(auth, "_request_peer_pid", lambda _request: peer_pid)
         monkeypatch.setattr(auth, "_gateway_spawned_app_backend", lambda _pid: False)
@@ -2740,16 +2740,16 @@ class TestLocalToken:
         with the ``resources`` value written for the same refusal, so the pairing
         cannot drift apart silently.
         """
-        from kiro_crew import member_memory_auth as auth
+        from efm_go import member_memory_auth as auth
 
         seen: dict[str, str] = {}
 
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: False)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: False)
         resp = await core_mod.api_token_local(_req(remote="203.0.113.9"))
         assert resp.status == 403
         seen[json.loads(resp.body)["code"]] = fake_sel.log_api_access.call_args.kwargs["resources"]
 
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         resp = await core_mod.api_token_local(
             _req(app={"local_secret": "right"}, headers={"X-Local-Secret": "wrong"})
         )
@@ -2779,12 +2779,12 @@ class TestLocalToken:
         refusal body is readable by whoever could already read the ``error``
         string. These two codes carry no fact that string does not.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: False)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: False)
         body = json.loads((await core_mod.api_token_local(_req(remote="203.0.113.9"))).body)
         assert body["error"] == "loopback only"
         assert body["code"] == "loopback_only"
 
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         body = json.loads(
             (
                 await core_mod.api_token_local(
@@ -2799,7 +2799,7 @@ class TestLocalToken:
     async def test_bad_embed_port_is_dropped(
         self, monkeypatch, fake_sel, verified_owner_process
     ) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         minted: dict = {}
 
         def _generate(owner, ttl_seconds=0, extra=None):
@@ -2821,14 +2821,14 @@ class TestLocalToken:
 class TestLogout:
     @pytest.mark.asyncio
     async def test_non_loopback_is_refused(self, monkeypatch, fake_sel) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: False)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: False)
         resp = await core_mod.api_logout(_req(remote="203.0.113.9"))
         assert resp.status == 403
         assert json.loads(resp.body)["error"] == "loopback only"
 
     @pytest.mark.asyncio
     async def test_wrong_secret_is_refused(self, monkeypatch, fake_sel) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         resp = await core_mod.api_logout(
             _req(app={"local_secret": "right"}, headers={"X-Local-Secret": "wrong"})
         )
@@ -2840,12 +2840,12 @@ class TestLogout:
         self, monkeypatch, fake_sel
     ) -> None:
         """Fail-closed: an unpersisted revocation must never report success."""
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
 
         def _boom():
             raise OSError("read-only trust dir")
 
-        monkeypatch.setattr("kiro_crew.dashboard.token_auth.revoke_all_sessions", _boom)
+        monkeypatch.setattr("efm_go.dashboard.token_auth.revoke_all_sessions", _boom)
         resp = await core_mod.api_logout(
             _req(app={"local_secret": "right"}, headers={"X-Local-Secret": "right"})
         )
@@ -2856,9 +2856,9 @@ class TestLogout:
 
     @pytest.mark.asyncio
     async def test_successful_revocation_is_audited(self, monkeypatch, fake_sel) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         revoke = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.token_auth.revoke_all_sessions", revoke)
+        monkeypatch.setattr("efm_go.dashboard.token_auth.revoke_all_sessions", revoke)
         resp = await core_mod.api_logout(
             _req(app={"local_secret": "right"}, headers={"X-Local-Secret": "right"})
         )
@@ -2872,7 +2872,7 @@ class TestAppSecretExchange:
     @pytest.fixture
     def app_sel(self, monkeypatch) -> MagicMock:
         recorder = MagicMock()
-        monkeypatch.setattr("kiro_crew.sel.sel", lambda: recorder)
+        monkeypatch.setattr("efm_go.sel.sel", lambda: recorder)
         return recorder
 
     @pytest.mark.asyncio
@@ -2884,7 +2884,7 @@ class TestAppSecretExchange:
 
     @pytest.mark.asyncio
     async def test_invalid_secret_is_refused(self, app_sel, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.token_auth.validate_app_secret", lambda *_a: False)
+        monkeypatch.setattr("efm_go.dashboard.token_auth.validate_app_secret", lambda *_a: False)
         resp = await core_mod.api_app_token(
             _req(match_info={"name": "meetings"}, headers={"X-App-Secret": "nope"})
         )
@@ -2893,14 +2893,14 @@ class TestAppSecretExchange:
 
     @pytest.mark.asyncio
     async def test_valid_secret_mints_an_app_scoped_credential(self, app_sel, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.token_auth.validate_app_secret", lambda *_a: True)
+        monkeypatch.setattr("efm_go.dashboard.token_auth.validate_app_secret", lambda *_a: True)
         seen: dict = {}
 
         def _generate(name, app=None):
             seen.update({"name": name, "app": app})
             return "app-scoped-value"
 
-        monkeypatch.setattr("kiro_crew.dashboard.token_auth.generate_token", _generate)
+        monkeypatch.setattr("efm_go.dashboard.token_auth.generate_token", _generate)
         resp = await core_mod.api_app_token(
             _req(match_info={"name": "meetings"}, headers={"X-App-Secret": "ok"})
         )
@@ -2918,7 +2918,7 @@ class TestSessionAgentRoutes:
     @pytest.mark.asyncio
     async def test_list_returns_workspace_results(self, monkeypatch, fake_sel) -> None:
         monkeypatch.setattr(
-            "kiro_crew.session_workspace.list_results",
+            "efm_go.session_workspace.list_results",
             lambda _s: [{"agent_id": "a1", "bytes": 12}],
         )
         resp = await core_mod.api_session_agents_list(_req(match_info={"id": "s1"}))
@@ -2927,7 +2927,7 @@ class TestSessionAgentRoutes:
 
     @pytest.mark.asyncio
     async def test_missing_result_is_404(self, monkeypatch, fake_sel) -> None:
-        monkeypatch.setattr("kiro_crew.session_workspace.read_result", lambda *_a: "")
+        monkeypatch.setattr("efm_go.session_workspace.read_result", lambda *_a: "")
         resp = await core_mod.api_session_agent_result(
             _req(match_info={"id": "s1", "agent_id": "a1"})
         )
@@ -2937,7 +2937,7 @@ class TestSessionAgentRoutes:
     @pytest.mark.asyncio
     async def test_result_is_returned_after_redaction(self, monkeypatch, fake_sel) -> None:
         monkeypatch.setattr(
-            "kiro_crew.session_workspace.read_result", lambda *_a: "finished the audit"
+            "efm_go.session_workspace.read_result", lambda *_a: "finished the audit"
         )
         resp = await core_mod.api_session_agent_result(
             _req(match_info={"id": "s1", "agent_id": "a1"})
@@ -2951,7 +2951,7 @@ class TestSessionAgentRoutes:
     ) -> None:
         result = tmp_path / "agent-a1.md"
         result.write_text("partial output\n", encoding="utf-8", newline="\n")
-        monkeypatch.setattr("kiro_crew.session_workspace.result_path", lambda *_a: result)
+        monkeypatch.setattr("efm_go.session_workspace.result_path", lambda *_a: result)
 
         app = web.Application()
         app["state"] = SimpleNamespace(
@@ -2976,7 +2976,7 @@ class TestSessionAgentRoutes:
             raise ConnectionResetError("peer went away")
 
         monkeypatch.setattr(
-            "kiro_crew.session_workspace.result_path",
+            "efm_go.session_workspace.result_path",
             lambda *_a: SimpleNamespace(exists=lambda: True, read_text=_reset),
         )
         app = web.Application()
@@ -3060,7 +3060,7 @@ class TestSessionAgentPathIdValidation:
         keys use them (``dashboard:slot-3``). A guard that rejected any of these
         would break working URLs, so pin the accepted set rather than only the
         refused one."""
-        monkeypatch.setattr("kiro_crew.session_workspace.list_results", lambda _s: [])
+        monkeypatch.setattr("efm_go.session_workspace.list_results", lambda _s: [])
         resp = await core_mod.api_session_agents_list(_req(match_info={"id": good}))
         assert resp.status == 200
 
@@ -3080,7 +3080,7 @@ class TestNonAsciiLocalSecret:
     async def test_refused_like_a_wrong_secret(
         self, monkeypatch, fake_sel, handler: str, bad: str
     ) -> None:
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.is_loopback", lambda _r: True)
+        monkeypatch.setattr("efm_go.dashboard.handlers.is_loopback", lambda _r: True)
         resp = await getattr(core_mod, handler)(
             _req(app={"local_secret": "right"}, headers={"X-Local-Secret": bad})
         )

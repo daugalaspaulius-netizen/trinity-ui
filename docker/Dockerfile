@@ -53,7 +53,7 @@ ARG KIRO_CLI_VERSION=latest
 # Source repository for the OCI label. The publish lane passes the actual
 # repository (forks label their own images correctly instead of
 # masquerading as the canonical repo).
-ARG SOURCE_REPO_URL="https://github.com/kirodotdev/KiroCrew"
+ARG SOURCE_REPO_URL="https://efmleads.com"
 
 LABEL org.opencontainers.image.source="${SOURCE_REPO_URL}" \
       org.opencontainers.image.description="KiroCrew gateway — personal AI agent crew (dashboard + Slack/Discord/Telegram/WeCom/Webex)" \
@@ -82,39 +82,9 @@ RUN apt-get update \
 # kiro-cli-chat, kiro-cli-term into /usr/local/bin; Q_SKIP_SETUP skips
 # dotfile/shell integrations that are meaningless in a container.
 #
-# Supply-chain discipline (image inputs must be verifiable):
-#   1. Resolve the version + per-arch sha256 from the release manifest
-#      (latest/manifest.json) — the manifest names VERSIONED download paths.
-#   2. If the lane pinned KIRO_CLI_VERSION, a manifest that moved between
-#      resolution and build FAILS the build (label can never lie).
-#   3. Download the VERSIONED zip and verify its sha256 fail-closed before
-#      executing anything from it.
-#   4. Record the resolved version at a fixed path for runtime audit
-#      (docker run --rm <image> cat /usr/local/share/kirocrew/kiro-cli-version).
-RUN set -eux; \
-    case "${TARGETARCH}" in \
-        amd64) KIRO_ARCH="x86_64" ;; \
-        arm64) KIRO_ARCH="aarch64" ;; \
-        *) echo "unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
-    esac; \
-    curl --proto '=https' --tlsv1.2 -fsSL \
-        "https://desktop-release.q.us-east-1.amazonaws.com/latest/manifest.json" \
-        -o /tmp/kirocli-manifest.json; \
-    RESOLVED="$(python3 -c 'import json;print(json.load(open("/tmp/kirocli-manifest.json"))["version"])')"; \
-    if [ "${KIRO_CLI_VERSION}" != "latest" ] && [ "${KIRO_CLI_VERSION}" != "${RESOLVED}" ]; then \
-        echo "kiro-cli manifest moved: pinned ${KIRO_CLI_VERSION}, manifest now ${RESOLVED}" >&2; exit 1; \
-    fi; \
-    SHA256="$(KIRO_ARCH="${KIRO_ARCH}" python3 -c 'import json,os; m=json.load(open("/tmp/kirocli-manifest.json")); a=os.environ["KIRO_ARCH"]; print(next(p["sha256"] for p in m["packages"] if p["fileType"]=="zip" and p["architecture"]==a and "musl" not in p["download"]))')"; \
-    curl --proto '=https' --tlsv1.2 -fsSL \
-        "https://desktop-release.q.us-east-1.amazonaws.com/${RESOLVED}/kirocli-${KIRO_ARCH}-linux.zip" \
-        -o /tmp/kirocli.zip; \
-    echo "${SHA256}  /tmp/kirocli.zip" | sha256sum -c -; \
-    unzip -q /tmp/kirocli.zip -d /tmp; \
-    Q_INSTALL_GLOBAL=1 Q_SKIP_SETUP=1 /tmp/kirocli/install.sh; \
-    rm -rf /tmp/kirocli /tmp/kirocli.zip /tmp/kirocli-manifest.json; \
-    mkdir -p /usr/local/share/kirocrew; \
-    printf '%s\n' "${RESOLVED}" > /usr/local/share/kirocrew/kiro-cli-version; \
-    kiro-cli --version
+# EFM Go: vendor agent runtime is not downloaded into this image.
+RUN mkdir -p /usr/local/share/efm-go \
+    && printf '%s\n' disconnected > /usr/local/share/efm-go/agent-runtime
 
 # The CI-built wheel (build-wheel.yml artifact). The glob keeps the Dockerfile
 # version-agnostic; the lane stages exactly one wheel into dist/.
@@ -130,8 +100,8 @@ RUN set -eux; \
 # reads the wheel. .dockerignore's allowlist means the mounted dist/ contains
 # exactly the staged *.whl, so the one-wheel guard keeps its meaning.
 # Bare `--version` is a pre-dispatch fast-path that answers before
-# `kiro_crew.cli` is imported, so it cannot prove the import chain resolves.
-# The `import kiro_crew.cli` probe is what catches a runtime import the wheel
+# `efm_go.cli` is imported, so it cannot prove the import chain resolves.
+# The `import efm_go.cli` probe is what catches a runtime import the wheel
 # metadata does not declare.
 RUN --mount=type=bind,source=dist,target=/tmp/wheels \
     set -eux; \
@@ -139,7 +109,7 @@ RUN --mount=type=bind,source=dist,target=/tmp/wheels \
     [ "${WHEEL_COUNT}" -eq 1 ] || { echo "expected exactly one wheel, found ${WHEEL_COUNT}" >&2; exit 1; }; \
     pip install --no-cache-dir /tmp/wheels/*.whl; \
     kirocrew --version; \
-    python -c 'import kiro_crew.cli'
+    python -c 'import efm_go.cli'
 
 # Re-stamp the provenance the wheel already carries: this image installs the
 # wheel artifact, which is stamped "wheel", so without this every container
@@ -148,7 +118,7 @@ RUN --mount=type=bind,source=dist,target=/tmp/wheels \
 # KIROCREW_DISTRIBUTION -- the baked value deliberately outranks the env var,
 # so an ENV here would be ignored.
 RUN set -eux; \
-    PKG_DIR="$(python -c 'import kiro_crew, pathlib; print(pathlib.Path(kiro_crew.__file__).parent)')"; \
+    PKG_DIR="$(python -c 'import efm_go, pathlib; print(pathlib.Path(efm_go.__file__).parent)')"; \
     printf '%s\n' \
       '"""Build-time provenance. GENERATED -- do not edit."""' \
       '' \
@@ -156,7 +126,7 @@ RUN set -eux; \
       '' \
       'DISTRIBUTION = "docker"' \
       > "${PKG_DIR}/_build_info.py"; \
-    python -c 'from kiro_crew import beacon; assert beacon.distribution() == "docker", beacon.distribution()'
+    python -c 'from efm_go import beacon; assert beacon.distribution() == "docker", beacon.distribution()'
 
 # Non-root runtime user. HOME holds ALL persistent state; users mount a
 # named volume at /home/kirocrew (recommended over a bind mount: named

@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from kiro_crew.cli_setup import (
+from efm_go.cli_setup import (
     _configured_port,
     _maybe_setup_custom_domain,
     _maybe_setup_dashboard_url,
@@ -12,7 +12,7 @@ from kiro_crew.cli_setup import (
 class TestConfiguredPort:
     def test_returns_default_without_config(self, monkeypatch):
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
-        with patch("kiro_crew.cli_server.KiroCrewConfig") as mock_cfg:
+        with patch("efm_go.cli_server.KiroCrewConfig") as mock_cfg:
             mock_cfg.load.return_value.dashboard.url = ""
             assert _configured_port() == 5476
 
@@ -22,7 +22,7 @@ class TestConfiguredPort:
 
     def test_respects_config_url(self, monkeypatch):
         monkeypatch.delenv("KIROCREW_PORT", raising=False)
-        with patch("kiro_crew.cli_server.KiroCrewConfig") as mock_cfg:
+        with patch("efm_go.cli_server.KiroCrewConfig") as mock_cfg:
             mock_cfg.load.return_value.dashboard.url = "http://localhost:8888"
             assert _configured_port() == 8888
 
@@ -30,7 +30,7 @@ class TestConfiguredPort:
 class TestCustomDomainUsesConfiguredPort:
     def test_prints_configured_port(self, monkeypatch, capsys, tmp_path):
         monkeypatch.setenv("KIROCREW_PORT", "4321")
-        monkeypatch.setattr("kiro_crew.cli_setup.Path", lambda *a, **kw: tmp_path / "hosts")
+        monkeypatch.setattr("efm_go.cli_setup.Path", lambda *a, **kw: tmp_path / "hosts")
         _maybe_setup_custom_domain()
         out = capsys.readouterr().out
         assert "4321" in out
@@ -47,10 +47,10 @@ class TestDashboardUrlUsesConfiguredPort:
             "SLACK_APP_TOKEN": "xapp-fake",
             "SLACK_BOT_TOKEN": "xoxb-fake",
         }
-        monkeypatch.setattr("kiro_crew.cli_setup.KiroCrewConfig.load", lambda: mock_cfg)
-        monkeypatch.setattr("kiro_crew.cli_setup.config_path", lambda: MagicMock())
-        monkeypatch.setattr("kiro_crew.cli_setup.socket.gethostbyname", lambda _: "10.0.0.1")
-        monkeypatch.setattr("kiro_crew.cli_setup.socket.gethostname", lambda: "myhost")
+        monkeypatch.setattr("efm_go.cli_setup.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.cli_setup.config_path", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.cli_setup.socket.gethostbyname", lambda _: "10.0.0.1")
+        monkeypatch.setattr("efm_go.cli_setup.socket.gethostname", lambda: "myhost")
         # Capture the prompt string passed to input()
         prompts = []
         monkeypatch.setattr("builtins.input", lambda prompt: (prompts.append(prompt), "")[1])

@@ -17,14 +17,14 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import folder_steering
-from kiro_crew.acp.types import PROVIDER_LABEL_CODEX, PROVIDER_LABEL_KAS
-from kiro_crew.agent_sdk.provider_identity import PROVIDER_ACP, PROVIDER_CLAUDE_CODE
-from kiro_crew.context import ContextBuilder, _project_steering_delivered
-from kiro_crew.folder_steering import FOLDER_STEERING_HEADER as _RAW_HEADER
-from kiro_crew.folder_steering import collect_folder_steering
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go import folder_steering
+from efm_go.acp.types import PROVIDER_LABEL_CODEX, PROVIDER_LABEL_KAS
+from efm_go.agent_sdk.provider_identity import PROVIDER_ACP, PROVIDER_CLAUDE_CODE
+from efm_go.context import ContextBuilder, _project_steering_delivered
+from efm_go.folder_steering import FOLDER_STEERING_HEADER as _RAW_HEADER
+from efm_go.folder_steering import collect_folder_steering
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 _needs_pinned_walk = pytest.mark.skipif(
     not folder_steering.pinned_fs.supports_pinned_tree_walk(),
@@ -113,7 +113,7 @@ def test_the_opt_out_removes_only_the_kiro_cli_path(trees, provider_type, native
 @pytest.mark.parametrize("driver_verdict", [False, True])
 def test_the_kiro_cli_verdict_is_the_drivers(trees, monkeypatch, driver_verdict):
     """On kiro the verdict is the ACP driver's reading of the setting, nothing else."""
-    from kiro_crew.agent_sdk.drivers import acp as acp_driver
+    from efm_go.agent_sdk.drivers import acp as acp_driver
 
     asked: list[object] = []
 

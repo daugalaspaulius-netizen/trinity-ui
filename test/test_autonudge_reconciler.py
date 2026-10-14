@@ -36,8 +36,8 @@ import time
 
 import pytest
 
-from kiro_crew.autonudge import AutoNudgeService, NudgeLoop
-from kiro_crew.monitoring.models import (
+from efm_go.autonudge import AutoNudgeService, NudgeLoop
+from efm_go.monitoring.models import (
     MONITOR_STATE_VERSION,
     MonitorDispatchResult,
     MonitorOutcome,
@@ -138,7 +138,7 @@ async def test_delivered_fire_without_turn_complete_is_rescued_by_reconciler(svc
     svc._on_fire = on_fire
     await svc.start()
     loop = await svc.add(slot_key="chat-1-123", message="watch the PR", idle_secs=300)
-    with caplog.at_level(logging.INFO, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.INFO, logger="efm_go.autonudge"):
         await _run_timer_as_production_would(svc, loop)
     assert fired == [loop.id]
     # Delivered fires are logged at INFO -- the observability half of the fix.
@@ -205,7 +205,7 @@ async def test_gate_exception_falls_through_to_fire_and_keeps_loop_alive(svc, ca
     svc._monitor_tick_is_quiet = boom  # type: ignore[method-assign]
     await svc.start()
     loop = await svc.add(slot_key="chat-1-123", message="go", idle_secs=300)
-    with caplog.at_level(logging.ERROR, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.ERROR, logger="efm_go.autonudge"):
         t = await _run_timer_as_production_would(svc, loop)
     # The tick SPENT a turn -- fail-toward-firing, not fail-toward-silence.
     assert fired == [loop.id]
@@ -382,7 +382,7 @@ async def test_reconciler_skips_monitor_version_this_gateway_does_not_implement(
     loop = await svc.add(slot_key="chat-1-111", message="a", idle_secs=300)
     loop.monitor = _monitor(version=MONITOR_STATE_VERSION + 1)
     svc._cancel_timer(loop.id)
-    with caplog.at_level(logging.INFO, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.INFO, logger="efm_go.autonudge"):
         _reconcile_twice(svc)
     assert loop.id not in svc._timers
     assert not any("not arming" in r.message for r in caplog.records)
@@ -463,7 +463,7 @@ async def test_pass_defers_while_mutation_lock_held_and_keeps_candidacy(svc):
 async def test_periodic_task_rescues_end_to_end(svc, monkeypatch):
     """The backstop works with nobody calling _reconcile_once by hand: shrink
     the beat interval, strand a loop, and a live timer appears on its own."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     monkeypatch.setattr(_an, "_RECONCILE_INTERVAL_SECS", 0.05)
     await svc.start()
@@ -481,7 +481,7 @@ async def test_reconciler_beat_stays_on_wall_clock_under_patched_sleep(svc, monk
     fast-forward the per-loop timers; a sleep-based reconciler would busy-spin
     under that patch and re-arm everything continuously. The call_later beat
     must keep the reconciler dormant regardless."""
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     real_sleep = asyncio.sleep
     passes: list[float] = []

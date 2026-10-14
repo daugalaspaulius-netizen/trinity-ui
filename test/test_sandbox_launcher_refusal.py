@@ -23,9 +23,9 @@ from pathlib import Path
 import pytest
 from test_sandbox_launcher_program import RecordingLibc, launch, refusal
 
-from kiro_crew import sandbox as sb
-from kiro_crew import sandbox_launcher
-from kiro_crew import sandbox_launcher_program as program
+from efm_go import sandbox as sb
+from efm_go import sandbox_launcher
+from efm_go import sandbox_launcher_program as program
 
 #: The exact line a container under its runtime's default AppArmor profile
 #: produces: both unshares succeed, the launcher's first mount is refused.
@@ -353,7 +353,7 @@ class TestOneOwnerForTheLauncherPrefixes:
     def test_the_clone_probe_classifier_reads_the_sandbox_tuple(self) -> None:
         # Two spellings of what the launcher says would drift apart the first time
         # the launcher changed; the module that generates the launcher owns the one.
-        from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup
+        from efm_go.apps.builtins.auto_improvement.backend import clone_setup
 
         assert clone_setup._LAUNCHER_EXIT_PREFIXES is sb.LAUNCHER_EXIT_PREFIXES
 

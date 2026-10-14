@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.effort import (
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.effort import (
     EFFORT_LEVELS,
     EFFORT_VALUES,
     effort_settings_key,
@@ -20,8 +20,8 @@ from kiro_crew.effort import (
     model_supports_effort,
     resolve_effort_for_model,
 )
-from kiro_crew.providers import acp as acp_provider
-from kiro_crew.providers.acp import (
+from efm_go.providers import acp as acp_provider
+from efm_go.providers.acp import (
     _clear_cli_overlay_effort,
     _read_cli_overlay,
     _write_cli_overlay,
@@ -88,7 +88,7 @@ class TestModelSupportsEffort:
         # agnostic, and a kiro/acp Haiku agent reaches it with the RAW
         # "claude-haiku-4.5" spelling (the kiro path does NOT translate). So the
         # raw id must report False, NOT inherit Sonnet's supports_effort flag.
-        from kiro_crew import model_registry as mr
+        from efm_go import model_registry as mr
 
         # The fold itself is unchanged — claude_code translation -> Sonnet id.
         assert mr.to_provider_id("claude-haiku-4.5", "claude_code") == (
@@ -330,14 +330,14 @@ class TestFactoryEffortThreading:
     def _capture_provider_kwargs(
         self, provider_name: str, *, config_effort: str = "", **factory_call
     ):
-        # Both factory branches lazily `from kiro_crew.providers.acp import
+        # Both factory branches lazily `from efm_go.providers.acp import
         # AcpProvider` (circular-import workaround). That import runs inside
         # create_provider_factory(), so patch the source module symbol BEFORE
         # building the factory, then capture the construction kwargs.
         cfg = KiroCrewConfig()
         cfg.agent.provider = provider_name
         cfg.agent.reasoning_effort = config_effort
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             factory(**factory_call)
@@ -400,12 +400,12 @@ class TestFactoryDropWarning:
     drift from the decision it reports on. Silence stays the contract when the
     effort is delivered, invalid, or absent."""
 
-    _LOGGER = "kiro_crew.config.loader"
+    _LOGGER = "efm_go.config.loader"
 
     def _drop_warnings(self, caplog, tmp_path, **factory_call) -> list[str]:
         cfg = KiroCrewConfig()
         cfg.agent.provider = "acp"
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             with caplog.at_level(logging.WARNING, logger=self._LOGGER):
@@ -459,7 +459,7 @@ class TestFactoryDropWarning:
         # (Design review on this PR).
         cfg = KiroCrewConfig()
         cfg.agent.provider = "acp"
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             with caplog.at_level(logging.WARNING, logger=self._LOGGER):
@@ -493,7 +493,7 @@ class TestFactoryDropWarning:
         cfg = KiroCrewConfig()
         cfg.agent.provider = "acp"
         cfg.agent.reasoning_effort = "high"
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             with caplog.at_level(logging.WARNING, logger=self._LOGGER):
@@ -523,7 +523,7 @@ class TestFactoryDropWarning:
         cfg = KiroCrewConfig()
         cfg.agent.provider = "acp"
         cfg.agent.reasoning_effort = "high"
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             with caplog.at_level(logging.WARNING, logger=self._LOGGER):
@@ -589,8 +589,8 @@ class TestPoolEffortPostClaim:
     async def test_pool_claim_with_effort_override_applies_effort_post_claim(self):
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.providers.acp import AcpProvider
-        from kiro_crew.session import SessionManager
+        from efm_go.providers.acp import AcpProvider
+        from efm_go.session import SessionManager
 
         cfg = MagicMock()
         cfg.session.pool_size = 2
@@ -628,8 +628,8 @@ class TestPoolEffortPostClaim:
         import logging
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.providers.acp import AcpProvider
-        from kiro_crew.session import SessionManager
+        from efm_go.providers.acp import AcpProvider
+        from efm_go.session import SessionManager
 
         cfg = MagicMock()
         cfg.session.pool_size = 2
@@ -672,8 +672,8 @@ class TestPoolEffortPostClaim:
         import logging
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.providers.acp import AcpProvider
-        from kiro_crew.session import SessionManager
+        from efm_go.providers.acp import AcpProvider
+        from efm_go.session import SessionManager
 
         cfg = MagicMock()
         cfg.session.pool_size = 2
@@ -720,7 +720,7 @@ class TestFactoryDefaultEffortFallback:
         cfg = KiroCrewConfig()
         cfg.agent.provider = "acp"
         cfg.agent.reasoning_effort = config_effort
-        with patch("kiro_crew.providers.acp.AcpProvider") as mock_provider:
+        with patch("efm_go.providers.acp.AcpProvider") as mock_provider:
             mock_provider.return_value = MagicMock()
             factory = cfg.create_provider_factory()
             factory(**factory_call)

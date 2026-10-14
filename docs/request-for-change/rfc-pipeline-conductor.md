@@ -15,7 +15,7 @@ superseded-by: []
 # RFC: Pipeline Conductor — the issue pipelines as a conductor use case
 
 > **Partly shipped — see the `pipeline-conductor` skill at
-> [`builtin_skills/pipeline-conductor/SKILL.md`](../../src/kiro_crew/builtin_skills/pipeline-conductor/SKILL.md)
+> [`builtin_skills/pipeline-conductor/SKILL.md`](../../src/efm_go/builtin_skills/pipeline-conductor/SKILL.md)
 > for what runs today, and [`../system-specs/modules/pipeline-conductor.md`](../system-specs/modules/pipeline-conductor.md)
 > for the contract.** M0 is on main: the `kirocrew-pipeline-conductor` agent is
 > registered in `subagent.py`'s `UNADVERTISED_AGENTS`, and the skill ships with its

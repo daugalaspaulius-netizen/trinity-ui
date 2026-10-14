@@ -10,7 +10,7 @@ sandboxed process, so the racing writer is ordinary rather than exotic.
 
 The tests here LOSE that race deliberately and then ask what the mount actually
 received. They run the launcher program's own stages
-(``kiro_crew.sandbox_launcher_program``) in-process, against real files under
+(``efm_go.sandbox_launcher_program``) in-process, against real files under
 ``tmp_path``, with :class:`_Libc` in place of libc. The swap is planted inside the
 ``mount`` call itself, before the kernel would resolve its target: every shape of
 a mask loop passes through that point after classifying the target, the pinned
@@ -42,7 +42,7 @@ from typing import Any, Callable, NamedTuple
 import pytest
 from test_sandbox_launcher_program import CoveringLibc, identity, launch, payload, refusal
 
-from kiro_crew import sandbox, sandbox_launcher_program, sandbox_plan
+from efm_go import sandbox, sandbox_launcher_program, sandbox_plan
 
 program = sandbox_launcher_program
 
@@ -184,7 +184,7 @@ def _run(
     readonly_dirs: list[str] | None = None,
     hide_ssh: bool = True,
 ) -> _Ran:
-    """Place every mask (:func:`~kiro_crew.sandbox_launcher_program.place_masks`).
+    """Place every mask (:func:`~efm_go.sandbox_launcher_program.place_masks`).
 
     The plan masks the bed's credential directory, its secret file and ``~/.ssh``,
     and seals its policy cache, unless a list is given. No mask root or window

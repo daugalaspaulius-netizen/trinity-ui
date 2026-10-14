@@ -16,11 +16,11 @@ from types import SimpleNamespace
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import hooks as hooks_mod
-from kiro_crew.hooks import safe_read_file_bytes_nolink
+from efm_go import hooks as hooks_mod
+from efm_go.hooks import safe_read_file_bytes_nolink
 
 REPO = Path(__file__).resolve().parents[1]
-HANDLERS = (REPO / "src" / "kiro_crew" / "deploy" / "handlers.py").read_text(encoding="utf-8")
+HANDLERS = (REPO / "src" / "efm_go" / "deploy" / "handlers.py").read_text(encoding="utf-8")
 
 
 class TestF1FdPinnedContainment:

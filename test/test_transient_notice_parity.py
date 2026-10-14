@@ -1,7 +1,7 @@
 """Guard: the transient-5xx notice tokens must match the frontend's table.
 
 ``TRANSIENT_NOTICE_RETRYING`` / ``TRANSIENT_NOTICE_RESUMING`` /
-``TRANSIENT_NOTICE_GIVE_UP`` in ``kiro_crew.dashboard.chat_utils`` are the
+``TRANSIENT_NOTICE_GIVE_UP`` in ``efm_go.dashboard.chat_utils`` are the
 ``meta["notice"]`` wire tokens chat_runner stamps on the ``error`` rows it
 appends while retrying an upstream model 5xx. ``NOTICE_TOKENS`` in
 ``website/src/pages/chat/transientNotice.ts`` is the frontend's copy of that
@@ -18,7 +18,7 @@ import re
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[1]
-_BACKEND = _REPO / "src" / "kiro_crew" / "dashboard" / "chat_utils.py"
+_BACKEND = _REPO / "src" / "efm_go" / "dashboard" / "chat_utils.py"
 _FRONTEND = _REPO / "website" / "src" / "pages" / "chat" / "transientNotice.ts"
 
 # `TRANSIENT_NOTICE_SOMETHING = "..."` at column 0, excluding the META_KEY entry

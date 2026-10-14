@@ -8,7 +8,7 @@ import uuid
 
 import pytest
 
-from kiro_crew.artifacts import (
+from efm_go.artifacts import (
     ArtifactComment,
     ArtifactStore,
 )
@@ -315,7 +315,7 @@ class TestCommentActivityEvents:
         assert "reason" not in ev["metadata"]
 
     def test_unknown_event_type_still_rejected(self, store):
-        from kiro_crew.artifacts import ArtifactValidationError
+        from efm_go.artifacts import ArtifactValidationError
 
         art = store.get("test-art")
         with pytest.raises(ArtifactValidationError):
@@ -339,7 +339,7 @@ class TestCommentRetentionCap:
         return ArtifactComment(id=cid, body=f"r{n}", thread_id=root_id, parent_id=root_id)
 
     def test_cap_drops_oldest_threads_keeps_newest(self, store, monkeypatch):
-        from kiro_crew import artifacts as art_mod
+        from efm_go import artifacts as art_mod
 
         # Shrink the cap so the test is cheap.
         monkeypatch.setattr(art_mod, "MAX_COMMENTS_PER_ARTIFACT", 3)
@@ -353,7 +353,7 @@ class TestCommentRetentionCap:
         assert "root-0000" not in ids and "root-0001" not in ids  # oldest dropped
 
     def test_cap_drops_whole_thread_never_orphans_reply(self, store, monkeypatch):
-        from kiro_crew import artifacts as art_mod
+        from efm_go import artifacts as art_mod
 
         monkeypatch.setattr(art_mod, "MAX_COMMENTS_PER_ARTIFACT", 3)
         # Oldest thread: root-0000 + two replies (3 comments in one thread).

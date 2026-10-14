@@ -16,8 +16,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew import history as H
-from kiro_crew.history import HistoryConsolidator
+from efm_go import history as H
+from efm_go.history import HistoryConsolidator
 
 _LIVE_BODY = "## When to use\nold\n## Steps\n1. old\n## Gotchas\nnone\n"
 
@@ -100,7 +100,7 @@ def _mk(loader, **kw):
 
 
 def _sel_recorder(recorded):
-    ctx = patch("kiro_crew.history.sel")
+    ctx = patch("efm_go.history.sel")
     mock = ctx.start()
     mock.return_value.log_tool_invocation = lambda **k: recorded.append(k)
     return ctx
@@ -625,7 +625,7 @@ async def test_stage_update_truncates_long_target_slug():
     `<slug>-update` would exceed the 64-char slug cap and staging would REJECT it
     — silently dropping the learning, since consolidation advances its offset
     regardless. The slug must be truncated so the suffix fits."""
-    from kiro_crew.skills import _AUTO_NAME_PATTERN
+    from efm_go.skills import _AUTO_NAME_PATTERN
 
     long_slug = "d" * 60
     assert _AUTO_NAME_PATTERN.match(long_slug)  # the target itself is legal

@@ -6,8 +6,8 @@ import threading
 
 import pytest
 
-from kiro_crew.dashboard.chat_runner import _handle_workflow_command
-from kiro_crew.dashboard.chat_utils import parse_workflow_command
+from efm_go.dashboard.chat_runner import _handle_workflow_command
+from efm_go.dashboard.chat_utils import parse_workflow_command
 
 
 class FakeSlot:
@@ -63,7 +63,7 @@ def test_parse_workflow_command_keeps_free_form_input() -> None:
 
 @pytest.mark.asyncio
 async def test_bare_workflow_command_lists_saved_slugs(monkeypatch) -> None:
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner.sel", lambda: _FakeSel())
+    monkeypatch.setattr("efm_go.dashboard.chat_runner.sel", lambda: _FakeSel())
     state = FakeState()
     slot = FakeSlot()
 
@@ -78,7 +78,7 @@ async def test_bare_workflow_command_lists_saved_slugs(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_named_workflow_runs_exact_definition_and_maps_input(monkeypatch) -> None:
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner.sel", lambda: _FakeSel())
+    monkeypatch.setattr("efm_go.dashboard.chat_runner.sel", lambda: _FakeSel())
     state = FakeState()
     slot = FakeSlot()
 

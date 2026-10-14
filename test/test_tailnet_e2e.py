@@ -48,7 +48,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.dashboard import tailnet, tailnet_serve
+from efm_go.dashboard import tailnet, tailnet_serve
 
 _DASH_PORT = 5476
 _SUFFIX = "tail1a2b3c.ts.net"
@@ -183,7 +183,7 @@ def env(tmp_path, monkeypatch):
 
 def _run_cli(*argv: str) -> int:
     """Invoke the real `kirocrew` entry point in-process; return its exit code."""
-    from kiro_crew.cli import main
+    from efm_go.cli import main
 
     with patch.object(sys, "argv", ["kirocrew", *argv]):
         try:

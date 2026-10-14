@@ -9,7 +9,7 @@ the second copy of it drifts silently.
 Before adding a constant, check the table for an existing owner. Module-level
 constants are `UPPER_SNAKE_CASE`; private ones are `_UPPER_SNAKE_CASE`.
 
-Paths below are relative to `src/kiro_crew/`.
+Paths below are relative to `src/efm_go/`.
 
 | Concern | Owning module | Notes |
 |---|---|---|
@@ -53,9 +53,9 @@ Other style rules:
 | Python version | >= 3.12; `from __future__ import annotations` for type hints |
 | Imports | `import logging` plus `logger = logging.getLogger(__name__)` |
 | Async | `asyncio` throughout; `async def` for all I/O |
-| Module-global asyncio primitives | Never a bare `asyncio.Lock()`/`Event()`/`Queue()` at module scope — it binds to the import-time (or first-use) loop and raises `RuntimeError` from any other loop (Python 3.10+). Use `kiro_crew.loop_lock.LoopBoundLock` for locks, or create the primitive inside the coroutine. CI enforces this (`loop-bound-locks` gate). |
+| Module-global asyncio primitives | Never a bare `asyncio.Lock()`/`Event()`/`Queue()` at module scope — it binds to the import-time (or first-use) loop and raises `RuntimeError` from any other loop (Python 3.10+). Use `efm_go.loop_lock.LoopBoundLock` for locks, or create the primitive inside the coroutine. CI enforces this (`loop-bound-locks` gate). |
 | Dataclasses | `@dataclass` for data containers |
-| Product name | The product is **Kiro Crew**: two words, a space, capital `K`. Identifiers keep the spelling their own system gave them (the `kirodotdev/KiroCrew` repo slug, `KiroCrew.dmg` artifacts, the `KiroCrew Nightly` OS identifier, the `kirocrew` CLI, `KIROCREW_*` env vars, `kiro_crew` imports). CI gates the lines a change ADDS, so an existing spelling nearby does not exempt a new one; run `BRAND_BASE_REF=origin/main python3 scripts/check_brand_name.py` before pushing. |
+| Product name | The product is **Kiro Crew**: two words, a space, capital `K`. Identifiers keep the spelling their own system gave them (the `efmleads.com` repo slug, `KiroCrew.dmg` artifacts, the `KiroCrew Nightly` OS identifier, the `kirocrew` CLI, `KIROCREW_*` env vars, `efm_go` imports). CI gates the lines a change ADDS, so an existing spelling nearby does not exempt a new one; run `BRAND_BASE_REF=origin/main python3 scripts/check_brand_name.py` before pushing. |
 | Errors | ACP exceptions live in `acp/transport_errors.py` (re-exported by `acp/client.py`), `acp/session_handle.py`, and `acp/runtime.py`; return error strings at tool boundaries. See [error-handling](error-handling.md). |
 
 ## Comments explain the WHY
@@ -108,8 +108,8 @@ committing:
 
 ```bash
 python3 scripts/check_black_formatting.py && python3 scripts/check_subprocess_encoding.py
-COMMENT_HISTORY_BASE_REF=origin/main python3 scripts/check_comment_history.py && isort src/kiro_crew test
-flake8 src/kiro_crew test && mypy src/kiro_crew
+COMMENT_HISTORY_BASE_REF=origin/main python3 scripts/check_comment_history.py && isort src/efm_go test
+flake8 src/efm_go test && mypy src/efm_go
 python3 scripts/local-gate.py
 ```
 
@@ -123,7 +123,7 @@ clean, and a file that *becomes* clean must be pruned from the list, so it only
 ever shrinks. Format what you touched with
 `black --target-version py310 <paths>`, never the whole tree.
 
-**On macOS, run `mypy --platform linux src/kiro_crew`.** CI type-checks on Linux, and
+**On macOS, run `mypy --platform linux src/efm_go`.** CI type-checks on Linux, and
 typeshed guards `os.listxattr` / `getxattr` / `setxattr` behind
 `sys.platform == "linux"` even though macOS has them. A bare local run therefore
 reports errors in files you did not touch, and — the half that matters — it MISSES the
@@ -139,7 +139,7 @@ Linux-only errors CI fails on, so a clean local run is a false green.
 
 `setup.cfg` also sets `max_line_length = 100`, ignores E501 (after auto-formatting
 the only long lines left do not matter) and E203 (black's whitespace before `:`),
-and excludes `src/kiro_crew/_vendor` from flake8 entirely. mypy and isort exclude
+and excludes `src/efm_go/_vendor` from flake8 entirely. mypy and isort exclude
 it too. Never hand-edit vendored code, and never reformat it: the point is a clean
 diff against the upstream wheel at upgrade time.
 
@@ -160,7 +160,7 @@ judged as one call), behind the shrink-only
 
 For a child whose output encoding is knowable — `git`, `gh`, a Python
 interpreter we spawn running our own code — pin the decode with the shared
-definition in `kiro_crew.subprocess_utf8`: splat `**UTF8_TEXT` into the call
+definition in `efm_go.subprocess_utf8`: splat `**UTF8_TEXT` into the call
 (this keeps the call going through the module's own `subprocess` attribute, so
 tests that patch it by name keep intercepting — and it adds no new spawn
 primitive for `test_spawn_audit` to police). For a Python child, also pin the

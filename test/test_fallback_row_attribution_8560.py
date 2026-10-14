@@ -128,17 +128,17 @@ class TestFallbackServedTurnAttribution:
         its credits to the model that ran, instead of landing in ``unknown``."""
         from unittest.mock import AsyncMock, patch
 
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.acp.types import TurnUsage
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.dashboard.handlers import usage as usage_mod
-        from kiro_crew.llm_helpers import TRANSIENT_RETRIES
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.acp.types import TurnUsage
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.dashboard.handlers import usage as usage_mod
+        from efm_go.llm_helpers import TRANSIENT_RETRIES
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         shard_dir = tmp_path / "usage" / "tokens"
         monkeypatch.setattr(usage_mod, "_TOKEN_USAGE_DIR", shard_dir)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._agent_fallback_chain",
+            "efm_go.dashboard.chat_runner._agent_fallback_chain",
             lambda: ("fallback-model",),
         )
 
@@ -199,10 +199,10 @@ class TestFallbackServedTurnAttribution:
         slot's own model — the change must touch only the fallback branch."""
         from unittest.mock import AsyncMock, patch
 
-        from kiro_crew.acp.types import TurnUsage
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.dashboard.handlers import usage as usage_mod
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import TurnUsage
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.dashboard.handlers import usage as usage_mod
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         shard_dir = tmp_path / "usage" / "tokens"
         monkeypatch.setattr(usage_mod, "_TOKEN_USAGE_DIR", shard_dir)
@@ -242,10 +242,10 @@ class TestFallbackServedTurnAttribution:
         """
         from unittest.mock import AsyncMock, patch
 
-        from kiro_crew.acp.types import TurnUsage
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.dashboard.handlers import usage as usage_mod
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import TurnUsage
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.dashboard.handlers import usage as usage_mod
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         shard_dir = tmp_path / "usage" / "tokens"
         monkeypatch.setattr(usage_mod, "_TOKEN_USAGE_DIR", shard_dir)

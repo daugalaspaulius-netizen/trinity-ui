@@ -105,7 +105,7 @@ printf '# Sample project\n\nA small tree the GUI user test browses from the chat
 KIROCREW_HOME="$HOME_DIR" python3 "$(dirname "$0")/seed_home.py" --fixture "$GUI_SEED" "${member_args[@]}" --project "$GUI_PROJECT_DIR"
 
 # ---- 3. gateway ------------------------------------------------------------
-# Same shape as kiro_crew.testing.harness.spawn_feature_gateway (the E2E job's
+# Same shape as efm_go.testing.harness.spawn_feature_gateway (the E2E job's
 # boot): isolated data + agent homes, the packaged fake ACP backend as the
 # "kiro-cli", yolo approval so the tester never meets an approval prompt, no
 # crons, and --test-mode (= --port auto --no-open --json-ready) so the READY
@@ -119,7 +119,7 @@ env \
   KIROCREW_KIRO_BIN="$FAKE_BACKEND" \
   KIROCREW_SKIP_MODEL_DOWNLOAD=1 \
   PYTHONUNBUFFERED=1 \
-  setsid python3 -m kiro_crew gateway --test-mode --approval yolo --no-crons \
+  setsid python3 -m efm_go gateway --test-mode --approval yolo --no-crons \
   > "$GATEWAY_LOG" 2> "$GUI_OUT/gateway.err" &
 GW_PID="$!"
 echo "$GW_PID" >> "$PIDS"

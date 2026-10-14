@@ -2,7 +2,7 @@
 
 Lives in the repo-level ``test/`` tree (not the app's in-package ``tests/``)
 because ``setup.cfg`` sets ``testpaths = test transfer`` — a test under
-``src/kiro_crew/apps/builtins/...`` is never collected by CI.
+``src/efm_go/apps/builtins/...`` is never collected by CI.
 
 This module is the ONLY place that talks to the vendored presentation engine, and
 it talks by SPAWNING it: a separately versioned third-party checkout, driven with
@@ -36,7 +36,7 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.apps.builtins.pptx_maker.backend import engine, engine_source, paths
+from efm_go.apps.builtins.pptx_maker.backend import engine, engine_source, paths
 
 
 class TestEngineResult:

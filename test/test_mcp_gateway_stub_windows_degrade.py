@@ -32,8 +32,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.mcp_gateway import stub
+from efm_go import platform_compat
+from efm_go.mcp_gateway import stub
 
 
 class _FakeProc:

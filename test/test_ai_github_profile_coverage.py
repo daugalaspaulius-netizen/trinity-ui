@@ -29,12 +29,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup
-from kiro_crew.apps.builtins.auto_improvement.backend import profile_normalize as PN
-from kiro_crew.apps.builtins.auto_improvement.backend import store
-from kiro_crew.apps.builtins.auto_improvement.profiles.github_repo import profile as gh
-from kiro_crew.apps.builtins.auto_improvement.spine.contracts import TRACK_BUG, TRACK_PERF
+from efm_go import security
+from efm_go.apps.builtins.auto_improvement.backend import clone_setup
+from efm_go.apps.builtins.auto_improvement.backend import profile_normalize as PN
+from efm_go.apps.builtins.auto_improvement.backend import store
+from efm_go.apps.builtins.auto_improvement.profiles.github_repo import profile as gh
+from efm_go.apps.builtins.auto_improvement.spine.contracts import TRACK_BUG, TRACK_PERF
 
 # ── scaffolding ──────────────────────────────────────────────────────────────
 
@@ -1144,7 +1144,7 @@ def test_isolation_push_disabled_requires_both_urls_neutral(
     tmp_path, monkeypatch, push_url, fetch_url, expected
 ):
     """Only exact singleton sentinels satisfy the shared runtime isolation gate."""
-    from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup
+    from efm_go.apps.builtins.auto_improvement.backend import clone_setup
 
     clone = tmp_path / "clone"
     clone.mkdir()
@@ -1162,7 +1162,7 @@ def test_isolation_push_disabled_requires_both_urls_neutral(
 
 
 def test_isolation_push_disabled_fails_closed_on_a_git_error(tmp_path, monkeypatch):
-    from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup
+    from efm_go.apps.builtins.auto_improvement.backend import clone_setup
 
     clone = tmp_path / "clone2"
     clone.mkdir()
@@ -1176,7 +1176,7 @@ def test_isolation_push_disabled_fails_closed_on_a_git_error(tmp_path, monkeypat
 
 
 def test_isolation_push_disabled_fails_closed_on_a_spawn_failure(tmp_path, monkeypatch):
-    from kiro_crew.apps.builtins.auto_improvement.backend import clone_setup
+    from efm_go.apps.builtins.auto_improvement.backend import clone_setup
 
     clone = tmp_path / "absent"
     clone.mkdir()
@@ -1205,7 +1205,7 @@ def test_isolation_do_not_pollute_tolerates_unavailable_roots(tmp_path, monkeypa
         raise RuntimeError("no data dir")
 
     monkeypatch.setattr(store, "data_dir", _boom)
-    from kiro_crew.config import loader as cfg_loader
+    from efm_go.config import loader as cfg_loader
 
     monkeypatch.setattr(cfg_loader, "config_dir", _boom)
     iso = gh.RepoIsolation(clone_path=tmp_path / "c")
@@ -1380,7 +1380,7 @@ def test_profile_test_dir_follows_where_the_tests_really_are(
 
 def test_profile_propose_never_fabricates_a_mechanical_edit(tmp_path, monkeypatch):
     prof = _profile(tmp_path, monkeypatch)
-    from kiro_crew.apps.builtins.auto_improvement.spine.contracts import Candidate
+    from efm_go.apps.builtins.auto_improvement.spine.contracts import Candidate
 
     got = prof.propose(
         candidate=Candidate(kind=TRACK_BUG, target="src/pkg/mod.py"),

@@ -15,7 +15,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-from kiro_crew.acp_backends import (
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_DEEPSEEK,
@@ -25,10 +25,10 @@ from kiro_crew.acp_backends import (
     ACP_BACKEND_OPENCODE,
     ACP_BACKEND_PI,
 )
-from kiro_crew.agent_sdk import backends as acp_backends
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard.handlers.agents import _supply_live_enum
-from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+from efm_go.agent_sdk import backends as acp_backends
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard.handlers.agents import _supply_live_enum
+from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
 FIELD = "agent.acp_backend"
 
@@ -53,7 +53,7 @@ def restore_registry():
     ``_selectable`` would leak a widened baseline into every later test in the run.
 
     Reached through ``agent_sdk.backends``, the module that DEFINES the pair. The
-    ``kiro_crew.acp_backends`` shim re-exports the public names only: a second
+    ``efm_go.acp_backends`` shim re-exports the public names only: a second
     binding to a mutable set is how two views of one registry start disagreeing.
     """
     baseline_before = set(acp_backends._baseline)

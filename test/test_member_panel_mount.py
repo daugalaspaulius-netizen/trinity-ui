@@ -25,10 +25,10 @@ from typing import Any
 
 import pytest
 
-import kiro_crew.validation  # noqa: F401 - break the legacy import cycle first
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.kas_agents import to_client_custom_agent
-from kiro_crew.acp.types import (
+import efm_go.validation  # noqa: F401 - break the legacy import cycle first
+from efm_go.acp.client import AcpClient
+from efm_go.acp.kas_agents import to_client_custom_agent
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_GOOSE,
@@ -36,8 +36,8 @@ from kiro_crew.acp.types import (
     ACP_BACKEND_KIRO,
     ACP_BACKEND_OPENCODE,
 )
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
-from kiro_crew.members import (
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+from efm_go.members import (
     MEMBER_DISPATCH_SERVER,
     MEMBER_PANEL_SERVER,
     crew_panel_enabled,
@@ -63,12 +63,12 @@ class TestThePremise:
     """
 
     def test_the_panel_server_is_opt_in(self):
-        from kiro_crew.agent import _MANAGED_MCP_SERVERS
+        from efm_go.agent import _MANAGED_MCP_SERVERS
 
         assert _MANAGED_MCP_SERVERS[MEMBER_PANEL_SERVER].get("opt_in") is True
 
     def test_it_is_in_the_opt_in_managed_set(self):
-        from kiro_crew.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS, OPT_IN_BIN_MCP_SERVERS
+        from efm_go.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS, OPT_IN_BIN_MCP_SERVERS
 
         assert MEMBER_PANEL_SERVER in OPT_IN_BIN_MCP_SERVERS
         assert MEMBER_PANEL_SERVER not in ALWAYS_ON_BIN_MCP_SERVERS
@@ -76,14 +76,14 @@ class TestThePremise:
     def test_identity_travels_to_it(self):
         """A granted server that carries no session identity comes up
         present-but-unusable: it refuses every call as ``identity_unattested``."""
-        from kiro_crew.acp.session_mcp import IDENTITY_BOUND_SERVERS
+        from efm_go.acp.session_mcp import IDENTITY_BOUND_SERVERS
 
         assert MEMBER_PANEL_SERVER in IDENTITY_BOUND_SERVERS
 
 
 class TestPanelGrantSet:
     def test_every_grant_names_the_panel_server(self):
-        from kiro_crew.agent import _MEMBER_PANEL_GRANTS
+        from efm_go.agent import _MEMBER_PANEL_GRANTS
 
         assert _MEMBER_PANEL_GRANTS
         for grant in _MEMBER_PANEL_GRANTS:
@@ -93,8 +93,8 @@ class TestPanelGrantSet:
         """Derived from the server's own registration rather than restated, so a
         tool added to ``kirocrew-panel`` later cannot be silently ungranted while
         this file still passes."""
-        from kiro_crew.agent import _MEMBER_PANEL_GRANTS
-        from kiro_crew.mcp_panel import _tool_definitions
+        from efm_go.agent import _MEMBER_PANEL_GRANTS
+        from efm_go.mcp_panel import _tool_definitions
 
         registered = {t["name"] for t in _tool_definitions()}
         granted = {g.rsplit("/", 1)[-1] for g in _MEMBER_PANEL_GRANTS}
@@ -106,7 +106,7 @@ class TestPanelGrantSet:
         or session argument, and refuses a subagent, so it is granted rather than
         prompted -- an approval prompt would stall the unattended cycle the drawer
         is watched during."""
-        from kiro_crew.agent import _MEMBER_PANEL_GRANTS
+        from efm_go.agent import _MEMBER_PANEL_GRANTS
 
         assert f"@{MEMBER_PANEL_SERVER}/panel_publish" in _MEMBER_PANEL_GRANTS
 
@@ -114,7 +114,7 @@ class TestPanelGrantSet:
         """The grant travels as ``allowedTools`` through the governance ceiling, so
         the server entry itself must still carry no ``autoApprove`` key -- that key
         is resolved inside the host and skips the ceiling entirely."""
-        from kiro_crew.agent import _MANAGED_MCP_SERVERS
+        from efm_go.agent import _MANAGED_MCP_SERVERS
 
         assert "autoApprove" not in _MANAGED_MCP_SERVERS[MEMBER_PANEL_SERVER]
 
@@ -139,7 +139,7 @@ class TestKasPanelProjection:
         assert not any(MEMBER_PANEL_SERVER in str(v) for v in perms.values()), perms
 
     def test_panel_grants_join_allowed_tools(self):
-        from kiro_crew.agent import _MEMBER_PANEL_GRANTS
+        from efm_go.agent import _MEMBER_PANEL_GRANTS
 
         out = to_client_custom_agent("a", dict(self.SPEC), "p", crew_panel=True)
         rendered = str(out.get("permissions") or {})
@@ -219,7 +219,7 @@ class TestCrewPanelCeiling:
     def _config(self, monkeypatch, *, value: bool, degraded: set[str] | None = None):
         from types import SimpleNamespace
 
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         fake = SimpleNamespace(
             agent=SimpleNamespace(crew_panel=value),
@@ -230,7 +230,7 @@ class TestCrewPanelCeiling:
         )
 
     def test_default_is_on(self):
-        from kiro_crew.config.sections import AgentConfig
+        from efm_go.config.sections import AgentConfig
 
         assert AgentConfig().crew_panel is True
 
@@ -249,7 +249,7 @@ class TestCrewPanelCeiling:
         assert crew_panel_enabled() is False
 
     def test_a_raising_read_withdraws_the_grant(self, monkeypatch):
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         def _boom(cls):
             raise OSError("config unreadable")
@@ -271,7 +271,7 @@ class TestTheSwitchReachesALiveSession:
     def test_the_publish_gate_reads_the_switch(self):
         import inspect
 
-        from kiro_crew.dashboard.handlers import agent_panel as handler
+        from efm_go.dashboard.handlers import agent_panel as handler
 
         source = inspect.getsource(handler._resolve_publishing_crew)
         assert "crew_panel_enabled" in source
@@ -280,7 +280,7 @@ class TestTheSwitchReachesALiveSession:
         """One gate, so neither verb can be left reachable while the other is not."""
         import inspect
 
-        from kiro_crew.dashboard.handlers import agent_panel as handler
+        from efm_go.dashboard.handlers import agent_panel as handler
 
         for route in (handler.api_agent_panel_publish, handler.api_agent_panel_templates):
             assert "_resolve_publishing_crew" in inspect.getsource(route), route.__name__
@@ -288,7 +288,7 @@ class TestTheSwitchReachesALiveSession:
     def test_the_refusal_names_the_switch(self):
         import inspect
 
-        from kiro_crew.dashboard.handlers import agent_panel as handler
+        from efm_go.dashboard.handlers import agent_panel as handler
 
         source = inspect.getsource(handler._resolve_publishing_crew)
         assert "crew_panel_disabled" in source
@@ -321,10 +321,10 @@ class _ClientStub:
 def panel_granted(monkeypatch):
     """The ceiling open, so these tests judge the ARRAY-level preconditions.
 
-    Patched on ``kiro_crew.members`` because the append imports it from there at
+    Patched on ``efm_go.members`` because the append imports it from there at
     call time, which is also what keeps the config read off this module's import.
     """
-    import kiro_crew.members as members_mod
+    import efm_go.members as members_mod
 
     monkeypatch.setattr(members_mod, "crew_panel_enabled", lambda: True)
     return members_mod
@@ -351,7 +351,7 @@ class TestClaudePanelAppend:
         assert self._run(stub) == _base_servers()
 
     def test_the_switch_off_withholds(self, monkeypatch):
-        import kiro_crew.members as members_mod
+        import efm_go.members as members_mod
 
         monkeypatch.setattr(members_mod, "crew_panel_enabled", lambda: False)
         assert self._run(_ClientStub()) == _base_servers()
@@ -446,7 +446,7 @@ class TestPanelBackendSetIsItsOwnDecision:
     """
 
     def test_the_set_exists_and_is_distinct(self):
-        from kiro_crew.acp.types import ACP_BACKENDS_MEMBER_DISPATCH, ACP_BACKENDS_MEMBER_PANEL
+        from efm_go.acp.types import ACP_BACKENDS_MEMBER_DISPATCH, ACP_BACKENDS_MEMBER_PANEL
 
         assert ACP_BACKENDS_MEMBER_PANEL is not ACP_BACKENDS_MEMBER_DISPATCH
 
@@ -460,7 +460,7 @@ class TestPanelBackendSetIsItsOwnDecision:
         assert "ACP_BACKENDS_MEMBER_DISPATCH" not in source
 
     def test_kiro_is_excluded(self):
-        from kiro_crew.acp.types import ACP_BACKENDS_MEMBER_PANEL
+        from efm_go.acp.types import ACP_BACKENDS_MEMBER_PANEL
 
         assert ACP_BACKEND_KIRO not in ACP_BACKENDS_MEMBER_PANEL
 
@@ -469,7 +469,7 @@ class TestPanelBackendSetIsItsOwnDecision:
         [ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS, ACP_BACKEND_CODEX, ACP_BACKEND_OPENCODE],
     )
     def test_the_argued_members_are_present(self, backend):
-        from kiro_crew.acp.types import ACP_BACKENDS_MEMBER_PANEL
+        from efm_go.acp.types import ACP_BACKENDS_MEMBER_PANEL
 
         assert backend in ACP_BACKENDS_MEMBER_PANEL
 
@@ -485,8 +485,8 @@ class TestRuntimePanelMountAsksThePerToolSwitch:
 
     @staticmethod
     def _runtime(monkeypatch, *, narrowed):
-        from kiro_crew.acp import runtime as runtime_mod
-        from kiro_crew.acp.types import ACP_BACKEND_KAS as _KAS
+        from efm_go.acp import runtime as runtime_mod
+        from efm_go.acp.types import ACP_BACKEND_KAS as _KAS
 
         rt = object.__new__(runtime_mod.AcpRuntime)
         rt._acp_backend = _KAS
@@ -496,7 +496,7 @@ class TestRuntimePanelMountAsksThePerToolSwitch:
             "session_mcp_disabled_tools",
             lambda *a, **k: frozenset(narrowed),
         )
-        import kiro_crew.members as members_mod
+        import efm_go.members as members_mod
 
         monkeypatch.setattr(members_mod, "crew_panel_enabled", lambda: True)
         return rt
@@ -548,7 +548,7 @@ class TestPanelCompositionStaysInsideTheMemberBranch:
         import inspect
         import textwrap
 
-        from kiro_crew.acp.runtime import AcpRuntime
+        from efm_go.acp.runtime import AcpRuntime
 
         source = textwrap.dedent(inspect.getsource(getattr(AcpRuntime, method)))
         sites = [
@@ -569,7 +569,7 @@ class TestPanelCompositionStaysInsideTheMemberBranch:
         with no member key reaches no part of the composition."""
         import inspect
 
-        from kiro_crew.acp.runtime import AcpRuntime
+        from efm_go.acp.runtime import AcpRuntime
 
         source = inspect.getsource(getattr(AcpRuntime, method))
         assert "panel_mounted = False" in source

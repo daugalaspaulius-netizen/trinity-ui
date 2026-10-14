@@ -18,24 +18,24 @@ superseded-by: [rfc-retire-chat-autopilot.md]
 
 > **Superseded before acceptance.** The accepted
 > [Autopilot retirement](rfc-retire-chat-autopilot.md) replaced this proposal.
-> Backend removal [#15362](https://github.com/kirodotdev/KiroCrew/pull/15362)
-> and frontend removal [#15359](https://github.com/kirodotdev/KiroCrew/pull/15359)
+> Backend removal [#15362](https://efmleads.com/pull/15362)
+> and frontend removal [#15359](https://efmleads.com/pull/15359)
 > have both merged. The stage loop, its prompt, its system spec, and its visible
 > controls are absent from current `main`. This document and its sanitized
 > evidence appendix remain as the record of six incidents and the cancellation
 > failure they exposed.
 
 Status: superseded. The stage-budget decision and draft implementation
-[#13992](https://github.com/kirodotdev/KiroCrew/pull/13992) no longer apply. The
+[#13992](https://efmleads.com/pull/13992) no longer apply. The
 ordinary four-hour chat-turn ceiling on current `main` still cancels `_run_chat`
 without first sending native `session/cancel`; issue
-[#14058](https://github.com/kirodotdev/KiroCrew/issues/14058) tracks that narrower
+[#14058](https://efmleads.com/issues/14058) tracks that narrower
 lifecycle defect. Its fix must not restore the retired Autopilot mode. The
 proposal below is retained as historical context, not as current direction.
 
 - Measured against `main` at `7f1f4fb1d` on 2026-09-26.
 - Incident evidence: [sanitized timeout evidence](assets/autopilot-stage-timeout-evidence.md).
-- Tracking issue: [#14058](https://github.com/kirodotdev/KiroCrew/issues/14058).
+- Tracking issue: [#14058](https://efmleads.com/issues/14058).
 - Existing contracts: `docs/system-specs/modules/autopilot.md`,
   `docs/system-specs/modules/session.md`, and
   `docs/system-specs/modules/acp-client.md`.
@@ -100,17 +100,17 @@ The visible signature was consistent across the incidents:
 At `7f1f4fb1d`:
 
 - `OrchestrationTracker.start_stage` in
-  `src/kiro_crew/context_management.py` starts an absolute stage clock.
-- `_stage_loop` in `src/kiro_crew/dashboard/chat_orchestrator.py` checks that
+  `src/efm_go/context_management.py` starts an absolute stage clock.
+- `_stage_loop` in `src/efm_go/dashboard/chat_orchestrator.py` checks that
   clock before entering a stage.
 - The same loop then passes `tracker.stage_timeout_seconds` to `_bounded_turn`
   around `_run_chat`. The 30-minute progression budget therefore also kills the
   running turn.
-- `_bounded_turn` in `src/kiro_crew/dashboard/turn_dispatch.py` deliberately
+- `_bounded_turn` in `src/efm_go/dashboard/turn_dispatch.py` deliberately
   cancels the inner task and raises even when `_run_chat` absorbs
   `CancelledError`.
 - `_run_chat`'s `CancelledError` branch in
-  `src/kiro_crew/dashboard/chat_runner.py` currently persists the partial
+  `src/efm_go/dashboard/chat_runner.py` currently persists the partial
   dashboard reply only. It does not send native `session/cancel`.
 - The native ACP turn can therefore continue after the dashboard controller
   reports that it stopped.

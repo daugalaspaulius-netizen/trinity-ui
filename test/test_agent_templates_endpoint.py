@@ -20,24 +20,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew import agent_state
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.config.paths import config_dir
-from kiro_crew.dashboard.handlers import agent_templates
-from kiro_crew.dashboard.handlers.agent_templates import (
+from efm_go import agent_state
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.config.paths import config_dir
+from efm_go.dashboard.handlers import agent_templates
+from efm_go.dashboard.handlers.agent_templates import (
     api_agent_template_create,
     api_agent_template_delete,
     api_agent_templates,
 )
-from kiro_crew.dashboard.handlers.agents import api_agent_detail
-from kiro_crew.webhooks import token_store
+from efm_go.dashboard.handlers.agents import api_agent_detail
+from efm_go.webhooks import token_store
 
 
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     """Past the owner boundary; owner-auth has its own enumerated coverage."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -46,7 +46,7 @@ def _owner_caller(monkeypatch):
 def agents_dir(tmp_path):
     d = tmp_path / "agents"
     d.mkdir()
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", d):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", d):
         yield d
 
 
@@ -143,8 +143,8 @@ async def test_roster_marks_a_row_without_a_spec_file_read_only(agents_dir, monk
     provider wrote -- empty, foreign or absent from disk. No action on the tab
     has a file to write for it, so it must not be offered as editable only for
     every edit or delete to answer 404: it is read-only for the runtime's reason."""
-    from kiro_crew.agent_discovery import AgentInfo
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.agent_discovery import AgentInfo
+    from efm_go.dashboard.handlers import agent_templates as module
 
     _write(agents_dir, "reviewer.json", description="mine")
     _seed_config()
@@ -208,7 +208,7 @@ async def test_roster_masks_package_controlled_strings_like_the_sibling_rosters(
     renders it through ``_roster_mask`` like ``GET /api/agents`` and the chat
     catalog do, so a credential-shaped value arrives as the sentinel. A row whose
     identity itself would be masked is left out rather than half-shown."""
-    from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+    from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
     probe = "AKIAIOSFODNN7EXAMPLE"
     _write(agents_dir, "SomePkg-atlas.json", name="atlas", description=f"key {probe}", model=probe)
@@ -366,7 +366,7 @@ async def test_create_refusals(agents_dir, body, status, code):
 async def test_create_copies_the_source_as_it_is_inside_the_lock(agents_dir, monkeypatch):
     """The pre-lock read only resolves the source's path; its body is read again
     under the spec lock, so an edit that lands in between is what gets copied."""
-    from kiro_crew.dashboard.handlers import agents as agents_handlers
+    from efm_go.dashboard.handlers import agents as agents_handlers
 
     _write(agents_dir, "SomePkg-atlas.json", name="atlas", prompt="v1")
     _seed_config()
@@ -393,7 +393,7 @@ async def test_create_and_delete_mutations_run_through_the_drained_seam(agents_d
     mutations go through ``drained_to_thread``, which drains the thread first."""
     import asyncio
 
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.dashboard.handlers import agent_templates as module
 
     drained: list[str] = []
 
@@ -416,7 +416,7 @@ async def test_successful_create_and_delete_emit_operation_labelled_sel_events(
 ):
     """The owner gate logs only denials; a successful write of a machine-global
     spec gets its own labelled line beside the middleware's request-level one."""
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.dashboard.handlers import agent_templates as module
 
     events: list[dict] = []
     monkeypatch.setattr(
@@ -453,7 +453,7 @@ async def test_create_revalidates_the_source_identity_under_the_lock(agents_dir,
     file reaching that name landing before the lock (``atlas.json``, a user
     save) makes the source ambiguous, so the copy must refuse rather than copy
     whichever file the probe happened to see. Nothing is written."""
-    from kiro_crew.dashboard.handlers import agents as agents_handlers
+    from efm_go.dashboard.handlers import agents as agents_handlers
 
     _write(agents_dir, "SomePkg-atlas.json", name="atlas", prompt="package")
     _seed_config()
@@ -478,7 +478,7 @@ async def test_create_refuses_a_source_replaced_by_another_file_under_the_lock(
     different file now answers to ``atlas`` when the lock is taken, the probe's
     path is stale -- the locked re-resolution must see exactly the probed file,
     so the request refuses instead of copying a definition it never validated."""
-    from kiro_crew.dashboard.handlers import agents as agents_handlers
+    from efm_go.dashboard.handlers import agents as agents_handlers
 
     _write(agents_dir, "SomePkg-atlas.json", name="atlas", prompt="package")
     _seed_config()
@@ -501,7 +501,7 @@ async def test_create_rescans_by_declared_name_under_the_lock(agents_dir, monkey
     """A package install landing ``Pkg-foo.json`` (declaring ``foo``) between the
     pre-lock probe and the write must refuse, not create ``foo.json`` beside it
     as an ambiguous name; the locked check scans by declared name, not stem alone."""
-    from kiro_crew.dashboard.handlers import agents as agents_module
+    from efm_go.dashboard.handlers import agents as agents_module
 
     _seed_config()
     real_stem_check = agents_module._spec_stem_on_disk
@@ -522,7 +522,7 @@ async def test_create_rescans_by_declared_name_under_the_lock(agents_dir, monkey
 async def test_create_refuses_a_name_bound_only_in_the_overlay(agents_dir):
     """A binding present only in ``config.local.json`` still makes the new file
     resolve for a dangling reference the moment it lands."""
-    from kiro_crew.config.loader import config_local_path
+    from efm_go.config.loader import config_local_path
 
     _seed_config()
     config_local_path().write_text(
@@ -621,7 +621,7 @@ async def test_delete_names_a_schedule_that_landed_in_the_unlocked_window(
     """The cron store is not under the guard's locks; a job written between the
     check and the unlink is re-read once the file is gone and named out loud --
     a warning and an audit row -- instead of failing first at its next fire."""
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.dashboard.handlers import agent_templates as module
 
     _write(agents_dir, "reviewer.json")
     _seed_config({"pr-bot": "kirocrew"}, default="pr-bot")
@@ -662,8 +662,8 @@ async def test_delete_holds_the_cron_store_lock_from_the_check_through_the_renam
     cannot land in between: a writer that contends for ``.crons.lock`` while the
     guard reads is still waiting when the template goes, and the guard's read
     and the rename both happen INSIDE the hold."""
-    from kiro_crew import platform_compat
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go import platform_compat
+    from efm_go.dashboard.handlers import agent_templates as module
 
     _write(agents_dir, "reviewer.json")
     _seed_config({"pr-bot": "kirocrew"}, default="pr-bot")
@@ -705,8 +705,8 @@ async def test_delete_refuses_while_the_cron_store_lock_is_held_elsewhere(agents
     """A scheduler write holding ``.crons.lock`` past the bounded wait is a 503
     ``schedule_store_busy`` -- retryable -- with the file intact: the guard never
     claims "no schedule dispatches this" without the store pinned."""
-    from kiro_crew import platform_compat
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go import platform_compat
+    from efm_go.dashboard.handlers import agent_templates as module
 
     _write(agents_dir, "reviewer.json")
     _seed_config({"pr-bot": "kirocrew"}, default="pr-bot")
@@ -747,7 +747,7 @@ async def test_delete_counts_a_binding_that_lives_only_in_the_overlay(agents_dir
     """``config.local.json`` deep-merges over the base and can carry a crew's
     effective ``kiro_agent`` on its own; the guard reads the merged config
     under both layers' locks."""
-    from kiro_crew.config.loader import config_local_path
+    from efm_go.config.loader import config_local_path
 
     _write(agents_dir, "reviewer.json")
     _seed_config({"pr-bot": "kirocrew"}, default="pr-bot")
@@ -970,8 +970,8 @@ async def test_post_delete_observation_cannot_turn_the_delete_into_a_failure(
     """Once the file is gone, a store that fails to read during the post-delete
     reference check is a WARNING, not a refusal: the client must not hear
     "failed" about a template that has been removed."""
-    from kiro_crew.cron import CronStoreUnreadable
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.cron import CronStoreUnreadable
+    from efm_go.dashboard.handlers import agent_templates as module
 
     _write(agents_dir, "reviewer.json")
     _seed_config({"pr-bot": "kirocrew"}, default="pr-bot")
@@ -1001,8 +1001,8 @@ async def test_delete_never_unlinks_a_row_whose_filename_is_not_a_spec_beneath_a
     catalog row carries whatever its provider put there); the delete path never
     treats it as a path. Only a plain basename that resolves to a regular file
     directly under the agents directory names a deletable template."""
-    from kiro_crew.agent_discovery import AgentInfo
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.agent_discovery import AgentInfo
+    from efm_go.dashboard.handlers import agent_templates as module
 
     victim = tmp_path / "victim.json"
     victim.write_text("{}", encoding="utf-8")
@@ -1030,8 +1030,8 @@ async def test_delete_never_unlinks_a_file_that_does_not_answer_to_the_requested
     edition row saying ``rogue`` over ``victim.json`` passes the path guard, so
     the FILE is re-read under the spec lock and must itself answer to the
     requested name (declared name or stem) before anything is unlinked."""
-    from kiro_crew.agent_discovery import AgentInfo
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.agent_discovery import AgentInfo
+    from efm_go.dashboard.handlers import agent_templates as module
 
     _write(agents_dir, "victim.json", name="victim")
     _seed_config()
@@ -1047,8 +1047,8 @@ async def test_delete_never_unlinks_a_file_that_does_not_answer_to_the_requested
 async def test_delete_classifies_the_file_on_disk_not_the_row(agents_dir, monkeypatch):
     """A row that calls a package file plain does not make it deletable: the
     read-only rule is re-applied to the file's own contents under the lock."""
-    from kiro_crew.agent_discovery import AgentInfo
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.agent_discovery import AgentInfo
+    from efm_go.dashboard.handlers import agent_templates as module
 
     _write(agents_dir, "SomePkg-atlas.json", name="atlas")
     _seed_config()
@@ -1063,7 +1063,7 @@ async def test_delete_classifies_the_file_on_disk_not_the_row(agents_dir, monkey
 
 @pytest.mark.asyncio
 async def test_delete_refusal_masks_reference_labels_like_the_roster(agents_dir):
-    from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+    from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
     probe = "AKIAIOSFODNN7EXAMPLE"
     _write(agents_dir, "reviewer.json")
@@ -1108,7 +1108,7 @@ async def test_delete_revalidates_ambiguity_under_the_spec_lock(agents_dir, monk
     """A second file reaching the name that lands AFTER the pre-lock probe (a
     package install) must refuse under the lock, not let the stale single match
     unlink the user's own file."""
-    from kiro_crew.dashboard.handlers import agent_templates as module
+    from efm_go.dashboard.handlers import agent_templates as module
 
     _write(agents_dir, "bar.json", name="bar")
     _seed_config()
@@ -1183,7 +1183,7 @@ async def test_patch_definition_classifies_the_targeted_file_not_its_name(agents
     _write(agents_dir, "atlas.json", name="atlas", prompt="mine")
     _write(agents_dir, "SomePkg-atlas.json", name="atlas", prompt="shipped")
     _seed_config()
-    from kiro_crew.dashboard.handlers.agent_templates import read_only_reason_for_path
+    from efm_go.dashboard.handlers.agent_templates import read_only_reason_for_path
 
     assert read_only_reason_for_path(agents_dir / "atlas.json") is None
     assert read_only_reason_for_path(agents_dir / "SomePkg-atlas.json") == "package"
@@ -1211,7 +1211,7 @@ async def test_patch_definition_refuses_an_ambiguous_name(agents_dir):
 async def test_patch_revalidates_ambiguity_under_the_write_lock(agents_dir, monkeypatch):
     """A second claimant landing between the scan and the write (a package
     install) refuses under the lock instead of overwriting the stale match."""
-    from kiro_crew.dashboard.handlers import agents as agents_module
+    from efm_go.dashboard.handlers import agents as agents_module
 
     _write(agents_dir, "atlas.json", name="atlas", prompt="mine")
     _seed_config()

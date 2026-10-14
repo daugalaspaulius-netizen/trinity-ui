@@ -14,8 +14,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.acp import runtime as rt
+from efm_go import platform_compat
+from efm_go.acp import runtime as rt
 
 
 def _bare_runtime(pid: int = 54321) -> rt.AcpRuntime:

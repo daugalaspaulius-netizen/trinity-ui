@@ -1,4 +1,4 @@
-"""Tests for :mod:`kiro_crew.crew_log.holders` -- the pull-request holder projection.
+"""Tests for :mod:`efm_go.crew_log.holders` -- the pull-request holder projection.
 
 The suite is organised around the two things this module claims: the ownership
 RULE (a conductor does not out-own the worker it dispatched) and the resume CACHE
@@ -16,11 +16,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.crew_log import eager
-from kiro_crew.crew_log import holders as holders_mod
-from kiro_crew.crew_log import session_tree as tree_mod
-from kiro_crew.crew_log import store as crew_store
-from kiro_crew.crew_log.holders import (
+from efm_go.crew_log import eager
+from efm_go.crew_log import holders as holders_mod
+from efm_go.crew_log import session_tree as tree_mod
+from efm_go.crew_log import store as crew_store
+from efm_go.crew_log.holders import (
     MAX_ENTRY_BYTES,
     MAX_OWNER_CHARS,
     MAX_PR_NUMBER,
@@ -36,14 +36,14 @@ from kiro_crew.crew_log.holders import (
     is_ancestor,
     parse_references,
 )
-from kiro_crew.crew_log.schema import KIND_SESSION, Entry
-from kiro_crew.crew_log.session_tree import SessionTree, TreeNode, TreeReading
-from kiro_crew.validation import MAX_ACP_SESSION_ID_LEN, MAX_SHORT_STRING
+from efm_go.crew_log.schema import KIND_SESSION, Entry
+from efm_go.crew_log.session_tree import SessionTree, TreeNode, TreeReading
+from efm_go.validation import MAX_ACP_SESSION_ID_LEN, MAX_SHORT_STRING
 
 #: The repository this suite's fixtures name. Split from the SLUG rather than
 #: spelled as two literals: the slug is the identifier form, and a bare joined
 #: product name in added source is what the brand gate refuses.
-_OWNER, _REPO = "kirodotdev/KiroCrew".split("/")
+_OWNER, _REPO = "efmleads.com".split("/")
 
 
 def _url(owner: str, repo: str, number: int | str = "") -> str:
@@ -1084,7 +1084,7 @@ class TestScannerBounds:
         def failing_listing(kind: str, **kwargs: object) -> tuple[list[Path], bool, bool]:
             return [], False, True
 
-        monkeypatch.setattr("kiro_crew.crew_log.session_tree.unit_dirs", failing_listing)
+        monkeypatch.setattr("efm_go.crew_log.session_tree.unit_dirs", failing_listing)
         assert SessionTree().reading(preferred=("sid-c",)).incomplete is True
 
     def test_the_preferred_list_is_bounded_before_it_is_materialized(self, store: _Store) -> None:
@@ -1109,7 +1109,7 @@ class TestScannerBounds:
         # same pull request. Dropping it loses a holder from an answer that still
         # reports itself complete.
         store.unit("sid-a", "slot-a")
-        store.append("sid-a", "see HTTPS://GitHub.com/kirodotdev/KiroCrew/pull/42")
+        store.append("sid-a", "see HTTPS://GitHub.com/efmleads.com/pull/42")
         reading = ReferenceScanner().references()
         assert _ref(42) in reading.mentions
         assert reading.incomplete is False
@@ -1450,7 +1450,7 @@ class TestScannerFaults:
         # holders, which throws away every healthy unit's work to report one
         # unreadable one. It belongs in the same branch as a failed listing --
         # this unit's references cannot be counted, and the other units' still can.
-        from kiro_crew.session_ledger import _store_name
+        from efm_go.session_ledger import _store_name
 
         store.unit("sid-a", "slot-a")
         store.append("sid-a", f"{_URL}/7")

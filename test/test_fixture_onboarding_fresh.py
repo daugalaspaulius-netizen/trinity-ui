@@ -1,7 +1,7 @@
 """Consumer contract for the onboarding-fresh seeded-home fixture."""
 
-from kiro_crew.config.loader import KiroCrewConfig, config_path
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go.config.loader import KiroCrewConfig, config_path
+from efm_go.testing.fixtures import seeded_home
 
 
 def _loaded_onboarding_state() -> tuple[bool, bool]:

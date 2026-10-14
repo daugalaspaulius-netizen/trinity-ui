@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from kiro_crew.apps.spawn_sdk import build_done_probe
+from efm_go.apps.spawn_sdk import build_done_probe
 
 
 def _subagents(*, tracked=None, queued_ids=()):

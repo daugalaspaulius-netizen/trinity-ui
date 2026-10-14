@@ -8,14 +8,14 @@ import threading
 
 import pytest
 
-from kiro_crew.crew_log.errors import CrewLogError
-from kiro_crew.crew_log.schema import KIND_MEMBER
-from kiro_crew.crew_log.store import crew_log_path
-from kiro_crew.eventlog import types
-from kiro_crew.eventlog.log import LogCorrupt, MemberLog
-from kiro_crew.eventlog.members_projections import all_units
-from kiro_crew.eventlog.service import MemberEventLogService
-from kiro_crew.projection import ProjectionRegistry
+from efm_go.crew_log.errors import CrewLogError
+from efm_go.crew_log.schema import KIND_MEMBER
+from efm_go.crew_log.store import crew_log_path
+from efm_go.eventlog import types
+from efm_go.eventlog.log import LogCorrupt, MemberLog
+from efm_go.eventlog.members_projections import all_units
+from efm_go.eventlog.service import MemberEventLogService
+from efm_go.projection import ProjectionRegistry
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +293,7 @@ def test_disposer_removes_unit():
 # Service
 # ---------------------------------------------------------------------------
 def test_service_ensure_append_snapshot(tmp_path, monkeypatch):
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -329,7 +329,7 @@ def test_service_folds_events_a_second_process_wrote_between_our_appends(tmp_pat
     anything at or below that -- so they never folded, and the pushed projection
     and ``snapshot`` undercounted them until a restart re-primed from the file.
     """
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -364,7 +364,7 @@ def test_a_read_sees_events_another_process_committed(tmp_path, monkeypatch):
     service stayed invisible here: activity, history and the pushed projections all
     reported the older state until this process happened to append or restart.
     """
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -399,7 +399,7 @@ def test_an_unchanged_log_is_not_reparsed_on_every_read(tmp_path, monkeypatch):
     Pinned because the cheap path is the whole reason the refresh is acceptable on
     a hot read: ``last_seqs()`` asks once per member on every connect.
     """
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -434,7 +434,7 @@ def test_the_log_reports_which_member_it_belongs_to(tmp_path, monkeypatch):
     cannot be shared is a whole-member PROJECTION, so a caller serving one needs to
     know whose log it is reading -- and only the header can say.
     """
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -460,7 +460,7 @@ def test_a_migration_interrupted_after_create_resumes(tmp_path, monkeypatch):
     version of ensure that returns without doing anything cannot satisfy it no
     matter what the log happens to contain.
     """
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -519,7 +519,7 @@ def test_activity_migration_resumes_row_by_row(tmp_path, monkeypatch):
     """
     import json as _json
 
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -578,7 +578,7 @@ def test_identical_legacy_activity_rows_all_survive_a_resumed_migration(tmp_path
     """
     import json as _json
 
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -616,7 +616,7 @@ def test_identical_legacy_activity_rows_all_survive_a_resumed_migration(tmp_path
 
 
 def test_service_broadcast_frames(tmp_path, monkeypatch):
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -640,7 +640,7 @@ def test_service_broadcast_redacts_project_before_egress(tmp_path, monkeypatch):
     the same as the /history and /activity HTTP reads."""
     import json
 
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -664,7 +664,7 @@ def test_redact_projection_value_scrubs_keys_not_just_values():
     """A dict KEY can be agent-authored (a contributed projection key, a nested
     data key), so a credential- or URL-shaped key must be scrubbed too -- redacting
     only values would let it cross to the browser."""
-    from kiro_crew.eventlog.service import _redact_projection_value
+    from efm_go.eventlog.service import _redact_projection_value
 
     secret = "https://evil.example/x?token=AKIAIOSFODNN7EXAMPLE"
     out = _redact_projection_value({secret: {secret: "v"}})
@@ -674,7 +674,7 @@ def test_redact_projection_value_scrubs_keys_not_just_values():
 
 
 def test_service_broadcast_never_raises(tmp_path, monkeypatch):
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -690,7 +690,7 @@ def test_service_broadcast_never_raises(tmp_path, monkeypatch):
 
 
 def test_service_migrates_legacy(tmp_path, monkeypatch):
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -714,7 +714,7 @@ def test_service_migrates_legacy(tmp_path, monkeypatch):
 
 
 def test_service_ensure_is_idempotent(tmp_path, monkeypatch):
-    import kiro_crew.members as members
+    import efm_go.members as members
 
     monkeypatch.setattr(members, "data_home", lambda: tmp_path)
     root = tmp_path / "members"
@@ -739,8 +739,8 @@ class TestLegacyRetirementMemoRequiresDurableMarker:
     """
 
     def test_transient_marker_write_failure_retries_in_same_process(self, tmp_path, monkeypatch):
-        import kiro_crew.members as members
-        from kiro_crew.eventlog import service as service_mod
+        import efm_go.members as members
+        from efm_go.eventlog import service as service_mod
 
         monkeypatch.setattr(members, "data_home", lambda: tmp_path)
         root = tmp_path / "members"
@@ -795,7 +795,7 @@ class TestEnsureCostsAStatOnARepeat:
 
     @staticmethod
     def _service(tmp_path, monkeypatch) -> MemberEventLogService:
-        import kiro_crew.members as members
+        import efm_go.members as members
 
         monkeypatch.setattr(members, "data_home", lambda: tmp_path)
         root = tmp_path / "members"
@@ -912,8 +912,8 @@ class TestEnsureCostsAStatOnARepeat:
         pass did not read what is there", so an error that reads as absence defeats
         it: the member settles and its binding is never migrated in this process.
         """
-        import kiro_crew.members as members
-        from kiro_crew.eventlog import service as service_mod
+        import efm_go.members as members
+        from efm_go.eventlog import service as service_mod
 
         svc = self._service(tmp_path, monkeypatch)
 
@@ -951,7 +951,7 @@ class TestEnsureCostsAStatOnARepeat:
         """
         import json as _json
 
-        import kiro_crew.members as members
+        import efm_go.members as members
 
         svc = self._service(tmp_path, monkeypatch)
         members.write_dm_binding("dave", member="Dave", slot_key=members.member_slot_key("dave"))
@@ -987,8 +987,8 @@ class TestEnsureCostsAStatOnARepeat:
         """
         import json as _json
 
-        import kiro_crew.members as members
-        from kiro_crew.eventlog import service as service_mod
+        import efm_go.members as members
+        from efm_go.eventlog import service as service_mod
 
         svc = self._service(tmp_path, monkeypatch)
         rows = [
@@ -1028,7 +1028,7 @@ class TestEnsureCostsAStatOnARepeat:
 
     def test_a_failed_binding_read_is_not_recorded_as_a_completed_fold(self, tmp_path, monkeypatch):
         """Same rule for the binding and rules reads: a swallowed failure settles nothing."""
-        import kiro_crew.members as members
+        import efm_go.members as members
 
         svc = self._service(tmp_path, monkeypatch)
         members.write_dm_binding("dave", member="Dave", slot_key=members.member_slot_key("dave"))
@@ -1063,7 +1063,7 @@ class TestEnsureCostsAStatOnARepeat:
         member as settled with its binding never migrated -- while the file is still
         sitting there, which is the definition of work a later pass can do.
         """
-        import kiro_crew.members as members
+        import efm_go.members as members
 
         svc = self._service(tmp_path, monkeypatch)
         path = members.dm_binding_path("dave")
@@ -1097,7 +1097,7 @@ def test_create_is_a_no_op_when_another_writer_published_first(tmp_path, monkeyp
     the log it refused to overwrite is the one this caller wanted, so the refusal
     is an answer rather than a fault.
     """
-    from kiro_crew.crew_log.store import CrewLog
+    from efm_go.crew_log.store import CrewLog
 
     log = _log(tmp_path)
     log.create("Alice")
@@ -1118,7 +1118,7 @@ def test_create_still_raises_a_refusal_that_is_not_the_race(tmp_path, monkeypatc
     member who simply has a log, and the first read would then report an empty
     history instead of the failure.
     """
-    from kiro_crew.crew_log import store as store_mod
+    from efm_go.crew_log import store as store_mod
 
     log = _log(tmp_path)
 
@@ -1184,8 +1184,8 @@ def test_the_member_log_is_fenced_the_same_way_every_other_crew_log_is(tmp_path)
     Asserted against the real gate on the real path, with the member's former
     location as the control -- it is exactly the path that was NOT fenced.
     """
-    from kiro_crew import sandbox, security
-    from kiro_crew.members import member_dir
+    from efm_go import sandbox, security
+    from efm_go.members import member_dir
 
     log = _log(tmp_path)
     log.create("Alice")
@@ -1236,7 +1236,7 @@ def test_the_activity_projection_serves_ts_as_a_number_not_the_logged_string():
     NaN and ``e.ts >= todayFloor`` false, which renders zero counts and invalid
     dates on the ordinary path rather than failing loudly.
     """
-    from kiro_crew.eventlog.members_projections import ActivityProjection
+    from efm_go.eventlog.members_projections import ActivityProjection
 
     proj = ActivityProjection()
     state = {"recent": [{"ts": "2026-09-20T12:00:00Z", "member": "Gale"}]}
@@ -1261,8 +1261,8 @@ def test_an_activity_row_migrated_from_a_legacy_file_is_not_recorded_twice(tmp_p
     """
     import json as _json
 
-    import kiro_crew.members as members
-    from kiro_crew.eventlog.service import get_service
+    import efm_go.members as members
+    from efm_go.eventlog.service import get_service
 
     svc = get_service()
     slug = members.slug_for_name("Gale")
@@ -1299,8 +1299,8 @@ def test_a_colliding_members_activity_does_not_reach_the_other_members_view(tmp_
     in the log HEADER, which is not an event -- so the scoping runs where the
     header name is known, beside the roster name overlay.
     """
-    import kiro_crew.members as members
-    from kiro_crew.eventlog.service import get_service
+    import efm_go.members as members
+    from efm_go.eventlog.service import get_service
 
     svc = get_service()
     owner, stranger = "Gale", "gale"
@@ -1336,8 +1336,8 @@ def test_a_colliding_members_activity_does_not_reach_the_other_members_view(tmp_
 def test_the_owners_own_activity_survives_the_scoping(tmp_path):
     """CONTROL. Serving nothing would also satisfy the assertion above, so the
     ordinary single-member case has to be checked in the same breath."""
-    import kiro_crew.members as members
-    from kiro_crew.eventlog.service import get_service
+    import efm_go.members as members
+    from efm_go.eventlog.service import get_service
 
     svc = get_service()
     name = "Solo"
@@ -1360,8 +1360,8 @@ def test_one_unreadable_member_does_not_cost_the_others_their_baseline(tmp_path)
     `last_seq`, one member with a damaged header raises out of the whole dict, so
     every OTHER member loses its cursor for a fault in a file it does not share.
     """
-    import kiro_crew.members as members
-    from kiro_crew.eventlog.service import get_service
+    import efm_go.members as members
+    from efm_go.eventlog.service import get_service
 
     svc = get_service()
     good, bad = "Alice", "Bob"
@@ -1407,11 +1407,11 @@ class TestAnAppendWaitsOutAnotherProcessesLease:
         import threading
         import time
 
-        from kiro_crew.crew_log import lease
-        from kiro_crew.crew_log.schema import KIND_MEMBER
-        from kiro_crew.eventlog.log import MemberLog
-        from kiro_crew.eventlog.service import get_service
-        from kiro_crew.eventlog.types import ACTIVITY_RECORD
+        from efm_go.crew_log import lease
+        from efm_go.crew_log.schema import KIND_MEMBER
+        from efm_go.eventlog.log import MemberLog
+        from efm_go.eventlog.service import get_service
+        from efm_go.eventlog.types import ACTIVITY_RECORD
 
         svc = get_service()
         svc.ensure("waiter", "Waiter")
@@ -1457,13 +1457,13 @@ class TestAnAppendWaitsOutAnotherProcessesLease:
         # hold the queue behind this event -- and it proves the test above is not
         # passing merely because contention never happened, since the same lease
         # here does refuse.
-        from kiro_crew.crew_log import lease
-        from kiro_crew.crew_log.errors import CODE_ALREADY_OWNED, CrewLogError
-        from kiro_crew.crew_log.schema import KIND_MEMBER
-        from kiro_crew.eventlog import log as log_module
-        from kiro_crew.eventlog.log import MemberLog
-        from kiro_crew.eventlog.service import get_service
-        from kiro_crew.eventlog.types import ACTIVITY_RECORD
+        from efm_go.crew_log import lease
+        from efm_go.crew_log.errors import CODE_ALREADY_OWNED, CrewLogError
+        from efm_go.crew_log.schema import KIND_MEMBER
+        from efm_go.eventlog import log as log_module
+        from efm_go.eventlog.log import MemberLog
+        from efm_go.eventlog.service import get_service
+        from efm_go.eventlog.types import ACTIVITY_RECORD
 
         monkeypatch.setattr(log_module, "APPEND_CONTENTION_SECONDS", 0.05)
         svc = get_service()
@@ -1492,7 +1492,7 @@ class TestEveryHardExitDrainsTheMemberEventLog:
         """
         from pathlib import Path
 
-        import kiro_crew.slack.gateway as gateway_module
+        import efm_go.slack.gateway as gateway_module
 
         source = Path(gateway_module.__file__).read_text(encoding="utf-8")
         exits = [i for i, line in enumerate(source.splitlines()) if "os._exit(" in line]
@@ -1515,7 +1515,7 @@ class TestTheLegacyActivitySourceIsRetiredOnceFolded:
 
     @staticmethod
     def _legacy(home, slug, rows):
-        from kiro_crew import members
+        from efm_go import members
 
         d = members.member_dir(slug)
         d.mkdir(parents=True, exist_ok=True)
@@ -1528,8 +1528,8 @@ class TestTheLegacyActivitySourceIsRetiredOnceFolded:
 
     def test_a_row_written_after_the_fold_is_not_imported(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.eventlog.types import ACTIVITY_RECORD
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.eventlog.types import ACTIVITY_RECORD
 
         svc_mod.set_service(None)
         slug = "alice"
@@ -1556,8 +1556,8 @@ class TestTheLegacyActivitySourceIsRetiredOnceFolded:
         # CONTROL. Without this, refusing to read the legacy file at all would satisfy
         # the test above while losing every member's history on upgrade.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.eventlog.types import ACTIVITY_RECORD
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.eventlog.types import ACTIVITY_RECORD
 
         svc_mod.set_service(None)
         self._legacy(tmp_path, "bob", [{"ts": 1, "via": "cli", "project": "p"}])
@@ -1569,7 +1569,7 @@ class TestTheLegacyActivitySourceIsRetiredOnceFolded:
 
     def test_the_fold_stops_reading_past_its_byte_budget(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         rows = [{"ts": i, "via": "cli", "project": "p"} for i in range(200)]
         self._legacy(tmp_path, "carol", rows)
@@ -1593,9 +1593,9 @@ class TestTheForgeryPathClosesEvenWithNothingToMigrate:
 
     def test_a_member_with_no_legacy_file_is_still_retired(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.eventlog.types import ACTIVITY_RECORD
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.eventlog.types import ACTIVITY_RECORD
 
         svc_mod.set_service(None)
         svc = svc_mod.get_service()
@@ -1625,9 +1625,9 @@ class TestTheForgeryPathClosesEvenWithNothingToMigrate:
         member-side rename is hygiene only.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.eventlog.types import ACTIVITY_RECORD
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.eventlog.types import ACTIVITY_RECORD
 
         d = members.member_dir("frank")
         d.mkdir(parents=True, exist_ok=True)
@@ -1677,8 +1677,8 @@ class TestTheForgeryPathClosesEvenWithNothingToMigrate:
         outcome-only assertion passes against the very bug this pins.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         d = members.member_dir("erin")
         d.mkdir(parents=True, exist_ok=True)
@@ -1732,8 +1732,8 @@ class TestTheForgeryPathClosesEvenWithNothingToMigrate:
         # CONTROL. Without this, capping every read at zero would satisfy both tests
         # above while migrating nothing at all.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         d = members.member_dir("frank")
         d.mkdir(parents=True, exist_ok=True)
@@ -1755,7 +1755,7 @@ class TestOnlyARegularFileIsReadAtTheLegacyPath:
 
     @staticmethod
     def _member_dir(slug):
-        from kiro_crew import members
+        from efm_go import members
 
         d = members.member_dir(slug)
         d.mkdir(parents=True, exist_ok=True)
@@ -1764,8 +1764,8 @@ class TestOnlyARegularFileIsReadAtTheLegacyPath:
     @pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="no FIFO on this platform")
     def test_a_planted_fifo_does_not_hang_the_fold(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         d = self._member_dir("gail")
         os.mkfifo(d / members.ACTIVITY_FILE_NAME)
@@ -1792,8 +1792,8 @@ class TestOnlyARegularFileIsReadAtTheLegacyPath:
     @pytest.mark.skipif(not hasattr(os, "O_NOFOLLOW"), reason="O_NOFOLLOW unavailable")
     def test_a_symlink_at_the_legacy_path_is_not_followed(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         outside = tmp_path / "outside.jsonl"
         outside.write_text(
@@ -1810,8 +1810,8 @@ class TestOnlyARegularFileIsReadAtTheLegacyPath:
         # CONTROL. Without this, refusing every open would satisfy both tests above
         # while losing every member's history on upgrade.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         d = self._member_dir("iris")
         (d / members.ACTIVITY_FILE_NAME).write_text(
@@ -1831,8 +1831,8 @@ class TestOnlyARegularFileIsReadAtTheLegacyPath:
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         import errno
 
-        from kiro_crew import members, platform_compat
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members, platform_compat
+        from efm_go.eventlog import service as svc_mod
 
         d = self._member_dir("jade")
         (d / members.ACTIVITY_FILE_NAME).write_text(
@@ -1856,7 +1856,7 @@ class TestOnlyARegularFileIsReadAtTheLegacyPath:
         # fold permanently incomplete for members who simply never had a legacy file,
         # so the migration would never finish and never retire.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         self._member_dir("kira")  # exists, but holds no activity file
         rows, complete = svc_mod._read_legacy_activity_files("kira")
@@ -1880,7 +1880,7 @@ class TestTheCompletionMarkerIsDurableBeforeTheNameIsFreed:
 
     @staticmethod
     def _legacy(slug, rows):
-        from kiro_crew import members
+        from efm_go import members
 
         d = members.member_dir(slug)
         d.mkdir(parents=True, exist_ok=True)
@@ -1910,7 +1910,7 @@ class TestTheCompletionMarkerIsDurableBeforeTheNameIsFreed:
         state the marker reaches only AFTER that call is a state a crash can skip.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         legacy = self._legacy("ivy", [{"ts": 1, "via": "cli", "project": "p"}])
@@ -1932,8 +1932,8 @@ class TestTheCompletionMarkerIsDurableBeforeTheNameIsFreed:
     def test_a_forged_row_after_that_crash_is_still_refused(self, tmp_path, monkeypatch):
         """The consequence the order exists to prevent, driven end to end."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.eventlog.types import ACTIVITY_RECORD
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.eventlog.types import ACTIVITY_RECORD
 
         svc_mod.set_service(None)
         self._legacy("jane", [{"ts": 1, "via": "cli", "project": "p"}])
@@ -1957,7 +1957,7 @@ class TestTheCompletionMarkerIsDurableBeforeTheNameIsFreed:
         # CONTROL on the barrier itself: the ordering is worthless if the directory
         # entry is still only in the page cache when the rename lands.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         self._legacy("kara", [{"ts": 1, "via": "cli", "project": "p"}])
@@ -1987,8 +1987,8 @@ class TestAnIncompleteFoldIsNotFinalised:
 
     def test_a_budget_truncated_fold_leaves_the_source_in_place(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         d = members.member_dir("gina")
@@ -2013,8 +2013,8 @@ class TestAnIncompleteFoldIsNotFinalised:
         # CONTROL. Without this, never finalising would satisfy the test above while
         # leaving the forgery path open for every member.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         d = members.member_dir("hank")
@@ -2043,7 +2043,7 @@ class TestTheFoldIsSerializedAcrossProcesses:
 
     @staticmethod
     def _legacy(slug, rows):
-        from kiro_crew import members
+        from efm_go import members
 
         d = members.member_dir(slug)
         d.mkdir(parents=True, exist_ok=True)
@@ -2056,7 +2056,7 @@ class TestTheFoldIsSerializedAcrossProcesses:
         taken: a lease acquired and released around each append is exactly the
         state that already existed and that duplicates rows."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         self._legacy("nadia", [{"ts": 1, "via": "cli", "project": "p"}])
@@ -2068,7 +2068,7 @@ class TestTheFoldIsSerializedAcrossProcesses:
             # A SECOND acquire from this process succeeds by reference count, so it
             # cannot answer "is it held". Asked of the lease module's own registry
             # instead, which is what another process's acquire consults.
-            from kiro_crew.crew_log import lease as lease_mod
+            from efm_go.crew_log import lease as lease_mod
 
             held_during_fold.append(bool(getattr(lease_mod, "_held", {})))
             return real_locked(self, slug, name, log)
@@ -2088,8 +2088,8 @@ class TestTheFoldIsSerializedAcrossProcesses:
         process holds the log, so this pass writes nothing -- and must leave the
         source under its live name so the next ensure folds it."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.eventlog.types import ACTIVITY_RECORD
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.eventlog.types import ACTIVITY_RECORD
 
         svc_mod.set_service(None)
         legacy = self._legacy("orla", [{"ts": 1, "via": "cli", "project": "p"}])
@@ -2130,7 +2130,7 @@ class TestWhatOneLogRetainsIsBounded:
 
     def test_a_long_log_retains_only_the_newest_window(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import log as log_mod
+        from efm_go.eventlog import log as log_mod
 
         monkeypatch.setattr(log_mod, "MAX_RETAINED_EVENTS", 5)
         log = log_mod.MemberLog("pia")
@@ -2148,7 +2148,7 @@ class TestWhatOneLogRetainsIsBounded:
         # CONTROL. Without this, reporting every load as truncated would satisfy
         # the test above while sending every read to the store for no reason.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import log as log_mod
+        from efm_go.eventlog import log as log_mod
 
         monkeypatch.setattr(log_mod, "MAX_RETAINED_EVENTS", 5)
         log = log_mod.MemberLog("quinn")
@@ -2165,7 +2165,7 @@ class TestWhatOneLogRetainsIsBounded:
         retained window is read from the store, whose own page is bounded by the
         limit, so the cost is the page rather than the log."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import log as log_mod
+        from efm_go.eventlog import log as log_mod
 
         monkeypatch.setattr(log_mod, "MAX_RETAINED_EVENTS", 3)
         log = log_mod.MemberLog("rhea")
@@ -2195,9 +2195,9 @@ class TestWhatOneLogRetainsIsBounded:
         the log and holds whichever collection the fold happens to read.
         """
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import log as log_mod
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import log as log_mod
+        from efm_go.eventlog import service as svc_mod
 
         monkeypatch.setattr(log_mod, "MAX_RETAINED_EVENTS", 2)
         monkeypatch.setattr(members, "read_member_rules", lambda slug, name: "be brief")
@@ -2240,7 +2240,7 @@ class TestARedactionFailureDropsTheFrameInsteadOfPublishingIt:
 
     def test_a_frame_whose_redaction_raises_is_not_broadcast(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         svc = svc_mod.get_service()
@@ -2260,7 +2260,7 @@ class TestARedactionFailureDropsTheFrameInsteadOfPublishingIt:
         # CONTROL. Without this, never broadcasting would satisfy the test above
         # while making the projection feed dead.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         svc = svc_mod.get_service()
@@ -2283,8 +2283,8 @@ class TestOneBadByteCannotBlockEveryLaterActivityWrite:
 
     def test_invalid_utf8_skips_its_line_and_the_rest_still_folds(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         d = members.member_dir("bea")
@@ -2314,8 +2314,8 @@ class TestOneBadByteCannotBlockEveryLaterActivityWrite:
 
     def test_a_later_activity_write_still_lands(self, tmp_path, monkeypatch):
         # This is the loss the finding names: not the fold, the writes AFTER it.
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         monkeypatch.setattr(members, "data_home", lambda: tmp_path)
         (tmp_path / "members").mkdir(exist_ok=True)
@@ -2335,7 +2335,7 @@ class TestAnImportedLegacyRowIsMarkedAndDoesNotDuplicate:
     """
 
     def _write_legacy(self, monkeypatch, tmp_path, rows):
-        from kiro_crew import members
+        from efm_go import members
 
         d = members.member_dir("pam")
         d.mkdir(parents=True, exist_ok=True)
@@ -2345,7 +2345,7 @@ class TestAnImportedLegacyRowIsMarkedAndDoesNotDuplicate:
 
     def test_an_imported_row_carries_the_provenance_marker(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         row = {"member": "Pam", "ts": "2026-01-01T00:00:00Z", "via": "cli", "project": "p"}
@@ -2369,7 +2369,7 @@ class TestAnImportedLegacyRowIsMarkedAndDoesNotDuplicate:
         # The marker is inside the row, and migration identity IS the row -- so
         # without the strip in _activity_key every later pass re-appends the file.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         svc_mod.set_service(None)
         row = {"member": "Pam", "ts": "2026-01-01T00:00:00Z", "via": "cli", "project": "p"}
@@ -2395,8 +2395,8 @@ class TestAnImportedLegacyRowIsMarkedAndDoesNotDuplicate:
         # CONTROL. Marking everything would satisfy the first test and destroy the
         # distinction the marker exists to draw.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import members
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go import members
+        from efm_go.eventlog import service as svc_mod
 
         monkeypatch.setattr(members, "data_home", lambda: tmp_path)
         (tmp_path / "members").mkdir(exist_ok=True)

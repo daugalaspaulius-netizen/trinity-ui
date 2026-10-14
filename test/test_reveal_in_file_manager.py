@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 from unittest.mock import patch
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 
 class TestRevealInFileManager:

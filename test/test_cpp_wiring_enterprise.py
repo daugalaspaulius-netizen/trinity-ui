@@ -23,10 +23,10 @@ from typing import Dict, List, Optional, Tuple
 import pytest
 from test_sandbox_launcher_program import rendered_payload
 
-from kiro_crew import agent, sandbox
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.hooks import TOOL_DENY, HookManager, HooksConfig
-from kiro_crew.platform import (
+from efm_go import agent, sandbox
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.hooks import TOOL_DENY, HookManager, HooksConfig
+from efm_go.platform import (
     BASELINE_DENY,
     PROFILE_ENTERPRISE,
     PlatformCompositionError,
@@ -108,7 +108,7 @@ def enterprise_ctx(monkeypatch):
 def _compose_enterprise_context(cfg: KiroCrewConfig, monkeypatch):
     """Compose via the companion if importable, else build the overlay inline."""
     try:
-        from kiro_crew.platform.discovery import discover_companion_context
+        from efm_go.platform.discovery import discover_companion_context
 
         companion = discover_companion_context(PROFILE_ENTERPRISE, cfg)
         if companion is not None and companion.profile == PROFILE_ENTERPRISE:

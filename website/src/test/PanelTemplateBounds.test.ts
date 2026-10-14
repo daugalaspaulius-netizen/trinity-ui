@@ -18,7 +18,7 @@ import { join } from 'node:path'
 
 const TEMPLATE = join(
   __dirname,
-  '../../../src/kiro_crew/agent_panel_templates/default.html',
+  '../../../src/efm_go/agent_panel_templates/default.html',
 )
 
 /**

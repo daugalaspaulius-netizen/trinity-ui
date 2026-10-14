@@ -50,9 +50,9 @@ from typing import Any, Optional
 
 import pytest
 
-from kiro_crew.loopback_http import build_loopback_opener
-from kiro_crew.platform_compat import IS_WINDOWS
-from kiro_crew.pod import provision as prov
+from efm_go.loopback_http import build_loopback_opener
+from efm_go.platform_compat import IS_WINDOWS
+from efm_go.pod import provision as prov
 
 # The pod plane these scenarios run on is hermetic: its own roots, its own unit
 # prefix and its own port band, so a run can never collide with (or reclaim) a
@@ -194,7 +194,7 @@ class PodClient:
         ``mc_token_<port>`` cookie; every requested endpoint -- including the
         mixed-internal routes -- is then called without a token in its URL.
         """
-        from kiro_crew.pod.runtime import api_path
+        from efm_go.pod.runtime import api_path
 
         opener = self._windows_opener
         if opener is None:
@@ -462,7 +462,7 @@ def _resolve_backend(scratch: Path) -> Path | None:
                 "requested driver is absent; unset it to run against the fake backend"
             )
         return None
-    from kiro_crew.testing.harness import fake_acp_backend_launcher
+    from efm_go.testing.harness import fake_acp_backend_launcher
 
     backend = fake_acp_backend_launcher(scratch)
     if not backend.is_file():
@@ -538,7 +538,7 @@ def pod(tmp_path_factory: pytest.TempPathFactory):
     if not os.environ.get("KIROCREW_E2E_SCENARIOS"):
         pytest.skip("pod scenario E2E. Set KIROCREW_E2E_SCENARIOS=1 to run.")
 
-    from kiro_crew.pod import runtime as rt
+    from efm_go.pod import runtime as rt
 
     # The pod's own gate, not a platform test of our own: on Linux this is the
     # systemd + session-bus check, on macOS the launchd one, and on a host with a
@@ -558,9 +558,9 @@ def pod(tmp_path_factory: pytest.TempPathFactory):
             + (".venv\\Scripts\\pip install -e ." if IS_WINDOWS else ".venv/bin/pip install -e .")
             + ")"
         )
-    if not (root / "src" / "kiro_crew" / "static" / "dist").is_dir():
+    if not (root / "src" / "efm_go" / "static" / "dist").is_dir():
         unresolved(
-            f"no built SPA dist under {root / 'src' / 'kiro_crew' / 'static' / 'dist'}; "
+            f"no built SPA dist under {root / 'src' / 'efm_go' / 'static' / 'dist'}; "
             "a pod refuses to come up without one (cd website && npm ci && npm run build)"
         )
 
@@ -842,21 +842,21 @@ def render_host_service_definition(env_overrides: dict[str, str] | None = None) 
     if IS_WINDOWS:
         script = (
             "import os\n"
-            "from kiro_crew.pod.config import PodConfig\n"
-            "from kiro_crew.pod.windows import render_task_script\n"
+            "from efm_go.pod.config import PodConfig\n"
+            "from efm_go.pod.windows import render_task_script\n"
             "name = os.environ['KIROCREW_E2E_POD_NAME']\n"
             "print(render_task_script(PodConfig.load(), name), end='')\n"
         )
     else:
         script = (
             "import sys\n"
-            "from kiro_crew.service.common import Platform, current_platform\n"
+            "from efm_go.service.common import Platform, current_platform\n"
             "plat = current_platform()\n"
             "if plat is Platform.SYSTEMD:\n"
-            "    from kiro_crew.service import linux\n"
+            "    from efm_go.service import linux\n"
             "    print(linux.render_unit(user_scope=True))\n"
             "elif plat is Platform.LAUNCHD:\n"
-            "    from kiro_crew.service import macos\n"
+            "    from efm_go.service import macos\n"
             "    print(macos.render_plist())\n"
             "else:\n"
             "    sys.exit(f'no service backend for {plat}')\n"

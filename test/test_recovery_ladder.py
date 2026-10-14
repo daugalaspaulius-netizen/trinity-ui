@@ -8,9 +8,9 @@ from unittest.mock import patch
 import pytest
 from overload_fakes import Clock
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.metrics import events as ev
-from kiro_crew.recovery import ladder as lad
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.metrics import events as ev
+from efm_go.recovery import ladder as lad
 
 
 @pytest.fixture(autouse=True)
@@ -43,7 +43,7 @@ class _Rec:
 @pytest.fixture
 def rec():
     r = _Rec()
-    with patch("kiro_crew.metrics.provider.get_recorder", return_value=r):
+    with patch("efm_go.metrics.provider.get_recorder", return_value=r):
         yield r
 
 
@@ -324,14 +324,14 @@ class TestSinkAndMetrics:
 
 class TestLayersShareTheSchedule:
     def test_gatewayd_supervisor_reads_l4(self):
-        from kiro_crew.mcp_gateway import manager
+        from efm_go.mcp_gateway import manager
 
         l4 = lad.LADDER.layer(lad.L4_GATEWAYD)
         assert manager._RESPAWN_BACKOFF_START_SECS == l4.base_secs
         assert manager._RESPAWN_BACKOFF_MAX_SECS == l4.max_secs
 
     def test_supervisor_backoff_is_jittered_and_bounded(self, monkeypatch):
-        from kiro_crew.mcp_gateway import manager
+        from efm_go.mcp_gateway import manager
 
         floor, cap = manager._RESPAWN_BACKOFF_START_SECS, manager._RESPAWN_BACKOFF_MAX_SECS
         seen = set()
@@ -348,12 +348,12 @@ class TestLayersShareTheSchedule:
         assert manager.GatewayManager._next_respawn_backoff(0.0) >= 0.0
 
     def test_acp_client_reads_l3(self):
-        from kiro_crew.acp import client
+        from efm_go.acp import client
 
         assert client._ACP_RESPAWN_BACKOFF_S == lad.LADDER.layer(lad.L3_ACP_RUNTIME).base_secs
 
     def test_task_store_reads_the_shared_schedule(self):
-        from kiro_crew.taskq import model
+        from efm_go.taskq import model
 
         assert model.RECOVERY_BACKOFF_BASE_SECS == lad.LADDER.base_secs
         assert model.RECOVERY_BACKOFF_MAX_SECS == lad.LADDER.max_secs
@@ -367,8 +367,8 @@ class TestLayersShareTheSchedule:
         ``agent.recovery_backoff_*`` knobs; this pins that they read `LADDER` and
         not the configured process ladder.
         """
-        from kiro_crew.acp import client
-        from kiro_crew.taskq import model
+        from efm_go.acp import client
+        from efm_go.taskq import model
 
         lad.configure_default_ladder(_cfg(7.0, 300.0))
         assert client._ACP_RESPAWN_BACKOFF_S == lad.LADDER.layer(lad.L3_ACP_RUNTIME).base_secs
@@ -378,9 +378,9 @@ class TestLayersShareTheSchedule:
         """The literals the ladder replaced must not come back."""
         import inspect
 
-        from kiro_crew.acp import client
-        from kiro_crew.mcp_gateway import manager
-        from kiro_crew.taskq import model
+        from efm_go.acp import client
+        from efm_go.mcp_gateway import manager
+        from efm_go.taskq import model
 
         assert "_RESPAWN_BACKOFF_START_SECS = 1.0" not in inspect.getsource(manager)
         assert "_RESPAWN_BACKOFF_MAX_SECS = 60.0" not in inspect.getsource(manager)
@@ -445,7 +445,7 @@ def test_the_gateway_installs_the_ladder_snapshot_before_its_consumers():
     """Source-level pin on the boot seam; no gateway is booted for it."""
     import inspect
 
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     assert "configure_default_ladder(self._cfg)" in inspect.getsource(
         GatewayOrchestrator._init_subagents
@@ -459,7 +459,7 @@ def test_manager_records_an_l4_restart_and_escalation(monkeypatch):
     """The supervisor's respawn path is what feeds L4 (source-level pin)."""
     import inspect
 
-    from kiro_crew.mcp_gateway import manager
+    from efm_go.mcp_gateway import manager
 
     src = inspect.getsource(manager.GatewayManager._run_watchdog)
     assert "record_restart(L4_GATEWAYD)" in src

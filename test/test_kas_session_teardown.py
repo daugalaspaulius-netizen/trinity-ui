@@ -16,13 +16,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.acp.runtime import (
+from efm_go.acp.runtime import (
     _TERMINATE_TIMEOUT,
     AcpRequestTimeout,
     AcpRuntime,
     AcpRuntimeError,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     ACP_BACKEND_KAS,
     METHOD_KAS_SESSION_DELETE,
     METHOD_SESSION_TERMINATE,
@@ -49,7 +49,7 @@ class TestTeardownVerbPerBackend:
     def test_the_two_verbs_are_not_the_same_namespace(self):
         """A regression here would send the wrong extension namespace."""
         assert METHOD_KAS_SESSION_DELETE == "_kiro/session/delete"
-        assert METHOD_SESSION_TERMINATE == "_kiro.dev/session/terminate"
+        assert METHOD_SESSION_TERMINATE == "_efm.go/session/terminate"
 
 
 class TestTeardownIsStillBestEffort:
@@ -88,7 +88,7 @@ class TestTeardownIsStillBestEffort:
 
 def _readiness_subject(tmp_path, monkeypatch, wait_mcp_ready):
     """Build one failed KAS session beside an unaffected resident sibling."""
-    import kiro_crew.acp.runtime as runtime_mod
+    import efm_go.acp.runtime as runtime_mod
 
     runtime = _runtime(tmp_path, ACP_BACKEND_KAS)
     runtime._process = object()  # type: ignore[assignment]

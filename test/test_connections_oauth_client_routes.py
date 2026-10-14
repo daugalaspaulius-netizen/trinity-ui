@@ -17,8 +17,8 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.dashboard.handlers import connections
-from kiro_crew.secrets import SecretVault
+from efm_go.dashboard.handlers import connections
+from efm_go.secrets import SecretVault
 
 BASE = "/api/connections/oauth-clients"
 GITHUB_VAULT_NAME = "CONNECTIONS_GITHUB_CLIENT_SECRET"
@@ -569,7 +569,7 @@ async def test_a_failed_client_id_write_rolls_the_secret_back(home, monkeypatch)
     async def _boom(*_args, **_kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_utils.run_config_write", _boom)
+    monkeypatch.setattr("efm_go.dashboard.chat_utils.run_config_write", _boom)
 
     client = await _client()
     try:
@@ -597,7 +597,7 @@ async def test_a_failed_client_id_write_removes_a_secret_that_did_not_exist_befo
     async def _boom(*_args, **_kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_utils.run_config_write", _boom)
+    monkeypatch.setattr("efm_go.dashboard.chat_utils.run_config_write", _boom)
 
     client = await _client()
     try:
@@ -671,7 +671,7 @@ async def test_delete_restores_the_secret_when_the_config_drop_fails(home, monke
     async def _boom(*_args, **_kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_utils.run_config_write", _boom)
+    monkeypatch.setattr("efm_go.dashboard.chat_utils.run_config_write", _boom)
 
     client = await _client()
     try:
@@ -699,7 +699,7 @@ async def test_rollback_leaves_a_secret_someone_else_wrote_in_between(home, monk
         vault.set_sync(GITHUB_VAULT_NAME, "newer-from-elsewhere")
         raise OSError("disk full")
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_utils.run_config_write", _boom_after_side_write)
+    monkeypatch.setattr("efm_go.dashboard.chat_utils.run_config_write", _boom_after_side_write)
 
     client = await _client()
     try:

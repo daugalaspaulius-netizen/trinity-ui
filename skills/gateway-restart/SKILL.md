@@ -41,7 +41,7 @@ This overview form omits `-StatusFile`, so the shared default `logs/restart-stat
 
 The PowerShell script (`do-restart.ps1`) accepts `-KirocrewBin` (the resolved absolute path to `kirocrew.exe`) and `-StatusFile` (the attempt-specific verdict path from step 3). The attempt log is always `<status file>.log` — not caller-settable. **Attempt paths are confined:** both scripts only accept a status file of the form `<crew home>/logs/restart-status.<suffix>` (no slashes or `..` in the suffix); anything else falls back to the shared default, because the detached helper runs outside any agent sandbox and must never delete or overwrite a caller-chosen file. It sleeps 10 seconds, then calls the binary. `Start-Process -WindowStyle Hidden` creates a detached process that survives the gateway's death. Unlike Unix, Windows has no `nohup`/`disown` — `Start-Process` with `-WindowStyle Hidden` is the equivalent pattern for fire-and-forget background work.
 
-> **Important:** Always resolve `kirocrew` to an absolute path at schedule time (before the detached process launches). A hidden process may not inherit the same PATH as the agent session — this is the documented Windows reality. If resolution fails, the script falls back to PATH lookup and then to `python -m kiro_crew.cli restart` via the venv Python. All path arguments passed to `Start-Process -ArgumentList` must be wrapped in escaped quotes (`` `"..`" ``) to handle paths containing spaces (e.g. `C:\Users\John Smith\...`).
+> **Important:** Always resolve `kirocrew` to an absolute path at schedule time (before the detached process launches). A hidden process may not inherit the same PATH as the agent session — this is the documented Windows reality. If resolution fails, the script falls back to PATH lookup and then to `python -m efm_go.cli restart` via the venv Python. All path arguments passed to `Start-Process -ArgumentList` must be wrapped in escaped quotes (`` `"..`" ``) to handle paths containing spaces (e.g. `C:\Users\John Smith\...`).
 
 ### Resume Monitor
 
@@ -98,9 +98,9 @@ finish the turn promptly so the session directive can apply before the helper wa
    $crewHome = if ($env:KIROCREW_HOME) { $env:KIROCREW_HOME } else { Join-Path $env:USERPROFILE ".kiro\crew" }
    $statusFile = Join-Path $crewHome ("logs\restart-status." + [DateTimeOffset]::Now.ToUnixTimeSeconds() + "." + $PID)
    ```
-2. **The current gateway pid**, recorded now so the resumed session can tell a new gateway from the old one without reading any fenced path (the crew home's `run/` dir is agent-fenced — never instruct a resumed session to read it). Use the gateway pid reported by `kirocrew status` as the primary source. If it is unavailable, fall back to a process listing whose pattern cannot match its own invoking shell and covers both install shapes (the `kirocrew` binary and an editable install's `python -m kiro_crew gateway`):
+2. **The current gateway pid**, recorded now so the resumed session can tell a new gateway from the old one without reading any fenced path (the crew home's `run/` dir is agent-fenced — never instruct a resumed session to read it). Use the gateway pid reported by `kirocrew status` as the primary source. If it is unavailable, fall back to a process listing whose pattern cannot match its own invoking shell and covers both install shapes (the `kirocrew` binary and an editable install's `python -m efm_go gateway`):
    ```bash
-   pgrep -f "kiro_?crew[ ]gateway" | head -1   # brackets prevent self-match; covers kirocrew + kiro_crew
+   pgrep -f "kiro_?crew[ ]gateway" | head -1   # brackets prevent self-match; covers kirocrew + efm_go
    ```
    A bare `pgrep -f "kirocrew gateway"` self-matches the shell running it and misses editable installs entirely — two transient wrapper-shell pids then "differ" across the restart and fake a pid-changed signal.
 

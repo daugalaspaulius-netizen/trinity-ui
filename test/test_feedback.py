@@ -14,7 +14,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.dashboard.handlers import feedback
+from efm_go.dashboard.handlers import feedback
 
 _TEST_IDENTITY = "install-abc123"
 
@@ -656,7 +656,7 @@ class TestSubmitMetadataRedaction:
         assert "[url]-CREDBIT" in seen_cred
         # ...and the fully redacted value is what egresses.
         assert self._meta(captured["payload"], "sessionId") == "chat-[url]-[cred]"
-        assert self._meta(captured["payload"], "kiro_crew_version") == "[url]-[cred]"
+        assert self._meta(captured["payload"], "efm_go_version") == "[url]-[cred]"
 
     @pytest.mark.asyncio
     async def test_clean_metadata_passes_through_and_user_id_is_server_value(
@@ -678,5 +678,5 @@ class TestSubmitMetadataRedaction:
         resp = await feedback.api_feedback_submit(self._req())
         assert resp.status == 200
         assert self._meta(captured["payload"], "sessionId") == "chat-7-1786950000"
-        assert self._meta(captured["payload"], "kiro_crew_version") == "1.2.3"
+        assert self._meta(captured["payload"], "efm_go_version") == "1.2.3"
         assert self._meta(captured["payload"], "userId") == "install-xyz"

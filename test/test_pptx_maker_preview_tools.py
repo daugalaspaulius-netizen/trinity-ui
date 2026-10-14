@@ -21,7 +21,7 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.apps.builtins.pptx_maker.backend import pdftoppm_shim, preview_tools
+from efm_go.apps.builtins.pptx_maker.backend import pdftoppm_shim, preview_tools
 
 pdfium = pytest.importorskip(
     "pypdfium2",

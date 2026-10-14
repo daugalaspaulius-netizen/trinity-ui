@@ -27,15 +27,15 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import mcp_core, session_directive
-from kiro_crew.autonudge import (
+from efm_go import mcp_core, session_directive
+from efm_go.autonudge import (
     AutoNudgeService,
     MonitorUpdateConflict,
     _stopped_row_is_replaceable,
 )
-from kiro_crew.dashboard.handlers.autonudge import _redact_monitor_value
-from kiro_crew.mcp_tools import control
-from kiro_crew.monitoring.models import (
+from efm_go.dashboard.handlers.autonudge import _redact_monitor_value
+from efm_go.mcp_tools import control
+from efm_go.monitoring.models import (
     MONITOR_PUBLIC_FIELDS,
     MONITOR_STOP_INVALID_RECORD,
     MonitorBudgets,

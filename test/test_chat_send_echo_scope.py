@@ -11,9 +11,9 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app, _make_state
 
-from kiro_crew.dashboard import revocation_gen, token_auth, ws_event_scope
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.dashboard.state import SlotOrigin
+from efm_go.dashboard import revocation_gen, token_auth, ws_event_scope
+from efm_go.dashboard.handlers import updates
+from efm_go.dashboard.state import SlotOrigin
 
 _SLOT = "echo-scope-slot"
 _APP = "echo-scope-observer"
@@ -24,8 +24,8 @@ _PROMPT = "Keep this credential private: ghp_" + "x" * 36
 @pytest.fixture
 def echo_state(tmp_path, monkeypatch):
     # Real authentication with isolated signing/nonce state and fixture manifests.
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     monkeypatch.setattr(token_auth, "_get_secret", lambda: b"echo-scope-test-signing-key")
     monkeypatch.setattr(token_auth, "_state", token_auth.TokenStateManager())
     monkeypatch.setattr(token_auth, "_app_perms_cache", {})
@@ -38,7 +38,7 @@ def echo_state(tmp_path, monkeypatch):
     monkeypatch.setattr(ws_event_scope, "is_app_enabled", lambda _name: True)
     stopped = asyncio.Event()
     monkeypatch.setattr(updates, "shutdown_event", stopped)
-    monkeypatch.setattr("kiro_crew.dashboard.ws.shutdown_event", stopped)
+    monkeypatch.setattr("efm_go.dashboard.ws.shutdown_event", stopped)
     state = _make_state(tmp_path)
     state.get_or_create_slot(_SLOT, origin=SlotOrigin.USER)
     # Periodic status is unrelated to prompt delivery or its permission check.
@@ -48,7 +48,7 @@ def echo_state(tmp_path, monkeypatch):
     # fixture's count sources (unrelated to what these echo tests assert).
     import time as _time
 
-    from kiro_crew.dashboard import status_counts as _sc
+    from efm_go.dashboard import status_counts as _sc
 
     monkeypatch.setattr(_sc, "_counts_cache", (0, 0))
     monkeypatch.setattr(_sc, "_counts_cache_ts", _time.monotonic())
@@ -59,8 +59,8 @@ def echo_state(tmp_path, monkeypatch):
         slot.append("assistant", "reply")
         slot.append("done", "", "done", broadcast=False)
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", reply)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", reply)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
     yield state
     stopped.set()
 
@@ -90,14 +90,14 @@ async def _sse_until_fence(response):
 async def test_user_echo_reaches_only_authorized_ws_clients(
     echo_state, monkeypatch, can_read_user_slots
 ):
-    from kiro_crew.dashboard.ws import api_ws
+    from efm_go.dashboard.ws import api_ws
 
     manifest = SimpleNamespace(
         permissions=SimpleNamespace(
             api=["/api/stream"], events=["slots:user"] if can_read_user_slots else []
         )
     )
-    monkeypatch.setattr("kiro_crew.apps.manager.get_app_manifest", lambda _name: manifest)
+    monkeypatch.setattr("efm_go.apps.manager.get_app_manifest", lambda _name: manifest)
     monkeypatch.setattr(ws_event_scope, "get_app_manifest", lambda _name: manifest)
     app = _make_app(echo_state)
     app.middlewares.insert(0, token_auth.token_auth_middleware())

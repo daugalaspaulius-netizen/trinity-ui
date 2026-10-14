@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 
-from kiro_crew.knowledge.dedup import (
+from efm_go.knowledge.dedup import (
     DocRef,
     _match_reason,
     dedup_document,
@@ -14,8 +14,8 @@ from kiro_crew.knowledge.dedup import (
     normalize_filename,
     pick_winner,
 )
-from kiro_crew.knowledge.embedder import floats_to_bytes
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.knowledge.embedder import floats_to_bytes
+from efm_go.knowledge.store import KnowledgeStore
 
 
 def _mk_store(tmp_path) -> KnowledgeStore:
@@ -198,7 +198,7 @@ class TestPriority:
         assert pick_winner(upload_docx, folder_pdf)[0].source_id == "f"
 
     def test_format_rank_ordering(self):
-        from kiro_crew.knowledge.dedup import _format_rank
+        from efm_go.knowledge.dedup import _format_rank
         assert _format_rank("a.docx") > _format_rank("a.pdf")
         assert _format_rank("a.md") >= _format_rank("a.docx")
         # unknown extension and no extension both fall back to the default rank,
@@ -653,7 +653,7 @@ class TestOneDocumentManyLocations:
         the folder vocabulary's 'done' becomes invisible to it, and identical content
         then lands again under a second uri as a duplicate.
         """
-        from kiro_crew.knowledge.agent_source import find_document_by_hash
+        from efm_go.knowledge.agent_source import find_document_by_hash
         store = _mk_store(tmp_path)
         try:
             agg = store.add_source(name="Auto-added", source_type="agent",
@@ -874,7 +874,7 @@ class TestOneDocumentManyLocations:
         into one reference spanning both documents' items, so a later collapse treats
         them as a single thing and removing one takes the other's indexed copy too.
         """
-        from kiro_crew.knowledge.dedup import enumerate_docs
+        from efm_go.knowledge.dedup import enumerate_docs
         store = _mk_store(tmp_path)
         try:
             agg = store.add_source(name="Artifacts", source_type="artifact",
@@ -904,7 +904,7 @@ class TestOneDocumentManyLocations:
         """An unattended pass must not delete a document on a similarity judgement."""
         from unittest.mock import patch
 
-        from kiro_crew.knowledge.dedup import DedupAction, DocRef, dedup_sweep
+        from efm_go.knowledge.dedup import DedupAction, DocRef, dedup_sweep
         store = _mk_store(tmp_path)
 
         def _ref(sid: str, stype: str, name: str, iid: str, h: str) -> DocRef:
@@ -922,7 +922,7 @@ class TestOneDocumentManyLocations:
                             loser=_ref("l2", "upload", "b.md", "i4", "h3"),
                             reason="fuzzy:0.9700"),
             ]
-            import kiro_crew.knowledge.dedup as dd
+            import efm_go.knowledge.dedup as dd
             with patch.object(dd, "enumerate_docs", return_value=[]), \
                  patch.object(dd, "find_duplicates", return_value=fake), \
                  patch.object(dd, "_audit_collapse"), \
@@ -944,7 +944,7 @@ class TestOneDocumentManyLocations:
         With the mtime gate, removing the survivor takes the content out of the
         Library while the duplicate file is still on disk and nothing re-reads it.
         """
-        from kiro_crew.knowledge.dedup import dedup_sweep
+        from efm_go.knowledge.dedup import dedup_sweep
         store = _mk_store(tmp_path)
         try:
             folder = store.add_source(name="docs", source_type="local_folder",
@@ -1030,7 +1030,7 @@ class TestOneDocumentManyLocations:
         """
         store = _mk_store(tmp_path)
         try:
-            from kiro_crew.knowledge.dedup import _collapse_doc
+            from efm_go.knowledge.dedup import _collapse_doc
             a = store.add_source(name="A", source_type="local_folder",
                                  uri=str(tmp_path / "a"))
             b = store.add_source(name="B", source_type="local_folder",

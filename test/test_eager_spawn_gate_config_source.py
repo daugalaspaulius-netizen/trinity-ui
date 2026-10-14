@@ -21,12 +21,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config import live
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.config.resolution import DEGRADED_WHOLE_CONFIG
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_runner import schedule_eager_spawn
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.config import live
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.config.resolution import DEGRADED_WHOLE_CONFIG
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_runner import schedule_eager_spawn
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
 
 @pytest.fixture(autouse=True)

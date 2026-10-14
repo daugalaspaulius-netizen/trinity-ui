@@ -14,8 +14,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from kiro_crew.apps.cron_sdk import CronSDK
-from kiro_crew.cron import CronService
+from efm_go.apps.cron_sdk import CronSDK
+from efm_go.cron import CronService
 
 
 def _run(value: Any) -> Any:
@@ -659,7 +659,7 @@ class TestOwnedCronToggle:
         from unittest.mock import Mock
 
         audit = Mock()
-        monkeypatch.setattr("kiro_crew.apps.cron_sdk.sel", lambda: audit)
+        monkeypatch.setattr("efm_go.apps.cron_sdk.sel", lambda: audit)
         other = CronSDK("other", service).add_job(name="other/job", message="hello", every_secs=600)
         sdk = CronSDK("example", service)
         before = service._path.read_bytes()
@@ -682,7 +682,7 @@ class TestOwnedCronToggle:
 
     @pytest.mark.asyncio
     async def test_async_toggle_and_sync_loop_refusal(self, service):
-        from kiro_crew.apps.cron_sdk import CronSyncOnLoopError
+        from efm_go.apps.cron_sdk import CronSyncOnLoopError
 
         sdk = CronSDK("example", service)
         job = await sdk.add_job_async(name="example/job", message="hello", every_secs=600)

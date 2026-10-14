@@ -6,15 +6,15 @@ pulling ``slack.gateway``) and ``dashboard.state`` (pulling ``vector_memory``
 name, not at module scope. At module scope every CLI invocation and — worse —
 every long-lived MCP stdio server (``kirocrew mcp-core`` / ``mcp-cron`` /
 ``mcp-computer``) would pay ~1.3 s and ~112 MB for subcommands that never run;
-a fresh ``import kiro_crew.cli`` instead costs ~0.5 s / ~54 MB.
+a fresh ``import efm_go.cli`` instead costs ~0.5 s / ~54 MB.
 
 The tests here keep it that way:
 
-1. **Ratchet** — a fresh interpreter that imports ``kiro_crew.cli`` must not
+1. **Ratchet** — a fresh interpreter that imports ``efm_go.cli`` must not
    end up with any of the heavy modules in ``sys.modules``.  Without this, the
    next module-scope import silently undoes the win (the two historical
    ``# noqa: E402`` blocks show that already happened once).
-2. **Dispatch integrity** — every function-local ``from kiro_crew.* import``
+2. **Dispatch integrity** — every function-local ``from efm_go.* import``
    inside ``main()`` must resolve.  A typo in a moved import is otherwise only
    discovered at runtime by the user who runs that one subcommand.
 3. **Stdio servers still serve** — ``mcp-core`` / ``mcp-cron`` answer
@@ -43,29 +43,29 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli
-from kiro_crew.platform import PlatformCompositionError
+from efm_go import cli
+from efm_go.platform import PlatformCompositionError
 
 _SRC = Path(__file__).resolve().parent.parent / "src"
-_CLI_PY = _SRC / "kiro_crew" / "cli.py"
+_CLI_PY = _SRC / "efm_go" / "cli.py"
 
-#: Modules that must NOT load as a side effect of ``import kiro_crew.cli``.
+#: Modules that must NOT load as a side effect of ``import efm_go.cli``.
 #: Each entry names a measured cost: cli_commands/cli_server are the two
 #: deferred dispatch-table modules (~1.1 s combined), slack.gateway is
 #: cli_server's heaviest edge, dashboard.state → vector_memory → numpy is the
 #: ~56 MB RSS chain.
 _BANNED_AFTER_CLI_IMPORT = (
-    "kiro_crew.cli_commands",
-    "kiro_crew.cli_server",
-    "kiro_crew.slack.gateway",
-    "kiro_crew.dashboard.state",
-    "kiro_crew.vector_memory",
+    "efm_go.cli_commands",
+    "efm_go.cli_server",
+    "efm_go.slack.gateway",
+    "efm_go.dashboard.state",
+    "efm_go.vector_memory",
     "numpy",
 )
 
 
 def test_cli_import_does_not_load_heavy_modules(tmp_path: Path) -> None:
-    """Ratchet: ``import kiro_crew.cli`` must stay free of the deferred modules.
+    """Ratchet: ``import efm_go.cli`` must stay free of the deferred modules.
 
     If this fails, a module-scope import (direct or transitive) reached one of
     the banned modules again — move it into the dispatch branch that needs it
@@ -73,13 +73,13 @@ def test_cli_import_does_not_load_heavy_modules(tmp_path: Path) -> None:
     """
     code = (
         "import sys; "
-        "import kiro_crew.cli; "
+        "import efm_go.cli; "
         "banned = " + repr(list(_BANNED_AFTER_CLI_IMPORT)) + "; "
         "present = [m for m in banned if m in sys.modules]; "
         "print(repr(present))"
     )
     # cwd=tmp_path: a child inherits pytest's CWD (the checkout) unless told
-    # otherwise; the interpreter resolves kiro_crew from the installed package,
+    # otherwise; the interpreter resolves efm_go from the installed package,
     # not from the directory it runs in, so nothing here needs the checkout.
     res = subprocess.run(
         [sys.executable, "-c", code],
@@ -88,17 +88,17 @@ def test_cli_import_does_not_load_heavy_modules(tmp_path: Path) -> None:
         timeout=120,
         cwd=tmp_path,
     )
-    assert res.returncode == 0, f"import kiro_crew.cli failed:\n{res.stderr}"
+    assert res.returncode == 0, f"import efm_go.cli failed:\n{res.stderr}"
     present = ast.literal_eval(res.stdout.strip())
     assert present == [], (
-        f"module-scope import of kiro_crew.cli loaded deferred modules: {present}. "
+        f"module-scope import of efm_go.cli loaded deferred modules: {present}. "
         "A new (or moved-back) module-scope import reaches them — defer it into "
         "the main() dispatch branch that uses it (see issue #3504)."
     )
 
 
 def _local_imports_in_main() -> list[tuple[str, str]]:
-    """(module, name) for every function-local kiro_crew import inside main()."""
+    """(module, name) for every function-local efm_go import inside main()."""
     tree = ast.parse(_CLI_PY.read_text(encoding="utf-8"))
     main_fn = next(
         node
@@ -108,7 +108,7 @@ def _local_imports_in_main() -> list[tuple[str, str]]:
     found: list[tuple[str, str]] = []
     for node in ast.walk(main_fn):
         if isinstance(node, ast.ImportFrom) and node.module and (
-            node.module == "kiro_crew" or node.module.startswith("kiro_crew.")
+            node.module == "efm_go" or node.module.startswith("efm_go.")
         ):
             for alias in node.names:
                 found.append((node.module, alias.name))
@@ -119,9 +119,9 @@ def test_main_contains_the_deferred_dispatch_imports() -> None:
     """The dispatch imports really are function-local (not silently hoisted back)."""
     local = _local_imports_in_main()
     modules = {mod for mod, _ in local}
-    assert "kiro_crew.cli_commands" in modules
-    assert "kiro_crew.cli_server" in modules
-    assert "kiro_crew.dashboard.state" in modules
+    assert "efm_go.cli_commands" in modules
+    assert "efm_go.cli_server" in modules
+    assert "efm_go.dashboard.state" in modules
     # Coherence check: the dispatch chain defers a substantial name set, not a remnant.
     assert len(local) >= 25, f"expected >=25 deferred imports in main(), found {len(local)}"
 
@@ -151,7 +151,7 @@ def _read_line(
     reports as an un-attributed pytest timeout instead of the "no <what>
     response" assertion this helper's caller is written to make — and on Windows
     pytest-timeout has no SIGALRM, so it kills the xdist worker outright, the
-    caller's ``finally`` never runs, and the ``python -m kiro_crew`` child is
+    caller's ``finally`` never runs, and the ``python -m efm_go`` child is
     left alive holding the worker's pipes. Reading on a daemon thread with a
     join deadline converts that lost RUN into a failed TEST that names itself.
     30s is generous for a cold interpreter plus server boot and stays well
@@ -170,7 +170,7 @@ def _read_line(
 def _stdio_roundtrip(subcommand: str, tmp_path: Path) -> list[str]:
     """Start ``kirocrew <subcommand>`` over stdio; return the tools/list names."""
     proc = subprocess.Popen(
-        [sys.executable, "-m", "kiro_crew", subcommand],
+        [sys.executable, "-m", "efm_go", subcommand],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -246,9 +246,9 @@ def test_boot_platform_runs_before_mcp_core_dispatch(monkeypatch) -> None:
         cli, "boot_platform", lambda *_a, **_k: order.append("boot_platform")
     )
 
-    fake_mcp_core = types.ModuleType("kiro_crew.mcp_core")
+    fake_mcp_core = types.ModuleType("efm_go.mcp_core")
     fake_mcp_core.run_mcp_core_server = lambda: order.append("dispatch")  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "kiro_crew.mcp_core", fake_mcp_core)
+    monkeypatch.setitem(sys.modules, "efm_go.mcp_core", fake_mcp_core)
 
     monkeypatch.setattr(cli.sys, "argv", ["kirocrew", "mcp-core"])
     cli.main()
@@ -265,9 +265,9 @@ def test_platform_composition_error_still_aborts_mcp_core(monkeypatch) -> None:
     monkeypatch.setattr(cli, "boot_platform", _raise)
 
     dispatched: list[bool] = []
-    fake_mcp_core = types.ModuleType("kiro_crew.mcp_core")
+    fake_mcp_core = types.ModuleType("efm_go.mcp_core")
     fake_mcp_core.run_mcp_core_server = lambda: dispatched.append(True)  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "kiro_crew.mcp_core", fake_mcp_core)
+    monkeypatch.setitem(sys.modules, "efm_go.mcp_core", fake_mcp_core)
 
     monkeypatch.setattr(cli.sys, "argv", ["kirocrew", "mcp-core"])
     with pytest.raises(PlatformCompositionError):

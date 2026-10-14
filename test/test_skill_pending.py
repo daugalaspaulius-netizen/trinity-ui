@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.skills import AutoSkillProvenance, ClaimRefusal, SkillsLoader
+from efm_go.skills import AutoSkillProvenance, ClaimRefusal, SkillsLoader
 
 
 @pytest.fixture()
@@ -163,7 +163,7 @@ def test_noncanonical_pending_dir_name_is_hidden(loader):
 def test_stage_rolls_back_claim_on_write_failure(loader, monkeypatch):
     """A partial write (e.g. disk full) must not leave a claimed-but-empty
     pending dir that blocks re-staging the slug."""
-    import kiro_crew.skills as S
+    import efm_go.skills as S
 
     def _boom(**kw):
         raise OSError("disk full")
@@ -239,7 +239,7 @@ def test_redaction_breaking_script_aborts_promotion(loader, monkeypatch):
 def test_failed_move_restores_meta(loader, monkeypatch):
     """If the promotion move fails after .meta.json was removed, the metadata is
     restored so the candidate isn't stranded in pending without it."""
-    import kiro_crew.skills as S
+    import efm_go.skills as S
 
     _stage(loader, "movefail")
     meta = loader._pending_root() / "movefail" / ".meta.json"
@@ -631,7 +631,7 @@ def test_claim_without_the_lock_is_refused_not_attempted(loader, monkeypatch):
     def refusing(fd, **kw):
         raise OSError("lock held by another process")
 
-    monkeypatch.setattr("kiro_crew.skills.file_lock", refusing)
+    monkeypatch.setattr("efm_go.skills.file_lock", refusing)
     assert _stage_distinct(loader, "unlocked") is None
     assert not (loader._pending_root() / "unlocked").exists()
     assert (
@@ -686,7 +686,7 @@ def test_claim_lock_refusal_is_reported_as_retryable(loader, monkeypatch):
     def refusing(fd, **kw):
         raise OSError("lock held by another process")
 
-    monkeypatch.setattr("kiro_crew.skills.file_lock", refusing)
+    monkeypatch.setattr("efm_go.skills.file_lock", refusing)
     staged = ClaimRefusal()
     assert _stage_distinct(loader, "stall-retryable", refusal=staged) is None
     assert staged.retryable is True, "an unacquired claim lock is the retryable refusal"

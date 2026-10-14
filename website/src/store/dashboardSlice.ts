@@ -1621,7 +1621,7 @@ export function slotSurfaceKey(slot: { mode?: string; surface?: string }): strin
  * other and with the server on it: `selectContinuable` (which must not OFFER
  * Continue on a bound slot) and ChatPage's regenerate / edit-resend gates
  * (which must not offer those either). Mirrors `remote_bound_refusal` in
- * `src/kiro_crew/dashboard/remote_relay.py`, which REFUSES the same actions with
+ * `src/efm_go/dashboard/remote_relay.py`, which REFUSES the same actions with
  * 409 `remote_action_unsupported`.
  *
  * Keyed on `executor` (the binding INTENT), never `instance_id` or `is_remote`:

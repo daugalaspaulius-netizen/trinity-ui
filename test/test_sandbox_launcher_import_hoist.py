@@ -9,7 +9,7 @@ seccomp-install time with ``ModuleNotFoundError``, so every sandboxed spawn died
 inside the launcher. The isolation probe in Auto-Improvement then read that crash
 as "push is not disabled".
 
-The launcher is ``kiro_crew.sandbox_launcher_program``; a spawn runs that module's
+The launcher is ``efm_go.sandbox_launcher_program``; a spawn runs that module's
 source with one plan line substituted. These tests run it:
 
 * in a fresh isolated interpreter with every further import DENIED once the program
@@ -39,7 +39,7 @@ from pathlib import Path
 import pytest
 from test_sandbox_launcher_program import RecordingLibc, launch, payload, refusal
 
-from kiro_crew import sandbox_launcher, sandbox_launcher_program, sandbox_plan
+from efm_go import sandbox_launcher, sandbox_launcher_program, sandbox_plan
 
 program = sandbox_launcher_program
 
@@ -312,7 +312,7 @@ _EMITTERS = {
 
 def test_every_probe_failure_marker_has_a_launcher_failure_behind_it() -> None:
     """The prefix list and the failures below are one set, so a new prefix gets one too."""
-    from kiro_crew.apps.builtins.auto_improvement.backend.clone_setup import (
+    from efm_go.apps.builtins.auto_improvement.backend.clone_setup import (
         _LAUNCHER_EXIT_PREFIXES,
     )
 
@@ -349,10 +349,10 @@ def test_the_traceback_marker_matches_the_launcher_filename() -> None:
     ``mkstemp`` is passed -- never a pin on how ``sandbox.py`` spells that call, which
     would fail on any refactor of the writer while real drift went unnoticed.
     """
-    from kiro_crew.apps.builtins.auto_improvement.backend.clone_setup import (
+    from efm_go.apps.builtins.auto_improvement.backend.clone_setup import (
         _LAUNCHER_TRACEBACK_RE,
     )
-    from kiro_crew.sandbox import (
+    from efm_go.sandbox import (
         _LAUNCHER_SCRIPT_SUFFIX,
         _SANDBOX_ARTIFACT_PREFIX,
         namespace_launcher_script_dir,

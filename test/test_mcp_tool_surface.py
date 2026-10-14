@@ -2,10 +2,10 @@
 
 Two layers, both here so the contract reads in one place:
 
-* :mod:`kiro_crew.mcp_gateway.tool_surface` — the pure projection and the change
+* :mod:`efm_go.mcp_gateway.tool_surface` — the pure projection and the change
   description every adoption point compares through. What counts as a change,
   what deliberately does not, and which listings are unmeasurable.
-* :class:`~kiro_crew.mcp_gateway.backend.Backend` — recording the tool set a
+* :class:`~efm_go.mcp_gateway.backend.Backend` — recording the tool set a
   session was told about, and asking a replacement what IT publishes.
 
 The gateway-side decision built on these (refuse the respawn, audit it) lives
@@ -24,14 +24,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.mcp_gateway import backend as backend_mod
-from kiro_crew.mcp_gateway.backend import (
+from efm_go.mcp_gateway import backend as backend_mod
+from efm_go.mcp_gateway.backend import (
     TOOL_SURFACE_STUB_PREFIX,
     Backend,
     _PendingRequest,
 )
-from kiro_crew.mcp_gateway.pool import PoolKey
-from kiro_crew.mcp_gateway.tool_surface import (
+from efm_go.mcp_gateway.pool import PoolKey
+from efm_go.mcp_gateway.tool_surface import (
     _MAX_NAME_LEN,
     _MAX_TOOLS,
     _is_control,

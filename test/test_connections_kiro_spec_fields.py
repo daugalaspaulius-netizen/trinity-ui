@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from kiro_crew.mcp_utils import (
+from efm_go.mcp_utils import (
     kiro_entry_client_id,
     kiro_entry_scopes,
     kiro_oauth_wire_entry,

@@ -1,7 +1,7 @@
 """Consumer coverage for the apps-installed seed fixture."""
 
-from kiro_crew.apps import manager
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go.apps import manager
+from efm_go.testing.fixtures import seeded_home
 
 
 def test_apps_installed_fixture_is_read_by_app_manager() -> None:

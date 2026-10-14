@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.metrics import events as ev
+from efm_go.metrics import events as ev
 
 
 class _CapturingRecorder:
@@ -30,7 +30,7 @@ class _CapturingRecorder:
 @pytest.fixture
 def rec():
     r = _CapturingRecorder()
-    with patch("kiro_crew.metrics.provider.get_recorder", return_value=r):
+    with patch("efm_go.metrics.provider.get_recorder", return_value=r):
         yield r
 
 
@@ -48,20 +48,20 @@ class TestApprovalDecisions:
     """Every ``ToolHookResult`` construction is a gate verdict."""
 
     def test_allow_is_the_branch_that_reaches_a_prompt(self, rec):
-        from kiro_crew.hooks import TOOL_ALLOW, ToolHookResult
+        from efm_go.hooks import TOOL_ALLOW, ToolHookResult
 
         ToolHookResult.allow()
         call = _named(rec, ev.APPROVAL_DECISIONS)[-1]
         assert call["attrs"]["decision"] == TOOL_ALLOW
 
     def test_auto_approve_is_counted_separately(self, rec):
-        from kiro_crew.hooks import TOOL_AUTO_APPROVE, ToolHookResult
+        from efm_go.hooks import TOOL_AUTO_APPROVE, ToolHookResult
 
         ToolHookResult.auto_approve()
         assert _named(rec, ev.APPROVAL_DECISIONS)[-1]["attrs"]["decision"] == TOOL_AUTO_APPROVE
 
     def test_a_security_deny_and_a_policy_deny_are_distinguishable(self, rec):
-        from kiro_crew.hooks import ToolHookResult
+        from efm_go.hooks import ToolHookResult
 
         ToolHookResult.deny("blocked")
         ToolHookResult.deny_policy("ceiling")
@@ -71,16 +71,16 @@ class TestApprovalDecisions:
 
     def test_the_deny_reason_never_reaches_the_attributes(self, rec):
         """A reason carries paths and commands -- unbounded, and often sensitive."""
-        from kiro_crew.hooks import ToolHookResult
+        from efm_go.hooks import ToolHookResult
 
         ToolHookResult.deny("refusing to read /home/someone/.aws/credentials")
         call = _named(rec, ev.APPROVAL_DECISIONS)[-1]
         assert set(call["attrs"]) == {"decision", "security_deny"}
 
     def test_the_gate_still_returns_its_verdict_when_telemetry_raises(self):
-        from kiro_crew.hooks import TOOL_DENY, ToolHookResult
+        from efm_go.hooks import TOOL_DENY, ToolHookResult
 
-        with patch("kiro_crew.metrics.events.emit_counter", side_effect=RuntimeError("boom")):
+        with patch("efm_go.metrics.events.emit_counter", side_effect=RuntimeError("boom")):
             result = ToolHookResult.deny("blocked")
         assert result.action == TOOL_DENY
         assert result.reason == "blocked"
@@ -92,7 +92,7 @@ class TestApprovalDecisions:
 
     def test_a_surface_downgrade_of_the_verdict_is_not_a_second_decision(self, rec):
         """Found in review: chat_runner rebuilds the result to downgrade it."""
-        from kiro_crew.hooks import TOOL_ALLOW, ToolHookResult
+        from efm_go.hooks import TOOL_ALLOW, ToolHookResult
 
         ToolHookResult.auto_approve()  # the gate's verdict
         before = len(_named(rec, ev.APPROVAL_DECISIONS))
@@ -105,7 +105,7 @@ class TestApprovalDecisions:
         import ast
         import inspect
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         tree = ast.parse(inspect.getsource(hooks))
         factories = set()
@@ -135,7 +135,7 @@ class TestSpawnCounterPlacement:
         Admission is a package, so the funnel is only guaranteed if no sibling
         module emits the counter from its own -- necessarily earlier -- frame.
         """
-        from kiro_crew.subagent_manager import admission
+        from efm_go.subagent_manager import admission
 
         holders = []
         for module in sorted(Path(admission.__file__).resolve().parent.glob("*.py")):
@@ -158,7 +158,7 @@ class TestSpawnCounterPlacement:
     def test_it_sits_beside_the_repo_s_own_spawn_stat(self):
         import inspect
 
-        from kiro_crew.subagent_manager.admission.pump import _PumpMixin
+        from efm_go.subagent_manager.admission.pump import _PumpMixin
 
         body = inspect.getsource(_PumpMixin._log_spawned_impl)
         assert "inc_subagent_spawned" in body
@@ -173,7 +173,7 @@ class TestCompactions:
         from types import SimpleNamespace
         from typing import Any, cast
 
-        from kiro_crew.session_compaction import CompactionCoordinator
+        from efm_go.session_compaction import CompactionCoordinator
 
         coordinator = CompactionCoordinator.__new__(CompactionCoordinator)
         stub = cast(Any, coordinator)
@@ -333,7 +333,7 @@ class TestOverloadSeriesNames:
 
     @pytest.mark.parametrize("const", NAMES)
     def test_name_is_declared_and_valid(self, const):
-        from kiro_crew.metrics.schema import validate_name
+        from efm_go.metrics.schema import validate_name
 
         value = getattr(ev, const)
         assert value.startswith("kirocrew.")
@@ -341,5 +341,5 @@ class TestOverloadSeriesNames:
 
     def test_emit_histogram_never_raises(self, rec):
         ev.emit_histogram(ev.RECOVERY_DURATION_SECS, 1.5, {"layer": "L1_tool_call"}, unit="s")
-        with patch("kiro_crew.metrics.provider.get_recorder", side_effect=RuntimeError("x")):
+        with patch("efm_go.metrics.provider.get_recorder", side_effect=RuntimeError("x")):
             ev.emit_histogram(ev.TASKQ_DEPTH, 1.0, {"state": "queued"})

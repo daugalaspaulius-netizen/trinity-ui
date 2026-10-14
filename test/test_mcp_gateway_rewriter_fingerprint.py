@@ -24,10 +24,10 @@ from typing import Any
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew import agent_discovery
-from kiro_crew.mcp_gateway import rewriter
-from kiro_crew.mcp_gateway.hashing import expand_stub_flags
-from kiro_crew.mcp_gateway.rewriter import (
+from efm_go import agent_discovery
+from efm_go.mcp_gateway import rewriter
+from efm_go.mcp_gateway.hashing import expand_stub_flags
+from efm_go.mcp_gateway.rewriter import (
     _FINGERPRINT_NAME,
     overlay_ready,
     rewrite_agents,
@@ -105,12 +105,12 @@ _AMBIENT_READ_ALLOWLIST = frozenset(
         # all. Read once per pass in rewrite_agents and
         # fingerprinted as "forward_declared_env" (see
         # test_forward_declared_env_change_invalidates).
-        ("forward_declared_env_enabled", "config-import:kiro_crew.config.loader"),
+        ("forward_declared_env_enabled", "config-import:efm_go.config.loader"),
         # Output-AFFECTING: decides which secret-prefixed keys are folded into
         # effective_env_hash and passed on stub argv. Read once per pass in
         # rewrite_agents and fingerprinted as "pool_identity_env" (see
         # test_pool_identity_env_change_invalidates).
-        ("pool_identity_env_keys", "config-import:kiro_crew.config.loader"),
+        ("pool_identity_env_keys", "config-import:efm_go.config.loader"),
     }
 )
 
@@ -120,21 +120,21 @@ _REWRITE_PASS_ROOTS = frozenset({"rewrite_agents", "_rewrite_single_spec", "_bui
 
 
 def _module_config_names(tree: ast.Module) -> set[str]:
-    """Module-level names bound by importing from ``kiro_crew.config*``.
+    """Module-level names bound by importing from ``efm_go.config*``.
 
-    A module-scope ``from kiro_crew.config.x import Y`` followed by ``Y.load()``
+    A module-scope ``from efm_go.config.x import Y`` followed by ``Y.load()``
     inside a helper is a config read with no function-local import to detect,
     so the imported names themselves become detection targets.
     """
     names: set[str] = set()
     for node in tree.body:
         if isinstance(node, ast.ImportFrom):
-            if (node.module or "").startswith("kiro_crew.config"):
+            if (node.module or "").startswith("efm_go.config"):
                 for alias in node.names:
                     names.add(alias.asname or alias.name)
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name.startswith("kiro_crew.config"):
+                if alias.name.startswith("efm_go.config"):
                     names.add((alias.asname or alias.name).split(".")[0])
     return names
 
@@ -208,11 +208,11 @@ def _ambient_reads(func_name: str, fn: ast.AST, config_names: set[str]) -> set[t
             hits.add((func_name, f"os.environ:{key}"))
             consumed.add(id(node.value))
         elif isinstance(node, ast.ImportFrom):
-            if (node.module or "").startswith("kiro_crew.config"):
+            if (node.module or "").startswith("efm_go.config"):
                 hits.add((func_name, f"config-import:{node.module}"))
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name.startswith("kiro_crew.config"):
+                if alias.name.startswith("efm_go.config"):
                     hits.add((func_name, f"config-import:{alias.name}"))
     # Second pass: reads the call-shaped pass above did not consume — a bare
     # ``os.environ`` (copy/iteration/membership), sys/platform attributes, and
@@ -1882,7 +1882,7 @@ def test_legacy_overlay_acl_is_retightened_when_vouched(
     the file survives (dropping it would silently end the guard)."""
     import stat as _stat
 
-    from kiro_crew.mcp_gateway.rewriter import _stat_sig
+    from efm_go.mcp_gateway.rewriter import _stat_sig
 
     src = _mk_tree(tmp_path, n_agents=1)
     _rewrite(tmp_path)
@@ -1934,7 +1934,7 @@ def test_lockdown_failure_falls_through_to_full_rewrite(
     or otherwise unprotectable artifact must never be served from cache — the
     cache hit aborts and the full rewrite re-creates the artifact through its
     protect-before-content writers."""
-    from kiro_crew import platform_compat as _pc
+    from efm_go import platform_compat as _pc
 
     _mk_tree(tmp_path, n_agents=1)
     _rewrite(tmp_path)
@@ -1947,7 +1947,7 @@ def test_lockdown_failure_falls_through_to_full_rewrite(
             raise OSError("operation not permitted (foreign owner)")
         real(path)
 
-    monkeypatch.setattr("kiro_crew.mcp_gateway.rewriter.platform_compat.restrict_to_owner", failing)
+    monkeypatch.setattr("efm_go.mcp_gateway.rewriter.platform_compat.restrict_to_owner", failing)
     before = rewrite_counter["n"]
     _rewrite(tmp_path)
     fail["on"] = False

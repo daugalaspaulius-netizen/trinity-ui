@@ -24,10 +24,10 @@ from dashboard_owner_helpers import as_owner
 from oauth_url_corpus import OPERATOR_EXTENSION_OAUTH_URLS
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import hooks, mcp_grant
-from kiro_crew.connections import mint
-from kiro_crew.dashboard.handlers import connections
-from kiro_crew.runtime_ownership import RUNTIME_TENANCY, release_runtime_tenancy
+from efm_go import hooks, mcp_grant
+from efm_go.connections import mint
+from efm_go.dashboard.handlers import connections
+from efm_go.runtime_ownership import RUNTIME_TENANCY, release_runtime_tenancy
 
 _URL = "https://mcp.example.com/mcp"
 _AUTHORIZE = (
@@ -131,7 +131,7 @@ def _isolated_mint(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     )
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()
-    monkeypatch.setattr("kiro_crew.agent.kiro_agents_dir_path", lambda: agents_dir)
+    monkeypatch.setattr("efm_go.agent.kiro_agents_dir_path", lambda: agents_dir)
     monkeypatch.setattr(mcp_grant, "kiro_oauth_cache_dir", lambda **kw: cache_dir)
     # The manifest is real gateway state; tests must never write the live one.
     monkeypatch.setattr(mint, "_mint_manifest_path", lambda: tmp_path / "mint-specs.json")
@@ -1562,7 +1562,7 @@ def test_a_planted_row_naming_a_real_agent_spec_is_never_unlinked(_isolated_mint
 def test_a_planted_row_naming_one_of_our_managed_specs_is_never_unlinked(
     monkeypatch: pytest.MonkeyPatch, _isolated_mint: Path
 ):
-    from kiro_crew.agent_files import OWNED_KIRO_AGENT_FILES
+    from efm_go.agent_files import OWNED_KIRO_AGENT_FILES
 
     owned = _isolated_mint / OWNED_KIRO_AGENT_FILES[0]
     owned.write_text("VICTIM", encoding="utf-8")
@@ -1610,7 +1610,7 @@ def test_an_unrecorded_mint_shaped_file_in_the_agents_dir_is_never_unlinked(
 def test_an_owned_name_symlinked_to_a_mint_shaped_file_is_never_unlinked(
     _isolated_mint: Path,
 ):
-    from kiro_crew.agent_files import OWNED_KIRO_AGENT_FILES
+    from efm_go.agent_files import OWNED_KIRO_AGENT_FILES
 
     # The check/act attack: every name-based conjunct would pass on the RESOLVED
     # target (in-dir, mint-shaped, not owned) while unlink acts on the owned
@@ -1678,7 +1678,7 @@ def test_removal_is_a_no_op_without_a_path(tmp_path: Path):
 def test_a_provider_absent_from_the_main_spec_falls_back_to_the_managed_agent(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    monkeypatch.setattr("kiro_crew.agent.kiro_agents_dir_path", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.agent.kiro_agents_dir_path", lambda: tmp_path)
     (tmp_path / "kirocrew.json").write_text(json.dumps({"mcpServers": {}}), encoding="utf-8")
 
     assert mint._write_mint_agent_spec("notion") == ("kirocrew", "")
@@ -1687,7 +1687,7 @@ def test_a_provider_absent_from_the_main_spec_falls_back_to_the_managed_agent(
 def test_writing_a_spec_lands_a_uniquely_named_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    monkeypatch.setattr("kiro_crew.agent.kiro_agents_dir_path", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.agent.kiro_agents_dir_path", lambda: tmp_path)
     (tmp_path / "kirocrew.json").write_text(
         json.dumps({"mcpServers": {"notion": {"url": _URL}}}), encoding="utf-8"
     )
@@ -1705,7 +1705,7 @@ def test_writing_a_spec_lands_a_uniquely_named_file(
 def test_writing_refuses_to_overwrite_an_existing_path(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    monkeypatch.setattr("kiro_crew.agent.kiro_agents_dir_path", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.agent.kiro_agents_dir_path", lambda: tmp_path)
     (tmp_path / "kirocrew.json").write_text(
         json.dumps({"mcpServers": {"notion": {"url": _URL}}}), encoding="utf-8"
     )
@@ -2000,7 +2000,7 @@ async def test_the_unaudited_warning_names_the_key_not_the_url(
     _audit_calls_recorded(monkeypatch, recorded=False)
     _write_paired_grant_artifacts(secret_url)
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_grant"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_grant"):
         assert await mcp_grant.grant_observed(secret_url) is True
 
     blob = "\n".join(r.getMessage() for r in caplog.records)
@@ -2259,8 +2259,8 @@ def test_the_handlers_package_does_not_import_the_mint_engine():
     in-process ``sys.modules`` check would always find it.
     """
     probe = (
-        "import sys; import kiro_crew.dashboard.handlers;"
-        " print('MINT' if 'kiro_crew.connections.mint' in sys.modules else 'CLEAN')"
+        "import sys; import efm_go.dashboard.handlers;"
+        " print('MINT' if 'efm_go.connections.mint' in sys.modules else 'CLEAN')"
     )
     out = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, timeout=180)
     assert out.returncode == 0, out.stderr[-2000:]
@@ -2530,10 +2530,10 @@ def test_row_tokens_do_not_repeat_across_a_gateway_restart():
     # module state alive, hiding exactly the bug under test.
     probe = (
         # Import in the gateway's own order: the handlers package first, then the
-        # mint engine it defers. A cold `import kiro_crew.connections.mint` trips a
-        # pre-existing cycle in kiro_crew.session_pid that production never hits.
-        "import kiro_crew.dashboard.handlers;"
-        "from kiro_crew.connections.mint import _new_mint_token as t; print(t())"
+        # mint engine it defers. A cold `import efm_go.connections.mint` trips a
+        # pre-existing cycle in efm_go.session_pid that production never hits.
+        "import efm_go.dashboard.handlers;"
+        "from efm_go.connections.mint import _new_mint_token as t; print(t())"
     )
     first = subprocess.run(
         [sys.executable, "-c", probe], capture_output=True, text=True, check=True

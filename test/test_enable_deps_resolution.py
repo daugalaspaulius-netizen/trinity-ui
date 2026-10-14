@@ -16,8 +16,8 @@ from dashboard_owner_helpers import owner_claims
 @pytest.fixture(autouse=True)
 def _mock_dashboard_server():
     """Pre-mock dashboard.server to avoid circular import with mimir."""
-    if "kiro_crew.dashboard.server" not in sys.modules:
-        sys.modules["kiro_crew.dashboard.server"] = MagicMock()
+    if "efm_go.dashboard.server" not in sys.modules:
+        sys.modules["efm_go.dashboard.server"] = MagicMock()
     yield
 
 
@@ -27,7 +27,7 @@ class TestEnableDepsResolution:
     @pytest.mark.asyncio
     async def test_dependencies_resolved_on_enable(self) -> None:
         """When the manifest declares capability deps, resolve_dependencies is called."""
-        from kiro_crew.apps.dependencies import DependencyResult
+        from efm_go.apps.dependencies import DependencyResult
 
         fake_app_info = {
             "name": "test-app",
@@ -44,22 +44,22 @@ class TestEnableDepsResolution:
         mock_dep_result = DependencyResult(installed=["capability/agents/TestCapabilityPkg"])
 
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=fake_app_info),
+            patch("efm_go.apps.routes.get_app", return_value=fake_app_info),
             patch(
-                "kiro_crew.apps.routes.enable_app",
+                "efm_go.apps.routes.enable_app",
                 return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
             ),
-            patch("kiro_crew.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
-            patch("kiro_crew.apps.routes.start_app_backend", return_value=None),
-            patch("kiro_crew.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
+            patch("efm_go.apps.routes.start_app_backend", return_value=None),
+            patch("efm_go.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
             patch(
-                "kiro_crew.apps.routes._resolve_deps",
+                "efm_go.apps.routes._resolve_deps",
                 new_callable=AsyncMock,
                 return_value=mock_dep_result,
             ) as mock_resolve,
         ):
-            from kiro_crew.apps.routes import handle_enable_app
+            from efm_go.apps.routes import handle_enable_app
 
             request = MagicMock()
             request.match_info = {"name": "test-app"}
@@ -93,18 +93,18 @@ class TestEnableDepsResolution:
         }
 
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=fake_app_info),
+            patch("efm_go.apps.routes.get_app", return_value=fake_app_info),
             patch(
-                "kiro_crew.apps.routes.enable_app",
+                "efm_go.apps.routes.enable_app",
                 return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
             ),
-            patch("kiro_crew.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
-            patch("kiro_crew.apps.routes.start_app_backend", return_value=None),
-            patch("kiro_crew.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
-            patch("kiro_crew.apps.routes._resolve_deps", new_callable=AsyncMock) as mock_resolve,
+            patch("efm_go.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
+            patch("efm_go.apps.routes.start_app_backend", return_value=None),
+            patch("efm_go.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes._resolve_deps", new_callable=AsyncMock) as mock_resolve,
         ):
-            from kiro_crew.apps.routes import handle_enable_app
+            from efm_go.apps.routes import handle_enable_app
 
             request = MagicMock()
             request.match_info = {"name": "simple-app"}
@@ -120,7 +120,7 @@ class TestEnableDepsResolution:
     @pytest.mark.asyncio
     async def test_failed_deps_reported_but_enable_continues(self) -> None:
         """Failed dependency resolution is reported but doesn't block enable."""
-        from kiro_crew.apps.dependencies import DependencyResult
+        from efm_go.apps.dependencies import DependencyResult
 
         fake_app_info = {
             "name": "partial-app",
@@ -139,22 +139,22 @@ class TestEnableDepsResolution:
         )
 
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=fake_app_info),
+            patch("efm_go.apps.routes.get_app", return_value=fake_app_info),
             patch(
-                "kiro_crew.apps.routes.enable_app",
+                "efm_go.apps.routes.enable_app",
                 return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
             ),
-            patch("kiro_crew.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
-            patch("kiro_crew.apps.routes.start_app_backend", return_value=None),
-            patch("kiro_crew.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
+            patch("efm_go.apps.routes.start_app_backend", return_value=None),
+            patch("efm_go.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
             patch(
-                "kiro_crew.apps.routes._resolve_deps",
+                "efm_go.apps.routes._resolve_deps",
                 new_callable=AsyncMock,
                 return_value=mock_dep_result,
             ),
         ):
-            from kiro_crew.apps.routes import handle_enable_app
+            from efm_go.apps.routes import handle_enable_app
 
             request = MagicMock()
             request.match_info = {"name": "partial-app"}
@@ -180,7 +180,7 @@ class TestEnableDepsResolution:
         """Dependencies are resolved BEFORE setup.onEnable runs."""
         call_order: list[str] = []
 
-        from kiro_crew.apps.dependencies import DependencyResult
+        from efm_go.apps.dependencies import DependencyResult
 
         fake_app_info = {
             "name": "ordered-app",
@@ -201,19 +201,19 @@ class TestEnableDepsResolution:
             return {"output": "", "failed": False}
 
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=fake_app_info),
+            patch("efm_go.apps.routes.get_app", return_value=fake_app_info),
             patch(
-                "kiro_crew.apps.routes.enable_app",
+                "efm_go.apps.routes.enable_app",
                 return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
             ),
-            patch("kiro_crew.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
-            patch("kiro_crew.apps.routes.start_app_backend", return_value=None),
-            patch("kiro_crew.apps.routes._run_lifecycle_script", side_effect=mock_script),
-            patch("kiro_crew.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
-            patch("kiro_crew.apps.routes._resolve_deps", side_effect=mock_resolve),
+            patch("efm_go.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
+            patch("efm_go.apps.routes.start_app_backend", return_value=None),
+            patch("efm_go.apps.routes._run_lifecycle_script", side_effect=mock_script),
+            patch("efm_go.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes._resolve_deps", side_effect=mock_resolve),
         ):
-            from kiro_crew.apps.routes import handle_enable_app
+            from efm_go.apps.routes import handle_enable_app
 
             request = MagicMock()
             request.match_info = {"name": "ordered-app"}
@@ -258,23 +258,23 @@ class TestClientInstallOnEnableIsAdvisory:
         failed_script = {"output": "The file ... does not exist.", "failed": True}
 
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=self._client_app()),
+            patch("efm_go.apps.routes.get_app", return_value=self._client_app()),
             patch(
-                "kiro_crew.apps.routes.enable_app",
+                "efm_go.apps.routes.enable_app",
                 return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
             ),
-            patch("kiro_crew.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
             patch(
-                "kiro_crew.apps.routes._run_lifecycle_script",
+                "efm_go.apps.routes._run_lifecycle_script",
                 new_callable=AsyncMock,
                 return_value=failed_script,
             ),
-            patch("kiro_crew.apps.routes.disable_app") as mock_disable,
-            patch("kiro_crew.apps.routes.sys") as mock_sys,
+            patch("efm_go.apps.routes.disable_app") as mock_disable,
+            patch("efm_go.apps.routes.sys") as mock_sys,
         ):
             mock_sys.platform = "darwin"
-            from kiro_crew.apps.routes import handle_enable_app
+            from efm_go.apps.routes import handle_enable_app
 
             request = MagicMock()
             request.match_info = {"name": "crew-companion"}
@@ -298,21 +298,21 @@ class TestClientInstallOnEnableIsAdvisory:
     async def test_client_app_script_skipped_on_unsupported_os(self) -> None:
         """A macOS-only client app enabled on Linux must not run its macOS command."""
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=self._client_app()),
+            patch("efm_go.apps.routes.get_app", return_value=self._client_app()),
             patch(
-                "kiro_crew.apps.routes.enable_app",
+                "efm_go.apps.routes.enable_app",
                 return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
             ),
-            patch("kiro_crew.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
             patch(
-                "kiro_crew.apps.routes._run_lifecycle_script", new_callable=AsyncMock
+                "efm_go.apps.routes._run_lifecycle_script", new_callable=AsyncMock
             ) as mock_script,
-            patch("kiro_crew.apps.routes.disable_app") as mock_disable,
-            patch("kiro_crew.apps.routes.sys") as mock_sys,
+            patch("efm_go.apps.routes.disable_app") as mock_disable,
+            patch("efm_go.apps.routes.sys") as mock_sys,
         ):
             mock_sys.platform = "linux"
-            from kiro_crew.apps.routes import handle_enable_app
+            from efm_go.apps.routes import handle_enable_app
 
             request = MagicMock()
             request.match_info = {"name": "crew-companion"}
@@ -343,13 +343,13 @@ class TestClientInstallOnEnableIsAdvisory:
         on enable. An unreadable block reads as "not a client app", keeping the
         strict rollback rather than widening the advisory path.
         """
-        from kiro_crew.apps.routes import _client_install_manifest
+        from efm_go.apps.routes import _client_install_manifest
 
         assert _client_install_manifest({"platform": platform_value}) is None
 
     def test_a_well_formed_client_block_is_still_recognised(self) -> None:
         """The guard above must not swallow the case the feature depends on."""
-        from kiro_crew.apps.routes import _client_install_manifest
+        from efm_go.apps.routes import _client_install_manifest
 
         cfg = _client_install_manifest({"platform": {"os": ["macos"], "installMode": "client"}})
         assert cfg is not None
@@ -367,25 +367,25 @@ class TestClientInstallOnEnableIsAdvisory:
         }
 
         with (
-            patch("kiro_crew.apps.routes.get_app", return_value=server_app),
+            patch("efm_go.apps.routes.get_app", return_value=server_app),
             patch(
-                "kiro_crew.apps.routes.enable_app",
+                "efm_go.apps.routes.enable_app",
                 return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
             ),
-            patch("kiro_crew.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
-            patch("kiro_crew.apps.routes.start_app_backend", return_value=None),
-            patch("kiro_crew.apps.routes.stop_app_backend"),
-            patch("kiro_crew.apps.routes.deregister_app") as mock_dereg,
-            patch("kiro_crew.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
-            patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+            patch("efm_go.apps.routes.register_app", return_value=MagicMock(to_dict=lambda: {})),
+            patch("efm_go.apps.routes.start_app_backend", return_value=None),
+            patch("efm_go.apps.routes.stop_app_backend"),
+            patch("efm_go.apps.routes.deregister_app") as mock_dereg,
+            patch("efm_go.apps.routes.on_app_enable", new_callable=AsyncMock, return_value=None),
+            patch("efm_go.apps.routes.sel", return_value=MagicMock()),
             patch(
-                "kiro_crew.apps.routes._run_lifecycle_script",
+                "efm_go.apps.routes._run_lifecycle_script",
                 new_callable=AsyncMock,
                 return_value=failed_script,
             ),
-            patch("kiro_crew.apps.routes.disable_app") as mock_disable,
+            patch("efm_go.apps.routes.disable_app") as mock_disable,
         ):
-            from kiro_crew.apps.routes import handle_enable_app
+            from efm_go.apps.routes import handle_enable_app
 
             request = MagicMock()
             request.match_info = {"name": "server-app"}

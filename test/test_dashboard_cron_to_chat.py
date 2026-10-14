@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.cron import CronJob
-from kiro_crew.dashboard.cron_inject import (
+from efm_go.cron import CronJob
+from efm_go.dashboard.cron_inject import (
     _MIN_PROMPT_CHARS_TO_REFERENCE,
     _PROMPT_LOOKBACK_ROWS,
     _REFERENCE_MARKER,
@@ -17,8 +17,8 @@ from kiro_crew.dashboard.cron_inject import (
     inject_cron_result_to_dashboard,
     run_marker,
 )
-from kiro_crew.security import redact_credentials, redact_exfiltration_urls
-from kiro_crew.session_surface import set_dashboard_surfaced
+from efm_go.security import redact_credentials, redact_exfiltration_urls
+from efm_go.session_surface import set_dashboard_surfaced
 
 
 def _redacted(text: str) -> str:
@@ -187,7 +187,7 @@ class TestInjectCronResultToDashboard:
         get_or_create_slot's default, which put private cron content inside the
         ``slots:user`` WS scope -- so any app holding that scope received it.
         """
-        from kiro_crew.dashboard.state import SlotOrigin
+        from efm_go.dashboard.state import SlotOrigin
 
         state = _make_state()
         job = _make_job()
@@ -977,7 +977,7 @@ class TestInjectCronResultToDashboard:
         """
         state = _make_state()
         job = _make_job(message="do the thing", last_result_ts=1_756_000_000.0)
-        with patch("kiro_crew.dashboard.cron_inject.append_rows_if_absent_off_loop") as durable:
+        with patch("efm_go.dashboard.cron_inject.append_rows_if_absent_off_loop") as durable:
             _inject(state, job, "the result")
         assert durable.call_count == 1, "the pair must be ONE grouped write"
         rows = durable.call_args.args[2]
@@ -992,7 +992,7 @@ class TestInjectCronResultToDashboard:
         """No result means no run boundary, so the durable write never fires."""
         state = _make_state()
         job = _make_job()
-        with patch("kiro_crew.dashboard.cron_inject.append_rows_if_absent_off_loop") as durable:
+        with patch("efm_go.dashboard.cron_inject.append_rows_if_absent_off_loop") as durable:
             _inject(state, job, "")
         durable.assert_not_called()
 
@@ -1093,8 +1093,8 @@ class TestInjectCronResultToDashboard:
         slot fails those gates until some unrelated slot change republishes,
         so the first cron run's sub-agents stayed invisible and their results
         were never injected."""
-        from kiro_crew.dashboard.chat_utils import dashboard_slot_key
-        from kiro_crew.session_surface import (
+        from efm_go.dashboard.chat_utils import dashboard_slot_key
+        from efm_go.session_surface import (
             has_dashboard_surface,
             set_dashboard_surfaced,
         )
@@ -1184,7 +1184,7 @@ class TestHydrateSlotFromHistory:
     """Tests for hydrate_slot_from_history (accepts pre-loaded messages)."""
 
     def test_hydrates_messages_into_slot(self):
-        from kiro_crew.dashboard.cron_inject import hydrate_slot_from_history
+        from efm_go.dashboard.cron_inject import hydrate_slot_from_history
 
         history = [
             {"role": "user", "content": "hello"},
@@ -1198,7 +1198,7 @@ class TestHydrateSlotFromHistory:
         assert slot.messages[1]["content"] == "world"
 
     def test_empty_history_produces_no_messages(self):
-        from kiro_crew.dashboard.cron_inject import hydrate_slot_from_history
+        from efm_go.dashboard.cron_inject import hydrate_slot_from_history
 
         state = _make_state(history_messages=[])
         slot = state.get_or_create_slot(name="cron-abc")
@@ -1206,7 +1206,7 @@ class TestHydrateSlotFromHistory:
         assert len(slot.messages) == 0
 
     def test_skips_messages_with_empty_content(self):
-        from kiro_crew.dashboard.cron_inject import hydrate_slot_from_history
+        from efm_go.dashboard.cron_inject import hydrate_slot_from_history
 
         history = [
             {"role": "assistant", "content": ""},
@@ -1219,7 +1219,7 @@ class TestHydrateSlotFromHistory:
         assert slot.messages[0]["content"] == "real message"
 
     def test_assigns_user_role_class(self):
-        from kiro_crew.dashboard.cron_inject import hydrate_slot_from_history
+        from efm_go.dashboard.cron_inject import hydrate_slot_from_history
 
         history = [
             {"role": "user", "content": "user msg"},
@@ -1237,7 +1237,7 @@ class TestHydrateSlotFromHistory:
         # disjoint id sets for the same rows while the durable injection
         # copies make the region read all-id — the identity walk then marks
         # every hydrated row owed and a bounded read serves the history twice.
-        from kiro_crew.dashboard.cron_inject import hydrate_slot_from_history
+        from efm_go.dashboard.cron_inject import hydrate_slot_from_history
 
         history = [
             {"role": "user", "content": "hello", "meta": {"mid": "m-disk-1"}},
@@ -1260,7 +1260,7 @@ class TestHasSlot:
     """Tests for DashboardState.has_slot method."""
 
     def test_returns_true_when_slot_exists(self):
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         state = MagicMock(spec=DashboardState)
         state._slots = {"cron-abc": MagicMock()}
@@ -1268,7 +1268,7 @@ class TestHasSlot:
         assert state.has_slot("cron-abc") is True
 
     def test_returns_false_when_slot_missing(self):
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         state = MagicMock(spec=DashboardState)
         state._slots = {}

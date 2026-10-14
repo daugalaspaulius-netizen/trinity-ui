@@ -16,8 +16,8 @@ import pytest
 from aiohttp.test_utils import make_mocked_request
 from dashboard_owner_helpers import NoConfiguredOwner
 
-from kiro_crew.apps.builtins.mochi import hooks
-from kiro_crew.apps.builtins.mochi.backend import routes
+from efm_go.apps.builtins.mochi import hooks
+from efm_go.apps.builtins.mochi.backend import routes
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -668,14 +668,14 @@ class TestReset:
     @pytest.mark.asyncio
     async def test_clears_state_files_and_restores_defaults(self, tmp_path) -> None:
         async with _live_runtime(tmp_path):
-            from kiro_crew.apps.builtins.mochi.activity_log import LOG_FILE
-            from kiro_crew.apps.builtins.mochi.pinned_files_service import DATA_FILE_NAME
-            from kiro_crew.apps.builtins.mochi.settings import (
+            from efm_go.apps.builtins.mochi.activity_log import LOG_FILE
+            from efm_go.apps.builtins.mochi.pinned_files_service import DATA_FILE_NAME
+            from efm_go.apps.builtins.mochi.settings import (
                 PACK_GHOST,
                 PACK_MOCHI,
                 save_settings,
             )
-            from kiro_crew.apps.builtins.mochi.stats_service import STATS_FILE_NAME
+            from efm_go.apps.builtins.mochi.stats_service import STATS_FILE_NAME
 
             # Seed via the OWNING modules' constants. The previous version of this
             # test wrote "mochi-stats.json" — a name no module uses — and then
@@ -705,7 +705,7 @@ class TestReset:
         'restore' pre-reset counters.)
         """
         async with _live_runtime(tmp_path) as rt:
-            from kiro_crew.apps.builtins.mochi.stats_service import STATS_FILE_NAME
+            from efm_go.apps.builtins.mochi.stats_service import STATS_FILE_NAME
 
             # tick(), reset(), the recorders and get_stats() share ONE reentrant
             # lock so they cannot interleave across threads; RLock (not Lock) so
@@ -763,7 +763,7 @@ class TestReset:
         un-did itself.
         """
         async with _live_runtime(tmp_path) as rt:
-            from kiro_crew.apps.builtins.mochi.pinned_files_service import DATA_FILE_NAME
+            from efm_go.apps.builtins.mochi.pinned_files_service import DATA_FILE_NAME
 
             target = tmp_path / "watched.txt"
             target.write_text("hello")
@@ -856,7 +856,7 @@ class TestReset:
         missing file as "already gone" — so reset reported success while keeping
         the state it promised to clear.
         """
-        from kiro_crew.apps.builtins.mochi import (
+        from efm_go.apps.builtins.mochi import (
             activity_log,
             mcp_server,
             pinned_files_service,
@@ -883,7 +883,7 @@ class TestReset:
     @pytest.mark.asyncio
     async def test_keeps_user_imported_appearance_packs(self, tmp_path) -> None:
         async with _live_runtime(tmp_path):
-            from kiro_crew.apps.builtins.mochi.appearance_store import save_pack
+            from efm_go.apps.builtins.mochi.appearance_store import save_pack
 
             save_pack(tmp_path, {"id": "mine"}, {"idle": "<svg/>"})
             await routes._handle_reset(_json_request("POST", "/reset", {}))
@@ -930,7 +930,7 @@ class TestNoLockingCallRunsOnTheEventLoop:
             "cancel_watch_item",
             "remove_watch_item",
         }
-        root = _REPO_ROOT / "src/kiro_crew/apps/builtins/mochi"
+        root = _REPO_ROOT / "src/efm_go/apps/builtins/mochi"
         offenders: list[str] = []
         scanned = 0
         for path in sorted(root.rglob("*.py")):
@@ -985,7 +985,7 @@ class TestTheOwnerLoopNeverBlocksOnDisk:
         import ast
 
         tree = ast.parse(
-            (_REPO_ROOT / "src/kiro_crew/apps/builtins/mochi/hooks.py").read_text(encoding="utf-8")
+            (_REPO_ROOT / "src/efm_go/apps/builtins/mochi/hooks.py").read_text(encoding="utf-8")
         )
 
         def receiver(call: ast.Call) -> tuple[str, str] | None:
@@ -1035,7 +1035,7 @@ class TestSettingsAndDisplayWritesAreOffloaded:
         import re
 
         lines = (
-            (_REPO_ROOT / "src/kiro_crew/apps/builtins/mochi/backend/routes.py")
+            (_REPO_ROOT / "src/efm_go/apps/builtins/mochi/backend/routes.py")
             .read_text(encoding="utf-8")
             .splitlines()
         )
@@ -1199,8 +1199,8 @@ class TestQueueFilenameHasOneDefinition:
     """
 
     def test_every_reader_resolves_to_the_owner(self):
-        from kiro_crew.apps.builtins.mochi import hooks, mcp_server, queue_file
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi import hooks, mcp_server, queue_file
+        from efm_go.apps.builtins.mochi.backend import routes
 
         assert hooks._QUEUE_FILE is queue_file.QUEUE_FILE
         assert mcp_server._QUEUE_FILE is queue_file.QUEUE_FILE
@@ -1209,7 +1209,7 @@ class TestQueueFilenameHasOneDefinition:
     def test_no_module_redefines_the_literal(self):
         """A future copy-paste must fail here rather than drift silently."""
 
-        from kiro_crew.apps.builtins.mochi import queue_file
+        from efm_go.apps.builtins.mochi import queue_file
 
         pkg = Path(queue_file.__file__).parent
         owner = Path(queue_file.__file__).name
@@ -1232,7 +1232,7 @@ class TestMcpToolsRoute:
 
     @staticmethod
     def _server(name="srv", disabled=False, tools=()):
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         s = McpServerInfo(name=name, command="node")
         s.tools = list(tools)
@@ -1244,7 +1244,7 @@ class TestMcpToolsRoute:
         # routes imports them at module scope, so rebinding the source module
         # would leave these handlers holding the real functions and the test
         # would silently exercise a live probe.
-        from kiro_crew.apps.builtins.mochi.backend import routes as r
+        from efm_go.apps.builtins.mochi.backend import routes as r
 
         monkeypatch.setattr(r, "list_servers", lambda: list(servers))
         if probe is not None:
@@ -1262,7 +1262,7 @@ class TestMcpToolsRoute:
         """Guards the actual defect: the path existed but not for this method."""
         from aiohttp import web
 
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         app = web.Application()
         routes.register_routes(app)
@@ -1275,7 +1275,7 @@ class TestMcpToolsRoute:
 
     @pytest.mark.asyncio
     async def test_returns_tools_as_objects(self, monkeypatch):
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         srv = self._server(tools=["alpha", "beta"])
 
@@ -1302,7 +1302,7 @@ class TestMcpToolsRoute:
         throws, blanking the settings tree — so this boundary narrows the shape
         instead of trusting upstream.
         """
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         srv = self._server(tools=[{"x": 1}, "alpha", ["a"], "", 7, None, "beta"])
 
@@ -1323,7 +1323,7 @@ class TestMcpToolsRoute:
     async def test_probe_error_prose_is_not_returned(self, monkeypatch):
         """A server's own error text can carry a credential and this response
         reaches the dashboard, so the prose must not be on the wire at all."""
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         srv = self._server()
 
@@ -1343,7 +1343,7 @@ class TestMcpToolsRoute:
 
     @pytest.mark.asyncio
     async def test_unknown_server_is_404(self, monkeypatch):
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         self._patch(monkeypatch, [self._server(name="other")])
         req = _owner_request("POST", "/api/apps/mochi/mcp-tools/srv", match_info={"name": "srv"})
@@ -1355,7 +1355,7 @@ class TestMcpToolsRoute:
         """Probing SPAWNS the server. ``probe_all`` filters consent-disabled rows
         before calling ``probe_server``; ``probe_server`` does not enforce it, so
         this per-server entry point must, or it bypasses the consent gate."""
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         called = []
 
@@ -1380,7 +1380,7 @@ class TestMcpToolsRoute:
         reads only the row would spawn it. Row says enabled, scope says disabled
         -> must refuse.
         """
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         called = []
 
@@ -1405,7 +1405,7 @@ class TestMcpToolsRoute:
     @pytest.mark.asyncio
     async def test_scope_scan_failure_fails_closed(self, monkeypatch):
         """A scan that raises must refuse the probe, not fall through to it."""
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         called = []
 
@@ -1434,7 +1434,7 @@ class TestMcpToolsRoute:
         exact lookup finds no ``disabled: true`` — and the canonical row can be
         retained from the agent config, which is what makes it probeable.
         """
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         called = []
 
@@ -1472,7 +1472,7 @@ class TestMcpToolsRoute:
         real reader against a malformed file on disk (no stub) to prove the
         propagate-and-refuse path, rather than asserting on a mocked raise.
         """
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         called = []
 
@@ -1488,7 +1488,7 @@ class TestMcpToolsRoute:
         monkeypatch.setattr(
             routes.mcp_discovery, "_extra_scope_sources", lambda: []
         )
-        from kiro_crew.apps.builtins.mochi.backend import routes as r
+        from efm_go.apps.builtins.mochi.backend import routes as r
 
         monkeypatch.setattr(r, "list_servers", lambda: [self._server(disabled=False)])
         monkeypatch.setattr(r, "probe_server", _probe)
@@ -1516,7 +1516,7 @@ class TestMcpToolsRoute:
         hold the ``disabled: true`` and the consent check went back to
         fail-OPEN — the same defect one layer down.
         """
-        from kiro_crew.apps.builtins.mochi.backend import routes as r
+        from efm_go.apps.builtins.mochi.backend import routes as r
 
         called = []
 
@@ -1541,7 +1541,7 @@ class TestMcpToolsRoute:
     def test_absent_mcp_servers_key_is_legitimately_empty(self, monkeypatch, tmp_path):
         """Guard the fix against over-reaching: a config with NO ``mcpServers``
         key is a valid empty scope, not a malformed one, and must not raise."""
-        from kiro_crew.apps.builtins.mochi.backend import routes as r
+        from efm_go.apps.builtins.mochi.backend import routes as r
 
         ok = tmp_path / "empty-mcp.json"
         ok.write_text('{"someOtherKey": 1}', encoding="utf-8")
@@ -1551,7 +1551,7 @@ class TestMcpToolsRoute:
 
     @pytest.mark.asyncio
     async def test_blank_name_is_400(self, monkeypatch):
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         self._patch(monkeypatch, [])
         req = _owner_request("POST", "/api/apps/mochi/mcp-tools/ ", match_info={"name": "  "})
@@ -1561,7 +1561,7 @@ class TestMcpToolsRoute:
     @pytest.mark.asyncio
     async def test_concurrent_probe_is_rejected(self, monkeypatch):
         """Click-spam must not spawn one process per click."""
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         async def _probe(server):
             return server
@@ -1580,7 +1580,7 @@ class TestMcpToolsRoute:
 
     @pytest.mark.asyncio
     async def test_inflight_cleared_when_probe_raises(self, monkeypatch):
-        from kiro_crew.apps.builtins.mochi.backend import routes
+        from efm_go.apps.builtins.mochi.backend import routes
 
         async def _probe(server):
             raise RuntimeError("boom")

@@ -31,7 +31,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.apps import routes
+from efm_go.apps import routes
 
 #: Short enough to keep the tests fast, long enough that a slow loopback hop
 #: cannot be mistaken for the bound firing.

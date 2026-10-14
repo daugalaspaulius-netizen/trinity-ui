@@ -33,7 +33,7 @@ import asyncio
 
 import pytest
 
-from kiro_crew.mcp_gateway import manager as mgr
+from efm_go.mcp_gateway import manager as mgr
 
 
 def _manager(tmp_path) -> mgr.GatewayManager:

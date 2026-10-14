@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
-from kiro_crew.acp_backends import (
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_GOOSE,
@@ -21,8 +21,8 @@ from kiro_crew.acp_backends import (
     ACP_BACKEND_KIRO,
     ACP_BACKEND_OPENCODE,
 )
-from kiro_crew.knowledge import llm_pool
-from kiro_crew.knowledge.llm_pool import (
+from efm_go.knowledge import llm_pool
+from efm_go.knowledge.llm_pool import (
     DEFAULT_EXTRACTION_EFFORT,
     DEFAULT_IDLE_TTL_SECS,
     WORKER_RECYCLE_CALLS,
@@ -56,7 +56,7 @@ def _config_dir_tracks_patched_home(monkeypatch):
     ``.kirocrew/config.json`` layout the tests build.
     """
     monkeypatch.setattr(
-        "kiro_crew.knowledge.llm_pool.config_dir", lambda: Path.home() / ".kirocrew"
+        "efm_go.knowledge.llm_pool.config_dir", lambda: Path.home() / ".kirocrew"
     )
 
 
@@ -319,7 +319,7 @@ class TestAcpWorkerFailureRetiresClient:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("error", ["timeout", "acp"])
     async def test_failure_shuts_down_so_next_send_gets_fresh_worker(self, error):
-        from kiro_crew.acp.client import AcpError, AcpTimeoutError
+        from efm_go.acp.client import AcpError, AcpTimeoutError
 
         exc = AcpTimeoutError() if error == "timeout" else AcpError("boom")
         stuck = MagicMock()
@@ -564,7 +564,7 @@ class TestReadConfig:
         mock_client.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
         ):
             worker = AcpWorker()
             await worker.start()
@@ -579,7 +579,7 @@ class TestReadConfig:
         mock_client.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
         ):
             worker = AcpWorker()
             await worker.start()
@@ -625,7 +625,7 @@ class TestReadConfig:
         mock_client.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
         ):
             worker = AcpWorker()
             await worker.start()
@@ -646,7 +646,7 @@ class TestReadConfig:
         mock_client.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
         ):
             worker = AcpWorker()
             await worker.start()
@@ -665,7 +665,7 @@ class TestReadConfig:
         mock_client.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
         ):
             worker = AcpWorker()
             await worker.start()
@@ -676,10 +676,10 @@ class TestReadConfig:
         naming the configured backend and which capability failed, and does so
         ONCE per backend per process -- this pool's workers are recreated
         often, so a warning on every ``start()`` would spam the log."""
-        from kiro_crew.knowledge import llm_pool as llm_pool_mod
+        from efm_go.knowledge import llm_pool as llm_pool_mod
 
         llm_pool_mod._WARNED_UNSAFE_BACKENDS.clear()
-        with caplog.at_level("WARNING", logger="kiro_crew.knowledge.llm_pool"):
+        with caplog.at_level("WARNING", logger="efm_go.knowledge.llm_pool"):
             # codex fails honors_zero_tool_ban (AcpRuntime carries no zero-tool
             # refusal).
             assert _get_acp_backend({"agent": {"acp_backend": ACP_BACKEND_CODEX}}) == (
@@ -706,7 +706,7 @@ class TestReadConfig:
         mock_client.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
         ):
             worker = AcpWorker()
             await worker.start()
@@ -721,7 +721,7 @@ class TestReadConfig:
         mock_client.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=mock_client) as mk,
         ):
             pool = LLMPool(pool_size=1)
             await pool.start()
@@ -868,7 +868,7 @@ class TestAcpWorker:
         fresh.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=fresh),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=fresh),
         ):
             worker = AcpWorker()
             worker._client = stale
@@ -885,7 +885,7 @@ class TestAcpWorker:
         fresh.is_ready = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=fresh),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=fresh),
         ):
             worker = AcpWorker()
             worker._client = stale
@@ -905,13 +905,13 @@ class TestAcpWorker:
         unregistered: list[int] = []
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=fresh),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=fresh),
             patch(
-                "kiro_crew.knowledge.llm_pool.register_protected_pid",
+                "efm_go.knowledge.llm_pool.register_protected_pid",
                 side_effect=registered.append,
             ),
             patch(
-                "kiro_crew.knowledge.llm_pool.unregister_protected_pid",
+                "efm_go.knowledge.llm_pool.unregister_protected_pid",
                 side_effect=unregistered.append,
             ),
         ):
@@ -935,13 +935,13 @@ class TestAcpWorker:
         unregistered: list[int] = []
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", side_effect=[first, second]),
+            patch("efm_go.knowledge.llm_pool.AcpClient", side_effect=[first, second]),
             patch(
-                "kiro_crew.knowledge.llm_pool.register_protected_pid",
+                "efm_go.knowledge.llm_pool.register_protected_pid",
                 side_effect=registered.append,
             ),
             patch(
-                "kiro_crew.knowledge.llm_pool.unregister_protected_pid",
+                "efm_go.knowledge.llm_pool.unregister_protected_pid",
                 side_effect=unregistered.append,
             ),
         ):
@@ -961,7 +961,7 @@ class TestAcpWorkerZeroToolConfirmation:
 
     @pytest.mark.asyncio
     async def test_unconfirmed_opencode_falls_back_to_kiro_and_warns(self, tmp_path, caplog):
-        from kiro_crew.knowledge import llm_pool as llm_pool_mod
+        from efm_go.knowledge import llm_pool as llm_pool_mod
 
         llm_pool_mod._WARNED_UNSAFE_BACKENDS.clear()
         first = _zero_tool_client()
@@ -974,8 +974,8 @@ class TestAcpWorkerZeroToolConfirmation:
         second.spec_zero_tools = False
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", side_effect=[first, second]) as mk,
-            caplog.at_level("WARNING", logger="kiro_crew.knowledge.llm_pool"),
+            patch("efm_go.knowledge.llm_pool.AcpClient", side_effect=[first, second]) as mk,
+            caplog.at_level("WARNING", logger="efm_go.knowledge.llm_pool"),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_OPENCODE)
             await worker.start()
@@ -1000,7 +1000,7 @@ class TestAcpWorkerZeroToolConfirmation:
         second.spec_zero_tools = False
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", side_effect=[first, second]),
+            patch("efm_go.knowledge.llm_pool.AcpClient", side_effect=[first, second]),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_OPENCODE)
             await worker.start()
@@ -1010,7 +1010,7 @@ class TestAcpWorkerZeroToolConfirmation:
 
     @pytest.mark.asyncio
     async def test_confirmed_opencode_stays_on_opencode_no_warning(self, tmp_path, caplog):
-        from kiro_crew.knowledge import llm_pool as llm_pool_mod
+        from efm_go.knowledge import llm_pool as llm_pool_mod
 
         llm_pool_mod._WARNED_UNSAFE_BACKENDS.clear()
         client = _zero_tool_client()
@@ -1019,8 +1019,8 @@ class TestAcpWorkerZeroToolConfirmation:
         client.spec_zero_tools = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client) as mk,
-            caplog.at_level("WARNING", logger="kiro_crew.knowledge.llm_pool"),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client) as mk,
+            caplog.at_level("WARNING", logger="efm_go.knowledge.llm_pool"),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_OPENCODE)
             await worker.start()
@@ -1042,8 +1042,8 @@ class TestAcpWorkerZeroToolConfirmation:
         client.spec_zero_tools = False
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client) as mk,
-            caplog.at_level("WARNING", logger="kiro_crew.knowledge.llm_pool"),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client) as mk,
+            caplog.at_level("WARNING", logger="efm_go.knowledge.llm_pool"),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_KIRO)
             await worker.start()
@@ -1061,7 +1061,7 @@ class TestAcpWorkerZeroToolConfirmation:
         client.spec_zero_tools = False
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_KIRO)
             await worker.start()
@@ -1079,7 +1079,7 @@ class TestAcpWorkerZeroToolConfirmation:
         client.spec_zero_tools = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_OPENCODE)
             await worker.start()
@@ -1101,8 +1101,8 @@ class TestAcpWorkerZeroToolConfirmation:
         client.spec_zero_tools = False
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client) as mk,
-            caplog.at_level("WARNING", logger="kiro_crew.knowledge.llm_pool"),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client) as mk,
+            caplog.at_level("WARNING", logger="efm_go.knowledge.llm_pool"),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_KIRO)
             with pytest.raises(RuntimeError, match="zero-tool spec"):
@@ -1125,7 +1125,7 @@ class TestAcpWorkerZeroToolConfirmation:
         client.shutdown.side_effect = RuntimeError("boom")
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_KIRO)
             with pytest.raises(RuntimeError, match="zero-tool spec"):
@@ -1146,7 +1146,7 @@ class TestAcpWorkerZeroToolConfirmation:
         second.spec_zero_tools = False
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", side_effect=[first, second]) as mk,
+            patch("efm_go.knowledge.llm_pool.AcpClient", side_effect=[first, second]) as mk,
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_OPENCODE)
             with pytest.raises(RuntimeError, match="zero-tool spec"):
@@ -1173,7 +1173,7 @@ class TestAcpWorkerZeroToolConfirmation:
         )
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_KIRO)
             await worker.start()
@@ -1196,7 +1196,7 @@ class TestAcpWorkerZeroToolConfirmation:
         )
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(acp_backend=ACP_BACKEND_KIRO)
             with pytest.raises(RuntimeError, match="could not be confirmed"):
@@ -1224,7 +1224,7 @@ class TestAcpWorkerZeroToolConfirmation:
         )
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             await AcpWorker(acp_backend=ACP_BACKEND_KIRO).start()
         assert calls == ["authored", "ready", "effective"]
@@ -1255,7 +1255,7 @@ class TestAcpWorkerZeroToolConfirmation:
         )
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", side_effect=[first, second]),
+            patch("efm_go.knowledge.llm_pool.AcpClient", side_effect=[first, second]),
         ):
             await AcpWorker(acp_backend=ACP_BACKEND_OPENCODE).start()
         assert calls == ["first-ready", "second-authored", "second-ready", "second-effective"]
@@ -1284,7 +1284,7 @@ class TestAcpWorkerZeroToolConfirmation:
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
             patch(
-                "kiro_crew.knowledge.llm_pool.AcpClient",
+                "efm_go.knowledge.llm_pool.AcpClient",
                 side_effect=[first, second, third],
             ) as mk,
         ):
@@ -1336,7 +1336,7 @@ class TestAcpWorkerEffort:
         client.send_command.side_effect = lambda *_args, **_kwargs: events.append("set")
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1351,7 +1351,7 @@ class TestAcpWorkerEffort:
         client = _mock_effort_client(["low", "medium", "high"], claude=True)
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1366,12 +1366,12 @@ class TestAcpWorkerEffort:
         ``effort`` there draws "unknown config option", which the except below the
         push turns into "using provider default" -- so the pool silently runs at
         whatever effort the adapter chose."""
-        from kiro_crew.acp.types import ACP_BACKEND_CODEX, effort_config_option_id
+        from efm_go.acp.types import ACP_BACKEND_CODEX, effort_config_option_id
 
         client = _mock_effort_client(["low", "medium", "high"], backend=ACP_BACKEND_CODEX)
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1385,12 +1385,12 @@ class TestAcpWorkerEffort:
     async def test_codex_support_precheck_asks_about_the_codex_option(self, tmp_path):
         """The precheck must ask about the id it is about to write; asking about
         ``effort`` on codex answers False and skips a push that would land."""
-        from kiro_crew.acp.types import ACP_BACKEND_CODEX, effort_config_option_id
+        from efm_go.acp.types import ACP_BACKEND_CODEX, effort_config_option_id
 
         client = _mock_effort_client(["low", "medium", "high"], backend=ACP_BACKEND_CODEX)
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1403,7 +1403,7 @@ class TestAcpWorkerEffort:
         second = _mock_effort_client(["low", "medium", "high"])
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", side_effect=[first, second]),
+            patch("efm_go.knowledge.llm_pool.AcpClient", side_effect=[first, second]),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1417,7 +1417,7 @@ class TestAcpWorkerEffort:
         client = _mock_effort_client(["low", "medium"])
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1431,7 +1431,7 @@ class TestAcpWorkerEffort:
         client = _mock_effort_client([], supports=False, claude=True)
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1453,8 +1453,8 @@ class TestAcpWorkerEffort:
         client.spec_zero_tools = True
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
-            caplog.at_level("WARNING", logger="kiro_crew.knowledge.llm_pool"),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
+            caplog.at_level("WARNING", logger="efm_go.knowledge.llm_pool"),
         ):
             worker = AcpWorker(effort="high", acp_backend=backend)
             await worker.start()
@@ -1474,7 +1474,7 @@ class TestAcpWorkerEffort:
         client.send_command.side_effect = RuntimeError("effort command rejected")
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1494,11 +1494,11 @@ class TestLLMPoolEffort:
         # rather than depending on whatever this host has configured.
         with (
             patch(
-                "kiro_crew.knowledge.llm_pool.AcpWorker", return_value=fake_worker
+                "efm_go.knowledge.llm_pool.AcpWorker", return_value=fake_worker
             ) as worker_type,
-            patch("kiro_crew.knowledge.llm_pool._get_sandbox_mode", return_value="auto"),
+            patch("efm_go.knowledge.llm_pool._get_sandbox_mode", return_value="auto"),
             patch(
-                "kiro_crew.knowledge.llm_pool._get_acp_backend",
+                "efm_go.knowledge.llm_pool._get_acp_backend",
                 return_value=ACP_BACKEND_KIRO,
             ),
         ):
@@ -1517,11 +1517,11 @@ class TestLLMPoolEffort:
         # Same reason as the sibling above: state the tier, do not inherit it.
         with (
             patch(
-                "kiro_crew.knowledge.llm_pool.AcpWorker", return_value=fake_worker
+                "efm_go.knowledge.llm_pool.AcpWorker", return_value=fake_worker
             ) as worker_type,
-            patch("kiro_crew.knowledge.llm_pool._get_sandbox_mode", return_value="auto"),
+            patch("efm_go.knowledge.llm_pool._get_sandbox_mode", return_value="auto"),
             patch(
-                "kiro_crew.knowledge.llm_pool._get_acp_backend",
+                "efm_go.knowledge.llm_pool._get_acp_backend",
                 return_value=ACP_BACKEND_KIRO,
             ),
         ):
@@ -1545,7 +1545,7 @@ class TestLLMPoolEffort:
 
         pool._create_worker = _mock_create  # type: ignore[assignment]
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 3}},
         ):
             await pool.start()
@@ -1565,7 +1565,7 @@ class TestLLMPoolEffort:
 
         pool._create_worker = _mock_create  # type: ignore[assignment]
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 5}},
         ):
             await pool.start()
@@ -1588,7 +1588,7 @@ class TestLLMPoolEffort:
 
         pool._create_worker = _mock_create  # type: ignore[assignment]
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 4}},
         ):
             await pool.start()
@@ -1650,7 +1650,7 @@ class TestLLMPoolEffortResolution:
         )
         pool._create_worker = _mock_fake_create()  # type: ignore[assignment]
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_effort": "low"}},
         ):
             await pool.start()
@@ -1662,7 +1662,7 @@ class TestLLMPoolEffortResolution:
         pool = LLMPool(pool_size=1, effort="medium")
         pool._create_worker = _mock_fake_create()  # type: ignore[assignment]
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_effort": "low"}},
         ):
             await pool.start()
@@ -1694,7 +1694,7 @@ class TestAcpWorkerEffortModelGate:
         client._model = "auto"
         with (
             patch("pathlib.Path.home", return_value=tmp_path),
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=client),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=client),
         ):
             worker = AcpWorker(effort="high")
             await worker.start()
@@ -1720,7 +1720,7 @@ class TestCCWorker:
 
     @pytest.mark.asyncio
     async def test_start_raises_without_claude(self):
-        with patch("kiro_crew.knowledge.llm_pool.shutil.which", return_value=None):
+        with patch("efm_go.knowledge.llm_pool.shutil.which", return_value=None):
             worker = CCWorker()
             with pytest.raises(RuntimeError, match="claude CLI not found"):
                 await worker.start()
@@ -1897,7 +1897,7 @@ class TestCCWorkerStreamJson:
 
     def test_the_line_limit_is_the_acp_transports_ceiling(self):
         """knowledge.md says so; a copy could drift from it without a test."""
-        from kiro_crew.acp import transport_framing
+        from efm_go.acp import transport_framing
 
         assert llm_pool.STDOUT_LINE_LIMIT == transport_framing._STDOUT_BUFFER_LIMIT
 
@@ -2018,7 +2018,7 @@ class TestCCWorkerStreamJson:
 class TestFetchUrlContent:
     @pytest.mark.asyncio
     async def test_fetch_returns_stripped_content(self):
-        from kiro_crew.knowledge.agent_fetch import fetch_url_content
+        from efm_go.knowledge.agent_fetch import fetch_url_content
 
         pool = _make_pool_with_fake_workers(
             pool_size=1,
@@ -2034,7 +2034,7 @@ class TestFetchUrlContent:
 
     @pytest.mark.asyncio
     async def test_fetch_raises_on_empty(self):
-        from kiro_crew.knowledge.agent_fetch import fetch_url_content
+        from efm_go.knowledge.agent_fetch import fetch_url_content
 
         pool = _make_pool_with_fake_workers(pool_size=1, responses=[""])
         with pytest.raises(RuntimeError, match="empty content"):
@@ -2042,7 +2042,7 @@ class TestFetchUrlContent:
 
     @pytest.mark.asyncio
     async def test_fetch_raises_on_whitespace_only(self):
-        from kiro_crew.knowledge.agent_fetch import fetch_url_content
+        from efm_go.knowledge.agent_fetch import fetch_url_content
 
         pool = _make_pool_with_fake_workers(pool_size=1, responses=["   \n  "])
         with pytest.raises(RuntimeError, match="empty content"):
@@ -2406,9 +2406,9 @@ class TestWorkerConversationRecycle:
         # makes _collect_active_pids report a non-empty protected set to whatever
         # else shares this worker.
         with (
-            patch("kiro_crew.knowledge.llm_pool.AcpClient", return_value=new_client),
-            patch("kiro_crew.knowledge.llm_pool.register_protected_pid"),
-            patch("kiro_crew.knowledge.llm_pool.unregister_protected_pid"),
+            patch("efm_go.knowledge.llm_pool.AcpClient", return_value=new_client),
+            patch("efm_go.knowledge.llm_pool.register_protected_pid"),
+            patch("efm_go.knowledge.llm_pool.unregister_protected_pid"),
         ):
             await worker.reset_conversation()
 
@@ -2465,7 +2465,7 @@ def _patch_tree_kill(monkeypatch, sink):
     point are patched, so the pin stays safe even when run against unmodified
     code that never calls either.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     async def _fake_tree(pid, sig):
         sink.append((pid, sig))
@@ -2493,7 +2493,7 @@ class TestCCWorkerReapsTheProcessTree:
 
     @pytest.mark.asyncio
     async def test_spawn_requests_its_own_session(self):
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         captured: "dict[str, object]" = {}
 
@@ -2508,10 +2508,10 @@ class TestCCWorkerReapsTheProcessTree:
         # least `mode`) into the `_prepare` seam. A positional-only stub raises
         # TypeError from inside wrap_argv_async instead of exercising the spawn.
         with (
-            patch("kiro_crew.knowledge.llm_pool.wrap_argv", lambda cmd, **k: (cmd, None)),
-            patch("kiro_crew.knowledge.llm_pool.cgroup_scope_argv", lambda argv: argv),
+            patch("efm_go.knowledge.llm_pool.wrap_argv", lambda cmd, **k: (cmd, None)),
+            patch("efm_go.knowledge.llm_pool.cgroup_scope_argv", lambda argv: argv),
             patch(
-                "kiro_crew.knowledge.llm_pool.create_subprocess_limited",
+                "efm_go.knowledge.llm_pool.create_subprocess_limited",
                 _fake_spawn,
             ),
         ):

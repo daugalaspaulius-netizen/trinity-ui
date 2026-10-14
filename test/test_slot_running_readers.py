@@ -26,7 +26,7 @@ _BUSY_HELPERS: dict[str, frozenset[str]] = {
 
 def test_running_guarded_task_loads_null_check_task() -> None:
     """Every ``x.task`` read under an ``x.running`` guard also checks it is set."""
-    dashboard = Path(__file__).parents[1] / "src" / "kiro_crew" / "dashboard"
+    dashboard = Path(__file__).parents[1] / "src" / "efm_go" / "dashboard"
     guarded_task_loads: list[tuple[str, int]] = []
     for path in dashboard.rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -62,7 +62,7 @@ def test_running_guarded_task_loads_null_check_task() -> None:
 
 def test_running_and_turn_running_slot_readers_are_enumerated() -> None:
     """Every slot reader declares whether it needs reservation or execution state."""
-    dashboard = Path(__file__).parents[1] / "src" / "kiro_crew" / "dashboard"
+    dashboard = Path(__file__).parents[1] / "src" / "efm_go" / "dashboard"
     actual: dict[tuple[str, str], frozenset[str]] = {}
     publishers: set[tuple[str, str]] = set()
     for path in sorted(dashboard.rglob("*.py")):

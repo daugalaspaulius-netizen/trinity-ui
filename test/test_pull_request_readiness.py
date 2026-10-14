@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.monitoring.models import MonitorObservationStatus, ProviderErrorKind
-from kiro_crew.monitoring.pull_request import (
+from efm_go.monitoring.models import MonitorObservationStatus, ProviderErrorKind
+from efm_go.monitoring.pull_request import (
     PULL_REQUEST_MONITOR_KINDS,
     PullRequestCheck,
     PullRequestFacts,

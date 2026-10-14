@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL_DIR = ROOT / "src" / "kiro_crew" / "builtin_skills" / "browser-recording"
+SKILL_DIR = ROOT / "src" / "efm_go" / "builtin_skills" / "browser-recording"
 SKILL = SKILL_DIR / "SKILL.md"
 RUNNER = SKILL_DIR / "scripts" / "record_browser.py"
 DRIVER = SKILL_DIR / "scripts" / "driver.mjs"

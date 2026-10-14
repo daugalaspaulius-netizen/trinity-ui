@@ -6,12 +6,12 @@ per-turn additions, a sub-agent, the default agent versus any other agent, a
 crew member's session, and which crew-member private files exist today.
 
 This is a contributor document: it cites private symbols throughout, so it lives
-here rather than in the packaged end-user tree (`src/kiro_crew/docs/`), whose
+here rather than in the packaged end-user tree (`src/efm_go/docs/`), whose
 charter routes an engineering note to `docs/`. The packaged index links across to
 it.
 
 Everything here is read from the current code, and citations name a file and a
-**symbol** (`src/kiro_crew/context.py` → `build_message`) rather than a line
+**symbol** (`src/efm_go/context.py` → `build_message`) rather than a line
 number, which rots. Where an older doc disagreed with the code, that doc was
 corrected rather than annotated.
 
@@ -19,10 +19,10 @@ Detail this file deliberately does not restate:
 
 | For | Read |
 |---|---|
-| Agent specs, `skill://` mapping, config files | [Agents & Configuration](../../src/kiro_crew/docs/agents.md) |
-| Skill authoring, frontmatter, discovery tools | [Skills](../../src/kiro_crew/docs/skills.md) |
-| Spawning, limits, results | [Subagents & Parallel Work](../../src/kiro_crew/docs/subagents.md) |
-| Memory types, V1/V2, modes | [Memory & Learning](../../src/kiro_crew/docs/memory-and-learning.md) |
+| Agent specs, `skill://` mapping, config files | [Agents & Configuration](../../src/efm_go/docs/agents.md) |
+| Skill authoring, frontmatter, discovery tools | [Skills](../../src/efm_go/docs/skills.md) |
+| Spawning, limits, results | [Subagents & Parallel Work](../../src/efm_go/docs/subagents.md) |
+| Memory types, V1/V2, modes | [Memory & Learning](../../src/efm_go/docs/memory-and-learning.md) |
 | Section internals and budget rationale | [memory-skills-hooks spec](../system-specs/modules/memory-skills-hooks.md) |
 | Crew records, binding, `select_crew` | [crew-mode spec](../system-specs/modules/crew-mode.md) |
 | Sub-agent lifecycle, host/profile resolution | [subagent spec](../system-specs/modules/subagent.md), [platform-context spec](../system-specs/modules/platform-context.md) |
@@ -123,7 +123,7 @@ tokens, because characters are exact and free to count.
 
 Each per-block budget is `_budget(fraction)` — a **share of the base**, never a
 number of its own. The base, the shares and `_ResolvedCaps` live in
-`src/kiro_crew/context_assembly/budget.py`. The share is what the code states and what stays true when the
+`src/efm_go/context_assembly/budget.py`. The share is what the code states and what stays true when the
 base moves, so the table quotes the share and the constant to read it from rather
 than a byte figure (`docs/system-specs/common/code-style.md` owns this rule).
 
@@ -265,7 +265,7 @@ The mechanism, when on:
 - The Jev decision point (`decisions/points/skills_select.py` →
   `selected_skills`, wired through the `select` callable) may **replace** the
   matched set for a sampled session; `None` keeps the match, `[]` empties it. See
-  [Jev Skill Selection](../../src/kiro_crew/docs/decisions.md).
+  [Jev Skill Selection](../../src/efm_go/docs/decisions.md).
 
 #### Per-session body dedup
 
@@ -330,7 +330,7 @@ by `_SNAPSHOT_MAX_CHARS`) and `dashboard/handlers/autonudge.py` prepends it to a
 **monitor /
 auto-nudge cycle message**, so each cycle starts from durable state rather than
 transcript memory. It is empty when the session has no ledger or its phase is
-terminal. See [Session Ledger](../../src/kiro_crew/docs/session-ledger.md), [Monitor Loops](../../src/kiro_crew/docs/monitor-loops.md).
+terminal. See [Session Ledger](../../src/efm_go/docs/session-ledger.md), [Monitor Loops](../../src/efm_go/docs/monitor-loops.md).
 
 ## 3. Sub-agent sessions (`spawn_run`)
 
@@ -639,24 +639,24 @@ per-member permission control; both exist today, in the forms above.
 
 | Question | Files |
 |---|---|
-| What is in the first-turn prompt, in what order | `src/kiro_crew/context.py` (`build_message`, `build_session_context`), composed from the owners in `src/kiro_crew/context_assembly/` |
-| Which block is which, and how big it was | `src/kiro_crew/context_blocks.py` (`_MARKERS`, `_CLOSERS`, `measure_prompt`) |
-| Budgets, caps, the protected ceiling | `src/kiro_crew/context_assembly/budget.py` (`_budget`, `_ResolvedCaps`, `admit_background`), `src/kiro_crew/context.py` (`_resolve_caps`) |
-| Marker and fence scrubs of untrusted text | `src/kiro_crew/context_assembly/markers.py`, `src/kiro_crew/context.py` (`_neutralize_structural_markers`) |
-| Replay and recall projection | `src/kiro_crew/context_assembly/replay.py`, `src/kiro_crew/context.py` (`build_session_replay`, `_recall_rows`) |
-| Memory block contents | `src/kiro_crew/memory.py` (`get_context`, `activity_index`, `get_activity_context`) |
-| Lessons | `src/kiro_crew/learn.py`, `src/kiro_crew/vector_memory.py` (`write_lesson`), `src/kiro_crew/vector_memory_runtime/lessons.py` (the lesson readers, ranking and tiered rendering) |
-| Skill index, pinned bodies, discovery | `src/kiro_crew/skill_runtime/delivery.py` (`get_context`), `src/kiro_crew/skills.py` (`load_skill`) |
-| Trigger matching, and its model-picked override | `src/kiro_crew/trigger_match.py`, `src/kiro_crew/skills.py` (`get_triggered_skills`), `src/kiro_crew/skill_runtime/delivery.py` (`split_triggered`, `trigger_hint`), `src/kiro_crew/decisions/points/skills_select.py` |
-| Which agents get skills | `src/kiro_crew/context.py` (`_skills_injection_plan`), `src/kiro_crew/agent_discovery.py` (`agent_skill_globs`, `expand_skill_uri`) |
-| Steering and hooks | `src/kiro_crew/context.py` (`_load_steering_resources`, `steering_target_admissible`), `src/kiro_crew/hooks.py` |
-| Post-compaction re-injection | `src/kiro_crew/messaging/turn_bracket.py` (`TurnBracket`, `consume_reinjection`, `rearm_reinjection`; re-exported by `messaging/dispatch.py`) |
-| Ledger snapshot on nudge turns | `src/kiro_crew/session_ledger.py` (`render_snapshot`), `src/kiro_crew/dashboard/handlers/autonudge.py` |
-| Sub-agent context scope | `src/kiro_crew/subagent.py` (`_context_groups_of`), `src/kiro_crew/mcp_tools/spawn.py` |
-| Sub-agent prompt assembly, shared vs dedicated | `src/kiro_crew/subagent_manager/run.py` |
-| Scratch directories | `src/kiro_crew/agent_scratch.py` (`allocate_scratch`, `scratch_env`) |
-| The worker agent spec | `src/kiro_crew/agent_materialization/worker_agent.py` (`_write_worker_spec`) |
-| Member identity, rules, briefing, activity, V2 essentials | `src/kiro_crew/members.py`, `src/kiro_crew/context_assembly/member.py` (`build_member_section`, `build_v2_essentials`), `src/kiro_crew/member_essential_context.py` |
-| Crew records, routing, binding | `src/kiro_crew/config/loader.py`, `src/kiro_crew/mcp_core.py` |
-| Per-member permissions | `src/kiro_crew/agent_capabilities.py`, `src/kiro_crew/agent_state.py` |
-| Session creation and agent inheritance | `src/kiro_crew/dashboard/session_control.py` |
+| What is in the first-turn prompt, in what order | `src/efm_go/context.py` (`build_message`, `build_session_context`), composed from the owners in `src/efm_go/context_assembly/` |
+| Which block is which, and how big it was | `src/efm_go/context_blocks.py` (`_MARKERS`, `_CLOSERS`, `measure_prompt`) |
+| Budgets, caps, the protected ceiling | `src/efm_go/context_assembly/budget.py` (`_budget`, `_ResolvedCaps`, `admit_background`), `src/efm_go/context.py` (`_resolve_caps`) |
+| Marker and fence scrubs of untrusted text | `src/efm_go/context_assembly/markers.py`, `src/efm_go/context.py` (`_neutralize_structural_markers`) |
+| Replay and recall projection | `src/efm_go/context_assembly/replay.py`, `src/efm_go/context.py` (`build_session_replay`, `_recall_rows`) |
+| Memory block contents | `src/efm_go/memory.py` (`get_context`, `activity_index`, `get_activity_context`) |
+| Lessons | `src/efm_go/learn.py`, `src/efm_go/vector_memory.py` (`write_lesson`), `src/efm_go/vector_memory_runtime/lessons.py` (the lesson readers, ranking and tiered rendering) |
+| Skill index, pinned bodies, discovery | `src/efm_go/skill_runtime/delivery.py` (`get_context`), `src/efm_go/skills.py` (`load_skill`) |
+| Trigger matching, and its model-picked override | `src/efm_go/trigger_match.py`, `src/efm_go/skills.py` (`get_triggered_skills`), `src/efm_go/skill_runtime/delivery.py` (`split_triggered`, `trigger_hint`), `src/efm_go/decisions/points/skills_select.py` |
+| Which agents get skills | `src/efm_go/context.py` (`_skills_injection_plan`), `src/efm_go/agent_discovery.py` (`agent_skill_globs`, `expand_skill_uri`) |
+| Steering and hooks | `src/efm_go/context.py` (`_load_steering_resources`, `steering_target_admissible`), `src/efm_go/hooks.py` |
+| Post-compaction re-injection | `src/efm_go/messaging/turn_bracket.py` (`TurnBracket`, `consume_reinjection`, `rearm_reinjection`; re-exported by `messaging/dispatch.py`) |
+| Ledger snapshot on nudge turns | `src/efm_go/session_ledger.py` (`render_snapshot`), `src/efm_go/dashboard/handlers/autonudge.py` |
+| Sub-agent context scope | `src/efm_go/subagent.py` (`_context_groups_of`), `src/efm_go/mcp_tools/spawn.py` |
+| Sub-agent prompt assembly, shared vs dedicated | `src/efm_go/subagent_manager/run.py` |
+| Scratch directories | `src/efm_go/agent_scratch.py` (`allocate_scratch`, `scratch_env`) |
+| The worker agent spec | `src/efm_go/agent_materialization/worker_agent.py` (`_write_worker_spec`) |
+| Member identity, rules, briefing, activity, V2 essentials | `src/efm_go/members.py`, `src/efm_go/context_assembly/member.py` (`build_member_section`, `build_v2_essentials`), `src/efm_go/member_essential_context.py` |
+| Crew records, routing, binding | `src/efm_go/config/loader.py`, `src/efm_go/mcp_core.py` |
+| Per-member permissions | `src/efm_go/agent_capabilities.py`, `src/efm_go/agent_state.py` |
+| Session creation and agent inheritance | `src/efm_go/dashboard/session_control.py` |

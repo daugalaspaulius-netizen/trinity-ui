@@ -19,9 +19,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.discord import renderer as discord_renderer
-from kiro_crew.discord.renderer import DiscordApprovalDecider, DiscordRenderer
-from kiro_crew.discord.transport import DISCORD_CAPABILITIES
+from efm_go.discord import renderer as discord_renderer
+from efm_go.discord.renderer import DiscordApprovalDecider, DiscordRenderer
+from efm_go.discord.transport import DISCORD_CAPABILITIES
 
 
 class _SendCapture:

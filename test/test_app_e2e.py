@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.apps.bridges import deregister_app, register_app
-from kiro_crew.apps.manager import (
+from efm_go.apps.bridges import deregister_app, register_app
+from efm_go.apps.manager import (
     APP_MANIFEST_FILENAME,
     _read_installed,
     disable_app,
@@ -23,8 +23,8 @@ from kiro_crew.apps.manager import (
     list_apps,
     uninstall_app,
 )
-from kiro_crew.apps.manifest import AppManifest
-from kiro_crew.apps.permissions import validate_permissions
+from efm_go.apps.manifest import AppManifest
+from efm_go.apps.permissions import validate_permissions
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -83,18 +83,18 @@ def app_env(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(home))
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
 
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
     # Patch _mcp_json_path to avoid file descriptor errors in tests
     mcp_path = tmp_path / "mcp.json"
     monkeypatch.setattr(bridges_mod, "_mcp_json_path", lambda: mcp_path)
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
 
     bmod._processes.clear()
     bmod._allocated_ports.clear()
     monkeypatch.setattr(
-        "kiro_crew.apps.execution.third_party_execution_allowed", lambda: True
+        "efm_go.apps.execution.third_party_execution_allowed", lambda: True
     )
     return {"home": home, "kiro_agents": kiro_agents}
 

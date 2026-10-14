@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.manifest — AppManifest parser and validator."""
+"""Tests for efm_go.apps.manifest — AppManifest parser and validator."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from conftest import make_escaping_link
-from kiro_crew.apps.manifest import (
+from efm_go.apps.manifest import (
     ARGUMENT_TOKEN,
     AppManifest,
     CapabilityDependencies,
@@ -18,7 +18,7 @@ from kiro_crew.apps.manifest import (
     Dependencies,
     SetupConfig,
 )
-from kiro_crew.constants import WINDOWS_DEVICE_STEMS
+from efm_go.constants import WINDOWS_DEVICE_STEMS
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -88,7 +88,7 @@ class TestValidation:
         shared routes registered before the /api/apps/{name} catch-all. Reserving
         these names is the defense-in-depth backstop that keeps NEW apps from
         claiming them (the token_auth carve-out is the primary boundary)."""
-        from kiro_crew.apps.manifest import app_name_error, is_reserved_app_name
+        from efm_go.apps.manifest import app_name_error, is_reserved_app_name
 
         reason = app_name_error(name)
         assert reason is not None
@@ -102,7 +102,7 @@ class TestValidation:
     def test_names_merely_resembling_a_route_segment_stay_valid(self, name):
         """The reservation matches the exact literal segment only: kebab names
         that merely contain or resemble a segment must still validate."""
-        from kiro_crew.apps.manifest import app_name_error, is_reserved_app_name
+        from efm_go.apps.manifest import app_name_error, is_reserved_app_name
 
         assert app_name_error(name) is None
         assert is_reserved_app_name(name) is False
@@ -122,7 +122,7 @@ class TestValidation:
     def test_device_stem_vocabulary_is_not_duplicated(self):
         """One definition, shared with the git-branch grammar. Two copies of a
         22-name set drift, and the branch rule is the precedent this follows."""
-        from kiro_crew.apps.manifest import UNPORTABLE_APP_NAMES
+        from efm_go.apps.manifest import UNPORTABLE_APP_NAMES
 
         assert UNPORTABLE_APP_NAMES is WINDOWS_DEVICE_STEMS
 
@@ -186,7 +186,7 @@ class TestValidation:
         # A dotted module-style backend entryPoint has no '..' and is not
         # absolute, so the containment helper must not false-positive on it.
         m = AppManifest.from_dict(
-            _valid_manifest(backend={"entryPoint": "kiro_crew.apps.builtins.x.server"})
+            _valid_manifest(backend={"entryPoint": "efm_go.apps.builtins.x.server"})
         )
         assert m.validate() == []
 
@@ -240,7 +240,7 @@ class TestValidation:
             "index.mjs",
             "backend/server.py",
             "ui\\index.mjs",  # backslash separator is not a traversal
-            "kiro_crew.apps.builtins.x.server",  # dotted module-style
+            "efm_go.apps.builtins.x.server",  # dotted module-style
             "a..b/c.py",  # ".." inside a segment, not a segment itself
         ],
     )
@@ -780,9 +780,9 @@ class TestDependencies:
         """
         import json
 
-        from kiro_crew.apps.manifest import AppManifest
+        from efm_go.apps.manifest import AppManifest
 
-        builtins = _REPO_ROOT / "src/kiro_crew/apps/builtins"
+        builtins = _REPO_ROOT / "src/efm_go/apps/builtins"
         for app_json in sorted(builtins.glob("*/app.json")):
             raw = json.loads(app_json.read_text(encoding="utf-8"))
             declared = raw.get("dependencies") or {}
@@ -985,14 +985,14 @@ class TestCapabilityDepTypesContract:
     def test_types_match_dataclass_fields(self):
         import dataclasses
 
-        from kiro_crew.apps.dependency_ledger import CAPABILITY_DEP_TYPES
+        from efm_go.apps.dependency_ledger import CAPABILITY_DEP_TYPES
 
         fields = {f.name for f in dataclasses.fields(CapabilityDependencies)}
         assert set(CAPABILITY_DEP_TYPES) == fields
 
     def test_installable_subset_is_derived(self):
-        from kiro_crew.apps.dependencies import _INSTALLABLE_TYPES
-        from kiro_crew.apps.dependency_ledger import CAPABILITY_DEP_TYPES
+        from efm_go.apps.dependencies import _INSTALLABLE_TYPES
+        from efm_go.apps.dependency_ledger import CAPABILITY_DEP_TYPES
 
         assert set(_INSTALLABLE_TYPES) <= set(CAPABILITY_DEP_TYPES)
 
@@ -1008,20 +1008,20 @@ class TestRequiresDesktopApp:
     """
 
     def test_defaults_to_false(self):
-        from kiro_crew.apps.manifest import PlatformConfig
+        from efm_go.apps.manifest import PlatformConfig
 
         assert PlatformConfig().requiresDesktopApp is False
         assert PlatformConfig.from_dict({}).requiresDesktopApp is False
 
     def test_omitted_from_dict_when_false(self):
-        from kiro_crew.apps.manifest import PlatformConfig
+        from efm_go.apps.manifest import PlatformConfig
 
         # Absent-not-null: the wire form stays minimal, matching how the other
         # PlatformConfig fields serialize.
         assert "requiresDesktopApp" not in PlatformConfig().to_dict()
 
     def test_round_trips_when_true(self):
-        from kiro_crew.apps.manifest import PlatformConfig
+        from efm_go.apps.manifest import PlatformConfig
 
         cfg = PlatformConfig.from_dict({"requiresDesktopApp": True})
         assert cfg.requiresDesktopApp is True
@@ -1029,7 +1029,7 @@ class TestRequiresDesktopApp:
         assert PlatformConfig.from_dict(cfg.to_dict()).requiresDesktopApp is True
 
     def test_non_bool_values_are_coerced(self):
-        from kiro_crew.apps.manifest import PlatformConfig
+        from efm_go.apps.manifest import PlatformConfig
 
         # Manifests are user-authored JSON; a truthy string must not crash the
         # parse, and a falsy value must not enable the gate.
@@ -1038,7 +1038,7 @@ class TestRequiresDesktopApp:
         assert PlatformConfig.from_dict({"requiresDesktopApp": None}).requiresDesktopApp is False
 
     def test_independent_of_os_axis(self):
-        from kiro_crew.apps.manifest import PlatformConfig
+        from efm_go.apps.manifest import PlatformConfig
 
         # Declaring a desktop surface must not narrow the gateway OS list.
         cfg = PlatformConfig.from_dict({"requiresDesktopApp": True})
@@ -1053,7 +1053,7 @@ class TestRequiresDesktopApp:
     def test_mochi_builtin_declares_it(self):
         """Mochi is the first consumer: its panel needs the Electron shell."""
 
-        import kiro_crew.apps.builtins as builtins_pkg
+        import efm_go.apps.builtins as builtins_pkg
 
         app_json = Path(builtins_pkg.__file__).parent / "mochi" / "app.json"
         manifest = AppManifest.from_dict(json.loads(app_json.read_text()))
@@ -1066,7 +1066,7 @@ class TestRequiresDesktopApp:
         matched NOTHING — a declaring app was silently unsupported everywhere,
         which is the worst of both answers.
         """
-        from kiro_crew.apps.manifest import PlatformConfig
+        from efm_go.apps.manifest import PlatformConfig
 
         cfg = PlatformConfig(os=["macos", "linux", "windows"])
         assert cfg.supports_platform("win32") is True
@@ -1075,7 +1075,7 @@ class TestRequiresDesktopApp:
 
     def test_current_os_names_windows_in_the_manifest_vocabulary(self, monkeypatch):
         """`current_os()` must return a name manifests compare against, not `win32`."""
-        from kiro_crew.apps import manifest as manifest_mod
+        from efm_go.apps import manifest as manifest_mod
 
         monkeypatch.setattr(manifest_mod.sys, "platform", "win32", raising=False)
         assert manifest_mod.PlatformConfig.current_os() == "windows"
@@ -1083,7 +1083,7 @@ class TestRequiresDesktopApp:
     def test_the_default_still_excludes_windows(self):
         """Opt-in, not opt-out: widening the default would promise Windows for
         every existing app that never declared it."""
-        from kiro_crew.apps.manifest import PlatformConfig
+        from efm_go.apps.manifest import PlatformConfig
 
         assert PlatformConfig().supports_platform("win32") is False
 
@@ -1106,7 +1106,7 @@ class TestScalarGrantDoesNotBecomeAWildcard:
     """
 
     def test_scalar_star_never_yields_the_wildcard(self):
-        from kiro_crew.apps.manifest import Permissions
+        from efm_go.apps.manifest import Permissions
 
         for field in ("exposeToApps", "events", "api", "mcpTools"):
             perms = Permissions.from_dict({field: "*"})
@@ -1115,18 +1115,18 @@ class TestScalarGrantDoesNotBecomeAWildcard:
             )
 
     def test_scalar_path_never_yields_a_match_everything_prefix(self):
-        from kiro_crew.apps.manifest import Permissions
+        from efm_go.apps.manifest import Permissions
 
         assert Permissions.from_dict({"api": "/api/chat"}).api == []
 
     def test_other_scalar_shapes_also_deny(self):
-        from kiro_crew.apps.manifest import Permissions
+        from efm_go.apps.manifest import Permissions
 
         for value in (True, 1, {"a": "b"}, None):
             assert Permissions.from_dict({"exposeToApps": value}).exposeToApps == []
 
     def test_a_real_list_still_works(self):
-        from kiro_crew.apps.manifest import Permissions
+        from efm_go.apps.manifest import Permissions
 
         perms = Permissions.from_dict(
             {
@@ -1143,7 +1143,7 @@ class TestScalarGrantDoesNotBecomeAWildcard:
         assert perms.mcpTools == ["cron_add"]
 
     def test_the_wildcard_still_works_when_declared_as_a_list(self):
-        from kiro_crew.apps.manifest import Permissions
+        from efm_go.apps.manifest import Permissions
 
         assert Permissions.from_dict({"exposeToApps": ["*"]}).exposeToApps == ["*"]
         assert Permissions.from_dict({"events": ["*"]}).events == ["*"]
@@ -1235,7 +1235,7 @@ def test_overlay_builtins_must_not_ship_a_ui_bundle():
     is invisible at runtime until someone notices the surface silently reverted.
     """
     offenders = []
-    for entry in sorted((_REPO_ROOT / "src/kiro_crew/apps/builtins").iterdir()):
+    for entry in sorted((_REPO_ROOT / "src/efm_go/apps/builtins").iterdir()):
         manifest_path = entry / "app.json"
         if not manifest_path.is_file():
             continue
@@ -1260,7 +1260,7 @@ def test_command_bar_builtin_is_overlay_only_and_default_on():
     """
     raw = json.loads(
         (
-            _REPO_ROOT / "src/kiro_crew/apps/builtins/command_bar/app.json"
+            _REPO_ROOT / "src/efm_go/apps/builtins/command_bar/app.json"
         ).read_text(encoding="utf-8")
     )
     m = AppManifest.from_dict(raw)
@@ -1925,7 +1925,7 @@ class TestContributesPanelTabs:
         assert any("path traversal" in e for e in m.validate())
 
     def test_too_many_tabs_rejected(self):
-        from kiro_crew.apps.manifest import _MAX_PANEL_TABS_PER_APP
+        from efm_go.apps.manifest import _MAX_PANEL_TABS_PER_APP
 
         tabs = [_panel_tab(id=f"t{i}") for i in range(_MAX_PANEL_TABS_PER_APP + 1)]
         m = AppManifest.from_dict(_valid_manifest(contributes={"panelTabs": tabs}))
@@ -1950,7 +1950,7 @@ class TestShippedManifestsAreWellFormedJson:
     """
 
     def _builtin_manifests(self) -> list[Path]:
-        paths = sorted((_REPO_ROOT / "src/kiro_crew/apps/builtins").glob("*/app.json"))
+        paths = sorted((_REPO_ROOT / "src/efm_go/apps/builtins").glob("*/app.json"))
         assert paths, "no built-in manifests found -- the glob or the layout moved"
         return paths
 

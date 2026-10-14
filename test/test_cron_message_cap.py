@@ -19,9 +19,9 @@ from unittest.mock import MagicMock
 import pytest
 from body_stream_helpers import attach_body
 
-from kiro_crew.cron import CronService
-from kiro_crew.dashboard.handlers import api_cron_update, api_crons_create
-from kiro_crew.validation import (
+from efm_go.cron import CronService
+from efm_go.dashboard.handlers import api_cron_update, api_crons_create
+from efm_go.validation import (
     CRON_ADD_SCHEMA,
     MAX_CRON_MESSAGE,
     MAX_MEDIUM_STRING,
@@ -41,7 +41,7 @@ OVERSIZE_MSG = "x" * (MAX_CRON_MESSAGE + 1)
 
 @pytest.fixture(autouse=True)
 def _isolate_cron_store(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.cron._DEFAULT_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.cron._DEFAULT_DIR", tmp_path)
     yield
 
 

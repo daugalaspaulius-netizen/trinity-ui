@@ -31,7 +31,7 @@ numbers, because every line reference taken from a checkout 962 commits behind h
 moved.
 
 - **The hot path re-serializes the whole window to record a one-row state change.**
-  `src/kiro_crew/dashboard/chat_persistence.py::_save_slot_to_history` keeps a frozen
+  `src/efm_go/dashboard/chat_persistence.py::_save_slot_to_history` keeps a frozen
   prefix of `slot._disk_older_count` lines verbatim and rewrites the in-memory window.
   The module says so itself, twice, in capitals — "re-serializes the WHOLE in-memory
   window on every flush" — and sets
@@ -44,7 +44,7 @@ moved.
   archived with `reason="foreign-dedup"`; rewrite mode (`rewrite=True`, explicit
   `messages`, or `slot._pending_rewrite`) truncates the window tail, archiving the
   dropped lines through `_archive_dropped_lines`. Archives are then hard-deleted by
-  `src/kiro_crew/history.py::_cleanup_old_archives` after
+  `src/efm_go/history.py::_cleanup_old_archives` after
   `session.archive_retention_days` (default 30), so a row can become silently
   unrecoverable after a month.
 - **Other rewriting paths, for completeness.** `history.py::_maybe_rotate` drops the
@@ -74,13 +74,13 @@ model-visible message list from it on every turn. That is why resume, fork, repl
 and compaction all reduce to one read there.
 
 Kiro Crew cannot do this, and this RFC does not attempt it. Each turn sends **one
-string**, built by `src/kiro_crew/context.py::ContextBuilder.build_message` (via
+string**, built by `src/efm_go/context.py::ContextBuilder.build_message` (via
 `build_session_context`) and handed to `client.stream(full_message)` in
 `dashboard/chat_runner.py`. The model's actual conversation lives in kiro-cli's own
 native ACP session, reached through `session/load`. Kiro Crew's JSONL is a *parallel
 durable transcript*, injected back only at session start, replay, and provider switch.
 Compaction likewise happens inside the provider —
-`src/kiro_crew/session.py::check_context_usage` → `_compact_session` sends kiro-cli an
+`src/efm_go/session.py::check_context_usage` → `_compact_session` sends kiro-cli an
 in-place `/compact` and watches its status; it mutates no Kiro Crew record.
 
 Adopting DSH's derivation model would mean Kiro Crew holding the message array and

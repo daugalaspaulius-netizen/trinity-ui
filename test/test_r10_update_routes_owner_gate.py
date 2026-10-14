@@ -22,7 +22,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers import updates
+from efm_go.dashboard.handlers import updates
 
 pytestmark = pytest.mark.asyncio
 

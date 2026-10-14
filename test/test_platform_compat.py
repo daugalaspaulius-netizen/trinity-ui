@@ -1,4 +1,4 @@
-"""Unit tests for kiro_crew.platform_compat — the cross-platform shim that lets
+"""Unit tests for efm_go.platform_compat — the cross-platform shim that lets
 KiroCrew run natively on Windows alongside macOS/Linux.
 
 These exercise the PURE / platform-dispatching surface, spawning a real process
@@ -33,8 +33,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat as pc
-from kiro_crew import windows_acl
+from efm_go import platform_compat as pc
+from efm_go import windows_acl
 
 
 @pytest.mark.skipif(
@@ -156,7 +156,7 @@ class TestReexecPythonModule:
     def test_windows_uses_space_free_argv0(self, monkeypatch, nonbundled_python_without_user_site):
         executable = (
             r"C:\Users\alice\AppData\Local\Programs\KiroCrew Nightly"
-            r"\resources\backend-dist\kirocrew-backend\python.exe"
+            r"\resources\backend-dist\efm-go-backend\python.exe"
         )
         calls = []
         monkeypatch.setattr(pc, "IS_WINDOWS", True)
@@ -165,12 +165,12 @@ class TestReexecPythonModule:
         monkeypatch.setenv("PYTHONUTF8", "0")
         monkeypatch.setenv("PYTHONIOENCODING", "cp1252")
 
-        pc.reexec_python_module("kiro_crew", ["gateway", "--port", "5476"])
+        pc.reexec_python_module("efm_go", ["gateway", "--port", "5476"])
 
         assert calls == [
             (
                 executable,
-                ["python.exe", "-s", "-P", "-m", "kiro_crew", "gateway", "--port", "5476"],
+                ["python.exe", "-s", "-P", "-m", "efm_go", "gateway", "--port", "5476"],
             )
         ]
         assert os.environ["PYTHONUTF8"] == "1"
@@ -187,9 +187,9 @@ class TestReexecPythonModule:
         monkeypatch.setenv("PYTHONUTF8", "0")
         monkeypatch.setenv("PYTHONIOENCODING", "latin-1")
 
-        pc.reexec_python_module("kiro_crew", ["gateway"])
+        pc.reexec_python_module("efm_go", ["gateway"])
 
-        assert calls == [(executable, [executable, "-s", "-P", "-m", "kiro_crew", "gateway"])]
+        assert calls == [(executable, [executable, "-s", "-P", "-m", "efm_go", "gateway"])]
         assert os.environ["PYTHONUTF8"] == "1"
         assert os.environ["PYTHONIOENCODING"] == "utf-8:backslashreplace"
 
@@ -204,7 +204,7 @@ class TestReexecPythonModule:
         probe = tmp_path / "utf8_reexec_probe.py"
         probe.write_text(
             "import os\n"
-            "from kiro_crew.platform_compat import reexec_python_module\n"
+            "from efm_go.platform_compat import reexec_python_module\n"
             "if os.environ.get('_KIROCREW_UTF8_REEXEC_PROBE') == '1':\n"
             "    print('👻 restarted')\n"
             "else:\n"
@@ -247,7 +247,7 @@ class TestCancelWheelAppliesInFlight:
     tree an update may have changed.
     """
 
-    _MODULE = "kiro_crew.platform.wheel_apply"
+    _MODULE = "efm_go.platform.wheel_apply"
 
     def _stub_module(self, monkeypatch, cancel) -> None:
         stub = types.ModuleType(self._MODULE)
@@ -292,7 +292,7 @@ class TestCancelWheelAppliesInFlight:
             pc.reexec_launcher(str(tmp_path / "kirocrew"), ["gateway"])
             assert order == ["cancel:exec", "execv"]
         else:
-            pc.reexec_python_module("kiro_crew", ["gateway"], executable=str(tmp_path / "python"))
+            pc.reexec_python_module("efm_go", ["gateway"], executable=str(tmp_path / "python"))
             assert order == ["cancel:exec", "execv"]
 
 
@@ -805,7 +805,7 @@ class TestFindListeningPids:
 
     def test_windows_listener_probe_marks_browser_capable(self, monkeypatch):
         """Use real Windows/Darwin attribution there; both synthetic shapes elsewhere."""
-        from kiro_crew.browser_cli import view as browser_view
+        from efm_go.browser_cli import view as browser_view
 
         def _assert_capable(port: int) -> None:
             assert pc.process_owns_loopback_listener(os.getpid(), port) is True
@@ -1303,12 +1303,12 @@ class TestResourceShims:
         mood. ``samples["wired"]`` records whether the lock took, so a failure
         here says which case it measured.
         """
-        import kiro_crew
+        import efm_go
 
         root = Path(__file__).resolve().parents[1]
         source_root = root / "src"
-        assert Path(kiro_crew.__file__).resolve().parent == source_root / "kiro_crew"
-        assert Path(pc.__file__).resolve() == source_root / "kiro_crew" / "platform_compat.py"
+        assert Path(efm_go.__file__).resolve().parent == source_root / "efm_go"
+        assert Path(pc.__file__).resolve() == source_root / "efm_go" / "platform_compat.py"
         result = subprocess.run(
             [
                 sys.executable,
@@ -1316,11 +1316,11 @@ class TestResourceShims:
                 "-c",
                 "import json, sys; from pathlib import Path; "
                 "sys.path[:0] = sys.argv[1:]; "
-                "import kiro_crew, test_platform_compat as probe; "
-                "assert Path(kiro_crew.__file__).resolve().parent "
-                "== Path(sys.argv[1]) / 'kiro_crew'; "
+                "import efm_go, test_platform_compat as probe; "
+                "assert Path(efm_go.__file__).resolve().parent "
+                "== Path(sys.argv[1]) / 'efm_go'; "
                 "assert Path(probe.pc.__file__).resolve() "
-                "== Path(sys.argv[1]) / 'kiro_crew' / 'platform_compat.py'; "
+                "== Path(sys.argv[1]) / 'efm_go' / 'platform_compat.py'; "
                 "assert Path(probe.__file__).resolve() "
                 "== Path(sys.argv[2]) / 'test_platform_compat.py'; "
                 "print(json.dumps(probe._measure_rss_release()))",
@@ -1510,7 +1510,7 @@ class TestPeakRssIsThisProcesss:
     def test_the_two_status_parsers_agree(self):
         # pdf_extract_child keeps its own copy (it must not import this module
         # under a capped address space); the two must read the same text alike.
-        from kiro_crew import pdf_extract_child
+        from efm_go import pdf_extract_child
 
         for text in (self._STATUS, "VmHWM:\t 1 kB\n", "VmHWM:\t 1 MB\n", ""):
             assert pc._peak_rss_from_status(text) == pdf_extract_child._peak_rss_from_status(text)
@@ -1523,7 +1523,7 @@ class TestPeakRssIsThisProcesss:
         bar = 256 * 1024 * 1024
         child = textwrap.dedent("""
             import json, sys
-            from kiro_crew import platform_compat as pc
+            from efm_go import platform_compat as pc
             json.dump(
                 {"own_peak": pc.proc_peak_rss_bytes(),
                  "inherited": pc._ru_maxrss_bytes() if pc.IS_POSIX else None},
@@ -1532,7 +1532,7 @@ class TestPeakRssIsThisProcesss:
             """)
         parent = textwrap.dedent(f"""
             import json, subprocess, sys
-            from kiro_crew import platform_compat as pc
+            from efm_go import platform_compat as pc
             blob = bytearray({2 * bar})
             for i in range(0, len(blob), 4096):
                 blob[i] = 1
@@ -5230,7 +5230,7 @@ class TestKillAsyncVariants:
     variants.
 
     The async wrappers exist so async call sites can offload the blocking
-    Windows ``taskkill`` spawn to :func:`kiro_crew.executors.subprocess_executor`
+    Windows ``taskkill`` spawn to :func:`efm_go.executors.subprocess_executor`
     without stalling the event loop. The POSIX branch dispatches inline to the
     sync ``kill_pid`` / ``kill_process_tree`` (``os.kill`` / ``os.killpg`` are
     non-blocking, and preserving the same callable keeps existing tests that
@@ -5316,7 +5316,7 @@ class TestKillAsyncVariants:
         monkeypatch.setattr(pc.subprocess, "run", fake_run)
 
         # Patch the `subprocess_executor` name bound in the platform_compat
-        # module namespace (top-level `from kiro_crew.executors import ...`)
+        # module namespace (top-level `from efm_go.executors import ...`)
         # to return our sentinel.
         monkeypatch.setattr(pc, "subprocess_executor", lambda: sentinel)
 
@@ -5708,7 +5708,7 @@ def test_process_descendants_snapshots_a_new_session_grandchild():
     This is the case a bare ``killpg`` misses, so the walk that broadens a kill
     must be able to see it.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX session semantics
         pytest.skip("POSIX session semantics")
@@ -5751,7 +5751,7 @@ def test_process_descendants_snapshots_a_new_session_grandchild():
 
 def test_process_descendants_is_best_effort_on_unreadable_table(monkeypatch):
     """Introspection failure must not raise into a caller's kill path."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(
         platform_compat,
@@ -5767,7 +5767,7 @@ def test_process_descendants_is_best_effort_on_unreadable_table(monkeypatch):
 
 
 def test_process_descendants_refuses_reserved_pids():
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     assert platform_compat.process_descendants(1) == []
     assert platform_compat.process_descendants(0) == []
@@ -5779,7 +5779,7 @@ def test_parent_map_ignores_a_planted_ps_earlier_on_path(tmp_path, monkeypatch):
     The shim below would report a bogus tree (and could run any code) if the
     lookup honored PATH.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -5802,7 +5802,7 @@ def test_parent_map_ignores_a_planted_ps_earlier_on_path(tmp_path, monkeypatch):
 
 
 def test_trusted_system_bin_rejects_a_name_not_in_system_dirs(tmp_path, monkeypatch):
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -5818,7 +5818,7 @@ def test_trusted_system_bin_rejects_a_name_not_in_system_dirs(tmp_path, monkeypa
 def test_trusted_system_bin_dirs_are_not_limited_to_fhs():
     # A distribution may keep ps/lsof/systemd-run outside /usr/{s}bin; an
     # FHS-only pin resolves nothing at all there.
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     fhs = {"/usr/bin", "/bin", "/usr/sbin", "/sbin"}
     assert set(platform_compat._TRUSTED_SYSTEM_BIN_DIRS) - fhs
@@ -5826,7 +5826,7 @@ def test_trusted_system_bin_dirs_are_not_limited_to_fhs():
 
 def test_trusted_system_bin_resolves_outside_fhs(tmp_path, monkeypatch):
     # A tool reachable only through a non-FHS pinned directory still resolves.
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -5877,7 +5877,7 @@ def test_root_owned_path_accepts_a_system_dir_and_rejects_a_user_one(tmp_path, m
     the user directory keeps its REAL ownership, so the two verdicts turn on the
     one property that separates them.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX ownership
         pytest.skip("POSIX ownership semantics")
@@ -5912,7 +5912,7 @@ def test_root_owned_path_declines_a_root_leaf_under_a_writable_directory(tmp_pat
     root-owned binary under a uid-writable directory can be swapped for anything.
     Only the walk can see that: the leaf itself passes every check.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX ownership
         pytest.skip("POSIX ownership semantics")
@@ -5944,7 +5944,7 @@ def test_root_owned_path_declines_a_root_leaf_under_a_writable_directory(tmp_pat
 
 def test_root_owned_path_declines_a_group_writable_component(tmp_path, monkeypatch):
     """Ownership is not enough: group/world write is writable by more than root."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX ownership
         pytest.skip("POSIX ownership semantics")
@@ -5978,7 +5978,7 @@ def test_root_owned_path_declines_an_acl_write_grant(tmp_path, monkeypatch):
     the principal this gate defends against. ``os.access`` is what sees it, because
     the kernel evaluates ACLs and this function cannot.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX ownership
         pytest.skip("POSIX ownership semantics")
@@ -6057,7 +6057,7 @@ def test_aws_bin_declined_is_none_when_the_system_copy_won(monkeypatch):
     Reporting "the local copy was refused" while `/usr/bin/aws` is what got used
     offers that refusal as the cause of some later, unrelated failure.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(platform_compat, "trusted_system_bin", lambda name: "/usr/bin/aws")
     monkeypatch.setattr(platform_compat, "_local_aws_bin_candidate", lambda: "/usr/local/bin/aws")
@@ -6074,7 +6074,7 @@ def test_root_owned_path_accepts_an_absolute_symlink_through_root_owned_dirs(tmp
     and the whole fallback is dead code on exactly the hosts it was added for. So
     this is the positive case: every component root-owned, verdict True.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6133,7 +6133,7 @@ def test_root_owned_path_declines_a_writable_ancestor_of_a_symlinked_component(
     ``/usr/local`` and never ``/opt/x`` -- the directory that can replace the target
     wholesale. Only resolving component by component reaches it.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6182,7 +6182,7 @@ def test_root_owned_path_accepts_a_real_system_binary(tmp_path, monkeypatch):
     Presented through ``os.stat`` rather than read from ``/usr/bin/env`` -- see
     ``_root_owned_everywhere_except`` for why the real directory cannot serve.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX layout
         pytest.skip("POSIX filesystem layout")
@@ -6207,7 +6207,7 @@ def test_root_owned_path_declines_a_group_writable_directory_on_the_chain(tmp_pa
     ``2775``, so anyone in ``staff`` can replace the entry. Owner-only checking
     would accept it.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX ownership
         pytest.skip("POSIX ownership semantics")
@@ -6245,7 +6245,7 @@ def test_root_owned_path_walks_past_the_immediate_parent(tmp_path, monkeypatch):
     whoever owns the grandparent can swap the parent directory wholesale. Checking
     only the immediate parent would accept it.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX ownership
         pytest.skip("POSIX ownership semantics")
@@ -6289,7 +6289,7 @@ def test_root_owned_path_declines_a_writable_hop_in_the_middle_of_a_chain(tmp_pa
     and ``/tmp`` -- the one directory where the retarget actually happens -- is
     never looked at. Whoever can write that directory chooses what executes.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6331,7 +6331,7 @@ def test_root_owned_path_declines_a_writable_hop_in_the_middle_of_a_chain(tmp_pa
 
 def test_root_owned_path_declines_a_symlink_loop(tmp_path, monkeypatch):
     """A cycle answers False rather than spinning: an unbounded walk is a hang."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6397,7 +6397,7 @@ def test_traversed_components_of_a_symlink_free_path_is_its_lexical_chain(tmp_pa
     question over the lexical chain asks it over the very same directories here
     whenever no symlink is involved, in root-first order with the target last.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX path semantics
         pytest.skip("POSIX path semantics")
@@ -6419,7 +6419,7 @@ def test_traversed_components_visits_a_hop_in_the_middle_of_a_chain(tmp_path):
     themselves are absent: their mode is meaningless and the directory holding
     them governs their replacement.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6445,7 +6445,7 @@ def test_traversed_components_visits_both_sides_of_a_symlinked_directory_compone
     walk over the collapsed path names ``holder`` and never ``prefix``. Either
     directory's owner can choose what the entry resolves to, so both are here.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6464,7 +6464,7 @@ def test_traversed_components_visits_both_sides_of_a_symlinked_directory_compone
 
 def test_traversed_components_is_none_on_a_symlink_loop(tmp_path):
     """A cycle answers ``None``, never a partial list: unknown is not a shorter walk."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6479,7 +6479,7 @@ def test_traversed_components_is_none_on_a_symlink_loop(tmp_path):
 
 def test_traversed_components_is_none_when_a_link_cannot_be_read(tmp_path, monkeypatch):
     """An ``OSError`` mid-walk is ``None``: the caller decides what unknown means."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6501,7 +6501,7 @@ def test_root_owned_path_is_the_root_owned_predicate_over_the_walk(tmp_path, mon
     refusals stay refusals: the walk finds the one directory left as the test
     user's in each shape and the predicate declines it.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX ownership
         pytest.skip("POSIX ownership semantics")
@@ -6546,7 +6546,7 @@ def test_root_owned_path_declines_a_symlink_into_a_writable_directory(tmp_path, 
     symlinked from a trusted prefix therefore passes the literal walk end to end
     and is caught only when the walk restarts from the resolved path.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX symlinks
         pytest.skip("POSIX symlink semantics")
@@ -6586,7 +6586,7 @@ def test_root_owned_path_declines_a_symlink_into_a_writable_directory(tmp_path, 
 
 def test_trusted_aws_bin_prefers_the_trusted_system_copy(monkeypatch):
     """The local-prefix half is a FALLBACK, never a first choice."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(platform_compat, "trusted_system_bin", lambda name: "/usr/bin/aws")
     assert platform_compat.trusted_aws_bin() == "/usr/bin/aws"
@@ -6598,7 +6598,7 @@ def test_trusted_aws_bin_declines_a_candidate_the_caller_could_replace(tmp_path,
     Same answer as an absent tool, on purpose: the caller's degradation is
     "cannot ask", never "ask this binary anyway".
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -6616,7 +6616,7 @@ def test_trusted_aws_bin_declines_a_candidate_the_caller_could_replace(tmp_path,
 
 
 def test_trusted_aws_bin_resolves_a_candidate_that_passes_the_gate(tmp_path, monkeypatch):
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -6635,7 +6635,7 @@ def test_trusted_aws_bin_resolves_a_candidate_that_passes_the_gate(tmp_path, mon
 
 def test_trusted_aws_bin_is_none_when_no_copy_exists_anywhere(tmp_path, monkeypatch):
     """An open gate cannot invent a binary that is not there."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -6656,7 +6656,7 @@ def test_trusted_aws_bin_declines_a_shebang_script(tmp_path, monkeypatch):
     endless road of validating the interpreter, then its libraries, then its module
     search path.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -6692,7 +6692,7 @@ def test_local_aws_bin_trust_is_one_predicate_for_both_callers(tmp_path, monkeyp
     verdicts rather than over a particular condition, so it survives the next
     condition being added.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -6718,7 +6718,7 @@ def test_aws_bin_declined_names_the_copy_the_gate_refused(tmp_path, monkeypatch)
     that could only see ``None`` would tell those operators to install a tool they
     already have.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -6737,7 +6737,7 @@ def test_aws_bin_declined_names_the_copy_the_gate_refused(tmp_path, monkeypatch)
 
 def test_aws_bin_declined_is_none_when_there_is_no_copy(tmp_path, monkeypatch):
     """An absent tool is not a declined one -- nothing was refused."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -6749,7 +6749,7 @@ def test_aws_bin_declined_is_none_when_there_is_no_copy(tmp_path, monkeypatch):
 
 def test_aws_bin_declined_is_silent_about_a_copy_the_gate_accepts(tmp_path, monkeypatch):
     """The accepted case must report NOTHING, or the caller slanders a trusted copy."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     if platform_compat.IS_WINDOWS:  # pragma: no cover - POSIX lookup
         pytest.skip("POSIX binary resolution")
@@ -6778,7 +6778,7 @@ def test_aws_bin_declined_is_silent_about_a_copy_the_gate_accepts(tmp_path, monk
 )
 def test_parent_map_is_empty_when_no_trusted_ps_exists(monkeypatch):
     """No trusted binary must degrade to best-effort, never fall back to PATH."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(platform_compat, "trusted_system_bin", lambda name: None)
     assert platform_compat._posix_process_parent_map() == {}
@@ -6968,7 +6968,7 @@ def _plant_on_path(tmp_path, monkeypatch, name):
 def _pin_warnings(caplog):
     """Only this module's records, so an unrelated warning cannot skew the count."""
 
-    return [r for r in caplog.records if r.name == "kiro_crew.platform_compat"]
+    return [r for r in caplog.records if r.name == "efm_go.platform_compat"]
 
 
 def test_a_tool_installed_outside_the_trusted_dirs_is_diagnosable(tmp_path, monkeypatch, caplog):
@@ -6983,7 +6983,7 @@ def test_a_tool_installed_outside_the_trusted_dirs_is_diagnosable(tmp_path, monk
     monkeypatch.setattr(pc, "_UNPINNED_TOOL_PROBED", set())
     planted = _plant_on_path(tmp_path, monkeypatch, "definitely-not-a-system-tool")
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.platform_compat"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.platform_compat"):
         assert pc.trusted_system_bin("definitely-not-a-system-tool") is None
 
     records = _pin_warnings(caplog)
@@ -7001,7 +7001,7 @@ def test_the_unpinned_tool_diagnostic_does_not_repeat(tmp_path, monkeypatch, cap
     monkeypatch.setattr(pc, "_UNPINNED_TOOL_PROBED", set())
     _plant_on_path(tmp_path, monkeypatch, "definitely-not-a-system-tool")
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.platform_compat"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.platform_compat"):
         for _ in range(3):
             assert pc.trusted_system_bin("definitely-not-a-system-tool") is None
 
@@ -7018,7 +7018,7 @@ def test_a_genuinely_absent_tool_is_not_reported_as_misplaced(tmp_path, monkeypa
     monkeypatch.setattr(pc, "_UNPINNED_TOOL_PROBED", set())
     monkeypatch.setenv("PATH", str(tmp_path))
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.platform_compat"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.platform_compat"):
         assert pc.trusted_system_bin("definitely-not-a-system-tool") is None
 
     assert _pin_warnings(caplog) == []
@@ -7076,7 +7076,7 @@ class TestIsBundledInterpreter:
             / "Contents"
             / "Resources"
             / "backend-dist"
-            / "kirocrew-backend-arm64"
+            / "efm-go-backend-arm64"
             / "bin"
             / "python3.12"
         )
@@ -7846,7 +7846,7 @@ class TestOpenLockFile:
         # helper's non-truncation property.
         lock = tmp_path / "x.lock"
         lock.write_text("holder-pid 1234")
-        from kiro_crew.platform_compat import file_lock, open_lock_file
+        from efm_go.platform_compat import file_lock, open_lock_file
 
         with open_lock_file(lock) as fd:
             assert isinstance(fd, int)
@@ -7858,7 +7858,7 @@ class TestOpenLockFile:
     def test_creates_missing_file_and_is_lockable(self, tmp_path):
         lock = tmp_path / "sub" / "y.lock"
         lock.parent.mkdir(parents=True)
-        from kiro_crew.platform_compat import flock_exclusive, open_lock_file
+        from efm_go.platform_compat import flock_exclusive, open_lock_file
 
         with open_lock_file(lock) as fd:
             with flock_exclusive(fd):
@@ -7872,9 +7872,9 @@ class TestOpenLockFile:
         # file_lock-family acquire within the next two lines. Every site was
         # converted to open_lock_file in this change; a new offender fails
         # here with its file and line.
-        import kiro_crew
+        import efm_go
 
-        src_root = os.path.dirname(os.path.abspath(kiro_crew.__file__))
+        src_root = os.path.dirname(os.path.abspath(efm_go.__file__))
         # deploy/pending.py and deploy/profiles.py are owned by an in-flight
         # deploy-locks fix; drop the exemptions once it merges — the scan
         # will then enforce those sites too.
@@ -8451,13 +8451,13 @@ class TestStripExtendedLengthPrefix:
         Identity is the property, not equal behaviour: a second copy answers the
         same values on these inputs and still drifts when one side is edited.
         """
-        from kiro_crew import session_ledger
+        from efm_go import session_ledger
 
         assert session_ledger.strip_extended_length_prefix is pc.strip_extended_length_prefix
 
     def test_the_workflow_guard_shares_the_one_fold(self, monkeypatch, tmp_path):
         """``workflow_memory`` must reach the same helper on its guarded path."""
-        from kiro_crew import workflow_memory
+        from efm_go import workflow_memory
 
         calls = []
         real = pc.strip_extended_length_prefix

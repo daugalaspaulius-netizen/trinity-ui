@@ -7,8 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.recovery import policy as pol
-from kiro_crew.recovery.ladder import (
+from efm_go.recovery import policy as pol
+from efm_go.recovery.ladder import (
     L1_TOOL_CALL,
     L4_GATEWAYD,
     L5_GATEWAY,
@@ -207,9 +207,9 @@ def test_policy_module_is_pure_at_import():
     import importlib
     import sys
 
-    mod = importlib.import_module("kiro_crew.recovery.policy")
+    mod = importlib.import_module("efm_go.recovery.policy")
     src = open(mod.__file__, encoding="utf-8").read()
     assert "import asyncio" not in src
-    assert "kiro_crew.config" not in src
+    assert "efm_go.config" not in src
     assert "\nimport time" not in src  # no clock: callers pass ``now``
-    assert "kiro_crew.recovery.policy" in sys.modules
+    assert "efm_go.recovery.policy" in sys.modules

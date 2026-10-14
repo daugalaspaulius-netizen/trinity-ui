@@ -54,8 +54,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.apps.execution import _BUILTINS_DIR
-from kiro_crew.apps.manifest import PlatformConfig
+from efm_go.apps.execution import _BUILTINS_DIR
+from efm_go.apps.manifest import PlatformConfig
 
 #: Apps whose manifest declares `backend.entryPoint`, so the gateway spawns a
 #: separate backend process for them. On native Windows that spawn is gated on
@@ -176,7 +176,7 @@ def test_apps_needing_a_backend_child_are_pinned(manifests: dict[str, dict]) -> 
 
 
 def test_every_app_with_tests_is_a_package() -> None:
-    """`setup.cfg` collects `src/kiro_crew/apps/builtins`, so tests/ must be packages.
+    """`setup.cfg` collects `src/efm_go/apps/builtins`, so tests/ must be packages.
 
     Seven apps ship a module named `test_manifest.py`. Two folders of the same
     basename that are not packages collide on module name and fail collection

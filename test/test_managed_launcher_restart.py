@@ -17,13 +17,13 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from installer_test_helpers import run_bounded
 
-from kiro_crew import platform_compat
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.gateway_restart import resolve_restart_launcher
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.context import PlatformCompositionError, set_context
-from kiro_crew.slack.gateway import GatewayOrchestrator
+from efm_go import platform_compat
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard.handlers import updates
+from efm_go.gateway_restart import resolve_restart_launcher
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.context import PlatformCompositionError, set_context
+from efm_go.slack.gateway import GatewayOrchestrator
 
 _SOURCE_ROOT = Path(__file__).resolve().parents[1] / "src"
 
@@ -208,13 +208,13 @@ print("PROBE=" + json.dumps({
 if os.environ.pop("PROBE_FIRST", ""):
     sys.path.extend(DEPENDENCY_PATHS)
     from dataclasses import replace
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.platform.bootstrap import build_default_context
-    from kiro_crew.platform.context import set_context
-    from kiro_crew.dashboard.handlers import updates
-    from kiro_crew.dashboard import chat
-    from kiro_crew.platform import update_provider
-    from kiro_crew.slack import gateway
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.platform.bootstrap import build_default_context
+    from efm_go.platform.context import set_context
+    from efm_go.dashboard.handlers import updates
+    from efm_go.dashboard import chat
+    from efm_go.platform import update_provider
+    from efm_go.slack import gateway
 
     launcher = str(root / "crew-launcher")
     set_context(replace(build_default_context(KiroCrewConfig()),
@@ -270,11 +270,11 @@ def test_managed_bundle_switch(tmp_path, mode, remove_a):
         imports.mkdir(parents=True)
         for name in ("core_probe", "companion_probe"):
             (imports / f"{name}.py").write_text(f"VERSION = {version!r}\n", encoding="utf-8")
-        package = imports / "kiro_crew"
+        package = imports / "efm_go"
         package.mkdir()
         # Execute real restart code through A's removable import path. The
         # synthetic module entry point only reports a probe even without the fix.
-        for entry in (_SOURCE_ROOT / "kiro_crew").iterdir():
+        for entry in (_SOURCE_ROOT / "efm_go").iterdir():
             if entry.name not in {"__main__.py", "__pycache__"}:
                 (package / entry.name).symlink_to(entry, target_is_directory=entry.is_dir())
         (package / "__main__.py").write_text(

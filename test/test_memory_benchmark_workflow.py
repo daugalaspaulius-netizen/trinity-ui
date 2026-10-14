@@ -107,7 +107,7 @@ def test_the_digest_guard_rejects_a_non_hex_value(tmp_path: Path) -> None:
     script = _step("Read the pinned embedding-model digest")["run"]
     # Replace the python3 read with a stub that emits junk, keeping the guard.
     broken = script.replace(
-        "DIGEST=\"$(python3 -c 'from kiro_crew import embeddings; "
+        "DIGEST=\"$(python3 -c 'from efm_go import embeddings; "
         "print(embeddings._GGUF_SHA256)')\"",
         'DIGEST="not-a-digest"',
     )

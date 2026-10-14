@@ -19,7 +19,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "src" / "kiro_crew"
+SRC = ROOT / "src" / "efm_go"
 
 # Names the migration deleted. ``browser_[a-z]`` covers the whole 22-tool
 # surface (browser_navigate, browser_snapshot, browser_take_screenshot, ...)
@@ -74,5 +74,5 @@ def test_pattern_catches_the_references_this_change_removed() -> None:
     assert REMOVED.search('    "@playwright-mcp",')
     assert REMOVED.search("use browse_outline to compress the snapshot")
     # ...and not on our own package, or the CLI it wraps.
-    assert not REMOVED.search("from kiro_crew.browser_cli import install")
+    assert not REMOVED.search("from efm_go.browser_cli import install")
     assert not REMOVED.search("playwright-cli open https://example.com")

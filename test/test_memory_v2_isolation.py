@@ -18,22 +18,22 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import context as ctx
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import (
+from efm_go import context as ctx
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import (
     KiroCrewConfig,
     config_dir,
     resolve_agent_bindings,
     workspace_dir_for,
 )
-from kiro_crew.dashboard.handlers import cron
-from kiro_crew.history import ConversationLog
-from kiro_crew.history_consolidation import HistoryConsolidator
-from kiro_crew.hooks import HookManager
-from kiro_crew.learn import Lesson, LessonStore
-from kiro_crew.member_memory_auth import bind_private_session_store
-from kiro_crew.memory import INDEX_DB_FILE, MemoryStore
-from kiro_crew.memory_stores import (
+from efm_go.dashboard.handlers import cron
+from efm_go.history import ConversationLog
+from efm_go.history_consolidation import HistoryConsolidator
+from efm_go.hooks import HookManager
+from efm_go.learn import Lesson, LessonStore
+from efm_go.member_memory_auth import bind_private_session_store
+from efm_go.memory import INDEX_DB_FILE, MemoryStore
+from efm_go.memory_stores import (
     DEFAULT_MEMORY_STORE,
     MEMORY_DB_FILE,
     UnknownMemoryStore,
@@ -42,8 +42,8 @@ from kiro_crew.memory_stores import (
     memory_stores_root,
     resolve_store_path,
 )
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.vector_memory import VectorMemoryStore, create_member_database, open_member_database
+from efm_go.skills import SkillsLoader
+from efm_go.vector_memory import VectorMemoryStore, create_member_database, open_member_database
 
 #: The two silos, and the crew bound to each. Both are DECLARED in the fixture's
 #: config, because declaring is what makes a store resolvable at all — an undeclared
@@ -570,7 +570,7 @@ class TestConsolidatorStoreResolution:
     ) -> None:
         from test_history_consolidation_retry import KEY, _make_consolidator, _seed_log
 
-        from kiro_crew import execution_context, memory_stores
+        from efm_go import execution_context, memory_stores
 
         log = await asyncio.to_thread(_seed_log, tmp_path)
         await asyncio.to_thread(bind_private_session_store, KEY, CODING)
@@ -920,7 +920,7 @@ class TestLessonRoutesFollowTheBindingNotThePopulation:
     """
 
     async def test_a_private_subagent_writes_and_recalls_only_its_own_lessons(self, silos) -> None:
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         key = "subagent:worker-a"
         await asyncio.to_thread(create_agent_folder, "worker-a", memory_store=CODING)
@@ -1215,7 +1215,7 @@ class TestTheSessionsRecordedBindingIsWhatASurfaceReads:
             ctx.store_of_session(log, _CHANNEL_SESSION_KEY)
 
     def test_subagent_reads_its_own_record_without_transcript_metadata(self, silos):
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         create_agent_folder("memoryrun", memory_store=CODING)
         assert ctx.store_of_session(ConversationLog(), "subagent:memoryrun") == CODING
@@ -1279,7 +1279,7 @@ class TestTheSessionsRecordedBindingIsWhatASurfaceReads:
         store for one session, so ``_session_memory_store`` is an adapter over this
         resolver rather than a second implementation of it.
         """
-        from kiro_crew.dashboard.handlers._shared import _session_memory_store
+        from efm_go.dashboard.handlers._shared import _session_memory_store
 
         log = _seeded_log(tmp_path / "sessions", _CHANNEL_SESSION_KEY, CODING)
         state = MagicMock()
@@ -1315,7 +1315,7 @@ class TestTheSessionsRecordedBindingIsWhatASurfaceReads:
     async def test_turn_identity_and_first_store_construction_run_off_loop(
         self, silos, tmp_path, monkeypatch, unavailable
     ) -> None:
-        from kiro_crew import embeddings, execution_context, memory_stores
+        from efm_go import embeddings, execution_context, memory_stores
 
         silos.builder.conversation_log = await asyncio.to_thread(
             _seeded_log, tmp_path / "sessions", _CHANNEL_SESSION_KEY, CODING
@@ -1450,7 +1450,7 @@ async def _prompt_through_the_channel_pipeline(
     substituted: the governance probe, identity publication, the embed pool's thread
     hop, and the turn driver.
     """
-    import kiro_crew.messaging.dispatch as dispatch_mod
+    import efm_go.messaging.dispatch as dispatch_mod
 
     captured: list[str] = []
 
@@ -1553,15 +1553,15 @@ class TestTheChannelPipelineReadsTheSessionsOwnSilo:
 #: ``EXPECTED_BACKLOG`` counts what is still unconverted, so the two halves together
 #: leave no site unaccounted for.
 _CONVERTED_TURN_SURFACES: tuple[tuple[str, str], ...] = (
-    ("src/kiro_crew/slack/handler.py", "candidate_key"),
-    ("src/kiro_crew/slack/transport_dispatch.py", "session_key"),
-    ("src/kiro_crew/telegram/transport_dispatch.py", "session_key"),
-    ("src/kiro_crew/messaging/dispatch.py", "session_key"),
+    ("src/efm_go/slack/handler.py", "candidate_key"),
+    ("src/efm_go/slack/transport_dispatch.py", "session_key"),
+    ("src/efm_go/telegram/transport_dispatch.py", "session_key"),
+    ("src/efm_go/messaging/dispatch.py", "session_key"),
     # Auto-nudge continues the nudged session; both injections continue the PARENT.
-    ("src/kiro_crew/slack/gateway.py", "key"),
-    ("src/kiro_crew/slack/gateway.py", "parent_key"),
+    ("src/efm_go/slack/gateway.py", "key"),
+    ("src/efm_go/slack/gateway.py", "parent_key"),
     # The heartbeat resolves the store of its own fixed key.
-    ("src/kiro_crew/slack/gateway.py", "session_key"),
+    ("src/efm_go/slack/gateway.py", "session_key"),
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]

@@ -7,7 +7,7 @@ line, and verify core functionality works end-to-end.
 Gated behind ``KIROCREW_E2E=1`` because they spawn a real gateway process
 (5-15s startup). CI runs them on a shared test fleet; local devs opt in.
 
-Requires: ``kiro_crew.testing.harness`` and composable
+Requires: ``efm_go.testing.harness`` and composable
 CLI flags.
 """
 
@@ -36,8 +36,8 @@ def gateway():
     No state cleanup between tests; each test must be tolerant of
     prior-test side effects, or use a fresh per-test gateway.
     """
-    from kiro_crew.testing import fake_acp_backend
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing import fake_acp_backend
+    from efm_go.testing.harness import spawn_feature_gateway
 
     previous = os.environ.get("KIROCREW_KIRO_BIN")
     os.environ["KIROCREW_KIRO_BIN"] = str(fake_acp_backend.__file__)
@@ -261,8 +261,8 @@ def acp_gateway(monkeypatch):
     want the fake wired in, and it must not leak ``KIROCREW_KIRO_BIN`` into the
     control-plane gateway. ``monkeypatch`` restores the env on teardown.
     """
-    from kiro_crew.testing import fake_acp_backend
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing import fake_acp_backend
+    from efm_go.testing.harness import spawn_feature_gateway
 
     # Execute the packaged fake itself so readiness probes and ACP turns use
     # the same deterministic backend rather than a test-only copy.

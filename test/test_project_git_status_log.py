@@ -16,13 +16,13 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
 from conftest import make_dir_link
-from kiro_crew.dashboard.handlers import (
+from efm_go.dashboard.handlers import (
     api_project_git_log,
     api_project_git_status,
     api_project_tree,
 )
-from kiro_crew.security import redact
-from kiro_crew.security.redaction import _PATH_SEGMENT_DISCRIMINATOR_SEP, _path_segment_label
+from efm_go.security import redact
+from efm_go.security.redaction import _PATH_SEGMENT_DISCRIMINATOR_SEP, _path_segment_label
 
 
 def _clear_readonly_and_retry(func, path, _exc) -> None:
@@ -73,7 +73,7 @@ def passthrough_sandbox(monkeypatch):
     Production fails closed with 503 when the sandbox is unavailable. Only
     Git's own not-a-repository verdict produces ``repo: false``.
     """
-    from kiro_crew.dashboard.handlers import files as files_mod
+    from efm_go.dashboard.handlers import files as files_mod
 
     monkeypatch.setattr(
         files_mod,
@@ -88,7 +88,7 @@ def passthrough_sandbox(monkeypatch):
 
 @pytest.fixture()
 def mock_sel():
-    with patch("kiro_crew.dashboard.handlers.sel") as m:
+    with patch("efm_go.dashboard.handlers.sel") as m:
         m.return_value = MagicMock()
         yield m.return_value
 
@@ -194,7 +194,7 @@ class TestGitStatus:
     async def test_symlink_git_marker_to_real_repo_is_followed_by_git(
         self, repo, tmp_path, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         project = tmp_path / "linked-project"
         project.mkdir()
@@ -336,7 +336,7 @@ class TestGitStatus:
         assert data["repo"] is True
 
     def test_repository_probe_uses_bounded_git_runner(self, repo, monkeypatch):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         seen: dict[str, object] = {}
 
@@ -370,7 +370,7 @@ class TestGitStatus:
     async def test_non_repository_probe_failure_is_unavailable(
         self, repo, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         monkeypatch.setattr(
             files_mod,
@@ -391,7 +391,7 @@ class TestGitStatus:
     async def test_operational_status_failure_is_not_reported_as_non_repo(
         self, repo, mock_sel, monkeypatch, failure
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         if failure == "sandbox":
 
@@ -430,7 +430,7 @@ class TestGitStatus:
     async def test_permission_revocation_after_git_failure_is_unavailable(
         self, repo, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         real_popen = files_mod.popen_limited
         real_stat = files_mod.os.stat
@@ -465,7 +465,7 @@ class TestGitStatus:
 
     @pytest.mark.asyncio
     async def test_probe_pins_english_git_diagnostics(self, tmp_path, mock_sel, monkeypatch):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         plain = tmp_path / "plain"
         plain.mkdir()
@@ -495,7 +495,7 @@ class TestGitStatus:
     async def test_probe_path_text_does_not_claim_repository_absence(
         self, tmp_path, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         repo = tmp_path / "not a git repository"
         repo.mkdir()
@@ -522,7 +522,7 @@ class TestGitStatus:
     async def test_non_utf8_probe_stderr_does_not_crash(
         self, tmp_path, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         plain = tmp_path / "plain"
         plain.mkdir()
@@ -544,7 +544,7 @@ class TestGitStatus:
     async def test_probe_stderr_overflow_is_killed_and_unavailable(
         self, repo, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         proc = _ProbeProcess(
             128,
@@ -710,7 +710,7 @@ class TestGitStatus:
         joined result must be a fixed point of the redactor; when it is not, the
         whole-path result wins, the same floor ``redact_path_segments`` applies
         to its own assembly."""
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         sub = repo / "SEC"
         sub.mkdir()
@@ -762,7 +762,7 @@ class TestGitStatus:
         """When the path helper (``redact_path_segments``) hands back the same
         string for two paths, the de-dup keeps one entry per
         (path, status, staged) so GitPanel never renders two rows under one key."""
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         monkeypatch.setattr(
             files_mod,
@@ -808,7 +808,7 @@ class TestGitStatus:
         survives on one and comes back ``[REDACTED: credential]`` on the other.
         """
         with patch(
-            "kiro_crew.dashboard.handlers.files._redact_project_path",
+            "efm_go.dashboard.handlers.files._redact_project_path",
             side_effect=lambda p: f"[{p}]",
         ) as wrapper:
             async with TestClient(TestServer(_make_app(str(repo)))) as client:
@@ -912,7 +912,7 @@ class TestGitLogDiscoveryBoundary:
     async def test_explicit_not_a_repository_verdict_is_repo_false(
         self, tmp_path, mock_sel, monkeypatch, stderr
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         plain = tmp_path / "plain"
         plain.mkdir()
@@ -951,7 +951,7 @@ class TestGitLogDiscoveryBoundary:
     async def test_probe_path_text_does_not_claim_repository_absence(
         self, tmp_path, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         repo = tmp_path / "not a git repository"
         repo.mkdir()
@@ -976,7 +976,7 @@ class TestGitLogDiscoveryBoundary:
     async def test_operational_probe_failure_is_unavailable(
         self, repo, mock_sel, monkeypatch, failure
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         if failure == "sandbox":
 
@@ -1003,7 +1003,7 @@ class TestGitLogDiscoveryBoundary:
     async def test_probe_stderr_overflow_is_killed_and_unavailable(
         self, repo, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         proc = _ProbeProcess(
             128,
@@ -1022,7 +1022,7 @@ class TestGitLogDiscoveryBoundary:
 
     @pytest.mark.asyncio
     async def test_probe_timeout_is_unavailable(self, repo, mock_sel, monkeypatch):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         real_run = files_mod._run_git_bounded
 
@@ -1088,7 +1088,7 @@ class TestGitLogDiscoveryBoundary:
     async def test_vanished_directory_after_probe_failure_is_repo_false(
         self, repo, mock_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         def vanish_then_fail(*_args, **_kwargs):
             _remove_tree(repo)
@@ -1103,7 +1103,7 @@ class TestGitLogDiscoveryBoundary:
         assert data == {"repo": False, "commits": []}
 
     def test_verdict_predicate_is_shared_by_both_routes(self):
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         assert files_mod._is_not_a_repo_verdict(
             "fatal: not a git repository (or any parent): .git\n"
@@ -1181,7 +1181,7 @@ class TestFilterDriverRefusal:
         nothing at all. Refusing is still right -- an unreadable scope cannot be
         proven filter-free -- but the 503 must not report a driver it never saw.
         """
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         real = files_mod._run_git_bounded
 
@@ -1241,7 +1241,7 @@ class TestFilterDriverRefusal:
         Both answers are the same 503, so the response body cannot witness the
         ordering; the guard never being reached is what does.
         """
-        import kiro_crew.dashboard.handlers.files as files_mod
+        import efm_go.dashboard.handlers.files as files_mod
 
         called = False
 
@@ -1283,7 +1283,7 @@ class TestFilterDriverRefusal:
         retrying. One code for both tells an LFS user their repository is broken
         on every poll, forever, so the caller must be able to tell them apart.
         """
-        import kiro_crew.dashboard.handlers.files as files_mod
+        import efm_go.dashboard.handlers.files as files_mod
 
         _git(repo, "config", "filter.evil.clean", "touch /tmp/pwned")
         async with TestClient(TestServer(_make_app(str(repo)))) as client:
@@ -1357,7 +1357,7 @@ class TestWorktreeConfigScopeGate:
 
     @staticmethod
     def _guard(repo) -> str:
-        from kiro_crew.dashboard.handlers.files import _repo_filter_refusal_cause
+        from efm_go.dashboard.handlers.files import _repo_filter_refusal_cause
 
         env = {
             **os.environ,
@@ -1435,7 +1435,7 @@ class TestWorktreeConfigScopeGate:
 
     def test_extension_off_never_probes_worktree_scope(self, repo, monkeypatch):
         """Without the extension the ``--worktree`` scope is never issued."""
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         real = files_mod._run_git_bounded
         seen: list[list[str]] = []
@@ -1505,7 +1505,7 @@ class TestVanishedDirectory:
         self, repo, mock_sel, monkeypatch
     ):
         """A Windows spawn error for a vanished cwd is absence, not outage."""
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         def vanish_then_fail(*_args, **_kwargs):
             _remove_tree(repo)
@@ -1527,7 +1527,7 @@ class TestVanishedDirectory:
     async def test_dir_removed_between_check_and_spawn_returns_no_data(self, repo, mock_sel, monkeypatch):
         """TOCTOU: the project dir can vanish after the isdir gate and before
         the git spawn. The endpoint must answer degraded, never 500."""
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         real_isdir = os.path.isdir
 

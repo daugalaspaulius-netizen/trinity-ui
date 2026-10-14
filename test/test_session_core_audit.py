@@ -1,6 +1,6 @@
 """Regression tests for the session-core audit fixes.
 
-Covers three remediations in ``src/kiro_crew/session.py``:
+Covers three remediations in ``src/efm_go/session.py``:
 
 1. ``open_task_session`` re-validates session identity + provider liveness
    AFTER acquiring the per-session semaphore (mirroring ``get_or_create``), so a
@@ -25,8 +25,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import FirstTurnState, SessionManager, _Session
+from efm_go.config import KiroCrewConfig
+from efm_go.session import FirstTurnState, SessionManager, _Session
 
 
 @pytest.fixture
@@ -89,7 +89,7 @@ async def test_open_task_session_revalidates_dead_provider_after_semaphore(cfg):
         sess.semaphore.release()
 
     with patch(
-        "kiro_crew.acp.session_provider.AcpSessionProvider",
+        "efm_go.acp.session_provider.AcpSessionProvider",
         return_value=fresh_provider,
     ):
         _, result = await asyncio.gather(
@@ -131,7 +131,7 @@ async def test_open_task_session_revalidates_removed_session_after_semaphore(cfg
         sess.semaphore.release()
 
     with patch(
-        "kiro_crew.acp.session_provider.AcpSessionProvider",
+        "efm_go.acp.session_provider.AcpSessionProvider",
         return_value=fresh_provider,
     ):
         _, result = await asyncio.gather(
@@ -204,7 +204,7 @@ async def test_open_task_session_lost_race_revalidates_recycled_winner(cfg):
         winner.semaphore.release()
 
     with patch(
-        "kiro_crew.acp.session_provider.AcpSessionProvider",
+        "efm_go.acp.session_provider.AcpSessionProvider",
         side_effect=[dup_provider, fresh_provider],
     ):
         _, result = await asyncio.gather(
@@ -259,7 +259,7 @@ async def test_resolve_agent_model_reresolves_after_json_created(tmp_path, monke
     POST-FIX: creating the JSON bumps the agents-dir mtime, invalidating the
     cache so the real model is resolved.
     """
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", tmp_path)
     SessionManager._agent_model_cache = {}  # type: ignore[attr-defined]
 
     # Miss: no JSON present yet.
@@ -281,7 +281,7 @@ async def test_resolve_agent_model_reresolves_after_json_created(tmp_path, monke
 async def test_resolve_agent_model_ttl_reresolves_inplace_edit(tmp_path, monkeypatch):
     """An in-place edit of an existing agent JSON does not change the dir mtime,
     so only the TTL can catch it. With TTL elapsed the value is re-resolved."""
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", tmp_path)
     SessionManager._agent_model_cache = {}  # type: ignore[attr-defined]
 
     f = tmp_path / "a.json"
@@ -289,7 +289,7 @@ async def test_resolve_agent_model_ttl_reresolves_inplace_edit(tmp_path, monkeyp
     assert SessionManager._resolve_agent_model("a") == "m1"
 
     # Force TTL expiry so the (unchanged-mtime) cache entry is dropped.
-    monkeypatch.setattr("kiro_crew.session._AGENT_MODEL_CACHE_TTL", 0.0)
+    monkeypatch.setattr("efm_go.session._AGENT_MODEL_CACHE_TTL", 0.0)
     f.write_text(json.dumps({"name": "a", "model": "m2"}), encoding="utf-8")
     assert SessionManager._resolve_agent_model("a") == "m2"
 
@@ -298,7 +298,7 @@ async def test_resolve_agent_model_ttl_reresolves_inplace_edit(tmp_path, monkeyp
 async def test_resolve_agent_model_serves_cache_within_ttl(tmp_path, monkeypatch):
     """Within the TTL and with an unchanged dir mtime, a cached resolution is
     served WITHOUT re-globbing the agents dir (proves the cache still works)."""
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", tmp_path)
     SessionManager._agent_model_cache = {}  # type: ignore[attr-defined]
 
     (tmp_path / "z.json").write_text(

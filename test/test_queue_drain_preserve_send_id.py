@@ -38,7 +38,7 @@ async def _post_busy(state, slot_key: str, message: str, meta: dict | None):
 
 
 async def _drain_once(state, slot) -> None:
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     with (
         patch.object(chat_runner, "spawn_guarded_turn", return_value=MagicMock()),
@@ -61,11 +61,11 @@ class TestBusySlotQueueEntry:
     async def test_entry_carries_the_client_send_id(self, tmp_path, monkeypatch):
         """The producer half: the busy-slot queue branch stamps `sendId` onto the
         entry, next to the containment snapshot it already carried."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("busy-chat")
         slot.task = _live_turn()  # force the busy queue path
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", MagicMock())
 
         payload = await _post_busy(state, "busy-chat", _TEXT, {"sendId": _SEND_ID})
 
@@ -84,11 +84,11 @@ class TestBusySlotQueueEntry:
         Pinned as an ABSENT KEY rather than a falsy value -- an empty string would
         travel to the row and give a client an id that matches nothing.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("busy-chat")
         slot.task = _live_turn()  # force the busy queue path
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", MagicMock())
 
         await _post_busy(state, "busy-chat", _TEXT, None)
 
@@ -109,11 +109,11 @@ class TestBusySlotQueueEntry:
         """Same deny-by-default gate as the steer path (`normalize_send_id`): raw
         client input that fails the shape check is dropped, never truncated or
         rewritten -- a rewritten id would silently mismatch the client's copy."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("busy-chat")
         slot.task = _live_turn()  # force the busy queue path
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", MagicMock())
 
         await _post_busy(state, "busy-chat", _TEXT, {"sendId": bad_id})
 
@@ -126,12 +126,12 @@ class TestSubagentHoldQueueEntry:
     async def test_entry_carries_the_client_send_id(self, tmp_path, monkeypatch):
         """The idle-slot hold (background sub-agents still running) is the other
         queue producer a composer send can reach; it stamps the id the same way."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.subagents = MagicMock()
         state.subagents.running_agents_for = MagicMock(return_value=["agent-1"])
         slot = state.get_or_create_slot("held-chat")
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", MagicMock())
 
         payload = await _post_busy(state, "held-chat", _TEXT, {"sendId": _SEND_ID})
 
@@ -145,12 +145,12 @@ class TestDrainedRow:
     async def test_drained_row_carries_the_send_id(self, tmp_path, monkeypatch):
         """End to end: the id on the entry is worth nothing on its own -- the row
         is what a client reads back off the slot detail."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("busy-chat")
         slot.task = _live_turn()  # force the busy queue path
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", MagicMock())
 
         await _post_busy(state, "busy-chat", _TEXT, {"sendId": _SEND_ID})
 
@@ -165,18 +165,18 @@ class TestDrainedRow:
         # The single-entry case keeps the plain-send shape: one `sendId`, no list.
         assert "sendIds" not in meta
         # Queue plumbing must not ride into the persisted row.
-        from kiro_crew.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
+        from efm_go.dashboard.session_control import QUEUED_CONTAINMENT_META_KEY
 
         assert QUEUED_CONTAINMENT_META_KEY not in meta
 
     @pytest.mark.asyncio
     async def test_drained_row_without_an_id_has_no_send_id_key(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("busy-chat")
         slot.task = _live_turn()  # force the busy queue path
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", MagicMock())
 
         await _post_busy(state, "busy-chat", _TEXT, None)
 
@@ -195,14 +195,14 @@ class TestDrainedRow:
         That row stands for all of them, so it has to name all of them: `sendIds`
         lists each in queue order, and `sendId` is still present (the union's
         last writer) so the key is never absent when any entry had one."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.subagents = None
         slot = state.get_or_create_slot("busy-chat")
 
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         queue_for_next_turn(state, slot, "first", directive_user_origin=True, send_id="s-aaa-1")
         queue_for_next_turn(state, slot, "second", directive_user_origin=True, send_id="s-bbb-2")
@@ -225,12 +225,12 @@ class TestDrainedRow:
 class TestQueueForNextTurnSeam:
     def test_send_id_is_stamped_only_when_given(self, tmp_path, monkeypatch):
         """The helper's own contract, independent of the HTTP handler."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("seam")
 
-        from kiro_crew.dashboard.chat_delivery import queue_for_next_turn
+        from efm_go.dashboard.chat_delivery import queue_for_next_turn
 
         qid_with = queue_for_next_turn(state, slot, "with id", send_id=_SEND_ID)
         qid_without = queue_for_next_turn(state, slot, "without id")

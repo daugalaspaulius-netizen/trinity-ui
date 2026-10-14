@@ -24,10 +24,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import pinned_fs
-from kiro_crew import seed as seed_mod
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod.config import PodConfig
+from efm_go import pinned_fs
+from efm_go import seed as seed_mod
+from efm_go.pod import runtime as rt
+from efm_go.pod.config import PodConfig
 
 
 @pytest.fixture

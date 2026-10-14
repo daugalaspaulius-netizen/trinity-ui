@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.cron_trigger import trigger_cron_job
-from kiro_crew.mcp_cron import _call_tool_inner
+from efm_go.cron_trigger import trigger_cron_job
+from efm_go.mcp_cron import _call_tool_inner
 
 # ── Fixtures ──
 
@@ -129,7 +129,7 @@ class TestTriggerCronJob:
             return original_read_text(path, *args, **kwargs)
 
         monkeypatch.setattr(path_type, "read_text", remove_before_read)
-        with patch("kiro_crew.cron_trigger.run_marker.read_secret", return_value=None):
+        with patch("efm_go.cron_trigger.run_marker.read_secret", return_value=None):
             ok, msg = trigger_cron_job("abc12345", port, secret_path)
 
         assert ok is False
@@ -242,8 +242,8 @@ class TestCronTriggerMCP:
     def test_trigger_success(self, mock_dashboard, monkeypatch):
         port, cfg_dir = mock_dashboard
         monkeypatch.setenv("KIROCREW_HOME", str(cfg_dir))
-        from kiro_crew import mcp_cron
-        from kiro_crew.cron import CronService
+        from efm_go import mcp_cron
+        from efm_go.cron import CronService
 
         # The ownership gate reads the stored row, so the job has to exist and be
         # owned by this caller. Without that gate it is reachable without either, because an
@@ -267,8 +267,8 @@ class TestCronTriggerMCP:
 
     def test_trigger_invalid_id(self, monkeypatch, tmp_path):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew import mcp_cron
-        from kiro_crew.config import loader
+        from efm_go import mcp_cron
+        from efm_go.config import loader
         orig_port = loader.DASHBOARD_PORT
         loader.DASHBOARD_PORT = 19999
         try:
@@ -290,11 +290,11 @@ class TestCronTriggerCLI:
         # Verify the handler accepts "trigger" action without crashing
         import argparse
 
-        from kiro_crew.cli_commands import _cron
+        from efm_go.cli_commands import _cron
         args = argparse.Namespace(cron_action="trigger", job_id="abc12345")
         # Will fail with connection error (no gateway) but proves the action is recognized
         from unittest.mock import patch as _patch
-        with _patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path / "nonexistent"), \
+        with _patch("efm_go.cli_commands.config_dir", return_value=tmp_path / "nonexistent"), \
              pytest.raises(SystemExit) as exc:
             _cron(args)
         assert exc.value.code == 1
@@ -304,16 +304,16 @@ class TestCronTriggerCLI:
         """CLI trigger prints success message."""
         import argparse
 
-        from kiro_crew.cli_commands import _cron
+        from efm_go.cli_commands import _cron
 
         port, cfg_dir = mock_dashboard
         args = argparse.Namespace(cron_action="trigger", job_id="abc12345")
 
         from unittest.mock import patch as _patch
 
-        with _patch("kiro_crew.cli_commands.config_dir", return_value=cfg_dir), \
+        with _patch("efm_go.cli_commands.config_dir", return_value=cfg_dir), \
              _patch(
-                 "kiro_crew.cli_commands.resolve_client_port_ex",
+                 "efm_go.cli_commands.resolve_client_port_ex",
                  lambda _cli: (port, True),
              ):
             _cron(args)
@@ -326,14 +326,14 @@ class TestCronTriggerCLI:
         """A failed trigger exits 1 so scripts can tell it from success."""
         import argparse
 
-        from kiro_crew.cli_commands import _cron
+        from efm_go.cli_commands import _cron
 
         port, cfg_dir = mock_dashboard
         args = argparse.Namespace(cron_action="trigger", job_id="aabbccddee")
 
-        with patch("kiro_crew.cli_commands.config_dir", return_value=cfg_dir), \
+        with patch("efm_go.cli_commands.config_dir", return_value=cfg_dir), \
              patch(
-                 "kiro_crew.cli_commands.resolve_client_port_ex",
+                 "efm_go.cli_commands.resolve_client_port_ex",
                  lambda _cli: (port, True),
              ):
             with pytest.raises(SystemExit) as exc:
@@ -345,18 +345,18 @@ class TestCronTriggerCLI:
         """CLI rejects malformed job IDs."""
         import argparse
 
-        from kiro_crew.cli_commands import _cron
+        from efm_go.cli_commands import _cron
 
         args = argparse.Namespace(cron_action="trigger", job_id="../evil")
 
         from unittest.mock import patch as _patch
 
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         orig_port = loader.DASHBOARD_PORT
         loader.DASHBOARD_PORT = 19999
         try:
-            with _patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path), \
+            with _patch("efm_go.cli_commands.config_dir", return_value=tmp_path), \
                  pytest.raises(SystemExit) as exc:
                 _cron(args)
         finally:
@@ -371,11 +371,11 @@ class TestCronTriggerCLI:
         """pause and resume exit 1 on an unknown job id."""
         import argparse
 
-        from kiro_crew.cli_commands import _cron
+        from efm_go.cli_commands import _cron
 
         args = argparse.Namespace(cron_action=action, job_id="abc12345")
 
-        with patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path), \
+        with patch("efm_go.cli_commands.config_dir", return_value=tmp_path), \
              pytest.raises(SystemExit) as exc:
             _cron(args)
         assert exc.value.code == 1
@@ -389,13 +389,13 @@ class TestCronTriggerToolDefinition:
     """Verify cron_trigger appears in tool list with correct schema."""
 
     def test_tool_listed(self):
-        from kiro_crew.mcp_cron import _list_tools
+        from efm_go.mcp_cron import _list_tools
         tools = _list_tools()
         names = [t["name"] for t in tools]
         assert "cron_trigger" in names
 
     def test_tool_schema(self):
-        from kiro_crew.mcp_cron import _list_tools
+        from efm_go.mcp_cron import _list_tools
         tools = _list_tools()
         trigger = next(t for t in tools if t["name"] == "cron_trigger")
         assert "job_id" in trigger["inputSchema"]["properties"]

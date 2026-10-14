@@ -25,7 +25,7 @@ class _AuditLog:
 
 
 def _handler_module():
-    return importlib.import_module("kiro_crew.dashboard.handlers.portability")
+    return importlib.import_module("efm_go.dashboard.handlers.portability")
 
 
 class _OwnerState:

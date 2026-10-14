@@ -19,14 +19,14 @@ import json
 
 import pytest
 
-from kiro_crew.dashboard.handlers.security import (
+from efm_go.dashboard.handlers.security import (
     api_governance_policy,
     build_governance_policy_snapshot,
 )
-from kiro_crew.platform import context as ctx_mod
-from kiro_crew.platform import governance_profiles as gp
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.governance import _SCOPE_ALIASES, SCOPE_CATALOG, parse_policy
+from efm_go.platform import context as ctx_mod
+from efm_go.platform import governance_profiles as gp
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.governance import _SCOPE_ALIASES, SCOPE_CATALOG, parse_policy
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def _reset_ctx():
 
 def _install_ceiling(policy_body):
     """Compose a context carrying the given policy and install it as active."""
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     base = build_default_context(KiroCrewConfig.load())
     ceiling = parse_policy(policy_body) if policy_body is not None else None
@@ -440,7 +440,7 @@ class TestScopeAttribution:
         # resolve_active_scope`, so patching governance_profiles' own attribute
         # leaves the handler calling the original and the snapshot SUCCEEDS —
         # which would make this test pass vacuously against the success branch.
-        import kiro_crew.dashboard.handlers.security as sec
+        import efm_go.dashboard.handlers.security as sec
 
         def _boom(*_a, **_k):
             raise RuntimeError("resolution glitch")
@@ -474,14 +474,14 @@ class TestEndpoint:
     async def test_display_fails_safe_on_resolution_error(self, profiles_dir, monkeypatch):
         # A governance-resolution error must NOT 500 the Security page — the
         # snapshot degrades to a well-formed "unavailable" response.
-        import kiro_crew.dashboard.handlers.security as sec
+        import efm_go.dashboard.handlers.security as sec
 
         def _boom(*_a, **_k):
             raise RuntimeError("resolution glitch")
 
         monkeypatch.setattr(sec, "resolve_active_scope", _boom, raising=False)
         # Patch the symbol the function imports lazily inside its body.
-        monkeypatch.setattr("kiro_crew.platform.governance_profiles.resolve_active_scope", _boom)
+        monkeypatch.setattr("efm_go.platform.governance_profiles.resolve_active_scope", _boom)
         resp = await self._call()
         assert resp.status == 200
         payload = json.loads(resp.body)
@@ -584,13 +584,13 @@ class TestEndpoint:
         self, profiles_dir, monkeypatch
     ):
         """The unavailable response always reports an empty list."""
-        import kiro_crew.dashboard.handlers.security as sec
+        import efm_go.dashboard.handlers.security as sec
 
         def _boom(*_a, **_k):
             raise RuntimeError("resolution glitch")
 
         monkeypatch.setattr(sec, "resolve_active_scope", _boom, raising=False)
-        monkeypatch.setattr("kiro_crew.platform.governance_profiles.resolve_active_scope", _boom)
+        monkeypatch.setattr("efm_go.platform.governance_profiles.resolve_active_scope", _boom)
         snap = build_governance_policy_snapshot()
         assert snap["unavailable"] is True
         assert snap["fallback_profiles"] == []

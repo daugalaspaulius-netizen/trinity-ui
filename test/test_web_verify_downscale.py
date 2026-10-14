@@ -19,7 +19,7 @@ from PIL import Image
 _SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "web-verify"
     / "scripts"
@@ -210,7 +210,7 @@ class DownscaleTest(unittest.TestCase):
 
     def test_cap_matches_the_prompt_block_ceiling(self) -> None:
         """One number, two enforcement points — drift here is silent."""
-        from kiro_crew.acp.prompt_blocks import MAX_IMAGE_EDGE_PX
+        from efm_go.acp.prompt_blocks import MAX_IMAGE_EDGE_PX
 
         self.assertEqual(mod.MAX_EDGE_PX, MAX_IMAGE_EDGE_PX)
 

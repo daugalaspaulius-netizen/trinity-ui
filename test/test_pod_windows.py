@@ -24,11 +24,11 @@ from test_pod_windows_liveness import supervisor as supervisor
 from test_pod_windows_run import contained
 from test_pod_windows_run import model as model
 
-from kiro_crew.platform_compat import IS_WINDOWS
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod import windows as win
-from kiro_crew.pod.config import EXIT_REFUSED_UNRECOVERABLE, PodConfig
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.platform_compat import IS_WINDOWS
+from efm_go.pod import runtime as rt
+from efm_go.pod import windows as win
+from efm_go.pod.config import EXIT_REFUSED_UNRECOVERABLE, PodConfig
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 __all__ = ["model", "supervisor"]
 
@@ -90,7 +90,7 @@ def test_the_wrapper_pins_the_pod_plane_because_a_task_carries_no_env(cfg):
     DIFFERENT PodConfig. Every non-default key must therefore appear as a `set`.
     """
     body = win.render_task_script(cfg, "smoke")
-    from kiro_crew.pod.config import environment_vars
+    from efm_go.pod.config import environment_vars
 
     selected = environment_vars(cfg)
     assert selected, "the hermetic fixture plane must differ from the defaults"
@@ -100,7 +100,7 @@ def test_the_wrapper_pins_the_pod_plane_because_a_task_carries_no_env(cfg):
 
 def test_the_wrapper_boots_the_named_pod_through_python(cfg):
     body = win.render_task_script(cfg, "smoke")
-    # Boot logic stays in kiro_crew.pod.runtime.boot; the wrapper only re-enters
+    # Boot logic stays in efm_go.pod.runtime.boot; the wrapper only re-enters
     # the entry point, exactly as the systemd ExecStart and the launchd
     # ProgramArguments do. Nothing shell-shaped is shipped.
     assert 'pod _run "smoke"' in body
@@ -335,7 +335,7 @@ def test_the_runtime_wrapper_does_not_translate_on_windows(cfg, monkeypatch):
     backend renders: Task Scheduler has no restart policy, so a non-zero exit is
     recorded and stays down, and the honest code is already the terminal one.
     """
-    from kiro_crew.pod.config import TERMINAL_BOOT_EXIT_CODES
+    from efm_go.pod.config import TERMINAL_BOOT_EXIT_CODES
 
     monkeypatch.setattr(rt, "IS_MACOS", False)
     for code in (*TERMINAL_BOOT_EXIT_CODES, 0, 1, 42):

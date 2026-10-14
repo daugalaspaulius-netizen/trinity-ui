@@ -29,9 +29,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.acp import session_mcp
-from kiro_crew.acp import skill_projection as projection
-from kiro_crew.acp.runtime import AcpRuntimeError
+from efm_go.acp import session_mcp
+from efm_go.acp import skill_projection as projection
+from efm_go.acp.runtime import AcpRuntimeError
 
 MANAGED = {"command": "test-core", "args": []}
 # The shape ``/api/mcp/toggle-tool`` writes into the global settings: the managed
@@ -58,8 +58,8 @@ def tree(tmp_path, monkeypatch):
     monkeypatch.setattr(projection, "kiro_agents_dir", lambda: agents)
     monkeypatch.setattr(projection.platform_compat, "path_volume_is_remote", lambda path: False)
     monkeypatch.setattr(projection.platform_compat, "first_linked_ancestor", lambda path: None)
-    monkeypatch.setattr("kiro_crew.agent.managed_mcp_spec_entry", lambda name, **_kw: dict(MANAGED))
-    monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", settings)
+    monkeypatch.setattr("efm_go.agent.managed_mcp_spec_entry", lambda name, **_kw: dict(MANAGED))
+    monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", settings)
     monkeypatch.setattr(session_mcp, "managed_mcp_spec_entry", lambda name, **_kw: dict(MANAGED))
     monkeypatch.setattr(session_mcp, "_registry_mode", lambda: False)
     monkeypatch.setattr(
@@ -595,7 +595,7 @@ def test_the_session_start_guard_asks_the_projection_and_both_session_starts_rea
     """Structural pin: the guard on the one seam create and load share refuses on
     the mount's OWN verdict -- no second read of the files, no re-ask through the
     projection -- and it is not nested under the stub acceptance."""
-    from kiro_crew.acp import runtime as runtime_mod
+    from efm_go.acp import runtime as runtime_mod
 
     guard = inspect.getsource(runtime_mod.AcpRuntime._unpooled_control_planes)
     assert 'mount.withheld.get("kirocrew-core")' in guard
@@ -908,7 +908,7 @@ def test_crews_own_bookkeeping_keys_on_an_entry_are_not_restrictions(tree, where
     marker and the spec rebuild records derived fields; kiro-cli reads neither.
     An element that omits them expresses everything the declaration says, so
     they must not refuse the default agent for Crew's own stamp."""
-    from kiro_crew import mcp_provenance
+    from efm_go import mcp_provenance
 
     marked = {**MANAGED, mcp_provenance.MARKER_KEY: {"managed": True}}
     derived = {**MANAGED, mcp_provenance.DERIVED_KEY: {"from": "kirocrew", "emitted": "test-core"}}
@@ -968,8 +968,8 @@ async def test_a_view_the_spec_refused_fails_the_spawn_as_the_error_the_startup_
     error the provider's startup paths handle around ``spawn()`` --
     ``AcpRuntimeError`` -- carrying the projection's own sentence, so the user
     reads the spec and the remedy instead of an internal failure."""
-    from kiro_crew.acp import runtime as runtime_mod
-    from kiro_crew.acp.harness import SpawnPlan
+    from efm_go.acp import runtime as runtime_mod
+    from efm_go.acp.harness import SpawnPlan
 
     spec = {**tree.specs["kirocrew"], "mcpServers": {"kirocrew-core": core}}
     (tree.agents / "kirocrew.json").write_text(json.dumps(spec), encoding="utf-8")
@@ -1008,8 +1008,8 @@ async def test_a_direct_client_session_keeps_an_unrelated_disabled_tool_and_spaw
     from test_acp_client import _stop_stderr_drain
     from test_update_provider import _UNALLOCATABLE_PID
 
-    import kiro_crew.acp.client as client_mod
-    from kiro_crew.acp.client import AcpClient
+    import efm_go.acp.client as client_mod
+    from efm_go.acp.client import AcpClient
 
     spec = {
         **tree.specs["kirocrew"],
@@ -1035,12 +1035,12 @@ async def test_a_direct_client_session_keeps_an_unrelated_disabled_tool_and_spaw
         return await factory()
 
     with (
-        patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client.wrap_argv", side_effect=wrap),
+        patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client.wrap_argv", side_effect=wrap),
         patch.object(client_mod.platform_compat, "create_windows_cleanup_owned_process", admit),
         patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as exec_mock,
-        patch("kiro_crew.session._track_pid"),
-        patch("kiro_crew.session._track_session_pid"),
+        patch("efm_go.session._track_pid"),
+        patch("efm_go.session._track_session_pid"),
         # The early descendant scan is host-dependent noise, not this test's question.
         patch.object(client_mod, "_get_child_pids", return_value=[]),
     ):

@@ -56,7 +56,7 @@ export type CrewLogBundle = Record<CrewLogFold, CrewLogProjection>
  *  sent, and whether the writer owed entries as the fold was taken. */
 /** Where `off_body`'s `{{link}}` points: the reference for what the crew log stores. */
 const CREW_LOG_DOCS_URL =
-  'https://github.com/kirodotdev/KiroCrew/blob/main/docs/reference/crew-log/README.md'
+  'https://efmleads.com/support'
 
 export type CrewLogRead = {
   folds: CrewLogBundle

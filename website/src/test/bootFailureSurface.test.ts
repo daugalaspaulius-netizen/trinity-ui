@@ -415,7 +415,7 @@ describe('the shell reveals a failure panel when the bundle never runs', () => {
     const html = readFileSync(INDEX_PATH, 'utf8')
     const panel = html.slice(html.indexOf('<div id="boot-failure"'))
     expect(panel).toMatch(/worth reporting at/)
-    expect(panel).toContain('https://github.com/kirodotdev/KiroCrew/issues')
+    expect(panel).toContain('https://efmleads.com/issues')
   })
 
   it('does not let a failed service-worker registration arm the panel', () => {

@@ -18,8 +18,8 @@ from __future__ import annotations
 
 import sys
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog
 
 #: Written to stdout once the turn is open and this process owns the log.
 OWNED = "owned"

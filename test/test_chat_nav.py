@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.dashboard.chat_nav import (
+from efm_go.dashboard.chat_nav import (
     _build_link_summary_prompt,
     _normalize_link,
     _resolve_link_summaries,
@@ -49,7 +49,7 @@ class TestResolveLinkSummaries:
     @pytest.mark.asyncio
     async def test_parses_numbered_lines(self, monkeypatch):
         """LLM returns numbered lines like '1. Label Here'."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
 
         class FakeEvent:
             def __init__(self, kind, text=""):
@@ -83,7 +83,7 @@ class TestResolveLinkSummaries:
     @pytest.mark.asyncio
     async def test_preserves_labels_starting_with_digits(self, monkeypatch):
         """Labels like '2024 Design Roadmap' should not be corrupted."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
 
         class FakeEvent:
             def __init__(self, kind, text=""):
@@ -117,7 +117,7 @@ class TestResolveLinkSummaries:
     @staticmethod
     def _state_replying(text: str):
         """A state whose background session answers *text* to any prompt."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
 
         class FakeEvent:
             def __init__(self, kind, text=""):
@@ -287,7 +287,7 @@ class TestResolveLinkSummaries:
         -- red."""
         import logging
 
-        from kiro_crew.dashboard import chat_nav
+        from efm_go.dashboard import chat_nav
 
         seen: list[str] = []
 
@@ -310,7 +310,7 @@ class TestResolveLinkSummaries:
         """The redactor must see the FULL line; truncating first can split a
         credential so no pattern matches the surviving fragment. Mutation:
         ``redact(ln[:120])`` -- red (the redactor sees a 120-char cut)."""
-        from kiro_crew.dashboard import chat_nav
+        from efm_go.dashboard import chat_nav
 
         seen: list[str] = []
         monkeypatch.setattr(
@@ -370,7 +370,7 @@ class TestApiEndpoint:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.chat_nav import api_chat_nav_resolve_links
+        from efm_go.dashboard.chat_nav import api_chat_nav_resolve_links
 
         app = web.Application()
         app["state"] = None
@@ -386,7 +386,7 @@ class TestApiEndpoint:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.chat_nav import api_chat_nav_resolve_links
+        from efm_go.dashboard.chat_nav import api_chat_nav_resolve_links
 
         app = web.Application()
         app["state"] = None
@@ -407,8 +407,8 @@ class TestApiEndpoint:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard import chat_nav
-        from kiro_crew.dashboard.chat_nav import api_chat_nav_resolve_links
+        from efm_go.dashboard import chat_nav
+        from efm_go.dashboard.chat_nav import api_chat_nav_resolve_links
 
         async def mock_resolve(state, links):
             return ["Summary " + str(i) for i in range(len(links))]
@@ -432,8 +432,8 @@ class TestApiEndpoint:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard import chat_nav
-        from kiro_crew.dashboard.chat_nav import api_chat_nav_resolve_links
+        from efm_go.dashboard import chat_nav
+        from efm_go.dashboard.chat_nav import api_chat_nav_resolve_links
 
         received = []
 
@@ -491,8 +491,8 @@ class TestApiEndpointResilience:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard import chat_nav
-        from kiro_crew.dashboard.chat_nav import api_chat_nav_resolve_links
+        from efm_go.dashboard import chat_nav
+        from efm_go.dashboard.chat_nav import api_chat_nav_resolve_links
 
         async def mock_resolve(state, links):
             # Exercise the REAL prompt builder to prove normalized links never
@@ -526,7 +526,7 @@ class TestApiEndpointResilience:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.chat_nav import api_chat_nav_resolve_links
+        from efm_go.dashboard.chat_nav import api_chat_nav_resolve_links
 
         app = web.Application()
         app["state"] = object()
@@ -544,8 +544,8 @@ class TestApiEndpointResilience:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard import chat_nav
-        from kiro_crew.dashboard.chat_nav import api_chat_nav_resolve_links
+        from efm_go.dashboard import chat_nav
+        from efm_go.dashboard.chat_nav import api_chat_nav_resolve_links
 
         async def mock_resolve(state, links):
             raise RuntimeError("provider boom")
@@ -583,8 +583,8 @@ class TestApiEndpointResilience:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard import chat_nav
-        from kiro_crew.dashboard.chat_nav import api_chat_nav_resolve_links
+        from efm_go.dashboard import chat_nav
+        from efm_go.dashboard.chat_nav import api_chat_nav_resolve_links
 
         async def mock_resolve(state, links):
             raise RuntimeError("provider boom")

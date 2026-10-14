@@ -15,32 +15,32 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
-from kiro_crew.discord.client import EDIT_FAILED, EDIT_OK
-from kiro_crew.discord.renderer import DiscordRenderer, _transform_buries_refs
-from kiro_crew.discord.transport import DISCORD_CAPABILITIES
-from kiro_crew.messaging.driver import APPROVAL_AUTO, TurnDriver
-from kiro_crew.messaging.split import iter_fence_spans
-from kiro_crew.messaging.tables import (
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
+from efm_go.discord.client import EDIT_FAILED, EDIT_OK
+from efm_go.discord.renderer import DiscordRenderer, _transform_buries_refs
+from efm_go.discord.transport import DISCORD_CAPABILITIES
+from efm_go.messaging.driver import APPROVAL_AUTO, TurnDriver
+from efm_go.messaging.split import iter_fence_spans
+from efm_go.messaging.tables import (
     TABLE_POLICY_AUTO,
     TABLE_POLICY_NATIVE,
     TABLE_POLICY_OFF,
     display_width,
     resolve_table_policy,
 )
-from kiro_crew.messaging.transport import TransportCapabilities
-from kiro_crew.slack.transport import SLACK_CAPABILITIES
-from kiro_crew.teams.renderer import TeamsRenderer
-from kiro_crew.teams.transport import TEAMS_CAPABILITIES
-from kiro_crew.telegram.renderer import TelegramRenderer
-from kiro_crew.telegram.transport import TELEGRAM_CAPABILITIES
-from kiro_crew.webex.client import WEBEX_MAX_TEXT
-from kiro_crew.webex.renderer import WebexRenderer
-from kiro_crew.webex.transport import WEBEX_CAPABILITIES
-from kiro_crew.wecom.renderer import WeComRenderer
-from kiro_crew.wecom.transport import WECOM_CAPABILITIES
-from kiro_crew.weixin.transport import WEIXIN_CAPABILITIES
-from kiro_crew.weixin.turn_renderer import WeixinRenderer
+from efm_go.messaging.transport import TransportCapabilities
+from efm_go.slack.transport import SLACK_CAPABILITIES
+from efm_go.teams.renderer import TeamsRenderer
+from efm_go.teams.transport import TEAMS_CAPABILITIES
+from efm_go.telegram.renderer import TelegramRenderer
+from efm_go.telegram.transport import TELEGRAM_CAPABILITIES
+from efm_go.webex.client import WEBEX_MAX_TEXT
+from efm_go.webex.renderer import WebexRenderer
+from efm_go.webex.transport import WEBEX_CAPABILITIES
+from efm_go.wecom.renderer import WeComRenderer
+from efm_go.wecom.transport import WECOM_CAPABILITIES
+from efm_go.weixin.transport import WEIXIN_CAPABILITIES
+from efm_go.weixin.turn_renderer import WeixinRenderer
 
 #: A table wide enough (60 display columns) that ``auto`` must choose cards.
 WIDE_TABLE = (
@@ -354,8 +354,8 @@ class TestCapabilityDeclarations:
 
 class TestOutboundTableSafety:
     def test_cards_rescan_a_joined_authorization_header_and_bearer_value(self) -> None:
-        from kiro_crew.messaging.tables import TABLE_POLICY_CARDS
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.messaging.tables import TABLE_POLICY_CARDS
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
         token = "opaque-token-value"
         table = (
@@ -391,7 +391,7 @@ class TestOutboundTableSafety:
         assert "—" in rendered
 
     def test_converted_output_is_rescanned_for_exfiltration_urls(self) -> None:
-        from kiro_crew.messaging.tables import TABLE_POLICY_CARDS
+        from efm_go.messaging.tables import TABLE_POLICY_CARDS
 
         url = "https://attacker.example/c?x=" + "q" * 300
         table = (
@@ -448,7 +448,7 @@ class TestPerTargetPolicies:
         )
 
     def test_slack_flattening_is_byte_unchanged(self) -> None:
-        from kiro_crew.slack.format import to_slack_mrkdwn
+        from efm_go.slack.format import to_slack_mrkdwn
 
         assert to_slack_mrkdwn(WIDE_TABLE) == (
             "• *Provider:* GitHub | *Auth:* OAuth app | *Status:* Gated "

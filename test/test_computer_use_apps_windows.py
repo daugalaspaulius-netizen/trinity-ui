@@ -21,9 +21,9 @@ from contextlib import contextmanager
 
 import pytest
 
-from kiro_crew.computer_use import apps_windows, policy
-from kiro_crew.computer_use import windows_ffi as ffi
-from kiro_crew.computer_use.types import AppRef, ComputerUseError, PolicyConfig
+from efm_go.computer_use import apps_windows, policy
+from efm_go.computer_use import windows_ffi as ffi
+from efm_go.computer_use.types import AppRef, ComputerUseError, PolicyConfig
 
 
 def _info(

@@ -18,8 +18,8 @@ from __future__ import annotations
 
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard.state import _ascii_slot_key, _normalize_slot_key
-from kiro_crew.history import _safe_key
+from efm_go.dashboard.state import _ascii_slot_key, _normalize_slot_key
+from efm_go.history import _safe_key
 
 EM_DASH = "\u2014"
 

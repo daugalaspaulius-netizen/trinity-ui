@@ -19,10 +19,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard.handlers import cron
-from kiro_crew.learn import LessonStore
-from kiro_crew.mcp_tools import learn
-from kiro_crew.validation import (
+from efm_go.dashboard.handlers import cron
+from efm_go.learn import LessonStore
+from efm_go.mcp_tools import learn
+from efm_go.validation import (
     LEARN_LIST_SCHEMA,
     LESSON_LIST_LIMIT,
     LESSON_LIST_LIMIT_MAX,
@@ -32,7 +32,7 @@ from kiro_crew.validation import (
     ValidationError,
     validate_tool_args,
 )
-from kiro_crew.vector_memory import VectorMemoryStore, create_member_database, open_member_database
+from efm_go.vector_memory import VectorMemoryStore, create_member_database, open_member_database
 
 
 def _store(tmp_path) -> VectorMemoryStore:
@@ -112,7 +112,7 @@ def _window(body: dict) -> dict:
 async def test_member_sqlite_remains_authority_when_the_page_has_no_rows(
     tmp_path, monkeypatch, population
 ) -> None:
-    from kiro_crew import memory_stores
+    from efm_go import memory_stores
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     monkeypatch.setattr(memory_stores, "memory_stores_root", lambda: tmp_path / "memory_stores")

@@ -18,8 +18,8 @@ from pathlib import Path
 import pytest
 from test_snapshot import unpinnable_argv
 
-from kiro_crew import snapshot as snap
-from kiro_crew import snapshot_redact as redact
+from efm_go import snapshot as snap
+from efm_go import snapshot_redact as redact
 
 TOKEN = "8412345678:AAH9xSECRETtokenvalue_here12345"
 
@@ -1122,7 +1122,7 @@ class TestTheUploadPathDoesNotConsultConfigAtAll:
         src = inspect.getsource(snap._redacted_upload_copy)
         assert "outbound_redaction_enabled()" in src
         assert "KiroCrewConfig" not in src, "a config read came back to the upload path"
-        assert "from kiro_crew.config.loader import" not in src
+        assert "from efm_go.config.loader import" not in src
         assert not hasattr(
             snap, "KiroCrewConfig"
         ), "the module-scope config import is unused now and must not linger"

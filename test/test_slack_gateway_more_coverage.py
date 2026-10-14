@@ -1,4 +1,4 @@
-"""Further coverage for ``kiro_crew.slack.gateway``.
+"""Further coverage for ``efm_go.slack.gateway``.
 
 ``test_slack_gateway.py``, ``test_slack_gateway_coverage.py`` and
 ``test_slack_gateway_cron_exec_coverage.py`` already drive the cron executor,
@@ -45,9 +45,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.autonudge import APPROVAL_STALL_REASON, CONSECUTIVE_FAILURE_REASON, NudgeLoop
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.monitoring.models import (
+from efm_go.autonudge import APPROVAL_STALL_REASON, CONSECUTIVE_FAILURE_REASON, NudgeLoop
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.monitoring.models import (
     DEFAULT_MONITOR_CADENCE_SECS,
     DEFAULT_MONITOR_STALL_MIN_SECS,
     DEFAULT_MONITOR_STALL_TICKS,
@@ -56,7 +56,7 @@ from kiro_crew.monitoring.models import (
     MonitorOutcome,
     MonitorState,
 )
-from kiro_crew.slack import gateway as gw
+from efm_go.slack import gateway as gw
 
 # ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -155,7 +155,7 @@ class TestWarnIfKiroCliOutdated:
         never happened. The refusal path itself is covered separately by
         :meth:`test_unresolvable_binary_never_spawns`.
         """
-        with patch("kiro_crew.kiro_cli.resolve_kiro_cli", return_value="/opt/pinned/bin/kiro-cli"):
+        with patch("efm_go.kiro_cli.resolve_kiro_cli", return_value="/opt/pinned/bin/kiro-cli"):
             yield
 
     @pytest.mark.asyncio
@@ -167,7 +167,7 @@ class TestWarnIfKiroCliOutdated:
         argument is no protection. Nothing to warn about, so nothing runs.
         """
         orch = _make_orchestrator()
-        with patch("kiro_crew.kiro_cli.resolve_kiro_cli", return_value=None):
+        with patch("efm_go.kiro_cli.resolve_kiro_cli", return_value=None):
             with patch("asyncio.create_subprocess_exec") as spawn:
                 await orch._warn_if_kiro_cli_outdated()
         spawn.assert_not_called()
@@ -183,7 +183,7 @@ class TestWarnIfKiroCliOutdated:
         proc = _probe_proc(_communicate)
         orch = _make_orchestrator()
         with patch(
-            "kiro_crew.kiro_cli.resolve_kiro_cli", return_value="/opt/pinned/bin/kiro-cli"
+            "efm_go.kiro_cli.resolve_kiro_cli", return_value="/opt/pinned/bin/kiro-cli"
         ) as mock_resolve:
             with patch("asyncio.create_subprocess_exec", AsyncMock(return_value=proc)) as spawn:
                 await orch._warn_if_kiro_cli_outdated()
@@ -206,7 +206,7 @@ class TestWarnIfKiroCliOutdated:
             return None if kwargs.get("include_inherited_path") is False else "/w/venv/bin/kiro-cli"
 
         with caplog.at_level("WARNING"):
-            with patch("kiro_crew.kiro_cli.resolve_kiro_cli", side_effect=_resolve):
+            with patch("efm_go.kiro_cli.resolve_kiro_cli", side_effect=_resolve):
                 with patch("asyncio.create_subprocess_exec") as spawn:
                     await orch._warn_if_kiro_cli_outdated()
         spawn.assert_not_called()
@@ -217,7 +217,7 @@ class TestWarnIfKiroCliOutdated:
         """No kiro-cli anywhere is not a problem to report — the backend is optional."""
         orch = _make_orchestrator()
         with caplog.at_level("WARNING"):
-            with patch("kiro_crew.kiro_cli.resolve_kiro_cli", return_value=None):
+            with patch("efm_go.kiro_cli.resolve_kiro_cli", return_value=None):
                 with patch("asyncio.create_subprocess_exec") as spawn:
                     await orch._warn_if_kiro_cli_outdated()
         spawn.assert_not_called()
@@ -239,7 +239,7 @@ class TestWarnIfKiroCliOutdated:
 
         with caplog.at_level("WARNING"):
             with patch.object(gw, "_KIRO_CLI_RESOLVE_TIMEOUT_SECS", 0.01):
-                with patch("kiro_crew.kiro_cli.resolve_kiro_cli", side_effect=_hang):
+                with patch("efm_go.kiro_cli.resolve_kiro_cli", side_effect=_hang):
                     with patch("asyncio.create_subprocess_exec") as spawn:
                         await orch._warn_if_kiro_cli_outdated()
         spawn.assert_not_called()
@@ -405,7 +405,7 @@ class TestDeliverResultRouting:
         # (no owner-DM fallback), and still ring the bell. The tag is
         # agent-writable, so the channel must be tracked for the post to happen —
         # see test_slack_heartbeat_channel_deliver.py for the refusal legs.
-        monkeypatch.setattr("kiro_crew.slack.gateway.is_tracked_channel", lambda c: c == "C1")
+        monkeypatch.setattr("efm_go.slack.gateway.is_tracked_channel", lambda c: c == "C1")
         orch = _make_orchestrator()
         ds = _mock_dashboard_state()
         orch.dashboard_state = ds
@@ -512,7 +512,7 @@ class TestShutdownExtras:
         orch.dashboard_state = ds
         orch._stop_mcp_broker = AsyncMock()
         with patch(
-            "kiro_crew.dashboard.chat.save_all_slots_to_history",
+            "efm_go.dashboard.chat.save_all_slots_to_history",
             side_effect=RuntimeError("history lock"),
         ):
             await orch._shutdown()  # must not raise
@@ -669,7 +669,7 @@ class TestDashboardPortSelection:
         ds = _mock_dashboard_state()
         with patch.object(gw, "LessonStore", MagicMock()):
             with patch(
-                "kiro_crew.dashboard.start_api_server", AsyncMock(return_value=(runner, ds))
+                "efm_go.dashboard.start_api_server", AsyncMock(return_value=(runner, ds))
             ) as start:
                 await orch._init_api_server()
         assert start.await_args.kwargs["port"] == 0
@@ -684,7 +684,7 @@ class TestDashboardPortSelection:
         runner.addresses = [("127.0.0.1", 1)]
         with patch.object(gw, "LessonStore", MagicMock()):
             with patch(
-                "kiro_crew.dashboard.start_api_server",
+                "efm_go.dashboard.start_api_server",
                 AsyncMock(return_value=(runner, _mock_dashboard_state())),
             ) as start:
                 await orch._init_api_server()
@@ -742,7 +742,7 @@ class TestAutoMigrateMemory:
             with patch.object(gw, "model_file_present", return_value=True):
                 with patch.object(gw, "make_sync_embed_fn", return_value=lambda s: [0.0]):
                     with patch.object(gw, "reconcile_store_embedding_space") as reconcile:
-                        with patch("kiro_crew.memory.legacy_memory_present", return_value=True):
+                        with patch("efm_go.memory.legacy_memory_present", return_value=True):
                             await orch._auto_migrate_memory()
 
         orch._set_memory_migrated.assert_awaited_once_with(True)
@@ -792,7 +792,7 @@ class TestAutoMigrateMemory:
     async def test_set_memory_migrated_delegates_to_handler(self):
         orch = _make_orchestrator()
         with patch(
-            "kiro_crew.dashboard.handlers.memory._set_migrated", AsyncMock()
+            "efm_go.dashboard.handlers.memory._set_migrated", AsyncMock()
         ) as set_migrated:
             await orch._set_memory_migrated(True)
         set_migrated.assert_awaited_once_with(True)
@@ -811,13 +811,13 @@ class TestInitMcpDiscovery:
         orch = _make_orchestrator()
         servers = [SimpleNamespace(name="builder-mcp"), SimpleNamespace(name="playwright-mcp")]
         with caplog.at_level("INFO"):
-            with patch("kiro_crew.mcp_discovery.list_servers", return_value=servers):
+            with patch("efm_go.mcp_discovery.list_servers", return_value=servers):
                 orch._init_mcp_discovery()
         assert "builder-mcp, playwright-mcp" in caplog.text
 
     def test_listing_failure_is_swallowed(self):
         orch = _make_orchestrator()
-        with patch("kiro_crew.mcp_discovery.list_servers", side_effect=RuntimeError("boom")):
+        with patch("efm_go.mcp_discovery.list_servers", side_effect=RuntimeError("boom")):
             orch._init_mcp_discovery()  # must not raise
 
 
@@ -1025,7 +1025,7 @@ class TestNotifyNudgeExpired:
         reason that path recorded, and asserts BOTH numbers in the notice are the
         constants the trip used.
         """
-        from kiro_crew.monitoring.decision import decide_monitor, monitor_stall_reason
+        from efm_go.monitoring.decision import decide_monitor, monitor_stall_reason
 
         state = MonitorState(
             kind="github_pull_request",
@@ -1083,7 +1083,7 @@ class TestNotifyNudgeExpired:
         The exclusions are reasons that never reach this branch, each for a stated
         structural reason -- not a list to append to when a case is inconvenient.
         """
-        from kiro_crew.monitoring import models as monitor_models
+        from efm_go.monitoring import models as monitor_models
 
         handled_by_an_outcome_branch = {
             monitor_models.MONITOR_STOP_RUNTIME_BUDGET,
@@ -1202,7 +1202,7 @@ class TestNotifyNudgeExpired:
         unmet" about a finished subject. The rule is expressed once now, as a ``terminal``
         flag the earlier branches defer to.
         """
-        from kiro_crew.autonudge import MONITOR_TERMINAL_REASON
+        from efm_go.autonudge import MONITOR_TERMINAL_REASON
 
         orch = _make_orchestrator()
         ds = _mock_dashboard_state()
@@ -1232,7 +1232,7 @@ class TestNotifyNudgeExpired:
         skipped, and the operator was told the goal was possibly unmet and to restart
         a watch whose subject had merged.
         """
-        from kiro_crew.autonudge import MONITOR_TERMINAL_REASON
+        from efm_go.autonudge import MONITOR_TERMINAL_REASON
 
         orch = _make_orchestrator()
         ds = _mock_dashboard_state()

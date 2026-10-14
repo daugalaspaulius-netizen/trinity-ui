@@ -131,7 +131,7 @@ echo "[dev] Vite up on :$VITE_PORT"
 # `kirocrew token` can print a SECOND, externally-advertised URL when
 # dashboard.url is configured — always take the localhost one.
 TOKEN_URL="$(PYTHONPATH="$SCRIPT_DIR/src" \
-    "$RUNTIME_PYTHON" -m kiro_crew token --port "$GATEWAY_PORT" 2>/dev/null \
+    "$RUNTIME_PYTHON" -m efm_go token --port "$GATEWAY_PORT" 2>/dev/null \
     | grep -oE 'http://localhost:[0-9]+[^ ]*' | head -1)"
 if [ -n "$TOKEN_URL" ]; then
     OPEN_URL="$(printf '%s' "$TOKEN_URL" | sed "s/:$GATEWAY_PORT/:$VITE_PORT/")"
@@ -148,7 +148,7 @@ if [ -n "$TOKEN_URL" ]; then
     fi
 else
     echo "[dev] WARNING: could not mint a token automatically. Run:"
-    echo "[dev]   KIROCREW_HOME=$KIROCREW_HOME PYTHONPATH=src .venv/bin/python -m kiro_crew token --port $GATEWAY_PORT"
+    echo "[dev]   KIROCREW_HOME=$KIROCREW_HOME PYTHONPATH=src .venv/bin/python -m efm_go token --port $GATEWAY_PORT"
     echo "[dev] then open the URL with :$GATEWAY_PORT swapped to :$VITE_PORT"
 fi
 

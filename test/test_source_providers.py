@@ -16,9 +16,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import github_runner
-from kiro_crew.dashboard.handlers import source_providers as source
-from kiro_crew.sandbox import spawn_shim_argv
+from efm_go import github_runner
+from efm_go.dashboard.handlers import source_providers as source
+from efm_go.sandbox import spawn_shim_argv
 
 
 def _trust_ancestors_above(monkeypatch, base):
@@ -78,12 +78,12 @@ def _no_visibility_refresh_side_task(monkeypatch):
 
 
 def test_parse_github_pull_request() -> None:
-    ref = source.parse_source_url("https://github.com/kirodotdev/KiroCrew/pull/58?tab=checks")
+    ref = source.parse_source_url("https://efmleads.com/pull/58?tab=checks")
     assert ref.provider == "github"
     assert ref.owner == "kirodotdev"
     assert ref.repo == "KiroCrew"
     assert ref.number == 58
-    assert ref.url == "https://github.com/kirodotdev/KiroCrew/pull/58"
+    assert ref.url == "https://efmleads.com/pull/58"
 
 
 def test_github_check_active_status_is_pending_even_with_success_conclusion() -> None:
@@ -5745,7 +5745,7 @@ def _app(
 
 @pytest.mark.asyncio
 async def test_local_token_uses_configured_owner_subject(monkeypatch) -> None:
-    from kiro_crew.dashboard.handlers import core
+    from efm_go.dashboard.handlers import core
 
     generate = MagicMock(return_value="owner-token")
     audit = MagicMock()
@@ -5773,7 +5773,7 @@ async def test_local_token_uses_configured_owner_subject(monkeypatch) -> None:
 async def test_local_token_carries_embed_parent_port_claim(monkeypatch) -> None:
     """?embed_parent_port=<port> is baked into the token as a signed claim so the
     embedded remote can authorize that loopback parent origin in frame-ancestors."""
-    from kiro_crew.dashboard.handlers import core
+    from efm_go.dashboard.handlers import core
 
     generate = MagicMock(return_value="owner-token")
     monkeypatch.setattr(core, "generate_token", generate)
@@ -5799,7 +5799,7 @@ async def test_local_token_carries_embed_parent_port_claim(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_local_token_uses_local_owner_subject_without_configured_owner(monkeypatch) -> None:
-    from kiro_crew.dashboard.handlers import core
+    from efm_go.dashboard.handlers import core
 
     generate = MagicMock(return_value="local-token")
     audit = MagicMock()
@@ -6774,13 +6774,13 @@ def _clear_issue_cache():
 
 
 def test_parse_github_issue_url() -> None:
-    ref = source.parse_source_url("https://github.com/kirodotdev/KiroCrew/issues/58#issue-1")
+    ref = source.parse_source_url("https://efmleads.com/issues/58#issue-1")
     assert ref.provider == "github"
     assert ref.owner == "kirodotdev"
     assert ref.repo == "KiroCrew"
     assert ref.number == 58
     assert ref.kind == "issue"
-    assert ref.url == "https://github.com/kirodotdev/KiroCrew/issues/58"
+    assert ref.url == "https://efmleads.com/issues/58"
 
 
 def test_parse_github_pull_request_still_reports_change_kind() -> None:
@@ -10311,7 +10311,7 @@ class TestGetJiraAuth:
 
     def test_catalog_slots_match_runtime_precedence(self, monkeypatch):
         """Catalog output names the same vault slot the runtime resolves."""
-        from kiro_crew.dashboard.handlers.secrets import _managed_secret_catalog
+        from efm_go.dashboard.handlers.secrets import _managed_secret_catalog
 
         class FakeEntry:
             host = "acme.atlassian.net"
@@ -11006,7 +11006,7 @@ async def test_terminate_process_reaps_via_communicate_not_wait(monkeypatch):
     """``_terminate_process`` must route through the bounded, pipe-draining
     ``kill_and_reap`` -- a bare ``await proc.wait()`` here can hang the gateway
     task forever when the child is killed with a full pipe."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     proc = _ReapProbe()
     tree_kills: "list[tuple[int, int]]" = []

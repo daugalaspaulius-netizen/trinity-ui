@@ -25,10 +25,10 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from off_loop_helpers import off_loop
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, Ref
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.dashboard.handlers import crew_log as routes
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, Ref
+from efm_go.crew_log import projection as crew_log
+from efm_go.dashboard.handlers import crew_log as routes
 
 SESSION = "s-route"
 GATEWAY = "gateway"
@@ -44,7 +44,7 @@ def _isolated_home(tmp_path, monkeypatch):
 def _is_owner():
     """Every test here calls as the dashboard owner unless it says otherwise."""
     with patch(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         return_value=True,
     ):
         yield
@@ -168,10 +168,10 @@ async def test_both_reads_refuse_a_caller_that_is_not_the_owner():
     _opened(_log())
     with (
         patch(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             return_value=False,
         ),
-        patch("kiro_crew.dashboard.handlers._shared.logger"),
+        patch("efm_go.dashboard.handlers._shared.logger"),
     ):
         page = await routes.api_session_crew_log(_page_request())
         fold = await routes.api_session_crew_log_projection(_projection_request("status"))
@@ -206,7 +206,7 @@ def test_every_crew_log_route_is_reachable_from_the_router():
     """
     from aiohttp import web as _web
 
-    from kiro_crew.dashboard.routes import sessions as sessions_routes
+    from efm_go.dashboard.routes import sessions as sessions_routes
 
     app = _web.Application()
     sessions_routes.register(app)
@@ -565,7 +565,7 @@ async def test_the_fold_read_says_whether_the_gateway_is_recording(monkeypatch):
     assert off["recording"] is False
     assert off["flag_value"] == "off"
     assert off["flag_recognised"] is True
-    from kiro_crew.constants import env_file_display
+    from efm_go.constants import env_file_display
 
     assert off["env_file"] == env_file_display()
 
@@ -600,7 +600,7 @@ async def test_the_settle_step_waits_on_the_emitter_s_own_flush():
     answer for a caller that must read the file it just wrote, and this pins that it
     is what gets called, with a bounded wait rather than an unbounded one.
     """
-    from kiro_crew.crew_log import emit
+    from efm_go.crew_log import emit
 
     with patch.object(emit, "flush", return_value=True) as flush:
         assert routes._settle_writes() is True
@@ -1036,7 +1036,7 @@ def test_notify_before_the_publisher_is_bound_is_a_no_op():
 
 @pytest.mark.asyncio
 async def test_installing_the_publisher_registers_exactly_one_growth_listener(monkeypatch):
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     monkeypatch.setenv(routes.CREW_LOG_ENV, "1")
     with (
@@ -1053,8 +1053,8 @@ async def test_installing_the_publisher_registers_exactly_one_growth_listener(mo
 @pytest.mark.asyncio
 async def test_a_reinstall_swaps_the_bus_subscriptions_rather_than_doubling_them(monkeypatch):
     """The publisher keeps its two scoped disposers, so a re-install replaces the pair."""
-    from kiro_crew.crew_log import bus as crew_log_bus
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import bus as crew_log_bus
+    from efm_go.crew_log import emit as crew_log_emit
 
     monkeypatch.setenv(routes.CREW_LOG_ENV, "1")
     crew_log_bus.reset_for_tests()
@@ -1102,8 +1102,8 @@ def test_this_module_does_not_load_the_storage_package_at_import():
     """
     probe = (
         "import importlib, json, sys;"
-        "importlib.import_module('kiro_crew.dashboard.handlers.crew_log');"
-        "print(json.dumps(sorted(k for k in sys.modules if k.startswith('kiro_crew.crew_log'))))"
+        "importlib.import_module('efm_go.dashboard.handlers.crew_log');"
+        "print(json.dumps(sorted(k for k in sys.modules if k.startswith('efm_go.crew_log'))))"
     )
     done = subprocess.run(  # noqa: S603 - fixed argv, no shell
         [os.path.abspath(sys.executable), "-B", "-c", probe],
@@ -1285,7 +1285,7 @@ def test_the_flag_name_matches_the_emitters_own_constant():
     flag exists to avoid, so the name is spelled in the handler. That is only safe
     while something proves the spelling still matches.
     """
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     assert routes.CREW_LOG_ENV == crew_log_emit.CREW_LOG_ENV
 
@@ -1300,7 +1300,7 @@ async def test_installing_with_the_flag_off_builds_nothing(monkeypatch):
     """
     monkeypatch.setenv(routes.CREW_LOG_ENV, "0")
     monkeypatch.setattr(routes, "_publisher", None)
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     with patch.object(crew_log_emit, "_growth_listeners", []):
         assert routes.install_crew_log_publisher(_Sockets()) is None
@@ -1392,7 +1392,7 @@ def _flag_on(monkeypatch) -> None:
 
 def test_the_caller_name_is_pinned_to_the_mcp_servers_own(monkeypatch):
     """Two modules name one component; a rename on one side must fail here."""
-    from kiro_crew.mcp_crew_log import SERVER_NAME
+    from efm_go.mcp_crew_log import SERVER_NAME
 
     assert routes.CREW_LOG_MCP_CALLER == SERVER_NAME
 
@@ -1414,7 +1414,7 @@ def test_the_enable_hint_names_the_env_file_the_gateway_reads(monkeypatch, tmp_p
     hint that hardcodes the default home sends an operator with another home to an
     inert file, and the flag appears not to work.
     """
-    from kiro_crew.config.loader import env_path
+    from efm_go.config.loader import env_path
 
     home = tmp_path / "elsewhere"
     monkeypatch.setenv("KIROCREW_HOME", str(home))
@@ -1427,8 +1427,8 @@ def test_the_enable_hint_names_the_env_file_the_gateway_reads(monkeypatch, tmp_p
 
 
 def test_the_session_ledger_refusal_names_the_env_file_the_gateway_reads(monkeypatch, tmp_path):
-    from kiro_crew import session_ledger
-    from kiro_crew.constants import env_file_display
+    from efm_go import session_ledger
+    from efm_go.constants import env_file_display
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "elsewhere"))
     monkeypatch.setenv("KIROCREW_CREW_LOG", "0")
@@ -1452,10 +1452,10 @@ def test_every_crew_log_off_refusal_names_the_env_file_the_gateway_reads(
     """The same file, spelled once, in every place that tells an operator to edit it."""
     import inspect
 
-    from kiro_crew import session_ledger
-    from kiro_crew.apps.builtins.issue_radar.backend import crew_store
-    from kiro_crew.dashboard.handlers import work_ledger
-    from kiro_crew.mcp_tools import ledger as mcp_ledger
+    from efm_go import session_ledger
+    from efm_go.apps.builtins.issue_radar.backend import crew_store
+    from efm_go.dashboard.handlers import work_ledger
+    from efm_go.mcp_tools import ledger as mcp_ledger
 
     module = {
         "session_ledger": session_ledger,
@@ -1470,7 +1470,7 @@ def test_every_crew_log_off_refusal_names_the_env_file_the_gateway_reads(
 
 def test_the_page_reader_is_the_one_shared_implementation():
     """One implementation, so the browser door and the agent door cannot differ."""
-    from kiro_crew.crew_log import read as shared
+    from efm_go.crew_log import read as shared
 
     assert routes.MAX_PAGE_REFS == shared.MAX_PAGE_REFS
     assert routes._read_page.__module__ == routes.__name__
@@ -1524,7 +1524,7 @@ def _fresh_dispatch_scan():
     anyway -- clearing them outright means these tests do not depend on that
     validation being right, which is a property with its own tests.
     """
-    from kiro_crew.crew_log import read as crew_log_read
+    from efm_go.crew_log import read as crew_log_read
 
     crew_log_read._TREE._heads.clear()
     crew_log_read.reset_class_bundles()
@@ -1735,14 +1735,14 @@ class TestTheDispatchFence:
         assert len(lines) >= 2, lines
         lines[1] = b'{"not": "an entry"}'
         child_log.write_bytes(b"\n".join(lines))
-        from kiro_crew.crew_log import read as crew_log_read
+        from efm_go.crew_log import read as crew_log_read
 
         crew_log_read._TREE._heads.clear()
 
         request = _as_conductor(
             f"/api/crew-log/units/{GRANDCHILD_UNIT}/page", match={"unit": GRANDCHILD_UNIT}
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers.crew_log"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers.crew_log"):
             response = asyncio.run(routes.api_crew_log_unit_page(request))
         assert response.status == 403
         # The wire carries the ordinary refusal and nothing that distinguishes this
@@ -1766,7 +1766,7 @@ class TestTheDispatchFence:
         request = _as_conductor(
             f"/api/crew-log/units/{STRANGER_UNIT}/page", match={"unit": STRANGER_UNIT}
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers.crew_log"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers.crew_log"):
             response = asyncio.run(routes.api_crew_log_unit_page(request))
         assert response.status == 403
         assert "does not fall inside that scope" in json.loads(response.text)["error"]
@@ -1793,7 +1793,7 @@ class TestTheDispatchFence:
         lines = child_log.read_bytes().split(b"\n")
         lines[1] = b'{"not": "an entry"}'
         child_log.write_bytes(b"\n".join(lines))
-        from kiro_crew.crew_log import read as crew_log_read
+        from efm_go.crew_log import read as crew_log_read
 
         crew_log_read._TREE._heads.clear()
 
@@ -1829,7 +1829,7 @@ class TestTheDispatchFence:
         assert len(lines) >= 2, lines
         lines[1] = b'{"not": "an entry"}'
         child_log.write_bytes(b"\n".join(lines))
-        from kiro_crew.crew_log import read as crew_log_read
+        from efm_go.crew_log import read as crew_log_read
 
         crew_log_read._TREE._heads.clear()
 
@@ -1837,7 +1837,7 @@ class TestTheDispatchFence:
         # view only when a slot is in scope, so an unscoped owner listing never
         # consults lineage and cannot reach this fault at all. The consumer the gap
         # belongs to is a conductor listing what it dispatched.
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.crew_log.session_tree"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.crew_log.session_tree"):
             first = crew_log_read.list_session_units(limit=50, scope_slot=CONDUCTOR_SLOT)
             second = crew_log_read.list_session_units(limit=50, scope_slot=CONDUCTOR_SLOT)
 
@@ -1966,7 +1966,7 @@ class TestTheDispatchFence:
         """
         _flag_on(monkeypatch)
         _dispatch_tree()
-        from kiro_crew.crew_log import read as crew_log_read
+        from efm_go.crew_log import read as crew_log_read
 
         real = crew_log_read.projections.fold_session
 
@@ -2085,7 +2085,7 @@ class TestTheDispatchFence:
         assert first_kept > 1, "a trim that keeps seq 1 is not a trim"
         (directory / f"log.{first_kept}.jsonl").write_text("".join(kept), encoding="utf-8")
         head.unlink()
-        from kiro_crew.crew_log import read as crew_log_read
+        from efm_go.crew_log import read as crew_log_read
 
         crew_log_read.reset_class_bundles()
 
@@ -2158,7 +2158,7 @@ class TestTheDispatchFence:
         assert len(moves) == 1, f"expected one move to damage, got {moves}"
         lines[moves[0]] = "{not json at all\n"
         head.write_text("".join(lines), encoding="utf-8")
-        from kiro_crew.crew_log import read as crew_log_read
+        from efm_go.crew_log import read as crew_log_read
 
         crew_log_read.reset_class_bundles()
 
@@ -2247,7 +2247,7 @@ class TestTheDispatchFence:
         """
         _flag_on(monkeypatch)
         _dispatch_tree()
-        from kiro_crew.crew_log import read as crew_log_read
+        from efm_go.crew_log import read as crew_log_read
 
         real = crew_log_read.dispatch_view
         seen: dict[str, bool] = {}
@@ -2572,7 +2572,7 @@ class TestTheGrantIsRecheckedAfterTheRead:
         _flag_on(monkeypatch)
         _dispatch_tree()
         slot = _Slot()
-        from kiro_crew.crew_log import read as crew_log_read
+        from efm_go.crew_log import read as crew_log_read
 
         real = crew_log_read.recorded_class
         calls = []
@@ -2806,7 +2806,7 @@ class TestTheOffloadHelperOwnsTheOrder:
         own code. Dropping the mapping turns all four into a 500 with no code.
         """
         _flag_on(monkeypatch)
-        from kiro_crew.crew_log.errors import CrewLogError
+        from efm_go.crew_log.errors import CrewLogError
 
         shaped: list = []
 
@@ -2905,7 +2905,7 @@ class TestTheOffloadHelperOwnsTheOrder:
         """
         _flag_on(monkeypatch)
         _dispatch_tree()
-        from kiro_crew.crew_log.errors import CrewLogError
+        from efm_go.crew_log.errors import CrewLogError
 
         def _refusing(*args, **kwargs):
             raise CrewLogError("bad unit id", code="invalid_id")
@@ -3030,7 +3030,7 @@ class TestOnlyTheInternalTransportReachesThese:
         offered the cookie fall-through, because what is behind it is another live
         session's history. The browser's own pair must stay OUT of the prefix, or
         the panel could not load its own log at all."""
-        from kiro_crew.dashboard.server import (
+        from efm_go.dashboard.server import (
             _MIXED_INTERNAL_API_PATHS,
             _STRICT_INTERNAL_API_PATHS,
         )
@@ -3357,7 +3357,7 @@ class TestAudit:
         sel.log_api_access.side_effect = lambda **kw: recorded.append(kw)
         path = "/api/crew-log/x"
         request = _internal_request(path, match=match)
-        with patch("kiro_crew.sel.sel", return_value=sel):
+        with patch("efm_go.sel.sel", return_value=sel):
             asyncio.run(getattr(routes, handler)(request))
         rows = [row for row in recorded if row["operation"] == operation]
         assert rows, recorded
@@ -3376,7 +3376,7 @@ class TestAudit:
         sel = MagicMock()
         sel.log_api_access.side_effect = lambda **kw: recorded.append(kw)
         request = _internal_request("/api/crew-log/sessions", session_key="")
-        with patch("kiro_crew.sel.sel", return_value=sel):
+        with patch("efm_go.sel.sel", return_value=sel):
             response = asyncio.run(routes.api_crew_log_sessions(request))
         assert response.status == 403
         rows = [row for row in recorded if row["operation"] == "session_crew_log.list"]
@@ -3403,7 +3403,7 @@ class TestAudit:
             sessions={"subagent:abc": SESSION},
             match={"unit": "s-dispatched"},
         )
-        with patch("kiro_crew.sel.sel", return_value=sel):
+        with patch("efm_go.sel.sel", return_value=sel):
             response = asyncio.run(routes.api_crew_log_unit_page(request))
         assert response.status == 200
         rows = [row for row in recorded if row["operation"] == "session_crew_log.read"]
@@ -3431,7 +3431,7 @@ class TestAudit:
             sessions={"subagent:abc": SESSION},
             match={"unit": "s-stranger-unit"},
         )
-        with patch("kiro_crew.sel.sel", return_value=sel):
+        with patch("efm_go.sel.sel", return_value=sel):
             response = asyncio.run(routes.api_crew_log_unit_page(request))
         assert response.status == 403
         rows = [row for row in recorded if row["operation"] == "session_crew_log.read"]
@@ -3451,7 +3451,7 @@ class TestAudit:
         sel = MagicMock()
         sel.log_api_access.side_effect = lambda **kw: recorded.append(kw)
         request = _internal_request("/api/crew-log/sessions", secret=False)
-        with patch("kiro_crew.sel.sel", return_value=sel):
+        with patch("efm_go.sel.sel", return_value=sel):
             response = asyncio.run(routes.api_crew_log_sessions(request))
         assert response.status == 403
         rows = [row for row in recorded if row["operation"] == "session_crew_log.list"]
@@ -3472,7 +3472,7 @@ class TestAudit:
         sel = MagicMock()
         sel.log_api_access.side_effect = lambda **kw: recorded.append(kw)
         request = _internal_request("/api/crew-log/sessions", caller="kirocrew-dashboard")
-        with patch("kiro_crew.sel.sel", return_value=sel):
+        with patch("efm_go.sel.sel", return_value=sel):
             response = asyncio.run(routes.api_crew_log_sessions(request))
         assert response.status == 403
         rows = [row for row in recorded if row["operation"] == "session_crew_log.list"]
@@ -3490,7 +3490,7 @@ class TestAudit:
         sel = MagicMock()
         sel.log_api_access.side_effect = lambda **kw: recorded.append(kw)
         request = _internal_request("/api/crew-log/sessions", caller="not-a-real-server")
-        with patch("kiro_crew.sel.sel", return_value=sel):
+        with patch("efm_go.sel.sel", return_value=sel):
             response = asyncio.run(routes.api_crew_log_sessions(request))
         assert response.status == 403
         rows = [row for row in recorded if row["operation"] == "session_crew_log.list"]
@@ -3520,7 +3520,7 @@ class TestAudit:
         sel = MagicMock()
         sel.log_api_access.side_effect = lambda **kw: recorded.append(kw)
         request = _internal_request("/api/crew-log/x", secret=False, match=match)
-        with patch("kiro_crew.sel.sel", return_value=sel):
+        with patch("efm_go.sel.sel", return_value=sel):
             response = asyncio.run(getattr(routes, handler)(request))
         assert response.status == 403
         assert [row for row in recorded if row["outcome"] == "denied"], recorded
@@ -3529,7 +3529,7 @@ class TestAudit:
         _flag_on(monkeypatch)
         _opened(_log())
         request = _internal_request("/api/crew-log/sessions")
-        with patch("kiro_crew.sel.sel", side_effect=RuntimeError("sel is down")):
+        with patch("efm_go.sel.sel", side_effect=RuntimeError("sel is down")):
             response = asyncio.run(routes.api_crew_log_sessions(request))
         assert response.status == 200
 
@@ -3539,7 +3539,7 @@ class TestAudit:
         session itself carries. The second is automatic; this pins that it happens.
         """
         monkeypatch.setenv(routes.CREW_LOG_ENV, "1")
-        from kiro_crew.crew_log import emit
+        from efm_go.crew_log import emit
 
         handle = _log()
         _opened(handle)
@@ -3573,7 +3573,7 @@ class TestTheBrowserRoutesAreUnchanged:
         _opened(_log())
         request = _internal_request(f"/api/sessions/{SESSION}/crew-log", match={"id": SESSION})
         with patch(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             return_value=False,
         ):
             response = asyncio.run(routes.api_session_crew_log(request))
@@ -3597,7 +3597,7 @@ class TestTheListingBoundsWhatItRetains:
         reader orders by -- a real unit is a directory holding ``log.jsonl``, and a
         directory with no log is not a unit at all.
         """
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         root = lg.crew_log_root(lg.KIND_SESSION)
         root.mkdir(parents=True, exist_ok=True)
@@ -3614,7 +3614,7 @@ class TestTheListingBoundsWhatItRetains:
         return names if newest_first_names else list(reversed(names))
 
     def test_only_the_newest_candidates_are_retained(self, monkeypatch):
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         names = self._dirs(7)
         monkeypatch.setattr(reader, "MAX_LISTED_CANDIDATES", 3)
@@ -3623,7 +3623,7 @@ class TestTheListingBoundsWhatItRetains:
         assert cut is True
 
     def test_a_root_within_the_bound_is_not_reported_cut(self, monkeypatch):
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         self._dirs(3)
         monkeypatch.setattr(reader, "MAX_LISTED_CANDIDATES", 3)
@@ -3633,7 +3633,7 @@ class TestTheListingBoundsWhatItRetains:
 
     def test_a_cut_candidate_set_makes_the_listing_report_truncated(self, monkeypatch):
         """A caller must not read a bounded walk as the whole tree."""
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         self._dirs(5)
         monkeypatch.setattr(reader, "MAX_LISTED_CANDIDATES", 2)
@@ -3643,7 +3643,7 @@ class TestTheListingBoundsWhatItRetains:
     def test_the_walk_never_holds_more_than_the_bound(self, monkeypatch):
         """The bound is on RETENTION: the heap is capped during iteration, so the
         peak held size cannot grow with the directory count."""
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         self._dirs(9)
         monkeypatch.setattr(reader, "MAX_LISTED_CANDIDATES", 2)
@@ -3659,7 +3659,7 @@ class TestTheListingBoundsWhatItRetains:
         assert peaks and max(peaks) <= 2
 
     def test_a_root_that_was_never_created_is_empty_and_not_cut(self):
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         assert not lg.crew_log_root(lg.KIND_SESSION).exists()
         assert reader._candidate_dirs(lg.KIND_SESSION) == ([], False)
@@ -3683,7 +3683,7 @@ class TestTheRetentionListingStaysOffTheLoop:
         import ast
         import inspect
 
-        from kiro_crew.dashboard.handlers import crew_log as mod
+        from efm_go.dashboard.handlers import crew_log as mod
 
         tree = ast.parse(inspect.getsource(mod))
         found = []
@@ -3746,7 +3746,7 @@ class TestTheCallerTestAgreesWithTheSharedDerivation:
 
     def test_the_derivation_reports_exactly_the_members_the_refusal_tests(self):
         """A fourth member has to be considered here, not silently untested."""
-        from kiro_crew.dashboard.chat_runner import _crew_log_class
+        from efm_go.dashboard.chat_runner import _crew_log_class
 
         assert len(_crew_log_class(None, _Slot())) == 3
 
@@ -3766,7 +3766,7 @@ class TestTheCallerTestAgreesWithTheSharedDerivation:
         for name, value in shape.items():
             setattr(slot, name, value)
         request = self._request_for(slot)
-        from kiro_crew.dashboard.chat_runner import _crew_log_class
+        from efm_go.dashboard.chat_runner import _crew_log_class
 
         state = request.app.get("state")
         assert _crew_log_class(state, slot) != (
@@ -3782,7 +3782,7 @@ class TestTheCallerTestAgreesWithTheSharedDerivation:
         _dispatch_tree()
         slot = _Slot()
         request = self._request_for(slot)
-        from kiro_crew.dashboard.chat_runner import _crew_log_class
+        from efm_go.dashboard.chat_runner import _crew_log_class
 
         assert _crew_log_class(request.app.get("state"), slot) == ("persistent", "", False)
         assert routes._caller_class_refusal(request, CONDUCTOR_SLOT) == ""
@@ -3807,7 +3807,7 @@ class TestRecencyComesFromTheLogNotItsDirectory:
         Through ``crew_log_dir``, never ``root / unit_id``: a unit directory is named
         with a readable-plus-digest fold of the id, not the id itself.
         """
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         _opened(_log(unit_id))
         directory = lg.crew_log_dir(lg.KIND_SESSION, unit_id)
@@ -3816,7 +3816,7 @@ class TestRecencyComesFromTheLogNotItsDirectory:
         os.utime(directory, (dir_at, dir_at))
 
     def test_the_busy_old_session_sorts_newer_than_the_idle_new_one(self):
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         now = time.time()
         self._unit("s-open-all-day", dir_at=now - 86_400, log_at=now)
@@ -3828,7 +3828,7 @@ class TestRecencyComesFromTheLogNotItsDirectory:
         ]
 
     def test_a_recency_window_keeps_the_busy_session_and_drops_the_idle_one(self):
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         now = time.time()
         self._unit("s-open-all-day", dir_at=now - 86_400, log_at=now)
@@ -3842,7 +3842,7 @@ class TestRecencyComesFromTheLogNotItsDirectory:
         It is refused a moment later for having no unit id, so the only question
         here is whether one bad directory can take the listing down with it.
         """
-        from kiro_crew.crew_log import read as reader
+        from efm_go.crew_log import read as reader
 
         now = time.time()
         self._unit("s-real", dir_at=now, log_at=now)
@@ -4128,7 +4128,7 @@ def test_the_publisher_is_installed_after_the_listener_binds():
     """
     import inspect
 
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     source = inspect.getsource(server.start_dashboard)
     # The boot phases it calls before the bind live in its server_runtime owners.

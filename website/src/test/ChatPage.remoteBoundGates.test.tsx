@@ -3,7 +3,7 @@
  *
  * A crew-bound (remote-executor) session refuses every LOCAL turn-starting
  * action server-side: `remote_bound_refusal` in
- * `src/kiro_crew/dashboard/remote_relay.py` answers 409
+ * `src/efm_go/dashboard/remote_relay.py` answers 409
  * `remote_action_unsupported` for regenerate, edit-resend, rewind and continue,
  * because each would run the crew's turn on THIS machine and diverge the
  * transcripts. Continue was already gated client-side (`selectContinuable`);

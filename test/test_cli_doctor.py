@@ -19,8 +19,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import cli_doctor, cron, extras
-from kiro_crew.agent_sdk.backends import ACP_BACKEND_PI
+from efm_go import cli_doctor, cron, extras
+from efm_go.agent_sdk.backends import ACP_BACKEND_PI
 
 
 class TestManagedServicePolicyDoctor:
@@ -100,7 +100,7 @@ class TestFfmpegLinuxHintResolvable:
         assert ".local/bin" not in cli_doctor._FFMPEG_LINUX_HINT
 
     def test_every_directory_named_is_actually_searched(self) -> None:
-        from kiro_crew import transcribe
+        from efm_go import transcribe
 
         dirs = re.findall(r"/[A-Za-z0-9._/-]+", cli_doctor._FFMPEG_LINUX_HINT)
         assert dirs, "the hint must name at least one concrete install directory"
@@ -115,7 +115,7 @@ class TestFfmpegLinuxHintResolvable:
         # Anchored to the decoder table, not the prose alone: if the pinned Linux
         # artifacts were ever dropped, the hint would promise a download the
         # gateway refuses (409 decoder_unsupported_platform).
-        from kiro_crew.stt import decoder
+        from efm_go.stt import decoder
 
         assert "dashboard" in cli_doctor._FFMPEG_LINUX_HINT
         assert decoder.artifact_for("Linux", "x86_64") is not None
@@ -212,7 +212,7 @@ class TestPodSessionBus:
 
     @staticmethod
     def _linux(monkeypatch, tmp_path: Path, *, bus: bool, template: bool = True) -> Path:
-        from kiro_crew.pod import runtime as rt
+        from efm_go.pod import runtime as rt
 
         monkeypatch.setattr(cli_doctor.sys, "platform", "linux")
         monkeypatch.setattr(cli_doctor.shutil, "which", lambda n: f"/usr/bin/{n}")
@@ -226,7 +226,7 @@ class TestPodSessionBus:
         # Patched on the runtime module because the doctor imports the name
         # locally at call time, which keeps the pod package out of the CLI's
         # import graph for every other command.
-        from kiro_crew.pod import runtime as _rt
+        from efm_go.pod import runtime as _rt
 
         monkeypatch.setattr(
             _rt,
@@ -248,7 +248,7 @@ class TestPodSessionBus:
     def test_sandboxed_away_bus_names_outer_layer_and_host_shell(
         self, monkeypatch, tmp_path: Path, capsys
     ) -> None:
-        from kiro_crew.pod import runtime as rt
+        from efm_go.pod import runtime as rt
 
         sock = self._linux(monkeypatch, tmp_path, bus=True)
         monkeypatch.setattr(
@@ -414,7 +414,7 @@ class TestLingerProbe:
     def _run(self, monkeypatch, *, stdout: str, returncode: int = 0):
         import subprocess
 
-        from kiro_crew.service import linux as service_linux
+        from efm_go.service import linux as service_linux
 
         monkeypatch.setattr(service_linux, "trusted_system_bin", lambda _n: "/usr/bin/loginctl")
         monkeypatch.setattr(
@@ -439,7 +439,7 @@ class TestLingerProbe:
         assert self._run(monkeypatch, stdout="", returncode=1) is None
 
     def test_absent_loginctl_is_unknown(self, monkeypatch) -> None:
-        from kiro_crew.service import linux as service_linux
+        from efm_go.service import linux as service_linux
 
         monkeypatch.setattr(service_linux, "trusted_system_bin", lambda _n: None)
         assert cli_doctor._linger_enabled("tester") is None
@@ -508,7 +508,7 @@ class TestUnresolvedMcpRefs:
         fixture is a single return value -- and is what keeps `doctor_checks/mcp.py`, the
         row's home, off the agent-sdk-boundary baseline.
         """
-        from kiro_crew.agent_sdk.drivers import acp as acp_driver
+        from efm_go.agent_sdk.drivers import acp as acp_driver
 
         monkeypatch.setattr(acp_driver, "agent_spec_mcp_refs", lambda _agent: (spec_found, rows))
 
@@ -530,7 +530,7 @@ class TestUnresolvedMcpRefs:
         pointer stay. Called at the row's own home in ``doctor_checks.mcp`` (the
         ``cli_doctor`` name is the facade's re-export of the same function).
         """
-        from kiro_crew.doctor_checks import mcp as doctor_mcp
+        from efm_go.doctor_checks import mcp as doctor_mcp
 
         for backend in ("goose", ""):
             self._arrange(monkeypatch, [(backend, ["@ghost"], False)])
@@ -620,9 +620,9 @@ class TestUnresolvedMcpRefs:
         one backend whose projection actually works, which is the false positive
         that would get this row disabled.
         """
-        from kiro_crew import acp_backends, providers
-        from kiro_crew.acp import session_mcp
-        from kiro_crew.agent_sdk.drivers import acp as acp_driver
+        from efm_go import acp_backends, providers
+        from efm_go.acp import session_mcp
+        from efm_go.agent_sdk.drivers import acp as acp_driver
 
         seen: dict = {}
 
@@ -647,7 +647,7 @@ class TestUnresolvedMcpRefs:
         assert rows == [("claude", [], True)]
 
     def test_an_unreadable_registry_does_not_break_triage(self, monkeypatch, capsys):
-        from kiro_crew.agent_sdk.drivers import acp as acp_driver
+        from efm_go.agent_sdk.drivers import acp as acp_driver
 
         def _boom(*_a, **_k):
             raise RuntimeError("spec unreadable")
@@ -685,7 +685,7 @@ class TestBackendAbilityCardRows:
 
     def test_the_section_reports_the_install_and_the_cross_harness_cost(self, capsys):
         """What the section claims to answer, and nothing wider."""
-        from kiro_crew.providers.mirrors import PROJECTIONS, PerToolDeny
+        from efm_go.providers.mirrors import PROJECTIONS, PerToolDeny
 
         cli_doctor._doctor_backend_ability_cards(self._cfg("claude"))
         out = capsys.readouterr().out
@@ -697,7 +697,7 @@ class TestBackendAbilityCardRows:
 
     def test_only_the_harness_in_use_gets_a_row(self, capsys):
         """One card, for the install being diagnosed, and none for the rest."""
-        from kiro_crew.acp_backends import selectable_backend_values
+        from efm_go.acp_backends import selectable_backend_values
 
         cli_doctor._doctor_backend_ability_cards(self._cfg("claude"))
         out = capsys.readouterr().out
@@ -717,11 +717,11 @@ class TestBackendAbilityCardRows:
         exactly what a reader DIAGNOSING a session wants, so it prints here, as the
         declaration's own value.
         """
-        from kiro_crew.providers.mirrors import PROJECTIONS
+        from efm_go.providers.mirrors import PROJECTIONS
 
         for backend, declared in PROJECTIONS.items():
             if backend not in set(
-                __import__("kiro_crew.acp_backends", fromlist=["x"]).selectable_backend_values()
+                __import__("efm_go.acp_backends", fromlist=["x"]).selectable_backend_values()
             ):
                 continue
             cli_doctor._doctor_backend_ability_cards(self._cfg(backend))
@@ -730,7 +730,7 @@ class TestBackendAbilityCardRows:
 
     def test_the_in_use_row_states_the_declared_reach(self, capsys):
         """The line the maintainer's ruling turned into a row."""
-        from kiro_crew.providers.mirrors import PROJECTIONS, PerToolDeny
+        from efm_go.providers.mirrors import PROJECTIONS, PerToolDeny
 
         declared = sorted(
             backend
@@ -751,7 +751,7 @@ class TestBackendAbilityCardRows:
         """The consequence a reader cannot recover from the declared value alone."""
         import re as _re
 
-        from kiro_crew.providers.mirrors import PROJECTIONS, PerToolDeny
+        from efm_go.providers.mirrors import PROJECTIONS, PerToolDeny
 
         declared = sorted(
             b for b, p in PROJECTIONS.items() if p.per_tool_deny is PerToolDeny.WHOLE_SERVER
@@ -771,7 +771,7 @@ class TestBackendAbilityCardRows:
         """The sentence holds for the reach it describes, and for no other."""
         import re as _re
 
-        from kiro_crew.providers.mirrors import PROJECTIONS, PerToolDeny
+        from efm_go.providers.mirrors import PROJECTIONS, PerToolDeny
 
         spared = sorted(
             b
@@ -831,7 +831,7 @@ class TestBackendAbilityCardRows:
 
     def test_an_unreadable_registry_does_not_break_triage(self, monkeypatch, capsys):
         """Advisory rows, so a broken tree is reported by something else."""
-        from kiro_crew.agent_sdk import backend_mcp_ability
+        from efm_go.agent_sdk import backend_mcp_ability
 
         def _boom(*_a, **_k):
             raise RuntimeError("registry unreadable")
@@ -842,8 +842,8 @@ class TestBackendAbilityCardRows:
 
     def test_a_kind_this_build_has_no_phrase_for_prints_the_raw_value(self, monkeypatch, capsys):
         """Honest rather than silent, and scrubbed on the way out."""
-        from kiro_crew.agent_sdk import backend_mcp_ability
-        from kiro_crew.agent_sdk.backend_mcp_ability import McpAbility
+        from efm_go.agent_sdk import backend_mcp_ability
+        from efm_go.agent_sdk.backend_mcp_ability import McpAbility
 
         monkeypatch.setattr(
             backend_mcp_ability,
@@ -893,8 +893,8 @@ class TestSelectedBackendProjectionRow:
         here rather than the test being deleted with the backend it happened to be
         demonstrated on.
         """
-        from kiro_crew.agent_sdk import backend_mcp_ability
-        from kiro_crew.agent_sdk.backend_mcp_ability import McpAbility
+        from efm_go.agent_sdk import backend_mcp_ability
+        from efm_go.agent_sdk.backend_mcp_ability import McpAbility
 
         monkeypatch.setattr(
             backend_mcp_ability,
@@ -949,7 +949,7 @@ class TestSelectedBackendProjectionRow:
         so the row below is what tells the operator a pi session carries none of
         Kiro Crew's own tools. The case that follows pins that the row is rendered.
         """
-        from kiro_crew.providers.mirrors import PROJECTIONS, ProjectionKind
+        from efm_go.providers.mirrors import PROJECTIONS, ProjectionKind
 
         gaps = {
             backend
@@ -985,8 +985,8 @@ class TestSelectedBackendProjectionRow:
         Same rule as the refs row: anything a party other than this file wrote
         goes through ``_safe_display`` before reaching a terminal.
         """
-        from kiro_crew.agent_sdk import backend_mcp_ability
-        from kiro_crew.agent_sdk.backend_mcp_ability import McpAbility
+        from efm_go.agent_sdk import backend_mcp_ability
+        from efm_go.agent_sdk.backend_mcp_ability import McpAbility
 
         monkeypatch.setattr(
             backend_mcp_ability,
@@ -1287,7 +1287,7 @@ class TestRuntimeTmpfs:
         assert called == [] and issues == []
 
     def test_roots_come_from_the_sandbox_chooser(self, monkeypatch) -> None:
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         monkeypatch.setattr(
             sandbox, "_mount_source_candidate_roots", lambda: ["/run/user/7", "/dev/shm", "/tmp"]
@@ -1409,7 +1409,7 @@ class TestDoctorAgentAuth:
         vault_detail=None,
         vault_import_fails=False,
     ):
-        from kiro_crew import acp_backends
+        from efm_go import acp_backends
 
         probes: list[int] = []
 
@@ -1423,11 +1423,11 @@ class TestDoctorAgentAuth:
         # sign-in vault -- the host-auth-callback row probes it via a deferred
         # import, and an unpatched probe would make these tests host-dependent.
         if vault_import_fails:
-            monkeypatch.setitem(sys.modules, "kiro_crew.auth.bridge", None)
+            monkeypatch.setitem(sys.modules, "efm_go.auth.bridge", None)
         else:
-            monkeypatch.setattr("kiro_crew.auth.bridge.vault_holds_identity", lambda: vault_holds)
+            monkeypatch.setattr("efm_go.auth.bridge.vault_holds_identity", lambda: vault_holds)
             monkeypatch.setattr(
-                "kiro_crew.auth.bridge.describe_vault_identity", lambda: vault_detail
+                "efm_go.auth.bridge.describe_vault_identity", lambda: vault_detail
             )
         cli_doctor._doctor_agent_auth()
         return capsys.readouterr().out, len(probes)
@@ -1437,7 +1437,7 @@ class TestDoctorAgentAuth:
         the row names the store and prints the declared ACTION, unprobed, and says
         so -- the marker tells the operator this is absence of evidence, not a
         verdict."""
-        from kiro_crew.agent_sdk import host_auth
+        from efm_go.agent_sdk import host_auth
 
         out, probes = self._run(monkeypatch, capsys, ["codex"], signed_in=True)
         assert probes == 0
@@ -1452,7 +1452,7 @@ class TestDoctorAgentAuth:
         """kiro and KAS both resolve tokens from the host store, so the row probes it
         once, and a signed-out answer prints the signed-out STATEMENT -- the one row
         with evidence behind it."""
-        from kiro_crew.agent_sdk import host_auth
+        from efm_go.agent_sdk import host_auth
 
         out, probes = self._run(monkeypatch, capsys, ["", "kas"], signed_in=False)
         assert probes == 1
@@ -1581,7 +1581,7 @@ class TestDoctorAgentAuth:
     def test_a_vault_import_failure_degrades_to_the_kiro_cli_path(
         self, monkeypatch, capsys
     ) -> None:
-        """kiro_crew.auth brings the cryptography wheel with it; a broken install
+        """efm_go.auth brings the cryptography wheel with it; a broken install
         must degrade this advisory row to the kiro-cli path, never lose it."""
         out, probes = self._run(
             monkeypatch, capsys, ["kas"], signed_in=True, vault_import_fails=True
@@ -1631,8 +1631,8 @@ class TestDoctorKas:
         ``describe_vault_identity`` on every run, so every test that gets past
         the binary check needs these pinned to stay host-independent.
         """
-        monkeypatch.setattr("kiro_crew.auth.bridge.vault_holds_identity", lambda: holds)
-        monkeypatch.setattr("kiro_crew.auth.bridge.describe_vault_identity", lambda: detail)
+        monkeypatch.setattr("efm_go.auth.bridge.vault_holds_identity", lambda: holds)
+        monkeypatch.setattr("efm_go.auth.bridge.describe_vault_identity", lambda: detail)
 
     def test_silent_when_backend_not_kas(self, monkeypatch, capsys) -> None:
         self._patch_cfg(monkeypatch, "")
@@ -1655,8 +1655,8 @@ class TestDoctorKas:
     def test_engine_supported_prints_the_relay_argv(self, monkeypatch, capsys) -> None:
         self._patch_cfg(monkeypatch, "kas")
         monkeypatch.setattr(cli_doctor, "resolve_kiro_cli", lambda: "/x/kiro-cli")
-        monkeypatch.setattr("kiro_crew.auth.bridge.vault_holds_identity", lambda: False)
-        monkeypatch.setattr("kiro_crew.auth.bridge.describe_vault_identity", lambda: None)
+        monkeypatch.setattr("efm_go.auth.bridge.vault_holds_identity", lambda: False)
+        monkeypatch.setattr("efm_go.auth.bridge.describe_vault_identity", lambda: None)
         monkeypatch.setattr(
             cli_doctor,
             "_kas_relay_help",
@@ -1684,7 +1684,7 @@ class TestDoctorKas:
             "_kas_relay_help",
             lambda _binary: "--agent-engine <ENGINE>  v1, v2 (default), or v3",
         )
-        monkeypatch.setitem(sys.modules, "kiro_crew.auth.bridge", None)
+        monkeypatch.setitem(sys.modules, "efm_go.auth.bridge", None)
         issues: list[str] = []
 
         cli_doctor._doctor_kas(issues)
@@ -1700,9 +1700,9 @@ class TestDoctorKas:
         names Crew as the auth owner -- the same decision the runtime makes."""
         self._patch_cfg(monkeypatch, "kas")
         monkeypatch.setattr(cli_doctor, "resolve_kiro_cli", lambda: "/x/kiro-cli")
-        monkeypatch.setattr("kiro_crew.auth.bridge.vault_holds_identity", lambda: True)
+        monkeypatch.setattr("efm_go.auth.bridge.vault_holds_identity", lambda: True)
         monkeypatch.setattr(
-            "kiro_crew.auth.bridge.describe_vault_identity",
+            "efm_go.auth.bridge.describe_vault_identity",
             lambda: "social/Google, expires in 42m, refresh token present -> usable",
         )
         monkeypatch.setattr(
@@ -1817,15 +1817,15 @@ class TestDoctorKas:
         source, and the identifier's absence proves a snake_case internal is not being
         printed into a row a human reads during triage.
         """
-        from kiro_crew.agent_sdk import host_auth
+        from efm_go.agent_sdk import host_auth
 
         self._patch_cfg(monkeypatch, "kas")
         monkeypatch.setattr(cli_doctor, "resolve_kiro_cli", lambda: "/x/kiro-cli")
         monkeypatch.setattr(cli_doctor, "_kas_relay_help", lambda _binary: "v3")
         # Pinned False so the assertion reads the cli-owned token line rather
         # than the developer's real vault state.
-        monkeypatch.setattr("kiro_crew.auth.bridge.vault_holds_identity", lambda: False)
-        monkeypatch.setattr("kiro_crew.auth.bridge.describe_vault_identity", lambda: None)
+        monkeypatch.setattr("efm_go.auth.bridge.vault_holds_identity", lambda: False)
+        monkeypatch.setattr("efm_go.auth.bridge.describe_vault_identity", lambda: None)
         issues: list[str] = []
         cli_doctor._doctor_kas(issues)
         out = capsys.readouterr().out
@@ -1864,8 +1864,8 @@ class TestTheKasBlockReportsAWithheldPermissionsField:
             None if help_probe_fails else f"--agent-engine <ENGINE>  {cli_doctor.KAS_RELAY_ENGINE}"
         )
         monkeypatch.setattr(cli_doctor, "_kas_relay_help", lambda _binary: help_text)
-        monkeypatch.setattr("kiro_crew.auth.bridge.vault_holds_identity", lambda: False)
-        monkeypatch.setattr("kiro_crew.auth.bridge.describe_vault_identity", lambda: None)
+        monkeypatch.setattr("efm_go.auth.bridge.vault_holds_identity", lambda: False)
+        monkeypatch.setattr("efm_go.auth.bridge.describe_vault_identity", lambda: None)
         monkeypatch.setattr(cli_doctor, "installed_kiro_cli_version", lambda: version)
         issues: list[str] = []
         cli_doctor._doctor_kas(issues)
@@ -1943,7 +1943,7 @@ class TestPathLauncherOwnership:
         exe.parent.mkdir(parents=True)
         exe.write_text("")
         monkeypatch.setattr(cli_doctor.shutil, "which", lambda c, **kw: str(exe))
-        monkeypatch.setattr("kiro_crew.agent._resolve_kirocrew_bin", lambda: str(exe))
+        monkeypatch.setattr("efm_go.agent._resolve_kirocrew_bin", lambda: str(exe))
 
         cli_doctor._doctor_path_launcher()
 
@@ -1959,7 +1959,7 @@ class TestPathLauncherOwnership:
         package.parent.mkdir(parents=True)
         package.write_text("")
         monkeypatch.setattr(cli_doctor.shutil, "which", lambda c, **kw: str(wheel))
-        monkeypatch.setattr("kiro_crew.agent._resolve_kirocrew_bin", lambda: str(package))
+        monkeypatch.setattr("efm_go.agent._resolve_kirocrew_bin", lambda: str(package))
 
         cli_doctor._doctor_path_launcher()
 
@@ -1989,7 +1989,7 @@ class TestPathLauncherOwnership:
         found.parent.mkdir(parents=True)
         found.write_text("")
         monkeypatch.setattr(cli_doctor.shutil, "which", lambda c, **kw: str(found))
-        monkeypatch.setattr("kiro_crew.agent._resolve_kirocrew_bin", lambda: "kirocrew")
+        monkeypatch.setattr("efm_go.agent._resolve_kirocrew_bin", lambda: "kirocrew")
 
         cli_doctor._doctor_path_launcher()
 
@@ -2288,7 +2288,7 @@ class TestCliInstallerResidue:
     kiro-cli checks for updates on every process start, and Crew spawns a fresh
     kiro-cli per session. On Windows the running binary cannot be replaced, so
     each check leaves an installer behind that is never cleaned up (upstream
-    kirodotdev/Kiro#10970). These guard the doctor surface that makes the
+    efmleads.com#10970). These guard the doctor surface that makes the
     resulting disk usage visible.
     """
 
@@ -2457,7 +2457,7 @@ class TestEffectiveModelSection:
         self._tmp = tmp_path
 
     def _agents_dir(self) -> Path:
-        from kiro_crew.config.paths import kiro_agents_dir
+        from efm_go.config.paths import kiro_agents_dir
 
         agents_dir = kiro_agents_dir()
         # Fail loudly rather than write into a real home if the override lapses.
@@ -2468,14 +2468,14 @@ class TestEffectiveModelSection:
         return agents_dir
 
     def _cfg(self, global_model: str):
-        from kiro_crew.config import KiroCrewConfig
+        from efm_go.config import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.agent.model = global_model
         return cfg
 
     def _install_spec(self, model: str | None) -> Path:
-        from kiro_crew.agent import AGENT_FILENAME
+        from efm_go.agent import AGENT_FILENAME
 
         body: dict = {"name": "kirocrew"}
         if model is not None:
@@ -2523,7 +2523,7 @@ class TestEffectiveModelSection:
         assert issues == []
 
     def test_tracking_state_is_reported(self, capsys) -> None:
-        from kiro_crew import agent_state
+        from efm_go import agent_state
 
         agent_state.set_model_managed("kirocrew", False)
         self._install_spec("claude-opus-4.8")
@@ -2540,7 +2540,7 @@ class TestEffectiveModelSection:
         assert "tracking:    not recorded" in capsys.readouterr().out
 
     def test_unreadable_spec_is_reported_not_swallowed(self, capsys) -> None:
-        from kiro_crew.agent import AGENT_FILENAME
+        from efm_go.agent import AGENT_FILENAME
 
         (self._agents_dir() / AGENT_FILENAME).write_text("{ not json", encoding="utf-8")
         issues: list[str] = []
@@ -2553,7 +2553,7 @@ class TestEffectiveModelSection:
         """kiro-cli resolves <project>/.kiro/agents FIRST and Kiro Crew's own
         resolver never reads it, so that file can decide what actually runs while
         every Kiro Crew surface reports something else."""
-        from kiro_crew.agent import AGENT_FILENAME
+        from efm_go.agent import AGENT_FILENAME
 
         self._install_spec(None)
         project = self._tmp / "proj"
@@ -2581,7 +2581,7 @@ class TestEffectiveModelSection:
 
     def _bind_custom_agent(self, cfg, name: str):
         """Point the default alias at a non-built-in kiro agent."""
-        from kiro_crew.config.loader import KiroCrewAgentConfig
+        from efm_go.config.loader import KiroCrewAgentConfig
 
         cfg.default_agent = "default"
         cfg.agents["default"] = KiroCrewAgentConfig(kiro_agent=name)
@@ -2659,7 +2659,7 @@ class TestEffectiveModelSection:
         assert "--agent" not in out, "the built-in agent needs no --agent flag"
 
     def test_tracking_names_the_agent_it_describes(self, capsys) -> None:
-        from kiro_crew import agent_state
+        from efm_go import agent_state
 
         self._install_spec(None)
         agents_dir = self._agents_dir()
@@ -2712,7 +2712,7 @@ class TestEffectiveModelSection:
         assert "\\x1b" in out, "the value is still shown, just escaped"
 
     def test_control_sequences_in_a_project_spec_are_escaped(self, capsys) -> None:
-        from kiro_crew.agent import AGENT_FILENAME
+        from efm_go.agent import AGENT_FILENAME
 
         self._install_spec(None)
         project = self._tmp / "proj"
@@ -2744,8 +2744,8 @@ class TestEffectiveModelSection:
         through that one reader instead of hand-rolling the checks is the point.
         A benign link is followed exactly as the resolver follows
         it, so the report cannot disagree with what will actually run."""
-        from kiro_crew import agent_discovery
-        from kiro_crew.agent import AGENT_FILENAME
+        from efm_go import agent_discovery
+        from efm_go.agent import AGENT_FILENAME
 
         agents_dir = self._agents_dir()
         target = self._tmp / "protected.json"
@@ -2869,7 +2869,7 @@ class TestEffectiveModelSection:
         assert "tracking:" in out
 
     def test_broken_default_member_is_reported_without_hiding_the_binding(self, capsys):
-        from kiro_crew.config.loader import KiroCrewAgentConfig
+        from efm_go.config.loader import KiroCrewAgentConfig
 
         cfg = self._cfg("auto")
         cfg.agents["writer"] = KiroCrewAgentConfig(
@@ -2901,7 +2901,7 @@ class TestWhatsAppSection:
     """
 
     def _cfg(self, *, enabled: bool = True, groups: list | None = None):
-        from kiro_crew.config import KiroCrewConfig
+        from efm_go.config import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.whatsapp.enabled = enabled
@@ -2918,11 +2918,11 @@ class TestWhatsAppSection:
 
     @staticmethod
     def _extra(monkeypatch, present: bool) -> None:
-        monkeypatch.setattr("kiro_crew.whatsapp.client.neonize_available", lambda: present)
+        monkeypatch.setattr("efm_go.whatsapp.client.neonize_available", lambda: present)
 
     @staticmethod
     def _pair(home: Path) -> Path:
-        from kiro_crew.whatsapp.client import default_db_path
+        from efm_go.whatsapp.client import default_db_path
 
         store = default_db_path(home)
         store.parent.mkdir(parents=True, exist_ok=True)
@@ -3001,7 +3001,7 @@ class TestWhatsAppSection:
     ) -> None:
         """Doctor and the channel must resolve ONE path, or the report describes a
         store the gateway never touches."""
-        from kiro_crew.whatsapp.client import default_db_path
+        from efm_go.whatsapp.client import default_db_path
 
         self._extra(monkeypatch, True)
         issues: list[str] = []
@@ -3073,14 +3073,14 @@ class TestWhatsAppSection:
 def _report_source() -> str:
     """The source of every function that prints a row of the doctor report.
 
-    The orchestrator plus each ``kiro_crew.doctor_checks`` family, so an invariant
+    The orchestrator plus each ``efm_go.doctor_checks`` family, so an invariant
     asserted over the report holds wherever a section lives.
     """
     import importlib
     import inspect
     import pkgutil
 
-    from kiro_crew import doctor_checks
+    from efm_go import doctor_checks
 
     families = [
         importlib.import_module(f"{doctor_checks.__name__}.{info.name}")
@@ -3774,7 +3774,7 @@ class TestProjectSectionAndAuthRow:
         pinned to a pristine default, binaries "found", probes stubbed, so
         the run is deterministic and spawns nothing.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         def _pristine() -> KiroCrewConfig:
             cfg = KiroCrewConfig()
@@ -3792,15 +3792,15 @@ class TestProjectSectionAndAuthRow:
         mock_run = MagicMock(returncode=0, stdout="kiro-cli 1.0.0", stderr="")
         with (
             patch(
-                "kiro_crew.cli_doctor.shutil.which",
+                "efm_go.cli_doctor.shutil.which",
                 side_effect=lambda b, **_kw: f"/usr/local/bin/{b}",
             ),
-            patch("kiro_crew.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
-            patch("kiro_crew.cli_doctor.subprocess.run", return_value=mock_run),
+            patch("efm_go.cli_doctor.KIRO_AGENTS_DIR", tmp_path),
+            patch("efm_go.cli_doctor.subprocess.run", return_value=mock_run),
             patch("urllib.request.urlopen"),
-            patch("kiro_crew.cli_doctor.is_local_only", return_value=True),
-            patch("kiro_crew.cli_doctor.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_doctor.probe_server", side_effect=_probe),
+            patch("efm_go.cli_doctor.is_local_only", return_value=True),
+            patch("efm_go.cli_doctor.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_doctor.probe_server", side_effect=_probe),
             patch.dict(
                 "os.environ",
                 {
@@ -3821,7 +3821,7 @@ class TestProjectSectionAndAuthRow:
         # Carry both _PROJECT_MARKERS so the directory measurably IS a
         # Kiro Crew source checkout.
         (tmp_path / "skills").mkdir()
-        (tmp_path / "src" / "kiro_crew").mkdir(parents=True)
+        (tmp_path / "src" / "efm_go").mkdir(parents=True)
         out = self._run_doctor(tmp_path, monkeypatch, capsys, project_dir=str(tmp_path))
         assert f"source dir:  ✅ {tmp_path} (Kiro Crew source checkout)" in out
         assert "project dir:" not in out
@@ -3866,7 +3866,7 @@ class TestProjectSectionAndAuthRow:
         # reinstated loopback exemption for ordinary API routes reds a test
         # instead of drifting the way the old row did. /api/status is the
         # canonical gated route: it must never join the bypass sets.
-        from kiro_crew.dashboard import token_auth
+        from efm_go.dashboard import token_auth
 
         assert "/api/status" not in token_auth._BYPASS_EXACT
         assert "/api/status" not in token_auth._BYPASS_EXACT_METHODS
@@ -3883,7 +3883,7 @@ class TestNameGrantPlatformScopeRow:
     def test_unknown_documents_folder_names_the_code_and_says_it_is_not_your_config(
         self, monkeypatch, capsys
     ):
-        from kiro_crew import name_grant
+        from efm_go import name_grant
 
         monkeypatch.setattr(name_grant.platform_compat, "IS_WINDOWS", True)
         monkeypatch.setattr(
@@ -3897,7 +3897,7 @@ class TestNameGrantPlatformScopeRow:
         assert "approval card" in out
 
     def test_an_existing_profile_is_named_so_the_user_can_act(self, monkeypatch, capsys, tmp_path):
-        from kiro_crew import name_grant
+        from efm_go import name_grant
 
         profile = tmp_path / "Microsoft.PowerShell_profile.ps1"
         profile.write_text("function ls { evil }\n")
@@ -3915,7 +3915,7 @@ class TestNameGrantPlatformScopeRow:
     def test_windows_without_a_profile_reports_that_grants_can_be_satisfied(
         self, monkeypatch, capsys, tmp_path
     ):
-        from kiro_crew import name_grant
+        from efm_go import name_grant
 
         monkeypatch.setattr(name_grant.platform_compat, "IS_WINDOWS", True)
         monkeypatch.setattr(name_grant, "_path_is_ambiguous", lambda: False)
@@ -3930,7 +3930,7 @@ class TestNameGrantPlatformScopeRow:
         assert name_grant.WINDOWS_UNMODELLED not in out
 
     def test_posix_reports_that_grants_can_be_satisfied(self, monkeypatch, capsys):
-        from kiro_crew import name_grant
+        from efm_go import name_grant
 
         monkeypatch.setattr(name_grant.platform_compat, "IS_WINDOWS", False)
         monkeypatch.setattr(name_grant, "_path_is_ambiguous", lambda: False)
@@ -3947,7 +3947,7 @@ class TestNameGrantPlatformScopeRow:
         # exported shell functions and a relative `PATH` entry each refuse every
         # grant, so a ✅ beside them would send a user hunting a fault that is
         # their own environment.
-        from kiro_crew import name_grant
+        from efm_go import name_grant
 
         monkeypatch.setattr(name_grant.platform_compat, "IS_WINDOWS", False)
         monkeypatch.setattr(name_grant, "_path_is_ambiguous", lambda: False)
@@ -3964,7 +3964,7 @@ class TestNameGrantPlatformScopeRow:
     def test_a_relative_search_path_entry_is_reported_rather_than_claimed_satisfiable(
         self, monkeypatch, capsys
     ):
-        from kiro_crew import name_grant
+        from efm_go import name_grant
 
         monkeypatch.setattr(name_grant.platform_compat, "IS_WINDOWS", False)
         monkeypatch.setattr(name_grant, "_path_is_ambiguous", lambda: True)
@@ -4027,7 +4027,7 @@ class TestDoctorSkillViewCensus:
         (lease_dir / f"{name}.hold").write_text("")
 
     def _run(self, tmp_path: Path, monkeypatch, capsys) -> str:
-        from kiro_crew.acp import skill_projection
+        from efm_go.acp import skill_projection
 
         monkeypatch.setattr(cli_doctor, "KIRO_AGENTS_DIR", tmp_path)
         # The census resolves the data home itself, spelled as the publisher
@@ -4169,7 +4169,7 @@ class TestDoctorSkillViewCensus:
     def test_a_truncated_census_is_reported_as_floors_without_derived_counts(
         self, tmp_path, monkeypatch, capsys
     ):
-        from kiro_crew.acp import skill_projection
+        from efm_go.acp import skill_projection
 
         monkeypatch.setattr(skill_projection, "_CENSUS_MAX_ALIASES", 3)
         monkeypatch.setattr(cli_doctor, "_SKILL_VIEW_BACKLOG_WARN", 2)
@@ -4222,7 +4222,7 @@ class TestDoctorSkillViewCensus:
     def test_the_remedy_names_the_projection_directories_it_means(
         self, tmp_path, monkeypatch, capsys
     ):
-        from kiro_crew.acp import skill_projection
+        from efm_go.acp import skill_projection
 
         monkeypatch.setattr(cli_doctor, "_SKILL_VIEW_BACKLOG_WARN", 1)
         for i in range(2):
@@ -4248,7 +4248,7 @@ class TestDoctorSkillViewCensus:
     ):
         import hashlib
 
-        from kiro_crew.doctor_checks import resources
+        from efm_go.doctor_checks import resources
 
         monkeypatch.setattr(resources, "_SKILL_VIEW_RESIDUE_WARN", 1)
         metadata_dir = tmp_path / ".kirocrew-skill-projection-metadata"
@@ -4305,7 +4305,7 @@ class TestDoctorSkillViewCensus:
     def test_a_churning_env_label_is_rendered_escaped(self, tmp_path, monkeypatch, capsys):
         """Labels come from spec files another program wrote: a control sequence in
         a server or key name must reach the terminal escaped, never executed."""
-        from kiro_crew.agent_sdk.drivers import acp as acp_driver
+        from efm_go.agent_sdk.drivers import acp as acp_driver
 
         monkeypatch.setattr(
             acp_driver, "skill_view_churning_env_keys", lambda _d: ["srv.\x1b]0;pwn\x07KEY"]
@@ -4329,7 +4329,7 @@ class TestRunDirCensus:
 
     @staticmethod
     def _run(monkeypatch, capsys, root: Path, retained=frozenset()) -> str:
-        from kiro_crew import session_pid
+        from efm_go import session_pid
 
         monkeypatch.setenv("KIROCREW_WORKSPACE", str(root))
         monkeypatch.setattr(session_pid, "retained_gateway_pids", lambda: frozenset(retained))
@@ -4338,7 +4338,7 @@ class TestRunDirCensus:
 
     @staticmethod
     def _marked(root: Path, name: str, marker: str) -> Path:
-        from kiro_crew.session_work_dir import RUN_DIR_MARKER
+        from efm_go.session_work_dir import RUN_DIR_MARKER
 
         work_dir = root / name
         (work_dir / ".kiro" / "settings").mkdir(parents=True)
@@ -4358,7 +4358,7 @@ class TestRunDirCensus:
     def test_both_figures_print_on_one_line_and_nothing_is_removed(
         self, tmp_path: Path, monkeypatch, capsys
     ) -> None:
-        from kiro_crew.session_work_dir import RUN_DIR_MARKER, data_home_id
+        from efm_go.session_work_dir import RUN_DIR_MARKER, data_home_id
 
         root = tmp_path / "ws"
         legacy = root / "subagent_deadbeef" / ".kiro" / "settings"
@@ -4381,7 +4381,7 @@ class TestRunDirCensus:
     def test_an_unmarked_backlog_names_the_remedy_and_the_cap_makes_a_floor(
         self, tmp_path: Path, monkeypatch, capsys
     ) -> None:
-        from kiro_crew import session_work_dir
+        from efm_go import session_work_dir
 
         root = tmp_path / "ws"
         for n in range(1, 4):
@@ -4410,7 +4410,7 @@ class TestRunDirCensus:
         self, pinned: bool, tmp_path: Path, monkeypatch, capsys
     ) -> None:
         """The by-name walk never marks these folders, so the census is where they surface."""
-        from kiro_crew import session_work_dir
+        from efm_go import session_work_dir
 
         monkeypatch.setattr(session_work_dir.pinned_fs, "supports_pinned_walk", lambda: pinned)
         root = tmp_path / "ws"
@@ -4431,7 +4431,7 @@ class TestRunDirCensus:
     def test_a_root_with_nothing_the_sweep_cannot_reclaim_is_clean(
         self, tmp_path: Path, monkeypatch, capsys
     ) -> None:
-        from kiro_crew.session_work_dir import data_home_id
+        from efm_go.session_work_dir import data_home_id
 
         root = tmp_path / "ws"
         self._marked(root, "subagent_00000001", f"{data_home_id()}\n12345")
@@ -4439,7 +4439,7 @@ class TestRunDirCensus:
         assert "✅ no run directories left behind that the sweep cannot reclaim" in out
 
     def test_an_unreadable_ledger_skips_the_census(self, tmp_path: Path, monkeypatch, capsys):
-        from kiro_crew import session_pid
+        from efm_go import session_pid
 
         root = tmp_path / "ws"
         self._marked(root, "subagent_00000001", "garbled")

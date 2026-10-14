@@ -27,10 +27,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import aiohttp
 import pytest
 
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.platform import update_capability, update_layout, update_provider
-from kiro_crew.platform.update_capability import AutoUpdateEffect
-from kiro_crew.platform.update_provider import CommandProvider, UpdateCheckResult
+from efm_go.dashboard.handlers import updates
+from efm_go.platform import update_capability, update_layout, update_provider
+from efm_go.platform.update_capability import AutoUpdateEffect
+from efm_go.platform.update_provider import CommandProvider, UpdateCheckResult
 
 # A well-formed manifest, shaped like the real feed document.
 _FEED_TEMPLATE = {
@@ -43,7 +43,7 @@ _FEED_TEMPLATE = {
     "sha256": "ea681adb",
     "signature": "V9MGrlYt",
     "version": "0.1.3rc2",
-    "wheel_url": "https://download.crew.kiro.dev/cli/insider/0.1.3rc2/x.whl",
+    "wheel_url": "https://efmleads.com/cli/insider/0.1.3rc2/x.whl",
 }
 
 
@@ -110,7 +110,7 @@ def _pin_probe_git(monkeypatch, tmp_path):
         )
         fake.chmod(0o755)
     monkeypatch.setattr(
-        "kiro_crew.platform.update_capability.trusted_system_bin", lambda _name: str(fake)
+        "efm_go.platform.update_capability.trusted_system_bin", lambda _name: str(fake)
     )
     return fake
 
@@ -269,7 +269,7 @@ class TestWheelInstallCheck:
         asyncio.run(updates._do_update_check())
 
         info = updates.get_update_info()
-        assert seen["url"] == "https://updates.crew.kiro.dev/feed/insider/latest-cli.json"
+        assert seen["url"] == "https://efmleads.com/go/updates/feed/insider/latest-cli.json"
         assert info["update_available"] is True
         assert info["check_status"] == "succeeded"
         assert info["error_code"] is None
@@ -293,7 +293,7 @@ class TestWheelInstallCheck:
         # `release_channel` at import, while `derive_capability` imports it inside the
         # call, so patching the module attribute reaches one and not the other. That
         # asymmetry is precisely the production race — two reads, two moments.
-        monkeypatch.setattr("kiro_crew.platform.update_layout.release_channel", lambda: "stable")
+        monkeypatch.setattr("efm_go.platform.update_layout.release_channel", lambda: "stable")
         _stub_feed(monkeypatch, body=_manifest(version="0.1.3rc2"))
         monkeypatch.setattr(updates, "_local_version", "0.1.2rc3")
         asyncio.run(updates._do_update_check())
@@ -435,7 +435,7 @@ class TestFeedMinVersion:
     def _verified_signature(self, monkeypatch):
         """Default the signature to VERIFIED so each test exercises one axis;
         the unverified case overrides this explicitly."""
-        from kiro_crew.platform import feed_trust
+        from efm_go.platform import feed_trust
 
         monkeypatch.setattr(feed_trust, "verify_manifest_signature", lambda _m: True)
 
@@ -500,7 +500,7 @@ class TestFeedMinVersion:
         """The floor coerces the UI, so a manifest whose signature does not
         verify contributes NO floor — while the ordinary (non-coercive) update
         verdict still succeeds, exactly the pre-floor posture."""
-        from kiro_crew.platform import feed_trust
+        from efm_go.platform import feed_trust
 
         monkeypatch.setattr(feed_trust, "verify_manifest_signature", lambda _m: False)
         _stub_feed(monkeypatch, body=_manifest(version="0.6.0", min_version="0.6.0"))
@@ -740,10 +740,10 @@ class TestGitCheckoutStillWorks:
         _pin_probe_git(monkeypatch, tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         # These tests exercise the CHECK against a scripted git; the process
-        # running them does not load kiro_crew from tmp_path, so the provenance
+        # running them does not load efm_go from tmp_path, so the provenance
         # half of the git-lane gate is declared rather than derived.
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
         return tmp_path
@@ -1305,7 +1305,7 @@ class TestAutoApplyGuard:
 
     @staticmethod
     def _orchestrator():
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         # __new__ without __init__: _check_for_updates only touches
         # dashboard_state and _auto_apply_update, and a real construction would
@@ -1334,29 +1334,29 @@ class TestAutoApplyGuard:
         busy: int = 0,
         effect=None,
     ):
-        import kiro_crew.dashboard.handlers as handlers
+        import efm_go.dashboard.handlers as handlers
 
         orch = self._orchestrator()
         orch._in_flight_work_counts = MagicMock(return_value=(busy, 0))
         cfg = MagicMock()
         cfg.auto_update = auto_update
-        from kiro_crew.platform.governance import UpdatePins
+        from efm_go.platform.governance import UpdatePins
 
         original = dict(handlers._update_info)
         try:
             handlers._update_info.clear()
             handlers._update_info.update(info)
             with patch.object(handlers, "_do_update_check", new_callable=AsyncMock):
-                with patch("kiro_crew.config.KiroCrewConfig.load", return_value=cfg):
+                with patch("efm_go.config.KiroCrewConfig.load", return_value=cfg):
                     with patch(
-                        "kiro_crew.platform.update_governance.update_required",
+                        "efm_go.platform.update_governance.update_required",
                         return_value=False,
                     ):
                         # Runtime ownership is authoritative. Old managed wheels
                         # predate the build stamp and report "source", while a
                         # foreign wheel must never be rewritten by Kiro Crew.
                         with patch(
-                            "kiro_crew.platform.wheel_engine.running_from_managed_venv",
+                            "efm_go.platform.wheel_engine.running_from_managed_venv",
                             return_value=managed_venv,
                         ):
                             # No commands in the policy pins, so resolve_provider
@@ -1364,12 +1364,12 @@ class TestAutoApplyGuard:
                             # path under test.
                             with (
                                 patch(
-                                    "kiro_crew.platform.governance.active_update_pins",
+                                    "efm_go.platform.governance.active_update_pins",
                                     return_value=UpdatePins(),
                                 ),
                                 (
                                     patch(
-                                        "kiro_crew.slack.gateway.auto_update_effect",
+                                        "efm_go.slack.gateway.auto_update_effect",
                                         return_value=effect,
                                     )
                                     if effect is not None
@@ -1396,7 +1396,7 @@ class TestAutoApplyGuard:
             },
         }
         with patch(
-            "kiro_crew.slack.gateway.distribution",
+            "efm_go.slack.gateway.distribution",
             side_effect=AssertionError("managed-venv ownership must replace the build stamp"),
         ):
             orch = self._run(
@@ -1426,7 +1426,7 @@ class TestAutoApplyGuard:
         # The first coordinator cycle runs while boot is still inside the MCP
         # probe, so a SIGTERM there reaches it before ``_shutdown`` does. An
         # installer admitted now would be stopped mid-write moments later.
-        with patch("kiro_crew.slack.gateway.shutdown_event", SimpleNamespace(is_set=lambda: True)):
+        with patch("efm_go.slack.gateway.shutdown_event", SimpleNamespace(is_set=lambda: True)):
             orch = self._run(dict(self._MANAGED_UPDATE), auto_update=True, managed_venv=True)
         orch._auto_apply_wheel_update.assert_not_awaited()
         orch.sessions.pause_turn_admission_for_update.assert_not_awaited()
@@ -1436,7 +1436,7 @@ class TestAutoApplyGuard:
         orch._pending_update_respawn = MagicMock()
         orch._restart_after_update = AsyncMock()
         orch._finish_auto_update_apply = AsyncMock()
-        with patch("kiro_crew.slack.gateway.shutdown_event", SimpleNamespace(is_set=lambda: True)):
+        with patch("efm_go.slack.gateway.shutdown_event", SimpleNamespace(is_set=lambda: True)):
             asyncio.run(orch._retry_pending_update_restart())
         orch._restart_after_update.assert_not_awaited()
         orch.sessions.pause_turn_admission_for_update.assert_not_awaited()
@@ -1620,7 +1620,7 @@ class TestAutoApplyGuard:
         assert "Already on latest version" not in capsys.readouterr().out
 
     def test_failed_apply_replay_waits_for_the_existing_pass(self, tmp_path):
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         orch = object.__new__(gateway.GatewayOrchestrator)
         replay = AsyncMock()
@@ -1647,7 +1647,7 @@ class TestAutoApplyGuard:
 
 class TestRecurringAutoUpdateCoordinator:
     def test_rechecks_after_the_interval(self):
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         orch = object.__new__(gateway.GatewayOrchestrator)
         orch._check_for_updates = AsyncMock(side_effect=[None, asyncio.CancelledError()])
@@ -1663,7 +1663,7 @@ class TestRecurringAutoUpdateCoordinator:
         sleep.assert_awaited_once_with(updates._UPDATE_CHECK_INTERVAL)
 
     def test_busy_deferral_retries_soon(self):
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         orch = object.__new__(gateway.GatewayOrchestrator)
         calls = 0
@@ -1793,8 +1793,8 @@ async def callback(job):
         assert guarded == [True, False]
 
     def test_every_background_registration_is_gated_and_counted(self):
-        root = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
-        from kiro_crew.slack import gateway
+        root = Path(__file__).resolve().parents[1] / "src" / "efm_go"
+        from efm_go.slack import gateway
 
         census = inspect.getsource(gateway.GatewayOrchestrator._in_flight_work_counts)
         for token in (
@@ -1806,7 +1806,7 @@ async def callback(job):
         ):
             assert token in census, f"channel callback census lost {token}"
 
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         subagent_census = inspect.getsource(SubagentManager.pending_work_count.fget)
         for token in (
@@ -1876,7 +1876,7 @@ async def callback(job):
                 assert token in census, f"{kind} registers work but is absent from the census"
 
     def test_every_pre_turn_channel_reserves_before_commands(self):
-        root = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = Path(__file__).resolve().parents[1] / "src" / "efm_go"
         owners = {
             path.parent.name
             for path in root.glob("*/client.py")
@@ -1959,7 +1959,7 @@ async def callback(job):
         assert "inbound_restricted=session_restricted" in teams_source
 
     def test_upstream_inline_receivers_register_before_dispatch(self):
-        root = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = Path(__file__).resolve().parents[1] / "src" / "efm_go"
         contracts = (
             (root / "whatsapp" / "client.py", "_on_message", "on_message"),
             (root / "weixin" / "transport.py", "_poll_forever", "receive"),
@@ -1995,7 +1995,7 @@ async def callback(job):
         assert "_handler_tasks" in (root / "weixin" / "client.py").read_text(encoding="utf-8")
 
     def test_slack_socket_reserves_before_ack(self):
-        path = Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "slack" / "events.py"
+        path = Path(__file__).resolve().parents[1] / "src" / "efm_go" / "slack" / "events.py"
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         listener = next(
             node
@@ -2019,7 +2019,7 @@ async def callback(job):
         assert admit and ack and min(admit) < min(ack)
 
     def test_every_auto_apply_path_uses_the_final_restart_fence(self):
-        path = Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "slack" / "gateway.py"
+        path = Path(__file__).resolve().parents[1] / "src" / "efm_go" / "slack" / "gateway.py"
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         methods = {
             node.name: node
@@ -2175,7 +2175,7 @@ def _pin_install_shape(
     shell: bool = True,
 ):
     """Pin every input ``auto_update_effect`` reads, at the seams it reads them."""
-    from kiro_crew.platform import (
+    from efm_go.platform import (
         update_capability,
         update_governance,
         update_layout,
@@ -2195,7 +2195,7 @@ def _pin_install_shape(
             requires_restart=True,
         ),
     )
-    monkeypatch.setattr("kiro_crew.platform_compat.trusted_git_bin", lambda: "/usr/bin/git")
+    monkeypatch.setattr("efm_go.platform_compat.trusted_git_bin", lambda: "/usr/bin/git")
     monkeypatch.setattr(update_governance, "_git", lambda _root, *_args: branch)
     monkeypatch.setattr(update_governance, "repo_exec_config_reason", lambda _root: exec_config)
     monkeypatch.setattr(update_governance, "tracks_upstream", lambda _root, _b, **_k: tracks)
@@ -2207,13 +2207,13 @@ def _pin_install_shape(
     monkeypatch.setattr(update_layout, "cdn_bases", lambda: ("https://a", "https://b"))
     monkeypatch.setattr(update_capability, "_installer_runs_here", lambda: platform != "win32")
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.trusted_system_bin", lambda _n: "/bin/sh" if shell else None
+        "efm_go.platform_compat.trusted_system_bin", lambda _n: "/bin/sh" if shell else None
     )
     monkeypatch.setattr(update_provider, "resolve_provider", lambda: provider)
 
 
 def _provider(*, can_apply: bool):
-    from kiro_crew.platform.update_provider import UpdateCheckResult
+    from efm_go.platform.update_provider import UpdateCheckResult
 
     provider = MagicMock()
     provider.can_apply = MagicMock(return_value=can_apply)
@@ -2294,7 +2294,7 @@ class TestAutoUpdateEffect:
 
     @pytest.mark.parametrize("shape, effect, route", _SHAPES)
     def test_the_effect_of_each_install_shape(self, monkeypatch, shape, effect, route):
-        from kiro_crew.platform.update_capability import auto_update_effect
+        from efm_go.platform.update_capability import auto_update_effect
 
         self._shape(monkeypatch, shape)
         answer = auto_update_effect(running_version="1.0.0")
@@ -2309,8 +2309,8 @@ class TestAutoUpdateEffect:
     def test_the_update_loop_acts_on_that_effect(self, monkeypatch, shape, effect, route):
         """``install`` applies with the switch on; ``mandatory`` applies with it off;
         ``notify`` never pauses admission, even with the switch on."""
-        import kiro_crew.dashboard.handlers as handlers
-        from kiro_crew.platform.governance import UpdatePins
+        import efm_go.dashboard.handlers as handlers
+        from efm_go.platform.governance import UpdatePins
 
         provider = self._shape(monkeypatch, shape)
         orch = TestAutoApplyGuard._orchestrator()
@@ -2334,9 +2334,9 @@ class TestAutoUpdateEffect:
             )
             with (
                 patch.object(handlers, "_do_update_check", new_callable=AsyncMock),
-                patch("kiro_crew.config.KiroCrewConfig.load", return_value=cfg),
+                patch("efm_go.config.KiroCrewConfig.load", return_value=cfg),
                 patch(
-                    "kiro_crew.platform.governance.active_update_pins", return_value=UpdatePins()
+                    "efm_go.platform.governance.active_update_pins", return_value=UpdatePins()
                 ),
             ):
                 asyncio.run(orch._check_for_updates())
@@ -2374,9 +2374,9 @@ def test_a_provider_the_check_resolves_stops_the_built_in_routes(monkeypatch):
     provider configured in between is first seen by the check itself. A provider
     OWNS the update, so no built-in route may apply that cycle.
     """
-    import kiro_crew.dashboard.handlers as handlers
-    from kiro_crew.platform.governance import UpdatePins
-    from kiro_crew.platform.update_capability import MANAGED_BY_COMMAND
+    import efm_go.dashboard.handlers as handlers
+    from efm_go.platform.governance import UpdatePins
+    from efm_go.platform.update_capability import MANAGED_BY_COMMAND
 
     _pin_install_shape(monkeypatch, managed_by="git")
     orch = TestAutoApplyGuard._orchestrator()
@@ -2401,8 +2401,8 @@ def test_a_provider_the_check_resolves_stops_the_built_in_routes(monkeypatch):
         handlers._update_info.clear()
         with (
             patch.object(handlers, "_do_update_check", _check_installs_a_provider),
-            patch("kiro_crew.config.KiroCrewConfig.load", return_value=cfg),
-            patch("kiro_crew.platform.governance.active_update_pins", return_value=UpdatePins()),
+            patch("efm_go.config.KiroCrewConfig.load", return_value=cfg),
+            patch("efm_go.platform.governance.active_update_pins", return_value=UpdatePins()),
         ):
             asyncio.run(orch._check_for_updates())
     finally:
@@ -2416,8 +2416,8 @@ def test_a_provider_the_check_resolves_stops_the_built_in_routes(monkeypatch):
 
 def test_a_wheel_route_without_an_installer_command_does_not_pause_admission(monkeypatch):
     """The command comes from the CHECK, so the route cannot vouch for it."""
-    import kiro_crew.dashboard.handlers as handlers
-    from kiro_crew.platform.governance import UpdatePins
+    import efm_go.dashboard.handlers as handlers
+    from efm_go.platform.governance import UpdatePins
 
     _pin_install_shape(monkeypatch, managed_by="kirocrew")
     orch = TestAutoApplyGuard._orchestrator()
@@ -2434,8 +2434,8 @@ def test_a_wheel_route_without_an_installer_command_does_not_pause_admission(mon
         )
         with (
             patch.object(handlers, "_do_update_check", new_callable=AsyncMock),
-            patch("kiro_crew.config.KiroCrewConfig.load", return_value=cfg),
-            patch("kiro_crew.platform.governance.active_update_pins", return_value=UpdatePins()),
+            patch("efm_go.config.KiroCrewConfig.load", return_value=cfg),
+            patch("efm_go.platform.governance.active_update_pins", return_value=UpdatePins()),
         ):
             asyncio.run(orch._check_for_updates())
     finally:
@@ -2457,7 +2457,7 @@ def test_every_unattended_apply_consults_the_effect_first():
     import ast
     import inspect
 
-    from kiro_crew.slack import gateway
+    from efm_go.slack import gateway
 
     cls = next(
         node
@@ -2494,7 +2494,7 @@ def test_every_unattended_apply_consults_the_effect_first():
 
 def test_a_provider_without_can_apply_still_installs(monkeypatch):
     """A provider predating ``can_apply`` keeps applying when asked, as before."""
-    from kiro_crew.platform.update_capability import auto_update_effect
+    from efm_go.platform.update_capability import auto_update_effect
 
     legacy = MagicMock(spec=["check", "apply"])
     _pin_install_shape(monkeypatch, managed_by="kirocrew", provider=legacy)
@@ -2507,8 +2507,8 @@ def test_a_source_pinned_install_below_the_floor_is_not_told_to_run_kirocrew_upd
     monkeypatch,
 ):
     """The pin refuses `kirocrew update` too, so no badge points at it."""
-    import kiro_crew.dashboard.handlers as handlers
-    from kiro_crew.platform.governance import UpdatePins
+    import efm_go.dashboard.handlers as handlers
+    from efm_go.platform.governance import UpdatePins
 
     _pin_install_shape(monkeypatch, managed_by="git", blocked="pinned", floor=True)
     orch = TestAutoApplyGuard._orchestrator()
@@ -2526,7 +2526,7 @@ def test_a_source_pinned_install_below_the_floor_is_not_told_to_run_kirocrew_upd
         )
         with (
             patch.object(handlers, "_do_update_check", new_callable=AsyncMock),
-            patch("kiro_crew.platform.governance.active_update_pins", return_value=UpdatePins()),
+            patch("efm_go.platform.governance.active_update_pins", return_value=UpdatePins()),
         ):
             asyncio.run(orch._check_for_updates())
         forced = handlers._update_info["update_available"]
@@ -2544,9 +2544,9 @@ def test_a_source_pinned_install_below_the_floor_is_not_told_to_run_kirocrew_upd
 # DERIVED from the helpers it calls, so a newly added gate fails here until the
 # route reads it too — or until it is declared dynamic below, with its reason.
 _GATE_HELPER_MODULES = (
-    "kiro_crew.platform.update_governance",
-    "kiro_crew.platform.update_layout",
-    "kiro_crew.platform.wheel_engine",
+    "efm_go.platform.update_governance",
+    "efm_go.platform.update_layout",
+    "efm_go.platform.wheel_engine",
 )
 
 #: Helpers an apply path calls that the STATIC derivation cannot read, with why.
@@ -2589,8 +2589,8 @@ def test_the_derivation_reads_every_static_gate_its_apply_path_reads(apply_name,
     import ast
     import inspect
 
-    from kiro_crew.platform import update_capability
-    from kiro_crew.slack import gateway
+    from efm_go.platform import update_capability
+    from efm_go.slack import gateway
 
     def _names(module, name: str) -> set[str]:
         fn = next(
@@ -2611,7 +2611,7 @@ def test_the_derivation_reads_every_static_gate_its_apply_path_reads(apply_name,
     applied = _names(gateway, apply_name)
     if "preflight_bases" in applied:
         # The managed-venv apply runs its gates through the shared preflight.
-        from kiro_crew.platform import wheel_apply
+        from efm_go.platform import wheel_apply
 
         applied |= _names(wheel_apply, "preflight_bases")
     static_gates = (applied & helpers) - set(_DYNAMIC_GATES)
@@ -2635,7 +2635,7 @@ class TestTheStatusFrameAnswersBeforeAnyCheck:
 
     @pytest.fixture(autouse=True)
     def _no_derivation_yet(self, monkeypatch):
-        from kiro_crew.dashboard.handlers import updates
+        from efm_go.dashboard.handlers import updates
 
         monkeypatch.setattr(updates, "_auto_effect", None)
         monkeypatch.setattr(updates, "_auto_effect_task", None)
@@ -2647,39 +2647,39 @@ class TestTheStatusFrameAnswersBeforeAnyCheck:
         def _boom(*_a, **_k):  # pragma: no cover - must not be called
             raise AssertionError("the status frame must not shell out to git")
 
-        monkeypatch.setattr("kiro_crew.platform.update_governance._git_probe", _boom)
-        monkeypatch.setattr("kiro_crew.platform.update_capability.subprocess.run", _boom)
+        monkeypatch.setattr("efm_go.platform.update_governance._git_probe", _boom)
+        monkeypatch.setattr("efm_go.platform.update_capability.subprocess.run", _boom)
 
     def test_a_desktop_bundle_reports_notify(self, monkeypatch, _no_derivation_yet):
         self._no_git(monkeypatch)
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "dmg")
-        monkeypatch.setattr("kiro_crew.platform.update_provider.resolve_provider", lambda: None)
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "dmg")
+        monkeypatch.setattr("efm_go.platform.update_provider.resolve_provider", lambda: None)
 
         assert status_fields_of(_no_derivation_yet)["update_auto_effect"] == "notify"
 
     def test_a_managed_venv_reports_install(self, monkeypatch, _no_derivation_yet):
         self._no_git(monkeypatch)
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "wheel")
-        monkeypatch.setattr("kiro_crew.platform.update_provider.resolve_provider", lambda: None)
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_provider.resolve_provider", lambda: None)
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability._source_checkout_root", lambda: None
+            "efm_go.platform.update_capability._source_checkout_root", lambda: None
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability._runs_from_managed_venv", lambda: True
+            "efm_go.platform.update_capability._runs_from_managed_venv", lambda: True
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability._installer_runs_here", lambda: True
+            "efm_go.platform.update_capability._installer_runs_here", lambda: True
         )
-        monkeypatch.setattr("kiro_crew.platform_compat.trusted_system_bin", lambda _n: "/bin/sh")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.cdn_bases_are_safe", lambda: True)
+        monkeypatch.setattr("efm_go.platform_compat.trusted_system_bin", lambda _n: "/bin/sh")
+        monkeypatch.setattr("efm_go.platform.update_layout.cdn_bases_are_safe", lambda: True)
         monkeypatch.setattr(
-            "kiro_crew.platform.update_layout.cdn_bases", lambda: ("https://a", "https://b")
-        )
-        monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_blocked_reason", lambda _u: ""
+            "efm_go.platform.update_layout.cdn_bases", lambda: ("https://a", "https://b")
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_required", lambda _v: False
+            "efm_go.platform.update_governance.update_blocked_reason", lambda _u: ""
+        )
+        monkeypatch.setattr(
+            "efm_go.platform.update_governance.update_required", lambda _v: False
         )
 
         assert status_fields_of(_no_derivation_yet)["update_auto_effect"] == "install"
@@ -2694,11 +2694,11 @@ class TestTheStatusFrameAnswersBeforeAnyCheck:
         """The provider path publishes no ``can_apply``, so the field must not read it."""
         self._no_git(monkeypatch)
         monkeypatch.setattr(
-            "kiro_crew.platform.update_provider.resolve_provider",
+            "efm_go.platform.update_provider.resolve_provider",
             lambda: _provider(can_apply=can_apply),
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_required", lambda _v: floor
+            "efm_go.platform.update_governance.update_required", lambda _v: floor
         )
 
         original = dict(_no_derivation_yet._update_info)
@@ -2719,10 +2719,10 @@ class TestTheStatusFrameAnswersBeforeAnyCheck:
     def test_a_checkout_is_the_one_shape_that_waits(self, monkeypatch, _no_derivation_yet):
         """Only git can report a branch and a remote, so this one stays unknown."""
         self._no_git(monkeypatch)
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "source")
-        monkeypatch.setattr("kiro_crew.platform.update_provider.resolve_provider", lambda: None)
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "source")
+        monkeypatch.setattr("efm_go.platform.update_provider.resolve_provider", lambda: None)
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability._source_checkout_root",
+            "efm_go.platform.update_capability._source_checkout_root",
             lambda: Path("/somewhere/checkout"),
         )
 
@@ -2741,11 +2741,11 @@ def test_a_non_boolean_auto_update_on_disk_reads_as_the_default(tmp_path, monkey
     Stored verbatim it is truthy to the update loop, which would install on a
     host whose owner wrote the opposite, and no switch can render a string.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     path = tmp_path / "config.json"
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: path)
-    monkeypatch.setattr("kiro_crew.config.loader.config_local_path", lambda: tmp_path / "none.json")
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: path)
+    monkeypatch.setattr("efm_go.config.loader.config_local_path", lambda: tmp_path / "none.json")
 
     def _loaded(value) -> bool:
         path.write_text(json.dumps({"auto_update": value}), encoding="utf-8")
@@ -2777,8 +2777,8 @@ class TestTheProviderPathPublishesItsOwnCanApply:
 
     @pytest.mark.parametrize("can_apply", [True, False])
     def test_a_loop_check_publishes_the_providers_verdict(self, monkeypatch, can_apply):
-        import kiro_crew.dashboard.handlers as handlers
-        from kiro_crew.platform.governance import UpdatePins
+        import efm_go.dashboard.handlers as handlers
+        from efm_go.platform.governance import UpdatePins
 
         provider = _provider(can_apply=can_apply)
         _pin_install_shape(monkeypatch, managed_by="kirocrew", provider=provider)
@@ -2793,11 +2793,11 @@ class TestTheProviderPathPublishesItsOwnCanApply:
         try:
             handlers._update_info.clear()
             with (
-                patch("kiro_crew.config.KiroCrewConfig.load", return_value=cfg),
+                patch("efm_go.config.KiroCrewConfig.load", return_value=cfg),
                 patch(
-                    "kiro_crew.platform.governance.active_update_pins", return_value=UpdatePins()
+                    "efm_go.platform.governance.active_update_pins", return_value=UpdatePins()
                 ),
-                patch("kiro_crew.slack.gateway.respawn_executable", create=True),
+                patch("efm_go.slack.gateway.respawn_executable", create=True),
             ):
                 asyncio.run(orch._check_for_updates())
             fields = handlers.updates.status_update_fields()
@@ -2812,28 +2812,28 @@ class TestTheProviderPathPublishesItsOwnCanApply:
 
 def test_a_pipx_install_answers_notify_without_git(monkeypatch):
     """Not a checkout, not the managed venv: the git-free path already knows."""
-    from kiro_crew.dashboard.handlers import updates
+    from efm_go.dashboard.handlers import updates
 
     def _boom(*_a, **_k):  # pragma: no cover - must not be called
         raise AssertionError("the status frame must not shell out to git")
 
-    monkeypatch.setattr("kiro_crew.platform.update_governance._git_probe", _boom)
+    monkeypatch.setattr("efm_go.platform.update_governance._git_probe", _boom)
     monkeypatch.setattr(updates, "_auto_effect", None)
     monkeypatch.setattr(updates, "_shape_effect", None)
-    monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "wheel")
-    monkeypatch.setattr("kiro_crew.platform.update_provider.resolve_provider", lambda: None)
-    monkeypatch.setattr("kiro_crew.platform.update_capability._source_checkout_root", lambda: None)
+    monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "wheel")
+    monkeypatch.setattr("efm_go.platform.update_provider.resolve_provider", lambda: None)
+    monkeypatch.setattr("efm_go.platform.update_capability._source_checkout_root", lambda: None)
     monkeypatch.setattr(
-        "kiro_crew.platform.update_capability._runs_from_managed_venv", lambda: False
+        "efm_go.platform.update_capability._runs_from_managed_venv", lambda: False
     )
-    monkeypatch.setattr("kiro_crew.platform.update_capability._installer_runs_here", lambda: True)
-    monkeypatch.setattr("kiro_crew.platform_compat.trusted_system_bin", lambda _n: "/bin/sh")
+    monkeypatch.setattr("efm_go.platform.update_capability._installer_runs_here", lambda: True)
+    monkeypatch.setattr("efm_go.platform_compat.trusted_system_bin", lambda _n: "/bin/sh")
 
     assert status_fields_of(updates)["update_auto_effect"] == "notify"
 
 
 def test_the_git_free_answer_is_derived_once_per_process(monkeypatch):
-    from kiro_crew.dashboard.handlers import updates
+    from efm_go.dashboard.handlers import updates
 
     calls = {"n": 0}
 
@@ -2851,7 +2851,7 @@ def test_the_git_free_answer_is_derived_once_per_process(monkeypatch):
 
 def test_the_status_reader_never_derives_on_the_loop(monkeypatch):
     """The sync reader only reads the memo; the funnel primes it off the loop."""
-    from kiro_crew.dashboard.handlers import updates
+    from efm_go.dashboard.handlers import updates
 
     def _boom(**_kw):  # pragma: no cover - must not be called
         raise AssertionError("status_update_fields must not derive the effect itself")
@@ -2863,9 +2863,9 @@ def test_the_status_reader_never_derives_on_the_loop(monkeypatch):
 
 
 def test_the_status_funnel_primes_the_effect_before_reading(monkeypatch):
-    from kiro_crew.dashboard import status_counts
-    from kiro_crew.dashboard.handlers import updates
-    from kiro_crew.platform.update_capability import AutoUpdateEffect
+    from efm_go.dashboard import status_counts
+    from efm_go.dashboard.handlers import updates
+    from efm_go.platform.update_capability import AutoUpdateEffect
 
     monkeypatch.setattr(updates, "_auto_effect", None)
     monkeypatch.setattr(updates, "_shape_effect", None)
@@ -2895,7 +2895,7 @@ def test_the_status_funnel_primes_the_effect_before_reading(monkeypatch):
     ],
 )
 def test_only_a_desktop_bundle_reports_itself_bundled_by_the_app(dist, bundled):
-    from kiro_crew.platform.update_capability import bundled_by_desktop_app
+    from efm_go.platform.update_capability import bundled_by_desktop_app
 
     assert bundled_by_desktop_app(dist) is bundled
 
@@ -2912,15 +2912,15 @@ def test_a_bundled_gateway_with_a_policy_provider_says_both_facts(
     The effect is the provider's answer, because the provider is what this
     gateway's loop runs; without one, the app's own updater owns it: notify.
     """
-    from kiro_crew.dashboard.handlers import updates
+    from efm_go.dashboard.handlers import updates
 
     provider = None if provider_kind is None else _provider(can_apply=provider_kind == "apply")
     monkeypatch.setattr(updates, "_auto_effect", None)
     monkeypatch.setattr(updates, "_shape_effect", None)
-    monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "dmg")
-    monkeypatch.setattr("kiro_crew.platform.update_capability.baked_distribution", lambda: "dmg")
-    monkeypatch.setattr("kiro_crew.platform.update_provider.resolve_provider", lambda: provider)
-    monkeypatch.setattr("kiro_crew.platform.update_governance.update_required", lambda _v: False)
+    monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "dmg")
+    monkeypatch.setattr("efm_go.platform.update_capability.baked_distribution", lambda: "dmg")
+    monkeypatch.setattr("efm_go.platform.update_provider.resolve_provider", lambda: provider)
+    monkeypatch.setattr("efm_go.platform.update_governance.update_required", lambda _v: False)
     original = dict(updates._update_info)
     try:
         updates._update_info.clear()
@@ -2937,8 +2937,8 @@ def test_a_bundled_gateway_with_a_policy_provider_says_both_facts(
 
 def test_a_runtime_distribution_override_cannot_claim_the_bundle(monkeypatch):
     """Only the BAKED stamp says "bundled": an env override cannot relabel it."""
-    from kiro_crew.platform.update_capability import bundled_by_desktop_app
+    from efm_go.platform.update_capability import bundled_by_desktop_app
 
-    monkeypatch.setattr("kiro_crew.platform.update_capability.baked_distribution", lambda: "")
-    monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "dmg")
+    monkeypatch.setattr("efm_go.platform.update_capability.baked_distribution", lambda: "")
+    monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "dmg")
     assert bundled_by_desktop_app() is False

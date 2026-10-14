@@ -29,9 +29,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.deploy import engine
-from kiro_crew.instances import diagnostics, token_mint
-from kiro_crew.instances.ssh_tunnel_manager import _SshTunnel
+from efm_go.deploy import engine
+from efm_go.instances import diagnostics, token_mint
+from efm_go.instances.ssh_tunnel_manager import _SshTunnel
 
 _TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2ln"
 _NOT_INSTALLED = (

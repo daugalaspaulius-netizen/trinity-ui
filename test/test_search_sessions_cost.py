@@ -21,8 +21,8 @@ import threading
 
 import pytest
 
-from kiro_crew import history
-from kiro_crew.history import ConversationLog
+from efm_go import history
+from efm_go.history import ConversationLog
 
 
 @pytest.fixture

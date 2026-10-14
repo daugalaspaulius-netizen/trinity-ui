@@ -1,4 +1,4 @@
-"""Coverage for ``kiro_crew.autonudge_authz`` guard clauses and audit fallbacks.
+"""Coverage for ``efm_go.autonudge_authz`` guard clauses and audit fallbacks.
 
 ``test/test_workflows_nudge_wiring.py`` already pins the happy path and the
 headline Discord/dashboard denials. This file targets the remaining rejection
@@ -19,15 +19,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew import autonudge_authz
-from kiro_crew.autonudge import MonitorUpdateConflict
-from kiro_crew.autonudge_authz import (
+from efm_go import autonudge_authz
+from efm_go.autonudge import MonitorUpdateConflict
+from efm_go.autonudge_authz import (
     authorize_and_add_nudge,
     authorize_and_update_nudge,
     normalize_banner,
 )
-from kiro_crew.constants import MAX_BANNER_CHARS
-from kiro_crew.monitoring.models import MAX_MONITOR_WAKE_INSTRUCTIONS_CHARS, MonitorState
+from efm_go.constants import MAX_BANNER_CHARS
+from efm_go.monitoring.models import MAX_MONITOR_WAKE_INSTRUCTIONS_CHARS, MonitorState
 
 
 class RecordingSvc:
@@ -604,7 +604,7 @@ async def test_a_new_goal_after_a_stop_file_finish_is_not_killed_by_the_stale_fi
     slot, so the person's sequence -- Clear, then set a new goal -- must not
     end on the new loop's first tick. The arm chokepoint unlinks the stale
     file before the new loop exists, which is what this pins end to end."""
-    from kiro_crew.autonudge import STOP_SENTINEL_REASON, AutoNudgeService
+    from efm_go.autonudge import STOP_SENTINEL_REASON, AutoNudgeService
 
     sentinel = tmp_path / ".stop-chat-1-1"
     monkeypatch.setattr(

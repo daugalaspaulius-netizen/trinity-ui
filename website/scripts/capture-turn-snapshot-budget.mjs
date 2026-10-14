@@ -98,12 +98,12 @@ const DEMOTED = path => ({
   turn_budget_chars: TURN_BUDGET,
 })
 const FILE_CHANGES = [
-  { path: 'src/kiro_crew/dashboard/chat_runner.py', before: KEPT_BEFORE, after: KEPT_AFTER },
-  DEMOTED('src/kiro_crew/dashboard/chat_utils.py'),
+  { path: 'src/efm_go/dashboard/chat_runner.py', before: KEPT_BEFORE, after: KEPT_AFTER },
+  DEMOTED('src/efm_go/dashboard/chat_utils.py'),
   DEMOTED('website/src/store/chatSlice.ts'),
   DEMOTED('test/test_file_change_snapshots.py'),
 ]
-const DEMOTED_ROW = 'src/kiro_crew/dashboard/chat_utils.py'
+const DEMOTED_ROW = 'src/efm_go/dashboard/chat_utils.py'
 const KEPT = FILE_CHANGES[0]
 const TURN_SENTENCE = /too large to keep every file's diff/
 const OMITTED_NOTICE = /12 more files changed in this turn are not listed\./

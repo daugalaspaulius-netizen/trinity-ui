@@ -15,11 +15,11 @@ superseded-by: []
 # RFC: A conversation's trust follows its founder, not its continuer
 
 - Status: `in-progress` -- the change this document records is live in an open
-  PR, [#13109](https://github.com/kirodotdev/KiroCrew/pull/13109), the same
+  PR, [#13109](https://efmleads.com/pull/13109), the same
   reading the index gives `rfc-composable-layout-mechanism` and
   `rfc-solo-spawn-gate`. The design was reviewed and accepted by maintainer
   bolichen97 on 2026-10-01, in
-  [this document's PR](https://github.com/kirodotdev/KiroCrew/pull/15457#issuecomment-5927219425):
+  [this document's PR](https://efmleads.com/pull/15457#issuecomment-5927219425):
   "reviewed for a security regression and accepted as designed: it only
   narrows when chat-level trust auto-approves". The status stays
   `in-progress` rather than `accepted` because the index reads `in-progress`
@@ -54,7 +54,7 @@ by which chat happens to be asking.
 
 The remedy a person has today is to start the task again from one chat. An
 in-product way to clear or re-found a contested conversation is
-[#13244](https://github.com/kirodotdev/KiroCrew/issues/13244), and this
+[#13244](https://efmleads.com/issues/13244), and this
 document records that shipping the contest ahead of that affordance is the
 ordering bolichen97 accepted on 2026-10-01.
 
@@ -122,7 +122,7 @@ whichever records happen to be live.
 - **No clearing or re-founding affordance.** Rewriting a founder record's
   `conversation_root` under one chat is a human action with its own UI, its own
   audit line and its own question about who may do it; it is
-  [#13244](https://github.com/kirodotdev/KiroCrew/issues/13244)'s to design.
+  [#13244](https://efmleads.com/issues/13244)'s to design.
   Shipping the contest first means a contested conversation is prompt-forever
   until then. bolichen97 accepted that on 2026-10-01: the alternative was to
   keep auto-approving cross-chat continuations while the clearing tool was
@@ -167,7 +167,7 @@ whichever records happen to be live.
   and pre-upgrade nested conversations are contested on first continuation.
   The prompts say what happened and what to do; they offer no button because
   there is not yet one to offer.
-- The implementation is [#13109](https://github.com/kirodotdev/KiroCrew/pull/13109),
+- The implementation is [#13109](https://efmleads.com/pull/13109),
   whose Goal line records this decision in the words above. The current
   behaviour, once merged, is specified in
   [`../system-specs/modules/subagent.md`](../system-specs/modules/subagent.md)

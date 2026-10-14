@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`kiro_crew.artifacts` — the data layer."""
+"""Unit tests for :mod:`efm_go.artifacts` — the data layer."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew.artifacts import (
+from efm_go.artifacts import (
     MAX_CONTENT_BYTES,
     MAX_VERSIONS,
     Artifact,
@@ -317,7 +317,7 @@ class TestList:
         assert store.list() == []
 
     def test_returns_newest_first(self, store: ArtifactStore, monkeypatch) -> None:
-        from kiro_crew import artifacts
+        from efm_go import artifacts
 
         # All timestamp reads within a write share its explicit instant.
         now = "2026-01-01T00:00:00.000001+00:00"
@@ -346,7 +346,7 @@ class TestList:
         CI failed ``test_artifacts_handlers.TestList.test_returns_items`` on exactly
         that. The ``slug`` tie-break is what makes the answer total.
         """
-        from kiro_crew import artifacts
+        from efm_go import artifacts
 
         monkeypatch.setattr(
             artifacts, "_now_iso", lambda: "2026-01-01T00:00:00.000001+00:00"
@@ -574,7 +574,7 @@ class TestDelete:
 class TestSecurity:
     def test_root_under_sensitive_path_refused(self, tmp_path: Path, monkeypatch) -> None:
         # Pretend the root path is sensitive
-        from kiro_crew import artifacts as art_mod
+        from efm_go import artifacts as art_mod
 
         monkeypatch.setattr(art_mod, "sensitive_path_refusal", lambda _p: "Blocked: x")
         with pytest.raises(ArtifactError):
@@ -598,7 +598,7 @@ class TestSecurity:
         # symlink expansion landing on a sensitive path), the snapshot read
         # must refuse rather than silently leak. Verify the gated helper is
         # actually on the read path.
-        from kiro_crew import artifacts as art_mod
+        from efm_go import artifacts as art_mod
 
         store.create(name="x", content="v1")
         # First update succeeds: the gate returns False normally.
@@ -774,7 +774,7 @@ class TestLifecycleEvents:
     def test_event_log_is_fifo_capped(self, store: ArtifactStore) -> None:
         # Cap is 500 (MAX_EVENTS_PER_ARTIFACT). Force-write 510 events to
         # confirm the oldest 10 get dropped.
-        from kiro_crew.artifacts import MAX_EVENTS_PER_ARTIFACT
+        from efm_go.artifacts import MAX_EVENTS_PER_ARTIFACT
 
         art = store.create(name="brd", content="# v1")
         for i in range(MAX_EVENTS_PER_ARTIFACT + 10):
@@ -967,7 +967,7 @@ class TestLivePointer:
         meta.source_path = str(sensitive)
         store._write_meta(meta)
         # Pretend the path is sensitive.
-        from kiro_crew import artifacts as artifacts_mod
+        from efm_go import artifacts as artifacts_mod
 
         monkeypatch.setattr(
             artifacts_mod,
@@ -1157,7 +1157,7 @@ class TestSourcePathSecurityHardening:
         # Make is_sensitive_path return True only for the resolved path
         # (NOT the traversal string), simulating the real-world semantics
         # where the check inspects the canonical filesystem location.
-        from kiro_crew import artifacts as artifacts_mod
+        from efm_go import artifacts as artifacts_mod
 
         resolved = str(sensitive.resolve())
         monkeypatch.setattr(
@@ -1178,7 +1178,7 @@ class TestSourcePathSecurityHardening:
         sensitive.write_text("PRIVATE", encoding="utf-8")
         link = tmp_path / "innocent.md"
         link.symlink_to(sensitive)
-        from kiro_crew import artifacts as artifacts_mod
+        from efm_go import artifacts as artifacts_mod
 
         resolved = str(sensitive.resolve())
         monkeypatch.setattr(
@@ -1198,7 +1198,7 @@ class TestSourcePathSecurityHardening:
         # MAX_CONTENT_BYTES bound was silently exceeded for multi-byte text
         # — a 100-char string of 4-byte emoji would be 400 bytes after
         # encode() and bypass the cap.
-        from kiro_crew import artifacts as artifacts_mod
+        from efm_go import artifacts as artifacts_mod
 
         # Use a small cap so the test runs fast.
         monkeypatch.setattr(artifacts_mod, "MAX_CONTENT_BYTES", 50)
@@ -1229,7 +1229,7 @@ class TestRoundThirteenFixes:
         # must stop at MAX_CONTENT_BYTES+1 — verified by mocking read_text
         # to fail loudly if anyone calls it (the new code uses open('rb')
         # + bounded read instead).
-        from kiro_crew import artifacts as artifacts_mod
+        from efm_go import artifacts as artifacts_mod
 
         monkeypatch.setattr(artifacts_mod, "MAX_CONTENT_BYTES", 50)
         f = tmp_path / "big.txt"
@@ -1339,7 +1339,7 @@ class TestRecordImpression:
         assert store.get("x").content == "<div>orig</div>"
 
     def test_unknown_slug_raises(self, store):
-        from kiro_crew.artifacts import ArtifactNotFoundError
+        from efm_go.artifacts import ArtifactNotFoundError
 
         with pytest.raises(ArtifactNotFoundError):
             store.record_impression("no-such-thing", by="user")
@@ -1883,7 +1883,7 @@ class TestSourceRootBarrier:
         src = proj / ".aws" / "credentials"
         src.parent.mkdir(parents=True)
         src.write_text("SECRET", encoding="utf-8")
-        from kiro_crew import artifacts as artifacts_mod
+        from efm_go import artifacts as artifacts_mod
 
         monkeypatch.setattr(artifacts_mod, "is_sensitive_path", lambda p: p == str(src.resolve()))
         assert home_store._try_read_source_path(str(src), str(proj)) is None
@@ -2334,7 +2334,7 @@ class TestSourceRootBarrier:
         """
         proj, src = project_file
         original = src.read_text(encoding="utf-8")
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         real_write = hooks_mod.os.write
         calls = {"n": 0}
@@ -2422,7 +2422,7 @@ class TestSourceRootBarrier:
         src.write_text(full, encoding="utf-8")
         # Force the bounded read to return a PREFIX, exactly as an oversized
         # file would, and prove the original survives intact.
-        from kiro_crew import artifacts as artifacts_mod
+        from efm_go import artifacts as artifacts_mod
 
         monkeypatch.setattr(artifacts_mod, "MAX_CONTENT_BYTES", 32)
         home_store.update("spec", snapshot=True)
@@ -2615,7 +2615,7 @@ class TestSourcePathLengthRejected:
             store.relocate("x", "/" + "a" * 600)
 
     def test_path_at_the_cap_is_accepted_unchanged(self, store: ArtifactStore) -> None:
-        from kiro_crew.artifacts import MAX_SOURCE_PATH_LEN
+        from efm_go.artifacts import MAX_SOURCE_PATH_LEN
 
         at_cap = "/" + "a" * (MAX_SOURCE_PATH_LEN - 1)
         art = store.create(name="X", content="c", slug="x", source_path=at_cap)
@@ -2633,7 +2633,7 @@ class TestAllowedRootsSingleProducer:
     def test_set_contains_home_data_home_and_configured_roots(
         self, home_store, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.config.loader import KiroCrewConfig, PublishConfig
+        from efm_go.config.loader import KiroCrewConfig, PublishConfig
 
         extra = tmp_path / "shared"
         extra.mkdir()
@@ -2668,8 +2668,8 @@ class TestAllowedRootsSingleProducer:
         once in the store (inside ``allowed_source_roots``) and never in the
         handler, which must call the store instead.
         """
-        import kiro_crew.artifacts as artifacts_mod
-        import kiro_crew.dashboard.handlers.artifacts as handlers_mod
+        import efm_go.artifacts as artifacts_mod
+        import efm_go.dashboard.handlers.artifacts as handlers_mod
 
         store_src = Path(artifacts_mod.__file__).read_text(encoding="utf-8")
         handler_src = Path(handlers_mod.__file__).read_text(encoding="utf-8")

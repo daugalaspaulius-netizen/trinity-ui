@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 from channel_turn_fakes import FakeSessions, RecordingCtxBuilder
 
-from kiro_crew.messaging.turn_bracket import TurnBracket, stop_reason_landed, turn_bracket
+from efm_go.messaging.turn_bracket import TurnBracket, stop_reason_landed, turn_bracket
 
 KEY = "weixin:agentA:direct:userA"
 

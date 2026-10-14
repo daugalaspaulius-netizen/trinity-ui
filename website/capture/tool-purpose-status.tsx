@@ -46,7 +46,7 @@ document.documentElement.setAttribute('data-theme', theme === 'light' ? 'kiro-li
 
 const SLOT = 'chat-1'
 const PURPOSE = 'Count the backend modules'
-const REFINED_TITLE = 'Running: sleep 40; ls src/kiro_crew | wc -l'
+const REFINED_TITLE = 'Running: sleep 40; ls src/efm_go | wc -l'
 
 /** Frames captured from a real turn: kiro-cli emits the initial `tool_call`
  *  with the agent's purpose, then a `tool_call_update` refinement carrying the
@@ -68,7 +68,7 @@ const REFINEMENT = {
     slot: SLOT,
     tool: REFINED_TITLE,
     kind: 'execute',
-    input_preview: '{"command":"sleep 40; ls src/kiro_crew | wc -l"}',
+    input_preview: '{"command":"sleep 40; ls src/efm_go | wc -l"}',
     tool_call_id: 'tc-1',
     is_update: true,
     ...(scene === 'with-purpose' ? { purpose: PURPOSE } : {}),

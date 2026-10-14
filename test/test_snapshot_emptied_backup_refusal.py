@@ -11,9 +11,9 @@ from pathlib import Path
 import pytest
 from test_snapshot import unpinnable_argv
 
-from kiro_crew import pinned_fs
-from kiro_crew import snapshot as snap
-from kiro_crew import snapshot_redact as redact
+from efm_go import pinned_fs
+from efm_go import snapshot as snap
+from efm_go import snapshot_redact as redact
 
 KEY = "AKIAIOSFODNN7EXAMPLE"
 

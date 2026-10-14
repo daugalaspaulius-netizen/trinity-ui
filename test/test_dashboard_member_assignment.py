@@ -10,11 +10,11 @@ import threading
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.dashboard import chat_persistence
-from kiro_crew.execution_context import read_session_execution
-from kiro_crew.member_memory_auth import read_private_session_store
-from kiro_crew.memory_stores import UnknownMemoryStore, provision_member_memory
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.dashboard import chat_persistence
+from efm_go.execution_context import read_session_execution
+from efm_go.member_memory_auth import read_private_session_store
+from efm_go.memory_stores import UnknownMemoryStore, provision_member_memory
 
 
 @pytest.fixture
@@ -110,7 +110,7 @@ async def test_dashboard_pin_holds_namespace_lock_through_publication(
     tmp_path, member_stores, monkeypatch
 ):
     """Deletion cannot retire a store between its final check and binding write."""
-    from kiro_crew import execution_context, memory_stores, platform_compat
+    from efm_go import execution_context, memory_stores, platform_compat
 
     writer, _ = member_stores
     state = _make_state(tmp_path)

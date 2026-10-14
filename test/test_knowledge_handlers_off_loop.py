@@ -45,10 +45,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.dashboard.handlers import knowledge as kh
-from kiro_crew.knowledge.store import _ON_LOOP_DB_GUARD, KnowledgeStore
-from kiro_crew.on_loop_db import OnLoopStoreError
+from efm_go._sqlite_compat import sqlite3
+from efm_go.dashboard.handlers import knowledge as kh
+from efm_go.knowledge.store import _ON_LOOP_DB_GUARD, KnowledgeStore
+from efm_go.on_loop_db import OnLoopStoreError
 
 
 @pytest.fixture()
@@ -1385,7 +1385,7 @@ class TestCancellationFinalizesSyncStatus:
         """A cancel inside the budget-deferral arm is not caught by the sibling
         ``except BaseException`` arm, so the 'pending' write itself must be
         cancel-safe: drained, finalized, re-raised -- never left 'syncing'."""
-        from kiro_crew.knowledge.ingestion import ImportChunkBudgetError
+        from efm_go.knowledge.ingestion import ImportChunkBudgetError
 
         source_id = await asyncio.to_thread(_seed_source, store)
         entered = threading.Event()

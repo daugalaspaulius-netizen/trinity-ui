@@ -18,7 +18,7 @@ import asyncio
 
 import pytest
 
-from kiro_crew.instances.ssh_tunnel_manager import (
+from efm_go.instances.ssh_tunnel_manager import (
     _MAX_STDOUT_CHARS,
     _sanitize_ssm_stdout,
     _SshTunnel,

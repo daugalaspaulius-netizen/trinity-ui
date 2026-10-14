@@ -19,9 +19,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import history as history_mod
-from kiro_crew import memory_stores
-from kiro_crew.history import (
+from efm_go import history as history_mod
+from efm_go import memory_stores
+from efm_go.history import (
     _CONSOLIDATION_MAX_ATTEMPTS,
     _CONSOLIDATION_PROMPT_BUDGET_CHARS,
     ConversationLog,
@@ -486,7 +486,7 @@ class TestConsolidateNowDrainsTheTail:
         marked so the sweep does not repeat it -- but only up to what was read."""
         import contextlib
 
-        from kiro_crew.history import TranscriptWithheld
+        from efm_go.history import TranscriptWithheld
 
         log = _log_with(tmp_path, ["x" * (_CONSOLIDATION_PROMPT_BUDGET_CHARS // 3)] * 9)
         c = _make_consolidator(log)
@@ -543,7 +543,7 @@ class TestTheReceiptDescribesThePromptedSpan:
         advances the durable marker past the tail the moment the marker write is
         retried after a transient failure.
         """
-        from kiro_crew.context import ContextBuilder
+        from efm_go.context import ContextBuilder
 
         log = _log_with(
             tmp_path,
@@ -556,7 +556,7 @@ class TestTheReceiptDescribesThePromptedSpan:
         memory = MagicMock()
         memory.read_preferences.return_value = ""
         memory.read_projects.return_value = ""
-        monkeypatch.setattr("kiro_crew.context.store_of_session", lambda *_: "alice-store")
+        monkeypatch.setattr("efm_go.context.store_of_session", lambda *_: "alice-store")
         monkeypatch.setattr(memory_stores, "memory_store_version", lambda *_: 2)
         monkeypatch.setattr(ContextBuilder, "ensure_store", AsyncMock(return_value=store))
         monkeypatch.setattr(ContextBuilder, "get_memory_for", lambda **_: memory)

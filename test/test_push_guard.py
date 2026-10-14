@@ -1,6 +1,6 @@
 """Tests for the kirocrew-prepare-pr push_guard.py stale-base detection.
 
-Verifies that the push_guard script (src/kiro_crew/builtin_skills/kirocrew-dev/
+Verifies that the push_guard script (src/efm_go/builtin_skills/kirocrew-dev/
 kirocrew-prepare-pr/scripts/push_guard.py) correctly refuses to push when:
 - The branch has no common history with origin/<base> (orphan / disconnected)
 - The commit count exceeds --max-ahead (implausibly many commits for a PR)
@@ -30,15 +30,15 @@ import pytest
 from installer_test_helpers import run_bounded
 from skill_script_helpers import load_skill_script
 
-from kiro_crew import platform_compat
-from kiro_crew.platform.update_governance import _GIT_LOCATION_VARS
+from efm_go import platform_compat
+from efm_go.platform.update_governance import _GIT_LOCATION_VARS
 
 # Resolve the push_guard.py script path relative to the repo root.
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUSH_GUARD_DIR = (
     REPO_ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"
@@ -4433,7 +4433,7 @@ class TestPushGuardContracts:
     def test_the_docs_name_the_message_file_the_script_reads(self):
         skill = (PUSH_GUARD_DIR.parent / "SKILL.md").read_text(encoding="utf-8")
         brief = (
-            REPO_ROOT / "src" / "kiro_crew" / "builtin_skills" / "pipeline-conductor" / "SKILL.md"
+            REPO_ROOT / "src" / "efm_go" / "builtin_skills" / "pipeline-conductor" / "SKILL.md"
         ).read_text(encoding="utf-8")
         hint = (REPO_ROOT / ".github" / "workflows" / "code-review.yml").read_text(encoding="utf-8")
         for text in (skill, brief, hint):
@@ -4499,7 +4499,7 @@ class TestPushGuardContracts:
 
     def test_no_shipped_text_carries_the_soft_reset_squash(self):
         roots = [
-            REPO_ROOT / "src" / "kiro_crew" / "builtin_skills",
+            REPO_ROOT / "src" / "efm_go" / "builtin_skills",
             REPO_ROOT / ".github" / "workflows",
             REPO_ROOT / "scripts",
         ]

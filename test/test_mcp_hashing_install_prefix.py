@@ -26,14 +26,14 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.mcp_gateway import hashing, launch_approval
-from kiro_crew.mcp_gateway.hashing import hash_command, launch_token_bytes
+from efm_go.mcp_gateway import hashing, launch_approval
+from efm_go.mcp_gateway.hashing import hash_command, launch_token_bytes
 
 
 def _pin_release(monkeypatch: pytest.MonkeyPatch, prefix: Path) -> dict[str, str]:
     """Point the alias inputs at a throwaway release tree; return its spellings."""
     site = prefix / "lib" / "python3.12" / "site-packages"
-    pkg = site / "kiro_crew"
+    pkg = site / "efm_go"
     interpreter = prefix / "bin" / "python3.12"
     monkeypatch.setattr(hashing.sys, "executable", str(interpreter))
     monkeypatch.setattr(hashing, "_package_dir", lambda: str(pkg))
@@ -114,7 +114,7 @@ def test_only_the_three_exact_spellings_fold(
         os.sep.join((rel["prefix"], "..", "server")),  # traversal through the prefix
         rel["prefix"],  # the prefix itself
         rel["site"] + os.sep,  # a trailing separator
-        str(Path(rel["site"]) / "kiro_crew" / "apps" / "other.py"),  # another package file
+        str(Path(rel["site"]) / "efm_go" / "apps" / "other.py"),  # another package file
     )
     for token in literal:
         for role in (
@@ -314,7 +314,7 @@ def test_host_cli_pin_is_admitted_across_an_upgrade(
     ``site-packages`` into the declared ``PYTHONPATH``; the approval fingerprint
     covers both halves, so both must fold.
     """
-    from kiro_crew.apps import bridges
+    from efm_go.apps import bridges
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     store = tmp_path / "approvals.json"
@@ -325,8 +325,8 @@ def test_host_cli_pin_is_admitted_across_an_upgrade(
         monkeypatch.setattr(sys, "executable", rel["interpreter"])
         monkeypatch.setattr(
             bridges,
-            "kiro_crew_file",
-            lambda r=rel: str(Path(r["site"]) / "kiro_crew" / "__init__.py"),
+            "efm_go_file",
+            lambda r=rel: str(Path(r["site"]) / "efm_go" / "__init__.py"),
         )
         cfg = bridges._pin_host_cli_command("demo", {"command": "kirocrew", "args": ["mcp-core"]})
         assert cfg["command"] == rel["interpreter"]
@@ -372,7 +372,7 @@ def test_the_rewriters_own_spellings_are_the_alias_keys(monkeypatch: pytest.Monk
     ``sys.executable`` and package location -- so the emitted spellings must
     be those strings, on this host, with nothing monkeypatched.
     """
-    from kiro_crew.apps import bridges
+    from efm_go.apps import bridges
 
     aliases = hashing.install_aliases()
     assert aliases[sys.executable] == hashing._ALIAS_INTERPRETER
@@ -394,22 +394,22 @@ def test_install_resident_is_the_interpreter_alias_only(
     assert not hashing.install_resident("npx")
 
 
-def test_runs_install_code_needs_the_interpreter_and_kiro_crew_argv(
+def test_runs_install_code_needs_the_interpreter_and_efm_go_argv(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     rel = _pin_release(monkeypatch, tmp_path / "prefix")
     py = rel["interpreter"]
-    assert hashing.runs_install_code(py, ["-P", "-m", "kiro_crew", "app", "mcp", "demo"])
-    assert hashing.runs_install_code(py, ["-s", "-m", "kiro_crew.mcp_core"])
-    assert hashing.runs_install_code(py, ["-mkiro_crew.apps.x"])
+    assert hashing.runs_install_code(py, ["-P", "-m", "efm_go", "app", "mcp", "demo"])
+    assert hashing.runs_install_code(py, ["-s", "-m", "efm_go.mcp_core"])
+    assert hashing.runs_install_code(py, ["-mefm_go.apps.x"])
     assert hashing.runs_install_code(py, [rel["deps_boot"], str(tmp_path / ".deps"), "server.py"])
     # A third-party server that merely runs ON the interpreter is not install code.
     assert not hashing.runs_install_code(py, [str(tmp_path / "apps" / "demo" / "server.py")])
     assert not hashing.runs_install_code(py, ["-m", "some_other_module"])
-    assert not hashing.runs_install_code(py, ["-m", "kiro_crewish"])
-    assert not hashing.runs_install_code(py, ["--mode", "kiro_crew"])
+    assert not hashing.runs_install_code(py, ["-m", "efm_goish"])
+    assert not hashing.runs_install_code(py, ["--mode", "efm_go"])
     # Nor is Kiro Crew code under a foreign interpreter.
-    assert not hashing.runs_install_code(str(tmp_path / "x" / "python3"), ["-m", "kiro_crew"])
+    assert not hashing.runs_install_code(str(tmp_path / "x" / "python3"), ["-m", "efm_go"])
 
 
 def test_binary_version_carries_the_code_fingerprint_for_the_interpreter_alias(
@@ -419,11 +419,11 @@ def test_binary_version_carries_the_code_fingerprint_for_the_interpreter_alias(
 
     Both identity consumers -- the pool's registration token and the
     shareability cache's key -- must fold it, or a host-CLI pin
-    (``sys.executable -P -m kiro_crew app mcp <name>``, no file argv) would keep
+    (``sys.executable -P -m efm_go app mcp <name>``, no file argv) would keep
     its pre-upgrade row across a release that replaced the server's code.
     """
-    import kiro_crew.code_fingerprint as cf
-    from kiro_crew.mcp_gateway import evaluate, stub
+    import efm_go.code_fingerprint as cf
+    from efm_go.mcp_gateway import evaluate, stub
 
     rel = _pin_release(monkeypatch, tmp_path / "prefix")
     interpreter = Path(rel["interpreter"])
@@ -432,7 +432,7 @@ def test_binary_version_carries_the_code_fingerprint_for_the_interpreter_alias(
     outside = tmp_path / "elsewhere" / "python3"
     outside.parent.mkdir(parents=True)
     outside.write_bytes(b"#!/bin/sh\nexit 0\n")
-    args = ["-P", "-m", "kiro_crew", "app", "mcp", "demo"]
+    args = ["-P", "-m", "efm_go", "app", "mcp", "demo"]
 
     monkeypatch.setattr(cf, "code_fingerprint", lambda: "release-A")
     monkeypatch.setattr(evaluate, "code_fingerprint", lambda: "release-A")

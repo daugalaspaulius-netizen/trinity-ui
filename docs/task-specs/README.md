@@ -12,4 +12,4 @@ read the owning spec under [../system-specs/](../system-specs/README.md) instead
 
 - [Memory V2 algorithm effectiveness](2026/09/memory-v2/algorithm-effectiveness-report.md)
   records retrieval quality, missing-vector behavior, failure cases and evidence limits;
-  [visual report](https://github.com/kirodotdev/KiroCrew/blob/568abd2faf45db6ae36dd62164b8f5a85af74a71/docs/task-specs/2026/09/memory-v2/algorithm-effectiveness-report.html).
+  [visual report](https://efmleads.com/blob/568abd2faf45db6ae36dd62164b8f5a85af74a71/docs/task-specs/2026/09/memory-v2/algorithm-effectiveness-report.html).

@@ -1,15 +1,15 @@
-"""Coverage tests for :mod:`kiro_crew.cli_commands` subcommand dispatch.
+"""Coverage tests for :mod:`efm_go.cli_commands` subcommand dispatch.
 
 Each handler in ``cli_commands`` is a plain ``argparse.Namespace`` consumer, so
 these tests call the handlers DIRECTLY (never through a subprocess) and assert
 on the routed side effects: which collaborator was called, what was printed, and
 which exit code was raised. Everything that would touch the network, the real
 data home, or a live gateway is mocked -- the module's HTTP paths are exercised
-by patching ``kiro_crew.cli_commands.loopback_urlopen``, and every filesystem write lands in
+by patching ``efm_go.cli_commands.loopback_urlopen``, and every filesystem write lands in
 ``tmp_path``.
 
 Follows the style already established by ``test_cli.py`` (``argparse.Namespace``
-+ ``patch("kiro_crew.cli_commands.<name>")``) and ``test_workspace_crud_cli.py``
++ ``patch("efm_go.cli_commands.<name>")``) and ``test_workspace_crud_cli.py``
 (config fixtures written into ``tmp_path``).
 """
 
@@ -35,13 +35,13 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from kiro_crew import cli_commands as cc
-from kiro_crew import sel as sel_mod
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, WorkspaceConfig
-from kiro_crew.cron import CronSchedule
-from kiro_crew.eval.scenario import AssertionType
-from kiro_crew.security import BUILTIN_DENIED_RULES
-from kiro_crew.vector_memory import LessonWriteOutcome, LessonWriteResult
+from efm_go import cli_commands as cc
+from efm_go import sel as sel_mod
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, WorkspaceConfig
+from efm_go.cron import CronSchedule
+from efm_go.eval.scenario import AssertionType
+from efm_go.security import BUILTIN_DENIED_RULES
+from efm_go.vector_memory import LessonWriteOutcome, LessonWriteResult
 
 # ── helpers ──
 
@@ -137,13 +137,13 @@ def _read_doc(p: Path) -> dict:
 class TestSmallHelpers:
     def test_internal_secret_reads_file(self, tmp_path: Path) -> None:
         (tmp_path / ".local_secret").write_text("  s3cr3t\n", encoding="utf-8")
-        with patch("kiro_crew.cli_commands.read_local_secret", return_value="s3cr3t") as read:
+        with patch("efm_go.cli_commands.read_local_secret", return_value="s3cr3t") as read:
             assert cc._internal_secret(6123) == "s3cr3t"
         read.assert_called_once_with(6123, dial_host="127.0.0.1")
 
     def test_internal_secret_missing_file_is_empty(self, tmp_path: Path) -> None:
         """A missing secret must yield "" so the server answers 403, not a crash."""
-        with patch("kiro_crew.cli_commands.read_local_secret", return_value=""):
+        with patch("efm_go.cli_commands.read_local_secret", return_value=""):
             assert cc._internal_secret(6123) == ""
 
     def test_format_schedule_non_schedule_falls_back_to_str(self) -> None:
@@ -154,7 +154,7 @@ class TestSmallHelpers:
         # was resolved in), with its zone label, not the host's local time.
         sched = CronSchedule(kind="at", at_ts=1700000000.0)
         with patch(
-            "kiro_crew.cli_commands.get_local_tz",
+            "efm_go.cli_commands.get_local_tz",
             return_value=("UTC", ZoneInfo("UTC")),
         ):
             out = cc._format_schedule(sched)
@@ -162,7 +162,7 @@ class TestSmallHelpers:
 
     def test_format_schedule_delegates_for_every(self) -> None:
         sched = CronSchedule(kind="every", every_secs=300)
-        with patch("kiro_crew.cli_commands.format_schedule", return_value="every 5m") as fmt:
+        with patch("efm_go.cli_commands.format_schedule", return_value="every 5m") as fmt:
             assert cc._format_schedule(sched) == "every 5m"
         fmt.assert_called_once_with(sched)
 
@@ -175,34 +175,34 @@ class TestWorkspaceDirGuard:
     """
 
     def test_relative_name_inside_home_is_accepted(self, tmp_path: Path) -> None:
-        with patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path):
+        with patch("efm_go.cli_commands.config_dir", return_value=tmp_path):
             assert (
                 cc._ws_dir_resolves_inside_home("workspace-demo")
                 == (tmp_path / "workspace-demo").resolve()
             )
 
     def test_home_root_itself_is_refused(self, tmp_path: Path) -> None:
-        with patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path):
+        with patch("efm_go.cli_commands.config_dir", return_value=tmp_path):
             assert cc._ws_dir_resolves_inside_home(".") is None
 
     def test_escaping_path_is_refused(self, tmp_path: Path) -> None:
-        with patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path):
+        with patch("efm_go.cli_commands.config_dir", return_value=tmp_path):
             assert cc._ws_dir_resolves_inside_home("../elsewhere") is None
 
     def test_unknown_user_tilde_fails_closed(self, tmp_path: Path) -> None:
         """``expanduser`` raises RuntimeError here -- it must not escape."""
-        with patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path):
+        with patch("efm_go.cli_commands.config_dir", return_value=tmp_path):
             assert cc._ws_dir_resolves_inside_home("~nosuchuser1234/x") is None
 
     def test_sensitive_target_is_refused(self, tmp_path: Path) -> None:
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_commands.is_sensitive_path", return_value=True),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.is_sensitive_path", return_value=True),
         ):
             assert cc._ws_dir_resolves_inside_home("profiles") is None
 
     def test_error_message_names_boundary_and_value(self, tmp_path: Path) -> None:
-        with patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path):
+        with patch("efm_go.cli_commands.config_dir", return_value=tmp_path):
             msg = cc._ws_dir_error("/etc")
             assert "data home" in msg and "/etc" in msg and "relative directory name" in msg
 
@@ -218,8 +218,8 @@ class TestSpawnCli:
             "agents": [{"id": "a1", "task": "do x", "done": True}, {"id": "a2", "task": "y"}]
         }
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value="s"),
-            patch("kiro_crew.cli_commands.loopback_urlopen", return_value=_FakeResponse(payload)),
+            patch("efm_go.cli_commands._internal_secret", return_value="s"),
+            patch("efm_go.cli_commands.loopback_urlopen", return_value=_FakeResponse(payload)),
         ):
             cc._spawn(_ns(spawn_action="list", port=1234))
         out = capsys.readouterr().out
@@ -227,9 +227,9 @@ class TestSpawnCli:
 
     def test_list_empty_says_so(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
             patch(
-                "kiro_crew.cli_commands.loopback_urlopen",
+                "efm_go.cli_commands.loopback_urlopen",
                 return_value=_FakeResponse({"agents": []}),
             ),
         ):
@@ -241,8 +241,8 @@ class TestSpawnCli:
     ) -> None:
         err = _http_error(400, json.dumps({"error": "bad spawn"}).encode())
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
-            patch("kiro_crew.cli_commands.loopback_urlopen", side_effect=err),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands.loopback_urlopen", side_effect=err),
             pytest.raises(SystemExit) as exc,
         ):
             cc._spawn(_ns(spawn_action="list", port=1234))
@@ -253,9 +253,9 @@ class TestSpawnCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
             patch(
-                "kiro_crew.cli_commands.loopback_urlopen", side_effect=_http_error(503, b"<html>")
+                "efm_go.cli_commands.loopback_urlopen", side_effect=_http_error(503, b"<html>")
             ),
             pytest.raises(SystemExit),
         ):
@@ -266,9 +266,9 @@ class TestSpawnCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
             patch(
-                "kiro_crew.cli_commands.loopback_urlopen",
+                "efm_go.cli_commands.loopback_urlopen",
                 side_effect=urllib.error.URLError("refused"),
             ),
             pytest.raises(SystemExit) as exc,
@@ -285,9 +285,9 @@ class TestSpawnCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
             patch(
-                "kiro_crew.cli_commands.loopback_urlopen",
+                "efm_go.cli_commands.loopback_urlopen",
                 return_value=_FakeResponse({"id": "ag1", "task": "t"}),
             ) as uo,
         ):
@@ -301,9 +301,9 @@ class TestSpawnCli:
         """A deferred row is accepted under its id but not running; the CLI
         relays the gateway's ``queued`` answer and reason instead of a start."""
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
             patch(
-                "kiro_crew.cli_commands.loopback_urlopen",
+                "efm_go.cli_commands.loopback_urlopen",
                 return_value=_FakeResponse(
                     {
                         "id": "ag1",
@@ -330,9 +330,9 @@ class TestSpawnCli:
             _FakeResponse({"done": True, "result": "final answer"}),
         ]
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
             patch.object(cc._time, "sleep") as slept,
-            patch("kiro_crew.cli_commands.loopback_urlopen", side_effect=responses),
+            patch("efm_go.cli_commands.loopback_urlopen", side_effect=responses),
         ):
             cc._spawn(_ns(spawn_action="run", port=1, task="t", fire_and_forget=False))
         assert "final answer" in capsys.readouterr().out
@@ -346,9 +346,9 @@ class TestSpawnCli:
             _FakeResponse({"done": True, "error": "agent blew up"}),
         ]
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
             patch.object(cc._time, "sleep"),
-            patch("kiro_crew.cli_commands.loopback_urlopen", side_effect=responses),
+            patch("efm_go.cli_commands.loopback_urlopen", side_effect=responses),
             pytest.raises(SystemExit) as exc,
         ):
             cc._spawn(_ns(spawn_action="run", port=1, task="t", fire_and_forget=False))
@@ -359,10 +359,10 @@ class TestSpawnCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
             patch.object(cc._time, "sleep"),
             patch(
-                "kiro_crew.cli_commands.loopback_urlopen",
+                "efm_go.cli_commands.loopback_urlopen",
                 side_effect=[_FakeResponse({"id": "ag4", "task": "t"}), OSError("gone")],
             ),
             pytest.raises(SystemExit),
@@ -373,8 +373,8 @@ class TestSpawnCli:
     def test_run_create_http_error_exits_1(self, capsys: pytest.CaptureFixture[str]) -> None:
         err = _http_error(422, json.dumps({"error": "task too long"}).encode())
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
-            patch("kiro_crew.cli_commands.loopback_urlopen", side_effect=err),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands.loopback_urlopen", side_effect=err),
             pytest.raises(SystemExit),
         ):
             cc._spawn(_ns(spawn_action="run", port=1, task="t", fire_and_forget=True))
@@ -382,8 +382,8 @@ class TestSpawnCli:
 
     def test_run_unreachable_gateway_exits_1(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
-            patch("kiro_crew.cli_commands._internal_secret", return_value=""),
-            patch("kiro_crew.cli_commands.loopback_urlopen", side_effect=OSError("no route")),
+            patch("efm_go.cli_commands._internal_secret", return_value=""),
+            patch("efm_go.cli_commands.loopback_urlopen", side_effect=OSError("no route")),
             pytest.raises(SystemExit),
         ):
             cc._spawn(_ns(spawn_action="run", port=9, task="t", fire_and_forget=True))
@@ -398,9 +398,9 @@ class TestAppCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands.install_app", return_value=_result(True, name="demo")),
+            patch("efm_go.cli_commands.install_app", return_value=_result(True, name="demo")),
             patch(
-                "kiro_crew.cli_commands.register_app",
+                "efm_go.cli_commands.register_app",
                 return_value=_registration(
                     agents=["a"], skills=["s"], crons=["c"], errors=["partial"]
                 ),
@@ -414,7 +414,7 @@ class TestAppCli:
     def test_install_failure_exits_1(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
             patch(
-                "kiro_crew.cli_commands.install_app",
+                "efm_go.cli_commands.install_app",
                 return_value=_result(False, error="not an app"),
             ),
             pytest.raises(SystemExit) as exc,
@@ -424,7 +424,7 @@ class TestAppCli:
         assert "not an app" in capsys.readouterr().err
 
     def test_list_empty(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with patch("kiro_crew.cli_commands.list_apps", return_value=[]):
+        with patch("efm_go.cli_commands.list_apps", return_value=[]):
             cc._handle_app(_ns(app_action="list"))
         assert "No apps installed." in capsys.readouterr().out
 
@@ -435,16 +435,16 @@ class TestAppCli:
             {"name": "one", "version": "1.0", "enabled": True, "displayName": "One"},
             {"name": "two", "enabled": False},
         ]
-        with patch("kiro_crew.cli_commands.list_apps", return_value=apps):
+        with patch("efm_go.cli_commands.list_apps", return_value=apps):
             cc._handle_app(_ns(app_action="list"))
         out = capsys.readouterr().out
         assert "one" in out and "enabled" in out and "two" in out and "disabled" in out
 
     def test_enable_success_counts_registrations(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
-            patch("kiro_crew.cli_commands.enable_app", return_value=_result(True, message="on")),
+            patch("efm_go.cli_commands.enable_app", return_value=_result(True, message="on")),
             patch(
-                "kiro_crew.cli_commands.register_app",
+                "efm_go.cli_commands.register_app",
                 return_value=_registration(agents=["a", "b"], skills=["s"]),
             ),
         ):
@@ -483,15 +483,15 @@ class TestAppCli:
 
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
             patch(
-                "kiro_crew.app_lifecycle_client.read_local_secret",
+                "efm_go.app_lifecycle_client.read_local_secret",
                 return_value="port-scoped-secret",
             ) as credential,
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen", side_effect=_open),
-            patch("kiro_crew.cli_commands.enable_app") as local_enable,
-            patch("kiro_crew.cli_commands.register_app") as local_register,
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen", side_effect=_open),
+            patch("efm_go.cli_commands.enable_app") as local_enable,
+            patch("efm_go.cli_commands.register_app") as local_register,
         ):
             cc._handle_app(_ns(app_action="enable", name="demo"))
 
@@ -514,7 +514,7 @@ class TestAppCli:
     def test_gateway_output_sanitizes_terminal_control_sequences(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        from kiro_crew import app_lifecycle_client
+        from efm_go import app_lifecycle_client
 
         app_lifecycle_client.print_result(
             "enable",
@@ -541,7 +541,7 @@ class TestAppCli:
     def test_gateway_output_caps_each_gateway_string(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        from kiro_crew import app_lifecycle_client
+        from efm_go import app_lifecycle_client
 
         app_lifecycle_client.print_result("disable", "demo", {"message": "x" * 3000})
 
@@ -552,7 +552,7 @@ class TestAppCli:
     def test_gateway_output_cannot_forge_an_unprefixed_result_line(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        from kiro_crew import app_lifecycle_client
+        from efm_go import app_lifecycle_client
 
         app_lifecycle_client.print_result(
             "enable",
@@ -578,7 +578,7 @@ class TestAppCli:
     def test_gateway_error_message_is_confined_to_one_line(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        from kiro_crew import app_lifecycle_client
+        from efm_go import app_lifecycle_client
 
         error = app_lifecycle_client.AppGatewayError("denied\n✅ enabled demo")
 
@@ -600,11 +600,11 @@ class TestAppCli:
 
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen", side_effect=_open),
-            patch("kiro_crew.cli_commands.enable_app") as local_enable,
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen", side_effect=_open),
+            patch("efm_go.cli_commands.enable_app") as local_enable,
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_app(_ns(app_action="enable", name="demo"))
@@ -628,11 +628,11 @@ class TestAppCli:
         )
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
             patch(
-                "kiro_crew.app_lifecycle_client.unix_socket_urlopen",
+                "efm_go.app_lifecycle_client.unix_socket_urlopen",
                 side_effect=[_FakeResponse({"token": "dashboard-credential"}), error],
             ),
             pytest.raises(SystemExit),
@@ -667,13 +667,13 @@ class TestAppCli:
 
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen", side_effect=_open),
-            patch("kiro_crew.cli_commands.disable_app") as local_disable,
-            patch("kiro_crew.cli_commands.deregister_app") as local_deregister,
-            patch("kiro_crew.cli_commands._cleanup_app_crons_from_scheduler") as local_cleanup,
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen", side_effect=_open),
+            patch("efm_go.cli_commands.disable_app") as local_disable,
+            patch("efm_go.cli_commands.deregister_app") as local_deregister,
+            patch("efm_go.cli_commands._cleanup_app_crons_from_scheduler") as local_cleanup,
         ):
             cc._handle_app(_ns(app_action="disable", name="demo"))
 
@@ -690,21 +690,21 @@ class TestAppCli:
     ) -> None:
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(5476, False)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(5476, False)
             ),
             patch(
-                "kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"
+                "efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"
             ) as credential,
             patch(
-                "kiro_crew.app_lifecycle_client.unix_socket_urlopen",
+                "efm_go.app_lifecycle_client.unix_socket_urlopen",
                 side_effect=urllib.error.URLError(FileNotFoundError("no socket")),
             ) as urlopen,
-            patch("kiro_crew.cli_commands.enable_app", return_value=_result(True)) as local_enable,
+            patch("efm_go.cli_commands.enable_app", return_value=_result(True)) as local_enable,
             patch(
-                "kiro_crew.cli_commands.register_app", return_value=_registration()
+                "efm_go.cli_commands.register_app", return_value=_registration()
             ) as local_register,
-            patch("kiro_crew.cli_commands._register_app_crons_to_scheduler"),
-            patch("kiro_crew.cli_commands._warn_hooks_need_restart"),
+            patch("efm_go.cli_commands._register_app_crons_to_scheduler"),
+            patch("efm_go.cli_commands._warn_hooks_need_restart"),
         ):
             cc._handle_app(_ns(app_action="enable", name="demo"))
 
@@ -721,16 +721,16 @@ class TestAppCli:
     def test_missing_local_secret_keeps_enable_file_only_behavior(self) -> None:
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value=""),
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen") as urlopen,
-            patch("kiro_crew.cli_commands.enable_app", return_value=_result(True)) as local_enable,
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value=""),
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen") as urlopen,
+            patch("efm_go.cli_commands.enable_app", return_value=_result(True)) as local_enable,
             patch(
-                "kiro_crew.cli_commands.register_app", return_value=_registration()
+                "efm_go.cli_commands.register_app", return_value=_registration()
             ) as local_register,
-            patch("kiro_crew.cli_commands._register_app_crons_to_scheduler"),
-            patch("kiro_crew.cli_commands._warn_hooks_need_restart"),
+            patch("efm_go.cli_commands._register_app_crons_to_scheduler"),
+            patch("efm_go.cli_commands._warn_hooks_need_restart"),
         ):
             cc._handle_app(_ns(app_action="enable", name="demo"))
 
@@ -744,14 +744,14 @@ class TestAppCli:
         error = _http_error(409, json.dumps({"error": "app is busy"}).encode())
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
             patch(
-                "kiro_crew.app_lifecycle_client.unix_socket_urlopen",
+                "efm_go.app_lifecycle_client.unix_socket_urlopen",
                 side_effect=[_FakeResponse({"token": "dashboard-credential"}), error],
             ),
-            patch("kiro_crew.cli_commands.enable_app") as local_enable,
+            patch("efm_go.cli_commands.enable_app") as local_enable,
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_app(_ns(app_action="enable", name="demo"))
@@ -766,11 +766,11 @@ class TestAppCli:
         error = _http_error(403, json.dumps({"error": "local credential denied"}).encode())
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen", side_effect=error),
-            patch("kiro_crew.cli_commands.disable_app") as local_disable,
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen", side_effect=error),
+            patch("efm_go.cli_commands.disable_app") as local_disable,
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_app(_ns(app_action="disable", name="demo"))
@@ -827,15 +827,15 @@ class TestAppCli:
     def test_mint_exception_surface_is_classified_by_outcome(
         self, failure: BaseException, expected: str
     ) -> None:
-        from kiro_crew import app_lifecycle_client
+        from efm_go import app_lifecycle_client
 
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, False)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, False)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen", side_effect=failure),
-            patch("kiro_crew.cli_commands.enable_app") as local_enable,
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen", side_effect=failure),
+            patch("efm_go.cli_commands.enable_app") as local_enable,
         ):
             if expected == "file-only":
                 assert app_lifecycle_client.toggle_app("demo", "enable") is None
@@ -893,18 +893,18 @@ class TestAppCli:
     def test_action_exception_surface_is_classified_by_outcome(
         self, failure: BaseException, expected: str
     ) -> None:
-        from kiro_crew import app_lifecycle_client
+        from efm_go import app_lifecycle_client
 
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
             patch(
-                "kiro_crew.app_lifecycle_client.unix_socket_urlopen",
+                "efm_go.app_lifecycle_client.unix_socket_urlopen",
                 side_effect=[_FakeResponse({"token": "dashboard-credential"}), failure],
             ),
-            patch("kiro_crew.cli_commands.enable_app") as local_enable,
+            patch("efm_go.cli_commands.enable_app") as local_enable,
         ):
             if expected == "interrupt":
                 with pytest.raises(KeyboardInterrupt):
@@ -920,14 +920,14 @@ class TestAppCli:
         failure = urllib.error.URLError(ConnectionRefusedError("gateway restarted"))
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
             patch(
-                "kiro_crew.app_lifecycle_client.unix_socket_urlopen",
+                "efm_go.app_lifecycle_client.unix_socket_urlopen",
                 side_effect=[_FakeResponse({"token": "dashboard-credential"}), failure],
             ),
-            patch("kiro_crew.cli_commands.enable_app") as local_enable,
+            patch("efm_go.cli_commands.enable_app") as local_enable,
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_app(_ns(app_action="enable", name="demo"))
@@ -953,7 +953,7 @@ class TestAppCli:
     def test_other_transport_failures_are_gateway_errors(
         self, stage: str, failure: OSError
     ) -> None:
-        from kiro_crew import app_lifecycle_client
+        from efm_go import app_lifecycle_client
 
         side_effect: object
         expected_type: type[Exception] = app_lifecycle_client.AppGatewayError
@@ -973,10 +973,10 @@ class TestAppCli:
                 )
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen", side_effect=side_effect),
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen", side_effect=side_effect),
             pytest.raises(expected_type, match=expected) as raised,
         ):
             app_lifecycle_client.toggle_app("demo", "enable")
@@ -992,7 +992,7 @@ class TestAppCli:
     def test_malformed_or_truncated_gateway_responses_are_gateway_errors(
         self, stage: str, bad_response: _FakeResponse
     ) -> None:
-        from kiro_crew import app_lifecycle_client
+        from efm_go import app_lifecycle_client
 
         side_effect = (
             [bad_response]
@@ -1001,10 +1001,10 @@ class TestAppCli:
         )
         with (
             patch(
-                "kiro_crew.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
+                "efm_go.app_lifecycle_client.resolve_client_port_ex", return_value=(8123, True)
             ),
-            patch("kiro_crew.app_lifecycle_client.read_local_secret", return_value="local-secret"),
-            patch("kiro_crew.app_lifecycle_client.unix_socket_urlopen", side_effect=side_effect),
+            patch("efm_go.app_lifecycle_client.read_local_secret", return_value="local-secret"),
+            patch("efm_go.app_lifecycle_client.unix_socket_urlopen", side_effect=side_effect),
             pytest.raises(
                 app_lifecycle_client.AppGatewayError,
                 match="gateway returned a malformed response",
@@ -1014,7 +1014,7 @@ class TestAppCli:
 
     def test_enable_failure_exits_1(self) -> None:
         with (
-            patch("kiro_crew.cli_commands.enable_app", return_value=_result(False)),
+            patch("efm_go.cli_commands.enable_app", return_value=_result(False)),
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_app(_ns(app_action="enable", name="demo"))
@@ -1024,9 +1024,9 @@ class TestAppCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands._cleanup_app_crons_from_scheduler") as cleanup,
-            patch("kiro_crew.cli_commands.deregister_app") as dereg,
-            patch("kiro_crew.cli_commands.disable_app", return_value=_result(True, message="off")),
+            patch("efm_go.cli_commands._cleanup_app_crons_from_scheduler") as cleanup,
+            patch("efm_go.cli_commands.deregister_app") as dereg,
+            patch("efm_go.cli_commands.disable_app", return_value=_result(True, message="off")),
         ):
             cc._handle_app(_ns(app_action="disable", name="demo"))
         cleanup.assert_called_once_with("demo")
@@ -1046,13 +1046,13 @@ class TestAppCli:
         """
         order: list[str] = []
         with (
-            patch("kiro_crew.cli_commands._cleanup_app_crons_from_scheduler"),
+            patch("efm_go.cli_commands._cleanup_app_crons_from_scheduler"),
             patch(
-                "kiro_crew.cli_commands.deregister_app",
+                "efm_go.cli_commands.deregister_app",
                 side_effect=lambda n: order.append("deregister"),
             ),
             patch(
-                "kiro_crew.cli_commands.disable_app",
+                "efm_go.cli_commands.disable_app",
                 side_effect=lambda n: order.append("disable") or _result(True, message="off"),
             ),
         ):
@@ -1061,9 +1061,9 @@ class TestAppCli:
 
     def test_disable_failure_exits_1(self) -> None:
         with (
-            patch("kiro_crew.cli_commands._cleanup_app_crons_from_scheduler"),
-            patch("kiro_crew.cli_commands.deregister_app"),
-            patch("kiro_crew.cli_commands.disable_app", return_value=_result(False)),
+            patch("efm_go.cli_commands._cleanup_app_crons_from_scheduler"),
+            patch("efm_go.cli_commands.deregister_app"),
+            patch("efm_go.cli_commands.disable_app", return_value=_result(False)),
             pytest.raises(SystemExit),
         ):
             cc._handle_app(_ns(app_action="disable", name="demo"))
@@ -1076,30 +1076,30 @@ class TestAppCli:
         self, purge: bool, expect_keep_data: bool
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands._cleanup_app_crons_from_scheduler"),
-            patch("kiro_crew.cli_commands.deregister_app"),
-            patch("kiro_crew.cli_commands.uninstall_app", return_value=_result(True)) as uninstall,
+            patch("efm_go.cli_commands._cleanup_app_crons_from_scheduler"),
+            patch("efm_go.cli_commands.deregister_app"),
+            patch("efm_go.cli_commands.uninstall_app", return_value=_result(True)) as uninstall,
         ):
             cc._handle_app(_ns(app_action="uninstall", name="demo", purge_data=purge))
         uninstall.assert_called_once_with("demo", keep_data=expect_keep_data)
 
     def test_uninstall_failure_exits_1(self) -> None:
         with (
-            patch("kiro_crew.cli_commands._cleanup_app_crons_from_scheduler"),
-            patch("kiro_crew.cli_commands.deregister_app"),
-            patch("kiro_crew.cli_commands.uninstall_app", return_value=_result(False)),
+            patch("efm_go.cli_commands._cleanup_app_crons_from_scheduler"),
+            patch("efm_go.cli_commands.deregister_app"),
+            patch("efm_go.cli_commands.uninstall_app", return_value=_result(False)),
             pytest.raises(SystemExit),
         ):
             cc._handle_app(_ns(app_action="uninstall", name="demo", purge_data=False))
 
     def test_dev_on_prints_live_reload_hint(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with patch("kiro_crew.apps.dev_mode.set_dev_mode", return_value={"ok": True}):
+        with patch("efm_go.apps.dev_mode.set_dev_mode", return_value={"ok": True}):
             cc._handle_app(_ns(app_action="dev", name="demo", off=False))
         out = capsys.readouterr().out
         assert "dev mode" in out and "--off" in out
 
     def test_dev_off_restores_caching(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with patch("kiro_crew.apps.dev_mode.set_dev_mode", return_value={"ok": True}) as setter:
+        with patch("efm_go.apps.dev_mode.set_dev_mode", return_value={"ok": True}) as setter:
             cc._handle_app(_ns(app_action="dev", name="demo", off=True))
         setter.assert_called_once_with("demo", False, confirm_out_of_install_root=False)
         assert "dev mode off" in capsys.readouterr().out
@@ -1113,7 +1113,7 @@ class TestAppCli:
             "code": "dev_mode_out_of_install_confirmation_required",
         }
         with (
-            patch("kiro_crew.apps.dev_mode.set_dev_mode", return_value=refusal) as setter,
+            patch("efm_go.apps.dev_mode.set_dev_mode", return_value=refusal) as setter,
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_app(
@@ -1124,7 +1124,7 @@ class TestAppCli:
         setter.assert_called_once_with("demo", True, confirm_out_of_install_root=False)
 
     def test_dev_confirm_flag_is_forwarded(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with patch("kiro_crew.apps.dev_mode.set_dev_mode", return_value={"ok": True}) as setter:
+        with patch("efm_go.apps.dev_mode.set_dev_mode", return_value={"ok": True}) as setter:
             cc._handle_app(
                 _ns(app_action="dev", name="demo", off=False, confirm_out_of_install_root=True)
             )
@@ -1133,7 +1133,7 @@ class TestAppCli:
     def test_dev_confirm_flag_with_off_warns(self, capsys: pytest.CaptureFixture[str]) -> None:
         """The flag only applies to enabling — an ignored flag must say so,
         not exit 0 looking like a confirmed grant."""
-        with patch("kiro_crew.apps.dev_mode.set_dev_mode", return_value={"ok": True}) as setter:
+        with patch("efm_go.apps.dev_mode.set_dev_mode", return_value={"ok": True}) as setter:
             cc._handle_app(
                 _ns(app_action="dev", name="demo", off=True, confirm_out_of_install_root=True)
             )
@@ -1143,7 +1143,7 @@ class TestAppCli:
 
     def test_dev_error_exits_1(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
-            patch("kiro_crew.apps.dev_mode.set_dev_mode", return_value={"error": "no such app"}),
+            patch("efm_go.apps.dev_mode.set_dev_mode", return_value={"error": "no such app"}),
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_app(_ns(app_action="dev", name="demo", off=False))
@@ -1151,13 +1151,13 @@ class TestAppCli:
         assert "no such app" in capsys.readouterr().err
 
     def test_info_prints_json(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with patch("kiro_crew.cli_commands.get_app", return_value={"name": "demo", "v": 1}):
+        with patch("efm_go.cli_commands.get_app", return_value={"name": "demo", "v": 1}):
             cc._handle_app(_ns(app_action="info", name="demo"))
         assert json.loads(capsys.readouterr().out) == {"name": "demo", "v": 1}
 
     def test_info_missing_exits_1(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
-            patch("kiro_crew.cli_commands.get_app", return_value=None),
+            patch("efm_go.cli_commands.get_app", return_value=None),
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_app(_ns(app_action="info", name="ghost"))
@@ -1168,7 +1168,7 @@ class TestAppCli:
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         target = tmp_path / "my-app"
-        with patch("kiro_crew.cli_commands.scaffold_app", return_value=target) as scaffold:
+        with patch("efm_go.cli_commands.scaffold_app", return_value=target) as scaffold:
             cc._handle_app(
                 _ns(
                     app_action="init",
@@ -1192,14 +1192,14 @@ class TestAppCli:
     def test_init_without_ui_skips_npm_hint(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        with patch("kiro_crew.cli_commands.scaffold_app", return_value=tmp_path / "a"):
+        with patch("efm_go.cli_commands.scaffold_app", return_value=tmp_path / "a"):
             cc._handle_app(
                 _ns(app_action="init", name="a", dir=str(tmp_path), backend=False, ui=False)
             )
         assert "npm install" not in capsys.readouterr().out
 
     def test_mcp_action_delegates_to_server_runner(self) -> None:
-        with patch("kiro_crew.cli_commands._run_app_mcp_server") as runner:
+        with patch("efm_go.cli_commands._run_app_mcp_server") as runner:
             cc._handle_app(_ns(app_action="mcp", name="demo"))
         runner.assert_called_once_with("demo")
 
@@ -1211,7 +1211,7 @@ class TestAppCli:
 class TestRunAppMcpServer:
     def test_missing_module_exits_1_on_stderr(self, capsys: pytest.CaptureFixture[str]) -> None:
         """stdout is the JSON-RPC channel -- diagnostics must go to stderr."""
-        target = "kiro_crew.apps.builtins.my_app.mcp_server"
+        target = "efm_go.apps.builtins.my_app.mcp_server"
         with (
             patch(
                 "importlib.import_module",
@@ -1228,7 +1228,7 @@ class TestRunAppMcpServer:
     def test_missing_parent_package_exits_1(self, capsys: pytest.CaptureFixture[str]) -> None:
         """A ModuleNotFoundError naming a PARENT package of the target is the
         target being unimportable -- same clean refusal."""
-        parent = "kiro_crew.apps.builtins.my_app"
+        parent = "efm_go.apps.builtins.my_app"
         with (
             patch(
                 "importlib.import_module",
@@ -1293,10 +1293,10 @@ class TestCleanupAppCrons:
             return 2
 
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.deregister_app_crons_from_service", new=_two),
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.deregister_app_crons_from_service", new=_two),
+            patch("efm_go.cli_commands.sel") as sel,
         ):
             assert cc._cleanup_app_crons_from_scheduler("demo") == 2
         assert "removed 2 cron job(s)" in capsys.readouterr().out
@@ -1306,10 +1306,10 @@ class TestCleanupAppCrons:
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.deregister_app_crons_from_service", new=self._zero),
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.deregister_app_crons_from_service", new=self._zero),
+            patch("efm_go.cli_commands.sel"),
         ):
             assert cc._cleanup_app_crons_from_scheduler("demo") == 0
         assert capsys.readouterr().out == ""
@@ -1319,10 +1319,10 @@ class TestCleanupAppCrons:
             raise RuntimeError("scheduler down")
 
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_commands.CronService"),
-            patch("kiro_crew.cli_commands.deregister_app_crons_from_service", new=_boom),
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.CronService"),
+            patch("efm_go.cli_commands.deregister_app_crons_from_service", new=_boom),
+            patch("efm_go.cli_commands.sel") as sel,
             pytest.raises(RuntimeError, match="scheduler down"),
         ):
             cc._cleanup_app_crons_from_scheduler("demo")
@@ -1352,7 +1352,7 @@ class TestAgentCli:
         cfg_path = _seed_doc_file(tmp_path, cfg)
         with (
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
         ):
             cc._handle_agent(
                 _ns(
@@ -1400,7 +1400,7 @@ class TestAgentCli:
         cfg_path = _seed_doc_file(tmp_path, cfg)
         with (
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
         ):
             cc._handle_agent(
                 _ns(
@@ -1417,14 +1417,14 @@ class TestAgentCli:
         assert agent["memory_store"] == "m0"
 
     def test_update_template_and_workspace_preserves_private_memory(self, tmp_path: Path) -> None:
-        from kiro_crew.memory_stores import provision_member_memory
+        from efm_go.memory_stores import provision_member_memory
 
         cfg = _cfg_with(agents={"a": KiroCrewAgentConfig()})
         store = provision_member_memory(cfg, "a")
         cfg_path = _seed_doc_file(tmp_path, cfg)
         with (
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
         ):
             cc._handle_agent(
                 _ns(
@@ -1469,7 +1469,7 @@ class TestAgentCli:
         cfg_path = _seed_doc_file(tmp_path, cfg)
         with (
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
         ):
             cc._handle_agent(_ns(agent_action="delete", name="spare"))
         assert "spare" not in _read_doc(cfg_path)["agents"]
@@ -1481,7 +1481,7 @@ class TestAgentCli:
         """Same contract as the dashboard delete: the crew is dropped from its
         team, and a store that cannot even be locked never refuses the delete
         (the recreate-inherits harm is closed on the create path instead)."""
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         cfg = _cfg_with(
             agents={"default": KiroCrewAgentConfig(), "spare": KiroCrewAgentConfig()},
@@ -1490,7 +1490,7 @@ class TestAgentCli:
         dropped: list[str] = []
         with (
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
             patch.object(crew_teams, "drop_member", lambda name: dropped.append(name)),
         ):
             cc._handle_agent(_ns(agent_action="delete", name="spare"))
@@ -1511,7 +1511,7 @@ class TestAgentCli:
         cfg_path = _seed_doc_file(tmp_path, cfg)
         with (
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
             patch.object(crew_teams, "document_lock", lambda: _Broken()),
         ):
             cc._handle_agent(_ns(agent_action="delete", name="other"))
@@ -1523,14 +1523,14 @@ class TestAgentCli:
     ) -> None:
         """A name a deleted crew left on a team is purged BEFORE the new crew
         is registered, so it never inherits the old membership."""
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         cfg = _cfg_with(agents={})
         cfg_path = _seed_doc_file(tmp_path, cfg)
         released: list[str] = []
         with (
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
             patch.object(crew_teams, "release_name", lambda name: released.append(name)),
         ):
             cc._handle_agent(
@@ -1551,7 +1551,7 @@ class TestAgentCli:
         """Registering the name while its old team entry cannot be removed is
         exactly what would expose that entry, so the create is refused with
         the registry untouched."""
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         cfg = _cfg_with(agents={})
         cfg_path = _seed_doc_file(tmp_path, cfg)
@@ -1561,7 +1561,7 @@ class TestAgentCli:
 
         with (
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
             patch.object(crew_teams, "release_name", _boom),
             pytest.raises(SystemExit) as exc,
         ):
@@ -1619,9 +1619,9 @@ class TestWorkspaceCopyFrom:
 
     def test_copy_from_unknown_source_exits_1(self, tmp_path: Path) -> None:
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             patch.object(KiroCrewConfig, "load", return_value=self._base()),
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.sel"),
             pytest.raises(SystemExit) as exc,
         ):
             cc._handle_workspace(
@@ -1638,10 +1638,10 @@ class TestWorkspaceCopyFrom:
         cfg = self._base()
         cfg_path = _seed_doc_file(tmp_path, cfg)
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.cli_commands.sel"),
         ):
             cc._handle_workspace(
                 _ns(workspace_action="create", name="copy1", dir=None, copy_from="src")
@@ -1660,10 +1660,10 @@ class TestWorkspaceCopyFrom:
             return p.endswith("secret.env")
 
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             patch.object(KiroCrewConfig, "load", return_value=self._base()),
-            patch("kiro_crew.cli_commands.is_sensitive_path", side_effect=_sensitive),
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.is_sensitive_path", side_effect=_sensitive),
+            patch("efm_go.cli_commands.sel"),
         ):
             cc._handle_workspace(
                 _ns(workspace_action="create", name="copy2", dir=None, copy_from="src")
@@ -1674,9 +1674,9 @@ class TestWorkspaceCopyFrom:
 
     def test_copy_from_escaping_dir_is_refused(self, tmp_path: Path) -> None:
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             patch.object(KiroCrewConfig, "load", return_value=self._base()),
-            patch("kiro_crew.cli_commands.sel") as sel,
+            patch("efm_go.cli_commands.sel") as sel,
             pytest.raises(SystemExit),
         ):
             cc._handle_workspace(
@@ -1688,9 +1688,9 @@ class TestWorkspaceCopyFrom:
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             patch.object(KiroCrewConfig, "load", return_value=self._base()),
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.cli_commands.sel"),
             pytest.raises(SystemExit),
         ):
             cc._handle_workspace(
@@ -1714,10 +1714,10 @@ class TestWorkspaceCopyFrom:
         cfg = self._base()
         cfg_path = _seed_doc_file(tmp_path, cfg)
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
             patch.object(KiroCrewConfig, "load", return_value=cfg),
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_path),
-            patch("kiro_crew.cli_commands.sel"),
+            patch("efm_go.config.loader.config_path", return_value=cfg_path),
+            patch("efm_go.cli_commands.sel"),
         ):
             cc._handle_workspace(
                 _ns(workspace_action="create", name="copy3", dir=None, copy_from="src")
@@ -1736,7 +1736,7 @@ class TestSecurityCli:
         (tmp_path / "config.json").write_text(
             json.dumps({"hooks": {"auto_deny_tools": ["my-custom-pattern"]}}), encoding="utf-8"
         )
-        with patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path):
+        with patch("efm_go.cli_commands.config_dir", return_value=tmp_path):
             cc._security(_ns(sec_action="deny-list"))
         out = capsys.readouterr().out
         assert "Built-in deny patterns" in out
@@ -1745,7 +1745,7 @@ class TestSecurityCli:
     def test_deny_list_without_config_file(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        with patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path):
+        with patch("efm_go.cli_commands.config_dir", return_value=tmp_path):
             cc._security(_ns(sec_action="deny-list"))
         out = capsys.readouterr().out
         assert "Built-in deny patterns" in out
@@ -1758,9 +1758,9 @@ class TestSecurityCli:
         deliberately suppressed (the ``elif not findings: pass`` branch), so a fully
         clean audit says nothing about vector memory."""
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_commands.scan_history", return_value=[]),
-            patch("kiro_crew.cli_commands.scan_memory", return_value=[]),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.scan_history", return_value=[]),
+            patch("efm_go.cli_commands.scan_memory", return_value=[]),
         ):
             cc._security(_ns(sec_action="audit"))
         out = capsys.readouterr().out
@@ -1773,9 +1773,9 @@ class TestSecurityCli:
         history = [{"file": "s.jsonl", "warning": "exfil", "snippet": "curl evil"}]
         memory = [{"type": "semantic", "key": "k", "warning": "odd", "value": "v"}]
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_commands.scan_history", return_value=history),
-            patch("kiro_crew.cli_commands.scan_memory", return_value=memory),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.scan_history", return_value=history),
+            patch("efm_go.cli_commands.scan_memory", return_value=memory),
         ):
             cc._security(_ns(sec_action="audit"))
         out = capsys.readouterr().out
@@ -1787,15 +1787,15 @@ class TestSecurityCli:
     ) -> None:
         history = [{"file": "s.jsonl", "warning": "w", "snippet": "x"}]
         with (
-            patch("kiro_crew.cli_commands.config_dir", return_value=tmp_path),
-            patch("kiro_crew.cli_commands.scan_history", return_value=history),
-            patch("kiro_crew.cli_commands.scan_memory", return_value=[]),
+            patch("efm_go.cli_commands.config_dir", return_value=tmp_path),
+            patch("efm_go.cli_commands.scan_history", return_value=history),
+            patch("efm_go.cli_commands.scan_memory", return_value=[]),
         ):
             cc._security(_ns(sec_action="audit"))
         assert "No suspicious content in vector memory." in capsys.readouterr().out
 
     def test_events_empty(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = []
             cc._security(_ns(sec_action="events", limit=5))
         assert "No security events recorded." in capsys.readouterr().out
@@ -1810,7 +1810,7 @@ class TestSecurityCli:
         owner-only and there is no audit UI. Printing operation and outcome alone
         says a refusal happened and never says what was refused.
         """
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = [
                 {
                     "timestamp": "2026-09-24T12:00:00Z",
@@ -1831,7 +1831,7 @@ class TestSecurityCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """The negative: an empty field must print no line, not a bare label."""
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = [
                 {
                     "timestamp": "2026-09-24T12:00:00Z",
@@ -1857,7 +1857,7 @@ class TestSecurityCli:
         would execute in the owner's terminal, which is the one place this trail is
         read, so both untrusted fields go through the shared one-line policy.
         """
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = [
                 {
                     "timestamp": "2026-09-24T12:00:00Z",
@@ -1889,7 +1889,7 @@ class TestSecurityCli:
         the indented detail lines would leave the summary line above them a live
         path to the same terminal.
         """
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = [
                 {
                     "timestamp": "2026-09-24T12:00:00Z",
@@ -1918,7 +1918,7 @@ class TestSecurityCli:
         or a list. Handing that straight to ``re.sub`` would raise ``TypeError`` and
         take the whole listing down -- one bad row would hide every good one.
         """
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = [
                 {
                     "timestamp": 1234567890,
@@ -1948,7 +1948,7 @@ class TestSecurityCli:
 
     def test_events_passes_the_time_window_through(self) -> None:
         """``-n`` alone cannot express "the last two hours"."""
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = []
             cc._security(
                 _ns(sec_action="events", limit=5, since="2026-08-21T00:00:00Z", until="2h")
@@ -1959,7 +1959,7 @@ class TestSecurityCli:
 
     def test_events_rejects_an_unreadable_time(self, capsys: pytest.CaptureFixture[str]) -> None:
         """A typo must not read as "no events in that window"."""
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             with pytest.raises(SystemExit) as exc:
                 cc._security(_ns(sec_action="events", limit=5, since="yesterdayish"))
         assert exc.value.code == 2
@@ -1967,7 +1967,7 @@ class TestSecurityCli:
         sel.return_value.recent.assert_not_called()
 
     def test_events_rejects_an_inverted_window(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             with pytest.raises(SystemExit) as exc:
                 cc._security(
                     _ns(
@@ -1982,7 +1982,7 @@ class TestSecurityCli:
         sel.return_value.recent.assert_not_called()
 
     def test_events_names_the_window_when_empty(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = []
             cc._security(_ns(sec_action="events", limit=5, since="2026-08-21T00:00:00Z"))
         out = capsys.readouterr().out
@@ -2001,7 +2001,7 @@ class TestSecurityCli:
                 "downstream_service": "slack",
             }
         ]
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.recent.return_value = events
             cc._security(_ns(sec_action="events", limit=20))
         out = capsys.readouterr().out
@@ -2042,7 +2042,7 @@ class TestSecurityCli:
             history_verifiable=verifiable,
             reason="" if verifiable else "segment directory refused to pin (planted link?)",
         )
-        with patch("kiro_crew.cli_commands.sel") as sel:
+        with patch("efm_go.cli_commands.sel") as sel:
             sel.return_value.verify_integrity.return_value = outcome
             cc._security(_ns(sec_action="verify"))
         assert expected in capsys.readouterr().out
@@ -2119,7 +2119,7 @@ class TestParseTimeSelector:
 class TestPolicyCli:
     def test_show_without_policy(self, capsys: pytest.CaptureFixture[str]) -> None:
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=SimpleNamespace(governance=None),
         ):
             cc._policy(_ns(policy_action="show"))
@@ -2129,7 +2129,7 @@ class TestPolicyCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=SimpleNamespace(governance=_fake_ceiling()),
         ):
             cc._policy(_ns(policy_action="show"))
@@ -2157,7 +2157,7 @@ class TestPolicyCli:
             by_category[rule.category] = by_category.get(rule.category, 0) + 1
         biggest, biggest_n = max(by_category.items(), key=lambda kv: kv[1])
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=SimpleNamespace(governance=None),
         ):
             cc._policy(_ns(policy_action="show"))
@@ -2174,7 +2174,7 @@ class TestPolicyCli:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=SimpleNamespace(governance=_fake_ceiling()),
         ):
             cc._policy(_ns(policy_action="show"))
@@ -2186,7 +2186,7 @@ class TestPolicyCli:
         # on this subparser would collide via argparse's parent/subparser
         # default-override gotcha.
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=SimpleNamespace(governance=None),
         ):
             cc._policy(_ns(policy_action="show", ids=True))
@@ -2198,7 +2198,7 @@ class TestPolicyCli:
         ceiling = _fake_ceiling()
         ceiling.controls = {}
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=SimpleNamespace(governance=ceiling),
         ):
             cc._policy(_ns(policy_action="show"))
@@ -2209,11 +2209,11 @@ class TestPolicyCli:
     ) -> None:
         with (
             patch(
-                "kiro_crew.platform.context.current_context",
+                "efm_go.platform.context.current_context",
                 return_value=SimpleNamespace(governance=None),
             ),
             patch(
-                "kiro_crew.platform.governance_profiles._profiles_dir",
+                "efm_go.platform.governance_profiles._profiles_dir",
                 return_value=tmp_path / "absent",
             ),
         ):
@@ -2234,11 +2234,11 @@ class TestPolicyCli:
 
         with (
             patch(
-                "kiro_crew.platform.context.current_context",
+                "efm_go.platform.context.current_context",
                 return_value=SimpleNamespace(governance=_fake_ceiling()),
             ),
-            patch("kiro_crew.platform.governance_profiles._profiles_dir", return_value=pdir),
-            patch("kiro_crew.platform.governance_profiles.get_store_profile", side_effect=_get),
+            patch("efm_go.platform.governance_profiles._profiles_dir", return_value=pdir),
+            patch("efm_go.platform.governance_profiles.get_store_profile", side_effect=_get),
         ):
             cc._policy(_ns(policy_action="validate"))
         out = capsys.readouterr().out
@@ -2249,11 +2249,11 @@ class TestPolicyCli:
     def test_explain_unknown_scope_lists_catalog(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
             patch(
-                "kiro_crew.platform.context.current_context",
+                "efm_go.platform.context.current_context",
                 return_value=SimpleNamespace(governance=None),
             ),
             patch(
-                "kiro_crew.platform.governance.SCOPE_CATALOG",
+                "efm_go.platform.governance.SCOPE_CATALOG",
                 {"capabilities.telemetry": object()},
             ),
         ):
@@ -2277,19 +2277,19 @@ class TestPolicyCli:
         gate = SimpleNamespace(permitted=True, reason="title allowed")
         with (
             patch(
-                "kiro_crew.platform.context.current_context",
+                "efm_go.platform.context.current_context",
                 return_value=SimpleNamespace(governance=_fake_ceiling()),
             ),
             patch(
-                "kiro_crew.platform.governance.SCOPE_CATALOG",
+                "efm_go.platform.governance.SCOPE_CATALOG",
                 {"capabilities.telemetry": object()},
             ),
             patch(
-                "kiro_crew.platform.governance_profiles.resolve_active_scope",
+                "efm_go.platform.governance_profiles.resolve_active_scope",
                 return_value=SimpleNamespace(name="prof"),
             ),
-            patch("kiro_crew.platform.governance.resolve", return_value=decision),
-            patch("kiro_crew.platform.governance.gate_decision", return_value=gate),
+            patch("efm_go.platform.governance.resolve", return_value=decision),
+            patch("efm_go.platform.governance.gate_decision", return_value=gate),
         ):
             cc._policy(
                 _ns(
@@ -2310,22 +2310,22 @@ class TestPolicyCli:
     def test_explain_without_active_profile(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
             patch(
-                "kiro_crew.platform.context.current_context",
+                "efm_go.platform.context.current_context",
                 return_value=SimpleNamespace(governance=None),
             ),
-            patch("kiro_crew.platform.governance.SCOPE_CATALOG", {"s": object()}),
+            patch("efm_go.platform.governance.SCOPE_CATALOG", {"s": object()}),
             patch(
-                "kiro_crew.platform.governance_profiles.resolve_active_scope",
+                "efm_go.platform.governance_profiles.resolve_active_scope",
                 return_value=None,
             ),
             patch(
-                "kiro_crew.platform.governance.resolve",
+                "efm_go.platform.governance.resolve",
                 return_value=SimpleNamespace(
                     permitted=True, rule="allow", layer=None, reason="default"
                 ),
             ),
             patch(
-                "kiro_crew.platform.governance.gate_decision",
+                "efm_go.platform.governance.gate_decision",
                 return_value=SimpleNamespace(permitted=True, reason="ok"),
             ),
         ):
@@ -2345,10 +2345,10 @@ class TestPolicyCli:
     def test_profile_missing(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
             patch(
-                "kiro_crew.platform.context.current_context",
+                "efm_go.platform.context.current_context",
                 return_value=SimpleNamespace(governance=None),
             ),
-            patch("kiro_crew.platform.governance_profiles.get_store_profile", return_value=None),
+            patch("efm_go.platform.governance_profiles.get_store_profile", return_value=None),
         ):
             cc._policy(_ns(policy_action="profile", name="ghost"))
         assert "No profile named 'ghost'" in capsys.readouterr().out
@@ -2362,10 +2362,10 @@ class TestPolicyCli:
         )
         with (
             patch(
-                "kiro_crew.platform.context.current_context",
+                "efm_go.platform.context.current_context",
                 return_value=SimpleNamespace(governance=None),
             ),
-            patch("kiro_crew.platform.governance_profiles.get_store_profile", return_value=prof),
+            patch("efm_go.platform.governance_profiles.get_store_profile", return_value=prof),
         ):
             cc._policy(_ns(policy_action="profile", name="team"))
         out = capsys.readouterr().out
@@ -2376,10 +2376,10 @@ class TestPolicyCli:
         prof = SimpleNamespace(name="empty", bind=None, extends=None, controls={})
         with (
             patch(
-                "kiro_crew.platform.context.current_context",
+                "efm_go.platform.context.current_context",
                 return_value=SimpleNamespace(governance=None),
             ),
-            patch("kiro_crew.platform.governance_profiles.get_store_profile", return_value=prof),
+            patch("efm_go.platform.governance_profiles.get_store_profile", return_value=prof),
         ):
             cc._policy(_ns(policy_action="profile", name="empty"))
         out = capsys.readouterr().out
@@ -2387,7 +2387,7 @@ class TestPolicyCli:
 
     def test_unknown_action_prints_usage(self, capsys: pytest.CaptureFixture[str]) -> None:
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=SimpleNamespace(governance=None),
         ):
             cc._policy(_ns(policy_action=None))
@@ -2404,8 +2404,8 @@ class _LearnHarness:
         self.vs = MagicMock()
         self.jsonl = MagicMock()
         self._patches = [
-            patch("kiro_crew.cli_commands.VectorMemoryStore", return_value=self.vs),
-            patch("kiro_crew.cli_commands.LessonStore", return_value=self.jsonl),
+            patch("efm_go.cli_commands.VectorMemoryStore", return_value=self.vs),
+            patch("efm_go.cli_commands.LessonStore", return_value=self.jsonl),
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
         ]
 
@@ -2585,7 +2585,7 @@ class _MemHarness:
     def __init__(self) -> None:
         self.store = MagicMock()
         self._patches = [
-            patch("kiro_crew.cli_commands.declared_store", return_value=self.store),
+            patch("efm_go.cli_commands.declared_store", return_value=self.store),
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
         ]
 
@@ -2722,12 +2722,12 @@ class TestMemoryCli:
         assert "0 vectors" not in out
 
     def test_audit_with_and_without_findings(self, capsys: pytest.CaptureFixture[str]) -> None:
-        with _MemHarness(), patch("kiro_crew.cli_commands.scan_memory", return_value=[]):
+        with _MemHarness(), patch("efm_go.cli_commands.scan_memory", return_value=[]):
             cc._memory_cmd(_ns(mem_action="audit"))
         assert "No suspicious content in memory." in capsys.readouterr().out
 
         findings = [{"type": "semantic", "key": "k", "warning": "w", "value": "v"}]
-        with _MemHarness(), patch("kiro_crew.cli_commands.scan_memory", return_value=findings):
+        with _MemHarness(), patch("efm_go.cli_commands.scan_memory", return_value=findings):
             cc._memory_cmd(_ns(mem_action="audit"))
         assert "1 suspicious entries" in capsys.readouterr().out
 
@@ -2829,9 +2829,9 @@ class _ArtifactHarness:
     def __enter__(self) -> _ArtifactHarness:
         self._patches = [
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.parse_dashboard_url", return_value=("localhost", 5476)),
-            patch("kiro_crew.cli_commands._internal_secret", return_value="s"),
-            patch("kiro_crew.cli_commands.loopback_urlopen", side_effect=self._responses),
+            patch("efm_go.cli_commands.parse_dashboard_url", return_value=("localhost", 5476)),
+            patch("efm_go.cli_commands._internal_secret", return_value="s"),
+            patch("efm_go.cli_commands.loopback_urlopen", side_effect=self._responses),
         ]
         started = [p.start() for p in self._patches]
         self.urlopen = started[-1]
@@ -3170,7 +3170,7 @@ class TestArtifactCli:
         f.write_text("secret", encoding="utf-8")
         with (
             _ArtifactHarness([]),
-            patch("kiro_crew.cli_commands.is_sensitive_path", return_value=True),
+            patch("efm_go.cli_commands.is_sensitive_path", return_value=True),
             pytest.raises(SystemExit) as exc,
         ):
             cc._artifact(
@@ -3309,7 +3309,7 @@ class TestArtifactCli:
 class TestPodDispatch:
     def test_pod_delegates_to_verb_layer(self) -> None:
         args = _ns(pod_action="ls")
-        with patch("kiro_crew.pod.cli.dispatch") as dispatch:
+        with patch("efm_go.pod.cli.dispatch") as dispatch:
             cc._pod(args)
         dispatch.assert_called_once_with(args)
 
@@ -3321,7 +3321,7 @@ class TestTelemetryCli:
     def test_status_is_read_only(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.beacon") as beacon,
+            patch("efm_go.cli_commands.beacon") as beacon,
         ):
             beacon.format_status.return_value = "beacon: OFF"
             cc._telemetry(_ns(telemetry_action="status"))
@@ -3330,7 +3330,7 @@ class TestTelemetryCli:
     def test_missing_action_defaults_to_status(self, capsys: pytest.CaptureFixture[str]) -> None:
         with (
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.beacon") as beacon,
+            patch("efm_go.cli_commands.beacon") as beacon,
         ):
             beacon.format_status.return_value = "default-status"
             cc._telemetry(_ns(telemetry_action=None))
@@ -3354,8 +3354,8 @@ class TestTelemetryCli:
         effective.telemetry.beacon_enabled = False
         with (
             patch.object(KiroCrewConfig, "load", return_value=effective),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon") as beacon,
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon") as beacon,
         ):
             beacon.DISABLE_ENV = "KIROCREW_NO_BEACON"
             beacon.INSTALL_ID_FILE = "install_id"
@@ -3373,8 +3373,8 @@ class TestTelemetryCli:
         effective.telemetry.beacon_enabled = True
         with (
             patch.object(KiroCrewConfig, "load", return_value=effective),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon") as beacon,
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon") as beacon,
         ):
             beacon.is_governance_pinned_off.return_value = False
             cc._telemetry(_ns(telemetry_action="enable"))
@@ -3386,8 +3386,8 @@ class TestTelemetryCli:
         path = tmp_path / "config.json"
         with (
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon") as beacon,
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon") as beacon,
             pytest.raises(SystemExit) as exc,
         ):
             beacon.is_governance_pinned_off.return_value = True
@@ -3403,8 +3403,8 @@ class TestTelemetryCli:
         path.write_text("{not json", encoding="utf-8")
         with (
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon"),
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon"),
             pytest.raises(SystemExit) as exc,
         ):
             cc._telemetry(_ns(telemetry_action="disable"))
@@ -3418,8 +3418,8 @@ class TestTelemetryCli:
         path.write_text("[1, 2, 3]", encoding="utf-8")
         with (
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon"),
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon"),
             pytest.raises(SystemExit),
         ):
             cc._telemetry(_ns(telemetry_action="disable"))
@@ -3434,8 +3434,8 @@ class TestTelemetryCli:
         path.write_text(original, encoding="utf-8")
         with (
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon"),
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon"),
             pytest.raises(SystemExit),
         ):
             cc._telemetry(_ns(telemetry_action="disable"))
@@ -3452,8 +3452,8 @@ class TestTelemetryCli:
         still_on.telemetry.beacon_enabled = True
         with (
             patch.object(KiroCrewConfig, "load", return_value=still_on),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon") as beacon,
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon") as beacon,
             pytest.raises(SystemExit) as exc,
         ):
             beacon.DISABLE_ENV = "KIROCREW_NO_BEACON"
@@ -3469,9 +3469,9 @@ class TestTelemetryCli:
         path.write_text("{}", encoding="utf-8")
         with (
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon"),
-            patch("kiro_crew.config.loader.atomic_write", side_effect=OSError("disk full")),
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon"),
+            patch("efm_go.config.loader.atomic_write", side_effect=OSError("disk full")),
             pytest.raises(SystemExit) as exc,
         ):
             cc._telemetry(_ns(telemetry_action="disable"))
@@ -3490,8 +3490,8 @@ class TestTelemetryCli:
                 "load",
                 side_effect=[KiroCrewConfig(), RuntimeError("bad config")],
             ),
-            patch("kiro_crew.cli_commands.config_path", return_value=path),
-            patch("kiro_crew.cli_commands.beacon") as beacon,
+            patch("efm_go.cli_commands.config_path", return_value=path),
+            patch("efm_go.cli_commands.beacon") as beacon,
         ):
             beacon.INSTALL_ID_FILE = "install_id"
             cc._telemetry(_ns(telemetry_action="disable"))
@@ -3540,11 +3540,11 @@ class _EvalHarness:
     def __enter__(self) -> _EvalHarness:
         self._patches = [
             patch.object(KiroCrewConfig, "load", return_value=KiroCrewConfig()),
-            patch("kiro_crew.cli_commands.build_provider_factory", return_value=MagicMock()),
-            patch("kiro_crew.cli_commands.EvalRunner", return_value=self.runner),
-            patch("kiro_crew.cli_commands.LLMJudge", return_value=self.judge),
-            patch("kiro_crew.cli_commands.format_results", return_value="## Report"),
-            patch("kiro_crew.cli_commands.score_by_dimension", return_value={}),
+            patch("efm_go.cli_commands.build_provider_factory", return_value=MagicMock()),
+            patch("efm_go.cli_commands.EvalRunner", return_value=self.runner),
+            patch("efm_go.cli_commands.LLMJudge", return_value=self.judge),
+            patch("efm_go.cli_commands.format_results", return_value="## Report"),
+            patch("efm_go.cli_commands.score_by_dimension", return_value={}),
         ]
         for p in self._patches:
             p.start()
@@ -3566,7 +3566,7 @@ class TestRunEval:
         monkeypatch.chdir(tmp_path)
         with (
             _EvalHarness([_scenario_result(True)]),
-            patch("kiro_crew.cli_commands.load_scenario", return_value=_scenario()) as loader,
+            patch("efm_go.cli_commands.load_scenario", return_value=_scenario()) as loader,
         ):
             await cc._run_eval(_ns(all_scenarios=False, scenarios=None, judge=False))
         assert loader.call_args[0][0].name == "smoke_test.json"
@@ -3588,7 +3588,7 @@ class TestRunEval:
         scenarios = [_scenario("a"), _scenario("b")]
         with (
             _EvalHarness([_scenario_result(True), _scenario_result(False)]) as h,
-            patch("kiro_crew.cli_commands.load_scenarios", return_value=scenarios) as loader,
+            patch("efm_go.cli_commands.load_scenarios", return_value=scenarios) as loader,
         ):
             await cc._run_eval(_ns(all_scenarios=True, scenarios=None, judge=False))
         assert loader.call_args[0][0].name == "scenarios"
@@ -3601,7 +3601,7 @@ class TestRunEval:
         monkeypatch.chdir(tmp_path)
         with (
             _EvalHarness([_scenario_result(True)]),
-            patch("kiro_crew.cli_commands.load_scenario", return_value=_scenario("named")) as ld,
+            patch("efm_go.cli_commands.load_scenario", return_value=_scenario("named")) as ld,
         ):
             await cc._run_eval(
                 _ns(all_scenarios=False, scenarios=["memory_recall_basic"], judge=False)
@@ -3625,7 +3625,7 @@ class TestRunEval:
     _WRITE_CHILD = """
 import locale, sys
 from pathlib import Path
-from kiro_crew.cli_commands import write_eval_artifacts
+from efm_go.cli_commands import write_eval_artifacts
 
 print("encoding=" + locale.getencoding())
 report_path, json_path = write_eval_artifacts(
@@ -3702,8 +3702,8 @@ print("wrote=" + report_path.name + "," + json_path.name)
         }
         with (
             _EvalHarness([_scenario_result(True)]),
-            patch("kiro_crew.cli_commands.load_scenario", return_value=_scenario()),
-            patch("kiro_crew.cli_commands.score_by_dimension", return_value=dims),
+            patch("efm_go.cli_commands.load_scenario", return_value=_scenario()),
+            patch("efm_go.cli_commands.score_by_dimension", return_value=dims),
         ):
             await cc._run_eval(_ns(all_scenarios=False, scenarios=None, judge=False))
         out = capsys.readouterr().out
@@ -3723,7 +3723,7 @@ print("wrote=" + report_path.name + "," + json_path.name)
         )
         with (
             _EvalHarness([_scenario_result(True, turn=turn)]) as h,
-            patch("kiro_crew.cli_commands.load_scenario", return_value=_scenario()),
+            patch("efm_go.cli_commands.load_scenario", return_value=_scenario()),
         ):
             await cc._run_eval(_ns(all_scenarios=False, scenarios=None, judge=True))
         h.judge.start.assert_awaited_once()
@@ -3746,7 +3746,7 @@ print("wrote=" + report_path.name + "," + json_path.name)
         with (
             _EvalHarness([_scenario_result(True, turn=turn)]) as h,
             patch(
-                "kiro_crew.cli_commands.load_scenario",
+                "efm_go.cli_commands.load_scenario",
                 return_value=_scenario(judge_criteria="be terse"),
             ),
         ):
@@ -3769,7 +3769,7 @@ print("wrote=" + report_path.name + "," + json_path.name)
         )
         with (
             _EvalHarness([_scenario_result(True, turn=turn)]) as h,
-            patch("kiro_crew.cli_commands.load_scenario", return_value=_scenario()),
+            patch("efm_go.cli_commands.load_scenario", return_value=_scenario()),
         ):
             await cc._run_eval(_ns(all_scenarios=False, scenarios=None, judge=True))
         h.judge.judge_turn.assert_not_awaited()
@@ -3795,9 +3795,9 @@ class TestDevConfirmFlagNoAbbreviation:
             argv = ["kirocrew", "app", "dev", "demo", abbrev]
             with (
                 patch.object(sys, "argv", argv),
-                patch("kiro_crew.cli_commands._handle_app") as handler,
+                patch("efm_go.cli_commands._handle_app") as handler,
             ):
-                from kiro_crew.cli import main
+                from efm_go.cli import main
 
                 with pytest.raises(SystemExit) as exc:
                     main()
@@ -3813,9 +3813,9 @@ class TestDevConfirmFlagNoAbbreviation:
         argv = ["kirocrew", "app", "dev", "demo", "--confirm-out-of-install-root"]
         with (
             patch.object(sys, "argv", argv),
-            patch("kiro_crew.cli_commands._handle_app") as handler,
+            patch("efm_go.cli_commands._handle_app") as handler,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
             ns = handler.call_args[0][0]

@@ -1,7 +1,7 @@
 """The opencode session MCP array: its projection, and the adapter facts it rests on.
 
 Two halves, deliberately in one file. The unit half drives
-:mod:`kiro_crew.providers.mirrors.opencode` over a temp agent spec. The
+:mod:`efm_go.providers.mirrors.opencode` over a temp agent spec. The
 :func:`test_real_opencode_acp_accepts_the_crew_stdio_element` half drives a real
 ``opencode acp`` and is the anti-drift guard for the whole projection: this backend
 had NO projection at all because an adapter fact was inferred from its
@@ -23,16 +23,16 @@ from pathlib import Path
 import pytest
 from real_adapter_gate import MEASURED_OPENCODE_VERSION, require_real_adapter
 
-from kiro_crew import agent as agent_mod
-from kiro_crew import platform_compat
-from kiro_crew.acp import session_mcp
-from kiro_crew.acp_backends import (
+from efm_go import agent as agent_mod
+from efm_go import platform_compat
+from efm_go.acp import session_mcp
+from efm_go.acp_backends import (
     ACP_BACKEND_OPENCODE,
     ACP_BACKENDS_SESSION_MCP_ARRAY,
 )
-from kiro_crew.providers.mirrors import Concern, Disposition, mirror_for
-from kiro_crew.providers.mirrors.identity import identity_bound_crew_servers
-from kiro_crew.providers.mirrors.opencode import (
+from efm_go.providers.mirrors import Concern, Disposition, mirror_for
+from efm_go.providers.mirrors.identity import identity_bound_crew_servers
+from efm_go.providers.mirrors.opencode import (
     OpenCodeMirror,
     narrowed_control_plane,
     opencode_elements,
@@ -594,8 +594,8 @@ class TestPooledStubs:
         path with no unit-level seam."""
         import inspect
 
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.providers.mirrors import MIRRORS
+        from efm_go.acp import client as client_mod
+        from efm_go.providers.mirrors import MIRRORS
 
         assert ACP_BACKEND_OPENCODE in MIRRORS
         pooled = inspect.getsource(client_mod.AcpClient._pooled_mcp_servers)
@@ -656,7 +656,7 @@ class TestTheMirrorFaces:
         writes the config Crew DOES seed."""
         import inspect
 
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         body = inspect.getsource(client_mod.AcpClient._opencode_routing_config)
         assert '"mcp"' not in body
@@ -874,7 +874,7 @@ def _run_driver_reaping_group(
     broadcast guard. Copied in shape from ``test_codex_session_mcp.py``, whose
     sibling test has the identical three-generation problem.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     proc = subprocess.Popen(
         argv,
@@ -914,7 +914,7 @@ def _opencode_bin() -> str | None:
     what this test must exercise is the binary a real session would spawn, on the
     same ladder (``OPENCODE_BIN``, mise, PATH).
     """
-    from kiro_crew.acp.client import _resolve_self_served_bin
+    from efm_go.acp.client import _resolve_self_served_bin
 
     resolved, _search = _resolve_self_served_bin(ACP_BACKEND_OPENCODE)
     return resolved or None
@@ -1084,8 +1084,8 @@ def test_the_real_adapter_guard_is_reachable_at_all(monkeypatch):
     binary from this test's process -- a host program this test has no business
     starting (test-hygiene class 7).
     """
-    from kiro_crew.acp import client as client_mod
-    from kiro_crew.acp.client import _resolve_self_served_bin
+    from efm_go.acp import client as client_mod
+    from efm_go.acp.client import _resolve_self_served_bin
 
     monkeypatch.setattr(client_mod, "_mise_which", lambda tool: None)
     resolved, search = _resolve_self_served_bin(ACP_BACKEND_OPENCODE)
@@ -1121,7 +1121,7 @@ def test_the_driver_runner_reaps_descendants_on_the_timeout_path():
     parent = (
         "import subprocess, sys, time\n"
         f"sys.path.insert(0, {str(src_root)!r})\n"
-        "from kiro_crew.platform_compat import get_process_start_id\n"
+        "from efm_go.platform_compat import get_process_start_id\n"
         'g = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(300)"])\n'
         "print(g.pid, get_process_start_id(g.pid) or '', flush=True)\n"
         "time.sleep(300)\n"
@@ -1180,7 +1180,7 @@ def test_the_driver_and_stub_are_syntactically_valid_python():
 
 def _real_opencode_read_back(tmp_path, global_permission: dict) -> tuple[str, str]:
     """Run the real routing read-back under a private HOME holding *global_permission*."""
-    from kiro_crew.acp.client import AcpClient
+    from efm_go.acp.client import AcpClient
 
     home = tmp_path / "home"
     config_home = home / ".config"

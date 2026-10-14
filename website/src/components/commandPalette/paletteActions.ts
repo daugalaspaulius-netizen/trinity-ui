@@ -31,9 +31,9 @@ import { useMayLeaveForNavigation, useIsCurrentUrl } from '../NavigationLeaveGua
  *
  *  - `$skill`  → `SkillsLoader.get_triggered_skills()` / `load_skill()`, which
  *    is guarded by `_safe_name()` (rejects `..` / `\\`) and `validate_file_path()`
- *    (`src/kiro_crew/skills.py`).
+ *    (`src/efm_go/skills.py`).
  *  - `@prompt` → `_expand_prompt_mention()` on the submit path
- *    (`src/kiro_crew/dashboard/chat_runner.py:784`, consumed at lines 999/1201).
+ *    (`src/efm_go/dashboard/chat_runner.py:784`, consumed at lines 999/1201).
  *
  * Those resolvers already apply `redact_credentials()` / `redact_exfiltration_urls()`.
  * Because the FE only ever emits a token string, there is no new untrusted

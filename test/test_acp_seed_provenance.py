@@ -40,13 +40,13 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import model_registry as mr
-from kiro_crew import sandbox, security
-from kiro_crew.acp import client as acp_client
-from kiro_crew.acp import seed_provenance as sp
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.types import ACP_BACKEND_CLAUDE
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go import model_registry as mr
+from efm_go import sandbox, security
+from efm_go.acp import client as acp_client
+from efm_go.acp import seed_provenance as sp
+from efm_go.acp.client import AcpClient
+from efm_go.acp.types import ACP_BACKEND_CLAUDE
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 _SERVED = [
     "global.anthropic.claude-opus-5[1m]",
@@ -64,14 +64,14 @@ def _pinned_kiro_cli_version(monkeypatch):
 
     A client start here materialises the agent spec (``ensure_agent_materialized``
     -> ``rebuild_agent_config`` -> ``_write_derived_permissions``), which reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``:
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``:
     one real ``kiro-cli --version`` spawn per binary identity, process-cached, so
     whichever test in the worker starts first pays it against the HOST's install
     with the checkout as the child's cwd. Pinned to the floor release, as
     ``test_agent.py`` and the generated-writer suites pin it.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 

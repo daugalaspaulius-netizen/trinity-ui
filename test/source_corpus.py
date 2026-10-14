@@ -1,7 +1,7 @@
-"""One streamed read of the ``kiro_crew`` source tree, shared by every AST ratchet.
+"""One streamed read of the ``efm_go`` source tree, shared by every AST ratchet.
 
 Several gates in this suite pin a structural property of the whole package by
-walking ``src/kiro_crew/**/*.py`` and ``ast.parse``-ing each file. Independently
+walking ``src/efm_go/**/*.py`` and ``ast.parse``-ing each file. Independently
 they each paid the same costs, and the suite paid them once per gate:
 
 * the ``rglob`` walk and the read of ~62 MB of source (0.2 s), and
@@ -61,18 +61,18 @@ from pathlib import Path
 
 
 def src_root() -> Path:
-    """Locate the ``kiro_crew`` package.
+    """Locate the ``efm_go`` package.
 
     Prefer the importable package (correct regardless of CWD / install layout);
     fall back to the in-repo path so a gate also runs standalone under a bare
     ``python3`` with no deps installed.
     """
     try:
-        import kiro_crew  # noqa: PLC0415
+        import efm_go  # noqa: PLC0415
 
-        return Path(kiro_crew.__file__).resolve().parent
+        return Path(efm_go.__file__).resolve().parent
     except Exception:
-        return Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        return Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 
 @functools.lru_cache(maxsize=1)

@@ -1051,7 +1051,7 @@ describe('the step details these fixtures put on screen', () => {
   })
 
   it('are copy launch_job.py actually writes', () => {
-    const py = read('../../../src/kiro_crew/cloud/launch_job.py')
+    const py = read('../../../src/efm_go/cloud/launch_job.py')
     for (const detail of details) {
       expect(py, `launch_job.py never writes ${JSON.stringify(detail)}`).toContain(detail)
     }

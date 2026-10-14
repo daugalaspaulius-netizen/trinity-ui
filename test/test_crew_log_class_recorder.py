@@ -20,7 +20,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 #: The recorder every link-commit site must reach.
 RECORDER = "note_crew_log_class"
@@ -29,7 +29,7 @@ RECORDER = "note_crew_log_class"
 ANNOUNCER = "_note_bind"
 
 #: Sites that assign a link WITHOUT recording, and why each is sound. Keyed by
-#: ``<path relative to src/kiro_crew>:<function>``. A site missing from both this map and
+#: ``<path relative to src/efm_go>:<function>``. A site missing from both this map and
 #: the recorder's callers fails; an entry here naming a site that does not assign a
 #: link fails as well.
 LINK_EXEMPT: dict[str, str] = {
@@ -256,7 +256,7 @@ def test_the_manager_exposes_both_listener_sinks():
     import succeeds, and only an actual boot fails. Asking the manager for both names is
     the cheap form of that boot.
     """
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     for name in ("set_unbind_listener", "set_bind_listener"):
         assert callable(getattr(SessionManager, name, None)), (
@@ -301,8 +301,8 @@ def test_a_binding_before_the_log_exists_survives_being_removed():
     with the fold, which holds each member at the most restrictive value the log ever
     recorded.
     """
-    from kiro_crew.dashboard.chat_runner import PENDING_CHANNEL_ATTR, _crew_log_class
-    from kiro_crew.dashboard.state import note_crew_log_class
+    from efm_go.dashboard.chat_runner import PENDING_CHANNEL_ATTR, _crew_log_class
+    from efm_go.dashboard.state import note_crew_log_class
 
     class _Slot:
         key = "chat-1"
@@ -327,8 +327,8 @@ def test_a_binding_before_the_log_exists_survives_being_removed():
 
 def test_a_slot_that_was_never_bound_is_not_marked():
     """The accepting case: the mark is not a blanket restriction on every idle slot."""
-    from kiro_crew.dashboard.chat_runner import PENDING_CHANNEL_ATTR, _crew_log_class
-    from kiro_crew.dashboard.state import note_crew_log_class
+    from efm_go.dashboard.chat_runner import PENDING_CHANNEL_ATTR, _crew_log_class
+    from efm_go.dashboard.state import note_crew_log_class
 
     class _Slot:
         key = "chat-2"
@@ -358,9 +358,9 @@ def test_a_live_session_id_does_not_stop_the_mark(monkeypatch):
     rather than replacing it; a fix that only marked would pass a mark-only assertion while
     silently dropping the write for every session whose log does exist.
     """
-    from kiro_crew.crew_log import emit as crew_log_emit
-    from kiro_crew.dashboard.chat_runner import PENDING_CHANNEL_ATTR, _crew_log_class
-    from kiro_crew.dashboard.state import note_crew_log_class
+    from efm_go.crew_log import emit as crew_log_emit
+    from efm_go.dashboard.chat_runner import PENDING_CHANNEL_ATTR, _crew_log_class
+    from efm_go.dashboard.state import note_crew_log_class
 
     seen: list[tuple[str, bool, str]] = []
     monkeypatch.setattr(
@@ -412,9 +412,9 @@ def test_a_real_chat_slot_holds_the_mark_and_keeps_the_record(monkeypatch):
     So this drives the recorder with a real slot and asserts the append, the mark and the
     fold that reads it, starting from a fresh slot that reads as never published.
     """
-    from kiro_crew.crew_log import emit as crew_log_emit
-    from kiro_crew.dashboard.chat_runner import PENDING_CHANNEL_ATTR, _crew_log_class
-    from kiro_crew.dashboard.state import _ChatSlot, note_crew_log_class
+    from efm_go.crew_log import emit as crew_log_emit
+    from efm_go.dashboard.chat_runner import PENDING_CHANNEL_ATTR, _crew_log_class
+    from efm_go.dashboard.state import _ChatSlot, note_crew_log_class
 
     seen: list[tuple[str, str, str, bool, str]] = []
     monkeypatch.setattr(

@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.taskrunner import Step, StepStatus, TaskRun, TaskRunner
+from efm_go.providers.base import LLMEvent
+from efm_go.taskrunner import Step, StepStatus, TaskRun, TaskRunner
 
 
 def _make_mock_sessions() -> MagicMock:
@@ -263,7 +263,7 @@ class TestExecutePlan:
             await release.wait()
 
         runner._execute_tasks = _block_execution  # type: ignore[assignment]
-        with patch("kiro_crew.taskrunner.git_coord"):
+        with patch("efm_go.taskrunner.git_coord"):
             task_id = await runner.execute_plan("plan_test")
             task = runner._tasks[task_id]
             await started.wait()
@@ -292,7 +292,7 @@ class TestExecutePlan:
         run.tasks[1].error = "old error"
         run.tasks[1].result = "old result"
         run.error = "Shutdown signal received"
-        with patch("kiro_crew.taskrunner.git_coord"):
+        with patch("efm_go.taskrunner.git_coord"):
             await runner.execute_plan("plan_test")
             task = runner._tasks["plan_test"]
             try:
@@ -317,7 +317,7 @@ class TestExecutePlan:
         run.tasks[1].error = "previous failure"
         run.tasks[1].result = "partial output"
         run.error = "Task 2 failed"
-        with patch("kiro_crew.taskrunner.git_coord"):
+        with patch("efm_go.taskrunner.git_coord"):
             await runner.execute_plan("plan_test")
             task = runner._tasks["plan_test"]
             try:
@@ -341,7 +341,7 @@ class TestExecutePlan:
         run.tasks[0].result = "old output"
         run.tasks[1].status = StepStatus.FAILED
         run.tasks[1].error = "old error"
-        with patch("kiro_crew.taskrunner.git_coord"):
+        with patch("efm_go.taskrunner.git_coord"):
             await runner.execute_plan("plan_test", fresh=True)
             task = runner._tasks["plan_test"]
             try:
@@ -368,7 +368,7 @@ class TestExecutePlan:
                 Step(index=2, title="S2", description="D2", depends_on=[1]),
             ],
         )
-        with patch("kiro_crew.taskrunner.git_coord"):
+        with patch("efm_go.taskrunner.git_coord"):
             await runner.execute_plan("plan_test")
             # Wait for completion
             task = runner._tasks.get("plan_test")
@@ -405,7 +405,7 @@ class TestExecutePlan:
                 Step(index=2, title="S2", description="D2", depends_on=[1]),
             ],
         )
-        with patch("kiro_crew.taskrunner.git_coord"):
+        with patch("efm_go.taskrunner.git_coord"):
             await runner.execute_plan("plan_test")
             task = runner._tasks.get("plan_test")
             if task:
@@ -418,7 +418,7 @@ class TestExecutePlan:
     @pytest.mark.asyncio
     async def test_concurrent_guard_preserves_state_on_rejection(self, tmp_path: Path) -> None:
         """If MAX_CONCURRENT_TASKS is hit, state must NOT be mutated."""
-        from kiro_crew.taskrunner import _MAX_CONCURRENT_TASKS
+        from efm_go.taskrunner import _MAX_CONCURRENT_TASKS
 
         runner = _make_runner(tmp_path)
         run = _planned_run(runner)

@@ -40,11 +40,11 @@ from unittest.mock import MagicMock
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import artifacts as art_mod
-from kiro_crew import security
-from kiro_crew.artifacts import ArtifactError, ArtifactStore
-from kiro_crew.atomic_write import on_event_loop
-from kiro_crew.dashboard.handlers import artifacts as art_handlers
+from efm_go import artifacts as art_mod
+from efm_go import security
+from efm_go.artifacts import ArtifactError, ArtifactStore
+from efm_go.atomic_write import on_event_loop
+from efm_go.dashboard.handlers import artifacts as art_handlers
 
 
 @pytest.fixture

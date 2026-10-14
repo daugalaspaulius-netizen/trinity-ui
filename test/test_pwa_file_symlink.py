@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 
 @pytest.mark.asyncio
@@ -17,7 +17,7 @@ async def test_pwa_file_serves_through_symlinked_dist(tmp_path):
     legitimate symlinked file isn't rejected (falling through to the SPA
     fallback, which serves index.html as text/html and breaks any JS
     import e.g. /pcm-worklet.js)."""
-    from kiro_crew.dashboard.handlers import core
+    from efm_go.dashboard.handlers import core
 
     real_dist = tmp_path / "real-dist"
     real_dist.mkdir()
@@ -36,7 +36,7 @@ async def test_pwa_file_serves_through_symlinked_dist(tmp_path):
 @pytest.mark.asyncio
 async def test_pwa_file_rejects_traversal(tmp_path):
     """Guard still blocks paths resolving outside _DIST_DIR."""
-    from kiro_crew.dashboard.handlers import core
+    from efm_go.dashboard.handlers import core
 
     dist = tmp_path / "dist"
     dist.mkdir()

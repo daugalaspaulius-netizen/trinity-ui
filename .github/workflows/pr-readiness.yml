@@ -611,7 +611,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.repository.default_branch || github.ref_name }}
-          sparse-checkout: src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts
+          sparse-checkout: src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts
           persist-credentials: false
 
       # Issue #6658: the one-lane / one-rationale-per-finding disposition rule
@@ -655,7 +655,7 @@ jobs:
           REPO: ${{ github.repository }}
           PR: ${{ steps.context.outputs.pr }}
           SHA: ${{ steps.context.outputs.sha }}
-          GATE: ${{ github.workspace }}/src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/pr_status.py
+          GATE: ${{ github.workspace }}/src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/pr_status.py
         run: |
           set -uo pipefail
 
@@ -760,7 +760,7 @@ jobs:
           REPO: ${{ github.repository }}
           PR: ${{ steps.context.outputs.pr }}
           SHA: ${{ steps.context.outputs.sha }}
-          GATE: ${{ github.workspace }}/src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/pr_status.py
+          GATE: ${{ github.workspace }}/src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/scripts/pr_status.py
         run: |
           set -uo pipefail
 

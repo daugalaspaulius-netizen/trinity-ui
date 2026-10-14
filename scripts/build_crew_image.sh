@@ -24,7 +24,7 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-readonly RUNTIME_DIR="${REPO_ROOT}/src/kiro_crew/apps/builtins/aws_control/crew/runtime"
+readonly RUNTIME_DIR="${REPO_ROOT}/src/efm_go/apps/builtins/aws_control/crew/runtime"
 
 BASE=""
 BUNDLE=""

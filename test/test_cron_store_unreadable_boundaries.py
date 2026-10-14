@@ -37,8 +37,8 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from source_corpus import candidate_sources, src_root
 
-from kiro_crew.cron import CronService, CronStoreBusy, CronStoreUnreadable
-from kiro_crew.messaging.commands import cron_remove_all_reply
+from efm_go.cron import CronService, CronStoreBusy, CronStoreUnreadable
+from efm_go.messaging.commands import cron_remove_all_reply
 
 # One xdist worker for the whole module: the two ratchets at the bottom derive from
 # ONE module-cached scan of src/. Under `--dist loadgroup` an unmarked module is spread
@@ -67,7 +67,7 @@ def _svc_with_unreadable_store(tmp_path: Path) -> CronService:
 
 def _dashboard_client(svc: CronService) -> TestClient:
     """Minimal app exposing POST /api/crons backed by *svc*."""
-    from kiro_crew.dashboard.handlers.cron import api_crons_create
+    from efm_go.dashboard.handlers.cron import api_crons_create
 
     app = web.Application()
     app["state"] = SimpleNamespace(crons=svc, push_refresh=lambda _k: None)
@@ -106,7 +106,7 @@ async def test_dashboard_create_translates_unreadable_store(tmp_path: Path) -> N
 async def test_dashboard_create_refuses_unavailable_member_without_mutation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, schedule: dict, member: str
 ) -> None:
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
 
     config = KiroCrewConfig()
     config.agents["broken"] = KiroCrewAgentConfig(
@@ -143,8 +143,8 @@ async def test_dashboard_create_refuses_unavailable_member_without_mutation(
 async def test_dashboard_create_keeps_valid_member_binding(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, schedule: dict
 ) -> None:
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.memory_stores import provision_member_memory
 
     config = KiroCrewConfig()
     config.agents["writer"] = KiroCrewAgentConfig(kiro_agent="kirocrew")
@@ -181,7 +181,7 @@ def test_cli_cron_add_translates_unreadable_store(
     """
     import argparse
 
-    import kiro_crew.cli_commands as cc
+    import efm_go.cli_commands as cc
 
     (tmp_path / "crons.json").write_bytes(_UNREADABLE)
     monkeypatch.setattr(cc, "config_dir", lambda: tmp_path)
@@ -220,10 +220,10 @@ def test_mcp_cron_add_translates_unreadable_store(
     caller BEFORE it reaches the store -- without it this test would pass on the
     authz message and never exercise the write at all.
     """
-    import kiro_crew.mcp_cron as mc
+    import efm_go.mcp_cron as mc
 
     (tmp_path / "crons.json").write_bytes(_UNREADABLE)
-    monkeypatch.setattr("kiro_crew.mcp_cron.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.mcp_cron.config_dir", lambda: tmp_path)
     monkeypatch.setenv("KIROCREW_SESSION_KEY", "dashboard:unreadable-probe")
 
     out = mc._call_tool_inner("cron_add", {"name": "n", "message": "m", "every": 300})
@@ -591,7 +591,7 @@ async def test_app_deregister_propagates_unreadable_rather_than_reporting_zero(
     is a sibling of `CronStoreBusy`, not a subclass, so without its own arm it
     falls to the generic handler and returns 0.
     """
-    from kiro_crew.apps.bridges import deregister_app_crons_from_service
+    from efm_go.apps.bridges import deregister_app_crons_from_service
 
     svc = _svc_with_unreadable_app_owned_store(tmp_path)
     with pytest.raises(CronStoreUnreadable) as exc:
@@ -607,7 +607,7 @@ async def test_absent_store_still_tears_down_cleanly(tmp_path: Path) -> None:
     real regression. `_load` returns at its `exists()` check WITHOUT setting
     `_load_failed`, which is what keeps the two cases distinguishable.
     """
-    from kiro_crew.apps.bridges import deregister_app_crons_from_service
+    from efm_go.apps.bridges import deregister_app_crons_from_service
 
     assert not (tmp_path / "crons.json").exists()
     svc = CronService(base_dir=tmp_path)
@@ -619,7 +619,7 @@ async def test_absent_store_still_tears_down_cleanly(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_honestly_empty_store_still_tears_down_cleanly(tmp_path: Path) -> None:
     """NC, second half: an EMPTY job list is not an unreadable one."""
-    from kiro_crew.apps.bridges import deregister_app_crons_from_service
+    from efm_go.apps.bridges import deregister_app_crons_from_service
 
     (tmp_path / "crons.json").write_text(json.dumps({"version": 2, "jobs": []}), encoding="utf-8")
     svc = CronService(base_dir=tmp_path)
@@ -659,7 +659,7 @@ async def test_disable_reports_unreadable_cleanup_instead_of_crashing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The disable hook must record a 'failed' cleanup note, not propagate."""
-    from kiro_crew.apps import hooks_integration as hi
+    from efm_go.apps import hooks_integration as hi
 
     svc = _svc_with_unreadable_app_owned_store(tmp_path)
     monkeypatch.setattr(hi, "_lifecycle_dispatcher", _dispatcher_stub(svc))
@@ -677,7 +677,7 @@ async def test_disable_over_a_healthy_store_still_reports_no_failure(
 
     Guards against buying the lane by turning every store read into a refusal.
     """
-    from kiro_crew.apps import hooks_integration as hi
+    from efm_go.apps import hooks_integration as hi
 
     (tmp_path / "crons.json").write_text(json.dumps({"version": 2, "jobs": []}), encoding="utf-8")
     svc = CronService(base_dir=tmp_path)
@@ -1018,29 +1018,29 @@ _CRON_WRITES = frozenset(
 #: structural reason. An exemption is a visible, reviewable line on purpose --
 #: adding one should feel like a claim someone can check, because it is.
 _EXEMPT_READ_DECIDE_WRITE: dict[tuple[str, str], str] = {
-    ("src/kiro_crew/apps/bridges.py", "register_app_crons_with_service"): (
+    ("src/efm_go/apps/bridges.py", "register_app_crons_with_service"): (
         "An empty read makes every definition look ABSENT, so the add is still "
         "attempted and refuses at the write. The degraded read biases TOWARD the "
         "write rather than around it, so the refusal cannot be skipped."
     ),
-    ("src/kiro_crew/onboarding_import.py", "_write_schedule"): (
+    ("src/efm_go/onboarding_import.py", "_write_schedule"): (
         "Same shape: no matching job means it falls through to `add_job`, which "
         "refuses. Absence routes INTO the write, so the store cannot stay silent."
     ),
-    ("src/kiro_crew/dashboard/state.py", "delete_cron_folder"): (
+    ("src/efm_go/dashboard/state.py", "delete_cron_folder"): (
         "The authoritative write is `save_cron_folders()` on a DIFFERENT store and "
         "happens BEFORE the read. The job loop that follows is documented "
         "best-effort cleanup whose per-job failure is benign (an unknown folder_id "
         "renders as ungrouped and self-heals), so the outcome this reports does not "
         "depend on the cron read at all."
     ),
-    ("src/kiro_crew/cli_commands.py", "_cron_dispatch"): (
+    ("src/efm_go/cli_commands.py", "_cron_dispatch"): (
         "A verb dispatcher: the read and the writes are ALTERNATIVE branches of one "
         "request, never a read that decides a write. Its own dispatch-boundary "
         "wrapper already translates the refusal for every verb, including ones "
         "added later."
     ),
-    ("src/kiro_crew/mcp_cron.py", "_call_tool_inner"): (
+    ("src/efm_go/mcp_cron.py", "_call_tool_inner"): (
         "The same verb-dispatcher shape as `_cron_dispatch` -- one branch per tool, "
         "so no branch reads and then decides a write."
     ),
@@ -1133,10 +1133,10 @@ def _read_decide_write_callers() -> tuple[tuple[str, str, int, bool], ...]:
             continue
         if "/tests/" in posix or path.name.startswith("test_"):
             continue
-        # Keyed as `src/kiro_crew/...` from the package root, not from the checkout,
+        # Keyed as `src/efm_go/...` from the package root, not from the checkout,
         # so the exemption keys resolve identically for an editable and an installed
         # package layout.
-        rel = "src/kiro_crew/" + path.relative_to(root).as_posix()
+        rel = "src/efm_go/" + path.relative_to(root).as_posix()
         callers.extend(_scan_module_for_read_decide_write(text, rel))
     return tuple(callers)
 

@@ -15,16 +15,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew import agent_state
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.dashboard.handlers.agents import api_agent_publish
+from efm_go import agent_state
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.dashboard.handlers.agents import api_agent_publish
 
 
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     """Run past the owner boundary; owner-auth has its own coverage elsewhere."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -83,7 +83,7 @@ async def test_publish_rejects_a_name_a_crew_binding_dangles_at(tmp_path):
     cfg.default_agent = "design-crew"
     cfg.save()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -100,7 +100,7 @@ async def test_publish_rejects_a_name_a_crew_binding_dangles_at(tmp_path):
 async def test_publish_rejects_the_legacy_default_agent_fallback_name(tmp_path):
     """`agent.default_agent` is a resolvable reference like any crew binding —
     publishing under a name it dangles at is refused."""
-    from kiro_crew.config.loader import config_path, update_config_locked
+    from efm_go.config.loader import config_path, update_config_locked
 
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
@@ -112,7 +112,7 @@ async def test_publish_rejects_the_legacy_default_agent_fallback_name(tmp_path):
 
     update_config_locked(config_path(), mutate=_inject_fallback)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -126,7 +126,7 @@ def test_rebind_refuses_a_vanished_target_file(tmp_path):
     """`require_path` rechecks the target file INSIDE the critical section: a
     cross-process delete between a handler's validation and the rebind must
     not persist a binding to nothing."""
-    from kiro_crew.dashboard.handlers.agents import _rebind_crew_locked
+    from efm_go.dashboard.handlers.agents import _rebind_crew_locked
 
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
@@ -145,7 +145,7 @@ async def test_publish_happy_path(tmp_path):
     agents_dir.mkdir()
     _seed_private_copy(agents_dir, "design-crew", "design-crew", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -175,7 +175,7 @@ async def test_publish_copies_model_tracking(tmp_path):
     _seed_private_copy(agents_dir, "c", "c", "kirocrew")
     agent_state.set_model_managed("c", False)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(_publish_request("c", {"crew": "c", "name": "published"}))
 
     assert resp.status == 200
@@ -189,7 +189,7 @@ async def test_publish_refuses_name_collision(tmp_path):
     _write_template(agents_dir, "taken")
     _seed_private_copy(agents_dir, "c", "c", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(_publish_request("c", {"crew": "c", "name": "taken"}))
 
     assert resp.status == 409
@@ -207,7 +207,7 @@ async def test_publish_refuses_non_private_source(tmp_path):
     _write_template(agents_dir, "shared")
     _seed_config("c", "shared")  # bound, but NO fork lineage
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(_publish_request("shared", {"crew": "c", "name": "newname"}))
 
     assert resp.status == 409
@@ -223,7 +223,7 @@ async def test_publish_refuses_another_crews_copy(tmp_path):
     cfg.agents["intruder"] = KiroCrewAgentConfig(kiro_agent="kirocrew")
     cfg.save()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("owner-crew", {"crew": "intruder", "name": "stolen"})
         )
@@ -242,7 +242,7 @@ async def test_publish_rejects_invalid_names(tmp_path, name):
     agents_dir.mkdir()
     _seed_private_copy(agents_dir, "c", "c", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(_publish_request("c", {"crew": "c", "name": name}))
 
     assert resp.status == 400
@@ -255,7 +255,7 @@ async def test_publish_rejects_reserved_name(tmp_path):
     agents_dir.mkdir()
     _seed_private_copy(agents_dir, "c", "c", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(_publish_request("c", {"crew": "c", "name": "kirocrew"}))
 
     assert resp.status == 400
@@ -273,7 +273,7 @@ async def test_publish_rejects_the_kas_reserved_ids(tmp_path, name):
     agents_dir.mkdir()
     _seed_private_copy(agents_dir, "c", "c", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(_publish_request("c", {"crew": "c", "name": name}))
 
     assert resp.status == 400
@@ -289,7 +289,7 @@ async def test_publish_accepts_the_case_variant_of_a_reserved_id(tmp_path):
     agents_dir.mkdir()
     _seed_private_copy(agents_dir, "c", "c", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(_publish_request("c", {"crew": "c", "name": "Default"}))
 
     assert resp.status == 200, resp.text
@@ -303,7 +303,7 @@ async def test_publish_404_on_unknown_template_and_crew(tmp_path):
     agents_dir.mkdir()
     _seed_private_copy(agents_dir, "c", "c", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         missing_template = await api_agent_publish(
             _publish_request("ghost", {"crew": "c", "name": "x1"})
         )
@@ -320,7 +320,7 @@ async def test_publish_400_on_bad_body(tmp_path):
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         bad_json = await api_agent_publish(_publish_request("c", None, bad_json=True))
         not_object = await api_agent_publish(_publish_request("c", ["crew"]))
         no_crew = await api_agent_publish(_publish_request("c", {"name": "x"}))
@@ -340,7 +340,7 @@ async def test_publish_stale_binding_409(tmp_path):
     _write_template(agents_dir, "elsewhere")
     _seed_config("design-crew", "elsewhere")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -360,7 +360,7 @@ async def test_publish_keeps_lineage_when_delete_fails(tmp_path):
     _seed_private_copy(agents_dir, "design-crew", "design-crew", "kirocrew")
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch("pathlib.Path.unlink", side_effect=OSError("locked")),
     ):
         resp = await api_agent_publish(
@@ -398,7 +398,7 @@ async def test_publish_reports_committed_binding_when_marking_shared_fails(tmp_p
         real_clear(name)
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch.object(agent_state, "clear_fork_info", side_effect=_clear_unless_new),
     ):
         resp = await api_agent_publish(
@@ -432,7 +432,7 @@ async def test_publish_refuses_differing_case_collision(tmp_path):
     _write_template(agents_dir, "reviewer")
     _seed_private_copy(agents_dir, "design-crew", "design-crew", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "Reviewer"})
         )
@@ -458,9 +458,9 @@ async def test_publish_sanitizes_governance_before_write(tmp_path):
         config["allowedTools"] = ["governance-filtered"]
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch(
-            "kiro_crew.dashboard.handlers.agents.sanitize_agent_config_governance",
+            "efm_go.dashboard.handlers.agents.sanitize_agent_config_governance",
             fake_sanitize,
         ),
     ):
@@ -483,9 +483,9 @@ async def test_publish_generic_rebind_failure_compensates(tmp_path):
     _seed_private_copy(agents_dir, "design-crew", "design-crew", "kirocrew")
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch(
-            "kiro_crew.dashboard.handlers.agents._rebind_crew_locked",
+            "efm_go.dashboard.handlers.agents._rebind_crew_locked",
             side_effect=RuntimeError("disk full"),
         ),
     ):
@@ -509,9 +509,9 @@ async def test_publish_bookkeeping_failure_compensates(tmp_path):
     _seed_private_copy(agents_dir, "design-crew", "design-crew", "kirocrew")
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch(
-            "kiro_crew.dashboard.handlers.agents.agent_state.get_model_managed",
+            "efm_go.dashboard.handlers.agents.agent_state.get_model_managed",
             side_effect=RuntimeError("sidecar unavailable"),
         ),
     ):
@@ -533,7 +533,7 @@ async def test_publish_rejects_reserved_windows_name(tmp_path):
     agents_dir.mkdir()
     _seed_private_copy(agents_dir, "design-crew", "design-crew", "kirocrew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "CON"})
         )
@@ -551,7 +551,7 @@ async def test_publish_copies_in_lock_reread_not_stale_snapshot(tmp_path):
     agents_dir.mkdir()
     _seed_private_copy(agents_dir, "design-crew", "design-crew", "kirocrew")
 
-    from kiro_crew.dashboard.handlers import agents as agents_mod
+    from efm_go.dashboard.handlers import agents as agents_mod
 
     real_read = agents_mod._read_agent_spec
     src = agents_dir / "design-crew.json"
@@ -568,8 +568,8 @@ async def test_publish_copies_in_lock_reread_not_stale_snapshot(tmp_path):
         return result
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
-        patch("kiro_crew.dashboard.handlers.agents._read_agent_spec", side_effect=racing_read),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.dashboard.handlers.agents._read_agent_spec", side_effect=racing_read),
     ):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "published"})
@@ -598,9 +598,9 @@ async def test_publish_succeeds_when_post_commit_prune_fails(tmp_path):
             raise RuntimeError("sidecar unavailable")
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch(
-            "kiro_crew.dashboard.handlers.agents.agent_state.prune",
+            "efm_go.dashboard.handlers.agents.agent_state.prune",
             side_effect=_post_commit_failing_prune,
         ),
     ):
@@ -626,7 +626,7 @@ async def test_publish_cleanup_removes_resolved_file_not_declared_name(tmp_path)
     agent_state.set_fork_info("design-crew", forked_from="kirocrew", private_to="design-crew")
     _seed_config("design-crew", "design-crew")
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "published"})
         )
@@ -656,7 +656,7 @@ async def test_publish_rolls_back_when_the_clean_slate_prune_fails(tmp_path, mon
 
     monkeypatch.setattr(agent_state, "prune", _failing_prune)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -681,7 +681,7 @@ async def test_publish_keeps_copy_bound_by_another_crew(tmp_path):
     cfg.agents["other-crew"] = KiroCrewAgentConfig(kiro_agent="design-crew")
     cfg.save()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -712,7 +712,7 @@ async def test_publish_keeps_copy_bound_by_file_stem(tmp_path):
     cfg.default_agent = "design-crew"
     cfg.save()
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -728,7 +728,7 @@ async def test_publish_cleanup_checks_and_unlinks_under_config_lock(tmp_path, mo
     section under the config advisory lock, so a binding writer queued on the
     lock cannot land between them. Observed by wrapping the locked mutate and
     recording the copy file's existence on entry and exit."""
-    import kiro_crew.dashboard.handlers.agents as handlers
+    import efm_go.dashboard.handlers.agents as handlers
 
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
@@ -751,7 +751,7 @@ async def test_publish_cleanup_checks_and_unlinks_under_config_lock(tmp_path, mo
 
     monkeypatch.setattr(handlers, "update_config_locked", _recording)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -771,7 +771,7 @@ async def test_publish_rollback_keeps_destination_bound_by_another_crew(tmp_path
     created destination must keep the file AS A SHARED TEMPLATE — deleting it
     breaks that crew's sessions, and marking it private misattributes a
     template in live use."""
-    import kiro_crew.dashboard.handlers.agents as handlers
+    import efm_go.dashboard.handlers.agents as handlers
 
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
@@ -787,7 +787,7 @@ async def test_publish_rollback_keeps_destination_bound_by_another_crew(tmp_path
 
     monkeypatch.setattr(handlers, "_rebind_crew_locked", _failing_rebind)
 
-    with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+    with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
         resp = await api_agent_publish(
             _publish_request("design-crew", {"crew": "design-crew", "name": "reviewer-v2"})
         )
@@ -819,14 +819,14 @@ async def test_publish_rollback_retained_destination_is_never_shared(tmp_path):
         real_set_fork_info(name, forked_from=forked_from, private_to=private_to)
 
     with (
-        patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir),
+        patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir),
         patch("pathlib.Path.unlink", side_effect=OSError("locked")),
         patch(
-            "kiro_crew.dashboard.handlers.agents.agent_state.get_model_managed",
+            "efm_go.dashboard.handlers.agents.agent_state.get_model_managed",
             side_effect=RuntimeError("sidecar unavailable"),
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents.agent_state.set_fork_info",
+            "efm_go.dashboard.handlers.agents.agent_state.set_fork_info",
             side_effect=_fail_on_reassert,
         ),
     ):

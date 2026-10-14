@@ -15,9 +15,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import history, history_search
-from kiro_crew.dashboard.handlers import source_providers as source
-from kiro_crew.dashboard.slot_projection import SlotProjection
+from efm_go import history, history_search
+from efm_go.dashboard.handlers import source_providers as source
+from efm_go.dashboard.slot_projection import SlotProjection
 
 CR_URL = "https://review.acme.example/cr/123"
 
@@ -147,7 +147,7 @@ def test_unregistered_url_is_still_refused() -> None:
 
 
 def test_builtin_parsing_is_unchanged(plugin) -> None:
-    gh = source.parse_source_url("https://github.com/kirodotdev/KiroCrew/pull/58")
+    gh = source.parse_source_url("https://efmleads.com/pull/58")
     assert (gh.provider, gh.number) == ("github", 58)
     gl = source.parse_source_url("https://gitlab.com/g/sub/p/-/merge_requests/5")
     assert (gl.provider, gl.number) == ("gitlab", 5)
@@ -424,7 +424,7 @@ def test_plugin_issue_refs_are_refused_at_admission(plugin) -> None:
 
 def test_sidebar_source_links_include_the_plugin_chip(plugin) -> None:
     """The sidebar chip scanner must reach a plugin URL and label it."""
-    from kiro_crew.dashboard import state as state_mod
+    from efm_go.dashboard import state as state_mod
 
     slot = object.__new__(state_mod._ChatSlot)
     slot.messages = [{"role": "assistant", "content": f"Raised {CR_URL} for review."}]
@@ -458,7 +458,7 @@ def test_sidebar_dedups_on_ref_identity_not_canonical_url(plugin) -> None:
     change. Keying the dedup on the ref identity collapses them; the backwards
     walk makes the most recent mention's URL the chip's link target.
     """
-    from kiro_crew.dashboard import state as state_mod
+    from efm_go.dashboard import state as state_mod
 
     prefix = "https://review.acme.example/cr/"
 
@@ -510,7 +510,7 @@ def test_sidebar_dedups_on_ref_identity_not_canonical_url(plugin) -> None:
 
 def test_sidebar_keeps_same_numbered_changes_on_different_repos_distinct(plugin) -> None:
     """Identity keying must not over-collapse: same number, different repo."""
-    from kiro_crew.dashboard import state as state_mod
+    from efm_go.dashboard import state as state_mod
 
     slot = object.__new__(state_mod._ChatSlot)
     slot.messages = [
@@ -540,7 +540,7 @@ def test_sidebar_keeps_same_host_jira_context_paths_distinct(plugin, monkeypatch
     identity that dropped the URL entirely would collide them and one link
     would silently disappear from the sidebar.
     """
-    from kiro_crew.dashboard import state as state_mod
+    from efm_go.dashboard import state as state_mod
 
     monkeypatch.setattr(source, "_jira_hosts_snapshot", frozenset({"jira.acme.internal"}))
     monkeypatch.setattr(source, "_gitlab_hosts_loaded_at", 1.0)

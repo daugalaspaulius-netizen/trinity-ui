@@ -13,7 +13,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.dashboard.handlers import messaging as mod
+from efm_go.dashboard.handlers import messaging as mod
 
 
 class _Caps:

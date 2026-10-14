@@ -37,13 +37,13 @@ def fake_home(tmp_path, monkeypatch):
 @pytest.fixture
 def sandbox(fake_home, monkeypatch):
     """Sandbox the mcp.py module-level config paths + collaborator seams."""
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     monkeypatch.setattr(mcp_mod, "_KIROCREW_MCP_JSON", fake_home / "kirocrew.mcp.json")
     monkeypatch.setattr(mcp_mod, "_GLOBAL_MCP_JSON", fake_home / "kiro.mcp.json")
     monkeypatch.setattr(mcp_mod, "_MCP_LOCK_PATH", fake_home / "kiro.mcp.lock")
 
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     rebuild = MagicMock()
     monkeypatch.setattr(agent_mod, "rebuild_agent_config", rebuild)
@@ -59,7 +59,7 @@ def sandbox(fake_home, monkeypatch):
 @pytest.fixture
 def fake_sel(monkeypatch):
     """Capture SEL calls made by the custom handlers."""
-    from kiro_crew.dashboard.handlers import mcp_custom as mod
+    from efm_go.dashboard.handlers import mcp_custom as mod
 
     instance = MagicMock()
     monkeypatch.setattr(mod, "sel", lambda: instance)
@@ -67,7 +67,7 @@ def fake_sel(monkeypatch):
 
 
 def _make_app() -> web.Application:
-    from kiro_crew.dashboard.handlers import mcp_custom as mod
+    from efm_go.dashboard.handlers import mcp_custom as mod
 
     app = web.Application()
     state = MagicMock()
@@ -499,7 +499,7 @@ class TestCustomUpdate:
     async def test_put_rejects_redaction_marker_as_fresh_header_value(self, sandbox, fake_sel):
         """A spec pasted from another server's read payload carries the marker;
         writing it would store a nonsense credential that fails auth silently."""
-        from kiro_crew.mcp_discovery import MCP_REDACTED_HEADER_VALUE
+        from efm_go.mcp_discovery import MCP_REDACTED_HEADER_VALUE
 
         entry = {"url": "https://mcp.example.com/sse"}
         sandbox.kirocrew_json.write_text(json.dumps({"mcpServers": {"remote": entry}}))
@@ -722,7 +722,7 @@ class TestCarriedKeyRoundTrip:
         NOT own, so it is meaningless in the store, and preserving it here would
         let a hand-edit volunteer the entry for management on a shared surface.
         """
-        from kiro_crew.mcp_provenance import MARKER_KEY
+        from efm_go.mcp_provenance import MARKER_KEY
 
         sandbox.kirocrew_json.write_text(
             json.dumps(
@@ -795,7 +795,7 @@ class TestCarriedKeyRoundTrip:
         through to the sibling, so the cleared grant keeps being requested while
         the API answers 200 and looks like it worked.
         """
-        from kiro_crew.mcp_utils import kiro_entry_client_id, kiro_entry_scopes
+        from efm_go.mcp_utils import kiro_entry_client_id, kiro_entry_scopes
 
         sandbox.kirocrew_json.write_text(
             json.dumps(
@@ -830,7 +830,7 @@ class TestCarriedKeyRoundTrip:
         self, sandbox, fake_sel
     ):
         """The reader falls through to ``oauth.oauthScopes`` too, so a clear must reach it."""
-        from kiro_crew.mcp_utils import kiro_entry_scopes
+        from efm_go.mcp_utils import kiro_entry_scopes
 
         sandbox.kirocrew_json.write_text(
             json.dumps(
@@ -951,7 +951,7 @@ class TestCarriedKeyRoundTrip:
                 )
                 assert resp.status == 200, f"{submit} rejected: {await resp.text()}"
                 entry = _written(sandbox)["weather"]
-                from kiro_crew.mcp_utils import kiro_entry_scopes
+                from efm_go.mcp_utils import kiro_entry_scopes
 
                 assert kiro_entry_scopes(entry) == expect_scopes, (
                     f"{submit} must persist, got {entry}"
@@ -961,7 +961,7 @@ class TestCarriedKeyRoundTrip:
 
     async def test_editing_a_nested_client_id_persists(self, sandbox, fake_sel):
         """Same rule for the other hint, and unrelated sub-keys survive."""
-        from kiro_crew.mcp_utils import kiro_entry_client_id
+        from efm_go.mcp_utils import kiro_entry_client_id
 
         url = "https://mcp.acme.com/mcp"
         sandbox.kirocrew_json.write_text(
@@ -1056,7 +1056,7 @@ class TestCarriedKeyRoundTrip:
         that sibling back would let the reader fall through to it and resurrect the
         grant the submission just cleared.
         """
-        from kiro_crew.mcp_utils import kiro_entry_scopes
+        from efm_go.mcp_utils import kiro_entry_scopes
 
         url = "https://mcp.acme.com/mcp"
         sandbox.kirocrew_json.write_text(
@@ -1113,13 +1113,13 @@ class TestServersListSurfacesCustomAdds:
     async def test_disabled_custom_add_appears_in_servers_list(
         self, sandbox, fake_sel, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         # Route discovery at the sandboxed KiroCrew scope file only.
         monkeypatch.setattr(
-            "kiro_crew.mcp_discovery._MCP_JSON_PATHS", (sandbox.kirocrew_json,)
+            "efm_go.mcp_discovery._MCP_JSON_PATHS", (sandbox.kirocrew_json,)
         )
-        monkeypatch.setattr("kiro_crew.mcp_discovery._extra_scope_sources", lambda: [])
+        monkeypatch.setattr("efm_go.mcp_discovery._extra_scope_sources", lambda: [])
 
         app = web.Application()
         state = MagicMock()
@@ -1129,7 +1129,7 @@ class TestServersListSurfacesCustomAdds:
         # supplies; a bare MagicMock attribute is a Mock no caller can equal.
         state.owner_id = ""
         app["state"] = state
-        from kiro_crew.dashboard.handlers import mcp_custom as custom_mod
+        from efm_go.dashboard.handlers import mcp_custom as custom_mod
 
         app.router.add_post("/api/mcp/custom", custom_mod.api_mcp_custom_add)
         app.router.add_get("/api/mcp", mcp_mod.api_mcp_servers)

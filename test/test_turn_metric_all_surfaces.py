@@ -27,11 +27,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.dashboard.handlers import usage as usage_mod
-from kiro_crew.messaging.link import TELEMETRY_CHANNELS, telemetry_channel_of
-from kiro_crew.metrics import turns as turns_mod
+from efm_go.dashboard.handlers import usage as usage_mod
+from efm_go.messaging.link import TELEMETRY_CHANNELS, telemetry_channel_of
+from efm_go.metrics import turns as turns_mod
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 
 class _Recorder:
@@ -143,7 +143,7 @@ def test_the_stall_refinement_travels_on_the_dashboard_emit(recorder) -> None:
     # outside the usage_has_billing gate anyway. An override parameter on the
     # shared boundary was dead code: its only passer also disabled the branch
     # that read it.
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     chat_runner._emit_turn_metric(
         9, "stale_recover", "chat-12-1785445181", elapsed_ms=9, exhausted=True
@@ -166,7 +166,7 @@ def test_a_bare_usage_object_is_unclassified_and_not_a_fault(recorder) -> None:
     sampling them — inventing a fault spike out of a visibility fix. ``ok`` is
     equally wrong in the other direction: it claims a success nobody observed.
     """
-    from kiro_crew.dashboard.handlers.telemetry import _TERMINAL_FAULT_OUTCOMES
+    from efm_go.dashboard.handlers.telemetry import _TERMINAL_FAULT_OUTCOMES
 
     usage_mod._emit_turn_histogram({"duration_ms": 9}, "_bg", _BareUsage())
     outcome = recorder.samples[0][2]["outcome"]

@@ -34,7 +34,7 @@ describe('scanSensitive', () => {
     expect(scanSensitive('ghp_abcdefghijklmnopqrstu0123456789 and xoxb-1234567890-abcdefghij')).toEqual(['token'])
     expect(scanSensitive('Kiro Crew triaged 47 issues and opened PR #7202, CI green.')).toEqual([])
     // Public URLs and relative paths are not findings.
-    expect(scanSensitive('https://github.com/kirodotdev/KiroCrew src/index.ts')).toEqual([])
+    expect(scanSensitive('https://efmleads.com src/index.ts')).toEqual([])
   })
 })
 

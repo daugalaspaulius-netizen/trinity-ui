@@ -24,9 +24,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard import kiro_readiness
-from kiro_crew.dashboard.handlers import agents, sessions
-from kiro_crew.kiro_prerequisite import KiroPrerequisiteService, PrerequisiteStatus
+from efm_go.dashboard import kiro_readiness
+from efm_go.dashboard.handlers import agents, sessions
+from efm_go.kiro_prerequisite import KiroPrerequisiteService, PrerequisiteStatus
 
 
 class _Clock:
@@ -91,7 +91,7 @@ async def test_api_models_keeps_the_tight_bound_and_reprobes_a_stale_latch() -> 
 
     with patch.object(service, "_probe", AsyncMock()) as probe:
         with patch(
-            "kiro_crew.acp.client._resolve_kiro_bin_for_spawn",
+            "efm_go.acp.client._resolve_kiro_bin_for_spawn",
             AsyncMock(return_value=""),
         ):
             resp = await agents.api_models(_request(service))

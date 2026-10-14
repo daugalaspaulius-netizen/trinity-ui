@@ -81,7 +81,7 @@ const CR_SLOT = {
   ...base('chat-alpha', CR_TITLE),
   source_links: [{
     provider: 'github', number: CR_NUMBER, label: `CR-${CR_NUMBER}`,
-    url: `https://github.com/kirodotdev/KiroCrew/pull/${CR_NUMBER}`, kind: 'change',
+    url: `https://efmleads.com/pull/${CR_NUMBER}`, kind: 'change',
   }],
   source_links_total: 1,
 } as ChatSlot
@@ -99,7 +99,7 @@ const DECOY_SLOT = {
   ...base('chat-gamma', DECOY_TITLE),
   source_links: [{
     provider: 'github', number: 55, label: '#55',
-    url: 'https://github.com/kirodotdev/KiroCrew/pull/55', kind: 'change',
+    url: 'https://efmleads.com/pull/55', kind: 'change',
   }],
   source_links_total: 1,
 } as ChatSlot
@@ -121,7 +121,7 @@ const BARE_SLOT = {
   ...base('chat-eta', BARE_TITLE),
   source_links: [{
     provider: 'github', number: BARE_NUMBER,
-    url: `https://github.com/kirodotdev/KiroCrew/pull/${BARE_NUMBER}`, kind: 'change',
+    url: `https://efmleads.com/pull/${BARE_NUMBER}`, kind: 'change',
   }],
   source_links_total: 1,
 } as ChatSlot

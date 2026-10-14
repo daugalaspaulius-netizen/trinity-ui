@@ -590,7 +590,7 @@ test("configureUpdater: allowPrerelease=true (nightly/insider stamps are semver 
 // ---------------------------------------------------------------------------
 // CONTRACT with electron-updater internals: the generic provider resolves
 // artifact urls via newUrlFromBase(fileUrl, base). Our pointer/bytes host
-// split (updates.crew.kiro.dev pointers, download.crew.kiro.dev bytes) relies
+// split (updates.efmleads.com pointers, download.efmleads.com bytes) relies
 // on the UNDOCUMENTED-but-structural behaviour that an ABSOLUTE file url
 // ignores the base. A library upgrade that changes this must fail CI here,
 // not strand installs in the field.
@@ -598,18 +598,18 @@ test("configureUpdater: allowPrerelease=true (nightly/insider stamps are semver 
 
 test("CONTRACT: absolute artifact urls pass through newUrlFromBase unchanged (pointer/bytes split)", () => {
   const { newBaseUrl, newUrlFromBase } = require("electron-updater/out/util");
-  const base = newBaseUrl(buildFeedBase({ base: "https://updates.crew.kiro.dev/feed", channel: "nightly" }));
-  const absolute = "https://download.crew.kiro.dev/desktop/nightly/0.1.0-nightly.20260728t112233/KiroCrew-arm64.dmg";
+  const base = newBaseUrl(buildFeedBase({ base: "https://efmleads.com/go/updates/feed", channel: "nightly" }));
+  const absolute = "https://efmleads.com/desktop/nightly/0.1.0-nightly.20260728t112233/KiroCrew-arm64.dmg";
   // Base is on a DIFFERENT host than the artifact: the absolute url must win.
   assert.strictEqual(newUrlFromBase(absolute, base).href, absolute);
 });
 
 test("CONTRACT: relative channel-file names resolve under the feed base directory", () => {
   const { newBaseUrl, newUrlFromBase } = require("electron-updater/out/util");
-  const base = newBaseUrl(buildFeedBase({ base: "https://updates.crew.kiro.dev/feed", channel: "nightly" }));
+  const base = newBaseUrl(buildFeedBase({ base: "https://efmleads.com/go/updates/feed", channel: "nightly" }));
   assert.strictEqual(
     newUrlFromBase("latest-mac.yml", base).href,
-    "https://updates.crew.kiro.dev/feed/nightly/latest-mac.yml",
+    "https://efmleads.com/go/updates/feed/nightly/latest-mac.yml",
   );
 });
 

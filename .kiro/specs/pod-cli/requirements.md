@@ -1,6 +1,6 @@
 # `kirocrew pod` — Requirements
 
-Status: implemented in `src/kiro_crew/pod/` and exposed by `kirocrew pod`.
+Status: implemented in `src/efm_go/pod/` and exposed by `kirocrew pod`.
 
 ## Overview
 

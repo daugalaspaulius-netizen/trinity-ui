@@ -74,7 +74,7 @@ const DENIED = {
 
 const control = (key, label, unit, count, summary, items) => ({
   key, label, unit, count, summary, unavailable: false,
-  source: 'src/kiro_crew/security.py',
+  source: 'src/efm_go/security.py',
   items,
 })
 

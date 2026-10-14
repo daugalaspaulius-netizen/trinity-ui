@@ -1,4 +1,4 @@
-"""Tests for :mod:`kiro_crew.diag.procs` -- the read-only process-tree view.
+"""Tests for :mod:`efm_go.diag.procs` -- the read-only process-tree view.
 
 The whole suite runs against a FAKE process table built under ``tmp_path``, so
 nothing here reads the real ``/proc``, spawns ``ps``, or touches a live process.
@@ -6,7 +6,7 @@ That is also what makes the negative assertions meaningful: a stranger process
 and a non-allowlisted environment key exist in the fixture, and the tests assert
 they never reach the output.
 
-``kiro_crew.diag`` has no ``__init__.py`` in this branch -- worker A owns that
+``efm_go.diag`` has no ``__init__.py`` in this branch -- worker A owns that
 file -- so the package resolves as a namespace package. The import below is the
 test that this works; no conftest shim is needed.
 """
@@ -22,8 +22,8 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import platform_compat, session_pid
-from kiro_crew.diag import procs
+from efm_go import platform_compat, session_pid
+from efm_go.diag import procs
 
 NUL = b"\x00"
 
@@ -69,7 +69,7 @@ STRANGER = 1006
 
 MARKER = {session_pid.KIROCREW_SPAWNED_ENV: session_pid.KIROCREW_SPAWNED_VALUE}
 
-GATEWAY_ARGV = nul_argv(b"/v/bin/python3", b"-m", b"kiro_crew.cli", b"gateway")
+GATEWAY_ARGV = nul_argv(b"/v/bin/python3", b"-m", b"efm_go.cli", b"gateway")
 CHAT_ARGV = nul_argv(b"/usr/local/bin/kiro-cli-chat", b"--acp")
 BROWSER_ARGV = nul_argv(b"node", b"/n/playwright-core/lib/entry/cliDaemon.js", b"kc-abc")
 RENDERER_ARGV = nul_argv(b"/opt/chrome/chrome-headless", b"--type=renderer")
@@ -80,7 +80,7 @@ STRANGER_ARGV = nul_argv(b"/usr/sbin/sshd", b"-D")
 class FakeProcTable:
     """A writable stand-in for ``/proc``, one directory per process.
 
-    Only the files :mod:`kiro_crew.diag.procs` reads are created, and each is
+    Only the files :mod:`efm_go.diag.procs` reads are created, and each is
     written in the real kernel's shape -- including a ``comm`` containing a space
     and a ``)``, because surviving that is the ``stat`` parser's whole job.
     """
@@ -336,7 +336,7 @@ def test_kind_classification(tmp_path: Path) -> None:
     table.add(
         1010,
         GATEWAY,
-        cmdline=nul_argv(b"/v/bin/python3", b"-m", b"kiro_crew.mcp_gateway.gatewayd", b"-s", b"/x"),
+        cmdline=nul_argv(b"/v/bin/python3", b"-m", b"efm_go.mcp_gateway.gatewayd", b"-s", b"/x"),
         env=dict(MARKER),
     )
     table.add(1011, GATEWAY, cmdline=CHAT_ARGV, env=dict(MARKER))
@@ -362,15 +362,15 @@ def test_kind_classification(tmp_path: Path) -> None:
 def test_the_shipped_gateway_entry_form_is_classified_as_the_gateway(
     tmp_path: Path,
 ) -> None:
-    """Regression: the live gateway on this host runs as ``python -m kiro_crew gateway``.
+    """Regression: the live gateway on this host runs as ``python -m efm_go gateway``.
 
-    Its argv names the PACKAGE, so neither ``kiro_crew.cli`` nor
-    ``kiro_crew.__main__`` appears in it and the reaper's module markers do not
+    Its argv names the PACKAGE, so neither ``efm_go.cli`` nor
+    ``efm_go.__main__`` appears in it and the reaper's module markers do not
     match. A first draft classified a real running gateway as ``other``.
     """
     table = FakeProcTable(tmp_path / "proc")
     shipped = nul_argv(
-        b"/rt/python3.12/bin/real/python3.12", b"-m", b"kiro_crew", b"gateway", b"--port", b"8476"
+        b"/rt/python3.12/bin/real/python3.12", b"-m", b"efm_go", b"gateway", b"--port", b"8476"
     )
     console = nul_argv(b"/home/u/.local/bin/kirocrew", b"gateway", b"--port", b"9000")
     table.add(GATEWAY, OUTSIDER, cmdline=GATEWAY_ARGV, env=dict(MARKER))
@@ -502,14 +502,14 @@ def test_cmdline_credentials_are_redacted(tmp_path: Path) -> None:
     table.add(
         GATEWAY,
         OUTSIDER,
-        cmdline=nul_argv(b"/v/bin/python3", b"-m", b"kiro_crew.cli", b"--key=AKIAIOSFODNN7EXAMPLE"),
+        cmdline=nul_argv(b"/v/bin/python3", b"-m", b"efm_go.cli", b"--key=AKIAIOSFODNN7EXAMPLE"),
         env=dict(MARKER),
     )
     roster = table.scan()
     rendered = roster.nodes[GATEWAY].cmdline
     assert "AKIAIOSFODNN7EXAMPLE" not in rendered
     assert "REDACTED" in rendered
-    assert "kiro_crew.cli" in rendered, "redaction must not eat the identifying argv"
+    assert "efm_go.cli" in rendered, "redaction must not eat the identifying argv"
 
 
 def test_every_emitted_string_passes_through_the_canonical_redactor(
@@ -521,7 +521,7 @@ def test_every_emitted_string_passes_through_the_canonical_redactor(
     all leave through it; a regex-shaped assertion would only prove that one
     pattern happens to be covered today.
     """
-    from kiro_crew.platform import context
+    from efm_go.platform import context
 
     monkeypatch.setattr(context, "redact_via_context", lambda text: f"<scrubbed:{text}>")
 
@@ -774,7 +774,7 @@ def test_a_credential_straddling_the_bound_is_still_redacted(tmp_path: Path) -> 
     table = FakeProcTable(tmp_path / "proc")
     # Pad so the credential sits astride MAX_CMDLINE_CHARS.
     pad = b"x" * (procs.MAX_CMDLINE_CHARS - 10)
-    argv = nul_argv(b"/v/bin/python3", b"-m", b"kiro_crew.cli", pad + b"--key=AKIAIOSFODNN7EXAMPLE")
+    argv = nul_argv(b"/v/bin/python3", b"-m", b"efm_go.cli", pad + b"--key=AKIAIOSFODNN7EXAMPLE")
     table.add(GATEWAY, OUTSIDER, cmdline=argv, env=dict(MARKER))
 
     roster = table.scan()

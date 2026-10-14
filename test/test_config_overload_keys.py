@@ -29,8 +29,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config import sections
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config import sections
+from efm_go.config.loader import KiroCrewConfig
 
 _CLAMP_RE = re.compile(r"[Cc]lamped to (-?\d+(?:\.\d+)?)\s*(?:s)?\.\.\s*(-?\d+(?:\.\d+)?)")
 
@@ -71,7 +71,7 @@ _FLOOR_COMPANIONS: dict[str, dict[str, object]] = {
 
 def _loaded(tmp_path: Path, data: dict) -> KiroCrewConfig:
     (tmp_path / "config.json").write_text(json.dumps(data), encoding="utf-8")
-    with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+    with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
         return KiroCrewConfig.load()
 
 

@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.webex.gateway (maybe_start_webex).
+"""Tests for efm_go.webex.gateway (maybe_start_webex).
 
 This file owns three things every other Webex change leans on: the guarded
 no-op paths (a Webex problem must never take down the gateway), the approval-mode
@@ -14,9 +14,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.messaging.driver import APPROVAL_AUTO, APPROVAL_INTERACTIVE
-from kiro_crew.webex import gateway as webex_gateway
-from kiro_crew.webex.gateway import _resolve_approval_mode, maybe_start_webex
+from efm_go.messaging.driver import APPROVAL_AUTO, APPROVAL_INTERACTIVE
+from efm_go.webex import gateway as webex_gateway
+from efm_go.webex.gateway import _resolve_approval_mode, maybe_start_webex
 
 
 class FakeClient:

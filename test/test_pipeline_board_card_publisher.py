@@ -30,12 +30,12 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.dashboard import card_lifecycle
-from kiro_crew.dashboard import state as state_module
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.dynamic_cards import CardBudget
-from kiro_crew.dashboard.handlers import agent_panel as routes
-from kiro_crew.pipeline_board_contract import (
+from efm_go.dashboard import card_lifecycle
+from efm_go.dashboard import state as state_module
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.dynamic_cards import CardBudget
+from efm_go.dashboard.handlers import agent_panel as routes
+from efm_go.pipeline_board_contract import (
     BOARD_TEMPLATE_ID,
     build_pipeline_board,
     card_template_path,
@@ -202,7 +202,7 @@ async def test_the_generator_would_be_caught_if_it_ran(
     Without this, a stub that was never wired in would make ``calls == 0`` true for the
     wrong reason and the no-model claim would rest on nothing.
     """
-    from kiro_crew.crew_log import session_tree_projection
+    from efm_go.crew_log import session_tree_projection
 
     lifecycle, slot, _state, no_model = service
     lifecycle.enabled = True
@@ -1227,7 +1227,7 @@ def test_a_derived_card_gets_a_store_without_the_model_opt_in(service: Any) -> N
 def test_the_real_state_builds_the_store_with_the_model_path_off() -> None:
     """``ensure_dynamic_card_store`` must construct the container and start no worker -- that
     is what keeps the model path exactly as opt-in as it was."""
-    from kiro_crew.dashboard import state as state_mod
+    from efm_go.dashboard import state as state_mod
 
     holder = SimpleNamespace(_dynamic_cards=None, _background_tasks=set(), _slots={})
     store = state_mod.DashboardState.ensure_dynamic_card_store(holder)  # type: ignore[arg-type]

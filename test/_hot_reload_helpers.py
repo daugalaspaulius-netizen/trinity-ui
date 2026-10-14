@@ -25,10 +25,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from kiro_crew.config import live
-from kiro_crew.config.live import ConfigChange, ConfigWatch
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.sections import _clamp_pct, _normalize_threshold_pair
+from efm_go.config import live
+from efm_go.config.live import ConfigChange, ConfigWatch
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.sections import _clamp_pct, _normalize_threshold_pair
 
 # ------------------------------------------------------------------
 # Config documents and the shape a subscriber receives
@@ -158,9 +158,9 @@ def point_loader_at(tmp_path: Path, monkeypatch: Any, doc: dict) -> Path:
     """Point the loader at a temp ``config.json`` carrying *doc*."""
     cfg_path = tmp_path / "config.json"
     write_config(cfg_path, doc)
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_path)
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_path)
     monkeypatch.setattr(
-        "kiro_crew.config.loader.config_local_path", lambda: tmp_path / "config.local.json"
+        "efm_go.config.loader.config_local_path", lambda: tmp_path / "config.local.json"
     )
     return cfg_path
 
@@ -235,7 +235,7 @@ class FakeIMessageClient:
 
 class FakeWhatsAppClient:
     def __init__(self) -> None:
-        from kiro_crew.whatsapp.jids import OwnIdentity
+        from efm_go.whatsapp.jids import OwnIdentity
 
         self.sent: list[tuple[str, str]] = []
         self.on_message = None
@@ -324,7 +324,7 @@ class ChannelCase:
 
     @property
     def transport_module(self) -> str:
-        return f"kiro_crew.{self.name}.transport"
+        return f"efm_go.{self.name}.transport"
 
     @property
     def audit_operation(self) -> str:
@@ -364,7 +364,7 @@ class ChannelCase:
 
 
 def _inbound(channel_type: str, user_id: str, conversation_id: str) -> Any:
-    from kiro_crew.messaging.transport import InboundMessage
+    from efm_go.messaging.transport import InboundMessage
 
     return InboundMessage(
         channel_type=channel_type, user_id=user_id, conversation_id=conversation_id, text="hi"
@@ -434,26 +434,26 @@ def _generation_probe(read: Callable[[Any], Any], bucket: Any):
 @functools.lru_cache(maxsize=1)
 def channel_cases() -> tuple[ChannelCase, ...]:
     """Every channel whose allow-list follows ``config.json`` without a restart."""
-    from kiro_crew.discord.transport import DiscordTransport
-    from kiro_crew.discord.transport_dispatch import DiscordDispatcher
-    from kiro_crew.feishu.client import CHAT_P2P, LarkInbound
-    from kiro_crew.feishu.transport import FeishuTransport
-    from kiro_crew.feishu.transport_dispatch import FeishuDispatcher
-    from kiro_crew.imessage.transport import IMessageTransport
-    from kiro_crew.imessage.transport_dispatch import IMessageDispatcher
-    from kiro_crew.teams.transport import TeamsTransport
-    from kiro_crew.teams.transport_dispatch import TeamsDispatcher
-    from kiro_crew.telegram.transport import TelegramTransport
-    from kiro_crew.telegram.transport_dispatch import TelegramDispatcher
-    from kiro_crew.webex.transport import WebexTransport
-    from kiro_crew.webex.transport_dispatch import WebexDispatcher
-    from kiro_crew.wecom.client import WeComInbound
-    from kiro_crew.wecom.transport import WeComTransport
-    from kiro_crew.wecom.transport_dispatch import WeComDispatcher
-    from kiro_crew.weixin.transport import WeixinTransport
-    from kiro_crew.weixin.transport_dispatch import WeixinDispatcher
-    from kiro_crew.whatsapp.transport import WhatsAppTransport
-    from kiro_crew.whatsapp.transport_dispatch import WhatsAppDispatcher
+    from efm_go.discord.transport import DiscordTransport
+    from efm_go.discord.transport_dispatch import DiscordDispatcher
+    from efm_go.feishu.client import CHAT_P2P, LarkInbound
+    from efm_go.feishu.transport import FeishuTransport
+    from efm_go.feishu.transport_dispatch import FeishuDispatcher
+    from efm_go.imessage.transport import IMessageTransport
+    from efm_go.imessage.transport_dispatch import IMessageDispatcher
+    from efm_go.teams.transport import TeamsTransport
+    from efm_go.teams.transport_dispatch import TeamsDispatcher
+    from efm_go.telegram.transport import TelegramTransport
+    from efm_go.telegram.transport_dispatch import TelegramDispatcher
+    from efm_go.webex.transport import WebexTransport
+    from efm_go.webex.transport_dispatch import WebexDispatcher
+    from efm_go.wecom.client import WeComInbound
+    from efm_go.wecom.transport import WeComTransport
+    from efm_go.wecom.transport_dispatch import WeComDispatcher
+    from efm_go.weixin.transport import WeixinTransport
+    from efm_go.weixin.transport_dispatch import WeixinDispatcher
+    from efm_go.whatsapp.transport import WhatsAppTransport
+    from efm_go.whatsapp.transport_dispatch import WhatsAppDispatcher
 
     async def _no_dispatch(msg: Any) -> None:
         return None
@@ -809,10 +809,10 @@ class GatedCase:
 
 @functools.lru_cache(maxsize=1)
 def gated_cases() -> tuple[GatedCase, ...]:
-    from kiro_crew.feishu.client import CHAT_GROUP, LarkInbound
-    from kiro_crew.feishu.transport import FeishuTransport
-    from kiro_crew.telegram.transport import TelegramTransport, forum_gate_outcome
-    from kiro_crew.webex.transport import WebexTransport
+    from efm_go.feishu.client import CHAT_GROUP, LarkInbound
+    from efm_go.feishu.transport import FeishuTransport
+    from efm_go.telegram.transport import TelegramTransport, forum_gate_outcome
+    from efm_go.webex.transport import WebexTransport
 
     def telegram_build() -> tuple[Any, Callable[[], Any]]:
         t = TelegramTransport(FakeClient(), allowed_user_ids=[7])
@@ -910,9 +910,9 @@ def normalizer_cases() -> tuple[tuple[str, Callable[[Any], Any], Any, Any], ...]
     unusable ENTRIES are dropped, and an unusable WHOLE VALUE answers ``None``
     so the caller keeps its previous roster instead of emptying it.
     """
-    from kiro_crew.imessage.transport import allowed_handles_from_config
-    from kiro_crew.teams.transport import allowed_emails_from_config
-    from kiro_crew.wecom.transport import allowed_userids_from_config
+    from efm_go.imessage.transport import allowed_handles_from_config
+    from efm_go.teams.transport import allowed_emails_from_config
+    from efm_go.wecom.transport import allowed_userids_from_config
 
     return (
         (

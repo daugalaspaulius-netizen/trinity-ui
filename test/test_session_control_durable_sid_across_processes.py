@@ -21,9 +21,9 @@ import sys
 
 import pytest
 
-from kiro_crew.crew_log import emit
-from kiro_crew.crew_log import session_tree_projection as stp
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.crew_log import emit
+from efm_go.crew_log import session_tree_projection as stp
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 #: Run in a FRESH interpreter against the store this module wrote. Drives the RESOLVER
 #: rather than the store reader underneath it: that reader is shared code this change
@@ -39,8 +39,8 @@ from kiro_crew.subprocess_utf8 import UTF8_TEXT
 #: REAL ``SessionMap``, reading the real file, because that is the source under test.
 _CHILD = """
 import asyncio, json, sys
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.session_map import SessionMap
+from efm_go.dashboard import session_control as sc
+from efm_go.session_map import SessionMap
 
 mapped = SessionMap()
 
@@ -78,7 +78,7 @@ def _store(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     monkeypatch.setattr(
-        "kiro_crew.executors.maintenance_executor",
+        "efm_go.executors.maintenance_executor",
         lambda: type("_NoPool", (), {"submit": staticmethod(lambda *a, **k: None)}),
     )
     stp.reset_for_tests()

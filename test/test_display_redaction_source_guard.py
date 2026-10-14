@@ -1,6 +1,6 @@
 """The display redaction battery reads no mutable state beyond ``_exempt_exact_hosts``.
 
-``kiro_crew.dashboard.chat_utils._redact_for_display`` memoizes the output of
+``efm_go.dashboard.chat_utils._redact_for_display`` memoizes the output of
 ``redact_exfiltration_urls`` followed by ``redact_credentials``, keyed on the
 input text and the exempt-host set. That key is only sound while the battery's
 OUTPUT is a pure function of exactly those two inputs. Nothing on the
@@ -32,8 +32,8 @@ from collections import deque
 
 import pytest
 
-import kiro_crew.dashboard.chat_utils as chat_utils
-from kiro_crew.security import exfil, redaction
+import efm_go.dashboard.chat_utils as chat_utils
+from efm_go.security import exfil, redaction
 
 # The two battery entry points, as the display cache composes them.
 BATTERY_ROOTS: tuple[tuple[object, str], ...] = (

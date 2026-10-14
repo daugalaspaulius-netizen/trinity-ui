@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_doctor
+from efm_go import cli_doctor
 
 
 @pytest.fixture
@@ -505,7 +505,7 @@ class TestOperatorCopyPointsSomewhereReachable:
         """Neither of the earlier two spellings existed for a pip-installed operator.
 
         The dashboard has no Docs surface at all (packaged docs are reached as
-        GitHub links), and ``src/kiro_crew/...`` is a repo path absent from a wheel
+        GitHub links), and ``src/efm_go/...`` is a repo path absent from a wheel
         install. Asserting on the URL alone would not catch a regression that ADDED
         a dead pointer beside it, so both dead spellings are asserted absent.
         """
@@ -522,7 +522,7 @@ class TestOperatorCopyPointsSomewhereReachable:
             cli_doctor._BLOCKED_COMMANDS_DOC_URL in line for line in out.splitlines()
         ), "the URL is split across lines and cannot be copied out"
         assert "dashboard's Docs" not in out, "points at a surface the dashboard lacks"
-        assert "src/kiro_crew/docs/blocked-commands.md." not in out, "bare repo path"
+        assert "src/efm_go/docs/blocked-commands.md." not in out, "bare repo path"
         assert issues == []
 
     def test_the_profiles_row_aligns_with_its_siblings(self, fake_home, monkeypatch, capsys):
@@ -589,7 +589,7 @@ class TestVendorLineIsFailSoft:
         assert cli_doctor._credential_vendor_line() == ""
 
     def test_a_lookup_error_degrades_to_no_line(self, monkeypatch):
-        import kiro_crew.platform.context as ctx_mod
+        import efm_go.platform.context as ctx_mod
 
         def _boom(fn, **kw):
             raise RuntimeError("composition exploded")

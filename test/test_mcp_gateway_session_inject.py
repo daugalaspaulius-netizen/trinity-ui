@@ -25,8 +25,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER
-from kiro_crew.mcp_gateway.session_servers import (
+from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER
+from efm_go.mcp_gateway.session_servers import (
     _acp_env,
     _acp_server_entry,
     injection_server_names,
@@ -233,7 +233,7 @@ def _write_project_markdown_agent(root: Path, name: str, filename: str | None = 
     Written through ``agent_spec_format``'s own suffix rather than a literal so
     this fixture and the guard read the same constant.
     """
-    from kiro_crew.agent_spec_format import MARKDOWN_SUFFIX
+    from efm_go.agent_spec_format import MARKDOWN_SUFFIX
 
     agents = root / ".kiro" / "agents"
     agents.mkdir(parents=True, exist_ok=True)
@@ -385,7 +385,7 @@ def test_a_malformed_project_spec_is_not_a_shadow_for_the_overlay_lookup(tmp_pat
     pins that: its other caller is a governance refusal, where a file in any state
     is a claim on the name and refusing is the conservative direction.
     """
-    from kiro_crew.agent import _project_shadow_of
+    from efm_go.agent import _project_shadow_of
 
     overlay = _write_overlay(tmp_path / "gw", "kirocrew", {"pooled": _stub()})
     project = tmp_path / "checkout"
@@ -455,7 +455,7 @@ def test_the_unbrokered_project_agent_state_is_reported_above_debug(tmp_path, ca
     overlay = _write_overlay(tmp_path / "gw", "kirocrew", {"pooled": _stub()})
     project = tmp_path / "checkout"
     _write_project_agent(project, "kirocrew")
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.session_servers"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.session_servers"):
         assert pooled_session_servers(overlay, "kirocrew", work_dir=project) == []
     records = [r for r in caplog.records if r.levelno >= logging.WARNING]
     assert records, "the unbrokered-project-agent state was reported below WARNING"
@@ -464,7 +464,7 @@ def test_the_unbrokered_project_agent_state_is_reported_above_debug(tmp_path, ca
     # A session with no project agent in play stays quiet: this must not become a
     # warning every ordinary session emits.
     caplog.clear()
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_gateway.session_servers"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.mcp_gateway.session_servers"):
         assert [e["name"] for e in pooled_session_servers(overlay, "kirocrew")] == ["pooled"]
     assert [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING] == []
 
@@ -484,7 +484,7 @@ def test_a_differing_stem_markdown_file_does_not_hide_a_json_project_agent(tmp_p
     Both hosts suppress, so the assertion has to name the resolved FILE: a
     behaviour-only check cannot tell "found z.json" from "found a.md".
     """
-    from kiro_crew.mcp_gateway.session_servers import _project_spec_for_agent
+    from efm_go.mcp_gateway.session_servers import _project_spec_for_agent
 
     overlay = _write_overlay(tmp_path / "gw", "kirocrew", {"pooled": _stub()})
     project = tmp_path / "checkout"
@@ -576,7 +576,7 @@ def test_every_call_site_passes_the_session_checkout():
                 name = None
         return name
 
-    src_root = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+    src_root = Path(__file__).resolve().parents[1] / "src" / "efm_go"
     missing: list[str] = []
     sites = 0
     for path in sorted(src_root.rglob("*.py")):
@@ -649,7 +649,7 @@ for line in sys.stdin:
 
 _DRIVER = r"""
 import json, os, subprocess, sys, threading, time
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 w = sys.argv[1]
 p = subprocess.Popen(["kiro-cli", "acp", "--agent", "pooltest"], cwd=w + "/proj",
@@ -900,17 +900,17 @@ def test_injection_writes_nothing_to_the_work_dir(tmp_path):
 def _registry_mode(monkeypatch, enabled):
     """Force the operator's registry-mode declaration for one test.
 
-    Patched on ``kiro_crew.agent``, which owns the flag, because
+    Patched on ``efm_go.agent``, which owns the flag, because
     ``session_servers`` binds it per call rather than at import time.
     """
-    from kiro_crew import agent as agent_mod
+    from efm_go import agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "_mcp_registry_mode", lambda: enabled)
 
 
 def _control_plane_name():
     """One of Crew's own control-plane server names, read from its owner."""
-    from kiro_crew.mcp_cleanup import CONTROL_PLANE_SERVERS
+    from efm_go.mcp_cleanup import CONTROL_PLANE_SERVERS
 
     return CONTROL_PLANE_SERVERS[0]
 
@@ -1023,9 +1023,9 @@ def test_both_ceilings_read_one_control_plane_tuple():
     always-on set, which carries a third name: that set answers whether a server
     must appear in an agent spec, not whether a session gets it regardless.
     """
-    from kiro_crew.acp.session_mcp import CONTROL_PLANE_SERVERS as via_acp
-    from kiro_crew.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS
-    from kiro_crew.mcp_cleanup import CONTROL_PLANE_SERVERS as via_leaf
+    from efm_go.acp.session_mcp import CONTROL_PLANE_SERVERS as via_acp
+    from efm_go.mcp_cleanup import ALWAYS_ON_BIN_MCP_SERVERS
+    from efm_go.mcp_cleanup import CONTROL_PLANE_SERVERS as via_leaf
 
     assert via_acp is via_leaf, "the two ceilings read separate tuples"
     assert set(via_leaf) < set(

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 
 def test_default_is_off():
@@ -25,7 +25,7 @@ def test_flag_is_read_from_the_config_file(tmp_path, raw, expected):
     dashboard = {} if raw is None else {"crewmates_in_agent_picker": raw}
     cfg_file = tmp_path / "config.json"
     cfg_file.write_text(json.dumps({"dashboard": dashboard}), encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+    with patch("efm_go.config.loader.config_path", return_value=cfg_file):
         assert KiroCrewConfig.load().dashboard.crewmates_in_agent_picker is expected
 
 

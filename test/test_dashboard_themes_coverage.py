@@ -1,4 +1,4 @@
-"""Coverage tests for ``kiro_crew.dashboard.handlers.themes`` — HTTP surface.
+"""Coverage tests for ``efm_go.dashboard.handlers.themes`` — HTTP surface.
 
 ``test_theme_install.py`` covers the pure validation core plus a few module
 helpers; this file covers the parts a validator test never reaches: the six
@@ -31,11 +31,11 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.platform.governance_profiles as gov_mod
+import efm_go.platform.governance_profiles as gov_mod
 from conftest import requires_symlinks
-from kiro_crew import platform_compat
-from kiro_crew.dashboard.conditional_get import bare_etag_value, weak_content_etag
-from kiro_crew.dashboard.handlers import themes as th
+from efm_go import platform_compat
+from efm_go.dashboard.conditional_get import bare_etag_value, weak_content_etag
+from efm_go.dashboard.handlers import themes as th
 
 # _validate_theme_data only *requires* --bg/--text/--accent per mode.
 _VALID_VARS: dict[str, dict[str, str]] = {

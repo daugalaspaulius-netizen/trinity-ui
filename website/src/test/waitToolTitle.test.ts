@@ -10,7 +10,7 @@
  *
  * The backend has no title matcher to mirror: its liveness contract selects the
  * wait by the provenance-verified adapter identity
- * (`src/kiro_crew/acp/liveness.py::ToolCallState.is_trusted_wait`). This title
+ * (`src/efm_go/acp/liveness.py::ToolCallState.is_trusted_wait`). This title
  * match is the frontend's only signal, so every transport form a real `wait` call
  * arrives under must match here, or its countdown never shows.
  */

@@ -23,8 +23,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.eval.bench import datasets
-from kiro_crew.eval.bench.datasets import (
+from efm_go.eval.bench import datasets
+from efm_go.eval.bench.datasets import (
     SPECS,
     CorpusFetchError,
     DatasetSpec,

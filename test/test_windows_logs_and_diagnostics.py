@@ -7,8 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import cli_doctor, cli_server, platform_compat
-from kiro_crew.service.common import Platform
+from efm_go import cli_doctor, cli_server, platform_compat
+from efm_go.service.common import Platform
 
 
 @pytest.fixture

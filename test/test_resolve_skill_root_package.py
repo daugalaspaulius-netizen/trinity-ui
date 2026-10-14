@@ -10,8 +10,8 @@ from unittest.mock import patch
 
 import pytest
 
-import kiro_crew.dashboard.handlers._shared as _shared
-from kiro_crew.platform.defaults import DefaultMcpToolingProvider
+import efm_go.dashboard.handlers._shared as _shared
+from efm_go.platform.defaults import DefaultMcpToolingProvider
 
 
 class _FakeState:
@@ -30,7 +30,7 @@ def _isolate_config():
     # otherwise current_context()'s lazy build (reached via the extra_skills
     # seam in _resolve_skill_root) would call the raising load() and degrade the
     # edition-root lookup to [].
-    from kiro_crew.platform.context import current_context
+    from efm_go.platform.context import current_context
 
     current_context()
     with patch.object(_shared.KiroCrewConfig, "load", side_effect=_no_extra_paths):
@@ -144,7 +144,7 @@ def test_resolve_skill_root_extra_paths_take_precedence_over_edition(tmp_path, m
 
 
 def test_package_row_matched_by_exact_key():
-    from kiro_crew.dashboard.handlers.prompts import _match_package_row
+    from efm_go.dashboard.handlers.prompts import _match_package_row
 
     rows = [
         {"key": "package/SomePkg/shared-skill", "name": "shared-skill", "path": "/a/SKILL.md"},
@@ -165,13 +165,13 @@ def test_ambiguous_leaf_name_refuses_rather_than_serving_the_wrong_file(caplog):
     """
     import logging
 
-    from kiro_crew.dashboard.handlers.prompts import _match_package_row
+    from efm_go.dashboard.handlers.prompts import _match_package_row
 
     rows = [
         {"key": "one/shared-skill", "name": "shared-skill", "path": "/a/SKILL.md"},
         {"key": "two/shared-skill", "name": "shared-skill", "path": "/b/SKILL.md"},
     ]
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers.prompts"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers.prompts"):
         assert _match_package_row(rows, "package/shared-skill", "shared-skill") is None
     assert any("refusing to guess" in r.getMessage() for r in caplog.records)
 
@@ -182,7 +182,7 @@ def test_unique_leaf_name_still_matches_for_editions_that_key_differently():
     Dropping the leaf leg outright would break it, so the fallback stays — gated
     on being unambiguous.
     """
-    from kiro_crew.dashboard.handlers.prompts import _match_package_row
+    from efm_go.dashboard.handlers.prompts import _match_package_row
 
     rows = [{"key": "AIPowerUser/agent-builder", "name": "agent-builder", "path": "/x"}]
     row = _match_package_row(rows, "package/agent-builder", "agent-builder")
@@ -199,10 +199,10 @@ def test_no_match_is_quiet_while_ambiguity_warns(caplog):
     """
     import logging
 
-    from kiro_crew.dashboard.handlers.prompts import _match_package_row
+    from efm_go.dashboard.handlers.prompts import _match_package_row
 
     rows = [{"key": "package/other", "name": "other", "path": "/x"}]
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers.prompts"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers.prompts"):
         assert _match_package_row(rows, "package/missing", "missing") is None
     assert caplog.records == [], [r.getMessage() for r in caplog.records]
 
@@ -246,7 +246,7 @@ def test_same_relative_path_in_two_roots_refuses_to_guess(tmp_path, monkeypatch,
         (root / "shared-skill" / "SKILL.md").write_text(f"# {root}", encoding="utf-8")
     _set_edition_roots(monkeypatch, root_a, root_b)
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers._shared"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers._shared"):
         assert _shared._resolve_package_skill_path("shared-skill") is None
     assert any("refusing to guess" in r.getMessage() for r in caplog.records)
 

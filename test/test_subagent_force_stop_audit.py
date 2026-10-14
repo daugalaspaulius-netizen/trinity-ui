@@ -12,7 +12,7 @@ Every signal seam is stubbed (``platform_compat.kill_process_group`` /
 ``kill_pid_async`` / ``kill_process_tree_pinned`` / ``get_process_start_id`` /
 ``pid_exists`` and the child helpers in ``acp.client``), so no test here touches
 a real process. The kill
-and the survival check are ``kiro_crew.process_identity``'s, shared with the
+and the survival check are ``efm_go.process_identity``'s, shared with the
 cron reaper; once a leader is gone they decide by the tree it led, and those
 two probes -- the POSIX process-group probe and the Windows exact-tree cleanup
 pin -- are pinned "gone" for this whole module (:func:`_no_tree_behind_the_leader`):
@@ -34,14 +34,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from test_subagent_continuable import _mock_sessions as _completing_sessions
 
-from kiro_crew import platform_compat
-from kiro_crew.acp.client import AcpProcessDied
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.process_identity import MAX_ERROR_DETAIL_LEN, ProcessHandle, process_handle_of
-from kiro_crew.session import SessionManager
-from kiro_crew.session_lifecycle import TornDown, _TeardownScope
-from kiro_crew.subagent import SubagentInfo, SubagentManager
-from kiro_crew.subagent_persistence import create_agent_folder, update_state
+from efm_go import platform_compat
+from efm_go.acp.client import AcpProcessDied
+from efm_go.config import KiroCrewConfig
+from efm_go.process_identity import MAX_ERROR_DETAIL_LEN, ProcessHandle, process_handle_of
+from efm_go.session import SessionManager
+from efm_go.session_lifecycle import TornDown, _TeardownScope
+from efm_go.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent_persistence import create_agent_folder, update_state
 
 # The start id the fake client records at spawn (``platform_compat.get_process_start_id``
 # reads ``/proc/<pid>/stat`` field 22 on Linux); the kill re-reads it before signalling.
@@ -75,8 +75,8 @@ def _no_tree_behind_the_leader() -> Iterator[None]:
     patch wins).
     """
     with (
-        patch("kiro_crew.platform_compat.pgroup_exists", return_value=False),
-        patch("kiro_crew.platform_compat.windows_tree_cleanup_pending", return_value=False),
+        patch("efm_go.platform_compat.pgroup_exists", return_value=False),
+        patch("efm_go.platform_compat.windows_tree_cleanup_pending", return_value=False),
     ):
         yield
 
@@ -186,10 +186,10 @@ def _kill_path_stubs() -> tuple[Any, Any, Any, Any]:
     recorded one, so the root is this run's and the signal is reached.
     """
     return (
-        patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-        patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-        patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID),
-        patch("kiro_crew.acp.client._kill_escaped_children"),
+        patch("efm_go.acp.client._get_child_pids", return_value=[]),
+        patch("efm_go.platform_compat.pid_exists", return_value=True),
+        patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID),
+        patch("efm_go.acp.client._kill_escaped_children"),
     )
 
 
@@ -232,18 +232,18 @@ class TestReaperRecordsAFailedKill:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock()) as pid_kill,
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock()) as pid_kill,
         ):
             await manager._force_reap("refused1", info, 7200.0)
 
@@ -269,18 +269,18 @@ class TestReaperRecordsAFailedKill:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=PermissionError("[Errno 1] Operation not permitted")),
             ),
             patch(
-                "kiro_crew.platform_compat.kill_pid_async",
+                "efm_go.platform_compat.kill_pid_async",
                 AsyncMock(side_effect=PermissionError("[Errno 1] Operation not permitted")),
             ),
         ):
@@ -296,16 +296,16 @@ class TestReaperRecordsAFailedKill:
         _hanging_reset(manager)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID),
             patch(
-                "kiro_crew.acp.client._get_child_pids",
+                "efm_go.acp.client._get_child_pids",
                 side_effect=RuntimeError("cannot schedule new futures after shutdown"),
             ),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("probe1", info, 7200.0)
 
@@ -320,14 +320,14 @@ class TestReaperRecordsAFailedKill:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("killed1", info, 7200.0)
 
@@ -343,19 +343,19 @@ class TestReaperRecordsAFailedKill:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=ProcessLookupError("[Errno 3] No such process")),
             ),
             patch(
-                "kiro_crew.platform_compat.kill_pid_async",
+                "efm_go.platform_compat.kill_pid_async",
                 AsyncMock(side_effect=ProcessLookupError("[Errno 3] No such process")),
             ),
         ):
@@ -374,15 +374,15 @@ class TestReaperRecordsAFailedKill:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -421,13 +421,13 @@ class TestForceStopActsAfterAResetHang:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("popped1", info, 7200.0)
 
@@ -456,13 +456,13 @@ class TestForceStopActsAfterAResetHang:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("succ1", info, 7200.0)
 
@@ -480,12 +480,12 @@ class TestForceStopActsAfterAResetHang:
         manager, _info, key = _overdue_run("root1", pid=5353)
 
         with (
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
-            patch("kiro_crew.acp.client._is_our_child", return_value=False) as child_verifier,
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._is_our_child", return_value=False) as child_verifier,
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             assert await manager._sigkill_session(key, _handle_of(manager, "root1")) is None
 
@@ -499,12 +499,12 @@ class TestForceStopActsAfterAResetHang:
         manager._sessions._sessions[key].provider._client._child_pids = {6161: ("111", b"node")}
 
         with (
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[7171]) as probe,
-            patch("kiro_crew.acp.client._kill_escaped_children") as sweep,
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="9999999"),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock()) as pid_kill,
+            patch("efm_go.acp.client._get_child_pids", return_value=[7171]) as probe,
+            patch("efm_go.acp.client._kill_escaped_children") as sweep,
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="9999999"),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock()) as pid_kill,
         ):
             assert await manager._sigkill_session(key, _handle_of(manager, "recycled1")) is None
 
@@ -540,12 +540,12 @@ class TestForceStopActsAfterAResetHang:
             return "9999999" if walked.called else _START_ID
 
         with (
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[7272]),
-            patch("kiro_crew.acp.client._capture_child_records", walked),
-            patch("kiro_crew.acp.client._kill_escaped_children") as sweep,
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", side_effect=_start_id),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.acp.client._get_child_pids", return_value=[7272]),
+            patch("efm_go.acp.client._capture_child_records", walked),
+            patch("efm_go.acp.client._kill_escaped_children") as sweep,
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", side_effect=_start_id),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             failure = await manager._sigkill_session(key, _handle_of(manager, "walk1"))
 
@@ -575,17 +575,17 @@ class TestForceStopActsAfterAResetHang:
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
 
         with (
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID),
             patch(
-                "kiro_crew.platform_compat.windows_tree_cleanup_pending", return_value=False
+                "efm_go.platform_compat.windows_tree_cleanup_pending", return_value=False
             ) as pin,
             patch(
-                "kiro_crew.platform_compat.kill_process_tree_pinned", return_value=False
+                "efm_go.platform_compat.kill_process_tree_pinned", return_value=False
             ) as pinned_kill,
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock()) as pid_kill,
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock()) as pid_kill,
         ):
             assert await manager._sigkill_session(key, _handle_of(manager, "walk2")) is None
 
@@ -599,13 +599,13 @@ class TestForceStopActsAfterAResetHang:
         manager, _info, key = _overdue_run("unverified1", pid=5656)
 
         with (
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
-            with patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID):
+            with patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID):
                 handle = _handle_of(manager, "unverified1")
             failure = await manager._sigkill_session(key, handle)
 
@@ -618,7 +618,7 @@ class TestForceStopActsAfterAResetHang:
         manager, _info, key = _overdue_run("nopid1", pid=None)
         _session_with_pid(manager, key, None)
 
-        with patch("kiro_crew.platform_compat.kill_process_group") as group_kill:
+        with patch("efm_go.platform_compat.kill_process_group") as group_kill:
             assert manager._retain_process_handles("nopid1", key) == []
             assert await manager._sigkill_session("subagent:absent", None) is None
             assert await manager._sigkill_sessions(key, []) is None
@@ -650,14 +650,14 @@ class TestTheReapNamesTheRunsOwnSession:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("cont-run", info, 7200.0)
 
@@ -692,13 +692,13 @@ class TestACompletedResetIsNotProofOfDeath:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("survived1", info, 7200.0)
 
@@ -714,14 +714,14 @@ class TestACompletedResetIsNotProofOfDeath:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -737,11 +737,11 @@ class TestACompletedResetIsNotProofOfDeath:
         manager._sessions.reset = AsyncMock(return_value=True)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=False),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.platform_compat.pid_exists", return_value=False),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("gone2", info, 7200.0)
 
@@ -766,12 +766,12 @@ class TestACompletedResetIsNotProofOfDeath:
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.platform_compat.pid_exists", return_value=False) as alive,
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock()) as pid_kill,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.platform_compat.pid_exists", return_value=False) as alive,
+            patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock()) as pid_kill,
         ):
             await manager._force_reap("exited1", info, 7200.0)
 
@@ -788,11 +788,11 @@ class TestACompletedResetIsNotProofOfDeath:
         manager._sessions.reset = AsyncMock(return_value=True)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="9999999"),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="9999999"),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("recycled2", info, 7200.0)
 
@@ -806,13 +806,13 @@ class TestACompletedResetIsNotProofOfDeath:
         manager._sessions.reset = AsyncMock(return_value=True)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("unread1", info, 7200.0)
 
@@ -840,13 +840,13 @@ class TestACompletedResetIsNotProofOfDeath:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("unmapped1", info, 7200.0)
 
@@ -860,9 +860,9 @@ class TestACompletedResetIsNotProofOfDeath:
         manager._sessions.reset = AsyncMock(return_value=False)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("nosess1", info, 7200.0)
 
@@ -886,14 +886,14 @@ class TestTheRunsOwnTeardownRecordsTheKill:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -911,13 +911,13 @@ class TestTheRunsOwnTeardownRecordsTheKill:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._teardown_run_session(info, key)
 
@@ -933,12 +933,12 @@ class TestTheRunsOwnTeardownRecordsTheKill:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._teardown_run_session(info, key)
 
@@ -952,10 +952,10 @@ class TestTheRunsOwnTeardownRecordsTheKill:
         manager._sessions.reset = AsyncMock(return_value=True)
 
         with (
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=False),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.platform_compat.pid_exists", return_value=False),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._teardown_run_session(info, key)
 
@@ -1014,15 +1014,15 @@ class TestTheRunsOwnReportWaitsForItsTeardown:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent.mark_delivered") as delivered,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.mark_delivered") as delivered,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -1058,12 +1058,12 @@ class TestTheRunsOwnReportWaitsForItsTeardown:
         manager = _completing_run(seen)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent.mark_delivered") as delivered,
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=False),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.mark_delivered") as delivered,
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.platform_compat.pid_exists", return_value=False),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             info = manager.spawn("finish cleanly", keep=True)
             assert info is not None and not info.error
@@ -1092,16 +1092,16 @@ class TestTheRunsOwnReportWaitsForItsTeardown:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.read_tombstone", return_value={"cause": "error"}),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.read_tombstone", return_value={"cause": "error"}),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -1123,16 +1123,16 @@ class TestTheRunsOwnReportWaitsForItsTeardown:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.read_tombstone", return_value=None),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.read_tombstone", return_value=None),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -1164,10 +1164,10 @@ class TestTheRunsOwnReportWaitsForItsTeardown:
         manager._sessions.reset = AsyncMock(side_effect=_reset_that_hangs)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent.mark_delivered") as delivered,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent.mark_delivered") as delivered,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             info = manager.spawn("finish, then be cancelled in the teardown", keep=True)
             assert info is not None and not info.error
@@ -1227,17 +1227,17 @@ class TestTheRunsOwnReportWaitsForItsTeardown:
             raise _REFUSAL
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent.mark_delivered") as delivered,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent._TEARDOWN_REPORT_GRACE", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.mark_delivered") as delivered,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent._TEARDOWN_REPORT_GRACE", 0.05),
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group", MagicMock(side_effect=_slow_refusal)
+                "efm_go.platform_compat.kill_process_group", MagicMock(side_effect=_slow_refusal)
             ),
         ):
             info = manager.spawn("finish, then hang in the reset and stall in the kill", keep=True)
@@ -1296,7 +1296,7 @@ class TestEqualHandlesMergeTheirEvidence:
     def test_the_kill_set_keeps_the_popped_readings_children(self) -> None:
         # This PR's shared definition: imported here so the module still imports
         # on the parent for the red-first count.
-        from kiro_crew.process_identity import kill_set
+        from efm_go.process_identity import kill_set
 
         snapshot = _handle(9901, pgid=9901)
         popped = _handle(9901, children={9905: ("start-9905", "node")})
@@ -1314,7 +1314,7 @@ class TestEqualHandlesMergeTheirEvidence:
     def test_a_reading_that_adds_nothing_keeps_the_handle_object(self) -> None:
         # Imported here, not at the top: the module must still import on the
         # parent for the red-first count, and these two names are this fix's.
-        from kiro_crew.process_identity import absorb_handle, add_handle
+        from efm_go.process_identity import absorb_handle, add_handle
 
         kept = _handle(9901, pgid=9901, children={9905: ("start-9905", "node")})
         assert absorb_handle(kept, _handle(9901)) is kept
@@ -1324,7 +1324,7 @@ class TestEqualHandlesMergeTheirEvidence:
 
     def test_a_recycled_child_pid_keeps_its_newer_record(self) -> None:
         """One child pid, two readings: the kernel reused the number, and the later record is the identity."""
-        from kiro_crew.process_identity import absorb_handle
+        from efm_go.process_identity import absorb_handle
 
         kept = _handle(9901, pgid=9901, children={9905: ("start-9905", "node")})
         merged = absorb_handle(kept, _handle(9901, children={9905: ("start-9950", "sh")}))
@@ -1333,7 +1333,7 @@ class TestEqualHandlesMergeTheirEvidence:
         assert merged.pgid == 9901 and merged == kept
 
     def test_the_same_pid_under_another_start_id_stays_two_handles(self) -> None:
-        from kiro_crew.process_identity import add_handle
+        from efm_go.process_identity import add_handle
 
         handles: list[ProcessHandle] = []
         add_handle(handles, _handle(9901, "start-a"))
@@ -1352,7 +1352,7 @@ class TestEqualHandlesMergeTheirEvidence:
             9907: ("start-9907", "node")
         }
 
-        with patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID):
+        with patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID):
             handles = manager._retain_process_handles("merge1", key)
 
         assert len(handles) == 1, f"one incarnation became {len(handles)} handles"
@@ -1396,13 +1396,13 @@ class TestTheRetainedHandleOutlivesThePop:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             teardown = asyncio.create_task(manager._teardown_run_session(info, key))
             manager._tasks["race1"] = teardown
@@ -1452,13 +1452,13 @@ class TestTheRetainedHandleOutlivesThePop:
             return None if group_kill.call_count else _START_ID
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
-            patch("kiro_crew.platform_compat.pid_exists", side_effect=_alive),
-            patch("kiro_crew.platform_compat.get_process_start_id", side_effect=_start_id),
-            patch("kiro_crew.platform_compat.kill_process_group", group_kill),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.pid_exists", side_effect=_alive),
+            patch("efm_go.platform_compat.get_process_start_id", side_effect=_start_id),
+            patch("efm_go.platform_compat.kill_process_group", group_kill),
         ):
             reap = asyncio.create_task(manager._force_reap("race2", info, 7200.0))
             await asyncio.wait_for(popped.wait(), timeout=5)
@@ -1526,13 +1526,13 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             teardown = asyncio.create_task(manager._teardown_run_session(info, key))
             manager._tasks["shared1"] = teardown
@@ -1566,13 +1566,13 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
                 )
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group", side_effect=_kill) as group_kill,
+            patch("efm_go.platform_compat.kill_process_group", side_effect=_kill) as group_kill,
         ):
             teardown = asyncio.create_task(manager._teardown_run_session(info, key))
             manager._tasks["shared2"] = teardown
@@ -1601,14 +1601,14 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         _hanging_reset(manager)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("shared3", info, 7200.0)
 
@@ -1669,21 +1669,21 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         _hanging_reset(manager)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value="2222"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
+            patch("efm_go.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.platform_compat.get_process_start_id", return_value="2222"),
             patch(
-                "kiro_crew.platform_compat.windows_tree_cleanup_pending",
+                "efm_go.platform_compat.windows_tree_cleanup_pending",
                 side_effect=lambda pid, start_id: start_id == "1111",
             ),
             patch(
-                "kiro_crew.platform_compat.kill_process_tree_pinned", return_value=True
+                "efm_go.platform_compat.kill_process_tree_pinned", return_value=True
             ) as pinned_drain,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("recycled6", info, 7200.0)
 
@@ -1724,7 +1724,7 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         """
         manager, info, key = _overdue_run("shared4", pid=9696)
         torn = manager._sessions._sessions.pop(key)
-        with patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID):
+        with patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID):
             entry = TornDown(session=torn, handle=process_handle_of(torn))
         manager._sessions.tearing_down = MagicMock(
             side_effect=lambda session_key: [entry] if session_key == key else []
@@ -1733,14 +1733,14 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         _hanging_reset(manager)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("shared4", info, 7200.0)
 
@@ -1766,7 +1766,7 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         successor.provider._client._start_time = "start-9798"
         successor.provider._client._child_pids = {}
         with patch(
-            "kiro_crew.platform_compat.get_process_start_id",
+            "efm_go.platform_compat.get_process_start_id",
             side_effect=lambda pid: {9797: _START_ID, 9798: "start-9798"}[pid],
         ):
             entries = [
@@ -1780,17 +1780,17 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         _hanging_reset(manager)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             patch(
-                "kiro_crew.platform_compat.get_process_start_id",
+                "efm_go.platform_compat.get_process_start_id",
                 side_effect=lambda pid: {9797: _START_ID, 9798: "start-9798"}[pid],
             ),
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("shared5", info, 7200.0)
 
@@ -1814,7 +1814,7 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         """
         manager, _info, key = _overdue_run("shared6", pid=9696)
         torn = manager._sessions._sessions.pop(key)
-        with patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID):
+        with patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID):
             captured = process_handle_of(torn)  # read at the pop, the process alive
         # The hung teardown's own awaits cleared the wrapper's pid; the process
         # it named at the pop is still standing.
@@ -1847,7 +1847,7 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         """
         manager, info, key = _overdue_run("shared7", pid=9696)
         torn = manager._sessions._sessions.pop(key)
-        with patch("kiro_crew.platform_compat.get_process_start_id", return_value=_START_ID):
+        with patch("efm_go.platform_compat.get_process_start_id", return_value=_START_ID):
             captured = process_handle_of(torn)  # read at the pop, the process alive
         torn.provider._client._pid = None
         torn.provider._client._start_time = None
@@ -1860,14 +1860,14 @@ class TestEveryCandidateUnderTheKeyIsKilledOnItsOwnHandle:
         _hanging_reset(manager)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("shared7", info, 7200.0)
 
@@ -1981,17 +1981,17 @@ class TestTheSessionTheResetPopsIsKilledToo:
         children, alive, _start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             patch(
-                "kiro_crew.platform_compat.get_process_start_id",
+                "efm_go.platform_compat.get_process_start_id",
                 side_effect=lambda pid: {9901: _START_ID, 9902: "start-9902"}[pid],
             ),
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("late1", info, 7200.0)
 
@@ -2013,16 +2013,16 @@ class TestTheSessionTheResetPopsIsKilledToo:
         children, alive, _start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             patch(
-                "kiro_crew.platform_compat.get_process_start_id",
+                "efm_go.platform_compat.get_process_start_id",
                 side_effect=lambda pid: {9903: _START_ID, 9904: "start-9904"}[pid],
             ),
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._teardown_run_session(info, key)
 
@@ -2043,14 +2043,14 @@ class TestTheSessionTheResetPopsIsKilledToo:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("late3", info, 7200.0)
 
@@ -2075,7 +2075,7 @@ class TestTheSessionTheResetPopsIsKilledToo:
         _session_with_pid(manager, key, None)
         _reset_pops_the_live_session(manager)
 
-        with patch("kiro_crew.subagent.sel") as mock_sel:
+        with patch("efm_go.subagent.sel") as mock_sel:
             await manager._teardown_run_session(info, key)
 
         assert not [
@@ -2092,9 +2092,9 @@ class TestTheSessionTheResetPopsIsKilledToo:
         _reset_pops_the_live_session(manager)
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("seen2", info, 7200.0)
 
@@ -2110,7 +2110,7 @@ class TestTheSessionTheResetPopsIsKilledToo:
         ``scope=`` failed the reset it was meant to observe and left the key
         live (``test_member_continuation_identity.py``).
         """
-        from kiro_crew.process_identity import teardown_capture
+        from efm_go.process_identity import teardown_capture
 
         plain = MagicMock()
         assert teardown_capture(plain, "subagent:plain") == ({}, [])
@@ -2131,14 +2131,14 @@ class TestTheSessionTheResetPopsIsKilledToo:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             await manager._force_reap("late4", info, 7200.0)
 
@@ -2193,20 +2193,20 @@ class TestTheRecordCarriesTheKillBeforeItIsPublished:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
             patch.object(manager, "_run_inner", AsyncMock(side_effect=_stream)),
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock()),
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock()),
         ):
             run_task = asyncio.create_task(manager._run(info))
             manager._tasks["pub1"] = run_task
@@ -2274,16 +2274,16 @@ class TestADeliveredRecordIsNotRewrittenByTheReap:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -2324,16 +2324,16 @@ class TestADeliveredRecordIsNotRewrittenByTheReap:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -2431,18 +2431,18 @@ class TestAStopCancelledMidTeardownStillReports:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._REPORT_DRAIN_TIMEOUT", 5.0),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
-            patch("kiro_crew.subagent.clear_tombstone") as cleared,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._REPORT_DRAIN_TIMEOUT", 5.0),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.clear_tombstone") as cleared,
             patch.object(manager, "_run_inner", AsyncMock(side_effect=_stream)),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group"),
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock()),
+            patch("efm_go.platform_compat.kill_process_group"),
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock()),
         ):
             run_task = asyncio.create_task(manager._run(info))
             manager._tasks["shut1"] = run_task
@@ -2524,11 +2524,11 @@ class TestAStopCancelledMidTeardownStillReports:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent._REPORT_DRAIN_TIMEOUT", 5.0),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent._REPORT_DRAIN_TIMEOUT", 5.0),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
             patch.object(manager, "_run_inner", AsyncMock(side_effect=_stream)),
             children,
             alive,
@@ -2537,10 +2537,10 @@ class TestAStopCancelledMidTeardownStillReports:
             # The group signal fails; the kill's pid-scoped fallback is the await
             # the cancellation lands in.
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=PermissionError("[Errno 1] Operation not permitted")),
             ),
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock(side_effect=_hanging_kill)),
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock(side_effect=_hanging_kill)),
         ):
             run_task = asyncio.create_task(manager._run(info))
             manager._tasks["shut3"] = run_task
@@ -2594,17 +2594,17 @@ class TestAStopCancelledMidTeardownStillReports:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._REPORT_DRAIN_TIMEOUT", 5.0),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._REPORT_DRAIN_TIMEOUT", 5.0),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
             patch.object(manager, "_run_inner", AsyncMock(side_effect=_stream)),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group"),
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock()),
+            patch("efm_go.platform_compat.kill_process_group"),
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock()),
         ):
             run_task = asyncio.create_task(manager._run(info))
             manager._tasks["shut2"] = run_task
@@ -2666,18 +2666,18 @@ class TestAStopCancelledMidTeardownStillReports:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._REPORT_DRAIN_TIMEOUT", 0.5),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
-            patch("kiro_crew.subagent.clear_tombstone") as cleared,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._REPORT_DRAIN_TIMEOUT", 0.5),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.clear_tombstone") as cleared,
             patch.object(manager, "_run_inner", AsyncMock(side_effect=_stream)),
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group"),
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock()),
+            patch("efm_go.platform_compat.kill_process_group"),
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock()),
         ):
             run_task = asyncio.create_task(manager._run(info))
             manager._tasks["shut4"] = run_task
@@ -2744,16 +2744,16 @@ class TestConcurrentStopsCoalesceIntoOneReap:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.write_tombstone") as tombstones,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.write_tombstone") as tombstones,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ) as group_kill,
         ):
@@ -2815,17 +2815,17 @@ class TestConcurrentStopsCoalesceIntoOneReap:
             await report_task
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
-            patch("kiro_crew.subagent.write_tombstone"),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.write_tombstone"),
             patch.object(manager, "_await_report", AsyncMock(side_effect=_slow_delivery)),
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ),
         ):
@@ -2865,15 +2865,15 @@ class TestConcurrentStopsCoalesceIntoOneReap:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
-            patch("kiro_crew.subagent._RESET_TIMEOUT", 0.05),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
+            patch("efm_go.subagent._RESET_TIMEOUT", 0.05),
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=_REFUSAL),
             ) as group_kill,
         ):
@@ -2905,11 +2905,11 @@ class TestWindowsShape:
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_tree_pinned",
+                "efm_go.platform_compat.kill_process_tree_pinned",
                 side_effect=OSError("taskkill /T failed (exit 128)"),
             ),
             patch(
-                "kiro_crew.platform_compat.kill_pid_async", AsyncMock(return_value=True)
+                "efm_go.platform_compat.kill_pid_async", AsyncMock(return_value=True)
             ) as pid_kill,
         ):
             failure = await manager._sigkill_session(key, _handle_of(manager, "win1"))
@@ -2933,8 +2933,8 @@ class TestWindowsShape:
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_tree_pinned", return_value=False),
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock(return_value=True)),
+            patch("efm_go.platform_compat.kill_process_tree_pinned", return_value=False),
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock(return_value=True)),
         ):
             assert await manager._sigkill_session(key, _handle_of(manager, "win2")) is None
 
@@ -2953,10 +2953,10 @@ class TestWindowsShape:
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=PermissionError("[Errno 1] Operation not permitted")),
             ),
-            patch("kiro_crew.platform_compat.kill_pid_async", AsyncMock(return_value=True)),
+            patch("efm_go.platform_compat.kill_pid_async", AsyncMock(return_value=True)),
         ):
             assert await manager._sigkill_session(key, _handle_of(manager, "posix1")) is None
 
@@ -2964,7 +2964,7 @@ class TestWindowsShape:
 @pytest.fixture()
 def agent_root(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
     """Point persistence at a temp directory."""
-    monkeypatch.setattr("kiro_crew.subagent_persistence._SUBAGENTS_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.subagent_persistence._SUBAGENTS_DIR", tmp_path)
     return tmp_path
 
 
@@ -2998,7 +2998,7 @@ class TestOrphanReconcileRecordsAFailedKill:
                 "kill_pid",
                 side_effect=PermissionError(1, "Operation not permitted"),
             ),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             await manager._reconcile_orphans()
 
@@ -3019,7 +3019,7 @@ class TestOrphanReconcileRecordsAFailedKill:
             patch.object(manager, "_is_pid_alive", return_value=True),
             patch.object(manager, "_is_orphan_process", return_value=True),
             patch.object(platform_compat, "kill_pid", side_effect=ProcessLookupError),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             await manager._reconcile_orphans()
 
@@ -3035,7 +3035,7 @@ class TestOrphanReconcileRecordsAFailedKill:
             patch.object(manager, "_is_pid_alive", return_value=True),
             patch.object(manager, "_is_orphan_process", return_value=True),
             patch.object(platform_compat, "kill_pid") as kill,
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             await manager._reconcile_orphans()
 
@@ -3082,7 +3082,7 @@ class TestTheOrphanKillLeavesTheLoopRunning:
             patch.object(manager, "_is_pid_alive", return_value=True),
             patch.object(manager, "_is_orphan_process", return_value=True),
             patch.object(platform_compat, "kill_pid_async", side_effect=slow_kill) as kill,
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.sel") as mock_sel,
         ):
             ticks = await self._ticks_during(manager._reconcile_orphans())
 
@@ -3133,7 +3133,7 @@ class TestTheKillFailureStaysInsideTheErrorBound:
     """The reap retains a bounded ``info.error`` through the shared ``with_kill_failure``.
 
     Every writer of ``info.error`` holds it to ``MAX_ERROR_DETAIL_LEN`` -- the
-    one bound in ``kiro_crew.process_identity`` the sub-agent record and the cron
+    one bound in ``efm_go.process_identity`` the sub-agent record and the cron
     job's ``last_error`` share -- at the point of retention, and the record, the
     tombstone and the report all carry the string as is. The kill's reason is
     not this code's to size: a Windows tree drain that fails carries the tree's
@@ -3157,18 +3157,18 @@ class TestTheKillFailureStaysInsideTheErrorBound:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             alive,
             start_id,
             sweep,
             patch(
-                "kiro_crew.platform_compat.kill_process_group",
+                "efm_go.platform_compat.kill_process_group",
                 MagicMock(side_effect=PermissionError(blob)),
             ),
             patch(
-                "kiro_crew.platform_compat.kill_pid_async",
+                "efm_go.platform_compat.kill_pid_async",
                 AsyncMock(side_effect=PermissionError(blob)),
             ),
         ):
@@ -3242,8 +3242,8 @@ class TestTheReapFencesTheKey:
         children, _alive, _start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             patch.object(manager, "_sessions_under", side_effect=_snapshot),
             patch.object(
                 manager, "_write_tombstone", side_effect=lambda *_a, **_k: events.append("record")
@@ -3252,9 +3252,9 @@ class TestTheReapFencesTheKey:
             sweep,
             # The reset stopped the process: gone by identity and by liveness,
             # its group empty (the autouse pin), so nothing survives to kill.
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=False),
-            patch("kiro_crew.platform_compat.kill_process_group") as group_kill,
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.platform_compat.pid_exists", return_value=False),
+            patch("efm_go.platform_compat.kill_process_group") as group_kill,
         ):
             mock_sel().log_tool_invocation.side_effect = lambda **_: events.append("audit")
             await manager._force_reap("fence1", info, 7200.0)
@@ -3287,12 +3287,12 @@ class TestTheReapFencesTheKey:
         children, _alive, _start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             children,
             sweep,
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
-            patch("kiro_crew.platform_compat.pid_exists", return_value=False),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.platform_compat.pid_exists", return_value=False),
         ):
             await manager._force_reap("fence3", info, 7200.0)
 
@@ -3352,14 +3352,14 @@ class TestTheReapFencesTheKey:
         children, alive, start_id, sweep = _kill_path_stubs()
 
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as mock_sel,
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as mock_sel,
             patch.object(mgr, "_dispatch_hard_kill") as hard_kill,
             children,
             alive,
             start_id,
             sweep,
-            patch("kiro_crew.platform_compat.kill_process_group", return_value=True) as group_kill,
+            patch("efm_go.platform_compat.kill_process_group", return_value=True) as group_kill,
         ):
             assert manager._retain_process_handles("fence2", key) == []
             await manager._force_reap("fence2", info, 7200.0)

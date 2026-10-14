@@ -13,7 +13,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.dashboard.handlers import connections
+from efm_go.dashboard.handlers import connections
 
 
 @pytest.mark.parametrize(

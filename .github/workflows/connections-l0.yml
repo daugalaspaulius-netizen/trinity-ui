@@ -28,8 +28,8 @@ name: Connections L0 Static Metadata Probe
 #   L0_VERIFICATION_WARN_AGE_DAYS. This job cannot fix it: refreshing needs live
 #   network AND a commit, and this job has neither `contents: write` nor any
 #   business pushing to a protected branch. On a networked machine:
-#       python -m kiro_crew.connections.l0_probe --record
-#       git add src/kiro_crew/connections/registry.json && commit
+#       python -m efm_go.connections.l0_probe --record
+#       git add src/efm_go/connections/registry.json && commit
 #   The PR suite only WARNS until L0_VERIFICATION_MAX_AGE_DAYS, and then only
 #   hard-fails for providers actually visible to users -- so this red is the
 #   early signal, and ignoring it eventually blocks PRs.
@@ -153,7 +153,7 @@ jobs:
           if [ "$PRIOR_RUN" = "true" ]; then
             expected="--prior-run-expected"
           fi
-          python -m kiro_crew.connections.l0_probe \
+          python -m efm_go.connections.l0_probe \
             --report connections-l0-report.json \
             --state l0-state.json \
             --drift-threshold 3 \

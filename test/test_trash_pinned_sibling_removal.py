@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import pinned_fs, session_storage
+from efm_go import pinned_fs, session_storage
 
 _NOW = 1_700_000_000.0
 _BATCH = "20231114-batch"
@@ -110,7 +110,7 @@ class TestAncestorSwapContainment:
 
         monkeypatch.setattr(session_storage, "_unlisted_files", _screen_then_swap)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             # The identity comes from the caller, recorded before the restore read anything -
             # here, before the swap the scan performs below.
             session_storage._discard_restored_batch(batch, _identity(batch))
@@ -142,7 +142,7 @@ class TestAncestorSwapContainment:
 
         _swap_parent_for_a_link(root, victim)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             session_storage._remove_emptied_batch(batch, "the empty batch", expect=identity)
 
         assert precious.read_text() == "staged, unlisted, the only copy"
@@ -236,7 +236,7 @@ class TestAncestorSwapContainment:
             return found
 
         monkeypatch.setattr(session_storage, "_unlisted_files", _screen_then_swap)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             assert session_storage.restore(batch.batch_id) == 1
 
         assert precious.read_text() == "the only copy", "the victim's file must survive"
@@ -254,7 +254,7 @@ class TestAncestorSwapContainment:
         root = tmp_path / "trash"
         batch = _batch_with_manifest(root, _BATCH, entries=[])
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             session_storage._remove_emptied_batch(batch, "the empty batch", expect=None)
 
         assert batch.is_dir()
@@ -326,7 +326,7 @@ class TestUnswappedRemovalStillHappens:
         batch = _batch_with_manifest(root, _BATCH, entries=[])
         (batch / "orphan.jsonl").write_text("staged but never recorded")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             session_storage._remove_emptied_batch(batch, "the empty batch", expect=_identity(batch))
 
         assert (batch / "orphan.jsonl").read_text() == "staged but never recorded"
@@ -346,7 +346,7 @@ class TestUnswappedRemovalStillHappens:
         batch = _batch_with_manifest(root, _BATCH, entries=[])
         (batch / "planted").symlink_to(tmp_path / "nowhere")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             removed = session_storage._remove_emptied_batch(
                 batch, "the restored batch", expect=_identity(batch)
             )
@@ -377,7 +377,7 @@ class TestUnswappedRemovalStillHappens:
         replanted = batch / "cli" / "aaaa1111.jsonl"
         replanted.write_text("arrived after the restore moved the real one out")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             session_storage._remove_emptied_batch(
                 batch, "the restored batch", expect=_identity(batch)
             )
@@ -542,7 +542,7 @@ class TestTheApprovalReadsOneFile:
         batch = _batch_with_manifest(root, _BATCH, entries=[])
         (batch / session_storage.MANIFEST_NAME).write_bytes(b'{"schema": "\xff\xfe not utf8"}\n')
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             removed = session_storage._remove_emptied_batch(
                 batch, "the restored batch", expect=_identity(batch)
             )
@@ -894,7 +894,7 @@ class TestTheCoarsePlatform:
         (batch / "keep.me").write_text("not the selected batch")
 
         monkeypatch.setattr(session_storage, "_FD_SAFE_DELETE", False)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session_storage"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session_storage"):
             removed = session_storage._remove_emptied_batch(
                 batch, "the empty batch", expect=stale_identity
             )

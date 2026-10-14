@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
-from kiro_crew.dashboard.chat_handlers import _is_interrupted
+from efm_go.dashboard.chat_handlers import _is_interrupted
 
 
 def slot(*messages: dict) -> SimpleNamespace:

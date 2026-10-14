@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.deploy.pending as pending
-import kiro_crew.deploy.profiles as profiles
+import efm_go.deploy.pending as pending
+import efm_go.deploy.profiles as profiles
 
 SENTINEL = b"held by a prior acquirer\n"
 

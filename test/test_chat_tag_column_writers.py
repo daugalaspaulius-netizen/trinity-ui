@@ -14,8 +14,8 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state, _make_tags_app
 
-from kiro_crew.dashboard import create_rate_limit
-from kiro_crew.dashboard.token_auth import MEMBER_CHAT_PRINCIPAL_KEY
+from efm_go.dashboard import create_rate_limit
+from efm_go.dashboard.token_auth import MEMBER_CHAT_PRINCIPAL_KEY
 
 _TAG = {"id": "t00000000001", "name": "Active", "color": "#22c55e", "order": 0, "status": True}
 _COLS = [
@@ -26,13 +26,13 @@ _COLS = [
 
 @pytest.fixture(autouse=True)
 def _hermetic_signing_secret(monkeypatch):
-    from kiro_crew.dashboard import token_secret
+    from efm_go.dashboard import token_secret
 
     monkeypatch.setattr(token_secret, "_get_secret", lambda: b"test-signing-key")
 
 
 def _board_app(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     state._tags = [dict(_TAG)]
     state._tag_boards = [dict(c) for c in _COLS]
@@ -197,7 +197,7 @@ async def test_an_agent_write_is_audited_as_the_agent_not_the_browser(tmp_path, 
     """SEL must tell an MCP-driven board change from the person clicking."""
     from unittest.mock import MagicMock
 
-    from kiro_crew.dashboard import chat_tags
+    from efm_go.dashboard import chat_tags
 
     create_rate_limit.reset_for_tests()
     audit = MagicMock()

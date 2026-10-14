@@ -11,16 +11,16 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew
-from kiro_crew import crashpad_inherit
-from kiro_crew.crashpad_inherit import (
+import efm_go
+from efm_go import crashpad_inherit
+from efm_go.crashpad_inherit import (
     CRASHPAD_MASKS,
     EXC_MASK_CRASH,
     EXC_MASK_RESOURCE,
     MACH_PORT_NULL,
     detach_inherited_crash_handler,
 )
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 
 class _FakeLibc:
@@ -96,7 +96,7 @@ def test_reports_failure_without_raising(monkeypatch: pytest.MonkeyPatch) -> Non
 # -- the grandchild is the shape the fix exists for (kiro-cli, MCP servers).
 _CHILD_SCRIPT = """\
 import ctypes, json, subprocess, sys
-from kiro_crew.crashpad_inherit import CRASHPAD_MASKS, detach_inherited_crash_handler
+from efm_go.crashpad_inherit import CRASHPAD_MASKS, detach_inherited_crash_handler
 
 
 def read_crashpad_ports():
@@ -136,7 +136,7 @@ def _assert_crashpad_ports_null(report: dict) -> None:
 def test_child_task_and_its_children_read_null_ports_afterwards(tmp_path: Path) -> None:
     script = tmp_path / "detach_probe.py"
     script.write_text(_CHILD_SCRIPT, encoding="utf-8")
-    src_root = str(Path(kiro_crew.__file__).resolve().parent.parent)
+    src_root = str(Path(efm_go.__file__).resolve().parent.parent)
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(p for p in (src_root, env.get("PYTHONPATH")) if p)
     proc = subprocess.run(

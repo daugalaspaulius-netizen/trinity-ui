@@ -28,14 +28,14 @@ from typing import Iterator
 
 import pytest
 
-from kiro_crew.platform import tree_liveness, wheel_engine
-from kiro_crew.platform.wheel_engine import ManagedVenvLayout, WheelUpdateError
-from kiro_crew.platform_compat import IS_POSIX, trusted_system_bin, try_acquire_lock
+from efm_go.platform import tree_liveness, wheel_engine
+from efm_go.platform.wheel_engine import ManagedVenvLayout, WheelUpdateError
+from efm_go.platform_compat import IS_POSIX, trusted_system_bin, try_acquire_lock
 
 pytestmark = pytest.mark.skipif(not IS_POSIX, reason="the shadow-venv engine is POSIX-only")
 
-_FEED_BASE = "https://updates.crew.kiro.dev"
-_ARTIFACT_BASE = "https://download.crew.kiro.dev"
+_FEED_BASE = "https://efmleads.com/go/updates"
+_ARTIFACT_BASE = "https://efmleads.com"
 
 
 def _layout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ManagedVenvLayout:
@@ -63,7 +63,7 @@ def _claim(layout: ManagedVenvLayout, tree: Path, *, sentinel: bool = True) -> N
 
 def _install_locking_release(tree: Path) -> None:
     """The file that tells the prune this tree's release holds its liveness lock."""
-    platform_pkg = tree / "lib" / "python3.12" / "site-packages" / "kiro_crew" / "platform"
+    platform_pkg = tree / "lib" / "python3.12" / "site-packages" / "efm_go" / "platform"
     platform_pkg.mkdir(parents=True, exist_ok=True)
     (platform_pkg / "tree_liveness.py").write_text("", encoding="utf-8")
 
@@ -190,7 +190,7 @@ class TestAGatewayStartedThroughTheLinkMovesOffItFirst:
     def test_an_interpreter_started_through_the_link_is_recognised(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.platform import wheel_apply
+        from efm_go.platform import wheel_apply
 
         layout = _layout(tmp_path, monkeypatch)
         tree = TestRespawnLoadsItsOwnTree._tree(layout, "1.0")
@@ -241,7 +241,7 @@ class TestAGatewayStartedThroughTheLinkMovesOffItFirst:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A respawn that falls back to ``sys.executable`` would repeat every cycle."""
-        from kiro_crew.platform import wheel_apply
+        from efm_go.platform import wheel_apply
 
         layout = _layout(tmp_path, monkeypatch)
         layout.stable_link.symlink_to(_completed_tree(layout, "1.0", installed_at=time.time()))
@@ -348,7 +348,7 @@ class TestInterruptedWorkIsClearedNextTime:
         """A pre-lock release installed and promoted, killed before the sentinel came off."""
         tree = layout.versioned_tree("0.1.0")
         _claim(layout, tree)
-        package = tree / "lib" / "python3.12" / "site-packages" / "kiro_crew"
+        package = tree / "lib" / "python3.12" / "site-packages" / "efm_go"
         package.mkdir(parents=True)
         (package / "__init__.py").write_text("", encoding="utf-8")
         return tree
@@ -373,7 +373,7 @@ class TestInterruptedWorkIsClearedNextTime:
         monkeypatch.setattr(wheel_engine, "_run", lambda *_a, **_kw: None)
         with pytest.raises(WheelUpdateError, match="a running kirocrew process uses it"):
             wheel_engine.build_shadow_venv(tmp_path / "w.whl", tree)
-        assert (tree / "lib" / "python3.12" / "site-packages" / "kiro_crew").exists()
+        assert (tree / "lib" / "python3.12" / "site-packages" / "efm_go").exists()
 
     def test_a_set_cancel_leaves_no_new_directory(self, tmp_path: Path) -> None:
         cancel = wheel_engine.ApplyCancel()
@@ -717,7 +717,7 @@ class TestAKeptTreeIsRebuiltOnAMoveBack:
         self._wire(layout, monkeypatch, "0.1.0")
         with pytest.raises(WheelUpdateError, match="a running kirocrew process uses it"):
             _apply(monkeypatch, "0.1.0")
-        assert (tree / "lib" / "python3.12" / "site-packages" / "kiro_crew").exists()
+        assert (tree / "lib" / "python3.12" / "site-packages" / "efm_go").exists()
 
     def test_a_kept_previous_tree_is_rebuilt_and_promoted(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -937,7 +937,7 @@ class TestPersistedLaunchPaths:
     def test_the_launchd_repairer_names_the_stable_path(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.service import macos
+        from efm_go.service import macos
 
         layout = _layout(tmp_path, monkeypatch)
         first = _completed_tree(layout, "1.0", installed_at=time.time() - 10)
@@ -965,12 +965,12 @@ class TestPersistedLaunchPaths:
         """
         from unittest.mock import MagicMock, patch
 
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         layout = _layout(tmp_path, monkeypatch)
         first = _completed_tree(layout, "1.0", installed_at=time.time() - 10)
         (first / "pyvenv.cfg").write_text("", encoding="utf-8")
-        package = first / "lib" / "python3.12" / "site-packages" / "kiro_crew"
+        package = first / "lib" / "python3.12" / "site-packages" / "efm_go"
         package.mkdir(parents=True, exist_ok=True)
         (package / "__init__.py").write_text("", encoding="utf-8")
         layout.stable_link.symlink_to(first)
@@ -983,7 +983,7 @@ class TestPersistedLaunchPaths:
             lambda path: str(path).startswith(str(tmp_path)) and real_works(path),
         )
         monkeypatch.setattr(agent_mod, "_KIROCREW_BIN", None)
-        with patch.dict(sys.modules, {"kiro_crew": fake_package}):
+        with patch.dict(sys.modules, {"efm_go": fake_package}):
             command, args = agent_mod._kirocrew_mcp_invocation("mcp-core")
         assert (command, args) == (str(first / "bin" / "kirocrew"), ["mcp-core"])
 
@@ -997,7 +997,7 @@ class TestPersistedLaunchPaths:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The ``~/.local/bin`` shim outlives the process that writes it."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         layout = _layout(tmp_path, monkeypatch)
         first = _completed_tree(layout, "1.0", installed_at=time.time())
@@ -1063,11 +1063,11 @@ class TestBuildChildEnvironment:
             "kirocrew",
             "9.9.9",
             {
-                "kiro_crew/__init__.py": "__version__ = '9.9.9'\n",
-                "kiro_crew/cli.py": "import depdummy\n\ndef main():\n    pass\n",
+                "efm_go/__init__.py": "__version__ = '9.9.9'\n",
+                "efm_go/cli.py": "import depdummy\n\ndef main():\n    pass\n",
                 # The console script verification looks for comes from here.
                 "kirocrew-9.9.9.dist-info/entry_points.txt": (
-                    "[console_scripts]\nkirocrew = kiro_crew.cli:main\n"
+                    "[console_scripts]\nkirocrew = efm_go.cli:main\n"
                 ),
             },
             "Requires-Dist: depdummy\n",

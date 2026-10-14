@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.embeddings as embeddings_mod
-from kiro_crew.embeddings import (
+import efm_go.embeddings as embeddings_mod
+from efm_go.embeddings import (
     LlamaCppEmbedder,
     ModelDownloadManager,
     active_embedding_space_signature,
@@ -55,8 +55,8 @@ def _isolate(monkeypatch, tmp_path: Path):
     monkeypatch.delenv("KIROCREW_EMBED_MODEL_URL", raising=False)
     # Point config_path at a file that does not exist by default, so a stray
     # real config on the dev host can never leak into these assertions.
-    monkeypatch.setattr("kiro_crew.embeddings.config_path", lambda: tmp_path / "config.json")
-    monkeypatch.setattr("kiro_crew.embeddings.config_dir", lambda: tmp_path / "home")
+    monkeypatch.setattr("efm_go.embeddings.config_path", lambda: tmp_path / "config.json")
+    monkeypatch.setattr("efm_go.embeddings.config_dir", lambda: tmp_path / "home")
     reset_shared_embedder()
     reset_download_manager()
     _REAL_LOAD_LLAMA.cache_clear()
@@ -217,7 +217,7 @@ class TestSensitivePathGate:
     def test_credential_store_is_refused(self, monkeypatch, tmp_path: Path) -> None:
         secret = _write_model(tmp_path / "credentials")
         _write_config(tmp_path, {"embed_model_path": str(secret)})
-        monkeypatch.setattr("kiro_crew.embeddings.is_sensitive_path", lambda p, base_dir=None: True)
+        monkeypatch.setattr("efm_go.embeddings.is_sensitive_path", lambda p, base_dir=None: True)
         spec = resolve_custom_model()
         assert spec is not None
         assert "protected location" in spec.error
@@ -229,7 +229,7 @@ class TestSensitivePathGate:
         and the gate must not depend on the file being readable.
         """
         _write_config(tmp_path, {"embed_model_path": str(tmp_path / "nope" / "id_rsa")})
-        monkeypatch.setattr("kiro_crew.embeddings.is_sensitive_path", lambda p, base_dir=None: True)
+        monkeypatch.setattr("efm_go.embeddings.is_sensitive_path", lambda p, base_dir=None: True)
         spec = resolve_custom_model()
         assert spec is not None and "protected location" in spec.error
 
@@ -248,7 +248,7 @@ class TestSensitivePathGate:
         def _boom(_p, base_dir=None):
             raise RuntimeError("gate unavailable")
 
-        monkeypatch.setattr("kiro_crew.embeddings.is_sensitive_path", _boom)
+        monkeypatch.setattr("efm_go.embeddings.is_sensitive_path", _boom)
         spec = resolve_custom_model()
         assert spec is not None and "protected location" in spec.error
 
@@ -268,7 +268,7 @@ class TestSensitivePathGate:
         """
         secret = _write_model(tmp_path / "credentials")
         _write_config(tmp_path, {"embed_model_path": str(secret)})
-        monkeypatch.setattr("kiro_crew.embeddings.is_sensitive_path", lambda p, base_dir=None: True)
+        monkeypatch.setattr("efm_go.embeddings.is_sensitive_path", lambda p, base_dir=None: True)
         backend = default_embedding_backend()
         assert isinstance(backend, LlamaCppEmbedder)
         assert backend.model_path != secret
@@ -284,7 +284,7 @@ class TestSensitivePathGate:
         must refuse.
         """
         secret = _write_model(tmp_path / "credentials")
-        monkeypatch.setattr("kiro_crew.embeddings.is_sensitive_path", lambda p, base_dir=None: True)
+        monkeypatch.setattr("efm_go.embeddings.is_sensitive_path", lambda p, base_dir=None: True)
         opened: list = []
 
         class _Tripwire:
@@ -294,7 +294,7 @@ class TestSensitivePathGate:
             def create_embedding(self, texts):  # pragma: no cover - never reached
                 raise AssertionError("must not run")
 
-        monkeypatch.setattr("kiro_crew.embeddings._load_llama_class", lambda: _Tripwire)
+        monkeypatch.setattr("efm_go.embeddings._load_llama_class", lambda: _Tripwire)
         embedder = LlamaCppEmbedder(model_path=secret, dim=1024, model_id="x:1")
         # The file exists and is big enough, so the presence check alone passes.
         assert model_file_present(secret) is True
@@ -306,7 +306,7 @@ class TestSensitivePathGate:
         """Guard against the new refusal blocking legitimate models."""
         model = _write_model(tmp_path / "models" / "mine.gguf")
         monkeypatch.setattr(
-            "kiro_crew.embeddings._load_llama_class", lambda: _fake_llama_class(n_embd=1024)
+            "efm_go.embeddings._load_llama_class", lambda: _fake_llama_class(n_embd=1024)
         )
         embedder = LlamaCppEmbedder(model_path=model, dim=1024, model_id="x:1")
         embedder.wait_ready(timeout=5)
@@ -321,7 +321,7 @@ class TestSensitivePathGate:
         """
         embeddings_mod._last_custom_model_error = ""
         _write_config(tmp_path, {"embed_model_path": str(tmp_path / "typo.gguf")})
-        with caplog.at_level("ERROR", logger="kiro_crew.embeddings"):
+        with caplog.at_level("ERROR", logger="efm_go.embeddings"):
             for _ in range(5):
                 resolve_custom_model()
         assert sum("unusable" in r.message for r in caplog.records) == 1
@@ -329,7 +329,7 @@ class TestSensitivePathGate:
     def test_a_different_error_still_logs(self, tmp_path: Path, caplog) -> None:
         """Dedup must not swallow a NEW misconfiguration."""
         embeddings_mod._last_custom_model_error = ""
-        with caplog.at_level("ERROR", logger="kiro_crew.embeddings"):
+        with caplog.at_level("ERROR", logger="efm_go.embeddings"):
             _write_config(tmp_path, {"embed_model_path": str(tmp_path / "typo.gguf")})
             resolve_custom_model()
             _write_config(tmp_path, {"embed_model_path": "relative/path.gguf"})
@@ -340,7 +340,7 @@ class TestSensitivePathGate:
         """A fix-then-break cycle on the SAME path must log the second time."""
         embeddings_mod._last_custom_model_error = ""
         broken = {"embed_model_path": str(tmp_path / "mine.gguf")}
-        with caplog.at_level("ERROR", logger="kiro_crew.embeddings"):
+        with caplog.at_level("ERROR", logger="efm_go.embeddings"):
             _write_config(tmp_path, broken)
             resolve_custom_model()  # missing -> logs
             _write_model(tmp_path / "mine.gguf")
@@ -413,7 +413,7 @@ class TestLoadTimeDimValidation:
     def test_mismatched_dim_refuses_to_load(self, tmp_path: Path, monkeypatch) -> None:
         model = _write_model(tmp_path / "mine.gguf")
         monkeypatch.setattr(
-            "kiro_crew.embeddings._load_llama_class", lambda: _fake_llama_class(n_embd=384)
+            "efm_go.embeddings._load_llama_class", lambda: _fake_llama_class(n_embd=384)
         )
         embedder = LlamaCppEmbedder(model_path=model, dim=1024, model_id="m:1")
         embedder.wait_ready(timeout=5)
@@ -423,7 +423,7 @@ class TestLoadTimeDimValidation:
     def test_matching_dim_loads(self, tmp_path: Path, monkeypatch) -> None:
         model = _write_model(tmp_path / "mine.gguf")
         monkeypatch.setattr(
-            "kiro_crew.embeddings._load_llama_class", lambda: _fake_llama_class(n_embd=768)
+            "efm_go.embeddings._load_llama_class", lambda: _fake_llama_class(n_embd=768)
         )
         embedder = LlamaCppEmbedder(model_path=model, dim=768, model_id="m:1")
         embedder.wait_ready(timeout=5)
@@ -434,7 +434,7 @@ class TestLoadTimeDimValidation:
         """The probe is advisory — a runtime lacking n_embd() is not blocked."""
         model = _write_model(tmp_path / "mine.gguf")
         monkeypatch.setattr(
-            "kiro_crew.embeddings._load_llama_class", lambda: _fake_llama_class(n_embd=None)
+            "efm_go.embeddings._load_llama_class", lambda: _fake_llama_class(n_embd=None)
         )
         embedder = LlamaCppEmbedder(model_path=model, dim=1024, model_id="m:1")
         embedder.wait_ready(timeout=5)
@@ -601,7 +601,7 @@ class TestReconcileChokepoint:
             def is_ready(self) -> bool:
                 return True
 
-        monkeypatch.setattr("kiro_crew.embeddings.get_shared_embedder", lambda: _Ready())
+        monkeypatch.setattr("efm_go.embeddings.get_shared_embedder", lambda: _Ready())
 
     def test_default_model_does_not_request_clearing(self) -> None:
         store = self._FakeStore()
@@ -704,7 +704,7 @@ class TestKnowledgeReembedsOnModelSwap:
     """
 
     def test_signature_changes_with_a_custom_model(self, tmp_path: Path) -> None:
-        from kiro_crew.knowledge.embedder import InProcessEmbedder, embedder_signature
+        from efm_go.knowledge.embedder import InProcessEmbedder, embedder_signature
 
         default_sig = embedder_signature(InProcessEmbedder())
 

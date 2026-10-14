@@ -33,10 +33,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import model_registry
-from kiro_crew.acp.client import AcpClient, AcpError, AcpModelUnavailable
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import (
+from efm_go import model_registry
+from efm_go.acp.client import AcpClient, AcpError, AcpModelUnavailable
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KIRO,
@@ -45,7 +45,7 @@ from kiro_crew.acp.types import (
     ACP_BACKENDS_MODEL_EFFORT_PAIR_IDS,
     effort_config_option_id,
 )
-from kiro_crew.providers.acp import AcpProvider
+from efm_go.providers.acp import AcpProvider
 
 #: The id codex-acp carries its reasoning effort under, read through the resolver
 #: rather than spelled again here -- a second copy in the tests would agree with
@@ -295,7 +295,7 @@ class TestAdvertisedPairSwitch:
 
 def _effort_provider(backend: str, model: str, *, applied: list[tuple[str, str]]) -> AcpProvider:
     """A provider whose client records every ``set_config_option`` write."""
-    with patch("kiro_crew.providers.acp.AcpClient"):
+    with patch("efm_go.providers.acp.AcpClient"):
         provider = AcpProvider(acp_backend=backend)
     provider._client = MagicMock()
     provider._client.backend = backend
@@ -464,7 +464,7 @@ class TestPersistedPairAndSlotEffortAgree:
             # persisted pin.
             await client._apply_startup_model()
 
-        with patch("kiro_crew.providers.acp.AcpClient"):
+        with patch("efm_go.providers.acp.AcpClient"):
             provider = AcpProvider(acp_backend=ACP_BACKEND_CODEX)
         provider._client = client
         provider._start_kiro_runtime = _start_runtime  # type: ignore[method-assign]
@@ -494,7 +494,7 @@ class TestPersistedPairAndSlotEffortAgree:
         client = _codex_client(tmp_path, model="openai.gpt-6-astra[max]")
         applied: list[tuple[str, str]] = []
         client.set_config_option = _codex_acp_1_11(applied)  # type: ignore[method-assign]
-        with patch("kiro_crew.providers.acp.AcpClient"):
+        with patch("efm_go.providers.acp.AcpClient"):
             provider = AcpProvider(acp_backend=ACP_BACKEND_CODEX)
         provider._client = client
         provider._effort_per_model = {"openai.gpt-6-astra[max]": "high"}
@@ -762,9 +762,9 @@ class TestABarePinOnAPairIdHarness:
         runtime.create_session = AsyncMock(return_value=handle)
 
         with (
-            patch("kiro_crew.providers.acp.AcpRuntime", return_value=runtime),
+            patch("efm_go.providers.acp.AcpRuntime", return_value=runtime),
             patch(
-                "kiro_crew.providers.acp.AcpSessionProvider",
+                "efm_go.providers.acp.AcpSessionProvider",
                 side_effect=lambda h, r, **kw: MagicMock(_handle=h, _runtime=r, resumed=False),
             ),
             patch("pathlib.Path.exists", return_value=False),
@@ -850,7 +850,7 @@ class TestABarePinOnAPairIdHarness:
         the dependency -- so a bare pin dropped here would make the model a
         session got depend on whether it was served from the pool.
         """
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         cfg = MagicMock()
         cfg.session.pool_size = 2
@@ -893,7 +893,7 @@ class TestABarePinOnAPairIdHarness:
         as usable for this backend and delegate to the handle, which does the
         real wire translation, rather than refusing it.
         """
-        from kiro_crew.acp.session_provider import AcpSessionProvider
+        from efm_go.acp.session_provider import AcpSessionProvider
 
         handle = MagicMock()
         handle.available_models = [{"modelId": m, "name": m} for m in CODEX_PAIR_ROWS]
@@ -919,7 +919,7 @@ class TestABarePinOnAPairIdHarness:
         """The fold widens only a pair-id pin that resolves to an advertised row;
         a model the account truly lacks must still raise, after the fresh probe.
         """
-        from kiro_crew.acp.session_provider import AcpSessionProvider
+        from efm_go.acp.session_provider import AcpSessionProvider
 
         handle = MagicMock()
         handle.available_models = [{"modelId": m, "name": m} for m in CODEX_PAIR_ROWS]

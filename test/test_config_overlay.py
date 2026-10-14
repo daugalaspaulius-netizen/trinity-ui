@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     KiroCrewConfig,
     _deep_merge,
     _subtract_overlay,
@@ -85,7 +85,7 @@ class TestConfigOverlayLoad:
         local_config = {"agent": {"yolo": True, "model": "auto"}}
         (config_dir / "config.local.json").write_text(json.dumps(local_config))
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
 
         assert cfg.agent.dangerously_skip_permissions is True
@@ -98,7 +98,7 @@ class TestConfigOverlayLoad:
         base_config = {"agent": {"yolo": False}}
         (config_dir / "config.json").write_text(json.dumps(base_config))
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
 
         assert cfg.agent.dangerously_skip_permissions is False
@@ -110,7 +110,7 @@ class TestConfigOverlayLoad:
         (config_dir / "config.json").write_text(json.dumps(base_config))
         (config_dir / "config.local.json").write_text("not valid json {{{")
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
 
         assert cfg.agent.dangerously_skip_permissions is False
@@ -122,7 +122,7 @@ class TestConfigOverlayLoad:
         (config_dir / "config.json").write_text(json.dumps(base_config))
         (config_dir / "config.local.json").write_text('"just a string"')
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
 
         assert cfg.agent.dangerously_skip_permissions is False
@@ -135,7 +135,7 @@ class TestConfigOverlayLoad:
         local_config = {"dashboard": {"auto_open_browser": False}}
         (config_dir / "config.local.json").write_text(json.dumps(local_config))
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
 
         assert cfg.dashboard.auto_open_browser is False
@@ -146,7 +146,7 @@ class TestConfigOverlayLoad:
         local_config = {"agent": {"yolo": True, "provider": "acp"}}
         (config_dir / "config.local.json").write_text(json.dumps(local_config))
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
 
         assert cfg.agent.dangerously_skip_permissions is True
@@ -159,7 +159,7 @@ class TestConfigOverlayLoad:
         local_config = {"agent": {"yolo": True}}
         (config_dir / "config.local.json").write_text(json.dumps(local_config))
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
 
         assert cfg.agent.dangerously_skip_permissions is True
@@ -193,7 +193,7 @@ class TestConfigOverlayLoad:
             return real_read_text(self, *args, **kwargs)
 
         monkeypatch.setattr(Path, "read_text", _flaky_read_text)
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             first = KiroCrewConfig.load()
             second = KiroCrewConfig.load()
 
@@ -211,7 +211,7 @@ class TestConfigOverlayLoad:
         local_config = {"agent": {"yolo": True, "model": "auto"}}
         (config_dir / "config.local.json").write_text(json.dumps(local_config))
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
             assert cfg.agent.dangerously_skip_permissions is True
             assert cfg.agent.model == "auto"
@@ -226,7 +226,7 @@ class TestConfigOverlayLoad:
         config_dir.mkdir()
         (config_dir / "config.json").write_text("[1, 2, 3]")
 
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             cfg = KiroCrewConfig.load()
 
         assert cfg.agent.dangerously_skip_permissions is False
@@ -244,8 +244,8 @@ class TestConfigOverlayLoad:
         os.chmod(local_file, 0o666)
 
         with (
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            caplog.at_level(logging.WARNING, logger="efm_go.config.loader"),
         ):
             cfg = KiroCrewConfig.load()
 
@@ -291,7 +291,7 @@ class TestConfigLocalPath:
     """Tests for config_local_path() function."""
 
     def test_returns_path_in_config_dir(self, tmp_path: Path) -> None:
-        with patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+        with patch("efm_go.config.loader.config_dir", return_value=tmp_path):
             assert config_local_path() == tmp_path / "config.local.json"
 
 
@@ -299,28 +299,28 @@ class TestDictSetCreate:
     """Tests for _dict_set_create helper in cli_config."""
 
     def test_creates_intermediate_dicts(self) -> None:
-        from kiro_crew.cli_config import _dict_set_create
+        from efm_go.cli_config import _dict_set_create
 
         d: dict = {}
         _dict_set_create(d, "agent.yolo", True)
         assert d == {"agent": {"yolo": True}}
 
     def test_creates_deeply_nested(self) -> None:
-        from kiro_crew.cli_config import _dict_set_create
+        from efm_go.cli_config import _dict_set_create
 
         d: dict = {}
         _dict_set_create(d, "a.b.c.d", 42)
         assert d == {"a": {"b": {"c": {"d": 42}}}}
 
     def test_overwrites_existing_value(self) -> None:
-        from kiro_crew.cli_config import _dict_set_create
+        from efm_go.cli_config import _dict_set_create
 
         d = {"agent": {"yolo": False}}
         _dict_set_create(d, "agent.yolo", True)
         assert d["agent"]["yolo"] is True
 
     def test_replaces_non_dict_intermediate(self) -> None:
-        from kiro_crew.cli_config import _dict_set_create
+        from efm_go.cli_config import _dict_set_create
 
         d = {"agent": "not_a_dict"}
         _dict_set_create(d, "agent.yolo", True)
@@ -333,7 +333,7 @@ class TestCliConfigSetLocal:
     def test_local_set_writes_to_config_local_json(self, tmp_path: Path) -> None:
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / ".kirocrew"
         config_dir.mkdir()
@@ -343,9 +343,9 @@ class TestCliConfigSetLocal:
         )
 
         with patch(
-            "kiro_crew.cli_config.config_local_path", return_value=config_dir / "config.local.json"
+            "efm_go.cli_config.config_local_path", return_value=config_dir / "config.local.json"
         ):
-            with patch("kiro_crew.cli_config.sel"):
+            with patch("efm_go.cli_config.sel"):
                 _config_cmd(args)
 
         local_file = config_dir / "config.local.json"
@@ -356,7 +356,7 @@ class TestCliConfigSetLocal:
     def test_local_set_unknown_section_warns(self, tmp_path: Path, capsys) -> None:
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / ".kirocrew"
         config_dir.mkdir()
@@ -366,9 +366,9 @@ class TestCliConfigSetLocal:
         )
 
         with patch(
-            "kiro_crew.cli_config.config_local_path", return_value=config_dir / "config.local.json"
+            "efm_go.cli_config.config_local_path", return_value=config_dir / "config.local.json"
         ):
-            with patch("kiro_crew.cli_config.sel"):
+            with patch("efm_go.cli_config.sel"):
                 _config_cmd(args)
 
         captured = capsys.readouterr()
@@ -377,7 +377,7 @@ class TestCliConfigSetLocal:
     def test_nonlocal_set_subtracts_overlay(self, tmp_path: Path) -> None:
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / ".kirocrew"
         config_dir.mkdir()
@@ -397,13 +397,13 @@ class TestCliConfigSetLocal:
         )
 
         with (
-            patch("kiro_crew.cli_config.config_path", return_value=config_dir / "config.json"),
+            patch("efm_go.cli_config.config_path", return_value=config_dir / "config.json"),
             patch(
-                "kiro_crew.cli_config.config_local_path",
+                "efm_go.cli_config.config_local_path",
                 return_value=config_dir / "config.local.json",
             ),
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            patch("kiro_crew.cli_config.sel"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            patch("efm_go.cli_config.sel"),
         ):
             _config_cmd(args)
 
@@ -414,7 +414,7 @@ class TestCliConfigSetLocal:
     def test_local_set_handles_corrupt_existing_file(self, tmp_path: Path) -> None:
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / ".kirocrew"
         config_dir.mkdir()
@@ -425,9 +425,9 @@ class TestCliConfigSetLocal:
         )
 
         with patch(
-            "kiro_crew.cli_config.config_local_path", return_value=config_dir / "config.local.json"
+            "efm_go.cli_config.config_local_path", return_value=config_dir / "config.local.json"
         ):
-            with patch("kiro_crew.cli_config.sel"):
+            with patch("efm_go.cli_config.sel"):
                 _config_cmd(args)
 
         data = json.loads((config_dir / "config.local.json").read_text(encoding="utf-8"))
@@ -436,7 +436,7 @@ class TestCliConfigSetLocal:
     def test_local_set_handles_non_dict_existing_file(self, tmp_path: Path) -> None:
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / ".kirocrew"
         config_dir.mkdir()
@@ -447,9 +447,9 @@ class TestCliConfigSetLocal:
         )
 
         with patch(
-            "kiro_crew.cli_config.config_local_path", return_value=config_dir / "config.local.json"
+            "efm_go.cli_config.config_local_path", return_value=config_dir / "config.local.json"
         ):
-            with patch("kiro_crew.cli_config.sel"):
+            with patch("efm_go.cli_config.sel"):
                 _config_cmd(args)
 
         data = json.loads((config_dir / "config.local.json").read_text(encoding="utf-8"))
@@ -458,7 +458,7 @@ class TestCliConfigSetLocal:
     def test_nonlocal_set_handles_corrupt_local_file(self, tmp_path: Path) -> None:
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / ".kirocrew"
         config_dir.mkdir()
@@ -475,13 +475,13 @@ class TestCliConfigSetLocal:
         )
 
         with (
-            patch("kiro_crew.cli_config.config_path", return_value=config_dir / "config.json"),
+            patch("efm_go.cli_config.config_path", return_value=config_dir / "config.json"),
             patch(
-                "kiro_crew.cli_config.config_local_path",
+                "efm_go.cli_config.config_local_path",
                 return_value=config_dir / "config.local.json",
             ),
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            patch("kiro_crew.cli_config.sel"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            patch("efm_go.cli_config.sel"),
         ):
             _config_cmd(args)
 
@@ -494,7 +494,7 @@ class TestCliConfigSetLocal:
 
         import pytest
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / "kiro"
         config_dir.mkdir()
@@ -505,13 +505,13 @@ class TestCliConfigSetLocal:
         )
 
         with (
-            patch("kiro_crew.cli_config.config_path", return_value=config_dir / "config.json"),
+            patch("efm_go.cli_config.config_path", return_value=config_dir / "config.json"),
             patch(
-                "kiro_crew.cli_config.config_local_path",
+                "efm_go.cli_config.config_local_path",
                 return_value=config_dir / "config.local.json",
             ),
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            patch("kiro_crew.cli_config.sel"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            patch("efm_go.cli_config.sel"),
         ):
             with pytest.raises(SystemExit) as exc_info:
                 _config_cmd(args)
@@ -524,7 +524,7 @@ class TestCliConfigSetLocal:
         """config set --file replaces a corrupt config.json cleanly (on_corrupt=reset)."""
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / "kiro"
         config_dir.mkdir()
@@ -538,9 +538,9 @@ class TestCliConfigSetLocal:
         )
 
         with (
-            patch("kiro_crew.cli_config.config_path", return_value=config_dir / "config.json"),
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            patch("kiro_crew.cli_config.sel"),
+            patch("efm_go.cli_config.config_path", return_value=config_dir / "config.json"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            patch("efm_go.cli_config.sel"),
         ):
             _config_cmd(args)
 
@@ -556,7 +556,7 @@ class TestCliConfigSetLocal:
         """set --file refuses a workspace naming a missing dir; nothing is written."""
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         config_dir = tmp_path / "kiro"
         (config_dir / "ok").mkdir(parents=True)
@@ -579,9 +579,9 @@ class TestCliConfigSetLocal:
             config_action="set", key=None, value=None, file=str(good_file), local=False
         )
         with (
-            patch("kiro_crew.cli_config.config_path", return_value=config_dir / "config.json"),
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            patch("kiro_crew.cli_config.sel"),
+            patch("efm_go.cli_config.config_path", return_value=config_dir / "config.json"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            patch("efm_go.cli_config.sel"),
         ):
             doc["workspaces"]["bad"] = bad
             good_file.write_text(json.dumps(doc))
@@ -613,17 +613,17 @@ class TestCliConfigSetDeclaredDictKeys:
     def _run(config_dir: Path, key: str, value: str) -> None:
         import argparse
 
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         args = argparse.Namespace(config_action="set", key=key, value=value, file=None, local=False)
         with (
-            patch("kiro_crew.cli_config.config_path", return_value=config_dir / "config.json"),
+            patch("efm_go.cli_config.config_path", return_value=config_dir / "config.json"),
             patch(
-                "kiro_crew.cli_config.config_local_path",
+                "efm_go.cli_config.config_local_path",
                 return_value=config_dir / "config.local.json",
             ),
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            patch("kiro_crew.cli_config.sel"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            patch("efm_go.cli_config.sel"),
         ):
             _config_cmd(args)
 

@@ -15,8 +15,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.apps.bridges import _apply_agent_mcp_policy
-from kiro_crew.apps.builtins.mochi.agent_policy import (
+from efm_go.apps.bridges import _apply_agent_mcp_policy
+from efm_go.apps.builtins.mochi.agent_policy import (
     BG_AGENT,
     CHAT_AGENT,
     build_policy,
@@ -27,7 +27,7 @@ from kiro_crew.apps.builtins.mochi.agent_policy import (
 class TestBuildPolicy:
     def test_audience_maps_chat_and_bg_to_real_agent_names(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers", lambda: {}
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers", lambda: {}
         )
         pol = build_policy(
             {
@@ -48,7 +48,7 @@ class TestBuildPolicy:
     def test_string_entry_defaults_to_chat_only(self, monkeypatch):
         """Legacy settings stored bare strings; they must not silently grant bg."""
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers", lambda: {}
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers", lambda: {}
         )
         pol = build_policy({"extraMcpServers": ["legacy"]})
         assert "legacy" in pol["agents"][CHAT_AGENT]["servers"]
@@ -56,7 +56,7 @@ class TestBuildPolicy:
 
     def test_ungranted_ambient_server_is_neutralized_with_its_real_tools(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers",
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers",
             lambda: {"ambient": ["t1", "t2"]},
         )
         pol = build_policy({"extraMcpServers": []})
@@ -69,7 +69,7 @@ class TestBuildPolicy:
         ``pending`` path) was a fail-open that kept Mochi's ambient access.
         """
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers",
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers",
             lambda: {"unprobed": []},
         )
         pol = build_policy({"extraMcpServers": []})
@@ -78,7 +78,7 @@ class TestBuildPolicy:
 
     def test_granted_server_is_never_also_neutralized(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers",
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers",
             lambda: {"shared": ["t1"]},
         )
         pol = build_policy({"extraMcpServers": [{"name": "shared", "agents": ["chat"]}]})
@@ -90,7 +90,7 @@ class TestBuildPolicy:
     def test_own_server_is_never_neutralized(self, monkeypatch):
         """The app's own MCP server is the pet's reason to exist."""
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers",
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers",
             lambda: {"mochi:mochi": ["perform_pet_action"], "other": ["x"]},
         )
         pol = build_policy({"extraMcpServers": []})
@@ -102,7 +102,7 @@ class TestBuildPolicy:
         def boom():
             raise RuntimeError("probe exploded")
 
-        monkeypatch.setattr("kiro_crew.mcp_discovery.list_servers", boom)
+        monkeypatch.setattr("efm_go.mcp_discovery.list_servers", boom)
         # HOME must be isolated: the second enumeration source is the real global
         # mcp.json, so without this the assertion depends on the dev's own config.
         monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path))
@@ -125,7 +125,7 @@ class TestBuildPolicy:
         a grant would swap it for a prompt-only one on an untrusted-content path.
         """
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers",
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers",
             lambda: {"kirocrew-core": ["spawn_run"], "kirocrew-cron": ["cron_add"]},
         )
         pol = build_policy({"extraMcpServers": []})
@@ -151,7 +151,7 @@ class TestBuildPolicy:
         — the built-in floor uses setdefault and never overwrites intent.
         """
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers",
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers",
             lambda: {"kirocrew-core": ["spawn_run"]},
         )
         pol = build_policy(
@@ -164,10 +164,10 @@ class TestBuildPolicy:
         assert pol["agents"][CHAT_AGENT]["servers"]["kirocrew-core"]["autoApprove"] == ["spawn_run"]
 
     def test_write_policy_lands_where_the_framework_reads_it(self, tmp_path, monkeypatch):
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(
-            "kiro_crew.apps.builtins.mochi.agent_policy._ambient_servers", lambda: {}
+            "efm_go.apps.builtins.mochi.agent_policy._ambient_servers", lambda: {}
         )
         write_policy(tmp_path, {"extraMcpServers": ["x"]})
         written = tmp_path / bridges.AGENT_MCP_POLICY_FILE
@@ -184,7 +184,7 @@ class TestApplyAgentMcpPolicy:
         # POLICY, so the launch command comes from the ambient MCP config. A
         # command-less entry never launches, so the tool is simply absent and
         # the agent reports "not available" with nothing logged anywhere.
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(
             bridges, "_global_mcp_specs", lambda: {"srv": {"command": "srv-cmd", "args": []}}
@@ -207,7 +207,7 @@ class TestApplyAgentMcpPolicy:
         # through the approval gate instead of auto-approving — this is the fix
         # for the prompt-injection cron/spawn bypass. The marker must not leak
         # into the kiro-cli server spec.
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(
             bridges, "_global_mcp_specs", lambda: {"srv": {"command": "srv-cmd", "args": []}}
@@ -241,7 +241,7 @@ class TestApplyAgentMcpPolicy:
         assert "@srv" in srv_withheld[0]["resources"]
 
     def test_grant_without_any_launch_spec_is_skipped(self, monkeypatch):
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(bridges, "_global_mcp_specs", lambda: {})
         out = _apply_agent_mcp_policy(
@@ -257,7 +257,7 @@ class TestApplyAgentMcpPolicy:
         # kiro-cli's strict agent loader rejects the whole file over a
         # command-less mcpServers entry, unregistering the agent instead of
         # denying the server.
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(
             bridges, "_global_mcp_specs", lambda: {"amb": {"command": "amb-cmd", "args": []}}
@@ -294,11 +294,11 @@ class TestQueuedPetActionIsExecutable:
     """
 
     def _queue(self, monkeypatch, tmp_path, args):
-        from kiro_crew.apps.builtins.mochi import mcp_server as ms
+        from efm_go.apps.builtins.mochi import mcp_server as ms
 
         monkeypatch.setattr(ms, "_data_dir", lambda: tmp_path)
         ms._tool_perform_pet_action(args)
-        from kiro_crew.apps.builtins.mochi import queue_file as qf
+        from efm_go.apps.builtins.mochi import queue_file as qf
 
         return qf, ms, qf.read_queue(str(tmp_path / ms._QUEUE_FILE))
 
@@ -326,7 +326,7 @@ class TestQueuedPetActionIsExecutable:
         assert task["behavior"] == "hide_left" and task["interrupt"] is False
 
     def test_query_does_not_queue_anything(self, monkeypatch, tmp_path):
-        from kiro_crew.apps.builtins.mochi import mcp_server as ms
+        from efm_go.apps.builtins.mochi import mcp_server as ms
 
         monkeypatch.setattr(ms, "_data_dir", lambda: tmp_path)
         out = ms._tool_perform_pet_action({"action": "query"})
@@ -361,7 +361,7 @@ class TestAmbientEnumerationFailsClosed:
         real_import = _builtins.__import__
 
         def boom(name, *args, **kwargs):
-            if name == "kiro_crew.mcp_discovery":
+            if name == "efm_go.mcp_discovery":
                 raise RuntimeError("probe cache unavailable")
             return real_import(name, *args, **kwargs)
 
@@ -398,7 +398,7 @@ class TestAmbientEnumerationFailsClosed:
 
         monkeypatch.setitem(
             sys.modules,
-            "kiro_crew.mcp_discovery",
+            "efm_go.mcp_discovery",
             types.SimpleNamespace(list_servers=lambda: [_Server("probed", ["a", "b"])]),
         )
 
@@ -440,11 +440,11 @@ class TestPolicyMaterializationFailsClosed:
         return types.SimpleNamespace(agents=agents)
 
     def test_a_raising_refresh_is_not_swallowed(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.mochi import agent_policy as ap
+        from efm_go.apps.builtins.mochi import agent_policy as ap
 
         monkeypatch.setattr(ap, "_ambient_servers", lambda: {})
         monkeypatch.setattr(
-            "kiro_crew.apps.bridges.refresh_app_agents",
+            "efm_go.apps.bridges.refresh_app_agents",
             lambda _app: (_ for _ in ()).throw(OSError("disk gone")),
         )
         with pytest.raises(ap.PolicyNotMaterialized):
@@ -452,12 +452,12 @@ class TestPolicyMaterializationFailsClosed:
 
     def test_a_partial_refresh_is_a_failure(self, tmp_path, monkeypatch):
         """The agent that got skipped is the one left holding ambient reach."""
-        from kiro_crew.apps.builtins.mochi import agent_policy as ap
+        from efm_go.apps.builtins.mochi import agent_policy as ap
 
         monkeypatch.setattr(ap, "_ambient_servers", lambda: {})
-        monkeypatch.setattr("kiro_crew.apps.bridges.refresh_app_agents", lambda _app: ["mochi"])
+        monkeypatch.setattr("efm_go.apps.bridges.refresh_app_agents", lambda _app: ["mochi"])
         monkeypatch.setattr(
-            "kiro_crew.apps.bridges.get_app_manifest",
+            "efm_go.apps.bridges.get_app_manifest",
             lambda _app: self._manifest(["agents/mochi.json", "agents/mochi-bg.json"]),
         )
         with pytest.raises(ap.PolicyNotMaterialized, match="1 of 2"):
@@ -468,12 +468,12 @@ class TestPolicyMaterializationFailsClosed:
         no Mochi agent config exists for kiro-cli to load, so nothing holds
         ambient reach. Treating that as a failure fired in every environment where
         the app is not registry-installed."""
-        from kiro_crew.apps.builtins.mochi import agent_policy as ap
+        from efm_go.apps.builtins.mochi import agent_policy as ap
 
         monkeypatch.setattr(ap, "_ambient_servers", lambda: {})
-        monkeypatch.setattr("kiro_crew.apps.bridges.refresh_app_agents", lambda _app: [])
+        monkeypatch.setattr("efm_go.apps.bridges.refresh_app_agents", lambda _app: [])
         monkeypatch.setattr(
-            "kiro_crew.apps.bridges.get_app_manifest", lambda _app: self._manifest([])
+            "efm_go.apps.bridges.get_app_manifest", lambda _app: self._manifest([])
         )
         policy = ap.apply_policy(tmp_path, {"extraMcpServers": []})
         assert CHAT_AGENT in policy["agents"]
@@ -482,12 +482,12 @@ class TestPolicyMaterializationFailsClosed:
         self, tmp_path, monkeypatch
     ):
         """The boot reconcile reads the file, so persisting it is the recovery."""
-        from kiro_crew.apps import bridges
-        from kiro_crew.apps.builtins.mochi import agent_policy as ap
+        from efm_go.apps import bridges
+        from efm_go.apps.builtins.mochi import agent_policy as ap
 
         monkeypatch.setattr(ap, "_ambient_servers", lambda: {})
         monkeypatch.setattr(
-            "kiro_crew.apps.bridges.refresh_app_agents",
+            "efm_go.apps.bridges.refresh_app_agents",
             lambda _app: (_ for _ in ()).throw(OSError("disk gone")),
         )
         with pytest.raises(ap.PolicyNotMaterialized):

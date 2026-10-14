@@ -8,9 +8,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.slack import handler as handler_mod
-from kiro_crew.slack.handler import _vc, _VoiceConfig, load_voice_reply_config, set_orch_cfg
-from kiro_crew.voice_reply import DEFAULT_PROVIDER, PROVIDER_POLLY
+from efm_go.slack import handler as handler_mod
+from efm_go.slack.handler import _vc, _VoiceConfig, load_voice_reply_config, set_orch_cfg
+from efm_go.voice_reply import DEFAULT_PROVIDER, PROVIDER_POLLY
 
 
 @pytest.fixture(autouse=True)
@@ -141,7 +141,7 @@ def test_provider_typo_falls_back_to_local_with_warning(tmp_path, monkeypatch, c
     import logging
 
     _cfg_file(tmp_path, monkeypatch, {"provider": "ploly"})
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.slack.handler"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.slack.handler"):
         set_orch_cfg(SimpleNamespace())
     assert _vc.provider == DEFAULT_PROVIDER
     # The direction is the point: a bad or absent value must never resolve
@@ -270,7 +270,7 @@ def test_dashboard_entrypoints_restore_voice_settings():
     disabled while the dashboard's settings PUT keeps reporting success."""
     import inspect
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     for func, name in (
         (server_mod.start_dashboard, "start_dashboard"),

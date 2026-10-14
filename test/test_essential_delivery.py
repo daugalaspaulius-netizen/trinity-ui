@@ -10,8 +10,8 @@ from types import SimpleNamespace
 import pytest
 from test_member_essential_context import env as _essential_env
 
-from kiro_crew.acp.session_provider import AcpSessionProvider
-from kiro_crew.acp.types import (
+from efm_go.acp.session_provider import AcpSessionProvider
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
@@ -23,15 +23,15 @@ from kiro_crew.acp.types import (
     STOP_REASON_END_TURN,
     AcpEvent,
 )
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.member_essential_context import MemberEssentialContextError, documents_for_member
-from kiro_crew.members import (
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.member_essential_context import MemberEssentialContextError, documents_for_member
+from efm_go.members import (
     member_briefing_path,
     member_briefing_supported,
     slug_for_name,
     write_member_rules,
 )
-from kiro_crew.providers.acp import AcpProvider
+from efm_go.providers.acp import AcpProvider
 
 
 @pytest.fixture(autouse=True)
@@ -460,7 +460,7 @@ async def test_changed_content_with_preserved_size_and_mtime_refreshes(env):
 
 @pytest.mark.asyncio
 async def test_rule_reads_and_source_admission_run_after_a_warm_hit(env):
-    from kiro_crew.members import MemberRulesUnreadable, member_rules_path
+    from efm_go.members import MemberRulesUnreadable, member_rules_path
 
     target = provider(env.project)
     await send(target, build(env, target, fresh=True))
@@ -534,8 +534,8 @@ async def test_late_old_stream_cleanup_cannot_retract_new_receipt(env):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("backend", [ACP_BACKEND_KIRO, ACP_BACKEND_KAS])
 async def test_startup_captures_native_inputs_after_real_private_binding(env, monkeypatch, backend):
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.member_memory_auth import bind_private_session_store
+    from efm_go.history import ConversationLog
+    from efm_go.member_memory_auth import bind_private_session_store
 
     key = "dashboard:native-start"
     bind_private_session_store(key, env.store)
@@ -569,10 +569,10 @@ async def test_startup_captures_native_inputs_after_real_private_binding(env, mo
 
 @pytest.mark.asyncio
 async def test_existing_receipt_preserves_captured_store_after_legacy_metadata_changes(env):
-    from kiro_crew.context import session_store_for_turn
-    from kiro_crew.execution_context import read_session_execution
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.member_memory_auth import bind_private_session_store
+    from efm_go.context import session_store_for_turn
+    from efm_go.execution_context import read_session_execution
+    from efm_go.history import ConversationLog
+    from efm_go.member_memory_auth import bind_private_session_store
 
     key = "dashboard:private"
     bind_private_session_store(key, env.store)
@@ -660,8 +660,8 @@ async def test_unrelated_slash_command_keeps_receipt(env, shared):
 
 
 def test_sdk_names_every_receipt_invalidating_observation():
-    from kiro_crew.agent_sdk import CONTEXT_EVENT_CLEAR
-    from kiro_crew.essential_delivery import (
+    from efm_go.agent_sdk import CONTEXT_EVENT_CLEAR
+    from efm_go.essential_delivery import (
         RECEIPT_INVALIDATING_EVENTS,
         RECEIPT_RESETTING_COMMANDS,
         EssentialDelivery,
@@ -774,10 +774,10 @@ async def test_native_launch_and_activation_own_exact_sources(
 ):
     from unittest.mock import AsyncMock
 
-    from kiro_crew.acp import client as client_module
-    from kiro_crew.acp.runtime import AcpRuntime
-    from kiro_crew.acp.types import METHOD_SESSION_NEW
-    from kiro_crew.config.paths import kiro_agents_dir
+    from efm_go.acp import client as client_module
+    from efm_go.acp.runtime import AcpRuntime
+    from efm_go.acp.types import METHOD_SESSION_NEW
+    from efm_go.config.paths import kiro_agents_dir
 
     path = env.project / ".kiro/agents/writer-template.json"
     spec = json.loads(path.read_text(encoding="utf-8"))
@@ -895,7 +895,7 @@ async def test_non_native_selector_includes_full_guide_only_at_trigger(env, text
 async def test_hooks_spans_and_abandoned_preparation_keep_receipt_correct(env):
     from unittest.mock import Mock
 
-    from kiro_crew.hooks import HookResult
+    from efm_go.hooks import HookResult
 
     target = provider(env.project)
     original = "generated #manual\nactual user request"
@@ -938,7 +938,7 @@ async def test_hooks_spans_and_abandoned_preparation_keep_receipt_correct(env):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("selection", ["auto", "tool-path"])
 async def test_conditional_discovery_reaches_the_real_admitted_reader(env, selection):
-    from kiro_crew.hooks import safe_read_file
+    from efm_go.hooks import safe_read_file
 
     guide = env.project / ".kiro/steering" / ("auto.md" if selection == "auto" else "match.md")
     body = (

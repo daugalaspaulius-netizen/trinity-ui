@@ -37,7 +37,7 @@ count is still printed as a non-failing report so the backlog stays visible.
     python3 scripts/check_harness_parity.py
 
     # scan explicit files, ignoring git entirely
-    python3 scripts/check_harness_parity.py src/kiro_crew/acp/runtime.py
+    python3 scripts/check_harness_parity.py src/efm_go/acp/runtime.py
 
     # self-test: plant one probe per rule, assert each verdict
     python3 scripts/check_harness_parity.py --test
@@ -63,7 +63,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Only the backend package and its consumers can hold a harness identity test.
 # Widening this to the whole tree buys nothing and costs a scan of 6,000 files.
-SCAN_ROOTS = ("src/kiro_crew/",)
+SCAN_ROOTS = ("src/efm_go/",)
 SCAN_SUFFIX = ".py"
 
 # This gate and its test spell every forbidden form out literally, and the
@@ -79,21 +79,21 @@ SKIP_PATHS = frozenset(
 # The one module allowed to DEFINE harness identifiers and membership sets.
 #
 # Moved out of ``acp/types.py`` deliberately: importing anything under
-# ``kiro_crew.acp`` executes that package's ``__init__`` (client + runtime), so the
+# ``efm_go.acp`` executes that package's ``__init__`` (client + runtime), so the
 # config loader and the dashboard could not read the vocabulary and each kept a
 # literal copy of the selectable list instead — the drift this rule exists to
 # prevent, reached by obeying it. The vocabulary module imports nothing from
-# ``kiro_crew.acp``, so every consumer can name the constants instead of copying
+# ``efm_go.acp``, so every consumer can name the constants instead of copying
 # them.
 #
-# Moved AGAIN by RFC PR 3a, from ``kiro_crew/acp_backends.py`` into
-# ``kiro_crew/agent_sdk/backends.py``, so the vocabulary sits behind the agent-SDK
+# Moved AGAIN by RFC PR 3a, from ``efm_go/acp_backends.py`` into
+# ``efm_go/agent_sdk/backends.py``, so the vocabulary sits behind the agent-SDK
 # boundary rather than beside it. The invariant is unchanged and this is still ONE
 # path, not two: ``acp/types.py`` and ``acp_backends.py`` both re-export from here,
 # and a re-export is an import rather than an assignment, so neither matches this
 # rule. Pointing the rule at the shim instead would be the drift it exists to
 # prevent -- a second place a definition could legally live.
-VOCABULARY_PATH = "src/kiro_crew/agent_sdk/backends.py"
+VOCABULARY_PATH = "src/efm_go/agent_sdk/backends.py"
 
 SUPPRESSION = re.compile(r"harness-ok")
 
@@ -367,116 +367,116 @@ def added_lines(frm: str, path: str) -> set[int]:
 PROBES: tuple[tuple[str, str, str, str | None], ...] = (
     (
         "negative-property",
-        "src/kiro_crew/providers/acp.py",
+        "src/efm_go/providers/acp.py",
         "        return not self.is_claude_backend",
         "negative-identity",
     ),
     (
         "negative-private",
-        "src/kiro_crew/acp/client.py",
+        "src/efm_go/acp/client.py",
         "        if not self._is_claude:",
         "negative-identity",
     ),
     (
         "negative-module-helper",
-        "src/kiro_crew/session.py",
+        "src/efm_go/session.py",
         "    if not provider.is_kas_backend:",
         "negative-identity",
     ),
     (
         "negative-constant",
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "        if self._acp_backend != ACP_BACKEND_KAS:",
         "negative-constant",
     ),
     (
         "negative-constant-reversed",
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "        if ACP_BACKEND_KAS != self._acp_backend:",
         "negative-constant",
     ),
     (
         "bare-literal",
-        "src/kiro_crew/session.py",
+        "src/efm_go/session.py",
         '    return backend == "claude"',
         "bare-literal",
     ),
     (
         "sandbox-delegation",
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "            is_kiro_cli=self._acp_backend != ACP_BACKEND_KAS,",
         "sandbox-delegation",
     ),
     (
         "sandbox-delegation-negation",
-        "src/kiro_crew/acp/client.py",
+        "src/efm_go/acp/client.py",
         "            is_kiro_cli=not self._is_claude,",
         "negative-identity",
     ),
     (
         "sandbox-delegation-negation-also-flags-the-flag",
-        "src/kiro_crew/acp/client.py",
+        "src/efm_go/acp/client.py",
         "            is_kiro_cli=not self._is_claude,",
         "sandbox-delegation",
     ),
     (
         "hash-inside-string-does-not-truncate",
-        "src/kiro_crew/acp/client.py",
+        "src/efm_go/acp/client.py",
         '        if sep == "#" and not self._is_claude:',
         "negative-identity",
     ),
     (
         "vocabulary-elsewhere",
-        "src/kiro_crew/providers/acp.py",
+        "src/efm_go/providers/acp.py",
         'ACP_BACKEND_BYO = "byo"',
         "vocabulary-home",
     ),
     (
         "membership-set-elsewhere",
-        "src/kiro_crew/subagent.py",
+        "src/efm_go/subagent.py",
         "ACP_BACKENDS_FAST = frozenset({ACP_BACKEND_KIRO})",
         "vocabulary-home",
     ),
     (
         "non-kiro-default",
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "        acp_backend: str = ACP_BACKEND_KAS,",
         "non-kiro-default",
     ),
     (
         "non-kiro-field-default",
-        "src/kiro_crew/config/loader.py",
+        "src/efm_go/config/loader.py",
         "        default=ACP_BACKEND_CLAUDE,",
         "non-kiro-default",
     ),
     # ── allowed forms: each must produce NO hit ──
     (
         "positive-property",
-        "src/kiro_crew/providers/acp.py",
+        "src/efm_go/providers/acp.py",
         "        return self.is_kiro_backend",
         None,
     ),
     (
         "positive-membership",
-        "src/kiro_crew/providers/acp.py",
+        "src/efm_go/providers/acp.py",
         "        return self._client.backend in ACP_BACKENDS_SESSION_SHARING",
         None,
     ),
     (
         "positive-constant",
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "        if self._acp_backend == ACP_BACKEND_KAS:",
         None,
     ),
     (
         "sandbox-membership",
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "            is_kiro_cli=self._acp_backend in ACP_BACKENDS_INTERNAL_SANDBOX,",
         None,
     ),
     (
         "sandbox-literal",
-        "src/kiro_crew/dashboard/handlers/agents.py",
+        "src/efm_go/dashboard/handlers/agents.py",
         "    return wrap_argv(argv, mode=configured_sandbox_mode(), is_kiro_cli=True)",
         None,
     ),
@@ -488,37 +488,37 @@ PROBES: tuple[tuple[str, str, str, str | None], ...] = (
     ),
     (
         "kiro-default",
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "        acp_backend: str = ACP_BACKEND_KIRO,",
         None,
     ),
     (
         "unrelated-backend-word",
-        "src/kiro_crew/sandbox.py",
+        "src/efm_go/sandbox.py",
         '    if backend == "namespace":',
         None,
     ),
     (
         "comment-naming-the-form",
-        "src/kiro_crew/acp/client.py",
+        "src/efm_go/acp/client.py",
         "        # never write `not self._is_claude` here",
         None,
     ),
     (
         "docstring-prose-naming-the-form",
-        "src/kiro_crew/providers/acp.py",
+        "src/efm_go/providers/acp.py",
         "        inferring it from ``not is_claude_backend`` — an inference that",
         None,
     ),
     (
         "trailing-comment-naming-the-form",
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "        flag = True  # not self._is_claude, historically",
         None,
     ),
     (
         "suppressed",
-        "src/kiro_crew/acp/client.py",
+        "src/efm_go/acp/client.py",
         "        x = not self._is_claude  # harness-ok: dormant seam, see H5",
         None,
     ),

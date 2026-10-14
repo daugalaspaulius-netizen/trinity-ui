@@ -13,7 +13,7 @@ import os
 
 import pytest
 
-from kiro_crew import platform_compat, task_executor
+from efm_go import platform_compat, task_executor
 
 
 @pytest.mark.asyncio

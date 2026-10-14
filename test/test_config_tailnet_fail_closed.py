@@ -24,8 +24,8 @@ from types import SimpleNamespace
 
 from multidict import CIMultiDict
 
-from kiro_crew.config import validation
-from kiro_crew.config.loader import (
+from efm_go.config import validation
+from efm_go.config.loader import (
     DEGRADED_TAILSCALE,
     DEGRADED_WHOLE_CONFIG,
     KiroCrewConfig,
@@ -34,8 +34,8 @@ from kiro_crew.config.loader import (
     tailnet_effective_allowed_logins,
     tailnet_identity_unknown,
 )
-from kiro_crew.dashboard import tailnet
-from kiro_crew.dashboard.tailnet import (
+from efm_go.dashboard import tailnet
+from efm_go.dashboard.tailnet import (
     TailnetTrust,
     governed_tailnet_trust,
     is_forwarded_tailnet_request,
@@ -62,7 +62,7 @@ def _loaded(
     )
     if overlay_text is not None:
         (tmp_path / "config.local.json").write_text(overlay_text, encoding="utf-8")
-    with unittest.mock.patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+    with unittest.mock.patch("efm_go.config.loader.config_dir", return_value=tmp_path):
         return KiroCrewConfig.load()
 
 
@@ -270,7 +270,7 @@ class TestAnInertAllowlistIsNotADegradation:
     def test_the_denial_names_the_value_to_fix(self, tmp_path: Path, caplog) -> None:
         """An operator locked out of their phone needs the file and the key, not
         a bare refusal -- this is the only signal they get."""
-        with caplog.at_level("WARNING", logger="kiro_crew.config.loader"):
+        with caplog.at_level("WARNING", logger="efm_go.config.loader"):
             _loaded(tmp_path, {"tailscale": "yes"})
         assert any("dashboard.tailscale" in r.getMessage() for r in caplog.records)
 
@@ -439,7 +439,7 @@ class TestNoSiteRespellsTheConjunction:
     """
 
     def test_only_the_property_itself_spells_it_out(self) -> None:
-        src_root = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        src_root = Path(__file__).resolve().parent.parent / "src" / "efm_go"
         offenders = []
         for path in src_root.rglob("*.py"):
             for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
@@ -513,9 +513,9 @@ class TestALostOverlayCannotReadmitAnyone:
         """
         cfg = _loaded(tmp_path, self._BASE, self._TRUNCATED_OVERLAY)
         with unittest.mock.patch(
-            "kiro_crew.dashboard.tailnet.is_governance_pinned_off", return_value=False
+            "efm_go.dashboard.tailnet.is_governance_pinned_off", return_value=False
         ):
-            with caplog.at_level("ERROR", logger="kiro_crew.dashboard.tailnet"):
+            with caplog.at_level("ERROR", logger="efm_go.dashboard.tailnet"):
                 asyncio.run(
                     governed_tailnet_trust(
                         False,
@@ -659,7 +659,7 @@ class TestGovernanceCeilingStillWins:
 
     def test_a_pinned_ceiling_clears_unknown_identity(self) -> None:
         with unittest.mock.patch(
-            "kiro_crew.dashboard.tailnet.is_governance_pinned_off", return_value=True
+            "efm_go.dashboard.tailnet.is_governance_pinned_off", return_value=True
         ):
             trust = asyncio.run(governed_tailnet_trust(False, (), "node", identity_unknown=True))
         assert trust.identity_unknown is False
@@ -667,7 +667,7 @@ class TestGovernanceCeilingStillWins:
 
     def test_without_a_ceiling_unknown_identity_survives(self) -> None:
         with unittest.mock.patch(
-            "kiro_crew.dashboard.tailnet.is_governance_pinned_off", return_value=False
+            "efm_go.dashboard.tailnet.is_governance_pinned_off", return_value=False
         ):
             trust = asyncio.run(governed_tailnet_trust(False, (), "node", identity_unknown=True))
         assert trust.enforces_identity is True

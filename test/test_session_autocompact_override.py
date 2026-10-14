@@ -27,16 +27,16 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     AUTOCOMPACT_PCT_MAX,
     AUTOCOMPACT_PCT_MIN,
     KiroCrewConfig,
 )
-from kiro_crew.dashboard.chat import api_chat_slot_autocompact
-from kiro_crew.dashboard.chat_persistence import _validate_autocompact_pct
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.session import SessionManager
+from efm_go.dashboard.chat import api_chat_slot_autocompact
+from efm_go.dashboard.chat_persistence import _validate_autocompact_pct
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.session import SessionManager
 
 
 def _manager() -> SessionManager:
@@ -146,7 +146,7 @@ class TestAutocompactEndpoint:
         slot = _ChatSlot("test")
         state = _mock_state(slot)
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(return_value=True),
         ) as saver:
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -179,7 +179,7 @@ class TestAutocompactEndpoint:
         slot.autocompact_pct = 60.0
         state = _mock_state(slot)
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(return_value=True),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -301,7 +301,7 @@ class TestAutocompactEndpoint:
         slot.linked_session_key = "slack:1234567890.123456"
         state = _mock_state(slot)
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(return_value=True),
         ) as saver:
             async with TestClient(TestServer(_make_app(state, request_app="someapp"))) as client:
@@ -333,7 +333,7 @@ class TestAutocompactEndpoint:
             return True
 
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(side_effect=_rebind_mid_persist),
         ):
             async with TestClient(TestServer(_make_app(state, request_app="someapp"))) as client:
@@ -356,7 +356,7 @@ class TestAutocompactEndpoint:
         slot = _ChatSlot("test")
         state = _mock_state(slot)
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(side_effect=OSError("disk full")),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -381,7 +381,7 @@ class TestAutocompactEndpoint:
         slot._disk_meta_created_at = "2026-01-01T00:00:00+00:00"  # was on disk
         state = _mock_state(slot)
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(return_value=False),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -426,7 +426,7 @@ class TestOverrideLifecycle:
         omitted from the rebuilt line) is undone by the carry — the old value
         rides back in and the next restart resurrects the cleared override.
         """
-        from kiro_crew.history import SLOT_OWNED_META_KEYS, carry_unowned_metadata
+        from efm_go.history import SLOT_OWNED_META_KEYS, carry_unowned_metadata
 
         assert "autocompact_pct" in SLOT_OWNED_META_KEYS
         rebuilt = {"_type": "meta", "model": "m"}  # cleared: key absent
@@ -462,10 +462,10 @@ class TestExpectedHistoryKeyPin:
     """
 
     def test_moved_routing_refuses_the_save(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _save_slot_to_history
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.chat import _save_slot_to_history
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         state = DashboardState(
             sessions=sessions,
@@ -492,10 +492,10 @@ class TestExpectedHistoryKeyPin:
         assert not (foreign_meta or {}).get("autocompact_pct")
 
     def test_matching_routing_saves_normally(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _save_slot_to_history
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.chat import _save_slot_to_history
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         state = DashboardState(
             sessions=sessions,
@@ -526,10 +526,10 @@ class TestHydrationRestoresOverride:
     """
 
     def test_channel_surfacing_restores_and_seeds(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import channel_slots
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard import channel_slots
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         sessions.channel_key_for_stem = lambda stem: ""
         state = DashboardState(
@@ -552,10 +552,10 @@ class TestHydrationRestoresOverride:
         sessions.set_autocompact_pct.assert_called_once_with("dashboard:" + slot.key, 55.0)
 
     def test_channel_surfacing_discards_a_tampered_value(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import channel_slots
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard import channel_slots
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         sessions.channel_key_for_stem = lambda stem: ""
         state = DashboardState(
@@ -611,7 +611,7 @@ class TestConcurrentPostSerialization:
             return True
 
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(side_effect=saver),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -647,7 +647,7 @@ class TestAliasSlotsShareOneTranscript:
         state = _mock_state(a)
         state._slots[b.key] = b
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(return_value=True),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -666,7 +666,7 @@ class TestAliasSlotsShareOneTranscript:
         state = _mock_state(a)
         state._slots[other.key] = other
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(return_value=True),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -675,7 +675,7 @@ class TestAliasSlotsShareOneTranscript:
         assert other.autocompact_pct == 40.0
 
     def test_alias_slots_resolve_to_one_lock(self) -> None:
-        from kiro_crew.dashboard.chat_handlers import _autocompact_txn_lock
+        from efm_go.dashboard.chat_handlers import _autocompact_txn_lock
 
         a = _ChatSlot("tab-a")
         b = _ChatSlot("tab-b")
@@ -698,9 +698,9 @@ class TestLegacyMetadataDeleteWon:
     """
 
     def _state(self, tmp_path, monkeypatch):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         return DashboardState(
             sessions=sessions,
@@ -713,7 +713,7 @@ class TestLegacyMetadataDeleteWon:
         )
 
     def test_deleted_legacy_session_is_not_resurrected(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = self._state(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("legacy")
@@ -738,7 +738,7 @@ class TestLegacyMetadataDeleteWon:
         stamps one in) — with no RECORDED identity to compare against, the
         guard fails open for the existing file, as documented.
         """
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = self._state(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("legacy2")
@@ -770,7 +770,7 @@ class TestObservedBitRecordedAtEveryHydrationSite:
     def test_every_identity_recording_site_sets_the_observed_bit(self) -> None:
         import pathlib
 
-        import kiro_crew.dashboard as dash_pkg
+        import efm_go.dashboard as dash_pkg
 
         root = pathlib.Path(dash_pkg.__file__).parent
         missing: list = []
@@ -814,7 +814,7 @@ class TestMidPersistRebindDoesNotSeedForeignSession:
             return True
 
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(side_effect=_save_then_rebind),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -858,7 +858,7 @@ class TestSiblingFlushCannotStaleTheCommit:
             return True
 
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(side_effect=_record_sibling),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -881,7 +881,7 @@ class TestSiblingFlushCannotStaleTheCommit:
         state._slots[b.key] = b
 
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             new=AsyncMock(side_effect=[True, False]),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -899,7 +899,7 @@ class TestSlotlessDeletionPreservesOverride:
     @pytest.mark.asyncio
     async def test_slotless_history_delete_preserves_the_override(self) -> None:
         """A transcript delete never proves cross-process override ownership."""
-        from kiro_crew.dashboard.handlers.sessions import _remove_slot_for_history_key
+        from efm_go.dashboard.handlers.sessions import _remove_slot_for_history_key
 
         key = "dashboard_chat-77-1788240000"
         mgr = _manager()

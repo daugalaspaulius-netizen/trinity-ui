@@ -33,10 +33,10 @@ import uuid
 
 import pytest
 
-from kiro_crew import mcp_cron, mcp_shared, session_pid_sig
-from kiro_crew.cron import CronService
-from kiro_crew.mcp_caller import CallerContext, set_current_caller
-from kiro_crew.mcp_cron import _authz_session_key, _call_tool_inner
+from efm_go import mcp_cron, mcp_shared, session_pid_sig
+from efm_go.cron import CronService
+from efm_go.mcp_caller import CallerContext, set_current_caller
+from efm_go.mcp_cron import _authz_session_key, _call_tool_inner
 
 _MUTATING_TOOLS = ("cron_update", "cron_remove", "cron_pause", "cron_resume", "cron_trigger")
 
@@ -48,8 +48,8 @@ def _isolate(monkeypatch, tmp_path):
     Identity is granted per test rather than by a shared fixture: half of this
     module is about what happens when there is none.
     """
-    monkeypatch.setattr("kiro_crew.cron._DEFAULT_DIR", tmp_path)
-    monkeypatch.setattr("kiro_crew.mcp_cron.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.cron._DEFAULT_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.mcp_cron.config_dir", lambda: tmp_path)
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
     monkeypatch.delenv("KIROCREW_HOST_PID", raising=False)

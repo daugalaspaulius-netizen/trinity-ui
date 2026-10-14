@@ -33,12 +33,12 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.skills as skills_module
-from kiro_crew.config.loader import KiroCrewConfig, SkillsConfig
-from kiro_crew.skills import SkillsLoader
+import efm_go.skills as skills_module
+from efm_go.config.loader import KiroCrewConfig, SkillsConfig
+from efm_go.skills import SkillsLoader
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL_DIR = ROOT / "src" / "kiro_crew" / "builtin_skills" / "explain-for"
+SKILL_DIR = ROOT / "src" / "efm_go" / "builtin_skills" / "explain-for"
 SKILL_FILE = SKILL_DIR / "SKILL.md"
 EVAL_DIR = ROOT / "evals" / "explain-for"
 CASES_FILE = EVAL_DIR / "cases.json"

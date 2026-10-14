@@ -17,8 +17,8 @@ import { mkdirSync } from 'node:fs'
 const BASE = process.argv[2] || 'http://127.0.0.1:6801'
 const OUT = process.argv[3] || '../.github/screenshots/pr-state-sync'
 const SLOT = 'chat-pr-state'
-const PR_URL = 'https://github.com/kirodotdev/KiroCrew/pull/443'
-const OTHER_URL = 'https://github.com/kirodotdev/KiroCrew/pull/409'
+const PR_URL = 'https://efmleads.com/pull/443'
+const OTHER_URL = 'https://efmleads.com/pull/409'
 
 mkdirSync(OUT, { recursive: true })
 
@@ -85,8 +85,8 @@ const source = (state, mergedAt) => ({
   ],
   comments: [],
   files: [
-    { path: 'src/kiro_crew/dashboard/handlers/source_providers.py', status: 'modified', additions: 151, deletions: 4, patch: '' },
-    { path: 'src/kiro_crew/dashboard/state.py', status: 'modified', additions: 46, deletions: 0, patch: '' },
+    { path: 'src/efm_go/dashboard/handlers/source_providers.py', status: 'modified', additions: 151, deletions: 4, patch: '' },
+    { path: 'src/efm_go/dashboard/state.py', status: 'modified', additions: 46, deletions: 0, patch: '' },
     { path: 'website/src/hooks/useWebSocket.ts', status: 'modified', additions: 32, deletions: 1, patch: '' },
     { path: 'website/src/utils/pullRequestStatusDelta.ts', status: 'added', additions: 62, deletions: 0, patch: '' },
   ],

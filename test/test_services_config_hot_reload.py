@@ -39,8 +39,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from _hot_reload_helpers import change as _change
 
-from kiro_crew.config import live
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config import live
+from efm_go.config.loader import KiroCrewConfig
 
 
 async def _dispatch(new, *paths: str) -> None:
@@ -70,7 +70,7 @@ def _one_sub(name: str):
 
 
 def _memory_store(tmp_path: Path):
-    from kiro_crew.vector_memory import VectorMemoryStore
+    from efm_go.vector_memory import VectorMemoryStore
 
     return VectorMemoryStore(db_path=tmp_path / "memory.db")
 
@@ -118,7 +118,7 @@ class TestVectorMemoryStore:
         assert store._prefixes[-2:] == ["team/", "vendor/"]
 
     def test_semantic_keys_are_appended_to_the_builtin_prefixes(self, tmp_path: Path) -> None:
-        from kiro_crew.vector_memory import _BUILTIN_PREFIXES
+        from efm_go.vector_memory import _BUILTIN_PREFIXES
 
         store = _memory_store(tmp_path)
         store.reconfigure(_memory_cfg(semantic_keys=["extra/"]))
@@ -180,7 +180,7 @@ class TestEpisodicMaxCountIsConsumed:
     """
 
     def test_the_store_constructor_takes_it(self, tmp_path: Path) -> None:
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "m.db", episodic_max=77)
         assert store._episodic_max == 77
@@ -201,7 +201,7 @@ class TestEpisodicMaxCountIsConsumed:
         subscription, that older snapshot would put a cap raised in between back
         down, and the next write would evict to the old cap.
         """
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         real_watch_object = live.watch_object
 
@@ -222,7 +222,7 @@ class TestEpisodicMaxCountIsConsumed:
         """A reload the watcher adopted after the caller's load, and dispatched
         before the store registered, never reaches the store through dispatch. The
         store's subscription replays the adopted config, so a raised cap holds."""
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         live.reset_for_tests()
         try:
@@ -241,7 +241,7 @@ class TestEpisodicMaxCountIsConsumed:
         """A ``config=None`` store (onboarding import's foreign data_home, an eval
         harness) keeps its constructor defaults at construction: the watcher's
         adopted ``memory.*`` tuning is not replayed onto it."""
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         live.reset_for_tests()
         try:
@@ -256,7 +256,7 @@ class TestEpisodicMaxCountIsConsumed:
             live.reset_for_tests()
 
     def test_a_reload_pushes_the_count_onto_a_store_that_missed_it(self, tmp_path: Path) -> None:
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "m.db", episodic_max=10)
         store.reconfigure(_memory_cfg(episodic_max=900))
@@ -269,7 +269,7 @@ class TestEpisodicMaxCountIsConsumed:
 
 
 def _consolidator():
-    from kiro_crew.history_consolidation import HistoryConsolidator
+    from efm_go.history_consolidation import HistoryConsolidator
 
     return HistoryConsolidator(log=MagicMock(), memory=MagicMock())
 
@@ -367,7 +367,7 @@ def _keystone_state(pattern: str = "rm -rf /", disabled: tuple[str, ...] = ()) -
 
 class TestHooksDeniedCommandSplice:
     def test_the_splice_replaces_the_opt_out_fields_wholesale(self) -> None:
-        from kiro_crew.hooks import HooksConfig, splice_denied_commands
+        from efm_go.hooks import HooksConfig, splice_denied_commands
 
         base = HooksConfig.from_dict(
             {**_hooks_flat_section(), "denied_commands": _keystone_state("OLD", ("old-id",))}
@@ -379,7 +379,7 @@ class TestHooksDeniedCommandSplice:
 
     def test_the_splice_preserves_the_flat_hook_keys(self) -> None:
         """The two halves come from different files, so neither may drop the other."""
-        from kiro_crew.hooks import HooksConfig, splice_denied_commands
+        from efm_go.hooks import HooksConfig, splice_denied_commands
 
         base = HooksConfig.from_dict(_hooks_flat_section())
         spliced = splice_denied_commands(base, _keystone_state())
@@ -388,7 +388,7 @@ class TestHooksDeniedCommandSplice:
 
     def test_an_empty_keystone_state_clears_the_opt_out(self) -> None:
         """Fail-safe direction for a deny gate: no state means every built-in enforces."""
-        from kiro_crew.hooks import HooksConfig, splice_denied_commands
+        from efm_go.hooks import HooksConfig, splice_denied_commands
 
         base = HooksConfig.from_dict({"denied_commands": {"disable_all": True}})
         spliced = splice_denied_commands(base, {})
@@ -396,7 +396,7 @@ class TestHooksDeniedCommandSplice:
         assert spliced.denied_commands_user_added == []
 
     def test_the_default_reads_the_keystone(self) -> None:
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         base = hooks_mod.HooksConfig()
         with patch.object(
@@ -409,7 +409,7 @@ class TestHooksDeniedCommandSplice:
 
 class TestHookManagerWatchConfig:
     def test_watch_config_is_opt_in_and_subscribes_on_hooks(self) -> None:
-        from kiro_crew.hooks import HookManager
+        from efm_go.hooks import HookManager
 
         manager = HookManager()
         assert manager._config_sub is None
@@ -421,7 +421,7 @@ class TestHookManagerWatchConfig:
 
     def test_a_repeated_watch_config_is_a_no_op(self) -> None:
         """A second call must not stack a duplicate subscription."""
-        from kiro_crew.hooks import HookManager
+        from efm_go.hooks import HookManager
 
         manager = HookManager()
         first = manager.watch_config()
@@ -433,7 +433,7 @@ class TestHookManagerWatchConfig:
         assert subs[0] is first
 
     def test_a_hooks_reload_keeps_the_current_keystone_state(self) -> None:
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         manager = hooks_mod.HookManager()
         manager.watch_config()
@@ -450,8 +450,8 @@ class TestHookManagerWatchConfig:
         """Settings>Security and the config.json watcher must not revert each other."""
         import dataclasses
 
-        from kiro_crew import hooks as hooks_mod
-        from kiro_crew.dashboard.handlers import security as security_mod
+        from efm_go import hooks as hooks_mod
+        from efm_go.dashboard.handlers import security as security_mod
 
         def _normalize(cfg):
             """Blank the per-parse ids so two parses of one keystone state compare."""
@@ -483,7 +483,7 @@ class TestHookManagerWatchConfig:
         assert _normalize(handler_manager._config) == _normalize(watcher_manager._config)
 
     def test_the_security_handler_is_a_no_op_without_a_context_builder(self) -> None:
-        from kiro_crew.dashboard.handlers import security as security_mod
+        from efm_go.dashboard.handlers import security as security_mod
 
         request = MagicMock()
         request.app = {"state": SimpleNamespace(context_builder=None)}
@@ -491,7 +491,7 @@ class TestHookManagerWatchConfig:
 
     @pytest.mark.asyncio
     async def test_an_unrelated_write_does_not_reload_hooks(self) -> None:
-        from kiro_crew.hooks import HookManager
+        from efm_go.hooks import HookManager
 
         manager = HookManager()
         manager.watch_config()
@@ -502,7 +502,7 @@ class TestHookManagerWatchConfig:
     def test_a_widened_auto_approve_set_is_sel_audited_by_count(self) -> None:
         """config.json is agent-writable, so a reload that widens what runs without a
         prompt leaves an audit row -- counts and flag names, never tool names."""
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         manager = hooks_mod.HookManager(
             hooks_mod.HooksConfig.from_dict({"auto_approve_tools": ["fs_read"]})
@@ -529,7 +529,7 @@ class TestHookManagerWatchConfig:
         assert "execute_bash" not in kw["resources"]
 
     def test_an_unchanged_auto_approve_set_leaves_no_audit_row(self) -> None:
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         manager = hooks_mod.HookManager(hooks_mod.HooksConfig.from_dict(_hooks_flat_section()))
         manager.watch_config()
@@ -550,7 +550,7 @@ class TestHookManagerWatchConfig:
 
 
 def _cron_history_store(tmp_path: Path):
-    from kiro_crew.cron_history import CronHistoryStore
+    from efm_go.cron_history import CronHistoryStore
 
     return CronHistoryStore(base_dir=tmp_path, _defer_prepare=True)
 
@@ -608,7 +608,7 @@ class TestCronHistoryStore:
 class TestTelemetryRecorderRebuild:
     @pytest.fixture(autouse=True)
     def _no_registered_applier(self):
-        from kiro_crew.metrics import provider as provider_mod
+        from efm_go.metrics import provider as provider_mod
 
         saved = provider_mod._config_sub
         provider_mod._config_sub = None
@@ -617,14 +617,14 @@ class TestTelemetryRecorderRebuild:
         provider_mod._config_sub = saved
 
     def test_watch_config_subscribes_on_telemetry(self) -> None:
-        from kiro_crew.metrics import provider as provider_mod
+        from efm_go.metrics import provider as provider_mod
 
         provider_mod.watch_config()
         assert _one_sub("telemetry").prefixes == ("telemetry",)
 
     def test_watch_config_is_idempotent(self) -> None:
         """A re-entered boot path must not stack appliers that each rebuild."""
-        from kiro_crew.metrics import provider as provider_mod
+        from efm_go.metrics import provider as provider_mod
 
         provider_mod.watch_config()
         provider_mod.watch_config()
@@ -633,7 +633,7 @@ class TestTelemetryRecorderRebuild:
 
     @pytest.mark.asyncio
     async def test_a_telemetry_change_rebuilds_the_recorder_exactly_once(self) -> None:
-        from kiro_crew.metrics import provider as provider_mod
+        from efm_go.metrics import provider as provider_mod
 
         provider_mod.watch_config()
         with patch.object(provider_mod, "shutdown") as shutdown:
@@ -646,7 +646,7 @@ class TestTelemetryRecorderRebuild:
     @pytest.mark.asyncio
     async def test_the_rebuild_runs_off_the_event_loop(self) -> None:
         """``shutdown`` flushes on the calling thread, so it must not run on the loop."""
-        from kiro_crew.metrics import provider as provider_mod
+        from efm_go.metrics import provider as provider_mod
 
         provider_mod.watch_config()
         with (
@@ -658,7 +658,7 @@ class TestTelemetryRecorderRebuild:
 
     @pytest.mark.asyncio
     async def test_an_unrelated_write_does_not_rebuild(self) -> None:
-        from kiro_crew.metrics import provider as provider_mod
+        from efm_go.metrics import provider as provider_mod
 
         provider_mod.watch_config()
         with patch.object(provider_mod, "shutdown") as shutdown:
@@ -674,7 +674,7 @@ class TestTelemetryRecorderRebuild:
 class TestChatEntryCacheBounds:
     @pytest.fixture(autouse=True)
     def _no_registered_applier(self):
-        from kiro_crew.dashboard import chat_persistence as cp
+        from efm_go.dashboard import chat_persistence as cp
 
         cp._entry_cache_config_sub = None
         yield
@@ -683,7 +683,7 @@ class TestChatEntryCacheBounds:
         cp._entry_cache_bounds_read_warned = False
 
     def test_watch_config_subscribes_on_both_bound_leaves(self) -> None:
-        from kiro_crew.dashboard import chat_persistence as cp
+        from efm_go.dashboard import chat_persistence as cp
 
         cp.watch_config()
         assert _one_sub("chat-entry-cache-bounds").prefixes == (
@@ -692,7 +692,7 @@ class TestChatEntryCacheBounds:
         )
 
     def test_watch_config_is_idempotent(self) -> None:
-        from kiro_crew.dashboard import chat_persistence as cp
+        from efm_go.dashboard import chat_persistence as cp
 
         cp.watch_config()
         cp.watch_config()
@@ -700,7 +700,7 @@ class TestChatEntryCacheBounds:
 
     @pytest.mark.asyncio
     async def test_a_bounds_write_invalidates_the_memo(self) -> None:
-        from kiro_crew.dashboard import chat_persistence as cp
+        from efm_go.dashboard import chat_persistence as cp
 
         cp.watch_config()
         cp._entry_cache_bounds_cached = (1, 2)
@@ -712,7 +712,7 @@ class TestChatEntryCacheBounds:
 
     @pytest.mark.asyncio
     async def test_the_next_read_re_resolves_from_the_new_config(self) -> None:
-        from kiro_crew.dashboard import chat_persistence as cp
+        from efm_go.dashboard import chat_persistence as cp
 
         cp.watch_config()
         cfg = KiroCrewConfig()
@@ -725,7 +725,7 @@ class TestChatEntryCacheBounds:
 
     @pytest.mark.asyncio
     async def test_an_unrelated_dashboard_write_keeps_the_memo(self) -> None:
-        from kiro_crew.dashboard import chat_persistence as cp
+        from efm_go.dashboard import chat_persistence as cp
 
         cp.watch_config()
         cp._entry_cache_bounds_cached = (5, 6)
@@ -739,7 +739,7 @@ class TestChatEntryCacheBounds:
 
 
 def _skills_loader(tmp_path: Path, extra: list[str] | None = None, max_triggered: int = 3):
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.skills import SkillsLoader
 
     cfg = KiroCrewConfig()
     cfg.skills.extra_paths = list(extra or [])
@@ -770,7 +770,7 @@ class TestSkillsLoader:
         cfg = KiroCrewConfig()
         cfg.skills.max_triggered = 6
         live.watch().prime(cfg)
-        with patch("kiro_crew.skills.KiroCrewConfig.load") as load:
+        with patch("efm_go.skills.KiroCrewConfig.load") as load:
             assert loader._max_triggered_now() == 6
         load.assert_not_called()
 
@@ -804,7 +804,7 @@ class TestSkillsLoader:
             seen.append(fn)
             return await real_to_thread(fn, *args, **kw)
 
-        with patch("kiro_crew.skills.asyncio.to_thread", side_effect=spy):
+        with patch("efm_go.skills.asyncio.to_thread", side_effect=spy):
             await loader._on_config_change(_change(cfg, "skills.extra_paths"))
         assert added.resolve() in loader._extra_paths
         # The resolve/is_dir screening stats every root, and the adoption that
@@ -829,7 +829,7 @@ class TestSkillsLoader:
         secret.mkdir()
         cfg = KiroCrewConfig()
         cfg.skills.extra_paths = [str(secret)]
-        with patch("kiro_crew.skills.is_sensitive_path", return_value=True):
+        with patch("efm_go.skills.is_sensitive_path", return_value=True):
             loader.reconfigure(cfg)
         assert secret.resolve() not in loader._extra_paths
 
@@ -885,7 +885,7 @@ class TestSkillsLoader:
 
 
 def _tunnel_manager():
-    from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+    from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
     registry = MagicMock()
     registry.list.return_value = []
@@ -919,7 +919,7 @@ class TestSshTunnelManagerApplyConfig:
     """
 
     def test_the_two_names_are_distinct_methods(self) -> None:
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         assert asyncio.iscoroutinefunction(SshTunnelManager.reconfigure)
         assert not asyncio.iscoroutinefunction(SshTunnelManager.apply_config)
@@ -984,7 +984,7 @@ class TestSshTunnelManagerApplyConfig:
 
 
 def _pool(size: int = 2, **kw):
-    from kiro_crew.knowledge.llm_pool import LLMPool
+    from efm_go.knowledge.llm_pool import LLMPool
 
     return LLMPool(size, **kw)
 
@@ -1003,7 +1003,7 @@ class TestLLMPoolReconfigure:
     async def test_the_idle_ttl_is_adopted_immediately(self) -> None:
         pool = _pool()
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"pool_idle_ttl_secs": 90}},
         ):
             await pool.reconfigure()
@@ -1013,7 +1013,7 @@ class TestLLMPoolReconfigure:
     async def test_a_tracking_pool_follows_the_configured_size(self) -> None:
         pool = _pool(2, config_pool_size_key="extraction_pool_size")
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 5}},
         ):
             await pool.reconfigure()
@@ -1025,7 +1025,7 @@ class TestLLMPoolReconfigure:
         pool = _pool(1)
         assert pool._config_pool_size_key is None
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 8}},
         ):
             await pool.reconfigure()
@@ -1036,7 +1036,7 @@ class TestLLMPoolReconfigure:
         """The extraction pool seeds its own width yet still follows later writes."""
         pool = _pool(3, config_pool_size_key="extraction_pool_size")
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 6}},
         ):
             await pool.reconfigure()
@@ -1046,11 +1046,11 @@ class TestLLMPoolReconfigure:
     async def test_a_malformed_value_keeps_the_documented_default(self) -> None:
         pool = _pool(2)
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"pool_idle_ttl_secs": "soon"}},
         ):
             await pool.reconfigure()
-        from kiro_crew.knowledge.llm_pool import DEFAULT_IDLE_TTL_SECS
+        from efm_go.knowledge.llm_pool import DEFAULT_IDLE_TTL_SECS
 
         assert pool._idle_ttl == DEFAULT_IDLE_TTL_SECS
 
@@ -1061,7 +1061,7 @@ class TestLLMPoolReconfigure:
         spawns 1 worker behind a 3-permit semaphore and over-admits acquire()."""
         pool = _pool(3, config_pool_size_key="extraction_pool_size")
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 1}},
         ):
             await pool.reconfigure()
@@ -1080,7 +1080,7 @@ class TestLLMPoolReconfigure:
             return SimpleNamespace(shutdown=AsyncMock())
 
         with (
-            patch("kiro_crew.knowledge.llm_pool._read_config", return_value={"knowledge": {}}),
+            patch("efm_go.knowledge.llm_pool._read_config", return_value={"knowledge": {}}),
             patch.object(pool, "_create_worker", side_effect=fake_worker),
         ):
             await pool.start()
@@ -1095,7 +1095,7 @@ class TestLLMPoolReconfigure:
         pool = _pool()
         assert pool._started is False
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"pool_idle_ttl_secs": 30}},
         ):
             await pool.reconfigure()
@@ -1107,7 +1107,7 @@ class TestLLMPoolReconfigure:
         pool._started = True
         with (
             patch(
-                "kiro_crew.knowledge.llm_pool._read_config",
+                "efm_go.knowledge.llm_pool._read_config",
                 return_value={"knowledge": {"pool_idle_ttl_secs": 30}},
             ),
             patch.object(pool, "_idle_reaper", new=AsyncMock()),
@@ -1127,7 +1127,7 @@ class TestLLMPoolReconfigure:
         pool._workers = [MagicMock(shutdown=AsyncMock()), MagicMock(shutdown=AsyncMock())]
         pool._in_use = 0
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 5, "pool_idle_ttl_secs": 0}},
         ):
             await pool.reconfigure()
@@ -1150,7 +1150,7 @@ class TestLLMPoolReconfigure:
         pool._workers = [MagicMock(shutdown=AsyncMock()), MagicMock(shutdown=AsyncMock())]
         pool._in_use = 0
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 5, "pool_idle_ttl_secs": 300}},
         ):
             await pool.reconfigure()
@@ -1158,7 +1158,7 @@ class TestLLMPoolReconfigure:
         if pool._reaper_task is not None:
             pool._reaper_task.cancel()
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 5, "pool_idle_ttl_secs": 0}},
         ):
             await pool.reconfigure()
@@ -1173,7 +1173,7 @@ class TestLLMPoolReconfigure:
         pool._workers = [MagicMock(shutdown=AsyncMock()), MagicMock(shutdown=AsyncMock())]
         pool._in_use = 1  # an ingest is in flight
         with patch(
-            "kiro_crew.knowledge.llm_pool._read_config",
+            "efm_go.knowledge.llm_pool._read_config",
             return_value={"knowledge": {"extraction_pool_size": 3, "pool_idle_ttl_secs": 0}},
         ):
             await pool.reconfigure()
@@ -1191,7 +1191,7 @@ class TestLLMPoolReconfigure:
     async def test_the_config_read_runs_off_the_event_loop(self) -> None:
         pool = _pool()
         with (
-            patch("kiro_crew.knowledge.llm_pool._read_config", return_value={}) as read,
+            patch("efm_go.knowledge.llm_pool._read_config", return_value={}) as read,
             patch("asyncio.to_thread", new=AsyncMock(return_value={})) as to_thread,
         ):
             await pool.reconfigure()
@@ -1203,7 +1203,7 @@ class TestLLMPoolReconfigure:
         pool = _pool()
         cfg = KiroCrewConfig()
         cfg.knowledge.pool_idle_ttl_secs = 45
-        with patch("kiro_crew.knowledge.llm_pool._read_config") as read:
+        with patch("efm_go.knowledge.llm_pool._read_config") as read:
             await _dispatch(cfg, "knowledge.pool_idle_ttl_secs")
         read.assert_not_called()
         assert pool._idle_ttl == 45
@@ -1219,7 +1219,7 @@ class TestLLMPoolReconfigure:
 class TestKnowledgeRoutesApplier:
     @pytest.mark.asyncio
     async def test_the_subscription_is_held_on_the_app(self) -> None:
-        from kiro_crew.dashboard.handlers import knowledge as knowledge_mod
+        from efm_go.dashboard.handlers import knowledge as knowledge_mod
 
         app: dict = {}
         await knowledge_mod._watch_knowledge_config(app)  # type: ignore[arg-type]
@@ -1229,7 +1229,7 @@ class TestKnowledgeRoutesApplier:
 
     @pytest.mark.asyncio
     async def test_an_embedder_setting_rebuilds_and_swaps_it_into_the_pipeline(self) -> None:
-        from kiro_crew.dashboard.handlers import knowledge as knowledge_mod
+        from efm_go.dashboard.handlers import knowledge as knowledge_mod
 
         pipeline = SimpleNamespace(embedder=object())
         app: dict = {"knowledge_pipeline": pipeline}
@@ -1244,7 +1244,7 @@ class TestKnowledgeRoutesApplier:
 
     @pytest.mark.asyncio
     async def test_a_failed_rebuild_keeps_the_old_embedder(self) -> None:
-        from kiro_crew.dashboard.handlers import knowledge as knowledge_mod
+        from efm_go.dashboard.handlers import knowledge as knowledge_mod
 
         old = object()
         app: dict = {"knowledge_embedder": old}
@@ -1257,7 +1257,7 @@ class TestKnowledgeRoutesApplier:
 
     @pytest.mark.asyncio
     async def test_turning_auto_ingest_off_stops_the_listener(self) -> None:
-        from kiro_crew.dashboard.handlers import knowledge as knowledge_mod
+        from efm_go.dashboard.handlers import knowledge as knowledge_mod
 
         app: dict = {"artifact_knowledge_sync": object()}
         cfg = KiroCrewConfig()
@@ -1271,7 +1271,7 @@ class TestKnowledgeRoutesApplier:
 
     @pytest.mark.asyncio
     async def test_turning_auto_ingest_on_registers_the_listener(self) -> None:
-        from kiro_crew.dashboard.handlers import knowledge as knowledge_mod
+        from efm_go.dashboard.handlers import knowledge as knowledge_mod
 
         app: dict = {"artifact_knowledge_sync": None}
         cfg = KiroCrewConfig()
@@ -1285,7 +1285,7 @@ class TestKnowledgeRoutesApplier:
 
     @pytest.mark.asyncio
     async def test_the_kinds_set_is_swapped_on_the_live_listener(self) -> None:
-        from kiro_crew.dashboard.handlers import knowledge as knowledge_mod
+        from efm_go.dashboard.handlers import knowledge as knowledge_mod
 
         sync = SimpleNamespace(kinds={"markdown"})
         app: dict = {"artifact_knowledge_sync": sync}
@@ -1299,7 +1299,7 @@ class TestKnowledgeRoutesApplier:
 
     @pytest.mark.asyncio
     async def test_an_untouched_knowledge_leaf_changes_nothing(self) -> None:
-        from kiro_crew.dashboard.handlers import knowledge as knowledge_mod
+        from efm_go.dashboard.handlers import knowledge as knowledge_mod
 
         app: dict = {"artifact_knowledge_sync": SimpleNamespace(kinds={"markdown"})}
         with (
@@ -1322,7 +1322,7 @@ class TestKnowledgeRoutesApplier:
 
 class TestResolveOnceRefreshWindowIsLive:
     def test_the_window_comes_from_the_live_snapshot(self) -> None:
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
         cfg = KiroCrewConfig()
@@ -1331,7 +1331,7 @@ class TestResolveOnceRefreshWindowIsLive:
         assert gw._mcp_resolve_refresh_secs() == 6 * 3600.0
 
     def test_a_later_write_moves_the_window_without_a_broker_restart(self) -> None:
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
         first = KiroCrewConfig()
@@ -1346,7 +1346,7 @@ class TestResolveOnceRefreshWindowIsLive:
     def test_without_a_snapshot_it_falls_back_to_the_boot_copy_never_a_load(self) -> None:
         """Before the watcher primes, the method reads the boot ``_cfg``: a
         ``load()`` here would parse and validate the file on the event loop."""
-        from kiro_crew.slack import gateway as gateway_mod
+        from efm_go.slack import gateway as gateway_mod
 
         gw = gateway_mod.GatewayOrchestrator.__new__(gateway_mod.GatewayOrchestrator)
         cfg = KiroCrewConfig()
@@ -1358,7 +1358,7 @@ class TestResolveOnceRefreshWindowIsLive:
 
     def test_zero_hours_is_floored_by_the_loops_own_minimum_sleep(self) -> None:
         """``0`` means "always stale" for freshness, never a spin loop for the timer."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         gw = GatewayOrchestrator.__new__(GatewayOrchestrator)
         cfg = KiroCrewConfig()

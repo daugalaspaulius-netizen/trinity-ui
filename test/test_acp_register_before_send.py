@@ -19,9 +19,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
-from kiro_crew.acp.runtime import AcpRuntime, AcpRuntimeDead
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import JsonRpcMessage
+from efm_go.acp.runtime import AcpRuntime, AcpRuntimeDead
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import JsonRpcMessage
 
 
 def _handle() -> tuple[AcpSessionHandle, AcpRuntime, MagicMock]:

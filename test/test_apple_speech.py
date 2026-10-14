@@ -1,4 +1,4 @@
-"""Tests for the ``apple`` STT provider (kiro_crew.apple_speech).
+"""Tests for the ``apple`` STT provider (efm_go.apple_speech).
 
 The provider is macOS-only and its real work happens in a compiled Swift helper, so
 the tests split three ways: platform-gating logic (runs everywhere, with the platform
@@ -22,9 +22,9 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from kiro_crew import apple_speech, platform_compat
-from kiro_crew import transcribe as _tr_mod
-from kiro_crew.config.loader import (
+from efm_go import apple_speech, platform_compat
+from efm_go import transcribe as _tr_mod
+from efm_go.config.loader import (
     _VALID_STT_PROVIDERS,
     STT_PROVIDER_LOCAL,
     SttConfig,
@@ -128,7 +128,7 @@ class TestHelperBuild:
         entry points surfaces the message (which carries the remedy) in its own
         result shape.
         """
-        from kiro_crew import sandbox as sb
+        from efm_go import sandbox as sb
 
         def boom(*a, **kw):
             raise sb.SandboxUnavailableError(
@@ -480,7 +480,7 @@ class TestHelperBuild:
         agent-writable — otherwise "the agent can write a file" becomes "the agent
         can run code as the gateway". `run` is on `_CREW_SECRET_LEAVES`; `cache` is
         not, which is what made the original location a privilege escalation."""
-        from kiro_crew.security import is_sensitive_path
+        from efm_go.security import is_sensitive_path
 
         cache = apple_speech._cache_dir()
         assert is_sensitive_path(str(cache)), cache
@@ -568,9 +568,9 @@ class TestTranscribePlumbing:
         called = []
         try:
             with (
-                patch("kiro_crew.transcribe._open_ffmpeg_for_execution", return_value=None),
+                patch("efm_go.transcribe._open_ffmpeg_for_execution", return_value=None),
                 patch(
-                    "kiro_crew.transcribe.ensure_ffmpeg_in_path",
+                    "efm_go.transcribe.ensure_ffmpeg_in_path",
                     side_effect=lambda: called.append(True),
                 ),
             ):
@@ -585,15 +585,15 @@ class TestTranscribePlumbing:
         a recording the probe shows is over the ceiling must be REFUSED before
         conversion (GPT review r26) — transcribing only its first hour would
         be silent data loss for every non-import caller."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         async def _too_long(path, max_secs, **kw):
             return True
 
         monkeypatch.setattr(tr, "audio_exceeds_secs", _too_long)
         with (
-            patch("kiro_crew.transcribe._resolve_ffmpeg_for_execution", return_value="ffmpeg"),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe._resolve_ffmpeg_for_execution", return_value="ffmpeg"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
         ):
             with pytest.raises(apple_speech.RecordingTooLongError, match="trim"):
                 await apple_speech._to_native_audio("/tmp/voice.webm")
@@ -606,22 +606,22 @@ class TestTranscribePlumbing:
         truncated prefix of an over-cap recording. Only a persistent cause is
         covered by the aligned-budget argument, so unknown duration is a loud,
         retryable refusal — the same rule the meetings import gate applies."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         async def _unanswerable(path, max_secs, **kw):
             return None
 
         monkeypatch.setattr(tr, "audio_exceeds_secs", _unanswerable)
         with (
-            patch("kiro_crew.transcribe._resolve_ffmpeg_for_execution", return_value="ffmpeg"),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe._resolve_ffmpeg_for_execution", return_value="ffmpeg"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
         ):
             with pytest.raises(apple_speech.DurationUnverifiedError, match="retry"):
                 await apple_speech._to_native_audio("/tmp/voice.webm")
 
     @pytest.mark.asyncio
     async def test_the_over_cap_refusal_surfaces_as_a_transcribe_error(self, monkeypatch):
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         async def _too_long(path, max_secs, **kw):
             return True
@@ -630,8 +630,8 @@ class TestTranscribePlumbing:
         monkeypatch.setattr(apple_speech, "availability", lambda: apple_speech.Availability(True))
         monkeypatch.setattr(apple_speech, "helper_path", lambda: "/fake/helper")
         with (
-            patch("kiro_crew.transcribe._resolve_ffmpeg_for_execution", return_value="ffmpeg"),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe._resolve_ffmpeg_for_execution", return_value="ffmpeg"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
         ):
             text, metrics = await apple_speech.transcribe("/tmp/voice.webm")
         assert text is None
@@ -643,7 +643,7 @@ class TestTranscribePlumbing:
         into a multi-gigabyte WAV and exhaust the temp volume (GPT review
         r23): the remux must carry ``-t _MAX_AUDIO_SECS``, the same ceiling
         ``batch_duration_cap_secs`` reports for this lane."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         _stub_probe_under_cap(monkeypatch)
         captured: dict = {}
@@ -653,9 +653,9 @@ class TestTranscribePlumbing:
             raise OSError("stop here — argv captured")
 
         with (
-            patch("kiro_crew.transcribe._resolve_ffmpeg_for_execution", return_value="ffmpeg"),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
-            patch("kiro_crew.transcribe._create_ffmpeg_subprocess", side_effect=fake_spawn),
+            patch("efm_go.transcribe._resolve_ffmpeg_for_execution", return_value="ffmpeg"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe._create_ffmpeg_subprocess", side_effect=fake_spawn),
         ):
             with pytest.raises(OSError, match="argv captured"):
                 await apple_speech._to_native_audio("/tmp/voice.webm")
@@ -670,15 +670,15 @@ class TestTranscribePlumbing:
         ffmpeg we still hand the original path over so the caller surfaces the
         framework's own error rather than a silent unavailability."""
         with (
-            patch("kiro_crew.transcribe._open_ffmpeg_for_execution", return_value=None),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe._open_ffmpeg_for_execution", return_value=None),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
         ):
             path, is_temp = await apple_speech._to_native_audio("/tmp/voice.webm")
         assert (path, is_temp) == ("/tmp/voice.webm", False)
 
     @pytest.mark.asyncio
     async def test_packaged_decoder_authentication_runs_off_the_event_loop(self, monkeypatch):
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         offloaded = []
 
@@ -810,10 +810,10 @@ class TestTranscodeTempOwnership:
         src.write_bytes(b"data")
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
             patch("asyncio.create_subprocess_exec", side_effect=OSError("spawn failed")),
         ):
             with pytest.raises(OSError):
@@ -830,7 +830,7 @@ class TestTranscodeTempOwnership:
         staged path asynchronously after ``create_subprocess_exec`` returns) and
         is released exactly once, after the child has exited, by the invocation
         itself rather than by ``__del__`` on the gateway event loop."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         _stub_probe_under_cap(monkeypatch)
         owned = self._owned_temp(tmp_path, monkeypatch)
@@ -867,10 +867,10 @@ class TestTranscodeTempOwnership:
 
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value=opened,
             ),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
             patch("asyncio.create_subprocess_exec", side_effect=fake_exec),
         ):
             result_path, is_temp = await apple_speech._to_native_audio(str(src))
@@ -900,13 +900,13 @@ class TestTranscodeTempOwnership:
 
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
             patch("asyncio.create_subprocess_exec", return_value=proc),
             patch(
-                "kiro_crew.transcribe._close_ffmpeg_for_execution",
+                "efm_go.transcribe._close_ffmpeg_for_execution",
                 side_effect=cancelled_close,
             ),
         ):
@@ -920,7 +920,7 @@ class TestTranscodeTempOwnership:
         self, tmp_path, monkeypatch
     ):
         _stub_probe_under_cap(monkeypatch)
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         binary = tmp_path / "ffmpeg"
         binary.write_bytes(b"decoder")
@@ -993,10 +993,10 @@ class TestTranscodeTempOwnership:
         monkeypatch.setattr(_tr_mod, "audio_exceeds_secs", _under_cap)
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
             patch("asyncio.create_subprocess_exec", return_value=_Proc()),
         ):
             with pytest.raises(asyncio.CancelledError):
@@ -1020,10 +1020,10 @@ class TestTranscodeTempOwnership:
         proc.returncode = 0
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
-            patch("kiro_crew.transcribe.ensure_ffmpeg_in_path"),
+            patch("efm_go.transcribe.ensure_ffmpeg_in_path"),
             patch("asyncio.create_subprocess_exec", return_value=proc),
         ):
             path, is_temp = await apple_speech._to_native_audio(str(src))
@@ -1035,7 +1035,7 @@ class TestTranscodeTempOwnership:
     async def test_sandbox_rejection_removes_the_owned_native_temp(self, tmp_path, monkeypatch):
         """The fail-closed sandbox refusal returns after `transcribe` received an
         owned temp, before the cleanup `finally` is armed, and must still remove it."""
-        from kiro_crew import sandbox as sb
+        from efm_go import sandbox as sb
 
         owned = tmp_path / "native.wav"
         owned.write_bytes(b"x")
@@ -1061,7 +1061,7 @@ class TestTranscodeTempOwnership:
     async def test_sandbox_rejection_never_removes_an_original_input(self, tmp_path, monkeypatch):
         """A non-temp native path is the caller's own file; the widened cleanup
         must stay keyed on the ownership flag, not on reaching the exit."""
-        from kiro_crew import sandbox as sb
+        from efm_go import sandbox as sb
 
         original = tmp_path / "voice.wav"
         original.write_bytes(b"x")
@@ -1628,7 +1628,7 @@ class TestStreamingEndpointGate:
     def test_apple_is_an_accepted_streaming_provider(self):
         """The WS endpoint gates on this tuple; `apple` must be in it or the live path
         is unreachable no matter what the provider implements."""
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.dashboard import stt_stream
 
         assert "apple" in stt_stream._STREAMING_PROVIDERS
         assert "transcribe" in stt_stream._STREAMING_PROVIDERS
@@ -1649,8 +1649,8 @@ class TestStreamingEndpointGate:
         that "no speech" has a spelling, and the 503 it draws from this gate is the
         intended answer. ``test_stt_provider_off`` pins that it never joins the tuple.
         """
-        from kiro_crew.config.sections import STT_PROVIDER_OFF
-        from kiro_crew.dashboard import stt_stream
+        from efm_go.config.sections import STT_PROVIDER_OFF
+        from efm_go.dashboard import stt_stream
 
         assert set(stt_stream._STREAMING_PROVIDERS) == set(_VALID_STT_PROVIDERS) - {
             STT_PROVIDER_OFF
@@ -1687,7 +1687,7 @@ class TestNoBlockingCallOnEventLoop:
             patch("subprocess.run", boom),
             patch("subprocess.Popen", boom),
             patch("subprocess.check_output", boom),
-            patch("kiro_crew.apple_speech._swiftc", boom),
+            patch("efm_go.apple_speech._swiftc", boom),
             patch("platform.system", lambda: "Darwin"),
             patch("platform.mac_ver", lambda: ("27.0", ("", "", ""), "arm64")),
             patch.object(apple_speech, "_swiftc_fast", lambda: "/usr/bin/swiftc"),
@@ -1708,7 +1708,7 @@ class TestNoBlockingCallOnEventLoop:
             assert apple_speech.is_available() is True
 
     def test_transcribe_is_available_spawns_nothing(self):
-        from kiro_crew.transcribe import is_available
+        from efm_go.transcribe import is_available
 
         with ExitStack() as stack:
             for cm in self._no_spawn():
@@ -1725,7 +1725,7 @@ class TestNoBlockingCallOnEventLoop:
         precondition are asserted alongside so a probe that started refusing
         everything would not read as a pass.
         """
-        from kiro_crew.dashboard.handlers import core
+        from efm_go.dashboard.handlers import core
 
         with ExitStack() as stack:
             for cm in self._no_spawn():
@@ -1743,7 +1743,7 @@ class TestNoBlockingCallOnEventLoop:
         without a spawn is the other half: the platform check has to be reached
         before any resolver, which is also why this needs no `_swiftc` stub.
         """
-        from kiro_crew.dashboard.handlers import core
+        from efm_go.dashboard.handlers import core
 
         def boom(*args, **kwargs):
             raise AssertionError(f"spawned a subprocess on the event-loop path: {args[:1]}")

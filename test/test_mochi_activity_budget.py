@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 
-from kiro_crew.apps.builtins.mochi.activity_budget import (
+from efm_go.apps.builtins.mochi.activity_budget import (
     DEFAULT_TIER,
     TIER_UNLIMITED,
     TIERS,
@@ -104,7 +104,7 @@ class _Ctx:
 
 class TestFloorAndModel:
     def _runtime(self, tmp_path):
-        from kiro_crew.apps.builtins.mochi import hooks
+        from efm_go.apps.builtins.mochi import hooks
 
         return hooks.MochiRuntime(_Ctx(str(tmp_path)))
 
@@ -112,9 +112,9 @@ class TestFloorAndModel:
         """Floor semantics: on economy (30min floor), an item checked 5 minutes
         ago is deferred even though its own 5-minute interval says due; an item
         never checked passes through (nothing to floor against)."""
-        from kiro_crew.apps.builtins.mochi import hooks
-        from kiro_crew.apps.builtins.mochi import watchlist_file as wf
-        from kiro_crew.apps.builtins.mochi.settings import save_settings
+        from efm_go.apps.builtins.mochi import hooks
+        from efm_go.apps.builtins.mochi import watchlist_file as wf
+        from efm_go.apps.builtins.mochi.settings import save_settings
 
         rt = self._runtime(tmp_path)
         save_settings(tmp_path, {"activityTier": "economy"})
@@ -127,9 +127,9 @@ class TestFloorAndModel:
         assert [i["id"] for i in rt.due_watch_items()] == ["b", "c"]
 
     def test_unlimited_applies_no_floor(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.mochi import hooks
-        from kiro_crew.apps.builtins.mochi import watchlist_file as wf
-        from kiro_crew.apps.builtins.mochi.settings import save_settings
+        from efm_go.apps.builtins.mochi import hooks
+        from efm_go.apps.builtins.mochi import watchlist_file as wf
+        from efm_go.apps.builtins.mochi.settings import save_settings
 
         rt = self._runtime(tmp_path)
         save_settings(tmp_path, {"activityTier": "unlimited"})
@@ -140,8 +140,8 @@ class TestFloorAndModel:
         assert [i["id"] for i in rt.due_watch_items()] == ["a"]
 
     def test_spawn_passes_bg_model_and_records_ledger(self, tmp_path, monkeypatch):
-        from kiro_crew.apps.builtins.mochi import hooks
-        from kiro_crew.apps.builtins.mochi.settings import save_settings
+        from efm_go.apps.builtins.mochi import hooks
+        from efm_go.apps.builtins.mochi.settings import save_settings
 
         save_settings(tmp_path, {"bgModel": "cheap-model-1"})
         calls = []
@@ -177,7 +177,7 @@ class TestSeparationOfAxes:
     def test_budget_module_never_reads_mode(self):
         import inspect
 
-        from kiro_crew.apps.builtins.mochi import activity_budget
+        from efm_go.apps.builtins.mochi import activity_budget
 
         src = inspect.getsource(activity_budget)
         assert '"mode"' not in src and "'mode'" not in src
@@ -190,7 +190,7 @@ class TestPollerBudgetPlumbing:
         the constant fallback lives inline in poll()."""
         import inspect
 
-        from kiro_crew.apps.builtins.mochi import queue_poller as qp
+        from efm_go.apps.builtins.mochi import queue_poller as qp
 
         src = inspect.getsource(qp.QueuePoller)
         assert "WATCH_STORM_WINDOW_MS" in src
@@ -210,7 +210,7 @@ class TestPresenceGate:
     visible (gates companion time)."""
 
     def _rt(self, tmp_path):
-        from kiro_crew.apps.builtins.mochi import hooks
+        from efm_go.apps.builtins.mochi import hooks
 
         return hooks.MochiRuntime(_Ctx(str(tmp_path)))
 

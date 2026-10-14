@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig, SkillsConfig
-from kiro_crew.skill_usage import SkillUsageLedger
-from kiro_crew.skills import _NEW_SKILL_BOOST_WINDOW_SECS, _SHORT_DESC_CHARS, SkillsLoader
+from efm_go.config.loader import KiroCrewConfig, SkillsConfig
+from efm_go.skill_usage import SkillUsageLedger
+from efm_go.skills import _NEW_SKILL_BOOST_WINDOW_SECS, _SHORT_DESC_CHARS, SkillsLoader
 
 
 @pytest.fixture(autouse=True)
@@ -20,7 +20,7 @@ def _isolate_extra_paths(monkeypatch, tmp_path_factory):
     don't bleed into these hermetic loader tests. Tests that need extra_paths
     pass ``config=``; tests that need edition-root resolution monkeypatch
     ``DefaultMcpToolingProvider.extra_skills``."""
-    from kiro_crew.platform.defaults import DefaultMcpToolingProvider
+    from efm_go.platform.defaults import DefaultMcpToolingProvider
 
     monkeypatch.setattr(
         KiroCrewConfig,
@@ -226,7 +226,7 @@ class TestBoundedSkillReads:
 
     def test_global_link_to_sensitive_directory_is_refused(self, tmp_path, monkeypatch):
         from conftest import make_dir_link
-        from kiro_crew.hooks import validate_file_path
+        from efm_go.hooks import validate_file_path
 
         crew_home = tmp_path / "crew"
         monkeypatch.setenv("KIROCREW_HOME", str(crew_home))
@@ -244,7 +244,7 @@ class TestBoundedSkillReads:
 
     def test_extra_directory_swap_after_validation_is_refused(self, tmp_path, monkeypatch):
         from conftest import make_dir_link
-        from kiro_crew import skills
+        from efm_go import skills
 
         crew_home = tmp_path / "crew"
         monkeypatch.setenv("KIROCREW_HOME", str(crew_home))
@@ -323,7 +323,7 @@ class TestSkillsLoader:
         _create_skill(skills_dir, "tagged", "<html-guide> is a markdown skill\n")
         _create_skill(skills_dir, "weather", "---\n_html: body\n---\n# Weather\n")
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False)
-        with caplog.at_level("WARNING", logger="kiro_crew.skills"):
+        with caplog.at_level("WARNING", logger="efm_go.skills"):
             assert sorted(s["key"] for s in loader.list_skills()) == ["tagged", "weather"]
             loader.list_skills()
         warned = [r.getMessage() for r in caplog.records if "body is HTML" in r.getMessage()]
@@ -336,8 +336,8 @@ class TestSkillsLoader:
     def test_html_skill_in_an_index_warmed_before_the_marker_is_dropped(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew import skill_search_index
-        from kiro_crew.frontmatter import SKILL_LOADER, parse_frontmatter
+        from efm_go import skill_search_index
+        from efm_go.frontmatter import SKILL_LOADER, parse_frontmatter
 
         skills_dir = tmp_path / "skills"
         _create_skill(skills_dir, "page", "<!doctype html><p>x</p>")
@@ -452,7 +452,7 @@ class TestSkillsLoader:
         when the rewrite lands in the same mtime tick as the priming read."""
         import os
 
-        from kiro_crew.skills import AutoSkillProvenance
+        from efm_go.skills import AutoSkillProvenance
 
         loader = SkillsLoader(skills_path=tmp_path / "skills", install_builtins=False)
         prov = AutoSkillProvenance(session_key="s1", created_at="2026-01-01T00:00:00Z")
@@ -508,7 +508,7 @@ class TestRepoScope:
 
     def _repo(self, tmp_path: Path, name: str = "checkout") -> Path:
         repo = tmp_path / name
-        (repo / "src" / "kiro_crew").mkdir(parents=True)
+        (repo / "src" / "efm_go").mkdir(parents=True)
         # A real checkout carries a .git entry, and the gate reads it as the
         # boundary the ancestor walk stops at, so the fixture needs one to model a
         # repository rather than a bare directory tree.
@@ -520,7 +520,7 @@ class TestRepoScope:
 
         The gate walks a project's ancestors up to the first ``.git``. A bare
         directory under ``tmp_path`` has no boundary of its own, so whether the
-        walk finds ``src/kiro_crew`` above it is decided by the host: a harness that
+        walk finds ``src/efm_go`` above it is decided by the host: a harness that
         pins ``TMPDIR`` under this checkout puts the real one in every ancestor
         chain. Giving the project its own ``.git`` models what "outside the repo"
         means to the gate -- a different repository -- and stops the walk there.
@@ -534,25 +534,25 @@ class TestRepoScope:
         # No project named at all -> fail closed. An un-scoped surface (eval
         # harness, a session with no project set) never inherits repo rules.
         skills = tmp_path / "skills"
-        self._write_skill(skills, "repo-only", "src/kiro_crew")
+        self._write_skill(skills, "repo-only", "src/efm_go")
         loader = SkillsLoader(skills_path=skills, install_builtins=False)
         assert loader.get_triggered_skills("zebra quokka") == []
 
     def test_scoped_skill_suppressed_outside_repo(self, tmp_path: Path) -> None:
         skills = tmp_path / "skills"
-        self._write_skill(skills, "repo-only", "src/kiro_crew")
+        self._write_skill(skills, "repo-only", "src/efm_go")
         loader = SkillsLoader(skills_path=skills, install_builtins=False)
         outside = self._other_repo(tmp_path, "elsewhere")
         assert loader.get_triggered_skills("zebra quokka", project_dir=str(outside)) == []
 
     def test_scoped_skill_eligible_inside_repo(self, tmp_path: Path) -> None:
         skills = tmp_path / "skills"
-        self._write_skill(skills, "repo-only", "src/kiro_crew")
+        self._write_skill(skills, "repo-only", "src/efm_go")
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=3))
         loader = SkillsLoader(skills_path=skills, install_builtins=False, config=cfg)
         subdir = self._repo(tmp_path) / "website"
         subdir.mkdir()
-        # ancestor of the project dir contains src/kiro_crew
+        # ancestor of the project dir contains src/efm_go
         assert loader.get_triggered_skills("zebra quokka", project_dir=str(subdir)) == ["repo-only"]
 
     def test_process_cwd_does_not_admit_the_skill(
@@ -562,7 +562,7 @@ class TestRepoScope:
         # scoped checkout admitted the skill into every session, whatever the
         # session was working on. Standing in the repo must decide nothing.
         skills = tmp_path / "skills"
-        self._write_skill(skills, "repo-only", "src/kiro_crew")
+        self._write_skill(skills, "repo-only", "src/efm_go")
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=3))
         loader = SkillsLoader(skills_path=skills, install_builtins=False, config=cfg)
         monkeypatch.chdir(self._repo(tmp_path))
@@ -574,7 +574,7 @@ class TestRepoScope:
         # Both injection paths share one helper; a pinned skill must not be a
         # way around the gate.
         skills = tmp_path / "skills"
-        self._write_skill(skills, "repo-only", "src/kiro_crew", always=True)
+        self._write_skill(skills, "repo-only", "src/efm_go", always=True)
         loader = SkillsLoader(skills_path=skills, install_builtins=False)
         other = self._other_repo(tmp_path, "some-rust-project")
         assert loader.get_always_skills() == []
@@ -600,7 +600,7 @@ class TestRepoScope:
         # the index tells the agent to read the full file for anything related -
         # so the repo-specific procedure stays one `cat` away.
         skills = tmp_path / "skills"
-        self._write_skill(skills, "repo-only", "src/kiro_crew")
+        self._write_skill(skills, "repo-only", "src/efm_go")
         self._write_skill(skills, "anywhere", None)
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=3))
         loader = SkillsLoader(skills_path=skills, install_builtins=False, config=cfg)
@@ -616,12 +616,12 @@ class TestRepoScope:
         inside = loader.get_context(project_dir=str(self._repo(tmp_path)))
         assert "repo-only" in inside
 
-    def test_kiro_crew_dev_skills_load_globally_and_say_so(self) -> None:
+    def test_efm_go_dev_skills_load_globally_and_say_so(self) -> None:
         # Maintainer decision: the Kiro Crew developer skills load in
         # every session like any other skill, so a Kiro Crew PR written from any
         # folder still gets them. The description is what keeps them out of other
         # repositories, so each one must state that it is for this repository.
-        from kiro_crew import skills as skills_mod
+        from efm_go import skills as skills_mod
 
         pkg = Path(skills_mod.__file__).parent
         expected = {
@@ -657,7 +657,7 @@ class TestRelocatedSkillCleanup:
     nested replacement is verifiably present."""
 
     def test_flat_copy_quarantined_when_nested_present(self, tmp_path: Path) -> None:
-        from kiro_crew.skills import _ensure_builtin_skills
+        from efm_go.skills import _ensure_builtin_skills
 
         base = tmp_path / "skills"
         old = base / "prepare-pr"
@@ -683,7 +683,7 @@ class TestRelocatedSkillCleanup:
         """An install that already holds ``kirocrew-dev/prepare-pr`` gets the
         renamed ``kirocrew-dev/kirocrew-prepare-pr``; the old nested copy is
         quarantined so the loader never sees two copies of the same skill."""
-        from kiro_crew.skills import _ensure_builtin_skills
+        from efm_go.skills import _ensure_builtin_skills
 
         base = tmp_path / "skills"
         old = base / "kirocrew-dev" / "prepare-pr"
@@ -707,7 +707,7 @@ class TestRelocatedSkillCleanup:
         """An operator who linked ``kirocrew-dev/prepare-pr`` to an outside
         provider keeps that provider's ``SKILL.md``: the relocation must not
         rename a file through the link."""
-        from kiro_crew.skills import _ensure_builtin_skills
+        from efm_go.skills import _ensure_builtin_skills
 
         provider = tmp_path / "provider" / "prepare-pr"
         provider.mkdir(parents=True)
@@ -732,7 +732,7 @@ class TestRelocatedSkillCleanup:
         # SKILL.md AFTER a prior migration quarantined a user-edited copy.
         # The second migration must NOT os.replace over the first quarantine
         # — both preserved copies must survive under distinct names.
-        from kiro_crew.skills import _ensure_builtin_skills
+        from efm_go.skills import _ensure_builtin_skills
 
         base = tmp_path / "skills"
         old = base / "prepare-pr"
@@ -766,8 +766,8 @@ class TestRelocatedSkillCleanup:
         # The empty source dir is what makes "never synced" real. Relying on a
         # relocated skill simply not being packaged would stop testing this the
         # moment that skill ships.
-        from kiro_crew import skills as skills_mod
-        from kiro_crew.skills import _ensure_builtin_skills
+        from efm_go import skills as skills_mod
+        from efm_go.skills import _ensure_builtin_skills
 
         monkeypatch.setattr(skills_mod, "_BUILTIN_SKILLS_DIR", tmp_path / "no-builtins")
 
@@ -796,7 +796,7 @@ class TestTriggeredSkills:
         if monkeypatch is not None:
             from unittest.mock import MagicMock
 
-            monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+            monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
         return loader
 
     def test_exact_trigger_match(self, tmp_path, monkeypatch):
@@ -830,7 +830,7 @@ class TestTriggeredSkills:
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False)
         from unittest.mock import MagicMock
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
         assert loader.get_triggered_skills("hello world") == []
 
     def test_case_insensitive(self, tmp_path, monkeypatch):
@@ -852,7 +852,7 @@ class TestTriggeredSkills:
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False)
         from unittest.mock import MagicMock
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
         assert loader.get_triggered_skills("anything") == []
 
     def test_trigger_match_does_not_record_usage(self, tmp_path, monkeypatch):
@@ -1024,7 +1024,7 @@ class TestTriggerMatching:
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=3))
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False, config=cfg)
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         result = loader.get_triggered_skills("what's the weather forecast today")
         assert "weather" in result
@@ -1042,7 +1042,7 @@ class TestTriggerMatching:
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=3))
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False, config=cfg)
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         # Positive match without negative words
         assert "code-search" in loader.get_triggered_skills("search code repositories")
@@ -1063,7 +1063,7 @@ class TestTriggerMatching:
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=2))
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False, config=cfg)
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         result = loader.get_triggered_skills("test")
         assert len(result) == 2
@@ -1088,7 +1088,7 @@ class TestTriggerMatching:
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=5))
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False, config=cfg)
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         result = loader.get_triggered_skills("alpha beta gamma")
         assert len(result) == 2
@@ -1106,7 +1106,7 @@ class TestTriggerMatching:
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=5))
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False, config=cfg)
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         result = loader.get_triggered_skills("test")
         assert "always" not in result
@@ -1125,7 +1125,7 @@ class TestTriggerMatching:
         cfg = KiroCrewConfig(skills=SkillsConfig(max_triggered=3))
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False, config=cfg)
 
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         assert "tiny-url" in loader.get_triggered_skills("please shorten this url")
         assert "tiny-url" in loader.get_triggered_skills("create a tiny link for me")
@@ -1137,14 +1137,14 @@ class TestAutoSkillProvenance:
     """Tests for the AutoSkillProvenance dataclass frontmatter serialization."""
 
     def test_now_iso_is_utc(self):
-        from kiro_crew.skills import AutoSkillProvenance
+        from efm_go.skills import AutoSkillProvenance
 
         stamp = AutoSkillProvenance.now_iso()
         # ISO 8601 UTC ends with +00:00 when using timezone.utc
         assert "+00:00" in stamp
 
     def test_frontmatter_lines_minimum(self):
-        from kiro_crew.skills import AutoSkillProvenance
+        from efm_go.skills import AutoSkillProvenance
 
         prov = AutoSkillProvenance(
             session_key="dashboard:chat-1", created_at="2026-05-05T11:30:00+00:00"
@@ -1158,7 +1158,7 @@ class TestAutoSkillProvenance:
         assert not any(line.startswith("reuse_count:") for line in lines)
 
     def test_frontmatter_lines_with_refinement(self):
-        from kiro_crew.skills import AutoSkillProvenance
+        from efm_go.skills import AutoSkillProvenance
 
         prov = AutoSkillProvenance(
             session_key="dashboard:chat-2",
@@ -1250,7 +1250,7 @@ class TestCreateAutoSkill:
     """Tests for SkillsLoader.create_auto_skill."""
 
     def _make_provenance(self):
-        from kiro_crew.skills import AutoSkillProvenance
+        from efm_go.skills import AutoSkillProvenance
 
         return AutoSkillProvenance(
             session_key="dashboard:chat-1",
@@ -1325,7 +1325,7 @@ class TestCreateAutoSkill:
         )
 
     def test_rejects_oversized_procedure(self, tmp_path):
-        from kiro_crew.skills import AUTO_SKILL_MAX_PROCEDURE_CHARS
+        from efm_go.skills import AUTO_SKILL_MAX_PROCEDURE_CHARS
 
         loader = SkillsLoader(skills_path=tmp_path / "skills", install_builtins=False)
         huge = "x" * (AUTO_SKILL_MAX_PROCEDURE_CHARS + 1)
@@ -1369,7 +1369,7 @@ class TestUpdateAutoSkill:
     """Tests for SkillsLoader.update_auto_skill (refine path)."""
 
     def _make_provenance(self, refined_at=""):
-        from kiro_crew.skills import AutoSkillProvenance
+        from efm_go.skills import AutoSkillProvenance
 
         return AutoSkillProvenance(
             session_key="dashboard:chat-2",
@@ -1457,7 +1457,7 @@ class TestListAutoSkills:
             procedure_md="body",
             provenance=(
                 __import__(
-                    "kiro_crew.skills", fromlist=["AutoSkillProvenance"]
+                    "efm_go.skills", fromlist=["AutoSkillProvenance"]
                 ).AutoSkillProvenance(
                     session_key="x",
                     created_at="2026-05-05T11:30:00+00:00",
@@ -1473,7 +1473,7 @@ class TestUpdateAutoSkillPreservesCreatedAt:
     """Regression test for #5: refine must not clobber created_at."""
 
     def test_created_at_preserved_across_refine(self, tmp_path):
-        from kiro_crew.skills import AutoSkillProvenance
+        from efm_go.skills import AutoSkillProvenance
 
         loader = SkillsLoader(skills_path=tmp_path / "skills", install_builtins=False)
         original = AutoSkillProvenance(
@@ -1661,7 +1661,7 @@ class TestSkillsLoaderExtraPaths:
     def test_sensitive_extra_path_skipped(self, tmp_path, monkeypatch):
         extra = tmp_path / "extra"
         extra.mkdir()
-        monkeypatch.setattr("kiro_crew.skills.is_sensitive_path", lambda p: True)
+        monkeypatch.setattr("efm_go.skills.is_sensitive_path", lambda p: True)
         loader = SkillsLoader(
             skills_path=tmp_path / "local",
             install_builtins=False,
@@ -1679,7 +1679,7 @@ class TestSkillsLoaderExtraPaths:
         # Both listing (_iter) and load_skill route extra-path reads through
         # validate_file_path — flagging it there blocks both.
         monkeypatch.setattr(
-            "kiro_crew.skills.validate_file_path",
+            "efm_go.skills.validate_file_path",
             lambda p: None if str(p).endswith("SKILL.md") else p,
         )
         loader = SkillsLoader(
@@ -1722,7 +1722,7 @@ class TestTriggerPerformance:
         )
 
         fake_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.skills.sel", lambda: fake_sel)
         triggered = loader.get_triggered_skills("please shorten this url")
 
         assert "tiny-url" in triggered
@@ -1742,7 +1742,7 @@ class TestTriggerPerformance:
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False)
 
         fake_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.skills.sel", lambda: fake_sel)
         assert loader.get_triggered_skills("hello there friend") == []
         assert fake_sel.log_tool_invocation.call_count == 0
 
@@ -1775,7 +1775,7 @@ class TestTriggerPerformance:
         )
 
         fake_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.skills.sel", lambda: fake_sel)
         # "shorten url" matches the positive trigger, but "test" fires the
         # negative trigger → excluded.
         triggered = loader.get_triggered_skills("shorten url for this test")
@@ -1804,7 +1804,7 @@ class TestTriggerPerformance:
             install_builtins=False,
             config=KiroCrewConfig(skills=SkillsConfig(max_triggered=3)),
         )
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         calls = {"n": 0}
         orig = loader._iter_uncached
@@ -1835,7 +1835,7 @@ class TestTriggerPerformance:
             install_builtins=False,
             config=KiroCrewConfig(skills=SkillsConfig(max_triggered=3)),
         )
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         calls = {"n": 0}
         real_load = KiroCrewConfig.load
@@ -1844,7 +1844,7 @@ class TestTriggerPerformance:
             calls["n"] += 1
             return real_load()
 
-        monkeypatch.setattr("kiro_crew.config.loader.KiroCrewConfig.load", _counting_load)
+        monkeypatch.setattr("efm_go.config.loader.KiroCrewConfig.load", _counting_load)
         for _ in range(5):
             loader.get_triggered_skills("shorten this url")
         # Zero config loads across 5 messages — the cap was snapshotted in __init__.
@@ -1864,7 +1864,7 @@ class TestTriggerPerformance:
         cfg = KiroCrewConfig()
         cfg.skills.max_triggered = 2
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False, config=cfg)
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         triggered = loader.get_triggered_skills("shorten url")
         assert len(triggered) == 2
@@ -1887,7 +1887,7 @@ class TestTriggerPerformance:
             config=KiroCrewConfig(skills=SkillsConfig(max_triggered=0)),
         )
         fake_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.skills.sel", lambda: fake_sel)
         walk = MagicMock(return_value=[])
         monkeypatch.setattr(loader, "_iter_visible", walk)
         read = MagicMock(return_value={})
@@ -1916,7 +1916,7 @@ class TestTriggerPerformance:
             config=KiroCrewConfig(skills=SkillsConfig(max_triggered=0)),
         )
         fake_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.skills.sel", lambda: fake_sel)
 
         assert loader.get_triggered_skills("shorten url for this test") == []
         assert fake_sel.log_tool_invocation.call_count == 0
@@ -1939,7 +1939,7 @@ class TestTriggerPerformance:
             config=KiroCrewConfig(skills=SkillsConfig(max_triggered=0)),
         )
         fake_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: fake_sel)
+        monkeypatch.setattr("efm_go.skills.sel", lambda: fake_sel)
         select = MagicMock(return_value=["tiny-url"])
 
         assert loader.get_triggered_skills("hello there friend", select=select) == ["tiny-url"]
@@ -1958,7 +1958,7 @@ class TestTriggerPerformance:
         without rebuilding the loader."""
         from unittest.mock import MagicMock
 
-        from kiro_crew.config import live
+        from efm_go.config import live
 
         skills_dir = tmp_path / "skills"
         _create_skill(
@@ -1971,7 +1971,7 @@ class TestTriggerPerformance:
             install_builtins=False,
             config=KiroCrewConfig(skills=SkillsConfig(max_triggered=0)),
         )
-        monkeypatch.setattr("kiro_crew.skills.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.skills.sel", lambda: MagicMock())
 
         assert loader.get_triggered_skills("shorten this url") == []
         cfg = KiroCrewConfig()
@@ -2090,7 +2090,7 @@ class TestResolveDollarSkills:
         every platform; ``make_dir_link`` keeps the symlinked-base path exercised
         on Windows (a junction) instead of skipping there.
         """
-        from kiro_crew.skills import _iter_skill_files
+        from efm_go.skills import _iter_skill_files
 
         real_base = tmp_path / "real_skills"
         _create_skill(real_base, "flat-skill", "---\nname: flat-skill\n---\n# Flat")
@@ -2122,7 +2122,7 @@ class TestResolveDollarSkills:
         skill must still be found and its resolved SKILL.md must land under the
         tree — proving a link ancestor is resolved and contained, not dropped.
         """
-        from kiro_crew.skills import _iter_skill_files
+        from efm_go.skills import _iter_skill_files
 
         base = tmp_path / "skills"
         base.mkdir(parents=True, exist_ok=True)
@@ -2153,7 +2153,7 @@ class TestResolveDollarSkills:
         the roots and must not enumerate, while an in-tree sibling still does.
         """
         from conftest import make_dir_link
-        from kiro_crew.skills import _iter_skill_files
+        from efm_go.skills import _iter_skill_files
 
         base = tmp_path / "skills"
         base.mkdir(parents=True, exist_ok=True)
@@ -2271,7 +2271,7 @@ class TestResolveDollarSkills:
                 f"---\nname: skill{i}\ndescription: d{i}\n---\n# S{i}\nbody{i}",
             )
         loader = SkillsLoader(skills_path=skills_dir, install_builtins=False)
-        monkeypatch.setattr("kiro_crew.skills._MAX_DOLLAR_SKILLS", 5)
+        monkeypatch.setattr("efm_go.skills._MAX_DOLLAR_SKILLS", 5)
         msg = " ".join(f"$skill{i}" for i in range(8))
         out = loader.resolve_dollar_skills(msg)
         assert len(out) == 5
@@ -2311,7 +2311,7 @@ class TestResolveDollarSkills:
         # resolve via $leaf WITHOUT being in config extra_paths — the loader
         # appends edition roots so the $skill resolver matches what the
         # /api/skills picker offers (frontend/backend parity).
-        from kiro_crew.platform.defaults import DefaultMcpToolingProvider
+        from efm_go.platform.defaults import DefaultMcpToolingProvider
 
         aim_root = tmp_path / "aim_skills"
         _create_skill(
@@ -2330,7 +2330,7 @@ class TestResolveDollarSkills:
     def test_local_skill_wins_over_aim_root_on_leaf_collision(self, tmp_path, monkeypatch):
         # Local skills dir and an edition root both have a `grill` leaf → local
         # wins (edition roots are appended last, _iter dedupes by first-seen).
-        from kiro_crew.platform.defaults import DefaultMcpToolingProvider
+        from efm_go.platform.defaults import DefaultMcpToolingProvider
 
         aim_root = tmp_path / "aim_skills"
         _create_skill(aim_root, "SomePkg/grill", "---\nname: grill\n---\nAIM GRILL")
@@ -2521,7 +2521,7 @@ class TestLazyLoadContext:
         assert "more skill(s) not shown" in tight
 
     def test_user_authored_classification(self, tmp_path, monkeypatch):
-        import kiro_crew.skills as skills_mod
+        import efm_go.skills as skills_mod
 
         skills_dir = tmp_path / "skills"
         provider = tmp_path / "provider" / "app-skill"
@@ -2674,7 +2674,7 @@ class TestDisabledAppSkillsAreNotTriggered:
     @staticmethod
     def _apps(monkeypatch, **enabled: bool) -> None:
         """Stub the app registry: name -> enabled."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         monkeypatch.setattr(
             mgr,
@@ -2740,7 +2740,7 @@ class TestDisabledAppSkillsAreNotTriggered:
     def test_an_unreadable_app_registry_hides_nothing(self, tmp_path, monkeypatch):
         """Fail OPEN here, deliberately: a transient read error must not silently
         strip an enabled app's skills out of context."""
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
 
         skills = tmp_path / "skills"
         self._write_app_skill(skills, "deploy_web", "artifact-deploy", "deploy")
@@ -2767,7 +2767,7 @@ class TestDisabledAppSkillsAreNotTriggered:
         tree (``apps/builtins/auto_improvement/skills/ai-discover``), not the
         data-home apps root. Returns the app's manifest name.
         """
-        import kiro_crew.skills as skills_mod
+        import efm_go.skills as skills_mod
 
         target = (
             Path(skills_mod.__file__).parent
@@ -2913,7 +2913,7 @@ class TestStripFrontmatterCloserParity:
     def test_lenient_closer_strips_whatever_the_parser_parses(self, closer: str) -> None:
         """The invariant itself: for the same document, the display parser
         reads the fields AND the stripper removes the block."""
-        from kiro_crew.frontmatter import SKILL_LOADER, parse_frontmatter
+        from efm_go.frontmatter import SKILL_LOADER, parse_frontmatter
 
         doc = self._doc(closer)
         fields = parse_frontmatter(doc, SKILL_LOADER)
@@ -2934,7 +2934,7 @@ class TestStripFrontmatterCloserParity:
         tolerates a carriage return before each fence newline, so the
         stripper must too — a CRLF document whose fields render in the UI
         must not leak its whole block to the model."""
-        from kiro_crew.frontmatter import SKILL_LOADER, parse_frontmatter
+        from efm_go.frontmatter import SKILL_LOADER, parse_frontmatter
 
         doc = f"---\r\ndescription: test skill\r\n---\r\n{self.BODY}"
         fields = parse_frontmatter(doc, SKILL_LOADER)
@@ -2968,7 +2968,7 @@ class TestStripFrontmatterCloserParity:
         switching SKILL_LOADER to leading_ws_fence), the premise assertion
         here goes red, forcing the stripper's opener to be revisited in the
         same change instead of silently reopening the leak."""
-        from kiro_crew.frontmatter import SKILL_LOADER, parse_frontmatter
+        from efm_go.frontmatter import SKILL_LOADER, parse_frontmatter
 
         doc = f" ---\ndescription: test skill\n---\n{self.BODY}"
         fields = parse_frontmatter(doc, SKILL_LOADER)

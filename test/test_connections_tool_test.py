@@ -16,9 +16,9 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.agent_sdk.drivers import acp as acp_driver
-from kiro_crew.connections import get_provider, tool_test
-from kiro_crew.dashboard.handlers import connections
+from efm_go.agent_sdk.drivers import acp as acp_driver
+from efm_go.connections import get_provider, tool_test
+from efm_go.dashboard.handlers import connections
 
 
 def _provider() -> dict[str, Any]:
@@ -86,7 +86,7 @@ def fake_client(monkeypatch: pytest.MonkeyPatch, tmp_path):
             self.shutdown_called = True
 
     monkeypatch.setattr(acp_driver, "_native_command_client_factory", lambda: FakeClient)
-    monkeypatch.setattr("kiro_crew.sandbox.configured_sandbox_mode", lambda: "strict")
+    monkeypatch.setattr("efm_go.sandbox.configured_sandbox_mode", lambda: "strict")
     monkeypatch.setattr(tool_test, "data_home", lambda: tmp_path)
     return FakeClient
 

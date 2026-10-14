@@ -1,4 +1,4 @@
-"""``_kiro.dev/metadata`` unconsumed-field reporting.
+"""``_efm.go/metadata`` unconsumed-field reporting.
 
 ``parse_metadata`` reads its known keys (usage, credits, and the refusal
 envelope) and drops everything else. These tests pin the
@@ -10,8 +10,8 @@ import logging
 
 import pytest
 
-from kiro_crew.acp import _dispatch
-from kiro_crew.acp._dispatch import parse_metadata
+from efm_go.acp import _dispatch
+from efm_go.acp._dispatch import parse_metadata
 
 
 @pytest.fixture(autouse=True)

@@ -9,10 +9,10 @@ import time
 
 import pytest
 
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_runner import _attach_turn_stats
-from kiro_crew.dashboard.handlers import usage
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_runner import _attach_turn_stats
+from efm_go.dashboard.handlers import usage
+from efm_go.dashboard.state import _ChatSlot
 
 
 def _make_slot_with_assistant_message() -> _ChatSlot:
@@ -274,10 +274,10 @@ async def test_steer_cut_of_a_withheld_first_chunk_still_records_ttft(tmp_path, 
     the clock must stop there rather than leave ``ttft_ms`` out."""
     from test_dashboard_chat import TestRunChatTransientRetry as _Suite
 
-    from kiro_crew.acp.types import TurnUsage
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
-    from kiro_crew.security import StreamRedactor
+    from efm_go.acp.types import TurnUsage
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go.security import StreamRedactor
 
     assert StreamRedactor().feed("Hello") == "", "precondition: the chunk is withheld"
     state = _Suite._make_state(tmp_path, monkeypatch)
@@ -309,9 +309,9 @@ async def test_recovery_turn_without_a_carried_clock_stores_no_ttft(tmp_path, mo
     dispatch: the user message it answers belongs to an earlier turn."""
     from test_dashboard_chat import TestRunChatTransientRetry as _Suite
 
-    from kiro_crew.acp.types import TurnUsage
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go.acp.types import TurnUsage
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
     state = _Suite._make_state(tmp_path, monkeypatch)
     slot = state.get_or_create_slot("s1")

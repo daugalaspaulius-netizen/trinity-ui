@@ -17,8 +17,8 @@ from urllib.parse import urlsplit
 
 import pytest
 
-from kiro_crew import mcp_grant
-from kiro_crew.connections.tool_aliases import normalized_endpoint
+from efm_go import mcp_grant
+from efm_go.connections.tool_aliases import normalized_endpoint
 
 _URL = "https://mcp.notion.com/mcp"
 
@@ -136,15 +136,15 @@ import pytest_asyncio  # noqa: E402  (imported for its marker plugin)
 from aiohttp import web  # noqa: E402
 from aiohttp.test_utils import TestClient, TestServer  # noqa: E402
 
-from kiro_crew import agent as agent_mod  # noqa: E402
-from kiro_crew import mcp_discovery  # noqa: E402
-from kiro_crew.config import paths as connections_paths  # noqa: E402
-from kiro_crew.connections import get_provider  # noqa: E402
-from kiro_crew.connections import mint  # noqa: E402
-from kiro_crew.connections import ownership  # noqa: E402
-from kiro_crew.connections import warm  # noqa: E402
-from kiro_crew.dashboard.handlers import connections  # noqa: E402
-from kiro_crew.dashboard.handlers import mcp as mcp_handlers  # noqa: E402
+from efm_go import agent as agent_mod  # noqa: E402
+from efm_go import mcp_discovery  # noqa: E402
+from efm_go.config import paths as connections_paths  # noqa: E402
+from efm_go.connections import get_provider  # noqa: E402
+from efm_go.connections import mint  # noqa: E402
+from efm_go.connections import ownership  # noqa: E402
+from efm_go.connections import warm  # noqa: E402
+from efm_go.dashboard.handlers import connections  # noqa: E402
+from efm_go.dashboard.handlers import mcp as mcp_handlers  # noqa: E402
 
 _ = pytest_asyncio
 
@@ -1798,8 +1798,8 @@ def test_the_mirror_strip_serializes_against_the_agent_files_own_lock(
     """
     import threading
 
-    from kiro_crew.apps.bridges import _mcp_lock
-    from kiro_crew.dashboard.handlers.mcp import _remove_from_agent_file
+    from efm_go.apps.bridges import _mcp_lock
+    from efm_go.dashboard.handlers.mcp import _remove_from_agent_file
 
     mirror = tmp_path / "kirocrew.json"
     mirror.write_text(json.dumps({"mcpServers": {_SLUG: {"url": _URL}}}), encoding="utf-8")

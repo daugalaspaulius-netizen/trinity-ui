@@ -73,7 +73,7 @@ name: Sign and Notarize macOS (reusable)
 #   - The signed_zip_key handoff is internal (sign job output -> notarize
 #     job), no longer plumbed through every caller.
 #   - The Apple credential is fetched from AWS Secrets Manager at runtime
-#     (kirocrew/signing/apple-notary) via the same OIDC role used for
+#     (efm-go/signing/apple-notary) via the same OIDC role used for
 #     signing. The password is masked and scoped to single steps in the
 #     notarize job only; it is never persisted to GITHUB_ENV, files, or
 #     logs, and the publish job never touches it.
@@ -369,7 +369,7 @@ jobs:
       UNSIGNED_DMG_KEY: ${{ needs.sign.outputs.unsigned_dmg_key }}
       # Published FILENAMES are pinned to this basename on every channel even
       # though the nightly BUNDLE is "KiroCrew Nightly.app": CDN keys and the
-      # latest-DMG permalink (desktop/<channel>/latest/KiroCrew.dmg) are a
+      # latest-DMG permalink (desktop/<channel>/latest/EFM-Go.dmg) are a
       # public contract, and deriving filenames from the bundle name would
       # silently rename the keys and break the permalink. A single-arch leg
       # appends its arch (KiroCrew-arm64 / KiroCrew-x64): the stem of the
@@ -425,7 +425,7 @@ jobs:
         run: |
           set -euo pipefail
           SECRET_JSON=$(aws secretsmanager get-secret-value \
-            --secret-id kirocrew/signing/apple-notary \
+            --secret-id efm-go/signing/apple-notary \
             --query SecretString --output text)
           APPLE_ID=$(printf '%s' "$SECRET_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['apple_id'])")
           APPLE_PW=$(printf '%s' "$SECRET_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['password'])")
@@ -500,7 +500,7 @@ jobs:
           set -euo pipefail
           # The DMG signs under the app's own bundle identifier, read from
           # the stapled bundle rather than hardcoded (all channels currently
-          # share the onboarded com.amazon.kiro.crew -- CDSigner authz is
+          # share the onboarded com.efmleads.go -- CDSigner authz is
           # per-identifier, so any future distinct id needs onboarding first).
           DMG_IDENTIFIER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "work/stapled/${APP_NAME}.app/Contents/Info.plist")"
           export DMG_IDENTIFIER
@@ -512,7 +512,7 @@ jobs:
         run: |
           set -euo pipefail
           SECRET_JSON=$(aws secretsmanager get-secret-value \
-            --secret-id kirocrew/signing/apple-notary \
+            --secret-id efm-go/signing/apple-notary \
             --query SecretString --output text)
           APPLE_ID=$(printf '%s' "$SECRET_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['apple_id'])")
           APPLE_PW=$(printf '%s' "$SECRET_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['password'])")
@@ -772,16 +772,14 @@ jobs:
       # exact shape electron-builder generates -- version, files[] with
       # url + sha512 + size, legacy top-level path/sha512, releaseDate.
       # website/electron/auto-update.js reads the per-channel feed
-      # DIRECTORY (updates.crew.kiro.dev/feed/<channel>/) and the library
-      # appends the platform filename.
+      # directory and the library appends the platform filename.
       #
       # Two properties are load-bearing (see test_publish_feed_contract.py):
       #   - sha512 is BASE64 of the raw digest (openssl -binary | base64),
       #     never hex: electron-updater string-compares base64; a hex value
       #     makes every download fail checksum verification.
-      #   - files[].url are ABSOLUTE byte-host urls (CLI_CDN_BASE =
-      #     download.crew.kiro.dev). The yml itself lives on the POINTER
-      #     host (updates.crew.kiro.dev/feed/...); electron-updater's
+      #   - files[].url are ABSOLUTE byte-host urls (CLI_CDN_BASE).
+      #     The yml itself lives on the pointer host; electron-updater's
       #     newUrlFromBase does `new URL(fileUrl, base)`, which ignores the
       #     base for absolute urls -- that is what preserves the
       #     pointer/bytes host split. A bare filename here would resolve
@@ -952,7 +950,7 @@ jobs:
           # a guard that fails on permissions instead of on the condition it
           # guards. Same convention as publish-linux.yml's byte compare, which
           # goes through the CDN for exactly this reason. CLI_CDN_BASE and
-          # updates.crew.kiro.dev are alternate domains of the SAME
+          # the feed host are alternate domains of the SAME
           # distribution, and feed/* is CACHING_DISABLED, so this response
           # comes from origin and reflects the object just written.
           FEED_CC=$(curl -fsS --retry 3 --retry-delay 2 \
@@ -965,7 +963,7 @@ jobs:
           echo "Feed Cache-Control verified via CDN: ${FEED_CC}"
 
       # Human-clickable permalink to the current DMG:
-      #   <CDN>/desktop/<channel>/latest/KiroCrew.dmg
+      #   <CDN>/desktop/<channel>/latest/EFM-Go.dmg
       # The feed remains the canonical pointer for machines; this alias is a
       # convenience mirror of the feed's dmg field for download buttons and
       # docs, so it is written AFTER the feed (never points ahead of the

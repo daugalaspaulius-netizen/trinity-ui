@@ -19,8 +19,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.config import loader
-from kiro_crew.config.loader import KiroCrewConfig, read_env_file_credential
+from efm_go.config import loader
+from efm_go.config.loader import KiroCrewConfig, read_env_file_credential
 
 _BODY = "JIRA_API_TOKEN=abc123\r\nSLACK_BOT_TOKEN=xyz\r\n"
 
@@ -213,7 +213,7 @@ class TestReaders:
         assert (exc.start, exc.end) == (0, len(_WIDE_BOM_FOR[wide_codec]))
 
     def test_service_warning_sees_a_bom_first_key(self, utf16_codec: str, tmp_path: Path) -> None:
-        from kiro_crew.service.common import _names_defined_in_env_file
+        from efm_go.service.common import _names_defined_in_env_file
 
         assert "JIRA_API_TOKEN" in _names_defined_in_env_file(_utf8_bom(tmp_path))
         assert _names_defined_in_env_file(_utf16_bom(tmp_path, utf16_codec)) == set()
@@ -221,7 +221,7 @@ class TestReaders:
     def test_service_warning_treats_a_non_utf8_file_as_unreadable(self, tmp_path: Path) -> None:
         # A BOM-less file in a legacy code page must make the caller warn,
         # not raise into a handler that swallows the warning with it.
-        from kiro_crew.service.common import _names_defined_in_env_file
+        from efm_go.service.common import _names_defined_in_env_file
 
         ep = tmp_path / ".env"
         ep.write_bytes("KIRO_API_KEY=caf\u00e9\n".encode("cp1252"))
@@ -232,7 +232,7 @@ class TestReaders:
     ) -> None:
         # A wide file is unset to the gateway, so a key it holds is still
         # dropped and the install must say so instead of raising.
-        from kiro_crew.service import common
+        from efm_go.service import common
 
         ep = tmp_path / ".env"
         ep.write_bytes(_WIDE_BOM_FOR[wide_codec] + "KIRO_API_KEY=x\r\n".encode(wide_codec))
@@ -248,7 +248,7 @@ class TestRewriters:
     def test_dashboard_channel_clear_removes_a_bom_first_key(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import messaging
 
         ep = _utf8_bom(tmp_path)
         monkeypatch.setattr(loader, "env_path", lambda: ep)
@@ -269,9 +269,9 @@ class TestRewriters:
         # which on a legacy Windows code page raises at the next gateway boot.
         import sys
 
-        from kiro_crew import cli_setup
-        from kiro_crew.dashboard.handlers import messaging
-        from kiro_crew.dashboard.handlers import weixin_qr as qr
+        from efm_go import cli_setup
+        from efm_go.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import weixin_qr as qr
 
         ep = tmp_path / ".env"
         ep.write_bytes(codecs.BOM_UTF8 + "WEIXIN_TOKEN=old\nNOTE=caf\u00e9\n".encode("utf-8"))
@@ -300,7 +300,7 @@ class TestRewriters:
     def test_a_rewrite_of_a_bomless_file_adds_no_bom(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import messaging
 
         ep = tmp_path / ".env"
         ep.write_bytes(_BODY.encode("utf-8"))
@@ -313,7 +313,7 @@ class TestRewriters:
     def test_weixin_writers_match_a_bom_first_key(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import weixin_qr as qr
+        from efm_go.dashboard.handlers import weixin_qr as qr
 
         ep = tmp_path / ".env"
         ep.write_bytes(codecs.BOM_UTF8 + b"WEIXIN_TOKEN=old\nOTHER=1\n")
@@ -330,7 +330,7 @@ class TestRewriters:
     def test_rewriter_refuses_a_wide_file_without_overwriting_it(
         self, wide_codec: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import messaging
 
         ep = _wide_bom(tmp_path, wide_codec)
         before = ep.read_bytes()
@@ -354,7 +354,7 @@ class TestDashboardChannelSave:
         from aiohttp.test_utils import TestClient, TestServer
         from test_channel_env_write_off_loop import CHANNELS
 
-        from kiro_crew.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import messaging
 
         name, handler_attr, validator_attr, body = next(c for c in CHANNELS if c[0] == channel)
         ep = _wide_bom(tmp_path, wide_codec)
@@ -398,7 +398,7 @@ class TestDashboardChannelSave:
         from aiohttp.test_utils import TestClient, TestServer
         from test_channel_env_write_off_loop import CHANNELS
 
-        from kiro_crew.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import messaging
 
         name, handler_attr, validator_attr, body = next(c for c in CHANNELS if c[0] == channel)
         ep = _wide_bom(tmp_path, wide_codec)
@@ -439,11 +439,11 @@ class TestMigrate:
             monkeypatch.delenv(key, raising=False)
 
     def _run(self, tmp_path: Path, ep: Path, **kwargs):
-        from kiro_crew.secrets.migrate import migrate_env_secrets
+        from efm_go.secrets.migrate import migrate_env_secrets
 
         with (
-            patch("kiro_crew.secrets.migrate.env_path", return_value=ep),
-            patch("kiro_crew.secrets.migrate.config_dir", return_value=tmp_path / "cfg"),
+            patch("efm_go.secrets.migrate.env_path", return_value=ep),
+            patch("efm_go.secrets.migrate.config_dir", return_value=tmp_path / "cfg"),
         ):
             return migrate_env_secrets(**kwargs)
 
@@ -488,7 +488,7 @@ class TestSetupSlack:
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         ep = _wide_bom(tmp_path, wide_codec)
         before = ep.read_bytes()
@@ -505,7 +505,7 @@ class TestSetupSlack:
         assert ep.read_bytes() == before
 
 
-_SRC = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+_SRC = Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 
 _DECODERS = frozenset({"decode_env_bytes", "read_env_file", "read_env_text"})

@@ -1,4 +1,4 @@
-"""Tests for plugin admission control (kiro_crew.platform.admission)."""
+"""Tests for plugin admission control (efm_go.platform.admission)."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ import json
 
 import pytest
 
-from kiro_crew.platform import discovery as discovery_mod
-from kiro_crew.platform.admission import (
+from efm_go.platform import discovery as discovery_mod
+from efm_go.platform.admission import (
     MODE_ENFORCE,
     MODE_OPEN,
     AdmissionPolicy,
     PluginManifest,
     evaluate_admission,
 )
-from kiro_crew.platform.discovery import PluginAdmissionError, discover_companion_context
+from efm_go.platform.discovery import PluginAdmissionError, discover_companion_context
 
 
 def _patch_admission_paths(monkeypatch, adm, tmp_path, policy_path=None):
@@ -70,7 +70,7 @@ def patch_manifest(monkeypatch):
 
     def _set(manifest):
         monkeypatch.setattr(
-            "kiro_crew.platform.admission._read_plugin_manifest",
+            "efm_go.platform.admission._read_plugin_manifest",
             lambda ep: manifest,
         )
 
@@ -335,9 +335,9 @@ class TestPolicyLoading:
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         _nope = tmp_path / "nope.json"
         monkeypatch.setattr(
-            "kiro_crew.platform.admission._policy_default_path", lambda: _nope
+            "efm_go.platform.admission._policy_default_path", lambda: _nope
         )
-        from kiro_crew.platform.admission import load_admission_policy
+        from efm_go.platform.admission import load_admission_policy
 
         policy = load_admission_policy()
         # fail-closed: enforce + signature + empty allowlist (admits nothing).
@@ -349,7 +349,7 @@ class TestPolicyLoading:
         bad = tmp_path / "admission_policy.json"
         bad.write_text("{ not valid json")
         monkeypatch.setenv("KIROCREW_ADMISSION_POLICY", str(bad))
-        from kiro_crew.platform.admission import load_admission_policy
+        from efm_go.platform.admission import load_admission_policy
 
         policy = load_admission_policy()
         # fail-closed: enforce + signature + empty allowlist (admits nothing)
@@ -359,7 +359,7 @@ class TestPolicyLoading:
 
     def test_seed_then_load_is_open(self, monkeypatch, tmp_path):
         """The first-run seed writes a permissive file so a fresh install stays open."""
-        import kiro_crew.platform.admission as adm
+        import efm_go.platform.admission as adm
 
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         _patch_admission_paths(monkeypatch, adm, tmp_path)
@@ -371,7 +371,7 @@ class TestPolicyLoading:
 
     def test_deletion_after_seed_fails_closed_no_reseed(self, monkeypatch, tmp_path):
         """deleting the seeded file must NOT re-seed; load fails closed."""
-        import kiro_crew.platform.admission as adm
+        import efm_go.platform.admission as adm
 
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         pol = tmp_path / "admission_policy.json"
@@ -390,8 +390,8 @@ class TestPolicyLoading:
         but a legitimate edit must NOT force the dashboard to 'degraded'."""
         import logging as _logging
 
-        import kiro_crew.platform.admission as adm
-        from kiro_crew.platform import governance_health as gh
+        import efm_go.platform.admission as adm
+        from efm_go.platform import governance_health as gh
 
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         pol = tmp_path / "admission_policy.json"
@@ -412,8 +412,8 @@ class TestPolicyLoading:
         assert gh.governance_status() != "degraded"
 
     def test_absent_policy_reports_degraded_health(self, monkeypatch, tmp_path):
-        import kiro_crew.platform.admission as adm
-        from kiro_crew.platform import governance_health as gh
+        import efm_go.platform.admission as adm
+        from efm_go.platform import governance_health as gh
 
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         _nope = tmp_path / "nope.json"
@@ -437,7 +437,7 @@ class TestPolicyLoading:
             )
         )
         monkeypatch.setenv("KIROCREW_ADMISSION_POLICY", str(p))
-        from kiro_crew.platform.admission import load_admission_policy
+        from efm_go.platform.admission import load_admission_policy
 
         policy = load_admission_policy()
         assert policy.mode == MODE_ENFORCE
@@ -457,7 +457,7 @@ class TestDiscoveryGate:
         ep = _FakeEntryPoint(name="amazon", loaded=_should_not_run)
         monkeypatch.setattr(discovery_mod, "plugin_entry_points", lambda: [ep])
         monkeypatch.setattr(
-            "kiro_crew.platform.admission._read_plugin_manifest",
+            "efm_go.platform.admission._read_plugin_manifest",
             lambda e: PluginManifest(name="amazon", publisher="p13n", version="1"),
         )
         policy = AdmissionPolicy(mode=MODE_OPEN, banned=["amazon"])
@@ -470,7 +470,7 @@ class TestDiscoveryGate:
         ep = _FakeEntryPoint(name="amazon", loaded=lambda _cfg: sentinel)
         monkeypatch.setattr(discovery_mod, "plugin_entry_points", lambda: [ep])
         monkeypatch.setattr(
-            "kiro_crew.platform.admission._read_plugin_manifest",
+            "efm_go.platform.admission._read_plugin_manifest",
             lambda e: PluginManifest(name="amazon", publisher="p13n", version="1"),
         )
         policy = AdmissionPolicy(mode=MODE_OPEN)
@@ -481,7 +481,7 @@ class TestDiscoveryGate:
         """ordering: discovery (which runs before the gateway seed on a
         fleet's first boot) seeds the permissive default, so the companion is
         admitted instead of fail-closing when no policy file exists yet."""
-        import kiro_crew.platform.admission as adm
+        import efm_go.platform.admission as adm
 
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         _patch_admission_paths(monkeypatch, adm, tmp_path)
@@ -528,16 +528,16 @@ class TestPolicySignatureTrustRoot:
         # its own domain; the security policy keeps its own fail-closed rules.
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         monkeypatch.setattr(
-            "kiro_crew.platform.admission._policy_default_path", lambda: tmp_path / "nope.json"
+            "efm_go.platform.admission._policy_default_path", lambda: tmp_path / "nope.json"
         )
-        from kiro_crew.platform.admission import load_admission_policy
+        from efm_go.platform.admission import load_admission_policy
 
         policy = load_admission_policy()
         assert policy.require_signature is True  # plugins: fail closed
         assert policy.require_policy_signature is False  # governance: stays advisory
 
     def test_seeded_default_body_declares_the_flag_off(self):
-        import kiro_crew.platform.admission as adm
+        import efm_go.platform.admission as adm
 
         assert adm._DEFAULT_POLICY_BODY["require_policy_signature"] is False
 
@@ -569,7 +569,7 @@ class TestPolicySignatureTrustRoot:
 
 class TestSharedSigningPrimitives:
     def test_manifest_payload_uses_shared_canonicalization(self):
-        from kiro_crew.platform.admission import canonical_signing_bytes
+        from efm_go.platform.admission import canonical_signing_bytes
 
         m = PluginManifest(name="p", publisher="pub", version="1")
         expected = canonical_signing_bytes(
@@ -578,14 +578,14 @@ class TestSharedSigningPrimitives:
         assert m.signing_payload() == expected
 
     def test_canonicalization_is_key_order_stable(self):
-        from kiro_crew.platform.admission import canonical_signing_bytes
+        from efm_go.platform.admission import canonical_signing_bytes
 
         assert canonical_signing_bytes({"a": 1, "b": 2}) == canonical_signing_bytes(
             {"b": 2, "a": 1}
         )
 
     def test_hmac_signature_matches_stdlib(self):
-        from kiro_crew.platform.admission import hmac_signature
+        from efm_go.platform.admission import hmac_signature
 
         expected = hmac.new(b"k", b"payload", hashlib.sha256).hexdigest()
         assert hmac_signature("k", b"payload") == expected
@@ -595,7 +595,7 @@ class TestReadPolicyTrustRoot:
     """``read_policy_trust_root`` is the side-effect-free reader (not the audited one)."""
 
     def test_reads_flag_and_keys_from_env_path(self, monkeypatch, tmp_path):
-        from kiro_crew.platform.admission import read_policy_trust_root
+        from efm_go.platform.admission import read_policy_trust_root
 
         adm = tmp_path / "admission_policy.json"
         adm.write_text(
@@ -610,8 +610,8 @@ class TestReadPolicyTrustRoot:
         # An absent trust root — at the default path or an explicitly configured
         # one — is "no operator opted in", so verification stays advisory and every
         # existing install keeps working with no key to provision.
-        from kiro_crew.platform import admission as adm_mod
-        from kiro_crew.platform.admission import read_policy_trust_root
+        from efm_go.platform import admission as adm_mod
+        from efm_go.platform.admission import read_policy_trust_root
 
         monkeypatch.setenv("KIROCREW_ADMISSION_POLICY", str(tmp_path / "gone.json"))
         assert read_policy_trust_root().require_policy_signature is False
@@ -634,7 +634,7 @@ class TestReadPolicyTrustRoot:
         (``load_admission_policy``); this reader must not additionally make the
         security ceiling unloadable through a second path.
         """
-        from kiro_crew.platform.admission import read_policy_trust_root
+        from efm_go.platform.admission import read_policy_trust_root
 
         adm = tmp_path / "admission_policy.json"
         adm.write_text(shape)
@@ -647,8 +647,8 @@ class TestReadPolicyTrustRoot:
         # Deliberately NOT _fail_closed_policy(): an admission-policy problem is
         # already handled in admission's own domain and must not make the security
         # ceiling unloadable through a second path.
-        import kiro_crew.platform.admission as adm_mod
-        from kiro_crew.platform.admission import read_policy_trust_root
+        import efm_go.platform.admission as adm_mod
+        from efm_go.platform.admission import read_policy_trust_root
 
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         monkeypatch.setattr(adm_mod, "_policy_default_path", lambda: tmp_path / "nope.json")
@@ -662,7 +662,7 @@ class TestReadPolicyTrustRoot:
     ):
         # Never raising is the reader's contract — a corrupt trust root must not
         # take down the security-ceiling load path as well.
-        from kiro_crew.platform.admission import read_policy_trust_root
+        from efm_go.platform.admission import read_policy_trust_root
 
         bad = tmp_path / "admission_policy.json"
         bad.write_text("{ not json")
@@ -674,9 +674,9 @@ class TestReadPolicyTrustRoot:
     def test_does_not_record_posture_or_incident(self, monkeypatch, tmp_path):
         # The whole reason this function exists: load_admission_policy records the
         # dashboard posture + a critical SEL, which is wrong on a repeating path.
-        import kiro_crew.platform.admission as adm_mod
-        from kiro_crew.platform import governance_health
-        from kiro_crew.platform.admission import read_policy_trust_root
+        import efm_go.platform.admission as adm_mod
+        from efm_go.platform import governance_health
+        from efm_go.platform.admission import read_policy_trust_root
 
         governance_health.reset()
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
@@ -717,7 +717,7 @@ class TestStrictBooleanFlagCoercion:
     def test_present_non_boolean_is_warned_about(self, junk, caplog):
         import logging as _logging
 
-        with caplog.at_level(_logging.WARNING, logger="kiro_crew.platform.admission"):
+        with caplog.at_level(_logging.WARNING, logger="efm_go.platform.admission"):
             AdmissionPolicy.from_dict({"require_policy_signature": junk})
         messages = [r.getMessage() for r in caplog.records]
         assert any(
@@ -730,7 +730,7 @@ class TestStrictBooleanFlagCoercion:
     def test_a_real_boolean_emits_no_warning(self, caplog):
         import logging as _logging
 
-        with caplog.at_level(_logging.WARNING, logger="kiro_crew.platform.admission"):
+        with caplog.at_level(_logging.WARNING, logger="efm_go.platform.admission"):
             AdmissionPolicy.from_dict(
                 {"require_signature": True, "require_policy_signature": False}
             )
@@ -755,7 +755,7 @@ class TestNonAsciiSignature:
         )
 
     def test_signature_valid_returns_false(self):
-        from kiro_crew.platform.admission import _signature_valid
+        from efm_go.platform.admission import _signature_valid
 
         m = PluginManifest(
             name="amazon", publisher="p13n", version="1", signature=self._BAD_SIG

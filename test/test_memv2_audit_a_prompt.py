@@ -9,14 +9,14 @@ import pytest
 from test_chat_runner_coverage import _complete, _drive, _runner_state, _set_stream, _slot
 from test_member_essential_context import env as _essential_env
 
-from kiro_crew import context as ctx
-from kiro_crew.config.paths import kiro_agents_dir
-from kiro_crew.context import ContextBuilder
-from kiro_crew.history import ConversationLog
-from kiro_crew.learn import LessonStore
-from kiro_crew.member_essential_context import documents_for_member
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go import context as ctx
+from efm_go.config.paths import kiro_agents_dir
+from efm_go.context import ContextBuilder
+from efm_go.history import ConversationLog
+from efm_go.learn import LessonStore
+from efm_go.member_essential_context import documents_for_member
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 env = _essential_env
 
@@ -119,8 +119,8 @@ async def test_runner_merges_disk_and_unflushed_tail_once(tmp_path, disk_current
 
 @pytest.mark.asyncio
 async def test_cancelled_init_closes_after_worker_finishes(tmp_path, monkeypatch):
-    from kiro_crew import embeddings, memory_stores, vector_memory
-    from kiro_crew.config.sections import MemoryStoreConfig
+    from efm_go import embeddings, memory_stores, vector_memory
+    from efm_go.config.sections import MemoryStoreConfig
 
     config = ctx.KiroCrewConfig.load()
     config.memory_stores["audit"] = MemoryStoreConfig()
@@ -195,7 +195,7 @@ def test_current_identity_excludes_only_this_delivery(field):
 
 @pytest.mark.asyncio
 async def test_actual_native_resume_does_not_replay_slot_tail(tmp_path):
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.providers.acp import AcpProvider
 
     state, _ = _runner_state(tmp_path)
     client = AcpProvider(work_dir=tmp_path)
@@ -219,8 +219,8 @@ async def test_actual_native_resume_does_not_replay_slot_tail(tmp_path):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("outcome", ["normal", "init_failure", "generation_changed", "race_loser"])
 async def test_store_worker_ownership_on_every_exit(tmp_path, monkeypatch, outcome):
-    from kiro_crew import embeddings, memory_stores, vector_memory
-    from kiro_crew.config.sections import MemoryStoreConfig
+    from efm_go import embeddings, memory_stores, vector_memory
+    from efm_go.config.sections import MemoryStoreConfig
 
     config = ctx.KiroCrewConfig.load()
     config.memory_stores["audit"] = MemoryStoreConfig()
@@ -267,8 +267,8 @@ async def test_store_worker_ownership_on_every_exit(tmp_path, monkeypatch, outco
 async def test_cancelled_real_store_releases_lock_fd(env, monkeypatch):
     import os
 
-    from kiro_crew import embeddings, member_memory_backup, platform_compat
-    from kiro_crew.vector_memory import VectorMemoryStore
+    from efm_go import embeddings, member_memory_backup, platform_compat
+    from efm_go.vector_memory import VectorMemoryStore
 
     # The essentials fixture already opened this database. Release that setup
     # connection so the contender measures only the cancelled worker's lock.
@@ -424,7 +424,7 @@ async def test_current_inject_is_not_historical_input(
     if explicit_identity:
         from functools import partial
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         monkeypatch.setattr(
             chat_runner, "_run_chat", partial(chat_runner._run_chat, _current_message=current)
@@ -443,8 +443,8 @@ async def test_current_inject_is_not_historical_input(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("kind", ["cron", "recovery", "user_replay"])
 async def test_queue_passes_exact_inject_row_to_runner(tmp_path, monkeypatch, kind):
-    from kiro_crew.dashboard import chat_runner
-    from kiro_crew.dashboard.chat_utils import CRON_NOTIFICATION_KIND, SYNTHETIC_RECOVERY_KIND
+    from efm_go.dashboard import chat_runner
+    from efm_go.dashboard.chat_utils import CRON_NOTIFICATION_KIND, SYNTHETIC_RECOVERY_KIND
 
     state, _ = _runner_state(tmp_path)
     state.subagents = None
@@ -490,7 +490,7 @@ def test_prompt_file_source_boundary(env, tmp_path, monkeypatch, reader, origin,
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("KIRO_HOME", str(home / ".kiro"))
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", home / ".kiro" / "agents")
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", home / ".kiro" / "agents")
     root = env.project if origin == "project" else home
     (root / "persona").mkdir()
     (root / "inside.txt").write_text("INSIDE_PERSONA", encoding="utf-8")
@@ -524,7 +524,7 @@ def test_prompt_file_source_boundary(env, tmp_path, monkeypatch, reader, origin,
 
 
 def test_absolute_prompt_file_keeps_existing_reader_rules(env, tmp_path):
-    from kiro_crew.member_essential_context import MemberEssentialContextError
+    from efm_go.member_essential_context import MemberEssentialContextError
 
     outside = tmp_path / "absolute-persona.txt"
     outside.write_text("ABSOLUTE_PERSONA", encoding="utf-8")
@@ -543,7 +543,7 @@ def test_absolute_prompt_file_keeps_existing_reader_rules(env, tmp_path):
 @pytest.mark.parametrize("reader", ["context", "essentials"])
 def test_relative_prompt_read_rejects_ancestor_swap(env, tmp_path, monkeypatch, reader):
     from conftest import make_dir_link
-    from kiro_crew import member_essential_context as essentials
+    from efm_go import member_essential_context as essentials
 
     directory = env.project / "persona"
     directory.mkdir()
@@ -597,7 +597,7 @@ def test_persisted_scalar_metadata_replays_with_legacy_identity(tmp_path, metada
 
 @pytest.mark.parametrize("oversized", [False, True])
 def test_relative_prompt_byte_reader_normalizes_or_refuses(env, monkeypatch, oversized):
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     (env.project / "reader.txt").write_bytes(b"first\r\nsecond\rlast")
     (env.project / ".kiro/agents/reader-template.json").write_text(

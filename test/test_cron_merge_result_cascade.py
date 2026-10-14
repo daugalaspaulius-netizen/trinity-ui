@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.cron import CronService, CronStoreUnreadable
+from efm_go.cron import CronService, CronStoreUnreadable
 
 
 def _completed_one_shot(service: CronService) -> object:

@@ -27,8 +27,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.dashboard.handlers import usage as usage_mod
-from kiro_crew.dashboard.handlers.usage import (
+from efm_go.dashboard.handlers import usage as usage_mod
+from efm_go.dashboard.handlers.usage import (
     _resolve_model,
     _wrapper_chain,
     persist_token_record,
@@ -262,8 +262,8 @@ class TestBlankModelBilledRowIsLoud:
         # dimension to either side without the other fails this test.
         from dataclasses import fields
 
-        from kiro_crew.acp.types import TurnUsage
-        from kiro_crew.llm_helpers import usage_has_billing
+        from efm_go.acp.types import TurnUsage
+        from efm_go.llm_helpers import usage_has_billing
 
         now = datetime.now().astimezone()
         for field in fields(TurnUsage):
@@ -346,20 +346,20 @@ class TestBillingStatsHolderWalkReachesTheRunner:
 
     @pytest.mark.parametrize("extra_layers", [0, 2, 4, 12])
     def test_runner_is_reached_through_every_layer_count(self, extra_layers):
-        from kiro_crew.llm_helpers import _billing_stat_holders, _billing_stats
+        from efm_go.llm_helpers import _billing_stat_holders, _billing_stats
 
         source, runner = self._deep_provider(extra_layers)
         assert any(node is runner for node in _billing_stat_holders(source))
         assert _billing_stats(source) is runner.last_prompt_stats
 
     def test_nearest_wrapper_is_still_first(self):
-        from kiro_crew.llm_helpers import _billing_stat_holders
+        from efm_go.llm_helpers import _billing_stat_holders
 
         source, _runner = self._deep_provider(3)
         assert _billing_stat_holders(source)[0] is source
 
     def test_cycle_terminates_with_each_node_once(self):
-        from kiro_crew.llm_helpers import _billing_stat_holders
+        from efm_go.llm_helpers import _billing_stat_holders
 
         a = _Node("a")
         b = _Node("b", provider=a)
@@ -369,7 +369,7 @@ class TestBillingStatsHolderWalkReachesTheRunner:
         assert len(chain) == 2 and chain[0] is a and chain[1] is b
 
     def test_attribute_synthesizing_source_hits_the_guard(self):
-        from kiro_crew import llm_helpers
+        from efm_go import llm_helpers
 
         chain = llm_helpers._billing_stat_holders(MagicMock())
         assert len(chain) == llm_helpers._WRAPPER_WALK_MAX_NODES

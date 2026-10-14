@@ -15,9 +15,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.mcp_gateway.abort import RuntimeAbortTarget
-from kiro_crew.providers.base import LLMEvent, LLMProvider
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.mcp_gateway.abort import RuntimeAbortTarget
+from efm_go.providers.base import LLMEvent, LLMProvider
 
 
 class _MinimalProvider(LLMProvider):

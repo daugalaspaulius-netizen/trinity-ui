@@ -22,9 +22,9 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from chat_test_helpers import _make_state
 
-from kiro_crew.config.loader import KiroCrewAgentConfig
-from kiro_crew.dashboard.handlers import members as m
-from kiro_crew.eventlog import types as eventlog_types
+from efm_go.config.loader import KiroCrewAgentConfig
+from efm_go.dashboard.handlers import members as m
+from efm_go.eventlog import types as eventlog_types
 
 CREW = "code-reviewer"
 SLUG = "code-reviewer"
@@ -124,7 +124,7 @@ async def test_non_owner_is_refused_before_any_read(tmp_path, handler, path, mat
     with (
         patch.object(m.KiroCrewConfig, "load", side_effect=_no_read),
         patch.object(m, "load_config_with_content_stamp", side_effect=_no_read),
-        patch("kiro_crew.eventlog.service.get_service", side_effect=_no_read),
+        patch("efm_go.eventlog.service.get_service", side_effect=_no_read),
     ):
         resp = await handler(req)
     assert resp.status == 403
@@ -187,8 +187,8 @@ def test_other_dashboard_frames_still_reach_a_non_owner_socket(tmp_path, monkeyp
 
 @pytest.mark.asyncio
 async def test_the_baseline_replay_records_its_grant(tmp_path, monkeypatch):
-    from kiro_crew.dashboard import ws_event_scope
-    from kiro_crew.eventlog.service import get_service
+    from efm_go.dashboard import ws_event_scope
+    from efm_go.eventlog.service import get_service
 
     state = _make_state(tmp_path)
     ws = _WS()
@@ -225,7 +225,7 @@ def test_the_connect_baseline_is_sent_to_the_owner_socket_only():
     projections the same way, so it must sit under the owner predicate rather
     than the dashboard-user flag.
     """
-    source = (Path(__file__).resolve().parents[1] / "src/kiro_crew/dashboard/ws.py").read_text(
+    source = (Path(__file__).resolve().parents[1] / "src/efm_go/dashboard/ws.py").read_text(
         encoding="utf-8"
     )
     call_at = source.index("await state.send_members_subscribed(ws)")

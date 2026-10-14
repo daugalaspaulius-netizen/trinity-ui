@@ -147,8 +147,8 @@ def _measure(base: Path, skills: int, runs: int) -> int:
     os.environ["USERPROFILE"] = str(home)
     os.environ["KIROCREW_HOME"] = str(base / "kirocrew-home")
 
-    import kiro_crew
-    from kiro_crew.dashboard.handlers import _shared
+    import efm_go
+    from efm_go.dashboard.handlers import _shared
 
     # A stand-in for the handler's DashboardState: the root resolver reads
     # only ``_slots``.
@@ -190,7 +190,7 @@ def _measure(base: Path, skills: int, runs: int) -> int:
     both = [a + b for a, b in zip(walk, recheck)]
     twice = [2 * a for a in walk]
 
-    print(f"kiro_crew: {Path(kiro_crew.__file__).resolve().parents[2]}")
+    print(f"efm_go: {Path(efm_go.__file__).resolve().parents[2]}")
     print(f"python {platform.python_version()} on {platform.platform()}")
     print(
         f"tree: {len(snapshot.entries)} skills over {len(roots)} roots "

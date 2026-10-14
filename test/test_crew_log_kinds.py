@@ -18,9 +18,9 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, CrewLogError, Ref
-from kiro_crew.crew_log.schema import check_ownership, require_src
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, CrewLogError, Ref
+from efm_go.crew_log.schema import check_ownership, require_src
 
 CREW = "qa"
 SESSION = "s-7f3a"
@@ -113,7 +113,7 @@ def test_an_unknown_kind_is_refused_before_any_source_list_is_indexed():
 
 def test_the_session_emitters_own_sources_are_all_accepted():
     """No behaviour change for the writes that exist: the emitter's own constants."""
-    from kiro_crew.crew_log import emit
+    from efm_go.crew_log import emit
 
     for src in (emit._SRC_ACP, emit._SRC_GATEWAY):
         assert require_src(src, kind=lg.KIND_SESSION) == src

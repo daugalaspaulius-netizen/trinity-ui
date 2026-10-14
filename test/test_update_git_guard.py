@@ -9,7 +9,7 @@ import subprocess
 
 import pytest
 
-from kiro_crew.dashboard.handlers import updates
+from efm_go.dashboard.handlers import updates
 
 
 def _init_repo(path) -> None:
@@ -75,7 +75,7 @@ def _pin_probe_git(monkeypatch, tmp_path):
         )
         fake.chmod(0o755)
     monkeypatch.setattr(
-        "kiro_crew.platform.update_capability.trusted_system_bin", lambda _name: str(fake)
+        "efm_go.platform.update_capability.trusted_system_bin", lambda _name: str(fake)
     )
     return fake
 
@@ -162,14 +162,14 @@ class TestUpdateCheckGitGuard:
         _init_repo(tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
 
         async def _no_provider():
             return None
 
-        monkeypatch.setattr("kiro_crew.platform.update_provider.apply_policy_update", _no_provider)
+        monkeypatch.setattr("efm_go.platform.update_provider.apply_policy_update", _no_provider)
         monkeypatch.setattr(updates, "update_blocked_reason", lambda url: None)
 
         calls: list[tuple[str, ...]] = []
@@ -217,14 +217,14 @@ class TestUpdateCheckGitGuard:
         _init_repo(tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
 
         async def _no_provider():
             return None
 
-        monkeypatch.setattr("kiro_crew.platform.update_provider.apply_policy_update", _no_provider)
+        monkeypatch.setattr("efm_go.platform.update_provider.apply_policy_update", _no_provider)
         monkeypatch.setattr(updates, "update_blocked_reason", lambda url: None)
 
         calls: list[tuple[str, ...]] = []
@@ -274,14 +274,14 @@ class TestUpdateCheckGitGuard:
         _init_repo(tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
 
         async def _no_provider():
             return None
 
-        monkeypatch.setattr("kiro_crew.platform.update_provider.apply_policy_update", _no_provider)
+        monkeypatch.setattr("efm_go.platform.update_provider.apply_policy_update", _no_provider)
         monkeypatch.setattr(updates, "update_blocked_reason", lambda url: None)
 
         calls: list[tuple[str, ...]] = []
@@ -331,7 +331,7 @@ class TestUpdateCheckGitGuard:
         _init_repo(tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
         called = {"n": 0}
@@ -354,7 +354,7 @@ class TestUpdateCheckGitGuard:
         _init_repo(tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
         called = {"n": 0}

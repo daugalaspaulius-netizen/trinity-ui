@@ -42,8 +42,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.cron import (
+from efm_go import platform_compat
+from efm_go.cron import (
     _MAX_SKIP_DATE_LOOKAHEAD,
     CronJob,
     CronSchedule,
@@ -672,7 +672,7 @@ class TestAppSDKMutationLoopSafety:
         """A CronSDK mutation awaited on the loop takes ``_file_lock`` (whose
         contention spin does ``time.sleep``) only in a worker thread — never on
         the event-loop thread. Mirrors the mechanical forbidden-I/O tests."""
-        from kiro_crew.apps.cron_sdk import CronSDK
+        from efm_go.apps.cron_sdk import CronSDK
 
         svc = await CronService.create(base_dir=tmp_path)
         await svc.start()
@@ -706,7 +706,7 @@ class TestAppSDKMutationLoopSafety:
     ) -> None:
         """Registering a cron via the async CronSDK re-arms the timer with NO
         caller-side drain call — arming is owned by CronService."""
-        from kiro_crew.apps.cron_sdk import CronSDK
+        from efm_go.apps.cron_sdk import CronSDK
 
         svc = await CronService.create(base_dir=tmp_path)
         await svc.start()
@@ -1211,7 +1211,7 @@ class TestTerminalStateMergeLocked:
         self, tmp_path: Path
     ) -> None:
         """Same lost-update guarantee for the user-cancel terminal path."""
-        with patch("kiro_crew.cron.cron_script.kill_running_process", return_value=False):
+        with patch("efm_go.cron.cron_script.kill_running_process", return_value=False):
             svc = CronService(base_dir=tmp_path)
             running = svc.add_job(name="running-job", message="m", every_secs=60)
 
@@ -1238,7 +1238,7 @@ class TestTerminalStateMergeLocked:
         set. Output a started run did produce is kept, and an agent job keeps its
         result as dedup context.
         """
-        with patch("kiro_crew.cron.cron_script.kill_running_process", return_value=False):
+        with patch("efm_go.cron.cron_script.kill_running_process", return_value=False):
             svc = CronService(base_dir=tmp_path)
             cmd = svc.add_job(name="cmd-job", message="", command="echo hi", every_secs=60)
             produced = svc.add_job(name="produced", message="", command="echo hi", every_secs=60)

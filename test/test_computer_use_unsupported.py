@@ -25,18 +25,18 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.computer_use import backend as backend_mod
-from kiro_crew.computer_use import enable_state
-from kiro_crew.computer_use import service as service_mod
-from kiro_crew.computer_use import tools as tools_mod
-from kiro_crew.computer_use.backend import (
+from efm_go import platform_compat
+from efm_go.computer_use import backend as backend_mod
+from efm_go.computer_use import enable_state
+from efm_go.computer_use import service as service_mod
+from efm_go.computer_use import tools as tools_mod
+from efm_go.computer_use.backend import (
     UnsupportedBackend,
     register_computer_use_backend,
     reset_shared_backend,
     select_default_backend,
 )
-from kiro_crew.computer_use.types import (
+from efm_go.computer_use.types import (
     ALL_TOOLS,
     ERROR_PREFIX,
     PERMISSION_UNSUPPORTED,
@@ -44,14 +44,14 @@ from kiro_crew.computer_use.types import (
     STATE_KEY_ENABLED,
     ComputerUseUnsupported,
 )
-from kiro_crew.config import loader as config_loader
-from kiro_crew.testing.fake_computer_use import FakeComputerUseBackend
+from efm_go.config import loader as config_loader
+from efm_go.testing.fake_computer_use import FakeComputerUseBackend
 
 _PACKAGE_ROOT = Path(inspect.getfile(backend_mod)).parent
 # Every module in the package, by dotted name — enumerated from disk so a module
 # added later is covered automatically rather than needing this list edited.
 _MODULE_NAMES = tuple(
-    f"kiro_crew.computer_use.{path.stem}"
+    f"efm_go.computer_use.{path.stem}"
     for path in sorted(_PACKAGE_ROOT.glob("*.py"))
     if path.stem != "__init__"
 )
@@ -69,7 +69,7 @@ class TestImportSafety:
         is about statements, not about LOADING a library); what must not happen is a
         module-scope ``CDLL``, which would fail — or worse, half-succeed — on a Linux
         runner and break collection of every test that transitively touches
-        ``kiro_crew``.
+        ``efm_go``.
         """
         assert importlib.import_module(module_name) is not None
 
@@ -114,7 +114,7 @@ class TestImportSafety:
         A typed ``ComputerUseUnsupported`` is what the backend converts into a
         refusal; a bare ``OSError`` from ``CDLL`` would escape as an internal error.
         """
-        from kiro_crew.computer_use import macos_ffi
+        from efm_go.computer_use import macos_ffi
 
         monkeypatch.setattr(platform_compat, "IS_MACOS", False)
         monkeypatch.setattr(macos_ffi, "_libs", None)

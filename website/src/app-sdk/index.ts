@@ -61,7 +61,7 @@ export function useAppApi(): AppApi {
 
 /** Subscribe to a real-time WebSocket event. Unsubscribes on unmount. */
 // ---------------------------------------------------------------------------
-// WebSocket event scope map — MIRRORS kiro_crew/dashboard/ws_event_scope.py.
+// WebSocket event scope map — MIRRORS efm_go/dashboard/ws_event_scope.py.
 // The gateway is authoritative; this table exists only so the SDK can tell an
 // app author accurately whether a subscription will be delivered. Keep the
 // three sets in sync with the Python tables (a completeness test on the Python

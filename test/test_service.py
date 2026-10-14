@@ -8,8 +8,8 @@ Two layers tested separately:
     exit code.
 
 Tests do not actually invoke ``systemctl`` or ``launchctl``. The
-subprocess calls in :mod:`kiro_crew.service.linux` and
-:mod:`kiro_crew.service.macos` are mocked.
+subprocess calls in :mod:`efm_go.service.linux` and
+:mod:`efm_go.service.macos` are mocked.
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.service import common, controller
-from kiro_crew.service.common import (
+from efm_go.service import common, controller
+from efm_go.service.common import (
     LAUNCHD_LABEL,
     RESTART_NOT_UP,
     RESTART_REFUSED,
@@ -64,7 +64,7 @@ def _no_host_env_file(monkeypatch, tmp_path):
     see a file it never wrote. Point both paths at an absent directory; a test
     that needs the file writes its own and re-points them.
     """
-    from kiro_crew.service import linux as svc_linux
+    from efm_go.service import linux as svc_linux
 
     env_dir = tmp_path / "absent-etc-kirocrew"
     monkeypatch.setattr(svc_linux, "ENV_DIR", env_dir)
@@ -97,7 +97,7 @@ def _restart_settle_without_waiting(monkeypatch):
     """Every ``restart()`` here confirms the unit through a fake clock: the
     window (``_RESTART_SETTLE_SECS``) is still walked, poll by poll, but takes
     no wall time. Tests reach the clock as ``svc_linux.time``."""
-    from kiro_crew.service import linux as svc_linux
+    from efm_go.service import linux as svc_linux
 
     monkeypatch.setattr(svc_linux, "time", _FakeClock(), raising=False)
 
@@ -109,7 +109,7 @@ _OURS_UNIT_TEXT = '[Unit]\nDescription=Kiro Crew gateway\n[Service]\nEnvironment
 
 
 def _svc_linux():
-    from kiro_crew.service import linux as svc_linux
+    from efm_go.service import linux as svc_linux
 
     return svc_linux
 
@@ -254,31 +254,31 @@ def _systemctl_stub(unit_path):
 
 class TestPlatformDetection:
     def test_linux_with_systemctl_returns_systemd(self):
-        with patch("kiro_crew.service.common.sys") as mock_sys, patch(
-            "kiro_crew.service.common.shutil.which",
+        with patch("efm_go.service.common.sys") as mock_sys, patch(
+            "efm_go.service.common.shutil.which",
             return_value="/usr/bin/systemctl",
         ):
             mock_sys.platform = "linux"
             assert current_platform() == Platform.SYSTEMD
 
     def test_linux_without_systemctl_returns_unsupported(self):
-        with patch("kiro_crew.service.common.sys") as mock_sys, patch(
-            "kiro_crew.service.common.shutil.which", return_value=None
+        with patch("efm_go.service.common.sys") as mock_sys, patch(
+            "efm_go.service.common.shutil.which", return_value=None
         ):
             mock_sys.platform = "linux"
             assert current_platform() == Platform.UNSUPPORTED
 
     def test_darwin_with_launchctl_returns_launchd(self):
-        with patch("kiro_crew.service.common.sys") as mock_sys, patch(
-            "kiro_crew.service.common.shutil.which",
+        with patch("efm_go.service.common.sys") as mock_sys, patch(
+            "efm_go.service.common.shutil.which",
             return_value="/bin/launchctl",
         ):
             mock_sys.platform = "darwin"
             assert current_platform() == Platform.LAUNCHD
 
     def test_unknown_platform_returns_unsupported(self):
-        with patch("kiro_crew.service.common.sys") as mock_sys, patch(
-            "kiro_crew.service.common.shutil.which",
+        with patch("efm_go.service.common.sys") as mock_sys, patch(
+            "efm_go.service.common.shutil.which",
             return_value="/usr/bin/anything",
         ):
             mock_sys.platform = "win32"
@@ -292,7 +292,7 @@ class TestManagedServiceMarkerDetection:
         # No system unit file, and the account's own manager has no unit either:
         # the user scope is ASKED (never the host's real manager from a test).
         run = _fake_systemctl(system=None, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert controller.installed_service_has_managed_marker() is None
         assert ["systemctl", "--user", "show"] == run.calls[0][:3], run.calls
 
@@ -302,7 +302,7 @@ class TestManagedServiceMarkerDetection:
         monkeypatch.setattr(controller.linux, "UNIT_PATH", path)
         path.write_text("[Service]\nExecStart=kirocrew gateway\n", encoding="utf-8")
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert controller.installed_service_has_managed_marker() is False
             path.write_text(
                 '[Service]\nEnvironment="KIROCREW_SERVICE_MANAGED=1"\n',
@@ -322,7 +322,7 @@ class TestManagedServiceMarkerDetection:
         monkeypatch.setattr(controller, "current_platform", lambda: Platform.SYSTEMD)
         monkeypatch.setattr(controller.linux, "UNIT_PATH", tmp_path / "missing.service")
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(fragment))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert controller.installed_service_has_managed_marker() is False
             fragment.write_text(
                 '[Service]\nEnvironment="KIROCREW_SERVICE_MANAGED=1"\n',
@@ -358,7 +358,7 @@ class TestManagedServiceMarkerDetection:
 
 class TestShutdownBudget:
     def test_service_deadline_covers_gateway_grace(self):
-        from kiro_crew.gateway_shutdown_budget import (
+        from efm_go.gateway_shutdown_budget import (
             GRACEFUL_SHUTDOWN_SECS,
             SIGNAL_MARGIN_SECS,
             TOTAL_SHUTDOWN_BUDGET_SECS,
@@ -374,19 +374,19 @@ class TestLinuxUnitRendering:
     """The rendered systemd unit should reference the resolved kirocrew bin."""
 
     def test_render_unit_includes_exec_start(self, tmp_path, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         # `id -gn tester` would return some real group; mock it to a known value
         # so the test asserts both User= and Group= are populated correctly.
         gid_result = MagicMock(returncode=0, stdout="amazon\n", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/home/u/.toolbox/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", return_value=gid_result
+            "efm_go.service.linux.subprocess.run", return_value=gid_result
         ), patch(
-            "kiro_crew.service.linux.trusted_system_bin", return_value="/usr/bin/id"
+            "efm_go.service.linux.trusted_system_bin", return_value="/usr/bin/id"
         ):
             unit = svc_linux.render_unit()
         # ExecStart executable is double-quoted (systemd tokenizes on
@@ -433,16 +433,16 @@ class TestLinuxUnitRendering:
         status so the unit stands down instead, and it names the constant the
         CLI exits with, so the exit and the exemption cannot drift apart.
         """
-        from kiro_crew.gateway_lock import LIVE_HOLDER_EXIT_CODE
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.gateway_lock import LIVE_HOLDER_EXIT_CODE
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         gid_result = MagicMock(returncode=0, stdout="amazon\n", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/home/u/.toolbox/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", return_value=gid_result
+            "efm_go.service.linux.subprocess.run", return_value=gid_result
         ):
             unit = svc_linux.render_unit(user_scope=user_scope)
 
@@ -474,15 +474,15 @@ class TestLinuxUnitRendering:
         """A system unit inherits no login-session env, so pods (systemd --user
         units) were unreachable from the service-installed gateway. The unit must
         wire up the per-user systemd instance explicitly."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         gid_result = MagicMock(returncode=0, stdout="staff\n", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", return_value=gid_result
+            "efm_go.service.linux.subprocess.run", return_value=gid_result
         ), patch.object(
             svc_linux, "_current_uid", return_value=4242
         ):
@@ -515,15 +515,15 @@ class TestLinuxUnitRendering:
     def test_render_unit_omits_session_bus_when_uid_unresolvable(self, monkeypatch):
         """Rather than bake in a guessed uid, omit the pair — the pod runtime
         backfills the same values at call time anyway."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         gid_result = MagicMock(returncode=0, stdout="staff\n", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", return_value=gid_result
+            "efm_go.service.linux.subprocess.run", return_value=gid_result
         ), patch.object(
             svc_linux, "_current_uid", return_value=None
         ):
@@ -538,7 +538,7 @@ class TestLinuxUnitRendering:
     def test_session_bus_is_systemd_only_not_in_the_shared_environment(self):
         """`/run/user/<uid>` is a Linux/systemd path with no launchd equivalent,
         so it must NOT leak into the env shared with the macOS plist."""
-        from kiro_crew.service.common import service_environment
+        from efm_go.service.common import service_environment
 
         keys = set(service_environment("/home/tester"))
         assert "XDG_RUNTIME_DIR" not in keys
@@ -546,15 +546,15 @@ class TestLinuxUnitRendering:
         assert service_environment("/home/tester")["KIROCREW_SERVICE_MANAGED"] == "1"
 
     def test_current_uid_returns_none_for_an_unknown_user(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         assert svc_linux._current_uid("no-such-user-e2b9f1") is None
 
     def test_render_unit_falls_back_to_argv0_when_kirocrew_not_on_path(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
-        with patch("kiro_crew.service.common.shutil.which", return_value=None), patch.object(
+        with patch("efm_go.service.common.shutil.which", return_value=None), patch.object(
             sys, "argv", ["/some/path/kirocrew"]
         ):
             unit = svc_linux.render_unit()
@@ -565,7 +565,7 @@ class TestLinuxUnitRendering:
     def test_install_writes_unit_via_sudo_install_and_invokes_systemctl(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         # Pin a non-root euid so the privilege prefix is deterministically
@@ -575,10 +575,10 @@ class TestLinuxUnitRendering:
         # Capture every subprocess.run call. All return success.
         ok = MagicMock(returncode=0, stdout="", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", return_value=ok
+            "efm_go.service.linux.subprocess.run", return_value=ok
         ) as run:
             svc_linux.install()
 
@@ -610,7 +610,7 @@ class TestLinuxUnitRendering:
         """If `sudo install` fails (user denies password, sudoers misconfigured),
         install MUST raise with a clear message rather than continuing on
         and silently leaving the system half-configured."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setattr(svc_linux.os, "geteuid", lambda: 1000, raising=False)
@@ -619,10 +619,10 @@ class TestLinuxUnitRendering:
         )
 
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", return_value=install_failed
+            "efm_go.service.linux.subprocess.run", return_value=install_failed
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc_info:
                 svc_linux.install()
@@ -637,13 +637,13 @@ class TestLinuxUnitRendering:
         """Defensive: render_unit needs the user's name to fill `User=`. If
         the env doesn't expose it, fail fast rather than render a unit
         with an empty User= line that systemd will reject."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.delenv("USER", raising=False)
         monkeypatch.delenv("LOGNAME", raising=False)
 
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ):
             with pytest.raises(svc_linux.ServiceInstallError):
@@ -654,7 +654,7 @@ class TestLinuxUnitRendering:
         (the baked ``XDG_RUNTIME_DIR`` / ``DBUS_SESSION_BUS_ADDRESS``), so with
         ``Linger=no`` the account's manager stops at logout and takes the
         runtimes down with it. The install path must say so and name the fix."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setattr(svc_linux, "trusted_system_bin", lambda _n: "/usr/bin/loginctl")
@@ -670,7 +670,7 @@ class TestLinuxUnitRendering:
         assert "loginctl enable-linger tester" in warning
 
     def test_linger_warning_silent_when_linger_is_on(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setattr(svc_linux, "trusted_system_bin", lambda _n: "/usr/bin/loginctl")
@@ -684,14 +684,14 @@ class TestLinuxUnitRendering:
     def test_linger_warning_silent_when_undeterminable(self, monkeypatch):
         """No ``loginctl``, an unknown user, or an unrecognised value stays quiet
         rather than guessing — the install still succeeds unqualified."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setattr(svc_linux, "trusted_system_bin", lambda _n: None)
         assert svc_linux.linger_warning_for_service_account() is None
 
     def test_uninstall_is_idempotent_when_unit_missing(self, tmp_path, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         # Point UNIT_PATH at a nonexistent file; both scopes are only QUERIED
         # (an unprivileged `show` each — the system manager is asked even with
@@ -702,7 +702,7 @@ class TestLinuxUnitRendering:
         monkeypatch.setattr(svc_linux, "UNIT_PATH", unit_path)
         monkeypatch.setattr(svc_linux.os, "geteuid", lambda: 1000, raising=False)
         run = _fake_systemctl(system=None, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
         assert report.system == "not installed"
         assert report.user == "not installed"
@@ -716,19 +716,19 @@ class TestLinuxPrivilegeResolution:
     nor lets a raw FileNotFoundError escape controller.install_service."""
 
     def test_privilege_prefix_is_empty_as_root(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.os, "geteuid", lambda: 0, raising=False)
         assert svc_linux._privilege_prefix() == []
 
     def test_privilege_prefix_is_sudo_when_not_root(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.os, "geteuid", lambda: 1000, raising=False)
         assert svc_linux._privilege_prefix() == ["sudo"]
 
     def test_require_privilege_ok_as_root_without_sudo(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.os, "geteuid", lambda: 0, raising=False)
         monkeypatch.setattr(svc_linux.shutil, "which", lambda _n: None)
@@ -736,7 +736,7 @@ class TestLinuxPrivilegeResolution:
         svc_linux._require_privilege()
 
     def test_require_privilege_raises_when_not_root_and_no_sudo(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         # The guard is Linux-scoped (systemd module); pin the platform so the
         # test asserts the raising branch on any host it runs on.
@@ -748,7 +748,7 @@ class TestLinuxPrivilegeResolution:
         assert "sudo" in str(exc.value).lower()
 
     def test_require_privilege_is_noop_off_linux(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         # On a non-Linux host (macOS/Windows) the systemd path is never the real
         # dispatch target, and cross-platform unit tests call these functions
@@ -762,7 +762,7 @@ class TestLinuxPrivilegeResolution:
         """A bare-root install (root login, or sudo with no SUDO_USER) must NOT
         produce a User=root unit — the gateway runs untrusted tools and the
         module invariant is that it runs as a normal user."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "root")
         monkeypatch.delenv("SUDO_USER", raising=False)
@@ -775,7 +775,7 @@ class TestLinuxPrivilegeResolution:
     def test_current_user_prefers_sudo_user_over_root(self, monkeypatch):
         """`sudo kirocrew service install` must target the human behind sudo,
         not the root sudo elevated to — so the unit gets User=<human>."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "root")
         monkeypatch.setenv("SUDO_USER", "alice")
@@ -786,7 +786,7 @@ class TestLinuxPrivilegeResolution:
         HOME=/WorkingDirectory= in the unit must follow the resolved USER (from
         that user's passwd home), never the process's /root — otherwise the
         non-root service cannot enter its working dir and fails to start."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "root")
         monkeypatch.setenv("SUDO_USER", "alice")
@@ -798,8 +798,8 @@ class TestLinuxPrivilegeResolution:
         monkeypatch.setattr(svc_linux, "_home_for_user", lambda u: "/home/alice" if u == "alice" else "/root")
         gid = MagicMock(returncode=0, stdout="alice\n", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which", return_value="/usr/local/bin/kirocrew"
-        ), patch("kiro_crew.service.linux.subprocess.run", return_value=gid):
+            "efm_go.service.common.shutil.which", return_value="/usr/local/bin/kirocrew"
+        ), patch("efm_go.service.linux.subprocess.run", return_value=gid):
             unit = svc_linux.render_unit()
         assert "User=alice" in unit
         assert "WorkingDirectory=/home/alice" in unit
@@ -810,7 +810,7 @@ class TestLinuxPrivilegeResolution:
         """The reported bug: on a root-only/minimal host without sudo, install
         must not crash with an uncaught FileNotFoundError; it must raise the
         friendly ServiceInstallError instead."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.sys, "platform", "linux")
         monkeypatch.setenv("USER", "tester")
@@ -824,7 +824,7 @@ class TestLinuxPrivilegeResolution:
         """restart()/stop() are best-effort and reachable from the update path;
         a missing sudo must degrade to a failed result, never a raised
         FileNotFoundError."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.os, "geteuid", lambda: 1000, raising=False)
         active = _fake_systemctl(system=_RUNNING, user=None)
@@ -850,11 +850,11 @@ class TestLinuxEnvironmentFile:
     KIROCREW_PORT on the service and it did not change the port'."""
 
     def test_unit_references_the_env_file(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ):
             unit = svc_linux.render_unit()
@@ -866,7 +866,7 @@ class TestLinuxEnvironmentFile:
         assert service < unit.index("EnvironmentFile=") < install
 
     def test_seed_env_file_creates_when_absent(self, tmp_path, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         env_file = tmp_path / "kirocrew" / "kirocrew.env"
         monkeypatch.setattr(svc_linux, "ENV_DIR", env_file.parent)
@@ -896,7 +896,7 @@ class TestLinuxEnvironmentFile:
         assert "#KIROCREW_PORT=" in written["contents"]
 
     def test_seed_env_file_never_clobbers_operator_edits(self, tmp_path, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         env_file = tmp_path / "kirocrew" / "kirocrew.env"
         env_file.parent.mkdir(parents=True)
@@ -922,7 +922,7 @@ class TestLinuxEnvironmentFile:
         """A pre-existing root-only /etc/kirocrew must not abort install: the
         existence probe goes through privileged `test -e`, and any error still
         degrades to a warning instead of propagating."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         env_file = tmp_path / "kirocrew" / "kirocrew.env"
         monkeypatch.setattr(svc_linux, "ENV_DIR", env_file.parent)
@@ -940,7 +940,7 @@ class TestLinuxEnvironmentFile:
         """Uninstall must delete ONLY our untouched seed — an operator-authored
         or -edited overrides file (including one pre-provisioned before install)
         is their config, not ours to remove."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         unit = tmp_path / "kirocrew.service"
         unit.write_text("[Unit]\n")
@@ -967,7 +967,7 @@ class TestLinuxEnvironmentFile:
         assert str(env_file) not in removed
 
     def test_uninstall_removes_our_untouched_seed(self, tmp_path, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         unit = tmp_path / "kirocrew.service"
         unit.write_text("[Unit]\n")
@@ -1066,8 +1066,8 @@ class TestLinuxServiceWritesUtf8:
             return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
 
         with (
-            patch("kiro_crew.service.linux.subprocess.run", side_effect=_fake_run),
-            patch("kiro_crew.service.linux._privilege_prefix", return_value=["sudo"]),
+            patch("efm_go.service.linux.subprocess.run", side_effect=_fake_run),
+            patch("efm_go.service.linux._privilege_prefix", return_value=["sudo"]),
         ):
             call(contents)
         return staged["raw"]
@@ -1081,16 +1081,16 @@ class TestLinuxServiceWritesUtf8:
         handed to the writer can legitimately carry non-ASCII, which is what
         makes the writer's encoding load-bearing rather than cosmetic.
         """
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "usuário")
         gid_result = MagicMock(returncode=0, stdout="usuário\n", stderr="")
         with (
             patch(
-                "kiro_crew.service.common.shutil.which", return_value="/home/usuario/bin/kirocrew"
+                "efm_go.service.common.shutil.which", return_value="/home/usuario/bin/kirocrew"
             ),
-            patch("kiro_crew.service.linux.subprocess.run", return_value=gid_result),
-            patch("kiro_crew.service.linux._home_for_user", return_value="/home/usuario"),
+            patch("efm_go.service.linux.subprocess.run", return_value=gid_result),
+            patch("efm_go.service.linux._home_for_user", return_value="/home/usuario"),
         ):
             unit = svc_linux.render_unit()
 
@@ -1099,7 +1099,7 @@ class TestLinuxServiceWritesUtf8:
 
     def test_the_unit_write_stages_utf8_bytes(self):
         """``_write_unit_via_sudo`` must hand ``install`` UTF-8 bytes."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         contents = "[Service]\nWorkingDirectory=/home/usuario\nEnvironment=USER=usuário\n"
         raw = self._capture_staged_bytes(svc_linux._write_unit_via_sudo, contents)
@@ -1116,7 +1116,7 @@ class TestLinuxServiceWritesUtf8:
         contract pin rather than a live-harm test -- but the helper takes
         arbitrary ``contents`` and publishes to a root-owned path, so the
         encoding must not be left to the host."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         contents = "# Kiro Crew — überschrift\nKIROCREW_PORT=5477\n"
         raw = self._capture_staged_bytes(
@@ -1132,7 +1132,7 @@ class TestLinuxServiceWritesUtf8:
         themselves the residue of an earlier pass that fixed a sibling."""
         from pathlib import Path
 
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         source = Path(svc_linux.__file__).read_text(encoding="utf-8")
         offenders = _text_writes_missing_encoding(source)
@@ -1171,12 +1171,12 @@ class TestMacOSPlistRendering:
         from both: on a headless Linux box the auto-open has nothing to reach, which
         is why the gap survived there unnoticed.
         """
-        from kiro_crew.service import linux as svc_linux
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import linux as svc_linux
+        from efm_go.service import macos as svc_macos
 
         monkeypatch.setattr(svc_macos, "LIVE_PROGRAM", tmp_path / "live-gateway")
         with patch(
-            "kiro_crew.service.common.shutil.which", return_value="/opt/homebrew/bin/kirocrew"
+            "efm_go.service.common.shutil.which", return_value="/opt/homebrew/bin/kirocrew"
         ):
             plist = svc_macos.render_plist()
         args = plist.split("<key>ProgramArguments</key>", 1)[1].split("</array>", 1)[0]
@@ -1187,8 +1187,8 @@ class TestMacOSPlistRendering:
         monkeypatch.setenv("USER", "tester")
         gid = MagicMock(returncode=0, stdout="staff\n", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which", return_value="/usr/local/bin/kirocrew"
-        ), patch("kiro_crew.service.linux.subprocess.run", return_value=gid):
+            "efm_go.service.common.shutil.which", return_value="/usr/local/bin/kirocrew"
+        ), patch("efm_go.service.linux.subprocess.run", return_value=gid):
             unit = svc_linux.render_unit()
         assert 'ExecStart="/usr/local/bin/kirocrew" gateway --no-open' in unit
 
@@ -1200,12 +1200,12 @@ class TestMacOSPlistRendering:
         PATH included - without rewriting and re-bootstrapping the plist (see
         service.common.launchd_live_program).
         """
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         link = tmp_path / "live-gateway"
         monkeypatch.setattr(svc_macos, "LIVE_PROGRAM", link)
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/opt/homebrew/bin/kirocrew",
         ):
             plist = svc_macos.render_plist()
@@ -1217,8 +1217,8 @@ class TestMacOSPlistRendering:
         assert "<key>KeepAlive</key>" in plist
 
     def test_render_plist_pins_bounded_graceful_restart_contract(self, tmp_path):
-        from kiro_crew.gateway_shutdown_budget import TOTAL_SHUTDOWN_BUDGET_SECS
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.gateway_shutdown_budget import TOTAL_SHUTDOWN_BUDGET_SECS
+        from efm_go.service import macos as svc_macos
 
         rendered = svc_macos.render_plist()
         payload = plistlib.loads(rendered.encode())
@@ -1229,8 +1229,8 @@ class TestMacOSPlistRendering:
         assert svc_macos.restart_contract_current(plist) is True
 
     def test_restart_contract_rejects_legacy_and_unbounded_definitions(self, tmp_path):
-        from kiro_crew.gateway_shutdown_budget import TOTAL_SHUTDOWN_BUDGET_SECS
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.gateway_shutdown_budget import TOTAL_SHUTDOWN_BUDGET_SECS
+        from efm_go.service import macos as svc_macos
 
         plist = tmp_path / "agent.plist"
         for payload in (
@@ -1260,7 +1260,7 @@ class TestMacOSPlistRendering:
         containing ``&`` or ``<`` would otherwise emit invalid XML that
         ``launchctl load`` rejects.
         """
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         monkeypatch.setattr(
             svc_macos, "LIVE_PROGRAM", Path("/path/with/<bad>&chars/live-gateway")
@@ -1272,7 +1272,7 @@ class TestMacOSPlistRendering:
         assert "&amp;chars" in plist
 
     def test_install_writes_plist_and_loads(self, tmp_path, monkeypatch):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         plist_dir = tmp_path / "LaunchAgents"
         log_dir = tmp_path / "Logs"
@@ -1285,9 +1285,9 @@ class TestMacOSPlistRendering:
 
         run = MagicMock(returncode=0, stdout="", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/opt/homebrew/bin/kirocrew",
-        ), patch("kiro_crew.service.macos.subprocess.run", return_value=run) as proc:
+        ), patch("efm_go.service.macos.subprocess.run", return_value=run) as proc:
             svc_macos.install()
 
         assert plist_path.exists()
@@ -1297,21 +1297,21 @@ class TestMacOSPlistRendering:
 
 class TestControllerDispatch:
     def test_install_unsupported_returns_2(self):
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.UNSUPPORTED,
         ):
             rc = controller.install_service()
         assert rc == 2
 
     def test_install_systemd_returns_0(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "install") as mock_install:
             rc = controller.install_service()
@@ -1319,12 +1319,12 @@ class TestControllerDispatch:
         mock_install.assert_called_once()
 
     def test_install_systemd_prints_linger_warning(self, capsys):
-        from kiro_crew.service import apparmor, controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import apparmor, controller
+        from efm_go.service import linux as svc_linux
 
         with (
             patch(
-                "kiro_crew.service.controller.current_platform",
+                "efm_go.service.controller.current_platform",
                 return_value=Platform.SYSTEMD,
             ),
             patch.object(svc_linux, "install", return_value=apparmor.ProfileOutcome(False, "")),
@@ -1339,12 +1339,12 @@ class TestControllerDispatch:
         assert "linger is off for tester" in capsys.readouterr().out
 
     def test_install_systemd_silent_when_linger_ok(self, capsys):
-        from kiro_crew.service import apparmor, controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import apparmor, controller
+        from efm_go.service import linux as svc_linux
 
         with (
             patch(
-                "kiro_crew.service.controller.current_platform",
+                "efm_go.service.controller.current_platform",
                 return_value=Platform.SYSTEMD,
             ),
             patch.object(svc_linux, "install", return_value=apparmor.ProfileOutcome(False, "")),
@@ -1355,30 +1355,30 @@ class TestControllerDispatch:
         assert "linger" not in capsys.readouterr().out
 
     def test_uninstall_unsupported_returns_2(self):
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.UNSUPPORTED,
         ):
             rc = controller.uninstall_service()
         assert rc == 2
 
     def test_is_service_active_unsupported_returns_false(self):
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.UNSUPPORTED,
         ):
             assert controller.is_service_active() is False
 
     def test_stop_service_returns_false_when_inactive(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "is_active", return_value=False), patch.object(
             svc_linux, "stop"
@@ -1387,11 +1387,11 @@ class TestControllerDispatch:
         mock_stop.assert_not_called()
 
     def test_stop_service_returns_true_when_active_systemd(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "is_active", return_value=True), patch.object(
             svc_linux, "stop"
@@ -1400,11 +1400,11 @@ class TestControllerDispatch:
         mock_stop.assert_called_once()
 
     def test_stop_service_routes_to_macos(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "is_active", return_value=True), patch.object(
             svc_macos, "stop"
@@ -1413,11 +1413,11 @@ class TestControllerDispatch:
         mock_stop.assert_called_once()
 
     def test_stop_service_returns_false_when_macos_inactive(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "is_active", return_value=False), patch.object(
             svc_macos, "stop"
@@ -1426,10 +1426,10 @@ class TestControllerDispatch:
         mock_stop.assert_not_called()
 
     def test_stop_service_unsupported_returns_false(self):
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.UNSUPPORTED,
         ):
             assert controller.stop_service() is False
@@ -1438,11 +1438,11 @@ class TestControllerDispatch:
         # Same behavior as stop_service: the controller should refuse to
         # restart an inactive service rather than masking the state issue.
         # Callers fall back to the foreground-gateway path on False.
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "is_active", return_value=False), patch.object(
             svc_linux, "restart"
@@ -1452,13 +1452,13 @@ class TestControllerDispatch:
         mock_restart.assert_not_called()
 
     def test_restart_service_returns_true_when_active_systemd(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
-        from kiro_crew.service.common import RestartReport, ScopeRestart
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
+        from efm_go.service.common import RestartReport, ScopeRestart
 
         restarted = RestartReport((ScopeRestart("system", True),))
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "is_active", return_value=True), patch.object(
             svc_linux, "restart", return_value=restarted
@@ -1474,9 +1474,9 @@ class TestControllerDispatch:
         # bogus success. The controller must propagate the restart outcome so
         # the caller diagnoses it instead of assuming the service manager
         # handled it.
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
-        from kiro_crew.service.common import RestartReport, ScopeRestart
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
+        from efm_go.service.common import RestartReport, ScopeRestart
 
         refused = RestartReport(
             (
@@ -1490,7 +1490,7 @@ class TestControllerDispatch:
             )
         )
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "is_active", return_value=True), patch.object(
             svc_linux, "restart", return_value=refused
@@ -1506,7 +1506,7 @@ class TestControllerDispatch:
         # not. The report is not ok — a scope still needs a hand — but it must
         # let the CLI say which scope restarted, or the operator reads "not
         # restarted" about the gateway they use.
-        from kiro_crew.service.common import RESTART_NOT_UP, RestartReport, ScopeRestart
+        from efm_go.service.common import RESTART_NOT_UP, RestartReport, ScopeRestart
 
         user_ok = ScopeRestart("user", True)
         system_down = ScopeRestart(
@@ -1525,11 +1525,11 @@ class TestControllerDispatch:
         assert RestartReport().restarted == ()
 
     def test_restart_service_routes_to_macos(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "is_active", return_value=True), patch.object(
             svc_macos, "restart", return_value=True
@@ -1540,11 +1540,11 @@ class TestControllerDispatch:
         mock_restart.assert_called_once()
 
     def test_restart_service_returns_false_when_macos_restart_fails(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "is_active", return_value=True), patch.object(
             svc_macos, "restart", return_value=False
@@ -1559,11 +1559,11 @@ class TestControllerDispatch:
         mock_restart.assert_called_once()
 
     def test_restart_service_returns_false_when_macos_inactive(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "is_active", return_value=False), patch.object(
             svc_macos, "restart"
@@ -1573,10 +1573,10 @@ class TestControllerDispatch:
         mock_restart.assert_not_called()
 
     def test_restart_service_unsupported_returns_false(self):
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.UNSUPPORTED,
         ):
             report = controller.restart_service()
@@ -1586,13 +1586,13 @@ class TestControllerDispatch:
         # The hint is printed precisely when the CLI restart path just failed
         # for privileges, so it must name the privileged command — never a
         # circular "kirocrew restart".
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch(
-            "kiro_crew.service.common.current_platform",
+            "efm_go.service.common.current_platform",
             return_value=Platform.SYSTEMD,
         ):
             hint = controller.manual_restart_hint()
@@ -1605,17 +1605,17 @@ class TestControllerDispatch:
         # exists; the MANUAL hint must not, because `kirocrew restart` is the
         # command that just failed. The per-scope report carries the user-scope
         # command for a refused user unit, so this function has one answer.
-        from kiro_crew.service import common as svc_common
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import common as svc_common
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux, "UNIT_PATH", tmp_path / "absent.service")
         monkeypatch.setattr(svc_linux, "user_unit_file_path", lambda: tmp_path / "nope.service")
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch(
-            "kiro_crew.service.common.current_platform",
+            "efm_go.service.common.current_platform",
             return_value=Platform.SYSTEMD,
         ):
             hint = controller.manual_restart_hint()
@@ -1626,14 +1626,14 @@ class TestControllerDispatch:
         # Not kickstart: macos.restart() already ran kickstart and it was
         # refused, so the hint must be a different mechanism (bootout +
         # bootstrap from the installed plist), not a retry of the failure.
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
-        from kiro_crew.service.common import LAUNCHD_LABEL
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
+        from efm_go.service.common import LAUNCHD_LABEL
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
-        ), patch("kiro_crew.service.controller.os.getuid", return_value=501, create=True):
+        ), patch("efm_go.service.controller.os.getuid", return_value=501, create=True):
             hint = controller.manual_restart_hint()
         assert "kickstart" not in hint
         assert f"launchctl bootout gui/501/{LAUNCHD_LABEL}" in hint
@@ -1642,14 +1642,14 @@ class TestControllerDispatch:
     def test_manual_restart_hint_never_circular(self):
         # Whatever the platform, the hint must not send the operator back into
         # the command that just failed.
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         for plat in (Platform.SYSTEMD, Platform.LAUNCHD, Platform.UNSUPPORTED):
             with patch(
-                "kiro_crew.service.controller.current_platform",
+                "efm_go.service.controller.current_platform",
                 return_value=plat,
             ), patch(
-                "kiro_crew.service.common.current_platform",
+                "efm_go.service.common.current_platform",
                 return_value=plat,
             ):
                 assert controller.manual_restart_hint() != "kirocrew restart"
@@ -1657,11 +1657,11 @@ class TestControllerDispatch:
     def test_install_systemd_handles_install_error(self, capsys):
         """If linux.install raises ServiceInstallError, controller catches it,
         prints to stderr, and returns 1 — not propagating the exception."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(
             svc_linux,
@@ -1674,11 +1674,11 @@ class TestControllerDispatch:
         assert "simulated failure" in captured.err
 
     def test_install_routes_to_macos(self, capsys):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "install") as mock_install:
             rc = controller.install_service()
@@ -1690,12 +1690,12 @@ class TestControllerDispatch:
         assert "plist:" in captured.out
 
     def test_uninstall_routes_to_systemd(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         report = svc_linux.UninstallReport("removed (/etc/x.service)", "not installed")
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "uninstall", return_value=report) as mock_un:
             rc = controller.uninstall_service()
@@ -1706,11 +1706,11 @@ class TestControllerDispatch:
         """uninstall() needs root to remove the root-owned unit, so it can raise
         ServiceInstallError on a non-root host without sudo. The controller must
         catch it and return non-zero, not let a traceback escape."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(
             svc_linux, "uninstall", side_effect=svc_linux.ServiceInstallError("needs sudo")
@@ -1720,11 +1720,11 @@ class TestControllerDispatch:
         assert "needs sudo" in capsys.readouterr().err
 
     def test_uninstall_routes_to_macos(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "uninstall") as mock_un:
             rc = controller.uninstall_service()
@@ -1733,11 +1733,11 @@ class TestControllerDispatch:
 
     def test_status_routes_to_systemd_active(self, capsys):
         """status() returns 0 when the unit is UP, prints the systemctl output."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(
             svc_linux, "status", return_value="● kirocrew.service\n"
@@ -1747,11 +1747,11 @@ class TestControllerDispatch:
         assert "kirocrew.service" in capsys.readouterr().out
 
     def test_status_routes_to_systemd_inactive_returns_1(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "status", return_value=""), patch.object(
             svc_linux, "is_up", return_value=False
@@ -1765,15 +1765,15 @@ class TestControllerDispatch:
         # `activating (auto-restart)`, and the exit code must NOT follow it —
         # a script gating on `kirocrew service status` would read a gateway
         # that never started as healthy. The headline still prints the state.
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         looping = {"ActiveState": "activating", "SubState": "auto-restart"}
         run = _fake_systemctl(system=None, user=looping)
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
-        ), patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        ), patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_active() is True
             assert svc_linux.is_up() is False
             rc = controller.service_status()
@@ -1781,11 +1781,11 @@ class TestControllerDispatch:
         assert "user scope: activating (auto-restart)" in capsys.readouterr().out
 
     def test_status_routes_to_macos_active(self, capsys):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(
             svc_macos, "status", return_value='"PID" = 1234;\n'
@@ -1795,11 +1795,11 @@ class TestControllerDispatch:
         assert "PID" in capsys.readouterr().out
 
     def test_status_routes_to_macos_inactive_returns_1(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "status", return_value=""), patch.object(
             svc_macos, "is_active", return_value=False
@@ -1808,31 +1808,31 @@ class TestControllerDispatch:
         assert rc == 1
 
     def test_status_unsupported_returns_2(self):
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.UNSUPPORTED,
         ):
             rc = controller.service_status()
         assert rc == 2
 
     def test_is_service_active_systemd_routes(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.SYSTEMD,
         ), patch.object(svc_linux, "is_active", return_value=True):
             assert controller.is_service_active() is True
 
     def test_is_service_active_macos_routes(self):
-        from kiro_crew.service import controller
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import controller
+        from efm_go.service import macos as svc_macos
 
         with patch(
-            "kiro_crew.service.controller.current_platform",
+            "efm_go.service.controller.current_platform",
             return_value=Platform.LAUNCHD,
         ), patch.object(svc_macos, "is_active", return_value=True):
             assert controller.is_service_active() is True
@@ -1842,7 +1842,7 @@ class TestLinuxControlPaths:
     """Cover uninstall, stop, status, is_active, and the sudo helper paths."""
 
     def test_uninstall_runs_full_teardown_when_unit_exists(self, tmp_path, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         # Point UNIT_PATH at a real temp file so ``UNIT_PATH.exists()``
         # is True without monkeypatching ``Path.exists`` globally (which
@@ -1858,7 +1858,7 @@ class TestLinuxControlPaths:
         # A unit the system manager has LOADED (stopped): the teardown must stop
         # and disable it before the file goes.
         run = _fake_systemctl(system=_DEAD, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             svc_linux.uninstall()
         called = run.calls
         # Each step must use sudo since /etc/systemd/system requires root.
@@ -1871,10 +1871,10 @@ class TestLinuxControlPaths:
         assert sentinel.read_text() == "user data"
 
     def test_is_active_returns_true_when_systemctl_says_active(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_active() is True
         # is_active must NOT use sudo (state is queryable as a regular user).
         assert all("sudo" not in c for c in run.calls), (
@@ -1882,28 +1882,28 @@ class TestLinuxControlPaths:
         )
 
     def test_is_active_returns_false_when_inactive(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_DEAD, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_active() is False
 
     def test_stop_invokes_systemctl_stop(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         # stop() acts on the scope(s) running the unit, so the system unit must
         # answer `show` first (unprivileged); the stop itself still goes through sudo.
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             svc_linux.stop()
         assert ["sudo", "systemctl", "stop", f"{SERVICE_NAME}.service"] in run.calls
         assert not any("--user" in c and "stop" in c for c in run.calls), run.calls
 
     def test_restart_returns_true_on_success(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
         assert report.ok is True and [o.scope for o in report.outcomes] == ["system"]
         assert ["sudo", "systemctl", "restart", f"{SERVICE_NAME}.service"] in run.calls
@@ -1913,13 +1913,13 @@ class TestLinuxControlPaths:
         # refuses a system-scope restart without root). restart() must report
         # that failure, not swallow it -- this is the crux of the false-success
         # bug: the outcome has to reach restart_service() and its caller.
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         refused = subprocess.CompletedProcess(
             [], 1, "", "Interactive authentication required"
         )
         run = _fake_systemctl(system=_RUNNING, user=None, overrides={"restart": refused})
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
         assert report.ok is False
         (failure,) = report.failures
@@ -1932,10 +1932,10 @@ class TestLinuxControlPaths:
         # systemctl restart is preferred over stop+start: it's a single
         # atomic operation, smaller down-window, and the supervisor
         # stays in charge of the lifecycle the whole time.
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             svc_linux.restart()
         called = run.calls
         assert [
@@ -1948,10 +1948,10 @@ class TestLinuxControlPaths:
         ), f"restart() should be atomic, not stop+start; got {called}"
 
     def test_status_returns_systemctl_output(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
         # The scope with a unit carries its `systemctl status` block.
         assert f"● {SERVICE_NAME}.service - Kiro Crew gateway (system scope block)" in out
@@ -1959,11 +1959,11 @@ class TestLinuxControlPaths:
         assert all("sudo" not in c for c in run.calls)
 
     def test_status_falls_back_to_stderr_when_stdout_empty(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         quiet = subprocess.CompletedProcess([], 3, "", "status printed to stderr\n")
         run = _fake_systemctl(system=_RUNNING, user=None, overrides={"status": quiet})
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
         assert "status printed to stderr" in out
 
@@ -2000,7 +2000,7 @@ class TestLinuxControlPaths:
         return respond
 
     def test_install_propagates_failure_at_daemon_reload(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         reload_failed = MagicMock(
@@ -2009,17 +2009,17 @@ class TestLinuxControlPaths:
         responder = self._run_responder(("daemon-reload", reload_failed))
 
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", side_effect=responder
+            "efm_go.service.linux.subprocess.run", side_effect=responder
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc_info:
                 svc_linux.install()
         assert "daemon-reload" in str(exc_info.value)
 
     def test_install_propagates_failure_at_enable(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         enable_failed = MagicMock(
@@ -2030,27 +2030,27 @@ class TestLinuxControlPaths:
         )
 
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", side_effect=responder
+            "efm_go.service.linux.subprocess.run", side_effect=responder
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc_info:
                 svc_linux.install()
         assert "enable" in str(exc_info.value)
 
     def test_install_propagates_failure_at_restart(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         restart_failed = MagicMock(returncode=1, stdout="", stderr="job failed")
         responder = self._run_responder(("restart", restart_failed))
 
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.linux.subprocess.run", side_effect=responder
+            "efm_go.service.linux.subprocess.run", side_effect=responder
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc_info:
                 svc_linux.install()
@@ -2063,12 +2063,12 @@ class TestLinuxControlPaths:
         """If `id -gn` is missing or errors, fall back to using the username
         as the group name. Better to fail loudly at systemd start than to
         guess wrong here."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         # `id` resolves to a trusted path, but the exec itself errors.
         monkeypatch.setattr(svc_linux, "trusted_system_bin", lambda _n: "/usr/bin/id")
         with patch(
-            "kiro_crew.service.linux.subprocess.run",
+            "efm_go.service.linux.subprocess.run",
             side_effect=FileNotFoundError("id"),
         ):
             assert svc_linux._current_group("alice") == "alice"
@@ -2076,7 +2076,7 @@ class TestLinuxControlPaths:
     def test_current_group_falls_back_when_id_not_in_trusted_dirs(self, monkeypatch):
         """When `id` is not in a trusted system directory the probe never shells
         out (a PATH shim must not run as root); it falls back to the username."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux, "trusted_system_bin", lambda _n: None)
         assert svc_linux._current_group("alice") == "alice"
@@ -2095,7 +2095,7 @@ class TestLinuxServiceScopes:
 
     @pytest.fixture(autouse=True)
     def _not_root(self, monkeypatch, tmp_path):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.os, "geteuid", lambda: 1000, raising=False)
         monkeypatch.setenv("USER", "tester")
@@ -2116,10 +2116,10 @@ class TestLinuxServiceScopes:
 
     def test_status_names_a_running_user_unit_when_the_system_unit_is_absent(self):
         """The reported bug: a running user-scope gateway read as 'inactive (dead)'."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
             active = svc_linux.is_active()
 
@@ -2131,10 +2131,10 @@ class TestLinuxServiceScopes:
         assert all("sudo" not in c for c in run.calls), run.calls
 
     def test_status_reports_both_scopes_as_not_installed(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
             active = svc_linux.is_active()
 
@@ -2147,10 +2147,10 @@ class TestLinuxServiceScopes:
     def test_status_reports_an_unreachable_user_bus_as_not_reachable(self):
         """No session bus (root without a login session, a stripped environment):
         the user scope is 'not reachable from this shell', never 'inactive'."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user_bus_error=_NO_BUS)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
             active = svc_linux.is_active()
 
@@ -2163,10 +2163,10 @@ class TestLinuxServiceScopes:
 
     def test_status_keeps_the_system_block_and_adds_the_user_line(self):
         """A system unit that is active keeps its `systemctl status` block."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
 
         system_line = out.index("system scope: active (running)")
@@ -2178,10 +2178,10 @@ class TestLinuxServiceScopes:
 
     def test_status_shows_an_installed_but_stopped_system_unit_beside_the_user_unit(self):
         """The reporter's host: a disabled system unit AND the real user unit."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_DEAD, user=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
             active = svc_linux.is_active()
 
@@ -2199,9 +2199,9 @@ class TestLinuxServiceScopes:
         The service module's `systemctl --user` goes through the SAME resolver, so
         an `unreachable` reading is a host fact, never a missing-variable artifact.
         The system-scope spawn is left with the inherited environment."""
-        from kiro_crew.pod import runtime as pod_runtime
-        from kiro_crew.service import common as svc_common
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.pod import runtime as pod_runtime
+        from efm_go.service import common as svc_common
+        from efm_go.service import linux as svc_linux
 
         runtime_dir = tmp_path / "run"
         runtime_dir.mkdir()
@@ -2215,7 +2215,7 @@ class TestLinuxServiceScopes:
             envs.append((list(argv), kw.get("env")))
             return inner(argv, *a, **kw)
 
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             svc_linux.status()
 
         user_envs = [env for argv, env in envs if "--user" in argv]
@@ -2235,12 +2235,12 @@ class TestLinuxServiceScopes:
         """Under sudo the process is root: `systemctl --user` would reach ROOT's
         manager, not the account's, so the scope is reported unreachable and no
         user-scope systemctl is spawned at all."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.os, "geteuid", lambda: 0, raising=False)
         monkeypatch.setenv("SUDO_USER", "tester")
         run = _fake_systemctl(system=None, user=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
             active = svc_linux.is_active()
 
@@ -2252,20 +2252,20 @@ class TestLinuxServiceScopes:
     # -- stop / restart follow the widened is_active -------------------------
 
     def test_stop_acts_on_the_scope_where_the_unit_runs(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             svc_linux.stop()
 
         assert ["systemctl", "--user", "stop", _UNIT] in run.calls, run.calls
         assert all("sudo" not in c for c in run.calls), run.calls
 
     def test_restart_acts_on_the_scope_where_the_unit_runs(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
         assert report.ok is True and [o.scope for o in report.outcomes] == ["user"]
 
@@ -2273,10 +2273,10 @@ class TestLinuxServiceScopes:
         assert all("sudo" not in c for c in run.calls), run.calls
 
     def test_restart_reports_false_when_no_scope_runs_the_unit(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
         assert not report and report.attempted is False
 
@@ -2285,13 +2285,13 @@ class TestLinuxServiceScopes:
     # -- uninstall ---------------------------------------------------------
 
     def test_uninstall_removes_a_user_unit_via_the_user_manager(self, tmp_path):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         fragment = tmp_path / ".config" / "systemd" / "user" / _UNIT
         fragment.parent.mkdir(parents=True)
         fragment.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(fragment))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.system == "not installed"
@@ -2303,12 +2303,12 @@ class TestLinuxServiceScopes:
         assert all("sudo" not in c for c in run.calls), run.calls
 
     def test_uninstall_with_nothing_installed_removes_nothing_and_says_so(self, capsys):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             report = svc_linux.uninstall()
             rc = controller.uninstall_service()
@@ -2323,10 +2323,10 @@ class TestLinuxServiceScopes:
         assert "stopped and removed" not in out
 
     def test_uninstall_leaves_an_unreachable_user_scope_alone_and_names_it(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user_bus_error=_NO_BUS)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.system == "not installed"
@@ -2339,8 +2339,8 @@ class TestLinuxServiceScopes:
     def test_uninstall_removes_both_scopes_and_the_controller_names_each(
         self, tmp_path, monkeypatch, capsys
     ):
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         system_unit = tmp_path / "etc" / _UNIT
         system_unit.parent.mkdir(parents=True)
@@ -2350,8 +2350,8 @@ class TestLinuxServiceScopes:
         fragment.parent.mkdir(parents=True)
         fragment.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         run = _fake_systemctl(system=_DEAD, user=_RUNNING, user_fragment=str(fragment))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             rc = controller.uninstall_service()
 
@@ -2370,8 +2370,8 @@ class TestLinuxServiceScopes:
         """The system scope is already torn down by the time the user unit file is
         unlinked, so a failure there must not raise: the controller would exit
         before printing the system line and before removing the AppArmor grant."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         system_unit = tmp_path / "etc" / _UNIT
         system_unit.parent.mkdir()
@@ -2387,10 +2387,10 @@ class TestLinuxServiceScopes:
             profile_removed.append(True)
             return MagicMock(message="AppArmor profile removed", ok=True)
 
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.linux.os.unlink", side_effect=PermissionError("Operation not permitted")
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.linux.os.unlink", side_effect=PermissionError("Operation not permitted")
         ), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", remove_profile):
             rc = controller.uninstall_service()
 
@@ -2419,8 +2419,8 @@ class TestLinuxServiceScopes:
         not take, so the unit is still loaded and possibly running. Its file must
         stay -- unlinking it would leave a running gateway with no unit to find it
         by -- and the report must say so rather than `removed`."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         fragment = tmp_path / ".config" / "systemd" / "user" / _UNIT
         fragment.parent.mkdir(parents=True)
@@ -2431,8 +2431,8 @@ class TestLinuxServiceScopes:
             user_fragment=str(fragment),
             overrides={"stop": self._REFUSED_STOP},
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             report = svc_linux.uninstall()
             rc = controller.uninstall_service()
@@ -2457,7 +2457,7 @@ class TestLinuxServiceScopes:
     def test_a_refused_user_disable_after_a_successful_stop_still_keeps_the_file(
         self, tmp_path
     ):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         fragment = tmp_path / "user" / _UNIT
         fragment.parent.mkdir()
@@ -2466,7 +2466,7 @@ class TestLinuxServiceScopes:
         run = _fake_systemctl(
             system=None, user=_RUNNING, user_fragment=str(fragment), overrides={"disable": refused}
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert fragment.exists()
@@ -2481,16 +2481,16 @@ class TestLinuxServiceScopes:
         """The same guard on the sibling branch: a system unit whose sudo'd stop the
         manager refuses is not `rm -f`'d, the warning lands on the SYSTEM line, and
         the user scope is still queried and reported."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         system_unit = tmp_path / "etc" / _UNIT
         system_unit.parent.mkdir()
         system_unit.write_text("", encoding="utf-8")
         monkeypatch.setattr(svc_linux, "UNIT_PATH", system_unit)
         run = _fake_systemctl(system=_RUNNING, user=None, overrides={"stop": self._REFUSED_STOP})
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             report = svc_linux.uninstall()
             rc = controller.uninstall_service()
@@ -2516,8 +2516,8 @@ class TestLinuxServiceScopes:
         file beside the account's own running user unit. The system scope cannot
         be touched without root, but that must not abort the call before the user
         unit -- the one this account CAN remove -- is torn down."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.sys, "platform", "linux")
         monkeypatch.setattr(svc_linux.shutil, "which", lambda name: None)
@@ -2529,8 +2529,8 @@ class TestLinuxServiceScopes:
         fragment.parent.mkdir()
         fragment.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         run = _fake_systemctl(system=_DEAD, user=_RUNNING, user_fragment=str(fragment))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             rc = controller.uninstall_service()
 
@@ -2554,7 +2554,7 @@ class TestLinuxServiceScopes:
         `systemctl` verb fails the same way and `/run/systemd/system` does not
         exist. No manager runs on such a host, so nothing can be running under the
         unit -- the file is removed, as the base did."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux, "_SYSTEMD_BOOTED_DIR", tmp_path / "run-systemd-absent")
         system_unit = tmp_path / "etc" / _UNIT
@@ -2570,7 +2570,7 @@ class TestLinuxServiceScopes:
                 return subprocess.CompletedProcess(list(argv), 1, "", no_pid1 + "\n")
             return res
 
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.system == f"removed ({system_unit})"
@@ -2587,7 +2587,7 @@ class TestLinuxServiceScopes:
         running, but this shell cannot reach it (a sandbox: `Permission denied`).
         Whether the unit is running cannot be confirmed from here, so nothing is
         removed and the line says so."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         booted = tmp_path / "run-systemd"
         booted.mkdir()
@@ -2605,7 +2605,7 @@ class TestLinuxServiceScopes:
                 return subprocess.CompletedProcess(list(argv), 1, "", denied + "\n")
             return res
 
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert system_unit.exists()
@@ -2621,16 +2621,16 @@ class TestLinuxServiceScopes:
         is not `loaded` and then unlinking would leave the gateway running with no
         unit to find it by -- so nothing is stopped, disabled or unlinked, and the
         operator is told the step that makes it removable."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         system_unit = tmp_path / "etc" / _UNIT
         system_unit.parent.mkdir()
         system_unit.write_text("", encoding="utf-8")
         monkeypatch.setattr(svc_linux, "UNIT_PATH", system_unit)
         run = _fake_systemctl(system=_RUNNING, user=None, system_load="masked")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             report = svc_linux.uninstall()
             rc = controller.uninstall_service()
@@ -2648,13 +2648,13 @@ class TestLinuxServiceScopes:
         )
 
     def test_a_running_masked_user_unit_is_refused_whole(self, tmp_path):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(
             system=None, user=_RUNNING, user_fragment="/dev/null", user_load="masked"
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.linux.os.unlink"
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.linux.os.unlink"
         ) as unlink:
             report = svc_linux.uninstall()
 
@@ -2670,10 +2670,10 @@ class TestLinuxServiceScopes:
         """A user unit deleted and daemon-reloaded while running answers
         `LoadState=not-found ActiveState=active`: that is a running gateway, not
         "nothing here", and `disable` / unlink have nothing to act on."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=_RUNNING, user_load="not-found")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.user.startswith("left in place (an active unit whose load state is not-found")
@@ -2687,10 +2687,10 @@ class TestLinuxServiceScopes:
         """No file at `/etc/systemd/system/kirocrew.service` is not the manager's
         word: the system scope is still asked with an unprivileged `show` (no
         password prompt) before it is called `not installed`."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         system_shows = [c for c in run.calls if c[:2] == ["systemctl", "show"]]
@@ -2708,12 +2708,12 @@ class TestLinuxServiceScopes:
         stopped (checked) and the `daemon-reload` makes it `not-found`; there is no
         file for `disable` to read an `[Install]` section from, so that verb is not
         issued and nothing is `rm`'d."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             report = svc_linux.uninstall()
             rc = controller.uninstall_service()
@@ -2743,12 +2743,12 @@ class TestLinuxServiceScopes:
         is the refusal the user scope already gives, not `not installed`: nothing
         is stopped, disabled or removed on this module's account, the operator is
         told the step, and the controller exits 1."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=None, system_load="not-found")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             report = svc_linux.uninstall()
             rc = controller.uninstall_service()
@@ -2769,10 +2769,10 @@ class TestLinuxServiceScopes:
         the path this module owns while the manager answers `masked`. Not running,
         so no verb is issued and nothing is unlinked — the line says what the
         manager holds rather than `not installed` or `removed`."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_DEAD, user=None, system_load="masked")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.system == f"left in place (load state masked, unit file {svc_linux.UNIT_PATH})"
@@ -2798,7 +2798,7 @@ class TestLinuxServiceScopes:
         mask in place while the spec said removed. Ours by name: the entry is
         unlinked under sudo and the manager reloaded — the name is unmasked —
         with no `stop` or `disable`, since nothing is loaded."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         mask = tmp_path / "etc-systemd-system" / _UNIT
         mask.parent.mkdir(parents=True)
@@ -2808,7 +2808,7 @@ class TestLinuxServiceScopes:
         run = _fake_systemctl(
             system=_DEAD, user=None, system_load="masked", system_fragment=fragment
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.system == f"removed (the mask {mask}; {_UNIT} is unmasked)", report.system
@@ -2828,7 +2828,7 @@ class TestLinuxServiceScopes:
         remedy installs to — so the user scope reads the same rule: the mask is
         unlinked as the calling user, `daemon-reload --user` runs, nothing is
         stopped, disabled or run under sudo, and the system scope is untouched."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         mask = svc_linux.user_unit_file_path()
         mask.parent.mkdir(parents=True)
@@ -2836,7 +2836,7 @@ class TestLinuxServiceScopes:
         run = _fake_systemctl(
             system=None, user=_DEAD, user_fragment=str(mask), user_load="masked"
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.user == f"removed (the mask {mask}; {_UNIT} is unmasked)", report.user
@@ -2856,7 +2856,7 @@ class TestLinuxServiceScopes:
         file whose unit the manager does not have loaded (`bad-setting` after a
         bad edit), or one left dangling, is neither a mask nor ours — left in
         place as before, nothing unlinked, no verb."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         theirs = tmp_path / "srv" / _UNIT
         theirs.parent.mkdir(parents=True)
@@ -2869,7 +2869,7 @@ class TestLinuxServiceScopes:
             run = _fake_systemctl(
                 system=_DEAD, user=None, system_load=load, system_fragment=str(link)
             )
-            with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+            with patch("efm_go.service.linux.subprocess.run", side_effect=run):
                 report = svc_linux.uninstall()
             assert report.system == f"left in place (load state {load}, unit file {link})", report
             assert report.removed == frozenset()
@@ -2877,7 +2877,7 @@ class TestLinuxServiceScopes:
             assert link.is_symlink() and theirs.exists()
         theirs.unlink()
         run = _fake_systemctl(system=_DEAD, user=None, system_load="not-found", system_fragment=str(link))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
         assert report.system == f"left in place (load state not-found, unit file {link})", report
         assert self._no_verb_issued(run), run.calls
@@ -2892,11 +2892,11 @@ class TestLinuxServiceScopes:
         own, with no file at `UNIT_PATH`, leaves neither, so it is a report (exit
         0) — the same reading the user scope gives an inactive alias. The same
         alias WITH a file at `UNIT_PATH`, or while running, stays unfinished."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         def teardown(system, **kw):
             run = _fake_systemctl(system=system, user=None, system_id="other.service", **kw)
-            with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+            with patch("efm_go.service.linux.subprocess.run", side_effect=run):
                 report = svc_linux.uninstall()
             assert not any("stop" in c or "disable" in c or "rm" in c for c in run.calls), run.calls
             assert report.system == (
@@ -2917,7 +2917,7 @@ class TestLinuxServiceScopes:
         """The controller's headline reads `removed`, never the wording of a line:
         the fileless system unit that was stopped and `daemon-reload`ed counts,
         and a `removed (…)` line with no scope in the set does not."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         gone = svc_linux.UninstallReport(
             f"stopped (its unit file /etc/systemd/system/{_UNIT} was already gone, so "
@@ -2964,15 +2964,15 @@ class TestLinuxServiceScopes:
         decided once, from the file the manager names: no marker, not the
         installer's path — not ours. Nothing is stopped, the scope is finished,
         nothing is removed, exit 0."""
-        from kiro_crew.service import controller
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import controller
+        from efm_go.service import linux as svc_linux
 
         vendor = tmp_path / "usr" / "lib" / "systemd" / "system" / _UNIT
         vendor.parent.mkdir(parents=True)
         vendor.write_text("[Unit]\nDescription=the distribution's own definition\n", encoding="utf-8")
         run = _fake_systemctl(system=_RUNNING, user=None, system_fragment=str(vendor))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.controller.current_platform", return_value=Platform.SYSTEMD
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.controller.current_platform", return_value=Platform.SYSTEMD
         ), patch.object(svc_linux, "remove_apparmor_profile", return_value=MagicMock(message="")):
             report = svc_linux.uninstall()
             rc = controller.uninstall_service()
@@ -2993,7 +2993,7 @@ class TestLinuxServiceScopes:
         read the way `kirocrew doctor` reads it. A copy of our unit under another
         unit directory is ours to tear down; a file that cannot be read, or that
         does not exist, makes no claim."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         elsewhere = tmp_path / "usr" / "lib" / "systemd" / "system" / _UNIT
         elsewhere.parent.mkdir(parents=True)
@@ -3030,12 +3030,12 @@ class TestLinuxServiceScopes:
         operator's: no marker, not the installer's path. Not ours, so not
         stopped, not disabled, and neither the source nor the link is touched:
         the scope finishes with `left untouched (…)`."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         search_dir, source, link = self._linked_user_unit(tmp_path)
         contents = source.read_text(encoding="utf-8")
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(source))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert source.exists(), "the operator's linked unit file was deleted"
@@ -3058,11 +3058,11 @@ class TestLinuxServiceScopes:
         (systemd >= 245), which reports the LINK as `FragmentPath`. Ours by the
         marker; linked, so the link entry is removed and the source it points at
         is kept — removing the link is what uninstalls it."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         search_dir, source, link = self._linked_user_unit(tmp_path, marked=True)
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(link))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert source.exists() and "KIROCREW_SERVICE_MANAGED" in source.read_text(encoding="utf-8")
@@ -3088,7 +3088,7 @@ class TestLinuxServiceScopes:
         like the remedy's unit and an earlier head unlinked it. Ownership now
         looks at the definition: the packaged file carries no marker and is not
         the installer's path — not ours. Nothing is stopped; link and file stay."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         own = Path(svc_linux._installer_unit_path(user=True))
         own.parent.mkdir(parents=True)
@@ -3098,7 +3098,7 @@ class TestLinuxServiceScopes:
         packaged.write_text("[Unit]\nDescription=the distribution's own definition\n", encoding="utf-8")
         own.symlink_to(packaged)
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(packaged))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert packaged.exists(), "the operator's lower-priority unit file was deleted"
@@ -3122,7 +3122,7 @@ class TestLinuxServiceScopes:
         (`Refusing to operate on alias name or linked unit file`, transcript 4,
         C5). The teardown ends at that refusal, after the stop and before any
         unlink: link and file both survive, the scope is unfinished."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         own = Path(svc_linux._installer_unit_path(user=True))
         own.parent.mkdir(parents=True)
@@ -3137,7 +3137,7 @@ class TestLinuxServiceScopes:
         run = _fake_systemctl(
             system=None, user=_RUNNING, user_fragment=str(packaged), overrides={"disable": refused}
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert packaged.exists() and own.is_symlink()
@@ -3159,7 +3159,7 @@ class TestLinuxServiceScopes:
         """The marked lower-priority file when `disable` passes: ours by the
         marker, reached through the link at the installer's path, so the link
         goes and the file stays — the line says which."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         own = Path(svc_linux._installer_unit_path(user=True))
         own.parent.mkdir(parents=True)
@@ -3169,7 +3169,7 @@ class TestLinuxServiceScopes:
         packaged.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         own.symlink_to(packaged)
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(packaged))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert packaged.exists() and not own.is_symlink() and not own.exists()
@@ -3183,7 +3183,7 @@ class TestLinuxServiceScopes:
         direct file in a lower-priority directory that nothing links. Ours by
         path; unlinked as before, and the other file — not the definition the
         manager loaded — is not touched."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         ours = Path(svc_linux._installer_unit_path(user=True))
         ours.parent.mkdir(parents=True)
@@ -3193,7 +3193,7 @@ class TestLinuxServiceScopes:
         shadowed = lib_dir / _UNIT
         shadowed.write_text("[Unit]\nDescription=a packaged unit the account's own shadows\n", encoding="utf-8")
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(ours))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert not ours.exists()
@@ -3209,12 +3209,12 @@ class TestLinuxServiceScopes:
     def test_a_link_entry_that_cannot_be_removed_is_reported_and_the_source_still_kept(
         self, tmp_path
     ):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         search_dir, source, link = self._linked_user_unit(tmp_path, marked=True)
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(source))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.linux.os.unlink", side_effect=PermissionError("Operation not permitted")
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.linux.os.unlink", side_effect=PermissionError("Operation not permitted")
         ):
             report = svc_linux.uninstall()
 
@@ -3236,7 +3236,7 @@ class TestLinuxServiceScopes:
         import ast
         import inspect
 
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         tree = ast.parse(inspect.getsource(svc_linux))
         owned_first = set()
@@ -3273,7 +3273,7 @@ class TestLinuxServiceScopes:
         user_unit.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         for system, user in ((_RUNNING, _RUNNING), (_DEAD, _DEAD), (None, _RUNNING), (_RUNNING, None)):
             run = _fake_systemctl(system=system, user=user, user_fragment=str(user_unit))
-            with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+            with patch("efm_go.service.linux.subprocess.run", side_effect=run):
                 report = svc_linux.uninstall()
             assert self._no_verb_issued(run), (system, user, run.calls)
             assert report.removed == frozenset(), (system, user, report)
@@ -3287,7 +3287,7 @@ class TestLinuxServiceScopes:
         unit, so the line is `not reachable from this shell (…)`, not `not
         installed` — nothing is left behind, so the scope is not unfinished. Without
         that directory no manager exists and `not installed` is the fact."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         inner = _fake_systemctl(system=None, user=None)
         denied = "Failed to connect to bus: Permission denied"
@@ -3301,14 +3301,14 @@ class TestLinuxServiceScopes:
         booted = tmp_path / "run-systemd"
         booted.mkdir()
         monkeypatch.setattr(svc_linux, "_SYSTEMD_BOOTED_DIR", booted)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             on_host = svc_linux.uninstall()
         assert on_host.system == f"not reachable from this shell ({denied})"
         assert on_host.unfinished == frozenset()
         assert not any("sudo" in c for c in inner.calls), inner.calls
 
         monkeypatch.setattr(svc_linux, "_SYSTEMD_BOOTED_DIR", tmp_path / "run-systemd-absent")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             in_container = svc_linux.uninstall()
         assert in_container.system == "not installed"
         assert in_container.unfinished == frozenset()
@@ -3319,7 +3319,7 @@ class TestLinuxServiceScopes:
         a blank or malformed `show` answer, a unit that failed to parse
         (`bad-setting`), a mask and an alias all answer None — the old
         `installed` test (any load state but `not-found`) let each of them through."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         fragment = tmp_path / "user" / _UNIT
         fragment.parent.mkdir()
@@ -3327,7 +3327,7 @@ class TestLinuxServiceScopes:
 
         def path_for(fragment_path=str(fragment), **kw):
             run = _fake_systemctl(system=None, user=_DEAD, user_fragment=fragment_path, **kw)
-            with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+            with patch("efm_go.service.linux.subprocess.run", side_effect=run):
                 return svc_linux.user_unit_path()
 
         assert path_for() == fragment
@@ -3343,14 +3343,14 @@ class TestLinuxServiceScopes:
     ):
         """`stop` / `disable` on an alias act on the unit it resolves to; the
         system scope refuses the alias like the user scope does."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         system_unit = tmp_path / "etc" / _UNIT
         system_unit.parent.mkdir()
         system_unit.write_text("", encoding="utf-8")
         monkeypatch.setattr(svc_linux, "UNIT_PATH", system_unit)
         run = _fake_systemctl(system=_RUNNING, user=None, system_id="shared.service")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert system_unit.exists()
@@ -3365,7 +3365,7 @@ class TestLinuxServiceScopes:
     ):
         """The unlink rests on the manager's ActiveState after the stop, not on
         the stop verb's exit code alone."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         fragment = tmp_path / "user" / _UNIT
         fragment.parent.mkdir()
@@ -3373,7 +3373,7 @@ class TestLinuxServiceScopes:
         run = _fake_systemctl(
             system=None, user=_RUNNING, user_fragment=str(fragment), stop_is_ignored=True
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert fragment.exists()
@@ -3388,13 +3388,13 @@ class TestLinuxServiceScopes:
         settles what the unlink may touch BEFORE `disable` removes a linked unit's
         entry) -> stop -> disable -> verify inactive (a second unit `show`) ->
         unlink -> daemon-reload."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         fragment = tmp_path / "user" / _UNIT
         fragment.parent.mkdir()
         fragment.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(fragment))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.user == f"removed ({fragment})"
@@ -3413,11 +3413,11 @@ class TestLinuxServiceScopes:
         `activating (auto-restart)`, which `is-active` answers non-zero for. The
         scope selector reads ActiveState from `show`, so `kirocrew stop` reaches
         the loop, `is_active()` counts it and the logs command prefers its journal."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         looping = {"ActiveState": "activating", "SubState": "auto-restart"}
         run = _fake_systemctl(system=None, user=looping)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
             assert svc_linux.is_active() is True
             assert svc_linux.user_unit_active() is True
@@ -3430,10 +3430,10 @@ class TestLinuxServiceScopes:
     def test_restart_never_starts_a_stopped_unit_in_the_other_scope(self):
         """Selecting on "running" rather than "installed": a stopped system unit
         left beside the running user unit is not restarted (started) on the side."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_DEAD, user=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
         assert report.ok is True and [o.scope for o in report.outcomes] == ["user"]
 
@@ -3446,7 +3446,7 @@ class TestLinuxServiceScopes:
         """A file dropped without a daemon-reload: the manager answers
         `LoadState=not-found`, a `stop` would only fail (exit 5, not loaded), and
         nothing runs under it -- removed, no stop/disable issued."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         system_unit = tmp_path / "etc" / _UNIT
         system_unit.parent.mkdir()
@@ -3454,7 +3454,7 @@ class TestLinuxServiceScopes:
         monkeypatch.setattr(svc_linux, "UNIT_PATH", system_unit)
         not_loaded = subprocess.CompletedProcess([], 5, "", f"Failed to stop {_UNIT}: Unit {_UNIT} not loaded.\n")
         run = _fake_systemctl(system=None, user=None, overrides={"stop": not_loaded})
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.system == f"removed ({system_unit})"
@@ -3466,7 +3466,7 @@ class TestLinuxServiceScopes:
     def test_a_system_unit_file_rm_that_does_not_take_is_reported_not_claimed_removed(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         system_unit = tmp_path / "etc" / _UNIT
         system_unit.parent.mkdir()
@@ -3482,7 +3482,7 @@ class TestLinuxServiceScopes:
                 )
             return res
 
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert report.system.startswith("stopped and disabled, but its unit file")
@@ -3496,14 +3496,14 @@ class TestLinuxServiceScopes:
         unit -- `Id=shared.service`, that unit's `FragmentPath` -- so following
         the path would delete someone else's unit file. Nothing in that scope is
         stopped, disabled or unlinked; the report names the alias."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         shared = tmp_path / "shared.service"
         shared.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         run = _fake_systemctl(
             system=None, user=_RUNNING, user_fragment=str(shared), user_id="shared.service"
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert shared.exists()
@@ -3520,13 +3520,13 @@ class TestLinuxServiceScopes:
         user-unit directory. Nothing at our path means nothing of ours to remove
         — the scope is reported, not acted on. (A mask AT our path is a mask of
         our name and is removed: see the persistent-mask tests above.)"""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(
             system=None, user=_DEAD, user_fragment="/dev/null", user_load="masked"
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch(
-            "kiro_crew.service.linux.os.unlink"
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch(
+            "efm_go.service.linux.os.unlink"
         ) as unlink:
             report = svc_linux.uninstall()
 
@@ -3538,12 +3538,12 @@ class TestLinuxServiceScopes:
     def test_uninstall_only_unlinks_a_file_named_after_the_unit(self, tmp_path):
         """A definition under another name is never ours, marker or not: the
         installer names its files after the unit."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         other = tmp_path / "gateway.service"
         other.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(other))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.uninstall()
 
         assert other.exists()
@@ -3551,10 +3551,10 @@ class TestLinuxServiceScopes:
         assert self._no_verb_issued(run), run.calls
 
     def test_status_names_an_alias_for_what_it_is(self, tmp_path):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=_RUNNING, user_id="shared.service")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             out = svc_linux.status()
 
         assert "user scope: active (running), an alias of shared.service" in out
@@ -3563,11 +3563,11 @@ class TestLinuxServiceScopes:
         """Two scopes running the unit and both restarts refused: the second
         scope's restart must still be issued, and the report names each scope's
         refusal with the restart command for THAT scope."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         refused = subprocess.CompletedProcess([], 1, "", "Interactive authentication required")
         run = _fake_systemctl(system=_RUNNING, user=_RUNNING, overrides={"restart": refused})
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
         assert report.ok is False
         assert [(f.scope, f.kind, f.hint) for f in report.failures] == [
@@ -3588,10 +3588,10 @@ class TestLinuxServiceScopes:
         (auto-restart)`. That is a FAILED restart with the unit's real state and
         Result, not success — and not a refusal either: no restart hint, since a
         hand-run restart fails the same way; the remedy is the journal."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=_RUNNING, restart_lands_in=self._LOOPING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
             # The reach predicate still sees the unit: `kirocrew stop` can reach it.
             assert svc_linux.is_active() is True
@@ -3612,12 +3612,12 @@ class TestLinuxServiceScopes:
         `active (running)` (the SIGCHLD has not landed), the next one
         `activating (auto-restart)`. One reading is not confirmation; the window
         is walked and the death inside it is reported."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(
             system=None, user=_RUNNING, restart_lands_in=[_RUNNING, self._LOOPING]
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
 
         assert report.ok is False
@@ -3627,24 +3627,24 @@ class TestLinuxServiceScopes:
     def test_restart_waits_for_a_unit_still_starting(self):
         """`activating (start)` is a unit on its way up (a Type=notify/forking
         edit of the unit): not a failure, wait for it. Up by the deadline → ok."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         starting = {"ActiveState": "activating", "SubState": "start"}
         run = _fake_systemctl(
             system=None, user=_RUNNING, restart_lands_in=[starting, starting, _RUNNING]
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
 
         assert report.ok is True
         assert len(svc_linux.time.sleeps) >= 2
 
     def test_restart_reports_a_unit_still_starting_at_the_deadline(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         starting = {"ActiveState": "activating", "SubState": "start"}
         run = _fake_systemctl(system=None, user=_RUNNING, restart_lands_in=starting)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
 
         assert report.ok is False
@@ -3658,10 +3658,10 @@ class TestLinuxServiceScopes:
     def test_restart_confirmed_up_stays_ok_after_the_window(self):
         """A live gateway: `active (running)` at every poll → ok, with the window
         walked (a single immediate reading proves nothing for Type=simple)."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=_RUNNING, restart_lands_in=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
 
         assert report.ok is True
@@ -3669,11 +3669,11 @@ class TestLinuxServiceScopes:
 
     def test_restart_into_a_start_limit_hit_is_a_failure(self):
         """Three crashes in the burst window: `failed` with Result=start-limit-hit."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         limited = {"ActiveState": "failed", "SubState": "failed", "Result": "start-limit-hit"}
         run = _fake_systemctl(system=_RUNNING, user=None, restart_lands_in=limited)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
 
         assert report.ok is False
@@ -3687,7 +3687,7 @@ class TestLinuxServiceScopes:
         """The bus goes away between the restart and the re-read: the unit's
         health is UNKNOWN — not "exits on start", not "restarted" — so the kind
         is unconfirmed and the remedy is to look, not a journal or a restart."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         inner = _fake_systemctl(system=None, user=_RUNNING)
 
@@ -3700,7 +3700,7 @@ class TestLinuxServiceScopes:
                 return subprocess.CompletedProcess(tokens, 1, "", _NO_BUS + "\n")
             return inner(argv, *a, **k)
 
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
 
         assert report.ok is False
@@ -3715,11 +3715,11 @@ class TestLinuxServiceScopes:
         """`systemctl restart` exits non-zero and the unit is exactly as it was
         (still active): the manager did not run the job — an authorization
         refusal — so the remedy is the same restart with the privilege it needs."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         refused = subprocess.CompletedProcess([], 1, "", "Interactive authentication required")
         run = _fake_systemctl(system=_RUNNING, user=None, overrides={"restart": refused})
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
 
         (failure,) = report.failures
@@ -3734,14 +3734,14 @@ class TestLinuxServiceScopes:
         names `sudo systemctl restart kirocrew` whatever `current_platform()`
         says about the PROCESS building the report — the Windows and macOS test
         shards answer UNSUPPORTED / LAUNCHD there and must read the same hint."""
-        from kiro_crew.service import common as svc_common
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import common as svc_common
+        from efm_go.service import linux as svc_linux
 
         refused = subprocess.CompletedProcess([], 1, "", "Interactive authentication required")
         run = _fake_systemctl(system=_RUNNING, user=_RUNNING, overrides={"restart": refused})
         for plat in (Platform.UNSUPPORTED, Platform.LAUNCHD):
             monkeypatch.setattr(svc_common, "current_platform", lambda p=plat: p)
-            with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+            with patch("efm_go.service.linux.subprocess.run", side_effect=run):
                 report = svc_linux.restart()
             assert [f.hint for f in report.failures] == [
                 "sudo systemctl restart kirocrew",
@@ -3753,7 +3753,7 @@ class TestLinuxServiceScopes:
         got no answer (the bus went away). No answer is not "not running": the
         unlink rests on the manager's word, so the file stays and the scope is
         unfinished — never an unverified unlink."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         fragment = tmp_path / ".config" / "systemd" / "user" / _UNIT
         fragment.parent.mkdir(parents=True)
@@ -3768,7 +3768,7 @@ class TestLinuxServiceScopes:
                 return subprocess.CompletedProcess(tokens, 1, "", _NO_BUS + "\n")
             return inner(argv, *a, **k)
 
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run), patch.object(
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run), patch.object(
             svc_linux.os, "unlink", side_effect=AssertionError("unlinked without confirmation")
         ):
             report = svc_linux.uninstall()
@@ -3786,7 +3786,7 @@ class TestLinuxServiceScopes:
         process is gone and the unit reads `failed`. A privilege-oriented
         "run it yourself" hint would be wrong — the job would fail again — so
         the kind is not-up and the remedy is the journal."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         job_failed = subprocess.CompletedProcess(
             [], 1, "", f"Job for {_UNIT} failed because the control process exited with error code."
@@ -3795,7 +3795,7 @@ class TestLinuxServiceScopes:
         run = _fake_systemctl(
             system=None, user=_RUNNING, overrides={"restart": job_failed}, restart_lands_in=limited
         )
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
 
         (failure,) = report.failures
@@ -3814,7 +3814,7 @@ class TestLinuxServiceScopes:
         `restart` issued on our name. The canonical-Id guard `uninstall` applies
         is one predicate for every verb: the alias is not selected, not counted
         as running or up, and the headline still says what it is."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         kwargs = (
             dict(system=_RUNNING, user=None, system_id="shared.service")
@@ -3822,7 +3822,7 @@ class TestLinuxServiceScopes:
             else dict(system=None, user=_RUNNING, user_id="shared.service")
         )
         run = _fake_systemctl(**kwargs)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_active() is False
             assert svc_linux.is_up() is False
             svc_linux.stop()
@@ -3837,10 +3837,10 @@ class TestLinuxServiceScopes:
     def test_a_running_alias_beside_our_stopped_unit_restarts_nothing(self):
         """Our unit stopped in one scope, an alias running in the other: neither
         is acted on — the stopped one is not running, the alias is not ours."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=_DEAD, system_id="shared.service")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             report = svc_linux.restart()
             assert svc_linux.is_active() is False
         assert report.attempted is False
@@ -3851,13 +3851,13 @@ class TestLinuxServiceScopes:
         was never verified. Not counted, not stopped or restarted, and
         `uninstall` leaves the file in place naming why — the guard is exact
         equality with `kirocrew.service`, not "not an alias"."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         fragment = tmp_path / ".config" / "systemd" / "user" / _UNIT
         fragment.parent.mkdir(parents=True)
         fragment.write_text(_OURS_UNIT_TEXT, encoding="utf-8")
         run = _fake_systemctl(system=None, user=_RUNNING, user_id="", user_fragment=str(fragment))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_active() is False
             assert svc_linux.is_up() is False
             svc_linux.stop()
@@ -3873,14 +3873,14 @@ class TestLinuxServiceScopes:
         """`kirocrew logs` picks the user journal off these two answers; a name
         that is an alias of another unit is not the per-user gateway, so neither
         answers True for it."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=_RUNNING, user_id="shared.service")
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.user_unit_installed() is False
             assert svc_linux.user_unit_active() is False
         run = _fake_systemctl(system=None, user=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.user_unit_installed() is True
             assert svc_linux.user_unit_active() is True
 
@@ -3904,32 +3904,32 @@ class TestLinuxServiceScopes:
         mid-transition: reachable, not up. `is_up()` is what `systemctl
         is-active` exits 0 for, so the `service status` exit code keeps the
         meaning the base gave it while reading both scopes."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=None, user=state)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_active() is reach
             assert svc_linux.is_up() is up
         assert all("sudo" not in c for c in run.calls), run.calls
 
     def test_is_up_reads_either_scope(self):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_up() is True
         run = _fake_systemctl(system=_DEAD, user=_RUNNING)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_up() is True
         run = _fake_systemctl(system=None, user_bus_error=_NO_BUS)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert svc_linux.is_up() is False
 
     def test_the_selinux_remedy_no_longer_disowns_the_user_unit(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/home/tester/.local/bin/kirocrew",
         ), patch.object(svc_linux, "_home_for_user", return_value="/home/tester"):
             remedy = svc_linux._user_scope_remedy()
@@ -3946,7 +3946,7 @@ class TestMacOSControlPaths:
         """Re-running install on a host that already has the plist loaded
         should unload first, then write+load. Otherwise the new plist
         wouldn't take effect."""
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         plist_dir = tmp_path / "LaunchAgents"
         plist_path = plist_dir / f"{LAUNCHD_LABEL}.plist"
@@ -3962,10 +3962,10 @@ class TestMacOSControlPaths:
 
         ok = MagicMock(returncode=0, stdout="", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/opt/homebrew/bin/kirocrew",
         ), patch(
-            "kiro_crew.service.macos.subprocess.run", return_value=ok
+            "efm_go.service.macos.subprocess.run", return_value=ok
         ) as run:
             svc_macos.install()
         called = [c.args[0] for c in run.call_args_list]
@@ -3979,7 +3979,7 @@ class TestMacOSControlPaths:
         assert unload_idx < load_idx
 
     def test_uninstall_unloads_and_removes_plist(self, tmp_path, monkeypatch):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         plist_dir = tmp_path / "LaunchAgents"
         plist_path = plist_dir / f"{LAUNCHD_LABEL}.plist"
@@ -3994,7 +3994,7 @@ class TestMacOSControlPaths:
 
         ok = MagicMock(returncode=0, stdout="", stderr="")
         with patch(
-            "kiro_crew.service.macos.subprocess.run", return_value=ok
+            "efm_go.service.macos.subprocess.run", return_value=ok
         ) as run:
             svc_macos.uninstall()
         assert not plist_path.exists()
@@ -4003,36 +4003,36 @@ class TestMacOSControlPaths:
         assert sentinel.read_text() == "user data"
 
     def test_uninstall_idempotent_when_plist_missing(self, tmp_path, monkeypatch):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         monkeypatch.setattr(svc_macos, "PLIST_PATH", tmp_path / "missing.plist")
-        with patch("kiro_crew.service.macos.subprocess.run") as run:
+        with patch("efm_go.service.macos.subprocess.run") as run:
             svc_macos.uninstall()
         run.assert_not_called()
 
     def test_is_active_returns_false_when_launchctl_errors(self):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         not_loaded = MagicMock(returncode=1, stdout="", stderr="not loaded")
-        with patch("kiro_crew.service.macos.subprocess.run", return_value=not_loaded):
+        with patch("efm_go.service.macos.subprocess.run", return_value=not_loaded):
             assert svc_macos.is_active() is False
 
     def test_is_active_returns_true_with_pid_in_output(self):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         loaded = MagicMock(
             returncode=0,
             stdout='{\n\t"PID" = 1234;\n\t"Label" = "dev.kirocrew.gateway";\n}\n',
             stderr="",
         )
-        with patch("kiro_crew.service.macos.subprocess.run", return_value=loaded):
+        with patch("efm_go.service.macos.subprocess.run", return_value=loaded):
             assert svc_macos.is_active() is True
 
     def test_is_active_returns_true_when_loaded_without_pid_line(self):
         """`launchctl list <label>` succeeds even if the agent is loaded
         but not running. We treat that as active so callers don't trip
         over a transient state."""
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         loaded_no_pid = MagicMock(
             returncode=0,
@@ -4040,7 +4040,7 @@ class TestMacOSControlPaths:
             stderr="",
         )
         with patch(
-            "kiro_crew.service.macos.subprocess.run", return_value=loaded_no_pid
+            "efm_go.service.macos.subprocess.run", return_value=loaded_no_pid
         ):
             assert svc_macos.is_active() is True
 
@@ -4049,14 +4049,14 @@ class TestMacOSControlPaths:
         # restart the agent immediately. ``unload`` (without ``-w``) is
         # the supported way to actually stop the running gateway, while
         # leaving the plist enabled for the next login.
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         plist_path = tmp_path / "agent.plist"
         plist_path.write_text("<plist/>")
         monkeypatch.setattr(svc_macos, "PLIST_PATH", plist_path)
         ok = MagicMock(returncode=0, stdout="", stderr="")
         with patch(
-            "kiro_crew.service.macos.subprocess.run", return_value=ok
+            "efm_go.service.macos.subprocess.run", return_value=ok
         ) as run:
             svc_macos.stop()
         called = [c.args[0] for c in run.call_args_list]
@@ -4065,10 +4065,10 @@ class TestMacOSControlPaths:
         assert not any(c[:2] == ["launchctl", "stop"] for c in called)
 
     def test_stop_no_op_when_plist_absent(self, tmp_path, monkeypatch):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         monkeypatch.setattr(svc_macos, "PLIST_PATH", tmp_path / "missing.plist")
-        with patch("kiro_crew.service.macos.subprocess.run") as run:
+        with patch("efm_go.service.macos.subprocess.run") as run:
             svc_macos.stop()
         run.assert_not_called()
 
@@ -4080,14 +4080,14 @@ class TestMacOSControlPaths:
         # never runs and the agent stays down. ``kickstart -k`` is performed by
         # launchd itself, so it survives the caller's death — the property Dev
         # Fleet's Restart control depends on.
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         plist_path = tmp_path / "agent.plist"
         plist_path.write_text("<plist/>")
         monkeypatch.setattr(svc_macos, "PLIST_PATH", plist_path)
         ok = MagicMock(returncode=0, stdout="", stderr="")
         with patch(
-            "kiro_crew.service.macos.subprocess.run", return_value=ok
+            "efm_go.service.macos.subprocess.run", return_value=ok
         ) as run:
             assert svc_macos.restart() is True
         called = [c.args[0] for c in run.call_args_list]
@@ -4102,13 +4102,13 @@ class TestMacOSControlPaths:
 
     def test_restart_is_false_when_launchd_rejects_it(self, tmp_path, monkeypatch):
         """A rejected kickstart must not be reported as a restart."""
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         plist_path = tmp_path / "agent.plist"
         plist_path.write_text("<plist/>")
         monkeypatch.setattr(svc_macos, "PLIST_PATH", plist_path)
         bad = MagicMock(returncode=1, stdout="", stderr="no such service")
-        with patch("kiro_crew.service.macos.subprocess.run", return_value=bad):
+        with patch("efm_go.service.macos.subprocess.run", return_value=bad):
             assert svc_macos.restart() is False
 
     def test_restart_no_op_when_plist_absent(self, tmp_path, monkeypatch):
@@ -4116,40 +4116,40 @@ class TestMacOSControlPaths:
         # error. The CLI controller decides whether to fall back to the
         # foreground-gateway path; this layer just refuses to invent a
         # plist that doesn't exist.
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         monkeypatch.setattr(svc_macos, "PLIST_PATH", tmp_path / "missing.plist")
-        with patch("kiro_crew.service.macos.subprocess.run") as run:
+        with patch("efm_go.service.macos.subprocess.run") as run:
             svc_macos.restart()
         run.assert_not_called()
 
     def test_status_returns_launchctl_output_when_loaded(self):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         loaded = MagicMock(
             returncode=0,
             stdout='{\n\t"PID" = 1234;\n}\n',
             stderr="",
         )
-        with patch("kiro_crew.service.macos.subprocess.run", return_value=loaded):
+        with patch("efm_go.service.macos.subprocess.run", return_value=loaded):
             out = svc_macos.status()
         assert "PID" in out
 
     def test_status_returns_friendly_message_when_not_loaded(self):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         not_loaded = MagicMock(returncode=1, stdout="", stderr="no entry")
-        with patch("kiro_crew.service.macos.subprocess.run", return_value=not_loaded):
+        with patch("efm_go.service.macos.subprocess.run", return_value=not_loaded):
             out = svc_macos.status()
         assert "not loaded" in out
 
     def test_kirocrew_bin_falls_back_to_argv0(self, monkeypatch):
         """If `kirocrew` is not on PATH, kirocrew_bin should resolve
         sys.argv[0] rather than crash."""
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
 
         monkeypatch.setattr(sys, "argv", ["/some/path/kirocrew"])
-        with patch("kiro_crew.service.common.shutil.which", return_value=None):
+        with patch("efm_go.service.common.shutil.which", return_value=None):
             assert "kirocrew" in svc_common.kirocrew_bin()
 
 
@@ -4171,7 +4171,7 @@ class TestRestartCommandHint:
         """Both unit-file seams — the Linux module's, the one binding the hint
         reads and every other test patches — pointed at a temp dir; tests create
         the files."""
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         system = tmp_path / "etc" / "kirocrew.service"
         user = tmp_path / "home" / ".config" / "systemd" / "user" / "kirocrew.service"
@@ -4185,7 +4185,7 @@ class TestRestartCommandHint:
         path.write_text("[Unit]\n", encoding="utf-8")
 
     def test_systemd_returns_sudo_systemctl(self, monkeypatch, unit_files):
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
 
         system, _user = unit_files
         self._touch(system)
@@ -4201,7 +4201,7 @@ class TestRestartCommandHint:
         # the remedy's location. `sudo systemctl restart kirocrew` answers
         # "Unit kirocrew.service not found" there; the account's own manager is
         # the one to address.
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
 
         _system, user = unit_files
         self._touch(user)
@@ -4215,7 +4215,7 @@ class TestRestartCommandHint:
         # about which scope RUNS the gateway, and either systemctl command could
         # restart a dead unit or start a competitor. `kirocrew restart` reads
         # both managers and acts on the running scope.
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
 
         system, user = unit_files
         self._touch(system)
@@ -4228,13 +4228,13 @@ class TestRestartCommandHint:
     ):
         # A foreground `kirocrew gateway` on a systemd host: neither unit exists,
         # so neither systemctl command can restart it — the CLI resolves it.
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
 
         monkeypatch.setattr(svc_common, "current_platform", lambda: Platform.SYSTEMD)
         assert svc_common.restart_command_hint() == "kirocrew restart"
 
     def test_launchd_returns_service_aware_cli(self, monkeypatch, unit_files):
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
 
         monkeypatch.setattr(
             svc_common, "current_platform", lambda: Platform.LAUNCHD
@@ -4242,7 +4242,7 @@ class TestRestartCommandHint:
         assert svc_common.restart_command_hint() == "kirocrew restart"
 
     def test_unsupported_returns_service_aware_cli(self, monkeypatch, unit_files):
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
 
         monkeypatch.setattr(
             svc_common, "current_platform", lambda: Platform.UNSUPPORTED
@@ -4255,7 +4255,7 @@ class TestRestartCommandHint:
         """Regression: the `systemctl --user` string that was filed against
         (AL2, no per-user manager) must not come back for a system unit or for
         no unit at all — only a per-user unit file earns it."""
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
 
         system, _user = unit_files
         for present in (False, True):
@@ -4270,8 +4270,8 @@ class TestRestartCommandHint:
     def test_the_hint_reads_the_linux_modules_unit_path_binding(self, monkeypatch, tmp_path):
         """One binding, not a copy: patching `linux.UNIT_PATH` — the seam every
         other test of the module uses — is what the hint sees."""
-        from kiro_crew.service import common as svc_common
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import common as svc_common
+        from efm_go.service import linux as svc_linux
 
         system = tmp_path / "kirocrew.service"
         self._touch(system)
@@ -4283,7 +4283,7 @@ class TestRestartCommandHint:
         assert svc_common.restart_command_hint() == "kirocrew restart"
 
     def test_user_unit_file_path_is_the_remedys_location(self, monkeypatch, tmp_path):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux.Path, "home", classmethod(lambda cls: tmp_path))
         assert svc_linux.user_unit_file_path() == (
@@ -4296,7 +4296,7 @@ class TestKirocrewBinOverride:
     def test_managed_tree_launch_path_is_persisted_through_the_stable_link(
         self, source, monkeypatch, tmp_path
     ):
-        from kiro_crew.platform import tree_liveness, wheel_engine
+        from efm_go.platform import tree_liveness, wheel_engine
 
         tree = tmp_path / "crew-venv-1.0"
         binary = tree / "bin" / "kirocrew"
@@ -4318,7 +4318,7 @@ class TestKirocrewBinOverride:
     def test_service_bin_override_wins_over_which(self, monkeypatch):
         monkeypatch.setenv("KIROCREW_SERVICE_BIN", "/opt/wrapper/kirocrew")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ):
             assert kirocrew_bin() == "/opt/wrapper/kirocrew"
@@ -4326,7 +4326,7 @@ class TestKirocrewBinOverride:
     def test_falls_back_to_which_when_override_unset(self, monkeypatch):
         monkeypatch.delenv("KIROCREW_SERVICE_BIN", raising=False)
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ):
             assert kirocrew_bin() == "/usr/local/bin/kirocrew"
@@ -4334,7 +4334,7 @@ class TestKirocrewBinOverride:
     def test_blank_override_is_ignored(self, monkeypatch):
         monkeypatch.setenv("KIROCREW_SERVICE_BIN", "   ")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ):
             assert kirocrew_bin() == "/usr/local/bin/kirocrew"
@@ -4411,13 +4411,13 @@ class TestServiceEnvironment:
         the systemd unit's Environment= lines. Asserting only the dict would pass
         even if a renderer dropped the key on the way out.
         """
-        from kiro_crew.service import linux as svc_linux
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import linux as svc_linux
+        from efm_go.service import macos as svc_macos
 
         monkeypatch.setenv("KIROCREW_PORT", "5477")
         monkeypatch.setattr(svc_macos, "LIVE_PROGRAM", tmp_path / "live-gateway")
         with patch(
-            "kiro_crew.service.common.shutil.which", return_value="/opt/homebrew/bin/kirocrew"
+            "efm_go.service.common.shutil.which", return_value="/opt/homebrew/bin/kirocrew"
         ):
             plist = svc_macos.render_plist()
         envs = plist.split("<key>EnvironmentVariables</key>", 1)[1].split("</dict>", 1)[0]
@@ -4427,8 +4427,8 @@ class TestServiceEnvironment:
         monkeypatch.setenv("USER", "tester")
         gid = MagicMock(returncode=0, stdout="staff\n", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which", return_value="/usr/local/bin/kirocrew"
-        ), patch("kiro_crew.service.linux.subprocess.run", return_value=gid):
+            "efm_go.service.common.shutil.which", return_value="/usr/local/bin/kirocrew"
+        ), patch("efm_go.service.linux.subprocess.run", return_value=gid):
             unit = svc_linux.render_unit()
         assert "KIROCREW_PORT=5477" in unit
         assert "KIROCREW_SERVICE_MANAGED=1" in unit
@@ -4462,12 +4462,12 @@ class TestServiceEnvironment:
             assert env["LC_ALL"] == self.EXPECTED_UTF8, bad
 
     def test_plist_includes_locale_and_kiro_bin(self, monkeypatch):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         monkeypatch.setenv("KIROCREW_KIRO_BIN", "/opt/shim/kiro-cli")
         monkeypatch.setenv("LANG", "en_US.UTF-8")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/opt/homebrew/bin/kirocrew",
         ):
             plist = svc_macos.render_plist()
@@ -4479,12 +4479,12 @@ class TestServiceEnvironment:
         assert "<key>PATH</key>" in plist
 
     def test_unit_includes_locale_and_kiro_bin(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setenv("KIROCREW_KIRO_BIN", "/opt/shim/kiro-cli")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/usr/local/bin/kirocrew",
         ):
             unit = svc_linux.render_unit()
@@ -4496,7 +4496,7 @@ class TestServiceEnvironment:
     def test_unit_quotes_spaced_program_and_env(self, monkeypatch):
         # A spaced KIROCREW_SERVICE_BIN / KIROCREW_KIRO_BIN must not split the
         # ExecStart exec (203/EXEC) or truncate the env value at the space.
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setenv("KIROCREW_SERVICE_BIN", "/opt/Kiro Crew/kirocrew")
@@ -4511,7 +4511,7 @@ class TestServiceEnvironment:
         # systemd expands %-specifiers (%h=home, %i=instance) in ExecStart /
         # Environment= regardless of quoting; a literal % in a path (e.g. a dir
         # named "100%") must be escaped to %% or the exec targets the wrong path.
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setenv("KIROCREW_SERVICE_BIN", "/opt/100%/kirocrew")
@@ -4522,7 +4522,7 @@ class TestServiceEnvironment:
         assert "/opt/100%/kirocrew" not in unit
 
     def test_sd_quote_escape_order(self):
-        from kiro_crew.service.linux import _sd_quote
+        from efm_go.service.linux import _sd_quote
 
         # %% before \\ before \" — a value with all three renders correctly.
         assert _sd_quote("a%b") == '"a%%b"'
@@ -4534,7 +4534,7 @@ class TestServiceEnvironment:
         # systemd token and let the remainder be parsed as fresh unit
         # directives (e.g. User=root injection into the root-owned unit) — must
         # raise, not escape.
-        from kiro_crew.service.linux import _sd_quote
+        from efm_go.service.linux import _sd_quote
 
         for bad in ("/opt/x\nUser=root", "a\tb", "a\x00b", "a\x7fb", "a\rb"):
             with pytest.raises(ValueError):
@@ -4543,7 +4543,7 @@ class TestServiceEnvironment:
     def test_render_unit_rejects_newline_injection(self, monkeypatch):
         # End-to-end: a newline-bearing override must abort render_unit(), not
         # emit an injectable unit file.
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setenv(
@@ -4566,7 +4566,7 @@ class TestServiceEnvironment:
         # path must be QUOTED there or the launcher would exec the wrong argv.
         # Compared against what kirocrew_bin() actually returned rather than a
         # literal, so the test does not re-encode one platform's path shape.
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         link = tmp_path / "live-gateway"
         monkeypatch.setattr(svc_macos, "LIVE_PROGRAM", link)
@@ -4581,7 +4581,7 @@ class TestServiceEnvironment:
     def test_live_program_escapes_a_single_quote_in_the_path(self):
         # A path containing ' would otherwise terminate the shell quoting and
         # turn the rest of the path into separate argv words.
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         script = svc_macos.render_live_program("/opt/it's/kirocrew")
         assert """exec '/opt/it'\\''s/kirocrew' "$@\"""" in script
@@ -4596,7 +4596,7 @@ class TestServiceEnvironment:
         The agent can be kickstarted at any moment, so the write goes through a
         temp sibling that is chmod'd before the rename.
         """
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         link = tmp_path / "live-gateway"
         monkeypatch.setattr(svc_macos, "LIVE_PROGRAM", link)
@@ -4619,7 +4619,7 @@ class TestEnsureLiveProgram:
     """
 
     def _agent(self, monkeypatch, tmp_path, *, indirected=True, fmt=None):
-        from kiro_crew.service import macos as svc_macos
+        from efm_go.service import macos as svc_macos
 
         launcher = tmp_path / "live-gateway"
         plist = tmp_path / "dev.kirocrew.gateway.plist"
@@ -4735,7 +4735,7 @@ class TestEnsureLiveProgram:
     def test_refuses_to_write_a_launcher_that_execs_a_non_executable(
         self, monkeypatch, tmp_path
     ):
-        """`python -m kiro_crew` with no console script resolves to `__main__.py`.
+        """`python -m efm_go` with no console script resolves to `__main__.py`.
 
         Writing that would leave launchd unable to spawn the agent AND suppress
         every later repair, since the launcher would then exist — the self-heal
@@ -4762,7 +4762,7 @@ class TestEnsureLiveProgram:
         svc, launcher, _plist = self._agent(monkeypatch, tmp_path)
         monkeypatch.delenv("KIROCREW_SERVICE_BIN", raising=False)
         stray = self._exe(tmp_path / "stray" / "kirocrew")
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
         monkeypatch.setattr(svc_common.shutil, "which", lambda _n: str(stray))
         # An interpreter directory with NO kirocrew beside it.
         bare = tmp_path / "bare"
@@ -4787,7 +4787,7 @@ class TestEnsureLiveProgram:
         monkeypatch.delenv("KIROCREW_SERVICE_BIN", raising=False)
         stray = self._exe(tmp_path / "stray" / "kirocrew")
         # kirocrew_bin() lives in service.common and resolves through ITS shutil.
-        from kiro_crew.service import common as svc_common
+        from efm_go.service import common as svc_common
         monkeypatch.setattr(svc_common.shutil, "which", lambda _n: str(stray))
         # The console script that ships beside the running interpreter.
         mine = self._exe(
@@ -4848,7 +4848,7 @@ class TestLauncherReconcileIsProductionOnly:
     """
 
     def test_the_default_home_on_darwin_reconciles(self, monkeypatch):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
         monkeypatch.setattr(cli_server.sys, "platform", "darwin")
@@ -4856,7 +4856,7 @@ class TestLauncherReconcileIsProductionOnly:
         assert cli_server._should_reconcile_launchd_launcher() is True
 
     def test_an_isolated_home_does_not_reconcile(self, monkeypatch, tmp_path):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / ".kirocrew-dev"))
         monkeypatch.setattr(cli_server.sys, "platform", "darwin")
@@ -4864,7 +4864,7 @@ class TestLauncherReconcileIsProductionOnly:
         assert cli_server._should_reconcile_launchd_launcher() is False
 
     def test_non_darwin_never_reconciles(self, monkeypatch):
-        from kiro_crew import cli_server
+        from efm_go import cli_server
 
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
         monkeypatch.setattr(cli_server.sys, "platform", "linux")
@@ -4879,7 +4879,7 @@ class TestLauncherReconcileIsProductionOnly:
         the signed bundle and invalidate its signature. The launchd agent belongs
         to a `service install`, not to an app that manages its own backend.
         """
-        from kiro_crew import cli_server, platform_compat
+        from efm_go import cli_server, platform_compat
 
         monkeypatch.delenv("KIROCREW_HOME", raising=False)
         monkeypatch.setattr(cli_server.sys, "platform", "darwin")
@@ -4889,7 +4889,7 @@ class TestLauncherReconcileIsProductionOnly:
         bundled_python = (
             tmp_path
             / platform_compat.BUNDLED_BACKEND_DIST_DIRNAME
-            / "kirocrew-backend"
+            / "efm-go-backend"
             / "bin"
             / "python3.12"
         )
@@ -4909,7 +4909,7 @@ class TestAppArmorGate:
 
     @staticmethod
     def _gate(monkeypatch, *, lsm="apparmor,capability", sysctl="1", parser="/usr/sbin/apparmor_parser", version=(5, 0)):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "apparmor_is_active", lambda: "apparmor" in lsm)
         monkeypatch.setattr(aa, "userns_restricted", lambda: sysctl == "1")
@@ -4951,13 +4951,13 @@ class TestAppArmorGate:
 
     def test_sysctl_absent_reads_as_unrestricted(self, monkeypatch, tmp_path):
         """An absent knob (Debian, older kernels) must not look like `1`."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "_SYSCTL_PATH", tmp_path / "nope")
         assert aa.userns_restricted() is False
 
     def test_lsm_read_failure_reads_as_inactive(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "_LSM_PATH", tmp_path / "nope")
         assert aa.apparmor_is_active() is False
@@ -4974,7 +4974,7 @@ class TestAppArmorProfileRendering:
         which is a symlink to the system python: attaching there would grant
         unprivileged userns to EVERY Python process on the host.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         text = aa.render_profile("4.0", self._EXEC)
 
@@ -4986,7 +4986,7 @@ class TestAppArmorProfileRendering:
         assert "crew-venv" not in body
 
     def test_grants_only_userns(self):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         body = aa.render_profile("4.0", self._EXEC).split("{", 1)[1]
 
@@ -4996,20 +4996,20 @@ class TestAppArmorProfileRendering:
         assert " mr," not in body
 
     def test_abi_line_matches_the_detected_abi(self):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         assert "abi <abi/4.0>," in aa.render_profile("4.0", self._EXEC)
         assert "abi <abi/5.0>," in aa.render_profile("5.0", self._EXEC)
 
     def test_abi_line_is_omitted_when_none_is_available(self):
         """Declaring an abi file the host lacks makes the profile fail to load."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         assert "abi <" not in aa.render_profile(None, self._EXEC)
 
     def test_detect_abi_picks_the_highest_numeric_file(self, monkeypatch, tmp_path):
         """Ubuntu 25.10 ships parser 5.x but only abi/3.0 and abi/4.0 on disk."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         for name in ("3.0", "4.0", "4.0-ip", "kernel-5.4-vanilla"):
             (tmp_path / name).write_text("", encoding="utf-8")
@@ -5018,14 +5018,14 @@ class TestAppArmorProfileRendering:
         assert aa.detect_abi() == "4.0"
 
     def test_detect_abi_returns_none_without_any_numeric_file(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "_ABI_DIR", tmp_path / "missing")
         assert aa.detect_abi() is None
 
     def test_documents_that_removal_rebreaks_the_sandbox(self):
         """The file is the only record a future reader has — it must say why."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         text = aa.render_profile("4.0", self._EXEC)
         assert "Managed by Kiro Crew" in text
@@ -5059,7 +5059,7 @@ class TestAppArmorInstall:
         Validation itself has its own tests (TestValidateExecPath); here it
         would otherwise refuse the stand-in path for not existing on disk.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(
             aa,
@@ -5068,7 +5068,7 @@ class TestAppArmorInstall:
         )
 
     def test_skips_cleanly_when_the_host_does_not_need_it(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         monkeypatch.setattr(aa, "should_install", lambda: (False, "no restriction here"))
@@ -5081,7 +5081,7 @@ class TestAppArmorInstall:
 
     def test_refuses_to_install_a_profile_that_does_not_compile(self, monkeypatch):
         """Loading a broken profile is how you get a service that will not start."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         monkeypatch.setattr(aa, "should_install", lambda: (True, "restricted"))
@@ -5100,7 +5100,7 @@ class TestAppArmorInstall:
 
     def test_a_sudo_failure_warns_and_never_raises(self, monkeypatch):
         """An install must never die because a hardening step failed."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "should_install", lambda: (True, "restricted"))
         monkeypatch.setattr(aa, "parser_path", lambda: "/usr/sbin/apparmor_parser")
@@ -5121,7 +5121,7 @@ class TestAppArmorInstall:
 
     def test_does_not_claim_success_when_enforcement_cannot_be_verified(self, monkeypatch):
         """A profile that loads but does not take effect is worse than none."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         monkeypatch.setattr(aa, "should_install", lambda: (True, "restricted"))
@@ -5139,7 +5139,7 @@ class TestAppArmorInstall:
         assert "Not claiming success" in outcome.message
 
     def test_happy_path_validates_loads_then_verifies(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         order: list[str] = []
@@ -5193,7 +5193,7 @@ class TestAppArmorInstall:
         refuse — correctly, and each refusal has its own test. This test is
         about the RENDERED attachment, so those rules are neutralised.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         launcher = durable_dir / "kirocrew"
         launcher.write_text("#!/bin/sh\n")
@@ -5221,7 +5221,7 @@ class TestAppArmorInstall:
         """A launcher path that fails validation must not write anything, and
         must not be confused with a compile failure or a sudo failure — it is
         its own named case with its own message."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         monkeypatch.setattr(aa, "should_install", lambda: (True, "restricted"))
@@ -5239,7 +5239,7 @@ class TestAppArmorInstall:
         assert writes == [] and runs == []
 
     def test_uninstall_is_a_noop_when_no_profile_is_present(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         _w, runs, _write, run = self._writers()
         monkeypatch.setattr(aa, "PROFILE_PATH", tmp_path / "absent")
@@ -5251,7 +5251,7 @@ class TestAppArmorInstall:
 
     def test_uninstall_unloads_then_removes(self, monkeypatch, tmp_path):
         """Whatever removes the service removes the grant — no orphaned profile."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         profile = tmp_path / aa.PROFILE_NAME
         profile.write_text("profile", encoding="utf-8")
@@ -5274,13 +5274,13 @@ class TestAppArmorUnitDirective:
     """
 
     def test_no_directive_by_default(self, monkeypatch):
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         gid = MagicMock(returncode=0, stdout="tester\n", stderr="")
         with patch(
-            "kiro_crew.service.common.shutil.which", return_value="/usr/bin/kirocrew"
-        ), patch("kiro_crew.service.linux.subprocess.run", return_value=gid):
+            "efm_go.service.common.shutil.which", return_value="/usr/bin/kirocrew"
+        ), patch("efm_go.service.linux.subprocess.run", return_value=gid):
             unit = svc_linux.render_unit()
 
         assert "AppArmorProfile" not in unit
@@ -5294,8 +5294,8 @@ class TestAppArmorUnitDirective:
         automatic path attachment). Asserted end-to-end through ``install()``,
         not just on ``render_unit`` in isolation, so a regression that starts
         threading a profile name back into the written unit is caught."""
-        from kiro_crew.service import apparmor as aa
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import apparmor as aa
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setenv("USER", "tester")
         monkeypatch.setattr(svc_linux, "_current_user", lambda: "tester")
@@ -5330,8 +5330,8 @@ class TestInstallApparmorProfileAttachesToTheLauncher:
     path and the SERVICE account's uid, not the installer process's own uid."""
 
     def test_passes_kirocrew_bin_as_exec_path_and_threads_expected_uid(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import apparmor as aa
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux, "kirocrew_bin", lambda: "/opt/kirocrew-venv/bin/kirocrew")
         calls = []
@@ -5357,8 +5357,8 @@ class TestInstallApparmorProfileAttachesToTheLauncher:
         root — a root-owned shared launcher would then pass the ownership
         check and the userns grant would extend to every account on the host
         (GPT review finding on this PR)."""
-        from kiro_crew.service import apparmor as aa
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import apparmor as aa
+        from efm_go.service import linux as svc_linux
 
         monkeypatch.setattr(svc_linux, "kirocrew_bin", lambda: "/opt/kirocrew-venv/bin/kirocrew")
         calls = []
@@ -5386,15 +5386,15 @@ class TestAppArmorNeverFailsTheInstall:
 
     @staticmethod
     def _patched(monkeypatch, outcome):
-        from kiro_crew.service import controller
-        from kiro_crew.service.common import Platform
+        from efm_go.service import controller
+        from efm_go.service.common import Platform
 
         monkeypatch.setattr(controller, "current_platform", lambda: Platform.SYSTEMD)
         monkeypatch.setattr(controller.linux, "install", lambda: outcome)
         return controller
 
     def test_install_still_succeeds_when_the_profile_fails(self, monkeypatch, capsys):
-        from kiro_crew.service.apparmor import ProfileOutcome
+        from efm_go.service.apparmor import ProfileOutcome
 
         controller = self._patched(
             monkeypatch,
@@ -5410,7 +5410,7 @@ class TestAppArmorNeverFailsTheInstall:
         assert "could not be installed" in out
 
     def test_install_reports_the_profile_on_success(self, monkeypatch, capsys):
-        from kiro_crew.service.apparmor import ProfileOutcome
+        from efm_go.service.apparmor import ProfileOutcome
 
         controller = self._patched(
             monkeypatch, ProfileOutcome(True, "AppArmor profile installed at /etc/apparmor.d/x")
@@ -5425,7 +5425,7 @@ class TestAppArmorNeverFailsTheInstall:
 
     def test_a_silent_skip_prints_nothing_extra(self, monkeypatch, capsys):
         """On Debian/Arch/RHEL the step must be invisible, not chatty."""
-        from kiro_crew.service.apparmor import ProfileOutcome
+        from efm_go.service.apparmor import ProfileOutcome
 
         controller = self._patched(monkeypatch, ProfileOutcome(False, ""))
 
@@ -5437,9 +5437,9 @@ class TestAppArmorNeverFailsTheInstall:
         assert "⚠️" not in out
 
     def test_uninstall_removes_the_profile_and_still_reports_success(self, monkeypatch, capsys):
-        from kiro_crew.service import controller
-        from kiro_crew.service.apparmor import ProfileOutcome
-        from kiro_crew.service.common import Platform
+        from efm_go.service import controller
+        from efm_go.service.apparmor import ProfileOutcome
+        from efm_go.service.common import Platform
 
         removed: list[bool] = []
 
@@ -5475,7 +5475,7 @@ class TestEnforcementVerificationIsSafeAndFaithful:
     """
 
     def test_never_spawns_unprivileged_and_drops_back_to_the_caller(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         calls: list[tuple[str, ...]] = []
         monkeypatch.setattr(
@@ -5503,7 +5503,7 @@ class TestEnforcementVerificationIsSafeAndFaithful:
         """sys.executable is user-writable; running it under sudo would be an LPE."""
         import sys as _sys
 
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         calls: list[tuple[str, ...]] = []
         monkeypatch.setattr(aa, "_resolve_trusted", lambda name: f"/usr/bin/{name}")
@@ -5513,10 +5513,10 @@ class TestEnforcementVerificationIsSafeAndFaithful:
         assert "/usr/bin/python3" in argv
         assert _sys.executable not in argv
         # And the payload must not import our own (user-writable) package.
-        assert "kiro_crew" not in " ".join(argv)
+        assert "efm_go" not in " ".join(argv)
 
     def test_a_missing_trusted_tool_is_inconclusive_not_a_failure_claim(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "_resolve_trusted", lambda name: None if name == "setpriv" else "/usr/bin/x")
 
@@ -5527,7 +5527,7 @@ class TestEnforcementVerificationIsSafeAndFaithful:
         assert "setpriv" in problem
 
     def test_a_failing_probe_inside_the_profile_is_surfaced(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "_resolve_trusted", lambda name: f"/usr/bin/{name}")
 
@@ -5543,7 +5543,7 @@ class TestTrustedToolResolution:
     """Anything handed to sudo must not be resolvable through the user's $PATH."""
 
     def test_rejects_a_binary_outside_the_trusted_dirs(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         fake = tmp_path / "apparmor_parser"
         fake.write_text("#!/bin/sh\n", encoding="utf-8")
@@ -5556,7 +5556,7 @@ class TestTrustedToolResolution:
         assert aa._resolve_trusted("apparmor_parser") is None
 
     def test_rejects_a_group_or_world_writable_binary(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         target = tmp_path / "aa-exec"
         target.write_text("#!/bin/sh\n", encoding="utf-8")
@@ -5566,7 +5566,7 @@ class TestTrustedToolResolution:
         assert aa._resolve_trusted("aa-exec") is None
 
     def test_missing_binary_returns_none(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "_TRUSTED_BIN_DIRS", (str(tmp_path),))
         assert aa._resolve_trusted("nope") is None
@@ -5582,7 +5582,7 @@ class TestTrustedToolResolution:
     )
     def test_resolves_a_real_root_owned_system_binary(self):
         """Against the real filesystem, not a fixture: /bin/sh must resolve."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         resolved = aa._resolve_trusted("sh")
         assert resolved is not None and resolved.startswith("/")
@@ -5597,8 +5597,8 @@ class TestProfileLoadsBeforeTheServiceStarts:
     """
 
     def test_profile_is_installed_before_daemon_reload_and_restart(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
-        from kiro_crew.service import linux as svc_linux
+        from efm_go.service import apparmor as aa
+        from efm_go.service import linux as svc_linux
 
         order: list[str] = []
         monkeypatch.setenv("USER", "tester")
@@ -5647,7 +5647,7 @@ def durable_dir(tmp_path, monkeypatch):
     ``test_rejects_a_world_writable_location`` and the ``_substitutable_by_others``
     tests deliberately do NOT use this fixture: they assert the refusals.
     """
-    from kiro_crew.service import apparmor as aa
+    from efm_go.service import apparmor as aa
 
     monkeypatch.setattr(aa, "_UNSAFE_EXEC_PARENTS", ())
     monkeypatch.setattr(
@@ -5696,7 +5696,7 @@ class TestLauncherExecPathIsSafeToAttach:
     """
 
     def test_rejects_a_relative_path(self):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         resolved, problem = aa.validate_exec_path("kirocrew.AppImage")
 
@@ -5704,12 +5704,12 @@ class TestLauncherExecPathIsSafeToAttach:
         assert "absolute" in problem
 
     def test_rejects_an_empty_path(self):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         assert aa.validate_exec_path("   ")[0] is None
 
     def test_rejects_a_path_that_does_not_exist(self, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         resolved, problem = aa.validate_exec_path(str(tmp_path / "nope.AppImage"))
 
@@ -5717,7 +5717,7 @@ class TestLauncherExecPathIsSafeToAttach:
         assert "could not be resolved" in problem
 
     def test_rejects_a_directory(self, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         resolved, problem = aa.validate_exec_path(str(tmp_path))
 
@@ -5731,7 +5731,7 @@ class TestLauncherExecPathIsSafeToAttach:
         The constant is monkeypatched rather than writing to the real /tmp so the
         assertion holds on macOS too, where /tmp resolves to /private/tmp.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = tmp_path / "kirocrew.AppImage"
         app.write_text("#!/bin/sh\n")
@@ -5745,7 +5745,7 @@ class TestLauncherExecPathIsSafeToAttach:
 
     def test_rejects_the_appimage_runtime_mount(self):
         """/tmp/.mount_XXXXXX is a fresh random path every launch."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         assert "/tmp/" in aa._UNSAFE_EXEC_PARENTS
 
@@ -5765,7 +5765,7 @@ class TestLauncherExecPathIsSafeToAttach:
     )
     def test_shared_interpreters_are_recognised(self, path):
         """Attaching here would grant userns to every program that runs it."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         assert aa._SHARED_INTERPRETER_RE.match(path), path
 
@@ -5779,14 +5779,14 @@ class TestLauncherExecPathIsSafeToAttach:
         ],
     )
     def test_real_application_paths_are_not_mistaken_for_interpreters(self, path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         assert not aa._SHARED_INTERPRETER_RE.match(path), path
 
     @posix_only
     def test_rejects_a_shared_interpreter_end_to_end(self):
         """/bin/sh exists on every POSIX host, and resolves to a shell either way."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         resolved, problem = aa.validate_exec_path("/bin/sh")
 
@@ -5804,7 +5804,7 @@ class TestLauncherExecPathIsSafeToAttach:
         attachment that the kernel matches against /bin/sh — a host-wide grant
         reached through a name that looks harmless.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         link = tmp_path / "kirocrew.AppImage"
         link.symlink_to("/bin/sh")
@@ -5817,7 +5817,7 @@ class TestLauncherExecPathIsSafeToAttach:
     @pytest.mark.parametrize("bad", ["star*", "quest?", "brack[et]", "brace{x}", 'quo"te'])
     def test_rejects_glob_metacharacters(self, durable_dir, bad):
         """AppArmor reads an attachment as a glob even inside quotes."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = durable_dir / f"{bad}.AppImage"
         try:
@@ -5833,7 +5833,7 @@ class TestLauncherExecPathIsSafeToAttach:
     @posix_only
     def test_accepts_a_durable_path_with_a_space(self, durable_dir):
         """A space is fine — the rendered attachment is quoted."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = durable_dir / "Kiro Crew.AppImage"
         app.write_text("#!/bin/sh\n")
@@ -5857,7 +5857,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
     def test_a_world_writable_directory_outside_the_denylist_is_refused(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         shared = tmp_path / "shared"
         shared.mkdir()
@@ -5876,7 +5876,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
 
     def test_a_group_writable_file_is_refused(self, tmp_path, monkeypatch):
         """Group members could replace the binary that receives the grant."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = tmp_path / "kirocrew.AppImage"
         app.write_text("#!/bin/sh\n")
@@ -5891,7 +5891,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
 
     def test_a_writable_ancestor_is_enough_to_refuse(self, tmp_path, monkeypatch):
         """Renaming a writable parent re-points the same absolute path."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         outer = tmp_path / "outer"
         inner = outer / "inner"
@@ -5917,7 +5917,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
         to be owned by the caller closes the whole class rather than adding names
         to the list.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         target = Path("/usr/bin/env")  # root-owned on every POSIX host
         if not target.exists():
@@ -5942,7 +5942,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
         self, shared, monkeypatch, tmp_path
     ):
         """The ownership rule covers what the interpreter regex never listed."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         stand_in = tmp_path / Path(shared).name
         stand_in.write_text("#!/bin/sh\n")
@@ -5961,7 +5961,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
 
     def test_a_file_you_own_under_a_tight_chain_is_accepted(self, tmp_path, monkeypatch):
         """Positive control: an AppImage you downloaded is owned by you."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = tmp_path / "kirocrew.AppImage"
         app.write_text("#!/bin/sh\n")
@@ -5985,7 +5985,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
         disqualifying; what matters is that the most obvious wrong answer a user
         could give is refused.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         tmp_uid = Path("/tmp").stat().st_uid
         if tmp_uid not in (0, os.getuid()):
@@ -5998,7 +5998,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
 
     def test_a_file_owned_by_another_user_is_refused(self, tmp_path, monkeypatch):
         """The owner of the file chooses which binary gets the grant."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = tmp_path / "kirocrew.AppImage"
         app.write_text("#!/bin/sh\n")
@@ -6045,7 +6045,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
         Both endpoints' chains are tight; only the directory holding the hop is
         writable, and a lexical chain over the collapsed path never names it.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         trusted = tmp_path / "trusted"
         trusted.mkdir()
@@ -6072,7 +6072,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
         The collapsed path's chain runs ``holder/bin``, ``holder``, ... and never
         names ``prefix``, whose owner can re-point ``bin`` wholesale.
         """
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         prefix = tmp_path / "prefix"
         prefix.mkdir()
@@ -6092,7 +6092,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
 
     def test_a_chain_through_tight_directories_is_still_accepted(self, tmp_path, monkeypatch):
         """Strictly a widening: the hop shape with every directory tight is accepted."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         trusted = tmp_path / "trusted"
         trusted.mkdir()
@@ -6114,7 +6114,7 @@ class TestATakeoverOfTheAttachedPathIsRefused:
 
     def test_a_walk_that_cannot_be_enumerated_is_refused(self, tmp_path, monkeypatch):
         """``None`` from the walk is a refusal that says so, never a shorter chain."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = tmp_path / "kirocrew.AppImage"
         app.write_text("#!/bin/sh\n")
@@ -6133,7 +6133,7 @@ class TestExpectedUidOverride:
     ``kirocrew service install`` itself runs as root or under ``sudo``."""
 
     def test_a_file_owned_by_the_expected_uid_is_accepted(self, tmp_path, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = tmp_path / "kirocrew"
         app.write_text("#!/bin/sh\n")
@@ -6158,7 +6158,7 @@ class TestExpectedUidOverride:
         runs as -- checking against the installer's own uid would wrongly
         accept an attachment that grants a different human's process the
         namespace capability."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = tmp_path / "kirocrew"
         app.write_text("#!/bin/sh\n")
@@ -6192,7 +6192,7 @@ class TestExpectedUidOverride:
         tight-mode ancestor owned by a THIRD account (not root, not the
         expected owner) still makes the whole path substitutable — the mode
         walk alone must not accept it."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         foreign = tmp_path / "foreign"
         foreign.mkdir()
@@ -6228,7 +6228,7 @@ class TestExpectedUidOverride:
         ownership rule must not reject it — root can already edit
         /etc/apparmor.d directly, so refusing root-owned ancestors would
         reject every real install for no gain."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         parent = tmp_path / "sys"
         parent.mkdir()
@@ -6256,7 +6256,7 @@ class TestExpectedUidOverride:
         ownership helper -- a regression that stops threading the kwarg
         through validate_exec_path would not be caught by the unit test above
         alone."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = tmp_path / "kirocrew"
         app.write_text("#!/bin/sh\n")
@@ -6278,7 +6278,7 @@ class TestLauncherProfileRendering:
     """The rendered profile must grant one permission and attach to one path."""
 
     def _render(self, path="/home/u/Apps/kirocrew.AppImage", abi="4.0"):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         return aa.render_launcher_profile(abi, Path(path))
 
@@ -6302,7 +6302,7 @@ class TestLauncherProfileRendering:
 
     @posix_only
     def test_attaches_to_the_given_path_in_quotes(self):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         text = self._render("/home/u/My Apps/kirocrew.AppImage")
 
@@ -6319,7 +6319,7 @@ class TestLauncherProfileRendering:
         assert "include <tunables/global>" in text
 
     def test_keeps_a_local_override_include(self):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         assert f"include if exists <local/{aa.LAUNCHER_PROFILE_NAME}>" in self._render()
 
@@ -6332,7 +6332,7 @@ class TestLauncherProfileRendering:
 
     @posix_only
     def test_round_trips_through_the_attachment_parser(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         profile = tmp_path / aa.LAUNCHER_PROFILE_NAME
         profile.write_text(self._render("/home/u/Apps/kirocrew.AppImage"))
@@ -6341,7 +6341,7 @@ class TestLauncherProfileRendering:
         assert aa.installed_attachment() == "/home/u/Apps/kirocrew.AppImage"
 
     def test_attachment_parser_returns_none_when_not_installed(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "LAUNCHER_PROFILE_PATH", tmp_path / "absent")
 
@@ -6358,7 +6358,7 @@ class TestLauncherStatusTellsTheTruth:
         monkeypatch.setattr(aa, "userns_restricted", lambda: True)
 
     def test_unaffected_host_is_reported_as_fine(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "apparmor_is_active", lambda: True)
         monkeypatch.setattr(aa, "userns_restricted", lambda: False)
@@ -6369,7 +6369,7 @@ class TestLauncherStatusTellsTheTruth:
         assert "does not restrict" in detail
 
     def test_missing_profile_on_an_appimage_launch_names_the_command(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         self._restricted(monkeypatch, aa)
         monkeypatch.setattr(aa, "installed_attachment", lambda: None)
@@ -6381,7 +6381,7 @@ class TestLauncherStatusTellsTheTruth:
 
     def test_missing_profile_without_an_appimage_points_at_the_service(self, monkeypatch):
         """A foreground gateway has no safe path to attach to."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         self._restricted(monkeypatch, aa)
         monkeypatch.setattr(aa, "installed_attachment", lambda: None)
@@ -6394,7 +6394,7 @@ class TestLauncherStatusTellsTheTruth:
 
     def test_a_moved_appimage_is_reported_as_not_covered(self, monkeypatch, durable_dir):
         """The kernel reports nothing here — the profile simply never matches."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = durable_dir / "kirocrew.AppImage"
         app.write_text("#!/bin/sh\n")
@@ -6409,7 +6409,7 @@ class TestLauncherStatusTellsTheTruth:
         assert "re-point" in detail
 
     def test_a_matching_attachment_is_reported_as_covered(self, monkeypatch, durable_dir):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         app = durable_dir / "kirocrew.AppImage"
         app.write_text("#!/bin/sh\n")
@@ -6449,7 +6449,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
         monkeypatch.setattr(aa, "verify_enforcement", lambda *_a: (True, None))
 
     def test_skips_cleanly_on_a_host_that_does_not_need_it(self, monkeypatch, durable_dir):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         monkeypatch.setattr(aa, "should_install", lambda: (False, "no restriction here"))
@@ -6463,7 +6463,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
         assert writes == [] and runs == []
 
     def test_explains_itself_when_there_is_nothing_to_attach_to(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         monkeypatch.setattr(aa, "should_install", lambda: (True, "restricted"))
@@ -6477,7 +6477,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
         assert writes == []
 
     def test_refuses_an_unsafe_path_without_touching_the_host(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         monkeypatch.setattr(aa, "should_install", lambda: (True, "restricted"))
@@ -6491,7 +6491,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
         assert writes == [] and runs == []
 
     def test_refuses_a_profile_that_does_not_compile(self, monkeypatch, durable_dir):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         self._ready(monkeypatch, aa)
@@ -6506,7 +6506,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
         assert writes == [] and runs == []
 
     def test_a_sudo_failure_warns_and_never_raises(self, monkeypatch, durable_dir):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         self._ready(monkeypatch, aa)
 
@@ -6524,7 +6524,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
     def test_does_not_claim_success_when_enforcement_is_unconfirmed(
         self, monkeypatch, durable_dir
     ):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         self._ready(monkeypatch, aa)
@@ -6542,7 +6542,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
         self, monkeypatch, durable_dir
     ):
         """Verifying the service profile instead would prove the wrong thing."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         self._ready(monkeypatch, aa)
@@ -6562,7 +6562,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
     def test_success_writes_the_profile_loads_it_and_says_to_restart(
         self, monkeypatch, durable_dir
     ):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         self._ready(monkeypatch, aa)
@@ -6581,7 +6581,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
 
     def test_warns_about_a_conflicting_hand_written_profile(self, monkeypatch, durable_dir):
         """The workaround people find first attaches to the same AppImage."""
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         writes, runs, write, run = self._writers()
         self._ready(monkeypatch, aa)
@@ -6600,7 +6600,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
     def test_uninstall_is_a_silent_noop_when_nothing_is_installed(
         self, monkeypatch, durable_dir
     ):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "LAUNCHER_PROFILE_PATH", durable_dir / "absent")
 
@@ -6610,7 +6610,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
         assert outcome.message == ""
 
     def test_uninstall_unloads_then_removes(self, monkeypatch, durable_dir):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         profile = durable_dir / aa.LAUNCHER_PROFILE_NAME
         profile.write_text("profile\n")
@@ -6625,7 +6625,7 @@ class TestLauncherInstallIsFailSoftAndHonest:
         assert runs[1] == ("rm", "-f", str(profile))
 
     def test_default_exec_path_reads_appimage(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setenv("APPIMAGE", "/home/u/Apps/kirocrew.AppImage")
         assert aa.default_exec_path() == "/home/u/Apps/kirocrew.AppImage"
@@ -6641,7 +6641,7 @@ class TestSandboxProfileControllerDispatch:
     """Non-Linux hosts get a clean no-op, not an error."""
 
     def test_install_is_a_noop_off_systemd(self, capsys):
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch.object(controller, "current_platform", return_value=Platform.LAUNCHD):
             rc = controller.install_launcher_profile(None)
@@ -6650,7 +6650,7 @@ class TestSandboxProfileControllerDispatch:
         assert "Linux-only" in capsys.readouterr().out
 
     def test_status_is_a_noop_off_systemd(self, capsys):
-        from kiro_crew.service import controller
+        from efm_go.service import controller
 
         with patch.object(controller, "current_platform", return_value=Platform.LAUNCHD):
             rc = controller.sandbox_profile_status(None)
@@ -6659,7 +6659,7 @@ class TestSandboxProfileControllerDispatch:
         assert "does not restrict" in capsys.readouterr().out
 
     def test_install_returns_nonzero_when_the_outcome_is_not_ok(self, capsys):
-        from kiro_crew.service import apparmor, controller, linux
+        from efm_go.service import apparmor, controller, linux
 
         with patch.object(controller, "current_platform", return_value=Platform.SYSTEMD), \
              patch.object(
@@ -6673,7 +6673,7 @@ class TestSandboxProfileControllerDispatch:
         assert "⚠️" in capsys.readouterr().out
 
     def test_status_exit_code_is_the_answer(self):
-        from kiro_crew.service import apparmor, controller
+        from efm_go.service import apparmor, controller
 
         with patch.object(controller, "current_platform", return_value=Platform.SYSTEMD), \
              patch.object(apparmor, "launcher_status", return_value=(False, "not covered")):
@@ -6698,7 +6698,7 @@ class TestHeadlessApiKeyDoctorReport:
     SECRET = "sk-doctor-value-not-for-disclosure"
 
     def _warn(self, monkeypatch, unit, warning="Note: dropped key"):
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         monkeypatch.setattr(
             cli_doctor.service_controller, "installed_unit_path", lambda: unit
@@ -6727,7 +6727,7 @@ class TestHeadlessApiKeyDoctorReport:
         path only proves a definition exists on disk. Both halves are pinned --
         the append being absent, and the `sys.exit(1)` it would have reached.
         """
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         source = inspect.getsource(cli_doctor._doctor_headless_auth)
         assert "issues.append" not in source
@@ -6750,7 +6750,7 @@ class TestHeadlessApiKeyDoctorReport:
 
     def test_a_failing_probe_cannot_break_doctor(self, monkeypatch, capsys, tmp_path):
         """Doctor reports; it must not raise because a diagnostic could not run."""
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         monkeypatch.setattr(
             cli_doctor.service_controller,
@@ -6790,7 +6790,7 @@ class TestHeadlessApiKeyDoctorReport:
         `_doctor` performs dozens of live host probes; the property under test is
         only that the call site exists.
         """
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         assert "_doctor_headless_auth(issues)" in inspect.getsource(
             cli_doctor._doctor
@@ -6807,7 +6807,7 @@ class TestInstalledUnitPath:
         monkeypatch.setattr(controller, "current_platform", lambda: Platform.SYSTEMD)
         monkeypatch.setattr(controller.linux, "UNIT_PATH", unit)
         run = _fake_systemctl(system=_RUNNING, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert controller.installed_unit_path() == unit
         # A system unit file answers by itself: no spawn at all.
         assert run.calls == []
@@ -6823,7 +6823,7 @@ class TestInstalledUnitPath:
         monkeypatch.setattr(controller, "current_platform", lambda: Platform.SYSTEMD)
         monkeypatch.setattr(controller.linux, "UNIT_PATH", tmp_path / "nope.service")
         run = _fake_systemctl(system=None, user=None)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert controller.installed_unit_path() is None
         # Only the user manager was asked, and without sudo.
         assert [c[:3] for c in run.calls] == [["systemctl", "--user", "show"]], run.calls
@@ -6839,7 +6839,7 @@ class TestInstalledUnitPath:
         # A stopped user unit is still an installed definition (the check is
         # about what a service would inherit, not whether it runs right now).
         run = _fake_systemctl(system=None, user=_DEAD, user_fragment=str(fragment))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert controller.installed_unit_path() == fragment
 
     @pytest.mark.parametrize(
@@ -6863,7 +6863,7 @@ class TestInstalledUnitPath:
         monkeypatch.setattr(controller, "current_platform", lambda: Platform.SYSTEMD)
         monkeypatch.setattr(controller.linux, "UNIT_PATH", tmp_path / "nope.service")
         run = _fake_systemctl(system=None, **kwargs)
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert controller.installed_unit_path() is None
 
     def test_user_unit_whose_file_is_gone_is_not_installed(self, monkeypatch, tmp_path):
@@ -6873,7 +6873,7 @@ class TestInstalledUnitPath:
         monkeypatch.setattr(controller.linux, "UNIT_PATH", tmp_path / "nope.service")
         gone = tmp_path / "removed" / "kirocrew.service"
         run = _fake_systemctl(system=None, user=_RUNNING, user_fragment=str(gone))
-        with patch("kiro_crew.service.linux.subprocess.run", side_effect=run):
+        with patch("efm_go.service.linux.subprocess.run", side_effect=run):
             assert controller.installed_unit_path() is None
 
     def test_unsupported_platform_is_not_installed(self, monkeypatch):
@@ -7098,7 +7098,7 @@ class TestAppArmorProfileValidation:
 
     @staticmethod
     def _fake_run(monkeypatch, *, returncode=0, stdout="", stderr="", raises=None):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         seen: dict = {}
 
@@ -7113,7 +7113,7 @@ class TestAppArmorProfileValidation:
         return seen
 
     def test_a_clean_parse_reports_ok(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         seen = self._fake_run(monkeypatch)
         ok, detail = aa.validate("/usr/sbin/apparmor_parser", "profile x {}")
@@ -7122,7 +7122,7 @@ class TestAppArmorProfileValidation:
         assert seen["argv"][:3] == ["/usr/sbin/apparmor_parser", "-Q", "--skip-cache"]
 
     def test_the_profile_text_reaches_the_parser_and_the_temp_file_is_removed(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         seen = self._fake_run(monkeypatch)
         written: dict = {}
@@ -7142,7 +7142,7 @@ class TestAppArmorProfileValidation:
         assert seen == {}
 
     def test_a_parse_failure_returns_the_parsers_own_words(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         self._fake_run(monkeypatch, returncode=1, stderr="  syntax error at line 3  ")
         assert aa.validate("/usr/sbin/apparmor_parser", "bad") == (
@@ -7151,13 +7151,13 @@ class TestAppArmorProfileValidation:
         )
 
     def test_stdout_is_used_when_stderr_is_empty(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         self._fake_run(monkeypatch, returncode=1, stdout="told you so")
         assert aa.validate("/usr/sbin/apparmor_parser", "bad") == (False, "told you so")
 
     def test_a_missing_parser_is_a_failure_not_a_crash(self, monkeypatch):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         self._fake_run(monkeypatch, raises=OSError("no such file"))
         ok, detail = aa.validate("/usr/sbin/apparmor_parser", "profile x {}")
@@ -7168,7 +7168,7 @@ class TestAppArmorProfileValidation:
     def test_a_parser_timeout_is_a_failure_not_a_crash(self, monkeypatch):
         import subprocess
 
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         self._fake_run(monkeypatch, raises=subprocess.TimeoutExpired("p", 30))
         assert aa.validate("/usr/sbin/apparmor_parser", "profile x {}")[0] is False
@@ -7194,7 +7194,7 @@ class TestAppArmorConflictingAttachment:
 
     @staticmethod
     def _dir(monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "LAUNCHER_PROFILE_PATH", tmp_path / aa.LAUNCHER_PROFILE_NAME)
         return aa
@@ -7263,14 +7263,14 @@ class TestAppArmorLauncherUninstall:
     """
 
     def test_nothing_to_do_when_no_profile_is_installed(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         monkeypatch.setattr(aa, "LAUNCHER_PROFILE_PATH", tmp_path / "absent")
         outcome = aa.uninstall_launcher(lambda *a: None)
         assert (outcome.changed, outcome.ok) == (False, True)
 
     def test_it_unloads_then_removes(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         path = tmp_path / "kirocrew-launcher"
         path.write_text("profile")
@@ -7287,7 +7287,7 @@ class TestAppArmorLauncherUninstall:
         assert outcome.changed is True and outcome.ok is True
 
     def test_a_failed_unload_still_removes_the_file(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         path = tmp_path / "kirocrew-launcher"
         path.write_text("profile")
@@ -7306,7 +7306,7 @@ class TestAppArmorLauncherUninstall:
         assert outcome.ok is True
 
     def test_a_failed_removal_is_reported(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         path = tmp_path / "kirocrew-launcher"
         path.write_text("profile")
@@ -7322,7 +7322,7 @@ class TestAppArmorLauncherUninstall:
         assert "read-only /etc" in outcome.message
 
     def test_no_parser_skips_the_unload_and_still_removes(self, monkeypatch, tmp_path):
-        from kiro_crew.service import apparmor as aa
+        from efm_go.service import apparmor as aa
 
         path = tmp_path / "kirocrew-launcher"
         path.write_text("profile")

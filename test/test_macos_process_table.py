@@ -17,7 +17,7 @@ import sys
 
 import pytest
 
-from kiro_crew.acp import runtime as rt
+from efm_go.acp import runtime as rt
 
 # The Linux branch reads /proc directly and never spawns, so the behaviour under
 # test only exists on the non-Linux path. Force that path rather than skipping,
@@ -159,11 +159,11 @@ def test_sampler_pass_over_many_pids_takes_one_snapshot(monkeypatch):
     ``_blocking_sample`` is what fans out over every live runtime pid, so the
     guarantee has to hold there and not merely in isolation.
     """
-    from kiro_crew.dashboard import session_memory as sm
+    from efm_go.dashboard import session_memory as sm
 
     calls = _counting_ps(monkeypatch)
     monkeypatch.setattr(sm, "_iter_descendant_pids", lambda pid: [pid])
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.usage.slot_spend", lambda: {})
+    monkeypatch.setattr("efm_go.dashboard.handlers.usage.slot_spend", lambda: {})
 
     sampler = sm.SessionMemorySampler()
     rows = [{"pid": 100}, {"pid": 101}, {"pid": 200}]

@@ -18,8 +18,8 @@ from datetime import datetime
 
 import pytest
 
-from kiro_crew.knowledge.retrieval import HybridRetriever
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.knowledge.retrieval import HybridRetriever
+from efm_go.knowledge.store import KnowledgeStore
 
 
 @pytest.fixture()
@@ -167,7 +167,7 @@ def test_simpledigraph_reader_survives_concurrent_mutation():
     """A reader traversing the graph must not crash while another thread
     clears+rebuilds it. Pre-fix this raised RuntimeError: dictionary changed
     size during iteration."""
-    from kiro_crew.knowledge.store import SimpleDiGraph
+    from efm_go.knowledge.store import SimpleDiGraph
 
     g = SimpleDiGraph()
     for i in range(200):

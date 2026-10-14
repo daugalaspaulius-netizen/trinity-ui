@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from non_utf8_comm import BAD_COMM, write_stat
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 # These tests exercise POSIX-only process-management semantics: process-group
 # APIs (os.killpg / os.getpgrp / os.getpgid), POSIX identity/age probes
@@ -36,7 +36,7 @@ _POSIX_ONLY = pytest.mark.skipif(
 def pid_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Redirect _pid_file_path to a temp file."""
     p = tmp_path / "kiro_pids.txt"
-    monkeypatch.setattr("kiro_crew.session_pid._pid_file_path", lambda: p)
+    monkeypatch.setattr("efm_go.session_pid._pid_file_path", lambda: p)
     return p
 
 
@@ -44,19 +44,19 @@ def pid_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def session_pid_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Redirect _session_pid_file_path to a temp file."""
     p = tmp_path / "kiro_session_pids.txt"
-    monkeypatch.setattr("kiro_crew.session_pid._session_pid_file_path", lambda: p)
+    monkeypatch.setattr("efm_go.session_pid._session_pid_file_path", lambda: p)
     return p
 
 
 class TestTrackUntrack:
     def test_track_pid_creates_file(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _track_pid
+        from efm_go.session_pid import _track_pid
 
         _track_pid(12345)
         assert "12345" in pid_file.read_text(encoding="utf-8")
 
     def test_track_multiple(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _track_pid
+        from efm_go.session_pid import _track_pid
 
         _track_pid(111)
         _track_pid(222)
@@ -64,7 +64,7 @@ class TestTrackUntrack:
         assert lines == ["111", "222"]
 
     def test_untrack_pid(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _track_pid, _untrack_pid
+        from efm_go.session_pid import _track_pid, _untrack_pid
 
         _track_pid(111)
         _track_pid(222)
@@ -73,7 +73,7 @@ class TestTrackUntrack:
         assert lines == ["222"]
 
     def test_untrack_nonexistent(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _track_pid, _untrack_pid
+        from efm_go.session_pid import _track_pid, _untrack_pid
 
         _track_pid(111)
         _untrack_pid(999)  # should not crash
@@ -93,9 +93,9 @@ class TestTrackUntrack:
         3-field ``gw:pid:token``) and absent on others (2-field ``gw:pid``),
         which would otherwise make the expected value host-dependent.
         """
-        from kiro_crew.session_pid import _track_session_pid, _untrack_session_pid
+        from efm_go.session_pid import _track_session_pid, _untrack_session_pid
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: token)
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: token)
         _track_session_pid(111)
         _track_session_pid(222)
         _untrack_session_pid(111)
@@ -105,14 +105,14 @@ class TestTrackUntrack:
         assert lines == [f"{gw}:222{suffix}"]
 
     def test_untrack_session_pid_missing_file(self, session_pid_file: Path) -> None:
-        from kiro_crew.session_pid import _untrack_session_pid
+        from efm_go.session_pid import _untrack_session_pid
 
         _untrack_session_pid(999)  # should not crash on missing file
         assert not session_pid_file.exists()
 
     def test_untrack_session_pid_other_gateway_untouched(self, session_pid_file: Path) -> None:
         """Untracking our PID must NOT remove other gateways' entries for same child PID."""
-        from kiro_crew.session_pid import _track_session_pid, _untrack_session_pid
+        from efm_go.session_pid import _track_session_pid, _untrack_session_pid
 
         _track_session_pid(111)
         # Simulate another gateway's entry for the same child PID
@@ -123,27 +123,27 @@ class TestTrackUntrack:
         assert lines == ["99999:111"]
 
     def test_track_child_pids_with_parent(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _track_child_pids
+        from efm_go.session_pid import _track_child_pids
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({100: None, 200: None, 300: None}, parent_pid=999)
         lines = pid_file.read_text(encoding="utf-8").strip().splitlines()
         assert set(lines) == {"100:999", "200:999", "300:999"}
 
     def test_track_child_pids_dedup(self, pid_file: Path) -> None:
         """Duplicate child:parent entries should not be written."""
-        from kiro_crew.session_pid import _track_child_pids
+        from efm_go.session_pid import _track_child_pids
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({100: None, 200: None}, parent_pid=999)
             _track_child_pids({100: None, 300: None}, parent_pid=999)
         lines = pid_file.read_text(encoding="utf-8").strip().splitlines()
         assert sorted(lines) == ["100:999", "200:999", "300:999"]
 
     def test_untrack_child_pids(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _track_child_pids, _untrack_child_pids
+        from efm_go.session_pid import _track_child_pids, _untrack_child_pids
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({100: None, 200: None, 300: None}, parent_pid=999)
         _untrack_child_pids({100: None, 300: None})
         lines = pid_file.read_text(encoding="utf-8").strip().splitlines()
@@ -151,10 +151,10 @@ class TestTrackUntrack:
 
     def test_untrack_child_pids_preserves_bare_pid(self, pid_file: Path) -> None:
         """Untracking child PIDs must not remove bare PID lines (kiro-cli parents)."""
-        from kiro_crew.session_pid import _track_child_pids, _track_pid, _untrack_child_pids
+        from efm_go.session_pid import _track_child_pids, _track_pid, _untrack_child_pids
 
         _track_pid(100)  # bare parent line
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({100: None}, parent_pid=999)  # child line with same PID
         _untrack_child_pids({100: None})
         lines = pid_file.read_text(encoding="utf-8").strip().splitlines()
@@ -174,7 +174,7 @@ class TestTrackUntrack:
 
     @staticmethod
     def _pid_is(monkeypatch: pytest.MonkeyPatch, alive: bool) -> None:
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp.platform_compat, "pid_exists", lambda p: alive)
 
@@ -182,13 +182,13 @@ class TestTrackUntrack:
         self, pid_file: Path, session_pid_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Dead pid, our token: both lines go, an unrelated root stays."""
-        from kiro_crew.session_pid import (
+        from efm_go.session_pid import (
             _track_pid,
             _track_session_pid,
             _untrack_root_by_identity,
         )
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-a")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-a")
         self._pid_is(monkeypatch, alive=False)
         _track_pid(4242)
         _track_session_pid(4242)
@@ -203,13 +203,13 @@ class TestTrackUntrack:
         """THE finding: the dead root's number was handed to a fresh root this
         gateway already tracked, and its session line carries a different token.
         A token mismatch retains everything -- the bare line is never reached."""
-        from kiro_crew.session_pid import (
+        from efm_go.session_pid import (
             _track_pid,
             _track_session_pid,
             _untrack_root_by_identity,
         )
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-new")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-new")
         # Even a probe that says DEAD must not reach the bare line here: the
         # session line is not ours, so nothing this call owns is on disk.
         self._pid_is(monkeypatch, alive=False)
@@ -227,13 +227,13 @@ class TestTrackUntrack:
         The session file cannot tell the number has a new holder; the kernel can.
         Our session line is retired, the bare line the two share stays because the
         number is alive, and that is a settled result."""
-        from kiro_crew.session_pid import (
+        from efm_go.session_pid import (
             _track_pid,
             _track_session_pid,
             _untrack_root_by_identity,
         )
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-a")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-a")
         _track_pid(4242)
         _track_session_pid(4242)
         # The successor holds 4242 now: its own _track_pid dedups against the
@@ -250,7 +250,7 @@ class TestTrackUntrack:
         appends under: a successor cannot be mid-append when the answer is read,
         so a live answer means its bare line is either already there or is the
         one it is about to write itself -- retaining is never wrong."""
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp, "_pid_start_token", lambda p: "tok-a")
         sp._track_pid(4242)
@@ -285,14 +285,14 @@ class TestTrackUntrack:
         retirement this call owes; when the bare `kiro_pids.txt` rewrite is refused
         the dead root's line survives, so a true answer would have the caller log a
         clean retirement over a registry that still names it."""
-        from kiro_crew import session_pid as session_pid_module
-        from kiro_crew.session_pid import (
+        from efm_go import session_pid as session_pid_module
+        from efm_go.session_pid import (
             _track_pid,
             _track_session_pid,
             _untrack_root_by_identity,
         )
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-a")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-a")
         self._pid_is(monkeypatch, alive=False)
         _track_pid(4242)
         _track_session_pid(4242)
@@ -305,7 +305,7 @@ class TestTrackUntrack:
                 return False
             return real_rewrite(path, text)
 
-        monkeypatch.setattr("kiro_crew.session_pid._rewrite_pid_file", refuse_the_bare_file)
+        monkeypatch.setattr("efm_go.session_pid._rewrite_pid_file", refuse_the_bare_file)
         assert _untrack_root_by_identity(4242, "tok-a") is False
         # The half that did commit stays committed -- this is about the REPORT.
         assert session_pid_file.read_text(encoding="utf-8").strip() == ""
@@ -317,20 +317,20 @@ class TestTrackUntrack:
         """The FIRST write refused: the session line survives, so the bare line
         must not be touched either (the two are retired together or not at all)
         and the answer is False."""
-        from kiro_crew import session_pid as session_pid_module
-        from kiro_crew.session_pid import (
+        from efm_go import session_pid as session_pid_module
+        from efm_go.session_pid import (
             _track_pid,
             _track_session_pid,
             _untrack_root_by_identity,
         )
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-a")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-a")
         self._pid_is(monkeypatch, alive=False)
         _track_pid(4242)
         _track_session_pid(4242)
         real_rewrite = session_pid_module._rewrite_pid_file
         monkeypatch.setattr(
-            "kiro_crew.session_pid._rewrite_pid_file",
+            "efm_go.session_pid._rewrite_pid_file",
             lambda path, text: False if path == session_pid_file else real_rewrite(path, text),
         )
         assert _untrack_root_by_identity(4242, "tok-a") is False
@@ -346,12 +346,12 @@ class TestTrackUntrack:
         file is THAT token. On the plain-append path no probe is made at all, and
         on the replacement path the probe is an occupancy check whose value is
         never written (see the test below)."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
         def _no_probe(pid: int) -> str:
             raise AssertionError("the tracker re-probed a token it was handed")
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", _no_probe)
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", _no_probe)
         _track_session_pid(4242, "tok-spawn")
         assert (
             session_pid_file.read_text(encoding="utf-8").strip() == f"{os.getpid()}:4242:tok-spawn"
@@ -366,11 +366,11 @@ class TestTrackUntrack:
         live root's only record -- and the number names the successor, not the
         process this token belongs to. Re-reading the identity under the lock says
         so; nothing is written."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
         session_pid_file.write_text(f"{os.getpid()}:4242:tok-succ\n")
         # The number is the successor's now: the live identity is ITS token.
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-succ")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-succ")
         _track_session_pid(4242, "tok-old")
         assert (
             session_pid_file.read_text(encoding="utf-8").strip() == f"{os.getpid()}:4242:tok-succ"
@@ -384,11 +384,11 @@ class TestTrackUntrack:
         Keeping the stale line is the hole identity-bound retirement fell through
         (the successor never got a line, so nothing about it was in this file);
         the line is replaced, and the file holds one line for the number."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
         session_pid_file.write_text(f"{os.getpid()}:4242:tok-old\n{os.getpid()}:7:tok-x\n")
         # The number still names OUR process: the occupancy re-read agrees.
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-new")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-new")
         _track_session_pid(4242, "tok-new")
         lines = session_pid_file.read_text(encoding="utf-8").strip().splitlines()
         assert lines == [f"{os.getpid()}:7:tok-x", f"{os.getpid()}:4242:tok-new"]
@@ -399,10 +399,10 @@ class TestTrackUntrack:
         """One line per number holds whatever order the file lists them in. A
         stale predecessor line ahead of our own exact entry must not make the
         re-track return early and leave both standing."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
         session_pid_file.write_text(f"{os.getpid()}:4242:tok-old\n{os.getpid()}:4242:tok-new\n")
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-new")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-new")
         _track_session_pid(4242, "tok-new")
         lines = session_pid_file.read_text(encoding="utf-8").strip().splitlines()
         assert lines == [f"{os.getpid()}:4242:tok-new"]
@@ -410,7 +410,7 @@ class TestTrackUntrack:
     def test_track_session_pid_exact_retrack_is_a_no_op(
         self, session_pid_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
         _track_session_pid(4242, "tok-a")
         _track_session_pid(4242, "tok-a")
@@ -422,10 +422,10 @@ class TestTrackUntrack:
     ) -> None:
         """No identity to offer proves nothing about who holds the number, so a
         token-less track leaves a line that does carry one exactly as it is."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
         session_pid_file.write_text(f"{os.getpid()}:4242:tok-a\n")
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: None)
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: None)
         _track_session_pid(4242)
         assert session_pid_file.read_text(encoding="utf-8").strip() == f"{os.getpid()}:4242:tok-a"
 
@@ -435,11 +435,11 @@ class TestTrackUntrack:
         """Failing to record a live root is the unrecoverable direction: a root
         in neither file is unreachable by every reaper. A refused rewrite must
         surface, not read as recorded."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
         session_pid_file.write_text(f"{os.getpid()}:4242:tok-old\n")
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok-new")
-        monkeypatch.setattr("kiro_crew.session_pid._rewrite_pid_file", lambda path, text: False)
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok-new")
+        monkeypatch.setattr("efm_go.session_pid._rewrite_pid_file", lambda path, text: False)
         with pytest.raises(OSError):
             _track_session_pid(4242, "tok-new")
 
@@ -450,26 +450,26 @@ class TestTrackUntrack:
         touched -- not even a bare line whose pid the probe would call dead. The
         sweep reaps a dead entry by liveness; erasing a live one by number is the
         failure this guard exists to prevent."""
-        from kiro_crew.session_pid import (
+        from efm_go.session_pid import (
             _track_pid,
             _track_session_pid,
             _untrack_root_by_identity,
         )
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: None)
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: None)
         self._pid_is(monkeypatch, alive=False)
         _track_pid(4242)
         _track_session_pid(4242)  # legacy token-less line
         # "Touches nothing" means the registries are not even opened: with no
         # identity to compare there is no line this call could own.
         monkeypatch.setattr(
-            "kiro_crew.session_pid._session_pid_file_path",
+            "efm_go.session_pid._session_pid_file_path",
             lambda: pytest.fail("no token: the session registry must not be read"),
         )
         assert _untrack_root_by_identity(4242, None) is False
         assert _untrack_root_by_identity(4242, "") is False
         monkeypatch.setattr(
-            "kiro_crew.session_pid._session_pid_file_path", lambda: session_pid_file
+            "efm_go.session_pid._session_pid_file_path", lambda: session_pid_file
         )
         assert _untrack_root_by_identity(4242, "tok-a") is False
         assert session_pid_file.read_text(encoding="utf-8").strip() == f"{os.getpid()}:4242"
@@ -477,10 +477,10 @@ class TestTrackUntrack:
 
     def test_replace_child_pids_rewrites_only_the_children_it_names(self, pid_file: Path) -> None:
         """A whole-set write for the caller's OWN children, nothing else."""
-        from kiro_crew.session_pid import _replace_child_pids, _track_child_pids, _track_pid
+        from efm_go.session_pid import _replace_child_pids, _track_child_pids, _track_pid
 
         _track_pid(100)  # bare root line, another owner's business
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({200: None, 300: None}, parent_pid=999)
             _track_child_pids({400: None}, parent_pid=888)  # a different parent
 
@@ -502,9 +502,9 @@ class TestTrackUntrack:
         still tracked under it. Wiping the block by owner alone would untrack
         that survivor permanently — the leak this file exists to prevent.
         """
-        from kiro_crew.session_pid import _replace_child_pids, _track_child_pids
+        from efm_go.session_pid import _replace_child_pids, _track_child_pids
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({777: None}, parent_pid=999)  # an older runtime's survivor
 
         assert _replace_child_pids({300: ("t300", b"x")}, parent_pid=999) is True
@@ -522,13 +522,13 @@ class TestTrackUntrack:
         token, and the sweep compares live against recorded — both the
         stranger's, so they agree and it kills an unrelated process.
         """
-        from kiro_crew.session_pid import _replace_child_pids, _track_child_pids
+        from efm_go.session_pid import _replace_child_pids, _track_child_pids
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value="old"):
+        with patch("efm_go.session_pid._pid_start_token", return_value="old"):
             _track_child_pids({200: None}, parent_pid=999)
         assert pid_file.read_text(encoding="utf-8").strip() == "200:999:old"
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value="live-stranger") as live:
+        with patch("efm_go.session_pid._pid_start_token", return_value="live-stranger") as live:
             assert _replace_child_pids({200: ("recorded", b"x")}, parent_pid=999) is True
 
         live.assert_not_called()
@@ -536,7 +536,7 @@ class TestTrackUntrack:
 
     def test_replace_child_pids_falls_back_to_two_fields(self, pid_file: Path) -> None:
         """An identity that cannot be a field leaves the sweep nothing to match."""
-        from kiro_crew.session_pid import _replace_child_pids
+        from efm_go.session_pid import _replace_child_pids
 
         assert _replace_child_pids({200: (None, b"x"), 300: ("has:colon", b"y")}, 999) is True
 
@@ -544,18 +544,18 @@ class TestTrackUntrack:
         assert lines == {"200:999", "300:999"}
 
     def test_replace_child_pids_drops_a_parents_last_child(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _replace_child_pids, _track_child_pids
+        from efm_go.session_pid import _replace_child_pids, _track_child_pids
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({200: None}, parent_pid=999)
 
         assert _replace_child_pids({}, parent_pid=999, drop=(200,)) is True
         assert pid_file.read_text(encoding="utf-8").strip() == ""
 
     def test_replace_child_pids_with_nothing_named_writes_nothing(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _replace_child_pids, _track_child_pids
+        from efm_go.session_pid import _replace_child_pids, _track_child_pids
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({200: None}, parent_pid=999)
 
         assert _replace_child_pids({}, parent_pid=999) is True
@@ -563,14 +563,14 @@ class TestTrackUntrack:
 
     def test_replace_child_pids_reports_a_failed_write(self, pid_file: Path) -> None:
         """The caller publishes nothing on False, so the answer must be truthful."""
-        from kiro_crew.session_pid import _replace_child_pids
+        from efm_go.session_pid import _replace_child_pids
 
-        with patch("kiro_crew.session_pid._rewrite_pid_file", return_value=False):
+        with patch("efm_go.session_pid._rewrite_pid_file", return_value=False):
             assert _replace_child_pids({200: ("t", b"x")}, parent_pid=999) is False
 
     def test_replace_child_pids_refuses_a_parentless_call(self, pid_file: Path) -> None:
         """parent_pid=0 names no owner's block, so there is nothing to replace."""
-        from kiro_crew.session_pid import _replace_child_pids
+        from efm_go.session_pid import _replace_child_pids
 
         assert _replace_child_pids({200: ("t", b"x")}, parent_pid=0) is False
 
@@ -585,7 +585,7 @@ class TestSignalOrphanedRuntimeGroup:
     @staticmethod
     def _identity(monkeypatch, live: dict[int, str | None]) -> None:
         """What each pid's start id reads as at the instant of the signal."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp.platform_compat, "get_process_start_id", lambda pid: live.get(pid))
 
@@ -598,7 +598,7 @@ class TestSignalOrphanedRuntimeGroup:
         one. Both must satisfy the same assertions, so every test that checks
         delivery runs against both.
         """
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         sent: list[tuple[int, int]] = []
         if seam == "kill":
@@ -630,7 +630,7 @@ class TestSignalOrphanedRuntimeGroup:
 
     @pytest.mark.parametrize("seam", ["kill", "pidfd"])
     def test_signals_each_vouched_member_by_identity(self, monkeypatch, seam) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(
             sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a", 102: "b"}
@@ -659,7 +659,7 @@ class TestSignalOrphanedRuntimeGroup:
         """
         import errno as errno_mod
 
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a"})
         self._identity(monkeypatch, {101: "a"})
@@ -685,7 +685,7 @@ class TestSignalOrphanedRuntimeGroup:
         """`pidfd_send_signal` is 5.1 and `pidfd_open` is 5.3, so they can differ."""
         import errno as errno_mod
 
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a"})
         self._identity(monkeypatch, {101: "a"})
@@ -710,7 +710,7 @@ class TestSignalOrphanedRuntimeGroup:
         window the descriptor exists to close, so the member is skipped and left
         to the sweep instead.
         """
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a"})
         self._identity(monkeypatch, {101: "a"})
@@ -737,7 +737,7 @@ class TestSignalOrphanedRuntimeGroup:
         introduced to remove: here the number changes hands AT the open, and only
         the correct order notices.
         """
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a"})
         live = {101: "a"}
@@ -769,7 +769,7 @@ class TestSignalOrphanedRuntimeGroup:
         so the check is binding rather than merely recent; on the fallback it is
         the same re-read as before. Neither may signal the newcomer.
         """
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(
             sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a", 102: "b"}
@@ -784,7 +784,7 @@ class TestSignalOrphanedRuntimeGroup:
     def test_escalation_re_signals_only_the_members_it_vouched(self, monkeypatch, seam) -> None:
         """A vouched member still alive under the same start id is the proof, and
         the only target."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(
             sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a", 103: "c"}
@@ -806,7 +806,7 @@ class TestSignalOrphanedRuntimeGroup:
         """Every runtime is a marked session leader, so a fresh one on the reused
         number vouches as well as the old did. Only the members the SIGTERM saw
         can tell them apart; none alive under their start id means not ours."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         # 101 is alive but under a NEW start id: the pid was reused.
         monkeypatch.setattr(
@@ -823,7 +823,7 @@ class TestSignalOrphanedRuntimeGroup:
     def test_escalation_refuses_when_a_vouched_member_has_no_readable_identity(
         self, monkeypatch
     ) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: None})
         kill = MagicMock()
@@ -834,7 +834,7 @@ class TestSignalOrphanedRuntimeGroup:
 
     def test_a_member_with_no_readable_identity_is_never_signalled(self, monkeypatch) -> None:
         """Nothing to compare at the instant of the signal means no signal."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: None})
         kill = MagicMock()
@@ -844,7 +844,7 @@ class TestSignalOrphanedRuntimeGroup:
         kill.assert_not_called()
 
     def test_no_vouching_member_sends_nothing(self, monkeypatch) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {})
         kill = MagicMock()
@@ -856,7 +856,7 @@ class TestSignalOrphanedRuntimeGroup:
     def test_a_refused_signal_does_not_abort_the_teardown(self, monkeypatch) -> None:
         """The caller is mid-teardown; an error here would skip its state clearing
         and PID pruning. The sweep retries a refused member on its own cadence."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a"})
         self._identity(monkeypatch, {101: "a"})
@@ -868,7 +868,7 @@ class TestSignalOrphanedRuntimeGroup:
         assert sp._signal_orphaned_runtime_group(100, 15, "inst") == {}
 
     def test_a_member_that_exited_under_us_counts_as_nothing(self, monkeypatch) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a"})
         self._identity(monkeypatch, {101: "a"})
@@ -882,7 +882,7 @@ class TestSignalOrphanedRuntimeGroup:
     @pytest.mark.parametrize("pgid", [0, 1])
     def test_refuses_a_broadcast_group(self, monkeypatch, pgid) -> None:
         """A member listing keyed on 0 or 1 would be a listing of the wrong thing."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         members = MagicMock(return_value={101: "a"})
         monkeypatch.setattr(sp, "_marked_group_members", members)
@@ -896,7 +896,7 @@ class TestSignalOrphanedRuntimeGroup:
     def test_refuses_to_signal_without_an_instance(self, monkeypatch) -> None:
         """No incarnation pin, no authority: the number plus the generic marker
         cannot tell this spawns's group from a fresh runtime's on a recycled pid."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         members = MagicMock(return_value={101: "a"})
         monkeypatch.setattr(sp, "_marked_group_members", members)
@@ -908,7 +908,7 @@ class TestSignalOrphanedRuntimeGroup:
         kill.assert_not_called()
 
     def test_refuses_our_own_group(self, monkeypatch) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         kill = MagicMock()
         monkeypatch.setattr(sp.os, "kill", kill)
@@ -943,7 +943,7 @@ class TestMarkedGroupMembers:
     def test_only_live_marked_members_of_the_group_count(
         self, tmp_path, monkeypatch, comm: bytes
     ) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         # The reader is Linux-gated, and the fixture supplies the /proc shape it
         # reads, so pin the platform rather than skipping: a skip would leave the
@@ -974,7 +974,7 @@ class TestMarkedGroupMembers:
         self, tmp_path, monkeypatch
     ) -> None:
         """A second read may already name another process, so it is never taken."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "linux")
         root = self._fake_proc(tmp_path, {101: ("S", 100, "ours"), 102: ("S", 100, "ours")})
@@ -991,7 +991,7 @@ class TestMarkedGroupMembers:
         self, tmp_path, monkeypatch
     ) -> None:
         """A detached survivor that merely inherited the marker."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "linux")
         root = self._fake_proc(tmp_path, {101: ("S", 100, "ours")})
@@ -1001,7 +1001,7 @@ class TestMarkedGroupMembers:
         assert sp._marked_group_members(100, "ours", proc_root=root) == {}
 
     def test_env_spawn_instance_reads_the_value_and_fails_closed(self, tmp_path) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         root = self._fake_proc(tmp_path, {101: ("S", 100, "abc123")})
         (tmp_path / "202").mkdir()
@@ -1017,7 +1017,7 @@ class TestMarkedGroupMembers:
         gate rejects all of them and the reap would reach nothing. A caller that
         turns the gate off keeps the group and instance checks unchanged.
         """
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "linux")
         root = self._fake_proc(tmp_path, {101: ("S", 100, "ours"), 104: ("S", 200, "ours")})
@@ -1038,7 +1038,7 @@ class TestMarkedGroupMembers:
 
     def test_the_public_non_runtime_entry_point_turns_the_gate_off(self, monkeypatch) -> None:
         """signal_orphaned_spawn_group differs from the ACP path in exactly one way."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         seen: dict[str, object] = {}
 
@@ -1067,7 +1067,7 @@ class TestMarkedGroupMembers:
         "everything there refused the signal" -- collapsing them is how a refusal
         comes to read as a completed reap.
         """
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp, "_marked_group_members", lambda pgid, inst, **_k: {101: "a"})
         monkeypatch.setattr(sp, "_pid_start_token", lambda pid: "a")
@@ -1086,7 +1086,7 @@ class TestMarkedGroupMembers:
 
     def test_the_public_entry_point_keeps_every_other_refusal(self, monkeypatch) -> None:
         """A relaxed argv gate must not relax the group or instance guards."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         members = MagicMock(return_value={101: "a"})
         monkeypatch.setattr(sp, "_marked_group_members", members)
@@ -1104,7 +1104,7 @@ class TestMarkedGroupMembers:
 class TestCleanupOrphanedMcpServers:
     def test_dead_child_pruned(self, pid_file: Path) -> None:
         """Dead child PIDs should be removed from the file silently."""
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("99999:1\n")  # child=99999, parent=1
         _cleanup_orphaned_mcp_servers()
@@ -1112,7 +1112,7 @@ class TestCleanupOrphanedMcpServers:
 
     def test_alive_child_with_alive_parent_survives(self, pid_file: Path) -> None:
         """Child whose parent session is still alive should NOT be killed."""
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         my_pid = os.getpid()
         child_pid = 77777
@@ -1121,7 +1121,7 @@ class TestCleanupOrphanedMcpServers:
         def fake_pid_exists(pid: int) -> bool:
             return pid in (child_pid, my_pid)  # both alive
 
-        with patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists):
+        with patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists):
             killed = _cleanup_orphaned_mcp_servers()
 
         assert killed == 0
@@ -1129,7 +1129,7 @@ class TestCleanupOrphanedMcpServers:
 
     def test_alive_child_with_dead_parent_killed(self, pid_file: Path) -> None:
         """Child whose parent session died should be killed (PPid=1 confirms orphan)."""
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("77777:99999\n")  # parent 99999 is dead
 
@@ -1137,9 +1137,9 @@ class TestCleanupOrphanedMcpServers:
             return pid == 77777  # child alive, parent dead
 
         with (
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid"),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
+            patch("efm_go.session_pid.platform_compat.kill_pid"),
+            patch("efm_go.platform_compat.get_ppid", return_value=1),
         ):
             killed = _cleanup_orphaned_mcp_servers()
 
@@ -1147,7 +1147,7 @@ class TestCleanupOrphanedMcpServers:
 
     def test_alive_child_with_dead_parent_pid_reused(self, pid_file: Path) -> None:
         """Child PID reused by unrelated process should NOT be killed."""
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("77777:99999\n")
 
@@ -1155,9 +1155,9 @@ class TestCleanupOrphanedMcpServers:
             return pid == 77777  # child alive (reused PID), parent dead
 
         with (
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=5555),
-            patch("kiro_crew.session_pid._accepted_subreaper_pids", return_value={1}),
+            patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
+            patch("efm_go.platform_compat.get_ppid", return_value=5555),
+            patch("efm_go.session_pid._accepted_subreaper_pids", return_value={1}),
         ):
             killed = _cleanup_orphaned_mcp_servers()
 
@@ -1174,7 +1174,7 @@ class TestCleanupOrphanedMcpServers:
         it. The guard must accept the shared subreaper set instead, gated on
         the KIROCREW_SPAWNED environ marker as positive identity.
         """
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         systemd_user_pid = 4242  # same-uid systemd --user manager
         pid_file.write_text("77777:99999\n")  # parent 99999 is dead
@@ -1184,16 +1184,16 @@ class TestCleanupOrphanedMcpServers:
 
         kill_mock = MagicMock()
         with (
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid", kill_mock),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=systemd_user_pid),
+            patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
+            patch("efm_go.session_pid.platform_compat.kill_pid", kill_mock),
+            patch("efm_go.platform_compat.get_ppid", return_value=systemd_user_pid),
             patch(
-                "kiro_crew.session_pid._accepted_subreaper_pids",
+                "efm_go.session_pid._accepted_subreaper_pids",
                 return_value={1, systemd_user_pid},
             ),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._tracked_child_has_runtime_identity",
+                "efm_go.session_pid._tracked_child_has_runtime_identity",
                 return_value=True,
             ),
         ):
@@ -1212,7 +1212,7 @@ class TestCleanupOrphanedMcpServers:
         runtime argv identity on top of the marker. A tracking entry naming
         such a PID -- stale or forged -- is pruned without killing.
         """
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         systemd_user_pid = 4242
         pid_file.write_text("77777:99999\n")
@@ -1222,16 +1222,16 @@ class TestCleanupOrphanedMcpServers:
 
         kill_mock = MagicMock()
         with (
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid", kill_mock),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=systemd_user_pid),
+            patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
+            patch("efm_go.session_pid.platform_compat.kill_pid", kill_mock),
+            patch("efm_go.platform_compat.get_ppid", return_value=systemd_user_pid),
             patch(
-                "kiro_crew.session_pid._accepted_subreaper_pids",
+                "efm_go.session_pid._accepted_subreaper_pids",
                 return_value={1, systemd_user_pid},
             ),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._tracked_child_has_runtime_identity",
+                "efm_go.session_pid._tracked_child_has_runtime_identity",
                 return_value=False,
             ),
         ):
@@ -1250,7 +1250,7 @@ class TestCleanupOrphanedMcpServers:
         KIROCREW_SPAWNED environ marker the sweep must treat the entry as PID
         reuse: prune the stale line, never SIGKILL the innocent process.
         """
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         systemd_user_pid = 4242
         pid_file.write_text("77777:99999\n")  # parent 99999 is dead
@@ -1260,14 +1260,14 @@ class TestCleanupOrphanedMcpServers:
 
         kill_mock = MagicMock()
         with (
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid", kill_mock),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=systemd_user_pid),
+            patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
+            patch("efm_go.session_pid.platform_compat.kill_pid", kill_mock),
+            patch("efm_go.platform_compat.get_ppid", return_value=systemd_user_pid),
             patch(
-                "kiro_crew.session_pid._accepted_subreaper_pids",
+                "efm_go.session_pid._accepted_subreaper_pids",
                 return_value={1, systemd_user_pid},
             ),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False),
         ):
             killed = _cleanup_orphaned_mcp_servers()
 
@@ -1285,7 +1285,7 @@ class TestCleanupOrphanedMcpServers:
         a same-uid ``systemd`` comm is accepted, a non-systemd comm and a
         non-numeric entry are not, and pid 1 is always present.
         """
-        import kiro_crew.session_pid as session_pid_mod
+        import efm_go.session_pid as session_pid_mod
 
         (tmp_path / "4242").mkdir()
         (tmp_path / "4242" / "comm").write_text("systemd\n")
@@ -1311,7 +1311,7 @@ class TestCleanupOrphanedMcpServers:
         proceeds to the reparent heuristic (here: orphan reparented to init),
         which authorizes the kill exactly as it always has.
         """
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("77777:99999:123456\n")  # parent 99999 dead
 
@@ -1320,10 +1320,10 @@ class TestCleanupOrphanedMcpServers:
 
         kill_mock = MagicMock()
         with (
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid", kill_mock),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="123456"),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
+            patch("efm_go.session_pid.platform_compat.kill_pid", kill_mock),
+            patch("efm_go.session_pid._pid_start_token", return_value="123456"),
+            patch("efm_go.platform_compat.get_ppid", return_value=1),
         ):
             killed = _cleanup_orphaned_mcp_servers()
 
@@ -1339,7 +1339,7 @@ class TestCleanupOrphanedMcpServers:
         arbitrary process: token agreement never grants kill authority that
         the reparent heuristic would refuse.
         """
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("77777:99999:123456\n")
 
@@ -1348,11 +1348,11 @@ class TestCleanupOrphanedMcpServers:
 
         kill_mock = MagicMock()
         with (
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid", kill_mock),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="123456"),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=5555),
-            patch("kiro_crew.session_pid._accepted_subreaper_pids", return_value={1}),
+            patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
+            patch("efm_go.session_pid.platform_compat.kill_pid", kill_mock),
+            patch("efm_go.session_pid._pid_start_token", return_value="123456"),
+            patch("efm_go.platform_compat.get_ppid", return_value=5555),
+            patch("efm_go.session_pid._accepted_subreaper_pids", return_value={1}),
         ):
             killed = _cleanup_orphaned_mcp_servers()
 
@@ -1369,7 +1369,7 @@ class TestCleanupOrphanedMcpServers:
         systemd-parented) has a different start identity, so the sweep prunes
         it without ever reaching the kill arms.
         """
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("77777:99999:123456\n")
 
@@ -1378,13 +1378,13 @@ class TestCleanupOrphanedMcpServers:
 
         kill_mock = MagicMock()
         with (
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid", kill_mock),
+            patch("efm_go.session_pid.platform_compat.pid_exists", side_effect=fake_pid_exists),
+            patch("efm_go.session_pid.platform_compat.kill_pid", kill_mock),
             patch(
-                "kiro_crew.session_pid._pid_start_token",
+                "efm_go.session_pid._pid_start_token",
                 return_value="999999",  # different incarnation
             ),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.platform_compat.get_ppid", return_value=1),
         ):
             killed = _cleanup_orphaned_mcp_servers()
 
@@ -1394,50 +1394,50 @@ class TestCleanupOrphanedMcpServers:
 
     def test_track_child_pids_records_start_token(self, pid_file: Path) -> None:
         """_track_child_pids persists the child's start identity as field 3."""
-        from kiro_crew.session_pid import _track_child_pids
+        from efm_go.session_pid import _track_child_pids
 
-        with patch("kiro_crew.session_pid._pid_start_token", return_value="424242"):
+        with patch("efm_go.session_pid._pid_start_token", return_value="424242"):
             _track_child_pids({555: None}, parent_pid=111)
 
         lines = pid_file.read_text(encoding="utf-8").strip().splitlines()
         assert lines == ["555:111:424242"]
 
         # Unreadable identity at track time degrades to the legacy shape.
-        with patch("kiro_crew.session_pid._pid_start_token", return_value=None):
+        with patch("efm_go.session_pid._pid_start_token", return_value=None):
             _track_child_pids({556: None}, parent_pid=111)
         lines = pid_file.read_text(encoding="utf-8").strip().splitlines()
         assert "556:111" in lines
 
     def test_bare_pid_dead_pruned(self, pid_file: Path) -> None:
         """Dead bare PIDs should be pruned from the file."""
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("99999\n")
 
-        with patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=False):
+        with patch("efm_go.session_pid.platform_compat.pid_exists", return_value=False):
             killed = _cleanup_orphaned_mcp_servers()
         assert killed == 0
         assert "99999" not in pid_file.read_text(encoding="utf-8")
 
     def test_bare_pid_alive_kept(self, pid_file: Path) -> None:
         """Alive bare PIDs should be kept in the file."""
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("88888\n")
 
-        with patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True):
+        with patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True):
             killed = _cleanup_orphaned_mcp_servers()
         assert killed == 0
         assert "88888" in pid_file.read_text(encoding="utf-8")
 
     def test_empty_file(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("")
         assert _cleanup_orphaned_mcp_servers() == 0
 
     def test_no_file(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         assert _cleanup_orphaned_mcp_servers() == 0
 
@@ -1446,7 +1446,7 @@ class TestCleanupOrphanedSessions:
     @_POSIX_ONLY
     def test_preserves_non_kiro_pids(self, session_pid_file: Path) -> None:
         """Bug fix: non-kiro PIDs (MCP servers) must survive — not killed."""
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
         session_pid_file.write_text("99998\n99999\n")
 
@@ -1459,16 +1459,16 @@ class TestCleanupOrphanedSessions:
         # _is_managed_agent_process(False) branch.
         with (
             patch(
-                "kiro_crew.session_pid._is_managed_agent_process", side_effect=lambda p: p == 99998
+                "efm_go.session_pid._is_managed_agent_process", side_effect=lambda p: p == 99998
             ),
-            patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
-            patch("kiro_crew.session_pid._pid_in_spawn_grace", return_value=False),
+            patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session_pid._pid_in_spawn_grace", return_value=False),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 return_value=platform_compat.PID_ALIVE,
             ),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid"),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid.platform_compat.kill_pid"),
         ):
             cleanup_orphaned_sessions()
 
@@ -1479,7 +1479,7 @@ class TestCleanupOrphanedSessions:
     @_POSIX_ONLY
     def test_kiro_pids_killed(self, session_pid_file: Path) -> None:
         """Kiro PIDs should be SIGKILL'd."""
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
         session_pid_file.write_text("99998\n")
 
@@ -1489,18 +1489,18 @@ class TestCleanupOrphanedSessions:
             kills.append((pid, sig))
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
             # The sweep's liveness gate is pid_liveness() (tri-state), not pid_exists();
             # ALIVE -> falls through to the kill path. pid_exists is still patched for
             # the post-kill re-probe branch.
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 return_value=platform_compat.PID_ALIVE,
             ),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid", side_effect=fake_kill),
-            patch("kiro_crew.session_pid._pid_in_spawn_grace", return_value=False),
-            patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid.platform_compat.kill_pid", side_effect=fake_kill),
+            patch("efm_go.session_pid._pid_in_spawn_grace", return_value=False),
+            patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
         ):
             cleanup_orphaned_sessions()
 
@@ -1510,9 +1510,9 @@ class TestCleanupOrphanedSessions:
         self, tmp_path: Path, session_pid_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Malformed session_pid_*.txt files (e.g. MagicMock leak) should be deleted."""
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
-        monkeypatch.setattr("kiro_crew.session_pid.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_pid.config_dir", lambda: tmp_path)
         session_pid_file.write_text("")  # no kiro PIDs to kill
 
         # Create one valid (dead process) and one malformed pid file
@@ -1520,7 +1520,7 @@ class TestCleanupOrphanedSessions:
         (tmp_path / "session_pid_mock.get_pid().txt").write_text("sess-mock")
 
         with (
-            patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
             patch("os.kill", side_effect=ProcessLookupError),
         ):
             cleanup_orphaned_sessions()
@@ -1533,9 +1533,9 @@ class TestCleanupOrphanedSessions:
         self, tmp_path: Path, session_pid_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """OSError on malformed pid file unlink should not abort the cleanup loop."""
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
-        monkeypatch.setattr("kiro_crew.session_pid.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_pid.config_dir", lambda: tmp_path)
         session_pid_file.write_text("")
 
         # Create malformed + valid pid files
@@ -1552,7 +1552,7 @@ class TestCleanupOrphanedSessions:
         monkeypatch.setattr(Path, "unlink", unlink_that_fails_on_bad)
 
         with (
-            patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
             patch("os.kill", side_effect=ProcessLookupError),
         ):
             cleanup_orphaned_sessions()  # should not raise
@@ -1577,9 +1577,9 @@ class TestCleanupOrphanedSessions:
         Uses a real live thread's native tid rather than a fake ``/proc``, so
         the test exercises the same kernel behaviour that produced the bug.
         """
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
-        monkeypatch.setattr("kiro_crew.session_pid.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_pid.config_dir", lambda: tmp_path)
         session_pid_file.write_text("")
 
         tid_box: dict[str, int] = {}
@@ -1605,7 +1605,7 @@ class TestCleanupOrphanedSessions:
 
             # NOT patching os.kill: both pids are genuinely signalable here,
             # which is exactly the condition the old predicate could not split.
-            with patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0):
+            with patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0):
                 cleanup_orphaned_sessions()
 
             assert not thread_map.exists(), "a pid that is only a thread must be pruned"
@@ -1625,18 +1625,18 @@ class TestCleanupOrphanedSessions:
         ``/proc`` scan back on the boot path, where the readiness cost of it is
         not visible to anyone reading the sweep.
         """
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
-        monkeypatch.setattr("kiro_crew.session_pid.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_pid.config_dir", lambda: tmp_path)
         session_pid_file.write_text("")
 
         def _refuse() -> set[int] | None:
             raise AssertionError("the boot setting must not read /proc for leaders")
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.live_thread_group_leaders", _refuse
+            "efm_go.session_pid.platform_compat.live_thread_group_leaders", _refuse
         )
-        with patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0):
+        with patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0):
             cleanup_orphaned_sessions(narrow_with_leaders=False)
 
     def test_prune_pass_leaves_the_shared_pid_file_alone(
@@ -1649,9 +1649,9 @@ class TestCleanupOrphanedSessions:
         ``kiro_session_pids.txt`` it would race the spawns that append to it once
         the gateway is serving, and a lost entry is an unkillable orphan.
         """
-        from kiro_crew.session_pid import _prune_stale_session_pid_files
+        from efm_go.session_pid import _prune_stale_session_pid_files
 
-        monkeypatch.setattr("kiro_crew.session_pid.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_pid.config_dir", lambda: tmp_path)
         session_pid_file.write_text("111:222\n")
         (tmp_path / "session_pid_99999.txt").write_text("sess-dead")
 
@@ -1682,16 +1682,16 @@ class TestCleanupOrphanedSessions:
         load-bearing -- it keeps the guarantee a property of the function instead of
         of where it happens to be called from.
         """
-        from kiro_crew.session_pid import _prune_stale_session_pid_files
+        from efm_go.session_pid import _prune_stale_session_pid_files
 
-        monkeypatch.setattr("kiro_crew.session_pid.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_pid.config_dir", lambda: tmp_path)
         live = tmp_path / f"session_pid_{os.getpid()}.txt"
         live.write_text("sess-published-after-the-snapshot")
 
         # A snapshot from before this process existed: the pid is signalable and
         # is a real thread-group leader, yet absent from the set.
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.live_thread_group_leaders",
+            "efm_go.session_pid.platform_compat.live_thread_group_leaders",
             lambda: frozenset({1}),
         )
 
@@ -1704,7 +1704,7 @@ class TestCleanupOrphanedSessions:
 class TestResetStateUntracksParentPid:
     def test_reset_state_untracks_parent_pid(self) -> None:
         """Verify _reset_state calls _untrack_pid with the saved PID."""
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient.__new__(AcpClient)
         client._process = None
@@ -1723,14 +1723,14 @@ class TestResetStateUntracksParentPid:
         client._oauth_emitted_servers = set()
         # _reset_state restarts the per-process cost baseline on this object
         # (always present in production: __init__ assigns it unconditionally).
-        from kiro_crew.acp.types import AcpPromptStats
+        from efm_go.acp.types import AcpPromptStats
 
         client.last_prompt_stats = AcpPromptStats()
         mock_task = Mock()
         mock_task.done.return_value = False
         client._stderr_task = mock_task
 
-        with patch("kiro_crew.session._untrack_pid") as mock_untrack:
+        with patch("efm_go.session._untrack_pid") as mock_untrack:
             client._reset_state()
 
         assert client._pid is None
@@ -1744,8 +1744,8 @@ class TestResetStateUntracksParentPid:
         spawned since can hold it. With the spawn token in hand, _reset_state
         retires the line that names this process and never the lines that merely
         carry the number."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import AcpPromptStats
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import AcpPromptStats
 
         client = AcpClient.__new__(AcpClient)
         client._process = None
@@ -1772,10 +1772,10 @@ class TestResetStateUntracksParentPid:
         def _never(*_a):
             raise AssertionError("prefix-matched untrack ran although a token was held")
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_gone_or_unmanaged", lambda pid: True)
-        monkeypatch.setattr("kiro_crew.session_pid._untrack_root_by_identity", _by_identity)
-        monkeypatch.setattr("kiro_crew.session._untrack_pid", _never)
-        monkeypatch.setattr("kiro_crew.session._untrack_session_pid", _never)
+        monkeypatch.setattr("efm_go.session_pid._pid_gone_or_unmanaged", lambda pid: True)
+        monkeypatch.setattr("efm_go.session_pid._untrack_root_by_identity", _by_identity)
+        monkeypatch.setattr("efm_go.session._untrack_pid", _never)
+        monkeypatch.setattr("efm_go.session._untrack_session_pid", _never)
 
         client._reset_state()
 
@@ -1791,11 +1791,11 @@ class TestFindOrphanMcpCandidates:
 
     def test_excludes_pids_in_active_set(self) -> None:
         """PIDs present in active_pids are never returned as candidates."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[100, 200]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[100, 200]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"kirocrew_sandbox_abc.py"),
         ):
             mock_sys.platform = "linux"
@@ -1811,18 +1811,18 @@ class TestFindOrphanMcpCandidates:
         The candidate is already gone, which is what the sweep wants, so the
         expected TOCTOU race must not emit exc_info.
         """
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[22620]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[22620]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(
                 Path,
                 "read_bytes",
                 side_effect=FileNotFoundError(2, "No such file or directory"),
             ),
             patch("os.getpid", return_value=1),
-            caplog.at_level("DEBUG", logger="kiro_crew.session_pid"),
+            caplog.at_level("DEBUG", logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1837,17 +1837,17 @@ class TestFindOrphanMcpCandidates:
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """`ps -p <dead-pid>` exits non-zero — same race, same quiet handling."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[9140]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[9140]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch(
-                "kiro_crew.session_pid.subprocess.check_output",
+                "efm_go.session_pid.subprocess.check_output",
                 side_effect=subprocess.CalledProcessError(1, "ps"),
             ),
             patch("os.getpid", return_value=1),
-            caplog.at_level("DEBUG", logger="kiro_crew.session_pid"),
+            caplog.at_level("DEBUG", logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "darwin"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1859,14 +1859,14 @@ class TestFindOrphanMcpCandidates:
 
     def test_unexpected_probe_error_keeps_traceback(self, caplog: pytest.LogCaptureFixture) -> None:
         """A genuinely unexpected probe failure still logs exc_info."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[555]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[555]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", side_effect=PermissionError(13, "denied")),
             patch("os.getpid", return_value=1),
-            caplog.at_level("DEBUG", logger="kiro_crew.session_pid"),
+            caplog.at_level("DEBUG", logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1878,16 +1878,16 @@ class TestFindOrphanMcpCandidates:
 
     def test_excludes_non_kirocrew_processes(self) -> None:
         """Orphans without known MCP entrypoint markers are skipped."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[300]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[300]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(
                 Path, "read_bytes", return_value=b"/usr/bin/python3\x00some_other_script.py"
             ),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=300.0),
+            patch("efm_go.session_pid._linux_pid_age", return_value=300.0),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1896,14 +1896,14 @@ class TestFindOrphanMcpCandidates:
 
     def test_excludes_non_entrypoint_vim_grep(self) -> None:
         """Non-Python processes mentioning kirocrew in args (e.g. vim, grep) are skipped."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[350]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[350]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"vim\x00/tmp/kirocrew_sandbox_abc.log"),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=300.0),
+            patch("efm_go.session_pid._linux_pid_age", return_value=300.0),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1919,20 +1919,20 @@ class TestFindOrphanMcpCandidates:
         must exist on disk: a gatewayd whose socket is GONE is deliberately
         sweepable via the reachability path (_is_sweepable_orphan_gatewayd).
         """
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         live_sock = tmp_path / "gw.sock"
         live_sock.write_text("")
         cmdline = (
-            b"python3\x00-m\x00kiro_crew.mcp_gateway.gatewayd"
+            b"python3\x00-m\x00efm_go.mcp_gateway.gatewayd"
             b"\x00--socket\x00" + os.fsencode(str(live_sock))
         )
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[360]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[360]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=cmdline),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=300.0),
+            patch("efm_go.session_pid._linux_pid_age", return_value=300.0),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1941,18 +1941,18 @@ class TestFindOrphanMcpCandidates:
 
     def test_includes_kirocrew_orphan_not_in_active(self) -> None:
         """Orphaned process with sandbox wrapper entrypoint and not in active set is a candidate."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[400]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[400]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(
                 Path,
                 "read_bytes",
                 return_value=b"python3\x00/tmp/kirocrew_sandbox_xyz.py",
             ),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=300.0),
+            patch("efm_go.session_pid._linux_pid_age", return_value=300.0),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1961,10 +1961,10 @@ class TestFindOrphanMcpCandidates:
 
     def test_excludes_own_pid(self) -> None:
         """The gateway's own PID is never returned."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[999]),
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[999]),
             patch("os.getpid", return_value=999),
         ):
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1980,14 +1980,14 @@ class TestFindOrphanMcpCandidates:
         ``builder-mcp`` orphan would SIGKILL an unrelated process, so the marker
         is deliberately absent here.
         """
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[410]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[410]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"builder-mcp\x00--stdio"),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=300.0),
+            patch("efm_go.session_pid._linux_pid_age", return_value=300.0),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -1996,7 +1996,7 @@ class TestFindOrphanMcpCandidates:
 
     def test_matches_macos_space_separated_cmdline(self) -> None:
         """macOS ps output (space-separated) is correctly parsed."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         def mock_check_output(cmd, **kwargs):
             # Single combined ps call returns "<etime> <command...>"
@@ -2005,8 +2005,8 @@ class TestFindOrphanMcpCandidates:
             return b""
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[420]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[420]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch(
                 "subprocess.check_output",
                 side_effect=mock_check_output,
@@ -2020,18 +2020,18 @@ class TestFindOrphanMcpCandidates:
 
     def test_skips_young_processes(self) -> None:
         """Processes younger than _ORPHAN_MIN_AGE_SECONDS are never candidates."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[450]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[450]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(
                 Path,
                 "read_bytes",
                 return_value=b"python3\x00/tmp/kirocrew_sandbox_new.py",
             ),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=50.0),
+            patch("efm_go.session_pid._linux_pid_age", return_value=50.0),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -2054,19 +2054,19 @@ class TestKillOrphanMcps:
         already assume -- that the PID was not recycled mid-sweep. See
         test_orphan_mcp_subtree.TestRootRecycleGuard for the guard's own cover.
         """
-        with patch("kiro_crew.session_pid._pid_start_token", return_value="tok-stable"):
+        with patch("efm_go.session_pid._pid_start_token", return_value="tok-stable"):
             yield
 
     def test_uses_killpg_when_pgid_differs(self) -> None:
         """If orphan is its own group leader, kill via killpg."""
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
             patch("os.getpgrp", return_value=1000),
             patch("os.getpgid", return_value=500),
             patch("os.killpg") as mock_killpg,
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"python3\x00kirocrew_sandbox_x.py"),
         ):
             mock_sys.platform = "linux"
@@ -2077,14 +2077,14 @@ class TestKillOrphanMcps:
 
     def test_falls_back_to_direct_kill_when_pgid_matches(self) -> None:
         """If orphan shares our pgid, use direct os.kill (not _kill_pid_tree)."""
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
             patch("os.getpgrp", return_value=1000),
             patch("os.getpgid", return_value=1000),
             patch("os.kill") as mock_kill,
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"python3\x00kirocrew_sandbox_x.py"),
         ):
             mock_sys.platform = "linux"
@@ -2095,14 +2095,14 @@ class TestKillOrphanMcps:
 
     def test_direct_kill_handles_already_dead(self) -> None:
         """ProcessLookupError on direct kill is handled gracefully."""
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
             patch("os.getpgrp", return_value=1000),
             patch("os.getpgid", return_value=1000),
             patch("os.kill", side_effect=ProcessLookupError),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"python3\x00kirocrew_sandbox_x.py"),
         ):
             mock_sys.platform = "linux"
@@ -2112,7 +2112,7 @@ class TestKillOrphanMcps:
 
     def test_respects_max_kill_cap(self) -> None:
         """Never kills more than _ORPHAN_SWEEP_MAX_KILLS in one pass."""
-        from kiro_crew.session_pid import _ORPHAN_SWEEP_MAX_KILLS, kill_orphan_mcps
+        from efm_go.session_pid import _ORPHAN_SWEEP_MAX_KILLS, kill_orphan_mcps
 
         pids = list(range(1000, 1000 + _ORPHAN_SWEEP_MAX_KILLS + 10))
         with (
@@ -2120,7 +2120,7 @@ class TestKillOrphanMcps:
             patch("os.getpgid", side_effect=lambda pid: pid),
             patch("os.killpg"),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"python3\x00kirocrew_sandbox_x.py"),
         ):
             mock_sys.platform = "linux"
@@ -2130,7 +2130,7 @@ class TestKillOrphanMcps:
 
     def test_handles_already_dead_process(self) -> None:
         """ProcessLookupError during kill is silently handled."""
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
             patch("os.getpgrp", return_value=1000),
@@ -2142,12 +2142,12 @@ class TestKillOrphanMcps:
 
     def test_skips_recycled_pid_on_reverify(self) -> None:
         """If cmdline stops matching at kill time, the PID is skipped (TOCTOU)."""
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
             patch("os.getpgrp", return_value=1000),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"/usr/bin/bash\x00script.sh"),
             patch("os.killpg") as mock_killpg,
             patch("os.kill") as mock_kill,
@@ -2167,7 +2167,7 @@ class TestKillOrphanMcps:
         subprocess.CalledProcessError (a SubprocessError, NOT an OSError). The
         except tuple must catch it so the loop continues to the next PID.
         """
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         def mock_check_output(cmd, **kwargs):
             # cmd[-1] is the str(pid) being re-verified
@@ -2180,7 +2180,7 @@ class TestKillOrphanMcps:
             patch("os.getpgid", side_effect=lambda p: p),
             patch("os.killpg") as mock_killpg,
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch("subprocess.check_output", side_effect=mock_check_output),
         ):
             mock_sys.platform = "darwin"
@@ -2195,27 +2195,27 @@ class TestParseEtime:
     """Tests for _parse_etime (ps etime format parser)."""
 
     def test_minutes_seconds(self) -> None:
-        from kiro_crew.session_pid import _parse_etime
+        from efm_go.session_pid import _parse_etime
 
         assert _parse_etime("05:30") == 330.0
 
     def test_hours_minutes_seconds(self) -> None:
-        from kiro_crew.session_pid import _parse_etime
+        from efm_go.session_pid import _parse_etime
 
         assert _parse_etime("01:05:30") == 3930.0
 
     def test_days_hours_minutes_seconds(self) -> None:
-        from kiro_crew.session_pid import _parse_etime
+        from efm_go.session_pid import _parse_etime
 
         assert _parse_etime("2-01:00:00") == 2 * 86400 + 3600
 
     def test_invalid_returns_zero(self) -> None:
-        from kiro_crew.session_pid import _parse_etime
+        from efm_go.session_pid import _parse_etime
 
         assert _parse_etime("garbage") == 0.0
 
     def test_empty_returns_zero(self) -> None:
-        from kiro_crew.session_pid import _parse_etime
+        from efm_go.session_pid import _parse_etime
 
         assert _parse_etime("") == 0.0
 
@@ -2233,7 +2233,7 @@ class TestOurOrphanPids:
         multibyte one cut at the kernel's 15 bytes, so it is not UTF-8; its
         parent is read from stat bytes, so that orphan is listed like the rest.
         """
-        from kiro_crew.session_pid import _our_orphan_pids
+        from efm_go.session_pid import _our_orphan_pids
 
         my_uid = 1000
         rows = {  # pid -> (uid, comm, ppid)
@@ -2268,8 +2268,8 @@ class TestOurOrphanPids:
                 return tmp_path / child
 
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
-            patch("kiro_crew.session_pid.Path", return_value=_Proc()),
+            patch("efm_go.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.Path", return_value=_Proc()),
             patch("os.getuid", return_value=my_uid),
         ):
             mock_sys.platform = "linux"
@@ -2284,10 +2284,10 @@ class TestOurOrphanPids:
         launcher child is a live sibling and must be excluded; only the
         init-reparented pid is returned.
         """
-        from kiro_crew.session_pid import _our_orphan_pids
+        from efm_go.session_pid import _our_orphan_pids
 
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch(
                 "subprocess.check_output",
                 return_value=b"  500    42\n  600     1\n",
@@ -2303,10 +2303,10 @@ class TestOurOrphanPids:
 
     def test_returns_empty_on_exception(self) -> None:
         """Returns empty list on failure, does not raise."""
-        from kiro_crew.session_pid import _our_orphan_pids
+        from efm_go.session_pid import _our_orphan_pids
 
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch("subprocess.check_output", side_effect=OSError("ps failed")),
             patch("os.getuid", return_value=1000),
         ):
@@ -2332,7 +2332,7 @@ class TestLinuxPidAge:
         that are not UTF-8. starttime_ticks=500000, clk_tck=100 → 5000s offset;
         uptime=10000s → age=5000s.
         """
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "linux")
         root = self._proc(tmp_path, 1234, comm, 500000)
@@ -2341,7 +2341,7 @@ class TestLinuxPidAge:
 
     def test_malformed_stat_returns_zero(self, tmp_path: Path, monkeypatch) -> None:
         """Too-few fields → 0.0 fail-safe (min-age guard skips)."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "linux")
         (tmp_path / "999").mkdir()
@@ -2358,7 +2358,7 @@ class TestIsManagedAgentProcess:
         Exercises the platform_compat.process_matches call (the real
         /proc/<pid>/cmdline read on Linux) without killing anything.
         """
-        from kiro_crew.session_pid import _is_managed_agent_process
+        from efm_go.session_pid import _is_managed_agent_process
 
         assert _is_managed_agent_process(os.getpid()) is False
 
@@ -2366,14 +2366,14 @@ class TestIsManagedAgentProcess:
 class TestSyncKillProvider:
     def test_no_pid_returns_early(self) -> None:
         """Provider with no client/_proc/_active_proc PID → early return."""
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
         provider = MagicMock(spec=["_client", "_proc", "_active_proc"])
         provider._client = None
         provider._proc = None
         provider._active_proc = None
 
-        with patch("kiro_crew.session_pid.platform_compat.kill_pid") as mock_kill:
+        with patch("efm_go.session_pid.platform_compat.kill_pid") as mock_kill:
             _sync_kill_provider(provider)
 
         mock_kill.assert_not_called()
@@ -2389,7 +2389,7 @@ class TestSyncKillProvider:
         through the POSIX escalation loop (kill_pid is recorded, not real, so
         the loop runs both iterations deterministically), then reaps the child.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
         proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
         try:
@@ -2407,7 +2407,7 @@ class TestSyncKillProvider:
                 return True
 
             with patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=fake_kill,
             ):
                 _sync_kill_provider(provider)
@@ -2424,7 +2424,7 @@ class TestSyncKillProvider:
     )
     def test_posix_already_dead_on_sigterm(self) -> None:
         """ProcessLookupError on first signal → early return (already dead)."""
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
         provider = MagicMock(spec=["_client", "_proc", "_active_proc"])
         provider._client = None
@@ -2440,7 +2440,7 @@ class TestSyncKillProvider:
             raise ProcessLookupError()
 
         with patch(
-            "kiro_crew.session_pid.platform_compat.kill_pid",
+            "efm_go.session_pid.platform_compat.kill_pid",
             side_effect=fake_kill,
         ):
             _sync_kill_provider(provider)
@@ -2489,7 +2489,7 @@ def test_sync_windows_tree_refusal_never_falls_back_to_root_only(
     monkeypatch: pytest.MonkeyPatch, drain_error: bool, caplog: pytest.LogCaptureFixture
 ) -> None:
     """A failed tree drain keeps its scope; killing only the root is not cleanup."""
-    from kiro_crew.session_pid import _sync_kill_provider
+    from efm_go.session_pid import _sync_kill_provider
 
     pid, start = 4321, "recorded-creation"
     provider = MagicMock(spec=["_client", "_proc", "_active_proc"])
@@ -2650,7 +2650,7 @@ class TestSyncKillProviderTree:
 
     def _await_descendants(self, pid: int, timeout: float = 10.0) -> list[int]:
         """Wait for the root's fork to appear; return the (pinned) descendant pids."""
-        from kiro_crew.acp.client import _get_child_pids
+        from efm_go.acp.client import _get_child_pids
 
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
@@ -2911,11 +2911,11 @@ class TestSyncKillProviderTree:
         and would survive it, so this pins the signal being addressed to the
         process GROUP.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
         # The escalation budget is not the behaviour under test; shorten it so
         # the SIGTERM -> SIGKILL path runs without a multi-second wait.
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
         root, gc_pid = self._spawn_tree(escape_group=False)
         grandchildren: list[int] = []
         try:
@@ -2937,9 +2937,9 @@ class TestSyncKillProviderTree:
         The group signal cannot reach it and it ignores SIGTERM, so the only
         thing that ends it is the snapshot-driven descendant sweep.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
         root, gc_pid = self._spawn_tree(escape_group=True)
         grandchildren: list[int] = []
         try:
@@ -2967,10 +2967,10 @@ class TestSyncKillProviderTree:
         runtime's own ``_child_pids`` snapshot is the only record that still
         names it, so the sweep has to read that too.
         """
-        from kiro_crew.acp.client import _capture_child_records
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.acp.client import _capture_child_records
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
         root = self._spawn_isolated()
         stray = self._spawn_isolated()
         try:
@@ -2998,11 +2998,11 @@ class TestSyncKillProviderTree:
         in no record, so the group is the only thing that covers it. An empty
         snapshot reproduces that state deterministically.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
         monkeypatch.setattr(
-            "kiro_crew.session_pid._provider_descendant_records", lambda provider, pid, **_kw: {}
+            "efm_go.session_pid._provider_descendant_records", lambda provider, pid, **_kw: {}
         )
         root, gc_pid = self._spawn_tree(escape_group=False)
         grandchildren: list[int] = []
@@ -3030,10 +3030,10 @@ class TestSyncKillProviderTree:
         Signal ordering is the deterministic pin; the race itself is not
         reproducible on demand.
         """
-        from kiro_crew import session_pid as sp
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go import session_pid as sp
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.3)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.3)
 
         events: list[str] = []
         real_killpg = os.killpg
@@ -3047,8 +3047,8 @@ class TestSyncKillProviderTree:
             events.append("reap")
             real_reap(pid, recorded_start, gated=gated)
 
-        monkeypatch.setattr("kiro_crew.session_pid.os.killpg", tracking_killpg)
-        monkeypatch.setattr("kiro_crew.session_pid._reap_provider_root", tracking_reap)
+        monkeypatch.setattr("efm_go.session_pid.os.killpg", tracking_killpg)
+        monkeypatch.setattr("efm_go.session_pid._reap_provider_root", tracking_reap)
 
         # The grandchild ignores SIGTERM and stays in the group, so the tree is
         # not gone at the deadline and the SIGKILL escalation actually runs.
@@ -3081,9 +3081,9 @@ class TestSyncKillProviderTree:
         sent to the root at all. Descendants recorded at spawn are still swept:
         each is verified on its own identity, which is the check the root lacked.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
         root = self._spawn_isolated()
         stray = self._spawn_isolated()
         try:
@@ -3115,9 +3115,9 @@ class TestSyncKillProviderTree:
         signalling it would reap a stranger's tree. Descendants recorded
         at spawn are still signalled, because each is named and verified on its own.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
         root = self._spawn_isolated()
         stray = self._spawn_isolated()
         killpg_calls: list[tuple[int, int]] = []
@@ -3132,11 +3132,11 @@ class TestSyncKillProviderTree:
             return real_pgroup_of(probe_pid) if seen["n"] == 1 else 999_999
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.os.killpg",
+            "efm_go.session_pid.os.killpg",
             lambda pgid, sig: killpg_calls.append((pgid, sig)),
         )
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.pgroup_of", pgroup_of_then_handed_on
+            "efm_go.session_pid.platform_compat.pgroup_of", pgroup_of_then_handed_on
         )
         try:
             provider = self._provider(
@@ -3166,18 +3166,18 @@ class TestSyncKillProviderTree:
         confirm. This runs on POSIX by faking the platform flag, because the
         branch it pins is unreachable here.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
         pinned_calls: list[tuple[int, str, int]] = []
         unpinned_calls: list[tuple[int, int]] = []
 
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.IS_WINDOWS", True)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.IS_WINDOWS", True)
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.kill_process_tree_pinned",
+            "efm_go.session_pid.platform_compat.kill_process_tree_pinned",
             lambda pid, expected, sig: (pinned_calls.append((pid, expected, sig)), False)[1],
         )
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.kill_process_tree",
+            "efm_go.session_pid.platform_compat.kill_process_tree",
             lambda pid, sig: unpinned_calls.append((pid, sig)),
         )
 
@@ -3204,9 +3204,9 @@ class TestSyncKillProviderTree:
         walked entries are dropped, while the spawn-time snapshot, recorded when
         the tree was provably ours, is still signalled.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
         root, gc_pid = self._spawn_tree(escape_group=False)
         stray = self._spawn_isolated()
         real_start_id = platform_compat.get_process_start_id
@@ -3228,12 +3228,12 @@ class TestSyncKillProviderTree:
             return real_start_id(probe_pid)
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.get_process_start_id", start_id_going_stale
+            "efm_go.session_pid.platform_compat.get_process_start_id", start_id_going_stale
         )
         signalled: list[int] = []
         real_kill_pid = platform_compat.kill_pid
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.kill_pid",
+            "efm_go.session_pid.platform_compat.kill_pid",
             lambda p, sig: (signalled.append(p), real_kill_pid(p, sig))[1],
         )
         try:
@@ -3259,9 +3259,9 @@ class TestSyncKillProviderTree:
         second snapshot is only an intersection filter, so it can shrink the set and
         never add to it.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
         root = self._spawn_isolated()
         bystander = self._spawn_isolated()
         provider = self._provider(root.pid)
@@ -3276,12 +3276,12 @@ class TestSyncKillProviderTree:
             return [bystander.pid] if walks["n"] == 1 else []
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.process_descendants", walk_then_lose_it
+            "efm_go.session_pid.platform_compat.process_descendants", walk_then_lose_it
         )
         signalled: list[int] = []
         real_kill_pid = platform_compat.kill_pid
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.kill_pid",
+            "efm_go.session_pid.platform_compat.kill_pid",
             lambda p, sig: (signalled.append(p), real_kill_pid(p, sig))[1],
         )
         try:
@@ -3323,9 +3323,9 @@ class TestSyncKillProviderTree:
         Mutation guard: permitting the wait when the live read is None -- reaping on an
         unconfirmable identity -- consumes the status and reddens the last assertion.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
         root, gc_pid = self._spawn_tree(escape_group=False)
         try:
             grandchildren = self._await_descendants(root.pid)
@@ -3338,7 +3338,7 @@ class TestSyncKillProviderTree:
                 return real_start_id(probe_pid)
 
             monkeypatch.setattr(
-                "kiro_crew.session_pid.platform_compat.get_process_start_id",
+                "efm_go.session_pid.platform_compat.get_process_start_id",
                 _unreadable_once_exited,
             )
             _sync_kill_provider(provider)
@@ -3376,7 +3376,7 @@ class TestSyncKillProviderTree:
         never reports the state this constructs. `_our_child_exited` asks this
         process's own child status instead, which is answerable anywhere.
         """
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
         try:
@@ -3438,9 +3438,9 @@ class TestSyncKillProviderTree:
         is confirmed by the filter and carries the stranger's captured id -- which the
         signal-time re-read then agrees with instead of catching.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
         root = self._spawn_isolated()
         bystander = self._spawn_isolated()
         real_start_id = platform_compat.get_process_start_id
@@ -3448,7 +3448,7 @@ class TestSyncKillProviderTree:
         # Both scans report the pid, so the intersection keeps it; only the root
         # identity going stale across them can reject it.
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.process_descendants",
+            "efm_go.session_pid.platform_compat.process_descendants",
             lambda probe: [bystander.pid] if probe == root.pid else [],
         )
         root_reads = {"n": 0}
@@ -3463,12 +3463,12 @@ class TestSyncKillProviderTree:
             return real_start_id(probe_pid)
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.get_process_start_id", start_id_going_stale
+            "efm_go.session_pid.platform_compat.get_process_start_id", start_id_going_stale
         )
         signalled: list[int] = []
         real_kill_pid = platform_compat.kill_pid
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.kill_pid",
+            "efm_go.session_pid.platform_compat.kill_pid",
             lambda p, sig: (signalled.append(p), real_kill_pid(p, sig))[1],
         )
         try:
@@ -3492,9 +3492,9 @@ class TestSyncKillProviderTree:
         after the snapshot would be reached by neither the group signal nor the
         recorded sweep, and would survive the teardown.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
         root, gc_pid = self._spawn_tree(escape_group=False)
         real_start_id = platform_compat.get_process_start_id
         self._await_descendants(root.pid)
@@ -3519,10 +3519,10 @@ class TestSyncKillProviderTree:
             return real_start_id(probe_pid)
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.process_descendants", counting_descendants
+            "efm_go.session_pid.platform_compat.process_descendants", counting_descendants
         )
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.get_process_start_id", start_id_after_reap
+            "efm_go.session_pid.platform_compat.get_process_start_id", start_id_after_reap
         )
         killpg_calls: list[int] = []
         real_killpg = os.killpg
@@ -3531,7 +3531,7 @@ class TestSyncKillProviderTree:
             killpg_calls.append(sig)
             real_killpg(pgid, sig)
 
-        monkeypatch.setattr("kiro_crew.session_pid.os.killpg", tracking_killpg)
+        monkeypatch.setattr("efm_go.session_pid.os.killpg", tracking_killpg)
         try:
             _sync_kill_provider(provider)
 
@@ -3550,9 +3550,9 @@ class TestSyncKillProviderTree:
         window must not be signalled, so a wrong record is skipped rather than
         used.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.5)
 
         root = self._spawn_isolated()
         bystander = self._spawn_isolated()
@@ -3685,9 +3685,9 @@ class TestSyncKillProviderTree:
         record names: ``unrecorded`` here is absent from the records and ignores
         SIGTERM, so only the group SIGKILL can end it.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.2)
         leader_pid, recorded_start, witness_pid, unrecorded_pid = self._spawn_reaped_leader(
             tmp_path
         )
@@ -3722,7 +3722,7 @@ class TestSyncKillProviderTree:
                 killpg_calls.append((pgid, sig))
                 real_killpg(pgid, sig)
 
-            monkeypatch.setattr("kiro_crew.session_pid.os.killpg", tracking_killpg)
+            monkeypatch.setattr("efm_go.session_pid.os.killpg", tracking_killpg)
 
             _sync_kill_provider(provider)
 
@@ -3746,16 +3746,16 @@ class TestSyncKillProviderTree:
         descendant that called ``setsid`` leads a group of its own, so it says
         nothing about the leader's -- which stays unsignalled, exactly as before.
         """
-        from kiro_crew.session_pid import _group_from_witnessed_descendant
+        from efm_go.session_pid import _group_from_witnessed_descendant
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.pgroup_of_leader", lambda _pid: 4242
+            "efm_go.session_pid.platform_compat.pgroup_of_leader", lambda _pid: 4242
         )
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.get_process_start_id", lambda _pid: "same"
+            "efm_go.session_pid.platform_compat.get_process_start_id", lambda _pid: "same"
         )
         # The witness verifies, but it leads its own group.
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.pgroup_of", lambda _pid: 4243)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.pgroup_of", lambda _pid: 4243)
 
         assert _group_from_witnessed_descendant(4242, "root", {4243: ("same", None)}) is None
 
@@ -3770,17 +3770,17 @@ class TestSyncKillProviderTree:
         tree. Only ``candidate == pid`` stops that, which is why this case exists
         separately from the witness-left-the-group one above.
         """
-        from kiro_crew.session_pid import _group_from_witnessed_descendant
+        from efm_go.session_pid import _group_from_witnessed_descendant
 
         # A group the recorded leader 4242 does not lead.
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.pgroup_of_leader", lambda _pid: 4243
+            "efm_go.session_pid.platform_compat.pgroup_of_leader", lambda _pid: 4243
         )
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.get_process_start_id", lambda _pid: "same"
+            "efm_go.session_pid.platform_compat.get_process_start_id", lambda _pid: "same"
         )
         # The witness is genuinely in 4243, so ownership alone would say yes.
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.pgroup_of", lambda _pid: 4243)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.pgroup_of", lambda _pid: 4243)
 
         assert _group_from_witnessed_descendant(4242, "same", {4243: ("same", None)}) is None
 
@@ -3796,12 +3796,12 @@ class TestSyncKillProviderTree:
         stranger, so a witness drawn from them proves nothing about our tree. The
         shape also cannot need recovery: its root was alive when the handle was read.
         """
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
-        monkeypatch.setattr("kiro_crew.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.1)
+        monkeypatch.setattr("efm_go.session_pid._PROVIDER_TERM_GRACE_SECONDS", 0.1)
         calls: list[int] = []
         monkeypatch.setattr(
-            "kiro_crew.session_pid._group_from_witnessed_descendant",
+            "efm_go.session_pid._group_from_witnessed_descendant",
             lambda pid, *a, **k: calls.append(pid) or 4242,
         )
         # A `_proc`-shaped provider: no _client, a live handle with returncode None.
@@ -3813,15 +3813,15 @@ class TestSyncKillProviderTree:
         provider._active_proc = None
         # Not an isolated leader, so _isolated_provider_group yields None and the
         # recovery branch is the only thing that could produce a pgid.
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.pgroup_of", lambda _pid: 999)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.pgroup_of", lambda _pid: 999)
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.process_descendants", lambda _p: []
+            "efm_go.session_pid.platform_compat.process_descendants", lambda _p: []
         )
         killpg_calls: list[tuple[int, int]] = []
         monkeypatch.setattr(
-            "kiro_crew.session_pid.os.killpg", lambda pgid, sig: killpg_calls.append((pgid, sig))
+            "efm_go.session_pid.os.killpg", lambda pgid, sig: killpg_calls.append((pgid, sig))
         )
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.kill_pid", lambda _p, _s: None)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.kill_pid", lambda _p, _s: None)
 
         _sync_kill_provider(provider)
 
@@ -3832,15 +3832,15 @@ class TestSyncKillProviderTree:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A recorded pid whose live identity differs cannot vouch for the group."""
-        from kiro_crew.session_pid import _group_from_witnessed_descendant
+        from efm_go.session_pid import _group_from_witnessed_descendant
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.pgroup_of_leader", lambda _pid: 4242
+            "efm_go.session_pid.platform_compat.pgroup_of_leader", lambda _pid: 4242
         )
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.get_process_start_id", lambda _pid: "live"
+            "efm_go.session_pid.platform_compat.get_process_start_id", lambda _pid: "live"
         )
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.pgroup_of", lambda _pid: 4242)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.pgroup_of", lambda _pid: 4242)
 
         assert _group_from_witnessed_descendant(4242, "root", {4243: ("recorded", None)}) is None
 
@@ -3848,48 +3848,48 @@ class TestSyncKillProviderTree:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A record carrying no start id proves nothing and is skipped."""
-        from kiro_crew.session_pid import _group_from_witnessed_descendant
+        from efm_go.session_pid import _group_from_witnessed_descendant
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.pgroup_of_leader", lambda _pid: 4242
+            "efm_go.session_pid.platform_compat.pgroup_of_leader", lambda _pid: 4242
         )
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.get_process_start_id", lambda _pid: None
+            "efm_go.session_pid.platform_compat.get_process_start_id", lambda _pid: None
         )
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.pgroup_of", lambda _pid: 4242)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.pgroup_of", lambda _pid: 4242)
 
         assert _group_from_witnessed_descendant(4242, "root", {4243: (None, None)}) is None
 
     def test_recovered_group_is_never_our_own(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Our own group is refused: killpg on it would signal the gateway itself."""
-        from kiro_crew.session_pid import _group_from_witnessed_descendant
+        from efm_go.session_pid import _group_from_witnessed_descendant
 
         own = os.getpgrp()
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.pgroup_of_leader", lambda _pid: own
+            "efm_go.session_pid.platform_compat.pgroup_of_leader", lambda _pid: own
         )
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.get_process_start_id", lambda _pid: "same"
+            "efm_go.session_pid.platform_compat.get_process_start_id", lambda _pid: "same"
         )
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.pgroup_of", lambda _pid: own)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.pgroup_of", lambda _pid: own)
 
         assert _group_from_witnessed_descendant(own, "root", {os.getpid(): ("same", None)}) is None
 
     def test_recovered_group_refuses_a_denied_leader(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """``None`` from the primitive means signalling is denied, so nothing is sent."""
-        from kiro_crew.session_pid import _group_from_witnessed_descendant
+        from efm_go.session_pid import _group_from_witnessed_descendant
 
         monkeypatch.setattr(
-            "kiro_crew.session_pid.platform_compat.pgroup_of_leader", lambda _pid: None
+            "efm_go.session_pid.platform_compat.pgroup_of_leader", lambda _pid: None
         )
 
         assert _group_from_witnessed_descendant(4242, "root", {4243: ("same", None)}) is None
 
     def test_no_group_is_recovered_on_windows(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Windows has no such group; teardown there goes through kill_process_tree."""
-        from kiro_crew.session_pid import _group_from_witnessed_descendant
+        from efm_go.session_pid import _group_from_witnessed_descendant
 
-        monkeypatch.setattr("kiro_crew.session_pid.platform_compat.IS_WINDOWS", True)
+        monkeypatch.setattr("efm_go.session_pid.platform_compat.IS_WINDOWS", True)
 
         assert _group_from_witnessed_descendant(4242, "root", {4243: ("start", None)}) is None
 
@@ -3941,7 +3941,7 @@ class TestReapProviderRoot:
         raise AssertionError(f"child {proc.pid} never became a zombie")
 
     def _assert_refused(self, live_id: "str | None", monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         proc, pid = self._zombie()
         try:
@@ -3975,7 +3975,7 @@ class TestReapProviderRoot:
 class TestCleanupOrphanedMcpServersExtra:
     def test_bare_pid_non_numeric_skipped(self, pid_file: Path) -> None:
         """A bare (no-colon) line that is not an int is skipped via ValueError."""
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("not_a_number\n")
 
@@ -3987,7 +3987,7 @@ class TestCleanupOrphanedMcpServersExtra:
 
     def test_orphan_kill_oserror_swallowed(self, pid_file: Path) -> None:
         """kill_pid raising OSError on an orphaned child is swallowed; entry pruned."""
-        from kiro_crew.session_pid import _cleanup_orphaned_mcp_servers
+        from efm_go.session_pid import _cleanup_orphaned_mcp_servers
 
         pid_file.write_text("77777:99999\n")  # parent 99999 dead
 
@@ -3999,12 +3999,12 @@ class TestCleanupOrphanedMcpServersExtra:
 
         with (
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_exists",
+                "efm_go.session_pid.platform_compat.pid_exists",
                 side_effect=fake_pid_exists,
             ),
-            patch("kiro_crew.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.platform_compat.get_ppid", return_value=1),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=fake_kill,
             ),
         ):
@@ -4031,10 +4031,10 @@ class TestPidGoneOrUnmanaged:
     """
 
     def test_dead_pid_is_safe_to_untrack(self) -> None:
-        from kiro_crew.session_pid import _pid_gone_or_unmanaged
+        from efm_go.session_pid import _pid_gone_or_unmanaged
 
         with patch(
-            "kiro_crew.platform_compat.pid_liveness",
+            "efm_go.platform_compat.pid_liveness",
             return_value=platform_compat.PID_DEAD,
         ):
             assert _pid_gone_or_unmanaged(4242) is True
@@ -4044,7 +4044,7 @@ class TestPidGoneOrUnmanaged:
         # is a managed agent: it may be an un-reaped survivor, and the periodic
         # sweep re-validates ownership before reaping. This is the fail-safe
         # direction — we never untrack something that is still alive here.
-        from kiro_crew.session_pid import _pid_gone_or_unmanaged
+        from efm_go.session_pid import _pid_gone_or_unmanaged
 
         assert _pid_gone_or_unmanaged(os.getpid()) is False
 
@@ -4053,19 +4053,19 @@ class TestPidGoneOrUnmanaged:
         # PID_UNSIGNALABLE, which we treat as "retain" (the sweep re-validates
         # ownership off the hot path). Never orphaning a live survivor is the
         # invariant; a retained-but-recycled PID is harmless.
-        from kiro_crew.session_pid import _pid_gone_or_unmanaged
+        from efm_go.session_pid import _pid_gone_or_unmanaged
 
         with patch(
-            "kiro_crew.platform_compat.pid_liveness",
+            "efm_go.platform_compat.pid_liveness",
             return_value=platform_compat.PID_UNSIGNALABLE,
         ):
             assert _pid_gone_or_unmanaged(4242) is False
 
     def test_alive_pid_is_retained(self) -> None:
-        from kiro_crew.session_pid import _pid_gone_or_unmanaged
+        from efm_go.session_pid import _pid_gone_or_unmanaged
 
         with patch(
-            "kiro_crew.platform_compat.pid_liveness",
+            "efm_go.platform_compat.pid_liveness",
             return_value=platform_compat.PID_ALIVE,
         ):
             assert _pid_gone_or_unmanaged(4242) is False
@@ -4078,55 +4078,55 @@ class TestMarkedMcpLauncherPredicates:
     """Positive-ID sweep path for fingerprint-less MCP launchers (npx)."""
 
     def test_matches_npx_playwright_null_separated(self) -> None:
-        from kiro_crew.session_pid import _is_marked_mcp_launcher
+        from efm_go.session_pid import _is_marked_mcp_launcher
 
         cmdline = b"npx\x00@playwright/mcp\x00--headless"
         assert _is_marked_mcp_launcher(cmdline) is True
 
     def test_matches_npx_playwright_space_separated(self) -> None:
         """macOS ps output is space-separated — substring match covers both."""
-        from kiro_crew.session_pid import _is_marked_mcp_launcher
+        from efm_go.session_pid import _is_marked_mcp_launcher
 
         cmdline = b"/usr/local/bin/node /usr/lib/node_modules/@playwright/mcp/cli.js"
         assert _is_marked_mcp_launcher(cmdline) is True
 
     def test_matches_generic_start_server(self) -> None:
-        from kiro_crew.session_pid import _is_marked_mcp_launcher
+        from efm_go.session_pid import _is_marked_mcp_launcher
 
         cmdline = b"/bin/sh\x00-c\x00some-launcher mcp start-server slack-mcp"
         assert _is_marked_mcp_launcher(cmdline) is True
 
     def test_rejects_peer_gateway(self) -> None:
-        from kiro_crew.session_pid import _is_marked_mcp_launcher
+        from efm_go.session_pid import _is_marked_mcp_launcher
 
-        cmdline = b"python3\x00-m\x00kiro_crew.mcp_gateway.gatewayd\x00mcp start-server"
+        cmdline = b"python3\x00-m\x00efm_go.mcp_gateway.gatewayd\x00mcp start-server"
         assert _is_marked_mcp_launcher(cmdline) is False
 
     def test_rejects_unrelated_process(self) -> None:
-        from kiro_crew.session_pid import _is_marked_mcp_launcher
+        from efm_go.session_pid import _is_marked_mcp_launcher
 
         assert _is_marked_mcp_launcher(b"vim\x00notes-about-mcp.md") is False
 
     def test_sweepable_requires_env_marker_for_marked_launcher(self) -> None:
         """npx cmdline WITHOUT the environ marker is NOT sweepable."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_mcp
+        from efm_go.session_pid import _is_sweepable_orphan_mcp
 
         cmdline = b"npx\x00@playwright/mcp\x00--headless"
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False):
             assert _is_sweepable_orphan_mcp(1234, cmdline) is False
 
     def test_sweepable_with_env_marker(self) -> None:
-        from kiro_crew.session_pid import _is_sweepable_orphan_mcp
+        from efm_go.session_pid import _is_sweepable_orphan_mcp
 
         cmdline = b"npx\x00@playwright/mcp\x00--headless"
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert _is_sweepable_orphan_mcp(1234, cmdline) is True
 
     def test_fingerprinted_cmdline_never_reads_environ(self) -> None:
         """The pre-existing marker path must not depend on the environ read."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_mcp
+        from efm_go.session_pid import _is_sweepable_orphan_mcp
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker") as mock_env:
+        with patch("efm_go.session_pid._env_has_kirocrew_marker") as mock_env:
             assert _is_sweepable_orphan_mcp(1, b"kirocrew_sandbox_abc\x00--stdio") is True
         mock_env.assert_not_called()
 
@@ -4146,17 +4146,17 @@ class TestEnvHasKirocrewMarker:
         exec-time environment out of ``sysctl KERN_PROCARGS2``, which is what
         makes the marked-launcher sweep reachable there at all.
         """
-        from kiro_crew.session_pid import _env_has_kirocrew_marker
+        from efm_go.session_pid import _env_has_kirocrew_marker
 
-        with patch("kiro_crew.session_pid.sys") as mock_sys:
+        with patch("efm_go.session_pid.sys") as mock_sys:
             mock_sys.platform = "win32"
             assert _env_has_kirocrew_marker(os.getpid()) is False
 
     def test_read_failure_fails_closed(self) -> None:
-        from kiro_crew.session_pid import _env_has_kirocrew_marker
+        from efm_go.session_pid import _env_has_kirocrew_marker
 
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", side_effect=PermissionError),
         ):
             mock_sys.platform = "linux"
@@ -4172,8 +4172,8 @@ class TestEnvHasKirocrewMarker:
         """
         import time
 
-        from kiro_crew.constants import KIROCREW_SPAWNED_ENV, KIROCREW_SPAWNED_VALUE
-        from kiro_crew.session_pid import _env_has_kirocrew_marker
+        from efm_go.constants import KIROCREW_SPAWNED_ENV, KIROCREW_SPAWNED_VALUE
+        from efm_go.session_pid import _env_has_kirocrew_marker
 
         env = {**os.environ, KIROCREW_SPAWNED_ENV: KIROCREW_SPAWNED_VALUE}
         proc = subprocess.Popen(["sleep", "30"], env=env)
@@ -4190,8 +4190,8 @@ class TestEnvHasKirocrewMarker:
 
     @pytest.mark.skipif(sys.platform != "linux", reason="/proc is Linux-only")
     def test_real_child_without_marker(self) -> None:
-        from kiro_crew.constants import KIROCREW_SPAWNED_ENV
-        from kiro_crew.session_pid import _env_has_kirocrew_marker
+        from efm_go.constants import KIROCREW_SPAWNED_ENV
+        from efm_go.session_pid import _env_has_kirocrew_marker
 
         env = {k: v for k, v in os.environ.items() if k != KIROCREW_SPAWNED_ENV}
         proc = subprocess.Popen(["sleep", "30"], env=env)
@@ -4206,23 +4206,23 @@ class TestMarkedLauncherSweepIntegration:
     @pytest.fixture(autouse=True)
     def _stable_root_identity(self) -> Iterator[None]:
         """See TestKillOrphanMcps._stable_root_identity."""
-        with patch("kiro_crew.session_pid._pid_start_token", return_value="tok-stable"):
+        with patch("efm_go.session_pid._pid_start_token", return_value="tok-stable"):
             yield
 
     """find + kill phases honor the marked-launcher positive-ID path."""
 
     def test_find_includes_marked_npx_orphan(self) -> None:
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[700]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[700]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"npx\x00@playwright/mcp\x00--headless"),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=300.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._linux_pid_age", return_value=300.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
         ):
@@ -4233,15 +4233,15 @@ class TestMarkedLauncherSweepIntegration:
 
     def test_find_excludes_unmarked_npx_orphan(self) -> None:
         """A user's own npx process (no environ marker) is never a candidate."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[710]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[710]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"npx\x00@playwright/mcp\x00--headless"),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=300.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False),
+            patch("efm_go.session_pid._linux_pid_age", return_value=300.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -4250,18 +4250,18 @@ class TestMarkedLauncherSweepIntegration:
 
     @_POSIX_ONLY
     def test_kill_reverify_honors_marked_launcher(self) -> None:
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
             patch("os.getpgrp", return_value=1000),
             patch("os.getpgid", return_value=720),
             patch("os.killpg") as mock_killpg,
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"npx\x00@playwright/mcp\x00--headless"),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
         ):
@@ -4273,7 +4273,7 @@ class TestMarkedLauncherSweepIntegration:
 
     @_POSIX_ONLY
     def test_kill_reverify_skips_unmarked_launcher(self) -> None:
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
             patch("os.getpgrp", return_value=1000),
@@ -4281,9 +4281,9 @@ class TestMarkedLauncherSweepIntegration:
             patch("os.killpg") as mock_killpg,
             patch("os.kill") as mock_kill,
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=b"npx\x00@playwright/mcp\x00--headless"),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False),
         ):
             mock_sys.platform = "linux"
             killed = kill_orphan_mcps([730])
@@ -4302,16 +4302,16 @@ class TestIsSweepableOrphanWork:
     _PYTEST_CMDLINE = b"/usr/bin/python3\x00-m\x00pytest\x00test/\x00-x\x00-q"
 
     def test_marked_orphaned_old_work_process_is_sweepable(self) -> None:
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
         with (
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
         ):
@@ -4319,19 +4319,19 @@ class TestIsSweepableOrphanWork:
 
     def test_xdist_execnet_worker_is_sweepable(self) -> None:
         """pytest-xdist popen workers run under execnet's bootstrap cmdline."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
         worker = (
             b"/repo/.venv/bin/python\x00-u\x00-c" b"\x00import sys;exec(eval(sys.stdin.readline()))"
         )
         with (
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
         ):
@@ -4344,35 +4344,35 @@ class TestIsSweepableOrphanWork:
         still polls its log — SID still points at the live leader, so the
         sweep must leave the run alone. The environ is never read.
         """
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
         with (
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=True,
             ),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker") as mock_env,
+            patch("efm_go.session_pid._env_has_kirocrew_marker") as mock_env,
         ):
             assert _is_sweepable_orphan_work(1234, self._PYTEST_CMDLINE, 700.0) is False
         mock_env.assert_not_called()
 
     def test_unreadable_sid_fails_closed(self) -> None:
         """SID read failure -> assume the owner is alive -> never sweep."""
-        from kiro_crew.session_pid import _work_orphan_session_leader_alive
+        from efm_go.session_pid import _work_orphan_session_leader_alive
 
-        with patch("kiro_crew.session_pid._linux_pid_sid", return_value=-1):
+        with patch("efm_go.session_pid._linux_pid_sid", return_value=-1):
             assert _work_orphan_session_leader_alive(1234) is True
 
     def test_self_session_leader_fails_closed(self) -> None:
         """A setsid'd coordinator (own leader) carries no ownership info -> kept."""
-        from kiro_crew.session_pid import _work_orphan_session_leader_alive
+        from efm_go.session_pid import _work_orphan_session_leader_alive
 
-        with patch("kiro_crew.session_pid._linux_pid_sid", return_value=1234):
+        with patch("efm_go.session_pid._linux_pid_sid", return_value=1234):
             assert _work_orphan_session_leader_alive(1234) is True
 
     def test_dead_leader_means_session_ended(self, tmp_path: Path) -> None:
         """Leader gone (or PID recycled into a non-leader) -> session ended."""
-        from kiro_crew.session_pid import _work_orphan_session_leader_alive
+        from efm_go.session_pid import _work_orphan_session_leader_alive
 
         write_stat(tmp_path, 1234, session=500)
         assert _work_orphan_session_leader_alive(1234, tmp_path) is False  # 500 gone
@@ -4381,7 +4381,7 @@ class TestIsSweepableOrphanWork:
 
     def test_a_present_leader_whose_stat_cannot_be_read_is_alive(self, tmp_path: Path) -> None:
         """Only a pid whose /proc entry is absent counts as a gone leader."""
-        from kiro_crew.session_pid import _work_orphan_session_leader_alive
+        from efm_go.session_pid import _work_orphan_session_leader_alive
 
         write_stat(tmp_path, 1234, session=500)
         (tmp_path / "500").mkdir()
@@ -4395,10 +4395,10 @@ class TestIsSweepableOrphanWork:
         Those are intentional survivors — the shape gate excludes them, and
         their environ is never even read.
         """
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
         daemon = b"/usr/bin/node\x00/opt/serve-sim/cli.js\x00--udid\x00ABC123"
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker") as mock_env:
+        with patch("efm_go.session_pid._env_has_kirocrew_marker") as mock_env:
             assert _is_sweepable_orphan_work(1234, daemon, 7000.0) is False
         mock_env.assert_not_called()
 
@@ -4406,22 +4406,22 @@ class TestIsSweepableOrphanWork:
         """'pytest' inside a path ARGUMENT must not match (structural, not
         substring): ``nohup node /work/pytest-dashboard/server.js`` is a
         daemon, not a test run."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
         daemon = b"/usr/bin/node\x00/work/pytest-dashboard/server.js"
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker") as mock_env:
+        with patch("efm_go.session_pid._env_has_kirocrew_marker") as mock_env:
             assert _is_sweepable_orphan_work(1234, daemon, 7000.0) is False
         mock_env.assert_not_called()
 
     def test_venv_pytest_console_script_is_sweepable(self) -> None:
         """argv0 basename exactly ``pytest`` (venv console script) matches."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
         console = b"/repo/.venv/bin/pytest\x00test/\x00-q"
         with (
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
         ):
@@ -4430,7 +4430,7 @@ class TestIsSweepableOrphanWork:
     def test_bootstrap_payload_as_free_arg_is_not_sweepable(self) -> None:
         """The execnet payload only matches as the argument OF ``-c`` — the
         same bytes appearing as any other argv element do not qualify."""
-        from kiro_crew.session_pid import _work_sweep_cmdline_is_test_runner
+        from efm_go.session_pid import _work_sweep_cmdline_is_test_runner
 
         free = b"/usr/bin/grep\x00import sys;exec(eval(sys.stdin.readline()))\x00log"
         assert _work_sweep_cmdline_is_test_runner(free) is False
@@ -4441,22 +4441,22 @@ class TestIsSweepableOrphanWork:
         Age is checked FIRST so a young process never even has its environ
         read; the env-marker mock asserts it stays uncalled.
         """
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker") as mock_env:
+        with patch("efm_go.session_pid._env_has_kirocrew_marker") as mock_env:
             assert _is_sweepable_orphan_work(1234, self._PYTEST_CMDLINE, 599.0) is False
         mock_env.assert_not_called()
 
     def test_mcp_floor_is_not_enough_for_work_class(self) -> None:
         """The 120s MCP floor must NOT admit work processes (dedicated floor)."""
-        from kiro_crew.session_pid import (
+        from efm_go.session_pid import (
             _ORPHAN_MIN_AGE_SECONDS,
             _ORPHAN_WORK_MIN_AGE_SECONDS,
             _is_sweepable_orphan_work,
         )
 
         assert _ORPHAN_WORK_MIN_AGE_SECONDS > _ORPHAN_MIN_AGE_SECONDS
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert (
                 _is_sweepable_orphan_work(1234, self._PYTEST_CMDLINE, _ORPHAN_MIN_AGE_SECONDS + 1)
                 is False
@@ -4464,16 +4464,16 @@ class TestIsSweepableOrphanWork:
 
     def test_unmarked_work_process_is_not_sweepable(self) -> None:
         """No KIROCREW_SPAWNED environ marker — a user's own pytest is safe."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False):
             assert _is_sweepable_orphan_work(1234, self._PYTEST_CMDLINE, 700.0) is False
 
     def test_managed_agent_basename_is_not_sweepable(self) -> None:
         """kiro-cli/claude runtimes stay owned by their tracked-PID lifecycle."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert (
                 _is_sweepable_orphan_work(1234, b"/usr/local/bin/kiro-cli\x00chat\x00--acp", 700.0)
                 is False
@@ -4482,21 +4482,21 @@ class TestIsSweepableOrphanWork:
 
     def test_gateway_entrypoint_is_not_sweepable(self) -> None:
         """Agent-launched peer gateways (e.g. dev pods) are never swept."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert (
                 _is_sweepable_orphan_work(
-                    1234, b"python3\x00-m\x00kiro_crew.mcp_gateway.gatewayd", 700.0
+                    1234, b"python3\x00-m\x00efm_go.mcp_gateway.gatewayd", 700.0
                 )
                 is False
             )
 
     def test_empty_cmdline_is_not_sweepable(self) -> None:
         """Kernel threads / zombies (empty cmdline) are never candidates."""
-        from kiro_crew.session_pid import _is_sweepable_orphan_work
+        from efm_go.session_pid import _is_sweepable_orphan_work
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert _is_sweepable_orphan_work(1234, b"", 700.0) is False
 
 
@@ -4506,17 +4506,17 @@ class TestWorkOrphanSweepIntegration:
     _PYTEST_CMDLINE = b"/usr/bin/python3\x00-m\x00pytest\x00test/\x00-x\x00-q"
 
     def test_find_includes_marked_old_work_orphan(self) -> None:
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[900]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[900]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=self._PYTEST_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=700.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._linux_pid_age", return_value=700.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
         ):
@@ -4526,17 +4526,17 @@ class TestWorkOrphanSweepIntegration:
         assert result == [900]
 
     def test_find_excludes_young_marked_work_orphan(self) -> None:
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[901]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[901]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=self._PYTEST_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=300.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._linux_pid_age", return_value=300.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
         ):
@@ -4546,15 +4546,15 @@ class TestWorkOrphanSweepIntegration:
         assert result == []
 
     def test_find_excludes_unmarked_work_orphan(self) -> None:
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[902]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[902]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=self._PYTEST_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=700.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False),
+            patch("efm_go.session_pid._linux_pid_age", return_value=700.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -4563,19 +4563,19 @@ class TestWorkOrphanSweepIntegration:
 
     def test_find_excludes_marked_kiro_cli_orphan(self) -> None:
         """Managed agent runtime carrying the marker still isn't work-swept."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[903]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[903]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(
                 Path, "read_bytes", return_value=b"/usr/local/bin/kiro-cli\x00chat\x00--acp"
             ),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=700.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._linux_pid_age", return_value=700.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
         ):
@@ -4586,25 +4586,25 @@ class TestWorkOrphanSweepIntegration:
 
     def test_kill_sweeps_whole_subtree_leaf_first(self) -> None:
         """Descendants (incl. grandchildren) die before parents; root last."""
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         kill_order: list[int] = []
 
         with (
             patch("os.getpgrp", return_value=1000),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=self._PYTEST_CMDLINE),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=700.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._linux_pid_age", return_value=700.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
             # Preorder: 910 -> [911, 912(-> 913)]; 913 is a grandchild.
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[911, 912, 913]),
+            patch("efm_go.acp.client._get_child_pids", return_value=[911, 912, 913]),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, _sig: kill_order.append(p),
             ),
         ):
@@ -4617,16 +4617,16 @@ class TestWorkOrphanSweepIntegration:
 
     def test_kill_reverify_skips_now_young_or_unmarked(self) -> None:
         """Kill-phase re-verify fails closed when the marker is gone (TOCTOU)."""
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
             patch("os.getpgrp", return_value=1000),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=self._PYTEST_CMDLINE),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=700.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False),
-            patch("kiro_crew.session_pid.platform_compat.kill_pid") as mock_kill,
+            patch("efm_go.session_pid._linux_pid_age", return_value=700.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False),
+            patch("efm_go.session_pid.platform_compat.kill_pid") as mock_kill,
         ):
             mock_sys.platform = "linux"
             killed = kill_orphan_mcps([920])
@@ -4636,28 +4636,28 @@ class TestWorkOrphanSweepIntegration:
 
     def test_subtree_kill_respects_global_cap(self) -> None:
         """The _ORPHAN_SWEEP_MAX_KILLS cap bounds subtree members too."""
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         kill_order: list[int] = []
 
         with (
-            patch("kiro_crew.session_pid._ORPHAN_SWEEP_MAX_KILLS", 3),
+            patch("efm_go.session_pid._ORPHAN_SWEEP_MAX_KILLS", 3),
             patch("os.getpgrp", return_value=1000),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=self._PYTEST_CMDLINE),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=700.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._linux_pid_age", return_value=700.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
             patch(
-                "kiro_crew.session_pid._work_orphan_session_leader_alive",
+                "efm_go.session_pid._work_orphan_session_leader_alive",
                 return_value=False,
             ),
             patch(
-                "kiro_crew.acp.client._get_child_pids",
+                "efm_go.acp.client._get_child_pids",
                 return_value=[931, 932, 933, 934, 935],
             ),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, _sig: kill_order.append(p),
             ),
         ):
@@ -4674,12 +4674,12 @@ class TestSpawnedMarkerInjection:
     """Every provider/MCP spawn site injects the KIROCREW_SPAWNED marker."""
 
     def test_sandboxed_spawn_argv_injects_marker(self) -> None:
-        from kiro_crew.constants import KIROCREW_SPAWNED_ENV, KIROCREW_SPAWNED_VALUE
-        from kiro_crew.sandbox import sandboxed_spawn_argv
+        from efm_go.constants import KIROCREW_SPAWNED_ENV, KIROCREW_SPAWNED_VALUE
+        from efm_go.sandbox import sandboxed_spawn_argv
 
         with (
-            patch("kiro_crew.sandbox.wrap_argv", return_value=(["echo"], None)),
-            patch("kiro_crew.sandbox.cgroup_scope_argv", side_effect=lambda a: a),
+            patch("efm_go.sandbox.wrap_argv", return_value=(["echo"], None)),
+            patch("efm_go.sandbox.cgroup_scope_argv", side_effect=lambda a: a),
         ):
             _, env, _ = sandboxed_spawn_argv(["echo"], env={"PATH": "/bin"})
 
@@ -4693,7 +4693,7 @@ class TestSpawnedMarkerInjection:
         The fork is KiroACP-only, so upstream's ``providers/claude_code.py``
         spawn site is intentionally absent from this list (the module is
         deleted in the public fork)."""
-        src_root = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        src_root = Path(__file__).resolve().parent.parent / "src" / "efm_go"
         spawn_sites = [
             "sandbox.py",
             "acp/runtime.py",
@@ -4721,9 +4721,9 @@ class TestPidStartTokenIdentityGuard:
         self, session_pid_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Entries carry ``gw:pid:token`` so the sweep can verify identity."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok123")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok123")
         _track_session_pid(4242)
         assert session_pid_file.read_text(encoding="utf-8").strip() == f"{os.getpid()}:4242:tok123"
 
@@ -4731,9 +4731,9 @@ class TestPidStartTokenIdentityGuard:
         self, session_pid_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """No token (Windows / ps failure) → legacy 2-field entry."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: None)
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: None)
         _track_session_pid(4242)
         assert session_pid_file.read_text(encoding="utf-8").strip() == f"{os.getpid()}:4242"
 
@@ -4746,10 +4746,10 @@ class TestPidStartTokenIdentityGuard:
         root before its identity was readable or a predecessor on a recycled
         number, the process holding the number NOW is the one being recorded, so
         the line carrying its identity is the one that stays. Never two lines."""
-        from kiro_crew.session_pid import _track_session_pid
+        from efm_go.session_pid import _track_session_pid
 
         session_pid_file.write_text(f"{os.getpid()}:4242\n")
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok123")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok123")
         _track_session_pid(4242)
         lines = session_pid_file.read_text(encoding="utf-8").strip().splitlines()
         assert lines == [f"{os.getpid()}:4242:tok123"]
@@ -4758,9 +4758,9 @@ class TestPidStartTokenIdentityGuard:
         self, session_pid_file: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Untrack matches the token-bearing form, not just the legacy one."""
-        from kiro_crew.session_pid import _track_session_pid, _untrack_session_pid
+        from efm_go.session_pid import _track_session_pid, _untrack_session_pid
 
-        monkeypatch.setattr("kiro_crew.session_pid._pid_start_token", lambda p: "tok123")
+        monkeypatch.setattr("efm_go.session_pid._pid_start_token", lambda p: "tok123")
         _track_session_pid(4242)
         _untrack_session_pid(4242)
         assert session_pid_file.read_text(encoding="utf-8").strip() == ""
@@ -4771,34 +4771,34 @@ class TestPidStartTokenIdentityGuard:
         The PID is live and its cmdline matches an agent, so every pre-existing
         guard passes; only the start-token comparison catches the recycle.
         """
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
         # Dead gateway (999999) : live child PID, recorded with an OLD token.
         session_pid_file.write_text("999999:99998:oldtoken\n")
         kills: list[tuple[int, int]] = []
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
             # Live process now reports a DIFFERENT token → PID was recycled.
-            patch("kiro_crew.session_pid._pid_start_token", return_value="newtoken"),
+            patch("efm_go.session_pid._pid_start_token", return_value="newtoken"),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 return_value=platform_compat.PID_ALIVE,
             ),
             # The owning gateway (999999) must read as DEAD or _skip_tagged
             # skips the entry and the test passes vacuously; the child is alive.
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_exists",
+                "efm_go.session_pid.platform_compat.pid_exists",
                 side_effect=lambda p: p != 999999,
             ),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
             # Grace disabled so the ONLY thing that can save the process is the
             # identity check under test.
-            patch("kiro_crew.session_pid._pid_in_spawn_grace", return_value=False),
-            patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session_pid._pid_in_spawn_grace", return_value=False),
+            patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
         ):
             cleanup_orphaned_sessions()
 
@@ -4811,30 +4811,30 @@ class TestPidStartTokenIdentityGuard:
         transient probe failure orphans it permanently (the fail-safe stated in
         _pid_gone_or_unmanaged: "any inconclusive result retains").
         """
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
         entry = "999999:99998:recorded-token"
         session_pid_file.write_text(entry + "\n")
         kills: list[tuple[int, int]] = []
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
             # Identity unreadable (probe failure) — neither match nor mismatch.
-            patch("kiro_crew.session_pid._pid_start_token", return_value=None),
+            patch("efm_go.session_pid._pid_start_token", return_value=None),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 return_value=platform_compat.PID_ALIVE,
             ),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_exists",
+                "efm_go.session_pid.platform_compat.pid_exists",
                 side_effect=lambda p: p != 999999,
             ),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
-            patch("kiro_crew.session_pid._pid_in_spawn_grace", return_value=False),
-            patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session_pid._pid_in_spawn_grace", return_value=False),
+            patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
         ):
             cleanup_orphaned_sessions()
 
@@ -4842,7 +4842,7 @@ class TestPidStartTokenIdentityGuard:
 
     def test_session_roots_unreadable_token_retains_entry(self, session_pid_file: Path) -> None:
         """Same fail-safe in the periodic root sweep: retain, don't kill or drop."""
-        from kiro_crew.session_pid import cleanup_orphaned_session_roots
+        from efm_go.session_pid import cleanup_orphaned_session_roots
 
         entry = "999999:99998:recorded-token"
         session_pid_file.write_text(entry + "\n")
@@ -4852,13 +4852,13 @@ class TestPidStartTokenIdentityGuard:
             return platform_compat.PID_DEAD if pid == 999999 else platform_compat.PID_ALIVE
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
-            patch("kiro_crew.session_pid._pid_start_token", return_value=None),
-            patch("kiro_crew.session_pid.platform_compat.pid_liveness", side_effect=fake_liveness),
-            patch("kiro_crew.session_pid.platform_compat.get_ppid", return_value=1),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._pid_start_token", return_value=None),
+            patch("efm_go.session_pid.platform_compat.pid_liveness", side_effect=fake_liveness),
+            patch("efm_go.session_pid.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
         ):
@@ -4879,7 +4879,7 @@ class TestPidStartTokenIdentityGuard:
         ever reaps it again. The token is strictly stronger evidence of identity
         than the parent, so it must not be vetoed by the PPid heuristic.
         """
-        from kiro_crew.session_pid import cleanup_orphaned_session_roots
+        from efm_go.session_pid import cleanup_orphaned_session_roots
 
         entry = "999999:99998:sametoken"
         session_pid_file.write_text(entry + "\n")
@@ -4889,15 +4889,15 @@ class TestPidStartTokenIdentityGuard:
             return platform_compat.PID_DEAD if pid == 999999 else platform_compat.PID_ALIVE
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="sametoken"),
-            patch("kiro_crew.session_pid.platform_compat.pid_liveness", side_effect=fake_liveness),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._pid_start_token", return_value="sametoken"),
+            patch("efm_go.session_pid.platform_compat.pid_liveness", side_effect=fake_liveness),
             # The subreaper that adopted the orphan -- neither init(1), nor the
             # dead gateway PID, nor the -1 probe-failure sentinel.
-            patch("kiro_crew.session_pid.platform_compat.get_ppid", return_value=7447),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid.platform_compat.get_ppid", return_value=7447),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
         ):
@@ -4913,30 +4913,30 @@ class TestPidStartTokenIdentityGuard:
     @_POSIX_ONLY
     def test_matching_token_still_killed(self, session_pid_file: Path) -> None:
         """A genuine orphan (token matches) is still reaped — no regression."""
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
         session_pid_file.write_text("999999:99998:sametoken\n")
         kills: list[tuple[int, int]] = []
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="sametoken"),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._pid_start_token", return_value="sametoken"),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 return_value=platform_compat.PID_ALIVE,
             ),
             # The owning gateway (999999) must read as DEAD or _skip_tagged
             # skips the entry and the test passes vacuously; the child is alive.
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_exists",
+                "efm_go.session_pid.platform_compat.pid_exists",
                 side_effect=lambda p: p != 999999,
             ),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
-            patch("kiro_crew.session_pid._pid_in_spawn_grace", return_value=False),
-            patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session_pid._pid_in_spawn_grace", return_value=False),
+            patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
         ):
             cleanup_orphaned_sessions()
 
@@ -4945,29 +4945,29 @@ class TestPidStartTokenIdentityGuard:
     @_POSIX_ONLY
     def test_legacy_entry_without_token_still_swept(self, session_pid_file: Path) -> None:
         """Back-compat: a 2-field entry keeps its old cmdline+grace behavior."""
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
         session_pid_file.write_text("999999:99998\n")
         kills: list[tuple[int, int]] = []
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 return_value=platform_compat.PID_ALIVE,
             ),
             # The owning gateway (999999) must read as DEAD or _skip_tagged
             # skips the entry and the test passes vacuously; the child is alive.
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_exists",
+                "efm_go.session_pid.platform_compat.pid_exists",
                 side_effect=lambda p: p != 999999,
             ),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
-            patch("kiro_crew.session_pid._pid_in_spawn_grace", return_value=False),
-            patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session_pid._pid_in_spawn_grace", return_value=False),
+            patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
         ):
             cleanup_orphaned_sessions()
 
@@ -4980,7 +4980,7 @@ class TestPidStartTokenIdentityGuard:
         A ``split(":", 1)`` parse would int("99998:tok") -> ValueError and prune
         the entry, silently dropping every token-bearing line from the sweep.
         """
-        from kiro_crew.session_pid import cleanup_orphaned_session_roots
+        from efm_go.session_pid import cleanup_orphaned_session_roots
 
         session_pid_file.write_text("999999:99998:sametoken\n")
         kills: list[tuple[int, int]] = []
@@ -4990,13 +4990,13 @@ class TestPidStartTokenIdentityGuard:
             return platform_compat.PID_DEAD if pid == 999999 else platform_compat.PID_ALIVE
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="sametoken"),
-            patch("kiro_crew.session_pid.platform_compat.pid_liveness", side_effect=fake_liveness),
-            patch("kiro_crew.session_pid.platform_compat.get_ppid", return_value=1),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._pid_start_token", return_value="sametoken"),
+            patch("efm_go.session_pid.platform_compat.pid_liveness", side_effect=fake_liveness),
+            patch("efm_go.session_pid.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
         ):
@@ -5006,7 +5006,7 @@ class TestPidStartTokenIdentityGuard:
 
     def test_session_roots_sweep_spares_recycled_pid(self, session_pid_file: Path) -> None:
         """Token mismatch in the periodic root sweep → prune, never kill."""
-        from kiro_crew.session_pid import cleanup_orphaned_session_roots
+        from efm_go.session_pid import cleanup_orphaned_session_roots
 
         session_pid_file.write_text("999999:99998:oldtoken\n")
         kills: list[tuple[int, int]] = []
@@ -5015,13 +5015,13 @@ class TestPidStartTokenIdentityGuard:
             return platform_compat.PID_DEAD if pid == 999999 else platform_compat.PID_ALIVE
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="newtoken"),
-            patch("kiro_crew.session_pid.platform_compat.pid_liveness", side_effect=fake_liveness),
-            patch("kiro_crew.session_pid.platform_compat.get_ppid", return_value=1),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._pid_start_token", return_value="newtoken"),
+            patch("efm_go.session_pid.platform_compat.pid_liveness", side_effect=fake_liveness),
+            patch("efm_go.session_pid.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
         ):
@@ -5057,7 +5057,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         mode is silent — the entry is dropped and the process spared. So the omission
         has to be a red test rather than something an operator finds later.
         """
-        from kiro_crew.agent_sdk.backends import (
+        from efm_go.agent_sdk.backends import (
             ACP_BACKEND_PROCESS_NAMES,
             ACP_BACKENDS_KNOWN,
             agent_process_markers,
@@ -5076,7 +5076,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
 
     def test_the_self_served_names_come_from_the_launch_table(self) -> None:
         """The three harnesses with a launch row are not spelled twice."""
-        from kiro_crew.agent_sdk.backends import (
+        from efm_go.agent_sdk.backends import (
             ACP_BACKEND_LAUNCH,
             ACP_BACKEND_PROCESS_NAMES,
         )
@@ -5092,26 +5092,26 @@ class TestReclaimOwnsEveryHarnessItTracked:
 
         The names are declared once, in the registry, and ``acp.client`` indexes it --
         the import direction that is allowed, since ``agent_sdk.backends`` is a
-        stdlib-only leaf while ``session_pid`` may not import ``kiro_crew.acp`` at all
+        stdlib-only leaf while ``session_pid`` may not import ``efm_go.acp`` at all
         (``check_agent_sdk_boundary`` forbids it, ``test_agent_lifecycle_cycle`` pins the
         absence). This asserts the equality a re-spelling would break, so a literal
         reintroduced in either place is caught here rather than by a reclaim sweep
         failing to recognise the process the adapter spawns.
         """
-        from kiro_crew.acp import runtime as acp_runtime
-        from kiro_crew.acp.client import (
+        from efm_go.acp import runtime as acp_runtime
+        from efm_go.acp.client import (
             CLAUDE_ACP_BIN,
             CODEX_ACP_BIN,
             KIRO_CLI_BIN,
             PI_ACP_BIN,
         )
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             ACP_BACKEND_CLAUDE,
             ACP_BACKEND_CODEX,
             ACP_BACKEND_KIRO,
             ACP_BACKEND_PI,
         )
-        from kiro_crew.agent_sdk.backends import ACP_BACKEND_PROCESS_NAMES
+        from efm_go.agent_sdk.backends import ACP_BACKEND_PROCESS_NAMES
 
         assert ACP_BACKEND_PROCESS_NAMES[ACP_BACKEND_CLAUDE] == CLAUDE_ACP_BIN
         assert ACP_BACKEND_PROCESS_NAMES[ACP_BACKEND_CODEX] == CODEX_ACP_BIN
@@ -5143,7 +5143,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         substring test over the whole cmdline on Linux and macOS, so this is the
         question the reclaim actually asks.
         """
-        from kiro_crew.session_pid import _MANAGED_AGENT_MARKERS
+        from efm_go.session_pid import _MANAGED_AGENT_MARKERS
 
         assert any(marker in cmdline for marker in _MANAGED_AGENT_MARKERS), (
             f"{backend}'s orphan reads as unmanaged, so the reclaim would drop its "
@@ -5167,7 +5167,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         the whole command line, a recycled PID landing on any of these passes the
         recycle guard and is signalled.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(cmdline) is False
 
@@ -5204,7 +5204,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         missed reclaim -- the orphan is SPARED, not wrongly killed -- which is the direction
         this module fails in everywhere else.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(cmdline) is True
 
@@ -5230,7 +5230,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         the script slot opens, and what closes the hole is that only the FIRST non-flag
         token after argv0 is read.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(cmdline) is False
 
@@ -5252,7 +5252,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         REAL adapter is treated as unmanaged -- the leak this module exists to close,
         reintroduced by the tokenizer.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(cmdline) is True
 
@@ -5311,7 +5311,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         them made an unrelated application answer for a harness. Comparing a path this
         repository publishes closes the axis, because the set is one we own.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(cmdline) is expected
 
@@ -5323,11 +5323,11 @@ class TestReclaimOwnsEveryHarnessItTracked:
         authority to signal a process Crew did not start. Derived from one table so
         neither can happen, and asserted here so the derivation cannot quietly stop.
         """
-        from kiro_crew.agent_sdk.backends import (
+        from efm_go.agent_sdk.backends import (
             ACP_BACKEND_NODE_ADAPTER_PACKAGES,
             node_adapter_entry_relpaths,
         )
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         relpaths = node_adapter_entry_relpaths()
         assert len(relpaths) == len(ACP_BACKEND_NODE_ADAPTER_PACKAGES), (
@@ -5389,7 +5389,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         boolean one needs a table of Node's flags, which is an open set and a moving one;
         index 1 is neither.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(cmdline) is expected
 
@@ -5400,7 +5400,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         widens the slot in which a harness name is accepted, so one added on speculation
         grants authority for a shape nothing produces.
         """
-        from kiro_crew.session_pid import _HARNESS_INTERPRETERS
+        from efm_go.session_pid import _HARNESS_INTERPRETERS
 
         assert {name.decode() for name in _HARNESS_INTERPRETERS} == {
             "node",
@@ -5418,14 +5418,14 @@ class TestReclaimOwnsEveryHarnessItTracked:
         excludes a process from being swept; on the untracked-runtime report it names
         something that is not a harness at all.
         """
-        from kiro_crew.session_pid import _MANAGED_AGENT_BASENAMES
+        from efm_go.session_pid import _MANAGED_AGENT_BASENAMES
 
         assert basename.encode() not in _MANAGED_AGENT_BASENAMES
 
     def test_every_harness_basename_matches_exactly(self) -> None:
         """The exact set still covers every harness, plus the two legacy spellings."""
-        from kiro_crew.agent_sdk.backends import ACP_BACKEND_PROCESS_NAMES
-        from kiro_crew.session_pid import _MANAGED_AGENT_BASENAMES
+        from efm_go.agent_sdk.backends import ACP_BACKEND_PROCESS_NAMES
+        from efm_go.session_pid import _MANAGED_AGENT_BASENAMES
 
         for name in ACP_BACKEND_PROCESS_NAMES.values():
             assert name.encode() in _MANAGED_AGENT_BASENAMES, name
@@ -5443,7 +5443,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         set is strictly more collision-prone than the two-name pair it replaced, so
         tightening only Linux would leave macOS worse off than before.
         """
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "darwin")
         monkeypatch.setattr(sp, "_pid_cmdline", lambda pid, proc_root=None: b"")
@@ -5476,7 +5476,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         this pins that the narrowness is a selection rather than a stale copy. An empty
         selection would silently disarm the reaper, so that is checked too.
         """
-        from kiro_crew.session_pid import (
+        from efm_go.session_pid import (
             _MANAGED_AGENT_BASENAMES,
             _MANAGED_AGENT_RUNTIME_BASENAMES,
             _SCOPE_REAP_ANCHOR_NAMES,
@@ -5514,7 +5514,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         entry recorded, so dropping the record would spare the process and then make it
         unfindable by every sweep. A token-less entry has no such proof and is pruned.
         """
-        from kiro_crew.session_pid import cleanup_orphaned_session_roots
+        from efm_go.session_pid import cleanup_orphaned_session_roots
 
         settled = "999999:99998:sometoken"
         tokenless = "999999:99997"
@@ -5522,16 +5522,16 @@ class TestReclaimOwnsEveryHarnessItTracked:
         kills: list[tuple[int, int]] = []
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=False),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="sometoken"),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=False),
+            patch("efm_go.session_pid._pid_start_token", return_value="sometoken"),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 side_effect=self._dead_gateway_liveness(999999),
             ),
-            patch("kiro_crew.session_pid.platform_compat.get_ppid", return_value=1),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
         ):
@@ -5556,7 +5556,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         is covered for the sandboxed shape as well as the periodic sweep -- an entry that
         takes the retain branch here survives a gateway restart too.
         """
-        from kiro_crew.session_pid import cleanup_orphaned_session_roots
+        from efm_go.session_pid import cleanup_orphaned_session_roots
 
         entry = "999999:99998:sometoken"
         session_pid_file.write_text(entry + "\n")
@@ -5564,17 +5564,17 @@ class TestReclaimOwnsEveryHarnessItTracked:
         kills: list[tuple[int, int]] = []
 
         with (
-            patch("kiro_crew.session_pid._pid_cmdline", return_value=cmdline),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="sometoken"),
+            patch("efm_go.session_pid._pid_cmdline", return_value=cmdline),
+            patch("efm_go.session_pid._pid_start_token", return_value="sometoken"),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 side_effect=self._dead_gateway_liveness(999999),
             ),
-            patch("kiro_crew.session_pid.platform_compat.get_ppid", return_value=1),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.session_pid.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
         ):
@@ -5588,24 +5588,24 @@ class TestReclaimOwnsEveryHarnessItTracked:
 
     def test_a_recognised_orphan_is_killed(self, session_pid_file: Path) -> None:
         """The whole point: a harness the marker set now covers gets reaped."""
-        from kiro_crew.session_pid import cleanup_orphaned_session_roots
+        from efm_go.session_pid import cleanup_orphaned_session_roots
 
         entry = "999999:99998:sometoken"
         session_pid_file.write_text(entry + "\n")
         kills: list[tuple[int, int]] = []
 
         with (
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="sometoken"),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._pid_start_token", return_value="sometoken"),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 side_effect=self._dead_gateway_liveness(999999),
             ),
-            patch("kiro_crew.session_pid.platform_compat.get_ppid", return_value=1),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.session_pid.platform_compat.get_ppid", return_value=1),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append((p, s)),
             ),
         ):
@@ -5623,7 +5623,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         process's entry survived in the file and every later pass met a dead PID
         there.
         """
-        from kiro_crew.session_pid import _kill_confirmed_and_writeback
+        from efm_go.session_pid import _kill_confirmed_and_writeback
 
         my_gw = os.getpid()
         entry = f"{my_gw}:99998:sometoken"
@@ -5631,13 +5631,13 @@ class TestReclaimOwnsEveryHarnessItTracked:
         kills: list[int] = []
 
         with (
-            patch("kiro_crew.session_pid.platform_compat.IS_WINDOWS", False),
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="sometoken"),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid.platform_compat.IS_WINDOWS", False),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.session_pid._pid_start_token", return_value="sometoken"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append(p),
             ),
         ):
@@ -5662,23 +5662,23 @@ class TestReclaimOwnsEveryHarnessItTracked:
         sweep could find it by. That is the unreclaimable state: spared, then forgotten,
         which is the exact failure this change exists to remove.
         """
-        from kiro_crew.session_pid import _sweep_pid_entries
+        from efm_go.session_pid import _sweep_pid_entries
 
         my_gw = os.getpid()
         entry = f"{my_gw}:99998:recorded"
         kills: list[int] = []
 
         with (
-            patch("kiro_crew.session_pid.platform_compat.IS_WINDOWS", False),
+            patch("efm_go.session_pid.platform_compat.IS_WINDOWS", False),
             patch(
-                "kiro_crew.session_pid.platform_compat.pid_liveness",
+                "efm_go.session_pid.platform_compat.pid_liveness",
                 return_value=platform_compat.PID_ALIVE,
             ),
-            patch("kiro_crew.session_pid._pid_start_token", return_value="recorded"),
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=False),
-            patch("kiro_crew.session_pid._pid_in_spawn_grace", return_value=False),
+            patch("efm_go.session_pid._pid_start_token", return_value="recorded"),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=False),
+            patch("efm_go.session_pid._pid_in_spawn_grace", return_value=False),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append(p),
             ),
         ):
@@ -5708,19 +5708,19 @@ class TestReclaimOwnsEveryHarnessItTracked:
         arm returns an empty index, so the same default made a transient read failure
         kill every candidate un-vouched.
         """
-        from kiro_crew.session_pid import _kill_confirmed_and_writeback
+        from efm_go.session_pid import _kill_confirmed_and_writeback
 
         my_gw = os.getpid()
         session_pid_file.write_text("")
         kills: list[int] = []
 
         with (
-            patch("kiro_crew.session_pid.platform_compat.IS_WINDOWS", False),
-            patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.session_pid.platform_compat.pid_exists", return_value=True),
+            patch("efm_go.session_pid.platform_compat.IS_WINDOWS", False),
+            patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.session_pid.platform_compat.pid_exists", return_value=True),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append(p),
             ),
         ):
@@ -5737,7 +5737,7 @@ class TestReclaimOwnsEveryHarnessItTracked:
         Without it the kill phase signalled whatever held the PID by then; the token
         is subtractive evidence and this is where it subtracts.
         """
-        from kiro_crew.session_pid import _kill_confirmed_and_writeback
+        from efm_go.session_pid import _kill_confirmed_and_writeback
 
         my_gw = os.getpid()
         entry = f"{my_gw}:99998:recorded"
@@ -5745,9 +5745,9 @@ class TestReclaimOwnsEveryHarnessItTracked:
         kills: list[int] = []
 
         with (
-            patch("kiro_crew.session_pid._pid_start_token", return_value="different"),
+            patch("efm_go.session_pid._pid_start_token", return_value="different"),
             patch(
-                "kiro_crew.session_pid.platform_compat.kill_pid",
+                "efm_go.session_pid.platform_compat.kill_pid",
                 side_effect=lambda p, s: kills.append(p),
             ),
         ):
@@ -5764,7 +5764,7 @@ def _launcher_shape() -> "tuple[tuple[str, ...], str, str, str]":
     Read off the sandbox module itself, never from literals, so these fixtures cannot
     become the place the builder and the recogniser drift apart.
     """
-    import kiro_crew.sandbox as sandbox_mod
+    import efm_go.sandbox as sandbox_mod
 
     return (
         sandbox_mod._LAUNCHER_INTERPRETER_FLAGS,
@@ -5830,7 +5830,7 @@ class TestSandboxedAgentRootIsRecognised:
         spellings the resolver produces (the bin shim, whose basename is the name, and
         the package entry, matched against the published relative path).
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(_launcher_cmdline(*wrapped)) is True
 
@@ -5853,7 +5853,7 @@ class TestSandboxedAgentRootIsRecognised:
         app backends too. Only the inner positions that would have named a harness
         unwrapped may name one here.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(_launcher_cmdline(*wrapped)) is False
 
@@ -5865,7 +5865,7 @@ class TestSandboxedAgentRootIsRecognised:
         flags, and a script that is neither in Crew's run directory nor named the way
         ``sandbox.py`` names the launcher it writes.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         assert _cmdline_names_a_harness(b"/usr/bin/python3\x00foo.py\x00kiro-cli\x00acp") is False
 
@@ -5877,7 +5877,7 @@ class TestSandboxedAgentRootIsRecognised:
         a hand-written path would fail several at once and stop proving that any single
         one of them is load-bearing.
         """
-        from kiro_crew.sandbox import _SEATBELT_PROFILE_SUFFIX
+        from efm_go.sandbox import _SEATBELT_PROFILE_SUFFIX
 
         flags, run_dir, prefix, suffix = _launcher_shape()
         script = _launcher_script_path()
@@ -5925,7 +5925,7 @@ class TestSandboxedAgentRootIsRecognised:
         direction this module fails in everywhere. Asserted as one test over a named map
         so a failure says WHICH condition stopped holding.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         admitted = [
             broken
@@ -5952,9 +5952,9 @@ class TestSandboxedAgentRootIsRecognised:
         ``config.paths._valid_override_home``, so it can never present this spelling and a
         test driven through it would pass with the normalization removed.
         """
-        import kiro_crew.sandbox as sandbox_mod
-        from kiro_crew.sandbox import namespace_launcher_script_dir
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        import efm_go.sandbox as sandbox_mod
+        from efm_go.sandbox import namespace_launcher_script_dir
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         home = tmp_path / "x" / ".." / ".kiro" / "crew"
         # ``sandbox`` binds ``config_dir`` at import, so the repoint goes on that module.
@@ -5982,7 +5982,7 @@ class TestSandboxedAgentRootIsRecognised:
         * a name whose ``\`` segment makes ``os.path.dirname`` and a backslash-aware
           basename disagree about where the file name starts.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         flags, run_dir, prefix, suffix = _launcher_shape()
         name = f"{prefix}1_a{suffix}"
@@ -6005,8 +6005,8 @@ class TestSandboxedAgentRootIsRecognised:
         exception with no per-entry guard, so a propagated error silently stops reclaiming
         EVERY remaining entry. Declining costs one missed reclaim instead.
         """
-        import kiro_crew.sandbox as sandbox_mod
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        import efm_go.sandbox as sandbox_mod
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         # Built BEFORE the break: the fixture resolves the same directory the gate does.
         cmdline = _launcher_cmdline("kiro-cli", "acp")
@@ -6030,8 +6030,8 @@ class TestSandboxedAgentRootIsRecognised:
         ``config_dir()`` call -- which creates the data home -- per entry per pass, for an
         answer the free tests already have.
         """
-        import kiro_crew.sandbox as sandbox_mod
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        import efm_go.sandbox as sandbox_mod
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         def _unexpected() -> str:
             raise AssertionError("the gate resolved the run directory for a plain argv")
@@ -6050,7 +6050,7 @@ class TestSandboxedAgentRootIsRecognised:
         would be authority granted for one nothing can produce. A loop here would also
         let a crafted argv bury the harness name arbitrarily deep.
         """
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         flags, _run_dir, _prefix, _suffix = _launcher_shape()
         script = _launcher_script_path()
@@ -6082,7 +6082,7 @@ class TestSandboxedAgentRootIsRecognised:
         asserts both sides of it, because the two predicates reading the same command line
         and answering differently is the kind of thing a later change quietly "fixes".
         """
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp, "_env_has_kirocrew_marker", lambda pid, **kw: True)
         cmdline = _launcher_cmdline("/usr/local/bin/kiro-cli", "acp")
@@ -6105,14 +6105,14 @@ class TestSandboxedAgentRootIsRecognised:
         the one thing the lazy lookup exists to avoid. The copy is pinned here instead, the
         same way ``_BROWSER_SESSION_ENV`` is.
         """
-        from kiro_crew.sandbox import _SANDBOX_ARTIFACT_PREFIX
-        from kiro_crew.session_pid import _MCP_ENTRYPOINT_MARKERS, _SANDBOX_LAUNCHER_MARKER
+        from efm_go.sandbox import _SANDBOX_ARTIFACT_PREFIX
+        from efm_go.session_pid import _MCP_ENTRYPOINT_MARKERS, _SANDBOX_LAUNCHER_MARKER
 
         assert _SANDBOX_LAUNCHER_MARKER == _SANDBOX_ARTIFACT_PREFIX.encode()
         assert _SANDBOX_LAUNCHER_MARKER in _MCP_ENTRYPOINT_MARKERS
 
     @_POSIX_ONLY
-    @patch("kiro_crew.sandbox._resolve_agent_executable", return_value="/usr/local/bin/kiro-cli")
+    @patch("efm_go.sandbox._resolve_agent_executable", return_value="/usr/local/bin/kiro-cli")
     def test_the_argv_the_wrap_really_builds_is_recognised(self, _resolve: Mock) -> None:
         """End-to-end against ``namespace_argv`` itself, not a hand-written shape.
 
@@ -6122,9 +6122,9 @@ class TestSandboxedAgentRootIsRecognised:
         moved run directory or a renamed artifact fails here rather than silently costing
         every sandboxed root its reclaim.
         """
-        import kiro_crew.sandbox as sandbox_mod
-        from kiro_crew.sandbox import namespace_argv
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        import efm_go.sandbox as sandbox_mod
+        from efm_go.sandbox import namespace_argv
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         argv = namespace_argv(["kiro-cli", "acp"], "strict")
         try:
@@ -6146,8 +6146,8 @@ class TestSandboxedAgentRootIsRecognised:
         two-flag spelling stops being recognised. Both halves are asserted: either one
         alone also passes against a copy of the value kept in this module.
         """
-        import kiro_crew.sandbox as sandbox_mod
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        import efm_go.sandbox as sandbox_mod
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         stock = sandbox_mod._LAUNCHER_INTERPRETER_FLAGS
         script = _launcher_script_path()
@@ -6169,8 +6169,8 @@ class TestSandboxedAgentRootIsRecognised:
         and what ``namespace_argv``'s ``mkstemp`` writes, so a recogniser holding its own
         copy goes quiet on a rename while every other test stays green.
         """
-        import kiro_crew.sandbox as sandbox_mod
-        from kiro_crew.session_pid import _cmdline_names_a_harness
+        import efm_go.sandbox as sandbox_mod
+        from efm_go.session_pid import _cmdline_names_a_harness
 
         monkeypatch.setattr(sandbox_mod, "_SANDBOX_ARTIFACT_PREFIX", "kirocrew_boxed_")
         flags = sandbox_mod._LAUNCHER_INTERPRETER_FLAGS
@@ -6188,14 +6188,14 @@ class TestSpawnGraceCrossPlatform:
     @_POSIX_ONLY
     def test_grace_applies_on_macos(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Regression: the grace window was Linux-only, so macOS never got it."""
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "darwin")
         monkeypatch.setattr(sp, "_pid_age_seconds", lambda p: 5.0)
         assert sp._pid_in_spawn_grace(4242) is True
 
     def test_old_process_not_in_grace_on_macos(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "darwin")
         monkeypatch.setattr(sp, "_pid_age_seconds", lambda p: sp.SWEEP_SPAWN_GRACE_SECONDS + 1)
@@ -6204,7 +6204,7 @@ class TestSpawnGraceCrossPlatform:
     @_POSIX_ONLY
     def test_unknown_age_treated_as_young(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Unreadable age → safe direction (skip the kill)."""
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "darwin")
         monkeypatch.setattr(sp, "_pid_age_seconds", lambda p: None)
@@ -6214,7 +6214,7 @@ class TestSpawnGraceCrossPlatform:
         """macOS age comes from the in-process start id — no subprocess/ps."""
         import time as _time
 
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "darwin")
         monkeypatch.setattr(sp.platform_compat, "IS_WINDOWS", False)
@@ -6224,7 +6224,7 @@ class TestSpawnGraceCrossPlatform:
         assert age is not None and 85.0 <= age <= 95.0
 
     def test_macos_age_none_when_identity_unknown(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp.sys, "platform", "darwin")
         monkeypatch.setattr(sp.platform_compat, "IS_WINDOWS", False)
@@ -6233,7 +6233,7 @@ class TestSpawnGraceCrossPlatform:
 
     def test_windows_has_no_grace(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Windows keeps prior behavior (no age source, sweep stays functional)."""
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         monkeypatch.setattr(sp.platform_compat, "IS_WINDOWS", True)
         assert sp._pid_in_spawn_grace(4242) is False
@@ -6254,9 +6254,9 @@ class TestSweepSparesLiveProcess:
     def test_live_process_with_recycled_entry_survives(
         self, session_pid_file: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.session_pid import cleanup_orphaned_sessions
+        from efm_go.session_pid import cleanup_orphaned_sessions
 
-        monkeypatch.setattr("kiro_crew.session_pid.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_pid.config_dir", lambda: tmp_path)
         victim = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
         try:
             # Stale entry from a DEAD gateway naming the live PID, with a token
@@ -6265,7 +6265,7 @@ class TestSweepSparesLiveProcess:
 
             with (
                 # Cmdline check passes (as it did in the real incident).
-                patch("kiro_crew.session_pid._is_managed_agent_process", return_value=True),
+                patch("efm_go.session_pid._is_managed_agent_process", return_value=True),
                 # The owning gateway (999999) must read as DEAD, or `_skip_tagged`
                 # keeps the entry and the prune assertion below fails. Pinned rather
                 # than assumed: 999999 is a perfectly ordinary live PID on a host
@@ -6274,12 +6274,12 @@ class TestSweepSparesLiveProcess:
                 # that one PID is faked -- every other, the live victim included,
                 # still goes to the real probe.
                 patch(
-                    "kiro_crew.session_pid.platform_compat.pid_exists",
+                    "efm_go.session_pid.platform_compat.pid_exists",
                     side_effect=lambda p: p != 999999 and platform_compat.pid_exists(p),
                 ),
                 # Grace disabled: isolate the identity check as the sole guard.
-                patch("kiro_crew.session_pid._pid_in_spawn_grace", return_value=False),
-                patch("kiro_crew.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
+                patch("efm_go.session_pid._pid_in_spawn_grace", return_value=False),
+                patch("efm_go.session_pid._cleanup_orphaned_mcp_servers", return_value=0),
             ):
                 cleanup_orphaned_sessions()
 
@@ -6329,13 +6329,13 @@ class TestPidFileRewriteIsAtomic:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        from kiro_crew.session_pid import _write_back_pid_file
+        from efm_go.session_pid import _write_back_pid_file
 
         original = "100:200:tokA\n101:201:tokB\n102:202:tokC\n"
         session_pid_file.write_text(original, encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.atomic_write.replace_with_retry", self._fail_rename)
+        monkeypatch.setattr("efm_go.atomic_write.replace_with_retry", self._fail_rename)
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.session_pid"):
             _write_back_pid_file({"101:201:tokB"})
 
         # The rewrite never landed, so the ledger must still name all three
@@ -6350,14 +6350,14 @@ class TestPidFileRewriteIsAtomic:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        from kiro_crew.session_pid import _untrack_session_pid
+        from efm_go.session_pid import _untrack_session_pid
 
         gw = os.getpid()
         original = f"{gw}:900:tokX\n{gw}:901:tokY\n"
         session_pid_file.write_text(original, encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.atomic_write.replace_with_retry", self._fail_rename)
+        monkeypatch.setattr("efm_go.atomic_write.replace_with_retry", self._fail_rename)
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.session_pid"):
             _untrack_session_pid(900)
 
         assert session_pid_file.read_text(encoding="utf-8") == original
@@ -6369,13 +6369,13 @@ class TestPidFileRewriteIsAtomic:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        from kiro_crew.session_pid import _untrack_pid
+        from efm_go.session_pid import _untrack_pid
 
         original = "700\n701\n702\n"
         pid_file.write_text(original, encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.atomic_write.replace_with_retry", self._fail_rename)
+        monkeypatch.setattr("efm_go.atomic_write.replace_with_retry", self._fail_rename)
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.session_pid"):
             _untrack_pid(701)
 
         assert pid_file.read_text(encoding="utf-8") == original
@@ -6387,13 +6387,13 @@ class TestPidFileRewriteIsAtomic:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        from kiro_crew.session_pid import _untrack_child_pids
+        from efm_go.session_pid import _untrack_child_pids
 
         original = "800:1\n801:1\n"
         pid_file.write_text(original, encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.atomic_write.replace_with_retry", self._fail_rename)
+        monkeypatch.setattr("efm_go.atomic_write.replace_with_retry", self._fail_rename)
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.session_pid"):
             _untrack_child_pids({801: object()})
 
         assert pid_file.read_text(encoding="utf-8") == original
@@ -6414,18 +6414,18 @@ class TestPidFileRewriteIsAtomic:
         this rewrite unguarded during gateway start, so the error escaping here
         would abort startup.
         """
-        from kiro_crew.session_pid import _write_back_pid_file
+        from efm_go.session_pid import _write_back_pid_file
 
         def _sharing_violation(*_a: object, **_kw: object) -> None:
             raise PermissionError(32, "The process cannot access the file")
 
         original = "100:200:tokA\n101:201:tokB\n"
         session_pid_file.write_text(original, encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.platform_compat.IS_WINDOWS", True)
-        monkeypatch.setattr("kiro_crew.atomic_write.os.replace", _sharing_violation)
+        monkeypatch.setattr("efm_go.platform_compat.IS_WINDOWS", True)
+        monkeypatch.setattr("efm_go.atomic_write.os.replace", _sharing_violation)
 
         # Runs with a live event loop, which is what disables the retry.
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.session_pid"):
             _write_back_pid_file({"101:201:tokB"})
 
         assert session_pid_file.read_text(encoding="utf-8") == original
@@ -6434,7 +6434,7 @@ class TestPidFileRewriteIsAtomic:
     def test_successful_rewrite_lands_and_leaves_no_temp_residue(
         self, session_pid_file: Path
     ) -> None:
-        from kiro_crew.session_pid import _write_back_pid_file
+        from efm_go.session_pid import _write_back_pid_file
 
         session_pid_file.write_text("100:200:tokA\n101:201:tokB\n", encoding="utf-8")
 
@@ -6446,7 +6446,7 @@ class TestPidFileRewriteIsAtomic:
 
     def test_no_truncating_writer_remains_in_session_pid(self) -> None:
         """Ratchet: every PID-file rewrite goes through the atomic chokepoint."""
-        import kiro_crew.session_pid as sp
+        import efm_go.session_pid as sp
 
         source = Path(str(sp.__file__)).read_text(encoding="utf-8")
         assert ".write_text(" not in source, (
@@ -6468,7 +6468,7 @@ def reset_untracked_report_dedup() -> Iterator[None]:
     logged once rather than once per sweep tick; leaking that between tests
     would make assertions order-dependent.
     """
-    import kiro_crew.session_pid as sp
+    import efm_go.session_pid as sp
 
     sp._reported_untracked_agent_pids.clear()
     yield
@@ -6484,7 +6484,7 @@ class TestTrackedAgentPids:
     """_tracked_agent_pids unions the PIDs both tracking files claim."""
 
     def test_no_files_yields_empty_set(self, pid_file: Path, session_pid_file: Path) -> None:
-        from kiro_crew.session_pid import _read_tracked_agent_pids, _tracked_agent_pids
+        from efm_go.session_pid import _read_tracked_agent_pids, _tracked_agent_pids
 
         assert _tracked_agent_pids() == set()
         assert _read_tracked_agent_pids() == (set(), True)
@@ -6499,7 +6499,7 @@ class TestTrackedAgentPids:
         start-time identity (numeric on Linux). Counting either would let a
         stale entry suppress a genuine report.
         """
-        from kiro_crew.session_pid import _tracked_agent_pids
+        from efm_go.session_pid import _tracked_agent_pids
 
         session_pid_file.write_text("4100:4200:987654321\n", encoding="utf-8")
 
@@ -6509,7 +6509,7 @@ class TestTrackedAgentPids:
         self, pid_file: Path, session_pid_file: Path
     ) -> None:
         """``_cleanup_orphaned_mcp_servers`` kills the child, not the parent."""
-        from kiro_crew.session_pid import _tracked_agent_pids
+        from efm_go.session_pid import _tracked_agent_pids
 
         pid_file.write_text("5100:5200\n", encoding="utf-8")
 
@@ -6518,7 +6518,7 @@ class TestTrackedAgentPids:
     def test_bare_line_names_its_own_process_in_either_file(
         self, pid_file: Path, session_pid_file: Path
     ) -> None:
-        from kiro_crew.session_pid import _tracked_agent_pids
+        from efm_go.session_pid import _tracked_agent_pids
 
         session_pid_file.write_text("5300\n", encoding="utf-8")
         pid_file.write_text("5400\n", encoding="utf-8")
@@ -6527,7 +6527,7 @@ class TestTrackedAgentPids:
 
     def test_both_files_union(self, pid_file: Path, session_pid_file: Path) -> None:
         """Each file contributes its own reapable field, at its own index."""
-        from kiro_crew.session_pid import _tracked_agent_pids
+        from efm_go.session_pid import _tracked_agent_pids
 
         session_pid_file.write_text("10:11\n", encoding="utf-8")
         pid_file.write_text("20:21\n", encoding="utf-8")
@@ -6538,7 +6538,7 @@ class TestTrackedAgentPids:
         self, pid_file: Path, session_pid_file: Path
     ) -> None:
         """A partially-appended or hand-edited line must not raise."""
-        from kiro_crew.session_pid import _tracked_agent_pids
+        from efm_go.session_pid import _tracked_agent_pids
 
         session_pid_file.write_text("garbage\n0:-3\n:\n77:78\n", encoding="utf-8")
 
@@ -6546,7 +6546,7 @@ class TestTrackedAgentPids:
 
     def test_unreadable_file_is_tolerated(self, pid_file: Path, session_pid_file: Path) -> None:
         """Report-only: an OSError costs a log line at worst, never a raise."""
-        from kiro_crew.session_pid import _tracked_agent_pids
+        from efm_go.session_pid import _tracked_agent_pids
 
         pid_file.write_text("31:32\n", encoding="utf-8")
         with patch.object(Path, "read_text", side_effect=OSError("boom")):
@@ -6555,7 +6555,7 @@ class TestTrackedAgentPids:
     def test_unreadable_non_missing_file_marks_snapshot_incomplete(
         self, pid_file: Path, session_pid_file: Path
     ) -> None:
-        from kiro_crew.session_pid import _read_tracked_agent_pids
+        from efm_go.session_pid import _read_tracked_agent_pids
 
         with patch.object(Path, "read_text", side_effect=OSError(errno.EACCES, "denied")):
             assert _read_tracked_agent_pids() == (set(), False)
@@ -6564,7 +6564,7 @@ class TestTrackedAgentPids:
         self, pid_file: Path, session_pid_file: Path
     ) -> None:
         """A stray non-UTF-8 byte is damage, not an exception out of every reaper."""
-        from kiro_crew.session_pid import _read_tracked_agent_pids
+        from efm_go.session_pid import _read_tracked_agent_pids
 
         session_pid_file.write_bytes(b"10:11\n\xff\xfe\n")
         pid_file.write_text("31:32\n", encoding="utf-8")
@@ -6575,7 +6575,7 @@ class TestTrackedAgentPids:
     def test_malformed_entry_marks_snapshot_incomplete_but_keeps_valid_pids(
         self, pid_file: Path, session_pid_file: Path
     ) -> None:
-        from kiro_crew.session_pid import _read_tracked_agent_pids
+        from efm_go.session_pid import _read_tracked_agent_pids
 
         session_pid_file.write_text("10:11\ntruncated:\n", encoding="utf-8")
         assert _read_tracked_agent_pids() == ({11}, False)
@@ -6585,29 +6585,29 @@ class TestIsUntrackedManagedAgentOrphan:
     """Positive identity for the report-only detector."""
 
     def test_untracked_marked_runtime_is_detected(self) -> None:
-        from kiro_crew.session_pid import _is_untracked_managed_agent_orphan
+        from efm_go.session_pid import _is_untracked_managed_agent_orphan
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert _is_untracked_managed_agent_orphan(900, _agent_cmdline(), set()) is True
 
     def test_tracked_runtime_is_not_detected(self) -> None:
         """A PID either file claims is already reachable by a reaper."""
-        from kiro_crew.session_pid import _is_untracked_managed_agent_orphan
+        from efm_go.session_pid import _is_untracked_managed_agent_orphan
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert _is_untracked_managed_agent_orphan(900, _agent_cmdline(), {900}) is False
 
     def test_unmarked_process_is_not_detected(self) -> None:
         """A user's own kiro-cli (no environ marker) is never reported."""
-        from kiro_crew.session_pid import _is_untracked_managed_agent_orphan
+        from efm_go.session_pid import _is_untracked_managed_agent_orphan
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False):
             assert _is_untracked_managed_agent_orphan(901, _agent_cmdline(), set()) is False
 
     def test_claude_runtime_basename_also_detected(self) -> None:
-        from kiro_crew.session_pid import _is_untracked_managed_agent_orphan
+        from efm_go.session_pid import _is_untracked_managed_agent_orphan
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert (
                 _is_untracked_managed_agent_orphan(
                     902, _agent_cmdline("/usr/local/bin/claude"), set()
@@ -6617,32 +6617,32 @@ class TestIsUntrackedManagedAgentOrphan:
 
     def test_peer_gateway_is_not_detected(self) -> None:
         """A gateway/CLI entrypoint is not an agent runtime."""
-        from kiro_crew.session_pid import _is_untracked_managed_agent_orphan
+        from efm_go.session_pid import _is_untracked_managed_agent_orphan
 
-        cmdline = b"kiro-cli\x00-m\x00kiro_crew.mcp_gateway.gatewayd"
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        cmdline = b"kiro-cli\x00-m\x00efm_go.mcp_gateway.gatewayd"
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert _is_untracked_managed_agent_orphan(903, cmdline, set()) is False
 
     def test_non_runtime_basename_is_not_detected(self) -> None:
         """A marked pytest orphan belongs to the work sweep, not this arm."""
-        from kiro_crew.session_pid import _is_untracked_managed_agent_orphan
+        from efm_go.session_pid import _is_untracked_managed_agent_orphan
 
         cmdline = b"/venv/bin/pytest\x00-x"
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert _is_untracked_managed_agent_orphan(904, cmdline, set()) is False
 
     def test_empty_cmdline_is_not_detected(self) -> None:
         """Kernel thread / zombie — no argv to identify."""
-        from kiro_crew.session_pid import _is_untracked_managed_agent_orphan
+        from efm_go.session_pid import _is_untracked_managed_agent_orphan
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True):
+        with patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True):
             assert _is_untracked_managed_agent_orphan(905, b"", set()) is False
 
     def test_no_environ_read_when_shape_already_declines(self) -> None:
         """Cheap gates run first — the /proc environ read is the last resort."""
-        from kiro_crew.session_pid import _is_untracked_managed_agent_orphan
+        from efm_go.session_pid import _is_untracked_managed_agent_orphan
 
-        with patch("kiro_crew.session_pid._env_has_kirocrew_marker") as mock_env:
+        with patch("efm_go.session_pid._env_has_kirocrew_marker") as mock_env:
             assert (
                 _is_untracked_managed_agent_orphan(906, b"/venv/bin/pytest\x00-x", set()) is False
             )
@@ -6666,16 +6666,16 @@ class TestUntrackedRuntimeReportIntegration:
         appear, and the PID must stay out of ``candidates`` — this arm has no
         kill authority.
         """
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[4242]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[4242]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_agent_cmdline()),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=3600.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=3600.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            caplog.at_level(logging.ERROR, logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -6701,18 +6701,18 @@ class TestUntrackedRuntimeReportIntegration:
         A newline in it would otherwise forge whole lines in gateway.log and
         through /api/logs, which read as if the gateway had emitted them.
         """
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         hostile = b"\x00".join([b"/tmp/kiro-cli\nERROR forged line", b"chat"])
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[4848]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[4848]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=hostile),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=3600.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=3600.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            caplog.at_level(logging.ERROR, logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -6732,16 +6732,16 @@ class TestUntrackedRuntimeReportIntegration:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """A persisting orphan must not re-log on every sweep tick."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[4343]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[4343]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_agent_cmdline()),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=3600.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=3600.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            caplog.at_level(logging.ERROR, logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
             find_orphan_mcp_candidates(active_pids=set())
@@ -6758,24 +6758,24 @@ class TestUntrackedRuntimeReportIntegration:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Dedup state is scoped to PIDs still detected, so it cannot grow."""
-        import kiro_crew.session_pid as sp
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        import efm_go.session_pid as sp
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_agent_cmdline()),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=3600.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=3600.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            caplog.at_level(logging.ERROR, logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
-            with patch("kiro_crew.session_pid._our_orphan_pids", return_value=[4444]):
+            with patch("efm_go.session_pid._our_orphan_pids", return_value=[4444]):
                 find_orphan_mcp_candidates(active_pids=set())
-            with patch("kiro_crew.session_pid._our_orphan_pids", return_value=[]):
+            with patch("efm_go.session_pid._our_orphan_pids", return_value=[]):
                 find_orphan_mcp_candidates(active_pids=set())
                 assert sp._reported_untracked_agent_pids == set()
-            with patch("kiro_crew.session_pid._our_orphan_pids", return_value=[4444]):
+            with patch("efm_go.session_pid._our_orphan_pids", return_value=[4444]):
                 find_orphan_mcp_candidates(active_pids=set())
 
         assert len([r for r in caplog.records if "4444" in r.getMessage()]) == 2
@@ -6788,18 +6788,18 @@ class TestUntrackedRuntimeReportIntegration:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """A runtime the session file records is reachable — no diagnostic."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         session_pid_file.write_text("7:4545:99999\n", encoding="utf-8")
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[4545]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[4545]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_agent_cmdline()),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=3600.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=3600.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            caplog.at_level(logging.ERROR, logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -6822,20 +6822,20 @@ class TestUntrackedRuntimeReportIntegration:
         runtime, treating the field as tracked would return the sweep to the
         exact silence the report exists to prevent.
         """
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         # 4747 appears only as a dead gateway (session) and a dead parent (child).
         session_pid_file.write_text("4747:11:99999\n", encoding="utf-8")
         pid_file.write_text("12:4747\n", encoding="utf-8")
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[4747]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[4747]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_agent_cmdline()),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=3600.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=3600.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            caplog.at_level(logging.ERROR, logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -6851,16 +6851,16 @@ class TestUntrackedRuntimeReportIntegration:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Below the age floor the tracking append may simply not have landed."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[4646]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[4646]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_agent_cmdline()),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=5.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            caplog.at_level(logging.ERROR, logger="kiro_crew.session_pid"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=5.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            caplog.at_level(logging.ERROR, logger="efm_go.session_pid"),
         ):
             mock_sys.platform = "linux"
             result = find_orphan_mcp_candidates(active_pids=set())
@@ -6891,31 +6891,31 @@ class TestBrowserDaemonSessionArg:
     """Structural extraction of the generated session name from daemon argv."""
 
     def test_extracts_generated_session_name(self) -> None:
-        from kiro_crew.session_pid import _browser_daemon_session_arg
+        from efm_go.session_pid import _browser_daemon_session_arg
 
         assert _browser_daemon_session_arg(_DAEMON_CMDLINE) == b"kc-1a2b3c4d"
 
     def test_rejects_operator_named_session(self) -> None:
         """Only Kiro-Crew-generated ``kc-<8hex>`` names are ever sweepable."""
-        from kiro_crew.session_pid import _browser_daemon_session_arg
+        from efm_go.session_pid import _browser_daemon_session_arg
 
         assert _browser_daemon_session_arg(_OPERATOR_DAEMON_CMDLINE) is None
 
     def test_rejects_space_joined_cmdline(self) -> None:
         """A ps-style space-joined cmdline cannot delimit argv safely."""
-        from kiro_crew.session_pid import _browser_daemon_session_arg
+        from efm_go.session_pid import _browser_daemon_session_arg
 
         assert _browser_daemon_session_arg(_DAEMON_CMDLINE.replace(b"\x00", b" ")) is None
 
     def test_rejects_non_daemon_cmdline(self) -> None:
-        from kiro_crew.session_pid import _browser_daemon_session_arg
+        from efm_go.session_pid import _browser_daemon_session_arg
 
         assert _browser_daemon_session_arg(b"/usr/bin/node\x00server.js\x00kc-1a2b3c4d") is None
 
     def test_session_env_name_matches_launch_module(self) -> None:
         """Drift ratchet: the local constant must track the real env var."""
-        from kiro_crew.browser_cli.launch import SESSION_ENV
-        from kiro_crew.session_pid import _BROWSER_SESSION_ENV
+        from efm_go.browser_cli.launch import SESSION_ENV
+        from efm_go.session_pid import _BROWSER_SESSION_ENV
 
         assert _BROWSER_SESSION_ENV == SESSION_ENV
 
@@ -6924,18 +6924,18 @@ class TestBrowserDaemonOrphanSweep:
     """A stranded generated-session daemon is reclaimed; a live one never is."""
 
     def test_dead_owner_daemon_is_a_candidate(self) -> None:
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[800]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[800]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_DAEMON_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=900.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            patch("kiro_crew.session_pid._env_value", return_value=b"kc-1a2b3c4d"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=900.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_value", return_value=b"kc-1a2b3c4d"),
             patch(
-                "kiro_crew.session_pid._browser_session_owner_alive",
+                "efm_go.session_pid._browser_session_owner_alive",
                 return_value=False,
             ),
         ):
@@ -6944,18 +6944,18 @@ class TestBrowserDaemonOrphanSweep:
 
     def test_live_owner_daemon_is_never_a_candidate(self) -> None:
         """The safety invariant: a live agent's browser is never reclaimed."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[801]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[801]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_DAEMON_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=900.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            patch("kiro_crew.session_pid._env_value", return_value=b"kc-1a2b3c4d"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=900.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_value", return_value=b"kc-1a2b3c4d"),
             patch(
-                "kiro_crew.session_pid._browser_session_owner_alive",
+                "efm_go.session_pid._browser_session_owner_alive",
                 return_value=True,
             ),
         ):
@@ -6963,18 +6963,18 @@ class TestBrowserDaemonOrphanSweep:
             assert find_orphan_mcp_candidates(active_pids=set()) == []
 
     def test_operator_session_daemon_is_never_a_candidate(self) -> None:
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[802]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[802]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_OPERATOR_DAEMON_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=900.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            patch("kiro_crew.session_pid._env_value", return_value=b"chrome"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=900.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_value", return_value=b"chrome"),
             patch(
-                "kiro_crew.session_pid._browser_session_owner_alive",
+                "efm_go.session_pid._browser_session_owner_alive",
                 return_value=False,
             ),
         ):
@@ -6983,18 +6983,18 @@ class TestBrowserDaemonOrphanSweep:
 
     def test_unmarked_daemon_is_never_a_candidate(self) -> None:
         """No ``KIROCREW_SPAWNED`` marker means we did not spawn this tree."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[803]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[803]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_DAEMON_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=900.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=False),
-            patch("kiro_crew.session_pid._env_value", return_value=b"kc-1a2b3c4d"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=900.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=False),
+            patch("efm_go.session_pid._env_value", return_value=b"kc-1a2b3c4d"),
             patch(
-                "kiro_crew.session_pid._browser_session_owner_alive",
+                "efm_go.session_pid._browser_session_owner_alive",
                 return_value=False,
             ),
         ):
@@ -7003,18 +7003,18 @@ class TestBrowserDaemonOrphanSweep:
 
     def test_young_daemon_is_never_a_candidate(self) -> None:
         """The work-class age floor applies: a fresh daemon is never raced."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[804]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[804]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_DAEMON_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=200.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            patch("kiro_crew.session_pid._env_value", return_value=b"kc-1a2b3c4d"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=200.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_value", return_value=b"kc-1a2b3c4d"),
             patch(
-                "kiro_crew.session_pid._browser_session_owner_alive",
+                "efm_go.session_pid._browser_session_owner_alive",
                 return_value=False,
             ),
         ):
@@ -7023,18 +7023,18 @@ class TestBrowserDaemonOrphanSweep:
 
     def test_env_argv_session_mismatch_is_never_a_candidate(self) -> None:
         """argv name must be the generated name this process was exec'd with."""
-        from kiro_crew.session_pid import find_orphan_mcp_candidates
+        from efm_go.session_pid import find_orphan_mcp_candidates
 
         with (
-            patch("kiro_crew.session_pid._our_orphan_pids", return_value=[805]),
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid._our_orphan_pids", return_value=[805]),
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(Path, "read_bytes", return_value=_DAEMON_CMDLINE),
             patch("os.getpid", return_value=1),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=900.0),
-            patch("kiro_crew.session_pid._env_has_kirocrew_marker", return_value=True),
-            patch("kiro_crew.session_pid._env_value", return_value=b"kc-99999999"),
+            patch("efm_go.session_pid._linux_pid_age", return_value=900.0),
+            patch("efm_go.session_pid._env_has_kirocrew_marker", return_value=True),
+            patch("efm_go.session_pid._env_value", return_value=b"kc-99999999"),
             patch(
-                "kiro_crew.session_pid._browser_session_owner_alive",
+                "efm_go.session_pid._browser_session_owner_alive",
                 return_value=False,
             ),
         ):
@@ -7077,24 +7077,24 @@ class TestBrowserDaemonOrphanSweep:
         cmdlines: tuple[bytes, bytes],
         expected_killed: int,
     ) -> None:
-        from kiro_crew.session_pid import kill_orphan_mcps
+        from efm_go.session_pid import kill_orphan_mcps
 
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch("os.getpgrp", return_value=1000),
             patch("os.getpid", return_value=1),
             patch.object(Path, "read_bytes", side_effect=cmdlines),
-            patch("kiro_crew.session_pid._pid_start_token", side_effect=start_tokens),
-            patch("kiro_crew.session_pid._is_sweepable_orphan_mcp", return_value=False),
-            patch("kiro_crew.session_pid._is_sweepable_orphan_gatewayd", return_value=False),
-            patch("kiro_crew.session_pid._is_sweepable_orphan_work", return_value=False),
+            patch("efm_go.session_pid._pid_start_token", side_effect=start_tokens),
+            patch("efm_go.session_pid._is_sweepable_orphan_mcp", return_value=False),
+            patch("efm_go.session_pid._is_sweepable_orphan_gatewayd", return_value=False),
+            patch("efm_go.session_pid._is_sweepable_orphan_work", return_value=False),
             patch(
-                "kiro_crew.session_pid._is_sweepable_orphan_browser_daemon",
+                "efm_go.session_pid._is_sweepable_orphan_browser_daemon",
                 return_value=True,
             ),
-            patch("kiro_crew.session_pid._linux_pid_age", return_value=900.0),
+            patch("efm_go.session_pid._linux_pid_age", return_value=900.0),
             patch(
-                "kiro_crew.session_pid._kill_orphan_browser_daemon",
+                "efm_go.session_pid._kill_orphan_browser_daemon",
                 return_value=1,
             ) as mock_kill,
         ):
@@ -7111,7 +7111,7 @@ class TestBrowserSessionOwnerAlive:
     """The ownership probe reads only exec-time environ, never on-disk state."""
 
     def test_live_peer_holding_the_session_reads_as_alive(self) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         with (
             patch.object(sp, "sys") as mock_sys,
@@ -7125,7 +7125,7 @@ class TestBrowserSessionOwnerAlive:
 
     def test_only_the_daemons_own_tree_reads_as_dead(self) -> None:
         """Chromium children share the daemon's SID and are not owners."""
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         with (
             patch.object(sp, "sys") as mock_sys,
@@ -7138,7 +7138,7 @@ class TestBrowserSessionOwnerAlive:
             assert sp._browser_session_owner_alive(900, b"kc-1a2b3c4d") is False
 
     def test_unreadable_peer_fails_closed_to_alive(self) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         def _boom(
             pid: int,
@@ -7159,7 +7159,7 @@ class TestBrowserSessionOwnerAlive:
             assert sp._browser_session_owner_alive(900, b"kc-1a2b3c4d") is True
 
     def test_non_linux_fails_closed_to_alive(self) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         with patch.object(sp, "sys") as mock_sys:
             mock_sys.platform = "darwin"
@@ -7233,7 +7233,7 @@ class TestBrowserSessionOwnerFakeProc:
         monkeypatch: pytest.MonkeyPatch,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         proc_root = tmp_path / "proc"
         proc_root.mkdir()
@@ -7248,7 +7248,7 @@ class TestBrowserSessionOwnerFakeProc:
         )
         self._linux_fixture(monkeypatch, sp, proc_root)
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.session_pid"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.session_pid"):
             assert sp._is_sweepable_orphan_browser_daemon(
                 900, _DAEMON_CMDLINE, 900.0, proc_root=proc_root
             )
@@ -7278,7 +7278,7 @@ class TestBrowserSessionOwnerFakeProc:
         proc_file: str,
         invalid_content: bytes,
     ) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         proc_root = tmp_path / "proc"
         proc_root.mkdir()
@@ -7294,7 +7294,7 @@ class TestBrowserSessionOwnerFakeProc:
         (proc_root / "901" / proc_file).write_bytes(invalid_content)
         self._linux_fixture(monkeypatch, sp, proc_root)
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.session_pid"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.session_pid"):
             assert sp._is_sweepable_orphan_browser_daemon(
                 900, _DAEMON_CMDLINE, 900.0, proc_root=proc_root
             )
@@ -7312,7 +7312,7 @@ class TestBrowserSessionOwnerFakeProc:
         monkeypatch: pytest.MonkeyPatch,
         owner_name: str,
     ) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         proc_root = tmp_path / "proc"
         proc_root.mkdir()
@@ -7336,7 +7336,7 @@ class TestBrowserSessionOwnerFakeProc:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         proc_root = tmp_path / "proc"
         proc_root.mkdir()
@@ -7359,7 +7359,7 @@ class TestBrowserSessionOwnerFakeProc:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         proc_root = tmp_path / "proc"
         proc_root.mkdir()
@@ -7375,7 +7375,7 @@ class TestBrowserSessionOwnerFakeProc:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from kiro_crew import session_pid as sp
+        from efm_go import session_pid as sp
 
         proc_root = tmp_path / "proc"
         proc_root.mkdir()
@@ -7419,7 +7419,7 @@ class TestAcquiringAPidLockDoesNotTruncateTheLockFile:
     SEED = b"lock-file-content-that-must-survive"
 
     def test_session_pid_file_lock_preserves_the_lock_file(self, session_pid_file: Path) -> None:
-        from kiro_crew.session_pid import _session_pid_file_lock, _session_pid_file_path
+        from efm_go.session_pid import _session_pid_file_lock, _session_pid_file_path
 
         lock_path = _session_pid_file_path().with_suffix(".lock")
         lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -7431,7 +7431,7 @@ class TestAcquiringAPidLockDoesNotTruncateTheLockFile:
         assert lock_path.read_bytes() == self.SEED
 
     def test_pid_file_lock_preserves_the_lock_file(self, pid_file: Path) -> None:
-        from kiro_crew.session_pid import _pid_file_lock, _pid_file_path
+        from efm_go.session_pid import _pid_file_lock, _pid_file_path
 
         lock_path = _pid_file_path().with_suffix(".lock")
         lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -7449,7 +7449,7 @@ class TestAcquiringAPidLockDoesNotTruncateTheLockFile:
         lock, which is exactly the interleaving a truncating open turns into a
         crash rather than a wait.
         """
-        from kiro_crew.session_pid import _periodic_pid_sweep, _session_pid_file_path
+        from efm_go.session_pid import _periodic_pid_sweep, _session_pid_file_path
 
         path = _session_pid_file_path()
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -7471,7 +7471,7 @@ class TestAcquiringAPidLockDoesNotTruncateTheLockFile:
         mode a naive ``"r"`` fix would introduce, and the reason ``"r+"`` rather
         than ``"r"`` is the answer.
         """
-        from kiro_crew.session_pid import _pid_file_path
+        from efm_go.session_pid import _pid_file_path
 
         lock_path = _pid_file_path().with_suffix(".lock")
         lock_path.parent.mkdir(parents=True, exist_ok=True)

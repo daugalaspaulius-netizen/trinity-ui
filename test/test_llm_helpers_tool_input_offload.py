@@ -30,10 +30,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.sel as sel_mod
-from kiro_crew import llm_helpers, security
-from kiro_crew.llm_helpers import ToolApprovalPolicy, _resolve_permission
-from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+import efm_go.sel as sel_mod
+from efm_go import llm_helpers, security
+from efm_go.llm_helpers import ToolApprovalPolicy, _resolve_permission
+from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
 # A title that survives every title-tier check, so the decision under test is
 # decided by tool_input alone.

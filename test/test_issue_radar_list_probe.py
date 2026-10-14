@@ -34,10 +34,10 @@ from unittest import mock
 
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh
-from kiro_crew.apps.builtins.issue_radar.backend import routes, store
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh
+from efm_go.apps.builtins.issue_radar.backend import routes, store
 
-PROBE_TARGET = "kiro_crew.apps.builtins.issue_radar.backend.github_client.probe_open_list"
+PROBE_TARGET = "efm_go.apps.builtins.issue_radar.backend.github_client.probe_open_list"
 
 
 def _key(owner: str, repo: str):
@@ -47,7 +47,7 @@ def _key(owner: str, repo: str):
     loose owner/repo pair. GitHub is used throughout here so these tests keep
     asserting the ORIGINAL probe behaviour unchanged.
     """
-    from kiro_crew.apps.builtins.issue_radar.backend import provider
+    from efm_go.apps.builtins.issue_radar.backend import provider
 
     return provider.key_from_parts(owner, repo)
 

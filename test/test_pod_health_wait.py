@@ -18,10 +18,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.instances import run_marker
-from kiro_crew.pod import cli as pod_cli
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod.config import PodConfig
+from efm_go.instances import run_marker
+from efm_go.pod import cli as pod_cli
+from efm_go.pod import runtime as rt
+from efm_go.pod.config import PodConfig
 
 
 @pytest.fixture(autouse=True)
@@ -286,14 +286,14 @@ class TestUpThreadsTheBudget:
         monkeypatch.setattr(rt, "_git_worktrees", lambda ref: {})
         monkeypatch.setattr(rt, "_port_is_free", lambda _p: True)
         # A ready worktree: venv binary + built dist, so `_up` skips provisioning.
-        from kiro_crew.pod import provision as prov
+        from efm_go.pod import provision as prov
 
         co = tmp_path / "wts" / "demo"
         b = prov.venv_bin(co)
         b.parent.mkdir(parents=True, exist_ok=True)
         b.write_text("#!/bin/sh\n")
         b.chmod(0o755)
-        (co / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True, exist_ok=True)
+        (co / "src" / "efm_go" / "static" / "dist").mkdir(parents=True, exist_ok=True)
         monkeypatch.setattr(rt, "derive_port", lambda cfg, n: 7811)
         monkeypatch.setattr(rt, "is_active", lambda cfg, n: False)
         monkeypatch.setattr(rt, "systemctl", lambda *a, **k: _cp(returncode=0))
@@ -1373,7 +1373,7 @@ class TestWaitHealthyRequiresTheCredential:
         whoever edits the mint.
         """
         server = (
-            Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "dashboard" / "server.py"
+            Path(__file__).resolve().parents[1] / "src" / "efm_go" / "dashboard" / "server.py"
         )
         # The credential helpers live in the server_runtime owners it composes.
         owners = sorted((server.parent / "server_runtime").glob("[!_]*.py"))

@@ -363,7 +363,7 @@ describe('reaction motions', () => {
     // literals drift silently: a name added on one side is dropped by the other
     // with no test going red, and the user sees a motion that never plays.
     const sections = readFileSync(
-      join(__dirname, '../../../src/kiro_crew/config/sections.py'),
+      join(__dirname, '../../../src/efm_go/config/sections.py'),
       'utf8',
     )
     const block = /_AVATAR_MOTIONS: dict\[str, tuple\[str, \.\.\.\]\] = \{([\s\S]*?)\n\}/.exec(sections)

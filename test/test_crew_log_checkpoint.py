@@ -18,13 +18,13 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog
-from kiro_crew.crew_log import checkpoint as savepoints
-from kiro_crew.crew_log import lease
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.crew_log import store
-from kiro_crew.projection import checkpoint as projection_checkpoint
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog
+from efm_go.crew_log import checkpoint as savepoints
+from efm_go.crew_log import lease
+from efm_go.crew_log import projection as crew_log
+from efm_go.crew_log import store
+from efm_go.projection import checkpoint as projection_checkpoint
 
 SESSION = "s-savepoint"
 GATEWAY = "gateway"

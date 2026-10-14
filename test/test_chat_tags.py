@@ -9,9 +9,9 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state, _make_tags_app
 
-from kiro_crew.dashboard import chat_tags as chat_tags_module
-from kiro_crew.dashboard.chat_tags import _normalize_column, _valid_color
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard import chat_tags as chat_tags_module
+from efm_go.dashboard.chat_tags import _normalize_column, _valid_color
+from efm_go.dashboard.state import _ChatSlot
 
 
 @pytest.fixture(autouse=True)
@@ -19,7 +19,7 @@ def _hermetic_signing_secret(monkeypatch):
     """Pin the grants-store provenance key so no test touches the real
     ``token_signing.key`` (lazy creation would pollute the developer's or
     runner's live config home)."""
-    from kiro_crew.dashboard import token_secret
+    from efm_go.dashboard import token_secret
 
     monkeypatch.setattr(token_secret, "_get_secret", lambda: b"test-signing-key")
 
@@ -153,7 +153,7 @@ class TestNormalizeColumn:
 class TestTagVocabulary:
     @pytest.mark.asyncio
     async def test_list_seeds_default_vocabulary(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.load_tags()
         app = _make_tags_app(state)
@@ -167,7 +167,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_list_returns_in_order(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._tags = [
             {"id": "b", "name": "B", "color": "#000000", "order": 1, "status": False},
@@ -183,7 +183,7 @@ class TestTagVocabulary:
     async def test_list_survives_a_hand_edited_order(self, tmp_path, monkeypatch):
         """``tags.json`` is loaded verbatim, so a row whose ``order`` is not a number
         must sort as 0 rather than turn every reader of the vocabulary into a 500."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._tags = [
             {"id": "b", "name": "B", "color": "#000000", "order": 1, "status": False},
@@ -199,7 +199,7 @@ class TestTagVocabulary:
             assert names[-1] == "B" and set(names) == {"B", "X", "F", "M"}
 
     def test_tag_order_never_raises(self):
-        from kiro_crew.dashboard.chat_tags import _order_key
+        from efm_go.dashboard.chat_tags import _order_key
 
         assert _order_key({"order": 3}) == 3
         assert _order_key({"order": 2.9}) == 2
@@ -215,7 +215,7 @@ class TestTagVocabulary:
         makes the ``chat_tag_create`` MCP tool's refusal the endpoint's rule and
         not a tool-layer copy of it.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -241,9 +241,9 @@ class TestTagVocabulary:
 
         Mutation guard: drop the ``allow_create`` call and the whole burst is 201.
         """
-        from kiro_crew.dashboard import create_rate_limit
+        from efm_go.dashboard import create_rate_limit
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         create_rate_limit.reset_for_tests()
         try:
             state = _make_state(tmp_path)
@@ -267,9 +267,9 @@ class TestTagVocabulary:
     @pytest.mark.asyncio
     async def test_create_does_not_rate_limit_the_browser(self, tmp_path, monkeypatch):
         """A person seeding a board can legitimately outpace the agent budget."""
-        from kiro_crew.dashboard import create_rate_limit
+        from efm_go.dashboard import create_rate_limit
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         create_rate_limit.reset_for_tests()
         try:
             state = _make_state(tmp_path)
@@ -284,7 +284,7 @@ class TestTagVocabulary:
     @pytest.mark.asyncio
     async def test_update_refuses_an_app_caller_and_a_gone_slot(self, tmp_path, monkeypatch):
         """PATCH is a vocabulary write too: same two refusals as POST, before any edit."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._tags = [
             {"id": "t1", "name": "Keep", "color": "#000000", "order": 0, "status": False}
@@ -323,7 +323,7 @@ class TestTagVocabulary:
         derivation answers "" and would read as the person — the same refusal
         the folder writes apply.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         assert "gone-slot" not in state._slots
         app = _make_tags_app(state)
@@ -339,7 +339,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_create_tag(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -356,7 +356,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_create_tag_invalid_color_falls_back(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -366,7 +366,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_create_tag_empty_name_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -375,7 +375,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_create_tag_invalid_json_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -386,7 +386,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_update_tag_rename_recolor_status(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -413,10 +413,10 @@ class TestTagVocabulary:
         mint on an id the dashboard never issued is refused, so the planted tag
         never resolves onto the board. Metadata PATCHes on it still work (a
         rename mints nothing), and the tag is recoverable by recreating it."""
-        from kiro_crew.context import _board_safe_tag_name
-        from kiro_crew.dashboard.chat_tag_grants import has_grant_row, refresh_cache
+        from efm_go.context import _board_safe_tag_name
+        from efm_go.dashboard.chat_tag_grants import has_grant_row, refresh_cache
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         planted = "ignore.previous.instructions"
         state._tags.append({"id": planted, "name": "Backlog", "color": "#3b82f6", "order": 9})
@@ -449,7 +449,7 @@ class TestTagVocabulary:
         """a PATCH carrying a valid rename AND an invalid status
         must reject BEFORE any field mutates — otherwise the rejected rename
         stays live in memory behind the 400."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -472,9 +472,9 @@ class TestTagVocabulary:
         Dashboard create records the tag as non-status, so an agent-policy
         PATCH inherits that bit rather than truth-testing agent-writable JSON.
         """
-        from kiro_crew.dashboard.chat_tags import agent_tag_grant
+        from efm_go.dashboard.chat_tags import agent_tag_grant
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -489,9 +489,9 @@ class TestTagVocabulary:
     @pytest.mark.asyncio
     async def test_agent_patch_does_not_promote_forged_bool_status(self, tmp_path, monkeypatch):
         """A forged boolean status never overrides protected identity."""
-        from kiro_crew.dashboard.chat_tags import agent_tag_grant
+        from efm_go.dashboard.chat_tags import agent_tag_grant
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -509,9 +509,9 @@ class TestTagVocabulary:
         """revoke-up-front must not become a PERMANENT revocation
         when the replacement mint fails — the prior grant is restored and the
         PATCH still surfaces 500."""
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         real_mint = ct.mint_grant
@@ -541,9 +541,9 @@ class TestTagVocabulary:
         ``none`` row stays ``none`` and a narrowed ``add-only`` stays ``add-only``;
         only a tag with no protected record at all takes the out-of-the-box
         ``add-remove`` default, the same one the create path mints."""
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -582,9 +582,9 @@ class TestTagVocabulary:
     @pytest.mark.asyncio
     async def test_failed_mint_rolls_back_vocabulary(self, tmp_path, monkeypatch):
         """A PATCH whose grant transition fails leaves both stores unchanged."""
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -613,9 +613,9 @@ class TestTagVocabulary:
     async def test_delete_aborts_when_revoke_fails(self, tmp_path, monkeypatch):
         """a deletion must never outlive the authority it removes
         — a failed revoke aborts the DELETE with the tag (and grant) intact."""
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -642,10 +642,10 @@ class TestTagVocabulary:
         the tag must still carry its status identity as a ``("none", True)``
         row -- less authority, never a missing row that the applier would read
         as a plain label and let two workflow states coexist."""
-        from kiro_crew.dashboard import chat_tag_grants as grants
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tag_grants as grants
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         real_write = ct._write_tags_snapshot
@@ -680,10 +680,10 @@ class TestTagVocabulary:
         asked for a grant change), so its failure compensation must not act on
         the grant store at all -- acting on 'no prior row' there would revoke
         the tag's real grant behind the 500."""
-        from kiro_crew.dashboard import chat_tag_grants as grants
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tag_grants as grants
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -705,10 +705,10 @@ class TestTagVocabulary:
     @pytest.mark.asyncio
     async def test_rowless_tag_is_refused_before_vocab_write(self, tmp_path, monkeypatch):
         """A legacy or planted row cannot recreate provenance through PATCH."""
-        from kiro_crew.dashboard import chat_tag_grants as grants
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tag_grants as grants
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -736,9 +736,9 @@ class TestTagVocabulary:
         """revoke succeeded but the vocabulary persist
         failed — the captured grant is re-minted so a failed DELETE is a
         no-op on authority."""
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -761,9 +761,9 @@ class TestTagVocabulary:
         return 201 for a tag chat_tag refuses — the grant is minted BEFORE
         the vocabulary commit, so a mint failure aborts with NOTHING durable
         in either store and surfaces 500."""
-        from kiro_crew.dashboard import chat_tags as ct
+        from efm_go.dashboard import chat_tags as ct
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -787,7 +787,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_update_tag_empty_name_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -797,7 +797,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_update_tag_unparseable_order_ignored(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -807,7 +807,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_update_tag_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -816,7 +816,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_update_tag_invalid_json_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -831,7 +831,7 @@ class TestTagVocabulary:
     @pytest.mark.asyncio
     async def test_update_tag_redacts_credentials_in_name(self, tmp_path, monkeypatch):
         """PATCH a tag name containing an AWS key — the credential is redacted."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -849,7 +849,7 @@ class TestTagVocabulary:
         """Redaction must run BEFORE truncation: a credential crossing the
         60-char cut would otherwise be sliced into a fragment the scanners
         do not recognize, persisting a raw key prefix."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -864,7 +864,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_create_tag_redacts_credential_straddling_truncation(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -882,7 +882,7 @@ class TestTagVocabulary:
         must be written BEFORE any slot strip — a crash after it leaves only
         harmless dangling slot ids (pruned on load), never lost assignments
         with a still-live tag."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         call_order: list[str] = []
@@ -892,7 +892,7 @@ class TestTagVocabulary:
             return True  # a committed save — None would read as the refusal
 
         original_write = __import__(
-            "kiro_crew.dashboard.chat_tags", fromlist=["_write_tags_snapshot"]
+            "efm_go.dashboard.chat_tags", fromlist=["_write_tags_snapshot"]
         )._write_tags_snapshot
 
         def _tracking_write(st, snapshot):
@@ -904,8 +904,8 @@ class TestTagVocabulary:
             slot = _ChatSlot("s1")
             slot.tags = [tag["id"]]
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", _tracking_save):
-                with patch("kiro_crew.dashboard.chat_tags._write_tags_snapshot", _tracking_write):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", _tracking_save):
+                with patch("efm_go.dashboard.chat_tags._write_tags_snapshot", _tracking_write):
                     resp = await client.delete(f"/api/chat/tags/{tag['id']}")
             assert resp.status == 200
             # Vocabulary removal must be committed BEFORE slot persistence.
@@ -913,7 +913,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_delete_tag_strips_from_slots_and_columns(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -928,7 +928,7 @@ class TestTagVocabulary:
                     json={"tag_ids": [tag["id"], other["id"]], "mode": "any"},
                 )
             ).json()
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.delete(f"/api/chat/tags/{tag['id']}")
             assert resp.status == 200
             assert tag["id"] not in {t["id"] for t in state._tags}
@@ -939,7 +939,7 @@ class TestTagVocabulary:
 
     @pytest.mark.asyncio
     async def test_delete_tag_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -952,7 +952,7 @@ class TestTagVocabulary:
     ):
         """A failing slot save during the post-commit strip must not abort
         stripping the remaining slots; the failed one is marked dirty."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -972,7 +972,7 @@ class TestTagVocabulary:
                     raise IOError("disk full")
                 return True  # a committed save — None would read as the refusal
 
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", _partial_failing_save):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", _partial_failing_save):
                 resp = await client.delete(f"/api/chat/tags/{tag['id']}")
             assert resp.status == 200
             assert all(t["id"] != tag["id"] for t in state._tags)
@@ -986,7 +986,7 @@ class TestTagVocabulary:
     async def test_delete_succeeds_despite_board_persist_failure(self, tmp_path, monkeypatch):
         """Board strip failure after the vocab commit is tolerated: deletion
         succeeds; the dangling board reference is pruned on next load."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -1004,7 +1004,7 @@ class TestTagVocabulary:
             def _failing_boards(snapshot):
                 raise IOError("disk full")
 
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 with patch.object(state, "save_tag_boards_snapshot", _failing_boards):
                     resp = await client.delete(f"/api/chat/tags/{tag['id']}")
             assert resp.status == 200
@@ -1020,7 +1020,7 @@ class TestTagVocabulary:
 class TestSlotTags:
     @pytest.mark.asyncio
     async def test_assign_filters_unknown_and_dedupes(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -1029,7 +1029,7 @@ class TestSlotTags:
             slot = _ChatSlot("s1")
             original_revision = slot.tags_revision
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [t1["id"], "ghost", t1["id"], t2["id"], 7]},
@@ -1064,7 +1064,7 @@ class TestSlotTags:
         server compares under the tag lock, refuses without touching the slot,
         and returns the current list + revision so A can rebase its delta. The
         same list sent with the CURRENT revision (or no base at all) commits."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -1073,7 +1073,7 @@ class TestSlotTags:
             slot = _ChatSlot("s1")
             state._slots["s1"] = slot
             stale_base = slot.tags_revision
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 # Client B commits t2 (unconditional legacy write).
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": [t2["id"]]})
                 assert resp.status == 200
@@ -1115,9 +1115,9 @@ class TestSlotTags:
         agent mutation that landed in between must rotate that revision, so the
         human's save is refused as ``stale_base`` and shown the agent's tags --
         not applied over them without a word."""
-        from kiro_crew.dashboard.session_directive_apply import apply_session_directive
+        from efm_go.dashboard.session_directive_apply import apply_session_directive
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -1132,7 +1132,7 @@ class TestSlotTags:
             async def _saved(state, slot, force=False, expected_history_key=None):
                 return True
 
-            with patch("kiro_crew.dashboard.chat_persistence.save_slot_off_loop", _saved):
+            with patch("efm_go.dashboard.chat_persistence.save_slot_off_loop", _saved):
                 result = await apply_session_directive(
                     state,
                     slot,
@@ -1146,7 +1146,7 @@ class TestSlotTags:
             agent_revision = slot.tags_revision
             assert agent_revision != human_base
 
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [plain["id"]], "base_tags_revision": human_base},
@@ -1170,7 +1170,7 @@ class TestSlotTags:
 
     @pytest.mark.asyncio
     async def test_assign_refusal_restores_tags_and_revision(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -1184,7 +1184,7 @@ class TestSlotTags:
                 return False
 
             state.push_slots_update = MagicMock()
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", _refuse):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", _refuse):
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": [tag["id"]]})
 
             assert resp.status == 409
@@ -1212,9 +1212,9 @@ class TestSlotTags:
         """A restarted process claims a higher epoch from the persisted counter,
         so every revision it mints sorts after every revision of the previous
         process — however far the old process's sequence had advanced."""
-        from kiro_crew.dashboard import state as state_module
+        from efm_go.dashboard import state as state_module
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         # Process 1: fresh data home, seeds the counter and mints many revisions.
         monkeypatch.setattr(state_module, "_TAGS_REVISION_EPOCH", None)
         monkeypatch.setattr(state_module, "_TAGS_REVISION_SEQ", 0)
@@ -1246,9 +1246,9 @@ class TestSlotTags:
         orderable minting resumes."""
         import re as _re
 
-        from kiro_crew.dashboard import state as state_module
+        from efm_go.dashboard import state as state_module
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         epoch_file = tmp_path / state_module._TAGS_REVISION_EPOCH_FILE
         epoch_file.write_text("41\n")
         real_atomic_write = state_module.atomic_write
@@ -1281,9 +1281,9 @@ class TestSlotTags:
         directory (the rename's entry) before any revision is minted from it;
         otherwise a power loss inside the flush window followed by a backward
         clock step re-claims an epoch that connected clients already hold."""
-        from kiro_crew.dashboard import state as state_module
+        from efm_go.dashboard import state as state_module
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         calls: list[tuple[str, object]] = []
         real_atomic_write = state_module.atomic_write
 
@@ -1319,9 +1319,9 @@ class TestSlotTags:
         the file alone rather than assert an order it cannot prove."""
         import re as _re
 
-        from kiro_crew.dashboard import state as state_module
+        from efm_go.dashboard import state as state_module
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         epoch_file = tmp_path / state_module._TAGS_REVISION_EPOCH_FILE
         epoch_file.write_text("garbage\n")
         # Backward clock: far below any epoch a healthy process would have claimed.
@@ -1334,7 +1334,7 @@ class TestSlotTags:
 
     @pytest.mark.asyncio
     async def test_assign_slot_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -1343,7 +1343,7 @@ class TestSlotTags:
 
     @pytest.mark.asyncio
     async def test_assign_invalid_json_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._slots["s1"] = _ChatSlot("s1")
         app = _make_tags_app(state)
@@ -1357,7 +1357,7 @@ class TestSlotTags:
 
     @pytest.mark.asyncio
     async def test_assign_non_array_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._slots["s1"] = _ChatSlot("s1")
         app = _make_tags_app(state)
@@ -1376,7 +1376,7 @@ class TestSlotTags:
         another app's slot answer ``slot_not_found``: a distinct code per reason
         would make the route an existence oracle.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         unscoped = _ChatSlot("s1")
         foreign = _ChatSlot("s2")
@@ -1398,7 +1398,7 @@ class TestSlotTags:
             # test_create_refuses_an_app_caller), and this test is about the PUT.
             tag = {"id": "t1", "name": "T1", "color": "#000000", "order": 0, "status": False}
             state._tags.append(tag)
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 for key in ("s1", "s2"):
                     resp = await client.put(
                         f"/api/chat/slots/{key}/tags", json={"tags": [tag["id"]]}
@@ -1418,7 +1418,7 @@ class TestSlotTags:
         session would pass an ``_app`` check and persist the app's tags into a
         conversation it does not own. Both identities must resolve to the app.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         mine = _ChatSlot("s1")
         mine._app = "my-app"
@@ -1442,7 +1442,7 @@ class TestSlotTags:
 
         app.middlewares.append(_as_app)
         async with TestClient(TestServer(app)) as client:
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": ["t1"]})
             assert resp.status == 404
             assert (await resp.json())["code"] == "slot_not_found"
@@ -1451,7 +1451,7 @@ class TestSlotTags:
 
     def test_app_owns_transcript_is_unanimous_and_fails_closed(self):
         """Own file and own linked session pass; shared, foreign, unclaimed or empty keys do not."""
-        from kiro_crew.dashboard.token_auth import app_owns_transcript
+        from efm_go.dashboard.token_auth import app_owns_transcript
 
         mine = _ChatSlot("s1")
         mine._app = "my-app"
@@ -1485,7 +1485,7 @@ class TestSlotTags:
         with nothing saved — otherwise the earlier answer is stale by the time
         the write lands.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         mine = _ChatSlot("s1")
         mine._app = "my-app"
@@ -1501,7 +1501,7 @@ class TestSlotTags:
 
         from aiohttp import web as _web
 
-        from kiro_crew.dashboard import chat_tags as _ct
+        from efm_go.dashboard import chat_tags as _ct
 
         real_read = _ct.read_bounded_json
 
@@ -1518,9 +1518,9 @@ class TestSlotTags:
         async with TestClient(TestServer(app)) as client:
             with (
                 patch(
-                    "kiro_crew.dashboard.chat_tags.read_bounded_json", side_effect=_bind_then_read
+                    "efm_go.dashboard.chat_tags.read_bounded_json", side_effect=_bind_then_read
                 ),
-                patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save,
+                patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save,
             ):
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": ["t1"]})
             assert resp.status == 409
@@ -1535,7 +1535,7 @@ class TestSlotTags:
         A ``dashboard:`` key naming a popped slot derives app "" and would read
         as the person, passing both ownership checks. Refused before either.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         target = _ChatSlot("s1")
         state._slots["s1"] = target
@@ -1544,7 +1544,7 @@ class TestSlotTags:
         )
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": ["t1"]},
@@ -1559,7 +1559,7 @@ class TestSlotTags:
     async def test_assign_app_token_allowed_on_its_own_linked_transcript(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         own = _ChatSlot("s1")
         own._app = "my-app"
@@ -1579,14 +1579,14 @@ class TestSlotTags:
 
         app.middlewares.append(_as_app)
         async with TestClient(TestServer(app)) as client:
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": ["t1"]})
             assert resp.status == 200
         assert own.tags == ["t1"]
 
     @pytest.mark.asyncio
     async def test_assign_app_token_allowed_on_own_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         own = _ChatSlot("s1")
         own._app = "my-app"
@@ -1604,7 +1604,7 @@ class TestSlotTags:
         async with TestClient(TestServer(app)) as client:
             tag = {"id": "t1", "name": "T1", "color": "#000000", "order": 0, "status": False}
             state._tags.append(tag)
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": [tag["id"]]})
             assert resp.status == 200
         assert own.tags == [tag["id"]]
@@ -1622,8 +1622,8 @@ class TestSlotTags:
     async def test_internal_caller_cannot_add_a_person_reserved_tag(self, tmp_path, monkeypatch):
         """An agent adding a ``none``-policy (person-reserved) tag is refused;
         nothing is written."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tag_grants
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tag_grants
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1633,7 +1633,7 @@ class TestSlotTags:
             chat_tag_grants.refresh_cache()
             slot = _ChatSlot("s1")
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [tag["id"]]},
@@ -1650,8 +1650,8 @@ class TestSlotTags:
     async def test_internal_caller_cannot_strip_an_add_only_tag(self, tmp_path, monkeypatch):
         """Removing needs ``add-remove``: an agent stripping an ``add-only`` tag
         the person placed is refused, leaving the tag on the slot."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tag_grants
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tag_grants
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1662,7 +1662,7 @@ class TestSlotTags:
             slot = _ChatSlot("s1")
             slot.tags = [tag["id"]]
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags", json={"tags": []}, headers=self._INTERNAL
                 )
@@ -1675,8 +1675,8 @@ class TestSlotTags:
     async def test_internal_caller_can_change_an_add_remove_tag(self, tmp_path, monkeypatch):
         """The gate is a policy check, not a blanket agent ban: an ``add-remove``
         tag the person opened to the agent is still assignable."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tag_grants
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tag_grants
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1686,7 +1686,7 @@ class TestSlotTags:
             chat_tag_grants.refresh_cache()
             slot = _ChatSlot("s1")
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [tag["id"]]},
@@ -1699,8 +1699,8 @@ class TestSlotTags:
     async def test_browser_is_never_gated_by_the_grants_policy(self, tmp_path, monkeypatch):
         """The person (no ``X-Internal-Secret``) may set a person-reserved tag;
         the whole policy constrains agents, not the owner."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tag_grants
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tag_grants
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1710,7 +1710,7 @@ class TestSlotTags:
             chat_tag_grants.refresh_cache()
             slot = _ChatSlot("s1")
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags", json={"tags": [tag["id"]]}
                 )  # no internal-secret header -> browser
@@ -1722,8 +1722,8 @@ class TestSlotTags:
         """Only the DIFF is gated: an agent write that leaves a person-reserved
         tag already on the slot in place (adding an open tag beside it) is
         allowed — the reserved tag is neither added nor removed."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tag_grants
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tag_grants
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1736,7 +1736,7 @@ class TestSlotTags:
             slot = _ChatSlot("s1")
             slot.tags = [reserved["id"]]
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [reserved["id"], open_tag["id"]]},
@@ -1750,10 +1750,10 @@ class TestSlotTags:
         """Deny-by-default on identity: an app token (no internal secret, but a
         resolved app claim) is a non-person principal and is gated too, so it
         cannot strip a row-backed person-reserved tag."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from aiohttp import web as _web
 
-        from kiro_crew.dashboard import chat_tag_grants
+        from efm_go.dashboard import chat_tag_grants
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1779,7 +1779,7 @@ class TestSlotTags:
             slot._app = "my-app"
             slot.tags = [tag["id"]]
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": []})
             assert resp.status == 403
             assert (await resp.json())["code"] in (
@@ -1796,8 +1796,8 @@ class TestSlotTags:
         carries two row-backed status tags is refused — the agent must use
         ``chat_tag`` ``set_state`` (which strips peers). Swapping one status for
         another (its peer removed in the same diff) is allowed."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tag_grants
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tag_grants
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1811,7 +1811,7 @@ class TestSlotTags:
             slot.tags = [review["id"]]
             state._slots["s1"] = slot
             # Stacking Done beside Review -> two status tags -> refused.
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [review["id"], done["id"]]},
@@ -1822,7 +1822,7 @@ class TestSlotTags:
             assert slot.tags == [review["id"]]
             assert save.call_count == 0
             # Swapping Review -> Done (Review removed in the same diff) is fine.
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [done["id"]]},
@@ -1837,7 +1837,7 @@ class TestSlotTags:
         reservation: a non-person caller may still apply it. This is what keeps
         app self-tagging working — the gate bites only tags the owner minted a
         row for."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -1845,7 +1845,7 @@ class TestSlotTags:
             state._tags.append(tag)  # rowless: resolves to ("none", False)
             slot = _ChatSlot("s1")
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [tag["id"]]},
@@ -1861,7 +1861,7 @@ class TestSlotTags:
         peer-strip can never remove (``set_state`` would wedge), so it is refused
         ``status_identity_unprotected`` — a forged status cannot slip the gate by
         being rowless."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -1877,7 +1877,7 @@ class TestSlotTags:
             state._tags.append(tag)
             slot = _ChatSlot("s1")
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [tag["id"]]},
@@ -1896,8 +1896,8 @@ class TestSlotTags:
         A later agent change that touches neither — a pure remove of its own
         ordinary label — must not be blamed for that pre-existing state: the
         exclusivity refusal fires only when THIS diff adds a status tag."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tag_grants
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tag_grants
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1916,7 +1916,7 @@ class TestSlotTags:
             state._slots["s1"] = slot
             # Agent removes only its own ordinary label; the two status tags are
             # untouched -> allowed, not blamed for the pre-existing stack.
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [review["id"], done["id"]]},
@@ -1935,9 +1935,9 @@ class TestSlotTags:
         possibly-reserved tag through as rowless. The health and the rows come
         from ONE atomic snapshot, so a refresh cannot flip health between the
         check and a row lookup."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tags as ct
-        from kiro_crew.dashboard.chat_tag_grants import GrantsSnapshot
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tags as ct
+        from efm_go.dashboard.chat_tag_grants import GrantsSnapshot
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -1952,7 +1952,7 @@ class TestSlotTags:
             state._tags.append(tag)
             slot = _ChatSlot("s1")
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [tag["id"]]},
@@ -1970,9 +1970,9 @@ class TestSlotTags:
         were discarded. A tag that is now rowless might be a lost reservation, so
         it is failed closed ``tag_grants_unavailable`` — but a ROW-BACKED tag (a
         reseeded default state) resolves normally and stays assignable."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_tags as ct
-        from kiro_crew.dashboard.chat_tag_grants import GrantsSnapshot
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_tags as ct
+        from efm_go.dashboard.chat_tag_grants import GrantsSnapshot
 
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
@@ -2004,7 +2004,7 @@ class TestSlotTags:
             # A formerly-reserved (now rowless) label is failed closed.
             slot = _ChatSlot("s1")
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [lost["id"]]},
@@ -2015,7 +2015,7 @@ class TestSlotTags:
             assert slot.tags == []
             assert save.call_count == 0
             # A reseeded default state (row-backed add-remove) still assigns.
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags",
                     json={"tags": [review["id"]]},
@@ -2034,7 +2034,7 @@ class TestSlotTags:
         vocabulary would silently omit its removal and persist it with no grants
         check. The route fails closed ``tag_grants_unavailable`` for a removal it
         cannot resolve while the vocabulary is non-authoritative."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         # Simulate an unreadable tags.json: empty, non-authoritative vocabulary.
@@ -2044,7 +2044,7 @@ class TestSlotTags:
             slot = _ChatSlot("s1")
             slot.tags = ["review"]  # a reserved status id not present in the (empty) vocab
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop") as save:
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop") as save:
                 resp = await client.put(
                     "/api/chat/slots/s1/tags", json={"tags": []}, headers=self._INTERNAL
                 )
@@ -2058,7 +2058,7 @@ class TestSlotTags:
         """With an AUTHORITATIVE vocabulary, a slot id absent from it is a
         dangling reference to a deleted tag — benign for an agent to drop. The
         non-authoritative fail-closed does not fire here."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         state._tags = []  # authoritative-and-empty: the id really was deleted
@@ -2067,7 +2067,7 @@ class TestSlotTags:
             slot = _ChatSlot("s1")
             slot.tags = ["ghost"]
             state._slots["s1"] = slot
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put(
                     "/api/chat/slots/s1/tags", json={"tags": []}, headers=self._INTERNAL
                 )
@@ -2088,12 +2088,12 @@ class TestSlotTags:
         enumeration AND to this test together. The sibling fences
         (``member_slot_write_refused``, the app-isolation check) key on the same
         three representations."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from aiohttp import web as _web
 
-        from kiro_crew.dashboard import chat_tag_grants
-        from kiro_crew.dashboard.chat_utils import effective_session_key
-        from kiro_crew.dashboard.token_auth import MEMBER_CHAT_PRINCIPAL_KEY
+        from efm_go.dashboard import chat_tag_grants
+        from efm_go.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard.token_auth import MEMBER_CHAT_PRINCIPAL_KEY
 
         async def _put(request_markers, slot_setup=None):
             state = _make_state(tmp_path)
@@ -2115,7 +2115,7 @@ class TestSlotTags:
 
             app.middlewares.append(_mark)
             async with TestClient(TestServer(app)) as client:
-                with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+                with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                     resp = await client.put(
                         "/api/chat/slots/s1/tags",
                         json={"tags": [tag["id"]]},
@@ -2170,10 +2170,10 @@ class TestSlotTags:
         ``caller=origin_caller`` would file every denial under ``dashboard`` and
         corrupt the append-only SEL attribution. Pin that the app leg's denial
         records the app id."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from aiohttp import web as _web
 
-        from kiro_crew.dashboard import chat_tag_grants
+        from efm_go.dashboard import chat_tag_grants
 
         captured: list[dict] = []
 
@@ -2181,7 +2181,7 @@ class TestSlotTags:
             def log_api_access(self, **kwargs):
                 captured.append(kwargs)
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_tags.sel", lambda: _CapturingSel())
+        monkeypatch.setattr("efm_go.dashboard.chat_tags.sel", lambda: _CapturingSel())
 
         state = _make_state(tmp_path)
         tag = {"id": "resv", "name": "Resv", "color": "#000000", "order": 0, "status": False}
@@ -2200,7 +2200,7 @@ class TestSlotTags:
 
         app.middlewares.append(_mark)
         async with TestClient(TestServer(app)) as client:
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.put("/api/chat/slots/s1/tags", json={"tags": [tag["id"]]})
         assert resp.status == 403
         denials = [c for c in captured if c.get("outcome") == "denied"]
@@ -2215,7 +2215,7 @@ class TestSlotTags:
 class TestColumns:
     @pytest.mark.asyncio
     async def test_list_columns_empty(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2226,7 +2226,7 @@ class TestColumns:
     @pytest.mark.asyncio
     async def test_list_columns_survives_a_hand_edited_order(self, tmp_path, monkeypatch):
         """``tag_boards.json`` is loaded verbatim like ``tags.json``; same key, same rule."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._tag_boards = [
             {"id": "b", "name": "B", "tag_ids": [], "mode": "any", "order": 1},
@@ -2242,7 +2242,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_create_column(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2261,7 +2261,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_create_column_invalid_mode_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2270,7 +2270,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_create_column_invalid_json_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2283,7 +2283,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_update_column(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2298,7 +2298,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_update_column_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2307,7 +2307,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_update_column_invalid_payload_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2319,7 +2319,7 @@ class TestColumns:
     async def test_update_column_valid_tag_id_persists(self, tmp_path, monkeypatch):
         """The board filter round-trip: a tag id taken from the same list the
         popover renders (GET /api/chat/tags) must survive the PATCH."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2340,7 +2340,7 @@ class TestColumns:
         """An unknown tag id must fail LOUDLY (400 + code), never return 200
         with the id silently dropped — the drop is what made the board filter
         appear to do nothing (column falls back to match-all)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2363,7 +2363,7 @@ class TestColumns:
     async def test_update_column_empty_tag_ids_clears_filter(self, tmp_path, monkeypatch):
         """[] is the clear-filter (match-all) state the board UI sends; it
         must stay accepted."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2379,7 +2379,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_create_column_unknown_tag_id_rejected_400(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2391,7 +2391,7 @@ class TestColumns:
     async def test_create_column_empty_tag_ids_allowed(self, tmp_path, monkeypatch):
         """The board creates columns with tag_ids [] (add-column flows);
         validation must keep that working."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2403,7 +2403,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_update_column_invalid_json_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2417,7 +2417,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_delete_column(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2428,7 +2428,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_delete_column_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2437,7 +2437,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_reorder_columns(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2453,7 +2453,7 @@ class TestColumns:
         """Regression: review-bot flagged ',
         '.join(ids[:10]) raising TypeError on non-string elements,
         which would skip the SEL audit event after the state mutation."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2464,7 +2464,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_reorder_invalid_json_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2477,7 +2477,7 @@ class TestColumns:
 
     @pytest.mark.asyncio
     async def test_reorder_non_list_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2491,7 +2491,7 @@ class TestColumns:
 class TestDrop:
     @pytest.mark.asyncio
     async def test_drop_on_status_lane_swaps_status_tag(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2512,7 +2512,7 @@ class TestDrop:
                     "/api/chat/tag-columns", json={"tag_ids": [done["id"]], "mode": "any"}
                 )
             ).json()
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.post("/api/chat/slots/s1/drop", json={"column_id": col["id"]})
             data = await resp.json()
             assert data["ok"] is True
@@ -2523,7 +2523,7 @@ class TestDrop:
 
     @pytest.mark.asyncio
     async def test_drop_refusal_restores_tags_with_fresh_revision(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2547,7 +2547,7 @@ class TestDrop:
                 return False
 
             state.push_slots_update = MagicMock()
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop", _refuse):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop", _refuse):
                 resp = await client.post("/api/chat/slots/s1/drop", json={"column_id": col["id"]})
             data = await resp.json()
             assert data["ok"] is False
@@ -2560,7 +2560,7 @@ class TestDrop:
 
     @pytest.mark.asyncio
     async def test_drop_on_filter_only_column_is_noop(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2580,7 +2580,7 @@ class TestDrop:
 
     @pytest.mark.asyncio
     async def test_drop_slot_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2589,7 +2589,7 @@ class TestDrop:
 
     @pytest.mark.asyncio
     async def test_drop_column_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._slots["s1"] = _ChatSlot("s1")
         app = _make_tags_app(state)
@@ -2599,7 +2599,7 @@ class TestDrop:
 
     @pytest.mark.asyncio
     async def test_drop_invalid_json_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._slots["s1"] = _ChatSlot("s1")
         app = _make_tags_app(state)
@@ -2614,7 +2614,7 @@ class TestDrop:
     @pytest.mark.asyncio
     async def test_drop_on_multi_tag_column_is_noop(self, tmp_path, monkeypatch):
         """Drop on a column with > 1 status tag is a no-op (not a single-status lane)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2646,7 +2646,7 @@ class TestLoadTagsSafety:
     def test_load_failure_does_not_overwrite_with_defaults(self, tmp_path, monkeypatch):
         """If tags.json exists but cannot be parsed, never silently overwrite it
         with the seed vocabulary — that would destroy the user's data."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         # Write an unreadable / corrupt tags file
         corrupt = tmp_path / "tags.json"
         corrupt.write_text("not-json-at-all", encoding="utf-8")
@@ -2659,7 +2659,7 @@ class TestLoadTagsSafety:
 
     def test_missing_file_seeds_defaults(self, tmp_path, monkeypatch):
         """If tags.json doesn't exist, seed the default 5 status tags."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.load_tags()
         names = {t["name"] for t in state._tags}
@@ -2675,10 +2675,10 @@ class TestLoadTagsSafety:
         defaults resolve agent-drivable. With the reverse order that boot reads
         as an upgraded install and seeds an EMPTY store, so every default
         workflow state silently becomes human-only."""
-        from kiro_crew.dashboard import chat_tags as ct
-        from kiro_crew.dashboard import state as state_mod
+        from efm_go.dashboard import chat_tags as ct
+        from efm_go.dashboard import state as state_mod
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         crashed = _make_state(tmp_path)
         real_seed = state_mod.seed_default_grants
 
@@ -2704,7 +2704,7 @@ class TestLoadTagsSafety:
     def test_explicitly_empty_file_is_not_reseeded(self, tmp_path, monkeypatch):
         """If tags.json contains [], the user explicitly cleared every tag —
         do not re-seed defaults across restart."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         (tmp_path / "tags.json").write_text("[]", encoding="utf-8")
         state = _make_state(tmp_path)
         state.load_tags()
@@ -2718,7 +2718,7 @@ class TestLoadTagsSafety:
         id left in place would make that column's filter un-editable."""
         import json as _json
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         (tmp_path / "tags.json").write_text(
             _json.dumps([{"id": "live1", "name": "Live", "color": "#111111", "order": 0}]),
             encoding="utf-8",
@@ -2747,7 +2747,7 @@ class TestLoadTagsSafety:
         the slot-restore prune."""
         import json as _json
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         (tmp_path / "tags.json").write_text("not-json-at-all", encoding="utf-8")
         (tmp_path / "tag_boards.json").write_text(
             _json.dumps([{"id": "c1", "name": "L", "tag_ids": ["t1"], "mode": "any", "order": 0}]),
@@ -2763,7 +2763,7 @@ class TestReorderUniqueOrders:
     async def test_partial_reorder_does_not_collide(self, tmp_path, monkeypatch):
         """Reordering only a subset of columns must not leave older columns
         sharing an `order` value with the newly-renumbered ones."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2790,7 +2790,7 @@ class TestDropOnMixedColumn:
         """The docstring promises that a drop on a column with exactly one
         status tag swaps onto that status — additional non-status tags in
         the column's filter must not block the swap."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2813,7 +2813,7 @@ class TestDropOnMixedColumn:
                     json={"tag_ids": [done["id"], spike["id"]], "mode": "all"},
                 )
             ).json()
-            with patch("kiro_crew.dashboard.chat_tags.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_tags.save_slot_off_loop"):
                 resp = await client.post("/api/chat/slots/s1/drop", json={"column_id": col["id"]})
             data = await resp.json()
             assert data["ok"] is True
@@ -2831,7 +2831,7 @@ class TestDeleteSlotPersistPropagatesFromUnderlying:
 
     @pytest.mark.asyncio
     async def test_delete_succeeds_despite_underlying_write_failure(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2862,7 +2862,7 @@ class TestTagCreatePersistFailure:
 
     @pytest.mark.asyncio
     async def test_create_returns_500_and_rolls_back_on_write_failure(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2890,7 +2890,7 @@ class TestBoardColumnConcurrency:
     async def test_concurrent_column_creates_both_persisted(self, tmp_path, monkeypatch):
         import asyncio
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
 
@@ -2929,7 +2929,7 @@ class TestDeleteVocabWriteCompensation:
 
     @pytest.mark.asyncio
     async def test_vocab_write_failure_leaves_slots_untouched(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2970,7 +2970,7 @@ class TestUpdateDeleteRace:
     async def test_concurrent_delete_causes_update_to_404(self, tmp_path, monkeypatch):
         import asyncio as _asyncio
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_tags_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -2980,7 +2980,7 @@ class TestUpdateDeleteRace:
             # Make _write_tags_snapshot slow so the DELETE holds the lock long
             # enough for PATCH to queue behind it.
             original_write = __import__(
-                "kiro_crew.dashboard.chat_tags", fromlist=["_write_tags_snapshot"]
+                "efm_go.dashboard.chat_tags", fromlist=["_write_tags_snapshot"]
             )._write_tags_snapshot
 
             def _slow_write(st, snap):
@@ -2990,7 +2990,7 @@ class TestUpdateDeleteRace:
             # Run DELETE and PATCH concurrently.
             # DELETE wins the lock; PATCH waits, then re-resolves -> 404.
             with patch(
-                "kiro_crew.dashboard.chat_tags._write_tags_snapshot",
+                "efm_go.dashboard.chat_tags._write_tags_snapshot",
                 side_effect=_slow_write,
             ):
                 delete_task = _asyncio.ensure_future(client.delete(f"/api/chat/tags/{tid}"))

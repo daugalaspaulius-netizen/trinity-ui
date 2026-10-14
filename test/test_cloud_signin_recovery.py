@@ -5,10 +5,10 @@ Kiro session: the device code timed out, nobody approved it, the gateway
 restarted mid-wait, or the owner cancelled. Three seams, no AWS and no live
 gateway:
 
-* ``cloud/login.py`` — :func:`~kiro_crew.cloud.login.cancel_device_login` stops a
+* ``cloud/login.py`` — :func:`~efm_go.cloud.login.cancel_device_login` stops a
   cancelled login WITHOUT signing the box out (which ``logout`` would do to a
   session the cancelled attempt never established).
-* ``cloud/launch_job.py`` — :func:`~kiro_crew.cloud.launch_job.run_signin_retry`
+* ``cloud/launch_job.py`` — :func:`~efm_go.cloud.launch_job.run_signin_retry`
   re-runs only the sign-in step, a cancel stops the remote login, and a restart
   mid-sign-in keeps a crew that is already signed in.
 * ``dashboard/handlers_cloud.py`` — ``POST /api/cloud/launch/{id}/signin/restart``
@@ -31,11 +31,11 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.cloud import launch_engine as le
-from kiro_crew.cloud import launch_job as lj
-from kiro_crew.cloud import login, ssm
-from kiro_crew.cloud.login_target import KiroLoginTarget
-from kiro_crew.dashboard import handlers_cloud as hc
+from efm_go.cloud import launch_engine as le
+from efm_go.cloud import launch_job as lj
+from efm_go.cloud import login, ssm
+from efm_go.cloud.login_target import KiroLoginTarget
+from efm_go.dashboard import handlers_cloud as hc
 
 COMPANY = KiroLoginTarget.from_fields(
     license="pro", start_url="https://amzn.awsapps.com/start", region="us-east-1"
@@ -536,13 +536,13 @@ class TestLaunchCancellation:
         docstring, so a cancelled Fargate sign-in records no false note -- and
         `_abort_signin` never infers anything from a missing method.
         """
-        from kiro_crew.cloud.fargate_engine import FargateSigninHandle
+        from efm_go.cloud.fargate_engine import FargateSigninHandle
 
         h = FargateSigninHandle("arn:aws:ecs:x:1:task/y")
         assert h.abort() is True
         assert "no remote login" in (FargateSigninHandle.abort.__doc__ or "").lower()
         # Every in-tree handle now answers for itself.
-        from kiro_crew.cloud import launch_engine as le_mod
+        from efm_go.cloud import launch_engine as le_mod
 
         assert callable(getattr(le_mod._RealSigninHandle, "abort", None))
 
@@ -1461,7 +1461,7 @@ class TestSigninRestartRoute:
     async def test_the_route_is_registered(self):
         import inspect
 
-        from kiro_crew.dashboard.routes import connections
+        from efm_go.dashboard.routes import connections
 
         src = inspect.getsource(connections)
         assert "/api/cloud/launch/{id}/signin/restart" in src

@@ -26,9 +26,9 @@ import asyncio
 
 import pytest
 
-from kiro_crew.config.sections import DecisionsConfig, NudgeWakeConfig
-from kiro_crew.decisions import gate, impl_llm
-from kiro_crew.decisions.types import Choice, Noul, Score
+from efm_go.config.sections import DecisionsConfig, NudgeWakeConfig
+from efm_go.decisions import gate, impl_llm
+from efm_go.decisions.types import Choice, Noul, Score
 
 #: The judge's own questions. Every one is a ``Choice``, which is the only type the
 #: shipped wire speaks (``impl_jev._to_wire`` refuses anything else), so the RFC's
@@ -498,7 +498,7 @@ class TestRunnerSeam:
                 on_chunk(chunk)
             return chunk
 
-        monkeypatch.setattr("kiro_crew.llm_helpers.stream_and_collect", _fake_collect)
+        monkeypatch.setattr("efm_go.llm_helpers.stream_and_collect", _fake_collect)
         runner = impl_llm.build_session_runner(_Sessions(), model="")
         with pytest.raises(impl_llm.LlmProtocolError) as caught:
             asyncio.run(runner("prompt"))
@@ -531,7 +531,7 @@ class TestTheRunnerIsWiredAtBoot:
     def test_constructing_the_dashboard_state_registers_a_runner(self) -> None:
         from unittest.mock import MagicMock
 
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         impl_llm.set_runner(None)
         try:
@@ -556,7 +556,7 @@ def handlers_mod():
     dashboard handler pulls in the whole route layer, and only the row-projection
     tests below need it.
     """
-    from kiro_crew.dashboard.handlers import decisions as handlers
+    from efm_go.dashboard.handlers import decisions as handlers
 
     return handlers
 
@@ -578,7 +578,7 @@ class TestTheCardsRowForTheJudge:
         permits: bool,
         oracle: bool = True,
     ) -> dict:
-        from kiro_crew.dashboard.handlers import decisions as handlers
+        from efm_go.dashboard.handlers import decisions as handlers
 
         monkeypatch.setattr(handlers, "_sampling_admits_anybody", lambda: True)
         # Patch the READER, not the rule: it delegates to the real ``gate.judge_lane``
@@ -672,7 +672,7 @@ class TestTheCardsRowForTheJudge:
         against the table rather than against this branch's absence of an entry: with
         the scope registered and recorded, the pinned lane is armed and the row says so.
         """
-        from kiro_crew.decisions import consent
+        from efm_go.decisions import consent
 
         handlers = handlers_mod()
         monkeypatch.setitem(gate.POINT_SCOPE_KEYS, gate.JUDGE_POINT, "nudge_evidence")
@@ -708,7 +708,7 @@ class TestTheCardsRowForTheJudge:
         projection separately from ``permits`` because this lane needs the denial
         WITHOUT the consent.
         """
-        from kiro_crew.dashboard.handlers import decisions as handlers
+        from efm_go.dashboard.handlers import decisions as handlers
 
         monkeypatch.setattr(handlers, "_sampling_admits_anybody", lambda: True)
         monkeypatch.setattr(handlers, "_llm_lane_available", lambda: True)
@@ -957,14 +957,14 @@ class TestEditableConfig:
     """Both keys are writable through the config route, and nothing else is added."""
 
     def test_provider_is_a_closed_enum(self) -> None:
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         spec = _EDITABLE_CONFIG["decisions.nudge_wake.provider"]
         assert spec["type"] == "enum"
         assert set(spec["values"]) == {"auto", "jev", "llm"}
 
     def test_llm_model_takes_the_role_model_grammar(self) -> None:
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         spec = _EDITABLE_CONFIG["decisions.nudge_wake.llm_model"]
         assert spec["type"] == "str"
@@ -972,7 +972,7 @@ class TestEditableConfig:
 
     def test_the_endpoint_and_key_stay_uneditable(self) -> None:
         """This PR must not make the egress destination writable by the config route."""
-        from kiro_crew.dashboard.handlers.core import _EDITABLE_CONFIG
+        from efm_go.dashboard.handlers.core import _EDITABLE_CONFIG
 
         assert "decisions.provider.endpoint" not in _EDITABLE_CONFIG
         assert "decisions.provider.api_key" not in _EDITABLE_CONFIG

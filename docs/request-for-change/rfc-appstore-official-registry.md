@@ -21,7 +21,7 @@ superseded-by: []
 
 **Author:** KiroCrew contributors
 **Date:** 2026-07-29
-**Status:** partial, **and diverged** — this document's failure mode is the first one the [directory README](README.md) names: *the plan was overtaken.* Rollout step R1 shipped **in the sibling `kirodotdev/KiroCrewApps` repo**, but §4 was reversed on four decisions while it did, so §4 is now a record of what was decided rather than a description of the contract. **Read the note at the head of §4 before trusting anything below about categories.** The schema files in that repository are the current source of truth.
+**Status:** partial, **and diverged** — this document's failure mode is the first one the [directory README](README.md) names: *the plan was overtaken.* Rollout step R1 shipped **in the sibling `efmleads.comApps` repo**, but §4 was reversed on four decisions while it did, so §4 is now a record of what was decided rather than a description of the contract. **Read the note at the head of §4 before trusting anything below about categories.** The schema files in that repository are the current source of truth.
 
 On the Kiro Crew side, R3 and R4 are no longer unstarted as this line previously said, but neither is finished. The official **fetch** is live and so is editorial-driven Discover (`apps/official_catalog.py`, `apps/official_editorial.py`). The **signature gate is not**: that module's own header lists three deliberate omissions, and the first is "No signature verification" — the `.sig` sidecar is published and nothing checks it, so trust is TLS to our own domain, and the consequence is enforced rather than ignored (a curated author does not mint the verified mark while that holds). **Tombstone resolution is absent** on the same terms: a document carrying a non-empty `removed` or `reinstated` list is refused outright rather than half-resolved. The rail order's own document is published but not yet read by any client — the client still resolves category order from the editorial document, so that one URL exists ahead of its consumer by design.
 
@@ -33,7 +33,7 @@ The App Store's catalog and its merchandising are frozen into each KiroCrew
 release. Two concrete gaps:
 
 1. **No first-party remote registry.** The curated catalog is the bundled
-   `kiro_crew/apps/app-registry.json`, compiled into the wheel next to
+   `efm_go/apps/app-registry.json`, compiled into the wheel next to
    `registry.py` (read through `_REGISTRY_FILE`, `apps/registry_pipeline/sources.py`). Changing the catalog — adding an app,
    fixing a repo URL, pulling a broken one — requires shipping a new app
    release. User-configured *external* registries exist
@@ -103,7 +103,7 @@ mechanism*):
 |-------|------|----------|
 | **Contract (schema)** | `KiroCrewApps` *(now; migrates to `KiroCrewAppSDK` later)* | JSON Schema + generated TS types for the registry entry and the editorial document. Starts co-located with the data it validates; extracted to the SDK once there are external consumers (published app-author tooling). |
 | **Data (source of truth)** | `KiroCrewApps` | `official-registry.json` + `editorial.json`, hand-curated. A publish CI workflow validates against the co-located schema and pushes to the distribution CDN. |
-| **Client + fallback** | `KiroCrew` | Fetch / validate / layered-fallback code, **plus** the bundled fallback snapshot `kiro_crew/apps/app-registry.json`, which is **generated** from `KiroCrewApps` at build time (or a bot sync PR) — never hand-authored, so the offline floor cannot drift from canonical. |
+| **Client + fallback** | `KiroCrew` | Fetch / validate / layered-fallback code, **plus** the bundled fallback snapshot `efm_go/apps/app-registry.json`, which is **generated** from `KiroCrewApps` at build time (or a bot sync PR) — never hand-authored, so the offline floor cannot drift from canonical. |
 
 Rationale: the entire premise of goal 1 is to decouple catalog + merchandising
 cadence from app releases. Co-locating the data in `KiroCrew` re-couples them —
@@ -602,7 +602,7 @@ checks).
 
 > **Diverged from what shipped. Read this before §4.**
 >
-> Four of §4's decisions were reversed in `kirodotdev/KiroCrewApps` after this
+> Four of §4's decisions were reversed in `efmleads.comApps` after this
 > document was accepted. The reasoning below is kept as the record of what was
 > decided and why; it is no longer a description of the contract. The schema
 > files in that repository are the current source of truth.
@@ -863,7 +863,7 @@ two documents must not be read as using one shared tier vocabulary.
   uninstall). This is the only path by which an already-installed app learns it
   was pulled.
 - **Bundled fallback generation**: a build step (or bot PR) pulls the current
-  *published* document (§2) and writes `kiro_crew/apps/app-registry.json` as the
+  *published* document (§2) and writes `efm_go/apps/app-registry.json` as the
   compiled snapshot — including its tombstones, so an offline client still
   honors removals.
 

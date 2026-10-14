@@ -32,7 +32,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.config.sections import MemoryConfig
+from efm_go.config.sections import MemoryConfig
 
 
 @pytest.fixture(autouse=True)
@@ -42,7 +42,7 @@ def _owner_caller(monkeypatch):
     its own enumerate-the-invariant coverage in
     test_agents_endpoints_owner_auth.py."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
     pass  # Member routing does not depend on OS isolation.
@@ -71,7 +71,7 @@ def _fake_config():
 
 
 def _make_app() -> web.Application:
-    from kiro_crew.dashboard.handlers.agents import api_kirocrew_agents_create
+    from efm_go.dashboard.handlers.agents import api_kirocrew_agents_create
 
     app = web.Application()
     app.router.add_post("/api/agents", api_kirocrew_agents_create)
@@ -102,19 +102,19 @@ async def _post(body, cfg, installed=(), spy=None):
 
     with (
         patch(
-            "kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load",
+            "efm_go.dashboard.handlers.agents.KiroCrewConfig.load",
             return_value=cfg,
         ),
         patch(
-            "kiro_crew.config.loader.update_config_locked",
+            "efm_go.config.loader.update_config_locked",
             new=_fake_update_config_locked,
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents.list_agents",
+            "efm_go.dashboard.handlers.agents.list_agents",
             new=_list_agents,
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents._sel",
+            "efm_go.dashboard.handlers.agents._sel",
             return_value=SimpleNamespace(
                 log_api_access=lambda **kwargs: None,
             ),

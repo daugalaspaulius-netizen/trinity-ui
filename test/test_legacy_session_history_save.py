@@ -15,11 +15,11 @@ from __future__ import annotations
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.dashboard import chat_handlers as handlers
-from kiro_crew.execution_context import read_session_execution
-from kiro_crew.history import ConversationLog
-from kiro_crew.memory_stores import (
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.dashboard import chat_handlers as handlers
+from efm_go.execution_context import read_session_execution
+from efm_go.history import ConversationLog
+from efm_go.memory_stores import (
     MissingExecutionIdentity,
     UnknownMemoryStore,
     provision_member_memory,

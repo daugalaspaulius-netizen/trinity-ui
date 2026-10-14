@@ -56,7 +56,7 @@ delete leaves every other session untouched.
 
 ### Composition and source ownership
 
-`kiro_crew.history` remains the compatibility facade and defines the real
+`efm_go.history` remains the compatibility facade and defines the real
 `ConversationLog` type. It owns transcript paths and sidecars, the shared
 in-process and cross-process lock registries, append/atomic-turn persistence,
 cache generation registries, and consolidation-progress writes. The facade
@@ -966,7 +966,7 @@ no longer destroy older turns.
   - **Successor identity, landed on the save side.** The **creation-time
     per-message uuid** (`meta.mid`, minted by `_ChatSlot.append`, persisted by
     the save, carried onto durable copies — the successor identity tracked by
-    [issue #381](https://github.com/kirodotdev/KiroCrew/issues/381)) is now the
+    [issue #381](https://efmleads.com/issues/381)) is now the
     fold's pass-0 identity, so for stamped lines identity is *exact* rather
     than inferred. The bounded timestamp-first heuristic above is thereby
     **demoted to a legacy fallback** for un-stamped lines: pre-id transcripts
@@ -1952,7 +1952,7 @@ unreferenced only when archive retention expires its last row. The ceilings are
 attachments grow with every distinct image it posts until the session is
 deleted — content-addressing dedups repeats, not a stream of unique pictures. A
 per-session byte ceiling, or a sweep coupled to archive-retention expiry, is a
-follow-up ([issue #10437](https://github.com/kirodotdev/KiroCrew/issues/10437)), not part of the write
+follow-up ([issue #10437](https://efmleads.com/issues/10437)), not part of the write
 boundary.
 
 **Known limitation:** the rewritten destination is the absolute path of the

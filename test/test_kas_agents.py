@@ -15,9 +15,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import config as kiro_crew_config
-from kiro_crew.acp import kas_agents
-from kiro_crew.acp.kas_agents import (
+from efm_go import config as efm_go_config
+from efm_go.acp import kas_agents
+from efm_go.acp.kas_agents import (
     _KAS_FALLBACK_PROMPT,
     KAS_MAX_CUSTOM_AGENTS,
     KasAgentTranslationError,
@@ -28,11 +28,11 @@ from kiro_crew.acp.kas_agents import (
     resolve_prompt,
     to_client_custom_agent,
 )
-from kiro_crew.agent_discovery import (
+from efm_go.agent_discovery import (
     WELCOME_MESSAGE_MAX_CHARS,
     spec_welcome_message,
 )
-from kiro_crew.agent_files import KAS_RESERVED_AGENT_IDS
+from efm_go.agent_files import KAS_RESERVED_AGENT_IDS
 
 
 def _rule(policy, capability):
@@ -442,7 +442,7 @@ class TestTheCeilingIsReAskedAtProjectionTime:
         self, monkeypatch, caplog
     ):
         monkeypatch.setattr(kas_agents, "may_skip_gate_now", lambda ref: False)
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent("kirocrew", _spec(allowedTools=["web_fetch"]), "p")
         assert "withholds auto-approval for web_fetch" in caplog.text
 
@@ -523,7 +523,7 @@ class TestKeysTheWireCannotCarry:
 
     def test_the_keys_are_named(self, caplog):
         spec = _spec(hooks={"postToolUse": []}, toolsSettings={"x": 1})
-        with caplog.at_level("DEBUG", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("DEBUG", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent("kirocrew", spec, "p")
         assert "toolsSettings" in caplog.text
 
@@ -534,12 +534,12 @@ class TestKeysTheWireCannotCarry:
         assert caplog.text.strip() == ""
 
     def test_the_translated_key_is_not_reported_as_lost(self, caplog):
-        with caplog.at_level("DEBUG", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("DEBUG", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent("kirocrew", _spec(allowedTools=["web_fetch"]), "p")
         assert "allowedTools" not in caplog.text
 
     def test_nothing_logged_when_the_spec_has_none(self, caplog):
-        with caplog.at_level("DEBUG", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("DEBUG", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent("kirocrew", _spec(), "p")
         assert "cannot carry" not in caplog.text
 
@@ -659,7 +659,7 @@ class TestAgainstTheRealBundledSpec:
 
     @staticmethod
     def _bundled() -> dict:
-        path = Path(kiro_crew_config.__file__).resolve().parent / "defaults.json"
+        path = Path(efm_go_config.__file__).resolve().parent / "defaults.json"
         return json.loads(path.read_text(encoding="utf-8"))
 
     def test_the_crew_agent_projects_with_its_tools_intact(self):
@@ -905,7 +905,7 @@ class TestMcpServersProjection:
     def test_the_managed_name_set_is_the_shared_one(self):
         """Not a third spelling of the four names: this is the set
         ``mcp_cleanup`` already ratchet-pins to ``agent._MANAGED_MCP_SERVERS``."""
-        from kiro_crew.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
+        from efm_go.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
 
         assert kas_agents.MANAGED_MCP_SERVER_NAMES == frozenset(KIROCREW_BIN_MCP_SERVERS)
 
@@ -1041,7 +1041,7 @@ class TestMutedServersAreNotDeclared:
         assert out["mcpServers"]["live"]["command"] == "x"
 
     def test_the_withhold_is_explained(self, caplog):
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent(
                 "kirocrew", _spec(mcpServers={"muted": {"command": "x", "disabled": True}}), "p"
             )
@@ -1049,7 +1049,7 @@ class TestMutedServersAreNotDeclared:
         assert "would launch the server anyway" in caplog.text
 
     def test_a_bad_type_is_explained_as_a_bad_type(self, caplog):
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent(
                 "kirocrew", _spec(mcpServers={"odd": {"command": "x", "disabled": "yes"}}), "p"
             )
@@ -1079,7 +1079,7 @@ class TestAMutedServerCannotArriveThroughThePoolingStub:
         from the wrapper marker the rewriter leaves -- so a change in what the
         rewriter wraps changes this answer.
         """
-        from kiro_crew.mcp_gateway import rewriter
+        from efm_go.mcp_gateway import rewriter
 
         rewritten, _ = rewriter._rewrite_single_spec(
             dict(spec),
@@ -1141,7 +1141,7 @@ class TestAMutedServerCannotArriveThroughThePoolingStub:
                 "governed": {"command": "y", "type": "registry"},
             }
         )
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_agents"):
             out = to_client_custom_agent(
                 "kirocrew", spec, "p", stub_server_names=frozenset({"muted", "governed"})
             )
@@ -1179,7 +1179,7 @@ class TestRegistryGovernedEntries:
         could answer differently, and a ceiling that disagrees with itself is not
         a ceiling.
         """
-        from kiro_crew.acp import session_mcp
+        from efm_go.acp import session_mcp
 
         monkeypatch.setattr(session_mcp, "_registry_mode", lambda: on)
 
@@ -1232,14 +1232,14 @@ class TestRegistryGovernedEntries:
         assert out["mcpServers"]["kirocrew-core"]["type"] == "registry"
 
     def test_the_withhold_names_the_direction_it_fired_in(self, monkeypatch, caplog):
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent(
                 "kirocrew", _spec(mcpServers={"g": {"command": "x", "type": "registry"}}), "p"
             )
         assert "registry mode is off" in caplog.text
         caplog.clear()
         self._governed(monkeypatch)
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent("kirocrew", _spec(mcpServers={"g": {"command": "x"}}), "p")
         assert "registry mode is on" in caplog.text
 
@@ -1248,7 +1248,7 @@ class TestRegistryGovernedEntries:
         error from the host, which is why this one is a WARNING: it is the only
         local signal that the control plane was dropped."""
         self._governed(monkeypatch)
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent(
                 "kirocrew", _spec(mcpServers={"kirocrew-core": {"command": "x"}}), "p"
             )
@@ -1261,7 +1261,7 @@ class TestRegistryGovernedEntries:
         entries, and that install loses its control plane identically. Requiring
         the stamp would silence the one case that cannot self-diagnose."""
         self._governed(monkeypatch)
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent(
                 "kirocrew", _spec(mcpServers={"kirocrew-cron": {"command": "x"}}), "p"
             )
@@ -1269,7 +1269,7 @@ class TestRegistryGovernedEntries:
 
     def test_it_warns_once_per_projection_not_once_per_server(self, monkeypatch, caplog):
         self._governed(monkeypatch)
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent(
                 "kirocrew",
                 _spec(
@@ -1284,7 +1284,7 @@ class TestRegistryGovernedEntries:
         assert len([r for r in caplog.records if r.levelname == "WARNING"]) == 1
 
     def test_an_ungoverned_install_is_silent(self, caplog):
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent("kirocrew", _spec(), "p")
         assert caplog.text.strip() == ""
 
@@ -1296,9 +1296,9 @@ class TestRegistryGovernedEntries:
         filter. All three have to agree or a governed entry stops being
         recognized as one.
         """
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.acp import session_mcp
-        from kiro_crew.mcp_cleanup import MCP_REGISTRY_TYPE
+        from efm_go import agent as agent_mod
+        from efm_go.acp import session_mcp
+        from efm_go.mcp_cleanup import MCP_REGISTRY_TYPE
 
         assert MCP_REGISTRY_TYPE == agent_mod._MCP_REGISTRY_TYPE
         assert MCP_REGISTRY_TYPE == session_mcp._KIRO_REGISTRY_TYPE
@@ -1312,7 +1312,7 @@ class TestDiscardedRestrictionsAreReported:
     """
 
     def test_a_discarded_restriction_is_named(self, caplog):
-        with caplog.at_level("DEBUG", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("DEBUG", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent(
                 "kirocrew",
                 _spec(mcpServers={"srv": {"command": "x", "disabledTools": ["learn_add"]}}),
@@ -1323,7 +1323,7 @@ class TestDiscardedRestrictionsAreReported:
     def test_a_key_crew_itself_removed_is_not_blamed_on_the_backend(self, caplog):
         """``autoApprove`` never reaches the wire, so naming it here would report
         Crew's own subtraction as the backend's discard."""
-        with caplog.at_level("DEBUG", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("DEBUG", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent(
                 "kirocrew",
                 _spec(mcpServers={"srv": {"command": "x", "autoApprove": ["t"]}}),
@@ -1332,7 +1332,7 @@ class TestDiscardedRestrictionsAreReported:
         assert "autoApprove" not in caplog.text
 
     def test_an_entry_with_no_restrictions_says_nothing(self, caplog):
-        with caplog.at_level("DEBUG", logger="kiro_crew.acp.kas_agents"):
+        with caplog.at_level("DEBUG", logger="efm_go.acp.kas_agents"):
             to_client_custom_agent("kirocrew", _spec(), "p")
         assert "discards" not in caplog.text
 
@@ -1349,7 +1349,7 @@ class TestRuntimeSuppliesTheStubbedSet:
     @staticmethod
     def _overlay_with_a_stub(root: Path, agent: str) -> Path:
         """A user-level overlay holding one broker stub for *agent*."""
-        from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER
+        from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER
 
         overlay = root / "overlay"
         overlay.mkdir(parents=True, exist_ok=True)
@@ -1381,7 +1381,7 @@ class TestRuntimeSuppliesTheStubbedSet:
         would run outside the pool, outside caller-identity attribution and outside
         broker governance, with the operator believing the gateway applies.
         """
-        import kiro_crew.mcp_gateway.session_servers as session_servers_mod
+        import efm_go.mcp_gateway.session_servers as session_servers_mod
 
         overlay = self._overlay_with_a_stub(tmp_path, "kirocrew")
         # A checkout that DOES declare the same name, which is the trigger.
@@ -1416,7 +1416,7 @@ class TestRuntimeSuppliesTheStubbedSet:
         mirrored host's real servers or leave a project markdown agent running the
         user-level stub's command. Splatting one mapping makes the two inseparable.
         """
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             ACP_BACKEND_CODEX,
             ACP_BACKEND_KAS,
             ACP_BACKEND_KIRO,
@@ -1459,12 +1459,12 @@ class TestRuntimeSuppliesTheStubbedSet:
         the expectation from ``has_mirror`` is what makes a new mirror correct by
         construction rather than by someone remembering this list.
         """
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             ACP_BACKENDS_USER_LEVEL_AGENT_SPECS_ONLY,
             overlay_project_scope,
         )
-        from kiro_crew.agent_sdk import backends as backends_mod
-        from kiro_crew.providers.mirrors.registry import has_mirror
+        from efm_go.agent_sdk import backends as backends_mod
+        from efm_go.providers.mirrors.registry import has_mirror
 
         candidates = {
             value
@@ -1516,15 +1516,15 @@ class TestRuntimeSuppliesTheStubbedSet:
 
     @staticmethod
     def _runtime(monkeypatch, overlay, seen):
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         rt = object.__new__(runtime_mod.AcpRuntime)
         rt._acp_backend = runtime_mod.ACP_BACKEND_KAS
         rt._mcp_gateway_overlay = overlay
 
-        import kiro_crew.acp.kas_agents as kas_agents_mod
-        import kiro_crew.agent as agent_mod
-        import kiro_crew.config.paths as paths_mod
+        import efm_go.acp.kas_agents as kas_agents_mod
+        import efm_go.agent as agent_mod
+        import efm_go.config.paths as paths_mod
 
         monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda _a: None)
         monkeypatch.setattr(paths_mod, "kiro_agents_dir", lambda: Path("/agents"))
@@ -1553,7 +1553,7 @@ class TestRuntimeSuppliesTheStubbedSet:
     @pytest.mark.asyncio
     async def test_runtime_carries_each_callers_identity_through_the_harness(self, monkeypatch):
         rt = self._runtime(monkeypatch, None, [])
-        import kiro_crew.acp.kas_agents as kas_agents_mod
+        import efm_go.acp.kas_agents as kas_agents_mod
 
         seen = []
 
@@ -1580,7 +1580,7 @@ class TestRuntimeSuppliesTheStubbedSet:
     async def test_the_overlay_set_is_forwarded(self, monkeypatch):
         seen: list[frozenset] = []
         rt = self._runtime(monkeypatch, "/overlay", seen)
-        import kiro_crew.mcp_gateway.session_servers as session_servers_mod
+        import efm_go.mcp_gateway.session_servers as session_servers_mod
 
         monkeypatch.setattr(
             session_servers_mod,
@@ -1600,7 +1600,7 @@ class TestRuntimeSuppliesTheStubbedSet:
         """The default install: nothing stubbed, so nothing is subtracted."""
         seen: list[frozenset] = []
         rt = self._runtime(monkeypatch, None, seen)
-        import kiro_crew.mcp_gateway.session_servers as session_servers_mod
+        import efm_go.mcp_gateway.session_servers as session_servers_mod
 
         monkeypatch.setattr(
             session_servers_mod, "injection_server_names", lambda _o, _a, **_kw: frozenset()
@@ -1621,7 +1621,7 @@ class TestRuntimeSuppliesTheStubbedSet:
         def _boom(_o, _a, **_kw):
             raise OSError("overlay unreadable")
 
-        import kiro_crew.mcp_gateway.session_servers as session_servers_mod
+        import efm_go.mcp_gateway.session_servers as session_servers_mod
 
         monkeypatch.setattr(session_servers_mod, "injection_server_names", _boom)
 
@@ -1636,7 +1636,7 @@ class TestSpecLookup:
 
     A spec's filename and its declared ``name`` are allowed to differ, and a
     package manager that installs several agents namespaces them as
-    ``<package>-<name>.json``. ``kiro_crew.agent.agent_spec_path`` already
+    ``<package>-<name>.json``. ``efm_go.agent.agent_spec_path`` already
     resolves those by declared name, so a filename-only lookup here fails the
     projection on agents the config, the CLI and the dashboard all resolve.
     """
@@ -1885,7 +1885,7 @@ class TestHoistManagedServers:
 
     @staticmethod
     def _managed(monkeypatch, entry):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         calls = []
 
@@ -1900,7 +1900,7 @@ class TestHoistManagedServers:
     def test_hoisted_elements_carry_the_session_token(self, monkeypatch):
         # The runtime stamps the token before the hoist runs, so these elements
         # are the only managed servers that would otherwise start without it.
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
         calls = self._managed(monkeypatch, {"command": "/opt/kc", "args": ["mcp-core"]})
         projected = self._projected()
@@ -1924,7 +1924,7 @@ class TestHoistManagedServers:
         # KAS spawns the hoisted element itself, so gatewayd's own-binary check
         # never runs on it: a spec naming another program kirocrew-core must get
         # the managed launch, not this session's identity for its own binary.
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
         self._managed(monkeypatch, {"command": "/opt/kc", "args": ["mcp-core"]})
         projected = self._projected(
@@ -1945,7 +1945,7 @@ class TestHoistManagedServers:
         assert env[STUB_SESSION_TOKEN_ENV] == "tok-1"
 
     def test_an_unresolvable_managed_launch_is_hoisted_without_the_token(self, monkeypatch):
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
         self._managed(monkeypatch, None)
         _, with_token = hoist_managed_servers(
@@ -2039,11 +2039,11 @@ class TestHoistManagedServers:
         import builtins
         import sys
 
-        monkeypatch.delitem(sys.modules, "kiro_crew.acp.session_mcp", raising=False)
+        monkeypatch.delitem(sys.modules, "efm_go.acp.session_mcp", raising=False)
         real_import = builtins.__import__
 
         def guarded(name, *args, **kwargs):
-            if name == "kiro_crew.acp.session_mcp":
+            if name == "efm_go.acp.session_mcp":
                 raise AssertionError("session_mcp imported on the no-payload path")
             return real_import(name, *args, **kwargs)
 

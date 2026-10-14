@@ -15,7 +15,7 @@ from unittest import mock
 
 import pytest
 
-import kiro_crew.executors as ex
+import efm_go.executors as ex
 
 
 def setup_function() -> None:

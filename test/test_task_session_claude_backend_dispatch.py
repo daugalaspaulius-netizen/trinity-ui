@@ -15,9 +15,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.types import ACP_BACKEND_KIRO
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
+from efm_go.acp.types import ACP_BACKEND_KIRO
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
 
 
 @pytest.fixture
@@ -76,7 +76,7 @@ class TestTaskSessionClaudeBackendDispatch:
                     ),
                 ) as bootstrap_spy,
                 patch(
-                    "kiro_crew.acp.harness.kiro.KiroHarness.resolve_spawn",
+                    "efm_go.acp.harness.kiro.KiroHarness.resolve_spawn",
                     new=AsyncMock(
                         side_effect=AssertionError("claude task step built a kiro-cli spawn plan")
                     ),

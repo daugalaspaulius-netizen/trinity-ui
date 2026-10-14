@@ -1,7 +1,7 @@
 """The pipeline board CARD: the page binds exactly what the flattener writes.
 
-``mypy src/kiro_crew/`` checks both ends of ``build_pipeline_board`` -- a
-:class:`~kiro_crew.work_vocab.WorkBoardView` in, a ``PipelineBoardPanel`` out, required
+``mypy src/efm_go/`` checks both ends of ``build_pipeline_board`` -- a
+:class:`~efm_go.work_vocab.WorkBoardView` in, a ``PipelineBoardPanel`` out, required
 keys and all. It cannot see inside ``dashboard_card_pages/pipeline_board.html``, so the
 html end of the agreement needs a reader of its own. This is that reader.
 
@@ -42,14 +42,14 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import pipeline_board_contract as contract
-from kiro_crew.dashboard.dynamic_cards import (
+from efm_go import pipeline_board_contract as contract
+from efm_go.dashboard.dynamic_cards import (
     _FIELD_NAME,
     MAX_DATA_BYTES,
     MAX_HTML_BYTES,
     normalize_card,
 )
-from kiro_crew.pipeline_board_contract import (
+from efm_go.pipeline_board_contract import (
     BOARD_COLUMN_NAMES,
     BOARD_STAT_KEYS,
     BOARD_TEMPLATE_ID,
@@ -63,8 +63,8 @@ from kiro_crew.pipeline_board_contract import (
     panel_card_data,
     validate_judgment,
 )
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
-from kiro_crew.work_vocab import WORK_ITEM_STATES, WorkBoardView
+from efm_go.subprocess_utf8 import UTF8_TEXT
+from efm_go.work_vocab import WORK_ITEM_STATES, WorkBoardView
 
 # ``MAX_DATA_BYTES``/``MAX_HTML_BYTES`` and ``_FIELD_NAME`` are IMPORTED FROM THE HOST,
 # not restated. The contract module keeps its own copies so it can bound a card without
@@ -689,16 +689,16 @@ def test_a_note_that_adds_something_is_kept() -> None:
 
 #: The drawer template whose rendering this card replaces. While it exists it is the card's
 #: post-restart producer: opening the drawer republishes a card the in-memory store lost.
-_DRAWER_TEMPLATE = "src/kiro_crew/agent_panel_templates/kirocrew-pipeline-conductor.html"
+_DRAWER_TEMPLATE = "src/efm_go/agent_panel_templates/kirocrew-pipeline-conductor.html"
 
 #: Where a rehydrator may live, as (module, attribute) pairs. Resolved with ``getattr`` on the
 #: IMPORTED module, never grepped: a comment, a docstring or an unrelated identifier carrying one of
 #: these words satisfies a text search, and the one check standing between the drawer's removal and
 #: a board nobody can see must not be satisfiable by prose.
 _REHYDRATOR_SITES = (
-    ("kiro_crew.dashboard.card_lifecycle", "rehydrate_derived"),
-    ("kiro_crew.dashboard.handlers.agent_panel", "_rehydrate_derived_card"),
-    ("kiro_crew.dashboard.card_lifecycle", "rebuild_derived_card"),
+    ("efm_go.dashboard.card_lifecycle", "rehydrate_derived"),
+    ("efm_go.dashboard.handlers.agent_panel", "_rehydrate_derived_card"),
+    ("efm_go.dashboard.card_lifecycle", "rebuild_derived_card"),
 )
 
 
@@ -730,7 +730,7 @@ def _rehydrator_probe() -> tuple[Any, Any, Any, None]:
     """
     from types import SimpleNamespace
 
-    from kiro_crew.dashboard import card_lifecycle as lifecycle_mod
+    from efm_go.dashboard import card_lifecycle as lifecycle_mod
 
     slot = SimpleNamespace(
         key="chat-1875",
@@ -1477,7 +1477,7 @@ def test_the_card_page_ships_in_the_wheel_and_the_sdist() -> None:
     root = card_template_path().parents[3]
     directory = card_template_path().parent.name
     assert f"{directory}/*.html" in (root / "setup.cfg").read_text(encoding="utf-8")
-    assert f"src/kiro_crew/{directory} *.html" in (root / "MANIFEST.in").read_text(encoding="utf-8")
+    assert f"src/efm_go/{directory} *.html" in (root / "MANIFEST.in").read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------

@@ -27,13 +27,13 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.connections import registry as registry_mod
-from kiro_crew.connections.tool_aliases import derived_alias
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.connections import registry as registry_mod
+from efm_go.connections.tool_aliases import derived_alias
 
 _REPO = Path(__file__).resolve().parents[1]
-_DOC = _REPO / "src/kiro_crew/docs/connections.md"
-_REGISTRY = _REPO / "src/kiro_crew/connections/registry.json"
+_DOC = _REPO / "src/efm_go/docs/connections.md"
+_REGISTRY = _REPO / "src/efm_go/connections/registry.json"
 
 #: The doc writes every provider list as ``<Word> entries: A, B, C``, one per row
 #: of the visibility table. Anchoring on the row's first cell is what keeps a
@@ -229,6 +229,6 @@ class TestCrossReferences:
             assert "](connections.md)" in text, f"connections.md is not linked from {index}"
 
     def test_the_doc_is_in_the_tips_allowlist(self) -> None:
-        from kiro_crew.tips_allowlist import TIP_DOC_ALLOWLIST
+        from efm_go.tips_allowlist import TIP_DOC_ALLOWLIST
 
         assert "connections.md" in TIP_DOC_ALLOWLIST

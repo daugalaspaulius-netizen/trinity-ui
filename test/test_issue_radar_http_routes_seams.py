@@ -30,8 +30,8 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from dashboard_owner_helpers import NoConfiguredOwner
 
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh
-from kiro_crew.apps.builtins.issue_radar.backend import provider, routes, store
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh
+from efm_go.apps.builtins.issue_radar.backend import provider, routes, store
 
 BASE = "/api/apps/issue-radar"
 SHA = "a" * 40
@@ -764,7 +764,7 @@ class TestProviderContextPerRequest(unittest.IsolatedAsyncioTestCase):
             mock.patch.object(store, "refresh_labels_cache", side_effect=_refresh),
             mock.patch.object(gh, "list_repo_labels", side_effect=_fetch("github")),
             mock.patch(
-                "kiro_crew.apps.builtins.issue_radar.backend.gitlab_client.list_repo_labels",
+                "efm_go.apps.builtins.issue_radar.backend.gitlab_client.list_repo_labels",
                 side_effect=_fetch("gitlab"),
             ),
         ):

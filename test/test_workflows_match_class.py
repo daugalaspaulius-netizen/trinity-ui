@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.workflows.validate import validate
+from efm_go.workflows.validate import validate
 
 _TEMPLATE = (
     'META = {{"name": "m"}}\n\n\n'

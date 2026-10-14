@@ -8,11 +8,11 @@ import shutil
 
 import pytest
 
-from kiro_crew import cli_cloud, platform_compat
-from kiro_crew.cloud import connect as connect_mod
-from kiro_crew.cloud import ec2
-from kiro_crew.cloud.config import CloudConfig
-from kiro_crew.cloud.launch_state import LaunchState
+from efm_go import cli_cloud, platform_compat
+from efm_go.cloud import connect as connect_mod
+from efm_go.cloud import ec2
+from efm_go.cloud.config import CloudConfig
+from efm_go.cloud.launch_state import LaunchState
 
 
 def _args(**kw):
@@ -78,7 +78,7 @@ class TestDispatch:
 
     def test_setup_cloud_step_skips_on_eof(self, monkeypatch, capsys):
         # Piped `kirocrew setup` (no stdin) must skip the cloud step, not crash.
-        from kiro_crew import cli_setup
+        from efm_go import cli_setup
 
         def raise_eof(_prompt):
             raise EOFError
@@ -90,7 +90,7 @@ class TestDispatch:
     def test_dispatch_validation_error_fails_cleanly(self, monkeypatch, capsys):
         # A malformed user value (e.g. --tag with a bad charset) must render
         # the same clean one-liner as AWSError — never a raw traceback.
-        from kiro_crew.validation import ValidationError
+        from efm_go.validation import ValidationError
 
         def raise_validation(_args):
             raise ValidationError("tag", "invalid characters")
@@ -105,7 +105,7 @@ class TestDispatch:
     def test_dispatch_aws_error_fails_cleanly(self, monkeypatch, capsys):
         # AWS failures outside an action's own try/except (e.g. the
         # ec2.describe() in status) must also render the clean one-liner.
-        from kiro_crew.cloud.aws import AWSError
+        from efm_go.cloud.aws import AWSError
 
         def raise_aws(_args):
             raise AWSError("token has expired", action="sts:GetCallerIdentity")
@@ -268,7 +268,7 @@ class TestDestroy:
         under ``--yes`` it keeps it without asking. So the same read refuses here, and the
         wizard is never entered.
         """
-        from kiro_crew.cloud import wizard
+        from efm_go.cloud import wizard
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         real = tmp_path / "somewhere-else.json"
@@ -299,7 +299,7 @@ class TestDestroy:
         )
         monkeypatch.setattr(ec2, "destroy", lambda *a, **k: {"destroyed": True})
         monkeypatch.setattr(connect_mod, "unregister_instance", lambda *a, **k: True)
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(
             source_mod, "delete_source", lambda *a, **k: {"removed": True, "uri": "", "error": ""}
@@ -380,7 +380,7 @@ class TestDestroy:
             ec2, "destroy", lambda *a, **k: destroyed.update(called=True) or {"destroyed": True}
         )
         monkeypatch.setattr(connect_mod, "unregister_instance", lambda *a, **k: True)
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(
             source_mod, "delete_source", lambda *a, **k: {"removed": True, "uri": "", "error": ""}
@@ -405,7 +405,7 @@ class TestDestroy:
         )
         monkeypatch.setattr(ec2, "destroy", lambda *a, **k: {"destroyed": True})
         monkeypatch.setattr(connect_mod, "unregister_instance", lambda *a, **k: True)
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         monkeypatch.setattr(
             source_mod,
@@ -436,7 +436,7 @@ class TestDestroy:
             ec2, "describe", lambda *a, **k: {"exists": True, "instance_id": "i-0abc"}
         )
         monkeypatch.setattr(ec2, "destroy", lambda *a, **k: {"destroyed": False})
-        import kiro_crew.cloud.source as source_mod
+        import efm_go.cloud.source as source_mod
 
         def _boom(*a, **k):  # pragma: no cover - must not run on unconfirmed delete
             raise AssertionError("source must not be deleted when teardown is unconfirmed")
@@ -477,7 +477,7 @@ class TestCloudLogin:
         assert "already signed in" in capsys.readouterr().out
 
     def test_login_surfaces_device_url_and_waits(self, monkeypatch, capsys):
-        from kiro_crew.cloud.login import LoginPrompt
+        from efm_go.cloud.login import LoginPrompt
 
         monkeypatch.setattr(cli_cloud, "_resolve", lambda _a: ("dev", "us-east-1"))
         monkeypatch.setattr(cli_cloud, "_resolve_tag", lambda _a: "kc-1")
@@ -505,7 +505,7 @@ class TestCloudLogin:
         assert "Signed in" in out
 
     def test_login_not_approved_returns_1(self, monkeypatch, capsys):
-        from kiro_crew.cloud.login import LoginPrompt
+        from efm_go.cloud.login import LoginPrompt
 
         monkeypatch.setattr(cli_cloud, "_resolve", lambda _a: ("dev", "us-east-1"))
         monkeypatch.setattr(cli_cloud, "_resolve_tag", lambda _a: "kc-1")

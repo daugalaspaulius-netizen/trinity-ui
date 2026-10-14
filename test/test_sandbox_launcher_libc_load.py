@@ -17,7 +17,7 @@ the confinement the launcher exists to establish.
 The spawned userns probe already followed this rule; these tests hold the
 launcher to it too, so the two pre-confinement scripts cannot drift apart again.
 
-The launcher is ``kiro_crew.sandbox_launcher_program``, and the file a spawn runs is
+The launcher is ``efm_go.sandbox_launcher_program``, and the file a spawn runs is
 that module's source with one plan line substituted
 (``test_sandbox_launcher_program.py`` holds that). So:
 
@@ -52,8 +52,8 @@ from pathlib import Path
 import pytest
 from test_sandbox_launcher_program import payload, refusal
 
-from kiro_crew import sandbox_launcher, sandbox_launcher_program, sandbox_plan
-from kiro_crew.sandbox import _PROBE_SHIM_CODE
+from efm_go import sandbox_launcher, sandbox_launcher_program, sandbox_plan
+from efm_go.sandbox import _PROBE_SHIM_CODE
 
 program = sandbox_launcher_program
 

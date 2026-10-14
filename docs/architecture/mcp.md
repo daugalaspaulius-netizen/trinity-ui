@@ -705,7 +705,7 @@ kiro-cli 2.10.0+ watches `~/.kiro/agents` and `mcp.json` and reconciles a
 RUNNING session against an edit: only the changed servers restart, the
 conversation is kept, and the change applies at the next turn boundary. That
 makes the restart above redundant on that harness — it exists only to make
-kiro-cli re-read a file it already watches. `kiro_crew/mcp_hot_reload.py` owns
+kiro-cli re-read a file it already watches. `efm_go/mcp_hot_reload.py` owns
 the gate, and it is keyed to the processes actually running, never to the
 binary on disk: every live provider — the registered sessions plus the warm
 pool the reset would drain — must declare `LLMProvider.mcp_config_hot_reload`
@@ -730,7 +730,7 @@ there is nothing a reset could reach, so the answer is also to skip.
 `POST /api/sessions/restart` stays the unconditional manual path.
 
 The skip is inferred from that declaration, not observed: kiro-cli's
-`_kiro.dev/mcp/server_initialized` notification is the signal that a reconcile
+`_efm.go/mcp/server_initialized` notification is the signal that a reconcile
 actually spawned the server, and the gate does not yet consult it. A watcher
 that fails at runtime therefore reads as success with nothing red; the
 troubleshooting entry below and the manual restart are the recovery, and
@@ -776,7 +776,7 @@ Both halves of the fingerprint fold exactly three gateway-computed spellings
 for a manifest's bare `python3` and for the `kirocrew` host CLI) folds only as
 the command, the absolute path of the `deps_boot` shim folds only as an argument
 (`hashing.launch_token_bytes`, which takes the slot's role from the caller), and
-the directory holding the `kiro_crew` package folds only as an `os.pathsep`
+the directory holding the `efm_go` package folds only as an `os.pathsep`
 segment of the declared `PYTHONPATH` (`hashing.env_value_bytes`, which takes the
 key). Each hashes by role rather than by the versioned directory a release places
 it in, so the approval survives the upgrade that moves that install. Matching is
@@ -848,7 +848,7 @@ write applies with no broker restart:
   longer or shorter window takes effect on the next pass. It is read in the
   GATEWAY process, which is where the config watcher runs.
 - **`apps_enabled`** — retired as a preference (nothing writes it; see
-  [mcp-apps.md](../../src/kiro_crew/docs/mcp-apps.md)), but a stored `false` is
+  [mcp-apps.md](../../src/efm_go/docs/mcp-apps.md)), but a stored `false` is
   still an opt-out. The MCP Apps gate reads it on every call through the
   fingerprint-cached `KiroCrewConfig.load()`, so the opt-out applies with no
   daemon restart, and an unreadable config fails closed.
@@ -1034,7 +1034,7 @@ old-daemon compatibility.
 `_spawns_own_control_plane` vetting gatewayd applies before it hands a pooled
 backend the token: control-plane name, managed binary by real path, exact args,
 no loader or `PYTHON*` overlay in the child env (Kiro Crew's own pinned UTF-8
-values excepted), and no import root shadowing `kiro_crew`. A kept token also
+values excepted), and no import root shadowing `efm_go`. A kept token also
 gets `PYTHONSAFEPATH` (and `PYTHONNOUSERSITE` unless user-site holds this
 package). Every other target has the token removed, so a third-party binary
 never inherits it. Without the token a fallback control plane relies on the
@@ -1116,7 +1116,7 @@ restored before it is spawned or persisted. `which` can append uppercase `.EXE`
 from `PATHEXT` even when the file is named `demo-mcp.exe`. Windows can open
 that path, but a launcher that dispatches by its own basename with a
 case-sensitive lookup can reject it. The repair
-(`kiro_crew.env.resolved_command_casing`) scans the resolved path's parent
+(`efm_go.env.resolved_command_casing`) scans the resolved path's parent
 directory and substitutes the unique case-insensitive basename match instead of
 canonicalizing the full path.
 
@@ -1617,7 +1617,7 @@ must not be one an agent should be granted SEPARATELY, which would make it a
 sources already reads this data from that store, so the counts add no reach.
 
 `kirocrew-core` tools with no CLI twin, grouped by concern (authoritative list:
-`kiro_crew.mcp_tools.build_tool_list()`, which is what `mcp_core._list_tools`
+`efm_go.mcp_tools.build_tool_list()`, which is what `mcp_core._list_tools`
 answers `tools/list` from):
 
 - **Subagents:** `spawn_status`, `spawn_continue`, `spawn_steer`,
@@ -1723,7 +1723,7 @@ answers `tools/list` from):
 ### A `kirocrew-core` tool has two halves
 
 Each tool is declared twice in the same per-domain module under
-`kiro_crew/mcp_tools/` (`spawn.py`, `artifacts.py`, `workflows.py`, …), and
+`efm_go/mcp_tools/` (`spawn.py`, `artifacts.py`, `workflows.py`, …), and
 nothing at runtime notices when only one half lands:
 
 - Its **descriptor** — name, model-facing description, JSON Schema — is returned
@@ -1742,7 +1742,7 @@ name is claimed twice.
 Handlers reach the server's shared plumbing — `_post`/`_get`, the identity
 resolvers, the governance vets — as **attributes of `mcp_core`**, not as direct
 imports. That is deliberate: an attribute lookup resolves at call time, so a test
-that rebinds one (`patch("kiro_crew.mcp_core._post")`, `setattr(mcp_core, "sel",
+that rebinds one (`patch("efm_go.mcp_core._post")`, `setattr(mcp_core, "sel",
 …)`) still intercepts the handler. A direct import would bind at import time and
 silently escape every such patch. `mcp_core._HANDLER_SURFACE` names the bindings
 that exist only for this purpose, so an import cleanup cannot quietly delete one.
@@ -2379,7 +2379,7 @@ compares the command actually exec'd (by real path) and its args against the
 invocation `agent.managed_mcp_spec_entry` emits for that name and records the
 verdict as `Backend.control_plane`; the handler forwards the token on that flag
 only. The invocation being ours is still not proof of what runs: the managed
-spec falls back to `<python> -m kiro_crew <sub>` when no launcher resolves, and
+spec falls back to `<python> -m efm_go <sub>` when no launcher resolves, and
 the child's CWD could carry foreign code under our name. Python's `PYTHON*`
 environment namespace is an extensible interpreter control surface: entries can add roots, execute hooks, select an executable, or move
 user-site without changing the command, and the dynamic-loader `LD_*` / `DYLD_*`
@@ -2409,7 +2409,7 @@ removing the surface rather than inspecting it. A `--user` install is the case t
 keeps user-site enabled, because its own package lives there; an unresolvable
 user-site is treated the same way, leaving the child's import behaviour unchanged
 rather than guessing. The verdict is false when either root holds an importable
-`kiro_crew` other than this process's package. A `--user` install therefore keeps
+`efm_go` other than this process's package. A `--user` install therefore keeps
 its token: its user-site holds the very package this process is running, which
 matches. Disabling user-site instead would break that install shape outright. A namespace directory
 without `__init__.py` does not count, and a dev gateway whose project CWD is its
@@ -2418,7 +2418,7 @@ relax this bearer-token fence: an inert root may cause a safe false-deny, but a
 Python version change cannot create a false-grant.
 
 The verdict is taken BEFORE `spawn_backend` forks, under `asyncio.to_thread`
-(it imports `kiro_crew.agent`, reads config and stats those roots), so foreign
+(it imports `efm_go.agent`, reads config and stats those roots), so foreign
 code cannot erase its shadow before a post-spawn check. An accepted backend is
 still launched with `PYTHONSAFEPATH=1` as defense in depth. After the verdict,
 and for every pooled backend, the spawn site re-applies Kiro Crew's own UTF-8
@@ -2441,7 +2441,7 @@ spawned under its name. A denial for a reserved name is logged at spawn
 (`_deny_control_plane`) naming the backend and the condition that failed — no
 spec entry, a different binary, different args, a non-empty `PYTHON*` / `LD_*` /
 `DYLD_*` variable,
-or a root that shadows `kiro_crew` (named in the message, so per-user site-packages
+or a root that shadows `efm_go` (named in the message, so per-user site-packages
 is distinguishable from the local one) — so an
 install that trips the check has more to read than every cron tool answering
 403. The same reason rides to the denied backend itself: the spawn site records it
@@ -2453,7 +2453,7 @@ in the caller block, emitted only when set), and the backend's
 text pointed at the token and the spec when the cause was neither.
 
 `CONTROL_PLANE_BACKENDS` is named in the daemon itself, in `mcp_gateway/daemon/control_plane.py` (importing
-`acp.session_mcp` would put `kiro_crew.agent` on the daemon's boot path; the
+`acp.session_mcp` would put `efm_go.agent` on the daemon's boot path; the
 set is read from the `mcp_cleanup` leaf instead). It is
 a superset of `acp.session_mcp.CONTROL_PLANE_SERVERS`, not a mirror, because the
 two answer different questions: `CONTROL_PLANE_SERVERS` decides which servers
@@ -2531,7 +2531,7 @@ read. The line-oriented JSON-RPC readers on either side of a stdio MCP server
 (the stdio loop, the auto-improvement app's server, the gateway's stdout pump and
 pre-init reader, the stub's and gatewayd's frame readers, the app-call
 round trip, a script cron's `McpToolClient`) parse through
-`kiro_crew.json_line.parse_json_object_line`, which catches `ValueError` (that
+`efm_go.json_line.parse_json_object_line`, which catches `ValueError` (that
 covers an integer literal past the int-string digit limit too) and
 `RecursionError`, the case a `JSONDecodeError` arm misses, and returns `None` for
 anything that is not an object. `None` there never means end of stream. The
@@ -2840,7 +2840,7 @@ request I saw".
   (`test_identity_topology.py` enforces both). Read-only paths may use the lenient
   `_resolve_session_key()`.
 - A tool on `kirocrew-core`, `kirocrew-cron` or `kirocrew-dashboard` declares its
-  display title in `src/kiro_crew/data/mcp_tool_titles.json`. The server serves it
+  display title in `src/efm_go/data/mcp_tool_titles.json`. The server serves it
   as the MCP `Tool.title`, and the dashboard and channel task labels read the same
   file for the tool-call row's title. `test_mcp_tool_titles.py` fails when a listed
   tool and the table disagree.

@@ -304,7 +304,7 @@ describe("shouldReresolveBackend", () => {
 
   it("pins the watchdog's exit status so the two sides cannot drift apart", () => {
     const backend = fs.readFileSync(
-      path.join(__dirname, "..", "..", "..", "src", "kiro_crew", "dashboard", "stale_asset_watchdog.py"),
+      path.join(__dirname, "..", "..", "..", "src", "efm_go", "dashboard", "stale_asset_watchdog.py"),
       "utf8",
     );
     assert.match(backend, new RegExp(`^STALE_ASSET_EXIT_CODE = ${STALE_ASSET_EXIT_CODE}$`, "m"));

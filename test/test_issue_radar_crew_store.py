@@ -47,12 +47,12 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew.apps.builtins.issue_radar.backend import crew_runtime
-from kiro_crew.apps.builtins.issue_radar.backend import crew_store as cs
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log_projection
-from kiro_crew.crew_log.schema import KIND_SESSION
-from kiro_crew.crew_log.store import CrewLog
+from efm_go.apps.builtins.issue_radar.backend import crew_runtime
+from efm_go.apps.builtins.issue_radar.backend import crew_store as cs
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log_projection
+from efm_go.crew_log.schema import KIND_SESSION
+from efm_go.crew_log.store import CrewLog
 
 OWNER, REPO = "kirodotdev", "KiroCrew"  # brand-ok: the repository name
 
@@ -139,7 +139,7 @@ def _eager_folder_held():
     keep that thread out: a scan it started before the patch can assign the index
     after the test's own read and replace what the test is about to check.
     """
-    from kiro_crew.crew_log import eager
+    from efm_go.crew_log import eager
 
     assert eager.drain(timeout=10.0), "the eager folder never settled"
     with eager.paused() as held:
@@ -169,7 +169,7 @@ def test_a_crew_id_in_use_anywhere_is_never_minted_again(tmp_path, monkeypatch):
     other's ledgers into one record. Creation checks every repository's crew records
     and the crew log's slot listing before an id is taken, so a clash cannot happen."""
     other = cs.create_crew("someone", "elsewhere", {"name": "Twin"}, root=tmp_path)
-    from kiro_crew.apps.builtins.issue_radar.backend import store as radar_store
+    from efm_go.apps.builtins.issue_radar.backend import store as radar_store
 
     gitlab_root = radar_store.provider_root(
         root=tmp_path, provider="gitlab", host="gitlab.example.org"
@@ -856,8 +856,8 @@ def test_a_read_continued_from_its_checkpoint_equals_a_cold_fold(tmp_path):
 def test_the_clearable_fields_are_one_list_everywhere():
     """The entry type declares the list; the store re-exports it; validation spells
     it out for the tool schema's enum. Three spellings, one pin."""
-    from kiro_crew import validation
-    from kiro_crew.crew_log.entry_types import RADAR_CLEARABLE_FIELDS
+    from efm_go import validation
+    from efm_go.crew_log.entry_types import RADAR_CLEARABLE_FIELDS
 
     assert tuple(cs.CLEARABLE_FIELDS) == tuple(RADAR_CLEARABLE_FIELDS)
     assert frozenset(cs.CLEARABLE_FIELDS) == validation._ISSUE_RADAR_CREW_CLEARABLE_FIELDS
@@ -869,7 +869,7 @@ def test_an_append_the_writer_refused_raises_instead_of_answering(tmp_path, monk
     is not a commit -- the write raises, the caller is told, and the fold shows
     nothing. Synthesizing an answer is reserved for a writer still holding the
     entry past the flush budget."""
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
@@ -987,8 +987,8 @@ def test_two_updates_with_the_same_line_but_different_fields_both_fold(tmp_path)
     """The collapse of a repeated entry keys on the whole update, not on the line's
     display identity: two same-millisecond calls with equal event text but
     different patches must both apply, while an exact repeat applies once."""
-    from kiro_crew.crew_log import projection as crew_log
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log import projection as crew_log
+    from efm_go.crew_log.schema import Entry
 
     def entry(seq, data):
         return Entry(
@@ -1022,8 +1022,8 @@ def test_a_retried_update_stamped_later_is_still_applied_once():
     sent again; the retry is the same update stamped seconds later. Its line id
     carries the stamp, so the repeat check keys on the payload alone: the update and
     its event apply once, and a re-applied ``tried`` does not list twice."""
-    from kiro_crew.crew_log import projection as crew_log
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log import projection as crew_log
+    from efm_go.crew_log.schema import Entry
 
     data = {
         "crew_id": "c_0a1b2c3d",
@@ -1051,8 +1051,8 @@ def test_an_identical_update_after_an_intervening_one_is_a_new_update():
     is recording a new transition, and it applies -- a history-wide check would
     silently drop it. A retry is the next update for its item, so the narrow check
     still catches it."""
-    from kiro_crew.crew_log import projection as crew_log
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log import projection as crew_log
+    from efm_go.crew_log.schema import Entry
 
     base = {"crew_id": "c_0a1b2c3d", "owner": OWNER, "repo": REPO, "number": 7}
     blocked = {**base, "phase": "awaiting-ci", "event": "waiting on CI", "event_kind": "ci"}
@@ -1087,9 +1087,9 @@ def test_ci_members_and_labels_read_off_bytes_are_re_bounded_by_the_fold():
     fold reads bytes off a file: every member is re-bounded to the record tool's own
     type and ceiling, and the label count is capped, so an oversized reading cannot
     make every retained item hold it."""
-    from kiro_crew.crew_log import entry_types
-    from kiro_crew.crew_log import projection as crew_log
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log import entry_types
+    from efm_go.crew_log import projection as crew_log
+    from efm_go.crew_log.schema import Entry
 
     data = {
         "crew_id": "c_0a1b2c3d",
@@ -1119,8 +1119,8 @@ def test_ci_members_and_labels_read_off_bytes_are_re_bounded_by_the_fold():
 def test_rejected_approaches_are_bounded_per_item_newest_kept():
     """Every list the fold retains has a named bound; ``tried`` keeps the newest
     RADAR_TRIED_LIMIT rows of one item, which is what a resume reads."""
-    from kiro_crew.crew_log import projection as crew_log
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log import projection as crew_log
+    from efm_go.crew_log.schema import Entry
 
     base = {
         "crew_id": "c_0a1b2c3d",
@@ -1148,7 +1148,7 @@ def test_rejected_approaches_are_bounded_per_item_newest_kept():
 
 
 def _fold_entries(crew_log, datas):
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     return crew_log.fold(
         "radar",
@@ -1170,7 +1170,7 @@ def test_work_items_are_bounded_finished_ones_evicted_first_and_counted(monkeypa
     oldest finish first, never the item just written; an evicted item takes its
     phase history along; and the count is reported so a bounded record is told
     from a complete one."""
-    from kiro_crew.crew_log import projection as crew_log
+    from efm_go.crew_log import projection as crew_log
 
     monkeypatch.setattr(crew_log, "RADAR_ITEM_LIMIT", 4)
     base = {"crew_id": "c_0a1b2c3d", "owner": OWNER, "repo": REPO, "event_kind": "implement"}
@@ -1202,7 +1202,7 @@ def test_a_retry_after_eviction_puts_the_item_back_rather_than_deduping_away(mon
     sets, so an evicted item's digest can outlive the item. A retry matching that stale
     digest must APPLY: returning early would leave the crew told its update landed while
     the row is gone."""
-    from kiro_crew.crew_log import projection as crew_log
+    from efm_go.crew_log import projection as crew_log
 
     monkeypatch.setattr(crew_log, "RADAR_ITEM_LIMIT", 2)
     base = {"crew_id": "c_0a1b2c3d", "owner": OWNER, "repo": REPO, "event_kind": "implement"}
@@ -1221,7 +1221,7 @@ def test_a_retry_after_eviction_puts_the_item_back_rather_than_deduping_away(mon
 
 
 def test_this_crews_passes_are_bounded_earliest_decided_evicted_and_counted(monkeypatch):
-    from kiro_crew.crew_log import projection as crew_log
+    from efm_go.crew_log import projection as crew_log
 
     monkeypatch.setattr(crew_log, "RADAR_SKIP_LIMIT", 2)
     base = {"crew_id": "c_0a1b2c3d", "owner": OWNER, "repo": REPO, "event_kind": "skip"}
@@ -1243,8 +1243,8 @@ def test_this_crews_passes_are_bounded_earliest_decided_evicted_and_counted(monk
 def test_a_ci_reading_keeps_only_the_declared_member_keys():
     """``ci_state`` is merged key by key; an undeclared key would grow the item by
     key without bound, so the fold keeps the declared members and no other."""
-    from kiro_crew.crew_log import entry_types
-    from kiro_crew.crew_log import projection as crew_log
+    from efm_go.crew_log import entry_types
+    from efm_go.crew_log import projection as crew_log
 
     base = {
         "crew_id": "c_0a1b2c3d",
@@ -1325,7 +1325,7 @@ def test_the_carry_marks_its_files_only_after_every_entry_landed(tmp_path, monke
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
     item_file = _legacy_item(tmp_path, cid, 2251)
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     real_recorded = crew_log_emit.on_radar_recorded
     calls = {"n": 0}
@@ -1379,7 +1379,7 @@ def test_a_carry_still_queued_in_the_writer_refuses_the_write_that_triggered_it(
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
     item_file = _legacy_item(tmp_path, cid, 2251)  # phase implementing: an EDITING item
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     real_flush = crew_log_emit.flush
     behind = {"on": True}
@@ -1641,7 +1641,7 @@ def test_the_two_phase_classifications_do_not_coincide(tmp_path):
 def test_the_vocabularies_are_the_ones_the_entry_type_declares(tmp_path):
     """The store re-exports the crew log's constants rather than owning a copy:
     the entry type's closed enums and the writer's refusals must be ONE set."""
-    from kiro_crew.crew_log import entry_types as et
+    from efm_go.crew_log import entry_types as et
 
     assert cs.PHASES is et.RADAR_PHASES
     assert cs.EVENT_KINDS is et.RADAR_EVENT_KINDS
@@ -2007,7 +2007,7 @@ def test_reads_apply_units_in_the_order_they_recorded_not_header_order(tmp_path,
     units by the order the crew RECORDED into them. Header clock order is what a
     backward clock step inverts; here the store is made to list the units in that
     inverted order, and the read still applies the later write last."""
-    from kiro_crew.crew_log import store as crew_log_store
+    from efm_go.crew_log import store as crew_log_store
 
     crew = _crew(tmp_path)
     cid = crew["id"]
@@ -2089,7 +2089,7 @@ def test_the_unit_order_write_never_follows_a_planted_link(tmp_path):
     assert (
         victim.read_text(encoding="utf-8") == "operator data\n"
     ), "nothing written through the link"
-    from kiro_crew import atomic_write as atomic_write_module
+    from efm_go import atomic_write as atomic_write_module
 
     if atomic_write_module.pinned_parent_replace_supported():
         # The staged file is renamed over the link: the link is replaced, never followed.
@@ -2116,8 +2116,8 @@ def test_the_name_screen_refuses_a_linked_order_file_on_every_platform(tmp_path,
     What the POSIX test proves is that a real link makes that function answer True; what
     this pins is that the writer ACTS on the answer rather than writing through it.
     """
-    from kiro_crew import atomic_write as atomic_write_module
-    from kiro_crew import platform_compat
+    from efm_go import atomic_write as atomic_write_module
+    from efm_go import platform_compat
 
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
@@ -2178,7 +2178,7 @@ def test_the_unit_order_fallback_screen_answers_for_a_junction_not_only_a_symlin
     this fallback, since it has no descriptor-relative rename -- with no boundary.
     Pinned by reporting a link through the predicate while the filesystem holds a
     plain directory: a screen that consulted ``is_symlink`` would write anyway."""
-    from kiro_crew import atomic_write as atomic_write_module
+    from efm_go import atomic_write as atomic_write_module
 
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
@@ -2207,7 +2207,7 @@ def test_a_unit_listing_that_fails_refuses_the_write_and_empties_the_read(tmp_pa
     empty record says nothing false about what could be read). A WRITE lists strictly:
     folded over an empty record because the scan failed, the one-editor rule would
     admit a second editor, so the write is refused instead."""
-    from kiro_crew.crew_log import store as crew_log_store
+    from efm_go.crew_log import store as crew_log_store
 
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
@@ -2240,7 +2240,7 @@ def test_a_unit_holding_entries_it_cannot_prove_refuses_the_write(tmp_path, monk
     unit's header will not read. That unit's entries hold the editing item, so a write
     folded over the shorter listing passes the one-editor rule and admits a second
     editor -- the same loss as a scan that failed, reached without any failure."""
-    from kiro_crew.crew_log import store as crew_log_store
+    from efm_go.crew_log import store as crew_log_store
 
     crew, retired = _live_crew(tmp_path)
     cid = crew["id"]
@@ -2283,7 +2283,7 @@ def test_a_unit_directory_with_nothing_in_it_yet_does_not_refuse_the_write(tmp_p
     scan landing in that window sees a child with no content. It holds no entries, so
     leaving it out loses nothing -- and refusing on it would make every crew write
     fail whenever any session anywhere happened to be starting its log."""
-    from kiro_crew.crew_log import store as crew_log_store
+    from efm_go.crew_log import store as crew_log_store
 
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
@@ -2302,7 +2302,7 @@ def test_a_cached_listing_that_is_short_a_unit_still_refuses_the_write(tmp_path,
     fingerprint, so once a READ has cached the shorter map the next strict caller takes
     a cache HIT and never reaches the scan. The refusal has to be re-derived on the hit
     or the validating caller is served exactly the listing the scan refused."""
-    from kiro_crew.crew_log import store as crew_log_store
+    from efm_go.crew_log import store as crew_log_store
 
     crew, retired = _live_crew(tmp_path)
     cid = crew["id"]
@@ -2538,8 +2538,8 @@ def test_the_folds_text_clamp_is_the_cap_the_record_tool_itself_accepts(tmp_path
     sit AT the largest value the record tool accepts, never below it. Below it, an
     ordinary field the tool took is shortened on every read -- silent corruption of
     state a resume acts on, not a bound."""
-    from kiro_crew.crew_log import projection as crew_log
-    from kiro_crew.validation import MAX_MEDIUM_STRING
+    from efm_go.crew_log import projection as crew_log
+    from efm_go.validation import MAX_MEDIUM_STRING
 
     assert (
         crew_log.RADAR_TEXT_LIMIT == MAX_MEDIUM_STRING
@@ -2955,7 +2955,7 @@ def test_the_item_bound_never_evicts_the_item_that_holds_the_edit(monkeypatch):
     evicting the item in an editing phase makes the rule answer "no editor" and admit a
     second one -- and an append-only log cannot retract the lines the two then write. So
     an editing item is never the victim even when no terminal item is available."""
-    from kiro_crew.crew_log import projection as crew_log
+    from efm_go.crew_log import projection as crew_log
 
     monkeypatch.setattr(crew_log, "RADAR_ITEM_LIMIT", 3)
     base = {"crew_id": "c_0a1b2c3d", "owner": OWNER, "repo": REPO, "event_kind": "implement"}
@@ -2985,7 +2985,7 @@ def test_a_retry_whose_item_was_evicted_is_not_vouched_for_by_a_surviving_skip(m
     EITHER survived let the surviving pass stand in for the evicted item, and the
     same-digest retry -- the one thing that would put the item back -- returned early
     and left it missing."""
-    from kiro_crew.crew_log import projection as crew_log
+    from efm_go.crew_log import projection as crew_log
 
     monkeypatch.setattr(crew_log, "RADAR_ITEM_LIMIT", 2)
     base = {"crew_id": "c_0a1b2c3d", "owner": OWNER, "repo": REPO, "event_kind": "skip"}
@@ -3028,7 +3028,7 @@ def test_an_append_that_landed_after_the_flush_budget_publishes_its_unit_precede
     that write's own append moves the live unit after it."""
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
-    from kiro_crew.crew_log import emit as crew_log_emit
+    from efm_go.crew_log import emit as crew_log_emit
 
     real_flush = crew_log_emit.flush
     monkeypatch.setattr(crew_log_emit, "flush", lambda *a, **k: False)
@@ -3116,8 +3116,8 @@ def test_a_unit_recreated_under_its_id_folds_cold_however_far_its_seq_climbed(tm
     log's seq was still below the cached one, and the stale checkpoint would never be
     offered to the comparison this pins.
     """
-    from kiro_crew.crew_log import eager
-    from kiro_crew.crew_log.store import segment_paths
+    from efm_go.crew_log import eager
+    from efm_go.crew_log.store import segment_paths
 
     crew, sid = _live_crew(tmp_path)
     cid = crew["id"]
@@ -3182,8 +3182,8 @@ def test_an_oversized_legacy_ci_member_is_bounded_not_a_lost_row(tmp_path):
 def test_the_radar_ci_bounds_and_label_limit_are_the_record_tools_own():
     """The fold's per-member CI bounds and label count are copied from the record
     tool's field specs; this pins the copy so the two cannot drift apart silently."""
-    from kiro_crew.crew_log import entry_types
-    from kiro_crew.validation import ISSUE_RADAR_CREW_RECORD_SCHEMA
+    from efm_go.crew_log import entry_types
+    from efm_go.validation import ISSUE_RADAR_CREW_RECORD_SCHEMA
 
     specs = {f.name: f for f in ISSUE_RADAR_CREW_RECORD_SCHEMA.fields}
     assert set(entry_types.RADAR_CI_BOUNDS) == set(entry_types.RADAR_CI_KEYS)
@@ -3638,7 +3638,7 @@ def test_a_write_that_does_not_move_the_item_leaves_phase_off_the_event_line(tmp
 
 def _fallback_only(monkeypatch):
     """Take the by-name branch on a host that would otherwise write through a fd."""
-    from kiro_crew import atomic_write as atomic_write_module
+    from efm_go import atomic_write as atomic_write_module
 
     monkeypatch.setattr(atomic_write_module, "pinned_parent_replace_supported", lambda: False)
 
@@ -3868,7 +3868,7 @@ def test_the_pinned_parent_branch_is_unchanged_on_a_posix_host(tmp_path):
 
     POSIX production takes this branch, so this is the pin that says POSIX behaviour
     did not move: the walk is reached only through the by-name fallback."""
-    from kiro_crew import atomic_write as atomic_write_module
+    from efm_go import atomic_write as atomic_write_module
 
     if not atomic_write_module.pinned_parent_replace_supported():
         pytest.skip("this host has no descriptor-relative rename; the fallback is the only path")
@@ -4075,7 +4075,7 @@ def test_the_posix_read_path_takes_no_hold(tmp_path):
     an open that refuses a reparse point. POSIX has neither, writes through a pinned
     descriptor instead, and a walk here would refuse components that POSIX today
     resolves -- so this is the pin that says POSIX behaviour did not move."""
-    from kiro_crew import atomic_write as atomic_write_module
+    from efm_go import atomic_write as atomic_write_module
 
     if not atomic_write_module.pinned_parent_replace_supported():
         pytest.skip("this host has no descriptor-relative rename; the fallback is the only path")
@@ -4590,7 +4590,7 @@ def test_a_read_back_that_misses_the_written_entry_warns_with_seq_unit_and_path(
     CI red can show."""
     import logging
 
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     data = {"crew_id": "c_0a1b2c3d", "owner": OWNER, "repo": REPO, "number": 7}
     other = Entry(

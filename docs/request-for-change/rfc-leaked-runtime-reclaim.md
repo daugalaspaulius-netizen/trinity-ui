@@ -18,7 +18,7 @@ superseded-by: []
 - Status: draft. Acceptance requested from a maintainer; the status flips to `accepted` when one records it here. Step A of the rollout is on main as #15755 (reading and reclaim) and #15764 (dashboard card) and needed no record because it adds no default kill authority. Steps B and C extend what the gateway kills by default, and the First Principles lane reads that decision from the base branch, so this document lands on its own first.
 - Author: iamwhatever
 - Created: 2026-10-01
-- Related: #14510 (the reconciler's kill arm, which predates this RFC), `src/kiro_crew/runtime_reconcile.py`, `src/kiro_crew/runtime_ownership.py` (`authorize_runtime_kill`), `src/kiro_crew/session_pid.py` (`_is_untracked_managed_agent_orphan`), `src/kiro_crew/session_scope_reap.py` (`instance_slice_pids`, `reap_abandoned_agent_scopes`)
+- Related: #14510 (the reconciler's kill arm, which predates this RFC), `src/efm_go/runtime_reconcile.py`, `src/efm_go/runtime_ownership.py` (`authorize_runtime_kill`), `src/efm_go/session_pid.py` (`_is_untracked_managed_agent_orphan`), `src/efm_go/session_scope_reap.py` (`instance_slice_pids`, `reap_abandoned_agent_scopes`)
 
 ## Summary
 
@@ -165,11 +165,11 @@ Step A as merged already limits a confirmed reclaim to install-stamped candidate
 
 | Issue | How |
 |---|---|
-| [#11899](https://github.com/kirodotdev/KiroCrew/issues/11899) | detected leaks are reclaimed (steps A–C) |
-| [#11789](https://github.com/kirodotdev/KiroCrew/issues/11789) | closed sessions' runtime trees are reclaimed by the reconciler's tree signal |
-| [#8133](https://github.com/kirodotdev/KiroCrew/issues/8133) | unowned slice processes are counted and reclaimed |
-| [#13324](https://github.com/kirodotdev/KiroCrew/issues/13324) | leaked MCP members of a runtime group are reclaimed with their root |
-| [#11991](https://github.com/kirodotdev/KiroCrew/issues/11991) | Unresolved. Windows has no reading until it has a native candidate source (job objects) |
+| [#11899](https://efmleads.com/issues/11899) | detected leaks are reclaimed (steps A–C) |
+| [#11789](https://efmleads.com/issues/11789) | closed sessions' runtime trees are reclaimed by the reconciler's tree signal |
+| [#8133](https://efmleads.com/issues/8133) | unowned slice processes are counted and reclaimed |
+| [#13324](https://efmleads.com/issues/13324) | leaked MCP members of a runtime group are reclaimed with their root |
+| [#11991](https://efmleads.com/issues/11991) | Unresolved. Windows has no reading until it has a native candidate source (job objects) |
 
 ## Open questions
 

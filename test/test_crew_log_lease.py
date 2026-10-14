@@ -27,10 +27,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, CrewLogError
-from kiro_crew.crew_log.lease import LEASE_FILE
-from kiro_crew.platform_compat import file_lock
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, CrewLogError
+from efm_go.crew_log.lease import LEASE_FILE
+from efm_go.platform_compat import file_lock
 
 CHILD = Path(__file__).parent / "fixtures" / "crew_log_lease_child.py"
 SESSION = "lease-owner-session"
@@ -217,7 +217,7 @@ def test_a_release_fired_by_the_collector_inside_an_acquire_does_not_deadlock(mo
     Mutation guard: making the lock a plain ``threading.Lock`` hangs the acquire
     below, and the bounded wait reports it.
     """
-    from kiro_crew.crew_log import lease
+    from efm_go.crew_log import lease
 
     class Cycle:
         pass

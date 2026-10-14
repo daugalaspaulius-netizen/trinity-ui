@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.connections import RegistryValidationError, get_all_registry_providers
-from kiro_crew.connections import registry as registry_module
-from kiro_crew.connections.registry import (
+from efm_go.connections import RegistryValidationError, get_all_registry_providers
+from efm_go.connections import registry as registry_module
+from efm_go.connections.registry import (
     AUTH_MODE_DCR,
     AUTH_MODE_PREREGISTERED,
     CALLBACK_PATH,

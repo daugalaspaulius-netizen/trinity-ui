@@ -35,8 +35,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent_panel
-from kiro_crew.crew_log.schema import (
+from efm_go import agent_panel
+from efm_go.crew_log.schema import (
     KIND_SESSION,
     MAX_ENTRY_BYTES,
     MAX_REF_SPAN,
@@ -48,7 +48,7 @@ from kiro_crew.crew_log.schema import (
     serialize,
     split_type,
 )
-from kiro_crew.crew_log.store import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT
+from efm_go.crew_log.store import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT
 
 _DOCS = Path(__file__).parent.parent / "docs" / "reference" / "crew-log"
 SESSION_TYPES_DOC = _DOCS / "session-types.md"
@@ -246,7 +246,7 @@ def _emitter_definers(package: Path) -> frozenset[str]:
 
 @functools.lru_cache(maxsize=1)
 def _emit_functions_called_in_the_tree() -> frozenset[str]:
-    """Every ``on_*`` emitter function called under ``src/kiro_crew``.
+    """Every ``on_*`` emitter function called under ``src/efm_go``.
 
     A call site is what makes a type actually written. The module that DEFINES these
     functions is skipped -- an emitter API with no caller writes nothing, which is exactly
@@ -258,7 +258,7 @@ def _emit_functions_called_in_the_tree() -> frozenset[str]:
     marks, which is invisible on a warm Linux filesystem and is shard time on a cold
     Windows one.
     """
-    root = Path(__file__).parent.parent / "src" / "kiro_crew"
+    root = Path(__file__).parent.parent / "src" / "efm_go"
     definers = _emitter_definers(root / "crew_log")
     called: set[str] = set()
     for path in root.rglob("*.py"):

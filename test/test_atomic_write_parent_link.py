@@ -18,7 +18,7 @@ import os
 
 import pytest
 
-from kiro_crew import atomic_write as aw
+from efm_go import atomic_write as aw
 
 SECRET = "sk-live-DEADBEEF"
 
@@ -342,7 +342,7 @@ def test_relocated_data_home_under_the_kiro_home_still_writes(tmp_path, monkeypa
     caches are cleared alongside ``$HOME`` -- otherwise this test would read
     whichever home the process resolved first.
     """
-    from kiro_crew.config import paths as config_paths
+    from efm_go.config import paths as config_paths
 
     relocated = tmp_path / "another-disk"
     relocated.mkdir()
@@ -407,7 +407,7 @@ def test_a_resolver_that_raises_contributes_no_anchor(owned_home, monkeypatch):
     roots are best-effort by design: a resolver that cannot answer drops out and
     the remaining ones still anchor the walk.
     """
-    from kiro_crew.config import paths as config_paths
+    from efm_go.config import paths as config_paths
 
     def _boom():
         raise RuntimeError("Symlink loop from KIRO_HOME")

@@ -13,14 +13,14 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer
 
-from kiro_crew.config import live
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.sections import DecisionProviderConfig, DecisionsConfig
-from kiro_crew.context import ContextBuilder
-from kiro_crew.decisions import log
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.config import live
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.sections import DecisionProviderConfig, DecisionsConfig
+from efm_go.context import ContextBuilder
+from efm_go.decisions import log
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 
 @pytest.mark.asyncio
@@ -60,7 +60,7 @@ async def test_jev_response_reaches_the_assembled_message(
             json.dumps({"enabled": enabled, "endpoint": str(server.make_url("/judge"))}),
             encoding="utf-8",
         )
-        monkeypatch.setattr("kiro_crew.config.loader.decisions_consent_path", lambda: keystone)
+        monkeypatch.setattr("efm_go.config.loader.decisions_consent_path", lambda: keystone)
         cfg.decisions = DecisionsConfig(
             bucket=bucket,
             provider=DecisionProviderConfig(
@@ -71,7 +71,7 @@ async def test_jev_response_reaches_the_assembled_message(
         )
         monkeypatch.setattr(live, "snapshot", lambda: cfg)
         # The vault is the only key source; the loopback judge accepts any bearer.
-        import kiro_crew.secrets.vault as vault_mod
+        import efm_go.secrets.vault as vault_mod
 
         class _Value:
             def reveal(self):

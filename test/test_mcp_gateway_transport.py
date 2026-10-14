@@ -28,9 +28,9 @@ from typing import Any, Iterator
 import pytest
 from tmpdir_helpers import SHORT_TMP_PREFIX, short_tmp_base
 
-from kiro_crew import code_fingerprint as cf
-from kiro_crew import platform_compat as pc
-from kiro_crew.mcp_gateway import transport
+from efm_go import code_fingerprint as cf
+from efm_go import platform_compat as pc
+from efm_go.mcp_gateway import transport
 
 
 @pytest.fixture(autouse=True)
@@ -1036,7 +1036,7 @@ async def test_manager_offloads_prepare_dir_from_the_event_loop(
 ) -> None:
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.mcp_gateway import manager as mgr
+    from efm_go.mcp_gateway import manager as mgr
 
     probe = _LoopProbe()
     monkeypatch.setattr(mgr.transport, "prepare_dir", probe)
@@ -1065,7 +1065,7 @@ async def test_gatewayd_offloads_prepare_dir_from_the_event_loop(
 ) -> None:
     from unittest.mock import AsyncMock
 
-    from kiro_crew.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_gateway import gatewayd as gw
 
     probe = _LoopProbe()
     monkeypatch.setattr(gw.transport, "prepare_dir", probe)

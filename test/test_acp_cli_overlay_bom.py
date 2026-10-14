@@ -12,7 +12,7 @@ from __future__ import annotations
 import codecs
 import json
 
-from kiro_crew.providers.acp import (
+from efm_go.providers.acp import (
     _clear_cli_overlay_effort,
     _read_cli_overlay,
     _write_cli_overlay,

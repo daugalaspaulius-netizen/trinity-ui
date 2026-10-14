@@ -11,21 +11,21 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.github_runner import (
+from efm_go.github_runner import (
     GITHUB_MAX_OWNER_CHARS,
     GITHUB_MAX_REPO_CHARS,
     SetupError,
 )
-from kiro_crew.monitoring import github_pull_request
-from kiro_crew.monitoring.decision import decide_monitor
-from kiro_crew.monitoring.github_pull_request import (
+from efm_go.monitoring import github_pull_request
+from efm_go.monitoring.decision import decide_monitor
+from efm_go.monitoring.github_pull_request import (
     _MAX_SUBJECTS_PER_QUERY,
     GitHubPullRequestProbeResult,
     GitHubPullRequestProvider,
     GitHubPullRequestTarget,
     parse_github_pull_request_target,
 )
-from kiro_crew.monitoring.models import (
+from efm_go.monitoring.models import (
     DEFAULT_MONITOR_CADENCE_SECS,
     DEFAULT_MONITOR_PROVIDER_ERRORS,
     DEFAULT_MONITOR_STALL_TICKS,
@@ -42,12 +42,12 @@ from kiro_crew.monitoring.models import (
     ProviderErrorKind,
     monitor_state_to_dict,
 )
-from kiro_crew.monitoring.pull_request import (
+from efm_go.monitoring.pull_request import (
     PullRequestCheck,
     PullRequestFacts,
     classify_pull_request_facts,
 )
-from kiro_crew.monitoring.shadow import ShadowWakeDeliveryRefused, run_shadow_probe
+from efm_go.monitoring.shadow import ShadowWakeDeliveryRefused, run_shadow_probe
 
 _HEAD = "0123456789abcdef0123456789abcdef01234567"
 
@@ -3839,7 +3839,7 @@ _REST_STATUS_PATH = f"repos/owner/repo/commits/{_HEAD}/status?per_page=100"
 def _rest_pull_request(**changes: object) -> dict[str, object]:
     """One REST pull request in the field spellings GitHub actually answers with.
 
-    Measured against ``repos/kirodotdev/KiroCrew/pulls/11830``: ``merged`` is a
+    Measured against ``repos/efmleads.com/pulls/11830``: ``merged`` is a
     boolean BESIDE ``state`` rather than a third state, ``mergeable`` is a boolean
     rather than an enum, ``mergeable_state`` is lowercase, and the revision is
     reached through ``head.sha``. Writing the fixture in GraphQL's spellings would

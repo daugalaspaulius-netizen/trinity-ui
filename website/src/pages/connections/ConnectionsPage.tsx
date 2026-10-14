@@ -49,7 +49,7 @@ const CONNECTION_STATUS_POLL_MS = 30_000
  *  approval address needs. Linked from the mint_url_rejected feedback via
  *  `Feedback.help`, so the card's remedy ends in a link rather than a bare path. */
 const OAUTH_ENDPOINT_ALLOWLIST_GUIDE_URL =
-  'https://github.com/kirodotdev/KiroCrew/blob/main/docs/guides/connecting-remote-oauth-mcp-server.md#if-the-host-is-not-recognized-the-oauth-endpoint-allowlist'
+  'https://efmleads.com/blob/main/docs/guides/connecting-remote-oauth-mcp-server.md#if-the-host-is-not-recognized-the-oauth-endpoint-allowlist'
 
 export type ConnectionCardState =
   | 'not-connected'

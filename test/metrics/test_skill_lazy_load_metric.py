@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.skills import SkillsLoader
+from efm_go.skills import SkillsLoader
 
 
 class _CapturingRecorder:
@@ -40,7 +40,7 @@ def test_load_skill_hit_emits_metric(skill_dir: Path):
     mgr = SkillsLoader(skills_path=skill_dir, install_builtins=False)
     rec = _CapturingRecorder()
 
-    with patch("kiro_crew.skills.get_recorder", return_value=rec):
+    with patch("efm_go.skills.get_recorder", return_value=rec):
         result = mgr.load_skill("test-skill")
 
     assert result is not None
@@ -61,7 +61,7 @@ def test_load_skill_miss_emits_metric(skill_dir: Path):
     mgr = SkillsLoader(skills_path=skill_dir, install_builtins=False)
     rec = _CapturingRecorder()
 
-    with patch("kiro_crew.skills.get_recorder", return_value=rec):
+    with patch("efm_go.skills.get_recorder", return_value=rec):
         result = mgr.load_skill("nonexistent-skill")
 
     assert result is None
@@ -79,7 +79,7 @@ def test_load_skill_invalid_name_no_metric(skill_dir: Path):
     mgr = SkillsLoader(skills_path=skill_dir, install_builtins=False)
     rec = _CapturingRecorder()
 
-    with patch("kiro_crew.skills.get_recorder", return_value=rec):
+    with patch("efm_go.skills.get_recorder", return_value=rec):
         result = mgr.load_skill("../escape-attempt")
 
     assert result is None

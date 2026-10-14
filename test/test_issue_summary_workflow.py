@@ -143,7 +143,7 @@ class Runner:
             "PATH": f"{bindir}{os.pathsep}{os.environ['PATH']}",
             "FIXTURES": str(self.fixtures),
             "GH_TOKEN": "stub",
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             "GITHUB_OUTPUT": str(self.outputs_file),
             "GITHUB_STEP_SUMMARY": str(self.summary),
             "MARKER": MARKER,
@@ -270,13 +270,13 @@ def test_posts_one_comment_with_all_three_sections(runner: Runner) -> None:
     assert "Opening Settings blanks the dashboard" in body
     assert "the gateway log from around the blank screen" in body
     assert "#4001" in body
-    assert runner.write_target == "POST repos/kirodotdev/KiroCrew/issues/4100/comments"
+    assert runner.write_target == "POST repos/efmleads.com/issues/4100/comments"
 
 
 def test_second_run_edits_the_existing_comment_instead_of_appending(runner: Runner) -> None:
     """A dispatch rehearsal or a retry must not turn the thread into a wall."""
     runner.run(existing_comment=True)
-    assert runner.write_target == "PATCH repos/kirodotdev/KiroCrew/issues/comments/555"
+    assert runner.write_target == "PATCH repos/efmleads.com/issues/comments/555"
 
 
 def test_dry_run_renders_to_the_job_summary_and_posts_nothing(runner: Runner) -> None:

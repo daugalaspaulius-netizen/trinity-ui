@@ -8,16 +8,16 @@ from types import SimpleNamespace
 import pytest
 from test_subagent_continuable import _manager
 
-from kiro_crew import execution_context as execution
-from kiro_crew import subagent, subagent_persistence
-from kiro_crew.history import ConversationLog
-from kiro_crew.subagent import SubagentInfo
+from efm_go import execution_context as execution
+from efm_go import subagent, subagent_persistence
+from efm_go.history import ConversationLog
+from efm_go.subagent import SubagentInfo
 
 
 @pytest.fixture
 def legacy_v1_run(tmp_path, monkeypatch):
     """Write the pre-canonical state and sidecar shared by Global and named V1."""
-    from kiro_crew.config import paths
+    from efm_go.config import paths
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     monkeypatch.setattr(paths, "_resolved_home", None)
@@ -285,7 +285,7 @@ async def test_cold_continuation_reads_one_snapshot_off_loop_and_rechecks_busy(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("cold", [False, True])
 async def test_retry_retains_original_member_app_and_mode_after_parent_closes(monkeypatch, cold):
-    from kiro_crew.dashboard.handlers import messaging
+    from efm_go.dashboard.handlers import messaging
 
     parent = "dashboard:retry-parent"
     captured = execution.ExecutionContext(

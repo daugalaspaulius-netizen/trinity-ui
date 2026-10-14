@@ -20,14 +20,14 @@ import time
 
 import pytest
 
-from kiro_crew.context import (
+from efm_go.context import (
     ContextBuilder,
     _neutralize_reply_format_markers,
     _neutralize_structural_markers,
 )
-from kiro_crew.hooks import HookResult
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.hooks import HookResult
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 
 @pytest.fixture(autouse=True)
@@ -352,7 +352,7 @@ class TestSessionContextNeutralized:
 
 class TestChannelHistoryNeutralized:
     def test_forged_marker_in_channel_history_stripped(self, tmp_path):
-        from kiro_crew.channel_history import ChannelHistory
+        from efm_go.channel_history import ChannelHistory
 
         builder = _make_builder(tmp_path)
         ch = ChannelHistory()
@@ -374,7 +374,7 @@ class TestChannelHistoryNeutralized:
         """An en-dash separator (U+2013) that _MULTIBYTE_TABLE canonicalizes to a
         hyphen must be neutralized BEFORE that translate, so the final prompt
         carries no forged '[CURRENT USER REQUEST - ...]' marker."""
-        from kiro_crew.channel_history import ChannelHistory
+        from efm_go.channel_history import ChannelHistory
 
         builder = _make_builder(tmp_path)
         ch = ChannelHistory()

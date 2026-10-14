@@ -8,8 +8,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.chat import api_chat_slot_project
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard.chat import api_chat_slot_project
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
 
 def _make_app(state: DashboardState) -> web.Application:
@@ -38,7 +38,7 @@ class TestChatSlotProject:
     async def test_set_project(self, tmp_path):
         slot = _ChatSlot("test")
         state = _mock_state(slot)
-        with patch("kiro_crew.dashboard.chat_handlers._save_recent_project"):
+        with patch("efm_go.dashboard.chat_handlers._save_recent_project"):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat/slots/test/project",
@@ -78,7 +78,7 @@ class TestChatSlotProject:
     async def test_sensitive_path_returns_403(self, tmp_path):
         slot = _ChatSlot("test")
         state = _mock_state(slot)
-        with patch("kiro_crew.dashboard.chat_handlers.is_sensitive_path", return_value=True):
+        with patch("efm_go.dashboard.chat_handlers.is_sensitive_path", return_value=True):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat/slots/test/project",
@@ -90,7 +90,7 @@ class TestChatSlotProject:
     async def test_data_home_overlap_returns_actionable_400(self, tmp_path, monkeypatch):
         """Pre-flight: a workspace containing the voice runtime is refused
         at the endpoint with the actionable message, before any session spawn."""
-        import kiro_crew.sandbox as sandbox_mod
+        import efm_go.sandbox as sandbox_mod
 
         # The pre-flight is darwin-gated to match the spawn-time guards it
         # mirrors, so pin the platform for the refusal path.
@@ -126,7 +126,7 @@ class TestChatSlotProject:
         slot = _ChatSlot("test")
         slot.total_messages = 5
         state = _mock_state(slot)
-        with patch("kiro_crew.dashboard.chat_handlers._save_recent_project"):
+        with patch("efm_go.dashboard.chat_handlers._save_recent_project"):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat/slots/test/project",
@@ -152,7 +152,7 @@ class TestChatSlotProject:
         chat_runner consumes the flag so the next message picks up the new CWD."""
         slot = _ChatSlot("test")
         state = _mock_state(slot)
-        with patch("kiro_crew.dashboard.chat_handlers._save_recent_project"):
+        with patch("efm_go.dashboard.chat_handlers._save_recent_project"):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat/slots/test/project",
@@ -170,7 +170,7 @@ class TestChatSlotProject:
         slot = _ChatSlot("test")
         slot.project = str(tmp_path)
         state = _mock_state(slot)
-        with patch("kiro_crew.dashboard.chat_handlers._save_recent_project"):
+        with patch("efm_go.dashboard.chat_handlers._save_recent_project"):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat/slots/test/project",
@@ -190,7 +190,7 @@ class TestFolderProjectDirOverlapPreflight:
     slot-create read path re-runs against stored values."""
 
     def _pin_runtime(self, tmp_path, monkeypatch):
-        import kiro_crew.sandbox as sandbox_mod
+        import efm_go.sandbox as sandbox_mod
 
         monkeypatch.setattr(sandbox_mod.sys, "platform", "darwin")
         runtime = tmp_path / "data" / "run" / "voice-runtime"
@@ -203,7 +203,7 @@ class TestFolderProjectDirOverlapPreflight:
         return runtime
 
     def test_folder_overlap_denied_with_guard_message(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_folders import _folder_project_overlap_denied
+        from efm_go.dashboard.chat_folders import _folder_project_overlap_denied
 
         runtime = self._pin_runtime(tmp_path, monkeypatch)
         err = _folder_project_overlap_denied(str(tmp_path))
@@ -214,7 +214,7 @@ class TestFolderProjectDirOverlapPreflight:
         assert "Pick a project subdirectory" in err
 
     def test_folder_overlap_check_accepts_non_overlapping_dir(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_folders import _folder_project_overlap_denied
+        from efm_go.dashboard.chat_folders import _folder_project_overlap_denied
 
         self._pin_runtime(tmp_path, monkeypatch)
         clean = tmp_path / "clean"

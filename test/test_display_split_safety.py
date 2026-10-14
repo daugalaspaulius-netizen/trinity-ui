@@ -12,7 +12,7 @@ from __future__ import annotations
 import pytest
 
 from conftest import CREDENTIAL_STRADDLE_SHAPES
-from kiro_crew.messaging.display_safety import (
+from efm_go.messaging.display_safety import (
     _balanced_link_reading,
     _first_close_reading,
     _link_free_reading,
@@ -22,8 +22,8 @@ from kiro_crew.messaging.display_safety import (
     safe_split_offset,
     severs_a_credential,
 )
-from kiro_crew.messaging.renderer import _default_redactor
-from kiro_crew.telegram.renderer import _strip_hr
+from efm_go.messaging.renderer import _default_redactor
+from efm_go.telegram.renderer import _strip_hr
 
 
 class TestTheOracleIsAsStrongAsTheSendPath:

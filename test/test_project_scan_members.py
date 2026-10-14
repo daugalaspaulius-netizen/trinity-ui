@@ -23,7 +23,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.project_scan import (
+from efm_go.project_scan import (
     MAX_DECLARATION_BYTES,
     Candidate,
     CandidateTree,
@@ -301,7 +301,7 @@ class TestMemberCandidates:
         # accumulation is keyed on the path, so peak memory is bounded by unique
         # members rather than patterns x matches — asserted on what
         # ``_declared_members`` hands back, not only on the deduplicated preview.
-        from kiro_crew import project_scan as ps
+        from efm_go import project_scan as ps
 
         _npm_root(tmp_path, *(["packages/*"] * 2000))
         _make(tmp_path, "packages/api/", "packages/ui/")
@@ -592,7 +592,7 @@ class TestSensitiveReadGate:
             return real_open(path, *a, **k)
 
         monkeypatch.setattr(
-            "kiro_crew.project_scan.is_sensitive_path", lambda p: str(p) == str(target)
+            "efm_go.project_scan.is_sensitive_path", lambda p: str(p) == str(target)
         )
         monkeypatch.setattr("builtins.open", _spy_open)
 

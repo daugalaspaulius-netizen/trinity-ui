@@ -11,8 +11,8 @@ import pytest
 from member_memory_helpers import env as _member_env
 from member_memory_helpers import request
 
-from kiro_crew import sel as sel_module
-from kiro_crew.dashboard.handlers import _shared, sessions
+from efm_go import sel as sel_module
+from efm_go.dashboard.handlers import _shared, sessions
 
 env = _member_env
 pytestmark = [pytest.mark.asyncio, pytest.mark.xdist_group("member_memory_denial_audit")]
@@ -47,7 +47,7 @@ async def test_member_denial_survives_audit_failure_without_reading_history(
     env.state.conversation_log.list_sessions = list_history
     if not verified_member:
         monkeypatch.setattr(
-            "kiro_crew.execution_context.read_session_execution",
+            "efm_go.execution_context.read_session_execution",
             mock.Mock(side_effect=ValueError("invalid execution record")),
         )
 

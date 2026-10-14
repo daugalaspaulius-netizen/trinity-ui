@@ -124,14 +124,14 @@ jobs:
         # from the previous vector space. That is the correct outcome: those
         # numbers are not comparable.
         run: |
-          DIGEST="$(python3 -c 'from kiro_crew import embeddings; print(embeddings._GGUF_SHA256)')"
+          DIGEST="$(python3 -c 'from efm_go import embeddings; print(embeddings._GGUF_SHA256)')"
           case "$DIGEST" in
             [0-9a-f][0-9a-f]*) ;;
             *) echo "::error::could not read the model digest (got '$DIGEST')"; exit 1 ;;
           esac
           # Derived, not hardcoded: the cache path must follow the code's own idea
           # of where the model lives or the cache silently stops covering it.
-          MODEL_DIR="$(python3 -c 'from kiro_crew import embeddings; print(embeddings.default_model_path().parent)')"
+          MODEL_DIR="$(python3 -c 'from efm_go import embeddings; print(embeddings.default_model_path().parent)')"
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "path=$MODEL_DIR" >> "$GITHUB_OUTPUT"
 
@@ -157,7 +157,7 @@ jobs:
           import asyncio
           import sys
 
-          from kiro_crew import embeddings
+          from efm_go import embeddings
 
           mgr = embeddings.ModelDownloadManager()
           if mgr.model_ready():

@@ -21,8 +21,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import subagent as sa
-from kiro_crew.mcp_tools import spawn as spawn_tools
+from efm_go import subagent as sa
+from efm_go.mcp_tools import spawn as spawn_tools
 
 #: Grammar-valid (pure alphanumerics and dashes) yet credential-shaped, so
 #: redaction rewrites it. The roster's grammar filter cannot catch this class --
@@ -50,7 +50,7 @@ class TestHelperContract:
         """A registered spec named ``reviewer.v2`` is a real agent kiro-cli loads;
         the roster renders it and every ``agent`` tool field admits it, or the
         roster would advertise a name the schema refuses (and vice versa)."""
-        from kiro_crew.validation import (
+        from efm_go.validation import (
             CRON_ADD_SCHEMA,
             SPAWN_CONTINUE_SCHEMA,
             SPAWN_RUN_SCHEMA,

@@ -39,13 +39,13 @@ from _hot_reload_helpers import (
     sel_outcomes,
 )
 
-from kiro_crew.config import live
-from kiro_crew.imessage.transport import IMessageTransport
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.teams.transport import TeamsTransport
-from kiro_crew.teams.transport_dispatch import TeamsDispatcher
-from kiro_crew.whatsapp.transport import WhatsAppTransport
-from kiro_crew.whatsapp.transport_dispatch import WhatsAppDispatcher
+from efm_go.config import live
+from efm_go.imessage.transport import IMessageTransport
+from efm_go.messaging.transport import InboundMessage
+from efm_go.teams.transport import TeamsTransport
+from efm_go.teams.transport_dispatch import TeamsDispatcher
+from efm_go.whatsapp.transport import WhatsAppTransport
+from efm_go.whatsapp.transport_dispatch import WhatsAppDispatcher
 
 # ------------------------------------------------------------------
 # Teams: three holders of one roster
@@ -69,7 +69,7 @@ class TestTeamsAllowList:
     def test_an_unchanged_roster_is_not_audited(self, monkeypatch):
         audited: list[dict] = []
         monkeypatch.setattr(
-            "kiro_crew.teams.transport.sel",
+            "efm_go.teams.transport.sel",
             lambda: SimpleNamespace(log_api_access=lambda **kw: audited.append(kw)),
         )
         t = self._transport()

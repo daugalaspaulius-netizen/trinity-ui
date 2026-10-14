@@ -18,9 +18,9 @@ import pytest
 from test_slack_handler import FakeProvider, FakeSessionManager
 
 from conftest import MockSlackClient
-from kiro_crew.messaging.renderer import credential_redaction_notice, redaction_notice
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.slack.handler import (
+from efm_go.messaging.renderer import credential_redaction_notice, redaction_notice
+from efm_go.providers.base import LLMEvent
+from efm_go.slack.handler import (
     _pending_approvals,
     _thread_agents,
     _trusted_sessions,
@@ -50,7 +50,7 @@ def _clean_state():
 def _ensure_reactions_enabled(monkeypatch):
     import dataclasses
 
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     _real_load = KiroCrewConfig.load
 
@@ -66,7 +66,7 @@ def _ensure_reactions_enabled(monkeypatch):
 def _force_show_thinking(monkeypatch):
     import dataclasses
 
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     _real_load = KiroCrewConfig.load
 
@@ -317,8 +317,8 @@ class TestCountRedactionTags:
     """The shared two-kind tally every notice surface counts through."""
 
     def test_counts_both_kinds_in_order(self):
-        from kiro_crew.messaging.renderer import count_redaction_tags
-        from kiro_crew.security import (
+        from efm_go.messaging.renderer import count_redaction_tags
+        from efm_go.security import (
             CREDENTIAL_REDACTION_TAGS,
             EXFILTRATION_REDACTION_TAG_PREFIX,
         )
@@ -330,21 +330,21 @@ class TestCountRedactionTags:
         assert count_redaction_tags(text) == (2, 1)
 
     def test_url_tag_is_counted_by_prefix_never_equality(self):
-        from kiro_crew.messaging.renderer import count_redaction_tags
-        from kiro_crew.security import EXFILTRATION_REDACTION_TAG_PREFIX
+        from efm_go.messaging.renderer import count_redaction_tags
+        from efm_go.security import EXFILTRATION_REDACTION_TAG_PREFIX
 
         # The URL tag interpolates the redacted domain, so no constant form
         # exists to compare equal against — the prefix is the identity.
         assert count_redaction_tags(f"{EXFILTRATION_REDACTION_TAG_PREFIX}a.example]") == (0, 1)
 
     def test_clean_text_counts_zero_zero(self):
-        from kiro_crew.messaging.renderer import count_redaction_tags
+        from efm_go.messaging.renderer import count_redaction_tags
 
         assert count_redaction_tags("All green, deploy finished.") == (0, 0)
 
     def test_matches_what_the_redactors_actually_emit(self):
-        from kiro_crew.messaging.renderer import count_redaction_tags
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.messaging.renderer import count_redaction_tags
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
         out, _ = redact_exfiltration_urls(f"curl '{_EXFIL_URL}'")
         out, _ = redact_credentials(out + f" then psql {_SECRET_URI}")

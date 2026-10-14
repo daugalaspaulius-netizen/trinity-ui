@@ -15,9 +15,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.dashboard import crash_dump_store
-from kiro_crew.dashboard.crash_dump_store import (
+from efm_go import platform_compat
+from efm_go.dashboard import crash_dump_store
+from efm_go.dashboard.crash_dump_store import (
     DUMP_PREFIX,
     DUMP_SUFFIX,
     dump_age_seconds,
@@ -119,9 +119,9 @@ def _create_stacked_dump(dumps_dir: Path, name: str) -> Path:
         "Thread 0x00007f1234 (most recent call first):\n"
         '  File "/usr/lib/python3.12/socket.py", line 704, in close\n'
         "    self._real_close()\n"
-        '  File "/home/user/.kirocrew/src/kiro_crew/acp/client.py", line 312, in _teardown\n'
+        '  File "/home/user/.kirocrew/src/efm_go/acp/client.py", line 312, in _teardown\n'
         "    self._sock.close()\n"
-        '  File "/home/user/.kirocrew/src/kiro_crew/dashboard/server.py", line 800, in _cleanup\n'
+        '  File "/home/user/.kirocrew/src/efm_go/dashboard/server.py", line 800, in _cleanup\n'
         "    await self._teardown()\n"
     )
     return p
@@ -276,9 +276,9 @@ def _create_multi_thread_dump(dumps_dir: Path, name: str, *, idle_workers: int =
         "Thread 0x00007f0000beef (most recent call first):\n"
         '  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 166 in submit\n'
         '  File "/usr/lib/python3.12/asyncio/base_events.py", line 867 in run_in_executor\n'
-        '  File "/home/user/.kirocrew/src/kiro_crew/dashboard/server.py", line 246 in _should_prevent_sleep\n'
+        '  File "/home/user/.kirocrew/src/efm_go/dashboard/server.py", line 246 in _should_prevent_sleep\n'
         '  File "/usr/lib/python3.12/asyncio/base_events.py", line 645 in run_forever\n'
-        '  File "/home/user/.kirocrew/src/kiro_crew/cli.py", line 2046 in main\n'
+        '  File "/home/user/.kirocrew/src/efm_go/cli.py", line 2046 in main\n'
     )
     p = dumps_dir / name
     p.write_text(
@@ -317,7 +317,7 @@ def test_dump_first_stack_lines_prefers_current_thread_marker(dumps_dir: Path) -
         "# If thread stacks appear below, the event loop wedged and faulthandler fired.\n"
         "\n"
         "Current thread 0x00007f00000001 (most recent call first):\n"
-        '  File "/home/user/.kirocrew/src/kiro_crew/dashboard/state.py", line 100 in _flush\n'
+        '  File "/home/user/.kirocrew/src/efm_go/dashboard/state.py", line 100 in _flush\n'
         "Thread 0x00007f00000002 (most recent call first):\n"
         '  File "/usr/lib/python3.12/queue.py", line 171 in get\n'
     )
@@ -370,7 +370,7 @@ def test_dump_age_never_negative_with_future_mtime(dumps_dir: Path) -> None:
 
 def test_watchdog_dump_file_param_custom_callback(dumps_dir: Path) -> None:
     """Verify custom dump callback is invoked when dump_file is set (wiring only)."""
-    from kiro_crew.dashboard.loop_watchdog import LoopStallWatchdog
+    from efm_go.dashboard.loop_watchdog import LoopStallWatchdog
 
     class _Clock:
         def __init__(self) -> None:
@@ -406,7 +406,7 @@ def test_watchdog_soft_only_dump_is_written_to_discoverable_file(
     dumps_dir: Path, monkeypatch
 ) -> None:
     """Without a hard timer, the soft dump must remain visible to doctor."""
-    from kiro_crew.dashboard import loop_watchdog
+    from efm_go.dashboard import loop_watchdog
 
     class _Clock:
         def __init__(self) -> None:
@@ -447,7 +447,7 @@ def test_watchdog_armed_soft_dump_leaves_crash_sentinel_untouched(
     dumps_dir: Path, monkeypatch
 ) -> None:
     """A recovered managed-service stall must not look like a fatal crash."""
-    from kiro_crew.dashboard import loop_watchdog
+    from efm_go.dashboard import loop_watchdog
 
     class _Clock:
         def __init__(self) -> None:
@@ -492,7 +492,7 @@ def test_watchdog_rearm_failure_restores_discoverable_soft_dump(
     dumps_dir: Path, monkeypatch
 ) -> None:
     """A cancelled alarm that cannot re-arm must degrade to the file fallback."""
-    from kiro_crew.dashboard import loop_watchdog
+    from efm_go.dashboard import loop_watchdog
 
     class _Clock:
         def __init__(self) -> None:
@@ -681,7 +681,7 @@ def test_dump_file_fd_survives_dropping_last_python_reference(dumps_dir: Path) -
 
 def test_dump_replay_lines_basic(dumps_dir: Path) -> None:
     """Replay reads all stack lines within limits."""
-    from kiro_crew.dashboard.crash_dump_store import dump_replay_lines
+    from efm_go.dashboard.crash_dump_store import dump_replay_lines
 
     p = _create_stacked_dump(dumps_dir, f"{DUMP_PREFIX}20260717T030000Z{DUMP_SUFFIX}")
     lines, truncated = dump_replay_lines(p)
@@ -692,7 +692,7 @@ def test_dump_replay_lines_basic(dumps_dir: Path) -> None:
 
 def test_dump_replay_lines_truncates_by_line_count(dumps_dir: Path) -> None:
     """Replay truncates at max_lines."""
-    from kiro_crew.dashboard.crash_dump_store import dump_replay_lines
+    from efm_go.dashboard.crash_dump_store import dump_replay_lines
 
     p = _create_stacked_dump(dumps_dir, f"{DUMP_PREFIX}20260717T030000Z{DUMP_SUFFIX}")
     lines, truncated = dump_replay_lines(p, max_lines=2)
@@ -702,7 +702,7 @@ def test_dump_replay_lines_truncates_by_line_count(dumps_dir: Path) -> None:
 
 def test_dump_replay_lines_truncates_by_bytes(dumps_dir: Path) -> None:
     """Replay truncates at max_bytes."""
-    from kiro_crew.dashboard.crash_dump_store import dump_replay_lines
+    from efm_go.dashboard.crash_dump_store import dump_replay_lines
 
     p = _create_stacked_dump(dumps_dir, f"{DUMP_PREFIX}20260717T030000Z{DUMP_SUFFIX}")
     lines, truncated = dump_replay_lines(p, max_bytes=50)
@@ -713,7 +713,7 @@ def test_dump_replay_lines_truncates_by_bytes(dumps_dir: Path) -> None:
 
 def test_dump_replay_lines_header_only(dumps_dir: Path) -> None:
     """Replay returns empty for header-only dumps."""
-    from kiro_crew.dashboard.crash_dump_store import dump_replay_lines
+    from efm_go.dashboard.crash_dump_store import dump_replay_lines
 
     p = _create_header_only_dump(dumps_dir, f"{DUMP_PREFIX}20260717T030000Z{DUMP_SUFFIX}")
     lines, truncated = dump_replay_lines(p)
@@ -729,7 +729,7 @@ def test_dump_replay_lines_wedged_thread_survives_truncation(dumps_dir: Path) ->
     showed only ``Queue.get`` workers plus ``[truncated]`` — omitting the one
     stack that explains the stall.
     """
-    from kiro_crew.dashboard.crash_dump_store import dump_replay_lines
+    from efm_go.dashboard.crash_dump_store import dump_replay_lines
 
     # 40 idle workers x 4 lines >> the 12-line cap below; main thread is last.
     p = _create_multi_thread_dump(
@@ -749,7 +749,7 @@ def test_dump_replay_lines_wedged_thread_survives_truncation(dumps_dir: Path) ->
 
 def test_startup_crash_dump_replay_logs_stacks(dumps_dir: Path, caplog: pytest.LogCaptureFixture) -> None:
     """Verify that the journal replay logic logs dump content at WARNING."""
-    from kiro_crew.dashboard.crash_dump_store import (
+    from efm_go.dashboard.crash_dump_store import (
         dump_replay_lines,
         newest_dump_with_stacks,
     )

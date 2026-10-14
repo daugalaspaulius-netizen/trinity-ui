@@ -94,7 +94,7 @@ def test_the_fake_backend_keeps_readiness_offline() -> None:
     """
     script = _read(INSTALLER_SCRIPT)
     assert "KIROCREW_KIRO_BIN" in script
-    assert "kiro_crew.testing.fake_acp_backend" in script
+    assert "efm_go.testing.fake_acp_backend" in script
     assert "KIROCREW_SKIP_MODEL_DOWNLOAD" in script
 
 

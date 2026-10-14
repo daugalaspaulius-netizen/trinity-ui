@@ -6,10 +6,10 @@ import json
 import pytest
 from member_memory_helpers import env as _member_env
 
-from kiro_crew.config import loader
-from kiro_crew.learn import Lesson, LessonStore
-from kiro_crew.memory_startup import MemoryStartup, MemoryStartupUnavailable
-from kiro_crew.vector_memory import open_member_database
+from efm_go.config import loader
+from efm_go.learn import Lesson, LessonStore
+from efm_go.memory_startup import MemoryStartup, MemoryStartupUnavailable
+from efm_go.vector_memory import open_member_database
 
 env = _member_env
 
@@ -22,7 +22,7 @@ def _fields(lessons: list[Lesson]) -> list[tuple]:
     comparisons failed with two operands whose reprs were CHARACTER-IDENTICAL down
     to every field -- the signature of one module imported under two identities
     (``/tmp`` is a symlink to ``/private/tmp`` there, so a path-derived
-    ``sys.path`` entry can yield ``kiro_crew.learn`` twice), which makes the two
+    ``sys.path`` entry can yield ``efm_go.learn`` twice), which makes the two
     ``Lesson`` classes distinct objects.
 
     What this test is about is WHICH lessons survived the recovery fence, and every

@@ -27,12 +27,12 @@ from chat_test_helpers import _make_state
 from test_discord import _prime_live
 from test_discord_sessions import _bind_to_chat1, _dispatcher, _log, _message
 
-from kiro_crew.dashboard import channel_handoff as ch
-from kiro_crew.dashboard import chat_delivery as cd
-from kiro_crew.dashboard import chat_runner as cr
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.history import HUMAN_TURN_META_KEY
-from kiro_crew.messaging.transport import InboundMessage
+from efm_go.dashboard import channel_handoff as ch
+from efm_go.dashboard import chat_delivery as cd
+from efm_go.dashboard import chat_runner as cr
+from efm_go.dashboard import session_control as sc
+from efm_go.history import HUMAN_TURN_META_KEY
+from efm_go.messaging.transport import InboundMessage
 
 # The refusal every case below either avoids or keeps.
 _REFUSAL = "busy with a turn started elsewhere"
@@ -414,9 +414,9 @@ async def test_run_chat_hands_a_commands_off_message_to_the_model_as_text(
 ) -> None:
     """With the switch, "/clear" goes to ``stream`` as text; without it, to
     ``stream_command`` -- the dashboard's own path is the parity half."""
-    from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+    from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     state.broadcast_ws = MagicMock()
     state.push_slots_update = MagicMock()
@@ -457,9 +457,9 @@ async def test_a_recovery_requeue_keeps_the_commands_off_stamp(tmp_path, monkeyp
     runner's recovery; the requeued entry carries the stamp, so the retry's drain
     hands "/clear" to the model again instead of running it. A plain turn's requeue
     carries no stamp, so the composer's own retried command still runs."""
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     state.broadcast_ws = MagicMock()
     state.push_slots_update = MagicMock()
@@ -985,7 +985,7 @@ async def test_an_allowed_thread_still_gets_its_drop_notice(tmp_path) -> None:
 def test_the_channel_recipient_stamp_does_not_survive_a_restore(tmp_path) -> None:
     """It names a write target on a network surface, so an edited line cannot
     make the drain post the entry's text into a conversation of its choosing."""
-    from kiro_crew.dashboard.slot_queue_repository import sanitize_restored_queue
+    from efm_go.dashboard.slot_queue_repository import sanitize_restored_queue
 
     raw = [
         {
@@ -1096,7 +1096,7 @@ async def test_a_full_fence_set_queues_the_handoff_and_keeps_every_fence(tmp_pat
     dispatcher, client, sessions, state, slot, enqueued = await _bound_to_busy_dashboard(
         tmp_path, steer_client=steer_client
     )
-    from kiro_crew.dashboard.chat_delivery import MAX_PENDING_STEERS
+    from efm_go.dashboard.chat_delivery import MAX_PENDING_STEERS
 
     # MAX_PENDING_STEERS distinct audiences already recorded this turn; the live
     # audience is none of them, so this message names a new one.
@@ -1314,15 +1314,15 @@ async def _turn_emits_monitor_watch_after_a_steer(tmp_path, monkeypatch, *, chan
     """
     from test_acp_tool_identity import _stub_state
 
-    from kiro_crew import session_directive
-    from kiro_crew.acp.types import (
+    from efm_go import session_directive
+    from efm_go.acp.types import (
         EVENT_COMPLETE,
         EVENT_TEXT_CHUNK,
         EVENT_TOOL_CALL,
         EVENT_TOOL_RESULT,
         AcpEvent,
     )
-    from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
+    from efm_go.dashboard.chat_delivery import steer_into_running_turn
 
     state = _stub_state(tmp_path)
     slot = state.get_or_create_slot("chat-1")
@@ -1457,7 +1457,7 @@ async def test_a_close_during_the_steer_reports_the_text_queued_for_the_next_res
         tmp_path, steer_client=steer_client
     )
 
-    from kiro_crew.dashboard.slot_queue_repository import queue_persist_signature
+    from efm_go.dashboard.slot_queue_repository import queue_persist_signature
 
     async def _close_then_accept(_msg):
         state._slots.pop("chat-1")
@@ -1706,7 +1706,7 @@ async def test_a_full_live_queue_refuses_the_enqueue(tmp_path) -> None:
     other copy), are both wrong; the channel human still holds the text and is
     told why it was not added.
     """
-    from kiro_crew.dashboard.slot_queue_repository import MAX_LIVE_QUEUE_ENTRIES
+    from efm_go.dashboard.slot_queue_repository import MAX_LIVE_QUEUE_ENTRIES
 
     dispatcher, client, sessions, state, slot, enqueued = await _bound_to_busy_dashboard(
         tmp_path, steer_client=None
@@ -1727,8 +1727,8 @@ async def test_a_full_live_queue_refuses_the_enqueue(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_the_fence_cap_fallthrough_still_meets_the_queue_bound(tmp_path) -> None:
     """At the fence cap the queue arm is the fallback, and its bound is the one refusal left."""
-    from kiro_crew.dashboard.chat_delivery import MAX_PENDING_STEERS
-    from kiro_crew.dashboard.slot_queue_repository import MAX_LIVE_QUEUE_ENTRIES
+    from efm_go.dashboard.chat_delivery import MAX_PENDING_STEERS
+    from efm_go.dashboard.slot_queue_repository import MAX_LIVE_QUEUE_ENTRIES
 
     steer_client = _steerable()
     dispatcher, client, sessions, state, slot, _ = await _bound_to_busy_dashboard(

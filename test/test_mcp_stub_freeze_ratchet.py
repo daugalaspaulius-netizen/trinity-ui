@@ -18,7 +18,7 @@ from __future__ import annotations
 import ast
 import pathlib
 
-SRC = pathlib.Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+SRC = pathlib.Path(__file__).resolve().parent.parent / "src" / "efm_go"
 HANDLER = SRC / "dashboard" / "handlers" / "mcp.py"
 
 # Keys whose write makes the legacy alias resolution unstable or authoritative.

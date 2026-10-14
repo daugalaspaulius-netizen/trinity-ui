@@ -37,14 +37,14 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import mcp_discovery
-from kiro_crew.dashboard import handlers_instances
-from kiro_crew.dashboard.handlers import _shared as shared_handlers
-from kiro_crew.dashboard.handlers import mcp as mcp_handlers
-from kiro_crew.dashboard.routes import agent_config as agent_config_routes
-from kiro_crew.dashboard.routes import connections as connections_routes
-from kiro_crew.dashboard.routes import messaging as messaging_routes
-from kiro_crew.dashboard.routes import system as system_routes
+from efm_go import mcp_discovery
+from efm_go.dashboard import handlers_instances
+from efm_go.dashboard.handlers import _shared as shared_handlers
+from efm_go.dashboard.handlers import mcp as mcp_handlers
+from efm_go.dashboard.routes import agent_config as agent_config_routes
+from efm_go.dashboard.routes import connections as connections_routes
+from efm_go.dashboard.routes import messaging as messaging_routes
+from efm_go.dashboard.routes import system as system_routes
 
 pytestmark = pytest.mark.asyncio
 
@@ -57,11 +57,11 @@ _MUTATING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 #: The five modules whose mutating routes carry the gate.
 _GATED_MODULES = frozenset(
     {
-        "kiro_crew.dashboard.handlers.hooks",
-        "kiro_crew.dashboard.handlers.mcp_custom",
-        "kiro_crew.dashboard.handlers.mcp",
-        "kiro_crew.dashboard.handlers.security",
-        "kiro_crew.dashboard.handlers_instances",
+        "efm_go.dashboard.handlers.hooks",
+        "efm_go.dashboard.handlers.mcp_custom",
+        "efm_go.dashboard.handlers.mcp",
+        "efm_go.dashboard.handlers.security",
+        "efm_go.dashboard.handlers_instances",
     }
 )
 
@@ -100,7 +100,7 @@ _REFUSAL = {"error": "owner authorization required", "code": "owner_only"}
 #: ``_shared.require_owner_dashboard_request``. ``handlers_instances`` is absent on
 #: purpose: it gates inside ``_guard``, which is a pure function covered directly
 #: below, so it needs no route drive at all.
-_SHARED_GATE_MODULES = frozenset(_GATED_MODULES - {"kiro_crew.dashboard.handlers_instances"})
+_SHARED_GATE_MODULES = frozenset(_GATED_MODULES - {"efm_go.dashboard.handlers_instances"})
 
 #: Status the stand-in gate answers with. Outside every status any handler body
 #: produces, so "the gate ran and stopped here" cannot be confused with a body.
@@ -405,7 +405,7 @@ async def test_the_standalone_local_install_is_admitted_by_the_predicate() -> No
     predicate itself rather than by driving routes, because a caller the gate
     ADMITS is exactly the caller whose handler body would then execute.
     """
-    from kiro_crew.dashboard.handlers.source_providers import is_owner_dashboard_request
+    from efm_go.dashboard.handlers.source_providers import is_owner_dashboard_request
 
     for subject in ("local-app", "local-startup"):
         assert is_owner_dashboard_request(_req(subject, owner_id="")) is True, subject
@@ -528,7 +528,7 @@ async def test_every_instances_route_runs_the_guard() -> None:
     routes = {
         (r.method, r.resource.canonical)
         for r in app.router.routes()
-        if getattr(r.handler, "__module__", "") == "kiro_crew.dashboard.handlers_instances"
+        if getattr(r.handler, "__module__", "") == "efm_go.dashboard.handlers_instances"
         and r.resource is not None
         and r.method != "HEAD"
     }
@@ -602,7 +602,7 @@ async def test_no_other_gated_route_belongs_to_the_strict_internal_set() -> None
     """
     import re
 
-    from kiro_crew.dashboard import server as server_mod
+    from efm_go.dashboard import server as server_mod
 
     with open(server_mod.__file__, encoding="utf-8") as fh:
         source = fh.read()

@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew import platform_compat as pc
+from efm_go import platform_compat as pc
 
 
 @pytest.fixture
@@ -159,7 +159,7 @@ def test_transient_failure_duplicate_and_metadata_retry_refund_once(kernel, monk
 
     # Fail the drain's OWN retirement rather than a caller-supplied stand-in, so
     # the retained-receipt path is exercised where production runs it.
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     original_retire = session_pid.retire_windows_tree_tracking
 
@@ -337,7 +337,7 @@ async def test_both_physical_spawn_expressions_obey_admission(kernel, module_nam
     import inspect
     import textwrap
 
-    mod = importlib.import_module(f"kiro_crew.acp.{module_name}")
+    mod = importlib.import_module(f"efm_go.acp.{module_name}")
     cls = mod.AcpClient if module_name == "client" else mod.AcpRuntime
     method = cls._spawn if module_name == "client" else cls._spawn_admitted
     tree = ast.parse(textwrap.dedent(inspect.getsource(method)))
@@ -384,7 +384,7 @@ async def test_both_physical_spawn_expressions_obey_admission(kernel, module_nam
 
 
 def test_app_capacity_refusal_and_manual_dead_root_preserve_rows(kernel, monkeypatch, tmp_path):
-    from kiro_crew.apps import backend
+    from efm_go.apps import backend
 
     path = tmp_path / "apps.json"
     monkeypatch.setattr(backend, "_pidfile_path", lambda: path)
@@ -412,7 +412,7 @@ def test_app_capacity_refusal_and_manual_dead_root_preserve_rows(kernel, monkeyp
 
 
 def test_app_metadata_failure_keeps_pin_and_capacity_for_maintenance(kernel, monkeypatch, tmp_path):
-    from kiro_crew.apps import backend
+    from efm_go.apps import backend
 
     path = tmp_path / "apps.json"
     monkeypatch.setattr(backend, "_pidfile_path", lambda: path)
@@ -467,7 +467,7 @@ async def test_resume_worker_settles_before_repeated_cancellation(kernel):
 
 @pytest.mark.parametrize("shape", ["_client", "_proc", "_active_proc"])
 def test_sync_provider_shapes_cannot_bypass_capacity(kernel, monkeypatch, shape):
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     root = kernel.add(100)
     for _ in range(2):
@@ -687,7 +687,7 @@ async def test_failed_executor_submission_preserves_admitted_pin_for_maintenance
 
 
 def test_pending_root_tracking_survives_sweep_and_delayed_writeback(kernel, monkeypatch, tmp_path):
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     root = kernel.add(100)
     kernel.denied.add(root)
@@ -711,7 +711,7 @@ def test_pending_root_tracking_survives_sweep_and_delayed_writeback(kernel, monk
 
 
 def test_pending_root_tracking_survives_the_tracked_child_sweep(kernel, monkeypatch, tmp_path):
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     root = kernel.add(100)
     kernel.denied.add(root)

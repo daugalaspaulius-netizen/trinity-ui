@@ -540,8 +540,8 @@ So you do not plan around capabilities that are not here:
   policy-versus-profile algebra, and the distribution engine's internals.
 - [assets/security-policy.example.json](assets/security-policy.example.json) — a
   policy with a `distribution` block filled in, to copy from.
-- [../../src/kiro_crew/docs/troubleshooting.md](../../src/kiro_crew/docs/troubleshooting.md)
+- [../../src/efm_go/docs/troubleshooting.md](../../src/efm_go/docs/troubleshooting.md)
   — the user-facing "MCP tools not working" checklist.
-- Kiro's own documentation: [Enterprise MCP governance](https://kiro.dev/docs/enterprise/governance/mcp/)
-  (administrator setup) and [MCP registry mode](https://kiro.dev/docs/mcp/registry/)
+- Kiro's own documentation: [Enterprise MCP governance](https://efmleads.com/docs/enterprise/governance/mcp/)
+  (administrator setup) and [MCP registry mode](https://efmleads.com/docs/mcp/registry/)
   (registry mode and registry-type overrides).

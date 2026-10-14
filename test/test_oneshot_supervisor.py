@@ -28,10 +28,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import _process_group_supervisor as supervisor
-from kiro_crew import kiro_prerequisite, platform_compat
-from kiro_crew.dashboard.handlers import agents
-from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+from efm_go import _process_group_supervisor as supervisor
+from efm_go import kiro_prerequisite, platform_compat
+from efm_go.dashboard.handlers import agents
+from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
 # Above every supported platform's pid_max, so no cleanup path can reach a live
 # process by it (same spelling as test/test_update_provider.py).
@@ -487,15 +487,15 @@ def test_api_models_spawns_the_list_under_the_reaping_supervisor(tmp_path: Path)
     cfg = SimpleNamespace(agent=SimpleNamespace(provider="kiro"))
     with (
         patch.object(agents.KiroCrewConfig, "load", return_value=cfg),
-        patch("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
-        patch("kiro_crew.acp.client._resolve_ssh_auth_sock", lambda env: None),
-        patch("kiro_crew.env.augmented_path", lambda p: p),
+        patch("efm_go.acp.client._resolve_kiro_bin_for_spawn", return_value="/usr/bin/kiro-cli"),
+        patch("efm_go.acp.client._resolve_ssh_auth_sock", lambda env: None),
+        patch("efm_go.env.augmented_path", lambda p: p),
         patch(
-            "kiro_crew.dashboard.handlers.agents.wrap_argv",
+            "efm_go.dashboard.handlers.agents.wrap_argv",
             lambda argv, **kwargs: (argv, None),
         ),
-        patch("kiro_crew.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
-        patch("kiro_crew.sandbox.resource_limit_preexec", lambda: None),
+        patch("efm_go.dashboard.handlers.agents.cgroup_scope_argv", lambda argv: argv),
+        patch("efm_go.sandbox.resource_limit_preexec", lambda: None),
         patch.object(agents.asyncio, "create_subprocess_exec", spawn),
     ):
         resp = asyncio.run(agents.api_models(request))

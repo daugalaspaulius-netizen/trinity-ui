@@ -730,7 +730,7 @@ describe('TasksCapacityCard', () => {
   })
 
   it('keeps a long reason un-truncated at the narrow layout and only clips from sm up', async () => {
-    const reason = 'GitHub API rate limited for repo kirodotdev/KiroCrew; the coordinator resumes this run once the reset window at the top of the hour has passed'
+    const reason = 'GitHub API rate limited for repo efmleads.com; the coordinator resumes this run once the reset window at the top of the hour has passed'
     tasksSummary.mockResolvedValue(summary({
       waiting: [row('dep-long', 'waiting_dependency', { wait_reason: reason, age_secs: 70, attempts: 3 })],
     }))

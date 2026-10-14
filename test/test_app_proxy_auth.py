@@ -7,7 +7,7 @@ import time
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.proxy_auth import raw_request_target, verify_proxy_request
+from efm_go.apps.proxy_auth import raw_request_target, verify_proxy_request
 
 SECRET = "s3cret-app-key"
 

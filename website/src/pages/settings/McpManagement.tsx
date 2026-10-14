@@ -62,7 +62,7 @@ import { i18nT } from '../../i18n/t'
  */
 
 const DOCS_URL =
-  'https://github.com/kirodotdev/KiroCrew/blob/main/docs/architecture/design-notes/mcp-stub-decoupling.md'
+  'https://efmleads.com/blob/main/docs/architecture/design-notes/mcp-stub-decoupling.md'
 
 type GatewayStatus = {
   enabled: boolean

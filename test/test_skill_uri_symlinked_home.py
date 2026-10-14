@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.agent_discovery import expand_skill_uri
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.skills import SkillsLoader
+from efm_go.agent_discovery import expand_skill_uri
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.skills import SkillsLoader
 
 needs_posix_symlinks = pytest.mark.skipif(
     not hasattr(os, "symlink") or os.name == "nt", reason="needs POSIX symlinks"
@@ -126,8 +126,8 @@ def test_tilde_mapping_admits_an_exact_read_while_the_catalog_builds(
 
 
 def test_a_unc_mapping_glob_is_never_resolved_outside_the_fence(tmp_path, monkeypatch, opened):
-    import kiro_crew.skills as skills_module
-    from kiro_crew.hooks import is_unc_shape
+    import efm_go.skills as skills_module
+    from efm_go.hooks import is_unc_shape
 
     real_validate = skills_module.validate_file_path
     real_realpath = os.path.realpath
@@ -155,7 +155,7 @@ def test_a_unc_mapping_glob_is_never_resolved_outside_the_fence(tmp_path, monkey
 
 @needs_posix_symlinks
 def test_a_project_mapping_and_the_project_root_are_never_resolved(tmp_path, monkeypatch, opened):
-    import kiro_crew.skills as skills_module
+    import efm_go.skills as skills_module
 
     project = tmp_path / "proj"
     (project / ".kiro" / "skills").mkdir(parents=True)
@@ -180,7 +180,7 @@ def test_a_project_mapping_and_the_project_root_are_never_resolved(tmp_path, mon
 
 @needs_posix_symlinks
 def test_a_project_mapping_selects_through_a_symlinked_project_spelling(tmp_path, opened):
-    from kiro_crew import skill_trust
+    from efm_go import skill_trust
 
     if not skill_trust.project_skill_traversal_supported():
         pytest.skip("project skill traversal unsupported on this platform")
@@ -202,7 +202,7 @@ def test_a_project_mapping_selects_through_a_symlinked_project_spelling(tmp_path
 
 @needs_posix_symlinks
 def test_a_resolved_prefix_holding_glob_characters_matches_only_itself(tmp_path, monkeypatch):
-    import kiro_crew.skills as skills_module
+    import efm_go.skills as skills_module
 
     target = tmp_path / "skills[x]"
     _write_skill(target, "demo")
@@ -220,7 +220,7 @@ def test_a_resolved_prefix_holding_glob_characters_matches_only_itself(tmp_path,
 
 
 def test_loader_roots_are_resolved_once_however_many_mappings(tmp_path, monkeypatch, opened):
-    import kiro_crew.skills as skills_module
+    import efm_go.skills as skills_module
 
     loader = _loader(tmp_path, [], opened)
     seen: list[str] = []
@@ -239,7 +239,7 @@ def test_loader_roots_are_resolved_once_however_many_mappings(tmp_path, monkeypa
 
 @needs_posix_symlinks
 def test_the_dashboard_annotation_agrees_with_the_loader(tmp_path, symlinked_home):
-    from kiro_crew.dashboard.handlers._shared import (
+    from efm_go.dashboard.handlers._shared import (
         _agent_loads_skill,
         _agents_loading_skill,
         _expand_agent_globs,

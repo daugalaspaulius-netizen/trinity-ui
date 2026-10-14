@@ -36,7 +36,7 @@ from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 #: The modules that hold the reaper's kill path: the cron reaper and ``cancel()``,
 #: the identity/kill module, and the session facade and allocation boundary the

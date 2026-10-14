@@ -38,12 +38,12 @@ import pytest
 # dispatcher factory) so this suite exercises the SAME doubles.
 from test_discord import _dispatcher as _base_dispatcher  # noqa: E402
 
-from kiro_crew.discord import transport_dispatch as dispatch_mod
-from kiro_crew.discord.client import DiscordInteraction
-from kiro_crew.discord.renderer import DiscordApprovalDecider
-from kiro_crew.messaging import spawn_approval_delivery as seam
-from kiro_crew.messaging.display_safety import canonicalize_display
-from kiro_crew.subagent import SpawnApprovalUnreachable
+from efm_go.discord import transport_dispatch as dispatch_mod
+from efm_go.discord.client import DiscordInteraction
+from efm_go.discord.renderer import DiscordApprovalDecider
+from efm_go.messaging import spawn_approval_delivery as seam
+from efm_go.messaging.display_safety import canonicalize_display
+from efm_go.subagent import SpawnApprovalUnreachable
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -731,7 +731,7 @@ def _short_wait(monkeypatch):
     No press is scheduled in any test using this, so the only way the wait ends is
     its own timeout -- there is no race for the scheduler to decide.
     """
-    from kiro_crew.discord import renderer as renderer_mod
+    from efm_go.discord import renderer as renderer_mod
 
     monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 0.05)
 

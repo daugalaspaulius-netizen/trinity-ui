@@ -19,8 +19,8 @@ from urllib.parse import urlencode
 
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh
-from kiro_crew.apps.builtins.issue_radar.backend import routes, store
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh
+from efm_go.apps.builtins.issue_radar.backend import routes, store
 
 
 def _iso_days_ago(days: float) -> str:
@@ -39,7 +39,7 @@ def _req(query: dict | None = None):
 
     aiohttp's own ``make_mocked_request`` rather than a hand-rolled stand-in:
     the handler is typed ``(web.Request) -> web.Response``, so a duck-typed
-    stub fails the repo-wide ``mypy src/kiro_crew/`` gate.
+    stub fails the repo-wide ``mypy src/efm_go/`` gate.
     """
     path = "/api/apps/issue-radar/recent-repos"
     if query:
@@ -205,12 +205,12 @@ class TestGhSetupClassification(unittest.TestCase):
         # patched on its owning module, not on github_client.
         # The path is a neutral fixture — the point is that ANY rejected
         # override becomes a setup error, not that a specific prefix does.
-        from kiro_crew import github_runner
+        from efm_go import github_runner
         github_runner.reset_cache()
         try:
             with mock.patch.dict("os.environ", {"KIROCREW_ISSUE_RADAR_GH": "/fake/prefix/bin/gh"}), \
                  mock.patch(
-                     "kiro_crew.github_runner.validate_provider_executable",
+                     "efm_go.github_runner.validate_provider_executable",
                      side_effect=ValueError("path must be canonical"),
                  ):
                 with self.assertRaises(gh.GhSetupError) as ctx:

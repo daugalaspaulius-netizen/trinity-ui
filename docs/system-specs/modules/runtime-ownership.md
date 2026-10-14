@@ -30,7 +30,7 @@ peer check on a shared pid ([dashboard-token-auth.md](dashboard-token-auth.md) �
 *Unix-socket transport: kernel-attested `X-Session-Key`*), and the threat model
 ([security.md](security.md)).
 
-`runtime_ownership` imports nothing from `kiro_crew`. It is a leaf on purpose:
+`runtime_ownership` imports nothing from `efm_go`. It is a leaf on purpose:
 `session_pid` is the pid-bookkeeping leaf and calls the gate, so an import in the
 other direction would close `session_pid → acp → acp.runtime → session_pid`.
 

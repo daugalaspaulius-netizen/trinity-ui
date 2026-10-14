@@ -32,7 +32,7 @@ from typing import Any
 _SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "cron-cost-optimize"
     / "scripts"

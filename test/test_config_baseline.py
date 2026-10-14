@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.schema import SCHEMA_REGISTRY
+from efm_go.config.schema import SCHEMA_REGISTRY
 
 # Each test spawns a real child interpreter (subprocess.run([sys.executable, ...]));
 # pin the module to a dedicated xdist worker so concurrent cold-starts under -n auto
@@ -230,9 +230,9 @@ def _armed_queue_wait(asked: float, ceiling: float) -> float:
     Imported inside the call because ``gatewayd`` is a heavyweight module and
     every other test here needs none of it.
     """
-    from kiro_crew.mcp_gateway import admission as adm
-    from kiro_crew.mcp_gateway import gatewayd as gw
-    from kiro_crew.mcp_gateway import host_budget as hb
+    from efm_go.mcp_gateway import admission as adm
+    from efm_go.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_gateway import host_budget as hb
 
     admission = adm.Admission(
         gate=adm.SpawnGate(1),
@@ -261,8 +261,8 @@ class TestSpawnQueueWaitHelpMatchesTheDaemon:
 
     def test_the_key_is_a_ceiling_the_stub_budget_caps_first(self) -> None:
         """Measured, not read: raising the key past the stub's ask moves nothing."""
-        from kiro_crew.config.sections import McpGatewayConfig
-        from kiro_crew.mcp_gateway import stub as stub_mod
+        from efm_go.config.sections import McpGatewayConfig
+        from efm_go.mcp_gateway import stub as stub_mod
 
         asked = float(stub_mod._SPAWN_QUEUE_WAIT_BUDGET_SECS)
         shipped = float(McpGatewayConfig().spawn_queue_wait_secs)
@@ -292,7 +292,7 @@ class TestSpawnQueueWaitHelpMatchesTheDaemon:
         along, is exactly that trap).
         """
         sites = {
-            "src/kiro_crew/config/integration_sections.py": _schema_help(_SPAWN_QUEUE_WAIT_PATH),
+            "src/efm_go/config/integration_sections.py": _schema_help(_SPAWN_QUEUE_WAIT_PATH),
             "config-baseline.json": _baseline_help(_SPAWN_QUEUE_WAIT_PATH),
             _SPAWN_QUEUE_WAIT_DOC: _doc_paragraph_about(
                 _SPAWN_QUEUE_WAIT_DOC, "spawn_queue_wait_secs"
@@ -324,13 +324,13 @@ class TestSpawnQueueWaitHelpMatchesTheDaemon:
 
     def test_the_number_the_prose_names_is_the_shipped_default(self) -> None:
         """Both help copies name a figure; it has to be the one that ships."""
-        from kiro_crew.config.sections import McpGatewayConfig
-        from kiro_crew.mcp_gateway import stub as stub_mod
+        from efm_go.config.sections import McpGatewayConfig
+        from efm_go.mcp_gateway import stub as stub_mod
 
         shipped = McpGatewayConfig().spawn_queue_wait_secs
         assert float(stub_mod._RECONNECT_TOTAL_BUDGET_SECS) == float(shipped)
         for name, text in (
-            ("src/kiro_crew/config/integration_sections.py", _schema_help(_SPAWN_QUEUE_WAIT_PATH)),
+            ("src/efm_go/config/integration_sections.py", _schema_help(_SPAWN_QUEUE_WAIT_PATH)),
             ("config-baseline.json", _baseline_help(_SPAWN_QUEUE_WAIT_PATH)),
         ):
             assert f"above {shipped}" in text, (

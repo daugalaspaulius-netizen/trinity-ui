@@ -54,7 +54,7 @@ ROOT = Path(__file__).resolve().parents[1]
 #: The subtree whose recipes this lane is responsible for. One directory, not a
 #: repo-wide sweep: ``docker/Dockerfile`` is the gateway distribution and is
 #: already built by ``docker-smoke.yml``.
-RUNTIME_SUBPATH = "src/kiro_crew/apps/builtins/aws_control/crew/runtime"
+RUNTIME_SUBPATH = "src/efm_go/apps/builtins/aws_control/crew/runtime"
 
 #: A ``scripts/<name>.sh`` path cited anywhere in a recipe's text, comments
 #: included -- the citation IS prose, so the recipe is read raw here.

@@ -18,26 +18,26 @@ from typing import NamedTuple
 
 import pytest
 
-import kiro_crew
-from kiro_crew.discord.client import DISCORD_MAX_TEXT
-from kiro_crew.discord.renderer import _fit_platform_cap
-from kiro_crew.discord.renderer import _redact_all as _discord_redact_all
-from kiro_crew.messaging import split as split_module
-from kiro_crew.messaging.display_safety import (
+import efm_go
+from efm_go.discord.client import DISCORD_MAX_TEXT
+from efm_go.discord.renderer import _fit_platform_cap
+from efm_go.discord.renderer import _redact_all as _discord_redact_all
+from efm_go.messaging import split as split_module
+from efm_go.messaging.display_safety import (
     FURTHER_READINGS,
     _plain_reading,
     canonicalize_display,
     joins_to_a_credential,
     redact_for_display,
 )
-from kiro_crew.messaging.renderer import (
+from efm_go.messaging.renderer import (
     _default_redactor,
     chunk_for_transport,
     chunk_text,
     count_redaction_tags,
     repaired_after_a_sent_tail,
 )
-from kiro_crew.messaging.split import (
+from efm_go.messaging.split import (
     _WHITESPACE_RUN,
     _collapse_reads_as_a_key,
     _collapses_to_a_key,
@@ -53,8 +53,8 @@ from kiro_crew.messaging.split import (
     split_markdown_bytes,
     split_markdown_safe,
 )
-from kiro_crew.messaging.transport import TransportCapabilities
-from kiro_crew.telegram.renderer import (
+from efm_go.messaging.transport import TransportCapabilities
+from efm_go.telegram.renderer import (
     _md_to_telegram_html,
     _split_markdown,
     _split_markdown_bounded,
@@ -62,14 +62,14 @@ from kiro_crew.telegram.renderer import (
     _strip_md,
     _table_blocks,
 )
-from kiro_crew.whatsapp.renderer import _redact_all, render_chunks, to_whatsapp_text
+from efm_go.whatsapp.renderer import _redact_all, render_chunks, to_whatsapp_text
 
 #: AWS's own documented example key, the same fixture the display-safety tests
 #: use, so no real credential shape is introduced anywhere.
 KEY = "AKIAIOSFODNN7EXAMPLE"
 HEAD, TAIL = KEY[:10], KEY[10:]
 
-SRC = Path(kiro_crew.__file__).parent
+SRC = Path(efm_go.__file__).parent
 
 #: The splitters that ACCEPT a redactor, which is what makes "pass one" a
 #: well-formed demand. ``chunk_text`` takes no such parameter: it is the blind
@@ -283,7 +283,7 @@ def _splitter_calls(tree: ast.AST) -> list[SplitterCall]:
 
 
 def _modules_that_split() -> dict[str, list[SplitterCall]]:
-    """Every module under ``src/kiro_crew`` that calls a redactor-accepting splitter.
+    """Every module under ``src/efm_go`` that calls a redactor-accepting splitter.
 
     DERIVED by walking the tree, not curated. A curated list of delivery paths has
     one failure mode that matters: a path nobody adds to it is not merely
@@ -509,7 +509,7 @@ class TestChunkForTransportGradesTheByteSeam:
     """
 
     def _byte_capped(self, max_bytes: int) -> TransportCapabilities:
-        from kiro_crew.webex.transport import WEBEX_CAPABILITIES
+        from efm_go.webex.transport import WEBEX_CAPABILITIES
 
         return dataclasses.replace(
             WEBEX_CAPABILITIES,
@@ -542,7 +542,7 @@ class TestChunkForTransportGradesTheByteSeam:
     def _char_capped(self, max_chars: int) -> TransportCapabilities:
         # A char-capped channel: max_message_bytes=0 takes chunk_for_transport's
         # CHARACTER branch (messaging/renderer.py), the one F2 lives on.
-        from kiro_crew.webex.transport import WEBEX_CAPABILITIES
+        from efm_go.webex.transport import WEBEX_CAPABILITIES
 
         return dataclasses.replace(
             WEBEX_CAPABILITIES, max_message_bytes=0, max_message_chars=max_chars
@@ -559,7 +559,7 @@ class TestChunkForTransportGradesTheByteSeam:
         wide-space straddle -- no delivered sequence may read as a key, and the call
         must terminate.
         """
-        from kiro_crew.messaging.renderer import _default_redactor as _dr
+        from efm_go.messaging.renderer import _default_redactor as _dr
 
         head, tail = "AKIAIOSFOD", "NN7EXAMPLE"
         bodies = (
@@ -591,7 +591,7 @@ class TestChunkForTransportGradesTheByteSeam:
         unchanged repair reproduces that unsafe sequence, so the byte path must
         re-grade and shrink the budget until the delivered sequence is clean.
         """
-        from kiro_crew.messaging.renderer import _default_redactor as _dr
+        from efm_go.messaging.renderer import _default_redactor as _dr
 
         head, tail = "AKIAIOSFOD", "NN7EXAMPLE"
         # budget 10: the byte cut lands exactly so ``# NN7EXAMPLE`` is piece-leading
@@ -815,7 +815,7 @@ class TestTheTerminalKeepsWhatItCan:
         fresh way for a valid span to lose its formatting without anyone deciding
         it should.
         """
-        import kiro_crew.messaging.split as split_module
+        import efm_go.messaging.split as split_module
 
         assert not hasattr(split_module, "_flush_whitespace")
         tree = ast.parse((SRC / "messaging" / "split.py").read_text(encoding="utf-8"))
@@ -991,7 +991,7 @@ class TestTheDashboardHandlerLegsOffloadTheSplitter:
         Offloaded = it is the first argument to ``asyncio.to_thread`` rather than a
         direct call.
         """
-        from kiro_crew.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import messaging
 
         # The legs run from a messaging_api owner the facade composes, so the scan
         # parses the facade and every owner, and fails if a leg lives in a file it
@@ -1858,7 +1858,7 @@ class TestAHardByteCapIsNeverExceeded:
     """
 
     def test_webex_bounds_its_own_chunks(self) -> None:
-        from kiro_crew.webex.renderer import WEBEX_MAX_TEXT, _bounded_chunks
+        from efm_go.webex.renderer import WEBEX_MAX_TEXT, _bounded_chunks
 
         oversized = "x" * 9000
         body = f"[label](https://example.test/{oversized}/{HEAD} {TAIL})"
@@ -1892,7 +1892,7 @@ class TestAHardByteCapIsNeverExceeded:
         assert bounded_for_delivery(["hello"], 40, _default_redactor) == ["hello"]
 
     def test_webex_keeps_ordinary_text_whole(self) -> None:
-        from kiro_crew.webex.renderer import _bounded_chunks
+        from efm_go.webex.renderer import _bounded_chunks
 
         prose = "an ordinary answer with nothing to redact in it"
         assert "".join(_bounded_chunks(prose)) == prose

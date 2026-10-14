@@ -13,8 +13,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import cron_history as cron_history_mod
-from kiro_crew.cron_history import _SUMMARY_CAP, CronHistoryStore, CronRunRecord
+from efm_go import cron_history as cron_history_mod
+from efm_go.cron_history import _SUMMARY_CAP, CronHistoryStore, CronRunRecord
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -344,7 +344,7 @@ def test_record_from_dict_ignores_extra_keys() -> None:
 
 @pytest.mark.asyncio
 async def test_run_job_returns_false_when_already_executing() -> None:
-    from kiro_crew.cron import CronJob, CronService, RunClaims, _RunClaim
+    from efm_go.cron import CronJob, CronService, RunClaims, _RunClaim
 
     svc = CronService.__new__(CronService)
     svc._jobs = [CronJob(id="j1", name="test", schedule="* * * * *", message="hi")]
@@ -360,7 +360,7 @@ async def test_run_job_returns_false_when_already_executing() -> None:
 
 @pytest.mark.asyncio
 async def test_run_job_stores_manual_trigger_meta() -> None:
-    from kiro_crew.cron import CronJob, CronService, RunClaims
+    from efm_go.cron import CronJob, CronService, RunClaims
 
     svc = CronService.__new__(CronService)
     svc._jobs = [CronJob(id="j1", name="test", schedule="* * * * *", message="hi")]
@@ -404,7 +404,7 @@ def _read_history_rows(tmp_path: Path, job_id: str) -> list[dict]:
 
 
 def _freshness_job(**kw):
-    from kiro_crew.cron import CronJob, CronSchedule
+    from efm_go.cron import CronJob, CronSchedule
 
     return CronJob(
         id=kw.pop("id", "j1"),
@@ -420,7 +420,7 @@ class TestRunResultFreshness:
         """A timed-out run must record its own error, not the prior run's summary."""
         import asyncio
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         async def _hang(*args, **kwargs):
             await asyncio.sleep(9999)
@@ -430,7 +430,7 @@ class TestRunResultFreshness:
         svc._jobs = [job]
         svc._save()
         with patch.object(svc, "_execute", side_effect=_hang), patch(
-            "kiro_crew.cron._JOB_TIMEOUT_SECS", 0.05
+            "efm_go.cron._JOB_TIMEOUT_SECS", 0.05
         ):
             asyncio.run(svc._run_job_isolated(job, svc._claim_run(job.id, "scheduled")))
 
@@ -448,7 +448,7 @@ class TestRunResultFreshness:
         """None snapshot branch: first-ever run timing out records its error."""
         import asyncio
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         async def _hang(*args, **kwargs):
             await asyncio.sleep(9999)
@@ -459,7 +459,7 @@ class TestRunResultFreshness:
         svc._jobs = [job]
         svc._save()
         with patch.object(svc, "_execute", side_effect=_hang), patch(
-            "kiro_crew.cron._JOB_TIMEOUT_SECS", 0.05
+            "efm_go.cron._JOB_TIMEOUT_SECS", 0.05
         ):
             asyncio.run(svc._run_job_isolated(job, svc._claim_run(job.id, "scheduled")))
 
@@ -472,7 +472,7 @@ class TestRunResultFreshness:
         """A run that produces a new result records it as summary and trace."""
         import asyncio
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         async def _produce(job, meta=None):
             job.set_run_result("new run output")
@@ -502,7 +502,7 @@ class TestRunResultFreshness:
         """
         import asyncio
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         async def _script_ok(job, meta=None):
             job.set_run_result("ok")  # interned literal, same object every run
@@ -530,7 +530,7 @@ class TestRunResultFreshness:
         """
         import asyncio
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         async def _one_char(job, meta=None):
             job.set_run_result("y")
@@ -556,7 +556,7 @@ class TestRunResultFreshness:
         with empty output) must not surface the previous run's result."""
         import asyncio
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         async def _no_output(job, meta=None):
             job.last_status = "ok"
@@ -581,7 +581,7 @@ class TestRunResultFreshness:
         object must not leak run 1's freshness marker into run 2's history."""
         import asyncio
 
-        from kiro_crew.cron import CronService
+        from efm_go.cron import CronService
 
         async def _produce(job, meta=None):
             job.set_run_result("run one output")
@@ -777,7 +777,7 @@ def test_cron_service_survives_unusable_history_dir(tmp_path: Path) -> None:
     down — gateway scheduler, MCP ``cron_add``/``cron_list``/``cron_trigger``
     and ``kirocrew cron list`` alike, none of which need history to work.
     """
-    from kiro_crew.cron import CronService
+    from efm_go.cron import CronService
 
     with _deny_leaf("mkdir", "stat", "scandir", "listdir", "open"):
         svc = CronService(base_dir=tmp_path)
@@ -792,7 +792,7 @@ def test_cron_service_start_survives_stat_denied_history(tmp_path: Path) -> None
     wrongly reports itself enabled turns this into a fatal gateway-startup
     error even though the constructor survived.
     """
-    from kiro_crew.cron import CronService
+    from efm_go.cron import CronService
 
     async def _boot() -> None:
         with _deny_leaf("mkdir", "stat", "scandir", "listdir"):
@@ -819,7 +819,7 @@ def test_create_factory_prepares_history_off_the_event_loop(tmp_path: Path) -> N
     """
     import threading
 
-    from kiro_crew.cron import CronService
+    from efm_go.cron import CronService
 
     async def _boot() -> None:
         loop_thread = threading.get_ident()

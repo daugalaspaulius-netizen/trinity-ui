@@ -27,8 +27,8 @@ import logging
 import pytest
 from windows_sim import read_sharing_violation
 
-from kiro_crew import atomic_write as aw
-from kiro_crew import platform_compat
+from efm_go import atomic_write as aw
+from efm_go import platform_compat
 
 
 @pytest.fixture(autouse=True)
@@ -286,7 +286,7 @@ def test_converted_site_read_signals_emits_the_degrade(tmp_path, monkeypatch, ca
     folded the Windows sharing-violation window into the same silent ``{}`` a
     genuinely absent cache returns.
     """
-    from kiro_crew.apps.builtins.issue_radar.backend import crew_runtime
+    from efm_go.apps.builtins.issue_radar.backend import crew_runtime
 
     monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
     monkeypatch.setattr(aw, "on_event_loop", lambda: True)

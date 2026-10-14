@@ -29,9 +29,9 @@ Three streams currently work on the same problem, which is keeping an agent turn
 
 | Stream | Where it lives | Pull requests |
 |---|---|---|
-| structured monitors | `src/kiro_crew/monitoring/` | merged: [#5180](https://github.com/kirodotdev/KiroCrew/pull/5180), [#5181](https://github.com/kirodotdev/KiroCrew/pull/5181), [#5182](https://github.com/kirodotdev/KiroCrew/pull/5182), [#5183](https://github.com/kirodotdev/KiroCrew/pull/5183), [#5184](https://github.com/kirodotdev/KiroCrew/pull/5184). open: [#5185](https://github.com/kirodotdev/KiroCrew/pull/5185), [#5186](https://github.com/kirodotdev/KiroCrew/pull/5186), [#5305](https://github.com/kirodotdev/KiroCrew/pull/5305) |
-| irq kernel and pr_watch cron | `irq.py`, `probes/gh_pr.py`, `babysit/scripts/pr_watch.py` | merged: [#5273](https://github.com/kirodotdev/KiroCrew/pull/5273), [#5886](https://github.com/kirodotdev/KiroCrew/pull/5886), [#6071](https://github.com/kirodotdev/KiroCrew/pull/6071), [#6279](https://github.com/kirodotdev/KiroCrew/pull/6279), [#7431](https://github.com/kirodotdev/KiroCrew/pull/7431), [#7634](https://github.com/kirodotdev/KiroCrew/pull/7634), [#8122](https://github.com/kirodotdev/KiroCrew/pull/8122), [#8326](https://github.com/kirodotdev/KiroCrew/pull/8326) |
-| self-armed loops for member slots | `autonudge_selfarm.py` (new), `autonudge.py`, `autonudge_authz.py`, `mcp_tools/control.py` | open: [#8919](https://github.com/kirodotdev/KiroCrew/pull/8919) |
+| structured monitors | `src/efm_go/monitoring/` | merged: [#5180](https://efmleads.com/pull/5180), [#5181](https://efmleads.com/pull/5181), [#5182](https://efmleads.com/pull/5182), [#5183](https://efmleads.com/pull/5183), [#5184](https://efmleads.com/pull/5184). open: [#5185](https://efmleads.com/pull/5185), [#5186](https://efmleads.com/pull/5186), [#5305](https://efmleads.com/pull/5305) |
+| irq kernel and pr_watch cron | `irq.py`, `probes/gh_pr.py`, `babysit/scripts/pr_watch.py` | merged: [#5273](https://efmleads.com/pull/5273), [#5886](https://efmleads.com/pull/5886), [#6071](https://efmleads.com/pull/6071), [#6279](https://efmleads.com/pull/6279), [#7431](https://efmleads.com/pull/7431), [#7634](https://efmleads.com/pull/7634), [#8122](https://efmleads.com/pull/8122), [#8326](https://efmleads.com/pull/8326) |
+| self-armed loops for member slots | `autonudge_selfarm.py` (new), `autonudge.py`, `autonudge_authz.py`, `mcp_tools/control.py` | open: [#8919](https://efmleads.com/pull/8919) |
 
 This document states the target shape, what gets deleted, and the order.
 
@@ -41,9 +41,9 @@ The second fact is that a body is not re-sent per turn so much as permanent. ACP
 
 ## What #9073 already settled
 
-[#9073](https://github.com/kirodotdev/KiroCrew/pull/9073), merged 2026-09-07, moved the session-directive selector off the tool result text and onto the call's input. This changes the starting point for this work, so it is stated first.
+[#9073](https://efmleads.com/pull/9073), merged 2026-09-07, moved the session-directive selector off the tool result text and onto the call's input. This changes the starting point for this work, so it is stated first.
 
-| | Before [#9073](https://github.com/kirodotdev/KiroCrew/pull/9073) | Now |
+| | Before [#9073](https://efmleads.com/pull/9073) | Now |
 |---|---|---|
 | What names the directive | a marker inside the tool's result text, repaired across backend reshaping | `sha256(tool + canonical_json(args))`, computed by the gateway in `session_directive.call_input_digest` |
 | Where it waits | recovered from the result body | a turn-scoped bounded queue, `dashboard/directive_queue.py`, 300s age, 8 per session, 256 sessions |
@@ -52,7 +52,7 @@ The second fact is that a body is not re-sent per turn so much as permanent. ACP
 
 The consequence for this RFC is narrowing, and welcome: `monitor_start` and `monitor_watch` now share the transport completely, one `_emit_directive`, one queue, one digest, one claim, one `apply_session_directive` dispatch. What remains unshared is exactly the observation layer and the wake decision. That is the whole remaining scope.
 
-Two asymmetries survive and the merged design has to pick one. `monitor_watch` uses the full strict session gate and refuses on a non-strict key through `require_strict_session_key`, while `monitor_start` uses the resolve half only and lets an empty key fall through to the directive. And [#9073](https://github.com/kirodotdev/KiroCrew/pull/9073) verifiably did not touch the `gate` parameter or the `irq.poll` path from [#7634](https://github.com/kirodotdev/KiroCrew/pull/7634): its only file under `autonudge*`, `irq` or `probes` is a test.
+Two asymmetries survive and the merged design has to pick one. `monitor_watch` uses the full strict session gate and refuses on a non-strict key through `require_strict_session_key`, while `monitor_start` uses the resolve half only and lets an empty key fall through to the directive. And [#9073](https://efmleads.com/pull/9073) verifiably did not touch the `gate` parameter or the `irq.poll` path from [#7634](https://efmleads.com/pull/7634): its only file under `autonudge*`, `irq` or `probes` is a test.
 
 ## Target shape
 
@@ -68,11 +68,11 @@ The layers that sequence runs through:
 
 | Layer | Component after the merge | Responsibility |
 |---|---|---|
-| transport | already shared, from [#9073](https://github.com/kirodotdev/KiroCrew/pull/9073) | claim a directive by call-input digest and apply it |
+| transport | already shared, from [#9073](https://efmleads.com/pull/9073) | claim a directive by call-input digest and apply it |
 | observation | irq | watch, wait, collect, act. Produce named observations, hold the coalescing window, reset on epoch change, dedupe with a time bound, centralise the failure rules |
 | decision | structured controller | terminal outcomes, budgets over runtime, turns, tokens and provider errors, charge the wake after the turn completes |
 | dispatch | structured controller | route the wake to the bound session, or to a notification when there is no live slot |
-| arming | shared, plus [#8919](https://github.com/kirodotdev/KiroCrew/pull/8919)'s self-arm | who may arm a loop, and for which slot |
+| arming | shared, plus [#8919](https://efmleads.com/pull/8919)'s self-arm | who may arm a loop, and for which slot |
 
 The seam that makes this work already exists: the structured decision layer consumes a normalised `MonitorObservation` rather than raw provider output, so irq becomes the layer that produces observations.
 
@@ -88,10 +88,10 @@ Duplication here means the same decision or the same state implemented twice, no
 |---|---|
 | the single-fingerprint computation in `monitoring/github_pull_request.py` | replaced by a derivation from the named entries, so there is one source of truth rather than two hashes that can drift |
 | irq's own delivered-cycle counting and quiet-streak floor | the structured budgets subsume them, and they were only ever a stand-in for accounting irq does not have |
-| the `gate` parameter's separate path on `monitor_start` ([#7634](https://github.com/kirodotdev/KiroCrew/pull/7634)) | once the observation layer is shared, a second gate on one of the two tools has nothing left to do |
+| the `gate` parameter's separate path on `monitor_start` ([#7634](https://efmleads.com/pull/7634)) | once the observation layer is shared, a second gate on one of the two tools has nothing left to do |
 | `builtin_skills/kirocrew-dev/babysit/scripts/gh_merge_watch.py` (local, unversioned) | `pr_watch.py` already raises `Done` on merge and adds a state file, per-head dedupe and an error backstop that `gh_merge_watch` lacks |
 
-[#8919](https://github.com/kirodotdev/KiroCrew/pull/8919) is not duplicate. It extends the same stack rather than reimplementing it: it adds a `self_armed` bit and a keystone-gated trust record so a member slot can arm its own loop, reusing `NudgeLoop`, `add_monitor()` and the `authorize_and_add_nudge` chokepoint. It is integrated, not deleted. Separately, [#3127](https://github.com/kirodotdev/KiroCrew/pull/3127) was a pure structural move of the monitor tool descriptors from `mcp_core.py` into `mcp_tools/control.py`; it changes where this work edits, not what it merges.
+[#8919](https://efmleads.com/pull/8919) is not duplicate. It extends the same stack rather than reimplementing it: it adds a `self_armed` bit and a keystone-gated trust record so a member slot can arm its own loop, reusing `NudgeLoop`, `add_monitor()` and the `authorize_and_add_nudge` chokepoint. It is integrated, not deleted. Separately, [#3127](https://efmleads.com/pull/3127) was a pure structural move of the monitor tool descriptors from `mcp_core.py` into `mcp_tools/control.py`; it changes where this work edits, not what it merges.
 
 ## Order
 
@@ -100,15 +100,15 @@ Duplication here means the same decision or the same state implemented twice, no
 | 1 | the provider emits named observations; the existing fingerprint is derived from them | none, proven by a golden test over every existing fixture | nothing |
 | 2 | the coalescing window becomes a pre-stage ahead of the decision, default off, on for babysit | none while off | 1 |
 | 3 | structured budgets and completed-turn accounting replace irq's delivered-cycle count | irq gains budgets it does not have | 1 |
-| 4 | both drivers run the same probe: the in-process scheduler and the cron subprocess | none, [#7634](https://github.com/kirodotdev/KiroCrew/pull/7634) already ran one probe from two drivers | 1, 2 |
+| 4 | both drivers run the same probe: the in-process scheduler and the cron subprocess | none, [#7634](https://efmleads.com/pull/7634) already ran one probe from two drivers | 1, 2 |
 | 5 | the probe contract is exposed as an SDK: implement `identity()` and `observe()`, inherit scheduling, dedupe, coalescing, epoch reset and failure handling | new capability | 1 to 4 |
-| 6 | integrate [#8919](https://github.com/kirodotdev/KiroCrew/pull/8919)'s self-arm so a member slot can arm a merged monitor | new capability | 1, and [#8919](https://github.com/kirodotdev/KiroCrew/pull/8919) landing |
+| 6 | integrate [#8919](https://efmleads.com/pull/8919)'s self-arm so a member slot can arm a merged monitor | new capability | 1, and [#8919](https://efmleads.com/pull/8919) landing |
 | 7 | one poller batches many subjects in a single GraphQL query, and the dashboard surface moves in the SAME step | new capability, and watches stop being slot-scoped | 4 |
 | 8 | rate-limit classification and an error budget adopted from the structured side; orphaned watches reclaimed through the terminal-outcome path | closes two gaps that exist today | 3 |
 
 Step 1 lands first because it changes no behaviour, which makes it the cheapest thing to review, and every later step shrinks once it is in.
 
-Step 0, independent of all of the above and the only item with an external deadline: teach the goal popover to see a structured monitor, before [#5186](https://github.com/kirodotdev/KiroCrew/pull/5186) lands. The API half is done -- both legacy read routes now report that a monitor is armed, its cadence and its state, while the owner-gated route keeps sole custody of what is being watched. They do NOT report how far in it is -- see below -- so what is left of step 0 is that gap plus the popover rendering the shape it does receive.
+Step 0, independent of all of the above and the only item with an external deadline: teach the goal popover to see a structured monitor, before [#5186](https://efmleads.com/pull/5186) lands. The API half is done -- both legacy read routes now report that a monitor is armed, its cadence and its state, while the owner-gated route keeps sole custody of what is being watched. They do NOT report how far in it is -- see below -- so what is left of step 0 is that gap plus the popover rendering the shape it does receive.
 
 Two remainders of step 0 are DEFERRED rather than closed, and both are named here so neither reads as an oversight:
 
@@ -125,7 +125,7 @@ From irq, which the structured controller does not have today:
 - a failed state write delivered immediately with a warning, because an un-aged window turns a wake into a loss
 - a consecutive-error backstop that reports the watch as blind
 
-From [#9073](https://github.com/kirodotdev/KiroCrew/pull/9073), which every arming caller must now handle:
+From [#9073](https://efmleads.com/pull/9073), which every arming caller must now handle:
 
 - 403 `not_local_caller`, 400 `session_key_required`, `not_derivable`, `invalid_directive`
 - a claim miss at the consumer: input differs, parked before this turn, or a sibling frame already matched
@@ -143,7 +143,7 @@ loop = svc.get_by_slot(slot_key)
 legacy = loop if loop is not None and not is_structured_monitor_loop(loop) else None
 ```
 
-The structured read lives on a different endpoint, `/api/session-monitor`, which requires an authenticated session binding and is the agent-facing path behind `monitor_inspect`. So the moment [#5186](https://github.com/kirodotdev/KiroCrew/pull/5186) routed babysit through `monitor_watch`, the popover would have reported no loop while a monitor was running. Step 0 closed that, and closed it by ENTITLEMENT rather than by returning the record: the legacy reads have no owner gate, so they now publish existence, cadence and state -- the loop's own entitled fields -- and withhold everything that describes what is being watched. `message` is withheld too, because on a structured monitor it IS the wake instructions. `/api/monitors`, behind `_require_monitor_owner`, stays the only place the full record appears. Two things remain open. The payload does NOT answer "how far in", because the cycle accounting it would have used is withheld as false and the `monitor_presence` object prepared for it was held back to ship with its reader rather than ahead of it. And the popover still has to render what does arrive.
+The structured read lives on a different endpoint, `/api/session-monitor`, which requires an authenticated session binding and is the agent-facing path behind `monitor_inspect`. So the moment [#5186](https://efmleads.com/pull/5186) routed babysit through `monitor_watch`, the popover would have reported no loop while a monitor was running. Step 0 closed that, and closed it by ENTITLEMENT rather than by returning the record: the legacy reads have no owner gate, so they now publish existence, cadence and state -- the loop's own entitled fields -- and withhold everything that describes what is being watched. `message` is withheld too, because on a structured monitor it IS the wake instructions. `/api/monitors`, behind `_require_monitor_owner`, stays the only place the full record appears. Two things remain open. The payload does NOT answer "how far in", because the cycle accounting it would have used is withheld as false and the `monitor_presence` object prepared for it was held back to ship with its reader rather than ahead of it. And the popover still has to render what does arrive.
 
 **Its armed-watch list is slot-scoped.** Watches are filtered with `runBelongsToSlot(session_key, slotKey)` against the `dashboard:<slotKey>` convention, and only script crons count. A watch that moves out of session has no slot in its identity, so batching many subjects into one poller makes every one of them invisible here.
 
@@ -152,12 +152,12 @@ Three inputs also drift in meaning once the loop is probe-gated:
 | Input | What the dialog says | What it now means |
 |---|---|---|
 | Seconds between nudges | sends a nudge at this interval | observes at this interval and nudges only when the observation is worth a turn, and it is an idle gap rather than a period, so real cadence is the interval plus the previous turn's duration |
-| Max cycles, 0 = unlimited | cycles of the loop | DELIVERED turns, counting the streak-floor delivery, a gate fallback and a post-wake follow-up, not intervals and not wakes. [#5186](https://github.com/kirodotdev/KiroCrew/pull/5186) also sets 24 cycles and 4 hours for the legacy MCP path and rejects an explicit unlimited, so the dialog offering 0 is already inconsistent with it |
+| Max cycles, 0 = unlimited | cycles of the loop | DELIVERED turns, counting the streak-floor delivery, a gate fallback and a post-wake follow-up, not intervals and not wakes. [#5186](https://efmleads.com/pull/5186) also sets 24 cycles and 4 hours for the legacy MCP path and rejects an explicit unlimited, so the dialog offering 0 is already inconsistent with it |
 | Goal description | free text | a structured monitor needs a typed `target` and `objective` instead, so the surface has to carry both shapes |
 
 What the surface has to answer changes from "what is armed on this tab" to three questions: what this gateway is watching, which of those will wake a session rather than only notify, and what it has spent. The spend half has real data to show for the first time once budgets move in.
 
-This builds on [#8936](https://github.com/kirodotdev/KiroCrew/pull/8936), which already moves the same four files (`autoNudgeLoop.ts`, `AutoNudgePopover.tsx`, `useWebSocket.ts`, `api/client.ts`) toward a per-member patrol view. That is the same one-to-many direction, so the redesign extends it rather than replacing it.
+This builds on [#8936](https://efmleads.com/pull/8936), which already moves the same four files (`autoNudgeLoop.ts`, `AutoNudgePopover.tsx`, `useWebSocket.ts`, `api/client.ts`) toward a per-member patrol view. That is the same one-to-many direction, so the redesign extends it rather than replacing it.
 
 Sequencing constraint: the surface ships in the same step as batching, never later. A step that makes watches invisible while they run is not acceptable even briefly.
 
@@ -179,7 +179,7 @@ The shape both stacks converged on is Prometheus Alertmanager's notification pip
 |---|---|
 | `group_by`, a label set | the observation `key` |
 | `group_wait`, buffer before a group's first notification, typically seconds to a few minutes | the coalescing floor, 240s |
-| `group_interval`, wait before notifying about a new member added to an already-notified group | **absent**. [#7431](https://github.com/kirodotdev/KiroCrew/pull/7431) gives a joining entry its own full floor instead, which is a defensible choice but not the same knob |
+| `group_interval`, wait before notifying about a new member added to an already-notified group | **absent**. [#7431](https://efmleads.com/pull/7431) gives a joining entry its own full floor instead, which is a defensible choice but not the same knob |
 | `repeat_interval`, re-send an alert already delivered | the time-bounded re-alert, 6h |
 | `inhibit_rules` and silences | `known_reds` |
 | `send_resolved` | the `ready` and terminal observations |
@@ -195,14 +195,14 @@ Alertmanager needs no token budget because a paged human self-limits. An agent d
 
 The skill-prose reduction is a separate track. It shares a motivation with this one and none of its code, and the honest claim there is that a body should never enter the window rather than that a repeat is being suppressed.
 
-Retiring the remaining marker consumers is [#9073](https://github.com/kirodotdev/KiroCrew/pull/9073)'s own follow-up, not this RFC's: `mcp_apps_render.find_marker` still reads a result body, and the messaging `TurnDriver` still applies directives from the marker on kiro-cli.
+Retiring the remaining marker consumers is [#9073](https://efmleads.com/pull/9073)'s own follow-up, not this RFC's: `mcp_apps_render.find_marker` still reads a result body, and the messaging `TurnDriver` still applies directives from the marker on kiro-cli.
 
 ## Open decisions
 
 Whether the out-of-session cron driver stays a supported channel or retires with the legacy babysit recipe. It is the only path that survives the session it was armed from, and everything the session-bound path can watch it can also watch.
 
-Whether [#5186](https://github.com/kirodotdev/KiroCrew/pull/5186) scopes legacy to the targets it does not support rather than demoting `monitor_start` wholesale. `goal-conductor` and `pipeline-conductor` patrol their own session with it as their primary use, neither sets `max_cycles` or `max_runtime_secs`, and under the legacy defaults of 24 cycles and 4 hours a long-horizon patrol stops silently.
+Whether [#5186](https://efmleads.com/pull/5186) scopes legacy to the targets it does not support rather than demoting `monitor_start` wholesale. `goal-conductor` and `pipeline-conductor` patrol their own session with it as their primary use, neither sets `max_cycles` or `max_runtime_secs`, and under the legacy defaults of 24 cycles and 4 hours a long-horizon patrol stops silently.
 
 Which session gate the merged arming path takes: `monitor_watch`'s strict refusal or `monitor_start`'s resolve-half fall-through.
 
-`docs/system-specs/modules/babysit-pr-watch.md` states there are two current monitoring modes. [#5186](https://github.com/kirodotdev/KiroCrew/pull/5186) does not touch it, so it becomes false when [#5186](https://github.com/kirodotdev/KiroCrew/pull/5186) lands.
+`docs/system-specs/modules/babysit-pr-watch.md` states there are two current monitoring modes. [#5186](https://efmleads.com/pull/5186) does not touch it, so it becomes false when [#5186](https://efmleads.com/pull/5186) lands.

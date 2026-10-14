@@ -20,10 +20,10 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import sandbox
-from kiro_crew.apps.builtins.aws_control.backend import storage
-from kiro_crew.deploy import engine
-from kiro_crew.deploy.engine import AWSError
+from efm_go import sandbox
+from efm_go.apps.builtins.aws_control.backend import storage
+from efm_go.deploy import engine
+from efm_go.deploy.engine import AWSError
 
 
 @contextlib.contextmanager
@@ -1298,7 +1298,7 @@ class TestGetObjectHeadBytes:
         # plant a junction at its name before the create, and the CLI's path
         # resolves into the planted target. Both directories are therefore held
         # open -- root first, then the per-call directory -- for the whole call.
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         pinned: list[str] = []
         real_pin = platform_compat.pin_directory
@@ -1344,7 +1344,7 @@ class TestGetObjectHeadBytes:
     def test_the_staging_root_is_fenced_on_both_the_tool_gate_and_the_sandbox(self):
         # Moving the staging root out of the fenced leaf would silently
         # re-open the link swap; the three spellings are pinned together.
-        from kiro_crew import sandbox, security
+        from efm_go import sandbox, security
 
         assert storage.STAGING_DIR_LEAF in security._CREW_SECRET_LEAVES
         assert storage.STAGING_DIR_LEAF in sandbox._CREW_HIDDEN_LEAVES

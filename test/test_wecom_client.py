@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.wecom.client."""
+"""Tests for efm_go.wecom.client."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, patch
 import aiohttp
 import pytest
 
-from kiro_crew.wecom.client import (
+from efm_go.wecom.client import (
     WeComClient,
     WeComInbound,
     _build_subscribe_frame,
@@ -579,14 +579,14 @@ class TestThresholdClamp:
     """WeComConfig.__post_init__ clamps to [1,100] and enforces soft <= hard."""
 
     def test_soft_above_hard_is_lowered_to_hard(self) -> None:
-        from kiro_crew.config.loader import WeComConfig
+        from efm_go.config.loader import WeComConfig
 
         c = WeComConfig(soft_threshold_pct=95, hard_threshold_pct=50)
         assert c.soft_threshold_pct == 50
         assert c.hard_threshold_pct == 50
 
     def test_out_of_range_values_clamped(self) -> None:
-        from kiro_crew.config.loader import WeComConfig
+        from efm_go.config.loader import WeComConfig
 
         c = WeComConfig(soft_threshold_pct=-10, hard_threshold_pct=200)
         assert c.soft_threshold_pct == 1
@@ -728,7 +728,7 @@ class TestFrameLoggingOmitsContent:
         # Unhandled cmd path exercises both the inbound-frame debug line and the
         # unhandled-cmd debug line for a single frame.
         raw = json.dumps({"cmd": "totally-unknown-cmd", "response_url": secret})
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.wecom.client"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.wecom.client"):
             await client._handle_message(raw)
         # The raw frame (incl. the response_url credential) never reaches logs.
         assert secret not in caplog.text
@@ -757,7 +757,7 @@ class TestFrameLoggingOmitsContent:
         """An unhandled command logs a generic event, never the command name."""
         client = self._client()
         cmd = "aibot_secret_command_name"
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.wecom.client"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.wecom.client"):
             await client._handle_message(json.dumps({"cmd": cmd}))
         # The externally-derived command name must not appear...
         assert cmd not in caplog.text
@@ -833,7 +833,7 @@ class TestStatusCallback:
         async def _no_sleep(_delay: float) -> None:
             return None
 
-        with patch("kiro_crew.wecom.client.asyncio.sleep", _no_sleep):
+        with patch("efm_go.wecom.client.asyncio.sleep", _no_sleep):
             await client._run_loop()
 
         assert seen and seen[0][0] is False
@@ -938,7 +938,7 @@ class TestUploadMedia:
         assert fake_ws.sent[2]["body"]["upload_id"] == "UP1"
 
     async def test_non_zero_errcode_raises(self) -> None:
-        from kiro_crew.wecom.media_upload import WeComUploadError
+        from efm_go.wecom.media_upload import WeComUploadError
 
         fake_ws = FakeWS()
         client = _make_client()
@@ -959,7 +959,7 @@ class TestUploadMedia:
             await asyncio.wait_for(task, timeout=2)
 
     async def test_missing_media_id_raises(self) -> None:
-        from kiro_crew.wecom.media_upload import WeComUploadError
+        from efm_go.wecom.media_upload import WeComUploadError
 
         fake_ws = FakeWS()
         client = _make_client()
@@ -983,7 +983,7 @@ class TestUploadMedia:
             await asyncio.wait_for(task, timeout=2)
 
     async def test_no_ws_raises(self) -> None:
-        from kiro_crew.wecom.media_upload import WeComUploadError
+        from efm_go.wecom.media_upload import WeComUploadError
 
         client = _make_client()
         client._ws = None
@@ -996,8 +996,8 @@ class TestUploadMedia:
         # bounds enforce this: the per-frame ACK wait and the derived whole-
         # handshake deadline. With tiny budgets the per-frame wait trips first;
         # either way the fail-closed contract holds.
-        from kiro_crew.wecom import client as client_mod
-        from kiro_crew.wecom.media_upload import WeComUploadError
+        from efm_go.wecom import client as client_mod
+        from efm_go.wecom.media_upload import WeComUploadError
 
         monkeypatch.setattr(client_mod, "_UPLOAD_ACK_TIMEOUT_SECS", 0.02)
         monkeypatch.setattr(client_mod, "_UPLOAD_PER_CHUNK_BUDGET_SECS", 0.02)

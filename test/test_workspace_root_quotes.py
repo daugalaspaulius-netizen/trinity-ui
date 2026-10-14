@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.config import loader
-from kiro_crew.config.loader import normalize_workspace_path, workspace_root
+from efm_go.config import loader
+from efm_go.config.loader import normalize_workspace_path, workspace_root
 
 
 @pytest.mark.parametrize("raw", ['"~/x y"', "'~/x y'", '  "~/x y"  '])
@@ -77,12 +77,12 @@ def test_relative_root_falls_back_to_the_default(
 def test_wizard_quoted_answer_writes_the_unquoted_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.cli_setup import _setup_workspace_dir
+    from efm_go.cli_setup import _setup_workspace_dir
 
     monkeypatch.chdir(tmp_path)
     target = tmp_path / "AI prompting"
     ws_file = tmp_path / "cfg" / "workspace_dir"
-    monkeypatch.setattr("kiro_crew.cli_setup._workspace_dir_file", lambda: ws_file)
+    monkeypatch.setattr("efm_go.cli_setup._workspace_dir_file", lambda: ws_file)
     with patch("builtins.input", return_value=f'"{target}"'):
         _setup_workspace_dir()
 
@@ -92,11 +92,11 @@ def test_wizard_quoted_answer_writes_the_unquoted_path(
 
 
 def test_wizard_refuses_a_relative_answer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from kiro_crew.cli_setup import _setup_workspace_dir
+    from efm_go.cli_setup import _setup_workspace_dir
 
     monkeypatch.chdir(tmp_path)
     ws_file = tmp_path / "cfg" / "workspace_dir"
-    monkeypatch.setattr("kiro_crew.cli_setup._workspace_dir_file", lambda: ws_file)
+    monkeypatch.setattr("efm_go.cli_setup._workspace_dir_file", lambda: ws_file)
     with patch("builtins.input", return_value="relative-ws"):
         _setup_workspace_dir()
 
@@ -107,13 +107,13 @@ def test_wizard_refuses_a_relative_answer(tmp_path: Path, monkeypatch: pytest.Mo
 def test_wizard_keeps_a_previously_saved_quoted_default(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.cli_setup import _setup_workspace_dir
+    from efm_go.cli_setup import _setup_workspace_dir
 
     monkeypatch.chdir(tmp_path)
     target = tmp_path / "AI prompting"
     ws_file = tmp_path / "workspace_dir"
     ws_file.write_text(f'"{target}"\n', encoding="utf-8")
-    monkeypatch.setattr("kiro_crew.cli_setup._workspace_dir_file", lambda: ws_file)
+    monkeypatch.setattr("efm_go.cli_setup._workspace_dir_file", lambda: ws_file)
     with patch("builtins.input", return_value=""):
         _setup_workspace_dir()
 

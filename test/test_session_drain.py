@@ -15,9 +15,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-import kiro_crew.session as session_mod
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import (
+import efm_go.session as session_mod
+from efm_go.config import KiroCrewConfig
+from efm_go.session import (
     SessionClosingError,
     SessionManager,
     _provider_has_active_turn,
@@ -589,7 +589,7 @@ def test_acp_runtime_kill_is_sigterm_first_with_grace():
     """The teardown kill must send SIGTERM with a non-trivial grace window
     before escalating to SIGKILL, so kiro-cli can release its native-session
     lock. Guards against a regression that shortens the grace to ~0."""
-    from kiro_crew.acp.runtime import AcpRuntime
+    from efm_go.acp.runtime import AcpRuntime
 
     # SIGTERM grace is generous enough for lock release, and a separate reap
     # window follows the SIGKILL escalation.
@@ -603,7 +603,7 @@ def test_acp_client_kill_is_sigterm_first():
     refactor can't silently drop straight to SIGKILL."""
     import inspect as _inspect
 
-    from kiro_crew.acp import client as _client
+    from efm_go.acp import client as _client
 
     src = _inspect.getsource(_client.AcpClient._kill_process)
     assert "SIGTERM" in src
@@ -612,7 +612,7 @@ def test_acp_client_kill_is_sigterm_first():
 
 @pytest.mark.asyncio
 async def test_inbound_callback_reservation_releases_when_handler_task_finishes(cfg):
-    from kiro_crew.messaging import dispatch
+    from efm_go.messaging import dispatch
 
     mgr = SessionManager(cfg, provider_factory=lambda **k: _FakeProvider())
     route = dispatch.InboundRoute(conversation_id="conv", text="hello", user_id="u")
@@ -634,7 +634,7 @@ async def test_inbound_callback_reservation_releases_when_handler_task_finishes(
 
 @pytest.mark.asyncio
 async def test_refused_callback_resolves_restriction_before_spooling(monkeypatch):
-    from kiro_crew.messaging import dispatch
+    from efm_go.messaging import dispatch
 
     route = dispatch.InboundRoute(conversation_id="conv", text="secret", user_id="u")
     restricted = AsyncMock(return_value=True)
@@ -661,7 +661,7 @@ async def test_refused_callback_resolves_restriction_before_spooling(monkeypatch
 
 @pytest.mark.asyncio
 async def test_refused_resume_ambiguity_denies_persistence():
-    from kiro_crew.messaging.session_resume import (
+    from efm_go.messaging.session_resume import (
         InboundResolution,
         RoutingDecision,
         refused_resume_is_restricted,
@@ -681,7 +681,7 @@ async def test_refused_resume_ambiguity_denies_persistence():
 
 @pytest.mark.asyncio
 async def test_inline_inbound_callback_reservation_releases_when_scope_finishes(cfg):
-    from kiro_crew.messaging import dispatch
+    from efm_go.messaging import dispatch
 
     mgr = SessionManager(cfg, provider_factory=lambda **k: _FakeProvider())
     route = dispatch.InboundRoute(conversation_id="conv", text="hello", user_id="u")
@@ -699,7 +699,7 @@ async def test_inline_inbound_callback_reservation_releases_when_scope_finishes(
 
 @pytest.mark.asyncio
 async def test_restart_fence_spools_refusal_synchronously(monkeypatch):
-    from kiro_crew.messaging import dispatch
+    from efm_go.messaging import dispatch
 
     route = dispatch.InboundRoute(conversation_id="conv", text="hello", user_id="u")
     calls: list[tuple[str, object]] = []

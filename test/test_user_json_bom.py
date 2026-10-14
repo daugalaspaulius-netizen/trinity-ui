@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.user_json import (
+from efm_go.user_json import (
     load_mcp_servers,
     load_user_json_object,
     loads_mcp_config,
@@ -91,7 +91,7 @@ class TestWritersPreserveAWrongShape:
     ) -> None:
         # A parseable file with a list ``mcpServers`` must not be read as empty
         # and overwritten with only the new entry.
-        from kiro_crew import mcp_discovery
+        from efm_go import mcp_discovery
 
         path = tmp_path / ".mcp.json"
         raw = _BOM + json.dumps({"mcpServers": [{"command": "x"}], "keep": 1}).encode("utf-8")
@@ -104,7 +104,7 @@ class TestWritersPreserveAWrongShape:
 
 @pytest.fixture()
 def bridges_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    from kiro_crew.apps import bridges
+    from efm_go.apps import bridges
 
     agents = tmp_path / ".kiro" / "agents"
     settings = tmp_path / ".kiro" / "settings"
@@ -119,12 +119,12 @@ class TestBridgesSetup:
     def test_legacy_scrub_reads_a_bom_file_and_writes_it_back_plain(
         self, bridges_home: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         legacy = bridges._LEGACY_SHARED_MCP_PATH
         _write_bom_json(legacy, {"mcpServers": {"tunnel:srv": {"command": "x"}, "keep": {}}})
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.apps.bridges"):
             assert bridges._scrub_legacy_shared_mcp("tunnel") == 1
 
         assert "Failed to scrub" not in caplog.text
@@ -133,7 +133,7 @@ class TestBridgesSetup:
         assert json.loads(raw) == {"mcpServers": {"keep": {}}}
 
     def test_registration_reads_a_bom_agent_config(self, bridges_home: Path) -> None:
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         _write_bom_json(bridges._mcp_json_path(), {"mcpServers": {"user": {"command": "u"}}})
 
@@ -145,7 +145,7 @@ class TestBridgesSetup:
     def test_a_bom_list_root_agent_config_is_refused_not_crashed_on(
         self, bridges_home: Path
     ) -> None:
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         _write_bom_json(bridges._mcp_json_path(), [])
         assert bridges._read_mcp_json_unlocked() == {}
@@ -155,7 +155,7 @@ class TestBridgesSetup:
     def test_an_installed_app_agent_spec_with_bom_keeps_its_user_edits(
         self, tmp_path: Path
     ) -> None:
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         path = tmp_path / "app--agent.json"
         _write_bom_json(path, {"name": "app--agent", "model": "user-pick"})
@@ -164,7 +164,7 @@ class TestBridgesSetup:
     def test_global_policy_specs_read_a_bom_file(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps import bridges
+        from efm_go.apps import bridges
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         _write_bom_json(
@@ -176,7 +176,7 @@ class TestBridgesSetup:
 
 class TestChatStartLoading:
     def test_agent_materialization_loader_reads_a_bom_mcp_json(self, tmp_path: Path) -> None:
-        from kiro_crew.user_json import load_user_json_object
+        from efm_go.user_json import load_user_json_object
 
         path = tmp_path / "mcp.json"
         _write_bom_json(path, {"mcpServers": {"s": {"command": "s"}}})
@@ -188,7 +188,7 @@ class TestChatStartLoading:
         # ``KiroCrewConfig.load`` accepts a BOM'd ``config.json``, so the agent's
         # own loader must too: if the two judged one file differently, the spec
         # builder would treat a config the gateway loaded as absent.
-        from kiro_crew import agent
+        from efm_go import agent
 
         path = tmp_path / "config.json"
         _write_bom_json(path, {"model": "m"})
@@ -197,7 +197,7 @@ class TestChatStartLoading:
     def test_doctor_reads_a_bom_agent_config(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         class _Stop(Exception):
             pass
@@ -216,7 +216,7 @@ class TestChatStartLoading:
         assert "agent spec is not a JSON object" in capsys.readouterr().out
 
     def test_json_agent_spec_with_bom_parses(self) -> None:
-        from kiro_crew.agent_spec_format import parse_agent_spec_bytes
+        from efm_go.agent_spec_format import parse_agent_spec_bytes
 
         spec = parse_agent_spec_bytes(_BOM + b'{"name": "a"}', "a.json")
         assert spec == {"name": "a"}
@@ -224,7 +224,7 @@ class TestChatStartLoading:
     def test_discovery_reads_a_bom_mcp_json(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import mcp_discovery
+        from efm_go import mcp_discovery
 
         path = tmp_path / "crew" / "mcp.json"
         _write_bom_json(path, {"mcpServers": {"d": {"command": "d"}}})

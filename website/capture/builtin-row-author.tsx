@@ -9,9 +9,9 @@
  * WHAT IS FAITHFUL: the component is the real `AppListRow`, and both row shapes
  * carry values taken VERBATIM from the two real sources —
  *   - "before" = what local synthesis produces from this wheel's
- *     `src/kiro_crew/apps/builtins/<name>/app.json`
+ *     `src/efm_go/apps/builtins/<name>/app.json`
  *   - "after"  = what the live catalog publishes for the same app
- *     (https://apps.crew.kiro.dev/official-registry.json)
+ *     (https://efmleads.com/api/apps/official-registry.json)
  * Nothing here is invented: artwork, tags and version are byte-identical across
  * the two sources (measured), so `author` is the whole visible delta and these
  * frames show exactly that.

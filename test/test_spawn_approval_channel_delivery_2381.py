@@ -37,15 +37,15 @@ import pytest
 # fake sessions, dispatcher factory) so this suite exercises the SAME doubles.
 from test_telegram import _cfg, _dispatcher, _prime_live  # noqa: E402
 
-from kiro_crew.messaging import spawn_approval_delivery as seam
-from kiro_crew.messaging.link import CHAT_TYPE_FORUM, parse_session_key
-from kiro_crew.messaging.session_trust import (
+from efm_go.messaging import spawn_approval_delivery as seam
+from efm_go.messaging.link import CHAT_TYPE_FORUM, parse_session_key
+from efm_go.messaging.session_trust import (
     _trusted_sessions,
     clear_trusted_sessions,
     is_session_trusted,
 )
-from kiro_crew.subagent import SpawnApprovalUnreachable
-from kiro_crew.telegram.renderer import TelegramApprovalDecider
+from efm_go.subagent import SpawnApprovalUnreachable
+from efm_go.telegram.renderer import TelegramApprovalDecider
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -161,8 +161,8 @@ def _spawn_callback():  # type: ignore[no-untyped-def]
     the Slack-DM/dashboard gate does when no surface is attached. The source
     ratchet below pins that the production callback keeps this shape.
     """
-    from kiro_crew.messaging.spawn_approval_delivery import deliver_spawn_approval
-    from kiro_crew.providers.base import LLMEvent
+    from efm_go.messaging.spawn_approval_delivery import deliver_spawn_approval
+    from efm_go.providers.base import LLMEvent
 
     async def _approve_spawn_gate(_event: LLMEvent, _parent: str) -> bool:
         raise SpawnApprovalUnreachable("no interactive surface is attached")
@@ -224,7 +224,7 @@ class TestWrappedSpawnApproval:
         REAL ``_spawn_approve`` keeps the seam-first shape and that the exact
         substring the unreachable-gate ratchet also asserts is still present.
         """
-        import kiro_crew.slack.gateway as gateway_mod
+        import efm_go.slack.gateway as gateway_mod
 
         src = Path(gateway_mod.__file__).read_text(encoding="utf-8")
         consult = src.index("deliver_spawn_approval(")
@@ -250,7 +250,7 @@ def _press_lands_inside_the_window(
     press resolves nothing. A press that lands returns at once, so this costs no
     time; one that never resolves still fails by name well inside ``--timeout``.
     """
-    import kiro_crew.telegram.renderer as renderer_mod
+    import efm_go.telegram.renderer as renderer_mod
 
     monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 30.0)
 
@@ -407,7 +407,7 @@ class TestTelegramDeliveryHook:
         # rotation between spawn and press bumps the generation, so the recomputed
         # key does not match the armed one: the press resolves nothing and the
         # prompt deny-by-defaults at the timeout. Pin that coupling here.
-        import kiro_crew.telegram.renderer as renderer_mod
+        import efm_go.telegram.renderer as renderer_mod
 
         monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 0.2)
         d, cli, _sess = _dispatcher({7})
@@ -531,7 +531,7 @@ class TestASilentSendFailureFallsThroughAtOnce:
         ``_APPROVAL_TIMEOUT_S`` (minutes) and surface as a suite-wide timeout
         instead of a failed assertion.
         """
-        import kiro_crew.telegram.renderer as renderer_mod
+        import efm_go.telegram.renderer as renderer_mod
 
         monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 0.2)
 
@@ -665,7 +665,7 @@ class TestAutoApprovedNeverReachesTheChannel:
 
     @pytest.mark.asyncio
     async def test_a_trusted_parent_never_calls_the_spawn_approval(self) -> None:
-        from kiro_crew.subagent import SubagentManager
+        from efm_go.subagent import SubagentManager
 
         ctx = MagicMock()
         ctx.build_message = MagicMock(return_value=("built", None))
@@ -722,7 +722,7 @@ class TestTheDestinationIsReauthorizedBeforeTheSend:
         ``_APPROVAL_TIMEOUT_S`` (minutes) and surface as a suite-wide timeout
         instead of a failed assertion.
         """
-        import kiro_crew.telegram.renderer as renderer_mod
+        import efm_go.telegram.renderer as renderer_mod
 
         monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 0.2)
 
@@ -822,7 +822,7 @@ class TestTheDestinationIsReauthorizedBeforeTheSend:
         # must still read it, rather than time out and report a denial.
         import time
 
-        import kiro_crew.messaging.identity as identity_mod
+        import efm_go.messaging.identity as identity_mod
 
         real = identity_mod._channel_inbound_permitted_sync
 
@@ -950,7 +950,7 @@ class TestTheDeliveryHookCharacterization:
 
     @pytest.fixture(autouse=True)
     def _short_prompt_wait(self, monkeypatch: pytest.MonkeyPatch) -> Any:
-        import kiro_crew.telegram.renderer as renderer_mod
+        import efm_go.telegram.renderer as renderer_mod
 
         monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 0.2)
         _clear_windows()
@@ -1169,7 +1169,7 @@ class TestTheDeliveryHookCharacterization:
             asked.append((channel, rid))
             return True
 
-        monkeypatch.setattr("kiro_crew.telegram.transport_dispatch.unpressed_wait_answer", _answer)
+        monkeypatch.setattr("efm_go.telegram.transport_dispatch.unpressed_wait_answer", _answer)
         d, _cli, _sess = _dispatcher({7})
         reads: list[tuple[Any, Any]] = []
         real_check = d._spawn_prompt_destination_permitted

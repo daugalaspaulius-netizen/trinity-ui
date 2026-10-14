@@ -822,7 +822,7 @@ describe('DevFleetPage', () => {
   // on this page reveals that the managed code is not the running code.
   it('warns when the install serving the dashboard is not the managed checkout', async () => {
     mockFleet({
-      serving_install_reason: 'this dashboard is served by the install at /Applications/KiroCrew.app/Contents/Resources/backend-dist/kirocrew-backend-arm64/lib/python3.12/site-packages/kiro_crew, which is not inside the checkout Dev Fleet manages (/Users/dev/kirocrew).',
+      serving_install_reason: 'this dashboard is served by the install at /Applications/KiroCrew.app/Contents/Resources/backend-dist/efm-go-backend-arm64/lib/python3.12/site-packages/efm_go, which is not inside the checkout Dev Fleet manages (/Users/dev/kirocrew).',
       worktrees: [{ name: 'main', is_main: true, running: false, has_dist: true, behind: 0 }],
     })
     renderPage()

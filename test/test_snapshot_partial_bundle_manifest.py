@@ -15,7 +15,7 @@ import tarfile
 import pytest
 from test_snapshot import _setup_fake_kirocrew, snapshot_family_paths, unpinnable_argv
 
-from kiro_crew import snapshot as snap
+from efm_go import snapshot as snap
 
 
 @pytest.fixture
@@ -310,8 +310,8 @@ class TestTextIOPinsUtf8:
         """
         import pathlib
 
-        import kiro_crew.snapshot_redact as sr
-        from kiro_crew.apps.builtins.aws_control.backend import backup as app_backup
+        import efm_go.snapshot_redact as sr
+        from efm_go.apps.builtins.aws_control.backend import backup as app_backup
 
         parts = pathlib.Path(app_backup.__file__).parent / "backup_parts"
         paths = [

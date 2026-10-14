@@ -17,9 +17,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.config.sections import DECISION_PROVIDER_ENDPOINT_DEFAULT as DEFAULT_ENDPOINT
-from kiro_crew.config.sections import DECISION_PROVIDER_MODEL_DEFAULT as DEFAULT_MODEL
-from kiro_crew.decisions import consent, local_models
+from efm_go.config.sections import DECISION_PROVIDER_ENDPOINT_DEFAULT as DEFAULT_ENDPOINT
+from efm_go.config.sections import DECISION_PROVIDER_MODEL_DEFAULT as DEFAULT_MODEL
+from efm_go.decisions import consent, local_models
 
 # ---------------------------------------------------------------------------
 # The loopback test
@@ -158,13 +158,13 @@ class TestCatalog:
             )
 
     def test_every_model_id_is_one_the_client_will_send(self):
-        from kiro_crew.decisions.types import is_model_id
+        from efm_go.decisions.types import is_model_id
 
         for m in local_models.LOCAL_MODELS:
             assert is_model_id(m.model), m.model
 
     def test_every_launcher_and_lock_ships_beside_the_module(self):
-        from kiro_crew.decisions.local_runtime import SERVERS_DIR
+        from efm_go.decisions.local_runtime import SERVERS_DIR
 
         for m in local_models.LOCAL_MODELS:
             assert (SERVERS_DIR / m.launcher).is_file(), m.launcher
@@ -172,7 +172,7 @@ class TestCatalog:
 
     def test_every_lock_pins_every_requirement_exactly(self):
         """A range would let a later release change what runs under the card's numbers."""
-        from kiro_crew.decisions.local_runtime import SERVERS_DIR
+        from efm_go.decisions.local_runtime import SERVERS_DIR
 
         for m in local_models.LOCAL_MODELS:
             for line in (SERVERS_DIR / m.requirements).read_text(encoding="utf-8").splitlines():
@@ -280,7 +280,7 @@ def _request(*, app: str = "", user: str = "owner-1", owner: str = "owner-1", bo
 
 @pytest.fixture
 def audit(monkeypatch):
-    import kiro_crew.dashboard.handlers as handlers_pkg
+    import efm_go.dashboard.handlers as handlers_pkg
 
     rows: list[dict] = []
     fake = MagicMock()
@@ -292,14 +292,14 @@ def audit(monkeypatch):
 @pytest.fixture
 def keystone(tmp_path, monkeypatch):
     path = tmp_path / "decisions_consent.json"
-    monkeypatch.setattr("kiro_crew.config.loader.decisions_consent_path", lambda: path)
+    monkeypatch.setattr("efm_go.config.loader.decisions_consent_path", lambda: path)
     return path
 
 
 @pytest.fixture
 def config_file():
     """The config.json the pinned data home resolves to, and a reader for its provider."""
-    from kiro_crew.config.loader import config_path
+    from efm_go.config.loader import config_path
 
     path = config_path()
 
@@ -354,7 +354,7 @@ class _FakeRuntime:
 def runtime(monkeypatch):
     """No test here may download a model or start a server: the route drives a fake,
     and the port the route would pick is the preset's own."""
-    from kiro_crew.decisions import local_runtime
+    from efm_go.decisions import local_runtime
 
     fake = _FakeRuntime()
     monkeypatch.setattr(local_runtime, "get_runtime", lambda: fake)
@@ -364,7 +364,7 @@ def runtime(monkeypatch):
 
 @pytest.fixture
 def not_denied(monkeypatch):
-    from kiro_crew.decisions import capability
+    from efm_go.decisions import capability
 
     monkeypatch.setattr(capability, "is_decisions_denied", lambda *a, **k: False)
 
@@ -373,7 +373,7 @@ class TestProviderRouteOwnerOnly:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("verb", ["get", "put"])
     async def test_a_non_owner_is_refused(self, verb, audit, config_file):
-        from kiro_crew.dashboard.handlers import decisions as mod
+        from efm_go.dashboard.handlers import decisions as mod
 
         handler = (
             mod.api_decisions_provider_get if verb == "get" else mod.api_decisions_provider_put
@@ -384,7 +384,7 @@ class TestProviderRouteOwnerOnly:
 
     @pytest.mark.asyncio
     async def test_an_app_token_is_refused(self, audit, config_file):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         resp = await api_decisions_provider_put(_request(app="some-app", body={"preset": "laya"}))
         assert resp.status == 403
@@ -393,7 +393,7 @@ class TestProviderRouteOwnerOnly:
 class TestProviderRouteGet:
     @pytest.mark.asyncio
     async def test_lists_every_preset_and_reports_hosted_jev_by_default(self, audit):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_get
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_get
 
         resp = await api_decisions_provider_get(_request())
         payload = json.loads(resp.text)
@@ -407,7 +407,7 @@ class TestProviderRouteGet:
 
     @pytest.mark.asyncio
     async def test_reports_what_is_downloaded_and_what_the_runtime_is_doing(self, audit, runtime):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_get
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_get
 
         runtime.installed = {"laya"}
         runtime.state.update(preset="plumb-4b", state="downloading", bytes_done=5, bytes_total=10)
@@ -424,7 +424,7 @@ class TestProviderRouteGet:
 class TestLocalModelStatus:
     @pytest.mark.asyncio
     async def test_reports_the_runtime_and_writes_no_audit_row(self, audit, runtime):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_local_model_status
+        from efm_go.dashboard.handlers.decisions import api_decisions_local_model_status
 
         runtime.installed = {"laya"}
         runtime.state.update(preset="laya", state="downloading", bytes_done=3, bytes_total=9)
@@ -435,7 +435,7 @@ class TestLocalModelStatus:
 
     @pytest.mark.asyncio
     async def test_a_non_owner_is_refused(self, audit, runtime):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_local_model_status
+        from efm_go.dashboard.handlers.decisions import api_decisions_local_model_status
 
         resp = await api_decisions_local_model_status(_request(user="someone-else"))
         assert resp.status == 403
@@ -471,7 +471,7 @@ class TestProviderRoutePut:
     async def test_every_body_that_is_not_a_bare_preset_is_refused(
         self, body, audit, config_file, runtime
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         resp = await api_decisions_provider_put(_request(body=body))
         assert resp.status == 400
@@ -481,7 +481,7 @@ class TestProviderRoutePut:
 
     @pytest.mark.asyncio
     async def test_an_unparseable_body_is_refused_and_audited(self, audit, config_file):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         req = _request()
         req.json = AsyncMock(side_effect=json.JSONDecodeError("bad", "{", 0))
@@ -497,7 +497,7 @@ class TestProviderRoutePut:
     async def test_a_local_preset_writes_the_endpoint_it_built(
         self, audit, config_file, keystone, not_denied
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         resp = await api_decisions_provider_put(_request(body={"preset": "plumb-4b"}))
         assert resp.status == 200
@@ -512,7 +512,7 @@ class TestProviderRoutePut:
     async def test_choosing_a_local_preset_starts_it_on_the_written_port(
         self, audit, config_file, keystone, not_denied, runtime
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         resp = await api_decisions_provider_put(_request(body={"preset": "laya"}))
         assert runtime.calls == [("activate", "laya", 8104)]
@@ -522,8 +522,8 @@ class TestProviderRoutePut:
     async def test_a_held_default_port_moves_the_preset_to_a_free_one(
         self, audit, config_file, keystone, not_denied, runtime, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
-        from kiro_crew.decisions import local_runtime
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.decisions import local_runtime
 
         monkeypatch.setattr(local_runtime, "free_port", lambda preferred: 40123)
         await api_decisions_provider_put(_request(body={"preset": "laya"}))
@@ -535,8 +535,8 @@ class TestProviderRoutePut:
         self, audit, config_file, keystone, not_denied, runtime, monkeypatch
     ):
         """Its own server holds the port, so a free-port probe would move it away."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
-        from kiro_crew.decisions import local_runtime
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.decisions import local_runtime
 
         runtime.state.update(preset="laya", state="running", port=40500)
         monkeypatch.setattr(local_runtime, "free_port", lambda preferred: 1 / 0)
@@ -548,8 +548,8 @@ class TestProviderRoutePut:
         self, audit, config_file, keystone, not_denied, runtime, monkeypatch
     ):
         """The error may be that another program took the port, so it is not reused."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
-        from kiro_crew.decisions import local_runtime
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.decisions import local_runtime
 
         runtime.state.update(
             preset="laya", state="error", port=40500, error="port 40500 is already in use"
@@ -562,7 +562,7 @@ class TestProviderRoutePut:
     async def test_choosing_hosted_jev_stops_the_local_server(
         self, audit, config_file, keystone, not_denied, runtime
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         await api_decisions_provider_put(_request(body={"preset": "laya"}))
         await api_decisions_provider_put(_request(body={"preset": "jev"}))
@@ -572,7 +572,7 @@ class TestProviderRoutePut:
     async def test_a_failed_write_starts_nothing(
         self, audit, config_file, keystone, not_denied, runtime, monkeypatch
     ):
-        import kiro_crew.dashboard.handlers.decisions as mod
+        import efm_go.dashboard.handlers.decisions as mod
 
         def _boom(*_a, **_k):
             raise OSError("disk full")
@@ -586,8 +586,8 @@ class TestProviderRoutePut:
     async def test_the_api_key_reference_is_left_as_it_was(
         self, audit, config_file, keystone, not_denied
     ):
-        from kiro_crew.config.loader import update_config_locked
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.config.loader import update_config_locked
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         path, provider = config_file
 
@@ -603,7 +603,7 @@ class TestProviderRoutePut:
     async def test_hosted_jev_restores_the_shipped_defaults(
         self, audit, config_file, keystone, not_denied
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         await api_decisions_provider_put(_request(body={"preset": "laya"}))
         resp = await api_decisions_provider_put(_request(body={"preset": "jev"}))
@@ -618,7 +618,7 @@ class TestProviderRoutePut:
     async def test_the_write_is_audited_with_the_endpoint(
         self, audit, config_file, keystone, not_denied
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         await api_decisions_provider_put(_request(body={"preset": "laya"}))
         row = [r for r in audit if r["operation"] == "decisions_provider_put"][-1]
@@ -637,7 +637,7 @@ class TestConsentCarry:
     async def test_a_standing_consent_follows_a_switch_to_a_local_preset(
         self, audit, config_file, keystone, not_denied
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         self._consent(keystone, DEFAULT_ENDPOINT)
         await api_decisions_provider_put(_request(body={"preset": "laya"}))
@@ -649,7 +649,7 @@ class TestConsentCarry:
     async def test_switching_back_to_hosted_jev_never_inherits_consent(
         self, audit, config_file, keystone, not_denied
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         local = local_models.endpoint_for(8104)
         self._consent(keystone, local)
@@ -666,8 +666,8 @@ class TestConsentCarry:
         import asyncio
         import time
 
-        import kiro_crew.dashboard.handlers.decisions as mod
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        import efm_go.dashboard.handlers.decisions as mod
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         self._consent(keystone, DEFAULT_ENDPOINT)
         events: list[str] = []
@@ -698,7 +698,7 @@ class TestConsentCarry:
     ):
         """The keystone is re-read under the write lock, so a consent the owner turned
         off after this PUT last looked at it stays off."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         # What a stale read outside the lock would have seen: consent still on.
         stale = {"enabled": True, "endpoint": DEFAULT_ENDPOINT}
@@ -710,7 +710,7 @@ class TestConsentCarry:
     async def test_no_consent_is_created_where_none_stood(
         self, audit, config_file, keystone, not_denied
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         await api_decisions_provider_put(_request(body={"preset": "laya"}))
         assert consent.is_enabled(consent.load_state()) is False
@@ -721,7 +721,7 @@ class TestConsentCarry:
     ):
         """The provider is written before consent is carried, so a keystone write
         that fails must not turn a saved switch into a "nothing changed" 500."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         self._consent(keystone, DEFAULT_ENDPOINT)
 
@@ -741,8 +741,8 @@ class TestConsentCarry:
 
     @pytest.mark.asyncio
     async def test_a_fleet_denial_stops_the_carry(self, audit, config_file, keystone, monkeypatch):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
-        from kiro_crew.decisions import capability
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.decisions import capability
 
         monkeypatch.setattr(capability, "is_decisions_denied", lambda *a, **k: True)
         self._consent(keystone, DEFAULT_ENDPOINT)
@@ -759,8 +759,8 @@ class TestConsentCarry:
         """The route asks the probe about the side it switches TO, and the payload
         reports both sides. Stubbed as a fleet that allows hosted Jev and withdraws
         local models: the switch to a preset is refused, the switch to Jev is not."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
-        from kiro_crew.decisions import capability
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.decisions import capability
 
         monkeypatch.setattr(capability, "is_decisions_denied", lambda *a, local=False, **k: local)
         monkeypatch.setattr(capability, "denied_sides", lambda *a, **k: (False, True))
@@ -781,7 +781,7 @@ class TestNoModel:
     async def test_choosing_none_stops_the_server_and_names_no_model(
         self, audit, config_file, keystone, not_denied, runtime
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
 
         await api_decisions_provider_put(_request(body={"preset": "laya"}))
         resp = await api_decisions_provider_put(_request(body={"preset": "none"}))
@@ -795,8 +795,8 @@ class TestNoModel:
         self, audit, config_file, keystone, runtime, monkeypatch
     ):
         """The way out of a configured preset is never refused: it sends and runs nothing."""
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_provider_put
-        from kiro_crew.decisions import capability
+        from efm_go.dashboard.handlers.decisions import api_decisions_provider_put
+        from efm_go.decisions import capability
 
         monkeypatch.setattr(capability, "is_decisions_denied", lambda *a, **k: True)
         resp = await api_decisions_provider_put(_request(body={"preset": "none"}))
@@ -806,7 +806,7 @@ class TestNoModel:
     def test_the_gate_sends_nothing_with_no_model(self, keystone, not_denied):
         from types import SimpleNamespace
 
-        from kiro_crew.decisions import gate
+        from efm_go.decisions import gate
 
         keystone.write_text(
             json.dumps({"enabled": True, "endpoint": local_models.ENDPOINT_NONE}),
@@ -819,8 +819,8 @@ class TestNoModel:
     def test_a_server_is_not_resumed_with_no_model(self, monkeypatch, runtime):
         from types import SimpleNamespace
 
-        from kiro_crew.config import live
-        from kiro_crew.decisions import local_runtime
+        from efm_go.config import live
+        from efm_go.decisions import local_runtime
 
         provider = SimpleNamespace(endpoint=local_models.ENDPOINT_NONE, model="")
         cfg = SimpleNamespace(decisions=SimpleNamespace(provider=provider))
@@ -857,7 +857,7 @@ class TestGateReadsTheRowOfTheConfiguredProvider:
     def test_only_the_preset_this_gateway_runs_selects_the_local_row(
         self, keystone, monkeypatch, runtime, endpoint, model, consented
     ):
-        from kiro_crew.decisions import capability, gate
+        from efm_go.decisions import capability, gate
 
         runtime.state.update(preset="plumb-4b", state="running", port=8102)
         monkeypatch.setattr(
@@ -871,7 +871,7 @@ class TestGateReadsTheRowOfTheConfiguredProvider:
     ):
         """Local models pinned off, hosted Jev allowed: a server started by hand on the
         preset's port does not get decisions by borrowing the preset's address."""
-        from kiro_crew.decisions import capability, gate
+        from efm_go.decisions import capability, gate
 
         endpoint = local_models.endpoint_for(8102)
         monkeypatch.setattr(capability, "is_decisions_denied", lambda *a, local=False, **k: local)
@@ -884,7 +884,7 @@ class TestGateReadsTheRowOfTheConfiguredProvider:
     ):
         """Consent carried and no fleet pin: while the preset is not RUNNING, whatever
         holds its port gets no decision payload."""
-        from kiro_crew.decisions import gate
+        from efm_go.decisions import gate
 
         endpoint = local_models.endpoint_for(8102)
         runtime.state.update(preset="plumb-4b", state=state, port=8102)
@@ -904,7 +904,7 @@ def _delete_request(preset_id, **kw):
 class TestLocalModelDelete:
     @pytest.mark.asyncio
     async def test_refuses_while_a_stopped_worker_still_holds_the_files(self, audit, runtime):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_local_model_delete
+        from efm_go.dashboard.handlers.decisions import api_decisions_local_model_delete
 
         runtime.installed = {"laya"}
         runtime.busy = {"laya"}
@@ -916,7 +916,7 @@ class TestLocalModelDelete:
     async def test_a_delete_that_could_not_finish_is_an_audited_error(
         self, audit, runtime, monkeypatch
     ):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_local_model_delete
+        from efm_go.dashboard.handlers.decisions import api_decisions_local_model_delete
 
         def _locked(m):
             raise PermissionError(13, "file in use", "/somewhere/model.safetensors")
@@ -931,7 +931,7 @@ class TestLocalModelDelete:
 
     @pytest.mark.asyncio
     async def test_removes_a_preset_that_is_not_in_use(self, audit, runtime):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_local_model_delete
+        from efm_go.dashboard.handlers.decisions import api_decisions_local_model_delete
 
         runtime.installed = {"laya"}
         resp = await api_decisions_local_model_delete(_delete_request("laya"))
@@ -941,7 +941,7 @@ class TestLocalModelDelete:
 
     @pytest.mark.asyncio
     async def test_refuses_the_preset_the_runtime_is_serving(self, audit, runtime):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_local_model_delete
+        from efm_go.dashboard.handlers.decisions import api_decisions_local_model_delete
 
         runtime.state.update(preset="laya", state="running", port=8104)
         resp = await api_decisions_local_model_delete(_delete_request("laya"))
@@ -953,7 +953,7 @@ class TestLocalModelDelete:
     async def test_refuses_the_preset_the_provider_names(
         self, audit, config_file, keystone, not_denied, runtime
     ):
-        from kiro_crew.dashboard.handlers.decisions import (
+        from efm_go.dashboard.handlers.decisions import (
             api_decisions_local_model_delete,
             api_decisions_provider_put,
         )
@@ -965,7 +965,7 @@ class TestLocalModelDelete:
 
     @pytest.mark.asyncio
     async def test_an_unknown_id_is_a_404_and_touches_nothing(self, audit, runtime):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_local_model_delete
+        from efm_go.dashboard.handlers.decisions import api_decisions_local_model_delete
 
         resp = await api_decisions_local_model_delete(_delete_request("../../etc"))
         assert resp.status == 404
@@ -973,7 +973,7 @@ class TestLocalModelDelete:
 
     @pytest.mark.asyncio
     async def test_a_non_owner_is_refused(self, audit, runtime):
-        from kiro_crew.dashboard.handlers.decisions import api_decisions_local_model_delete
+        from efm_go.dashboard.handlers.decisions import api_decisions_local_model_delete
 
         resp = await api_decisions_local_model_delete(_delete_request("laya", user="someone-else"))
         assert resp.status == 403
@@ -987,7 +987,7 @@ class TestDeleteAndSwitchAreSerialised:
         after it, not remove files from under the download that just started."""
         import asyncio
 
-        import kiro_crew.dashboard.handlers.decisions as mod
+        import efm_go.dashboard.handlers.decisions as mod
 
         runtime.installed = {"laya"}
         async with mod._PROVIDER_SWITCH_LOCK:
@@ -1009,8 +1009,8 @@ class TestStartupResumeIsSerialisedWithSwitches:
         """A resume that read the config before a switch landed would start the stale preset."""
         import asyncio
 
-        import kiro_crew.dashboard.handlers.decisions as mod
-        from kiro_crew.decisions import local_runtime
+        import efm_go.dashboard.handlers.decisions as mod
+        from efm_go.decisions import local_runtime
 
         calls: list = []
         monkeypatch.setattr(

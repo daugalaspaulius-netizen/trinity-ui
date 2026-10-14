@@ -14,8 +14,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from kiro_crew import model_registry
-from kiro_crew.dashboard.handlers.agents import (
+from efm_go import model_registry
+from efm_go.dashboard.handlers.agents import (
     _advertised_cc_models,
     _cc_models,
     _normalize_model_key,
@@ -48,9 +48,9 @@ def _FakeProvider(models, *, backend=None):
     assertion would let this double claim every capability at once. Setting the
     real record is what makes the double describe a backend that exists.
     """
-    from kiro_crew.acp_backends import ACP_BACKEND_CLAUDE
-    from kiro_crew.agent_sdk.capabilities import capabilities_for
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.acp_backends import ACP_BACKEND_CLAUDE
+    from efm_go.agent_sdk.capabilities import capabilities_for
+    from efm_go.providers.acp import AcpProvider
 
     provider = MagicMock(spec=AcpProvider)
     provider.capabilities = capabilities_for(ACP_BACKEND_CLAUDE if backend is None else backend)
@@ -114,7 +114,7 @@ class TestAdvertisedCcModels:
         gate a live codex session would answer the claude picker with codex ids,
         and claude-agent-acp refuses every one of them.
         """
-        from kiro_crew.acp_backends import ACP_BACKEND_CODEX
+        from efm_go.acp_backends import ACP_BACKEND_CODEX
 
         prov = _FakeProvider(
             [{"modelId": "gpt-5.4-codex", "name": "GPT-5.4 Codex", "description": ""}],

@@ -16,8 +16,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import voice_reply as voice
-from kiro_crew.dashboard import chat_voice
+from efm_go import voice_reply as voice
+from efm_go.dashboard import chat_voice
 
 
 class RawPiper:
@@ -213,7 +213,7 @@ async def test_resident_failure_before_pcm_falls_back_after_retirement(
     piper_env, monkeypatch, failure
 ):
     model, _config, cleanup, wrap = piper_env
-    monkeypatch.setattr("kiro_crew.piper_runtime.python_piper_available", lambda: True)
+    monkeypatch.setattr("efm_go.piper_runtime.python_piper_available", lambda: True)
     if failure == "spawn":
         error = OSError("worker could not start")
     else:
@@ -240,7 +240,7 @@ async def test_resident_failure_before_pcm_falls_back_after_retirement(
 
 @pytest.mark.asyncio
 async def test_probe_true_but_isolated_worker_exits_before_ready_uses_cli(piper_env, monkeypatch):
-    from kiro_crew import piper_runtime
+    from efm_go import piper_runtime
 
     model, _config, _cleanup, _wrap = piper_env
     monkeypatch.setattr(piper_runtime, "python_piper_available", lambda: True)
@@ -286,7 +286,7 @@ async def test_resident_policy_cancel_and_deadline_failures_never_try_cli(
     piper_env, monkeypatch, failure
 ):
     model, _config, _cleanup, wrap = piper_env
-    monkeypatch.setattr("kiro_crew.piper_runtime.python_piper_available", lambda: True)
+    monkeypatch.setattr("efm_go.piper_runtime.python_piper_available", lambda: True)
     resident = FailedResident(voice.VoiceSynthesisError(failure, "attempt refused"))
     spawn = AsyncMock()
     monkeypatch.setattr(voice, "create_subprocess_limited", spawn)
@@ -304,7 +304,7 @@ async def test_resident_policy_cancel_and_deadline_failures_never_try_cli(
 @pytest.mark.parametrize("failure", [asyncio.CancelledError, PermissionError])
 async def test_resident_interruption_or_os_refusal_never_tries_cli(piper_env, monkeypatch, failure):
     model, _config, _cleanup, wrap = piper_env
-    monkeypatch.setattr("kiro_crew.piper_runtime.python_piper_available", lambda: True)
+    monkeypatch.setattr("efm_go.piper_runtime.python_piper_available", lambda: True)
     resident = FailedResident(failure())
     stream = voice.streaming_piper_reply("hello", piper_model=str(model), runtime=resident)
     async with contextlib.aclosing(stream):
@@ -317,7 +317,7 @@ async def test_resident_interruption_or_os_refusal_never_tries_cli(piper_env, mo
 @pytest.mark.asyncio
 async def test_resident_failure_after_pcm_never_replays_the_text(piper_env, monkeypatch):
     model, _config, _cleanup, wrap = piper_env
-    monkeypatch.setattr("kiro_crew.piper_runtime.python_piper_available", lambda: True)
+    monkeypatch.setattr("efm_go.piper_runtime.python_piper_available", lambda: True)
     resident = FailedResident(
         voice.VoiceSynthesisError("voice_invalid_audio", "worker lost"), partial=True
     )
@@ -333,7 +333,7 @@ async def test_resident_failure_after_pcm_never_replays_the_text(piper_env, monk
 @pytest.mark.asyncio
 async def test_resident_failure_without_a_cli_keeps_its_original_error(piper_env, monkeypatch):
     model, _config, _cleanup, wrap = piper_env
-    monkeypatch.setattr("kiro_crew.piper_runtime.python_piper_available", lambda: True)
+    monkeypatch.setattr("efm_go.piper_runtime.python_piper_available", lambda: True)
     monkeypatch.setattr(voice, "_resolve_piper_binary", lambda _binary: None)
     original = voice.VoiceSynthesisError("voice_invalid_audio", "worker could not import")
     resident = FailedResident(original)
@@ -351,7 +351,7 @@ async def test_original_deadline_cancels_and_reaps_cli_including_a_fallback(
     piper_env, monkeypatch, use_resident
 ):
     model, _config, cleanup, _wrap = piper_env
-    monkeypatch.setattr("kiro_crew.piper_runtime.python_piper_available", lambda: True)
+    monkeypatch.setattr("efm_go.piper_runtime.python_piper_available", lambda: True)
     resident = FailedResident(voice.VoiceSynthesisError("voice_invalid_audio", "worker lost"))
     proc = RawPiper()
     spawned = asyncio.Event()
@@ -396,15 +396,15 @@ async def test_cli_diagnostic_uses_composed_log_redaction(
 ):
     from dataclasses import replace
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.platform import (
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.platform import (
         PlatformCompositionError,
         build_default_context,
         reset_context,
         set_context,
     )
-    from kiro_crew.platform.context import LOG_WITHHELD_PLACEHOLDER
-    from kiro_crew.platform.defaults import DefaultCredentialPolicy
+    from efm_go.platform.context import LOG_WITHHELD_PLACEHOLDER
+    from efm_go.platform.defaults import DefaultCredentialPolicy
 
     class Policy(DefaultCredentialPolicy):
         def redact(self, text):

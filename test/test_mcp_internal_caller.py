@@ -22,7 +22,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import mcp_core, mcp_shared
+from efm_go import mcp_core, mcp_shared
 
 
 @pytest.fixture(autouse=True)

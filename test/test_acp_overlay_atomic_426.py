@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import json
 
-from kiro_crew.providers import acp as acp_mod
-from kiro_crew.providers.acp import _write_cli_overlay, _write_tool_search_overlay
+from efm_go.providers import acp as acp_mod
+from efm_go.providers.acp import _write_cli_overlay, _write_tool_search_overlay
 
 
 def _cli_json(work_dir):

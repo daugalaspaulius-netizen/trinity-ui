@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard import server as srv
+from efm_go.dashboard import server as srv
 
 
 @pytest.mark.asyncio

@@ -11,7 +11,7 @@ are on `main`:
 
 - `kirocrew pod scenarios [--json]`
 - `kirocrew pod up/down/ls/status/logs/prune/api`
-- `src/kiro_crew/apps/builtins/dev_fleet/skills/pod-e2e/scripts/pod-e2e.sh`
+- `src/efm_go/apps/builtins/dev_fleet/skills/pod-e2e/scripts/pod-e2e.sh`
 
 `kirocrew pod api` prints a stable JSON object with `name`, `method`, `path`,
 `status`, `ok`, and `body`. It permits `GET` and `HEAD` by default; `POST`,
@@ -31,7 +31,7 @@ The packaged scenarios are the agent's **native seeding vocabulary**:
 `kirocrew pod scenarios` prints each name plus its description, and that listing
 — not this guide — is the authoritative inventory. Use the smallest scenario
 that establishes the state under test. The fixture job names asserted below are
-owned by [`minimal/crons.json`](../../src/kiro_crew/tests_fixtures/minimal/crons.json).
+owned by [`minimal/crons.json`](../../src/efm_go/tests_fixtures/minimal/crons.json).
 
 A new scenario earns its place with two things in one PR: a **named debugging or
 verification use case** in its `fixture.yaml` description (the state it pins and
@@ -114,7 +114,7 @@ A successful boot without the `jq` API assertion is not backend verification.
 
 ## Recipe 2: prove a frontend change
 
-The [pod-e2e skill](../../src/kiro_crew/apps/builtins/dev_fleet/skills/pod-e2e/SKILL.md)
+The [pod-e2e skill](../../src/efm_go/apps/builtins/dev_fleet/skills/pod-e2e/SKILL.md)
 owns the harness flags, manifest syntax, authenticated Playwright context, and
 artifact contract. Follow that skill for harness details. This recipe adds the
 worktree-specific proof delta: a seeded boot, a passing verdict assertion, and
@@ -124,7 +124,7 @@ changed surface includes onboarding or another first-run overlay.
 ```bash
 set -euo pipefail
 WT="$(basename "$PWD")"
-HARNESS="$PWD/src/kiro_crew/apps/builtins/dev_fleet/skills/pod-e2e/scripts/pod-e2e.sh"
+HARNESS="$PWD/src/efm_go/apps/builtins/dev_fleet/skills/pod-e2e/scripts/pod-e2e.sh"
 ARTIFACT_DIR="$HOME/.kirocrew-pods/.e2e-artifacts/$WT"
 
 HANDLE="$(kirocrew pod up "$WT" --seed rich --json)"
@@ -351,7 +351,7 @@ That is the setting the nightly job uses. Each file also runs alone, so
 Three preconditions, all of them the same ones the recipes above need. The
 worktree must have `.venv/bin/kirocrew`, because a pod boots the CHECKOUT's own
 binary and the suite refuses to fall back to the host's installed build. It must
-have a built `src/kiro_crew/static/dist`. And the host must be able to run pods
+have a built `src/efm_go/static/dist`. And the host must be able to run pods
 at all, which the suite asks through the pod's own `runtime.require_backend()`
 rather than testing the platform itself.
 

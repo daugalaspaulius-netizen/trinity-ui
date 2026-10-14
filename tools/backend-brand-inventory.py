@@ -4,7 +4,7 @@
 import os, re, json, sys, tokenize, io
 from collections import Counter
 
-SRC = "/opt/efm/kirocrew-ui/src/kiro_crew"
+SRC = "/opt/efm/kirocrew-ui/src/efm_go"
 OUT = "/opt/efm/kirocrew-ui/backend-brand-inventory.json"
 
 def classify_token(tok_type, tok_str, relpath):

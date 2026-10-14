@@ -4,7 +4,7 @@ import asyncio
 import json
 from types import SimpleNamespace
 
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard.state import _ChatSlot
 
 
 def _slot(*messages: dict) -> _ChatSlot:
@@ -248,7 +248,7 @@ def test_last_ts_skips_the_turn_end_done_row():
 def test_last_ts_is_unchanged_by_a_rebuild_from_disk():
     # The same transcript before and after a restart: the live slot still holds
     # the unsaved rows, the rebuilt one holds only what the save path keeps.
-    from kiro_crew.dashboard.chat_persistence import _build_message_entry
+    from efm_go.dashboard.chat_persistence import _build_message_entry
 
     s = _ChatSlot("test-slot")
     s.append("user", "question", "msg msg-u")
@@ -262,7 +262,7 @@ def test_last_ts_is_unchanged_by_a_rebuild_from_disk():
 
 
 def test_last_ts_skips_every_transient_role():
-    from kiro_crew.dashboard.state import _TRANSIENT_ROLES
+    from efm_go.dashboard.state import _TRANSIENT_ROLES
 
     for role in sorted(_TRANSIENT_ROLES):
         s = _slot(
@@ -283,7 +283,7 @@ def test_the_dashboard_unsaved_role_list_matches_the_save_path():
     import re
     from pathlib import Path
 
-    from kiro_crew.dashboard.state import _TRANSIENT_ROLES
+    from efm_go.dashboard.state import _TRANSIENT_ROLES
 
     source = (
         Path(__file__).resolve().parents[1] / "website/src/hooks/unreadOnAttention.ts"

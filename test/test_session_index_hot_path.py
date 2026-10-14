@@ -27,9 +27,9 @@ import os
 
 import pytest
 
-from kiro_crew._sqlite_compat import _CJK_RANGES, fts5_available, is_cjk_char
-from kiro_crew.history import ConversationLog
-from kiro_crew.history_index import cjk_inventory
+from efm_go._sqlite_compat import _CJK_RANGES, fts5_available, is_cjk_char
+from efm_go.history import ConversationLog
+from efm_go.history_index import cjk_inventory
 
 requires_fts5 = pytest.mark.skipif(not fts5_available(), reason="SQLite built without FTS5")
 

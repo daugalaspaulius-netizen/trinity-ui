@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.apps.builtins.dev_fleet import repository as repository_mod
-from kiro_crew.apps.builtins.dev_fleet import runtime as runtime_mod
-from kiro_crew.apps.builtins.dev_fleet import worktree_ops
+from efm_go.apps.builtins.dev_fleet import repository as repository_mod
+from efm_go.apps.builtins.dev_fleet import runtime as runtime_mod
+from efm_go.apps.builtins.dev_fleet import worktree_ops
 
 NAME = "kc-wt-11919"
 NOT_FOUND = f"worktree not found: {NAME}"

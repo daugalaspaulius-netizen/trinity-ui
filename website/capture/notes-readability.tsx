@@ -32,7 +32,7 @@ and pointers only, so a cold resume starts here.
 ## In flight
 
 - **Chat settings subnav** — borderless cards and larger section headers
-  landed; PR open at [kirodotdev/KiroCrew#11381](https://github.com/kirodotdev/KiroCrew/pull/11381).
+  landed; PR open at [efmleads.com#11381](https://efmleads.com/pull/11381).
   - Worktree \`/srv/worktrees/kc-settings-restyle\`, branch
     \`feat/chat-settings-subnav\`, base commit \`07a05a2b1c9f3e2a1b4c5d6e7f8a9b0c1d2e3f4a\`.
   - Waiting on the UX review lane to re-read the open-search screenshot.

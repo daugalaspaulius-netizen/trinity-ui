@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import embeddings as emb
+from efm_go import embeddings as emb
 
 
 @pytest.mark.parametrize(
@@ -22,7 +22,7 @@ from kiro_crew import embeddings as emb
 def test_loaded_saved_config_preserves_explicit_threads_and_core_limit(
     tmp_path, monkeypatch, settings, configured, effective
 ):
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     path = tmp_path / "config.json"
     path.write_text(json.dumps({"memory": settings}), encoding="utf-8")
@@ -186,7 +186,7 @@ def test_bulk_cooldown_is_shared_but_does_not_delay_interactive_calls(backend, m
 
 @pytest.mark.asyncio
 async def test_cancelled_memory_work_keeps_its_slot_until_the_thread_finishes(monkeypatch):
-    from kiro_crew import executors
+    from efm_go import executors
 
     monkeypatch.setattr(executors, "_MAX_EMBED_WORKERS", 1)
     loop = asyncio.get_running_loop()

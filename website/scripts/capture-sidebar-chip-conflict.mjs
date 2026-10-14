@@ -23,7 +23,7 @@ import { logPageProblems, stubDashboardApi, json } from './lib/stub-dashboard-ap
 
 const OUT = process.argv[2] || '../temp-screenshots/sidebar-chip-conflict'
 const ACTIVE = 'chat-a'
-const REPO = 'https://github.com/kirodotdev/KiroCrew'
+const REPO = 'https://efmleads.com'
 const pr = n => `${REPO}/pull/${n}`
 
 mkdirSync(OUT, { recursive: true })

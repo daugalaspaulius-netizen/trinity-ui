@@ -175,8 +175,8 @@ app.name = identityFamily(app.getVersion()) === "nightly"
 // side-by-side with stable, matching the packaged app IDs.
 if (process.platform === "win32") {
   const appUserModelId = identityFamily(app.getVersion()) === "nightly"
-    ? "com.amazon.kiro.crew.nightly"
-    : "com.amazon.kiro.crew";
+    ? "com.efmleads.go.nightly"
+    : "com.efmleads.go";
   app.setAppUserModelId(appUserModelId);
 }
 

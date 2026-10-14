@@ -21,8 +21,8 @@ import subprocess
 
 import pytest
 
-from kiro_crew import name_grant, platform_compat
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go import name_grant, platform_compat
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 
 @pytest.fixture(autouse=True)

@@ -28,7 +28,7 @@ from chat_test_helpers import _make_app, _make_state
 @pytest.fixture
 def _patch_sel():
     mock_sel = MagicMock()
-    with patch("kiro_crew.dashboard.chat_handlers.sel", return_value=mock_sel):
+    with patch("efm_go.dashboard.chat_handlers.sel", return_value=mock_sel):
         yield mock_sel
 
 
@@ -57,7 +57,7 @@ class TestDeliveryIdLifecycle:
 
     @pytest.mark.asyncio
     async def test_a_successful_steer_leaves_no_entry(self, tmp_path, monkeypatch, _patch_sel):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -94,7 +94,7 @@ class TestDeliveryIdLifecycle:
     @pytest.mark.asyncio
     async def test_a_refused_steer_leaves_no_entry(self, tmp_path, monkeypatch, _patch_sel):
         """The unwind path must clear it too, or a queue fallback leaks instead."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -124,7 +124,7 @@ class TestDeliveryIdLifecycle:
         self, tmp_path, monkeypatch, _patch_sel
     ):
         """The growth shape is what makes this a leak rather than one stale key."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -156,7 +156,7 @@ class TestSteerPendingTracking:
 
     @pytest.mark.asyncio
     async def test_successful_steer_is_tracked_pending(self, tmp_path, monkeypatch, _patch_sel):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -176,7 +176,7 @@ class TestSteerPendingTracking:
 
     @pytest.mark.asyncio
     async def test_failed_steer_not_tracked(self, tmp_path, monkeypatch, _patch_sel):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -198,7 +198,7 @@ class TestSteerPendingTracking:
 
     @pytest.mark.asyncio
     async def test_multiple_steers_tracked_in_order(self, tmp_path, monkeypatch, _patch_sel):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -221,7 +221,7 @@ class TestSteerConsumedClears:
     """_settle_consumed_steers: snapshot-matched settling via the real helper."""
 
     def _slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         return state.get_or_create_slot("test")
 
@@ -247,8 +247,8 @@ class TestSteerConsumedClears:
         here as an exact set rather than skipped by a substring, so a second
         steer-named entry point -- for either family -- still reddens this.
         """
-        from kiro_crew.crew_log import emit as crew_log_emit
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.crew_log import emit as crew_log_emit
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         assert {name for name in dir(crew_log_emit) if "steer" in name.lower()} == {
             "on_subagent_steered"
@@ -257,7 +257,7 @@ class TestSteerConsumedClears:
             "site that can order one correctly"
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("test")
         slot._pending_steers = ["fix the bug", "late arrival"]
@@ -274,7 +274,7 @@ class TestSteerConsumedClears:
         assert appended == [], "the echo wrote a crew log entry it cannot order"
 
     def test_snapshot_settles_only_contained_steers(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         slot._pending_steers = ["fix the bug", "late arrival"]
@@ -284,7 +284,7 @@ class TestSteerConsumedClears:
         assert slot._pending_steers == ["late arrival"]
 
     def test_snapshot_with_all_steers_settles_all(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         slot._pending_steers = ["a", "b"]
@@ -297,7 +297,7 @@ class TestSteerConsumedClears:
         # Older backend / redacted echo: no usable text is no evidence of
         # consumption, so everything stays pending for the turn-end requeue.
         # A duplicate card is visible and cancellable; a silent loss is not.
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         slot._pending_steers = ["a", "b"]
@@ -309,7 +309,7 @@ class TestSteerConsumedClears:
         # "fix the bug" but was never itself consumed — equality matching on
         # parsed blocks must keep it pending (substring matching would settle
         # it and silently lose it when the turn dies).
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         slot._pending_steers = ["fix", "fix the bug"]
@@ -318,7 +318,7 @@ class TestSteerConsumedClears:
 
     def test_wrapper_text_not_falsely_settled(self, tmp_path, monkeypatch):
         # A steer like "user" must not match the <user_message> wrapper itself.
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         slot._pending_steers = ["user", "e"]
@@ -328,7 +328,7 @@ class TestSteerConsumedClears:
     def test_whitespace_parity_with_rpc_strip(self, tmp_path, monkeypatch):
         # The steer RPC wraps message.strip(); pending stores the raw message.
         # A trailing-newline pending entry must still settle against its block.
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         slot._pending_steers = ["do the thing\n"]
@@ -340,7 +340,7 @@ class TestSteerConsumedClears:
         # only ONE of them (the duplicate was registered after kiro-cli
         # snapshotted). Set-membership settling would sweep both and silently
         # lose the second — settling must be count-aware.
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         slot._pending_steers = ["fix", "fix"]
@@ -348,7 +348,7 @@ class TestSteerConsumedClears:
         assert slot._pending_steers == ["fix"]
 
     def test_duplicate_steers_settle_all_when_snapshot_has_both(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         slot._pending_steers = ["fix", "fix"]
@@ -359,7 +359,7 @@ class TestSteerConsumedClears:
         assert slot._pending_steers == []
 
     def test_noop_without_pending(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot = self._slot(tmp_path, monkeypatch)
         _settle_consumed_steers(slot, "<user_message>x</user_message>")
@@ -373,7 +373,7 @@ class TestSteerRegisteredBeforeAwait:
 
     @pytest.mark.asyncio
     async def test_pending_visible_during_steer_await(self, tmp_path, monkeypatch, _patch_sel):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -400,7 +400,7 @@ class TestSteerRegisteredBeforeAwait:
 
     @pytest.mark.asyncio
     async def test_failed_steer_unwinds_registration(self, tmp_path, monkeypatch, _patch_sel):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -426,14 +426,14 @@ class TestSteerRegisteredBeforeAwait:
     ):
         # The turn's finally ran DURING the await and requeued the steer; the
         # failure path must detect the missing entry and NOT queue it again.
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
         async def _steer(message):
             # Simulate _requeue_unconsumed_steers running mid-await.
-            from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+            from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
             _requeue_unconsumed_steers(state, slot)
             raise RuntimeError("backend died")
@@ -463,14 +463,14 @@ class TestProductionWiring:
     def _runner_source(self) -> str:
         from pathlib import Path
 
-        import kiro_crew.dashboard.chat_runner as cr
+        import efm_go.dashboard.chat_runner as cr
 
         return Path(cr.__file__).read_text(encoding="utf-8")
 
     def test_finally_calls_requeue_before_queue_drain(self):
         import inspect
 
-        import kiro_crew.dashboard.chat_runner as cr
+        import efm_go.dashboard.chat_runner as cr
 
         # Scoped to the one hand-off every turn exit runs, so a requeue call
         # anywhere else in the module cannot satisfy the order.
@@ -518,7 +518,7 @@ class TestProductionWiring:
     def test_steer_handler_registers_before_await(self):
         from pathlib import Path
 
-        import kiro_crew.dashboard.chat_delivery as cd
+        import efm_go.dashboard.chat_delivery as cd
 
         src = Path(cd.__file__).read_text(encoding="utf-8")
         register_at = src.index("slot._pending_steers.append(message)")
@@ -534,7 +534,7 @@ class TestSteerRequeueOnTurnDeath:
 
     @pytest.mark.asyncio
     async def test_unconsumed_steers_requeued_at_queue_head(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("test")
@@ -544,7 +544,7 @@ class TestSteerRequeueOnTurnDeath:
         slot._pending_steers = ["steer-1", "steer-2"]
 
         # Execute the requeue block exactly as _run_chat's finally does.
-        from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+        from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
         _requeue_unconsumed_steers(state, slot)
 
@@ -561,13 +561,13 @@ class TestSteerRequeueOnTurnDeath:
 
     @pytest.mark.asyncio
     async def test_no_pending_steers_is_noop(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("test")
         slot.queue_append("existing")
 
-        from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+        from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
         _requeue_unconsumed_steers(state, slot)
 
@@ -576,13 +576,13 @@ class TestSteerRequeueOnTurnDeath:
 
     @pytest.mark.asyncio
     async def test_requeue_survives_broadcast_failure(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock(side_effect=RuntimeError("ws down"))
         slot = state.get_or_create_slot("test")
         slot._pending_steers = ["important"]
 
-        from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+        from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
         _requeue_unconsumed_steers(state, slot)  # must not raise
 
@@ -613,7 +613,7 @@ class TestSteerLifecycleState:
     async def test_a_written_steer_row_is_not_marked_consumed(
         self, tmp_path, monkeypatch, _patch_sel
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -622,7 +622,7 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
+        from efm_go.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
 
         outcome = await steer_into_running_turn(state, slot, "go north")
 
@@ -638,7 +638,7 @@ class TestSteerLifecycleState:
 
     @pytest.mark.asyncio
     async def test_a_consumed_echo_promotes_the_row(self, tmp_path, monkeypatch, _patch_sel):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -647,8 +647,8 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_delivery import steer_into_running_turn
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         await steer_into_running_turn(state, slot, "go north")
         row_ts = next(m for m in slot.messages if m.get("meta", {}).get("steer"))["ts"]
@@ -679,7 +679,7 @@ class TestSteerLifecycleState:
         consumption event must finish that lifecycle without disturbing a
         legacy blocking ask.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.broadcast_ws_owners = MagicMock()
@@ -689,8 +689,8 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_delivery import steer_into_running_turn
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         # The accepted steer writes its row first. The card is registered only
         # afterwards, reproducing the ordering from the dashboard report.
@@ -716,7 +716,7 @@ class TestSteerLifecycleState:
 
     def test_unmatched_or_empty_echo_does_not_retire_a_question(self, tmp_path, monkeypatch):
         """Only positive consumption evidence closes the answer channel."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws_owners = MagicMock()
         slot = state.get_or_create_slot("test")
@@ -728,7 +728,7 @@ class TestSteerLifecycleState:
             questions=[{"question": "Which option?", "options": [{"label": "B"}]}],
         )
 
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         _settle_consumed_steers(slot, "<user_message>\nsomething else\n</user_message>", state)
         assert list(slot._question_pending) == ["card-live"]
@@ -744,7 +744,7 @@ class TestSteerLifecycleState:
         self, tmp_path, monkeypatch, _patch_sel
     ):
         """The state the bug report is about: acked, never consumed, requeued."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -753,8 +753,8 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
-        from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+        from efm_go.dashboard.chat_delivery import steer_into_running_turn
+        from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
         await steer_into_running_turn(state, slot, "go north")
         row_ts = next(m for m in slot.messages if m.get("meta", {}).get("steer"))["ts"]
@@ -789,7 +789,7 @@ class TestSteerLifecycleState:
         This is the mirror case: overstating and understating are
         both the row disagreeing with the backend.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -800,7 +800,7 @@ class TestSteerLifecycleState:
             # EVIDENCE-FREE sweep, not a matched echo -- an injection
             # narrower than the fault this test names, which let it pass while
             # `chat_delivery` was inferring `consumed` from absence alone.
-            from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+            from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
             _settle_consumed_steers(slot, "<user_message>\ngo north\n</user_message>", state)
             return True
@@ -810,7 +810,7 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(side_effect=_consume_during_rpc)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
+        from efm_go.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
 
         outcome = await steer_into_running_turn(state, slot, "go north")
 
@@ -835,13 +835,13 @@ class TestSteerLifecycleState:
         nothing would correct it. That is the defect this change removes, reached
         by a different route.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
         async def _empty_echo_during_rpc(_msg):
-            from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+            from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
             # A real empty frame, not a synthesized clear: this is the exact input
             # whose handling the finding is about.
@@ -853,7 +853,7 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(side_effect=_empty_echo_during_rpc)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
+        from efm_go.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
 
         outcome = await steer_into_running_turn(state, slot, "go north")
 
@@ -885,13 +885,13 @@ class TestSteerLifecycleState:
         unguarded `in` raises TypeError and would crash the steer path instead of
         degrading to the honest state.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
         async def _consume_with_broken_marker(_msg):
-            from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+            from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
             _settle_consumed_steers(slot, "<user_message>\ngo north\n</user_message>", state)
             # Real evidence WAS recorded and is then made unreadable, so this pins
@@ -904,7 +904,7 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(side_effect=_consume_with_broken_marker)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
+        from efm_go.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
 
         outcome = await steer_into_running_turn(state, slot, "go north")
 
@@ -928,7 +928,7 @@ class TestSteerLifecycleState:
         would claim the wrong message was the one the turn consumed. Real identity
         for a pending steer is a separate refactor, out of scope here.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -937,8 +937,8 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import sanitize_outbound, steer_into_running_turn
-        from kiro_crew.dashboard.chat_runner import _mark_steer_row_state
+        from efm_go.dashboard.chat_delivery import sanitize_outbound, steer_into_running_turn
+        from efm_go.dashboard.chat_runner import _mark_steer_row_state
 
         first = "deploy with AKIAIOSFODNN7EXAMPLE"
         second = "deploy with AKIAI44QH8DHBEXAMPLE"
@@ -984,7 +984,7 @@ class TestSteerLifecycleState:
         state -- the mirror case -- and needs no real steer identity, which is a
         separate refactor.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -993,11 +993,11 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import (
+        from efm_go.dashboard.chat_delivery import (
             sanitize_outbound,
             steer_into_running_turn,
         )
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         first = "deploy with AKIAIOSFODNN7EXAMPLE"
         second = "deploy with AKIAI44QH8DHBEXAMPLE"
@@ -1055,13 +1055,13 @@ class TestSteerLifecycleState:
         function provably produces the state, the promote loop has to survive it,
         and `side_state` shares the same helper with its own pending list.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _running_slot(state)
 
-        from kiro_crew.dashboard.chat_delivery import sanitize_outbound
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
-        from kiro_crew.dashboard.steer_settle import settle_consumed_steers
+        from efm_go.dashboard.chat_delivery import sanitize_outbound
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.steer_settle import settle_consumed_steers
 
         msg = "deploy with AKIAIOSFODNN7EXAMPLE"
         target = sanitize_outbound(msg)
@@ -1108,13 +1108,13 @@ class TestSteerLifecycleState:
         that window must not resolve to the older row and mark a steer consumed
         that never was.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
-        from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
-        from kiro_crew.dashboard.chat_runner import _mark_steer_row_state
+        from efm_go.dashboard.chat_delivery import steer_into_running_turn
+        from efm_go.dashboard.chat_runner import _mark_steer_row_state
 
         # first steer persists a row, then a hard kill wipes the bookkeeping
         first_client = MagicMock()
@@ -1155,7 +1155,7 @@ class TestSteerLifecycleState:
         `mid`, the patch matches nothing, and a consumed steer's badge stays hidden
         until the page is reloaded.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -1164,8 +1164,8 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_delivery import steer_into_running_turn
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         await steer_into_running_turn(state, slot, "go north")
         row = next(m for m in slot.messages if m.get("meta", {}).get("steer"))
@@ -1196,7 +1196,7 @@ class TestSteerLifecycleState:
         so the newest match is unambiguously the live one and the dead row is left
         exactly as it was.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -1205,8 +1205,8 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_delivery import steer_into_running_turn
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         # a steer whose turn was hard-killed: row persists, bookkeeping wiped
         await steer_into_running_turn(state, slot, "go north")
@@ -1235,7 +1235,7 @@ class TestSteerLifecycleState:
         so the entry must stay pending, nothing may be promoted, and the
         turn-end requeue must render a visible, cancellable queue card.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -1244,8 +1244,8 @@ class TestSteerLifecycleState:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go.dashboard.chat_delivery import steer_into_running_turn
+        from efm_go.dashboard.chat_runner import (
             _requeue_unconsumed_steers,
             _settle_consumed_steers,
         )
@@ -1283,12 +1283,12 @@ class TestSteerLifecycleState:
         two of them carry the same content here, so which is which is unknowable
         and the patch correctly declines (see the sanitized-collision test).
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("test")
 
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         slot.append(
             "user", "same", "msg msg-u", ts="1", meta={"steer": True, "steerState": "written"}
@@ -1326,7 +1326,7 @@ class TestRequeuedThenCancelledSteer:
     async def test_cancelled_requeue_is_not_persisted_as_delivered(
         self, tmp_path, monkeypatch, _patch_sel
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -1371,7 +1371,7 @@ class TestHardKillDiscardsSteers:
 
     @pytest.mark.asyncio
     async def test_force_stop_clears_pending_steers(self, tmp_path, monkeypatch, _patch_sel):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -1426,13 +1426,13 @@ class TestRequeuedSteerCarriesTheClientSendId:
         `_requeue_unconsumed_steers` rather than a hand-rolled stand-in, so the
         entry meta asserted here is the one production writes.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
         async def _steer(message):
-            from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+            from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
             _requeue_unconsumed_steers(state, slot)
             return True
@@ -1472,7 +1472,7 @@ class TestRequeuedSteerCarriesTheClientSendId:
         its steer delivery ids), and this pins that `sendId` is not filtered out
         of it.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.subagents = None
@@ -1481,7 +1481,7 @@ class TestRequeuedSteerCarriesTheClientSendId:
         slot._steer_delivery_ids = {self._TEXT: "did-1"}
         slot._steer_send_ids = {self._TEXT: self._SEND_ID}
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         chat_runner._requeue_unconsumed_steers(state, slot)
 
@@ -1507,13 +1507,13 @@ class TestRequeuedSteerCarriesTheClientSendId:
         Pinned as an ABSENT KEY rather than a falsy value -- an empty string would
         travel to the row and give the frontend an id that matches nothing.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
         async def _steer(message):
-            from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+            from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
             _requeue_unconsumed_steers(state, slot)
             return True
@@ -1539,13 +1539,13 @@ class TestRequeuedSteerCarriesTheClientSendId:
         that fails the id gates must not get there by the requeue door after being
         refused at the row door.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
         async def _steer(message):
-            from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+            from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
             _requeue_unconsumed_steers(state, slot)
             return True
@@ -1587,7 +1587,7 @@ class TestSendIdMapLifecycle:
     @pytest.mark.asyncio
     async def test_the_requeue_moves_the_entry_out(self, tmp_path, monkeypatch):
         """Moved onto the queue entry, not copied -- the map must not keep it."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("test")
@@ -1595,7 +1595,7 @@ class TestSendIdMapLifecycle:
         slot._steer_delivery_ids = {self._TEXT: "did-1"}
         slot._steer_send_ids = {self._TEXT: self._SEND_ID}
 
-        from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+        from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
         _requeue_unconsumed_steers(state, slot)
 
@@ -1627,7 +1627,7 @@ class TestSendIdMapLifecycle:
         terminal tail and enter the requeue loop zero times, so it cannot cover
         this even though it is the same failure mode one layer up.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("test")
@@ -1636,7 +1636,7 @@ class TestSendIdMapLifecycle:
         slot._steer_delivery_ids = {t: f"did-{n}" for n, t in enumerate(texts)}
         slot._steer_send_ids = {t: f"s-m4k2p1-{n}" for n, t in enumerate(texts)}
 
-        from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+        from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
         _requeue_unconsumed_steers(state, slot)
 
@@ -1658,7 +1658,7 @@ class TestSendIdMapLifecycle:
     @pytest.mark.asyncio
     async def test_a_hard_kill_drops_the_entry(self, tmp_path, monkeypatch, _patch_sel):
         """A force stop discards the text, so no requeued entry will carry it."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -1691,7 +1691,7 @@ class TestSendIdMapLifecycle:
         records that precondition, so the constructed pin below is honestly
         labelled a defensive-invariant pin rather than a production-path one.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.subagents = None
@@ -1699,7 +1699,7 @@ class TestSendIdMapLifecycle:
         observed: dict[str, object] = {}
 
         async def _requeue_and_drain(message):
-            from kiro_crew.dashboard import chat_runner
+            from efm_go.dashboard import chat_runner
 
             chat_runner._requeue_unconsumed_steers(state, slot)
             with (
@@ -1755,7 +1755,7 @@ class TestSendIdMapLifecycle:
         `_steer_delivery_ids` pop at this same return is defensive for exactly the
         same reason. This pin is what makes removing either of them fail.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -1811,13 +1811,13 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
     @pytest.mark.asyncio
     async def test_requeued_entry_meta_carries_the_receipt(self, tmp_path, monkeypatch):
         """Registration -> entry meta, driving the real requeue from inside the RPC."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
         async def _steer(message):
-            from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+            from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
             _requeue_unconsumed_steers(state, slot)
             return True
@@ -1827,7 +1827,7 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
         client_mock.steer = _steer
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import STEER_REQUEUED, steer_into_running_turn
+        from efm_go.dashboard.chat_delivery import STEER_REQUEUED, steer_into_running_turn
 
         outcome = await steer_into_running_turn(state, slot, self._TEXT, decision_strip=self._STRIP)
         assert outcome == STEER_REQUEUED
@@ -1841,7 +1841,7 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
     @pytest.mark.asyncio
     async def test_drained_row_carries_the_receipt(self, tmp_path, monkeypatch):
         """Entry meta -> row meta: the row is what the transcript reader reads."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.subagents = None
@@ -1850,7 +1850,7 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
         slot._steer_delivery_ids = {self._TEXT: "did-1"}
         slot._steer_decision_strips = {self._TEXT: self._STRIP}
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         chat_runner._requeue_unconsumed_steers(state, slot)
         with (
@@ -1877,7 +1877,7 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
         REQUEUED row and the drained row would claim the decision and neither copy is
         ever removed. `sendId` is dropped at that same site for the same reason.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -1887,8 +1887,8 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
         client_mock.steer = AsyncMock(return_value=True)
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat_delivery import STEER_STEERED, steer_into_running_turn
 
         assert (
             await steer_into_running_turn(state, slot, self._TEXT, decision_strip=self._STRIP)
@@ -1913,14 +1913,14 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
         message for the slot's lifetime -- and a steer the echo accounted for is
         never requeued, so nothing will read it again.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("test")
         slot._pending_steers = [self._TEXT]
         slot._steer_decision_strips = {self._TEXT: self._STRIP}
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         chat_runner._settle_consumed_steers(
             slot, f"<user_message>\n{self._TEXT}\n</user_message>", state
@@ -1937,13 +1937,13 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
         persisted with the queue and reaches the row, where an empty receipt would
         render as a decision that never happened.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
 
         async def _steer(message):
-            from kiro_crew.dashboard.chat_runner import _requeue_unconsumed_steers
+            from efm_go.dashboard.chat_runner import _requeue_unconsumed_steers
 
             _requeue_unconsumed_steers(state, slot)
             return True
@@ -1953,7 +1953,7 @@ class TestRequeuedSteerKeepsItsDecisionReceipt:
         client_mock.steer = _steer
         slot._acp_client = client_mock
 
-        from kiro_crew.dashboard.chat_delivery import steer_into_running_turn
+        from efm_go.dashboard.chat_delivery import steer_into_running_turn
 
         await steer_into_running_turn(state, slot, self._TEXT)
         assert "decisions_strip" not in slot._queue[0]["meta"]
@@ -1972,9 +1972,9 @@ class TestPeerSteerOnCodex:
     async def test_a_peer_steer_into_codex_is_refused_before_the_rpc(
         self, tmp_path, monkeypatch, _patch_sel
     ):
-        from kiro_crew.dashboard.chat_delivery import STEER_UNAVAILABLE, steer_into_running_turn
+        from efm_go.dashboard.chat_delivery import STEER_UNAVAILABLE, steer_into_running_turn
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)
@@ -1991,9 +1991,9 @@ class TestPeerSteerOnCodex:
 
     @pytest.mark.asyncio
     async def test_the_composer_still_steers_codex(self, tmp_path, monkeypatch, _patch_sel):
-        from kiro_crew.dashboard.chat_delivery import STEER_UNAVAILABLE, steer_into_running_turn
+        from efm_go.dashboard.chat_delivery import STEER_UNAVAILABLE, steer_into_running_turn
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = _running_slot(state)

@@ -31,8 +31,8 @@ import pytest
 from test_snapshot import _setup_fake_kirocrew, unpinnable_argv
 
 from conftest import make_dir_link
-from kiro_crew import pinned_fs
-from kiro_crew import snapshot as snap
+from efm_go import pinned_fs
+from efm_go import snapshot as snap
 
 # Unique enough that the interception below can key on the base name alone, which is
 # what makes it work for a bare name opened relative to a directory descriptor as

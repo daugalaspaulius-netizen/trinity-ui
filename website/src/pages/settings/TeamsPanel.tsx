@@ -16,7 +16,7 @@ import { ChannelFolderBackfill } from './ChannelFolderBackfill'
 const CHANNEL_NAME = "Teams"
 const AZURE_BOT_URL = 'https://portal.azure.com/#create/Microsoft.AzureBot'
 const SETUP_GUIDE =
-  'https://github.com/kirodotdev/KiroCrew/blob/main/src/kiro_crew/docs/teams-integration.md'
+  'https://efmleads.com/support'
 const WEBHOOK_PATH = '/api/messaging/teams'
 /** In-chat commands the soft-threshold nudge names. Protocol tokens the channel
  *  matches by value, so they stay code constants rather than catalog values. */

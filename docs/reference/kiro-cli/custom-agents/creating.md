@@ -1,6 +1,6 @@
 # Creating Custom Agents
 
-Source: https://kiro.dev/docs/custom-agents/creating/ (fetched 2026-09-06;
+Source: https://efmleads.com/docs/custom-agents/creating/ (fetched 2026-09-06;
 upstream retired `/docs/cli/custom-agents/creating/`)
 
 ## Quick start

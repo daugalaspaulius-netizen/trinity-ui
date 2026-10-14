@@ -1,12 +1,12 @@
-"""Tests for the Composed Platform Providers contract (kiro_crew.platform)."""
+"""Tests for the Composed Platform Providers contract (efm_go.platform)."""
 
 from __future__ import annotations
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform import (
+from efm_go import security
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform import (
     BASELINE_DENY,
     CONTRACT_VERSION,
     PROFILE_ENTERPRISE,
@@ -18,7 +18,7 @@ from kiro_crew.platform import (
     build_default_context,
     resolve_profile,
 )
-from kiro_crew.platform.context import PlatformContext
+from efm_go.platform.context import PlatformContext
 
 
 @pytest.fixture
@@ -39,8 +39,8 @@ class TestDefaultContext:
     def test_default_adapters_match_legacy_behavior(self, cfg: KiroCrewConfig) -> None:
         ctx = build_default_context(cfg)
         # Each Default* adapter reproduces today's module-level value.
-        from kiro_crew import agent, embeddings, sandbox
-        from kiro_crew.apps import registry
+        from efm_go import agent, embeddings, sandbox
+        from efm_go.apps import registry
 
         assert ctx.embeddings.registry_model() == embeddings._MODEL_ID
         assert ctx.sandbox.strict_dirs() == list(sandbox._STRICT_DIRS)
@@ -166,7 +166,7 @@ class TestProfileResolution:
         # would brick every command at boot. The heuristic is opt-in only.
         monkeypatch.delenv("KIROCREW_PROFILE", raising=False)
         monkeypatch.delenv("KIROCREW_SSO_PROFILE_PROBE", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.profile.Path.home", lambda: _FakeHome(True))
+        monkeypatch.setattr("efm_go.platform.profile.Path.home", lambda: _FakeHome(True))
         assert resolve_profile(cfg, entry_points=[]) == PROFILE_STANDALONE
 
     def test_marker_stat_triggers_enterprise_when_probe_opted_in(
@@ -177,7 +177,7 @@ class TestProfileResolution:
         # (rather than running open defaults).
         monkeypatch.delenv("KIROCREW_PROFILE", raising=False)
         monkeypatch.setenv("KIROCREW_SSO_PROFILE_PROBE", "1")
-        monkeypatch.setattr("kiro_crew.platform.profile.Path.home", lambda: _FakeHome(True))
+        monkeypatch.setattr("efm_go.platform.profile.Path.home", lambda: _FakeHome(True))
         assert resolve_profile(cfg, entry_points=[]) == PROFILE_ENTERPRISE
 
     def test_legacy_probe_env_still_triggers_enterprise(
@@ -190,13 +190,13 @@ class TestProfileResolution:
         monkeypatch.delenv("KIROCREW_PROFILE", raising=False)
         monkeypatch.delenv("KIROCREW_SSO_PROFILE_PROBE", raising=False)
         monkeypatch.setenv("KIROCREW_MIDWAY_PROFILE_PROBE", "1")
-        monkeypatch.setattr("kiro_crew.platform.profile.Path.home", lambda: _FakeHome(True))
+        monkeypatch.setattr("efm_go.platform.profile.Path.home", lambda: _FakeHome(True))
         assert resolve_profile(cfg, entry_points=[]) == PROFILE_ENTERPRISE
 
     def test_no_signals_is_standalone(self, cfg: KiroCrewConfig, monkeypatch) -> None:
         monkeypatch.delenv("KIROCREW_PROFILE", raising=False)
         monkeypatch.setenv("KIROCREW_SSO_PROFILE_PROBE", "1")
-        monkeypatch.setattr("kiro_crew.platform.profile.Path.home", lambda: _FakeHome(False))
+        monkeypatch.setattr("efm_go.platform.profile.Path.home", lambda: _FakeHome(False))
         assert resolve_profile(cfg, entry_points=[]) == PROFILE_STANDALONE
 
 
@@ -222,7 +222,7 @@ class TestBootstrapAndDiscovery:
         ctx = bootstrap_context(cfg)
         assert ctx.profile == PROFILE_STANDALONE
         # current_context() now returns this context.
-        from kiro_crew.platform import current_context
+        from efm_go.platform import current_context
 
         assert current_context() is ctx
 
@@ -231,15 +231,15 @@ class TestBootstrapAndDiscovery:
     ) -> None:
         monkeypatch.setenv("KIROCREW_PROFILE", "enterprise")
         # No companion entry point installed → must raise (fail-closed).
-        monkeypatch.setattr("kiro_crew.platform.bootstrap.plugin_entry_points", lambda: [])
-        monkeypatch.setattr("kiro_crew.platform.discovery.plugin_entry_points", lambda: [])
+        monkeypatch.setattr("efm_go.platform.bootstrap.plugin_entry_points", lambda: [])
+        monkeypatch.setattr("efm_go.platform.discovery.plugin_entry_points", lambda: [])
         with pytest.raises(PlatformCompositionError):
             bootstrap_context(cfg)
 
     def test_contract_version_mismatch_rejected(self, cfg: KiroCrewConfig, monkeypatch) -> None:
         import dataclasses
 
-        from kiro_crew.platform import bootstrap as bootstrap_mod
+        from efm_go.platform import bootstrap as bootstrap_mod
 
         bad = dataclasses.replace(
             build_default_context(cfg, profile=PROFILE_ENTERPRISE),
@@ -257,7 +257,7 @@ class TestBootstrapAndDiscovery:
         # Defense in depth: if discovery ever returns None for a non-standalone
         # profile, bootstrap must STILL refuse to boot rather than install an
         # enterprise-labeled context with open defaults.
-        from kiro_crew.platform import bootstrap as bootstrap_mod
+        from efm_go.platform import bootstrap as bootstrap_mod
 
         monkeypatch.setenv("KIROCREW_PROFILE", "enterprise")
         monkeypatch.setattr(bootstrap_mod, "plugin_entry_points", lambda: [object()])
@@ -289,7 +289,7 @@ class TestRedactLogViaContext:
     def _install(policy, cfg: KiroCrewConfig):
         import dataclasses
 
-        from kiro_crew.platform import set_context
+        from efm_go.platform import set_context
 
         set_context(
             dataclasses.replace(
@@ -301,13 +301,13 @@ class TestRedactLogViaContext:
     @pytest.fixture(autouse=True)
     def _restore_context(self):
         """Never leave a stub context installed for the rest of the session."""
-        from kiro_crew.platform import reset_context
+        from efm_go.platform import reset_context
 
         yield
         reset_context()
 
     def test_companion_shape_is_scrubbed_on_top_of_the_baseline(self, cfg: KiroCrewConfig) -> None:
-        from kiro_crew.platform.context import redact_log_via_context
+        from efm_go.platform.context import redact_log_via_context
 
         class _Policy:
             def redact(self, text: str) -> str:
@@ -327,7 +327,7 @@ class TestRedactLogViaContext:
     def test_composition_failure_withholds_the_text_instead_of_raising(
         self, cfg: KiroCrewConfig
     ) -> None:
-        from kiro_crew.platform.context import (
+        from efm_go.platform.context import (
             LOG_WITHHELD_PLACEHOLDER,
             redact_log_via_context,
         )
@@ -351,7 +351,7 @@ class TestRedactLogViaContext:
         ``redact_via_context`` stop raising -- which would silently convert every
         egress sink to fail-open. Pin the difference to the call site.
         """
-        from kiro_crew.platform.context import redact_via_context
+        from efm_go.platform.context import redact_via_context
 
         class _Unprovable:
             def redact(self, text: str) -> str:
@@ -370,7 +370,7 @@ class TestRedactLogViaContext:
         on a host whose companion is merely misbehaving, so the inherited
         degrade-to-baseline path has to survive underneath the new catch.
         """
-        from kiro_crew.platform.context import (
+        from efm_go.platform.context import (
             LOG_WITHHELD_PLACEHOLDER,
             redact_log_via_context,
         )
@@ -401,8 +401,8 @@ class TestRedactLogViaContext:
         since ``current_context()`` never memoizes its fail-closed verdict on a
         non-standalone profile.
         """
-        from kiro_crew.platform import context as context_mod
-        from kiro_crew.platform.context import (
+        from efm_go.platform import context as context_mod
+        from efm_go.platform.context import (
             LOG_WITHHELD_PLACEHOLDER,
             redact_log_via_context,
             reset_context,
@@ -455,9 +455,9 @@ class TestRedactLogViaContext:
         """
         import pathlib
 
-        import kiro_crew
+        import efm_go
 
-        root = pathlib.Path(kiro_crew.__file__).parent
+        root = pathlib.Path(efm_go.__file__).parent
         for rel in self.CONVERGED_LOG_SITES:
             lines = (root / rel).read_text(encoding="utf-8").splitlines()
             body = [ln for ln in lines if not ln.lstrip().startswith(("import ", "from "))]

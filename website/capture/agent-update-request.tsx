@@ -63,7 +63,7 @@ const noop = async () => ({ ok: true })
     autoDownload: true,
     laneVersion: '0.6.0',
     runningAheadOfLane: false,
-    downloadUrl: 'https://download.crew.kiro.dev/desktop/stable/latest',
+    downloadUrl: 'https://efmleads.com/desktop/stable/latest',
   }),
   setChannel: noop,
   setAutoDownload: noop,

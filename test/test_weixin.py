@@ -11,8 +11,8 @@ import asyncio
 
 import pytest
 
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.weixin.client import (
+from efm_go.messaging.transport import InboundMessage
+from efm_go.weixin.client import (
     ILINK_APP_ID,
     ITEM_TEXT,
     MSG_STATE_FINISH,
@@ -25,13 +25,13 @@ from kiro_crew.weixin.client import (
     _headers,
     protocol_error_code,
 )
-from kiro_crew.weixin.renderer import (
+from efm_go.weixin.renderer import (
     WEIXIN_CHUNK_LIMIT,
     normalize_markdown,
     render_chunks,
     split_markdown_blocks,
 )
-from kiro_crew.weixin.transport import WeixinTransport
+from efm_go.weixin.transport import WeixinTransport
 
 
 # ── protocol headers ──────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ def test_declared_capabilities_match_the_directions_actually_implemented():
     carries text only, because the ``getuploadurl`` + encrypted CDN PUT half is
     unimplemented. Flip ``files_outbound`` in the change that lands it.
     """
-    from kiro_crew.weixin.transport import WEIXIN_CAPABILITIES
+    from efm_go.weixin.transport import WEIXIN_CAPABILITIES
 
     assert WEIXIN_CAPABILITIES.files_inbound is True
     assert WEIXIN_CAPABILITIES.files_outbound is False
@@ -270,7 +270,7 @@ def test_transport_default_policy_is_deny_by_default(tmp_path):
 
 def test_config_dm_policy_defaults_to_allowlist():
     """A fresh QR login must not expose the agent to every sender."""
-    from kiro_crew.config.loader import WeixinConfig
+    from efm_go.config.loader import WeixinConfig
 
     assert WeixinConfig().dm_policy == "allowlist"
     assert WeixinConfig().allowed_user_ids == []
@@ -379,14 +379,14 @@ def test_gateway_home_follows_the_configured_data_home(tmp_path, monkeypatch):
     other's reply state.
     """
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "isolated"))
-    from kiro_crew.config import paths as paths_mod
+    from efm_go.config import paths as paths_mod
 
     resolved = paths_mod.data_home()
     assert str(tmp_path / "isolated") in str(resolved)
 
     # The gateway must resolve the home through the canonical helper, not a
     # hardcoded path, so overriding the data home actually moves the state.
-    import kiro_crew.weixin.gateway as gw
+    import efm_go.weixin.gateway as gw
 
     assert gw.data_home is paths_mod.data_home
 
@@ -401,7 +401,7 @@ def test_gateway_wires_the_transport_into_the_dispatcher_before_connect(tmp_path
     """
     from types import SimpleNamespace
 
-    import kiro_crew.weixin.gateway as gw
+    import efm_go.weixin.gateway as gw
 
     class _Cfg:
         class agent:
@@ -497,8 +497,8 @@ def test_a_mid_response_options_mention_never_deletes_the_body():
         "Important paragraph that must survive.\n"
         "A list: [1] first [2] second\n"
     )
-    from kiro_crew.messaging.renderer import render_options_as_text
-    from kiro_crew.weixin.transport import WEIXIN_CAPABILITIES
+    from efm_go.messaging.renderer import render_options_as_text
+    from efm_go.weixin.transport import WEIXIN_CAPABILITIES
 
     out = render_options_as_text(body + "\n[OPTIONS: Keep | Discard]", WEIXIN_CAPABILITIES)
     assert "Important paragraph that must survive." in out
@@ -527,7 +527,7 @@ def test_poll_loop_backs_off_on_ret_keyed_session_expiry(tmp_path, monkeypatch):
         return {"ret": -14}
 
     client.get_updates = expired  # type: ignore[assignment]
-    monkeypatch.setattr("kiro_crew.weixin.transport.asyncio.sleep", fake_sleep)
+    monkeypatch.setattr("efm_go.weixin.transport.asyncio.sleep", fake_sleep)
     t._running = True
     asyncio.run(t._poll_loop())
     assert sleeps == [600]  # the long session-expiry pause, not a spin
@@ -545,7 +545,7 @@ def test_poll_loop_backs_off_on_ret_keyed_rate_limit(tmp_path, monkeypatch):
         return {"ret": -2}
 
     client.get_updates = limited  # type: ignore[assignment]
-    monkeypatch.setattr("kiro_crew.weixin.transport.asyncio.sleep", fake_sleep)
+    monkeypatch.setattr("efm_go.weixin.transport.asyncio.sleep", fake_sleep)
     t._running = True
     asyncio.run(t._poll_loop())
     assert sleeps == [30]
@@ -564,7 +564,7 @@ def test_poll_loop_backs_off_on_an_unknown_error_code(tmp_path, monkeypatch):
         return {"ret": -999}
 
     client.get_updates = weird  # type: ignore[assignment]
-    monkeypatch.setattr("kiro_crew.weixin.transport.asyncio.sleep", fake_sleep)
+    monkeypatch.setattr("efm_go.weixin.transport.asyncio.sleep", fake_sleep)
     t._running = True
     asyncio.run(t._poll_loop())
     assert sleeps and sleeps[0] > 0
@@ -626,7 +626,7 @@ def test_send_message_returns_the_payload_on_success():
 
 def test_receive_persists_the_context_off_the_event_loop(tmp_path, monkeypatch):
     """The store rewrites a JSON file; doing it inline would stall the poll loop."""
-    import kiro_crew.weixin.transport as mod
+    import efm_go.weixin.transport as mod
 
     calls: list[tuple] = []
     real_to_thread = mod.asyncio.to_thread

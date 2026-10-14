@@ -4,7 +4,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer'
 
 /**
  * A streaming tick that reclassifies an EARLIER line must not re-create the
- * blocks below it. See kirodotdev/KiroCrew#10893.
+ * blocks below it. See efmleads.com#10893.
  *
  * Asserted on DOM node identity rather than pixels: jsdom has no layout engine,
  * and node identity across a re-render is engine-independent React behaviour, so

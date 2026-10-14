@@ -30,10 +30,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.dashboard.chat_utils import slot_transcript_key
-from kiro_crew.dashboard.handlers.telemetry import _with_conversation_titles
-from kiro_crew.dashboard.state import NEW_SESSION_TITLE, DashboardState
-from kiro_crew.history import ConversationLog
+from efm_go.dashboard.chat_utils import slot_transcript_key
+from efm_go.dashboard.handlers.telemetry import _with_conversation_titles
+from efm_go.dashboard.state import NEW_SESSION_TITLE, DashboardState
+from efm_go.history import ConversationLog
 
 
 def _request(slots: dict, conversation_log=None) -> SimpleNamespace:

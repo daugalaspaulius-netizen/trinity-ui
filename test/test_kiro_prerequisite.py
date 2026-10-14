@@ -24,29 +24,29 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew import _process_group_supervisor as supervisor
-from kiro_crew import kiro_prerequisite as prerequisite_module
-from kiro_crew import platform_compat
-from kiro_crew.agent_files import AGENT_FILENAME
-from kiro_crew.dashboard.chat_handlers import api_chat_slot_create
-from kiro_crew.dashboard.chat_regenerate import (
+from efm_go import _process_group_supervisor as supervisor
+from efm_go import kiro_prerequisite as prerequisite_module
+from efm_go import platform_compat
+from efm_go.agent_files import AGENT_FILENAME
+from efm_go.dashboard.chat_handlers import api_chat_slot_create
+from efm_go.dashboard.chat_regenerate import (
     api_chat_slot_edit_resend,
     api_chat_slot_regenerate,
 )
-from kiro_crew.dashboard.chat_rewind import api_chat_slot_rewind
-from kiro_crew.dashboard.chat_runner import _run_chat
-from kiro_crew.dashboard.handlers.kiro_prerequisite import (
+from efm_go.dashboard.chat_rewind import api_chat_slot_rewind
+from efm_go.dashboard.chat_runner import _run_chat
+from efm_go.dashboard.handlers.kiro_prerequisite import (
     api_kiro_prerequisite_repair_specs,
     api_kiro_prerequisite_status,
     api_kiro_prerequisite_update_cli,
 )
-from kiro_crew.dashboard.kiro_readiness import kiro_session_ready
-from kiro_crew.kiro_cli import (
+from efm_go.dashboard.kiro_readiness import kiro_session_ready
+from efm_go.kiro_cli import (
     BUNDLED_KIRO_CLI_ENTRY,
     BUNDLED_KIRO_CLI_WINDOWS_ENTRY,
     resolve_kiro_cli,
 )
-from kiro_crew.kiro_prerequisite import (
+from efm_go.kiro_prerequisite import (
     BUNDLED_CLI_UPDATE_REFUSAL,
     KIRO_CLI_LOGIN_COMMAND,
     KIRO_CLI_SSO_LOGIN_COMMAND,
@@ -75,8 +75,8 @@ def _isolate_agent_specs(tmp_path_factory, monkeypatch):
     Tests that exercise the missing-spec behaviour re-patch the same hook inside
     the test body, which runs after this fixture and therefore wins.
     """
-    from kiro_crew import agent as agent_module
-    from kiro_crew.agent_files import REQUIRED_KIRO_AGENT_FILES
+    from efm_go import agent as agent_module
+    from efm_go.agent_files import REQUIRED_KIRO_AGENT_FILES
 
     agents = tmp_path_factory.mktemp("kiro-agents")
     for name in REQUIRED_KIRO_AGENT_FILES:
@@ -144,7 +144,7 @@ def _agents_dir_never_the_real_home(
     assertions depend on the machine they run on.
     """
     monkeypatch.setenv("KIRO_HOME", str(tmp_path_factory.mktemp("kiro-home")))
-    import kiro_crew.kiro_prerequisite as kiro_prerequisite_module
+    import efm_go.kiro_prerequisite as kiro_prerequisite_module
 
     monkeypatch.setattr(kiro_prerequisite_module, "_default_spec_lister", lambda: [], raising=True)
 
@@ -157,7 +157,7 @@ async def _wait_for_operation(service: KiroPrerequisiteService) -> None:
 
 class TestHostSandboxReadiness:
     def test_probe_failure_payload_does_not_claim_host_sandbox(self) -> None:
-        from kiro_crew.dashboard.handlers.kiro_prerequisite import _not_ready_snapshot
+        from efm_go.dashboard.handlers.kiro_prerequisite import _not_ready_snapshot
 
         assert _not_ready_snapshot()["sandbox_backend_available"] is False
 
@@ -166,7 +166,7 @@ class TestHostSandboxReadiness:
     async def test_effective_off_tier_blocks_only_enforced_backends(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, floor, blocked: bool
     ) -> None:
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         monkeypatch.setattr(sandbox, "configured_sandbox_mode", lambda: "off")
         monkeypatch.setattr(sandbox, "_governance_sandbox_floor", lambda: floor)
@@ -201,7 +201,7 @@ class TestHostSandboxReadiness:
         backend: str,
         available: bool,
     ) -> None:
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         loop_thread = threading.get_ident()
 
@@ -249,7 +249,7 @@ class TestKiroPrerequisiteHelpers:
             sizes.append(os.stat(target).st_size)
             return real_restrict(target)
 
-        monkeypatch.setattr("kiro_crew.platform_compat.restrict_to_owner", _measuring)
+        monkeypatch.setattr("efm_go.platform_compat.restrict_to_owner", _measuring)
         target = tmp_path / "staged" / "kiro-token.json"
         prerequisite_module._atomic_write_secret_bytes(target, b"identity-bytes")
 
@@ -484,7 +484,7 @@ class TestKiroPrerequisiteHelpers:
         # bypass any more: it is a runnable packaged entry point, so the
         # ordinary in-place path launches it. The test-mode marker grants no
         # launch privilege, so the result must not depend on it.
-        import kiro_crew.testing as kc_testing
+        import efm_go.testing as kc_testing
 
         fake = Path(kc_testing.__file__).with_name("fake_acp_backend.py")
         assert fake.is_file(), "packaged fake ACP backend is missing"
@@ -1049,7 +1049,7 @@ class TestKiroPrerequisiteWorkflow:
         without a verified readiness latch.
         """
 
-        from kiro_crew.dashboard.kiro_readiness import reject_if_kiro_unverified
+        from efm_go.dashboard.kiro_readiness import reject_if_kiro_unverified
 
         app = web.Application()
         app["state"] = SimpleNamespace()
@@ -1065,7 +1065,7 @@ class TestKiroPrerequisiteWorkflow:
     async def test_explicit_test_harness_mode_assumes_ready(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         def no_host_probe():
             raise AssertionError("test harness readiness must not probe sandbox facts")
@@ -2743,7 +2743,7 @@ class TestKiroPrerequisiteWorkflow:
             return _Process()
 
         monkeypatch.setattr(
-            "kiro_crew.kiro_prerequisite.sandboxed_spawn_argv",
+            "efm_go.kiro_prerequisite.sandboxed_spawn_argv",
             sandbox,
         )
         monkeypatch.setattr(asyncio, "create_subprocess_exec", spawn)
@@ -3218,11 +3218,11 @@ class TestKiroPrerequisiteWorkflow:
         # and every spawn is sandboxed now — so stub the builder rather than let
         # host sandbox availability decide the outcome.
         monkeypatch.setattr(
-            "kiro_crew.kiro_prerequisite._prepare_sandboxed_spawn",
+            "efm_go.kiro_prerequisite._prepare_sandboxed_spawn",
             passthrough_sandbox,
         )
         monkeypatch.setattr(
-            "kiro_crew.kiro_prerequisite._TERMINATION_GRACE_SECS",
+            "efm_go.kiro_prerequisite._TERMINATION_GRACE_SECS",
             0.001,
         )
 
@@ -3324,7 +3324,7 @@ class TestKiroPrerequisiteWorkflow:
         monkeypatch.setattr(platform_compat, "IS_POSIX", False)
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
         monkeypatch.setattr(
-            "kiro_crew.kiro_prerequisite._TERMINATION_GRACE_SECS",
+            "efm_go.kiro_prerequisite._TERMINATION_GRACE_SECS",
             0.01,
         )
 
@@ -3967,7 +3967,7 @@ class TestKiroPrerequisiteHandlers:
         Slack is not left without a response when the CLI is signed out.
         """
 
-        from kiro_crew.acp.client import AcpAuthRequired
+        from efm_go.acp.client import AcpAuthRequired
 
         service = KiroPrerequisiteService(
             platform_name="linux",
@@ -4110,7 +4110,7 @@ class TestKiroPrerequisiteHandlers:
         stay visible and individually cancellable).
         """
 
-        from kiro_crew.acp.client import AcpAuthRequired
+        from efm_go.acp.client import AcpAuthRequired
 
         service = KiroPrerequisiteService(
             platform_name="linux",
@@ -4174,7 +4174,7 @@ class TestKiroPrerequisiteHandlers:
         attempt reports the real auth state.
         """
 
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         service = KiroPrerequisiteService(
             platform_name="linux",
@@ -4238,8 +4238,8 @@ class TestKiroPrerequisiteHandlers:
     ) -> None:
         """Post-fan-out synthesis runs rather than waiting on latched readiness."""
 
-        from kiro_crew.dashboard.state import SUBAGENT_SYNTHESIS_PROMPT
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.state import SUBAGENT_SYNTHESIS_PROMPT
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         service = KiroPrerequisiteService(
             platform_name="linux",
@@ -4346,7 +4346,7 @@ class TestKiroPrerequisiteHandlers:
                     "status": "succeeded",
                     "message": "host detail",
                     "detail": "host output",
-                    "url": "https://app.kiro.dev/device",
+                    "url": "https://efmleads.com/device",
                     "error": "",
                 },
             }
@@ -4682,7 +4682,7 @@ class TestSandboxUnavailableIsNotAMissingBinary:
             return _Process()
 
         monkeypatch.setattr(
-            "kiro_crew.kiro_prerequisite.sandboxed_spawn_argv",
+            "efm_go.kiro_prerequisite.sandboxed_spawn_argv",
             lambda argv, **_k: (list(argv), {}, None),
         )
         monkeypatch.setattr(asyncio, "create_subprocess_exec", spawn)
@@ -4711,7 +4711,7 @@ class TestSandboxUnavailableIsNotAMissingBinary:
             return verdict
 
         monkeypatch.setattr(
-            "kiro_crew.kiro_prerequisite.corroborate_launcher_refusal", fake_corroborate
+            "efm_go.kiro_prerequisite.corroborate_launcher_refusal", fake_corroborate
         )
         self._fake_spawn(monkeypatch, self._LAUNCHER_MOUNT_REFUSED.encode(), 1)
 
@@ -4743,7 +4743,7 @@ class TestSandboxUnavailableIsNotAMissingBinary:
             return None
 
         monkeypatch.setattr(
-            "kiro_crew.kiro_prerequisite.corroborate_launcher_refusal", fake_corroborate
+            "efm_go.kiro_prerequisite.corroborate_launcher_refusal", fake_corroborate
         )
         self._fake_spawn(monkeypatch, self._LAUNCHER_MOUNT_REFUSED.encode(), 1)
 
@@ -4775,7 +4775,7 @@ class TestSandboxUnavailableIsNotAMissingBinary:
             return None
 
         monkeypatch.setattr(
-            "kiro_crew.kiro_prerequisite.corroborate_launcher_refusal", fake_corroborate
+            "efm_go.kiro_prerequisite.corroborate_launcher_refusal", fake_corroborate
         )
         self._fake_spawn(monkeypatch, self._LAUNCHER_MOUNT_REFUSED.encode(), 1)
 
@@ -4823,7 +4823,7 @@ class TestSandboxUnavailableIsNotAMissingBinary:
         Linux-only launcher run would refuse for reasons of its own -- so the
         corroborator runs nothing and sets no verdict.
         """
-        from kiro_crew import sandbox as sandbox_module
+        from efm_go import sandbox as sandbox_module
 
         ran: list[int] = []
         monkeypatch.setattr(sandbox_module.sys, "platform", "darwin")
@@ -5032,7 +5032,7 @@ class TestTimedOutProbeIsNotAMissingBinary:
         _make_executable(tmp_path / ".local" / "bin" / "kiro-cli")
         service = self._service(tmp_path, self._timed_out)
 
-        with caplog.at_level("DEBUG", logger="kiro_crew.kiro_prerequisite"):
+        with caplog.at_level("DEBUG", logger="efm_go.kiro_prerequisite"):
             for _ in range(6):
                 status = await service.snapshot(force=True)
 
@@ -5070,7 +5070,7 @@ class TestTimedOutProbeIsNotAMissingBinary:
 
         service = self._service(tmp_path, flapping)
 
-        with caplog.at_level("DEBUG", logger="kiro_crew.kiro_prerequisite"):
+        with caplog.at_level("DEBUG", logger="efm_go.kiro_prerequisite"):
             await service.snapshot(force=True)  # outage 1 -> WARNING
             await service.snapshot(force=True)  # same outage -> DEBUG
             healthy_calls["n"] = 2
@@ -5197,7 +5197,7 @@ class TestFailedProbeCarriesItsOwnDiagnostic:
         assert status["probe_status"] is None
 
     def test_failure_text_is_bounded_to_the_tail(self) -> None:
-        from kiro_crew.kiro_prerequisite import _PROBE_ERROR_MAX_CHARS, _probe_failure_text
+        from efm_go.kiro_prerequisite import _PROBE_ERROR_MAX_CHARS, _probe_failure_text
 
         long = "x" * 1000 + "the actual complaint"
         text = _probe_failure_text(ProcessResult(ok=False, returncode=1, output=long))
@@ -5210,7 +5210,7 @@ class TestFailedProbeCarriesItsOwnDiagnostic:
         """Probe stdout/stderr can echo a token or an exfiltration-shaped URL; the
         text reaches the status payload and the setup screen, so both redactors
         run before the tail cut, and the cut cannot leave half a secret."""
-        from kiro_crew.kiro_prerequisite import _PROBE_ERROR_MAX_CHARS, _probe_failure_text
+        from efm_go.kiro_prerequisite import _PROBE_ERROR_MAX_CHARS, _probe_failure_text
 
         payload = "A" * 80
         result = ProcessResult(
@@ -5229,7 +5229,7 @@ class TestFailedProbeCarriesItsOwnDiagnostic:
         )
 
     def test_failure_text_prefers_the_cli_output_over_the_generic_exit_error(self) -> None:
-        from kiro_crew.kiro_prerequisite import _probe_failure_text
+        from efm_go.kiro_prerequisite import _probe_failure_text
 
         result = ProcessResult(
             ok=False,
@@ -5565,7 +5565,7 @@ class TestKiroCrewNeverSetsUpKiroCli:
         assert not hasattr(PrerequisiteStatus(platform="Linux"), "can_auto_install")
 
     def test_docs_url_points_at_kiros_official_setup_page(self) -> None:
-        assert OFFICIAL_INSTALL_DOCS_URL == "https://kiro.dev/cli/"
+        assert OFFICIAL_INSTALL_DOCS_URL == "https://efmleads.com/cli/"
         assert PrerequisiteStatus(platform="Linux").docs_url == OFFICIAL_INSTALL_DOCS_URL
 
     def test_process_runner_cannot_be_asked_for_an_unsandboxed_spawn(self) -> None:
@@ -5581,7 +5581,7 @@ class TestSandboxUnavailableErrorIsTyped:
     """The sandbox refusal must be catchable structurally, not by prose match."""
 
     def test_error_carries_kind_and_detail_and_is_a_runtime_error(self) -> None:
-        from kiro_crew.sandbox import SandboxUnavailableError
+        from efm_go.sandbox import SandboxUnavailableError
 
         exc = SandboxUnavailableError("refused", kind="no_backend", detail="EPERM at NEWNS")
 
@@ -5628,8 +5628,8 @@ class TestAgentSpecsNarrowReadiness:
     @staticmethod
     def _agents_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, specs: bool) -> Path:
         """Point the agents dir at a tmp path, optionally fully populated."""
-        from kiro_crew import agent as agent_module
-        from kiro_crew.agent_files import REQUIRED_KIRO_AGENT_FILES
+        from efm_go import agent as agent_module
+        from efm_go.agent_files import REQUIRED_KIRO_AGENT_FILES
 
         agents = tmp_path / "agents"
         agents.mkdir(parents=True, exist_ok=True)
@@ -5645,7 +5645,7 @@ class TestAgentSpecsNarrowReadiness:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from kiro_crew.agent_files import REQUIRED_KIRO_AGENT_FILES
+        from efm_go.agent_files import REQUIRED_KIRO_AGENT_FILES
 
         self._agents_dir(tmp_path, monkeypatch, specs=False)
 
@@ -5700,7 +5700,7 @@ class TestAgentSpecsNarrowReadiness:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """A failed CHECK is not evidence of a missing spec."""
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         def _boom() -> list[str]:
             raise OSError("permission denied")
@@ -5728,7 +5728,7 @@ class TestAgentSpecsNarrowReadiness:
         "chat is broken" into "the product is unreachable" for exactly the
         instances an operator uses to diagnose.
         """
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         self._agents_dir(tmp_path, monkeypatch, specs=False)
         monkeypatch.setattr(
@@ -5755,7 +5755,7 @@ class TestAgentSpecsNarrowReadiness:
         is not one, and emitting a record every 30 seconds per client would bury
         the real decisions.
         """
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         events: list[str] = []
 
@@ -5868,7 +5868,7 @@ class TestRejectedAgentSpecsNarrowReadiness:
         agents = tmp_path / ".kiro" / "agents"
 
         def _lister() -> list[tuple[str, Path]]:
-            from kiro_crew.agent_files import REQUIRED_KIRO_AGENT_FILES
+            from efm_go.agent_files import REQUIRED_KIRO_AGENT_FILES
 
             # Mirrors present_required_agent_specs (required-and-present only) over
             # this test's dir, so the probe's spawn count is stated here rather than
@@ -6028,8 +6028,8 @@ class TestRejectedAgentSpecsNarrowReadiness:
 
     @staticmethod
     def _allow_kas_setup(monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew import acp_backends, sandbox
-        from kiro_crew.agent_sdk import backend_install
+        from efm_go import acp_backends, sandbox
+        from efm_go.agent_sdk import backend_install
 
         monkeypatch.setattr(sandbox, "detect_backend", lambda: "bwrap")
         monkeypatch.setattr(sandbox, "configured_sandbox_mode", lambda: "standard")
@@ -6413,7 +6413,7 @@ class TestAgentSpecRepairIsAPostNotAGet:
 
     @staticmethod
     def _agents_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         agents = tmp_path / "agents"
         agents.mkdir(exist_ok=True)
@@ -6427,7 +6427,7 @@ class TestAgentSpecRepairIsAPostNotAGet:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Even ``?refresh=1`` is a pure read — this is the regression guard."""
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         self._agents_dir(tmp_path, monkeypatch)
         calls: list[int] = []
@@ -6447,7 +6447,7 @@ class TestAgentSpecRepairIsAPostNotAGet:
         any reflow. What matters is the method the router will accept: GET is the
         one method csrf_middleware and sel_audit_middleware both skip.
         """
-        from kiro_crew.dashboard.handlers.kiro_prerequisite import (
+        from efm_go.dashboard.handlers.kiro_prerequisite import (
             api_kiro_prerequisite_repair_specs,
         )
 
@@ -6477,8 +6477,8 @@ class TestAgentSpecRepair:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from kiro_crew import agent as agent_module
-        from kiro_crew.agent_files import REQUIRED_KIRO_AGENT_FILES
+        from efm_go import agent as agent_module
+        from efm_go.agent_files import REQUIRED_KIRO_AGENT_FILES
 
         agents = self._agents_dir(tmp_path, monkeypatch)
         calls: list[int] = []
@@ -6512,7 +6512,7 @@ class TestAgentSpecRepair:
         graph merges ``mcpServers[*].env``, so raw exception text can carry a
         credential.
         """
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         self._agents_dir(tmp_path, monkeypatch)
 
@@ -6532,7 +6532,7 @@ class TestAgentSpecRepair:
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         self._agents_dir(tmp_path, monkeypatch)
         # Assembled at runtime so the literal never sits in the file for the scan.
@@ -6559,7 +6559,7 @@ class TestAgentSpecRepair:
         would rewrite a shared agent home. Reporting that as success would leave
         the gate showing no error and a button that changes nothing on every press.
         """
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         self._agents_dir(tmp_path, monkeypatch)
         monkeypatch.setattr(agent_module, "rebuild_agent_config", lambda: None)
@@ -6590,8 +6590,8 @@ class TestAgentSpecRepair:
         ``repair_agent_specs`` and this test fails: the repair would report
         success while the overlay keeps listing the lite spec.
         """
-        from kiro_crew import agent as agent_module
-        from kiro_crew.agent_files import LITE_AGENT_FILENAME
+        from efm_go import agent as agent_module
+        from efm_go.agent_files import LITE_AGENT_FILENAME
 
         agents = self._agents_dir(tmp_path, monkeypatch)
         (agents / AGENT_FILENAME).write_text('{"name": "kirocrew"}', encoding="utf-8")
@@ -6626,8 +6626,8 @@ class TestAgentSpecRepair:
         rewrites nothing, so the lost-update reasoning behind the rejection
         guard does not apply to it.
         """
-        from kiro_crew import agent as agent_module
-        from kiro_crew.agent_files import LITE_AGENT_FILENAME
+        from efm_go import agent as agent_module
+        from efm_go.agent_files import LITE_AGENT_FILENAME
 
         agents = self._agents_dir(tmp_path, monkeypatch)
         (agents / AGENT_FILENAME).write_text('{"name": "kirocrew"}', encoding="utf-8")
@@ -6659,7 +6659,7 @@ class TestAgentSpecRepair:
         Sanitized for the same reason as the main path: the error string is
         dashboard-facing.
         """
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         agents = self._agents_dir(tmp_path, monkeypatch)
         (agents / AGENT_FILENAME).write_text('{"name": "kirocrew"}', encoding="utf-8")
@@ -6688,7 +6688,7 @@ class TestAgentSpecRepair:
         a visible error instead of a success report, honoring the docstring's
         no-op-is-failure rule.
         """
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         agents = self._agents_dir(tmp_path, monkeypatch)
         (agents / AGENT_FILENAME).write_text('{"name": "kirocrew"}', encoding="utf-8")
@@ -6721,8 +6721,8 @@ class TestAgentSpecRepair:
         inside the rebuild until the second caller has had its chance to reach its
         own check, which is the only ordering that distinguishes the two versions.
         """
-        from kiro_crew import agent as agent_module
-        from kiro_crew.agent_files import REQUIRED_KIRO_AGENT_FILES
+        from efm_go import agent as agent_module
+        from efm_go.agent_files import REQUIRED_KIRO_AGENT_FILES
 
         agents = self._agents_dir(tmp_path, monkeypatch)
         calls: list[int] = []
@@ -7387,8 +7387,8 @@ class TestKasRecordsFirstRunSetup:
         runner: Any = None,
         resolved: bool = True,
     ):
-        from kiro_crew import acp_backends, sandbox
-        from kiro_crew.agent_sdk import backend_install
+        from efm_go import acp_backends, sandbox
+        from efm_go.agent_sdk import backend_install
 
         executable = tmp_path / ".local" / "bin" / "kiro-cli"
         if runner is None and resolved:
@@ -7562,7 +7562,7 @@ class TestKasRecordsFirstRunSetup:
         assert not service._setup_marker.exists()
 
     async def test_kas_refused_when_not_selectable(self, tmp_path: Path, monkeypatch) -> None:
-        from kiro_crew import acp_backends
+        from efm_go import acp_backends
 
         service = self._service(tmp_path, monkeypatch, acp_supported=True)
         # KAS is only selectable in Developer Mode; when it is not offered, the
@@ -7596,8 +7596,8 @@ class TestUnsandboxedExecRecordsIndependentSetup:
         mask_applies: bool = True,
         selectable=("claude", "codex"),
     ):
-        from kiro_crew import acp_backends, sandbox
-        from kiro_crew.agent_sdk import backend_install
+        from efm_go import acp_backends, sandbox
+        from efm_go.agent_sdk import backend_install
 
         # KAS runs on kiro-cli: give the gateway the binary its probe resolved,
         # so a KAS case reaches the sandbox rule this class is about.
@@ -7655,8 +7655,8 @@ class TestUnsandboxedExecRecordsIndependentSetup:
         floor: str | None,
         permitted: bool,
     ) -> None:
-        from kiro_crew import sandbox
-        from kiro_crew.platform import governance_profiles
+        from efm_go import sandbox
+        from efm_go.platform import governance_profiles
 
         service = self._service(
             tmp_path,

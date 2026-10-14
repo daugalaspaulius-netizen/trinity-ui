@@ -33,10 +33,10 @@ from aiohttp.test_utils import TestClient, TestServer
 from windows_sim import replace_sharing_violation
 
 from conftest import requires_symlinks
-from kiro_crew import atomic_write as atomic_write_mod
-from kiro_crew import platform_compat
-from kiro_crew.apps.builtins.md_notebook import git_ops
-from kiro_crew.loop_lock import LoopBoundLock
+from efm_go import atomic_write as atomic_write_mod
+from efm_go import platform_compat
+from efm_go.apps.builtins.md_notebook import git_ops
+from efm_go.loop_lock import LoopBoundLock
 
 SECRET = "test-proxy-secret"
 
@@ -200,7 +200,7 @@ def fixtures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, _seed_template: Pa
     # live token. Pin the resolver's own override to a path that does not exist
     # so it answers "no gh" and the token path is exercised as a genuine absence.
     monkeypatch.setenv("MD_NOTEBOOK_GH_BIN", str(tmp_path / "no-such-gh"))
-    from kiro_crew.apps.builtins.md_notebook import server as server_mod
+    from efm_go.apps.builtins.md_notebook import server as server_mod
 
     # Every data-home path resolves per call from the env above, so the module is
     # used as imported.
@@ -661,7 +661,7 @@ async def test_reveal_pins_path_so_a_planted_helper_cannot_run(monkeypatch) -> N
     """
     if os.name != "posix":
         pytest.skip("PATH is deliberately left inherited on Windows")
-    from kiro_crew.apps.builtins.md_notebook import server as server_mod
+    from efm_go.apps.builtins.md_notebook import server as server_mod
 
     captured: dict[str, Any] = {}
 
@@ -693,7 +693,7 @@ def test_every_spawn_in_this_module_pins_path() -> None:
     `subprocess.run` added without `env=_trusted_env()` would silently reopen the
     hole, so the count is asserted rather than left to review.
     """
-    from kiro_crew.apps.builtins.md_notebook import server as server_mod
+    from efm_go.apps.builtins.md_notebook import server as server_mod
 
     source = Path(server_mod.__file__).read_text(encoding="utf-8")
     assert source.count("subprocess.run(") == source.count("env=_trusted_env(),")
@@ -1014,7 +1014,7 @@ def test_path_contains_sensitive_flags_ancestors_of_credentials(
     """The reverse-direction gate flags the home directory (it contains
     ``~/.ssh``) and any ancestor of a protected location — WITHOUT needing the
     credential paths to exist on disk, and without walking the tree."""
-    from kiro_crew import security
+    from efm_go import security
 
     home = tmp_path / "home"
     home.mkdir()
@@ -1078,7 +1078,7 @@ def test_pat_stays_under_crew_home_ignoring_md_notebook_home(monkeypatch, tmp_pa
     stray = tmp_path / "stray"
     # Imported before the env moves and never reloaded: the property is that a change
     # AFTER import is honoured, so no path may be captured when the module loads.
-    from kiro_crew.apps.builtins.md_notebook import server as server_mod
+    from efm_go.apps.builtins.md_notebook import server as server_mod
 
     monkeypatch.setattr(server_mod, "_HOME", None)
     monkeypatch.setenv("KIROCREW_HOME", str(crew))
@@ -1114,7 +1114,7 @@ def test_default_home_follows_kirocrew_home(monkeypatch, tmp_path: Path) -> None
     dev gateway (``KIROCREW_HOME=.kirocrew-dev``) would load and edit the real
     ~/.kiro/crew notes. ``_default_home`` now routes through ``config_dir()``.
     """
-    from kiro_crew.apps.builtins.md_notebook import server as server_mod
+    from efm_go.apps.builtins.md_notebook import server as server_mod
 
     iso = tmp_path / "iso-home"
     monkeypatch.setenv("KIROCREW_HOME", str(iso))
@@ -1799,7 +1799,7 @@ async def test_creating_writes_wait_for_a_running_sync(fixtures, monkeypatch) ->
     move into `.trash`): a note created while a sync is in flight is created
     AFTER the merge, against the tree the merge produced."""
     _mod, remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     async with signed_client(_mod) as client:
         vault = await _clone(client, remote)
@@ -1887,7 +1887,7 @@ async def test_a_symlink_landing_while_a_writer_waits_on_the_lock_is_refused(
     the write at the stale target and passed the in-lock lexical walk.
     """
     _mod, remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     async with signed_client(_mod) as client:
         vault = await _clone(client, remote)
@@ -3052,7 +3052,7 @@ def test_notebook_pat_is_behind_the_sensitive_path_floor() -> None:
     file tools must not be able to read it through the shared gate. The app's own
     backend opens it directly and is unaffected.
     """
-    from kiro_crew.security import is_sensitive_path
+    from efm_go.security import is_sensitive_path
 
     assert is_sensitive_path("~/.kiro/crew/workspace/md-notebook/pat") is True
     # config_dir() can resolve to the legacy `.kirocrew` data-home on a migration
@@ -3202,7 +3202,7 @@ async def test_run_git_surrogateescape_round_trips_a_non_utf8_path(tmp_path) -> 
     `os` layer restores byte-exactly, or the empty-scope classifier's lstat
     inspects a U+FFFD path that names nothing and an EXISTING
     `config.worktree` reads as the empty scope (see
-    kiro_crew.git_worktree_scope)."""
+    efm_go.git_worktree_scope)."""
     repo = tmp_path / os.fsdecode(b"v-\xff")
     repo.mkdir()
     _git("init", "-q", "--template=", ".", cwd=repo)
@@ -3943,7 +3943,7 @@ async def test_an_external_edit_during_the_retry_window_still_wins(fixtures) -> 
                 raise PermissionError(32, "The process cannot access the file")
             return real_replace(src, dst, *args, **kwargs)
 
-        from kiro_crew import atomic_write as aw
+        from efm_go import atomic_write as aw
 
         with pytest.MonkeyPatch.context() as mp:
             # Both backoff knobs are zeroed, both with raising=False, so this test
@@ -4169,7 +4169,7 @@ async def test_a_tokenless_save_stages_inside_the_note_lock(fixtures) -> None:
 @pytest.mark.asyncio
 async def test_the_vault_registry_write_also_retries(fixtures) -> None:
     """The registry is re-read by every later request, so it has the same window."""
-    from kiro_crew import atomic_write as aw
+    from efm_go import atomic_write as aw
 
     server_mod, _remote, _seed = fixtures
 
@@ -4249,7 +4249,7 @@ def loop_syncer(monkeypatch: pytest.MonkeyPatch):
     (1440) intact, so the interval assertions below hold with a wide margin
     instead of depending on the scheduler's cooperation.
     """
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     monkeypatch.setattr(syncer_mod, "TICK_SEC", 0.005)
     monkeypatch.setattr(syncer_mod, "SECONDS_PER_MINUTE", 0.005)
@@ -4371,7 +4371,7 @@ async def test_settings_writes_apply_in_arrival_order(fixtures) -> None:
 async def test_auto_sync_permission_flip_is_audited(fixtures) -> None:
     """Enabling autoSync authorizes unattended `git push`; the permission flip
     MUST leave a SEL record. A no-op re-write (True->True) writes nothing."""
-    from kiro_crew.sel import sel
+    from efm_go.sel import sel
 
     server_mod, _remote, _seed = fixtures
     fingerprint = "autoSyncMins=1439"  # unique to this test, so it isolates its events
@@ -4480,7 +4480,7 @@ async def test_create_app_wires_the_auto_sync_loop(fixtures) -> None:
     lifecycle it would stop the moment the Notes tab closed, which is the whole
     defect this replaces."""
     server_mod, _remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     app = server_mod.create_app()
     assert syncer_mod.start_syncer in app.on_startup
@@ -4606,7 +4606,7 @@ async def test_a_raising_vault_does_not_stop_the_others(
     """Per-vault containment: an unreachable remote costs that vault one cycle,
     not auto-sync for every other vault until the gateway restarts."""
     server_mod, _remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     await server_mod.write_vaults(
         [
@@ -4638,7 +4638,7 @@ async def test_the_loop_skips_read_only_vaults(fixtures, monkeypatch: pytest.Mon
     """sync commits, merges and pushes — all writes — so a read-only vault must
     not reach it, exactly as on the manual path."""
     server_mod, _remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     await server_mod.write_vaults(
         [
@@ -4670,7 +4670,7 @@ async def test_a_vault_forgotten_mid_cycle_is_skipped(
     mid-cycle has had its authorization revoked and must not be pushed from the
     stale snapshot. It is skipped while the still-connected vaults sync."""
     server_mod, _remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     full = [
         {"id": "a", "localPath": "/vaults/a"},
@@ -4710,7 +4710,7 @@ async def test_a_mid_cycle_revocation_stops_the_remaining_vaults(
     """A cycle pushes every vault in turn; disabling auto-sync mid-cycle must stop
     the run rather than finish pushing the rest against a revoked authorization."""
     server_mod, _remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     await server_mod.write_vaults(
         [
@@ -4750,7 +4750,7 @@ async def test_the_loop_passes_the_anti_tamper_pins(
     one. Nobody is watching this run, so a repointed remote that was not refused
     would send the user's notes somewhere new with no step to intervene at."""
     server_mod, _remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     vault = {
         "id": "v1",
@@ -4797,7 +4797,7 @@ async def test_conflicts_do_not_record_a_sync_time(
     """A conflicted merge was aborted and pushed nothing, so stamping it would
     tell the user their notes are backed up when they are still only local."""
     server_mod, _remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     await server_mod.write_vaults([{"id": "v1", "localPath": "/vaults/v1"}])
 
@@ -4825,7 +4825,7 @@ async def test_a_cycle_never_overlaps_the_previous_one(
     """Two concurrent commits in one repository race on index.lock, and the
     loser drops that cycle's notes from history."""
     server_mod, _remote, _seed = fixtures
-    from kiro_crew.apps.builtins.md_notebook import syncer as syncer_mod
+    from efm_go.apps.builtins.md_notebook import syncer as syncer_mod
 
     await server_mod.write_vaults([{"id": "v1", "localPath": "/vaults/v1"}])
     started = asyncio.Event()
@@ -5070,7 +5070,7 @@ def test_extract_tags_accepts_a_non_ascii_leading_character() -> None:
     register the same way. Tags feed an in-memory index, never a path, so
     the wide lead cannot create a filesystem collision.
     """
-    from kiro_crew.apps.builtins.md_notebook import notes as notes_mod
+    from efm_go.apps.builtins.md_notebook import notes as notes_mod
 
     assert notes_mod.extract_tags("#论文") == ["论文"]
     assert notes_mod.extract_tags("#분기") == ["분기"]
@@ -5083,7 +5083,7 @@ def test_extract_tags_accepts_a_non_ascii_leading_character() -> None:
 
 def test_extract_tags_still_refuses_a_non_alphanumeric_lead() -> None:
     """Only the script restriction is lifted; the shape rules stand."""
-    from kiro_crew.apps.builtins.md_notebook import notes as notes_mod
+    from efm_go.apps.builtins.md_notebook import notes as notes_mod
 
     assert notes_mod.extract_tags("#_foo") == []
     assert notes_mod.extract_tags("#-x") == []
@@ -5096,7 +5096,7 @@ def test_extract_tags_still_refuses_a_non_alphanumeric_lead() -> None:
 def test_extract_tags_ignores_masked_code_in_any_script() -> None:
     """Code masking still wins over the wider lead: a tag inside fenced or
     inline code is a sample, not an index entry."""
-    from kiro_crew.apps.builtins.md_notebook import notes as notes_mod
+    from efm_go.apps.builtins.md_notebook import notes as notes_mod
 
     assert notes_mod.extract_tags("```\n#논문\n```") == []
     assert notes_mod.extract_tags("`#논문`") == []

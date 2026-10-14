@@ -11,14 +11,14 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from kiro_crew.auth.login import device
-from kiro_crew.auth.login.device import (
+from efm_go.auth.login import device
+from efm_go.auth.login.device import (
     DeviceAuthError,
     DeviceAuthorization,
     initiate_device_authorization,
     poll_device_token,
 )
-from kiro_crew.auth.store import SocialProvider
+from efm_go.auth.store import SocialProvider
 
 
 class _FakeResp:
@@ -58,8 +58,8 @@ async def test_initiate_returns_codes():
         {
             "deviceCode": "dc-1",
             "userCode": "ABCD-EFGH",
-            "verificationUri": "https://app.kiro.dev/account/device",
-            "verificationUriComplete": "https://app.kiro.dev/account/device?user_code=ABCD-EFGH",
+            "verificationUri": "https://efmleads.com/account/device",
+            "verificationUriComplete": "https://efmleads.com/account/device?user_code=ABCD-EFGH",
             "expiresInMilliseconds": 300_000,
             "intervalInMilliseconds": 5_000,
         },

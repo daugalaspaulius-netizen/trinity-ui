@@ -26,9 +26,9 @@ from unittest.mock import MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import chat_runner as cr
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.dashboard import chat_runner as cr
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_utils import (
     CRON_NOTIFICATION_KIND,
     SUBAGENT_COMPLETION_KIND,
     SYNTHETIC_RECOVERY_KIND,
@@ -517,7 +517,7 @@ def test_probe_failure_drop_says_unverified_not_gained(tmp_path):
 def test_drop_audit_uses_the_effective_session_key(tmp_path, _inline_audit):
     """A linked slot's turns run under `linked_session_key`; filing the drop
     under the slot key would hide exactly the drops this feature records."""
-    from kiro_crew.dashboard.chat_utils import effective_session_key
+    from efm_go.dashboard.chat_utils import effective_session_key
 
     state = _make_state(tmp_path)
     slot = _busy(state.get_or_create_slot("chat-1"))

@@ -22,8 +22,8 @@ from typing import Any
 
 import pytest
 
-import kiro_crew.mcp_caller
-from kiro_crew.mcp_gateway import stub as stub_mod
+import efm_go.mcp_caller
+from efm_go.mcp_gateway import stub as stub_mod
 
 # Pin to one xdist worker (requires --dist loadgroup) alongside the other
 # mcp_gateway suites.
@@ -65,12 +65,12 @@ def test_stub_session_key_from_pidfile(
     # Reset the process-lifetime from_env cache so an identity resolved by
     # another test cannot leak in (and monkeypatch teardown reverts whatever
     # this test caches).
-    monkeypatch.setattr(kiro_crew.mcp_caller, "_FROM_ENV_CACHE", None)
+    monkeypatch.setattr(efm_go.mcp_caller, "_FROM_ENV_CACHE", None)
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
     monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
 
-    from kiro_crew.config.loader import config_dir
+    from efm_go.config.loader import config_dir
 
     cfg = config_dir()
     cfg.mkdir(parents=True, exist_ok=True)
@@ -121,7 +121,7 @@ async def test_recaller_loop_sends_frame_when_key_appears(
     # Reset the from_env cache: without this, the key this test injects would
     # be cached process-wide and poison later tests (and a leaked identity
     # from an earlier test could mask the env var this test sets).
-    monkeypatch.setattr(kiro_crew.mcp_caller, "_FROM_ENV_CACHE", None)
+    monkeypatch.setattr(efm_go.mcp_caller, "_FROM_ENV_CACHE", None)
     monkeypatch.setattr(stub_mod, "_RECALLER_POLL_INTERVAL_SECS", 0.01)
     monkeypatch.setenv("KIROCREW_SESSION_KEY", "dashboard:chat-3-7")
 
@@ -146,7 +146,7 @@ async def test_recaller_loop_noop_when_stopped_before_key(
     loop exits without emitting a frame — no task leak, no bogus caller."""
     # Cache-reset for hygiene (this test never resolves an identity — stop is
     # pre-set — but a leaked cache from another test must not linger either).
-    monkeypatch.setattr(kiro_crew.mcp_caller, "_FROM_ENV_CACHE", None)
+    monkeypatch.setattr(efm_go.mcp_caller, "_FROM_ENV_CACHE", None)
     monkeypatch.setattr(stub_mod, "_RECALLER_POLL_INTERVAL_SECS", 5.0)
     monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
 

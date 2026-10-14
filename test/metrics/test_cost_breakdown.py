@@ -14,8 +14,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from kiro_crew.dashboard.handlers import usage as usage_mod
-from kiro_crew.messaging.link import TELEMETRY_CHANNELS, telemetry_channel_of
+from efm_go.dashboard.handlers import usage as usage_mod
+from efm_go.messaging.link import TELEMETRY_CHANNELS, telemetry_channel_of
 
 
 def _row(*, slot, model="m", credits=1.0, used=0, window=1_000_000, age_days=0.0,

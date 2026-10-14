@@ -31,7 +31,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from kiro_crew.pipeline_board_contract import (  # noqa: E402
+from efm_go.pipeline_board_contract import (  # noqa: E402
     build_pipeline_board,
     card_template_path,
     panel_card_data,

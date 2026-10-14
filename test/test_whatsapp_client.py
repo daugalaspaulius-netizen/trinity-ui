@@ -21,8 +21,8 @@ from typing import Any
 
 import pytest
 
-import kiro_crew.whatsapp.client as wac
-from kiro_crew.whatsapp.client import (
+import efm_go.whatsapp.client as wac
+from efm_go.whatsapp.client import (
     MISSING_EXTRA_HINT,
     STATE_BANNED,
     STATE_CONNECTED,
@@ -1063,8 +1063,8 @@ def test_the_session_store_is_behind_the_sensitive_path_keystone():
     The sidecars are asserted too: SQLite's WAL and SHM hold the same key bytes,
     so protecting only the .db would leave the credential readable next to it.
     """
-    from kiro_crew.config.paths import data_home
-    from kiro_crew.security import is_sensitive_path
+    from efm_go.config.paths import data_home
+    from efm_go.security import is_sensitive_path
 
     db = default_db_path(data_home())
     assert is_sensitive_path(str(db))

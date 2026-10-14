@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from kiro_crew.knowledge.embedder import bytes_to_floats, floats_to_bytes
+from efm_go.knowledge.embedder import bytes_to_floats, floats_to_bytes
 
 
 def test_binary_roundtrip() -> None:

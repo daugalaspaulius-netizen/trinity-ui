@@ -28,17 +28,10 @@
  * marker-driven managed lane, both reporting through one state reporter.
  */
 
-// Default update feed host: updates.crew.kiro.dev, the pointer hostname of the
-// public distribution CDN (CloudFront + OAC over the kirocrew-updates bucket).
-//
-// electron-updater's generic provider treats the configured URL as a DIRECTORY
-// and resolves <base>/latest-mac.yml (macOS) or <base>/latest-linux.yml (Linux)
-// from it. The artifact URLs inside those files are ABSOLUTE and point at the
-// byte hostname (download.crew.kiro.dev), which is what preserves our
-// pointer/bytes host split: `new URL(fileUrl, base)` ignores the base when
-// fileUrl is absolute. That behaviour is structural but undocumented, so
-// test/auto-update.test.js pins it against the real installed library — a
-// version bump that changes it must fail CI, not strand installs in the field.
+// The feed base is our own directory. electron-updater treats it as a
+// directory and resolves latest-mac.yml or latest-linux.yml from it.
+// Absolute file URLs ignore that base. The mute flag and the empty download
+// base stay until our own update channel is real.
 const {
   classifyBundleLocation,
   containingDirForBundle,

@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.feishu.transport_dispatch (FeishuDispatcher)."""
+"""Tests for efm_go.feishu.transport_dispatch (FeishuDispatcher)."""
 
 from __future__ import annotations
 
@@ -9,16 +9,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
-from kiro_crew.feishu.client import LarkInbound
-from kiro_crew.feishu.transport_dispatch import FeishuDispatcher
-from kiro_crew.messaging.inbound_spool import InboundRoute
-from kiro_crew.messaging.link import (
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
+from efm_go.feishu.client import LarkInbound
+from efm_go.feishu.transport_dispatch import FeishuDispatcher
+from efm_go.messaging.inbound_spool import InboundRoute
+from efm_go.messaging.link import (
     CHAT_TYPE_DIRECT,
     CHAT_TYPE_FORUM,
     build_dm_session_key,
 )
-from kiro_crew.session_allocation import SessionClosingError
+from efm_go.session_allocation import SessionClosingError
 
 # ------------------------------------------------------------------
 # Fakes
@@ -241,8 +241,8 @@ def _live_messaging(**messaging_kw):
     (``dm_scope`` is the exception: restart-marked, read from the boot copy).
     Resets the watcher on exit so nothing leaks into the next test.
     """
-    from kiro_crew.config import live
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config import live
+    from efm_go.config.loader import KiroCrewConfig
 
     live.reset_for_tests()
     try:
@@ -565,7 +565,7 @@ class TestTurn:
         async def _capture(turn, **kwargs):
             captured.append(turn)
 
-        monkeypatch.setattr("kiro_crew.feishu.transport_dispatch.drive_turn", _capture)
+        monkeypatch.setattr("efm_go.feishu.transport_dispatch.drive_turn", _capture)
 
         sessions = FakeSessions(FakeProvider([]), ctx_pct=10.0)
         d = _dispatcher(sessions, FakeCtx(), FakeClient())
@@ -575,7 +575,7 @@ class TestTurn:
         predicate = captured[0].auto_approve_session
         assert callable(predicate), "grant must be a predicate, not a captured value"
 
-        import kiro_crew.feishu.transport_dispatch as mod
+        import efm_go.feishu.transport_dispatch as mod
 
         monkeypatch.setattr(mod, "safety_override", lambda: SimpleNamespace(is_active=lambda: True))
         assert predicate() is True
@@ -600,7 +600,7 @@ class TestTurn:
         async def _capture(turn, **kwargs):
             captured.append(turn)
 
-        monkeypatch.setattr("kiro_crew.feishu.transport_dispatch.drive_turn", _capture)
+        monkeypatch.setattr("efm_go.feishu.transport_dispatch.drive_turn", _capture)
 
         sessions = FakeSessions(FakeProvider([]), ctx_pct=10.0)
         d = _dispatcher(sessions, FakeCtx(), FakeClient())
@@ -696,7 +696,7 @@ class TestCommands:
     async def test_update_pause_spools_new_before_generation_side_effects(
         self, monkeypatch
     ) -> None:
-        from kiro_crew.messaging import dispatch
+        from efm_go.messaging import dispatch
 
         sessions = FakeSessions(FakeProvider([]))
         sessions.reserve_inbound_callback = lambda: None

@@ -21,8 +21,8 @@ from typing import Any
 import aiohttp
 import pytest
 
-from kiro_crew.wecom import client as client_mod
-from kiro_crew.wecom.client import WeComClient, WeComInbound, _resolve_proxy, new_stream_id
+from efm_go.wecom import client as client_mod
+from efm_go.wecom.client import WeComClient, WeComInbound, _resolve_proxy, new_stream_id
 
 
 @dataclass

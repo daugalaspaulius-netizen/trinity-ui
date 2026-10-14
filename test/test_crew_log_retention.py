@@ -24,10 +24,10 @@ import pytest
 from crew_log_type_helpers import minimal_data
 from off_loop_helpers import off_loop
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, store
-from kiro_crew.crew_log.lease import LEASE_FILE
-from kiro_crew.session_ledger import _store_name
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, store
+from efm_go.crew_log.lease import LEASE_FILE
+from efm_go.session_ledger import _store_name
 
 SESSION = "s-retain"
 CREW = "qa"
@@ -205,7 +205,7 @@ def test_remove_unit_refuses_while_another_process_owns_the_unit():
 def _hold_lease(lease_path: str, ready, done) -> None:  # pragma: no cover - child process
     from pathlib import Path
 
-    from kiro_crew.platform_compat import file_lock
+    from efm_go.platform_compat import file_lock
 
     path = Path(lease_path)
     path.touch(exist_ok=True)
@@ -822,7 +822,7 @@ def test_sweep_writes_nothing_into_a_log_it_keeps():
 
 def test_history_archive_cleanup_expires_logs_on_the_same_setting(monkeypatch):
     """``session.archive_retention_days`` governs both halves, in one pass."""
-    from kiro_crew import history
+    from efm_go import history
 
     log = _closed_session(closed_days_ago=90)
     del log
@@ -833,7 +833,7 @@ def test_history_archive_cleanup_expires_logs_on_the_same_setting(monkeypatch):
 
 
 def test_history_archive_cleanup_honours_the_disable_for_logs_too(monkeypatch):
-    from kiro_crew import history
+    from efm_go import history
 
     log = _closed_session(closed_days_ago=4000)
     del log
@@ -850,7 +850,7 @@ def test_history_archive_cleanup_sweeps_logs_with_no_archive_directory(monkeypat
     so an early return there would leave that half uncollected until the first
     archive was ever written.
     """
-    from kiro_crew import history
+    from efm_go import history
 
     log = _closed_session(closed_days_ago=90)
     del log
@@ -867,7 +867,7 @@ def test_a_failing_log_sweep_never_breaks_the_transcript_archive(monkeypatch):
     Retaining too much is a disk-space problem; failing to archive the transcript
     loses the record, so the crew log half is contained.
     """
-    from kiro_crew import history
+    from efm_go import history
 
     monkeypatch.setattr(history, "_last_cleanup", 0.0)
 
@@ -920,8 +920,8 @@ def test_a_partial_removal_keeps_lineage_whose_opening_record_still_reads(monkey
     the segments this pass did take can be the ones holding it -- which is why a record
     surviving intact still owes a re-read of the decision.
     """
-    from kiro_crew.crew_log import session_tree
-    from kiro_crew.crew_log import session_tree_projection as stp
+    from efm_go.crew_log import session_tree
+    from efm_go.crew_log import session_tree_projection as stp
 
     forgotten: list[str] = []
     retracted: list[str] = []
@@ -973,8 +973,8 @@ def test_a_partial_removal_downgrades_to_parentless_when_the_creating_segment_we
     SLOT -- a slot with no record reads as a creator that never existed, rather than one
     whose own creator is unknown.
     """
-    from kiro_crew.crew_log import session_tree
-    from kiro_crew.crew_log import session_tree_projection as stp
+    from efm_go.crew_log import session_tree
+    from efm_go.crew_log import session_tree_projection as stp
 
     forgotten: list[str] = []
     retracted: list[str] = []
@@ -1015,12 +1015,12 @@ def test_a_partial_removal_drops_lineage_once_the_opening_record_is_unreadable(m
     Left held, the projection serves an edge into a log nobody can read and writes it to
     the checkpoint, so a restart reads it back as fact.
     """
-    from kiro_crew.crew_log import session_tree_projection as stp
+    from efm_go.crew_log import session_tree_projection as stp
 
     forgotten: list[str] = []
     monkeypatch.setattr(stp, "forget_unit", lambda sid: forgotten.append(sid))
     # Whatever survives the pass, the disk cannot prove an opening record.
-    monkeypatch.setattr("kiro_crew.crew_log.session_tree.opened_record", lambda *a, **k: None)
+    monkeypatch.setattr("efm_go.crew_log.session_tree.opened_record", lambda *a, **k: None)
 
     log = _closed_session()
     del log
@@ -1113,9 +1113,9 @@ async def test_destroying_a_session_records_the_teardown_in_its_log(monkeypatch)
     built its crew log with ``CrewLog.create``, which leaves nothing holding the
     unit, so they were green while the gateway could not collect a real one.
     """
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.crew_log import emit
-    from kiro_crew.session import SessionManager
+    from efm_go.config import KiroCrewConfig
+    from efm_go.crew_log import emit
+    from efm_go.session import SessionManager
 
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     emit.reset_caches()
@@ -1148,9 +1148,9 @@ async def test_a_destroyed_sessions_log_is_then_collectable_by_the_sweep(monkeyp
     refused by a lease nobody released, and the sweep skipping a unit that reads
     as open. A test on the entry's presence would prove neither.
     """
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.crew_log import emit
-    from kiro_crew.session import SessionManager
+    from efm_go.config import KiroCrewConfig
+    from efm_go.crew_log import emit
+    from efm_go.session import SessionManager
 
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     emit.reset_caches()
@@ -1271,8 +1271,8 @@ def test_a_valid_empty_session_map_cannot_authorize_collecting_a_reset_closed_un
     part in the decision. The unit here is expired and closed, and its only
     protection is that its reason does not prove the id is dead.
     """
-    from kiro_crew.config.loader import config_dir
-    from kiro_crew.session_map import SESSION_MAP_FILENAME
+    from efm_go.config.loader import config_dir
+    from efm_go.session_map import SESSION_MAP_FILENAME
 
     path = config_dir() / SESSION_MAP_FILENAME
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1369,9 +1369,9 @@ async def test_a_destroy_that_leaves_another_mapping_writes_a_NON_terminal_reaso
     withheld here and the unit stays uncollectable -- retention prefers keeping a
     log it cannot prove is dead.
     """
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.crew_log import emit
-    from kiro_crew.session import SessionManager
+    from efm_go.config import KiroCrewConfig
+    from efm_go.crew_log import emit
+    from efm_go.session import SessionManager
 
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     emit.reset_caches()
@@ -1402,9 +1402,9 @@ async def test_a_destroy_that_leaves_another_mapping_writes_a_NON_terminal_reaso
 @pytest.mark.asyncio
 async def test_an_unreadable_map_also_withholds_the_terminal_reason(monkeypatch):
     """An unreadable map is not evidence of revocation, so the claim is withheld."""
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.crew_log import emit
-    from kiro_crew.session import SessionManager
+    from efm_go.config import KiroCrewConfig
+    from efm_go.crew_log import emit
+    from efm_go.session import SessionManager
 
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     emit.reset_caches()
@@ -1436,9 +1436,9 @@ async def test_a_session_opened_after_a_destroy_makes_the_unit_uncollectable_aga
     as a live conversation whatever the close said. Anyone who plants a mapping and
     resumes therefore causes the log to be KEPT, not deleted.
     """
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.crew_log import emit
-    from kiro_crew.session import SessionManager
+    from efm_go.config import KiroCrewConfig
+    from efm_go.crew_log import emit
+    from efm_go.session import SessionManager
 
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     emit.reset_caches()
@@ -1473,7 +1473,7 @@ def _stage_target(unit_id: str):
 
 def test_staging_syncs_both_parents_after_the_rename(monkeypatch):
     """A rename is not a move until both directories are on disk."""
-    from kiro_crew import atomic_write
+    from efm_go import atomic_write
 
     log = _closed_session(unit_id="s-stage")
     del log
@@ -1490,7 +1490,7 @@ def test_staging_syncs_both_parents_after_the_rename(monkeypatch):
 
 
 def test_a_sync_that_fails_after_the_rename_puts_the_unit_back(monkeypatch):
-    from kiro_crew import atomic_write
+    from efm_go import atomic_write
 
     log = _closed_session(unit_id="s-unsynced")
     del log

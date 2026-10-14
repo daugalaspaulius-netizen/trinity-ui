@@ -20,10 +20,10 @@ from pathlib import Path
 import pytest
 from stall_dump_helpers import CHAT_STACK, CRON_STACK, write_dump
 
-from kiro_crew import cron_inflight
-from kiro_crew.cron import CronJob, CronService, CronStoreUnreadable
-from kiro_crew.dashboard import crash_dump_store
-from kiro_crew.stall_attribution import attribute_dump, describe
+from efm_go import cron_inflight
+from efm_go.cron import CronJob, CronService, CronStoreUnreadable
+from efm_go.dashboard import crash_dump_store
+from efm_go.stall_attribution import attribute_dump, describe
 
 pytestmark = pytest.mark.asyncio
 
@@ -252,7 +252,7 @@ class TestBreaker:
     ) -> None:
         from unittest.mock import MagicMock
 
-        from kiro_crew import sel as sel_mod
+        from efm_go import sel as sel_mod
 
         seed = CronService(base_dir=tmp_path)
         job = seed.add_job(name="audited", message="m", every_secs=3600)

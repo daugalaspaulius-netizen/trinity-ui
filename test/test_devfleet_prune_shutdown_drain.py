@@ -36,8 +36,8 @@ import asyncio
 
 import pytest
 
-import kiro_crew.apps.builtins.dev_fleet.server as mod
-from kiro_crew.apps.builtins.dev_fleet import live, repository, runtime, worktree_ops
+import efm_go.apps.builtins.dev_fleet.server as mod
+from efm_go.apps.builtins.dev_fleet import live, repository, runtime, worktree_ops
 
 
 @pytest.fixture(autouse=True)

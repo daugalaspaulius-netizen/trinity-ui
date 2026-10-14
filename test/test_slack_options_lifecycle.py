@@ -20,15 +20,15 @@ from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state, drain_background_tasks
 from turn_harness import SlotSpec, TurnContext, TurnScript, run_turn
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
-from kiro_crew.dashboard.chat_utils import remember_slack_options
-from kiro_crew.slack.format import (
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
+from efm_go.dashboard.chat_utils import remember_slack_options
+from efm_go.slack.format import (
     OPTIONS_CHECKBOXES_ACTION,
     OPTIONS_SUBMIT_ACTION,
     build_options_blocks,
     replace_options_blocks,
 )
-from kiro_crew.slack.outbound import PostedOptions, expire_options
+from efm_go.slack.outbound import PostedOptions, expire_options
 
 AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
 
@@ -51,7 +51,7 @@ def _recs(state, key):
     such ambiguity: record and expiry both resolve the live owner the same way, and
     the accessor canonicalises what it is given.
     """
-    from kiro_crew.dashboard.chat_utils import effective_session_key, options_records
+    from efm_go.dashboard.chat_utils import effective_session_key, options_records
 
     if hasattr(key, "key"):
         slot = key
@@ -63,7 +63,7 @@ def _recs(state, key):
 
 def _set_recs(state, key, records):
     """Seed OPTIONS records for *key* (the store is keyed by session key)."""
-    from kiro_crew.dashboard.chat_utils import effective_session_key, set_options_records
+    from efm_go.dashboard.chat_utils import effective_session_key, set_options_records
 
     if hasattr(key, "key"):
         key = effective_session_key(key)
@@ -306,7 +306,7 @@ class TestLifecycleOnTheSlot:
     """remember / expire / forget against a real slot registry."""
 
     def _state(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.sessions.get_slack_link = MagicMock(return_value=(None, None))
         state.push_slots_update = MagicMock()
@@ -332,7 +332,7 @@ class TestLifecycleOnTheSlot:
     async def test_a_recorded_control_is_expired_on_the_next_turn(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             effective_session_key,
             expire_slack_options,
             remember_slack_options,
@@ -355,7 +355,7 @@ class TestLifecycleOnTheSlot:
         self, tmp_path, monkeypatch
     ):
         """The record is cleared before the edit, so a failure is not retried."""
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             effective_session_key,
             expire_slack_options,
             remember_slack_options,
@@ -380,7 +380,7 @@ class TestLifecycleOnTheSlot:
         Striking every choice through afterwards would erase it, so the click
         drops the record instead.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             effective_session_key,
             expire_slack_options,
             forget_slack_options,
@@ -406,7 +406,7 @@ class TestLifecycleOnTheSlot:
         ``_run_chat`` takes whatever state object its caller passes; several
         callers pass a stand-in that has no slot registry at all.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             forget_slack_options,
             remember_slack_options,
@@ -425,7 +425,7 @@ class TestLifecycleOnTheSlot:
     async def test_a_raising_slot_registry_cannot_break_the_turn(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.dashboard.chat_utils import expire_slack_options
+        from efm_go.dashboard.chat_utils import expire_slack_options
 
         state = self._state(tmp_path, monkeypatch)
         state.get_slot = MagicMock(side_effect=RuntimeError("registry down"))
@@ -449,12 +449,12 @@ class TestLifecycleOnTheSlot:
         ``state._slack_to_slot`` itself and so passed while production never
         registered that mapping at all.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             effective_session_key,
             expire_slack_options,
             remember_slack_options,
         )
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         state = self._state(tmp_path, monkeypatch)
         state.slack_client.open_dm = AsyncMock(return_value="C1")
@@ -491,7 +491,7 @@ class TestLifecycleOnTheSlot:
         state helper that writes it, so a click on the replayed control could
         not find the slot and answered into a separate Slack session.
         """
-        from kiro_crew.dashboard.chat_utils import slack_options_owner_key
+        from efm_go.dashboard.chat_utils import slack_options_owner_key
 
         state = self._state(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -510,7 +510,7 @@ class TestLifecycleOnTheSlot:
         Resolving through it alone is what made this silently return the wrong
         session, so the resolver also matches on the slot's own link fields.
         """
-        from kiro_crew.dashboard.chat_utils import slack_options_owner_key
+        from efm_go.dashboard.chat_utils import slack_options_owner_key
 
         state = self._state(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -525,7 +525,7 @@ class TestLifecycleOnTheSlot:
     def test_an_unowned_thread_resolves_to_its_own_slack_key(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.dashboard.chat_utils import slack_options_owner_key
+        from efm_go.dashboard.chat_utils import slack_options_owner_key
 
         state = self._state(tmp_path, monkeypatch)
 
@@ -548,7 +548,7 @@ class TestLifecycleOnTheSlot:
         Only a missing STATE is a genuine no-op: with nowhere to record, there is
         nothing to expire.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             forget_slack_options,
             options_records,
@@ -588,9 +588,9 @@ class TestTurnEntryWiring:
         """Covers dashboard sends, queue drains, regenerate, rewind, cron
         injection and the Slack-linked-thread route — every turn that runs
         through the dashboard engine."""
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.sessions.get_slack_link = MagicMock(return_value=(None, None))
         state.push_slots_update = MagicMock()
@@ -617,9 +617,9 @@ class TestTurnEntryWiring:
     ):
         """A /prompts reference re-enters the same turn; re-expiring there would
         spend a control the user has not been shown an answer to yet."""
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.sessions.get_slack_link = MagicMock(return_value=(None, None))
         state.push_slots_update = MagicMock()
@@ -641,7 +641,7 @@ class TestTurnEntryWiring:
     @pytest.mark.asyncio
     async def test_slack_inbound_turn_expires(self, monkeypatch):
         """Covers the live Slack path, which never reaches the dashboard engine."""
-        from kiro_crew.slack import transport_dispatch
+        from efm_go.slack import transport_dispatch
 
         calls: list[str] = []
 
@@ -698,7 +698,7 @@ class TestTurnEntryWiring:
         ``ping`` answers and returns without running the agent, so the pending
         question is still the one being waited on and its control must survive.
         """
-        from kiro_crew.slack import transport_dispatch
+        from efm_go.slack import transport_dispatch
 
         calls: list[str] = []
 
@@ -735,8 +735,8 @@ class TestTurnEntryWiring:
     @pytest.mark.parametrize(
         "module_name,func_name",
         [
-            ("kiro_crew.slack.transport_dispatch", "handle_message_transport"),
-            ("kiro_crew.slack.handler", "handle_message"),
+            ("efm_go.slack.transport_dispatch", "handle_message_transport"),
+            ("efm_go.slack.handler", "handle_message"),
         ],
     )
     def test_slack_inbound_expires_again_after_the_turn_serializes(
@@ -788,7 +788,7 @@ class TestTurnEntryWiring:
         expiry has to run after that resolution — expiring ``slack:<ts>`` would
         leave the dashboard session's control live and strike through nothing.
         """
-        from kiro_crew.slack import transport_dispatch
+        from efm_go.slack import transport_dispatch
 
         calls: list[str] = []
 
@@ -833,7 +833,7 @@ class TestTurnEntryWiring:
 
 
 def _slack_app(state):
-    from kiro_crew.dashboard.chat_slack import api_chat_slot_slack_link
+    from efm_go.dashboard.chat_slack import api_chat_slot_slack_link
 
     app = web.Application()
     app["state"] = state
@@ -891,7 +891,7 @@ class TestLinkTimeBackfill:
         assert state.slack_client.post_blocks.await_args is not None
 
     def _state(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.slack_client = MagicMock()
         state.slack_client.open_dm = AsyncMock(return_value="C1")
@@ -1052,7 +1052,7 @@ class TestNonStringKeyIsRefused:
 
     @pytest.mark.timeout(5)
     def test_a_non_string_key_returns_none_instead_of_spinning(self):
-        from kiro_crew.dashboard import chat_utils
+        from efm_go.dashboard import chat_utils
 
         state = MagicMock()
 
@@ -1062,7 +1062,7 @@ class TestNonStringKeyIsRefused:
 
     @pytest.mark.timeout(5)
     def test_a_real_string_key_still_reaches_the_lookup(self):
-        from kiro_crew.dashboard import chat_utils
+        from efm_go.dashboard import chat_utils
 
         state = MagicMock()
         sentinel = object()
@@ -1091,9 +1091,9 @@ class TestUnlinkSpendsTheControl:
 
     @pytest.mark.asyncio
     async def test_unlink_expires_a_live_options_control(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_slack import api_chat_slot_slack_unlink
+        from efm_go.dashboard.chat_slack import api_chat_slot_slack_unlink
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_slack.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_slack.sel", lambda: MagicMock())
 
         state = _make_state(tmp_path)
         # Returns into the JSON body, so it has to be a real bool not a mock.
@@ -1155,9 +1155,9 @@ class TestUnlinkSpendsTheControl:
         link survives. Compare-and-clear is the only ordering that closes both, so
         this test pins the relink half.
         """
-        from kiro_crew.dashboard.chat_slack import api_chat_slot_slack_unlink
+        from efm_go.dashboard.chat_slack import api_chat_slot_slack_unlink
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_slack.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_slack.sel", lambda: MagicMock())
 
         state = _make_state(tmp_path)
         state.sessions.clear_slack_link = MagicMock(return_value=True)
@@ -1179,7 +1179,7 @@ class TestUnlinkSpendsTheControl:
             _state._slack_to_slot["thread-2"] = slot.key
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_slack.expire_slack_options", _relink_midway
+            "efm_go.dashboard.chat_slack.expire_slack_options", _relink_midway
         )
 
         app = web.Application()
@@ -1203,10 +1203,10 @@ class TestUnlinkSpendsTheControl:
         comparison as "a relink landed" would turn every ordinary unlink into a
         silent no-op.
         """
-        from kiro_crew.dashboard.chat_slack import api_chat_slot_slack_unlink
-        from kiro_crew.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard.chat_slack import api_chat_slot_slack_unlink
+        from efm_go.dashboard.chat_utils import effective_session_key
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_slack.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_slack.sel", lambda: MagicMock())
 
         state = _make_state(tmp_path)
         slack = MagicMock()
@@ -1224,7 +1224,7 @@ class TestUnlinkSpendsTheControl:
         async def _no_relink(_state, _session_key, ts=None):
             return None
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_slack.expire_slack_options", _no_relink)
+        monkeypatch.setattr("efm_go.dashboard.chat_slack.expire_slack_options", _no_relink)
 
         app = web.Application()
         app["state"] = state
@@ -1254,7 +1254,7 @@ class TestEveryOutstandingControlIsExpired:
 
     @pytest.mark.asyncio
     async def test_expiry_drains_all_recorded_controls(self, tmp_path):
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             remember_slack_options,
         )
@@ -1292,7 +1292,7 @@ class TestEveryOutstandingControlIsExpired:
         resolver falls back to asking the slots their own identity, so both the
         record and the expiry reach the same slot.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             remember_slack_options,
             slack_options_slot,
@@ -1334,7 +1334,7 @@ class TestEveryOutstandingControlIsExpired:
         """
         from slack_sdk.errors import SlackApiError
 
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             remember_slack_options,
         )
@@ -1368,7 +1368,7 @@ class TestEveryOutstandingControlIsExpired:
         """
         from slack_sdk.errors import SlackApiError
 
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             remember_slack_options,
         )
@@ -1402,7 +1402,7 @@ class TestEveryOutstandingControlIsExpired:
         over the user's answer. It also defeats the under-lock skip, which
         relies on the forget having removed the record.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             slack_options_owner_key,
             slack_options_session_keys,
         )
@@ -1429,7 +1429,7 @@ class TestEveryOutstandingControlIsExpired:
         handed us a mock. Guards the helper against silently recording under a
         MagicMock's repr.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             canonical_key,
             slack_options_owner_key,
             slack_options_session_keys,
@@ -1455,12 +1455,12 @@ class TestEveryOutstandingControlIsExpired:
         skip its edit entirely, rather than landing late and replacing the
         selection with a spent summary.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             forget_slack_options,
             remember_slack_options,
         )
-        from kiro_crew.slack.outbound import options_edit_lock
+        from efm_go.slack.outbound import options_edit_lock
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -1499,7 +1499,7 @@ class TestEveryOutstandingControlIsExpired:
         """
         from slack_sdk.errors import SlackApiError
 
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             forget_slack_options,
             remember_slack_options,
@@ -1530,7 +1530,7 @@ class TestEveryOutstandingControlIsExpired:
     @pytest.mark.asyncio
     async def test_recording_the_same_control_twice_queues_one_edit(self, tmp_path):
         """A retry, or two paths recording one post, is not two live controls."""
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             remember_slack_options,
         )
@@ -1564,7 +1564,7 @@ class TestForgettingIsScopedToTheClickedControl:
     """
 
     def test_a_click_forgets_only_the_control_it_answered(self, tmp_path):
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             forget_slack_options,
             remember_slack_options,
         )
@@ -1585,7 +1585,7 @@ class TestForgettingIsScopedToTheClickedControl:
 
     def test_omitting_the_ts_still_clears_everything(self, tmp_path):
         """The unlink path detaches the whole conversation, so all of them go."""
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             forget_slack_options,
             remember_slack_options,
         )
@@ -1627,7 +1627,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.slack import handler, transport_dispatch
+        from efm_go.slack import handler, transport_dispatch
 
         dispatch = inspect.getsource(transport_dispatch.handle_message_transport)
         owner_expr = "get_session_for_thread(reply_ts) or session_key"
@@ -1671,7 +1671,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.slack import handler, transport_dispatch
+        from efm_go.slack import handler, transport_dispatch
 
         for name, src, shortcuts in (
             (
@@ -1712,8 +1712,8 @@ class TestControlPostedAfterTheWindowIsSpent:
         pass — leaving live buttons for a superseded question. The drain re-checks
         and spends it itself.
         """
-        from kiro_crew.dashboard import chat_slack
-        from kiro_crew.dashboard.chat_backfill import BackfillSelection
+        from efm_go.dashboard import chat_slack
+        from efm_go.dashboard.chat_backfill import BackfillSelection
 
         expired: list[str] = []
 
@@ -1766,9 +1766,9 @@ class TestControlPostedAfterTheWindowIsSpent:
         very question the conversation is now waiting on — so the drain narrows
         its cleanup to the ts it posted itself.
         """
-        from kiro_crew.dashboard import chat_slack
-        from kiro_crew.dashboard.chat_backfill import BackfillSelection
-        from kiro_crew.slack.outbound import PostedOptions
+        from efm_go.dashboard import chat_slack
+        from efm_go.dashboard.chat_backfill import BackfillSelection
+        from efm_go.slack.outbound import PostedOptions
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -1823,8 +1823,8 @@ class TestControlPostedAfterTheWindowIsSpent:
         choices would arrive as the characters `[OPTIONS: A | B]`. Only the newest
         reply is answerable; an earlier one renders struck through.
         """
-        from kiro_crew.dashboard import chat_slack
-        from kiro_crew.dashboard.chat_backfill import BackfillSelection
+        from efm_go.dashboard import chat_slack
+        from efm_go.dashboard.chat_backfill import BackfillSelection
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -1870,8 +1870,8 @@ class TestControlPostedAfterTheWindowIsSpent:
         history would put a credential into Slack with no redaction anywhere on
         that path.
         """
-        from kiro_crew.dashboard import chat_slack
-        from kiro_crew.dashboard.chat_backfill import BackfillSelection
+        from efm_go.dashboard import chat_slack
+        from efm_go.dashboard.chat_backfill import BackfillSelection
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         reply = {"role": "assistant", "content": f"which key? [OPTIONS: {secret} | cancel]"}
@@ -1907,8 +1907,8 @@ class TestControlPostedAfterTheWindowIsSpent:
         would miss the advancement on exactly the busiest slots — where the race
         is most likely. total_messages is a lifetime counter, so it still moves.
         """
-        from kiro_crew.dashboard import chat_slack
-        from kiro_crew.dashboard.chat_backfill import BackfillSelection
+        from efm_go.dashboard import chat_slack
+        from efm_go.dashboard.chat_backfill import BackfillSelection
 
         expired: list[str] = []
 
@@ -1961,8 +1961,8 @@ class TestControlPostedAfterTheWindowIsSpent:
         nothing. The agent is mid-reply the entire time, which is precisely when
         the replayed question is stale, so the control must still be spent.
         """
-        from kiro_crew.dashboard import chat_slack
-        from kiro_crew.dashboard.chat_backfill import BackfillSelection
+        from efm_go.dashboard import chat_slack
+        from efm_go.dashboard.chat_backfill import BackfillSelection
 
         expired: list[str] = []
 
@@ -2011,7 +2011,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         is strictly stronger, so the test asserts against the real owner rather
         than keeping a second copy of the pipeline alive to test.
         """
-        from kiro_crew.slack.format import strip_ansi
+        from efm_go.slack.format import strip_ansi
 
         # An AWS key broken up by a colour escape mid-token.
         secret = "AKIA\x1b[0mIOSFODNN7EXAMPLE"
@@ -2036,11 +2036,11 @@ class TestControlPostedAfterTheWindowIsSpent:
         while it still holds the message's edit lock, so the queued click is refused
         by exactly the check a duplicate click hits.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             remember_slack_options,
         )
-        from kiro_crew.slack.outbound import claim_options_answer
+        from efm_go.slack.outbound import claim_options_answer
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -2070,7 +2070,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         src = inspect.getsource(interactions._handle_options_submit)
         assert "release_options_answer(channel, msg_ts)" in src, (
@@ -2125,10 +2125,10 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             slack_options_owner_keys_snapshot,
         )
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         state = MagicMock()
         state._slots = {}
@@ -2161,7 +2161,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         message while the waiter proceeds on the old one, so two coroutines edit
         one Slack message at once and every guarantee built on this lock is off.
         """
-        from kiro_crew.slack import outbound
+        from efm_go.slack import outbound
 
         key = ("CH-split", "msg-split")
         inside: list[str] = []
@@ -2213,7 +2213,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         import inspect
         from pathlib import Path
 
-        from kiro_crew.dashboard.handlers import messaging
+        from efm_go.dashboard.handlers import messaging
 
         # The send route's Slack leg runs from a messaging_api owner the facade
         # composes, so the scan reads the facade and every owner, and fails if the
@@ -2275,7 +2275,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         so no dashboard turn would ever expire that record and a click on those
         buttons would answer into the dashboard session instead.
         """
-        from kiro_crew.dashboard.chat_slack import api_chat_slot_slack_link
+        from efm_go.dashboard.chat_slack import api_chat_slot_slack_link
 
         state = _make_state(tmp_path)
         slack = MagicMock()
@@ -2313,7 +2313,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         """The keys must be read BEFORE link_slack moves the index."""
         import inspect
 
-        from kiro_crew.dashboard import chat_slack
+        from efm_go.dashboard import chat_slack
 
         src = inspect.getsource(chat_slack.link_slot_to_slack)
         snap = src.find("_prior_owner_keys = slack_options_owner_keys_snapshot(")
@@ -2340,9 +2340,9 @@ class TestControlPostedAfterTheWindowIsSpent:
         the compare of the slot's live fields against the ones captured before the
         await, not any check inside the clear.
         """
-        from kiro_crew.dashboard import chat_slack
-        from kiro_crew.dashboard.chat_slack import api_chat_slot_slack_unlink
-        from kiro_crew.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard import chat_slack
+        from efm_go.dashboard.chat_slack import api_chat_slot_slack_unlink
+        from efm_go.dashboard.chat_utils import effective_session_key
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -2377,7 +2377,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         src = inspect.getsource(interactions._handle_options)
         tail = src[src.find("Standard OPTIONS choice") :]
@@ -2406,7 +2406,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         src = inspect.getsource(interactions._handle_options)
         # Locate the standard-OPTIONS section; the action-button branches above it
@@ -2438,8 +2438,8 @@ class TestControlPostedAfterTheWindowIsSpent:
         other order -- a control already tracked when the unlink arrives -- and had
         nothing to abort on here, because the record did not exist yet.
         """
-        from kiro_crew.dashboard import chat_slack
-        from kiro_crew.dashboard.chat_backfill import BackfillSelection
+        from efm_go.dashboard import chat_slack
+        from efm_go.dashboard.chat_backfill import BackfillSelection
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -2482,7 +2482,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         buttons really are still on screen, and this entry is the only thing
         standing between a second click and a duplicate turn.
         """
-        from kiro_crew.slack import outbound
+        from efm_go.slack import outbound
 
         cap = outbound._MAX_EDIT_LOCKS
         # One claim whose buttons may still be live -- never settled.
@@ -2510,7 +2510,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         landed, the original was deleted, or the expiry's strike-through
         succeeded. Only then may memory pressure reclaim it.
         """
-        from kiro_crew.slack import outbound
+        from efm_go.slack import outbound
 
         assert outbound.claim_options_answer("C1", "s1") is True
         assert outbound._ANSWERED[("C1", "s1")] is False
@@ -2533,8 +2533,8 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.dashboard import chat_utils
-        from kiro_crew.dashboard.chat_utils import options_records, set_options_records
+        from efm_go.dashboard import chat_utils
+        from efm_go.dashboard.chat_utils import options_records, set_options_records
 
         src = inspect.getsource(chat_utils.set_options_records)
         assert "_MAX_OPTION_KEYS" not in src and "del store[" not in src, (
@@ -2566,8 +2566,8 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.dashboard import chat_utils
-        from kiro_crew.dashboard import state as state_mod
+        from efm_go.dashboard import chat_utils
+        from efm_go.dashboard import state as state_mod
 
         assert "_slack_options_posted" not in inspect.getsource(state_mod), (
             "the slot-held OPTIONS field must be gone, not shadowed by a fallback"
@@ -2585,7 +2585,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         Record, expire and forget must all work for a session that has no dashboard
         slot at any point -- which is the normal state of a plain Slack thread.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             expire_slack_options,
             forget_slack_options,
             options_records,
@@ -2631,7 +2631,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         which is the normal state for a plain Slack conversation, so keying
         validity on record presence would reject every legitimate click there.
         """
-        from kiro_crew.slack.outbound import claim_options_answer
+        from efm_go.slack.outbound import claim_options_answer
 
         assert claim_options_answer("C-1", "opt-1") is True
         assert claim_options_answer("C-1", "opt-1") is False, (
@@ -2651,7 +2651,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         src = inspect.getsource(interactions._handle_options_submit)
         lock_at = src.find("async with options_edit_lock(")
@@ -2677,7 +2677,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         """
         import inspect
 
-        from kiro_crew.slack import interactions
+        from efm_go.slack import interactions
 
         src = inspect.getsource(interactions._handle_options_submit)
 
@@ -2703,7 +2703,7 @@ class TestControlPostedAfterTheWindowIsSpent:
         field, where ``<!channel>`` is INTERPRETED -- so an OPTIONS tag reading
         ``[OPTIONS: <!channel> | Skip]`` would page a whole channel on render.
         """
-        from kiro_crew.slack.format import build_options_selected_blocks
+        from efm_go.slack.format import build_options_selected_blocks
 
         blocks = build_options_selected_blocks(["<!channel>", "Skip & go <b>"], [0])
         text = blocks[0]["elements"][0]["text"]

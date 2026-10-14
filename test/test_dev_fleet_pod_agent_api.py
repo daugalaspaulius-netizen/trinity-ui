@@ -21,8 +21,8 @@ from typing import Any
 import pytest
 from aiohttp import web
 
-from kiro_crew.apps.builtins.dev_fleet import agent_pod_api
-from kiro_crew.mcp_tools import apps as apps_tools
+from efm_go.apps.builtins.dev_fleet import agent_pod_api
+from efm_go.mcp_tools import apps as apps_tools
 
 # ---------------------------------------------------------------------------
 # Route registration + admission
@@ -56,7 +56,7 @@ def test_package_reexports_register_routes() -> None:
     call through the package mounts every pod route — identity with this module's
     function alone would leave the other family unmounted.
     """
-    import kiro_crew.apps.builtins.dev_fleet as pkg
+    import efm_go.apps.builtins.dev_fleet as pkg
 
     app = web.Application()
     pkg.register_routes(app)
@@ -71,7 +71,7 @@ def test_every_route_is_named_in_the_strict_internal_table() -> None:
     ``/pod`` prefix is not -- Dev Fleet's neighbourhood includes worktree prune and
     the Make Live cutover, which must never inherit an internal-secret grant.
     """
-    from kiro_crew.dashboard.server import (
+    from efm_go.dashboard.server import (
         _MIXED_INTERNAL_API_PATHS,
         _STRICT_INTERNAL_API_PATHS,
     )
@@ -122,16 +122,16 @@ async def test_non_git_source_install_discovers_checkout_before_pod_op(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:
     """Agent routes must run the executor-backed discovery tiers before the op."""
-    from kiro_crew.apps.builtins.dev_fleet import repository, runtime
+    from efm_go.apps.builtins.dev_fleet import repository, runtime
 
     installed_source = tmp_path / "installed-source"
-    (installed_source / "src" / "kiro_crew").mkdir(parents=True)
+    (installed_source / "src" / "efm_go").mkdir(parents=True)
     (installed_source / "pyproject.toml").write_text("[project]\nname = 'kiro-crew'\n")
     assert not (installed_source / ".git").exists()
 
     checkout = tmp_path / "home" / "workplace" / "kirocrew"
     (checkout / ".git").mkdir(parents=True)
-    (checkout / "src" / "kiro_crew").mkdir(parents=True)
+    (checkout / "src" / "efm_go").mkdir(parents=True)
     (checkout / "pyproject.toml").write_text("[project]\nname = 'kiro-crew'\n")
 
     monkeypatch.delenv("KIROCREW_DEVFLEET_REPO", raising=False)
@@ -169,7 +169,7 @@ async def test_non_git_source_install_discovers_checkout_before_pod_op(
 def granted(monkeypatch: pytest.MonkeyPatch) -> None:
     """The default posture for the tests below: the Dev Fleet app is enabled."""
     monkeypatch.setattr(
-        "kiro_crew.apps.builtins.dev_fleet.agent_pod_api.is_app_enabled", lambda _n: True
+        "efm_go.apps.builtins.dev_fleet.agent_pod_api.is_app_enabled", lambda _n: True
     )
 
 
@@ -183,7 +183,7 @@ async def test_the_unix_socket_transport_is_admitted(
     platform where systemd --user pods exist -- so this pins the union the
     middleware itself uses (`_unix_sock is not None or is_loopback(...)`).
     """
-    monkeypatch.setattr("kiro_crew.dashboard.origin.request_is_unix_socket", lambda _r: True)
+    monkeypatch.setattr("efm_go.dashboard.origin.request_is_unix_socket", lambda _r: True)
     monkeypatch.setattr(
         agent_pod_api, "_ops", lambda: type("Ops", (), {"_pod_ls": staticmethod(_ok_ls)})
     )
@@ -215,7 +215,7 @@ async def test_cookie_only_caller_is_refused(granted: None) -> None:
 async def test_disabled_app_is_not_callable(monkeypatch: pytest.MonkeyPatch) -> None:
     """Routes are registered at startup, before any app is known to be enabled."""
     monkeypatch.setattr(
-        "kiro_crew.apps.builtins.dev_fleet.agent_pod_api.is_app_enabled", lambda _n: False
+        "efm_go.apps.builtins.dev_fleet.agent_pod_api.is_app_enabled", lambda _n: False
     )
     resp = await agent_pod_api.handle_pod_list(_Req())  # type: ignore[arg-type]
     assert resp.status == 403
@@ -235,7 +235,7 @@ def test_the_capability_is_not_gated_on_an_operator_grant() -> None:
     assert not hasattr(agent_pod_api, "_operator_granted")
     assert not hasattr(agent_pod_api, "_require_operator_grant")
 
-    from kiro_crew.config.sections import AgentConfig
+    from efm_go.config.sections import AgentConfig
 
     assert not hasattr(AgentConfig(), "allow_agent_pod_control")
 
@@ -255,7 +255,7 @@ async def test_provisioning_is_not_reachable_from_the_agent_surface(granted: Non
     silently given a 16-minute call. The dashboard's Provision button streams the
     same work under a run id, which is the shape that survives a restart.
     """
-    from kiro_crew.validation import POD_UP_SCHEMA
+    from efm_go.validation import POD_UP_SCHEMA
 
     assert [f.name for f in POD_UP_SCHEMA.fields] == ["worktree"]
     assert "provision" not in {
@@ -316,7 +316,7 @@ async def test_every_verb_answers_an_unusable_checkout(
     whichever one raises, which is why this asserts on the verbs rather than on the
     raise sites.
     """
-    from kiro_crew.apps.builtins.dev_fleet import repository
+    from efm_go.apps.builtins.dev_fleet import repository
 
     async def _aboom(*_a: Any, **_k: Any) -> Any:
         raise repository.RepoNotConfigured("no Kiro Crew checkout found to manage")
@@ -403,7 +403,7 @@ async def test_each_verb_reports_its_own_refusal_code(
 
 def test_ops_resolves_the_real_worktree_ops_module() -> None:
     """The lazy import is the seam every handler depends on; a typo there is silent."""
-    from kiro_crew.apps.builtins.dev_fleet import worktree_ops
+    from efm_go.apps.builtins.dev_fleet import worktree_ops
 
     assert agent_pod_api._ops() is worktree_ops
     assert callable(worktree_ops._pod_status)
@@ -425,7 +425,7 @@ def test_pod_tools_are_advertised_with_handlers() -> None:
 
 def test_pod_tools_are_registered_for_argument_validation() -> None:
     """A tool absent from MCP_CORE_SCHEMAS has its arguments passed through raw."""
-    from kiro_crew.validation import MCP_CORE_SCHEMAS
+    from efm_go.validation import MCP_CORE_SCHEMAS
 
     for name in ("pod_up", "pod_down", "pod_status", "pod_ls"):
         assert name in MCP_CORE_SCHEMAS

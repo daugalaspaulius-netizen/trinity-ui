@@ -1,10 +1,10 @@
 # ──────────────────────────────────────────────────────────────────────
 # Playwright CLI installer for Windows (no pre-existing Node/npm required).
 #
-#   irm https://raw.githubusercontent.com/kirodotdev/KiroCrew/main/playwright-cli.ps1 | iex
+#   irm https://raw.githubusercontent.com/efmleads.com/main/playwright-cli.ps1 | iex
 #
 # Read before you run (many enterprises forbid piping a script into a shell):
-#   irm https://raw.githubusercontent.com/kirodotdev/KiroCrew/main/playwright-cli.ps1 -OutFile playwright-cli.ps1
+#   irm https://raw.githubusercontent.com/efmleads.com/main/playwright-cli.ps1 -OutFile playwright-cli.ps1
 #   notepad playwright-cli.ps1
 #   powershell -ExecutionPolicy Bypass -File .\playwright-cli.ps1 -Version 0.1.18
 #
@@ -62,7 +62,7 @@ $WrapperName = "playwright-cli"
 $PublicNpmRegistry = "https://registry.npmjs.org/"
 # The floor that matters is not the package's own engines.node (>= 18) but the one
 # Kiro Crew's browsing requires of this CLI: MIN_NODE_MAJOR in
-# src/kiro_crew/browser_cli/install.py. Accepting less would install a CLI the
+# src/efm_go/browser_cli/install.py. Accepting less would install a CLI the
 # product refuses to drive. A test binds the two together. A bootstrap installs
 # Node 22 LTS.
 $MinNodeMajor = 20

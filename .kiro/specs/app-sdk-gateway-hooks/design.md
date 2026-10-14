@@ -1,6 +1,6 @@
 # Design Document: App SDK Gateway Hooks
 
-Status: implemented in `src/kiro_crew/apps/hooks_integration.py` and the related `apps` modules.
+Status: implemented in `src/efm_go/apps/hooks_integration.py` and the related `apps` modules.
 
 ## Overview
 
@@ -104,7 +104,7 @@ Each value is a Python dotted path in the format `module.path:callable_name`, re
 
 **Manifest Schema Version**: The manifest does not introduce a top-level `schemaVersion` field. Forward compatibility is handled by the existing `extra` dict in `AppManifest.from_dict()` — unknown fields are preserved on round-trip. If `backend.hooks` format changes in the future, a new field name (e.g. `backend.hooks_v2`) will be used rather than breaking the existing format.
 
-### 2. Route Registry (`kiro_crew/apps/route_registry.py`)
+### 2. Route Registry (`efm_go/apps/route_registry.py`)
 
 **Implementation choice: Middleware-based soft routing**
 
@@ -204,7 +204,7 @@ Routes are mounted at `/api/apps/{app_name}/{path}`. The registry enforces this 
 
 **App enable status**: When route loading fails during enable, the app is marked as `enabled=True` with an additional `health_status="degraded"` field in `installed.json`. The dashboard displays this as a warning badge. The app's other resources (agents, skills, crons) remain functional — only the failed routes are unavailable.
 
-### 3. Module Isolation (`kiro_crew/apps/module_loader.py`)
+### 3. Module Isolation (`efm_go/apps/module_loader.py`)
 
 App modules are loaded in isolation to prevent namespace collisions and sys.path pollution:
 
@@ -259,7 +259,7 @@ def unload_app_modules(app_name: str) -> None:
 - Clean unload on disable — re-enable loads fresh code (no stale cache)
 - Path containment — app modules cannot escape their directory
 
-### 4. App Context (`kiro_crew/apps/context.py`)
+### 4. App Context (`efm_go/apps/context.py`)
 
 ```python
 @dataclass
@@ -286,7 +286,7 @@ class AppHealthStatus:
     last_checked: str = ""  # ISO 8601
 ```
 
-### 4a. EventBus (`kiro_crew/apps/event_bus.py`)
+### 4a. EventBus (`efm_go/apps/event_bus.py`)
 
 Thin wrapper over the existing gateway WebSocket broadcast mechanism. Apps publish events scoped to their declared `permissions.events` list.
 
@@ -342,7 +342,7 @@ class EventBus:
 
 **Integration**: The `broadcast_fn` is `DashboardState.broadcast()` — the same function used by existing features (notifications, slot updates, etc.). No new WebSocket infrastructure needed.
 
-### 4b. AppStorage (`kiro_crew/apps/app_storage.py`)
+### 4b. AppStorage (`efm_go/apps/app_storage.py`)
 
 Simple key-value store backed by the app's `data_dir`. Provides a typed interface over file I/O with atomic writes and optional JSON serialization.
 
@@ -407,7 +407,7 @@ class AppStorage:
 - JSON serialization for structured data, raw string fallback for simple values
 - No quota enforcement in v1 (future: add `max_keys` and `max_bytes` to permissions)
 
-### 5. Cron SDK (`kiro_crew/apps/cron_sdk.py`)
+### 5. Cron SDK (`efm_go/apps/cron_sdk.py`)
 
 ```python
 class CronSDK:
@@ -494,7 +494,7 @@ class CronSDK:
         return None
 ```
 
-### 6. Lifecycle Hook Dispatcher (`kiro_crew/apps/lifecycle.py`)
+### 6. Lifecycle Hook Dispatcher (`efm_go/apps/lifecycle.py`)
 
 ```python
 class LifecycleDispatcher:
@@ -519,7 +519,7 @@ class LifecycleDispatcher:
     async def _invoke(self, app_name: str, hook_path: str, ctx: AppContext) -> None:
         """Import and call a hook via module_loader (same isolation as routes)."""
         try:
-            from kiro_crew.apps.module_loader import load_app_module
+            from efm_go.apps.module_loader import load_app_module
             app_root = app_dir(app_name)
             func = load_app_module(app_name, app_root, hook_path)
             result = func(ctx)
@@ -529,7 +529,7 @@ class LifecycleDispatcher:
             logger.exception("Lifecycle hook %s failed for app %s", hook_path, app_name)
 ```
 
-### 7. Builtin Auto-Discovery (`kiro_crew/apps/discovery.py`)
+### 7. Builtin Auto-Discovery (`efm_go/apps/discovery.py`)
 
 ```python
 def discover_builtin_apps(builtins_dir: Path) -> list[dict[str, Any]]:

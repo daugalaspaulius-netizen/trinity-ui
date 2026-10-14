@@ -29,9 +29,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew import mcp_core, session_directive
-from kiro_crew.acp._dispatch import parse_session_update
-from kiro_crew.acp.types import (
+from efm_go import mcp_core, session_directive
+from efm_go.acp._dispatch import parse_session_update
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_SUBAGENT_ACTIVITY,
     EVENT_SUBAGENT_LIST,
@@ -41,8 +41,8 @@ from kiro_crew.acp.types import (
     EVENT_TOOL_RESULT,
     AcpEvent,
 )
-from kiro_crew.dashboard import directive_queue
-from kiro_crew.dashboard.chat_utils import effective_session_key
+from efm_go.dashboard import directive_queue
+from efm_go.dashboard.chat_utils import effective_session_key
 
 # The raw arguments the model sent. Long enough to matter, quoted enough to have
 # defeated the naive repair, and carrying the ``_meta`` block KAS attaches to
@@ -139,7 +139,7 @@ async def _drive(state, slot, events, monkeypatch, *, park=True, park_input=None
     *park* publishes the record the tool would have parked, under the digest of
     *park_input* (default: the raw call args), for THIS slot's session key.
     """
-    from kiro_crew.dashboard import chat_runner
+    from efm_go.dashboard import chat_runner
 
     parked = []
 
@@ -398,7 +398,7 @@ class TestTheKeyStillGrantsNothing:
             session_directive.call_input_digest("monitor_start", CALL_ARGS),
         )
         monkeypatch.setattr(directive_queue.time, "monotonic", _real)
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"):
             spy = await _drive(
                 state,
                 slot,
@@ -454,7 +454,7 @@ class TestTheToolSideOfTheKey:
         not a second invocation: routing it through ``call_tool_with_logging``
         wrote a second "completed" row attributed to the same session, doubling
         every directive in the audit trail."""
-        from kiro_crew import mcp_shared
+        from efm_go import mcp_shared
 
         rows: list[dict] = []
 
@@ -487,7 +487,7 @@ class TestTheToolSideOfTheKey:
     def test_a_direct_handler_call_reports_nothing(self, monkeypatch):
         """Outside ``_call_tool`` there is no call to report; posting an empty one
         would only be refused by the gateway as not derivable."""
-        from kiro_crew.mcp_tools import control
+        from efm_go.mcp_tools import control
 
         posted: list[tuple[str, dict]] = []
         monkeypatch.setattr(mcp_core, "_post", lambda p, b, **kw: posted.append((p, b)))
@@ -547,7 +547,7 @@ class TestEmptyArgumentDirectives:
             AcpEvent(kind=EVENT_TEXT_CHUNK, text="ok"),
             AcpEvent(kind=EVENT_COMPLETE),
         ]
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         parked = []
 
@@ -604,7 +604,7 @@ class TestPlantedRecordIsNotClaimedByADifferentTool:
             AcpEvent(kind=EVENT_TEXT_CHUNK, text="ok"),
             AcpEvent(kind=EVENT_COMPLETE),
         ]
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         parked = []
 
@@ -713,7 +713,7 @@ class TestNativeSubagentCannotReachTheParentThroughASharedDigest:
             AcpEvent(kind=EVENT_TEXT_CHUNK, text="ok"),
             AcpEvent(kind=EVENT_COMPLETE),
         ]
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         parked = []
 
@@ -755,7 +755,7 @@ def _sel_spy(monkeypatch) -> list[dict]:
         def __getattr__(self, name):
             return lambda *a, **k: None
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner.sel", lambda: _Spy())
+    monkeypatch.setattr("efm_go.dashboard.chat_runner.sel", lambda: _Spy())
     return calls
 
 
@@ -993,7 +993,7 @@ class TestTheDisplayTitleCannotForgeTheTool:
             AcpEvent(kind=EVENT_TEXT_CHUNK, text="ok"),
             AcpEvent(kind=EVENT_COMPLETE),
         ]
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         parked = []
 
@@ -1033,7 +1033,7 @@ class TestClaudeBackendResolvesTheTool:
 
     @staticmethod
     def _msg(update: dict):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(method="session/update", params={"update": update})
 
@@ -1047,7 +1047,7 @@ class TestClaudeBackendResolvesTheTool:
         assert session_directive.directive_tool_from_call("", "", "mcp__kirocrew-core__nope") == ""
 
     def test_legacy_tool_call_builder_carries_the_wire_title(self):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient()
         ev = client._extract_tool_event(
@@ -1073,7 +1073,7 @@ class TestClaudeBackendResolvesTheTool:
 
     def test_legacy_builder_preserves_an_explicit_empty_raw_input(self):
         """Same fix as the shared builder: an explicit ``{}`` is an argument set."""
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         ev = AcpClient()._extract_tool_event(
             self._msg(
@@ -1089,7 +1089,7 @@ class TestClaudeBackendResolvesTheTool:
         assert ev is not None and ev.raw_tool_params == {}
 
     def test_legacy_refinement_builder_carries_the_wire_title(self):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient()
         # claude-agent-acp: initial tool_call with empty input, then the refinement.
@@ -1119,7 +1119,7 @@ class TestClaudeBackendResolvesTheTool:
         assert ev.raw_tool_params == CALL_ARGS
 
     def test_legacy_builder_keeps_a_shell_description_out_of_the_wire_title(self):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient()
         ev = client._extract_tool_event(
@@ -1363,8 +1363,8 @@ class TestLegacyParamsCacheIsTruthyGated:
     no sensitive-path scope), and the refinement must refresh it."""
 
     def test_initial_empty_input_is_not_cached_and_refinement_refreshes(self):
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import JsonRpcMessage
 
         def msg(update):
             return JsonRpcMessage(method="session/update", params={"update": update})
@@ -1461,7 +1461,7 @@ class TestConcurrentDirectivesInOneSession:
             AcpEvent(kind=EVENT_TEXT_CHUNK, text="ok"),
             AcpEvent(kind=EVENT_COMPLETE),
         ]
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         parked = []
 
@@ -1563,7 +1563,7 @@ class TestOpenCodeBackendResolvesTheTool:
         state = _stub_state(tmp_path)
         slot = state.get_or_create_slot("opencode-directive")
         slot._titled = True
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"):
             spy = await _drive(state, slot, _opencode_events(), monkeypatch)
         spy.assert_awaited_once()
         assert spy.call_args.args[3] == "monitor_start"
@@ -1581,7 +1581,7 @@ class TestOpenCodeBackendResolvesTheTool:
         state = _stub_state(tmp_path)
         slot = state.get_or_create_slot("opencode-lookalike")
         slot._titled = True
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"):
             spy = await _drive(
                 state,
                 slot,
@@ -1610,7 +1610,7 @@ class TestOpenCodeBackendResolvesTheTool:
         state = _stub_state(tmp_path)
         slot = state.get_or_create_slot("opencode-no-record")
         slot._titled = True
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"):
             spy = await _drive(
                 state,
                 slot,
@@ -1736,7 +1736,7 @@ async def test_unmatched_non_monitor_result_gets_no_monitor_advice(tmp_path, mon
 def test_unverified_notice_leads_with_a_human_outcome_for_every_directive_tool():
     """The line a person reads is the outcome alone, in words; the tool
     identifier is confined to the agent instruction the tool result carries."""
-    from kiro_crew.dashboard.chat_runner import (
+    from efm_go.dashboard.chat_runner import (
         unverified_directive_notice,
         unverified_directive_outcome,
     )
@@ -1761,7 +1761,7 @@ def test_unverified_notice_leads_with_a_human_outcome_for_every_directive_tool()
 def test_unclaimed_turn_end_notice_is_tool_neutral():
     """Any directive tool can park a record, so the notice for a record no call
     claimed cannot send the agent to one tool's inspector."""
-    from kiro_crew.dashboard.chat_runner import UNCLAIMED_DIRECTIVE_NOTICE
+    from efm_go.dashboard.chat_runner import UNCLAIMED_DIRECTIVE_NOTICE
 
     assert UNCLAIMED_DIRECTIVE_NOTICE == (
         "A request from this turn was not applied. Check that your last request took effect."

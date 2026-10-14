@@ -13,9 +13,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.chat import api_chat_slot_followup
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.validation import (
+from efm_go.dashboard.chat import api_chat_slot_followup
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.validation import (
     MAX_FOLLOWUP_PROMPT,
     MAX_FOLLOWUP_TITLE,
     SUGGEST_FOLLOWUP_SCHEMA,
@@ -281,7 +281,7 @@ class TestRealMiddlewareIntegration:
 
     @staticmethod
     def _app(state: DashboardState, secret: str) -> web.Application:
-        from kiro_crew.dashboard.token_auth import token_auth_middleware
+        from efm_go.dashboard.token_auth import token_auth_middleware
 
         mw = token_auth_middleware(
             mixed_internal_paths=frozenset({"/api/chat"}),

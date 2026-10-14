@@ -23,9 +23,9 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import _spawn_exec_shim as shim
-from kiro_crew import sandbox
-from kiro_crew.sandbox import (
+from efm_go import _spawn_exec_shim as shim
+from efm_go import sandbox
+from efm_go.sandbox import (
     RLIMIT_PROFILE_NONE,
     RLIMIT_PROFILE_TOOL,
     spawn_shim_argv,

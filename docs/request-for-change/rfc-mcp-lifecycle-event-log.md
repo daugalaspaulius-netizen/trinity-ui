@@ -27,13 +27,13 @@ left as written below.
 ## Summary
 
 The lifecycle event log (landed by
-[#3808](https://github.com/kirodotdev/KiroCrew/pull/3808), simplified by
-[#7386](https://github.com/kirodotdev/KiroCrew/pull/7386)) is a validated schema with no live
+[#3808](https://efmleads.com/pull/3808), simplified by
+[#7386](https://efmleads.com/pull/7386)) is a validated schema with no live
 writer. Its own contract defers three decisions to whoever emits first: the ordering model, the
 writer, and — implicitly — the failure posture. This RFC settles those three as **package-level
 precedents** that every later domain inherits, and lands them exercised by one concrete
 emitter/consumer pair: a per-session MCP registration trace, motivated by the residual gaps of
-[#7366](https://github.com/kirodotdev/KiroCrew/pull/7366) (the MCP session report).
+[#7366](https://efmleads.com/pull/7366) (the MCP session report).
 
 The three precedents, in one line each:
 

@@ -61,7 +61,7 @@ def _register_script_job(gw, job_id: str = _JOB_ID) -> None:
     ``cron_service.schedule.is_due`` answers False for that shape, so the
     scheduler never runs ``dispatch.py``.
     """
-    from kiro_crew.cron import CronJob
+    from efm_go.cron import CronJob
 
     gw.state.crons._jobs.append(
         CronJob(id=job_id, name=job_id.replace("-", " "), message="", script="dispatch.py:run")
@@ -87,9 +87,9 @@ def _script_context(gw, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iter
     port is the one the runner resolved, and the run's signed token names
     ``cron:<job id>``. The token is retracted when the block ends.
     """
-    from kiro_crew.cron_script import ScriptContext
-    from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV, mint_stub_session_token
-    from kiro_crew.session_token_sig import publish_session_token, retract_session_token
+    from efm_go.cron_script import ScriptContext
+    from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV, mint_stub_session_token
+    from efm_go.session_token_sig import publish_session_token, retract_session_token
 
     secret_file = tmp_path / "kirocrew_secret_run"
     secret_file.write_text(gw.app["local_secret"], encoding="utf-8")
@@ -280,7 +280,7 @@ async def test_a_switched_off_gateway_refusal_reaches_a_script_context(
 
 @pytest.mark.asyncio
 async def test_a_cron_key_opens_a_slot_labelled_cron_created(gateway_boot) -> None:
-    from kiro_crew.dashboard.state import SlotOrigin
+    from efm_go.dashboard.state import SlotOrigin
 
     async with gateway_boot() as gw:
         _register_script_job(gw)
@@ -314,7 +314,7 @@ async def test_a_cron_key_opens_a_slot_labelled_cron_created(gateway_boot) -> No
 async def test_a_cron_key_seeding_a_new_name_opens_a_slot_labelled_cron_created(
     gateway_boot,
 ) -> None:
-    from kiro_crew.dashboard.state import SlotOrigin
+    from efm_go.dashboard.state import SlotOrigin
 
     async with gateway_boot() as gw:
         _register_script_job(gw)
@@ -337,7 +337,7 @@ async def test_a_cron_key_seeding_a_new_name_opens_a_slot_labelled_cron_created(
 
 @pytest.mark.asyncio
 async def test_an_owner_opened_slot_stays_user_origin(gateway_boot) -> None:
-    from kiro_crew.dashboard.state import SlotOrigin
+    from efm_go.dashboard.state import SlotOrigin
 
     async with gateway_boot() as gw:
         made = await gw.post_json("/api/chat/slots", {"name": "Owner tab"})
@@ -400,7 +400,7 @@ async def _seed_and_settle(gw, key: str, message: str, job_id: str = "") -> None
 
 async def _persisted_meta(gw, key: str) -> dict:
     """The metadata line the gateway persisted for slot *key*, read off the loop."""
-    from kiro_crew.dashboard.chat_utils import slot_transcript_key
+    from efm_go.dashboard.chat_utils import slot_transcript_key
 
     log = gw.state.conversation_log
     transcript = slot_transcript_key(key)
@@ -481,7 +481,7 @@ async def test_the_owner_can_seed_a_cron_opened_slot(gateway_boot) -> None:
 async def test_a_switched_off_gateway_still_lets_the_owner_seed_a_cron_slot(
     gateway_boot, integration_home: Path
 ) -> None:
-    from kiro_crew.dashboard.state import SlotOrigin
+    from efm_go.dashboard.state import SlotOrigin
 
     _switch_session_control_off(integration_home)
     async with gateway_boot() as gw:
@@ -552,7 +552,7 @@ async def _owner_sets_mode(gw, key: str, mode: str) -> None:
 
 def _cron_slot_without_the_routes(gw, key: str, job_id: str = _JOB_ID):
     """A slot the cron owns, minted directly: for a gateway whose switch is off."""
-    from kiro_crew.dashboard.state import SlotOrigin
+    from efm_go.dashboard.state import SlotOrigin
 
     slot = gw.state.get_or_create_slot(key, origin=SlotOrigin.CRON)
     slot._created_by = f"cron:{job_id}"
@@ -571,7 +571,7 @@ def _posture(slot) -> tuple[bool, bool]:
 
 async def _audit_rows(gw, *, operation_prefix: str) -> list[dict]:
     """SEL access rows whose operation starts with *operation_prefix*, newest first."""
-    from kiro_crew.sel import sel
+    from efm_go.sel import sel
 
     rows = await asyncio.to_thread(sel().recent, 200)
     return [
@@ -586,7 +586,7 @@ async def _audit_rows(gw, *, operation_prefix: str) -> list[dict]:
 async def test_a_script_context_sets_trust_and_trust_reads_on_its_own_session(
     gateway_boot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.safety_override import safety_override
+    from efm_go.safety_override import safety_override
 
     async with gateway_boot() as gw:
         _register_script_job(gw)
@@ -618,7 +618,7 @@ async def test_a_script_context_sets_trust_and_trust_reads_on_its_own_session(
 async def test_a_script_context_is_refused_every_other_mode(
     gateway_boot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
 ) -> None:
-    from kiro_crew.safety_override import safety_override
+    from efm_go.safety_override import safety_override
 
     async with gateway_boot() as gw:
         _register_script_job(gw)

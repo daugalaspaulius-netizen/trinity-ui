@@ -1,4 +1,4 @@
-"""Tests for the doctor dead-path check (kiro_crew.doctor_deadpath).
+"""Tests for the doctor dead-path check (efm_go.doctor_deadpath).
 
 Covers the four scenarios the check must get right, on fabricated spec dirs
 under ``tmp_path`` (never the real agents dir):
@@ -21,8 +21,8 @@ from pathlib import Path
 import pytest
 
 from conftest import host_abs
-from kiro_crew import doctor_deadpath as dp
-from kiro_crew.agent_files import AGENT_FILENAME
+from efm_go import doctor_deadpath as dp
+from efm_go.agent_files import AGENT_FILENAME
 
 
 @pytest.fixture
@@ -144,7 +144,7 @@ class TestDefaultRepairDirGuard:
     ) -> None:
         calls: list[bool] = []
         monkeypatch.setattr(
-            "kiro_crew.agent.rebuild_agent_config", lambda *a, **k: calls.append(True)
+            "efm_go.agent.rebuild_agent_config", lambda *a, **k: calls.append(True)
         )
         other = tmp_path / "elsewhere"
         other.mkdir()
@@ -160,7 +160,7 @@ class TestDefaultRepairDirGuard:
     ) -> None:
         calls: list[bool] = []
         monkeypatch.setattr(
-            "kiro_crew.agent.rebuild_agent_config", lambda *a, **k: calls.append(True)
+            "efm_go.agent.rebuild_agent_config", lambda *a, **k: calls.append(True)
         )
         _write_spec(agents_dir, AGENT_FILENAME, {"srv": {"command": str(agents_dir / "gone")}})
 

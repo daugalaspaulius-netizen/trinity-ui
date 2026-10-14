@@ -35,19 +35,19 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from overload_fakes import Clock
 
-from kiro_crew import task_executor
-from kiro_crew.acp.types import (
+from efm_go import task_executor
+from efm_go.acp.types import (
     STOP_REASON_END_TURN,
     STOP_REASON_TOOL_STALL,
     STOP_RECOVERY_MAX_RETRIES,
     TurnUsage,
 )
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
-from kiro_crew.recovery.ladder import L3_ACP_RUNTIME, RecoveryLadder
-from kiro_crew.task_models import MAX_RETRIES, SESSION_PREFIX, Project, Task, TaskStatus
-from kiro_crew.taskq import model as m
-from kiro_crew.taskq.adapters import runner as r
-from kiro_crew.taskq.store import TaskStore
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+from efm_go.recovery.ladder import L3_ACP_RUNTIME, RecoveryLadder
+from efm_go.task_models import MAX_RETRIES, SESSION_PREFIX, Project, Task, TaskStatus
+from efm_go.taskq import model as m
+from efm_go.taskq.adapters import runner as r
+from efm_go.taskq.store import TaskStore
 
 _RUN_TASK_ID = "task-stall"
 _SESSION_KEY = f"{SESSION_PREFIX}:{_RUN_TASK_ID}:task1"

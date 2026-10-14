@@ -289,7 +289,7 @@ returns the same typed refusal, so a new unsupported platform is ~10 lines and
 cannot accidentally implement half a driver (`windows_driver.py`,
 `linux_driver.py`).
 
-`kiro_crew/testing/fake_computer_use.py` ships a `FakeComputerUseBackend` in the
+`efm_go/testing/fake_computer_use.py` ships a `FakeComputerUseBackend` in the
 runtime wheel (alongside `fake_acp_backend.py`), so a downstream suite can drive
 the whole stack with no framework, no window, no application and no permission
 grant. Its fixtures exist to make the security branches *reachable*: a node with
@@ -299,7 +299,7 @@ blocked (terminal) app in the catalog, and a real decodable 1x1 JPEG. The suite
 registers it process-wide; combined with the structural guarantee that no module
 in the package calls `CDLL` at import scope, CI can never touch the native path.
 
-Importing `kiro_crew.computer_use` is side-effect free: no framework load, no
+Importing `efm_go.computer_use` is side-effect free: no framework load, no
 file read, no platform branch until `get_shared_backend()` is called.
 `select_default_backend()` is the ONLY platform branch in the package and it asks
 `platform_compat.IS_MACOS` / `IS_WINDOWS` / `IS_LINUX`, never `sys.platform` —
@@ -1600,7 +1600,7 @@ existing capture rather than opening a new one: `emit_snapshot_frame` POSTs the
 already-encoded JPEG to the loopback `/api/computer-use/frame` ingress, which
 rebroadcasts it to OWNER websockets as a `computer_use_frame` event. The
 in-gateway browse mirror this shape was modelled on is gone — browsing now runs
-through the external `playwright-cli` binary (`kiro_crew/browser_cli/`), which
+through the external `playwright-cli` binary (`efm_go/browser_cli/`), which
 serves its own dashboard (`playwright-cli show`, supervised by
 `browser_cli/view.py`) instead of relaying frames through the gateway.
 
@@ -1720,7 +1720,7 @@ that never happens.
 
 AppKit needs a main-thread run loop and the gateway's main thread **is** the
 asyncio loop, so the overlay cannot live in the gateway at all. `overlay_proc.py`
-is therefore its own process (`python -m kiro_crew.computer_use.overlay_proc`,
+is therefore its own process (`python -m efm_go.computer_use.overlay_proc`,
 fixed argv, nothing agent-supplied in it) driven by newline-delimited JSON on
 stdin. It has its **own ctypes surface**, which is the one documented exception to
 "`macos_ffi.py` is the only module that touches ctypes": that invariant exists so a
@@ -1730,7 +1730,7 @@ child costs one animation. The child's docstring says so.
 `overlay.py` serializes on one `asyncio.Lock` — the child's stdin is an ordered
 byte stream and two concurrent writers would interleave half-lines — and the lock
 is created lazily, because an `asyncio.Lock` built outside a running loop is the
-cross-loop hazard `kiro_crew/__init__.py` documents.
+cross-loop hazard `efm_go/__init__.py` documents.
 
 Off macOS, and whenever the opt-in is off, `cursor_motion_enabled()` returns False
 before anything else in every method, so a Linux CI shard exercises these bodies
@@ -2608,7 +2608,7 @@ unexplained session reset reads as a crash. Pinned by
 | `website/src/pages/settings/ComputerUsePanel.tsx` | Settings → Computer Use |
 | `website/src/components/ComputerUseLiveView.tsx` | The floating live view (PiP) panel |
 | `website/src/hooks/useComputerUseFrame.ts` | Frame-stream subscription + session-title lookup |
-| `src/kiro_crew/builtin_skills/computer-use/SKILL.md` | The agent-facing workflow. **Bundled**, not in the top-level `skills/` dir: `config/prompt.md` tells the model to read it by name, so per AGENTS.md it is load-bearing and must reach every pip/DMG install |
+| `src/efm_go/builtin_skills/computer-use/SKILL.md` | The agent-facing workflow. **Bundled**, not in the top-level `skills/` dir: `config/prompt.md` tells the model to read it by name, so per AGENTS.md it is load-bearing and must reach every pip/DMG install |
 
 Cross-references: [governance.md](governance.md) for why computer use is
 deliberately NOT governed; [security.md](security.md) for the keystone leaf and the

@@ -1,4 +1,4 @@
-"""The unresolved-``@server``-ref guard (:mod:`kiro_crew.acp.mcp_ref_guard`).
+"""The unresolved-``@server``-ref guard (:mod:`efm_go.acp.mcp_ref_guard`).
 
 The defect this guards against has shipped on three harnesses: a session comes up
 holding ``tools: ["@kirocrew-core", ...]`` while nothing in its effective
@@ -10,7 +10,7 @@ spellings that are NOT server refs, and that the composition path in
 ``session/load``.
 
 The resolver itself is provider-neutral and lives in
-:mod:`kiro_crew.agent_sdk.mcp_refs`, which is what lets ``kirocrew doctor`` ask the
+:mod:`efm_go.agent_sdk.mcp_refs`, which is what lets ``kirocrew doctor`` ask the
 same question without taking an ACP edge; ``acp/mcp_ref_guard`` is only the log
 line. Both are exercised from here, because they are one behaviour.
 """
@@ -25,19 +25,19 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew.acp import client as client_mod
-from kiro_crew.acp import mcp_ref_guard, session_mcp
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.harness.codex import CodexHarness
-from kiro_crew.acp.mcp_ref_guard import warn_unresolved_server_refs
-from kiro_crew.acp.mcp_session_report import (
+from efm_go import agent as agent_mod
+from efm_go.acp import client as client_mod
+from efm_go.acp import mcp_ref_guard, session_mcp
+from efm_go.acp.client import AcpClient
+from efm_go.acp.harness.codex import CodexHarness
+from efm_go.acp.mcp_ref_guard import warn_unresolved_server_refs
+from efm_go.acp.mcp_session_report import (
     NAME_CAP,
     McpSessionReport,
     roster_names,
     sanitize_sink_text,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
@@ -45,13 +45,13 @@ from kiro_crew.acp.types import (
     ACP_BACKENDS_KNOWN,
     ACP_BACKENDS_SPEC_SERVERS_OFF_WIRE,
 )
-from kiro_crew.agent_sdk import mcp_refs as mcp_refs_mod
-from kiro_crew.agent_sdk.mcp_refs import (
+from efm_go.agent_sdk import mcp_refs as mcp_refs_mod
+from efm_go.agent_sdk.mcp_refs import (
     parse_tools_refs,
     unresolved_server_refs,
     wire_server_names,
 )
-from kiro_crew.providers.mirrors.codex import codex_projection
+from efm_go.providers.mirrors.codex import codex_projection
 
 _CORE = {"command": "/opt/kirocrew", "args": ["mcp-core"]}
 _CRON = {"command": "/opt/kirocrew", "args": ["mcp-cron"]}
@@ -390,7 +390,7 @@ class TestTheWarning:
             "servers; the harness may mount a same-named server from its own "
             "configuration, so a listed ref may still be served and this line cannot "
             "tell which. The harness still works. A backend that reads no agent file "
-            "needs a mirror (src/kiro_crew/providers/mirrors/) to project the spec "
+            "needs a mirror (src/efm_go/providers/mirrors/) to project the spec "
             "onto its session/new mcpServers array."
         )
         assert "absent from the session" not in text
@@ -598,7 +598,7 @@ class TestTheDocumentedReach:
         assert "never reaches" not in doc, "the module still disclaims the runtime"
 
     def test_the_runtime_call_site_is_wired(self):
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         src = inspect.getsource(runtime_mod)
         assert "warn_unresolved_server_refs(" in src
@@ -922,8 +922,8 @@ class TestTheRuntimeCallSitesAreWired:
         from contextlib import ExitStack
         from unittest.mock import MagicMock, patch
 
-        from kiro_crew.acp.runtime import AcpRuntime
-        from kiro_crew.acp.session_handle import AcpSessionHandle
+        from efm_go.acp.runtime import AcpRuntime
+        from efm_go.acp.session_handle import AcpSessionHandle
 
         rt = AcpRuntime(work_dir="/tmp", acp_backend=ACP_BACKEND_CODEX, expect_mcp_reports=False)
         proc = MagicMock()
@@ -972,7 +972,7 @@ class TestTheRuntimeCallSitesAreWired:
             )
             # codex is a mirrored host, so its array and the guard's snapshot arrive
             # together from the mirror hop; stand that hop in with the roster above.
-            from kiro_crew.acp.runtime import _MirroredSessionMcp
+            from efm_go.acp.runtime import _MirroredSessionMcp
 
             async def _mirrored(*_a, **_k):
                 return _MirroredSessionMcp(
@@ -1004,7 +1004,7 @@ class TestTheRuntimeCallSitesAreWired:
         that hands over a roster and forgets the guard -- or guards a different list
         than it reported -- is the omission this pins.
         """
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         lines = inspect.getsource(runtime_mod).splitlines()
         handoffs = [i for i, ln in enumerate(lines) if ".begin_session(" in ln]
@@ -1028,8 +1028,8 @@ class TestTheRuntimeCallSitesAreWired:
         detects: a detector that explodes must resolve to silence."""
         from unittest.mock import MagicMock
 
-        from kiro_crew.acp import runtime as runtime_mod
-        from kiro_crew.acp.runtime import AcpRuntime
+        from efm_go.acp import runtime as runtime_mod
+        from efm_go.acp.runtime import AcpRuntime
 
         def _boom(*_a, **_k):
             raise RuntimeError("detector exploded")
@@ -1049,8 +1049,8 @@ class TestTheRuntimeCallSitesAreWired:
         the snapshot it is handed, and the module's only ``agent_spec_snapshot``
         read sits in ``_ref_spec_snapshot``, which only those two hop bodies call.
         """
-        from kiro_crew.acp import runtime as runtime_mod
-        from kiro_crew.acp.runtime import (
+        from efm_go.acp import runtime as runtime_mod
+        from efm_go.acp.runtime import (
             AcpRuntime,
             _pooled_session_servers_and_ref_spec,
             _ref_spec_snapshot,
@@ -1087,9 +1087,9 @@ class TestTheRuntimeCallSitesAreWired:
         runtime's wrapper must too, and the pooled hop must still hand back its
         array when the snapshot fails.
         """
-        from kiro_crew.acp import runtime as runtime_mod
-        from kiro_crew.acp.runtime import _pooled_session_servers_and_ref_spec, _ref_spec_snapshot
-        from kiro_crew.agent_sdk.backends import overlay_project_scope
+        from efm_go.acp import runtime as runtime_mod
+        from efm_go.acp.runtime import _pooled_session_servers_and_ref_spec, _ref_spec_snapshot
+        from efm_go.agent_sdk.backends import overlay_project_scope
 
         def _stale(agent, *, work_dir=None):
             raise RuntimeError("derived spec is stale and could not be repaired")

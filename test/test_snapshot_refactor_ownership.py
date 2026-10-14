@@ -1,6 +1,6 @@
 """Who owns each snapshot rule, and that the facade hands out that owner's objects.
 
-``kiro_crew.snapshot`` is the command and API facade; the rules it applies live in four
+``efm_go.snapshot`` is the command and API facade; the rules it applies live in four
 owner modules. These tests pin the ownership map itself: every name is defined in
 exactly one module, the facade re-exports the owner's object rather than a copy and a
 patch on the facade reaches the owner that calls it, the owners depend on one another in
@@ -21,9 +21,9 @@ from pathlib import Path
 import pytest
 from test_snapshot import SNAPSHOT_FAMILY
 
-from kiro_crew import _sqlite_compat
-from kiro_crew import snapshot as snap
-from kiro_crew import snapshot_archive, snapshot_components, snapshot_merge, snapshot_restore
+from efm_go import _sqlite_compat
+from efm_go import snapshot as snap
+from efm_go import snapshot_archive, snapshot_components, snapshot_merge, snapshot_restore
 
 SRC = Path(snap.__file__).parent
 REPO_SRC = SRC.parent
@@ -31,7 +31,7 @@ REPO_SRC = SRC.parent
 #: The owner of every name the facade exports, by module. A name moving between owners
 #: is a change to this table, made on purpose, rather than something a re-export hides.
 OWNERS: dict[str, tuple[str, ...]] = {
-    "kiro_crew.snapshot_components": (
+    "efm_go.snapshot_components": (
         "COMPONENTS",
         "COMPONENT_HELP",
         "COMPONENT_JSON_OBJECTS",
@@ -67,7 +67,7 @@ OWNERS: dict[str, tuple[str, ...]] = {
         "resolve_components",
         "safe_tree_root",
     ),
-    "kiro_crew.snapshot_archive": (
+    "efm_go.snapshot_archive": (
         "DB_COPIED",
         "DB_NOT_A_DATABASE",
         "DB_UNSAFE_SOURCE",
@@ -103,7 +103,7 @@ OWNERS: dict[str, tuple[str, ...]] = {
         "_staging_is_pinned",
         "_terminal_safe",
     ),
-    "kiro_crew.snapshot_restore": (
+    "efm_go.snapshot_restore": (
         "NamedStoresInUse",
         "RollbackIncomplete",
         "SourceComponentUnsound",
@@ -131,7 +131,7 @@ OWNERS: dict[str, tuple[str, ...]] = {
         "_save_locked_document_to",
         "_trees_absent_from_bundle",
     ),
-    "kiro_crew.snapshot_merge": (
+    "efm_go.snapshot_merge": (
         "NotificationCopyUnsupported",
         "_MERGE_ALLOWED_TABLES",
         "_NOTIFICATION_RECORD_CAP",
@@ -157,7 +157,7 @@ OWNERS: dict[str, tuple[str, ...]] = {
     # (every redaction call name stays in this one module), the manifest writer, the
     # merge-mode driver, and the notification copy whose docstring records the ruling
     # for platforms without O_NOFOLLOW.
-    "kiro_crew.snapshot": (
+    "efm_go.snapshot": (
         "RedactionFailed",
         "_DASHBOARD_PORT",
         "_audit",
@@ -183,27 +183,27 @@ OWNERS: dict[str, tuple[str, ...]] = {
 }
 
 _MODULES = {
-    "kiro_crew.snapshot": snap,
-    "kiro_crew.snapshot_components": snapshot_components,
-    "kiro_crew.snapshot_archive": snapshot_archive,
-    "kiro_crew.snapshot_restore": snapshot_restore,
-    "kiro_crew.snapshot_merge": snapshot_merge,
+    "efm_go.snapshot": snap,
+    "efm_go.snapshot_components": snapshot_components,
+    "efm_go.snapshot_archive": snapshot_archive,
+    "efm_go.snapshot_restore": snapshot_restore,
+    "efm_go.snapshot_merge": snapshot_merge,
 }
 
 #: Which owners each owner may import. The facade imports all of them; nothing imports
 #: the facade back, and the redaction pass stays out of every module's import time.
 ALLOWED_IMPORTS: dict[str, frozenset[str]] = {
-    "kiro_crew.snapshot_components": frozenset(),
-    "kiro_crew.snapshot_archive": frozenset({"kiro_crew.snapshot_components"}),
-    "kiro_crew.snapshot_restore": frozenset(
-        {"kiro_crew.snapshot_components", "kiro_crew.snapshot_archive"}
+    "efm_go.snapshot_components": frozenset(),
+    "efm_go.snapshot_archive": frozenset({"efm_go.snapshot_components"}),
+    "efm_go.snapshot_restore": frozenset(
+        {"efm_go.snapshot_components", "efm_go.snapshot_archive"}
     ),
-    "kiro_crew.snapshot_merge": frozenset(
-        {"kiro_crew.snapshot_components", "kiro_crew.snapshot_archive"}
+    "efm_go.snapshot_merge": frozenset(
+        {"efm_go.snapshot_components", "efm_go.snapshot_archive"}
     ),
 }
 
-_OWNER_MODULES = tuple(m for m in OWNERS if m != "kiro_crew.snapshot")
+_OWNER_MODULES = tuple(m for m in OWNERS if m != "efm_go.snapshot")
 
 
 def _module_path(module: str) -> Path:
@@ -225,7 +225,7 @@ def _top_level_definitions(path: Path) -> set[str]:
 def test_each_owner_defines_exactly_its_declared_names(module: str) -> None:
     defined = _top_level_definitions(_module_path(module))
     # A module-level `try` binds the dashboard port where the facade defines it.
-    if module == "kiro_crew.snapshot":
+    if module == "efm_go.snapshot":
         defined.add("_DASHBOARD_PORT")
     assert defined == set(OWNERS[module]), (
         f"{module} defines {sorted(defined - set(OWNERS[module]))} beyond its declared "
@@ -259,16 +259,16 @@ def test_every_snapshot_module_is_registered_with_the_family_scans() -> None:
 
 
 def _imported_modules(tree: ast.AST) -> set[str]:
-    """Every ``kiro_crew`` module a tree imports, at module scope or inside a function."""
+    """Every ``efm_go`` module a tree imports, at module scope or inside a function."""
     found: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
-            if node.module == "kiro_crew":
-                found.update(f"kiro_crew.{a.name}" for a in node.names)
-            elif node.module.startswith("kiro_crew."):
+            if node.module == "efm_go":
+                found.update(f"efm_go.{a.name}" for a in node.names)
+            elif node.module.startswith("efm_go."):
                 found.add(node.module)
         elif isinstance(node, ast.Import):
-            found.update(a.name for a in node.names if a.name.startswith("kiro_crew."))
+            found.update(a.name for a in node.names if a.name.startswith("efm_go."))
         elif (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Attribute)
@@ -283,16 +283,16 @@ def _imported_modules(tree: ast.AST) -> set[str]:
 @pytest.mark.parametrize("module", _OWNER_MODULES)
 def test_owners_depend_downward_only_and_never_on_the_facade(module: str) -> None:
     tree = ast.parse(_module_path(module).read_text(encoding="utf-8"))
-    family = {m for m in _imported_modules(tree) if m.startswith("kiro_crew.snapshot")}
-    assert "kiro_crew.snapshot" not in family, f"{module} reaches back into the facade"
-    assert "kiro_crew.snapshot_redact" not in family, f"{module} imports the redaction pass"
+    family = {m for m in _imported_modules(tree) if m.startswith("efm_go.snapshot")}
+    assert "efm_go.snapshot" not in family, f"{module} reaches back into the facade"
+    assert "efm_go.snapshot_redact" not in family, f"{module} imports the redaction pass"
     assert (
         family <= ALLOWED_IMPORTS[module]
     ), f"{module} imports {sorted(family - ALLOWED_IMPORTS[module])}, which sit above it"
 
 
 def test_only_the_snapshot_family_imports_an_owner_module() -> None:
-    """Owners are reached only through ``kiro_crew.snapshot``, so ``_facade()`` finds it loaded.
+    """Owners are reached only through ``efm_go.snapshot``, so ``_facade()`` finds it loaded.
 
     ``_facade()`` looks the facade up in ``sys.modules`` instead of importing it. That holds
     only while every production path into an owner runs through the facade, which imports
@@ -312,7 +312,7 @@ def test_only_the_snapshot_family_imports_an_owner_module() -> None:
         tree = ast.parse(text)
         imported = _imported_modules(tree) & owners
         imported |= {
-            f"kiro_crew.{name}"
+            f"efm_go.{name}"
             for node in ast.walk(tree)
             if isinstance(node, ast.ImportFrom) and node.level
             for name in [node.module or "", *(a.name for a in node.names)]
@@ -342,10 +342,10 @@ def test_the_facade_binds_stdlib_sqlite_past_a_husk_driver(tmp_path: Path) -> No
     The owners reach the driver through the facade when they open a database, as the claim
     for this split asked, so the facade's binding is the only one to check. The same
     fresh-interpreter shape as ``test_sqlite_compat_resolver``: the husk has to be in place
-    before the first ``import kiro_crew``.
+    before the first ``import efm_go``.
     """
     sites = [m for m in OWNERS if hasattr(_MODULES[m], "sqlite3")]
-    assert sites == ["kiro_crew.snapshot"]
+    assert sites == ["efm_go.snapshot"]
     script = textwrap.dedent("""
         import importlib
         import sqlite3

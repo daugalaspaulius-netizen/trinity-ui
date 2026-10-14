@@ -1,4 +1,4 @@
-"""Tests for :mod:`kiro_crew.agent_scratch`.
+"""Tests for :mod:`efm_go.agent_scratch`.
 
 Everything runs against a monkeypatched data home under ``tmp_path``; the
 real ``<data home>/scratch`` is never touched.
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent_scratch as sc
+from efm_go import agent_scratch as sc
 
 
 @pytest.fixture

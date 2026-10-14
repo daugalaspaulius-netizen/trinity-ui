@@ -32,7 +32,7 @@ and frame that serve them, read
 
 ## Glossary
 
-**crew log** — the storage layer (`kiro_crew.crew_log`): a file format, the rules for
+**crew log** — the storage layer (`efm_go.crew_log`): a file format, the rules for
 who may write what, and the read-back paths. "Append-only log" names the same
 thing; these pages say *crew log* throughout.
 

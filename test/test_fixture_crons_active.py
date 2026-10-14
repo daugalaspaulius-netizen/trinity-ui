@@ -1,7 +1,7 @@
 """Consumer assertions for the ``crons-active`` seeded-home fixture."""
 
-from kiro_crew.cron import CronService
-from kiro_crew.testing.fixtures import seeded_home
+from efm_go.cron import CronService
+from efm_go.testing.fixtures import seeded_home
 
 
 def test_crons_active_loads_and_filters_multiple_active_jobs() -> None:

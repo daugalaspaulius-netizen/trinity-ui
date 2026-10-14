@@ -16,12 +16,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.appearance_packs import MAX_PACK_ID_LEN, safe_pack_id
-from kiro_crew.config.loader import (
+from efm_go.appearance_packs import MAX_PACK_ID_LEN, safe_pack_id
+from efm_go.config.loader import (
     KiroCrewAgentConfig,
     KiroCrewConfig,
 )
-from kiro_crew.config.sections import (
+from efm_go.config.sections import (
     _AVATAR_MOTIONS,
     _AVATAR_SOUNDS,
     _AVATAR_TRAIT_MAX_LEN,
@@ -36,7 +36,7 @@ def _load_from_dict(data: dict) -> KiroCrewConfig:
         tmp = Path(f.name)
     try:
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path",
+            "efm_go.config.loader.config_path",
             return_value=tmp,
         ):
             return KiroCrewConfig.load()
@@ -192,7 +192,7 @@ class TestAvatarEndpoints:
     def _app():
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import (
+        from efm_go.dashboard.handlers import (
             api_kirocrew_agent_update,
             api_kirocrew_agents_create,
         )
@@ -206,7 +206,7 @@ class TestAvatarEndpoints:
     def _owner_caller(self, monkeypatch):
         pass  # Member routing does not depend on OS isolation.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: True,
         )
 
@@ -289,7 +289,7 @@ class TestImageBodyComplete:
     """Structural completeness catches what magic-byte sniffing cannot."""
 
     def test_complete_fixtures_pass(self):
-        from kiro_crew.dashboard.handlers.agents import _image_body_complete
+        from efm_go.dashboard.handlers.agents import _image_body_complete
 
         assert _image_body_complete("png", _PNG)
         assert _image_body_complete("jpg", _JPG)
@@ -308,19 +308,19 @@ class TestImageBodyComplete:
         ],
     )
     def test_truncated_bodies_fail(self, ext, body):
-        from kiro_crew.dashboard.handlers.agents import _image_body_complete
+        from efm_go.dashboard.handlers.agents import _image_body_complete
 
         assert not _image_body_complete(ext, body)
 
     def test_webp_odd_payload_pad_byte_is_legal(self):
-        from kiro_crew.dashboard.handlers.agents import _image_body_complete
+        from efm_go.dashboard.handlers.agents import _image_body_complete
 
         payload = b"WEBP" + b"\x00" * 63  # odd length -> one RIFF pad byte
         body = b"RIFF" + len(payload).to_bytes(4, "little") + payload + b"\x00"
         assert _image_body_complete("webp", body)
 
     def test_unknown_ext_fails(self):
-        from kiro_crew.dashboard.handlers.agents import _image_body_complete
+        from efm_go.dashboard.handlers.agents import _image_body_complete
 
         assert not _image_body_complete("gif", b"GIF89a")
 
@@ -347,7 +347,7 @@ class TestUploadedAvatarEndpoints:
             assert resp.status == 400
             assert (await resp.json())["code"] == "avatar_bad_format"
         assert self._stored(seeded_agent) is None
-        from kiro_crew.dashboard.handlers.agents import _pending_avatar_path
+        from efm_go.dashboard.handlers.agents import _pending_avatar_path
 
         assert _pending_avatar_path(seeded_agent) is None
 
@@ -355,7 +355,7 @@ class TestUploadedAvatarEndpoints:
     def _app():
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import (
+        from efm_go.dashboard.handlers import (
             api_kirocrew_agent_avatar_get,
             api_kirocrew_agent_avatar_upload,
             api_kirocrew_agent_delete,
@@ -372,7 +372,7 @@ class TestUploadedAvatarEndpoints:
     @pytest.fixture(autouse=True)
     def _owner_caller(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: True,
         )
 
@@ -402,7 +402,7 @@ class TestUploadedAvatarEndpoints:
         the record's ``file`` pin (:func:`_live_avatar_file`); this helper is
         how a test asserts what physically exists regardless of the pin.
         """
-        from kiro_crew.dashboard.handlers.agents import _avatar_variant_paths
+        from efm_go.dashboard.handlers.agents import _avatar_variant_paths
 
         variants = _avatar_variant_paths(name)
         return variants[0] if variants else None
@@ -501,7 +501,7 @@ class TestUploadedAvatarEndpoints:
     async def test_upload_caps_size(self, seeded_agent, monkeypatch):
         from aiohttp.test_utils import TestClient, TestServer
 
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.agents._AVATAR_MAX_BYTES", 128)
+        monkeypatch.setattr("efm_go.dashboard.handlers.agents._AVATAR_MAX_BYTES", 128)
         async with TestClient(TestServer(self._app())) as client:
             resp = await client.post(
                 f"/api/agents/{seeded_agent}/avatar",
@@ -567,7 +567,7 @@ class TestUploadedAvatarEndpoints:
     async def test_crew_delete_removes_avatar_files(self, seeded_agent):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.handlers.agents import _pending_avatar_path
+        from efm_go.dashboard.handlers.agents import _pending_avatar_path
 
         async with TestClient(TestServer(self._app())) as client:
             await self._commit(client, seeded_agent, _PNG)
@@ -583,7 +583,7 @@ class TestUploadedAvatarEndpoints:
         """A leftover file with a non-image field must not stay retrievable."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.handlers.agents import _avatar_stem, _avatars_dir
+        from efm_go.dashboard.handlers.agents import _avatar_stem, _avatars_dir
 
         d = _avatars_dir()
         d.mkdir(parents=True, exist_ok=True)
@@ -604,7 +604,7 @@ class TestUploadedAvatarEndpoints:
         """
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.handlers.agents import _avatar_stem, _avatars_dir
+        from efm_go.dashboard.handlers.agents import _avatar_stem, _avatars_dir
 
         d = _avatars_dir()
         d.mkdir(parents=True, exist_ok=True)
@@ -721,7 +721,7 @@ class TestUploadedAvatarEndpoints:
         """
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.handlers.agents import _pending_avatar_path
+        from efm_go.dashboard.handlers.agents import _pending_avatar_path
 
         async with TestClient(TestServer(self._app())) as client:
             await self._commit(client, seeded_agent, _PNG)
@@ -796,7 +796,7 @@ class TestUploadedAvatarEndpoints:
         """
         from aiohttp.test_utils import TestClient, TestServer
 
-        import kiro_crew.dashboard.handlers.agents as handlers_agents
+        import efm_go.dashboard.handlers.agents as handlers_agents
 
         async with TestClient(TestServer(self._app())) as client:
             await self._commit(client, seeded_agent, _PNG)
@@ -833,7 +833,7 @@ class TestUploadedAvatarEndpoints:
         """
         from aiohttp.test_utils import TestClient, TestServer
 
-        import kiro_crew.dashboard.handlers.agents as handlers_agents
+        import efm_go.dashboard.handlers.agents as handlers_agents
 
         def _boom(src, dst):
             raise OSError("disk full")
@@ -863,7 +863,7 @@ class TestUploadedAvatarEndpoints:
         """
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.handlers.agents import _avatar_stem, _avatars_dir
+        from efm_go.dashboard.handlers.agents import _avatar_stem, _avatars_dir
 
         async with TestClient(TestServer(self._app())) as client:
             await self._commit(client, seeded_agent, _WEBP)
@@ -893,7 +893,7 @@ class TestUploadedAvatarEndpoints:
             await self._commit(client, seeded_agent, _PNG)
             committed = self._stored(seeded_agent)
             assert committed is not None
-            monkeypatch.setattr("kiro_crew.dashboard.handlers.agents._AVATAR_MAX_BYTES", 128)
+            monkeypatch.setattr("efm_go.dashboard.handlers.agents._AVATAR_MAX_BYTES", 128)
             committed.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 256)
             got = await client.get(f"/api/agents/{seeded_agent}/avatar")
             assert got.status == 404
@@ -917,7 +917,7 @@ class TestUploadedAvatarEndpoints:
         """
         from aiohttp.test_utils import TestClient, TestServer
 
-        import kiro_crew.dashboard.handlers.agents as handlers_agents
+        import efm_go.dashboard.handlers.agents as handlers_agents
 
         other_png = b"\x89PNG\r\n\x1a\n" + b"\x01" * 64 + _PNG_IEND
 
@@ -1200,7 +1200,7 @@ class TestGhostReactionsRoundTripThroughTheEndpoints:
     @pytest.fixture(autouse=True)
     def _owner_caller(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: True,
         )
 
@@ -1251,7 +1251,7 @@ class TestGhostReactionsRoundTripThroughTheEndpoints:
 
     @classmethod
     async def _put_avatar(cls, name: str, avatar):
-        from kiro_crew.dashboard.handlers import api_kirocrew_agent_update
+        from efm_go.dashboard.handlers import api_kirocrew_agent_update
 
         request = cls._request(
             "PUT", f"/api/agents/{name}", match_info={"name": name}, body={"avatar": avatar}
@@ -1260,7 +1260,7 @@ class TestGhostReactionsRoundTripThroughTheEndpoints:
 
     @classmethod
     async def _roster_avatar_of(cls, name: str):
-        from kiro_crew.dashboard.handlers import api_kirocrew_agents
+        from efm_go.dashboard.handlers import api_kirocrew_agents
 
         resp = await api_kirocrew_agents(cls._request("GET", "/api/agents"))
         assert resp.status == 200
@@ -1438,7 +1438,7 @@ class TestGhostReactionsRoundTripThroughTheEndpoints:
         """The ONLY app in this class: multipart staging needs a real stream."""
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import api_kirocrew_agent_avatar_upload
+        from efm_go.dashboard.handlers import api_kirocrew_agent_avatar_upload
 
         app = web.Application()
         app["state"] = types.SimpleNamespace(conversation_log=None)
@@ -1526,7 +1526,7 @@ class TestSafeAvatarPackKind:
         because a second list is what would drift: a crew could then persist an
         id the store refuses to look up.
         """
-        from kiro_crew.appearance_packs import store as store_mod
+        from efm_go.appearance_packs import store as store_mod
 
         assert store_mod._safe_id("aurora-1") == safe_pack_id("aurora-1")
         assert store_mod._safe_id("a/b") is safe_pack_id("a/b") is None
@@ -1590,7 +1590,7 @@ class TestPackAvatarThroughTheEndpoints:
     def _app():
         from aiohttp import web
 
-        from kiro_crew.dashboard.handlers import (
+        from efm_go.dashboard.handlers import (
             api_kirocrew_agent_update,
             api_kirocrew_agents,
             api_kirocrew_agents_create,
@@ -1607,7 +1607,7 @@ class TestPackAvatarThroughTheEndpoints:
     def _owner_caller(self, monkeypatch):
         pass  # Member routing does not depend on OS isolation.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: True,
         )
 
@@ -1663,7 +1663,7 @@ class TestPackAvatarThroughTheEndpoints:
         from aiohttp.test_utils import TestClient, TestServer
 
         with unittest.mock.patch(
-            "kiro_crew.dashboard.handlers.agents._promote_pending_avatar",
+            "efm_go.dashboard.handlers.agents._promote_pending_avatar",
             side_effect=AssertionError("a pack avatar entered the image staging flow"),
         ):
             async with TestClient(TestServer(self._app())) as client:
@@ -1777,7 +1777,7 @@ class TestPackAvatarThroughTheEndpoints:
         cfg.save()
         removed: list[str] = []
         with unittest.mock.patch(
-            "kiro_crew.dashboard.handlers.agents._remove_avatar_files",
+            "efm_go.dashboard.handlers.agents._remove_avatar_files",
             side_effect=removed.append,
         ):
             async with TestClient(TestServer(self._app())) as client:

@@ -15,11 +15,11 @@ from pathlib import Path
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew import sandbox, security
-from kiro_crew.config.loader import KiroCrewConfig, config_dir, workspace_dir_for
-from kiro_crew.config.paths import ensure_data_home
-from kiro_crew.memory import INDEX_DB_FILE, MemoryStore, workspace_dir
-from kiro_crew.memory_stores import (
+from efm_go import sandbox, security
+from efm_go.config.loader import KiroCrewConfig, config_dir, workspace_dir_for
+from efm_go.config.paths import ensure_data_home
+from efm_go.memory import INDEX_DB_FILE, MemoryStore, workspace_dir
+from efm_go.memory_stores import (
     DEFAULT_MEMORY_STORE,
     MEMORY_DB_FILE,
     MEMORY_STORE_NAME_MAX,
@@ -42,7 +42,7 @@ _IS_POSIX = os.name == "posix"
 
 def _write_config(payload: dict) -> None:
     """Write ``config.json`` into the per-test data home and drop the cache."""
-    from kiro_crew.config import loader as loader_mod
+    from efm_go.config import loader as loader_mod
 
     (config_dir() / "config.json").write_text(json.dumps(payload), encoding="utf-8")
     loader_mod._invalidate_config_cache()
@@ -72,14 +72,14 @@ class TestDefaultStoreRootsAreUnmoved:
 
     def test_vector_file_is_byte_exact_with_the_vector_store_default(self) -> None:
         """The default answer must be the path ``VectorMemoryStore()`` picks."""
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         assert resolve_store_path(DEFAULT_MEMORY_STORE) == VectorMemoryStore()._db_path
 
     def test_a_degraded_config_still_resolves_the_default_store(self) -> None:
         """An unreadable config must not cost the default store its paths."""
         (config_dir() / "config.json").write_text("{not json", encoding="utf-8")
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         loader_mod._invalidate_config_cache()
         assert memory_store_dir_for(DEFAULT_MEMORY_STORE) == workspace_dir()
@@ -213,7 +213,7 @@ class TestShapeRuleRaises:
     def test_config_load_reports_a_malformed_store_name(self, caplog) -> None:
         """Reported at boot, and kept verbatim so a save cannot erase it."""
         _write_config({"memory_stores": {"Bad_Name": {}}})
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             cfg = KiroCrewConfig.load()
         assert "Bad_Name" in cfg.memory_stores
         assert any("Bad_Name" in r.getMessage() for r in caplog.records)
@@ -239,7 +239,7 @@ class TestMalformedAndDeclaredIsUndeclaredForResolution:
 
     @pytest.mark.parametrize("store", ["Bad_Name", "../escape"])
     def test_malformed_member_binding_fails_before_any_memory_read(self, store):
-        from kiro_crew.config.loader import resolve_agent_bindings
+        from efm_go.config.loader import resolve_agent_bindings
 
         _write_config(
             {
@@ -356,7 +356,7 @@ class TestWorkspaceFallThrough:
                 "default_workspace": "default",
             }
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             resolved = workspace_dir_for("nope")
         assert resolved == config_dir() / "workspace"
         assert any("nope" in r.getMessage() for r in caplog.records)
@@ -396,7 +396,7 @@ class TestWorkspaceFallThrough:
         migrates it into the table, and both resolvers answer from that table
         rather than from the raw bytes.
         """
-        from kiro_crew.config.loader import resolve_agent_bindings
+        from efm_go.config.loader import resolve_agent_bindings
 
         _write_config({"workspaces": {"alt": "alt-tree"}, "default_workspace": "alt"})
         cfg = KiroCrewConfig.load()
@@ -415,7 +415,7 @@ class TestWorkspaceFallThrough:
 
     def test_a_real_fallback_to_default_workspace_warns(self, caplog) -> None:
         """An agent naming an undeclared workspace really does move; say so."""
-        from kiro_crew.config.loader import resolve_agent_bindings
+        from efm_go.config.loader import resolve_agent_bindings
 
         _write_config(
             {
@@ -426,7 +426,7 @@ class TestWorkspaceFallThrough:
             }
         )
         cfg = KiroCrewConfig.load()
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.config.loader"):
             bindings = resolve_agent_bindings(cfg, agent_name="crew")
         assert bindings.workspace_dir == Path("main-tree")
         warnings = self._fallback_warnings(caplog)
@@ -435,7 +435,7 @@ class TestWorkspaceFallThrough:
 
     def test_no_warning_when_the_agent_already_names_default_workspace(self, caplog) -> None:
         """Logging "'x' not found, falling back to 'x'" is noise, not a fallback."""
-        from kiro_crew.config.loader import resolve_agent_bindings
+        from efm_go.config.loader import resolve_agent_bindings
 
         _write_config(
             {
@@ -447,7 +447,7 @@ class TestWorkspaceFallThrough:
         )
         cfg = KiroCrewConfig.load()
         assert cfg.default_workspace == "ghost" and "ghost" not in cfg.workspaces
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.config.loader"):
             bindings = resolve_agent_bindings(cfg, agent_name="crew")
         assert bindings.workspace_dir == Path("workspace")
         assert self._fallback_warnings(caplog) == []
@@ -473,7 +473,7 @@ class TestWorkspaceFallThrough:
 
     def test_it_never_raises_on_an_unreadable_config(self) -> None:
         (config_dir() / "config.json").write_text("{{{", encoding="utf-8")
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         loader_mod._invalidate_config_cache()
         assert workspace_dir_for("anything") == config_dir() / "workspace"
@@ -503,7 +503,7 @@ class TestIndexIsPerStore:
 
     def test_it_is_the_path_the_snapshot_memory_component_declares(self) -> None:
         """The ratchet against moving it: snapshot names the file root-relative."""
-        from kiro_crew.snapshot import COMPONENTS
+        from efm_go.snapshot import COMPONENTS
 
         assert INDEX_DB_FILE in COMPONENTS["memory"].files
         rel = memory_index_path_for(DEFAULT_MEMORY_STORE).relative_to(config_dir())
@@ -584,8 +584,8 @@ class TestARealStoreSurvivesSnapshotAndRestore:
     """
 
     def test_search_answers_the_restored_content(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew import pinned_fs
-        from kiro_crew.snapshot import restore_main, snapshot_main
+        from efm_go import pinned_fs
+        from efm_go.snapshot import restore_main, snapshot_main
 
         # ``_staging_is_pinned`` refuses rather than falling back where the
         # platform has no directory descriptors, so say what an operator there

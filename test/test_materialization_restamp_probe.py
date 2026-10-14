@@ -17,8 +17,8 @@ from test_agent_capabilities import (  # noqa: F401 -- editor is a pytest fixtur
     spec_for,
 )
 
-from kiro_crew import agent_state
-from kiro_crew.agent_capabilities import (
+from efm_go import agent_state
+from efm_go.agent_capabilities import (
     CapabilityError,
     _digest,
     prepare_member_capabilities,
@@ -195,8 +195,8 @@ def test_edit_carrying_save_refuses_a_deleted_parent_key(editor):  # noqa: F811 
 
 def test_permissions_removed_for_an_old_cli_is_vouched(editor, monkeypatch):  # noqa: F811
     """On a release that refuses ``permissions``, Crew itself drops the block."""
-    from kiro_crew import kiro_cli
-    from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
+    from efm_go import kiro_cli
+    from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
 
     service, home, specs, parent = editor
     parent["permissions"] = derived_agent_permissions(parent["allowedTools"], "parent")

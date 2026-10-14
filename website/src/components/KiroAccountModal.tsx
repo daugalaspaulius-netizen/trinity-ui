@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, Coins, ExternalLink, Eye, EyeOff, Gift, Loader2, RefreshCw, UserRound } from 'lucide-react'
+import { AlertCircle, Coins, Eye, EyeOff, Gift, Loader2, RefreshCw, UserRound } from 'lucide-react'
 
 import { api } from '../api/client'
 import type { KiroBonusCreditGrant, KiroCreditUsage, KiroUsageRefreshResponse } from '../api/client'
@@ -107,7 +107,6 @@ interface KiroAccountModalProps {
   usage: KiroAccountUsage
 }
 
-const KIRO_ACCOUNT_URL = 'https://app.kiro.dev/settings/account'
 const KIRO_ACCOUNT_EMAIL_HIDDEN_KEY = 'kirocrew:account-email-hidden'
 
 function formatResetDate(value: string): string {
@@ -610,14 +609,6 @@ export default function KiroAccountModal({ open, onClose, usage }: KiroAccountMo
       <div className="flex flex-col gap-4">
         <AccountIdentity usage={usage} />
         <CreditUsage usage={usage} onClose={onClose} />
-        <a
-          href={KIRO_ACCOUNT_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 self-start text-[12px] text-accent hover:underline"
-        >
-          {i18nT('app.manage_account')} <ExternalLink className="lucide-inline" />
-        </a>
       </div>
     </Modal>
   )

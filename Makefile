@@ -16,12 +16,12 @@ PIP := $(VENV)/bin/pip
 # OR 022: only ever ADDS write-mask bits, a stricter umask is preserved.
 TIGHT_UMASK := umask "$$(printf '%03o' "$$(( $$(umask) | 022 ))")"
 PYTEST := $(VENV)/bin/pytest
-# Stage website/dist as the served src/kiro_crew/static/dist with the package's
+# Stage website/dist as the served src/efm_go/static/dist with the package's
 # own stager, through the venv `backend` installed it into: it links
 # static/dist to website/dist, keeps that link, or points it at a fresh copy --
 # never rm + cp under a running gateway. Not part of `frontend`, so
 # `backend-bin` (which copies website/dist itself) needs no Python for it.
-STAGE_DIST := $(VENV)/bin/python -m kiro_crew.frontend stage .
+STAGE_DIST := $(VENV)/bin/python -m efm_go.frontend stage .
 
 all: test
 
@@ -130,7 +130,7 @@ desktop:
 
 clean:
 	rm -rf build dist *.egg-info src/*.egg-info \
-	       src/kiro_crew/static/dist src/kiro_crew/static/.dist.* website/dist \
+	       src/efm_go/static/dist src/efm_go/static/.dist.* website/dist \
 	       website/.dist*.next-* website/.dist*.ready-* website/.dist*.prev-* \
 	       website/electron/backend-dist website/electron/dist \
 	       .pytest_cache .mypy_cache

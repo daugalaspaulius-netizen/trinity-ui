@@ -1,6 +1,6 @@
 """Deterministic coverage for the member-memory V2 retrieval benchmark.
 
-``kiro_crew.eval.bench.member_v2`` is the CI-run, model-backed gate measurement
+``efm_go.eval.bench.member_v2`` is the CI-run, model-backed gate measurement
 (``scripts/ci-member-memory-benchmark.py``); this file drives the same
 ``evaluate()`` entry point with a deterministic FAKE embedder instead of a real
 model, so the report-shape and structural-failure logic is covered without a
@@ -21,9 +21,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config.loader import config_dir
-from kiro_crew.eval.bench import member_v2
-from kiro_crew.eval.bench.member_v2 import (
+from efm_go.config.loader import config_dir
+from efm_go.eval.bench import member_v2
+from efm_go.eval.bench.member_v2 import (
     _bounded_oversized_result,
     _insert,
     _new_store,
@@ -164,14 +164,14 @@ class TestEvaluateReportShape:
 
 class TestEvaluateRefusals:
     def test_embed_returning_none_for_corpus_text_raises(self, home: Path) -> None:
-        from kiro_crew.eval.bench.admission_corpus import ADMISSION_TOPICS
+        from efm_go.eval.bench.admission_corpus import ADMISSION_TOPICS
 
         unembeddable = {ADMISSION_TOPICS[0].query}
         with pytest.raises(RuntimeError, match="Model failed to embed corpus input"):
             evaluate(_make_embed(missing=unembeddable), home)
 
     def test_embed_returning_non_finite_value_raises(self, home: Path) -> None:
-        from kiro_crew.eval.bench.admission_corpus import ADMISSION_TOPICS
+        from efm_go.eval.bench.admission_corpus import ADMISSION_TOPICS
 
         target_text = ADMISSION_TOPICS[0].query
 
@@ -184,7 +184,7 @@ class TestEvaluateRefusals:
             evaluate(_embed, home)
 
     def test_mismatched_embedding_dimensions_raise(self, home: Path) -> None:
-        from kiro_crew.eval.bench.admission_corpus import ADMISSION_TOPICS
+        from efm_go.eval.bench.admission_corpus import ADMISSION_TOPICS
 
         target_text = ADMISSION_TOPICS[0].query
 
@@ -205,7 +205,7 @@ class TestNewStoreAndInsertRefusals:
         # to exercise its own defensive check is to make the freshly-opened
         # store itself misreport. `algorithm_version` is a read-only property;
         # patch the underlying class attribute for the duration of this call.
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         monkeypatch.setattr(VectorMemoryStore, "algorithm_version", property(lambda self: "v1"))
         with pytest.raises(RuntimeError, match="did not open the owned V2 policy"):
@@ -279,7 +279,7 @@ class TestMainCli:
 
         monkeypatch.setattr(member_v2, "evaluate", cli_report)
         monkeypatch.setattr(
-            "kiro_crew.embeddings.LlamaCppEmbedder", self._FakeBackend, raising=True
+            "efm_go.embeddings.LlamaCppEmbedder", self._FakeBackend, raising=True
         )
         monkeypatch.setattr(
             "sys.argv",

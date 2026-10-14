@@ -29,8 +29,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.messaging.commands import stop_running_turn
-from kiro_crew.messaging.queue_drain import (
+from efm_go.messaging.commands import stop_running_turn
+from efm_go.messaging.queue_drain import (
     QUEUED_CHANNEL_KEY,
     QUEUED_OWNER_KEY,
     entries_queued_by,
@@ -38,14 +38,14 @@ from kiro_crew.messaging.queue_drain import (
     owner_token,
     tag_entry,
 )
-from kiro_crew.messaging.queue_receipt import (
+from efm_go.messaging.queue_receipt import (
     QueueReceipt,
     ReceiptLine,
     ReceiptQueue,
     receipt_address_key,
     receipt_text,
 )
-from kiro_crew.slack import events as slack_events
+from efm_go.slack import events as slack_events
 
 #: Two allow-listed people on one transport, and a third on another. Under a unified
 #: scope all three land on ONE session key, which is the whole premise.
@@ -73,7 +73,7 @@ def _manager() -> tuple[Any, Any, _Deps]:
     The allocation boundary is exercised through the manager rather than reached into,
     because the manager's signature is what every channel calls.
     """
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     mgr = SessionManager.__new__(SessionManager)
     boundary = mgr._allocation_boundary()
@@ -680,7 +680,7 @@ _STOP_HANDLERS = (
 
 
 def _handler_source(channel: str, module: str, name: str) -> str:
-    path = pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / channel / module
+    path = pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / channel / module
     tree = ast.parse(path.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.AsyncFunctionDef) and node.name == name:
@@ -745,7 +745,7 @@ def _slack_orch() -> Any:
     """
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.config.loader import (
+    from efm_go.config.loader import (
         ACTIVATION_ALWAYS,
         ChannelConfig,
         KiroCrewConfig,
@@ -824,9 +824,9 @@ def _pending_entry(user: str, ts: str, temp: pathlib.Path) -> tuple[str, str, di
 async def _route(orch: Any, event: dict) -> None:
     from unittest.mock import MagicMock, patch
 
-    with patch("kiro_crew.slack.events.sel", return_value=MagicMock()):
-        with patch("kiro_crew.slack.events.is_allowed_user", return_value=True):
-            with patch("kiro_crew.slack.events.is_owner", return_value=False):
+    with patch("efm_go.slack.events.sel", return_value=MagicMock()):
+        with patch("efm_go.slack.events.is_allowed_user", return_value=True):
+            with patch("efm_go.slack.events.is_owner", return_value=False):
                 await slack_events._route_message(orch, event, slack_events.SeenCache())
 
 
@@ -968,7 +968,7 @@ def _stop_by_bob(
     async def run() -> None:
         if registered:
             orch._session_tasks = {_THREAD: _NeverDone()}
-        with patch("kiro_crew.slack.events._dispatch_queued", new=dispatches):
+        with patch("efm_go.slack.events._dispatch_queued", new=dispatches):
             await _route(orch, _slack_event("U_BOB", "!stop", "103.0"))
             await _settle()
             dispatches.snapshot(orch, alice_temp, bob_temp)
@@ -1025,7 +1025,7 @@ class TestSlacksStopIsTheCallersToo:
 
         async def run() -> None:
             orch._session_tasks = {_THREAD: _NeverDone()}
-            with patch("kiro_crew.slack.events._dispatch_queued", new=dispatches):
+            with patch("efm_go.slack.events._dispatch_queued", new=dispatches):
                 await _route(orch, _slack_event("U_BOB", "!stop", "103.0"))
                 await _settle()
 
@@ -1129,8 +1129,8 @@ class TestThePreservedEntryDrainsOnlyOnceTheStopIsDone:
                 await turn_may_end.wait()
 
             with (
-                patch("kiro_crew.slack.events.handle_message", new=_turn),
-                patch("kiro_crew.slack.events._dispatch_queued", new=dispatches),
+                patch("efm_go.slack.events.handle_message", new=_turn),
+                patch("efm_go.slack.events._dispatch_queued", new=dispatches),
             ):
                 await _route(orch, _slack_event("U_ALICE", "first", "100.5"))
                 turn = orch._session_tasks[_THREAD]
@@ -1173,7 +1173,7 @@ class TestThePreservedEntryDrainsOnlyOnceTheStopIsDone:
 
         async def run() -> None:
             orch._session_tasks = {_THREAD: _NeverDone()}
-            with patch("kiro_crew.slack.events._dispatch_queued", new=dispatches):
+            with patch("efm_go.slack.events._dispatch_queued", new=dispatches):
                 inner: list[bool] = []
 
                 async def _second_stop_inside_the_first() -> None:
@@ -1265,7 +1265,7 @@ class TestThePreservedEntryDrainsOnlyOnceTheStopIsDone:
                     await dave_may_finish.wait()
 
             sessions.during_stop = _during
-            with patch("kiro_crew.slack.events._dispatch_queued", new=_dispatch):
+            with patch("efm_go.slack.events._dispatch_queued", new=_dispatch):
                 await _route(orch, _slack_event("U_BOB", "!stop", "105.0"))
                 await _settle()
                 assert dispatched == [], "Dave's stop is still in flight"
@@ -1326,7 +1326,7 @@ class TestThePreservedEntryDrainsOnlyOnceTheStopIsDone:
                     await alice_may_finish.wait()
 
             sessions.during_stop = _during
-            with patch("kiro_crew.slack.events._dispatch_queued", new=_dispatch):
+            with patch("efm_go.slack.events._dispatch_queued", new=_dispatch):
                 await _route(orch, _slack_event("U_BOB", "!stop", "105.0"))
                 await _settle()
                 alice_may_finish.set()
@@ -1361,7 +1361,7 @@ class TestThePreservedEntryDrainsOnlyOnceTheStopIsDone:
                 await _route(orch, _slack_event("U_BOB", "!stop", "103.0"))
             assert not slack_events._key_busy(orch, _THREAD)
             sessions.queue.append(_pending_entry("U_ALICE", "104.0", slack_home / "a.png"))
-            with patch("kiro_crew.slack.events._dispatch_queued", new=dispatches):
+            with patch("efm_go.slack.events._dispatch_queued", new=dispatches):
                 await slack_events._drain_slack_queue(orch, _THREAD)
                 await _settle()
 

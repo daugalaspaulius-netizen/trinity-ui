@@ -25,9 +25,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.sandbox as sandbox_mod
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.sandbox import (
+import efm_go.sandbox as sandbox_mod
+from efm_go.config import loader as loader_mod
+from efm_go.sandbox import (
     UNSANDBOXED_BY_OPERATOR,
     UNSANDBOXED_BY_PLATFORM,
     SandboxUnavailableError,
@@ -221,7 +221,7 @@ class TestWrapArgvOnABackendlessHost:
     ) -> None:
         _pin_config(monkeypatch, value=True, declared=False)
         sel_instance = MagicMock()
-        with patch("kiro_crew.sel.sel", return_value=sel_instance):
+        with patch("efm_go.sel.sel", return_value=sel_instance):
             wrapped, cleanup = wrap_argv(list(_ARGV), mode="standard")
         assert wrapped == _ARGV
         assert cleanup is None
@@ -232,7 +232,7 @@ class TestWrapArgvOnABackendlessHost:
     def test_operator_grant_audits_its_own_source(self, no_backend, monkeypatch) -> None:
         _pin_config(monkeypatch, value=True, declared=True)
         sel_instance = MagicMock()
-        with patch("kiro_crew.sel.sel", return_value=sel_instance):
+        with patch("efm_go.sel.sel", return_value=sel_instance):
             wrap_argv(list(_ARGV), mode="standard")
         event = sel_instance.log_tool_invocation.call_args_list[0].kwargs
         assert event["outcome"] == "unconfined"
@@ -244,7 +244,7 @@ class TestWrapArgvOnABackendlessHost:
         _pin_config(monkeypatch, value=True, declared=False)
         failing = MagicMock()
         failing.log_tool_invocation.side_effect = OSError("audit log unwritable")
-        with patch("kiro_crew.sel.sel", return_value=failing):
+        with patch("efm_go.sel.sel", return_value=failing):
             wrapped, _ = wrap_argv(list(_ARGV), mode="standard")
         assert wrapped == _ARGV
 
@@ -252,7 +252,7 @@ class TestWrapArgvOnABackendlessHost:
         """The refusal must name the operator's own decision, not tell them to set a
         key they already set."""
         _pin_config(monkeypatch, value=False, declared=True)
-        with patch("kiro_crew.sel.sel", return_value=MagicMock()):
+        with patch("efm_go.sel.sel", return_value=MagicMock()):
             with pytest.raises(SandboxUnavailableError) as excinfo:
                 wrap_argv(list(_ARGV), mode="standard")
         assert "is set to false" in str(excinfo.value)
@@ -263,7 +263,7 @@ class TestWrapArgvOnABackendlessHost:
         fleet keeps fail-closing on Windows too."""
         _pin_config(monkeypatch, value=True, declared=False)
         monkeypatch.setattr(sandbox_mod, "_governance_sandbox_floor", lambda: "strict")
-        with patch("kiro_crew.sel.sel", return_value=MagicMock()):
+        with patch("efm_go.sel.sel", return_value=MagicMock()):
             with pytest.raises(SandboxUnavailableError):
                 wrap_argv(list(_ARGV), mode="standard")
 
@@ -284,12 +284,12 @@ class TestWrapArgvOnABackendlessHost:
         """
         _pin_config(monkeypatch, value=True, declared=False)
         monkeypatch.setattr(sandbox_mod, "_last_unshare_failure", (True, "fork EAGAIN", "retry"))
-        with patch("kiro_crew.sel.sel", return_value=MagicMock()):
+        with patch("efm_go.sel.sel", return_value=MagicMock()):
             platform_wrapped, _ = wrap_argv(list(_ARGV), mode="standard")
 
         delattr(sandbox_mod.wrap_argv, "_warned")
         _pin_config(monkeypatch, value=True, declared=True)
-        with patch("kiro_crew.sel.sel", return_value=MagicMock()):
+        with patch("efm_go.sel.sel", return_value=MagicMock()):
             operator_wrapped, _ = wrap_argv(list(_ARGV), mode="standard")
 
         assert platform_wrapped == operator_wrapped == _ARGV
@@ -299,7 +299,7 @@ class TestWrapArgvOnABackendlessHost:
         REFUSAL path, where it picks the guidance and gates the carve-out."""
         _pin_config(monkeypatch, value=False, declared=False)
         monkeypatch.setattr(sandbox_mod, "_last_unshare_failure", (True, "fork EAGAIN", "retry"))
-        with patch("kiro_crew.sel.sel", return_value=MagicMock()):
+        with patch("efm_go.sel.sel", return_value=MagicMock()):
             with pytest.raises(SandboxUnavailableError) as excinfo:
                 wrap_argv(list(_ARGV), mode="standard")
         assert excinfo.value.kind == "transient"
@@ -312,7 +312,7 @@ class TestWrapArgvOnABackendlessHost:
         platform where a foreign Seatbelt can be detected."""
         _pin_config(monkeypatch, value=False, declared=False)
         monkeypatch.setattr(sandbox_mod, "_inside_macos_sandbox", lambda: True)
-        with patch("kiro_crew.sel.sel", return_value=MagicMock()):
+        with patch("efm_go.sel.sel", return_value=MagicMock()):
             with pytest.raises(SandboxUnavailableError) as excinfo:
                 wrap_argv(list(_ARGV), mode="standard")
         assert excinfo.value.kind == "foreign_sandbox"
@@ -324,7 +324,7 @@ class TestWrapArgvOnABackendlessHost:
         warning whose only suggestion is impossible trains readers to ignore it."""
         _pin_config(monkeypatch, value=True, declared=False)
         with caplog.at_level("WARNING"):
-            with patch("kiro_crew.sel.sel", return_value=MagicMock()):
+            with patch("efm_go.sel.sel", return_value=MagicMock()):
                 wrap_argv(list(_ARGV), mode="standard")
         security = [r.getMessage() for r in caplog.records if "SECURITY" in r.getMessage()]
         assert len(security) == 1

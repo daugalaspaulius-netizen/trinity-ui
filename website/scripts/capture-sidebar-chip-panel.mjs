@@ -29,9 +29,9 @@ const OUT = process.argv[2] || '../temp-screenshots/sidebar-chip-panel'
 const ACTIVE = 'chat-a'
 const OTHER = 'chat-b'
 const BUSY = 'chat-c'
-const REPO = 'https://github.com/kirodotdev/KiroCrew'
-const PR_URL = 'https://github.com/kirodotdev/KiroCrew/pull/634'
-const ISSUE_URL = 'https://github.com/kirodotdev/KiroCrew/issues/701'
+const REPO = 'https://efmleads.com'
+const PR_URL = 'https://efmleads.com/pull/634'
+const ISSUE_URL = 'https://efmleads.com/issues/701'
 
 mkdirSync(OUT, { recursive: true })
 

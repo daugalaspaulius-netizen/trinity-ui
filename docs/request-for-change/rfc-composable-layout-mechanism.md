@@ -6,7 +6,7 @@ created: 2026-09-24
 last-audited: 2026-09-25
 audited-at: 20b4c8fee
 doc-pr:
-implementation-prs: ["https://github.com/kirodotdev/KiroCrew/pull/13572"]
+implementation-prs: ["https://efmleads.com/pull/13572"]
 tracking-issues: []
 supersedes: []
 superseded-by: []
@@ -15,7 +15,7 @@ superseded-by: []
 
 - Status: in-progress — PR 1 of the §7 sequence (the layout model and its tests,
   pure data with no UI) is in flight as
-  [#13572](https://github.com/kirodotdev/KiroCrew/pull/13572); the remaining
+  [#13572](https://efmleads.com/pull/13572); the remaining
   elements and the editor/renderer land as the later PRs in §7. The mechanism is
   not yet reachable from any surface. It is the decision to build the mechanism
   described below and to surface it first as custom member layouts, landed as the

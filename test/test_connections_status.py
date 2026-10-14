@@ -17,9 +17,9 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew import mcp_grant
-from kiro_crew.connections import mint, status
-from kiro_crew.dashboard.handlers import connections
+from efm_go import mcp_grant
+from efm_go.connections import mint, status
+from efm_go.dashboard.handlers import connections
 
 _NOTION = {"slug": "notion", "mcp_url": "https://mcp.notion.com/mcp"}
 _LINEAR = {"slug": "linear", "mcp_url": "https://mcp.linear.app/mcp"}
@@ -337,7 +337,7 @@ def test_pair_semantics_from_one_stat_pass(isolated_status, monkeypatch):
 async def test_a_stamp_that_cannot_persist_is_not_published(isolated_status, monkeypatch):
     """A read-only home must not fabricate connected-since: an in-memory stamp
     the next read cannot reproduce would re-date the connection every poll."""
-    from kiro_crew import agent, hooks
+    from efm_go import agent, hooks
 
     def _read_only(*a, **kw):
         raise OSError("read-only home")
@@ -366,7 +366,7 @@ def test_the_status_read_id_is_registered_with_the_audit_gate():
     """``emit_internal_read_audit`` fail-closes on an unregistered read_id, and
     the audit tests above monkeypatch the hook, so only this un-mocked check can
     catch a registration gap that silently disables the audit."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     assert status._GRANT_PRESENCE_READ_ID in hooks._AUDIT_ONLY_READ_IDS
 
@@ -375,7 +375,7 @@ def test_the_status_read_id_is_registered_with_the_audit_gate():
 async def test_a_first_observed_grant_is_sel_audited_once(isolated_status, monkeypatch):
     """Stamping a first-connect time is the credential-store observation this
     module acts on; it owes exactly one trail entry, not one per poll sweep."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     calls: list[str] = []
     monkeypatch.setattr(
@@ -401,7 +401,7 @@ async def test_an_unrecordable_audit_never_fails_the_status_read(
     this boundary (stats only), so an SEL outage warns instead of denying."""
     import logging
 
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     monkeypatch.setattr(hooks, "emit_internal_read_audit", lambda *a, **kw: False)
     _set_facts(granted={_NOTION["mcp_url"]})
@@ -423,7 +423,7 @@ def test_overlapping_reconciles_serialize_and_the_second_carries_the_first_stamp
     module lock and passes deterministically with it."""
     import threading as _threading
 
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     monkeypatch.setattr(hooks, "emit_internal_read_audit", lambda *a, **kw: True)
 
@@ -492,7 +492,7 @@ def test_a_failed_prune_never_resurrects_the_revoked_timestamp(isolated_status, 
     date from the unpruned file), an indeterminate lookup carries nothing, and
     the first successful save persists the honest state and retires the memory
     baseline."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     monkeypatch.setattr(hooks, "emit_internal_read_audit", lambda *a, **kw: True)
 

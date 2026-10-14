@@ -1,8 +1,8 @@
 """The dashboard agents handlers keep their surface and contracts while their owners move.
 
-``kiro_crew.dashboard.handlers.agents`` is the agents handlers' import path and their
+``efm_go.dashboard.handlers.agents`` is the agents handlers' import path and their
 patch surface. Most of what it defined now lives in the modules of
-``kiro_crew.dashboard.agent_admin``, one responsibility each, and
+``efm_go.dashboard.agent_admin``, one responsibility each, and
 ``agent_admin.compose`` runs every function they define on the facade's globals.
 These tests pin:
 
@@ -42,10 +42,10 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from source_corpus import repo_files_named, repo_root
 
-import kiro_crew.dashboard.handlers as handlers_pkg
-import kiro_crew.dashboard.handlers.agents as agents
-from kiro_crew.dashboard import agent_admin
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+import efm_go.dashboard.handlers as handlers_pkg
+import efm_go.dashboard.handlers.agents as agents
+from efm_go.dashboard import agent_admin
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _FACADE = agents.__name__
 _FACADE_PATH = Path(agents.__file__).resolve()
@@ -327,8 +327,8 @@ def test_a_fresh_interpreter_sees_every_base_public_name(tmp_path: Path) -> None
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.handlers as pkg
-        import kiro_crew.dashboard.handlers.agents as agents
+        import efm_go.dashboard.handlers as pkg
+        import efm_go.dashboard.handlers.agents as agents
         missing = [n for n in sys.argv[1:] if not hasattr(agents, n)]
         assert missing == [], missing
         foreign = [n for n in sys.argv[1:] if hasattr(pkg, n) and n.startswith("api_")
@@ -355,7 +355,7 @@ def test_the_routes_and_the_package_reach_the_facade_objects() -> None:
     handlers package re-exports is the facade's object. The owner-gate test's route
     walk selects handlers by ``__module__``, so every one of them still reads the
     facade's name."""
-    from kiro_crew.dashboard import routes
+    from efm_go.dashboard import routes
 
     app = web.Application()
     routes.register_all(app)
@@ -375,7 +375,7 @@ def test_the_routes_and_the_package_reach_the_facade_objects() -> None:
 def _facade_importers() -> dict[str, set[str]]:
     """``{module path: names}`` every source file imports from the facade by name."""
     found: dict[str, set[str]] = {}
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         if path.resolve() == _FACADE_PATH or "_vendor" in path.parts:
             continue
         text = path.read_text(encoding="utf-8")
@@ -393,7 +393,7 @@ def test_the_seams_other_modules_import_keep_their_identity() -> None:
     """Sibling handlers import the facade's privates by name, most of them inside a
     function. Each still resolves there, and the ones bound when a sibling loads are
     the composed objects -- so a sibling that loaded first and the facade agree."""
-    from kiro_crew.dashboard.handlers import agent_catalog
+    from efm_go.dashboard.handlers import agent_catalog
 
     importers = _facade_importers()
     assert len(importers) >= 20
@@ -411,22 +411,22 @@ def test_the_seams_other_modules_import_keep_their_identity() -> None:
 #: module-level import of any of them would put that module on the gateway's boot
 #: path (or close an import cycle), so each stays function-local.
 _IMPORTED_BY_NAME = {
-    "DEGRADED_WHOLE_CONFIG": "kiro_crew.config.resolution",
-    "MEMBER_CONFIG": "kiro_crew.eventlog.types",
-    "REMOVE_REMOVED": "kiro_crew.crew_log.store",
-    "_SENSITIVE_MASK": "kiro_crew.dashboard.handlers.core",
-    "_get_mcp_lock": "kiro_crew.dashboard.handlers.mcp",
-    "_is_background_only": "kiro_crew.dashboard.handlers.agent_catalog",
-    "_offload_config_write": "kiro_crew.dashboard.handlers.mcp",
-    "_sync_mcp_to_agent": "kiro_crew.dashboard.handlers.mcp",
-    "get_service": "kiro_crew.eventlog.service",
-    "inherited_template_action": "kiro_crew.dashboard.handlers.agent_capabilities",
-    "member_slug": "kiro_crew.members",
-    "normalize_member_source": "kiro_crew.dashboard.handlers.members",
-    "redact_oauth_client_secrets": "kiro_crew.mcp_utils",
-    "release_cached_memory_store": "kiro_crew.context",
-    "release_markdown_memory_store": "kiro_crew.dashboard.handlers._shared",
-    "restore_redacted_oauth_client_secrets": "kiro_crew.mcp_utils",
+    "DEGRADED_WHOLE_CONFIG": "efm_go.config.resolution",
+    "MEMBER_CONFIG": "efm_go.eventlog.types",
+    "REMOVE_REMOVED": "efm_go.crew_log.store",
+    "_SENSITIVE_MASK": "efm_go.dashboard.handlers.core",
+    "_get_mcp_lock": "efm_go.dashboard.handlers.mcp",
+    "_is_background_only": "efm_go.dashboard.handlers.agent_catalog",
+    "_offload_config_write": "efm_go.dashboard.handlers.mcp",
+    "_sync_mcp_to_agent": "efm_go.dashboard.handlers.mcp",
+    "get_service": "efm_go.eventlog.service",
+    "inherited_template_action": "efm_go.dashboard.handlers.agent_capabilities",
+    "member_slug": "efm_go.members",
+    "normalize_member_source": "efm_go.dashboard.handlers.members",
+    "redact_oauth_client_secrets": "efm_go.mcp_utils",
+    "release_cached_memory_store": "efm_go.context",
+    "release_markdown_memory_store": "efm_go.dashboard.handlers._shared",
+    "restore_redacted_oauth_client_secrets": "efm_go.mcp_utils",
 }
 
 
@@ -453,7 +453,7 @@ def test_a_star_import_carries_the_moved_public_names(tmp_path: Path) -> None:
     assert not hasattr(agents, "__all__")
     probe = tmp_path / "agents_star_probe.py"
     probe.write_text(
-        "from kiro_crew.dashboard.handlers.agents import *  # noqa: F401,F403\n",
+        "from efm_go.dashboard.handlers.agents import *  # noqa: F401,F403\n",
         encoding="utf-8",
     )
     spec = importlib.util.spec_from_file_location("agents_star_probe", probe)
@@ -544,7 +544,7 @@ def test_every_base_definition_is_in_exactly_one_place() -> None:
 
 
 def test_the_owners_log_as_the_facade() -> None:
-    """Log capture keyed to ``kiro_crew.dashboard.handlers.agents`` keeps seeing the
+    """Log capture keyed to ``efm_go.dashboard.handlers.agents`` keeps seeing the
     moved sites: an owner function logs through the facade's ``logger``."""
     assert agents.logger.name == _FACADE
     readers = [
@@ -554,7 +554,7 @@ def test_the_owners_log_as_the_facade() -> None:
 
 
 def test_every_owner_function_runs_on_the_facade_globals() -> None:
-    """A patch of ``kiro_crew.dashboard.handlers.agents.<name>`` reaches an owner
+    """A patch of ``efm_go.dashboard.handlers.agents.<name>`` reaches an owner
     function only because the function reads the facade's globals, not its own."""
     labels = {label for label, _ in _owner_functions()}
     assert len(labels) >= 85
@@ -633,7 +633,7 @@ def test_the_compose_copy_matches_its_siblings() -> None:
     own copy so no package imports another's, and the copies stay identical."""
 
     def body(package: str) -> str:
-        text = (_SRC / "kiro_crew/dashboard" / package / "__init__.py").read_text(encoding="utf-8")
+        text = (_SRC / "efm_go/dashboard" / package / "__init__.py").read_text(encoding="utf-8")
         return text[text.index("def compose(") :]
 
     assert body("agent_admin") == body("file_api") == body("messaging_api")
@@ -691,7 +691,7 @@ def _type_checking_nodes(tree: ast.Module) -> set[int]:
 
 def _owner_runtime_edges(source: str, package: str) -> list[int]:
     """Lines where an owner imports a project module outside ``TYPE_CHECKING`` at
-    module level: the facade, a sibling owner, or anything else under ``kiro_crew``."""
+    module level: the facade, a sibling owner, or anything else under ``efm_go``."""
     tree = ast.parse(source)
     guarded = _type_checking_nodes(tree)
     module_level = {id(sub) for node in tree.body for sub in ast.walk(node)}
@@ -705,7 +705,7 @@ def _owner_runtime_edges(source: str, package: str) -> list[int]:
         {
             node.lineno
             for node, target in _import_targets(tree, package)
-            if _within(target, "kiro_crew")
+            if _within(target, "efm_go")
             and id(node) not in guarded
             and id(node) in module_level
             and id(node) not in function_bodies
@@ -719,15 +719,15 @@ def _owner_runtime_edges(source: str, package: str) -> list[int]:
         ("from . import roster\n", True),
         ("from .roster import _roster_mask\n", True),
         ("from ..handlers import agents\n", True),
-        ("from kiro_crew.dashboard.handlers import agents\n", True),
-        ("import kiro_crew.dashboard.handlers.agents as handlers\n", True),
+        ("from efm_go.dashboard.handlers import agents\n", True),
+        ("import efm_go.dashboard.handlers.agents as handlers\n", True),
         (
-            "import importlib\nimportlib.import_module('kiro_crew.dashboard.handlers.agents')\n",
+            "import importlib\nimportlib.import_module('efm_go.dashboard.handlers.agents')\n",
             True,
         ),
-        ("__import__('kiro_crew.dashboard.agent_admin.roster')\n", True),
-        ("if TYPE_CHECKING:\n    from kiro_crew.dashboard.handlers.agents import _sel\n", False),
-        ("def f():\n    from kiro_crew.mcp_utils import redact_oauth_client_secrets\n", False),
+        ("__import__('efm_go.dashboard.agent_admin.roster')\n", True),
+        ("if TYPE_CHECKING:\n    from efm_go.dashboard.handlers.agents import _sel\n", False),
+        ("def f():\n    from efm_go.mcp_utils import redact_oauth_client_secrets\n", False),
         ("import asyncio\nfrom aiohttp import web\n", False),
     ],
 )
@@ -738,7 +738,7 @@ def test_the_owner_edge_check_sees_every_spelling(source: str, flagged: bool) ->
 def test_nothing_but_the_facade_imports_an_owner() -> None:
     """The facade is the one import path and the one patch surface."""
     importers = []
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         resolved = path.resolve()
         if _OWNER_DIR in resolved.parents or resolved == _FACADE_PATH or "_vendor" in path.parts:
             continue
@@ -782,9 +782,9 @@ def test_a_fresh_facade_import_loads_every_owner(tmp_path: Path) -> None:
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.handlers.agents
+        import efm_go.dashboard.handlers.agents
         missing = [n for n in sys.argv[1:]
-                   if f"kiro_crew.dashboard.agent_admin.{n}" not in sys.modules]
+                   if f"efm_go.dashboard.agent_admin.{n}" not in sys.modules]
         assert missing == [], missing
         print("ok")
         """,
@@ -799,8 +799,8 @@ def test_a_sibling_that_loads_first_still_binds_the_composed_seams(tmp_path: Pat
     _run_child(
         tmp_path,
         """
-        import kiro_crew.dashboard.handlers.agent_catalog as catalog
-        import kiro_crew.dashboard.handlers.agents as agents
+        import efm_go.dashboard.handlers.agent_catalog as catalog
+        import efm_go.dashboard.handlers.agents as agents
         for name in ("_agent_roster_row", "_name_would_be_masked", "_roster_mask"):
             assert getattr(catalog, name) is getattr(agents, name), name
             assert getattr(catalog, name).__globals__ is vars(agents), name
@@ -814,10 +814,10 @@ def test_a_second_facade_import_recomposes_the_owners_onto_it(tmp_path: Path) ->
         tmp_path,
         """
         import sys
-        import kiro_crew.dashboard.handlers.agents as first
-        del sys.modules["kiro_crew.dashboard.handlers.agents"]
-        import kiro_crew.dashboard.handlers.agents as second
-        from kiro_crew.dashboard.agent_admin import roster
+        import efm_go.dashboard.handlers.agents as first
+        del sys.modules["efm_go.dashboard.handlers.agents"]
+        import efm_go.dashboard.handlers.agents as second
+        from efm_go.dashboard.agent_admin import roster
         assert second is not first
         assert second._roster_mask.__globals__ is vars(second)
         assert roster._roster_mask is second._roster_mask
@@ -830,7 +830,7 @@ def test_a_second_facade_import_recomposes_the_owners_onto_it(tmp_path: Path) ->
 
 _PATCH_CALLS = ("setattr", "patch.object", "delattr")
 _MULTIPLE_OPTIONS = frozenset({"spec", "create", "spec_set", "autospec", "new_callable"})
-_FACADE_STRING = re.compile(r"""^kiro_crew\.dashboard\.handlers\.agents\.(\w+)$""")
+_FACADE_STRING = re.compile(r"""^efm_go\.dashboard\.handlers\.agents\.(\w+)$""")
 
 #: The patches whose attribute the scan cannot resolve from the source, keyed by
 #: (test file, enclosing function), with the names each one rebinds.
@@ -843,7 +843,7 @@ def _facade_aliases(tree: ast.Module) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             aliases |= {a.asname for a in node.names if a.name == _FACADE and a.asname}
-        elif isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.dashboard.handlers":
+        elif isinstance(node, ast.ImportFrom) and node.module == "efm_go.dashboard.handlers":
             aliases |= {a.asname or a.name for a in node.names if a.name == "agents"}
     changed = True
     while changed:
@@ -985,7 +985,7 @@ def _patched_names_in(text: str) -> tuple[set[str], set[str]]:
     # Every spelling below names the facade's dotted path or imports ``agents`` from
     # the handlers package, so a source with neither holds no facade patch.
     if "handlers.agents" not in text and not (
-        "kiro_crew.dashboard.handlers import" in text and re.search(r"\bagents\b", text)
+        "efm_go.dashboard.handlers import" in text and re.search(r"\bagents\b", text)
     ):
         return set(), set()
     tree = ast.parse(text)
@@ -1038,7 +1038,7 @@ def _patched_names_in(text: str) -> tuple[set[str], set[str]]:
                 for target in targets:
                     if isinstance(target, ast.Attribute) and ast.unparse(target.value) in aliases:
                         found.add(target.attr)
-    found |= set(re.findall(r"""["']kiro_crew\.dashboard\.handlers\.agents\.(\w+)["']""", text))
+    found |= set(re.findall(r"""["']efm_go\.dashboard\.handlers\.agents\.(\w+)["']""", text))
     return found, dynamic
 
 
@@ -1123,28 +1123,28 @@ def _captured_names(source: str) -> set[str]:
 def test_the_patch_scan_reads_every_spelling() -> None:
     planted = (
         "import importlib, sys\n"
-        "import kiro_crew.dashboard.handlers.agents as handlers\n"
-        "from kiro_crew.dashboard.handlers import agents as ag\n"
-        "facade = importlib.import_module('kiro_crew.dashboard.handlers.agents')\n"
+        "import efm_go.dashboard.handlers.agents as handlers\n"
+        "from efm_go.dashboard.handlers import agents as ag\n"
+        "facade = importlib.import_module('efm_go.dashboard.handlers.agents')\n"
         "alias = facade\n"
-        "held = sys.modules['kiro_crew.dashboard.handlers.agents']\n"
+        "held = sys.modules['efm_go.dashboard.handlers.agents']\n"
         "def test(monkeypatch):\n"
         "    monkeypatch.setattr(handlers, 'first', 1)\n"
         "    monkeypatch.setattr(ag, 'second', 2)\n"
         "    patch.object(alias, 'third')\n"
         "    ag.fourth = 4\n"
-        "    monkeypatch.setattr('kiro_crew.dashboard.handlers.agents.fifth', 5)\n"
+        "    monkeypatch.setattr('efm_go.dashboard.handlers.agents.fifth', 5)\n"
         "    monkeypatch.setattr(ag.Shared, 'attr', 7)\n"
         "    monkeypatch.setattr(other, 'not_the_facade', 8)\n"
         "    monkeypatch.delattr(ag, 'sixth')\n"
         "    patch.object(target=alias, attribute='seventh')\n"
         "    patch.multiple(held, eighth=1, create=True)\n"
-        "    patch('kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load')\n"
+        "    patch('efm_go.dashboard.handlers.agents.KiroCrewConfig.load')\n"
         "@pytest.mark.parametrize('which', ['ninth', 'tenth'])\n"
         "def test_param(which):\n"
-        "    patch(f'kiro_crew.dashboard.handlers.agents.{which}')\n"
-        "FACADE = 'kiro_crew.dashboard.handlers.agents'\n"
-        "other = 'kiro_crew.dashboard.handlers.members'\n"
+        "    patch(f'efm_go.dashboard.handlers.agents.{which}')\n"
+        "FACADE = 'efm_go.dashboard.handlers.agents'\n"
+        "other = 'efm_go.dashboard.handlers.members'\n"
         "def test_strings(monkeypatch):\n"
         "    path = FACADE\n"
         "    patch(f'{path}.eleventh')\n"
@@ -1171,7 +1171,7 @@ def test_the_patch_scan_reads_every_spelling() -> None:
     }
     assert dynamic == set()
     unresolvable = (
-        "from kiro_crew.dashboard.handlers import agents as ag\n"
+        "from efm_go.dashboard.handlers import agents as ag\n"
         "def _drive(monkeypatch, name):\n"
         "    monkeypatch.setattr(ag, name, 1)\n"
     )
@@ -1184,7 +1184,7 @@ def test_the_capture_scan_flags_what_an_owner_evaluates_when_it_loads() -> None:
         "from typing import TYPE_CHECKING\n"
         "import asyncio as aio\n"
         "if TYPE_CHECKING:\n"
-        "    from kiro_crew.dashboard.handlers.agents import _sel\n"
+        "    from efm_go.dashboard.handlers.agents import _sel\n"
         "LIMIT = _CAP * 2\n"
         "def f(x=_DEFAULT, *, y=_KW):\n"
         "    return _sel(), list_agents\n"
@@ -1237,7 +1237,7 @@ _STAYS_IN_THE_FACADE = (
     r"\bconditional_response\(",
     r"\bcapabilities_(?:for|of)\(|\bis_claude_code\(|\bACP_BACKEND_CLAUDE\b",
     r'operation="api_kirocrew_agents"',
-    r"\bkiro_crew\.(?:acp|providers)\b",
+    r"\befm_go\.(?:acp|providers)\b",
 )
 
 
@@ -1252,8 +1252,8 @@ def _mirror(tmp_path: Path, *extra: str) -> Path:
     """A checkout-shaped ``src`` copy of the facade, its owners and *extra* files."""
     root = tmp_path / "checkout" / "src"
     rels = [
-        "kiro_crew/dashboard/handlers/agents.py",
-        *(f"kiro_crew/dashboard/agent_admin/{path.name}" for path in _OWNER_DIR.glob("*.py")),
+        "efm_go/dashboard/handlers/agents.py",
+        *(f"efm_go/dashboard/agent_admin/{path.name}" for path in _OWNER_DIR.glob("*.py")),
         *extra,
     ]
     for rel in rels:
@@ -1282,7 +1282,7 @@ def test_the_sdk_identity_ratchet_reads_the_owners(
 
     rel = "dashboard/handlers/agents.py"
     assert len(guard._composed_owner_rels(rel)) == len(_BASE_OWNERS)
-    root = _mirror(tmp_path) / "kiro_crew"
+    root = _mirror(tmp_path) / "efm_go"
     monkeypatch.setattr(guard, "SRC", root)
     planted = "\n\ndef _planted(backend):\n    return backend == ACP_BACKEND_CLAUDE\n"
     _red_green(
@@ -1299,7 +1299,7 @@ def test_the_provider_literal_ratchet_reads_the_owners(
 
     rel = "dashboard/handlers/agents.py"
     assert len(guard._composed_owner_paths(rel)) == len(_BASE_OWNERS)
-    root = _mirror(tmp_path) / "kiro_crew"
+    root = _mirror(tmp_path) / "efm_go"
     monkeypatch.setattr(guard, "SRC", root)
     planted = '\n\ndef _planted(provider):\n    return provider == "claude_code"\n'
     _red_green(
@@ -1316,9 +1316,9 @@ def test_the_import_hoist_ratchet_reads_the_owners(
 
     root = _mirror(tmp_path, *(rel for rel in guard._HOISTED_FILES if "agents.py" not in rel))
     monkeypatch.setattr(guard, "_SRC", root)
-    planted = "\n\ndef _planted():\n    from kiro_crew.agent import install_agent\n"
+    planted = "\n\ndef _planted():\n    from efm_go.agent import install_agent\n"
     _red_green(
-        root / "kiro_crew/dashboard/agent_admin/capabilities.py",
+        root / "efm_go/dashboard/agent_admin/capabilities.py",
         guard.test_no_function_local_agent_imports_remain,
         planted,
     )
@@ -1334,7 +1334,7 @@ def test_the_default_model_fence_reads_the_owners(
     fence = guard.TestApiDoesNotStringifyModels()
     text = fence._handler_source()
     assert all(source in text for source in _owner_sources().values())
-    owners = _mirror(tmp_path) / "kiro_crew/dashboard/agent_admin"
+    owners = _mirror(tmp_path) / "efm_go/dashboard/agent_admin"
     monkeypatch.setattr(agent_admin, "__file__", str(owners / "__init__.py"))
     planted = "\n\ndef _planted(body):\n    return normalize_agent_model(str(body))\n"
     _red_green(
@@ -1353,7 +1353,7 @@ def test_the_media_route_fence_reads_the_owners(
     ``If-None-Match`` compare grown in an owner fails it."""
     import test_conditional_get as guard
 
-    owners = _mirror(tmp_path) / "kiro_crew/dashboard/agent_admin"
+    owners = _mirror(tmp_path) / "efm_go/dashboard/agent_admin"
     monkeypatch.setattr(agent_admin, "__file__", str(owners / "__init__.py"))
     planted = "\n\ndef _planted(request):\n    return request.if_none_match\n"
     _red_green(owners / "avatars.py", guard.test_every_media_route_uses_the_shared_helper, planted)
@@ -1425,7 +1425,7 @@ def test_the_error_code_rows_match_each_owner(tmp_path: Path) -> None:
     assert rows == {path: live[path] for path in rows}
     assert sum(counts.get("missing_code", 0) for counts in rows.values()) == 46
     assert {path for path in live if path.startswith("dashboard/agent_admin/")} <= set(rows)
-    root = _mirror(tmp_path) / "kiro_crew"
+    root = _mirror(tmp_path) / "efm_go"
     owner = root / "dashboard/agent_admin/roster.py"
     scan = guard._scan_uncached.__wrapped__
     before = guard.tally(scan(root))
@@ -1468,17 +1468,17 @@ def test_the_hardened_read_census_names_the_owners() -> None:
     project-name scan stays keyed to the facade."""
     import test_agent_spec_hardened_reads as guard
 
-    facade = "kiro_crew/dashboard/handlers/agents.py"
+    facade = "efm_go/dashboard/handlers/agents.py"
     reads = guard._labelled_call_sites("_read_agent_spec")
     assert facade not in reads
     assert {path: pairs for path, pairs in reads.items() if "/agent_admin/" in path} == {
-        "kiro_crew/dashboard/agent_admin/agent_detail.py": [("api_agent_detail", "dashboard")] * 3,
-        "kiro_crew/dashboard/agent_admin/fork_publish.py": [
+        "efm_go/dashboard/agent_admin/agent_detail.py": [("api_agent_detail", "dashboard")] * 3,
+        "efm_go/dashboard/agent_admin/fork_publish.py": [
             ("api_agent_fork", "dashboard"),
             ("api_agent_publish", "dashboard"),
         ],
-        "kiro_crew/dashboard/agent_admin/installed_agents.py": [("api_agents_sync", "dashboard")],
-        "kiro_crew/dashboard/agent_admin/template_lineage.py": [("forward:operation", "dashboard")],
+        "efm_go/dashboard/agent_admin/installed_agents.py": [("api_agents_sync", "dashboard")],
+        "efm_go/dashboard/agent_admin/template_lineage.py": [("forward:operation", "dashboard")],
     }
     assert guard._labelled_call_sites("project_agent_names")[facade] == [
         ("api_kirocrew_agents", "dashboard")
@@ -1490,7 +1490,7 @@ def test_every_redacting_owner_is_classified_like_the_facade() -> None:
     and none grows a gate-side baseline log site."""
     from test_security_posture import _REDACTOR_CALL_RE, _gate_side_baseline_log_sites
 
-    from kiro_crew import security_posture
+    from efm_go import security_posture
 
     redacting = {
         f"dashboard/agent_admin/{stem}.py"
@@ -1534,7 +1534,7 @@ def _owner_paths() -> list[str]:
 
 def _rules_missing_owners(rules: list[dict]) -> tuple[set[str], dict[str, list[str]]]:
     """``(ids of rules matching the facade, {id: owner files those rules miss})``."""
-    facade = "src/kiro_crew/dashboard/handlers/agents.py"
+    facade = "src/efm_go/dashboard/handlers/agents.py"
     matched: set[str] = set()
     missing: dict[str, list[str]] = {}
     for rule in rules:
@@ -1759,7 +1759,7 @@ async def test_the_installed_listing_puts_kirocrew_first(monkeypatch: pytest.Mon
 
 
 def _sync_config() -> Any:
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     cfg = MagicMock(spec=KiroCrewConfig)
     cfg.agents = {}
@@ -1771,7 +1771,7 @@ def _sync_config() -> Any:
 async def test_a_sync_refuses_a_credential_shaped_discovered_name(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from kiro_crew.agent_discovery import AgentInfo
+    from efm_go.agent_discovery import AgentInfo
 
     shaped = "ghp_" + "a" * 36
     found = [

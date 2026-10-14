@@ -44,10 +44,10 @@ from test_connections_warm import (  # noqa: F401 -- autouse fixtures
     _clean_warm_runtime,
 )
 
-from kiro_crew.connections import mint, status, warm
-from kiro_crew.connections.mint import _mints
-from kiro_crew.connections.registry import Provider
-from kiro_crew.dashboard.handlers import connections
+from efm_go.connections import mint, status, warm
+from efm_go.connections.mint import _mints
+from efm_go.connections.registry import Provider
+from efm_go.dashboard.handlers import connections
 
 _URL = "https://consent.example/authorize?state=abc"
 

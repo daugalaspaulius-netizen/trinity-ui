@@ -13,8 +13,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import session_start_sizing as sss
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go import session_start_sizing as sss
+from efm_go.config.loader import KiroCrewConfig
 
 
 @pytest.fixture(autouse=True)
@@ -154,7 +154,7 @@ def test_explicit_integer_wins(monkeypatch):
 def _load_with(tmp_path: Path, monkeypatch, agent: dict | None) -> KiroCrewConfig:
     cfg_file = tmp_path / "config.json"
     cfg_file.write_text(json.dumps({} if agent is None else {"agent": agent}))
-    monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_file)
+    monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_file)
     return KiroCrewConfig.load()
 
 
@@ -183,7 +183,7 @@ def test_loader_accepts_auto_or_int(tmp_path, monkeypatch, raw, expected):
 
 
 def test_schema_accepts_integer_and_string():
-    from kiro_crew.config.schema import build_json_schema
+    from efm_go.config.schema import build_json_schema
 
     node = build_json_schema(KiroCrewConfig)["properties"]["agent"]["properties"][
         "session_start_concurrency"
@@ -196,7 +196,7 @@ def test_schema_accepts_integer_and_string():
 
 
 def test_runtime_resolver_resolves_auto(monkeypatch):
-    from kiro_crew.acp import runtime as acp_runtime
+    from efm_go.acp import runtime as acp_runtime
 
     monkeypatch.setattr(
         KiroCrewConfig,
@@ -218,8 +218,8 @@ def test_runtime_resolver_resolves_auto(monkeypatch):
 @pytest.mark.asyncio
 async def test_gate_snapshot_auto_is_resolved_off_loop(monkeypatch):
     """An ``auto`` live snapshot sizes the gate from the host, not as int("auto")."""
-    from kiro_crew.acp import runtime as acp_runtime
-    from kiro_crew.acp import runtime_start
+    from efm_go.acp import runtime as acp_runtime
+    from efm_go.acp import runtime_start
 
     monkeypatch.setattr(
         runtime_start.live,
@@ -236,7 +236,7 @@ async def test_gate_snapshot_auto_is_resolved_off_loop(monkeypatch):
 
 
 def test_doctor_shows_resolved_auto_value_and_inputs(monkeypatch, capsys):
-    from kiro_crew import cli_doctor
+    from efm_go import cli_doctor
 
     monkeypatch.setattr(sss, "affinity_cpu_count", lambda: 64)
     monkeypatch.setattr(sss, "cgroup_cpu_quota", lambda: None)
@@ -250,7 +250,7 @@ def test_doctor_shows_resolved_auto_value_and_inputs(monkeypatch, capsys):
 
 
 def test_doctor_explicit_value_is_not_labelled_as_a_probe(capsys):
-    from kiro_crew import cli_doctor
+    from efm_go import cli_doctor
 
     cfg = KiroCrewConfig()
     cfg.agent.session_start_concurrency = 3
@@ -267,7 +267,7 @@ async def test_gateway_boot_sizes_auto_off_the_event_loop(monkeypatch, caplog):
     import logging
     import threading
 
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     loop_thread = threading.get_ident()
     probed_on: list[int] = []
@@ -278,7 +278,7 @@ async def test_gateway_boot_sizes_auto_off_the_event_loop(monkeypatch, caplog):
 
     monkeypatch.setattr(sss, "probe_host_capacity", _probe)
     orch = SimpleNamespace(_cfg=KiroCrewConfig())
-    with caplog.at_level(logging.INFO, logger="kiro_crew.slack.gateway"):
+    with caplog.at_level(logging.INFO, logger="efm_go.slack.gateway"):
         await GatewayOrchestrator._log_session_start_sizing(orch)  # type: ignore[arg-type]
     await asyncio.sleep(0)
     assert probed_on and probed_on[0] != loop_thread
@@ -296,7 +296,7 @@ def test_gateway_boot_sizes_only_after_the_socket_binds():
     """
     import inspect
 
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     src = inspect.getsource(GatewayOrchestrator.run)
     assert "await self._log_session_start_sizing()" not in src
@@ -315,7 +315,7 @@ def test_subagent_manager_never_probes_the_host(monkeypatch):
     """
     from overload_fakes import mock_ctx, mock_sessions
 
-    from kiro_crew.subagent import _STARTUP_CAP_GATE_ROUNDS, SubagentManager
+    from efm_go.subagent import _STARTUP_CAP_GATE_ROUNDS, SubagentManager
 
     probes: list[int] = []
 

@@ -14,10 +14,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from overload_fakes import mock_ctx, mock_sessions, wait_taskq_open
 
-import kiro_crew.subagent as subagent_mod
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.subagent import SubagentManager
-from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+import efm_go.subagent as subagent_mod
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.subagent import SubagentManager
+from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
 
 @pytest.mark.asyncio

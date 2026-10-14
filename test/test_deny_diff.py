@@ -48,15 +48,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.agent_sdk.host_auth import home_override_env_vars
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.agent_sdk.host_auth import home_override_env_vars
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "deny_diff.py"
 GOLDEN_PATHS = (
-    ROOT / "src" / "kiro_crew" / "builtin_skills" / "security-conductor" / "golden-paths.json"
+    ROOT / "src" / "efm_go" / "builtin_skills" / "security-conductor" / "golden-paths.json"
 )
-HOOKS = ROOT / "src" / "kiro_crew" / "hooks.py"
+HOOKS = ROOT / "src" / "efm_go" / "hooks.py"
 
 
 def _load(name: str, path: Path):
@@ -107,8 +107,8 @@ def _scratch_repo(tmp_path: Path) -> Path:
     repository git can see or write is this one.
     """
     repo = tmp_path / "scratch-repo"
-    (repo / "src" / "kiro_crew").mkdir(parents=True)
-    (repo / "src" / "kiro_crew" / "__init__.py").write_text("", encoding="utf-8")
+    (repo / "src" / "efm_go").mkdir(parents=True)
+    (repo / "src" / "efm_go" / "__init__.py").write_text("", encoding="utf-8")
     identity = ["-c", "user.name=t", "-c", "user.email=t@example.invalid"]
     for args in (
         ["init", "-q", "-b", "main", "."],
@@ -155,7 +155,7 @@ def _fake_tree(
     *,
     omit: tuple[str, ...] = (),
 ) -> Path:
-    """A minimal importable ``kiro_crew.security`` under *root*.
+    """A minimal importable ``efm_go.security`` under *root*.
 
     *denied* is either a bare set (assigned to the rule-catalog tier, the common
     case) or a per-tier mapping, which is how a non-catalog regression is staged.
@@ -172,9 +172,9 @@ def _fake_tree(
     source = _FAKE_HEADER.format(tiers=tiers) + "".join(
         body for name, body in _FAKE_TIER_SOURCE.items() if name not in omit
     )
-    package = root / "src" / "kiro_crew" / "security"
+    package = root / "src" / "efm_go" / "security"
     package.mkdir(parents=True, exist_ok=True)
-    (root / "src" / "kiro_crew" / "__init__.py").write_text("", encoding="utf-8")
+    (root / "src" / "efm_go" / "__init__.py").write_text("", encoding="utf-8")
     (package / "__init__.py").write_text(source, encoding="utf-8")
     return root
 

@@ -35,16 +35,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 from real_adapter_gate import MEASURED_CODEX_ACP_VERSION, require_real_adapter
 
-from kiro_crew import agent as agent_mod
-from kiro_crew.acp import runtime as acp_runtime
-from kiro_crew.acp import session_mcp
-from kiro_crew.acp._dispatch import identified_mcp_call
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.harness.codex import CodexHarness
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import JsonRpcMessage
-from kiro_crew.acp_backends import (
+from efm_go import agent as agent_mod
+from efm_go.acp import runtime as acp_runtime
+from efm_go.acp import session_mcp
+from efm_go.acp._dispatch import identified_mcp_call
+from efm_go.acp.client import AcpClient
+from efm_go.acp.harness.codex import CodexHarness
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import JsonRpcMessage
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
@@ -52,9 +52,9 @@ from kiro_crew.acp_backends import (
     ACP_BACKENDS_MEMBER_DISPATCH,
     ACP_BACKENDS_SESSION_MCP_ARRAY,
 )
-from kiro_crew.members import MEMBER_DISPATCH_SERVER
-from kiro_crew.providers.mirrors import Concern, Disposition, mirror_for
-from kiro_crew.providers.mirrors.codex import (
+from efm_go.members import MEMBER_DISPATCH_SERVER
+from efm_go.providers.mirrors import Concern, Disposition, mirror_for
+from efm_go.providers.mirrors.codex import (
     CodexMirror,
     _identity_bound_crew_servers,
     codex_elements,
@@ -827,7 +827,7 @@ class TestTheSessionArraySeam:
         is the base contract's ``session_projection`` and not a codex import."""
         import inspect
 
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         source = inspect.getsource(client_mod)
         assert "codex_withheld_servers" not in source
@@ -844,8 +844,8 @@ class TestTheSessionArraySeam:
         empty deny set -- claude here -- so the client needs no per-backend branch
         to read the seam, and a codex-only shape does not leak into the client.
         """
-        from kiro_crew.acp_backends import ACP_BACKEND_CLAUDE
-        from kiro_crew.providers.mirrors import SessionProjection
+        from efm_go.acp_backends import ACP_BACKEND_CLAUDE
+        from efm_go.providers.mirrors import SessionProjection
 
         _write_spec(
             agents_dir,
@@ -904,8 +904,8 @@ class TestTheSessionArraySeam:
         import ast
         import inspect
 
-        from kiro_crew.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
-        from kiro_crew.providers.mirrors import codex as codex_mod
+        from efm_go.mcp_cleanup import KIROCREW_BIN_MCP_SERVERS
+        from efm_go.providers.mirrors import codex as codex_mod
 
         derived = _identity_bound_crew_servers()
         assert derived == frozenset(KIROCREW_BIN_MCP_SERVERS) - frozenset(
@@ -1162,7 +1162,7 @@ class TestSpecDisabledToolRefusal:
             def log_tool_invocation(self, **kw):
                 audited.append(kw)
 
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: _Sel())
 
@@ -1232,7 +1232,7 @@ class TestSpecDisabledToolRefusal:
         refusal must run there too -- and it does, before the approve."""
         client = self._client(tmp_path, agents_dir, disabled=["spawn_run"])
         sent = self._capture(client)
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(
             sel_mod, "sel", lambda: type("S", (), {"log_tool_invocation": lambda *a, **k: None})()
@@ -1262,7 +1262,7 @@ class TestSpecDisabledToolRefusal:
             def log_tool_invocation(self, **kw):
                 audited.append(kw)
 
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: _Sel())
         await client._handle_permission(_codex_mcp_approval(12, "never-seen"))
@@ -1306,7 +1306,7 @@ class TestSpecDisabledToolRefusal:
         no unit seam, and the failure mode is a switched-off tool running."""
         import inspect
 
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         body = inspect.getsource(client_mod.AcpClient.send_message_stream)
         # The predicate is true on every session with a deny set (and on a harness
@@ -1383,7 +1383,7 @@ class TestSpecDisabledToolRefusal:
             def log_tool_invocation(self, **kw):
                 audited.append(kw)
 
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: _Sel())
         client._extract_tool_event(_codex_mcp_tool_call("c9", "kirocrew-core", "spawn_run"))
@@ -1420,7 +1420,7 @@ class TestSpecDisabledToolRefusal:
     def test_every_result_site_runs_the_tripwire(self):
         import inspect
 
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         for site in ("_dispatch_events", "_read_prompt_response"):
             body = inspect.getsource(getattr(client_mod.AcpClient, site))
@@ -1440,7 +1440,7 @@ class TestSpecDisabledToolRefusal:
         annotation-free here; the day one needs an annotation, this is the test that
         says the codex refusal must then fire on the ``tool_call`` frame instead.
         """
-        from kiro_crew import mcp_core, mcp_cron
+        from efm_go import mcp_core, mcp_cron
 
         for server, tools in (
             ("kirocrew-core", mcp_core._list_tools()),
@@ -1485,7 +1485,7 @@ class TestSpecDisabledToolRefusal:
         """
         import inspect
 
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         source = inspect.getsource(client_mod)
         builds = source.count("self._build_permission_event(")
@@ -1767,7 +1767,7 @@ def _run_driver_reaping_group(
     checkout) unless told otherwise, and every caller already owns a throwaway
     directory the driver tree can run from.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     proc = subprocess.Popen(
         argv,
@@ -1811,7 +1811,7 @@ def _codex_acp_entry() -> Path | None:
     what this test must exercise is the adapter a real session would spawn, on the
     same ladder (``CODEX_ACP_BIN``, project ``node_modules``, mise, PATH).
     """
-    from kiro_crew.acp.client import _resolve_codex_acp_bin
+    from efm_go.acp.client import _resolve_codex_acp_bin
 
     argv, _search = _resolve_codex_acp_bin()
     if not argv:
@@ -1866,13 +1866,13 @@ def test_the_driver_runner_reaps_descendants_on_the_timeout_path():
     with THAT identity" -- a reissued number is a stranger, neither a leak nor a
     kill target. The failure-path kill is pinned to the same identity.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     src_root = Path(platform_compat.__file__).resolve().parents[1]
     parent = (
         "import subprocess, sys, time\n"
         f"sys.path.insert(0, {str(src_root)!r})\n"
-        "from kiro_crew.platform_compat import get_process_start_id\n"
+        "from efm_go.platform_compat import get_process_start_id\n"
         'g = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(300)"])\n'
         "print(g.pid, get_process_start_id(g.pid) or '', flush=True)\n"
         "time.sleep(300)\n"
@@ -2266,7 +2266,7 @@ import json, os, queue, subprocess, sys, threading, time
 root, entry, node, src_root, max_depth = sys.argv[1:6]
 max_depth = int(max_depth)
 sys.path.insert(0, src_root)
-from kiro_crew.acp.runtime import _iter_descendant_pids
+from efm_go.acp.runtime import _iter_descendant_pids
 
 work = os.path.join(root, "work")
 env = dict(os.environ)
@@ -2506,8 +2506,8 @@ def test_the_real_adapter_guard_is_reachable_at_all(monkeypatch):
     fake records -- that the ladder asked mise for THIS adapter's binary -- is the
     "spawn's own resolver" fact the test exists to pin.
     """
-    from kiro_crew.acp import client as client_mod
-    from kiro_crew.acp.client import CODEX_ACP_BIN, _resolve_codex_acp_bin
+    from efm_go.acp import client as client_mod
+    from efm_go.acp.client import CODEX_ACP_BIN, _resolve_codex_acp_bin
 
     asked: list[str] = []
 
@@ -2698,7 +2698,7 @@ class TestTheRuntimeApprovalPathHonoursTheDenySet:
             def log_tool_invocation(self, **kw):
                 audited.append(kw)
 
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: _Sel())
 
@@ -2843,7 +2843,7 @@ class TestTheTripwireNoticesASwitchedOffToolThatRan:
             def log_tool_invocation(self, **kw):
                 audited.append(kw)
 
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         monkeypatch.setattr(sel_mod, "sel", lambda: _Sel())
         return audited

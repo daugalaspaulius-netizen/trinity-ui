@@ -20,19 +20,19 @@ from pathlib import Path
 import pytest
 from skill_script_helpers import load_skill_script
 
-from kiro_crew.platform.update_governance import _GIT_LOCATION_VARS
+from efm_go.platform.update_governance import _GIT_LOCATION_VARS
 
 SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "pipeline-conductor"
     / "scripts"
     / "claim_preflight.py"
 )
 
-REPO = "kirodotdev/KiroCrew"
+REPO = "efmleads.com"
 ITEM = 8029
 
 
@@ -1246,7 +1246,7 @@ class TestReferenceRepositoryMustBeKnown:
         "url,expected",
         [
             ("https://api.github.com/repos/other/Repo/issues/12", "other/Repo"),
-            ("https://api.github.com/repos/kirodotdev/KiroCrew/pulls/8036", REPO),
+            ("https://api.github.com/repos/efmleads.com/pulls/8036", REPO),
             ("https://api.github.com/repos/a/b/issues/1/comments", "a/b"),
             (None, None),
             ("garbage", None),
@@ -1952,8 +1952,8 @@ class TestClosingReference:
             "Resolves #8029",
             "resolve #8029",
             "Fixes: #8029",
-            "Fixes kirodotdev/KiroCrew#8029",
-            "Fixes https://github.com/kirodotdev/KiroCrew/issues/8029",
+            "Fixes efmleads.com#8029",
+            "Fixes https://efmleads.com/issues/8029",
             "some prose\n\nFixes #8029\n",
         ],
     )

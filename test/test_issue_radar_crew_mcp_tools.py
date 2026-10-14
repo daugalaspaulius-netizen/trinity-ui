@@ -28,10 +28,10 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from turn_harness import SlotSpec, TurnScript, run_turn
 
-from kiro_crew import mcp_core
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, STOP_REASON_END_TURN, AcpEvent
-from kiro_crew.dashboard.token_auth import token_auth_middleware
-from kiro_crew.validation import MCP_CORE_SCHEMAS, ValidationError, validate_tool_args
+from efm_go import mcp_core
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, STOP_REASON_END_TURN, AcpEvent
+from efm_go.dashboard.token_auth import token_auth_middleware
+from efm_go.validation import MCP_CORE_SCHEMAS, ValidationError, validate_tool_args
 
 READ_TOOL = "issue_radar_crew_read"
 RECORD_TOOL = "issue_radar_crew_record"
@@ -166,7 +166,7 @@ class TestGatewayPathsAreReachableWithTheInternalSecret(unittest.TestCase):
                 ), f"{helper.__name__} ignored the verified key and re-resolved one"
 
     def test_both_crew_routes_are_mixed_internal_paths(self):
-        from kiro_crew.dashboard.server import _MIXED_INTERNAL_API_PATHS
+        from efm_go.dashboard.server import _MIXED_INTERNAL_API_PATHS
 
         assert READ_PATH in _MIXED_INTERNAL_API_PATHS
         assert WORK_PATH in _MIXED_INTERNAL_API_PATHS
@@ -179,7 +179,7 @@ class TestGatewayPathsAreReachableWithTheInternalSecret(unittest.TestCase):
         ``/issue/close`` and the comment routes — which write to GitHub — to
         anything holding the internal secret.
         """
-        from kiro_crew.dashboard.server import (
+        from efm_go.dashboard.server import (
             _MIXED_INTERNAL_API_PATHS,
             _STRICT_INTERNAL_API_PATHS,
         )
@@ -194,7 +194,7 @@ class TestGatewayPathsAreReachableWithTheInternalSecret(unittest.TestCase):
     def test_the_paths_the_tools_call_are_the_paths_allowlisted(self):
         # A route constant that drifts from the allowlist entry is a silent 403
         # for an unattended agent — nobody is watching the turn it happens on.
-        from kiro_crew.dashboard.server import _MIXED_INTERNAL_API_PATHS
+        from efm_go.dashboard.server import _MIXED_INTERNAL_API_PATHS
 
         assert mcp_core._CREW_READ_PATH == READ_PATH
         assert mcp_core._CREW_WORK_PATH == WORK_PATH
@@ -289,7 +289,7 @@ class TestToolRegistration(unittest.TestCase):
         # enforced as ``allowed=``: refusing an odd label would fail the write
         # that indexes the skip, and an unindexed skip is the waste the index
         # exists to remove. The store coerces to ``other`` instead.
-        from kiro_crew.apps.builtins.issue_radar.backend import crew_store
+        from efm_go.apps.builtins.issue_radar.backend import crew_store
 
         spec = next(t for t in mcp_core._list_tools() if t["name"] == RECORD_TOOL)
         advertised = set(spec["inputSchema"]["properties"]["skip_scope"]["enum"])
@@ -300,7 +300,7 @@ class TestToolRegistration(unittest.TestCase):
     def test_the_phase_vocabulary_mirrors_the_store_exactly(self):
         # validation.py cannot import an app package, so it mirrors these. Drift
         # would silently reject a legitimate phase at the tool boundary.
-        from kiro_crew.apps.builtins.issue_radar.backend import crew_store
+        from efm_go.apps.builtins.issue_radar.backend import crew_store
 
         by_name = {f.name: f for f in MCP_CORE_SCHEMAS[RECORD_TOOL].fields}
         assert set(by_name["phase"].allowed) == set(crew_store.PHASES)
@@ -485,9 +485,9 @@ class TestAnAutoNudgeTurnResolvesTheSameIdentityAsADirectTurn:
         from types import SimpleNamespace
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.autonudge import NudgeLoop
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.slack import gateway as gw
+        from efm_go.autonudge import NudgeLoop
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.slack import gateway as gw
 
         slot_key = "crew-c_7f3a"
         loop = NudgeLoop(
@@ -543,8 +543,8 @@ class TestAnAutoNudgeTurnResolvesTheSameIdentityAsADirectTurn:
         raw slot key), so pinning its output keeps the test about the
         nudge==direct property and not about the key's spelling.
         """
-        from kiro_crew.dashboard.chat_utils import effective_session_key
-        from kiro_crew.slack import gateway as gw
+        from efm_go.dashboard.chat_utils import effective_session_key
+        from efm_go.slack import gateway as gw
 
         orch, loop, slot = self._fire_env()
         expected = effective_session_key(slot)
@@ -567,7 +567,7 @@ class TestAnAutoNudgeTurnResolvesTheSameIdentityAsADirectTurn:
 
         with (
             patch.object(gw, "spawn_guarded_turn", _spawn),
-            patch("kiro_crew.dashboard.chat._run_chat", new=_fake_run_chat),
+            patch("efm_go.dashboard.chat._run_chat", new=_fake_run_chat),
         ):
             result = await orch._fire_dashboard_nudge(loop)
             # Drain the spawned turn so the publish recorded above has run.
@@ -597,7 +597,7 @@ class TestAnAutoNudgeTurnResolvesTheSameIdentityAsADirectTurn:
         turn's identity is non-empty and slot-derived -- i.e. the crew resolves
         to a real session, not the empty string the strict gate refuses.
         """
-        from kiro_crew.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard.chat_utils import effective_session_key
 
         _, _, slot = self._fire_env()
         direct_identity = effective_session_key(slot)
@@ -633,7 +633,7 @@ class TestAnAutoNudgeTurnResolvesTheSameIdentityAsADirectTurn:
         """The writer keys off the session key it is handed, not a re-resolve."""
         import inspect
 
-        from kiro_crew.messaging import identity
+        from efm_go.messaging import identity
 
         writer_src = inspect.getsource(identity.publish_turn_identity)
         assert "session_key" in inspect.signature(identity.publish_turn_identity).parameters
@@ -865,7 +865,7 @@ class TestPublicStringsAreSanitizedOnTheWayIn(unittest.TestCase):
     def test_the_kirocrew_home_collapses_before_the_user_home(self):
         # Longest-first ordering: scrubbing the home first would leave
         # "<home>/.kiro/crew/..." — still this machine's directory layout.
-        from kiro_crew.config.loader import config_dir
+        from efm_go.config.loader import config_dir
 
         captured, _ = _record(
             event=f"read the ledger under {config_dir()}/workspace",
@@ -949,8 +949,8 @@ class TestPublicStringsAreSanitizedOnTheWayIn(unittest.TestCase):
         assert "clear" not in captured["body"], "silence must stay silence"
 
     def test_the_clear_enum_is_the_store_s_list(self):
-        from kiro_crew.apps.builtins.issue_radar.backend import crew_store
-        from kiro_crew.mcp_tools import apps as apps_tools
+        from efm_go.apps.builtins.issue_radar.backend import crew_store
+        from efm_go.mcp_tools import apps as apps_tools
 
         schema = next(s for s in apps_tools.schemas() if s["name"] == "issue_radar_crew_record")
         enum = schema["inputSchema"]["properties"]["clear"]["items"]["enum"]
@@ -1139,7 +1139,7 @@ class TestMiddlewareDecision:
         return req
 
     def _mw(self, secret: str = "s3cret"):
-        from kiro_crew.dashboard.server import (
+        from efm_go.dashboard.server import (
             _MIXED_INTERNAL_API_PATHS,
             _STRICT_INTERNAL_API_PATHS,
         )
@@ -1234,7 +1234,7 @@ class TestMiddlewareDecision:
         route that does not exist cannot be registered, so the lookup below would
         fail before the gate was ever consulted. The deletion is asserted separately.
         """
-        from kiro_crew.apps.builtins.issue_radar.backend import crew_routes, routes
+        from efm_go.apps.builtins.issue_radar.backend import crew_routes, routes
 
         app = web.Application()
         crew_routes.register_crew_routes(app)
@@ -1272,7 +1272,7 @@ class TestMiddlewareDecision:
         that exists and refuses, and "the endpoint is gone" is the property that
         actually stops anyone building on it again.
         """
-        from kiro_crew.apps.builtins.issue_radar.backend import crew_routes
+        from efm_go.apps.builtins.issue_radar.backend import crew_routes
 
         app = web.Application()
         crew_routes.register_crew_routes(app)

@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import cli_chat
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.shell_audit_log import SHELL_AUDIT_LOG_MAX_BYTES, SHELL_AUDIT_LOG_NAME
+from efm_go import cli_chat
+from efm_go.config import KiroCrewConfig
+from efm_go.shell_audit_log import SHELL_AUDIT_LOG_MAX_BYTES, SHELL_AUDIT_LOG_NAME
 
 
 def _patch_provider(monkeypatch) -> MagicMock:

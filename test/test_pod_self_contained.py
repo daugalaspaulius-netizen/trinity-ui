@@ -15,9 +15,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.pod import provision as prov
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod.config import PodConfig
+from efm_go.pod import provision as prov
+from efm_go.pod import runtime as rt
+from efm_go.pod.config import PodConfig
 
 
 def _pod_cfg(tmp_path: Path) -> PodConfig:
@@ -208,7 +208,7 @@ def test_app_is_refused_because_it_rewrites_the_host_agent_registry(unpinned_age
     """`apps/bridges.py` symlinks app agents into `Path.home()/.kiro/agents` and
     edits `~/.kiro/settings/mcp.json` — the HOST registry. A pod install/uninstall
     would replace or delete symlinks the live gateway depends on."""
-    from kiro_crew.apps import bridges
+    from efm_go.apps import bridges
 
     # Resolved through the accessor, not the module constant: since #874 the
     # constant is an opt-in override that is ``None`` by default, so reading it
@@ -292,7 +292,7 @@ def test_no_allowed_verb_is_host_scoped():
 # what happened — worse than no entry, because it is trusted.
 # --------------------------------------------------------------------------- #
 def test_a_refused_exec_is_audited_as_denied_not_allowed(tmp_path, monkeypatch):
-    from kiro_crew.pod import cli as pod_cli
+    from efm_go.pod import cli as pod_cli
 
     cfg = _pod_cfg(tmp_path)
     seen: list[tuple[str, str]] = []
@@ -310,7 +310,7 @@ def test_a_refused_exec_is_audited_as_denied_not_allowed(tmp_path, monkeypatch):
 
 
 def test_an_allowed_exec_is_audited_as_allowed(tmp_path, monkeypatch):
-    from kiro_crew.pod import cli as pod_cli
+    from efm_go.pod import cli as pod_cli
 
     cfg = _pod_cfg(tmp_path)
     checkout = _provisioned_checkout(tmp_path)
@@ -351,7 +351,7 @@ def test_snapshot_is_refused_because_its_destination_is_configurable():
     """`snapshot_dir` is a config field and `--keep N` DELETES older archives, so a
     pod seeded from the live config could prune the user's real backups —
     `sanitized_seed_config` only forces the tunnel and the channel enables off."""
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     assert hasattr(KiroCrewConfig, "__dataclass_fields__")
     assert "snapshot_dir" in KiroCrewConfig.__dataclass_fields__
@@ -381,7 +381,7 @@ def test_pod_env_scopes_the_workspace_into_the_pod_home(tmp_path):
 def test_the_pod_workspace_is_not_the_live_workspace(tmp_path, monkeypatch):
     """The concrete regression: with no override, resolution reaches a default
     under the real HOME. The pod's value must not be that."""
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     cfg = _pod_cfg(tmp_path)
     checkout = _provisioned_checkout(tmp_path)
@@ -406,7 +406,7 @@ def test_the_pod_workspace_is_not_the_live_workspace(tmp_path, monkeypatch):
 def test_the_override_actually_drives_workspace_root(tmp_path, monkeypatch):
     """Pin that KIROCREW_WORKSPACE is the mechanism workspace_root() honours, so
     the fix cannot silently stop working if resolution is reordered."""
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     cfg = _pod_cfg(tmp_path)
     checkout = _provisioned_checkout(tmp_path)
@@ -438,7 +438,7 @@ def test_run_is_refused_because_it_writes_beside_the_spec():
     implicit write derived from an INPUT path, which the inclusion test excludes."""
     import inspect
 
-    from kiro_crew import task_reporter
+    from efm_go import task_reporter
 
     src = inspect.getsource(task_reporter.save_progress)
     assert "spec_path" in src and "parent" in src, "premise: progress goes beside the spec"

@@ -2,7 +2,7 @@
 
 ``test/conftest.py`` holds the bulk of the suite's isolation, but it only applies
 to ``test/``. ``[tool:pytest] testpaths`` also collects ``transfer`` and
-``src/kiro_crew/apps/builtins`` (~108 test modules that ship inside the package,
+``src/efm_go/apps/builtins`` (~108 test modules that ship inside the package,
 next to the code they cover), and those get no ``test/conftest.py`` fixtures at
 all -- only this file, plus that app's own ``tests/conftest.py`` where one exists.
 Anything that must hold for EVERY test therefore has to live here, at the
@@ -23,7 +23,7 @@ this" contract failed at least once:
 * **The data home.** ``KIROCREW_HOME`` is pinned per test, and the ``~/.kiro``
   paths that production binds at IMPORT time (which the env var cannot reach) are
   pinned with it. Without this, the ~108 test modules that ship inside the package
-  under ``src/kiro_crew/apps/builtins/*/tests/`` -- which see this conftest and no
+  under ``src/efm_go/apps/builtins/*/tests/`` -- which see this conftest and no
   other -- write the operator's live ``~/.kiro/crew`` the moment they touch
   ``config_dir()``. ``KIROCREW_WORKSPACE`` is pinned alongside it for the same
   reason: ``workspace_root()`` is a SEPARATE default from ``config_dir()`` (it
@@ -95,13 +95,13 @@ Besides the floor, this file carries the two pieces of the Determinism contract
 that no test can import from ``test/``: the opt-in ``manual_clock``, ``seeded_rng``
 and ``local_tz`` fixtures (requested by name, never autouse), and the per-test
 publication of the running test's timeout to
-``kiro_crew.testing.wait.runner_timeout_secs``, so a wait helper's default deadline is
+``efm_go.testing.wait.runner_timeout_secs``, so a wait helper's default deadline is
 half of the timeout pytest-timeout enforces on that test.
 
 Imports at MODULE level are stdlib + pytest only, on purpose: a rootdir conftest is
-imported before every collection, so pulling ``kiro_crew`` in here would make the
+imported before every collection, so pulling ``efm_go`` in here would make the
 whole suite depend on import-time side effects of the package under test. The
-fixtures that do need ``kiro_crew`` import it in their own body, which runs at test
+fixtures that do need ``efm_go`` import it in their own body, which runs at test
 setup -- by which point the test module has already imported the package anyway --
 and tolerate an ImportError so a partial checkout cannot break collection.
 """
@@ -133,15 +133,15 @@ import _pytest.runner
 import pytest
 
 # ── ACP frame recorder switch (rootdir floor) ───────────────────────────────
-# ``kiro_crew.acp._frame_record`` starts its writer thread at IMPORT time when
+# ``efm_go.acp._frame_record`` starts its writer thread at IMPORT time when
 # ``KIROCREW_ACP_RECORD_FRAMES`` is set, and ``acp.client`` (hence the dashboard
 # server, the session handle, the Slack handler, ...) imports it transitively. An
 # operator running the suite with a live recording configured would otherwise
 # have every collected test module's fake frames appended to their real corpus
 # file -- from ANY testpath, including the ~108 modules under
-# ``src/kiro_crew/apps/builtins/*/tests/`` that never see ``test/conftest.py``.
+# ``src/efm_go/apps/builtins/*/tests/`` that never see ``test/conftest.py``.
 # Cleared here, at rootdir-conftest import, which precedes every test module's
-# first ``kiro_crew`` import; tests that need the switch set it themselves
+# first ``efm_go`` import; tests that need the switch set it themselves
 # through monkeypatch.
 os.environ.pop("KIROCREW_ACP_RECORD_FRAMES", None)
 
@@ -337,7 +337,7 @@ def _refuse_a_real_data_home() -> None:
 # alone below), so hypothesis falls back to its own default: ``.hypothesis/examples``
 # resolved against the CURRENT WORKING DIRECTORY, i.e. the repo root, for every test
 # collected from ANY testpath -- including the ~108 modules under
-# ``src/kiro_crew/apps/builtins/*/tests/`` that never import ``test/conftest.py`` at all.
+# ``src/efm_go/apps/builtins/*/tests/`` that never import ``test/conftest.py`` at all.
 # That writes an untracked directory into the checkout on every run (git status shows it
 # under "Ignored files" since ``.gitignore`` covers it, but it still needs a place to live
 # that is not the source tree).
@@ -450,11 +450,11 @@ def _redirect_bytecode_cache() -> None:
 
 
 def _put_the_tree_under_test_first_on_child_paths() -> None:
-    """Make every interpreter a test spawns import the ``kiro_crew`` this run imports.
+    """Make every interpreter a test spawns import the ``efm_go`` this run imports.
 
     ``[tool:pytest] pythonpath = src`` (or a ``-o pythonpath=<tree>/src`` override)
     puts the tree under test on THIS interpreter's ``sys.path`` only. A
-    ``sys.executable -c`` child resolves ``kiro_crew`` from the venv's install
+    ``sys.executable -c`` child resolves ``efm_go`` from the venv's install
     instead. On CI the install is the checkout being tested, so nothing differs; in
     a linked worktree that borrows another checkout's venv, every child imported
     THAT checkout, and a child calling a symbol the worktree added failed with
@@ -463,7 +463,7 @@ def _put_the_tree_under_test_first_on_child_paths() -> None:
     the same way ``PYTHONPYCACHEPREFIX`` does above.
 
     ``find_spec`` locates the package without executing it (the module-level
-    no-``kiro_crew`` rule in this file's docstring). An inherited ``PYTHONPATH`` is
+    no-``efm_go`` rule in this file's docstring). An inherited ``PYTHONPATH`` is
     kept after it, and no empty component is ever written: an empty entry is the
     child's CWD on ``sys.path`` (``test_stdlib_shadow.py``). A test that builds a
     child env from scratch, or strips ``PYTHONPATH`` on purpose, is unaffected.
@@ -471,7 +471,7 @@ def _put_the_tree_under_test_first_on_child_paths() -> None:
     import importlib.util
 
     try:
-        spec = importlib.util.find_spec("kiro_crew")
+        spec = importlib.util.find_spec("efm_go")
     except (ImportError, ValueError):
         return
     if spec is None or not spec.origin:
@@ -704,7 +704,7 @@ _HOST_SERVICE_EXEC_ALLOWED_MODULES: frozenset[str] = frozenset(
 #: ``kirocrew pod`` verbs that create, start, stop or delete a host service
 #: definition (a systemd unit, a launchd agent, a Task Scheduler task). The pod
 #: CLI is how a test reaches a service manager without naming one, so a spawn of
-#: ``kirocrew pod <verb>`` or ``python -m kiro_crew pod <verb>`` is refused for
+#: ``kirocrew pod <verb>`` or ``python -m efm_go pod <verb>`` is refused for
 #: every module not listed above. Read-only verbs (``ls``, ``status``, ``api``,
 #: ``logs``) stay allowed.
 _POD_MUTATING_VERBS = frozenset({"up", "down", "install", "prune", "restart"})
@@ -765,7 +765,7 @@ def _pod_cli_refusal(tokens: list[str]) -> str | None:
     """Name the ``kirocrew pod`` mutation in *tokens*, or ``None``.
 
     Matches the console script (``kirocrew``, ``kirocrew.exe``) and the module
-    form (``python -m kiro_crew``), then requires the literal ``pod`` subcommand
+    form (``python -m efm_go``), then requires the literal ``pod`` subcommand
     followed by a verb from :data:`_POD_MUTATING_VERBS`. Anything looser would
     refuse a test that merely passes ``"pod"`` as an argument to something else.
     """
@@ -773,7 +773,7 @@ def _pod_cli_refusal(tokens: list[str]) -> str | None:
         name = _basename(token)
         if name in {"kirocrew", "kirocrew.exe"}:
             rest = tokens[index + 1 :]
-        elif token == "-m" and index + 1 < len(tokens) and tokens[index + 1] == "kiro_crew":
+        elif token == "-m" and index + 1 < len(tokens) and tokens[index + 1] == "efm_go":
             rest = tokens[index + 2 :]
         else:
             continue
@@ -791,7 +791,7 @@ def _refuse(reason: str, argv: object) -> None:
         f"  argv: {argv!r}\n"
         f"This spawn must be stubbed. Depending on the code under test:\n"
         f"  - dev_fleet make-live: stub BOTH `_run_cmd` and `_dropin_path`\n"
-        f"  - kiro_crew.service.*: patch `service.<platform>.subprocess.run`\n"
+        f"  - efm_go.service.*: patch `service.<platform>.subprocess.run`\n"
         f"  - pod runtime: stub the runtime's `systemctl` / `launchctl` helper\n"
         f"Read-only queries (`systemctl show`, `cat`, `is-active`) are allowed and "
         f"need no stub.\n"
@@ -877,14 +877,14 @@ def monkeypatch(_floor_monkeypatch):
 
 @pytest.fixture
 def manual_clock():
-    """A fresh ``kiro_crew.testing.clock.ManualClock`` (Determinism contract D2, D3).
+    """A fresh ``efm_go.testing.clock.ManualClock`` (Determinism contract D2, D3).
 
     Nothing is installed until the test asks:
     ``manual_clock.install(monkeypatch, subject_module)`` replaces that module's own
     ``time`` binding through the test's ``monkeypatch``, so the stdlib clock, the event
     loop and pytest-timeout keep real time.
     """
-    from kiro_crew.testing.clock import ManualClock
+    from efm_go.testing.clock import ManualClock
 
     return ManualClock()
 
@@ -895,9 +895,9 @@ def seeded_rng(request):
 
     The seed is the same in every run and on every host, and it is printed in the
     report of a failing test, so the draws that failed can be replayed with
-    ``kiro_crew.testing.ids.seeded_rng(nodeid, seed=<printed seed>)``.
+    ``efm_go.testing.ids.seeded_rng(nodeid, seed=<printed seed>)``.
     """
-    from kiro_crew.testing import ids
+    from efm_go.testing import ids
 
     nodeid = _nodeid_without_xdist_group(request.node)
     seed = ids.seed_for(nodeid)
@@ -1032,7 +1032,7 @@ def _isolate_launchd_paths(_xdg_config_root, _floor_monkeypatch):
     log_dir = root / "Logs"
 
     eager: dict[str, dict[str, object]] = {
-        "kiro_crew.service.macos": {
+        "efm_go.service.macos": {
             "PLIST_DIR": plist_dir,
             "PLIST_PATH": plist_path,
             "LOG_DIR": log_dir,
@@ -1040,10 +1040,10 @@ def _isolate_launchd_paths(_xdg_config_root, _floor_monkeypatch):
             "STDERR_LOG": log_dir / "gateway.err",
             "LIVE_PROGRAM": launcher,
         },
-        "kiro_crew.service.common": {"launchd_live_program": lambda: launcher},
+        "efm_go.service.common": {"launchd_live_program": lambda: launcher},
     }
     lazy: dict[str, dict[str, object]] = {
-        "kiro_crew.apps.builtins.dev_fleet.gateway_service": {
+        "efm_go.apps.builtins.dev_fleet.gateway_service": {
             "PLIST_PATH": plist_path,
             "launchd_live_program": lambda: launcher,
         },
@@ -1120,7 +1120,7 @@ def _isolate_sandbox_mount_source_roots(_sandbox_mount_source_root, _floor_monke
     """
     monkeypatch = _floor_monkeypatch
     try:
-        sandbox_mod = importlib.import_module("kiro_crew.sandbox")
+        sandbox_mod = importlib.import_module("efm_go.sandbox")
     except Exception:  # pragma: no cover - a partial checkout must not break collection
         return
     _SANDBOX_SWEEP_ORIGINALS.setdefault(
@@ -1210,7 +1210,7 @@ def _pin_kill_and_reap_group_probe(_floor_monkeypatch):
     """
     monkeypatch = _floor_monkeypatch
     try:
-        platform_compat = importlib.import_module("kiro_crew.platform_compat")
+        platform_compat = importlib.import_module("efm_go.platform_compat")
     except Exception:  # pragma: no cover - a partial checkout must not break collection
         return
     monkeypatch.setattr(platform_compat, "_shares_own_process_group", lambda _pid: False)
@@ -1242,7 +1242,7 @@ def _no_credential_env_residue():
     shape. Two linear environment scans per test also catch a dynamic key that
     did not exist at setup, without masking an unrelated environment change.
     """
-    from kiro_crew.config.loader import _JIRA_TOKEN_RE, CREDENTIAL_KEYS
+    from efm_go.config.loader import _JIRA_TOKEN_RE, CREDENTIAL_KEYS
 
     fixed = frozenset(CREDENTIAL_KEYS)
 
@@ -1314,7 +1314,7 @@ def _scrub_inherited_preload_env(_floor_monkeypatch):
     nothing a test leaked survives past the test on this worker.
     """
     monkeypatch = _floor_monkeypatch
-    from kiro_crew.name_grant import (
+    from efm_go.name_grant import (
         _BASH_FUNC_KEY_PREFIX,
         _BASH_FUNC_VALUE_PREFIX,
         _ENV_PRELOAD_VARS,
@@ -1440,7 +1440,7 @@ _REAL_USER_SESSION_ENV_AT_START: dict[str, str] = {
 
 def _reset_cgroup_scope_probe() -> None:
     """Drop ``sandbox``'s memoised cgroup-scope probe so the next call re-reads the env."""
-    sb = sys.modules.get("kiro_crew.sandbox")
+    sb = sys.modules.get("efm_go.sandbox")
     if sb is not None:
         sb._CGROUP_SCOPE_PROBE = None
 
@@ -1492,7 +1492,7 @@ def real_user_session(monkeypatch):
         pytest.skip("no systemd user session on this host")
     for name, value in _REAL_USER_SESSION_ENV_AT_START.items():
         monkeypatch.setenv(name, value)
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     monkeypatch.setattr(sb, "_CGROUP_SCOPE_PROBE", None)
     try:
@@ -1590,7 +1590,7 @@ IMPORT_TIME_METRIC_EMITTERS: list[str] = []
 
 
 def _metrics_provider_module():
-    return sys.modules.get("kiro_crew.metrics.provider")
+    return sys.modules.get("efm_go.metrics.provider")
 
 
 def _pin_telemetry_off_for_the_process() -> None:
@@ -1845,7 +1845,7 @@ def _join_install_receipt_workers() -> None:
     lock acquire; the module is looked up rather than imported so a test run that
     never touches the receipt path pays nothing.
     """
-    mod = sys.modules.get("kiro_crew.apps.install_receipt")
+    mod = sys.modules.get("efm_go.apps.install_receipt")
     waiter = getattr(mod, "wait_for_pending_receipt_writes", None)
     if waiter is not None:
         waiter()
@@ -1858,7 +1858,7 @@ def _resume_crew_log_eager_fold() -> None:
     tests, this one hands the worker back to the test itself. Looked up rather than
     imported, so a run that never touches the crew log pays nothing.
     """
-    mod = sys.modules.get("kiro_crew.crew_log.eager")
+    mod = sys.modules.get("efm_go.crew_log.eager")
     resume = getattr(mod, "resume_for_tests", None)
     if resume is not None:
         resume()
@@ -1888,7 +1888,7 @@ def _retire_crew_log_eager_fold() -> "BaseException | None":
     instead, beside :func:`_refuse_a_resolved_real_default_home`, which is the established
     place for "this test left damage".
     """
-    mod = sys.modules.get("kiro_crew.crew_log.eager")
+    mod = sys.modules.get("efm_go.crew_log.eager")
     retire = getattr(mod, "retire_for_tests", None)
     if retire is None:
         return None
@@ -2253,7 +2253,7 @@ def _no_leaked_telemetry_exporter():
     leaked = _live_exporter_threads() - before
     if not leaked:
         return
-    provider = sys.modules.get("kiro_crew.metrics.provider")
+    provider = sys.modules.get("efm_go.metrics.provider")
     if provider is not None:
         with contextlib.suppress(Exception):
             provider.reset_for_testing()
@@ -2374,7 +2374,7 @@ def _restore_log_queue_listener():
     stopping it propagating is the whole job.
 
     HANDLERS stay untouched, the boundary ``_restore_logger_levels`` below draws and for
-    its reasons. The ``_CliLogQueueHandler`` left on the ``kiro_crew`` logger therefore
+    its reasons. The ``_CliLogQueueHandler`` left on the ``efm_go`` logger therefore
     outlives the listener it fed, holding an unattended queue; it is the same handler
     accumulation that fixture already records as a separate defect, and
     ``test_cli_logging.py``'s ``_pristine_logging`` is what absorbs it today by clearing
@@ -2385,10 +2385,10 @@ def _restore_log_queue_listener():
     and, as there, such a fixture has to stop its own listener, because every later test
     then inherits it and so restores to it.
     """
-    cli = sys.modules.get("kiro_crew.cli")
+    cli = sys.modules.get("efm_go.cli")
     before = getattr(cli, "_LOG_QUEUE_LISTENER", None)
     yield
-    cli = sys.modules.get("kiro_crew.cli")
+    cli = sys.modules.get("efm_go.cli")
     if cli is None:
         return
     after = getattr(cli, "_LOG_QUEUE_LISTENER", None)
@@ -2433,7 +2433,7 @@ def _restore_hooks_integration_globals():
     through ``sys.modules`` so a worker that never imported the module pays
     nothing and no import is charged to the lazy-import ratchets.
     """
-    hi = sys.modules.get("kiro_crew.apps.hooks_integration")
+    hi = sys.modules.get("efm_go.apps.hooks_integration")
     before = None
     if hi is not None:
         before = (
@@ -2441,7 +2441,7 @@ def _restore_hooks_integration_globals():
             getattr(hi, "_route_registry", None),
         )
     yield
-    hi = sys.modules.get("kiro_crew.apps.hooks_integration")
+    hi = sys.modules.get("efm_go.apps.hooks_integration")
     if hi is None:
         return
     if before is None:
@@ -2484,7 +2484,7 @@ def _restore_logger_levels():
 
     A level is PROCESS-GLOBAL and HIERARCHICAL, which together are what make a leak here
     so hard to attribute: ``Logger.debug`` checks the EFFECTIVE level, so an explicit
-    level left on ``kiro_crew`` decides what every ``kiro_crew.*`` logger in the worker
+    level left on ``efm_go`` decides what every ``efm_go.*`` logger in the worker
     may emit, and it outranks the root level ``caplog.at_level()`` sets. The victim then
     sees ``caplog.text == ""`` -- not the wrong text, NOTHING -- from a test that passes
     alone, in a file that has nothing to do with the cause.
@@ -2493,7 +2493,7 @@ def _restore_logger_levels():
     test_options_post_failure_still_delivers_text`` asserts on a ``logger.debug`` line and
     reds whenever ``test_cli.py::TestCronCli::test_cli_argparse_cron_add_agent_flag``
     shares its worker -- an ARGPARSE test, in a file with no connection to Slack. It
-    drives the real ``cli.main()``, whose ``_setup_cli_logging`` pins ``kiro_crew`` at
+    drives the real ``cli.main()``, whose ``_setup_cli_logging`` pins ``efm_go`` at
     WARNING, exactly as production does once per process and never undoes. Test modules
     across the suite drive ``main()`` that way.
 
@@ -2515,7 +2515,7 @@ def _restore_logger_levels():
     back during teardown, re-attaching the setup phase's handler and dropping the one the
     teardown phase is capturing through.
 
-    The handlers ``_setup_cli_logging`` leaves on ``kiro_crew`` do accumulate -- each open
+    The handlers ``_setup_cli_logging`` leaves on ``efm_go`` do accumulate -- each open
     on a ``gateway.log`` under a ``tmp_path`` the next test deletes -- but that is a
     separate defect from this one, and it is not what empties ``caplog``.
     ``test_cli_logging.py``'s own ``_pristine_logging`` fixture is what absorbs it today,
@@ -2577,30 +2577,30 @@ def _runner_timeout_secs(item) -> float | None:
 
 #: The session's own ``time.monotonic``, ``time.sleep`` and ``asyncio.sleep``, taken in
 #: ``pytest_sessionstart`` (after every plugin's configure, before any test can patch
-#: them): what :func:`_publish_runner_timeout` hands back to ``kiro_crew.testing.wait``.
+#: them): what :func:`_publish_runner_timeout` hands back to ``efm_go.testing.wait``.
 _WAIT_CLOCKS: tuple | None = None
 
 
 def _publish_runner_timeout(seconds: float | None) -> None:
-    """Hand the running test's timeout, and the real clocks, to ``kiro_crew.testing.wait``.
+    """Hand the running test's timeout, and the real clocks, to ``efm_go.testing.wait``.
 
     Set at setup and cleared after teardown, so a wait in a fixture's teardown still
     sees it. The module is imported here once its package is loaded, which is cheap
-    (only ``wait`` itself and ``kiro_crew.loop_lock``) and lets a test that imports
+    (only ``wait`` itself and ``efm_go.loop_lock``) and lets a test that imports
     ``wait`` inside its body see its own timeout. The package itself is never
     imported here: its ``__init__`` loads the gateway harness, which must not happen
     under one test's pinned home. A test in a suite that never loaded
-    ``kiro_crew.testing`` waits on the module's fallback instead.
+    ``efm_go.testing`` waits on the module's fallback instead.
 
     The module captures the clocks it waits with when it is first imported, so a test
     that patched ``time.monotonic`` and then imported it first would leave every later
     wait in the worker reading the fake. Writing the session's originals back at each
     setup confines that to the one test.
     """
-    wait = sys.modules.get("kiro_crew.testing.wait")
-    if wait is None and seconds is not None and "kiro_crew.testing" in sys.modules:
+    wait = sys.modules.get("efm_go.testing.wait")
+    if wait is None and seconds is not None and "efm_go.testing" in sys.modules:
         try:
-            wait = importlib.import_module("kiro_crew.testing.wait")
+            wait = importlib.import_module("efm_go.testing.wait")
         except ImportError:  # pragma: no cover - a partial checkout
             return
     if wait is not None:
@@ -2627,7 +2627,7 @@ def pytest_runtest_setup(item):
     OS sandbox backend" on a host whose sandbox works perfectly.
 
     This lived in ``test/conftest.py``, which the in-package app suites never load,
-    so the ~1490 tests under ``src/kiro_crew/apps/builtins/*/tests/`` had no warm
+    so the ~1490 tests under ``src/efm_go/apps/builtins/*/tests/`` had no warm
     cache at all -- 19 of them failed that way in a full run while every one passed
     when its own file was run alone. Whether an app test file happened to land on an
     xdist worker that had already run something under ``test/`` decided the verdict.
@@ -2656,7 +2656,7 @@ def pytest_runtest_setup(item):
     _publish_runner_timeout(_runner_timeout_secs(item))
     global _probe_verdict, _probe_attempted
     try:
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         if not _probe_attempted:
             _probe_attempted = True
@@ -2755,14 +2755,14 @@ def _check_zone_drift(item) -> None:
         _floor_report("time zone", item.nodeid, f"changed the process zone {before} -> {after}")
 
 
-# The shared ``kiro_crew.executors`` pools. Work a test hands one and does not wait for
+# The shared ``efm_go.executors`` pools. Work a test hands one and does not wait for
 # runs inside whichever test comes next on the worker, against that test's home.
 _POOL_STATE = pytest.StashKey[dict]()
 
 
 def _pool_activity() -> dict[str, tuple[int, int]]:
     """``name -> (busy, queued)`` for every loaded shared pool that has work."""
-    executors = sys.modules.get("kiro_crew.executors")
+    executors = sys.modules.get("efm_go.executors")
     if executors is None:
         return {}
     from concurrent.futures import ThreadPoolExecutor
@@ -2796,14 +2796,14 @@ def _check_pool_leftovers(item) -> None:
             )
 
 
-# ``kiro_crew`` package attributes. ``monkeypatch.setattr("kiro_crew.mod.name", ...)``
+# ``efm_go`` package attributes. ``monkeypatch.setattr("efm_go.mod.name", ...)``
 # resolves each dotted component as an ATTRIBUTE of its parent package, so a test that
-# evicts ``kiro_crew.mod`` from ``sys.modules`` and imports it again without putting the
+# evicts ``efm_go.mod`` from ``sys.modules`` and imports it again without putting the
 # parent's attribute back, or that replaces a module the others already hold, breaks
 # later tests far from the cause (2,167 setup errors on one Windows worker). The floor
 # restores what the test inherited and names the test that changed it.
 class _PackageTable:
-    """The inherited ``kiro_crew`` module graph: one row per bound submodule."""
+    """The inherited ``efm_go`` module graph: one row per bound submodule."""
 
     __slots__ = ("modules_len", "root", "root_items", "names", "objs", "parent_dicts", "childs")
 
@@ -2818,7 +2818,7 @@ class _PackageTable:
 
     def rebuild(self) -> None:
         modules = sys.modules
-        self.root = modules.get("kiro_crew")
+        self.root = modules.get("efm_go")
         self.root_items = (
             [(k, v) for k, v in vars(self.root).items() if not k.startswith("__")]
             if self.root is not None
@@ -2826,7 +2826,7 @@ class _PackageTable:
         )
         names, objs, parent_dicts, childs = [], [], [], []
         for name, module in list(modules.items()):
-            if module is None or not name.startswith("kiro_crew."):
+            if module is None or not name.startswith("efm_go."):
                 continue
             parent_name, _, child = name.rpartition(".")
             parent_dict = getattr(modules.get(parent_name), "__dict__", None)
@@ -2843,7 +2843,7 @@ class _PackageTable:
 
     def intact(self) -> bool:
         modules = sys.modules
-        if modules.get("kiro_crew") is not self.root:
+        if modules.get("efm_go") is not self.root:
             return False
         if list(map(modules.get, self.names)) != self.objs:
             return False
@@ -2856,9 +2856,9 @@ class _PackageTable:
         """Put back every inherited binding, and return what had changed."""
         changed: list[str] = []
         modules = sys.modules
-        if self.root is not None and modules.get("kiro_crew") is not self.root:
-            changed.append("sys.modules['kiro_crew'] replaced")
-            modules["kiro_crew"] = self.root
+        if self.root is not None and modules.get("efm_go") is not self.root:
+            changed.append("sys.modules['efm_go'] replaced")
+            modules["efm_go"] = self.root
         for name, obj, parent_dict, child in zip(
             self.names, self.objs, self.parent_dicts, self.childs
         ):
@@ -2875,7 +2875,7 @@ class _PackageTable:
         if root_dict is not None:
             for key, value in self.root_items:
                 if root_dict.get(key) is not value:
-                    changed.append(f"kiro_crew.{key} rebound")
+                    changed.append(f"efm_go.{key} rebound")
                     root_dict[key] = value
         return changed
 
@@ -2884,12 +2884,12 @@ _PACKAGE_TABLE = _PackageTable()
 
 
 @pytest.fixture(autouse=True)
-def _kiro_crew_package_attr_floor(request):
-    """Restore the ``kiro_crew`` module graph a test inherited; report the test that changed it.
+def _efm_go_package_attr_floor(request):
+    """Restore the ``efm_go`` module graph a test inherited; report the test that changed it.
 
-    Compares, at teardown, every ``kiro_crew.*`` entry of ``sys.modules`` the test
+    Compares, at teardown, every ``efm_go.*`` entry of ``sys.modules`` the test
     inherited and its parent package's attribute (plus the root package's own globals,
-    which an in-process ``importlib.reload(kiro_crew)`` rebinds) with what they were at
+    which an in-process ``importlib.reload(efm_go)`` rebinds) with what they were at
     setup, using C-level ``map`` comparisons; only a change takes the slow path. A
     module the test imported for the first time is checked too: one left in
     ``sys.modules`` without its parent attribute is bound back. Reports by default and
@@ -2899,7 +2899,7 @@ def _kiro_crew_package_attr_floor(request):
     (``request.getfixturevalue``) has its replacement undone at that test's teardown.
     """
     table = _PACKAGE_TABLE
-    if sys.modules.get("kiro_crew") is None:
+    if sys.modules.get("efm_go") is None:
         yield
         return
     if len(sys.modules) != table.modules_len or not table.intact():
@@ -2909,7 +2909,7 @@ def _kiro_crew_package_attr_floor(request):
     if not table.intact():
         changed = table.restore()
     if len(sys.modules) != table.modules_len:
-        changed += _bind_unbound_kiro_crew_modules()
+        changed += _bind_unbound_efm_go_modules()
         table.rebuild()
     if not changed:
         return
@@ -2918,19 +2918,19 @@ def _kiro_crew_package_attr_floor(request):
     )
     if os.environ.get(_PKG_ATTR_STRICT_ENV) == "1":
         raise AssertionError(
-            f"this test changed the kiro_crew module graph (restored): {detail}. Load a "
+            f"this test changed the efm_go module graph (restored): {detail}. Load a "
             "private copy with spec_from_file_location under a unique name instead of "
             "reloading or evicting a shared module (testing-conventions D11)."
         )
     _floor_report("package attrs", request.node.nodeid, detail)
 
 
-def _bind_unbound_kiro_crew_modules() -> list[str]:
-    """Bind back a loaded ``kiro_crew`` submodule its parent package lost."""
+def _bind_unbound_efm_go_modules() -> list[str]:
+    """Bind back a loaded ``efm_go`` submodule its parent package lost."""
     bound: list[str] = []
     modules = sys.modules
     for name, module in list(modules.items()):
-        if module is None or not name.startswith("kiro_crew."):
+        if module is None or not name.startswith("efm_go."):
             continue
         parent_name, _, child = name.rpartition(".")
         parent_dict = getattr(modules.get(parent_name), "__dict__", None)
@@ -3278,7 +3278,7 @@ def pytest_collection_modifyitems(config, items):
     :func:`on_self_hosted_runner`.
 
     Lives HERE rather than in ``test/conftest.py`` because the lists already name node
-    ids under ``src/kiro_crew/apps/builtins/auto_improvement/tests/``, and a hook rooted
+    ids under ``src/efm_go/apps/builtins/auto_improvement/tests/``, and a hook rooted
     at ``test/`` is never registered when only in-package tests are collected -- which is
     exactly what CI's reduced-scope Windows job does when a diff touches no path under
     ``test/``. Those entries are also absent from ``BACKEND_DESELECTS``, so they were
@@ -3441,7 +3441,7 @@ def _base_nodeid(nodeid: str) -> str:
 
 
 def platform_compat_or_none():
-    """``kiro_crew.platform_compat``, or ``None`` when it cannot be imported.
+    """``efm_go.platform_compat``, or ``None`` when it cannot be imported.
 
     Imported lazily so this rootdir conftest keeps its module-level imports to the
     stdlib: it is loaded before every collection, and a module-scope import of the
@@ -3449,7 +3449,7 @@ def platform_compat_or_none():
     side effects.
     """
     try:
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
     except ImportError:  # pragma: no cover - partial checkout
         return None
     return platform_compat
@@ -3653,7 +3653,7 @@ def _remove_tree(path: pathlib.Path) -> bool:
     returns a filesystem-derived boolean rather than the hook's opinion.
     """
     try:
-        from kiro_crew import platform_compat as _pc
+        from efm_go import platform_compat as _pc
     except ImportError:  # pragma: no cover - partial checkout
         shutil.rmtree(path, ignore_errors=True)
         return not path.exists()
@@ -3975,7 +3975,7 @@ def _isolate_kirocrew_home(request, _isolation_dirs, _floor_monkeypatch):
 
     This lives at the rootdir rather than in ``test/conftest.py`` because the leak it
     closes is worst in the testpaths that conftest does not reach. The ~108 test
-    modules under ``src/kiro_crew/apps/builtins/*/tests/`` ship inside the package and
+    modules under ``src/efm_go/apps/builtins/*/tests/`` ship inside the package and
     see only this file, so before this fixture existed here any of them that touched
     ``config_dir()`` resolved the operator's live data home -- and that resolution is
     not read-only: ``config_dir()`` CREATES the home and its marker on first use, and
@@ -4065,7 +4065,7 @@ def _isolate_kirocrew_home(request, _isolation_dirs, _floor_monkeypatch):
             monkeypatch.setenv(_name, "")  # the undo for this entry is "was absent"
             monkeypatch.delenv(_name)
     _reset_path_resolver_degradation(monkeypatch)
-    paths = sys.modules.get("kiro_crew.config.paths")
+    paths = sys.modules.get("efm_go.config.paths")
     if paths is not None:
         monkeypatch.setattr(paths, "_resolved_home", None, raising=False)
         monkeypatch.setattr(
@@ -4092,7 +4092,7 @@ def _reset_path_resolver_degradation(monkeypatch) -> None:
     to export, so a test that provokes a stall on purpose still sees only its own.
 
     ``_path_resolve_degraded`` and ``_path_resolve_wedged`` are re-exported by the
-    ``kiro_crew.security`` facade, so they are set THROUGH it: the facade mirrors a
+    ``efm_go.security`` facade, so they are set THROUGH it: the facade mirrors a
     write onto the owning submodule, while patching the owner alone would leave the
     facade holding the original object and break the export-identity contract
     ``test_security_facade`` pins. ``_path_resolve_load_probes`` and
@@ -4100,8 +4100,8 @@ def _reset_path_resolver_degradation(monkeypatch) -> None:
     submodule -- a facade write for those names would mirror nowhere and silently
     do nothing.
     """
-    security = sys.modules.get("kiro_crew.security")
-    paths = sys.modules.get("kiro_crew.security.paths")
+    security = sys.modules.get("efm_go.security")
+    paths = sys.modules.get("efm_go.security.paths")
     if security is not None:
         monkeypatch.setattr(security, "_path_resolve_degraded", {}, raising=False)
         monkeypatch.setattr(security, "_path_resolve_wedged", [], raising=False)
@@ -4154,7 +4154,7 @@ def _is_the_operators_default_home(path) -> bool:
 
 def _resolved_real_default_home():
     """The operator's real home if ``paths._resolved_home`` holds it right now, else None."""
-    paths = sys.modules.get("kiro_crew.config.paths")
+    paths = sys.modules.get("efm_go.config.paths")
     resolved = getattr(paths, "_resolved_home", None) if paths is not None else None
     if resolved is not None and _is_the_operators_default_home(resolved):
         return resolved
@@ -4187,7 +4187,7 @@ def _refuse_a_resolved_real_default_home(resolved) -> None:
         f"({resolved}): it dropped the KIROCREW_HOME pin and let config_dir() / "
         "data_home() fall through to ~/.kiro/crew, which CREATES that directory. "
         "A test of the default path pins the default too: "
-        "monkeypatch.setattr(kiro_crew.config.paths, '_resolve_default_home', "
+        "monkeypatch.setattr(efm_go.config.paths, '_resolve_default_home', "
         "lambda: tmp_path / 'default'); see test_lazy_data_home_paths.py and "
         "conftest._refuse_a_resolved_real_default_home."
     )
@@ -4221,13 +4221,13 @@ def _isolate_sel_default_dir(tmp_path_factory):
     writer, and the thread is not churned per test.
 
     Patches the ``_default_dir()`` accessor rather than a captured constant, because
-    the module resolves its default lazily so that importing ``kiro_crew.sel`` never
+    the module resolves its default lazily so that importing ``efm_go.sel`` never
     triggers the one-time data-home migration as an import side effect. Tests that
     manage their own ``SecurityEventLog`` (passing ``base_dir`` and resetting
     ``_instance``) are unaffected.
     """
     try:
-        from kiro_crew import sel as _sel
+        from efm_go import sel as _sel
     except ImportError:  # pragma: no cover - partial checkout
         yield
         return
@@ -4279,7 +4279,7 @@ def sel_private_root(tmp_path_factory):
     directory.
     """
     try:
-        from kiro_crew.sel import SecurityEventLog
+        from efm_go.sel import SecurityEventLog
     except ImportError:  # pragma: no cover - partial checkout
         yield None
         return
@@ -4319,15 +4319,15 @@ def sel_private_root(tmp_path_factory):
 #: same-shaped tmp path keeps those assertions meaningful.
 #:
 #: ``test/test_host_isolation_floor.py`` ratchets this table against the
-#: ``Path.home()`` bindings ``src/kiro_crew`` actually has, so a new one cannot land
+#: ``Path.home()`` bindings ``src/efm_go`` actually has, so a new one cannot land
 #: unpinned.
 _SHARED_KIRO_PATHS: tuple[tuple[str, str, str], ...] = (
-    ("kiro_crew.agent", "_KIRO_MCP_JSON", ".kiro/settings/mcp.json"),
-    ("kiro_crew.agent", "_CC_MCP_JSON", ".claude.json"),
-    ("kiro_crew.agent", "_DEFAULT_KIRO_HOOKS_DIR", ".kiro/hooks"),
-    ("kiro_crew.learn", "_DEFAULT_DIR", ".kiro/crew"),
-    ("kiro_crew.apps.bridges", "_LEGACY_SHARED_MCP_PATH", ".kiro/settings/mcp.json"),
-    ("kiro_crew.dashboard.handlers.mcp", "_GLOBAL_MCP_JSON", ".kiro/settings/mcp.json"),
+    ("efm_go.agent", "_KIRO_MCP_JSON", ".kiro/settings/mcp.json"),
+    ("efm_go.agent", "_CC_MCP_JSON", ".claude.json"),
+    ("efm_go.agent", "_DEFAULT_KIRO_HOOKS_DIR", ".kiro/hooks"),
+    ("efm_go.learn", "_DEFAULT_DIR", ".kiro/crew"),
+    ("efm_go.apps.bridges", "_LEGACY_SHARED_MCP_PATH", ".kiro/settings/mcp.json"),
+    ("efm_go.dashboard.handlers.mcp", "_GLOBAL_MCP_JSON", ".kiro/settings/mcp.json"),
     # A DERIVED sibling (`_GLOBAL_MCP_JSON.with_suffix(".lock")`), and it has to move
     # WITH its json or the pair is worse than either alone: `_McpFileLockSync.__enter__`
     # creates `_GLOBAL_MCP_JSON.parent` and then touches `_MCP_LOCK_PATH`, so redirecting
@@ -4337,7 +4337,7 @@ _SHARED_KIRO_PATHS: tuple[tuple[str, str, str], ...] = (
     # because that directory was there, and on CI only because an earlier test had
     # leaked into it. This is the sibling-binding case the ratchet's own docstring says
     # it cannot see, which is why the set is enumerated here by hand.
-    ("kiro_crew.dashboard.handlers.mcp", "_MCP_LOCK_PATH", ".kiro/settings/mcp.lock"),
+    ("efm_go.dashboard.handlers.mcp", "_MCP_LOCK_PATH", ".kiro/settings/mcp.lock"),
     # RELATIVE in production (``home / _AUTH_STAGING_RELATIVE``, home = ``Path.home()``),
     # and it must stay so: the sandbox hides ``~/.kiro/crew-auth-staging`` by that
     # HOME-relative spelling, so deriving it from the data home instead would leave a
@@ -4346,7 +4346,7 @@ _SHARED_KIRO_PATHS: tuple[tuple[str, str, str], ...] = (
     # the left operand when the right one is absolute -- so the mkdir+chmod that
     # ``KiroPrerequisiteService`` performs on construction stops reaching the
     # operator's real ``~/.kiro`` (fifteen dashboard-server tests did).
-    ("kiro_crew.kiro_prerequisite", "_AUTH_STAGING_RELATIVE", ".kiro/crew-auth-staging"),
+    ("efm_go.kiro_prerequisite", "_AUTH_STAGING_RELATIVE", ".kiro/crew-auth-staging"),
 )
 
 
@@ -4399,7 +4399,7 @@ def _isolate_shared_kiro_paths(_isolation_dirs, _floor_monkeypatch):
 def _isolate_subagents_dir(_isolation_dirs, _floor_monkeypatch):
     """Pin the subagent registry dir to a tmp dir for the whole suite.
 
-    ``kiro_crew.subagent_persistence._SUBAGENTS_DIR`` is bound at import time to
+    ``efm_go.subagent_persistence._SUBAGENTS_DIR`` is bound at import time to
     ``config_dir() / "subagents"``, so the ``KIROCREW_HOME`` safety net above
     cannot retroactively redirect it. Any test that calls ``SubagentManager.spawn``
     or ``create_agent_folder`` without isolating this global itself would write
@@ -4412,7 +4412,7 @@ def _isolate_subagents_dir(_isolation_dirs, _floor_monkeypatch):
 
     monkeypatch = _floor_monkeypatch
     monkeypatch.setattr(
-        "kiro_crew.subagent_persistence._SUBAGENTS_DIR",
+        "efm_go.subagent_persistence._SUBAGENTS_DIR",
         _isolation_dirs("subagents") / "subagents",
     )
 
@@ -4422,11 +4422,11 @@ def _isolate_subagents_dir(_isolation_dirs, _floor_monkeypatch):
 #: directory, so the hook production already offers "a caller (test/tooling)" is set
 #: by default instead of per test.
 _AGENT_SPEC_HOOKS: tuple[tuple[str, str], ...] = (
-    ("kiro_crew.agent", "KIRO_AGENTS_DIR"),
-    ("kiro_crew.agent_discovery", "_KIRO_AGENTS_DIR"),
-    ("kiro_crew.apps.bridges", "KIRO_AGENTS_DIR"),
-    ("kiro_crew.cli_doctor", "KIRO_AGENTS_DIR"),
-    ("kiro_crew.doctor_deadpath", "KIRO_AGENTS_DIR"),
+    ("efm_go.agent", "KIRO_AGENTS_DIR"),
+    ("efm_go.agent_discovery", "_KIRO_AGENTS_DIR"),
+    ("efm_go.apps.bridges", "KIRO_AGENTS_DIR"),
+    ("efm_go.cli_doctor", "KIRO_AGENTS_DIR"),
+    ("efm_go.doctor_deadpath", "KIRO_AGENTS_DIR"),
 )
 
 #: The real user home, captured at IMPORT -- before any test can patch
@@ -4530,7 +4530,7 @@ def _isolate_agent_spec_home(_agent_spec_seam_modules, _isolation_dirs, _floor_m
     monkeypatch = _floor_monkeypatch
     monkeypatch.delenv("KIRO_HOME", raising=False)
     root = _isolation_dirs("kiro-agents")
-    paths = sys.modules.get("kiro_crew.config.paths")
+    paths = sys.modules.get("efm_go.config.paths")
 
     def _pinned_agents_dir() -> pathlib.Path:
         """The per-test dir, unless this test redirected the home itself."""
@@ -4569,7 +4569,7 @@ def unpinned_agent_spec_home(_isolate_agent_spec_home, monkeypatch):
         mod = sys.modules.get(module)
         if mod is not None:
             monkeypatch.setattr(mod, attr, None, raising=False)
-    paths = sys.modules.get("kiro_crew.config.paths")
+    paths = sys.modules.get("efm_go.config.paths")
     if paths is not None:
         monkeypatch.setattr(paths, "_agents_dir_override", None)
     return _isolate_agent_spec_home
@@ -4685,7 +4685,7 @@ def _isolate_kiro_sessions_dir(_isolation_dirs, _floor_monkeypatch, tmp_path_fac
     # milliseconds once per worker; ``ImportError`` is tolerated so a partial
     # checkout cannot break collection (a module that cannot import has no seam).
     try:
-        paths = importlib.import_module("kiro_crew.config.paths")
+        paths = importlib.import_module("efm_go.config.paths")
     except ImportError:  # pragma: no cover - partial checkout
         paths = None
     if paths is not None:
@@ -4712,7 +4712,7 @@ def _isolate_kiro_sessions_dir(_isolation_dirs, _floor_monkeypatch, tmp_path_fac
     # ``session_map`` defers to ``kiro_sessions_dir()`` when its own override is
     # unset, so the resolver pin above is the floor; this only keeps a module that IS
     # loaded reading the same tree through its own lever.
-    session_map = sys.modules.get("kiro_crew.session_map")
+    session_map = sys.modules.get("efm_go.session_map")
     if session_map is not None:
         monkeypatch.setattr(session_map, "_KIRO_SESSIONS_DIR", root, raising=False)
 
@@ -4727,10 +4727,10 @@ def unpinned_kiro_sessions_dir(_isolate_kiro_sessions_dir, monkeypatch):
     the operator's real store, and a test that deletes through it is the harm the
     pin exists to prevent.
     """
-    paths = sys.modules.get("kiro_crew.config.paths")
+    paths = sys.modules.get("efm_go.config.paths")
     if paths is not None:
         monkeypatch.setattr(paths, "_sessions_dir_override", None)
-    session_map = sys.modules.get("kiro_crew.session_map")
+    session_map = sys.modules.get("efm_go.session_map")
     if session_map is not None:
         monkeypatch.setattr(session_map, "_KIRO_SESSIONS_DIR", None, raising=False)
 
@@ -4806,7 +4806,7 @@ def _no_default_builtin_skills_sync(request, _floor_monkeypatch):
     if request.node.get_closest_marker("real_builtin_skills_sync") is not None:
         return
 
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.skills import SkillsLoader
 
     original_init = SkillsLoader.__init__
 
@@ -4828,7 +4828,7 @@ def _no_central_policy_fetch(_floor_monkeypatch):
 
     Two independent hazards, both of which have to be closed here rather than in
     ``test/conftest.py``: the ~108 test modules under
-    ``src/kiro_crew/apps/builtins/*/tests/`` never see that file, and several of them
+    ``src/efm_go/apps/builtins/*/tests/`` never see that file, and several of them
     call ``boot_platform``.
 
     **The environment.** ``KIROCREW_POLICY_URL`` and its siblings make
@@ -4858,7 +4858,7 @@ def _no_central_policy_fetch(_floor_monkeypatch):
     # Imported at teardown, not at setup: the module pulls in the governance
     # evaluator, and an autouse fixture must not add that to every test's import
     # cost. If it was never imported, no refresher can be running.
-    module = sys.modules.get("kiro_crew.platform.policy_distribution")
+    module = sys.modules.get("efm_go.platform.policy_distribution")
     if module is not None:
         with contextlib.suppress(Exception):
             module.stop_refresher(0.5)
@@ -4890,14 +4890,14 @@ def _reset_platform_context(_floor_monkeypatch):
     ``set_context`` without booting.
 
     Lives HERE, at the rootdir, for the same reason ``_isolate_kirocrew_home`` does:
-    the ~108 test modules under ``src/kiro_crew/apps/builtins/*/tests/`` never see
+    the ~108 test modules under ``src/efm_go/apps/builtins/*/tests/`` never see
     ``test/conftest.py``.  With the pin only there, an inherited
     ``KIROCREW_PROFILE=enterprise`` reddens 150+ builtin-app tests (every governance-gated
     route answers 500, every gated notification is dropped) while ``test/`` stays
     green.
     """
-    from kiro_crew.platform.bootstrap import _reset_boot_state
-    from kiro_crew.platform.context import reset_context
+    from efm_go.platform.bootstrap import _reset_boot_state
+    from efm_go.platform.context import reset_context
 
     _floor_monkeypatch.setenv("KIROCREW_PROFILE", "standalone")
     reset_context()
@@ -4911,7 +4911,7 @@ def _reset_platform_context(_floor_monkeypatch):
 def _isolate_agent_state_sidecar(_isolation_dirs, _floor_monkeypatch):
     """Pin the agent_state sidecar to a tmp dir for the whole suite.
 
-    ``kiro_crew.agent_state`` stores per-agent bookkeeping (model_managed,
+    ``efm_go.agent_state`` stores per-agent bookkeeping (model_managed,
     cc_model) in ``~/.kirocrew/agent_model_state.json`` via ``config_dir()``.
     Tests that exercise the install / refresh / migration / PATCH paths would
     otherwise read and write the operator's real sidecar. Redirect
@@ -4919,17 +4919,17 @@ def _isolate_agent_state_sidecar(_isolation_dirs, _floor_monkeypatch):
     tmp dir so every test starts from empty state.
 
     The module is taken from ``sys.modules`` (``import_module``), never through the
-    dotted string ``"kiro_crew.agent_state.config_dir"``: that string resolves each
+    dotted string ``"efm_go.agent_state.config_dir"``: that string resolves each
     component as an ATTRIBUTE of its parent package, so a test that evicted
-    ``kiro_crew.agent_state`` and re-imported it without restoring
-    ``kiro_crew``'s attribute made this setup raise ``AttributeError`` for every
+    ``efm_go.agent_state`` and re-imported it without restoring
+    ``efm_go``'s attribute made this setup raise ``AttributeError`` for every
     later test on the worker (2,167 setup errors on one Windows worker).
     """
     _pin_agent_state_sidecar(_floor_monkeypatch, _isolation_dirs("agent-state"))
 
 
 def _pin_agent_state_sidecar(monkeypatch, sidecar_root) -> None:
-    agent_state = importlib.import_module("kiro_crew.agent_state")
+    agent_state = importlib.import_module("efm_go.agent_state")
     monkeypatch.setattr(agent_state, "config_dir", lambda: sidecar_root)
 
 
@@ -4966,21 +4966,21 @@ def _reset_member_eventlog_singleton(_isolate_kirocrew_home):
     that does not drain in time fails the test that filled it.
 
     It lives in the rootdir conftest because the in-package app suites
-    (``src/kiro_crew/apps/builtins/**/tests``) reach the same queue and see no other
+    (``src/efm_go/apps/builtins/**/tests``) reach the same queue and see no other
     conftest. Both modules are looked up in ``sys.modules`` rather than imported, so
     a test that never loads them pays nothing; the drain is bound at setup when the
     module is already loaded, so a test that replaces ``drain_for_shutdown`` with a
     wedged stand-in does not wedge this teardown. Reset at both ends, so a test that
     runs after a leak still starts on a clean singleton.
     """
-    hooks = sys.modules.get("kiro_crew.eventlog_hooks")
+    hooks = sys.modules.get("efm_go.eventlog_hooks")
     drain = getattr(hooks, "drain_for_shutdown", None)
     _reset_member_eventlog_service()
     try:
         yield
     finally:
         if drain is None:
-            hooks = sys.modules.get("kiro_crew.eventlog_hooks")
+            hooks = sys.modules.get("efm_go.eventlog_hooks")
             drain = getattr(hooks, "drain_for_shutdown", None)
         drained = drain(_MEMBER_EVENTLOG_DRAIN_SECONDS) if drain is not None else True
         _reset_member_eventlog_service()
@@ -4992,7 +4992,7 @@ def _reset_member_eventlog_singleton(_isolate_kirocrew_home):
 
 
 def _reset_member_eventlog_service() -> None:
-    service = sys.modules.get("kiro_crew.eventlog.service")
+    service = sys.modules.get("efm_go.eventlog.service")
     if service is not None:
         service.set_service(None)
 

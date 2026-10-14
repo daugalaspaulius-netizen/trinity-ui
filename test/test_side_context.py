@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from kiro_crew.dashboard import side_context as sc
-from kiro_crew.dashboard.side_state import SideState
+from efm_go.dashboard import side_context as sc
+from efm_go.dashboard.side_state import SideState
 
 
 def _slot(messages):

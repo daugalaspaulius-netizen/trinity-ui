@@ -22,15 +22,15 @@ from pathlib import Path
 
 from skill_script_helpers import load_skill_script
 
-from kiro_crew import crew_log as lg
-from kiro_crew import session_ledger
-from kiro_crew.crew_log import CrewLog
-from kiro_crew.crew_log import emit as crew_log_emit
+from efm_go import crew_log as lg
+from efm_go import session_ledger
+from efm_go.crew_log import CrewLog
+from efm_go.crew_log import emit as crew_log_emit
 
 SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "goal-conductor"
     / "scripts"

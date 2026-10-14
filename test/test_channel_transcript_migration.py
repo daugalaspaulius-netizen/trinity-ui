@@ -7,12 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.channel_transcript_migration import (
+from efm_go.channel_transcript_migration import (
     _CARRIED_META_FIELDS,
     _orphan_target_stem,
     migrate_channel_transcripts,
 )
-from kiro_crew.history import ConversationLog
+from efm_go.history import ConversationLog
 
 CHANNEL_STEM = "slack_1785370133.085469"
 ORPHAN_STEM = f"dashboard_{CHANNEL_STEM}"
@@ -172,7 +172,7 @@ class TestMigrateChannelTranscripts:
 
         calls: list[int] = []
         monkeypatch.setattr(
-            "kiro_crew.channel_transcript_migration.atomic_write", _boom
+            "efm_go.channel_transcript_migration.atomic_write", _boom
         )
 
         assert migrate_channel_transcripts(log) == 0
@@ -378,7 +378,7 @@ class TestMixedTimezoneOrdering:
     """
 
     def test_an_aware_timestamp_sorts_after_an_earlier_naive_one(self):
-        from kiro_crew.channel_transcript_migration import _epoch_of
+        from efm_go.channel_transcript_migration import _epoch_of
 
         # 10:00 local is a real instant; compare it against an aware value.
         naive = _epoch_of("2026-08-01T10:00:00")
@@ -388,7 +388,7 @@ class TestMixedTimezoneOrdering:
 
     def test_string_order_and_instant_order_genuinely_disagree(self):
         """Guards the actual defect: lexical comparison is not chronological."""
-        from kiro_crew.channel_transcript_migration import _epoch_of
+        from efm_go.channel_transcript_migration import _epoch_of
 
         a, b = "2026-08-01T10:00:00", "2026-08-01T09:30:00+00:00"
         # Lexically a > b, so a string sort puts b first.
@@ -400,7 +400,7 @@ class TestMixedTimezoneOrdering:
         )
 
     def test_an_unparseable_timestamp_sorts_after_every_real_instant(self):
-        from kiro_crew.channel_transcript_migration import _epoch_of
+        from efm_go.channel_transcript_migration import _epoch_of
 
         assert _epoch_of("not a date") > _epoch_of("2099-12-31T23:59:59+00:00")
 
@@ -414,7 +414,7 @@ class TestWithinFileDuplicatesSurvive:
     """
 
     def test_a_repeat_within_one_file_is_kept(self):
-        from kiro_crew.channel_transcript_migration import _merge_messages
+        from efm_go.channel_transcript_migration import _merge_messages
 
         # Same role/content/ts twice — e.g. two rows in one coarse clock tick.
         dup = {"role": "user", "content": "ok", "ts": "2026-08-01T10:00:00+00:00"}
@@ -422,14 +422,14 @@ class TestWithinFileDuplicatesSurvive:
         assert len(merged) == 2
 
     def test_the_same_message_in_both_files_collapses_to_one(self):
-        from kiro_crew.channel_transcript_migration import _merge_messages
+        from efm_go.channel_transcript_migration import _merge_messages
 
         shared = {"role": "user", "content": "hi", "ts": "2026-08-01T10:00:00+00:00"}
         merged = _merge_messages([dict(shared)], [dict(shared)])
         assert len(merged) == 1
 
     def test_a_repeat_in_one_file_and_a_single_in_the_other_keeps_the_repeat(self):
-        from kiro_crew.channel_transcript_migration import _merge_messages
+        from efm_go.channel_transcript_migration import _merge_messages
 
         m = {"role": "assistant", "content": "done", "ts": "2026-08-01T10:00:00+00:00"}
         merged = _merge_messages([dict(m), dict(m)], [dict(m)])
@@ -445,7 +445,7 @@ class TestRedactionStableIdentity:
     """
 
     def test_a_redacted_and_a_raw_copy_are_one_message(self):
-        from kiro_crew.channel_transcript_migration import _merge_messages
+        from efm_go.channel_transcript_migration import _merge_messages
 
         ts = "2026-08-01T10:00:00+00:00"
         raw = {"role": "assistant", "content": "key AKIAIOSFODNN7EXAMPLE ok", "ts": ts}
@@ -457,11 +457,11 @@ class TestRedactionStableIdentity:
         assert len(merged_same) == 1
 
     def test_identity_is_stable_under_redaction(self):
-        from kiro_crew.channel_transcript_migration import _identity
+        from efm_go.channel_transcript_migration import _identity
 
         ts = "2026-08-01T10:00:00+00:00"
         raw = {"role": "assistant", "content": "tok AKIAIOSFODNN7EXAMPLE", "ts": ts}
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
         scrubbed, _ = redact_exfiltration_urls(raw["content"])
         scrubbed, _ = redact_credentials(scrubbed)

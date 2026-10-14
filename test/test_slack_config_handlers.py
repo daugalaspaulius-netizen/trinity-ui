@@ -9,8 +9,8 @@ from pathlib import Path
 
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.config.loader as loader
-from kiro_crew.dashboard.handlers.messaging import _mask_secret, _write_env_updates
+import efm_go.config.loader as loader
+from efm_go.dashboard.handlers.messaging import _mask_secret, _write_env_updates
 
 
 def test_mask_secret_keeps_prefix_and_tail() -> None:
@@ -63,7 +63,7 @@ def test_write_env_updates_handles_missing_file(tmp_path: Path, monkeypatch) -> 
 
 def test_save_denies_non_loopback(monkeypatch) -> None:
     """Config writes are loopback-only: remote sessions are read-only."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     monkeypatch.setattr(mod, "is_direct_local_request", lambda req: False)
     req = make_mocked_request(
@@ -107,7 +107,7 @@ class _StubRequest:
 
 
 def test_direct_local_requires_loopback_and_no_forward_headers() -> None:
-    from kiro_crew.dashboard.origin import is_direct_local_request
+    from efm_go.dashboard.origin import is_direct_local_request
 
     # Genuine local: loopback peer, no proxy headers.
     assert is_direct_local_request(_StubRequest("127.0.0.1"))
@@ -119,7 +119,7 @@ def test_direct_local_requires_loopback_and_no_forward_headers() -> None:
 def test_forwarded_loopback_request_is_not_direct_local() -> None:
     """A proxied/tunneled request arrives FROM a real loopback peer but must
     be treated as remote: any standard forwarding header flips the gate."""
-    from kiro_crew.dashboard.origin import is_direct_local_request
+    from efm_go.dashboard.origin import is_direct_local_request
 
     headers = ("Forwarded", "X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Proto", "X-Real-IP")
     for header in headers:
@@ -130,7 +130,7 @@ def test_forwarded_loopback_request_is_not_direct_local() -> None:
 def test_save_denies_forwarded_loopback_request() -> None:
     """End-to-end: a reverse-proxied request (loopback peer + XFF) cannot
     write config or plant tokens — 403 before any parsing."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     req = make_mocked_request(
         "PUT",
@@ -155,7 +155,7 @@ def test_save_syncs_process_environ(tmp_path: Path, monkeypatch) -> None:
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text("SLACK_BOT_TOKEN=xoxb-OLD\n", encoding="utf-8")
@@ -210,7 +210,7 @@ def _client_put(mod, monkeypatch, tmp_path, body):
 
 def test_save_rejects_token_slack_refuses(tmp_path, monkeypatch) -> None:
     """A token Slack rejects (invalid_auth) fails the save; nothing written."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     async def _reject(key, token):
         return "invalid_auth"
@@ -225,7 +225,7 @@ def test_save_rejects_token_slack_refuses(tmp_path, monkeypatch) -> None:
 
 def test_save_proceeds_with_warning_when_slack_unreachable(tmp_path, monkeypatch) -> None:
     """Being offline must not block a save — token stored, warning returned."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     async def _unreachable(key, token):
         raise ConnectionError("no route to slack.com")
@@ -241,7 +241,7 @@ def test_save_proceeds_with_warning_when_slack_unreachable(tmp_path, monkeypatch
 def test_manifest_endpoint_renders_alias_and_url(monkeypatch) -> None:
     """Manifest endpoint uses a non-identifying default alias (never $USER)
     and builds Slack's deep link; explicit ?alias= is honored."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     monkeypatch.setenv("USER", "hostaccount")
     req = make_mocked_request("GET", "/api/slack/manifest")
@@ -259,7 +259,7 @@ def test_manifest_endpoint_renders_alias_and_url(monkeypatch) -> None:
 
 
 def test_manifest_endpoint_rejects_bad_alias() -> None:
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     req = make_mocked_request("GET", "/api/slack/manifest?alias=../evil")
     resp = asyncio.run(mod.api_slack_manifest(req))
@@ -268,7 +268,7 @@ def test_manifest_endpoint_rejects_bad_alias() -> None:
 
 def test_clear_flags_must_be_strict_booleans(tmp_path, monkeypatch) -> None:
     """Truthy non-bool clear flags (e.g. "false", 1) must not delete tokens."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text("SLACK_BOT_TOKEN=xoxb-KEEP\n", encoding="utf-8")
@@ -296,7 +296,7 @@ def test_clear_flags_must_be_strict_booleans(tmp_path, monkeypatch) -> None:
 def test_restart_required_only_on_actual_change(tmp_path, monkeypatch) -> None:
     """The UI sends every field on save; unchanged boot-read fields and an
     unchanged owner must NOT flag restart_required (it was always-True)."""
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text("", encoding="utf-8")
@@ -333,8 +333,8 @@ def test_webex_held_env_lock_leaves_legacy_credential_intact(tmp_path, monkeypat
     import asyncio
     import json
 
-    import kiro_crew.config.loader as loader
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.config.loader as loader
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text("WEBEX_BOT_TOKEN=old-env-token\n", encoding="utf-8")
@@ -392,8 +392,8 @@ def test_teams_held_env_lock_leaves_legacy_credential_intact(tmp_path, monkeypat
     import asyncio
     import json
 
-    import kiro_crew.config.loader as loader
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.config.loader as loader
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text("MICROSOFT_APP_PASSWORD=old-pass\n", encoding="utf-8")
@@ -468,8 +468,8 @@ def test_teams_config_json_write_failure_leaves_consistent_pair(tmp_path, monkey
     """
     import json
 
-    import kiro_crew.config.loader as loader
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.config.loader as loader
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text("MICROSOFT_APP_PASSWORD=old-pass\n", encoding="utf-8")
@@ -573,8 +573,8 @@ def test_teams_config_write_failure_preserves_process_only_credential(
     """
     import json
 
-    import kiro_crew.config.loader as loader
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.config.loader as loader
+    import efm_go.dashboard.handlers.messaging as mod
 
     # .env has NO password entry — credential exists only in os.environ.
     env = tmp_path / ".env"
@@ -655,8 +655,8 @@ def test_teams_legacy_config_only_password_preserved_on_metadata_only_save(
     import asyncio
     import json
 
-    import kiro_crew.config.loader as loader
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.config.loader as loader
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text("", encoding="utf-8")  # no MICROSOFT_APP_PASSWORD in .env
@@ -752,8 +752,8 @@ def test_teams_cancellation_after_successful_env_write_does_not_rollback_config(
     import asyncio
     import json
 
-    import kiro_crew.config.loader as loader
-    import kiro_crew.dashboard.handlers.messaging as mod
+    import efm_go.config.loader as loader
+    import efm_go.dashboard.handlers.messaging as mod
 
     env = tmp_path / ".env"
     env.write_text("MICROSOFT_APP_PASSWORD=old-pass\n", encoding="utf-8")

@@ -27,10 +27,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew import validation
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.handlers import session_control as handlers_sc
+from efm_go import validation
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.handlers import session_control as handlers_sc
 
 
 @pytest.fixture(autouse=True)
@@ -239,7 +239,7 @@ class TestDefaultAudience:
         ``too_many_targets``: the caller names nothing, so the refusal tells it to
         "send to a named subset" of an audience it never chose.
         """
-        from kiro_crew.dashboard.state import MAX_SLOTS_PER_CREATOR
+        from efm_go.dashboard.state import MAX_SLOTS_PER_CREATOR
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")
@@ -406,7 +406,7 @@ class TestTheCap:
         caller cannot act on, because the fence chose those targets, not the caller.
         Raise the per-creator cap or lower the broadcast cap and this reddens.
         """
-        from kiro_crew.dashboard.state import MAX_SLOTS_PER_CREATOR
+        from efm_go.dashboard.state import MAX_SLOTS_PER_CREATOR
 
         assert sc.MAX_BROADCAST_TARGETS >= MAX_SLOTS_PER_CREATOR
 
@@ -467,7 +467,7 @@ class TestModes:
         async def _fake_run_chat(_state, slot, prompt):
             ran["prompt"] = prompt
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._run_chat", _fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._run_chat", _fake_run_chat)
 
         async def _drive():
             out = await sc.broadcast_to_targets(
@@ -632,7 +632,7 @@ class TestATargetThatNeverAnswers:
         cancellation -- interrupting it strands the steer bookkeeping permanently,
         which `TestTheShieldedSteerDelivery` pins.
         """
-        from kiro_crew.dashboard.chat_delivery import STEER_STEERED
+        from efm_go.dashboard.chat_delivery import STEER_STEERED
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")
@@ -654,7 +654,7 @@ class TestATargetThatNeverAnswers:
             return STEER_STEERED
 
         audits: list[dict] = []
-        monkeypatch.setattr("kiro_crew.dashboard.chat_delivery.steer_into_running_turn", _steer)
+        monkeypatch.setattr("efm_go.dashboard.chat_delivery.steer_into_running_turn", _steer)
         monkeypatch.setattr(sc, "_audit", lambda **kwargs: audits.append(kwargs))
 
         out = await sc.broadcast_to_targets(
@@ -686,7 +686,7 @@ class TestATargetThatNeverAnswers:
         self, tmp_path, monkeypatch
     ):
         """A post-hand-over timeout cannot be inferred from emptied target state."""
-        from kiro_crew.dashboard.chat_delivery import STEER_STEERED
+        from efm_go.dashboard.chat_delivery import STEER_STEERED
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")
@@ -699,11 +699,11 @@ class TestATargetThatNeverAnswers:
             await never.wait()
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_delivery.steer_into_running_turn",
+            "efm_go.dashboard.chat_delivery.steer_into_running_turn",
             AsyncMock(return_value=STEER_STEERED),
         )
         monkeypatch.setattr(sc, "newly_held_constraints", lambda *_args: ["mirror_unverified"])
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.stop_slot_turn", _stop_never_returns)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.stop_slot_turn", _stop_never_returns)
 
         out = await sc.broadcast_to_targets(
             state,
@@ -930,7 +930,7 @@ class TestATargetThatNeverAnswers:
         an inequality still passes while the two are separately maintained, and the
         failure it guards against is someone raising one and forgetting the other.
         """
-        from kiro_crew import mcp_dashboard, validation
+        from efm_go import mcp_dashboard, validation
 
         assert (
             sc.BROADCAST_TARGET_ALLOWANCE_SECS
@@ -1122,7 +1122,7 @@ class TestTheShieldedSteerDelivery:
         that frame the arm cannot run, and the instruction would be lost rather than
         delayed. So the retained delivery carries it.
         """
-        from kiro_crew.dashboard.chat_delivery import STEER_UNAVAILABLE
+        from efm_go.dashboard.chat_delivery import STEER_UNAVAILABLE
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -1136,7 +1136,7 @@ class TestTheShieldedSteerDelivery:
             await release.wait()
             return STEER_UNAVAILABLE
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_delivery.steer_into_running_turn", _steer)
+        monkeypatch.setattr("efm_go.dashboard.chat_delivery.steer_into_running_turn", _steer)
         text = "stop, the fix already landed"
 
         out = await sc.broadcast_to_targets(
@@ -1177,11 +1177,11 @@ class TestTheShieldedSteerDelivery:
         answers `STEER_UNAVAILABLE` for this exact text on every later attempt --
         the caller's retry silently becomes a queue card forever.
         """
-        from kiro_crew.dashboard.chat_delivery import (
+        from efm_go.dashboard.chat_delivery import (
             STEER_STEERED,
             steer_into_running_turn,
         )
-        from kiro_crew.dashboard.chat_runner import _settle_consumed_steers
+        from efm_go.dashboard.chat_runner import _settle_consumed_steers
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -1326,7 +1326,7 @@ class TestTheRoute:
     def test_the_route_is_on_the_strict_internal_path_list(self):
         """Registered but unlisted means the middleware ignores the secret, and the
         route is unreachable in production while every handler test still passes."""
-        from kiro_crew.dashboard import server as srv
+        from efm_go.dashboard import server as srv
 
         listed = set(srv._STRICT_INTERNAL_API_PATHS)
         assert "/api/session-control/broadcast" in listed
@@ -1468,13 +1468,13 @@ def test_the_audit_records_which_audience_the_caller_chose(tmp_path):
 def test_a_steer_broadcast_reaches_a_busy_target_through_the_real_delivery(tmp_path):
     """End to end on the steer arm: a busy target with a steer-capable client is
     cut into, and the report says `steered` rather than `queued`."""
-    from kiro_crew.dashboard.chat_delivery import STEER_STEERED
+    from efm_go.dashboard.chat_delivery import STEER_STEERED
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
     _busy(_child(state, "chat-2", caller))
     with patch(
-        "kiro_crew.dashboard.chat_delivery.steer_into_running_turn",
+        "efm_go.dashboard.chat_delivery.steer_into_running_turn",
         new=AsyncMock(return_value=STEER_STEERED),
     ):
         out = _broadcast(state, caller, mode="steer")
@@ -1532,8 +1532,8 @@ class TestEndToEnd:
         """A tool context whose dashboard is the real aiohttp handlers."""
         import json
 
-        from kiro_crew.mcp_tools.dashboard_client import InMemoryDashboardClient
-        from kiro_crew.mcp_tools.table import Caller, ToolContext
+        from efm_go.mcp_tools.dashboard_client import InMemoryDashboardClient
+        from efm_go.mcp_tools.table import Caller, ToolContext
 
         def _request(req, method):
             request = MagicMock()
@@ -1571,7 +1571,7 @@ class TestEndToEnd:
         return ToolContext(dash, Caller.strict(_key(caller)))
 
     def test_a_queue_broadcast_lands_in_both_targets_transcripts(self, tmp_path, monkeypatch):
-        from kiro_crew.mcp_dashboard import TABLE
+        from efm_go.mcp_dashboard import TABLE
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")
@@ -1595,7 +1595,7 @@ class TestEndToEnd:
         self, tmp_path, monkeypatch
     ):
         """Filtering to no targets must not widen into the default audience."""
-        from kiro_crew.mcp_dashboard import TABLE
+        from efm_go.mcp_dashboard import TABLE
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")
@@ -1615,7 +1615,7 @@ class TestEndToEnd:
     def test_one_dead_target_does_not_cost_the_live_one_its_message(self, tmp_path, monkeypatch):
         """The partial-delivery contract, through every layer: the refused row
         reaches the model's prose AND the other target really got the message."""
-        from kiro_crew.mcp_dashboard import TABLE
+        from efm_go.mcp_dashboard import TABLE
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")
@@ -1636,7 +1636,7 @@ class TestEndToEnd:
     def test_the_status_listing_reflects_what_the_broadcast_just_did(self, tmp_path, monkeypatch):
         """The two verbs are meant to be used together — broadcast, then patrol —
         so the roster must show the queue the broadcast created."""
-        from kiro_crew.mcp_dashboard import TABLE
+        from efm_go.mcp_dashboard import TABLE
 
         state = _make_state(tmp_path)
         caller = _slot(state, "chat-1")

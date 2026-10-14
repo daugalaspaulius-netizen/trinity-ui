@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-import kiro_crew.sandbox as sb
+import efm_go.sandbox as sb
 
 
 @pytest.fixture(autouse=True)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Populate a throwaway KIROCREW_HOME for the GUI user-test target.
 
-Copies a named fixture (``kiro_crew.seed``, the same code path as
+Copies a named fixture (``efm_go.seed``, the same code path as
 ``kirocrew gateway --seed``) and then patches ``config.json`` so the dashboard
 renders as a fully onboarded install with a crew roster:
 
@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
 
     if args.print_fake_backend:
-        from kiro_crew.testing import fake_acp_backend
+        from efm_go.testing import fake_acp_backend
 
         print(fake_acp_backend.__file__)
         return 0
@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
         print("KIROCREW_HOME must point at the scratch home to seed", file=sys.stderr)
         return 2
 
-    from kiro_crew.seed import SeedError, seed
+    from efm_go.seed import SeedError, seed
 
     try:
         seed(args.fixture)

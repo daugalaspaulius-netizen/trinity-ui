@@ -17,11 +17,11 @@ from aiohttp.test_utils import TestClient, TestServer
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from kiro_crew.config.schema import (
+from efm_go.config.schema import (
     SCHEMA_REGISTRY,
     config_entry_to_dict,
 )
-from kiro_crew.members import is_crew_id, is_valid_member_name
+from efm_go.members import is_crew_id, is_valid_member_name
 
 
 @pytest.fixture(autouse=True)
@@ -31,7 +31,7 @@ def _owner_caller(monkeypatch):
     its own enumerate-the-invariant coverage in
     test_agents_endpoints_owner_auth.py."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
     pass  # Member routing does not depend on OS isolation.
@@ -44,7 +44,7 @@ def _owner_caller(monkeypatch):
 
 def _make_app() -> web.Application:
     """Minimal aiohttp app with the schema endpoint."""
-    from kiro_crew.dashboard.handlers import api_config_schema
+    from efm_go.dashboard.handlers import api_config_schema
 
     app = web.Application()
     app.router.add_get("/api/config/schema", api_config_schema)
@@ -213,7 +213,7 @@ class TestSchemaApiEndpoint:
 
 def _make_crud_app() -> web.Application:
     """Minimal aiohttp app with KiroCrew Agent CRUD endpoints."""
-    from kiro_crew.dashboard.handlers import (
+    from efm_go.dashboard.handlers import (
         api_kirocrew_agent_delete,
         api_kirocrew_agent_update,
         api_kirocrew_agents,
@@ -288,7 +288,7 @@ class TestAgentCrudProperties:
             tmp = Path(f.name)
 
         try:
-            with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+            with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
                 async with TestClient(TestServer(_make_crud_app())) as client:
                     # Create
                     resp = await client.post(
@@ -377,7 +377,7 @@ class TestAgentCrudProperties:
             tmp = Path(f.name)
 
         try:
-            with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+            with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
                 async with TestClient(TestServer(_make_crud_app())) as client:
                     resp = await client.post(
                         "/api/agents",
@@ -457,7 +457,7 @@ class TestAgentCrudProperties:
             tmp = Path(f.name)
 
         try:
-            with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+            with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
                 async with TestClient(TestServer(_make_crud_app())) as client:
                     resp = await client.delete(f"/api/agents/{name}")
                     assert resp.status == 200
@@ -485,7 +485,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.post(
                     "/api/agents",
@@ -502,7 +502,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.put(
                     "/api/agents/nonexistent",
@@ -517,7 +517,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.put(
                     "/api/agents/default",
@@ -531,7 +531,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 response = await client.post(
                     "/api/agents", json={"name": ["not", "text"], "kiro_agent": "kirocrew"}
@@ -549,7 +549,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(data), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 response = await client.put("/api/agents/default", json={"kiro_agent": target})
                 assert response.status == 200, await response.text()
@@ -559,7 +559,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 response = await client.put("/api/agents/default", json={"kiro_agent": ""})
                 assert response.status == 400
@@ -575,7 +575,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(data), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 response = await client.put(
                     "/api/agents/default",
@@ -589,7 +589,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.delete("/api/agents/default")
                 assert resp.status == 409
@@ -602,7 +602,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.delete("/api/agents/nonexistent")
                 assert resp.status == 404
@@ -615,7 +615,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.post(
                     "/api/agents",
@@ -631,7 +631,7 @@ class TestAgentCrudEdgeCases:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
 
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.post(
                     "/api/agents",
@@ -646,7 +646,7 @@ async def test_crud_triggers_create_and_update_round_trip(tmp_path: Path) -> Non
     """`triggers` persists through create + update and appears in the agents list."""
     tmp = tmp_path / "config.json"
     tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
-    with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+    with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
         async with TestClient(TestServer(_make_crud_app())) as client:
             # Create carrying triggers
             resp = await client.post(
@@ -685,12 +685,12 @@ class TestDefaultAgentGuard:
     @pytest.fixture(autouse=True)
     def _agents_lock_root(self, monkeypatch, tmp_path: Path) -> None:
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.agents.kiro_agents_dir_path",
+            "efm_go.dashboard.handlers.agents.kiro_agents_dir_path",
             lambda: tmp_path,
         )
 
     def _default_agent_app(self) -> web.Application:
-        from kiro_crew.dashboard.handlers import api_default_agent
+        from efm_go.dashboard.handlers import api_default_agent
 
         app = web.Application()
         app.router.add_put("/api/config/default-agent", api_default_agent)
@@ -701,7 +701,7 @@ class TestDefaultAgentGuard:
     async def test_non_alias_name_is_rejected(self, tmp_path: Path) -> None:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(self._default_agent_app())) as client:
                 resp = await client.put(
                     "/api/config/default-agent", json={"agent": "repo-only-agent"}
@@ -717,7 +717,7 @@ class TestDefaultAgentGuard:
         """A JSON list/object agent value returns 400, never an unhashable 500."""
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(self._default_agent_app())) as client:
                 for bad in (["x"], {"n": 1}, 7):
                     resp = await client.put("/api/config/default-agent", json={"agent": bad})
@@ -734,9 +734,9 @@ class TestDefaultAgentGuard:
         """
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             with unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load",
+                "efm_go.dashboard.handlers.agents.KiroCrewConfig.load",
                 side_effect=RuntimeError("boom"),
             ):
                 async with TestClient(TestServer(self._default_agent_app())) as client:
@@ -749,7 +749,7 @@ class TestDefaultAgentGuard:
     async def test_alias_name_is_accepted(self, tmp_path: Path) -> None:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(self._default_agent_app())) as client:
                 resp = await client.put("/api/config/default-agent", json={"agent": "default"})
                 assert resp.status == 200
@@ -757,7 +757,7 @@ class TestDefaultAgentGuard:
 
     @staticmethod
     def _installed(**kw):
-        from kiro_crew.agent_discovery import AgentInfo
+        from efm_go.agent_discovery import AgentInfo
 
         fields = {"name": "atlas", "filename": "atlas.json", "description": "d", "model": "auto"}
         fields.update(kw)
@@ -779,12 +779,12 @@ class TestDefaultAgentGuard:
                 events.append(kw)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents", return_value=found
+                "efm_go.dashboard.handlers.agents.list_agents", return_value=found
             ),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.agents._sel", lambda: _Sel()),
+            unittest.mock.patch("efm_go.dashboard.handlers.agents._sel", lambda: _Sel()),
         ):
             async with TestClient(TestServer(self._default_agent_app())) as client:
                 resp = await client.put("/api/config/default-agent", json={"agent": "atlas"})
@@ -827,11 +827,11 @@ class TestDefaultAgentGuard:
             return []
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.agents.list_agents", _scan),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.agents.list_agents", _scan),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.agents_spec_lock",
+                "efm_go.dashboard.handlers.agents.agents_spec_lock",
                 side_effect=lambda _root: _SpecLock(),
             ),
         ):
@@ -862,12 +862,12 @@ class TestDefaultAgentGuard:
                 events.append(kw)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents", return_value=found
+                "efm_go.dashboard.handlers.agents.list_agents", return_value=found
             ),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.agents._sel", lambda: _Sel()),
+            unittest.mock.patch("efm_go.dashboard.handlers.agents._sel", lambda: _Sel()),
         ):
             async with TestClient(TestServer(self._default_agent_app())) as client:
                 resp = await client.put("/api/config/default-agent", json={"agent": "atlas"})
@@ -891,9 +891,9 @@ class TestDefaultAgentGuard:
                 events.append(kw)
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.agents._sel", lambda: _Sel()),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.agents._sel", lambda: _Sel()),
         ):
             async with TestClient(TestServer(self._default_agent_app())) as client:
                 resp = await client.put("/api/config/default-agent", json={"agent": "default"})
@@ -928,10 +928,10 @@ class TestDefaultAgentGuard:
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
         found = [self._installed(**info_kw)]
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents", return_value=found
+                "efm_go.dashboard.handlers.agents.list_agents", return_value=found
             ),
         ):
             async with TestClient(TestServer(self._default_agent_app())) as client:
@@ -948,7 +948,7 @@ class TestDefaultAgentGuard:
         decision is the strict sidecar read inside the locked write, never the
         scan's display field: a roster that reports the copy as shared (the
         lenient read of a degraded sidecar) still cannot enroll it."""
-        from kiro_crew import agent_state
+        from efm_go import agent_state
 
         tmp = tmp_path / "config.json"
         seed = _seed_config()
@@ -958,10 +958,10 @@ class TestDefaultAgentGuard:
         # The scan says shared; the sidecar says private.
         found = [self._installed(private_to="")]
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents", return_value=found
+                "efm_go.dashboard.handlers.agents.list_agents", return_value=found
             ),
         ):
             async with TestClient(TestServer(self._default_agent_app())) as client:
@@ -977,16 +977,16 @@ class TestDefaultAgentGuard:
         """An unreadable sidecar fails closed: the scan cannot tell a shared
         template from a private copy, so nothing is enrolled and the default is
         unchanged, with the 409 every binding writer answers."""
-        from kiro_crew import agent_state
+        from efm_go import agent_state
 
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
         found = [self._installed()]
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents", return_value=found
+                "efm_go.dashboard.handlers.agents.list_agents", return_value=found
             ),
             unittest.mock.patch.object(
                 agent_state, "get_fork_info", side_effect=OSError("sidecar unreadable")
@@ -1018,10 +1018,10 @@ class TestDefaultAgentGuard:
             )
         ]
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents", return_value=found
+                "efm_go.dashboard.handlers.agents.list_agents", return_value=found
             ),
         ):
             async with TestClient(TestServer(self._default_agent_app())) as client:
@@ -1043,10 +1043,10 @@ class TestDefaultAgentGuard:
         seed["agents"]["crew-b"] = {"kiro_agent": "atlas"}
         tmp.write_text(json.dumps(seed), encoding="utf-8")
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents", return_value=[]
+                "efm_go.dashboard.handlers.agents.list_agents", return_value=[]
             ) as scan,
         ):
             async with TestClient(TestServer(self._default_agent_app())) as client:
@@ -1074,7 +1074,7 @@ class TestDefaultAgentGuard:
     def test_file_name_binding_counts_as_running_the_declared_template(self) -> None:
         """A crewmate whose ``kiro_agent`` recorded the FILE name dispatches the
         declared agent, so it binds that template for this choice too."""
-        from kiro_crew.dashboard.handlers import agents as handlers
+        from efm_go.dashboard.handlers import agents as handlers
 
         with unittest.mock.patch.object(
             handlers,
@@ -1097,7 +1097,7 @@ class TestDefaultAgentGuard:
         """A crew bound to the template between the pre-lock read and the
         locked write makes the enrollment a second row for it: the in-lock
         re-check refuses with the rebind's 409 and writes nothing."""
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
@@ -1112,10 +1112,10 @@ class TestDefaultAgentGuard:
 
         found = [self._installed()]
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents", return_value=found
+                "efm_go.dashboard.handlers.agents.list_agents", return_value=found
             ),
             unittest.mock.patch.object(
                 KiroCrewConfig, "load", side_effect=load_before_concurrent_create
@@ -1134,8 +1134,8 @@ class TestDefaultAgentGuard:
     ) -> tuple[int, dict, dict]:
         """PUT *agent* as the default with *rows* added to ``agents`` between
         the pre-lock load and the locked write; returns status, body, saved."""
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.dashboard.handlers import agents as handlers
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.dashboard.handlers import agents as handlers
 
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(seed or _seed_config()), encoding="utf-8")
@@ -1149,10 +1149,10 @@ class TestDefaultAgentGuard:
             return loaded
 
         with (
-            unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
-            unittest.mock.patch("kiro_crew.dashboard.handlers.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
+            unittest.mock.patch("efm_go.dashboard.handlers.config_path", return_value=tmp),
             unittest.mock.patch(
-                "kiro_crew.dashboard.handlers.agents.list_agents",
+                "efm_go.dashboard.handlers.agents.list_agents",
                 return_value=[self._installed()],
             ),
             unittest.mock.patch.object(
@@ -1237,7 +1237,7 @@ class TestAgentMutationNonObjectBody:
     async def test_create_rejects_non_object_body(self, bad_body, tmp_path: Path) -> None:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.post("/api/agents", json=bad_body)
                 assert resp.status == 400
@@ -1249,7 +1249,7 @@ class TestAgentMutationNonObjectBody:
     async def test_update_rejects_non_object_body(self, bad_body, tmp_path: Path) -> None:
         tmp = tmp_path / "config.json"
         tmp.write_text(json.dumps(_seed_config()), encoding="utf-8")
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.put("/api/agents/default", json=bad_body)
                 assert resp.status == 400
@@ -1270,7 +1270,7 @@ async def test_binding_only_update_is_stale_checked_and_merge_safe(tmp_path: Pat
     }
     tmp = tmp_path / "config.json"
     tmp.write_text(json.dumps(seed), encoding="utf-8")
-    with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+    with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
         async with TestClient(TestServer(_make_crud_app())) as client:
             # Stale expectation -> 409, binding untouched.
             resp = await client.put(
@@ -1296,7 +1296,7 @@ async def test_binding_only_update_is_stale_checked_and_merge_safe(tmp_path: Pat
 
 @pytest.mark.asyncio
 async def test_binding_only_unchanged_value_refuses_a_concurrent_rebind(tmp_path: Path) -> None:
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     seed = _seed_config()
     seed["agents"]["test-agent"] = {
@@ -1316,7 +1316,7 @@ async def test_binding_only_unchanged_value_refuses_a_concurrent_rebind(tmp_path
         return loaded
 
     with (
-        unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
+        unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
         unittest.mock.patch.object(
             KiroCrewConfig, "load", side_effect=load_before_concurrent_rebind
         ),
@@ -1340,7 +1340,7 @@ async def test_binding_only_update_serializes_against_generic_snapshot_save(tmp_
     import asyncio
     import concurrent.futures
 
-    from kiro_crew.dashboard.handlers import agents as handlers
+    from efm_go.dashboard.handlers import agents as handlers
 
     seed = _seed_config()
     seed["agents"]["crew-a"] = {"kiro_agent": "kirocrew", "workspace": "ws-a"}
@@ -1349,7 +1349,7 @@ async def test_binding_only_update_serializes_against_generic_snapshot_save(tmp_
     tmp.write_text(json.dumps(seed), encoding="utf-8")
     real_owner = handlers._foreign_private_copy_owner
     fired: dict[str, object] = {}
-    with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+    with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
         async with TestClient(TestServer(_make_crud_app())) as client:
             loop = asyncio.get_running_loop()
 
@@ -1398,14 +1398,14 @@ async def test_binding_update_rejects_unverifiable_lineage(tmp_path: Path) -> No
     the spawn gate validates governance, not ownership, so a bind that slipped
     through would have another crew executing the private definition once the
     sidecar recovered. Unverifiable lineage 409s."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     seed = _seed_config()
     seed["agents"]["test-agent"] = {"kiro_agent": "kirocrew"}
     tmp = tmp_path / "config.json"
     tmp.write_text(json.dumps(seed), encoding="utf-8")
     with (
-        unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp),
+        unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp),
         unittest.mock.patch.object(
             agent_state, "get_fork_info", side_effect=OSError("sidecar unreadable")
         ),
@@ -1426,7 +1426,7 @@ async def test_binding_update_rejects_foreign_private_copy(tmp_path: Path) -> No
     """binding a crew to ANOTHER crew's private copy is refused —
     the owner's publish/reset cleanup would delete the template out from under
     the second crew. Binding the owner itself stays allowed."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     seed = _seed_config()
     seed["agents"]["test-agent"] = {"kiro_agent": "kirocrew"}
@@ -1434,7 +1434,7 @@ async def test_binding_update_rejects_foreign_private_copy(tmp_path: Path) -> No
     tmp = tmp_path / "config.json"
     tmp.write_text(json.dumps(seed), encoding="utf-8")
     agent_state.set_fork_info("owner-copy", forked_from="kirocrew", private_to="owner-crew")
-    with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+    with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
         async with TestClient(TestServer(_make_crud_app())) as client:
             resp = await client.put(
                 "/api/agents/test-agent",
@@ -1458,14 +1458,14 @@ async def test_create_rejects_foreign_private_copy(tmp_path: Path) -> None:
     """crew creation re-checks private-copy ownership INSIDE the
     config lock, immediately before the binding is added — a fork recording
     lineage after a pre-lock validation cannot slip through."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     seed = _seed_config()
     seed["agents"]["owner-crew"] = {"kiro_agent": "owner-copy"}
     tmp = tmp_path / "config.json"
     tmp.write_text(json.dumps(seed), encoding="utf-8")
     agent_state.set_fork_info("owner-copy", forked_from="kirocrew", private_to="owner-crew")
-    with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+    with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
         async with TestClient(TestServer(_make_crud_app())) as client:
             resp = await client.post(
                 "/api/agents",
@@ -1482,8 +1482,8 @@ async def test_binding_update_rejects_foreign_copy_via_stem(tmp_path: Path) -> N
     """lineage is keyed by declared name, but a binding can name
     the file STEM — the guard must resolve the stem to the declared name
     before concluding the target is not a private copy."""
-    from kiro_crew import agent_state
-    from kiro_crew.config.paths import kiro_agents_dir
+    from efm_go import agent_state
+    from efm_go.config.paths import kiro_agents_dir
 
     agents_dir = kiro_agents_dir()
     agents_dir.mkdir(parents=True, exist_ok=True)
@@ -1499,7 +1499,7 @@ async def test_binding_update_rejects_foreign_copy_via_stem(tmp_path: Path) -> N
     tmp = tmp_path / "config.json"
     tmp.write_text(json.dumps(seed), encoding="utf-8")
     try:
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             async with TestClient(TestServer(_make_crud_app())) as client:
                 resp = await client.put(
                     "/api/agents/test-agent",

@@ -20,16 +20,16 @@ from typing import Any, Dict, List
 
 import pytest
 
-import kiro_crew.platform.context as platform_context
-from kiro_crew.dashboard.handlers import agents as agents_handler
-from kiro_crew.platform.capability_bound import (
+import efm_go.platform.context as platform_context
+from efm_go.dashboard.handlers import agents as agents_handler
+from efm_go.platform.capability_bound import (
     CAPABILITY_INSTALL_TIMEOUT,
     CAPABILITY_READ_TIMEOUT,
     CAPABILITY_UNINSTALL_TIMEOUT,
     BoundedCapabilityManager,
 )
-from kiro_crew.platform.defaults import DefaultCapabilityManager
-from kiro_crew.platform.interfaces import CapabilityResult
+from efm_go.platform.defaults import DefaultCapabilityManager
+from efm_go.platform.interfaces import CapabilityResult
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +39,7 @@ def _owner_caller(monkeypatch):
     its own enumerate-the-invariant coverage in
     test_agents_endpoints_owner_auth.py."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -191,7 +191,7 @@ def no_agent_rebuild(monkeypatch):
     """Stub the agent-config rebuild — it is filesystem-heavy and not under test."""
     rebuilds: List[bool] = []
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.agents.install_agent", lambda *a, **k: rebuilds.append(True)
+        "efm_go.dashboard.handlers.agents.install_agent", lambda *a, **k: rebuilds.append(True)
     )
     cleared: List[bool] = []
     monkeypatch.setattr(
@@ -512,7 +512,7 @@ class TestRedactExternalLayerOrder:
     )
 
     def test_long_query_exfil_url_is_still_fully_redacted(self):
-        from kiro_crew.dashboard.handlers.discover import _redact_external
+        from efm_go.dashboard.handlers.discover import _redact_external
 
         out = _redact_external(self._EXFIL)
         # The whole-URL redaction must still fire...
@@ -523,19 +523,19 @@ class TestRedactExternalLayerOrder:
 
     def test_short_token_is_still_scrubbed(self):
         """The new win must survive the reorder."""
-        from kiro_crew.dashboard.handlers.discover import _redact_external
+        from efm_go.dashboard.handlers.discover import _redact_external
 
         out = _redact_external("https://r.example.com/x?api_key=abc123&keep=1")
         assert "abc123" not in out
         assert "keep=1" in out  # a scrub, not a blanket drop
 
     def test_credential_shapes_still_caught(self):
-        from kiro_crew.dashboard.handlers.discover import _redact_external
+        from efm_go.dashboard.handlers.discover import _redact_external
 
         assert "AKIAIOSFODNN7EXAMPLE" not in _redact_external("AKIAIOSFODNN7EXAMPLE")
 
     def test_benign_text_passes_through(self):
-        from kiro_crew.dashboard.handlers.discover import _redact_external
+        from efm_go.dashboard.handlers.discover import _redact_external
 
         benign = "installed 3 packages from https://registry.example.com/v2"
         assert _redact_external(benign) == benign
@@ -548,7 +548,7 @@ class TestRedactExternalLayerOrder:
         (its class stops at the space) and leaves `[REDACTED] credential]`. The
         secret is removed either way — this keeps the message readable.
         """
-        from kiro_crew.dashboard.handlers.discover import _redact_external
+        from efm_go.dashboard.handlers.discover import _redact_external
 
         out = _redact_external("?token=AKIAIOSFODNN7EXAMPLE")
         assert "AKIAIOSFODNN7EXAMPLE" not in out
@@ -556,7 +556,7 @@ class TestRedactExternalLayerOrder:
 
     def test_redaction_is_idempotent(self):
         """Re-redacting an already-redacted string must be a no-op."""
-        from kiro_crew.dashboard.handlers.discover import _redact_external
+        from efm_go.dashboard.handlers.discover import _redact_external
 
         once = _redact_external("?token=AKIAIOSFODNN7EXAMPLE&api_key=abc123")
         assert _redact_external(once) == once
@@ -620,13 +620,13 @@ class TestRouteRegistration:
         import importlib
         import inspect
 
-        from kiro_crew.dashboard import routes as routes_pkg
-        from kiro_crew.dashboard import server as core_server
+        from efm_go.dashboard import routes as routes_pkg
+        from efm_go.dashboard import server as core_server
 
         sources = [inspect.getsource(core_server)]
         for name in routes_pkg.REGISTRAR_NAMES:
             sources.append(
-                inspect.getsource(importlib.import_module(f"kiro_crew.dashboard.routes.{name}"))
+                inspect.getsource(importlib.import_module(f"efm_go.dashboard.routes.{name}"))
             )
 
         found = set()
@@ -671,7 +671,7 @@ class TestRouteRegistration:
         assert "/api/capability/plugins/sync" in paths
 
     def test_handlers_are_exported(self):
-        from kiro_crew.dashboard import handlers
+        from efm_go.dashboard import handlers
 
         for name in (
             "api_capability_agents_install",

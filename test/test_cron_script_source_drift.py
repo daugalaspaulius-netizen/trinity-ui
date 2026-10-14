@@ -23,8 +23,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import skills as skills_mod
-from kiro_crew.skills import (
+from efm_go import skills as skills_mod
+from efm_go.skills import (
     CRON_SOURCE_DIVERGED,
     CRON_SOURCE_IN_SYNC,
     CRON_SOURCE_UNVERIFIABLE,
@@ -193,7 +193,7 @@ class TestDoctorRendersNamesInert:
         capsys: pytest.CaptureFixture[str],
         state: str,
     ) -> str:
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         entry = skills_mod.CronScriptSource(
             name=self.ESC_NAME,
@@ -260,7 +260,7 @@ def test_control_character_name_on_disk_is_enumerated_and_escaped(
     accepted by the filesystem, survives enumeration, and still reaches the
     operator inert.
     """
-    from kiro_crew import cli_doctor
+    from efm_go import cli_doctor
 
     name = "poller\x1b[31m.py"
     _ship_skill_script(data_home, "pack/skill", name, "def run(ctx):\n    pass\n")

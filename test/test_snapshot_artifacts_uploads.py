@@ -30,7 +30,7 @@ import pytest
 from test_snapshot import _setup_fake_kirocrew, unpinnable_argv
 
 from conftest import requires_symlinks
-from kiro_crew import snapshot as snap
+from efm_go import snapshot as snap
 
 FOLDERS = '[{"id": "abc123abc123", "name": "Reports", "order": 0, "parent_id": ""}]'
 
@@ -412,7 +412,7 @@ class TestAnEmptyLibraryDoesNotVetoTheWholeRestore:
         -- the recovery function the guard narrowing touched -- to prove the locked-doc
         branch still restores regardless of that guard.
         """
-        from kiro_crew import snapshot_restore
+        from efm_go import snapshot_restore
 
         rel = "crew-teams/teams.json"
         mc = tmp_path / "home"
@@ -441,7 +441,7 @@ class TestAnEmptyLibraryDoesNotVetoTheWholeRestore:
         rewriting a locked document the restore never opened -- the live roster, including
         any edit that landed independently, survives untouched.
         """
-        from kiro_crew import snapshot_restore
+        from efm_go import snapshot_restore
 
         rel = "crew-teams/teams.json"
         mc = tmp_path / "home"

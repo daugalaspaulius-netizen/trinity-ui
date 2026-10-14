@@ -1,4 +1,4 @@
-"""Additional coverage for :mod:`kiro_crew.acp.client`.
+"""Additional coverage for :mod:`efm_go.acp.client`.
 
 Every test here drives real product code with injected fakes at the boundary the
 product actually calls (``glob``/``subprocess``/``kiro_sessions_dir``/the hook and
@@ -23,10 +23,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from stray_line_helpers import too_deep_to_decode as _too_deep_to_decode
 
-import kiro_crew.acp.client as acp_client
-from kiro_crew import model_registry as mr
-from kiro_crew.acp._dispatch import UNSERIALISABLE_SIBLING_VALUE
-from kiro_crew.acp.client import (
+import efm_go.acp.client as acp_client
+from efm_go import model_registry as mr
+from efm_go.acp._dispatch import UNSERIALISABLE_SIBLING_VALUE
+from efm_go.acp.client import (
     AcpAuthRequired,
     AcpClient,
     AcpError,
@@ -48,7 +48,7 @@ from kiro_crew.acp.client import (
     advertised_model_ids,
     resolve_usable_model,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     EVENT_AGENT_SWITCHED,
@@ -67,8 +67,8 @@ from kiro_crew.acp.types import (
     AcpEvent,
     JsonRpcMessage,
 )
-from kiro_crew.hooks import HOOK_EVENT_POST_TOOL_USE
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.hooks import HOOK_EVENT_POST_TOOL_USE
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 _POSIX_ONLY = pytest.mark.skipif(
     sys.platform == "win32", reason="POSIX-only APIs (os.kill, /proc, ps, AF_UNIX sockets)"
@@ -81,14 +81,14 @@ def _pinned_kiro_cli_version(monkeypatch):
 
     A client start here materialises the agent spec (``ensure_agent_materialized``
     -> ``rebuild_agent_config`` -> ``_write_derived_permissions``), which reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``:
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``:
     one real ``kiro-cli --version`` spawn per binary identity, process-cached, so
     whichever test in the worker starts a client first pays it against the HOST's
     install with the checkout as the child's cwd. Pinned to the floor release, as
     ``test_agent.py`` and the generated-writer suites pin it.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -778,7 +778,7 @@ class TestEnsureReady:
 
         Revert-verified: dropping the translation raises the raw type and fails here.
         """
-        from kiro_crew import acp_tool_gate
+        from efm_go import acp_tool_gate
 
         def _refuse(backend, mode):
             raise acp_tool_gate.ToolGateUnroutable("no sandbox backend on this host")
@@ -961,7 +961,7 @@ class TestDispatchMcpNotifications:
         client._read_new_tool_results_sync = lambda: []
         client._prompt_loop = _fake_loop(
             [
-                ("agent_switched", _notify("_kiro.dev/agent_switched", {"agentName": "reviewer"})),
+                ("agent_switched", _notify("_efm.go/agent_switched", {"agentName": "reviewer"})),
                 # Unsafe scheme: refused BEFORE dedupe is recorded.
                 (
                     "mcp_oauth_request",
@@ -1145,9 +1145,9 @@ class TestReadPromptResponse:
                 ),
                 (
                     "compaction",
-                    _notify("_kiro.dev/compaction/status", {"status": {"type": "failed"}}),
+                    _notify("_efm.go/compaction/status", {"status": {"type": "failed"}}),
                 ),
-                ("metadata", _notify("_kiro.dev/metadata", {"contextUsagePercentage": 42.5})),
+                ("metadata", _notify("_efm.go/metadata", {"contextUsagePercentage": 42.5})),
                 ("complete", JsonRpcMessage(id=1, result={"stopReason": "end_turn"})),
             ]
         )
@@ -1410,7 +1410,7 @@ class TestReadNewToolResults:
         past it so the lines after it are read on this scan."""
         import functools
 
-        from kiro_crew import jsonl_util
+        from efm_go import jsonl_util
 
         monkeypatch.setattr(
             acp_client,
@@ -1695,9 +1695,9 @@ class TestDrainPostCompactionMetadata:
             client,
             [
                 None,  # silent read
-                _notify("_kiro.dev/metadata", {"meteringUsage": []}),  # no pct -> keep draining
+                _notify("_efm.go/metadata", {"meteringUsage": []}),  # no pct -> keep draining
                 notification,  # buffered for the main loop
-                _notify("_kiro.dev/metadata", {"contextUsagePercentage": 12.0}),
+                _notify("_efm.go/metadata", {"contextUsagePercentage": 12.0}),
             ],
         )
 
@@ -1883,7 +1883,7 @@ class TestToolInterruptedAudit:
         def _boom():
             raise RuntimeError("SEL backend unavailable")
 
-        monkeypatch.setattr("kiro_crew.sel.sel", _boom)
+        monkeypatch.setattr("efm_go.sel.sel", _boom)
 
         with caplog.at_level(logging.WARNING, logger=acp_client.logger.name):
             client._emit_tool_interrupted_sel("unit-test")

@@ -23,8 +23,8 @@ import pytest
 from spawn_test_helpers import LONG_CHILD_WITH_GRANDCHILD, await_gone, await_pids, kill_leftovers
 from wheel_update_test_helpers import wire_wheel_apply
 
-from kiro_crew.platform import wheel_engine
-from kiro_crew.slack.gateway import GatewayOrchestrator
+from efm_go.platform import wheel_engine
+from efm_go.slack.gateway import GatewayOrchestrator
 
 #: Boots in this test. Each is a full boot (~2s here).
 ITERATIONS = 10

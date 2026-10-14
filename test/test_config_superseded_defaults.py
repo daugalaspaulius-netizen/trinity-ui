@@ -25,11 +25,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.config import loader as L
-from kiro_crew.config import superseded_defaults as SD
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.superseded_defaults import (
+from efm_go import platform_compat
+from efm_go.config import loader as L
+from efm_go.config import superseded_defaults as SD
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.superseded_defaults import (
     SupersededDefault,
     drift_summary,
     superseded_default_drift,
@@ -239,7 +239,7 @@ def test_a_later_moved_default_is_reported_and_loads_unchanged(
 def test_a_stored_en_us_is_not_drift_where_auto_resolves_to_en_us(provider, tmp_path, monkeypatch):
     """Off the local recogniser "auto" resolves to en-US, so adopting would change
     nothing and the row must not ask the operator to act."""
-    from kiro_crew.config.sections import SttConfig
+    from efm_go.config.sections import SttConfig
 
     _point_home(tmp_path, monkeypatch)
     stored = {"stt": {"provider": provider, "language_code": "en-US"}}
@@ -256,7 +256,7 @@ def test_a_stored_en_us_is_not_drift_where_auto_resolves_to_en_us(provider, tmp_
     ],
 )
 def test_a_stored_en_us_is_drift_on_the_local_recogniser(stt, tmp_path, monkeypatch):
-    from kiro_crew.config.sections import SttConfig
+    from efm_go.config.sections import SttConfig
 
     _point_home(tmp_path, monkeypatch)
     assert SttConfig().effective_language_code == "auto"
@@ -278,7 +278,7 @@ def test_a_stored_en_us_is_drift_on_the_local_recogniser(stt, tmp_path, monkeypa
 def test_the_language_row_asks_about_the_provider_that_actually_runs(
     tmp_path, monkeypatch, caplog, base, overlay, reported
 ):
-    from kiro_crew.config.sections import SttConfig
+    from efm_go.config.sections import SttConfig
 
     _point_home(tmp_path, monkeypatch)
     _write_config(tmp_path, {"stt": base})
@@ -1361,7 +1361,7 @@ def test_a_degraded_load_keeps_its_document_cached_instead_of_re_reading_forever
         json.dumps({"agent": {"subagent_timeout_secs": 1800}, "publish": {}}),
         encoding="utf-8",
     )
-    from kiro_crew.config.resolution import reset_degraded_observations
+    from efm_go.config.resolution import reset_degraded_observations
 
     reset_degraded_observations()
     fixed = KiroCrewConfig.load()
@@ -1775,7 +1775,7 @@ def test_the_registered_new_defaults_match_the_live_dataclass_defaults():
     if they ever diverge, the disk and memory halves would resolve different
     numbers and the divergence would be invisible.
     """
-    from kiro_crew.config.sections import AgentConfig
+    from efm_go.config.sections import AgentConfig
 
     assert AgentConfig.__dataclass_fields__["subagent_timeout_secs"].default == (
         SUBAGENT_ENTRY.new_default

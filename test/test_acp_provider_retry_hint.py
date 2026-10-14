@@ -30,13 +30,13 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.acp.client import (
+from efm_go.acp.client import (
     AcpError,
     _format_acp_error,
     _is_transient_raw_error,
     _raise_acp_error,
 )
-from kiro_crew.llm_helpers import acp_error_is_transient
+from efm_go.llm_helpers import acp_error_is_transient
 
 # The reported frame, verbatim.
 _GENERIC_500 = {

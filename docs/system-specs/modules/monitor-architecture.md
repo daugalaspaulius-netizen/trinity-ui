@@ -823,7 +823,7 @@ enforced nowhere:
   failure. Both current implementations now follow this rule: the structured
   provider reads the aggregate as an ordinary worst-wins row, and the skill's
   status tool was brought onto the same rule by
-  [PR #10731](https://github.com/kirodotdev/KiroCrew/pull/10731), merged
+  [PR #10731](https://efmleads.com/pull/10731), merged
   2026-09-14.
 - A stale reviewer stamp is an entry (`stale:<name>`), not a paragraph.
 - An un-dispositioned finding is an entry, so readiness cannot be declared over

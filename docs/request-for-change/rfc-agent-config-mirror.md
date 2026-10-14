@@ -18,7 +18,7 @@ superseded-by: []
   vocabularies, registry, parity guards, and Claude Code, Codex, OpenCode, and
   Goose mirrors are on main. The contract ships as a registry keyed by backend
   id (`providers/mirrors/registry.py`: `PROJECTIONS` and `mirror_for`), not as
-  a defaulted method on `LLMProvider`; see `../../src/kiro_crew/providers/mirrors/README.md`.
+  a defaulted method on `LLMProvider`; see `../../src/efm_go/providers/mirrors/README.md`.
   KAS remains an external projection and kiro-cli remains native, so the
   relocation plan is not complete.
 - Author: zejiangg, with Kiro
@@ -89,7 +89,7 @@ Two observations that decide the design:
 > method on `LLMProvider`. `providers/mirrors/registry.py` holds `PROJECTIONS`
 > (one declared kind per backend) and `mirror_for(backend)`, which returns the
 > registered mirror or `None`. A backend still has to be declared, so absence
-> stays a statement. `../../src/kiro_crew/providers/mirrors/README.md` owns the
+> stays a statement. `../../src/efm_go/providers/mirrors/README.md` owns the
 > current contract.
 
 The mirror is declared on `LLMProvider` with a safe default, not on `AcpClient`
@@ -164,7 +164,7 @@ implementations are scattered across `providers/acp.py`, `acp/kas_agents.py` and
 of those files tells a reader the other two are the same kind of thing.
 
 ```
-src/kiro_crew/providers/mirrors/
+src/efm_go/providers/mirrors/
   README.md          # what a mirror is, how to add one, the disposition vocabulary
   base.py            # AgentConfigMirror ABC + Disposition enum + the concern list
   registry.py        # backend id -> mirror, and the "declared no mirror" entries
@@ -207,7 +207,7 @@ The folder is where the answer goes; the test is what asks the question.
 
 ### 3.7 Where the supporting code lives
 
-- Capability sets: `src/kiro_crew/agent_sdk/backends.py` only;
+- Capability sets: `src/efm_go/agent_sdk/backends.py` only;
   `acp_backends.py` re-exports them. Harness-parity R5/H8 exempts no other path,
   and every member must already be in `ACP_BACKENDS_KNOWN`.
 - Consumption: `backend in ACP_BACKENDS_<CAP>`. Never `not self._is_claude`,
@@ -292,7 +292,7 @@ than a documentation defect.
 
 These are routinely conflated and the plan is wrong if they are:
 
-- **Crew's own hooks** (`src/kiro_crew/hooks.py`, the `config.json` `hooks`
+- **Crew's own hooks** (`src/efm_go/hooks.py`, the `config.json` `hooks`
   section) fire on Crew's side of the wire, on ACP tool events, via
   `fire_tool_hooks` / `get_global_hook_store` in `acp/client.py`. They are
   already backend-agnostic and already work everywhere. **This RFC does not

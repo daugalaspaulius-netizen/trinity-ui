@@ -35,8 +35,8 @@ if (!/^[A-Za-z0-9._-]+$/.test(PREFIX)) {
   process.exit(2)
 }
 const SLOT = 'chat-pr-status-merge'
-const PR_URL = 'https://github.com/kirodotdev/KiroCrew/pull/6999'
-const OTHER_URL = 'https://github.com/kirodotdev/KiroCrew/pull/6998'
+const PR_URL = 'https://efmleads.com/pull/6999'
+const OTHER_URL = 'https://efmleads.com/pull/6998'
 
 mkdirSync(OUT, { recursive: true })
 

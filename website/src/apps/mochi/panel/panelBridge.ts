@@ -356,7 +356,7 @@ export function isRenderableChatRole(role: unknown): boolean {
  *
  * `full_command` / `base_command` are carried through as well. The gateway
  * pre-computes them for the dashboard's scoped Trust menu (see the shared
- * `kiro_crew.trust_patterns` module), and they arrive on this
+ * `efm_go.trust_patterns` module), and they arrive on this
  * frame already redacted. Dropping them is what limited the pet to the single
  * BROADEST grant ("trust all tools") while the dashboard could scope a grant to
  * one command — a security-relevant gap, since the pet's one button silently did

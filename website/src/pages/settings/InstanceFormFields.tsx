@@ -33,7 +33,7 @@ export const DEFAULT_TTL = '20h'
 // registry rejects for an SSM crew.
 export const DEFAULT_SSM_RUN_AS = 'ec2-user'
 // The port a Fargate crew's front proxy listens on. Mirrors FRONT_PORT in
-// src/kiro_crew/cloud/fargate/taskdef.py; a fargate record forwards to it
+// src/efm_go/cloud/fargate/taskdef.py; a fargate record forwards to it
 // rather than to a dashboard port.
 export const DEFAULT_FARGATE_REMOTE_PORT = '8080'
 // Example SSM target shown as the field's placeholder: a typical EC2 instance

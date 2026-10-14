@@ -28,11 +28,11 @@ from unittest.mock import MagicMock
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import agent_discovery
-from kiro_crew import hooks as hooks_mod
-from kiro_crew import security
-from kiro_crew.dashboard.handlers import sessions as sessions_mod
-from kiro_crew.security.paths import PathResolutionStalled
+from efm_go import agent_discovery
+from efm_go import hooks as hooks_mod
+from efm_go import security
+from efm_go.dashboard.handlers import sessions as sessions_mod
+from efm_go.security.paths import PathResolutionStalled
 
 AGENT = "reviewer"
 
@@ -283,7 +283,7 @@ async def test_the_projection_and_the_policy_read_resolve_the_same_spec(
     Both go through ``agent_discovery.spec_by_declared_name``, so this pins the
     agreement rather than two lookups that happen to coincide today.
     """
-    from kiro_crew.acp.kas_agents import load_agent_spec
+    from efm_go.acp.kas_agents import load_agent_spec
 
     (tmp_path / f"SomePackage-{AGENT}.json").write_text(
         json.dumps(

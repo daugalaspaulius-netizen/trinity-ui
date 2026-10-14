@@ -45,20 +45,20 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import llm_helpers
-from kiro_crew.apps.builtins.auto_improvement.spine import agent_runner as R
-from kiro_crew.constants import (
+from efm_go import llm_helpers
+from efm_go.apps.builtins.auto_improvement.spine import agent_runner as R
+from efm_go.constants import (
     DENY_CAUSE_AUDIT_UNAVAILABLE,
     DENY_CAUSE_HOOK_ERROR,
     DENY_CAUSE_POLICY,
     DENY_CAUSE_SURFACE_POLICY,
 )
-from kiro_crew.dashboard.handlers import optimizer as optimizer_mod
-from kiro_crew.dashboard.handlers import taskrunner as taskrunner_mod
-from kiro_crew.dashboard.handlers.optimizer import handle_optimize
-from kiro_crew.dashboard.handlers.taskrunner import _run_refine
-from kiro_crew.deny_notice import _DENY_CAUSE_TEXT, build_refusal_steer_notice
-from kiro_crew.providers.base import (
+from efm_go.dashboard.handlers import optimizer as optimizer_mod
+from efm_go.dashboard.handlers import taskrunner as taskrunner_mod
+from efm_go.dashboard.handlers.optimizer import handle_optimize
+from efm_go.dashboard.handlers.taskrunner import _run_refine
+from efm_go.deny_notice import _DENY_CAUSE_TEXT, build_refusal_steer_notice
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
@@ -73,7 +73,7 @@ _POLICY_GUIDANCE = "allowed alternative"
 _SURFACE_CLAUSE = "tool policy of the surface"
 _HOOK_ERROR_CLAUSE = "PreToolUse hook raised"
 _AUDIT_CLAUSE = "could not write the audit record"
-_SRC = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew"
+_SRC = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go"
 
 
 # ── Doubles ──────────────────────────────────────────────────────────────────
@@ -157,14 +157,14 @@ class _FakeSel:
 @pytest.fixture
 def fake_sel(monkeypatch):
     sel = _FakeSel()
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel)
     return sel
 
 
 @pytest.fixture
 def broken_sel(monkeypatch):
     sel = _FakeSel(fail=True)
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel)
     return sel
 
 
@@ -228,7 +228,7 @@ def optimizer_sel(monkeypatch):
 @pytest.fixture
 def refine_sel(monkeypatch):
     sel = _FakeSel()
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: sel)
+    monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: sel)
     return sel
 
 

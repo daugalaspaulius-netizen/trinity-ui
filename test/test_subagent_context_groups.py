@@ -20,18 +20,18 @@ import json
 from datetime import datetime
 from types import SimpleNamespace
 
-from kiro_crew import context as context_module
-from kiro_crew.config.loader import config_path
-from kiro_crew.context import (
+from efm_go import context as context_module
+from efm_go.config.loader import config_path
+from efm_go.context import (
     CONTEXT_GROUP_LESSONS,
     CONTEXT_GROUP_MEMORY,
     CONTEXT_GROUP_PROJECT,
     SWITCHABLE_CONTEXT_GROUPS,
     ContextBuilder,
 )
-from kiro_crew.learn import Lesson, LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.learn import Lesson, LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 ALL_GROUPS = frozenset(SWITCHABLE_CONTEXT_GROUPS)
 
@@ -159,12 +159,12 @@ class TestProjectGroup:
     """
 
     def test_present_by_default(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.context._build_docs_section", lambda: "[DOCS-SENTINEL]\n\n")
+        monkeypatch.setattr("efm_go.context._build_docs_section", lambda: "[DOCS-SENTINEL]\n\n")
         ctx = _builder(tmp_path).build_session_context()
         assert "[DOCS-SENTINEL]" in ctx
 
     def test_absent_when_withheld(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.context._build_docs_section", lambda: "[DOCS-SENTINEL]\n\n")
+        monkeypatch.setattr("efm_go.context._build_docs_section", lambda: "[DOCS-SENTINEL]\n\n")
         ctx = _builder(tmp_path).build_session_context(
             context_groups=ALL_GROUPS - {CONTEXT_GROUP_PROJECT}
         )

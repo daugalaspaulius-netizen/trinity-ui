@@ -13,9 +13,9 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.learn import Lesson, LessonStore
-from kiro_crew.project_scope import project_scope_satisfied
-from kiro_crew.vector_memory import _lesson_display_text, _lesson_scope, _lesson_slug
+from efm_go.learn import Lesson, LessonStore
+from efm_go.project_scope import project_scope_satisfied
+from efm_go.vector_memory import _lesson_display_text, _lesson_scope, _lesson_slug
 
 
 class TestProjectScopeSatisfied:
@@ -130,7 +130,7 @@ class TestProjectScopeSatisfied:
         # Storing "." reported success and then applied nowhere -- the same
         # silent-success shape this feature exists to end. The write surface now
         # refuses it instead of persisting an inert lesson.
-        from kiro_crew.validation import LEARN_ADD_SCHEMA, ValidationError, validate_tool_args
+        from efm_go.validation import LEARN_ADD_SCHEMA, ValidationError, validate_tool_args
 
         base = {"rule": "r", "category": "tool"}
         for bad in (".", "..", "src/./pkg", "C:/x"):
@@ -162,8 +162,8 @@ class TestProjectScopeSatisfied:
         # The static bypass, no race needed: a symlink already in the tree makes the
         # literal fragment look harmless while the probe follows it into the
         # credential directory. Judging the RESOLVED path is what closes it.
-        from kiro_crew import project_scope as ps
-        from kiro_crew.security import is_sensitive_path
+        from efm_go import project_scope as ps
+        from efm_go.security import is_sensitive_path
 
         # Aim check: the real predicate flags the shape the guard exists for.
         assert is_sensitive_path(str(Path.home() / ".ssh" / "id_rsa")) is True
@@ -197,7 +197,7 @@ class TestProjectScopeSatisfied:
         # and the gate enforces the rest. If they disagree, a value is either stored
         # and never usable or refused while being perfectly fine -- so pin both
         # surfaces, against the raw value, to the same verdicts.
-        from kiro_crew.project_scope import SCOPE_FRAGMENT_RE
+        from efm_go.project_scope import SCOPE_FRAGMENT_RE
 
         (tmp_path / ".git").mkdir()
         (tmp_path / "src" / "pkg").mkdir(parents=True)
@@ -289,7 +289,7 @@ class TestSkillLoaderSharesTheGate:
     """The skill gate must answer through the shared function, not a copy."""
 
     def test_skill_gate_delegates_to_the_shared_rule(self, tmp_path, monkeypatch):
-        from kiro_crew import skills as skills_mod
+        from efm_go import skills as skills_mod
 
         calls: list[tuple[str, object]] = []
 
@@ -542,7 +542,7 @@ class TestVectorStoreLessonScope:
     """
 
     def _store(self, tmp_path):
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "m.db", embedding_dim=4)
         store.init()
@@ -639,7 +639,7 @@ class TestVectorStoreLessonScope:
         # migrate_from_markdown reads lessons.jsonl directly, so it needs the same
         # three-state rule as the store: a present unusable scope is skipped, not
         # normalised to None and injected everywhere.
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         home = tmp_path / "home"
         home.mkdir()
@@ -664,7 +664,7 @@ class TestVectorStoreLessonScope:
         # A scoped lesson that migrates in as global is silently widened, which is
         # the one direction the gate must never move. Drives the real
         # migrate_from_markdown, which reads its source dir from config_dir().
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         home = tmp_path / "home"
         home.mkdir()
@@ -778,7 +778,7 @@ class TestVectorStoreLessonScope:
         # migration's condition is kept so its own skip COUNT is right for the right
         # reason, but the property below holds for every caller, including ones this
         # PR never touched.
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         home = tmp_path / "home"
         home.mkdir()
@@ -801,7 +801,7 @@ class TestVectorStoreLessonScope:
         # workspace tier was inert, so converting it to a global lesson would inject
         # a one-workspace correction into every session -- worse than the dead tier
         # it replaced.
-        from kiro_crew.mcp_tools import learn as mcp_learn
+        from efm_go.mcp_tools import learn as mcp_learn
 
         out = mcp_learn.learn_add("learn_add", {"rule": "r", "scope": "workspace"})
         assert out.startswith("Error:")
@@ -898,7 +898,7 @@ class TestVectorStoreDeleteScope:
     """
 
     def _store(self, tmp_path):
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.vector_memory import VectorMemoryStore
 
         store = VectorMemoryStore(db_path=tmp_path / "m.db", embedding_dim=4)
         store.init()

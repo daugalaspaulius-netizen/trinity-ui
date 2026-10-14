@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "src" / "kiro_crew" / "deploy" / "skills" / "artifact-deploy" / "templates"
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "src" / "efm_go" / "deploy" / "skills" / "artifact-deploy" / "templates"
 
 
 # ── SEC-3F9C863A: search_for_context limit cap ──
@@ -28,7 +28,7 @@ class TestSearchForContextLimitCap:
     def _parse_limit_from_source(self):
         """Extract the limit clamp from knowledge.py source to verify it's bounded."""
         src = (Path(__file__).resolve().parent.parent
-               / "src" / "kiro_crew" / "dashboard" / "handlers" / "knowledge.py")
+               / "src" / "efm_go" / "dashboard" / "handlers" / "knowledge.py")
         text = src.read_text(encoding="utf-8")
         # Find the search_for_context function's limit line
         match = re.search(r'limit\s*=\s*min\((\d+),\s*max\((\d+),', text)
@@ -52,8 +52,8 @@ class TestEmailRedactionInLogs:
     """Teams and Webex dispatchers must NOT log full email addresses."""
 
     @pytest.mark.parametrize("module_path", [
-        "src/kiro_crew/teams/transport_dispatch.py",
-        "src/kiro_crew/webex/transport_dispatch.py",
+        "src/efm_go/teams/transport_dispatch.py",
+        "src/efm_go/webex/transport_dispatch.py",
     ])
     def test_no_raw_email_in_log_info(self, module_path):
         src = (Path(__file__).resolve().parent.parent / module_path)
@@ -75,7 +75,7 @@ class TestSageRoutesErrorDisclosure:
 
     def test_no_raw_exception_in_502_response(self):
         src = (Path(__file__).resolve().parent.parent
-               / "src" / "kiro_crew" / "apps" / "builtins" / "code_review_sage" / "backend" / "routes.py")
+               / "src" / "efm_go" / "apps" / "builtins" / "code_review_sage" / "backend" / "routes.py")
         text = src.read_text(encoding="utf-8")
         # Find all lines with status=502 and ensure none pass str(e)
         lines_502 = [line for line in text.splitlines() if "status=502" in line]
@@ -90,7 +90,7 @@ class TestWeakCryptography:
 
     def test_vector_memory_md5_annotated(self):
         src = (Path(__file__).resolve().parent.parent
-               / "src" / "kiro_crew" / "vector_memory.py")
+               / "src" / "efm_go" / "vector_memory.py")
         text = src.read_text(encoding="utf-8")
         md5_calls = [line for line in text.splitlines() if "hashlib.md5(" in line]
         for line in md5_calls:
@@ -99,7 +99,7 @@ class TestWeakCryptography:
 
     def test_sage_learning_no_sha1(self):
         src = (Path(__file__).resolve().parent.parent
-               / "src" / "kiro_crew" / "apps" / "builtins" / "code_review_sage" / "sage_lib" / "learning.py")
+               / "src" / "efm_go" / "apps" / "builtins" / "code_review_sage" / "sage_lib" / "learning.py")
         text = src.read_text(encoding="utf-8")
         assert "hashlib.sha1(" not in text, "SHA-1 must be replaced with SHA-256"
 
@@ -162,7 +162,7 @@ class TestEngineDeployBucketLogging:
         """What the original test should have checked: a single seam, so a control
         cannot be added to a copy that nothing calls."""
         src = (Path(__file__).resolve().parent.parent
-               / "src" / "kiro_crew" / "deploy" / "engine.py")
+               / "src" / "efm_go" / "deploy" / "engine.py")
         text = src.read_text(encoding="utf-8")
         assert text.count("_harden_bucket(") >= 3, (
             "bucket hardening must go through one helper used by both paths"

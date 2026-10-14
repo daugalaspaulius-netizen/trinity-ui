@@ -17,19 +17,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.agent_sdk import TURN_STOP_REASON_CANCELLED
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.dashboard.chat import _run_chat
-from kiro_crew.dashboard.recovery_replays import ReplayFamily
-from kiro_crew.dashboard.state import REFUSAL_RECOVERY_PREFIX, DashboardState, _ChatSlot
-from kiro_crew.history import ConversationLog
-from kiro_crew.hooks import ToolHookResult
-from kiro_crew.providers.base import (
+from efm_go.agent_sdk import TURN_STOP_REASON_CANCELLED
+from efm_go.config import KiroCrewConfig
+from efm_go.dashboard.chat import _run_chat
+from efm_go.dashboard.recovery_replays import ReplayFamily
+from efm_go.dashboard.state import REFUSAL_RECOVERY_PREFIX, DashboardState, _ChatSlot
+from efm_go.history import ConversationLog
+from efm_go.hooks import ToolHookResult
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     LLMEvent,
 )
-from kiro_crew.session import SessionManager
+from efm_go.session import SessionManager
 
 LINKED_KEY = "slack:1700000000.000100"
 
@@ -496,7 +496,7 @@ async def _run_denied_turn(state, client, slot, *, channel_stop: bool, stop_coun
         return _events([LLMEvent(kind=EVENT_COMPLETE, stop_reason="end_turn")])
 
     client.stream = MagicMock(side_effect=_stream)
-    with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+    with patch("efm_go.dashboard.chat.sel") as mock_sel:
         mock_sel.return_value = MagicMock()
         await _run_chat(state, slot, "hello")
         if slot.task:
@@ -520,12 +520,12 @@ class TestChannelStopPurgesAQueuedContinuationAtDrain:
 
     @staticmethod
     def _queued_continuation(tmp_path, stop_counts):
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _PROMISE_ONLY_CONTINUE_MSG,
             SYNTHETIC_RECOVERY_KIND,
             RecoveryPayload,
         )
-        from kiro_crew.dashboard.session_control import containment_meta
+        from efm_go.dashboard.session_control import containment_meta
 
         state, _client = _make_state(
             tmp_path, deny_reason="Blocked by security policy: git push", stop_counts=stop_counts
@@ -553,13 +553,13 @@ class TestChannelStopPurgesAQueuedContinuationAtDrain:
 
     @pytest.mark.asyncio
     async def test_a_stop_on_the_linked_session_while_queued_purges_it(self, tmp_path):
-        from kiro_crew.dashboard.chat_runner import _start_next_queued_turn
+        from efm_go.dashboard.chat_runner import _start_next_queued_turn
 
         stop_counts = {LINKED_KEY: 0}
         state, slot = self._queued_continuation(tmp_path, stop_counts)
         stop_counts[LINKED_KEY] = 1  # /kirocrew stop landed while it waited
 
-        with patch("kiro_crew.dashboard.chat_runner._run_chat", new_callable=AsyncMock):
+        with patch("efm_go.dashboard.chat_runner._run_chat", new_callable=AsyncMock):
             started = await _start_next_queued_turn(state, slot)
 
         assert started is False
@@ -572,12 +572,12 @@ class TestChannelStopPurgesAQueuedContinuationAtDrain:
 
     @pytest.mark.asyncio
     async def test_no_stop_lets_the_queued_continuation_dispatch(self, tmp_path):
-        from kiro_crew.dashboard.chat_runner import _start_next_queued_turn
+        from efm_go.dashboard.chat_runner import _start_next_queued_turn
 
         stop_counts = {LINKED_KEY: 0}
         state, slot = self._queued_continuation(tmp_path, stop_counts)
 
-        with patch("kiro_crew.dashboard.chat_runner._run_chat", new_callable=AsyncMock) as run_chat:
+        with patch("efm_go.dashboard.chat_runner._run_chat", new_callable=AsyncMock) as run_chat:
             started = await _start_next_queued_turn(state, slot)
             if slot.task:
                 await slot.task

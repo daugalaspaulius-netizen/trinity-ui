@@ -29,7 +29,7 @@ import { useLanguageGeneration } from '../i18n/useLanguageGeneration'
 
 /** Where the RFC explains redaction; every "About" link opens it. */
 export const ABOUT_REDACTION_URL =
-  'https://github.com/kirodotdev/KiroCrew/blob/main/docs/request-for-change/rfc-redaction-explain-and-reveal.md'
+  'https://efmleads.com/blob/main/docs/request-for-change/rfc-redaction-explain-and-reveal.md'
 
 // ── records ──────────────────────────────────────────────────────────────
 

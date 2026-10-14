@@ -59,7 +59,7 @@ function item(over: Partial<StepItem> = {}): StepItem {
   }
 }
 
-// Deliberately NOT kirodotdev/KiroCrew. The PR link used to be hardcoded to that
+// Deliberately NOT efmleads.com. The PR link used to be hardcoded to that
 // repository, so a fixture naming it would let the old and the correct behaviour
 // produce byte-identical hrefs and the assertions below would pass either way.
 const TEST_REPO: RepoRef = { owner: 'acme', repo: 'widgets', provider: 'github' }
@@ -122,7 +122,7 @@ describe('StepItemsTable — PR column', () => {
     renderTable([item({ number: 4820, pr: 5127 })])
     const href = within(rowFor(4820)).getByRole('link').getAttribute('href') ?? ''
     expect(href).toContain('acme/widgets')
-    expect(href).not.toContain('kirodotdev/KiroCrew')
+    expect(href).not.toContain('efmleads.com')
   })
 
   it('uses the forge\u2019s own grammar rather than assuming GitHub\u2019s', () => {

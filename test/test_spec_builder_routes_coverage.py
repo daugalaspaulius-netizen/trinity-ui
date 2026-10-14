@@ -1,6 +1,6 @@
 """Coverage tests for Spec Builder's backend route module.
 
-``src/kiro_crew/apps/builtins/spec_builder/backend/routes.py`` had no test file at
+``src/efm_go/apps/builtins/spec_builder/backend/routes.py`` had no test file at
 all: every helper and all thirteen handlers were unexercised. This file covers it
 at three levels.
 
@@ -41,10 +41,10 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
 from conftest import requires_symlinks
-from kiro_crew.apps.builtins.spec_builder.backend import handlers as handler_module
-from kiro_crew.apps.builtins.spec_builder.backend import parsers as parser_module
-from kiro_crew.apps.builtins.spec_builder.backend import runtime as runtime_module
-from kiro_crew.apps.builtins.spec_builder.tests.routes_facade import routes as r
+from efm_go.apps.builtins.spec_builder.backend import handlers as handler_module
+from efm_go.apps.builtins.spec_builder.backend import parsers as parser_module
+from efm_go.apps.builtins.spec_builder.backend import runtime as runtime_module
+from efm_go.apps.builtins.spec_builder.tests.routes_facade import routes as r
 
 # A name that satisfies _NAME_RE yet does NOT survive _redact -- the exact shape
 # _usable_name exists to reject (a description can slugify into one).
@@ -1094,16 +1094,16 @@ class TestModuleContracts:
 
 class TestSecurityModuleUnavailable:
     """The module's import-time fallbacks, exercised by importing it for real
-    with ``kiro_crew.security`` unimportable -- the only way those lines run."""
+    with ``efm_go.security`` unimportable -- the only way those lines run."""
 
     @staticmethod
     def _load_without_security():
         import importlib.util
 
-        saved = sys.modules.get("kiro_crew.security")
+        saved = sys.modules.get("efm_go.security")
         # ``None`` in sys.modules makes the import statement raise ImportError,
         # which is exactly the condition the try/except in the module guards.
-        sys.modules["kiro_crew.security"] = None  # type: ignore[assignment]
+        sys.modules["efm_go.security"] = None  # type: ignore[assignment]
         try:
             spec = importlib.util.spec_from_file_location("_sb_nosec", parser_module.__file__)
             assert spec is not None and spec.loader is not None
@@ -1112,9 +1112,9 @@ class TestSecurityModuleUnavailable:
             return module
         finally:
             if saved is not None:
-                sys.modules["kiro_crew.security"] = saved
+                sys.modules["efm_go.security"] = saved
             else:  # pragma: no cover - security is always importable in prod
-                del sys.modules["kiro_crew.security"]
+                del sys.modules["efm_go.security"]
 
     def test_every_path_reads_as_sensitive_when_it_cannot_be_judged(self, tmp_path):
         module = self._load_without_security()
@@ -2147,7 +2147,7 @@ class TestTeardownWorkerSlot:
         slot.key = "not a slot key"  # type: ignore[assignment]
         state = _State(**{"spec-builder-demo": slot})
         with mock.patch(
-            "kiro_crew.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()
+            "efm_go.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()
         ):
             assert await r._teardown_worker_slot(state, "demo", only_slot=slot) is True
         assert state._slots == {}
@@ -2167,7 +2167,7 @@ class TestTeardownWorkerSlot:
 
         with (
             mock.patch(
-                "kiro_crew.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()
+                "efm_go.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()
             ) as save,
             mock.patch.object(asyncio, "wait_for", _cancelled),
         ):
@@ -2183,7 +2183,7 @@ class TestTeardownWorkerSlot:
         slot = _Slot("spec-builder-demo")
         state = _State(**{"spec-builder-demo": slot})
         with mock.patch(
-            "kiro_crew.dashboard.chat_persistence.save_slot_off_loop",
+            "efm_go.dashboard.chat_persistence.save_slot_off_loop",
             mock.AsyncMock(side_effect=OSError("disk full")),
         ):
             assert await r._teardown_worker_slot(state, "demo") is True
@@ -2196,7 +2196,7 @@ class TestTeardownWorkerSlot:
         slot = _Slot("spec-builder-demo")
         state = _State(**{"spec-builder-demo": slot})
         with mock.patch(
-            "kiro_crew.dashboard.chat_persistence.save_slot_off_loop",
+            "efm_go.dashboard.chat_persistence.save_slot_off_loop",
             mock.AsyncMock(side_effect=OSError("disk full")),
         ):
             assert await r._teardown_worker_slot(state, "demo", require_archive=True) is False
@@ -2406,7 +2406,7 @@ class TestDispatchTurn:
     async def test_an_idle_slot_starts_a_turn(self):
         slot = _Slot("spec-builder-demo")
         state = _State(**{"spec-builder-demo": slot})
-        with mock.patch("kiro_crew.dashboard.chat_runner._run_chat", mock.AsyncMock()):
+        with mock.patch("efm_go.dashboard.chat_runner._run_chat", mock.AsyncMock()):
             r._dispatch_turn(state, slot, "do the thing")
             assert slot.messages == [{"role": "user", "content": "do the thing", "ts": ""}]
             assert slot.task is not None
@@ -2430,7 +2430,7 @@ class TestDispatchTurn:
             return _noop()
 
         with (
-            mock.patch("kiro_crew.dashboard.chat_runner._run_chat", mock.AsyncMock()),
+            mock.patch("efm_go.dashboard.chat_runner._run_chat", mock.AsyncMock()),
             mock.patch.object(asyncio, "wait_for", _capture),
         ):
             r._dispatch_turn(state, slot, "do the thing")
@@ -2880,7 +2880,7 @@ class TestReadRecentProjects:
         assert r._read_recent_projects() == []
 
     def test_only_existing_directories_survive_and_the_list_is_bounded(self, tmp_path):
-        from kiro_crew.config.paths import config_dir
+        from efm_go.config.paths import config_dir
 
         real = [str(tmp_path / f"p{i}") for i in range(12)]
         for path in real:
@@ -2892,7 +2892,7 @@ class TestReadRecentProjects:
         assert r._read_recent_projects() == real[:10]
 
     def test_a_malformed_or_wrongly_shaped_file_is_an_empty_list(self):
-        from kiro_crew.config.paths import config_dir
+        from efm_go.config.paths import config_dir
 
         config_dir().mkdir(parents=True, exist_ok=True)
         (config_dir() / "recent_projects.json").write_text('{"not": "a list"}')
@@ -4158,7 +4158,7 @@ class TestHandleDelete:
         state = _State(**{"spec-builder-demo-0123abcd": slot})
         with (
             mock.patch.object(r, "_remove_nudge_loop", mock.AsyncMock()),
-            mock.patch("kiro_crew.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()),
+            mock.patch("efm_go.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()),
         ):
             out = await r._handle_delete(
                 _mk(
@@ -4393,7 +4393,7 @@ class TestTeardownFailureBranches:
         state = _State()
         state._slots = _StubbornRegistry({"spec-builder-demo": slot})  # type: ignore[assignment]
         with mock.patch(
-            "kiro_crew.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()
+            "efm_go.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()
         ) as save:
             assert await r._teardown_worker_slot(state, "demo") is True
         save.assert_awaited_once()
@@ -4408,7 +4408,7 @@ class TestTeardownFailureBranches:
             raise RuntimeError("teardown blew up")
 
         with (
-            mock.patch("kiro_crew.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()),
+            mock.patch("efm_go.dashboard.chat_persistence.save_slot_off_loop", mock.AsyncMock()),
             mock.patch.object(asyncio, "wait_for", _explode),
         ):
             assert await r._teardown_worker_slot(state, "demo") is True
@@ -4426,7 +4426,7 @@ class TestTeardownFailureBranches:
         state = _State()
         state._slots = _NoWrites({"spec-builder-demo": slot})  # type: ignore[assignment]
         with mock.patch(
-            "kiro_crew.dashboard.chat_persistence.save_slot_off_loop",
+            "efm_go.dashboard.chat_persistence.save_slot_off_loop",
             mock.AsyncMock(side_effect=OSError("disk full")),
         ):
             assert await r._teardown_worker_slot(state, "demo", require_archive=True) is False

@@ -17,10 +17,10 @@ from types import SimpleNamespace
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.apps import backend, bridges
-from kiro_crew.apps import manifest as manifest_mod
-from kiro_crew.apps import registry
-from kiro_crew.apps.manifest import (
+from efm_go.apps import backend, bridges
+from efm_go.apps import manifest as manifest_mod
+from efm_go.apps import registry
+from efm_go.apps.manifest import (
     AppManifest,
     file_entry_point_refusal,
     has_stdio_mcp_server,
@@ -37,7 +37,7 @@ def _manifest(**fields) -> AppManifest:
 
 class TestIsModuleStyleEntryPoint:
     def test_a_dotted_extensionless_name_with_no_file_is_a_module(self, tmp_path):
-        assert is_module_style_entry_point("kiro_crew.apps.builtins.demo.server", tmp_path)
+        assert is_module_style_entry_point("efm_go.apps.builtins.demo.server", tmp_path)
         assert is_module_style_entry_point("my_pkg.server", tmp_path)
 
     @pytest.mark.parametrize(

@@ -25,9 +25,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.mcp_discovery import McpServerInfo
-from kiro_crew.mcp_gateway.preflight import PREFLIGHT_IDENTITY_NAMES, preflight
-from kiro_crew.mcp_gateway.shareability import ShareEvidence, Strength, assess
+from efm_go.mcp_discovery import McpServerInfo
+from efm_go.mcp_gateway.preflight import PREFLIGHT_IDENTITY_NAMES, preflight
+from efm_go.mcp_gateway.shareability import ShareEvidence, Strength, assess
 
 # A server whose declared capabilities depend on who is asking. This is the
 # hazard the pre-flight exists to detect: the pool caches the FIRST caller's

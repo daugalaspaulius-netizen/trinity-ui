@@ -1,4 +1,4 @@
-"""``kiro_crew.pod.provision`` names a failed step from its stderr, not its stdout tail.
+"""``efm_go.pod.provision`` names a failed step from its stderr, not its stdout tail.
 
 The Dev Fleet gateway spawns ``pod provision`` with ``stderr=STDOUT``, so a step
 writing straight to the inherited descriptors lands its stdout and stderr in ONE
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.pod import provision as prov
+from efm_go.pod import provision as prov
 
 
 def _script_step(script: str) -> list[str]:

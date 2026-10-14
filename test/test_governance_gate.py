@@ -13,11 +13,11 @@ import json
 
 import pytest
 
-from kiro_crew.hooks import TOOL_DENY, HookManager, HooksConfig
-from kiro_crew.platform import context as ctx_mod
-from kiro_crew.platform import governance_profiles as gp
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.governance import parse_policy
+from efm_go.hooks import TOOL_DENY, HookManager, HooksConfig
+from efm_go.platform import context as ctx_mod
+from efm_go.platform import governance_profiles as gp
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.governance import parse_policy
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def profiles_dir(tmp_path, monkeypatch):
 
 def _install_ceiling(monkeypatch, policy_body):
     """Compose a context carrying the given policy and install it as active."""
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     base = build_default_context(KiroCrewConfig.load())
     ceiling = parse_policy(policy_body) if policy_body is not None else None
@@ -135,7 +135,7 @@ def test_denial_emits_redacted_audit(profiles_dir, monkeypatch):
         def log_governance_decision(self, **kw):
             events.append(kw)
 
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: _FakeSel())
+    monkeypatch.setattr("efm_go.sel.sel", lambda: _FakeSel())
     _install_ceiling(
         monkeypatch,
         {

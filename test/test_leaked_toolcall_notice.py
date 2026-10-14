@@ -29,8 +29,8 @@ from __future__ import annotations
 import pathlib
 import re
 
-from kiro_crew.acp.types import STOP_REASON_CANCELLED, STOP_REASON_END_TURN
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.acp.types import STOP_REASON_CANCELLED, STOP_REASON_END_TURN
+from efm_go.dashboard.chat_utils import (
     has_leaked_tool_call,
     should_notice_compaction_dropped_leak,
     should_notice_leaked_tool_call,
@@ -438,7 +438,7 @@ class TestTheNoticeDoesNotStarveARecovery:
     outside, which is a structural property no predicate test can observe.
     """
 
-    RUNNER = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew/dashboard/chat_runner.py"
+    RUNNER = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go/dashboard/chat_runner.py"
     CALL = "should_notice_compaction_dropped_leak("
 
     def _call_line(self) -> str:
@@ -492,7 +492,7 @@ class TestTheBoundaryScanRunsBeforeTheReset:
     ``event.synthesized`` guard that identifies this one.
     """
 
-    RUNNER = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew/dashboard/chat_runner.py"
+    RUNNER = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go/dashboard/chat_runner.py"
     GUARD = re.compile(r"^\s*if not event\.synthesized:")
     RESET = re.compile(r'^\s*assistant_text = ""\s*$')
     SCAN = "has_leaked_tool_call("

@@ -20,10 +20,10 @@ from member_memory_helpers import (
     write_member_home,
 )
 
-from kiro_crew import member_memory_backup as member_backup
-from kiro_crew import memory_backup, memory_stores
-from kiro_crew.config import loader
-from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+from efm_go import member_memory_backup as member_backup
+from efm_go import memory_backup, memory_stores
+from efm_go.config import loader
+from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
 pytestmark = pytest.mark.xdist_group("member_memory_backup")
 
@@ -130,7 +130,7 @@ def test_journal_permission_failure_precedes_content_and_allows_retry(env, monke
 
 
 def test_cli_stages_lost_member_directory_recovery_without_touching_another_member(env, capsys):
-    from kiro_crew.cli_commands import _memory_backup_cmd
+    from efm_go.cli_commands import _memory_backup_cmd
 
     path = env.paths["alice"]
     backup = memory_backup.backup_store(path)
@@ -367,8 +367,8 @@ def test_pending_restore_refuses_an_open_v2_generation(env):
 
 @pytest.mark.asyncio
 async def test_member_document_facade_open_holds_restore_admission(env):
-    from kiro_crew.context import cached_vector_store_entries, release_cached_memory_store
-    from kiro_crew.dashboard.handlers._shared import (
+    from efm_go.context import cached_vector_store_entries, release_cached_memory_store
+    from efm_go.dashboard.handlers._shared import (
         markdown_memory_for_store,
         release_markdown_memory_store,
     )
@@ -556,7 +556,7 @@ def test_cancel_commits_before_best_effort_stage_cleanup(env, monkeypatch):
 
 
 def test_cli_cancel_reports_unchanged_active_memory(env, capsys):
-    from kiro_crew.cli_commands import _memory_backup_cmd
+    from efm_go.cli_commands import _memory_backup_cmd
 
     path = env.paths["alice"]
     backup = memory_backup.backup_store(path)

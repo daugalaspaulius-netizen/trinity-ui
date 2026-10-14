@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
-from kiro_crew.mcp_tools import spawn as spawn_tools
+from efm_go.mcp_tools import spawn as spawn_tools
 
 _DETAIL = "low memory: 2.2 GB available, need 2.5 GB (0.50 GB for this start)"
 

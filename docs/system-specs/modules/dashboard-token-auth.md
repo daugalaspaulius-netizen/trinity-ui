@@ -144,7 +144,7 @@ gates (`_workflow_ready`, `_crewmate_prune_gate`, each a 503).
 
 ### 1. `token_auth.py` — Token Generator, Validator & Middleware
 
-Location: `src/kiro_crew/dashboard/token_auth.py`
+Location: `src/efm_go/dashboard/token_auth.py`
 
 #### Token Format
 
@@ -463,7 +463,7 @@ An **app token** (payload carries a non-empty `app` claim, minted by the `X-App-
 
 ### 2. `origin.py` — Dashboard URL & Bind Address Resolution
 
-Location: `src/kiro_crew/dashboard/origin.py`
+Location: `src/efm_go/dashboard/origin.py`
 
 Centralizes dashboard URL parsing, bind-address resolution, origin-set construction, and per-request origin validation. Shared by `server.py`, `ws.py`, `gateway.py`, and `allowlist.py`.
 
@@ -492,7 +492,7 @@ def build_allowed_origins(port: int, local_only: bool, configured_host: str = ""
 
 ### 3. `!dashboard` Command Handler
 
-Location: `src/kiro_crew/slack/handler_runtime/commands.py` → `_bang_dashboard`, dispatched by `_handle_slash_command` (re-exported by `slack/handler.py`)
+Location: `src/efm_go/slack/handler_runtime/commands.py` → `_bang_dashboard`, dispatched by `_handle_slash_command` (re-exported by `slack/handler.py`)
 
 Parses `!dashboard [duration]`, delegates to `allowlist.send_dashboard_link()`:
 
@@ -510,7 +510,7 @@ if cmd == "!dashboard":
 
 ### 4. `send_dashboard_link()` — Token URL Generation & DM Delivery
 
-Location: `src/kiro_crew/slack/allowlist.py`
+Location: `src/efm_go/slack/allowlist.py`
 
 Generates the token, constructs the URL using `origin.py` helpers, and DMs it to the owner (never posted in channels to prevent token leakage):
 

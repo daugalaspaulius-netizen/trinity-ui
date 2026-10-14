@@ -30,7 +30,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 #: Modules a stub must not hold once it is bridging. Each has a large
 #: transitive graph and is reached, if at all, on a path a stub takes rarely:
@@ -42,15 +42,15 @@ from kiro_crew.subprocess_utf8 import UTF8_TEXT
 #: catch a cheap leaf landing beside an expensive one, and report a failure
 #: that does not say which module grew the footprint.
 FORBIDDEN_WHEN_BRIDGING = (
-    "kiro_crew.config.loader",
-    "kiro_crew.mcp_gateway.pool",
-    "kiro_crew.mcp_gateway.manager",
-    "kiro_crew.mcp_gateway.backend",
-    "kiro_crew.mcp_gateway.rewriter",
-    "kiro_crew.metrics.events",
-    "kiro_crew.jsonl_util",
-    "kiro_crew.security",
-    "kiro_crew.validation",
+    "efm_go.config.loader",
+    "efm_go.mcp_gateway.pool",
+    "efm_go.mcp_gateway.manager",
+    "efm_go.mcp_gateway.backend",
+    "efm_go.mcp_gateway.rewriter",
+    "efm_go.metrics.events",
+    "efm_go.jsonl_util",
+    "efm_go.security",
+    "efm_go.validation",
 )
 
 #: Additionally absent after a bare ``import``: building the Register payload
@@ -58,7 +58,7 @@ FORBIDDEN_WHEN_BRIDGING = (
 #: Crew's own servers. ``mcp_caller`` and ``mcp_cleanup`` are NOT here: every
 #: run builds a Register payload, so importing them in the module body changes
 #: when rather than whether, and the eager spelling is the readable one.
-FORBIDDEN_AT_IMPORT = FORBIDDEN_WHEN_BRIDGING + ("kiro_crew.code_fingerprint",)
+FORBIDDEN_AT_IMPORT = FORBIDDEN_WHEN_BRIDGING + ("efm_go.code_fingerprint",)
 
 #: What the rewriter stamps into every overlay it writes. 64 MiB is the shipped
 #: default, so a probe using it asserts the plumbing without also asserting a
@@ -132,7 +132,7 @@ def test_bridging_stub_holds_none_of_the_heavy_modules(tmp_path, session_key):
     """
     code = (
         "import json, sys\n"
-        "import kiro_crew.mcp_gateway.stub as stub\n"
+        "import efm_go.mcp_gateway.stub as stub\n"
         f"args = stub._parse_args({STUB_ARGV!r})\n"
         "stub._adopt_read_ceiling(args)\n"
         "payload = stub.build_register_payload(args)\n"
@@ -157,7 +157,7 @@ def test_stub_import_loads_even_less(tmp_path):
     """A bare import reaches neither the bridging set nor the startup modules."""
     code = (
         "import json, sys\n"
-        "import kiro_crew.mcp_gateway.stub\n"
+        "import efm_go.mcp_gateway.stub\n"
         f"forbidden = {list(FORBIDDEN_AT_IMPORT)!r}\n"
         "print(json.dumps(sorted(m for m in forbidden if m in sys.modules)))\n"
     )
@@ -175,10 +175,10 @@ def test_stub_label_matches_the_poolkey_the_daemon_builds(tmp_path):
     though nothing would fail.
     """
     code = (
-        "import kiro_crew.mcp_gateway.stub as stub\n"
+        "import efm_go.mcp_gateway.stub as stub\n"
         f"args = stub._parse_args({STUB_ARGV!r})\n"
         "payload = stub.build_register_payload(args)\n"
-        "from kiro_crew.mcp_gateway.pool import PoolKey\n"
+        "from efm_go.mcp_gateway.pool import PoolKey\n"
         "mine = stub.format_pool_label(payload)\n"
         "theirs = PoolKey.from_register(payload).human_readable()\n"
         "assert mine == theirs, (mine, theirs)\n"
@@ -189,7 +189,7 @@ def test_stub_label_matches_the_poolkey_the_daemon_builds(tmp_path):
 
 def test_label_names_every_field_it_is_missing():
     """A payload short of a label field raises, rather than printing ``None``."""
-    from kiro_crew.mcp_gateway.hashing import format_pool_label
+    from efm_go.mcp_gateway.hashing import format_pool_label
 
     with pytest.raises(ValueError) as caught:
         format_pool_label({"server_name": "s"})
@@ -202,11 +202,11 @@ def test_adopted_ceiling_comes_off_argv_without_reading_config(tmp_path):
     """The flag the rewriter wrote is the ceiling, and config stays unloaded."""
     code = (
         "import sys\n"
-        "import kiro_crew.mcp_gateway.stub as stub\n"
+        "import efm_go.mcp_gateway.stub as stub\n"
         f"args = stub._parse_args({STUB_ARGV!r})\n"
         f"assert stub._adopt_read_ceiling(args) == {FLAG_CEILING}\n"
         f"assert stub._HELD_FRAME_BYTES == {FLAG_CEILING}\n"
-        "assert 'kiro_crew.config.loader' not in sys.modules\n"
+        "assert 'efm_go.config.loader' not in sys.modules\n"
     )
     result = _run_probe(tmp_path, code)
     assert result.returncode == 0, result.stderr
@@ -217,7 +217,7 @@ def test_env_var_still_beats_the_flag(tmp_path):
     code = (
         "import os\n"
         "os.environ['KIROCREW_MCP_READ_LIMIT'] = '2048'\n"
-        "import kiro_crew.mcp_gateway.stub as stub\n"
+        "import efm_go.mcp_gateway.stub as stub\n"
         f"args = stub._parse_args({STUB_ARGV!r})\n"
         "assert stub._adopt_read_ceiling(args) == 2048\n"
     )
@@ -241,9 +241,9 @@ def test_absent_or_unusable_flag_resolves_the_old_way(tmp_path, bad):
     code = (
         "import sys\n"
         "from unittest.mock import patch\n"
-        "import kiro_crew.mcp_gateway.stub as stub\n"
+        "import efm_go.mcp_gateway.stub as stub\n"
         f"args = stub._parse_args({argv!r})\n"
-        "with patch('kiro_crew.config.loader._raw_config',\n"
+        "with patch('efm_go.config.loader._raw_config',\n"
         "           return_value={'mcp_gateway': {'read_buffer_limit_bytes': 4194304}}):\n"
         "    assert stub._adopt_read_ceiling(args) == 4194304\n"
     )
@@ -253,7 +253,7 @@ def test_absent_or_unusable_flag_resolves_the_old_way(tmp_path, bad):
 
 def _fingerprint(limit: int) -> dict:
     """``_rewrite_inputs_fingerprint`` with everything but the ceiling pinned."""
-    from kiro_crew.mcp_gateway import rewriter
+    from efm_go.mcp_gateway import rewriter
 
     return rewriter._rewrite_inputs_fingerprint(
         source_dir=Path("/tmp"),
@@ -301,7 +301,7 @@ def test_one_rewrite_pass_writes_one_ceiling(tmp_path):
     """
     import inspect
 
-    from kiro_crew.mcp_gateway import rewriter
+    from efm_go.mcp_gateway import rewriter
 
     assert "read_buffer_limit" in inspect.signature(rewriter._build_stub_entry).parameters
     body = inspect.getsource(rewriter._build_stub_entry)
@@ -322,12 +322,12 @@ def test_the_module_body_defaults_the_ceiling_without_reading_config(tmp_path):
     """
     code = (
         "import sys\n"
-        "import kiro_crew.mcp_gateway.stub as stub\n"
-        "from kiro_crew.mcp_gateway.read_limits import _DEFAULT_READ_BUFFER_LIMIT\n"
+        "import efm_go.mcp_gateway.stub as stub\n"
+        "from efm_go.mcp_gateway.read_limits import _DEFAULT_READ_BUFFER_LIMIT\n"
         "assert stub.READ_BUFFER_LIMIT_BYTES == _DEFAULT_READ_BUFFER_LIMIT\n"
         "assert stub._HELD_FRAME_BYTES == _DEFAULT_READ_BUFFER_LIMIT\n"
         "assert stub._HELD_TOTAL_BYTES == _DEFAULT_READ_BUFFER_LIMIT\n"
-        "assert 'kiro_crew.config.loader' not in sys.modules\n"
+        "assert 'efm_go.config.loader' not in sys.modules\n"
     )
     result = _run_probe(tmp_path, code)
     assert result.returncode == 0, result.stderr
@@ -342,8 +342,8 @@ def test_a_lowered_ceiling_does_not_tighten_the_retention_floor(tmp_path):
     argv = [a for a in STUB_ARGV if a != str(FLAG_CEILING)]
     argv[argv.index("--read-limit") + 1 : argv.index("--read-limit") + 1] = ["4096"]
     code = (
-        "import kiro_crew.mcp_gateway.stub as stub\n"
-        "from kiro_crew.mcp_gateway.read_limits import _DEFAULT_READ_BUFFER_LIMIT\n"
+        "import efm_go.mcp_gateway.stub as stub\n"
+        "from efm_go.mcp_gateway.read_limits import _DEFAULT_READ_BUFFER_LIMIT\n"
         f"args = stub._parse_args({argv!r})\n"
         "assert stub._adopt_read_ceiling(args) == 4096\n"
         "assert stub._HELD_FRAME_BYTES == 4096\n"
@@ -372,9 +372,9 @@ def test_execution_context_does_not_load_validation():
             sys.executable,
             "-B",
             "-c",
-            "import sys, kiro_crew.execution_context\n"
-            "assert 'kiro_crew.validation' not in sys.modules\n"
-            "assert 'kiro_crew.security' not in sys.modules\n",
+            "import sys, efm_go.execution_context\n"
+            "assert 'efm_go.validation' not in sys.modules\n"
+            "assert 'efm_go.security' not in sys.modules\n",
         ],
         env=env,
         capture_output=True,
@@ -386,7 +386,7 @@ def test_execution_context_does_not_load_validation():
 
 def test_validation_still_binds_the_constant_that_moved():
     """``validation.MAX_SHORT_STRING`` is the leaf's object, for its 15 readers."""
-    from kiro_crew import constants, validation
+    from efm_go import constants, validation
 
     assert validation.MAX_SHORT_STRING is constants.MAX_SHORT_STRING
     assert validation.MAX_SHORT_STRING == 500

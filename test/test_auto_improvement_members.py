@@ -14,19 +14,19 @@ from types import SimpleNamespace
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew.apps.builtins.auto_improvement.backend import crew, store
-from kiro_crew.apps.builtins.auto_improvement.spine import agent_runner, crew_runner
-from kiro_crew.apps.builtins.auto_improvement.spine.crew_runner import CrewRunner
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.config.loader import update_config_locked
-from kiro_crew.execution_context import read_session_execution
-from kiro_crew.history import ConversationLog
-from kiro_crew.members import read_activity
-from kiro_crew.memory_stores import memory_stores_root
-from kiro_crew.platform.context import PlatformCompositionError, current_context, set_context
-from kiro_crew.platform.governance import parse_policy
-from kiro_crew.security.exfil import EXFILTRATION_REDACTION_TAG_PREFIX
-from kiro_crew.security.redaction import REDACTED_CREDENTIAL_TAG
+from efm_go.apps.builtins.auto_improvement.backend import crew, store
+from efm_go.apps.builtins.auto_improvement.spine import agent_runner, crew_runner
+from efm_go.apps.builtins.auto_improvement.spine.crew_runner import CrewRunner
+from efm_go.config import KiroCrewConfig
+from efm_go.config.loader import update_config_locked
+from efm_go.execution_context import read_session_execution
+from efm_go.history import ConversationLog
+from efm_go.members import read_activity
+from efm_go.memory_stores import memory_stores_root
+from efm_go.platform.context import PlatformCompositionError, current_context, set_context
+from efm_go.platform.governance import parse_policy
+from efm_go.security.exfil import EXFILTRATION_REDACTION_TAG_PREFIX
+from efm_go.security.redaction import REDACTED_CREDENTIAL_TAG
 
 #: How long these tests let one member assignment run, and how long they wait for
 #: it. Both are LOST-RUN guards: no test that uses them is about how long an
@@ -141,7 +141,7 @@ async def test_installed_members_are_visible_in_the_roster():
     from aiohttp import web
     from aiohttp.test_utils import make_mocked_request
 
-    from kiro_crew.dashboard.handlers.members import api_members
+    from efm_go.dashboard.handlers.members import api_members
 
     identities = await asyncio.to_thread(crew.ensure_team)
     app = web.Application()
@@ -159,8 +159,8 @@ async def test_installed_members_are_visible_in_the_roster():
 
 
 def test_confinement_reads_the_current_config_and_effective_floor(monkeypatch):
-    from kiro_crew import sandbox
-    from kiro_crew.apps.builtins.auto_improvement.backend.runner import _credentials_are_unconfined
+    from efm_go import sandbox
+    from efm_go.apps.builtins.auto_improvement.backend.runner import _credentials_are_unconfined
 
     seen = []
 
@@ -186,7 +186,7 @@ class Provider:
         self.shutdowns = 0
 
     async def stream(self, prompt):
-        from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+        from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
 
         self.prompts.append(prompt)
         if self.entered is not None:
@@ -450,19 +450,19 @@ async def test_stages_use_distinct_owned_sessions_and_shared_budget(tmp_path):
 
 @pytest.mark.asyncio
 async def test_assignments_build_real_context_from_only_their_private_store(tmp_path, monkeypatch):
-    from kiro_crew import context as context_module
-    from kiro_crew.context import ContextBuilder
-    from kiro_crew.learn import LessonStore
-    from kiro_crew.members import write_member_rules
-    from kiro_crew.memory import MemoryStore
-    from kiro_crew.skills import SkillsLoader
+    from efm_go import context as context_module
+    from efm_go.context import ContextBuilder
+    from efm_go.learn import LessonStore
+    from efm_go.members import write_member_rules
+    from efm_go.memory import MemoryStore
+    from efm_go.skills import SkillsLoader
 
     agents = tmp_path / "kiro/agents"
     agents.mkdir(parents=True)
     monkeypatch.setenv("KIRO_HOME", str(agents.parent))
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents)
-    monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", agents)
-    monkeypatch.setattr("kiro_crew.embeddings.model_file_present", lambda: False)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents)
+    monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", agents)
+    monkeypatch.setattr("efm_go.embeddings.model_file_present", lambda: False)
     monkeypatch.setattr(context_module, "_memory_stores", {})
     monkeypatch.setattr(context_module, "_vector_stores", {})
     for role, spec in crew.ROLES.items():
@@ -570,7 +570,7 @@ def test_memory_tool_grant_requires_trusted_identity(trusted, allowed, expected)
 async def test_native_permission_without_kind_uses_same_call_only(
     kind, is_shell, matching, allowed, approved, tmp_path
 ):
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_COMPLETE,
         EVENT_PERMISSION_REQUEST,
         EVENT_TOOL_CALL,
@@ -623,7 +623,7 @@ async def test_native_permission_without_kind_uses_same_call_only(
     "within_scope", [False, True], ids=["outside-write-scope", "inside-write-scope"]
 )
 async def test_kindless_native_edit_honors_filesystem_write_ceiling(tmp_path, within_scope):
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_COMPLETE,
         EVENT_PERMISSION_REQUEST,
         EVENT_TOOL_CALL,
@@ -701,10 +701,10 @@ async def test_kindless_native_edit_honors_filesystem_write_ceiling(tmp_path, wi
 def test_owner_recovery_preserves_healthy_role(tmp_path, damage):
     from dataclasses import asdict
 
-    from kiro_crew.config.loader import config_path
-    from kiro_crew.execution_context import bind_session_execution, resolve_member_execution
-    from kiro_crew.members import read_member_rules, write_member_rules
-    from kiro_crew.memory import PREFERENCES_FILE
+    from efm_go.config.loader import config_path
+    from efm_go.execution_context import bind_session_execution, resolve_member_execution
+    from efm_go.members import read_member_rules, write_member_rules
+    from efm_go.memory import PREFERENCES_FILE
 
     identities = crew.ensure_team()
     original = KiroCrewConfig.load()
@@ -923,7 +923,7 @@ async def test_project_shadow_refuses_before_provider_allocation(tmp_path, role,
     ],
 )
 async def test_project_shadow_scan_fails_closed(tmp_path, monkeypatch, failure):
-    from kiro_crew import agent_discovery, hooks
+    from efm_go import agent_discovery, hooks
 
     project = tmp_path / "repo"
     agents = project / ".kiro" / "agents"
@@ -1013,7 +1013,7 @@ async def test_project_shadow_controls_allow_assignment(tmp_path, scope):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("shadow", [False, True])
 async def test_project_shadow_checks_provider_default_cwd(tmp_path, monkeypatch, shadow):
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     monkeypatch.setattr(loader, "workspace_root", lambda: tmp_path / "workspace")
     monkeypatch.setattr(
@@ -1047,7 +1047,7 @@ class _GovernedProvider(Provider):
         self.rejected = []
 
     async def stream(self, prompt):
-        from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, AcpEvent
+        from efm_go.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, AcpEvent
 
         yield AcpEvent(
             kind=EVENT_PERMISSION_REQUEST,

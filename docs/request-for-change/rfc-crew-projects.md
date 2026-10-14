@@ -62,7 +62,7 @@ superseded-by: []
 
 ### Why revise
 
-The P0 implementation ([PR #7181](https://github.com/kirodotdev/KiroCrew/pull/7181),
+The P0 implementation ([PR #7181](https://efmleads.com/pull/7181),
 about 13k lines) went through twelve review rounds. Of roughly fifteen blocking
 findings, all but two were one class: **authority read back from state an
 agent shell can write.** The registry, activation records, source provenance
@@ -427,7 +427,7 @@ Verified at `5cd92ff99`:
   reproduce the same library on a second install short of re-adding every
   source by hand.
 * There is no Jira, Confluence, or ServiceNow reader anywhere in
-  `src/kiro_crew` (grep for either term returns zero hits), and no manifest
+  `src/efm_go` (grep for either term returns zero hits), and no manifest
   format that names external context sources.
 * **Sessions have no grouping concept.** `slot.project` ties one session to
   one directory, but nothing groups the many sessions working the same body of

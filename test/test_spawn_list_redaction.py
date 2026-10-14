@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from kiro_crew.mcp_core import _call_tool_inner
+from efm_go.mcp_core import _call_tool_inner
 
 
 class TestSpawnListRedactBeforeTruncate:
@@ -28,7 +28,7 @@ class TestSpawnListRedactBeforeTruncate:
             ]
         }
 
-        with patch("kiro_crew.mcp_core._get", return_value=fake_response):
+        with patch("efm_go.mcp_core._get", return_value=fake_response):
             result = _call_tool_inner("spawn_list", {})
 
         # The raw key must not appear (even partially) in the output
@@ -47,8 +47,8 @@ class TestSpawnListAgentNames:
 
         fake_response = {"agents": []}
 
-        with patch("kiro_crew.mcp_core._get", return_value=fake_response), patch(
-            "kiro_crew.mcp_core.list_agents", return_value=[fake_agent]
+        with patch("efm_go.mcp_core._get", return_value=fake_response), patch(
+            "efm_go.mcp_core.list_agents", return_value=[fake_agent]
         ):
             result = _call_tool_inner("spawn_list", {})
 

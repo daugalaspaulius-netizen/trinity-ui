@@ -10,11 +10,11 @@ On the main chat page the transcript scroller runs the full height of the pane a
 ## Why
 
 - Text visible through the glass is the product (the iOS toolbar layout), not a defect. Legibility of what sits over the transcript is the glass recipe's job (blur and tint), never the scroller's.
-- https://github.com/kirodotdev/KiroCrew/pull/15820 read the scroll-under as a bug and clipped the transcript above the dock; the maintainer saw the hard edge on main the same day and reverted that half with the words "这个是一个 design decision", keeping #15820's welcome-hero half ("hero 修复留下").
+- https://efmleads.com/pull/15820 read the scroll-under as a bug and clipped the transcript above the dock; the maintainer saw the hard edge on main the same day and reverted that half with the words "这个是一个 design decision", keeping #15820's welcome-hero half ("hero 修复留下").
 
 ## Evidence
 
-- https://github.com/kirodotdev/KiroCrew/issues/16289 -- the issue recording the decision and the maintainer's direction.
-- https://github.com/kirodotdev/KiroCrew/pull/16291#issuecomment-5963169872 -- the maintainer's on-record restatement of the decision, on the pull request that adds this entry.
-- https://github.com/kirodotdev/KiroCrew/pull/16291 -- the revert of #15820's transcript half and the pull request that adds this entry.
-- https://github.com/kirodotdev/KiroCrew/pull/15820 -- the reverted attempt.
+- https://efmleads.com/issues/16289 -- the issue recording the decision and the maintainer's direction.
+- https://efmleads.com/pull/16291#issuecomment-5963169872 -- the maintainer's on-record restatement of the decision, on the pull request that adds this entry.
+- https://efmleads.com/pull/16291 -- the revert of #15820's transcript half and the pull request that adds this entry.
+- https://efmleads.com/pull/15820 -- the reverted attempt.

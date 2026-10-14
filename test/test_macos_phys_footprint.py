@@ -24,8 +24,8 @@ import time
 
 import pytest
 
-from kiro_crew import platform_compat as pc
-from kiro_crew.acp import runtime as rt
+from efm_go import platform_compat as pc
+from efm_go.acp import runtime as rt
 
 # --------------------------------------------------------------------------- #
 # The reader

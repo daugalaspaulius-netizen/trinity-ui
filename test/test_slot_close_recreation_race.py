@@ -51,24 +51,24 @@ import pytest
 from chat_test_helpers import _make_state
 from turn_harness import Do, SlotSpec, TurnContext, TurnScript, run_turn
 
-from kiro_crew import autonudge, execution_context
-from kiro_crew import history as history_mod
-from kiro_crew import mcp_apps_render
-from kiro_crew import members as members_mod
-from kiro_crew.acp.types import (
+from efm_go import autonudge, execution_context
+from efm_go import history as history_mod
+from efm_go import mcp_apps_render
+from efm_go import members as members_mod
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_TEXT_CHUNK,
     EVENT_TOOL_CALL,
     EVENT_TOOL_RESULT,
     AcpEvent,
 )
-from kiro_crew.autonudge import AutoNudgeService
-from kiro_crew.dashboard import chat_handlers as handlers
-from kiro_crew.dashboard import chat_runner, chat_summary
-from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-from kiro_crew.dashboard.state import SlotOrigin
-from kiro_crew.history import is_incognito_transcript
-from kiro_crew.memory_stores import UnknownMemoryStore
+from efm_go.autonudge import AutoNudgeService
+from efm_go.dashboard import chat_handlers as handlers
+from efm_go.dashboard import chat_runner, chat_summary
+from efm_go.dashboard.chat_persistence import _save_slot_to_history
+from efm_go.dashboard.state import SlotOrigin
+from efm_go.history import is_incognito_transcript
+from efm_go.memory_stores import UnknownMemoryStore
 
 NAME = "chat-1-1785"
 
@@ -464,8 +464,8 @@ async def test_delete_first_guard_keeps_the_app_dismissal_and_says_so(
         saved.append((bool(kw.get("closed")), bool(kw.get("rows_only"))))
         return True
 
-    monkeypatch.setattr("kiro_crew.apps.teardown.notify_slot_closed", _told)
-    monkeypatch.setattr("kiro_crew.apps.teardown.notify_slot_close_undone", _undo)
+    monkeypatch.setattr("efm_go.apps.teardown.notify_slot_closed", _told)
+    monkeypatch.setattr("efm_go.apps.teardown.notify_slot_close_undone", _undo)
     monkeypatch.setattr(handlers, "save_slot_off_loop", _persist)
 
     caplog.set_level(logging.WARNING, logger=handlers.__name__)
@@ -604,8 +604,8 @@ async def test_delete_failure_arm_skips_both_compensations_when_restore_skipped(
         await release.wait()
         raise RuntimeError("disk wedged")
 
-    monkeypatch.setattr("kiro_crew.apps.teardown.notify_slot_closed", _told)
-    monkeypatch.setattr("kiro_crew.apps.teardown.notify_slot_close_undone", _undo)
+    monkeypatch.setattr("efm_go.apps.teardown.notify_slot_closed", _told)
+    monkeypatch.setattr("efm_go.apps.teardown.notify_slot_close_undone", _undo)
     monkeypatch.setattr(handlers, "save_slot_off_loop", _persist)
 
     close = asyncio.create_task(handlers.api_chat_slot_delete(_Req(state, NAME)))
@@ -657,8 +657,8 @@ async def test_delete_failure_arm_undoes_the_app_close_when_the_slot_is_restored
     async def _persist(*_a, **_kw) -> None:
         raise RuntimeError("disk wedged")
 
-    monkeypatch.setattr("kiro_crew.apps.teardown.notify_slot_closed", _told)
-    monkeypatch.setattr("kiro_crew.apps.teardown.notify_slot_close_undone", _undo)
+    monkeypatch.setattr("efm_go.apps.teardown.notify_slot_closed", _told)
+    monkeypatch.setattr("efm_go.apps.teardown.notify_slot_close_undone", _undo)
     monkeypatch.setattr(handlers, "save_slot_off_loop", _persist)
 
     resp = await handlers.api_chat_slot_delete(_Req(state, NAME))
@@ -1162,7 +1162,7 @@ def _disk_contents(state) -> list[str]:
 
 def _summary_cfg():
     """A config with the session summary ON, so its gate is decided by the slot."""
-    from kiro_crew.config.loader import KiroCrewConfig, SessionSummaryConfig
+    from efm_go.config.loader import KiroCrewConfig, SessionSummaryConfig
 
     cfg = KiroCrewConfig()
     cfg.session_summary = SessionSummaryConfig(enabled=True)
@@ -1903,7 +1903,7 @@ async def test_failed_handover_restores_replacement_when_no_private_rows_landed(
 @pytest.mark.asyncio
 async def test_failed_handover_does_not_undo_a_concurrent_title_fold(tmp_path, monkeypatch) -> None:
     """A title writer ordered after the read leaves its pending mode before unlock."""
-    from kiro_crew.dashboard import chat_persistence, chat_utils
+    from efm_go.dashboard import chat_persistence, chat_utils
 
     state = _make_state(tmp_path)
     original = state.get_or_create_slot(NAME, memory_mode="temporary")
@@ -1963,7 +1963,7 @@ async def test_failed_handover_keeps_replacement_restricted_when_line_unverifiab
     tmp_path, monkeypatch, failure
 ) -> None:
     """An unreadable line or unavailable transcript lock cannot authorize rollback."""
-    from kiro_crew.dashboard import chat_utils
+    from efm_go.dashboard import chat_utils
 
     state = _make_state(tmp_path)
     original = state.get_or_create_slot(NAME, memory_mode="temporary")
@@ -2037,7 +2037,7 @@ async def test_failed_handover_keeps_replacement_restricted_when_atomic_write_la
 
 def test_tightening_retries_carrier_cas_before_mutating_replacement(tmp_path, monkeypatch) -> None:
     """One carrier rebind is retried before the slot and marker become restricted."""
-    from kiro_crew.dashboard import chat_utils as chat_utils_mod
+    from efm_go.dashboard import chat_utils as chat_utils_mod
 
     state = _make_state(tmp_path)
     original = state.get_or_create_slot(NAME, memory_mode="temporary")
@@ -2096,7 +2096,7 @@ def test_tightening_retries_carrier_cas_before_mutating_replacement(tmp_path, mo
 
 def test_second_carrier_cas_failure_leaves_replacement_unmodified(tmp_path, monkeypatch) -> None:
     """Two carrier rebinds propagate without partially tightening slot-owned state."""
-    from kiro_crew.dashboard import chat_utils as chat_utils_mod
+    from efm_go.dashboard import chat_utils as chat_utils_mod
 
     state = _make_state(tmp_path)
     original = state.get_or_create_slot(NAME, memory_mode="temporary")
@@ -2144,7 +2144,7 @@ async def test_delete_handover_saves_tail_after_second_carrier_cas_failure(
     tmp_path, monkeypatch
 ) -> None:
     """A CAS refusal cannot skip the rows-only save that owns the popped tail."""
-    from kiro_crew.dashboard import chat_utils as chat_utils_mod
+    from efm_go.dashboard import chat_utils as chat_utils_mod
 
     state = _make_state(tmp_path)
     original = state.get_or_create_slot(NAME, memory_mode="temporary")
@@ -2202,7 +2202,7 @@ async def test_tightening_a_live_replacement_keeps_and_rolls_back_its_carrier(tm
     fold with nothing to fold into. The carrier is tightened in place instead:
     same identity, stricter mode, and a failed write restores that generation.
     """
-    from kiro_crew.dashboard.chat_utils import (
+    from efm_go.dashboard.chat_utils import (
         effective_session_key,
         restore_replacement_if_handover_did_not_land,
         slot_history_key,
@@ -2326,8 +2326,8 @@ async def test_a_save_over_a_corrupt_line_rewrites_it_strictest_and_lands_the_ro
     mode with no store: the line's real contract is unknowable and the ratchet
     forbids relabelling it looser.
     """
-    from kiro_crew.execution_context import STRICTEST_MEMORY_MODE
-    from kiro_crew.history import METADATA_LINE_CORRUPT, METADATA_LINE_READABLE
+    from efm_go.execution_context import STRICTEST_MEMORY_MODE
+    from efm_go.history import METADATA_LINE_CORRUPT, METADATA_LINE_READABLE
 
     state = _make_state(tmp_path)
     log = state.conversation_log
@@ -2368,7 +2368,7 @@ async def test_a_transient_read_failure_still_defers_the_save(tmp_path, monkeypa
     ``_dirty`` stays armed and no row is written; once the read clears the next
     attempt lands the rows under the line's own (folded) mode, untouched.
     """
-    from kiro_crew import history_projection
+    from efm_go import history_projection
 
     state = _make_state(tmp_path)
     log = state.conversation_log
@@ -2404,7 +2404,7 @@ async def test_a_transient_read_failure_still_defers_the_save(tmp_path, monkeypa
 
 def test_a_corrupt_line_withholds_derivation(tmp_path) -> None:
     """Readers keep failing closed on a corrupt line: no rows are derived from it."""
-    from kiro_crew.history import transcript_withholds_derivation
+    from efm_go.history import transcript_withholds_derivation
 
     state = _make_state(tmp_path)
     log = state.conversation_log
@@ -2428,8 +2428,8 @@ def test_a_metadata_merge_over_a_corrupt_line_heals_it_strictest(tmp_path, monke
     line keeps the rows, carries the strictest mode whatever the fields say, no
     store, and no minted ``created_at``.
     """
-    from kiro_crew import history_projection
-    from kiro_crew.execution_context import STRICTEST_MEMORY_MODE
+    from efm_go import history_projection
+    from efm_go.execution_context import STRICTEST_MEMORY_MODE
 
     state = _make_state(tmp_path)
     log = state.conversation_log

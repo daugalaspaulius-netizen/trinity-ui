@@ -10,12 +10,12 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from conftest import plant_day_link
-from kiro_crew.context import ContextBuilder, _neutralize_structural_markers
-from kiro_crew.hooks import ContextRule, HookManager, HooksConfig
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_stores import memory_store_name_defect
-from kiro_crew.skills import SkillsLoader
+from efm_go.context import ContextBuilder, _neutralize_structural_markers
+from efm_go.hooks import ContextRule, HookManager, HooksConfig
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.memory_stores import memory_store_name_defect
+from efm_go.skills import SkillsLoader
 
 # One xdist worker for the whole module. The ``build_message`` call-site ratchet below
 # walks the package through the shared ``source_corpus`` (one memoised file list per
@@ -67,9 +67,9 @@ class TestMemoryStoreOverrideProperty:
         distinct memory_store parameter, get_memory_for must be called
         with the memory_store value, not the workspace value.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.config.sections import MemoryStoreConfig
-        from kiro_crew.memory_stores import memory_store_dir_for
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.config.sections import MemoryStoreConfig
+        from efm_go.memory_stores import memory_store_dir_for
 
         # These are legacy named V1 stores: the property checks routing, while
         # the member-isolation suite covers owned V2 provisioning and algorithms.
@@ -87,7 +87,7 @@ class TestMemoryStoreOverrideProperty:
         # Assert the resolved target: store names and workspace names use
         # separate namespaces, so inspecting one positional argument can miss
         # a store-routing error.
-        from kiro_crew import context as ctx_mod
+        from efm_go import context as ctx_mod
 
         calls: list[tuple[str | None, str | None]] = []
         original_get_memory = ContextBuilder.get_memory_for
@@ -323,7 +323,7 @@ class TestContextBuilder:
 
     @pytest.mark.parametrize("density", ["more", "less"])
     def test_dashboard_artifacts_discovery_uses_existing_system_pointer(self, density, monkeypatch):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.dashboard.widget_density = density
@@ -333,9 +333,9 @@ class TestContextBuilder:
         assert "{{WIDGET_BLOCK}}" not in prompt
 
     def test_dashboard_capability_tracks_a_channel_tabs_presence(self, tmp_path, monkeypatch):
-        from kiro_crew import session_surface
-        from kiro_crew.config import live
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go import session_surface
+        from efm_go.config import live
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.dashboard.dynamic_dashboard_cards = True
@@ -362,7 +362,7 @@ class TestContextBuilder:
     def test_dashboard_hint_is_not_a_generation_or_persistence_grant(
         self, tmp_path, memory_mode, enabled
     ):
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig.load()
         cfg.dashboard.dynamic_dashboard_cards = enabled
@@ -395,8 +395,8 @@ class TestContextBuilder:
     def test_dashboard_milestone_guidance_reads_current_live_toggle(
         self, tmp_path, monkeypatch, lifecycle
     ):
-        from kiro_crew.config import live
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config import live
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         monkeypatch.setattr(live, "snapshot", lambda: cfg)
@@ -431,8 +431,8 @@ class TestContextBuilder:
     def test_dashboard_capability_does_not_expand_other_surfaces(
         self, tmp_path, kwargs, monkeypatch
     ):
-        from kiro_crew.config import live
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config import live
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.dashboard.dynamic_dashboard_cards = True
@@ -447,13 +447,13 @@ class TestContextBuilder:
         assert "Automatic cards:" not in msg
 
     def test_dashboard_capability_respects_custom_agent_opt_out(self, tmp_path, monkeypatch):
-        from kiro_crew.config import live
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config import live
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.dashboard.dynamic_dashboard_cards = True
         monkeypatch.setattr(live, "snapshot", lambda: cfg)
-        monkeypatch.setattr("kiro_crew.context._agent_includes_crew_context", lambda _: False)
+        monkeypatch.setattr("efm_go.context._agent_includes_crew_context", lambda _: False)
         builder = ContextBuilder(
             memory=MemoryStore(workspace=tmp_path / "ws"),
             skills=SkillsLoader(skills_path=tmp_path / "skills", install_builtins=False),
@@ -612,7 +612,7 @@ class TestContextBuilder:
         """A ``$skill`` body arrives ``.strip()``ed (no trailing newline). The
         assembly must still open the next block on its own line, or the context
         breakdown books that block's bytes to the skill."""
-        from kiro_crew.context_blocks import split_blocks
+        from efm_go.context_blocks import split_blocks
 
         builder = ContextBuilder(
             memory=MemoryStore(workspace=tmp_path / "ws"),
@@ -707,7 +707,7 @@ class TestContextBuilder:
 
     def test_reinjection_restores_agent_contract_after_compaction(self, tmp_path):
         """The managed spec prompt only points at this block, so compaction must restore it."""
-        from kiro_crew.agent import _NATIVE_PROMPT_STUB
+        from efm_go.agent import _NATIVE_PROMPT_STUB
 
         builder = self._reinject_builder(tmp_path)
         fresh, _ = builder.build_message("first turn", is_new_session=True)
@@ -737,7 +737,7 @@ class TestContextBuilder:
         per-session snapshot, and re-injection reuses it."""
         builder = self._reinject_builder(tmp_path)
         with patch(
-            "kiro_crew.resource_status.adaptive_exec_cap",
+            "efm_go.resource_status.adaptive_exec_cap",
             side_effect=[4242, 4343, 4444],
         ):
             fresh, _ = builder.build_message(
@@ -760,7 +760,7 @@ class TestContextBuilder:
         reads the cap in force for it, so the figure still tracks the host."""
         builder = self._reinject_builder(tmp_path)
         with patch(
-            "kiro_crew.resource_status.adaptive_exec_cap",
+            "efm_go.resource_status.adaptive_exec_cap",
             side_effect=[4242, 4343, 4444],
         ):
             first, _ = builder.build_message(
@@ -778,7 +778,7 @@ class TestContextBuilder:
         compaction restores here."""
         builder = self._reinject_builder(tmp_path)
         with patch(
-            "kiro_crew.resource_status.adaptive_exec_cap",
+            "efm_go.resource_status.adaptive_exec_cap",
             side_effect=[4242, 4343, 4444],
         ):
             fresh, _ = builder.build_message(
@@ -1051,7 +1051,7 @@ class TestContextBuilder:
         assert "pipeline tool" in msg
 
     def test_hook_modify(self, tmp_path):
-        from kiro_crew.hooks import TransformHook
+        from efm_go.hooks import TransformHook
 
         hooks_cfg = HooksConfig(transforms=[TransformHook(pattern="deploy", prefix="[DEPLOY]")])
         builder = ContextBuilder(
@@ -1064,7 +1064,7 @@ class TestContextBuilder:
 
     def test_dashboard_cross_session_removed(self, tmp_path):
         """Cross-tab context injection is removed -- sibling sessions never leak."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -1082,7 +1082,7 @@ class TestContextBuilder:
 
     def test_history_budget_truncates_long_messages(self, tmp_path):
         """Long assistant messages are truncated to _PER_MESSAGE_CAP."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -1101,8 +1101,8 @@ class TestContextBuilder:
 
     def test_history_budget_limits_total_chars(self, tmp_path):
         """History injection respects _HISTORY_BUDGET_CHARS."""
-        from kiro_crew.context import _HISTORY_BUDGET_CHARS
-        from kiro_crew.history import ConversationLog
+        from efm_go.context import _HISTORY_BUDGET_CHARS
+        from efm_go.history import ConversationLog
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -1130,7 +1130,7 @@ class TestGetMemoryForVectorStore:
 
     def test_nondefault_store_shares_vector_store(self, tmp_path, monkeypatch):
         """Non-default stores get the same vector_store as the default store."""
-        import kiro_crew.context as ctx_mod
+        import efm_go.context as ctx_mod
 
         original = ctx_mod._memory_stores.copy()
         ctx_mod._memory_stores.clear()
@@ -1153,7 +1153,7 @@ class TestGetMemoryForVectorStore:
 
     def test_nondefault_store_without_default_has_no_vector_store(self, tmp_path, monkeypatch):
         """If no default store exists yet, non-default store gets no vector_store."""
-        import kiro_crew.context as ctx_mod
+        import efm_go.context as ctx_mod
 
         original = ctx_mod._memory_stores.copy()
         ctx_mod._memory_stores.clear()
@@ -1170,13 +1170,13 @@ class TestCompressAssistantMessage:
     """Tests for _compress_assistant_message code block and JSON handling."""
 
     def test_small_code_block_preserved(self):
-        from kiro_crew.context import _compress_assistant_message
+        from efm_go.context import _compress_assistant_message
 
         text = "Here:\n```python\nprint('hi')\n```\nDone."
         assert _compress_assistant_message(text) == text
 
     def test_large_code_block_head_tail(self):
-        from kiro_crew.context import _compress_assistant_message
+        from efm_go.context import _compress_assistant_message
 
         lines = [f"line {i} " + "a" * 100 for i in range(30)]
         block = "```python\n" + "\n".join(lines) + "\n```"
@@ -1188,7 +1188,7 @@ class TestCompressAssistantMessage:
         assert "line 15" not in result  # middle omitted
 
     def test_few_long_lines_char_truncated(self):
-        from kiro_crew.context import _compress_assistant_message
+        from efm_go.context import _compress_assistant_message
 
         # 5 lines of 1K each = 5K total, >2K but <=15 lines
         lines = ["x" * 1000 for _ in range(5)]
@@ -1198,13 +1198,13 @@ class TestCompressAssistantMessage:
         assert len(result) < len(block)
 
     def test_json_blob_small_preserved(self):
-        from kiro_crew.context import _compress_assistant_message
+        from efm_go.context import _compress_assistant_message
 
         text = 'Result: {"key": "value", "num": 42}'
         assert _compress_assistant_message(text) == text
 
     def test_json_blob_large_truncated(self):
-        from kiro_crew.context import _compress_assistant_message
+        from efm_go.context import _compress_assistant_message
 
         blob = '{"data": "' + "x" * 1500 + '"}'
         result = _compress_assistant_message(f"Output: {blob}")
@@ -1214,7 +1214,7 @@ class TestCompressAssistantMessage:
 class TestDocsSection:
     def test_docs_section_present_when_docs_exist(self, tmp_path, monkeypatch):
         """_build_docs_section returns content when docs dir exists."""
-        from kiro_crew import context as ctx_mod
+        from efm_go import context as ctx_mod
 
         docs_dir = tmp_path / "docs"
         docs_dir.mkdir()
@@ -1228,7 +1228,7 @@ class TestDocsSection:
 
     def test_docs_section_empty_when_no_docs(self, tmp_path, monkeypatch):
         """_build_docs_section returns empty string when docs dir missing."""
-        from kiro_crew import context as ctx_mod
+        from efm_go import context as ctx_mod
 
         monkeypatch.setattr(ctx_mod, "_BUNDLED_DOCS_DIR", tmp_path / "nonexistent")
 
@@ -1237,7 +1237,7 @@ class TestDocsSection:
 
     def test_docs_injected_for_kirocrew_agent(self, tmp_path, monkeypatch):
         """build_session_context includes docs for the default kirocrew agent."""
-        from kiro_crew import context as ctx_mod
+        from efm_go import context as ctx_mod
 
         docs_dir = tmp_path / "docs"
         docs_dir.mkdir()
@@ -1253,7 +1253,7 @@ class TestDocsSection:
 
     def test_docs_not_injected_for_custom_agent(self, tmp_path, monkeypatch):
         """build_session_context skips docs for custom (non-kirocrew) agents."""
-        from kiro_crew import context as ctx_mod
+        from efm_go import context as ctx_mod
 
         docs_dir = tmp_path / "docs"
         docs_dir.mkdir()
@@ -1271,7 +1271,7 @@ class TestDocsSection:
 class TestCompressedHistory:
     def test_build_session_context_uses_compressed_history(self, tmp_path):
         """When compressed_history is passed, it replaces naive truncation."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -1291,8 +1291,8 @@ class TestCompressedHistory:
     def test_compressed_history_keeps_its_verbatim_head_up_to_its_own_cap(self, tmp_path):
         """The compressed variant is sized to ``compressed_history``, not the
         smaller fallback cap, so its opening verbatim head survives admission."""
-        from kiro_crew import context as ctx_mod
-        from kiro_crew.history import ConversationLog
+        from efm_go import context as ctx_mod
+        from efm_go.history import ConversationLog
 
         conv_log = ConversationLog(base_dir=tmp_path / "sessions")
         conv_log.init()
@@ -1352,12 +1352,12 @@ class TestLoadAgentPrompt:
             json.dumps({"name": "test", "prompt": prompt}), encoding="utf-8"
         )
         monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir)
-        monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", agents_dir)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents_dir)
+        monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", agents_dir)
 
     @staticmethod
     def _managed_contract(tmp_path, monkeypatch):
-        from kiro_crew import agent
+        from efm_go import agent
 
         package = tmp_path / "installed-package" / "config"
         package.mkdir(parents=True)
@@ -1373,7 +1373,7 @@ class TestLoadAgentPrompt:
         """The stub is the managed contract whatever spec carries it: a fork or
         template copy inherits it verbatim and must not receive the stub TEXT as
         its persona."""
-        from kiro_crew import agent
+        from efm_go import agent
 
         self._managed_contract(tmp_path, monkeypatch)
         self._write_spec(tmp_path, monkeypatch, agent._NATIVE_PROMPT_STUB)
@@ -1401,7 +1401,7 @@ class TestLoadAgentPrompt:
         """End to end: a plain (non-member) session on a template copy of the
         managed default, whose spec inherited the stub verbatim, gets the resolved
         contract as its [AGENT SYSTEM PROMPT] exactly once, and never the stub text."""
-        from kiro_crew import agent
+        from efm_go import agent
 
         self._managed_contract(tmp_path, monkeypatch)
         self._write_spec(tmp_path, monkeypatch, agent._NATIVE_PROMPT_STUB)
@@ -1459,7 +1459,7 @@ class TestRuntimeDisplayName:
         ],
     )
     def test_runtime_display_name(self, session_key, expected_runtime):
-        from kiro_crew.context import _runtime_display_name
+        from efm_go.context import _runtime_display_name
 
         assert _runtime_display_name(session_key) == expected_runtime
 
@@ -1573,7 +1573,7 @@ class TestMultibyteSanitization:
 
     def test_multibyte_table_covers_all_chars(self):
         """Translation table handles all listed multi-byte chars."""
-        from kiro_crew.context import _MULTIBYTE_TABLE
+        from efm_go.context import _MULTIBYTE_TABLE
 
         sample = "\u2014 \u2013 \u2018 \u2019 \u201c \u201d \u2026 \u00a0 \u2022"
         result = sample.translate(_MULTIBYTE_TABLE)
@@ -1596,7 +1596,7 @@ class TestCurrentDateTimezone:
         builder = self._make_builder(tmp_path)
         # The PUBLISHED default, not a config load: get_local_tz reads the
         # snapshot so prompt assembly does no config I/O on the event loop.
-        with patch("kiro_crew.cron.published_config_timezone", return_value="Asia/Tokyo"):
+        with patch("efm_go.cron.published_config_timezone", return_value="Asia/Tokyo"):
             ctx = builder.build_session_context()
         # Tokyo is JST/UTC+9; %Z renders "JST"
         assert "[CURRENT DATE]" in ctx
@@ -1605,7 +1605,7 @@ class TestCurrentDateTimezone:
 
     def test_current_date_falls_back_to_utc_when_config_empty(self, tmp_path):
         builder = self._make_builder(tmp_path)
-        with patch("kiro_crew.cron.published_config_timezone", return_value=""):
+        with patch("efm_go.cron.published_config_timezone", return_value=""):
             ctx = builder.build_session_context()
         date_line = [ln for ln in ctx.splitlines() if ln.startswith("[CURRENT DATE]")][0]
         assert "UTC" in date_line
@@ -1615,7 +1615,7 @@ class TestLoadSteeringResources:
     """Tests for _load_steering_resources."""
 
     def test_loads_md_files_from_resources(self, tmp_path):
-        from kiro_crew.context import _load_steering_resources
+        from efm_go.context import _load_steering_resources
 
         # Create steering file
         steering_dir = tmp_path / ".kiro" / "steering"
@@ -1638,7 +1638,7 @@ class TestLoadSteeringResources:
         assert "Always be nice." in result
 
     def test_returns_empty_when_no_config(self, tmp_path):
-        from kiro_crew.context import _load_steering_resources
+        from efm_go.context import _load_steering_resources
 
         with patch("pathlib.Path.home", return_value=tmp_path):
             result = _load_steering_resources()
@@ -1646,7 +1646,7 @@ class TestLoadSteeringResources:
         assert result == ""
 
     def test_skips_sensitive_paths(self, tmp_path):
-        from kiro_crew.context import _load_steering_resources
+        from efm_go.context import _load_steering_resources
 
         # Create a .md file in a sensitive location
         ssh_dir = tmp_path / ".ssh"
@@ -1701,8 +1701,8 @@ class TestLoadSteeringResources:
 
 class TestLessonsCap:
     def test_over_cap_preserves_complete_explicit_rules(self, tmp_path):
-        from kiro_crew.context import _LESSONS_STARTUP_CAP
-        from kiro_crew.learn import Lesson
+        from efm_go.context import _LESSONS_STARTUP_CAP
+        from efm_go.learn import Lesson
 
         lessons = LessonStore(base_dir=tmp_path)
         # Save enough long lessons that the formatted context exceeds the cap.
@@ -1754,7 +1754,7 @@ class TestLessonsCap:
         assert end - start <= _LESSONS_STARTUP_CAP
 
     def test_under_cap_no_error_block(self, tmp_path):
-        from kiro_crew.learn import Lesson
+        from efm_go.learn import Lesson
 
         lessons = LessonStore(base_dir=tmp_path)
         lessons.save(Lesson(ts="1", rule="always run the formatter", category="knowledge"))
@@ -1934,7 +1934,7 @@ class TestMemoryGetContextQueryWiring:
         # re-inject rows deleted from it.
         from types import SimpleNamespace
 
-        from kiro_crew.learn import Lesson
+        from efm_go.learn import Lesson
 
         builder = self._builder(tmp_path)
         store = builder.get_memory_for(None)
@@ -1956,7 +1956,7 @@ class TestMemoryGetContextQueryWiring:
         # vanish from the prompt in the meantime.
         from types import SimpleNamespace
 
-        from kiro_crew.learn import Lesson
+        from efm_go.learn import Lesson
 
         builder = self._builder(tmp_path)
         store = builder.get_memory_for(None)
@@ -1973,8 +1973,8 @@ class TestMemoryGetContextQueryWiring:
         assert "JSONL-SENTINEL" in msg
 
     def test_withheld_only_vector_store_still_yields_jsonl_lessons(self, tmp_path):
-        from kiro_crew.learn import Lesson
-        from kiro_crew.vector_memory import VectorMemoryStore
+        from efm_go.learn import Lesson
+        from efm_go.vector_memory import VectorMemoryStore
 
         builder = self._builder(tmp_path)
         memory = builder.get_memory_for(None)
@@ -2220,7 +2220,7 @@ class TestDurableModelVersionLessonContext:
     def test_jsonl_context_renders_durable_model_version_references(self, tmp_path):
         from types import SimpleNamespace
 
-        from kiro_crew.learn import Lesson
+        from efm_go.learn import Lesson
 
         builder = self._builder(tmp_path)
         memory = builder.get_memory_for(None)
@@ -2255,7 +2255,7 @@ class TestDurableModelVersionLessonContext:
             assert rule in message
 
     def test_vector_context_renders_durable_model_version_references(self, tmp_path):
-        from kiro_crew.vector_memory import LessonWriteOutcome, VectorMemoryStore
+        from efm_go.vector_memory import LessonWriteOutcome, VectorMemoryStore
 
         builder = self._builder(tmp_path)
         memory = builder.get_memory_for(None)
@@ -2291,7 +2291,7 @@ class TestDurableModelVersionLessonContext:
     def test_vector_context_renders_model_qualified_tooling(
         self, tmp_path, rule: str, category: str
     ) -> None:
-        from kiro_crew.vector_memory import LessonWriteOutcome, VectorMemoryStore
+        from efm_go.vector_memory import LessonWriteOutcome, VectorMemoryStore
 
         builder = self._builder(tmp_path)
         memory = builder.get_memory_for(None)
@@ -2311,8 +2311,8 @@ class TestDurableModelVersionLessonContext:
             vector_store.close()
 
     def test_key_confirmed_legacy_negative_pin_yields_jsonl_fallback(self, tmp_path):
-        from kiro_crew.learn import Lesson
-        from kiro_crew.vector_memory import (
+        from efm_go.learn import Lesson
+        from efm_go.vector_memory import (
             _LESSON_NEGATIVE_SEP,
             VectorMemoryStore,
             _lesson_key,
@@ -2358,13 +2358,13 @@ class TestKeepVisibleMarkerRule:
     channel agent following the rule would show users the literal marker text."""
 
     def test_marker_documented_in_dashboard_rules_only(self):
-        from kiro_crew.context import _CRITICAL_RULES, _CRITICAL_RULES_CHANNEL
+        from efm_go.context import _CRITICAL_RULES, _CRITICAL_RULES_CHANNEL
 
         assert "<!-- keep-visible -->" in _CRITICAL_RULES
         assert "<!-- keep-visible -->" not in _CRITICAL_RULES_CHANNEL
 
     def test_prefers_restructuring_over_marker(self):
-        from kiro_crew.context import _CRITICAL_RULES, _CRITICAL_RULES_CHANNEL
+        from efm_go.context import _CRITICAL_RULES, _CRITICAL_RULES_CHANNEL
 
         clause = "Prefer restructuring the turn so the deliverable IS its last message"
         assert clause in _CRITICAL_RULES
@@ -2373,7 +2373,7 @@ class TestKeepVisibleMarkerRule:
 
 def test_critical_rules_forbid_assuming_a_persons_gender():
     """A named person whose pronouns were never given is not called "he"."""
-    from kiro_crew.context import _CRITICAL_RULES, _CRITICAL_RULES_CHANNEL
+    from efm_go.context import _CRITICAL_RULES, _CRITICAL_RULES_CHANNEL
 
     rule = "Do not assume anyone's gender."
     assert rule in _CRITICAL_RULES

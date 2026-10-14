@@ -14,7 +14,7 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew import mcp_discovery
+from efm_go import mcp_discovery
 
 
 @pytest.fixture(autouse=True)

@@ -27,9 +27,9 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import platform_compat as pc
-from kiro_crew import session_pid as sp
-from kiro_crew.constants import KIROCREW_SPAWNED_ENV, KIROCREW_SPAWNED_VALUE
+from efm_go import platform_compat as pc
+from efm_go import session_pid as sp
+from efm_go.constants import KIROCREW_SPAWNED_ENV, KIROCREW_SPAWNED_VALUE
 
 _MARKER = f"{KIROCREW_SPAWNED_ENV}={KIROCREW_SPAWNED_VALUE}".encode()
 
@@ -169,7 +169,7 @@ class TestPlatformArms:
         (proc / "environ").write_bytes(b"PATH=/usr/bin\x00" + _MARKER + b"\x00")
 
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(pc, "darwin_process_environ") as mock_darwin,
         ):
             mock_sys.platform = "linux"
@@ -182,14 +182,14 @@ class TestPlatformArms:
         proc.mkdir()
         (proc / "environ").write_bytes(b"PATH=/usr/bin\x00")
 
-        with patch("kiro_crew.session_pid.sys") as mock_sys:
+        with patch("efm_go.session_pid.sys") as mock_sys:
             mock_sys.platform = "linux"
             assert sp._read_env_has_kirocrew_marker(102, tmp_path) is False
 
     def test_windows_stays_unproven_and_never_reads_the_darwin_oracle(self) -> None:
         """Windows has no same-uid environ oracle; the gate must keep refusing."""
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(pc, "darwin_process_environ") as mock_darwin,
         ):
             mock_sys.platform = "win32"
@@ -200,7 +200,7 @@ class TestPlatformArms:
 
     def test_darwin_marker_present_is_proven(self) -> None:
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(pc, "darwin_process_environ", return_value=[b"PATH=/bin", _MARKER]),
         ):
             mock_sys.platform = "darwin"
@@ -209,7 +209,7 @@ class TestPlatformArms:
 
     def test_darwin_marker_absent_is_a_refusal_not_an_unknown(self) -> None:
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(pc, "darwin_process_environ", return_value=[b"PATH=/bin"]),
         ):
             mock_sys.platform = "darwin"
@@ -219,7 +219,7 @@ class TestPlatformArms:
     def test_darwin_unreadable_fails_closed(self) -> None:
         """An unreadable environment is unproven identity, never a licence."""
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(pc, "darwin_process_environ", return_value=None),
         ):
             mock_sys.platform = "darwin"
@@ -230,7 +230,7 @@ class TestPlatformArms:
     def test_darwin_does_not_relax_the_cmdline_gate(self) -> None:
         """A readable marker is not identity on its own: the shape still rules."""
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(pc, "darwin_process_environ", return_value=[_MARKER]),
         ):
             mock_sys.platform = "darwin"
@@ -247,7 +247,7 @@ class TestPlatformArms:
         (proc / "environ").write_bytes(_MARKER + b"\x00")
 
         with (
-            patch("kiro_crew.session_pid.sys") as mock_sys,
+            patch("efm_go.session_pid.sys") as mock_sys,
             patch.object(pc, "darwin_process_environ") as mock_darwin,
         ):
             mock_sys.platform = "darwin"
@@ -273,7 +273,7 @@ class TestTheArmLicensesNothingElse:
     def darwin_with_marker(self, monkeypatch: pytest.MonkeyPatch):
         """macOS, and every environ read answers "marked"."""
         monkeypatch.setattr(pc, "darwin_process_environ", lambda _pid: [_MARKER])
-        with patch("kiro_crew.session_pid.sys") as mock_sys:
+        with patch("efm_go.session_pid.sys") as mock_sys:
             mock_sys.platform = "darwin"
             assert sp._env_has_kirocrew_marker(4242) is True, "fixture must be permissive"
             yield

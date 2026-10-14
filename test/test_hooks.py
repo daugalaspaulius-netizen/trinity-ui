@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.hooks import (
+from efm_go.hooks import (
     HOOK_INJECT_CONTEXT,
     HOOK_MODIFY,
     HOOK_PASSTHROUGH,
@@ -422,7 +422,7 @@ class TestToolHooks:
         only for a child whose own identity verified."""
         from types import SimpleNamespace
 
-        from kiro_crew.hooks import ToolHookResult, identity_grant_covers_child
+        from efm_go.hooks import ToolHookResult, identity_grant_covers_child
 
         cfg = HooksConfig(auto_approve_tools=["@memory-mcp/*", "Reading *"])
         mgr = HookManager(cfg)
@@ -462,12 +462,12 @@ class TestToolHooks:
         traced to its pattern."""
         import logging
 
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         hooks_mod._TITLE_ONLY_GRANT_NOTED.clear()
         cfg = HooksConfig(auto_approve_tools=["Look up*"])
         mgr = HookManager(cfg)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.hooks"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.hooks"):
             for _ in range(2):
                 assert (
                     mgr.on_tool_call(
@@ -484,7 +484,7 @@ class TestToolHooks:
         # No breadcrumb when the identity is unproven: the title branch is the
         # grant key there and the pattern simply grants.
         caplog.clear()
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.hooks"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.hooks"):
             assert (
                 mgr.on_tool_call(
                     "Look up the paper", mcp_server_name="memory-mcp", mcp_tool_name="search_memory"
@@ -531,8 +531,8 @@ class TestHookGateKwargs:
         exact values under the gate's keyword names; ``command`` is the
         recovered ``shell_command`` and ``mcp_tool_name`` is the ``_meta.kiro``
         ``tool_name`` (never the model-authored title)."""
-        from kiro_crew.acp.types import AcpEvent
-        from kiro_crew.hooks import hook_gate_kwargs
+        from efm_go.acp.types import AcpEvent
+        from efm_go.hooks import hook_gate_kwargs
 
         event = AcpEvent(
             kind="permission_request",
@@ -569,7 +569,7 @@ class TestHookGateKwargs:
         ``None`` in a string/bool slot — yields exactly the default the gate
         parameter declares, matching the ``getattr(...) or ""`` /
         ``bool(getattr(...))`` reads the channel dispatchers used."""
-        from kiro_crew.hooks import hook_gate_kwargs
+        from efm_go.hooks import hook_gate_kwargs
 
         bare = hook_gate_kwargs(SimpleNamespace())
         assert bare == {
@@ -600,7 +600,7 @@ class TestHookGateKwargs:
         # A non-shell event recovers no command even when its params carry one:
         # ``shell_command`` is None off the shell kind, and the helper does not
         # second-guess it (the gate keys deny-by-default on is_shell + command).
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         non_shell = AcpEvent(kind="permission_request", raw_tool_params={"command": "ls"})
         assert hook_gate_kwargs(non_shell)["command"] is None
@@ -611,8 +611,8 @@ class TestHookGateKwargs:
         the identity out of it: an identity-keyed deny binds on a benign title
         only because the helper threaded ``mcp_server_name``/``mcp_tool_name``/
         ``mcp_identity_trusted`` — the very signal a hand-copying site drops."""
-        from kiro_crew.acp.types import AcpEvent
-        from kiro_crew.hooks import hook_gate_kwargs
+        from efm_go.acp.types import AcpEvent
+        from efm_go.hooks import hook_gate_kwargs
 
         mgr = HookManager(HooksConfig(auto_deny_tools=["@ops/delete_*"]))
         event = AcpEvent(
@@ -645,7 +645,7 @@ class TestHookGateKwargs:
         """A surface with a different event shape may replace an extracted
         value; a key the helper does not extract is refused loudly, so a
         misspelt override cannot become a stray gate kwarg."""
-        from kiro_crew.hooks import hook_gate_kwargs
+        from efm_go.hooks import hook_gate_kwargs
 
         ev = SimpleNamespace(tool_kind="", raw_tool_params={"cmd": "ls"}, is_shell=False)
         kwargs = hook_gate_kwargs(ev, tool_kind="bash", command="ls", is_shell=True)
@@ -663,7 +663,7 @@ class TestHookGateKwargs:
         because every site had to be edited by hand."""
         import inspect
 
-        from kiro_crew.hooks import hook_gate_kwargs
+        from efm_go.hooks import hook_gate_kwargs
 
         sig = inspect.signature(HookManager.on_tool_call)
         keyword_only = {
@@ -772,9 +772,9 @@ class TestHookGateKwargs:
         exceptions; anything else is an offender."""
         from pathlib import Path
 
-        import kiro_crew
+        import efm_go
 
-        root = Path(kiro_crew.__file__).resolve().parent
+        root = Path(efm_go.__file__).resolve().parent
         event_kwargs = set(self.EVENT_FIELD_BY_KWARG)
         offenders: list[str] = []
         helper_sites: set[str] = set()
@@ -925,7 +925,7 @@ class TestShellCommandProperty:
     """
 
     def test_from_raw_tool_params(self):
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(kind="tool_call", is_shell=True, raw_tool_params={"command": "ls -la"})
         assert ev.shell_command == "ls -la"
@@ -935,7 +935,7 @@ class TestShellCommandProperty:
         — this is the dashboard's primary gate path, so the fallback is
         load-bearing: reading only raw_tool_params is a no-op on permission
         events."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="permission_request",
@@ -945,13 +945,13 @@ class TestShellCommandProperty:
         assert ev.shell_command == "cr --all --yes"
 
     def test_non_shell_returns_none(self):
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(kind="tool_call", is_shell=False, raw_tool_params={"command": "ls"})
         assert ev.shell_command is None
 
     def test_missing_or_empty_command_returns_none(self):
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         assert AcpEvent(kind="tool_call", is_shell=True, raw_tool_params={}).shell_command is None
         assert (
@@ -960,7 +960,7 @@ class TestShellCommandProperty:
         )
 
     def test_malformed_tool_input_returns_none(self):
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(kind="permission_request", is_shell=True, tool_input="not json{")
         assert ev.shell_command is None
@@ -975,7 +975,7 @@ class TestShellCommandUseAws:
     """
 
     def test_use_aws_from_raw_tool_params(self):
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1003,7 +1003,7 @@ class TestShellCommandUseAws:
         the dashboard's primary gate path, where the v3.3.x SSM block fired."""
         import json as _json
 
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="permission_request",
@@ -1015,7 +1015,7 @@ class TestShellCommandUseAws:
     def test_use_aws_not_denied_by_default_gate(self):
         """End-to-end through the gate: a benign use_aws call must NOT hit the
         deny-by-default backstop once the command is recoverable."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="permission_request",
@@ -1030,7 +1030,7 @@ class TestShellCommandUseAws:
     def test_use_aws_destructive_operation_still_denied(self):
         """The synthesized command must keep the built-in deny globs armed:
         destructive AWS operations stay blocked."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1049,7 +1049,7 @@ class TestShellCommandUseAws:
     def test_use_aws_credential_read_payload_still_denied(self):
         """A shell payload smuggled inside ssm send-command parameters must be
         visible to the sensitive-path checks via the serialized tail."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1068,7 +1068,7 @@ class TestShellCommandUseAws:
     def test_missing_operation_name_still_returns_none(self):
         """Half a structured shape is not verifiable — deny-by-default must
         stay armed for it."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(kind="tool_call", is_shell=True, raw_tool_params={"service_name": "ssm"})
         assert ev.shell_command is None
@@ -1078,7 +1078,7 @@ class TestShellCommandUseAws:
     def test_pascal_case_operation_normalized_to_kebab(self):
         """PascalCase operation_name (the AWS API name, e.g. 'DeleteStack')
         must be normalized to kebab-case so deny globs still match."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1097,7 +1097,7 @@ class TestShellCommandUseAws:
     def test_pascal_case_destructive_op_denied(self):
         """End-to-end: PascalCase 'DeleteStack' must hit the deny gate
         identically to kebab 'delete-stack'."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1115,7 +1115,7 @@ class TestShellCommandUseAws:
 
     def test_camel_case_operation_normalized(self):
         """camelCase operation_name must also normalize (e.g. 'deleteStack')."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1131,7 +1131,7 @@ class TestShellCommandUseAws:
 
     def test_kebab_case_operation_unchanged(self):
         """Already-kebab operation_name must pass through unchanged."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1149,7 +1149,7 @@ class TestShellCommandUseAws:
         single tokens like 'cloudformation'). PascalCase service_name is passed
         through as-is because normalizing it would break deny regex matches
         (e.g. 'CloudFormation' → 'cloud-formation' ≠ 'cloudformation')."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1172,7 +1172,7 @@ class TestShellCommandUseAws:
     def test_whitespace_in_service_name_returns_none(self):
         """service_name with whitespace is rejected (fail-closed) — a
         multi-token service could confuse regex-based deny rules."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1186,7 +1186,7 @@ class TestShellCommandUseAws:
 
     def test_whitespace_in_operation_name_returns_none(self):
         """operation_name with whitespace is rejected (fail-closed)."""
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="tool_call",
@@ -1202,7 +1202,7 @@ class TestShellCommandUseAws:
         """permission_request path (tool_input JSON) also normalizes casing."""
         import json as _json
 
-        from kiro_crew.acp.types import AcpEvent
+        from efm_go.acp.types import AcpEvent
 
         ev = AcpEvent(
             kind="permission_request",
@@ -1267,14 +1267,14 @@ class TestHooksConfigFromDict:
         assert cfg.auto_approve_subagent_tools is True
 
     def test_hook_manager_auto_approve_subagent_tools_property(self):
-        from kiro_crew.hooks import HookManager
+        from efm_go.hooks import HookManager
 
         cfg = HooksConfig.from_dict({"auto_approve_subagent_tools": True})
         mgr = HookManager(cfg)
         assert mgr.auto_approve_subagent_tools is True
 
     def test_hook_manager_auto_approve_subagent_tools_default(self):
-        from kiro_crew.hooks import HookManager
+        from efm_go.hooks import HookManager
 
         cfg = HooksConfig.from_dict({})
         mgr = HookManager(cfg)
@@ -1304,7 +1304,7 @@ class TestSafeReadFile:
 
     def test_blocks_symlink_to_sensitive_path(self, tmp_path, monkeypatch):
         """A workspace symlink into ~/.aws must be refused through the link."""
-        from kiro_crew.hooks import safe_read_file_bytes
+        from efm_go.hooks import safe_read_file_bytes
 
         home = tmp_path / "home"
         (home / ".aws").mkdir(parents=True)
@@ -1327,7 +1327,7 @@ class TestSafeReadFile:
         A FILE symlink, so a junction cannot stand in for it — the marker skips
         this only where symlink creation needs a privilege the shell lacks.
         """
-        from kiro_crew.hooks import safe_read_file_bytes
+        from efm_go.hooks import safe_read_file_bytes
 
         real = tmp_path / "real.txt"
         real.write_text("hello")
@@ -1365,7 +1365,7 @@ class TestSafeReadFile:
         """
         import errno
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         monkeypatch.setattr(hooks, "MAX_FILE_BYTES", 16)
         f = tmp_path / "big.json"
@@ -1385,7 +1385,7 @@ class TestSafeReadFile:
         """
         import errno
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         monkeypatch.setattr(hooks, "MAX_FILE_BYTES", 16)
         f = tmp_path / "grows.json"
@@ -1425,7 +1425,7 @@ class TestSafeReadFile:
         """
         import os
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         f = tmp_path / "watched.txt"
         f.write_bytes(b"payload")
@@ -1450,7 +1450,7 @@ class TestSafeReadFile:
         """
         import os
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         f = tmp_path / "refused.txt"
         f.write_bytes(b"must not be read")
@@ -1471,7 +1471,7 @@ class TestSafeReadFile:
         """
         import os
 
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         f = tmp_path / "plain.txt"
         f.write_bytes(b"content")
@@ -1496,7 +1496,7 @@ class TestSafeReadFile:
         """
         import errno
 
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         f = tmp_path / "plain.txt"
         f.write_bytes(b"content")
@@ -1529,24 +1529,24 @@ class TestShouldAutoApproveSpawn:
         return SimpleNamespace(**base)
 
     def test_approves_spawn_run_when_flag_true(self):
-        from kiro_crew.hooks import HookManager
-        from kiro_crew.slack.handler import _should_auto_approve_spawn
+        from efm_go.hooks import HookManager
+        from efm_go.slack.handler import _should_auto_approve_spawn
 
         ctx = MagicMock()
         ctx.hooks = HookManager(HooksConfig.from_dict({"auto_approve_subagent_spawn": True}))
         assert _should_auto_approve_spawn(ctx, self._spawn_event()) is True
 
     def test_rejects_when_flag_false(self):
-        from kiro_crew.hooks import HookManager
-        from kiro_crew.slack.handler import _should_auto_approve_spawn
+        from efm_go.hooks import HookManager
+        from efm_go.slack.handler import _should_auto_approve_spawn
 
         ctx = MagicMock()
         ctx.hooks = HookManager(HooksConfig.from_dict({"auto_approve_subagent_spawn": False}))
         assert _should_auto_approve_spawn(ctx, self._spawn_event()) is False
 
     def test_rejects_non_spawn_tool(self):
-        from kiro_crew.hooks import HookManager
-        from kiro_crew.slack.handler import _should_auto_approve_spawn
+        from efm_go.hooks import HookManager
+        from efm_go.slack.handler import _should_auto_approve_spawn
 
         ctx = MagicMock()
         ctx.hooks = HookManager(HooksConfig.from_dict({"auto_approve_subagent_spawn": True}))
@@ -1556,8 +1556,8 @@ class TestShouldAutoApproveSpawn:
     def test_rejects_shell_event_with_forged_spawn_title(self):
         """The issue's attack: a SHELL event titled spawn_run must not ride
         the spawn rung — the title is model-authored."""
-        from kiro_crew.hooks import HookManager
-        from kiro_crew.slack.handler import _should_auto_approve_spawn
+        from efm_go.hooks import HookManager
+        from efm_go.slack.handler import _should_auto_approve_spawn
 
         ctx = MagicMock()
         ctx.hooks = HookManager(HooksConfig.from_dict({"auto_approve_subagent_spawn": True}))
@@ -1596,7 +1596,7 @@ class TestEventIsSpawnRun:
         return self._event(**fields)
 
     def test_canonical_trusted_core_spawn_is_genuine(self):
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         assert event_is_spawn_run(self._genuine()) is True
 
@@ -1605,12 +1605,12 @@ class TestEventIsSpawnRun:
         # rung: the channel deny plane keys on the title, so approving here
         # would bypass a title-keyed deny rule. Falling to the ladder is a
         # downgrade (prompt/trust), never a hard block.
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         assert event_is_spawn_run(self._genuine(title="Spawn agents")) is False
 
     def test_canonical_mismatch_refuses_regardless_of_a_forged_title(self):
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         event = self._genuine(tool_name="execute_bash")
         assert event_is_spawn_run(event) is False
@@ -1618,26 +1618,26 @@ class TestEventIsSpawnRun:
     def test_untrusted_identity_provenance_fails_closed(self):
         # tool_name non-emptiness alone is not proof of provenance: a future
         # inline population path leaves the flag False and must fail closed.
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         assert event_is_spawn_run(self._genuine(mcp_identity_trusted=False)) is False
 
     def test_foreign_server_spawn_run_tool_is_refused(self):
         # A third-party MCP server exposing a tool literally named spawn_run
         # must not ride the crew's spawn rung.
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         assert event_is_spawn_run(self._genuine(mcp_server_name="evil-server")) is False
 
     def test_builtin_named_spawn_run_without_a_server_is_refused(self):
         # kiro-cli sets tool_name for built-ins too, with an empty server
         # name — a built-in cannot satisfy the MCP-server pin.
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         assert event_is_spawn_run(self._genuine(mcp_server_name="")) is False
 
     def test_shell_event_with_forged_title_refuses_without_canonical_identity(self):
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         event = self._event(tool_name="", title="spawn_run", is_shell=True, shell_classified=True)
         assert event_is_spawn_run(event) is False
@@ -1646,7 +1646,7 @@ class TestEventIsSpawnRun:
         # The correlated cache miss: tool_name empty AND shell_classified
         # False AND is_shell miss-default False. Canonical-only means no
         # evidence -> refuse.
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         event = self._event(tool_name="", title="spawn_run", shell_classified=False)
         assert event_is_spawn_run(event) is False
@@ -1656,13 +1656,13 @@ class TestEventIsSpawnRun:
         # re-titled "spawn_run") must not ride the rung either — there is no
         # title fallback. The rung not firing is a downgrade to the channel's
         # normal ladder, never a hard block.
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         event = self._event(tool_name="", title="spawn_run", is_shell=False, shell_classified=True)
         assert event_is_spawn_run(event) is False
 
     def test_plain_non_spawn_title_refuses(self):
-        from kiro_crew.hooks import event_is_spawn_run
+        from efm_go.hooks import event_is_spawn_run
 
         assert event_is_spawn_run(self._event(tool_name="", title="grep")) is False
 
@@ -1683,8 +1683,8 @@ class TestClassifierOnlyHostTrustedProof:
         # Every allowlisted name is a governed built-in whose scopes are read
         # scopes only. A name absent from BUILTIN_TOOL_SCOPES has no governed
         # scope at all and is not presumed read-only either.
-        from kiro_crew.hooks import _HOST_READ_ONLY_BUILTIN_TOOLS
-        from kiro_crew.platform.governance import BUILTIN_TOOL_SCOPES
+        from efm_go.hooks import _HOST_READ_ONLY_BUILTIN_TOOLS
+        from efm_go.platform.governance import BUILTIN_TOOL_SCOPES
 
         read_scopes = {"filesystem.read", "network.egress"}
         for name in sorted(_HOST_READ_ONLY_BUILTIN_TOOLS):
@@ -1697,15 +1697,15 @@ class TestClassifierOnlyHostTrustedProof:
     def test_write_capable_builtins_are_not_allowlisted(self):
         # The converse pin: no built-in that can write, run commands, or govern
         # tools is on the read-only allowlist.
-        from kiro_crew.hooks import _HOST_READ_ONLY_BUILTIN_TOOLS
-        from kiro_crew.platform.governance import BUILTIN_TOOL_SCOPES
+        from efm_go.hooks import _HOST_READ_ONLY_BUILTIN_TOOLS
+        from efm_go.platform.governance import BUILTIN_TOOL_SCOPES
 
         for name, scopes in BUILTIN_TOOL_SCOPES.items():
             if self._WRITE_SCOPES & set(scopes):
                 assert name not in _HOST_READ_ONLY_BUILTIN_TOOLS, name
 
     def test_trusted_host_builtin_is_proven_read_only(self):
-        from kiro_crew.hooks import _is_host_read_only_builtin
+        from efm_go.hooks import _is_host_read_only_builtin
 
         assert _is_host_read_only_builtin("fs_read", "", mcp_identity_trusted=True) is True
 
@@ -1713,24 +1713,24 @@ class TestClassifierOnlyHostTrustedProof:
         # The seam: a host-known name whose provenance is not the _meta.kiro
         # parse this client made (inline payload, hand-built event, cache miss)
         # is prose, not identity. The absence of a server name proves nothing.
-        from kiro_crew.hooks import _is_host_read_only_builtin
+        from efm_go.hooks import _is_host_read_only_builtin
 
         assert _is_host_read_only_builtin("fs_read", "", mcp_identity_trusted=False) is False
 
     def test_mcp_served_tool_named_like_a_builtin_is_refused(self):
-        from kiro_crew.hooks import _is_host_read_only_builtin
+        from efm_go.hooks import _is_host_read_only_builtin
 
         assert (
             _is_host_read_only_builtin("fs_read", "evil-server", mcp_identity_trusted=True) is False
         )
 
     def test_empty_identity_matches_nothing(self):
-        from kiro_crew.hooks import _is_host_read_only_builtin
+        from efm_go.hooks import _is_host_read_only_builtin
 
         assert _is_host_read_only_builtin("", "", mcp_identity_trusted=True) is False
 
     def test_write_capable_builtin_is_not_a_read_only_proof(self):
-        from kiro_crew.hooks import _is_host_read_only_builtin
+        from efm_go.hooks import _is_host_read_only_builtin
 
         for name in ("fs_write", "code", "execute_bash"):
             assert _is_host_read_only_builtin(name, "", mcp_identity_trusted=True) is False, name
@@ -1778,7 +1778,7 @@ class TestMutatingKindBeatsTheTitle:
     def test_a_non_read_kind_is_not_auto_approved_despite_a_cu_read_title(self, kind, monkeypatch):
         # Force the CU predicate True so the test pins the DECISION, not the
         # keystone read (which is off in CI and would mask a regression).
-        monkeypatch.setattr("kiro_crew.hooks._cu_read_only_auto_approve", lambda _name: True)
+        monkeypatch.setattr("efm_go.hooks._cu_read_only_auto_approve", lambda _name: True)
         mgr = HookManager()
         result = mgr.on_tool_call(self._CU_OBSERVE_TITLE, tool_kind=kind)
         assert result.action == TOOL_ALLOW, (
@@ -1797,7 +1797,7 @@ class TestMutatingKindBeatsTheTitle:
         import inspect
         import textwrap
 
-        from kiro_crew import hooks as hooks_mod
+        from efm_go import hooks as hooks_mod
 
         assert hooks_mod._READ_ONLY_TOOL_KINDS == frozenset({"read", "fetch"})
         # Over the AST, not the source text: the explanatory comment names the
@@ -1815,7 +1815,7 @@ class TestMutatingKindBeatsTheTitle:
     @pytest.mark.parametrize("kind", ["read", "fetch"])
     def test_a_genuine_cu_observation_still_auto_approves(self, kind, monkeypatch):
         """The feature the fix must not break: a PROVEN read still doesn't nag."""
-        monkeypatch.setattr("kiro_crew.hooks._cu_read_only_auto_approve", lambda _name: True)
+        monkeypatch.setattr("efm_go.hooks._cu_read_only_auto_approve", lambda _name: True)
         mgr = HookManager()
         assert mgr.on_tool_call(self._CU_OBSERVE_TITLE, tool_kind=kind).action == (
             TOOL_AUTO_APPROVE
@@ -1836,7 +1836,7 @@ class TestMutatingKindBeatsTheTitle:
         `mcp__kirocrew-computer__*` title anyway (asserted below), so blocking absent
         kinds outright would have regressed every ordinary tool for no security gain.
         """
-        monkeypatch.setattr("kiro_crew.hooks._cu_read_only_auto_approve", lambda _name: True)
+        monkeypatch.setattr("efm_go.hooks._cu_read_only_auto_approve", lambda _name: True)
         mgr = HookManager()
         assert mgr.on_tool_call(self._CU_OBSERVE_TITLE).action == TOOL_ALLOW, (
             "a computer-use title with NO kind auto-approved — a mutating call can "
@@ -1850,7 +1850,7 @@ class TestMutatingKindBeatsTheTitle:
         above would stop being the only way in and this PR's guarantee would quietly
         weaken — so it is asserted rather than assumed.
         """
-        from kiro_crew.slack.gateway import _is_read_only_tool
+        from efm_go.slack.gateway import _is_read_only_tool
 
         for tool in ("computer_get_state", "computer_list_apps", "computer_click"):
             title = f"mcp__kirocrew-computer__{tool}"
@@ -1858,7 +1858,7 @@ class TestMutatingKindBeatsTheTitle:
 
     def test_a_read_sounding_title_cannot_rescue_a_non_read_kind(self, monkeypatch):
         """The same invariant for the generic title heuristic, not just the CU one."""
-        monkeypatch.setattr("kiro_crew.hooks._cu_read_only_auto_approve", lambda _name: False)
+        monkeypatch.setattr("efm_go.hooks._cu_read_only_auto_approve", lambda _name: False)
         mgr = HookManager()
         for kind in ("execute", "other"):
             assert mgr.on_tool_call("read_the_docs", tool_kind=kind).action == TOOL_ALLOW, kind
@@ -1867,7 +1867,7 @@ class TestMutatingKindBeatsTheTitle:
         assert mgr.on_tool_call("read_the_docs").action == TOOL_AUTO_APPROVE
 
     def test_rejects_none_context(self):
-        from kiro_crew.slack.handler import _should_auto_approve_spawn
+        from efm_go.slack.handler import _should_auto_approve_spawn
 
         event = SimpleNamespace(
             tool_name="spawn_run",
@@ -1880,7 +1880,7 @@ class TestMutatingKindBeatsTheTitle:
         assert _should_auto_approve_spawn(None, event) is False
 
     def test_rejects_none_hooks(self):
-        from kiro_crew.slack.handler import _should_auto_approve_spawn
+        from efm_go.slack.handler import _should_auto_approve_spawn
 
         ctx = MagicMock()
         ctx.hooks = None
@@ -1912,7 +1912,7 @@ class TestCanonicalMcpIdentityGoverned:
         them and denies if any matches -- mirroring the real tightest-wins
         evaluation over a single profile snapshot.
         """
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         seen: list[str] = []
 
@@ -2076,7 +2076,7 @@ class TestBuiltinToolIdentityGoverned:
         # profile hot-reloaded mid-call answer each from a different snapshot, so
         # a tool both complete profiles deny could be permitted by every single
         # lookup -- and each resolve walked ``profiles/`` on the event loop.
-        import kiro_crew.platform.governance_profiles as profiles_mod
+        import efm_go.platform.governance_profiles as profiles_mod
 
         calls = []
         real = profiles_mod.resolve_active_scope
@@ -2110,7 +2110,7 @@ class TestServerLevelGovernanceBindsOnPartialIdentity:
     @staticmethod
     def _ceiling_denying(server_ref: str):
         """A real ceiling whose ``mcp`` scope denies *server_ref*."""
-        from kiro_crew.platform.governance import (
+        from efm_go.platform.governance import (
             MODE_DENY,
             GovernanceCeiling,
             ScopedRuleset,
@@ -2126,8 +2126,8 @@ class TestServerLevelGovernanceBindsOnPartialIdentity:
     @staticmethod
     def _install(monkeypatch, ceiling):
         """Run the gate against *ceiling* with the real security authority."""
-        import kiro_crew.hooks as hooks_mod
-        from kiro_crew.platform import current_context
+        import efm_go.hooks as hooks_mod
+        from efm_go.platform import current_context
 
         real = current_context()
 
@@ -2283,7 +2283,7 @@ class TestAppOwnMcpServerAutoApprove:
     def _builtin(self, monkeypatch):
         """Treat the test app names as first-party builtins whose shipped
         manifest declares the ``myapp:srv`` MCP server."""
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(
             hooks_mod,
@@ -2306,7 +2306,7 @@ class TestAppOwnMcpServerAutoApprove:
     @pytest.fixture
     def _agent_owned(self, monkeypatch):
         """``myagent`` is declared by builtin ``myapp``'s shipped manifest."""
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "_BUILTIN_APP_AGENTS", {"myagent": "myapp"})
 
@@ -2379,7 +2379,7 @@ class TestAppOwnMcpServerAutoApprove:
         # auto-approve a different app's app-scoped server. Both apps are
         # first-party and both servers declared, so ONLY the ownership check can
         # be what rejects this.
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(
             hooks_mod, "_is_first_party_app", lambda app: app.casefold() in {"myapp", "otherapp"}
@@ -2437,7 +2437,7 @@ class TestAppOwnMcpServerAutoApprove:
         # A per-tool policy denying ``@myapp:srv/danger`` must block the call
         # even though the prose title never matches that policy — closing the
         # bypass where an own-server auto-approve skipped per-tool governance.
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "_is_first_party_app", lambda app: True)
         monkeypatch.setattr(hooks_mod, "_is_declared_builtin_mcp_server", lambda name: True)
@@ -2474,7 +2474,7 @@ class TestAppOwnMcpServerAutoApprove:
         # to the canonical mcp__server__tool, not just the prose title. A deny
         # rule keyed on the canonical name blocks the own-server auto-approve
         # even when the LLM title is non-canonical prose that never matched it.
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "_is_first_party_app", lambda app: True)
         monkeypatch.setattr(hooks_mod, "_is_declared_builtin_mcp_server", lambda name: True)
@@ -2509,7 +2509,7 @@ class TestAppOwnMcpServerAutoApprove:
     def test_set_builtin_app_mcp_servers_populates_gate(self, monkeypatch):
         # Boot pushes the shipped-manifest-declared <app>:<server> names in; the
         # gate then does a pure in-memory, case-insensitive membership test.
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "_BUILTIN_APP_MCP_SERVERS", frozenset())
         hooks_mod.set_builtin_app_mcp_servers(["MyApp:Srv", "other:s", "", None])  # junk ignored
@@ -2546,7 +2546,7 @@ class TestAppOwnMcpServerAutoApprove:
 
     def test_third_party_own_server_not_auto_approved(self, monkeypatch):
         # A third-party app (no builtin provenance) is NOT blanket-trusted.
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "_is_first_party_app", lambda app: False)
         mgr = HookManager()
@@ -2600,7 +2600,7 @@ class TestAppOwnMcpServerAutoApprove:
     def test_governance_deny_wins_over_own_server(self, monkeypatch):
         # The app-own-server branch is placed AFTER `_governance_denial`, so a
         # ceiling/profile that denies the app's own server still blocks it.
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "_is_first_party_app", lambda app: True)
         monkeypatch.setattr(
@@ -2618,7 +2618,7 @@ class TestAppOwnMcpServerAutoApprove:
         assert r.action == TOOL_DENY
 
     def test_ownership_helper_direct(self):
-        from kiro_crew.hooks import _app_owns_mcp_server
+        from efm_go.hooks import _app_owns_mcp_server
 
         assert _app_owns_mcp_server("myapp:srv", "myapp") is True
         assert _app_owns_mcp_server("MyApp:srv", "myapp") is True  # case-insensitive
@@ -2630,7 +2630,7 @@ class TestAppOwnMcpServerAutoApprove:
     def test_set_builtin_app_names_populates_gate(self, monkeypatch):
         # Boot pushes the builtin names in; the gate then does a pure in-memory,
         # case-insensitive membership test (no filesystem I/O on the event loop).
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "_BUILTIN_APP_NAMES", frozenset())
         hooks_mod.set_builtin_app_names(["MyApp", "other", "", None])  # junk ignored
@@ -2641,7 +2641,7 @@ class TestAppOwnMcpServerAutoApprove:
     def test_unwarmed_builtin_set_fails_closed(self, monkeypatch):
         # Before boot warms the set, provenance is unknown → treated as
         # third-party (own-server calls prompt, never wrongly auto-approved).
-        import kiro_crew.hooks as hooks_mod
+        import efm_go.hooks as hooks_mod
 
         monkeypatch.setattr(hooks_mod, "_BUILTIN_APP_NAMES", frozenset())
         assert hooks_mod._is_first_party_app("myapp") is False
@@ -2659,13 +2659,13 @@ class TestTargetPathSpellings:
 
     @staticmethod
     def _gate():
-        from kiro_crew.hooks import HookManager, HooksConfig
+        from efm_go.hooks import HookManager, HooksConfig
 
         return HookManager(HooksConfig.from_dict({}))
 
     @pytest.mark.parametrize("key", ["path", "file_path", "filePath"])
     def test_a_sensitive_path_is_denied_under_every_spelling(self, key):
-        from kiro_crew.hooks import TOOL_DENY
+        from efm_go.hooks import TOOL_DENY
 
         decision = self._gate().on_tool_call(
             "Tidy up the notes",
@@ -2690,7 +2690,7 @@ class TestTargetPathSpellings:
         limiting the keystone to the FIRST path still passed while the kind was
         ``edit``.
         """
-        from kiro_crew.hooks import TOOL_DENY
+        from efm_go.hooks import TOOL_DENY
 
         decision = self._gate().on_tool_call(
             "Read the notes",
@@ -2703,7 +2703,7 @@ class TestTargetPathSpellings:
     def test_an_ordinary_path_is_still_allowed_under_every_spelling(self):
         """The absence direction: widening the spellings must not start denying
         ordinary files, or the gate would refuse most real edits."""
-        from kiro_crew.hooks import TOOL_DENY
+        from efm_go.hooks import TOOL_DENY
 
         for key in ("path", "file_path", "filePath"):
             decision = self._gate().on_tool_call(
@@ -2715,7 +2715,7 @@ class TestTargetPathSpellings:
             assert decision.action != TOOL_DENY, f"{key!r} wrongly denied an ordinary file"
 
     def test_target_paths_ignores_non_string_and_blank_values(self):
-        from kiro_crew.hooks import target_paths
+        from efm_go.hooks import target_paths
 
         assert target_paths({"path": {"nested": 1}, "filePath": "   "}) == []
         assert target_paths(None) == []
@@ -2737,13 +2737,13 @@ class TestTargetPathNestedExtraction:
 
     @staticmethod
     def _gate():
-        from kiro_crew.hooks import HookManager, HooksConfig
+        from efm_go.hooks import HookManager, HooksConfig
 
         return HookManager(HooksConfig.from_dict({}))
 
     def test_a_sensitive_path_nested_in_an_array_argument_is_denied(self):
         """The reported fence miss, end to end through the gate."""
-        from kiro_crew.hooks import TOOL_DENY
+        from efm_go.hooks import TOOL_DENY
 
         decision = self._gate().on_tool_call(
             "Read the notes",
@@ -2757,13 +2757,13 @@ class TestTargetPathNestedExtraction:
         )
 
     def test_single_op_array_extraction(self):
-        from kiro_crew.hooks import target_paths
+        from efm_go.hooks import target_paths
 
         params = {"operations": [{"mode": "Line", "path": "~/.ssh/id_rsa"}]}
         assert target_paths(params) == ["~/.ssh/id_rsa"]
 
     def test_two_op_array_extraction_preserves_order_and_dedups(self):
-        from kiro_crew.hooks import target_paths
+        from efm_go.hooks import target_paths
 
         params = {
             "operations": [
@@ -2777,13 +2777,13 @@ class TestTargetPathNestedExtraction:
     def test_negative_control_pattern_only_yields_nothing(self):
         """A search-shaped call with no path key emits no candidates — the
         widening must not start inventing targets from unrelated arguments."""
-        from kiro_crew.hooks import target_paths
+        from efm_go.hooks import target_paths
 
         assert target_paths({"pattern": "x"}) == []
         assert target_paths({"operations": [{"mode": "Directory", "depth": 2}]}) == []
 
     def test_list_of_strings_directly_under_a_path_key_is_collected(self):
-        from kiro_crew.hooks import target_paths
+        from efm_go.hooks import target_paths
 
         assert target_paths({"path": ["/tmp/a", "~/.ssh/id_rsa"]}) == [
             "/tmp/a",
@@ -2793,7 +2793,7 @@ class TestTargetPathNestedExtraction:
     def test_an_ordinary_nested_path_is_still_allowed(self):
         """The absence direction: recursing must not start denying ordinary
         batch reads, or the gate would refuse most real multi-file calls."""
-        from kiro_crew.hooks import TOOL_DENY
+        from efm_go.hooks import TOOL_DENY
 
         decision = self._gate().on_tool_call(
             "Read the notes",
@@ -2806,7 +2806,7 @@ class TestTargetPathNestedExtraction:
     def test_a_deeply_nested_path_is_still_found_without_raising(self):
         """The walk is iterative and exhaustive: depth alone cannot hide a
         path (no RecursionError, no fail-open depth bound)."""
-        from kiro_crew.hooks import target_paths
+        from efm_go.hooks import target_paths
 
         deep: dict = {"path": "~/.ssh/id_rsa"}
         for _ in range(1000):
@@ -2819,7 +2819,7 @@ class TestTargetPathNestedExtraction:
         """An attacker-shaped payload that exhausts the work caps must mark the
         result truncated, and the gate must DENY the unverifiable call rather
         than trust a partial scan — deny-by-default, never silent fail-open."""
-        from kiro_crew.hooks import (
+        from efm_go.hooks import (
             _TARGET_PATH_MAX_PATHS,
             TOOL_DENY,
             target_paths,
@@ -2849,7 +2849,7 @@ class TestTargetPathNestedExtraction:
 
     def test_ordinary_calls_are_nowhere_near_the_work_caps(self):
         """The caps must not start refusing real batch reads."""
-        from kiro_crew.hooks import target_paths
+        from efm_go.hooks import target_paths
 
         params = {"operations": [{"mode": "Line", "path": f"/tmp/f{i}.txt"} for i in range(40)]}
         result = target_paths(params)
@@ -2922,7 +2922,7 @@ class TestPathTierUnderAResolverStall:
     def test_a_stalled_file_read_is_refused_as_unverifiable_not_as_sensitive(
         self, monkeypatch, tmp_path
     ):
-        from kiro_crew import security
+        from efm_go import security
 
         target = tmp_path / "ws" / "README.md"
         target.parent.mkdir()
@@ -2943,7 +2943,7 @@ class TestPathTierUnderAResolverStall:
         assert repr(str(target)) in result.reason  # quoted: the unverifiable wording uses the repr
 
     def test_a_sensitive_read_still_says_sensitive(self, monkeypatch):
-        from kiro_crew import security
+        from efm_go import security
 
         monkeypatch.setattr(security.paths, "_path_in_home_dirs", lambda *a, **k: True)
         result = HookManager().on_tool_call("~/.aws/credentials", tool_kind="read")
@@ -2951,7 +2951,7 @@ class TestPathTierUnderAResolverStall:
         assert result.reason == "Blocked: access to sensitive path: ~/.aws/credentials"
 
     def test_safe_read_file_keeps_the_repr_quoted_match_wording(self, monkeypatch, tmp_path):
-        from kiro_crew import hooks, security
+        from efm_go import hooks, security
 
         target = tmp_path / "plain.txt"
         target.write_text("x")
@@ -2961,7 +2961,7 @@ class TestPathTierUnderAResolverStall:
         assert str(info.value) == f"Blocked: access to sensitive path: {str(target)!r}"
 
     def test_safe_read_file_passes_the_unverifiable_wording_through(self, monkeypatch, tmp_path):
-        from kiro_crew import hooks, security
+        from efm_go import hooks, security
 
         target = tmp_path / "plain.txt"
         target.write_text("x")
@@ -2983,7 +2983,7 @@ class TestPathTierUnderAResolverStall:
         still re-spelled with the repr (the log-forgery guard)."""
         import os
 
-        from kiro_crew import hooks, security
+        from efm_go import hooks, security
 
         forged = str(tmp_path / f"{security.UNVERIFIABLE_PATH_PREFIX}\nWARNING forged")
         resolved = os.path.realpath(forged)
@@ -3008,7 +3008,7 @@ class TestShellCommandTextLeavesThePathTier:
     CMD = "cd /workplace/me/proj && grep -rn verified_reverse_launch_into src"
 
     def test_the_recovered_command_never_enters_the_path_tier(self, monkeypatch):
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         asked: list[str] = []
 
@@ -3026,7 +3026,7 @@ class TestShellCommandTextLeavesThePathTier:
         that happens to be a bare path is command text all the same: the path tier
         is not consulted, and the sandbox is what stands between the shell and the
         credential store (see the spec's "does not match PATHS in command text")."""
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         asked: list[str] = []
         monkeypatch.setattr(
@@ -3042,7 +3042,7 @@ class TestShellCommandTextLeavesThePathTier:
     def test_a_shell_title_that_is_not_the_command_still_pays_the_path_tier(self, monkeypatch):
         """An LLM-authored title on a shell frame is not command text; it is gated as
         before (the resolver sees it, and a match on it is refused)."""
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         asked: list[str] = []
         monkeypatch.setattr(
@@ -3054,7 +3054,7 @@ class TestShellCommandTextLeavesThePathTier:
     def test_a_non_shell_title_is_still_path_gated(self, monkeypatch):
         """The Claude Code adapter's file-read title is the bare path with no prefix
         and no raw_params; the title tier is what fences it, and it must keep doing so."""
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         asked: list[str] = []
 
@@ -3069,7 +3069,7 @@ class TestShellCommandTextLeavesThePathTier:
         assert result.reason == "Blocked: access to sensitive path: ~/.ssh/id_rsa"
 
     def test_a_non_shell_read_with_raw_params_is_still_path_gated(self, monkeypatch):
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         monkeypatch.setattr(
             hooks,
@@ -3086,7 +3086,7 @@ class TestShellCommandTextLeavesThePathTier:
         """kiro-cli can classify an execute-kind frame as shell while naming an MCP
         server. An MCP-served tool runs outside the sandbox the exemption leans
         on, so its command stays path-gated."""
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         asked: list[str] = []
 
@@ -3109,7 +3109,7 @@ class TestShellCommandTextLeavesThePathTier:
     def test_raw_params_paths_on_a_shell_frame_are_still_refused(self, monkeypatch):
         """The raw_params path tier is independent of the command exemption: a shell-
         classified frame carrying a path parameter is still refused on it."""
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         monkeypatch.setattr(
             hooks,

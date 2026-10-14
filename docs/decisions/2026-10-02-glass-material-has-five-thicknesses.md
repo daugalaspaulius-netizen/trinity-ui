@@ -16,6 +16,6 @@ The Liquid Glass material (`website/src/components/Glass.tsx`) has exactly five 
 
 ## Evidence
 
-- https://github.com/kirodotdev/KiroCrew/issues/16299 — the request and the maintainer's direction (comments 5962954713 and 5963142485 fix the five steps and their values).
-- https://github.com/kirodotdev/KiroCrew/pull/16351#issuecomment-5964651450 — the maintainer's on-record restatement of the decision, on the pull request that adds this entry.
-- https://github.com/kirodotdev/KiroCrew/pull/16351 — the implementation and the pull request that adds this entry.
+- https://efmleads.com/issues/16299 — the request and the maintainer's direction (comments 5962954713 and 5963142485 fix the five steps and their values).
+- https://efmleads.com/pull/16351#issuecomment-5964651450 — the maintainer's on-record restatement of the decision, on the pull request that adds this entry.
+- https://efmleads.com/pull/16351 — the implementation and the pull request that adds this entry.

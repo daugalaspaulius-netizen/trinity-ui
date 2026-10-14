@@ -31,7 +31,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.instances.registry import (
+from efm_go.instances.registry import (
     INSTANCE_NAME_MAX,
     MAX_CHAINED_PER_PARENT,
     MAX_VIA_HOPS,
@@ -41,8 +41,8 @@ from kiro_crew.instances.registry import (
     ancestor_ids,
     descendant_ids,
 )
-from kiro_crew.instances.ssh_tunnel_manager import _Mint
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.instances.ssh_tunnel_manager import _Mint
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 # ── helpers ──────────────────────────────────────────────────────────────
 
@@ -73,7 +73,7 @@ class _FakeTunnel:
         aws_profile="",
         aws_region="",
     ):
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
+        from efm_go.instances.ssh_tunnel_manager import TunnelState, TunnelStatus
 
         self.iid = iid
         self.ssh_host = ssh_host
@@ -100,8 +100,8 @@ class _FakeTunnel:
 
 def _free_ports(monkeypatch):
     """Make both loopback port probes answer "free", so these stay hermetic."""
-    from kiro_crew.instances import port_allocator
-    from kiro_crew.instances import ssh_tunnel_manager as stm
+    from efm_go.instances import port_allocator
+    from efm_go.instances import ssh_tunnel_manager as stm
 
     monkeypatch.setattr(port_allocator, "_is_port_free", lambda *_a, **_k: True)
     monkeypatch.setattr(stm, "_is_port_free", lambda *_a, **_k: True)
@@ -131,7 +131,7 @@ def _fake_base_port() -> int:
 def _mgr(tmp_path, monkeypatch, *, mint=None, real_hop_guard=False):
     """A manager over a fresh registry, with a fake forwarder and a fake mint."""
     _free_ports(monkeypatch)
-    from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+    from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
     _FakeTunnel.made = []
     reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -228,7 +228,7 @@ class _FakeReq:
 def _enable(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     (tmp_path / "config.json").write_text(json.dumps({"instances": {"enabled": True}}))
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     loader._invalidate_config_cache()
 
@@ -255,7 +255,7 @@ def _relay_mint(
     async def fake(inst, _params):
         if seen is not None:
             seen.append(inst.id)
-        from kiro_crew.instances.ssh_tunnel_manager import _Mint
+        from efm_go.instances.ssh_tunnel_manager import _Mint
 
         return _Mint(
             token=token,
@@ -539,7 +539,7 @@ class TestChainedForward:
         )
 
         async def silent_mint(_inst, _params):
-            from kiro_crew.instances.ssh_tunnel_manager import _Mint
+            from efm_go.instances.ssh_tunnel_manager import _Mint
 
             return _Mint(token="CHAINED_TOKEN", hop=0, ttl="20h")  # reports no port
 
@@ -692,7 +692,7 @@ class TestChainedToken:
         builds a payload, the hub parses one, and nothing compared them. So this drives
         the parent for real and then feeds its own payload to the hub's parser.
         """
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         # The parent end: mint for a crew IT holds, for a hub on port 9191.
         reg, mgr = _mgr(tmp_path, monkeypatch)
@@ -840,7 +840,7 @@ class TestChainedToken:
         async def mint_that_loses_the_forward(host, *, embed_parent_port=None, **_kw):
             mgr_ = holder[0]
             if host == "c-host" and embed_parent_port == 9191:
-                from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+                from efm_go.instances.ssh_tunnel_manager import TunnelState
 
                 mgr_._tunnels["c"].status.state = TunnelState.ERROR
             return f"TOKEN_FOR_{host}"
@@ -876,7 +876,7 @@ class TestChainedToken:
         a refresh scheduled from our row's 20h default would run after a shorter
         token has already expired.
         """
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         reg, mgr = _mgr(tmp_path, monkeypatch)
         reg.add(name="B", ssh_host="b-host", instance_id="b")
@@ -930,7 +930,7 @@ class TestChainedToken:
         """Read at THIS level because every connect test doubles the mint, so the
         reply-parsing itself is only reachable here -- a mutation removing it stays
         green against those tests."""
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         reg, mgr = _mgr(tmp_path, monkeypatch)
         reg.add(name="B", ssh_host="b-host", instance_id="b")
@@ -967,7 +967,7 @@ class TestChainedToken:
         """Dropped, so the caller refuses the dial. Adopting a malformed value would
         put it straight into an `ssh -L` target, and `True` is in the list because
         `isinstance(True, int)` is True and it would otherwise read as port 1."""
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         reg, mgr = _mgr(tmp_path, monkeypatch)
         reg.add(name="B", ssh_host="b-host", instance_id="b")
@@ -1014,8 +1014,8 @@ class TestChainedToken:
         AFTER the token is already dead. Refused instead, the same as a reply we
         cannot read -- every gateway that answers this endpoint reports its TTL.
         """
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.ssh_tunnel_manager import TokenMintError
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.ssh_tunnel_manager import TokenMintError
 
         reg, mgr = _mgr(tmp_path, monkeypatch)
         reg.add(name="B", ssh_host="b-host", instance_id="b")
@@ -1086,8 +1086,8 @@ class TestChainedToken:
         by hand or by an agent can carry any id string. Unchecked, an id like
         `victim/disconnect?x=` interpolates into a DIFFERENT authenticated route on
         the parent and spends our credential for it there."""
-        from kiro_crew.instances.registry import Instance
-        from kiro_crew.instances.ssh_tunnel_manager import TokenMintError
+        from efm_go.instances.registry import Instance
+        from efm_go.instances.ssh_tunnel_manager import TokenMintError
 
         reg, mgr = _mgr(tmp_path, monkeypatch)
         reg.add(name="B", ssh_host="b-host", instance_id="b")
@@ -1149,7 +1149,7 @@ class TestChainedToken:
         import inspect
         import textwrap
 
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         def calls_in(fn):
             tree = ast.parse(textwrap.dedent(inspect.getsource(fn)))
@@ -1188,7 +1188,7 @@ class TestCycleGuard:
         return reg, mgr
 
     def test_a_hop_that_lands_back_on_us_is_refused_and_torn_down(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         reg, mgr = self._chained(tmp_path, monkeypatch)
         monkeypatch.setattr(stm, "gateway_id", lambda *_a, **_k: "OURS")
@@ -1207,7 +1207,7 @@ class TestCycleGuard:
         assert reg is not None
 
     def test_a_hop_that_lands_on_an_ancestor_is_refused(self, tmp_path, monkeypatch):
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         _reg, mgr = self._chained(tmp_path, monkeypatch)
         monkeypatch.setattr(stm, "gateway_id", lambda *_a, **_k: "OURS")
@@ -1242,7 +1242,7 @@ class TestCycleGuard:
         """A top-level crew pointing back at this gateway is what the product
         already allows. Refusing it here would break a working setup over an
         arrangement chaining does not introduce."""
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         reg, mgr = _mgr(tmp_path, monkeypatch)
         reg.add(name="Self", ssh_host="localhost", instance_id="self")
@@ -1373,7 +1373,7 @@ class TestChainCascade:
 
     def test_removing_a_parent_removes_the_rows_below_it(self, tmp_path, monkeypatch):
         """A row left behind describes a forward that can never be opened again."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1410,7 +1410,7 @@ class TestChainCascade:
         former parent id reported a failure having just deleted the crews under
         it, and dropped the list of which ones they were with it.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1448,7 +1448,7 @@ class TestChainCascade:
         failed stop from a reconnect that landed after a successful one -- so it is
         safe to refuse on, and every row stays.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1503,7 +1503,7 @@ class TestChainCascade:
         sticky intent, so its tab was gone and reconnecting the parent would not have
         brought it back: a row left changed under a sentence promising otherwise.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1560,7 +1560,7 @@ class TestChainCascade:
         is logged rather than hidden -- the response cannot carry it, because the
         removal succeeded and nothing at the dashboard reads a residual.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1579,7 +1579,7 @@ class TestChainCascade:
                 return True
 
         stuck = _RacingStuck()
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.handlers_instances"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.handlers_instances"):
             resp = asyncio.run(
                 handlers.api_instances_remove(_FakeReq(_State(reg, stuck), match={"id": "b"}))
             )
@@ -1602,7 +1602,7 @@ class TestChainCascade:
         by reading the registry, and the rows are gone by then, so sweeping only
         the crew that was asked for tears down nothing below it and leaves a
         forward holding a port with no row left to surface it."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1652,7 +1652,7 @@ class TestChainCascade:
         """Validating the parent and inserting the child are two awaits. A removal
         between them snapshots the subtree without the new row and then deletes the
         parent under it, leaving a crew whose only route is a hop that is gone."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1698,7 +1698,7 @@ class TestChainCascade:
     def test_the_rows_go_leaves_first_so_no_row_outlives_its_parent(self, tmp_path, monkeypatch):
         """An interrupted sweep may leave a parent with fewer children, which still
         connects; a row whose parent is already gone can never be opened again."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1758,7 +1758,7 @@ class TestDepthCap:
         return reg
 
     def test_a_second_hop_is_allowed(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -1775,7 +1775,7 @@ class TestDepthCap:
         assert reg.get("c").via_remote_port == 53999
 
     def test_a_third_hop_is_refused_before_anything_is_written(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -1817,7 +1817,7 @@ class TestDepthCap:
         subject left the reader unable to tell what was refused or what had been
         doing it. Each refusal names the crew and reads as a whole sentence.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -1870,7 +1870,7 @@ class TestDepthCap:
             assert name in error, f"{code} does not name {name!r}: {error!r}"
 
     def test_an_unknown_parent_is_refused(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -1894,7 +1894,7 @@ class TestDepthCap:
         take under a suffixed id, giving one remote crew two rows, two forwards, two
         tabs and two charges against the width cap.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1921,7 +1921,7 @@ class TestDepthCap:
         remote id behind a different parent -- two parents can each hold a crew whose
         id on that parent happens to read the same.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1955,7 +1955,7 @@ class TestDepthCap:
         place. A retry from the announcing pane produces exactly this pair, so it is
         the ordinary case rather than an error path.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -1992,7 +1992,7 @@ class TestDepthCap:
         import ast
         import inspect
 
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         tree = ast.parse(inspect.getsource(handlers.api_instances_add))
         fn = tree.body[0]
@@ -2029,7 +2029,7 @@ class TestDepthCap:
         bound at all: eight chained rows of arbitrary-length names are still an
         arbitrary-size registry and an arbitrary-size response.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = self._reg(tmp_path)
@@ -2060,7 +2060,7 @@ class TestDepthCap:
         for anything else to bind. The cap belongs at the write sites, which is where
         ``ttl`` already puts it for this same reason.
         """
-        from kiro_crew.instances.registry import validate_instance_name
+        from efm_go.instances.registry import validate_instance_name
 
         path = tmp_path / "instances.json"
         reg = InstancesRegistry(path=path)
@@ -2123,7 +2123,7 @@ class TestDepthCap:
         its own cap -- these rows are created by that parent's pane announcing crews,
         not by anyone at this dashboard, and each one is a forward and a mint here.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -2160,7 +2160,7 @@ class TestDepthCap:
         """A full parent must not refuse crews riding a DIFFERENT one, or one parent's
         pane could stop every other parent from being used.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -2232,7 +2232,7 @@ class TestDepthCap:
         """Both or neither: a consumer that gets a remaining without the total it
         counts down from has to invent a denominator, which is the defect.
         """
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         class _St:
             def to_dict(self):
@@ -2261,7 +2261,7 @@ class TestDepthCap:
         assert "token_ttl_total" not in d2
 
     def test_an_ssm_parent_is_refused(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -2286,7 +2286,7 @@ class TestDepthCap:
     def test_a_patch_cannot_re_parent_a_crew(self, tmp_path, monkeypatch):
         """Re-parenting would move a crew onto a hop whose depth was never
         checked, so only the hop PORT is editable."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         assert "via_instance_id" not in handlers._PATCH_FIELD_TYPES
         assert handlers._PATCH_FIELD_TYPES["via_remote_port"] is int
@@ -2330,7 +2330,7 @@ class TestEmbedTokenEndpoint:
             return self.result
 
     def test_it_hands_back_the_token_and_the_hop_port(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -2347,7 +2347,7 @@ class TestEmbedTokenEndpoint:
     def test_a_malformed_port_is_refused_before_any_mint(self, tmp_path, monkeypatch):
         """`isinstance(True, int)` is True, so a bool would otherwise be accepted
         as port 1 and mint a token no page can use."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -2362,7 +2362,7 @@ class TestEmbedTokenEndpoint:
             assert mgr.calls == []
 
     def test_a_refusal_carries_the_managers_status(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -2380,7 +2380,7 @@ class TestEmbedTokenEndpoint:
     def test_a_non_owner_caller_is_refused(self, tmp_path, monkeypatch):
         """The route mints a credential for a machine, so it carries the same
         owner-only gate as every other route in this control plane."""
-        from kiro_crew.dashboard import handlers_instances as handlers
+        from efm_go.dashboard import handlers_instances as handlers
 
         _enable(tmp_path, monkeypatch)
         reg = InstancesRegistry(path=tmp_path / "instances.json")
@@ -2405,7 +2405,7 @@ class TestEmbedTokenEndpoint:
         ...)``, so a POST-only stub would see no catch-all at all and the assertion
         would pass without checking anything.
         """
-        from kiro_crew.dashboard.routes import connections
+        from efm_go.dashboard.routes import connections
 
         paths: list[str] = []
 
@@ -2512,7 +2512,7 @@ class TestForgedHostIsNeverDialled:
         import pathlib as _p
 
         src = (
-            _p.Path(__file__).resolve().parents[1] / "src/kiro_crew/instances/ssh_tunnel_manager.py"
+            _p.Path(__file__).resolve().parents[1] / "src/efm_go/instances/ssh_tunnel_manager.py"
         ).read_text()
         fn = next(
             n
@@ -2571,7 +2571,7 @@ class TestTheHopOwnershipInvariantHolds:
         invariant it is meant to check. Which branch satisfies it is recorded so a reader
         can see the case really did exercise one.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr, hop = self._lent(tmp_path, monkeypatch)
         try:
@@ -2591,7 +2591,7 @@ class TestTheHopOwnershipInvariantHolds:
     def test_it_holds_after_the_recovery_gives_up(self, tmp_path, monkeypatch):
         """Past `max_recovery_attempts` the ERROR entry stays for good, so this is the
         state that would otherwise persist for the credential's whole lifetime."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr, hop = self._lent(tmp_path, monkeypatch)
         # The give-up path also schedules a diagnosis, and the real one spawns
@@ -2636,7 +2636,7 @@ class TestTheHopOwnershipInvariantHolds:
         makes the invariant true rather than the invariant itself: the reclaim returns
         before touching anything, leaving the port occupied.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as stm
+        import efm_go.instances.ssh_tunnel_manager as stm
 
         reg, mgr, hop = self._lent(tmp_path, monkeypatch)
         try:
@@ -2702,7 +2702,7 @@ class TestLentHopReservation:
         # registry's clock, because `lend_hop` takes the LATER of the deadlines -- so a
         # shorter one cannot fake expiry, which is the property that stops a
         # second mint from shortening a reservation an earlier one earned.
-        from kiro_crew.instances import registry as reg_mod
+        from efm_go.instances import registry as reg_mod
 
         later = time.time() + 3 * 3600
         monkeypatch.setattr(reg_mod.time, "time", lambda: later)
@@ -2810,7 +2810,7 @@ class TestLentHopReservation:
         freed while the credential naming it stayed valid -- the exposure itself, reached
         without any orphan, reclaim or restart.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = _mgr(tmp_path, monkeypatch, real_hop_guard=True)
         reg.add(name="C", ssh_host="c-host", instance_id="c", ttl="2h")
@@ -2910,7 +2910,7 @@ class TestLentHopReservation:
         import inspect
         import textwrap
 
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         after = ast.parse(
             textwrap.dedent(inspect.getsource(stm.SshTunnelManager._recover_after))
@@ -3021,7 +3021,7 @@ class TestLentHopReservation:
         no hold taken, while the hub kept forwarding the crew's bearer token to that
         loopback port. Any other local binder that took it was handed the credential.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         held_during_mint: list[bool] = []
         # `connect` and `mint_embed_token` mint too, and both run before the port is
@@ -3151,7 +3151,7 @@ class TestLentHopReservation:
         valid. Asserted on the GUARD, because the cache surviving proves nothing about who
         owns the port.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = _mgr(tmp_path, monkeypatch, real_hop_guard=True)
         reg.add(name="C", ssh_host="c-host", instance_id="c", ttl="2h")
@@ -3192,7 +3192,7 @@ class TestLentHopReservation:
         in-memory cache, and this case proves it by making every registry read raise: if
         the seam consults the record at all, it fails here.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = _mgr(tmp_path, monkeypatch, real_hop_guard=True)
         reg.add(name="C", ssh_host="c-host", instance_id="c", ttl="2h")
@@ -3226,7 +3226,7 @@ class TestLentHopReservation:
         ``_hold_lent_port_now`` directly, so deleting the call from the seam leaves them
         all green. This drives the real entry point the monitor uses.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = _mgr(tmp_path, monkeypatch, real_hop_guard=True)
         reg.add(name="C", ssh_host="c-host", instance_id="c", ttl="2h")
@@ -3259,7 +3259,7 @@ class TestLentHopReservation:
         all -- the port would stay free for the rest of the lease with no later pass to
         notice. It pins the hold as the seam's FIRST act rather than one of its outcomes.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = _mgr(tmp_path, monkeypatch, real_hop_guard=True)
         reg.add(name="C", ssh_host="c-host", instance_id="c", ttl="2h")
@@ -3280,7 +3280,7 @@ class TestLentHopReservation:
 
     def test_a_lapsed_cache_entry_is_not_held(self, tmp_path, monkeypatch):
         """The cache mirrors a deadline, so it must not resurrect a dead credential."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = _mgr(tmp_path, monkeypatch, real_hop_guard=True)
         reg.add(name="C", ssh_host="c-host", instance_id="c", ttl="2h")
@@ -3339,7 +3339,7 @@ class TestLentHopReservation:
         import inspect
         import textwrap
 
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         fn = ast.parse(
             textwrap.dedent(inspect.getsource(stm.SshTunnelManager._teardown_locked))
@@ -3376,7 +3376,7 @@ class TestLentHopReservation:
         making it raise proves the lease check returned BEFORE anything was inspected or
         signalled.
         """
-        import kiro_crew.instances.ssh_tunnel_manager as stm
+        import efm_go.instances.ssh_tunnel_manager as stm
 
         reg, mgr = _mgr(tmp_path, monkeypatch)
         reg.add(name="C", ssh_host="c-host", instance_id="c", ttl="2h")
@@ -3477,7 +3477,7 @@ class TestLentHopReservation:
         measuring the clamp rather than max-wins, and the real writer cannot exceed it
         either (it takes the shorter of the crew's row TTL and ``LENT_HOP_TTL_CAP``).
         """
-        from kiro_crew.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS
+        from efm_go.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS
 
         reg, _ = _mgr(tmp_path, monkeypatch)
         far = time.time() + HOP_LEASE_DEADLINE_CAP_SECS - 60
@@ -3542,7 +3542,7 @@ class TestHopRetiredDetection:
         return asyncio.run(run())
 
     def test_the_parent_saying_the_hop_is_gone_retires_the_forward(self, tmp_path, monkeypatch):
-        from kiro_crew.instances.token_mint import HopRetiredError
+        from efm_go.instances.token_mint import HopRetiredError
 
         reg, mgr = self._chained(tmp_path, monkeypatch)
         monkeypatch.setattr(mgr, "_mint_through_parent", _relay_mint(mgr))
@@ -3566,7 +3566,7 @@ class TestHopRetiredDetection:
         tearing a working chain down on one would turn every network hiccup into a
         disconnect the user has to undo.
         """
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances.token_mint import TokenMintError
 
         reg, mgr = self._chained(tmp_path, monkeypatch)
         monkeypatch.setattr(mgr, "_mint_through_parent", _relay_mint(mgr))
@@ -3606,8 +3606,8 @@ class TestHopRetiredDetection:
         removed crew in with "maybe this build has no chaining endpoint". A test that
         reads the set cannot see that; one that answers a 404 can.
         """
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.token_mint import HopRetiredError
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.token_mint import HopRetiredError
 
         reg, mgr = self._chained(tmp_path, monkeypatch)
         inst = reg.get("c")
@@ -3635,8 +3635,8 @@ class TestHopRetiredDetection:
         retryable failure rather than being trusted -- failing closed on a reply too
         big to vet.
         """
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.token_mint import HopRetiredError, TokenMintError
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.token_mint import HopRetiredError, TokenMintError
 
         reg, mgr = self._chained(tmp_path, monkeypatch)
         inst = reg.get("c")
@@ -3671,8 +3671,8 @@ class TestHopRetiredDetection:
         would tear a chain down because the PARENT is old rather than because the hop
         moved, which is the confusion reading the status alone creates.
         """
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.token_mint import HopRetiredError, TokenMintError
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.token_mint import HopRetiredError, TokenMintError
 
         reg, mgr = self._chained(tmp_path, monkeypatch)
         inst = reg.get("c")
@@ -3697,11 +3697,11 @@ class TestHopRetiredDetection:
 class TestGatewayIdentity:
     def test_it_is_stable_and_persisted(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         loader._invalidate_config_cache()
-        from kiro_crew import gateway_identity
-        from kiro_crew.gateway_identity import GATEWAY_ID_FILE, gateway_id
+        from efm_go import gateway_identity
+        from efm_go.gateway_identity import GATEWAY_ID_FILE, gateway_id
 
         first = gateway_id()
         assert len(first) == 32
@@ -3716,10 +3716,10 @@ class TestGatewayIdentity:
         """`/api/health` is the most polled endpoint there is and the id cannot
         change, so only the first resolve may pay for the file."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         loader._invalidate_config_cache()
-        from kiro_crew import gateway_identity
+        from efm_go import gateway_identity
 
         gateway_identity._CACHED_IDS.clear()
         first = gateway_identity.gateway_id()
@@ -3737,10 +3737,10 @@ class TestGatewayIdentity:
 
     def test_a_corrupt_file_is_replaced(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         loader._invalidate_config_cache()
-        from kiro_crew.gateway_identity import GATEWAY_ID_FILE, gateway_id
+        from efm_go.gateway_identity import GATEWAY_ID_FILE, gateway_id
 
         path = loader.config_dir()
         path.mkdir(parents=True, exist_ok=True)
@@ -3750,10 +3750,10 @@ class TestGatewayIdentity:
 
     def test_reading_without_create_does_not_mint(self, tmp_path, monkeypatch):
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
         loader._invalidate_config_cache()
-        from kiro_crew.gateway_identity import GATEWAY_ID_FILE, gateway_id
+        from efm_go.gateway_identity import GATEWAY_ID_FILE, gateway_id
 
         assert gateway_id(create=False) == ""
         assert not (loader.config_dir() / GATEWAY_ID_FILE).exists()
@@ -3761,8 +3761,8 @@ class TestGatewayIdentity:
     def test_two_homes_get_different_ids(self, tmp_path, monkeypatch):
         """Two gateways sharing a machine but not a data home are two gateways,
         which is precisely the distinction the cycle guard needs."""
-        from kiro_crew.config import loader
-        from kiro_crew.gateway_identity import gateway_id
+        from efm_go.config import loader
+        from efm_go.gateway_identity import gateway_id
 
         ids = []
         for name in ("home-a", "home-b"):
@@ -3813,7 +3813,7 @@ class TestChainedRepairPaths:
         minted: list[str] = []
         monkeypatch.setattr(mgr, "_mint_through_parent", _relay_mint(mgr, port=54321, seen=minted))
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         mgr._tunnels["c"].status.state = TunnelState.ERROR
         _FakeTunnel.made = []
@@ -3841,7 +3841,7 @@ class TestChainedRepairPaths:
         minted: list[str] = []
         monkeypatch.setattr(mgr, "_mint_through_parent", _relay_mint(mgr, port=54321, seen=minted))
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         fails = {"n": 1}
         real_start = _FakeTunnel.start
@@ -3875,13 +3875,13 @@ class TestChainedRepairPaths:
         assert asyncio.run(mgr.connect("c")).state.value == "connected"
 
         async def mint_naming_no_port(inst, _params):
-            from kiro_crew.instances.ssh_tunnel_manager import _Mint
+            from efm_go.instances.ssh_tunnel_manager import _Mint
 
             return _Mint(token="CHAINED_TOKEN", hop=0, ttl=inst.ttl)
 
         monkeypatch.setattr(mgr, "_mint_through_parent", mint_naming_no_port)
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         mgr._tunnels["c"].status.state = TunnelState.ERROR
         _FakeTunnel.made = []
@@ -4021,7 +4021,7 @@ class TestChainedRepairPaths:
 
         src = (
             pathlib.Path(__file__).resolve().parents[1]
-            / "src/kiro_crew/instances/ssh_tunnel_manager.py"
+            / "src/efm_go/instances/ssh_tunnel_manager.py"
         ).read_text()
         tree = ast.parse(src)
 
@@ -4152,7 +4152,7 @@ class TestChainedRepairPaths:
             mgr, "_mint_through_parent", _relay_mint(mgr, token="MOVED", port=54321)
         )
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         # Every rebuild fails, so no forward ever dials the port the parent named.
         async def never_starts(self):
@@ -4268,7 +4268,7 @@ class TestChainedRepairPaths:
             _relay_mint(mgr, token="HEALED", port=54321, hop_gen=7),
         )
 
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         mgr._tunnels["c"].status.state = TunnelState.ERROR
         _FakeTunnel.made = []
@@ -4284,8 +4284,8 @@ class TestChainedRepairPaths:
         guarding the credential -- which is the whole finding. The endpoint and these
         fields ship in one change, so a parent that answers this route at all has them.
         """
-        from kiro_crew.instances import ssh_tunnel_manager as stm
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances import ssh_tunnel_manager as stm
+        from efm_go.instances.token_mint import TokenMintError
 
         reg, mgr = self._pair(tmp_path, monkeypatch)
         inst = reg.get("c")
@@ -4474,11 +4474,11 @@ class TestTheRefreshScheduleFollowsTheLifetimeItStored:
         the row would put the re-mint long after the credential is dead. The pane
         would then reload on every cycle, which is what makes the cap safe or not.
         """
-        from kiro_crew.instances.constants import (
+        from efm_go.instances.constants import (
             DEFAULT_TOKEN_REFRESH_FRACTION,
             LENT_HOP_TTL_CAP,
         )
-        from kiro_crew.instances.token_mint import ttl_to_seconds
+        from efm_go.instances.token_mint import ttl_to_seconds
 
         cap = ttl_to_seconds(LENT_HOP_TTL_CAP)
         reg, mgr = self._chained(tmp_path, monkeypatch, row_ttl="20h")
@@ -4540,7 +4540,7 @@ class TestTheRefreshScheduleFollowsTheLifetimeItStored:
         new lifetime, so the retry stays on the interval it was already using; making
         failure reschedule would turn a network blip into a changed schedule.
         """
-        from kiro_crew.instances.token_mint import TokenMintError
+        from efm_go.instances.token_mint import TokenMintError
 
         reg, mgr = self._chained(tmp_path, monkeypatch)
         answer = {"ttl": "20h"}
@@ -4593,8 +4593,8 @@ class TestALentCredentialIsShortLived:
     def test_the_lent_lifetime_the_lease_and_the_answer_are_one_capped_number(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.instances.constants import LENT_HOP_TTL_CAP
-        from kiro_crew.instances.token_mint import ttl_to_seconds
+        from efm_go.instances.constants import LENT_HOP_TTL_CAP
+        from efm_go.instances.token_mint import ttl_to_seconds
 
         asked: list[str] = []
         reg, mgr = _mgr(tmp_path, monkeypatch, mint=self._recording_mint(asked))
@@ -4623,8 +4623,8 @@ class TestALentCredentialIsShortLived:
         the cap gets it; raising the cap to their row would widen the exposure they
         asked to narrow.
         """
-        from kiro_crew.instances.constants import LENT_HOP_TTL_CAP
-        from kiro_crew.instances.token_mint import ttl_to_seconds
+        from efm_go.instances.constants import LENT_HOP_TTL_CAP
+        from efm_go.instances.token_mint import ttl_to_seconds
 
         assert ttl_to_seconds("5m") < ttl_to_seconds(LENT_HOP_TTL_CAP), "5m is not the shorter one"
 
@@ -4647,7 +4647,7 @@ class TestALentCredentialIsShortLived:
         lent to anyone, nothing releases a hold on its behalf, and capping it would
         re-mint every half hour for no window closed.
         """
-        from kiro_crew.instances.constants import LENT_HOP_TTL_CAP
+        from efm_go.instances.constants import LENT_HOP_TTL_CAP
 
         asked: list[str] = []
         reg, mgr = _mgr(tmp_path, monkeypatch, mint=self._recording_mint(asked))
@@ -4665,13 +4665,13 @@ class TestALentCredentialIsShortLived:
         margin a re-mint has to complete inside. A cap small enough to eat that margin
         expires the token mid-mint, and the hub's pane reloads every cycle.
         """
-        from kiro_crew.instances.constants import (
+        from efm_go.instances.constants import (
             DEFAULT_SSM_MINT_TIMEOUT_SECS,
             DEFAULT_TOKEN_REFRESH_FRACTION,
             LENT_HOP_TTL_CAP,
             MINT_TIMEOUT_CEILING_SECS,
         )
-        from kiro_crew.instances.token_mint import ttl_to_seconds
+        from efm_go.instances.token_mint import ttl_to_seconds
 
         margin = ttl_to_seconds(LENT_HOP_TTL_CAP) * (1.0 - DEFAULT_TOKEN_REFRESH_FRACTION)
         slowest = max(MINT_TIMEOUT_CEILING_SECS + 15.0, DEFAULT_SSM_MINT_TIMEOUT_SECS)
@@ -4695,14 +4695,14 @@ class TestEveryPeerCallAwaitsItsCredential:
     def _manager_source() -> str:
         import inspect
 
-        from kiro_crew.instances import ssh_tunnel_manager
+        from efm_go.instances import ssh_tunnel_manager
 
         return inspect.getsource(ssh_tunnel_manager)
 
     def test_the_credential_builder_is_a_coroutine_function(self):
         import inspect
 
-        from kiro_crew.instances.ssh_tunnel_manager import SshTunnelManager
+        from efm_go.instances.ssh_tunnel_manager import SshTunnelManager
 
         assert inspect.iscoroutinefunction(
             SshTunnelManager._peer_cookie_header
@@ -4741,8 +4741,8 @@ class TestTheRetainedLeaseMapIsBounded:
         string it mirrors, and drift would silently widen or narrow the load clamp, so the
         equality is pinned rather than trusted.
         """
-        from kiro_crew.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS, LENT_HOP_TTL_CAP
-        from kiro_crew.instances.token_mint import ttl_to_seconds
+        from efm_go.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS, LENT_HOP_TTL_CAP
+        from efm_go.instances.token_mint import ttl_to_seconds
 
         assert HOP_LEASE_DEADLINE_CAP_SECS == ttl_to_seconds(LENT_HOP_TTL_CAP), (
             "the seconds-valued cap the registry clamps to has drifted from the TTL cap "
@@ -4760,8 +4760,8 @@ class TestTheRetainedLeaseMapIsBounded:
         still be allowed at the cap, or a chained crew would stop being able to re-mint
         precisely when the map is full.
         """
-        from kiro_crew.instances.constants import HOP_LEASE_MAX
-        from kiro_crew.instances.registry import InstancesRegistry, InvalidInstanceError
+        from efm_go.instances.constants import HOP_LEASE_MAX
+        from efm_go.instances.registry import InstancesRegistry, InvalidInstanceError
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
         soon = time.time() + 600
@@ -4787,8 +4787,8 @@ class TestTheRetainedLeaseMapIsBounded:
         admission's clamp deleted. Mutation M40 proved exactly that -- it survived a
         through-the-registry assertion -- so the two bounds have to be measured apart.
         """
-        from kiro_crew.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS
+        from efm_go.instances.registry import InstancesRegistry
 
         path = tmp_path / "instances.json"
         reg = InstancesRegistry(path=path)
@@ -4809,8 +4809,8 @@ class TestTheRetainedLeaseMapIsBounded:
         removes the very lease that would prove the clamp missing. Mutation M42 survived
         the combined assertion for that reason.
         """
-        from kiro_crew.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS, HOP_LEASE_MAX
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS, HOP_LEASE_MAX
+        from efm_go.instances.registry import InstancesRegistry
 
         now = time.time()
         path = tmp_path / "instances.json"
@@ -4835,8 +4835,8 @@ class TestTheRetainedLeaseMapIsBounded:
         pin the cap's worth of ports for the full horizon. Loud with a count, because every
         shed lease makes a port allocatable while a credential may still name it.
         """
-        from kiro_crew.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS, HOP_LEASE_MAX
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS, HOP_LEASE_MAX
+        from efm_go.instances.registry import InstancesRegistry
 
         now = time.time()
         # Written directly, not through `lend_hop`: admission would refuse this map, which
@@ -4883,8 +4883,8 @@ class TestTheRetainedLeaseMapIsBounded:
         `<= now + cap`, which is true under both anchors, so mutation M42 is about the clamp
         EXISTING. This case is about it decaying.
         """
-        from kiro_crew.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.constants import HOP_LEASE_DEADLINE_CAP_SECS
+        from efm_go.instances.registry import InstancesRegistry
 
         now = time.time()
         path = tmp_path / "instances.json"
@@ -4924,8 +4924,8 @@ class TestRemovingAParentTakesItsChainedSubtree:
         self, tmp_path, monkeypatch
     ):
         """Driven through `unregister_instance`, the path cloud destroy actually calls."""
-        from kiro_crew.cloud import connect as cloud_connect
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.cloud import connect as cloud_connect
+        from efm_go.instances.registry import InstancesRegistry
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
         reg.add(name="Parent", ssh_host="parent-host", instance_id="parent", ttl="2h")
@@ -4941,7 +4941,7 @@ class TestRemovingAParentTakesItsChainedSubtree:
         reg.add(name="Bystander", ssh_host="other-host", instance_id="other", ttl="2h")
         monkeypatch.setattr(cloud_connect, "InstancesRegistry", lambda: reg, raising=False)
         monkeypatch.setattr(
-            "kiro_crew.instances.registry.InstancesRegistry", lambda *a, **k: reg, raising=False
+            "efm_go.instances.registry.InstancesRegistry", lambda *a, **k: reg, raising=False
         )
 
         assert cloud_connect.unregister_instance("parent-host") is True
@@ -4956,7 +4956,7 @@ class TestRemovingAParentTakesItsChainedSubtree:
 
     def test_the_cascade_is_one_write_so_no_read_sees_a_child_without_its_parent(self, tmp_path):
         """Removing a row at a time left a window an interleaved read could land in."""
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
         reg.add(name="P", ssh_host="p", instance_id="p", ttl="2h")
@@ -4993,7 +4993,7 @@ class TestRemovingAParentTakesItsChainedSubtree:
         self, tmp_path
     ):
         """The two boundary answers a caller branches on."""
-        from kiro_crew.instances.registry import InstancesRegistry
+        from efm_go.instances.registry import InstancesRegistry
 
         reg = InstancesRegistry(path=tmp_path / "instances.json")
         reg.add(name="Solo", ssh_host="solo", instance_id="solo", ttl="2h")
@@ -5015,7 +5015,7 @@ class TestAPeerRequestRefusesAForwardThatMovedUnderIt:
     @staticmethod
     def _chained(tmp_path, monkeypatch):
         """A connected parent ``b`` on a known port, plus the chained child ``c``."""
-        from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+        from efm_go.instances.ssh_tunnel_manager import TunnelState
 
         reg, mgr = _mgr(tmp_path, monkeypatch)
         reg.add(name="B", ssh_host="b-host", instance_id="b")
@@ -5041,7 +5041,7 @@ class TestAPeerRequestRefusesAForwardThatMovedUnderIt:
 
     def _mint(self, mgr, inst, reg, monkeypatch, during):
         """Run the chained mint with *during* executing inside the credential await."""
-        from kiro_crew.instances import ssh_tunnel_manager as stm
+        from efm_go.instances import ssh_tunnel_manager as stm
 
         _FakeMintSession.posted = []
         # Set, not inherited: `reply` is a CLASS attribute several cases here rewrite,
@@ -5067,7 +5067,7 @@ class TestAPeerRequestRefusesAForwardThatMovedUnderIt:
     def test_a_forward_that_moved_during_the_credential_await_is_not_spent_on(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.instances.ssh_tunnel_manager import TokenMintError
+        from efm_go.instances.ssh_tunnel_manager import TokenMintError
 
         reg, mgr, inst, tunnel, hop = self._chained(tmp_path, monkeypatch)
         params = self._mint(
@@ -5095,7 +5095,7 @@ class TestAPeerRequestRefusesAForwardThatMovedUnderIt:
         Port equality holds while the forward is a different generation, which is the
         reading ``_remint_parent_under_lock`` already relies on.
         """
-        from kiro_crew.instances.ssh_tunnel_manager import TokenMintError
+        from efm_go.instances.ssh_tunnel_manager import TokenMintError
 
         reg, mgr, inst, tunnel, hop = self._chained(tmp_path, monkeypatch)
         params = self._mint(
@@ -5132,7 +5132,7 @@ class TestAPeerRequestRefusesAForwardThatMovedUnderIt:
         """
         import inspect
 
-        from kiro_crew.instances import ssh_tunnel_manager
+        from efm_go.instances import ssh_tunnel_manager
 
         source = inspect.getsource(ssh_tunnel_manager)
         helper = "self." + "_peer_headers_for" + "("

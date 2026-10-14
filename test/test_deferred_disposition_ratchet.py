@@ -24,7 +24,7 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILLS = ROOT / "src" / "kiro_crew" / "builtin_skills"
+SKILLS = ROOT / "src" / "efm_go" / "builtin_skills"
 PREPARE_PR = SKILLS / "kirocrew-dev" / "kirocrew-prepare-pr" / "SKILL.md"
 
 DEFERRED = "accepted-and-deferred"

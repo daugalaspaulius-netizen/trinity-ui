@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import _BG_BLIND_RECYCLE_PROMPTS, BACKGROUND_KEY, SessionManager
-from kiro_crew.session_background import BACKGROUND_RSS_FALLBACK_MB
+from efm_go.config import KiroCrewConfig
+from efm_go.session import _BG_BLIND_RECYCLE_PROMPTS, BACKGROUND_KEY, SessionManager
+from efm_go.session_background import BACKGROUND_RSS_FALLBACK_MB
 
 _CEILING_MB = 1536
 _BG_PID = 4242
@@ -75,8 +75,8 @@ class TestTreeRssRecyclesTheBackgroundSession:
         mgr = await _started_manager(cfg)
         provider = mgr._sessions[BACKGROUND_KEY].provider
 
-        with patch("kiro_crew.session.get_session_rss_mb", return_value=_CEILING_MB) as measure:
-            with caplog.at_level("INFO", logger="kiro_crew.session"):
+        with patch("efm_go.session.get_session_rss_mb", return_value=_CEILING_MB) as measure:
+            with caplog.at_level("INFO", logger="efm_go.session"):
                 await mgr.recycle_background()
 
         measure.assert_called_once_with(_BG_PID)
@@ -92,8 +92,8 @@ class TestTreeRssRecyclesTheBackgroundSession:
         mgr = await _started_manager(cfg)
         provider = mgr._sessions[BACKGROUND_KEY].provider
 
-        with patch("kiro_crew.session.get_session_rss_mb", return_value=1890):
-            with caplog.at_level("INFO", logger="kiro_crew.session"):
+        with patch("efm_go.session.get_session_rss_mb", return_value=1890):
+            with caplog.at_level("INFO", logger="efm_go.session"):
                 await mgr.recycle_background()
 
         provider.shutdown.assert_awaited_once()
@@ -106,7 +106,7 @@ class TestTreeRssRecyclesTheBackgroundSession:
         mgr = await _started_manager(cfg)
         provider = mgr._sessions[BACKGROUND_KEY].provider
 
-        with patch("kiro_crew.session.get_session_rss_mb", return_value=_CEILING_MB - 1):
+        with patch("efm_go.session.get_session_rss_mb", return_value=_CEILING_MB - 1):
             await mgr.recycle_background()
 
         provider.shutdown.assert_not_awaited()
@@ -125,8 +125,8 @@ class TestZeroFallsBackToTheBackgroundCeiling:
         mgr = await _started_manager(cfg)
         provider = mgr._sessions[BACKGROUND_KEY].provider
 
-        with patch("kiro_crew.session.get_session_rss_mb", return_value=1890):
-            with caplog.at_level("INFO", logger="kiro_crew.session"):
+        with patch("efm_go.session.get_session_rss_mb", return_value=1890):
+            with caplog.at_level("INFO", logger="efm_go.session"):
                 await mgr.recycle_background()
 
         provider.shutdown.assert_awaited_once()
@@ -140,7 +140,7 @@ class TestZeroFallsBackToTheBackgroundCeiling:
         provider = mgr._sessions[BACKGROUND_KEY].provider
 
         with patch(
-            "kiro_crew.session.get_session_rss_mb",
+            "efm_go.session.get_session_rss_mb",
             return_value=BACKGROUND_RSS_FALLBACK_MB - 1,
         ):
             await mgr.recycle_background()
@@ -158,7 +158,7 @@ class TestAnUnreadableTreeFallsThrough:
         mgr = await _started_manager(cfg)
         provider = mgr._sessions[BACKGROUND_KEY].provider
 
-        with patch("kiro_crew.session.get_session_rss_mb", return_value=None):
+        with patch("efm_go.session.get_session_rss_mb", return_value=None):
             await mgr.recycle_background()
 
         provider.shutdown.assert_not_awaited()
@@ -172,8 +172,8 @@ class TestAnUnreadableTreeFallsThrough:
         provider = mgr._sessions[BACKGROUND_KEY].provider
         mgr._sessions[BACKGROUND_KEY].prompt_count = _BG_BLIND_RECYCLE_PROMPTS - 1
 
-        with patch("kiro_crew.session.get_session_rss_mb", return_value=None):
-            with caplog.at_level("INFO", logger="kiro_crew.session"):
+        with patch("efm_go.session.get_session_rss_mb", return_value=None):
+            with caplog.at_level("INFO", logger="efm_go.session"):
                 await mgr.recycle_background()
 
         provider.shutdown.assert_awaited_once()
@@ -186,7 +186,7 @@ class TestAnUnreadableTreeFallsThrough:
         mgr = await _started_manager(cfg)
         provider = mgr._sessions[BACKGROUND_KEY].provider
 
-        with patch("kiro_crew.session.get_session_rss_mb", side_effect=OSError("boom")):
+        with patch("efm_go.session.get_session_rss_mb", side_effect=OSError("boom")):
             await mgr.recycle_background()
 
         provider.shutdown.assert_not_awaited()
@@ -200,7 +200,7 @@ class TestAnUnreadableTreeFallsThrough:
         provider = mgr._sessions[BACKGROUND_KEY].provider
 
         with patch.object(SessionManager, "get_pid", return_value=None):
-            with patch("kiro_crew.session.get_session_rss_mb", return_value=99_999) as measure:
+            with patch("efm_go.session.get_session_rss_mb", return_value=99_999) as measure:
                 await mgr.recycle_background()
 
         measure.assert_not_called()

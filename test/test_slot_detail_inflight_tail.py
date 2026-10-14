@@ -21,8 +21,8 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app, _make_state
 
-from kiro_crew.dashboard.chat_utils import _collapse_wire_rows
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard.chat_utils import _collapse_wire_rows
+from efm_go.dashboard.state import _ChatSlot
 
 #: Deltas in the in-flight segment. Large enough that it alone overruns the
 #: bound below, which is the condition that produces the fragment.

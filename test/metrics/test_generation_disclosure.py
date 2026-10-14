@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from kiro_crew.dashboard.handlers.telemetry import _aggregate, _Hist
+from efm_go.dashboard.handlers.telemetry import _aggregate, _Hist
 
 _BOUNDS_A = [10.0, 50.0, 100.0, 500.0, 1000.0]
 _BOUNDS_B = [25.0, 250.0, 2500.0, 25000.0, 250000.0]   # a boundary change

@@ -7,7 +7,7 @@ out and listed so the chat agent can open them directly.
 
 from __future__ import annotations
 
-from kiro_crew.dashboard.workflow_inject import (
+from efm_go.dashboard.workflow_inject import (
     _collect_artifact_paths,
     _slot_key_from_session,
     _summarize,
@@ -216,7 +216,7 @@ def test_durable_copy_carries_the_window_rows_id() -> None:
         "session_key": "dashboard:chat-2-123",
         "result": {"ok": True},
     }
-    with patch("kiro_crew.dashboard.workflow_inject.append_if_absent_off_loop") as durable:
+    with patch("efm_go.dashboard.workflow_inject.append_if_absent_off_loop") as durable:
         assert inject_workflow_result(state, "wf_2", snap) is True
     assert len(origin.messages) == 1
     window_mid = origin.messages[0]["meta"]["mid"]

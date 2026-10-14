@@ -114,7 +114,7 @@ document.documentElement.setAttribute('data-theme', theme)
     channelSwitchable: false,
     channelPreference: '',
     platform: 'darwin-arm64',
-    downloadUrl: 'https://download.crew.kiro.dev/desktop/nightly/latest/KiroCrew.dmg',
+    downloadUrl: 'https://efmleads.com/desktop/nightly/latest/KiroCrew.dmg',
     packaged: true,
   }),
 }

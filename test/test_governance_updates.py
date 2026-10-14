@@ -14,15 +14,15 @@ import sys
 import pytest
 
 from conftest import host_abs
-from kiro_crew.platform import update_governance
-from kiro_crew.platform.context import PlatformCompositionError
-from kiro_crew.platform.governance import (
+from efm_go.platform import update_governance
+from efm_go.platform.context import PlatformCompositionError
+from efm_go.platform.governance import (
     UpdatePins,
     active_update_pins,
     parse_policy,
     parse_profile,
 )
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 
 @pytest.fixture(autouse=True)
@@ -188,7 +188,7 @@ class TestSeam:
 
     def test_ungoverned_host_is_unpinned(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance.active_update_pins", lambda: UpdatePins()
+            "efm_go.platform.governance.active_update_pins", lambda: UpdatePins()
         )
         assert update_governance.update_blocked_reason("https://anywhere") == ""
         assert update_governance.update_required("0.0.1") is False
@@ -196,7 +196,7 @@ class TestSeam:
 
     def test_source_mismatch_is_blocked_with_a_reason(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             lambda: UpdatePins(source="https://git.corp/*"),
         )
         reason = update_governance.update_blocked_reason("https://github.com/evil/x")
@@ -206,14 +206,14 @@ class TestSeam:
 
     def test_unresolvable_source_reports_so(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             lambda: UpdatePins(source="https://git.corp/*"),
         )
         assert "does not match" in update_governance.update_blocked_reason("")
 
     def test_below_floor_requires_an_update(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             lambda: UpdatePins(min_version="2.0.0"),
         )
         assert update_governance.update_required("1.9.9") is True
@@ -225,7 +225,7 @@ class TestSeam:
         def _boom():
             raise RuntimeError("context unavailable")
 
-        monkeypatch.setattr("kiro_crew.platform.context.current_context", _boom)
+        monkeypatch.setattr("efm_go.platform.context.current_context", _boom)
         assert active_update_pins() == UpdatePins()
         assert update_governance.update_blocked_reason("https://anywhere") == ""
         assert update_governance.update_required("0.0.1") is False
@@ -731,7 +731,7 @@ class TestWorktreeRedirectRefusal:
     def test_unresolvable_work_tree_is_refused(self, monkeypatch):
         """Cannot prove where a write would land, so do not write."""
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance._git_probe",
+            "efm_go.platform.update_governance._git_probe",
             lambda proj, *a: "" if a[:1] == ("config",) else None,
         )
         assert update_governance.repo_exec_config_reason("/proj") != ""
@@ -817,8 +817,8 @@ class TestRepoExecConfigRefusal:
         ``lstat`` inspects a U+FFFD path that names nothing -- clearing a
         ``--worktree`` scope whose ``config.worktree`` EXISTS, i.e. dropping
         the caller's refusal exactly the way the newline rewrite did."""
-        from kiro_crew.git_worktree_scope import worktree_probe_failure_is_empty_scope
-        from kiro_crew.subprocess_utf8 import utf8_path_stdout
+        from efm_go.git_worktree_scope import worktree_probe_failure_is_empty_scope
+        from efm_go.subprocess_utf8 import utf8_path_stdout
 
         repo = _init_repo(tmp_path / os.fsdecode(b"wt-\xff"))
         out = update_governance._git_probe(
@@ -1569,7 +1569,7 @@ class TestRepoExecConfigRefusal:
 
     def test_unreadable_config_refuses(self, monkeypatch):
         """Cannot prove a repo driver-free, so do not proceed."""
-        monkeypatch.setattr("kiro_crew.platform.update_governance._git_probe", lambda *a, **k: None)
+        monkeypatch.setattr("efm_go.platform.update_governance._git_probe", lambda *a, **k: None)
         assert update_governance.repo_exec_config_reason("/proj") != ""
 
     def test_driver_regex_agrees_with_the_worktree_gate(self):
@@ -1579,7 +1579,7 @@ class TestRepoExecConfigRefusal:
         module carries its own because `platform/` must not import a dashboard
         handler. Parity is asserted rather than assumed.
         """
-        from kiro_crew.dashboard.handlers.worktree import _FILTER_KEY_RE
+        from efm_go.dashboard.handlers.worktree import _FILTER_KEY_RE
 
         for key in (
             "filter.evil.process",

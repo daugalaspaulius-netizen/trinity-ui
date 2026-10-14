@@ -23,9 +23,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-import kiro_crew
-from kiro_crew.dashboard import remote_mirror, remote_relay
-from kiro_crew.dashboard.remote_relay import (
+import efm_go
+from efm_go.dashboard import remote_mirror, remote_relay
+from efm_go.dashboard.remote_relay import (
     RemoteTurnError,
     create_peer_slot,
     ensure_version_parity,
@@ -35,7 +35,7 @@ from kiro_crew.dashboard.remote_relay import (
     parse_sse_record,
     relay_remote_turn,
 )
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard.state import _ChatSlot
 
 #: Every async test here needs the loop; the repo runs pytest-asyncio in strict
 #: mode, so the marker is explicit rather than inferred from the coroutine.
@@ -234,7 +234,7 @@ class TestVersionParity:
     @pytest.mark.asyncio
     async def test_an_equal_version_passes(self):
         mgr = MagicMock()
-        mgr.peer_version = AsyncMock(return_value=(True, kiro_crew.__version__))
+        mgr.peer_version = AsyncMock(return_value=(True, efm_go.__version__))
         await ensure_version_parity(mgr, "nobita")  # does not raise
 
     @pytest.mark.asyncio
@@ -244,7 +244,7 @@ class TestVersionParity:
         with pytest.raises(RemoteTurnError) as excinfo:
             await ensure_version_parity(mgr, "nobita")
         assert "0.5.9" in str(excinfo.value)
-        assert kiro_crew.__version__ in str(excinfo.value)
+        assert efm_go.__version__ in str(excinfo.value)
 
     @pytest.mark.asyncio
     async def test_a_patch_skew_in_the_same_series_passes(self):
@@ -254,9 +254,9 @@ class TestVersionParity:
         release does not move the wire contract, so refusing it only forced a
         lockstep upgrade with no safety it bought.
         """
-        from kiro_crew.apps.version import parse_version
+        from efm_go.apps.version import parse_version
 
-        major, minor = parse_version(kiro_crew.__version__)[:2]
+        major, minor = parse_version(efm_go.__version__)[:2]
         peer = f"{major}.{minor}.{minor + 999}"  # same major.minor, far-off patch
         mgr = MagicMock()
         mgr.peer_version = AsyncMock(return_value=(True, peer))
@@ -265,9 +265,9 @@ class TestVersionParity:
     @pytest.mark.asyncio
     async def test_a_different_minor_is_refused(self):
         """A feature release (minor bump on 0.x) moves the vocabulary — refuse it."""
-        from kiro_crew.apps.version import parse_version
+        from efm_go.apps.version import parse_version
 
-        major, minor = parse_version(kiro_crew.__version__)[:2]
+        major, minor = parse_version(efm_go.__version__)[:2]
         peer = f"{major}.{minor + 1}.0"
         mgr = MagicMock()
         mgr.peer_version = AsyncMock(return_value=(True, peer))
@@ -283,7 +283,7 @@ class TestVersionParity:
         gate falls back to full-string equality rather than optimistically pass —
         an equal build id runs, any difference is refused.
         """
-        monkeypatch.setattr(kiro_crew, "__version__", "build-2026.09.04-abc123", raising=False)
+        monkeypatch.setattr(efm_go, "__version__", "build-2026.09.04-abc123", raising=False)
         mgr = MagicMock()
         mgr.peer_version = AsyncMock(return_value=(True, "build-2026.09.04-abc123"))
         await ensure_version_parity(mgr, "nobita")  # identical build id → passes
@@ -629,7 +629,7 @@ class TestRelayReplay:
 
 class TestBindingPersistence:
     def test_the_binding_survives_a_save_and_rehydrate(self, tmp_path):
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
@@ -661,7 +661,7 @@ class TestBindingPersistence:
         back as an ordinary local one and the next turn runs here instead of on
         the crew the user picked.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("chat-1")
@@ -690,7 +690,7 @@ class TestBindingPersistence:
         on-disk file that IS truncated to that shape now fails CLOSED on rehydrate —
         see ``test_an_incomplete_stored_binding_fails_closed_not_open`` below.)
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("chat-1")
@@ -717,7 +717,7 @@ class TestBindingPersistence:
         ``remote_binding_incomplete``) and the ``_run_chat`` chokepoint refuse the
         send with a message the user can act on.
         """
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
@@ -760,7 +760,7 @@ def _create_app(state, *, app_name: str = "", user: str = "local-app"):
     """
     from aiohttp import web
 
-    from kiro_crew.dashboard.chat import api_chat_slot_create
+    from efm_go.dashboard.chat import api_chat_slot_create
 
     async def handler(request: web.Request) -> web.Response:
         request["app"] = app_name
@@ -788,7 +788,7 @@ class TestBindingAuthorization:
     def peer(self, monkeypatch):
         """A spy standing in for the peer write, so a call is observable."""
         spy = AsyncMock(return_value="peer-chat-9")
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.create_peer_slot", spy)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.create_peer_slot", spy)
         return spy
 
     @pytest.mark.asyncio
@@ -947,7 +947,7 @@ class TestBindingAuthorization:
         from aiohttp.test_utils import TestClient, TestServer
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.create_peer_slot",
+            "efm_go.dashboard.chat_handlers.create_peer_slot",
             AsyncMock(side_effect=RemoteTurnError("crew is on an older version")),
         )
         state = _make_state(tmp_path)
@@ -1082,7 +1082,7 @@ class TestBindingAuthorization:
             return "peer-chat-9"
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.create_peer_slot", _create_peer_slot_racing
+            "efm_go.dashboard.chat_handlers.create_peer_slot", _create_peer_slot_racing
         )
         async with TestClient(TestServer(_create_app(state))) as client:
             resp = await client.post(
@@ -1118,7 +1118,7 @@ class TestBindingAuthorization:
             return "", "no such directory"
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_folder_project_dir_off_loop",
+            "efm_go.dashboard.chat_handlers.resolve_folder_project_dir_off_loop",
             invalid_project,
         )
         async with TestClient(TestServer(_create_app(state))) as client:
@@ -1142,21 +1142,21 @@ class TestBoundCreateDefaults:
     @pytest.fixture
     def peer(self, monkeypatch):
         spy = AsyncMock(return_value="peer-chat-9")
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.create_peer_slot", spy)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.create_peer_slot", spy)
         return spy
 
     @pytest.fixture
     def local_default(self, monkeypatch):
         """A config whose default agent exists only on THIS machine."""
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-        from kiro_crew.memory_stores import provision_member_memory
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.memory_stores import provision_member_memory
 
         config = KiroCrewConfig()
         config.agents["local-only-crew"] = KiroCrewAgentConfig(kiro_agent="local-only-crew")
         config.default_agent = "local-only-crew"
         provision_member_memory(config, "local-only-crew")
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load",
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load",
             staticmethod(lambda: config),
         )
 
@@ -1228,7 +1228,7 @@ class TestRemotePickApplication:
     def forward(self, monkeypatch):
         """Returns ``{}``: the peer's accepted state, empty when it reports none."""
         spy = AsyncMock(return_value={})
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.forward_peer_selection", spy)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.forward_peer_selection", spy)
         return spy
 
     @pytest.mark.asyncio
@@ -1241,10 +1241,10 @@ class TestRemotePickApplication:
         the turns had already moved off, so the header and the persisted record
         disagreed with the only side that executes anything.
         """
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(return_value={"ok": True, "agent": "reviewer", "workspace": "peer-ws"}),
         )
         state = _make_state(tmp_path)
@@ -1263,7 +1263,7 @@ class TestRemotePickApplication:
     async def test_a_peer_that_names_no_workspace_changes_nothing(self, tmp_path, forward):
         """Only a non-empty string is taken, so an older or terser peer is safe:
         a missing field leaves the local value alone rather than blanking it."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         state = _make_state(tmp_path)
         slot = _remote_slot()
@@ -1277,10 +1277,10 @@ class TestRemotePickApplication:
     async def test_only_an_agent_pick_moves_the_workspace(self, tmp_path, monkeypatch):
         """A model or effort pick does not re-resolve bindings, so a `workspace`
         key in its reply is not a commitment this slot should adopt."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(return_value={"ok": True, "workspace": "not-a-commitment"}),
         )
         state = _make_state(tmp_path)
@@ -1296,11 +1296,11 @@ class TestRemotePickApplication:
         self, tmp_path, monkeypatch
     ):
         """A peer commit with a stale local row is applied but not durable."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
-        from kiro_crew.dashboard.chat_persistence import _rehydrate_slot_from_history
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_persistence import _rehydrate_slot_from_history
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(return_value={"agent": "reviewer", "agent_kind": "template"}),
         )
         state = _make_state(tmp_path)
@@ -1341,10 +1341,10 @@ class TestRemotePickApplication:
     async def test_the_mirrored_workspace_is_persisted_with_the_agent(self, tmp_path, monkeypatch):
         """One write, or a restart restores the pair inconsistent — an agent from
         the peer next to a workspace the peer never agreed to."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(return_value={"ok": True, "workspace": "peer-ws"}),
         )
         state = _make_state(tmp_path)
@@ -1362,7 +1362,7 @@ class TestRemotePickApplication:
 
     @pytest.mark.asyncio
     async def test_an_accepted_pick_is_mirrored_on_the_slot(self, tmp_path, forward):
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         state = _make_state(tmp_path)
         slot = _remote_slot()
@@ -1382,10 +1382,10 @@ class TestRemotePickApplication:
 
     @pytest.mark.asyncio
     async def test_a_refused_pick_leaves_the_slot_untouched(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(side_effect=RemoteTurnError("that crew has no such agent")),
         )
         state = _make_state(tmp_path)
@@ -1407,7 +1407,7 @@ class TestRemotePickApplication:
         """Same reason the local path bumps it: an explicit pick has to outrank
         the model-fallback restore probe, which would otherwise treat the pick as
         automatic backfill and override it."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         state = _make_state(tmp_path)
         slot = _remote_slot()
@@ -1439,7 +1439,7 @@ class TestRemotePickApplication:
         with itself, which is why the local model/effort/workspace routes can leave
         it to the flush and this one cannot.
         """
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("chat-1")
@@ -1455,8 +1455,8 @@ class TestRemotePickApplication:
     async def test_remote_dynamic_effort_pick_survives_cold_restore(
         self, tmp_path, monkeypatch, forward
     ):
-        from kiro_crew.dashboard import chat_persistence
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard import chat_persistence
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(chat_persistence, "config_dir", lambda: tmp_path)
         monkeypatch.setattr(
@@ -1489,7 +1489,7 @@ class TestRemotePickApplication:
 
     @pytest.mark.asyncio
     async def test_marker_failure_refuses_remote_pick_before_forward(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         forward = AsyncMock(return_value={"ok": True, "reasoning_effort": "minimal"})
         monkeypatch.setattr(chat_handlers, "forward_peer_selection", forward)
@@ -1512,10 +1512,10 @@ class TestRemotePickApplication:
 
     @pytest.mark.asyncio
     async def test_remote_effort_pick_mirrors_normalized_codex_model(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(return_value={"ok": True, "reasoning_effort": "", "model": "gpt-6-sol"}),
         )
         state = _make_state(tmp_path)
@@ -1538,10 +1538,10 @@ class TestRemotePickApplication:
     @pytest.mark.asyncio
     async def test_a_refused_pick_persists_nothing(self, tmp_path, monkeypatch):
         """The write is downstream of the peer's acceptance, like the mirror."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(side_effect=RemoteTurnError("that crew has no such agent")),
         )
         state = _make_state(tmp_path)
@@ -1561,7 +1561,7 @@ class TestRemotePickApplication:
         Deriving it from the peer's workspace name would write a local directory
         that has nothing to do with the workspace the turn actually runs in.
         """
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         state = _make_state(tmp_path)
         slot = _remote_slot()
@@ -1595,7 +1595,7 @@ class _FakeUpstream:
 def _mgr_returning(status: int, body: bytes):
     """An instances manager whose proxy answers once with *status* / *body*."""
     mgr = MagicMock()
-    mgr.peer_version = AsyncMock(return_value=(True, kiro_crew.__version__))
+    mgr.peer_version = AsyncMock(return_value=(True, efm_go.__version__))
     mgr.proxy_request = MagicMock(return_value=_FakeUpstream(status, body))
     return mgr
 
@@ -1723,7 +1723,7 @@ class TestCreatePeerSlot:
         """
         state = _make_state(tmp_path)
         mgr = MagicMock()
-        mgr.peer_version = AsyncMock(return_value=(True, kiro_crew.__version__))
+        mgr.peer_version = AsyncMock(return_value=(True, efm_go.__version__))
         mgr.proxy_request = MagicMock(side_effect=ConnectionResetError("port 17777 refused"))
         state.instances_manager = mgr
 
@@ -1833,7 +1833,7 @@ class TestForwardPeerSelection:
         """Same byte ceiling the refusal path enforces, and for the same reason:
         a hostile or broken peer must not be able to make the hub decode an
         unbounded body just because it answered 200."""
-        from kiro_crew.dashboard.remote_relay import _MAX_PEER_SLOT_REPLY_BYTES
+        from efm_go.dashboard.remote_relay import _MAX_PEER_SLOT_REPLY_BYTES
 
         state = _make_state(tmp_path)
         padding = b" " * (_MAX_PEER_SLOT_REPLY_BYTES + 1)
@@ -1917,7 +1917,7 @@ class TestForwardPeerSelection:
     async def test_an_unreachable_peer_says_so_without_leaking_the_cause(self, tmp_path):
         state = _make_state(tmp_path)
         mgr = MagicMock()
-        mgr.peer_version = AsyncMock(return_value=(True, kiro_crew.__version__))
+        mgr.peer_version = AsyncMock(return_value=(True, efm_go.__version__))
         mgr.proxy_request = MagicMock(side_effect=ConnectionResetError("port 17777 refused"))
         state.instances_manager = mgr
 
@@ -1994,7 +1994,7 @@ class TestPeerTurnRequest:
         """Without ``relay=1`` the reply carries the prose and no tool activity."""
         state = _make_state(tmp_path)
         mgr = MagicMock()
-        mgr.peer_version = AsyncMock(return_value=(True, kiro_crew.__version__))
+        mgr.peer_version = AsyncMock(return_value=(True, efm_go.__version__))
 
         class _Streaming(_FakeUpstream):
             def __init__(self):
@@ -2025,7 +2025,7 @@ class TestPeerTurnRequest:
         """
         state = _make_state(tmp_path)
         mgr = MagicMock()
-        mgr.peer_version = AsyncMock(return_value=(True, kiro_crew.__version__))
+        mgr.peer_version = AsyncMock(return_value=(True, efm_go.__version__))
         mgr.proxy_request = MagicMock(return_value=_FakeUpstream(503, b"{}"))
         state.instances_manager = mgr
         state.broadcast_ws = MagicMock()
@@ -2314,10 +2314,10 @@ class TestPeerStringRedaction:
     ):
         """This one is both rendered AND written to history, so an unscrubbed
         credential here outlives the session."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(return_value={"ok": True, "workspace": f"ws-{_BAIT}"}),
         )
         state = _make_state(tmp_path)
@@ -2511,7 +2511,7 @@ class TestPeerVersionIsNotAnEchoChannel:
         assert "[REDACTED: credential]" in message
         # Still actionable: the local version is what tells the user which end to
         # move, so redacting the peer's half must not cost them that.
-        assert kiro_crew.__version__ in message
+        assert efm_go.__version__ in message
 
     @pytest.mark.asyncio
     async def test_an_oversized_peer_version_is_bounded(self):
@@ -2626,7 +2626,7 @@ class TestRelayedTurnDoesNotDrainLocally:
         slot._queue.append({"id": "q1", "content": "the second send"})
 
         started = AsyncMock(return_value=True)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._start_next_queued_turn", started)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._start_next_queued_turn", started)
 
         await relay_remote_turn(state, slot, "hi", chunks=_stream(b"data: [DONE]\n\n"))
 
@@ -2668,7 +2668,7 @@ class TestRelayedTurnDoesNotDrainLocally:
         slot = _remote_slot()
         slot._queue.append({"id": "q1", "content": "the second send"})
         started = AsyncMock(return_value=True)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._start_next_queued_turn", started)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._start_next_queued_turn", started)
 
         async def _boom() -> AsyncIterator[bytes]:
             raise RuntimeError("tunnel died")
@@ -2692,7 +2692,7 @@ def _send_app(state, *, app_name: str = "", user: str = "local-app"):
     """
     from aiohttp import web
 
-    from kiro_crew.dashboard.chat import api_chat
+    from efm_go.dashboard.chat import api_chat
 
     async def handler(request: web.Request) -> web.StreamResponse:
         request["app"] = app_name
@@ -2784,7 +2784,7 @@ class TestRemotePicksAreSerialised:
 
     @pytest.mark.asyncio
     async def test_a_second_pick_waits_for_the_first_transaction(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
@@ -2803,7 +2803,7 @@ class TestRemotePicksAreSerialised:
             return {}
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection", _slow_forward
+            "efm_go.dashboard.chat_handlers.forward_peer_selection", _slow_forward
         )
 
         first = asyncio.create_task(
@@ -2869,7 +2869,7 @@ def _chat_handlers_functions():
     import ast
     import inspect
 
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     tree = ast.parse(inspect.getsource(chat_handlers))
     return {
@@ -2967,7 +2967,7 @@ class TestEveryPeerDirectedOperationIsOwnerGated:
         from aiohttp.test_utils import TestClient, TestServer
 
         relay = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.relay_remote_turn", relay)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.relay_remote_turn", relay)
         state = _make_state(tmp_path)
         slot = _remote_slot()
         state._slots[slot.key] = slot
@@ -3004,10 +3004,10 @@ class TestEveryPeerDirectedOperationIsOwnerGated:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.chat import api_chat_slot_stop
+        from efm_go.dashboard.chat import api_chat_slot_stop
 
         forwarded = AsyncMock(return_value=True)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.forward_peer_stop", forwarded)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.forward_peer_stop", forwarded)
         state = _make_state(tmp_path)
         slot = _remote_slot()
         state._slots[slot.key] = slot
@@ -3033,10 +3033,10 @@ class TestEveryPeerDirectedOperationIsOwnerGated:
         so one refusal covers agent, model, reasoning effort and workspace, and
         the AST check above is what keeps that true.
         """
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         forwarded = AsyncMock(return_value={})
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.forward_peer_selection", forwarded)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.forward_peer_selection", forwarded)
         state = _make_state(tmp_path)
         slot = _remote_slot()
         slot.model = "kept"
@@ -3053,10 +3053,10 @@ class TestEveryPeerDirectedOperationIsOwnerGated:
     @pytest.mark.asyncio
     async def test_the_pick_chokepoint_still_lets_the_owner_through(self, tmp_path, monkeypatch):
         """The gate must not be a blanket refusal of the feature it protects."""
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.forward_peer_selection",
+            "efm_go.dashboard.chat_handlers.forward_peer_selection",
             AsyncMock(return_value={}),
         )
         state = _make_state(tmp_path)
@@ -3076,10 +3076,10 @@ class TestEveryPeerDirectedOperationIsOwnerGated:
         Deny-by-default there, rather than reading it as the empty dashboard
         claim: the peer path is the last place to guess about identity.
         """
-        from kiro_crew.dashboard.chat_handlers import _apply_remote_pick
+        from efm_go.dashboard.chat_handlers import _apply_remote_pick
 
         forwarded = AsyncMock(return_value={})
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.forward_peer_selection", forwarded)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.forward_peer_selection", forwarded)
         state = _make_state(tmp_path)
         slot = _remote_slot()
 
@@ -3168,7 +3168,7 @@ def _mode_app(state, *, app_name: str = "", user: str = "local-app"):
     """
     from aiohttp import web
 
-    from kiro_crew.dashboard.chat_folders import api_chat_slot_mode
+    from efm_go.dashboard.chat_folders import api_chat_slot_mode
 
     async def handler(request: web.Request) -> web.Response:
         request["app"] = app_name
@@ -3191,7 +3191,7 @@ class TestRemoteSessionLockedWhileTunnelDown:
     """
 
     def test_peer_is_connected_reads_the_tunnel_state_defensively(self):
-        from kiro_crew.dashboard.remote_relay import peer_is_connected
+        from efm_go.dashboard.remote_relay import peer_is_connected
 
         up = SimpleNamespace(
             status=lambda _id: SimpleNamespace(state=SimpleNamespace(value="connected"))
@@ -3287,7 +3287,7 @@ class TestInterruptedTurnSurvivesRestart:
         assert not any(c.args[0] == "chat_done" for c in state.broadcast_ws.call_args_list)
 
     def test_a_crash_mid_turn_comes_back_with_an_interrupted_row(self, tmp_path):
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
@@ -3313,7 +3313,7 @@ class TestInterruptedTurnSurvivesRestart:
         assert restored._relay_in_flight is False
 
     def test_a_completed_turn_leaves_no_interrupted_row(self, tmp_path):
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
@@ -3340,7 +3340,7 @@ class TestInterruptedTurnSurvivesRestart:
         appends a false interruption row every time. Owning the key
         makes its absence on the completion save clear the on-disk value.
         """
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
@@ -3398,7 +3398,7 @@ class TestRelayMirrorIsDetachedIfPrepareFails:
         async def _noop(*_a, **_k):
             return None
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.relay_remote_turn", _noop)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.relay_remote_turn", _noop)
 
         async def _boom(self, _request):
             raise ConnectionResetError("reader vanished before prepare")
@@ -3484,7 +3484,7 @@ class TestPreStreamRefusalRollsBackTheUserRow:
         """
         state = _make_state(tmp_path)
         mgr = MagicMock()
-        mgr.peer_version = AsyncMock(return_value=(True, kiro_crew.__version__))
+        mgr.peer_version = AsyncMock(return_value=(True, efm_go.__version__))
 
         class _EmptyButAccepted(_FakeUpstream):
             def __init__(self):
@@ -3512,7 +3512,7 @@ class TestRelayCarriesToolRowMeta:
     """A tool row's durable ``meta`` must survive the relay, minus the peer's mid."""
 
     def test_build_stream_chunk_carries_a_tool_rows_meta(self):
-        from kiro_crew.dashboard.chat_utils import _build_stream_chunk
+        from efm_go.dashboard.chat_utils import _build_stream_chunk
 
         row = {
             "role": "tool_call",
@@ -3527,7 +3527,7 @@ class TestRelayCarriesToolRowMeta:
         assert "meta" not in json.loads(_build_stream_chunk(row))
 
     def test_apply_row_keeps_tool_meta_but_drops_the_peers_mid(self, tmp_path):
-        from kiro_crew.dashboard.remote_relay import _apply_row, _ChunkSequencer
+        from efm_go.dashboard.remote_relay import _apply_row, _ChunkSequencer
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -3648,12 +3648,12 @@ def _turn_action_app(state, *, app_name=""):
     """
     from aiohttp import web
 
-    from kiro_crew.dashboard.chat_handlers import api_chat_slot_continue
-    from kiro_crew.dashboard.chat_regenerate import (
+    from efm_go.dashboard.chat_handlers import api_chat_slot_continue
+    from efm_go.dashboard.chat_regenerate import (
         api_chat_slot_edit_resend,
         api_chat_slot_regenerate,
     )
-    from kiro_crew.dashboard.chat_rewind import api_chat_slot_rewind
+    from efm_go.dashboard.chat_rewind import api_chat_slot_rewind
 
     @web.middleware
     async def _auth(request, handler):
@@ -3708,8 +3708,8 @@ class TestBoundSlotRefusesTurnRestartingActions:
         async def _ok(_request):
             return None
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_regenerate.reject_if_kiro_unverified", _ok)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_rewind.reject_if_kiro_unverified", _ok)
+        monkeypatch.setattr("efm_go.dashboard.chat_regenerate.reject_if_kiro_unverified", _ok)
+        monkeypatch.setattr("efm_go.dashboard.chat_rewind.reject_if_kiro_unverified", _ok)
 
         state = _make_state(tmp_path)
         slot = await self._bound_slot(state)
@@ -3727,7 +3727,7 @@ class TestBoundSlotRefusesTurnRestartingActions:
     def test_the_helper_refuses_an_incomplete_binding_too(self):
         """Keyed on ``executor``, not ``is_remote`` — a half-open binding is still
         refused, never silently run locally."""
-        from kiro_crew.dashboard.remote_relay import remote_bound_refusal
+        from efm_go.dashboard.remote_relay import remote_bound_refusal
 
         # Fully bound.
         assert remote_bound_refusal(_remote_slot("chat-1")) is not None
@@ -3762,7 +3762,7 @@ class TestBoundSlotRefusesTurnRestartingActions:
         async def _ok(_request):
             return None
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_rewind.reject_if_kiro_unverified", _ok)
+        monkeypatch.setattr("efm_go.dashboard.chat_rewind.reject_if_kiro_unverified", _ok)
 
         state = _make_state(tmp_path)
         await self._bound_slot(state)  # remote slot in state, _app unset (owner-only)
@@ -3786,7 +3786,7 @@ class TestRemoteSlotNeverRunsLocally:
 
     @pytest.mark.asyncio
     async def test_run_chat_refuses_a_remote_slot_before_any_execution(self, tmp_path):
-        from kiro_crew.dashboard.chat_runner import _run_chat
+        from efm_go.dashboard.chat_runner import _run_chat
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()

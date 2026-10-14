@@ -6,13 +6,13 @@ import pathlib
 
 import pytest
 
-from kiro_crew.monitoring.decision import (
+from efm_go.monitoring.decision import (
     decide_monitor,
     monitor_budget_reason,
     monitor_stall_reason,
 )
-from kiro_crew.monitoring.github_provider_errors import REASON_SHARED_COOLDOWN
-from kiro_crew.monitoring.models import (
+from efm_go.monitoring.github_provider_errors import REASON_SHARED_COOLDOWN
+from efm_go.monitoring.models import (
     DEFAULT_MONITOR_CADENCE_SECS,
     DEFAULT_MONITOR_COALESCE_SECS,
     DEFAULT_MONITOR_REALERT_SECS,

@@ -22,7 +22,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.handlers import sandbox_doc as sd
+from efm_go.dashboard.handlers import sandbox_doc as sd
 
 
 @pytest.fixture(autouse=True)
@@ -283,7 +283,7 @@ def test_the_pop_happens_under_the_lock() -> None:
 def test_the_serving_route_is_on_the_auth_bypass_list() -> None:
     """The token is the credential, so the route must bypass session auth — and
     the prefix in the middleware must be the one the handler actually serves."""
-    from kiro_crew.dashboard import token_auth
+    from efm_go.dashboard import token_auth
 
     assert sd.SANDBOX_DOC_PREFIX in token_auth._BYPASS_PREFIXES, (
         "the document route is not on the bypass list, so a sandboxed frame "
@@ -413,7 +413,7 @@ async def test_frame_ancestors_includes_the_embedding_ancestor(monkeypatch) -> N
     on one port framing a remote dashboard on another, with the widget inside that.
     """
     monkeypatch.setattr(
-        "kiro_crew.dashboard.server._extra_frame_ancestors",
+        "efm_go.dashboard.server._extra_frame_ancestors",
         lambda request, app: ["http://localhost:5476"],
     )
     doc_id, token = await _mint("<p>hi</p>")
@@ -429,7 +429,7 @@ async def test_an_injecting_or_inexpressible_ancestor_cannot_reach_the_header(
 ) -> None:
     """The ancestor producer is not trusted to have made its values header-safe."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.server._extra_frame_ancestors",
+        "efm_go.dashboard.server._extra_frame_ancestors",
         lambda request, app: [
             "http://localhost:5476; script-src *",
             "http://[::1]:5476",

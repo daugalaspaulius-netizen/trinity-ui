@@ -33,13 +33,13 @@ rules:
     paths:
       include:
         - test/**
-        - src/kiro_crew/apps/builtins/**/tests/**
-        - src/kiro_crew/apps/builtins/**/*_tests/**
+        - src/efm_go/apps/builtins/**/tests/**
+        - src/efm_go/apps/builtins/**/*_tests/**
     message: >
       A fixed sleep in a test body is a bet on how fast the host is: it passes on
       a fast runner and reds a loaded one, or it makes a negative assertion pass
       for the trivial reason. Wait on the state you assert with
-      kiro_crew.testing.wait.wait_until / async_wait_until (D1), or hold the
+      efm_go.testing.wait.wait_until / async_wait_until (D1), or hold the
       blocker and wait until it is parked (until_parked).
     severity: ERROR
     languages: [python]
@@ -52,8 +52,8 @@ rules:
     paths:
       include:
         - test/**
-        - src/kiro_crew/apps/builtins/**/tests/**
-        - src/kiro_crew/apps/builtins/**/*_tests/**
+        - src/efm_go/apps/builtins/**/tests/**
+        - src/efm_go/apps/builtins/**/*_tests/**
     message: >
       monkeypatch.undo() reverts EVERY patch on the shared instance, including
       the autouse fixtures' that this test inherited, so the rest of the test
@@ -72,8 +72,8 @@ rules:
     paths:
       include:
         - test/**
-        - src/kiro_crew/apps/builtins/**/tests/**
-        - src/kiro_crew/apps/builtins/**/*_tests/**
+        - src/efm_go/apps/builtins/**/tests/**
+        - src/efm_go/apps/builtins/**/*_tests/**
     message: >
       importlib.reload rebinds a shared module's globals in place, so code that
       imported a name earlier keeps the old object and later tests see a module
@@ -95,8 +95,8 @@ rules:
     paths:
       include:
         - test/**
-        - src/kiro_crew/apps/builtins/**/tests/**
-        - src/kiro_crew/apps/builtins/**/*_tests/**
+        - src/efm_go/apps/builtins/**/tests/**
+        - src/efm_go/apps/builtins/**/*_tests/**
     message: >
       Patching the stdlib time module replaces the clock for the whole worker:
       every thread, library and event loop (loop.time() is time.monotonic())
@@ -119,8 +119,8 @@ rules:
     paths:
       include:
         - test/**
-        - src/kiro_crew/apps/builtins/**/tests/**
-        - src/kiro_crew/apps/builtins/**/*_tests/**
+        - src/efm_go/apps/builtins/**/tests/**
+        - src/efm_go/apps/builtins/**/*_tests/**
     message: >
       A naive local-time read depends on the host's zone and on when the test
       runs: it passes in UTC and fails where local midnight falls between two
@@ -143,8 +143,8 @@ rules:
     paths:
       include:
         - test/**
-        - src/kiro_crew/apps/builtins/**/tests/**
-        - src/kiro_crew/apps/builtins/**/*_tests/**
+        - src/efm_go/apps/builtins/**/tests/**
+        - src/efm_go/apps/builtins/**/*_tests/**
     message: >
       An unseeded draw makes the input different on every run, so a red cannot
       be replayed. Use random.Random(SEED) or the seeded_rng fixture (D6).
@@ -166,8 +166,8 @@ rules:
     paths:
       include:
         - test/**
-        - src/kiro_crew/apps/builtins/**/tests/**
-        - src/kiro_crew/apps/builtins/**/*_tests/**
+        - src/efm_go/apps/builtins/**/tests/**
+        - src/efm_go/apps/builtins/**/*_tests/**
         - conftest.py
     message: >
       An autouse fixture that patches through the shared monkeypatch is lifted

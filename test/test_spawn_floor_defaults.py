@@ -24,12 +24,12 @@ from unittest.mock import MagicMock
 import pytest
 from overload_fakes import mock_ctx, mock_sessions, wait_taskq_open
 
-import kiro_crew.resource_status as rs
-import kiro_crew.subagent as subagent_mod
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.sections import AgentConfig
-from kiro_crew.constants import DEFAULT_SPAWN_MIN_MEMORY_GB
-from kiro_crew.subagent import (
+import efm_go.resource_status as rs
+import efm_go.subagent as subagent_mod
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.sections import AgentConfig
+from efm_go.constants import DEFAULT_SPAWN_MIN_MEMORY_GB
+from efm_go.subagent import (
     _DEDICATED_TOPUP_WAIT_SECS,
     _SHARED_START_MIN_GB,
     _SHARED_START_SAVING_GB,
@@ -141,7 +141,7 @@ def test_every_default_of_the_floor_is_the_one_constant() -> None:
 
 @pytest.mark.parametrize("stored", ["not-a-number", None])
 def test_an_unreadable_stored_floor_falls_back_to_the_constant(stored) -> None:
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     agent = loader._build_agent_config({"spawn_min_memory_gb": stored})
     assert agent.spawn_min_memory_gb == DEFAULT_SPAWN_MIN_MEMORY_GB
@@ -351,8 +351,8 @@ def _write_agent_config(agent: dict) -> None:
     """Write the isolated home's config.json and drop the load cache."""
     import json
 
-    from kiro_crew.config import loader
-    from kiro_crew.config.paths import config_dir
+    from efm_go.config import loader
+    from efm_go.config.paths import config_dir
 
     (config_dir() / "config.json").write_text(json.dumps({"agent": agent}), encoding="utf-8")
     loader._invalidate_config_cache()
@@ -465,7 +465,7 @@ async def test_the_top_up_waits_on_the_kernel_pressure_hold(
 ) -> None:
     """A shared start turning dedicated meets the pressure hold too, under the
     top-up's own bound; the figure clears the floor here, so only the hold waits."""
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     _Host(monkeypatch, tmp_path, 16.0)
     mgr, _ = await _manager(monkeypatch, eligible=True)
@@ -552,7 +552,7 @@ async def test_the_gate_reads_memory_off_the_event_loop(monkeypatch, tmp_path, m
     loop: the in-memory wait's wake re-pumps it, and an inline pump there would
     read the host on the loop on every retry.
     """
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     # Production's pump: a coroutine whose store reads run off the loop. The
     # suite switches it off for its inline settle loops.
@@ -594,7 +594,7 @@ async def _undurable_low_memory_wait(monkeypatch, tmp_path, mode, **spawn_kwargs
     """A non-durable start waiting below the floor on production's coroutine
     pump: an incognito row beside a store, or any row with the task queue off.
     The host is short until the caller raises it."""
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", True)
     host = _Host(monkeypatch, tmp_path, 2.4)
@@ -744,7 +744,7 @@ async def test_a_non_durable_row_is_held_from_its_pop_through_the_pass_grants(
     pick before it dispatches. A non-durable row is held from the pop: a stop
     landing during a grant still finds it (and the pass does not start it), and
     a grant that raises sends it back to the window instead of losing it."""
-    from kiro_crew.subagent_manager.admission import (
+    from efm_go.subagent_manager.admission import (
         MEMORY_WAIT_UNTIL_KEY,
         SpawnAdmissionCoordinator,
     )
@@ -877,7 +877,7 @@ async def test_an_unanswered_gate_read_waits_and_never_reads_on_the_loop(
     ``_HOST_READ_OFF_LOOP_SECS``, or a pool that cannot start a thread, read
     nothing: the start waits as ``low_memory`` (never fails open on a host
     nobody measured) and starts on the re-check once the pool answers."""
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     # Production's pump, as in the off-loop test above: its re-check reads off
     # the loop too, so the whole round trip can be pinned.
@@ -952,7 +952,7 @@ async def test_a_disabled_floor_takes_no_reading_so_an_unanswered_pool_cannot_ho
         return await real_to_thread(func, *args, **kwargs)
 
     monkeypatch.setattr(subagent_mod.asyncio, "to_thread", _refuses)
-    caplog.set_level(logging.WARNING, logger="kiro_crew.subagent")
+    caplog.set_level(logging.WARNING, logger="efm_go.subagent")
     try:
         info = await mgr.spawn_async("one", parent_session_key=PARENT, _memory_mode=mode)
         assert info.queued_reason != QUEUED_REASON_LOW_MEMORY and not info.done
@@ -1002,7 +1002,7 @@ async def test_governance_tightened_during_the_read_still_refuses(
     governance before the read and forbidden during it is refused, not run.
     ``persistent`` is the default path, whose row ``spawn_async`` committed
     before the read: the refusal fails that row, so it cannot run later."""
-    from kiro_crew import taskq as _taskq
+    from efm_go import taskq as _taskq
 
     _Host(monkeypatch, tmp_path, 8.0)  # ample: only governance can stop it
     mgr, started = await _manager(monkeypatch, eligible=False)
@@ -1047,8 +1047,8 @@ async def test_governance_tightened_during_a_drain_read_fails_the_row(
     """The coroutine pump's re-check of a deferred row reads the floor off the
     loop too; a governance change made during that read fails the row
     (``_refuse_row``) instead of starting it."""
-    from kiro_crew import taskq as _taskq
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go import taskq as _taskq
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", True)
     host = _Host(monkeypatch, tmp_path, 2.4)
@@ -1082,7 +1082,7 @@ async def test_admission_closing_during_the_read_fails_the_committed_row(
     """``spawn_async`` commits a durable row before it reads the floor. If gateway
     admission closes during that read, the caller is refused, so the row is
     failed with it: left queued, it would run once admission reopens."""
-    from kiro_crew import taskq as _taskq
+    from efm_go import taskq as _taskq
 
     _Host(monkeypatch, tmp_path, 8.0)
     mgr, started = await _manager(monkeypatch, eligible=False)
@@ -1147,7 +1147,7 @@ async def test_only_a_read_that_answered_unmeasurable_proceeds_unchecked(
     else:
         answer = (True, -1.0) if reading == "unmeasurable" else (False, 0.5)
         monkeypatch.setattr(subagent_mod, "check_memory_available", lambda *_a, **_k: answer)
-    caplog.set_level(logging.WARNING, logger="kiro_crew.subagent")
+    caplog.set_level(logging.WARNING, logger="efm_go.subagent")
     try:
         info = await mgr.spawn_async("one", parent_session_key=PARENT, _memory_mode="incognito")
         calls = audit.return_value.log_tool_invocation.mock_calls
@@ -1299,7 +1299,7 @@ async def test_a_top_up_that_never_got_an_answer_starts_and_says_headroom_unknow
         return await real_to_thread(func, *args, **kwargs)
 
     monkeypatch.setattr(subagent_mod.asyncio, "to_thread", _refuses)
-    caplog.set_level(logging.WARNING, logger="kiro_crew.subagent")
+    caplog.set_level(logging.WARNING, logger="efm_go.subagent")
     info = _row(id="b3", _start_price_gb=SHARED, _start_priced_shared=True)
     mgr._agents[info.id] = info
     try:

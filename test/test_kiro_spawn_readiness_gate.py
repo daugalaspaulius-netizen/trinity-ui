@@ -30,11 +30,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.dashboard import kiro_readiness
-from kiro_crew.dashboard.handlers import agents, sessions
-from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+from efm_go.dashboard import kiro_readiness
+from efm_go.dashboard.handlers import agents, sessions
+from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
-_RESOLVE_TARGET = "kiro_crew.acp.client._resolve_kiro_bin_for_spawn"
+_RESOLVE_TARGET = "efm_go.acp.client._resolve_kiro_bin_for_spawn"
 _FAKE_KIRO_BIN = "/usr/bin/kiro-cli"
 
 
@@ -156,7 +156,7 @@ async def test_refused_call_is_visible_in_the_log(
     request = _request(_make_signed_out_kiro_prerequisite())
     request.path = "/api/models"
 
-    with caplog.at_level("WARNING", logger="kiro_crew.dashboard.kiro_readiness"):
+    with caplog.at_level("WARNING", logger="efm_go.dashboard.kiro_readiness"):
         with patch(_RESOLVE_TARGET, AsyncMock(return_value=_FAKE_KIRO_BIN)):
             resp = await agents.api_models(request)
 
@@ -164,7 +164,7 @@ async def test_refused_call_is_visible_in_the_log(
     refusals = [
         r
         for r in caplog.records
-        if r.name == "kiro_crew.dashboard.kiro_readiness" and r.levelname == "WARNING"
+        if r.name == "efm_go.dashboard.kiro_readiness" and r.levelname == "WARNING"
     ]
     assert refusals, "the readiness gate refused a call without logging anything"
     message = refusals[0].getMessage()
@@ -231,12 +231,12 @@ async def test_a_newline_in_the_path_cannot_forge_a_log_line(
     request = _request(_make_signed_out_kiro_prerequisite())
     request.path = forged
 
-    with caplog.at_level("WARNING", logger="kiro_crew.dashboard.kiro_readiness"):
+    with caplog.at_level("WARNING", logger="efm_go.dashboard.kiro_readiness"):
         with patch(_RESOLVE_TARGET, AsyncMock(return_value=_FAKE_KIRO_BIN)):
             resp = await agents.api_models(request)
 
     assert resp.status == 503
-    records = [r for r in caplog.records if r.name == "kiro_crew.dashboard.kiro_readiness"]
+    records = [r for r in caplog.records if r.name == "efm_go.dashboard.kiro_readiness"]
     assert records, "the gate refused without logging anything"
     message = records[0].getMessage()
     # ``splitlines`` is the property that matters, not an absence of two literals:
@@ -272,12 +272,12 @@ async def test_unicode_line_separators_cannot_forge_a_log_line(
     request = _request(_make_signed_out_kiro_prerequisite())
     request.path = f"/api/chat/slots/a{encoded}WARNING forged/regenerate"
 
-    with caplog.at_level("WARNING", logger="kiro_crew.dashboard.kiro_readiness"):
+    with caplog.at_level("WARNING", logger="efm_go.dashboard.kiro_readiness"):
         with patch(_RESOLVE_TARGET, AsyncMock(return_value=_FAKE_KIRO_BIN)):
             resp = await agents.api_models(request)
 
     assert resp.status == 503
-    records = [r for r in caplog.records if r.name == "kiro_crew.dashboard.kiro_readiness"]
+    records = [r for r in caplog.records if r.name == "efm_go.dashboard.kiro_readiness"]
     assert records, "the gate refused without logging anything"
     message = records[0].getMessage()
     assert len(message.splitlines()) == 1

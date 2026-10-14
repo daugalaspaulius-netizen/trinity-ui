@@ -23,7 +23,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.mcp_shared as mcp_shared
+import efm_go.mcp_shared as mcp_shared
 
 
 @pytest.fixture(autouse=True)
@@ -93,7 +93,7 @@ class TestSuccessCaching:
     def test_policy_target_and_secret_follow_bound_client_port(
         self, fake_sel, patch_session_setup, monkeypatch, explicit_port
     ):
-        from kiro_crew.port_resolution import resolve_client_port_src
+        from efm_go.port_resolution import resolve_client_port_src
 
         monkeypatch.setattr(mcp_shared, "resolve_client_port_src", resolve_client_port_src)
         monkeypatch.setenv("KIROCREW_BOUND_PORT", "49213")
@@ -568,7 +568,7 @@ class TestWarningSuppression:
     def test_first_failures_emit_warnings(
         self, caplog, fake_sel, patch_session_setup, monkeypatch
     ):
-        caplog.set_level(logging.WARNING, logger="kiro_crew.mcp_shared")
+        caplog.set_level(logging.WARNING, logger="efm_go.mcp_shared")
         self._drive_failures(fake_sel, patch_session_setup, monkeypatch, n=2)
         warning_messages = [r.getMessage() for r in caplog.records]
         warn_count = sum(
@@ -579,7 +579,7 @@ class TestWarningSuppression:
     def test_warning_after_threshold_is_suppressed_with_notice(
         self, caplog, fake_sel, patch_session_setup, monkeypatch
     ):
-        caplog.set_level(logging.WARNING, logger="kiro_crew.mcp_shared")
+        caplog.set_level(logging.WARNING, logger="efm_go.mcp_shared")
         # 3 failures: first 2 emit the full warning, 3rd emits the
         # one-shot suppression notice.
         self._drive_failures(fake_sel, patch_session_setup, monkeypatch, n=3)
@@ -594,13 +594,13 @@ class TestWarningSuppression:
     def test_subsequent_failures_silent(
         self, caplog, fake_sel, patch_session_setup, monkeypatch
     ):
-        caplog.set_level(logging.WARNING, logger="kiro_crew.mcp_shared")
+        caplog.set_level(logging.WARNING, logger="efm_go.mcp_shared")
         # 5 failures total — only 3 log lines (2 warnings + 1 suppression notice).
         self._drive_failures(fake_sel, patch_session_setup, monkeypatch, n=5)
         msgs = [
             r.getMessage()
             for r in caplog.records
-            if r.name == "kiro_crew.mcp_shared"
+            if r.name == "efm_go.mcp_shared"
         ]
         assert len(msgs) == 3
 
@@ -672,7 +672,7 @@ class TestCallerTokenOnTheRead:
     def test_explicit_caller_token_rides_the_read_with_no_caller_var_set(
         self, fake_sel, patch_session_setup, monkeypatch
     ):
-        from kiro_crew.mcp_caller import current_caller, set_current_caller
+        from efm_go.mcp_caller import current_caller, set_current_caller
 
         monkeypatch.delenv("KIROCREW_STUB_SESSION_TOKEN", raising=False)
         set_current_caller(None)
@@ -691,7 +691,7 @@ class TestCallerTokenOnTheRead:
     def test_the_caller_var_is_still_the_fallback_when_no_token_is_handed_in(
         self, fake_sel, patch_session_setup, monkeypatch
     ):
-        from kiro_crew.mcp_caller import CallerContext, set_current_caller
+        from efm_go.mcp_caller import CallerContext, set_current_caller
 
         monkeypatch.delenv("KIROCREW_STUB_SESSION_TOKEN", raising=False)
         set_current_caller(
@@ -710,7 +710,7 @@ class TestCallerTokenOnTheRead:
     def test_an_explicit_token_outranks_the_caller_var(
         self, fake_sel, patch_session_setup, monkeypatch
     ):
-        from kiro_crew.mcp_caller import CallerContext, set_current_caller
+        from efm_go.mcp_caller import CallerContext, set_current_caller
 
         monkeypatch.delenv("KIROCREW_STUB_SESSION_TOKEN", raising=False)
         set_current_caller(
@@ -729,7 +729,7 @@ class TestCallerTokenOnTheRead:
     def test_no_token_anywhere_sends_no_token_header(
         self, fake_sel, patch_session_setup, monkeypatch
     ):
-        from kiro_crew.mcp_caller import set_current_caller
+        from efm_go.mcp_caller import set_current_caller
 
         monkeypatch.delenv("KIROCREW_STUB_SESSION_TOKEN", raising=False)
         set_current_caller(None)

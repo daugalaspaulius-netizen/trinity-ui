@@ -18,13 +18,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig, SkillsConfig
-from kiro_crew.context import ContextBuilder
-from kiro_crew.memory import MemoryStore
-from kiro_crew.messaging import dispatch as D
-from kiro_crew.messaging.dispatch import drive_turn
-from kiro_crew.session import HEARTBEAT_KEY
-from kiro_crew.skills import SkillsLoader
+from efm_go.config.loader import KiroCrewConfig, SkillsConfig
+from efm_go.context import ContextBuilder
+from efm_go.memory import MemoryStore
+from efm_go.messaging import dispatch as D
+from efm_go.messaging.dispatch import drive_turn
+from efm_go.session import HEARTBEAT_KEY
+from efm_go.skills import SkillsLoader
 
 BODY_SENTINEL = "STEP ONE: pour the concrete before the rebar."
 HINT_HEADER = "[Relevant skills for this message]"
@@ -302,7 +302,7 @@ class TestTransportFinallySeamSettlesDedup:
 
         from test_messaging_dispatch import _Driver, _patch_pipeline, _Renderer, _Sessions, _turn
 
-        from kiro_crew.acp.types import STOP_REASON_CANCELLED
+        from efm_go.acp.types import STOP_REASON_CANCELLED
 
         _patch_pipeline(monkeypatch)
 
@@ -311,7 +311,7 @@ class TestTransportFinallySeamSettlesDedup:
             # transcript, so the re-injected bodies never reached the window.
             last_stop_reason = STOP_REASON_CANCELLED
 
-        monkeypatch.setattr("kiro_crew.messaging.dispatch.TurnDriver", _CancelledDriver)
+        monkeypatch.setattr("efm_go.messaging.dispatch.TurnDriver", _CancelledDriver)
         spy = _SeamSpyBuilder()
         turn = _turn(_Renderer())
         asyncio.run(drive_turn(turn, sessions=_Sessions(), ctx_builder=spy))
@@ -394,7 +394,7 @@ class TestEverySeamSiteSettlesTheSkillBodies:
         assert checked_fns >= 7, f"expected the known seam functions, found {checked_fns}"
 
     def test_seam_helper_is_a_noop_for_a_builder_without_the_methods(self) -> None:
-        from kiro_crew.messaging.dispatch import rollback_skill_bodies
+        from efm_go.messaging.dispatch import rollback_skill_bodies
 
         # A builder stand-in that predates the settle methods must be a safe
         # no-op at the seam (defensive getattr), never raising into the turn's
@@ -602,7 +602,7 @@ class TestRecordIsBounded:
         builder = _builder(tmp_path, _loader(skills, cap=4))
         builder._SENT_SKILL_BODY_ENTRIES = 2  # type: ignore[misc]
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.context"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.context"):
             _send(builder, session_key="overflow")
 
         assert any("per-session entry cap" in r.getMessage() for r in caplog.records)
@@ -704,7 +704,7 @@ class TestDeliveryAuditReflectsDedup:
         _write_skill(skills, "foundation")
         builder = _builder(tmp_path, _loader(skills))
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.context.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.context.sel", lambda: sel_mock)
 
         _send(builder)
         # Nothing demoted -> the matcher row is already correct, no extra row.
@@ -717,7 +717,7 @@ class TestDeliveryAuditReflectsDedup:
         _write_skill(skills, "foundation")
         builder = _builder(tmp_path, _loader(skills))
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.context.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.context.sel", lambda: sel_mock)
 
         _send(builder)  # body delivered, recorded
         _send(builder)  # foundation demoted to pointer this turn
@@ -754,7 +754,7 @@ class TestDeliveryAuditReflectsDedup:
             )
         builder = _builder(tmp_path, _loader(skills, cap=n_optout + 1))
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.context.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.context.sel", lambda: sel_mock)
 
         _send(builder)  # foundation body delivered + recorded; opt-outs pointer
         _send(builder)  # foundation demoted this turn -> correction row fires
@@ -793,7 +793,7 @@ class TestDeliveryAuditReflectsDedup:
         loader.trigger_hint.return_value = ""
         builder = ContextBuilder(memory=MemoryStore(workspace=tmp_path / "ws"), skills=loader)
         sel_mock = MagicMock()
-        monkeypatch.setattr("kiro_crew.context.sel", lambda: sel_mock)
+        monkeypatch.setattr("efm_go.context.sel", lambda: sel_mock)
 
         builder.build_message("trigger", is_new_session=False, session_key="len-test")
         builder.build_message("trigger", is_new_session=False, session_key="len-test")

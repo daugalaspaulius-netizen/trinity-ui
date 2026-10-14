@@ -17,14 +17,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.acp.client import AcpError
-from kiro_crew.dashboard.chat_runner import (
+from efm_go.acp.client import AcpError
+from efm_go.dashboard.chat_runner import (
     SESSION_NOT_FOUND_CANCELLED_TEXT,
     SESSION_NOT_FOUND_GIVE_UP_TEXT,
     SESSION_NOT_FOUND_RETRY_TEXT,
 )
-from kiro_crew.dashboard.recovery_replays import ReplayFamily
-from kiro_crew.llm_helpers import acp_error_is_session_not_found
+from efm_go.dashboard.recovery_replays import ReplayFamily
+from efm_go.llm_helpers import acp_error_is_session_not_found
 
 _SNF = ReplayFamily.SESSION_NOT_FOUND
 
@@ -35,7 +35,7 @@ _NOT_FOUND = (
 
 
 def _state(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     state.broadcast_ws = MagicMock()
     state.push_slots_update = MagicMock()
@@ -92,8 +92,8 @@ def _assistant(slot):
 
 @pytest.mark.asyncio
 async def test_lost_session_resets_and_retries_once_then_lands(tmp_path, monkeypatch):
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
     calls: list[str] = []
 
@@ -127,7 +127,7 @@ async def test_lost_session_resets_and_retries_once_then_lands(tmp_path, monkeyp
 
 @pytest.mark.asyncio
 async def test_lost_session_twice_ends_on_a_clear_error_without_looping(tmp_path, monkeypatch):
-    from kiro_crew.dashboard.chat import _run_chat
+    from efm_go.dashboard.chat import _run_chat
 
     calls: list[str] = []
 
@@ -175,7 +175,7 @@ async def test_stop_during_the_reset_purges_the_replay_before_dispatch(
     """A soft Stop landing while the reset is awaited keeps the queue and snaps
     back to idle; the Stop counter is the only evidence, and it must veto the
     replay so a cancelled request is never re-run."""
-    from kiro_crew.dashboard.chat import _run_chat
+    from efm_go.dashboard.chat import _run_chat
 
     calls: list[str] = []
 
@@ -194,7 +194,7 @@ async def test_stop_during_the_reset_purges_the_replay_before_dispatch(
         return True
 
     state.sessions.reset = AsyncMock(side_effect=_reset_then_stop)
-    caplog.set_level(logging.INFO, logger="kiro_crew.dashboard.chat_runner")
+    caplog.set_level(logging.INFO, logger="efm_go.dashboard.chat_runner")
 
     with patch("asyncio.sleep", new_callable=AsyncMock):
         await _run_chat(state, slot, "delete the old branches")
@@ -215,9 +215,9 @@ async def test_stop_during_the_reset_purges_the_replay_before_dispatch(
 async def test_stop_after_dispatch_aborts_the_replay_before_the_provider(tmp_path, monkeypatch):
     """A Stop after dequeue but before the guarded task consumes the replay still
     vetoes it, from the snapshots the drain handed over."""
-    from kiro_crew.dashboard.chat import _run_chat
-    from kiro_crew.dashboard.chat_utils import effective_session_key
-    from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+    from efm_go.dashboard.chat import _run_chat
+    from efm_go.dashboard.chat_utils import effective_session_key
+    from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
     provider_calls = 0
 
@@ -261,7 +261,7 @@ async def test_stop_resolved_before_the_error_never_queues_a_replay(tmp_path, mo
     error reaches the handler leaves ``_stopping`` False; only the Stop counter
     moved. The handler must read that counter itself: the replay snapshots are
     taken after the Stop, so the drain-side veto cannot see it either."""
-    from kiro_crew.dashboard.chat import _run_chat
+    from efm_go.dashboard.chat import _run_chat
 
     calls: list[str] = []
 

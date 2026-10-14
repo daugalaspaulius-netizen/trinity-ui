@@ -9,9 +9,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard.handlers import knowledge as kh
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard.handlers import knowledge as kh
+from efm_go.knowledge.store import KnowledgeStore
 
 
 class _FakePool:
@@ -135,7 +135,7 @@ class TestKnowledgePoolSetup:
         # operator pin wins over the hard default while a background-role pin
         # never moves extraction. The role lookup reads config.json's raw JSON
         # (a dict), so a None role pin means "absent".
-        from kiro_crew.knowledge.llm_pool import (
+        from efm_go.knowledge.llm_pool import (
             DEFAULT_EXTRACTION_EFFORT,
             _get_workload_effort,
         )

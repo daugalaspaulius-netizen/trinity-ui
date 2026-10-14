@@ -13,9 +13,9 @@ from unittest.mock import mock_open, patch
 
 import pytest
 
-import kiro_crew.sandbox as sb
+import efm_go.sandbox as sb
 from conftest import absent_sysconf
-from kiro_crew.sandbox import _probe_sandbox_exec
+from efm_go.sandbox import _probe_sandbox_exec
 
 # The namespace probe internals are Linux-only by construction: they call
 # unshare(2), write /proc/<pid> identity maps, and use select.poll / os.WNOHANG,
@@ -48,31 +48,31 @@ def _exit_recorder(codes: list):
     return _fake_exit
 
 
-@patch("kiro_crew.sandbox.sys")
+@patch("efm_go.sandbox.sys")
 def test_non_darwin_returns_false(mock_sys):
     mock_sys.platform = "linux"
     assert _probe_sandbox_exec() is False
 
 
-@patch("kiro_crew.sandbox.sys")
-@patch("kiro_crew.sandbox.os.path.exists", return_value=False)
+@patch("efm_go.sandbox.sys")
+@patch("efm_go.sandbox.os.path.exists", return_value=False)
 def test_sandbox_exec_not_found_returns_false(mock_exists, mock_sys):
     mock_sys.platform = "darwin"
     assert _probe_sandbox_exec() is False
 
 
-@patch("kiro_crew.sandbox.sys")
-@patch("kiro_crew.sandbox.os.path.exists", return_value=True)
-@patch("kiro_crew.sandbox.subprocess.run")
+@patch("efm_go.sandbox.sys")
+@patch("efm_go.sandbox.os.path.exists", return_value=True)
+@patch("efm_go.sandbox.subprocess.run")
 def test_sandbox_exec_works(mock_run, mock_exists, mock_sys):
     mock_sys.platform = "darwin"
     mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
     assert _probe_sandbox_exec() is True
 
 
-@patch("kiro_crew.sandbox.sys")
-@patch("kiro_crew.sandbox.os.path.exists", return_value=True)
-@patch("kiro_crew.sandbox.subprocess.run")
+@patch("efm_go.sandbox.sys")
+@patch("efm_go.sandbox.os.path.exists", return_value=True)
+@patch("efm_go.sandbox.subprocess.run")
 def test_sandbox_exec_works_on_macos_26(mock_run, mock_exists, mock_sys):
     """macOS 26 (Tahoe) is NOT hard-blocked: sandbox-exec + the Seatbelt kernel
     subsystem still work there, so the probe decides empirically. A passing probe
@@ -84,18 +84,18 @@ def test_sandbox_exec_works_on_macos_26(mock_run, mock_exists, mock_sys):
     assert _probe_sandbox_exec() is True
 
 
-@patch("kiro_crew.sandbox.sys")
-@patch("kiro_crew.sandbox.os.path.exists", return_value=True)
-@patch("kiro_crew.sandbox.subprocess.run")
+@patch("efm_go.sandbox.sys")
+@patch("efm_go.sandbox.os.path.exists", return_value=True)
+@patch("efm_go.sandbox.subprocess.run")
 def test_sandbox_exec_fails_returns_false(mock_run, mock_exists, mock_sys):
     mock_sys.platform = "darwin"
     mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=1)
     assert _probe_sandbox_exec() is False
 
 
-@patch("kiro_crew.sandbox.sys")
-@patch("kiro_crew.sandbox.os.path.exists", side_effect=[True, False])
-@patch("kiro_crew.sandbox.subprocess.run")
+@patch("efm_go.sandbox.sys")
+@patch("efm_go.sandbox.os.path.exists", side_effect=[True, False])
+@patch("efm_go.sandbox.subprocess.run")
 def test_missing_trusted_probe_binary_fails_closed(mock_run, mock_exists, mock_sys):
     mock_sys.platform = "darwin"
 
@@ -104,9 +104,9 @@ def test_missing_trusted_probe_binary_fails_closed(mock_run, mock_exists, mock_s
     assert mock_exists.call_count == 2
 
 
-@patch("kiro_crew.sandbox.sys")
-@patch("kiro_crew.sandbox.os.path.exists", return_value=True)
-@patch("kiro_crew.sandbox.subprocess.run", side_effect=OSError("timeout"))
+@patch("efm_go.sandbox.sys")
+@patch("efm_go.sandbox.os.path.exists", return_value=True)
+@patch("efm_go.sandbox.subprocess.run", side_effect=OSError("timeout"))
 def test_subprocess_exception_returns_false(mock_run, mock_exists, mock_sys):
     mock_sys.platform = "darwin"
     assert _probe_sandbox_exec() is False
@@ -114,7 +114,7 @@ def test_subprocess_exception_returns_false(mock_run, mock_exists, mock_sys):
 
 def test_userns_available_delegates_to_probe(monkeypatch):
     """Public userns_available() is a stable alias for the private probe."""
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     monkeypatch.setattr(sb, "_probe_unshare", lambda: True)
     assert sb.userns_available() is True
@@ -132,7 +132,7 @@ def _reset_wsl_cache():
     test that consults ``is_wsl()`` would see a stale ``True`` on a native
     Linux host). Tearing down the cache keeps each test hermetic.
     """
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     sb.is_wsl.cache_clear()
     yield
@@ -140,14 +140,14 @@ def _reset_wsl_cache():
 
 
 def test_is_wsl_false_off_linux(monkeypatch):
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     monkeypatch.setattr(sb.sys, "platform", "darwin")
     assert sb.is_wsl() is False
 
 
 def test_is_wsl_true_via_env_distro(monkeypatch):
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     monkeypatch.setattr(sb.sys, "platform", "linux")
     monkeypatch.setenv("WSL_DISTRO_NAME", "Ubuntu")
@@ -156,7 +156,7 @@ def test_is_wsl_true_via_env_distro(monkeypatch):
 
 
 def test_is_wsl_true_via_env_interop(monkeypatch):
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     monkeypatch.setattr(sb.sys, "platform", "linux")
     monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
@@ -165,7 +165,7 @@ def test_is_wsl_true_via_env_interop(monkeypatch):
 
 
 def test_is_wsl_true_via_proc_version(monkeypatch):
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     monkeypatch.setattr(sb.sys, "platform", "linux")
     monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
@@ -176,7 +176,7 @@ def test_is_wsl_true_via_proc_version(monkeypatch):
 
 
 def test_is_wsl_false_on_native_linux(monkeypatch):
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     monkeypatch.setattr(sb.sys, "platform", "linux")
     monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
@@ -187,7 +187,7 @@ def test_is_wsl_false_on_native_linux(monkeypatch):
 
 
 def test_is_wsl_false_when_proc_version_unreadable(monkeypatch):
-    import kiro_crew.sandbox as sb
+    import efm_go.sandbox as sb
 
     monkeypatch.setattr(sb.sys, "platform", "linux")
     monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
@@ -1011,7 +1011,7 @@ def _fork_verdict_from_a_fresh_interpreter(cwd: Path) -> tuple[bool, bool, str, 
     """
     code = (
         "import json, sys\n"
-        "import kiro_crew.sandbox as sb\n"
+        "import efm_go.sandbox as sb\n"
         "json.dump(list(sb._probe_unshare_via_fork()), sys.stdout)\n"
     )
     out = subprocess.run(
@@ -1047,7 +1047,7 @@ class TestProbeRunsInAFreshProcess:
     #: it when it exits. Prints three counts: forked-before, forked-after, spawned.
     #: Its ``forked()`` reads the child's thread count as ``st_nlink`` of
     #: ``/proc/self/task`` minus two, inline: under ``-I -S`` there is no site
-    #: directory, so it cannot import this module or ``kiro_crew``.
+    #: directory, so it cannot import this module or ``efm_go``.
     _EXPERIMENT = r"""
 import os, subprocess, sys, threading, time
 
@@ -1202,8 +1202,8 @@ print(before, after, spawned)
         assert sb._probe_unshare_once() == (True, False, "fork path ran", "")
 
     def test_the_shim_imports_nothing_first_party(self):
-        """It runs under ``-I -S``: no site directory, so a kiro_crew import would fail."""
-        assert "kiro_crew" not in sb._PROBE_SHIM_CODE
+        """It runs under ``-I -S``: no site directory, so a efm_go import would fail."""
+        assert "efm_go" not in sb._PROBE_SHIM_CODE
         for line in sb._PROBE_SHIM_CODE.splitlines():
             if line.startswith(("import ", "from ")):
-                assert "kiro_crew" not in line, line
+                assert "efm_go" not in line, line

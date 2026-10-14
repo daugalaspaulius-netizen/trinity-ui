@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.acp import _dispatch
-from kiro_crew.acp.harness_tool_names import (
+from efm_go.acp import _dispatch
+from efm_go.acp.harness_tool_names import (
     GOOSE_TOOL_IDS_BY_KIRO_TOOL,
     HARNESS_TOOL_TABLES,
     OPENCODE_TOOL_IDS_BY_KIRO_TOOL,
@@ -13,7 +13,7 @@ from kiro_crew.acp.harness_tool_names import (
     qualified_harness_tool_id,
     split_harness_tool_id,
 )
-from kiro_crew.acp.kas_permissions import KAS_TOOL_IDS_BY_KIRO_TOOL, kas_tool_match_names
+from efm_go.acp.kas_permissions import KAS_TOOL_IDS_BY_KIRO_TOOL, kas_tool_match_names
 
 
 def test_a_shell_call_answers_to_its_kiro_cli_name():

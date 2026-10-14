@@ -1,6 +1,6 @@
 # Subagents
 
-Source: https://kiro.dev/docs/custom-agents/subagents/ (fetched 2026-09-06)
+Source: https://efmleads.com/docs/custom-agents/subagents/ (fetched 2026-09-06)
 
 Upstream retired `/docs/cli/chat/subagents/` and moved the page under custom
 agents. This describes **upstream's** subagent model; Kiro Crew's own

@@ -39,7 +39,7 @@ from typing import Final
 
 import pytest
 
-from kiro_crew import memory_record_metadata, memory_schema, vector_memory
+from efm_go import memory_record_metadata, memory_schema, vector_memory
 
 # ── The relation scanner ─────────────────────────────────────────────────────
 
@@ -308,9 +308,9 @@ class TestLineageDrift:
 
     @staticmethod
     def _module_tree() -> ast.Module:
-        import kiro_crew
+        import efm_go
 
-        source = Path(kiro_crew.__file__).resolve().with_name("vector_memory.py")
+        source = Path(efm_go.__file__).resolve().with_name("vector_memory.py")
         return ast.parse(source.read_text(encoding="utf-8"))
 
     def test_a_write_to_a_view_is_refused_at_runtime(self) -> None:
@@ -378,9 +378,9 @@ class TestLineageDrift:
         Verified in both directions on a seeded sample, so the detector cannot go
         vacuous: a guarded write passes and an unguarded one is reported.
         """
-        import kiro_crew
+        import efm_go
 
-        module = Path(kiro_crew.__file__).resolve().with_name("vector_memory.py")
+        module = Path(efm_go.__file__).resolve().with_name("vector_memory.py")
         source = module.read_text(encoding="utf-8")
         assert _unguarded_write_violations(source, "vector_memory.py") == []
 

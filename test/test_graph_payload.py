@@ -2,7 +2,7 @@
 
 import pytest
 
-from kiro_crew.connections.vendors.microsoft.graph.payload import (
+from efm_go.connections.vendors.microsoft.graph.payload import (
     CalendarViewWindow,
     GraphPayloadError,
     QuerySpec,

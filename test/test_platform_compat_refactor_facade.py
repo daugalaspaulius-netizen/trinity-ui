@@ -1,4 +1,4 @@
-"""``kiro_crew.platform_compat`` stays the compatibility layer's import and patch surface.
+"""``efm_go.platform_compat`` stays the compatibility layer's import and patch surface.
 
 The cross-process file locks and the owner-only access helpers are defined in
 ``platform_lock_compat`` and ``platform_owner_compat``. Every name that moved stays
@@ -22,7 +22,7 @@ from typing import Any
 import pytest
 import test_sandbox_refactor_facade as shared
 
-from kiro_crew import platform_compat, platform_lock_compat, platform_owner_compat
+from efm_go import platform_compat, platform_lock_compat, platform_owner_compat
 
 # The patch census parses every test file once; keep it on the sandbox file's worker.
 pytestmark = pytest.mark.xdist_group(name="tree_scan_sandbox_refactor_facade")
@@ -35,7 +35,7 @@ _OWNERS: dict[str, ModuleType] = {
 #: ``tempfile``: only the persistence probe reads it now, and a test reaches the stdlib
 #: module through ``platform_compat.tempfile``, so the binding moved with its reader.
 _MOVED: dict[str, tuple[str, ...]] = {
-    "kiro_crew.platform_lock_compat": (
+    "efm_go.platform_lock_compat": (
         "_LOCK_POLL_SECS",
         "_LOCK_POLL_MAX_SECS",
         "_LOCK_TIMEOUT_SECS",
@@ -56,7 +56,7 @@ _MOVED: dict[str, tuple[str, ...]] = {
         "probe_file_persistence",
         "tempfile",
     ),
-    "kiro_crew.platform_owner_compat": (
+    "efm_go.platform_owner_compat": (
         "_OWNER_RIGHTS_SID",
         "_TOKEN_QUERY",
         "_TOKEN_USER_CLASS",
@@ -75,9 +75,9 @@ _MOVED: dict[str, tuple[str, ...]] = {
     ),
 }
 
-_LOCK = "kiro_crew.platform_lock_compat"
-_OWNER = "kiro_crew.platform_owner_compat"
-_PC = "kiro_crew.platform_compat"
+_LOCK = "efm_go.platform_lock_compat"
+_OWNER = "efm_go.platform_owner_compat"
+_PC = "efm_go.platform_compat"
 
 #: Every function in an owner that imports from the facade, and what it reads there.
 #: The lock modules are imported at the point where their branch first uses them,
@@ -193,7 +193,7 @@ def test_the_owners_log_under_the_compatibility_layer_s_name() -> None:
     shared.check_owner_logger(platform_compat, _OWNERS)
 
 
-#: Names a test patches through ``kiro_crew.platform_compat`` that the facade AND an owner
+#: Names a test patches through ``efm_go.platform_compat`` that the facade AND an owner
 #: both bind, each importing its own, so the patch reaches only the facade's code. ``Path``
 #: is rebound for the process-identity and trusted-binary helpers, which stay here; no test
 #: fakes it for a lock or an owner-only helper. A new entry is a decision that the patch

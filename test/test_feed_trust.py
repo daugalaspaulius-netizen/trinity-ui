@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.platform import feed_trust
+from efm_go.platform import feed_trust
 
 ROOT = Path(__file__).resolve().parents[1]
 INSTALLER = ROOT / "cli.sh"

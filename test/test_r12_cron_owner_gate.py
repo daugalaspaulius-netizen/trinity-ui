@@ -100,7 +100,7 @@ ROUTE_IDS = ["patch", "run", "enable", "ack", "cancel", "delete", "batch_delete"
 
 @pytest.fixture
 def sel_calls(monkeypatch) -> MagicMock:
-    import kiro_crew.sel as sel_mod
+    import efm_go.sel as sel_mod
 
     recorder = MagicMock()
     monkeypatch.setattr(sel_mod, "sel", lambda: recorder)
@@ -108,7 +108,7 @@ def sel_calls(monkeypatch) -> MagicMock:
 
 
 async def _call(claims: dict[str, object], method: str, path: str, body):
-    from kiro_crew.dashboard.handlers import cron as h
+    from efm_go.dashboard.handlers import cron as h
 
     crons = _crons()
     app = web.Application(middlewares=[_identity(claims)])

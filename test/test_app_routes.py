@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.routes — REST API endpoints."""
+"""Tests for efm_go.apps.routes — REST API endpoints."""
 from __future__ import annotations
 
 import json
@@ -8,9 +8,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.apps.manager import APP_MANIFEST_FILENAME, install_app
-from kiro_crew.apps.routes import register_app_routes
-from kiro_crew.cron import CronStoreBusy
+from efm_go.apps.manager import APP_MANIFEST_FILENAME, install_app
+from efm_go.apps.routes import register_app_routes
+from efm_go.cron import CronStoreBusy
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -41,9 +41,9 @@ def _setup_env(tmp_path, monkeypatch):
     )
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
     bmod._processes.clear()
     bmod._allocated_ports.clear()
     return home
@@ -221,7 +221,7 @@ async def test_uninstall_aborts_409_when_cron_cleanup_busy(tmp_path, monkeypatch
     src = _make_app_source(tmp_path)
     install_app(src)
 
-    import kiro_crew.apps.routes as routes_mod
+    import efm_go.apps.routes as routes_mod
 
     calls = {"n": 0}
 
@@ -270,8 +270,8 @@ async def test_uninstall_aborts_non_retryable_when_cron_store_unreadable(tmp_pat
     src = _make_app_source(tmp_path)
     install_app(src)
 
-    import kiro_crew.apps.routes as routes_mod
-    from kiro_crew.cron import CronStoreUnreadable
+    import efm_go.apps.routes as routes_mod
+    from efm_go.cron import CronStoreUnreadable
 
     calls = {"n": 0}
 
@@ -312,7 +312,7 @@ async def test_uninstall_retries_then_succeeds_on_transient_cron_busy(
     src = _make_app_source(tmp_path)
     install_app(src)
 
-    import kiro_crew.apps.routes as routes_mod
+    import efm_go.apps.routes as routes_mod
 
     calls = {"n": 0}
 
@@ -367,7 +367,7 @@ async def test_uninstall_cron_busy_runs_no_destructive_step_before_abort(
     (src / APP_MANIFEST_FILENAME).write_text(json.dumps(manifest, indent=2))
     install_app(src)
 
-    import kiro_crew.apps.routes as routes_mod
+    import efm_go.apps.routes as routes_mod
 
     async def _busy(name, cron_service):
         raise CronStoreBusy("store busy")
@@ -459,7 +459,7 @@ async def test_register_helper_dispatches_off_loop(monkeypatch):
     passes its return value through to the caller."""
     import threading
 
-    import kiro_crew.apps.routes as routes_mod
+    import efm_go.apps.routes as routes_mod
 
     loop_thread = threading.current_thread()
     seen: dict[str, object] = {}
@@ -482,7 +482,7 @@ async def test_deregister_helper_dispatches_off_loop(monkeypatch):
     """_deregister_app_off_loop runs deregister_app on an executor thread."""
     import threading
 
-    import kiro_crew.apps.routes as routes_mod
+    import efm_go.apps.routes as routes_mod
 
     loop_thread = threading.current_thread()
     seen: dict[str, object] = {}
@@ -506,7 +506,7 @@ async def test_install_route_registers_off_loop(tmp_path, monkeypatch):
     registration call must not execute on the event-loop thread."""
     import threading
 
-    import kiro_crew.apps.routes as routes_mod
+    import efm_go.apps.routes as routes_mod
 
     _setup_env(tmp_path, monkeypatch)
     src = _make_app_source(tmp_path)

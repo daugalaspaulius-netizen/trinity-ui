@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import json
 
-from kiro_crew.config import loader as L
-from kiro_crew.config.loader import _KNOWN_CONFIG_SECTIONS, KiroCrewConfig
+from efm_go.config import loader as L
+from efm_go.config.loader import _KNOWN_CONFIG_SECTIONS, KiroCrewConfig
 
 
 def test_known_sections_equals_emitted_sections():
@@ -60,7 +60,7 @@ def test_retired_key_is_ignored_dropped_and_never_warned(tmp_path, monkeypatch, 
     monkeypatch.setattr(L, "config_dir", lambda: tmp_path)
     monkeypatch.setattr(L, "config_local_path", lambda: tmp_path / "config.local.json")
 
-    with caplog.at_level("WARNING", logger="kiro_crew.config.loader"):
+    with caplog.at_level("WARNING", logger="efm_go.config.loader"):
         cfg = KiroCrewConfig.load()
     assert not hasattr(cfg, "agent_template_pane")
     assert "agent_template_pane" not in cfg._extra_sections
@@ -78,7 +78,7 @@ def test_extra_sections_never_clobbers_a_known_section():
 
 
 def test_extra_sections_excluded_from_json_schema():
-    from kiro_crew.config import schema
+    from efm_go.config import schema
 
     assert not any("_extra_sections" in e.path for e in schema.SCHEMA_REGISTRY)
 
@@ -91,7 +91,7 @@ def test_api_config_response_omits_extra_sections():
     credential it holds. The masked view must drop `_extra_sections` entirely,
     while `to_dict()` (the save() path) still carries them.
     """
-    from kiro_crew.dashboard.handlers.core import _masked_config_dict
+    from efm_go.dashboard.handlers.core import _masked_config_dict
 
     cfg = KiroCrewConfig()
     cfg._extra_sections = {"amazon": {"api_token": "SECRET-should-not-leak", "flag": True}}

@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.mcp_gateway.stub import (
+from efm_go.mcp_gateway.stub import (
     _crew_home,
     _default_socket_path,
     _fallback_log_path,
@@ -109,7 +109,7 @@ def test_log_fallback_rotates_at_the_size_cap(
     """The log rotated at the cap keeps ONE previous generation, bounding disk
     use. Unrotated it grows without limit — hundreds of KB in hours on a
     degraded host."""
-    from kiro_crew.mcp_gateway import stub
+    from efm_go.mcp_gateway import stub
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     log = stub._fallback_log_path()
@@ -137,7 +137,7 @@ def test_fallback_counts_aggregates_live_and_rotated_within_window(
     import json
     import time as _time
 
-    from kiro_crew.mcp_gateway import stub
+    from efm_go.mcp_gateway import stub
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     log = stub._fallback_log_path()
@@ -168,7 +168,7 @@ def test_fallback_counts_aggregates_live_and_rotated_within_window(
 def test_fallback_counts_survives_a_missing_log(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from kiro_crew.mcp_gateway import stub
+    from efm_go.mcp_gateway import stub
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     counts = stub.fallback_counts()
@@ -186,7 +186,7 @@ def test_log_fallback_never_blocks_when_the_rotation_lock_is_held(
     import json
     import os as _os
 
-    from kiro_crew.mcp_gateway import stub
+    from efm_go.mcp_gateway import stub
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     log = stub._fallback_log_path()
@@ -194,7 +194,7 @@ def test_log_fallback_never_blocks_when_the_rotation_lock_is_held(
     log.write_bytes(b"x" * (stub._FALLBACK_LOG_MAX_BYTES - 1) + b"\n")  # at the cap
 
     # Simulate another stub holding the rotation lock RIGHT NOW.
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     holder_fd = _os.open(
         log.with_suffix(".jsonl.lock"), _os.O_CREAT | _os.O_RDWR, 0o600

@@ -25,8 +25,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import kiro_crew.heartbeat as hb_mod
-from kiro_crew.heartbeat import HeartbeatService
+import efm_go.heartbeat as hb_mod
+from efm_go.heartbeat import HeartbeatService
 
 _PRUNE_COUNTER = "kirocrew.sel.prune_failed.count"
 
@@ -107,7 +107,7 @@ class TestSelPruneFailureIsLoud:
         svc, _, _ran = _service(monkeypatch, prune_error=OSError("no space left on device"))
         monkeypatch.setattr(hb_mod, "get_recorder", lambda: MagicMock())
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.heartbeat"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.heartbeat"):
             await svc._beat()
 
         assert any(

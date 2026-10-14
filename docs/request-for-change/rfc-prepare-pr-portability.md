@@ -15,7 +15,7 @@ superseded-by: []
 # RFC: Portable `prepare-pr` via Pluggable Project Profiles
 
 > **Current behaviour: see the `prepare-pr` skill's own
-> [`SKILL.md`](../../src/kiro_crew/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/SKILL.md)
+> [`SKILL.md`](../../src/efm_go/builtin_skills/kirocrew-dev/kirocrew-prepare-pr/SKILL.md)
 > and [`../ci/ci-and-reviews.md`](../ci/ci-and-reviews.md).** The profile resolver
 > ships as `resolve_profile.py` in that skill's `scripts/` directory and
 > implements the four-step resolution order and the `.prepare-pr.toml` schema
@@ -429,7 +429,7 @@ Built-in and portable are **not** in conflict:
 ## 7. Proposed layout after refactor
 
 ```
-src/kiro_crew/builtin_skills/kirocrew-dev/prepare-pr/
+src/efm_go/builtin_skills/kirocrew-dev/prepare-pr/
   SKILL.md                    # generic core loop + "Project profile" section
   profiles/
     kirocrew.json             # bundled Kiro Crew profile (setup, gates, reviewers, labels, single-commit)

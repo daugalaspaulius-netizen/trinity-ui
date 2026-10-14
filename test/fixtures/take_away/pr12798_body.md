@@ -17,7 +17,7 @@ chat with are shared-memory shells rather than real members.
 
 Implements the accepted RFC: `docs/request-for-change/rfc-crewmates-launch.md`
 (screen 03, existing users) — as a one-time startup migration, no UI
-(amendment [#13032](https://github.com/kirodotdev/KiroCrew/pull/13032)).
+(amendment [#13032](https://efmleads.com/pull/13032)).
 
 | Piece | What it does |
 |---|---|

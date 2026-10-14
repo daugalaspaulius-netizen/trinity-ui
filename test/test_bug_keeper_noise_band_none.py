@@ -4,14 +4,14 @@ Measurement.noise_band is None.
 
 from pathlib import Path
 
-from kiro_crew.apps.builtins.auto_improvement.spine.contracts import (
+from efm_go.apps.builtins.auto_improvement.spine.contracts import (
     TRACK_PERF,
     Candidate,
     GateResult,
     Measurement,
     Proposal,
 )
-from kiro_crew.apps.builtins.auto_improvement.spine.keeper import Keeper
+from efm_go.apps.builtins.auto_improvement.spine.keeper import Keeper
 
 
 def test_verdict_reason_no_none_string():

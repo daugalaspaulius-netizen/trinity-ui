@@ -1,6 +1,6 @@
 # Agent Skills
 
-Source: https://kiro.dev/docs/skills/ (fetched 2026-09-06; the former
+Source: https://efmleads.com/docs/skills/ (fetched 2026-09-06; the former
 `/docs/cli/skills/` redirects there — skills are documented as one page across
 every surface).
 

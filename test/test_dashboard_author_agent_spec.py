@@ -22,10 +22,10 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.agent_spec_format import is_markdown_spec, parse_markdown_spec
+from efm_go.agent_spec_format import is_markdown_spec, parse_markdown_spec
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_DIR = ROOT / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev" / "dashboard-template"
+SKILL_DIR = ROOT / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev" / "dashboard-template"
 SPEC_PATH = SKILL_DIR / "agent-spec.md"
 
 #: Everything the charter needs, and nothing that lets it become something else.

@@ -14,10 +14,10 @@ from pathlib import Path
 import pytest
 from overload_fakes import Clock, ManagerHarness, open_task_store
 
-from kiro_crew.subagent import SubagentInfo
-from kiro_crew.taskq import model, waits
-from kiro_crew.taskq.store import TaskStore, TaskStoreUnavailable
-from kiro_crew.taskq.waits import (
+from efm_go.subagent import SubagentInfo
+from efm_go.taskq import model, waits
+from efm_go.taskq.store import TaskStore, TaskStoreUnavailable
+from efm_go.taskq.waits import (
     CANCEL_CALL,
     CANCEL_TASK,
     CANCEL_TREE,
@@ -443,7 +443,7 @@ def test_wake_without_a_granted_slot_is_claimable_not_running(store, ledger, clo
 
 
 def test_a_crash_after_a_slotless_wake_reconciles_to_redispatch(store, ledger, clock) -> None:
-    from kiro_crew.taskq.reconcile import reconcile_on_boot
+    from efm_go.taskq.reconcile import reconcile_on_boot
 
     gen = _running(store, "t1")
     assert ledger.enter("t1", WaitRecord.input("c", since=clock.t), generation=gen)

@@ -38,9 +38,9 @@ from unittest import mock
 
 import pytest
 
-import kiro_crew.dashboard.chat_runner as chat_runner
-from kiro_crew.acp.client import AcpProcessDied
-from kiro_crew.dashboard.chat_runner import (
+import efm_go.dashboard.chat_runner as chat_runner
+from efm_go.acp.client import AcpProcessDied
+from efm_go.dashboard.chat_runner import (
     _reject_hook_blocked,
     _reject_hook_error,
     _reject_invalid_tool,
@@ -340,7 +340,7 @@ class TestEveryDenySiteAuditsBeforeTheWire:
     one site's audit cannot vouch for another's).
     """
 
-    RUNNER = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew/dashboard/chat_runner.py"
+    RUNNER = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go/dashboard/chat_runner.py"
     WIRE = r"await (?:client\.reject_tool|_reject_attributed)\("
     REJECT = re.compile(r"^\s*" + WIRE)
     BOUNDARY = re.compile(r"^\s*(?:await client\.approve_tool\(|%s|async def )" % WIRE)

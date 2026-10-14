@@ -21,9 +21,9 @@ from test_acp_liveness import FakeProc, _Clock
 from test_acp_stale_recovery import _SilentQueue
 
 from conftest import requires_symlinks
-from kiro_crew import platform_compat
-from kiro_crew.acp import liveness
-from kiro_crew.acp.liveness import (
+from efm_go import platform_compat
+from efm_go.acp import liveness
+from efm_go.acp.liveness import (
     EVIDENCE_ESTABLISHED_FLAT,
     EVIDENCE_REMOTE_FLAT,
     VERDICT_UNKNOWN,
@@ -32,13 +32,13 @@ from kiro_crew.acp.liveness import (
     ProcessRow,
     ToolCallState,
 )
-from kiro_crew.acp.session_handle import (
+from efm_go.acp.session_handle import (
     AcpSessionHandle,
     WatchdogSettings,
     _watchdog_evidence_class,
 )
-from kiro_crew.acp.types import STOP_REASON_TOOL_STALL
-from kiro_crew.config.loader import WatchdogConfig
+from efm_go.acp.types import STOP_REASON_TOOL_STALL
+from efm_go.config.loader import WatchdogConfig
 
 # ── Oracle: /proc ────────────────────────────────────────────────────────────
 
@@ -273,7 +273,7 @@ def test_handle_counts_an_unsettled_start_as_a_tenant():
 def test_tenancy_reads_the_real_runtime_session_tables():
     """Pins the three AcpRuntime attributes the count reads, so a rename there
     cannot silently fall back to a default that reads as a sole tenant."""
-    from kiro_crew.acp.runtime import AcpRuntime
+    from efm_go.acp.runtime import AcpRuntime
 
     rt = AcpRuntime()
     handle = AcpSessionHandle("sA", asyncio.Queue(), rt, watchdog=WatchdogSettings())
@@ -312,7 +312,7 @@ def test_loopback_peer_is_not_a_remote_call(tmp_path):
     fake.add_pid(100, children=[300], io_bytes=1000)
     fake.add_socket_fd(100, 7, "111")  # the root's own socket: pid 300 is tool side
     fake.set_net_tcp(100, ["111"])
-    fake.add_pid(300, cmdline="python -m kiro_crew.mcp_core", io_bytes=2000)
+    fake.add_pid(300, cmdline="python -m efm_go.mcp_core", io_bytes=2000)
     fake.add_socket_fd(300, 9, "555")
     _set_tcp(fake, 300, ["555"], peer=_LOOPBACK_PEER)
     oracle = _oracle(fake, clock, sample_min=1.0)

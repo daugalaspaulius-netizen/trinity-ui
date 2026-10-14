@@ -6,7 +6,7 @@ What lives in this directory, and why the private key does not
 
 ``manifest.json`` is a real signed manifest, and ``signing-key.pub.pem`` is the
 public half of the throwaway key that signed it. It is a CROSS-TOOL fixture: the
-dashboard's verifier (``kiro_crew.platform.feed_trust``) and the publishing tool's
+dashboard's verifier (``efm_go.platform.feed_trust``) and the publishing tool's
 verifier both have to accept these exact bytes, so it pins the signed byte format
 in one artifact instead of in two independent test helpers that can drift.
 

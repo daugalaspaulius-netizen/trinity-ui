@@ -24,8 +24,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 # Import cycle workaround: see test_subagent_snapshot_idle_secs.py for rationale.
-import kiro_crew.dashboard.handlers  # noqa: F401
-from kiro_crew.dashboard.ws import build_subagent_snapshot
+import efm_go.dashboard.handlers  # noqa: F401
+from efm_go.dashboard.ws import build_subagent_snapshot
 
 
 def _agent(**over):

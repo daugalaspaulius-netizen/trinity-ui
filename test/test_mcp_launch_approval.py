@@ -31,9 +31,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent_discovery
-from kiro_crew.mcp_gateway import rewriter
-from kiro_crew.mcp_gateway.hashing import encode_target_args
+from efm_go import agent_discovery
+from efm_go.mcp_gateway import rewriter
+from efm_go.mcp_gateway.hashing import encode_target_args
 
 #: Opts this module out of the conftest fixture that approves every gatewayd launch.
 ENFORCE_LAUNCH_APPROVAL = True
@@ -48,7 +48,7 @@ def _target_spec(command: str, *args: str) -> str:
 
 def _approval_module():
     try:
-        return importlib.import_module("kiro_crew.mcp_gateway.launch_approval")
+        return importlib.import_module("efm_go.mcp_gateway.launch_approval")
     except ImportError:
         return None
 
@@ -258,7 +258,7 @@ def test_the_gateway_filter_drops_an_unapproved_target():
 
 
 def _pool_key(server: str, command: str = _APPROVED_CMD, args: list[str] | None = None):
-    from kiro_crew.mcp_gateway.pool import PoolKey
+    from efm_go.mcp_gateway.pool import PoolKey
 
     params = inspect.signature(PoolKey).parameters
     values = {name: "" for name in params}
@@ -271,7 +271,7 @@ def _pool_key(server: str, command: str = _APPROVED_CMD, args: list[str] | None 
 
 
 def test_gatewayd_refuses_to_resolve_an_unapproved_target(tmp_path, monkeypatch):
-    from kiro_crew.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway import gatewayd
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     monkeypatch.setenv("KIROCREW_MCP_TARGET_SRV", _target_spec(_ATTACK_CMD, "-c", "id"))
@@ -284,7 +284,7 @@ def test_gatewayd_refuses_to_resolve_an_unapproved_target(tmp_path, monkeypatch)
 
 
 def test_gatewayd_resolves_an_approved_target(tmp_path, monkeypatch):
-    from kiro_crew.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway import gatewayd
 
     mod = _approval_module()
     assert mod is not None
@@ -298,7 +298,7 @@ def test_gatewayd_resolves_an_approved_target(tmp_path, monkeypatch):
 
 
 def test_gatewayd_fails_closed_without_a_store(tmp_path, monkeypatch):
-    from kiro_crew.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway import gatewayd
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     monkeypatch.setenv("KIROCREW_MCP_TARGET_SRV", _target_spec(_APPROVED_CMD))
@@ -308,7 +308,7 @@ def test_gatewayd_fails_closed_without_a_store(tmp_path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_gateway_resolution_reads_approval_store_off_loop(tmp_path, monkeypatch):
-    from kiro_crew.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway import gatewayd
 
     resolve = getattr(gatewayd, "_resolve_target_off_loop", None)
     assert resolve is not None, "gateway target resolution must have an async offload boundary"
@@ -332,7 +332,7 @@ async def test_gateway_resolution_reads_approval_store_off_loop(tmp_path, monkey
 
 @pytest.mark.asyncio
 async def test_gateway_resolution_fails_closed_before_approval_store_exists(tmp_path, monkeypatch):
-    from kiro_crew.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway import gatewayd
 
     resolve = getattr(gatewayd, "_resolve_target_off_loop", None)
     assert resolve is not None, "gateway target resolution must have an async offload boundary"
@@ -344,7 +344,7 @@ async def test_gateway_resolution_fails_closed_before_approval_store_exists(tmp_
 
 @pytest.mark.asyncio
 async def test_gateway_resolution_reloads_a_new_approval_without_restart(tmp_path, monkeypatch):
-    from kiro_crew.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway import gatewayd
 
     resolve = getattr(gatewayd, "_resolve_target_off_loop", None)
     assert resolve is not None, "gateway target resolution must have an async offload boundary"
@@ -367,9 +367,9 @@ async def test_gateway_resolution_reloads_a_new_approval_without_restart(tmp_pat
 async def test_gateway_rechecks_approval_after_spawn_queue_wait(tmp_path, monkeypatch):
     from unittest.mock import AsyncMock
 
-    from kiro_crew.mcp_gateway import admission as admission_mod
-    from kiro_crew.mcp_gateway import gatewayd, host_budget
-    from kiro_crew.mcp_gateway.pool import BackendPool
+    from efm_go.mcp_gateway import admission as admission_mod
+    from efm_go.mcp_gateway import gatewayd, host_budget
+    from efm_go.mcp_gateway.pool import BackendPool
 
     mod = _approval_module()
     assert mod is not None
@@ -459,7 +459,7 @@ def test_approval_store_is_inside_the_sealed_directory(tmp_path):
     ],
 )
 def test_agent_tools_cannot_write_the_launch_inputs(leaf):
-    from kiro_crew.security.paths import is_sensitive_path, is_sensitive_write_path
+    from efm_go.security.paths import is_sensitive_path, is_sensitive_write_path
 
     path = str(Path.home() / ".kiro" / "crew" / leaf)
     assert is_sensitive_write_path(path)
@@ -468,7 +468,7 @@ def test_agent_tools_cannot_write_the_launch_inputs(leaf):
 
 
 def test_launch_approval_inputs_are_read_only_in_the_sandbox(tmp_path, monkeypatch):
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     monkeypatch.setattr(sandbox, "config_dir", lambda: tmp_path)
     dirs, files = sandbox._sealable_absent_ceilings()
@@ -486,7 +486,7 @@ def test_launch_approval_inputs_are_read_only_in_the_sandbox(tmp_path, monkeypat
 
 @pytest.mark.parametrize("leaf", ["mcp-launch-approvals", "mcp/resolved"])
 def test_launch_artifact_symlinks_are_refused_before_the_sandbox_mount(tmp_path, monkeypatch, leaf):
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     target = tmp_path / leaf
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -500,7 +500,7 @@ def test_launch_artifact_symlinks_are_refused_before_the_sandbox_mount(tmp_path,
 
 
 def test_nested_resolved_launch_overlap_uses_its_named_reason(tmp_path, monkeypatch):
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     home = tmp_path / "crew"
     target = home / "mcp" / "resolved"
@@ -538,11 +538,11 @@ def _stub_request(body: dict):
 @pytest.fixture
 def toggle_home(tmp_path, monkeypatch):
     """A config file, an approval store and an agents dir the toggle and the rewrite share."""
-    import kiro_crew.config.loader as loader_mod
-    import kiro_crew.config.paths as paths_mod
-    from kiro_crew import agent
-    from kiro_crew.config.paths import kiro_agents_dir
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    import efm_go.config.loader as loader_mod
+    import efm_go.config.paths as paths_mod
+    from efm_go import agent
+    from efm_go.config.paths import kiro_agents_dir
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     cfg = tmp_path / "config.json"
     cfg.write_text("{}")
@@ -590,7 +590,7 @@ _AUTO_EXPECTED = object()
 
 
 async def _toggle_on(name: str = "srv", *, expected_launch: object = _AUTO_EXPECTED):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     body = {"name": name, "stub": True}
     if expected_launch is _AUTO_EXPECTED:
@@ -673,7 +673,7 @@ def test_command_and_derived_env_are_approved_as_one_pair(tmp_path, monkeypatch)
     assert stored.admits_launch("SRV", command_a, env_a)
     assert not stored.admits_launch("SRV", command_a, env_b)
 
-    from kiro_crew.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway import gatewayd
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     monkeypatch.setenv("KIROCREW_MCP_TARGET_SRV", _target_spec(_APPROVED_CMD))
@@ -689,7 +689,7 @@ def test_command_and_derived_env_are_approved_as_one_pair(tmp_path, monkeypatch)
 
 @pytest.mark.asyncio
 async def test_status_reports_stored_refusal_without_resolving_again(toggle_home, monkeypatch):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     mod = _approval_module()
     assert mod is not None
@@ -726,7 +726,7 @@ async def test_status_reports_stored_refusal_without_resolving_again(toggle_home
 
 @pytest.mark.asyncio
 async def test_refused_display_argv_is_redacted_in_storage_and_status(tmp_path, monkeypatch):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     mod = _approval_module()
     assert mod is not None
@@ -1400,7 +1400,7 @@ def test_a_stored_approved_display_is_bounded_on_read(tmp_path):
 
 @pytest.mark.asyncio
 async def test_first_toggle_requires_the_displayed_launch(toggle_home):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     _declare(toggle_home, "agent spec", _APPROVED_CMD, [])
     response = await mcp_mod.api_mcp_gateway_set_stub(_stub_request({"name": "srv", "stub": True}))
@@ -1411,7 +1411,7 @@ async def test_first_toggle_requires_the_displayed_launch(toggle_home):
 
 @pytest.mark.asyncio
 async def test_launch_endpoint_returns_the_first_toggle_compare_and_set(toggle_home):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     _declare(toggle_home, "agent spec", _APPROVED_CMD, [])
     request = _stub_request({})
@@ -1429,7 +1429,7 @@ async def test_launch_endpoint_returns_the_first_toggle_compare_and_set(toggle_h
 
 @pytest.mark.asyncio
 async def test_partial_launch_display_cannot_be_approved(toggle_home):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     padded = [str(index) for index in range(getattr(_approval_module(), "_MAX_DISPLAY_ARGS") + 1)]
     _declare(toggle_home, "agent spec", _APPROVED_CMD, padded)
@@ -1457,7 +1457,7 @@ async def test_partial_launch_display_cannot_be_approved(toggle_home):
 
 @pytest.mark.asyncio
 async def test_batch_toggle_on_requires_individual_launch_displays(toggle_home):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     response = await mcp_mod.api_mcp_gateway_set_stub(
         _stub_request({"names": ["srv"], "stub": True})
@@ -1523,7 +1523,7 @@ async def test_a_changed_launch_identity_set_still_rejects_reapprove(tmp_path, t
 async def test_toggle_reads_the_refusal_store_off_the_event_loop(
     tmp_path, toggle_home, monkeypatch
 ):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     _declare(toggle_home, "agent spec", _APPROVED_CMD, [])
     event_loop_thread = threading.get_ident()
@@ -1640,12 +1640,12 @@ def test_gateway_spawn_and_env_tests_choose_launch_approval_fixture():
         imported_symbols = set()
         enforced = False
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.mcp_gateway":
+            if isinstance(node, ast.ImportFrom) and node.module == "efm_go.mcp_gateway":
                 module_aliases.update(
                     alias.asname or alias.name for alias in node.names if alias.name == "gatewayd"
                 )
             elif (
-                isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.mcp_gateway.gatewayd"
+                isinstance(node, ast.ImportFrom) and node.module == "efm_go.mcp_gateway.gatewayd"
             ):
                 imported_symbols.update(alias.name for alias in node.names if sensitive(alias.name))
             elif isinstance(node, ast.Assign):
@@ -1678,7 +1678,7 @@ def test_gatewayd_stems_share_the_approval_store_codec():
     assert mod is not None
     codec = getattr(mod, "target_env_stem", None)
     assert codec is not None, "launch_approval must define the single target-stem codec"
-    from kiro_crew.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway import gatewayd
 
     env = {
         "KIROCREW_MCP_TARGET_SRV": "x",
@@ -1769,8 +1769,8 @@ def test_an_over_record_cap_stem_is_absent_from_every_structure(tmp_path):
 async def test_a_toggle_whose_launches_exceed_the_cap_changes_nothing(
     tmp_path, toggle_home, monkeypatch
 ):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
-    from kiro_crew.mcp_gateway import launch_resolve
+    from efm_go.dashboard.handlers import mcp as mcp_mod
+    from efm_go.mcp_gateway import launch_resolve
 
     mod = _approval_module()
     cap = getattr(mod, "_MAX_SERVER_LAUNCHES")
@@ -1808,7 +1808,7 @@ async def test_a_toggle_whose_launches_exceed_the_cap_changes_nothing(
 async def test_a_toggle_at_the_store_record_cap_changes_neither_store(
     tmp_path, toggle_home, monkeypatch
 ):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     mod = _approval_module()
     assert mod is not None
@@ -1855,7 +1855,7 @@ async def test_a_toggle_at_the_store_record_cap_changes_neither_store(
 async def test_an_approval_write_failure_does_not_admit_the_launch(
     tmp_path, toggle_home, monkeypatch
 ):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     _declare(toggle_home, "agent spec", _APPROVED_CMD, [])
     monkeypatch.setattr(mcp_mod, "approve", lambda launches: (_ for _ in ()).throw(OSError()))
@@ -1875,7 +1875,7 @@ async def test_reapprove_rejects_a_launch_changed_after_it_was_shown(
 ):
     from unittest.mock import MagicMock
 
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     mod = _approval_module()
     assert mod is not None
@@ -1967,7 +1967,7 @@ def test_restore_keeps_a_reapproval_that_lands_after_revoke(tmp_path):
 
 @pytest.mark.asyncio
 async def test_turning_the_stub_off_forgets_the_approval(tmp_path, toggle_home):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     _declare(toggle_home, "agent spec", _APPROVED_CMD, [])
     assert (await _toggle_on())[0] == 200
@@ -1985,8 +1985,8 @@ async def test_turning_the_stub_off_forgets_the_approval(tmp_path, toggle_home):
 async def test_stub_off_restores_approval_when_config_does_not_commit(
     tmp_path, toggle_home, monkeypatch, failure
 ):
-    import kiro_crew.config.loader as loader_mod
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    import efm_go.config.loader as loader_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     _declare(toggle_home, "agent spec", _APPROVED_CMD, [])
     assert (await _toggle_on())[0] == 200
@@ -2020,7 +2020,7 @@ async def test_stub_off_restores_approval_when_config_does_not_commit(
 async def test_stub_off_revocation_failure_preserves_config_and_approval(
     tmp_path, toggle_home, monkeypatch
 ):
-    from kiro_crew.dashboard.handlers import mcp as mcp_mod
+    from efm_go.dashboard.handlers import mcp as mcp_mod
 
     _declare(toggle_home, "agent spec", _APPROVED_CMD, [])
     assert (await _toggle_on())[0] == 200
@@ -2048,8 +2048,8 @@ def test_boot_persists_launch_state_only_after_process_readiness(tmp_path):
     import asyncio
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.slack import gateway as gw
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.slack import gateway as gw
 
     cfg = KiroCrewConfig()
     cfg.mcp_gateway.stub_servers = ["srv"]
@@ -2080,10 +2080,10 @@ def test_boot_persists_launch_state_only_after_process_readiness(tmp_path):
         await persist
 
     with (
-        patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
-        patch("kiro_crew.slack.gateway.rewrite_agents", return_value=(None, {})),
-        patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager),
-        patch("kiro_crew.slack.gateway.save_pass", side_effect=_save),
+        patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
+        patch("efm_go.slack.gateway.rewrite_agents", return_value=(None, {})),
+        patch("efm_go.slack.gateway.GatewayManager", return_value=manager),
+        patch("efm_go.slack.gateway.save_pass", side_effect=_save),
     ):
         asyncio.run(_run())
 
@@ -2094,8 +2094,8 @@ def test_gateway_rewrite_and_target_filter_share_a_maintenance_worker(tmp_path):
     import asyncio
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.slack import gateway as gw
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.slack import gateway as gw
 
     cfg = KiroCrewConfig()
     cfg.mcp_gateway.stub_servers = ["srv"]
@@ -2115,10 +2115,10 @@ def test_gateway_rewrite_and_target_filter_share_a_maintenance_worker(tmp_path):
         return target_env, []
 
     with (
-        patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
-        patch("kiro_crew.slack.gateway.rewrite_agents", side_effect=_rewrite),
-        patch("kiro_crew.slack.gateway.filter_target_env", side_effect=_filter),
-        patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager),
+        patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
+        patch("efm_go.slack.gateway.rewrite_agents", side_effect=_rewrite),
+        patch("efm_go.slack.gateway.filter_target_env", side_effect=_filter),
+        patch("efm_go.slack.gateway.GatewayManager", return_value=manager),
     ):
         asyncio.run(orch._init_mcp_gateway())
 
@@ -2132,10 +2132,10 @@ def test_the_toggle_resolves_with_the_inputs_the_gateway_start_rewrites_with(tmp
     import asyncio
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.slack import gateway as gw
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.slack import gateway as gw
 
-    resolve = importlib.import_module("kiro_crew.mcp_gateway.launch_resolve")
+    resolve = importlib.import_module("efm_go.mcp_gateway.launch_resolve")
     cfg = KiroCrewConfig()
     cfg.mcp_gateway.stub_servers = ["srv"]
     with patch.object(cfg, "load_credentials", return_value={"KIROCREW_OWNER_ID": "U"}):
@@ -2143,9 +2143,9 @@ def test_the_toggle_resolves_with_the_inputs_the_gateway_start_rewrites_with(tmp
     manager = MagicMock()
     manager.start = AsyncMock(return_value=False)
     with (
-        patch("kiro_crew.slack.gateway.is_gateway_supported", return_value=True),
-        patch("kiro_crew.slack.gateway.rewrite_agents", return_value=(None, {})) as rw,
-        patch("kiro_crew.slack.gateway.GatewayManager", return_value=manager),
+        patch("efm_go.slack.gateway.is_gateway_supported", return_value=True),
+        patch("efm_go.slack.gateway.rewrite_agents", return_value=(None, {})) as rw,
+        patch("efm_go.slack.gateway.GatewayManager", return_value=manager),
     ):
         asyncio.run(orch._init_mcp_gateway())
 
@@ -2154,8 +2154,8 @@ def test_the_toggle_resolves_with_the_inputs_the_gateway_start_rewrites_with(tmp
 
 
 def test_seeding_routes_the_name_without_approving_its_launch(tmp_path, toggle_home):
-    from kiro_crew.mcp_gateway import verdict_cache as vc
-    from kiro_crew.mcp_gateway.seed import SeedPlan, apply_seed
+    from efm_go.mcp_gateway import verdict_cache as vc
+    from efm_go.mcp_gateway.seed import SeedPlan, apply_seed
 
     _declare(toggle_home, "agent spec", _APPROVED_CMD, [])
     assert apply_seed(SeedPlan(add_stub=("srv",)), {}, vc.VerdictCache(vc.cache_path(tmp_path)))
@@ -2193,8 +2193,8 @@ def test_a_warm_boot_with_approvals_is_served_from_the_rewrite_cache(tmp_path):
 async def test_re_approving_a_running_server_keeps_its_declared_env_forwarded(
     tmp_path, toggle_home
 ):
-    from kiro_crew.mcp_gateway import gatewayd
-    from kiro_crew.mcp_gateway.hashing import hash_effective_env
+    from efm_go.mcp_gateway import gatewayd
+    from efm_go.mcp_gateway.hashing import hash_effective_env
 
     declared = {"FOO": "bar"}
     (toggle_home / "a.json").write_text(

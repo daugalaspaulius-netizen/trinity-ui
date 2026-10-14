@@ -18,7 +18,7 @@ Two jobs, the same split ``test_host_service_guard.py`` uses:
 * **Behaviour** -- prove each guard is armed, catches what it claims, and stays silent
   on what it must not touch. A guard nobody exercises is a guard that stops working at
   the next refactor without anybody noticing.
-* **Ratchet** -- pin the guarded set against what ``src/kiro_crew`` actually contains,
+* **Ratchet** -- pin the guarded set against what ``src/efm_go`` actually contains,
   so a NEW import-time ``Path.home()`` binding cannot land unpinned. Same shape as
   ``test_host_service_guard.py``'s ratchet and ``test_spawn_preexec_guard.py``'s
   ``_ALLOWED``.
@@ -40,12 +40,12 @@ from logging.handlers import QueueListener
 
 import pytest
 
-from kiro_crew import cli
-from kiro_crew.log_redaction import install_log_redaction
+from efm_go import cli
+from efm_go.log_redaction import install_log_redaction
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 _ROOT_CONFTEST = _REPO_ROOT / "conftest.py"
-_SRC = _REPO_ROOT / "src" / "kiro_crew"
+_SRC = _REPO_ROOT / "src" / "efm_go"
 
 
 def _load_root_conftest():
@@ -162,7 +162,7 @@ class TestTheDataHomeIsPinnedForEveryTestpath:
         lifetime, so this also proves the per-test reset of ``_resolved_home`` works --
         without it a home cached by an earlier test on this xdist worker would win.
         """
-        from kiro_crew.config.paths import config_dir
+        from efm_go.config.paths import config_dir
 
         assert config_dir().resolve() == pathlib.Path(os.environ["KIROCREW_HOME"]).resolve()
 
@@ -170,12 +170,12 @@ class TestTheDataHomeIsPinnedForEveryTestpath:
         self, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The floor is a safety net, not a cage: a test that isolates itself wins."""
-        from kiro_crew.config.paths import config_dir
+        from efm_go.config.paths import config_dir
 
         mine = tmp_path / "my-own-home"
         mine.mkdir()
         monkeypatch.setenv("KIROCREW_HOME", str(mine))
-        monkeypatch.setattr("kiro_crew.config.paths._resolved_home", None)
+        monkeypatch.setattr("efm_go.config.paths._resolved_home", None)
 
         assert config_dir().resolve() == mine.resolve()
 
@@ -236,7 +236,7 @@ class TestThePlatformProfileIsPinnedForEveryTestpath:
     no companion installed that profile FAILS CLOSED: ``current_context()`` raises
     ``PlatformCompositionError``, every governance-gated route answers 500, every gated
     notification is dropped. A pin in ``test/conftest.py`` reaches ``test/`` alone:
-    ``test/`` stays green while 150+ tests under ``src/kiro_crew/apps/builtins/*/tests/``
+    ``test/`` stays green while 150+ tests under ``src/efm_go/apps/builtins/*/tests/``
     are red on exactly that box. The pin is a rootdir floor, like the data home.
     """
 
@@ -252,7 +252,7 @@ class TestThePlatformProfileIsPinnedForEveryTestpath:
 
     def test_the_context_composes_the_open_source_default(self) -> None:
         """The observable consequence: no fail-closed refusal on an unbooted process."""
-        from kiro_crew.platform.context import current_context
+        from efm_go.platform.context import current_context
 
         assert current_context() is not None
 
@@ -293,7 +293,7 @@ class TestNoMetricIsEmittedAtImport:
         emitters = list(live.IMPORT_TIME_METRIC_EMITTERS)
         assert emitters == [], (
             "importing these test modules emitted a metric (a module-level default "
-            "argument or constant that goes through kiro_crew.metrics): "
+            "argument or constant that goes through efm_go.metrics): "
             f"{emitters}. Build the value inside the test or fixture instead; an "
             "import-time build binds the exporter to the operator's real data home."
         )
@@ -304,8 +304,8 @@ class TestNoMetricIsEmittedAtImport:
         The hookwrapper is a plain generator: enter it, emit a metric where the module
         import would have, leave it, and the module is recorded and the build undone.
         """
-        from kiro_crew.hooks import ToolHookResult
-        from kiro_crew.metrics import provider
+        from efm_go.hooks import ToolHookResult
+        from efm_go.metrics import provider
 
         provider.reset_for_testing()
         monkeypatch.setattr(_root, "IMPORT_TIME_METRIC_EMITTERS", [])
@@ -330,8 +330,8 @@ class TestNoMetricIsEmittedAtImport:
     def test_a_build_that_predates_the_module_is_blamed_on_the_conftest_import(
         self, request, monkeypatch
     ) -> None:
-        from kiro_crew.hooks import ToolHookResult
-        from kiro_crew.metrics import provider
+        from efm_go.hooks import ToolHookResult
+        from efm_go.metrics import provider
 
         provider.reset_for_testing()
         monkeypatch.setattr(_root, "IMPORT_TIME_METRIC_EMITTERS", [])
@@ -376,7 +376,7 @@ class TestTheWorkspaceRootIsPinnedForEveryTestpath:
         this only needs to prove the env var reaches the resolver -- there is no
         module-global memo to reset alongside it.
         """
-        from kiro_crew.config.loader import workspace_root
+        from efm_go.config.loader import workspace_root
 
         assert (
             workspace_root().resolve() == pathlib.Path(os.environ["KIROCREW_WORKSPACE"]).resolve()
@@ -386,7 +386,7 @@ class TestTheWorkspaceRootIsPinnedForEveryTestpath:
         self, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The floor is a safety net, not a cage: a test that isolates itself wins."""
-        from kiro_crew.config.loader import workspace_root
+        from efm_go.config.loader import workspace_root
 
         mine = tmp_path / "my-own-workspace"
         monkeypatch.setenv("KIROCREW_WORKSPACE", str(mine))
@@ -423,7 +423,7 @@ class TestThePodPlaneIsPinnedForEveryTestpath:
 
     def test_pod_config_resolves_to_those_same_pinned_dirs(self) -> None:
         """``load()`` reads the environment fresh, so the pin only has to reach it."""
-        from kiro_crew.pod.config import PodConfig
+        from efm_go.pod.config import PodConfig
 
         cfg = PodConfig.load()
 
@@ -435,7 +435,7 @@ class TestThePodPlaneIsPinnedForEveryTestpath:
         self, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The floor is a safety net, not a cage: a test that isolates itself wins."""
-        from kiro_crew.pod.config import PodConfig
+        from efm_go.pod.config import PodConfig
 
         mine = tmp_path / "my-own-pods"
         monkeypatch.setenv("KIROCREW_POD_ENV_DIR", str(mine))
@@ -497,7 +497,7 @@ class TestTheAgentSpecHomeIsPinnedForEveryTestpath:
     """
 
     def test_the_spec_write_target_is_not_the_operators_real_home(self) -> None:
-        from kiro_crew import agent
+        from efm_go import agent
 
         target = agent.kiro_agents_dir_path().resolve()
 
@@ -531,8 +531,8 @@ class TestTheAgentSpecHomeIsPinnedForEveryTestpath:
         module that binds the name by hand is what proves the reach, not the
         definition site.
         """
-        from kiro_crew.config import paths
-        from kiro_crew.slack import handler
+        from efm_go.config import paths
+        from efm_go.slack import handler
 
         assert paths._agents_dir_override is not None, "the floor installed no override"
         assert handler.kiro_agents_dir is paths.kiro_agents_dir, (
@@ -566,7 +566,7 @@ class TestTheAgentSpecHomeIsPinnedForEveryTestpath:
         instead of the tree they just built, which is how an earlier revision of this
         floor broke five test groups at once.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.setattr(pathlib.Path, "home", classmethod(lambda cls: tmp_path))
 
@@ -583,13 +583,13 @@ class TestTheAgentSpecHomeIsPinnedForEveryTestpath:
         construction; this pins it so a future edit that re-spells the default in both
         places still has to keep them equal.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         assert paths.kiro_agents_dir() == paths.ambient_agents_dir()
 
     def test_one_directory_is_shared_across_the_seams(self) -> None:
         """A spec written through one seam has to be readable through another."""
-        from kiro_crew import agent, agent_discovery
+        from efm_go import agent, agent_discovery
 
         assert agent.KIRO_AGENTS_DIR == agent_discovery._KIRO_AGENTS_DIR
 
@@ -604,7 +604,7 @@ class TestTheAgentSpecHomeIsPinnedForEveryTestpath:
         a linked git worktree -- green in CI, red on a developer machine, which is the
         setup this repo mandates.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         assert _inside_a_guarded_root(paths.ambient_agents_dir().resolve()), (
             "ambient_agents_dir followed the override; the write guard can no longer "
@@ -614,7 +614,7 @@ class TestTheAgentSpecHomeIsPinnedForEveryTestpath:
             paths.kiro_agents_dir() != paths.ambient_agents_dir()
         ), "the two resolvers agree, so the guard's comparison proves nothing"
 
-        from kiro_crew import agent
+        from efm_go import agent
 
         assert (
             agent._decline_shared_agent_home(audit=False) is None
@@ -629,7 +629,7 @@ class TestTheAgentSpecHomeIsPinnedForEveryTestpath:
         write guard is the one caller whose question is genuinely about the
         environment.
         """
-        allowed = {"kiro_crew/config/paths.py", "kiro_crew/agent.py"}
+        allowed = {"efm_go/config/paths.py", "efm_go/agent.py"}
         callers = set()
         for path in sorted(_SRC.rglob("*.py")):
             if "_vendor" in path.parts:
@@ -705,7 +705,7 @@ class TestTheAgentSpecHomeIsPinnedForEveryTestpath:
         self, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The floor is a safety net, not a cage."""
-        from kiro_crew import agent
+        from efm_go import agent
 
         mine = tmp_path / "my-own-agents"
         monkeypatch.setattr(agent, "KIRO_AGENTS_DIR", mine)
@@ -725,7 +725,7 @@ class TestTheKiroSessionsDirIsPinnedForEveryTestpath:
     """
 
     def test_the_resolved_dir_is_not_the_operators_real_home(self) -> None:
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         assert not _inside_a_guarded_root(paths.kiro_sessions_dir().resolve())
 
@@ -735,8 +735,8 @@ class TestTheKiroSessionsDirIsPinnedForEveryTestpath:
         ``session_map`` binds ``kiro_sessions_dir`` by name, so this is what proves the
         override reaches a copied function object rather than only the definition site.
         """
-        from kiro_crew import session_map
-        from kiro_crew.config import paths
+        from efm_go import session_map
+        from efm_go.config import paths
 
         assert paths._sessions_dir_override is not None, "the floor installed no override"
         assert session_map.kiro_sessions_dir is paths.kiro_sessions_dir, (
@@ -757,20 +757,20 @@ class TestTheKiroSessionsDirIsPinnedForEveryTestpath:
         fixture BODY directly with the module evicted from ``sys.modules``: the only
         way the override can be present afterwards is if the fixture imported it.
         """
-        import kiro_crew.config as config_pkg
+        import efm_go.config as config_pkg
 
-        original = sys.modules["kiro_crew.config.paths"]
+        original = sys.modules["efm_go.config.paths"]
         # Restore the package attribute the re-import will overwrite, and the
         # sys.modules entry, when monkeypatch unwinds.
         monkeypatch.setattr(config_pkg, "paths", original)
-        monkeypatch.delitem(sys.modules, "kiro_crew.config.paths")
-        monkeypatch.delitem(sys.modules, "kiro_crew.session_map", raising=False)
+        monkeypatch.delitem(sys.modules, "efm_go.config.paths")
+        monkeypatch.delitem(sys.modules, "efm_go.session_map", raising=False)
 
         body = _root._isolate_kiro_sessions_dir
         body = getattr(body, "__wrapped__", body)
         body(lambda name: tmp_path / name, _floor_monkeypatch, tmp_path_factory)
 
-        reimported = importlib.import_module("kiro_crew.config.paths")
+        reimported = importlib.import_module("efm_go.config.paths")
         assert reimported is not original, "sys.modules eviction did not take"
         assert reimported._sessions_dir_override is not None, (
             "the floor left kiro_sessions_dir() unpinned for a test whose first import "
@@ -785,7 +785,7 @@ class TestTheKiroSessionsDirIsPinnedForEveryTestpath:
         ``Path.home``) and then read the tree they built there; a pin that answered the
         isolation dir regardless would send every one of them to an empty directory.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.setenv("KIRO_HOME", str(tmp_path / "relocated"))
         assert paths.kiro_sessions_dir() == tmp_path / "relocated" / "sessions" / "cli"
@@ -797,7 +797,7 @@ class TestTheKiroSessionsDirIsPinnedForEveryTestpath:
         it, so a test cannot reach the real transcript store by spelling the real path
         explicitly.
         """
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         monkeypatch.setenv("KIRO_HOME", str(_root._REAL_KIRO_HOME_AT_START))
         assert not _inside_a_guarded_root(paths.kiro_sessions_dir().resolve())
@@ -809,8 +809,8 @@ class TestTheKiroSessionsDirIsPinnedForEveryTestpath:
         so a test that writes through one seam and reads through the other still sees
         one tree.
         """
-        from kiro_crew import session_map
-        from kiro_crew.config import paths
+        from efm_go import session_map
+        from efm_go.config import paths
 
         assert session_map._KIRO_SESSIONS_DIR is not None
         assert session_map._KIRO_SESSIONS_DIR == paths.kiro_sessions_dir()
@@ -819,7 +819,7 @@ class TestTheKiroSessionsDirIsPinnedForEveryTestpath:
         self, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The floor is a safety net, not a cage."""
-        from kiro_crew.config import paths
+        from efm_go.config import paths
 
         mine = tmp_path / "my-own-sessions"
         monkeypatch.setattr(paths, "_sessions_dir_override", lambda: mine)
@@ -858,7 +858,7 @@ class TestTheSharedKiroPathsArePinned:
         exist. Pinning both is not enough on its own: they must land in the SAME
         directory, which is what this asserts.
         """
-        from kiro_crew.dashboard.handlers import mcp as mcp_mod
+        from efm_go.dashboard.handlers import mcp as mcp_mod
 
         assert mcp_mod._MCP_LOCK_PATH.parent == mcp_mod._GLOBAL_MCP_JSON.parent
 
@@ -895,11 +895,11 @@ class TestTheSharedKiroPathRatchet:
         # fixture. It has to move the whole macOS launchd set together (PLIST_DIR,
         # PLIST_PATH, LOG_DIR, STDOUT_LOG, STDERR_LOG, LIVE_PROGRAM) because both
         # consumers import them by value.
-        ("kiro_crew/service/macos.py", "PLIST_DIR"): "covered by _isolate_launchd_paths",
-        ("kiro_crew/service/macos.py", "LOG_DIR"): "covered by _isolate_launchd_paths",
+        ("efm_go/service/macos.py", "PLIST_DIR"): "covered by _isolate_launchd_paths",
+        ("efm_go/service/macos.py", "LOG_DIR"): "covered by _isolate_launchd_paths",
         # The kiro-cli/amazon-q sqlite tuples here are not direct
         # ``Path.home()`` bindings; they are PROJECTIONS over the canonical table in
-        # ``kiro_crew/identity_stores.py`` (``sqlite_dbs(...)`` resolves the home
+        # ``efm_go/identity_stores.py`` (``sqlite_dbs(...)`` resolves the home
         # inside the call), so they do not match this tripwire's import-time
         # shape and need no exclusion. Their anchor rule ("must name the REAL
         # home"; stub the READER, never move the anchor) is carried forward by
@@ -910,7 +910,7 @@ class TestTheSharedKiroPathRatchet:
         # would make every containment test assert against a root that does not ship.
         # Nothing here writes: the module reads the value to bound path resolution.
         (
-            "kiro_crew/apps/builtins/file_explorer/server.py",
+            "efm_go/apps/builtins/file_explorer/server.py",
             "_HOME",
         ): "security anchor: the browsing allow-list root",
     }
@@ -1500,11 +1500,11 @@ class TestLoggerLevelsAreRestored:
     """A logger's level is PROCESS-GLOBAL, per worker, and HIERARCHICAL.
 
     Together those are what make this leak class so hard to attribute. ``Logger.debug``
-    gates on the EFFECTIVE level, so an explicit level left on ``kiro_crew`` decides what
-    every ``kiro_crew.*`` logger in the worker may emit, and it outranks the root level
+    gates on the EFFECTIVE level, so an explicit level left on ``efm_go`` decides what
+    every ``efm_go.*`` logger in the worker may emit, and it outranks the root level
     ``caplog.at_level()`` sets -- the victim gets ``caplog.text == ""``, nothing at all
     rather than the wrong text, from a test that passes alone. The suite reaches this
-    through ``cli._setup_cli_logging``, which pins ``kiro_crew`` at WARNING, and which
+    through ``cli._setup_cli_logging``, which pins ``efm_go`` at WARNING, and which
     test modules across the suite run for real by driving ``cli.main()`` in process.
 
     ``conftest._restore_logger_levels`` is what removes the class; without a test, an edit
@@ -1513,30 +1513,30 @@ class TestLoggerLevelsAreRestored:
     proof needs no adjacent observer test.
     """
 
-    def test_this_test_starts_with_an_unconfigured_kiro_crew_logger(self) -> None:
+    def test_this_test_starts_with_an_unconfigured_efm_go_logger(self) -> None:
         """Which is only true if no earlier test on this worker left a level on it."""
-        assert logging.getLogger("kiro_crew").level == logging.NOTSET
+        assert logging.getLogger("efm_go").level == logging.NOTSET
 
     def test_a_leaked_level_is_removed_by_the_floors_own_teardown(self) -> None:
         """One full cycle of the real fixture: snapshot, pin a level and leave it, restore.
 
         The pin is exactly the leak the floor absorbs in the wild — ``_setup_cli_logging``
-        sets ``kiro_crew`` to WARNING once per process and never undoes it. A failure
+        sets ``efm_go`` to WARNING once per process and never undoes it. A failure
         part-way cannot leak the level past this test: the live autouse instance of the
         same fixture wraps this test too, and its snapshot predates the pin.
         """
         cycle = _autouse_floor_generator("_restore_logger_levels")()
         next(cycle)  # the floor's setup: snapshot, taken while the level is NOTSET
 
-        logging.getLogger("kiro_crew").setLevel(logging.WARNING)
-        assert logging.getLogger("kiro_crew").level == logging.WARNING
+        logging.getLogger("efm_go").setLevel(logging.WARNING)
+        assert logging.getLogger("efm_go").level == logging.WARNING
 
         with pytest.raises(StopIteration):
             next(cycle)  # the floor's teardown: the restore under test
-        level = logging.getLogger("kiro_crew").level
+        level = logging.getLogger("efm_go").level
         assert level == logging.NOTSET, (
-            f"kiro_crew is still pinned at {logging.getLevelName(level)} -- every "
-            "kiro_crew.* record below that level would be dropped before it reaches "
+            f"efm_go is still pinned at {logging.getLevelName(level)} -- every "
+            "efm_go.* record below that level would be dropped before it reaches "
             "the root handler caplog captures through"
         )
 
@@ -1547,7 +1547,7 @@ class TestLoggerLevelsAreRestored:
         ``(NOTSET, enabled)`` state rather than passing over it, and this is the only
         place that behaviour is exercised with a genuinely fresh name.
         """
-        name = "kiro_crew._floor_probe_6351"
+        name = "efm_go._floor_probe_6351"
         assert name not in logging.Logger.manager.loggerDict
 
         cycle = _autouse_floor_generator("_restore_logger_levels")()
@@ -1564,16 +1564,16 @@ class TestLoggerLevelsAreRestored:
             "missing-from-snapshot branch no longer restores to pristine"
         )
 
-    def test_a_debug_record_from_a_kiro_crew_logger_still_reaches_caplog(self, caplog) -> None:
+    def test_a_debug_record_from_a_efm_go_logger_still_reaches_caplog(self, caplog) -> None:
         """The capability the level restore exists to protect, asserted directly.
 
         The level assertion above pins the mechanism; this pins the OUTCOME, in the exact
         shape the victim test uses -- ``at_level`` on the root logger, a ``debug`` call on
-        a ``kiro_crew.*`` child -- so a future floor that restores something subtly
+        a ``efm_go.*`` child -- so a future floor that restores something subtly
         different still has to keep this working.
         """
         with caplog.at_level("DEBUG"):
-            logging.getLogger("kiro_crew.slack.gateway").debug("floor canary")
+            logging.getLogger("efm_go.slack.gateway").debug("floor canary")
         assert "floor canary" in caplog.text
 
 
@@ -1612,8 +1612,8 @@ class TestTheLogQueueListenerIsRestored:
         a setup-phase list back during teardown would drop the one it is capturing
         through.
         """
-        monkeypatch.setattr("kiro_crew.cli._fd_targets_file", lambda fd, path: False)
-        loggers = (logging.getLogger(), logging.getLogger("kiro_crew"))
+        monkeypatch.setattr("efm_go.cli._fd_targets_file", lambda fd, path: False)
+        loggers = (logging.getLogger(), logging.getLogger("efm_go"))
         saved = [(lgr, lgr.handlers[:]) for lgr in loggers]
         yield
         for lgr, handlers in saved:
@@ -1946,7 +1946,7 @@ class TestTheWorkerBudgetIsMemoryBounded:
         stops asserting anything on the macOS and Windows shards.
         """
         import xdist_budget as budget
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         monkeypatch.setattr(platform_compat, "IS_LINUX", True)
         monkeypatch.setattr(platform_compat, "IS_MACOS", False)
@@ -1996,9 +1996,9 @@ class TestTheWorkerBudgetIsMemoryBounded:
 
         # Imported in-body, not at module scope: this file's own ratchet asserts
         # that no import-time ``~/.kiro`` binding escapes the isolation fixtures,
-        # and importing kiro_crew during COLLECTION binds them against the real
+        # and importing efm_go during COLLECTION binds them against the real
         # home before any fixture has run.
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         monkeypatch.setattr(platform_compat, "IS_LINUX", True)
         monkeypatch.setattr(platform_compat, "IS_MACOS", False)
@@ -2025,7 +2025,7 @@ class TestTheWorkerBudgetIsMemoryBounded:
         silently dropping to one worker.
         """
         import xdist_budget as budget
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         monkeypatch.setattr(platform_compat, "IS_LINUX", False)
         monkeypatch.setattr(platform_compat, "IS_MACOS", False)
@@ -2172,7 +2172,7 @@ class TestTheHooksDispatcherIsRestored:
 
     @staticmethod
     def _hi():
-        from kiro_crew.apps import hooks_integration
+        from efm_go.apps import hooks_integration
 
         return hooks_integration
 

@@ -6,10 +6,10 @@ from unittest.mock import ANY, Mock
 import pytest
 from test_member_essential_context import env as _member_env
 
-from kiro_crew.context import CONTEXT_GROUP_LESSONS, ContextBuilder
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.context import CONTEXT_GROUP_LESSONS, ContextBuilder
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 env = _member_env
 
@@ -134,8 +134,8 @@ def test_v1_new_session_bounds_pref_rows_at_the_startup_cap(tmp_path, opened):
     """The cap must reach the store through the real plumbing
     (context._ResolvedCaps -> memory.get_context -> get_preferences_context).
     Mocks cannot see a dropped keyword argument; a real store over the cap can."""
-    from kiro_crew.context import _PREFS_STARTUP_CAP
-    from kiro_crew.vector_memory import VectorMemoryStore
+    from efm_go.context import _PREFS_STARTUP_CAP
+    from efm_go.vector_memory import VectorMemoryStore
 
     vectors = opened(VectorMemoryStore(db_path=tmp_path / "mem.db"))
     vectors.init()

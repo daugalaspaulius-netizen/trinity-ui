@@ -12,8 +12,8 @@ import types
 
 import pytest
 
-from kiro_crew import cli
-from kiro_crew.apps.builtins import BUILTIN_NAMES
+from efm_go import cli
+from efm_go.apps.builtins import BUILTIN_NAMES
 
 
 def _run_cli(monkeypatch, tmp_path, argv):
@@ -111,7 +111,7 @@ class TestDispatch:
         """Dispatch is a delegation to ``_run_app_mcp_server`` — the ONE
         spelling of "import the builtin's mcp_server and run it or refuse
         cleanly", shared with the ``kirocrew app mcp <name>`` manifest path."""
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         calls: list[str] = []
         monkeypatch.setattr(cli_commands, "_run_app_mcp_server", calls.append)
@@ -139,14 +139,14 @@ class TestDispatch:
     def test_resolvable_builtin_runs_its_mcp_server(self, monkeypatch, tmp_path):
         """A registered verb reaches ``run_mcp_server()`` on the real module
         resolution path (import stubbed at the module seam)."""
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         ran = {"hit": False}
         stub = types.SimpleNamespace(run_mcp_server=lambda: ran.__setitem__("hit", True))
         real_import = cli_commands.importlib.import_module
 
         def stubbing_import(module, *a, **k):
-            if module == "kiro_crew.apps.builtins.mochi.mcp_server":
+            if module == "efm_go.apps.builtins.mochi.mcp_server":
                 return stub
             return real_import(module, *a, **k)
 

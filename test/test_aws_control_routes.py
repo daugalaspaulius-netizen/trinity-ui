@@ -37,9 +37,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import aws_consent
-from kiro_crew.apps.builtins.aws_control.backend import routes as routes_mod
-from kiro_crew.deploy.engine import AWSError
+from efm_go import aws_consent
+from efm_go.apps.builtins.aws_control.backend import routes as routes_mod
+from efm_go.deploy.engine import AWSError
 
 BASE = "/api/apps/aws-control"
 ACCOUNT = "111122223333"
@@ -2801,7 +2801,7 @@ class TestLibrary:
         push.assert_not_called()
 
     def test_push_404s_an_unknown_artifact(self):
-        from kiro_crew.artifacts import ArtifactNotFoundError
+        from efm_go.artifacts import ArtifactNotFoundError
 
         resp = self._push(side_effect=ArtifactNotFoundError("nope"))
         assert resp.status == 404
@@ -3124,7 +3124,7 @@ class TestBackupEndpoints:
         a key that names none, and the reconciliation of a run left behind by a
         dead gateway -- lives in ``test_aws_control_backup_job.py``.
         """
-        from kiro_crew.apps.builtins.aws_control.backend import backup as backup_mod
+        from efm_go.apps.builtins.aws_control.backend import backup as backup_mod
 
         handlers = _registered()
         p1, p2, p3 = _enabled_owner_env()
@@ -3156,7 +3156,7 @@ class TestBackupEndpoints:
         return resp
 
     def test_run_snapshot_backup_starts_a_job_and_returns_its_id(self):
-        from kiro_crew.apps.builtins.aws_control.backend import backup as backup_mod
+        from efm_go.apps.builtins.aws_control.backend import backup as backup_mod
 
         resp = self._run_backup(backup_mod.KIND_SNAPSHOT)
         assert resp.status == 200
@@ -3166,7 +3166,7 @@ class TestBackupEndpoints:
         assert body["runId"] == "e" * 32
 
     def test_run_sessions_backup_claims_the_sessions_kind(self):
-        from kiro_crew.apps.builtins.aws_control.backend import backup as backup_mod
+        from efm_go.apps.builtins.aws_control.backend import backup as backup_mod
 
         start = AsyncMock(return_value="f" * 32)
         resp = self._run_backup(backup_mod.KIND_SESSIONS, start=start)
@@ -3179,7 +3179,7 @@ class TestBackupEndpoints:
     def test_run_reports_an_absent_job_runtime_as_503(self):
         # Enabled, but no SDK was published: the `jobs` grant is missing or the
         # context build failed. The runtime is absent — not a bad request.
-        from kiro_crew.apps.builtins.aws_control.backend import backup as backup_mod
+        from efm_go.apps.builtins.aws_control.backend import backup as backup_mod
 
         resp = self._run_backup(backup_mod.KIND_SNAPSHOT, sdk_present=False)
         assert resp.status == 503
@@ -3188,8 +3188,8 @@ class TestBackupEndpoints:
     def test_run_reports_a_refused_claim_as_503(self):
         # The SDK could not persist the initial record, or the host refused a
         # thread. Nothing started, and the code says which layer refused.
-        from kiro_crew.apps.builtins.aws_control.backend import backup as backup_mod
-        from kiro_crew.apps.job_sdk import JobError
+        from efm_go.apps.builtins.aws_control.backend import backup as backup_mod
+        from efm_go.apps.job_sdk import JobError
 
         resp = self._run_backup(
             backup_mod.KIND_SNAPSHOT, start=AsyncMock(side_effect=JobError("no disk"))
@@ -3905,7 +3905,7 @@ class TestIamPolicy:
         with (
             mock.patch.object(routes_mod, "is_app_enabled", return_value=True),
             mock.patch(
-                "kiro_crew.deploy.iam.policy_json", return_value={"Version": "2012-10-17"}
+                "efm_go.deploy.iam.policy_json", return_value={"Version": "2012-10-17"}
             ) as policy,
         ):
             resp = asyncio.run(

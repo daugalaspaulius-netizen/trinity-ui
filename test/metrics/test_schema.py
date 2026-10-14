@@ -1,10 +1,10 @@
-"""Tests for kiro_crew.metrics.schema — tel-01 foundation contracts."""
+"""Tests for efm_go.metrics.schema — tel-01 foundation contracts."""
 
 import base64
 
 import pytest
 
-from kiro_crew.metrics.schema import (
+from efm_go.metrics.schema import (
     MAX_ATTR_COUNT,
     MAX_ATTR_VALUE_LEN,
     redact,

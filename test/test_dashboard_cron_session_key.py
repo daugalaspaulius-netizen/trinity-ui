@@ -13,13 +13,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.cron import CronService
-from kiro_crew.dashboard.handlers import api_crons
+from efm_go.cron import CronService
+from efm_go.dashboard.handlers import api_crons
 
 
 @pytest.fixture(autouse=True)
 def _isolate_cron_store(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.cron._DEFAULT_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.cron._DEFAULT_DIR", tmp_path)
     yield
 
 

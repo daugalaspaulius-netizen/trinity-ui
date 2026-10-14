@@ -2,9 +2,9 @@
 
 ## Overview
 
-`src/kiro_crew/session_storage.py` measures what conversations cost on disk and
-reclaims that space when a user asks. `src/kiro_crew/session_digest.py` reads a
-single session's content for the detail view. `src/kiro_crew/dashboard/handlers/session_storage.py`
+`src/efm_go/session_storage.py` measures what conversations cost on disk and
+reclaims that space when a user asks. `src/efm_go/session_digest.py` reads a
+single session's content for the detail view. `src/efm_go/dashboard/handlers/session_storage.py`
 exposes both over HTTP. Reclaiming stages files under `<data home>/trash/sessions/`
 rather than unlinking them; emptying that trash is the only irreversible step and
 the only one that returns space to the filesystem.
@@ -946,7 +946,7 @@ sorting heterogeneous dicts does not type-check.
 
 The collection GETs are not HTTP-cached and are not polling endpoints, but `measure()` and `list_units()` may reuse a short-lived process-local filesystem scan. `select_reclaimable()`, `move_to_trash()`, and the handler's `_classify()` pass an uncached read because a stale scan or co-tenant map must never decide a refusal. `invalidate_scan_cache()` runs after every mutation. `test_a_reclaim_does_not_select_against_a_cached_pass` and `test_the_pre_classification_never_reads_a_cached_cotenant_pass` pin that boundary.
 
-The dashboard handlers offload every store-accessing path with `asyncio.to_thread`; `kiro_crew.session_storage` itself is synchronous, so any other async caller must do the same. `GET .../empty` is the exception that can run on the event loop because it reads only process-local job counters and touches no store.
+The dashboard handlers offload every store-accessing path with `asyncio.to_thread`; `efm_go.session_storage` itself is synchronous, so any other async caller must do the same. `GET .../empty` is the exception that can run on the event loop because it reads only process-local job counters and touches no store.
 
 Error codes: `restricted_session` (403), `unknown` (404, no such uid on the detail
 route), `invalid_body`, `invalid_threshold`, `cleanup_refused`, `invalid_batch`,
@@ -1225,7 +1225,7 @@ no longer addressing.
 
 ## Constants
 
-`kiro_crew.session_storage` owns the trash layout, manifest schema, age policy, and mutation-lock constants; `kiro_crew.dashboard.handlers.session_storage` owns the request selection bound. Callers import those constants rather than duplicating their literals, so code and tests remain the source of truth when the policy changes.
+`efm_go.session_storage` owns the trash layout, manifest schema, age policy, and mutation-lock constants; `efm_go.dashboard.handlers.session_storage` owns the request selection bound. Callers import those constants rather than duplicating their literals, so code and tests remain the source of truth when the policy changes.
 
 ## Known Limitations
 

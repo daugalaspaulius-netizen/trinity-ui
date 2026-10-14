@@ -481,7 +481,7 @@ export default function IssuePanel({
                   title={i18nT('components.issuePanel.cli_login_required', {
                     provider: queryError.loginCommand === 'gh auth login' ? 'GitHub' : 'GitLab',
                   })}
-                  message={i18nT('components.issuePanel.kiro_crew_uses_your_local_provider_cli_to_load_i')}
+                  message={i18nT('components.issuePanel.efm_go_uses_your_local_provider_cli_to_load_i')}
                   askAgent
                   testId="issue-panel-load-error"
                 />

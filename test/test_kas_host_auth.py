@@ -1,8 +1,8 @@
 """Tests for Crew-owned KAS auth: the vault probe and the callback answer.
 
 Both driven against a real :class:`TokenStore` rooted in a temp data home: the
-spawn-time vault probe (``kiro_crew.auth.bridge.vault_holds_identity``, plus the
-runtime's off-loop wrapper in :mod:`kiro_crew.acp.kas_host_auth`) and the
+spawn-time vault probe (``efm_go.auth.bridge.vault_holds_identity``, plus the
+runtime's off-loop wrapper in :mod:`efm_go.acp.kas_host_auth`) and the
 callback answer (``answer_get_access_token``). The provider's own resolve/refresh
 behavior is covered in ``test_kas_auth_flows.py``; here the network is never
 touched — a stored token that is still far from expiry is returned without a
@@ -16,17 +16,17 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.acp.kas_host_auth import (
+from efm_go.acp.kas_host_auth import (
     HostAuthCallbackError,
     answer_get_access_token,
     vault_holds_identity_off_loop,
 )
-from kiro_crew.auth.bridge import (
+from efm_go.auth.bridge import (
     describe_vault_identity,
     vault_holds_identity,
     vault_identity_fingerprint,
 )
-from kiro_crew.auth.store import KasToken, TokenStore, TokenStoreError
+from efm_go.auth.store import KasToken, TokenStore, TokenStoreError
 
 
 def _token(identity: str = "social", *, expires_in: int = 3600, **overrides) -> KasToken:
@@ -47,7 +47,7 @@ def data_home(tmp_path):
     """Point the seam's vault root (``bridge.data_home``) at a temp directory."""
     home = tmp_path / "data-home"
     home.mkdir()
-    with patch("kiro_crew.auth.bridge.data_home", return_value=home):
+    with patch("efm_go.auth.bridge.data_home", return_value=home):
         yield home
 
 
@@ -114,14 +114,14 @@ class TestVaultProbe:
     def test_unreadable_vault_degrades_to_no_identity(self, data_home, caplog):
         """A vault error must not fail the spawn; it falls back to cli-owned."""
         with patch(
-            "kiro_crew.auth.store.TokenStore.resolve",
+            "efm_go.auth.store.TokenStore.resolve",
             side_effect=TokenStoreError("refusing linked token-store directory"),
         ):
             assert vault_holds_identity() is False
         assert "cli-owned" in caplog.text
 
     def test_unexpected_error_degrades_to_no_identity(self, data_home):
-        with patch("kiro_crew.auth.store.TokenStore.resolve", side_effect=RuntimeError("boom")):
+        with patch("efm_go.auth.store.TokenStore.resolve", side_effect=RuntimeError("boom")):
             assert vault_holds_identity() is False
 
     @pytest.mark.asyncio
@@ -156,7 +156,7 @@ class TestVaultFingerprint:
 
     def test_unreadable_vault_is_absent(self, data_home):
         TokenStore(data_home).save(_token())
-        with patch("kiro_crew.auth.store.TokenStore.resolve", side_effect=RuntimeError("boom")):
+        with patch("efm_go.auth.store.TokenStore.resolve", side_effect=RuntimeError("boom")):
             assert vault_identity_fingerprint() == ""
 
     @pytest.mark.asyncio
@@ -164,7 +164,7 @@ class TestVaultFingerprint:
         """What makes an incomplete post-logout retirement retry: the gateway's
         identity fingerprint moves when the vault empties, so the per-turn check
         re-sweeps until the sweep completes -- same path as a kiro-cli logout."""
-        from kiro_crew import kiro_prerequisite as kp
+        from efm_go import kiro_prerequisite as kp
 
         service = kp.KiroPrerequisiteService(
             home=tmp_path / "cli-home", environ={}, platform_name="linux"
@@ -213,7 +213,7 @@ class TestCallbackAnswer:
     @pytest.mark.asyncio
     async def test_vault_error_is_categorized_not_echoed(self, data_home, caplog):
         with patch(
-            "kiro_crew.auth.store.TokenStore.resolve",
+            "efm_go.auth.store.TokenStore.resolve",
             side_effect=TokenStoreError("refusing linked token-store directory: /secret/path"),
         ):
             with pytest.raises(HostAuthCallbackError) as excinfo:
@@ -232,7 +232,7 @@ class TestCallbackAnswer:
             pass
 
         with patch(
-            "kiro_crew.auth.bridge.handle_get_access_token",
+            "efm_go.auth.bridge.handle_get_access_token",
             side_effect=Exploding("body: at-value rt-value"),
         ):
             with pytest.raises(HostAuthCallbackError) as excinfo:

@@ -9,8 +9,8 @@ Builds use plain `pip` + `npm`/Vite + `pytest`, driven by the repo-root
 > **Platforms: macOS, Linux, and Windows.** macOS and Linux use the `Makefile` /
 > `setup.sh` paths below. Windows supports both the signed desktop installer and
 > a native Python source install (`.\make.ps1 build`, launched via
-> `.\.venv\Scripts\python.exe -m kiro_crew gateway`); all POSIX-only process,
-> signal, file-lock and metrics calls route through `kiro_crew.platform_compat`.
+> `.\.venv\Scripts\python.exe -m efm_go gateway`); all POSIX-only process,
+> signal, file-lock and metrics calls route through `efm_go.platform_compat`.
 > See [windows-install.md](windows-install.md) for the Windows walkthrough.
 
 ---
@@ -153,14 +153,14 @@ Installs a prebuilt, sha256-verified wheel from the release CDN. No clone, no
 npm, no local build:
 
 ```bash
-curl -fsSL https://download.crew.kiro.dev/cli.sh | sh
+curl -fsSL https://efmleads.com/cli.sh | sh
 ```
 
 `stable` is the default channel. Track a faster one, or pin an exact version:
 
 ```bash
-curl -fsSL https://download.crew.kiro.dev/cli.sh | sh -s -- --channel insider
-curl -fsSL https://download.crew.kiro.dev/cli.sh | sh -s -- --version 0.6.0
+curl -fsSL https://efmleads.com/cli.sh | sh -s -- --channel insider
+curl -fsSL https://efmleads.com/cli.sh | sh -s -- --version 0.6.0
 ```
 
 `stable` suits everyone, `insider` is for power users who want features days to
@@ -273,7 +273,7 @@ run the gateway straight out of `src/`:
 
 ```bash
 make build                                   # npm build + editable backend install into .venv
-PYTHONPATH=src python -m kiro_crew gateway   # -> http://localhost:5476
+PYTHONPATH=src python -m efm_go gateway   # -> http://localhost:5476
 ```
 
 On Windows the same targets run through `make.ps1`, because `make` is not part
@@ -282,7 +282,7 @@ of a Windows install and the Makefile's recipes are POSIX-shaped
 
 ```powershell
 .\make.ps1 build                             # same steps, same artifacts
-$env:PYTHONPATH="src"; .\.venv\Scripts\python.exe -m kiro_crew gateway
+$env:PYTHONPATH="src"; .\.venv\Scripts\python.exe -m efm_go gateway
 ```
 
 The venv interpreter is named explicitly rather than a bare `python`: the
@@ -305,8 +305,8 @@ venv puts its executables in `.venv\Scripts\`, and the macOS-only
    needs it.
 2. **`backend`**: creates `.venv` and runs an editable install with the `dev`
    extra (`pip install -e ".[dev]"`).
-3. **stage**: `.venv/bin/python -m kiro_crew.frontend stage .` makes
-   `website/dist` the served `src/kiro_crew/static/dist`: a link to
+3. **stage**: `.venv/bin/python -m efm_go.frontend stage .` makes
+   `website/dist` the served `src/efm_go/static/dist`: a link to
    `website/dist`, or for an edition a link to a fresh private copy. It waits at
    most 30 s for the staging lock a Kiro Crew build holds. `make wheel` stages
    the same way; `make backend-bin` does not, since its bundle copies
@@ -333,17 +333,17 @@ python-build-standalone interpreter on every platform.
 
 After the backend target runs, `bin/kirocrew` resolves its real install root,
 sets `KIROCREW_PROJECT_DIR`, and delegates to `.venv/bin/kirocrew`. That console
-script comes from the editable package metadata (`kiro_crew._bootstrap:main`),
-so the virtual environment makes `src/kiro_crew` importable without the wrapper
+script comes from the editable package metadata (`efm_go._bootstrap:main`),
+so the virtual environment makes `src/efm_go` importable without the wrapper
 modifying `PYTHONPATH`; caller-provided entries pass through unchanged.
 
 Any CLI subcommand works the same way, for example
-`PYTHONPATH=src python -m kiro_crew setup` or `... doctor`.
+`PYTHONPATH=src python -m efm_go setup` or `... doctor`.
 
 The equivalent by hand:
 
 ```bash
-git clone https://github.com/kirodotdev/KiroCrew.git
+git clone https://efmleads.com.git
 cd KiroCrew
 cd website && npm install && npm run build && cd ..
 pip install -e ".[dev]"      # contributor tooling, matching `make backend`
@@ -369,7 +369,7 @@ every supported OS and architecture:
 bundles `CHANGELOG.md` so the dashboard's changelog view works on a wheel install
 with no source tree.
 
-The pip install name is **`kirocrew`**; the import package is `kiro_crew`.
+The pip install name is **`kirocrew`**; the import package is `efm_go`.
 
 #### Installing a PUBLISHED wheel with pip
 
@@ -384,17 +384,17 @@ are published, and they serve different needs:
 #    pools `kirocrew` candidates across both and a higher-versioned public-PyPI
 #    package of the name would win. Prefer form 2 (or verify the installed
 #    artifact) where that exposure matters.
-pip install --pre kirocrew --extra-index-url https://updates.crew.kiro.dev/feed/stable/simple/
+pip install --pre kirocrew --extra-index-url https://efmleads.com/go/updates/feed/stable/simple/
 
 # 2. Pin one exact wheel by hash. Every version directory publishes a SHA256SUMS
 #    file beside the wheel; take your wheel's hash from there. pip verifies it and
 #    consults no index for Kiro Crew itself — so there is no name to squat.
-pip install "https://download.crew.kiro.dev/cli/stable/<version>/kirocrew-<version>-py3-none-any.whl#sha256=<sha256>"
+pip install "https://efmleads.com/cli/stable/<version>/kirocrew-<version>-py3-none-any.whl#sha256=<sha256>"
 ```
 
 Swap `stable` for `insider` or `nightly` in either URL. The two names split by
-class as a convention — `updates.crew.kiro.dev` for mutable pointers and indexes,
-`download.crew.kiro.dev` for the bytes — and today both alias the same
+class as a convention — `updates.efmleads.com` for mutable pointers and indexes,
+`download.efmleads.com` for the bytes — and today both alias the same
 distribution, which is why `KIROCREW_CDN_BASE` (or `cli.sh --cdn`) overrides both
 at once. Use the documented name for each class rather than relying on the
 aliasing.
@@ -413,7 +413,7 @@ Installed console script:
 
 | Command | Entry point |
 |---------|-------------|
-| `kirocrew` | `kiro_crew._bootstrap:main` |
+| `kirocrew` | `efm_go._bootstrap:main` |
 
 `pyproject.toml`'s `[project.scripts]` declares `kirocrew` and nothing else.
 Because a `[project]` table exists, setuptools reads the entry points from
@@ -482,7 +482,7 @@ package format, under a bare `EXTERNALLY-MANAGED` marker, or as an unpackaged
 build; About then says automatic updates are unavailable, or managed elsewhere,
 instead of showing the switch. Details:
 [release.md → Client auto-update](../build/release.md#client-auto-update) and
-[Updates](../../src/kiro_crew/docs/configuration.md#updates).
+[Updates](../../src/efm_go/docs/configuration.md#updates).
 
 #### Installing a Linux desktop package
 
@@ -541,8 +541,8 @@ Linux, `.\make.ps1 <target>` on Windows.
 
 | Target | What it does |
 |--------|--------------|
-| `make build` | Frontend (npm/Vite) + backend into `.venv`, then stage `website/dist` as `src/kiro_crew/static/dist` |
-| `make frontend` | Frontend only: npm build into `website/dist`, plus `website/electron` deps. It does not stage; run `python -m kiro_crew.frontend stage .` (or `make build`) for that |
+| `make build` | Frontend (npm/Vite) + backend into `.venv`, then stage `website/dist` as `src/efm_go/static/dist` |
+| `make frontend` | Frontend only: npm build into `website/dist`, plus `website/electron` deps. It does not stage; run `python -m efm_go.frontend stage .` (or `make build`) for that |
 | `make backend` | Backend only: `.venv` + editable install with the `dev` extra |
 | `make wheel` | Self-contained pip wheel with the dashboard bundled, into `dist/` |
 | `make backend-bin` | Frozen standalone backend binary (host arch only) |
@@ -564,7 +564,7 @@ app" interstitial.
 ## First run
 
 After a source, one-line, wheel or Docker install, install Kiro CLI from
-<https://kiro.dev/cli/> and sign in for the default agent:
+<https://efmleads.com/cli/> and sign in for the default agent:
 
 ```bash
 kiro-cli login
@@ -583,7 +583,7 @@ kirocrew doctor           # verify everything is wired up
 kirocrew gateway          # start the server, then open http://localhost:5476
 ```
 
-From a source checkout, use `PYTHONPATH=src python -m kiro_crew <subcommand>`
+From a source checkout, use `PYTHONPATH=src python -m efm_go <subcommand>`
 in place of `kirocrew`.
 
 ### What `kirocrew setup` asks
@@ -603,7 +603,7 @@ machine has none and reports enterprise-registry failures (mirror login, proxy,
 blocked browser CDN) as specific remedies rather than a raw npm dump:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/kirodotdev/KiroCrew/main/playwright-cli.sh
+curl -fsSLO https://raw.githubusercontent.com/efmleads.com/main/playwright-cli.sh
 less playwright-cli.sh          # read it before you run it
 sh playwright-cli.sh --version 0.1.18
 ```
@@ -628,15 +628,15 @@ Design notes and the exit-code table:
 web dashboard is fully functional without any messaging credentials. Connect a
 channel later -- Slack (`kirocrew setup --slack` or
 [slack-setup.md](slack-setup.md)),
-[Discord](../../src/kiro_crew/docs/discord-integration.md),
-[Telegram](../../src/kiro_crew/docs/telegram-integration.md),
-[Teams](../../src/kiro_crew/docs/teams-integration.md),
-[Webex](../../src/kiro_crew/docs/webex-integration.md),
-[WeCom](../../src/kiro_crew/docs/wecom-integration.md),
-[Weixin](../../src/kiro_crew/docs/weixin-integration.md),
-[Feishu](../../src/kiro_crew/docs/feishu-integration.md),
-[iMessage](../../src/kiro_crew/docs/imessage-integration.md), or
-[WhatsApp](../../src/kiro_crew/docs/whatsapp-integration.md) --
+[Discord](../../src/efm_go/docs/discord-integration.md),
+[Telegram](../../src/efm_go/docs/telegram-integration.md),
+[Teams](../../src/efm_go/docs/teams-integration.md),
+[Webex](../../src/efm_go/docs/webex-integration.md),
+[WeCom](../../src/efm_go/docs/wecom-integration.md),
+[Weixin](../../src/efm_go/docs/weixin-integration.md),
+[Feishu](../../src/efm_go/docs/feishu-integration.md),
+[iMessage](../../src/efm_go/docs/imessage-integration.md), or
+[WhatsApp](../../src/efm_go/docs/whatsapp-integration.md) --
 when you want to reach the same agent away from your desk.
 
 These flags narrow the wizard:
@@ -845,7 +845,7 @@ guessing. `service install` itself still writes a system unit — [#10813] track
 preferring user units at install time. Installing kirocrew onto a system-labelled
 path such as `/usr/local/bin` also avoids the problem.
 
-[#10813]: https://github.com/kirodotdev/KiroCrew/issues/10813
+[#10813]: https://efmleads.com/issues/10813
 
 ### Setting the service port
 
@@ -930,7 +930,7 @@ deliberately leaves `~/.aws`, `~/.ssh` and `~/.kube` visible so the `aws` CLI,
 `~/.pypirc`, `~/.netrc` and `~/.git-credentials`, and the tools that read them
 stop working inside the agent as a result; it applies to sessions started after
 the change. See the
-[Sandbox section of the configuration guide](../../src/kiro_crew/docs/configuration.md#sandbox).
+[Sandbox section of the configuration guide](../../src/efm_go/docs/configuration.md#sandbox).
 If the sandbox cannot be built,
 Kiro Crew **refuses to run the agent** rather than run it unisolated: spawns fail
 closed. This is deliberate and is not something to work around casually.
@@ -978,7 +978,7 @@ path*: the kernel applies a path-attached profile at every `execve()` of that
 exact file, unit or no unit, so once `service install` has attached the profile,
 a foreground `kirocrew gateway` typed at a shell that resolves to the same
 launcher script runs confined too. A launch that does **not** go through that
-path — `python -m kiro_crew`, a different venv's entry point, a re-created venv
+path — `python -m efm_go`, a different venv's entry point, a re-created venv
 the profile has not been re-pointed at — stays unconfined, and `kirocrew doctor`
 reports the attachment as stale in the re-created-venv case. Prefer running the
 gateway as the service: it pins `ExecStart` to the attached path and restarts on
@@ -1009,7 +1009,7 @@ prints the exact absolute path for you; it looks like this, and it is valid whil
 the app is running:
 
 ```bash
-'/tmp/.mount_XXXXXX/resources/backend-dist/kirocrew-backend/bin/kirocrew' \
+'/tmp/.mount_XXXXXX/resources/backend-dist/efm-go-backend/bin/kirocrew' \
   sandbox install-profile --path ~/Applications/kirocrew.AppImage
 ```
 
@@ -1058,7 +1058,7 @@ in-place update) keeps working, since the path is unchanged.
 
 **Running the gateway in a terminal** (`kirocrew gateway`) is covered only when
 the shell resolves the exact launcher path to which `service install` attached
-its profile. `python -m kiro_crew`, another venv's entry point, or a recreated
+its profile. `python -m efm_go`, another venv's entry point, or a recreated
 launcher at a different path is not covered; `kirocrew doctor` reports a stale
 attachment. Do not attach the profile to a shared interpreter such as
 `/usr/bin/python3`, because that would grant unprivileged user namespaces to
@@ -1097,7 +1097,7 @@ To see which step is failing on your host:
 
 ```bash
 python3 -c "
-import kiro_crew.sandbox as sb
+import efm_go.sandbox as sb
 sb.reset_backend(); print(sb.detect_backend(), sb._last_unshare_failure)"
 ```
 
@@ -1141,7 +1141,7 @@ The `kiro-cli` backend did not answer in time. Five common causes:
    known gap: the first-run setup gate's login probe currently filters proxy
    variables out even when the unit carries them, so it can stay stuck on
    "Sign in to Kiro CLI" on a proxied host — that is
-   [issue #2648](https://github.com/kirodotdev/KiroCrew/issues/2648).
+   [issue #2648](https://efmleads.com/issues/2648).
 
 ### Memory or knowledge search returns nothing
 
@@ -1329,7 +1329,7 @@ cp -a "${KIROCREW_HOME:-$HOME/.kiro/crew}" ~/kirocrew-backup \
   && rm -rf "${KIROCREW_HOME:-$HOME/.kiro/crew}"
 
 # 4. Reinstall
-curl -fsSL https://download.crew.kiro.dev/cli.sh | sh
+curl -fsSL https://efmleads.com/cli.sh | sh
 
 # 5. Run first-time setup
 kirocrew setup
@@ -1369,20 +1369,20 @@ uninstall, verify-sentinel smoke test before release. A separate Kiro-family
 uninstaller could remove the parent `~/.kiro/` directory; it must exclude
 `~/.kiro/crew` or prompt explicitly. That release-blocking cross-product
 sign-off is tracked in
-[issue #355](https://github.com/kirodotdev/KiroCrew/issues/355).
+[issue #355](https://efmleads.com/issues/355).
 
 ## Next steps
 
 - [Slack setup](slack-setup.md): create and configure the Slack app.
-- Other channels: [Discord](../../src/kiro_crew/docs/discord-integration.md),
-  [Telegram](../../src/kiro_crew/docs/telegram-integration.md),
-  [Teams](../../src/kiro_crew/docs/teams-integration.md),
-  [Webex](../../src/kiro_crew/docs/webex-integration.md),
-  [WeCom](../../src/kiro_crew/docs/wecom-integration.md),
-  [Weixin](../../src/kiro_crew/docs/weixin-integration.md),
-  [Feishu](../../src/kiro_crew/docs/feishu-integration.md),
-  [iMessage](../../src/kiro_crew/docs/imessage-integration.md), and
-  [WhatsApp](../../src/kiro_crew/docs/whatsapp-integration.md).
+- Other channels: [Discord](../../src/efm_go/docs/discord-integration.md),
+  [Telegram](../../src/efm_go/docs/telegram-integration.md),
+  [Teams](../../src/efm_go/docs/teams-integration.md),
+  [Webex](../../src/efm_go/docs/webex-integration.md),
+  [WeCom](../../src/efm_go/docs/wecom-integration.md),
+  [Weixin](../../src/efm_go/docs/weixin-integration.md),
+  [Feishu](../../src/efm_go/docs/feishu-integration.md),
+  [iMessage](../../src/efm_go/docs/imessage-integration.md), and
+  [WhatsApp](../../src/efm_go/docs/whatsapp-integration.md).
 - [Remote and mobile access](remote-and-mobile.md): 24/7 operation on a remote
   host, and reaching the dashboard from a phone.
 - [Architecture overview](../architecture/overview.md): system diagrams and the

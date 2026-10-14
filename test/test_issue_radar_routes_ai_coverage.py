@@ -46,10 +46,10 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from dashboard_owner_helpers import NoConfiguredOwner
 
-from kiro_crew import llm_helpers
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh
-from kiro_crew.apps.builtins.issue_radar.backend import provider, routes, store
-from kiro_crew.start_priority import StartPriority
+from efm_go import llm_helpers
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh
+from efm_go.apps.builtins.issue_radar.backend import provider, routes, store
+from efm_go.start_priority import StartPriority
 
 BASE = "/api/apps/issue-radar"
 

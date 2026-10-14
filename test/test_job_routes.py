@@ -1,4 +1,4 @@
-"""Coverage tests for kiro_crew.apps.job_routes — the shared ``_jobs/*`` HTTP
+"""Coverage tests for efm_go.apps.job_routes — the shared ``_jobs/*`` HTTP
 surface mounted once for every app.
 
 Everything runs in-process against ``aiohttp``'s ``TestServer`` with
@@ -29,11 +29,11 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.apps.job_routes as jr
-import kiro_crew.apps.job_sdk as js
-import kiro_crew.dashboard.handlers._shared as shared
-import kiro_crew.dashboard.handlers.source_providers as sp
-from kiro_crew.apps.job_sdk import JobError, JobSDK, forget_sdk, get_sdk, register_sdk
+import efm_go.apps.job_routes as jr
+import efm_go.apps.job_sdk as js
+import efm_go.dashboard.handlers._shared as shared
+import efm_go.dashboard.handlers.source_providers as sp
+from efm_go.apps.job_sdk import JobError, JobSDK, forget_sdk, get_sdk, register_sdk
 
 APP = "jobs-cov-app"
 
@@ -271,7 +271,7 @@ async def test_the_interruption_fields_reach_the_client(
     party that can act on either. A record that carries them behind an API that
     withholds them leaves the record honest and the API not.
     """
-    from kiro_crew.apps.job_sdk import (
+    from efm_go.apps.job_sdk import (
         CAUSE_RUNNER_UNREGISTERED,
         INTERRUPTED,
         STARTING,
@@ -311,7 +311,7 @@ async def test_work_observed_reaches_the_client(
     its work reads the observed fact rather than re-deriving it. An SDK-minted
     boolean, so it carries none of the sanitizing cost the P2 result channel does.
     """
-    from kiro_crew.apps.job_sdk import DONE, JobRun
+    from efm_go.apps.job_sdk import DONE, JobRun
 
     _setup_guards(tmp_path, monkeypatch)
     run_id = "7d" * 16
@@ -345,7 +345,7 @@ async def test_the_callers_own_strings_are_withheld_from_the_client(
     an endpoint a client reaches, which is why a test pins it rather than a
     docstring claiming it.
     """
-    from kiro_crew.apps.job_sdk import DONE, JobRun
+    from efm_go.apps.job_sdk import DONE, JobRun
 
     _setup_guards(tmp_path, monkeypatch)
     run_id = "8e" * 16
@@ -956,7 +956,7 @@ async def test_on_loop_read_propagates_permission_error_offloaded_read_retries(
     helpers now use retry off-loop and succeed.  Shimmed on the module attribute
     only — never ``os.name``, which breaks ``Path.home()`` on POSIX.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     sdk.register("k", lambda handle, **p: {"ok": True})
     rid = sdk.start("k")

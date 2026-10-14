@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from conftest import forget_env_at_teardown
-from kiro_crew import _ssl_compat
-from kiro_crew._ssl_compat import _CA_CANDIDATES, _ensure_ssl_certs
+from efm_go import _ssl_compat
+from efm_go._ssl_compat import _CA_CANDIDATES, _ensure_ssl_certs
 
 # The provenance markers, one per exported variable. The names are a contract
 # (a successor reads them from an environment a predecessor wrote), so they
@@ -82,7 +82,7 @@ class TestEnsureSslCerts:
 
         with (
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            patch("kiro_crew._ssl_compat._CA_CANDIDATES", candidates),
+            patch("efm_go._ssl_compat._CA_CANDIDATES", candidates),
         ):
             _ensure_ssl_certs()
 
@@ -104,7 +104,7 @@ class TestEnsureSslCerts:
 
         with (
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            patch("kiro_crew._ssl_compat._CA_CANDIDATES", candidates),
+            patch("efm_go._ssl_compat._CA_CANDIDATES", candidates),
         ):
             _ensure_ssl_certs()
 
@@ -123,7 +123,7 @@ class TestEnsureSslCerts:
 
         with (
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            patch("kiro_crew._ssl_compat._CA_CANDIDATES", candidates),
+            patch("efm_go._ssl_compat._CA_CANDIDATES", candidates),
             patch.dict("sys.modules", {"certifi": None}),
         ):
             _ensure_ssl_certs()
@@ -147,7 +147,7 @@ class TestEnsureSslCerts:
 
         with (
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            patch("kiro_crew._ssl_compat._CA_CANDIDATES", candidates),
+            patch("efm_go._ssl_compat._CA_CANDIDATES", candidates),
             patch.dict("sys.modules", {"certifi": mock_certifi}),
         ):
             _ensure_ssl_certs()
@@ -191,7 +191,7 @@ class TestEnsureSslCerts:
 
         with (
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            patch("kiro_crew._ssl_compat._CA_CANDIDATES", (str(existing_candidate),)),
+            patch("efm_go._ssl_compat._CA_CANDIDATES", (str(existing_candidate),)),
             patch.dict("sys.modules", {"certifi": mock_certifi}),
         ):
             _ensure_ssl_certs()
@@ -235,7 +235,7 @@ class TestEnsureSslCerts:
 
         with (
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            patch("kiro_crew._ssl_compat._CA_CANDIDATES", candidates),
+            patch("efm_go._ssl_compat._CA_CANDIDATES", candidates),
         ):
             _ensure_ssl_certs()
 
@@ -256,10 +256,10 @@ class TestEnsureSslCerts:
         from unittest.mock import patch as _patch
 
         mock_fn = MagicMock()
-        with _patch("kiro_crew._ssl_compat._ensure_ssl_certs", mock_fn):
-            import kiro_crew.cli
+        with _patch("efm_go._ssl_compat._ensure_ssl_certs", mock_fn):
+            import efm_go.cli
 
-            importlib.reload(kiro_crew.cli)
+            importlib.reload(efm_go.cli)
         mock_fn.assert_called()
 
     def test_macos_injects_system_trust(self, monkeypatch, tmp_path):
@@ -335,7 +335,7 @@ class TestEnsureSslCerts:
             patch.object(_ssl_compat, "truststore", mock_truststore),
             patch.dict(sys.modules, {"certifi": mock_certifi}),
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            patch("kiro_crew._ssl_compat._CA_CANDIDATES", ("/nonexistent/a.pem",)),
+            patch("efm_go._ssl_compat._CA_CANDIDATES", ("/nonexistent/a.pem",)),
         ):
             _ensure_ssl_certs()
 
@@ -358,7 +358,7 @@ class TestEnsureSslCerts:
         with (
             patch.object(_ssl_compat, "truststore", mock_truststore),
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            caplog.at_level("WARNING", logger="kiro_crew._ssl_compat"),
+            caplog.at_level("WARNING", logger="efm_go._ssl_compat"),
         ):
             _ensure_ssl_certs()
 
@@ -381,7 +381,7 @@ class TestEnsureSslCerts:
         with (
             patch.object(_ssl_compat, "truststore", None),
             patch("ssl.get_default_verify_paths", return_value=mock_paths),
-            caplog.at_level("WARNING", logger="kiro_crew._ssl_compat"),
+            caplog.at_level("WARNING", logger="efm_go._ssl_compat"),
         ):
             _ensure_ssl_certs()
 
@@ -393,10 +393,10 @@ class TestEnsureSslCerts:
         import importlib
 
         mock_fn = MagicMock()
-        with patch("kiro_crew._ssl_compat._ensure_ssl_certs", mock_fn):
-            import kiro_crew.mcp_gateway.gatewayd
+        with patch("efm_go._ssl_compat._ensure_ssl_certs", mock_fn):
+            import efm_go.mcp_gateway.gatewayd
 
-            importlib.reload(kiro_crew.mcp_gateway.gatewayd)
+            importlib.reload(efm_go.mcp_gateway.gatewayd)
         mock_fn.assert_called()
 
     def test_context_trust_uses_openssl_ca_count(self, monkeypatch):
@@ -442,7 +442,7 @@ def _no_system_bundle():
     mock_paths = type("P", (), {"cafile": None, "capath": None})()
     return (
         patch("ssl.get_default_verify_paths", return_value=mock_paths),
-        patch("kiro_crew._ssl_compat._CA_CANDIDATES", ("/nonexistent/a.pem", "/nonexistent/b.crt")),
+        patch("efm_go._ssl_compat._CA_CANDIDATES", ("/nonexistent/a.pem", "/nonexistent/b.crt")),
     )
 
 
@@ -521,7 +521,7 @@ class TestInheritedInstallPinnedBundle:
             no_cafile,
             no_candidates,
             patch.dict("sys.modules", {"certifi": _certifi_at(new_bundle)}),
-            caplog.at_level("INFO", logger="kiro_crew._ssl_compat"),
+            caplog.at_level("INFO", logger="efm_go._ssl_compat"),
         ):
             _ensure_ssl_certs()
 
@@ -604,7 +604,7 @@ class TestInheritedInstallPinnedBundle:
             no_cafile,
             no_candidates,
             patch.dict("sys.modules", {"certifi": _certifi_at(new_bundle)}),
-            caplog.at_level("INFO", logger="kiro_crew._ssl_compat"),
+            caplog.at_level("INFO", logger="efm_go._ssl_compat"),
         ):
             _ensure_ssl_certs()
 
@@ -623,8 +623,8 @@ class TestInheritedInstallPinnedBundle:
         """The prelude's import set is two modules, the same on every platform.
 
         A fresh interpreter runs the prelude against a dead pin without
-        provenance and reports the ``kiro_crew`` modules it loaded: exactly
-        ``kiro_crew`` and the prelude.  The config package, ``platform_compat``
+        provenance and reports the ``efm_go`` modules it loaded: exactly
+        ``efm_go`` and the prelude.  The config package, ``platform_compat``
         and the update engine must not be among them, and no HTTPS client may
         have been imported -- the prelude exists to run before any of them.
         """
@@ -643,10 +643,10 @@ class TestInheritedInstallPinnedBundle:
             env.pop(marker, None)
         code = (
             "import sys\n"
-            "from kiro_crew._ssl_compat import _ensure_ssl_certs\n"
+            "from efm_go._ssl_compat import _ensure_ssl_certs\n"
             "_ensure_ssl_certs()\n"
             "print(repr(sorted(m for m in sys.modules "
-            "if m.startswith('kiro_crew') or m in ('aiohttp', 'requests', 'urllib3'))))\n"
+            "if m.startswith('efm_go') or m in ('aiohttp', 'requests', 'urllib3'))))\n"
         )
         result = subprocess.run(
             [sys.executable, "-c", code],
@@ -657,7 +657,7 @@ class TestInheritedInstallPinnedBundle:
         )
         assert result.returncode == 0, result.stderr
         loaded = ast.literal_eval(result.stdout.strip().splitlines()[-1])
-        assert loaded == ["kiro_crew", "kiro_crew._ssl_compat"], loaded
+        assert loaded == ["efm_go", "efm_go._ssl_compat"], loaded
 
     def test_runtime_export_yields_to_a_system_bundle(self, monkeypatch, tmp_path):
         """Re-deriving means the clean-start order: the system bundle wins over certifi.
@@ -717,7 +717,7 @@ class TestInheritedInstallPinnedBundle:
             no_cafile,
             no_candidates,
             patch.dict("sys.modules", {"certifi": _certifi_at(own_bundle)}),
-            caplog.at_level("INFO", logger="kiro_crew._ssl_compat"),
+            caplog.at_level("INFO", logger="efm_go._ssl_compat"),
         ):
             _ensure_ssl_certs()
 
@@ -750,7 +750,7 @@ class TestInheritedInstallPinnedBundle:
             no_cafile,
             no_candidates,
             patch.dict("sys.modules", {"certifi": _certifi_at(new_bundle)}),
-            caplog.at_level("INFO", logger="kiro_crew._ssl_compat"),
+            caplog.at_level("INFO", logger="efm_go._ssl_compat"),
         ):
             _ensure_ssl_certs()
 
@@ -768,7 +768,7 @@ class TestInheritedInstallPinnedBundle:
         monkeypatch.setenv("SSL_CERT_FILE", str(missing))
         monkeypatch.delenv("REQUESTS_CA_BUNDLE", raising=False)
 
-        with caplog.at_level("WARNING", logger="kiro_crew._ssl_compat"):
+        with caplog.at_level("WARNING", logger="efm_go._ssl_compat"):
             _ensure_ssl_certs()
 
         import os
@@ -799,7 +799,7 @@ class TestInheritedInstallPinnedBundle:
         for marker in _MARKERS:
             monkeypatch.setenv(marker, str(stale))
 
-        with caplog.at_level("INFO", logger="kiro_crew._ssl_compat"):
+        with caplog.at_level("INFO", logger="efm_go._ssl_compat"):
             _ensure_ssl_certs()
 
         import os
@@ -854,7 +854,7 @@ class TestInheritedInstallPinnedBundle:
             no_cafile,
             no_candidates,
             patch.dict("sys.modules", {"certifi": _certifi_at(new_bundle)}),
-            caplog.at_level("INFO", logger="kiro_crew._ssl_compat"),
+            caplog.at_level("INFO", logger="efm_go._ssl_compat"),
         ):
             _ensure_ssl_certs()
 
@@ -887,7 +887,7 @@ class TestInheritedInstallPinnedBundle:
             no_cafile,
             no_candidates,
             patch.dict("sys.modules", {"certifi": _certifi_at(bundle)}),
-            caplog.at_level("INFO", logger="kiro_crew._ssl_compat"),
+            caplog.at_level("INFO", logger="efm_go._ssl_compat"),
         ):
             _ensure_ssl_certs()
             _ensure_ssl_certs()

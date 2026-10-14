@@ -20,10 +20,10 @@ import pytest
 from member_memory_helpers import forget_declared_stores
 from test_member_memory_upgrade import LESSON_KEY, _write_legacy_database
 
-from kiro_crew import member_memory_backup as member_backup
-from kiro_crew import memory_backup, memory_schema, memory_stores
-from kiro_crew.config import loader
-from kiro_crew.vector_memory import (
+from efm_go import member_memory_backup as member_backup
+from efm_go import memory_backup, memory_schema, memory_stores
+from efm_go.config import loader
+from efm_go.vector_memory import (
     create_member_database,
     open_member_database,
     read_member_database_identity,
@@ -343,7 +343,7 @@ def test_the_legacy_completion_uses_the_fts5_capable_driver(live, monkeypatch):
     interpreters, so both legacy helpers must open the database through the
     driver every other memory path uses, never the bare standard library.
     """
-    from kiro_crew import _sqlite_compat
+    from efm_go import _sqlite_compat
 
     real = _sqlite_compat.sqlite3
     opened: list[str] = []

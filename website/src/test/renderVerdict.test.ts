@@ -272,7 +272,7 @@ describe('the base render is forced by anything that can move a number', () => {
     'AGENTS.md',
     'website/AGENTS.md',
     '.github/workflows/ci.yml',
-    'src/kiro_crew/server.py',
+    'src/efm_go/server.py',
   ])('does not force one for %s', file => {
     expect(renderable!.test(file)).toBe(false)
   })

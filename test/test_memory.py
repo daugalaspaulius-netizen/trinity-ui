@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from conftest import make_dir_link, plant_day_link
-from kiro_crew.memory import MemoryStore
+from efm_go.memory import MemoryStore
 
 
 class TestMemoryStore:
@@ -246,14 +246,14 @@ class TestActiveProjectsHeader:
     """
 
     def test_content_without_the_header_gains_one(self):
-        from kiro_crew.memory import normalize_projects_document
+        from efm_go.memory import normalize_projects_document
 
         out = normalize_projects_document("just some notes", today="2026-09-15")
         assert out.startswith("# Active Projects\n\n_Updated: 2026-09-15_\n\n")
         assert out.endswith("just some notes\n")
 
     def test_content_with_the_header_is_not_wrapped_again(self):
-        from kiro_crew.memory import normalize_projects_document
+        from efm_go.memory import normalize_projects_document
 
         out = normalize_projects_document("# Active Projects\n\nnotes", today="2026-09-15")
         assert out.count("# Active Projects") == 1
@@ -268,7 +268,7 @@ class TestActiveProjectsHeader:
         branches. Trimming both would be a behaviour change riding along with a
         refactor.
         """
-        from kiro_crew.memory import normalize_projects_document
+        from efm_go.memory import normalize_projects_document
 
         assert (
             normalize_projects_document("# Active Projects\n\nnotes  ", today="2026-09-15")
@@ -281,7 +281,7 @@ class TestActiveProjectsHeader:
 
     def test_the_injected_date_is_the_caller_s(self):
         """The date is a parameter so the two writes can share one clock read."""
-        from kiro_crew.memory import normalize_projects_document
+        from efm_go.memory import normalize_projects_document
 
         out = normalize_projects_document("notes", today="1999-01-02")
         assert "_Updated: 1999-01-02_" in out
@@ -627,8 +627,8 @@ class TestHistoryDecayWording:
         from pathlib import Path
 
         repo = Path(__file__).resolve().parents[1]
-        paths = list((repo / "src" / "kiro_crew").rglob("*.py"))
-        paths.append(repo / "src" / "kiro_crew" / "docs" / "configuration.md")
+        paths = list((repo / "src" / "efm_go").rglob("*.py"))
+        paths.append(repo / "src" / "efm_go" / "docs" / "configuration.md")
         paths.extend((repo / "docs").rglob("*.md"))
 
         copies: list[tuple[str, str]] = []
@@ -708,10 +708,10 @@ class TestNamedV1StoreUnderFencedTree:
     def _named_store(self, monkeypatch) -> MemoryStore:
         import json
 
-        from kiro_crew import memory_stores
-        from kiro_crew.config import loader as loader_mod
-        from kiro_crew.config.loader import config_dir
-        from kiro_crew.memory_stores import memory_index_path_for, memory_store_dir_for
+        from efm_go import memory_stores
+        from efm_go.config import loader as loader_mod
+        from efm_go.config.loader import config_dir
+        from efm_go.memory_stores import memory_index_path_for, memory_store_dir_for
 
         (config_dir() / "config.json").write_text(
             json.dumps({"memory_stores": {"default": {}, self.NAME: {}}}), encoding="utf-8"
@@ -730,7 +730,7 @@ class TestNamedV1StoreUnderFencedTree:
         """Make the nolink reader's sensitive-path check fence everything under *root*."""
         import os
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         fenced_root = os.path.realpath(str(root))
 
@@ -748,7 +748,7 @@ class TestNamedV1StoreUnderFencedTree:
         store.write_projects("PROJECT_SENTINEL")
         self._fence(monkeypatch, store._workspace)
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         # Precondition: the nolink reader refuses the fenced store's own file.
         assert (
@@ -797,7 +797,7 @@ class TestNamedV1StoreUnderFencedTree:
         """
         from datetime import date, timedelta
 
-        from kiro_crew import memory_files as memory_mod
+        from efm_go import memory_files as memory_mod
 
         store = self._named_store(monkeypatch)
         self._fence(monkeypatch, store._workspace)

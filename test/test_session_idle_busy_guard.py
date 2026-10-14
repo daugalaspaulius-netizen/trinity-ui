@@ -26,8 +26,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
 
 
 @pytest.fixture
@@ -142,7 +142,7 @@ class TestKeepaliveHandler:
     @pytest.mark.asyncio
     async def test_keepalive_touches_last_used_as_well_as_the_acp_clock(self) -> None:
         """Without this, a session blocking in `wait` still ages toward reaping."""
-        from kiro_crew.dashboard.handlers.sessions import api_session_keepalive
+        from efm_go.dashboard.handlers.sessions import api_session_keepalive
 
         provider = MagicMock()
         sessions = MagicMock()
@@ -161,7 +161,7 @@ class TestKeepaliveHandler:
     @pytest.mark.asyncio
     async def test_keepalive_still_succeeds_when_touch_is_absent(self) -> None:
         """Older session managers / test stubs must not 500 the keepalive."""
-        from kiro_crew.dashboard.handlers.sessions import api_session_keepalive
+        from efm_go.dashboard.handlers.sessions import api_session_keepalive
 
         sessions = MagicMock(spec=["get_provider"])
         sessions.get_provider = MagicMock(return_value=MagicMock())

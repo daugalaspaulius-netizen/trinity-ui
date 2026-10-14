@@ -17,8 +17,8 @@ import logging
 
 import pytest
 
-import kiro_crew.sel as sel_mod
-from kiro_crew.sel import SecurityEvent, SecurityEventLog
+import efm_go.sel as sel_mod
+from efm_go.sel import SecurityEvent, SecurityEventLog
 
 
 @pytest.fixture(autouse=True)

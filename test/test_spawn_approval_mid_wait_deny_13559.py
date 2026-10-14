@@ -45,9 +45,9 @@ import pytest
 # dispatcher factory) so this suite exercises a REAL registered hook.
 from test_telegram import _dispatcher  # noqa: E402
 
-from kiro_crew.constants import DENY_CAUSE_APPROVAL_TIMEOUT
-from kiro_crew.messaging import spawn_approval_delivery as seam
-from kiro_crew.telegram.renderer import TelegramApprovalDecider
+from efm_go.constants import DENY_CAUSE_APPROVAL_TIMEOUT
+from efm_go.messaging import spawn_approval_delivery as seam
+from efm_go.telegram.renderer import TelegramApprovalDecider
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -74,7 +74,7 @@ def _short_prompt_wait(monkeypatch: pytest.MonkeyPatch) -> None:
     The real window is minutes, so without this every elapsed-wait assertion below
     would park the suite on it rather than failing.
     """
-    import kiro_crew.telegram.renderer as renderer_mod
+    import efm_go.telegram.renderer as renderer_mod
 
     monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 0.2)
 
@@ -93,7 +93,7 @@ def _press_lands_inside_the_window(
     press resolves nothing. A press that lands returns at once, so this costs no
     time; one that never resolves still fails by name well inside ``--timeout``.
     """
-    import kiro_crew.telegram.renderer as renderer_mod
+    import efm_go.telegram.renderer as renderer_mod
 
     monkeypatch.setattr(renderer_mod, "_APPROVAL_TIMEOUT_S", 30.0)
 
@@ -312,7 +312,7 @@ class TestTheSeamOwnsTheReading:
             asked.append((channel, request_id))
             return None
 
-        import kiro_crew.telegram.transport_dispatch as td
+        import efm_go.telegram.transport_dispatch as td
 
         d, _cli, _sess = _dispatcher({7})
         session_key = d._session_key(("direct", "7"))
@@ -338,9 +338,9 @@ class TestTheSeamOwnsTheReading:
         # The hook's branch compares against this constant, and the decider sets
         # exactly it on an elapsed wait. Pin the pairing so a rename of either side
         # cannot silently turn the branch off and restore the bug.
-        from kiro_crew.telegram import renderer as renderer_mod
+        from efm_go.telegram import renderer as renderer_mod
 
-        src = renderer_mod.__loader__.get_source("kiro_crew.telegram.renderer")
+        src = renderer_mod.__loader__.get_source("efm_go.telegram.renderer")
         assert "self.last_deny_cause = DENY_CAUSE_APPROVAL_TIMEOUT" in src
         assert DENY_CAUSE_APPROVAL_TIMEOUT == "approval_timeout"
 

@@ -39,11 +39,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from dashboard_owner_helpers import owner_claims
 
-from kiro_crew import platform_compat
-from kiro_crew.apps import bridges, routes
-from kiro_crew.gateway_lock import GatewayLock
-from kiro_crew.history import transcript_stem
-from kiro_crew.session_map import SUPPRESS_REPLAY_FLAG, SessionMap
+from efm_go import platform_compat
+from efm_go.apps import bridges, routes
+from efm_go.gateway_lock import GatewayLock
+from efm_go.history import transcript_stem
+from efm_go.session_map import SUPPRESS_REPLAY_FLAG, SessionMap
 
 APP = "acme-app"
 OWNED = "dashboard:acme-run-abc"
@@ -171,7 +171,7 @@ def test_a_clear_that_could_not_be_written_is_not_reported_as_clean(tmp_path, mo
 
 def test_a_failed_clear_is_visible_to_the_operator(tmp_path, capsys):
     """And the text has to name the action that fixes it, which is not the gateway one."""
-    from kiro_crew import cli_commands
+    from efm_go import cli_commands
 
     cli_commands._print_pointer_cleanup(APP, bridges.SessionPointerCleanup(failed=True))
     err = capsys.readouterr().err
@@ -323,7 +323,7 @@ def test_the_in_gateway_path_clears_inside_the_lock_via_the_live_map(tmp_path):
     is the NEW installation's.
     """
     src = (
-        pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "apps" / "routes.py"
+        pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "apps" / "routes.py"
     ).read_text(encoding="utf-8")
     handler = src.split("async def _run_uninstall", 1)[1].split("\nasync def ", 1)[0]
 
@@ -390,7 +390,7 @@ def test_the_in_gateway_path_enumerates_through_the_live_manager(tmp_path):
     clear, which goes through the live map, then leaves it for a reinstall.
     """
     src = (
-        pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "apps" / "routes.py"
+        pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "apps" / "routes.py"
     ).read_text(encoding="utf-8")
     handler = src.split("async def _run_uninstall", 1)[1].split("\nasync def ", 1)[0]
 
@@ -426,7 +426,7 @@ def test_a_declined_clear_is_visible_to_the_operator_and_not_a_success_tick(tmp_
     case rather than an extreme one. Silent, it leaves a pointer keyed by a name a
     reinstall reuses and the operator sees only a success tick.
     """
-    from kiro_crew import cli_commands
+    from efm_go import cli_commands
 
     cli_commands._print_pointer_cleanup(APP, bridges.SessionPointerCleanup(declined=True))
     err = capsys.readouterr().err
@@ -443,7 +443,7 @@ def test_the_clear_still_runs_when_the_app_is_already_gone(tmp_path, monkeypatch
     Re-running it with the gateway stopped is the only path back — and it only works
     because the bookkeeping half does not require the app to still be installed.
     """
-    from kiro_crew import cli_commands
+    from efm_go import cli_commands
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     SessionMap().set(OWNED, "sid-app", provider="acp")
@@ -551,7 +551,7 @@ def test_the_in_gateway_path_suppresses_replay_and_finishes_durable(tmp_path):
     the same invariant as ``flush()`` before releasing the lock.
     """
     src = (
-        pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "apps" / "routes.py"
+        pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "apps" / "routes.py"
     ).read_text(encoding="utf-8")
     handler = src.split("async def _run_uninstall", 1)[1].split("\nasync def ", 1)[0]
 
@@ -578,7 +578,7 @@ def test_the_cold_start_chokepoint_consumes_the_persisted_flag():
     persisted half cannot be honoured on one path and ignored on the other.
     """
     src = (
-        pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "session.py"
+        pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "session.py"
     ).read_text(encoding="utf-8")
     consume = src.split("def consume_replay_suppression", 1)[1].split("\n    def ", 1)[0]
 
@@ -650,7 +650,7 @@ def test_both_suppression_markers_are_consumed_together():
     a fix for stale history turned into amnesia about live history.
     """
     src = (
-        pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "session.py"
+        pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "session.py"
     ).read_text(encoding="utf-8")
     consume = src.split("def consume_replay_suppression", 1)[1].split("\n    def ", 1)[0]
 
@@ -771,31 +771,31 @@ async def test_a_flush_that_fails_does_not_abandon_the_rest_of_the_uninstall(
     }
 
     with (
-        patch("kiro_crew.apps.routes.get_app", return_value=fake_app),
+        patch("efm_go.apps.routes.get_app", return_value=fake_app),
         patch(
-            "kiro_crew.apps.routes.uninstall_app",
+            "efm_go.apps.routes.uninstall_app",
             return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
         ),
-        patch("kiro_crew.apps.routes.stop_app_backend", return_value=None),
-        patch("kiro_crew.apps.routes.deregister_app", return_value=None),
+        patch("efm_go.apps.routes.stop_app_backend", return_value=None),
+        patch("efm_go.apps.routes.deregister_app", return_value=None),
         patch(
-            "kiro_crew.apps.teardown.on_app_disable",
+            "efm_go.apps.teardown.on_app_disable",
             new_callable=AsyncMock,
             return_value=None,
         ),
-        patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+        patch("efm_go.apps.routes.sel", return_value=MagicMock()),
         patch(
-            "kiro_crew.apps.routes.classify_and_clean_for_uninstall",
+            "efm_go.apps.routes.classify_and_clean_for_uninstall",
             return_value={"removable": [], "shared": [], "userInstalled": []},
         ),
         patch(
-            "kiro_crew.apps.routes.clean_dependencies",
+            "efm_go.apps.routes.clean_dependencies",
             new_callable=AsyncMock,
             return_value=[],
         ),
-        patch("kiro_crew.apps.routes.invalidate_app_secret_cache") as secret_cache,
-        patch("kiro_crew.apps.routes._unregister_notification_channels") as channels,
-        patch("kiro_crew.apps.routes.forget_app_hooks") as hooks,
+        patch("efm_go.apps.routes.invalidate_app_secret_cache") as secret_cache,
+        patch("efm_go.apps.routes._unregister_notification_channels") as channels,
+        patch("efm_go.apps.routes.forget_app_hooks") as hooks,
         caplog.at_level(logging.WARNING, logger=routes.logger.name),
     ):
         resp = await routes.handle_uninstall_app(request)
@@ -900,25 +900,25 @@ async def test_a_teardown_that_raises_still_leaves_the_suppression_durable(tmp_p
     }
 
     with (
-        patch("kiro_crew.apps.routes.get_app", return_value=fake_app),
+        patch("efm_go.apps.routes.get_app", return_value=fake_app),
         patch(
-            "kiro_crew.apps.routes.uninstall_app",
+            "efm_go.apps.routes.uninstall_app",
             return_value=MagicMock(ok=True, to_dict=lambda: {"ok": True}),
         ),
-        patch("kiro_crew.apps.routes.stop_app_backend", return_value=None),
-        patch("kiro_crew.apps.routes.deregister_app", return_value=None),
+        patch("efm_go.apps.routes.stop_app_backend", return_value=None),
+        patch("efm_go.apps.routes.deregister_app", return_value=None),
         patch(
-            "kiro_crew.apps.teardown.on_app_disable",
+            "efm_go.apps.teardown.on_app_disable",
             new_callable=AsyncMock,
             return_value=None,
         ),
-        patch("kiro_crew.apps.routes.sel", return_value=MagicMock()),
+        patch("efm_go.apps.routes.sel", return_value=MagicMock()),
         patch(
-            "kiro_crew.apps.routes.classify_and_clean_for_uninstall",
+            "efm_go.apps.routes.classify_and_clean_for_uninstall",
             return_value={"removable": [], "shared": [], "userInstalled": []},
         ),
         patch(
-            "kiro_crew.apps.routes.clean_dependencies",
+            "efm_go.apps.routes.clean_dependencies",
             new_callable=AsyncMock,
             return_value=[],
         ),

@@ -1,4 +1,4 @@
-"""Behaviour coverage for the un-exercised helpers of ``kiro_crew.apps.registry``.
+"""Behaviour coverage for the un-exercised helpers of ``efm_go.apps.registry``.
 
 The registry module's install path is the interesting half (git clone, build,
 identity gates) but most of its surface is small, deterministic helpers that had
@@ -31,9 +31,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.apps import registry
-from kiro_crew.apps.manifest import AppManifest
-from kiro_crew.platform import PlatformCompositionError
+from efm_go.apps import registry
+from efm_go.apps.manifest import AppManifest
+from efm_go.platform import PlatformCompositionError
 
 #: The install's refusal for a root `data` the data directory cannot stand beside,
 #: as `manager.gateway_data_dir_obstruction` spells it -- the transaction must carry it
@@ -51,7 +51,7 @@ _DATA_IS_A_FILE = (
 @pytest.fixture(autouse=True)
 def _explicit_registry_execution_admission(monkeypatch):
     """These tests reach admitted registry code paths unless they say otherwise."""
-    monkeypatch.setattr("kiro_crew.apps.execution.third_party_execution_allowed", lambda: True)
+    monkeypatch.setattr("efm_go.apps.execution.third_party_execution_allowed", lambda: True)
 
 
 @pytest.fixture()
@@ -77,7 +77,7 @@ def pip_importable(monkeypatch):
     """
     import site
 
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(site, "ENABLE_USER_SITE", False)
     monkeypatch.setattr(platform_compat, "is_bundled_interpreter", lambda: False)
@@ -106,7 +106,7 @@ def bundled_interpreter(monkeypatch, tmp_path):
     exists here and each case below isolates the condition it is about. The
     case about a MISSING entry removes it explicitly.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(platform_compat, "is_bundled_interpreter", lambda: True)
     (tmp_path / "server.py").write_text("", encoding="utf-8")
@@ -194,7 +194,7 @@ def _reg(name: str, repo: str, branch: str = "main") -> SimpleNamespace:
 def _config_with(monkeypatch, registries: list[SimpleNamespace]) -> None:
     """Make every ``KiroCrewConfig.load()`` in this module see *registries*."""
     monkeypatch.setattr(
-        "kiro_crew.config.loader.KiroCrewConfig.load",
+        "efm_go.config.loader.KiroCrewConfig.load",
         classmethod(lambda cls: SimpleNamespace(registries=registries)),
     )
 
@@ -448,7 +448,7 @@ class TestConfiguredRegistryHosts:
             raise OSError("config unreadable")
 
         monkeypatch.setattr(
-            "kiro_crew.config.loader.KiroCrewConfig.load", classmethod(_boom)
+            "efm_go.config.loader.KiroCrewConfig.load", classmethod(_boom)
         )
         assert registry._configured_registry_hosts() == frozenset()
 
@@ -1450,7 +1450,7 @@ class TestCandidateResolution:
         # fails; pin "catalog reachable, app absent" so the assertion
         # exercises the bundled + external span deterministically.
         monkeypatch.setattr(
-            "kiro_crew.apps.official_catalog.inventory_for_install",
+            "efm_go.apps.official_catalog.inventory_for_install",
             lambda name: None,
         )
         monkeypatch.setattr(
@@ -1614,7 +1614,7 @@ class TestRepoLookups:
             raise RuntimeError("config exploded")
 
         monkeypatch.setattr(
-            "kiro_crew.config.loader.KiroCrewConfig.load", classmethod(_boom)
+            "efm_go.config.loader.KiroCrewConfig.load", classmethod(_boom)
         )
         assert registry._external_registry_app_by_repo("ext/demo") is None
         assert registry._external_registry_repos() == set()
@@ -1686,7 +1686,7 @@ class TestExternalRegistryCacheIdentity:
         # name while every writer had moved to the coordinate identity, so an
         # external source always counted 0 and the single-owner credential
         # grant was silently disabled.
-        from kiro_crew.apps.routes import _repo_key_owner_count
+        from efm_go.apps.routes import _repo_key_owner_count
 
         monkeypatch.setattr(registry, "_load_registry_file", list)
         reg = _reg("mine", "https://gitea.internal/idx.git")
@@ -2337,7 +2337,7 @@ class TestRunAppBuild:
         """
         (tmp_path / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
         bundled = tmp_path / "App.app" / "Contents" / "Resources" / "backend-dist"
-        bundled = bundled / "kirocrew-backend-arm64" / "bin" / "python3.12"
+        bundled = bundled / "efm-go-backend-arm64" / "bin" / "python3.12"
         bundled.parent.mkdir(parents=True, exist_ok=True)
         bundled.write_text("", encoding="utf-8")
         monkeypatch.setattr(registry.sys, "executable", str(bundled))
@@ -2701,7 +2701,7 @@ class TestRunAppBuild:
             tmp_path,
             "demo",
             [],
-            manifest=_asgi_backend("kiro_crew.apps.builtins.demo.server"),
+            manifest=_asgi_backend("efm_go.apps.builtins.demo.server"),
             self_managed=False,
         )
         assert result["ok"] is False
@@ -2926,7 +2926,7 @@ class TestRunAppBuild:
         backend never gets its deps -- so the waiver, granted because the
         provisioner installs the file, does not apply to one it will refuse. The
         cap is the provisioner's own constant, applied by the shared rule."""
-        from kiro_crew.apps.manifest import REQUIREMENTS_TXT_MAX_BYTES
+        from efm_go.apps.manifest import REQUIREMENTS_TXT_MAX_BYTES
 
         (tmp_path / "requirements.txt").write_bytes(b"#" + b"x" * REQUIREMENTS_TXT_MAX_BYTES)
         spawned = _fake_sandbox(monkeypatch, [_FakeProc(returncode=0)])
@@ -3219,7 +3219,7 @@ class TestRunAppBuild:
         and the final gate -- timed together. Returns the runtime's refusal (``""``
         when it accepts the path), the build result, the final refusal and the
         elapsed seconds."""
-        from kiro_crew.apps.manifest import file_entry_point_refusal
+        from efm_go.apps.manifest import file_entry_point_refusal
 
         (tmp_path / "B").symlink_to(Path("."))
         (tmp_path / "requirements.txt").write_text("fastapi\n", encoding="utf-8")
@@ -3342,7 +3342,7 @@ class TestRunAppBuild:
         copy and raises the install's own refusal -- in both passes, without the
         desktop code (a browser install refuses it too) -- and the holder is gone.
         An UPDATE puts the preserved directory back over the file: nothing to refuse."""
-        from kiro_crew.apps.manager import InstalledTreeRefused
+        from efm_go.apps.manager import InstalledTreeRefused
 
         home = tmp_path / "home"
         source = home / "app-sources" / "demo"
@@ -4096,7 +4096,7 @@ class TestInstallFromRegistryRefusals:
     async def test_legacy_name_grant_refuses_before_manifest_fetch_or_clone(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.config.loader import _invalidate_config_cache
+        from efm_go.config.loader import _invalidate_config_cache
 
         home = tmp_path / "home"
         home.mkdir()
@@ -4203,7 +4203,7 @@ class TestInstallFromRegistryRefusals:
             registry, "app_admission_denied", lambda name, manifest=None, action="": None
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.version.check_min_version", lambda mv: "needs 999.0.0"
+            "efm_go.apps.version.check_min_version", lambda mv: "needs 999.0.0"
         )
         result = await registry.install_from_registry("demo")
         assert result == {"ok": False, "name": "demo", "error": "needs 999.0.0"}
@@ -4242,13 +4242,13 @@ class TestInstallFromRegistryRefusals:
 # Each case below pins a value the registry derives from where its code lives
 # (``__file__``), a byte-exact cache identity, a fixed classification, or a
 # module-level seam that one function reads while another defines it. Every case
-# goes through ``kiro_crew.apps.registry`` only, so it answers the same way against
+# goes through ``efm_go.apps.registry`` only, so it answers the same way against
 # the one-module registry and against the split one.
 
 
 class TestTheBundledSeedIsTheWheelsOwnFile:
     def test_the_seed_path_sits_beside_the_registry_module(self):
-        # The seed ships as ``kiro_crew/apps/app-registry.json``; a module that
+        # The seed ships as ``efm_go/apps/app-registry.json``; a module that
         # derived the path from its OWN ``__file__`` after moving would look in the
         # wrong directory and silently list no seed rows at all.
         assert registry._REGISTRY_FILE == Path(registry.__file__).parent / "app-registry.json"

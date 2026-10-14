@@ -75,11 +75,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.dashboard.server import (
+from efm_go.dashboard.server import (
     _MIXED_INTERNAL_API_PATHS,
     _STRICT_INTERNAL_API_PATHS,
 )
-from kiro_crew.dashboard.token_auth import (
+from efm_go.dashboard.token_auth import (
     _BYPASS_EXACT,
     _BYPASS_EXACT_METHODS,
     internal_path_matches,
@@ -91,7 +91,7 @@ from kiro_crew.dashboard.token_auth import (
 # per full run for this file alone. Grouping keeps the cache single-copy per run.
 pytestmark = pytest.mark.xdist_group(name="tree_scan_test_mcp_call_site_auth_coverage")
 
-_SRC = Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+_SRC = Path(__file__).resolve().parent.parent / "src" / "efm_go"
 _CORE = _SRC / "mcp_core.py"
 
 # The helpers that carry X-Internal-Secret. Defined in mcp_core; called either
@@ -162,7 +162,7 @@ _KNOWN_UNRESOLVED = frozenset(
         # gateway can be told apart from a dead one.
         "cli_server.py:_probe_dashboard_health",
         # NOT a gateway call at all: this fetches the public release feed
-        # (updates.crew.kiro.dev) over HTTPS to compare versions. There is no
+        # (updates.efmleads.com) over HTTPS to compare versions. There is no
         # /api path to resolve because the peer is the CDN, and no secret is
         # attached (the feed is unauthenticated display metadata; the signed
         # manifest is verified by the wheel engine before anything installs).
@@ -463,7 +463,7 @@ def _call_method(call: ast.Call, called: str) -> str:
 # reach is their rows' declared routes, which ``_scan`` resolves the loopback
 # client's sites to; no other module may build a loopback client
 # (``test_only_a_table_server_builds_a_loopback_client``).
-_TABLE_SERVERS = {"mcp_dashboard.py": "kiro_crew.mcp_dashboard"}
+_TABLE_SERVERS = {"mcp_dashboard.py": "efm_go.mcp_dashboard"}
 
 # The loopback client's own module. Its verbs forward a path, so they are
 # wrappers, but their callers are table rows (resolved from the rows' declared
@@ -774,12 +774,12 @@ class TestDeclaredDashboardRoutes:
     def test_the_loopback_detector_sees_every_spelling(self):
         """Non-vacuity for ``test_only_a_table_server_builds_a_loopback_client``."""
         for flagged in (
-            "from kiro_crew.mcp_tools.dashboard_client import LoopbackDashboardClient",
-            "from kiro_crew.mcp_tools import dashboard_client as dc\nc = dc.LoopbackDashboardClient()",
+            "from efm_go.mcp_tools.dashboard_client import LoopbackDashboardClient",
+            "from efm_go.mcp_tools import dashboard_client as dc\nc = dc.LoopbackDashboardClient()",
             "ctx = ToolContext.for_frame('kirocrew-x')",
         ):
             assert _builds_loopback_client(ast.parse(flagged)), flagged
-        for ignored in ("client.post('/api/x', {})", "from kiro_crew.mcp_tools.table import Tool"):
+        for ignored in ("client.post('/api/x', {})", "from efm_go.mcp_tools.table import Tool"):
             assert not _builds_loopback_client(ast.parse(ignored)), ignored
         for rel in _TABLE_SERVERS:
             tree = ast.parse((_SRC / rel).read_text(encoding="utf-8"))
@@ -906,7 +906,7 @@ class TestMcpCallSiteAuthCoverage:
         """
         mod = tmp_path / "kwshape.py"
         mod.write_text(
-            "from kiro_crew.mcp_core import _post\n"
+            "from efm_go.mcp_core import _post\n"
             "def go():\n"
             '    return _post(path="/api/kw-walker-probe", body={})\n',
             encoding="utf-8",

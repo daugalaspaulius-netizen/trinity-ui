@@ -13,8 +13,8 @@ import logging
 
 import pytest
 
-from kiro_crew.mcp_gateway import rewriter
-from kiro_crew.mcp_gateway.rewriter import (
+from efm_go.mcp_gateway import rewriter
+from efm_go.mcp_gateway.rewriter import (
     _WRAPPER_MARKER,
     _collect_target_env,
     _reset_collision_warnings,

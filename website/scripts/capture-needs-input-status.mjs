@@ -132,7 +132,7 @@ async function main() {
         ready: true,
         initial_setup_complete: true,
         repair_required: false,
-        docs_url: 'https://kiro.dev',
+        docs_url: 'https://efmleads.com',
         login_command: 'kiro-cli login',
         sso_login_command: 'kiro-cli login --sso',
         setup_allowed: true,

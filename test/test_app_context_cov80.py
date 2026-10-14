@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from kiro_crew.apps.app_storage import AppStorage
-from kiro_crew.apps.context import AppHealthStatus, build_app_context
-from kiro_crew.apps.cron_sdk import CronSDK
-from kiro_crew.apps.event_bus import EventBus
-from kiro_crew.apps.spawn_sdk import SpawnSDK
+from efm_go.apps.app_storage import AppStorage
+from efm_go.apps.context import AppHealthStatus, build_app_context
+from efm_go.apps.cron_sdk import CronSDK
+from efm_go.apps.event_bus import EventBus
+from efm_go.apps.spawn_sdk import SpawnSDK
 
 
 class TestAppHealthStatus:

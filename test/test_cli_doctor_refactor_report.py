@@ -8,7 +8,7 @@ the loaded credentials), how every section's issues aggregate into the closing
 verdict, and the exit status. This file pins those, byte for byte, on four hosts.
 
 Every section the orchestrator calls BY NAME is replaced with a marker through
-``kiro_crew.cli_doctor`` -- the patch target every other doctor test uses -- so a
+``efm_go.cli_doctor`` -- the patch target every other doctor test uses -- so a
 marker that stops printing is also a patch seam that stopped reaching its call site.
 The rows the orchestrator composes from its own probes run for real, against probes
 pinned here. Linux only: the rows describe a Linux host, and the platform branches
@@ -25,9 +25,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import cli_doctor
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform import PlatformCompositionError
+from efm_go import cli_doctor
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform import PlatformCompositionError
 
 pytestmark = pytest.mark.skipif(
     not sys.platform.startswith("linux"), reason="the frozen report describes a Linux host"
@@ -153,7 +153,7 @@ class _Host:
             "LLAMA_CPP_LIB_PATH",
         ):
             mp.delenv(var, raising=False)
-        mp.setattr(cli_doctor, "__file__", str(self.tmp / "pkg" / "src" / "kiro_crew" / "x.py"))
+        mp.setattr(cli_doctor, "__file__", str(self.tmp / "pkg" / "src" / "efm_go" / "x.py"))
         mp.setattr(cli_doctor, "KIRO_AGENTS_DIR", self.agents)
         mp.setattr(cli_doctor, "config_dir", lambda: self.home)
         mp.setattr(cli_doctor, "data_home", lambda: self.home)
@@ -201,8 +201,8 @@ class _Host:
         mp.setattr(cli_doctor, "job_pause_state_from_disk", lambda job_id: self.paused)
         mp.setattr(cli_doctor, "machine_hostname", lambda: "devbox")
         mp.setattr(cli_doctor, "is_local_only", lambda host, has_slack: self.local)
-        import kiro_crew._sqlite_compat as sqlite_compat
-        import kiro_crew.channels as channels
+        import efm_go._sqlite_compat as sqlite_compat
+        import efm_go.channels as channels
 
         mp.setattr(sqlite_compat, "fts5_available", lambda: self.fts5)
         mp.setattr(channels, "channel_readiness", lambda cfg, creds: tuple(self.readiness))
@@ -379,7 +379,7 @@ MCP Tools
 
 Runtime
   python:      ✅ <PYTHON> (<PYVER>)
-  kiro_crew:   ✅ 9.9.9
+  efm_go:   ✅ 9.9.9
   deps:        ✅ websockets, slack_sdk, aiohttp available
   <<_doctor_import_path>>
   sqlite fts5: ✅ available
@@ -420,7 +420,7 @@ Connectivity
 
 def _ready(host: _Host) -> None:
     checkout = host.tmp / "checkout"
-    for marker in ("skills", "src/kiro_crew", ".git"):
+    for marker in ("skills", "src/efm_go", ".git"):
         (checkout / marker).mkdir(parents=True)
     host.mp.setenv("KIROCREW_PROJECT_DIR", str(checkout))
     (host.agents / "kirocrew.json").write_text("{}", encoding="utf-8")

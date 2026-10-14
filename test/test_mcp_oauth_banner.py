@@ -24,10 +24,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from oauth_url_corpus import LEGIT_OAUTH_URLS
 
-from kiro_crew import mcp_discovery
-from kiro_crew.connections import get_all_registry_providers, get_visible_providers
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_runner import (
+from efm_go import mcp_discovery
+from efm_go.connections import get_all_registry_providers, get_visible_providers
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_runner import (
     _connections_managed_mcp_names,
     _drain_session_init_oauth_requests,
     _emit_mcp_oauth_request,
@@ -35,15 +35,15 @@ from kiro_crew.dashboard.chat_runner import (
     _mark_mcp_oauth_completed,
     _supersede_open_mcp_oauth_banners,
 )
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.dashboard.chat_utils import (
     _broadcast_expired_oauth_banners,
     _live_child_instance,
     _prepare_messages,
     _redact_meta_for_role,
 )
-from kiro_crew.dashboard.state import _ChatSlot
-from kiro_crew.mcp_utils import mcp_server_alias
-from kiro_crew.security import oauth_url_contains_credential
+from efm_go.dashboard.state import _ChatSlot
+from efm_go.mcp_utils import mcp_server_alias
+from efm_go.security import oauth_url_contains_credential
 
 # ── _is_safe_oauth_url ──
 
@@ -1142,13 +1142,13 @@ class TestProcessInstanceContract:
     """
 
     def _bare_client(self):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = object.__new__(AcpClient)
         return client
 
     def _bare_runtime(self):
-        from kiro_crew.acp.runtime import AcpRuntime
+        from efm_go.acp.runtime import AcpRuntime
 
         runtime = object.__new__(AcpRuntime)
         return runtime
@@ -1320,7 +1320,7 @@ class TestOAuthParamCredentialScan:
         # Pins the entry at the data layer: the pair must be present exactly
         # (host lowercase, path exact), so a rename or move in the set fails
         # loudly rather than silently re-breaking reconnect.
-        from kiro_crew.security import _OAUTH_AUTHORIZATION_ENDPOINTS
+        from efm_go.security import _OAUTH_AUTHORIZATION_ENDPOINTS
 
         assert (
             "mcp.auth.mail.superhuman.com",
@@ -1347,7 +1347,7 @@ class TestBannerGateIsCanonicalSecurityPredicate:
         assert not hasattr(chat_runner, "_oauth_url_contains_credential")
 
     def test_chat_runner_binding_is_the_canonical_function(self):
-        from kiro_crew import security
+        from efm_go import security
 
         assert chat_runner.oauth_url_contains_credential is security.oauth_url_contains_credential
 
@@ -1560,7 +1560,7 @@ class TestAnnotationFailsOpen:
         _own(tmp_path, monkeypatch, {CARDED_SLUG: {"url": "https://mcp.notion.com/mcp"}})
         slot = _ChatSlot("s1")
         with patch(
-            f"kiro_crew.dashboard.chat_runner.{broken}", side_effect=RuntimeError("boom")
+            f"efm_go.dashboard.chat_runner.{broken}", side_effect=RuntimeError("boom")
         ):
             await _drain_session_init_oauth_requests(MagicMock(), slot, _pending(CARDED_SLUG))
         assert _owned_flags(slot) == [False]
@@ -1676,7 +1676,7 @@ class TestConnectionsManagedMcpNames:
     def test_a_scope_we_do_not_own_confers_nothing(self):
         """A slug present only in a scope we do not own stays un-annotated."""
         with patch(
-            "kiro_crew.mcp_discovery._load_mcp_json_by_source",
+            "efm_go.mcp_discovery._load_mcp_json_by_source",
             return_value={
                 mcp_discovery.SCOPE_KIROCREW: {},
                 mcp_discovery.SCOPE_KIRO_GLOBAL: {CARDED_SLUG: {"url": "https://n"}},

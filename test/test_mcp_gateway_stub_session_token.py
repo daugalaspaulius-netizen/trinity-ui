@@ -62,15 +62,15 @@ from test_mcp_gateway_claim import (
 )
 from test_mcp_gateway_session_inject import _PROBE_SCRIPT, REAL_CLI
 
-from kiro_crew import mcp_caller, mcp_core, platform_compat
-from kiro_crew.mcp_caller import CallerContext
-from kiro_crew.mcp_gateway import claim as claim_mod
-from kiro_crew.mcp_gateway import gatewayd as gw
-from kiro_crew.mcp_gateway import prewarm as prewarm_mod
-from kiro_crew.mcp_gateway import stub as stub_mod
-from kiro_crew.mcp_gateway.daemon import connection as connection_mod
-from kiro_crew.mcp_gateway.pool import PoolKey
-from kiro_crew.mcp_gateway.session_servers import (
+from efm_go import mcp_caller, mcp_core, platform_compat
+from efm_go.mcp_caller import CallerContext
+from efm_go.mcp_gateway import claim as claim_mod
+from efm_go.mcp_gateway import gatewayd as gw
+from efm_go.mcp_gateway import prewarm as prewarm_mod
+from efm_go.mcp_gateway import stub as stub_mod
+from efm_go.mcp_gateway.daemon import connection as connection_mod
+from efm_go.mcp_gateway.pool import PoolKey
+from efm_go.mcp_gateway.session_servers import (
     STUB_SESSION_TOKEN_ENV,
     attach_stub_session_token,
 )
@@ -199,7 +199,7 @@ def test_an_owned_control_plane_register_names_the_stubs_code_generation(
     upgrading Kiro Crew would unpool every unrelated server even when its own
     binary and protocol did not move.
     """
-    from kiro_crew import code_fingerprint as fingerprint_mod
+    from efm_go import code_fingerprint as fingerprint_mod
 
     monkeypatch.setattr(fingerprint_mod, "code_fingerprint", lambda: "stub-generation")
     owned = stub_mod._parse_args(
@@ -225,7 +225,7 @@ def test_register_generation_attestation_requires_managed_server_name(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A third-party name cannot opt into the Crew daemon-generation gate by argv."""
-    from kiro_crew import code_fingerprint as fingerprint_mod
+    from efm_go import code_fingerprint as fingerprint_mod
 
     monkeypatch.setattr(fingerprint_mod, "code_fingerprint", lambda: "stub-generation")
     common_args = [
@@ -261,7 +261,7 @@ def test_the_stubs_owned_subcommand_set_is_the_managed_server_table() -> None:
     keeps attaching to a pre-fingerprint daemon after an upgrade. ``mcp-debug``
     and ``mcp-panel`` were missing when the check landed.
     """
-    from kiro_crew import mcp_discovery
+    from efm_go import mcp_discovery
 
     assert stub_mod._KIROCREW_MCP_SUBCOMMANDS == frozenset(
         mcp_discovery._MANAGED_SERVER_SUBCOMMANDS.values()
@@ -278,7 +278,7 @@ def test_the_caller_aware_opt_in_servers_name_the_stubs_code_generation(
     """Exactly the servers whose mounts refuse every call as ``identity_unattested``
     without the per-session attestation must run the generation check, or a
     pre-fingerprint daemon keeps serving them after an upgrade."""
-    from kiro_crew import code_fingerprint as fingerprint_mod
+    from efm_go import code_fingerprint as fingerprint_mod
 
     monkeypatch.setattr(fingerprint_mod, "code_fingerprint", lambda: "stub-generation")
     owned = stub_mod._parse_args(
@@ -1065,7 +1065,7 @@ def test_the_fallback_precheck_covers_every_control_plane() -> None:
     superset of the daemon's ``CONTROL_PLANE_BACKENDS``, or a control plane added
     to the daemon's set alone would be skipped here silently: no vetting, no
     token, no WARNING -- the exact tokenless shape this PR fixed."""
-    from kiro_crew import mcp_cleanup
+    from efm_go import mcp_cleanup
 
     assert stub_mod.KIROCREW_BIN_MCP_SERVERS is mcp_cleanup.KIROCREW_BIN_MCP_SERVERS
     assert gw.CONTROL_PLANE_BACKENDS <= frozenset(stub_mod.KIROCREW_BIN_MCP_SERVERS)
@@ -1073,7 +1073,7 @@ def test_the_fallback_precheck_covers_every_control_plane() -> None:
 
 _FALLBACK_IMPORT_PROBE = r"""
 import json, sys
-from kiro_crew.mcp_gateway import stub
+from efm_go.mcp_gateway import stub
 
 def _capture(*_a, **_k):
     raise SystemExit(0)
@@ -1090,20 +1090,20 @@ except SystemExit:
     pass
 print(json.dumps({
     "stub": stub.__file__,
-    "modules": sorted(m for m in sys.modules if m.startswith("kiro_crew.mcp_gateway.")),
+    "modules": sorted(m for m in sys.modules if m.startswith("efm_go.mcp_gateway.")),
 }))
 """
 
-_HEAVY = ("kiro_crew.mcp_gateway.gatewayd", "kiro_crew.mcp_gateway.daemon")
+_HEAVY = ("efm_go.mcp_gateway.gatewayd", "efm_go.mcp_gateway.daemon")
 
 
 def _fallback_import_footprint(server: str, command: str, tmp_path: Path) -> list[str]:
-    """The ``kiro_crew.mcp_gateway`` modules a fresh stub process holds after one
+    """The ``efm_go.mcp_gateway`` modules a fresh stub process holds after one
     fallback exec of *server*. A subprocess, because this test process imported
     gatewayd at collection and ``sys.modules`` here can prove nothing. The child
     is pinned to THIS checkout's package by absolute path: the harness's
     ``PYTHONPATH`` may be relative, and resolved from ``tmp_path`` it would hand
-    the child whatever ``kiro_crew`` the interpreter has installed instead."""
+    the child whatever ``efm_go`` the interpreter has installed instead."""
     src_root = Path(stub_mod.__file__).resolve().parents[2]
     env = {**os.environ, STUB_SESSION_TOKEN_ENV: TOKEN_A}
     env["PYTHONPATH"] = os.pathsep.join(
@@ -1133,7 +1133,7 @@ def test_a_third_party_fallback_does_not_import_gatewayd(tmp_path: Path) -> None
     control: it shows the probe can see the import when it does happen."""
     third_party = _fallback_import_footprint("echo-mcp", sys.executable, tmp_path)
     assert not set(third_party) & set(_HEAVY), third_party
-    assert "kiro_crew.mcp_gateway.stub" in third_party
+    assert "efm_go.mcp_gateway.stub" in third_party
 
     control_plane = _fallback_import_footprint("kirocrew-core", sys.executable, tmp_path)
     assert set(_HEAVY) <= set(control_plane), control_plane
@@ -1193,7 +1193,7 @@ def test_the_fallback_calls_the_real_vetting_in_the_shape_it_accepts(tmp_path: P
     reaches it, and a real call in that shape must reach a verdict."""
     import inspect
 
-    from kiro_crew.mcp_gateway.daemon import control_plane as control_plane_mod
+    from efm_go.mcp_gateway.daemon import control_plane as control_plane_mod
 
     vetting = gw._spawns_own_control_plane
     assert vetting is control_plane_mod._spawns_own_control_plane
@@ -1266,7 +1266,7 @@ def _bare_runtime(
     pid: int = 4242,
     published: list[tuple[str, str]] | None = None,
 ) -> Any:
-    from kiro_crew.acp.runtime import AcpRuntime
+    from efm_go.acp.runtime import AcpRuntime
 
     runtime = AcpRuntime(work_dir="/tmp")
     runtime._mcp_gateway_socket = "/tmp/kirocrew-gw.sock"
@@ -1275,7 +1275,7 @@ def _bare_runtime(
     # switch-free identity channel). Recorded rather than written: these are unit
     # tests of the naming/claim contract, and letting them touch the mapping
     # directory would make each one depend on a trust root it never set up.
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     sink = published if published is not None else []
     monkeypatch.setattr(
@@ -1292,7 +1292,7 @@ async def test_the_runtime_names_the_session_before_its_stubs_can_register(
     a claim sent afterwards races the register it exists to inform. The claim is
     pushed — and awaited — first, and the token it names is the one on the
     entries handed to that request."""
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     sent: list[tuple[Any, ...]] = []
 
@@ -1316,7 +1316,7 @@ async def test_each_session_on_one_runtime_gets_its_own_token(
 ) -> None:
     """Two sessions sharing a kiro-cli process must not share the name that
     tells them apart."""
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     async def _ok(*_a: Any, **_k: Any) -> bool:
         return True
@@ -1335,7 +1335,7 @@ async def test_an_unclaimed_worker_mints_a_token_but_pushes_no_claim(
 ) -> None:
     """A warm-pool worker is spawned before any session claims it, so there is
     no owner to name yet — its ``rekey()`` carries the same token later."""
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     sent: list[Any] = []
 
@@ -1361,7 +1361,7 @@ async def test_no_stub_entries_still_names_the_session_but_pushes_no_claim(
 
     A token without a reachable gatewayd is not inert, because gatewayd is not its
     only reader: it also resolves through a MAC-signed mapping file
-    (:mod:`kiro_crew.session_token_sig`) that the strict identity resolver reads
+    (:mod:`efm_go.session_token_sig`) that the strict identity resolver reads
     with no daemon, no broker stub and no config switch. So a session on a
     gateway-less install — the default install — needs a name of its own, and
     withholding one is the identity gap this asserts against.
@@ -1369,7 +1369,7 @@ async def test_no_stub_entries_still_names_the_session_but_pushes_no_claim(
     The claim half is independent and is asserted too: with no stub entries there
     is no stub connection for a claim to inform, so no claim is pushed.
     """
-    import kiro_crew.acp.runtime as rt_mod
+    import efm_go.acp.runtime as rt_mod
 
     async def _boom(*_a: Any, **_k: Any) -> bool:
         raise AssertionError("claimed a session with no stub connections to inform")
@@ -1389,7 +1389,7 @@ def test_the_shared_runtime_rekey_claims_its_own_session_not_the_runtime(
 ) -> None:
     """A warm-pool re-claim on a runtime hosting subagents must reach only the
     claiming session's stubs — which is the token the handle carries."""
-    import kiro_crew.acp.session_provider as sp_mod
+    import efm_go.acp.session_provider as sp_mod
 
     pushed: list[tuple[Any, ...]] = []
     monkeypatch.setattr(
@@ -1432,8 +1432,8 @@ def test_the_shared_runtime_rekey_claims_its_own_session_not_the_runtime(
 #: shared runtime's process tree pointed at. Deleting one keyword argument
 #: re-opens exactly that, which no behavioural test on another file would catch.
 _SHARED_RUNTIME_SESSION_SITES = [
-    ("src/kiro_crew/subagent_manager/run.py", "session_key=session_key"),
-    ("src/kiro_crew/session_allocation.py", "session_key=key"),
+    ("src/efm_go/subagent_manager/run.py", "session_key=session_key"),
+    ("src/efm_go/session_allocation.py", "session_key=key"),
 ]
 
 
@@ -1452,7 +1452,7 @@ def test_every_turn_re_pushes_the_sessions_claim(monkeypatch: pytest.MonkeyPatch
     without stubs is left alone."""
     import asyncio as _asyncio
 
-    from kiro_crew.messaging import identity as identity_mod
+    from efm_go.messaging import identity as identity_mod
 
     calls: list[str] = []
 
@@ -1478,7 +1478,7 @@ def test_a_provider_without_stubs_is_left_alone(monkeypatch: pytest.MonkeyPatch)
     """No stub token means no claim to push and nothing that would read one."""
     import asyncio as _asyncio
 
-    from kiro_crew.messaging import identity as identity_mod
+    from efm_go.messaging import identity as identity_mod
 
     class _Sessions:
         def get_pid(self, _key: str) -> None:
@@ -1497,7 +1497,7 @@ async def test_warm_reuse_claims_the_fresh_sessions_stubs(
     """``new_conversation`` reuses the runtime and launches FRESH stubs, so it
     mints a fresh token that nothing has named. Left unclaimed, those stubs are
     refused — a warm worker would run its whole next task with no identity."""
-    import kiro_crew.acp.session_provider as sp_mod
+    import efm_go.acp.session_provider as sp_mod
 
     class _Handle:
         def __init__(self, token: str = "") -> None:
@@ -1561,7 +1561,7 @@ async def test_a_cold_started_session_can_re_bind_after_a_respawn(
     key therefore arrives at construction, and this asserts the whole chain —
     empty key binds nothing, seeded key re-binds and re-targets the live stub.
     """
-    import kiro_crew.acp.session_provider as sp_mod
+    import efm_go.acp.session_provider as sp_mod
 
     _attest(monkeypatch, _ANCESTORS)
     backend, reader, task = await _live_conn(monkeypatch, "", TOKEN_A, "stub-cold")
@@ -1612,8 +1612,8 @@ async def test_a_cold_started_session_can_re_bind_after_a_respawn(
 #: shared-runtime session sites: one deleted keyword argument and the provider's
 #: re-claim carries no key, which gatewayd discards.
 _PROVIDER_OWNER_SITES = [
-    ("src/kiro_crew/providers/acp.py", "session_key=self._owning_session_key()"),
-    ("src/kiro_crew/subagent_manager/run.py", "session_key=session_key"),
+    ("src/efm_go/providers/acp.py", "session_key=self._owning_session_key()"),
+    ("src/efm_go/subagent_manager/run.py", "session_key=session_key"),
 ]
 
 
@@ -1636,7 +1636,7 @@ async def test_a_subagents_own_turn_re_establishes_its_claim(
     this token exists to protect. Its provider re-claims at its own turn
     boundary, so a daemon respawn mid-run costs it one turn rather than the whole
     remaining run."""
-    import kiro_crew.acp.session_provider as sp_mod
+    import efm_go.acp.session_provider as sp_mod
 
     class _Handle:
         stub_session_token = TOKEN_B
@@ -1668,7 +1668,7 @@ async def test_a_subagents_own_turn_re_establishes_its_claim(
 
 
 def test_the_client_reclaim_names_its_own_token(monkeypatch: pytest.MonkeyPatch) -> None:
-    import kiro_crew.acp.client as client_mod
+    import efm_go.acp.client as client_mod
 
     pushed: list[tuple[Any, ...]] = []
     monkeypatch.setattr(
@@ -1697,7 +1697,7 @@ def test_the_client_reclaim_names_its_own_token(monkeypatch: pytest.MonkeyPatch)
 
 _TOKEN_DRIVER = r"""
 import json, os, subprocess, sys, threading, time
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 w = sys.argv[1]
 p = subprocess.Popen(["kiro-cli", "acp", "--agent", "pooltest"], cwd=w + "/proj",
@@ -1952,7 +1952,7 @@ async def test_a_respawned_replacement_is_judged_on_its_own(
     session forwards afterwards. The base caller the handler holds for the
     connection never carries the token, so the token the dead backend was
     entitled to cannot ride along to whatever answers next."""
-    from kiro_crew.mcp_gateway.backend import BackendGone
+    from efm_go.mcp_gateway.backend import BackendGone
 
     class _DiesOnce(_FakeBackendType):
         control_plane = True
@@ -2028,7 +2028,7 @@ def test_the_token_is_attached_per_backend_never_to_the_base_caller() -> None:
 
 def test_control_plane_backends_contain_session_mcp_and_justify_the_difference() -> None:
     """gatewayd names the set itself so the daemon does not import
-    ``kiro_crew.agent`` at boot, and this pin is what stops the two copies
+    ``efm_go.agent`` at boot, and this pin is what stops the two copies
     drifting -- the two sets are not EQUAL, so it pins the RELATIONSHIP.
 
     ``CONTROL_PLANE_SERVERS`` decides which servers every session mounts and which
@@ -2048,9 +2048,9 @@ def test_control_plane_backends_contain_session_mcp_and_justify_the_difference()
     ``acp.session_mcp.IDENTITY_BOUND_SERVERS`` -- the kiro-backend element list that
     carries the same token -- so the two identity paths grant the same servers.
     """
-    from kiro_crew.acp.session_mcp import CONTROL_PLANE_SERVERS, IDENTITY_BOUND_SERVERS
-    from kiro_crew.agent import _MANAGED_MCP_SERVERS
-    from kiro_crew.mcp_cleanup import OPT_IN_BIN_MCP_SERVERS
+    from efm_go.acp.session_mcp import CONTROL_PLANE_SERVERS, IDENTITY_BOUND_SERVERS
+    from efm_go.agent import _MANAGED_MCP_SERVERS
+    from efm_go.mcp_cleanup import OPT_IN_BIN_MCP_SERVERS
 
     assert gw.CONTROL_PLANE_BACKENDS == frozenset(IDENTITY_BOUND_SERVERS)
     assert frozenset(CONTROL_PLANE_SERVERS) < gw.CONTROL_PLANE_BACKENDS
@@ -2082,7 +2082,7 @@ def test_the_control_plane_check_asks_for_an_opt_in_invocation(
     409 -- with this whole file still green. That is the exact shape of the bug
     this pins against.
     """
-    from kiro_crew import agent as agent_mod
+    from efm_go import agent as agent_mod
 
     seen: list[dict[str, Any]] = []
 
@@ -2109,7 +2109,7 @@ class TestTokenOnlyControlPlane:
         """No patching: whatever this install emits for the dashboard set must be
         recognised as ours, or the token is never handed over and every
         ``session_create`` / ``session_send`` answers 409."""
-        from kiro_crew.agent import managed_mcp_spec_entry
+        from efm_go.agent import managed_mcp_spec_entry
 
         entry = managed_mcp_spec_entry(self.NAME, include_opt_in=True)
         assert entry is not None
@@ -2130,7 +2130,7 @@ class TestTokenOnlyControlPlane:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """A managed argv cannot earn the token while its loader can replace code."""
-        from kiro_crew.agent import managed_mcp_spec_entry
+        from efm_go.agent import managed_mcp_spec_entry
 
         entry = managed_mcp_spec_entry(self.NAME, include_opt_in=True)
         assert entry is not None
@@ -2179,7 +2179,7 @@ class TestTokenOnlyControlPlane:
         """Membership is necessary, never sufficient: the same binary/argv/env
         fences that guard the always-on planes deny a dashboard spawn that is not
         byte-for-byte the managed invocation, and each denial names its reason."""
-        from kiro_crew.agent import managed_mcp_spec_entry
+        from efm_go.agent import managed_mcp_spec_entry
 
         entry = managed_mcp_spec_entry(self.NAME, include_opt_in=True)
         assert entry is not None
@@ -2207,7 +2207,7 @@ class TestTokenOnlyControlPlane:
         """The flag is the control-plane check's, not the spec writers': without
         it the dashboard entry is still ``None``, so an opt-in server the user
         never granted is not resurrected by the same helper that now verifies it."""
-        from kiro_crew.agent import managed_mcp_spec_entry
+        from efm_go.agent import managed_mcp_spec_entry
 
         assert managed_mcp_spec_entry(self.NAME) is None
         assert managed_mcp_spec_entry("not-a-managed-server", include_opt_in=True) is None
@@ -2218,10 +2218,10 @@ class TestTokenOnlyControlPlane:
         """The flag skips exactly ONE disqualifier. A closed ``spec_gate`` keeps a
         backend unspawned, so a spawn under that name is anomalous: the entry stays
         ``None`` under the flag, and a gate that raises reads as closed."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         gate = {"open": False}
-        invocation = (sys.executable, ["-m", "kiro_crew", "mcp-probe"])
+        invocation = (sys.executable, ["-m", "efm_go", "mcp-probe"])
 
         def _raise() -> bool:
             raise RuntimeError("keystone unreadable")
@@ -2249,7 +2249,7 @@ class TestTokenOnlyControlPlane:
     ) -> None:
         """Through the production path: the real dashboard invocation, under a
         spec whose gate has shut, gets no token and the denial says why."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         entry = agent_mod.managed_mcp_spec_entry(self.NAME, include_opt_in=True)
         assert entry is not None
@@ -2269,7 +2269,7 @@ class TestTokenOnlyControlPlane:
         name leaves one DEBUG line naming the set and no WARNING, while a reserved
         name that fails leaves the WARNING and never the DEBUG line. A control
         plane missing from the set is exactly the silent shape this pins against."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with caplog.at_level(logging.DEBUG, logger=gw.__name__):
             assert not gw._spawns_own_control_plane("echo-mcp", "/bin/true", [], env={})
@@ -2293,7 +2293,7 @@ class TestSpawnsOwnControlPlane:
         launcher = tmp_path / "kirocrew"
         launcher.write_text("#!/bin/sh\n")
         entry = {"command": str(launcher), "args": ["mcp-core"]}
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(
             agent_mod,
@@ -2343,8 +2343,8 @@ class TestSpawnsOwnControlPlane:
         other = tmp_path / "evil"
         other.write_text("#!/bin/sh\n")
         shadow_root = tmp_path / "proj"
-        (shadow_root / "kiro_crew").mkdir(parents=True)
-        (shadow_root / "kiro_crew" / "__init__.py").write_text("")
+        (shadow_root / "efm_go").mkdir(parents=True)
+        (shadow_root / "efm_go" / "__init__.py").write_text("")
         cases = [
             (dict(command=str(other), args=["mcp-core"]), "is not the spec's"),
             (dict(command=managed["command"], args=["mcp-cron"]), "differ from spec"),
@@ -2364,7 +2364,7 @@ class TestSpawnsOwnControlPlane:
                 (record,) = [r for r in caplog.records if "denied the session token" in r.message]
                 assert "'kirocrew-core'" in record.message and fragment in record.message
             caplog.clear()
-            import kiro_crew.agent as agent_mod
+            import efm_go.agent as agent_mod
 
             monkeypatch.setattr(agent_mod, "managed_mcp_spec_entry", lambda name, **_kw: None)
             assert not gw._spawns_own_control_plane(
@@ -2379,7 +2379,7 @@ class TestSpawnsOwnControlPlane:
     def test_an_unresolvable_managed_entry_fails_closed(
         self, monkeypatch: pytest.MonkeyPatch, managed: dict[str, Any]
     ) -> None:
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "managed_mcp_spec_entry", lambda name, **_kw: None)
         assert not gw._spawns_own_control_plane("kirocrew-core", managed["command"], ["mcp-core"])
@@ -2387,7 +2387,7 @@ class TestSpawnsOwnControlPlane:
     def test_the_real_managed_entry_matches_itself(self) -> None:
         """No patching: whatever this install emits for ``kirocrew-cron`` must be
         recognised as ours, or the fix that hands the token over is inert."""
-        from kiro_crew.agent import managed_mcp_spec_entry
+        from efm_go.agent import managed_mcp_spec_entry
 
         entry = managed_mcp_spec_entry("kirocrew-cron")
         assert entry is not None
@@ -2395,17 +2395,17 @@ class TestSpawnsOwnControlPlane:
             "kirocrew-cron", entry["command"], entry["args"], env={}
         )
 
-    def test_a_kiro_crew_package_beside_the_launcher_is_not_ours(
+    def test_a_efm_go_package_beside_the_launcher_is_not_ours(
         self, managed: dict[str, Any]
     ) -> None:
         """Script form: the launcher's directory is ``sys.path[0]``."""
-        beside = Path(managed["command"]).parent / "kiro_crew"
+        beside = Path(managed["command"]).parent / "efm_go"
         beside.mkdir()
         (beside / "__init__.py").write_text("")
         assert not gw._spawns_own_control_plane("kirocrew-core", managed["command"], ["mcp-core"])
 
     def test_the_spawn_site_decides_off_the_event_loop(self) -> None:
-        """The classifier imports ``kiro_crew.agent``, reads config and stats a
+        """The classifier imports ``efm_go.agent``, reads config and stats a
         fixed local root; the one production call must run in a thread."""
         import inspect
         import re
@@ -2434,7 +2434,7 @@ class TestSpawnsOwnControlPlane:
         flag nor the token."""
         from test_mcp_gateway_spawn_gate import _fake_backend, _register_frame
 
-        from kiro_crew.mcp_gateway.pool import BackendPool, PoolKey
+        from efm_go.mcp_gateway.pool import BackendPool, PoolKey
 
         order: list[str] = []
         spawned_env: dict[str, str] = {}
@@ -2484,8 +2484,8 @@ class TestSpawnsOwnControlPlane:
         let a pooled interpreter build stdio from a Windows ANSI codepage."""
         from test_mcp_gateway_spawn_gate import _fake_backend, _register_frame
 
-        from kiro_crew.mcp_gateway.pool import BackendPool, PoolKey
-        from kiro_crew.platform_compat import _UTF8_PROCESS_ENV
+        from efm_go.mcp_gateway.pool import BackendPool, PoolKey
+        from efm_go.platform_compat import _UTF8_PROCESS_ENV
 
         classifier_env: dict[str, str] = {}
         spawned_env: dict[str, str] = {}
@@ -2522,7 +2522,7 @@ class TestSpawnsOwnControlPlane:
     def test_utf8_pinning_keeps_the_real_fence_on_our_side(self, managed: dict[str, Any]) -> None:
         """The pair the spawn site adds is exactly what the real classifier
         would deny, which is why it is added only after the verdict."""
-        from kiro_crew.platform_compat import _UTF8_PROCESS_ENV
+        from efm_go.platform_compat import _UTF8_PROCESS_ENV
 
         assert gw._spawns_own_control_plane(
             "kirocrew-core", managed["command"], ["mcp-core"], env={}
@@ -2533,7 +2533,7 @@ class TestSpawnsOwnControlPlane:
 
 
 class TestModuleFormShadowing:
-    """A managed ``<python> -m kiro_crew <sub>`` still needs a token fence.
+    """A managed ``<python> -m efm_go <sub>`` still needs a token fence.
 
     The fixed CWD or launcher root must not shadow this process's package.
     The complete Python environment namespace denies the token without
@@ -2547,9 +2547,9 @@ class TestModuleFormShadowing:
     def module_entry(self, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         entry = {
             "command": sys.executable,
-            "args": ["-s", "-P", "-m", "kiro_crew", self.SUB],
+            "args": ["-s", "-P", "-m", "efm_go", self.SUB],
         }
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(
             agent_mod,
@@ -2567,43 +2567,43 @@ class TestModuleFormShadowing:
         (tmp_path / "README.md").write_text("not a package")
         assert self._ours(module_entry, env={}, work_dir=tmp_path)
 
-    def test_a_project_carrying_its_own_kiro_crew_package_is_not(
+    def test_a_project_carrying_its_own_efm_go_package_is_not(
         self, module_entry: dict[str, Any], tmp_path: Path
     ) -> None:
-        (tmp_path / "kiro_crew").mkdir()
-        (tmp_path / "kiro_crew" / "__init__.py").write_text("")
+        (tmp_path / "efm_go").mkdir()
+        (tmp_path / "efm_go" / "__init__.py").write_text("")
         assert not self._ours(module_entry, env={}, work_dir=tmp_path)
 
     # The extension suffix is the platform's own (``.so`` / ``.pyd``): the
     # classifier asks the import system for its suffixes, so the test must too.
     @pytest.mark.parametrize("suffix", [".py", ".pyc", importlib.machinery.EXTENSION_SUFFIXES[-1]])
-    def test_a_project_carrying_a_kiro_crew_module_file_is_not(
+    def test_a_project_carrying_a_efm_go_module_file_is_not(
         self, module_entry: dict[str, Any], tmp_path: Path, suffix: str
     ) -> None:
-        (tmp_path / f"kiro_crew{suffix}").write_bytes(b"")
+        (tmp_path / f"efm_go{suffix}").write_bytes(b"")
         assert not self._ours(module_entry, env={}, work_dir=tmp_path)
 
     def test_a_namespace_directory_does_not_shadow(
         self, module_entry: dict[str, Any], tmp_path: Path
     ) -> None:
         """No ``__init__.py``: the import system scans past it to the real package."""
-        (tmp_path / "kiro_crew").mkdir()
+        (tmp_path / "efm_go").mkdir()
         assert self._ours(module_entry, env={}, work_dir=tmp_path)
 
     def test_our_own_checkout_as_cwd_is_ours(self, module_entry: dict[str, Any]) -> None:
         """A dev gateway running from ``src/`` with ``src/`` as the project CWD
         loads the very package this process runs -- that is not a shadow."""
-        import kiro_crew
+        import efm_go
 
-        src = Path(kiro_crew.__file__).resolve().parent.parent
+        src = Path(efm_go.__file__).resolve().parent.parent
         assert self._ours(module_entry, env={}, work_dir=src)
 
     def test_pythonpath_can_shadow_too(self, module_entry: dict[str, Any], tmp_path: Path) -> None:
         clean = tmp_path / "project"
         clean.mkdir()
         foreign = tmp_path / "lib"
-        (foreign / "kiro_crew").mkdir(parents=True)
-        (foreign / "kiro_crew" / "__init__.py").write_text("")
+        (foreign / "efm_go").mkdir(parents=True)
+        (foreign / "efm_go" / "__init__.py").write_text("")
         assert self._ours(module_entry, env={}, work_dir=clean)
         assert not self._ours(module_entry, env={"PYTHONPATH": str(foreign)}, work_dir=clean)
         # Relative values are non-empty too; no child-root model is consulted.
@@ -2624,7 +2624,7 @@ class TestModuleFormShadowing:
         """A zipimport package bypassed the old directory-and-suffix scan."""
         archive = tmp_path / "foreign.egg"
         with zipfile.ZipFile(archive, "w") as bundle:
-            bundle.writestr("kiro_crew/__init__.py", "")
+            bundle.writestr("efm_go/__init__.py", "")
         assert not self._ours(module_entry, env={"PYTHONPATH": str(archive)}, work_dir=tmp_path)
 
     def test_any_non_empty_pythonhome_denies_the_token(
@@ -2675,8 +2675,8 @@ class TestModuleFormShadowing:
         than disabling it and ``PYTHONSAFEPATH`` does not cover it either.
         """
         user_site = tmp_path / "user-site"
-        (user_site / "kiro_crew").mkdir(parents=True)
-        (user_site / "kiro_crew" / "__init__.py").write_text("")
+        (user_site / "efm_go").mkdir(parents=True)
+        (user_site / "efm_go" / "__init__.py").write_text("")
         monkeypatch.setattr(gw.site, "ENABLE_USER_SITE", True)
         monkeypatch.setattr(gw.site, "getusersitepackages", lambda: str(user_site))
 
@@ -2698,10 +2698,10 @@ class TestModuleFormShadowing:
         Disabling user-site would break that shape outright, so the check must
         compare the package it finds rather than refuse the root's existence.
         """
-        ours = Path(gw.kiro_crew.__file__).resolve().parent
+        ours = Path(gw.efm_go.__file__).resolve().parent
         user_site = tmp_path / "user-site"
         user_site.mkdir()
-        (user_site / "kiro_crew").symlink_to(ours, target_is_directory=True)
+        (user_site / "efm_go").symlink_to(ours, target_is_directory=True)
         monkeypatch.setattr(gw.site, "ENABLE_USER_SITE", True)
         monkeypatch.setattr(gw.site, "getusersitepackages", lambda: str(user_site))
 
@@ -2737,8 +2737,8 @@ class TestModuleFormShadowing:
         """Its own package lives there; switching user-site off would break it."""
         user_site = tmp_path / "user-site"
         user_site.mkdir()
-        (user_site / "kiro_crew").symlink_to(
-            Path(gw.kiro_crew.__file__).resolve().parent, target_is_directory=True
+        (user_site / "efm_go").symlink_to(
+            Path(gw.efm_go.__file__).resolve().parent, target_is_directory=True
         )
         monkeypatch.setattr(gw.site, "ENABLE_USER_SITE", True)
         monkeypatch.setattr(gw.site, "getusersitepackages", lambda: str(user_site))
@@ -2766,15 +2766,15 @@ class TestModuleFormShadowing:
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         """``-P``/``-I`` semantics may change; the token fence stays stricter."""
-        entry = {"command": sys.executable, "args": ["-P", "-s", "-m", "kiro_crew", self.SUB]}
-        import kiro_crew.agent as agent_mod
+        entry = {"command": sys.executable, "args": ["-P", "-s", "-m", "efm_go", self.SUB]}
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "managed_mcp_spec_entry", lambda name, **_kw: dict(entry))
-        (tmp_path / "kiro_crew").mkdir()
-        (tmp_path / "kiro_crew" / "__init__.py").write_text("")
+        (tmp_path / "efm_go").mkdir()
+        (tmp_path / "efm_go" / "__init__.py").write_text("")
         assert not self._ours(entry, env={}, work_dir=tmp_path)
         assert not self._ours(entry, env={"PYTHONPATH": str(tmp_path)}, work_dir=tmp_path)
-        isolated = {"command": sys.executable, "args": ["-I", "-m", "kiro_crew", self.SUB]}
+        isolated = {"command": sys.executable, "args": ["-I", "-m", "efm_go", self.SUB]}
         monkeypatch.setattr(agent_mod, "managed_mcp_spec_entry", lambda name, **_kw: dict(isolated))
         assert not self._ours(isolated, env={"PYTHONPATH": str(tmp_path)}, work_dir=tmp_path)
 

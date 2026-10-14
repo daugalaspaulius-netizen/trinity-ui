@@ -21,13 +21,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.cron import CronJob
-from kiro_crew.dashboard.cron_inject import (
+from efm_go.cron import CronJob
+from efm_go.dashboard.cron_inject import (
     ensure_cron_slot,
     inject_cron_result_to_dashboard,
 )
-from kiro_crew.dashboard.session_control import caller_slot_key
-from kiro_crew.session_surface import has_dashboard_surface, set_dashboard_surfaced
+from efm_go.dashboard.session_control import caller_slot_key
+from efm_go.session_surface import has_dashboard_surface, set_dashboard_surfaced
 
 
 @pytest.fixture(autouse=True)
@@ -261,7 +261,7 @@ def _inject_shaped(job):
     fields the pre-create never reads; real values keep them out of the
     redactors as non-strings (same rationale as the sibling module's fake).
     """
-    from kiro_crew.cron import CronJob
+    from efm_go.cron import CronJob
 
     job.message = "run the sweep"
     job.last_result_ts = 0.0
@@ -308,7 +308,7 @@ class TestPreCreateGuard:
         at the unguarded callsite it reached cron.py's except arm and the run
         died for an amenity. Contained, the run proceeds; having actually
         dispatched, a one-shot is then legitimately consumed."""
-        from kiro_crew.slack.gateway import _pre_create_cron_slot
+        from efm_go.slack.gateway import _pre_create_cron_slot
 
         state = _make_state()
         job = self._arm_lifecycle(_make_job())
@@ -327,7 +327,7 @@ class TestPreCreateGuard:
         site retains the unexecuted one-shot."""
         import asyncio
 
-        from kiro_crew.slack.gateway import _pre_create_cron_slot
+        from efm_go.slack.gateway import _pre_create_cron_slot
 
         state = _make_state()
         job = self._arm_lifecycle(_make_job())
@@ -359,7 +359,7 @@ class TestPreCreateGuard:
     async def test_control_normal_first_run_still_binds_through_the_guard(self):
         """The guard changes failure semantics only: the healthy path still
         mints the tab, binds identity, and clears the marker for dispatch."""
-        from kiro_crew.slack.gateway import _pre_create_cron_slot
+        from efm_go.slack.gateway import _pre_create_cron_slot
 
         state = _make_state()
         job = self._arm_lifecycle(_make_job())
@@ -377,7 +377,7 @@ class TestPreCreateGuard:
         """Benign no-new-deny: the wrapper adds no refusal path of its own —
         eligibility still lives in ensure_cron_slot, an ineligible job gets
         no tab and no marker residue."""
-        from kiro_crew.slack.gateway import _pre_create_cron_slot
+        from efm_go.slack.gateway import _pre_create_cron_slot
 
         state = _make_state()
         job = self._arm_lifecycle(_make_job(hidden=True))

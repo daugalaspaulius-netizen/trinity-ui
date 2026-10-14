@@ -25,8 +25,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.cron import CronJob
-from kiro_crew.dashboard.handlers.cron import api_cron_update, api_crons, api_crons_create
+from efm_go.cron import CronJob
+from efm_go.dashboard.handlers.cron import api_cron_update, api_crons, api_crons_create
 
 pytestmark = pytest.mark.asyncio
 

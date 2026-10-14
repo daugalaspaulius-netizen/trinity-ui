@@ -19,11 +19,11 @@ from types import SimpleNamespace
 import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
-from kiro_crew import kiro_prerequisite as kp
-from kiro_crew.session_allocation import (
+from efm_go import kiro_prerequisite as kp
+from efm_go.session_allocation import (
     FOREGROUND_COLD_START_RESERVE as _COLD_START_RESERVE_FOR_TEST,
 )
-from kiro_crew.session_allocation import MAX_CONCURRENT_COLD_STARTS as _MAX_COLD_STARTS_FOR_TEST
+from efm_go.session_allocation import MAX_CONCURRENT_COLD_STARTS as _MAX_COLD_STARTS_FOR_TEST
 
 
 @pytest.fixture(autouse=True)
@@ -405,7 +405,7 @@ class TestIdentityFingerprint:
     def test_the_audit_id_is_registered(self) -> None:
         """An unregistered id is refused by the hook, which would fail every read."""
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         assert kp._IDENTITY_FINGERPRINT_READ_ID in hooks._AUDIT_ONLY_READ_IDS
 
@@ -858,8 +858,8 @@ class TestApiKeyIdentity:
         """Couples the guard to the REAL provider/client/runtime shapes, so a
         rename of the attributes it reads fails here instead of failing open."""
 
-        from kiro_crew.acp.runtime import AcpRuntime
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.acp.runtime import AcpRuntime
+        from efm_go.providers.acp import AcpProvider
 
         overlay = {"KIRO_API_KEY": "b"}
         assert kp.overlay_sets_api_key(AcpProvider(extra_env=overlay)) is True
@@ -883,8 +883,8 @@ class TestApiKeyIdentity:
         child and a cli-owned KAS relay ARE handed the key, so they keep the
         whole-fingerprint spare."""
 
-        from kiro_crew.acp.runtime import AcpRuntime
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.acp.runtime import AcpRuntime
+        from efm_go.providers.acp import AcpProvider
 
         sep, vault = kp._API_KEY_FINGERPRINT_SEP, kp._CREW_VAULT_FINGERPRINT_SEP
         stamp, rotated = f"s1{sep}k1{vault}v1", f"s1{sep}k2{vault}v1"
@@ -1085,7 +1085,7 @@ class _FakeProvider:
 
     @property
     def uses_kiro_identity_store(self) -> bool:
-        from kiro_crew.acp.types import backends_retired_by_host_logout
+        from efm_go.acp.types import backends_retired_by_host_logout
 
         return self.backend in backends_retired_by_host_logout()
 
@@ -1127,7 +1127,7 @@ class _FakeRuntime:
 
     @property
     def uses_kiro_identity_store(self) -> bool:
-        from kiro_crew.acp.types import backends_retired_by_host_logout
+        from efm_go.acp.types import backends_retired_by_host_logout
 
         return self._acp_backend in backends_retired_by_host_logout()
 
@@ -1248,14 +1248,14 @@ class TestStoreRelocation:
 
 class TestProviderMembership:
     def test_kiro_backend_is_a_member(self) -> None:
-        from kiro_crew.session import _provider_uses_kiro_identity_store
+        from efm_go.session import _provider_uses_kiro_identity_store
 
         assert _provider_uses_kiro_identity_store(_FakeProvider(""))
 
     def test_unknown_backend_fails_closed(self) -> None:
         """An object that declares nothing must be left running, not recycled."""
 
-        from kiro_crew.session import _provider_uses_kiro_identity_store
+        from efm_go.session import _provider_uses_kiro_identity_store
 
         assert not _provider_uses_kiro_identity_store(object())
         assert not _provider_uses_kiro_identity_store(_FakeProvider("claude"))
@@ -1268,13 +1268,13 @@ class TestProviderMembership:
         so a harness that never states the claim cannot inherit it.
         """
 
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         assert "uses_kiro_identity_store" in vars(LLMProvider)
         assert LLMProvider.uses_kiro_identity_store.fget(object()) is False  # type: ignore[attr-defined]
 
     def test_a_non_declaring_provider_is_not_swept(self) -> None:
-        from kiro_crew.session import _provider_uses_kiro_identity_store
+        from efm_go.session import _provider_uses_kiro_identity_store
 
         class _Bare:
             pass
@@ -1509,7 +1509,7 @@ class TestLatchNarrowingPolicy:
         at "not signed in" until someone presses Check again.
         """
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -1530,7 +1530,7 @@ class TestLatchNarrowingPolicy:
 
     @pytest.mark.asyncio
     async def test_an_actual_sign_out_does_narrow_readiness(self, tmp_path: Path) -> None:
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -1557,7 +1557,7 @@ class TestLatchNarrowingPolicy:
     async def test_an_incomplete_sweep_leaves_the_change_pending(self, tmp_path: Path) -> None:
         """A skipped holder must not be recorded as reconciled."""
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -1577,7 +1577,7 @@ class TestLatchNarrowingPolicy:
 
     @pytest.mark.asyncio
     async def test_a_complete_sweep_reconciles_once(self, tmp_path: Path) -> None:
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -1602,7 +1602,7 @@ class TestLatchNarrowingPolicy:
         account it loaded to one turn.
         """
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         # No store on disk at all: the fingerprint is absent.
         service = kp.KiroPrerequisiteService(home=tmp_path, environ={}, platform_name="linux")
@@ -1650,7 +1650,7 @@ class TestReturnToBaselineAfterIncompleteSweep:
 
     @pytest.mark.asyncio
     async def test_returning_to_the_baseline_account_still_sweeps(self, tmp_path: Path) -> None:
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -1705,7 +1705,7 @@ class TestReturnToBaselineAfterIncompleteSweep:
         retire; only a sweep that COMPLETES clears the pending fingerprint.
         """
 
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -1737,8 +1737,8 @@ class TestRetirementCoverage:
 
     @staticmethod
     def _manager():
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         # pool_size 0 so construction never pre-spawns; the pool is populated
         # explicitly by the test that cares about it.
@@ -1754,14 +1754,14 @@ class TestRetirementCoverage:
         dropped the pointer, so read the entry.
         """
 
-        from kiro_crew.session_map import canonical_key
+        from efm_go.session_map import canonical_key
 
         entry = smap._session_map._data.get(canonical_key(key)) or {}
         return entry.get("sid", "")
 
     @staticmethod
     def _session(provider: object, *, busy: bool = False):
-        from kiro_crew.session import _Session
+        from efm_go.session import _Session
 
         sess = _Session(provider=provider)  # type: ignore[arg-type]
         if busy:
@@ -2312,7 +2312,7 @@ class TestRetirementCoverage:
     async def test_the_runtime_predicate_counts_inits_in_flight(self) -> None:
         """Pins the real AcpRuntime property, not just the test double."""
 
-        from kiro_crew.acp.runtime import AcpRuntime
+        from efm_go.acp.runtime import AcpRuntime
 
         runtime = AcpRuntime.__new__(AcpRuntime)
         runtime._session_queues = {}  # type: ignore[attr-defined]
@@ -2335,7 +2335,7 @@ class TestRetirementCoverage:
         instead. Two concurrent sweeps are the common boot case, not an exotic one:
         with ``_session_identity`` unset, every in-flight turn sees a change at once.
         """
-        from kiro_crew.start_priority import StartPriority
+        from efm_go.start_priority import StartPriority
 
         smap = self._manager()
         # Every permit held -- background its full width, a person the reserve -- so
@@ -2369,7 +2369,7 @@ class TestRetirementCoverage:
         previous account would still win registration and serve it.
         """
 
-        from kiro_crew.start_priority import StartPriority
+        from efm_go.start_priority import StartPriority
 
         smap = self._manager()
         await asyncio.wait_for(smap._start_sem.acquire(StartPriority.BACKGROUND), timeout=5.0)
@@ -2792,7 +2792,7 @@ class TestRetirementCoverage:
 
         unmarked = _FakeProvider("", sid="sid-current-account")
         smap._sessions["unmarked"] = self._session(unmarked)
-        monkeypatch.setattr("kiro_crew.session._load_acp_provider_type", lambda: _FakeProvider)
+        monkeypatch.setattr("efm_go.session._load_acp_provider_type", lambda: _FakeProvider)
 
         await smap.close_all()
 
@@ -2803,7 +2803,7 @@ class TestRetirementCoverage:
     def test_marked_replay_settlement_consumes_lease_without_republishing_sid(self) -> None:
         """A landed replay cannot restore the identity sweep's discarded sid."""
 
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         smap = self._manager()
         provider = object.__new__(AcpProvider)
@@ -2829,7 +2829,7 @@ class TestRetirementCoverage:
 
         import ast
 
-        source_root = Path(__file__).parents[1] / "src" / "kiro_crew"
+        source_root = Path(__file__).parents[1] / "src" / "efm_go"
         registration_paths = {
             ("session_allocation.py", "seed_conversation"),
             ("session_allocation.py", "_get_or_create_impl"),
@@ -2908,8 +2908,8 @@ class TestWarmPoolIdentityFence:
 
     @staticmethod
     def _manager():
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         return SessionManager(KiroCrewConfig())
 
@@ -3180,8 +3180,8 @@ class TestBootSeededSessionBaseline:
         equal, no sweep fires, the busy session is untouched.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -3210,8 +3210,8 @@ class TestBootSeededSessionBaseline:
         seed refuses: a store that cannot be fingerprinted.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -3242,7 +3242,7 @@ class TestBootSeededSessionBaseline:
         """
 
         source = (
-            Path(__file__).parents[1] / "src" / "kiro_crew" / "dashboard" / "server.py"
+            Path(__file__).parents[1] / "src" / "efm_go" / "dashboard" / "server.py"
         ).read_text(encoding="utf-8")
         constructions = source.count("KiroPrerequisiteService,")
         seeds = source.count("seed_sessions_baseline()")
@@ -3560,8 +3560,8 @@ class TestSpawnIdentityStamp:
         recycle, from its own record.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -3595,8 +3595,8 @@ class TestSpawnIdentityStamp:
     async def test_an_unstamped_child_is_never_flagged(self, tmp_path: Path) -> None:
         """No stamp means no verdict: the pre-stamping protections apply."""
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         smap = SessionManager(KiroCrewConfig())
         sess = _Session(provider=_FakeProvider(""))  # type: ignore[arg-type]
@@ -3616,8 +3616,8 @@ class TestSpawnIdentityStamp:
         baseline removed -- and an unreadable live read proves nothing.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         smap = SessionManager(KiroCrewConfig())
         provider = _FakeProvider("")
@@ -3634,8 +3634,8 @@ class TestSpawnIdentityStamp:
     async def test_a_non_kiro_child_is_never_flagged(self, tmp_path: Path) -> None:
         """The store predicate still gates: a claude child never compares."""
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         smap = SessionManager(KiroCrewConfig())
         provider = _FakeProvider("claude")
@@ -3652,8 +3652,8 @@ class TestSpawnIdentityStamp:
     ) -> None:
         """A demuxed session's provider inherits its runtime's spawn record."""
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         smap = SessionManager(KiroCrewConfig())
         provider = _FakeProvider("")
@@ -3802,7 +3802,7 @@ class TestSpawnIdentityStamp:
         """
 
         source = (
-            Path(__file__).parents[1] / "src" / "kiro_crew" / "dashboard" / "server.py"
+            Path(__file__).parents[1] / "src" / "efm_go" / "dashboard" / "server.py"
         ).read_text(encoding="utf-8")
         seeds = source.count("seed_sessions_baseline()")
         wirings = source.count("spawn_identity_reader = ")
@@ -3820,7 +3820,7 @@ class TestSpawnIdentityStamp:
         because unstamped children are (by design) silently skipped.
         """
 
-        src = Path(__file__).parents[1] / "src" / "kiro_crew"
+        src = Path(__file__).parents[1] / "src" / "efm_go"
         expected = {
             # shared run runtime + cold start + direct companion runtime
             "session_allocation.py": 3,
@@ -3883,8 +3883,8 @@ class TestSpawnIdentityStamp:
         on the pass that proved the mismatch would abort that claim.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
         runtime = self._fake_runtime("cli-b")
@@ -3908,8 +3908,8 @@ class TestSpawnIdentityStamp:
         reap, after the park grace.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
         runtime = self._fake_runtime("cli-b")
@@ -3934,8 +3934,8 @@ class TestSpawnIdentityStamp:
         live account) and parked, unkilled, until its work drains.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
         bg = self._fake_runtime("cli-b", busy=True)
@@ -3973,9 +3973,9 @@ class TestSpawnIdentityStamp:
 
         import time as _time
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.kiro_prerequisite import IDENTITY_PARK_GRACE_SECS
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.kiro_prerequisite import IDENTITY_PARK_GRACE_SECS
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
         bg = self._fake_runtime("cli-b", busy=True)
@@ -4015,8 +4015,8 @@ class TestSpawnIdentityStamp:
         would be the respawn churn this PR exists to remove.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
         healthy = self._fake_runtime("cli-a")
@@ -4042,8 +4042,8 @@ class TestSpawnIdentityStamp:
 
         from unittest import mock
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
 
@@ -4066,7 +4066,7 @@ class TestSpawnIdentityStamp:
             pass
 
         with mock.patch(
-            "kiro_crew.session._load_bg_runtime_types",
+            "efm_go.session._load_bg_runtime_types",
             return_value=(_FakeRuntime, _FakeDead),
         ):
             runtime = await smap.get_subagent_runtime("parent")
@@ -4086,8 +4086,8 @@ class TestSpawnIdentityStamp:
         Registration must therefore happen while the permit is still held.
         """
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import BACKGROUND_KEY, SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import BACKGROUND_KEY, SessionManager
 
         class _Prov:
             cwd = "."
@@ -4102,7 +4102,7 @@ class TestSpawnIdentityStamp:
             KiroCrewConfig(), provider_factory=lambda key, agent=None, cwd=None: _Prov()
         )
         # One permit total, so ``locked()`` is True exactly while it is held.
-        from kiro_crew.start_priority import PrioritySemaphore
+        from efm_go.start_priority import PrioritySemaphore
 
         smap._start_sem = PrioritySemaphore(1)
 
@@ -4139,8 +4139,8 @@ class TestSpawnIdentityStamp:
 
         from unittest import mock
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
 
@@ -4176,7 +4176,7 @@ class TestSpawnIdentityStamp:
             pass
 
         with mock.patch(
-            "kiro_crew.session._load_bg_runtime_types",
+            "efm_go.session._load_bg_runtime_types",
             return_value=(_FakeRuntime, _FakeDead),
         ):
             with pytest.raises(asyncio.CancelledError):
@@ -4193,8 +4193,8 @@ class TestSpawnIdentityStamp:
     async def test_a_cancelled_stamp_read_kills_the_background_provider(self) -> None:
         """The background spawn's stamp window is covered by a kill guard too."""
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import BACKGROUND_KEY, SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import BACKGROUND_KEY, SessionManager
 
         class _Prov:
             cwd = "."
@@ -4252,9 +4252,9 @@ class TestSpawnIdentityStamp:
         import re
         from pathlib import Path
 
-        import kiro_crew
+        import efm_go
 
-        src_root = Path(kiro_crew.__file__).parent
+        src_root = Path(efm_go.__file__).parent
         guarded = 0
         for rel in ("session_allocation.py", "session_background.py", "session_pool.py"):
             text = (src_root / rel).read_text(encoding="utf-8")
@@ -4293,8 +4293,8 @@ class TestSpawnIdentityStamp:
 
         from unittest import mock
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
         observed: list[set[int]] = []
@@ -4321,7 +4321,7 @@ class TestSpawnIdentityStamp:
             pass
 
         with mock.patch(
-            "kiro_crew.session._load_bg_runtime_types",
+            "efm_go.session._load_bg_runtime_types",
             return_value=(_FakeRuntime, _FakeDead),
         ):
             runtime = await smap.get_subagent_runtime("parent")
@@ -4351,9 +4351,9 @@ class TestSpawnIdentityStamp:
 
         from pathlib import Path
 
-        import kiro_crew
+        import efm_go
 
-        src_root = Path(kiro_crew.__file__).parent
+        src_root = Path(efm_go.__file__).parent
         scanned = 0
         for rel in ("session_allocation.py", "session_background.py", "session_pool.py"):
             lines = (src_root / rel).read_text(encoding="utf-8").splitlines()
@@ -4505,7 +4505,7 @@ class TestGenerationScopedLatchClear:
 
         from pathlib import Path as _Path
 
-        import kiro_crew.dashboard.chat_runner as chat_runner_module
+        import efm_go.dashboard.chat_runner as chat_runner_module
 
         text = _Path(chat_runner_module.__file__).read_text(encoding="utf-8")
         assert 'getattr(service, "identity_observation_generation", None)' in text, (
@@ -4532,8 +4532,8 @@ class TestFlaggedSessionResumePointer:
 
     @pytest.mark.asyncio
     async def test_a_flagged_session_loses_its_resume_pointer(self, tmp_path: Path) -> None:
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.session import SessionManager, _Session
+        from efm_go.config import KiroCrewConfig
+        from efm_go.session import SessionManager, _Session
 
         db = kp.kiro_identity_store_path("linux", tmp_path, {})
         _write_store(db)
@@ -4608,9 +4608,9 @@ class TestDrainReapConcurrentPark:
     async def test_a_runtime_parked_during_the_reap_kill_survives(self) -> None:
         import time as _time
 
-        from kiro_crew.config import KiroCrewConfig
-        from kiro_crew.kiro_prerequisite import IDENTITY_PARK_GRACE_SECS
-        from kiro_crew.session import SessionManager
+        from efm_go.config import KiroCrewConfig
+        from efm_go.kiro_prerequisite import IDENTITY_PARK_GRACE_SECS
+        from efm_go.session import SessionManager
 
         smap = SessionManager(KiroCrewConfig())
         aged = _time.monotonic() - IDENTITY_PARK_GRACE_SECS - 1.0

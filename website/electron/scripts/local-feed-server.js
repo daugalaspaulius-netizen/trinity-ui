@@ -20,8 +20,8 @@
  * failure rather than a format error.
  *
  * files[].url is emitted ABSOLUTE, matching production, where the metadata is
- * served from the pointer host (updates.crew.kiro.dev) while the bytes live on
- * the byte host (download.crew.kiro.dev). electron-updater resolves file urls
+ * served from the pointer host while the bytes live on
+ * the byte host. electron-updater resolves file urls
  * with `new URL(fileUrl, base)`, which ignores the base for absolute urls.
  *
  * Usage:

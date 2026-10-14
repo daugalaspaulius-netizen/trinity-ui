@@ -88,8 +88,8 @@ def test_script_exists_and_self_test_passes() -> None:
 @pytest.mark.parametrize(
     "path",
     [
-        "src/kiro_crew/session.py",
-        "src/kiro_crew/dashboard/server.py",
+        "src/efm_go/session.py",
+        "src/efm_go/dashboard/server.py",
         "docs/architecture/overview.md",
         "README.md",
         "setup.cfg",
@@ -101,7 +101,7 @@ def test_any_non_test_path_escalates(path: str) -> None:
 
 
 def test_a_leaf_mixed_with_source_escalates(clean_leaf: str) -> None:
-    assert _resolved([clean_leaf, "src/kiro_crew/agent.py"]) is None
+    assert _resolved([clean_leaf, "src/efm_go/agent.py"]) is None
 
 
 # ── shared test input is never a leaf ─────────────────────────────────────────

@@ -29,9 +29,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
-from kiro_crew.session_compaction import (
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
+from efm_go.session_compaction import (
     COMPACT_OUTCOME_CANCELLED,
     COMPACT_OUTCOME_RECYCLED,
 )
@@ -41,7 +41,7 @@ KEY = "dashboard:chat-14841"
 
 @pytest.fixture(autouse=True)
 def _clear_channel_decline_markers():
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     sl._stop_declined_markers.clear()
     sl._parked_queue.clear()
@@ -411,7 +411,7 @@ async def test_a_stop_before_the_semaphore_is_held_is_not_this_compactions_cance
 async def test_channel_decline_markers_die_with_the_compaction_that_armed_them():
     """Compaction A declines a channel Stop and ends; compaction B starts inside
     the window. B's first press must be a first press, not A's forcing second."""
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     mgr, key, compact, order, notices = await _setup()
     provider = mgr._sessions[key].provider
@@ -438,7 +438,7 @@ async def test_channel_decline_markers_die_with_the_compaction_that_armed_them()
 
 
 def test_clear_stop_declined_drops_only_that_keys_markers():
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     sl.note_stop_declined("k", "a", now=100.0)
     sl.note_stop_declined("k", "b", now=100.0)
@@ -543,7 +543,7 @@ def test_the_dashboard_stop_is_declined_while_the_session_compacts(tmp_path, mon
     """The route-level pre-check: no cancel is sent and the press still leaves a card."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -552,7 +552,7 @@ def test_the_dashboard_stop_is_declined_while_the_session_compacts(tmp_path, mon
     slot.task = task
     state.sessions.stop_turn = AsyncMock(return_value="soft")
     state.sessions.is_compacting = MagicMock(return_value=True)
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     reply = asyncio.run(stop_slot_turn(state, slot))
 
@@ -573,7 +573,7 @@ def test_a_mock_shaped_manager_does_not_decline_every_stop(tmp_path, monkeypatch
     """The probe is ``is True``: a truthy Mock answer must read as not compacting."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -582,7 +582,7 @@ def test_a_mock_shaped_manager_does_not_decline_every_stop(tmp_path, monkeypatch
     slot.task = task
     state.sessions.stop_turn = AsyncMock(return_value="soft")
     assert callable(state.sessions.is_compacting)  # a bare MagicMock attribute
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot))
 
@@ -593,7 +593,7 @@ def test_the_race_outcome_settles_the_card_and_undoes_the_soft_stop(tmp_path, mo
     """``stop_turn`` answering ``compacting`` after the pre-check passed."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -602,7 +602,7 @@ def test_the_race_outcome_settles_the_card_and_undoes_the_soft_stop(tmp_path, mo
     slot.task = task
     state.sessions.is_compacting = MagicMock(return_value=False)
     state.sessions.stop_turn = AsyncMock(return_value="compacting")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     reply = asyncio.run(stop_slot_turn(state, slot))
 
@@ -619,7 +619,7 @@ def test_a_second_press_during_compaction_escalates_to_the_force_stop(tmp_path, 
     """The escape hatch: the decline arms ``soft_pending``, so press #2 hard-stops."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -628,7 +628,7 @@ def test_a_second_press_during_compaction_escalates_to_the_force_stop(tmp_path, 
     slot.task = task
     state.sessions.is_compacting = MagicMock(return_value=True)
     state.sessions.stop_turn = AsyncMock(return_value="hard")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot))
     state.sessions.stop_turn.assert_not_awaited()
@@ -648,7 +648,7 @@ def test_the_second_press_after_a_decline_gets_its_own_stop_card(tmp_path, monke
     own, or the last stop row reads "nothing was stopped" for a reset session."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -657,7 +657,7 @@ def test_the_second_press_after_a_decline_gets_its_own_stop_card(tmp_path, monke
     slot.task = task
     state.sessions.is_compacting = MagicMock(return_value=True)
     state.sessions.stop_turn = AsyncMock(return_value="hard")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot))
     asyncio.run(stop_slot_turn(state, slot))
@@ -675,7 +675,7 @@ def test_a_caller_that_withholds_escalation_is_not_hard_killed_by_a_decline_mark
     turn it into a hard kill that clears the queue and pending steers."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -687,7 +687,7 @@ def test_a_caller_that_withholds_escalation_is_not_hard_killed_by_a_decline_mark
     # real second press, and must not escalate this one.
     state.sessions.is_compacting = MagicMock(return_value=True)
     state.sessions.stop_turn = AsyncMock(return_value="soft")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot))  # declined, marker armed
     asyncio.run(stop_slot_turn(state, slot, escalate=False))
@@ -703,7 +703,7 @@ def test_a_decline_marker_is_dropped_once_the_compaction_has_ended(tmp_path, mon
     refusal stopped applying."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -714,7 +714,7 @@ def test_a_decline_marker_is_dropped_once_the_compaction_has_ended(tmp_path, mon
     # Declined once, then the compaction finished before the second press.
     state.sessions.is_compacting = MagicMock(side_effect=[True, False, False])
     state.sessions.stop_turn = AsyncMock(return_value="soft")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot))
     assert slot._stop_declined_at > 0.0
@@ -729,7 +729,7 @@ def test_a_decline_marker_is_dropped_once_the_compaction_has_ended(tmp_path, mon
 def test_a_non_escalating_decline_does_not_arm_the_marker(tmp_path, monkeypatch):
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -738,7 +738,7 @@ def test_a_non_escalating_decline_does_not_arm_the_marker(tmp_path, monkeypatch)
     slot.task = task
     state.sessions.is_compacting = MagicMock(return_value=True)
     state.sessions.stop_turn = AsyncMock()
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot, escalate=False))
 
@@ -751,7 +751,7 @@ def test_a_non_escalating_press_does_not_spend_the_users_armed_hatch(tmp_path, m
     decline and the user's second press must leave the marker for that press."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -760,7 +760,7 @@ def test_a_non_escalating_press_does_not_spend_the_users_armed_hatch(tmp_path, m
     slot.task = task
     state.sessions.is_compacting = MagicMock(return_value=True)
     state.sessions.stop_turn = AsyncMock(return_value="hard")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot))  # declined, armed
     armed_at = slot._stop_declined_at
@@ -780,7 +780,7 @@ def test_the_shared_channel_stop_forces_on_a_repeat_within_the_window():
     compaction still holds the session is the escape hatch."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
+    from efm_go.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
 
     sessions = MagicMock()
     sessions.is_compacting = MagicMock(return_value=True)
@@ -821,7 +821,7 @@ def test_the_shared_channel_stop_forces_on_a_repeat_within_the_window():
 
 
 def test_a_stale_channel_decline_is_dropped_not_forced():
-    from kiro_crew.session_lifecycle import consume_stop_declined, note_stop_declined
+    from efm_go.session_lifecycle import consume_stop_declined, note_stop_declined
 
     note_stop_declined("k", "u1", now=100.0)
     assert consume_stop_declined("k", "u1", now=200.0) is False
@@ -833,7 +833,7 @@ def test_a_stale_channel_decline_is_dropped_not_forced():
 def test_one_pressers_decline_does_not_arm_another_pressers_first_stop():
     """A group route and a unified DM scope share one session key between people.
     The marker is theirs, not the session's: B's first press stays a first press."""
-    from kiro_crew.session_lifecycle import consume_stop_declined, note_stop_declined
+    from efm_go.session_lifecycle import consume_stop_declined, note_stop_declined
 
     note_stop_declined("unified:agent", "alice", now=100.0)
     assert consume_stop_declined("unified:agent", "bob", now=110.0) is False
@@ -844,7 +844,7 @@ def test_one_pressers_decline_does_not_arm_another_pressers_first_stop():
 def test_the_shared_channel_stop_is_not_forced_by_another_persons_decline():
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
+    from efm_go.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
 
     sessions = MagicMock()
     sessions.is_compacting = MagicMock(return_value=True)
@@ -874,8 +874,8 @@ def test_the_shared_channel_force_stop_goes_through_the_queue_keeping_helper():
     it is the ordinary one."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.messaging.commands import stop_running_turn
-    from kiro_crew.messaging.queue_drain import QUEUED_OWNER_KEY
+    from efm_go.messaging.commands import stop_running_turn
+    from efm_go.messaging.queue_drain import QUEUED_OWNER_KEY
 
     sessions = MagicMock()
     sessions.is_compacting = MagicMock(return_value=True)
@@ -908,8 +908,8 @@ async def test_force_stop_keeping_others_carries_other_peoples_entries_to_the_su
     """Against the real manager: the hard stop pops the session and its queue;
     bob's entry (and its staged file) must reach the successor, alice's must be
     dropped and its file unlinked."""
-    from kiro_crew.messaging.queue_drain import QUEUED_OWNER_KEY, entries_queued_by
-    from kiro_crew.session_lifecycle import force_stop_keeping_others
+    from efm_go.messaging.queue_drain import QUEUED_OWNER_KEY, entries_queued_by
+    from efm_go.session_lifecycle import force_stop_keeping_others
 
     mgr, key, compact, order, notices = await _setup()
     tmp_a = tmp_path / "a.png"
@@ -946,8 +946,8 @@ async def test_a_failed_successor_start_parks_other_peoples_entries_for_the_retr
     """The successor's provider does not start: bob's entry and its file are kept,
     parked, and delivered by the next start that succeeds (the hard stop's own
     respawn path), not deleted."""
-    from kiro_crew import session_lifecycle as sl
-    from kiro_crew.messaging.queue_drain import QUEUED_OWNER_KEY
+    from efm_go import session_lifecycle as sl
+    from efm_go.messaging.queue_drain import QUEUED_OWNER_KEY
 
     mgr, key, compact, order, notices = await _setup()
     tmp_b = tmp_path / "b.png"
@@ -978,7 +978,7 @@ async def test_a_failed_successor_start_parks_other_peoples_entries_for_the_retr
 def test_the_parked_queue_is_count_bounded_and_the_overflow_is_logged(caplog):
     from unittest.mock import MagicMock
 
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     sessions = MagicMock()
     entries = tuple((f"ts-{i}", "x", {}) for i in range(sl.PARKED_QUEUE_MAX + 2))
@@ -994,7 +994,7 @@ def test_the_parked_queue_is_count_bounded_and_the_overflow_is_logged(caplog):
 def test_the_parked_queue_is_bounded_across_keys_and_refuses_an_oversized_key(caplog):
     from unittest.mock import MagicMock
 
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     sessions = MagicMock()
     per_key = sl.PARKED_QUEUE_MAX
@@ -1019,8 +1019,8 @@ async def test_a_message_admitted_after_the_detach_is_carried_to_the_successor_t
     """Between the caller's detach and the hard reset's pop, a message can still
     land on the old session. ``stop_turn(preserve_queue=True)`` parks it right
     before the pop, so the successor gets it instead of the reset unlinking it."""
-    from kiro_crew.messaging.queue_drain import QUEUED_OWNER_KEY, entries_queued_by
-    from kiro_crew.session_lifecycle import force_stop_keeping_others
+    from efm_go.messaging.queue_drain import QUEUED_OWNER_KEY, entries_queued_by
+    from efm_go.session_lifecycle import force_stop_keeping_others
 
     mgr, key, compact, order, notices = await _setup()
     tmp_late = tmp_path / "late.png"
@@ -1053,7 +1053,7 @@ async def test_a_message_admitted_after_the_detach_is_carried_to_the_successor_t
 async def test_parked_entries_are_adopted_by_the_next_ordinary_allocation(tmp_path):
     """Both respawn attempts fail; the parked entry must not strand. The next
     ordinary ``get_or_create`` that registers a session under the key adopts it."""
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     mgr, key, compact, order, notices = await _setup()
     # A session already lives under the key (registered before anything was
@@ -1096,7 +1096,7 @@ async def test_a_failure_path_reset_carries_queued_follow_ups_to_a_successor(tmp
     handler's plain ``reset`` pops the session. The follow-ups and their staged
     files must reach a successor started for them, ahead of nothing, in order;
     an entry a mid-turn cancel marked is still dropped and its file unlinked."""
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     mgr, key, compact, order, notices = await _setup()
     files = {name: tmp_path / f"{name}.png" for name in ("m2", "gone", "m3")}
@@ -1159,7 +1159,7 @@ async def test_the_reset_successor_keeps_the_popped_sessions_identity():
 
 @pytest.mark.asyncio
 async def test_a_conversation_ending_reset_still_drops_the_queue(tmp_path):
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     mgr, key, compact, order, notices = await _setup()
     staged = tmp_path / "m2.png"
@@ -1180,8 +1180,8 @@ async def test_a_registration_cancelled_before_it_commits_keeps_the_parked_entri
     """The start record is the one suspension point between registering and
     returning; a cancellation there rolls the registration back. The parked
     entries must not have been adopted by the session that rollback removes."""
-    from kiro_crew import session_allocation as sa
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_allocation as sa
+    from efm_go import session_lifecycle as sl
 
     mgr, key, compact, order, notices = await _setup()
     await mgr.reset(KEY)
@@ -1214,8 +1214,8 @@ async def test_the_release_after_an_adopting_claim_wakes_the_adopted_entries_dra
     """Adoption inside get_or_create lands the entries on the queue; nothing
     starts them until a turn ends, so the release that frees the lease wakes
     their channels' drains."""
-    from kiro_crew import session_allocation as sa
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_allocation as sa
+    from efm_go import session_lifecycle as sl
 
     mgr, key, compact, order, notices = await _setup()
     woke: list[tuple[str, list[str]]] = []
@@ -1239,7 +1239,7 @@ async def test_the_release_after_an_adopting_claim_wakes_the_adopted_entries_dra
 def test_a_parked_entry_past_the_field_bounds_is_refused_not_retained(caplog):
     from unittest.mock import MagicMock
 
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     sessions = MagicMock()
     sessions._fold_key = lambda k: k
@@ -1260,7 +1260,7 @@ async def test_a_reset_that_raises_after_the_pop_parks_the_detached_queue():
     detached entries are parked for the next start instead of unwinding away."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     sessions = MagicMock()
     bob = ("ts-b", "bob's", {})
@@ -1297,7 +1297,7 @@ async def test_clear_queue_only_unlinks_the_handles_even_when_the_session_is_gon
 
 
 def test_decline_markers_are_count_bounded_and_the_overflow_is_counted(caplog):
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     with caplog.at_level("WARNING", logger=sl.__name__):
         for i in range(sl.STOP_DECLINED_MARKERS_MAX + 3):
@@ -1311,7 +1311,7 @@ def test_decline_markers_are_count_bounded_and_the_overflow_is_counted(caplog):
 
 
 def test_expired_decline_markers_are_swept_on_the_next_write():
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     for i in range(10):
         sl.note_stop_declined(f"k{i}", "u", now=100.0)
@@ -1320,7 +1320,7 @@ def test_expired_decline_markers_are_swept_on_the_next_write():
 
 
 def test_a_decline_marker_key_past_the_string_bound_is_refused_not_retained(caplog):
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     long_key = "k" * (sl.STOP_DECLINED_KEY_MAX_CHARS + 1)
     with caplog.at_level("WARNING", logger=sl.__name__):
@@ -1332,8 +1332,8 @@ def test_a_decline_marker_key_past_the_string_bound_is_refused_not_retained(capl
 
 
 def test_the_escalation_window_is_one_constant_for_dashboard_and_channels():
-    from kiro_crew import session_lifecycle as sl
-    from kiro_crew.dashboard import slot_projection as sp
+    from efm_go import session_lifecycle as sl
+    from efm_go.dashboard import slot_projection as sp
 
     assert sp.STOP_DECLINED_ESCALATION_SECS is sl.STOP_DECLINED_ESCALATION_SECS
 
@@ -1345,7 +1345,7 @@ def test_an_ordinary_second_press_escalation_still_discards_the_session_queue(
     its "discard everything" contract, session queue included."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -1355,7 +1355,7 @@ def test_an_ordinary_second_press_escalation_still_discards_the_session_queue(
     slot._stop_state = "soft_pending"  # a cooperative cancel is already pending
     state.sessions.is_compacting = MagicMock(return_value=False)
     state.sessions.stop_turn = AsyncMock(return_value="hard")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot))
 
@@ -1366,8 +1366,8 @@ def test_an_ordinary_second_press_escalation_still_discards_the_session_queue(
 def test_a_stale_decline_does_not_turn_a_later_first_press_into_a_force_stop(tmp_path, monkeypatch):
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
-    from kiro_crew.dashboard.slot_projection import STOP_DECLINED_ESCALATION_SECS
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.slot_projection import STOP_DECLINED_ESCALATION_SECS
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -1376,7 +1376,7 @@ def test_a_stale_decline_does_not_turn_a_later_first_press_into_a_force_stop(tmp
     slot.task = task
     state.sessions.is_compacting = MagicMock(return_value=False)
     state.sessions.stop_turn = AsyncMock(return_value="soft")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
     import time as _time
 
     slot._stop_declined_at = _time.monotonic() - STOP_DECLINED_ESCALATION_SECS - 1
@@ -1392,7 +1392,7 @@ def test_the_shared_channel_stop_keeps_the_queue_while_compacting():
     provider itself and clears the queue; a declined Stop must do neither."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
+    from efm_go.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
 
     sessions = MagicMock()
     sessions.is_compacting = MagicMock(return_value=True)
@@ -1554,7 +1554,7 @@ def _slack_orch():
 
 def _callers(ts):
     """A queue entry the presser of ``_run_slack_stop`` queued, tagged as Slack tags it."""
-    from kiro_crew.slack import events as ev
+    from efm_go.slack import events as ev
 
     return (ts, "text", {"paths": [], **ev._queue_tags("U_OWNER", "D1")})
 
@@ -1562,11 +1562,11 @@ def _callers(ts):
 def _run_slack_stop(orch):
     from unittest.mock import patch
 
-    from kiro_crew.slack import events as ev
+    from efm_go.slack import events as ev
 
-    with patch("kiro_crew.slack.events.is_allowed_user", return_value=True):
-        with patch("kiro_crew.slack.events.is_owner", return_value=True):
-            with patch("kiro_crew.slack.events.unlink_queued_temp_paths") as unlink:
+    with patch("efm_go.slack.events.is_allowed_user", return_value=True):
+        with patch("efm_go.slack.events.is_owner", return_value=True):
+            with patch("efm_go.slack.events.unlink_queued_temp_paths") as unlink:
                 from test_slack_events_coverage import _event
 
                 asyncio.run(ev._route_message(orch, _event(text="!stop"), ev.SeenCache()))
@@ -1648,7 +1648,7 @@ def test_slack_stop_detaches_at_the_press_and_drops_only_that():
 
     orch.sessions.stop_turn = AsyncMock(side_effect=_stop)
     dispatched = AsyncMock()
-    with patch("kiro_crew.slack.events._dispatch_queued", new=dispatched):
+    with patch("efm_go.slack.events._dispatch_queued", new=dispatched):
         unlink = _run_slack_stop(orch)
     orch.sessions.detach_queue.assert_called_once_with("100.0")
     orch.sessions.clear_queue.assert_called_once_with("100.0", only=at_press)
@@ -1698,7 +1698,7 @@ def test_slack_stop_declined_in_the_race_restores_what_it_detached():
     assert orch._session_tasks == {"100.0": task}
     # The reply promised that a repeat forces, so the race decline armed the
     # marker for this presser, the same as the pre-check decline does.
-    from kiro_crew.session_lifecycle import consume_stop_declined
+    from efm_go.session_lifecycle import consume_stop_declined
 
     assert consume_stop_declined("100.0", "U_OWNER") is True
 
@@ -1722,7 +1722,7 @@ def _interrupt_state():
     """The interrupt route's state double, as ``test_chat_slot_interrupt`` builds it."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+    from efm_go.dashboard.state import DashboardState, _ChatSlot
 
     slot = _ChatSlot("test")
     task = MagicMock()
@@ -1744,7 +1744,7 @@ async def _post_interrupt(state):
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.chat import api_chat_slot_interrupt
+    from efm_go.dashboard.chat import api_chat_slot_interrupt
 
     app = web.Application()
     app["state"] = state
@@ -1759,7 +1759,7 @@ async def test_interrupt_declined_by_the_precheck_leaves_the_turn_untouched(monk
     """Pending approvals stay pending, no cancel is sent."""
     from unittest.mock import MagicMock
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
     state, slot, fut = _interrupt_state()
     state.sessions.is_compacting = MagicMock(return_value=True)
 
@@ -1781,7 +1781,7 @@ async def test_interrupt_declined_after_the_body_read_keeps_the_pending_approval
     declines: the approval stays pending and the claim is released."""
     from unittest.mock import MagicMock
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
     state, slot, fut = _interrupt_state()
     # First probe (pre-check) says no; every later probe says a compaction holds it.
     state.sessions.is_compacting = MagicMock(side_effect=[False, True, True, True])
@@ -1801,7 +1801,7 @@ async def test_interrupt_declined_after_the_body_read_keeps_the_pending_approval
 async def test_interrupt_race_outcome_leaves_the_turn_and_settles_idle(monkeypatch):
     from unittest.mock import AsyncMock, MagicMock
 
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
     state, slot, _fut = _interrupt_state()
     state.sessions.is_compacting = MagicMock(return_value=False)
     state.sessions.stop_turn = AsyncMock(return_value="compacting")
@@ -1847,7 +1847,7 @@ async def test_spec_builder_pause_while_compacting_skips_the_stop_but_still_halt
     (this app's own run loop, not the compaction turn) is still cancelled, so a
     Pause the route reports as halted has halted, and its queued work is dropped
     as on any Pause."""
-    from kiro_crew.apps.builtins.spec_builder.backend import runtime
+    from efm_go.apps.builtins.spec_builder.backend import runtime
 
     slot = _SpecSlot()
     state = _spec_state(slot, compacting=True, stop_outcome="soft")
@@ -1862,7 +1862,7 @@ async def test_spec_builder_pause_while_compacting_skips_the_stop_but_still_halt
 async def test_spec_builder_pause_declined_in_the_race_still_halts_the_worker():
     """The race: the probe passed, the compaction committed, ``stop_turn`` declined.
     The worker task is ours to cancel regardless, so the Pause still halts it."""
-    from kiro_crew.apps.builtins.spec_builder.backend import runtime
+    from efm_go.apps.builtins.spec_builder.backend import runtime
 
     slot = _SpecSlot()
     state = _spec_state(slot, compacting=False, stop_outcome="compacting")
@@ -1874,7 +1874,7 @@ async def test_spec_builder_pause_declined_in_the_race_still_halts_the_worker():
 
 @pytest.mark.asyncio
 async def test_spec_builder_pause_that_goes_through_still_discards_and_cancels():
-    from kiro_crew.apps.builtins.spec_builder.backend import runtime
+    from efm_go.apps.builtins.spec_builder.backend import runtime
 
     slot = _SpecSlot()
     state = _spec_state(slot, compacting=False, stop_outcome="soft")
@@ -1912,7 +1912,7 @@ def test_force_true_on_an_idle_stop_state_reaches_the_hard_stop_not_the_decline(
 ):
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -1921,7 +1921,7 @@ def test_force_true_on_an_idle_stop_state_reaches_the_hard_stop_not_the_decline(
     slot.task = task
     state.sessions.is_compacting = MagicMock(return_value=True)
     state.sessions.stop_turn = AsyncMock(return_value="hard")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot, force=True))
 
@@ -1938,7 +1938,7 @@ def test_force_true_on_an_idle_state_with_no_compaction_stays_cooperative(tmp_pa
     escape from, so it keeps the cooperative path and the queue."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+    from efm_go.dashboard.chat_handlers import stop_slot_turn
 
     state = _dashboard_state(tmp_path)
     slot = state.get_or_create_slot("chat-14841")
@@ -1948,7 +1948,7 @@ def test_force_true_on_an_idle_state_with_no_compaction_stays_cooperative(tmp_pa
     slot._queue.append({"id": "q1", "content": "keep me"})
     state.sessions.is_compacting = MagicMock(return_value=False)
     state.sessions.stop_turn = AsyncMock(return_value="soft")
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: MagicMock())
 
     asyncio.run(stop_slot_turn(state, slot, force=True))
 
@@ -1995,7 +1995,7 @@ def test_slack_stop_hands_the_detached_queue_on_when_the_raising_stop_already_po
         raise RuntimeError("shutdown raised after the pop")
 
     orch.sessions.stop_turn = AsyncMock(side_effect=_stop)
-    with patch("kiro_crew.slack.events.hand_queue_to_successor", new=AsyncMock()) as hand:
+    with patch("efm_go.slack.events.hand_queue_to_successor", new=AsyncMock()) as hand:
         with pytest.raises(RuntimeError):
             _run_slack_stop(orch)
     orch.sessions.restore_queue.assert_not_called()
@@ -2010,7 +2010,7 @@ def test_slack_forced_repeat_carries_the_detached_queue_to_the_successor():
     back too, and is the next thing the stop's drain dispatches."""
     from unittest.mock import AsyncMock, MagicMock, patch
 
-    from kiro_crew.session_lifecycle import note_stop_declined
+    from efm_go.session_lifecycle import note_stop_declined
 
     orch, task = _slack_orch()
     orch.sessions.is_compacting = MagicMock(return_value=True)
@@ -2020,8 +2020,8 @@ def test_slack_forced_repeat_carries_the_detached_queue_to_the_successor():
     orch.sessions.stop_turn = AsyncMock(return_value="hard")
     note_stop_declined("100.0", "U_OWNER")  # the first press was declined
     dispatched = AsyncMock()
-    with patch("kiro_crew.slack.events.hand_queue_to_successor", new=AsyncMock()) as hand:
-        with patch("kiro_crew.slack.events._dispatch_queued", new=dispatched):
+    with patch("efm_go.slack.events.hand_queue_to_successor", new=AsyncMock()) as hand:
+        with patch("efm_go.slack.events._dispatch_queued", new=dispatched):
             unlink = _run_slack_stop(orch)
     assert orch.sessions.stop_turn.await_args.kwargs["force"] is True
     hand.assert_awaited_once_with(orch.sessions, "100.0", at_press)
@@ -2034,7 +2034,7 @@ def test_slack_forced_repeat_carries_the_detached_queue_to_the_successor():
 async def test_a_cancelled_successor_handoff_parks_the_entries_before_unwinding():
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew import session_lifecycle as sl
+    from efm_go import session_lifecycle as sl
 
     sessions = MagicMock()
     sessions._fold_key = lambda k: k
@@ -2063,8 +2063,8 @@ async def test_clear_queue_only_drops_the_detached_entries():
 
 
 def test_the_cancelled_notice_names_the_users_stop_as_the_cause_of_the_restart():
-    from kiro_crew.dashboard.chat_compaction_notice import notice_text
-    from kiro_crew.dashboard.state import (
+    from efm_go.dashboard.chat_compaction_notice import notice_text
+    from efm_go.dashboard.state import (
         _AUTO_COMPACT_CANCELLED_NOTICE,
         _AUTO_COMPACT_FAILED_NOTICE,
         _AUTO_RECYCLE_NOTICE,
@@ -2103,7 +2103,7 @@ def test_the_cancelled_notice_names_the_users_stop_as_the_cause_of_the_restart()
 def test_decline_stop_arms_only_after_the_warning_is_delivered():
     """The marker is what makes the next press a hard reset; the sentence is what
     makes that press informed. Send first, arm second."""
-    import kiro_crew.session_lifecycle as sl
+    import efm_go.session_lifecycle as sl
 
     order: list[str] = []
 
@@ -2121,7 +2121,7 @@ def test_decline_stop_arms_nothing_when_the_send_raises():
     """A transport error is ordinary, and it makes the retry MORE likely: a user
     who saw no answer presses again within seconds. That retry must be a first
     press, not a silent session reset."""
-    import kiro_crew.session_lifecycle as sl
+    import efm_go.session_lifecycle as sl
 
     async def _deliver() -> bool:
         raise RuntimeError("transport down")
@@ -2135,7 +2135,7 @@ def test_decline_stop_arms_nothing_when_the_send_raises():
 def test_decline_stop_arms_nothing_when_the_send_reports_it_could_not_run():
     """Some sends are conditional on a client or a message id rather than on an
     exception, and some swallow their own transport error. Those report False."""
-    import kiro_crew.session_lifecycle as sl
+    import efm_go.session_lifecycle as sl
 
     async def _no_client() -> bool:
         return False
@@ -2151,7 +2151,7 @@ def test_decline_stop_arms_nothing_unless_delivery_is_reported_as_true(reported)
     returns when nothing landed, so reading an unknown value as success would
     reset the session of a user who was never warned; anything that is not the
     explicit yes leaves the next press a first press."""
-    import kiro_crew.session_lifecycle as sl
+    import efm_go.session_lifecycle as sl
 
     async def _sent():
         return reported
@@ -2166,8 +2166,8 @@ def test_the_shared_channel_decline_sends_before_it_arms():
     that posted the text after the arm could leave the escalation live."""
     from unittest.mock import AsyncMock, MagicMock
 
-    import kiro_crew.session_lifecycle as sl
-    from kiro_crew.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
+    import efm_go.session_lifecycle as sl
+    from efm_go.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
 
     sessions = MagicMock()
     sessions.is_compacting = MagicMock(return_value=True)
@@ -2200,8 +2200,8 @@ def test_the_shared_channel_decline_sends_before_it_arms():
 def test_the_shared_channel_decline_arms_nothing_when_its_send_fails():
     from unittest.mock import AsyncMock, MagicMock
 
-    import kiro_crew.session_lifecycle as sl
-    from kiro_crew.messaging.commands import stop_running_turn
+    import efm_go.session_lifecycle as sl
+    from efm_go.messaging.commands import stop_running_turn
 
     sessions = MagicMock()
     sessions.is_compacting = MagicMock(return_value=True)
@@ -2233,7 +2233,7 @@ def test_the_shared_channel_stop_delivers_every_reply_itself():
     path and cannot answer a Stop twice."""
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.messaging.commands import STOP_REPLY_CANCELLED, stop_running_turn
+    from efm_go.messaging.commands import STOP_REPLY_CANCELLED, stop_running_turn
 
     sessions = MagicMock()
     sessions.is_compacting = MagicMock(return_value=False)
@@ -2264,7 +2264,7 @@ def test_slack_stop_arms_nothing_when_the_decline_post_never_lands():
     forcing second press the unseen warning would have promised."""
     from unittest.mock import AsyncMock, MagicMock
 
-    import kiro_crew.session_lifecycle as sl
+    import efm_go.session_lifecycle as sl
 
     sl._stop_declined_markers.clear()
     orch, _task = _slack_orch()
@@ -2283,8 +2283,8 @@ def test_the_shared_channel_decline_arms_nothing_when_the_send_reports_nothing_l
     is not a delivered warning, so the escalation stays unarmed."""
     from unittest.mock import AsyncMock, MagicMock
 
-    import kiro_crew.session_lifecycle as sl
-    from kiro_crew.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
+    import efm_go.session_lifecycle as sl
+    from efm_go.messaging.commands import STOP_REPLY_COMPACTING, stop_running_turn
 
     sl._stop_declined_markers.clear()
     sessions = MagicMock()

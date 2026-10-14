@@ -21,8 +21,8 @@ import time
 
 import pytest
 
-from kiro_crew import autonudge as _an
-from kiro_crew.autonudge import (
+from efm_go import autonudge as _an
+from efm_go.autonudge import (
     _OVERDUE_REARM_SECS,
     MANUAL_STOP_REASON,
     SENTINEL_DROPPED_REASON,
@@ -32,7 +32,7 @@ from kiro_crew.autonudge import (
     _is_torn_deactivation,
     _stopped_row_is_replaceable,
 )
-from kiro_crew.monitoring.models import (
+from efm_go.monitoring.models import (
     MonitorOutcome,
     MonitorState,
     monitor_state_to_dict,
@@ -169,7 +169,7 @@ async def test_start_resumes_a_torn_row_and_reschedules_it(tmp_path, caplog):
     _write_store(tmp_path, _row())
     svc = AutoNudgeService(base_dir=tmp_path)
     delays = _arm_delays(svc)
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.autonudge"):
         await svc.start()
     try:
         loop = svc.get_by_slot("chat-746-1788942058")

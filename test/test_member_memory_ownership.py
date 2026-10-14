@@ -14,16 +14,16 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
 from conftest import make_dir_link
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     KiroCrewAgentConfig,
     KiroCrewConfig,
     config_dir,
     resolve_agent_bindings,
     update_config_locked,
 )
-from kiro_crew.config.sections import MemoryStoreConfig
-from kiro_crew.members import dm_binding_path, write_dm_binding
-from kiro_crew.memory_stores import (
+from efm_go.config.sections import MemoryStoreConfig
+from efm_go.members import dm_binding_path, write_dm_binding
+from efm_go.memory_stores import (
     MemberAlreadyExists,
     UnknownMemoryStore,
     memory_store_dir_for,
@@ -35,7 +35,7 @@ from kiro_crew.memory_stores import (
     require_memory_store,
     resolve_store_path,
 )
-from kiro_crew.vector_memory import read_member_database_identity
+from efm_go.vector_memory import read_member_database_identity
 
 
 def _new_member(name: str = "reviewer") -> tuple[KiroCrewConfig, str]:
@@ -186,13 +186,13 @@ class TestPrivateOwnership:
 
     @pytest.mark.parametrize("replacement", ["Code Review", "Code-Review"])
     def test_deleted_member_identity_stays_reserved_by_retained_store(self, replacement):
-        from kiro_crew.execution_context import (
+        from efm_go.execution_context import (
             member_config_for_id,
             resolve_member_execution,
             validate_execution,
         )
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.vector_memory import open_member_database
+        from efm_go.memory import MemoryStore
+        from efm_go.vector_memory import open_member_database
 
         global_db = config_dir() / "memory.db"
         global_db.write_bytes(b"existing-global-v1")
@@ -248,7 +248,7 @@ class TestPrivateOwnership:
         assert resolve_agent_bindings(cfg, "default").memory_store_name == "default"
 
     def test_store_listing_follows_exact_member_avatar_and_updates_without_rebinding(self):
-        from kiro_crew.dashboard.handlers.memory_admin import _list_stores_blocking
+        from efm_go.dashboard.handlers.memory_admin import _list_stores_blocking
 
         cfg, first = _new_member("Code Review")
         cfg.agents["Code Review"].avatar = {"kind": "image", "v": 11}
@@ -276,7 +276,7 @@ class TestPrivateOwnership:
     def test_deleted_member_store_is_not_listed_for_the_picker(self):
         """The store record stays (its member id is reserved), but no route can
         read it, so listing it hands the picker a row whose every click is a 503."""
-        from kiro_crew.dashboard.handlers.memory_admin import _list_stores_blocking
+        from efm_go.dashboard.handlers.memory_admin import _list_stores_blocking
 
         cfg, store = _new_member("reviewer")
         persist_member_config(cfg, "reviewer", create=True)
@@ -297,7 +297,7 @@ class TestPrivateOwnership:
         ``owner_member_id``) is kept as written so the resolvers refuse it and
         doctor can show it, but the picker must not hash it into an unhashable
         TypeError that turns ``/api/memory/stores`` into a 500."""
-        from kiro_crew.dashboard.handlers.memory_admin import _list_stores_blocking
+        from efm_go.dashboard.handlers.memory_admin import _list_stores_blocking
 
         cfg, store = _new_member("reviewer")
         persist_member_config(cfg, "reviewer", create=True)
@@ -363,7 +363,7 @@ class TestPrivateOwnership:
     def test_legacy_advisory_resolution_does_not_probe_private_or_database_files(
         self, monkeypatch, binding
     ):
-        import kiro_crew.memory_stores as stores
+        import efm_go.memory_stores as stores
 
         cfg = KiroCrewConfig.load()
         cfg.agents["reviewer"] = KiroCrewAgentConfig(memory_store=binding)
@@ -550,11 +550,11 @@ class TestPrivateOwnership:
 
 @pytest.fixture
 def owner_crud_app(monkeypatch):
-    import kiro_crew.dashboard.handlers.agents as handlers
+    import efm_go.dashboard.handlers.agents as handlers
 
     pass  # Member routing does not depend on OS isolation.
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request", lambda _: True
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request", lambda _: True
     )
     monkeypatch.setattr(handlers, "list_agents", lambda: [])
     app = web.Application()
@@ -636,7 +636,7 @@ class TestMemberMemoryUserFlows:
         await asyncio.to_thread(require_member_memory_store, loaded, "reviewer")
 
     def test_cli_creates_private_memory_and_refuses_rebinding(self, capsys, monkeypatch):
-        from kiro_crew.cli_commands import _handle_agent
+        from efm_go.cli_commands import _handle_agent
 
         pass  # Member routing does not depend on OS isolation.
         _handle_agent(
@@ -672,8 +672,8 @@ class TestMemberMemoryUserFlows:
 
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.handlers import members as handlers
-        from kiro_crew.member_memory_auth import read_private_session_store
+        from efm_go.dashboard.handlers import members as handlers
+        from efm_go.member_memory_auth import read_private_session_store
 
         cfg, store = await asyncio.to_thread(_new_member)
         await asyncio.to_thread(persist_member_config, cfg, "reviewer", create=True)
@@ -721,8 +721,8 @@ class TestMemberMemoryUserFlows:
 
         from chat_test_helpers import _make_state
 
-        from kiro_crew import member_memory_auth
-        from kiro_crew.dashboard.handlers import members as handlers
+        from efm_go import member_memory_auth
+        from efm_go.dashboard.handlers import members as handlers
 
         cfg, store = await asyncio.to_thread(_new_member)
         await asyncio.to_thread(persist_member_config, cfg, "reviewer", create=True)

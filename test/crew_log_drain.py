@@ -40,7 +40,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.crew_log import KIND_SESSION, crew_log_root, emit, store
+from efm_go.crew_log import KIND_SESSION, crew_log_root, emit, store
 
 #: How long the writer may land nothing before the barrier reports it stuck. Not a
 #: budget for the drain: a writer that keeps landing bytes keeps the barrier waiting,

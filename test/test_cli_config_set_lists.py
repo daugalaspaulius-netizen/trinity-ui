@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.cli_config import _config_cmd, _is_list_key, _parse_list_value
+from efm_go.cli_config import _config_cmd, _is_list_key, _parse_list_value
 
 TRUSTED = "agent.apps_trusted"
 
@@ -26,11 +26,11 @@ TRUSTED = "agent.apps_trusted"
 def _set(home: Path, key: str, value: str, *, local: bool = False) -> None:
     args = argparse.Namespace(config_action="set", key=key, value=value, file=None, local=local)
     with (
-        patch("kiro_crew.cli_config.config_path", return_value=home / "config.json"),
-        patch("kiro_crew.cli_config.config_local_path", return_value=home / "config.local.json"),
-        patch("kiro_crew.config.loader.config_path", return_value=home / "config.json"),
-        patch("kiro_crew.config.loader.config_dir", return_value=home),
-        patch("kiro_crew.cli_config.sel"),
+        patch("efm_go.cli_config.config_path", return_value=home / "config.json"),
+        patch("efm_go.cli_config.config_local_path", return_value=home / "config.local.json"),
+        patch("efm_go.config.loader.config_path", return_value=home / "config.json"),
+        patch("efm_go.config.loader.config_dir", return_value=home),
+        patch("efm_go.cli_config.sel"),
     ):
         _config_cmd(args)
 
@@ -197,7 +197,7 @@ def test_an_undeclared_key_is_not_treated_as_a_list(home):
     # The registry is the sole authority: an unknown key returns False (the base
     # write path refuses an unknown key before the list rule is consulted), so no
     # config load happens on a write whose key misses the registry.
-    with patch("kiro_crew.cli_config.KiroCrewConfig.load") as load:
+    with patch("efm_go.cli_config.KiroCrewConfig.load") as load:
         assert not _is_list_key("custom.things")
         assert not _is_list_key("custom.other")
         load.assert_not_called()

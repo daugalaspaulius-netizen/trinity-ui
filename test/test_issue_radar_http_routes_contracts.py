@@ -30,10 +30,10 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from dashboard_owner_helpers import NoConfiguredOwner
 
-from kiro_crew import llm_helpers
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh
-from kiro_crew.apps.builtins.issue_radar.backend import provider, routes, store
-from kiro_crew.start_priority import StartPriority
+from efm_go import llm_helpers
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh
+from efm_go.apps.builtins.issue_radar.backend import provider, routes, store
+from efm_go.start_priority import StartPriority
 
 BASE = "/api/apps/issue-radar"
 SHA = "a" * 40
@@ -327,7 +327,7 @@ class TestProbeCoalescing(unittest.IsolatedAsyncioTestCase):
         with (
             mock.patch.object(gh, "probe_open_list", return_value=dict(READING)) as github_probe,
             mock.patch(
-                "kiro_crew.apps.builtins.issue_radar.backend.gitlab_client.probe_open_list",
+                "efm_go.apps.builtins.issue_radar.backend.gitlab_client.probe_open_list",
                 gitlab_probe,
             ),
         ):
@@ -1034,7 +1034,7 @@ class TestConfigRoutesKeepTheirProvider(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(remove.call_args, mock.call("g", "p", **identity))
 
     async def test_account_routes_dispatch_to_the_requested_provider(self):
-        gitlab = "kiro_crew.apps.builtins.issue_radar.backend.gitlab_client"
+        gitlab = "efm_go.apps.builtins.issue_radar.backend.gitlab_client"
         with (
             mock.patch(f"{gitlab}.get_current_login", return_value="alice.smith") as login,
             mock.patch(
@@ -1074,7 +1074,7 @@ class TestConfigRoutesKeepTheirProvider(unittest.IsolatedAsyncioTestCase):
             {"owner": "g", "repo": "p", "provider": "gitlab", "host": "gitlab.com"},
             {"owner": "o", "repo": "bad"},
         ]
-        gitlab = "kiro_crew.apps.builtins.issue_radar.backend.gitlab_client"
+        gitlab = "efm_go.apps.builtins.issue_radar.backend.gitlab_client"
         with (
             mock.patch.object(store, "list_connected_repos", return_value=rows),
             mock.patch(

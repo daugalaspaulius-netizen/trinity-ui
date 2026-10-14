@@ -42,7 +42,7 @@ const OUT = process.argv[2] || '../temp-screenshots/goal-clear-record'
 const SLOT = 'chat-loop'
 const PROJECT = '/home/user/workspace/uploader'
 const LOOP_ID = 'mon-9615'
-const PR = 'https://github.com/kirodotdev/KiroCrew/pull/9615'
+const PR = 'https://efmleads.com/pull/9615'
 
 mkdirSync(OUT, { recursive: true })
 

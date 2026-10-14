@@ -36,10 +36,10 @@ from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
 from conftest import requires_symlinks
-from kiro_crew.apps.registry_pipeline import indexes, sources
-from kiro_crew.config.loader import _invalidate_config_cache, registry_trust_path
-from kiro_crew.dashboard.handlers import security
-from kiro_crew.dashboard.handlers.security import (
+from efm_go.apps.registry_pipeline import indexes, sources
+from efm_go.config.loader import _invalidate_config_cache, registry_trust_path
+from efm_go.dashboard.handlers import security
+from efm_go.dashboard.handlers.security import (
     api_trusted_registries_list,
     api_trusted_registry_grant,
     api_trusted_registry_revoke,
@@ -69,7 +69,7 @@ def no_pinned(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def mock_sel():
-    with patch("kiro_crew.dashboard.handlers.security._sel") as m:
+    with patch("efm_go.dashboard.handlers.security._sel") as m:
         instance = MagicMock()
         m.return_value = instance
         yield instance
@@ -225,7 +225,7 @@ class TestTheRuntimeReader:
 
 class TestTheKeystoneFloor:
     def test_the_file_is_neither_readable_nor_writable_by_the_agent(self) -> None:
-        from kiro_crew.security import is_sensitive_path
+        from efm_go.security import is_sensitive_path
 
         assert is_sensitive_path("~/.kirocrew/registry_trust.json") is True
         assert is_sensitive_path("~/.kiro/crew/registry_trust.json") is True
@@ -470,7 +470,7 @@ def _make_registries_app(monkeypatch: pytest.MonkeyPatch) -> web.Application:
     every add/remove, so the pair is exercised together: what the GET reports
     is exactly what the PUT receives.
     """
-    from kiro_crew.apps import routes as routes_mod
+    from efm_go.apps import routes as routes_mod
 
     monkeypatch.setattr(routes_mod, "sel", lambda: MagicMock())
     monkeypatch.setattr(routes_mod, "_pinned_registries", lambda: [])
@@ -622,7 +622,7 @@ class TestRemovingARegistryKeepsItsGrantVisible:
         _write_config(home, [{"name": "mine", "repo": _REPO, "branch": "main"}])
         _write_grant(_REPO_PUBLIC)
         before = registry_trust_path().read_text(encoding="utf-8")
-        from kiro_crew.apps import routes as routes_mod
+        from efm_go.apps import routes as routes_mod
 
         monkeypatch.setattr(routes_mod, "sel", lambda: MagicMock())
         monkeypatch.setattr(routes_mod, "_pinned_registries", lambda: [])
@@ -784,7 +784,7 @@ class TestGrantValidatesUnderTheLock:
         # shared lock. A pre-fix handler validated before acquiring it, so this
         # probe would see the lock free. `LoopBoundLock.locked()` answers True from
         # the executor thread when any live loop holds the lock.
-        from kiro_crew.dashboard.handlers.agents import _get_config_lock
+        from efm_go.dashboard.handlers.agents import _get_config_lock
 
         _write_config(home, [{"name": "mine", "repo": _REPO, "branch": "main"}])
         monkeypatch.setattr(security, "_expire_registry_index_cache", lambda row: None)
@@ -813,7 +813,7 @@ class TestGrantValidatesUnderTheLock:
         # End-to-end consequence: because validation is under the lock, a row
         # removed while the grant is queued behind the lock is seen as gone and the
         # grant is refused with no orphan written.
-        from kiro_crew.dashboard.handlers.agents import _get_config_lock
+        from efm_go.dashboard.handlers.agents import _get_config_lock
 
         _write_config(home, [{"name": "mine", "repo": _REPO, "branch": "main"}])
         assert security._matching_operator_registry(_REPO_PUBLIC) is not None
@@ -845,7 +845,7 @@ class TestGrantValidatesUnderTheLock:
         # grant and the revoke handler now carry this same concrete shape (strict
         # read -> mutate the record -> publish through the shared writer) instead of
         # a callback, so driving the grant endpoint exercises exactly that path.
-        from kiro_crew.dashboard.handlers.agents import _get_config_lock
+        from efm_go.dashboard.handlers.agents import _get_config_lock
 
         _write_config(home, [{"name": "mine", "repo": _REPO, "branch": "main"}])
         monkeypatch.setattr(security, "_expire_registry_index_cache", lambda row: None)
@@ -897,11 +897,11 @@ class TestTheOpusRoundFourAdvisories:
         # no-grant state on every Linux host, so the reader must not log a
         # corruption-grade warning for it. A NON-empty wrong shape still warns.
         registry_trust_path().write_text("{}", encoding="utf-8")
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.registry_pipeline.sources"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.registry_pipeline.sources"):
             assert sources._granted_owner_repos() == frozenset()
         assert not [r for r in caplog.records if "not a usable store" in r.getMessage()]
         registry_trust_path().write_text(json.dumps({"version": 999}), encoding="utf-8")
-        with caplog.at_level("WARNING", logger="kiro_crew.apps.registry_pipeline.sources"):
+        with caplog.at_level("WARNING", logger="efm_go.apps.registry_pipeline.sources"):
             assert sources._granted_owner_repos() == frozenset()
         assert [r for r in caplog.records if "not a usable store" in r.getMessage()]
 
@@ -1001,7 +1001,7 @@ class TestAnAliasBackedKeystoneConfersNoTrust:
     so a linked keystone is not mutated in place and confers no owner trust."""
 
     def test_a_hardlinked_keystone_is_refused_as_corrupt(self, home) -> None:
-        from kiro_crew.apps import registry_trust as rt_mod
+        from efm_go.apps import registry_trust as rt_mod
 
         _write_grant(_REPO_PUBLIC)  # a valid keystone at the real path
         _alias, drop_second_name = _give_the_keystone_a_second_name(home)  # nlink == 2
@@ -1020,7 +1020,7 @@ class TestAnAliasBackedKeystoneConfersNoTrust:
         # The same refusal, driven through the reported count alone, so the
         # `st_nlink > 1` branch is exercised deterministically even where the
         # filesystem also allowed a real link above.
-        from kiro_crew.apps import registry_trust as rt_mod
+        from efm_go.apps import registry_trust as rt_mod
 
         _write_grant(_REPO_PUBLIC)
         reported = _report_a_second_link(registry_trust_path())
@@ -1034,7 +1034,7 @@ class TestAnAliasBackedKeystoneConfersNoTrust:
 
     @requires_symlinks
     def test_a_symlinked_keystone_is_refused_as_corrupt(self, home) -> None:
-        from kiro_crew.apps import registry_trust as rt_mod
+        from efm_go.apps import registry_trust as rt_mod
 
         real = home / "registry_trust_real.json"
         real.write_text(
@@ -1079,7 +1079,7 @@ class TestAnAliasBackedKeystoneConfersNoTrust:
         assert _REPO_PUBLIC in sources._granted_owner_repos()
 
     def test_undecodable_bytes_read_as_corrupt_not_as_a_crash(self, home) -> None:
-        from kiro_crew.apps import registry_trust as rt_mod
+        from efm_go.apps import registry_trust as rt_mod
 
         registry_trust_path().write_bytes(b'{"version": 1, "owner_trusted": ["\xff\xfe"]}')
         with pytest.raises(rt_mod.RegistryTrustCorruptError):
@@ -1095,8 +1095,8 @@ class TestAnAliasBackedKeystoneConfersNoTrust:
         # opens non-blocking and the S_ISREG check turns it into a corrupt read.
         # Every platform pins the non-blocking open through a spy; a POSIX host
         # additionally plants a real FIFO and proves the read returns.
-        from kiro_crew import platform_compat
-        from kiro_crew.apps import registry_trust as rt_mod
+        from efm_go import platform_compat
+        from efm_go.apps import registry_trust as rt_mod
 
         seen: list[bool] = []
         real_open = platform_compat.open_file_no_reparse
@@ -1125,7 +1125,7 @@ class TestAnAliasBackedKeystoneConfersNoTrust:
     def test_a_regular_keystone_reads_unchanged(self, home) -> None:
         # A plain regular file (nlink == 1, not a link) is unaffected by the alias
         # guard: the ordinary path still reads.
-        from kiro_crew.apps import registry_trust as rt_mod
+        from efm_go.apps import registry_trust as rt_mod
 
         _write_grant(_REPO_PUBLIC)
         assert set(rt_mod.read_registry_trust_strict()["owner_trusted"]) == {_REPO_PUBLIC}
@@ -1487,7 +1487,7 @@ class TestThePrewarmReadsTheTierOffTheFetchedRow:
     def test_a_swapped_row_does_not_lift_the_fetched_index(
         self, home, no_pinned, monkeypatch
     ) -> None:
-        from kiro_crew.apps.registry_pipeline import store_art
+        from efm_go.apps.registry_pipeline import store_art
 
         # The agent's row as it was when B's index was fetched.
         fetched = SimpleNamespace(name="N", repo=_OTHER, branch="main", trust="index")

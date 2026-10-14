@@ -16,10 +16,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.cloud import aws
-from kiro_crew.cloud import fargate_engine as fe
-from kiro_crew.cloud import launch_job as lj
-from kiro_crew.dashboard import handlers_cloud as hc
+from efm_go.cloud import aws
+from efm_go.cloud import fargate_engine as fe
+from efm_go.cloud import launch_job as lj
+from efm_go.dashboard import handlers_cloud as hc
 
 ARN = "arn:aws:ecs:us-east-1:123456789012:task/kc-crew/1abc2def3abc4def5abc6def7abc8def"
 SHORT_ARN = "arn:aws:ecs:us-east-1:123456789012:task/1abc2def3abc4def5abc6def7abc8def"

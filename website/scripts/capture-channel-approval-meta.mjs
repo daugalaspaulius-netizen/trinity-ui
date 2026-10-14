@@ -49,7 +49,7 @@ const LONG = [
   '--exclude=*.log --exclude=*.tmp --exclude=*.pyc --exclude=__pycache__ --exclude=.venv',
   '--exclude=.pytest_cache --exclude=.mypy_cache --exclude=.ruff_cache --exclude=playwright-report',
   '--directory=/home/dev/project website/src website/public website/capture website/scripts',
-  'src/kiro_crew test docs/system-specs README.md pyproject.toml package.json package-lock.json',
+  'src/efm_go test docs/system-specs README.md pyproject.toml package.json package-lock.json',
 ].join(' ')
 if (LONG.length <= 500) throw new Error(`LONG must exceed the 500-character bound, is ${LONG.length}`)
 

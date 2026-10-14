@@ -19,7 +19,7 @@ superseded-by: []
 - Related: `website/src/components/QuestionCard.tsx` (the card this reshapes),
   `website/src/components/PendingQuestionCard.tsx` (the submit path whose text format
   changes), `website/docs/i18n-catalog.md` (the authoring rule the six new keys follow),
-  `src/kiro_crew/mcp_tools/control.py` (the `ask_question` tool §3.6 makes blocking)
+  `src/efm_go/mcp_tools/control.py` (the `ask_question` tool §3.6 makes blocking)
 
 ## 1. Problem statement
 
@@ -300,7 +300,7 @@ reset.
 
 **Decided 2026-09-24 by buluoray: the pager is accepted, and restoring the answer review is
 deferred to a follow-up. It does not block
-[#13196](https://github.com/kirodotdev/KiroCrew/pull/13196).**
+[#13196](https://efmleads.com/pull/13196).**
 
 The design's one real subtraction (§3.4). A compact answered-summary above Submit on the
 last page would restore it without re-stacking the card: every answer visible, read-only,

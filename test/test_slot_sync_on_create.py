@@ -20,13 +20,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.session import SessionManager
+from efm_go.config import KiroCrewConfig
+from efm_go.session import SessionManager
 
 
 def _make_state(sessions):
     """A dashboard state real enough to run the REAL get_or_create_slot."""
-    from kiro_crew.dashboard.state import DashboardState
+    from efm_go.dashboard.state import DashboardState
 
     st = DashboardState.__new__(DashboardState)
     st._slots = {}

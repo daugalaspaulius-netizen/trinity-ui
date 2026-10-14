@@ -23,21 +23,21 @@ import asyncio
 
 import pytest
 
-from kiro_crew import name_grant
-from kiro_crew.acp.types import (
+from efm_go import name_grant
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
     AcpEvent,
     TurnUsage,
 )
-from kiro_crew.dashboard.handlers import usage
-from kiro_crew.dashboard.handlers.hooks import (
+from efm_go.dashboard.handlers import usage
+from efm_go.dashboard.handlers.hooks import (
     _EVENT_PERMISSION_REQUEST_KIND,
     _run_hook_inner,
 )
-from kiro_crew.hooks import TOOL_ALLOW, TOOL_AUTO_APPROVE, TOOL_DENY, ToolHookResult
-from kiro_crew.permission_floor import (
+from efm_go.hooks import TOOL_ALLOW, TOOL_AUTO_APPROVE, TOOL_DENY, ToolHookResult
+from efm_go.permission_floor import (
     OUTCOME_PENDING_APPROVAL,
     OUTCOME_REJECTED_TRANSPORT_FLOOR,
 )
@@ -151,7 +151,7 @@ def _drive(
     sel = _RecordingSel()
     # _sel() in handlers/hooks.py resolves through the handlers package's
     # late-binding sel() exactly for this patch point.
-    import kiro_crew.dashboard.handlers as handlers_pkg
+    import efm_go.dashboard.handlers as handlers_pkg
 
     monkeypatch.setattr(handlers_pkg, "sel", lambda: sel)
     # Keep the usage row off the real shards (same seam the turn-duration
@@ -331,7 +331,7 @@ def test_unauditable_auto_approve_is_denied(monkeypatch):
             if kwargs.get("outcome") == OUTCOME_PENDING_APPROVAL:
                 raise OSError("audit disk full")
 
-    import kiro_crew.dashboard.handlers as handlers_pkg
+    import efm_go.dashboard.handlers as handlers_pkg
 
     raising = _RaisingSel()
     monkeypatch.setattr(handlers_pkg, "sel", lambda: raising)

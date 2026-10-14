@@ -14,7 +14,7 @@ superseded-by: []
 
 # RFC: Goal loop approval hold
 
-- Status: in-progress. The decision was made by the operator who owns the conductor patrol (2026-10-05). The implementation is [#16993](https://github.com/kirodotdev/KiroCrew/pull/16993). That PR's First Principles lane reads an RFC's status off the base branch, so this document lands on its own first, as GOVERNANCE.md asks of an RFC. The implementation then rebases onto it.
+- Status: in-progress. The decision was made by the operator who owns the conductor patrol (2026-10-05). The implementation is [#16993](https://efmleads.com/pull/16993). That PR's First Principles lane reads an RFC's status off the base branch, so this document lands on its own first, as GOVERNANCE.md asks of an RFC. The implementation then rebases onto it.
 - Amends [rfc-goal-popover-pause-play-controls.md](rfc-goal-popover-pause-play-controls.md) in two places, both named in section 3: how an unanswered approval ends a loop, and whether held time spends the runtime budget. That document's other decisions stand.
 - Related: [rfc-conductor-work-ledger.md](rfc-conductor-work-ledger.md) (the `work-ledger` watch), [rfc-crew-log-wake.md](rfc-crew-log-wake.md) (how a worker's report wakes the conductor), and the goal-conductor skill's `scripts/patrol_budget.py` (agent-side renewal).
 - Measured at `a97659dfc3`.
@@ -25,9 +25,9 @@ Two ways an unattended goal loop ends while its work is still live.
 
 **An unanswered approval stops the loop for good.** A conductor patrol on a 30-minute interval with a 200-cycle cap was found stopped at cycle 47. The loop record (`97064f59` in `autonudge.json`) carried `stopped_reason: approval_stalled`. One cycle reached a tool that needed an interactive approval while nobody was at the dashboard. The prompt timed out, and the next wake turned the loop off.
 
-On main that is by design. `notify_approval_stalled` in `src/kiro_crew/autonudge_service/timers.py` sets `approval_stalled`. `_timer` in `src/kiro_crew/autonudge_service/firing.py` then deactivates the loop with that reason and emits `expired`. Nothing turns the loop back on. A person has to notice and re-arm it, so one missed prompt costs the rest of the night's patrol.
+On main that is by design. `notify_approval_stalled` in `src/efm_go/autonudge_service/timers.py` sets `approval_stalled`. `_timer` in `src/efm_go/autonudge_service/firing.py` then deactivates the loop with that reason and emits `expired`. Nothing turns the loop back on. A person has to notice and re-arm it, so one missed prompt costs the rest of the night's patrol.
 
-**A work-ledger watch is ended by its own bounds.** A conductor's `watch: "work-ledger"` loop exists to wake the conductor when its workers move. Its job ends when the ledger does: every item closed is the probe's terminal settlement (`WorkLedgerProbe.observe` in `src/kiro_crew/probes/work_ledger.py`). But `_timer` checks `max_cycles` and `max_runtime_secs` first. When either runs out with items still open, the watch stops with work in flight.
+**A work-ledger watch is ended by its own bounds.** A conductor's `watch: "work-ledger"` loop exists to wake the conductor when its workers move. Its job ends when the ledger does: every item closed is the probe's terminal settlement (`WorkLedgerProbe.observe` in `src/efm_go/probes/work_ledger.py`). But `_timer` checks `max_cycles` and `max_runtime_secs` first. When either runs out with items still open, the watch stops with work in flight.
 
 The goal-conductor skill can renew its own bounds (`patrol_budget.py renew`). That depends on the model calling `monitor_update` on the right cycle. On the host that produced the evidence, that call itself needed an approval.
 
@@ -120,7 +120,7 @@ None open. Two were settled in review:
 
 ## 8. Rollout
 
-One implementation PR, [#16993](https://github.com/kirodotdev/KiroCrew/pull/16993), after this document lands. Exit criteria, each pinned by a test there:
+One implementation PR, [#16993](https://efmleads.com/pull/16993), after this document lands. Exit criteria, each pinned by a test there:
 
 - An unanswered approval leaves the loop active, fires no cycle, emits no `expired`, and sends one hold notification.
 - A person's answer, a typed dashboard message, or Play releases the hold, and the next cycle fires with no re-arm.

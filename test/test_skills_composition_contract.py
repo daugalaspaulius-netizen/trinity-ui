@@ -1,8 +1,8 @@
 """Composition contract between ``SkillsLoader`` and ``skill_runtime``.
 
-``kiro_crew.skills`` keeps the loader's state, its locks and the code repository
+``efm_go.skills`` keeps the loader's state, its locks and the code repository
 guards pin to ``skills.py`` by path, and delegates the rest of its rules to the
-modules under ``kiro_crew.skill_runtime``. What this file pins is what callers of
+modules under ``efm_go.skill_runtime``. What this file pins is what callers of
 the loader observe independently of where each rule lives:
 
 * the class keeps every member it had, with the same kind and signature, and the
@@ -39,15 +39,15 @@ from source_corpus import repo_files_named, repo_root
 from test_link_screen_hold_pin import SCREENS
 from test_security_posture import _REDACTOR_CALL_RE
 
-import kiro_crew.skills as sk
-from kiro_crew import pinned_fs
-from kiro_crew.config.loader import KiroCrewConfig, SkillsConfig
-from kiro_crew.skills import AutoSkillProvenance, ClaimRefusal, SkillsLoader
+import efm_go.skills as sk
+from efm_go import pinned_fs
+from efm_go.config.loader import KiroCrewConfig, SkillsConfig
+from efm_go.skills import AutoSkillProvenance, ClaimRefusal, SkillsLoader
 
-RUNTIME_PACKAGE = "kiro_crew.skill_runtime"
+RUNTIME_PACKAGE = "efm_go.skill_runtime"
 RUNTIME_DIR = Path(sk.__file__).resolve().with_name("skill_runtime")
 FACADE_PATH = Path(sk.__file__).resolve()
-FACADE_LOGGER = "kiro_crew.skills"
+FACADE_LOGGER = "efm_go.skills"
 
 #: The owners the loader composes. A module added or removed changes the
 #: composition, so the set is spelled out rather than globbed.
@@ -65,7 +65,7 @@ RUNTIME_MODULES = frozenset(
 )
 
 #: Facade bindings that tests REBIND to change what the loader does, and which
-#: moved code consumes. Runtime code reads each through ``kiro_crew.skills`` at
+#: moved code consumes. Runtime code reads each through ``efm_go.skills`` at
 #: call time. ``os`` is rebound too, but only around ``installed_skill_currency``,
 #: which stays in the facade; runtime code reads ``os`` directly.
 FACADE_SEAMS = frozenset(
@@ -417,7 +417,7 @@ def _sibling_name_imports(source: str) -> list[str]:
     """Every import, at any depth, that binds a runtime owner's function rather
     than the owner module.
 
-    ``from kiro_crew.skill_runtime.listing import f`` copies ``f`` into the
+    ``from efm_go.skill_runtime.listing import f`` copies ``f`` into the
     importer once, so a patch of ``listing.f`` never reaches that caller."""
     hits = []
     for node in ast.walk(ast.parse(source)):
@@ -476,7 +476,7 @@ class TestSurface:
         missing = [name for name in _MODULE_NAMES if not hasattr(sk, name)]
         assert missing == []
 
-    def test_every_imported_kiro_crew_name_still_resolves_on_the_facade(self) -> None:
+    def test_every_imported_efm_go_name_still_resolves_on_the_facade(self) -> None:
         missing = [name for name in _IMPORTED_KIRO_CREW_NAMES if not hasattr(sk, name)]
         assert missing == []
 
@@ -496,7 +496,7 @@ class TestSurface:
         assert {"_dedupe_identical_skills", "_family_line", "_matches_any"} <= set(moved)
 
     def test_a_star_import_still_binds_every_public_name(self, tmp_path: Path) -> None:
-        probe = _load_probe(tmp_path, "sk_star_probe", "from kiro_crew.skills import *\n")
+        probe = _load_probe(tmp_path, "sk_star_probe", "from efm_go.skills import *\n")
         public = [name for name in _MODULE_NAMES if not name.startswith("_") and name != "logger"]
         public += [name for name in _IMPORTED_KIRO_CREW_NAMES if not name.startswith("_")]
         assert [name for name in public if not hasattr(probe, name)] == []
@@ -513,9 +513,9 @@ class TestSurface:
         assert (RUNTIME_DIR / "__init__.py").is_file()
 
 
-#: Every spelling a test uses to reach the facade module: ``import kiro_crew.skills``
-#: (aliased or not) and ``from kiro_crew import ..., skills, ...``.
-_MENTIONS_THE_FACADE = re.compile(r"kiro_crew\.skills\b|from kiro_crew import [^\n]*\bskills\b")
+#: Every spelling a test uses to reach the facade module: ``import efm_go.skills``
+#: (aliased or not) and ``from efm_go import ..., skills, ...``.
+_MENTIONS_THE_FACADE = re.compile(r"efm_go\.skills\b|from efm_go import [^\n]*\bskills\b")
 
 
 class TestPlacement:
@@ -543,16 +543,16 @@ class TestPlacement:
         for stem, source in _runtime_sources().items():
             for node in ast.parse(source).body:
                 if isinstance(node, ast.Import):
-                    assert "kiro_crew.skills" not in [alias.name for alias in node.names], stem
+                    assert "efm_go.skills" not in [alias.name for alias in node.names], stem
                 elif isinstance(node, ast.ImportFrom):
-                    assert node.module != "kiro_crew.skills", stem
+                    assert node.module != "efm_go.skills", stem
                     assert not (
-                        node.module == "kiro_crew"
+                        node.module == "efm_go"
                         and "skills" in [alias.name for alias in node.names]
                     ), stem
 
-    def test_runtime_modules_import_no_other_kiro_crew_name(self) -> None:
-        """Every name the facade imports from another ``kiro_crew`` module was a facade
+    def test_runtime_modules_import_no_other_efm_go_name(self) -> None:
+        """Every name the facade imports from another ``efm_go`` module was a facade
         binding a caller could patch. Taking those names through ``sk`` at call time,
         rather than importing them again at module scope, keeps each such patch
         effective on the moved code. Sibling owner modules and ``TYPE_CHECKING``
@@ -564,11 +564,11 @@ class TestPlacement:
                 if id(node) in typing_only:
                     continue
                 if isinstance(node, ast.ImportFrom) and _imported_module(node).startswith(
-                    "kiro_crew"
+                    "efm_go"
                 ):
                     assert _imported_module(node) == RUNTIME_PACKAGE, (stem, node.module)
                 elif isinstance(node, ast.Import):
-                    assert not [a.name for a in node.names if a.name.startswith("kiro_crew")], stem
+                    assert not [a.name for a in node.names if a.name.startswith("efm_go")], stem
 
     def test_runtime_imports_form_a_dag(self) -> None:
         graph = {
@@ -603,10 +603,10 @@ class TestPlacement:
     @pytest.mark.parametrize(
         "planted",
         [
-            "from kiro_crew.skill_runtime.listing import _dedupe_identical_skills\n",
-            "from kiro_crew.skill_runtime.listing import _dedupe_identical_skills as dedupe\n",
-            "def f():\n    from kiro_crew.skill_runtime.catalog import _matches_any\n",
-            "from kiro_crew.skill_runtime import _matches_any\n",
+            "from efm_go.skill_runtime.listing import _dedupe_identical_skills\n",
+            "from efm_go.skill_runtime.listing import _dedupe_identical_skills as dedupe\n",
+            "def f():\n    from efm_go.skill_runtime.catalog import _matches_any\n",
+            "from efm_go.skill_runtime import _matches_any\n",
             "from .listing import _fingerprint_mtime_and_size\n",
         ],
     )
@@ -616,7 +616,7 @@ class TestPlacement:
     @pytest.mark.parametrize(
         "allowed",
         [
-            "from kiro_crew.skill_runtime import listing as _listing\n",
+            "from efm_go.skill_runtime import listing as _listing\n",
             "from . import catalog\n",
         ],
     )
@@ -624,7 +624,7 @@ class TestPlacement:
         assert _sibling_name_imports(allowed) == []
 
     def test_runtime_functions_import_the_facade_as_a_module(self) -> None:
-        """``from kiro_crew import skills as sk`` and then ``sk.<seam>``: never a
+        """``from efm_go import skills as sk`` and then ``sk.<seam>``: never a
         by-name import of a facade binding, which would read it once, not per call."""
         imports = 0
         for stem, source in _runtime_sources().items():
@@ -633,9 +633,9 @@ class TestPlacement:
             for node in ast.walk(tree):
                 if id(node) in typing_only:
                     continue
-                if isinstance(node, ast.ImportFrom) and node.module == "kiro_crew":
+                if isinstance(node, ast.ImportFrom) and node.module == "efm_go":
                     imports += "skills" in [alias.name for alias in node.names]
-                if isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.skills":
+                if isinstance(node, ast.ImportFrom) and node.module == "efm_go.skills":
                     raise AssertionError(f"{stem}:{node.lineno} imports facade names by name")
         assert imports > 30
 
@@ -700,13 +700,13 @@ class TestPlacement:
     def test_the_seam_scan_catches_a_planted_bare_read(self) -> None:
         planted = (
             "def f(loader, path: 'validate_file_path') -> 'sel':\n"
-            "    from kiro_crew import skills as sk\n"
+            "    from efm_go import skills as sk\n"
             "    good = sk.validate_file_path(str(path))\n"
             "    return validate_file_path(str(path)), _COLD_CATALOG_WAIT_SECS\n"
             "class Owner:\n"
             "    def lock(self):\n"
-            "        from kiro_crew.platform_compat import file_lock\n"
-            "        from kiro_crew.hooks import safe_read_file as read\n"
+            "        from efm_go.platform_compat import file_lock\n"
+            "        from efm_go.hooks import safe_read_file as read\n"
             "        return file_lock, read\n"
         )
         assert [hit.split(": ")[1] for hit in self._bare_seam_loads(planted)] == [
@@ -718,7 +718,7 @@ class TestPlacement:
 
     @staticmethod
     def _facade_patched_names() -> set[str]:
-        """Names any test rebinds on ``kiro_crew.skills`` itself."""
+        """Names any test rebinds on ``efm_go.skills`` itself."""
         tests = repo_root() / "test"
         found: set[str] = set()
         for path in repo_files_named(".py"):
@@ -728,13 +728,13 @@ class TestPlacement:
             if not _MENTIONS_THE_FACADE.search(text):
                 continue
             tree = ast.parse(text)
-            aliases = {"kiro_crew.skills"}
+            aliases = {"efm_go.skills"}
             for node in ast.walk(tree):
-                if isinstance(node, ast.ImportFrom) and node.module == "kiro_crew":
+                if isinstance(node, ast.ImportFrom) and node.module == "efm_go":
                     aliases |= {a.asname or a.name for a in node.names if a.name == "skills"}
                 elif isinstance(node, ast.Import):
                     aliases |= {
-                        a.asname for a in node.names if a.name == "kiro_crew.skills" and a.asname
+                        a.asname for a in node.names if a.name == "efm_go.skills" and a.asname
                     }
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call) or len(node.args) < 2:
@@ -747,7 +747,7 @@ class TestPlacement:
                     and ast.unparse(node.func).endswith(("setattr", "patch.object"))
                 ):
                     found.add(name.value)
-            found |= set(re.findall(r"""["']kiro_crew\.skills\.(\w+)["']""", text))
+            found |= set(re.findall(r"""["']efm_go\.skills\.(\w+)["']""", text))
         return found - {"SkillsLoader"}
 
     def test_no_runtime_module_binds_a_name_tests_rebind_on_the_facade(self) -> None:
@@ -790,15 +790,15 @@ class TestPlacement:
 
     def test_the_seam_import_scan_catches_an_aliased_import(self) -> None:
         planted = (
-            "from kiro_crew.hooks import validate_file_path as _vfp\n"
-            "from kiro_crew.platform_compat import file_lock, pinned_directory\n"
+            "from efm_go.hooks import validate_file_path as _vfp\n"
+            "from efm_go.platform_compat import file_lock, pinned_directory\n"
             "if TYPE_CHECKING:\n"
-            "    from kiro_crew.hooks import safe_read_file\n"
+            "    from efm_go.hooks import safe_read_file\n"
         )
         assert self._module_seam_imports(planted) == ["1: validate_file_path", "2: file_lock"]
 
     def test_every_runtime_logger_is_the_facade_logger(self) -> None:
-        """caplog filters on ``kiro_crew.skills``; a ``skill_runtime.*`` logger is not
+        """caplog filters on ``efm_go.skills``; a ``skill_runtime.*`` logger is not
         its child, so its records would fall outside every such assertion."""
         for stem, source in _runtime_sources().items():
             calls = [
@@ -821,7 +821,7 @@ class TestPlacement:
             ], stem
 
     def test_no_runtime_module_anchors_a_path_on_its_own_file(self) -> None:
-        """``Path(__file__).parent`` in the facade is the ``kiro_crew`` package; in a
+        """``Path(__file__).parent`` in the facade is the ``efm_go`` package; in a
         runtime module it is ``skill_runtime``, which would narrow the builtin-app
         root the ownership check compares against. Anchors go through the facade."""
         for stem, source in _runtime_sources().items():
@@ -1259,7 +1259,7 @@ class TestSeamsReachTheRuntime:
         assert calls[-1] == "_matches_any"
 
     def test_the_ownership_check_anchors_at_the_package_root(self, make_loader) -> None:
-        """A builtin app's skill resolves inside ``kiro_crew/apps/builtins``, and its
+        """A builtin app's skill resolves inside ``efm_go/apps/builtins``, and its
         owner is the manifest name of that package directory."""
         builtins_root = FACADE_PATH.parent / "apps" / "builtins"
         manifest = next(
@@ -1457,7 +1457,7 @@ class TestThePinnedPendingRead:
         assert detail is not None and detail["meta"] == {} and detail["kind"] == "new"
 
     def test_an_oversized_body_refuses_the_candidate(self, make_loader) -> None:
-        from kiro_crew.skills_script_validator import MAX_SCRIPT_BYTES
+        from efm_go.skills_script_validator import MAX_SCRIPT_BYTES
 
         loader, pdir = self._candidate(make_loader)
         (pdir / "SKILL.md").write_text("# pad\n" * (MAX_SCRIPT_BYTES // 6 + 10), encoding="utf-8")

@@ -17,7 +17,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_f1_backend_verifies_expected_resource_ids():
-    src = (_ROOT / "src/kiro_crew/deploy/handlers.py").read_text(encoding="utf-8")
+    src = (_ROOT / "src/efm_go/deploy/handlers.py").read_text(encoding="utf-8")
     assert "expected_distribution_id" in src
     assert "resource ids changed since preview" in src
     # The verification happens before engine.destroy.
@@ -62,10 +62,10 @@ def test_f3_boundary_covers_reaper_role_actions():
     """Every action reaper.yaml grants must be allowed by the boundary —
     a boundary intersects with the role policy, so a gap silently breaks
     the reaper."""
-    from kiro_crew.deploy import iam
+    from efm_go.deploy import iam
     boundary = json.dumps(iam.boundary_policy_document())
     yaml_src = (
-        _ROOT / "src/kiro_crew/deploy/skills/artifact-deploy/templates/"
+        _ROOT / "src/efm_go/deploy/skills/artifact-deploy/templates/"
         "reaper.yaml"
     ).read_text(encoding="utf-8")
     # Strip comment lines (action names in comments are not grants).

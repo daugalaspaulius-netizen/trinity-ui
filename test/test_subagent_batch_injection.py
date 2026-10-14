@@ -15,10 +15,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard.chat import _dequeue_next_message
-from kiro_crew.dashboard.chat_runner import _start_next_queued_turn
-from kiro_crew.dashboard.chat_utils import SUBAGENT_COMPLETION_KIND, is_system_injection
-from kiro_crew.dashboard.state import (
+from efm_go.dashboard.chat import _dequeue_next_message
+from efm_go.dashboard.chat_runner import _start_next_queued_turn
+from efm_go.dashboard.chat_utils import SUBAGENT_COMPLETION_KIND, is_system_injection
+from efm_go.dashboard.state import (
     SUBAGENT_BATCH_COMPLETION_PREFIX,
     SUBAGENT_COMPLETION_PREFIX,
     SUBAGENT_COMPLETION_PREFIXES,
@@ -77,7 +77,7 @@ class TestBatchDigestQueueSemantics:
         slot = state.get_or_create_slot("batch-role")
         slot.queue_append(BATCH_DIGEST, kind=SUBAGENT_COMPLETION_KIND)
 
-        with patch("kiro_crew.dashboard.chat_runner.spawn_guarded_turn") as spawn:
+        with patch("efm_go.dashboard.chat_runner.spawn_guarded_turn") as spawn:
             spawn.return_value = MagicMock()
             started = await _start_next_queued_turn(state, slot)
 

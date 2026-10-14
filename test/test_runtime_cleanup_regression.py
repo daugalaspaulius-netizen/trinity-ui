@@ -12,17 +12,17 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import platform_compat, session_pid
-from kiro_crew.acp import client, runtime
-from kiro_crew.acp.types import (
+from efm_go import platform_compat, session_pid
+from efm_go.acp import client, runtime
+from efm_go.acp.types import (
     METHOD_SESSION_LOAD,
     METHOD_SESSION_NEW,
     METHOD_SESSION_TERMINATE,
     METHOD_SET_MODE,
     JsonRpcMessage,
 )
-from kiro_crew.session_cleanup import SessionCleanup
-from kiro_crew.watchdog import CleanupHook, SessionWatchdog
+from efm_go.session_cleanup import SessionCleanup
+from efm_go.watchdog import CleanupHook, SessionWatchdog
 
 
 class SimulatedKernel:

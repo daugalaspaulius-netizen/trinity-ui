@@ -25,8 +25,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.acp.kas_agents import to_client_custom_agent
-from kiro_crew.acp.kas_permissions import (
+from efm_go.acp.kas_agents import to_client_custom_agent
+from efm_go.acp.kas_permissions import (
     CAPABILITY_BY_TOOL,
     CEILING_REFS_BY_CAPABILITY,
     KAS_CAPABILITIES,
@@ -36,8 +36,8 @@ from kiro_crew.acp.kas_permissions import (
     allowed_tools_to_permissions,
     merge_user_permissions,
 )
-from kiro_crew.agent import _seed_kas_permissions
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION, spec_permissions_supported
+from efm_go.agent import _seed_kas_permissions
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION, spec_permissions_supported
 
 #: A release that accepts the field, and one that refuses it. Expressed against
 #: the floor rather than as literals so raising the floor cannot leave a test
@@ -50,7 +50,7 @@ _REFUSES = (SPEC_PERMISSIONS_MIN_VERSION[0], SPEC_PERMISSIONS_MIN_VERSION[1] - 1
 def installed_cli(monkeypatch):
     """Pin what ``_seed_kas_permissions`` believes the installed kiro-cli is.
 
-    Patched at ``kiro_crew.kiro_cli`` because the seed imports the name
+    Patched at ``efm_go.kiro_cli`` because the seed imports the name
     function-locally, so the lookup happens in the owning module at call time.
     Without this the answer is whatever the test HOST has installed -- which on
     CI is nothing, and "unknown" reads as refusing.
@@ -58,7 +58,7 @@ def installed_cli(monkeypatch):
 
     def _pin(version):
         monkeypatch.setattr(
-            "kiro_crew.kiro_cli.installed_kiro_cli_version",
+            "efm_go.kiro_cli.installed_kiro_cli_version",
             lambda: version,
         )
 
@@ -106,13 +106,13 @@ class TestTheSubagentToolIsKeyedOnTheCrewName:
         assert CEILING_REFS_BY_CAPABILITY["subagent"] == ("use_subagent",)
 
     def test_the_kas_spelling_is_named_with_its_fix(self, caplog):
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.kas_permissions"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.kas_permissions"):
             allowed_tools_to_permissions(["invoke_sub_agent"], agent_id="helper")
         assert "'invoke_sub_agent'" in caplog.text
         assert "'use_subagent'" in caplog.text
 
     def test_the_crew_spelling_warns_about_nothing(self, caplog):
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.kas_permissions"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.kas_permissions"):
             allowed_tools_to_permissions(["use_subagent"], agent_id="helper")
         assert caplog.text == ""
 
@@ -140,7 +140,7 @@ class TestTheShellAndFilesystemFamiliesAreRefused:
 
     def test_the_refusal_is_reported_at_info_because_it_reverses_the_spec(self, caplog):
         """Distinct from an unmappable entry: this one the spec explicitly asked for."""
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_permissions"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_permissions"):
             allowed_tools_to_permissions(["execute_bash"], agent_id="kirocrew")
         assert "not auto-approving execute_bash" in caplog.text
 
@@ -262,7 +262,7 @@ class TestTranslationNeverWidensAGrant:
         assert _rule(policy, "web_fetch")["effect"] == "allow"
 
     def test_a_rejected_glob_is_explainable_from_the_log(self, caplog):
-        with caplog.at_level("DEBUG", logger="kiro_crew.acp.kas_permissions"):
+        with caplog.at_level("DEBUG", logger="efm_go.acp.kas_permissions"):
             allowed_tools_to_permissions(["@*"], agent_id="a")
         assert "@*" in caplog.text
 
@@ -280,7 +280,7 @@ class TestUnclassifiableEntriesFailClosed:
     def test_the_names_are_reported_so_a_missing_grant_is_explainable(self, caplog):
         # Names the logger: left to the root logger this passes alone and fails in
         # the full suite, once something else has raised the package level.
-        with caplog.at_level("DEBUG", logger="kiro_crew.acp.kas_permissions"):
+        with caplog.at_level("DEBUG", logger="efm_go.acp.kas_permissions"):
             allowed_tools_to_permissions(["introspect"], agent_id="kirocrew")
         assert "introspect" in caplog.text
 
@@ -425,7 +425,7 @@ class TestTheDiskWriter:
             permissions={"rules": [{"capability": "web_fetch", "effect": "allow"}]},
         )
         _seed_kas_permissions(config)
-        import kiro_crew.acp.kas_agents as kas_agents
+        import efm_go.acp.kas_agents as kas_agents
 
         with pytest.MonkeyPatch.context() as patch:
             patch.setattr(kas_agents, "may_skip_gate_now", lambda ref: ref == "@srv")
@@ -541,7 +541,7 @@ class TestTheVersionProbeItself:
         """A pinned binary that exists on disk, and a recorder for the spawn."""
         import subprocess
 
-        from kiro_crew import kiro_cli
+        from efm_go import kiro_cli
 
         binary = tmp_path / "kiro-cli"
         binary.write_text("")
@@ -560,7 +560,7 @@ class TestTheVersionProbeItself:
         return binary, _install
 
     def test_the_pinned_binary_is_asked_and_its_answer_parsed(self, pinned):
-        from kiro_crew.kiro_cli import installed_kiro_cli_version
+        from efm_go.kiro_cli import installed_kiro_cli_version
 
         binary, install = pinned
         calls = install("kiro-cli 2.23.0\n")
@@ -569,7 +569,7 @@ class TestTheVersionProbeItself:
 
     def test_the_output_is_decoded_as_utf8_not_the_platform_locale(self, pinned):
         """A locale decode can mangle the token, and mangled reads as refusing."""
-        from kiro_crew.kiro_cli import installed_kiro_cli_version
+        from efm_go.kiro_cli import installed_kiro_cli_version
 
         _binary, install = pinned
         calls = install("kiro-cli 2.23.0\n")
@@ -578,8 +578,8 @@ class TestTheVersionProbeItself:
         assert calls[0]["timeout"] > 0
 
     def test_a_non_zero_exit_or_garbage_is_unknown(self, pinned):
-        from kiro_crew import kiro_cli
-        from kiro_crew.kiro_cli import installed_kiro_cli_version
+        from efm_go import kiro_cli
+        from efm_go.kiro_cli import installed_kiro_cli_version
 
         _binary, install = pinned
         install("kiro-cli 2.23.0\n", returncode=1)
@@ -592,7 +592,7 @@ class TestTheVersionProbeItself:
         """Cached by path and mtime: a swapped binary is asked again."""
         import os
 
-        from kiro_crew.kiro_cli import installed_kiro_cli_version
+        from efm_go.kiro_cli import installed_kiro_cli_version
 
         binary, install = pinned
         calls = install("kiro-cli 2.23.0\n")
@@ -605,7 +605,7 @@ class TestTheVersionProbeItself:
         assert len(calls) == 2
 
     def test_no_pin_means_no_spawn(self, monkeypatch):
-        from kiro_crew import kiro_cli
+        from efm_go import kiro_cli
 
         monkeypatch.setattr(kiro_cli, "pin_kiro_cli", lambda: (None, True))
         monkeypatch.setattr(kiro_cli, "_version_cache", {})
@@ -792,7 +792,7 @@ class TestRule1TheBlockIsParsedAgainstKasShapeAndRefusedWhole:
     def test_the_refusal_is_reported_at_warning_with_its_reason(self, caplog):
         """WARNING, not debug: it is the author's own file being declined, and the
         reason is the only way to find out which rule did it."""
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.kas_permissions"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.kas_permissions"):
             _merge({"rules": [{"capability": "web_fetch", "effect": "maybe"}]}, agent_id="kirocrew")
         assert "refusing its whole `permissions` block" in caplog.text
         assert "rule 0" in caplog.text
@@ -920,7 +920,7 @@ class TestRule3AnAllowTravelsOnlyWhereTheCeilingAlreadyPermitted:
         """A capability grants every tool mapped to it, so the ceiling has to clear
         every one of them -- an inversion keeping a single ref per capability would
         ask about one and grant the rest."""
-        import kiro_crew.acp.kas_permissions as module
+        import efm_go.acp.kas_permissions as module
 
         monkeypatch.setitem(module.CEILING_REFS_BY_CAPABILITY, "web_fetch", ("web_fetch", "fetch2"))
         block = {"rules": [{"capability": "web_fetch", "effect": "allow"}]}
@@ -943,7 +943,7 @@ class TestRule3AnAllowTravelsOnlyWhereTheCeilingAlreadyPermitted:
 
     def test_a_withheld_allow_is_reported_so_a_missing_grant_is_explainable(self, caplog):
         block = {"rules": [{"capability": "web_fetch", "effect": "allow"}]}
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_permissions"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_permissions"):
             _merge(block, _WITHHOLDS_EVERYTHING, agent_id="kirocrew")
         assert "withholds auto-approval for web_fetch" in caplog.text
 
@@ -1155,7 +1155,7 @@ class TestRule4TheShellAndFilesystemFamiliesNeverTravelAsAnAllow:
 
     def test_the_refusal_is_reported_because_it_reverses_the_spec(self, caplog):
         block = {"rules": [{"capability": "all", "effect": "allow"}]}
-        with caplog.at_level("INFO", logger="kiro_crew.acp.kas_permissions"):
+        with caplog.at_level("INFO", logger="efm_go.acp.kas_permissions"):
             _merge(block, agent_id="kirocrew")
         assert "fs_read, fs_write, shell" in caplog.text
 

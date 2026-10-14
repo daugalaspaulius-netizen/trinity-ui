@@ -2,7 +2,7 @@
 
 **This directory is the contributor and architecture documentation.** It is not
 shipped to users: the docs that ship inside the Python package live in
-[`../src/kiro_crew/docs/`](../src/kiro_crew/docs/README.md), and frontend-specific
+[`../src/efm_go/docs/`](../src/efm_go/docs/README.md), and frontend-specific
 docs live in [`../website/docs/`](../website/docs/README.md).
 
 New here? Start with [guides/install.md](guides/install.md), then
@@ -45,16 +45,16 @@ commit**. Concretely:
    doc no index reaches, a directory with no index, a code comment citing a doc that
    does not exist, a renamed doc whose filename is hardcoded in code, and a git
    conflict marker left at the start of a line. It walks four trees: this one,
-   the packaged [`../src/kiro_crew/docs/`](../src/kiro_crew/docs/README.md),
+   the packaged [`../src/efm_go/docs/`](../src/efm_go/docs/README.md),
    [`../website/docs/`](../website/docs/README.md), and the markdown a builtin app
-   ships under `src/kiro_crew/apps/builtins/`. That fourth tree is link-checked and
+   ships under `src/efm_go/apps/builtins/`. That fourth tree is link-checked and
    fact-checked but exempt from the index rules, because an app's README, agent
    briefs and `SKILL.md` files are curated by its `app.json` rather than by a
    documentation index.
 
 Two constraints that are easy to miss:
 
-- **`src/kiro_crew/docs/` filenames are an API.** That tree is packaged, is read at
+- **`src/efm_go/docs/` filenames are an API.** That tree is packaged, is read at
   runtime by `tips.py` (gated by `tips_allowlist.py`), and specific filenames are
   hardcoded in dashboard Settings panels. Renaming a file there is a code change.
   The tree is also flat by design: `setup.cfg`'s `package_data` glob does not

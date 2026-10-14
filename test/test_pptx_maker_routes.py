@@ -2,7 +2,7 @@
 
 Lives in the repo-level ``test/`` tree (not the app's in-package ``tests/``)
 because ``setup.cfg`` sets ``testpaths = test transfer`` — a test under
-``src/kiro_crew/apps/builtins/...`` is never collected by CI.
+``src/efm_go/apps/builtins/...`` is never collected by CI.
 
 Four things are pinned here because each is a way the app could be wrong in a
 way no other test would catch:
@@ -41,7 +41,7 @@ from aiohttp import web
 from aiohttp.test_utils import AioHTTPTestCase, make_mocked_request
 
 from conftest import make_dir_link
-from kiro_crew.apps.builtins.pptx_maker.backend import engine, paths, provision, routes
+from efm_go.apps.builtins.pptx_maker.backend import engine, paths, provision, routes
 
 # An AKIA-shaped access key ID. The canonical AWS documentation example, so it is
 # a real pattern match without being a live secret.

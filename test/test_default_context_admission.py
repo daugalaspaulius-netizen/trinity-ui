@@ -13,15 +13,15 @@ from unittest.mock import Mock
 
 import pytest
 
-from kiro_crew import context as ctx
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.context_blocks import measure_prompt
-from kiro_crew.hooks import HookManager
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_recall import bound_recall_payload
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import context as ctx
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.context_blocks import measure_prompt
+from efm_go.hooks import HookManager
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.memory_recall import bound_recall_payload
+from efm_go.skills import SkillsLoader
+from efm_go.vector_memory import VectorMemoryStore
 
 pytestmark = [
     pytest.mark.xdist_group("default_context_admission"),
@@ -688,7 +688,7 @@ def test_first_oversized_summary_is_not_forced_and_footer_is_charged(rig, monkey
 def test_confined_pinned_body_preserves_reference_delivery(
     rig, tmp_path, monkeypatch, project_name, fresh, reinject
 ):
-    from kiro_crew import skill_trust
+    from efm_go import skill_trust
 
     builder, _, skills, _, _ = rig
     project = tmp_path / project_name
@@ -734,8 +734,8 @@ def test_shared_admission_exact_fit_does_not_reserve_unused_footer(rig, monkeypa
 
 
 def test_agent_skill_search_entry_finds_omitted_catalog(rig, monkeypatch):
-    from kiro_crew import mcp_core
-    from kiro_crew.mcp_tools import skills as tools
+    from efm_go import mcp_core
+    from efm_go.mcp_tools import skills as tools
 
     builder, _, skills, _, _ = rig
     seed_skill(skills._dir, "notebookquartz")
@@ -785,14 +785,14 @@ def test_member_lessons_renderer_ranks_against_the_request(tmp_path, monkeypatch
     request is about. Passing the request lets ranking keep the relevant rule and
     drop an irrelevant newer one instead.
     """
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-    from kiro_crew.members import slug_for_name, write_member_rules
-    from kiro_crew.memory_stores import (
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.members import slug_for_name, write_member_rules
+    from efm_go.memory_stores import (
         memory_store_dir_for,
         persist_member_config,
         provision_member_memory,
     )
-    from kiro_crew.vector_memory import open_member_database
+    from efm_go.vector_memory import open_member_database
 
     home = tmp_path / "host-home"
     home.mkdir()
@@ -801,8 +801,8 @@ def test_member_lessons_renderer_ranks_against_the_request(tmp_path, monkeypatch
     monkeypatch.setenv("KIRO_HOME", str(home / ".kiro"))
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
     agents = home / ".kiro" / "agents"
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents)
-    monkeypatch.setattr("kiro_crew.agent_discovery._KIRO_AGENTS_DIR", agents)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents)
+    monkeypatch.setattr("efm_go.agent_discovery._KIRO_AGENTS_DIR", agents)
 
     cfg = KiroCrewConfig.load()
     cfg.agents["writer"] = KiroCrewAgentConfig(

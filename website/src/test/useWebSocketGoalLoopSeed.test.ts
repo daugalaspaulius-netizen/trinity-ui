@@ -75,7 +75,7 @@ const TERMINAL_MONITOR = {
   stopped_reason: 'token_budget',
   monitor: {
     version: 1, config_generation: 1, kind: 'github_pull_request',
-    target: 'https://github.com/kirodotdev/KiroCrew/pull/42', objective: 'review_ready',
+    target: 'https://efmleads.com/pull/42', objective: 'review_ready',
     budgets: {
       max_runtime_secs: 14_400, max_agent_turns: 8, max_tokens: 250_000,
       max_provider_errors: 3,

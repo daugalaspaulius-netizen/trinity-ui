@@ -1,6 +1,6 @@
 /**
  * Reasoning-effort vocabulary for the dashboard — mirrors the backend
- * `kiro_crew/effort.py` so the UI and server agree on levels and per-model
+ * `efm_go/effort.py` so the UI and server agree on levels and per-model
  * capability. Kept as a standalone module (not inside ChatInput) so it can be
  * imported without pulling in the component — and so test mocks of ChatInput
  * don't have to re-export it.
@@ -63,7 +63,7 @@ export const REASONING_EFFORT_PROVIDERS = new Set(['acp'])
 
 /**
  * Per-model effort capability — mirrors the backend `model_supports_effort`
- * (kiro_crew/effort.py): effort is available on Fable/Opus/Sonnet and GPT-5.x
+ * (efm_go/effort.py): effort is available on Fable/Opus/Sonnet and GPT-5.x
  * models; Haiku/auto/empty and the other third-party models (deepseek, minimax,
  * glm, qwen) cannot use it. Gates the dropdown so a non-capable model never
  * shows a control that would silently no-op on the backend.

@@ -19,9 +19,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import vector_memory
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.context import (
+from efm_go import vector_memory
+from efm_go.config import KiroCrewConfig
+from efm_go.context import (
     _LESSONS_SHOWN_PER_SESSION,
     _LESSONS_SHOWN_SESSIONS,
     _MULTIBYTE_TABLE,
@@ -31,11 +31,11 @@ from kiro_crew.context import (
     _scrub_turn_lesson,
     _ShownLessons,
 )
-from kiro_crew.hooks import HookResult
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go.hooks import HookResult
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
+from efm_go.vector_memory import VectorMemoryStore
 
 # Common words most rules share, so they are never what earns a rule its place.
 # Only words write_lesson's dedup ignores (its stop list, or two letters), so
@@ -275,7 +275,7 @@ class TestDocumentedPerMessageBounds:
     def test_operator_facing_copies_state_the_measured_bounds(self) -> None:
         root = Path(__file__).resolve().parents[1]
 
-        source = (root / "src/kiro_crew/config/memory_sections.py").read_text(encoding="utf-8")
+        source = (root / "src/efm_go/config/memory_sections.py").read_text(encoding="utf-8")
         source_help = source.split("inject_lessons_per_turn: bool", 1)[1].split(
             "inject_activity: bool", 1
         )[0]
@@ -294,7 +294,7 @@ class TestDocumentedPerMessageBounds:
             return lines[0]
 
         configuration_row = line_about(
-            "src/kiro_crew/docs/configuration.md", "`memory.inject_lessons_per_turn`"
+            "src/efm_go/docs/configuration.md", "`memory.inject_lessons_per_turn`"
         )
         config_spec_row = line_about(
             "docs/system-specs/modules/config.md", "inject_lessons_per_turn: bool"

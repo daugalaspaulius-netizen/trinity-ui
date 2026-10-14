@@ -8,10 +8,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.subagent import SubagentManager
-from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
-from kiro_crew.taskq import store as store_mod
-from kiro_crew.taskq.store import TaskStore, TaskStoreUnavailable
+from efm_go.subagent import SubagentManager
+from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
+from efm_go.taskq import store as store_mod
+from efm_go.taskq.store import TaskStore, TaskStoreUnavailable
 
 
 @pytest.mark.asyncio
@@ -107,8 +107,8 @@ def test_feature_map_covers_all_overload_routes():
 async def test_dependency_tick_keeps_store_off_loop_and_callbacks_on_loop(
     monkeypatch, live, expired
 ):
-    from kiro_crew.subagent import SubagentInfo
-    from kiro_crew.taskq import dependency, model
+    from efm_go.subagent import SubagentInfo
+    from efm_go.taskq import dependency, model
 
     monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", True)
     monkeypatch.setattr(SpawnAdmissionCoordinator, "open_store_off_loop", True)
@@ -254,7 +254,7 @@ async def test_a_transient_open_failure_is_retried_and_the_store_attaches(monkey
 @pytest.mark.asyncio
 async def test_the_reaper_sweep_is_what_retries_the_store_open(monkeypatch):
     """The wiring, so the retry cannot be orphaned from the loop that drives it."""
-    import kiro_crew.subagent as subagent_mod
+    import efm_go.subagent as subagent_mod
 
     def fail_open(store):
         raise TaskStoreUnavailable("database is locked")
@@ -283,7 +283,7 @@ async def test_the_reopen_backoff_follows_the_shared_recovery_schedule(monkeypat
     """The delay is ``RecoveryPolicy``'s equal-jitter step, not a local constant."""
     from types import SimpleNamespace
 
-    from kiro_crew.recovery.policy import RecoveryPolicy
+    from efm_go.recovery.policy import RecoveryPolicy
 
     def fail_open(store):
         raise TaskStoreUnavailable("database is locked")
@@ -416,8 +416,8 @@ def test_a_boot_phase_that_raises_is_logged_and_still_yields_a_working_store(
     untested arm is the claim's opposite: a typo there turns a stale row into a
     gateway that will not start.
     """
-    import kiro_crew.taskq as taskq_pkg
-    from kiro_crew.taskq import model
+    import efm_go.taskq as taskq_pkg
+    from efm_go.taskq import model
 
     def _boom(*a: object, **kw: object) -> None:
         raise RuntimeError("boot phase blew up")
@@ -427,7 +427,7 @@ def test_a_boot_phase_that_raises_is_logged_and_still_yields_a_working_store(
         monkeypatch.setattr(taskq_pkg.WaitLedger, "rebuild", _boom, raising=True)
     else:
         monkeypatch.setattr(taskq_pkg, phase, _boom, raising=True)
-    with caplog.at_level("WARNING", logger="kiro_crew.taskq"):
+    with caplog.at_level("WARNING", logger="efm_go.taskq"):
         store = taskq_pkg.open_default_store(tmp_path, import_legacy_records=True)
     try:
         assert warning in caplog.text
@@ -448,8 +448,8 @@ def _seed_wakeable_parent(home: Path) -> None:
     class, while an adapter-less kind keeps its state and only loses its lease
     (``awaiting_adapter``) -- so this is the shape the wake half sees at boot.
     """
-    from kiro_crew.taskq import model
-    from kiro_crew.taskq.waits import WaitRecord
+    from efm_go.taskq import model
+    from efm_go.taskq.waits import WaitRecord
 
     kind = model.KIND_TASKRUNNER_STEP
     store = TaskStore(TaskStore.default_path(home), network_fs=False).open()
@@ -486,8 +486,8 @@ def test_open_default_store_names_the_row_a_boot_sweep_could_not_settle(
     waiting for the next restart. A silent report makes that indistinguishable
     from a clean boot.
     """
-    import kiro_crew.taskq as taskq_pkg
-    from kiro_crew.taskq import model
+    import efm_go.taskq as taskq_pkg
+    from efm_go.taskq import model
 
     _seed_wakeable_parent(tmp_path)
 
@@ -495,7 +495,7 @@ def test_open_default_store_names_the_row_a_boot_sweep_could_not_settle(
         raise TaskStoreUnavailable("task wake failed: disk I/O error")
 
     monkeypatch.setattr(TaskStore, "wake_wait", _refuse, raising=True)
-    with caplog.at_level("WARNING", logger="kiro_crew.taskq"):
+    with caplog.at_level("WARNING", logger="efm_go.taskq"):
         store = taskq_pkg.open_default_store(tmp_path, import_legacy_records=False)
     try:
         assert "taskq boot wait rebuild left 1 row(s) unsettled" in caplog.text
@@ -510,8 +510,8 @@ def test_open_default_store_names_the_row_whose_artifact_probe_raised(
     tmp_path: Path, caplog
 ) -> None:
     """Reconcile's per-row errors reach the log too, and the row is still settled."""
-    import kiro_crew.taskq as taskq_pkg
-    from kiro_crew.taskq import model
+    import efm_go.taskq as taskq_pkg
+    from efm_go.taskq import model
 
     store = TaskStore(TaskStore.default_path(tmp_path), network_fs=False).open()
     store.accept([model.TaskRecord(id="lost", kind=model.KIND_SUBAGENT, session_key="dash:1")])
@@ -522,7 +522,7 @@ def test_open_default_store_names_the_row_whose_artifact_probe_raised(
     def _probe(rec: object) -> str:
         raise OSError("tombstone directory is unreadable")
 
-    with caplog.at_level("WARNING", logger="kiro_crew.taskq"):
+    with caplog.at_level("WARNING", logger="efm_go.taskq"):
         reopened = taskq_pkg.open_default_store(
             tmp_path, import_legacy_records=False, artifact_probe=_probe
         )
@@ -549,9 +549,9 @@ async def test_a_deferred_pump_claims_nothing_until_the_gateway_releases_it(monk
     and the row stays ``queued`` on disk; ``release_queue_dispatch`` is the one
     pass that picks it up. A manager built without the flag pumps at once.
     """
-    from kiro_crew.taskq import model
+    from efm_go.taskq import model
 
-    caplog.set_level(logging.DEBUG, logger="kiro_crew.subagent")
+    caplog.set_level(logging.DEBUG, logger="efm_go.subagent")
     monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", True)
     monkeypatch.setattr(SpawnAdmissionCoordinator, "open_store_off_loop", True)
     dispatched: list[str] = []

@@ -14,7 +14,7 @@ import threading
 
 import pytest
 
-from kiro_crew.appearance_packs.store import (
+from efm_go.appearance_packs.store import (
     DEFAULT_PACK,
     AppearanceStore,
 )

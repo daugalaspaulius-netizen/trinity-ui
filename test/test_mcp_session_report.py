@@ -1,11 +1,11 @@
-"""Per-session MCP report accumulation (:mod:`kiro_crew.acp.mcp_session_report`)."""
+"""Per-session MCP report accumulation (:mod:`efm_go.acp.mcp_session_report`)."""
 
 from __future__ import annotations
 
 import inspect
 
-from kiro_crew.acp import session_handle
-from kiro_crew.acp.mcp_session_report import (
+from efm_go.acp import session_handle
+from efm_go.acp.mcp_session_report import (
     _BUCKET_CAP,
     _ERROR_CAP,
     _NAME_CAP,
@@ -15,7 +15,7 @@ from kiro_crew.acp.mcp_session_report import (
     roster_names,
     server_name_of,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_MCP_SERVER_INITIALIZED,
     METHOD_KAS_MCP_STATUS,
     METHOD_KAS_TOOLS_CHANGED,
@@ -439,7 +439,7 @@ class TestEventOwnershipReachesTheReport:
                 start = src.find(marker, start + 1)
 
     def test_every_runner_call_site_forwards_it_to_the_report(self):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         src = inspect.getsource(chat_runner)
         calls = src.count("_record_session_mcp_event(\n") - src.count(

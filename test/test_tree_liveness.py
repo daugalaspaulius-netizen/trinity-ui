@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.platform import tree_liveness
-from kiro_crew.platform_compat import IS_POSIX, try_acquire_lock
+from efm_go.platform import tree_liveness
+from efm_go.platform_compat import IS_POSIX, try_acquire_lock
 
 
 def _tree(tmp_path: Path, *, lock: bool = True) -> Path:
@@ -137,7 +137,7 @@ class TestThroughStableLink:
             seen.append(path)
             return "/stable/bin/kirocrew"
 
-        from kiro_crew.platform import wheel_engine
+        from efm_go.platform import wheel_engine
 
         monkeypatch.setattr(wheel_engine, "stable_launch_path", _stable)
         assert tree_liveness.through_stable_link(str(exe)) == "/stable/bin/kirocrew"
@@ -174,7 +174,7 @@ class TestEntryPointLiveness:
     ) -> None:
         from unittest.mock import MagicMock
 
-        from kiro_crew import cli
+        from efm_go import cli
 
         hold = MagicMock()
         monkeypatch.setattr(tree_liveness, "hold_running_tree_lock", hold)
@@ -199,7 +199,7 @@ class TestEntryPointLiveness:
         import inspect
         import textwrap
 
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         source = textwrap.dedent(inspect.getsource(GatewayOrchestrator.run))
         tree = ast.parse(source)
@@ -218,7 +218,7 @@ class TestEntryPointLiveness:
         ready = source.index('print(f"KIROCREW_READY:')
         approval = source.index("approval_ready.set()")
         imported = source.index(
-            "from kiro_crew.platform.tree_liveness import hold_running_tree_lock"
+            "from efm_go.platform.tree_liveness import hold_running_tree_lock"
         )
         held = source.index("await asyncio.to_thread(hold_running_tree_lock)")
         signals = source.index("self._install_shutdown_signal_handlers()")

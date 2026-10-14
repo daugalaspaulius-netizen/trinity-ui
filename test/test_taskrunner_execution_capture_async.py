@@ -9,10 +9,10 @@ import pytest
 from aiohttp.test_utils import make_mocked_request
 from test_taskrunner_execution_context import make_runner, member_execution
 
-from kiro_crew.dashboard.handlers import taskrunner as handlers
-from kiro_crew.execution_context import bind_session_execution, read_session_execution
-from kiro_crew.history import ConversationLog
-from kiro_crew.task_models import Project, Task
+from efm_go.dashboard.handlers import taskrunner as handlers
+from efm_go.execution_context import bind_session_execution, read_session_execution
+from efm_go.history import ConversationLog
+from efm_go.task_models import Project, Task
 
 ORIGIN = "capture-source"
 

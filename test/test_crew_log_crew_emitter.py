@@ -30,11 +30,11 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, emit
-from kiro_crew.crew_log import schema as crew_schema
-from kiro_crew.crew_log.store import REMOVE_REMOVED, remove_unit
-from kiro_crew.dashboard.handlers import work_ledger as routes
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, emit
+from efm_go.crew_log import schema as crew_schema
+from efm_go.crew_log.store import REMOVE_REMOVED, remove_unit
+from efm_go.dashboard.handlers import work_ledger as routes
 
 CREW = "qa"
 #: A member DM slot key, which is what a conductor slot looks like when the board

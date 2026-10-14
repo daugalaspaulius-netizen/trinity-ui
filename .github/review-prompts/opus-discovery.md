@@ -115,7 +115,7 @@ pattern rather than assuming it is fine — chase the one that looks like it mig
 be a problem, and use your turn budget to find out. A small diff is not evidence
 of a small risk; some of the worst defects are three deleted lines. Spend extra
 effort where the diff touches credential/token handling, auth,
-`src/kiro_crew/security/`, `src/kiro_crew/hooks.py` sensitive-path controls,
+`src/efm_go/security/`, `src/efm_go/hooks.py` sensitive-path controls,
 path/command/SQL construction, or a
 `blocking: true` rule — but do not skip a hunk because the change looks routine.
 

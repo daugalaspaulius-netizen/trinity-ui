@@ -13,9 +13,9 @@ from datetime import datetime, timedelta, timezone
 import aiohttp
 import pytest
 
-from kiro_crew.auth.login import device
-from kiro_crew.auth.login.device import DeviceAuthorization
-from kiro_crew.auth.service import (
+from efm_go.auth.login import device
+from efm_go.auth.login.device import DeviceAuthorization
+from efm_go.auth.service import (
     MAX_POLL_TRANSPORT_FAILURES,
     KasLoginService,
     SignedOutDuringLoginError,
@@ -23,7 +23,7 @@ from kiro_crew.auth.service import (
     UnknownLoginError,
     _parse_provider,
 )
-from kiro_crew.auth.store import KasToken, SocialProvider, TokenStore
+from efm_go.auth.store import KasToken, SocialProvider, TokenStore
 
 
 class _FakeResp:
@@ -103,8 +103,8 @@ def _device_auth(expires_in_secs: float = 300) -> DeviceAuthorization:
     return DeviceAuthorization(
         device_code="dc-1",
         user_code="ABCD-EFGH",
-        verification_uri="https://app.kiro.dev/account/device",
-        verification_uri_complete="https://app.kiro.dev/account/device?user_code=ABCD-EFGH",
+        verification_uri="https://efmleads.com/account/device",
+        verification_uri_complete="https://efmleads.com/account/device?user_code=ABCD-EFGH",
         expires_at=datetime.now(timezone.utc) + timedelta(seconds=expires_in_secs),
         interval_secs=0.0,
     )
@@ -537,7 +537,7 @@ async def test_poll_authorized_store_write_failure_is_error(tmp_path, monkeypatc
     login_id = (await _begin(service, monkeypatch, _device_auth()))["login_id"]
 
     def _boom(_token):
-        from kiro_crew.auth.store import TokenStoreError
+        from efm_go.auth.store import TokenStoreError
 
         raise TokenStoreError("could not persist KAS token social")
 
@@ -699,8 +699,8 @@ async def test_begin_device_evicts_expired_pending(tmp_path, monkeypatch):
 # scripted fake session as the social tests.
 # ---------------------------------------------------------------------------
 
-from kiro_crew.auth.login import builder_id, control_plane  # noqa: E402
-from kiro_crew.auth.service import MissingStartUrlError  # noqa: E402
+from efm_go.auth.login import builder_id, control_plane  # noqa: E402
+from efm_go.auth.service import MissingStartUrlError  # noqa: E402
 
 
 def _oidc_auth(expires_in_secs: float = 300) -> builder_id.DeviceAuthorization:
@@ -892,7 +892,7 @@ async def test_begin_oidc_rejects_url_metacharacter_regions(tmp_path):
     redirect client registration and token exchange to an attacker host.
     """
     service, _ = _service(tmp_path)
-    from kiro_crew.auth.service import InvalidRegionError
+    from efm_go.auth.service import InvalidRegionError
 
     for bad in (
         "evil.com/",

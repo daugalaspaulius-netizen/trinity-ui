@@ -17,13 +17,13 @@ from pathlib import Path
 import pytest
 from skill_script_helpers import load_skill_script
 
-from kiro_crew import validation
-from kiro_crew.autonudge import NUDGE_RENEW_DUE_SHARE, NudgeLoop, nudge_cycle_header
+from efm_go import validation
+from efm_go.autonudge import NUDGE_RENEW_DUE_SHARE, NudgeLoop, nudge_cycle_header
 
 SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "goal-conductor"
     / "scripts"

@@ -3,16 +3,16 @@
 `design_critique` (local render target) and `design_tweak` (previewed project
 folder) each screen operator-picked paths against a set of credential dot-dirs
 that the `is_sensitive_path()` floor does not enumerate. That set is owned by
-:data:`kiro_crew.security.DENIED_ROOT_PARTS`; both apps must consume the SAME
+:data:`efm_go.security.DENIED_ROOT_PARTS`; both apps must consume the SAME
 object — identity, not equality — so a credential directory added for one app
 can never silently miss the other.
 """
 
 from __future__ import annotations
 
-from kiro_crew.apps.builtins.design_critique.backend import routes
-from kiro_crew.apps.builtins.design_tweak.backend import server
-from kiro_crew.security import DENIED_ROOT_PARTS
+from efm_go.apps.builtins.design_critique.backend import routes
+from efm_go.apps.builtins.design_tweak.backend import server
+from efm_go.security import DENIED_ROOT_PARTS
 
 
 class TestDeniedRootPartsSharedOwner:

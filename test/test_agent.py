@@ -27,10 +27,10 @@ from mcp_merge_helpers import run_install_mcp_merge as _run_install_mcp_merge
 from windows_sim import replace_sharing_violation
 
 from conftest import host_abs, requires_symlinks
-from kiro_crew import agent_state
-from kiro_crew import atomic_write as aw
-from kiro_crew.agent import _MANAGED_MCP_ENTRY_KEYS, install_agent, migrate_agent_specs
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go import agent_state
+from efm_go import atomic_write as aw
+from efm_go.agent import _MANAGED_MCP_ENTRY_KEYS, install_agent, migrate_agent_specs
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +38,7 @@ def _pinned_kiro_cli_version(monkeypatch):
     """Pin the kiro-cli release the spec ``permissions`` gate believes is installed.
 
     Every spec write here reaches ``_write_derived_permissions``, which reads
-    ``installed_kiro_cli_version`` function-locally from ``kiro_crew.kiro_cli``:
+    ``installed_kiro_cli_version`` function-locally from ``efm_go.kiro_cli``:
     one real ``kiro-cli --version`` spawn per binary identity, process-cached, so
     whichever test in the worker writes a spec first pays it -- against the
     HOST's install, with the checkout as the child's cwd -- and that host decides
@@ -47,7 +47,7 @@ def _pinned_kiro_cli_version(monkeypatch):
     and the generated-writer suites pin, so no test here reaches the binary.
     """
     monkeypatch.setattr(
-        "kiro_crew.kiro_cli.installed_kiro_cli_version",
+        "efm_go.kiro_cli.installed_kiro_cli_version",
         lambda: SPEC_PERMISSIONS_MIN_VERSION,
     )
 
@@ -79,14 +79,14 @@ def launchers_confined_to_tmp(tmp_path: Path):
     it. Real validation still runs inside that tree, so a test that expects a
     stale or dead launcher to be REJECTED keeps that assertion.
     """
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     real_works = agent_mod._launcher_works
 
     def _confined(path: Path) -> bool:
         return str(path).startswith(str(tmp_path)) and real_works(path)
 
-    with patch("kiro_crew.agent._launcher_works", side_effect=_confined):
+    with patch("efm_go.agent._launcher_works", side_effect=_confined):
         yield
 
 
@@ -118,7 +118,7 @@ def _run_install(  # type: ignore[return]
     _user_home = tmp_path / "kirocrew_home"
     patches = [
         patch.multiple(
-            "kiro_crew.agent",
+            "efm_go.agent",
             KIRO_AGENTS_DIR=kiro_dir,
             _BUNDLED_CFG_DIR=cfg_dir,
             _KIROCREW_BIN="/usr/bin/kirocrew",
@@ -128,16 +128,16 @@ def _run_install(  # type: ignore[return]
             _KIRO_MCP_JSON=tmp_path / "fake_kiro_mcp.json",
             _CC_MCP_JSON=tmp_path / "fake_cc_mcp.json",
         ),
-        patch("kiro_crew.agent._user_dir", lambda: _user_home),
-        patch("kiro_crew.agent._prompt_path", return_value=prompt),
-        patch("kiro_crew.agent._shipped_defaults", return_value=cfg_dir / "defaults.json"),
-        patch("kiro_crew.agent._project_dir", return_value=None),
-        patch("kiro_crew.agent._aim_skill_paths", return_value=[]),
+        patch("efm_go.agent._user_dir", lambda: _user_home),
+        patch("efm_go.agent._prompt_path", return_value=prompt),
+        patch("efm_go.agent._shipped_defaults", return_value=cfg_dir / "defaults.json"),
+        patch("efm_go.agent._project_dir", return_value=None),
+        patch("efm_go.agent._aim_skill_paths", return_value=[]),
         patch(
-            "kiro_crew.agent.shutil.which",
+            "efm_go.agent.shutil.which",
             side_effect=which if which is not None else (lambda c, **kw: c),
         ),
-        patch("kiro_crew.agent._mc_config_path", return_value=mc_config),
+        patch("efm_go.agent._mc_config_path", return_value=mc_config),
     ]
     with ExitStack() as stack:
         for p in patches:
@@ -323,7 +323,7 @@ class TestInstallAgent:
 
         # Simulated DEFAULT install, so no data-home pin is emitted and the
         # assertion below can be an exact equality on the whole env.
-        with patch("kiro_crew.agent._valid_override_home", return_value=None):
+        with patch("efm_go.agent._valid_override_home", return_value=None):
             path = _run_install(tmp_path, cfg_dir)
         entry = json.loads(path.read_text(encoding="utf-8"))["mcpServers"]["kirocrew-core"]
 
@@ -370,8 +370,8 @@ class TestInstallAgent:
         per-item filter: with it off the whole key is dropped by the ungoverned
         floor and the filter would have nothing to act on.
         """
-        from kiro_crew.config import live
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config import live
+        from efm_go.config.loader import KiroCrewConfig
 
         _cfg = KiroCrewConfig()
         _cfg.mcp.honour_auto_approve = True
@@ -709,7 +709,7 @@ class TestInstallAgent:
 
         # Simulated DEFAULT install: no override home, so nothing pins the child
         # and the declared HOME would otherwise decide where our data lives.
-        with patch("kiro_crew.agent._valid_override_home", return_value=None):
+        with patch("efm_go.agent._valid_override_home", return_value=None):
             path = _run_install(tmp_path, cfg_dir)
         entry = json.loads(path.read_text(encoding="utf-8"))["mcpServers"]["kirocrew-cron"]
 
@@ -918,8 +918,8 @@ class TestInstallAgent:
         switch that does it, and the server itself stays reachable: only the
         exemption goes, so the tool shows an approval card instead.
         """
-        from kiro_crew.config import live as _live
-        from kiro_crew.config.loader import KiroCrewConfig as _Cfg
+        from efm_go.config import live as _live
+        from efm_go.config.loader import KiroCrewConfig as _Cfg
 
         _cfg = _Cfg()
         _cfg.mcp.honour_auto_approve = False
@@ -957,8 +957,8 @@ class TestInstallAgent:
         ``autoApprove`` is hand-added and the floor would otherwise drop it from
         both candidates, leaving nothing to compare.
         """
-        from kiro_crew.config import live as _live
-        from kiro_crew.config.loader import KiroCrewConfig as _Cfg
+        from efm_go.config import live as _live
+        from efm_go.config.loader import KiroCrewConfig as _Cfg
 
         _cfg = _Cfg()
         _cfg.mcp.honour_auto_approve = True
@@ -1142,7 +1142,7 @@ class TestAtomicJsonWrite:
     """Test 1.3: _atomic_json_write preserves permissions and handles new files."""
 
     def test_preserves_existing_permissions(self, tmp_path: Path):
-        from kiro_crew.agent import _atomic_json_write
+        from efm_go.agent import _atomic_json_write
 
         target = tmp_path / "test.json"
         target.write_text("{}")
@@ -1160,7 +1160,7 @@ class TestAtomicJsonWrite:
         assert json.loads(target.read_text(encoding="utf-8")) == {"key": "value"}
 
     def test_new_file_gets_0o644(self, tmp_path: Path):
-        from kiro_crew.agent import _atomic_json_write
+        from efm_go.agent import _atomic_json_write
 
         target = tmp_path / "new.json"
         _atomic_json_write(target, {"new": True})
@@ -1185,8 +1185,8 @@ class TestAtomicJsonWrite:
         It matters here more than most: these are the agent configs kiro-cli
         reads at spawn, so a refused rename surfaces as a failed spawn.
         """
-        from kiro_crew import platform_compat
-        from kiro_crew.agent import _atomic_json_write
+        from efm_go import platform_compat
+        from efm_go.agent import _atomic_json_write
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
         monkeypatch.setattr(aw, "_REPLACE_BACKOFF_SECONDS", 0)
@@ -1203,8 +1203,8 @@ class TestAtomicJsonWrite:
         """POSIX permits replacing an open file, so a PermissionError there is a
         real access fault — retrying would only delay an honest failure, and
         the temp file must still be cleaned up."""
-        from kiro_crew import platform_compat
-        from kiro_crew.agent import _atomic_json_write
+        from efm_go import platform_compat
+        from efm_go.agent import _atomic_json_write
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", False)
         target = tmp_path / "agent.json"
@@ -1218,7 +1218,7 @@ class TestAtomicJsonWrite:
         assert target.read_text(encoding="utf-8") == "{}", "the target is unchanged"
 
     def test_no_temp_file_left_on_success(self, tmp_path: Path):
-        from kiro_crew.agent import _atomic_json_write
+        from efm_go.agent import _atomic_json_write
 
         target = tmp_path / "clean.json"
         _atomic_json_write(target, {"a": 1})
@@ -1239,7 +1239,7 @@ class TestAtomicJsonWrite:
 def test_all_skill_paths_nested_manifest_shape(
     tmp_path: Path, manifest_text: str, expected_events: set[str]
 ) -> None:
-    from kiro_crew.agent import _all_skill_paths
+    from efm_go.agent import _all_skill_paths
 
     # Build the AIM package tree from name segments so no single source line
     # spells the internal home-tree token the content scanner rejects.
@@ -1252,8 +1252,8 @@ def test_all_skill_paths_nested_manifest_shape(
     for event in ("old", "new"):
         (package / f"eventId-{event}" / "skills").mkdir(parents=True)
 
-    with patch("kiro_crew.agent.Path.home", return_value=tmp_path):
-        with patch("kiro_crew.agent._project_dir", return_value=None):
+    with patch("efm_go.agent.Path.home", return_value=tmp_path):
+        with patch("efm_go.agent._project_dir", return_value=None):
             paths = _all_skill_paths()
 
     found_events = {
@@ -1268,7 +1268,7 @@ class TestAllSkillPathsLocalSymlinks:
     @requires_symlinks
     def test_resolves_local_symlink_with_skills_parent(self, tmp_path: Path):
         """Symlink target whose parent is named 'skills' is added."""
-        from kiro_crew.agent import _all_skill_paths
+        from efm_go.agent import _all_skill_paths
 
         aim_skills = tmp_path / ".aim" / "skills"
         local_dir = aim_skills / "local"
@@ -1281,8 +1281,8 @@ class TestAllSkillPathsLocalSymlinks:
 
         (local_dir / "my-skill").symlink_to(target_skill)
 
-        with patch("kiro_crew.agent.Path.home", return_value=tmp_path):
-            with patch("kiro_crew.agent._project_dir", return_value=None):
+        with patch("efm_go.agent.Path.home", return_value=tmp_path):
+            with patch("efm_go.agent._project_dir", return_value=None):
                 paths = _all_skill_paths()
 
         assert str(target_parent) in paths
@@ -1290,7 +1290,7 @@ class TestAllSkillPathsLocalSymlinks:
     @requires_symlinks
     def test_skips_symlink_with_non_skills_parent(self, tmp_path: Path):
         """Symlink target whose parent is NOT named 'skills' is excluded."""
-        from kiro_crew.agent import _all_skill_paths
+        from efm_go.agent import _all_skill_paths
 
         aim_skills = tmp_path / ".aim" / "skills"
         local_dir = aim_skills / "local"
@@ -1300,8 +1300,8 @@ class TestAllSkillPathsLocalSymlinks:
         target_skill.mkdir(parents=True)
         (local_dir / "my-skill").symlink_to(target_skill)
 
-        with patch("kiro_crew.agent.Path.home", return_value=tmp_path):
-            with patch("kiro_crew.agent._project_dir", return_value=None):
+        with patch("efm_go.agent.Path.home", return_value=tmp_path):
+            with patch("efm_go.agent._project_dir", return_value=None):
                 paths = _all_skill_paths()
 
         assert str(tmp_path / "project" / "other") not in paths
@@ -1309,7 +1309,7 @@ class TestAllSkillPathsLocalSymlinks:
     @requires_symlinks
     def test_skips_sensitive_parent_path(self, tmp_path: Path):
         """Symlink resolving into a sensitive directory is excluded."""
-        from kiro_crew.agent import _all_skill_paths
+        from efm_go.agent import _all_skill_paths
 
         aim_skills = tmp_path / ".aim" / "skills"
         local_dir = aim_skills / "local"
@@ -1320,8 +1320,8 @@ class TestAllSkillPathsLocalSymlinks:
         target_skill.mkdir(parents=True)
         (local_dir / "bad-skill").symlink_to(target_skill)
 
-        with patch("kiro_crew.agent.Path.home", return_value=tmp_path):
-            with patch("kiro_crew.agent._project_dir", return_value=None):
+        with patch("efm_go.agent.Path.home", return_value=tmp_path):
+            with patch("efm_go.agent._project_dir", return_value=None):
                 paths = _all_skill_paths()
 
         assert str(sensitive_skills) not in paths
@@ -1329,7 +1329,7 @@ class TestAllSkillPathsLocalSymlinks:
     @requires_symlinks
     def test_skips_broken_symlink(self, tmp_path: Path):
         """Broken symlink raises OSError with strict=True and is logged."""
-        from kiro_crew.agent import _all_skill_paths
+        from efm_go.agent import _all_skill_paths
 
         aim_skills = tmp_path / ".aim" / "skills"
         local_dir = aim_skills / "local"
@@ -1337,9 +1337,9 @@ class TestAllSkillPathsLocalSymlinks:
 
         (local_dir / "broken").symlink_to(tmp_path / "nonexistent" / "skills" / "gone")
 
-        with patch("kiro_crew.agent.Path.home", return_value=tmp_path):
-            with patch("kiro_crew.agent._project_dir", return_value=None):
-                with patch("kiro_crew.agent.logger") as mock_logger:
+        with patch("efm_go.agent.Path.home", return_value=tmp_path):
+            with patch("efm_go.agent._project_dir", return_value=None):
+                with patch("efm_go.agent.logger") as mock_logger:
                     paths = _all_skill_paths()
 
         assert str(tmp_path / "nonexistent" / "skills") not in paths
@@ -1353,15 +1353,15 @@ class TestAllSkillPathsLocalSymlinks:
 
     def test_ignores_regular_dir_in_local(self, tmp_path: Path):
         """Regular directories in local/ are not resolved as symlinks."""
-        from kiro_crew.agent import _all_skill_paths
+        from efm_go.agent import _all_skill_paths
 
         aim_skills = tmp_path / ".aim" / "skills"
         local_dir = aim_skills / "local"
         regular = local_dir / "not-a-symlink" / "skills" / "some-skill"
         regular.mkdir(parents=True)
 
-        with patch("kiro_crew.agent.Path.home", return_value=tmp_path):
-            with patch("kiro_crew.agent._project_dir", return_value=None):
+        with patch("efm_go.agent.Path.home", return_value=tmp_path):
+            with patch("efm_go.agent._project_dir", return_value=None):
                 paths = _all_skill_paths()
 
         assert str(local_dir / "not-a-symlink" / "skills") not in paths
@@ -1369,7 +1369,7 @@ class TestAllSkillPathsLocalSymlinks:
     @requires_symlinks
     def test_ignores_symlink_to_file(self, tmp_path: Path):
         """Symlink pointing to a file (not directory) is skipped."""
-        from kiro_crew.agent import _all_skill_paths
+        from efm_go.agent import _all_skill_paths
 
         aim_skills = tmp_path / ".aim" / "skills"
         local_dir = aim_skills / "local"
@@ -1380,8 +1380,8 @@ class TestAllSkillPathsLocalSymlinks:
         target_file.write_text("not a skill dir")
         (local_dir / "file-link").symlink_to(target_file)
 
-        with patch("kiro_crew.agent.Path.home", return_value=tmp_path):
-            with patch("kiro_crew.agent._project_dir", return_value=None):
+        with patch("efm_go.agent.Path.home", return_value=tmp_path):
+            with patch("efm_go.agent._project_dir", return_value=None):
                 paths = _all_skill_paths()
 
         assert str(tmp_path / "project" / "skills") not in paths
@@ -1420,11 +1420,11 @@ class TestResolveKirocrewBin:
         a hardcoded ``bin/kirocrew``, so the layout is the one this OS actually
         looks for (``Scripts\\kirocrew.exe`` on Windows).
         """
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _kirocrew_bin_subpath, _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _kirocrew_bin_subpath, _resolve_kirocrew_bin
 
         root = tmp_path / "runtime"
-        pkg_dir = root / "lib" / "python3.12" / "site-packages" / "kiro_crew"
+        pkg_dir = root / "lib" / "python3.12" / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
 
@@ -1457,9 +1457,9 @@ class TestResolveKirocrewBin:
         try:
             agent_mod._KIROCREW_BIN = None
             with ExitStack() as stack:
-                stack.enter_context(patch.dict("sys.modules", {"kiro_crew": mock_mc}))
+                stack.enter_context(patch.dict("sys.modules", {"efm_go": mock_mc}))
                 stack.enter_context(
-                    patch("kiro_crew.agent._launcher_works", side_effect=_scoped_works)
+                    patch("efm_go.agent._launcher_works", side_effect=_scoped_works)
                 )
                 stack.enter_context(patch("sys.exec_prefix", str(prefix)))
                 stack.enter_context(
@@ -1476,13 +1476,13 @@ class TestResolveKirocrewBin:
 
     def test_finds_bin_in_parent_hierarchy(self, tmp_path: Path):
         """Walks up from package dir to find bin/kirocrew."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
-        # Create structure: venv/lib/python3.x/site-packages/kiro_crew
+        # Create structure: venv/lib/python3.x/site-packages/efm_go
         #                   venv/bin/kirocrew
         venv = tmp_path / "venv"
-        pkg_dir = venv / "lib" / "python3.11" / "site-packages" / "kiro_crew"
+        pkg_dir = venv / "lib" / "python3.11" / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
 
@@ -1492,7 +1492,7 @@ class TestResolveKirocrewBin:
         kirocrew_bin.write_text("#!/bin/bash\necho kirocrew")
         kirocrew_bin.chmod(0o755)
 
-        # Mock kiro_crew.__file__ to point to our fake package
+        # Mock efm_go.__file__ to point to our fake package
         mock_mc = unittest.mock.MagicMock()
         mock_mc.__file__ = str(pkg_dir / "__init__.py")
 
@@ -1500,7 +1500,7 @@ class TestResolveKirocrewBin:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 result = _resolve_kirocrew_bin()
             assert result == str(kirocrew_bin)
         finally:
@@ -1508,14 +1508,14 @@ class TestResolveKirocrewBin:
 
     def test_falls_back_to_shutil_which(self, tmp_path: Path, no_interpreter_scripts):
         """Falls back to PATH lookup when bin/ not found in hierarchy."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         # Package dir with no bin/ sibling anywhere (use /tmp which has no bin/)
         mock_mc = unittest.mock.MagicMock()
-        mock_mc.__file__ = str(tmp_path / "kiro_crew" / "__init__.py")
-        (tmp_path / "kiro_crew").mkdir()
-        (tmp_path / "kiro_crew" / "__init__.py").write_text("")
+        mock_mc.__file__ = str(tmp_path / "efm_go" / "__init__.py")
+        (tmp_path / "efm_go").mkdir()
+        (tmp_path / "efm_go" / "__init__.py").write_text("")
 
         # Create the fallback binary so _usable() validation passes
         fallback_bin = tmp_path / "usr_local_bin_kirocrew"
@@ -1532,7 +1532,7 @@ class TestResolveKirocrewBin:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 with patch("os.path.isfile", side_effect=_fake_isfile):
                     # Skip brazil-path branch
                     def _which(cmd: str) -> str | None:
@@ -1550,18 +1550,18 @@ class TestResolveKirocrewBin:
 
     def test_returns_kirocrew_when_not_found(self, tmp_path: Path, no_interpreter_scripts):
         """Returns 'kirocrew' string when not found anywhere."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         mock_mc = unittest.mock.MagicMock()
-        mock_mc.__file__ = str(tmp_path / "kiro_crew" / "__init__.py")
-        (tmp_path / "kiro_crew").mkdir(exist_ok=True)
-        (tmp_path / "kiro_crew" / "__init__.py").write_text("")
+        mock_mc.__file__ = str(tmp_path / "efm_go" / "__init__.py")
+        (tmp_path / "efm_go").mkdir(exist_ok=True)
+        (tmp_path / "efm_go" / "__init__.py").write_text("")
 
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 # Blanket isfile=False blocks walk, brazil-path, and which fallback
                 with patch("os.path.isfile", return_value=False):
                     with patch("shutil.which", return_value=None):
@@ -1576,13 +1576,13 @@ class TestResolveKirocrewBin:
         Regression test for scenario where
         ~/.local/bin/kirocrew was removed but still cached in PATH lookup.
         """
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         mock_mc = unittest.mock.MagicMock()
-        mock_mc.__file__ = str(tmp_path / "kiro_crew" / "__init__.py")
-        (tmp_path / "kiro_crew").mkdir(exist_ok=True)
-        (tmp_path / "kiro_crew" / "__init__.py").write_text("")
+        mock_mc.__file__ = str(tmp_path / "efm_go" / "__init__.py")
+        (tmp_path / "efm_go").mkdir(exist_ok=True)
+        (tmp_path / "efm_go" / "__init__.py").write_text("")
 
         # Stub brazil-path so its subprocess call doesn't resolve to a real binary
         def _which(cmd: str) -> str | None:
@@ -1595,7 +1595,7 @@ class TestResolveKirocrewBin:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 # Blanket isfile=False — the stale path must not pass validation
                 with patch("os.path.isfile", return_value=False):
                     with patch("shutil.which", side_effect=_which):
@@ -1613,8 +1613,8 @@ class TestResolveKirocrewBin:
         so an unresolvable binary surfaces as the bare name instead of caching
         a stale absolute path.
         """
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         # A real executable that lives somewhere NOT on the walk path or PATH.
         runtime_farm = tmp_path / "runtime"
@@ -1624,14 +1624,14 @@ class TestResolveKirocrewBin:
         kirocrew_bin.chmod(0o755)
 
         mock_mc = unittest.mock.MagicMock()
-        mock_mc.__file__ = str(tmp_path / "kiro_crew" / "__init__.py")
-        (tmp_path / "kiro_crew").mkdir(exist_ok=True)
-        (tmp_path / "kiro_crew" / "__init__.py").write_text("")
+        mock_mc.__file__ = str(tmp_path / "efm_go" / "__init__.py")
+        (tmp_path / "efm_go").mkdir(exist_ok=True)
+        (tmp_path / "efm_go" / "__init__.py").write_text("")
 
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 # Make the walk find nothing reachable from the package dir.
                 _real_isfile = os.path.isfile
 
@@ -1649,13 +1649,13 @@ class TestResolveKirocrewBin:
 
     def test_brazil_path_failure_falls_through(self, tmp_path: Path, no_interpreter_scripts):
         """brazil-path raising an exception falls through without crashing."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         mock_mc = unittest.mock.MagicMock()
-        mock_mc.__file__ = str(tmp_path / "kiro_crew" / "__init__.py")
-        (tmp_path / "kiro_crew").mkdir(exist_ok=True)
-        (tmp_path / "kiro_crew" / "__init__.py").write_text("")
+        mock_mc.__file__ = str(tmp_path / "efm_go" / "__init__.py")
+        (tmp_path / "efm_go").mkdir(exist_ok=True)
+        (tmp_path / "efm_go" / "__init__.py").write_text("")
 
         def _which(cmd: str) -> str | None:
             if cmd == "brazil-path":
@@ -1665,7 +1665,7 @@ class TestResolveKirocrewBin:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 with patch("os.path.isfile", return_value=False):
                     with patch("shutil.which", side_effect=_which):
                         with patch(
@@ -1681,8 +1681,8 @@ class TestResolveKirocrewBin:
 
     def test_caches_result(self, tmp_path: Path):
         """A cached launcher that still works is returned without re-resolving."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         cached = tmp_path / "cached" / "kirocrew"
         cached.parent.mkdir()
@@ -1707,8 +1707,8 @@ class TestResolveKirocrewBin:
         """
         import shutil as _shutil
 
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         def _launcher(root: Path) -> Path:
             exe = root / "bin" / "kirocrew"
@@ -1730,7 +1730,7 @@ class TestResolveKirocrewBin:
             # find nothing; only PATH names the current install.
             with (
                 patch.object(sys, "exec_prefix", str(old_install)),
-                patch("kiro_crew.__file__", str(old_install / "lib" / "kiro_crew" / "__init__.py")),
+                patch("efm_go.__file__", str(old_install / "lib" / "efm_go" / "__init__.py")),
                 patch("shutil.which", return_value=str(new_bin)),
             ):
                 assert _resolve_kirocrew_bin() == str(new_bin)
@@ -1744,11 +1744,11 @@ class TestResolveKirocrewBin:
         On a public install there is no Apollo/Brazil wrapper-rejection: any
         readable ``bin/kirocrew`` discovered by the walk is used as-is.
         """
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         venv = tmp_path / "venv"
-        pkg_dir = venv / "lib" / "python3.10" / "site-packages" / "kiro_crew"
+        pkg_dir = venv / "lib" / "python3.10" / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
 
@@ -1770,7 +1770,7 @@ class TestResolveKirocrewBin:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 with patch("shutil.which") as mock_which:
                     mock_which.side_effect = lambda cmd, **kw: (
                         str(fallback_bin) if cmd == "kirocrew" else None
@@ -1783,13 +1783,13 @@ class TestResolveKirocrewBin:
 
     def test_accepts_apollo_binary_with_envroot(self, tmp_path: Path):
         """Accepts Apollo binary when .envroot exists in a parent directory."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         # Create env/runtime/.envroot + env/runtime/bin/kirocrew (Apollo)
         runtime = tmp_path / "env" / "runtime"
-        (runtime / "lib" / "python3.10" / "site-packages" / "kiro_crew").mkdir(parents=True)
-        (runtime / "lib" / "python3.10" / "site-packages" / "kiro_crew" / "__init__.py").write_text(
+        (runtime / "lib" / "python3.10" / "site-packages" / "efm_go").mkdir(parents=True)
+        (runtime / "lib" / "python3.10" / "site-packages" / "efm_go" / "__init__.py").write_text(
             ""
         )
         (runtime / ".envroot").write_text("")
@@ -1804,13 +1804,13 @@ class TestResolveKirocrewBin:
 
         mock_mc = unittest.mock.MagicMock()
         mock_mc.__file__ = str(
-            runtime / "lib" / "python3.10" / "site-packages" / "kiro_crew" / "__init__.py"
+            runtime / "lib" / "python3.10" / "site-packages" / "efm_go" / "__init__.py"
         )
 
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 result = _resolve_kirocrew_bin()
             # Should accept — .envroot exists in parent of bin/
             assert result == str(kirocrew_bin)
@@ -1823,11 +1823,11 @@ class TestResolveKirocrewBin:
         Public installs do not reject wrapper scripts (the Brazil-workspace
         check is a no-op), so the walk-discovered bin wins over PATH.
         """
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
         project = tmp_path / "project"
-        pkg_dir = project / "src" / "kiro_crew"
+        pkg_dir = project / "src" / "efm_go"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
 
@@ -1849,7 +1849,7 @@ class TestResolveKirocrewBin:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 with patch("shutil.which") as mock_which:
                     mock_which.side_effect = lambda cmd, **kw: (
                         str(fallback_bin) if cmd == "kirocrew" else None
@@ -1862,7 +1862,7 @@ class TestResolveKirocrewBin:
 
     def test_accepts_brazil_wrapper_inside_workspace(self, tmp_path: Path):
         """Accepts bin/kirocrew with brazil-runtime-exec when packageInfo exists."""
-        from kiro_crew.agent import _bin_is_usable
+        from efm_go.agent import _bin_is_usable
 
         # Create structure with packageInfo (real Brazil workspace)
         workspace = tmp_path / "workspace"
@@ -1878,20 +1878,20 @@ class TestResolveKirocrewBin:
 
     def test_prefers_venv_bin_over_project_bin(self, tmp_path: Path):
         """Resolves .venv/bin/kirocrew before bin/kirocrew in the same tree."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
-        # Create structure: project/src/kiro_crew + project/.venv/bin/kirocrew
+        # Create structure: project/src/efm_go + project/.venv/bin/kirocrew
         # + project/bin/kirocrew (Brazil wrapper)
         project = tmp_path / "project"
-        pkg_dir = project / "src" / "kiro_crew"
+        pkg_dir = project / "src" / "efm_go"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
 
         # .venv/bin/kirocrew — the preferred candidate
         venv_bin = project / ".venv" / "bin" / "kirocrew"
         venv_bin.parent.mkdir(parents=True)
-        venv_bin.write_text('#!/bin/sh\nexec python -m kiro_crew "$@"\n')
+        venv_bin.write_text('#!/bin/sh\nexec python -m efm_go "$@"\n')
         venv_bin.chmod(0o755)
 
         # bin/kirocrew — Brazil wrapper (should be skipped)
@@ -1907,7 +1907,7 @@ class TestResolveKirocrewBin:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 result = _resolve_kirocrew_bin()
             # Should prefer .venv/bin/kirocrew over bin/kirocrew
             assert result == str(venv_bin)
@@ -1916,12 +1916,12 @@ class TestResolveKirocrewBin:
 
     def test_venv_install_falls_through_to_step1(self, tmp_path: Path):
         """When pkg_dir is inside .venv/, pyvenv.cfg breaks step 0."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go.agent import _resolve_kirocrew_bin
 
-        # Simulate pip-into-venv: .venv/lib/python3.x/site-packages/kiro_crew/
+        # Simulate pip-into-venv: .venv/lib/python3.x/site-packages/efm_go/
         venv_root = tmp_path / ".venv"
-        pkg_dir = venv_root / "lib" / "python3.13" / "site-packages" / "kiro_crew"
+        pkg_dir = venv_root / "lib" / "python3.13" / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
         (venv_root / "pyvenv.cfg").write_text("home = /usr/bin\n")
@@ -1929,7 +1929,7 @@ class TestResolveKirocrewBin:
         # .venv/bin/kirocrew exists (step 1 should find it)
         venv_bin = venv_root / "bin" / "kirocrew"
         venv_bin.parent.mkdir(parents=True)
-        venv_bin.write_text('#!/bin/sh\nexec python -m kiro_crew "$@"\n')
+        venv_bin.write_text('#!/bin/sh\nexec python -m efm_go "$@"\n')
         venv_bin.chmod(0o755)
 
         mock_mc = unittest.mock.MagicMock()
@@ -1938,7 +1938,7 @@ class TestResolveKirocrewBin:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 result = _resolve_kirocrew_bin()
             # Step 0 breaks at pyvenv.cfg; step 1 finds bin/kirocrew
             assert result == str(venv_bin)
@@ -1958,8 +1958,8 @@ class TestKirocrewBinSubpath:
     """
 
     def test_posix_returns_bin_kirocrew(self, tmp_path: Path, monkeypatch):
-        from kiro_crew import platform_compat
-        from kiro_crew.agent import _kirocrew_bin_subpath
+        from efm_go import platform_compat
+        from efm_go.agent import _kirocrew_bin_subpath
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", False)
         # Even with a stray kirocrew.cmd present, POSIX resolution is unchanged.
@@ -1969,21 +1969,21 @@ class TestKirocrewBinSubpath:
 
     def test_windows_prefers_relocatable_cmd_shim(self, tmp_path: Path, monkeypatch):
         """Bundle layout: BOTH launchers exist -> the .cmd shim wins."""
-        from kiro_crew import platform_compat
-        from kiro_crew.agent import _kirocrew_bin_subpath
+        from efm_go import platform_compat
+        from efm_go.agent import _kirocrew_bin_subpath
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
         (tmp_path / "bin").mkdir()
         cmd_shim = tmp_path / "bin" / "kirocrew.cmd"
-        cmd_shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m kiro_crew %*\r\n')
+        cmd_shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m efm_go %*\r\n')
         (tmp_path / "Scripts").mkdir()
         (tmp_path / "Scripts" / "kirocrew.exe").write_bytes(b"MZ")
         assert _kirocrew_bin_subpath(tmp_path) == cmd_shim
 
     def test_windows_falls_back_to_scripts_exe_without_cmd(self, tmp_path: Path, monkeypatch):
         """Plain pip install: no .cmd shim -> Scripts/kirocrew.exe as before."""
-        from kiro_crew import platform_compat
-        from kiro_crew.agent import _kirocrew_bin_subpath
+        from efm_go import platform_compat
+        from efm_go.agent import _kirocrew_bin_subpath
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
         (tmp_path / "Scripts").mkdir()
@@ -1993,8 +1993,8 @@ class TestKirocrewBinSubpath:
 
     def test_windows_cmd_must_be_a_file(self, tmp_path: Path, monkeypatch):
         """A directory named kirocrew.cmd does not shadow the .exe fallback."""
-        from kiro_crew import platform_compat
-        from kiro_crew.agent import _kirocrew_bin_subpath
+        from efm_go import platform_compat
+        from efm_go.agent import _kirocrew_bin_subpath
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
         (tmp_path / "bin" / "kirocrew.cmd").mkdir(parents=True)
@@ -2003,10 +2003,10 @@ class TestKirocrewBinSubpath:
 
     def test_bin_is_usable_accepts_cmd_batch_shim(self, tmp_path: Path):
         """A `.cmd` starts with `@`, not `#!` -> no shebang to validate, usable."""
-        from kiro_crew.agent import _bin_is_usable
+        from efm_go.agent import _bin_is_usable
 
         shim = tmp_path / "kirocrew.cmd"
-        shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m kiro_crew %*\r\n')
+        shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m efm_go %*\r\n')
         assert _bin_is_usable(shim) is True
 
     def test_resolver_walk_finds_cmd_shim_in_bundle_layout(
@@ -2018,22 +2018,22 @@ class TestKirocrewBinSubpath:
         resolving the co-present ``Scripts\\kirocrew.exe`` instead of the
         ``.cmd`` shim is exactly the defect.
         """
-        import kiro_crew.agent as agent_mod
-        from kiro_crew import platform_compat
-        from kiro_crew.agent import _resolve_kirocrew_bin
+        import efm_go.agent as agent_mod
+        from efm_go import platform_compat
+        from efm_go.agent import _resolve_kirocrew_bin
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", True)
 
         # Bundle layout (packaging/build-desktop.sh build_backend_windows):
-        # <root>/Lib/site-packages/kiro_crew + <root>/bin/kirocrew.cmd
+        # <root>/Lib/site-packages/efm_go + <root>/bin/kirocrew.cmd
         # + the pip-dropped <root>/Scripts/kirocrew.exe (non-relocatable).
-        root = tmp_path / "kirocrew-backend"
-        pkg_dir = root / "Lib" / "site-packages" / "kiro_crew"
+        root = tmp_path / "efm-go-backend"
+        pkg_dir = root / "Lib" / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
         (root / "bin").mkdir()
         cmd_shim = root / "bin" / "kirocrew.cmd"
-        cmd_shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m kiro_crew %*\r\n')
+        cmd_shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m efm_go %*\r\n')
         # The test host is POSIX, where the resolver's X_OK gate is real.
         cmd_shim.chmod(0o755)
         (root / "Scripts").mkdir()
@@ -2047,7 +2047,7 @@ class TestKirocrewBinSubpath:
         old_val = agent_mod._KIROCREW_BIN
         try:
             agent_mod._KIROCREW_BIN = None
-            with patch.dict("sys.modules", {"kiro_crew": mock_mc}):
+            with patch.dict("sys.modules", {"efm_go": mock_mc}):
                 result = _resolve_kirocrew_bin()
             assert result == str(cmd_shim)
         finally:
@@ -2066,9 +2066,9 @@ class TestKirocrewMcpInvocation:
     """
 
     def test_uses_standalone_binary_when_resolved(self):
-        from kiro_crew.agent import _kirocrew_mcp_invocation
+        from efm_go.agent import _kirocrew_mcp_invocation
 
-        with patch("kiro_crew.agent._resolve_kirocrew_bin", return_value="/opt/bin/kirocrew"):
+        with patch("efm_go.agent._resolve_kirocrew_bin", return_value="/opt/bin/kirocrew"):
             cmd, args = _kirocrew_mcp_invocation("mcp-cron")
         assert cmd == "/opt/bin/kirocrew"
         assert args == ["mcp-cron"]
@@ -2077,52 +2077,52 @@ class TestKirocrewMcpInvocation:
         self, nonbundled_python_without_user_site
     ):
         """Module fallback excludes the project CWD before importing Kiro Crew."""
-        from kiro_crew.agent import _kirocrew_mcp_invocation
+        from efm_go.agent import _kirocrew_mcp_invocation
 
         # Bare "kirocrew" is the unresolved sentinel from _resolve_kirocrew_bin.
-        with patch("kiro_crew.agent._resolve_kirocrew_bin", return_value="kirocrew"):
+        with patch("efm_go.agent._resolve_kirocrew_bin", return_value="kirocrew"):
             cmd, args = _kirocrew_mcp_invocation("mcp-core")
         assert cmd == sys.executable
-        assert args == ["-s", "-P", "-m", "kiro_crew", "mcp-core"]
+        assert args == ["-s", "-P", "-m", "efm_go", "mcp-core"]
 
     def test_unwraps_cmd_shim_to_sibling_interpreter(self, tmp_path: Path):
         """A resolved bin/kirocrew.cmd is never emitted verbatim.
 
         Mirrors website/electron/main.js: the shim is unwrapped to
-        ``<root>/python.exe -s -P -m kiro_crew <sub>`` so kiro-cli spawns the
+        ``<root>/python.exe -s -P -m efm_go <sub>`` so kiro-cli spawns the
         interpreter, not a batch file.
         """
-        from kiro_crew.agent import _kirocrew_mcp_invocation
+        from efm_go.agent import _kirocrew_mcp_invocation
 
-        root = tmp_path / "kirocrew-backend"
+        root = tmp_path / "efm-go-backend"
         (root / "bin").mkdir(parents=True)
         shim = root / "bin" / "kirocrew.cmd"
-        shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m kiro_crew %*\r\n')
+        shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m efm_go %*\r\n')
         interpreter = root / "python.exe"
         interpreter.write_bytes(b"MZ")
         interpreter.chmod(0o755)  # X_OK is real on the POSIX test host
 
-        with patch("kiro_crew.agent._resolve_kirocrew_bin", return_value=str(shim)):
+        with patch("efm_go.agent._resolve_kirocrew_bin", return_value=str(shim)):
             cmd, args = _kirocrew_mcp_invocation("mcp-cron")
         assert cmd == str(interpreter)
         # -P keeps the spawn CWD off sys.path; -s drops user site-packages.
-        assert args == ["-s", "-P", "-m", "kiro_crew", "mcp-cron"]
+        assert args == ["-s", "-P", "-m", "efm_go", "mcp-cron"]
 
     def test_cmd_shim_without_interpreter_falls_back_to_sys_executable(
         self, tmp_path: Path, nonbundled_python_without_user_site
     ):
         """Corrupted bundle: shim present but python.exe missing -> sys.executable."""
-        from kiro_crew.agent import _kirocrew_mcp_invocation
+        from efm_go.agent import _kirocrew_mcp_invocation
 
-        root = tmp_path / "kirocrew-backend"
+        root = tmp_path / "efm-go-backend"
         (root / "bin").mkdir(parents=True)
         shim = root / "bin" / "kirocrew.cmd"
-        shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m kiro_crew %*\r\n')
+        shim.write_text('@echo off\r\n"%~dp0..\\python.exe" -s -m efm_go %*\r\n')
 
-        with patch("kiro_crew.agent._resolve_kirocrew_bin", return_value=str(shim)):
+        with patch("efm_go.agent._resolve_kirocrew_bin", return_value=str(shim)):
             cmd, args = _kirocrew_mcp_invocation("mcp-core")
         assert cmd == sys.executable
-        assert args == ["-s", "-P", "-m", "kiro_crew", "mcp-core"]
+        assert args == ["-s", "-P", "-m", "efm_go", "mcp-core"]
 
 
 class TestKiroHooksMerge:
@@ -2187,7 +2187,7 @@ class TestKiroHooksMerge:
         prompt = cfg_dir / "prompt.md"
         patches = [
             patch.multiple(
-                "kiro_crew.agent",
+                "efm_go.agent",
                 KIRO_AGENTS_DIR=kiro_dir,
                 _BUNDLED_CFG_DIR=cfg_dir,
                 _KIROCREW_BIN="/usr/bin/kirocrew",
@@ -2195,12 +2195,12 @@ class TestKiroHooksMerge:
                 _KIRO_MCP_JSON=tmp_path / "nonexistent_kiro_mcp.json",
                 _CC_MCP_JSON=tmp_path / "nonexistent_cc_mcp.json",
             ),
-            patch("kiro_crew.agent._prompt_path", return_value=prompt),
-            patch("kiro_crew.agent._shipped_defaults", return_value=cfg_dir / "defaults.json"),
-            patch("kiro_crew.agent._project_dir", return_value=None),
-            patch("kiro_crew.agent._aim_skill_paths", return_value=[]),
-            patch("kiro_crew.agent.shutil.which", side_effect=lambda c, **kw: c),
-            patch("kiro_crew.agent._mc_config_path", return_value=mc_config),
+            patch("efm_go.agent._prompt_path", return_value=prompt),
+            patch("efm_go.agent._shipped_defaults", return_value=cfg_dir / "defaults.json"),
+            patch("efm_go.agent._project_dir", return_value=None),
+            patch("efm_go.agent._aim_skill_paths", return_value=[]),
+            patch("efm_go.agent.shutil.which", side_effect=lambda c, **kw: c),
+            patch("efm_go.agent._mc_config_path", return_value=mc_config),
         ]
         with ExitStack() as stack:
             for p in patches:
@@ -2253,7 +2253,7 @@ class TestKiroHooksMerge:
 
     def test_user_hooks_dedup_against_bundled(self, tmp_path: Path):
         """User hook whose command+matcher matches a bundled hook is not added twice."""
-        from kiro_crew.agent import _merge_kiro_hooks
+        from efm_go.agent import _merge_kiro_hooks
 
         hook = self._make_hook(tmp_path, "audit.sh")
         bundled = {"postToolUse": [{"matcher": "execute_bash", "command": hook}]}
@@ -2315,20 +2315,20 @@ class TestKiroHooksMerge:
 
     # -- Direct unit tests for _merge_kiro_hooks defensive branches --
     def test_merge_kiro_hooks_non_dict_user_hooks_returns_original(self):
-        from kiro_crew.agent import _merge_kiro_hooks
+        from efm_go.agent import _merge_kiro_hooks
 
         bundled = {"postToolUse": [{"command": "audit.sh"}]}
         assert _merge_kiro_hooks(bundled, ["bad"]) == bundled
 
     def test_merge_kiro_hooks_non_list_event_entries_skipped(self):
-        from kiro_crew.agent import _merge_kiro_hooks
+        from efm_go.agent import _merge_kiro_hooks
 
         bundled = {"postToolUse": [{"command": "audit.sh"}]}
         result = _merge_kiro_hooks(bundled, {"postToolUse": "not-a-list"})
         assert result == bundled
 
     def test_merge_kiro_hooks_non_dict_entry_in_list_skipped(self):
-        from kiro_crew.agent import _merge_kiro_hooks
+        from efm_go.agent import _merge_kiro_hooks
 
         result = _merge_kiro_hooks({}, {"preToolUse": ["just-a-string"]})
         assert result["preToolUse"] == []
@@ -2336,12 +2336,12 @@ class TestKiroHooksMerge:
     # -- Direct unit tests for _validate_hook_command --
 
     def test_validate_rejects_relative_path(self, tmp_path: Path):
-        from kiro_crew.agent import _validate_hook_command
+        from efm_go.agent import _validate_hook_command
 
         assert _validate_hook_command("relative/hook.sh", "test") is None
 
     def test_validate_rejects_shell_metacharacters(self, tmp_path: Path):
-        from kiro_crew.agent import _validate_hook_command
+        from efm_go.agent import _validate_hook_command
 
         hook = self._make_hook(tmp_path)
         assert _validate_hook_command(hook + "; rm -rf /", "test") is None
@@ -2349,19 +2349,19 @@ class TestKiroHooksMerge:
         assert _validate_hook_command(hook + " $(evil)", "test") is None
 
     def test_validate_rejects_nonexistent_file(self):
-        from kiro_crew.agent import _validate_hook_command
+        from efm_go.agent import _validate_hook_command
 
         assert _validate_hook_command("/nonexistent/hook.sh", "test") is None
 
     def test_validate_accepts_valid_hook(self, tmp_path: Path):
-        from kiro_crew.agent import _validate_hook_command
+        from efm_go.agent import _validate_hook_command
 
         hook = self._make_hook(tmp_path)
         assert _validate_hook_command(hook, "test") is not None
 
     def test_merge_strips_extra_fields(self, tmp_path: Path):
         """Only command and matcher fields are kept; arbitrary keys are stripped."""
-        from kiro_crew.agent import _merge_kiro_hooks
+        from efm_go.agent import _merge_kiro_hooks
 
         hook = self._make_hook(tmp_path)
         user = {"preToolUse": [{"command": hook, "matcher": "*", "shell": True, "env": {"X": "1"}}]}
@@ -2371,7 +2371,7 @@ class TestKiroHooksMerge:
     @requires_symlinks
     def test_validate_rejects_symlink_to_sensitive(self, tmp_path: Path):
         """Symlinks resolving to sensitive paths are rejected."""
-        from kiro_crew.agent import _validate_hook_command
+        from efm_go.agent import _validate_hook_command
 
         sensitive = tmp_path / ".ssh" / "key"
         sensitive.parent.mkdir(parents=True)
@@ -2380,12 +2380,12 @@ class TestKiroHooksMerge:
         link = tmp_path / "hooks" / "sneaky.sh"
         link.parent.mkdir(parents=True)
         link.symlink_to(sensitive)
-        with patch("kiro_crew.agent.is_sensitive_path", side_effect=lambda p: ".ssh" in p):
+        with patch("efm_go.agent.is_sensitive_path", side_effect=lambda p: ".ssh" in p):
             assert _validate_hook_command(str(link), "test") is None
 
     def test_merge_rejects_non_string_matcher(self, tmp_path: Path):
         """Non-string matcher values are skipped (prevents TypeError and injection)."""
-        from kiro_crew.agent import _merge_kiro_hooks
+        from efm_go.agent import _merge_kiro_hooks
 
         hook = self._make_hook(tmp_path)
         user = {
@@ -2401,7 +2401,7 @@ class TestKiroHooksMerge:
 
     def test_merge_kiro_hooks_max_per_event_limit(self, tmp_path: Path):
         """At most _MAX_USER_HOOKS_PER_EVENT hooks are accepted per event."""
-        from kiro_crew.agent import _MAX_USER_HOOKS_PER_EVENT, _merge_kiro_hooks
+        from efm_go.agent import _MAX_USER_HOOKS_PER_EVENT, _merge_kiro_hooks
 
         hooks = [
             {"command": self._make_hook(tmp_path, f"hook_{i}.sh")}
@@ -2412,14 +2412,14 @@ class TestKiroHooksMerge:
 
     def test_merge_kiro_hooks_unknown_event_rejected(self):
         """Unknown event types are silently dropped."""
-        from kiro_crew.agent import _merge_kiro_hooks
+        from efm_go.agent import _merge_kiro_hooks
 
         result = _merge_kiro_hooks({}, {"onBadEvent": [{"command": "/bin/true"}]})
         assert "onBadEvent" not in result
 
     def test_merge_rejects_matcher_with_shell_metacharacters(self, tmp_path: Path):
         """Matchers with shell metacharacters are rejected."""
-        from kiro_crew.agent import _merge_kiro_hooks
+        from efm_go.agent import _merge_kiro_hooks
 
         hook = self._make_hook(tmp_path)
         user = {
@@ -2437,7 +2437,7 @@ class TestKiroHooksMerge:
 
     def test_merge_rejects_oversized_matcher(self, tmp_path: Path):
         """Matchers exceeding max length are rejected."""
-        from kiro_crew.agent import _MAX_MATCHER_LEN, _merge_kiro_hooks
+        from efm_go.agent import _MAX_MATCHER_LEN, _merge_kiro_hooks
 
         hook = self._make_hook(tmp_path)
         user = {
@@ -2452,7 +2452,7 @@ class TestKiroHooksMerge:
 
     def test_merge_global_hooks_limit(self, tmp_path: Path):
         """Total hooks across all events are capped at _MAX_TOTAL_USER_HOOKS."""
-        from kiro_crew.agent import _MAX_TOTAL_USER_HOOKS, _merge_kiro_hooks
+        from efm_go.agent import _MAX_TOTAL_USER_HOOKS, _merge_kiro_hooks
 
         user = {}
         for event in ("preToolUse", "postToolUse", "userPromptSubmit"):
@@ -2470,7 +2470,7 @@ class TestKiroHooksFiltering:
 
     def test_auto_approve_tools_stripped_from_agent_config(self, tmp_path: Path):
         """auto_approve_tools must not appear in kirocrew.json (kiro-cli rejects it)."""
-        from kiro_crew.agent import _kiro_hooks_only
+        from efm_go.agent import _kiro_hooks_only
 
         hooks = {
             "auto_approve_tools": ["kirocrew browse *"],
@@ -2484,7 +2484,7 @@ class TestKiroHooksFiltering:
 
     def test_auto_deny_tools_stripped_from_agent_config(self):
         """auto_deny_tools must not appear in kirocrew.json."""
-        from kiro_crew.agent import _kiro_hooks_only
+        from efm_go.agent import _kiro_hooks_only
 
         hooks = {
             "auto_deny_tools": ["Dangerous*"],
@@ -2496,7 +2496,7 @@ class TestKiroHooksFiltering:
 
     def test_only_valid_kiro_events_preserved(self):
         """Only kiro-cli valid hook events survive filtering."""
-        from kiro_crew.agent import _VALID_HOOK_EVENTS, _kiro_hooks_only
+        from efm_go.agent import _VALID_HOOK_EVENTS, _kiro_hooks_only
 
         hooks = {
             "auto_approve_tools": ["*"],
@@ -2522,7 +2522,7 @@ class TestKiroHooksFiltering:
         runtime). This ratchet forces an explicit choice: adding a bundled hook key
         means updating either this set (a real event) or _INTERNAL_HOOK_KEYS
         (Kiro-Crew-internal), never neither (a fail-loud guard)."""
-        from kiro_crew.agent import _BUNDLED_CFG_DIR, _load_json
+        from efm_go.agent import _BUNDLED_CFG_DIR, _load_json
 
         bundled = _load_json(_BUNDLED_CFG_DIR / "defaults.json")
         bundled_hook_keys = set((bundled or {}).get("hooks", {}).keys())
@@ -2535,8 +2535,8 @@ class TestKiroHooksFiltering:
 
     def test_sanitize_agent_hooks_repairs_owned_files_subtractively(self, tmp_path: Path):
         """The repair removes only Kiro Crew's legacy key from every owned spec."""
-        from kiro_crew.agent import _hooks_sanitized_mtimes, _sanitize_agent_hooks
-        from kiro_crew.agent_files import OWNED_KIRO_AGENT_FILES
+        from efm_go.agent import _hooks_sanitized_mtimes, _sanitize_agent_hooks
+        from efm_go.agent_files import OWNED_KIRO_AGENT_FILES
 
         kiro_dir = tmp_path / "agents"
         kiro_dir.mkdir()
@@ -2552,7 +2552,7 @@ class TestKiroHooksFiltering:
             (kiro_dir / filename).write_text(json.dumps(broken_config))
 
         _hooks_sanitized_mtimes.clear()
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir):
             _sanitize_agent_hooks()
 
         for filename in OWNED_KIRO_AGENT_FILES:
@@ -2563,8 +2563,8 @@ class TestKiroHooksFiltering:
 
     def test_sanitize_agent_hooks_repairs_a_bom_saved_owned_file(self, tmp_path: Path):
         """A hand-saved owned spec with a byte-order mark is repaired, not skipped."""
-        from kiro_crew.agent import _hooks_sanitized_mtimes, _sanitize_agent_hooks
-        from kiro_crew.agent_files import OWNED_KIRO_AGENT_FILES
+        from efm_go.agent import _hooks_sanitized_mtimes, _sanitize_agent_hooks
+        from efm_go.agent_files import OWNED_KIRO_AGENT_FILES
 
         kiro_dir = tmp_path / "agents"
         kiro_dir.mkdir()
@@ -2573,7 +2573,7 @@ class TestKiroHooksFiltering:
         target.write_bytes(codecs.BOM_UTF8 + json.dumps(spec).encode("utf-8"))
 
         _hooks_sanitized_mtimes.clear()
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir):
             _sanitize_agent_hooks()
 
         raw = target.read_bytes()
@@ -2585,7 +2585,7 @@ class TestKiroHooksFiltering:
     )
     def test_sanitize_agent_hooks_does_not_touch_unowned_files(self, tmp_path: Path, filename: str):
         """Foreign, prefix-lookalike, and app materialized specs stay byte-identical."""
-        from kiro_crew.agent import _hooks_sanitized_mtimes, _sanitize_agent_hooks
+        from efm_go.agent import _hooks_sanitized_mtimes, _sanitize_agent_hooks
 
         kiro_dir = tmp_path / "agents"
         kiro_dir.mkdir()
@@ -2603,14 +2603,14 @@ class TestKiroHooksFiltering:
         path.write_text(original, encoding="utf-8")
 
         _hooks_sanitized_mtimes.clear()
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir):
             _sanitize_agent_hooks()
 
         assert path.read_text(encoding="utf-8") == original
 
     def test_sanitize_agent_hooks_skips_clean_file(self, tmp_path: Path):
         """_sanitize_agent_hooks does not rewrite configs that are already clean."""
-        from kiro_crew.agent import _hooks_sanitized_mtimes, _sanitize_agent_hooks
+        from efm_go.agent import _hooks_sanitized_mtimes, _sanitize_agent_hooks
 
         kiro_dir = tmp_path / "agents"
         kiro_dir.mkdir()
@@ -2624,7 +2624,7 @@ class TestKiroHooksFiltering:
         original_mtime = (kiro_dir / "kirocrew.json").stat().st_mtime
 
         _hooks_sanitized_mtimes.clear()
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", kiro_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", kiro_dir):
             _sanitize_agent_hooks()
 
         assert (kiro_dir / "kirocrew.json").stat().st_mtime == original_mtime
@@ -2755,7 +2755,7 @@ class TestToolBloatFixes:
         map" would sweep both of these in while every assertion about the mounted
         server still passed.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -2823,7 +2823,7 @@ class TestToolBloatFixes:
         gets wrong. Needs the resolver override because the stub echoes every
         command, which makes this branch unreachable by default.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -2908,7 +2908,7 @@ class TestToolBloatFixes:
 
     def test_overlapping_alias_output_is_not_rewritten_by_another_original_key(self):
         """Each ref moves once from its longest original server owner."""
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         config = {
             "tools": ["@npm:@scope/pkg/x/run", "@scope-pkg/x/y"],
@@ -2931,7 +2931,7 @@ class TestToolBloatFixes:
 
     def test_frozen_allowed_ref_is_dropped_only_when_it_collides_with_a_live_server(self):
         """A frozen grant cannot become a live normalized server's per-tool grant."""
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         config = {
             "tools": ["@a/b", "@a-b/c", "@x/y"],
@@ -2988,7 +2988,7 @@ class TestToolBloatFixes:
         approval. The mount half survives by design: it costs one mount attempt
         against an empty name, where a dropped `tools` ref is unrecoverable.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3043,7 +3043,7 @@ class TestToolBloatFixes:
         unvouched, so its grant goes while its mount stays. `npm:bar` IS the
         app's own claim on the same input: enabled owner, so it keeps both.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3100,7 +3100,7 @@ class TestToolBloatFixes:
         The unowned `solo` measures the other direction on the same input: a
         reader that claims every candidate fails here.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3159,7 +3159,7 @@ class TestToolBloatFixes:
         and its exemption must not narrow. That half is what keeps a gated-off
         server -- whose ref an existing config never re-adds -- mounted.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3219,7 +3219,7 @@ class TestToolBloatFixes:
         the config entirely rather than merely unresolved, so no pass can ever
         mount it and a reader that keeps everything fails here.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3284,7 +3284,7 @@ class TestToolBloatFixes:
         prefix but is not a numeric-suffixed sibling, so no app claims it and its
         grant goes under either reader while its mount stays.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3354,7 +3354,7 @@ class TestToolBloatFixes:
         mount too would fail on the sibling, and one that accepted the family for
         the grant would fail on it as well.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3411,7 +3411,7 @@ class TestToolBloatFixes:
         `x-y` is the other half on the same input: its own app is off, so it loses
         both refs, which is what the family rule was added for.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3470,7 +3470,7 @@ class TestToolBloatFixes:
         `beta:solo` is the positive half on the same input: its only claimant is
         enabled, so a reader that denies the whole map fails here.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3537,7 +3537,7 @@ class TestToolBloatFixes:
         `playwright-mcp` is the other half on the same input: the app does own it,
         so a reader that exempts everything fails here.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3590,7 +3590,7 @@ class TestToolBloatFixes:
         entry. A directory still holding the record file `list_apps` reads, under a
         name the list does not carry, is the signal that a claim went missing.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3641,7 +3641,7 @@ class TestToolBloatFixes:
         name looks unowned while its owner simply was never visible, and exempting
         it leaves an auto-approval behind.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3686,8 +3686,8 @@ class TestToolBloatFixes:
         this directory is indistinguishable from an overwritten app root, and
         counting every one would leave ownership permanently incomplete.
         """
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go import agent as agent_mod
+        from efm_go.apps import manager as apps_manager
 
         fake_apps = tmp_path / "fake_apps"
         fake_apps.mkdir()
@@ -3712,8 +3712,8 @@ class TestToolBloatFixes:
         counted, a single stray file would hold ownership permanently incomplete and
         narrow the exemption for every unclaimed name.
         """
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go import agent as agent_mod
+        from efm_go.apps import manager as apps_manager
 
         fake_apps = tmp_path / "fake_apps"
         fake_apps.mkdir()
@@ -3738,8 +3738,8 @@ class TestToolBloatFixes:
         sitting on disk, and its carried-forward server then looks unowned. The
         presence test therefore does not resolve the path.
         """
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go import agent as agent_mod
+        from efm_go.apps import manager as apps_manager
 
         fake_apps = tmp_path / "fake_apps"
         (fake_apps / "linked").mkdir(parents=True)
@@ -3768,8 +3768,8 @@ class TestToolBloatFixes:
         claim has to count as unread instead, so the reconcile falls back on the
         answer it had before the rebuild.
         """
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go import agent as agent_mod
+        from efm_go.apps import manager as apps_manager
 
         class _Manifest:
             mcpServers = {"srv": {"command": "x"}}
@@ -3800,8 +3800,8 @@ class TestToolBloatFixes:
         `@gated-alone` is the other half on the same input: gated and claimed by no
         app, so its ref is preserved -- which is what the gate exemption is for.
         """
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go import agent as agent_mod
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3853,7 +3853,7 @@ class TestToolBloatFixes:
         answers nothing is not consent, so the grant goes. The mount stays, as
         everywhere.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3892,7 +3892,7 @@ class TestToolBloatFixes:
         deliberately not such a source -- see the gated case below -- because being
         withheld right now is not the same as anyone still declaring the name.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3953,7 +3953,7 @@ class TestToolBloatFixes:
         reads must have seen every claim before an unclaimed, unvouched name is
         exempted.
         """
-        from kiro_crew.apps import manager as apps_manager
+        from efm_go.apps import manager as apps_manager
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -3997,7 +3997,7 @@ class TestToolBloatFixes:
         taken before the rebuild's work is what keeps the two apart, so the grant
         does not sit on the name waiting for the next server bound to it.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -4054,7 +4054,7 @@ class TestToolBloatFixes:
 
         The app is enabled throughout. Only the reading of it failed.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -4089,7 +4089,7 @@ class TestToolBloatFixes:
         self, tmp_path: Path, monkeypatch
     ):
         """The normalizer's collision filter revokes a grant through the caller audit."""
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -4133,7 +4133,7 @@ class TestToolBloatFixes:
 
     def test_alias_migration_is_not_a_revocation_sel_event(self, tmp_path: Path, monkeypatch):
         """Renamed bare and per-tool grants stay live without a false revocation event."""
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -4199,7 +4199,7 @@ class TestToolBloatFixes:
         self, tmp_path: Path, monkeypatch
     ):
         """A verbatim-kept ambiguous grant is not reported as revoked."""
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -4247,7 +4247,7 @@ class TestToolBloatFixes:
 
     def test_deleted_proxy_revocation_has_its_own_sel_event(self, tmp_path: Path, monkeypatch):
         """The every-rebuild proxy purge is covered by the same caller audit bracket."""
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -4371,7 +4371,7 @@ class TestToolBloatFixes:
         the withhold path in the same pass already emits one. A silent revoke
         leaves an operator no record of why a tool now prompts.
         """
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         cfg_dir = self._tool_search_defaults(tmp_path)
         kiro_dir = tmp_path / "kiro_agents"
@@ -5485,7 +5485,7 @@ class TestKiroHooksAutoimport:
 
     def test_kiro_hooks_autoimport_loads_executable_scripts(self, tmp_path: Path):
         """Two executable scripts both land under preToolUse with their absolute paths."""
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         s1 = self._make_script(hooks_dir, "a.sh")
@@ -5499,7 +5499,7 @@ class TestKiroHooksAutoimport:
 
     def test_kiro_hooks_autoimport_parses_event_header(self, tmp_path: Path):
         """A ``# event: PostToolUse`` header routes the script to postToolUse."""
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         self._make_script(hooks_dir, "audit.sh", body="# event: PostToolUse\nexit 0\n")
@@ -5512,7 +5512,7 @@ class TestKiroHooksAutoimport:
 
     def test_kiro_hooks_autoimport_parses_matcher_header(self, tmp_path: Path):
         """A ``# matcher:`` header is preserved on the resulting entry."""
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         self._make_script(hooks_dir, "guard.sh", body="# matcher: shell\nexit 0\n")
@@ -5525,13 +5525,13 @@ class TestKiroHooksAutoimport:
         """Non-executable ``.sh`` files are skipped; executable siblings still load."""
         import logging
 
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         self._make_script(hooks_dir, "ok.sh")
         self._make_script(hooks_dir, "disabled.sh", executable=False)
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.INFO, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         if sys.platform == "win32":
@@ -5547,7 +5547,7 @@ class TestKiroHooksAutoimport:
     @requires_symlinks
     def test_kiro_hooks_autoimport_skips_sensitive_path(self, tmp_path: Path, monkeypatch):
         """Scripts resolving into a sensitive path (~/.ssh) are rejected."""
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go.agent import _autoimport_kiro_hooks
 
         # Pretend HOME is tmp_path so ~/.ssh is fabricated and isolated.
         monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
@@ -5567,7 +5567,7 @@ class TestKiroHooksAutoimport:
 
     def test_kiro_hooks_autoimport_dedupes_with_explicit_config(self, tmp_path: Path):
         """A script listed both explicitly and in the autoimport dir yields one entry."""
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go.agent import _apply_user_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         script = self._make_script(hooks_dir, "shared.sh")
@@ -5588,7 +5588,7 @@ class TestKiroHooksAutoimport:
 
     def test_kiro_hooks_autoimport_respects_disable_flag(self, tmp_path: Path):
         """``agent.kiro_hooks_autoimport=False`` skips the scan even when scripts exist."""
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go.agent import _apply_user_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         self._make_script(hooks_dir, "a.sh")
@@ -5607,7 +5607,7 @@ class TestKiroHooksAutoimport:
 
     def test_kiro_hooks_autoimport_honors_custom_dir(self, tmp_path: Path):
         """``agent.kiro_hooks_dir`` overrides the default ~/.kiro/hooks path."""
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go.agent import _apply_user_kiro_hooks
 
         custom = tmp_path / "custom-hooks"
         self._make_script(custom, "only.sh")
@@ -5624,7 +5624,7 @@ class TestKiroHooksAutoimport:
         """More scripts than ``_MAX_TOTAL_USER_HOOKS`` get capped; one WARNING logged."""
         import logging
 
-        from kiro_crew.agent import _MAX_TOTAL_USER_HOOKS, _apply_user_kiro_hooks
+        from efm_go.agent import _MAX_TOTAL_USER_HOOKS, _apply_user_kiro_hooks
 
         # Spread across events so the per-event cap (10) does not fire first.
         # Filename suffixes are used so the scripts route to different events
@@ -5638,7 +5638,7 @@ class TestKiroHooksAutoimport:
         config: dict = {"hooks": {}}
         mc_cfg = {"agent": {"kiro_hooks_dir": str(hooks_dir)}}
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         merged_total = sum(len(v) for v in config["hooks"].values() if isinstance(v, list))
@@ -5683,7 +5683,7 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew.agent import _MAX_TOTAL_USER_HOOKS, _apply_user_kiro_hooks
+        from efm_go.agent import _MAX_TOTAL_USER_HOOKS, _apply_user_kiro_hooks
 
         # Build explicit kiro_hooks with _MAX_TOTAL_USER_HOOKS entries,
         # spread across events so the per-event cap (10) is not what
@@ -5730,7 +5730,7 @@ class TestKiroHooksAutoimport:
             }
         }
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         merged_total = sum(len(v) for v in config["hooks"].values() if isinstance(v, list))
@@ -5769,8 +5769,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _MAX_USER_HOOKS_PER_EVENT, _apply_user_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _MAX_USER_HOOKS_PER_EVENT, _apply_user_kiro_hooks
 
         # Configure more scripts on a single event than the per-event cap.
         # All scripts route to preToolUse so the per-event cap fires before
@@ -5800,7 +5800,7 @@ class TestKiroHooksAutoimport:
             }
         }
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         # Exactly _MAX_USER_HOOKS_PER_EVENT scripts should have been
@@ -5834,8 +5834,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _MAX_TOTAL_USER_HOOKS, _apply_user_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _MAX_TOTAL_USER_HOOKS, _apply_user_kiro_hooks
 
         # Spread over-cap scripts across events so the per-event cap (10)
         # does not fire first; only the global cap (20) gates.
@@ -5865,7 +5865,7 @@ class TestKiroHooksAutoimport:
             }
         }
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         merged_total = sum(len(v) for v in config["hooks"].values() if isinstance(v, list))
@@ -5896,8 +5896,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _apply_user_kiro_hooks
 
         sel_calls: list[tuple[str, str, str]] = []
 
@@ -5918,7 +5918,7 @@ class TestKiroHooksAutoimport:
             }
         }
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         assert config["hooks"] == {}
@@ -5942,8 +5942,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _apply_user_kiro_hooks
 
         sel_calls: list[tuple[str, str, str]] = []
 
@@ -5964,7 +5964,7 @@ class TestKiroHooksAutoimport:
             }
         }
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         non_list_sel = [c for c in sel_calls if "not a list" in c[2].lower()]
@@ -5979,15 +5979,15 @@ class TestKiroHooksAutoimport:
         """Missing directory returns empty dict with only a DEBUG log (no WARNINGs)."""
         import logging
 
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go.agent import _autoimport_kiro_hooks
 
         missing = tmp_path / "does-not-exist"
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(missing)
 
         assert result == {}
-        # Scope to the kiro_crew.agent logger: under `pytest -n auto`, a leaked
+        # Scope to the efm_go.agent logger: under `pytest -n auto`, a leaked
         # asyncio task exception from an unrelated test (e.g. "Task exception was
         # never retrieved" on the root `asyncio` logger) can land in caplog during
         # this window and falsely trip a bare records scan. We only care that THIS
@@ -5995,7 +5995,7 @@ class TestKiroHooksAutoimport:
         warnings = [
             r
             for r in caplog.records
-            if r.levelno >= logging.WARNING and r.name == "kiro_crew.agent"
+            if r.levelno >= logging.WARNING and r.name == "efm_go.agent"
         ]
         assert warnings == []
 
@@ -6018,8 +6018,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         # Matcher with a space is rejected by _SAFE_MATCHER_RE.
@@ -6034,7 +6034,7 @@ class TestKiroHooksAutoimport:
 
         monkeypatch.setattr(_agent_mod, "_sel_hook_rejected", _record_sel)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         assert result == {}
@@ -6083,8 +6083,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         # ``NoSuchEvent`` is not in _HOOK_EVENT_CANONICAL, so _infer_hook_event
@@ -6099,7 +6099,7 @@ class TestKiroHooksAutoimport:
 
         monkeypatch.setattr(_agent_mod, "_sel_hook_rejected", _record_sel)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         assert result == {}
@@ -6137,8 +6137,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         entry = self._make_script(hooks_dir, "broken.sh")
@@ -6163,7 +6163,7 @@ class TestKiroHooksAutoimport:
 
         monkeypatch.setattr(_agent_mod, "_sel_hook_rejected", _record_sel)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         assert result == {}
@@ -6193,8 +6193,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         entry = self._make_script(hooks_dir, "broken.sh")
@@ -6242,7 +6242,7 @@ class TestKiroHooksAutoimport:
 
         monkeypatch.setattr(_agent_mod, "_sel_hook_rejected", _record_sel)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         assert result == {}
@@ -6282,8 +6282,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         entry = self._make_script(hooks_dir, "disabled.sh", executable=False)
@@ -6295,7 +6295,7 @@ class TestKiroHooksAutoimport:
 
         monkeypatch.setattr(_agent_mod, "_sel_hook_rejected", _record_sel)
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.INFO, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         if sys.platform == "win32":
@@ -6346,14 +6346,14 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go.agent import _apply_user_kiro_hooks
 
         # ``_isolate_home`` fixture already sets Path.home() -> tmp_path.
         # Re-route the default fallback so failure does not touch the real
         # ~/.kiro/hooks.  Place an executable script directly at HOME root
         # to prove that home-root scanning would pick it up.
         monkeypatch.setattr(
-            "kiro_crew.agent._DEFAULT_KIRO_HOOKS_DIR",
+            "efm_go.agent._DEFAULT_KIRO_HOOKS_DIR",
             tmp_path / ".kiro" / "hooks",
         )
         evil = tmp_path / "evil.sh"
@@ -6366,7 +6366,7 @@ class TestKiroHooksAutoimport:
         # this passed validation; under the fix it's rejected.
         mc_cfg = {"agent": {"kiro_hooks_dir": str(tmp_path)}}
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         # Critical invariant: nothing from HOME-root got auto-registered.
@@ -6394,7 +6394,7 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go.agent import _apply_user_kiro_hooks
 
         # Stage a fake HOME so our default hooks dir doesn't exist and so
         # tmp_path's /private/var/folders path is *outside* HOME.
@@ -6404,7 +6404,7 @@ class TestKiroHooksAutoimport:
         # Also re-route the default hooks dir into the fake HOME so fallback
         # does not hit the caller's real ~/.kiro/hooks directory.
         monkeypatch.setattr(
-            "kiro_crew.agent._DEFAULT_KIRO_HOOKS_DIR",
+            "efm_go.agent._DEFAULT_KIRO_HOOKS_DIR",
             fake_home / ".kiro" / "hooks",
         )
 
@@ -6417,7 +6417,7 @@ class TestKiroHooksAutoimport:
         config: dict = {"hooks": {}}
         mc_cfg = {"agent": {"kiro_hooks_dir": str(outside)}}
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         # Fallback is fake_home/.kiro/hooks (doesn't exist), so nothing gets
@@ -6440,7 +6440,7 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         hooks_dir.mkdir()
@@ -6452,7 +6452,7 @@ class TestKiroHooksAutoimport:
         outside_target.chmod(0o755)
         (hooks_dir / "guard.sh").symlink_to(outside_target)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         assert result == {}
@@ -6485,8 +6485,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         # One legitimate script inside hooks_dir (passes containment).
         hooks_dir = tmp_path / "hooks"
@@ -6516,7 +6516,7 @@ class TestKiroHooksAutoimport:
 
         monkeypatch.setattr(_agent_mod, "_sel_hook_rejected", _record_sel)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         assert result == {}
@@ -6561,8 +6561,8 @@ class TestKiroHooksAutoimport:
         and assert it was invoked with the *resolved* path, not the
         symlinked ``requested`` path.
         """
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _apply_user_kiro_hooks
 
         # Real hooks directory plus a user-facing symlink that points at it.
         real_hooks = tmp_path / "real" / "hooks"
@@ -6624,11 +6624,11 @@ class TestKiroHooksAutoimport:
         ``~/.kiro/hooks``).  Under the pre-fix code, ``ValueError`` would
         escape and the test body would fail with an unhandled exception.
         """
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go.agent import _apply_user_kiro_hooks
 
         # Re-route the default so fallback doesn't touch caller's HOME.
         monkeypatch.setattr(
-            "kiro_crew.agent._DEFAULT_KIRO_HOOKS_DIR",
+            "efm_go.agent._DEFAULT_KIRO_HOOKS_DIR",
             tmp_path / "nonexistent" / "hooks",
         )
 
@@ -6656,8 +6656,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         hooks_dir.mkdir()
@@ -6676,7 +6676,7 @@ class TestKiroHooksAutoimport:
 
         monkeypatch.setattr(_agent_mod, "_sel_hook_rejected", _record_sel)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         assert result == {}
@@ -6704,12 +6704,12 @@ class TestKiroHooksAutoimport:
         This test asserts: (a) fallback to default, (b) no SEL call,
         (c) no crash.
         """
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _apply_user_kiro_hooks
 
         # Re-route default so fallback is empty (hooks dir doesn't exist).
         monkeypatch.setattr(
-            "kiro_crew.agent._DEFAULT_KIRO_HOOKS_DIR",
+            "efm_go.agent._DEFAULT_KIRO_HOOKS_DIR",
             tmp_path / "nonexistent" / "hooks",
         )
 
@@ -6756,7 +6756,7 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go.agent import _apply_user_kiro_hooks
 
         # Construct a real directory and a symlink to it.
         real_home = tmp_path / "real_home"
@@ -6769,7 +6769,7 @@ class TestKiroHooksAutoimport:
         monkeypatch.setattr(Path, "home", classmethod(lambda cls: symlink_home))
         # Re-route default so fallback doesn't touch caller's real HOME.
         monkeypatch.setattr(
-            "kiro_crew.agent._DEFAULT_KIRO_HOOKS_DIR",
+            "efm_go.agent._DEFAULT_KIRO_HOOKS_DIR",
             symlink_home / ".kiro" / "hooks",
         )
 
@@ -6785,7 +6785,7 @@ class TestKiroHooksAutoimport:
         # resolved == canonical HOME.
         mc_cfg = {"agent": {"kiro_hooks_dir": str(real_home)}}
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             _apply_user_kiro_hooks(config, mc_cfg)
 
         assert config["hooks"] == {}, (
@@ -6818,8 +6818,8 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         hooks_dir.mkdir()
@@ -6841,7 +6841,7 @@ class TestKiroHooksAutoimport:
 
         monkeypatch.setattr(_agent_mod, "_sel_hook_rejected", _record_sel)
 
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.agent"):
             result = _autoimport_kiro_hooks(hooks_dir)
 
         assert result == {}
@@ -6871,8 +6871,8 @@ class TestKiroHooksAutoimport:
         ``ValueError`` and asserts the code rejects cleanly (no crash,
         SEL audited).
         """
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _autoimport_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _autoimport_kiro_hooks
 
         hooks_dir = tmp_path / "hooks"
         entry = self._make_script(hooks_dir, "bad.sh")
@@ -6925,12 +6925,12 @@ class TestKiroHooksAutoimport:
         """
         import logging
 
-        from kiro_crew import agent as _agent_mod
-        from kiro_crew.agent import _apply_user_kiro_hooks
+        from efm_go import agent as _agent_mod
+        from efm_go.agent import _apply_user_kiro_hooks
 
         # Re-route default so fallback is inert.
         monkeypatch.setattr(
-            "kiro_crew.agent._DEFAULT_KIRO_HOOKS_DIR",
+            "efm_go.agent._DEFAULT_KIRO_HOOKS_DIR",
             tmp_path / "nonexistent" / "hooks",
         )
 
@@ -6959,7 +6959,7 @@ class TestKiroHooksAutoimport:
         # A path whose name triggers our resolve-fail shim.
         mc_cfg = {"agent": {"kiro_hooks_dir": str(tmp_path / "too-long")}}
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             # Must not raise.
             _apply_user_kiro_hooks(config, mc_cfg)
 
@@ -6990,7 +6990,7 @@ class TestRefreshDynamicFieldsLegacyMcpJsonAlias:
     so a refreshed config that keeps both is refused as a duplicate field."""
 
     def test_alias_dropped_when_include_mcp_json_written(self):
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         config = {"useLegacyMcpJson": True}
         _refresh_dynamic_fields(config)
@@ -7003,7 +7003,7 @@ class TestRefreshDynamicFieldsStripsStaleUrl:
     removed on refresh so it can't propagate into the CC config."""
 
     def test_stale_url_and_headers_removed_from_managed_entry(self):
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         config = {
             "mcpServers": {
@@ -7021,11 +7021,11 @@ class TestRefreshDynamicFieldsStripsStaleUrl:
             assert "headers" not in entry, f"{name} still has stale headers"
             assert entry["command"]
             # Windows uses the interpreter-module fallback, which prepends
-            # ``-m kiro_crew.__main__`` before the same managed subcommand.
+            # ``-m efm_go.__main__`` before the same managed subcommand.
             assert entry["args"][-len(args) :] == args
 
     def test_non_managed_server_url_preserved(self):
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         config = {
             "mcpServers": {
@@ -7038,7 +7038,7 @@ class TestRefreshDynamicFieldsStripsStaleUrl:
 
     def test_non_managed_server_oauth_hints_preserved(self):
         """scopes/clientId are passthrough — the runtime, not Kiro Crew, uses them."""
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         config = {
             "mcpServers": {
@@ -7057,7 +7057,7 @@ class TestRefreshDynamicFieldsStripsStaleUrl:
     def test_edition_extra_invocation_refreshed_user_keys_kept(self):
         """An edition extra's command/args are the edition's; everything else is
         the user's. A stale versioned interpreter must be replaced on refresh."""
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         extra = {
             "edition-extra": {"command": "/v2/python3", "args": ["-m", "extra"]},
@@ -7078,7 +7078,7 @@ class TestRefreshDynamicFieldsStripsStaleUrl:
                 "user-nulled": None,
             }
         }
-        with patch("kiro_crew.agent._extra_mcp_servers", return_value=extra):
+        with patch("efm_go.agent._extra_mcp_servers", return_value=extra):
             _refresh_dynamic_fields(config)
         entry = config["mcpServers"]["edition-extra"]
         assert entry["command"] == "/v2/python3"
@@ -7096,7 +7096,7 @@ class TestRefreshDynamicFieldsStripsStaleUrl:
         # stale toolsSettings.deniedCommands + autoAllowReadonly that kiro-cli
         # would keep enforcing ahead of the hooks gate. The refresh must remove
         # them so upgraded installs behave like a fresh (hooks-gate-only) one.
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         config = {
             "toolsSettings": {
@@ -7113,7 +7113,7 @@ class TestRefreshDynamicFieldsStripsStaleUrl:
 
     def test_refresh_preserves_other_tools_settings(self):
         # Only the retired keys are stripped — a user-authored sibling stays.
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         config = {
             "toolsSettings": {
@@ -7141,10 +7141,10 @@ class TestMigrateRelocatedSkillUris:
         (skills / self.NEW).mkdir(parents=True)
         (skills / self.NEW / "SKILL.md").write_text("---\nname: kirocrew-prepare-pr\n---\n")
         monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
-        monkeypatch.setattr("kiro_crew.skills.skills_dir", lambda: skills)
+        monkeypatch.setattr("efm_go.skills.skills_dir", lambda: skills)
         agents = tmp_path / "kiro_agents"
         agents.mkdir()
-        monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", agents)
+        monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", agents)
         return skills, agents
 
     def _write(self, agents: Path, resources: list) -> Path:
@@ -7153,7 +7153,7 @@ class TestMigrateRelocatedSkillUris:
         return spec
 
     def test_rewrites_home_and_absolute_forms_in_place(self, env) -> None:
-        from kiro_crew.agent import migrate_relocated_skill_uris
+        from efm_go.agent import migrate_relocated_skill_uris
 
         skills, agents = env
         spec = self._write(
@@ -7178,7 +7178,7 @@ class TestMigrateRelocatedSkillUris:
         ]
 
     def test_drops_the_old_entry_when_the_new_path_is_already_mapped(self, env) -> None:
-        from kiro_crew.agent import migrate_relocated_skill_uris
+        from efm_go.agent import migrate_relocated_skill_uris
 
         _skills, agents = env
         new = f"skill://~/.kiro/crew/skills/{self.NEW}/SKILL.md"
@@ -7187,7 +7187,7 @@ class TestMigrateRelocatedSkillUris:
         assert json.loads(spec.read_text(encoding="utf-8"))["resources"] == [new]
 
     def test_is_idempotent(self, env) -> None:
-        from kiro_crew.agent import migrate_relocated_skill_uris
+        from efm_go.agent import migrate_relocated_skill_uris
 
         _skills, agents = env
         self._write(agents, [f"skill://~/.kiro/crew/skills/{self.OLD}/SKILL.md"])
@@ -7195,7 +7195,7 @@ class TestMigrateRelocatedSkillUris:
         assert migrate_relocated_skill_uris() == 0
 
     def test_leaves_a_mapping_whose_old_skill_still_loads(self, env) -> None:
-        from kiro_crew.agent import migrate_relocated_skill_uris
+        from efm_go.agent import migrate_relocated_skill_uris
 
         skills, agents = env
         (skills / self.OLD).mkdir(parents=True)
@@ -7208,7 +7208,7 @@ class TestMigrateRelocatedSkillUris:
     def test_reads_and_writes_inside_the_spec_lock(self, env, monkeypatch) -> None:
         # A concurrent template PATCH holds the same lock; reading before it
         # would write a stale snapshot back over the user's saved edit.
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         _skills, agents = env
         self._write(agents, [f"skill://~/.kiro/crew/skills/{self.OLD}/SKILL.md"])
@@ -7244,14 +7244,14 @@ class TestMigrateRelocatedSkillUris:
     def test_leaves_an_enrolled_members_saved_generation_alone(self, env, monkeypatch) -> None:
         # An enrolled member's spec carries a digest its capability intent
         # records; an in-place rewrite would make reconcile refuse sessions.
-        from kiro_crew.agent import migrate_relocated_skill_uris
+        from efm_go.agent import migrate_relocated_skill_uris
 
         _skills, agents = env
         old = f"skill://~/.kiro/crew/skills/{self.OLD}/SKILL.md"
         spec = self._write(agents, [old])
 
         monkeypatch.setattr(
-            "kiro_crew.agent_state.get_capabilities",
+            "efm_go.agent_state.get_capabilities",
             lambda name: {"status": "saved"} if name == "alpha" else None,
         )
         assert migrate_relocated_skill_uris() == 0
@@ -7260,12 +7260,12 @@ class TestMigrateRelocatedSkillUris:
         def unreadable(name):
             raise ValueError("capability_state_invalid")
 
-        monkeypatch.setattr("kiro_crew.agent_state.get_capabilities", unreadable)
+        monkeypatch.setattr("efm_go.agent_state.get_capabilities", unreadable)
         assert migrate_relocated_skill_uris() == 0
         assert json.loads(spec.read_text(encoding="utf-8"))["resources"] == [old]
 
     def test_leaves_workspace_relative_and_wildcard_uris_alone(self, env) -> None:
-        from kiro_crew.agent import migrate_relocated_skill_uris
+        from efm_go.agent import migrate_relocated_skill_uris
 
         _skills, agents = env
         kept = [f".kiro/skills/{self.OLD}/SKILL.md", "skill://~/.kiro/crew/skills/*/SKILL.md"]
@@ -7286,7 +7286,7 @@ class TestMigrateAgentSpecs:
         )
         (kiro / "b.json").write_text(json.dumps({"name": "beta", "cc_model": "claude-sonnet-4.6"}))
         (kiro / "c.json").write_text(json.dumps({"name": "gamma", "model": "m"}))
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", kiro):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", kiro):
             cleaned = migrate_agent_specs()
         assert cleaned == 2
         assert "model_managed" not in json.loads((kiro / "a.json").read_text(encoding="utf-8"))
@@ -7298,7 +7298,7 @@ class TestMigrateAgentSpecs:
         kiro = tmp_path / "kiro_agents"
         kiro.mkdir()
         (kiro / "a.json").write_text(json.dumps({"name": "alpha", "model_managed": True}))
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", kiro):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", kiro):
             assert migrate_agent_specs() == 1
             assert migrate_agent_specs() == 0
 
@@ -7307,7 +7307,7 @@ class TestMigrateAgentSpecs:
         kiro = tmp_path / "kiro_agents"
         kiro.mkdir()
         (kiro / "a.json").write_text(json.dumps({"name": "alpha", "model_managed": True}))
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", kiro):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", kiro):
             migrate_agent_specs()
         assert agent_state.get_model_managed("alpha") is False
 
@@ -7515,8 +7515,8 @@ class TestRebuildReconcileRetainsEnabledAppServers:
     def test_reconcile_drops_by_enabled_state_not_ondisk_absence(self) -> None:
         import inspect
 
-        from kiro_crew import agent
-        from kiro_crew.agent_materialization import default_spec_commit
+        from efm_go import agent
+        from efm_go.agent_materialization import default_spec_commit
 
         assert "default_spec_commit.write_default_spec(" in inspect.getsource(agent.install_agent)
         src = inspect.getsource(default_spec_commit.write_default_spec)
@@ -7540,7 +7540,7 @@ class TestMcpMergePriority:
         the emitted spec for every managed remote, which nothing about recording
         authorship needs to do.
         """
-        from kiro_crew.mcp_provenance import MARKER_KEY, stamp
+        from efm_go.mcp_provenance import MARKER_KEY, stamp
 
         cfg_dir = _bundled_defaults(tmp_path)
         kiro_cmd = _make_exec(tmp_path, "marked-srv")
@@ -7605,8 +7605,8 @@ class TestMcpMergePriority:
         The opt-in is pinned on because the non-command field this pins is a
         hand-added ``autoApprove``, which the undeclared-grant floor drops.
         """
-        from kiro_crew.config import live as _live
-        from kiro_crew.config.loader import KiroCrewConfig as _Cfg
+        from efm_go.config import live as _live
+        from efm_go.config.loader import KiroCrewConfig as _Cfg
 
         _cfg = _Cfg()
         _cfg.mcp.honour_auto_approve = True
@@ -7678,34 +7678,34 @@ class TestRefreshDynamicFieldsSyncsConfigModel:
         return mc
 
     def test_explicit_config_model_overrides_managed_default(self, tmp_path: Path):
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         # model_managed=True would re-sync the agent file from the shipped
         # default; an explicit config.json pick must still win.
         agent_state.set_model_managed("kirocrew", True)
         mc = self._write_mc_config(tmp_path, "claude-opus-4.8")
         config = {"name": "kirocrew", "model": "stale-from-install"}
-        with patch("kiro_crew.agent._mc_config_path", return_value=mc):
+        with patch("efm_go.agent._mc_config_path", return_value=mc):
             _refresh_dynamic_fields(config)
         assert config["model"] == "claude-opus-4.8"
 
     def test_auto_sentinel_does_not_clobber_agent_model(self, tmp_path: Path):
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         # "auto" defers to managed/shipped resolution; it must not overwrite
         # the existing agent-file model with the literal "auto".
         mc = self._write_mc_config(tmp_path, "auto")
         config = {"name": "kirocrew", "model": "claude-haiku-4.5"}
-        with patch("kiro_crew.agent._mc_config_path", return_value=mc):
+        with patch("efm_go.agent._mc_config_path", return_value=mc):
             _refresh_dynamic_fields(config)
         assert config["model"] == "claude-haiku-4.5"
 
     def test_no_config_model_leaves_agent_model_untouched(self, tmp_path: Path):
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         mc = self._write_mc_config(tmp_path, None)
         config = {"name": "kirocrew", "model": "claude-sonnet-4.6"}
-        with patch("kiro_crew.agent._mc_config_path", return_value=mc):
+        with patch("efm_go.agent._mc_config_path", return_value=mc):
             _refresh_dynamic_fields(config)
         assert config["model"] == "claude-sonnet-4.6"
 
@@ -7725,7 +7725,7 @@ class TestResetAgentModel:
         return spec
 
     def test_clear_model_pin_drops_the_pin_and_resumes_tracking(self):
-        from kiro_crew.agent import clear_model_pin
+        from efm_go.agent import clear_model_pin
 
         config = {"name": "kirocrew", "model": "claude-opus-4.8"}
         clear_model_pin(config, "kirocrew")
@@ -7733,7 +7733,7 @@ class TestResetAgentModel:
         assert agent_state.get_model_managed("kirocrew") is True
 
     def test_clear_model_pin_is_idempotent_with_no_pin(self):
-        from kiro_crew.agent import clear_model_pin
+        from efm_go.agent import clear_model_pin
 
         config: dict = {"name": "kirocrew"}
         clear_model_pin(config, "kirocrew")
@@ -7743,7 +7743,7 @@ class TestResetAgentModel:
     def test_reset_writes_the_spec_and_reports_the_previous_model(
         self, tmp_path: Path, monkeypatch
     ):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         self._spec(tmp_path, "kirocrew", {"name": "kirocrew", "model": "claude-opus-4.8"})
         monkeypatch.setattr(agent_mod, "kiro_agents_dir_path", lambda: tmp_path)
@@ -7757,7 +7757,7 @@ class TestResetAgentModel:
     def test_reset_overrides_an_explicit_freeze(self, tmp_path: Path, monkeypatch):
         """A frozen editor pick is the user's own answer, and asking for a reset
         is a NEWER answer from the same user -- so it wins."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agent_state.set_model_managed("kirocrew", False)
         self._spec(tmp_path, "kirocrew", {"name": "kirocrew", "model": "claude-haiku-4.5"})
@@ -7769,7 +7769,7 @@ class TestResetAgentModel:
     def test_reset_never_writes_bookkeeping_into_the_spec(self, tmp_path: Path, monkeypatch):
         """kiro-cli validates specs with deny_unknown_fields and drops the whole
         agent on an unknown key, so a stray sidecar key must be lifted out."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         self._spec(
             tmp_path,
@@ -7786,7 +7786,7 @@ class TestResetAgentModel:
     def test_reset_resolves_a_spec_whose_filename_differs_from_its_name(
         self, tmp_path: Path, monkeypatch
     ):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         self._spec(tmp_path, "some-file", {"name": "custom-agent", "model": "claude-haiku-4.5"})
         monkeypatch.setattr(agent_mod, "kiro_agents_dir_path", lambda: tmp_path)
@@ -7796,7 +7796,7 @@ class TestResetAgentModel:
         assert previous == "claude-haiku-4.5"
 
     def test_reset_refuses_an_agent_with_no_spec(self, tmp_path: Path, monkeypatch):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "kiro_agents_dir_path", lambda: tmp_path)
         with pytest.raises(FileNotFoundError):
@@ -7808,12 +7808,12 @@ class TestResetAgentModel:
         """The counterpart contract: with no sidecar entry the refresh must not
         reclassify a pin on its own. Inferring ownership from the value is what
         makes the explicit reset necessary rather than optional."""
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         mc = tmp_path / "config.json"
         mc.write_text(json.dumps({"agent": {"model": "auto"}}), encoding="utf-8")
         config = {"name": "kirocrew", "model": "claude-opus-4.8"}
-        with patch("kiro_crew.agent._mc_config_path", return_value=mc):
+        with patch("efm_go.agent._mc_config_path", return_value=mc):
             _refresh_dynamic_fields(config)
         assert config["model"] == "claude-opus-4.8"
         assert agent_state.get_model_managed("kirocrew") is None
@@ -7825,7 +7825,7 @@ class TestResetAgentModel:
 def test_ensure_agent_materialized_noop_for_non_managed_agent(tmp_path, monkeypatch):
     """A non-managed (app/custom) agent can't be regenerated here → returns
     False and never touches rebuild_agent_config."""
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "kiro_agents_dir_path", lambda: tmp_path)
     rebuild = unittest.mock.MagicMock()
@@ -7837,7 +7837,7 @@ def test_ensure_agent_materialized_noop_for_non_managed_agent(tmp_path, monkeypa
 
 def test_ensure_agent_materialized_present_is_noop(tmp_path, monkeypatch):
     """Managed default already on disk → True, no regeneration."""
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "kiro_agents_dir_path", lambda: tmp_path)
     (tmp_path / agent_mod.AGENT_FILENAME).write_text("{}", encoding="utf-8")
@@ -7852,7 +7852,7 @@ def test_ensure_agent_materialized_present_is_noop(tmp_path, monkeypatch):
 def test_ensure_agent_materialized_regenerates_when_missing(tmp_path, monkeypatch):
     """Managed default missing → rebuild_agent_config is invoked and the file
     is materialized (the reporter's fresh-checkout case)."""
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "kiro_agents_dir_path", lambda: tmp_path)
 
@@ -7872,7 +7872,7 @@ def test_ensure_agent_materialized_regenerates_when_missing(tmp_path, monkeypatc
 def test_ensure_agent_materialized_swallows_errors(tmp_path, monkeypatch):
     """Best-effort: a rebuild failure never propagates (it sits on the spawn
     hot path) — returns False instead."""
-    import kiro_crew.agent as agent_mod
+    import efm_go.agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "kiro_agents_dir_path", lambda: tmp_path)
     rebuild = unittest.mock.MagicMock(side_effect=RuntimeError("boom"))
@@ -7894,7 +7894,7 @@ class TestAgentSpecPathRejectsTraversal:
     def test_traversal_is_refused_and_the_outside_file_is_untouched(
         self, tmp_path: Path, monkeypatch
     ):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -7924,7 +7924,7 @@ class TestAgentSpecPathRejectsTraversal:
         ],
     )
     def test_names_outside_the_grammar_are_refused(self, tmp_path: Path, monkeypatch, name):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -7933,7 +7933,7 @@ class TestAgentSpecPathRejectsTraversal:
 
     @pytest.mark.parametrize("name", ["my-agent_2", "reviewer.v2", "a" * 64])
     def test_a_valid_name_still_resolves(self, tmp_path: Path, monkeypatch, name):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -7954,7 +7954,7 @@ class TestSpecPathRefusesSymlinks:
     def test_a_symlinked_spec_is_refused_and_the_target_is_not_copied(
         self, tmp_path: Path, monkeypatch
     ):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -7973,7 +7973,7 @@ class TestSpecPathRefusesSymlinks:
 
     @requires_symlinks
     def test_the_name_scan_also_skips_a_symlink(self, tmp_path: Path, monkeypatch):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -7985,7 +7985,7 @@ class TestSpecPathRefusesSymlinks:
         assert agent_mod.agent_spec_path("wanted") is None
 
     def test_a_plain_spec_is_still_accepted(self, tmp_path: Path, monkeypatch):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8005,7 +8005,7 @@ class TestSpecPathPrefersTheDeclaredName:
     """
 
     def _dir(self, tmp_path: Path, monkeypatch) -> Path:
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8016,7 +8016,7 @@ class TestSpecPathPrefersTheDeclaredName:
         """The resolver prefers the declared name. (The WRITE path additionally
         refuses this state outright -- see TestResetRefusesAnAmbiguousName --
         because the runtime's choice between the two files is undefined.)"""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = self._dir(tmp_path, monkeypatch)
         (agents / "foo.json").write_text(
@@ -8034,7 +8034,7 @@ class TestSpecPathPrefersTheDeclaredName:
         """`foo.json` declaring `bar`, with nothing declaring `foo`: the runtime
         matches it by STEM, so it is the live spec for `--agent foo` and refusing
         it would leave a live pin unresettable."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = self._dir(tmp_path, monkeypatch)
         (agents / "foo.json").write_text(
@@ -8047,7 +8047,7 @@ class TestSpecPathPrefersTheDeclaredName:
         assert previous == "m"
 
     def test_the_filename_is_accepted_when_it_declares_no_name(self, tmp_path: Path, monkeypatch):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = self._dir(tmp_path, monkeypatch)
         (agents / "foo.json").write_text(json.dumps({"model": "m"}), encoding="utf-8")
@@ -8056,7 +8056,7 @@ class TestSpecPathPrefersTheDeclaredName:
     def test_the_filename_is_accepted_when_it_declares_the_same_name(
         self, tmp_path: Path, monkeypatch
     ):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = self._dir(tmp_path, monkeypatch)
         (agents / "foo.json").write_text(json.dumps({"name": "foo"}), encoding="utf-8")
@@ -8073,7 +8073,7 @@ class TestResetRefusesAnAmbiguousName:
     """
 
     def test_a_declared_match_plus_a_filename_match_is_refused(self, tmp_path: Path, monkeypatch):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8098,7 +8098,7 @@ class TestResetRefusesAnAmbiguousName:
         assert agent_mod.agent_state.get_model_managed("foo") is None
 
     def test_an_unambiguous_declared_match_still_resets(self, tmp_path: Path, monkeypatch):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8114,7 +8114,7 @@ class TestResetRefusesAnAmbiguousName:
     def test_two_specs_declaring_the_same_name_is_refused(self, tmp_path: Path, monkeypatch):
         """Same undefined-liveness argument as the filename collision: the
         runtime iterates unordered, so a writer cannot pick."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8149,8 +8149,8 @@ class TestSpecReadsAreSizeCapped:
     """
 
     def test_an_oversized_spec_is_refused_by_resolver_and_reset(self, tmp_path: Path, monkeypatch):
-        import kiro_crew.agent as agent_mod
-        from kiro_crew import hooks
+        import efm_go.agent as agent_mod
+        from efm_go import hooks
 
         monkeypatch.setattr(hooks, "MAX_FILE_BYTES", 256)
         agents = tmp_path / "agents"
@@ -8167,8 +8167,8 @@ class TestSpecReadsAreSizeCapped:
     def test_a_normal_sized_spec_under_the_same_cap_still_resets(self, tmp_path: Path, monkeypatch):
         """The A-side of the cap test: proves the refusal above is the SIZE, not
         the lowered cap breaking every read."""
-        import kiro_crew.agent as agent_mod
-        from kiro_crew import hooks
+        import efm_go.agent as agent_mod
+        from efm_go import hooks
 
         monkeypatch.setattr(hooks, "MAX_FILE_BYTES", 256)
         agents = tmp_path / "agents"
@@ -8201,7 +8201,7 @@ class TestResetOutputEscapesUntrustedPaths:
     HOSTILE = "/tmp/agents/evil\x1b[2J.json"
 
     def test_the_success_line_escapes_the_path(self, monkeypatch, capsys):
-        import kiro_crew.cli_commands as cli_commands
+        import efm_go.cli_commands as cli_commands
 
         monkeypatch.setattr(
             cli_commands,
@@ -8217,7 +8217,7 @@ class TestResetOutputEscapesUntrustedPaths:
         assert "\\x1b" in out, "the path is still shown, just escaped"
 
     def test_the_no_pin_line_escapes_the_path(self, monkeypatch, capsys):
-        import kiro_crew.cli_commands as cli_commands
+        import efm_go.cli_commands as cli_commands
 
         monkeypatch.setattr(
             cli_commands, "reset_agent_model", lambda name: (Path(self.HOSTILE), "")
@@ -8232,7 +8232,7 @@ class TestResetOutputEscapesUntrustedPaths:
 
     def test_the_ambiguity_refusal_escapes_both_paths(self, tmp_path: Path, monkeypatch):
         """The refusal message names two paths; both come off disk."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8249,7 +8249,7 @@ class TestResetOutputEscapesUntrustedPaths:
 
     def test_the_duplicate_name_refusal_escapes_paths(self, tmp_path: Path, monkeypatch):
         """The other refusal builds its message from a list of real spec paths."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8274,7 +8274,7 @@ class TestSelHookRejectedRedaction:
     """
 
     def _capture_sel(self, monkeypatch) -> list:
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         events: list = []
 
@@ -8286,7 +8286,7 @@ class TestSelHookRejectedRedaction:
         return events
 
     def test_credential_straddling_the_cut_is_not_leaked(self, monkeypatch) -> None:
-        from kiro_crew.agent import _sel_hook_rejected
+        from efm_go.agent import _sel_hook_rejected
 
         events = self._capture_sel(monkeypatch)
         # fabricated AKIA-shaped literal, inlined (a ``secret``-named binding
@@ -8299,7 +8299,7 @@ class TestSelHookRejectedRedaction:
 
     def test_plain_command_truncation_unchanged(self, monkeypatch) -> None:
         """Ordinary path is result-preserving: no secret ⇒ the same 200-char slice."""
-        from kiro_crew.agent import _sel_hook_rejected
+        from efm_go.agent import _sel_hook_rejected
 
         events = self._capture_sel(monkeypatch)
         _sel_hook_rejected("preToolUse", "c" * 250, "denied")
@@ -8324,7 +8324,7 @@ def _fork_env(tmp_path: Path):
     _user_home = tmp_path / "kirocrew_home"
     patches = [
         patch.multiple(
-            "kiro_crew.agent",
+            "efm_go.agent",
             KIRO_AGENTS_DIR=kiro_dir,
             _BUNDLED_CFG_DIR=cfg_dir,
             _KIROCREW_BIN="/usr/bin/kirocrew",
@@ -8332,13 +8332,13 @@ def _fork_env(tmp_path: Path):
             _KIRO_MCP_JSON=tmp_path / "fake_kiro_mcp.json",
             _CC_MCP_JSON=tmp_path / "fake_cc_mcp.json",
         ),
-        patch("kiro_crew.agent._user_dir", lambda: _user_home),
-        patch("kiro_crew.agent._prompt_path", return_value=prompt),
-        patch("kiro_crew.agent._shipped_defaults", return_value=cfg_dir / "defaults.json"),
-        patch("kiro_crew.agent._project_dir", return_value=None),
-        patch("kiro_crew.agent._aim_skill_paths", return_value=[]),
-        patch("kiro_crew.agent.shutil.which", side_effect=lambda c, **kw: c),
-        patch("kiro_crew.agent._mc_config_path", return_value=mc_config),
+        patch("efm_go.agent._user_dir", lambda: _user_home),
+        patch("efm_go.agent._prompt_path", return_value=prompt),
+        patch("efm_go.agent._shipped_defaults", return_value=cfg_dir / "defaults.json"),
+        patch("efm_go.agent._project_dir", return_value=None),
+        patch("efm_go.agent._aim_skill_paths", return_value=[]),
+        patch("efm_go.agent.shutil.which", side_effect=lambda c, **kw: c),
+        patch("efm_go.agent._mc_config_path", return_value=mc_config),
     ]
     with ExitStack() as stack:
         for p in patches:
@@ -8353,7 +8353,7 @@ class TestForkModeRefresh:
     the native-prompt stub."""
 
     def test_inline_prompt_preserved_in_fork_mode(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         config = {"prompt": "You are a bespoke reviewer.", "mcpServers": {}}
         with _fork_env(tmp_path):
@@ -8362,7 +8362,7 @@ class TestForkModeRefresh:
         assert config["prompt"] == "You are a bespoke reviewer."
 
     def test_file_uri_prompt_refreshed_in_fork_mode(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         # Managed-shaped stale pointer (old data home): healed to the stub, so
         # the fork stops delivering the persona natively on top of the injection.
@@ -8384,14 +8384,14 @@ class TestForkModeRefresh:
             agent_mod._refresh_dynamic_fields(custom, gated_off=frozenset(), fork=True)
             assert custom["prompt"] == "file:///Users/someone/Documents/prompt.md"
             nested = {
-                "prompt": "file:///old/lib/site-packages/kiro_crew/apps/builtins/mochi/agents/context/prompt.md",
+                "prompt": "file:///old/lib/site-packages/efm_go/apps/builtins/mochi/agents/context/prompt.md",
                 "mcpServers": {},
             }
             agent_mod._refresh_dynamic_fields(nested, gated_off=frozenset(), fork=True)
             assert nested["prompt"].endswith("/mochi/agents/context/prompt.md")
 
     def test_prompt_always_overwritten_when_not_fork(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         config = {"prompt": "human words that would be clobbered", "mcpServers": {}}
         with _fork_env(tmp_path) as (_kiro, _prompt):
@@ -8403,28 +8403,28 @@ class TestForkModeRefresh:
         assert config["prompt"] == agent_mod._NATIVE_PROMPT_STUB
 
     def test_is_managed_prompt_recognizes_stub_and_pointer(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (_kiro, prompt):
             assert agent_mod.is_managed_prompt(agent_mod._NATIVE_PROMPT_STUB)
             assert agent_mod.is_managed_prompt(f"file://{prompt}")
             assert agent_mod.is_managed_prompt("file:///old-home/.kiro/crew/prompt.md")
             assert agent_mod.is_managed_prompt(
-                "file:///old-venv/lib/python3.12/site-packages/kiro_crew/prompt.md"
+                "file:///old-venv/lib/python3.12/site-packages/efm_go/prompt.md"
             )
             assert agent_mod.is_managed_prompt(
                 "file:///Applications/KiroCrew.app/Contents/Resources/backend-dist/"
-                "kirocrew-backend-arm64/lib/python3.12/site-packages/kiro_crew/config/prompt.md"
+                "efm-go-backend-arm64/lib/python3.12/site-packages/efm_go/config/prompt.md"
             )
             assert not agent_mod.is_managed_prompt("file:///Users/someone/persona.md")
             assert not agent_mod.is_managed_prompt(
-                "file:///Users/someone/src/kiro_crew/config/prompt.md"
+                "file:///Users/someone/src/efm_go/config/prompt.md"
             )
             assert not agent_mod.is_managed_prompt(
                 "file:///Users/someone/.kiro/crew/workspace/.kiro/agents/prompt.md"
             )
             assert not agent_mod.is_managed_prompt(
-                "file:///old/lib/site-packages/kiro_crew/apps/builtins/mochi/agents/context/prompt.md"
+                "file:///old/lib/site-packages/efm_go/apps/builtins/mochi/agents/context/prompt.md"
             )
             assert not agent_mod.is_managed_prompt("You are a bespoke reviewer.")
             assert not agent_mod.is_managed_prompt("")
@@ -8435,7 +8435,7 @@ class TestForkModeRefresh:
         would leave every existing fork with the OLD text as a custom persona.
         A new spelling must be added to `is_managed_prompt` as a superseded
         spelling, and this pin updated alongside, never silently replaced."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         assert agent_mod._NATIVE_PROMPT_STUB == (
             "Your operating instructions are provided at the top of the session context, "
@@ -8444,7 +8444,7 @@ class TestForkModeRefresh:
         )
 
     def test_denied_commands_kept_in_fork_mode(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         config = {
             "prompt": "inline",
@@ -8458,7 +8458,7 @@ class TestForkModeRefresh:
 
     def test_denied_commands_stripped_when_not_fork(self, tmp_path: Path):
         """Control: on a non-fork refresh the legacy guardrails ARE stripped."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         config = {
             "prompt": "inline",
@@ -8480,7 +8480,7 @@ class TestRefreshForkedTemplates:
     @staticmethod
     def _seed_binding(*bindings: tuple[str, str]) -> None:
         """Persist config.json with each (crew, kiro_agent) binding."""
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.agents = {crew: KiroCrewAgentConfig(kiro_agent=agent) for crew, agent in bindings}
@@ -8494,7 +8494,7 @@ class TestRefreshForkedTemplates:
         return path
 
     def test_kirocrew_origin_fork_is_refreshed(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, _prompt):
             path = self._write_fork(kiro_dir, "my-crew", hooks={"old": "hook"})
@@ -8515,7 +8515,7 @@ class TestRefreshForkedTemplates:
         """F2 redesign: the refresh is deferred off the boot
         path; the spawn path fails closed — require_fork_governance waits on
         the settled event and ABORTS on a recorded failure or timeout."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         waits: list[float] = []
 
@@ -8542,7 +8542,7 @@ class TestRefreshForkedTemplates:
     def test_spawn_gate_aborts_on_refresh_failure_or_timeout(self, tmp_path: Path, monkeypatch):
         """F1: a failed or timed-out refresh must ABORT the
         fork-backed spawn, never release it onto stale grants."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (_kiro_dir, _prompt):
             agent_state.set_fork_info("my-crew", forked_from="kirocrew", private_to="my-crew")
@@ -8573,7 +8573,7 @@ class TestRefreshForkedTemplates:
         first, so a checkout declaring the fork's name would execute an
         ungoverned project copy while the gate validated the global one. A
         shadowed fork is refused; non-fork shadowing stays allowed."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "_fork_refresh_settled", threading.Event())
         agent_mod._fork_refresh_settled.set()
@@ -8604,7 +8604,7 @@ class TestRefreshForkedTemplates:
         """lineage is keyed by declared name, but a binding can
         carry the file stem — the gate must resolve the stem before concluding
         "not a fork", and the failure check must also key on the declared name."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "_fork_refresh_settled", threading.Event())
         agent_mod._fork_refresh_settled.set()
@@ -8635,7 +8635,7 @@ class TestRefreshForkedTemplates:
         finishing must NOT re-open the spawn gate — the queued pass carries
         the policy change that triggered it, so the settled event may only be
         set when no pass remains pending."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         started_first = threading.Event()
         release_first = threading.Event()
@@ -8684,7 +8684,7 @@ class TestRefreshForkedTemplates:
     def test_refresh_records_per_fork_failure_and_continues(self, tmp_path: Path, monkeypatch):
         """adjudication: one fork's write error must neither
         strand later forks unrefreshed nor release that fork's session gate."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         real_write = agent_mod._atomic_json_write
 
@@ -8716,7 +8716,7 @@ class TestRefreshForkedTemplates:
     def test_refresh_resolves_spec_by_declared_name(self, tmp_path: Path):
         """F2: a fork whose file stem differs from its declared
         name must still be refreshed (resolver, not `<name>.json`)."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, prompt):
             # File stem 'odd-stem' declares name 'my-crew'.
@@ -8743,7 +8743,7 @@ class TestRefreshForkedTemplates:
         the settled event for its complete lifecycle, so a concurrent spawn
         cannot consume a fork mid-pass. Observed from inside the pass via the
         ceiling hook."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         gate_states: list[bool] = []
 
@@ -8766,7 +8766,7 @@ class TestRefreshForkedTemplates:
     def test_unreadable_lineage_fails_closed(self, tmp_path: Path, monkeypatch):
         """F2: a sidecar read failure must refuse the spawn, not
         treat the agent as an ordinary non-fork."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         def _broken_read(name: str):
             raise OSError("sidecar unreadable")
@@ -8779,7 +8779,7 @@ class TestRefreshForkedTemplates:
         """The two failure classes the gate refuses on are repaired differently,
         so the refusal must say which one fired. A corrupt lineage sidecar names
         the sidecar file and the parse error, not the spec directory."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         sidecar = tmp_path / "agent_model_state.json"
         sidecar.write_text("{not json", encoding="utf-8")
@@ -8799,7 +8799,7 @@ class TestRefreshForkedTemplates:
         """The other class: the sidecar read fine (no lineage) but the spec
         scan itself failed. The refusal names the spec resolution and the
         error, not the sidecar."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         def _broken_scan(name: str, **_kw):
             raise OSError("agents dir vanished")
@@ -8820,7 +8820,7 @@ class TestRefreshForkedTemplates:
         name, so the declared name is the binding name, whose lineage was read
         and found empty. The gate admits the verified non-fork and warns with
         both paths so the operator can still tidy up."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8830,7 +8830,7 @@ class TestRefreshForkedTemplates:
         monkeypatch.setattr(agent_mod, "kiro_agents_dir_path", lambda: agents)
         monkeypatch.setattr(agent_state, "_state_path", lambda: tmp_path / "sidecar.json")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.agent"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.agent"):
             agent_mod.require_fork_governance("gpu-reviewer")
 
         warned = "\n".join(r.getMessage() for r in caplog.records)
@@ -8846,10 +8846,10 @@ class TestRefreshForkedTemplates:
         call raised ``AcpRuntimeError`` carrying the gate's refusal."""
         import asyncio
 
-        import kiro_crew.acp.client as client_mod
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.acp.harness.base import SpawnContext
-        from kiro_crew.acp.harness.kiro import KiroHarness
+        import efm_go.acp.client as client_mod
+        import efm_go.agent as agent_mod
+        from efm_go.acp.harness.base import SpawnContext
+        from efm_go.acp.harness.kiro import KiroHarness
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -8864,7 +8864,7 @@ class TestRefreshForkedTemplates:
             unittest.mock.AsyncMock(return_value="/opt/kiro/bin/kiro-cli"),
         )
         monkeypatch.setattr(agent_mod, "ensure_agent_materialized", lambda name: None)
-        import kiro_crew.sandbox as sandbox_mod
+        import efm_go.sandbox as sandbox_mod
 
         monkeypatch.setattr(
             sandbox_mod, "delegated_workspace_exposes_sealed_target", lambda work_dir: None
@@ -8889,7 +8889,7 @@ class TestRefreshForkedTemplates:
         the session may run the fork's file. The ambiguity must not be admitted
         as a non-fork: the gate takes the fork path for ``bar`` and refuses on
         its recorded refresh failure."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, _prompt):
             (kiro_dir / "foo.json").write_text(
@@ -8909,7 +8909,7 @@ class TestRefreshForkedTemplates:
     ):
         """A stem candidate the gate cannot read cannot be ruled out as a fork
         claimant, so the ambiguity is refused rather than admitted."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, _prompt):
             (kiro_dir / "foo.json").write_text("{not json", encoding="utf-8")
@@ -8927,7 +8927,7 @@ class TestRefreshForkedTemplates:
         sidecar records as a private copy takes the fork path unchanged: the
         refresh cannot pick which of two files to re-filter, records the
         failure, and the gate refuses on it."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, _prompt):
             self._write_fork(kiro_dir, "my-crew")
@@ -8947,7 +8947,7 @@ class TestRefreshForkedTemplates:
         """reset's complete read-modify-write must hold
         agents_spec_lock, with the spec read INSIDE it — a pre-lock snapshot
         written back would re-persist grants a concurrent refresh stripped."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         lock_held = {"now": False}
         events: list[tuple[str, bool]] = []
@@ -8986,7 +8986,7 @@ class TestRefreshForkedTemplates:
         assert ("write", True) in events
 
     def test_deferred_refresh_clears_then_sets_the_settled_event(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, _prompt):
             path = self._write_fork(kiro_dir, "my-crew", hooks={"old": "hook"})
@@ -9004,7 +9004,7 @@ class TestRefreshForkedTemplates:
         all — the sidecar is agent-writable, so lineage alone never qualifies.
         the orphan IS recorded as a failure, so sessions on it
         stay blocked until a rebind re-corroborates and refreshes it."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, _prompt):
             path = self._write_fork(kiro_dir, "cust-crew", hooks={"old": "hook"})
@@ -9031,7 +9031,7 @@ class TestRefreshForkedTemplates:
         allowedTools/autoApprove face the same ceiling, and no other writer
         sanitizes the file. The ceiling is a no-op on an ungoverned host, so
         observe it through the module's monkeypatch alias."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         seen: list[str] = []
 
@@ -9066,7 +9066,7 @@ class TestRefreshForkedTemplates:
         """a custom file-backed prompt that is temporarily
         unavailable (unmounted drive) must NOT be misread as dangling and
         replaced — only pointers naming the managed prompt file are healed."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, prompt):
             custom = self._write_fork(kiro_dir, "my-crew")
@@ -9089,7 +9089,7 @@ class TestRefreshForkedTemplates:
         """the managed file is called prompt.md — the natural
         custom name too. Identity must come from managed LOCATIONS, so a
         custom reference merely sharing the basename survives the refresh."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, prompt):
             custom = self._write_fork(kiro_dir, "my-crew")
@@ -9108,14 +9108,14 @@ class TestRefreshForkedTemplates:
         assert result["prompt"] == "file:///Users/someone/Documents/prompt.md"
 
     def test_source_checkout_prompt_preserved_but_site_packages_healed(self, tmp_path: Path):
-        """a bare "/kiro_crew/" spelling also matches a source
+        """a bare "/efm_go/" spelling also matches a source
         CHECKOUT of this repo, where prompt.md is a custom file — only the
         installed-package spellings identify a place the managed prompt has
         actually lived."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
-        checkout = "file:///workspace/kiro_crew/prompt.md"
-        wheel = "file:///old-venv/lib/python3.12/site-packages/kiro_crew/prompt.md"
+        checkout = "file:///workspace/efm_go/prompt.md"
+        wheel = "file:///old-venv/lib/python3.12/site-packages/efm_go/prompt.md"
         with _fork_env(tmp_path) as (kiro_dir, prompt):
             for name, uri in (("crew-a", checkout), ("crew-b", wheel)):
                 copy = self._write_fork(kiro_dir, name)
@@ -9135,7 +9135,7 @@ class TestRefreshForkedTemplates:
         assert got_b["prompt"] == agent_mod._NATIVE_PROMPT_STUB
 
     def test_fork_of_fork_chain_reaching_owned_is_refreshed(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, prompt):
             self._write_fork(kiro_dir, "mid")
@@ -9153,7 +9153,7 @@ class TestRefreshForkedTemplates:
     def test_forged_lineage_without_binding_never_writes(self, tmp_path: Path):
         """A sidecar entry whose crew is NOT bound to the spec drives no write:
         the agent-writable sidecar alone must not rewrite an arbitrary spec."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, _prompt):
             victim = self._write_fork(kiro_dir, "custom-spec")
@@ -9168,7 +9168,7 @@ class TestRefreshForkedTemplates:
         )
 
     def test_cycle_in_chain_does_not_hang_and_skips(self, tmp_path: Path):
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         with _fork_env(tmp_path) as (kiro_dir, _prompt):
             a = self._write_fork(kiro_dir, "a")
@@ -9193,7 +9193,7 @@ class TestRefreshForkedTemplates:
         and strip ungoverned autoApprove — the two paths that never reach the
         PreToolUse gate. A fork carrying grants the ceiling later tightened
         against must not persist them verbatim (security-class regression)."""
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         ceiling_calls: list[str] = []
 
@@ -9226,7 +9226,7 @@ class TestForkPromptRefreshGuard:
     defect."""
 
     def test_custom_live_file_prompt_preserved_on_fork(self, tmp_path):
-        from kiro_crew.agent import _refresh_dynamic_fields
+        from efm_go.agent import _refresh_dynamic_fields
 
         custom = tmp_path / "my-prompt.md"
         custom.write_text("custom", encoding="utf-8")
@@ -9235,7 +9235,7 @@ class TestForkPromptRefreshGuard:
         assert config["prompt"] == f"file://{custom}"
 
     def test_dangling_file_prompt_repaired_on_fork(self, tmp_path):
-        from kiro_crew.agent import _NATIVE_PROMPT_STUB, _refresh_dynamic_fields
+        from efm_go.agent import _NATIVE_PROMPT_STUB, _refresh_dynamic_fields
 
         # A MANAGED-shaped pointer at a gone location (moved data home) is the
         # repair case. Identity comes from the location spelling, not from
@@ -9250,7 +9250,7 @@ class TestForkPromptRefreshGuard:
         assert custom["prompt"] == f"file://{tmp_path / 'gone' / 'my-notes.md'}"
 
     def test_managed_pointer_still_refreshed_and_inline_preserved_on_fork(self):
-        from kiro_crew.agent import _NATIVE_PROMPT_STUB, _prompt_path, _refresh_dynamic_fields
+        from efm_go.agent import _NATIVE_PROMPT_STUB, _prompt_path, _refresh_dynamic_fields
 
         managed = {"prompt": f"file://{_prompt_path()}"}
         _refresh_dynamic_fields(managed, fork=True)

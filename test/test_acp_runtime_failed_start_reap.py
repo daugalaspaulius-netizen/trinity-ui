@@ -18,10 +18,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.acp import skill_projection
-from kiro_crew.acp.harness.base import SpawnPlan
-from kiro_crew.acp.runtime import AcpRuntime, AcpRuntimeError
+from efm_go import platform_compat
+from efm_go.acp import skill_projection
+from efm_go.acp.harness.base import SpawnPlan
+from efm_go.acp.runtime import AcpRuntime, AcpRuntimeError
 
 pytestmark = pytest.mark.skipif(
     not platform_compat.IS_POSIX, reason="process groups are a POSIX mechanism"
@@ -114,7 +114,7 @@ async def test_a_failed_init_leaves_no_child_processes(tmp_path, monkeypatch, ca
     monkeypatch.setattr(rt, "_initialize_handshake", _failing_handshake)
 
     try:
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.runtime"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.runtime"):
             with pytest.raises(AcpRuntimeError, match="initialize timed out"):
                 await rt.spawn()
         assert child_pid, "the stand-in tree never started"

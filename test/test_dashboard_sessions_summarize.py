@@ -16,10 +16,10 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import move_transcript_past
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.dashboard.handlers import api_sessions_summarize
-from kiro_crew.dashboard.handlers import sessions as sessions_handlers
-from kiro_crew.history import ConversationLog, HistoryLockTimeout, TranscriptBusy
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.dashboard.handlers import api_sessions_summarize
+from efm_go.dashboard.handlers import sessions as sessions_handlers
+from efm_go.history import ConversationLog, HistoryLockTimeout, TranscriptBusy
 
 
 class _FakeBgSession:
@@ -107,7 +107,7 @@ class TestSessionsSummarizeHandler:
             )
             assert resp.status == 200
         # Only the bounded top-N sessions triggered an LLM pass.
-        from kiro_crew.dashboard.handlers.sessions import _SUMMARIZE_MAX_SESSIONS
+        from efm_go.dashboard.handlers.sessions import _SUMMARIZE_MAX_SESSIONS
 
         assert len(created) == _SUMMARIZE_MAX_SESSIONS
 

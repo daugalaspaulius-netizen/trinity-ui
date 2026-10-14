@@ -71,7 +71,7 @@ def _pool_call(store: str | None = None) -> str:
 
 # The resolver call sites that read the OPERATOR's own memory for a dashboard
 # panel, held by path because a line number goes stale on any edit above the call.
-_OPERATOR_MEMORY_PANELS = ("src/kiro_crew/suggestions.py", "src/kiro_crew/tips.py")
+_OPERATOR_MEMORY_PANELS = ("src/efm_go/suggestions.py", "src/efm_go/tips.py")
 
 #: The constant those panels must name to stay on the global path deliberately.
 #: Its existence is pinned separately, by
@@ -175,7 +175,7 @@ def test_every_fix_message_names_symbols_that_exist(gate: ModuleType) -> None:
     # fail.
     haystack = "\n".join(
         path.read_text(encoding="utf-8")
-        for path in sorted((_REPO_ROOT / "src" / "kiro_crew").rglob("*.py"))
+        for path in sorted((_REPO_ROOT / "src" / "efm_go").rglob("*.py"))
     )
     named: dict[str, list[str]] = {}
     for rule in gate.ALL_RULES:
@@ -350,7 +350,7 @@ def test_a_seeded_violation_is_reported_under_its_own_rule(
     Membership rather than first-hit: one call can violate two rules at once,
     and asserting a single verdict would pin the walk order instead of the rule.
     """
-    got = {v.rule.rule_id for v in gate.scan_source("src/kiro_crew/probe.py", source)}
+    got = {v.rule.rule_id for v in gate.scan_source("src/efm_go/probe.py", source)}
     assert expected in got, f"expected {expected!r}, got {sorted(got) or 'no hit'}"
 
 
@@ -374,7 +374,7 @@ def test_a_declared_store_is_accepted(gate: ModuleType, store: str) -> None:
     A fix message naming a constant the tree does not define sends a contributor
     to write an import that cannot resolve.
     """
-    assert gate.scan_source("src/kiro_crew/probe.py", _pool_call(store)) == []
+    assert gate.scan_source("src/efm_go/probe.py", _pool_call(store)) == []
 
 
 def test_the_definitions_themselves_are_not_call_sites(gate: ModuleType) -> None:
@@ -400,7 +400,7 @@ class ContextBuilder:
     def build_message(self, message, is_new, session_key, memory_store=None):
         return self.build_session_context(session_key, memory_store=memory_store)
 """
-    assert gate.scan_source("src/kiro_crew/context.py", source) == []
+    assert gate.scan_source("src/efm_go/context.py", source) == []
 
 
 # ---------------------------------------------------------------------------
@@ -464,7 +464,7 @@ def test_a_file_with_no_call_site_is_skipped_without_parsing(
 # (``ratchet_scope.added_lines_at``), which is what makes a local run useful and
 # also what makes such a test's verdict a property of whatever the contributor
 # has uncommitted rather than of the gate: an unrelated edit under
-# ``src/kiro_crew/`` turns it red, and a checkout with no ``origin/main`` turns it
+# ``src/efm_go/`` turns it red, and a checkout with no ``origin/main`` turns it
 # into a skip that reads as a pass. CI's ``memory-store-seam`` job is what
 # enforces against the PR's real base; what needs pinning here is the scoping
 # RULE, done below with the plumbing pinned so the answer is deterministic. The
@@ -491,8 +491,8 @@ def test_an_added_line_inside_a_call_brings_the_whole_call_into_scope(
     keyword be added three lines down without the store ever being reviewed.
     """
     monkeypatch.setattr(gate, "REPO_ROOT", str(tmp_path))
-    planted = "src/kiro_crew/probe_memory.py"
-    (tmp_path / "src" / "kiro_crew").mkdir(parents=True)
+    planted = "src/efm_go/probe_memory.py"
+    (tmp_path / "src" / "efm_go").mkdir(parents=True)
     (tmp_path / planted).write_text(_pool_call(), encoding="utf-8")
 
     _pin_diff(gate, monkeypatch, planted, {4})
@@ -512,8 +512,8 @@ def test_a_changed_unparseable_file_fails_diff_mode_whatever_line_moved(
     change touched reports nothing, the run is green, and nothing says why.
     """
     monkeypatch.setattr(gate, "REPO_ROOT", str(tmp_path))
-    planted = "src/kiro_crew/probe_bytes.py"
-    (tmp_path / "src" / "kiro_crew").mkdir(parents=True)
+    planted = "src/efm_go/probe_bytes.py"
+    (tmp_path / "src" / "efm_go").mkdir(parents=True)
     (tmp_path / planted).write_bytes(b"ctx.build_message\n\xff\xfe\n")
 
     _pin_diff(gate, monkeypatch, planted, {500})
@@ -563,7 +563,7 @@ def test_removing_a_store_keyword_is_a_touched_line(gate: ModuleType, tmp_path: 
 
     # The anchored line must land inside the span of the violation the deletion
     # created, or the scope intersection still drops it.
-    found = gate.scan_source("src/kiro_crew/probe.py", stripped)
+    found = gate.scan_source("src/efm_go/probe.py", stripped)
     assert [v.rule.rule_id for v in found] == ["store-identity-required"]
     assert any(v.span[0] <= n <= v.span[1] for v in found for n in anchored)
 
@@ -584,7 +584,7 @@ def test_the_production_touched_line_reader_anchors_deletions_too(
         return {1}
 
     monkeypatch.setattr(gate._scope(), "added_lines_at", spy)
-    assert gate.touched_lines("BASE", "src/kiro_crew/x.py") == {1}
+    assert gate.touched_lines("BASE", "src/efm_go/x.py") == {1}
     assert seen == {"anchor_deletions": True}
 
 
@@ -603,7 +603,7 @@ def test_the_escape_hatch_silences_the_call(gate: ModuleType) -> None:
         "    is_new,\n"
         ")\n"
     )
-    assert gate.scan_source("src/kiro_crew/slack/gateway.py", source) == []
+    assert gate.scan_source("src/efm_go/slack/gateway.py", source) == []
 
 
 @pytest.mark.parametrize(
@@ -623,7 +623,7 @@ def test_an_escape_hatch_without_a_reason_does_not_silence(gate: ModuleType, mar
         "    injected,\n"
         ")\n"
     )
-    got = {v.rule.rule_id for v in gate.scan_source("src/kiro_crew/slack/gateway.py", source)}
+    got = {v.rule.rule_id for v in gate.scan_source("src/efm_go/slack/gateway.py", source)}
     assert "store-identity-required" in got
 
 
@@ -639,7 +639,7 @@ def test_the_marker_must_be_on_the_calls_opening_line(gate: ModuleType) -> None:
         "    injected,\n"
         ")\n"
     )
-    got = {v.rule.rule_id for v in gate.scan_source("src/kiro_crew/slack/gateway.py", source)}
+    got = {v.rule.rule_id for v in gate.scan_source("src/efm_go/slack/gateway.py", source)}
     assert "store-identity-required" in got
 
 
@@ -660,7 +660,7 @@ def test_similar_names_in_the_persistence_path_are_not_reported(whole_tree: list
     go vacuous if the persistence path is renamed to death.
     """
     similar: list[str] = []
-    for path in sorted((_REPO_ROOT / "src" / "kiro_crew").rglob("*.py")):
+    for path in sorted((_REPO_ROOT / "src" / "efm_go").rglob("*.py")):
         for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
             if "_build_message" in line:
                 similar.append(f"{path.relative_to(_REPO_ROOT).as_posix()}:{i}")
@@ -682,7 +682,7 @@ def test_a_similar_name_spelled_as_an_attribute_is_not_reported(gate: ModuleType
 entry = chat_persistence._build_message_entry(m)
 builder = chat_persistence._build_message_entry_uncached
 """
-    assert gate.scan_source("src/kiro_crew/history.py", source) == []
+    assert gate.scan_source("src/efm_go/history.py", source) == []
 
 
 def test_prose_naming_the_call_is_not_reported(gate: ModuleType) -> None:
@@ -703,4 +703,4 @@ sessions; ``build_session_context(...)`` prepends the memory block.
 # ContextBuilder.get_memory_for(None) is the spelling that reads the global store.
 NOTE = "build_message and build_session_context and get_memory_for()"
 '''
-    assert gate.scan_source("src/kiro_crew/context_blocks.py", source) == []
+    assert gate.scan_source("src/efm_go/context_blocks.py", source) == []

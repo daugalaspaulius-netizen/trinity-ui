@@ -227,18 +227,18 @@
   },
   "api": {
     "client": {
-      "paste_token_url_or_raw_token": "Paste sign-in URL…",
+      "paste_token_url_or_raw_token": "Sign-in paste is off",
       "proxy_challenge_reload": "Reload this browser tab — if a sign-in page appears, your access proxy’s session expired. If not, a proxy or firewall in front of this dashboard refused the request; check the proxy’s logs, or retry later.",
       "proxy_challenge_framed": "Open {{origin}} in a new tab — if a sign-in page appears, your access proxy’s session expired. Signing in inside this panel won’t work. Sign in there, then reload this page.",
       "rate_limited_by_the_tunnel_edge_http_429_too_man": "Rate limited by the tunnel edge (HTTP 429) — too many requests in a burst. The dashboard retries automatically; if this persists, wait a few seconds and reload.",
-      "reauth_command": "kirocrew token",
-      "run_kirocrew_token_then_paste_sign_in_url": "Run kirocrew token in a terminal, then paste the sign-in URL below and press Enter.",
+      "reauth_command": "EFM",
+      "run_kirocrew_token_then_paste_sign_in_url": "Token paste is off. Sign in through EFM.",
       "session_expired": "Session expired.",
-      "session_expired_sign_in_again": "Session expired. Run kirocrew token in a terminal, then paste the sign-in URL into the banner at the top of this page to sign back in.",
+      "session_expired_sign_in_again": "Session expired. Sign in through EFM.",
       "stale_owner_session": "This session predates the configured owner. Sign in again.",
-      "stale_owner_session_sign_in_again": "This session predates the configured owner (it was signed in before KIROCREW_OWNER_ID was set). Run kirocrew token in a terminal, then paste the sign-in URL into the banner at the top of this page to sign back in.",
+      "stale_owner_session_sign_in_again": "This session is not the EFM owner session. Sign in through EFM.",
       "stream_ended_without_completion": "Stream ended without completion",
-      "token_not_accepted": "That sign-in URL was not accepted. Run kirocrew token again and paste the new sign-in URL below.",
+      "token_not_accepted": "That sign-in URL was not accepted. Sign in through EFM.",
       "token_exchange_unreachable": "Could not reach the gateway, so the sign-in URL was not checked. Make sure it is running, then press Enter again.",
       "unexpected_server_response": "Unexpected server response"
     }
@@ -1799,13 +1799,13 @@
       "import_all_your_supported_work_or_handpick_what": "Import all your supported work or handpick what to bring over.",
       "import_complete": "Import complete",
       "import_selected": "Import selected",
-      "kiro_crew_found_agent_setup_on_this_gateway_host": "{{productName}} found agent setup on this gateway host. Select the sources to review.",
+      "efm_go_found_agent_setup_on_this_gateway_host": "{{productName}} found agent setup on this gateway host. Select the sources to review.",
       "review_import": "Review import",
-      "review_the_merge_before_kiro_crew_changes_local": "Review the merge before {{productName}} changes local setup.",
+      "review_the_merge_before_efm_go_changes_local": "Review the merge before {{productName}} changes local setup.",
       "select_items_to_import": "Select items to import",
       "the_gateway_returned_an_unexpected_error": "The gateway returned an unexpected error.",
       "the_import_did_not_finish_please_try_again": "The import did not finish. Please try again.",
-      "your_selected_setup_is_ready_in_kiro_crew": "Your selected setup is ready in {{productName}}."
+      "your_selected_setup_is_ready_in_efm_go": "Your selected setup is ready in {{productName}}."
     },
     "appHost": {
       "not_installed": "\"{{name}}\" is not installed"
@@ -1841,8 +1841,8 @@
     "appstore": {
       "categoryRail": {
         "all_apps": "All apps",
-        "curated_reviewed_by_the_kiro_crew_team": "Reviewed by the {{productName}} team",
-        "community_listed_not_vetted_by_the_kiro_crew_team": "Community-listed, not vetted by the {{productName}} team",
+        "curated_reviewed_by_the_efm_go_team": "Reviewed by the {{productName}} team",
+        "community_listed_not_vetted_by_the_efm_go_team": "Community-listed, not vetted by the {{productName}} team",
         "install_state": "INSTALL STATE",
         "all_install_states": "All",
         "installed": "Installed"
@@ -2428,7 +2428,7 @@
       "due": "Due {{time}}",
       "issue_sections": "Issue sections",
       "issues": "Issues",
-      "kiro_crew_uses_your_local_provider_cli_to_load_i": "{{productName}} uses your local provider CLI to load issues.",
+      "efm_go_uses_your_local_provider_cli_to_load_i": "{{productName}} uses your local provider CLI to load issues.",
       "linked": "Linked",
       "loading_issue": "Loading issue",
       "locked": "Locked",
@@ -2555,7 +2555,7 @@
     "kiroPrerequisiteGate": {
       "agent_specs_missing": "Agent specs missing",
       "agent_specs_rejected": "Agent specs rejected",
-      "another_sandbox_already_confines_kiro_crew_so_it": "Another sandbox already confines {{productName}}, so its own sandbox cannot nest inside it. This host's sandbox is not broken.",
+      "another_sandbox_already_confines_efm_go_so_it": "Another sandbox already confines {{productName}}, so its own sandbox cannot nest inside it. This host's sandbox is not broken.",
       "copied": "Copied",
       "copy_command": "Copy command",
       "copy_failed": "Copy failed. Select the command text and copy it manually.",
@@ -2568,11 +2568,11 @@
       "kiro_cli_is_installed_finish_signing_in_to_conti": "Kiro CLI is installed. Finish signing in to continue.",
       "kiro_cli_s_reason": "Why it was refused",
       "kiro_cli_update_needed": "Kiro CLI update needed",
-      "kiro_cli_will_not_load_kiro_crew_s_agent_specs": "Kiro CLI will not load {{productName}}'s agent specs",
-      "kiro_crew_installs_the_agent_specs_kiro_cli_load": "{{productName}} installs the agent specs Kiro CLI loads before it can answer anything.",
-      "kiro_crew_isolates_the_agent_in_an_os_level_sand": "{{productName}} isolates the agent in an OS-level sandbox before it runs anything.",
-      "kiro_crew_s_agent_specs_are_not_installed": "{{productName}}'s agent specs are not installed",
-      "kiro_crew_writes_its_own_agent_specs_where_kiro": "{{productName}} writes its own agent specs where Kiro CLI reads them. Without them Kiro CLI cannot resolve the agent, so every message fails. Check again rewrites the specs and reports what went wrong.",
+      "kiro_cli_will_not_load_efm_go_s_agent_specs": "Kiro CLI will not load {{productName}}'s agent specs",
+      "efm_go_installs_the_agent_specs_kiro_cli_load": "{{productName}} installs the agent specs Kiro CLI loads before it can answer anything.",
+      "efm_go_isolates_the_agent_in_an_os_level_sand": "{{productName}} isolates the agent in an OS-level sandbox before it runs anything.",
+      "efm_go_s_agent_specs_are_not_installed": "{{productName}}'s agent specs are not installed",
+      "efm_go_writes_its_own_agent_specs_where_kiro": "{{productName}} writes its own agent specs where Kiro CLI reads them. Without them Kiro CLI cannot resolve the agent, so every message fails. Check again rewrites the specs and reports what went wrong.",
       "linux_sandbox_guide": "Linux sandbox guide",
       "missing": "Missing",
       "open_kiro_cli_setup": "Open Kiro CLI setup",
@@ -2586,7 +2586,7 @@
       "remedy_spec_rejected_rewrite": "Rewrite the specs from scratch on the gateway host. This discards {{productName}}'s own MCP tool selections and rebuilds them from defaults.",
       "remedy_spec_rejected_update": "Update {{productName}}. This is the fix when Kiro CLI has moved to a spec format this version does not know how to write.",
       "remedy_userns_denied": "The kernel refused to create the user namespace. On Debian-family hosts check this legacy knob, and persist the value in /etc/sysctl.d/ so it survives a reboot. Inside a container it is usually the container's own seccomp filter denying unshare, which is fixed with container run flags rather than host settings.",
-      "repair_rewrites_the_specs_kiro_crew_owns": "Check again asks Kiro CLI to load the specs again. It does not rewrite them, because overwriting a spec that is already on disk would discard any MCP tool access you have changed. If re-checking does not clear this, one of the two remedies below will.",
+      "repair_rewrites_the_specs_efm_go_owns": "Check again asks Kiro CLI to load the specs again. It does not rewrite them, because overwriting a spec that is already on disk would discard any MCP tool access you have changed. If re-checking does not clear this, one of the two remedies below will.",
       "required": "Required",
       "run_kirocrew_doctor_on_the_gateway_host_for_a_ful": "Run this on the gateway host for a full prerequisite report, including which sandbox step failed.",
       "sandbox_unavailable": "Sandbox unavailable",
@@ -3554,7 +3554,7 @@
       "tab_name_with_status": "{{name}} — {{status}}"
     },
     "mobileConnect": {
-      "use_kiro_crew_on_your_phone": "Use {{productName}} on your phone",
+      "use_efm_go_on_your_phone": "Use {{productName}} on your phone",
       "close": "Close",
       "scan_with_your_phone_camera_to_continue_with_the_s": "Scan with your phone camera to open {{productName}} in your mobile browser. Everything stays in sync with this computer.",
       "generating": "Generating…",
@@ -5615,7 +5615,7 @@
       "failed_to_delete_agent": "Failed to delete crewmate",
       "failed_to_update_agent": "Failed to update crewmate",
       "select_an_agent_template": "Select a custom agent…",
-      "subdirectory_inside_kiro_crew_where_this_workspa": "Subdirectory inside ~/.kiro/crew where this workspace stores its data (chat history, lessons, projects). Each workspace gets its own isolated directory.",
+      "subdirectory_inside_efm_go_where_this_workspa": "Subdirectory inside ~/.kiro/crew where this workspace stores its data (chat history, lessons, projects). Each workspace gets its own isolated directory.",
       "workspace_name_is_required": "Workspace name is required",
       "session_color": "Session Color",
       "session_color_hint": "Sessions this agent starts use this color unless the session has a color of its own. Editing it re-tints those sessions. Leave empty for no agent color.",

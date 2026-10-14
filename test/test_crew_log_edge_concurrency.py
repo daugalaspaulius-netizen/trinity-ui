@@ -25,7 +25,7 @@ import crew_log_drain
 import pytest
 from crew_log_drain import assert_drained, settle, unsync_appends
 
-from kiro_crew.crew_log import CrewLog, crew_log_path, emit
+from efm_go.crew_log import CrewLog, crew_log_path, emit
 
 SESSION = "conc-edge-sess-0001"
 

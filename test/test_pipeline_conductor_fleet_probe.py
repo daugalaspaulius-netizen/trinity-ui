@@ -42,7 +42,7 @@ from conftest import make_dir_link
 SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "pipeline-conductor"
     / "scripts"
@@ -81,7 +81,7 @@ UNBUDGETED = ["-n4"]
 
 
 # The name the script is loaded under decides whether it is measured at all. CI
-# measures the backend with the package selector ``--cov=kiro_crew``, and coverage
+# measures the backend with the package selector ``--cov=efm_go``, and coverage
 # treats that as a module-name boundary: a file loaded under a bare top-level name
 # falls outside it, so every line these cases execute is recorded against nothing
 # and the script reads as untested however thoroughly it is exercised. Measured on
@@ -90,7 +90,7 @@ UNBUDGETED = ["-n4"]
 # The dotted spelling mirrors where the script physically sits; its directory is
 # not importable (a hyphen in the skill name, no ``__init__.py``), which is why
 # the module name has to be supplied rather than derived.
-LOAD_NAME = "kiro_crew.builtin_skills.pipeline_conductor.scripts.fleet_probe"
+LOAD_NAME = "efm_go.builtin_skills.pipeline_conductor.scripts.fleet_probe"
 
 
 @pytest.fixture
@@ -219,7 +219,7 @@ def test_own_rows_needle_matches_the_real_writer_spelling(mod):
         (["pytest", "-n", "0"], "suite"),
         (["pytest", "--ignore", "src/x", "-q"], "suite"),
         (["pytest", "test"], "suite"),
-        (["python", "-m", "pytest", "--pyargs", "kiro_crew.mod"], "suite"),
+        (["python", "-m", "pytest", "--pyargs", "efm_go.mod"], "suite"),
         (["vitest", "run"], "suite"),
         (["vitest", "run", "src/a.test.ts"], "paths"),
         (["pytest.exe", "C:\\repo\\test_a.py"], "paths"),
@@ -2555,7 +2555,7 @@ def test_an_alias_run_reports_its_scope_instead_of_declining(mod, tmp_path, monk
     fleet = tmp_path / "wt"
     fleet.mkdir()
     fleet_pid(root, fleet, "406", ["pytest-3", *UNBUDGETED, "test/test_x.py"])
-    fleet_pid(root, fleet, "407", ["pytest-3", *UNBUDGETED, "--cov", "src/kiro_crew"])
+    fleet_pid(root, fleet, "407", ["pytest-3", *UNBUDGETED, "--cov", "src/efm_go"])
     lines, _host = mod._host_lines({"fleet_worktrees": [str(fleet)]})
     scopes = {
         line.split()[1].split("=", 1)[1]: line.split("scope=", 1)[1].split()[0] for line in lines

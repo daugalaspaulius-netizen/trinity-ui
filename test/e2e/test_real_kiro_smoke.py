@@ -60,7 +60,7 @@ def _real_kiro_home() -> Path:
 
 def _resolve_real_kiro_cli(real_kiro_home: Path) -> str:
     """Resolve once without accepting a test backend inherited via the override."""
-    from kiro_crew.acp.client import _KiroExecutableTrustError, _resolve_kiro_bin
+    from efm_go.acp.client import _KiroExecutableTrustError, _resolve_kiro_bin
 
     env = dict(os.environ)
     env.pop("KIROCREW_KIRO_BIN", None)
@@ -101,8 +101,8 @@ def _probe_signed_in(kiro_bin: str, env: dict[str, str], cwd: Path) -> None:
 
 def _private_probe_payload() -> dict:
     """Fresh-process path and launcher verdict; never inspect the host's files."""
-    from kiro_crew import agent
-    from kiro_crew.config import paths
+    from efm_go import agent
+    from efm_go.config import paths
 
     launcher = Path(agent._resolve_kirocrew_bin())
     reachable = shutil.which("kirocrew")
@@ -172,7 +172,7 @@ def _native_transcript_count(home: Path) -> int:
 
 @contextlib.contextmanager
 def _booted_with_real_kiro(kiro_bin: str) -> Iterator[tuple[object, "_Client"]]:
-    from kiro_crew.testing.harness import spawn_feature_gateway
+    from efm_go.testing.harness import spawn_feature_gateway
 
     private_home = None
     handle = None
@@ -224,7 +224,7 @@ class _Client:
         import http.cookiejar
         import urllib.request
 
-        from kiro_crew.loopback_http import build_loopback_opener
+        from efm_go.loopback_http import build_loopback_opener
 
         self._port = port
         self.diagnostics = lambda: ""
@@ -476,8 +476,8 @@ def _await_completed_turn(
 
 def _confined_read(name: str, params: dict) -> str:
     """Execution-side gate: native MCP pre-approval cannot bypass this check."""
-    from kiro_crew.hooks import TOOL_DENY, HookManager
-    from kiro_crew.platform.context import current_context
+    from efm_go.hooks import TOOL_DENY, HookManager
+    from efm_go.platform.context import current_context
 
     ceiling = current_context().governance
     if ceiling is None or ceiling.get("filesystem.read") is None:
@@ -503,9 +503,9 @@ def _confined_read(name: str, params: dict) -> str:
 
 
 def _serve_confined_read() -> None:
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.mcp_shared import run_mcp_stdio_loop
-    from kiro_crew.platform.bootstrap import bootstrap_context
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.mcp_shared import run_mcp_stdio_loop
+    from efm_go.platform.bootstrap import bootstrap_context
 
     bootstrap_context(KiroCrewConfig.load())
     run_mcp_stdio_loop(
@@ -530,8 +530,8 @@ def _serve_confined_read() -> None:
 
 def _confined_project(project: Path, nonce_path: Path) -> tuple[str, Path]:
     """One private MCP read tool; no native filesystem, shell, or network tools."""
-    from kiro_crew.dashboard.side_readonly_spec import derive_readonly_spec
-    from kiro_crew.platform.governance import parse_policy
+    from efm_go.dashboard.side_readonly_spec import derive_readonly_spec
+    from efm_go.platform.governance import parse_policy
 
     policy_path = project / "security_policy.json"
     spec = derive_readonly_spec(
@@ -573,7 +573,7 @@ def _confined_project(project: Path, nonce_path: Path) -> tuple[str, Path]:
 
 def _set_smoke_project(handle, project: Path) -> None:
     """Configure only the harness-owned home, before creating any test slot."""
-    from kiro_crew.config.loader import update_config_locked
+    from efm_go.config.loader import update_config_locked
 
     def configure(data: dict) -> dict:
         data.setdefault("session", {})["eager_spawn"] = False

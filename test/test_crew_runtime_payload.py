@@ -20,7 +20,7 @@ because exactly one of these lanes silently shipped a broken wheel:
 
 Neither lane is reached by the patterns that were already present: the tree's Python files
 are found by ``packages = find:``, its ``.md`` files by
-``recursive-include src/kiro_crew/apps *.md``, and its Dockerfiles by nothing, because they
+``recursive-include src/efm_go/apps *.md``, and its Dockerfiles by nothing, because they
 have no suffix to match.
 
 These tests MODEL both files rather than executing them, which makes them the weaker half
@@ -37,7 +37,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = REPO_ROOT / "MANIFEST.in"
 SETUP_CFG = REPO_ROOT / "setup.cfg"
-RUNTIME = REPO_ROOT / "src" / "kiro_crew" / "apps" / "builtins" / "aws_control" / "crew" / "runtime"
+RUNTIME = REPO_ROOT / "src" / "efm_go" / "apps" / "builtins" / "aws_control" / "crew" / "runtime"
 
 
 def _payload() -> list[Path]:
@@ -98,7 +98,7 @@ def _package_data_patterns() -> list[str]:
         entry = line.strip()
         if not entry or entry.startswith("#"):
             continue
-        if entry.endswith("="):  # the `kiro_crew =` key line
+        if entry.endswith("="):  # the `efm_go =` key line
             continue
         if not line[0].isspace():  # a new top-level key ends the section's values
             break
@@ -117,7 +117,7 @@ def _wheel_shipped() -> set[Path]:
     """
     patterns = _package_data_patterns()
     assert patterns, "no package_data patterns parsed"
-    pkg_root = REPO_ROOT / "src" / "kiro_crew"
+    pkg_root = REPO_ROOT / "src" / "efm_go"
     return {p.resolve() for pat in patterns for p in pkg_root.glob(pat) if p.is_file()}
 
 
@@ -159,7 +159,7 @@ def test_the_wheel_rules_reach_the_payload() -> None:
     inherits this lane and not the other.
     """
     shipped = _wheel_shipped()
-    pkg_root = REPO_ROOT / "src" / "kiro_crew"
+    pkg_root = REPO_ROOT / "src" / "efm_go"
     unreached = [
         path.relative_to(pkg_root).as_posix()
         for path in _payload()
@@ -220,7 +220,7 @@ def test_the_sdist_rules_do_not_carry_the_container_test_suite() -> None:
 
 def test_the_wheel_rules_do_not_carry_the_container_test_suite() -> None:
     shipped_paths = _wheel_shipped()
-    pkg_root = REPO_ROOT / "src" / "kiro_crew"
+    pkg_root = REPO_ROOT / "src" / "efm_go"
     shipped = [
         path.relative_to(pkg_root).as_posix()
         for path in _container_test_files()

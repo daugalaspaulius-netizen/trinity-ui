@@ -49,7 +49,7 @@ function renderProvider(seed?: unknown) {
   // provider reads so `issuesQuery.data` is defined on the first render and the
   // first-page query never enables. scopeKey = provider:host:owner/repo.
   if (seed !== undefined) {
-    client.setQueryData(['issue-radar', 'issues', 'github:github.com:kirodotdev/Kiro', 'open'], seed)
+    client.setQueryData(['issue-radar', 'issues', 'github:github.com:efmleads.com', 'open'], seed)
   }
   render(
     <QueryClientProvider client={client}>

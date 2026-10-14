@@ -92,7 +92,7 @@ into its own directory, and a child process classifies against it with
 - **The parent never imports the product.** The composite is the thing under
   test, so importing it in the harness would pin the comparison to one side.
 - **Each child proves which tree answered.** It re-reports the file
-  `kiro_crew.security` resolved to and exits 2 when that sits outside the
+  `efm_go.security` resolved to and exits 2 when that sits outside the
   checkout it was given. Without the check, an installed copy of the package
   shadowing the path would serve *both* refs from one tree and every differential
   would come back empty — a false green with no symptom.
@@ -110,7 +110,7 @@ fails the job — a differential that could not run is not a pass.
 
 The gate calls the three `security.*` checks directly, so it measures the **rules**,
 not the hooks gate's own composition of them. That composition lives in
-`hooks.py` and `src/kiro_crew/hook_runtime/`: how the targets are built
+`hooks.py` and `src/efm_go/hook_runtime/`: how the targets are built
 (`hook_runtime/search_targets.py` builds the search target), the effective
 denied set (`hook_runtime/denied_commands.py`), the context-derived enabled set.
 A tightening implemented in `hooks.py` or `hook_runtime/` runs this gate — both
@@ -127,7 +127,7 @@ rule checks", and that is narrower than "no golden path is newly refused".
 
 ## The corpus
 
-The corpus is `src/kiro_crew/builtin_skills/security-conductor/golden-paths.json`, the
+The corpus is `src/efm_go/builtin_skills/security-conductor/golden-paths.json`, the
 security-conductor's committed golden-paths seed, whose rows each name an operation
 that is legitimate **by decision** plus the reason it is:
 
@@ -233,7 +233,7 @@ cannot: a row the PR *adds*, which the base-owned corpus does not contain.
 
 ```
 python3 scripts/deny_diff.py --base origin/main --head HEAD \
-    --corpus src/kiro_crew/builtin_skills/security-conductor/golden-paths.json
+    --corpus src/efm_go/builtin_skills/security-conductor/golden-paths.json
 ```
 
 Add `--json` for machine-readable rows, or `--platform posix|windows` to classify

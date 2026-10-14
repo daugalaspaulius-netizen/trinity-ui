@@ -26,14 +26,14 @@ from pathlib import Path
 
 from skill_script_helpers import load_skill_script
 
-from kiro_crew import agent
-from kiro_crew.agent_files import CONDUCTOR_AGENT_FILENAME, OWNED_KIRO_AGENT_FILES
-from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
-from kiro_crew.skills import _BUILTIN_SKILLS_DIR
+from efm_go import agent
+from efm_go.agent_files import CONDUCTOR_AGENT_FILENAME, OWNED_KIRO_AGENT_FILES
+from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.skills import _BUILTIN_SKILLS_DIR
 
 SKILL_DIR = (
-    Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "builtin_skills" / "goal-conductor"
+    Path(__file__).resolve().parents[1] / "src" / "efm_go" / "builtin_skills" / "goal-conductor"
 )
 SCRIPT = SKILL_DIR / "scripts" / "accept_eval.py"
 
@@ -50,14 +50,14 @@ def _pin_spec_permissions_cli(monkeypatch, which):
 
     The generated spec writers share one gate (``_write_derived_permissions``), which
     reads ``installed_kiro_cli_version`` function-locally from
-    ``kiro_crew.kiro_cli``, so the patch lands in the owning module. Without it
+    ``efm_go.kiro_cli``, so the patch lands in the owning module. Without it
     the answer is whatever the test HOST has, which on CI is nothing and reads
     as "unknown" -- the refusing case -- so a writer test asserting a
     ``permissions`` block would fail for a host reason rather than a code one.
     ``which`` is one of ``"accepts"``, ``"refuses"`` or ``"unknown"``.
     """
     version = {"accepts": _ACCEPTS, "refuses": _REFUSES, "unknown": None}[which]
-    monkeypatch.setattr("kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: version)
+    monkeypatch.setattr("efm_go.kiro_cli.installed_kiro_cli_version", lambda: version)
 
 
 class TestConductorInstaller:

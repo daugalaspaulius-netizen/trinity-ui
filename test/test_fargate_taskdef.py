@@ -14,9 +14,9 @@ import pathlib
 
 import pytest
 
-from kiro_crew.cloud.fargate import identity as ident
-from kiro_crew.cloud.fargate import taskdef as td
-from kiro_crew.cloud.fargate.identity import CrewBinding, DocumentRefused, SecretRef
+from efm_go.cloud.fargate import identity as ident
+from efm_go.cloud.fargate import taskdef as td
+from efm_go.cloud.fargate.identity import CrewBinding, DocumentRefused, SecretRef
 
 ACCOUNT = "123456789012"
 OTHER_ACCOUNT = "210987654321"
@@ -236,7 +236,7 @@ def test_two_secrets_competing_for_one_variable_are_refused():
 _CONTAINER = (
     pathlib.Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "apps"
     / "builtins"
     / "aws_control"
@@ -561,7 +561,7 @@ def test_the_init_process_is_on_the_definition_because_runtask_cannot_override_i
     admits ``linuxParameters``, so the task would run with no init process and
     nothing would report a problem.
     """
-    from kiro_crew.cloud.fargate import runtask as rt
+    from efm_go.cloud.fargate import runtask as rt
 
     assert "linuxParameters" not in rt.TASK_OVERRIDE_KEYS
     assert "linuxParameters" not in rt.CONTAINER_OVERRIDE_KEYS

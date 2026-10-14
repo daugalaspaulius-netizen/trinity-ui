@@ -2,7 +2,7 @@
 
 Lives in the repo-level ``test/`` tree (not the app's in-package ``tests/``)
 because ``setup.cfg`` sets ``testpaths = test transfer`` — a test under
-``src/kiro_crew/apps/builtins/...`` is never collected by CI.
+``src/efm_go/apps/builtins/...`` is never collected by CI.
 
 ``dictionary.toml`` is user-editable AND writable by the agent's own file tools,
 so every malformed-input case must degrade to "no corrections" rather than raise
@@ -16,8 +16,8 @@ from pathlib import Path
 import pytest
 from meetings_helpers import reset_module_state_fixture  # noqa: F401
 
-from kiro_crew.apps.builtins.meetings.backend import constants as k
-from kiro_crew.apps.builtins.meetings.backend.domain.dictionary import DomainDictionary
+from efm_go.apps.builtins.meetings.backend import constants as k
+from efm_go.apps.builtins.meetings.backend.domain.dictionary import DomainDictionary
 
 
 @pytest.fixture

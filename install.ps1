@@ -178,7 +178,7 @@ if ($NonInteractive) {
 Write-Host ""
 Write-Host "  Launching KiroCrew on AWS..." -ForegroundColor Cyan
 if ($Size -ne "") {
-    & $PyExe -m kiro_crew cloud launch --size $Size
+    & $PyExe -m efm_go cloud launch --size $Size
 } else {
-    & $PyExe -m kiro_crew cloud launch
+    & $PyExe -m efm_go cloud launch
 }

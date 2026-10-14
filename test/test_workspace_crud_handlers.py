@@ -17,13 +17,13 @@ from body_stream_helpers import BodyStreamPayload
 from dashboard_owner_helpers import NoConfiguredOwner
 
 from conftest import requires_symlinks
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     KiroCrewAgentConfig,
     KiroCrewConfig,
     WorkspaceConfig,
 )
-from kiro_crew.dashboard import chat_utils
-from kiro_crew.dashboard.handlers import (
+from efm_go.dashboard import chat_utils
+from efm_go.dashboard.handlers import (
     api_workspaces_create,
     api_workspaces_delete,
     api_workspaces_update,
@@ -69,10 +69,10 @@ def _cfg(**kw: object) -> KiroCrewConfig:
     return KiroCrewConfig(**defaults)
 
 
-_SEL = "kiro_crew.sel.sel"
-_LOAD = "kiro_crew.config.loader.KiroCrewConfig.load"
-_CFGDIR = "kiro_crew.config.loader.config_dir"
-_DATAHOME = "kiro_crew.dashboard.handlers.files.data_home"
+_SEL = "efm_go.sel.sel"
+_LOAD = "efm_go.config.loader.KiroCrewConfig.load"
+_CFGDIR = "efm_go.config.loader.config_dir"
+_DATAHOME = "efm_go.dashboard.handlers.files.data_home"
 
 
 def _seed_file(directory: Path, cfg: KiroCrewConfig) -> Path:
@@ -204,7 +204,7 @@ class TestCreateHandler:
             patch(_DATAHOME, return_value=tmp_path),
             patch(_SEL),
             patch(
-                "kiro_crew.dashboard.handlers.files.run_config_write",
+                "efm_go.dashboard.handlers.files.run_config_write",
                 new=_run_mutate_then_fail,
             ),
             pytest.raises(RuntimeError),
@@ -229,7 +229,7 @@ class TestCreateHandler:
         nothing is written to config. Mirrors the swap window with the real locked
         write: the parent is replaced right before the mutate runs.
         """
-        import kiro_crew.pinned_fs as pinned_fs
+        import efm_go.pinned_fs as pinned_fs
 
         if not pinned_fs.supports_pinned_walk():
             pytest.skip("platform cannot pin a parent by descriptor")
@@ -251,7 +251,7 @@ class TestCreateHandler:
             patch(_DATAHOME, return_value=tmp_path),
             patch(_SEL),
             patch(
-                "kiro_crew.dashboard.handlers.files.run_config_write",
+                "efm_go.dashboard.handlers.files.run_config_write",
                 new=_swap_parent_then_write,
             ),
         ):
@@ -271,7 +271,7 @@ class TestCreateHandler:
         self, tmp_path: Path
     ) -> None:
         """An existing directory behind a swapped parent is not adopted by name."""
-        import kiro_crew.pinned_fs as pinned_fs
+        import efm_go.pinned_fs as pinned_fs
 
         if not pinned_fs.supports_pinned_walk():
             pytest.skip("platform cannot pin a parent by descriptor")
@@ -295,7 +295,7 @@ class TestCreateHandler:
             patch(_DATAHOME, return_value=tmp_path),
             patch(_SEL),
             patch(
-                "kiro_crew.dashboard.handlers.files.run_config_write",
+                "efm_go.dashboard.handlers.files.run_config_write",
                 new=_swap_parent_then_write,
             ),
         ):
@@ -438,7 +438,7 @@ class TestUpdateHandler:
         parent swapped for a link points at now, not the directory that passed
         is_sensitive_path and containment. Only OTHER entries resolve fresh.
         """
-        from kiro_crew.dashboard.handlers import files as files_mod
+        from efm_go.dashboard.handlers import files as files_mod
 
         cfg = _cfg()
         _seed_file(tmp_path, cfg)
@@ -784,11 +784,11 @@ class TestDeltaMutatorHardening:
             patch(_CFGDIR, return_value=tmp_path),
             patch(_DATAHOME, return_value=tmp_path),
             patch(
-                "kiro_crew.config.loader.write_config_atomically",
+                "efm_go.config.loader.write_config_atomically",
                 side_effect=OSError("no space left on device"),
             ),
             patch(_SEL),
-            caplog.at_level("WARNING", logger="kiro_crew.dashboard.handlers.files"),
+            caplog.at_level("WARNING", logger="efm_go.dashboard.handlers.files"),
         ):
             with pytest.raises(OSError):
                 await api_workspaces_create(_req({"name": "copied", "copy_from": "default"}))
@@ -866,7 +866,7 @@ class TestDeltaMutatorHardening:
         rolling back would leave config.json pointing at a deleted tree."""
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.handlers import files as files_module
+        from efm_go.dashboard.handlers import files as files_module
 
         (tmp_path / "workspace").mkdir()
         (tmp_path / "workspace" / "notes.md").write_text("x", encoding="utf-8")

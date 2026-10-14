@@ -12,8 +12,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard import chat_title
-from kiro_crew.dashboard.chat_title import (
+from efm_go.dashboard import chat_title
+from efm_go.dashboard.chat_title import (
     _TITLE_LINE_BUDGET,
     _TITLE_LINE_MIN_KEEP,
     _TITLE_MAX_ATTACHMENT_FILES,
@@ -29,7 +29,7 @@ from kiro_crew.dashboard.chat_title import (
     _title_text,
     _validate_title_reply,
 )
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
 
 def test_prompt_isolates_and_delimits_transcript():

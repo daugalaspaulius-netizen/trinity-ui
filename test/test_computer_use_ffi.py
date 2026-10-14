@@ -50,9 +50,9 @@ import struct
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.computer_use import macos_ffi, snapshot_macos
-from kiro_crew.computer_use.types import ComputerUseUnsupported, SnapshotRequest
+from efm_go import platform_compat
+from efm_go.computer_use import macos_ffi, snapshot_macos
+from efm_go.computer_use.types import ComputerUseUnsupported, SnapshotRequest
 
 # Sentinel handle values. Distinct and non-zero so a truthiness bug (treating a
 # valid handle as NULL) shows up as a wrong branch rather than passing by luck.
@@ -1455,7 +1455,7 @@ def test_post_key_sets_flags_on_every_event_including_a_no_modifier_one(fakes: _
 
 def test_post_key_applies_a_modifier_mask_verbatim(fakes: _Fakes):
     """A requested mask reaches every event unchanged (no OR with live state)."""
-    from kiro_crew.computer_use import keymap
+    from efm_go.computer_use import keymap
 
     keycode, flags = keymap.parse_key("cmd+shift+a")
     macos_ffi.post_key(637, keycode, flags)
@@ -1958,7 +1958,7 @@ def test_shots_dir_default_uses_the_platform_tempdir(fakes: _Fakes):
     """
     import tempfile
 
-    from kiro_crew.computer_use.types import SCREENSHOT_DIR_NAME
+    from efm_go.computer_use.types import SCREENSHOT_DIR_NAME
 
     path = macos_ffi.shots_dir_default()
     assert path.startswith(tempfile.gettempdir())

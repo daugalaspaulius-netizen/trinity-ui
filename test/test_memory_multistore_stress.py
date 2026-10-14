@@ -17,13 +17,13 @@ from types import SimpleNamespace
 import pytest
 from member_memory_helpers import write_member_home
 
-from kiro_crew import context
-from kiro_crew import embeddings as emb
-from kiro_crew import vector_memory
-from kiro_crew.config import loader
-from kiro_crew.executors import run_in_embed_pool, run_with_recall_deadline
-from kiro_crew.slack.gateway import GatewayOrchestrator
-from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+from efm_go import context
+from efm_go import embeddings as emb
+from efm_go import vector_memory
+from efm_go.config import loader
+from efm_go.executors import run_in_embed_pool, run_with_recall_deadline
+from efm_go.slack.gateway import GatewayOrchestrator
+from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
 
 def deterministic_vector(text):

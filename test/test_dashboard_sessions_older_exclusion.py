@@ -28,8 +28,8 @@ from unittest.mock import MagicMock
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.handlers import api_sessions
-from kiro_crew.history import ConversationLog
+from efm_go.dashboard.handlers import api_sessions
+from efm_go.history import ConversationLog
 
 
 class _FakeSlot:

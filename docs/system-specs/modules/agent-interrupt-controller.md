@@ -1,13 +1,13 @@
-# Agent Interrupt Controller (`kiro_crew.irq`)
+# Agent Interrupt Controller (`efm_go.irq`)
 
 Status: implemented
 
-Owners: `kiro_crew.irq`; in-tree GitHub pull-request probe:
-`kiro_crew.probes.gh_pr`.
+Owners: `efm_go.irq`; in-tree GitHub pull-request probe:
+`efm_go.probes.gh_pr`.
 
 ## Purpose
 
-`kiro_crew.irq` lets a driver perform cheap observation and request an agent
+`efm_go.irq` lets a driver perform cheap observation and request an agent
 turn only when a probe reports an actionable condition. `Probe` supplies
 subject identity and a `Tick`; the kernel owns persisted state, deduplication,
 coalescing, and the verdict. The controller's verdict ownership keeps probes

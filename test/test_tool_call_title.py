@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.tool_call_title import (
+from efm_go.tool_call_title import (
     classify_tool_call,
     derive_tool_call_title,
     format_raw_command,

@@ -10,8 +10,8 @@ import math
 import sys
 from pathlib import Path
 
-from kiro_crew.dashboard.handlers.telemetry import _aggregate, _Hist, _pct_from_buckets
-from kiro_crew.metrics.schema import RESOURCE_ATTR_PROCESS_START_TIME
+from efm_go.dashboard.handlers.telemetry import _aggregate, _Hist, _pct_from_buckets
+from efm_go.metrics.schema import RESOURCE_ATTR_PROCESS_START_TIME
 
 _BOUNDS = [10, 20, 30, 40, 50]
 
@@ -356,7 +356,7 @@ def test_the_instrument_modules_stay_off_the_import_path(tmp_path: Path):
     inside ``_aggregate``, so it is imported on first use -- this pins that, and
     pins that the deferred import still works when the aggregation path runs.
     """
-    handler = sys.modules["kiro_crew.dashboard.handlers.telemetry"]
+    handler = sys.modules["efm_go.dashboard.handlers.telemetry"]
     assert not hasattr(handler, "LIFETIME_TOTAL_METRICS"), (
         "the roster was imported at module scope again, putting the instrument "
         "modules back on the gateway boot path"
@@ -1150,8 +1150,8 @@ def test_every_turn_outcome_label_is_classified_fault_or_excluded():
     import ast
     import inspect
 
-    from kiro_crew.dashboard.handlers.telemetry import _TERMINAL_FAULT_OUTCOMES
-    from kiro_crew.metrics.turns import turn_outcome
+    from efm_go.dashboard.handlers.telemetry import _TERMINAL_FAULT_OUTCOMES
+    from efm_go.metrics.turns import turn_outcome
 
     labels: set[str] = set()
     for node in ast.walk(ast.parse(inspect.getsource(turn_outcome))):
@@ -1382,12 +1382,12 @@ class TestTelemetryPosture:
         from unittest.mock import patch as _patch
 
         return _patch(
-            "kiro_crew.config.loader.KiroCrewConfig.load",
+            "efm_go.config.loader.KiroCrewConfig.load",
             return_value=SimpleNamespace(telemetry=SimpleNamespace(enabled=enabled)),
         )
 
     def test_config_flag_when_env_unset(self, monkeypatch) -> None:
-        from kiro_crew.dashboard.handlers.telemetry import _telemetry_cfg
+        from efm_go.dashboard.handlers.telemetry import _telemetry_cfg
 
         monkeypatch.delenv("KIROCREW_TELEMETRY", raising=False)
         with self._cfg(True):
@@ -1396,7 +1396,7 @@ class TestTelemetryPosture:
         assert state.env_pinned is False
 
     def test_env_truthy_overrides_a_false_config(self, monkeypatch) -> None:
-        from kiro_crew.dashboard.handlers.telemetry import _telemetry_cfg
+        from efm_go.dashboard.handlers.telemetry import _telemetry_cfg
 
         monkeypatch.setenv("KIROCREW_TELEMETRY", "1")
         with self._cfg(False):
@@ -1406,7 +1406,7 @@ class TestTelemetryPosture:
         assert state.env_var == "KIROCREW_TELEMETRY"
 
     def test_env_falsy_overrides_a_true_config(self, monkeypatch) -> None:
-        from kiro_crew.dashboard.handlers.telemetry import _telemetry_cfg
+        from efm_go.dashboard.handlers.telemetry import _telemetry_cfg
 
         monkeypatch.setenv("KIROCREW_TELEMETRY", "off")
         with self._cfg(True):
@@ -1417,7 +1417,7 @@ class TestTelemetryPosture:
     def test_blank_env_is_not_a_pin(self, monkeypatch) -> None:
         # An exported-but-empty variable is the shape a shell leaves behind; it
         # must defer to the config file rather than pinning the switch off.
-        from kiro_crew.dashboard.handlers.telemetry import _telemetry_cfg
+        from efm_go.dashboard.handlers.telemetry import _telemetry_cfg
 
         monkeypatch.setenv("KIROCREW_TELEMETRY", "  ")
         with self._cfg(True):
@@ -1428,7 +1428,7 @@ class TestTelemetryPosture:
     def test_env_var_name_comes_from_the_collector(self) -> None:
         # The message names a variable for the user to unset, so the name must be
         # the one the collector reads, not a copy that can drift from it.
-        from kiro_crew.dashboard.handlers.telemetry import _telemetry_cfg
-        from kiro_crew.metrics.provider import TELEMETRY_ENV_VAR
+        from efm_go.dashboard.handlers.telemetry import _telemetry_cfg
+        from efm_go.metrics.provider import TELEMETRY_ENV_VAR
 
         assert _telemetry_cfg().env_var == TELEMETRY_ENV_VAR

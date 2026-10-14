@@ -18,8 +18,8 @@ is a deny gate whose silent failure would be invisible:
 
 from __future__ import annotations
 
-from kiro_crew.computer_use import policy
-from kiro_crew.computer_use.types import (
+from efm_go.computer_use import policy
+from efm_go.computer_use.types import (
     CLICK_METHOD_ACCESSIBILITY,
     CLICK_METHOD_APP_POST,
     CLICK_METHOD_AUTO,

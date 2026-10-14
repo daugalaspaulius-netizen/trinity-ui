@@ -29,25 +29,25 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import name_grant, task_executor
-from kiro_crew.acp.types import (
+from efm_go import name_grant, task_executor
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
     AcpEvent,
 )
-from kiro_crew.context import ContextBuilder
-from kiro_crew.execution_context import execution_for_store
-from kiro_crew.hooks import TOOL_AUTO_APPROVE, HookManager, ToolHookResult
-from kiro_crew.messaging import (
+from efm_go.context import ContextBuilder
+from efm_go.execution_context import execution_for_store
+from efm_go.hooks import TOOL_AUTO_APPROVE, HookManager, ToolHookResult
+from efm_go.messaging import (
     APPROVAL_INTERACTIVE,
     APPROVAL_TRUST_READS,
     TransportCapabilities,
     TurnDriver,
 )
-from kiro_crew.messaging.renderer import Renderer
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.task_models import Project, Task
+from efm_go.messaging.renderer import Renderer
+from efm_go.providers.base import LLMEvent
+from efm_go.task_models import Project, Task
 
 _REFUSAL = name_grant.Refusal(name_grant.SHADOWED, "head resolves to a shadowing file")
 
@@ -109,7 +109,7 @@ class TestPromotedEntryPoint:
         stub.assert_awaited_once_with("head x")
 
     def test_dashboard_alias_is_the_promoted_helper(self):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         assert chat_runner._name_grant_refusal_off_loop is name_grant.refusal_for_command_off_loop
 
@@ -132,7 +132,7 @@ class TestPromotedEntryPoint:
         # the chokepoint, so the decline-not-raise guard covers them with no
         # second copy. Pinned through the wrapper so a future re-implementation
         # of the seam that loses the guard fails here.
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         monkeypatch.setattr(
             name_grant, "name_grant_refusal", MagicMock(side_effect=RuntimeError("boom"))
@@ -157,13 +157,13 @@ class TestLoopSafetyPins:
         import inspect
         import pkgutil
 
-        from kiro_crew import llm_helpers, subagent, task_executor, tool_permission
-        from kiro_crew.dashboard import chat_runner, chat_turn
-        from kiro_crew.discord import transport_dispatch as discord_dispatch
-        from kiro_crew.messaging import driver
-        from kiro_crew.slack import handler as slack_handler
-        from kiro_crew.slack import transport_dispatch as slack_dispatch
-        from kiro_crew.telegram import transport_dispatch as telegram_dispatch
+        from efm_go import llm_helpers, subagent, task_executor, tool_permission
+        from efm_go.dashboard import chat_runner, chat_turn
+        from efm_go.discord import transport_dispatch as discord_dispatch
+        from efm_go.messaging import driver
+        from efm_go.slack import handler as slack_handler
+        from efm_go.slack import transport_dispatch as slack_dispatch
+        from efm_go.telegram import transport_dispatch as telegram_dispatch
 
         assert chat_runner._name_grant_refusal_off_loop is name_grant.refusal_for_command_off_loop
         # The dashboard's rung is composed into chat_runner from these owners.
@@ -197,10 +197,10 @@ class TestLoopSafetyPins:
         # assertion covers the whole module for each.
         import inspect
 
-        from kiro_crew.discord import transport_dispatch as discord_dispatch
-        from kiro_crew.messaging import dispatch
-        from kiro_crew.slack import transport_dispatch as slack_dispatch
-        from kiro_crew.telegram import transport_dispatch as telegram_dispatch
+        from efm_go.discord import transport_dispatch as discord_dispatch
+        from efm_go.messaging import dispatch
+        from efm_go.slack import transport_dispatch as slack_dispatch
+        from efm_go.telegram import transport_dispatch as telegram_dispatch
 
         assert "name_grant" not in inspect.getsource(dispatch.build_tool_gate)
         for mod in (slack_dispatch, discord_dispatch, telegram_dispatch):
@@ -337,7 +337,7 @@ class TestTaskRunnerSurface:
 
 class TestSubagentSurface:
     def _manager_and_stream(self, event):
-        from kiro_crew.subagent import SubagentInfo, SubagentManager
+        from efm_go.subagent import SubagentInfo, SubagentManager
 
         provider = MagicMock()
 
@@ -372,7 +372,7 @@ class TestSubagentSurface:
 
     @staticmethod
     def _shell_event():
-        from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST
+        from efm_go.providers.base import EVENT_PERMISSION_REQUEST
 
         return LLMEvent(
             kind=EVENT_PERMISSION_REQUEST,
@@ -388,10 +388,10 @@ class TestSubagentSurface:
         _stub_verdict(monkeypatch, _REFUSAL)
         manager, info, provider = self._manager_and_stream(self._shell_event())
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent.update_state"),
-            patch("kiro_crew.subagent.create_agent_folder", MagicMock()),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent.update_state"),
+            patch("efm_go.subagent.create_agent_folder", MagicMock()),
         ):
             await manager._run_inner(info, "subagent:ng01")
         provider.approve_tool.assert_not_awaited()
@@ -402,10 +402,10 @@ class TestSubagentSurface:
         _stub_verdict(monkeypatch, None)
         manager, info, provider = self._manager_and_stream(self._shell_event())
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel"),
-            patch("kiro_crew.subagent.update_state"),
-            patch("kiro_crew.subagent.create_agent_folder", MagicMock()),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel"),
+            patch("efm_go.subagent.update_state"),
+            patch("efm_go.subagent.create_agent_folder", MagicMock()),
         ):
             await manager._run_inner(info, "subagent:ng01")
         provider.approve_tool.assert_awaited_once_with(9001)
@@ -416,10 +416,10 @@ class TestSubagentSurface:
         _stub_verdict(monkeypatch, _REFUSAL)
         manager, info, provider = self._manager_and_stream(self._shell_event())
         with (
-            patch("kiro_crew.subagent.Stats"),
-            patch("kiro_crew.subagent.sel") as sel_factory,
-            patch("kiro_crew.subagent.update_state"),
-            patch("kiro_crew.subagent.create_agent_folder", MagicMock()),
+            patch("efm_go.subagent.Stats"),
+            patch("efm_go.subagent.sel") as sel_factory,
+            patch("efm_go.subagent.update_state"),
+            patch("efm_go.subagent.create_agent_folder", MagicMock()),
         ):
             await manager._run_inner(info, "subagent:ng01")
         declined = [
@@ -550,7 +550,7 @@ class TestTurnDriverSurface:
         assert p.approved == ["rq1"]
 
     def test_the_decline_is_audited(self, monkeypatch):
-        from kiro_crew.messaging import driver as driver_mod
+        from efm_go.messaging import driver as driver_mod
 
         _stub_verdict(monkeypatch, _REFUSAL)
         p = _ScriptedProvider(self._events())
@@ -591,9 +591,9 @@ class TestTurnDriverSurface:
         # surface's one security decision to an unattributable row.
         import inspect
 
-        from kiro_crew.messaging import dispatch
-        from kiro_crew.slack import transport_dispatch as slack_dispatch
-        from kiro_crew.telegram import transport_dispatch as telegram_dispatch
+        from efm_go.messaging import dispatch
+        from efm_go.slack import transport_dispatch as slack_dispatch
+        from efm_go.telegram import transport_dispatch as telegram_dispatch
 
         for mod in (dispatch, slack_dispatch, telegram_dispatch):
             assert "audit_session_key=" in inspect.getsource(mod), mod.__name__
@@ -630,7 +630,7 @@ class TestSpawnRungEventIdentity:
         return [AcpEvent(**base), AcpEvent(kind=EVENT_COMPLETE, stop_reason="end_turn")]
 
     def test_genuine_spawn_run_event_rides_the_rung(self):
-        from kiro_crew.messaging.dispatch import build_auto_approve
+        from efm_go.messaging.dispatch import build_auto_approve
 
         p = _ScriptedProvider(
             self._events(
@@ -650,7 +650,7 @@ class TestSpawnRungEventIdentity:
     def test_forged_shell_title_falls_to_the_ladder(self):
         # The rung declines; interactive mode without a decider then denies by
         # default — a downgrade to the normal path, not a hard block.
-        from kiro_crew.messaging.dispatch import build_auto_approve
+        from efm_go.messaging.dispatch import build_auto_approve
 
         p = _ScriptedProvider(
             self._events(
@@ -673,11 +673,11 @@ class TestSpawnRungEventIdentity:
         # check this rung was hardened against.
         import inspect
 
-        from kiro_crew.discord import transport_dispatch as discord_dispatch
-        from kiro_crew.messaging import dispatch, driver
-        from kiro_crew.slack import handler as slack_handler
-        from kiro_crew.slack import transport_dispatch as slack_dispatch
-        from kiro_crew.telegram import transport_dispatch as telegram_dispatch
+        from efm_go.discord import transport_dispatch as discord_dispatch
+        from efm_go.messaging import dispatch, driver
+        from efm_go.slack import handler as slack_handler
+        from efm_go.slack import transport_dispatch as slack_dispatch
+        from efm_go.telegram import transport_dispatch as telegram_dispatch
 
         for mod in (
             dispatch,
@@ -760,9 +760,9 @@ class TestStreamAndCollectSurface:
             self.rejected.append(request_id)
 
     def _run(self, monkeypatch, refusal, *, approver):
-        from kiro_crew import llm_helpers
-        from kiro_crew.hooks import ToolHookResult
-        from kiro_crew.providers.base import EVENT_COMPLETE as PB_COMPLETE
+        from efm_go import llm_helpers
+        from efm_go.hooks import ToolHookResult
+        from efm_go.providers.base import EVENT_COMPLETE as PB_COMPLETE
 
         stub = _stub_verdict(monkeypatch, refusal)
         hooks = MagicMock()
@@ -817,8 +817,8 @@ class TestStreamAndCollectSurface:
 
     def test_the_decline_is_audited(self, monkeypatch):
         # `_resolve_permission` imports `sel` function-locally from
-        # `kiro_crew.sel`, so the observable seam is the source module.
-        with patch("kiro_crew.sel.sel") as sel_factory:
+        # `efm_go.sel`, so the observable seam is the source module.
+        with patch("efm_go.sel.sel") as sel_factory:
             approver = AsyncMock(return_value=False)
             self._run(monkeypatch, _REFUSAL, approver=approver)
         declined = [
@@ -841,7 +841,7 @@ class TestSlackHandlerSurface:
     def _run_handle_message(self, monkeypatch, refusal):
         from test_slack_handler_more_coverage import FakeProvider, FakeSessions, _Builder
 
-        import kiro_crew.slack.handler as h
+        import efm_go.slack.handler as h
 
         _stub_verdict(monkeypatch, refusal)
         # The downgrade hands the request to the ordinary interactive prompt,

@@ -43,7 +43,7 @@ const capped = (items: Notification[]): Notification[] =>
 /** True when an attention surface must skip *n*.
  *
  *  The backend stamps both halves and states the contract in
- *  `kiro_crew/notifications/settings.py`: muting a channel keeps the note in
+ *  `efm_go/notifications/settings.py`: muting a channel keeps the note in
  *  history but sets `silenced: true` and forces `priority: "passive"`, "so every
  *  attention surface (badge count, sound, native banner, feed styling) skips
  *  it". `notification_coordinator.deliver()` holds its own `_unread_count` to

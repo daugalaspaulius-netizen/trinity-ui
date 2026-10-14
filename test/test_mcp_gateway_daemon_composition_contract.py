@@ -40,14 +40,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.mcp_caller import CallerContext
-from kiro_crew.mcp_gateway import gatewayd as gw
-from kiro_crew.mcp_gateway import transport
-from kiro_crew.mcp_gateway.admission import Admission, SpawnGate, SpawnGateClosed, SpawnGateTimeout
-from kiro_crew.mcp_gateway.backend import BackendGone
-from kiro_crew.mcp_gateway.host_budget import HostBudget, HostBudgetExhausted, resolve_limits
-from kiro_crew.mcp_gateway.pool import BackendUnavailable, PoolAtCapacity, PoolKey
-from kiro_crew.platform_compat import (
+from efm_go.mcp_caller import CallerContext
+from efm_go.mcp_gateway import gatewayd as gw
+from efm_go.mcp_gateway import transport
+from efm_go.mcp_gateway.admission import Admission, SpawnGate, SpawnGateClosed, SpawnGateTimeout
+from efm_go.mcp_gateway.backend import BackendGone
+from efm_go.mcp_gateway.host_budget import HostBudget, HostBudgetExhausted, resolve_limits
+from efm_go.mcp_gateway.pool import BackendUnavailable, PoolAtCapacity, PoolKey
+from efm_go.platform_compat import (
     _UTF8_PROCESS_ENV,
     kill_process_tree,
     pid_exists,
@@ -957,7 +957,7 @@ def _log_text(path: Path) -> str:
 async def test_the_module_entry_point_publishes_its_owner_and_honours_an_orphan_claim(
     short_sock_dir: Path, tmp_path: Path
 ) -> None:
-    """``python -m kiro_crew.mcp_gateway.gatewayd`` runs the daemon as ``__main__``.
+    """``python -m efm_go.mcp_gateway.gatewayd`` runs the daemon as ``__main__``.
 
     The owner PID it was given reaches the pong, and an orphan stand-down is
     refused while that owner lives and honoured once it is gone -- both read the
@@ -989,7 +989,7 @@ async def test_the_module_entry_point_publishes_its_owner_and_honours_an_orphan_
         daemon = await asyncio.create_subprocess_exec(
             sys.executable,
             "-m",
-            "kiro_crew.mcp_gateway.gatewayd",
+            "efm_go.mcp_gateway.gatewayd",
             "--socket",
             str(sock),
             "--idle-timeout-secs",
@@ -1008,7 +1008,7 @@ async def test_the_module_entry_point_publishes_its_owner_and_honours_an_orphan_
             **group,
         )
     try:
-        from kiro_crew.mcp_gateway.daemon_control import describe_daemon
+        from efm_go.mcp_gateway.daemon_control import describe_daemon
 
         deadline = time.monotonic() + 90
         info = None
@@ -1056,7 +1056,7 @@ async def test_the_module_entry_point_publishes_its_owner_and_honours_an_orphan_
         # module was imported to answer the control frame.
         assert " INFO __main__ gatewayd listening socket=" in log, log
         assert " WARNING __main__ gatewayd: standing down on request" in log, log
-        assert "kiro_crew.mcp_gateway.gatewayd " not in log, log
+        assert "efm_go.mcp_gateway.gatewayd " not in log, log
     finally:
         await _reap(daemon)
         await _reap(owner)
@@ -1065,9 +1065,9 @@ async def test_the_module_entry_point_publishes_its_owner_and_honours_an_orphan_
 # --- composition: one namespace over the owners -----------------------------
 
 _DAEMON_DIR = Path(gw.__file__).with_name("daemon")
-_FACADE_MODULE = "kiro_crew.mcp_gateway.gatewayd"
+_FACADE_MODULE = "efm_go.mcp_gateway.gatewayd"
 
-#: What ``from kiro_crew.mcp_gateway.gatewayd import *`` has always carried of the
+#: What ``from efm_go.mcp_gateway.gatewayd import *`` has always carried of the
 #: daemon's own definitions.
 _PUBLIC_NAMES = frozenset(
     {
@@ -1127,7 +1127,7 @@ def _facade_aliases(tree: ast.Module) -> set[str]:
     """
     aliases: set[str] = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module == "kiro_crew.mcp_gateway":
+        if isinstance(node, ast.ImportFrom) and node.module == "efm_go.mcp_gateway":
             aliases.update(a.asname or a.name for a in node.names if a.name == "gatewayd")
         elif isinstance(node, ast.Import):
             aliases.update(a.asname for a in node.names if a.name == _FACADE_MODULE and a.asname)
@@ -1337,12 +1337,12 @@ def _patched_facade_names(source: str) -> tuple[set[str], list[tuple[int, str]]]
 @functools.lru_cache(maxsize=1)
 def _patched_names_in_the_suite() -> tuple[frozenset[str], tuple[str, ...]]:
     """Names the whole suite patches on the facade, and any patch site it cannot read."""
-    roots = [_REPO_ROOT / "test", _SRC_ROOT / "kiro_crew"]
+    roots = [_REPO_ROOT / "test", _SRC_ROOT / "efm_go"]
     found: set[str] = set()
     unreadable: list[str] = []
     for root in roots:
         for path in root.rglob("*.py"):
-            if root.name == "kiro_crew" and "tests" not in path.parts:
+            if root.name == "efm_go" and "tests" not in path.parts:
                 continue
             text = path.read_text(encoding="utf-8")
             if "gatewayd" in text:
@@ -1410,7 +1410,7 @@ class TestComposition:
         facade_defines = set(_defined_at_module_level(_parse(Path(gw.__file__))))
         problems: list[str] = []
         for leaf in _owner_names():
-            owner = importlib.import_module(f"kiro_crew.mcp_gateway.daemon.{leaf}")
+            owner = importlib.import_module(f"efm_go.mcp_gateway.daemon.{leaf}")
             for name in _defined_at_module_level(_parse(_DAEMON_DIR / f"{leaf}.py")):
                 if name in facade_defines:
                     problems.append(f"{leaf}.{name} is defined again by the facade")
@@ -1437,7 +1437,7 @@ class TestComposition:
         pattern = re.compile(r"gatewayd\.(_?[A-Za-z][A-Za-z0-9_]*)")
         not_symbols = {"py", "log", "stdout", "X"}
         cited: dict[str, str] = {}
-        for root, suffix in ((_REPO_ROOT / "docs", "*.md"), (_SRC_ROOT / "kiro_crew", "*.py")):
+        for root, suffix in ((_REPO_ROOT / "docs", "*.md"), (_SRC_ROOT / "efm_go", "*.py")):
             for path in root.rglob(suffix):
                 if "_vendor" in path.parts:
                     continue
@@ -1461,40 +1461,40 @@ class TestComposition:
     def test_the_patch_seam_detector_answers_both_ways(self) -> None:
         flagged = {
             "alpha": (
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t(monkeypatch):\n    monkeypatch.setattr(gw, 'alpha', 1)\n"
             ),
             "beta": (
-                "import kiro_crew.mcp_gateway.gatewayd as g\n"
+                "import efm_go.mcp_gateway.gatewayd as g\n"
                 "from unittest.mock import patch\n"
                 "def t():\n    with patch.object(g, 'beta'):\n        pass\n"
             ),
             "gamma": (
                 "from unittest import mock\n"
-                "def t():\n    with mock.patch('kiro_crew.mcp_gateway.gatewayd.gamma'):\n"
+                "def t():\n    with mock.patch('efm_go.mcp_gateway.gatewayd.gamma'):\n"
                 "        pass\n"
             ),
             "delta": (
-                "from kiro_crew.mcp_gateway import gatewayd\n" "def t():\n    gatewayd.delta = 1\n"
+                "from efm_go.mcp_gateway import gatewayd\n" "def t():\n    gatewayd.delta = 1\n"
             ),
             "epsilon": (
                 "import importlib\n"
-                "gw = importlib.import_module('kiro_crew.mcp_gateway.gatewayd')\n"
+                "gw = importlib.import_module('efm_go.mcp_gateway.gatewayd')\n"
                 "alias = gw\n"
                 "def t(monkeypatch):\n    monkeypatch.setattr(alias, 'epsilon', 1)\n"
             ),
             "zeta": (
                 "def t(monkeypatch):\n"
-                "    monkeypatch.setattr('kiro_crew.mcp_gateway.gatewayd.zeta', 1)\n"
+                "    monkeypatch.setattr('efm_go.mcp_gateway.gatewayd.zeta', 1)\n"
             ),
             "eta": (
                 "from unittest import mock\n"
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t():\n    with mock.patch.multiple(gw, eta=1):\n        pass\n"
             ),
             "kappa": (
                 "import pytest\n"
-                "from kiro_crew.mcp_gateway import gatewayd\n"
+                "from efm_go.mcp_gateway import gatewayd\n"
                 "@pytest.fixture\n"
                 "def gwmod():\n    return gatewayd\n"
                 "def t(monkeypatch, gwmod):\n    monkeypatch.setattr(gwmod, 'kappa', 1)\n"
@@ -1503,38 +1503,38 @@ class TestComposition:
                 "import importlib, pytest\n"
                 "@pytest.fixture\n"
                 "def facade():\n"
-                "    return importlib.import_module('kiro_crew.mcp_gateway.gatewayd')\n"
+                "    return importlib.import_module('efm_go.mcp_gateway.gatewayd')\n"
                 "def t(monkeypatch, facade):\n    monkeypatch.delattr(facade, 'lambda_')\n"
             ),
             "mu": (
                 "import pytest\n"
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "@pytest.mark.parametrize('exc,audit', [(1, 'mu'), pytest.param(2, 'mu')])\n"
                 "def t(monkeypatch, exc, audit):\n    monkeypatch.setattr(gw, audit, 1)\n"
             ),
             "nu": (
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t(monkeypatch):\n"
                 "    for name in ('nu',):\n        monkeypatch.setattr(gw, name, 1)\n"
             ),
             "xi": (
                 "from unittest.mock import patch\n"
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t():\n    with patch.object(target=gw, attribute='xi', new=1):\n"
                 "        pass\n"
             ),
             "omicron": (
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t(monkeypatch):\n"
                 "    monkeypatch.setattr(target=gw, name='omicron', value=1)\n"
             ),
             "pi": (
                 "from unittest import mock\n"
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t():\n    with mock.patch.dict(gw.__dict__, {'pi': 1}):\n        pass\n"
             ),
             "rho": (
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t(monkeypatch):\n    monkeypatch.setitem(gw.__dict__, 'rho', 1)\n"
             ),
         }
@@ -1542,21 +1542,21 @@ class TestComposition:
             assert _patched_facade_names(source) == ({name}, []), name
         unreadable = {
             "a computed name": (
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t(monkeypatch):\n    monkeypatch.setattr(gw, pick(), 1)\n"
             ),
             "an unparametrized variable": (
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t(monkeypatch, name):\n    monkeypatch.setattr(gw, name, 1)\n"
             ),
             "a dict built elsewhere": (
                 "from unittest import mock\n"
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t(values):\n    with mock.patch.dict(gw.__dict__, values):\n        pass\n"
             ),
             "keyword splat": (
                 "from unittest import mock\n"
-                "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+                "from efm_go.mcp_gateway import gatewayd as gw\n"
                 "def t(kw):\n    with mock.patch.multiple(gw, **kw):\n        pass\n"
             ),
         }
@@ -1565,12 +1565,12 @@ class TestComposition:
             assert found == set() and [fn for _, fn in sites] == ["t"], label
         ignored = [
             "from unittest.mock import patch\n"
-            "def t():\n    with patch('kiro_crew.mcp_gateway.gatewayd.os.stat'):\n        pass\n",
-            "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+            "def t():\n    with patch('efm_go.mcp_gateway.gatewayd.os.stat'):\n        pass\n",
+            "from efm_go.mcp_gateway import gatewayd as gw\n"
             "def t(monkeypatch):\n    monkeypatch.setattr(gw.socketsec, 'x', 1)\n",
-            "from kiro_crew.mcp_gateway import gatewayd as gw\n"
+            "from efm_go.mcp_gateway import gatewayd as gw\n"
             "def t(monkeypatch, other):\n    monkeypatch.setattr(other, 'theta', 1)\n",
-            "from kiro_crew.mcp_gateway import gatewayd as gw\n" "def t():\n    return gw.iota\n",
+            "from efm_go.mcp_gateway import gatewayd as gw\n" "def t():\n    return gw.iota\n",
         ]
         for source in ignored:
             assert _patched_facade_names(source) == (set(), []), source
@@ -1648,7 +1648,7 @@ class TestComposition:
         assert _bare_reads(tree, frozenset({"seam"})) == [(3, "seam")]
 
     def test_the_owners_form_a_graph_that_never_imports_the_facade(self) -> None:
-        package = "kiro_crew.mcp_gateway.daemon"
+        package = "efm_go.mcp_gateway.daemon"
         edges: dict[str, set[str]] = {}
         for leaf in _owner_names():
             imports = _runtime_imports(_parse(_DAEMON_DIR / f"{leaf}.py"))
@@ -1672,10 +1672,10 @@ class TestComposition:
     def test_nothing_but_the_facade_imports_an_owner(self) -> None:
         import re
 
-        pattern = re.compile(r"mcp_gateway\.daemon\b|from kiro_crew\.mcp_gateway import daemon\b")
+        pattern = re.compile(r"mcp_gateway\.daemon\b|from efm_go\.mcp_gateway import daemon\b")
         importers = sorted(
             str(path.relative_to(_SRC_ROOT))
-            for path in (_SRC_ROOT / "kiro_crew").rglob("*.py")
+            for path in (_SRC_ROOT / "efm_go").rglob("*.py")
             if _DAEMON_DIR not in path.parents
             and path != Path(gw.__file__)
             and pattern.search(path.read_text(encoding="utf-8"))
@@ -1685,7 +1685,7 @@ class TestComposition:
     def test_the_owners_read_the_running_facade_and_cannot_write_it(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.mcp_gateway import daemon
+        from efm_go.mcp_gateway import daemon
 
         monkeypatch.setattr(gw, "_OWNER_PID", 4242)
         assert daemon.facade._OWNER_PID == 4242

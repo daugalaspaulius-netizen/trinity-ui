@@ -25,9 +25,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.llm_helpers import TRANSIENT_RETRIES
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.subagent import (
+from efm_go.llm_helpers import TRANSIENT_RETRIES
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.subagent import (
     _TRANSIENT_CONTINUE_MSG,
     SubagentInfo,
     SubagentManager,
@@ -90,7 +90,7 @@ class _FatalError(Exception):
 
 
 def _context_overflow_error():
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
     error = AcpError("The agent context exceeded the model window", transient=False)
     error.structural_terminal = True
@@ -150,7 +150,7 @@ def _manager(sessions: MagicMock) -> SubagentManager:
 
 
 async def _spawn_and_wait(mgr: SubagentManager, task: str = "do work") -> SubagentInfo:
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn(task)
         assert info is not None
         await mgr._tasks[info.id]
@@ -159,7 +159,7 @@ async def _spawn_and_wait(mgr: SubagentManager, task: str = "do work") -> Subage
 
 @pytest.mark.asyncio
 async def test_default_budget_allows_work_past_one_hundred_tools():
-    from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+    from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
 
     async def stream(*_args, **_kwargs):
         for request_id in range(101):
@@ -208,7 +208,7 @@ async def test_transient_error_pretoken_retries_same_prompt():
 
     mgr._fire_event = _spy
 
-    with patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0):
+    with patch("efm_go.subagent.transient_retry_delay", return_value=0.0):
         info = await _spawn_and_wait(mgr)
 
     assert info.error == ""
@@ -223,7 +223,7 @@ async def test_registration_rate_limited_death_retries_pretoken_and_recovers():
     a throttled dynamic registration) rides the same zero-activity ladder as any
     transient: the SAME prompt is re-sent after backoff and the run completes,
     instead of surfacing a terminal generic process death."""
-    from kiro_crew.acp.client import registration_rate_limited_error
+    from efm_go.acp.client import registration_rate_limited_error
 
     calls: list[str] = []
     throttled = registration_rate_limited_error(
@@ -248,7 +248,7 @@ async def test_registration_rate_limited_death_retries_pretoken_and_recovers():
     # drive; a null coordinator pins the IN-TURN ladder, which is the seam
     # under test.
     mgr.dependency_coordinator_async = AsyncMock(return_value=None)
-    with patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0):
+    with patch("efm_go.subagent.transient_retry_delay", return_value=0.0):
         info = await _spawn_and_wait(mgr)
 
     assert info.error == ""
@@ -262,7 +262,7 @@ async def test_registration_rate_limited_death_retries_pretoken_and_recovers():
 async def test_registration_rate_limited_exhaustion_surfaces_typed_message():
     """Persistent registration throttling fails after the bounded budget with
     the typed message (guidance, one retained cause) — not a stderr wall."""
-    from kiro_crew.acp.client import registration_rate_limited_error
+    from efm_go.acp.client import registration_rate_limited_error
 
     calls: list[str] = []
 
@@ -283,8 +283,8 @@ async def test_registration_rate_limited_exhaustion_surfaces_typed_message():
     # classify as a dependency signal and wait on an undriven coordinator.
     mgr.dependency_coordinator_async = AsyncMock(return_value=None)
     with (
-        patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0),
-        patch("kiro_crew.subagent.configured_fallback_chain", return_value=()),
+        patch("efm_go.subagent.transient_retry_delay", return_value=0.0),
+        patch("efm_go.subagent.configured_fallback_chain", return_value=()),
     ):
         info = await _spawn_and_wait(mgr)
 
@@ -312,7 +312,7 @@ async def test_transient_error_posttoken_sends_continue_prompt():
         return _gen()
 
     mgr = _manager(_mock_sessions(stream_factory))
-    with patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0):
+    with patch("efm_go.subagent.transient_retry_delay", return_value=0.0):
         info = await _spawn_and_wait(mgr)
 
     assert info.error == ""
@@ -337,10 +337,10 @@ async def test_transient_budget_exhausted_propagates():
 
     mgr = _manager(_mock_sessions(stream_factory))
     with (
-        patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0),
+        patch("efm_go.subagent.transient_retry_delay", return_value=0.0),
         # fallback_model="" (disabled): this test pins the PRE-FEATURE budget
         # behavior — the default is now "auto", which would walk the chain.
-        patch("kiro_crew.subagent.configured_fallback_chain", return_value=()),
+        patch("efm_go.subagent.configured_fallback_chain", return_value=()),
     ):
         info = await _spawn_and_wait(mgr)
 
@@ -384,8 +384,8 @@ async def test_throttle_fallback_chain_swaps_model_and_annotates():
 
     mgr = _manager(sessions)
     with (
-        patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0),
-        patch("kiro_crew.subagent.configured_fallback_chain", return_value=("fb-1",)),
+        patch("efm_go.subagent.transient_retry_delay", return_value=0.0),
+        patch("efm_go.subagent.configured_fallback_chain", return_value=("fb-1",)),
     ):
         info = await _spawn_and_wait(mgr)
 
@@ -402,7 +402,7 @@ async def test_throttle_fallback_chain_swaps_model_and_annotates():
 async def test_throttle_fallback_chain_exhausted_propagates():
     """Every candidate also fails: the error surfaces after the bounded
     per-candidate attempts, exactly like today's exhaustion."""
-    from kiro_crew.llm_helpers import FALLBACK_CANDIDATE_ATTEMPTS
+    from efm_go.llm_helpers import FALLBACK_CANDIDATE_ATTEMPTS
 
     calls: list[str] = []
 
@@ -431,8 +431,8 @@ async def test_throttle_fallback_chain_exhausted_propagates():
 
     mgr = _manager(sessions)
     with (
-        patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0),
-        patch("kiro_crew.subagent.configured_fallback_chain", return_value=("fb-1",)),
+        patch("efm_go.subagent.transient_retry_delay", return_value=0.0),
+        patch("efm_go.subagent.configured_fallback_chain", return_value=("fb-1",)),
     ):
         info = await _spawn_and_wait(mgr)
 
@@ -453,7 +453,7 @@ async def test_throttle_fallback_ladder_routes_through_shared_budget_body():
     the shared body to refuse retries changes the attempt count — proof the
     budget is not re-encoded locally (mirror of the stream_and_collect pin in
     test_llm_helpers.py)."""
-    from kiro_crew.llm_helpers import FallbackState
+    from efm_go.llm_helpers import FallbackState
 
     calls: list[str] = []
 
@@ -480,8 +480,8 @@ async def test_throttle_fallback_ladder_routes_through_shared_budget_body():
 
     mgr = _manager(sessions)
     with (
-        patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0),
-        patch("kiro_crew.subagent.configured_fallback_chain", return_value=("fb-1",)),
+        patch("efm_go.subagent.transient_retry_delay", return_value=0.0),
+        patch("efm_go.subagent.configured_fallback_chain", return_value=("fb-1",)),
         patch.object(FallbackState, "should_retry_active", return_value=False),
     ):
         info = await _spawn_and_wait(mgr)
@@ -496,7 +496,7 @@ async def test_throttle_fallback_story_survives_a_verbose_error():
     """A verbose backend error fills _describe_exception to its cap — the
     story must still be present in info.error (the error tail is what gets
     trimmed, never the walk), and the total stays bounded."""
-    from kiro_crew.process_identity import MAX_ERROR_DETAIL_LEN
+    from efm_go.process_identity import MAX_ERROR_DETAIL_LEN
 
     calls: list[str] = []
 
@@ -523,8 +523,8 @@ async def test_throttle_fallback_story_survives_a_verbose_error():
 
     mgr = _manager(sessions)
     with (
-        patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0),
-        patch("kiro_crew.subagent.configured_fallback_chain", return_value=("fb-1",)),
+        patch("efm_go.subagent.transient_retry_delay", return_value=0.0),
+        patch("efm_go.subagent.configured_fallback_chain", return_value=("fb-1",)),
     ):
         info = await _spawn_and_wait(mgr)
 
@@ -565,7 +565,7 @@ def test_context_overflow_marker_forces_a_dedicated_runtime():
     )
     cfg = SimpleNamespace(agent=SimpleNamespace(session_sharing=True))
 
-    with patch("kiro_crew.subagent.KiroCrewConfig.load", return_value=cfg):
+    with patch("efm_go.subagent.KiroCrewConfig.load", return_value=cfg):
         assert mgr._should_use_session_sharing(info) is True
         info._force_dedicated = True
         assert mgr._should_use_session_sharing(info) is False
@@ -663,9 +663,9 @@ async def test_first_turn_context_overflow_retries_once_on_a_dedicated_runtime()
     mgr._run_inner = AsyncMock(side_effect=run_inner)
 
     with (
-        patch("kiro_crew.subagent.Stats"),
-        patch("kiro_crew.subagent.sel"),
-        patch("kiro_crew.subagent.asyncio.sleep", side_effect=capacity_wait_sleep),
+        patch("efm_go.subagent.Stats"),
+        patch("efm_go.subagent.sel"),
+        patch("efm_go.subagent.asyncio.sleep", side_effect=capacity_wait_sleep),
     ):
         info = mgr.spawn("evaluate bounded evidence")
         assert info is not None
@@ -748,7 +748,7 @@ async def test_dedicated_first_attempt_context_overflow_is_terminal():
 
     mgr._run_inner = AsyncMock(side_effect=run_inner)
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("evaluate bounded evidence")
         assert info is not None
         await mgr._tasks[info.id]
@@ -855,7 +855,7 @@ async def test_first_turn_context_overflow_forgets_rejected_sid_before_fresh_rec
     sessions.aflush = AsyncMock(side_effect=flush_sessions)
     provider.stream = MagicMock(side_effect=stream_factory)
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("evaluate bounded evidence")
         assert info is not None
         session_key = f"subagent:{info.id}"
@@ -912,7 +912,7 @@ async def test_context_overflow_recovery_preserves_a_successor_sid_and_fails_clo
     mgr._run_inner = AsyncMock(side_effect=run_inner)
     sessions.forget_conversation_if_sid = MagicMock(return_value=(False, "successor-sid"))
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("evaluate bounded evidence")
         assert info is not None
         first = mgr._tasks[info.id]
@@ -971,7 +971,7 @@ async def test_context_overflow_recovery_flush_failure_is_terminal_before_replac
     sessions.forget_conversation_if_sid = MagicMock(return_value=(True, "rejected-sid"))
     sessions.aflush = AsyncMock(side_effect=OSError("session map fsync failed"))
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("evaluate bounded evidence")
         assert info is not None
         first = mgr._tasks[info.id]
@@ -1060,9 +1060,9 @@ async def test_context_overflow_recovery_without_a_rejected_sid_fails_closed():
     sessions.forget_conversation_if_sid = MagicMock(side_effect=forget_conversation_if_sid)
 
     with (
-        patch("kiro_crew.subagent.Stats"),
-        patch("kiro_crew.subagent.sel"),
-        patch("kiro_crew.subagent.asyncio.sleep", side_effect=capacity_wait_sleep),
+        patch("efm_go.subagent.Stats"),
+        patch("efm_go.subagent.sel"),
+        patch("efm_go.subagent.asyncio.sleep", side_effect=capacity_wait_sleep),
     ):
         info = mgr.spawn("evaluate bounded evidence")
         assert info is not None
@@ -1101,7 +1101,7 @@ async def test_context_overflow_recovery_without_a_rejected_sid_fails_closed():
 
 @pytest.mark.asyncio
 async def test_continuation_context_overflow_before_activity_is_terminal():
-    import kiro_crew.subagent_persistence as sp
+    import efm_go.subagent_persistence as sp
 
     await asyncio.to_thread(
         sp.create_agent_folder,
@@ -1124,7 +1124,7 @@ async def test_continuation_context_overflow_before_activity_is_terminal():
 
     mgr._run_inner = AsyncMock(side_effect=run_inner)
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn(
             "continue established conversation",
             keep=True,
@@ -1167,7 +1167,7 @@ async def test_dedicated_context_overflow_is_terminal_without_a_retry_loop():
 
     mgr._run_inner = AsyncMock(side_effect=run_inner)
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("evaluate bounded evidence")
         assert info is not None
         first = mgr._tasks[info.id]
@@ -1217,7 +1217,7 @@ async def test_context_overflow_after_activity_is_not_replayed(
 
     mgr._run_inner = AsyncMock(side_effect=run_inner)
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("evaluate bounded evidence")
         assert info is not None
         await mgr._tasks[info.id]
@@ -1274,7 +1274,7 @@ async def test_user_cancel_is_neutral_stopped_with_partial():
 
     mgr._fire_event = _spy
 
-    with patch("kiro_crew.subagent.Stats") as stats, patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats") as stats, patch("efm_go.subagent.sel"):
         info = mgr.spawn("long job")
         assert info is not None
         await asyncio.wait_for(started.wait(), timeout=_START_TIMEOUT)
@@ -1306,7 +1306,7 @@ async def test_unexpected_cancel_auto_continues_once():
     started = asyncio.Event()
     mgr = _manager(_mock_sessions(_hanging_stream_factory(started)))
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("interruptible job")
         assert info is not None
         await asyncio.wait_for(started.wait(), timeout=_START_TIMEOUT)
@@ -1347,7 +1347,7 @@ async def test_unexpected_cancel_after_tool_activity_finalizes_without_respawn()
     cannot verify which side effects already happened — a preamble alone
     cannot make re-running safe (Arbiter item 1 / Design finding 1). The run
     is finalized with an explicit suppression error instead."""
-    from kiro_crew.acp.client import EVENT_TOOL_CALL
+    from efm_go.acp.client import EVENT_TOOL_CALL
 
     started = asyncio.Event()
     stream_calls: list[str] = []
@@ -1371,7 +1371,7 @@ async def test_unexpected_cancel_after_tool_activity_finalizes_without_respawn()
         return _gen()
 
     mgr = _manager(_mock_sessions(stream_factory))
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("side-effecting job")
         assert info is not None
         await asyncio.wait_for(started.wait(), timeout=_START_TIMEOUT)
@@ -1395,7 +1395,7 @@ async def test_unexpected_cancel_after_tool_activity_finalizes_without_respawn()
 async def test_cancel_recovery_text_only_respawn_gets_resume_preamble():
     """Text-only activity is safe to resume: the respawned prompt must carry
     the interruption preamble so the model continues instead of restarting."""
-    from kiro_crew.subagent import _CANCEL_RESUME_PREFIX
+    from efm_go.subagent import _CANCEL_RESUME_PREFIX
 
     started = asyncio.Event()
     mgr = _manager(_mock_sessions(_hanging_stream_factory(started)))
@@ -1408,7 +1408,7 @@ async def test_cancel_recovery_text_only_respawn_gets_resume_preamble():
 
     mgr._ctx_builder.build_message = MagicMock(side_effect=_capture)
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("resumable job")
         assert info is not None
         await asyncio.wait_for(started.wait(), timeout=_START_TIMEOUT)
@@ -1439,7 +1439,7 @@ async def test_shutdown_cancel_does_not_auto_continue():
     started = asyncio.Event()
     mgr = _manager(_mock_sessions(_hanging_stream_factory(started)))
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("job at shutdown")
         assert info is not None
         await asyncio.wait_for(started.wait(), timeout=_START_TIMEOUT)
@@ -1457,7 +1457,7 @@ async def test_shutdown_cancel_does_not_auto_continue():
 async def test_orphan_injection_delegates_to_callback():
     notify = AsyncMock(return_value=True)
     mgr = SubagentManager(sessions=MagicMock(), ctx_builder=None, on_orphan_notify=notify)
-    with patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.sel"):
         ok = await mgr._try_inject_orphan_notification("dashboard:main", "msg")
     assert ok is True
     # The structured completion facts are forwarded as a third arg;
@@ -1493,10 +1493,10 @@ async def test_delivered_orphan_survives_audit_and_tombstone_failures():
     }
 
     with (
-        patch("kiro_crew.subagent.has_dashboard_surface", return_value=True),
-        patch("kiro_crew.subagent.sel", return_value=audit),
+        patch("efm_go.subagent.has_dashboard_surface", return_value=True),
+        patch("efm_go.subagent.sel", return_value=audit),
         patch(
-            "kiro_crew.subagent.write_tombstone", side_effect=OSError("disk unavailable")
+            "efm_go.subagent.write_tombstone", side_effect=OSError("disk unavailable")
         ) as write_tombstone,
     ):
         result = await mgr._notify_orphan("orphan-1", state, False)
@@ -1555,7 +1555,7 @@ async def test_cancel_recovery_waits_for_slow_teardown():
     sessions.reset = AsyncMock(side_effect=_slow_reset)
     mgr = _manager(sessions)
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("slow teardown job")
         assert info is not None
         await asyncio.wait_for(started.wait(), timeout=_START_TIMEOUT)
@@ -1586,7 +1586,7 @@ async def test_cancel_recovery_waits_for_free_slot():
     started = asyncio.Event()
     mgr = _manager(_mock_sessions(_hanging_stream_factory(started)))
 
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("capacity job")
         assert info is not None
         await asyncio.wait_for(started.wait(), timeout=_START_TIMEOUT)
@@ -1643,9 +1643,9 @@ async def test_cancel_recovery_failure_emits_done_and_delivers():
     mgr._fire_event = _spy
 
     with (
-        patch("kiro_crew.subagent.Stats"),
-        patch("kiro_crew.subagent.sel"),
-        patch("kiro_crew.subagent._RECOVERY_SLOT_WAIT_SECS", 0.4),
+        patch("efm_go.subagent.Stats"),
+        patch("efm_go.subagent.sel"),
+        patch("efm_go.subagent._RECOVERY_SLOT_WAIT_SECS", 0.4),
     ):
         info = mgr.spawn("doomed recovery job")
         assert info is not None
@@ -1687,8 +1687,8 @@ async def test_cancel_all_reaches_pending_recovery_and_finalizes():
     mgr._fire_event = AsyncMock()
 
     with (
-        patch("kiro_crew.subagent.Stats"),
-        patch("kiro_crew.subagent.sel"),
+        patch("efm_go.subagent.Stats"),
+        patch("efm_go.subagent.sel"),
     ):
         info = mgr.spawn("job interrupted by shutdown")
         assert info is not None
@@ -1716,7 +1716,7 @@ async def test_transient_error_after_tool_call_sends_continue_prompt():
     """A transient error after TOOL activity (no text yet) must send CONTINUE —
     replaying the full prompt could re-execute the mutating tool that already
     ran (duplicate writes/messages)."""
-    from kiro_crew.acp.client import EVENT_TOOL_CALL
+    from efm_go.acp.client import EVENT_TOOL_CALL
 
     calls: list[str] = []
 
@@ -1740,7 +1740,7 @@ async def test_transient_error_after_tool_call_sends_continue_prompt():
         return _gen()
 
     mgr = _manager(_mock_sessions(stream_factory))
-    with patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0):
+    with patch("efm_go.subagent.transient_retry_delay", return_value=0.0):
         info = await _spawn_and_wait(mgr)
 
     assert info.error == ""
@@ -1768,7 +1768,7 @@ async def test_post_activity_retry_is_one_shot():
         return _gen()
 
     mgr = _manager(_mock_sessions(stream_factory))
-    with patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0):
+    with patch("efm_go.subagent.transient_retry_delay", return_value=0.0):
         info = await _spawn_and_wait(mgr)
 
     # Attempt 1 (original) → activity → ONE continuation → second post-activity
@@ -1790,7 +1790,7 @@ def test_no_raw_cancel_outside_chokepoint():
     import inspect
     from pathlib import Path
 
-    import kiro_crew.subagent as subagent_mod
+    import efm_go.subagent as subagent_mod
 
     source_root = Path(subagent_mod.__file__).resolve().parent
     source_paths = [Path(subagent_mod.__file__).resolve()]
@@ -1869,7 +1869,7 @@ def test_chokepoint_unmarked_cancel_consumes_recovery_budget():
 def test_outcome_property_is_canonical_three_way():
     """SubagentInfo.outcome is THE single classification source: stopped wins
     over error-nullability; error means failed; neither means completed."""
-    from kiro_crew.subagent import SubagentInfo
+    from efm_go.subagent import SubagentInfo
 
     stopped = SubagentInfo(id="o1", task="t")
     stopped.user_stopped = True
@@ -1895,9 +1895,9 @@ async def test_reconcile_multiple_orphans_sends_single_digest_dm():
         {"id": "orph-3", "pid": None, "parent_session": "", "task": "task three"},
     ]
     with (
-        patch("kiro_crew.subagent.list_orphans", return_value=orphans),
-        patch("kiro_crew.subagent.write_tombstone"),
-        patch("kiro_crew.subagent.sel"),
+        patch("efm_go.subagent.list_orphans", return_value=orphans),
+        patch("efm_go.subagent.write_tombstone"),
+        patch("efm_go.subagent.sel"),
     ):
         await mgr._reconcile_orphans()
 
@@ -1916,9 +1916,9 @@ async def test_reconcile_single_orphan_dm_is_not_wrapped_in_digest():
 
     orphans = [{"id": "solo-1", "pid": None, "parent_session": "", "task": "solo task"}]
     with (
-        patch("kiro_crew.subagent.list_orphans", return_value=orphans),
-        patch("kiro_crew.subagent.write_tombstone"),
-        patch("kiro_crew.subagent.sel"),
+        patch("efm_go.subagent.list_orphans", return_value=orphans),
+        patch("efm_go.subagent.write_tombstone"),
+        patch("efm_go.subagent.sel"),
     ):
         await mgr._reconcile_orphans()
 
@@ -1959,7 +1959,7 @@ async def test_generate_failed_after_output_keeps_the_output_with_a_warning(keep
 
     mgr = _manager(_mock_sessions(_recording))
     mgr.update_completion_keep(keep, 3000)
-    with patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0):
+    with patch("efm_go.subagent.transient_retry_delay", return_value=0.0):
         info = await _spawn_and_wait(mgr)
 
     assert info.outcome == "completed"
@@ -1987,7 +1987,7 @@ async def test_generate_failed_after_output_keeps_the_output_with_a_warning(keep
 )
 async def test_other_failures_after_output_still_fail(error, text):
     mgr = _manager(_mock_sessions(_streams_then_fails(error, text)))
-    with patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0):
+    with patch("efm_go.subagent.transient_retry_delay", return_value=0.0):
         info = await _spawn_and_wait(mgr)
 
     assert info.outcome == "failed"
@@ -2010,7 +2010,7 @@ async def test_control_tag_only_output_still_fails():
         return _gen()
 
     mgr = _manager(_mock_sessions(stream_factory))
-    with patch("kiro_crew.subagent.transient_retry_delay", return_value=0.0):
+    with patch("efm_go.subagent.transient_retry_delay", return_value=0.0):
         info = await _spawn_and_wait(mgr)
 
     assert info.outcome == "failed"

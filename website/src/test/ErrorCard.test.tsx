@@ -312,7 +312,7 @@ describe('ErrorCard — feature request refused for a usage limit', () => {
 
   it('points at the repo\'s feature_request issue template, not a blank issue', () => {
     const url = new URL(FEATURE_REQUEST_FORM_URL)
-    expect(url.origin + url.pathname).toBe('https://github.com/kirodotdev/KiroCrew/issues/new')
+    expect(url.origin + url.pathname).toBe('https://efmleads.com/issues/new')
     expect(url.searchParams.get('template')).toBe('feature_request.yml')
   })
 

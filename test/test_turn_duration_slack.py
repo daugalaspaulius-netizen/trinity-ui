@@ -36,17 +36,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.types import STOP_REASON_CANCELLED, STOP_REASON_END_TURN, TurnUsage
-from kiro_crew.autonudge import NudgeLoop
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard.handlers.usage import _token_usage_dir
-from kiro_crew.monitoring.models import (
+from efm_go.acp.types import STOP_REASON_CANCELLED, STOP_REASON_END_TURN, TurnUsage
+from efm_go.autonudge import NudgeLoop
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard.handlers.usage import _token_usage_dir
+from efm_go.monitoring.models import (
     MonitorActionCompletion,
     MonitorActionDisposition,
     MonitorState,
 )
-from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
-from kiro_crew.slack import gateway as gw
+from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
+from efm_go.slack import gateway as gw
 
 
 class _StepClock:

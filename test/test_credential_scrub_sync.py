@@ -24,16 +24,16 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.acp.client import _resolve_spawn_env
-from kiro_crew.config.loader import (
+from efm_go import platform_compat
+from efm_go.acp.client import _resolve_spawn_env
+from efm_go.config.loader import (
     CRED_KIRO_API_KEY,
     CREDENTIAL_KEYS,
     inject_kiro_cli_api_key,
     read_env_file_credential,
     strip_kiro_cli_api_key,
 )
-from kiro_crew.kiro_prerequisite import (
+from efm_go.kiro_prerequisite import (
     KiroPrerequisiteService,
     ProcessResult,
 )
@@ -89,7 +89,7 @@ class TestInjectKiroCliApiKey:
     def test_injects_from_env_file_when_absent(self, tmp_path: Path, monkeypatch) -> None:
         env_file = tmp_path / ".env"
         env_file.write_text("KIRO_API_KEY=from-file\n")
-        monkeypatch.setattr("kiro_crew.config.loader.env_path", lambda: env_file)
+        monkeypatch.setattr("efm_go.config.loader.env_path", lambda: env_file)
         env: dict[str, str] = {"PATH": "/usr/bin"}
         inject_kiro_cli_api_key(env)
         assert env[CRED_KIRO_API_KEY] == "from-file"
@@ -98,13 +98,13 @@ class TestInjectKiroCliApiKey:
         """Same precedence as load_credentials(): the environment beats .env."""
         env_file = tmp_path / ".env"
         env_file.write_text("KIRO_API_KEY=from-file\n")
-        monkeypatch.setattr("kiro_crew.config.loader.env_path", lambda: env_file)
+        monkeypatch.setattr("efm_go.config.loader.env_path", lambda: env_file)
         env = {CRED_KIRO_API_KEY: "from-environ"}
         inject_kiro_cli_api_key(env)
         assert env[CRED_KIRO_API_KEY] == "from-environ"
 
     def test_noop_when_unset_everywhere(self, tmp_path: Path, monkeypatch) -> None:
-        monkeypatch.setattr("kiro_crew.config.loader.env_path", lambda: tmp_path / "missing.env")
+        monkeypatch.setattr("efm_go.config.loader.env_path", lambda: tmp_path / "missing.env")
         env: dict[str, str] = {}
         inject_kiro_cli_api_key(env)
         assert CRED_KIRO_API_KEY not in env
@@ -139,7 +139,7 @@ class TestSpawnEnvInjection:
     def test_kiro_backend_gets_the_key(self, tmp_path: Path, monkeypatch) -> None:
         env_file = tmp_path / ".env"
         env_file.write_text("KIRO_API_KEY=spawn-key\n")
-        monkeypatch.setattr("kiro_crew.config.loader.env_path", lambda: env_file)
+        monkeypatch.setattr("efm_go.config.loader.env_path", lambda: env_file)
         env: dict[str, str] = {"PATH": "/usr/bin"}
         _resolve_spawn_env(env, kiro_api_key=True)
         assert env[CRED_KIRO_API_KEY] == "spawn-key"
@@ -149,7 +149,7 @@ class TestSpawnEnvInjection:
         through the same path must not inherit it from the .env file."""
         env_file = tmp_path / ".env"
         env_file.write_text("KIRO_API_KEY=spawn-key\n")
-        monkeypatch.setattr("kiro_crew.config.loader.env_path", lambda: env_file)
+        monkeypatch.setattr("efm_go.config.loader.env_path", lambda: env_file)
         env: dict[str, str] = {"PATH": "/usr/bin"}
         _resolve_spawn_env(env, kiro_api_key=False)
         assert CRED_KIRO_API_KEY not in env
@@ -159,7 +159,7 @@ class TestSpawnEnvInjection:
         must actively remove a copy inherited from the raw os.environ snapshot
         — merely skipping re-injection would hand a Claude/KAS child the Kiro
         model credential on any host that has it exported."""
-        monkeypatch.setattr("kiro_crew.config.loader.env_path", lambda: tmp_path / "missing.env")
+        monkeypatch.setattr("efm_go.config.loader.env_path", lambda: tmp_path / "missing.env")
         env = {CRED_KIRO_API_KEY: "inherited", "PATH": "/usr/bin"}
         _resolve_spawn_env(env, kiro_api_key=False)
         assert CRED_KIRO_API_KEY not in env
@@ -238,7 +238,7 @@ class TestJiraTokenScrubGuard:
         when _KIROCREW_CREDS_SCRUBBED=1."""
         import os
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         # Set up a minimal .env with a per-host Jira token
         config_dir = tmp_path / "config"
@@ -253,7 +253,7 @@ class TestJiraTokenScrubGuard:
         monkeypatch.delenv("JIRA_TOKEN_AABBCC", raising=False)
 
         # Patch config_dir to point at our tmp
-        monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: config_dir)
+        monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: config_dir)
 
         cfg = KiroCrewConfig.load()
         cfg.load_credentials()

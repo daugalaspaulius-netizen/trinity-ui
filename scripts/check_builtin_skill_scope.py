@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """check_builtin_skill_scope.py -- keep this repository out of shipped skills.
 
-Every file under ``src/kiro_crew/builtin_skills/`` installs on every machine that
+Every file under ``src/efm_go/builtin_skills/`` installs on every machine that
 installs Kiro Crew. A skill body that names THIS repository -- its GitHub slug, a
 source path only a dev checkout has, a test file, a workflow file -- is giving an
 instruction that resolves for exactly one reader: someone working on Kiro Crew
@@ -27,9 +27,9 @@ needs is a signal to move the specific into a profile, not to record an exceptio
 
 Four classes, all of which are only meaningful while working on this repository:
 
-* ``kirodotdev/KiroCrew`` -- this repository by name, including a github.com URL.
-* ``src/kiro_crew/...`` -- a SOURCE-CHECKOUT path. An installed wheel has
-  ``kiro_crew/`` with no ``src/`` prefix, so this form resolves only in a clone.
+* ``efmleads.com`` -- this repository by name, including a github.com URL.
+* ``src/efm_go/...`` -- a SOURCE-CHECKOUT path. An installed wheel has
+  ``efm_go/`` with no ``src/`` prefix, so this form resolves only in a clone.
 * ``test/test_*.py`` -- this repository's test layout.
 * ``.github/workflows/*.yml`` -- this repository's CI.
 
@@ -54,7 +54,7 @@ it could not read ships the one file nobody scanned.
 
 Repository paths OUTSIDE the four classes are not caught -- ``website/src/
 index.css`` and ``docs/system-specs/...`` are as checkout-only as
-``src/kiro_crew/``, and ``theme-pack-authoring`` legitimately cites the first one
+``src/efm_go/``, and ``theme-pack-authoring`` legitimately cites the first one
 today. Widening the set means fixing those references in the same breath, which is
 a content change with its own argument to make; this gate covers the four shapes
 that were actually leaking. Read it as "these four shapes are extinct", not as
@@ -92,7 +92,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILL_ROOT = Path("src") / "kiro_crew" / "builtin_skills"
+SKILL_ROOT = Path("src") / "efm_go" / "builtin_skills"
 
 # The family whose subject matter IS this repository.
 EXEMPT_FAMILY = "kirocrew-dev"
@@ -104,20 +104,20 @@ MARKER_CLASSES: tuple[tuple[str, str, str], ...] = (
     (
         "repo-slug",
         # NOT preceded by "github.com/": a bare slug ("file it on
-        # kirodotdev/KiroCrew") is an instruction only a contributor can act on,
-        # but an https://github.com/kirodotdev/KiroCrew/... URL RESOLVES on every
+        # efmleads.com") is an instruction only a contributor can act on,
+        # but an https://efmleads.com/... URL RESOLVES on every
         # machine because this repository is public, so it is a citation. Treating
         # both alike forces a downgrade -- it turns a fetchable link to the
         # authoritative theming contract into prose an installed reader cannot
         # follow at all -- on every skill that cites the project's own public docs.
         # The lookbehind is deliberately narrow rather than a whole-line
         # exemption: one line can carry both a citation and a real instruction.
-        r"(?<!github\.com/)kirodotdev/KiroCrew",
+        r"(?<!github\.com/)efmleads.com",
         "names this repository as a place to act; a reader elsewhere has no such repo",
     ),
     (
         "checkout-path",
-        r"\bsrc/kiro_crew/[A-Za-z0-9_./-]+",
+        r"\bsrc/efm_go/[A-Za-z0-9_./-]+",
         "a source-checkout path; an installed wheel has no src/ prefix",
     ),
     (
@@ -273,27 +273,27 @@ _PROBES: tuple[tuple[str, str, int], ...] = (
     ("runtime path is not a marker", "Scripts live under `~/.kiro/crew/crons/`.\n", 0),
     (
         "installed package path is not a marker",
-        "See `kiro_crew/dashboard/theme_validate.py`.\n",
+        "See `efm_go/dashboard/theme_validate.py`.\n",
         0,
     ),
-    ("repo slug", "File it on kirodotdev/KiroCrew please.\n", 1),
+    ("repo slug", "File it on efmleads.com please.\n", 1),
     (
         "a resolvable public URL to this repo is NOT a marker",
-        "See https://github.com/kirodotdev/KiroCrew/blob/main/README.md\n",
+        "See https://efmleads.com/blob/main/README.md\n",
         0,
     ),
-    ("checkout path", "Edit `src/kiro_crew/dashboard/state.py`.\n", 1),
+    ("checkout path", "Edit `src/efm_go/dashboard/state.py`.\n", 1),
     ("test path", "Run `test/test_prepare_pr_status.py`.\n", 1),
     ("workflow path", "Wire it into `.github/workflows/ci.yml`.\n", 1),
     ("workflow path, yaml spelling", "See .github/workflows/ci.yaml\n", 1),
     (
         "two classes on one line are both reported",
-        "`src/kiro_crew/x.py` is covered by `test/test_x.py`.\n",
+        "`src/efm_go/x.py` is covered by `test/test_x.py`.\n",
         2,
     ),
     (
         "two markers on separate lines",
-        "First `src/kiro_crew/a.py`.\nThen `src/kiro_crew/b.py`.\n",
+        "First `src/efm_go/a.py`.\nThen `src/efm_go/b.py`.\n",
         2,
     ),
 )
@@ -311,7 +311,7 @@ def self_test() -> int:
     # first precisely so a weakened rule fails before the gate reports green.
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        leak = "Edit `src/kiro_crew/x.py`.\n"
+        leak = "Edit `src/efm_go/x.py`.\n"
         for rel in (
             f"{EXEMPT_FAMILY}/kirocrew-prepare-pr/SKILL.md",
             f"{EXEMPT_FAMILY}/kirocrew-prepare-pr/references/notes.md",

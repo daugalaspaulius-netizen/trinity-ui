@@ -1,4 +1,4 @@
-"""Tests for :mod:`kiro_crew.skill_trust` -- the project-skills consent record.
+"""Tests for :mod:`efm_go.skill_trust` -- the project-skills consent record.
 
 A ``SKILL.md`` is prose that enters the agent's context and can instruct it to
 run anything, so loading one out of whatever repository the operator happened to
@@ -26,9 +26,9 @@ from unittest.mock import patch
 import pytest
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew import platform_compat, security, skill_trust
-from kiro_crew.config import paths
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go import platform_compat, security, skill_trust
+from efm_go.config import paths
+from efm_go.config.loader import KiroCrewConfig
 
 pytestmark = pytest.mark.skipif(
     not skill_trust.project_skill_traversal_supported(),
@@ -416,7 +416,7 @@ class TestOffSwitch:
 
         disabled = KiroCrewConfig.load()
         object.__setattr__(disabled.skills, "project_skills_enabled", False)
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=disabled):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=disabled):
             skill_trust.reset_cache_for_tests()
 
             assert skill_trust.is_project_trusted(project) is False
@@ -438,7 +438,7 @@ class TestOffSwitch:
         skill_trust.grant_project_trust(project)
 
         with patch(
-            "kiro_crew.config.loader.KiroCrewConfig.load",
+            "efm_go.config.loader.KiroCrewConfig.load",
             side_effect=RuntimeError("config unreadable"),
         ):
             skill_trust.reset_cache_for_tests()

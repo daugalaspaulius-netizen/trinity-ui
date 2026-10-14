@@ -19,9 +19,9 @@ import asyncio
 import pytest
 from windows_sim import replace_sharing_violation
 
-from kiro_crew import atomic_write as aw
-from kiro_crew import platform_compat
-from kiro_crew.autonudge import AutoNudgeService
+from efm_go import atomic_write as aw
+from efm_go import platform_compat
+from efm_go.autonudge import AutoNudgeService
 
 
 @pytest.fixture(autouse=True)

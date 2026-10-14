@@ -32,8 +32,8 @@ import sys
 
 import pytest
 
-from kiro_crew import sandbox, sandbox_plan
-from kiro_crew.service import live_target
+from efm_go import sandbox, sandbox_plan
+from efm_go.service import live_target
 
 _POSIX_ONLY = pytest.mark.skipif(sys.platform == "win32", reason="POSIX launcher only")
 _MODES = ("standard", "cc", "strict")
@@ -113,9 +113,9 @@ class TestNoBackendGetsThePointerBack:
         hidden leaf, and the isolated start is keyed on md-notebook alone. (The
         ``DEV_FLEET_APP_NAME`` constant in ``apps.backend`` names the bound-port
         deferral, not a carve-out.)"""
-        import kiro_crew.apps.backend as backend_mod
+        import efm_go.apps.backend as backend_mod
 
-        source = inspect.getsource(sys.modules["kiro_crew.apps.backend"])
+        source = inspect.getsource(sys.modules["efm_go.apps.backend"])
         assert backend_mod.DEV_FLEET_APP_NAME not in sandbox._APP_BACKEND_OWNED_LEAVES
         assert "_shipped_md_notebook" in source
         assert "_shipped_dev_fleet" not in source

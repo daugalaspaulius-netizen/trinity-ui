@@ -12,9 +12,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import artifacts as art_mod
-from kiro_crew.artifacts import ArtifactFolderStore, ArtifactNotFoundError, ArtifactStore
-from kiro_crew.dashboard.handlers.artifacts import (
+from efm_go import artifacts as art_mod
+from efm_go.artifacts import ArtifactFolderStore, ArtifactNotFoundError, ArtifactStore
+from efm_go.dashboard.handlers.artifacts import (
     api_artifact_folder_create,
     api_artifact_folder_delete,
     api_artifact_folder_update,
@@ -40,7 +40,7 @@ def stores(tmp_path: Path, monkeypatch):
 
 @pytest.fixture
 def patch_restricted(monkeypatch):
-    from kiro_crew.dashboard.handlers import artifacts as art_handlers
+    from efm_go.dashboard.handlers import artifacts as art_handlers
 
     def _stub(_state, req) -> bool:
         return req.app.get("_restricted_session", False)
@@ -218,8 +218,8 @@ class TestFolderDelete:
         withdraw the published copy first, the same rule as the single delete, reached
         through the folder door.
         """
-        import kiro_crew.publish_sync as _ps
-        from kiro_crew.artifacts import ArtifactPublication
+        import efm_go.publish_sync as _ps
+        from efm_go.artifacts import ArtifactPublication
 
         store, fstore = stores
         f = fstore.create("F")
@@ -237,7 +237,7 @@ class TestFolderDelete:
             withdrawn.append(a.slug)
             return _ps.DeleteWithdrawal.WITHDRAWN
 
-        monkeypatch.setattr("kiro_crew.publish_sync.delete_for_artifact", _withdraw)
+        monkeypatch.setattr("efm_go.publish_sync.delete_for_artifact", _withdraw)
         resp = await api_artifact_folder_delete(
             _request(match={"id": f["id"]}, query={"delete_contents": "true"})
         )
@@ -257,8 +257,8 @@ class TestFolderDelete:
         A folder that refuses to delete is recoverable: restore access and retry, or
         unpublish deliberately. A public copy whose only handle was just erased is not.
         """
-        import kiro_crew.publish_sync as _ps
-        from kiro_crew.artifacts import ArtifactPublication
+        import efm_go.publish_sync as _ps
+        from efm_go.artifacts import ArtifactPublication
 
         store, fstore = stores
         f = fstore.create("F")
@@ -273,7 +273,7 @@ class TestFolderDelete:
         async def _stuck(a):
             return _ps.DeleteWithdrawal.UNREACHABLE
 
-        monkeypatch.setattr("kiro_crew.publish_sync.delete_for_artifact", _stuck)
+        monkeypatch.setattr("efm_go.publish_sync.delete_for_artifact", _stuck)
         resp = await api_artifact_folder_delete(
             _request(match={"id": f["id"]}, query={"delete_contents": "true"})
         )
@@ -294,8 +294,8 @@ class TestFolderDelete:
         them, so the invariant is enforced where the destruction happens -- on the
         publication itself -- rather than by trusting the earlier enumeration.
         """
-        import kiro_crew.publish_sync as _ps
-        from kiro_crew.artifacts import ArtifactPublication
+        import efm_go.publish_sync as _ps
+        from efm_go.artifacts import ArtifactPublication
 
         store, fstore = stores
         f = fstore.create("F")
@@ -311,7 +311,7 @@ class TestFolderDelete:
         async def _withdraw(a):
             return _ps.DeleteWithdrawal.WITHDRAWN
 
-        monkeypatch.setattr("kiro_crew.publish_sync.delete_for_artifact", _withdraw)
+        monkeypatch.setattr("efm_go.publish_sync.delete_for_artifact", _withdraw)
 
         real_delete = fstore.delete
 
@@ -353,8 +353,8 @@ class TestFolderDelete:
         publish happens after. Only asking `delete` itself, where the check shares the
         lock with the removal, refuses it.
         """
-        import kiro_crew.publish_sync as _ps
-        from kiro_crew.artifacts import ArtifactPublication
+        import efm_go.publish_sync as _ps
+        from efm_go.artifacts import ArtifactPublication
 
         store, fstore = stores
         f = fstore.create("F")
@@ -363,7 +363,7 @@ class TestFolderDelete:
         async def _withdraw(a):  # pragma: no cover -- nothing published at preflight
             return _ps.DeleteWithdrawal.WITHDRAWN
 
-        monkeypatch.setattr("kiro_crew.publish_sync.delete_for_artifact", _withdraw)
+        monkeypatch.setattr("efm_go.publish_sync.delete_for_artifact", _withdraw)
 
         real_list = store.list
         calls: list[int] = []
@@ -499,7 +499,7 @@ class TestUpdateFolderAudit:
         """When the generic update also places the artifact in a folder, the
         success SEL audit must carry ``folder_id`` (mutation audited with its
         full effect — matches ``api_artifact_set_folder``)."""
-        from kiro_crew.dashboard.handlers import artifacts as art_handlers
+        from efm_go.dashboard.handlers import artifacts as art_handlers
 
         store, fstore = stores
         art = store.create(name="doc", content="x")
@@ -522,7 +522,7 @@ class TestUpdateFolderAudit:
     async def test_update_without_folder_audit_has_no_folder_key(
         self, stores, patch_restricted, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import artifacts as art_handlers
+        from efm_go.dashboard.handlers import artifacts as art_handlers
 
         store, _fstore = stores
         art = store.create(name="doc", content="x")
@@ -577,13 +577,13 @@ class TestFolderAutoIcon:
     @pytest.mark.asyncio
     async def test_create_derives_emoji_icon(self, stores, patch_restricted, monkeypatch) -> None:
         """Create fires the background emoji task; a valid emoji is stored."""
-        from kiro_crew.dashboard.handlers import artifacts as art_handlers
+        from efm_go.dashboard.handlers import artifacts as art_handlers
 
         async def _fake_gen(_state, _name: str) -> str:
             return "🚀"
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.artifacts.generate_emoji_for_name", _fake_gen
+            "efm_go.dashboard.handlers.artifacts.generate_emoji_for_name", _fake_gen
         )
         _store, fstore = stores
         resp = await api_artifact_folder_create(_request(body={"name": "Rockets"}))
@@ -598,7 +598,7 @@ class TestFolderAutoIcon:
     async def test_rename_rederives_icon_but_explicit_icon_wins(
         self, stores, patch_restricted, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import artifacts as art_handlers
+        from efm_go.dashboard.handlers import artifacts as art_handlers
 
         calls: list[str] = []
 
@@ -607,7 +607,7 @@ class TestFolderAutoIcon:
             return "🐛"
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.artifacts.generate_emoji_for_name", _fake_gen
+            "efm_go.dashboard.handlers.artifacts.generate_emoji_for_name", _fake_gen
         )
         _store, fstore = stores
         f = fstore.create("Old")
@@ -634,13 +634,13 @@ class TestFolderAutoIcon:
     async def test_invalid_llm_reply_leaves_icon_unset(
         self, stores, patch_restricted, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import artifacts as art_handlers
+        from efm_go.dashboard.handlers import artifacts as art_handlers
 
         async def _fake_gen(_state, _name: str) -> str:
             return ""  # generate_emoji_for_name returns "" on invalid replies
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.artifacts.generate_emoji_for_name", _fake_gen
+            "efm_go.dashboard.handlers.artifacts.generate_emoji_for_name", _fake_gen
         )
         _store, fstore = stores
         resp = await api_artifact_folder_create(_request(body={"name": "Plain"}))
@@ -658,7 +658,7 @@ class TestFolderIconRedaction:
         (An exfil URL with a credential-bearing query is the canonical
         redactable payload; the 16-char store cap is a second, independent
         guard on the API path.)"""
-        from kiro_crew.dashboard.handlers.artifacts import _serialize_folder
+        from efm_go.dashboard.handlers.artifacts import _serialize_folder
 
         payload = "https://evil.example.com/x?d=" + "A" * 64
         out = _serialize_folder({"id": "f1", "name": "ok", "icon": payload})
@@ -685,7 +685,7 @@ class TestMixedInternalPathRegistration:
         (hyphen, not slash). If server.py drops the dedicated entry, every
         folder MCP call falls through to cookie auth and fails with
         "Token required"."""
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import server as server_mod
 
         # The mixed-internal set is the module-level constant shared by
         # start_dashboard and start_api_server (a single source of truth so the

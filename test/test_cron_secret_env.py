@@ -14,8 +14,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.cron import CronService
-from kiro_crew.cron_script import (
+from efm_go.cron import CronService
+from efm_go.cron_script import (
     _filter_grant_env,
     _secret_env_precheck,
     compute_secret_env_pin,
@@ -24,7 +24,7 @@ from kiro_crew.cron_script import (
     run_script_sandboxed,
     validate_secret_env_grant,
 )
-from kiro_crew.secrets import SecretVault
+from efm_go.secrets import SecretVault
 
 
 @pytest.fixture(autouse=True)
@@ -60,7 +60,7 @@ def cron_home(monkeypatch, tmp_path):
         root.mkdir(parents=True, exist_ok=True)
         return root
 
-    monkeypatch.setattr("kiro_crew.cron_script.config_dir", _dir)
+    monkeypatch.setattr("efm_go.cron_script.config_dir", _dir)
     return _dir
 
 
@@ -232,9 +232,9 @@ class TestSecretEnvPrecheck:
 class TestRunCommandSandboxedSecretEnv:
     @pytest.fixture(autouse=True)
     def _passthrough_sandbox(self, monkeypatch, posix_test_shell):
-        monkeypatch.setattr("kiro_crew.cron_script.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.cron_script.wrap_argv", lambda argv, **k: (list(argv), None))
         monkeypatch.setattr(
-            "kiro_crew.cron_script._resolve_command_shell", lambda: posix_test_shell
+            "efm_go.cron_script._resolve_command_shell", lambda: posix_test_shell
         )
 
     def test_command_grant_fails_closed(self, tmp_path):
@@ -265,7 +265,7 @@ class TestRunScriptSandboxedSecretEnv:
         # platform: a benign -X flag inserted after the interpreter. A
         # /usr/bin/env prefix would not exist on Windows (WinError 2).
         monkeypatch.setattr(
-            "kiro_crew.cron_script.wrap_argv",
+            "efm_go.cron_script.wrap_argv",
             lambda argv, **k: ([argv[0], "-X", "utf8", *argv[1:]], None),
         )
 
@@ -273,7 +273,7 @@ class TestRunScriptSandboxedSecretEnv:
         """A wrap_argv that hands back the argv unmodified (no-backend host
         with the unsandboxed opt-in) loses the crons-dir hiding — a granted
         run must refuse rather than degrade its approved isolation."""
-        monkeypatch.setattr("kiro_crew.cron_script.wrap_argv", lambda argv, **k: (list(argv), None))
+        monkeypatch.setattr("efm_go.cron_script.wrap_argv", lambda argv, **k: (list(argv), None))
         SecretVault(tmp_path / ".kirocrew").set_sync("slack-sandbox", "xoxb-script")
         script = _make_script(tmp_path, "def run(ctx): pass\n")
         spec = str(script) + ":run"
@@ -299,7 +299,7 @@ class TestRunScriptSandboxedSecretEnv:
             seen["argv"] = list(argv)
             return ([argv[0], "-X", "utf8", *argv[1:]], None)
 
-        monkeypatch.setattr("kiro_crew.cron_script.wrap_argv", recording_wrap)
+        monkeypatch.setattr("efm_go.cron_script.wrap_argv", recording_wrap)
         SecretVault(tmp_path / ".kirocrew").set_sync("slack-sandbox", "xoxb-script")
         script = _make_script(tmp_path, "def run(ctx): pass\n")
         spec = str(script) + ":run"
@@ -332,7 +332,7 @@ class TestRunScriptSandboxedSecretEnv:
             seen["prelude"] = launcher.read_text(encoding="utf-8").split("\n", 4)
             return ([argv[0], "-X", "utf8", *argv[1:]], None)
 
-        monkeypatch.setattr("kiro_crew.cron_script.wrap_argv", recording_wrap)
+        monkeypatch.setattr("efm_go.cron_script.wrap_argv", recording_wrap)
         SecretVault(tmp_path / ".kirocrew").set_sync("slack-sandbox", "xoxb-script")
         script = _make_script(tmp_path, "def run(ctx): pass\n")
         spec = str(script) + ":run"
@@ -398,7 +398,7 @@ class TestRunScriptSandboxedSecretEnv:
         script = _make_script(
             tmp_path,
             "import os\n"
-            "from kiro_crew.cron_script import Done, _clean_cron_env\n"
+            "from efm_go.cron_script import Done, _clean_cron_env\n"
             "def run(ctx):\n"
             "    if 'MY_SANDBOX_TOKEN' in _clean_cron_env():\n"
             "        raise Done('LEAKED-TO-DESCENDANTS')\n"
@@ -426,7 +426,7 @@ class TestRunScriptSandboxedSecretEnv:
         script = _make_script(
             tmp_path,
             "import os\n"
-            "from kiro_crew.cron_script import Done\n"
+            "from efm_go.cron_script import Done\n"
             "def run(ctx):\n"
             "    # Compare INSIDE the child: echoing the raw value back would\n"
             "    # be scrubbed from the Done message by the grant-value scrub.\n"
@@ -488,7 +488,7 @@ class TestCronServiceSecretEnvGate:
         """A refused grant operation must not invalidate the grant it did not
         replace: minting peeks the next epoch and commits only after the
         store swap, so the existing pin survives a 409."""
-        from kiro_crew.cron_script import peek_grant_epoch
+        from efm_go.cron_script import peek_grant_epoch
 
         svc = self._service(tmp_path)
         job, spec, pin = self._script_job(svc, cron_home, grant={"MY_TOKEN": "slack-sandbox"})
@@ -510,7 +510,7 @@ class TestCronServiceSecretEnvGate:
         """The agent can write the cron store: a saved copy of a formerly
         valid mapping+pin written back after a revoke must not verify —
         the revoke bumped the grant epoch held in the agent-fenced vault."""
-        from kiro_crew.cron_script import bump_grant_epoch
+        from efm_go.cron_script import bump_grant_epoch
 
         svc = self._service(tmp_path)
         job, spec, pin = self._script_job(svc, cron_home, grant={"MY_TOKEN": "slack-sandbox"})
@@ -664,7 +664,7 @@ class TestCronServiceSecretEnvGate:
         delete the job, and replay the saved mapping+pin into a re-created
         job. An id with a committed epoch entry bumps on removal regardless
         of what the record shows at delete time."""
-        from kiro_crew.cron_script import commit_grant_epoch, peek_grant_epoch
+        from efm_go.cron_script import commit_grant_epoch, peek_grant_epoch
 
         svc = self._service(tmp_path)
         spec = _grant_script(cron_home)
@@ -696,7 +696,7 @@ class TestCronServiceSecretEnvGate:
         """A lost/corrupt epoch counter must never quietly restart at 0 —
         that would revive pins an agent saved under low epochs. Verification
         refuses, and bump raises instead of rewriting a fresh map."""
-        from kiro_crew.cron_script import bump_grant_epoch
+        from efm_go.cron_script import bump_grant_epoch
 
         svc = self._service(tmp_path)
         job, spec, pin = self._script_job(svc, cron_home, grant={"MY_TOKEN": "slack-sandbox"})
@@ -721,7 +721,7 @@ class TestCronServiceSecretEnvGate:
         """A commit whose peeked base was overtaken by a concurrent bump is
         refused — re-committing the bumped value would re-validate the very
         pin that bump meant to kill."""
-        from kiro_crew.cron_script import bump_grant_epoch, commit_grant_epoch, peek_grant_epoch
+        from efm_go.cron_script import bump_grant_epoch, commit_grant_epoch, peek_grant_epoch
 
         assert commit_grant_epoch("j-cas", peek_grant_epoch("j-cas"), expected_current=0) is True
         bump_grant_epoch("j-cas")  # concurrent revoke/removal -> 2
@@ -735,7 +735,7 @@ class TestCronServiceSecretEnvGate:
         svc = self._service(tmp_path)
         job, spec, pin = self._script_job(svc, cron_home, grant={"MY_TOKEN": "slack-sandbox"})
         svc.update_job(job.id, secret_env={"MY_TOKEN": "slack-sandbox"}, secret_env_pin=pin)
-        with patch("kiro_crew.cron_script._write_grant_epochs", side_effect=OSError("read-only")):
+        with patch("efm_go.cron_script._write_grant_epochs", side_effect=OSError("read-only")):
             with pytest.raises(OSError):
                 svc.remove_job(job.id, actor="owner", source="test")
         assert CronService(base_dir=svc._dir).get_job(job.id) is not None
@@ -763,7 +763,7 @@ class TestCronServiceSecretEnvGate:
         ran.last_status = "ok"
         ran.last_run_ts = time.time()
 
-        with patch("kiro_crew.cron_script._write_grant_epochs", side_effect=OSError("read-only")):
+        with patch("efm_go.cron_script._write_grant_epochs", side_effect=OSError("read-only")):
             svc._merge_job_result(ran)
 
         # Still present (the delete was correctly held) ...
@@ -788,7 +788,7 @@ class TestCronServiceSecretEnvGate:
         must never collapse into one (a collapsed bump revives revoked pins)."""
         import threading as _threading
 
-        from kiro_crew.cron_script import _grant_epoch, bump_grant_epoch
+        from efm_go.cron_script import _grant_epoch, bump_grant_epoch
 
         def worker() -> None:
             for _ in range(20):
@@ -898,7 +898,7 @@ class TestInjectionDefenseInDepth:
             script = _make_script(
                 tmp_path,
                 "import helper\n"
-                "from kiro_crew.cron_script import Done\n"
+                "from efm_go.cron_script import Done\n"
                 "def run(ctx):\n"
                 "    raise Done(helper.VALUE)\n",
             )
@@ -908,7 +908,7 @@ class TestInjectionDefenseInDepth:
                 spec, "", job_id="job1", grant={"MY_TOKEN": "slack-sandbox"}
             )
             with patch(
-                "kiro_crew.cron_script.wrap_argv",
+                "efm_go.cron_script.wrap_argv",
                 lambda argv, **k: ([argv[0], "-X", "utf8", *argv[1:]], None),
             ):
                 SecretVault(tmp_path / ".kirocrew").set_sync("slack-sandbox", "xoxb-1")
@@ -930,7 +930,7 @@ class TestMcpSecretRequest:
     """The agent-reachable half: cron_secret_request writes PENDING only."""
 
     def _svc_and_job(self, cron_home=None, *, agent: bool = False):
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         svc = CronService(base_dir=loader_config_dir())
         spec = "" if agent else _grant_script(cron_home)
@@ -944,12 +944,12 @@ class TestMcpSecretRequest:
         return svc, job
 
     def _vault(self):
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         return SecretVault(loader_config_dir())
 
     def test_request_records_pending_not_active(self, cron_home):
-        from kiro_crew import mcp_cron
+        from efm_go import mcp_cron
 
         svc, job = self._svc_and_job(cron_home)
         self._vault().set_sync("slack-sandbox", "xoxb-1")
@@ -971,7 +971,7 @@ class TestMcpSecretRequest:
         unstored secret is accepted as pending exactly like a stored one, so
         an agent cannot enumerate the owner's vault names by guessing.
         Validation happens on the owner-only approval surfaces."""
-        from kiro_crew import mcp_cron
+        from efm_go import mcp_cron
 
         svc, job = self._svc_and_job(cron_home)
         out = mcp_cron._call_tool_locally(
@@ -984,7 +984,7 @@ class TestMcpSecretRequest:
         assert reloaded.secret_env_pending == {"MY_TOKEN": "never-stored"}
 
     def test_request_refuses_agent_job(self):
-        from kiro_crew import mcp_cron
+        from efm_go import mcp_cron
 
         svc, job = self._svc_and_job(agent=True)
         self._vault().set_sync("slack-sandbox", "xoxb-1")
@@ -995,7 +995,7 @@ class TestMcpSecretRequest:
         assert out.startswith("Error:")
 
     def test_request_refuses_protected_env_name(self, cron_home):
-        from kiro_crew import mcp_cron
+        from efm_go import mcp_cron
 
         svc, job = self._svc_and_job(cron_home)
         self._vault().set_sync("slack-sandbox", "xoxb-1")
@@ -1006,7 +1006,7 @@ class TestMcpSecretRequest:
         assert out.startswith("Error:")
 
     def test_empty_request_withdraws_pending(self, cron_home):
-        from kiro_crew import mcp_cron
+        from efm_go import mcp_cron
 
         svc, job = self._svc_and_job(cron_home)
         self._vault().set_sync("slack-sandbox", "xoxb-1")
@@ -1023,7 +1023,7 @@ class TestMcpSecretRequest:
 
     def test_cron_update_cannot_write_active_grant(self, cron_home):
         """The general-purpose MCP update tool must never carry the grant."""
-        from kiro_crew import mcp_cron
+        from efm_go import mcp_cron
 
         svc, job = self._svc_and_job(cron_home)
         mcp_cron._call_tool_locally(
@@ -1048,7 +1048,7 @@ class TestGrantEndpointPendingFlow:
     def _owner_view(self, monkeypatch):
         """These tests exercise grant flow, not identity; grant is owner-only."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: True,
         )
 
@@ -1057,8 +1057,8 @@ class TestGrantEndpointPendingFlow:
 
         from aiohttp import web
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
-        from kiro_crew.dashboard.handlers.cron import api_cron_secret_grant
+        from efm_go.config.loader import config_dir as loader_config_dir
+        from efm_go.dashboard.handlers.cron import api_cron_secret_grant
 
         svc = CronService(base_dir=loader_config_dir())
         app = web.Application()
@@ -1096,12 +1096,12 @@ class TestGrantEndpointPendingFlow:
     async def test_approve_promotes_pending_to_active(self, cron_home):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
         jid = self._request_pending(svc, cron_home)
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(f"/api/crons/{jid}/secrets", json=_APPROVE)
                 body = await resp.json()
@@ -1123,14 +1123,14 @@ class TestGrantEndpointPendingFlow:
         required, so the omission is refused and nothing is promoted."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
         jid = self._request_pending(svc, cron_home)
         digest_only = {k: v for k, v in _APPROVE.items() if k != "expected_secret_env"}
         no_ts = {k: v for k, v in _APPROVE.items() if k != "expected_ts"}
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 for body in (digest_only, no_ts):
                     resp = await client.put(f"/api/crons/{jid}/secrets", json=body)
@@ -1159,7 +1159,7 @@ class TestGrantEndpointPendingFlow:
             if rec["id"] == jid:
                 rec["secret_env"] = ["not", "a", "mapping"]
         svc._path.write_text(json.dumps(records), encoding="utf-8")
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(f"/api/crons/{jid}/secrets", json=_APPROVE)
                 body = await resp.json()
@@ -1194,7 +1194,7 @@ class TestGrantEndpointPendingFlow:
             secret_env_pending_pin=pin,
             secret_env_pending_ts=1.0,
         )
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(
                     f"/api/crons/{job.id}/secrets",
@@ -1213,8 +1213,8 @@ class TestGrantEndpointPendingFlow:
         the value the concurrent bump minted."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
-        from kiro_crew.cron_script import _secret_env_precheck, bump_grant_epoch
+        from efm_go.config.loader import config_dir as loader_config_dir
+        from efm_go.cron_script import _secret_env_precheck, bump_grant_epoch
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1228,7 +1228,7 @@ class TestGrantEndpointPendingFlow:
             return result
 
         with (
-            patch("kiro_crew.dashboard.handlers.cron._sel"),
+            patch("efm_go.dashboard.handlers.cron._sel"),
             patch.object(svc, "update_job_async", raced),
         ):
             async with TestClient(TestServer(app)) as client:
@@ -1258,16 +1258,16 @@ class TestGrantEndpointPendingFlow:
         just-swapped pin standing in for the grant that worked before."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
         jid = self._request_pending(svc, cron_home)
         pending_pin_before = CronService(base_dir=svc._dir).get_job(jid).secret_env_pending_pin
         with (
-            patch("kiro_crew.dashboard.handlers.cron._sel"),
+            patch("efm_go.dashboard.handlers.cron._sel"),
             patch(
-                "kiro_crew.dashboard.handlers.cron.commit_grant_epoch",
+                "efm_go.dashboard.handlers.cron.commit_grant_epoch",
                 side_effect=OSError("no space left on device"),
             ),
         ):
@@ -1294,7 +1294,7 @@ class TestGrantEndpointPendingFlow:
         with B's dead pin would destroy a working grant for nothing."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1303,9 +1303,9 @@ class TestGrantEndpointPendingFlow:
         # Plant prior active grant A directly in the store.
         svc.update_job(jid, secret_env={"OLD_TOKEN": "other-secret"}, secret_env_pin="pin-A")
         with (
-            patch("kiro_crew.dashboard.handlers.cron._sel"),
+            patch("efm_go.dashboard.handlers.cron._sel"),
             patch(
-                "kiro_crew.dashboard.handlers.cron.commit_grant_epoch",
+                "efm_go.dashboard.handlers.cron.commit_grant_epoch",
                 side_effect=OSError("no space left on device"),
             ),
         ):
@@ -1326,7 +1326,7 @@ class TestGrantEndpointPendingFlow:
         snapshot and misreport success against the new grant."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1338,7 +1338,7 @@ class TestGrantEndpointPendingFlow:
             calls.append(dict(kwargs))
             return await real_update(job_id, **kwargs)
 
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             with patch.object(svc, "update_job_async", side_effect=recording_update):
                 async with TestClient(TestServer(app)) as client:
                     resp = await client.put(f"/api/crons/{jid}/secrets", json=_APPROVE)
@@ -1361,7 +1361,7 @@ class TestGrantEndpointPendingFlow:
         (runs already refuse under unhealthy epoch state — fail closed)."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1375,9 +1375,9 @@ class TestGrantEndpointPendingFlow:
         )
         svc.update_job(job.id, secret_env={"MY_TOKEN": "slack-sandbox"}, secret_env_pin="somepin")
         with (
-            patch("kiro_crew.dashboard.handlers.cron._sel"),
+            patch("efm_go.dashboard.handlers.cron._sel"),
             patch(
-                "kiro_crew.dashboard.handlers.cron.bump_grant_epoch",
+                "efm_go.dashboard.handlers.cron.bump_grant_epoch",
                 side_effect=ValueError("grant-epoch state corrupt (non-integer epoch)"),
             ),
         ):
@@ -1398,12 +1398,12 @@ class TestGrantEndpointPendingFlow:
         active grant."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
         jid = self._request_pending(svc, cron_home)
-        with patch("kiro_crew.dashboard.handlers.cron._sel") as sel_mock:
+        with patch("efm_go.dashboard.handlers.cron._sel") as sel_mock:
             sel_mock.return_value.log_api_access.side_effect = OSError("read-only fs")
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(f"/api/crons/{jid}/secrets", json=_APPROVE)
@@ -1423,12 +1423,12 @@ class TestGrantEndpointPendingFlow:
         revoke alike."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
         jid = self._request_pending(svc, cron_home)
-        with patch("kiro_crew.dashboard.handlers.cron._sel") as sel_mock:
+        with patch("efm_go.dashboard.handlers.cron._sel") as sel_mock:
             log = sel_mock.return_value.log_api_access
             async with TestClient(TestServer(app)) as client:
                 await client.put(
@@ -1462,7 +1462,7 @@ class TestGrantEndpointPendingFlow:
         app, svc = self._app_and_svc()
         jid = self._request_pending(svc, cron_home)
         svc.update_job(jid, secret_env={"OLD": "jira-token"}, secret_env_pin="pin")
-        with patch("kiro_crew.dashboard.handlers.cron._sel") as sel_mock:
+        with patch("efm_go.dashboard.handlers.cron._sel") as sel_mock:
             sel_mock.return_value.log_api_access.side_effect = OSError("read-only fs")
             async with TestClient(TestServer(app)) as client:
                 deny = await client.put(
@@ -1488,8 +1488,8 @@ class TestGrantEndpointPendingFlow:
         non-retryable 409 (cron_store_unreadable), never a 500."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
-        from kiro_crew.cron import CronStoreUnreadable
+        from efm_go.config.loader import config_dir as loader_config_dir
+        from efm_go.cron import CronStoreUnreadable
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1498,7 +1498,7 @@ class TestGrantEndpointPendingFlow:
         async def unreadable(job_id, **kwargs):
             raise CronStoreUnreadable("crons.json unreadable: EACCES")
 
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             with patch.object(svc, "update_job_async", side_effect=unreadable):
                 async with TestClient(TestServer(app)) as client:
                     for decision in (_APPROVE, {"deny_pending": True}):
@@ -1513,7 +1513,7 @@ class TestGrantEndpointPendingFlow:
         verbatim, so the owner-view serializer must scan keys AND values —
         a mapping planted directly in crons.json with credential- or
         exfil-URL-shaped content must not reach the dashboard raw."""
-        from kiro_crew.dashboard.handlers.cron import _redacted_grant_map
+        from efm_go.dashboard.handlers.cron import _redacted_grant_map
 
         out = _redacted_grant_map({"AWS_KEY": "https://evil.example/exfil?d=AKIAIOSFODNN7EXAMPLE"})
         assert out is not None
@@ -1534,8 +1534,8 @@ class TestGrantEndpointPendingFlow:
         pretend the compensation landed or crash with a 500."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
-        from kiro_crew.cron import CronStoreUnreadable
+        from efm_go.config.loader import config_dir as loader_config_dir
+        from efm_go.cron import CronStoreUnreadable
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1550,9 +1550,9 @@ class TestGrantEndpointPendingFlow:
             raise CronStoreUnreadable("crons.json unreadable: EIO")
 
         with (
-            patch("kiro_crew.dashboard.handlers.cron._sel"),
+            patch("efm_go.dashboard.handlers.cron._sel"),
             patch(
-                "kiro_crew.dashboard.handlers.cron.commit_grant_epoch",
+                "efm_go.dashboard.handlers.cron.commit_grant_epoch",
                 side_effect=OSError("no space left on device"),
             ),
             patch.object(svc, "update_job_async", side_effect=first_write_only),
@@ -1568,7 +1568,7 @@ class TestGrantEndpointPendingFlow:
     async def test_approve_refuses_when_code_changed_after_request(self, cron_home):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1598,7 +1598,7 @@ class TestGrantEndpointPendingFlow:
             ),
             secret_env_pending_ts=1.0,
         )
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(f"/api/crons/{job.id}/secrets", json=_APPROVE)
                 body = await resp.json()
@@ -1628,7 +1628,7 @@ class TestGrantEndpointPendingFlow:
             ),
             secret_env_pending_ts=2.0,
         )
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(
                     f"/api/crons/{jid}/secrets",
@@ -1649,7 +1649,7 @@ class TestGrantEndpointPendingFlow:
 
         app, svc = self._app_and_svc()
         jid = self._request_pending(svc, cron_home)
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(f"/api/crons/{jid}/secrets", json={"deny_pending": True})
         assert resp.status == 200
@@ -1667,7 +1667,7 @@ class TestGrantEndpointPendingFlow:
         the operator withdrew."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1683,9 +1683,9 @@ class TestGrantEndpointPendingFlow:
             raise OSError("no space left on device")
 
         with (
-            patch("kiro_crew.dashboard.handlers.cron._sel"),
+            patch("efm_go.dashboard.handlers.cron._sel"),
             patch(
-                "kiro_crew.dashboard.handlers.cron.commit_grant_epoch",
+                "efm_go.dashboard.handlers.cron.commit_grant_epoch",
                 side_effect=failing_commit,
             ),
         ):
@@ -1705,12 +1705,12 @@ class TestGrantEndpointPendingFlow:
         400: it attests to nothing about the code, so it cannot promote."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
         jid = self._request_pending(svc, cron_home)
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 for bad in (
                     {"approve_pending": True},
@@ -1736,7 +1736,7 @@ class TestGrantEndpointPendingFlow:
         A's, so the promotion must refuse rather than bless code nobody read."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1760,7 +1760,7 @@ class TestGrantEndpointPendingFlow:
             ),
             secret_env_pending_ts=2.0,
         )
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(
                     f"/api/crons/{jid}/secrets",
@@ -1800,7 +1800,7 @@ class TestGrantEndpointPendingFlow:
         hide executable content behind it."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc = self._app_and_svc()
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1827,7 +1827,7 @@ class TestGrantEndpointPendingFlow:
             ),
             secret_env_pending_ts=1.0,
         )
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(
                     f"/api/crons/{job.id}/secrets",
@@ -1851,8 +1851,8 @@ class TestGrantEndpointBoundaries:
 
         from aiohttp import web
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
-        from kiro_crew.dashboard.handlers.cron import api_cron_secret_grant
+        from efm_go.config.loader import config_dir as loader_config_dir
+        from efm_go.dashboard.handlers.cron import api_cron_secret_grant
 
         svc = CronService(base_dir=loader_config_dir())
 
@@ -1900,7 +1900,7 @@ class TestGrantEndpointBoundaries:
     def _owner_view(self, monkeypatch):
         """Default to owner view; the non-owner test overrides it."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: True,
         )
 
@@ -1913,7 +1913,7 @@ class TestGrantEndpointBoundaries:
 
         app, svc, _state = self._apps(internal_auth=False)
         jid = self._pending_job(svc, cron_home)
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(
                     f"/api/crons/{jid}/secrets",
@@ -1931,7 +1931,7 @@ class TestGrantEndpointBoundaries:
         approval that restates request A must not promote a replacement B."""
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.config.loader import config_dir as loader_config_dir
+        from efm_go.config.loader import config_dir as loader_config_dir
 
         app, svc, _state = self._apps(internal_auth=False)
         SecretVault(loader_config_dir()).set_sync("slack-sandbox", "xoxb-1")
@@ -1951,7 +1951,7 @@ class TestGrantEndpointBoundaries:
             ),
             secret_env_pending_ts=2.0,
         )
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(
                     f"/api/crons/{jid}/secrets",
@@ -1973,7 +1973,7 @@ class TestGrantEndpointBoundaries:
         from aiohttp.test_utils import TestClient, TestServer
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+            "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
             lambda request: False,
         )
         app, svc, _state = self._apps(internal_auth=False)
@@ -1992,7 +1992,7 @@ class TestGrantEndpointBoundaries:
 
         app, svc, _state = self._apps(internal_auth=True)
         jid = self._pending_job(svc, cron_home)
-        with patch("kiro_crew.dashboard.handlers.cron._sel"):
+        with patch("efm_go.dashboard.handlers.cron._sel"):
             async with TestClient(TestServer(app)) as client:
                 resp = await client.put(f"/api/crons/{jid}/secrets", json=_APPROVE)
                 body = await resp.json()
@@ -2008,8 +2008,8 @@ class TestGrantBodySizeCap:
     could hide executable tail bytes behind the preview truncation."""
 
     def test_grant_cap_never_exceeds_preview_cap(self):
-        from kiro_crew.cron_script import _MAX_GRANTED_SCRIPT_BYTES
-        from kiro_crew.dashboard.handlers.cron import _SCRIPT_SOURCE_MAX_BYTES
+        from efm_go.cron_script import _MAX_GRANTED_SCRIPT_BYTES
+        from efm_go.dashboard.handlers.cron import _SCRIPT_SOURCE_MAX_BYTES
 
         assert _MAX_GRANTED_SCRIPT_BYTES <= _SCRIPT_SOURCE_MAX_BYTES
 
@@ -2033,7 +2033,7 @@ class TestGrantValueScrubbing:
     @pytest.fixture(autouse=True)
     def _passthrough_sandbox(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.cron_script.wrap_argv",
+            "efm_go.cron_script.wrap_argv",
             lambda argv, **k: ([argv[0], "-X", "utf8", *argv[1:]], None),
         )
 
@@ -2114,7 +2114,7 @@ class TestGrantValueScrubbing:
         script = _make_script(
             tmp_path,
             "import os\n"
-            "from kiro_crew.cron_script import Done\n"
+            "from efm_go.cron_script import Done\n"
             "def run(ctx):\n"
             "    raise Done('all ' + os.environ['MY_SANDBOX_WORD'] + ' here')\n",
         )

@@ -36,9 +36,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.apps import bridges
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go import platform_compat
+from efm_go.apps import bridges
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 pytestmark = pytest.mark.skipif(
     not platform_compat.IS_POSIX,
@@ -116,7 +116,7 @@ class TestUnwritableLockPathIsReported:
         # No sidecar yet, so creating it is what the filesystem refuses -- the
         # shape a read-only ~/.kiro/agents presents on a fresh install.
         os.chmod(agents_dir, stat.S_IRUSR | stat.S_IXUSR)  # 0o500
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
             with pytest.raises(OSError) as exc_info:
                 with bridges._mcp_lock():
                     pytest.fail("acquired a lock on an unwritable path")
@@ -147,7 +147,7 @@ class TestUnwritableLockPathIsReported:
         lock_path = agents_dir / "kirocrew.lock"
         lock_path.touch()
         os.chmod(lock_path, stat.S_IRUSR)  # 0o400
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
             with pytest.raises(OSError):
                 with bridges._mcp_lock():
                     pytest.fail("acquired a lock on an unwritable sidecar")
@@ -173,7 +173,7 @@ class TestUnwritableLockPathIsReported:
         # writable fd, so it fails identically and must report identically --
         # otherwise the silence just moves to whichever caller reads first.
         os.chmod(agents_dir, stat.S_IRUSR | stat.S_IXUSR)  # 0o500
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
             with pytest.raises(OSError):
                 with bridges._mcp_lock(exclusive=False):
                     pytest.fail("acquired a shared lock on an unwritable path")
@@ -190,7 +190,7 @@ class TestRemediesStayDistinct:
         lock_path = agents_dir / "kirocrew.lock"
         holder = _spawn_holder(lock_path)
         try:
-            with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+            with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
                 with pytest.raises(OSError) as exc_info:
                     with bridges._mcp_lock():
                         pytest.fail("acquired a lock another process holds")
@@ -219,7 +219,7 @@ class TestRemediesStayDistinct:
         target = target_dir / "mcp.json"
         (target_dir / "mcp.lock").touch()
         os.chmod(target_dir / "mcp.lock", stat.S_IRUSR)  # 0o400
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
             with pytest.raises(OSError):
                 with bridges._mcp_lock(target=target):
                     pytest.fail("acquired a lock on an unwritable sidecar")
@@ -242,7 +242,7 @@ class TestNotEverythingIsALockProblem:
         # An ENOSPC on the caller's own atomic write, inside a lock that was
         # taken cleanly. Logged as a lock failure it would send an operator
         # after a holder that does not exist while the disk is full.
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
             with pytest.raises(OSError):
                 with bridges._mcp_lock():
                     raise OSError(errno.ENOSPC, os.strerror(errno.ENOSPC))
@@ -260,7 +260,7 @@ class TestNotEverythingIsALockProblem:
         spec = agents_dir / "kirocrew.json"
         spec.write_text('{"mcpServers": {}}\n', encoding="utf-8")
         os.chmod(spec, stat.S_IRUSR)  # 0o400
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
             with bridges._mcp_lock():
                 pass
         assert not _lock_warnings(caplog)
@@ -272,7 +272,7 @@ class TestHealthyAcquireIsUnchanged:
     def test_normal_acquire_is_silent(
         self, agents_dir: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
             with bridges._mcp_lock():
                 pass
         assert not _lock_warnings(caplog), "a successful acquire logged a lock warning"
@@ -294,7 +294,7 @@ class TestHealthyAcquireIsUnchanged:
         # The legacy shared mcp.json sits under a DIFFERENT sidecar, and its
         # parent may not exist yet -- the acquire creates it.
         target = tmp_path / "settings" / "mcp.json"
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
             with bridges._mcp_lock(target=target):
                 pass
         assert (tmp_path / "settings" / "mcp.lock").exists()
@@ -312,7 +312,7 @@ class TestHealthyAcquireIsUnchanged:
         root.mkdir()
         os.chmod(root, stat.S_IRUSR | stat.S_IXUSR)  # 0o500
         try:
-            with caplog.at_level(logging.DEBUG, logger="kiro_crew.apps.bridges"):
+            with caplog.at_level(logging.DEBUG, logger="efm_go.apps.bridges"):
                 with pytest.raises(OSError):
                     with bridges._mcp_lock(target=root / "settings" / "mcp.json"):
                         pytest.fail("acquired a lock under an uncreatable parent")

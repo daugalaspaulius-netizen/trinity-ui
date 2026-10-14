@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import pinned_fs, snapshot
+from efm_go import pinned_fs, snapshot
 
 pinned_only = pytest.mark.skipif(
     not pinned_fs.supports_pinned_tree_walk(),
@@ -655,7 +655,7 @@ def test_the_shipped_cli_accepts_the_opt_in_flag(monkeypatch: pytest.MonkeyPatch
     Asserted against the real `cli.main` with a control, because a test that only
     checked the flag parses could pass on a parser nobody runs.
     """
-    from kiro_crew import cli
+    from efm_go import cli
 
     def _run(argv: list[str]) -> object:
         monkeypatch.setattr("sys.argv", ["kirocrew"] + argv)
@@ -691,7 +691,7 @@ def test_the_import_path_records_unpinned_staging_instead_of_removing_the_featur
     """
     import zipfile
 
-    from kiro_crew import portability
+    from efm_go import portability
 
     mc = tmp_path / "home"
     mc.mkdir()
@@ -729,7 +729,7 @@ def test_a_pinnable_import_records_that_it_was_pinned(
     """
     import zipfile
 
-    from kiro_crew import portability
+    from efm_go import portability
 
     if not pinned_fs.supports_pinned_tree_walk():
         pytest.skip("host cannot pin, so there is no pinned case to assert")
@@ -763,7 +763,7 @@ def test_the_import_path_passes_its_staging_decision_to_both_branches() -> None:
     """
     import inspect
 
-    from kiro_crew import portability
+    from efm_go import portability
 
     source = inspect.getsource(portability.apply_import_zip)
     assert (
@@ -1809,7 +1809,7 @@ def test_no_name_based_filesystem_question_where_a_descriptor_is_held() -> None:
     }
     offenders: list[str] = []
 
-    for module in ("src/kiro_crew/pinned_fs.py",):
+    for module in ("src/efm_go/pinned_fs.py",):
         path = repo_root / module
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for func in ast.walk(tree):
@@ -2292,7 +2292,7 @@ def test_the_import_audit_line_records_the_staging_mode() -> None:
     """
     import inspect
 
-    from kiro_crew.dashboard.handlers import portability as handler
+    from efm_go.dashboard.handlers import portability as handler
 
     source = inspect.getsource(handler)
     assert "staging={summary.get('staging'" in source, (
@@ -2354,13 +2354,13 @@ class TestFdRealPathHome:
     """
 
     def test_defined_in_pinned_fs_and_exported(self):
-        assert pinned_fs.fd_real_path.__module__ == "kiro_crew.pinned_fs"
+        assert pinned_fs.fd_real_path.__module__ == "efm_go.pinned_fs"
         assert "fd_real_path" in pinned_fs.__all__
 
     def test_every_consumer_binds_the_pinned_fs_object(self):
-        from kiro_crew import hooks, sandbox
-        from kiro_crew.apps import routes as app_routes
-        from kiro_crew.apps.builtins.spec_builder.backend import repository as spec_repository
+        from efm_go import hooks, sandbox
+        from efm_go.apps import routes as app_routes
+        from efm_go.apps.builtins.spec_builder.backend import repository as spec_repository
 
         assert hooks._fd_real_path is pinned_fs.fd_real_path
         assert sandbox.fd_real_path is pinned_fs.fd_real_path

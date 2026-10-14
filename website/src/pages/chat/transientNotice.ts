@@ -8,7 +8,7 @@ import type { NoticeTone } from './NoticeCard'
  * Localized copy for the `error` rows the gateway's transient-5xx ladder appends.
  *
  * Each such row carries a structured wire token in `meta.notice`
- * (`TRANSIENT_NOTICE_*` in `src/kiro_crew/dashboard/chat_utils.py`); the row's
+ * (`TRANSIENT_NOTICE_*` in `src/efm_go/dashboard/chat_utils.py`); the row's
  * English content is the fallback for channel mirrors and SSE readers and is
  * never shown here. The dashboard keys its `i18nT()` copy on the token, so the
  * wording can change on either side without the other falling back to raw

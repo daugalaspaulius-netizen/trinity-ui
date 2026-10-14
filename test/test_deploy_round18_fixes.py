@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-SRC = Path(__file__).parent.parent / "src" / "kiro_crew"
+SRC = Path(__file__).parent.parent / "src" / "efm_go"
 HANDLERS = (SRC / "deploy" / "handlers.py").read_text(encoding="utf-8")
 # The deploy_artifact handler lives in its domain module, not mcp_core.py.
 MCP_DEPLOY = (SRC / "mcp_tools" / "artifacts.py").read_text(encoding="utf-8")

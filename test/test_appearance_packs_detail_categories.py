@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 
-from kiro_crew.appearance_packs import store as ap
+from efm_go.appearance_packs import store as ap
 
 
 def _manifest() -> dict:

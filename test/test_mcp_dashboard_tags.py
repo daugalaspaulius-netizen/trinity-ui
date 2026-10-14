@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from kiro_crew.mcp_dashboard import TABLE, _list_tools
-from kiro_crew.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
-from kiro_crew.mcp_tools.table import Caller, ToolContext
+from efm_go.mcp_dashboard import TABLE, _list_tools
+from efm_go.mcp_tools.dashboard_client import DashboardRequest, InMemoryDashboardClient
+from efm_go.mcp_tools.table import Caller, ToolContext
 
 _TAGS = [
     {"id": "aaaaaaaaaaaa", "name": "Active", "color": "#22c55e", "order": 0, "status": True},

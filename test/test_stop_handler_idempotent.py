@@ -94,7 +94,7 @@ class TestStopHandlerIdempotent:
         """Second non-force stop press while soft_pending returns info."""
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         # Simulate a stop already in progress (first press completed the guard
@@ -130,7 +130,7 @@ class TestStopHandlerIdempotent:
         """When stop_turn returns 'idle', the stop card is resolved."""
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         slot.running = True
@@ -150,10 +150,10 @@ class TestStopHandlerIdempotent:
         request.query = {}
 
         # Mock SEL logging and _reject_pending_approvals
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 await api_chat_slot_stop(request)
 
         # After the handler, stop state should be back to idle and event_id cleared
@@ -170,7 +170,7 @@ class TestInterruptHandlerIdempotent:
         """Interrupt while already stopping returns info."""
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot._stop_state = "soft_pending"
@@ -208,7 +208,7 @@ class TestInterruptHandlerIdempotent:
         """
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot.running = True
@@ -246,7 +246,7 @@ class TestInterruptHandlerIdempotent:
         """
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot.running = True
@@ -292,7 +292,7 @@ class TestInterruptHandlerIdempotent:
         """
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot.running = True
@@ -320,10 +320,10 @@ class TestInterruptHandlerIdempotent:
         request.can_read_body = True
         request.charset = None
 
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 resp = await api_chat_slot_interrupt(request)
         body = json.loads(resp.body)
 
@@ -343,7 +343,7 @@ class TestInterruptHandlerIdempotent:
         """
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot.running = True
@@ -377,10 +377,10 @@ class TestInterruptHandlerIdempotent:
         request.can_read_body = True
         request.charset = None
 
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 resp = await api_chat_slot_interrupt(request)
         body = json.loads(resp.body)
 
@@ -400,7 +400,7 @@ class TestInterruptHandlerIdempotent:
         """
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot.running = True
@@ -432,10 +432,10 @@ class TestInterruptHandlerIdempotent:
         request.can_read_body = True
         request.charset = None
 
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 resp = await api_chat_slot_interrupt(request)
         body = json.loads(resp.body)
 
@@ -456,7 +456,7 @@ class TestInterruptHandlerIdempotent:
         """
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot.running = True
@@ -505,7 +505,7 @@ class TestInterruptHandlerIdempotent:
         """
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot.running = True
@@ -535,10 +535,10 @@ class TestInterruptHandlerIdempotent:
         request.can_read_body = True
         request.charset = None
 
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 resp = await api_chat_slot_interrupt(request)
         body = json.loads(resp.body)
 
@@ -586,7 +586,7 @@ class TestStopCardTeardownRace:
         This is the mechanism the handler tests below simulate. If this ever
         stops mapping falsy to "idle", those simulations stop being faithful.
         """
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot("race-slot")
         slot._stop_state = "soft_pending"
@@ -602,7 +602,7 @@ class TestStopCardTeardownRace:
         """Escalation settles the card even when teardown won the race."""
         from aiohttp import web
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         slot.running = True
@@ -629,10 +629,10 @@ class TestStopCardTeardownRace:
         request.match_info = {"slot": "test-slot"}
         request.query = {}
 
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 await api_chat_slot_stop(request)
 
         stop_id = None
@@ -647,7 +647,7 @@ class TestStopCardTeardownRace:
     @pytest.mark.asyncio
     async def test_late_soft_ack_does_not_relabel_an_escalated_card(self):
         """Precedence survives: a hard kill is not relabelled a clean stop."""
-        from kiro_crew.dashboard.chat_handlers import _make_stop_resolver
+        from efm_go.dashboard.chat_handlers import _make_stop_resolver
 
         slot = _FakeSlot()
         state = _FakeState(slot)
@@ -675,7 +675,7 @@ class TestStopCardTeardownRace:
         stop for a session that was killed. `_stop_escalated_card_id` is not reset by
         teardown, so the soft callback still defers.
         """
-        from kiro_crew.dashboard.chat_handlers import _make_stop_resolver
+        from efm_go.dashboard.chat_handlers import _make_stop_resolver
 
         slot = _FakeSlot()
         state = _FakeState(slot)
@@ -694,7 +694,7 @@ class TestStopCardTeardownRace:
 
     def test_stopping_setter_leaves_the_escalation_marker_alone(self):
         """Pin the non-racy property on the real slot, not the stand-in."""
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot("escalation-slot")
         slot._stop_state = "killing"
@@ -708,7 +708,7 @@ class TestStopCardTeardownRace:
     @pytest.mark.asyncio
     async def test_resolver_settles_the_card_once(self):
         """The card id, not the state, is the idempotency token."""
-        from kiro_crew.dashboard.chat_handlers import _make_stop_resolver
+        from efm_go.dashboard.chat_handlers import _make_stop_resolver
 
         slot = _FakeSlot()
         state = _FakeState(slot)
@@ -736,7 +736,7 @@ class TestStopCardTeardownRace:
         posture, so the newer stop's own callback would later find nothing left
         to settle and its card would be wrong rather than merely stranded.
         """
-        from kiro_crew.dashboard.chat_handlers import (
+        from efm_go.dashboard.chat_handlers import (
             _make_stop_resolver,
             _resolve_stop_event,
         )
@@ -771,7 +771,7 @@ class TestStopCardTeardownRace:
         makes the stale marker simply stop matching, so no card-open path has to
         remember to clear it.
         """
-        from kiro_crew.dashboard.chat_handlers import (
+        from efm_go.dashboard.chat_handlers import (
             _make_stop_resolver,
             _resolve_stop_event,
         )
@@ -807,7 +807,7 @@ class TestStopCardTeardownRace:
         to release the posture: a slot left at "killing" suppresses re-queue
         and rejects every later interrupt.
         """
-        from kiro_crew.dashboard.chat_handlers import _make_stop_resolver
+        from efm_go.dashboard.chat_handlers import _make_stop_resolver
 
         slot = _FakeSlot()
         state = _FakeState(slot)
@@ -826,7 +826,7 @@ class TestStopCardTeardownRace:
         The marker holds a real card id, so a None-to-None comparison would
         defer a callback that no hard kill will follow, stranding the posture.
         """
-        from kiro_crew.dashboard.chat_handlers import _make_stop_resolver
+        from efm_go.dashboard.chat_handlers import _make_stop_resolver
 
         slot = _FakeSlot()
         state = _FakeState(slot)
@@ -861,12 +861,12 @@ class TestStopReusesOrphanedCard:
         return rows
 
     async def _press(self, state, slot):
-        from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+        from efm_go.dashboard.chat_handlers import stop_slot_turn
 
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 return await stop_slot_turn(state, slot)
 
     @pytest.mark.asyncio
@@ -901,7 +901,7 @@ class TestStopReusesOrphanedCard:
         press's cooperative ack defers to a hard callback that already fired,
         stranding the re-armed card at "stopping".
         """
-        from kiro_crew.dashboard.chat_handlers import _make_stop_resolver
+        from efm_go.dashboard.chat_handlers import _make_stop_resolver
 
         slot = _FakeSlot()
         state = _FakeState(slot)
@@ -950,7 +950,7 @@ class TestStopReusesOrphanedCard:
         both the card and the posture. (GPT server-lane blocking finding on
         head 82d79041f.)
         """
-        from kiro_crew.dashboard.chat_handlers import _make_stop_resolver
+        from efm_go.dashboard.chat_handlers import _make_stop_resolver
 
         slot = _FakeSlot()
         state = _FakeState(slot)
@@ -1045,7 +1045,7 @@ class TestStopReusesOrphanedCard:
         mode reuse exists to avoid. When the re-arm cannot find the row, the
         append mints fresh.
         """
-        from kiro_crew.dashboard import chat_handlers as ch
+        from efm_go.dashboard import chat_handlers as ch
 
         slot = _FakeSlot()
         state = _FakeState(slot)
@@ -1151,15 +1151,15 @@ class TestStopCancelsTheSessionTheTurnRunsOn:
 
     @pytest.mark.asyncio
     async def test_stop_uses_the_linked_session_key(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         slot.linked_session_key = "cron:40b4958a"
         state = _FakeState(slot)
 
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
-            patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"),
         ):
             await api_chat_slot_stop(self._request(state))
 
@@ -1168,14 +1168,14 @@ class TestStopCancelsTheSessionTheTurnRunsOn:
     @pytest.mark.asyncio
     async def test_stop_falls_back_to_the_dashboard_key(self):
         """A plain chat tab has no linked key, and must keep its own."""
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         state = _FakeState(slot)
 
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
-            patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"),
         ):
             await api_chat_slot_stop(self._request(state))
 
@@ -1183,7 +1183,7 @@ class TestStopCancelsTheSessionTheTurnRunsOn:
 
     @pytest.mark.asyncio
     async def test_interrupt_uses_the_linked_session_key(self):
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_interrupt
+        from efm_go.dashboard.chat_handlers import api_chat_slot_interrupt
 
         slot = _FakeSlot()
         slot.linked_session_key = "slack:1786000000.1"
@@ -1198,8 +1198,8 @@ class TestStopCancelsTheSessionTheTurnRunsOn:
         request.can_read_body = False
 
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
-            patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"),
         ):
             await api_chat_slot_interrupt(request)
 

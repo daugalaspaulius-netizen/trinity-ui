@@ -49,15 +49,15 @@ import pytest
 from aiohttp import streams, web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import memory_backup, memory_stores
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import config_dir
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard.handlers import memory as memory_handlers
-from kiro_crew.dashboard.handlers import memory_admin
-from kiro_crew.dashboard.handlers.source_providers import is_owner_dashboard_request
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_stores import (
+from efm_go import memory_backup, memory_stores
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import config_dir
+from efm_go.context import ContextBuilder
+from efm_go.dashboard.handlers import memory as memory_handlers
+from efm_go.dashboard.handlers import memory_admin
+from efm_go.dashboard.handlers.source_providers import is_owner_dashboard_request
+from efm_go.memory import MemoryStore
+from efm_go.memory_stores import (
     DEFAULT_MEMORY_STORE,
     declared_store_names,
     memory_index_path_for,
@@ -65,7 +65,7 @@ from kiro_crew.memory_stores import (
     owned_store_path,
     resolve_store_path,
 )
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go.vector_memory import VectorMemoryStore
 
 # Every test writes ``config.json`` into its own data home and drops the process-wide
 # config cache and the declared-store memo, so two workers racing those globals is a
@@ -487,8 +487,8 @@ class TestTheGateExcludesAnAgentBecauseItHasNoIdentity:
         the claim is about the paths an agent actually calls, and a hand-written set
         would keep passing after a path moved between the two classes.
         """
-        import kiro_crew.dashboard.token_auth as token_auth
-        from kiro_crew.dashboard import server
+        import efm_go.dashboard.token_auth as token_auth
+        from efm_go.dashboard import server
 
         class _FakeSel:
             def log_api_access(self, **kw: Any) -> None:

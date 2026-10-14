@@ -1,7 +1,7 @@
 """Invariants of the shared part-to-disk path.
 
 Every test here pins a property of the shared part-to-disk path.
-`kiro_crew.dashboard.part_stream`'s docstring carries the details; this file is
+`efm_go.dashboard.part_stream`'s docstring carries the details; this file is
 the executable half of it, so a refactor that reintroduces any of the seven
 defects fails here.
 """
@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.dashboard import part_stream
-from kiro_crew.dashboard.part_stream import (
+from efm_go.dashboard import part_stream
+from efm_go.dashboard.part_stream import (
     PartContentMismatch,
     PartTooLarge,
     _TempSink,

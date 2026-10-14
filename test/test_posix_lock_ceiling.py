@@ -36,8 +36,8 @@ from typing import Iterator
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go import platform_compat
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 pytestmark = pytest.mark.skipif(
     not platform_compat.IS_POSIX, reason="POSIX flock ceiling; Windows has its own branch"
@@ -256,7 +256,7 @@ class TestStagingLockOutlastsItsOwnWork:
         # Derived from the bounds it must outlast rather than compared with a
         # literal, so raising either subprocess timeout without raising the lock
         # ceiling fails here instead of silently refusing live contenders.
-        from kiro_crew import frontend
+        from efm_go import frontend
 
         assert frontend._STAGING_LOCK_TIMEOUT >= (
             frontend._INSTALL_TIMEOUT + frontend._BUILD_TIMEOUT
@@ -268,7 +268,7 @@ class TestStagingLockOutlastsItsOwnWork:
     def test_the_staging_lock_passes_its_ceiling_to_the_primitive(self, tmp_path: Path):
         # Asserted by capturing the value the primitive receives, not by reading
         # the source: a call site can keep the identifier and still be inert.
-        from kiro_crew import frontend
+        from efm_go import frontend
 
         seen: dict[str, object] = {}
 
@@ -531,7 +531,7 @@ class TestAgentSpecLockDoesNotHangBoot:
     ):
         # End to end on the lock the boot path takes: the gateway-startup hang
         # reduced to a single call.
-        from kiro_crew.agent import agents_spec_lock
+        from efm_go.agent import agents_spec_lock
 
         monkeypatch.setattr(platform_compat, "_LOCK_TIMEOUT_SECS", _TEST_CEILING)
         agents_dir = tmp_path / "agents"
@@ -551,7 +551,7 @@ class TestAgentSpecLockDoesNotHangBoot:
         # An unwritable lock path is refused by ``os.open`` before any lock is
         # attempted. Pinned so a "retry until the ceiling" change cannot turn
         # this prompt refusal into a wait.
-        from kiro_crew.agent import agents_spec_lock
+        from efm_go.agent import agents_spec_lock
 
         agents_dir = tmp_path / "readonly"
         agents_dir.mkdir()
@@ -579,13 +579,13 @@ class TestLockFailureIsReported:
     def test_unwritable_path_is_logged_with_path_and_reason(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ):
-        from kiro_crew.agent import agents_spec_lock
+        from efm_go.agent import agents_spec_lock
 
         agents_dir = tmp_path / "ro"
         agents_dir.mkdir()
         os.chmod(agents_dir, 0o500)
         try:
-            with caplog.at_level("WARNING", logger="kiro_crew.agent"):
+            with caplog.at_level("WARNING", logger="efm_go.agent"):
                 with pytest.raises(OSError):
                     with agents_spec_lock(agents_dir):
                         pass
@@ -607,14 +607,14 @@ class TestLockFailureIsReported:
     ):
         # A stuck holder needs a different action than an unwritable mount, so
         # the two must not be reported with the same remedy.
-        from kiro_crew.agent import agents_spec_lock
+        from efm_go.agent import agents_spec_lock
 
         monkeypatch.setattr(platform_compat, "_LOCK_TIMEOUT_SECS", _TEST_CEILING)
         agents_dir = tmp_path / "contended-agents"
         agents_dir.mkdir()
         proc = _spawn_holder(agents_dir / ".kirocrew-agents.lock")
         try:
-            with caplog.at_level("WARNING", logger="kiro_crew.agent"):
+            with caplog.at_level("WARNING", logger="efm_go.agent"):
                 with pytest.raises(OSError, match="still held"):
                     with agents_spec_lock(agents_dir):
                         pytest.fail("took the lock while another process held it")
@@ -637,11 +637,11 @@ class TestLockFailureIsReported:
         # as an agent-spec lock problem would send an operator hunting a stuck
         # holder while the real fault is the disk or a permission, so the report
         # must cover the acquire alone and let a body error through untouched.
-        from kiro_crew.agent import agents_spec_lock
+        from efm_go.agent import agents_spec_lock
 
         agents_dir = tmp_path / "body-error"
         agents_dir.mkdir()
-        with caplog.at_level("WARNING", logger="kiro_crew.agent"):
+        with caplog.at_level("WARNING", logger="efm_go.agent"):
             with pytest.raises(OSError, match="no space left"):
                 with agents_spec_lock(agents_dir):
                     # Same exception TYPE the acquire raises, so only scoping

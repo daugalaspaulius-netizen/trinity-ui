@@ -3,14 +3,14 @@
 ``session_pid`` is the one agent-lifecycle concern the ACP layer still owns:
 ``acp/runtime.py`` and ``acp/client.py`` drive every track/untrack transition.
 That direction is fine.  The reverse direction is not, and until recently
-``session_pid.py`` imported ``kiro_crew.providers.base`` at module scope for a
+``session_pid.py`` imported ``efm_go.providers.base`` at module scope for a
 single parameter annotation, which closed a real cycle::
 
     session_pid -> providers.base -> acp.types -> acp/__init__
                 -> acp.runtime -> session_pid
 
-The cycle was not theoretical.  Importing ``kiro_crew.session_pid`` as the
-first ``kiro_crew`` module raised ``ImportError: cannot import name
+The cycle was not theoretical.  Importing ``efm_go.session_pid`` as the
+first ``efm_go`` module raised ``ImportError: cannot import name
 '_track_pid' from partially initialized module``, so the module was only ever
 importable because something else had already imported the ACP package first.
 Other leaves paid for it with ``LLMProvider = Any`` runtime stubs and
@@ -24,7 +24,7 @@ attributes through ``getattr(..., None)`` that the provider ABC does not declare
 so the parameter is ``object`` and the edge is gone rather than exempted.
 
 These tests pin that, and they are the criterion for the cycle being closed.  A
-module-scope import of ``kiro_crew.providers`` or ``kiro_crew.acp`` added back to
+module-scope import of ``efm_go.providers`` or ``efm_go.acp`` added back to
 ``session_pid.py`` fails them -- including one added lazily, since the second test
 checks what the import actually loaded rather than what the source says.
 
@@ -44,12 +44,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SRC = _REPO_ROOT / "src"
 
-_FORBIDDEN_ROOTS = ("kiro_crew.acp", "kiro_crew.providers")
+_FORBIDDEN_ROOTS = ("efm_go.acp", "efm_go.providers")
 
 # The child prefixes its answer, because anything ELSE that reaches stdout --
 # an import that prints, a library banner -- would otherwise read as a leaked
@@ -59,7 +59,7 @@ _PRELUDE = f"import sys; sys.path.insert(0, {str(_SRC)!r})\n"
 
 # -I isolates the child (no PYTHONPATH, no user site) so it measures this tree
 # and not an editable install's.  -B is separate and NOT implied by it: without
-# it the child compiles the kiro_crew modules it imports and writes __pycache__
+# it the child compiles the efm_go modules it imports and writes __pycache__
 # into src/, so a read-only assertion would leave artifacts in the checkout it
 # was inspecting.  -I also implies -E, so PYTHONDONTWRITEBYTECODE cannot do this
 # job -- the flag is the only lever.  Keep both;
@@ -89,11 +89,11 @@ def _answers(proc: subprocess.CompletedProcess[str]) -> list[str]:
 
 def test_session_pid_imports_standalone() -> None:
     """Importing it first must work, not just importing it after the ACP layer."""
-    proc = _run("import kiro_crew.session_pid")
+    proc = _run("import efm_go.session_pid")
     assert proc.returncode == 0, (
-        "importing kiro_crew.session_pid as the first kiro_crew module failed, which "
+        "importing efm_go.session_pid as the first efm_go module failed, which "
         "means a module-scope import from it re-enters a package that imports it back. "
-        "The historical offender was `from kiro_crew.providers.base import LLMProvider`, "
+        "The historical offender was `from efm_go.providers.base import LLMProvider`, "
         "carried for one annotation that the ABC did not actually describe. Drop the "
         "import rather than deferring it under `if TYPE_CHECKING:` -- the boundary gate "
         "counts a type-only import too, and has no opt-out marker.\n"
@@ -104,16 +104,16 @@ def test_session_pid_imports_standalone() -> None:
 def test_session_pid_pulls_in_no_agent_layer_module() -> None:
     """It must load without the ACP or provider packages coming with it."""
     proc = _run(
-        "import kiro_crew.session_pid; "
+        "import efm_go.session_pid; "
         f"print({_ANSWER!r} + ' '.join(sorted(m for m in sys.modules "
-        "if m.startswith('kiro_crew.acp') or m.startswith('kiro_crew.providers'))))"
+        "if m.startswith('efm_go.acp') or m.startswith('efm_go.providers'))))"
     )
     assert proc.returncode == 0, proc.stderr
     answers = _answers(proc)
     assert len(answers) == 1, f"expected one sentinel line, got {answers!r} from {proc.stdout!r}"
     leaked = answers[0].split()
     assert not leaked, (
-        "importing kiro_crew.session_pid dragged in agent-layer modules: "
+        "importing efm_go.session_pid dragged in agent-layer modules: "
         f"{leaked}. session_pid is a leaf the ACP layer drives, not the other way "
         "round; it should name no type from there at all."
     )
@@ -126,9 +126,9 @@ def test_the_child_measures_this_checkout() -> None:
     that is exactly how a first draft of this file reported a failure from a
     sibling worktree.
     """
-    proc = _run(f"import kiro_crew.session_pid as m; print({_ANSWER!r} + m.__file__)")
+    proc = _run(f"import efm_go.session_pid as m; print({_ANSWER!r} + m.__file__)")
     assert proc.returncode == 0, proc.stderr
-    assert _answers(proc) == [str(_SRC / "kiro_crew" / "session_pid.py")], proc.stdout
+    assert _answers(proc) == [str(_SRC / "efm_go" / "session_pid.py")], proc.stdout
 
 
 def test_the_child_refuses_to_write_bytecode() -> None:
@@ -138,7 +138,7 @@ def test_the_child_refuses_to_write_bytecode() -> None:
     child imported straight into ``src/**/__pycache__``.
 
     This asks the child what it will DO rather than diffing the directory
-    afterwards, and the difference matters: pytest imports most of ``kiro_crew``
+    afterwards, and the difference matters: pytest imports most of ``efm_go``
     during collection, so by the time this test runs the ``.pyc`` files already
     exist and a child writing bytecode adds no new file. A mtime-and-filename
     diff therefore passes with ``-B`` removed -- measured, not assumed -- which

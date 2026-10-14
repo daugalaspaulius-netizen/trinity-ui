@@ -20,14 +20,14 @@ per-instance (`connection_method`) — see §13.
 > this spec's prose below uses "instance" wherever it is describing the
 > registry, the tunnel or the EC2 box rather than the surface.
 
-> **Section numbers in this document are an API.** `src/kiro_crew/cloud/connect.py`
+> **Section numbers in this document are an API.** `src/efm_go/cloud/connect.py`
 > cites "instances.md §9" from two docstrings (the module docstring and
 > `ssm_proxy_ssh_host`). Do not renumber existing sections; append new material as
 > new trailing sections.
 
-Code: `src/kiro_crew/instances/` (registry, tunnel manager, port allocator, token
+Code: `src/efm_go/instances/` (registry, tunnel manager, port allocator, token
 mint, diagnostics, injection validation, run-marker) plus
-`src/kiro_crew/dashboard/handlers_instances.py` (control plane) and the frontend
+`src/efm_go/dashboard/handlers_instances.py` (control plane) and the frontend
 `InstanceTabBar` / `InstancesViewport` / `Settings → Remote Crew` surfaces.
 
 ---
@@ -247,7 +247,7 @@ strip.
    `*.localhost`, matched client-side by `isEmbeddableLoopbackOrigin`
    (`website/src/lib/tunnelOrigin.ts`) against the server's
    `_LOOPBACK_FRAME_SRC` / `_INSTANCES_FRAME_SRC_EXTRA`
-   (`src/kiro_crew/dashboard/server.py`), including the deliberate `[::1]`
+   (`src/efm_go/dashboard/server.py`), including the deliberate `[::1]`
    omission. On any other origin (a reverse proxy or tunnel hostname, `[::1]`,
    https `*.localhost`) the browser's CSP would refuse the frame, so the pane
    mounts **no iframe and arms no load watchdog**; it renders an explanatory card
@@ -368,7 +368,7 @@ reason the ssh transport above is not.
 
 ### 5.1 `instances.*` config keys
 
-Transport defaults and bounds live in `kiro_crew.instances.constants` and are
+Transport defaults and bounds live in `efm_go.instances.constants` and are
 referenced from `InstancesConfig`, so the documented values and runtime policy
 cannot drift.
 
@@ -693,7 +693,7 @@ what its own edit invalidated, and never reopens anything on the user's behalf.
   /api/instances/{id}` rejects an edit to `connection_method`/`ssm_target`/
   `aws_profile`/`aws_region` (`400`, `code: "cloud_instance_addressing_locked"`)
   when the instance's current `ssm_target` matches an EC2 instance id in the
-  cloud launch job store (`kiro_crew.cloud.connect.is_launched_instance()`) —
+  cloud launch job store (`efm_go.cloud.connect.is_launched_instance()`) —
   i.e. Kiro Crew provisioned it, as opposed to a hand-added SSM record. These
   four fields are how `coordsOf()` (`RemoteCrewPanel.tsx`) builds
   `{profile, region, instanceId}` for Stop/Start/Delete; rewriting them on a
@@ -1191,7 +1191,7 @@ remote's non-interactive SSH shell usually does not export `KIROCREW_HOME`:
 3. `$HOME/<LEGACY_CONFIG_DIR_NAME>` (`.kirocrew`, for a not-yet-migrated remote).
 
 Those two home segments are **interpolated from the shared
-`kiro_crew.config.paths` constants**, the same ones the marker *writer* derives
+`efm_go.config.paths` constants**, the same ones the marker *writer* derives
 its default from, so reader and writer cannot drift apart on a future data-home
 rename. An absent or stale marker, or one that does not name an executable, falls
 through to the candidate search, so nothing regresses on an older remote. An
@@ -1205,7 +1205,7 @@ The launcher path is derived from `sys.executable`'s sibling console script
 (`kirocrew`, or `kirocrew.exe` on Windows) and is deliberately **not** resolved
 through symlinks, because the console script sits next to the possibly-symlinked
 interpreter in the venv's `bin/`, not next to the real interpreter. When no such
-script exists (a source-tree `python -m kiro_crew` launch) the marker is written
+script exists (a source-tree `python -m efm_go` launch) the marker is written
 **empty**: the mint clause requires a non-empty executable path so an empty
 marker is inert there, but the *filename* still matters to consumer 2.
 
@@ -1596,8 +1596,8 @@ The legacy `ssm_proxy_ssh_host` helper is kept for reference only.
 Copies one dashboard session from this instance to a connected peer. The user
 picks it from any session menu: **Send a copy to ▸ `<instance>`**.
 
-Code: `src/kiro_crew/dashboard/session_transfer.py` (bundle + importer),
-`src/kiro_crew/dashboard/transcript_snapshot.py` (the bundle's consistent
+Code: `src/efm_go/dashboard/session_transfer.py` (bundle + importer),
+`src/efm_go/dashboard/transcript_snapshot.py` (the bundle's consistent
 transcript read, under its `TRANSFER` rules),
 `SshTunnelManager.send_session_bundle` (delivery),
 `handlers_instances.api_instances_send_session` (control plane), and the frontend
@@ -1909,7 +1909,7 @@ a truncation nobody asked for.
 the reason it lives beside the first: a gzipped file arriving from a person and a
 plain-JSON bundle arriving over the tunnel are the same event carried by different
 transport, so the encoding must decide neither how the bytes are read nor where
-the session lands. `src/kiro_crew/dashboard/arrival_folders.py` owns it; the
+the session lands. `src/efm_go/dashboard/arrival_folders.py` owns it; the
 decision record, including why the tunnel's previously-unfiled default was
 changed, is
 [rfc-arrival-provenance-filing.md](../../request-for-change/rfc-arrival-provenance-filing.md).
@@ -2135,7 +2135,7 @@ remote → hub and remote → remote work without any reverse reachability.
 ### 14.7 The file hop (`GET /api/chat/slots/{slot}/export`)
 
 The same bundle, written to a file instead of pushed down a tunnel. Code:
-`src/kiro_crew/dashboard/session_export.py`, with the menu action
+`src/efm_go/dashboard/session_export.py`, with the menu action
 `ExportSessionItem` mounted beside `SendToInstanceSubmenu` in the shared
 `SessionActionsMenu`, and `ImportSessionItem` — the reverse direction — mounted
 directly beside it, because the file this reads is the file that row writes. The
@@ -2463,7 +2463,7 @@ Registry fields are the SSM-transport set: `ssm_target` (an ECS task target,
 `aws_region`. `ssm_run_as` is neither validated by the `fargate` arm nor read by
 its transport, since nothing is executed on the task. `remote_port` is the port
 the forward reaches on the task, the container's chat API port (`FRONT_PORT`,
-8080, in `src/kiro_crew/cloud/fargate/taskdef.py`); the registry's default is the
+8080, in `src/efm_go/cloud/fargate/taskdef.py`); the registry's default is the
 stock dashboard port, so a `fargate` record sets it.
 
 `registry.CONNECTION_METHODS` is `("ssh", "ssm", "fargate")` and
@@ -2471,7 +2471,7 @@ stock dashboard port, so a `fargate` record sets it.
 forwarder is `aws ssm start-session` and which share the `ssm_target` /
 `aws_profile` / `aws_region` coordinates.
 
-### 16.1 Registry (`src/kiro_crew/instances/registry.py`)
+### 16.1 Registry (`src/efm_go/instances/registry.py`)
 
 `Instance.validate()` has one arm per method. The `fargate` arm requires
 `split_ecs_target(ssm_target)` to return parts, the same splitter the connect
@@ -2492,7 +2492,7 @@ migrates from `ssm` to `fargate` in one `update()` call that changes both
 `connection_method` and `ssm_target`, because `update()` applies every change and
 then validates the whole record.
 
-### 16.2 Tunnel manager (`src/kiro_crew/instances/ssh_tunnel_manager.py`)
+### 16.2 Tunnel manager (`src/efm_go/instances/ssh_tunnel_manager.py`)
 
 `_resolve_transport` validates the target with `validate_ssm_target` and then
 requires `split_ecs_target` to succeed, so an EC2 id on a `fargate` record is
@@ -2514,7 +2514,7 @@ differs lives on the manager, not in the child.
   `get_token()` answers `""` and `token_ttl_remaining()` answers `None`.
 - **`TunnelStatus.turn_url`.** Set at connect to
   `http://127.0.0.1:<local_port>` + `FARGATE_TURN_PATH`
-  (`/v1/chat/completions`, from `src/kiro_crew/cloud/connect.py`) and included in
+  (`/v1/chat/completions`, from `src/efm_go/cloud/connect.py`) and included in
   `to_dict()` only when non-empty; it is empty for the dashboard-bearing methods.
 - **`restart_remote` refuses.** Nothing runs `kirocrew` on the task, so the call
   returns `{"ok": False, ...}` before any command is built and tells the user to
@@ -2531,7 +2531,7 @@ differs lives on the manager, not in the child.
   response before the timeout) fails the probe.
 - **`diagnose` routes to `diagnose_instance_fargate`.**
 
-### 16.3 Diagnosis ladder (`src/kiro_crew/instances/diagnostics.py`)
+### 16.3 Diagnosis ladder (`src/efm_go/instances/diagnostics.py`)
 
 `diagnose_instance_fargate(ssm_target, local_port, aws_profile, aws_region)`
 validates the coordinates and splits the target (an invalid value answers
@@ -2548,7 +2548,7 @@ broken link:
 There is no remote-dashboard rung: the task serves a chat API and runs no
 `kirocrew`, so nothing could be sent over SSM to ask it.
 
-### 16.4 Control plane (`src/kiro_crew/dashboard/handlers_instances.py`)
+### 16.4 Control plane (`src/efm_go/dashboard/handlers_instances.py`)
 
 `POST /api/instances/{id}/connect` on a connected `fargate` instance answers
 `200` with the status body carrying `turn_url` and **no `token`**. The handler
@@ -2573,7 +2573,7 @@ be the defect the field replaces.
 
 ### 16.6 Seam
 
-`FargateLaunchEngine.register()` (`src/kiro_crew/cloud/fargate_engine.py`) adds a
+`FargateLaunchEngine.register()` (`src/efm_go/cloud/fargate_engine.py`) adds a
 launched task to this registry, so a `fargate` record is normally created by the
 launch rather than by hand; Settings, the API and the CLI remain the way to add one
 for a task launched some other way, or to repair a launch whose registration did

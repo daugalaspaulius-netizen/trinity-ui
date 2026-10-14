@@ -9,8 +9,8 @@ from urllib.parse import quote
 
 import pytest
 
-from kiro_crew.connections.control_plane import CREDENTIAL_MODES
-from kiro_crew.connections.vendors.zoom.identity import (
+from efm_go.connections.control_plane import CREDENTIAL_MODES
+from efm_go.connections.vendors.zoom.identity import (
     ZOOM_CREDENTIAL_MODES,
     ZOOM_SERVER_TO_SERVER,
     ZOOM_USER_OAUTH,

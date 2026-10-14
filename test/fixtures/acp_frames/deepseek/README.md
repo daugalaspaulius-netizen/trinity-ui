@@ -82,7 +82,7 @@ verb, and which verb is sent. Without membership a reopened session reads as
 `session/request_permission` is a required class, and on this harness's own
 default composition nothing produces one. `permission-request-live.jsonl` is that
 class captured live -- and what makes it fire is Kiro Crew's gate plugin
-(`src/kiro_crew/agent_sdk/gate_extensions/deepseek/kiro_crew_tool_gate.mjs`)
+(`src/efm_go/agent_sdk/gate_extensions/deepseek/efm_go_tool_gate.mjs`)
 composed through the harness's own per-launch `--patch` overlay. The plugin
 answers the harness's `tools/pre-execute` waterfall with `{kind: 'ask'}`, its
 tools core resolves an `ask` through `ctx.approval`, and its ACP bridge answers

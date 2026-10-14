@@ -132,7 +132,7 @@ describe('ChatPage — pull request panel discovery', () => {
         key: 'slot-pr',
         messages: [{
           role: 'assistant',
-          content: 'Review https://github.com/kirodotdev/KiroCrew/pull/119',
+          content: 'Review https://efmleads.com/pull/119',
           cls: '',
         }],
         running: false,

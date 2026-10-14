@@ -24,10 +24,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.sel as sel_mod
-from kiro_crew.acp import _dispatch as d
-from kiro_crew.acp.types import JsonRpcMessage
-from kiro_crew.llm_helpers import ToolApprovalPolicy, _resolve_permission
+import efm_go.sel as sel_mod
+from efm_go.acp import _dispatch as d
+from efm_go.acp.types import JsonRpcMessage
+from efm_go.llm_helpers import ToolApprovalPolicy, _resolve_permission
 
 _BODY = "Cleanup example: rm -rf /tmp/example"
 _TCID = "toolu_bdrk_01E9iotykDeJMw8UKDLFzCvn"

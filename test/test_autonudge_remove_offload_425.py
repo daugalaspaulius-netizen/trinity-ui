@@ -15,8 +15,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.autonudge import AutoNudgeService, NudgeAdmissionRefused
-from kiro_crew.monitoring.models import MonitorBudgets
+from efm_go.autonudge import AutoNudgeService, NudgeAdmissionRefused
+from efm_go.monitoring.models import MonitorBudgets
 
 
 @pytest.fixture(autouse=True)
@@ -203,7 +203,7 @@ async def test_queued_add_revalidates_its_session_inside_the_transaction(svc):
 
 @pytest.mark.asyncio
 async def test_queued_add_revalidates_after_waiting_for_the_service_lock(svc):
-    from kiro_crew import autonudge as an
+    from efm_go import autonudge as an
 
     await svc.start()
     slot = object()
@@ -242,7 +242,7 @@ async def test_queued_add_revalidates_after_waiting_for_the_service_lock(svc):
 
 @pytest.mark.asyncio
 async def test_repeated_cancellation_cannot_leak_the_maintenance_lock(svc, monkeypatch):
-    from kiro_crew import autonudge as an
+    from efm_go import autonudge as an
 
     wait_returned = asyncio.Event()
     cleanup_started = asyncio.Event()
@@ -301,7 +301,7 @@ async def test_repeated_cancellation_cannot_leak_the_maintenance_lock(svc, monke
 
 @pytest.mark.asyncio
 async def test_maintenance_quiesce_wakes_a_firing_remove_waiter(tmp_path, monkeypatch):
-    from kiro_crew import autonudge as an
+    from efm_go import autonudge as an
 
     entered_fire = asyncio.Event()
     release_remove = asyncio.Event()

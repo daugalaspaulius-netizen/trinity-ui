@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.subagent as sa
+import efm_go.subagent as sa
 
 GIB = 1024**3
 ROOT = PurePosixPath("/sys/fs/cgroup")
@@ -109,11 +109,11 @@ def _mgr():
 def _spawn(mgr, *, min_gb: float = 4.0, memory=None):
     """Spawn with the memory guard on; ``memory`` mocks the check when given."""
     with ExitStack() as stack:
-        cfg = stack.enter_context(patch("kiro_crew.subagent.KiroCrewConfig"))
-        sel = stack.enter_context(patch("kiro_crew.subagent.sel"))
+        cfg = stack.enter_context(patch("efm_go.subagent.KiroCrewConfig"))
+        sel = stack.enter_context(patch("efm_go.subagent.sel"))
         if memory is not None:
             stack.enter_context(
-                patch("kiro_crew.subagent.check_memory_available", return_value=memory)
+                patch("efm_go.subagent.check_memory_available", return_value=memory)
             )
         cfg.load.return_value.agent.spawn_min_memory_gb = min_gb
         cfg.load.return_value.agent.subagent_cost_gb = 0.5

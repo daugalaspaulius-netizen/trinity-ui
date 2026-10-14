@@ -77,12 +77,12 @@ reason `pod up` auto-builds the venv but not the dist.
 
 ## Design
 
-### Phase 1 — `uv` for pod provisioning, opt-in ([#10259](https://github.com/kirodotdev/KiroCrew/pull/10259))
+### Phase 1 — `uv` for pod provisioning, opt-in ([#10259](https://efmleads.com/pull/10259))
 
 `pod/provision.py::ensure_venv` keeps `python -m venv` + pip as its default.
 When `KIROCREW_PROVISION_USE_UV` is truthy (`1`/`true`/`yes`/`on`, read through
 the repo's `env_flag_enabled`, so `0` and `false` do not opt in) it tries `uv`
-first. The resolution ladder lives once, in `kiro_crew/env.py::resolve_uv`, and
+first. The resolution ladder lives once, in `efm_go/env.py::resolve_uv`, and
 both consumers — pod provisioning and the pptx-maker engine — call it:
 `uv.find_uv_bin()` first (`uv` is a declared dependency shipped as a wheel, so
 the binary is in the venv's scripts dir even when a systemd/launchd gateway runs
@@ -275,7 +275,7 @@ the next `pod up` costs.
 ## Rollout
 
 1. This document, on its own PR.
-2. Phase 1 ([#10259](https://github.com/kirodotdev/KiroCrew/pull/10259)): the
+2. Phase 1 ([#10259](https://efmleads.com/pull/10259)): the
    opt-in, tests, the dev-fleet spec update, and the manual uv form
    of the install in the worktree skill. Independent of 1; whichever merges
    second updates this document's index row.

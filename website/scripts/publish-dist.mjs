@@ -55,7 +55,7 @@ const IN_PLACE_CODES = new Set(['EBUSY', 'EXDEV'])
 
 /**
  * The completeness rule, shared byte-for-byte with frontend._ASSET_REF in
- * src/kiro_crew/frontend.py (test_frontend_dist_resolve.py pins the two equal):
+ * src/efm_go/frontend.py (test_frontend_dist_resolve.py pins the two equal):
  * every `/assets/*.js|css` index.html references, ignoring a query or hash.
  */
 export const ASSET_REF_PATTERN = String.raw`(?:src|href)="(/assets/[^"?#]+\.(?:js|css))(?:[?#][^"]*)?"`

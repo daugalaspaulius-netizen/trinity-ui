@@ -29,7 +29,7 @@ from datetime import datetime
 
 import pytest
 
-from kiro_crew.workflows.registry import (
+from efm_go.workflows.registry import (
     STATUS_CANCELLED,
     STATUS_FAILED,
     STATUS_FINISHED,
@@ -38,8 +38,8 @@ from kiro_crew.workflows.registry import (
     RunHandle,
     RunRegistry,
 )
-from kiro_crew.workflows.runner import WorkflowRunner
-from kiro_crew.workflows.store import WorkflowRunStore
+from efm_go.workflows.runner import WorkflowRunner
+from efm_go.workflows.store import WorkflowRunStore
 
 # A fixed run-start stamp that is deliberately NOT an ISO timestamp and that a
 # real host wall clock can never produce, so "the event ts is this sentinel" is a
@@ -99,7 +99,7 @@ async def test_ctx_now_stays_fixed_and_visible_to_script() -> None:
 async def test_host_event_clock_is_deterministic_when_patched(monkeypatch) -> None:
     """Pin the host clock without adding a test-only runner constructor option."""
     counter = itertools.count()
-    monkeypatch.setattr("kiro_crew.workflows.runner.host_now_iso", lambda: f"evt-{next(counter)}")
+    monkeypatch.setattr("efm_go.workflows.runner.host_now_iso", lambda: f"evt-{next(counter)}")
     runner = _runner()
     res = await runner.run(GOOD_SCRIPT, run_id="wf_ec", now=NOW_SENTINEL)
     assert res.ok, res.error
@@ -518,8 +518,8 @@ def test_active_run_snapshot_omits_result_counts() -> None:
 def test_mcp_result_exposes_redacted_finished_agent_outputs(monkeypatch, aggregate) -> None:
     import json
 
-    from kiro_crew import mcp_core
-    from kiro_crew.mcp_tools import workflows
+    from efm_go import mcp_core
+    from efm_go.mcp_tools import workflows
 
     token = "AKIA" + "L" * 16
     handle = RunHandle(run_id="wf_mcp", name="example", status=STATUS_FINISHED)
@@ -549,7 +549,7 @@ def test_mcp_result_exposes_redacted_finished_agent_outputs(monkeypatch, aggrega
 
 
 def test_completion_summary_distinguishes_calls_from_verified_artifacts() -> None:
-    from kiro_crew.dashboard.workflow_inject import _summarize
+    from efm_go.dashboard.workflow_inject import _summarize
 
     handle = RunHandle(run_id="wf_summary", name="example", status=STATUS_FINISHED)
     handle.agent_results = {0: "write was refused", 1: None}
@@ -706,7 +706,7 @@ async def test_success_cancellation_respects_terminal_boundary(phase, cleanup_ra
 async def test_save_failure_is_visible_without_replacing_execution_result(
     tmp_path, monkeypatch, asynchronous
 ):
-    from kiro_crew.dashboard.workflow_inject import _summarize
+    from efm_go.dashboard.workflow_inject import _summarize
 
     store = WorkflowRunStore(base_dir=tmp_path / "workflows")
     registry = RunRegistry(store=store)
@@ -752,7 +752,7 @@ async def test_real_store_failures_reach_registry_durability_reporting(
     import logging
     from pathlib import Path
 
-    from kiro_crew.workflows import store as store_module
+    from efm_go.workflows import store as store_module
 
     caplog.set_level(logging.DEBUG, logger=store_module.__name__)
 

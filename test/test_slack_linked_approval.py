@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.slack.handler as handler
-from kiro_crew.messaging.session_trust import clear_trusted_sessions, is_session_trusted
-from kiro_crew.slack.handler import (
+import efm_go.slack.handler as handler
+from efm_go.messaging.session_trust import clear_trusted_sessions, is_session_trusted
+from efm_go.slack.handler import (
     _ACTION_APPROVE,
     _ACTION_REJECT,
     _ACTION_TRUST,

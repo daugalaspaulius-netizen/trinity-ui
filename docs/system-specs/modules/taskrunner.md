@@ -42,7 +42,7 @@ allow/deny rules, application permissions and owner-only aggregate controls rema
 independent. Cancellation resolves a canonical task ID once and operates on that
 same task. Member scope itself is not a confidentiality permission.
 
-The task runner is split into an orchestrator plus 4 focused helper modules under `src/kiro_crew/`:
+The task runner is split into an orchestrator plus 4 focused helper modules under `src/efm_go/`:
 
 ```
 taskrunner.py        (orchestrator)
@@ -209,7 +209,7 @@ The domain model was renamed `Step` → `Task`, `StepStatus` → `TaskStatus`, a
 `TaskRun` → `Project`. `taskrunner.py` re-exports the real symbols from
 `task_models` and also defines back-compat aliases so existing imports keep working:
 ```python
-from kiro_crew.task_models import Task, TaskStatus, WorkingMemory, Project, NotifyCallback  # noqa: F401
+from efm_go.task_models import Task, TaskStatus, WorkingMemory, Project, NotifyCallback  # noqa: F401
 
 # ── Backward-compat re-exports ──
 Step = Task
@@ -217,7 +217,7 @@ StepStatus = TaskStatus
 TaskRun = Project
 ```
 
-These files import from `kiro_crew.taskrunner` and require no changes:
+These files import from `efm_go.taskrunner` and require no changes:
 - `dashboard/handlers/taskrunner.py` → `StepStatus`, `TaskRun`
 - `dashboard/server.py` → `TaskRunner`
 - `dashboard/state.py` → `TaskRunner`

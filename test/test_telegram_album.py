@@ -17,8 +17,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.telegram import client as tg_client
-from kiro_crew.telegram.client import TelegramClient, TelegramInbound
+from efm_go.telegram import client as tg_client
+from efm_go.telegram.client import TelegramClient, TelegramInbound
 
 
 def _make_client() -> tuple[TelegramClient, list[TelegramInbound]]:
@@ -248,7 +248,7 @@ class TestAlbumBounds:
         assert len(client._albums[key]) == tg_client._ALBUM_MAX_MEMBERS
         assert client._album_dropped[key] == 4
 
-        with caplog.at_level("WARNING", logger="kiro_crew.telegram.client"):
+        with caplog.at_level("WARNING", logger="efm_go.telegram.client"):
             await _drain(client)
 
         assert len(received) == 1

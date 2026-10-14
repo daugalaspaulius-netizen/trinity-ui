@@ -10,13 +10,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import mcp_core, session_directive
-from kiro_crew.autonudge import AutoNudgeService, NudgeLoop, runtime_budget_exceeded
-from kiro_crew.dashboard.session_directive_apply import apply_session_directive
-from kiro_crew.mcp_tools import control
-from kiro_crew.monitoring.controller import MonitorController
-from kiro_crew.monitoring.github_pull_request import GitHubPullRequestProbeResult
-from kiro_crew.monitoring.models import (
+from efm_go import mcp_core, session_directive
+from efm_go.autonudge import AutoNudgeService, NudgeLoop, runtime_budget_exceeded
+from efm_go.dashboard.session_directive_apply import apply_session_directive
+from efm_go.mcp_tools import control
+from efm_go.monitoring.controller import MonitorController
+from efm_go.monitoring.github_pull_request import GitHubPullRequestProbeResult
+from efm_go.monitoring.models import (
     MonitorDecision,
     MonitorDispatchResult,
     MonitorObservation,
@@ -30,8 +30,8 @@ _SESSION_KEY = "dashboard:chat-1"
 _BINDING = "chat-1"
 _TARGET = "https://github.com/acme/widgets/pull/7"
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_BABYSIT_SKILL = _REPO_ROOT / "src/kiro_crew/builtin_skills/kirocrew-dev/babysit/SKILL.md"
-_SYSTEM_PROMPT = _REPO_ROOT / "src/kiro_crew/config/prompt.md"
+_BABYSIT_SKILL = _REPO_ROOT / "src/efm_go/builtin_skills/kirocrew-dev/babysit/SKILL.md"
+_SYSTEM_PROMPT = _REPO_ROOT / "src/efm_go/config/prompt.md"
 
 
 def test_babysit_is_reachable_and_the_system_prompt_prefers_structured_watch() -> None:
@@ -43,14 +43,14 @@ def test_babysit_is_reachable_and_the_system_prompt_prefers_structured_watch() -
     assert "Use `monitor_start`" in prompt
     assert "only for unsupported targets" in prompt
     assert "HEARTBEAT.md" in prompt
-    assert "kiro_crew.heartbeat.append_heartbeat_task(entry)" in prompt
+    assert "efm_go.heartbeat.append_heartbeat_task(entry)" in prompt
 
 
 def test_babysit_keeps_finite_legacy_path_for_unobserved_review_evidence() -> None:
     skill = _BABYSIT_SKILL.read_text(encoding="utf-8")
     legacy_recipe, _ = json.JSONDecoder().raw_decode(skill.split("monitor_start(", 1)[1])
     legacy_recipe["message"] = legacy_recipe["message"].replace("<unsupported target>", _TARGET)
-    with patch("kiro_crew.mcp_core._resolve_session_key_strict", return_value=_SESSION_KEY):
+    with patch("efm_go.mcp_core._resolve_session_key_strict", return_value=_SESSION_KEY):
         legacy = control.monitor_start(
             "monitor_start",
             legacy_recipe,
@@ -84,7 +84,7 @@ def test_prepare_pr_recipe_covers_its_poll_budget_without_provider_gating() -> N
     assert isinstance(call, ast.Call)
     args = {kw.arg: ast.literal_eval(kw.value) for kw in call.keywords}
     args["message"] = args["message"].replace("#<n>", _TARGET)
-    with patch("kiro_crew.mcp_core._resolve_session_key_strict", return_value=_SESSION_KEY):
+    with patch("efm_go.mcp_core._resolve_session_key_strict", return_value=_SESSION_KEY):
         result = control.monitor_start("monitor_start", args)
     applied = session_directive.decode(result, "monitor_start")
     assert applied is not None
@@ -191,7 +191,7 @@ def _state_and_slot():
 
 
 def _call_directive(tool_name: str, args: dict[str, object]) -> tuple[str, dict[str, object]]:
-    with patch("kiro_crew.mcp_core._resolve_session_key_strict", return_value=_SESSION_KEY):
+    with patch("efm_go.mcp_core._resolve_session_key_strict", return_value=_SESSION_KEY):
         result = mcp_core._call_tool_inner(tool_name, args)
     directive = session_directive.decode(result, tool_name)
     assert directive is not None
@@ -205,8 +205,8 @@ async def _apply(
 ) -> str:
     state, slot = _state_and_slot()
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
     ):
         return await apply_session_directive(state, slot, _SESSION_KEY, tool_name, directive)
 
@@ -248,8 +248,8 @@ def _inspection(service: AutoNudgeService) -> dict[str, object]:
             }
         )
     with (
-        patch("kiro_crew.mcp_core._resolve_session_key_strict", return_value=_SESSION_KEY),
-        patch("kiro_crew.mcp_core._get", return_value=response),
+        patch("efm_go.mcp_core._resolve_session_key_strict", return_value=_SESSION_KEY),
+        patch("efm_go.mcp_core._get", return_value=response),
     ):
         return json.loads(mcp_core._call_tool_inner("monitor_inspect", {}))
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config import loader as cfg_loader
+from efm_go.config import loader as cfg_loader
 
 
 @pytest.fixture()

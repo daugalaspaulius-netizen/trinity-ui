@@ -30,7 +30,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.subagent import SpawnApprovalUnreachable, SubagentManager
+from efm_go.subagent import SpawnApprovalUnreachable, SubagentManager
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -209,7 +209,7 @@ class TestUnansweredablePromptIsRefusedNow:
         ``outcome`` keeps its existing value on purpose — this IS a rejection —
         so the distinguishing fact has to be in the metadata.
         """
-        import kiro_crew.subagent as subagent_mod
+        import efm_go.subagent as subagent_mod
 
         calls: list[dict] = []
         recorder = MagicMock()
@@ -230,7 +230,7 @@ class TestUnansweredablePromptIsRefusedNow:
         """An operator grepping for the run id finds the cause, not just the effect.
 
         Captured at the root logger: the coordinators are rebound onto
-        ``kiro_crew.subagent``'s namespace (``bind_component_globals``), so the
+        ``efm_go.subagent``'s namespace (``bind_component_globals``), so the
         record is emitted under that name rather than under ``admission``.
         """
         mgr = _manager(_unreachable)
@@ -337,7 +337,7 @@ class TestTheOtherTwoOutcomesAreUnchanged:
 
 def _probe(state: object, *, slack: object = MagicMock()) -> bool:
     """Run ``_dashboard_client_attached`` against a hand-built gateway."""
-    from kiro_crew.slack.gateway import GatewayOrchestrator
+    from efm_go.slack.gateway import GatewayOrchestrator
 
     fake = SimpleNamespace(slack=slack, _owner_id="U123", dashboard_state=state)
     return GatewayOrchestrator._dashboard_client_attached(fake)  # type: ignore[arg-type]
@@ -345,7 +345,7 @@ def _probe(state: object, *, slack: object = MagicMock()) -> bool:
 
 def _hub_count(sockets: list[dict]) -> int:
     """Run the real ``dashboard_user_ws_count`` over hand-built sockets."""
-    from kiro_crew.dashboard.websocket_hub import WebSocketHub
+    from efm_go.dashboard.websocket_hub import WebSocketHub
 
     class _Sock:
         def __init__(self, *, closed: bool, dashboard_user: bool) -> None:
@@ -438,7 +438,7 @@ def _callback(  # type: ignore[no-untyped-def]
     monkeypatch, *, clients: int, raise_when_unreachable: bool, slack: object = None
 ):
     """Build one real ``_interactive_approval`` closure over a fake gateway."""
-    from kiro_crew.slack import gateway as gateway_mod
+    from efm_go.slack import gateway as gateway_mod
 
     monkeypatch.setattr(
         gateway_mod, "safety_override", lambda: SimpleNamespace(is_active=lambda: False)
@@ -470,7 +470,7 @@ def _callback(  # type: ignore[no-untyped-def]
 
 
 def _event():  # type: ignore[no-untyped-def]
-    from kiro_crew.providers.base import LLMEvent
+    from efm_go.providers.base import LLMEvent
 
     return LLMEvent(kind="permission_request", request_id="spawn:abc123", title="spawn_run(x)")
 
@@ -527,7 +527,7 @@ class TestOnlyTheSpawnGateRaises:
         """
         from pathlib import Path
 
-        import kiro_crew.slack.gateway as gateway_mod
+        import efm_go.slack.gateway as gateway_mod
 
         src = Path(gateway_mod.__file__).read_text(encoding="utf-8")
         assert "on_tool_approval=_approve_subagent," in src

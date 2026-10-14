@@ -39,7 +39,7 @@ change must also update the docs and the indexes. The rule is only real if a
 machine enforces it.
 
 The sixth check guards the other direction: some documentation filenames are an
-API. ``src/kiro_crew/docs/*.md`` is packaged and read at runtime, and specific
+API. ``src/efm_go/docs/*.md`` is packaged and read at runtime, and specific
 filenames are hardcoded in Python and TypeScript. Renaming one of those without
 updating its consumers breaks a shipped feature rather than a link.
 
@@ -106,10 +106,10 @@ from pathlib import Path
 # ── What we scan ────────────────────────────────────────────────────────────────
 
 # Documentation roots, each with the index file that must reach every doc in it.
-# ``docs/`` is repo-only contributor/architecture material; ``src/kiro_crew/docs/``
+# ``docs/`` is repo-only contributor/architecture material; ``src/efm_go/docs/``
 # is PACKAGED end-user material (see MANIFEST.in) and is read at runtime.
 #
-# ``src/kiro_crew/apps/builtins/`` is the third kind: thousands of lines of
+# ``src/efm_go/apps/builtins/`` is the third kind: thousands of lines of
 # spec-grade markdown that ship INSIDE a builtin app -- its README, its agent
 # briefs and prompts, and its SKILL.md files, which an agent loads verbatim at
 # runtime. A stale path or a dead link there misroutes the agent rather than a
@@ -118,9 +118,9 @@ from pathlib import Path
 # manifest rather than by a documentation index.
 DOC_ROOTS: tuple[str, ...] = (
     "docs",
-    "src/kiro_crew/docs",
+    "src/efm_go/docs",
     "website/docs",
-    "src/kiro_crew/apps/builtins",
+    "src/efm_go/apps/builtins",
 )
 
 # Per-directory index filenames, in priority order. A directory is "indexed" by
@@ -163,7 +163,7 @@ UNCURATED_PREFIXES: tuple[str, ...] = (
     # opens. Requiring an index in `skills/<name>/` or `agents/context/` would
     # add a file the app never loads, so reachability and the index requirement
     # are off here while every link and every cited path is still checked.
-    "src/kiro_crew/apps/builtins/",
+    "src/efm_go/apps/builtins/",
 )
 
 # Directories that legitimately hold docs without their own index: a vendored
@@ -200,14 +200,14 @@ SKIP_DIR_PATHS: frozenset[str] = frozenset(
         "dist",
         "website/build",
         "website/dist",
-        "src/kiro_crew/static/dist",
+        "src/efm_go/static/dist",
     }
 )
 
 #: Build trees whose names carry a per-build id, so they are skipped by prefix:
 #: the scratch, ready and previous trees of website/scripts/publish-dist.mjs,
-#: and the staged copies src/kiro_crew/static/dist links to.
-SKIP_DIR_PREFIXES: tuple[str, ...] = ("website/.dist", "src/kiro_crew/static/.dist")
+#: and the staged copies src/efm_go/static/dist links to.
+SKIP_DIR_PREFIXES: tuple[str, ...] = ("website/.dist", "src/efm_go/static/.dist")
 
 # Source trees scanned for citations of documentation paths. Broad on purpose: a
 # stale pointer is just as misleading in an agent-facing SKILL.md or an Electron
@@ -246,23 +246,23 @@ _EXTERNAL_REPO_MARKERS: tuple[str, ...] = (
 # The check is deliberately data-driven rather than a grep, so that adding a
 # coupling is a one-line change here and is impossible to forget silently.
 CODE_COUPLED_DOCS: dict[str, tuple[str, ...]] = {
-    "src/kiro_crew/docs/discord-integration.md": ("website/src/pages/settings/DiscordPanel.tsx",),
-    "src/kiro_crew/docs/feishu-integration.md": ("website/src/pages/settings/FeishuPanel.tsx",),
-    "src/kiro_crew/docs/imessage-integration.md": ("website/src/pages/settings/IMessagePanel.tsx",),
-    "src/kiro_crew/docs/slack-integration.md": ("website/src/pages/settings/SlackPanel.tsx",),
-    "src/kiro_crew/docs/teams-integration.md": ("website/src/pages/settings/TeamsPanel.tsx",),
-    "src/kiro_crew/docs/telegram-integration.md": ("website/src/pages/settings/TelegramPanel.tsx",),
-    "src/kiro_crew/docs/webex-integration.md": ("website/src/pages/settings/WebexPanel.tsx",),
-    "src/kiro_crew/docs/wecom-integration.md": ("website/src/pages/settings/WeComPanel.tsx",),
-    "src/kiro_crew/docs/weixin-integration.md": ("website/src/pages/settings/WeixinPanel.tsx",),
-    "src/kiro_crew/docs/whatsapp-integration.md": ("website/src/pages/settings/WhatsAppPanel.tsx",),
+    "src/efm_go/docs/discord-integration.md": ("website/src/pages/settings/DiscordPanel.tsx",),
+    "src/efm_go/docs/feishu-integration.md": ("website/src/pages/settings/FeishuPanel.tsx",),
+    "src/efm_go/docs/imessage-integration.md": ("website/src/pages/settings/IMessagePanel.tsx",),
+    "src/efm_go/docs/slack-integration.md": ("website/src/pages/settings/SlackPanel.tsx",),
+    "src/efm_go/docs/teams-integration.md": ("website/src/pages/settings/TeamsPanel.tsx",),
+    "src/efm_go/docs/telegram-integration.md": ("website/src/pages/settings/TelegramPanel.tsx",),
+    "src/efm_go/docs/webex-integration.md": ("website/src/pages/settings/WebexPanel.tsx",),
+    "src/efm_go/docs/wecom-integration.md": ("website/src/pages/settings/WeComPanel.tsx",),
+    "src/efm_go/docs/weixin-integration.md": ("website/src/pages/settings/WeixinPanel.tsx",),
+    "src/efm_go/docs/whatsapp-integration.md": ("website/src/pages/settings/WhatsAppPanel.tsx",),
     "docs/architecture/security-deep-dive.md": ("website/src/pages/settings/SecurityPanel.tsx",),
     "website/docs/theming-contract.md": ("website/scripts/check-theme-colors.mjs",),
 }
 
-# The tips catalog scans ``src/kiro_crew/docs/*.md`` but only surfaces docs named
+# The tips catalog scans ``src/efm_go/docs/*.md`` but only surfaces docs named
 # in this allowlist module; every allowlisted name must therefore still resolve.
-TIPS_ALLOWLIST_MODULE = "src/kiro_crew/tips_allowlist.py"
+TIPS_ALLOWLIST_MODULE = "src/efm_go/tips_allowlist.py"
 
 # Markdown inline/reference links and images: [text](target) and ![alt](target).
 _LINK_RE = re.compile(r"!?\[[^\]]*\]\(\s*(<[^>]*>|[^)\s]+)")
@@ -390,7 +390,7 @@ _UNRESOLVABLE_REF_OK: frozenset[str] = frozenset(
         #
         # Stamped by `scripts/stamp-distribution.sh` during packaging; imported
         # through a try/except ImportError precisely because a checkout lacks it.
-        "kiro_crew/_build_info.py",
+        "efm_go/_build_info.py",
         # Bundle inside the vendored npm package @agentclientprotocol/claude-agent-acp,
         # resolved out of the gitignored node_modules by `acp/client.py`.
         "dist/acp-agent.js",
@@ -488,7 +488,7 @@ CHECK_DEAD_IDENTIFIER = "dead-identifier"
 # Doc genres that name files and symbols BECAUSE they do not exist yet. Same
 # judgement as ``_PATH_CITE_DOC_PREFIXES``, applied to the fact checks whose
 # subject is existence: a proposal saying "this adds
-# ``src/kiro_crew/run_coordinator/sqlite.py``" is correct writing, and 13 of the 20
+# ``src/efm_go/run_coordinator/sqlite.py``" is correct writing, and 13 of the 20
 # path findings measured on the shipping tree were exactly that.
 _FORWARD_LOOKING_DOC_PREFIXES: tuple[str, ...] = (
     "docs/request-for-change/",
@@ -498,7 +498,7 @@ _FORWARD_LOOKING_DOC_PREFIXES: tuple[str, ...] = (
 # A source path written from the REPO ROOT, so it resolves or it is wrong. Both
 # boundaries are load-bearing. The lookBEHIND keeps the ``docs/`` and ``src/`` arms
 # from matching the tail of a longer path: without it
-# ``src/kiro_crew/docs/tips.md`` would also be read as a repo-root
+# ``src/efm_go/docs/tips.md`` would also be read as a repo-root
 # ``docs/tips.md``. The lookAHEAD keeps the extension from being a PREFIX of the
 # real one: without it ``scripts/vendor_manifest.sha256`` reads as
 # ``scripts/vendor_manifest.sh``, ``types.pyi`` as ``types.py``, ``page.mdx`` as
@@ -517,7 +517,7 @@ _REPO_PATH_CITE_RE = re.compile(
 # address format the auto-improvement spine hands an EXTERNAL target repository, so
 # the path names a module in that repo. The syntax alone cannot say which repo is
 # meant: this one uses it for its own code too
-# (``src/kiro_crew/mcp_tools/workflows.py::workflow_run``), and skipping on syntax
+# (``src/efm_go/mcp_tools/workflows.py::workflow_run``), and skipping on syntax
 # would let a rename leave every such local citation stale with the gate green.
 # What separates them is the DOCUMENT, the same discriminator
 # ``_PATH_CITE_DOC_PREFIXES`` already runs on: these docs describe a run against
@@ -549,7 +549,7 @@ _TABLE_LINK_CELL_RE = re.compile(r"\|\s*\[")
 # ones nobody recorded. A packaged doc's filename inside a STRING LITERAL is a
 # consumer (a setup-guide URL, a fetch path); the same name in a comment is a
 # citation, which ``check_code_citations`` already covers.
-_PACKAGED_DOCS_DIR = "src/kiro_crew/docs"
+_PACKAGED_DOCS_DIR = "src/efm_go/docs"
 _COUPLING_SCAN_ROOT = "website/src"
 _COUPLING_SUFFIXES: frozenset[str] = frozenset({".ts", ".tsx"})
 _STRING_LITERAL_RE = re.compile(r"""(['"`])((?:(?!\1).)*)\1""")
@@ -777,7 +777,7 @@ def _is_regular_file(path: Path) -> bool:
 
     This gate walks a tree a fork PR controls, and every file it lists is a file
     it may later read in full. A symlink is therefore an arbitrary read primitive:
-    ``src/kiro_crew/evil.py -> /dev/zero`` plus a citation naming it makes the read
+    ``src/efm_go/evil.py -> /dev/zero`` plus a citation naming it makes the read
     never finish, and a symlink into a credential path makes it exfiltration. Note
     ``Path.is_file()`` FOLLOWS symlinks, so the symlink test must be explicit.
 
@@ -1164,7 +1164,7 @@ def check_code_citations(root: Path, findings: Findings) -> None:
                         # inside the package, relative to the package itself.
                         if (
                             (root / ref).exists()
-                            or (root / "src" / "kiro_crew" / ref).exists()
+                            or (root / "src" / "efm_go" / ref).exists()
                             or (root / "website" / ref).exists()
                         ):
                             continue
@@ -1357,7 +1357,7 @@ def check_source_citations(root: Path, docs: list[Path], findings: Findings) -> 
 def check_code_coupled_docs(root: Path, findings: Findings) -> None:
     """Docs whose filenames are hardcoded in code must still exist.
 
-    ``src/kiro_crew/docs/`` is packaged and read at runtime; specific filenames
+    ``src/efm_go/docs/`` is packaged and read at runtime; specific filenames
     are baked into TypeScript URL constants and into the tips allowlist. Renaming
     one is a code change, not a docs change.
     """
@@ -1374,12 +1374,12 @@ def check_code_coupled_docs(root: Path, findings: Findings) -> None:
 
     allowlist = root / TIPS_ALLOWLIST_MODULE
     if allowlist.is_file():
-        packaged = root / "src" / "kiro_crew" / "docs"
+        packaged = root / "src" / "efm_go" / "docs"
         for match in re.finditer(r'"([A-Za-z0-9][A-Za-z0-9._-]*\.md)"', _read(allowlist)):
             name = match.group(1)
             if not (packaged / name).is_file():
                 findings.coupling.append(
-                    f"src/kiro_crew/docs/{name} is missing but listed in "
+                    f"src/efm_go/docs/{name} is missing but listed in "
                     f"{TIPS_ALLOWLIST_MODULE} (TIP_DOC_ALLOWLIST)"
                 )
 
@@ -1697,7 +1697,7 @@ def _write_baseline(path: Path, triples: set[tuple[str, str, str]]) -> None:
     the kernel enforces. Staging and renaming also means an interrupted refresh
     leaves the recorded backlog intact rather than truncated.
 
-    ``kiro_crew.atomic_write`` is the repo's helper for this shape and is not used
+    ``efm_go.atomic_write`` is the repo's helper for this shape and is not used
     here on purpose: this gate is stdlib-only so it runs before the package is
     installed, which is how CI invokes it.
     """
@@ -2010,7 +2010,7 @@ def _self_test() -> int:
         return "conflict_markers"
 
     def plant_phantom_ref(root: Path) -> str:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "mod.py").write_text(
             '"""Spec: ``docs/system-specs/modules/ghost.md``."""\n', encoding="utf-8"
@@ -2021,7 +2021,7 @@ def _self_test() -> int:
         spec = root / _HARNESS_INVARIANT_DOC
         spec.parent.mkdir(parents=True)
         spec.write_text("| Id | Rule |\n|---|---|\n| H1 | One |\n", encoding="utf-8")
-        source = root / "src" / "kiro_crew"
+        source = root / "src" / "efm_go"
         source.mkdir(parents=True)
         (source / "harness.py").write_text("# H99: missing invariant\n", encoding="utf-8")
         return "unknown_harness_invariants"
@@ -2029,7 +2029,7 @@ def _self_test() -> int:
     def plant_phantom_source_path(root: Path) -> str:
         # A module spec naming a file that exists nowhere -- the case the class
         # reports. The doc has to sit in the scoped tree to be checked at all.
-        pkg = root / "src" / "kiro_crew" / "acp"
+        pkg = root / "src" / "efm_go" / "acp"
         pkg.mkdir(parents=True)
         (pkg / "real.py").write_text("x = 1\n", encoding="utf-8")
         spec_dir = root / "docs" / "system-specs" / "modules"
@@ -2048,7 +2048,7 @@ def _self_test() -> int:
         # it is never indexed -- which makes a citation naming it UNRESOLVABLE, and
         # in a module spec that is a finding. Pointed at a real file in-tree, so
         # the probe proves the exclusion rather than the hazard.
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "real.py").write_text("a = 1\nb = 2\n", encoding="utf-8")
         try:
@@ -2065,12 +2065,12 @@ def _self_test() -> int:
             encoding="utf-8",
         )
         (spec_dir / "thing.md").write_text(
-            "# Thing\n\nSee `kiro_crew/linked.py:900`.\n", encoding="utf-8"
+            "# Thing\n\nSee `efm_go/linked.py:900`.\n", encoding="utf-8"
         )
         return "phantom_source_paths"
 
     def plant_stale_line_cite(root: Path) -> str:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\nb = 2\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text("# Ok\n\nSee `small.py:900`.\n", encoding="utf-8")
@@ -2079,7 +2079,7 @@ def _self_test() -> int:
     def plant_absurd_line_number(root: Path) -> str:
         # 4301 digits: past CPython's int(str) cap, so converting it raises and
         # would abort the whole gate on input a fork PR controls.
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
@@ -2089,7 +2089,7 @@ def _self_test() -> int:
 
     def plant_line_zero(root: Path) -> str:
         # Files are 1-indexed, so `:0` reads as precise and points at nothing.
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text("# Ok\n\nSee `small.py:0`.\n", encoding="utf-8")
@@ -2098,7 +2098,7 @@ def _self_test() -> int:
     def plant_stale_line_cite_in_an_uncurated_tree(root: Path) -> str:
         # An archive is exempt from CURATION -- indexes, style -- but a reader who
         # opens it still follows its line numbers, so the line check applies.
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\nb = 2\n", encoding="utf-8")
         archive = root / "docs" / "archive"
@@ -2109,7 +2109,7 @@ def _self_test() -> int:
     def plant_stale_line_cite_in_an_rfc(root: Path) -> str:
         # The path exemption above must NOT carry the line check with it: a line
         # number is a claim about code that exists now, even inside a proposal.
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\nb = 2\n", encoding="utf-8")
         rfc = root / "docs" / "request-for-change"
@@ -2123,14 +2123,14 @@ def _self_test() -> int:
     def plant_stale_line_range(root: Path) -> str:
         # The END of a range is what must be inside the file: a range whose start
         # is valid and whose end is past EOF is still a citation into nothing.
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\nb = 2\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text("# Ok\n\nSee `small.py:1-40`.\n", encoding="utf-8")
         return "stale_line_cites"
 
     def plant_coupling(root: Path) -> str:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "tips_allowlist.py").write_text(
             'TIP_DOC_ALLOWLIST = frozenset({"vanished.md"})\n', encoding="utf-8"
@@ -2231,7 +2231,7 @@ def _self_test() -> int:
         return "unreachable"
 
     def allow_fenced_sample(root: Path) -> str:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
@@ -2240,7 +2240,7 @@ def _self_test() -> int:
         return "stale_line_cites"
 
     def allow_in_range_cite(root: Path) -> str:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\nb = 2\nc = 3\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
@@ -2284,23 +2284,23 @@ def _self_test() -> int:
 
     def plant_missing_repo_path(root: Path) -> str:
         (root / "docs" / "ok.md").write_text(
-            "# Ok\n\nThe entry point is `src/kiro_crew/ghost.py`.\n", encoding="utf-8"
+            "# Ok\n\nThe entry point is `src/efm_go/ghost.py`.\n", encoding="utf-8"
         )
-        return "src/kiro_crew/ghost.py"
+        return "src/efm_go/ghost.py"
 
     def allow_repo_path_that_exists(root: Path) -> None:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "real.py").write_text("a = 1\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
-            "# Ok\n\nThe entry point is `src/kiro_crew/real.py`.\n", encoding="utf-8"
+            "# Ok\n\nThe entry point is `src/efm_go/real.py`.\n", encoding="utf-8"
         )
 
     def allow_repo_path_resolvable_one_root_down(root: Path) -> None:
         # A skill's own `scripts/reaper.sh` reads as repo-anchored and is not; the
         # suffix index is what tells the two apart, and dropping this exemption
         # re-reports 33 correct citations (measured).
-        skill = root / "src" / "kiro_crew" / "builtin_skills" / "demo" / "scripts"
+        skill = root / "src" / "efm_go" / "builtin_skills" / "demo" / "scripts"
         skill.mkdir(parents=True)
         (skill / "reaper.sh").write_text("#!/bin/sh\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
@@ -2315,20 +2315,20 @@ def _self_test() -> int:
             "# Docs\n\n- [Ok](ok.md)\n- [Rfc](request-for-change/rfc-x.md)\n", encoding="utf-8"
         )
         (rfc / "rfc-x.md").write_text(
-            "# Rfc\n\nThis adds `src/kiro_crew/planned.py`.\n", encoding="utf-8"
+            "# Rfc\n\nThis adds `src/efm_go/planned.py`.\n", encoding="utf-8"
         )
 
     def plant_line_ref_inside_the_file(root: Path) -> str:
         # Inside the file, so the beyond-EOF check stays silent and only the shape
         # check fires -- which is the citation that is about to rot unnoticed.
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\nb = 2\nc = 3\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text("# Ok\n\nSee `small.py:2`.\n", encoding="utf-8")
         return "small.py:2"
 
     def allow_symbol_cite_without_a_line(root: Path) -> None:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "small.py").write_text("a = 1\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
@@ -2366,27 +2366,27 @@ def _self_test() -> int:
         )
 
     def plant_unrecorded_coupling(root: Path) -> str:
-        packaged = root / "src" / "kiro_crew" / "docs"
+        packaged = root / "src" / "efm_go" / "docs"
         packaged.mkdir(parents=True)
         (packaged / "ghost-integration.md").write_text("# Ghost\n", encoding="utf-8")
         panel = root / "website" / "src" / "pages" / "settings"
         panel.mkdir(parents=True)
         (panel / "GhostPanel.tsx").write_text(
             "const SETUP_GUIDE = 'https://example.invalid/"
-            "src/kiro_crew/docs/ghost-integration.md'\n",
+            "src/efm_go/docs/ghost-integration.md'\n",
             encoding="utf-8",
         )
         return "ghost-integration.md"
 
     def allow_coupling_named_only_in_a_comment(root: Path) -> None:
         # A comment is a CITATION, which check_code_citations already owns.
-        packaged = root / "src" / "kiro_crew" / "docs"
+        packaged = root / "src" / "efm_go" / "docs"
         packaged.mkdir(parents=True)
         (packaged / "iframe-hosts.md").write_text("# Hosts\n", encoding="utf-8")
         page = root / "website" / "src" / "pages"
         page.mkdir(parents=True)
         (page / "ChatPage.tsx").write_text(
-            "// See `src/kiro_crew/docs/iframe-hosts.md` for the host list.\n"
+            "// See `src/efm_go/docs/iframe-hosts.md` for the host list.\n"
             "export const x = 1\n",
             encoding="utf-8",
         )
@@ -2395,7 +2395,7 @@ def _self_test() -> int:
         # ``apps.mdNotebook.sort.nameAZ`` is an i18n key, not a reference to the
         # packaged ``apps.md``. Without the regex's trailing guard every module
         # using that key namespace read as a consumer of the doc.
-        packaged = root / "src" / "kiro_crew" / "docs"
+        packaged = root / "src" / "efm_go" / "docs"
         packaged.mkdir(parents=True)
         (packaged / "apps.md").write_text("# Apps\n", encoding="utf-8")
         page = root / "website" / "src" / "apps"
@@ -2405,7 +2405,7 @@ def _self_test() -> int:
         )
 
     def allow_coupling_named_only_in_a_test(root: Path) -> None:
-        packaged = root / "src" / "kiro_crew" / "docs"
+        packaged = root / "src" / "efm_go" / "docs"
         packaged.mkdir(parents=True)
         (packaged / "fixture-doc.md").write_text("# Fixture\n", encoding="utf-8")
         tests = root / "website" / "src" / "test"
@@ -2413,7 +2413,7 @@ def _self_test() -> int:
         (tests / "Panel.test.tsx").write_text("const f = 'fixture-doc.md'\n", encoding="utf-8")
 
     def plant_dead_identifier(root: Path) -> str:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "real.py").write_text("def live_handler():\n    return 1\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
@@ -2422,7 +2422,7 @@ def _self_test() -> int:
         return "vanished_handler"
 
     def allow_live_identifier(root: Path) -> None:
-        pkg = root / "src" / "kiro_crew"
+        pkg = root / "src" / "efm_go"
         pkg.mkdir(parents=True)
         (pkg / "real.py").write_text("def live_handler_name():\n    return 1\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
@@ -2430,8 +2430,8 @@ def _self_test() -> int:
         )
 
     def allow_placeholder_identifier(root: Path) -> None:
-        (root / "src" / "kiro_crew").mkdir(parents=True)
-        (root / "src" / "kiro_crew" / "real.py").write_text("a = 1\n", encoding="utf-8")
+        (root / "src" / "efm_go").mkdir(parents=True)
+        (root / "src" / "efm_go" / "real.py").write_text("a = 1\n", encoding="utf-8")
         (root / "docs" / "ok.md").write_text(
             "# Ok\n\nName it `MyOwnWidget` in your app.\n", encoding="utf-8"
         )
@@ -2444,7 +2444,7 @@ def _self_test() -> int:
             (root / "docs").mkdir(parents=True)
             (root / "docs" / "README.md").write_text("# Docs\n\n- [Ok](ok.md)\n", encoding="utf-8")
             (root / "docs" / "ok.md").write_text(
-                "# Ok\n\nThe entry point is `src/kiro_crew/ghost.py`.\n", encoding="utf-8"
+                "# Ok\n\nThe entry point is `src/efm_go/ghost.py`.\n", encoding="utf-8"
             )
             unfiltered = run(root)
             if not unfiltered.facts_for(CHECK_PATH_EXISTS):

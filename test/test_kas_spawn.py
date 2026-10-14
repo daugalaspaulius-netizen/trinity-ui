@@ -3,11 +3,11 @@
 Kiro Crew reaches KAS through kiro-cli's own ACP relay
 (``kiro-cli acp --agent-engine v3``) rather than by locating kiro-cli's
 extracted KAS bundle and running ``node acp-server.js`` itself. See
-:mod:`kiro_crew.acp.kas_transport` for why, for the frame-parity measurement
+:mod:`efm_go.acp.kas_transport` for why, for the frame-parity measurement
 that preceded the switch, and for the two auth owners: ``--auth-method cli``
 (kiro-cli's store, the default) or -- when Crew's own vault holds an identity --
 no flag, with Crew answering the engine's ``_kiro/auth/getAccessToken`` request
-from :mod:`kiro_crew.auth`.
+from :mod:`efm_go.auth`.
 
 The invocation proof lives in ``TestKasInvocation``: it spawns a real
 ``AcpRuntime`` configured for the KAS backend against a stub agent that speaks
@@ -36,9 +36,9 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.acp import session_handle as sh
-from kiro_crew.acp.kas_host_auth import HostAuthCallbackError
-from kiro_crew.acp.kas_transport import (
+from efm_go.acp import session_handle as sh
+from efm_go.acp.kas_host_auth import HostAuthCallbackError
+from efm_go.acp.kas_transport import (
     KAS_AUTH_CALLBACK_ERROR_CODE,
     KAS_RELAY_AUTH_OWNER,
     KAS_RELAY_ENGINE,
@@ -46,16 +46,16 @@ from kiro_crew.acp.kas_transport import (
     METHOD_KAS_AUTH_GET_ACCESS_TOKEN,
     build_kas_argv,
 )
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.types import (
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.types import (
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
     ACP_BACKENDS_HOST_AUTH_CALLBACK,
     ACP_CLIENT_CAPABILITIES,
     KAS_CLIENT_CAPABILITIES,
 )
-from kiro_crew.agent_sdk.tool_search import ToolSearchSettings
-from kiro_crew.config.paths import kiro_agents_dir
+from efm_go.agent_sdk.tool_search import ToolSearchSettings
+from efm_go.config.paths import kiro_agents_dir
 
 
 @pytest.fixture(autouse=True)
@@ -132,7 +132,7 @@ class TestAuthOwnership:
 
     Two owners: kiro-cli (``--auth-method cli``, the default -- the frame never
     arrives) or Crew (no flag, because the Crew vault held an identity at spawn
-    -- the frame arrives and is answered from :mod:`kiro_crew.auth`). A third
+    -- the frame arrives and is answered from :mod:`efm_go.auth`). A third
     shape is forbidden: a shell-out to kiro-cli's hidden token verb.
     """
 
@@ -140,7 +140,7 @@ class TestAuthOwnership:
         """The credential is Crew's own vault or kiro-cli's own store -- never
         a subprocess. Asserted on the module surface because a re-added helper
         is exactly the regression the relay switch was meant to prevent."""
-        from kiro_crew.acp import runtime as runtime_mod
+        from efm_go.acp import runtime as runtime_mod
 
         for gone in ("_deliver_kas_access_token", "resolve_kas_access_token"):
             assert not hasattr(AcpRuntime, gone), f"AcpRuntime.{gone} should be gone"
@@ -148,7 +148,7 @@ class TestAuthOwnership:
 
     def test_the_shell_out_module_is_gone(self):
         with pytest.raises(ModuleNotFoundError):
-            __import__("kiro_crew.acp.kas_auth")
+            __import__("efm_go.acp.kas_auth")
 
     def test_host_auth_callback_is_positive_membership(self):
         """Handing a child a credential is authorized by membership (H5/H8), and
@@ -165,7 +165,7 @@ class TestAuthOwnership:
         Crew-owned), so staying conservative costs one respawn, never a turn on
         stale credentials.
         """
-        from kiro_crew.acp.types import backends_retired_by_host_logout
+        from efm_go.acp.types import backends_retired_by_host_logout
 
         assert ACP_BACKEND_KAS in backends_retired_by_host_logout()
 
@@ -228,7 +228,7 @@ class TestAuthOwnership:
             return rendered
 
         with (
-            patch("kiro_crew.acp.harness.kas.answer_get_access_token", side_effect=fake_answer),
+            patch("efm_go.acp.harness.kas.answer_get_access_token", side_effect=fake_answer),
             patch.object(runtime, "send_response", side_effect=record_response),
         ):
             await runtime._answer_get_access_token(7)
@@ -252,7 +252,7 @@ class TestAuthOwnership:
             raise HostAuthCallbackError("not signed in to Kiro Crew")
 
         with (
-            patch("kiro_crew.acp.harness.kas.answer_get_access_token", side_effect=refuse),
+            patch("efm_go.acp.harness.kas.answer_get_access_token", side_effect=refuse),
             patch.object(runtime, "send_error", side_effect=record_error),
         ):
             await runtime._answer_get_access_token(8)
@@ -289,7 +289,7 @@ class TestSandboxClassification:
             sandbox_mode="off",
             acp_backend=ACP_BACKEND_KAS,
         )
-        with patch("kiro_crew.acp.runtime.wrap_argv", side_effect=fake_wrap):
+        with patch("efm_go.acp.runtime.wrap_argv", side_effect=fake_wrap):
             with pytest.raises(self._Abort):
                 await runtime.spawn()
         assert captured["is_kiro_cli"] is False
@@ -306,13 +306,13 @@ class TestSandboxClassification:
         async def fake_bin(*, environ=None, home=None):
             return "/usr/bin/kiro-cli"
 
-        monkeypatch.setattr("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", fake_bin)
-        monkeypatch.setattr("kiro_crew.agent.ensure_agent_materialized", lambda _agent: None)
+        monkeypatch.setattr("efm_go.acp.client._resolve_kiro_bin_for_spawn", fake_bin)
+        monkeypatch.setattr("efm_go.agent.ensure_agent_materialized", lambda _agent: None)
         monkeypatch.setattr(
-            "kiro_crew.acp.skill_projection.prepare_native_skill_projection", lambda _work_dir: None
+            "efm_go.acp.skill_projection.prepare_native_skill_projection", lambda _work_dir: None
         )
         runtime = AcpRuntime(work_dir=tmp_path / "sbx2", sandbox_mode="off")
-        with patch("kiro_crew.acp.runtime.wrap_argv", side_effect=fake_wrap):
+        with patch("efm_go.acp.runtime.wrap_argv", side_effect=fake_wrap):
             with pytest.raises(self._Abort):
                 await runtime.spawn()
         assert captured["is_kiro_cli"] is True
@@ -460,7 +460,7 @@ def kas_stub(tmp_path, monkeypatch):
     async def fake_bin(*, environ=None, home=None) -> str:
         return str(launcher)
 
-    monkeypatch.setattr("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", fake_bin)
+    monkeypatch.setattr("efm_go.acp.client._resolve_kiro_bin_for_spawn", fake_bin)
     monkeypatch.setenv("KIRO_HOME", str(tmp_path / "kiro-home"))
     agents_dir = kiro_agents_dir()
     agents_dir.mkdir(parents=True, exist_ok=True)
@@ -513,7 +513,7 @@ class TestKasInvocation:
         # root conftest installs on ``agent.KIRO_AGENTS_DIR`` -- the spawn-time
         # self-heal and the spec read consult the pinned one, and an absent file
         # there is regenerated from the shipped default, which grants the loader.
-        from kiro_crew.agent import kiro_agents_dir_path
+        from efm_go.agent import kiro_agents_dir_path
 
         for agents_dir in {kiro_agents_dir(), kiro_agents_dir_path()}:
             agents_dir.mkdir(parents=True, exist_ok=True)
@@ -642,9 +642,9 @@ class TestKasInvocation:
         )
         with (
             patch(
-                "kiro_crew.acp.harness.kas.vault_holds_identity_off_loop", side_effect=has_identity
+                "efm_go.acp.harness.kas.vault_holds_identity_off_loop", side_effect=has_identity
             ),
-            patch("kiro_crew.acp.harness.kas.answer_get_access_token", side_effect=fake_answer),
+            patch("efm_go.acp.harness.kas.answer_get_access_token", side_effect=fake_answer),
         ):
             try:
                 await runtime.spawn()
@@ -675,9 +675,9 @@ class TestKasInvocation:
         )
         with (
             patch(
-                "kiro_crew.acp.harness.kas.vault_holds_identity_off_loop", side_effect=no_identity
+                "efm_go.acp.harness.kas.vault_holds_identity_off_loop", side_effect=no_identity
             ),
-            patch("kiro_crew.acp.harness.kas.answer_get_access_token", side_effect=must_not_run),
+            patch("efm_go.acp.harness.kas.answer_get_access_token", side_effect=must_not_run),
         ):
             try:
                 await runtime.spawn()
@@ -719,8 +719,8 @@ class TestKasInvocation:
             acp_backend=ACP_BACKEND_KAS,
         )
         with (
-            patch("kiro_crew.acp.harness.kas.vault_holds_identity_off_loop", side_effect=vault),
-            patch("kiro_crew.acp.harness.kas.answer_get_access_token", side_effect=fake_answer),
+            patch("efm_go.acp.harness.kas.vault_holds_identity_off_loop", side_effect=vault),
+            patch("efm_go.acp.harness.kas.answer_get_access_token", side_effect=fake_answer),
         ):
             try:
                 await runtime.spawn()
@@ -747,7 +747,7 @@ class TestKasInvocation:
             acp_backend=ACP_BACKEND_KAS,
         )
         with patch(
-            "kiro_crew.acp.harness.kas.vault_holds_identity_off_loop", side_effect=no_identity
+            "efm_go.acp.harness.kas.vault_holds_identity_off_loop", side_effect=no_identity
         ):
             argv = (await runtime._resolve_spawn_plan()).argv
         assert argv == build_kas_argv(str(kas_stub))
@@ -770,7 +770,7 @@ class TestKasInvocation:
             acp_backend=ACP_BACKEND_KAS,
         )
         with patch(
-            "kiro_crew.acp.harness.kas.vault_holds_identity_off_loop", side_effect=has_identity
+            "efm_go.acp.harness.kas.vault_holds_identity_off_loop", side_effect=has_identity
         ):
             argv = (await runtime._resolve_spawn_plan()).argv
         assert argv == build_kas_argv(str(kas_stub), host_auth=True)
@@ -780,12 +780,12 @@ class TestKasInvocation:
     @pytest.mark.asyncio
     async def test_missing_kiro_cli_fails_with_an_actionable_error(self, tmp_path, monkeypatch):
         """No kiro-cli means no relay, and the message must say which binary."""
-        from kiro_crew.acp.session_handle import AcpRuntimeError
+        from efm_go.acp.session_handle import AcpRuntimeError
 
         async def no_bin(*, environ=None, home=None) -> None:
             return None
 
-        monkeypatch.setattr("kiro_crew.acp.client._resolve_kiro_bin_for_spawn", no_bin)
+        monkeypatch.setattr("efm_go.acp.client._resolve_kiro_bin_for_spawn", no_bin)
         runtime = AcpRuntime(
             work_dir=tmp_path / "ws4",
             sandbox_mode="off",

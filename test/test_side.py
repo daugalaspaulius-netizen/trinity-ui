@@ -25,21 +25,21 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state, stub_readonly_spec_publisher
 
-from kiro_crew import context as context_module
-from kiro_crew.context import ContextBuilder
-from kiro_crew.dashboard.handlers.side import (
+from efm_go import context as context_module
+from efm_go.context import ContextBuilder
+from efm_go.dashboard.handlers.side import (
     _run_side_turn,
     api_side_close,
     api_side_open,
     api_side_stop,
     api_side_turn,
 )
-from kiro_crew.dashboard.side_prompts import SIDE_BOUNDARY_PROMPT
-from kiro_crew.dashboard.side_state import SideState
-from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
+from efm_go.dashboard.side_prompts import SIDE_BOUNDARY_PROMPT
+from efm_go.dashboard.side_state import SideState
+from efm_go.kiro_prerequisite import KiroPrerequisiteService
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
 
 _SIDE_QUESTION = "what is the difference between TCP and UDP?"
 _SIDE_ANSWER = "TCP is connection-oriented and UDP is not."
@@ -92,7 +92,7 @@ def _stub_run_side_turn(monkeypatch, *, answer: str = _SIDE_ANSWER):
         if slot._side is not None and slot._side.open:
             slot._side.append_assistant(answer)
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _fake_run)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _fake_run)
 
 
 @pytest.fixture(autouse=True)
@@ -227,7 +227,7 @@ async def test_side_turn_returns_before_run_finishes(tmp_path, monkeypatch):
         started.set()
         await release.wait()
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _blocking)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _blocking)
     state = _make_state(tmp_path)
     state.get_or_create_slot("parent")
     app = _make_side_app(state)
@@ -296,7 +296,7 @@ async def test_side_turn_surfaces_the_actionable_auth_message(tmp_path, monkeypa
     AcpAuthRequired carries the actionable `kiro-cli login` text.
     """
 
-    from kiro_crew.acp.client import AcpAuthRequired
+    from efm_go.acp.client import AcpAuthRequired
 
     state = _make_state(tmp_path)
     parent = state.get_or_create_slot("parent")
@@ -315,7 +315,7 @@ async def test_side_turn_surfaces_the_actionable_auth_message(tmp_path, monkeypa
 
     broadcasts: list[dict] = []
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.broadcast_side_result",
+        "efm_go.dashboard.handlers.side.broadcast_side_result",
         lambda state, **kw: broadcasts.append(kw),
     )
 
@@ -334,7 +334,7 @@ async def test_side_run_id_never_leaks_to_main_channels(tmp_path, monkeypatch):
     side_release = asyncio.Event()
 
     async def _streaming(state, slot, run_id, question, *, is_first_turn, start_priority=None):
-        from kiro_crew.dashboard.ws import broadcast_side_result
+        from efm_go.dashboard.ws import broadcast_side_result
 
         side_started.set()
         await side_release.wait()
@@ -346,7 +346,7 @@ async def test_side_run_id_never_leaks_to_main_channels(tmp_path, monkeypatch):
             content="answer",
         )
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _streaming)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _streaming)
     state = _make_state(tmp_path)
     events = _capture_broadcasts(state)
     state.get_or_create_slot("parent")
@@ -396,7 +396,7 @@ async def test_empty_llm_output_produces_visible_fallback(tmp_path, monkeypatch)
     state.sessions.get_or_create = _fake_get_or_create
     state.sessions.release = MagicMock()
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value=""),
     )
 
@@ -451,15 +451,15 @@ async def test_side_turn_resolves_slot_agent_to_kiro_agent(tmp_path, monkeypatch
     state.sessions.release = MagicMock()
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.KiroCrewConfig.load",
+        "efm_go.dashboard.handlers.side.KiroCrewConfig.load",
         lambda: MagicMock(agent=MagicMock(acp_backend="")),
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.resolve_agent_bindings",
+        "efm_go.dashboard.handlers.side.resolve_agent_bindings",
         lambda cfg, agent, project_dir=None: MagicMock(kiro_agent="kirocrew"),
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value="ok"),
     )
 
@@ -501,15 +501,15 @@ async def test_side_turn_runs_in_the_slot_project_dir(tmp_path, monkeypatch):
     state.sessions.release = MagicMock()
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.KiroCrewConfig.load",
+        "efm_go.dashboard.handlers.side.KiroCrewConfig.load",
         lambda: MagicMock(agent=MagicMock(acp_backend="")),
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.resolve_agent_bindings",
+        "efm_go.dashboard.handlers.side.resolve_agent_bindings",
         lambda cfg, agent, project_dir=None: MagicMock(kiro_agent="kirocrew"),
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value="ok"),
     )
 
@@ -545,16 +545,16 @@ async def test_side_turn_agent_resolution_falls_back_on_error(tmp_path, monkeypa
     def _boom(*_a, **_k):
         raise RuntimeError("config unavailable")
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.KiroCrewConfig.load", _boom)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.KiroCrewConfig.load", _boom)
     stream_mock = AsyncMock(return_value="ok")
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", stream_mock)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", stream_mock)
 
     await _run_side_turn(state, parent, "run-1", "q", is_first_turn=True)
 
     # With the config unloadable the harness is unknown, so the read-only
     # allowance is not granted: the raw slot.agent runs under REJECT_ALL and
     # no derived spec is involved — fail closed, never the base agent with tools.
-    from kiro_crew.llm_helpers import ToolApprovalPolicy
+    from efm_go.llm_helpers import ToolApprovalPolicy
 
     assert (
         captured["agent"] == "kirocrew"
@@ -601,7 +601,7 @@ async def test_side_stream_redacts_credential_split_across_chunks(tmp_path, monk
         on_chunk(f"IOSFODNN7EXAMPLE see {exfil_url} done")
         return f"here is a key AKIAIOSFODNN7EXAMPLE see {exfil_url} done"
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", _fake_stream)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", _fake_stream)
 
     await _run_side_turn(state, parent, "run-1", "q", is_first_turn=True)
 
@@ -687,17 +687,17 @@ async def test_side_turn_refuses_to_substitute_the_default_for_an_app_agent(tmp_
         return MagicMock(kiro_agent="kirocrew", requested_resolved=False)
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.KiroCrewConfig.load",
+        "efm_go.dashboard.handlers.side.KiroCrewConfig.load",
         lambda: MagicMock(agent=MagicMock(acp_backend="")),
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.resolve_agent_bindings",
+        "efm_go.dashboard.handlers.side.resolve_agent_bindings",
         lambda cfg, agent, project_dir=None: MagicMock(
             kiro_agent="kirocrew", requested_resolved=False
         ),
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.refresh_materialized_agents",
+        "efm_go.dashboard.handlers.side.refresh_materialized_agents",
         lambda: warms.append(1),
         # raising=False so this asserts the CONTRACT rather than where the rescan
         # happens to live. Against a build that has no such rung the test still
@@ -706,12 +706,12 @@ async def test_side_turn_refuses_to_substitute_the_default_for_an_app_agent(tmp_
         raising=False,
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_runner._recover_app_agent_binding",
+        "efm_go.dashboard.chat_runner._recover_app_agent_binding",
         _recover_fails,
         raising=False,
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value="ok"),
     )
 
@@ -758,20 +758,20 @@ async def test_side_turn_self_heals_a_cold_app_agent_and_then_dispatches_it(tmp_
         return MagicMock(kiro_agent="kirocrew", requested_resolved=False)
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.KiroCrewConfig.load",
+        "efm_go.dashboard.handlers.side.KiroCrewConfig.load",
         lambda: MagicMock(agent=MagicMock(acp_backend="")),
     )
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.resolve_agent_bindings", _resolve)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.resolve_agent_bindings", _resolve)
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.refresh_materialized_agents",
+        "efm_go.dashboard.handlers.side.refresh_materialized_agents",
         lambda: warmed.append(1),
         raising=False,
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_runner._recover_app_agent_binding", _recover, raising=False
+        "efm_go.dashboard.chat_runner._recover_app_agent_binding", _recover, raising=False
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value="ok"),
     )
 
@@ -807,17 +807,17 @@ async def test_side_turn_self_heal_is_scoped_to_app_slots(tmp_path, monkeypatch)
     warms: list[int] = []
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.KiroCrewConfig.load",
+        "efm_go.dashboard.handlers.side.KiroCrewConfig.load",
         lambda: MagicMock(agent=MagicMock(acp_backend="")),
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.resolve_agent_bindings",
+        "efm_go.dashboard.handlers.side.resolve_agent_bindings",
         lambda cfg, agent, project_dir=None: MagicMock(
             kiro_agent="kirocrew", requested_resolved=False
         ),
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.refresh_materialized_agents",
+        "efm_go.dashboard.handlers.side.refresh_materialized_agents",
         lambda: warms.append(1),
         # raising=False so this asserts the CONTRACT rather than where the rescan
         # happens to live. Against a build that has no such rung the test still
@@ -826,7 +826,7 @@ async def test_side_turn_self_heal_is_scoped_to_app_slots(tmp_path, monkeypatch)
         raising=False,
     )
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value="ok"),
     )
 
@@ -850,8 +850,8 @@ async def test_side_turn_streams_under_read_only_policy(tmp_path, monkeypatch):
     keystone file on the event loop."""
     from types import SimpleNamespace
 
-    from kiro_crew.hooks import HookManager
-    from kiro_crew.llm_helpers import ToolApprovalPolicy
+    from efm_go.hooks import HookManager
+    from efm_go.llm_helpers import ToolApprovalPolicy
 
     live_gate = HookManager()
     state = _make_state(tmp_path, context_builder=SimpleNamespace(hooks=live_gate))
@@ -871,7 +871,7 @@ async def test_side_turn_streams_under_read_only_policy(tmp_path, monkeypatch):
     state.sessions.release = MagicMock()
     stream_mock = AsyncMock(return_value=_SIDE_ANSWER)
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         stream_mock,
     )
 
@@ -899,7 +899,7 @@ async def test_side_turn_without_a_live_gate_passes_no_hooks(tmp_path, monkeypat
     ``hooks=None``, which the policy rejects everything under
     (``read_only_policy_no_hooks``) — never a default-constructed manager, which
     would classify reads against none of the operator's opt-outs or deny rules."""
-    from kiro_crew.llm_helpers import ToolApprovalPolicy
+    from efm_go.llm_helpers import ToolApprovalPolicy
 
     state = _make_state(tmp_path)
     assert state.context_builder is None
@@ -917,7 +917,7 @@ async def test_side_turn_without_a_live_gate_passes_no_hooks(tmp_path, monkeypat
     state.sessions.release = MagicMock()
     stream_mock = AsyncMock(return_value=_SIDE_ANSWER)
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         stream_mock,
     )
 
@@ -944,8 +944,8 @@ def test_dashboard_bound_profile_governs_a_side_turn(tmp_path, monkeypatch):
     """
     import json
 
-    from kiro_crew.hooks import TOOL_AUTO_APPROVE, TOOL_DENY, HookManager
-    from kiro_crew.platform import governance_profiles as gp
+    from efm_go.hooks import TOOL_AUTO_APPROVE, TOOL_DENY, HookManager
+    from efm_go.platform import governance_profiles as gp
 
     profiles = tmp_path / "profiles"
     profiles.mkdir()
@@ -1023,7 +1023,7 @@ async def test_side_turn_binds_its_session_to_the_derived_readonly_agent(
     state.sessions.get_or_create = _fake_get_or_create
     state.sessions.release = MagicMock()
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value=_SIDE_ANSWER),
     )
 
@@ -1045,12 +1045,12 @@ async def test_side_turn_refuses_when_the_readonly_spec_cannot_be_derived(tmp_pa
     The refusal is coded (``ReadOnlySpecError.code``) so the user-facing message
     and the log name the cause, and no session is created, so nothing runs.
     """
-    from kiro_crew.dashboard.side_readonly_spec import ReadOnlySpecError
+    from efm_go.dashboard.side_readonly_spec import ReadOnlySpecError
 
     def _refuse(base_name: str, project_dir: str | None = None) -> str:
         raise ReadOnlySpecError("base_spec_missing", f"no agent spec declares {base_name!r}")
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.publish_readonly_spec", _refuse)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.publish_readonly_spec", _refuse)
     state = _make_state(tmp_path)
     events = _capture_broadcasts(state)
     parent = state.get_or_create_slot("parent")
@@ -1063,7 +1063,7 @@ async def test_side_turn_refuses_when_the_readonly_spec_cannot_be_derived(tmp_pa
         side_effect=AssertionError("must not create a session")
     )
     stream_mock = AsyncMock(return_value=_SIDE_ANSWER)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", stream_mock)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", stream_mock)
 
     await _run_side_turn(state, parent, "run-refused", _SIDE_QUESTION, is_first_turn=True)
 
@@ -1118,7 +1118,7 @@ async def test_side_turn_rebinds_a_retained_session_whose_binding_changed(
     state.sessions.get_or_create = _fake_get_or_create
     state.sessions.release = MagicMock()
     stream_mock = AsyncMock(return_value=_SIDE_ANSWER)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", stream_mock)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", stream_mock)
 
     await _run_side_turn(state, parent, "run-rebind", _SIDE_QUESTION, is_first_turn=False)
 
@@ -1171,7 +1171,7 @@ async def test_a_close_during_the_rebind_destroy_acquires_nothing(
     state.sessions.get_or_create = AsyncMock(side_effect=AssertionError("must not acquire"))
     state.sessions.release = MagicMock()
     stream_mock = AsyncMock(return_value=_SIDE_ANSWER)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", stream_mock)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", stream_mock)
 
     await _run_side_turn(state, parent, "run-old", _SIDE_QUESTION, is_first_turn=False)
 
@@ -1202,14 +1202,14 @@ async def test_a_project_change_during_derivation_does_not_split_check_and_spawn
     derived_for: list[str | None] = []
 
     def _publish_then_switch(base_name: str, project_dir: str | None = None):
-        from kiro_crew.dashboard.side_readonly_spec import PublishedSpec
+        from efm_go.dashboard.side_readonly_spec import PublishedSpec
 
         derived_for.append(project_dir)
         parent.project = proj_b  # the project changes while the derivation is off-loop
         return PublishedSpec(name=f"{base_name}--readonly", digest="d" * 64)
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.publish_readonly_spec", _publish_then_switch
+        "efm_go.dashboard.handlers.side.publish_readonly_spec", _publish_then_switch
     )
     created: list[dict] = []
 
@@ -1221,7 +1221,7 @@ async def test_a_project_change_during_derivation_does_not_split_check_and_spawn
     state.sessions.get_or_create = _fake_get_or_create
     state.sessions.release = MagicMock()
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value=_SIDE_ANSWER),
     )
 
@@ -1257,7 +1257,7 @@ async def test_a_close_during_acquisition_destroys_the_acquired_session(
     state.sessions.destroy = AsyncMock()
     state.sessions.release = MagicMock()
     stream_mock = AsyncMock(return_value=_SIDE_ANSWER)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", stream_mock)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", stream_mock)
 
     await _run_side_turn(state, parent, "run-old", _SIDE_QUESTION, is_first_turn=True)
 
@@ -1291,7 +1291,7 @@ async def test_side_turn_destroys_a_live_session_no_binding_vouches_for(
     state.sessions.get_or_create = _fake_get_or_create
     state.sessions.release = MagicMock()
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.stream_and_collect",
+        "efm_go.dashboard.handlers.side.stream_and_collect",
         AsyncMock(return_value=_SIDE_ANSWER),
     )
 
@@ -1320,21 +1320,21 @@ async def test_a_turn_from_a_replaced_sidecar_never_touches_the_replacement_sess
     assert replacement.gen != old.gen
 
     def _publish_then_replace(base_name: str, project_dir: str | None = None):
-        from kiro_crew.dashboard.side_readonly_spec import PublishedSpec
+        from efm_go.dashboard.side_readonly_spec import PublishedSpec
 
         # The close+reopen lands while the derivation is off-loop.
         parent._side = replacement
         return PublishedSpec(name=f"{base_name}--readonly", digest="d" * 64)
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.side.publish_readonly_spec", _publish_then_replace
+        "efm_go.dashboard.handlers.side.publish_readonly_spec", _publish_then_replace
     )
     state.sessions.get_provider = MagicMock(return_value=MagicMock(name="replacement provider"))
     state.sessions.destroy = AsyncMock()
     state.sessions.get_or_create = AsyncMock(side_effect=AssertionError("must not acquire"))
     state.sessions.release = MagicMock()
     stream_mock = AsyncMock(return_value=_SIDE_ANSWER)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", stream_mock)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", stream_mock)
 
     await _run_side_turn(state, parent, "run-old", _SIDE_QUESTION, is_first_turn=True)
 
@@ -1362,7 +1362,7 @@ async def test_side_close_destroys_the_closing_generations_session(tmp_path):
 
 def _configure_backend(monkeypatch, backend: str) -> None:
     """Make ``KiroCrewConfig.load()`` in the side handler report *backend*."""
-    from kiro_crew.dashboard.handlers import side as side_mod
+    from efm_go.dashboard.handlers import side as side_mod
 
     real_load = side_mod.KiroCrewConfig.load
 
@@ -1381,8 +1381,8 @@ async def test_side_turn_grants_read_only_tools_only_on_the_kiro_backend(
     """On kiro-cli (``ACP_BACKENDS_SIDE_READONLY``) the turn derives the read-only
     spec and streams READ_ONLY; the allowance is positive membership, never a
     negation of some other backend."""
-    from kiro_crew.acp_backends import ACP_BACKEND_KIRO
-    from kiro_crew.llm_helpers import ToolApprovalPolicy
+    from efm_go.acp_backends import ACP_BACKEND_KIRO
+    from efm_go.llm_helpers import ToolApprovalPolicy
 
     _configure_backend(monkeypatch, ACP_BACKEND_KIRO)
     state = _make_state(tmp_path)
@@ -1401,7 +1401,7 @@ async def test_side_turn_grants_read_only_tools_only_on_the_kiro_backend(
     state.sessions.get_or_create = _fake_get_or_create
     state.sessions.release = MagicMock()
     stream_mock = AsyncMock(return_value=_SIDE_ANSWER)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", stream_mock)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", stream_mock)
 
     await _run_side_turn(state, parent, "run-kiro", _SIDE_QUESTION, is_first_turn=True)
 
@@ -1419,8 +1419,8 @@ async def test_side_turn_on_another_backend_runs_no_tools_and_derives_nothing(
     pre-approval surface the gate cannot see, so the turn keeps the pre-allowance
     posture: the base agent under REJECT_ALL, no derived spec, and a prompt and
     fallback that say tools are unavailable."""
-    from kiro_crew.acp_backends import ACP_BACKEND_CLAUDE
-    from kiro_crew.llm_helpers import ToolApprovalPolicy
+    from efm_go.acp_backends import ACP_BACKEND_CLAUDE
+    from efm_go.llm_helpers import ToolApprovalPolicy
 
     _configure_backend(monkeypatch, ACP_BACKEND_CLAUDE)
     state = _make_state(tmp_path)
@@ -1440,7 +1440,7 @@ async def test_side_turn_on_another_backend_runs_no_tools_and_derives_nothing(
     state.sessions.release = MagicMock()
     # An empty answer exercises the fallback copy for this branch.
     stream_mock = AsyncMock(return_value="")
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.stream_and_collect", stream_mock)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.stream_and_collect", stream_mock)
 
     await _run_side_turn(state, parent, "run-claude", _SIDE_QUESTION, is_first_turn=True)
 
@@ -1484,7 +1484,7 @@ async def test_side_stop_cancels_in_flight_turn_and_settles(tmp_path, monkeypatc
                 slot._side.task = None
             raise
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _blocking)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _blocking)
     state = _make_state(tmp_path)
     state.sessions.destroy = AsyncMock()
     events = _capture_broadcasts(state)
@@ -1543,7 +1543,7 @@ async def test_side_stop_cancels_the_backend_session(tmp_path, monkeypatch):
         except asyncio.CancelledError:
             raise
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _blocking)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _blocking)
     state = _make_state(tmp_path)
     state.sessions.destroy = AsyncMock()
     provider = MagicMock(name="side provider")
@@ -1587,7 +1587,7 @@ async def test_side_stop_does_not_clobber_a_replacement_turn(tmp_path, monkeypat
         except asyncio.CancelledError:
             raise
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _blocking)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _blocking)
     state = _make_state(tmp_path)
     state.sessions.destroy = AsyncMock()
     state.get_or_create_slot("parent")
@@ -1659,7 +1659,7 @@ async def test_concurrent_side_stops_settle_the_row_exactly_once(tmp_path, monke
         except asyncio.CancelledError:
             raise
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _blocking)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _blocking)
     state = _make_state(tmp_path)
     state.sessions.destroy = AsyncMock()
     events = _capture_broadcasts(state)
@@ -1738,7 +1738,7 @@ async def test_side_stop_appends_no_row_when_turn_ends_normally(tmp_path, monkey
                 slot._side.task = None
             return
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _finishing)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _finishing)
     state = _make_state(tmp_path)
     state.sessions.destroy = AsyncMock()
     events = _capture_broadcasts(state)
@@ -1823,7 +1823,7 @@ async def test_a_submit_during_the_stop_window_does_not_replace_the_cancelled_tu
             await hold_cancel_cleanup.wait()
             raise
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _blocking)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _blocking)
     state = _make_state(tmp_path)
     state.sessions.destroy = AsyncMock()
     events = _capture_broadcasts(state)
@@ -1901,9 +1901,9 @@ async def test_side_stop_settles_the_client_when_cleanup_wedges(tmp_path, monkey
             # stop handler's cleanup budget (never clears is_complete/task).
             await asyncio.sleep(3600)
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._run_side_turn", _wedged)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._run_side_turn", _wedged)
     # Shrink the cleanup budget so the test does not wait the real timeout.
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side._STOP_CLEANUP_TIMEOUT", 0.05)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side._STOP_CLEANUP_TIMEOUT", 0.05)
     state = _make_state(tmp_path)
     state.sessions.destroy = AsyncMock()
     events = _capture_broadcasts(state)

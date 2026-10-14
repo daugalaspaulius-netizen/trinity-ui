@@ -35,7 +35,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.subagent import (
+from efm_go.subagent import (
     SubagentInfo,
     SubagentManager,
 )
@@ -70,7 +70,7 @@ async def _noop_reset(session_key, **_):
 
 @pytest.mark.asyncio
 async def test_reap_settles_credits_before_a_cancelled_state_writer_drains(monkeypatch):
-    from kiro_crew.acp.types import AcpPromptStats
+    from efm_go.acp.types import AcpPromptStats
 
     mgr = _make_manager()
     mgr._sessions.reset = AsyncMock()
@@ -123,8 +123,8 @@ async def test_reap_settles_credits_before_a_cancelled_state_writer_drains(monke
     mgr._on_done = on_done
     mgr._write_tombstone = MagicMock(side_effect=lambda run, cause: tombstoned.append(run.credits))
     monkeypatch.setattr(type(mgr._run_events), "_run_inner_impl", billed_consumer)
-    monkeypatch.setattr("kiro_crew.subagent.asyncio.to_thread", blocked_write)
-    monkeypatch.setattr("kiro_crew.subagent.asyncio.wait", observe_drain)
+    monkeypatch.setattr("efm_go.subagent.asyncio.to_thread", blocked_write)
+    monkeypatch.setattr("efm_go.subagent.asyncio.wait", observe_drain)
     task = asyncio.create_task(mgr._run_inner(info, f"subagent:{info.id}"))
     mgr._tasks[info.id] = task
     try:
@@ -553,7 +553,7 @@ async def test_cancel_all_cancels_reports_that_exceed_the_drain_timeout(monkeypa
     they keep invoking `_on_done` against tearing-down state, then they die when
     the loop closes. They must be cancelled and gathered.
     """
-    import kiro_crew.subagent as mod
+    import efm_go.subagent as mod
 
     monkeypatch.setattr(mod, "_REPORT_DRAIN_TIMEOUT", 0.05)
     mgr = _make_manager()
@@ -584,7 +584,7 @@ async def test_cancel_all_readmits_an_undelivered_report_to_orphan_recovery(monk
     an outcome that was never injected AND is invisible to the only path that
     could still inject it. Shutdown must clear the tombstone in that case.
     """
-    import kiro_crew.subagent as mod
+    import efm_go.subagent as mod
 
     monkeypatch.setattr(mod, "_REPORT_DRAIN_TIMEOUT", 0.05)
     mgr = _make_manager()
@@ -632,7 +632,7 @@ async def test_cancel_all_keeps_the_tombstone_when_delivery_already_happened(mon
     values (30 s + 30 s) this test spent 60 s in that wait every run, to reach
     an assertion that does not depend on the length of the wait.
     """
-    import kiro_crew.subagent as mod
+    import efm_go.subagent as mod
 
     monkeypatch.setattr(mod, "_REPORT_DRAIN_TIMEOUT", 0.05)
     monkeypatch.setattr(mod, "_RESET_TIMEOUT", 0.05)
@@ -815,7 +815,7 @@ async def test_recovery_respawn_is_priced_as_a_fresh_process():
     mark, and the conservative direction); the sample count and last reading
     start over.
     """
-    from kiro_crew.subagent import _startup_memory_reserve_gb
+    from efm_go.subagent import _startup_memory_reserve_gb
 
     mgr = _make_manager()
     info = _info(_session_sharing=False)
@@ -998,7 +998,7 @@ async def test_user_stop_during_pending_recovery_is_not_recorded_as_failure():
     recovery = mgr._tasks.get("a1b2c3d4:recovery")
     assert recovery is not None, "recovery task was not registered"
 
-    import kiro_crew.subagent as mod
+    import efm_go.subagent as mod
 
     class _Stats:
         def inc_subagent_failed(self):

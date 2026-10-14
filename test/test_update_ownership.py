@@ -8,10 +8,10 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import update_ownership
-from kiro_crew.update_ownership import Step
+from efm_go import update_ownership
+from efm_go.update_ownership import Step
 
-_LOGGER = "kiro_crew.update_ownership"
+_LOGGER = "efm_go.update_ownership"
 
 
 def test_no_step_owns_no_gap():

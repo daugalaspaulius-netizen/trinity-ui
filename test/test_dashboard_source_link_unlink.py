@@ -14,14 +14,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard import channel_slots
-from kiro_crew.dashboard.chat_handlers import api_chat_slot_source_link_unlink
-from kiro_crew.dashboard.handlers.source_providers import parse_source_url
-from kiro_crew.dashboard.source_providers.contract import (
+from efm_go.dashboard import channel_slots
+from efm_go.dashboard.chat_handlers import api_chat_slot_source_link_unlink
+from efm_go.dashboard.handlers.source_providers import parse_source_url
+from efm_go.dashboard.source_providers.contract import (
     is_valid_source_identity_key,
     source_ref_identity_key,
 )
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard.state import _ChatSlot
 
 PR_A = "https://github.com/acme/widgets/pull/11"
 PR_B = "https://github.com/acme/widgets/pull/12"
@@ -90,7 +90,7 @@ class TestPersistenceRoundTrip:
     def test_dismiss_survives_a_simulated_reload(self):
         """The dismissed set is written to durable slot metadata and rehydrated,
         so a gateway restart does not resurrect a chip the user unlinked."""
-        from kiro_crew.dashboard.chat_persistence import _restore_dismissed_source_links
+        from efm_go.dashboard.chat_persistence import _restore_dismissed_source_links
 
         slot = _slot()
         key = _identity_key(PR_A)
@@ -110,7 +110,7 @@ class TestPersistenceRoundTrip:
     def test_reload_drops_a_tampered_identity_key(self):
         """History JSONL is disk-tamperable; a malformed key can never match a
         real identity, so it is dropped on restore rather than stored as junk."""
-        from kiro_crew.dashboard.chat_persistence import _restore_dismissed_source_links
+        from efm_go.dashboard.chat_persistence import _restore_dismissed_source_links
 
         slot = _slot()
         _restore_dismissed_source_links(
@@ -126,8 +126,8 @@ class TestPersistenceRoundTrip:
         discard can never hide that the restored set is incomplete."""
         import logging
 
-        from kiro_crew.dashboard.chat_persistence import _restore_dismissed_source_links
-        from kiro_crew.dashboard.state import _MAX_DISMISSED_SOURCE_LINKS
+        from efm_go.dashboard.chat_persistence import _restore_dismissed_source_links
+        from efm_go.dashboard.state import _MAX_DISMISSED_SOURCE_LINKS
 
         overflow = 7
         keys = [
@@ -135,7 +135,7 @@ class TestPersistenceRoundTrip:
             for i in range(_MAX_DISMISSED_SOURCE_LINKS + overflow)
         ]
         slot = _slot()
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.chat_persistence"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.chat_persistence"):
             _restore_dismissed_source_links(slot, keys)
         assert len(slot._dismissed_source_links) == _MAX_DISMISSED_SOURCE_LINKS
         # Exactly one warning, naming the dropped count and the cap.
@@ -150,8 +150,8 @@ class TestPersistenceRoundTrip:
         grown by an older build) cannot round-trip an unbounded set back to
         disk. The helper drops invalid keys, sorts, then keeps only the first
         cap entries."""
-        from kiro_crew.dashboard.chat_persistence import _capped_dismissed_line
-        from kiro_crew.dashboard.state import _MAX_DISMISSED_SOURCE_LINKS
+        from efm_go.dashboard.chat_persistence import _capped_dismissed_line
+        from efm_go.dashboard.state import _MAX_DISMISSED_SOURCE_LINKS
 
         # Genuinely valid, distinct identity keys past the ceiling.
         valid = [
@@ -168,7 +168,7 @@ class TestPersistenceRoundTrip:
         """The carry-forward callers pass the raw on-disk list, so
         ``_capped_dismissed_line`` must re-validate each key against the identity
         grammar — a tampered/oversized string is dropped, never re-written."""
-        from kiro_crew.dashboard.chat_persistence import _capped_dismissed_line
+        from efm_go.dashboard.chat_persistence import _capped_dismissed_line
 
         good = _identity_key(PR_A)
         result = _capped_dismissed_line([good, "not-json", "{}", ['{"nested":[1]}'], "x" * 100000])
@@ -179,8 +179,8 @@ class TestPersistenceRoundTrip:
         materializing the whole (possibly oversized/tampered) valid-key list and
         slicing — so a hostile on-disk line cannot force an unbounded list into
         memory before the cap applies. The in-memory set is exactly the ceiling."""
-        from kiro_crew.dashboard.chat_persistence import _restore_dismissed_source_links
-        from kiro_crew.dashboard.state import _MAX_DISMISSED_SOURCE_LINKS
+        from efm_go.dashboard.chat_persistence import _restore_dismissed_source_links
+        from efm_go.dashboard.state import _MAX_DISMISSED_SOURCE_LINKS
 
         oversized = [
             _identity_key(f"https://github.com/acme/widgets/pull/{i}")
@@ -197,7 +197,7 @@ class TestPersistenceRoundTrip:
         """The shared collector every on-disk reader uses stops at the cap during
         iteration (so an oversized/tampered list never materializes in full) and
         drops invalid keys. A non-list yields the empty set."""
-        from kiro_crew.dashboard.source_providers.contract import bounded_valid_identities
+        from efm_go.dashboard.source_providers.contract import bounded_valid_identities
 
         good = [_identity_key(f"https://github.com/acme/widgets/pull/{i}") for i in range(50)]
         # Oversized valid input caps at the requested bound.
@@ -216,11 +216,11 @@ class TestPersistenceRoundTrip:
         # A slot bound to a transcript whose dismissed set could not be read is
         # marked _dismissed_hydrated=False; its FULL save must carry the on-disk
         # dismissed line forward, not erase it with the empty in-memory set.
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_persistence import save_slot_off_loop
+        from efm_go.dashboard.state import _ChatSlot
 
         state = _make_state(tmp_path)
         key = _identity_key(PR_A)
@@ -247,11 +247,11 @@ class TestPersistenceRoundTrip:
         # The EMPTY-WINDOW (merge-writer) save path must ALSO carry the on-disk
         # dismissed line forward for an unhydrated slot, not erase it with []. A
         # slot with no durable window rows routes through that branch.
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_persistence import save_slot_off_loop
+        from efm_go.dashboard.state import _ChatSlot
 
         state = _make_state(tmp_path)
         key = _identity_key(PR_A)
@@ -278,11 +278,11 @@ class TestPersistenceRoundTrip:
         # on-disk dismissed line forward, NOT persist the tentative in-memory set
         # — the guarded write may still fail and roll it back, and a flush that
         # committed the tentative tombstone would survive a 409'd DELETE.
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_persistence import save_slot_off_loop
+        from efm_go.dashboard.state import _ChatSlot
 
         state = _make_state(tmp_path)
         on_disk = _identity_key(PR_A)
@@ -313,11 +313,11 @@ class TestPersistenceRoundTrip:
         # shrink the on-disk set and erase the newer tombstone (chip reappears on
         # restart). The save must UNION memory with the on-disk line so the
         # committed tombstone survives.
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.chat_persistence import save_slot_off_loop
+        from efm_go.dashboard.state import _ChatSlot
 
         state = _make_state(tmp_path)
         stale_known = _identity_key(PR_A)  # in the prefetched (stale) set
@@ -384,7 +384,7 @@ def _expect_for_req(req) -> str:
     ``created_at`` + ``linked_session_key``). Tests that are not exercising the
     identity gate build their manual request's query with this so they reach
     their intended path rather than the required-``expect`` 400."""
-    from kiro_crew.dashboard.chat_handlers import resolved_row_identity
+    from efm_go.dashboard.chat_handlers import resolved_row_identity
 
     slot = req.app["state"]._slots.get(req.match_info["slot"])
     if slot is None:
@@ -440,7 +440,7 @@ async def _delete(
     expect: str | None = None,
     omit_expect: bool = False,
 ) -> web.Response:
-    with patch("kiro_crew.dashboard.chat_handlers.sel"):
+    with patch("efm_go.dashboard.chat_handlers.sel"):
         return await api_chat_slot_source_link_unlink(
             _request(slot_key, identity, slots, app=app, expect=expect, omit_expect=omit_expect)
         )
@@ -453,7 +453,7 @@ class TestUnlinkEndpoint:
         state_slots = {"s1": slot}
         key = _identity_key(PR_A)
         req = _request("s1", key, state_slots)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
 
         assert resp.status == 200
@@ -557,7 +557,7 @@ class TestUnlinkEndpoint:
         resurrecting whichever chip falls off. The cap gates the union write, not
         only the in-memory add, so entering the persist path on ``not
         durably_dismissed`` cannot commit an oversized set."""
-        from kiro_crew.dashboard.state import _MAX_DISMISSED_SOURCE_LINKS
+        from efm_go.dashboard.state import _MAX_DISMISSED_SOURCE_LINKS
 
         slot = _slot()
         # Fill the in-memory dismissed set to the ceiling with synthetic keys the
@@ -570,7 +570,7 @@ class TestUnlinkEndpoint:
         key = _identity_key(PR_A)  # a genuinely new, derived link
         req = _request("s1", key, {"s1": slot})
         um = req.app["state"].conversation_log.update_metadata_if
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 409
         assert json.loads(resp.text)["code"] == "dismissed_source_links_full"
@@ -612,7 +612,7 @@ class TestUnlinkEndpoint:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 200
         # The payload the guard rewrote in place carries BOTH this request's key
@@ -634,9 +634,9 @@ class TestUnlinkEndpoint:
         req = _request("s1", encoded_identity, {"s1": slot})
         req.app["state"].conversation_log.update_metadata_if.return_value = True
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.source_providers.contract.is_valid_source_identity_key",
+                "efm_go.dashboard.source_providers.contract.is_valid_source_identity_key",
                 new=lambda k: True,
             ),
             patch.object(
@@ -723,7 +723,7 @@ class TestUnlinkEndpoint:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 409
         assert json.loads(resp.text) == {
@@ -756,7 +756,7 @@ class TestUnlinkEndpoint:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 200
         # The written union includes BOTH the new key and the pre-existing
@@ -784,7 +784,7 @@ class TestUnlinkEndpoint:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 409
         state.conversation_log.update_metadata_if.assert_not_called()  # no write
@@ -809,9 +809,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+                "efm_go.dashboard.chat_handlers.save_slot_off_loop",
                 new=AsyncMock(return_value=True),
             ) as saver,
         ):
@@ -856,13 +856,13 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.source_providers.contract.is_valid_source_identity_key",
+                "efm_go.dashboard.source_providers.contract.is_valid_source_identity_key",
                 return_value=True,
             ),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "shared-history-key",
             ),
         ):
@@ -896,9 +896,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "shared-history-key",
             ),
         ):
@@ -925,7 +925,7 @@ class TestUnlinkEndpoint:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 409
         assert key not in slot._dismissed_source_links  # rolled back
@@ -969,7 +969,7 @@ class TestUnlinkEndpoint:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 409
         assert seen["depth_during_write"] == 2  # our +1 on top of the concurrent +1
@@ -995,7 +995,7 @@ class TestUnlinkEndpoint:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 409
         guard = state.conversation_log.update_metadata_if.call_args.args[2]
@@ -1027,9 +1027,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "shared-history-key",
             ),
         ):
@@ -1043,9 +1043,9 @@ class TestUnlinkEndpoint:
         slot = _slot(PR_A, PR_B)
         ka, kb = _identity_key(PR_A), _identity_key(PR_B)
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+                "efm_go.dashboard.chat_handlers.save_slot_off_loop",
                 new=AsyncMock(return_value=True),
             ),
         ):
@@ -1083,9 +1083,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: hkeys[id(s)],
             ),
         ):
@@ -1132,9 +1132,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: hkeys[id(s)],
             ),
         ):
@@ -1180,9 +1180,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: hkeys[id(s)],
             ),
         ):
@@ -1234,9 +1234,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: hkeys[id(s)],
             ),
         ):
@@ -1288,9 +1288,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: hkeys[id(s)],
             ),
         ):
@@ -1330,9 +1330,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "authorized",
             ),
         ):
@@ -1378,9 +1378,9 @@ class TestUnlinkEndpoint:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "authorized",
             ),
         ):
@@ -1405,9 +1405,9 @@ class TestUnlinkEndpoint:
         key = _identity_key(PR_A)
         slot.dismiss_source_link(key)  # already dismissed
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+                "efm_go.dashboard.chat_handlers.save_slot_off_loop",
                 new=AsyncMock(return_value=True),
             ) as saver,
         ):
@@ -1451,7 +1451,7 @@ class TestUnlinkEndpoint:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel", new=lambda: sel_mock):
+        with patch("efm_go.dashboard.chat_handlers.sel", new=lambda: sel_mock):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 409
         calls = sel_mock.log_tool_invocation.call_args_list
@@ -1475,17 +1475,17 @@ class TestUnlinkEndpoint:
         # authorized_history_key != locked_history_key trips the rebind 409.
         keys = iter(["locked-key", "rebound-key", "rebound-key", "rebound-key"])
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel", new=lambda: sel_mock),
+            patch("efm_go.dashboard.chat_handlers.sel", new=lambda: sel_mock),
             patch(
-                "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+                "efm_go.dashboard.chat_handlers.save_slot_off_loop",
                 new=AsyncMock(return_value=True),
             ),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: next(keys),
             ),
             patch(
-                "kiro_crew.dashboard.chat_handlers._reauthorize_after_await",
+                "efm_go.dashboard.chat_handlers._reauthorize_after_await",
                 new=MagicMock(return_value=None),
             ),
         ):
@@ -1550,7 +1550,7 @@ class TestRebindResetsDismissals:
         # Hydration is authoritative: loading a transcript that records NO
         # dismissals must clear a set left over from a previous binding of a
         # reused slot object, not leave it in place.
-        from kiro_crew.dashboard.chat_persistence import _restore_dismissed_source_links
+        from efm_go.dashboard.chat_persistence import _restore_dismissed_source_links
 
         slot = _slot()
         slot.dismiss_source_link(_identity_key(PR_A))
@@ -1559,7 +1559,7 @@ class TestRebindResetsDismissals:
         assert slot._dismissed_source_links == set()
 
     def test_hydration_restores_the_new_transcripts_dismissals(self):
-        from kiro_crew.dashboard.chat_persistence import _restore_dismissed_source_links
+        from efm_go.dashboard.chat_persistence import _restore_dismissed_source_links
 
         slot = _slot()
         slot.dismiss_source_link(_identity_key(PR_A))
@@ -1572,7 +1572,7 @@ class TestRebindResetsDismissals:
         # the binding change, so the cron transcript's persisted dismissals must
         # be restored from the OFF-LOOP-prefetched value passed in — otherwise
         # the slot's next full save serializes an empty set and erases them.
-        from kiro_crew.dashboard import cron_inject
+        from efm_go.dashboard import cron_inject
 
         slot = _slot()
         state = MagicMock()
@@ -1581,7 +1581,7 @@ class TestRebindResetsDismissals:
         job = MagicMock(id="job42", agent_id="")
         with (
             patch.object(cron_inject, "hydrate_slot_from_history"),
-            patch("kiro_crew.dashboard.chat_utils._sync_dashboard_slots"),
+            patch("efm_go.dashboard.chat_utils._sync_dashboard_slots"),
             patch.object(cron_inject, "_safe_job_name", return_value="job42"),
         ):
             cron_inject._bind_cron_slot(state, job, [], dismissed=[_identity_key(PR_A)])
@@ -1592,7 +1592,7 @@ class TestRebindResetsDismissals:
         # canonical cron transcript (routing/continuity must not split), but is
         # marked _dismissed_hydrated=False so its full save carries the on-disk
         # dismissed line forward instead of erasing it with an empty set.
-        from kiro_crew.dashboard import cron_inject
+        from efm_go.dashboard import cron_inject
 
         slot = _slot()
         state = MagicMock()
@@ -1601,7 +1601,7 @@ class TestRebindResetsDismissals:
         job = MagicMock(id="job42", agent_id="")
         with (
             patch.object(cron_inject, "hydrate_slot_from_history") as hyd,
-            patch("kiro_crew.dashboard.chat_utils._sync_dashboard_slots"),
+            patch("efm_go.dashboard.chat_utils._sync_dashboard_slots"),
             patch.object(cron_inject, "_safe_job_name", return_value="job42"),
         ):
             cron_inject._bind_cron_slot(state, job, [])  # no dismissed arg -> sentinel
@@ -1616,7 +1616,7 @@ class TestRebindResetsDismissals:
         # be cleared and marked unhydrated (mirroring the cron bind), or the
         # slot's next union-save folds those foreign tombstones into the newly
         # linked transcript and suppresses unrelated links there.
-        from kiro_crew.dashboard import workflow_inject
+        from efm_go.dashboard import workflow_inject
 
         slot = _slot()
         slot.dismiss_source_link(_identity_key(PR_A))  # a prior run's tombstone
@@ -1626,7 +1626,7 @@ class TestRebindResetsDismissals:
         state.get_slot.return_value = None  # originating chat is gone -> fallback
         state.get_or_create_slot.return_value = slot
         snapshot = {"session_key": "sess-xyz", "name": "demo"}
-        with patch("kiro_crew.dashboard.chat_utils._sync_dashboard_slots"):
+        with patch("efm_go.dashboard.chat_utils._sync_dashboard_slots"):
             workflow_inject.inject_workflow_result(state, "run77", snapshot)
         assert slot.linked_session_key == "sess-xyz"  # linked to the new transcript
         assert slot._dismissed_source_links == set()  # stale set cleared
@@ -1681,10 +1681,10 @@ class TestEveryHydrationPathRestoresOrDefers:
         state.conversation_log.update_metadata(hkey, {"dismissed_source_links": [key]})
 
     def test_rehydrate_slot_from_history_restores_the_dismissed_set(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.chat_persistence import _rehydrate_slot_from_history
+        from efm_go.dashboard.chat_persistence import _rehydrate_slot_from_history
 
         state = _make_state(tmp_path)
         key = _identity_key(PR_A)
@@ -1698,10 +1698,10 @@ class TestEveryHydrationPathRestoresOrDefers:
         assert PR_A not in urls and PR_B in urls  # suppressed, sibling intact
 
     def test_apply_recent_session_restores_the_dismissed_set(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.chat_persistence import _apply_recent_session
+        from efm_go.dashboard.chat_persistence import _apply_recent_session
 
         state = _make_state(tmp_path)
         key = _identity_key(PR_A)
@@ -1728,7 +1728,7 @@ class TestEveryHydrationPathRestoresOrDefers:
 
     @pytest.mark.asyncio
     async def test_resume_endpoint_restores_the_dismissed_set(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_app, _make_state
 
@@ -1756,7 +1756,7 @@ class TestEveryHydrationPathRestoresOrDefers:
         import ast
         import pathlib
 
-        import kiro_crew.dashboard as pkg
+        import efm_go.dashboard as pkg
 
         root = pathlib.Path(pkg.__file__).parent
         found: dict[tuple[str, str], bool] = {}
@@ -1813,7 +1813,7 @@ class TestEveryHydrationPathRestoresOrDefers:
         )
         # The restore readers' metadata goes through the codec's field table, and
         # its dismissed row must be read by every purpose the table serves.
-        from kiro_crew.dashboard.slot_persistence import metadata_codec
+        from efm_go.dashboard.slot_persistence import metadata_codec
 
         row = next(r for r in metadata_codec.FIELDS if r.key == "dismissed_source_links")
         assert row.purposes == metadata_codec.PURPOSES, (
@@ -1834,10 +1834,10 @@ class TestEveryHydrationPathRestoresOrDefers:
         unions memory with the on-disk line. The regression such a path CAN
         cause is display-only: the forgetful slot derives the chip.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+        from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
         state = _make_state(tmp_path)
         key = _identity_key(PR_A)
@@ -1869,7 +1869,7 @@ class TestRejectionsAreAudited:
     @pytest.mark.asyncio
     async def test_invalid_identity_emits_a_failed_sel_audit(self):
         sel_mock = MagicMock()
-        with patch("kiro_crew.dashboard.chat_handlers.sel", new=lambda: sel_mock):
+        with patch("efm_go.dashboard.chat_handlers.sel", new=lambda: sel_mock):
             resp = await api_chat_slot_source_link_unlink(
                 _request("s1", "not-a-valid-key", {"s1": _slot()})
             )
@@ -1884,7 +1884,7 @@ class TestRejectionsAreAudited:
         sel_mock = MagicMock()
         # A format-valid but not-derived identity -> source_link_not_found.
         absent = _identity_key("https://github.com/acme/widgets/pull/999")
-        with patch("kiro_crew.dashboard.chat_handlers.sel", new=lambda: sel_mock):
+        with patch("efm_go.dashboard.chat_handlers.sel", new=lambda: sel_mock):
             resp = await api_chat_slot_source_link_unlink(_request("s1", absent, {"s1": _slot()}))
         assert resp.status == 404
         kwargs = sel_mock.log_tool_invocation.call_args.kwargs
@@ -1895,7 +1895,7 @@ class TestRejectionsAreAudited:
     @pytest.mark.asyncio
     async def test_missing_slot_emits_a_failed_sel_audit(self):
         sel_mock = MagicMock()
-        with patch("kiro_crew.dashboard.chat_handlers.sel", new=lambda: sel_mock):
+        with patch("efm_go.dashboard.chat_handlers.sel", new=lambda: sel_mock):
             resp = await api_chat_slot_source_link_unlink(
                 _request("s1", _identity_key(PR_A), {})  # no such slot
             )
@@ -1932,9 +1932,9 @@ class TestRejectionsAreAudited:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "shared-history-key",
             ),
         ):
@@ -1976,9 +1976,9 @@ class TestRejectionsAreAudited:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "shared-history-key",
             ),
         ):
@@ -2042,9 +2042,9 @@ class TestRejectionsAreAudited:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "shared-history-key",
             ),
         ):
@@ -2092,9 +2092,9 @@ class TestRejectionsAreAudited:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "shared-history-key",
             ),
         ):
@@ -2144,9 +2144,9 @@ class TestRejectionsAreAudited:
         req.get = lambda k, d=None: d
         req.app = {"state": state}
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel"),
+            patch("efm_go.dashboard.chat_handlers.sel"),
             patch(
-                "kiro_crew.dashboard.chat_handlers.slot_history_key",
+                "efm_go.dashboard.chat_handlers.slot_history_key",
                 new=lambda s: "shared-history-key",
             ),
         ):
@@ -2176,7 +2176,7 @@ class TestRejectionsAreAudited:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 200
         # It PERSISTED rather than fast-returning: a guarded write landed.
@@ -2207,7 +2207,7 @@ class TestRejectionsAreAudited:
         req.rel_url.query = {"expect": _expect_for_req(req)}
         req.get = lambda k, d=None: d
         req.app = {"state": state}
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 404  # not authorized against the pinned transcript
         # No durable tombstone was written for the foreign key.
@@ -2223,9 +2223,9 @@ class TestRejectionsAreAudited:
         sel_mock = MagicMock()
         stale_resp = web.json_response({"code": "session_gone"}, status=409)
         with (
-            patch("kiro_crew.dashboard.chat_handlers.sel", new=lambda: sel_mock),
+            patch("efm_go.dashboard.chat_handlers.sel", new=lambda: sel_mock),
             patch(
-                "kiro_crew.dashboard.chat_handlers._reauthorize_after_await",
+                "efm_go.dashboard.chat_handlers._reauthorize_after_await",
                 new=MagicMock(return_value=stale_resp),
             ),
         ):
@@ -2264,7 +2264,7 @@ class TestAwaitBindingRegressions:
             return result
 
         monkeypatch.setattr(asyncio, "to_thread", held_read)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             task = asyncio.create_task(api_chat_slot_source_link_unlink(req))
             await asyncio.wait_for(entered.wait(), 5)
             if change == "rebind":
@@ -2308,7 +2308,7 @@ class TestAwaitBindingRegressions:
             return result
 
         monkeypatch.setattr(asyncio, "to_thread", rebind_on_fold)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             response = await api_chat_slot_source_link_unlink(req)
         assert response.status == 200
         assert other in primary._dismissed_source_links
@@ -2348,7 +2348,7 @@ class TestAwaitBindingRegressions:
             return result
 
         monkeypatch.setattr(asyncio, "to_thread", rebind_during_reads)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             response = await api_chat_slot_source_link_unlink(req)
         assert response.status == 200
         assert key not in sibling._dismissed_source_links
@@ -2369,7 +2369,7 @@ class TestAwaitBindingRegressions:
         )
         state.conversation_log.update_metadata_if.side_effect = lambda _h, _f, _g: True
         state.push_slots_update.side_effect = RuntimeError("sensitive diagnostic")
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as audit:
+        with patch("efm_go.dashboard.chat_handlers.sel") as audit:
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 200
         events = audit.return_value.log_tool_invocation.call_args_list
@@ -2389,7 +2389,7 @@ class TestAwaitBindingRegressions:
     async def test_cron_retries_only_the_same_unhydrated_binding(self, monkeypatch, change):
         import asyncio
 
-        from kiro_crew.dashboard.cron_inject import _DISMISSED_UNREAD, prefetch_cron_dismissed
+        from efm_go.dashboard.cron_inject import _DISMISSED_UNREAD, prefetch_cron_dismissed
 
         slot = _ChatSlot("cron-job")
         slot.linked_session_key = "cron:job"
@@ -2478,7 +2478,7 @@ class TestAwaitBindingRegressions:
             return result
 
         monkeypatch.setattr(asyncio, "to_thread", move_on_later_await)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             response = await api_chat_slot_source_link_unlink(req)
         assert response.status == 200
         assert sibling.linked_session_key == "dashboard:C"
@@ -2508,7 +2508,7 @@ class TestAwaitBindingRegressions:
             return result
 
         monkeypatch.setattr(asyncio, "to_thread", move_during_second_read)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             response = await api_chat_slot_source_link_unlink(req)
         assert response.status == 200
         assert key not in first._dismissed_source_links
@@ -2516,7 +2516,7 @@ class TestAwaitBindingRegressions:
 
     @pytest.mark.asyncio
     async def test_cron_run_start_recovers_after_transient_metadata_failure(self):
-        from kiro_crew.dashboard.cron_inject import ensure_cron_slot
+        from efm_go.dashboard.cron_inject import ensure_cron_slot
 
         slot = _ChatSlot("cron-job")
         slot.linked_session_key = "cron:job"
@@ -2542,7 +2542,7 @@ class TestAwaitBindingRegressions:
 
     @pytest.mark.asyncio
     async def test_success_is_durable_on_the_authorized_transcript(self, tmp_path):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         primary = _slot()
         key = _identity_key(PR_A)
@@ -2550,7 +2550,7 @@ class TestAwaitBindingRegressions:
         state = req.app["state"]
         state.conversation_log = ConversationLog(tmp_path / "sessions")
         state.conversation_log.update_metadata("dashboard:s1", {"title": "keep me"})
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             response = await api_chat_slot_source_link_unlink(req)
         assert response.status == 200
         meta, readable = state.conversation_log.get_metadata_status("dashboard:s1")
@@ -2591,7 +2591,7 @@ class TestAwaitBindingRegressions:
             return result
 
         monkeypatch.setattr(asyncio, "to_thread", move_back)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             response = await api_chat_slot_source_link_unlink(req)
         assert response.status == 200  # committed first write accepted as terminal
         assert writes == 2  # first write + failed confirm only; NO compensation write
@@ -2608,7 +2608,7 @@ class TestUnlinkPublicationOutcome:
     ):
         import asyncio
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         key = _identity_key(PR_A)
         primary, sibling, joiner = _slot(), _slot(), _slot()
@@ -2658,7 +2658,7 @@ class TestUnlinkPublicationOutcome:
 
         monkeypatch.setattr(asyncio, "to_thread", drive)
         state.push_slots_update.side_effect = broadcast
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as audit:
+        with patch("efm_go.dashboard.chat_handlers.sel") as audit:
             # No publication is optimistic anymore: a post-persist broadcast is
             # non-aborting, so the handler always returns a response (never a
             # propagated RuntimeError).
@@ -2684,7 +2684,7 @@ class TestUnlinkPublicationOutcome:
     async def test_cancel_waits_for_transaction_settlement(self, tmp_path, monkeypatch, boundary):
         import asyncio
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         key = _identity_key(PR_A)
         primary, sibling, joiner = _slot(), _slot(), _slot()
@@ -2724,7 +2724,7 @@ class TestUnlinkPublicationOutcome:
             return result
 
         monkeypatch.setattr(asyncio, "to_thread", held)
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as audit:
+        with patch("efm_go.dashboard.chat_handlers.sel") as audit:
             task = asyncio.create_task(api_chat_slot_source_link_unlink(req))
             await asyncio.wait_for(entered.wait(), 5)
             task.cancel()
@@ -2754,7 +2754,7 @@ class TestUnlinkPublicationOutcome:
         # projection keep the chip VISIBLE until the write commits.
         import asyncio
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         key = _identity_key(PR_A)
         primary = _slot()
@@ -2784,7 +2784,7 @@ class TestUnlinkPublicationOutcome:
             pushes_show_chip.append(any(link["url"] == PR_A for link in primary._pr_source_links()))
 
         state.push_slots_update.side_effect = broadcast
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             task = asyncio.create_task(api_chat_slot_source_link_unlink(req))
             await asyncio.wait_for(entered.wait(), 5)
             # Mid-write: a concurrent projection MUST still show the chip, even
@@ -2817,7 +2817,7 @@ class TestUnlinkPublicationOutcome:
         # the whole time -- a client never saw it removed.
         import asyncio
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         key = _identity_key(PR_A)
         primary = _slot()
@@ -2841,7 +2841,7 @@ class TestUnlinkPublicationOutcome:
             return await original(func, *args, **kwargs)
 
         monkeypatch.setattr(asyncio, "to_thread", failing)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 409
         assert key not in primary._dismissed_source_links  # rolled back
@@ -2863,7 +2863,7 @@ class TestUnlinkPublicationOutcome:
         # and resurfaces until a later disk re-read.
         import asyncio
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         key_a, key_b = _identity_key(PR_A), _identity_key(PR_B)
         primary = _slot(PR_A, PR_B)
@@ -2887,7 +2887,7 @@ class TestUnlinkPublicationOutcome:
             return await original(func, *args, **kwargs)
 
         monkeypatch.setattr(asyncio, "to_thread", concurrent)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             resp = await api_chat_slot_source_link_unlink(req)
         assert resp.status == 200
         # The persisted line holds A∪B, and this request folded B back in, so the
@@ -2907,8 +2907,8 @@ class TestUnlinkPublicationOutcome:
     ):
         import asyncio
 
-        from kiro_crew.dashboard import chat_handlers
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard import chat_handlers
+        from efm_go.history import ConversationLog
 
         primary = _slot()
         key = _identity_key(PR_A)
@@ -2928,7 +2928,7 @@ class TestUnlinkPublicationOutcome:
             return result
 
         monkeypatch.setattr(asyncio, "to_thread", hold_write)
-        with patch("kiro_crew.dashboard.chat_handlers.sel"):
+        with patch("efm_go.dashboard.chat_handlers.sel"):
             caller = asyncio.create_task(api_chat_slot_source_link_unlink(req))
             await asyncio.wait_for(entered.wait(), 5)
             caller.cancel()
@@ -2949,7 +2949,7 @@ class TestUnlinkPublicationOutcome:
     async def test_terminal_audit_failure_cannot_overturn_a_commit(self, tmp_path):
         import asyncio
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         primary = _slot()
         key = _identity_key(PR_A)
@@ -2958,7 +2958,7 @@ class TestUnlinkPublicationOutcome:
         req.app["state"].conversation_log = log
         await asyncio.to_thread(log.update_metadata, "dashboard:s1", {})
         with patch(
-            "kiro_crew.dashboard.chat_handlers.sel", side_effect=OSError("private audit path")
+            "efm_go.dashboard.chat_handlers.sel", side_effect=OSError("private audit path")
         ):
             response = await api_chat_slot_source_link_unlink(req)
         meta, _ = await asyncio.to_thread(log.get_metadata_status, "dashboard:s1")
@@ -2969,7 +2969,7 @@ class TestUnlinkPublicationOutcome:
         import ast
         import inspect
 
-        from kiro_crew.dashboard.chat_handlers import _apply_source_link_unlink
+        from efm_go.dashboard.chat_handlers import _apply_source_link_unlink
 
         tree = ast.parse(inspect.getsource(_apply_source_link_unlink))
         raw = [

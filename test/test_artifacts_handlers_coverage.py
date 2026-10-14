@@ -33,15 +33,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import artifacts as art_mod
-from kiro_crew.artifacts import (
+from efm_go import artifacts as art_mod
+from efm_go.artifacts import (
     ArtifactComment,
     ArtifactError,
     ArtifactPublication,
     ArtifactStore,
 )
-from kiro_crew.dashboard.handlers import artifacts as h
-from kiro_crew.publish_provider import Capability, RemoteComment
+from efm_go.dashboard.handlers import artifacts as h
+from efm_go.publish_provider import Capability, RemoteComment
 
 # ── Harness ──────────────────────────────────────────────────────────────────
 

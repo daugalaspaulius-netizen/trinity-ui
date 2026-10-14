@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.apps.builtins.dev_fleet import (
+from efm_go.apps.builtins.dev_fleet import (
     fleet_state,
     http_api,
     live,
@@ -32,7 +32,7 @@ from kiro_crew.apps.builtins.dev_fleet import (
     server,
     worktree_ops,
 )
-from kiro_crew.pod import provision as prov
+from efm_go.pod import provision as prov
 
 _DEV_FLEET_MODULES = (
     runtime,

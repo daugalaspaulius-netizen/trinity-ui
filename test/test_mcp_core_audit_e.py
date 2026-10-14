@@ -20,10 +20,10 @@ from unittest.mock import patch
 
 import pytest
 
-import kiro_crew.mcp_core as mcp_core
-import kiro_crew.mcp_shared as mcp_shared
-from kiro_crew.mcp_core import _call_tool, _current_session_thread_ts
-from kiro_crew.mcp_shared import ToolCancelled
+import efm_go.mcp_core as mcp_core
+import efm_go.mcp_shared as mcp_shared
+from efm_go.mcp_core import _call_tool, _current_session_thread_ts
+from efm_go.mcp_shared import ToolCancelled
 
 
 class TestSpawnSubAgentsCancellation:
@@ -34,9 +34,9 @@ class TestSpawnSubAgentsCancellation:
         evt.set()  # cancel already signalled before the first poll iteration
         mcp_shared._thread_cancel_event = evt
         try:
-            with patch("kiro_crew.mcp_core._post") as mock_post, \
-                 patch("kiro_crew.mcp_core._get") as mock_get, \
-                 patch("kiro_crew.mcp_core.sel"), \
+            with patch("efm_go.mcp_core._post") as mock_post, \
+                 patch("efm_go.mcp_core._get") as mock_get, \
+                 patch("efm_go.mcp_core.sel"), \
                  patch.dict("os.environ", {"KIROCREW_SESSION_KEY": "s"}):
                 mock_post.return_value = {"id": "a1"}
                 mock_get.return_value = {"done": False, "agent": "slow"}
@@ -52,9 +52,9 @@ class TestSpawnSubAgentsCancellation:
     def test_not_cancelled_completes_normally(self):
         """Control: with no cancel set, a done agent still collects results."""
         mcp_shared._thread_cancel_event = None
-        with patch("kiro_crew.mcp_core._post") as mock_post, \
-             patch("kiro_crew.mcp_core._get") as mock_get, \
-             patch("kiro_crew.mcp_core.sel"), \
+        with patch("efm_go.mcp_core._post") as mock_post, \
+             patch("efm_go.mcp_core._get") as mock_get, \
+             patch("efm_go.mcp_core.sel"), \
              patch.dict("os.environ", {"KIROCREW_SESSION_KEY": "s"}):
             mock_post.return_value = {"id": "a1"}
             mock_get.return_value = {"done": True, "agent": "w", "result": "ok"}

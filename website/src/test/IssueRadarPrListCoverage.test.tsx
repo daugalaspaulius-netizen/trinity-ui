@@ -91,7 +91,7 @@ function pr(over: Partial<PullRequest> = {}): PullRequest {
   return {
     number: 7,
     title: 'Row title',
-    url: 'https://github.com/kirodotdev/Kiro/pull/7',
+    url: 'https://github.com/efmleads.com/pull/7',
     state: 'open',
     draft: false,
     labels: [],

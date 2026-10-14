@@ -1,4 +1,4 @@
-"""Coverage for ``kiro_crew.session`` edges the behavioural suites skip.
+"""Coverage for ``efm_go.session`` edges the behavioural suites skip.
 
 Three groups, and the seam between them is what this file is for:
 
@@ -30,12 +30,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.types import ACP_BACKEND_CLAUDE, ACP_BACKEND_KIRO
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.config.loader import KiroCrewAgentConfig
-from kiro_crew.mcp_gateway.abort import RuntimeAbortTarget
-from kiro_crew.messaging.link import ChannelLink
-from kiro_crew.session import (
+from efm_go.acp.types import ACP_BACKEND_CLAUDE, ACP_BACKEND_KIRO
+from efm_go.config import KiroCrewConfig
+from efm_go.config.loader import KiroCrewAgentConfig
+from efm_go.mcp_gateway.abort import RuntimeAbortTarget
+from efm_go.messaging.link import ChannelLink
+from efm_go.session import (
     _MAX_ORIGIN_LINKS,
     _STUCK_TURN_REPORT_SECS,
     BACKGROUND_KEY,
@@ -242,7 +242,7 @@ class TestDetectProviderSwitch:
         assert detect_provider_switch(_map_stub("claude_code", None), "k", "acp") is False
 
     def test_different_provider_with_a_stored_sid_is_a_switch(self) -> None:
-        with patch("kiro_crew.session.sel") as sel_mock:
+        with patch("efm_go.session.sel") as sel_mock:
             assert detect_provider_switch(_map_stub("claude_code", "sid-1"), "k", "acp") is True
         call = sel_mock.return_value.log_tool_invocation.call_args.kwargs
         assert call["tool_name"] == "provider_switch_detected"
@@ -883,7 +883,7 @@ class TestStuckTurnCheck:
             awaiting_permission=False,
         )
         await _busy(mgr, "d1", provider)
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.session"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.session"):
             await mgr._stuck_turn_check()
         assert any("_stuck_turn_check crashed" in r.message for r in caplog.records)
 
@@ -896,7 +896,7 @@ class TestSendAbortForSession:
     async def test_the_providers_target_drives_the_abort(self, mgr) -> None:
         target = RuntimeAbortTarget.build(4242, "/tmp/gw.sock")
         sess = _Session(provider=_stub_provider(runtime_abort_target=lambda: target))
-        with patch("kiro_crew.session.schedule_abort_for") as abort:
+        with patch("efm_go.session.schedule_abort_for") as abort:
             await mgr._send_abort_for_session("d1", sess)
         abort.assert_called_once()
         assert abort.call_args.args[0] is target
@@ -911,7 +911,7 @@ class TestSendAbortForSession:
         """
         opaque = object()
         sess = _Session(provider=_stub_provider(runtime_abort_target=lambda: opaque))
-        with patch("kiro_crew.session.schedule_abort_for") as abort:
+        with patch("efm_go.session.schedule_abort_for") as abort:
             await mgr._send_abort_for_session("d1", sess)
         assert abort.call_args.args[0] is opaque
 
@@ -922,8 +922,8 @@ class TestSendAbortForSession:
         """Visible by default: if provider internals get renamed the abort push
         stops firing, and a silent skip would hide the regression."""
         provider = _stub_provider(runtime_abort_target=lambda: None)
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
-            with patch("kiro_crew.session.schedule_abort_for") as abort:
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
+            with patch("efm_go.session.schedule_abort_for") as abort:
                 await mgr._send_abort_for_session("d1", _Session(provider=provider))
         abort.assert_not_called()
         assert any("abort-push skipped" in r.message for r in caplog.records)
@@ -940,8 +940,8 @@ class TestSendAbortForSession:
         provider = _stub_provider(
             runtime_abort_target=lambda: RuntimeAbortTarget.build(1, "/tmp/gw.sock")
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
-            with patch("kiro_crew.session.schedule_abort_for") as abort:
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
+            with patch("efm_go.session.schedule_abort_for") as abort:
                 await mgr._send_abort_for_session("d1", _Session(provider=provider))
         abort.assert_not_called()
         assert any("abort-push skipped" in r.message for r in caplog.records)
@@ -958,8 +958,8 @@ class TestSendAbortForSession:
     async def test_a_failing_audit_does_not_block_the_abort(self, mgr) -> None:
         target = RuntimeAbortTarget.build(7, "/tmp/gw.sock")
         sess = _Session(provider=_stub_provider(runtime_abort_target=lambda: target))
-        with patch("kiro_crew.session.sel", side_effect=RuntimeError("sel down")):
-            with patch("kiro_crew.session.schedule_abort_for") as abort:
+        with patch("efm_go.session.sel", side_effect=RuntimeError("sel down")):
+            with patch("efm_go.session.schedule_abort_for") as abort:
                 await mgr._send_abort_for_session("d1", sess)
         abort.assert_called_once()
 
@@ -969,8 +969,8 @@ class TestSendAbortForSession:
         target = RuntimeAbortTarget.build(4242, "/tmp/gw.sock")
         sess = _Session(provider=_stub_provider(runtime_abort_target=lambda: target))
         audit = MagicMock()
-        with patch("kiro_crew.session.sel", return_value=audit):
-            with patch("kiro_crew.session.schedule_abort_for"):
+        with patch("efm_go.session.sel", return_value=audit):
+            with patch("efm_go.session.schedule_abort_for"):
                 await mgr._send_abort_for_session("d1", sess)
         assert audit.log_api_access.call_args.kwargs["resources"] == "pid=4242 session=d1"
 
@@ -981,22 +981,22 @@ class TestSendAbortForSession:
 class TestOrphanMcpHook:
     @pytest.mark.asyncio
     async def test_a_sweep_result_is_logged(self, mgr, caplog) -> None:
-        with patch("kiro_crew.session._cleanup_orphaned_mcp_servers", return_value=3):
-            with caplog.at_level(logging.INFO, logger="kiro_crew.session"):
+        with patch("efm_go.session._cleanup_orphaned_mcp_servers", return_value=3):
+            with caplog.at_level(logging.INFO, logger="efm_go.session"):
                 await mgr._orphan_mcp_hook()
         assert any("cleaned 3 orphaned MCP servers" in r.message for r in caplog.records)
 
     @pytest.mark.asyncio
     async def test_a_clean_sweep_logs_nothing(self, mgr, caplog) -> None:
-        with patch("kiro_crew.session._cleanup_orphaned_mcp_servers", return_value=0):
-            with caplog.at_level(logging.INFO, logger="kiro_crew.session"):
+        with patch("efm_go.session._cleanup_orphaned_mcp_servers", return_value=0):
+            with caplog.at_level(logging.INFO, logger="efm_go.session"):
                 await mgr._orphan_mcp_hook()
         assert not any("orphaned MCP servers" in r.message for r in caplog.records)
 
     @pytest.mark.asyncio
     async def test_a_sweep_failure_is_swallowed(self, mgr) -> None:
         with patch(
-            "kiro_crew.session._cleanup_orphaned_mcp_servers",
+            "efm_go.session._cleanup_orphaned_mcp_servers",
             side_effect=OSError("procfs unreadable"),
         ):
             await mgr._orphan_mcp_hook()  # preserves the silent-swallow contract

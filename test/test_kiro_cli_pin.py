@@ -5,14 +5,14 @@ bundle (``diagnostics._kiro_cli_version``) both spawn kiro-cli from a process
 whose inherited ``PATH`` can lead with an agent-writable directory — a worktree
 venv's ``bin``. A bare ``"kiro-cli"`` argv0 is re-resolved off that ``PATH``
 inside ``exec``, so whatever that directory names would run as the gateway
-user. Both sites now route through :func:`kiro_crew.kiro_cli.pin_kiro_cli`,
+user. Both sites now route through :func:`efm_go.kiro_cli.pin_kiro_cli`,
 the sync form of the pin the unattended gateway spawns already use: an
 absolute path from the known install directories plus the operator's
 ``KIROCREW_KIRO_BIN``, with the inherited ``PATH`` excluded, refusing rather
 than falling back to the bare name.
 
 The structural guard at the bottom keeps the count of bare-name kiro-cli
-spawns under ``src/kiro_crew`` at zero, so a new site of the same shape fails
+spawns under ``src/efm_go`` at zero, so a new site of the same shape fails
 here rather than in a review lane.
 """
 
@@ -33,7 +33,7 @@ from source_corpus import parsed_candidates, src_root
 # git stubbed by argv prefix. Reused rather than copied so the two stay one.
 from test_cli_server_more_coverage import _GitStub, git_checkout  # noqa: F401
 
-from kiro_crew import cli_server, diagnostics, kiro_cli
+from efm_go import cli_server, diagnostics, kiro_cli
 
 _SRC_ROOT = src_root()
 
@@ -409,7 +409,7 @@ class TestDiagnosticsKiroCliPin:
 
 
 # --------------------------------------------------------------------------- #
-# Structural guard: no bare-name kiro-cli spawn anywhere under src/kiro_crew   #
+# Structural guard: no bare-name kiro-cli spawn anywhere under src/efm_go   #
 # --------------------------------------------------------------------------- #
 
 _SPAWN_FUNCS = {

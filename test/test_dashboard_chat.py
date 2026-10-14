@@ -30,19 +30,19 @@ from chat_test_helpers import (
 )
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.acp.types import ACP_BACKEND_CLAUDE, ACP_BACKEND_KIRO, TurnUsage
-from kiro_crew.agent_sdk.capabilities import capabilities_for
-from kiro_crew.config.loader import KiroCrewConfig, ResolvedBindings
-from kiro_crew.dashboard.chat_runner import _tool_call_ws_payload
-from kiro_crew.dashboard.recovery_replays import LiveSlot, ReplayFamily
-from kiro_crew.dashboard.state import (
+from efm_go.acp.types import ACP_BACKEND_CLAUDE, ACP_BACKEND_KIRO, TurnUsage
+from efm_go.agent_sdk.capabilities import capabilities_for
+from efm_go.config.loader import KiroCrewConfig, ResolvedBindings
+from efm_go.dashboard.chat_runner import _tool_call_ws_payload
+from efm_go.dashboard.recovery_replays import LiveSlot, ReplayFamily
+from efm_go.dashboard.state import (
     _MAX_SLOT_MESSAGES,
     _MAX_SOURCE_LINKS_PER_SLOT,
     SUBAGENT_SYNTHESIS_PROMPT,
     DashboardState,
     _ChatSlot,
 )
-from kiro_crew.history import ConversationLog
+from efm_go.history import ConversationLog
 
 
 def _provider_mock() -> AsyncMock:
@@ -263,7 +263,7 @@ class TestChatSlot:
         ``repo`` is NOT sent. It carried Jira's project key only so that a
         renderer predating ``label`` -- which assembles the Jira chip name as
         ``{repo}-{number}`` -- would not print ``undefined-123`` in an
-        already-open tab, since a restart without a ``kiro_crew.__version__``
+        already-open tab, since a restart without a ``efm_go.__version__``
         bump never trips the reload-on-upgrade guard. Releases have shipped past
         the change that introduced ``label``, so no such bundle can still be
         live. Absence is asserted rather than left unpinned so the field cannot
@@ -284,7 +284,7 @@ class TestChatSlot:
 
     def test_jira_issue_links_reevaluated_when_jira_allowlist_loads(self, monkeypatch):
         """Self-hosted Jira inherits the generation-keyed cache invalidation."""
-        from kiro_crew.dashboard.handlers import source_providers as sp
+        from efm_go.dashboard.handlers import source_providers as sp
 
         monkeypatch.setattr(sp, "_gitlab_hosts_snapshot", frozenset())
         monkeypatch.setattr(sp, "_jira_hosts_snapshot", frozenset())
@@ -324,7 +324,7 @@ class TestChatSlot:
         """The sync scan can run BEFORE the first off-loop allowlist load, so the
         cold-snapshot rejection must not stay memoized until the next message
         mutation -- the allowlist generation is part of the cache key."""
-        from kiro_crew.dashboard.handlers import source_providers as sp
+        from efm_go.dashboard.handlers import source_providers as sp
 
         monkeypatch.setattr(sp, "_gitlab_hosts_snapshot", frozenset())
         monkeypatch.setattr(sp, "_gitlab_hosts_loaded_at", 0.0)
@@ -440,7 +440,7 @@ class TestChatSlot:
         """The per-message walk must stop AT the cap, not collect the whole message
         first. One message can carry thousands of urls and this runs synchronously
         on the serialization path."""
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         calls = 0
         real = source_providers.parse_source_url
@@ -500,7 +500,7 @@ class TestChatSlot:
         rather than successes is what bounds rejected, repeated and distinct floods
         with one mechanism (a dedup set bounded only some of them, and cost
         unbounded memory to do it)."""
-        from kiro_crew.dashboard.handlers import source_providers
+        from efm_go.dashboard.handlers import source_providers
 
         calls = 0
         real = source_providers.parse_source_url
@@ -613,7 +613,7 @@ class TestChatSlot:
     def test_issue_links_never_inherit_a_chip_status(self, monkeypatch):
         """The chip-status cache is pull-request-only, so an issue entry must
         stay bare even when the cache would answer for its URL."""
-        from kiro_crew.dashboard import state as state_module
+        from efm_go.dashboard import state as state_module
 
         monkeypatch.setattr(
             state_module, "_cached_check_status", lambda _url: {"ci": "passed", "state": "open"}
@@ -632,7 +632,7 @@ class TestChatSlot:
 
     def test_source_links_without_kind_are_treated_as_changes(self, monkeypatch):
         """Older cached payloads have no `kind`; they must keep their status."""
-        from kiro_crew.dashboard import state as state_module
+        from efm_go.dashboard import state as state_module
 
         monkeypatch.setattr(state_module, "_cached_check_status", lambda _url: {"ci": "failed"})
         slot = _ChatSlot("s1")
@@ -646,7 +646,7 @@ class TestChatSlot:
         assert slot.to_dict(include_check_status=True)["source_links"][0]["ci"] == "failed"
 
     def test_gitlab_issue_link_requires_the_allowlist(self, monkeypatch):
-        from kiro_crew.dashboard.handlers import source_providers as sp
+        from efm_go.dashboard.handlers import source_providers as sp
 
         monkeypatch.setattr(sp, "_gitlab_hosts_snapshot", frozenset())
         monkeypatch.setattr(sp, "_gitlab_hosts_loaded_at", 0.0)
@@ -704,7 +704,7 @@ class TestBroadcastCompactionResultBackoff:
 
     @staticmethod
     def _make_slot_and_state(tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -712,18 +712,18 @@ class TestBroadcastCompactionResultBackoff:
 
     @staticmethod
     def _failed_event(title: str = ""):
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         return LLMEvent(kind="compaction_status", text="failed", title=title)
 
     @staticmethod
     def _completed_event(title: str = "did stuff"):
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         return LLMEvent(kind="compaction_status", text="completed", title=title)
 
     def test_first_n_failures_shown_as_is(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _COMPACTION_NOTICE_SHOW_FIRST_N,
             _broadcast_compaction_result,
         )
@@ -738,7 +738,7 @@ class TestBroadcastCompactionResultBackoff:
             assert f"{i}x in a row" not in msg
 
     def test_failures_beyond_limit_suppressed_within_cooldown(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _COMPACTION_NOTICE_SHOW_FIRST_N,
             _broadcast_compaction_result,
         )
@@ -756,7 +756,7 @@ class TestBroadcastCompactionResultBackoff:
         assert len(slot.messages) == before
 
     def test_cooldown_elapsed_shows_collapsed_streak_message(self, tmp_path, monkeypatch):
-        import kiro_crew.dashboard.chat_utils as chat_utils
+        import efm_go.dashboard.chat_utils as chat_utils
 
         state, slot = self._make_slot_and_state(tmp_path, monkeypatch)
 
@@ -782,7 +782,7 @@ class TestBroadcastCompactionResultBackoff:
         failure, so the ACP layer now carries the notification's own reason
         there — the row must name it instead of collapsing to
         "unknown error"."""
-        from kiro_crew.dashboard.chat_utils import _broadcast_compaction_result
+        from efm_go.dashboard.chat_utils import _broadcast_compaction_result
 
         state, slot = self._make_slot_and_state(tmp_path, monkeypatch)
 
@@ -794,7 +794,7 @@ class TestBroadcastCompactionResultBackoff:
         assert "unknown error" not in msg
 
     def test_success_resets_streak_and_cooldown(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _COMPACTION_NOTICE_SHOW_FIRST_N,
             _broadcast_compaction_result,
         )
@@ -820,7 +820,7 @@ class TestBroadcastCompactionResultBackoff:
         """Regression: the in-turn compaction path posted the notice but never
         refreshed the context meter — the bar stayed at the pre-compaction
         value until the next turn."""
-        from kiro_crew.dashboard.chat_utils import _broadcast_compaction_result
+        from efm_go.dashboard.chat_utils import _broadcast_compaction_result
 
         state, slot = self._make_slot_and_state(tmp_path, monkeypatch)
 
@@ -835,7 +835,7 @@ class TestBroadcastCompactionResultBackoff:
 
     def test_failed_does_not_broadcast_context_usage(self, tmp_path, monkeypatch):
         """A failed compaction leaves usage unchanged — no meter reset."""
-        from kiro_crew.dashboard.chat_utils import _broadcast_compaction_result
+        from efm_go.dashboard.chat_utils import _broadcast_compaction_result
 
         state, slot = self._make_slot_and_state(tmp_path, monkeypatch)
 
@@ -854,7 +854,7 @@ class TestBroadcastCompactionResultBackoff:
         can claim it. Nothing else pins the writer side, so a wording change here
         would silently unfold a multi-KB summary back into a plain notice. This
         test is that pin — change both sides together."""
-        from kiro_crew.dashboard.chat_utils import _broadcast_compaction_result
+        from efm_go.dashboard.chat_utils import _broadcast_compaction_result
 
         state, slot = self._make_slot_and_state(tmp_path, monkeypatch)
 
@@ -877,7 +877,7 @@ class TestBroadcastCompactionResultBackoff:
         ⏳ U+23F3) and one ⚠-led failure it routes to the error surface. A glyph
         swap here (⏳ U+23F3 vs ⌛ U+231B was a real review-round slip) would
         leave a raw emoji beside the card's icon with nothing red on this side."""
-        from kiro_crew.dashboard import state as st
+        from efm_go.dashboard import state as st
 
         assert st._AUTO_COMPACT_NOTICE.startswith("\U0001f504 ")
         assert st._SESSION_RECYCLED_NOTICE.startswith("\u267b\ufe0f ")
@@ -890,7 +890,7 @@ class TestApiChatDrainOnDisconnect:
     """Cover the slot.drain() call in chat_handlers' SSE finally block."""
 
     async def test_sse_reader_drains_pending_on_cancel(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -900,7 +900,7 @@ class TestApiChatDrainOnDisconnect:
             sl.append("chunk", "partial answer", "chunk")
             await asyncio.sleep(60)
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
 
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post(
@@ -932,14 +932,14 @@ class TestApiChatMemoryModeForwarding:
     """
 
     async def test_temporary_memory_mode_propagates_to_new_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         async def fake_run_chat(st, sl, msg, *, _directive_user_origin):
             assert _directive_user_origin is True
             sl.append("chunk", "ack", "chunk")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
 
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post(
@@ -961,14 +961,14 @@ class TestApiChatMemoryModeForwarding:
         assert slot.memory_mode == "temporary"
 
     async def test_missing_memory_mode_defaults_to_persistent(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         async def fake_run_chat(st, sl, msg, *, _directive_user_origin):
             assert _directive_user_origin is True
             sl.append("chunk", "ack", "chunk")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
 
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post(
@@ -986,14 +986,14 @@ class TestApiChatMemoryModeForwarding:
         assert slot.memory_mode == "persistent"
 
     async def test_invalid_memory_mode_is_dropped(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         async def fake_run_chat(st, sl, msg, *, _directive_user_origin):
             assert _directive_user_origin is True
             sl.append("chunk", "ack", "chunk")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
 
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post(
@@ -1018,8 +1018,8 @@ class TestApiChatMemoryModeForwarding:
         from unittest.mock import MagicMock
 
         mock_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.sel", lambda: mock_sel)
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.sel", lambda: mock_sel)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         # Pre-create a persistent slot
         state.get_or_create_slot("locked", memory_mode="persistent")
@@ -1067,7 +1067,7 @@ class TestApiChatModeForwarding:
             sl.append("chunk", "ack", "chunk")
 
         with pytest.MonkeyPatch.context() as mp:
-            mp.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+            mp.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat", json=body, timeout=None)
                 assert resp.status == 200
@@ -1077,7 +1077,7 @@ class TestApiChatModeForwarding:
                 await asyncio.sleep(0.05)
 
     async def test_design_critique_mode_propagates_to_new_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         await self._post_chat(
@@ -1098,7 +1098,7 @@ class TestApiChatModeForwarding:
         assert slot.mode != ""
 
     async def test_bogus_mode_is_dropped(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         await self._post_chat(
@@ -1111,7 +1111,7 @@ class TestApiChatModeForwarding:
         assert slot.mode == ""
 
     async def test_non_string_mode_is_dropped(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         await self._post_chat(
@@ -1128,7 +1128,7 @@ class TestApiChatModeForwarding:
         client, a saved script) gets an ordinary slot, not an error — the mode
         is absent from ``_CREATABLE_MODES``, so it is dropped like any other
         unknown value."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         await self._post_chat(
@@ -1143,7 +1143,7 @@ class TestApiChatModeForwarding:
     async def test_mode_ignored_for_existing_slot(self, tmp_path, monkeypatch):
         """Repeating mode on send() must be safe when the slot survived: an
         existing slot keeps its stored mode and no error is raised."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("dc-alive", mode="design-critique", memory_mode="temporary")
 
@@ -1171,14 +1171,14 @@ class TestApiChatNoBrowseMarker:
     `browse` field a client might still send."""
 
     async def _send(self, tmp_path, monkeypatch, *, body_extra: dict):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         async def fake_run_chat(st, sl, msg, *, _directive_user_origin):
             assert _directive_user_origin is True
             sl.append("chunk", "ack", "chunk")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
 
         slot_key = body_extra.get("slot", "browse-slot")
         async with TestClient(TestServer(_make_app(state))) as client:
@@ -1216,7 +1216,7 @@ class TestApiChatNoBrowseMarker:
 class TestSlotDetailPagination:
     @pytest.mark.asyncio
     async def test_default_returns_latest(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("test")
         for i in range(10):
@@ -1231,7 +1231,7 @@ class TestSlotDetailPagination:
 
     @pytest.mark.asyncio
     async def test_pagination_with_before(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("test")
         log = state.conversation_log
@@ -1260,7 +1260,7 @@ class TestSlotDetailPagination:
 
     @pytest.mark.asyncio
     async def test_empty_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("empty")
         async with TestClient(TestServer(_make_app(state))) as client:
@@ -1272,7 +1272,7 @@ class TestSlotDetailPagination:
 
     @pytest.mark.asyncio
     async def test_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.get("/api/chat/slots/nonexistent")
@@ -1280,7 +1280,7 @@ class TestSlotDetailPagination:
 
     async def _slot_with_history(self, tmp_path, monkeypatch, name, count=10):
         """A slot with *count* messages on disk and in memory."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot(name)
         for i in range(count):
@@ -1354,7 +1354,7 @@ class TestSlotDetailPagination:
         any of the archive probe, the page composition, or the re-probe is inlined
         onto the event loop.
         """
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = await self._slot_with_history(tmp_path, monkeypatch, "bounded-reader", count=30)
 
@@ -1452,7 +1452,7 @@ class TestSlotDetailPagination:
         self, tmp_path, monkeypatch
     ):
         """A raw U+2028 row is deterministic; answer from the full reader, once."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = await self._slot_with_history(tmp_path, monkeypatch, "u2028-row", count=30)
         path = state.conversation_log._path("dashboard:u2028-row")
@@ -1480,8 +1480,8 @@ class TestSlotDetailPagination:
     @pytest.mark.asyncio
     async def test_oversized_row_uses_full_reader_without_retrying(self, tmp_path, monkeypatch):
         """A deterministic over-cap row must not be re-scanned per retry attempt."""
-        from kiro_crew import history_projection
-        from kiro_crew.jsonl_util import OversizedRecord
+        from efm_go import history_projection
+        from efm_go.jsonl_util import OversizedRecord
 
         state = await self._slot_with_history(tmp_path, monkeypatch, "big-row", count=30)
         attempts: list[int] = []
@@ -1505,7 +1505,7 @@ class TestSlotDetailPagination:
         self, tmp_path, monkeypatch, caplog
     ):
         """Raw/durable prefix counters disagreeing is deterministic for the snapshot."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         state = await self._slot_with_history(tmp_path, monkeypatch, "prefix-skew", count=30)
         slot = state.get_or_create_slot("prefix-skew")
@@ -1542,9 +1542,9 @@ class TestSlotDetailPagination:
         self, tmp_path, monkeypatch, caplog
     ):
         """A fresh tab with no transcript file is a stable empty durable revision."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("fresh-tab")
         slot.append("user", "hello")
@@ -1566,7 +1566,7 @@ class TestSlotDetailPagination:
         self, tmp_path, monkeypatch
     ):
         """No conversation log (memory-only gateway): paginate from the resident window, never 500."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.conversation_log = None
         slot = state.get_or_create_slot("memonly")
@@ -1630,7 +1630,7 @@ class TestSlotDetailPagination:
 
     @pytest.mark.asyncio
     async def test_raw_and_durable_prefix_mismatch_uses_full_reader(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("mixed-prefix")
         state.conversation_log.append("dashboard:mixed-prefix", "done", "")
@@ -1726,7 +1726,7 @@ class TestSlotDetailPagination:
         self, tmp_path, monkeypatch
     ):
         """The no-limit branch reassembles disk+memory and still claims has_more false."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("whole")
         log = state.conversation_log
@@ -1767,7 +1767,7 @@ class TestSlotDetailPagination:
         lands mid-read must not be silently absent. Appending from inside the
         patched read reproduces exactly that window deterministically.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("midread")
         log = state.conversation_log
@@ -1809,7 +1809,7 @@ class TestSlotDetailPagination:
         window carries one ``done`` row, which ``_prepare_messages`` drops from the
         response, so a duplicated row is directly visible in the content sequence.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("dup")
         log = state.conversation_log
@@ -1841,7 +1841,7 @@ class TestSlotDetailPagination:
         client. A transient row sits between them, so a fix that merely stopped
         appending would pass the duplication test and fail this one.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("owed")
         log = state.conversation_log
@@ -1876,9 +1876,9 @@ class TestSlotDetailPagination:
         genuinely un-flushed turn from a response the client uses as a replacement.
         Under-count fails safe with an empty tail; over-count loses a message.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("overcount")
         for i in range(3):
@@ -1912,10 +1912,10 @@ class TestSlotDetailPagination:
         non-string id is preserved rather than replaced, reaches disk, and is then
         hashed by the boundary match, where a list raises ``TypeError``.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", AsyncMock())
         state = _make_state(tmp_path)
         state.get_or_create_slot("listmid")
 
@@ -1957,7 +1957,7 @@ class TestSlotDetailPagination:
         quantity the subtraction was approximating, and a foreign append does not
         move it.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("legacy")
         log = state.conversation_log
@@ -1999,8 +1999,8 @@ class TestSlotDetailPagination:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
         raw = "AKIAIOSFODNN7EXAMPLE"
         loaded, _ = redact_exfiltration_urls(raw)
@@ -2044,7 +2044,7 @@ class TestSlotDetailPagination:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         collided = "2026-08-18T12:00:00.000001+00:00"
         all_msgs = [
@@ -2081,10 +2081,10 @@ class TestSlotDetailPagination:
         silent-loss direction. One disk row is enough to reproduce it; two disk rows
         sharing an id are not required.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", AsyncMock())
         state = _make_state(tmp_path)
         state.get_or_create_slot("dupmid")
         dup = "m-deadbeefdeadbeef"
@@ -2132,7 +2132,7 @@ class TestSlotDetailPagination:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         dup = "m-deadbeefdeadbeef"
         all_msgs = [
@@ -2180,9 +2180,9 @@ class TestSlotDetailPagination:
         Driven through the real writers rather than a hand-built mixed window, so it
         cannot encode a row shape neither writer emits.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("mixed")
         key = "dashboard:mixed"
@@ -2240,9 +2240,9 @@ class TestSlotDetailPagination:
         id, the fixture degrades to the mixed shape and the guard names that,
         instead of the count assertion passing by way of the ordered fallback.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("dualid")
         key = "dashboard:dualid"
@@ -2296,9 +2296,9 @@ class TestSlotDetailPagination:
         the WHOLE history owed — a bounded read then serves every row twice
         until the next flush rewrites the file.
         """
-        from kiro_crew.dashboard.cron_inject import hydrate_slot_from_history
+        from efm_go.dashboard.cron_inject import hydrate_slot_from_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         key = "dashboard:cronhyd"
 
@@ -2350,9 +2350,9 @@ class TestSlotDetailPagination:
         case (``chat_persistence.py:1573-1587``), so the foreign row is dropped and
         the interleave never happens. Do not collapse these back to clock defaults.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("interleave")
         key = "dashboard:interleave"
@@ -2410,7 +2410,7 @@ class TestSlotDetailPagination:
         first: the disk window region is MIXED, which is what selects the ordered
         path, and the two sides genuinely differ by the redaction transform.
         """
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _save_slot_to_history,
             redact_credentials,
             redact_exfiltration_urls,
@@ -2421,7 +2421,7 @@ class TestSlotDetailPagination:
         redacted, _ = redact_credentials(redacted)
         assert redacted != secret, "fixture needs content the real redactor changes"
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("redactdup")
         key = "dashboard:redactdup"
@@ -2488,7 +2488,7 @@ class TestSlotDetailPagination:
         It cannot disturb a durable injection either: that pair is byte-identical,
         so it returns at the plain-equality branch above and never reaches here.
         """
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _save_slot_to_history,
             redact_credentials,
             redact_exfiltration_urls,
@@ -2509,7 +2509,7 @@ class TestSlotDetailPagination:
             red(mine) == red(theirs) != mine
         ), f"fixture needs two bodies that redact alike; got {red(mine)!r} vs {red(theirs)!r}"
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("redconflate")
         key = "dashboard:redconflate"
@@ -2562,9 +2562,9 @@ class TestSlotDetailPagination:
         """
         import threading
 
-        import kiro_crew.dashboard.chat_handlers as ch
+        import efm_go.dashboard.chat_handlers as ch
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("offloop")
         slot.append("user", "q1")
@@ -2610,9 +2610,9 @@ class TestSlotDetailPagination:
         taken in window order. That is a strict generalisation: when the persisted
         rows really are a prefix it gives the same answer.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("interleaveid")
         key = "dashboard:interleaveid"
@@ -2669,9 +2669,9 @@ class TestSlotDetailPagination:
 
         Driven through the real writers.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("transid")
         key = "dashboard:transid"
@@ -2729,9 +2729,9 @@ class TestSlotDetailPagination:
         """
         import json as _json
 
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("perm")
         key = "dashboard:perm"
@@ -2793,9 +2793,9 @@ class TestSlotDetailPagination:
         """
         import json as _json
 
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("permdone")
         key = "dashboard:permdone"
@@ -2854,9 +2854,9 @@ class TestSlotDetailPagination:
 
         Driven through the real producer's call shape (``chat_runner.py:3784``).
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("livechunk")
         key = "dashboard:livechunk"
@@ -2910,7 +2910,7 @@ class TestSlotDetailPagination:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         all_msgs = [
             {"role": "user", "content": "q1", "ts": "t1", "meta": {"mid": "m1"}},
@@ -2970,7 +2970,7 @@ class TestHistoryPersistence:
     @pytest.mark.asyncio
     async def test_disk_fallback_for_trimmed_slot(self, tmp_path, monkeypatch):
         """Default view uses in-memory; pagination of older messages uses disk."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("big")
         log = state.conversation_log
@@ -3013,9 +3013,9 @@ class TestSaveDoesNotResurrectDeletedSession:
     """
 
     def test_save_after_committed_delete_does_not_recreate_the_file(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("gone")
         slot.append("user", "hello")
@@ -3044,9 +3044,9 @@ class TestSaveDoesNotResurrectDeletedSession:
     def test_resumed_slot_save_after_delete_does_not_recreate_the_file(self, tmp_path, monkeypatch):
         """The ``_resumed_count`` evidence arm: a slot restored from history
         (no save of its own yet) must also honor a committed delete."""
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:revived", "user", "old turn")
@@ -3079,9 +3079,9 @@ class TestSaveDoesNotResurrectDeletedSession:
         deleted conversation with no save ever returning ``False`` to the fork.
         The direct ``session_was_deleted`` probe must refuse it anyway.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("forkclean")
         slot.append("user", "keep me?", "msg msg-u")
@@ -3111,10 +3111,10 @@ class TestSaveDoesNotResurrectDeletedSession:
     @pytest.mark.asyncio
     async def test_transfer_bundle_refuses_a_deleted_session(self, tmp_path, monkeypatch):
         """Same bypass on the export path: a non-dirty deleted slot must not bundle."""
-        from kiro_crew.dashboard import session_transfer as st
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard import session_transfer as st
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("bundlegone")
         slot.append("user", "ship me?", "msg msg-u")
@@ -3136,10 +3136,10 @@ class TestSaveDoesNotResurrectDeletedSession:
         the bundle in hand is the destroyed conversation. The post-assembly
         re-check must catch it.
         """
-        from kiro_crew.dashboard import session_transfer as st
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard import session_transfer as st
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("midassembly")
         slot.append("user", "racing", "msg msg-u")
@@ -3173,9 +3173,9 @@ class TestSaveDoesNotResurrectDeletedSession:
         — resurrecting the destroyed conversation inside someone else's rows.
         The guard must recognize the new incarnation by its identity and skip.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("reborn")
         slot.append("user", "the deleted conversation", "msg msg-u")
@@ -3209,10 +3209,10 @@ class TestSaveDoesNotResurrectDeletedSession:
         recreates the file -> the pending save merges the deleted window into
         the new transcript.
         """
-        from kiro_crew.dashboard import channel_slots
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard import channel_slots
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         key = "slack:thread-77"
@@ -3255,9 +3255,9 @@ class TestSaveDoesNotResurrectDeletedSession:
         (``_disk_meta_created_at``), which only a real hydrate or a committed
         save records.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("forkchild")
         slot.append("user", "the forked conversation", "msg msg-u")
@@ -3282,9 +3282,9 @@ class TestSaveDoesNotResurrectDeletedSession:
         the guard for exactly this slot — the save of the session's first
         message would recreate the deleted history. Identity alone must gate.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         # A session file with metadata but no message rows — e.g. a titled
@@ -3320,9 +3320,9 @@ class TestSaveDoesNotResurrectDeletedSession:
         content. The save must refuse to write (raising, so ``_dirty`` stays
         armed and the flush retries) until the metadata is readable again.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         slot = state.get_or_create_slot("flaky")
@@ -3340,12 +3340,12 @@ class TestSaveDoesNotResurrectDeletedSession:
 
     def test_probe_refuses_the_copy_when_metadata_is_unreadable(self, tmp_path, monkeypatch):
         """``session_was_deleted`` must fail closed on an unreadable metadata line."""
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _save_slot_to_history,
             session_was_deleted,
         )
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         slot = state.get_or_create_slot("murky")
@@ -3362,9 +3362,9 @@ class TestSaveDoesNotResurrectDeletedSession:
     def test_first_save_of_a_fresh_slot_still_creates_the_file(self, tmp_path, monkeypatch):
         """Control: the guard must not break the normal first create — a
         brand-new slot has no on-disk evidence and starts with no file."""
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("fresh")
         slot.append("user", "first message")
@@ -3386,9 +3386,9 @@ class TestSaveDoesNotResurrectDeletedSession:
         conversation would come back under a fresh key. The fork must abort
         instead.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("forkgone")
         slot.append("user", "keep me?", "msg msg-u")
@@ -3438,10 +3438,10 @@ class TestSaveDoesNotResurrectDeletedSession:
         the same rule ``build_transfer_bundle_async`` applies by re-probing
         after assembly.
         """
-        from kiro_crew.dashboard import chat_fork as fork_mod
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard import chat_fork as fork_mod
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("forkrace")
         slot.append("user", "delete me", "msg msg-u")
@@ -3505,9 +3505,9 @@ class TestSaveDoesNotResurrectDeletedSession:
         guard cannot hit this -- it reads both inside ``_locked``, the lock
         ``delete_session`` unlinks under.
         """
-        from kiro_crew.dashboard.chat_persistence import session_was_deleted
+        from efm_go.dashboard.chat_persistence import session_was_deleted
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:midprobe", "user", "delete me")
@@ -3537,9 +3537,9 @@ class TestSaveDoesNotResurrectDeletedSession:
         The re-stat must not turn the documented fail-open for legacy metadata
         into a refusal -- the file is there, so the copy proceeds.
         """
-        from kiro_crew.dashboard.chat_persistence import session_was_deleted
+        from efm_go.dashboard.chat_persistence import session_was_deleted
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:legacymeta", "user", "keep me")
@@ -3558,7 +3558,7 @@ class TestSaveDoesNotResurrectDeletedSession:
 class TestSlotLifecycle:
     @pytest.mark.asyncio
     async def test_list_slots(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("a")
         state.get_or_create_slot("b")
@@ -3572,8 +3572,8 @@ class TestSlotLifecycle:
     async def test_list_slots_schedules_source_refresh_with_push_callback(
         self, tmp_path, monkeypatch
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.handlers import source_providers
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.handlers import source_providers
 
         scheduler = MagicMock()
         monkeypatch.setattr(source_providers, "schedule_check_refresh", scheduler)
@@ -3602,9 +3602,9 @@ class TestSlotLifecycle:
 
     @pytest.mark.asyncio
     async def test_list_slots_omits_status_and_refresh_for_non_owner(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import state as state_module
-        from kiro_crew.dashboard.handlers import source_providers
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import state as state_module
+        from efm_go.dashboard.handlers import source_providers
 
         scheduler = MagicMock()
         monkeypatch.setattr(source_providers, "schedule_check_refresh", scheduler)
@@ -3644,9 +3644,9 @@ class TestSlotLifecycle:
         scheduler.assert_not_called()
 
     def test_slot_status_serialization_requires_owner_opt_in(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import state as state_module
+        from efm_go.dashboard import state as state_module
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         monkeypatch.setattr(
             state_module,
             "_cached_check_status",
@@ -3666,7 +3666,7 @@ class TestSlotLifecycle:
 
     @pytest.mark.asyncio
     async def test_approve_no_pending(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
         async with TestClient(TestServer(_make_app(state))) as client:
@@ -3675,8 +3675,8 @@ class TestSlotLifecycle:
 
     @pytest.mark.asyncio
     async def test_approve_resolves_future(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         loop = asyncio.get_running_loop()
@@ -3691,8 +3691,8 @@ class TestSlotLifecycle:
 
     @pytest.mark.asyncio
     async def test_trust_sets_flag_and_approves(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         loop = asyncio.get_running_loop()
@@ -3722,8 +3722,8 @@ class TestSlotLifecycle:
     @pytest.mark.asyncio
     async def test_approve_broadcasts_approval_resolved_single_pending(self, tmp_path, monkeypatch):
         """Single pending future without explicit request_id: extracts id and broadcasts."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         fut: asyncio.Future[str] = asyncio.get_running_loop().create_future()
@@ -3743,8 +3743,8 @@ class TestSlotLifecycle:
     @pytest.mark.asyncio
     async def test_approve_broadcasts_with_explicit_request_id(self, tmp_path, monkeypatch):
         """Explicit request_id is forwarded in the broadcast."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         fut: asyncio.Future[str] = asyncio.get_running_loop().create_future()
@@ -3766,8 +3766,8 @@ class TestSlotLifecycle:
     @pytest.mark.asyncio
     async def test_reject_broadcasts_approved_false(self, tmp_path, monkeypatch):
         """Rejection broadcasts approved=False."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         fut: asyncio.Future[str] = asyncio.get_running_loop().create_future()
@@ -3793,7 +3793,7 @@ class TestSlotLifecycle:
 class TestMultiSlotIsolation:
     @pytest.mark.asyncio
     async def test_slots_have_independent_messages(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         s1 = state.get_or_create_slot("s1")
         s2 = state.get_or_create_slot("s2")
@@ -3818,7 +3818,7 @@ class TestFullPaginationWalk:
     @pytest.mark.asyncio
     async def test_walk_all_pages(self, tmp_path, monkeypatch):
         """Simulate frontend infinite scroll — walk backwards through all messages."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("walk")
         log = state.conversation_log
@@ -3856,7 +3856,7 @@ class TestFullPaginationWalk:
     @pytest.mark.asyncio
     async def test_walk_with_trimmed_memory(self, tmp_path, monkeypatch):
         """Pagination with before uses disk — can access all messages."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("trim")
         log = state.conversation_log
@@ -3888,7 +3888,7 @@ class TestHasReaderFlag:
     """Verify _has_reader prevents duplicate message delivery."""
 
     def test_broadcast_skipped_when_reader_active(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         received: list[dict] = []
@@ -3899,7 +3899,7 @@ class TestHasReaderFlag:
         assert len(received) == 0
 
     def test_broadcast_fires_when_no_reader(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         received: list[dict] = []
@@ -3911,7 +3911,7 @@ class TestHasReaderFlag:
         assert received[0]["role"] == "assistant"
 
     def test_chunk_never_broadcast(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         received: list[dict] = []
@@ -3923,7 +3923,7 @@ class TestHasReaderFlag:
 
     def test_user_never_broadcast(self, tmp_path, monkeypatch):
         """User messages are added optimistically by frontend — no SSE broadcast."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         received: list[dict] = []
@@ -3934,7 +3934,7 @@ class TestHasReaderFlag:
         assert len(received) == 0
 
     def test_tool_and_permission_broadcast(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         received: list[dict] = []
@@ -3973,7 +3973,7 @@ class TestChunkCleanup:
 class TestPrepareMessages:
     def test_queued_preserved_done_stripped(self):
         """queued messages must survive _prepare_messages so the frontend shows the banner after tab switch."""
-        from kiro_crew.dashboard.chat import _prepare_messages
+        from efm_go.dashboard.chat import _prepare_messages
 
         msgs = [
             {"role": "user", "content": "hello"},
@@ -3988,7 +3988,7 @@ class TestPrepareMessages:
 
     def test_chunks_collapsed_to_streaming(self):
         """Trailing chunks should be collapsed into a single streaming message."""
-        from kiro_crew.dashboard.chat import _prepare_messages
+        from efm_go.dashboard.chat import _prepare_messages
 
         msgs = [
             {"role": "user", "content": "hi"},
@@ -4003,7 +4003,7 @@ class TestPrepareMessages:
         """When a queued message starts processing, its placeholder is replaced by a user entry."""
         import json
 
-        from kiro_crew.dashboard.chat import _remove_queued_by_id
+        from efm_go.dashboard.chat import _remove_queued_by_id
 
         slot = _ChatSlot("s1")
         slot.append("user", "first")
@@ -4022,7 +4022,7 @@ class TestPrepareMessages:
         """When the same text is queued twice, only the targeted placeholder is removed by ID."""
         import json
 
-        from kiro_crew.dashboard.chat import _remove_queued_by_id
+        from efm_go.dashboard.chat import _remove_queued_by_id
 
         slot = _ChatSlot("s1")
         qid1 = slot.queue_append("hello")
@@ -4053,8 +4053,8 @@ class TestKiroReadinessQueueHandoff:
         sibling switch's busy scan must see which session the parked turn is
         starting on) and retired by the refused turn itself afterwards.
         """
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         release = asyncio.Event()
 
@@ -4090,7 +4090,7 @@ class TestKiroReadinessQueueHandoff:
         # otherwise materialise a ``MagicMock/`` tree in the current directory.
         state.conversation_log._path.return_value = tmp_path / "transcript.jsonl"
         if wait_end == "deadline":
-            monkeypatch.setattr("kiro_crew.memory_startup.MEMORY_ADMISSION_WAIT_SECONDS", 0.0)
+            monkeypatch.setattr("efm_go.memory_startup.MEMORY_ADMISSION_WAIT_SECONDS", 0.0)
         state.memory_startup_task = asyncio.create_task(prepare_memory())
         slot = state.get_or_create_slot("memory-startup-admission")
         slot.queue_append("keep queued during startup")
@@ -4146,8 +4146,8 @@ class TestKiroReadinessQueueHandoff:
         reports auth failures — so the successor turn simply runs. This pins the
         no-loss invariant that outlives the probes.
         """
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         delivered: list[str] = []
 
@@ -4193,7 +4193,7 @@ class TestKiroReadinessQueueHandoff:
 class TestHistorySaveOnClose:
     @pytest.mark.asyncio
     async def test_close_saves_to_history(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hello")
@@ -4214,7 +4214,7 @@ class TestHistorySaveOnClose:
     @pytest.mark.asyncio
     async def test_transient_roles_excluded_from_history(self, tmp_path, monkeypatch):
         """chunk, done, queued, permission should not be saved to history."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "run ls")
@@ -4247,7 +4247,7 @@ class TestHistorySaveOnClose:
         never-filed to every in-memory reader, and the save path would have to
         rescue it from disk.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:filed1", "user", "hello")
@@ -4272,9 +4272,9 @@ class TestHistorySaveOnClose:
         ran on the default model, and its next save wrote ``model: ""`` over the
         pick on disk.
         """
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:modeled1", "user", "hello")
@@ -4302,7 +4302,7 @@ class TestHistorySaveOnClose:
     @pytest.mark.asyncio
     async def test_resume_ignores_a_non_string_model(self, tmp_path, monkeypatch):
         """A non-string ``model`` in transcript metadata must not crash resume."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:badmodel1", "user", "hello")
@@ -4319,7 +4319,7 @@ class TestHistorySaveOnClose:
     @pytest.mark.asyncio
     async def test_no_save_for_unchanged_resumed_session(self, tmp_path, monkeypatch):
         """Resumed session closed without new messages should not re-save."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:hist1", "user", "old msg")
@@ -4341,9 +4341,9 @@ class TestHistorySaveOnClose:
 
     def test_close_saves_mode_to_history(self, tmp_path, monkeypatch):
         """Slot mode is persisted in session metadata on close."""
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("orch1", mode="design-critique")
         slot.append("user", "plan")
@@ -4356,9 +4356,9 @@ class TestHistorySaveOnClose:
 
     def test_close_does_not_persist_trust(self, tmp_path, monkeypatch):
         """Trust flags are ephemeral — not written to session metadata."""
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("t1")
         slot._trust = True
@@ -4381,7 +4381,7 @@ class TestResumeDedupe:
     ):
         """Autopilot retired: a session persisted under mode='orchestrator'
         resumes as plain chat, with its transcript intact."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:orchhist", "user", "plan this")
@@ -4404,7 +4404,7 @@ class TestResumeDedupe:
         """A fresh resume must send next_before. The client pages by that field
         and treats its absence as 'no older history', so omitting it strands
         every row outside the returned window."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         for i in range(250):
@@ -4427,7 +4427,7 @@ class TestResumeDedupe:
         """`total` on this branch counts only the in-memory window, so the cursor
         has to add the frozen on-disk prefix back. Without that it points inside
         the range it is meant to skip past, and paging silently loses rows."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.conversation_log.append("dashboard:s1", "user", "hello")
 
@@ -4454,7 +4454,7 @@ class TestResumeDedupe:
     @pytest.mark.asyncio
     async def test_resume_existing_slot_returns_it(self, tmp_path, monkeypatch):
         """Resuming a session that's already active should return existing slot."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -4485,7 +4485,7 @@ class TestResumeDedupe:
     @pytest.mark.asyncio
     async def test_resume_close_resume_no_duplicate_history(self, tmp_path, monkeypatch):
         """Resume → close → resume → close should not create duplicate history."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -4526,7 +4526,7 @@ class TestHistoryKeyPrefix:
         registers the slot under the bare canonical key — the API response's
         ``key`` field is authoritative for follow-up calls.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:chat-1", "user", "hello")
@@ -4555,7 +4555,7 @@ class TestInMemoryAuthority:
     @pytest.mark.asyncio
     async def test_default_view_shows_current_messages(self, tmp_path, monkeypatch):
         """Default slot detail should return in-memory messages, not stale disk."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         # Stale disk data
@@ -4579,7 +4579,7 @@ class TestInMemoryAuthority:
     @pytest.mark.asyncio
     async def test_full_load_prepends_older_disk_messages(self, tmp_path, monkeypatch):
         """No-limit path prepends older disk messages when restore truncated."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         # Simulate: 8 messages on disk total (5 older + 3 recent)
@@ -4606,7 +4606,7 @@ class TestInMemoryAuthority:
     @pytest.mark.asyncio
     async def test_legacy_pagination_with_limit(self, tmp_path, monkeypatch):
         """Legacy limit-based pagination reads from chained disk."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         for i in range(10):
@@ -4642,8 +4642,8 @@ class TestInMemoryAuthority:
         the full history. Saving a new turn must preserve the frozen prefix
         byte-for-byte — no overwrite, no truncation, no archive.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -4687,12 +4687,12 @@ class TestInMemoryAuthority:
         own window entry one-for-one — never mis-classifying a real window line
         as a phantom "foreign append" and duplicating it.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         # Freeze history.py's clock so every on-disk append shares ONE ts,
         # reproducing the coarse-clock collision deterministically on any OS.
         import datetime as _dt
 
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         _FROZEN = _dt.datetime(2026, 7, 25, 0, 0, 0, tzinfo=_dt.timezone.utc)
 
@@ -4701,7 +4701,7 @@ class TestInMemoryAuthority:
             def now(cls, tz=None):
                 return _FROZEN
 
-        monkeypatch.setattr("kiro_crew.history.datetime", _FrozenDateTime)
+        monkeypatch.setattr("efm_go.history.datetime", _FrozenDateTime)
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -4744,10 +4744,10 @@ class TestInMemoryAuthority:
         instead preserve ``X`` (favouring a rare stale duplicate over
         irreversible data loss).
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         import json as _json
 
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -4787,8 +4787,8 @@ class TestInMemoryAuthority:
 
     def test_append_only_no_duplicate_on_resave(self, tmp_path, monkeypatch):
         """Re-saving without new messages must not duplicate the tail on disk."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -4813,8 +4813,8 @@ class TestInMemoryAuthority:
 
     def test_save_steady_state_does_not_archive(self, tmp_path, monkeypatch):
         """A normal append (slot is a superset of disk) archives nothing."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s5")
@@ -4834,8 +4834,8 @@ class TestInMemoryAuthority:
         must not get merged into this slot's history. Append-only touches a
         single session file, so a sibling file is left completely untouched.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -4868,8 +4868,8 @@ class TestInMemoryAuthority:
 
     def test_rewrite_path_archives_dropped_tail(self, tmp_path, monkeypatch):
         """An explicit snapshot save (rewrite, e.g. rewind) archives dropped msgs."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -4900,8 +4900,8 @@ class TestInMemoryAuthority:
         that truncates the window must leave the frozen prefix byte-for-byte and
         archive only the dropped window tail — never the older history.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -4940,10 +4940,10 @@ class TestInMemoryAuthority:
         finalized reply must end up on disk (the old position-counter model
         committed past the stop_event and dropped the later assistant line).
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         import json
 
-        from kiro_crew.dashboard.chat import _flush_segment, _save_slot_to_history
+        from efm_go.dashboard.chat import _flush_segment, _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -4981,10 +4981,10 @@ class TestInMemoryAuthority:
         window must carry the resolution to disk — the old append-only model
         only wrote new tail messages and dropped the in-place edit.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         import json
 
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -5023,9 +5023,9 @@ class TestInMemoryAuthority:
         takes the archive-safe rewrite path — the dropped tail is archived, not
         silently overwritten, and the kept prefix is correct on disk.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_persistence
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_persistence
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         state = _make_state(tmp_path)
         log = state.conversation_log
@@ -5072,7 +5072,7 @@ class TestInMemoryAuthority:
 class TestSessionRename:
     @pytest.mark.asyncio
     async def test_rename_success(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slot_title = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5090,7 +5090,7 @@ class TestSessionRename:
 
     @pytest.mark.asyncio
     async def test_rename_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         async with TestClient(TestServer(_make_app(state))) as client:
@@ -5099,7 +5099,7 @@ class TestSessionRename:
 
     @pytest.mark.asyncio
     async def test_rename_empty_title(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
 
@@ -5109,7 +5109,7 @@ class TestSessionRename:
 
     @pytest.mark.asyncio
     async def test_rename_invalid_json(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
 
@@ -5123,7 +5123,7 @@ class TestSessionRename:
 
     @pytest.mark.asyncio
     async def test_rename_truncates_at_200(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slot_title = MagicMock()
         state.get_or_create_slot("s1")
@@ -5140,7 +5140,7 @@ class TestSessionRename:
     @pytest.mark.asyncio
     async def test_resumed_session_preserves_title(self, tmp_path, monkeypatch):
         """Resumed session should set _titled=True so auto-title doesn't overwrite."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -5160,7 +5160,7 @@ class TestSessionRename:
         """Regression: resume must restore tags AND the auto-tag once-flag.
         Without the flag, resuming a session whose auto-tag the user removed
         re-runs maybe_auto_tag on the next message and silently re-adds it."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -5187,7 +5187,7 @@ class TestSessionRename:
         """FAIL-OPEN: if tags.json failed to load (vocabulary UNKNOWN), resume
         must NOT prune — pruning against an unknown vocab would wipe every
         assignment and the next save persists the loss."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._tags = []
         state._tags_authoritative = False  # load_tags() hit a parse/I/O error
@@ -5210,7 +5210,7 @@ class TestSessionRename:
         fine as []) IS authoritative: resume must prune the dangling id, or a
         crash between the vocab commit and slot cleanup would resurrect the
         deleted tag id on this slot forever."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._tags = []
         state._tags_authoritative = True  # tags.json parsed OK as []
@@ -5229,7 +5229,7 @@ class TestSessionRename:
         """load_tags() marks the vocabulary authoritative on a clean parse
         (including a legitimately-empty []) and NOT authoritative on a parse
         failure — the signal the restore-time pruning fail-open relies on."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         # Legitimately-empty vocabulary: parsed OK -> authoritative.
@@ -5264,7 +5264,7 @@ class TestSessionRename:
 class TestSessionColor:
     @pytest.mark.asyncio
     async def test_set_color_success(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -5280,7 +5280,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_set_color_null(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5295,7 +5295,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_set_color_not_found(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         async with TestClient(TestServer(_make_app(state))) as client:
@@ -5304,7 +5304,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_set_color_invalid_json(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
 
@@ -5318,7 +5318,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_set_color_negative_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
 
@@ -5328,7 +5328,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_set_color_bool_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
 
@@ -5338,7 +5338,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_set_color_zero(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5352,7 +5352,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_set_color_large_index(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
 
@@ -5361,9 +5361,9 @@ class TestSessionColor:
             assert resp.status == 400
 
     def test_color_zero_persisted(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.color_index = 0
@@ -5376,9 +5376,9 @@ class TestSessionColor:
         assert meta.get("color_index") == 0
 
     def test_color_persisted_in_history(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.color_index = 4
@@ -5391,9 +5391,9 @@ class TestSessionColor:
         assert meta.get("color_index") == 4
 
     def test_color_null_not_persisted(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hello")
@@ -5406,7 +5406,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_set_color_hex_success_and_lowercased(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -5425,7 +5425,7 @@ class TestSessionColor:
         "bad", ["#GGGGGG", "#abc", "abcdef", "#abcdef00", 123, True, ["#abcdef"]]
     )
     async def test_set_color_hex_malformed_rejected(self, tmp_path, monkeypatch, bad):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
 
@@ -5436,7 +5436,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_color_hex_and_index_mutually_exclusive(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5458,7 +5458,7 @@ class TestSessionColor:
     @pytest.mark.asyncio
     async def test_color_index_only_patch_keeps_existing_hex_when_null(self, tmp_path, monkeypatch):
         """An index-only PATCH with null must not silently null a hex (in-body gating)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5471,7 +5471,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_color_hex_null_clears(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5486,7 +5486,7 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_color_hex_in_to_dict(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.color_hex = "#0a0b0c"
@@ -5494,9 +5494,9 @@ class TestSessionColor:
 
     @pytest.mark.asyncio
     async def test_color_hex_persisted_in_history(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.color_hex = "#0a0b0c"
@@ -5516,66 +5516,66 @@ class TestBlockedSlashCommands:
     """Tests for _BLOCKED_SLASH_COMMANDS blocking dangerous commands."""
 
     def test_quit_is_blocked(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/quit" in _BLOCKED_SLASH_COMMANDS
 
     def test_exit_is_blocked(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/exit" in _BLOCKED_SLASH_COMMANDS
 
     def test_q_is_blocked(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/q" in _BLOCKED_SLASH_COMMANDS
 
     def test_editor_is_blocked(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/editor" in _BLOCKED_SLASH_COMMANDS
 
     def test_chat_is_blocked(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/chat" in _BLOCKED_SLASH_COMMANDS
 
     def test_paste_is_blocked(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/paste" in _BLOCKED_SLASH_COMMANDS
 
     def test_reply_is_blocked(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/reply" in _BLOCKED_SLASH_COMMANDS
 
     def test_tangent_is_blocked(self):
         # kiro-cli's terminal checkpoint toggle (Ctrl+T); the dashboard's
         # session model and /side cover its purpose, so it is inert here.
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/tangent" in _BLOCKED_SLASH_COMMANDS
 
     def test_compact_is_not_blocked(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS
 
         assert "/compact" not in _BLOCKED_SLASH_COMMANDS
 
     def test_blocked_is_subset_of_slash(self):
-        from kiro_crew.dashboard.chat import _BLOCKED_SLASH_COMMANDS, _SLASH_COMMANDS
+        from efm_go.dashboard.chat import _BLOCKED_SLASH_COMMANDS, _SLASH_COMMANDS
 
         assert _BLOCKED_SLASH_COMMANDS.issubset(_SLASH_COMMANDS)
 
     @pytest.mark.asyncio
     async def test_blocked_command_returns_warning_no_session(self, tmp_path, monkeypatch):
         """Posting /quit should add warning to slot and never acquire a session."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "/quit")
 
@@ -5594,7 +5594,7 @@ class TestTitleGenerationSessionLeak:
 
     @pytest.mark.asyncio
     async def test_background_session_destroyed_on_stream_error(self, tmp_path):
-        from kiro_crew.dashboard.chat import _generate_title_via_kiro
+        from efm_go.dashboard.chat import _generate_title_via_kiro
 
         state = _make_state(tmp_path)
 
@@ -5619,8 +5619,8 @@ class TestTitleGenerationSessionLeak:
 
     @pytest.mark.asyncio
     async def test_permission_request_rejected_during_title_gen(self, tmp_path):
-        from kiro_crew.dashboard.chat import _generate_title_via_kiro
-        from kiro_crew.providers.base import (
+        from efm_go.dashboard.chat import _generate_title_via_kiro
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_PERMISSION_REQUEST,
             EVENT_TEXT_CHUNK,
@@ -5649,8 +5649,8 @@ class TestTitleGenerationSessionLeak:
 
     @pytest.mark.asyncio
     async def test_complete_event_breaks_stream(self, tmp_path):
-        from kiro_crew.dashboard.chat import _generate_title_via_kiro
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _generate_title_via_kiro
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         state = _make_state(tmp_path)
         mock_client = MagicMock()
@@ -5679,7 +5679,7 @@ class TestFlushSegment:
 
         Validates: Requirements 1.1, 1.2, 4.3, 6.3
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5687,7 +5687,7 @@ class TestFlushSegment:
         slot.append("chunk", "Hello ")
         slot.append("chunk", "world")
 
-        from kiro_crew.dashboard.chat import _flush_segment
+        from efm_go.dashboard.chat import _flush_segment
 
         _flush_segment(state, slot, "Hello world")
 
@@ -5708,7 +5708,7 @@ class TestFlushSegment:
         it nothing registers emitted widgets, and the in-session Artifacts tab
         can never list them.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5720,10 +5720,10 @@ class TestFlushSegment:
             return []
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.register_widgets_off_loop", _fake_register
+            "efm_go.dashboard.chat_runner.register_widgets_off_loop", _fake_register
         )
 
-        from kiro_crew.dashboard.chat import _flush_segment
+        from efm_go.dashboard.chat import _flush_segment
 
         async def _run():
             _flush_segment(state, slot, '<mcwidget title="W">body</mcwidget>')
@@ -5747,7 +5747,7 @@ class TestFlushSegment:
 
     def test_flush_segment_skips_registration_without_a_widget(self, tmp_path, monkeypatch):
         """The common case (no widget) must not touch the artifact store at all."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5760,10 +5760,10 @@ class TestFlushSegment:
             return []
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.register_widgets_off_loop", _fake_register
+            "efm_go.dashboard.chat_runner.register_widgets_off_loop", _fake_register
         )
 
-        from kiro_crew.dashboard.chat import _flush_segment
+        from efm_go.dashboard.chat import _flush_segment
 
         async def _run():
             _flush_segment(state, slot, "just prose, no widget here")
@@ -5779,7 +5779,7 @@ class TestFlushSegment:
         text would persist to disk (and re-surface on the artifact page) exactly
         what the segment redaction just removed.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5791,10 +5791,10 @@ class TestFlushSegment:
             return []
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.register_widgets_off_loop", _fake_register
+            "efm_go.dashboard.chat_runner.register_widgets_off_loop", _fake_register
         )
 
-        from kiro_crew.dashboard.chat import _flush_segment
+        from efm_go.dashboard.chat import _flush_segment
 
         secret = "AKIAIOSFODNN7EXAMPLE"
 
@@ -5821,7 +5821,7 @@ class TestFlushSegment:
         expected to leave no trace would land in `artifacts/<slug>/` and show up
         in the library.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -5836,10 +5836,10 @@ class TestFlushSegment:
             return []
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.register_widgets_off_loop", _fake_register
+            "efm_go.dashboard.chat_runner.register_widgets_off_loop", _fake_register
         )
 
-        from kiro_crew.dashboard.chat import _flush_segment
+        from efm_go.dashboard.chat import _flush_segment
 
         async def _run():
             _flush_segment(state, slot, '<mcwidget title="W">secret body</mcwidget>')
@@ -5871,7 +5871,7 @@ class TestRunChatSegmentFlush:
     @staticmethod
     def _make_state_for_run_chat(tmp_path, monkeypatch):
         """Create a DashboardState wired for _run_chat tests."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -5887,7 +5887,7 @@ class TestRunChatSegmentFlush:
         any chat_chunk broadcast (pentest issue 3), while the reassembled stream
         stays lossless and shows the redaction.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         # AKIAIOSFODNN7EXAMPLE split exactly as in the pentest reproduction.
         events = [
@@ -5901,7 +5901,7 @@ class TestRunChatSegmentFlush:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "echo the key")
 
@@ -5926,7 +5926,7 @@ class TestRunChatSegmentFlush:
     ):
         """A credential split across thinking chunks must not appear raw on any
         chat_thinking broadcast (issue 3 parity for the thinking stream)."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_THINKING_CHUNK,
@@ -5945,7 +5945,7 @@ class TestRunChatSegmentFlush:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "think about it")
 
@@ -5968,7 +5968,7 @@ class TestRunChatSegmentFlush:
 
         Validates: Requirements 1.1, 1.2, 1.3, 4.3
         """
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -5988,7 +5988,7 @@ class TestRunChatSegmentFlush:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -6007,8 +6007,8 @@ class TestRunChatSegmentFlush:
     @pytest.mark.asyncio
     async def test_tool_turn_progress_claim_surfaces_idle_notice(self, tmp_path, monkeypatch):
         """A mixed turn must not replay tools, but it must not claim it keeps running."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -6032,7 +6032,7 @@ class TestRunChatSegmentFlush:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "run the full gate")
 
@@ -6055,7 +6055,7 @@ class TestRunChatSegmentFlush:
         and would stay green if this call were deleted, so pin the real
         `_run_chat` path here.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [LLMEvent(kind=EVENT_TEXT_CHUNK, text="ok"), LLMEvent(kind=EVENT_COMPLETE)]
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -6064,7 +6064,7 @@ class TestRunChatSegmentFlush:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -6077,7 +6077,7 @@ class TestRunChatSegmentFlush:
 
         Validates: Requirements 1.4
         """
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_PERMISSION_REQUEST,
             EVENT_TEXT_CHUNK,
@@ -6104,7 +6104,7 @@ class TestRunChatSegmentFlush:
         client.approve_tool = AsyncMock()
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "run ls")
 
@@ -6121,7 +6121,7 @@ class TestRunChatSegmentFlush:
 
         Validates: Requirements 8.1
         """
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             LLMEvent,
@@ -6138,7 +6138,7 @@ class TestRunChatSegmentFlush:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -6157,7 +6157,7 @@ class TestRunChatSegmentFlush:
 
         Validates: Requirements 7.1
         """
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -6179,7 +6179,7 @@ class TestRunChatSegmentFlush:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -6209,11 +6209,11 @@ class TestRunChatSegmentFlush:
         it, whether or not the client saw the turn boundary -- a snapshot or a
         `_done` lost to a reconnect cannot make the next turn's chunks read as
         replays of the finished one."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         def seqs() -> list[int]:
             return [
@@ -6240,7 +6240,7 @@ class TestRunChatSegmentFlush:
         assert second_turn[0] > first_turn[-1], (first_turn, second_turn)
         # Every frame names the process generation that numbered it, so a client
         # can drop a floor from before a gateway restart instead of comparing.
-        from kiro_crew.dashboard.chat_utils import chunk_generation
+        from efm_go.dashboard.chat_utils import chunk_generation
 
         gens = {
             c.args[1].get("gen")
@@ -6258,7 +6258,7 @@ class TestRunChatSegmentFlush:
         replay guard from; a row without the stamp would leave the snapshot
         unable to say how far the stream it holds has advanced.
         """
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -6278,7 +6278,7 @@ class TestRunChatSegmentFlush:
         # rebuilt at the segment flush (chunk rows are dropped from it), so
         # neither an instance patch nor reading `slot.messages` afterwards sees
         # every chunk row the runner appended.
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         appended: list[dict] = []
         real_append = _ChatSlot.append
@@ -6294,7 +6294,7 @@ class TestRunChatSegmentFlush:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -6327,7 +6327,7 @@ class TestRunChatNativeSubagentAttribution:
 
     @staticmethod
     def _make_state_for_run_chat(tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -6339,7 +6339,7 @@ class TestRunChatNativeSubagentAttribution:
 
     @pytest.mark.asyncio
     async def test_native_tool_calls_attribute_dedupe_and_accumulate(self, tmp_path, monkeypatch):
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_SUBAGENT_ACTIVITY,
             EVENT_SUBAGENT_LIST,
@@ -6403,7 +6403,7 @@ class TestRunChatNativeSubagentAttribution:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "explore the codebase with 1 subagent")
 
@@ -6438,7 +6438,7 @@ class TestRunChatNativeSubagentAttribution:
 class TestRunChatCompactDeferredWait:
     """The deferred-compaction wait at the end of _run_chat is a kiro-cli-only
     protocol step. claude-agent-acp performs /compact synchronously inside
-    session/prompt and never emits ``_kiro.dev/compaction/status``, so the
+    session/prompt and never emits ``_efm.go/compaction/status``, so the
     handler must skip ``wait_for_compaction`` for that backend or it sits
     blocked for 30 minutes and finally surfaces "Compaction timed out."
     """
@@ -6461,7 +6461,7 @@ class TestRunChatCompactDeferredWait:
 
     @staticmethod
     def _make_state_for_run_chat(tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -6475,7 +6475,7 @@ class TestRunChatCompactDeferredWait:
     async def test_claude_backend_skips_wait_for_compaction(self, tmp_path, monkeypatch):
         """When the backend compacts INLINE, the dashboard must report success
         immediately and never call ``wait_for_compaction``."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE)]
 
@@ -6490,7 +6490,7 @@ class TestRunChatCompactDeferredWait:
         client.capabilities = capabilities_for(ACP_BACKEND_CLAUDE)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "/compact")
 
@@ -6523,7 +6523,7 @@ class TestRunChatCompactDeferredWait:
     @pytest.mark.asyncio
     async def test_kiro_backend_still_waits_for_compaction(self, tmp_path, monkeypatch):
         """kiro-cli backend keeps the original deferred-wait path."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE)]
 
@@ -6541,7 +6541,7 @@ class TestRunChatCompactDeferredWait:
         client.capabilities = capabilities_for(ACP_BACKEND_KIRO)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "/compact")
 
@@ -6566,7 +6566,7 @@ class TestRunChatCompactDeferredWait:
     @pytest.mark.asyncio
     async def test_completed_status_arms_skills_context_reinjection(self, tmp_path, monkeypatch):
         """A provider-native completed status restores skills context once."""
-        from kiro_crew.providers.base import EVENT_COMPACTION_STATUS, EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPACTION_STATUS, EVENT_COMPLETE, LLMEvent
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -6578,7 +6578,7 @@ class TestRunChatCompactDeferredWait:
         )
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "continue after provider compaction")
 
@@ -6589,7 +6589,7 @@ class TestRunChatCompactDeferredWait:
         """When the wait_for_compaction grace drain captured kiro's fresh
         post-compaction metadata, the broadcast must carry the REAL numbers
         (accurate pct + served window), not the reset/unknown fallback."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE)]
 
@@ -6606,7 +6606,7 @@ class TestRunChatCompactDeferredWait:
         client.capabilities = capabilities_for(ACP_BACKEND_KIRO)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "/compact")
 
@@ -6630,7 +6630,7 @@ class TestRunChatCompactDeferredWait:
         """A failed deferred compaction leaves usage unchanged: re-send the
         current counts, never the reset form (which would blank a still-valid
         meter)."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE)]
 
@@ -6644,7 +6644,7 @@ class TestRunChatCompactDeferredWait:
         client.capabilities = capabilities_for(ACP_BACKEND_KIRO)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "/compact")
 
@@ -6674,7 +6674,7 @@ class TestRunChatCompactDeferredWait:
         ordinary prompt, and no reinjection is armed because nothing was
         compacted.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -6690,7 +6690,7 @@ class TestRunChatCompactDeferredWait:
         state.sessions.consume_provider_switch_replay = MagicMock(return_value=True)
         state.sessions.commit_provider_switch_replay_sid = MagicMock(return_value=True)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "/compact")
 
@@ -6723,7 +6723,7 @@ class TestRunChatCompactDeferredWait:
 
     async def _run_failed_compaction(self, tmp_path, monkeypatch, summary):
         """Drive /compact to a `failed` result carrying *summary*."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -6738,7 +6738,7 @@ class TestRunChatCompactDeferredWait:
         client.capabilities = capabilities_for(ACP_BACKEND_KIRO)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "/compact")
         return slot
@@ -6793,7 +6793,7 @@ class TestRunChatCompactDeferredWait:
     @pytest.mark.asyncio
     async def test_failed_compaction_reason_is_length_capped(self, tmp_path, monkeypatch):
         """A wall of provider text cannot scroll the transcript away."""
-        from kiro_crew.dashboard.chat_runner import _COMPACT_FAIL_REASON_MAX_CHARS
+        from efm_go.dashboard.chat_runner import _COMPACT_FAIL_REASON_MAX_CHARS
 
         slot = await self._run_failed_compaction(tmp_path, monkeypatch, "x" * 5_000)
         notice = self._compaction_notice(slot)
@@ -6834,7 +6834,7 @@ class TestTokenPersistenceBackfill:
 
     @staticmethod
     def _make_state_for_run_chat(tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -6847,13 +6847,13 @@ class TestTokenPersistenceBackfill:
     @pytest.mark.asyncio
     async def test_safe_complete_reports_structured_monitor_usage(self, tmp_path, monkeypatch):
         """Normal runner return is not the accounting boundary; safe evidence is."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.monitoring.completion import MonitorCompletionHook
-        from kiro_crew.monitoring.models import (
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.monitoring.completion import MonitorCompletionHook
+        from efm_go.monitoring.models import (
             MonitorActionCompletion,
             MonitorActionDisposition,
         )
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="done"),
@@ -6870,7 +6870,7 @@ class TestTokenPersistenceBackfill:
         client.context_window_tokens = MagicMock(return_value=0)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.generate_session_summary",
+            "efm_go.dashboard.chat_runner.generate_session_summary",
             AsyncMock(return_value=None),
         )
         completions: list[MonitorActionCompletion] = []
@@ -6894,10 +6894,10 @@ class TestTokenPersistenceBackfill:
     async def test_synthetic_timeout_complete_does_not_report_monitor_usage(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.monitoring.completion import MonitorCompletionHook
-        from kiro_crew.monitoring.models import MonitorActionCompletion
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.monitoring.completion import MonitorCompletionHook
+        from efm_go.monitoring.models import MonitorActionCompletion
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         event = LLMEvent(
             kind=EVENT_COMPLETE,
@@ -6911,7 +6911,7 @@ class TestTokenPersistenceBackfill:
         client.context_window_tokens = MagicMock(return_value=0)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.generate_session_summary",
+            "efm_go.dashboard.chat_runner.generate_session_summary",
             AsyncMock(return_value=None),
         )
         completions: list[MonitorActionCompletion] = []
@@ -6930,10 +6930,10 @@ class TestTokenPersistenceBackfill:
 
     @pytest.mark.asyncio
     async def test_synthesized_end_turn_does_not_report_monitor_usage(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.monitoring.completion import MonitorCompletionHook
-        from kiro_crew.monitoring.models import MonitorActionCompletion
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.monitoring.completion import MonitorCompletionHook
+        from efm_go.monitoring.models import MonitorActionCompletion
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         event = LLMEvent(
             kind=EVENT_COMPLETE,
@@ -6948,7 +6948,7 @@ class TestTokenPersistenceBackfill:
         client.context_window_tokens = MagicMock(return_value=0)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.generate_session_summary",
+            "efm_go.dashboard.chat_runner.generate_session_summary",
             AsyncMock(return_value=None),
         )
         completions: list[MonitorActionCompletion] = []
@@ -6968,8 +6968,8 @@ class TestTokenPersistenceBackfill:
     @pytest.mark.asyncio
     async def test_monitor_reauthorizes_at_provider_entry(self, tmp_path, monkeypatch):
         """A stopped claim cannot cross the runner's final provider boundary."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.monitoring.completion import MonitorCompletionHook
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.monitoring.completion import MonitorCompletionHook
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -6996,9 +6996,9 @@ class TestTokenPersistenceBackfill:
     @pytest.mark.asyncio
     async def test_monitor_shutdown_gate_precedes_acceptance(self, tmp_path, monkeypatch):
         """A closing session cannot acknowledge a wake that never entered the provider."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.monitoring.completion import MonitorCompletionHook
-        from kiro_crew.session import SessionClosingError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.monitoring.completion import MonitorCompletionHook
+        from efm_go.session import SessionClosingError
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -7029,10 +7029,10 @@ class TestTokenPersistenceBackfill:
         self, tmp_path, monkeypatch
     ):
         """Provider completion evidence is durable before cancellable analytics I/O."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.monitoring.completion import MonitorCompletionHook
-        from kiro_crew.monitoring.models import MonitorActionCompletion
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.monitoring.completion import MonitorCompletionHook
+        from efm_go.monitoring.models import MonitorActionCompletion
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         event = LLMEvent(
             kind=EVENT_COMPLETE,
@@ -7046,7 +7046,7 @@ class TestTokenPersistenceBackfill:
         client.context_window_tokens = MagicMock(return_value=0)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.generate_session_summary",
+            "efm_go.dashboard.chat_runner.generate_session_summary",
             AsyncMock(return_value=None),
         )
 
@@ -7054,7 +7054,7 @@ class TestTokenPersistenceBackfill:
             raise asyncio.CancelledError
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async",
+            "efm_go.dashboard.chat_runner.persist_token_record_async",
             _cancel_persistence,
         )
         completions: list[MonitorActionCompletion] = []
@@ -7086,7 +7086,7 @@ class TestTokenPersistenceBackfill:
         backfill branch can populate the record's model, so removing the
         late-backfill code would cause this test to fail.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [
             LLMEvent(
@@ -7113,7 +7113,7 @@ class TestTokenPersistenceBackfill:
         # record below -- a real CC session's client resolves the same one.
         _cc_cfg = KiroCrewConfig()
         _cc_cfg.dashboard.merge_queued_messages = False
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.KiroCrewConfig.load", lambda: _cc_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.KiroCrewConfig.load", lambda: _cc_cfg)
 
         # Build a mock whose inner._model starts EMPTY so the early backfill
         # branch (chat_runner.py:471-476) finds nothing and leaves slot.model
@@ -7143,10 +7143,10 @@ class TestTokenPersistenceBackfill:
             captured.append((slot_key, model, provider))
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7167,7 +7167,7 @@ class TestTokenPersistenceBackfill:
         while the client lets the usage recorder distinguish Auto from an
         unavailable model source.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=5, output_tokens=7)),
@@ -7186,10 +7186,10 @@ class TestTokenPersistenceBackfill:
             captured.append((k, m, provider, kwargs["model_source"]))
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7203,7 +7203,7 @@ class TestTokenPersistenceBackfill:
         """OpenCode resolves model synchronously; slot.model is already set
         when EVENT_COMPLETE arrives. Backfill must not clobber it.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=1, output_tokens=2)),
@@ -7224,10 +7224,10 @@ class TestTokenPersistenceBackfill:
             captured.append((k, m, provider))
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7256,7 +7256,7 @@ class TestTokenUsageSurface:
         linked_session_key,
         expected,
     ):
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         complete = LLMEvent(
             kind=EVENT_COMPLETE,
@@ -7274,9 +7274,9 @@ class TestTokenUsageSurface:
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
         persist = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.persist_token_record_async", persist)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.persist_token_record_async", persist)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7286,7 +7286,7 @@ class TestTokenUsageSurface:
     @pytest.mark.asyncio
     async def test_completion_keeps_source_of_session_that_ran(self, tmp_path, monkeypatch):
         """A mid-turn rebind must not move the completed turn's attribution."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         complete = LLMEvent(
             kind=EVENT_COMPLETE,
@@ -7311,9 +7311,9 @@ class TestTokenUsageSurface:
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
         persist = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.persist_token_record_async", persist)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.persist_token_record_async", persist)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7334,7 +7334,7 @@ class TestCostOnlyTurnPersistGate:
     async def test_a_cost_only_turn_persists_its_row(self, tmp_path, monkeypatch):
         """Mutation guard: dropping the gate's ``cost_usd`` conjunct makes the
         persist call disappear and this fail."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(cost_usd=0.42))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -7343,9 +7343,9 @@ class TestCostOnlyTurnPersistGate:
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
         persist = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.persist_token_record_async", persist)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.persist_token_record_async", persist)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7356,7 +7356,7 @@ class TestCostOnlyTurnPersistGate:
     async def test_an_all_zero_turn_still_writes_no_row(self, tmp_path, monkeypatch):
         """The widened gate must not have become unconditional: a turn whose
         usage carries no billing dimension at all stays out of the store."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage())]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -7365,9 +7365,9 @@ class TestCostOnlyTurnPersistGate:
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
         persist = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.persist_token_record_async", persist)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.persist_token_record_async", persist)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7397,7 +7397,7 @@ class TestKiroBackfillProfileGuard:
         return client
 
     def test_predicate_flags_bedrock_profile_ids(self):
-        from kiro_crew.dashboard.chat_runner import _is_bedrock_profile_id
+        from efm_go.dashboard.chat_runner import _is_bedrock_profile_id
 
         assert _is_bedrock_profile_id("global.anthropic.claude-opus-4-8[1m]")
         assert _is_bedrock_profile_id("us.anthropic.claude-opus-4-7")
@@ -7409,7 +7409,7 @@ class TestKiroBackfillProfileGuard:
         assert not _is_bedrock_profile_id("deepseek-3.2")
 
     def test_kiro_profile_id_is_dropped(self):
-        from kiro_crew.dashboard.chat_runner import _backfill_canonical_model
+        from efm_go.dashboard.chat_runner import _backfill_canonical_model
 
         client = self._client_with_model("global.anthropic.claude-opus-4-8[1m]")
         # acp/kiro provider: the throttled profile id must NOT be backfilled.
@@ -7417,7 +7417,7 @@ class TestKiroBackfillProfileGuard:
         assert _backfill_canonical_model(client, "kiro") == ""
 
     def test_kiro_portable_alias_is_kept(self):
-        from kiro_crew.dashboard.chat_runner import _backfill_canonical_model
+        from efm_go.dashboard.chat_runner import _backfill_canonical_model
 
         # A dotted alias is the picker's value and routes with capacity
         # awareness — keep it so the header/dropdown still reflect the model.
@@ -7425,7 +7425,7 @@ class TestKiroBackfillProfileGuard:
         assert _backfill_canonical_model(client, "acp") == "claude-opus-4.7"
 
     def test_claude_code_profile_id_still_canonicalizes(self):
-        from kiro_crew.dashboard.chat_runner import _backfill_canonical_model
+        from efm_go.dashboard.chat_runner import _backfill_canonical_model
 
         # claude_code is unaffected: its profile id maps to the dropdown key the
         # user explicitly chose, so the guard must not strip it.
@@ -7434,7 +7434,7 @@ class TestKiroBackfillProfileGuard:
         assert out == "opus-4.8-1m"
 
     def test_auto_sentinel_still_skipped(self):
-        from kiro_crew.dashboard.chat_runner import _backfill_canonical_model
+        from efm_go.dashboard.chat_runner import _backfill_canonical_model
 
         client = self._client_with_model("auto")
         assert _backfill_canonical_model(client, "acp") == ""
@@ -7447,7 +7447,7 @@ class TestKiroBackfillProfileGuard:
         id), so the next resume re-resolves rather than re-sending the throttled
         profile as a set_model override.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
 
@@ -7478,10 +7478,10 @@ class TestKiroBackfillProfileGuard:
             captured.append((k, m, provider))
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7517,19 +7517,19 @@ class TestPinnedModelWithheld:
         return client
 
     def test_pin_absent_from_advertised_is_withheld(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         client = self._client(["auto", "claude-sonnet-5"])
         assert _pinned_model_verdict(client, "claude-opus-5", "acp") is True
 
     def test_advertised_pin_is_kept(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         client = self._client(["auto", "claude-opus-5"])
         assert _pinned_model_verdict(client, "claude-opus-5", "acp") is False
 
     def test_unknown_entitlement_keeps_the_pin(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         # Advertised nothing (no session yet / backend omits the list) must read
         # as "unknown", never as "nothing is allowed" — and, since the verdict is
@@ -7537,14 +7537,14 @@ class TestPinnedModelWithheld:
         assert _pinned_model_verdict(self._client([]), "claude-opus-5", "acp") is None
 
     def test_auto_and_empty_are_never_withheld(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         client = self._client(["claude-sonnet-5"])
         assert _pinned_model_verdict(client, "auto", "acp") is None
         assert _pinned_model_verdict(client, "", "acp") is None
 
     def test_claude_code_provider_is_exempt(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         # slot.model is a canonical key there while the backend advertises bare
         # ids — comparing the two namespaces would call every model unusable.
@@ -7552,13 +7552,13 @@ class TestPinnedModelWithheld:
         assert _pinned_model_verdict(client, "opus-4.8-1m", "claude_code") is None
 
     def test_claude_backend_provider_is_exempt(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         client = self._client(["claude-opus-4-8[1m]"], claude_backend=True)
         assert _pinned_model_verdict(client, "claude-opus-4.8", "acp") is None
 
     def test_provider_without_getter_keeps_the_pin(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         client = MagicMock()
         del client.available_models
@@ -7566,7 +7566,7 @@ class TestPinnedModelWithheld:
         assert _pinned_model_verdict(client, "claude-opus-5", "acp") is None
 
     def test_getter_raising_keeps_the_pin(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         client = MagicMock()
         client.capabilities = capabilities_for(ACP_BACKEND_KIRO)
@@ -7574,7 +7574,7 @@ class TestPinnedModelWithheld:
         assert _pinned_model_verdict(client, "claude-opus-5", "acp") is None
 
     def test_namespaced_pin_matches_bare_advertised(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         # A persisted pin can carry a `<namespace>::<bare-id>`
         # qualifier from the catalog that advertised it when it was stored,
@@ -7588,7 +7588,7 @@ class TestPinnedModelWithheld:
         assert _pinned_model_verdict(client, "openrouter::z-ai/glm-5.3-flash", "acp") is False
 
     def test_namespaced_pin_judged_even_when_provider_unreadable(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         # _run_chat passes provider_name="" when the config could not be read.
         # The fold keys on the pin's own qualifier, not on the provider string,
@@ -7598,7 +7598,7 @@ class TestPinnedModelWithheld:
         assert _pinned_model_verdict(client, "openrouter::z-ai/glm-5.3-flash", "") is False
 
     def test_pin_absent_after_peel_is_still_withheld(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         # The peel must not turn the verdict into a rubber stamp: a pin the
         # backend serves under NEITHER spelling still answers withheld.
@@ -7606,7 +7606,7 @@ class TestPinnedModelWithheld:
         assert _pinned_model_verdict(client, "openrouter::no-such-model", "acp") is True
 
     def test_only_one_qualifier_level_is_peeled(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         # The fold peels exactly ONE leading qualifier. A doubly-qualified pin
         # whose innermost tail happens to be advertised is not a spelling of
@@ -7616,7 +7616,7 @@ class TestPinnedModelWithheld:
         assert _pinned_model_verdict(client, "a::b::glm-5.3-flash", "acp") is True
 
     def test_pin_advertised_verbatim_needs_no_peel(self):
-        from kiro_crew.dashboard.chat_runner import _pinned_model_verdict
+        from efm_go.dashboard.chat_runner import _pinned_model_verdict
 
         # A backend that advertises the qualified spelling itself matches on
         # the first (full) comparison — the peel is a miss-only retry, so it
@@ -7705,13 +7705,13 @@ class TestPinnedModelWithheld:
         import importlib
         from pathlib import Path
 
-        from kiro_crew.dashboard import chat_handlers, chat_runner
+        from efm_go.dashboard import chat_handlers, chat_runner
 
         # The handler bodies are split between `chat_handlers` and its
         # `chat_api` owners, so every owner is scanned beside the two facades.
         owner_paths = sorted((Path(chat_handlers.__file__).parent / "chat_api").glob("[!_]*.py"))
         owners = [
-            importlib.import_module(f"kiro_crew.dashboard.chat_api.{path.stem}")
+            importlib.import_module(f"efm_go.dashboard.chat_api.{path.stem}")
             for path in owner_paths
         ]
         assert owners, "no chat_api owner module found beside chat_handlers"
@@ -7745,7 +7745,7 @@ class TestPinnedModelWithheld:
     @pytest.mark.asyncio
     async def test_reset_chokepoint_forgets_the_verdict(self):
         """The one reset funnel must drop it, so all its call sites do."""
-        from kiro_crew.dashboard.chat_handlers import _reset_slot_session
+        from efm_go.dashboard.chat_handlers import _reset_slot_session
 
         state = MagicMock()
 
@@ -7757,7 +7757,7 @@ class TestPinnedModelWithheld:
         slot.model = "claude-opus-5"
         slot.record_model_withheld(True)
 
-        with patch("kiro_crew.dashboard.chat_handlers._unblock_pending_waits"):
+        with patch("efm_go.dashboard.chat_handlers._unblock_pending_waits"):
             await _reset_slot_session(state, slot, "dashboard:s1")
 
         assert slot.model_withheld is None
@@ -7771,7 +7771,7 @@ class TestPinnedModelWithheld:
         would republish a runnable pin as `auto` -- the defect the verdict exists
         to remove -- for a session that never changed.
         """
-        from kiro_crew.dashboard.chat_handlers import _reset_slot_session
+        from efm_go.dashboard.chat_handlers import _reset_slot_session
 
         state = MagicMock()
 
@@ -7783,7 +7783,7 @@ class TestPinnedModelWithheld:
         slot.model = "claude-opus-5"
         slot.record_model_withheld(True)
 
-        with patch("kiro_crew.dashboard.chat_handlers._unblock_pending_waits"):
+        with patch("efm_go.dashboard.chat_handlers._unblock_pending_waits"):
             reloaded = await _reset_slot_session(state, slot, "dashboard:s1", skip_if_busy=True)
 
         assert reloaded is False
@@ -7792,7 +7792,7 @@ class TestPinnedModelWithheld:
     @pytest.mark.asyncio
     async def test_a_reset_that_raises_drops_the_verdict(self):
         """A teardown that raised leaves a session the slot cannot vouch for."""
-        from kiro_crew.dashboard.chat_handlers import _reset_slot_session
+        from efm_go.dashboard.chat_handlers import _reset_slot_session
 
         state = MagicMock()
 
@@ -7804,7 +7804,7 @@ class TestPinnedModelWithheld:
         slot.model = "claude-opus-5"
         slot.record_model_withheld(True)
 
-        with patch("kiro_crew.dashboard.chat_handlers._unblock_pending_waits"):
+        with patch("efm_go.dashboard.chat_handlers._unblock_pending_waits"):
             with pytest.raises(RuntimeError):
                 await _reset_slot_session(state, slot, "dashboard:s1")
 
@@ -7815,7 +7815,7 @@ class TestPinnedModelWithheld:
         """End-to-end: a slot pinned to an unentitled model gets an in-chat
         notice, and the pin SURVIVES so a plan re-upgrade self-heals.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -7845,10 +7845,10 @@ class TestPinnedModelWithheld:
             del k, m, e, provider, kwargs
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7898,7 +7898,7 @@ class TestPinnedModelWithheld:
         no `_resolved_model_id` — a private-field read would store `""` forever
         and the chip would keep saying `auto`.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -7932,10 +7932,10 @@ class TestPinnedModelWithheld:
             del k, m, e, provider, kwargs
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -7957,7 +7957,7 @@ class TestPinnedModelWithheld:
         session (and this verdict) sees is the replacement, never the deprecated
         spelling the slot was carrying.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -7988,10 +7988,10 @@ class TestPinnedModelWithheld:
             del k, m, e, provider, kwargs
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -8014,7 +8014,7 @@ class TestPinnedModelWithheld:
         and publishing the previous session's answer for it would label a live
         session from an entitlement snapshot it never took.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -8043,10 +8043,10 @@ class TestPinnedModelWithheld:
             del k, m, e, provider, kwargs
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -8074,8 +8074,8 @@ class TestPinnedModelWithheld:
         config that loads once and then goes bad — config is read live through a
         fingerprint cache, so an edit mid-turn does exactly that.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -8093,7 +8093,7 @@ class TestPinnedModelWithheld:
                 raise ValueError("config became unreadable mid-turn")
             return real_cfg
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.KiroCrewConfig.load", load_then_break)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.KiroCrewConfig.load", load_then_break)
 
         client = _provider_mock()
         client.context_usage_pct = MagicMock(return_value=10.0)
@@ -8115,10 +8115,10 @@ class TestPinnedModelWithheld:
             del k, m, e, provider, kwargs
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         # Completes. Reading cfg.agent.provider here raises UnboundLocalError.
         await _run_chat(state, slot, "hello")
@@ -8132,7 +8132,7 @@ class TestPinnedModelWithheld:
     ):
         """The withheld case reports `auto` on the activity line; the healthy case
         must still report the model the session actually runs on."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -8162,10 +8162,10 @@ class TestPinnedModelWithheld:
             del k, m, e, provider, kwargs
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -8187,7 +8187,7 @@ class TestPinnedModelWithheld:
         """The notice reports the SPAWN-time withhold, so a warm session (neither
         new nor resumed) must not repeat it on every turn.
         """
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -8215,10 +8215,10 @@ class TestPinnedModelWithheld:
             del k, m, e, provider, kwargs
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -8244,7 +8244,7 @@ class TestPinnedModelWithheld:
     @pytest.mark.asyncio
     async def test_run_chat_keeps_an_entitled_pin(self, tmp_path, monkeypatch):
         """Counterpart: an advertised pin is left exactly as the user set it."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, usage=TurnUsage(input_tokens=3, output_tokens=4))]
         state = TestTokenPersistenceBackfill._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -8273,10 +8273,10 @@ class TestPinnedModelWithheld:
             del k, m, e, provider, kwargs
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.persist_token_record_async", _fake_persist
+            "efm_go.dashboard.chat_runner.persist_token_record_async", _fake_persist
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -8292,7 +8292,7 @@ class TestPrepareMessagesInterleaved:
 
         Validates: Requirements 6.1
         """
-        from kiro_crew.dashboard.chat import _prepare_messages
+        from efm_go.dashboard.chat import _prepare_messages
 
         messages = [
             {"role": "user", "content": "hello"},
@@ -8318,7 +8318,7 @@ class TestPrepareMessagesInterleaved:
 
     def test_no_trailing_chunks_no_streaming(self):
         """Without trailing chunks, no streaming message is produced."""
-        from kiro_crew.dashboard.chat import _prepare_messages
+        from efm_go.dashboard.chat import _prepare_messages
 
         messages = [
             {"role": "user", "content": "hello"},
@@ -8350,7 +8350,7 @@ class TestRuntimeWiring:
 
         Requirements: 1.3
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
         state.sessions.reset = AsyncMock()
@@ -8375,24 +8375,24 @@ class TestRuntimeWiring:
         mock_bindings.memory_store_name = "oncall-mem"
         mock_bindings.model = ""
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat.resolve_agent_bindings",
+            "efm_go.dashboard.chat.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat._workspace_name_for_dir",
+            "efm_go.dashboard.chat._workspace_name_for_dir",
             lambda cfg, ws_dir: "oncall-ws",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "oncall-ws",
         )
 
@@ -8418,7 +8418,7 @@ class TestRuntimeWiring:
         chip to a workspace the slot does not hold, and with the websocket
         down (the optimistic write's whole premise) nothing corrects it.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.workspace = "research-ws"
@@ -8427,8 +8427,8 @@ class TestRuntimeWiring:
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", _boom)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
 
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             resp = await client.post("/api/chat/slots/s1/agent", json={"agent": "oncall"})
@@ -8454,7 +8454,7 @@ class TestRuntimeWiring:
         tab's performSlotSwitch keep the OLD store value for a switch that
         actually happened.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.agent = "oncall"
@@ -8491,24 +8491,24 @@ class TestRuntimeWiring:
         mock_bindings.workspace_dir = Path("/tmp/research")
         mock_bindings.memory_store_name = "default"
         mock_bindings.model = ""
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat.resolve_agent_bindings",
+            "efm_go.dashboard.chat.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat._workspace_name_for_dir",
+            "efm_go.dashboard.chat._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
 
@@ -8540,7 +8540,7 @@ class TestRuntimeWiring:
         untouched. Restoring captured priors here (the old rollback shape)
         would silently erase that concurrent success.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.agent = "oncall"
@@ -8578,24 +8578,24 @@ class TestRuntimeWiring:
         mock_bindings.workspace_dir = Path("/tmp/research")
         mock_bindings.memory_store_name = "default"
         mock_bindings.model = ""
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat.resolve_agent_bindings",
+            "efm_go.dashboard.chat.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat._workspace_name_for_dir",
+            "efm_go.dashboard.chat._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
 
@@ -8627,24 +8627,24 @@ class TestRuntimeWiring:
         mock_bindings.workspace_dir = Path("/tmp/research")
         mock_bindings.memory_store_name = "default"
         mock_bindings.model = ""
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat.resolve_agent_bindings",
+            "efm_go.dashboard.chat.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat._workspace_name_for_dir",
+            "efm_go.dashboard.chat._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
 
@@ -8662,9 +8662,9 @@ class TestRuntimeWiring:
         acting tab keeps its old store value on a non-2xx, and the probe has
         proven the surviving session still runs the old binding.
         """
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.agent = "oncall"
@@ -8692,9 +8692,9 @@ class TestRuntimeWiring:
         successor cold-started from the committed bindings, and the answer is
         200 + warning.
         """
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.agent = "oncall"
@@ -8734,7 +8734,7 @@ class TestRuntimeWiring:
         reality. `agent` itself still commits — it is owned exclusively by
         this endpoint.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.agent = "oncall"
@@ -8771,24 +8771,24 @@ class TestRuntimeWiring:
         mock_bindings.workspace_dir = Path("/tmp/research")
         mock_bindings.memory_store_name = "default"
         mock_bindings.model = ""
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat.resolve_agent_bindings",
+            "efm_go.dashboard.chat.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat._workspace_name_for_dir",
+            "efm_go.dashboard.chat._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
 
@@ -8821,7 +8821,7 @@ class TestRuntimeWiring:
         (`agent` has no unlocked writers, so committing before the reset is
         safe: the failure path's rollback races nobody.)
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.agent = "oncall"
@@ -8837,8 +8837,8 @@ class TestRuntimeWiring:
             raise RuntimeError("config unreadable")
 
         # Resolution outcome is irrelevant to the visibility property.
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", _boom)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
 
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             resp = await client.post("/api/chat/slots/s1/agent", json={"agent": "research"})
@@ -8859,7 +8859,7 @@ class TestRuntimeWiring:
         persist would hand the tab a stale value that the pick had already
         superseded.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.workspace = "oncall-ws"
@@ -8869,8 +8869,8 @@ class TestRuntimeWiring:
             raise RuntimeError("config unreadable")
 
         # Resolution outcome is irrelevant; keep the derived commit a no-op.
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", _boom)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.KiroCrewConfig.load", _boom)
 
         # A conversation_log whose update_metadata simulates a concurrent
         # /workspace pick landing while the persist thread runs.
@@ -8897,7 +8897,7 @@ class TestRuntimeWiring:
         Without this, the dashboard file search stays scoped to the previous
         workspace even after the user selects a different agent.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.project = "/old/project"
@@ -8922,28 +8922,28 @@ class TestRuntimeWiring:
         mock_bindings.memory_store_name = "default"
         mock_bindings.model = ""
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat.resolve_agent_bindings",
+            "efm_go.dashboard.chat.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat._workspace_name_for_dir",
+            "efm_go.dashboard.chat._workspace_name_for_dir",
             lambda cfg, ws_dir: "dev-ws",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "dev-ws",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.default_project_dir",
+            "efm_go.dashboard.chat_handlers.default_project_dir",
             lambda ws: "/workspace/dev",
         )
 
@@ -8961,7 +8961,7 @@ class TestRuntimeWiring:
         turn: the slot advertises it while the default answers — the
         silent-substitution bug this exists to remove.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.project = str(tmp_path / "repo")
@@ -8981,25 +8981,25 @@ class TestRuntimeWiring:
         mock_bindings.requested_resolved = True
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "default",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.warm_project_agent_names", AsyncMock()
+            "efm_go.dashboard.chat_handlers.warm_project_agent_names", AsyncMock()
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.cached_project_agent_names",
+            "efm_go.dashboard.chat_handlers.cached_project_agent_names",
             lambda project_dir: frozenset({"repo-bot"}),
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.default_project_dir",
+            "efm_go.dashboard.chat_handlers.default_project_dir",
             lambda ws: "/workspace/default",
         )
 
@@ -9013,14 +9013,14 @@ class TestRuntimeWiring:
     @pytest.mark.asyncio
     async def test_api_chat_slot_workspace_updates_project_dir(self, tmp_path, monkeypatch):
         """Switching workspace also updates slot.project to the new workspace dir."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.project = "/old/project"
         state.sessions.reset = AsyncMock()
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.default_project_dir",
+            "efm_go.dashboard.chat_handlers.default_project_dir",
             lambda ws: "/workspace/new-ws",
         )
 
@@ -9036,7 +9036,7 @@ class TestRuntimeWiring:
         Without this, a session resumed after a gateway restart reverts to
         whatever agent (if any) was recorded in the initial metadata line.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
         state.sessions.reset = AsyncMock()
@@ -9056,7 +9056,7 @@ class TestRuntimeWiring:
         # workspace-focused test above; here we only care about persistence).
         mock_cfg = MagicMock()
         mock_cfg.agents = {}
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
 
         async with TestClient(TestServer(as_owner(_make_app_with_agent_routes(state)))) as client:
             resp = await client.post("/api/chat/slots/s1/agent", json={"agent": "new-agent"})
@@ -9076,7 +9076,7 @@ class TestRuntimeWiring:
 
         Requirements: 2.4
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         mock_cfg = MagicMock()
@@ -9098,24 +9098,24 @@ class TestRuntimeWiring:
         mock_bindings.memory_store_name = "default"
         mock_bindings.model = ""
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat.resolve_agent_bindings",
+            "efm_go.dashboard.chat.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.resolve_agent_bindings",
+            "efm_go.dashboard.chat_handlers.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat._workspace_name_for_dir",
+            "efm_go.dashboard.chat._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._workspace_name_for_dir",
+            "efm_go.dashboard.chat_handlers._workspace_name_for_dir",
             lambda cfg, ws_dir: "research-ws",
         )
 
@@ -9133,7 +9133,7 @@ class TestRuntimeWiring:
 
         Requirements: 2.3
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         slot = state.get_or_create_slot("ws-test", agent="oncall", workspace="oncall-ws")
@@ -9158,7 +9158,7 @@ class TestRuntimeWiring:
 
         Requirements: 3.1
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
 
         # Track calls to build_message
         build_message_calls: list[dict] = []
@@ -9167,13 +9167,13 @@ class TestRuntimeWiring:
             build_message_calls.append({"text": text, "session_key": session_key, "kwargs": kwargs})
             return text, MagicMock(action=None, text="")
 
-        from kiro_crew.config.loader import (
+        from efm_go.config.loader import (
             KiroCrewAgentConfig,
             KiroCrewConfig,
             WorkspaceConfig,
             resolve_agent_bindings,
         )
-        from kiro_crew.memory_stores import provision_member_memory
+        from efm_go.memory_stores import provision_member_memory
 
         mock_cfg = KiroCrewConfig.load()
         mock_cfg.agents["oncall"] = KiroCrewAgentConfig(
@@ -9186,21 +9186,21 @@ class TestRuntimeWiring:
         # The provider and context are doubles; model a supported runtime while
         # keeping member ownership and persisted conversation metadata real.
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat.resolve_agent_bindings",
+            "efm_go.dashboard.chat.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.KiroCrewConfig.load", lambda: mock_cfg)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.resolve_agent_bindings",
+            "efm_go.dashboard.chat_runner.resolve_agent_bindings",
             lambda cfg, name, project_dir=None, **kwargs: mock_bindings,
         )
 
         # Create a context builder with mocked build_message
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.context import ContextBuilder
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         ctx_builder = ContextBuilder(
             memory=MemoryStore(workspace=tmp_path / "ws"),
@@ -9210,15 +9210,15 @@ class TestRuntimeWiring:
             ctx_builder, "build_message", lambda *a, **kw: mock_build_message(ctx_builder, *a, **kw)
         )
         monkeypatch.setattr(ctx_builder, "ensure_store", AsyncMock(return_value=object()))
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.title_then_refresh", AsyncMock())
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.generate_session_summary", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.title_then_refresh", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.generate_session_summary", AsyncMock())
 
         state = _make_state(tmp_path, context_builder=ctx_builder)
 
         # Create a slot with retained history, then verify a cold start replays it.
         slot = state.get_or_create_slot("mem-test", agent="oncall")
         if binding_change == "none":
-            from kiro_crew.execution_context import bind_session_execution, resolve_member_execution
+            from efm_go.execution_context import bind_session_execution, resolve_member_execution
 
             captured_execution = await asyncio.to_thread(
                 resolve_member_execution, mock_cfg, "oncall"
@@ -9247,7 +9247,7 @@ class TestRuntimeWiring:
         slot.append("user", "test message", "msg msg-u")
 
         # Mock session manager to return a mock client
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         mock_client = MagicMock()
         mock_client.stream = MagicMock(
@@ -9264,7 +9264,7 @@ class TestRuntimeWiring:
         binding_reads = []
 
         def checked_bindings(cfg, name, project_dir=None, **kwargs):
-            from kiro_crew.memory_stores import UnknownMemoryStore
+            from efm_go.memory_stores import UnknownMemoryStore
 
             with pytest.raises(RuntimeError, match="no running event loop"):
                 asyncio.get_running_loop()
@@ -9280,11 +9280,11 @@ class TestRuntimeWiring:
             return resolved
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.resolve_agent_bindings", checked_bindings
+            "efm_go.dashboard.chat_runner.resolve_agent_bindings", checked_bindings
         )
 
         # Import and run _run_chat
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "test message")
         await asyncio.gather(*state._background_tasks)
@@ -9292,7 +9292,7 @@ class TestRuntimeWiring:
         assert len(binding_reads) == 1
         assert binding_reads[0][0] == "oncall"
         if binding_change != "none":
-            from kiro_crew.member_memory_auth import read_private_session_store
+            from efm_go.member_memory_auth import read_private_session_store
 
             state.sessions.get_or_create.assert_not_awaited()
             state.sessions.record_failure.assert_awaited_once_with("dashboard:mem-test")
@@ -9313,7 +9313,7 @@ class TestRuntimeWiring:
         metadata = conversation_log.get_metadata("dashboard:mem-test")
         assert metadata["memory_store"] == private_store
         assert metadata["agent"] == "oncall"
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.execution_context import read_session_execution
 
         retained_execution = read_session_execution("dashboard:mem-test")
         assert retained_execution.member_id == captured_execution.member_id
@@ -9347,18 +9347,18 @@ class TestRuntimeWiring:
         resumed session gets no replay, so the Resume press on that turn must
         carry the turn itself, or the model is told to finish a request it cannot
         see and answers the one before it (or reports nothing to continue)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
 
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.context import ContextBuilder
+        from efm_go.dashboard.chat_utils import (
             _BUSY_RECOVER_MSG,
             _CONN_RECOVER_MSG,
             _MANUAL_CONTINUE_MSG,
             _MANUAL_RESUME_MSG,
         )
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.memory import MemoryStore
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.skills import SkillsLoader
 
         resume_text = {
             "manual_resume": _MANUAL_RESUME_MSG,
@@ -9379,7 +9379,7 @@ class TestRuntimeWiring:
         )
         ctx_builder.conversation_log = MagicMock()
         monkeypatch.setattr(ctx_builder, "build_message", mock_build_message)
-        monkeypatch.setattr("kiro_crew.context.build_session_replay", lambda *a, **k: "")
+        monkeypatch.setattr("efm_go.context.build_session_replay", lambda *a, **k: "")
 
         state = _make_state(tmp_path, context_builder=ctx_builder)
         hook_store = MagicMock()
@@ -9413,7 +9413,7 @@ class TestRuntimeWiring:
         state.sessions.get_or_create = AsyncMock(return_value=(mock_client, True, resumed))
         state.sessions.get_pid = MagicMock(return_value=None)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(
             state,
@@ -9449,10 +9449,10 @@ class TestRuntimeWiring:
         native resume; outbound-only mirrors still run as direct dashboard turns
         and need the Tool Search resume workaround.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
 
-        from kiro_crew.messaging.link import ChannelLink
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.messaging.link import ChannelLink
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         state = _make_state(tmp_path)
         state.context_builder = None
@@ -9476,7 +9476,7 @@ class TestRuntimeWiring:
         state.sessions.get_or_create = AsyncMock(return_value=(mock_client, True, False))
         state.sessions.get_pid = MagicMock(return_value=None)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "linked dashboard turn")
 
@@ -9494,7 +9494,7 @@ class TestRuntimeWiring:
         and a cancelled terminal re-arms it because the provider discards that
         turn. The next accepted ordinary prompt finally clears the lease.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
 
         build_message_calls: list[dict] = []
         build_behavior = {"stop_during_build": False}
@@ -9513,12 +9513,12 @@ class TestRuntimeWiring:
                 build_behavior["stop_during_build"] = False
             return text, MagicMock(action=None, text="")
 
-        from kiro_crew.acp.types import STOP_REASON_CANCELLED
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.hooks import HOOK_EVENT_AGENT_SPAWN
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.acp.types import STOP_REASON_CANCELLED
+        from efm_go.context import ContextBuilder
+        from efm_go.hooks import HOOK_EVENT_AGENT_SPAWN
+        from efm_go.memory import MemoryStore
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.skills import SkillsLoader
 
         ctx_builder = ContextBuilder(
             memory=MemoryStore(workspace=tmp_path / "ws"),
@@ -9527,7 +9527,7 @@ class TestRuntimeWiring:
         ctx_builder.conversation_log = MagicMock()
         monkeypatch.setattr(ctx_builder, "build_message", mock_build_message)
         monkeypatch.setattr(
-            "kiro_crew.context.build_session_replay",
+            "efm_go.context.build_session_replay",
             lambda *args, **kwargs: "retained conversation replay",
         )
 
@@ -9545,7 +9545,7 @@ class TestRuntimeWiring:
             return message
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._maybe_inject_persona",
+            "efm_go.dashboard.chat_runner._maybe_inject_persona",
             inject_persona,
         )
 
@@ -9630,7 +9630,7 @@ class TestRuntimeWiring:
         state.sessions.mark_provider_switch_replay = MagicMock(side_effect=mark_replay)
         state.sessions.commit_provider_switch_replay_sid = MagicMock(side_effect=commit_replay)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "/tools")
 
@@ -9708,7 +9708,7 @@ class TestRuntimeWiring:
         stream_behavior["empty_end_turn"] = True
         slot._empty_response_retries = 1
         with patch(
-            "kiro_crew.dashboard.chat_runner._empty_auto_continue_enabled",
+            "efm_go.dashboard.chat_runner._empty_auto_continue_enabled",
             return_value=False,
         ):
             await _run_chat(state, slot, "real empty replay with continuation off")
@@ -9760,7 +9760,7 @@ class TestRuntimeWiring:
         Regression guard: without this wiring the flag is set by the compact
         callback and read by nobody, so the whole feature is dead code.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
 
         build_message_calls: list[dict] = []
 
@@ -9768,9 +9768,9 @@ class TestRuntimeWiring:
             build_message_calls.append({"text": text, "kwargs": kwargs})
             return text, MagicMock(action=None, text="")
 
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.context import ContextBuilder
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         ctx_builder = ContextBuilder(
             memory=MemoryStore(workspace=tmp_path / "ws"),
@@ -9804,7 +9804,7 @@ class TestRuntimeWiring:
         state.sessions.consume_needs_reinjection = MagicMock(side_effect=_consume)
         state.sessions.mark_needs_reinjection = MagicMock(side_effect=_mark)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "first turn after compaction")
 
@@ -9840,12 +9840,12 @@ class TestRuntimeWiring:
         the except arm, so an except-arm-only re-arm leaves the warm session
         running WITHOUT [PERMANENT RULES] for the rest of its life. The re-arm
         must live in the finally, on every exit path."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
 
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.context import ContextBuilder
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         ctx_builder = ContextBuilder(
             memory=MemoryStore(workspace=tmp_path / "ws"),
@@ -9861,7 +9861,7 @@ class TestRuntimeWiring:
         cfg = KiroCrewConfig()
         cfg.agents["rearm-test"] = KiroCrewAgentConfig(kiro_agent="kirocrew")
         cfg.default_agent = "rearm-test"
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.KiroCrewConfig.load", lambda: cfg)
         slot = state.get_or_create_slot("member-rearm-test", agent="rearm-test", mode="member")
 
         mock_client = MagicMock()
@@ -9875,7 +9875,7 @@ class TestRuntimeWiring:
         state.sessions.consume_needs_reinjection = MagicMock(return_value=False)
         state.sessions.mark_needs_reinjection = MagicMock()
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "first member turn")
 
@@ -9891,11 +9891,11 @@ class TestRunChatToolBoundarySegments:
 
     @pytest.mark.asyncio
     async def test_tool_boundary_splits_segments(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import LLMEvent
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -9936,11 +9936,11 @@ class TestRunChatToolBoundarySegments:
     @pytest.mark.asyncio
     async def test_tool_boundary_empty_chunk_still_splits(self, tmp_path, monkeypatch):
         """Empty text chunk after tool call doesn't prevent segment splitting."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import LLMEvent
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.chat.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
 
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
@@ -9999,7 +9999,7 @@ class TestRunChatToolCallUpdate:
 
     @staticmethod
     def _make_state_for_run_chat(tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -10013,7 +10013,7 @@ class TestRunChatToolCallUpdate:
     async def test_refinement_patches_pill_content_and_meta(self, tmp_path, monkeypatch):
         """An initial tool_call with a stub title is overwritten by the refined
         title and the meta picks up the populated input."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_CALL_UPDATE,
@@ -10040,7 +10040,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10056,7 +10056,7 @@ class TestRunChatToolCallUpdate:
     async def test_refinement_carries_purpose_when_it_has_one(self, tmp_path, monkeypatch):
         """The update frame must carry the purpose so the live status line keeps
         showing the agent's own reason for the call."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_CALL_UPDATE,
@@ -10086,7 +10086,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10100,7 +10100,7 @@ class TestRunChatToolCallUpdate:
         sending an empty string: consumers merge field-by-field and read an
         absent ``purpose`` as "keep what the initial tool_call supplied", so an
         empty value would replace a good purpose with the raw command."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_CALL_UPDATE,
@@ -10129,7 +10129,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10143,7 +10143,7 @@ class TestRunChatToolCallUpdate:
         status: when the initial tool_call streamed an empty rawInput, _tool_meta
         wrote an empty purpose, and the reloaded transcript reads meta.purpose —
         so a live-only patch loses it on the next reload."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_CALL_UPDATE,
@@ -10170,7 +10170,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10187,7 +10187,7 @@ class TestRunChatToolCallUpdate:
         dashboard gates the inline diff-card promotion on kind == 'edit'
         (a shell command whose input looks like a diff must never promote),
         and historical rows can only be gated from persisted meta."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             LLMEvent,
@@ -10209,7 +10209,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10220,7 +10220,7 @@ class TestRunChatToolCallUpdate:
     async def test_refinement_broadcasts_chat_message_update(self, tmp_path, monkeypatch):
         """The handler broadcasts a chat_message_update WS event so the
         frontend can patch the persisted tile in place without a reload."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_CALL_UPDATE,
@@ -10245,7 +10245,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10270,7 +10270,7 @@ class TestRunChatToolCallUpdate:
     async def test_refinement_preserves_existing_icon(self, tmp_path, monkeypatch):
         """Auto-approved tools may already carry a ✅ marker on the message
         with the same tool_call_id. The patch must preserve that prefix."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL_UPDATE,
             LLMEvent,
@@ -10296,7 +10296,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10309,7 +10309,7 @@ class TestRunChatToolCallUpdate:
     async def test_refinement_breaks_on_first_match_walking_reverse(self, tmp_path, monkeypatch):
         """When two messages share the tool_call_id (auto-approved double-emit
         with 🔧 then ✅), only the most recent one is patched."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL_UPDATE,
             LLMEvent,
@@ -10332,7 +10332,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10348,7 +10348,7 @@ class TestRunChatToolCallUpdate:
         """_pending_tools feeds PostToolUse hooks by tool name. The refinement
         must strip the "Running: " prefix exactly like EVENT_TOOL_CALL does so
         hooks matching by name keep working after the refinement event."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_CALL_UPDATE,
@@ -10383,7 +10383,7 @@ class TestRunChatToolCallUpdate:
         # was updated correctly via the WS-broadcast surface area: the
         # refinement broadcasts the refined title without the "Running: "
         # prefix on the handler's local copy.
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10401,7 +10401,7 @@ class TestRunChatToolCallUpdate:
     async def test_refinement_logs_sel_audit_event(self, tmp_path, monkeypatch):
         """The handler logs a `tool_invocation` audit event with
         outcome="refined" so the audit trail captures the refined name."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL_UPDATE,
             LLMEvent,
@@ -10413,7 +10413,7 @@ class TestRunChatToolCallUpdate:
             def log_tool_invocation(self, **kw):
                 captured.append(kw)
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.sel", lambda: _FakeSel())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.sel", lambda: _FakeSel())
 
         events = [
             LLMEvent(
@@ -10430,7 +10430,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10444,7 +10444,7 @@ class TestRunChatToolCallUpdate:
     async def test_refinement_no_tool_call_id_skipped(self, tmp_path, monkeypatch):
         """Refinement events without a tool_call_id are silently dropped —
         we have nothing to merge against."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL_UPDATE,
             LLMEvent,
@@ -10459,7 +10459,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10477,7 +10477,7 @@ class TestRunChatToolCallUpdate:
         """When no persisted tool message matches the tool_call_id, the
         handler still broadcasts the tool_call merge but skips
         chat_message_update (nothing to patch)."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL_UPDATE,
             LLMEvent,
@@ -10498,7 +10498,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10513,7 +10513,7 @@ class TestRunChatToolCallUpdate:
         """Credentials in tool_input must be redacted before the broadcast
         and the persisted meta. _redact_tool_field applies both
         redact_exfiltration_urls and redact_credentials."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL_UPDATE,
             LLMEvent,
@@ -10536,7 +10536,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10551,7 +10551,7 @@ class TestRunChatToolCallUpdate:
     async def test_refinement_handler_swallows_exceptions(self, tmp_path, monkeypatch):
         """A malformed broadcast or other exception inside the handler must
         not tear down the run loop. The try/except logs and continues."""
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL_UPDATE,
@@ -10586,7 +10586,7 @@ class TestRunChatToolCallUpdate:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         # Must not raise — the run loop should continue past the exception.
         await _run_chat(state, slot, "hello")
@@ -10622,7 +10622,7 @@ class TestRunChatModelRefusal:
 
     @staticmethod
     def _make_state_for_run_chat(tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -10635,9 +10635,9 @@ class TestRunChatModelRefusal:
     @pytest.mark.asyncio
     async def test_stale_recover_notice_is_tagged_and_emits_one_frame(self, tmp_path, monkeypatch):
         """The LIVE frame must carry the retry tag, and there must be exactly one."""
-        from kiro_crew.acp.types import STOP_REASON_STALE_RECOVER
-        from kiro_crew.dashboard.chat_utils import TRANSIENT_RETRY_KIND
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.acp.types import STOP_REASON_STALE_RECOVER
+        from efm_go.dashboard.chat_utils import TRANSIENT_RETRY_KIND
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, stop_reason=STOP_REASON_STALE_RECOVER)]
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -10645,7 +10645,7 @@ class TestRunChatModelRefusal:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10670,8 +10670,8 @@ class TestRunChatModelRefusal:
 
     @pytest.mark.asyncio
     async def test_refusal_shows_declined_card_and_does_not_retry(self, tmp_path, monkeypatch):
-        from kiro_crew.acp.types import STOP_REASON_REFUSAL
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.acp.types import STOP_REASON_REFUSAL
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         events = [LLMEvent(kind=EVENT_COMPLETE, stop_reason=STOP_REASON_REFUSAL)]
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -10679,7 +10679,7 @@ class TestRunChatModelRefusal:
         client = self._make_mock_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10721,8 +10721,8 @@ class TestRunChatRefusalFallback:
 
     @staticmethod
     def _refusal_events(**refusal_kwargs):
-        from kiro_crew.acp.types import STOP_REASON_REFUSAL, RefusalInfo
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.acp.types import STOP_REASON_REFUSAL, RefusalInfo
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         refusal = RefusalInfo(**refusal_kwargs) if refusal_kwargs else None
         return [LLMEvent(kind=EVENT_COMPLETE, stop_reason=STOP_REASON_REFUSAL, refusal=refusal)]
@@ -10734,7 +10734,7 @@ class TestRunChatRefusalFallback:
         """First refusal swaps + replays the SAME message; a second refusal
         (from the fallback) is terminal and says the fallback also declined."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         events = self._refusal_events(category="CYBER")
@@ -10743,7 +10743,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10793,7 +10793,7 @@ class TestRunChatRefusalFallback:
         """The swap is single-message: the first turn that is not the replay
         moves the session back to the primary before dispatching."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -10801,7 +10801,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._refusal_events(category="CYBER"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
         assert slot.task is not None
@@ -10809,8 +10809,8 @@ class TestRunChatRefusalFallback:
         assert slot._refusal_fallback_primary == "fable-5"
 
         # Next GENUINE message completes normally; restore precedes dispatch.
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         async def _ok_stream(msg):
             yield LLMEvent(kind=EVENT_COMPLETE, stop_reason=STOP_REASON_END_TURN)
@@ -10829,7 +10829,7 @@ class TestRunChatRefusalFallback:
     async def test_disabled_seam_keeps_terminal_card_and_never_swaps(self, tmp_path, monkeypatch):
         """Empty config (the default) is byte-for-byte the pre-feature path."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -10837,7 +10837,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._refusal_events(category="CYBER"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10852,7 +10852,7 @@ class TestRunChatRefusalFallback:
     async def test_auto_uses_provider_recommended_model(self, tmp_path, monkeypatch):
         """'auto' defers to the refusal envelope's recommended_model."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "auto",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -10862,7 +10862,7 @@ class TestRunChatRefusalFallback:
         )
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10873,7 +10873,7 @@ class TestRunChatRefusalFallback:
     async def test_auto_without_recommendation_is_terminal(self, tmp_path, monkeypatch):
         """'auto' with no recommended_model has nothing to retry on."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "auto",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -10881,7 +10881,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._refusal_events(category="CYBER"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10897,7 +10897,7 @@ class TestRunChatRefusalFallback:
     async def test_failed_swap_falls_back_to_terminal_card(self, tmp_path, monkeypatch):
         """A set_model failure surfaces the ordinary card — never a dead retry."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -10906,7 +10906,7 @@ class TestRunChatRefusalFallback:
         client.set_model = AsyncMock(side_effect=RuntimeError("model unavailable"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -10927,14 +10927,14 @@ class TestRunChatRefusalFallback:
         Continue-style continuation, never the user's message: replaying the
         message would run the dispatched tool a second time."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _REFUSAL_FALLBACK_RESUME_MSG,
             RecoveryPayload,
         )
-        from kiro_crew.providers.base import EVENT_TOOL_CALL, LLMEvent
+        from efm_go.providers.base import EVENT_TOOL_CALL, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TOOL_CALL, title="write_file", tool_kind="write"),
@@ -10958,7 +10958,7 @@ class TestRunChatRefusalFallback:
 
         monkeypatch.setattr(type(slot), "queue_insert", _spy)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello", _attachments=[str(tmp_path / "a.txt")])
 
@@ -11008,7 +11008,7 @@ class TestRunChatRefusalFallback:
         fallback model start the request over could only ever fire on a
         session that did not keep the partial turn — re-running the writes.
         The nudge must tell such a model to stop instead."""
-        from kiro_crew.dashboard.chat_utils import _REFUSAL_FALLBACK_RESUME_MSG
+        from efm_go.dashboard.chat_utils import _REFUSAL_FALLBACK_RESUME_MSG
 
         assert "start the request now" not in _REFUSAL_FALLBACK_RESUME_MSG
         assert "do NOT start the request over" in _REFUSAL_FALLBACK_RESUME_MSG
@@ -11019,10 +11019,10 @@ class TestRunChatRefusalFallback:
         """With no tool dispatched, the retry stays the verbatim replay of the
         user's own words, carrying the original attachments."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
-        from kiro_crew.dashboard.chat_utils import RecoveryPayload
+        from efm_go.dashboard.chat_utils import RecoveryPayload
 
         events = self._refusal_events(category="CYBER")
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11039,7 +11039,7 @@ class TestRunChatRefusalFallback:
 
         monkeypatch.setattr(type(slot), "queue_insert", _spy)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         _file = str(tmp_path / "a.txt")
         await _run_chat(state, slot, "hello", _attachments=[_file])
@@ -11064,13 +11064,13 @@ class TestRunChatRefusalFallback:
         ``_active_fallback_model`` is empty — the slot.model backfill must not
         persist the temporary candidate into the (durable) pin."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         # Simulate the real provider contract the backfill documents: the
         # resolved model readable off the client IS the currently served one.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._backfill_canonical_model",
+            "efm_go.dashboard.chat_runner._backfill_canonical_model",
             lambda client, provider_name: getattr(client, "served_model", "") or "",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11079,7 +11079,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._refusal_events(category="CYBER"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
         # Turn 1 backfilled the PRIMARY (legitimate). Clear it to model the
@@ -11098,7 +11098,7 @@ class TestRunChatRefusalFallback:
         """A synthetic recovery turn after the replay keeps the fallback
         active; only a genuine turn restores the primary."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11106,16 +11106,16 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._refusal_events(category="CYBER"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
         assert slot.task is not None
         await slot.task
         assert slot._refusal_fallback_primary == "fable-5"
 
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.dashboard.chat_utils import _SYNTHETIC_RECOVERY_MSGS
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.dashboard.chat_utils import _SYNTHETIC_RECOVERY_MSGS
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         async def _ok_stream(msg):
             yield LLMEvent(kind=EVENT_COMPLETE, stop_reason=STOP_REASON_END_TURN)
@@ -11142,7 +11142,7 @@ class TestRunChatRefusalFallback:
         """A non-raising ``set_model`` that does not move the model must NOT
         clear the restore record — the next turn retries instead of stranding
         the session on the fallback with nothing left to restore from."""
-        from kiro_crew.dashboard.chat_runner import _restore_refusal_fallback
+        from efm_go.dashboard.chat_runner import _restore_refusal_fallback
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -11174,7 +11174,7 @@ class TestRunChatRefusalFallback:
         even a pick of the fallback candidate itself, which current-model
         equality alone cannot distinguish from the automatic swap."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11182,7 +11182,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._refusal_events(category="CYBER"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
         assert slot.task is not None
@@ -11192,8 +11192,8 @@ class TestRunChatRefusalFallback:
         # An explicit pick moves the generation (api_chat_slot_model's seam).
         slot._model_pick_gen += 1
 
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         async def _ok_stream(msg):
             yield LLMEvent(kind=EVENT_COMPLETE, stop_reason=STOP_REASON_END_TURN)
@@ -11214,7 +11214,7 @@ class TestRunChatRefusalFallback:
         would run BEFORE that correction; the retry must refuse instead and
         leave the queue untouched."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11223,7 +11223,7 @@ class TestRunChatRefusalFallback:
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
         slot.queue_append("actually, drop that request")
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -11248,7 +11248,7 @@ class TestRunChatRefusalFallback:
         under the swap: the swap is unwound (witnessed restore), the refusal
         surfaces, and nothing is queued ahead of the follow-up."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11263,7 +11263,7 @@ class TestRunChatRefusalFallback:
         client.set_model = AsyncMock(side_effect=_apply_and_interrupt)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -11289,7 +11289,7 @@ class TestRunChatRefusalFallback:
         replays, and the enqueue snapshot would bake the moved counter in so
         the drain purge could never catch it either."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11307,7 +11307,7 @@ class TestRunChatRefusalFallback:
         client.set_model = AsyncMock(side_effect=_apply_and_stop)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -11328,7 +11328,7 @@ class TestRunChatRefusalFallback:
         TRUE primary P; a second refusal's swap A->B reads A as "active" —
         recording A would lose P permanently (restore would return to A,
         never to P)."""
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go.dashboard.chat_runner import (
             _refusal_fallback_swap,
             _restore_refusal_fallback,
         )
@@ -11370,7 +11370,7 @@ class TestRunChatRefusalFallback:
         sentinel refuse — the restore then fails every turn and the session
         stays stranded on the candidate. The swap must not run when the
         return leg is unprovable."""
-        from kiro_crew.dashboard.chat_runner import _refusal_fallback_swap
+        from efm_go.dashboard.chat_runner import _refusal_fallback_swap
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -11395,7 +11395,7 @@ class TestRunChatRefusalFallback:
         """When the backend advertises the "auto" sentinel as a target the
         round trip is provable: the swap runs and records "auto" as the
         primary for the restore."""
-        from kiro_crew.dashboard.chat_runner import _refusal_fallback_swap
+        from efm_go.dashboard.chat_runner import _refusal_fallback_swap
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -11424,7 +11424,7 @@ class TestRunChatRefusalFallback:
         it must not suppress the configured retry. Only USER-authored queue
         entries express superseding intent (`_has_user_queued_followup`)."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11432,13 +11432,13 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._refusal_events(category="CYBER"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat_utils import CRON_NOTIFICATION_KIND
+        from efm_go.dashboard.chat_utils import CRON_NOTIFICATION_KIND
 
         slot.queue_append(
             '[Cron notification from "scanner"]\nno new items', kind=CRON_NOTIFICATION_KIND
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -11457,7 +11457,7 @@ class TestRunChatRefusalFallback:
         attends the announced swap, and an unattended replay doubles whatever
         the wake was about. The gate reads the turn's ledger actor."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11465,7 +11465,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._refusal_events(category="CYBER"))
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "nightly scan wake", _turn_actor="subagent")
 
@@ -11497,7 +11497,7 @@ class TestRunChatRefusalFallback:
         slot._active_fallback_model = "haiku-test"
         slot._fallback_primary_model = "opus-test"  # walk departed FROM our candidate
 
-        from kiro_crew.dashboard.chat_runner import _restore_refusal_fallback
+        from efm_go.dashboard.chat_runner import _restore_refusal_fallback
 
         await _restore_refusal_fallback(slot, client)
 
@@ -11537,7 +11537,7 @@ class TestRunChatRefusalFallback:
         # which model equality alone cannot see.
         inner._explicit_pick_epoch = 1
 
-        from kiro_crew.dashboard.chat_runner import _restore_refusal_fallback
+        from efm_go.dashboard.chat_runner import _restore_refusal_fallback
 
         await _restore_refusal_fallback(slot, client)
 
@@ -11562,9 +11562,9 @@ class TestRunChatRefusalFallback:
         """
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.chat_runner import _restore_refusal_fallback
-        from kiro_crew.dashboard.chat_utils import effective_session_key
-        from kiro_crew.llm_helpers import pick_epoch_host, slot_switch_session_lock
+        from efm_go.dashboard.chat_runner import _restore_refusal_fallback
+        from efm_go.dashboard.chat_utils import effective_session_key
+        from efm_go.llm_helpers import pick_epoch_host, slot_switch_session_lock
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -11630,12 +11630,12 @@ class TestRunChatRefusalFallback:
         """
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go.dashboard.chat_runner import (
             _refusal_fallback_swap,
             _restore_refusal_fallback,
         )
-        from kiro_crew.dashboard.chat_utils import effective_session_key
-        from kiro_crew.llm_helpers import pick_epoch_host, slot_switch_session_lock
+        from efm_go.dashboard.chat_utils import effective_session_key
+        from efm_go.llm_helpers import pick_epoch_host, slot_switch_session_lock
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -11687,8 +11687,8 @@ class TestRunChatRefusalFallback:
     async def test_drain_purges_replay_after_stop(self, tmp_path, monkeypatch):
         """A Stop landing between the replay's enqueue and the drain kills the
         replay: the index-0 entry must never dispatch superseded work."""
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat_runner import (
             SYNTHETIC_RECOVERY_KIND,
             _start_next_queued_turn,
         )
@@ -11722,8 +11722,8 @@ class TestRunChatRefusalFallback:
     async def test_drain_purges_replay_when_user_correction_queued(self, tmp_path, monkeypatch):
         """A user correction queued behind the index-0 replay supersedes it:
         the correction dispatches, the replay dies."""
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat_runner import (
             SYNTHETIC_RECOVERY_KIND,
             _start_next_queued_turn,
         )
@@ -11764,10 +11764,10 @@ class TestRunChatRefusalFallback:
     async def test_replay_carries_original_turn_attachments(self, tmp_path, monkeypatch):
         """The replay is the SAME turn again: a refused message with files
         retries with its files riding the queue entry's meta."""
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11787,7 +11787,7 @@ class TestRunChatRefusalFallback:
 
         monkeypatch.setattr(_ChatSlot, "queue_insert", _spy_insert)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello", _attachments=["/tmp/evidence.png"])
         if slot.task is not None:
@@ -11803,10 +11803,10 @@ class TestRunChatRefusalFallback:
         """A folder attachment replays under ``dirs``: rebucketing the flat
         list under ``files`` would retype it and resolve its
         ``[attached_dir N]`` marker against the wrong list."""
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -11826,7 +11826,7 @@ class TestRunChatRefusalFallback:
 
         monkeypatch.setattr(_ChatSlot, "queue_insert", _spy_insert)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(
             state,
@@ -11857,8 +11857,8 @@ class TestRunChatRefusalFallback:
         unbound->bound case is already dropped by the admission sweep's
         fail-closed booleans; a bound->bound relink is invisible to them —
         this branch is what catches it and clears the episode record.)"""
-        from kiro_crew.dashboard import chat_runner, session_control
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go.dashboard import chat_runner, session_control
+        from efm_go.dashboard.chat_runner import (
             SYNTHETIC_RECOVERY_KIND,
             _start_next_queued_turn,
         )
@@ -11908,8 +11908,8 @@ class TestRunChatRefusalFallback:
         dispatch-gate text with it: otherwise an identical later resend
         matches as the retry — running on the fallback with the restore
         probe skipped and the one-retry allowance kept spent."""
-        from kiro_crew.dashboard import chat_runner, session_control
-        from kiro_crew.dashboard.chat_runner import _start_next_queued_turn
+        from efm_go.dashboard import chat_runner, session_control
+        from efm_go.dashboard.chat_runner import _start_next_queued_turn
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -11945,8 +11945,8 @@ class TestRunChatRefusalFallback:
         lock domain."""
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.chat_runner import _refusal_fallback_swap
-        from kiro_crew.llm_helpers import slot_switch_session_lock
+        from efm_go.dashboard.chat_runner import _refusal_fallback_swap
+        from efm_go.llm_helpers import slot_switch_session_lock
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -11988,8 +11988,8 @@ class TestRunChatRefusalFallback:
         lock domains."""
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.chat_runner import _restore_refusal_fallback
-        from kiro_crew.llm_helpers import slot_switch_session_lock
+        from efm_go.dashboard.chat_runner import _restore_refusal_fallback
+        from efm_go.llm_helpers import slot_switch_session_lock
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -12034,7 +12034,7 @@ class TestRunChatRefusalFallback:
         exactly one swap, no second 'retrying once' notice, no restore probe
         running the replay back on the primary that just refused."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         events = self._refusal_events(category="CYBER")
@@ -12043,7 +12043,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(events)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         secret_msg = "use token ghp_" + "A" * 36 + " to fetch the repo"
         await _run_chat(state, slot, secret_msg)
@@ -12069,7 +12069,7 @@ class TestRunChatRefusalFallback:
     @staticmethod
     def _arm_refusal_replay(slot, *, session_key: str | None = None) -> None:
         """The slot state a refusal swap leaves behind before its replay runs."""
-        from kiro_crew.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard.chat_utils import effective_session_key
 
         slot._refusal_fallback_primary = "fable-5"
         slot._refusal_fallback_candidate = "opus-test"
@@ -12097,7 +12097,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client([])
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         # Snapshot taken at enqueue…
         self._arm_refusal_replay(slot)
@@ -12136,7 +12136,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client([])
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         # The binding the swap recorded differs from the slot's live binding.
         self._arm_refusal_replay(slot, session_key="dash:old-session")
@@ -12160,14 +12160,14 @@ class TestRunChatRefusalFallback:
         turn retried, not a genuine new message: it must not re-arm the
         one-retry allowance (re-arming lets a crashing fallback replay cycle
         primary-refusal → swap → crash indefinitely)."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
         client = self._make_refusing_client([LLMEvent(kind=EVENT_COMPLETE)])
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         slot._refusal_fallback_attempted = True
 
@@ -12185,7 +12185,7 @@ class TestRunChatRefusalFallback:
         turn start must not move the session back to the primary mid-recovery.
         The fixed-text membership check cannot recognize a requeued user
         message, so the gate needs the structural signal."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -12193,8 +12193,8 @@ class TestRunChatRefusalFallback:
         client.served_model = "opus-test"  # still on the fallback candidate
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat_utils import effective_session_key
 
         slot._refusal_fallback_primary = "fable-5"
         slot._refusal_fallback_candidate = "opus-test"
@@ -12229,7 +12229,7 @@ class TestRunChatRefusalFallback:
         # Swap recorded session A; the slot has since rebound elsewhere.
         slot._refusal_fallback_session_key = "dash:session-a"
 
-        from kiro_crew.dashboard.chat_runner import _restore_refusal_fallback
+        from efm_go.dashboard.chat_runner import _restore_refusal_fallback
 
         await _restore_refusal_fallback(slot, client)
 
@@ -12247,7 +12247,7 @@ class TestRunChatRefusalFallback:
         the new entry — otherwise the requeued entry escapes the drain's
         refusal-specific validation, and a correction queued in the
         requeue-to-dispatch window loses to superseded work."""
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -12268,9 +12268,9 @@ class TestRunChatRefusalFallback:
         async def _no_drain(_state, _slot, **_kwargs) -> bool:
             return False
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._start_next_queued_turn", _no_drain)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._start_next_queued_turn", _no_drain)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         self._arm_refusal_replay(slot)
 
@@ -12316,8 +12316,8 @@ class TestRunChatRefusalFallback:
         slot._active_fallback_model = "haiku-throttle"
         slot._fallback_primary_model = "fable-5"
 
-        from kiro_crew.dashboard.chat_runner import _refusal_fallback_swap
-        from kiro_crew.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard.chat_runner import _refusal_fallback_swap
+        from efm_go.dashboard.chat_utils import effective_session_key
 
         result = await _refusal_fallback_swap(
             slot, client, "opus-test", session_key=effective_session_key(slot)
@@ -12341,7 +12341,7 @@ class TestRunChatRefusalFallback:
         stream opens. A correction queued in that window must abort the
         replay before any model call — a stale replay dispatching first could
         run destructive tools the correction cancelled."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -12362,7 +12362,7 @@ class TestRunChatRefusalFallback:
 
         state.sessions.get_or_create = _acquire_and_inject
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         self._arm_refusal_replay(slot)
 
@@ -12382,7 +12382,7 @@ class TestRunChatRefusalFallback:
 
     @staticmethod
     def _answering_events():
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         return [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="follow-up answer"),
@@ -12391,7 +12391,7 @@ class TestRunChatRefusalFallback:
 
     @staticmethod
     def _arm_model_access_replay(slot, entry_id: str = "q-replay") -> None:
-        from kiro_crew.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard.chat_utils import effective_session_key
 
         slot.replays.arm(
             ReplayFamily.MODEL_ACCESS,
@@ -12403,7 +12403,7 @@ class TestRunChatRefusalFallback:
 
     @staticmethod
     def _arm_image_recovery(slot) -> None:
-        from kiro_crew.dashboard.chat_utils import effective_session_key
+        from efm_go.dashboard.chat_utils import effective_session_key
 
         slot.replays.arm(
             ReplayFamily.IMAGE_HISTORY,
@@ -12456,7 +12456,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._answering_events(), prompts)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         getattr(self, self._ARM[family])(slot)
         slot.queue_insert(0, "actually do the other thing", kind="")
@@ -12481,12 +12481,12 @@ class TestRunChatRefusalFallback:
         """End to end through the real refuse -> swap -> enqueue path: a relink that
         lands before the drain moves the replay's session away, so the drain drops
         it with the move notice instead of dispatching it onto the new binding."""
-        from kiro_crew.acp.types import STOP_REASON_REFUSAL
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.acp.types import STOP_REASON_REFUSAL
+        from efm_go.dashboard import chat_runner
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -12511,7 +12511,7 @@ class TestRunChatRefusalFallback:
 
         monkeypatch.setattr(chat_runner, "_start_next_queued_turn", _relink_then_drain)
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
 
@@ -12535,11 +12535,11 @@ class TestRunChatRefusalFallback:
         consume seam, and the correction runs next."""
         import asyncio as _asyncio
 
-        from kiro_crew.acp.types import STOP_REASON_REFUSAL
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_REFUSAL
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._configured_refusal_fallback",
+            "efm_go.dashboard.chat_runner._configured_refusal_fallback",
             lambda: "opus-test",
         )
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
@@ -12560,7 +12560,7 @@ class TestRunChatRefusalFallback:
         client.stream_command = _stream
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         await _run_chat(state, slot, "hello")
         replay = slot.task
@@ -12585,21 +12585,21 @@ class TestRunChatRefusalFallback:
         import asyncio as _asyncio
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
-        from kiro_crew.dashboard.chat_utils import SYNTHESIS_CLEAR
+        from efm_go.dashboard.chat_utils import SYNTHESIS_CLEAR
 
         state.subagents = MagicMock()
         slot = state.get_or_create_slot("s1")
         state.sessions.get_or_create = AsyncMock()
         synthesis = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._run_pending_synthesis", synthesis)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._run_pending_synthesis", synthesis)
         # No child holds the synthesis back (the fire gate's own reads are
         # covered by its tests).
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.synthesis_fire_verdict",
+            "efm_go.dashboard.chat_runner.synthesis_fire_verdict",
             AsyncMock(return_value=SYNTHESIS_CLEAR),
         )
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         self._arm_refusal_replay(slot)
         slot._stop_generation = getattr(slot, "_stop_generation", 0) + 1
@@ -12618,7 +12618,7 @@ class TestRunChatRefusalFallback:
         """The swap records its replay's queue id, and the drain passes the
         replay identity only for that entry: the replay keeps the spent one-shot,
         while an ordinary entry queued behind it refreshes it."""
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
@@ -12668,7 +12668,7 @@ class TestRunChatRefusalFallback:
         client = self._make_refusing_client(self._answering_events(), prompts)
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         self._arm_model_access_replay(slot, "q-cleared-by-the-kill")
         slot._stop_generation = getattr(slot, "_stop_generation", 0) + 1
@@ -12690,14 +12690,14 @@ class TestRunChatRefusalFallback:
         """A swap during a synthetic recovery turn replays the synthetic text. The
         replay is still recognized (by queue id, not text), so it consumes the
         record instead of leaving it for the next turn."""
-        from kiro_crew.dashboard.chat_runner import _CONN_RECOVER_MSG
+        from efm_go.dashboard.chat_runner import _CONN_RECOVER_MSG
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("s1")
         client = self._make_refusing_client(self._answering_events())
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
 
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         self._arm_model_access_replay(slot)
 
@@ -12728,14 +12728,14 @@ class TestRunChatEarlyExitHandOff:
             TestRunChatRefusalFallback._answering_events() if events is None else events, prompts
         )
         state.sessions.get_or_create = AsyncMock(return_value=(client, True, False))
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.get_instance", lambda: None)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.get_instance", lambda: None)
         state.push_refresh = MagicMock()
         state.refresh_slot_source_status = MagicMock()
         return state, slot, prompts
 
     @staticmethod
     def _run(state, slot, message, **kwargs):
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         return run_as_slot_task(slot, _run_chat(state, slot, message, **kwargs))
 
@@ -12744,7 +12744,7 @@ class TestRunChatEarlyExitHandOff:
         notifies: list[dict] = []
         nudge = MagicMock()
         nudge.notify_turn_complete = MagicMock(side_effect=lambda _key, **kw: notifies.append(kw))
-        monkeypatch.setattr("kiro_crew.autonudge.get_instance", lambda: nudge)
+        monkeypatch.setattr("efm_go.autonudge.get_instance", lambda: nudge)
         return notifies
 
     @pytest.mark.parametrize(
@@ -12773,7 +12773,7 @@ class TestRunChatEarlyExitHandOff:
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         notifies = self._count_nudge_notifies(monkeypatch)
         title = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.title_then_refresh", title)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.title_then_refresh", title)
 
         await self._run(state, slot, "/prompts")
 
@@ -12795,8 +12795,8 @@ class TestRunChatEarlyExitHandOff:
         local command is still titled when the command ends the cycle."""
         state, slot, _prompts = self._setup(tmp_path, monkeypatch)
         title = AsyncMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.title_then_refresh", title)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.generate_session_summary", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.title_then_refresh", title)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.generate_session_summary", AsyncMock())
         slot.queue_insert(0, "/prompts", kind="")
 
         first = await self._run(state, slot, "answer me")
@@ -12855,7 +12855,7 @@ class TestRunChatEarlyExitHandOff:
         ``/compact`` or ``/quit`` behaves as if the turn never started."""
         state, slot, _prompts = self._setup(tmp_path, monkeypatch)
         consume = AsyncMock(return_value=False)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._consume_pending_reset", consume)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._consume_pending_reset", consume)
 
         await self._run(state, slot, "/quit")
 
@@ -12868,7 +12868,7 @@ class TestRunChatEarlyExitHandOff:
         rather than failing every entry in turn, and the error propagates."""
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._discard_stale_decision",
+            "efm_go.dashboard.chat_runner._discard_stale_decision",
             MagicMock(side_effect=RuntimeError("setup broke")),
         )
         slot.queue_insert(0, "second", kind="")
@@ -12890,7 +12890,7 @@ class TestRunChatEarlyExitHandOff:
         it. The outcome was recorded first, so the guard runs the tail with this
         turn's policy: a sign-in failure still holds the queue and is still
         recorded, and the AutoNudge timer re-arms exactly once, with its facts."""
-        from kiro_crew.acp.transport_errors import AcpAuthRequired
+        from efm_go.acp.transport_errors import AcpAuthRequired
 
         async def _signed_out(_msg):
             raise AcpAuthRequired("Please sign in")
@@ -12922,7 +12922,7 @@ class TestRunChatEarlyExitHandOff:
         """A cancel landing while the tail awaits its deferred-reset consume (a
         turn deadline) is deferred until the hand-off ran: the queued message
         still runs, and the turn then ends cancelled."""
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         entered = asyncio.Event()
@@ -12958,7 +12958,7 @@ class TestRunChatEarlyExitHandOff:
         """A coroutine closed while suspended above its main try (a pending task
         destroyed at loop or harness teardown) cannot await, so the guard skips
         the tail instead of raising out of the close."""
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state, slot, _prompts = self._setup(tmp_path, monkeypatch)
         tails = AsyncMock()
@@ -12981,7 +12981,7 @@ class TestRunChatEarlyExitHandOff:
         the tail itself; the outer call must not run it a second time."""
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._expand_prompt_mention_off_loop",
+            "efm_go.dashboard.chat_runner._expand_prompt_mention_off_loop",
             AsyncMock(return_value=("Execute the following instructions: review it", "ok")),
         )
         slot.queue_insert(0, "then this", kind="")
@@ -13016,8 +13016,8 @@ class TestRunChatEarlyExitHandOff:
         queues -- no reservation can take the floor either -- and the cycle
         hands it the floor instead of ending: one terminal chat_done, after the
         message it ran."""
-        from kiro_crew.apps.builtins.spec_builder.backend.runtime import _reserve_slot_turn
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.apps.builtins.spec_builder.backend.runtime import _reserve_slot_turn
+        from efm_go.dashboard import chat_runner
 
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         real_payload = chat_runner.chat_done_payload
@@ -13050,7 +13050,7 @@ class TestRunChatEarlyExitHandOff:
             if len(calls) == 1:
                 raise RuntimeError("setup broke")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._discard_stale_decision", _discard)
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._discard_stale_decision", _discard)
 
     @pytest.mark.parametrize("hold", ["sign-in", "setup"])
     @pytest.mark.asyncio
@@ -13058,7 +13058,7 @@ class TestRunChatEarlyExitHandOff:
         """A held queue keeps what it held, but a send arriving during the cycle's
         payload read is the user's next send, the one a hold resumes on: it runs
         instead of waiting on an idle slot, and the held entries drain after it."""
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         if hold == "sign-in":
@@ -13098,8 +13098,8 @@ class TestRunChatEarlyExitHandOff:
         """With sub-agents attached a user send waits, as it would on an idle
         slot. The hand-off for a send that arrived during the read of a held
         queue must not start a held sub-agent completion in its place."""
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat_utils import SUBAGENT_COMPLETION_KIND
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat_utils import SUBAGENT_COMPLETION_KIND
 
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         state.subagents = MagicMock()
@@ -13153,8 +13153,8 @@ class TestRunChatEarlyExitHandOff:
         """The cycle still ends with a ``done`` row, which the OpenAI-compatible
         readers wait for, so the failed turn's error row is what tells them to
         answer ``server_error`` rather than an empty successful completion."""
-        from kiro_crew.dashboard import openai_compat
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard import openai_compat
+        from efm_go.dashboard.chat import _run_chat
 
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         self._fail_first_setup(monkeypatch)
@@ -13209,7 +13209,7 @@ class TestRunChatEarlyExitHandOff:
         queued behind it runs."""
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._handle_workflow_command",
+            "efm_go.dashboard.chat_runner._handle_workflow_command",
             AsyncMock(side_effect=OSError("store unavailable")),
         )
         slot.queue_insert(0, "summarize the PR", kind="")
@@ -13231,7 +13231,7 @@ class TestRunChatEarlyExitHandOff:
         """A preparation task can finish without being cancelled and still have
         recorded a failure the turn's barrier refuses. The tail asks the barrier's
         own rule, so the queue is held rather than walked into that refusal."""
-        from kiro_crew import memory_startup
+        from efm_go import memory_startup
 
         state, slot, prompts = self._setup(tmp_path, monkeypatch)
         monkeypatch.setattr(memory_startup, "_active", None)
@@ -13257,7 +13257,7 @@ class TestApiChatModePropagation:
 
     @pytest.mark.asyncio
     async def test_yolo_mode_propagates_auto_policy(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -13277,8 +13277,8 @@ class TestApiChatModePropagation:
 
     @pytest.mark.asyncio
     async def test_normal_mode_clears_policy(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.safety_override import safety_override
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.safety_override import safety_override
 
         safety_override().activate("test")
         state = _make_state(tmp_path)
@@ -13297,7 +13297,7 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_trust_mode_scoped_to_slot_channel(self, tmp_path, monkeypatch):
         """Trust with slot_key only trusts that slot's linked channel."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -13320,7 +13320,7 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_trust_mode_all_channels_when_no_slot(self, tmp_path, monkeypatch):
         """Trust without slot_key trusts all channels."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -13339,7 +13339,7 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_normal_mode_scoped_resets_only_linked_channel(self, tmp_path, monkeypatch):
         """Normal mode with slot_key should only reset that slot's linked channel."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -13363,7 +13363,7 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_normal_mode_resets_all_channels_when_no_slot(self, tmp_path, monkeypatch):
         """Normal mode without slot_key resets all channel trust."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -13382,7 +13382,7 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_trust_mode_unknown_slot_returns_400(self, tmp_path, monkeypatch):
         """Trust with unknown slot_key must return 400, not trust all."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
 
@@ -13396,7 +13396,7 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_normal_mode_unknown_slot_returns_400(self, tmp_path, monkeypatch):
         """Normal with unknown slot_key must return 400, not reset all."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
 
@@ -13410,7 +13410,7 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_trust_slot_preserves_other_slot_trust(self, tmp_path, monkeypatch):
         """trusting slot B must not wipe trust from slot A."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         s1 = state.get_or_create_slot("s1")
@@ -13427,7 +13427,7 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_yolo_restores_per_slot_trust(self, tmp_path, monkeypatch):
         """YOLO does not mutate per-slot trust; disabling preserves it."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         s1 = state.get_or_create_slot("s1")
@@ -13453,7 +13453,7 @@ class TestApiChatModePropagation:
 
     def test_yolo_auto_expires_and_clears_untrusted_policies(self, tmp_path, monkeypatch):
         """YOLO expiry clears policies for untrusted slots only."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.broadcast_ws = MagicMock()
@@ -13463,7 +13463,7 @@ class TestApiChatModePropagation:
 
         from unittest.mock import patch
 
-        from kiro_crew.safety_override import safety_override
+        from efm_go.safety_override import safety_override
 
         # Wire the on_expired callback (as server.py does at startup)
         def _on_expired(source: str) -> None:
@@ -13472,7 +13472,7 @@ class TestApiChatModePropagation:
                     if not slot._trust and not slot._trust_reads:
                         state.sessions.set_approval_policy(f"dashboard:{slot.key}", "")
 
-        with patch("kiro_crew.safety_override.sel"):
+        with patch("efm_go.safety_override.sel"):
             safety_override().activate("dashboard")
         safety_override().on_expired = _on_expired
         safety_override()._expires_at = 0  # already expired
@@ -13489,8 +13489,8 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_trust_mode_propagates_approval_policy_to_session(self, tmp_path, monkeypatch):
         """Trust mode must set session approval_policy='auto' so subagents inherit."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.slack.handler.is_yolo_mode", lambda: False)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.slack.handler.is_yolo_mode", lambda: False)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -13503,8 +13503,8 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_normal_mode_resets_approval_policy(self, tmp_path, monkeypatch):
         """Normal mode must reset session approval_policy so subagents require approval."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.slack.handler.is_yolo_mode", lambda: False)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.slack.handler.is_yolo_mode", lambda: False)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -13517,8 +13517,8 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_trust_reads_mode_resets_approval_policy(self, tmp_path, monkeypatch):
         """trust_reads must reset approval_policy (not auto-approve writes)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.slack.handler.is_yolo_mode", lambda: False)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.slack.handler.is_yolo_mode", lambda: False)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -13531,8 +13531,8 @@ class TestApiChatModePropagation:
     @pytest.mark.asyncio
     async def test_trust_mode_all_slots_propagates_approval_policy(self, tmp_path, monkeypatch):
         """Trust without slot_key must set approval_policy on all slots."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.slack.handler.is_yolo_mode", lambda: False)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.slack.handler.is_yolo_mode", lambda: False)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -13556,8 +13556,8 @@ class TestApiChatModeGlobalOverrideScope:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("mode", ["trust", "trust_reads"])
     async def test_slot_scoped_trust_preserves_global_grant(self, mode, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.safety_override import safety_override
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.safety_override import safety_override
 
         safety_override().activate("dashboard")
         state = _make_state(tmp_path)
@@ -13577,8 +13577,8 @@ class TestApiChatModeGlobalOverrideScope:
     @pytest.mark.parametrize("mode", ["trust", "trust_reads"])
     async def test_global_trust_revokes_global_grant(self, mode, tmp_path, monkeypatch):
         """Without a slot the request IS global, so it may end the grant."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.safety_override import safety_override
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.safety_override import safety_override
 
         safety_override().activate("dashboard")
         state = _make_state(tmp_path)
@@ -13597,8 +13597,8 @@ class TestApiChatModeGlobalOverrideScope:
         This is the dashboard picker's YOLO off-switch: the picker always names
         the slot it is attached to.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.safety_override import safety_override
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.safety_override import safety_override
 
         safety_override().activate("dashboard")
         state = _make_state(tmp_path)
@@ -13614,8 +13614,8 @@ class TestApiChatModeGlobalOverrideScope:
     @pytest.mark.parametrize("mode", ["trust", "trust_reads"])
     async def test_declared_grant_is_revoked_at_any_scope(self, mode, tmp_path, monkeypatch):
         """A declared grant has no TTL, so any mode selection is its off-switch."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.safety_override import safety_override
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.safety_override import safety_override
 
         safety_override().activate_declared()
         assert safety_override().is_declared is True
@@ -13635,8 +13635,8 @@ class TestApiChatModeGlobalOverrideScope:
         Classifying it by permanence instead of source would revoke the grant of
         every operator who picked "until Kiro Crew restarts".
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.safety_override import safety_override
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.safety_override import safety_override
 
         so = safety_override()
         so.adhoc_until_shutdown = True
@@ -13655,7 +13655,7 @@ class TestApiChatModeGlobalOverrideScope:
     @pytest.mark.asyncio
     async def test_non_string_mode_does_not_raise(self, tmp_path, monkeypatch):
         """The membership test must answer for an unhashable body value."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.get_or_create_slot("s1")
@@ -13671,7 +13671,7 @@ class TestApproveYoloPropagation:
 
     @pytest.mark.asyncio
     async def test_yolo_approve_propagates_to_all_slots(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         s1 = state.get_or_create_slot("s1")
@@ -13692,7 +13692,7 @@ class TestApproveYoloPropagation:
 
     @pytest.mark.asyncio
     async def test_trust_approve_propagates_to_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         slot = state.get_or_create_slot("s1")
@@ -13729,8 +13729,8 @@ class TestBulkApproveBroadcast:
 
     @pytest.mark.asyncio
     async def test_mode_yolo_broadcasts_for_pending(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.broadcast_ws = MagicMock()
@@ -13762,8 +13762,8 @@ class TestBulkApproveBroadcast:
         their next tool call prompted again. Scope the sweep to the target
         session; other slots keep their pending future AND their untrusted state.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.broadcast_ws = MagicMock()
@@ -13798,8 +13798,8 @@ class TestBulkApproveBroadcast:
     @pytest.mark.asyncio
     async def test_unscoped_trust_still_sweeps_all_slots(self, tmp_path, monkeypatch):
         """An all-slots ``trust`` (no slot named) keeps sweeping every slot."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        monkeypatch.setattr("kiro_crew.dashboard.chat.sel", lambda: MagicMock())
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.chat.sel", lambda: MagicMock())
         state = _make_state(tmp_path)
         state.push_slots_update = MagicMock()
         state.broadcast_ws = MagicMock()
@@ -13833,7 +13833,7 @@ class TestMultiPendingApproval:
 
     @pytest.mark.asyncio
     async def test_multi_pending_returns_400(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         loop = asyncio.get_running_loop()
@@ -13849,7 +13849,7 @@ class TestMultiPendingApproval:
 
     @pytest.mark.asyncio
     async def test_approve_with_request_id(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         loop = asyncio.get_running_loop()
@@ -13871,9 +13871,9 @@ class TestMultiPendingApproval:
 class TestApiChatAgentPassing:
     @pytest.mark.asyncio
     async def test_agent_set_on_new_slot(self, tmp_path, monkeypatch):
-        from kiro_crew.config import loader
+        from efm_go.config import loader
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
         (agents_dir / "agentrock--my-aim-agent.json").write_text(
@@ -13896,7 +13896,7 @@ class TestApiChatAgentPassing:
 
     @pytest.mark.asyncio
     async def test_agent_mismatch_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("slot-x")
         slot.agent = "agent-a"
@@ -13910,7 +13910,7 @@ class TestApiChatAgentPassing:
     @pytest.mark.asyncio
     async def test_empty_agent_on_agent_slot_allowed(self, tmp_path, monkeypatch):
         """Follow-up message with no agent on an agent-bound slot must not 409."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("slot-y")
         slot.agent = "agent-a"
@@ -13925,11 +13925,11 @@ class TestApiChatAgentPassing:
 
     @pytest.mark.asyncio
     async def test_invalid_agent_name_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from unittest.mock import patch
 
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.chat_handlers._emit_agent_assignment") as mock_emit:
+        with patch("efm_go.dashboard.chat_handlers._emit_agent_assignment") as mock_emit:
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat?ws=1",
@@ -13940,14 +13940,14 @@ class TestApiChatAgentPassing:
 
     @pytest.mark.asyncio
     async def test_credential_shaped_invalid_agent_is_redacted_in_sel(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from unittest.mock import MagicMock, patch
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("member-dr-eggbot", agent="dr. eggbot", mode="member")
         unsafe = "crew password=shortvalue"
         audit = MagicMock()
-        with patch("kiro_crew.dashboard.chat_utils.sel", return_value=audit):
+        with patch("efm_go.dashboard.chat_utils.sel", return_value=audit):
             async with TestClient(TestServer(_make_app(state))) as client:
                 response = await client.post(
                     "/api/chat?ws=1",
@@ -13962,11 +13962,11 @@ class TestApiChatAgentPassing:
     @pytest.mark.asyncio
     async def test_non_string_agent_logs_actual_value(self, tmp_path, monkeypatch):
         """Fix for Post 22: str(agent) preserves malicious input in audit trail."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from unittest.mock import patch
 
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.chat_handlers._emit_agent_assignment") as mock_emit:
+        with patch("efm_go.dashboard.chat_handlers._emit_agent_assignment") as mock_emit:
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat?ws=1",
@@ -13978,11 +13978,11 @@ class TestApiChatAgentPassing:
     @pytest.mark.asyncio
     async def test_no_agent_no_emit(self, tmp_path, monkeypatch):
         """Fix for Post 23: no SEL event when no agent involved (reduces audit noise)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from unittest.mock import patch
 
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.chat_handlers._emit_agent_assignment") as mock_emit:
+        with patch("efm_go.dashboard.chat_handlers._emit_agent_assignment") as mock_emit:
             async with TestClient(TestServer(_make_app(state))) as client:
                 await client.post(
                     "/api/chat?ws=1",
@@ -13992,7 +13992,7 @@ class TestApiChatAgentPassing:
 
     @pytest.mark.asyncio
     async def test_sel_event_on_running_slot_rejection(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         from unittest.mock import MagicMock, patch
 
         state = _make_state(tmp_path)
@@ -14000,7 +14000,7 @@ class TestApiChatAgentPassing:
         mock_task = MagicMock()
         mock_task.done.return_value = False
         slot.task = mock_task
-        with patch("kiro_crew.dashboard.chat_handlers._emit_agent_assignment") as mock_emit:
+        with patch("efm_go.dashboard.chat_handlers._emit_agent_assignment") as mock_emit:
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat?ws=1",
@@ -14019,7 +14019,7 @@ class TestApiChatSendReceiptMid:
 
     @pytest.mark.asyncio
     async def test_idle_steer_echoes_user_before_the_reply(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("echo-slot")
         echoed: list[dict] = []
@@ -14038,7 +14038,7 @@ class TestApiChatSendReceiptMid:
             assert [(row["slot"], row["role"]) for row in echoed] == [("echo-slot", "user")]
             sl.append("assistant", "reply")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post(
                 "/api/chat?ws=1",
@@ -14063,13 +14063,13 @@ class TestApiChatSendReceiptMid:
 
     @pytest.mark.asyncio
     async def test_immediate_dispatch_receipt_carries_the_user_row_mid(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         async def fake_run_chat(st, sl, msg, *, _directive_user_origin):
             sl.append("chunk", "ack", "chunk")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", fake_run_chat)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", fake_run_chat)
 
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post(
@@ -14095,7 +14095,7 @@ class TestApiChatSendReceiptMid:
         """A busy slot queues the message and broadcasts its own queue card; the
         optimistic bubble is not this row's receipt, so no `mid` is returned
         (mirrors `confirmedDelivered`, which excludes a queued acceptance)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("busy-slot")
         mock_task = MagicMock()
@@ -14120,8 +14120,8 @@ class TestPromptBusyRecovery:
 
     @pytest.mark.asyncio
     async def test_prompt_busy_resets_session_and_requeues(self, tmp_path: Path) -> None:
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         state = _make_state(tmp_path)
         state.sessions.get_or_create = AsyncMock(return_value=(MagicMock(), False, False))
@@ -14164,8 +14164,8 @@ class TestPromptBusyRecovery:
         """When ACP subprocess dies (SIGTERM/SIGKILL), _run_chat must reset
         the session and re-queue the message so autonudges land on a fresh
         provider instead of a bare ❌ error card with no work done."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         state = _make_state(tmp_path)
         state.sessions.get_or_create = AsyncMock(return_value=(MagicMock(), False, False))
@@ -14244,7 +14244,7 @@ class TestSlotTaskNoneGuard:
         slot.task = asyncio.get_running_loop().create_future()
 
         async with TestClient(TestServer(_make_app(state))) as client:
-            with patch("kiro_crew.dashboard.chat_handlers.save_slot_off_loop"):
+            with patch("efm_go.dashboard.chat_handlers.save_slot_off_loop"):
                 resp = await client.delete("/api/chat/slots/s1")
             assert resp.status == 200
             assert slot.task.cancelled()
@@ -14257,7 +14257,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_archives_stale_sessions(self, tmp_path, monkeypatch):
         """Stale sessions are archived; fresh and pinned are kept."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timedelta, timezone
 
@@ -14294,7 +14294,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_skips_active_slot(self, tmp_path, monkeypatch):
         """The active slot is never archived even if stale."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timedelta, timezone
 
@@ -14315,7 +14315,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_saves_to_history(self, tmp_path, monkeypatch):
         """Archived sessions are persisted to conversation log."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timedelta, timezone
 
@@ -14338,7 +14338,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_defaults_to_3_days(self, tmp_path, monkeypatch):
         """Without max_inactive_days, defaults to 3."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timedelta, timezone
 
@@ -14355,7 +14355,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_empty_slots_uses_created_at(self, tmp_path, monkeypatch):
         """Slots with no messages use created_at for staleness."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timedelta, timezone
 
@@ -14374,7 +14374,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_no_stale_returns_zero(self, tmp_path, monkeypatch):
         """When all sessions are fresh, nothing is archived."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timezone
 
@@ -14396,7 +14396,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_rollback_on_save_failure(self, tmp_path, monkeypatch):
         """When _save_slot_to_history raises, slot is restored and reported as failed."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timedelta, timezone
 
@@ -14406,7 +14406,7 @@ class TestBulkCleanup:
         slot.drain()
 
         with patch(
-            "kiro_crew.dashboard.chat_handlers.save_slot_off_loop",
+            "efm_go.dashboard.chat_handlers.save_slot_off_loop",
             side_effect=OSError("disk full"),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
@@ -14427,7 +14427,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_cancels_running_task(self, tmp_path, monkeypatch):
         """Running tasks on stale slots are cancelled after archive."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timedelta, timezone
 
@@ -14449,7 +14449,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_skips_unparseable_timestamps(self, tmp_path, monkeypatch):
         """Slots with unparseable timestamps are skipped, not archived."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         slot = state.get_or_create_slot("bad-ts")
@@ -14469,7 +14469,7 @@ class TestBulkCleanup:
     @pytest.mark.asyncio
     async def test_cleanup_dry_run_returns_keys_without_archiving(self, tmp_path, monkeypatch):
         """dry_run=True returns stale keys and active_is_stale but does not archive anything."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         from datetime import datetime, timedelta, timezone
 
@@ -14511,27 +14511,27 @@ class TestHistoryKeyFor:
     """Tests for _history_key_for — canonical history key from slot key."""
 
     def test_already_canonical(self):
-        from kiro_crew.dashboard.chat import _history_key_for
+        from efm_go.dashboard.chat import _history_key_for
 
         assert _history_key_for("dashboard:chat-1-100") == "dashboard:chat-1-100"
 
     def test_strips_single_prefix(self):
-        from kiro_crew.dashboard.chat import _history_key_for
+        from efm_go.dashboard.chat import _history_key_for
 
         assert _history_key_for("dashboard_chat-1-100") == "dashboard:chat-1-100"
 
     def test_strips_double_prefix(self):
-        from kiro_crew.dashboard.chat import _history_key_for
+        from efm_go.dashboard.chat import _history_key_for
 
         assert _history_key_for("dashboard_dashboard_chat-1-100") == "dashboard:chat-1-100"
 
     def test_strips_triple_prefix(self):
-        from kiro_crew.dashboard.chat import _history_key_for
+        from efm_go.dashboard.chat import _history_key_for
 
         assert _history_key_for("dashboard_dashboard_dashboard_x") == "dashboard:x"
 
     def test_raw_key_gets_prefix(self):
-        from kiro_crew.dashboard.chat import _history_key_for
+        from efm_go.dashboard.chat import _history_key_for
 
         assert _history_key_for("chat-1-100") == "dashboard:chat-1-100"
 
@@ -14542,7 +14542,7 @@ class TestHistoryKeyFor:
 class TestFolderCRUD:
     @pytest.mark.asyncio
     async def test_list_folders_empty(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14552,7 +14552,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14567,7 +14567,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder_with_parent(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14582,7 +14582,7 @@ class TestFolderCRUD:
     @pytest.mark.asyncio
     async def test_create_folder_accepts_default_agent(self, tmp_path, monkeypatch):
         """The create modal collects the full folder config, so POST must take it."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14597,7 +14597,7 @@ class TestFolderCRUD:
     @pytest.mark.asyncio
     async def test_create_folder_accepts_palette_color(self, tmp_path, monkeypatch):
         """Create persists an allowlisted palette color and rejects others."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14617,7 +14617,7 @@ class TestFolderCRUD:
         means the UI offers a swatch the backend rejects with a 400."""
         from pathlib import Path
 
-        from kiro_crew.dashboard.chat_folders import _FOLDER_COLOR_PALETTE
+        from efm_go.dashboard.chat_folders import _FOLDER_COLOR_PALETTE
 
         catalog = (
             Path(__file__).resolve().parent.parent
@@ -14632,7 +14632,7 @@ class TestFolderCRUD:
     @pytest.mark.asyncio
     async def test_patch_color_set_and_clear(self, tmp_path, monkeypatch):
         """PATCH color: allowlisted value sets, empty string clears the key."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14647,7 +14647,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder_invalid_parent_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14658,7 +14658,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder_empty_name_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14667,7 +14667,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_rename(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14688,7 +14688,7 @@ class TestFolderCRUD:
         deliberately order-neutral — the reverse order strands a dangling
         folder_id instead, so undoing whichever half landed is what closes both.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14718,7 +14718,7 @@ class TestFolderCRUD:
         than hiding them, so this is a tree-shape defect rather than a
         disappearance — but still a folder nobody asked to put at the root.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14744,7 +14744,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_collapse(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14756,7 +14756,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_reparent_into_folder(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14769,7 +14769,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_reparent_to_root(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14803,7 +14803,7 @@ class TestFolderCRUD:
         The lock is held deliberately here so both handlers are provably queued
         on it before either applies -- the window is opened, not raced for.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14866,7 +14866,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_reparent_self_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14877,7 +14877,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_reparent_unknown_parent_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14887,7 +14887,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_reparent_cycle_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14914,7 +14914,7 @@ class TestFolderCRUD:
         """A PATCH mixing a VALID field (name) with an INVALID one (bad parent_id)
         must be all-or-nothing: the 400 rejection must NOT persist the name change
         (validate-all-before-mutate)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14933,7 +14933,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder_hidden_defaults_false(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14944,7 +14944,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_hidden(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -14958,7 +14958,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_folders_get_includes_history_count(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._folders = [
             {"id": "f1", "name": "A", "order": 0, "collapsed": False},
@@ -14985,7 +14985,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_assign_slot_to_folder_unhides(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("myslot")
         state._folders = [
@@ -15006,9 +15006,9 @@ class TestFolderCRUD:
         re-engage happens via api_chat_slot_resume loading an archived session
         from history, which is the revive path that lets a hidden folder reappear.
         """
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._folders = [
             {"id": "f1", "name": "Test", "order": 0, "collapsed": False, "hidden": True}
@@ -15034,7 +15034,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_default_agent(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -15050,7 +15050,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_clear_default_agent(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._folders = [
             {"id": "f1", "name": "Test", "order": 0, "collapsed": False, "default_agent": "nissay"}
@@ -15063,7 +15063,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder_with_project_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         proj = tmp_path / "proj"
@@ -15078,7 +15078,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder_relative_project_dir_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -15089,7 +15089,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder_nonexistent_project_dir_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         missing = tmp_path / "does-not-exist"
@@ -15101,7 +15101,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_create_folder_sensitive_project_dir_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -15114,7 +15114,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_project_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         proj = tmp_path / "proj2"
@@ -15132,7 +15132,7 @@ class TestFolderCRUD:
     @pytest.mark.asyncio
     async def test_slot_create_inherits_nearest_folder_project(self, tmp_path, monkeypatch):
         """The server owns folder inheritance when the client cache omits project."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         root_project = tmp_path / "root-project"
         parent_project = tmp_path / "parent-project"
@@ -15170,14 +15170,14 @@ class TestFolderCRUD:
         # 500ing the create. Pin it to a string like the sibling cfg mocks.
         mock_cfg.default_agent = ""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
+            "efm_go.dashboard.chat_handlers.KiroCrewConfig.load", lambda: mock_cfg
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.default_project_dir",
+            "efm_go.dashboard.chat_handlers.default_project_dir",
             lambda _workspace: str(root_project),
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.schedule_eager_spawn",
+            "efm_go.dashboard.chat_handlers.schedule_eager_spawn",
             lambda *_args, **_kwargs: None,
         )
 
@@ -15196,7 +15196,7 @@ class TestFolderCRUD:
     @pytest.mark.asyncio
     async def test_slot_create_rejects_invalid_inherited_project(self, tmp_path, monkeypatch):
         """A stale folder path fails before a partially configured slot is created."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._folders = [
             {
@@ -15222,7 +15222,7 @@ class TestFolderCRUD:
     @pytest.mark.asyncio
     async def test_slot_create_does_not_rescope_existing_named_slot(self, tmp_path, monkeypatch):
         """Folder inheritance initializes new slots; explicit project changes stay explicit."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         old_project = tmp_path / "old-project"
         folder_project = tmp_path / "folder-project"
@@ -15242,7 +15242,7 @@ class TestFolderCRUD:
             }
         ]
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.schedule_eager_spawn",
+            "efm_go.dashboard.chat_handlers.schedule_eager_spawn",
             lambda *_args, **_kwargs: None,
         )
 
@@ -15256,7 +15256,7 @@ class TestFolderCRUD:
         assert slot.project == str(old_project)
 
     def test_resolve_folder_project_dir_terminates_on_cycle(self):
-        from kiro_crew.dashboard.chat_folders import _resolve_folder_project_dir
+        from efm_go.dashboard.chat_folders import _resolve_folder_project_dir
 
         folders = [
             {"id": "a", "parent_id": "b", "project_dir": ""},
@@ -15266,7 +15266,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_folder_empty_name_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -15277,7 +15277,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_update_nonexistent_folder(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -15286,7 +15286,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_delete_folder(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -15299,7 +15299,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_delete_folder_reparents_children(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._folders = [
             {"id": "parent", "name": "Parent", "order": 0, "collapsed": False},
@@ -15314,7 +15314,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_delete_folder_ungroups_slots(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.folder_id = "f-del"
@@ -15326,7 +15326,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_assign_slot_to_folder(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("myslot")
         state._folders = [{"id": "f1", "name": "Test", "order": 0, "collapsed": False}]
@@ -15340,7 +15340,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_slot_folder_change_sets_reinject_flag(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("myslot")
         state._folders = [{"id": "f1", "name": "Test", "order": 0, "collapsed": False}]
@@ -15358,7 +15358,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_unassign_slot_from_folder(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("myslot")
         slot.folder_id = "f1"
@@ -15370,7 +15370,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_assign_folder_nonexistent_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         app = _make_folder_app(state)
         async with TestClient(TestServer(app)) as client:
@@ -15381,7 +15381,7 @@ class TestFolderCRUD:
     async def test_expected_created_matching_the_live_slot_files_it(self, tmp_path, monkeypatch):
         """The generation token is optional; when it matches the slot's own
         ``created_at`` the write lands exactly as an untokened one does."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("myslot")
         state._folders = [{"id": "f1", "name": "Test", "order": 0, "collapsed": False}]
@@ -15404,7 +15404,7 @@ class TestFolderCRUD:
         the same ``dashboard:<key>`` transcript key, so only the token can tell
         them apart — and it must, or the stale write files someone else's
         session."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         first = state.get_or_create_slot("myslot")
         stale_token = first.created_at
@@ -15428,7 +15428,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_assign_nonexistent_folder_rejected(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("myslot")
         app = _make_folder_app(state)
@@ -15440,7 +15440,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_pin_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("myslot")
         app = _make_folder_app(state)
@@ -15453,7 +15453,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_unpin_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("myslot")
         slot.pinned = True
@@ -15467,7 +15467,7 @@ class TestFolderCRUD:
     @pytest.mark.parametrize("value", ["false", "true", 0, 1, None, []])
     async def test_pin_slot_rejects_non_boolean_values(self, tmp_path, monkeypatch, value):
         """The API must not apply Python truthiness to JSON metadata."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("myslot")
         app = _make_folder_app(state)
@@ -15481,7 +15481,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_slots_include_pinned(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.pinned = True
@@ -15493,7 +15493,7 @@ class TestFolderCRUD:
 
     @pytest.mark.asyncio
     async def test_slots_include_folder_id(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.folder_id = "f-abc"
@@ -15521,7 +15521,7 @@ class TestFolderTags:
     @staticmethod
     def _app_with_tag_delete(state):
         """Folder endpoints plus the tag-delete route, on one app."""
-        from kiro_crew.dashboard.chat_tags import api_chat_tag_delete
+        from efm_go.dashboard.chat_tags import api_chat_tag_delete
 
         app = _make_folder_app(state)
         app.router.add_delete("/api/chat/tags/{id}", api_chat_tag_delete)
@@ -15530,7 +15530,7 @@ class TestFolderTags:
     @pytest.mark.asyncio
     async def test_create_and_update_with_valid_tags_persists(self, tmp_path, monkeypatch):
         """(a) Create with valid tags persists them; PATCH replaces the set."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         self._seed_vocabulary(state, ["t1", "t2", "t3"])
         app = _make_folder_app(state)
@@ -15558,7 +15558,7 @@ class TestFolderTags:
     @pytest.mark.asyncio
     async def test_create_dedupes_tags(self, tmp_path, monkeypatch):
         """Duplicates collapse (order preserved) and a valid set persists."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         self._seed_vocabulary(state, ["t1", "t2"])
         app = _make_folder_app(state)
@@ -15575,7 +15575,7 @@ class TestFolderTags:
         hand-edited tags.json carrying a list) must degrade to "unknown id"
         rather than crash the validator's set build with an unhashable type
         (which would 500 every folder-tag operation)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         self._seed_vocabulary(state, ["t1"])
         # Corrupt entries alongside the valid one: unhashable id, missing id.
@@ -15598,7 +15598,7 @@ class TestFolderTags:
         intersecting them against the unknown (empty) vocabulary — that
         intersection would silently wipe the folder's tags and the PATCH would
         persist the loss."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         self._seed_vocabulary(state, ["t1", "t2"])
         app = _make_folder_app(state)
@@ -15628,9 +15628,9 @@ class TestFolderTags:
         critical section under ``tags_write_lock`` (the invariant every tag
         consumer follows): a tag deletion committing between them would slip a
         just-deleted id past the strip pass and back onto the folder."""
-        from kiro_crew.dashboard.chat_tags import tags_write_lock
+        from efm_go.dashboard.chat_tags import tags_write_lock
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         self._seed_vocabulary(state, ["t1"])
         held: list[bool] = []
@@ -15663,7 +15663,7 @@ class TestFolderTags:
         the "permanently uneditable folder" class. Filtering at the write
         sheds the stale reference instead.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         self._seed_vocabulary(state, ["t1"])
         app = _make_folder_app(state)
@@ -15684,7 +15684,7 @@ class TestFolderTags:
     @pytest.mark.asyncio
     async def test_non_array_tags_rejected_400(self, tmp_path, monkeypatch):
         """A non-array `tags` payload is a 400, not a 500."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         self._seed_vocabulary(state, ["t1"])
         app = _make_folder_app(state)
@@ -15696,7 +15696,7 @@ class TestFolderTags:
     @pytest.mark.asyncio
     async def test_deleting_a_tag_strips_it_from_folders(self, tmp_path, monkeypatch):
         """(f) Deleting a tag from the vocabulary removes its id from every folder."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         self._seed_vocabulary(state, ["t1", "t2"])
         app = self._app_with_tag_delete(state)
@@ -15722,7 +15722,7 @@ class TestFolderTags:
 
 class TestFolderPersistence:
     def test_load_folders_from_disk(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         import json
 
         (tmp_path / "folders.json").write_text(
@@ -15734,7 +15734,7 @@ class TestFolderPersistence:
         assert state._folders[0]["name"] == "Test"
 
     def test_save_and_load_roundtrip(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state._folders = [{"id": "f1", "name": "Roundtrip", "order": 0, "collapsed": True}]
         state.save_folders()
@@ -15744,13 +15744,13 @@ class TestFolderPersistence:
         assert state._folders[0]["collapsed"] is True
 
     def test_load_missing_file(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.load_folders()
         assert state._folders == []
 
     def test_load_corrupted_file(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         (tmp_path / "folders.json").write_text("not json")
         state = _make_state(tmp_path)
         state.load_folders()
@@ -15763,9 +15763,9 @@ class TestGenerateEmojiForName:
         """generate_emoji_for_name (artifact-folder path) still redacts replies."""
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        from kiro_crew.dashboard.chat_folders import generate_emoji_for_name
+        from efm_go.dashboard.chat_folders import generate_emoji_for_name
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         mock_event = MagicMock()
@@ -15773,9 +15773,9 @@ class TestGenerateEmojiForName:
         mock_event.text = "🔥"
         done_event = MagicMock()
         done_event.kind = "complete"
-        monkeypatch.setattr("kiro_crew.providers.base.EVENT_TEXT_CHUNK", "text_chunk")
-        monkeypatch.setattr("kiro_crew.providers.base.EVENT_COMPLETE", "complete")
-        monkeypatch.setattr("kiro_crew.providers.base.EVENT_PERMISSION_REQUEST", "permission")
+        monkeypatch.setattr("efm_go.providers.base.EVENT_TEXT_CHUNK", "text_chunk")
+        monkeypatch.setattr("efm_go.providers.base.EVENT_COMPLETE", "complete")
+        monkeypatch.setattr("efm_go.providers.base.EVENT_PERMISSION_REQUEST", "permission")
 
         mock_client = _provider_mock()
         mock_client.prompt = MagicMock(return_value=AsyncIterator([mock_event, done_event]))
@@ -15784,11 +15784,11 @@ class TestGenerateEmojiForName:
 
         with (
             patch(
-                "kiro_crew.dashboard.chat_folders.redact_exfiltration_urls",
+                "efm_go.dashboard.chat_folders.redact_exfiltration_urls",
                 return_value=("🔥", False),
             ) as mock_url,
             patch(
-                "kiro_crew.dashboard.chat_folders.redact_credentials", return_value=("🔥", False)
+                "efm_go.dashboard.chat_folders.redact_credentials", return_value=("🔥", False)
             ) as mock_cred,
         ):
             icon = await generate_emoji_for_name(state, "Oncall")
@@ -15802,9 +15802,9 @@ class TestGenerateEmojiForName:
         emoji generator (still used for artifact-library folders)."""
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.chat_folders import generate_emoji_for_name
+        from efm_go.dashboard.chat_folders import generate_emoji_for_name
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
 
         mock_event = MagicMock()
@@ -15812,9 +15812,9 @@ class TestGenerateEmojiForName:
         mock_event.text = "\u2764\ufe0f"  # ❤️
         done_event = MagicMock()
         done_event.kind = "complete"
-        monkeypatch.setattr("kiro_crew.providers.base.EVENT_TEXT_CHUNK", "text_chunk")
-        monkeypatch.setattr("kiro_crew.providers.base.EVENT_COMPLETE", "complete")
-        monkeypatch.setattr("kiro_crew.providers.base.EVENT_PERMISSION_REQUEST", "permission")
+        monkeypatch.setattr("efm_go.providers.base.EVENT_TEXT_CHUNK", "text_chunk")
+        monkeypatch.setattr("efm_go.providers.base.EVENT_COMPLETE", "complete")
+        monkeypatch.setattr("efm_go.providers.base.EVENT_PERMISSION_REQUEST", "permission")
 
         mock_client = _provider_mock()
         mock_client.prompt = MagicMock(return_value=AsyncIterator([mock_event, done_event]))
@@ -15828,7 +15828,7 @@ class TestFolderAssignmentPersistence:
     @pytest.mark.asyncio
     async def test_folder_assignment_saves_to_history(self, tmp_path, monkeypatch):
         """api_chat_slot_folder should call _save_slot_to_history for new sessions."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("myslot")
         slot.append("user", "hello")
@@ -15858,7 +15858,7 @@ class TestFolderAssignmentPersistence:
 
         Fix: folder endpoint passes ``force=True`` which bypasses the guard.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("resumedslot")
         slot.append("user", "old message from before restart")
@@ -15867,7 +15867,7 @@ class TestFolderAssignmentPersistence:
         # Persist first so the fixture matches reality — a slot claiming
         # on-disk history whose file is missing is the delete-won state the
         # save now refuses to recreate.
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         _save_slot_to_history(state, slot, force=True)
         # Mark slot as a resumed session (simulates being restored from disk).
@@ -15899,7 +15899,7 @@ class TestFolderAssignmentPersistence:
         in _save_slot_to_history was blocking metadata-only writes. Pin
         endpoint now passes ``force=True``.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("pinslot")
         slot.append("user", "old message")
@@ -15907,7 +15907,7 @@ class TestFolderAssignmentPersistence:
         # Persist first: a resumed slot's file exists on disk (see the folder
         # regression above — the missing-file variant is the delete-won state
         # the save refuses to recreate).
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         _save_slot_to_history(state, slot, force=True)
         slot._resumed_count = len(slot.messages)
@@ -15931,9 +15931,9 @@ class TestFolderAssignmentPersistence:
         Without force, resumed sessions with no new messages skip the write.
         With force, the metadata-only mutation reaches disk regardless.
         """
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("forceslot")
         slot.append("user", "hello")
@@ -15972,7 +15972,7 @@ class TestFolderAssignmentPersistence:
 class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_truncates_and_stashes_variant(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -15983,7 +15983,7 @@ class TestRegenerateAndVariants:
         async def _capture(*a, **kw):
             captured.extend(list(slot._pending_variants))
 
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=_capture):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=_capture):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat/slots/s1/regenerate")
                 assert resp.status == 200
@@ -15994,7 +15994,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_regenerate_rejects_when_running(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16014,7 +16014,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_regenerate_requires_prior_assistant(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "only user")
@@ -16024,7 +16024,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_switch_variant_updates_content(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16042,7 +16042,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_switch_variant_index_out_of_range(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("assistant", "v1")
@@ -16054,14 +16054,14 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_passes_hint_to_run_chat(self, tmp_path, monkeypatch):
         """_run_chat should receive a non-empty regenerate_hint kwarg."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
         slot.append("assistant", "reply")
         slot.drain()
         mock_run = AsyncMock()
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=mock_run):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=mock_run):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat/slots/s1/regenerate")
                 assert resp.status == 200
@@ -16074,7 +16074,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_preserves_existing_variants(self, tmp_path, monkeypatch):
         """When assistant already has variants[], regenerate keeps them and adds current."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16090,7 +16090,7 @@ class TestRegenerateAndVariants:
         async def _capture(*a, **kw):
             captured.extend(list(slot._pending_variants))
 
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=_capture):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=_capture):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat/slots/s1/regenerate")
                 assert resp.status == 200
@@ -16100,7 +16100,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_when_active_is_old_variant_no_dup(self, tmp_path, monkeypatch):
         """If user switched back to v1 then regenerates, v1 should not be appended twice."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16116,7 +16116,7 @@ class TestRegenerateAndVariants:
         async def _capture(*a, **kw):
             captured.extend(list(slot._pending_variants))
 
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=_capture):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=_capture):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat/slots/s1/regenerate")
                 assert resp.status == 200
@@ -16126,9 +16126,9 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_caps_variants(self, tmp_path, monkeypatch):
         """Variant list is capped; oldest entries drop when over _MAX_VARIANTS."""
-        from kiro_crew.dashboard.chat import _MAX_VARIANTS
+        from efm_go.dashboard.chat import _MAX_VARIANTS
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16142,7 +16142,7 @@ class TestRegenerateAndVariants:
         async def _capture(*a, **kw):
             captured.extend(list(slot._pending_variants))
 
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=_capture):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=_capture):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat/slots/s1/regenerate")
                 assert resp.status == 200
@@ -16152,7 +16152,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_regenerate_rejects_missing_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post("/api/chat/slots/nonexistent/regenerate")
@@ -16160,7 +16160,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_regenerate_rejects_empty_user_message(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "")
@@ -16172,17 +16172,17 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_persists_to_disk(self, tmp_path, monkeypatch):
         """After regenerate, on-disk history should reflect the truncation."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
         slot.append("assistant", "old")
         slot.drain()
         # Save first so a file exists
-        from kiro_crew.dashboard.chat import _history_key_for, _save_slot_to_history
+        from efm_go.dashboard.chat import _history_key_for, _save_slot_to_history
 
         _save_slot_to_history(state, slot)
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=AsyncMock()):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=AsyncMock()):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat/slots/s1/regenerate")
                 assert resp.status == 200
@@ -16195,7 +16195,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_save_slot_redacts_variants(self, tmp_path, monkeypatch):
         """Variants written to disk must have credentials/exfil URLs redacted."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16207,7 +16207,7 @@ class TestRegenerateAndVariants:
         ]
         slot.messages[-1]["variant_idx"] = 1
         slot.drain()
-        from kiro_crew.dashboard.chat import _history_key_for, _save_slot_to_history
+        from efm_go.dashboard.chat import _history_key_for, _save_slot_to_history
 
         _save_slot_to_history(state, slot)
         key = _history_key_for(slot.key)
@@ -16220,7 +16220,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_switch_variant_rejects_when_running(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("assistant", "v2")
@@ -16242,7 +16242,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_switch_variant_missing_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         async with TestClient(TestServer(_make_app(state))) as client:
             resp = await client.post("/api/chat/slots/none/switch-variant", json={"index": 0})
@@ -16250,7 +16250,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_switch_variant_no_variants(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("assistant", "plain")  # no variants[]
@@ -16260,7 +16260,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_switch_variant_invalid_json_body(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("assistant", "v1")
@@ -16271,7 +16271,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_switch_variant_non_int_index(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("assistant", "v1")
@@ -16285,9 +16285,9 @@ class TestRegenerateAndVariants:
         # api_chat_slot_edit_resend parsed the body but never checked
         # isinstance(dict); a valid-JSON array/scalar reached body.get("index")
         # and raised AttributeError -> 500. Must be 400, like switch_variant.
-        from kiro_crew.dashboard.chat import api_chat_slot_edit_resend
+        from efm_go.dashboard.chat import api_chat_slot_edit_resend
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
         app = web.Application()
@@ -16305,7 +16305,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_clears_pending_on_task_error(self, tmp_path, monkeypatch):
         """If _run_chat raises, _pending_variants must be cleared to prevent leak."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16315,7 +16315,7 @@ class TestRegenerateAndVariants:
         async def _boom(*a, **kw):
             raise RuntimeError("llm blew up")
 
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=_boom):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=_boom):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat/slots/s1/regenerate")
                 assert resp.status == 200
@@ -16327,7 +16327,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_flush_segment_attaches_pending_variants(self, tmp_path, monkeypatch):
         """_flush_segment should attach _pending_variants to the new assistant message."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16336,7 +16336,7 @@ class TestRegenerateAndVariants:
             {"content": "old v1", "ts": "t1"},
             {"content": "old v2", "ts": "t2"},
         ]
-        from kiro_crew.dashboard.chat import _flush_segment
+        from efm_go.dashboard.chat import _flush_segment
 
         _flush_segment(state, slot, "new reply", broadcast=False)
         last = slot.messages[-1]
@@ -16348,7 +16348,7 @@ class TestRegenerateAndVariants:
 
     @pytest.mark.asyncio
     async def test_switch_variant_negative_index(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("assistant", "v1")
@@ -16360,7 +16360,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_only_system_and_assistant(self, tmp_path, monkeypatch):
         """Regenerate should fail if there's no user message (only system + assistant)."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("system", "you are helpful")
@@ -16372,11 +16372,11 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_flush_segment_no_pending_no_variants(self, tmp_path, monkeypatch):
         """Normal flush without pending variants should not add variants field."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
-        from kiro_crew.dashboard.chat import _flush_segment
+        from efm_go.dashboard.chat import _flush_segment
 
         _flush_segment(state, slot, "reply", broadcast=False)
         last = slot.messages[-1]
@@ -16385,7 +16385,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_switch_variant_missing_index_key(self, tmp_path, monkeypatch):
         """Request body without 'index' key should return 400."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("assistant", "v1")
@@ -16397,7 +16397,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_restore_preserves_variants(self, tmp_path, monkeypatch):
         """Variants written to disk should be restored via production code path."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16408,7 +16408,7 @@ class TestRegenerateAndVariants:
         ]
         slot.messages[-1]["variant_idx"] = 1
         slot.drain()
-        from kiro_crew.dashboard.chat import _save_slot_to_history, restore_recent_sessions
+        from efm_go.dashboard.chat import _save_slot_to_history, restore_recent_sessions
 
         _save_slot_to_history(state, slot)
         # Clear in-memory state and restore via production path
@@ -16424,7 +16424,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_regenerate_clears_pending_on_cancel(self, tmp_path, monkeypatch):
         """If user stops a regeneration (cancel), _pending_variants must be cleared."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16434,7 +16434,7 @@ class TestRegenerateAndVariants:
         async def _hang(*a, **kw):
             await asyncio.sleep(999)
 
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=_hang):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=_hang):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post("/api/chat/slots/s1/regenerate")
                 assert resp.status == 200
@@ -16450,7 +16450,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_prepare_messages_redacts_variant_content(self, tmp_path, monkeypatch):
         """Variant content exposed via API must have credentials redacted."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16459,7 +16459,7 @@ class TestRegenerateAndVariants:
             {"content": "AKIAIOSFODNN7EXAMPLE leaked key", "ts": "t1"},
             {"content": "safe", "ts": "t2"},
         ]
-        from kiro_crew.dashboard.chat import _prepare_messages
+        from efm_go.dashboard.chat import _prepare_messages
 
         prepared = _prepare_messages(slot.messages, False, live_child="")
         ai = [m for m in prepared if m.get("role") == "assistant"][0]
@@ -16469,7 +16469,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_switch_variant_corrupt_entry(self, tmp_path, monkeypatch):
         """If a variant entry is not a dict, switch-variant should return 400."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("assistant", "v1")
@@ -16481,7 +16481,7 @@ class TestRegenerateAndVariants:
     @pytest.mark.asyncio
     async def test_concurrent_regenerate_one_succeeds_one_409(self, tmp_path, monkeypatch):
         """Two simultaneous regenerate requests: one gets 200, the other gets 409."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hi")
@@ -16491,7 +16491,7 @@ class TestRegenerateAndVariants:
         async def _hang(*a, **kw):
             await asyncio.sleep(999)
 
-        with patch("kiro_crew.dashboard.chat_regenerate._run_chat", new=_hang):
+        with patch("efm_go.dashboard.chat_regenerate._run_chat", new=_hang):
             async with TestClient(TestServer(_make_app(state))) as client:
                 r1, r2 = await asyncio.gather(
                     client.post("/api/chat/slots/s1/regenerate"),
@@ -16542,7 +16542,7 @@ class TestForkSlot:
         empty newborn, and a client seeing that frame under the same revision as
         the inherited list would take it as the next toggle base and erase the
         inherited tags on its first write."""
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("src")
@@ -16662,7 +16662,7 @@ class TestForkSlot:
         failing_save = AsyncMock(side_effect=RuntimeError("lock timeout"))
         app = _make_app(state)
         async with TestClient(TestServer(app)) as client:
-            with patch("kiro_crew.dashboard.chat_fork.save_slot_off_loop", failing_save):
+            with patch("efm_go.dashboard.chat_fork.save_slot_off_loop", failing_save):
                 resp = await client.post("/api/chat/slots/src/fork", json={})
                 assert resp.status == 503
 
@@ -17099,7 +17099,7 @@ class TestForkSlot:
             new_key = data["key"]
 
         # Simulate a gateway restart by reading messages + metadata from disk
-        from kiro_crew.dashboard.chat import _history_key_for
+        from efm_go.dashboard.chat import _history_key_for
 
         hk = _history_key_for(new_key)
         meta = state.conversation_log.get_metadata(hk)
@@ -17163,7 +17163,7 @@ class TestForkSlot:
         from unittest.mock import MagicMock
 
         mock_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_fork.sel", lambda: mock_sel)
+        monkeypatch.setattr("efm_go.dashboard.chat_fork.sel", lambda: mock_sel)
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("src")
@@ -17243,8 +17243,8 @@ class TestForkSlot:
         assert child.blocks_reads is True
         assert f"dashboard:{data['key']}" in state._restricted_keys
 
-        from kiro_crew.context import build_session_replay
-        from kiro_crew.dashboard.chat import _history_key_for
+        from efm_go.context import build_session_replay
+        from efm_go.dashboard.chat import _history_key_for
 
         history_key = _history_key_for(data["key"])
         visible = [m["content"] for m in child.messages if m.get("role") in ("user", "assistant")]
@@ -17285,7 +17285,7 @@ class TestForkSlot:
 
         # conversation_log.recent(forked_key) is what ContextBuilder.build_session_context
         # calls to assemble the thread-history section for the new kiro process.
-        from kiro_crew.dashboard.chat import _history_key_for
+        from efm_go.dashboard.chat import _history_key_for
 
         recent = state.conversation_log.recent(_history_key_for(new_key))
         visible = [m for m in recent if m.get("role") in ("user", "assistant")]
@@ -17302,9 +17302,9 @@ class TestForkSlot:
         corrupt each other's view. Fork creates a FRESH kiro session on first
         prompt by leaving session_map unset for the new key.
         """
-        from kiro_crew.session import SessionMap
+        from efm_go.session import SessionMap
 
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
         session_map = SessionMap()
         session_map.set("dashboard:src", "parent-kiro-sid-abc123")
         # A loop-side mutation defers its disk write; the fresh-instance
@@ -17376,7 +17376,7 @@ class TestForkSlot:
         for i in range(250):
             slot.append("user" if i % 2 == 0 else "assistant", f"m{i}", "msg")
         slot.drain()
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         _save_slot_to_history(state, slot)
         # Simulate restore cap: keep only last 50 in memory.
@@ -17407,7 +17407,7 @@ class TestForkSlot:
         for i in range(250):
             slot.append("user" if i % 2 == 0 else "assistant", f"m{i}", "msg")
         slot.drain()
-        from kiro_crew.dashboard.chat import _save_slot_to_history
+        from efm_go.dashboard.chat import _save_slot_to_history
 
         _save_slot_to_history(state, slot)
         # Simulate restore with cap: real path caps messages then sets
@@ -17478,7 +17478,7 @@ class TestForkSlot:
         from unittest.mock import MagicMock
 
         mock_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_fork.sel", lambda: mock_sel)
+        monkeypatch.setattr("efm_go.dashboard.chat_fork.sel", lambda: mock_sel)
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("src", memory_mode="incognito")
@@ -17505,7 +17505,7 @@ class TestForkSlot:
 
         mock_sel = MagicMock()
         # The refusal is the per-slot checkpoint's, so its row is written there.
-        monkeypatch.setattr("kiro_crew.dashboard.slot_ownership.sel", lambda: mock_sel)
+        monkeypatch.setattr("efm_go.dashboard.slot_ownership.sel", lambda: mock_sel)
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("src", app="app-B")
@@ -17569,9 +17569,9 @@ class TestForkSlot:
         from unittest.mock import MagicMock
 
         mock_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.chat_fork.sel", lambda: mock_sel)
+        monkeypatch.setattr("efm_go.dashboard.chat_fork.sel", lambda: mock_sel)
         # Lower the cap so we don't need to create hundreds of slots.
-        monkeypatch.setattr("kiro_crew.dashboard.chat_fork.MAX_LIVE_SLOTS", 3)
+        monkeypatch.setattr("efm_go.dashboard.chat_fork.MAX_LIVE_SLOTS", 3)
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("src")
@@ -17605,7 +17605,7 @@ class TestForkSlot:
         against that list. Pre-fix, fork called ``read_messages`` and
         rejected any index past the current file's boundary.
         """
-        from kiro_crew.dashboard.chat_utils import _history_key_for
+        from efm_go.dashboard.chat_utils import _history_key_for
 
         state = _make_state(tmp_path)
         tab_id = "tab12345abcd"
@@ -17678,9 +17678,9 @@ class TestColorTheme:
 
     @pytest.mark.asyncio
     async def test_color_theme_set_on_slot(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.chat_handlers._run_chat", new=AsyncMock()):
+        with patch("efm_go.dashboard.chat_handlers._run_chat", new=AsyncMock()):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat?ws=1",
@@ -17691,11 +17691,11 @@ class TestColorTheme:
 
     @pytest.mark.asyncio
     async def test_color_theme_cleared_to_empty(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("theme-slot")
         slot.color_theme = "custom-mypack"
-        with patch("kiro_crew.dashboard.chat_handlers._run_chat", new=AsyncMock()):
+        with patch("efm_go.dashboard.chat_handlers._run_chat", new=AsyncMock()):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat?ws=1",
@@ -17707,11 +17707,11 @@ class TestColorTheme:
     @pytest.mark.asyncio
     async def test_color_theme_not_cleared_when_absent(self, tmp_path, monkeypatch):
         """Omitting color_theme from body must not reset an existing theme."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("theme-slot")
         slot.color_theme = "custom-mypack"
-        with patch("kiro_crew.dashboard.chat_handlers._run_chat", new=AsyncMock()):
+        with patch("efm_go.dashboard.chat_handlers._run_chat", new=AsyncMock()):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat?ws=1",
@@ -17722,9 +17722,9 @@ class TestColorTheme:
 
     @pytest.mark.asyncio
     async def test_invalid_color_theme_coerced_to_empty(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.chat_handlers._run_chat", new=AsyncMock()):
+        with patch("efm_go.dashboard.chat_handlers._run_chat", new=AsyncMock()):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat?ws=1",
@@ -17735,9 +17735,9 @@ class TestColorTheme:
 
     @pytest.mark.asyncio
     async def test_non_string_color_theme_coerced(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
-        with patch("kiro_crew.dashboard.chat_handlers._run_chat", new=AsyncMock()):
+        with patch("efm_go.dashboard.chat_handlers._run_chat", new=AsyncMock()):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat?ws=1",
@@ -17762,10 +17762,10 @@ class TestInstalledPackConsentInjection:
         return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     def test_matching_sha_injects(self):
-        from kiro_crew.dashboard.chat import _maybe_inject_persona
+        from efm_go.dashboard.chat import _maybe_inject_persona
 
         with patch(
-            "kiro_crew.dashboard.chat_utils._installed_theme_persona",
+            "efm_go.dashboard.chat_utils._installed_theme_persona",
             return_value=self.PERSONA,
         ):
             result = _maybe_inject_persona(
@@ -17780,10 +17780,10 @@ class TestInstalledPackConsentInjection:
     def test_stale_sha_not_injected(self):
         # Reinstall rewrote persona.md; the stored hash does not match the
         # on-disk text -> the new, never-consented persona must NOT be injected.
-        from kiro_crew.dashboard.chat import _maybe_inject_persona
+        from efm_go.dashboard.chat import _maybe_inject_persona
 
         with patch(
-            "kiro_crew.dashboard.chat_utils._installed_theme_persona",
+            "efm_go.dashboard.chat_utils._installed_theme_persona",
             return_value=self.PERSONA,
         ):
             result = _maybe_inject_persona(
@@ -17795,10 +17795,10 @@ class TestInstalledPackConsentInjection:
         assert result == "hello"
 
     def test_absent_sha_not_injected(self):
-        from kiro_crew.dashboard.chat import _maybe_inject_persona
+        from efm_go.dashboard.chat import _maybe_inject_persona
 
         with patch(
-            "kiro_crew.dashboard.chat_utils._installed_theme_persona",
+            "efm_go.dashboard.chat_utils._installed_theme_persona",
             return_value=self.PERSONA,
         ):
             result = _maybe_inject_persona("hello", "custom-mypack", True)
@@ -17808,10 +17808,10 @@ class TestInstalledPackConsentInjection:
         # The legacy boolean consent field grants nothing on its own: with no
         # content-bound sha, an installed pack persona is never injected even
         # though the pack ships one.
-        from kiro_crew.dashboard.chat import _maybe_inject_persona
+        from efm_go.dashboard.chat import _maybe_inject_persona
 
         with patch(
-            "kiro_crew.dashboard.chat_utils._installed_theme_persona",
+            "efm_go.dashboard.chat_utils._installed_theme_persona",
             return_value=self.PERSONA,
         ):
             result = _maybe_inject_persona(
@@ -17823,10 +17823,10 @@ class TestInstalledPackConsentInjection:
         assert result == "hello"
 
     def test_not_injected_on_followup(self):
-        from kiro_crew.dashboard.chat import _maybe_inject_persona
+        from efm_go.dashboard.chat import _maybe_inject_persona
 
         with patch(
-            "kiro_crew.dashboard.chat_utils._installed_theme_persona",
+            "efm_go.dashboard.chat_utils._installed_theme_persona",
             return_value=self.PERSONA,
         ):
             result = _maybe_inject_persona(
@@ -17843,7 +17843,7 @@ class TestInstalledPackConsentInjection:
         # non-ASCII str, aborting the whole chat turn). The compare-site guard
         # treats anything that is not exactly 64 lowercase-hex as ABSENT:
         # no exception AND no injection.
-        from kiro_crew.dashboard.chat import _maybe_inject_persona
+        from efm_go.dashboard.chat import _maybe_inject_persona
 
         valid = self._sha(self.PERSONA)
         malformed = [
@@ -17858,7 +17858,7 @@ class TestInstalledPackConsentInjection:
             valid[:-2] + "gg",  # non-hex chars
         ]
         with patch(
-            "kiro_crew.dashboard.chat_utils._installed_theme_persona",
+            "efm_go.dashboard.chat_utils._installed_theme_persona",
             return_value=self.PERSONA,
         ):
             for bad in malformed:
@@ -17876,7 +17876,7 @@ class TestInstalledPackConsentInjection:
         # The parse-site normalizer (validation.normalize_theme_consent_sha)
         # rejects malformed values (-> None, fail closed) and salvages a valid
         # sha wrapped in surrounding whitespace / uppercase (strip + lower).
-        from kiro_crew.validation import normalize_theme_consent_sha
+        from efm_go.validation import normalize_theme_consent_sha
 
         valid = self._sha(self.PERSONA)
         assert normalize_theme_consent_sha("é") is None
@@ -17888,10 +17888,10 @@ class TestInstalledPackConsentInjection:
         # salvage: leading/trailing whitespace + uppercase normalize to canonical
         assert normalize_theme_consent_sha("  " + valid.upper() + "\n") == valid
         # a normalized value then injects through the real gate
-        from kiro_crew.dashboard.chat import _maybe_inject_persona
+        from efm_go.dashboard.chat import _maybe_inject_persona
 
         with patch(
-            "kiro_crew.dashboard.chat_utils._installed_theme_persona",
+            "efm_go.dashboard.chat_utils._installed_theme_persona",
             return_value=self.PERSONA,
         ):
             norm = normalize_theme_consent_sha("  " + valid.upper() + "\n")
@@ -17922,7 +17922,7 @@ class TestStopReasonCancelled:
 
     @staticmethod
     def _make_state_for_run_chat(tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -17936,9 +17936,9 @@ class TestStopReasonCancelled:
     async def test_handler_stop_reason_cancelled_skips_record_success(self, tmp_path, monkeypatch):
         """When EVENT_COMPLETE carries stop_reason='cancelled', neither
         record_success nor record_failure should be called."""
-        from kiro_crew.acp.types import STOP_REASON_CANCELLED
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_CANCELLED
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="partial"),
@@ -17964,9 +17964,9 @@ class TestStopReasonCancelled:
         the leg that consumes the flag -- with no consume there is nothing to
         restore, so a test without this would pass vacuously.
         """
-        from kiro_crew.context import ContextBuilder
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.context import ContextBuilder
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         ctx_builder = ContextBuilder(
             memory=MemoryStore(workspace=tmp_path / "ws"),
@@ -17991,9 +17991,9 @@ class TestStopReasonCancelled:
         the empty-response re-queue left a soft-stop losing the skills index for
         the rest of the session.
         """
-        from kiro_crew.acp.types import STOP_REASON_CANCELLED
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_CANCELLED
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="partial"),
@@ -18015,7 +18015,7 @@ class TestStopReasonCancelled:
         """An exception between the consume and the success check must not
         swallow the flag either -- the restore lives in the `finally`, so every
         non-landing exit is covered, not only the ones that reach the end."""
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         state = self._make_state_for_run_chat(tmp_path, monkeypatch)
         self._wire_reinjection(state, tmp_path, monkeypatch)
@@ -18039,8 +18039,8 @@ class TestStopReasonCancelled:
     async def test_landed_turn_does_not_restore_the_reinjection_flag(self, tmp_path, monkeypatch):
         """The complement: a turn that lands must leave the flag cleared,
         otherwise the index is re-paid on every subsequent turn."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="a real answer"),
@@ -18060,9 +18060,9 @@ class TestStopReasonCancelled:
     @pytest.mark.asyncio
     async def test_handler_stop_reason_cancelled_skips_consolidation(self, tmp_path, monkeypatch):
         """When cancelled, maybe_consolidate must not be called."""
-        from kiro_crew.acp.types import STOP_REASON_CANCELLED
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_CANCELLED
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="partial"),
@@ -18082,9 +18082,9 @@ class TestStopReasonCancelled:
         self, tmp_path, monkeypatch
     ):
         """When stop_reason='end_turn', record_success and maybe_consolidate fire."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="done"),
@@ -18103,10 +18103,10 @@ class TestStopReasonCancelled:
 
     @pytest.mark.asyncio
     async def test_monitor_wake_turn_does_not_write_user_memory(self, tmp_path, monkeypatch):
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.dashboard.state import MONITOR_WAKE_PREFIX
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.dashboard.state import MONITOR_WAKE_PREFIX
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="monitor action complete"),
@@ -18126,9 +18126,9 @@ class TestStopReasonCancelled:
     @pytest.mark.asyncio
     async def test_handler_stop_reason_cancelled_flushes_partial_text(self, tmp_path, monkeypatch):
         """Partial text chunks before cancel must be flushed to the slot."""
-        from kiro_crew.acp.types import STOP_REASON_CANCELLED
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_CANCELLED
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         events = [
             LLMEvent(kind=EVENT_TEXT_CHUNK, text="partial output here"),
@@ -18152,7 +18152,7 @@ class TestStopTurnSlotState:
     """Tests for api_chat_slot_stop soft/hard state transitions."""
 
     def _make_state(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         sessions.stop_turn = AsyncMock(return_value="soft")
         sessions.reset = AsyncMock()
@@ -18552,7 +18552,7 @@ class TestStopDuringSessionPrep:
     """
 
     def _make_state_and_slot(self, tmp_path):
-        from kiro_crew.dashboard.chat_runner import _run_chat
+        from efm_go.dashboard.chat_runner import _run_chat
 
         state = _make_state(tmp_path)
         state.sessions.release = MagicMock()
@@ -18570,7 +18570,7 @@ class TestStopDuringSessionPrep:
         return state, slot, _run_chat
 
     def _make_client(self, stream_calls):
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         client = MagicMock()
         client.shutdown = AsyncMock()
@@ -18618,7 +18618,7 @@ class TestStopDuringSessionPrep:
         self, tmp_path: Path
     ) -> None:
         """A stopped pre-stream wake stays retryable instead of becoming DISPATCHED."""
-        from kiro_crew.monitoring.completion import MonitorCompletionHook
+        from efm_go.monitoring.completion import MonitorCompletionHook
 
         state, slot, _run_chat = self._make_state_and_slot(tmp_path)
         stream_calls: list[str] = []
@@ -18685,7 +18685,7 @@ class TestAcpProcessDiedRecovery:
     """Verify _run_chat handles AcpProcessDied with retry logic, redaction, and session reset."""
 
     def _make_state_and_slot(self, tmp_path):
-        from kiro_crew.dashboard.chat_runner import _run_chat
+        from efm_go.dashboard.chat_runner import _run_chat
 
         state = _make_state(tmp_path)
         state.sessions.get_or_create = AsyncMock(return_value=(MagicMock(), False, False))
@@ -18717,7 +18717,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_retry_at_depth_0_requeues_message(self, tmp_path: Path) -> None:
         """First pipe death at depth 0 → message re-queued, retrying shown."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, AcpProcessDied("pipe broken"))
@@ -18753,8 +18753,8 @@ class TestAcpProcessDiedRecovery:
         """A steer written into a turn sits in the same pipe as its prompt, so
         when the turn's death is ambiguous the teardown requeues it with the
         possibly-delivered mark; a plain death requeues it plainly."""
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.dashboard.chat_utils import STEER_POSSIBLY_DELIVERED_META
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.dashboard.chat_utils import STEER_POSSIBLY_DELIVERED_META
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
 
@@ -18765,7 +18765,7 @@ class TestAcpProcessDiedRecovery:
 
         client.stream = _steered_then_died
         client.stream_command = _steered_then_died
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         requeued: list[dict] = []
         _real = chat_runner._requeue_unconsumed_steers
@@ -18786,7 +18786,7 @@ class TestAcpProcessDiedRecovery:
     ) -> None:
         """The note reaches the model; slash-command dispatch and the mirror still
         read the user's own text."""
-        from kiro_crew.dashboard.chat_utils import STEER_POSSIBLY_DELIVERED_NOTE
+        from efm_go.dashboard.chat_utils import STEER_POSSIBLY_DELIVERED_NOTE
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         sent: list[str] = []
@@ -18806,7 +18806,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_budget_exhaustion_shows_stuck(self, tmp_path: Path) -> None:
         """4th pipe death → 'Session stuck' shown, no re-queue."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._acp_pipe_death_retries = 3  # already exhausted
@@ -18821,7 +18821,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_nested_depth_shows_please_retry(self, tmp_path: Path) -> None:
         """Pipe death at depth > 0 → 'please retry' shown, no re-queue."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, AcpProcessDied("pipe broken"))
@@ -18835,13 +18835,13 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_partial_assistant_text_redacted(self, tmp_path: Path) -> None:
         """Pipe death mid-stream preserves redacted output and queues a continuation."""
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.dashboard.chat_utils import (
             _CONN_RECOVER_MSG,
             SYNTHETIC_RECOVERY_KIND,
             RecoveryPayload,
         )
-        from kiro_crew.providers.base import EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_TEXT_CHUNK, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._titled = True
@@ -18856,7 +18856,7 @@ class TestAcpProcessDiedRecovery:
         client.stream_command = _stream_then_die
 
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new_callable=AsyncMock,
             return_value=False,
         ):
@@ -18891,13 +18891,13 @@ class TestAcpProcessDiedRecovery:
         marker here reports a dropped connection to a user whose status card
         says the session was busy.
         """
-        from kiro_crew.dashboard.chat_runner import PromptBusyExhaustedError
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_runner import PromptBusyExhaustedError
+        from efm_go.dashboard.chat_utils import (
             _BUSY_RECOVER_MSG,
             SYNTHETIC_RECOVERY_KIND,
             RecoveryPayload,
         )
-        from kiro_crew.providers.base import EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_TEXT_CHUNK, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._titled = True
@@ -18910,7 +18910,7 @@ class TestAcpProcessDiedRecovery:
         client.stream_command = _stream_then_busy
 
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new_callable=AsyncMock,
             return_value=False,
         ):
@@ -18946,8 +18946,8 @@ class TestAcpProcessDiedRecovery:
         the previous recovery, not the user's request. Tagging it ORIGINAL makes the
         next dequeue mirror internal orchestration to a linked thread as user speech.
         """
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.dashboard.chat_utils import (
             _CONN_RECOVER_MSG,
             SYNTHETIC_RECOVERY_KIND,
             RecoveryPayload,
@@ -18958,7 +18958,7 @@ class TestAcpProcessDiedRecovery:
         self._make_stream_raise(client, AcpProcessDied("pipe broken"))
 
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new_callable=AsyncMock,
             return_value=False,
         ):
@@ -18987,8 +18987,8 @@ class TestAcpProcessDiedRecovery:
         no thread to reply into, so the continuation's answer is never delivered and the
         question asked on Slack stays unanswered.
         """
-        from kiro_crew.dashboard.chat_utils import _CONN_RECOVER_MSG
-        from kiro_crew.providers.base import EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat_utils import _CONN_RECOVER_MSG
+        from efm_go.providers.base import EVENT_TEXT_CHUNK, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._titled = True
@@ -19014,7 +19014,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_session_reset_propagated(self, tmp_path: Path) -> None:
         """Verify the finally block resets the session after AcpProcessDied."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, AcpProcessDied("pipe broken"))
@@ -19026,7 +19026,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_stop_state_suppresses_requeue(self, tmp_path: Path) -> None:
         """AcpProcessDied during active stop → no re-queue."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._stop_state = "killing"
@@ -19039,7 +19039,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_stop_state_suppresses_requeue_prompt_busy(self, tmp_path: Path) -> None:
         """PromptBusyExhaustedError during active stop → no re-queue."""
-        from kiro_crew.dashboard.chat_runner import PromptBusyExhaustedError
+        from efm_go.dashboard.chat_runner import PromptBusyExhaustedError
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._stop_state = "soft_pending"
@@ -19052,7 +19052,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_stop_state_suppresses_requeue_acp_error(self, tmp_path: Path) -> None:
         """AcpError retry-eligible during active stop → no re-queue."""
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._stop_state = "killing"
@@ -19065,7 +19065,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_should_suppress_requeue_helper(self, tmp_path: Path) -> None:
         """_should_suppress_requeue returns True for non-idle states."""
-        from kiro_crew.dashboard.chat_runner import _should_suppress_requeue
+        from efm_go.dashboard.chat_runner import _should_suppress_requeue
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("helper-test")
@@ -19082,7 +19082,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_cancelled_error_redacts_partial_text(self, tmp_path: Path) -> None:
         """CancelledError mid-stream → partial output redacted before display."""
-        from kiro_crew.providers.base import EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_TEXT_CHUNK, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
 
@@ -19105,8 +19105,8 @@ class TestAcpProcessDiedRecovery:
         """First pipe death at depth 0 → queue_insert is called."""
         from unittest.mock import patch as _patch
 
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.dashboard.state import _ChatSlot
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, AcpProcessDied("pipe broken"))
@@ -19129,8 +19129,8 @@ class TestAcpProcessDiedRecovery:
         from unittest.mock import Mock
         from unittest.mock import patch as _patch
 
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.dashboard.state import _ChatSlot
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, AcpProcessDied("pipe broken"))
@@ -19151,10 +19151,10 @@ class TestAcpProcessDiedRecovery:
         with (
             _patch.object(_ChatSlot, "queue_insert", spy),
             _patch(
-                "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+                "efm_go.dashboard.chat_runner._start_next_queued_turn",
                 new=AsyncMock(return_value=False),
             ),
-            _patch("kiro_crew.dashboard.chat_runner._finish_queue_cycle"),
+            _patch("efm_go.dashboard.chat_runner._finish_queue_cycle"),
         ):
             await _run_chat(
                 state,
@@ -19172,8 +19172,8 @@ class TestAcpProcessDiedRecovery:
         self, tmp_path: Path, event_type: str
     ) -> None:
         """First token or tool closes durable replay windows immediately."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -19217,7 +19217,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_acperror_process_exited_uses_pipe_death_counter(self, tmp_path: Path) -> None:
         """Option Y: AcpError 'process exited' increments the pipe-death counter, not busy."""
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, AcpError("ACP process exited (code=1)"))
@@ -19230,7 +19230,7 @@ class TestAcpProcessDiedRecovery:
         assert any("Connection lost" in m.get("content", "") for m in error_msgs)
         # A recovery IS queued here, so the notice must be tagged: an untagged row is
         # indistinguishable from a terminal failure and re-offers an executing choice.
-        from kiro_crew.dashboard.chat_utils import TRANSIENT_RETRY_KIND
+        from efm_go.dashboard.chat_utils import TRANSIENT_RETRY_KIND
 
         _retrying = [m for m in error_msgs if "retrying" in m.get("content", "").lower()]
         assert _retrying, "no retrying notice to inspect"
@@ -19250,7 +19250,7 @@ class TestAcpProcessDiedRecovery:
     @pytest.mark.asyncio
     async def test_acperror_already_in_progress_uses_busy_counter(self, tmp_path: Path) -> None:
         """Option Y: AcpError 'already in progress' increments the busy counter, not pipe-death."""
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, AcpError("Prompt already in progress"))
@@ -19267,7 +19267,7 @@ class TestAcpProcessDiedRecovery:
         """PromptBusyExhaustedError at _prompt_depth>0 with budget remaining hits the
         else branch: surfaces a 'Session busy — please retry' card (not a silent
         failure) and does NOT re-queue (mirrors the AcpProcessDied depth>0 handling)."""
-        from kiro_crew.llm_helpers import PromptBusyExhaustedError
+        from efm_go.llm_helpers import PromptBusyExhaustedError
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, PromptBusyExhaustedError("busy"))
@@ -19293,7 +19293,7 @@ class TestAcpProcessDiedRecovery:
         block on `_prompt_depth == 0` makes a depth>0 pipe-death fall through to
         the generic else: no session reset (the next turn hit the dead process) and the
         failure never counted toward the exhaustion threshold."""
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._make_stream_raise(client, AcpError("ACP process exited (code=1)"))
@@ -19310,7 +19310,7 @@ class TestAcpProcessDiedRecovery:
         assert not slot._queue, "depth>0 must not re-queue"
         # Discriminating control: nothing is queued, so this notice is genuinely terminal
         # and must NOT be tagged -- tagging it would hide pills a user still needs.
-        from kiro_crew.dashboard.chat_utils import TRANSIENT_RETRY_KIND
+        from efm_go.dashboard.chat_utils import TRANSIENT_RETRY_KIND
 
         assert all((m.get("meta") or {}).get("kind") != TRANSIENT_RETRY_KIND for m in error_msgs)
 
@@ -19319,7 +19319,7 @@ class TestEmptyResponseRetry:
     """Verify _run_chat retries once on empty model response, then shows error."""
 
     def _make_state_and_slot(self, tmp_path):
-        from kiro_crew.dashboard.chat_runner import _run_chat
+        from efm_go.dashboard.chat_runner import _run_chat
 
         state = _make_state(tmp_path)
         state.sessions.get_or_create = AsyncMock(return_value=(MagicMock(), False, False))
@@ -19345,8 +19345,8 @@ class TestEmptyResponseRetry:
 
     def _make_empty_stream(self, mock_client):
         """Stream that completes immediately with no text."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         async def _stream(msg):
             yield LLMEvent(kind=EVENT_COMPLETE, stop_reason=STOP_REASON_END_TURN)
@@ -19376,12 +19376,12 @@ class TestEmptyResponseRetry:
         self, tmp_path: Path, resumed: bool
     ) -> None:
         """A false blocker after a read replays only the authenticated request."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.dashboard.chat_utils import (
             FALSE_TOOL_BLOCKER_REPLAY_KIND,
             RecoveryPayload,
         )
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -19444,7 +19444,7 @@ class TestEmptyResponseRetry:
             meta={"files": [file_path], "dirs": [dir_path]},
         )
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new=AsyncMock(return_value=False),
         ):
             await _run_chat(
@@ -19473,8 +19473,8 @@ class TestEmptyResponseRetry:
         self, tmp_path: Path, result_shape: str
     ) -> None:
         """Canonical read identity is insufficient without completed result proof."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -19513,7 +19513,7 @@ class TestEmptyResponseRetry:
         client.stream_command = _stream
 
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new=AsyncMock(return_value=False),
         ):
             await _run_chat(
@@ -19540,8 +19540,8 @@ class TestEmptyResponseRetry:
         kiro_backend: bool,
     ) -> None:
         """A familiar name needs extractor provenance and a Kiro backend."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -19580,7 +19580,7 @@ class TestEmptyResponseRetry:
         client.stream_command = _stream
 
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new=AsyncMock(return_value=False),
         ):
             await _run_chat(
@@ -19598,8 +19598,8 @@ class TestEmptyResponseRetry:
     @pytest.mark.asyncio
     async def test_kiro_blocker_near_miss_logs_without_replay(self, tmp_path: Path, caplog) -> None:
         """Wording drift is observable but never grants replay authority."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -19632,9 +19632,9 @@ class TestEmptyResponseRetry:
         client.stream_command = _stream
 
         with (
-            caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"),
+            caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"),
             patch(
-                "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+                "efm_go.dashboard.chat_runner._start_next_queued_turn",
                 new=AsyncMock(return_value=False),
             ),
         ):
@@ -19655,8 +19655,8 @@ class TestEmptyResponseRetry:
     @pytest.mark.asyncio
     async def test_yolo_read_then_false_blocker_stays_notice_only(self, tmp_path: Path) -> None:
         """Auto-approve never dispatches even an authenticated blocker replay."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -19696,7 +19696,7 @@ class TestEmptyResponseRetry:
         client.stream_command = _stream
 
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new=AsyncMock(return_value=False),
         ):
             await _run_chat(
@@ -19716,8 +19716,8 @@ class TestEmptyResponseRetry:
     @pytest.mark.asyncio
     async def test_non_user_read_then_false_blocker_does_not_replay(self, tmp_path: Path) -> None:
         """App/system text cannot acquire authenticated-user replay provenance."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -19756,7 +19756,7 @@ class TestEmptyResponseRetry:
         client.stream_command = _stream
 
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new=AsyncMock(return_value=False),
         ):
             await _run_chat(state, slot, "Untrusted app injection")
@@ -19772,8 +19772,8 @@ class TestEmptyResponseRetry:
         self, tmp_path: Path, intervention: str
     ) -> None:
         """A revocation landing after enqueue still wins at dispatch time."""
-        from kiro_crew.dashboard.chat_runner import _start_next_queued_turn
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_runner import _start_next_queued_turn
+        from efm_go.dashboard.chat_utils import (
             FALSE_TOOL_BLOCKER_REPLAY_KIND,
             RecoveryPayload,
         )
@@ -19810,7 +19810,7 @@ class TestEmptyResponseRetry:
         cfg = MagicMock()
         cfg.dashboard.merge_queued_messages = False
         with patch(
-            "kiro_crew.dashboard.chat_runner.KiroCrewConfig.load",
+            "efm_go.dashboard.chat_runner.KiroCrewConfig.load",
             return_value=cfg,
         ):
             started = await _start_next_queued_turn(state, slot)
@@ -19842,13 +19842,13 @@ class TestEmptyResponseRetry:
         the comparison reads a count the arm never took, and the replay
         dispatches over the user's Stop.
         """
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.dashboard.chat_runner import _start_next_queued_turn
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.dashboard.chat_runner import _start_next_queued_turn
+        from efm_go.dashboard.chat_utils import (
             FALSE_TOOL_BLOCKER_REPLAY_KIND,
             effective_session_key,
         )
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -19906,7 +19906,7 @@ class TestEmptyResponseRetry:
         request = "Publish and deploy the demo"
         slot.append("user", request, "msg msg-u")
         with patch(
-            "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+            "efm_go.dashboard.chat_runner._start_next_queued_turn",
             new=AsyncMock(return_value=False),
         ):
             await _run_chat(state, slot, request, _directive_user_origin=True)
@@ -19933,7 +19933,7 @@ class TestEmptyResponseRetry:
         cfg = MagicMock()
         cfg.dashboard.merge_queued_messages = False
         with patch(
-            "kiro_crew.dashboard.chat_runner.KiroCrewConfig.load",
+            "efm_go.dashboard.chat_runner.KiroCrewConfig.load",
             return_value=cfg,
         ):
             started = await _start_next_queued_turn(state, slot)
@@ -19971,11 +19971,11 @@ class TestEmptyResponseRetry:
 
         with (
             patch.object(_ChatSlot, "queue_insert", spy),
-            patch("kiro_crew.dashboard.chat_runner.save_slot_off_loop") as mock_save,
-            patch("kiro_crew.dashboard.chat_runner._maybe_consolidate") as mock_consolidate,
-            patch("kiro_crew.dashboard.chat_runner._flush_file_changes") as mock_flush,
+            patch("efm_go.dashboard.chat_runner.save_slot_off_loop") as mock_save,
+            patch("efm_go.dashboard.chat_runner._maybe_consolidate") as mock_consolidate,
+            patch("efm_go.dashboard.chat_runner._flush_file_changes") as mock_flush,
             patch(
-                "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+                "efm_go.dashboard.chat_runner._start_next_queued_turn",
                 new=AsyncMock(return_value=False),
             ),
         ):
@@ -20062,7 +20062,7 @@ class TestEmptyResponseRetry:
         the identical prompt reproduces the identical empty generation; a
         DIFFERENT message reliably recovers — this automates the user manually
         typing "continue"."""
-        from kiro_crew.dashboard.chat_runner import _EMPTY_AUTO_CONTINUE_MSG
+        from efm_go.dashboard.chat_runner import _EMPTY_AUTO_CONTINUE_MSG
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._empty_response_retries = 1  # already silently retried once
@@ -20096,7 +20096,7 @@ class TestEmptyResponseRetry:
         instruction as user-authored history and mirror it to linked
         channels), and it MUST NOT cancel a pending synthesis (the user did
         not take over the conversation)."""
-        from kiro_crew.dashboard.chat_runner import _EMPTY_AUTO_CONTINUE_MSG
+        from efm_go.dashboard.chat_runner import _EMPTY_AUTO_CONTINUE_MSG
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._empty_response_retries = 1  # next empty triggers the nudge rung
@@ -20147,8 +20147,8 @@ class TestEmptyResponseRetry:
         the card is read by the model via the transcript, and telling it the
         completed work produced no output invites a redo of side effects that
         already landed. Same distinction the continue rung draws one rung up."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_RESULT,
@@ -20196,8 +20196,8 @@ class TestEmptyResponseRetry:
         continue rung removes one rung up — and the first turn of THIS episode
         already ran a tool whose side effects landed.
         """
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_RESULT,
@@ -20296,7 +20296,7 @@ class TestEmptyResponseRetry:
         bodies instead would hand a user-authored turn the productive wording for
         work it never ran.
         """
-        from kiro_crew.dashboard.chat_utils import _ACTIVITY_NO_REPLY_CONTINUE_MSG
+        from efm_go.dashboard.chat_utils import _ACTIVITY_NO_REPLY_CONTINUE_MSG
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._empty_response_retries = 2
@@ -20331,7 +20331,7 @@ class TestEmptyResponseRetry:
         invite a resend. Keying the episode on the two continuation bodies would
         fail exactly here, which is why it is keyed on user origin instead.
         """
-        from kiro_crew.dashboard.chat_utils import _PROMISE_ONLY_CONTINUE_MSG
+        from efm_go.dashboard.chat_utils import _PROMISE_ONLY_CONTINUE_MSG
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         # Mid-episode: a productive turn has spent the budget and set the flag.
@@ -20373,7 +20373,7 @@ class TestEmptyResponseRetry:
         the payload marker. The evidence therefore has to be dropped when the
         episode ends, not merely disbelieved when it is read.
         """
-        from kiro_crew.dashboard import chat_runner as cr
+        from efm_go.dashboard import chat_runner as cr
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         monkeypatch.setattr(cr, "_empty_max_auto_continues", lambda: 2)
@@ -20414,9 +20414,9 @@ class TestEmptyResponseRetry:
         that turn looks like an unrelated one, the episode-end clear fires, and
         give-up falls back to inviting a resend of tools that already ran.
         """
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.dashboard import chat_runner as cr
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.dashboard import chat_runner as cr
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_RESULT,
@@ -20512,7 +20512,7 @@ class TestEmptyResponseRetry:
         # loader dropped the field — the exact regression this test guards).
         cfg_file = tmp_path / "flag-off-config.json"
         cfg_file.write_text('{"session": {"empty_response_auto_continue": false}}')
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+        with patch("efm_go.config.loader.config_path", return_value=cfg_file):
             await _run_chat(state, slot, "test message")
 
         notice_msgs = [m for m in slot.messages if m.get("role") == "notice"]
@@ -20534,7 +20534,7 @@ class TestEmptyResponseRetry:
         reads as advancing, not looping — instead of giving up after one.
         Exercises the REAL config path like the flag-off test above, so a
         loader that drops the field fails this test too."""
-        from kiro_crew.dashboard.chat_runner import _EMPTY_AUTO_CONTINUE_MSG
+        from efm_go.dashboard.chat_runner import _EMPTY_AUTO_CONTINUE_MSG
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._empty_response_retries = 2  # replay + first continue spent
@@ -20550,7 +20550,7 @@ class TestEmptyResponseRetry:
         cfg_file = tmp_path / "max-continues-config.json"
         cfg_file.write_text('{"session": {"empty_response_max_continues": 3}}')
         with (
-            patch("kiro_crew.config.loader.config_path", return_value=cfg_file),
+            patch("efm_go.config.loader.config_path", return_value=cfg_file),
             patch.object(_ChatSlot, "queue_insert", spy),
         ):
             await _run_chat(state, slot, "test message")
@@ -20572,7 +20572,7 @@ class TestEmptyResponseRetry:
 
         cfg_file = tmp_path / "max-continues-config.json"
         cfg_file.write_text('{"session": {"empty_response_max_continues": 3}}')
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+        with patch("efm_go.config.loader.config_path", return_value=cfg_file):
             await _run_chat(state, slot, "test message")
 
         notice_msgs = [m for m in slot.messages if m.get("role") == "notice"]
@@ -20582,7 +20582,7 @@ class TestEmptyResponseRetry:
     @pytest.mark.asyncio
     async def test_successful_response_resets_counter(self, tmp_path: Path) -> None:
         """A successful (non-empty) response resets the retry counter."""
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         slot._empty_response_retries = 1  # had a prior empty
@@ -20601,7 +20601,7 @@ class TestEmptyResponseRetry:
     @pytest.mark.asyncio
     async def test_compaction_turn_no_empty_response_error(self, tmp_path: Path) -> None:
         """Compaction turns set assistant_text='' but should NOT trigger the empty-response notice."""
-        from kiro_crew.providers.base import EVENT_COMPACTION_STATUS, EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPACTION_STATUS, EVENT_COMPLETE, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
 
@@ -20620,7 +20620,7 @@ class TestEmptyResponseRetry:
     @pytest.mark.asyncio
     async def test_clear_turn_no_empty_response_error(self, tmp_path: Path) -> None:
         """Clear turns set assistant_text='' but should NOT trigger the empty-response notice."""
-        from kiro_crew.providers.base import EVENT_CLEAR_STATUS, EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_CLEAR_STATUS, EVENT_COMPLETE, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         state.sessions.provider_switch_replay_pending = MagicMock(return_value=True)
@@ -20652,11 +20652,11 @@ class TestEmptyResponseRetry:
         self, tmp_path: Path, monkeypatch
     ) -> None:
         """Agent switch turns set assistant_text='' but should NOT trigger the empty-response notice."""
-        from kiro_crew.providers.base import EVENT_AGENT_SWITCHED, EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_AGENT_SWITCHED, EVENT_COMPLETE, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         monkeypatch.setattr(
-            "kiro_crew.config.loader._materialized_kiro_agent",
+            "efm_go.config.loader._materialized_kiro_agent",
             lambda name, project_dir=None: name if name == "new-agent" else "",
         )
 
@@ -20716,8 +20716,8 @@ class TestProductiveTurnNeverReplaysVerbatim:
         ``executed`` counts dispatches so a replay of the original message would
         be observable as a second execution rather than only as a queue entry.
         """
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -20741,8 +20741,8 @@ class TestProductiveTurnNeverReplaysVerbatim:
 
     @staticmethod
     def _tool_only_stream(client):
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TOOL_CALL,
             EVENT_TOOL_RESULT,
@@ -20759,8 +20759,8 @@ class TestProductiveTurnNeverReplaysVerbatim:
 
     @staticmethod
     def _thinking_only_stream(client):
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_THINKING_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_THINKING_CHUNK, LLMEvent
 
         async def _stream(msg):
             yield LLMEvent(kind=EVENT_THINKING_CHUNK, text="hmm")
@@ -20774,7 +20774,7 @@ class TestProductiveTurnNeverReplaysVerbatim:
         """The incident's own shape: preamble + a completed tool call, clean
         end_turn. The original message must NOT be re-queued; exactly one
         synthetic continuation may be, and the completed tool must not re-run."""
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _ACTIVITY_NO_REPLY_CONTINUE_MSG,
             _EMPTY_AUTO_CONTINUE_MSG,
         )
@@ -20814,7 +20814,7 @@ class TestProductiveTurnNeverReplaysVerbatim:
     @pytest.mark.asyncio
     async def test_tool_only_turn_does_not_replay_verbatim(self, tmp_path: Path) -> None:
         """A turn with tool calls and no text at all still counts as productive."""
-        from kiro_crew.dashboard.chat_utils import _ACTIVITY_NO_REPLY_CONTINUE_MSG
+        from efm_go.dashboard.chat_utils import _ACTIVITY_NO_REPLY_CONTINUE_MSG
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._tool_only_stream(client)
@@ -20830,7 +20830,7 @@ class TestProductiveTurnNeverReplaysVerbatim:
     @pytest.mark.asyncio
     async def test_thinking_only_turn_does_not_replay_verbatim(self, tmp_path: Path) -> None:
         """Thinking is work the replay would discard and re-charge for."""
-        from kiro_crew.dashboard.chat_utils import _ACTIVITY_NO_REPLY_CONTINUE_MSG
+        from efm_go.dashboard.chat_utils import _ACTIVITY_NO_REPLY_CONTINUE_MSG
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         self._thinking_only_stream(client)
@@ -20857,7 +20857,7 @@ class TestProductiveTurnNeverReplaysVerbatim:
         with (
             patch.object(_ChatSlot, "queue_insert", spy),
             patch(
-                "kiro_crew.dashboard.chat_runner._start_next_queued_turn",
+                "efm_go.dashboard.chat_runner._start_next_queued_turn",
                 new=AsyncMock(return_value=False),
             ),
         ):
@@ -20914,7 +20914,7 @@ class TestEmptyTurnDiagnostics:
         that can regress silently, and a stream fixture cannot express
         'synthesized terminal AND tool activity' as cleanly as the snapshot can.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             EMPTY_CAUSE_NO_TERMINAL,
             EMPTY_CAUSE_OTHER,
             EMPTY_CAUSE_PROVIDER_EMPTY,
@@ -20971,18 +20971,18 @@ class TestEmptyTurnDiagnostics:
     def test_normalize_stop_reason_never_returns_a_raw_backend_string(self) -> None:
         """Closed output set, and the ACP spellings it mirrors are pinned.
 
-        ``chat_utils`` may not import ``kiro_crew.acp.types`` (the agent-SDK
+        ``chat_utils`` may not import ``efm_go.acp.types`` (the agent-SDK
         boundary gate baselines it at one edge and a baselined file may not grow),
         so it spells the three stop reasons as literals. The test tree is outside
         that gate, so the pin lives here — a change to the backend's vocabulary
         reddens here instead of silently reclassifying every turn as ``other``.
         """
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             STOP_REASON_CANCELLED,
             STOP_REASON_END_TURN,
             STOP_REASON_REFUSAL,
         )
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _STOP_CANCELLED_REASON,
             _STOP_END_TURN,
             _STOP_REFUSAL,
@@ -21008,12 +21008,12 @@ class TestEmptyTurnDiagnostics:
         self, tmp_path: Path, caplog
     ) -> None:
         """Two turns that look identical to the old log line must not any more."""
-        from kiro_crew.acp.types import STOP_REASON_END_TURN
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.acp.types import STOP_REASON_END_TURN
+        from efm_go.dashboard.chat_utils import (
             EMPTY_CAUSE_NO_TERMINAL,
             EMPTY_CAUSE_PROVIDER_EMPTY,
         )
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         # A clean end_turn with nothing in it.
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
@@ -21023,7 +21023,7 @@ class TestEmptyTurnDiagnostics:
 
         client.stream = _clean
         client.stream_command = _clean
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.chat_runner"):
             await _run_chat(state, slot, "a", _prompt_depth=1)
         await self._cancel_background_tasks(state)
         assert self._causes(caplog) == [EMPTY_CAUSE_PROVIDER_EMPTY]
@@ -21038,7 +21038,7 @@ class TestEmptyTurnDiagnostics:
 
         client2.stream = _no_terminal
         client2.stream_command = _no_terminal
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.chat_runner"):
             await _run_chat2(state2, slot2, "a", _prompt_depth=1)
         await self._cancel_background_tasks(state2)
         assert self._causes(caplog) == [EMPTY_CAUSE_NO_TERMINAL]
@@ -21048,11 +21048,11 @@ class TestEmptyTurnDiagnostics:
         self, tmp_path: Path, caplog
     ) -> None:
         """A terminal with no stopReason is its own observation."""
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             EMPTY_CAUSE_OTHER,
             STOP_REASON_ABSENT,
         )
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
 
@@ -21061,7 +21061,7 @@ class TestEmptyTurnDiagnostics:
 
         client.stream = _stream
         client.stream_command = _stream
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.chat_runner"):
             await _run_chat(state, slot, "a", _prompt_depth=1)
         await self._cancel_background_tasks(state)
 
@@ -21077,7 +21077,7 @@ class TestEmptyTurnDiagnostics:
         Asserting the rung is what makes the diagnostic answer 'what did the
         runner DO', not only 'what did it see'.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             EMPTY_CAUSE_VISIBLE_PARTIAL,
             EMPTY_RUNG_CONTINUE,
         )
@@ -21085,7 +21085,7 @@ class TestEmptyTurnDiagnostics:
         state, slot, client, _run_chat = self._make_state_and_slot(tmp_path)
         TestProductiveTurnNeverReplaysVerbatim._text_then_tool_stream(client, [])
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.chat_runner"):
             await _run_chat(state, slot, "send the summary")
             await self._cancel_background_tasks(state)
 
@@ -21105,8 +21105,8 @@ class TestEmptyTurnDiagnostics:
         the streamed text, the tool title and the billed amounts must be absent
         from the line even though the turn carried all of them.
         """
-        from kiro_crew.acp.types import STOP_REASON_END_TURN, TurnUsage
-        from kiro_crew.providers.base import (
+        from efm_go.acp.types import STOP_REASON_END_TURN, TurnUsage
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -21126,7 +21126,7 @@ class TestEmptyTurnDiagnostics:
 
         client.stream = _stream
         client.stream_command = _stream
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.chat_runner"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.chat_runner"):
             await _run_chat(state, slot, "SECRETPROMPT")
             await self._cancel_background_tasks(state)
 
@@ -21154,8 +21154,8 @@ class TestExpandDollarSkills:
         """A DashboardState whose _get_skills() returns a hermetic loader
         pointed at *skills* (each a ``(name, body)`` pair)."""
         # Keep edition-contributed skill roots out of the hermetic loader.
-        from kiro_crew.platform.defaults import DefaultMcpToolingProvider
-        from kiro_crew.skills import SkillsLoader
+        from efm_go.platform.defaults import DefaultMcpToolingProvider
+        from efm_go.skills import SkillsLoader
 
         monkeypatch.setattr(DefaultMcpToolingProvider, "extra_skills", lambda self: [])
         skills_dir = tmp_path / "skills"
@@ -21170,7 +21170,7 @@ class TestExpandDollarSkills:
         return state
 
     def test_no_dollar_short_circuits(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_runner import _expand_dollar_skills
+        from efm_go.dashboard.chat_runner import _expand_dollar_skills
 
         state = self._state_with_skills(tmp_path, monkeypatch)
         slot = _ChatSlot("s1")
@@ -21180,7 +21180,7 @@ class TestExpandDollarSkills:
         state.push_slots_update.assert_not_called()
 
     def test_resolves_appends_block_and_chip(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_runner import _expand_dollar_skills
+        from efm_go.dashboard.chat_runner import _expand_dollar_skills
 
         state = self._state_with_skills(
             tmp_path,
@@ -21207,7 +21207,7 @@ class TestExpandDollarSkills:
         state.push_slots_update.assert_called_once()
 
     def test_skill_notice_preserves_multiple_resolved_bodies_in_order(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_runner import _expand_dollar_skills
+        from efm_go.dashboard.chat_runner import _expand_dollar_skills
 
         state = self._state_with_skills(
             tmp_path,
@@ -21232,7 +21232,7 @@ class TestExpandDollarSkills:
         }
 
     def test_unresolved_token_no_chip(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state = self._state_with_skills(
             tmp_path,
@@ -21253,7 +21253,7 @@ class TestExpandDollarSkills:
         assert kwargs.get("tool_name") == "skill_dollar_expansion"
 
     def test_incidental_dollar_not_audited(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state = self._state_with_skills(
             tmp_path,
@@ -21270,7 +21270,7 @@ class TestExpandDollarSkills:
         sel_mock.log_tool_invocation.assert_not_called()
 
     def test_credentials_redacted_in_loaded_body(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_runner import _expand_dollar_skills
+        from efm_go.dashboard.chat_runner import _expand_dollar_skills
 
         secret = "AKIAIOSFODNN7EXAMPLE"
         state = self._state_with_skills(
@@ -21285,7 +21285,7 @@ class TestExpandDollarSkills:
         assert secret not in out
 
     def test_resolution_exception_audited_and_swallowed(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         state = self._state_with_skills(tmp_path, monkeypatch)
         slot = _ChatSlot("s1")
@@ -21322,7 +21322,7 @@ class TestRunChatTransientRetry:
 
     @staticmethod
     def _make_state(tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.broadcast_ws = MagicMock()
         state.push_slots_update = MagicMock()
@@ -21393,7 +21393,7 @@ class TestRunChatTransientRetry:
 
     @staticmethod
     def _image_error():
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         exc = AcpError("The model could not process an image", transient=False)
         exc.structural_terminal = True
@@ -21408,8 +21408,8 @@ class TestRunChatTransientRetry:
         retrying the native conversation. With no new user attachment, discard
         the resume SID once and continue from Kiro Crew's text transcript without
         replaying the original request or its completed tool side effects."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import (
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -21466,9 +21466,9 @@ class TestRunChatTransientRetry:
         so a newer user message does not cancel it: the completion runs again on
         the fresh conversation, reports itself consumed, and the user's message
         runs after it."""
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         calls: list[str] = []
 
@@ -21521,8 +21521,8 @@ class TestRunChatTransientRetry:
         output already landed would replay as a continuation, and the synthesis
         turn is runner-authored: with a user message queued, neither is retried,
         and the user's message runs next."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import (
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -21570,7 +21570,7 @@ class TestRunChatTransientRetry:
         """A current attachment may itself be invalid. Preserve the healthy
         native conversation and let the actionable terminal error tell the user
         to remove or re-encode that image instead of discarding history."""
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         async def _fail(msg):
             raise self._image_error()
@@ -21596,7 +21596,7 @@ class TestRunChatTransientRetry:
     ):
         """If the fresh conversation also rejects an image, surface the error;
         never loop through repeated discard and synthetic replay."""
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         async def _fail(msg):
             raise self._image_error()
@@ -21626,7 +21626,7 @@ class TestRunChatTransientRetry:
         as a CURRENT-turn image block. Such a rejection is of the image the user
         just sent, so the healthy conversation must survive and the verbatim
         replay must never re-inline the same bytes."""
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         async def _fail(msg):
             raise self._image_error()
@@ -21658,7 +21658,7 @@ class TestRunChatTransientRetry:
         leaves ``_stopping`` back at idle, so only the enqueue-time stop-generation
         snapshot can see it. The recovery must be dropped, not dispatched: its
         replay would re-run a cancelled turn's remaining destructive step."""
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat import _run_chat
 
         calls: list[str] = []
 
@@ -21701,9 +21701,9 @@ class TestRunChatTransientRetry:
         must still veto the recovery. The queue entry is already consumed at
         this seam, so the runner must use the identity and snapshots passed by
         the drain."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.dashboard.chat_utils import effective_session_key
-        from kiro_crew.providers.base import EVENT_COMPLETE, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat_utils import effective_session_key
+        from efm_go.providers.base import EVENT_COMPLETE, LLMEvent
 
         provider_calls = 0
 
@@ -21750,9 +21750,9 @@ class TestRunChatTransientRetry:
     async def test_transient_pre_token_retries_then_recovers_no_reset(self, tmp_path, monkeypatch):
         """A transient 5xx before any token streams is retried on the SAME live
         session (no reset); the second attempt succeeds."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         call_count = 0
 
@@ -21782,7 +21782,7 @@ class TestRunChatTransientRetry:
         assert any("Connection unstable" in t for t in self._err_texts(slot))
         # ... and the notice is TAGGED, which is the only thing telling the UI a
         # recovery is pending; without it a stale pill re-runs the queued choice.
-        from kiro_crew.dashboard.chat_utils import TRANSIENT_RETRY_KIND
+        from efm_go.dashboard.chat_utils import TRANSIENT_RETRY_KIND
 
         _hiccups = [
             m
@@ -21810,9 +21810,9 @@ class TestRunChatTransientRetry:
         appends the continued answer as a NEW message below. The user sees an
         append-only sequence [partial] [recover notice] [continued answer] with
         nothing retracted. No chat_stream_reset event exists anymore."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         call_count = 0
         captured: list = []
@@ -21875,10 +21875,10 @@ class TestRunChatTransientRetry:
         assistant message) and the message is NOT re-queued. Under the
         append-only design the partial + a retry notice are shown regardless of
         eligibility; only the re-queue is gated."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_TEXT_CHUNK, LLMEvent
 
         call_count = 0
 
@@ -21931,9 +21931,9 @@ class TestRunChatTransientRetry:
         model resumes from where it stopped instead of blindly re-running the
         tool. Exactly one post-token recovery fires, the partial is preserved,
         and the continue instruction (not the original prompt) is re-queued."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import (
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -21998,10 +21998,10 @@ class TestRunChatTransientRetry:
         the one-shot allowance (the flag is set only when a recovery is actually
         enqueued). A LATER genuine user turn on the same slot can therefore still
         recover once."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard import chat_runner
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         # ── Turn 1: Stop active → suppressed post-token transient. ──
         async def _stream_suppressed(msg):
@@ -22024,7 +22024,7 @@ class TestRunChatTransientRetry:
         # And the row says so: nothing resumes, so it is the TERMINAL notice
         # (give-up text + token, no retry kind) — never a pending "resuming…"
         # the dashboard would draw as a soft notice with no way to continue.
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             TRANSIENT_GIVE_UP_TEXT,
             TRANSIENT_NOTICE_GIVE_UP,
             TRANSIENT_RETRY_KIND,
@@ -22071,10 +22071,10 @@ class TestRunChatTransientRetry:
         The recovery turn inherits the already-consumed allowance (it is not
         refreshed for the recover message), so the post-token branch is skipped
         and a clean terminal error surfaces instead of a second recovery."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.dashboard.chat_runner import _POSTTOKEN_RECOVER_MSG
-        from kiro_crew.providers.base import EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.dashboard.chat_runner import _POSTTOKEN_RECOVER_MSG
+        from efm_go.providers.base import EVENT_TEXT_CHUNK, LLMEvent
 
         captured: list = []
 
@@ -22113,8 +22113,8 @@ class TestRunChatTransientRetry:
     async def test_auth_error_fails_fast_no_retry(self, tmp_path, monkeypatch):
         """An auth failure is excluded from the transient set — it fails fast
         with a clean error and is never retried (a retry can't fix a token)."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         call_count = 0
 
@@ -22146,9 +22146,9 @@ class TestRunChatTransientRetry:
     ):
         """Persistent transient 5xx is retried up to the budget, then surfaces a
         clean ❌ error while leaving the session resumable (never reset)."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.llm_helpers import TRANSIENT_RETRIES
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.llm_helpers import TRANSIENT_RETRIES
 
         call_count = 0
 
@@ -22162,7 +22162,7 @@ class TestRunChatTransientRetry:
         # fallback_model="" (disabled): this test pins the PRE-FEATURE ladder
         # (the default is now "auto", which would walk the fallback branch —
         # that branch has its own class, TestRunChatModelFallback).
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._agent_fallback_chain", lambda: ())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._agent_fallback_chain", lambda: ())
         client = self._client(_stream)
         self._wire_sessions(state, client)
         slot = state.get_or_create_slot("s1")
@@ -22191,9 +22191,9 @@ class TestRunChatTransientRetry:
         5xx — e.g. right after the Continue press the ❌ message itself
         invites ("retry in a moment") — failed instantly with ZERO retries
         until some turn happened to finish cleanly."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         # ── Cycle 1: persistent 5xx exhausts the budget → terminal ❌. ──
         async def _always_fail(msg):
@@ -22252,8 +22252,8 @@ class TestRunChatTransientRetry:
         one exhaustion is still plausibly a momentary outage, and discarding
         on it would throw away a healthy conversation on every blip that
         outlasts the ladder."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         async def _always_fail(msg):
             raise AcpError(self._TRANSIENT)
@@ -22293,10 +22293,10 @@ class TestRunChatTransientRetry:
         once, so the recovery cycle cold-starts a fresh conversation and the
         slot self-heals instead of telling the user to 'retry in a moment'
         forever."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.llm_helpers import TRANSIENT_RETRIES
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.llm_helpers import TRANSIENT_RETRIES
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         # Fail every attempt of two full cycles (the "poisoned conversation"),
         # then succeed — the success models the fresh post-discard conversation.
@@ -22314,7 +22314,7 @@ class TestRunChatTransientRetry:
         state = self._make_state(tmp_path, monkeypatch)
         # fallback_model="" (disabled): pins the PRE-FEATURE escalation ladder
         # (the "auto" default would walk the fallback branch instead).
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._agent_fallback_chain", lambda: ())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._agent_fallback_chain", lambda: ())
         client = self._client(_stream)
         self._wire_sessions(state, client)
         slot = state.get_or_create_slot("s1")
@@ -22323,7 +22323,7 @@ class TestRunChatTransientRetry:
         with (
             patch("asyncio.sleep", new_callable=AsyncMock),
             patch(
-                "kiro_crew.dashboard.chat_runner.run_bg_oneliner",
+                "efm_go.dashboard.chat_runner.run_bg_oneliner",
                 new_callable=AsyncMock,
                 return_value="OK",
             ) as canary,
@@ -22369,8 +22369,8 @@ class TestRunChatTransientRetry:
         prolonged outage), no second discard fires: the one-shot is consumed by
         the first escalation and only a LANDED turn re-arms it, so a discard
         loop is impossible. Later cycles surface the terminal ❌ as before."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         async def _always_fail(msg):
             raise AcpError(self._TRANSIENT)
@@ -22385,7 +22385,7 @@ class TestRunChatTransientRetry:
         with (
             patch("asyncio.sleep", new_callable=AsyncMock),
             patch(
-                "kiro_crew.dashboard.chat_runner.run_bg_oneliner",
+                "efm_go.dashboard.chat_runner.run_bg_oneliner",
                 new_callable=AsyncMock,
                 return_value="OK",
             ),
@@ -22419,9 +22419,9 @@ class TestRunChatTransientRetry:
         streaming turn → exhaustion would discard a healthy conversation),
         while a cancelled turn with NO output proves nothing and preserves
         it. In both cases the spent one-shot stays consumed."""
-        from kiro_crew.acp.types import STOP_REASON_CANCELLED
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.types import STOP_REASON_CANCELLED
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         # ── Cancelled turn with NO output: both guards preserved. ──
         async def _cancelled_silent(msg):
@@ -22482,8 +22482,8 @@ class TestRunChatTransientRetry:
         ALSO fails, no discard fires, the one-shot stays unconsumed, and the
         streak stays accrued so a later user-initiated cycle re-probes once
         the outage ends."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         async def _always_fail(msg):
             raise AcpError(self._TRANSIENT)
@@ -22498,7 +22498,7 @@ class TestRunChatTransientRetry:
         with (
             patch("asyncio.sleep", new_callable=AsyncMock),
             patch(
-                "kiro_crew.dashboard.chat_runner.run_bg_oneliner",
+                "efm_go.dashboard.chat_runner.run_bg_oneliner",
                 new_callable=AsyncMock,
                 side_effect=AcpError(self._TRANSIENT),
             ) as canary,
@@ -22523,8 +22523,8 @@ class TestRunChatTransientRetry:
     async def test_canary_empty_reply_is_not_positive_evidence(self, tmp_path, monkeypatch):
         """A canary that completes with EMPTY output proves nothing about the
         fresh conversation working — fail-safe to no-discard."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         async def _always_fail(msg):
             raise AcpError(self._TRANSIENT)
@@ -22539,7 +22539,7 @@ class TestRunChatTransientRetry:
         with (
             patch("asyncio.sleep", new_callable=AsyncMock),
             patch(
-                "kiro_crew.dashboard.chat_runner.run_bg_oneliner",
+                "efm_go.dashboard.chat_runner.run_bg_oneliner",
                 new_callable=AsyncMock,
                 return_value="  ",
             ),
@@ -22562,8 +22562,8 @@ class TestRunChatTransientRetry:
         _stop_state back to "idle" before the check (a stop that fired AND
         resolved mid-probe must still veto). Nothing is consumed: the one-shot
         stays armed and the streak stays accrued."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         async def _always_fail(msg):
             raise AcpError(self._TRANSIENT)
@@ -22586,7 +22586,7 @@ class TestRunChatTransientRetry:
         with (
             patch("asyncio.sleep", new_callable=AsyncMock),
             patch(
-                "kiro_crew.dashboard.chat_runner.run_bg_oneliner",
+                "efm_go.dashboard.chat_runner.run_bg_oneliner",
                 new_callable=AsyncMock,
                 side_effect=_canary_with_midflight_stop,
             ) as canary,
@@ -22609,8 +22609,8 @@ class TestRunChatTransientRetry:
         """When the session's served model cannot be read, the canary cannot
         be pinned to it, so the probe is meaningless — fail-safe: no probe,
         no discard, one-shot preserved."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
 
         async def _always_fail(msg):
             raise AcpError(self._TRANSIENT)
@@ -22626,7 +22626,7 @@ class TestRunChatTransientRetry:
         with (
             patch("asyncio.sleep", new_callable=AsyncMock),
             patch(
-                "kiro_crew.dashboard.chat_runner.run_bg_oneliner",
+                "efm_go.dashboard.chat_runner.run_bg_oneliner",
                 new_callable=AsyncMock,
                 return_value="OK",
             ) as canary,
@@ -22648,9 +22648,9 @@ class TestRunChatTransientRetry:
         deliberate decision in the EVENT_THINKING_CHUNK branch — if thinking
         ever starts being persisted, this guard must become a turn-emit to
         avoid a double-emit."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import (
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_THINKING_CHUNK,
@@ -22715,9 +22715,9 @@ class TestRunChatTransientRetry:
         turns must never accrue the discard streak (and so can never reach the
         canary/discard), even though they leave _turn_emitted False for retry
         purposes. Locks in the _turn_thought gate on _prestream_exhausted."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_THINKING_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_THINKING_CHUNK, LLMEvent
 
         async def _think_then_die(msg):
             yield LLMEvent(kind=EVENT_THINKING_CHUNK, text="reasoning...")
@@ -22760,10 +22760,10 @@ class TestRunChatModelFallback:
         """The swap moves the LIVE session onto the candidate without a spawn,
         so the spawn-time cache would keep naming the primary; it must follow
         the provider's served model instead."""
-        from kiro_crew.dashboard.chat_runner import _fallback_swap_for_turn
+        from efm_go.dashboard.chat_runner import _fallback_swap_for_turn
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._agent_fallback_chain",
+            "efm_go.dashboard.chat_runner._agent_fallback_chain",
             lambda: ("fallback-model",),
         )
         state = self._make_state(tmp_path, monkeypatch)
@@ -22792,10 +22792,10 @@ class TestRunChatModelFallback:
         and swap all serialise on the same per-slot lock."""
         import asyncio
 
-        from kiro_crew.dashboard.chat_runner import _fallback_swap_for_turn
+        from efm_go.dashboard.chat_runner import _fallback_swap_for_turn
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._agent_fallback_chain",
+            "efm_go.dashboard.chat_runner._agent_fallback_chain",
             lambda: ("fallback-model",),
         )
         state = self._make_state(tmp_path, monkeypatch)
@@ -22838,12 +22838,12 @@ class TestRunChatModelFallback:
         session lock is held elsewhere."""
         import asyncio
 
-        from kiro_crew.dashboard.chat_runner import _fallback_swap_for_turn
-        from kiro_crew.dashboard.chat_utils import effective_session_key
-        from kiro_crew.llm_helpers import slot_switch_session_lock
+        from efm_go.dashboard.chat_runner import _fallback_swap_for_turn
+        from efm_go.dashboard.chat_utils import effective_session_key
+        from efm_go.llm_helpers import slot_switch_session_lock
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._agent_fallback_chain",
+            "efm_go.dashboard.chat_runner._agent_fallback_chain",
             lambda: ("fallback-model",),
         )
         state = self._make_state(tmp_path, monkeypatch)
@@ -22878,12 +22878,12 @@ class TestRunChatModelFallback:
         fallback backoff sleep resolves while no prompt is active; without the
         post-sleep guard the cancelled prompt is requeued and executes on the
         fallback anyway."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.llm_helpers import TRANSIENT_RETRIES
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.llm_helpers import TRANSIENT_RETRIES
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._agent_fallback_chain",
+            "efm_go.dashboard.chat_runner._agent_fallback_chain",
             lambda: ("fallback-model",),
         )
         call_count = 0
@@ -22960,13 +22960,13 @@ class TestRunChatModelFallback:
         """After the same-model budget exhausts, the session is moved onto the
         chain's candidate, the swap is ANNOUNCED as a persisted notice card,
         the turn recovers, and turn stats record the candidate."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.llm_helpers import TRANSIENT_RETRIES
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.llm_helpers import TRANSIENT_RETRIES
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._agent_fallback_chain",
+            "efm_go.dashboard.chat_runner._agent_fallback_chain",
             lambda: ("fallback-model",),
         )
         call_count = 0
@@ -23017,7 +23017,7 @@ class TestRunChatModelFallback:
         # candidate. The mocked provider yields no duration, so the stats dict
         # itself is not attached here; the model field's attach contract is
         # already pinned by test_turn_stats.py::test_model_included_when_resolved.
-        from kiro_crew.dashboard.handlers.usage import read_turn_model
+        from efm_go.dashboard.handlers.usage import read_turn_model
 
         assert read_turn_model(client) == "fallback-model"
 
@@ -23026,11 +23026,11 @@ class TestRunChatModelFallback:
         """REGRESSION PIN: with no chain configured, budget exhaustion surfaces
         the terminal ❌ exactly as before — no swap, no notice, no extra
         attempts."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.llm_helpers import TRANSIENT_RETRIES
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.llm_helpers import TRANSIENT_RETRIES
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner._agent_fallback_chain", lambda: ())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner._agent_fallback_chain", lambda: ())
         call_count = 0
 
         async def _stream(msg):
@@ -23060,12 +23060,12 @@ class TestRunChatModelFallback:
         """Every candidate also fails: the terminal ❌ carries the chain's
         story (primary throttled + which fallbacks were tried), and each
         candidate got exactly two attempts."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.llm_helpers import TRANSIENT_RETRIES
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.llm_helpers import TRANSIENT_RETRIES
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._agent_fallback_chain",
+            "efm_go.dashboard.chat_runner._agent_fallback_chain",
             lambda: ("fallback-model",),
         )
         call_count = 0
@@ -23103,19 +23103,19 @@ class TestRunChatModelFallback:
         from llm_helpers.fallback_rewound_transient_budget — not a re-encoded
         local constant. Patching the shared body to grant no extra pass drops
         the candidate to a single attempt."""
-        from kiro_crew.acp.client import AcpError
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.llm_helpers import TRANSIENT_RETRIES
+        from efm_go.acp.client import AcpError
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.llm_helpers import TRANSIENT_RETRIES
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner._agent_fallback_chain",
+            "efm_go.dashboard.chat_runner._agent_fallback_chain",
             lambda: ("fallback-model",),
         )
         # Rewind to the exhaustion threshold: the re-queued attempt runs, and
         # its failure immediately re-enters the fallback branch (no same-model
         # retry pass) — one attempt on the candidate instead of two.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.fallback_rewound_transient_budget",
+            "efm_go.dashboard.chat_runner.fallback_rewound_transient_budget",
             lambda: TRANSIENT_RETRIES,
         )
         call_count = 0
@@ -23146,8 +23146,8 @@ class TestRunChatModelFallback:
         """A sticky fallback from an earlier cycle is probed back to the
         primary at the start of the next genuine user turn — quietly (no
         chat card), clearing the sticky state on success."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         async def _stream(msg):
             yield LLMEvent(kind=EVENT_TEXT_CHUNK, text="ok-result")
@@ -23178,8 +23178,8 @@ class TestRunChatModelFallback:
     async def test_restore_probe_skipped_when_session_moved_on(self, tmp_path, monkeypatch):
         """If the session is not on our fallback (explicit user pick),
         the stale sticky state is dropped WITHOUT touching the model."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         async def _stream(msg):
             yield LLMEvent(kind=EVENT_TEXT_CHUNK, text="ok-result")
@@ -23197,7 +23197,7 @@ class TestRunChatModelFallback:
         # A stale provider marker from the abandoned fallback must be dropped
         # WITH the slot state — a surviving marker would re-seed the long-dead
         # primary into a later, unrelated fallback walk.
-        from kiro_crew.llm_helpers import TURN_FALLBACK_ATTR
+        from efm_go.llm_helpers import TURN_FALLBACK_ATTR
 
         setattr(client, TURN_FALLBACK_ATTR, ("claude-test-model", "fallback-model"))
 
@@ -23217,8 +23217,8 @@ class TestRunChatModelFallback:
         model the session fell back to changes slot.model but not the served
         model — the probe must drop the sticky state without restoring the
         old primary over their pick."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         async def _stream(msg):
             yield LLMEvent(kind=EVENT_TEXT_CHUNK, text="ok-result")
@@ -23260,8 +23260,8 @@ class TestRunChatModelFallback:
         probe restores the primary, drops the sticky state, and heals
         slot.model back to the activation snapshot (else the fallback id would
         be re-sent as a pin on resume)."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         async def _stream(msg):
             yield LLMEvent(kind=EVENT_TEXT_CHUNK, text="ok-result")
@@ -23300,8 +23300,8 @@ class TestRunChatModelFallback:
         sticky state is not, so a gateway restart would turn the temporary
         fallback into a permanent pin. An unpinned slot stays unpinned for the
         fallback's duration."""
-        from kiro_crew.dashboard.chat import _run_chat
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.dashboard.chat import _run_chat
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         async def _stream(msg):
             yield LLMEvent(kind=EVENT_TEXT_CHUNK, text="ok-result")
@@ -23357,14 +23357,14 @@ class TestSlotProbeWrapsSharedRestoreBody:
 
     @pytest.mark.asyncio
     async def test_delegates_slot_state_to_the_shared_body(self):
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.llm_helpers import TURN_FALLBACK_ATTR
+        from efm_go.dashboard import chat_runner
+        from efm_go.llm_helpers import TURN_FALLBACK_ATTR
 
         slot = self._slot()
         client = MagicMock()
         setattr(client, TURN_FALLBACK_ATTR, ("primary-m", "fb-1"))
         with patch(
-            "kiro_crew.dashboard.chat_runner.probe_fallback_restore", new_callable=AsyncMock
+            "efm_go.dashboard.chat_runner.probe_fallback_restore", new_callable=AsyncMock
         ) as probe:
             await chat_runner._probe_fallback_restore_for_slot(slot, client)
 
@@ -23383,22 +23383,22 @@ class TestSlotProbeWrapsSharedRestoreBody:
 
     @pytest.mark.asyncio
     async def test_explicit_pick_generation_bump_rides_in_as_stale(self):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         slot = self._slot(_model_pick_gen=4)  # picked after the swap
         with patch(
-            "kiro_crew.dashboard.chat_runner.probe_fallback_restore", new_callable=AsyncMock
+            "efm_go.dashboard.chat_runner.probe_fallback_restore", new_callable=AsyncMock
         ) as probe:
             await chat_runner._probe_fallback_restore_for_slot(slot, MagicMock())
         assert probe.await_args.kwargs["stale"] is True
 
     @pytest.mark.asyncio
     async def test_heal_hook_restores_the_activation_snapshot(self):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         slot = self._slot(model="fb-1", _fallback_slot_model="")  # backfilled pin
         with patch(
-            "kiro_crew.dashboard.chat_runner.probe_fallback_restore", new_callable=AsyncMock
+            "efm_go.dashboard.chat_runner.probe_fallback_restore", new_callable=AsyncMock
         ) as probe:
             await chat_runner._probe_fallback_restore_for_slot(slot, MagicMock())
         probe.await_args.kwargs["on_restored"]()
@@ -23406,18 +23406,18 @@ class TestSlotProbeWrapsSharedRestoreBody:
 
     @pytest.mark.asyncio
     async def test_no_active_fallback_never_reaches_the_shared_body(self):
-        from kiro_crew.dashboard import chat_runner
+        from efm_go.dashboard import chat_runner
 
         slot = self._slot(_active_fallback_model="")
         with patch(
-            "kiro_crew.dashboard.chat_runner.probe_fallback_restore", new_callable=AsyncMock
+            "efm_go.dashboard.chat_runner.probe_fallback_restore", new_callable=AsyncMock
         ) as probe:
             await chat_runner._probe_fallback_restore_for_slot(slot, MagicMock())
         probe.assert_not_awaited()
 
     def test_sticky_clear_drops_marker_and_slot_fields(self):
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.llm_helpers import TURN_FALLBACK_ATTR
+        from efm_go.dashboard import chat_runner
+        from efm_go.llm_helpers import TURN_FALLBACK_ATTR
 
         slot = self._slot()
         client = MagicMock()
@@ -23433,8 +23433,8 @@ class TestSlotProbeWrapsSharedRestoreBody:
         blank the slot fields — the slot probe keys on _active_fallback_model,
         so keeping the record is what makes the clear retryable next turn.
         Blanking the fields around a surviving marker would orphan it."""
-        from kiro_crew.dashboard import chat_runner
-        from kiro_crew.llm_helpers import TURN_FALLBACK_ATTR
+        from efm_go.dashboard import chat_runner
+        from efm_go.llm_helpers import TURN_FALLBACK_ATTR
 
         class _HostileClient:
             @property
@@ -23462,8 +23462,8 @@ class TestSlotsGetWarmsGitLabAllowlist:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.chat_handlers import api_chat_slots
-        from kiro_crew.dashboard.handlers import source_providers as sp
+        from efm_go.dashboard.chat_handlers import api_chat_slots
+        from efm_go.dashboard.handlers import source_providers as sp
 
         url = "https://gitlab.acme.internal/team/api/-/merge_requests/7"
         order: list[str] = []
@@ -23529,11 +23529,11 @@ class TestSourceLinkUrlsExcludeIssues:
 
     @pytest.mark.asyncio
     async def test_slots_get_schedules_only_change_links(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers import source_providers as sp
+        from efm_go.dashboard.handlers import source_providers as sp
 
         scheduler = MagicMock(return_value=[])
         monkeypatch.setattr(sp, "schedule_check_refresh", scheduler)
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.owner_id = "U_OWNER"
         slot = state.get_or_create_slot("source")
@@ -23566,7 +23566,7 @@ class TestBulkModelSwitch:
 
     @staticmethod
     def _app(state: DashboardState) -> web.Application:
-        from kiro_crew.dashboard.chat import api_chat_slots_model
+        from efm_go.dashboard.chat import api_chat_slots_model
 
         # Mirror production: token_auth middleware sets request["app"] on
         # every authenticated path ("" = dashboard user). Tests that model an
@@ -23731,7 +23731,7 @@ class TestBulkModelSwitch:
         state.sessions.reset = AsyncMock()
         state.get_or_create_slot("a", model="claude-opus-4.6")
 
-        from kiro_crew.dashboard.chat import api_chat_slots_model
+        from efm_go.dashboard.chat import api_chat_slots_model
 
         bare_app = web.Application()  # deliberately NO auth-marker middleware
         bare_app["state"] = state
@@ -23753,7 +23753,7 @@ class TestBulkModelSwitch:
         state.sessions.reset = AsyncMock()
         state.get_or_create_slot("a", model="claude-opus-4.6")
 
-        from kiro_crew.dashboard.chat import api_chat_slots_model
+        from efm_go.dashboard.chat import api_chat_slots_model
 
         @web.middleware
         async def buggy_auth_marker(request, handler):
@@ -23811,7 +23811,7 @@ class TestSlotModelGuard:
 
     @staticmethod
     def _app(state: DashboardState) -> web.Application:
-        from kiro_crew.dashboard.chat import api_chat_slot_model
+        from efm_go.dashboard.chat import api_chat_slot_model
 
         app = web.Application()
         app["state"] = state
@@ -23894,7 +23894,7 @@ class TestSlotModelLiveSwitch:
 
     @staticmethod
     def _app(state: DashboardState) -> web.Application:
-        from kiro_crew.dashboard.chat import api_chat_slot_model
+        from efm_go.dashboard.chat import api_chat_slot_model
 
         app = web.Application()
         app["state"] = state
@@ -23916,7 +23916,7 @@ class TestSlotModelLiveSwitch:
         ``capabilities_of`` requires a genuine ``SessionCapabilities``, so an
         attribute-shaped flag on a spec'd mock would claim every capability at once.
         """
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         provider = MagicMock(spec=AcpProvider)
         provider.capabilities = capabilities_for(ACP_BACKEND_CLAUDE if claude else ACP_BACKEND_KIRO)
@@ -23950,7 +23950,7 @@ class TestSlotModelLiveSwitch:
     @pytest.mark.asyncio
     async def test_canonical_key_is_translated_to_the_acp_id(self, tmp_path):
         # slot.model is a canonical/wire value; set_model only accepts kiro ids.
-        from kiro_crew import model_registry
+        from efm_go import model_registry
 
         state = _make_state(tmp_path)
         state.sessions.reset = AsyncMock()
@@ -24064,7 +24064,7 @@ class TestSlotModelLiveSwitch:
 
     @pytest.mark.asyncio
     async def test_claude_backend_switch_uses_provider_id(self, tmp_path):
-        from kiro_crew import model_registry
+        from efm_go import model_registry
 
         state = _make_state(tmp_path)
         state.sessions.reset = AsyncMock()
@@ -24225,7 +24225,7 @@ class TestSlotModelLiveSwitch:
         model, while the handler still answers ok:True. The slot must also keep
         its previous model, or the picker asserts a model that was refused.
         """
-        from kiro_crew.acp.client import AcpModelUnavailable
+        from efm_go.acp.client import AcpModelUnavailable
 
         state = _make_state(tmp_path)
         state.sessions.reset = AsyncMock()
@@ -24258,7 +24258,7 @@ class TestSlotModelLiveSwitch:
         FAILED attempt as an explicit choice and silently abandon restoring
         the primary — the session would stay on the fallback forever with no
         card and no probe."""
-        from kiro_crew.acp.client import AcpModelUnavailable
+        from efm_go.acp.client import AcpModelUnavailable
 
         state = _make_state(tmp_path)
         state.sessions.reset = AsyncMock()
@@ -24286,7 +24286,7 @@ class TestSlotModelLiveSwitch:
         is the later, successful pick's."""
         import asyncio
 
-        from kiro_crew.acp.client import AcpModelUnavailable
+        from efm_go.acp.client import AcpModelUnavailable
 
         state = _make_state(tmp_path)
         state.sessions.reset = AsyncMock()
@@ -24337,7 +24337,7 @@ class TestSlotModelLiveSwitch:
         transaction unwinds itself and the slot ends exactly where it began."""
         import asyncio
 
-        from kiro_crew.acp.client import AcpModelUnavailable
+        from efm_go.acp.client import AcpModelUnavailable
 
         state = _make_state(tmp_path)
         state.sessions.reset = AsyncMock()
@@ -24600,7 +24600,7 @@ class TestForkSlotTail:
         the B1 gate test below overrides this to False for its own assertion."""
         mock_cfg = MagicMock()
         mock_cfg.dashboard.tail_fork_enabled = True
-        monkeypatch.setattr("kiro_crew.dashboard.chat_fork.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat_fork.KiroCrewConfig.load", lambda: mock_cfg)
 
     @pytest.mark.asyncio
     async def test_tail_fork_keeps_messages_after_message_id(self, tmp_path):
@@ -24744,7 +24744,7 @@ class TestForkSlotTail:
         """B1 gate (D1): tail_fork_enabled=False silently downgrades tail -> head."""
         mock_cfg = MagicMock()
         mock_cfg.dashboard.tail_fork_enabled = False
-        monkeypatch.setattr("kiro_crew.dashboard.chat_fork.KiroCrewConfig.load", lambda: mock_cfg)
+        monkeypatch.setattr("efm_go.dashboard.chat_fork.KiroCrewConfig.load", lambda: mock_cfg)
         state = _make_state(tmp_path)
         _make_tail_fork_slot(state)
 
@@ -24784,7 +24784,7 @@ class TestSessionReload:
 
     @pytest.mark.asyncio
     async def test_reload_unknown_slot_404(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
             resp = await client.post("/api/chat/slots/nope/reload")
@@ -24793,13 +24793,13 @@ class TestSessionReload:
     @pytest.mark.asyncio
     async def test_reload_resets_notices_and_respawns(self, tmp_path, monkeypatch):
         """Happy path: atomic reset, feed notice tagged session_reload, eager resume."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         state.sessions.get_provider = MagicMock(return_value=self._idle_provider())
         state.sessions.reset = AsyncMock(return_value=True)
         eager = MagicMock(return_value=None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn", eager)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.schedule_eager_spawn", eager)
 
         async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
             resp = await client.post("/api/chat/slots/s1/reload")
@@ -24820,7 +24820,7 @@ class TestSessionReload:
     @pytest.mark.asyncio
     async def test_reload_refused_while_turn_in_flight(self, tmp_path, monkeypatch):
         """409 with no teardown, no notice, no eager spawn while a turn runs."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         busy = MagicMock()
@@ -24828,7 +24828,7 @@ class TestSessionReload:
         state.sessions.get_provider = MagicMock(return_value=busy)
         state.sessions.reset = AsyncMock()
         eager = MagicMock(return_value=None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn", eager)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.schedule_eager_spawn", eager)
         before = len(slot.messages)
 
         async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
@@ -24847,7 +24847,7 @@ class TestSessionReload:
         busy); the re-check of has_active_turn is what disambiguates. Nothing
         may be appended or respawned for the busy case.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         idle = self._idle_provider()
@@ -24858,7 +24858,7 @@ class TestSessionReload:
         state.sessions.get_provider = MagicMock(side_effect=[idle, idle, busy])
         state.sessions.reset = AsyncMock(return_value=False)
         eager = MagicMock(return_value=None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn", eager)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.schedule_eager_spawn", eager)
         before = len(slot.messages)
 
         async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
@@ -24877,13 +24877,13 @@ class TestSessionReload:
         prevent. The retry succeeds here; a second decline is the 409 case
         (covered below).
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         state.sessions.get_provider = MagicMock(return_value=self._idle_provider())
         state.sessions.reset = AsyncMock(side_effect=[False, True])
         eager = MagicMock(return_value=None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn", eager)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.schedule_eager_spawn", eager)
 
         async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
             resp = await client.post("/api/chat/slots/s1/reload")
@@ -24899,13 +24899,13 @@ class TestSessionReload:
     async def test_reload_double_decline_is_turn_in_flight(self, tmp_path, monkeypatch):
         """Two consecutive declines with a live session mean a genuinely racing
         turn: 409, no notice, no respawn -- never a false success."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         state.sessions.get_provider = MagicMock(return_value=self._idle_provider())
         state.sessions.reset = AsyncMock(return_value=False)
         eager = MagicMock(return_value=None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn", eager)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.schedule_eager_spawn", eager)
         before = len(slot.messages)
 
         async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
@@ -24929,7 +24929,7 @@ class TestSessionReload:
         import re
         from pathlib import Path
 
-        from kiro_crew.dashboard.system_notices import SYSTEM_NOTICE_KINDS
+        from efm_go.dashboard.system_notices import SYSTEM_NOTICE_KINDS
 
         ts_path = Path(__file__).resolve().parents[1] / "website/src/lib/systemNotice.ts"
         ts_src = ts_path.read_text(encoding="utf-8")
@@ -24946,13 +24946,13 @@ class TestSessionReload:
         this must not be an error; reloaded=False tells the caller no process
         was actually torn down.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         state.sessions.get_provider = MagicMock(return_value=None)
         state.sessions.reset = AsyncMock(return_value=False)
         eager = MagicMock(return_value=None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn", eager)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.schedule_eager_spawn", eager)
 
         async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
             resp = await client.post("/api/chat/slots/s1/reload")
@@ -24971,13 +24971,13 @@ class TestSessionReload:
         unblock it would survive the reset and hold its MCP worker until
         timeout with no agent left to receive the answer.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
         state.sessions.get_provider = MagicMock(return_value=self._idle_provider())
         state.sessions.reset = AsyncMock(return_value=True)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.schedule_eager_spawn",
+            "efm_go.dashboard.chat_handlers.schedule_eager_spawn",
             MagicMock(return_value=None),
         )
         cancelled = MagicMock(return_value=1)
@@ -24997,7 +24997,7 @@ class TestSessionReload:
         allowed /api/chat/* could reset a foreign slot's process and cancel its
         pending waits.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot._app = "other-app"
@@ -25023,14 +25023,14 @@ class TestSessionReload:
         dashboard-prefixed key — otherwise reload reports success while the
         live process keeps its stale config.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.linked_session_key = "slack:123.456"
         state.sessions.get_provider = MagicMock(return_value=None)
         state.sessions.reset = AsyncMock(return_value=True)
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.schedule_eager_spawn",
+            "efm_go.dashboard.chat_handlers.schedule_eager_spawn",
             MagicMock(return_value=None),
         )
 
@@ -25045,7 +25045,7 @@ class TestSessionReload:
         """409 while children are running/queued/delivering — the reset would
         tear down the shared subagent runtime and discard their work.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         state.sessions.get_provider = MagicMock(return_value=self._idle_provider())
@@ -25054,7 +25054,7 @@ class TestSessionReload:
         state.subagents.running_agents_for = MagicMock(return_value=["child-1"])
         state.subagents._queued_depth = MagicMock(return_value=0)
         eager = MagicMock(return_value=None)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.schedule_eager_spawn", eager)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.schedule_eager_spawn", eager)
         before = len(slot.messages)
 
         async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
@@ -25070,7 +25070,7 @@ class TestSessionReload:
     @pytest.mark.asyncio
     async def test_reload_fails_closed_on_unreadable_children_probe(self, tmp_path, monkeypatch):
         """A None running-probe is the probe FAILING, not zero children."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.get_or_create_slot("s1")
         state.sessions.get_provider = MagicMock(return_value=None)
@@ -25101,7 +25101,7 @@ class TestCloseBroadcastDurability:
     @staticmethod
     def _instrument(state, slot, monkeypatch, frames=None):
         """Record close steps in call order; append each frame's slot keys."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         calls: list[str] = []
 
@@ -25169,8 +25169,8 @@ class TestCloseBroadcastDurability:
         backend re-offers a folder suggestion at most once per slot, so a prune
         on a close that then rolls back loses them permanently.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard import chat_handlers
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard import chat_handlers
 
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -25200,7 +25200,7 @@ class TestCloseBroadcastDurability:
     @pytest.mark.asyncio
     async def test_broadcast_precedes_the_session_teardown(self, tmp_path, monkeypatch):
         """On success, broadcast after the save but before the slow teardown."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hello")
@@ -25223,7 +25223,7 @@ class TestCloseBroadcastDurability:
     @pytest.mark.asyncio
     async def test_broadcast_beats_a_slow_session_teardown(self, tmp_path, monkeypatch):
         """A session teardown that never returns must not hold the broadcast."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hello")
@@ -25265,7 +25265,7 @@ class TestCloseBroadcastDurability:
         shared subagent runtime which outlives the turn — the turn semaphore, the
         sweep's only busy guard, is free while subagents run.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s1")
         slot.append("user", "hello")
@@ -25313,7 +25313,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._row("user", "run it", "u1", "2026-08-19T10:00:00+00:00")
         reply = self._row("assistant", "done", "a1", "2026-08-19T10:00:03+00:00")
@@ -25350,7 +25350,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._row("user", "run it", "u1", "2026-08-19T10:00:00+00:00")
         stop = self._row("assistant", "stopped", "s1", "2026-08-19T10:00:02+00:00")
@@ -25382,10 +25382,10 @@ class TestUnflushedTailOrderingAndSnapshot:
         is entered. A snapshot captured on the loop predates it and keeps the row; one
         taken inside the worker sees the hole and drops the row from the response.
         """
-        import kiro_crew.dashboard.chat_handlers as ch
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        import efm_go.dashboard.chat_handlers as ch
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("loopsnap")
         key = "dashboard:loopsnap"
@@ -25467,7 +25467,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._idless("user", "run it", "2026-08-19T15:00:00+00:00")
         chunk = self._idless("chunk", "partial an", "2026-08-19T15:00:01+00:00")
@@ -25504,7 +25504,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._idless("user", "run it", "2026-08-19T15:00:00+00:00")
         stop = self._idless("assistant", "stopped", "2026-08-19T15:00:02+00:00")
@@ -25533,7 +25533,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         import json
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._idless("user", "run it", "2026-08-19T15:00:00+00:00")
         stop = self._idless("assistant", "stopped", "2026-08-19T15:00:02+00:00")
@@ -25588,7 +25588,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._idless("user", "run it", "2026-08-19T16:00:00+00:00")
         reply = self._idless("assistant", "the reply", "2026-08-19T16:00:01+00:00")
@@ -25633,7 +25633,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._idless("user", "ask", "2026-08-19T16:10:00+00:00")
         owed = self._idless("assistant", "owed body", "2026-08-19T16:10:01+00:00")
@@ -25681,7 +25681,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         import json
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._idless("user", "run it", "2026-08-20T04:00:00+00:00")
         stop = self._idless("assistant", "stopped", "2026-08-20T04:00:01+00:00")
@@ -25728,7 +25728,7 @@ class TestUnflushedTailOrderingAndSnapshot:
         import json
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.chat_handlers import _append_unflushed_tail
+        from efm_go.dashboard.chat_handlers import _append_unflushed_tail
 
         q = self._idless("user", "run it", "2026-08-20T04:10:00+00:00")
         stop = self._idless("assistant", "stopped", "2026-08-20T04:10:01+00:00")
@@ -25765,9 +25765,9 @@ class TestHistoryResumeInterruptedTurnMarker:
 
     @staticmethod
     def _saved_state(tmp_path, monkeypatch, name: str, rows: list[tuple], generation: int):
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot(name)
         for row in rows:

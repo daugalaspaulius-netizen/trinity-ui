@@ -1,6 +1,6 @@
 """The sandbox chokepoint's tool marker, and the separation its meaning rests on.
 
-A tree spawned through :func:`kiro_crew.sandbox.sandboxed_spawn_argv` lands in this
+A tree spawned through :func:`efm_go.sandbox.sandboxed_spawn_argv` lands in this
 install's agent slice carrying the inherited ``KIROCREW_SPAWNED`` ownership marker and
 appears in no membership record the runtime reconciler reads. Once such a tree outlives
 the reconciler's age floor -- a LaTeX build, an ``npx`` install, a provisioning run --
@@ -32,14 +32,14 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import runtime_reconcile, sandbox, session_pid
-from kiro_crew.constants import (
+from efm_go import runtime_reconcile, sandbox, session_pid
+from efm_go.constants import (
     KIROCREW_SANDBOX_TOOL_ENV,
     KIROCREW_SANDBOX_TOOL_VALUE,
     KIROCREW_SPAWNED_ENV,
     KIROCREW_SPAWNED_VALUE,
 )
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _SRC = Path(sandbox.__file__).resolve().parent
 
@@ -68,8 +68,8 @@ def _marked_env() -> dict[str, str]:
     patched because an unsandboxed exec is otherwise refused outright.
     """
     with (
-        patch("kiro_crew.sandbox.detect_backend", return_value="none"),
-        patch("kiro_crew.sandbox._allow_unsandboxed_exec", return_value=True),
+        patch("efm_go.sandbox.detect_backend", return_value="none"),
+        patch("efm_go.sandbox._allow_unsandboxed_exec", return_value=True),
     ):
         _argv, env, cleanup = sandbox.sandboxed_spawn_argv(["echo", "hi"])
     if cleanup:

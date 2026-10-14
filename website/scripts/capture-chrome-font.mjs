@@ -52,8 +52,8 @@ mkdirSync(OUT, { recursive: true })
 const AGENTS = [
   {
     id: '1713e7d0',
-    task: 'You are auditing the GitHub PR history of the repo kirodotdev/KiroCrew for a translation gap.',
-    tool: 'gh pr list --repo kirodotdev/KiroCrew --state all --limit 700 --json number,title,state',
+    task: 'You are auditing the GitHub PR history of the repo efmleads.com for a translation gap.',
+    tool: 'gh pr list --repo efmleads.com --state all --limit 700 --json number,title,state',
     tool_count: 5,
   },
   {

@@ -11,11 +11,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.mcp_gateway.rewriter import (
+from efm_go.mcp_gateway.rewriter import (
     _WRAPPER_MARKER,
     _WRAPPER_MARKER_LEGACY,
 )
-from kiro_crew.mcp_gateway.session_servers import (
+from efm_go.mcp_gateway.session_servers import (
     injection_server_names,
     pooled_session_servers,
 )
@@ -31,7 +31,7 @@ class TestEnableRebuildsFactory:
     async def test_enable_calls_refresh_defaults(self) -> None:
         """_apply_mcp_gateway_enabled must call refresh_defaults() on the
         session manager so the captured overlay path is re-resolved."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         orch = GatewayOrchestrator.__new__(GatewayOrchestrator)
         orch._mcp_gateway_manager = None
@@ -41,7 +41,7 @@ class TestEnableRebuildsFactory:
 
         with patch.object(type(orch), "_init_mcp_gateway", new_callable=AsyncMock) as mock_init:
             mock_init.return_value = None
-            with patch("kiro_crew.slack.gateway.KiroCrewConfig") as mock_cfg:
+            with patch("efm_go.slack.gateway.KiroCrewConfig") as mock_cfg:
                 mock_cfg.load.return_value = MagicMock(mcp_gateway=MagicMock(enabled=True))
                 orch._cfg = mock_cfg.load.return_value
                 result = await orch._apply_mcp_gateway_enabled(True)  # noqa: F841
@@ -52,7 +52,7 @@ class TestEnableRebuildsFactory:
     async def test_disable_also_calls_refresh_defaults(self) -> None:
         """Disabling must also rebuild the factory so new sessions stop
         injecting stubs pointing at a dead socket."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         orch = GatewayOrchestrator.__new__(GatewayOrchestrator)
         orch._mcp_gateway_manager = MagicMock(is_running=False)
@@ -62,7 +62,7 @@ class TestEnableRebuildsFactory:
         orch.sessions.refresh_defaults = AsyncMock()
 
         with patch.object(type(orch), "_stop_mcp_broker", new_callable=AsyncMock):
-            with patch("kiro_crew.slack.gateway.KiroCrewConfig") as mock_cfg:
+            with patch("efm_go.slack.gateway.KiroCrewConfig") as mock_cfg:
                 mock_cfg.load.return_value = MagicMock(mcp_gateway=MagicMock(enabled=False))
                 orch._cfg = mock_cfg.load.return_value
                 await orch._apply_mcp_gateway_enabled(False)
@@ -72,7 +72,7 @@ class TestEnableRebuildsFactory:
     @pytest.mark.asyncio
     async def test_no_crash_when_sessions_is_none(self) -> None:
         """Early boot: sessions may not be initialised yet."""
-        from kiro_crew.slack.gateway import GatewayOrchestrator
+        from efm_go.slack.gateway import GatewayOrchestrator
 
         orch = GatewayOrchestrator.__new__(GatewayOrchestrator)
         orch._mcp_gateway_manager = None
@@ -80,7 +80,7 @@ class TestEnableRebuildsFactory:
         orch.sessions = None
 
         with patch.object(type(orch), "_init_mcp_gateway", new_callable=AsyncMock):
-            with patch("kiro_crew.slack.gateway.KiroCrewConfig") as mock_cfg:
+            with patch("efm_go.slack.gateway.KiroCrewConfig") as mock_cfg:
                 mock_cfg.load.return_value = MagicMock(mcp_gateway=MagicMock(enabled=True))
                 orch._cfg = mock_cfg.load.return_value
                 # Must not raise
@@ -185,8 +185,8 @@ class TestNamingMigration:
     def test_gatewayd_resolver_accepts_legacy_env_key(self) -> None:
         """env_target_resolver must find a target under the old MC_MCP_TARGET_
         prefix when the new KIROCREW_MCP_TARGET_ is absent."""
-        from kiro_crew.mcp_gateway.gatewayd import env_target_resolver
-        from kiro_crew.mcp_gateway.pool import PoolKey
+        from efm_go.mcp_gateway.gatewayd import env_target_resolver
+        from efm_go.mcp_gateway.pool import PoolKey
 
         pk = PoolKey(
             server_name="test-srv",
@@ -209,8 +209,8 @@ class TestNamingMigration:
 
     def test_gatewayd_resolver_prefers_new_env_key(self) -> None:
         """When both new and legacy keys exist, the new one wins."""
-        from kiro_crew.mcp_gateway.gatewayd import env_target_resolver
-        from kiro_crew.mcp_gateway.pool import PoolKey
+        from efm_go.mcp_gateway.gatewayd import env_target_resolver
+        from efm_go.mcp_gateway.pool import PoolKey
 
         pk = PoolKey(
             server_name="test-srv",
@@ -234,7 +234,7 @@ class TestNamingMigration:
 
     def test_stub_accepts_kirocrew_mcp_socket_env(self) -> None:
         """The stub should prefer KIROCREW_MCP_SOCKET over MC_MCP_SOCKET."""
-        from kiro_crew.mcp_gateway.stub import _parse_args
+        from efm_go.mcp_gateway.stub import _parse_args
 
         with patch.dict(os.environ, {
             "KIROCREW_MCP_SOCKET": "/tmp/new.sock",
@@ -248,7 +248,7 @@ class TestNamingMigration:
 
     def test_stub_falls_back_to_legacy_mc_mcp_socket(self) -> None:
         """When only MC_MCP_SOCKET is set, it should still work."""
-        from kiro_crew.mcp_gateway.stub import _parse_args
+        from efm_go.mcp_gateway.stub import _parse_args
 
         env = dict(os.environ)
         env.pop("KIROCREW_MCP_SOCKET", None)
@@ -263,7 +263,7 @@ class TestNamingMigration:
     def test_rewriter_emits_new_env_key_prefix(self, tmp_path: Path) -> None:
         """rewrite_agents must populate target_env with KIROCREW_MCP_TARGET_
         keys, not the legacy MC_MCP_TARGET_ prefix."""
-        from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+        from efm_go.mcp_gateway.rewriter import rewrite_agents
 
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
@@ -294,7 +294,7 @@ class TestNamingMigration:
     def test_idempotent_rewrite_upgrades_legacy_marker(self, tmp_path: Path) -> None:
         """Re-running the rewriter on an overlay that carries the legacy
         marker must upgrade it to the new marker."""
-        from kiro_crew.mcp_gateway.rewriter import _rewrite_single_spec
+        from efm_go.mcp_gateway.rewriter import _rewrite_single_spec
 
         spec = {
             "name": "agent",

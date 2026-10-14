@@ -9,7 +9,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.handlers.workflows import (
+from efm_go.dashboard.handlers.workflows import (
     api_workflow_author,
     api_workflow_run,
     api_workflow_run_intent,
@@ -112,7 +112,7 @@ async def test_runs_list_is_compact_and_detail_carries_result() -> None:
     Both read endpoints redact + serialize on a worker thread; the response
     must still be well-formed JSON.
     """
-    from kiro_crew.dashboard.handlers.workflows import (
+    from efm_go.dashboard.handlers.workflows import (
         api_workflow_run_get,
         api_workflow_runs,
     )

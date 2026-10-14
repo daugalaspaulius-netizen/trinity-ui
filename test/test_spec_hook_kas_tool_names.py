@@ -15,28 +15,28 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-import kiro_crew.config.paths as paths_mod
-import kiro_crew.hooks as hooks_mod
-from kiro_crew.acp._dispatch import build_permission_event
-from kiro_crew.acp.kas_permissions import KAS_TOOL_IDS_BY_KIRO_TOOL, kas_tool_match_names
-from kiro_crew.agent_sdk import spec_hooks
-from kiro_crew.agent_sdk.backends import (
+import efm_go.config.paths as paths_mod
+import efm_go.hooks as hooks_mod
+from efm_go.acp._dispatch import build_permission_event
+from efm_go.acp.kas_permissions import KAS_TOOL_IDS_BY_KIRO_TOOL, kas_tool_match_names
+from efm_go.agent_sdk import spec_hooks
+from efm_go.agent_sdk.backends import (
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
     ACP_BACKENDS_CREW_FIRES_SPEC_HOOKS,
 )
-from kiro_crew.agent_sdk.capabilities import capabilities_for
-from kiro_crew.dashboard.chat import _run_chat
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.history import ConversationLog
-from kiro_crew.hooks import (
+from efm_go.agent_sdk.capabilities import capabilities_for
+from efm_go.dashboard.chat import _run_chat
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.history import ConversationLog
+from efm_go.hooks import (
     HOOK_EVENT_PRE_TOOL_USE,
     ScriptHook,
     ScriptHookResult,
     ScriptHookStore,
     ToolHookResult,
 )
-from kiro_crew.providers.base import (
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TOOL_CALL,
@@ -57,7 +57,7 @@ def _fresh_cache():
 def test_every_backend_crew_fires_spec_hooks_for_has_a_translation_table():
     # A backend that Crew fires spec hooks for needs its own vocabulary: KAS's is
     # this module's table, every other member's is in harness_tool_names.
-    from kiro_crew.acp.harness_tool_names import HARNESS_TOOL_TABLES
+    from efm_go.acp.harness_tool_names import HARNESS_TOOL_TABLES
 
     assert ACP_BACKEND_KAS in ACP_BACKENDS_CREW_FIRES_SPEC_HOOKS
     assert ACP_BACKENDS_CREW_FIRES_SPEC_HOOKS - {ACP_BACKEND_KAS} == frozenset(HARNESS_TOOL_TABLES)
@@ -148,7 +148,7 @@ def test_a_matcher_naming_a_tool_kas_runs_is_kept(matcher):
 
 
 def test_a_matcher_the_table_does_not_know_is_kept_and_warned(caplog):
-    with caplog.at_level("WARNING", logger="kiro_crew.agent_sdk.spec_hooks"):
+    with caplog.at_level("WARNING", logger="efm_go.agent_sdk.spec_hooks"):
         hooks = _pre_tool_hooks("use_aws")
     assert [h.matcher for h in hooks] == ["use_aws"]
     assert any("use_aws" in r.getMessage() for r in caplog.records)
@@ -169,7 +169,7 @@ def test_an_mcp_server_tool_matcher_is_kept_without_a_warning(matcher, caplog):
     # The form the gate builds for an MCP call, the KAS projection reads as MCP and
     # the agent-host contract documents; the object form's character set alone
     # dropped it as "invalid matcher" and the guard never ran.
-    with caplog.at_level("WARNING", logger="kiro_crew.agent_sdk.spec_hooks"):
+    with caplog.at_level("WARNING", logger="efm_go.agent_sdk.spec_hooks"):
         hooks = _pre_tool_hooks(matcher)
     assert [h.matcher for h in hooks] == [matcher]
     assert not caplog.records
@@ -197,8 +197,8 @@ def test_a_malformed_mcp_matcher_still_drops_the_hook(matcher):
 def test_an_mcp_server_tool_spec_hook_withholds_mcp_auto_approval(tmp_path, monkeypatch):
     # Without this, KAS auto-approves the MCP call and no permission request reaches
     # the gate, so even an accepted matcher would never see the call.
-    from kiro_crew.acp import kas_agents
-    from kiro_crew.acp.kas_permissions import hook_gated_capabilities
+    from efm_go.acp import kas_agents
+    from efm_go.acp.kas_permissions import hook_gated_capabilities
 
     monkeypatch.setattr(kas_agents, "get_global_hook_store", lambda: ScriptHookStore(tmp_path))
     spec = {"hooks": {"preToolUse": [{"matcher": "@github/create_issue", "command": "g.sh"}]}}
@@ -209,7 +209,7 @@ def test_an_mcp_server_tool_spec_hook_withholds_mcp_auto_approval(tmp_path, monk
 
 def test_a_post_tool_use_title_matcher_is_kept_and_warned(caplog):
     # PostToolUse still matches the call's title, which the author is told once.
-    with caplog.at_level("WARNING", logger="kiro_crew.agent_sdk.spec_hooks"):
+    with caplog.at_level("WARNING", logger="efm_go.agent_sdk.spec_hooks"):
         hooks = spec_hooks.spec_script_hooks(
             "a1", {"hooks": {"postToolUse": [{"matcher": "touch*", "command": "log.sh"}]}}
         )
@@ -308,8 +308,8 @@ def _write_spec(agents_dir: Path, matcher: str) -> None:
     }
     (agents_dir / "a1.json").write_text(json.dumps(spec), encoding="utf-8")
     # The turn resolves the slot's agent through discovery before it prepares hooks.
-    from kiro_crew.agent_discovery import clear_list_agents_cache
-    from kiro_crew.config.loader import refresh_materialized_agents
+    from efm_go.agent_discovery import clear_list_agents_cache
+    from efm_go.config.loader import refresh_materialized_agents
 
     clear_list_agents_cache()
     refresh_materialized_agents()
@@ -395,7 +395,7 @@ async def _one_shell_call(state, client) -> None:
     client.context_usage_pct = MagicMock(return_value=0.0)
     slot = _ChatSlot("chat-1-spec-kas")
     slot.agent = "a1"
-    with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+    with patch("efm_go.dashboard.chat.sel") as mock_sel:
         mock_sel.return_value = MagicMock()
         await _run_chat(state, slot, "hello")
         if slot.task:
@@ -426,7 +426,7 @@ async def _one_turn(state, client, events) -> None:
     client.context_usage_pct = MagicMock(return_value=0.0)
     slot = _ChatSlot("chat-1-spec-kas")
     slot.agent = "a1"
-    with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+    with patch("efm_go.dashboard.chat.sel") as mock_sel:
         mock_sel.return_value = MagicMock()
         await _run_chat(state, slot, "hello")
         if slot.task:
@@ -516,7 +516,7 @@ async def test_kas_a_gated_chat_call_runs_its_hook_once_on_the_permission_reques
     state, client = _turn_state(tmp_path, ACP_BACKEND_KAS)
     _page_hook(state, "web_fetch")
     informational = AsyncMock()
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner.fire_tool_hooks", informational)
+    monkeypatch.setattr("efm_go.dashboard.chat_runner.fire_tool_hooks", informational)
     await _one_turn(state, client, _fetch_frames())
     assert ran == ["page"]
     informational.assert_not_awaited()
@@ -530,7 +530,7 @@ async def test_kiro_cli_a_chat_tool_call_still_fires_its_informational_hook(
     _write_spec(agents_dir, "fs_write")
     state, client = _turn_state(tmp_path, ACP_BACKEND_KIRO)
     informational = AsyncMock()
-    monkeypatch.setattr("kiro_crew.dashboard.chat_runner.fire_tool_hooks", informational)
+    monkeypatch.setattr("efm_go.dashboard.chat_runner.fire_tool_hooks", informational)
     await _one_turn(
         state, client, [LLMEvent(kind=EVENT_TOOL_CALL, title="Fetch URL", tool_call_id="t-1")]
     )

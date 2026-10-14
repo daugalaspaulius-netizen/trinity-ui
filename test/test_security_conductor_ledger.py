@@ -22,7 +22,7 @@ from skill_script_helpers import load_skill_script
 SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "security-conductor"
     / "scripts"
@@ -88,7 +88,7 @@ def a_finding(mod, db: Path, capsys, *, surface="security.is_denied", title="fen
         "--severity",
         "High",
         "--path",
-        "src/kiro_crew/security.py",
+        "src/efm_go/security.py",
     )
     return int(out_json(capsys)["id"])
 
@@ -164,7 +164,7 @@ class TestDedupeIdentity:
             "--severity",
             "Critical",  # a re-report is not evidence to overwrite the record
             "--path",
-            "src/kiro_crew/security.py",
+            "src/efm_go/security.py",
         )
         again = out_json(capsys)
         assert again["id"] == first
@@ -188,9 +188,9 @@ class TestDedupeIdentity:
             "--severity",
             "Medium",
             "--path",
-            "src/kiro_crew/webhooks.py",
+            "src/efm_go/webhooks.py",
             "--path",
-            "src/kiro_crew/hooks.py",
+            "src/efm_go/hooks.py",
         )
         first = out_json(capsys)["id"]
         run(
@@ -204,11 +204,11 @@ class TestDedupeIdentity:
             "--severity",
             "Medium",
             "--path",
-            "src/kiro_crew/hooks.py",
+            "src/efm_go/hooks.py",
             "--path",
-            "src/kiro_crew/webhooks.py",
+            "src/efm_go/webhooks.py",
             "--path",
-            "src/kiro_crew/hooks.py",
+            "src/efm_go/hooks.py",
         )
         assert out_json(capsys)["id"] == first
 
@@ -225,7 +225,7 @@ class TestDedupeIdentity:
             "--severity",
             "High",
             "--path",
-            "src/kiro_crew/platform/security_authority.py",
+            "src/efm_go/platform/security_authority.py",
         )
         second = out_json(capsys)
         assert second["id"] != first
@@ -540,7 +540,7 @@ class TestDedupeSurvivesTheRace:
                     surface="security.is_denied",
                     title="fence bypass",
                     severity="High",
-                    paths=["src/kiro_crew/security.py"],
+                    paths=["src/efm_go/security.py"],
                     poc=None,
                     round_id=None,
                 )
@@ -560,7 +560,7 @@ class TestDedupeSurvivesTheRace:
                 conn.execute(
                     "INSERT INTO findings (surface, severity, title, paths, status, created)"
                     " VALUES ('security.is_denied', 'Low', 'fence bypass',"
-                    " '[\"src/kiro_crew/security.py\"]', 'open',"
+                    " '[\"src/efm_go/security.py\"]', 'open',"
                     " '2026-09-07T00:00:00+00:00')"
                 )
                 conn.commit()
@@ -1524,7 +1524,7 @@ class TestExportRoe:
             "--field",
             "scope",
             "--value",
-            "kirodotdev/KiroCrew",
+            "efmleads.com",
             "--reason",
             "pilot target",
             "--approved-by",
@@ -1538,7 +1538,7 @@ class TestExportRoe:
             "--field",
             "scope",
             "--value",
-            "src/kiro_crew/security.py",
+            "src/efm_go/security.py",
             "--reason",
             "surface 1",
             "--approved-by",

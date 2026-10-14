@@ -35,8 +35,8 @@ from pathlib import Path
 import pytest
 from slack_sdk.errors import SlackApiError
 
-import kiro_crew.cli_setup as cs
-from kiro_crew.config.loader import CRED_OWNER_ID, CRED_SLACK_APP_TOKEN, CRED_SLACK_BOT_TOKEN
+import efm_go.cli_setup as cs
+from efm_go.config.loader import CRED_OWNER_ID, CRED_SLACK_APP_TOKEN, CRED_SLACK_BOT_TOKEN
 
 
 class _FakeWebClient:
@@ -78,7 +78,7 @@ def _install(monkeypatch: pytest.MonkeyPatch, client: type[_FakeWebClient]) -> N
     the check would then run against real Slack and the assertion would read
     ``None``.
     """
-    monkeypatch.setattr("kiro_crew.cli_setup.WebClient", client)
+    monkeypatch.setattr("efm_go.cli_setup.WebClient", client)
 
 
 @pytest.fixture()
@@ -143,10 +143,10 @@ def no_restart(monkeypatch: pytest.MonkeyPatch) -> None:
         raise AssertionError("a test tried to restart the gateway")
 
     monkeypatch.setattr(cs, "_configured_port", lambda: 6473)
-    monkeypatch.setattr("kiro_crew.service.controller.is_service_active", lambda: False)
+    monkeypatch.setattr("efm_go.service.controller.is_service_active", lambda: False)
     monkeypatch.setattr(cs.platform_compat, "find_listening_pids", lambda port: [])
     monkeypatch.setattr(cs.platform_compat, "listening_pid_tool_available", lambda: True)
-    monkeypatch.setattr("kiro_crew.cli_server._restart", _never)
+    monkeypatch.setattr("efm_go.cli_server._restart", _never)
 
 
 class TestSetupSlackTokens:

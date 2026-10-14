@@ -15,8 +15,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-import kiro_crew.skills as skills_mod
-from kiro_crew.skills import MAX_SKILL_VERSIONS, AutoSkillProvenance, SkillsLoader
+import efm_go.skills as skills_mod
+from efm_go.skills import MAX_SKILL_VERSIONS, AutoSkillProvenance, SkillsLoader
 
 
 @pytest.fixture()

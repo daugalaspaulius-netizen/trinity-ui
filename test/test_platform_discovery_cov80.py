@@ -24,10 +24,10 @@ from typing import Any, List
 
 import pytest
 
-from kiro_crew.platform import discovery as discovery_mod
-from kiro_crew.platform.admission import MODE_OPEN, AdmissionPolicy, PluginManifest
-from kiro_crew.platform.context import PROFILE_STANDALONE, PlatformCompositionError
-from kiro_crew.platform.discovery import (
+from efm_go.platform import discovery as discovery_mod
+from efm_go.platform.admission import MODE_OPEN, AdmissionPolicy, PluginManifest
+from efm_go.platform.context import PROFILE_STANDALONE, PlatformCompositionError
+from efm_go.platform.discovery import (
     PLUGIN_GROUP,
     PluginAdmissionError,
     discover_companion_context,
@@ -55,7 +55,7 @@ class _FakeEntryPoint:
 def open_policy(monkeypatch: pytest.MonkeyPatch) -> AdmissionPolicy:
     """An open policy plus a stub manifest reader, so admission never touches disk."""
     monkeypatch.setattr(
-        "kiro_crew.platform.admission._read_plugin_manifest",
+        "efm_go.platform.admission._read_plugin_manifest",
         lambda ep: PluginManifest(name=ep.name, publisher="p13n", version="1"),
     )
     return AdmissionPolicy(mode=MODE_OPEN)
@@ -130,7 +130,7 @@ class TestDenyAudit:
     ) -> None:
         """The DENY audit is best-effort: it runs on the bootstrap path where SEL
         may not be wired, and its failure must not mask the refusal."""
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         def _boom() -> Any:
             raise RuntimeError("SEL is not wired yet")
@@ -140,7 +140,7 @@ class TestDenyAudit:
             discovery_mod, "plugin_entry_points", lambda: [_FakeEntryPoint("zibble")]
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.admission._read_plugin_manifest",
+            "efm_go.platform.admission._read_plugin_manifest",
             lambda ep: PluginManifest(name="zibble", publisher="p13n", version="1"),
         )
         policy = AdmissionPolicy(mode=MODE_OPEN, banned=["zibble"])

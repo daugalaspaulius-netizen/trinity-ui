@@ -35,7 +35,7 @@ vi.mock('../api/client', async importOriginal => ({
 const activeMonitor: StructuredMonitor = {
   kind: 'structured_monitor', id: 'monitor-1', slotKey: 'chat-1', active: true,
   actionable: true, version: 1, monitorKind: 'github_pull_request', objective: 'review_ready',
-  target: 'https://github.com/kirodotdev/KiroCrew/pull/42', cadenceSecs: 300,
+  target: 'https://efmleads.com/pull/42', cadenceSecs: 300,
   nextProbeAt: 1_800_000_300, wakeInstructions: 'Address actionable review feedback.',
   budgets: { maxRuntimeSecs: 14_400, maxAgentTurns: 8, maxTokens: 250_000, maxProviderErrors: 3 },
   latest: { classification: 'pending', reasonCode: 'checks_pending', observedAt: 1_800_000_000, decision: 'no_change' },
@@ -117,7 +117,7 @@ describe('SessionAutomationPopover', () => {
     const invalidate = vi.spyOn(client, 'invalidateQueries')
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/42' },
+      target: { value: 'https://efmleads.com/pull/42' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Start monitor' }))
 
@@ -125,7 +125,7 @@ describe('SessionAutomationPopover', () => {
       slot_key: 'chat-1',
       kind: 'github_pull_request',
       objective: 'review_ready',
-      target: 'https://github.com/kirodotdev/KiroCrew/pull/42',
+      target: 'https://efmleads.com/pull/42',
       cadence_secs: 300,
       max_runtime_secs: 14_400,
       max_agent_turns: 0,
@@ -350,13 +350,13 @@ describe('SessionAutomationPopover', () => {
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
       target: {
-        value: 'https://github.com/kirodotdev/KiroCrew/pull/42?notification_referrer_id=1#discussion_r2',
+        value: 'https://efmleads.com/pull/42?notification_referrer_id=1#discussion_r2',
       },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Start monitor' }))
 
     await waitFor(() => expect(api.monitorCreate).toHaveBeenCalledWith(expect.objectContaining({
-      target: 'https://github.com/kirodotdev/KiroCrew/pull/42',
+      target: 'https://efmleads.com/pull/42',
     })))
   })
 
@@ -463,7 +463,7 @@ describe('SessionAutomationPopover', () => {
   it.each(['', '0', '-1', '1.5', 'NaN'])('rejects %j as an unbounded cadence', async value => {
     renderPopover(null)
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/42' },
+      target: { value: 'https://efmleads.com/pull/42' },
     })
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Probe cadence in seconds' }), {
       target: { value },
@@ -483,7 +483,7 @@ describe('SessionAutomationPopover', () => {
   ])('shows an inline backend-bound error for %s', async (name, value, message) => {
     renderPopover(null)
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/42' },
+      target: { value: 'https://efmleads.com/pull/42' },
     })
     fireEvent.change(screen.getByRole('spinbutton', { name }), { target: { value } })
     fireEvent.click(screen.getByRole('button', { name: 'Start monitor' }))
@@ -506,7 +506,7 @@ describe('SessionAutomationPopover', () => {
     expect(api.monitorForSlot).toHaveBeenCalledWith('chat-1')
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/42' },
+      target: { value: 'https://efmleads.com/pull/42' },
     })
     fireEvent.change(runtime, { target: { value: '604801' } })
     fireEvent.click(screen.getByRole('button', { name: 'Start monitor' }))
@@ -525,7 +525,7 @@ describe('SessionAutomationPopover', () => {
     await waitFor(() => expect(runtime).toHaveAttribute('max', '2592000'))
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/42' },
+      target: { value: 'https://efmleads.com/pull/42' },
     })
     fireEvent.change(runtime, { target: { value: '2592000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Start monitor' }))
@@ -548,7 +548,7 @@ describe('SessionAutomationPopover', () => {
     await waitFor(() => expect(runtime).toHaveAttribute('max', String(ceiling)))
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/42' },
+      target: { value: 'https://efmleads.com/pull/42' },
     })
     fireEvent.change(runtime, { target: { value } })
     fireEvent.click(screen.getByRole('button', { name: 'Start monitor' }))
@@ -655,7 +655,7 @@ describe('SessionAutomationPopover', () => {
     expect(wake).toHaveAttribute('maxlength', '1000')
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/42' },
+      target: { value: 'https://efmleads.com/pull/42' },
     })
     fireEvent.change(wake, { target: { value: 'x'.repeat(1001) } })
     fireEvent.click(screen.getByRole('button', { name: 'Start monitor' }))
@@ -1333,7 +1333,7 @@ describe('SessionAutomationPopover', () => {
     const invalidate = vi.spyOn(client, 'invalidateQueries')
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/42' },
+      target: { value: 'https://efmleads.com/pull/42' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Start monitor' }))
     await waitFor(() => expect(api.monitorCreate).toHaveBeenCalled())
@@ -1379,7 +1379,7 @@ describe('SessionAutomationPopover', () => {
     const { rerenderAutomation } = renderPopover(activeMonitor)
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Pull request URL' }), {
-      target: { value: 'https://github.com/kirodotdev/KiroCrew/pull/99' },
+      target: { value: 'https://efmleads.com/pull/99' },
     })
     rerenderAutomation({
       ...activeMonitor,
@@ -1388,7 +1388,7 @@ describe('SessionAutomationPopover', () => {
     })
 
     expect(screen.getByRole('textbox', { name: 'Pull request URL' })).toHaveValue(
-      'https://github.com/kirodotdev/KiroCrew/pull/99',
+      'https://efmleads.com/pull/99',
     )
     expect(screen.getByRole('spinbutton', { name: 'Probe cadence in seconds' })).toHaveValue(600)
     expect(screen.getByRole('textbox', { name: 'Instructions for the agent when it wakes' }))
@@ -1396,7 +1396,7 @@ describe('SessionAutomationPopover', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     await waitFor(() => expect(api.monitorUpdate).toHaveBeenCalledWith('monitor-1', {
-      target: 'https://github.com/kirodotdev/KiroCrew/pull/99',
+      target: 'https://efmleads.com/pull/99',
     }))
   })
 
@@ -1542,7 +1542,7 @@ describe('SessionAutomationPopover', () => {
   it('opens on a live monitor rather than the default goal loop', () => {
     renderPopover(activeMonitor, vi.fn(), true, vi.fn(), '', { enterBounded: false })
 
-    expect(screen.getByText('https://github.com/kirodotdev/KiroCrew/pull/42')).toBeInTheDocument()
+    expect(screen.getByText('https://efmleads.com/pull/42')).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: 'Goal description' })).not.toBeInTheDocument()
   })
 

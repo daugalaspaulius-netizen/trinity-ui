@@ -19,7 +19,7 @@ import pytest
 def _make_orch(default_deliver, monkeypatch):
     """Build a GatewayOrchestrator (bypassing __init__) wired with a Slack mock
     and a fake config whose heartbeat.default_deliver is *default_deliver*."""
-    from kiro_crew.slack import gateway
+    from efm_go.slack import gateway
 
     orch = gateway.GatewayOrchestrator.__new__(gateway.GatewayOrchestrator)
 

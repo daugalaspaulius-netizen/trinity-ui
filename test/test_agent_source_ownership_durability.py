@@ -17,16 +17,16 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.knowledge.agent_source import (
+from efm_go.knowledge.agent_source import (
     AGENT_SOURCE_URI,
     add_agent_document,
     document_slug,
     ensure_agent_source,
     get_state,
 )
-from kiro_crew.knowledge.ingestion import IngestionPipeline
-from kiro_crew.knowledge.readers import FileReader
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.knowledge.ingestion import IngestionPipeline
+from efm_go.knowledge.readers import FileReader
+from efm_go.knowledge.store import KnowledgeStore
 
 URI = "https://example.invalid/doc"
 OTHER_URI = "https://example.invalid/other"

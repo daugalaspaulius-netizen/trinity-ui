@@ -25,8 +25,8 @@ import os
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.security import _SENSITIVE_HOME_DIRS, is_sensitive_path
+from efm_go import security
+from efm_go.security import _SENSITIVE_HOME_DIRS, is_sensitive_path
 
 #: leaf, the env vars that move it, and the spelling it takes under each of them.
 #:

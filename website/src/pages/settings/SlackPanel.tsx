@@ -15,7 +15,7 @@ import ErrorNotice from '../../components/ErrorNotice'
 import { SchemaRestartBadge } from '../../components/settingRef/RestartRequiredBadge'
 /** Brand name — do-not-translate, so it lives here rather than in the catalog. */
 const CHANNEL_NAME = "Slack"
-const SETUP_GUIDE = 'https://github.com/kirodotdev/KiroCrew/blob/main/src/kiro_crew/docs/slack-integration.md'
+const SETUP_GUIDE = 'https://efmleads.com/support'
 
 type Draft = {
   owner_id: string

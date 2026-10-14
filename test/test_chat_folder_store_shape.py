@@ -13,14 +13,14 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.dashboard.state import DashboardState
+from efm_go.dashboard.state import DashboardState
 
 
 def _load_with(tmp_path: Any, payload: object) -> list[dict]:
     (tmp_path / "folders.json").write_text(json.dumps(payload), encoding="utf-8")
     state = DashboardState.__new__(DashboardState)
     state._folders = []
-    with patch("kiro_crew.dashboard.state.config_dir", return_value=tmp_path):
+    with patch("efm_go.dashboard.state.config_dir", return_value=tmp_path):
         DashboardState.load_folders(state)
     return state._folders
 
@@ -76,8 +76,8 @@ class TestLoadFoldersDropsWhatNothingCanUse:
         state = DashboardState.__new__(DashboardState)
         state._folders = []
 
-        with patch("kiro_crew.dashboard.state.config_dir", return_value=tmp_path):
-            with patch("kiro_crew.dashboard.state.logger") as current_logger:
+        with patch("efm_go.dashboard.state.config_dir", return_value=tmp_path):
+            with patch("efm_go.dashboard.state.logger") as current_logger:
                 DashboardState.load_folders(state)
 
         current_logger.warning.assert_called_once_with(
@@ -98,7 +98,7 @@ class TestLoadFoldersDropsWhatNothingCanUse:
         state = DashboardState.__new__(DashboardState)
         state._folders = existing
 
-        with patch("kiro_crew.dashboard.state.config_dir", return_value=tmp_path):
+        with patch("efm_go.dashboard.state.config_dir", return_value=tmp_path):
             DashboardState.load_folders(state)
 
         assert state._folders is existing
@@ -117,7 +117,7 @@ class TestTheRealSnapshotSurvivesWhatLoadAdmits:
         )
         state = DashboardState.__new__(DashboardState)
         state._folders = []
-        with patch("kiro_crew.dashboard.state.config_dir", return_value=tmp_path):
+        with patch("efm_go.dashboard.state.config_dir", return_value=tmp_path):
             DashboardState.load_folders(state)
             # dict(row) over the surviving rows must not raise.
             snapshot = [dict(f) for f in state._folders]

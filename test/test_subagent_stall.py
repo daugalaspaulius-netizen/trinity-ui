@@ -24,7 +24,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent import SubagentInfo, SubagentManager
 
 
 def _make_manager(stall_idle_secs: int = 120) -> SubagentManager:
@@ -66,7 +66,7 @@ async def test_flagged_when_idle_beyond_threshold():
     mgr = _make_manager(stall_idle_secs=120)
     now = 1_000.0
     info = _info(turns=1, last_activity=now - 200)
-    with patch("kiro_crew.subagent.record_slow_command") as rec:
+    with patch("efm_go.subagent.record_slow_command") as rec:
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
         # Sweep 1: suspect only — no flag, no event, no record.
         assert info.stalled is False and info._stall_suspect_at > 0
@@ -97,7 +97,7 @@ async def test_not_re_emitted_when_already_stalled():
     mgr = _make_manager(stall_idle_secs=120)
     now = 1_000.0
     info = _info(turns=1, last_activity=now - 300, stalled=True)
-    with patch("kiro_crew.subagent.record_slow_command") as rec:
+    with patch("efm_go.subagent.record_slow_command") as rec:
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     mgr._fire_event.assert_not_called()  # already flagged; no duplicate event
     rec.assert_not_called()  # and no duplicate record
@@ -110,7 +110,7 @@ async def test_not_flagged_while_awaiting_approval():
     mgr = _make_manager(stall_idle_secs=120)
     now = 1_000.0
     info = _info(turns=1, last_activity=now - 700, _awaiting_approval=True)
-    with patch("kiro_crew.subagent.record_slow_command") as rec:
+    with patch("efm_go.subagent.record_slow_command") as rec:
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     assert info.stalled is False
     mgr._fire_event.assert_not_called()
@@ -127,7 +127,7 @@ async def test_slow_command_record_fields():
         started=now - 260, parent_session_key="dashboard:main",
         _stall_suspect_at=now - 60,  # sweep 1 already suspected (2-sweep rule)
     )
-    with patch("kiro_crew.subagent.record_slow_command") as rec:
+    with patch("efm_go.subagent.record_slow_command") as rec:
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     rec.assert_called_once()
     kwargs = rec.call_args.kwargs
@@ -146,7 +146,7 @@ async def test_flag_never_reaps():
     now = 1_000.0
     info = _info(turns=1, started=now - 5_000, last_activity=now - 5_000,
                  _stall_suspect_at=now - 60)  # sweep 1 already suspected (2-sweep rule)
-    with patch("kiro_crew.subagent.record_slow_command"):
+    with patch("efm_go.subagent.record_slow_command"):
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     assert info.stalled is True
     assert info.done is False

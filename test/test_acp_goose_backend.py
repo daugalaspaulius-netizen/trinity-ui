@@ -24,11 +24,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import acp_backends
-from kiro_crew.acp import client as acp_client
-from kiro_crew.acp.client import AcpClient, AcpToolGateUnroutable
-from kiro_crew.agent_sdk import backends as sdk_backends
-from kiro_crew.agent_sdk import tool_gate as gate
+from efm_go import acp_backends
+from efm_go.acp import client as acp_client
+from efm_go.acp.client import AcpClient, AcpToolGateUnroutable
+from efm_go.agent_sdk import backends as sdk_backends
+from efm_go.agent_sdk import tool_gate as gate
 
 GOOSE = acp_backends.ACP_BACKEND_GOOSE
 
@@ -466,7 +466,7 @@ def test_the_builtin_shell_frame_classifies_as_a_command() -> None:
     command, the command-deny tier never sees it, and under an auto-approve policy it
     runs. The meta channel is what makes the classification possible at all.
     """
-    from kiro_crew.acp._dispatch import is_shell_kind, meta_builtin_shell
+    from efm_go.acp._dispatch import is_shell_kind, meta_builtin_shell
 
     update = _goose_shell_update()
     assert "kind" not in update
@@ -476,7 +476,7 @@ def test_the_builtin_shell_frame_classifies_as_a_command() -> None:
 
 def test_a_served_tool_is_not_read_as_the_harness_shell() -> None:
     """The MCP frame from the same corpus must not match the builtin-shell pair."""
-    from kiro_crew.acp._dispatch import meta_builtin_shell
+    from efm_go.acp._dispatch import meta_builtin_shell
 
     assert meta_builtin_shell(_goose_tool_call_frame()) is False
 
@@ -488,7 +488,7 @@ def test_the_live_frame_yields_the_server_and_the_bare_tool() -> None:
     ``mcp__<server>__<tool>`` both spell the BARE tool, so the reader reconciles the two
     rather than leaving every comparison to do it.
     """
-    from kiro_crew.acp._dispatch import _kiro_mcp_server_name, _kiro_tool_name
+    from efm_go.acp._dispatch import _kiro_mcp_server_name, _kiro_tool_name
 
     frame = _goose_tool_call_frame()
     assert _kiro_mcp_server_name(frame) == "crew-probe"
@@ -505,7 +505,7 @@ def test_a_goose_builtin_is_not_misidentified_as_mcp() -> None:
     was. The pair is recognised as this harness's own shell instead, so the server is
     empty while the tool name survives.
     """
-    from kiro_crew.acp._dispatch import _kiro_mcp_server_name, _kiro_tool_name
+    from efm_go.acp._dispatch import _kiro_mcp_server_name, _kiro_tool_name
 
     builtin = _goose_shell_update()
     assert builtin["_meta"]["goose"]["toolCall"]["extensionName"] == "developer"
@@ -519,7 +519,7 @@ def test_the_kiro_channel_is_unchanged() -> None:
     Pinned because the readers were generalized in place: a regression here would move
     every existing backend's identity, not just goose's.
     """
-    from kiro_crew.acp._dispatch import _kiro_mcp_server_name, _kiro_tool_name
+    from efm_go.acp._dispatch import _kiro_mcp_server_name, _kiro_tool_name
 
     kiro_frame = {
         "_meta": {"kiro": {"mcpServerName": "kirocrew-core", "toolName": "memory_recall"}}
@@ -542,7 +542,7 @@ def test_a_denied_goose_mcp_tool_is_rejected_and_audited() -> None:
     """
     import asyncio
 
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     client = _stub()
     client._spec_denied_tools = {("crew-probe", "crew_probe_echo")}
@@ -578,8 +578,8 @@ def test_a_goose_mcp_approval_is_recognised_without_codex_marker() -> None:
     not fire at all -- leaving the auto-approve path with neither a deny match nor a
     refusal.
     """
-    from kiro_crew.acp.client import _identified_mcp_call, _is_mcp_tool_approval
-    from kiro_crew.acp.types import AcpEvent, JsonRpcMessage
+    from efm_go.acp.client import _identified_mcp_call, _is_mcp_tool_approval
+    from efm_go.acp.types import AcpEvent, JsonRpcMessage
 
     msg = JsonRpcMessage(id="perm-1", method="session/request_permission", params={})
     identified = AcpEvent(
@@ -613,7 +613,7 @@ def test_the_command_deny_tier_reaches_a_classified_goose_shell_call() -> None:
     reached only for a call the client resolved as a shell command. So the deny is
     asserted against the command the corpus frame actually carries.
     """
-    from kiro_crew.hooks import TOOL_DENY, HookManager, HooksConfig
+    from efm_go.hooks import TOOL_DENY, HookManager, HooksConfig
 
     update = _goose_shell_update()
     command = update["rawInput"]["command"]
@@ -635,7 +635,7 @@ def test_a_tool_call_no_channel_classified_is_refused_on_the_auto_approve_path()
     """
     import asyncio
 
-    from kiro_crew.acp.types import AcpEvent, JsonRpcMessage
+    from efm_go.acp.types import AcpEvent, JsonRpcMessage
 
     client = _stub()
     client._spec_denied_tools = {("some-server", "some-tool")}
@@ -653,7 +653,7 @@ def test_a_tool_call_no_channel_classified_is_refused_on_the_auto_approve_path()
 
     stripped = dict(_goose_shell_update())
     stripped.pop("_meta")
-    from kiro_crew.acp._dispatch import meta_builtin_shell
+    from efm_go.acp._dispatch import meta_builtin_shell
 
     assert meta_builtin_shell(stripped) is False
     assert "kind" not in stripped
@@ -692,7 +692,7 @@ def test_an_identified_mcp_call_is_not_caught_by_the_unclassified_refusal() -> N
     ``shell_classified``: a call whose identity IS recoverable belongs to the MCP checks
     below it, not to this one.
     """
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     client = _stub()
     client._tool_call_unclassified = {"call_x": True}
@@ -719,7 +719,7 @@ def test_a_harness_that_sends_kind_still_classifies_through_kind(kind: str) -> N
     ``kind: execute`` and no ``_meta`` classifies exactly as it did, and is not reported
     as this harness's builtin shell.
     """
-    from kiro_crew.acp._dispatch import is_shell_kind, meta_builtin_shell
+    from efm_go.acp._dispatch import is_shell_kind, meta_builtin_shell
 
     frame = {
         "sessionUpdate": "tool_call",
@@ -740,7 +740,7 @@ def test_the_shared_builder_caches_the_shell_signal_for_the_permission_event() -
     Caching it as resolved also matters -- an unresolved entry downgrades the child event
     to low fidelity and takes the identity-keyed grants with it.
     """
-    from kiro_crew.acp._dispatch import _build_tool_call_event
+    from efm_go.acp._dispatch import _build_tool_call_event
 
     shell_cache: dict[str, bool] = {}
     event = _build_tool_call_event(
@@ -763,7 +763,7 @@ def test_the_client_tool_call_path_classifies_and_records_the_verdict() -> None:
     A separate site from the shared builder -- the worker-pool dispatch runs through the
     client -- so it is covered separately rather than assumed to agree.
     """
-    from kiro_crew.acp.types import AcpPromptStats, JsonRpcMessage
+    from efm_go.acp.types import AcpPromptStats, JsonRpcMessage
 
     client = _stub()
     client._tool_call_inputs = {}
@@ -793,7 +793,7 @@ def test_the_client_tool_call_path_classifies_and_records_the_verdict() -> None:
 
 def test_a_frame_with_no_channel_is_recorded_as_unclassified() -> None:
     """The other half of the same site: nothing said anything, and that is remembered."""
-    from kiro_crew.acp.types import AcpPromptStats, JsonRpcMessage
+    from efm_go.acp.types import AcpPromptStats, JsonRpcMessage
 
     client = _stub()
     client._tool_call_inputs = {}
@@ -828,7 +828,7 @@ def test_the_refusal_is_scoped_to_harnesses_that_publish_a_channel() -> None:
     identity channel, where an unclassified frame contradicts the harness's own contract.
     Everything else keeps today's behaviour, whatever its frames happen to omit.
     """
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     assert acp_backends.ACP_BACKENDS_META_IDENTITY == {GOOSE}
 
@@ -862,7 +862,7 @@ def test_an_opencode_shaped_kindless_frame_is_not_refused() -> None:
     """
     import asyncio
 
-    from kiro_crew.acp.types import AcpEvent, JsonRpcMessage
+    from efm_go.acp.types import AcpEvent, JsonRpcMessage
 
     approved: list = []
     rejected: list = []
@@ -931,7 +931,7 @@ def test_every_opted_in_backend_classifies_each_recorded_tool_call() -> None:
     """
     from acp_frame_replay_harness import fixture_dir_name
 
-    from kiro_crew.acp._dispatch import (
+    from efm_go.acp._dispatch import (
         _kiro_mcp_server_name,
         _kiro_tool_name,
         is_shell_kind,
@@ -991,7 +991,7 @@ def test_a_trusted_identity_naming_an_unplaced_server_is_refused() -> None:
     """
     import asyncio
 
-    from kiro_crew.acp.types import AcpEvent, JsonRpcMessage
+    from efm_go.acp.types import AcpEvent, JsonRpcMessage
 
     client = _deny_set_client(GOOSE, placed=["crew-probe"])
     rejected: list = []
@@ -1027,7 +1027,7 @@ def test_a_trusted_identity_naming_an_unplaced_server_is_refused() -> None:
 
 def test_a_placed_server_and_the_builtin_extension_are_not_foreign() -> None:
     """The two identities a goose session legitimately carries both pass this check."""
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     client = _deny_set_client(GOOSE, placed=["crew-probe"])
 
@@ -1059,7 +1059,7 @@ def test_a_placed_server_and_the_builtin_extension_are_not_foreign() -> None:
 
 def test_the_foreign_server_check_is_scoped_to_array_backends() -> None:
     """kiro-cli's servers reach it through the agent file, so its array is not the universe."""
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.types import AcpEvent
 
     event = AcpEvent(
         kind="permission_request",
@@ -1100,7 +1100,7 @@ def test_a_mid_session_move_off_the_required_mode_stops_the_harness() -> None:
     """
     import asyncio
 
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.types import JsonRpcMessage
 
     frames = _mode_update_frames()
     modes = [f["params"]["update"]["currentModeId"] for f in frames]
@@ -1141,7 +1141,7 @@ def test_the_mode_tripwire_is_gated_on_the_read_back_predicate() -> None:
     """Every other backend's frames pass straight through; the kiro path gains no call."""
     import asyncio
 
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.types import JsonRpcMessage
 
     auto = next(
         f for f in _mode_update_frames() if f["params"]["update"]["currentModeId"] == "auto"
@@ -1158,8 +1158,8 @@ def test_the_mode_tripwire_is_gated_on_the_read_back_predicate() -> None:
 
 def test_the_codex_rawinput_channel_still_answers_first() -> None:
     """codex resolves through ``rawInput``, and that path must not have moved."""
-    from kiro_crew.acp.client import _identified_mcp_call
-    from kiro_crew.acp.types import AcpEvent
+    from efm_go.acp.client import _identified_mcp_call
+    from efm_go.acp.types import AcpEvent
 
     codex = AcpEvent(
         kind="permission_request",
@@ -1175,8 +1175,8 @@ def test_the_codex_rawinput_channel_still_answers_first() -> None:
 
 def test_the_install_command_and_the_resolved_binary_cannot_drift() -> None:
     """The driver seam reads the record rather than restating what it holds."""
-    from kiro_crew.agent_sdk.backends import launch_for
-    from kiro_crew.agent_sdk.drivers import acp as acp_driver
+    from efm_go.agent_sdk.backends import launch_for
+    from efm_go.agent_sdk.drivers import acp as acp_driver
 
     record = launch_for(sdk_backends.ACP_BACKEND_GOOSE)
     assert (
@@ -1261,7 +1261,7 @@ def test_the_credential_declaration_is_internally_consistent() -> None:
     open something the host fenced for another reason, so the relationship is checked
     rather than assumed.
     """
-    from kiro_crew.agent_sdk.host_auth import declaration_for
+    from efm_go.agent_sdk.host_auth import declaration_for
 
     decl = declaration_for(GOOSE)
     assert decl.credential_leaves == (".config/goose/secrets.yaml",)
@@ -1299,7 +1299,7 @@ def test_every_declared_home_override_is_scrubbed_from_a_child_env() -> None:
 
 def test_the_sign_in_remedy_renders_as_prose() -> None:
     """It reaches a div with no markdown pass, so backticks and ``--`` reach the reader."""
-    from kiro_crew.agent_sdk.host_auth import declaration_for
+    from efm_go.agent_sdk.host_auth import declaration_for
 
     remedy = declaration_for(GOOSE).sign_in_remedy
     assert "`" not in remedy
@@ -1324,7 +1324,7 @@ class TestAReleaseOutsideTheVerifiedRangeIsNamedAtHandshake:
         return [r.getMessage() for r in caplog.records if "routing contract" in r.getMessage()]
 
     def test_a_release_is_named_once_per_process(self, tmp_path, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             self._client(tmp_path, "1.51.0")._note_goose_version()
             self._client(tmp_path, "1.51.0")._note_goose_version()
             self._client(tmp_path, "2.0.0")._note_goose_version()
@@ -1332,7 +1332,7 @@ class TestAReleaseOutsideTheVerifiedRangeIsNamedAtHandshake:
 
     @pytest.mark.parametrize("version", ["1.50.1", "1.50.9"])
     def test_the_verified_range_is_silent(self, tmp_path, caplog, version):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             self._client(tmp_path, version)._note_goose_version()
         assert not self._hits(caplog)
 
@@ -1341,7 +1341,7 @@ class TestAReleaseOutsideTheVerifiedRangeIsNamedAtHandshake:
         self, tmp_path, caplog, version
     ):
         """The trailing dot on the prefix keeps 1.500.x and 1.5.x outside the range."""
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             self._client(tmp_path, version)._note_goose_version()
         hits = self._hits(caplog)
         assert len(hits) == 1
@@ -1349,7 +1349,7 @@ class TestAReleaseOutsideTheVerifiedRangeIsNamedAtHandshake:
         assert (version or "unknown") in hits[0]
 
     def test_other_harnesses_are_untouched(self, tmp_path, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             self._client(tmp_path, "9.9.9", sdk_backends.ACP_BACKEND_PI)._note_goose_version()
             self._client(tmp_path, "9.9.9", sdk_backends.ACP_BACKEND_KIRO)._note_goose_version()
         assert not caplog.records
@@ -1410,7 +1410,7 @@ def test_an_unclassified_call_is_refused_on_goose_without_a_deny_set() -> None:
     it fires on the empty set."""
     import asyncio
 
-    from kiro_crew.acp.types import AcpEvent, JsonRpcMessage
+    from efm_go.acp.types import AcpEvent, JsonRpcMessage
 
     client = _no_deny_set_client(GOOSE)
     client._tool_call_unclassified["call_ub405veq"] = True
@@ -1439,7 +1439,7 @@ def test_an_unclassified_call_is_refused_on_goose_without_a_deny_set() -> None:
 def test_a_foreign_server_is_refused_on_goose_without_a_deny_set() -> None:
     import asyncio
 
-    from kiro_crew.acp.types import AcpEvent, JsonRpcMessage
+    from efm_go.acp.types import AcpEvent, JsonRpcMessage
 
     client = _no_deny_set_client(GOOSE, placed=["crew-probe"])
     rejected: list = []
@@ -1475,7 +1475,7 @@ def test_a_classified_goose_call_is_still_approved_without_a_deny_set() -> None:
     """Judging is not refusing: a classified call on the empty set is approved as before."""
     import asyncio
 
-    from kiro_crew.acp.types import AcpEvent, JsonRpcMessage
+    from efm_go.acp.types import AcpEvent, JsonRpcMessage
 
     client = _no_deny_set_client(GOOSE, placed=["crew-probe"])
     client._tool_call_unclassified["call_ok"] = False
@@ -1504,7 +1504,7 @@ def test_a_harness_outside_the_set_builds_nothing_without_a_deny_set() -> None:
     recorded, so the answer this site sends is the one it always sent."""
     import asyncio
 
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.types import JsonRpcMessage
 
     client = _no_deny_set_client(acp_backends.ACP_BACKEND_CLAUDE)
     client._tool_call_unclassified["call_c"] = True
@@ -1517,7 +1517,7 @@ def test_a_harness_outside_the_set_builds_nothing_without_a_deny_set() -> None:
     client._permission_options = {}
 
     def _build(msg):
-        from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
+        from efm_go.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
 
         built.append(msg.id)
         client._permission_options[msg.id] = {"once": "allow"}
@@ -1565,7 +1565,7 @@ def _startup_client(backend: str, spawns: list[int]) -> AcpClient:
     """
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
     client = AcpClient(acp_backend=backend)
     client._process = None
@@ -1598,8 +1598,8 @@ def _startup_client(backend: str, spawns: list[int]) -> AcpClient:
 def test_an_unconfigured_goose_names_the_fix_and_is_not_retried() -> None:
     import asyncio
 
-    from kiro_crew.acp.client import AcpAuthRequired, AcpError
-    from kiro_crew.agent_sdk import host_auth
+    from efm_go.acp.client import AcpAuthRequired, AcpError
+    from efm_go.agent_sdk import host_auth
 
     spawns: list[int] = []
     client = _startup_client(GOOSE, spawns)
@@ -1619,7 +1619,7 @@ def test_the_goose_phrase_does_not_classify_another_harness() -> None:
     """Scoped per harness: kiro-cli meeting the same words keeps its retry."""
     import asyncio
 
-    from kiro_crew.acp.client import AcpAuthRequired, AcpError
+    from efm_go.acp.client import AcpAuthRequired, AcpError
 
     spawns: list[int] = []
     client = _startup_client(acp_backends.ACP_BACKEND_KIRO, spawns)
@@ -1642,7 +1642,7 @@ def test_a_cancel_answers_the_open_permission_request_as_cancelled(
     import threading
     from unittest.mock import AsyncMock, MagicMock
 
-    from kiro_crew.acp.types import JsonRpcMessage
+    from efm_go.acp.types import JsonRpcMessage
 
     frame = next(
         json.loads(line)
@@ -1705,7 +1705,7 @@ def test_a_keyring_only_goose_is_told_how_to_store_its_key_where_it_can_read_it(
     switch: telling that operator to run ``goose configure`` again only puts the
     key back in the keyring.
     """
-    from kiro_crew.acp.client import _format_acp_error
+    from efm_go.acp.client import _format_acp_error
 
     text = _format_acp_error({"code": -32000, "message": "Authentication required"}, backend=GOOSE)
 

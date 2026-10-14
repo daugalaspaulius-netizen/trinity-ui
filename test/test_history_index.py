@@ -1,4 +1,4 @@
-"""Tests for the session search candidate index (``kiro_crew.history_index``).
+"""Tests for the session search candidate index (``efm_go.history_index``).
 
 The index's contract is narrow and the tests below are written against it
 directly: it must return a SUPERSET of the true content hits, and it must refuse
@@ -14,9 +14,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew._sqlite_compat import fts5_available
-from kiro_crew.history_index import SessionSearchIndex, cjk_inventory
-from kiro_crew.history_search import parse_search_query
+from efm_go._sqlite_compat import fts5_available
+from efm_go.history_index import SessionSearchIndex, cjk_inventory
+from efm_go.history_search import parse_search_query
 
 pytestmark = pytest.mark.skipif(not fts5_available(), reason="SQLite built without FTS5")
 

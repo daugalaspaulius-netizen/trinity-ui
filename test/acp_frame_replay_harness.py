@@ -7,8 +7,8 @@ that outlive the run (AUTOSDE ``no-test-side-effects``), so the WRITER is a
 script and the test stays read-only.
 
 Not named ``test_*``, so pytest does not collect it. It lives under ``test/``
-rather than ``src/kiro_crew/testing/`` on purpose: it imports
-``kiro_crew.acp._dispatch``, and a module under ``src/`` outside ``acp/``,
+rather than ``src/efm_go/testing/`` on purpose: it imports
+``efm_go.acp._dispatch``, and a module under ``src/`` outside ``acp/``,
 ``agent_sdk/`` and ``providers/`` doing that adds an edge to the
 ``check_agent_sdk_boundary.py`` baseline, which this change is not allowed to
 grow.
@@ -22,7 +22,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from kiro_crew.acp._dispatch import (
+from efm_go.acp._dispatch import (
     agent_version_from_init,
     build_permission_event,
     classify_notification,
@@ -36,8 +36,8 @@ from kiro_crew.acp._dispatch import (
     parse_usage_cost,
     parse_usage_update,
 )
-from kiro_crew.acp.types import AcpEvent, JsonRpcMessage
-from kiro_crew.acp_backends import POLICY_ID_BY_BACKEND
+from efm_go.acp.types import AcpEvent, JsonRpcMessage
+from efm_go.acp_backends import POLICY_ID_BY_BACKEND
 
 
 def fixture_dir_name(backend: str) -> str:

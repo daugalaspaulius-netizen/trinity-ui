@@ -54,8 +54,8 @@ EXPENSIVE_MARKERS = ("actions/setup-node@", "npm run build", "build==", "test/e2
 #: pods. ``None`` means the backend lives in ``runtime`` itself (systemd).
 BACKEND_FOR_RUNNER = {
     "ubuntu-latest": None,
-    "macos-15": "kiro_crew.pod.launchd",
-    "windows-latest": "kiro_crew.pod.windows",
+    "macos-15": "efm_go.pod.launchd",
+    "windows-latest": "efm_go.pod.windows",
 }
 
 #: Platforms whose backend EXISTS but which are deliberately not in the matrix yet.

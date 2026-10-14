@@ -18,12 +18,12 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from kiro_crew.cron import CronJob, CronSchedule
-from kiro_crew.slack.gateway import _FAILURE_REMINDER_SECS, GatewayOrchestrator
+from efm_go.cron import CronJob, CronSchedule
+from efm_go.slack.gateway import _FAILURE_REMINDER_SECS, GatewayOrchestrator
 
 
 def _source() -> str:
-    import kiro_crew.slack.gateway as mod
+    import efm_go.slack.gateway as mod
 
     return Path(mod.__file__).read_text(encoding="utf-8")
 

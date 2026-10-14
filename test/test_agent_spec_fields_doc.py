@@ -3,7 +3,7 @@
 ``scripts/docs_lint.py`` gates a doc's SYMBOLS and PATHS, never what it claims about
 them, and ``test_context_management_doc.py`` pins one file:
 ``docs/architecture/context-management.md``. That leaves
-``src/kiro_crew/docs/agent-spec-fields.md`` free to say the opposite of the code with
+``src/efm_go/docs/agent-spec-fields.md`` free to say the opposite of the code with
 every symbol and path resolving and the lint green — and the claims most exposed to
 that are its skill-resource ones, because they describe a decision whose inputs are
 not visible in any symbol it names.
@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-DOC = Path(__file__).parent.parent / "src" / "kiro_crew" / "docs" / "agent-spec-fields.md"
+DOC = Path(__file__).parent.parent / "src" / "efm_go" / "docs" / "agent-spec-fields.md"
 
 
 @pytest.fixture(scope="module")
@@ -61,7 +61,7 @@ def test_steering_is_still_the_backend_gated_half(doc_text: str) -> None:
     that module, so a token match anywhere would keep this green with the steering
     gate's own condition dropped.
     """
-    source = (Path(__file__).parent.parent / "src" / "kiro_crew" / "context.py").read_text(
+    source = (Path(__file__).parent.parent / "src" / "efm_go" / "context.py").read_text(
         encoding="utf-8"
     )
     gate = (
@@ -82,7 +82,7 @@ def test_steering_is_still_the_backend_gated_half(doc_text: str) -> None:
 
 def test_relative_skill_uri_anchors_at_the_supplied_project(tmp_path: Path) -> None:
     """The doc's relative-URI rule: project_dir wins, spec location is the fallback."""
-    from kiro_crew.agent_discovery import expand_skill_uri
+    from efm_go.agent_discovery import expand_skill_uri
 
     spec = tmp_path / "proj" / ".kiro" / "agents" / "foo.json"
     spec.parent.mkdir(parents=True)
@@ -119,7 +119,7 @@ def test_native_launch_view_carries_no_skill_resources(doc_text, tmp_path, monke
     import json
     from types import SimpleNamespace
 
-    from kiro_crew.acp import skill_projection as projection
+    from efm_go.acp import skill_projection as projection
 
     monkeypatch.delenv("KIROCREW_NATIVE_SKILL_PROJECTION", raising=False)
     home = tmp_path / "kiro"
@@ -130,7 +130,7 @@ def test_native_launch_view_carries_no_skill_resources(doc_text, tmp_path, monke
     monkeypatch.setattr(projection, "kiro_home", lambda: home)
     monkeypatch.setattr(projection, "kiro_agents_dir", lambda: agents)
     monkeypatch.setattr(
-        "kiro_crew.agent.managed_mcp_spec_entry",
+        "efm_go.agent.managed_mcp_spec_entry",
         lambda name: {"command": "test-core", "args": []},
     )
     monkeypatch.setattr(
@@ -159,7 +159,7 @@ def test_native_launch_view_carries_no_skill_resources(doc_text, tmp_path, monke
 
 def test_mirror_note_names_the_real_return_expression(doc_text: str) -> None:
     """The mirror note quotes the plan's expression; a rewrite must update the page."""
-    source = (Path(__file__).parent.parent / "src" / "kiro_crew" / "context.py").read_text(
+    source = (Path(__file__).parent.parent / "src" / "efm_go" / "context.py").read_text(
         encoding="utf-8"
     )
     assert "return (bool(globs) or not is_custom), globs" in source

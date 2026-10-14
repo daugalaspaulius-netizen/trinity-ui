@@ -27,10 +27,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import autonudge_authz
-from kiro_crew.autonudge import AutoNudgeService, MonitorUpdateConflict
-from kiro_crew.dashboard.handlers import autonudge as h
-from kiro_crew.monitoring.models import (
+from efm_go import autonudge_authz
+from efm_go.autonudge import AutoNudgeService, MonitorUpdateConflict
+from efm_go.dashboard.handlers import autonudge as h
+from efm_go.monitoring.models import (
     MONITOR_STATE_VERSION,
     MonitorBudgets,
     MonitorOutcome,

@@ -13,7 +13,7 @@ import json
 import pytest
 from chat_test_helpers import move_transcript_past
 
-from kiro_crew.history import ConversationLog
+from efm_go.history import ConversationLog
 
 
 @pytest.fixture

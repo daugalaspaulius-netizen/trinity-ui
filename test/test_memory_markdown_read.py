@@ -20,8 +20,8 @@ import pytest
 from member_memory_helpers import env as _member_env
 from member_memory_helpers import request
 
-from kiro_crew import cli_commands
-from kiro_crew.memory import MemoryStore
+from efm_go import cli_commands
+from efm_go.memory import MemoryStore
 
 env = _member_env
 
@@ -224,7 +224,7 @@ class TestReadRefusalSelAudit:
     suppressed by the same same-host actor the guard defends against."""
 
     def _recording_sel(self, monkeypatch: pytest.MonkeyPatch) -> list[dict]:
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         calls: list[dict] = []
 
@@ -288,7 +288,7 @@ class TestReadRefusalSelAudit:
     def test_audit_failure_never_breaks_the_read(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         def _boom() -> object:
             raise RuntimeError("sel unavailable")
@@ -319,7 +319,7 @@ class TestGuardedReadRobustness:
     def test_oversized_file_yields_empty_entry(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         ms = _store(tmp_path)
         ms.init()
@@ -343,7 +343,7 @@ class TestGuardedReadRobustness:
     def test_concurrent_rewrite_retries_to_consistent_version(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import memory_files as memory_mod
+        from efm_go import memory_files as memory_mod
 
         ms = _store(tmp_path)
         ms.init()
@@ -367,7 +367,7 @@ class TestGuardedReadRobustness:
     def test_file_changing_on_every_read_degrades_to_empty(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import memory_files as memory_mod
+        from efm_go import memory_files as memory_mod
 
         ms = _store(tmp_path)
         ms.init()
@@ -399,8 +399,8 @@ class TestUncWorkspaceGate:
     def _unc_store(self, monkeypatch: pytest.MonkeyPatch) -> "object":
         import types
 
-        from kiro_crew import memory_files as memory_mod
-        from kiro_crew.memory import MemoryStore
+        from efm_go import memory_files as memory_mod
+        from efm_go.memory import MemoryStore
 
         store = MemoryStore(workspace=Path("//evil-host/share/ws"))
         # Patch ONLY memory.py's view of os (its sole use is the gate's
@@ -412,7 +412,7 @@ class TestUncWorkspaceGate:
     def test_snapshot_refuses_unc_workspace_without_filesystem_touch(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import memory_files as memory_mod
+        from efm_go import memory_files as memory_mod
 
         ms = self._unc_store(monkeypatch)
 
@@ -513,7 +513,7 @@ class TestMemoryShowCli:
     def test_store_reads_where_the_consolidator_writes(self) -> None:
         """The read surface must anchor where the gateway's consolidator
         (the writer of this layer) writes: the bare MemoryStore default."""
-        from kiro_crew.memory import MemoryStore, workspace_dir
+        from efm_go.memory import MemoryStore, workspace_dir
 
         store = cli_commands._markdown_memory_store()
         writer = MemoryStore()
@@ -556,7 +556,7 @@ class TestAtomicMemoryWrites:
     def test_failed_replace_cleans_up_temp_file(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew import atomic_write as atomic_write_mod
+        from efm_go import atomic_write as atomic_write_mod
 
         ms = _store(tmp_path)
         ms.init()
@@ -971,9 +971,9 @@ class TestMemoryCliWiring:
         ]
         with (
             patch.object(sys, "argv", argv),
-            patch("kiro_crew.cli_commands._memory_cmd") as mock_cmd,
+            patch("efm_go.cli_commands._memory_cmd") as mock_cmd,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         ns = mock_cmd.call_args[0][0]
@@ -987,9 +987,9 @@ class TestMemoryCliWiring:
     def test_memory_show_target_optional_defaults(self) -> None:
         with (
             patch.object(sys, "argv", ["kirocrew", "memory", "show"]),
-            patch("kiro_crew.cli_commands._memory_cmd") as mock_cmd,
+            patch("efm_go.cli_commands._memory_cmd") as mock_cmd,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         ns = mock_cmd.call_args[0][0]
@@ -998,9 +998,9 @@ class TestMemoryCliWiring:
     def test_memory_export_include_markdown_defaults_off(self) -> None:
         with (
             patch.object(sys, "argv", ["kirocrew", "memory", "export"]),
-            patch("kiro_crew.cli_commands._memory_cmd") as mock_cmd,
+            patch("efm_go.cli_commands._memory_cmd") as mock_cmd,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
         assert mock_cmd.call_args[0][0].include_markdown is False
@@ -1171,7 +1171,7 @@ class TestLiteralFtsQuery:
         assert self._indexed(tmp_path).search("   ") == []
 
     def test_an_embedded_quote_is_escaped_not_injected(self) -> None:
-        from kiro_crew.memory import _fts5_literal_query
+        from efm_go.memory import _fts5_literal_query
 
         assert _fts5_literal_query('a "b"') == '"a" """b"""'
 
@@ -1184,14 +1184,14 @@ class TestOneEscapingDialect:
     """
 
     def test_memory_and_knowledge_share_the_quoting_primitive(self) -> None:
-        from kiro_crew._sqlite_compat import fts5_quote_tokens
+        from efm_go._sqlite_compat import fts5_quote_tokens
 
         assert fts5_quote_tokens("PROJ-123 hooks.py") == ['"PROJ-123"', '"hooks.py"']
 
     def test_the_join_differs_on_purpose(self) -> None:
         """Memory ANDs a deliberate query; knowledge ORs for recall."""
-        from kiro_crew.knowledge.retrieval import HybridRetriever
-        from kiro_crew.memory import _fts5_literal_query
+        from efm_go.knowledge.retrieval import HybridRetriever
+        from efm_go.memory import _fts5_literal_query
 
         assert _fts5_literal_query("alpha beta") == '"alpha" "beta"'
         assert HybridRetriever._sanitize_fts5_query("alpha beta") == '"alpha" OR "beta"'
@@ -1239,7 +1239,7 @@ class TestLinkedWorkspaceAncestorGate:
     def _windows(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import types
 
-        from kiro_crew import memory_files as memory_mod
+        from efm_go import memory_files as memory_mod
 
         # Patch ONLY memory.py's view of os (same rationale as the UNC gate
         # tests above): patching the global os.name would make pathlib
@@ -1253,7 +1253,7 @@ class TestLinkedWorkspaceAncestorGate:
     ) -> None:
         """Ordering IS the property: the leaf predicate is wired to explode,
         so a regression that lstats first fails loudly instead of silently."""
-        from kiro_crew import memory_files as memory_mod
+        from efm_go import memory_files as memory_mod
 
         ms = _populated_store(tmp_path)
         self._windows(monkeypatch)
@@ -1286,7 +1286,7 @@ class TestLinkedWorkspaceAncestorGate:
     ) -> None:
         """Mutation check: with the walk reporting no link, the same store
         reads again -- the refusal above is attributable to the guard."""
-        from kiro_crew import memory_files as memory_mod
+        from efm_go import memory_files as memory_mod
 
         ms = _populated_store(tmp_path)
         self._windows(monkeypatch)
@@ -1304,7 +1304,7 @@ class TestLinkedWorkspaceAncestorGate:
         agent-writable), so the walk must not even run there."""
         if os.name == "nt":
             pytest.skip("gate is active on Windows by design")
-        from kiro_crew import memory_files as memory_mod
+        from efm_go import memory_files as memory_mod
 
         def _boom(_p: object) -> None:  # pragma: no cover
             raise AssertionError("ancestor walk ran on POSIX")
@@ -1327,7 +1327,7 @@ class TestLinkedWorkspaceAncestorGate:
 
 @pytest.mark.asyncio
 async def test_owner_loader_retains_member_database_history(env):
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     store = memory.vector_store
@@ -1343,7 +1343,7 @@ async def test_owner_loader_retains_member_database_history(env):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("escape", ["hardlink", "opened_path"])
 async def test_member_history_ignores_old_file_copies(env, monkeypatch, escape):
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     path = env.home / "memory_stores" / "member-alice" / "memory" / "history" / "2000-01-01.md"
@@ -1355,7 +1355,7 @@ async def test_member_history_ignores_old_file_copies(env, monkeypatch, escape):
         os.link(other, path)
     else:
         path.write_text("This member's own content.", encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.memory_files.fd_real_path", lambda descriptor: str(other))
+        monkeypatch.setattr("efm_go.memory_files.fd_real_path", lambda descriptor: str(other))
     assert "Current database history" in memory.read_recent_history()
     assert "Private evidence" not in memory.read_recent_history()
     assert other.read_text(encoding="utf-8") == "Private evidence belonging elsewhere."
@@ -1367,7 +1367,7 @@ async def test_member_history_ignores_old_file_copies(env, monkeypatch, escape):
 async def test_private_anchor_read_refuses_unsafe_present_files(
     env, monkeypatch, document, failure
 ):
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     path = memory._memory_dir / f"{document}.md"
@@ -1380,7 +1380,7 @@ async def test_private_anchor_read_refuses_unsafe_present_files(
         os.link(other, path)
         reason = "hard links"
     elif failure == "opened_path":
-        monkeypatch.setattr("kiro_crew.memory_files.fd_real_path", lambda descriptor: str(other))
+        monkeypatch.setattr("efm_go.memory_files.fd_real_path", lambda descriptor: str(other))
         reason = "bound path"
     elif failure == "invalid_utf8":
         path.write_bytes(b"\xff")
@@ -1397,7 +1397,7 @@ async def test_private_anchor_read_refuses_unsafe_present_files(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("document", ["preferences", "projects"])
 async def test_private_anchor_missing_and_empty_remain_valid_initial_states(env, document):
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     path = memory._memory_dir / f"{document}.md"
@@ -1414,8 +1414,8 @@ async def test_private_anchor_missing_and_empty_remain_valid_initial_states(env,
 @pytest.mark.asyncio
 @pytest.mark.parametrize("document", ["preferences", "projects"])
 async def test_private_anchor_get_returns_scoped_unavailable_reason_without_contents(env, document):
-    from kiro_crew.dashboard.handlers import memory as memory_handlers
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go.dashboard.handlers import memory as memory_handlers
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     path = memory._memory_dir / f"{document}.md"
@@ -1438,7 +1438,7 @@ async def test_private_anchor_get_returns_scoped_unavailable_reason_without_cont
     "failure", ["hardlink", "invalid_utf8", "vanished", "unsafe_root", "linked_root"]
 )
 async def test_member_index_rebuild_ignores_old_file_sources(env, monkeypatch, failure):
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     memory.append_history("Original searchable sentinel.")
@@ -1476,7 +1476,7 @@ async def test_member_index_rebuild_ignores_old_file_sources(env, monkeypatch, f
         monkeypatch.setattr(memory._files, "_read_root_guard", lambda: False)
     with monkeypatch.context() as traversal_guard:
         traversal_guard.setattr(
-            "kiro_crew.memory.os.scandir",
+            "efm_go.memory.os.scandir",
             lambda *args: pytest.fail("old file sources were traversed"),
         )
         assert memory.rebuild_index() == count
@@ -1487,8 +1487,8 @@ async def test_member_index_rebuild_ignores_old_file_sources(env, monkeypatch, f
 
 @pytest.mark.asyncio
 async def test_member_index_database_failure_rolls_back_and_is_explicit(env, monkeypatch):
-    from kiro_crew._sqlite_compat import sqlite3
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go._sqlite_compat import sqlite3
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     memory.append_history("Original searchable sentinel.")
@@ -1519,7 +1519,7 @@ async def test_member_index_database_failure_rolls_back_and_is_explicit(env, mon
 
 @pytest.mark.asyncio
 async def test_member_index_readers_keep_previous_index_until_commit(env, monkeypatch):
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     memory.append_history("Original searchable sentinel.")
@@ -1529,7 +1529,7 @@ async def test_member_index_readers_keep_previous_index_until_commit(env, monkey
     original = store.db
     with original:
         original.execute("UPDATE memory_history SET content='Replacement searchable record.'")
-    from kiro_crew.vector_memory import open_member_database
+    from efm_go.vector_memory import open_member_database
 
     reader = open_member_database(store._db_path, member_id="alice", store_id="member-alice")
     checked = []
@@ -1563,7 +1563,7 @@ async def test_member_index_readers_keep_previous_index_until_commit(env, monkey
 
 @pytest.mark.asyncio
 async def test_member_index_covers_database_history_beyond_snapshot_limit(env):
-    from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
+    from efm_go.dashboard.handlers._shared import markdown_memory_for_store
 
     memory = await markdown_memory_for_store(env.state, "member-alice")
     first_day = date(2000, 1, 1)

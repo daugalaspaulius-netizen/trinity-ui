@@ -33,10 +33,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.knowledge import store as store_mod
-from kiro_crew.knowledge.ingestion import IngestionPipeline
-from kiro_crew.knowledge.readers import FileReader
-from kiro_crew.knowledge.store import KnowledgeStore
+from efm_go.knowledge import store as store_mod
+from efm_go.knowledge.ingestion import IngestionPipeline
+from efm_go.knowledge.readers import FileReader
+from efm_go.knowledge.store import KnowledgeStore
 
 
 class _RecordingGuard:

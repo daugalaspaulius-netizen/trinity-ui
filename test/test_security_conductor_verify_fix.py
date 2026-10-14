@@ -25,7 +25,7 @@ state the verifier's exit status and write the corpus at its own call site, and
 what makes the broken-install case reachable without breaking the checkout.
 
 The deny fence is reached the way the shipped probe reaches it: the probe puts the
-worktree's ``src`` at the head of ``PYTHONPATH`` and imports ``kiro_crew.security``
+worktree's ``src`` at the head of ``PYTHONPATH`` and imports ``efm_go.security``
 from there, so a test stages a fake module at that path -- one that refuses any
 command carrying a marker, or one that fails to import. There is deliberately no
 flag that substitutes a classifier PROGRAM: that would decode caller text into
@@ -66,7 +66,7 @@ from skill_script_helpers import load_skill_script
 from test_security_conductor_fix_contract import build_repo
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SKILL_DIR = REPO_ROOT / "src" / "kiro_crew" / "builtin_skills" / "security-conductor"
+SKILL_DIR = REPO_ROOT / "src" / "efm_go" / "builtin_skills" / "security-conductor"
 SCRIPTS = SKILL_DIR / "scripts"
 VERIFY_FIX = SCRIPTS / "verify_fix.py"
 LEDGER = SCRIPTS / "ledger.py"
@@ -98,7 +98,7 @@ STUB_VERIFIER = """import sys
 sys.exit({code})
 """
 
-#: A fake ``kiro_crew.security`` staged on the worktree's ``src``, where the probe
+#: A fake ``efm_go.security`` staged on the worktree's ``src``, where the probe
 #: imports the fence from. It refuses any command containing a marker substring, so
 #: a test can arrange exactly one broken golden path without depending on what the
 #: real fence happens to think.
@@ -206,13 +206,13 @@ def fence(
 
 
 def stage_fence(worktree: Path, spec: dict) -> None:
-    """Write a fake ``kiro_crew.security`` where the probe will import it.
+    """Write a fake ``efm_go.security`` where the probe will import it.
 
     ``<worktree>/src`` leads the probe's ``PYTHONPATH``, so a package there shadows
     the installed one for the child only -- the test process keeps the real fence
     for the corpus class below.
     """
-    package = worktree / "src" / "kiro_crew"
+    package = worktree / "src" / "efm_go"
     package.mkdir(parents=True, exist_ok=True)
     (package / "__init__.py").write_text("", encoding="utf-8")
     body = (
@@ -607,7 +607,7 @@ class TestHoldsIsUnreachableWhileAnythingIsUnverifiable:
 class TestTheFenceClassifiedAgainstIsTheWorktrees:
     """A leading ``PYTHONPATH`` entry is a preference, not a guarantee.
 
-    A checkout that does not carry ``kiro_crew/security`` imports the INSTALLED
+    A checkout that does not carry ``efm_go/security`` imports the INSTALLED
     package instead, and every golden path is then classified against rules that
     are not under review -- a pass that says nothing about the fix. The probe
     therefore proves where the fence came from, and a borrowed one is unavailable.
@@ -616,7 +616,7 @@ class TestTheFenceClassifiedAgainstIsTheWorktrees:
     def test_a_worktree_without_the_package_does_not_borrow_the_installed_fence(
         self, staged: Path, tmp_path: Path, worktree: Path
     ) -> None:
-        """No fake fence is staged, so the only ``kiro_crew.security`` the probe can
+        """No fake fence is staged, so the only ``efm_go.security`` the probe can
         find is the one installed in this interpreter -- which must not count."""
         db = tmp_path / "findings.db"
         a_golden_path(staged, command="gh pr view 1 --json state")
@@ -635,8 +635,8 @@ class TestTheFenceClassifiedAgainstIsTheWorktrees:
         """A worktree whose ``src`` is a symlink to the source tree (the way an
         end-to-end smoke stages one) still owns the fence it points at."""
         real = tmp_path / "real-src"
-        (real / "kiro_crew").mkdir(parents=True)
-        module = real / "kiro_crew" / "security.py"
+        (real / "efm_go").mkdir(parents=True)
+        module = real / "efm_go" / "security.py"
         module.write_text("", encoding="utf-8")
         link = tmp_path / "wt" / "src"
         link.parent.mkdir()
@@ -650,12 +650,12 @@ class TestTheFenceClassifiedAgainstIsTheWorktrees:
         "module_file, root, symptom",
         [
             pytest.param(
-                "site-packages/kiro_crew/security/__init__.py", "wt/src", "outside", id="installed"
+                "site-packages/efm_go/security/__init__.py", "wt/src", "outside", id="installed"
             ),
             pytest.param(None, "wt/src", "no source file", id="namespace-package"),
-            pytest.param("wt/src/kiro_crew/security.py", "", "not told", id="no-root"),
+            pytest.param("wt/src/efm_go/security.py", "", "not told", id="no-root"),
             pytest.param(
-                "wt/src-other/kiro_crew/security.py", "wt/src", "outside", id="sibling-prefix"
+                "wt/src-other/efm_go/security.py", "wt/src", "outside", id="sibling-prefix"
             ),
         ],
     )
@@ -1075,7 +1075,7 @@ class TestTheGateReadsTheCommittedFileNotTheLedger:
     ) -> None:
         """A checkout that ships an emptier corpus is still judged by this one."""
         db = tmp_path / "findings.db"
-        shipped = worktree / "src" / "kiro_crew" / "builtin_skills" / "security-conductor"
+        shipped = worktree / "src" / "efm_go" / "builtin_skills" / "security-conductor"
         shipped.mkdir(parents=True)
         (shipped / CORPUS_FILENAME).write_text('{"golden_paths": []}', encoding="utf-8")
         a_golden_path(staged, command="gh pr view 1 REFUSE-ME")
@@ -1244,7 +1244,7 @@ class TestTheShippedCorpusIsALiveGate:
     ) -> None:
         """Every tier the gate applies to shell text, in its order -- the same composite the probe
         applies and `scripts/deny_diff.py` measures."""
-        import kiro_crew.security as security
+        import efm_go.security as security
 
         broken: dict[str, str] = {}
         for row in rows:
@@ -1381,7 +1381,7 @@ NO_TEST_IN_IT = "# a module the fix left behind with no test node in it\n"
 A_CONTRACT = {
     "finding_ids": [1],
     "allowed_paths": ["src/", "test/"],
-    "forbidden_paths": ["src/kiro_crew/sandbox.py"],
+    "forbidden_paths": ["src/efm_go/sandbox.py"],
     "max_changed_files": 3,
     "no_new_refusal_statement": "An operator-set KIROCREW_SECURITY_POLICY still reaches the child.",
 }
@@ -1431,7 +1431,7 @@ class TestTheFixContractIsStepZero:
 
     def test_no_contract_file_behaves_exactly_as_before(self, staged: Path, tmp_path: Path) -> None:
         """An old dispatch must not turn unverifiable overnight."""
-        worktree = build_repo(tmp_path, "no-contract", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "no-contract", committed=("src/efm_go/x.py",))
         a_behaviour_file(worktree, "test/test_behaviour.py", PASSING_TEST)
         a_golden_path(staged, kind="test", command="test/test_behaviour.py")
         install_verifier(staged, VERIFIER_REJECTED)
@@ -1444,7 +1444,7 @@ class TestTheFixContractIsStepZero:
         }
 
     def test_a_named_contract_that_is_honoured_holds(self, staged: Path, tmp_path: Path) -> None:
-        worktree = build_repo(tmp_path, "honoured", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "honoured", committed=("src/efm_go/x.py",))
         held = held_contract(tmp_path, "honoured", A_CONTRACT)
         a_behaviour_file(worktree, "test/test_behaviour.py", PASSING_TEST)
         a_golden_path(staged, kind="test", command="test/test_behaviour.py")
@@ -1463,7 +1463,7 @@ class TestTheFixContractIsStepZero:
         worktree = build_repo(
             tmp_path,
             "over-reach",
-            committed=("src/kiro_crew/x.py", "src/kiro_crew/sandbox.py"),
+            committed=("src/efm_go/x.py", "src/efm_go/sandbox.py"),
         )
         held = held_contract(tmp_path, "over-reach", A_CONTRACT)
         a_golden_path(staged, kind="flow", command="monitor_start")
@@ -1475,14 +1475,14 @@ class TestTheFixContractIsStepZero:
         body = payload(result)
         assert body["verdict"] == "broken"
         assert body["contract"]["verdict"] == "broken"
-        assert "src/kiro_crew/sandbox.py" in body["contract"]["why"]
+        assert "src/efm_go/sandbox.py" in body["contract"]["why"]
         assert "fix contract" in result.stderr
 
     def test_a_contract_that_will_not_read_is_unverifiable(
         self, staged: Path, tmp_path: Path
     ) -> None:
         """A named contract nobody could read is a check that went unsettled."""
-        worktree = build_repo(tmp_path, "bad-contract", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "bad-contract", committed=("src/efm_go/x.py",))
         held = tmp_path / "bad-contract-held.json"
         held.write_text("{not json", encoding="utf-8")
         a_golden_path(staged, kind="flow", command="monitor_start")
@@ -1497,7 +1497,7 @@ class TestTheFixContractIsStepZero:
     def test_an_absent_sibling_is_a_broken_installation_not_a_pass(
         self, staged: Path, tmp_path: Path
     ) -> None:
-        worktree = build_repo(tmp_path, "no-sibling", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "no-sibling", committed=("src/efm_go/x.py",))
         held = held_contract(tmp_path, "no-sibling", A_CONTRACT)
         (staged / "check_fix_contract.py").unlink()
         a_golden_path(staged, kind="flow", command="monitor_start")
@@ -1512,7 +1512,7 @@ class TestTheFixContractIsStepZero:
         self, staged: Path, tmp_path: Path
     ) -> None:
         """Precedence 10 > 30 is unchanged: a fix that did not land is not a scope story."""
-        worktree = build_repo(tmp_path, "both-wrong", committed=("src/kiro_crew/sandbox.py",))
+        worktree = build_repo(tmp_path, "both-wrong", committed=("src/efm_go/sandbox.py",))
         held = held_contract(tmp_path, "both-wrong", A_CONTRACT)
         a_golden_path(staged, kind="flow", command="monitor_start")
         install_verifier(staged, VERIFIER_CONFIRMED)
@@ -1557,7 +1557,7 @@ class TestAnUnsettledContractStopsTheGateRunningTheWorktree:
         worktree = build_repo(
             tmp_path,
             "violated-no-run",
-            committed=("src/kiro_crew/x.py", "src/kiro_crew/sandbox.py"),
+            committed=("src/efm_go/x.py", "src/efm_go/sandbox.py"),
         )
         sentinel = self.a_row_and_its_sentinel(staged, worktree)
         held = held_contract(tmp_path, "violated-no-run", A_CONTRACT)
@@ -1580,7 +1580,7 @@ class TestAnUnsettledContractStopsTheGateRunningTheWorktree:
         self, staged: Path, tmp_path: Path
     ) -> None:
         """Unreadable is not honoured: the same licence is missing, so the same skip."""
-        worktree = build_repo(tmp_path, "unreadable-no-run", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "unreadable-no-run", committed=("src/efm_go/x.py",))
         sentinel = self.a_row_and_its_sentinel(staged, worktree)
         held = tmp_path / "unreadable-held.json"
         held.write_text("{not json", encoding="utf-8")
@@ -1600,7 +1600,7 @@ class TestAnUnsettledContractStopsTheGateRunningTheWorktree:
         Without this, a screen that refused every ``test`` row unconditionally would
         pass the two cases above and cost the corpus its whole behaviour half.
         """
-        worktree = build_repo(tmp_path, "honoured-does-run", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "honoured-does-run", committed=("src/efm_go/x.py",))
         sentinel = self.a_row_and_its_sentinel(staged, worktree)
         held = held_contract(tmp_path, "honoured-does-run", A_CONTRACT)
         result = run_fix(
@@ -1620,7 +1620,7 @@ class TestAnUnsettledContractStopsTheGateRunningTheWorktree:
         worktree = build_repo(
             tmp_path,
             "violated-shell",
-            committed=("src/kiro_crew/x.py", "src/kiro_crew/sandbox.py"),
+            committed=("src/efm_go/x.py", "src/efm_go/sandbox.py"),
         )
         a_golden_path(staged, kind="shell", command="git status --porcelain")
         install_verifier(staged, VERIFIER_REJECTED)
@@ -1795,7 +1795,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         self, staged: Path, tmp_path: Path
     ) -> None:
         """``"base": "HEAD"`` would make the judged diff empty and every fix honoured."""
-        worktree = build_repo(tmp_path, "own-base", committed=("src/kiro_crew/sandbox.py",))
+        worktree = build_repo(tmp_path, "own-base", committed=("src/efm_go/sandbox.py",))
         held = held_contract(tmp_path, "own-base", {**A_CONTRACT, "base": "HEAD"})
         a_golden_path(staged, kind="flow", command="monitor_start")
         install_verifier(staged, VERIFIER_REJECTED)
@@ -1803,7 +1803,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
             staged, tmp_path / "findings.db", worktree, extra=["--contract", str(held)]
         )
         assert result.returncode == EXIT_BROKEN, result.stdout
-        assert "src/kiro_crew/sandbox.py" in payload(result)["contract"]["why"]
+        assert "src/efm_go/sandbox.py" in payload(result)["contract"]["why"]
 
     def test_a_relative_contract_path_is_resolved_before_it_is_used(
         self, staged: Path, tmp_path: Path
@@ -1814,7 +1814,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         conductor's. Run from a directory that is NOT the worktree, with a decoy in the
         worktree at that same relative path, and the narrow external copy must still win.
         """
-        worktree = build_repo(tmp_path, "relative", committed=("src/kiro_crew/sandbox.py",))
+        worktree = build_repo(tmp_path, "relative", committed=("src/efm_go/sandbox.py",))
         outside = tmp_path / "outside"
         outside.mkdir()
         (outside / "held.json").write_text(json.dumps(A_CONTRACT), encoding="utf-8")
@@ -1837,7 +1837,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         )
         assert result.returncode == EXIT_BROKEN, result.stdout
         body = payload(result)
-        assert "src/kiro_crew/sandbox.py" in body["contract"]["why"]
+        assert "src/efm_go/sandbox.py" in body["contract"]["why"]
         assert body["contract"]["report"]["contract_path"] == str(outside / "held.json")
 
     def test_the_base_is_passed_explicitly_on_every_invocation(self, mod) -> None:
@@ -1857,7 +1857,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         worktree = build_repo(
             tmp_path,
             "external",
-            committed=("src/kiro_crew/sandbox.py",),
+            committed=("src/efm_go/sandbox.py",),
             contract={**A_CONTRACT, "allowed_paths": ["src/"], "forbidden_paths": []},
         )
         held = tmp_path / "conductor" / "fix-contract.json"
@@ -1870,7 +1870,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         )
         assert result.returncode == EXIT_BROKEN, result.stdout
         body = payload(result)
-        assert "src/kiro_crew/sandbox.py" in body["contract"]["why"]
+        assert "src/efm_go/sandbox.py" in body["contract"]["why"]
         assert body["contract"]["report"]["contract_path"] == str(held)
 
     def test_a_stale_contract_does_not_reject_the_wrong_dispatch(
@@ -1881,7 +1881,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         Reading its rejection as this one's would send a fixer to repair a scope nobody
         declared for this run, so the mismatch is checked before the exit code branches.
         """
-        worktree = build_repo(tmp_path, "stale-violation", committed=("src/kiro_crew/sandbox.py",))
+        worktree = build_repo(tmp_path, "stale-violation", committed=("src/efm_go/sandbox.py",))
         held = held_contract(tmp_path, "stale-violation", {**A_CONTRACT, "finding_ids": [99]})
         a_golden_path(staged, kind="flow", command="monitor_start")
         install_verifier(staged, VERIFIER_REJECTED)
@@ -1901,7 +1901,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         contract" are indistinguishable from here.
         """
         worktree = build_repo(
-            tmp_path, "unnamed", committed=("src/kiro_crew/x.py",), contract=A_CONTRACT
+            tmp_path, "unnamed", committed=("src/efm_go/x.py",), contract=A_CONTRACT
         )
         a_golden_path(staged, kind="flow", command="monitor_start")
         install_verifier(staged, VERIFIER_REJECTED)
@@ -1918,7 +1918,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         worktree = build_repo(
             tmp_path,
             "widened",
-            committed=("src/kiro_crew/sandbox.py",),
+            committed=("src/efm_go/sandbox.py",),
             contract={**A_CONTRACT, "allowed_paths": ["src/"], "forbidden_paths": []},
         )
         a_golden_path(staged, kind="flow", command="monitor_start")
@@ -1936,7 +1936,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         self, staged: Path, tmp_path: Path
     ) -> None:
         """Naming a copy IS the assertion that one exists, so a missing one is unsettled."""
-        worktree = build_repo(tmp_path, "named-gone", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "named-gone", committed=("src/efm_go/x.py",))
         a_golden_path(staged, kind="flow", command="monitor_start")
         install_verifier(staged, VERIFIER_REJECTED)
         result = run_fix(
@@ -1952,7 +1952,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
         self, staged: Path, tmp_path: Path
     ) -> None:
         """A stale contract from an earlier dispatch is not this run's scope."""
-        worktree = build_repo(tmp_path, "wrong-finding", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "wrong-finding", committed=("src/efm_go/x.py",))
         held = held_contract(tmp_path, "wrong-finding", {**A_CONTRACT, "finding_ids": [99]})
         a_golden_path(staged, kind="flow", command="monitor_start")
         install_verifier(staged, VERIFIER_REJECTED)
@@ -1966,7 +1966,7 @@ class TestTheContractCannotSteerTheGateThatReadsIt:
     def test_a_named_contract_that_does_cover_the_finding_holds(
         self, staged: Path, tmp_path: Path
     ) -> None:
-        worktree = build_repo(tmp_path, "right-finding", committed=("src/kiro_crew/x.py",))
+        worktree = build_repo(tmp_path, "right-finding", committed=("src/efm_go/x.py",))
         held = held_contract(tmp_path, "right-finding", {**A_CONTRACT, "finding_ids": [1, 16]})
         a_golden_path(staged, kind="flow", command="monitor_start")
         install_verifier(staged, VERIFIER_REJECTED)

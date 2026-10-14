@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.voice_reply import (
+from efm_go.voice_reply import (
     _SAY_VOICE_RE,
     DEFAULT_LENGTH_SCALE,
     DEFAULT_PITCH,
@@ -172,7 +172,7 @@ class TestStripMarkdown:
         # in milliseconds. Generous bound for slow CI.
         import time
 
-        from kiro_crew.constants import strip_control_comments
+        from efm_go.constants import strip_control_comments
 
         start = time.monotonic()
         out_tabs = strip_control_comments("<!--deliver:" + "\t" * 50_000)
@@ -360,7 +360,7 @@ def _capture_mkstemp(monkeypatch) -> list[str]:
         allocated.append(path)
         return fd, path
 
-    monkeypatch.setattr("kiro_crew.voice_reply.tempfile.mkstemp", recording_mkstemp)
+    monkeypatch.setattr("efm_go.voice_reply.tempfile.mkstemp", recording_mkstemp)
     return allocated
 
 
@@ -393,14 +393,14 @@ _SANDBOX_REMEDY = (
 def _patch_aws_on_path(monkeypatch) -> None:
     """Make ``shutil.which`` report the ``aws`` CLI present, others absent."""
     monkeypatch.setattr(
-        "kiro_crew.voice_reply.shutil.which",
+        "efm_go.voice_reply.shutil.which",
         lambda name, *a, **k: _FAKE_AWS_CLI if name == "aws" else None,
     )
     # The which stub above is name-sensitive ("aws" only), but the shared
     # deploy-engine resolver would feed it a PATH-hit absolute path.
     # Pin the resolver to the bare name so this fixture keeps meaning exactly
     # "the aws CLI is present" regardless of the host.
-    monkeypatch.setattr("kiro_crew.voice_reply.resolve_aws_bin", lambda: "aws")
+    monkeypatch.setattr("efm_go.voice_reply.resolve_aws_bin", lambda: "aws")
 
 
 @pytest.fixture(autouse=True)
@@ -421,9 +421,9 @@ def _no_argv_prefixers(monkeypatch):
     the same host dependence. A test specifically about resource limits or cgroup
     scoping should patch the real function back.
     """
-    monkeypatch.setattr("kiro_crew.voice_reply.cgroup_scope_argv", lambda argv: list(argv))
+    monkeypatch.setattr("efm_go.voice_reply.cgroup_scope_argv", lambda argv: list(argv))
     monkeypatch.setattr(
-        "kiro_crew.voice_reply.create_subprocess_limited",
+        "efm_go.voice_reply.create_subprocess_limited",
         lambda *argv, **kw: asyncio.create_subprocess_exec(*argv, **kw),
     )
 
@@ -452,18 +452,18 @@ class TestProviderConstants:
 
 class TestIsAvailable:
     def test_polly_available_when_aws_on_path(self) -> None:
-        with patch("kiro_crew.voice_reply.shutil.which", return_value="/usr/bin/aws"):
+        with patch("efm_go.voice_reply.shutil.which", return_value="/usr/bin/aws"):
             assert is_available(PROVIDER_POLLY) is True
 
     def test_polly_unavailable_when_aws_missing(self) -> None:
-        with patch("kiro_crew.voice_reply.shutil.which", return_value=None):
+        with patch("efm_go.voice_reply.shutil.which", return_value=None):
             assert is_available(PROVIDER_POLLY) is False
 
     def test_piper_unavailable_when_binary_missing(self, tmp_path) -> None:
         model = tmp_path / "voice.onnx"
         model.write_bytes(b"fake")
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=None,
+            "efm_go.voice_reply._resolve_piper_binary", return_value=None,
         ):
             assert is_available(
                 PROVIDER_PIPER, piper_binary="", piper_model=str(model),
@@ -473,7 +473,7 @@ class TestIsAvailable:
         bin_path = tmp_path / "piper"
         _make_executable(str(bin_path))
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ):
             assert is_available(PROVIDER_PIPER, piper_model="") is False
 
@@ -481,7 +481,7 @@ class TestIsAvailable:
         bin_path = tmp_path / "piper"
         _make_executable(str(bin_path))
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ):
             # Model path provided but file doesn't exist.
             assert is_available(
@@ -494,7 +494,7 @@ class TestIsAvailable:
         model = tmp_path / "voice.onnx"
         model.write_bytes(b"fake model")
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ):
             assert is_available(
                 PROVIDER_PIPER, piper_model=str(model),
@@ -505,13 +505,13 @@ class TestIsAvailable:
 
     def test_system_available_when_engine_resolves(self) -> None:
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ):
             assert is_available(PROVIDER_SYSTEM) is True
 
     def test_system_unavailable_without_engine(self) -> None:
-        with patch("kiro_crew.voice_reply.resolve_system_tts", return_value=None):
+        with patch("efm_go.voice_reply.resolve_system_tts", return_value=None):
             assert is_available(PROVIDER_SYSTEM) is False
 
 
@@ -520,10 +520,10 @@ class TestIsAvailable:
 
 class TestResolveSystemTts:
     def test_macos_uses_say(self) -> None:
-        with patch("kiro_crew.voice_reply.IS_MACOS", True), patch(
-            "kiro_crew.voice_reply.IS_WINDOWS", False
+        with patch("efm_go.voice_reply.IS_MACOS", True), patch(
+            "efm_go.voice_reply.IS_WINDOWS", False
         ), patch(
-            "kiro_crew.voice_reply.trusted_system_bin", return_value="/usr/bin/say"
+            "efm_go.voice_reply.trusted_system_bin", return_value="/usr/bin/say"
         ) as probe:
             assert resolve_system_tts() == (SYSTEM_ENGINE_SAY, "/usr/bin/say")
         probe.assert_called_once_with("say")
@@ -533,9 +533,9 @@ class TestResolveSystemTts:
         # and throws in pwsh 7, so resolving anything else would report a
         # provider as available that fails on every call.
         ps = r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
-        with patch("kiro_crew.voice_reply.IS_MACOS", False), patch(
-            "kiro_crew.voice_reply.IS_WINDOWS", True
-        ), patch("kiro_crew.voice_reply.trusted_system_bin", return_value=ps) as probe:
+        with patch("efm_go.voice_reply.IS_MACOS", False), patch(
+            "efm_go.voice_reply.IS_WINDOWS", True
+        ), patch("efm_go.voice_reply.trusted_system_bin", return_value=ps) as probe:
             assert resolve_system_tts() == (SYSTEM_ENGINE_SAPI, ps)
         probe.assert_called_once_with("powershell")
 
@@ -546,23 +546,23 @@ class TestResolveSystemTts:
             calls.append(name)
             return "/usr/bin/espeak" if name == "espeak" else None
 
-        with patch("kiro_crew.voice_reply.IS_MACOS", False), patch(
-            "kiro_crew.voice_reply.IS_WINDOWS", False
-        ), patch("kiro_crew.voice_reply.trusted_system_bin", side_effect=probe):
+        with patch("efm_go.voice_reply.IS_MACOS", False), patch(
+            "efm_go.voice_reply.IS_WINDOWS", False
+        ), patch("efm_go.voice_reply.trusted_system_bin", side_effect=probe):
             assert resolve_system_tts() == (SYSTEM_ENGINE_ESPEAK, "/usr/bin/espeak")
         assert calls == ["espeak-ng", "espeak"]
 
     def test_linux_without_engine_returns_none(self) -> None:
         # The normal answer on a stock server image, not a broken host.
-        with patch("kiro_crew.voice_reply.IS_MACOS", False), patch(
-            "kiro_crew.voice_reply.IS_WINDOWS", False
-        ), patch("kiro_crew.voice_reply.trusted_system_bin", return_value=None):
+        with patch("efm_go.voice_reply.IS_MACOS", False), patch(
+            "efm_go.voice_reply.IS_WINDOWS", False
+        ), patch("efm_go.voice_reply.trusted_system_bin", return_value=None):
             assert resolve_system_tts() is None
 
     def test_macos_without_say_returns_none(self) -> None:
-        with patch("kiro_crew.voice_reply.IS_MACOS", True), patch(
-            "kiro_crew.voice_reply.IS_WINDOWS", False
-        ), patch("kiro_crew.voice_reply.trusted_system_bin", return_value=None):
+        with patch("efm_go.voice_reply.IS_MACOS", True), patch(
+            "efm_go.voice_reply.IS_WINDOWS", False
+        ), patch("efm_go.voice_reply.trusted_system_bin", return_value=None):
             assert resolve_system_tts() is None
 
 
@@ -584,7 +584,7 @@ class TestResolveSystemTtsAsync:
             seen.append(threading.get_ident())
             return (SYSTEM_ENGINE_SAY, "/usr/bin/say")
 
-        with patch("kiro_crew.voice_reply.resolve_system_tts", side_effect=slow_resolve):
+        with patch("efm_go.voice_reply.resolve_system_tts", side_effect=slow_resolve):
             assert await resolve_system_tts_async() == (SYSTEM_ENGINE_SAY, "/usr/bin/say")
         assert seen and seen[0] != loop_thread
 
@@ -796,13 +796,13 @@ class TestListSystemVoices:
 
     @pytest.mark.asyncio
     async def test_no_engine_is_an_empty_list_not_an_error(self) -> None:
-        with patch("kiro_crew.voice_reply.resolve_system_tts", return_value=None):
+        with patch("efm_go.voice_reply.resolve_system_tts", return_value=None):
             assert await list_system_voices() == []
 
     @pytest.mark.asyncio
     async def test_a_spawn_failure_raises(self) -> None:
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch("asyncio.create_subprocess_exec", side_effect=OSError("no exec")):
             with pytest.raises(SystemVoiceProbeError):
@@ -814,7 +814,7 @@ class TestListSystemVoices:
             return _mock_subprocess(returncode=3, stderr=b"bad flag")
 
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             with pytest.raises(SystemVoiceProbeError):
@@ -829,7 +829,7 @@ class TestListSystemVoices:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             with pytest.raises(SystemVoiceProbeError):
@@ -846,7 +846,7 @@ class TestListSystemVoices:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             with pytest.raises(asyncio.CancelledError):
@@ -865,8 +865,8 @@ class TestResolvePollyCli:
         """A GUI-launched gateway's minimal PATH must still resolve the CLI
         absolutely via the deploy engine's well-known-dirs resolver instead of
         silently skipping TTS."""
-        from kiro_crew import github_runner, voice_reply
-        from kiro_crew.deploy import engine
+        from efm_go import github_runner, voice_reply
+        from efm_go.deploy import engine
 
         fake_aws = tmp_path / "aws"
         fake_aws.write_text("#!/bin/sh\n")
@@ -884,8 +884,8 @@ class TestResolvePollyCli:
     def test_none_when_cli_absent_everywhere(self, monkeypatch, tmp_path) -> None:
         """Bare-name fallback that is not invocable maps to None — the value
         every probe site already treats as 'unavailable'."""
-        from kiro_crew import voice_reply
-        from kiro_crew.deploy import engine
+        from efm_go import voice_reply
+        from efm_go.deploy import engine
 
         empty_bin = tmp_path / "emptybin"
         empty_bin.mkdir()
@@ -916,7 +916,7 @@ class TestResolvePiperBinary:
         caller skips its "voice unavailable" notice, and the spawn then fails
         with nothing shown to the user.
         """
-        monkeypatch.setattr("kiro_crew.voice_reply.IS_WINDOWS", True)
+        monkeypatch.setattr("efm_go.voice_reply.IS_WINDOWS", True)
         monkeypatch.setenv("PATHEXT", ".COM;.EXE;.BAT;.CMD")
         notes = tmp_path / "piper_notes.txt"
         notes.write_text("not a binary")
@@ -950,7 +950,7 @@ class TestResolvePiperBinary:
 
     def test_falls_back_to_path(self, tmp_path) -> None:
         with patch(
-            "kiro_crew.voice_reply.shutil.which", return_value="/usr/local/bin/piper",
+            "efm_go.voice_reply.shutil.which", return_value="/usr/local/bin/piper",
         ), patch("os.path.isfile", return_value=False):
             assert _resolve_piper_binary("") == "/usr/local/bin/piper"
 
@@ -960,12 +960,12 @@ class TestResolvePiperBinary:
         bin_path = venv_bin / "piper"
         _make_executable(str(bin_path))
         monkeypatch.setenv("HOME", str(tmp_path))
-        with patch("kiro_crew.voice_reply.shutil.which", return_value=None):
+        with patch("efm_go.voice_reply.shutil.which", return_value=None):
             assert _resolve_piper_binary("") == str(bin_path)
 
     def test_nothing_found_returns_none(self, tmp_path, monkeypatch) -> None:
         monkeypatch.setenv("HOME", str(tmp_path))  # no venv exists
-        with patch("kiro_crew.voice_reply.shutil.which", return_value=None):
+        with patch("efm_go.voice_reply.shutil.which", return_value=None):
             assert _resolve_piper_binary("") is None
 
 
@@ -1004,7 +1004,7 @@ class TestResolveConfiguredProvider:
     def test_invalid_provider_warns_and_never_reaches_polly(self, caplog) -> None:
         import logging
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.voice_reply"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.voice_reply"):
             assert resolve_configured_provider({"provider": "ploly"}) == DEFAULT_PROVIDER
         assert DEFAULT_PROVIDER != PROVIDER_POLLY
         assert any("ploly" in rec.message for rec in caplog.records)
@@ -1069,7 +1069,7 @@ def _passthrough_wrap():
     async def identity(cmd, *_a, **_kw):
         return list(cmd), {}, None
 
-    return patch("kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=identity)
+    return patch("efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=identity)
 
 
 def _prepared(cleanup=None, env=None):
@@ -1089,14 +1089,14 @@ def _prepared(cleanup=None, env=None):
 class TestSynthesizeSystem:
     @pytest.mark.asyncio
     async def test_no_engine_returns_none(self) -> None:
-        with patch("kiro_crew.voice_reply.resolve_system_tts", return_value=None):
+        with patch("efm_go.voice_reply.resolve_system_tts", return_value=None):
             assert await _synthesize_system("hi") is None
 
     @pytest.mark.asyncio
     async def test_say_argv_and_stdin(self) -> None:
         fake_exec, captured = _writing_exec("-o")
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec), _passthrough_wrap():
             result = await _synthesize_system("hello", voice="Alex", rate="150%")
@@ -1123,7 +1123,7 @@ class TestSynthesizeSystem:
         for bad in ([], {}, 7, None):
             fake_exec, captured = _writing_exec("-o")
             with patch(
-                "kiro_crew.voice_reply.resolve_system_tts",
+                "efm_go.voice_reply.resolve_system_tts",
                 return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
             ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec), _passthrough_wrap():
                 result = await _synthesize_system("hello", voice=bad)  # type: ignore[arg-type]
@@ -1135,7 +1135,7 @@ class TestSynthesizeSystem:
     async def test_say_omits_voice_flag_when_unset(self) -> None:
         fake_exec, captured = _writing_exec("-o")
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec), _passthrough_wrap():
             result = await _synthesize_system("hello")
@@ -1147,7 +1147,7 @@ class TestSynthesizeSystem:
     async def test_espeak_argv(self) -> None:
         fake_exec, captured = _writing_exec("-w")
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_ESPEAK, "/usr/bin/espeak-ng"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec), _passthrough_wrap():
             result = await _synthesize_system("hallo", voice="de", rate="100%")
@@ -1178,10 +1178,10 @@ class TestSynthesizeSystem:
             return _mock_subprocess(returncode=0)
 
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAPI, "powershell.exe"),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             result = await _synthesize_system("你好 world", rate="100%")
         assert result is not None
@@ -1215,9 +1215,9 @@ class TestSynthesizeSystem:
             seen.clear()
             fake_exec, _captured = _writing_exec(flag)
             with patch(
-                "kiro_crew.voice_reply.resolve_system_tts", return_value=(engine, binp)
+                "efm_go.voice_reply.resolve_system_tts", return_value=(engine, binp)
             ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec), patch(
-                "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=identity
+                "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=identity
             ):
                 result = await _synthesize_system("hello", voice="Zira")
             assert result is not None, f"{engine} produced no audio"
@@ -1241,10 +1241,10 @@ class TestSynthesizeSystem:
 
         fake_exec, captured = _writing_exec("-o")
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=prepare
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=prepare
         ):
             result = await _synthesize_system("hello", voice="Alex")
         assert result is not None
@@ -1275,14 +1275,14 @@ class TestSynthesizeSystem:
             threads["output"] = threading.get_ident()
             return _produced_audio(path)
 
-        monkeypatch.setattr("kiro_crew.voice_reply.cgroup_scope_argv", record_cgroup)
-        monkeypatch.setattr("kiro_crew.voice_reply._produced_audio", record_output)
+        monkeypatch.setattr("efm_go.voice_reply.cgroup_scope_argv", record_cgroup)
+        monkeypatch.setattr("efm_go.voice_reply._produced_audio", record_output)
         fake_exec, _captured = _writing_exec("-o")
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
         ):
             result = await _synthesize_system("hello", voice="Alex")
         assert result is not None
@@ -1316,10 +1316,10 @@ class TestSynthesizeSystem:
             return _mock_subprocess(returncode=0)
 
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAPI, "powershell.exe"),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=identity
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=identity
         ):
             result = await _synthesize_system("hello", voice="Zira")
         assert result is not None
@@ -1347,10 +1347,10 @@ class TestSynthesizeSystem:
             return _mock_subprocess(returncode=1, stderr=b"boom")
 
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             assert await _synthesize_system("hello") is None
         assert allocated and not any(os.path.exists(p) for p in allocated)
@@ -1361,10 +1361,10 @@ class TestSynthesizeSystem:
         fake_exec, _captured = _writing_exec("-o", size=1)
 
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             assert await _synthesize_system("hello") is None
         assert allocated and not any(os.path.exists(p) for p in allocated)
@@ -1386,10 +1386,10 @@ class TestSynthesizeSystem:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply.resolve_system_tts",
+            "efm_go.voice_reply.resolve_system_tts",
             return_value=(SYSTEM_ENGINE_SAY, "/usr/bin/say"),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=_prepared()
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             assert await _synthesize_system("hello") is None
         proc.kill.assert_called_once()
@@ -1403,8 +1403,8 @@ class TestSynthesizePiper:
     @pytest.mark.asyncio
     async def test_binary_not_found_warns_and_returns_none(self, caplog) -> None:
         with (
-            patch("kiro_crew.voice_reply._resolve_piper_binary", return_value=None),
-            caplog.at_level("DEBUG", logger="kiro_crew.voice_reply"),
+            patch("efm_go.voice_reply._resolve_piper_binary", return_value=None),
+            caplog.at_level("DEBUG", logger="efm_go.voice_reply"),
         ):
             assert await _synthesize_piper("hi") is None
 
@@ -1419,7 +1419,7 @@ class TestSynthesizePiper:
         bin_path = tmp_path / "piper"
         _make_executable(str(bin_path))
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ):
             # Empty model
             assert await _synthesize_piper("hi", piper_model="") is None
@@ -1450,9 +1450,9 @@ class TestSynthesizePiper:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=fake_wrap
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=fake_wrap
         ), patch(
             "asyncio.create_subprocess_exec", side_effect=fake_exec,
         ):
@@ -1487,9 +1487,9 @@ class TestSynthesizePiper:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", side_effect=fake_wrap
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", side_effect=fake_wrap
         ), patch(
             "asyncio.create_subprocess_exec", side_effect=fake_exec,
         ):
@@ -1517,9 +1517,9 @@ class TestSynthesizePiper:
         proc = _mock_subprocess(returncode=1, stderr=b"bad voice")
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             side_effect=_prepared(),
         ), patch(
             "asyncio.create_subprocess_exec", return_value=proc,
@@ -1542,9 +1542,9 @@ class TestSynthesizePiper:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             side_effect=_prepared(),
         ), patch(
             "asyncio.create_subprocess_exec", side_effect=fake_exec,
@@ -1567,9 +1567,9 @@ class TestSynthesizePiper:
             raise _asyncio.TimeoutError()
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             side_effect=_prepared(),
         ), patch(
             "asyncio.create_subprocess_exec", return_value=proc,
@@ -1600,9 +1600,9 @@ class TestSynthesizePiper:
             raise _asyncio.TimeoutError()
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             side_effect=_prepared(),
         ), patch(
             "asyncio.create_subprocess_exec", return_value=proc,
@@ -1629,9 +1629,9 @@ class TestSynthesizePiper:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             side_effect=_prepared(),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             with pytest.raises(asyncio.CancelledError):
@@ -1665,9 +1665,9 @@ class TestSynthesizePiper:
             raise asyncio.CancelledError
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             side_effect=_prepared(),
         ), patch("asyncio.create_subprocess_exec", side_effect=cancelled_exec):
             with pytest.raises(asyncio.CancelledError):
@@ -1684,9 +1684,9 @@ class TestSynthesizePiper:
         model.write_bytes(b"m")
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             side_effect=_prepared(),
         ), patch(
             "asyncio.create_subprocess_exec", side_effect=OSError("boom"),
@@ -1705,7 +1705,7 @@ class TestSynthesizePiper:
         remedy prose rather than logging a stack trace that reads as a
         binary/model fault.
         """
-        from kiro_crew.sandbox import SandboxUnavailableError
+        from efm_go.sandbox import SandboxUnavailableError
 
         bin_path = tmp_path / "piper"
         _make_executable(str(bin_path))
@@ -1720,19 +1720,19 @@ class TestSynthesizePiper:
             created.append(p)
             return fd, p
 
-        monkeypatch.setattr("kiro_crew.voice_reply.tempfile.mkstemp", tracking_mkstemp)
+        monkeypatch.setattr("efm_go.voice_reply.tempfile.mkstemp", tracking_mkstemp)
 
         async def refuse(cmd, *_a, **_kw):
             raise SandboxUnavailableError(_SANDBOX_REMEDY, "no_backend", "not Linux")
 
         monkeypatch.setattr(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", refuse
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", refuse
         )
         monkeypatch.setattr(
-            "kiro_crew.voice_reply._resolve_piper_binary", lambda *a, **k: str(bin_path)
+            "efm_go.voice_reply._resolve_piper_binary", lambda *a, **k: str(bin_path)
         )
 
-        with caplog.at_level("ERROR", logger="kiro_crew.voice_reply"):
+        with caplog.at_level("ERROR", logger="efm_go.voice_reply"):
             with pytest.raises(SandboxUnavailableError):
                 await _synthesize_piper("hello", piper_model=str(model))
 
@@ -1761,9 +1761,9 @@ class TestSynthesizePiper:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply._resolve_piper_binary", return_value=str(bin_path),
+            "efm_go.voice_reply._resolve_piper_binary", return_value=str(bin_path),
         ), patch(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             side_effect=_prepared(cleanup=str(cleanup_path)),
         ), patch(
             "asyncio.create_subprocess_exec", side_effect=fake_exec,
@@ -1798,8 +1798,8 @@ def _polly_consented(tmp_path_factory, monkeypatch):
     """
     home = tmp_path_factory.mktemp("consent-home")
     monkeypatch.setenv("KIROCREW_HOME", str(home))
-    from kiro_crew import aws_consent
-    from kiro_crew.config.loader import config_dir
+    from efm_go import aws_consent
+    from efm_go.config.loader import config_dir
 
     config_dir().mkdir(parents=True, exist_ok=True)
     aws_consent.record_grant(
@@ -1825,7 +1825,7 @@ class TestSynthesizePolly:
         # every Windows host), which is caught and returns None. Patch to
         # passthrough so the existing create_subprocess_exec mocks run.
         monkeypatch.setattr(
-            "kiro_crew.voice_reply.wrap_argv", lambda argv, **k: (list(argv), None)
+            "efm_go.voice_reply.wrap_argv", lambda argv, **k: (list(argv), None)
         )
         # cgroup_scope_argv is neutralized module-wide by _no_cgroup_scope.
         _patch_aws_on_path(monkeypatch)
@@ -1858,7 +1858,7 @@ class TestSynthesizePolly:
         # is keyed on both -- so this case has to consent for the pair it
         # actually uses. That is the gate working: consent for one account does
         # not silently transfer to another profile or region.
-        from kiro_crew import aws_consent
+        from efm_go import aws_consent
 
         aws_consent.record_grant(
             aws_consent.SERVICE_POLLY,
@@ -1931,7 +1931,7 @@ class TestSynthesizePolly:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply.wrap_argv", side_effect=fake_wrap,
+            "efm_go.voice_reply.wrap_argv", side_effect=fake_wrap,
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             result = await _synthesize_polly("<speak>hi</speak>")
         assert result is not None
@@ -1950,7 +1950,7 @@ class TestSynthesizePolly:
             raise _asyncio.TimeoutError()
 
         with patch(
-            "kiro_crew.voice_reply.wrap_argv", side_effect=lambda c, mode: (c, None),
+            "efm_go.voice_reply.wrap_argv", side_effect=lambda c, mode: (c, None),
         ), patch(
             "asyncio.create_subprocess_exec", return_value=proc,
         ), patch("asyncio.wait_for", side_effect=hang_wait_for):
@@ -1975,7 +1975,7 @@ class TestSynthesizePolly:
             raise _asyncio.TimeoutError()
 
         with patch(
-            "kiro_crew.voice_reply.wrap_argv", side_effect=lambda c, mode: (c, None),
+            "efm_go.voice_reply.wrap_argv", side_effect=lambda c, mode: (c, None),
         ), patch(
             "asyncio.create_subprocess_exec", return_value=proc,
         ), patch("asyncio.wait_for", side_effect=hang_wait_for):
@@ -2042,7 +2042,7 @@ class TestSynthesizePolly:
             return proc
 
         with patch(
-            "kiro_crew.voice_reply.wrap_argv",
+            "efm_go.voice_reply.wrap_argv",
             side_effect=lambda c, mode: (c, str(cleanup_path)),
         ), patch("asyncio.create_subprocess_exec", side_effect=fake_exec):
             result = await _synthesize_polly("<speak>hi</speak>")
@@ -2058,7 +2058,7 @@ class TestSynthesizePolly:
         would raise FileNotFoundError instead of degrading gracefully.
         """
         monkeypatch.setattr(
-            "kiro_crew.voice_reply.shutil.which", lambda name, *a, **k: None
+            "efm_go.voice_reply.shutil.which", lambda name, *a, **k: None
         )
         spawned = {"n": 0}
 
@@ -2082,7 +2082,7 @@ class TestSynthesizePolly:
         generic handler's "Polly synthesis error" stack trace misattributes this to
         Polly or AWS credentials.
         """
-        from kiro_crew.sandbox import SandboxUnavailableError
+        from efm_go.sandbox import SandboxUnavailableError
 
         created: list[str] = []
         real_mkstemp = tempfile.mkstemp
@@ -2092,14 +2092,14 @@ class TestSynthesizePolly:
             created.append(p)
             return fd, p
 
-        monkeypatch.setattr("kiro_crew.voice_reply.tempfile.mkstemp", tracking_mkstemp)
+        monkeypatch.setattr("efm_go.voice_reply.tempfile.mkstemp", tracking_mkstemp)
 
         def refuse(cmd, mode):
             raise SandboxUnavailableError(_SANDBOX_REMEDY, "no_backend", "not Linux")
 
-        monkeypatch.setattr("kiro_crew.voice_reply.wrap_argv", refuse)
+        monkeypatch.setattr("efm_go.voice_reply.wrap_argv", refuse)
 
-        with caplog.at_level("ERROR", logger="kiro_crew.voice_reply"):
+        with caplog.at_level("ERROR", logger="efm_go.voice_reply"):
             with pytest.raises(SandboxUnavailableError):
                 await _synthesize_polly("<speak>hi</speak>")
 
@@ -2122,7 +2122,7 @@ class TestSynthesizePolly:
         operator to permanently drop isolation to work around momentary resource
         pressure, so the handler must relay ``str(exc)`` rather than its own copy.
         """
-        from kiro_crew.sandbox import SandboxUnavailableError
+        from efm_go.sandbox import SandboxUnavailableError
 
         transient_prose = (
             "This probe failure looks TRANSIENT (momentary resource pressure) "
@@ -2132,9 +2132,9 @@ class TestSynthesizePolly:
         def refuse(cmd, mode):
             raise SandboxUnavailableError(transient_prose, "transient", "fork: EAGAIN")
 
-        monkeypatch.setattr("kiro_crew.voice_reply.wrap_argv", refuse)
+        monkeypatch.setattr("efm_go.voice_reply.wrap_argv", refuse)
 
-        with caplog.at_level("ERROR", logger="kiro_crew.voice_reply"):
+        with caplog.at_level("ERROR", logger="efm_go.voice_reply"):
             with pytest.raises(SandboxUnavailableError):
                 await _synthesize_polly("<speak>hi</speak>")
 
@@ -2150,10 +2150,10 @@ class TestSynthesizeSpeechDispatcher:
     @pytest.mark.asyncio
     async def test_polly_dispatch(self) -> None:
         with patch(
-            "kiro_crew.voice_reply._synthesize_polly",
+            "efm_go.voice_reply._synthesize_polly",
             new=AsyncMock(return_value="/tmp/out.mp3"),
         ) as mock_polly, patch(
-            "kiro_crew.voice_reply._synthesize_piper",
+            "efm_go.voice_reply._synthesize_piper",
             new=AsyncMock(return_value="/tmp/out.wav"),
         ) as mock_piper:
             out = await synthesize_speech("hello world", provider=PROVIDER_POLLY)
@@ -2164,10 +2164,10 @@ class TestSynthesizeSpeechDispatcher:
     @pytest.mark.asyncio
     async def test_piper_dispatch(self) -> None:
         with patch(
-            "kiro_crew.voice_reply._synthesize_polly",
+            "efm_go.voice_reply._synthesize_polly",
             new=AsyncMock(return_value="/tmp/out.mp3"),
         ) as mock_polly, patch(
-            "kiro_crew.voice_reply._synthesize_piper",
+            "efm_go.voice_reply._synthesize_piper",
             new=AsyncMock(return_value="/tmp/out.wav"),
         ) as mock_piper:
             out = await synthesize_speech("hello world", provider=PROVIDER_PIPER)
@@ -2178,13 +2178,13 @@ class TestSynthesizeSpeechDispatcher:
     @pytest.mark.asyncio
     async def test_system_dispatch(self) -> None:
         with patch(
-            "kiro_crew.voice_reply._synthesize_polly",
+            "efm_go.voice_reply._synthesize_polly",
             new=AsyncMock(return_value="/tmp/out.mp3"),
         ) as mock_polly, patch(
-            "kiro_crew.voice_reply._synthesize_piper",
+            "efm_go.voice_reply._synthesize_piper",
             new=AsyncMock(return_value="/tmp/piper.wav"),
         ) as mock_piper, patch(
-            "kiro_crew.voice_reply._synthesize_system",
+            "efm_go.voice_reply._synthesize_system",
             new=AsyncMock(return_value="/tmp/system.wav"),
         ) as mock_system:
             out = await synthesize_speech(
@@ -2203,7 +2203,7 @@ class TestSynthesizeSpeechDispatcher:
     @pytest.mark.asyncio
     async def test_system_empty_text_returns_none(self) -> None:
         with patch(
-            "kiro_crew.voice_reply._synthesize_system",
+            "efm_go.voice_reply._synthesize_system",
             new=AsyncMock(return_value="/tmp/system.wav"),
         ) as mock_system:
             assert await synthesize_speech("**", provider=PROVIDER_SYSTEM) is None
@@ -2217,7 +2217,7 @@ class TestSynthesizeSpeechDispatcher:
     async def test_polly_empty_ssml_returns_none(self) -> None:
         # Pure markdown that strip_markdown reduces to empty yields empty ssml.
         with patch(
-            "kiro_crew.voice_reply._synthesize_polly",
+            "efm_go.voice_reply._synthesize_polly",
             new=AsyncMock(return_value=None),
         ) as mock_polly:
             out = await synthesize_speech("", provider=PROVIDER_POLLY)
@@ -2227,7 +2227,7 @@ class TestSynthesizeSpeechDispatcher:
     @pytest.mark.asyncio
     async def test_piper_empty_plain_returns_none(self) -> None:
         with patch(
-            "kiro_crew.voice_reply._synthesize_piper",
+            "efm_go.voice_reply._synthesize_piper",
             new=AsyncMock(return_value=None),
         ) as mock_piper:
             out = await synthesize_speech("   ", provider=PROVIDER_PIPER)
@@ -2246,7 +2246,7 @@ class TestSynthesizeSpeechDispatcher:
             return "/tmp/out.mp3"
 
         with patch(
-            "kiro_crew.voice_reply._synthesize_polly", side_effect=capture_polly,
+            "efm_go.voice_reply._synthesize_polly", side_effect=capture_polly,
         ):
             await synthesize_speech(raw, provider=PROVIDER_POLLY)
 
@@ -2306,7 +2306,7 @@ class TestVoiceReplyEndToEnd:
     async def test_synthesis_fails_returns_false(self) -> None:
         client = MagicMock()
         with patch(
-            "kiro_crew.voice_reply.synthesize_speech",
+            "efm_go.voice_reply.synthesize_speech",
             new=AsyncMock(return_value=None),
         ):
             assert await voice_reply(client, "C1", "t1", "hi") is False
@@ -2318,7 +2318,7 @@ class TestVoiceReplyEndToEnd:
         client = MagicMock()
         client.upload_file = AsyncMock(return_value=None)
         with patch(
-            "kiro_crew.voice_reply.synthesize_speech",
+            "efm_go.voice_reply.synthesize_speech",
             new=AsyncMock(return_value=str(audio)),
         ):
             ok = await voice_reply(
@@ -2336,7 +2336,7 @@ class TestVoiceReplyEndToEnd:
         client = MagicMock()
         client.upload_file = AsyncMock(side_effect=RuntimeError("boom"))
         with patch(
-            "kiro_crew.voice_reply.synthesize_speech",
+            "efm_go.voice_reply.synthesize_speech",
             new=AsyncMock(return_value=str(audio)),
         ):
             ok = await voice_reply(client, "C1", "t1", "hi")
@@ -2350,7 +2350,7 @@ class TestVoiceReplyEndToEnd:
 class TestStreamingVoiceReply:
     @pytest.mark.asyncio
     async def test_redacts_credentials_before_synthesis(self, tmp_path) -> None:
-        from kiro_crew.voice_reply import streaming_voice_reply
+        from efm_go.voice_reply import streaming_voice_reply
 
         sentences_seen: list[str] = []
 
@@ -2361,7 +2361,7 @@ class TestStreamingVoiceReply:
             return str(out)
 
         with patch(
-            "kiro_crew.voice_reply._synthesize_polly", side_effect=fake_polly,
+            "efm_go.voice_reply._synthesize_polly", side_effect=fake_polly,
         ):
             gen = streaming_voice_reply("AKIAIOSFODNN7EXAMPLE is secret. Bye.")
             async for _idx, _sent, _bytes in gen:
@@ -2373,7 +2373,7 @@ class TestStreamingVoiceReply:
 
     @pytest.mark.asyncio
     async def test_skips_sentences_with_failed_synth(self, tmp_path) -> None:
-        from kiro_crew.voice_reply import streaming_voice_reply
+        from efm_go.voice_reply import streaming_voice_reply
 
         calls = {"n": 0}
 
@@ -2386,7 +2386,7 @@ class TestStreamingVoiceReply:
             return str(out)
 
         with patch(
-            "kiro_crew.voice_reply._synthesize_polly", side_effect=alternating,
+            "efm_go.voice_reply._synthesize_polly", side_effect=alternating,
         ):
             collected = []
             async for idx, sent, data in streaming_voice_reply(
@@ -2405,7 +2405,7 @@ class TestTextTypeAutoDetection:
     def _passthrough_sandbox(self, monkeypatch, _polly_consented):
         # See TestSynthesizePolly._passthrough_sandbox.
         monkeypatch.setattr(
-            "kiro_crew.voice_reply.wrap_argv", lambda argv, **k: (list(argv), None)
+            "efm_go.voice_reply.wrap_argv", lambda argv, **k: (list(argv), None)
         )
         _patch_aws_on_path(monkeypatch)
 
@@ -2692,7 +2692,7 @@ def _pin_mkstemp(monkeypatch, owned) -> None:
     def fake_mkstemp(suffix: str = ""):
         return os.open(str(owned), os.O_WRONLY | os.O_CREAT), str(owned)
 
-    monkeypatch.setattr("kiro_crew.voice_reply.tempfile.mkstemp", fake_mkstemp)
+    monkeypatch.setattr("efm_go.voice_reply.tempfile.mkstemp", fake_mkstemp)
 
 
 def _track_unlink(monkeypatch, owned, events: list[str]) -> None:
@@ -2703,14 +2703,14 @@ def _track_unlink(monkeypatch, owned, events: list[str]) -> None:
             events.append("unlinked")
         return real_unlink(path, *args, **kwargs)
 
-    monkeypatch.setattr("kiro_crew.voice_reply.os.unlink", tracked)
+    monkeypatch.setattr("efm_go.voice_reply.os.unlink", tracked)
 
 
 def _lock_unlink(monkeypatch, owned, events: list[str]) -> None:
     """Make the unlink of *owned* fail as if the child still held it open.
 
     Every OTHER call reaches the real ``os.unlink`` with its full signature.
-    ``kiro_crew.voice_reply.os`` IS the stdlib module, so this patch is
+    ``efm_go.voice_reply.os`` IS the stdlib module, so this patch is
     process-global, and it outlives the ``tmp_path`` teardown: the module
     autouse fixture requests ``monkeypatch`` before ``tmp_path`` exists, so
     ``monkeypatch`` is undone last. Under ``tmp_path_retention_policy =
@@ -2732,7 +2732,7 @@ def _lock_unlink(monkeypatch, owned, events: list[str]) -> None:
         ), f"relative unlink {path!r} without dir_fd would touch the CWD"
         return real_unlink(path, *args, **kwargs)
 
-    monkeypatch.setattr("kiro_crew.voice_reply.os.unlink", locked)
+    monkeypatch.setattr("efm_go.voice_reply.os.unlink", locked)
 
 
 class TestSynthesizePiperCancelOwnership:
@@ -2755,10 +2755,10 @@ class TestSynthesizePiperCancelOwnership:
         owned = tmp_path / "owned.wav"
         _pin_mkstemp(monkeypatch, owned)
         monkeypatch.setattr(
-            "kiro_crew.voice_reply._resolve_piper_binary", lambda cfg: str(bin_path)
+            "efm_go.voice_reply._resolve_piper_binary", lambda cfg: str(bin_path)
         )
         monkeypatch.setattr(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async", _prepared()
+            "efm_go.voice_reply.sandboxed_spawn_argv_async", _prepared()
         )
         return model, owned
 
@@ -2843,7 +2843,7 @@ class TestSynthesizePiperCancelOwnership:
         launcher = tmp_path / "launcher.sh"
         launcher.write_text("#!/bin/sh\n")
         monkeypatch.setattr(
-            "kiro_crew.voice_reply.sandboxed_spawn_argv_async",
+            "efm_go.voice_reply.sandboxed_spawn_argv_async",
             _prepared(cleanup=str(launcher)),
         )
         events: list[str] = []
@@ -2868,7 +2868,7 @@ class TestSynthesizePollyCancelOwnership:
     @pytest.fixture(autouse=True)
     def _sandbox_and_consent(self, monkeypatch, _polly_consented):
         monkeypatch.setattr(
-            "kiro_crew.voice_reply.wrap_argv", lambda argv, **k: (list(argv), None)
+            "efm_go.voice_reply.wrap_argv", lambda argv, **k: (list(argv), None)
         )
         _patch_aws_on_path(monkeypatch)
 
@@ -2954,8 +2954,8 @@ class TestSynthesizeSpeechDoesNotSwallowARefusal:
 
     @pytest.mark.asyncio
     async def test_piper_refusal_travels_through_synthesize_speech(self, tmp_path, monkeypatch):
-        from kiro_crew.sandbox import SandboxUnavailableError
-        from kiro_crew.voice_reply import synthesize_speech
+        from efm_go.sandbox import SandboxUnavailableError
+        from efm_go.voice_reply import synthesize_speech
 
         prose = "SEAM-SENTINEL: the sandbox refused"
         bin_path = tmp_path / "piper"
@@ -2969,9 +2969,9 @@ class TestSynthesizeSpeechDoesNotSwallowARefusal:
         async def refuse(cmd, **kw):
             raise SandboxUnavailableError(prose, "no_backend", "not Linux")
 
-        monkeypatch.setattr("kiro_crew.voice_reply.sandboxed_spawn_argv_async", refuse)
+        monkeypatch.setattr("efm_go.voice_reply.sandboxed_spawn_argv_async", refuse)
         monkeypatch.setattr(
-            "kiro_crew.voice_reply._resolve_piper_binary", lambda *a, **k: str(bin_path)
+            "efm_go.voice_reply._resolve_piper_binary", lambda *a, **k: str(bin_path)
         )
 
         with pytest.raises(SandboxUnavailableError) as caught:
@@ -2982,8 +2982,8 @@ class TestSynthesizeSpeechDoesNotSwallowARefusal:
     async def test_polly_refusal_travels_through_synthesize_speech(
         self, monkeypatch, _polly_consented
     ):
-        from kiro_crew.sandbox import SandboxUnavailableError
-        from kiro_crew.voice_reply import synthesize_speech
+        from efm_go.sandbox import SandboxUnavailableError
+        from efm_go.voice_reply import synthesize_speech
 
         prose = "SEAM-SENTINEL: the sandbox refused"
 
@@ -3002,7 +3002,7 @@ class TestSynthesizeSpeechDoesNotSwallowARefusal:
         # from it), so it wraps through `wrap_argv_async` rather than the
         # credential-scrubbing spawn the local engines use. Patch the seam this
         # path really takes, or the spawn proceeds and the test proves nothing.
-        monkeypatch.setattr("kiro_crew.voice_reply.wrap_argv", refuse)
+        monkeypatch.setattr("efm_go.voice_reply.wrap_argv", refuse)
 
         with pytest.raises(SandboxUnavailableError) as caught:
             await synthesize_speech("hello", provider="polly")

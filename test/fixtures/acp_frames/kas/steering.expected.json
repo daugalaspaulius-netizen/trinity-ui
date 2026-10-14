@@ -32,7 +32,7 @@
         "text": "subagent progress"
       }
     ],
-    "frame": "_kiro.dev/session/update",
+    "frame": "_efm.go/session/update",
     "session_update": "agent_message_chunk",
     "text_chunk": {
       "text": "subagent progress",

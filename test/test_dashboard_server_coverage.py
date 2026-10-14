@@ -1,4 +1,4 @@
-"""Coverage tests for the residual branches of ``kiro_crew.dashboard.server``.
+"""Coverage tests for the residual branches of ``efm_go.dashboard.server``.
 
 The module's route/middleware wiring is already pinned elsewhere
 (``test_api_server.py``, ``test_api_health.py``, ``test_dashboard_static_routes.py``,
@@ -32,8 +32,8 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew.dashboard import server as srv
-from kiro_crew.platform_compat import unlink_link_or_junction
+from efm_go.dashboard import server as srv
+from efm_go.platform_compat import unlink_link_or_junction
 
 # ── helpers ─────────────────────────────────────────────────────────────
 
@@ -272,7 +272,7 @@ class TestPrecomputeTelemetry:
     """Telemetry is best-effort: no individual failure may abort startup."""
 
     def test_every_stage_failure_is_swallowed(self, monkeypatch) -> None:
-        import kiro_crew.dashboard.handlers_system as hs
+        import efm_go.dashboard.handlers_system as hs
 
         monkeypatch.setattr(
             hs, "_get_owner_hash", MagicMock(side_effect=RuntimeError("no owner"))
@@ -289,7 +289,7 @@ class TestPrecomputeTelemetry:
     def test_gateway_start_event_carries_the_precomputed_fields(
         self, monkeypatch
     ) -> None:
-        import kiro_crew.dashboard.handlers_system as hs
+        import efm_go.dashboard.handlers_system as hs
 
         monkeypatch.setattr(hs, "_get_owner_hash", MagicMock(return_value="hash-1"))
         monkeypatch.setattr(
@@ -337,7 +337,7 @@ class TestWriteSecretFileDescriptorCleanup:
             closed.append(fd)
             real_close(fd)
 
-        with patch("kiro_crew.dashboard.server.os.close", _spy):
+        with patch("efm_go.dashboard.server.os.close", _spy):
             with pytest.raises(OSError, match="chmod denied"):
                 srv._write_secret_file(secret_path, "s")
 
@@ -359,7 +359,7 @@ class TestWriteSecretFileDescriptorCleanup:
             real_close(fd)  # keep the descriptor from leaking in-process
             raise OSError("close failed")
 
-        with patch("kiro_crew.dashboard.server.os.close", _close_then_fail):
+        with patch("efm_go.dashboard.server.os.close", _close_then_fail):
             with pytest.raises(OSError, match="chmod denied"):
                 srv._write_secret_file(secret_path, "s")
 
@@ -477,7 +477,7 @@ class TestConnectionsWarmLifecycle:
         self,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        from kiro_crew.connections import warm
+        from efm_go.connections import warm
 
         calls: list[str] = []
         scavenge_started = asyncio.Event()
@@ -747,8 +747,8 @@ async def _start_api(tmp_path: Path, monkeypatch, **kwargs: Any) -> Any:
     cover -- notably the secret-write failure arm, which still reaches
     ``runner.cleanup()``.
     """
-    import kiro_crew.config.loader as _loader
-    import kiro_crew.dashboard.state as _st
+    import efm_go.config.loader as _loader
+    import efm_go.dashboard.state as _st
 
     monkeypatch.setattr(srv, "data_home", lambda: tmp_path)
     monkeypatch.setattr(_st, "config_dir", lambda: tmp_path)
@@ -814,7 +814,7 @@ class TestStartApiServerResidualPaths:
         monkeypatch.setattr(srv, "sel", MagicMock(return_value=audit))
         subagents = MagicMock()
         subagents.spawn.side_effect = RuntimeError("spawn exploded")
-        from kiro_crew.execution_context import bind_session_execution, execution_for_store
+        from efm_go.execution_context import bind_session_execution, execution_for_store
 
         # Admit a real captured caller so the identity and privacy gates reach
         # the crashing spawn; the body must claim that same authenticated caller.
@@ -823,7 +823,7 @@ class TestStartApiServerResidualPaths:
         # The caller also has to PROVE the key it declares, the way its production
         # counterpart does, or the identity gate answers ahead of the spawn and the
         # crash under test never happens.
-        from kiro_crew import member_memory_auth
+        from efm_go import member_memory_auth
 
         monkeypatch.setattr(
             member_memory_auth,
@@ -955,9 +955,9 @@ class TestSttHooks:
         assert {"_stt_startup", "_stt_shutdown"} <= names, names
 
         # No sweep task was ever created, and nothing imported the engine.
-        monkeypatch.delitem(sys.modules, "kiro_crew.stt.engine", raising=False)
+        monkeypatch.delitem(sys.modules, "efm_go.stt.engine", raising=False)
         for hook in app.on_cleanup:
             await hook(app)
         assert (
-            "kiro_crew.stt.engine" not in sys.modules
+            "efm_go.stt.engine" not in sys.modules
         ), "shutdown imported the recogniser to release a model that cannot exist"

@@ -569,7 +569,7 @@ export default [
               // A GATEWAY WIRE MARKER whose tag is bracketed ALL-CAPS, e.g.
               // `[SYSTEM] Sub-agent synthesis:`. These are matched byte-for-byte
               // with `startsWith` against Python constants in
-              // src/kiro_crew/dashboard/state.py and the matched prefix is then
+              // src/efm_go/dashboard/state.py and the matched prefix is then
               // SLICED OFF, so no character reaches the screen — translating one
               // silently stops its card from rendering in that locale. Real site:
               // the `PREFIXES` table in pages/chat/RecoveryCard.tsx, an ALL-CAPS
@@ -721,7 +721,7 @@ export default [
               // class was silently carried by the lowercase-token pattern above
               // instead, whose character class holds no `*`, `?`, `_`, `=`, `&` or
               // capital — so `/api/chat/*`, `/api/file_read`, `/api/chat?slot=1` and
-              // `https://kiro.dev/Docs` were all reported as untranslated copy. That is
+              // `https://efmleads.com/Docs` were all reported as untranslated copy. That is
               // invisible on existing code (frozen in the ledgers, and both whole-repo
               // ledger checks are report-only) and fails only NEW code, at
               // `[added-lines]`/`[vs-base]` zero tolerance — a hole that bites none of
@@ -787,7 +787,7 @@ export default [
               // `[Continue — requested by the user]`. These are matched with
               // `startsWith` against gateway-authored transcript rows and must stay
               // BYTE-IDENTICAL to the Python constants in
-              // `src/kiro_crew/dashboard/state.py`; the matched prefix is then SLICED
+              // `src/efm_go/dashboard/state.py`; the matched prefix is then SLICED
               // OFF, so no character of it ever reaches the screen — the card's visible
               // copy comes from `i18nT()`. Translating one would silently stop every
               // recovery card from rendering in that locale, which is the failure this

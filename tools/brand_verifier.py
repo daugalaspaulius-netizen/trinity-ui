@@ -6,7 +6,7 @@ Also checks startup/splash resources (loading.html, gateway-supervisor.js)."""
 import os, sys, json, tokenize, io
 
 ROOT = os.environ.get("ROOT", os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-SOURCE = os.path.join(ROOT, "src/kiro_crew")
+SOURCE = os.path.join(ROOT, "src/efm_go")
 ELECTRON = os.path.join(ROOT, "website", "electron")
 
 errors = []
@@ -124,7 +124,7 @@ else:
     errors.append(f"Source branding off: EFM={efm_src}, Kiro={kc_src}")
 
 # 2. Packaged backend
-BKD = os.path.join(ROOT, "website/electron/backend-dist/kirocrew-backend/Lib/site-packages/kiro_crew")
+BKD = os.path.join(ROOT, "website/electron/backend-dist/efm-go-backend/Lib/site-packages/efm_go")
 if os.path.isdir(BKD):
     kc_pkg, efm_pkg = count_label("packaged-backend", BKD)
     print(f"[CHECK] Packaged backend: Kiro Crew={kc_pkg}, EFM Go={efm_pkg}")
@@ -183,16 +183,16 @@ if os.path.isfile(GS_FILE):
     with open(GS_FILE, errors="replace") as fh:
         gs = fh.read()
     gs_purple = gs.count("#8E48FF")
-    gs_kiro_crew = gs.count("Kiro Crew")
+    gs_efm_go = gs.count("Kiro Crew")
     gs_ghost = gs.count("ghost") + gs.count("GHOST_SVG")
-    print(f"  gateway-supervisor.js: Kiro purple={gs_purple}, Kiro Crew={gs_kiro_crew}, ghost={gs_ghost}")
+    print(f"  gateway-supervisor.js: Kiro purple={gs_purple}, Kiro Crew={gs_efm_go}, ghost={gs_ghost}")
     if gs_purple > 1:  # up to 1 is the old constant comment
         errors.append(f"STARTUP: Kiro purple (#8E48FF) active in gateway-supervisor.js: {gs_purple}")
-    if gs_kiro_crew > 0:
-        errors.append(f"STARTUP: 'Kiro Crew' text in gateway-supervisor.js: {gs_kiro_crew}")
+    if gs_efm_go > 0:
+        errors.append(f"STARTUP: 'Kiro Crew' text in gateway-supervisor.js: {gs_efm_go}")
     if gs_ghost > 0:
         errors.append(f"STARTUP: ghost references in gateway-supervisor.js: {gs_ghost}")
-    if gs_purple <= 1 and gs_kiro_crew == 0 and gs_ghost == 0:
+    if gs_purple <= 1 and gs_efm_go == 0 and gs_ghost == 0:
         print(f"  [PASS] gateway-supervisor.js Kiro-free")
 else:
     print(f"  [SKIP] gateway-supervisor.js not found")

@@ -23,14 +23,14 @@ from aiohttp.test_utils import TestClient, TestServer
 from member_memory_helpers import write_member_home
 from off_loop_helpers import off_loop
 
-from kiro_crew import agent_panel
-from kiro_crew import crew_log as lg
-from kiro_crew import members as members_mod
-from kiro_crew.config.paths import data_home
-from kiro_crew.crew_log import CrewLog
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log_projection
-from kiro_crew.dashboard.handlers import agent_panel as routes
+from efm_go import agent_panel
+from efm_go import crew_log as lg
+from efm_go import members as members_mod
+from efm_go.config.paths import data_home
+from efm_go.crew_log import CrewLog
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log_projection
+from efm_go.dashboard.handlers import agent_panel as routes
 
 pytestmark = pytest.mark.asyncio
 
@@ -64,7 +64,7 @@ def _crew_slot(crew_name: str) -> str:
     under the slot ``api_member_thread`` created, which is this same resolver, so
     calling it here is what makes the round trip the real pairing.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     slug = members_mod.member_slug(crew_name)
     try:
@@ -343,8 +343,8 @@ async def test_a_publish_keys_on_the_crews_persisted_member_id(vetted):
     under a slug nothing reads: the publish reports success and the dashboard
     never appears.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.config.paths import config_dir
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.config.paths import config_dir
 
     # The shape memory provisioning writes: the name-derived slug with a suffix.
     persisted = f"{SLUG}-9f3a2b1c"
@@ -391,8 +391,8 @@ async def test_a_live_owner_with_a_suffixed_member_id_keeps_its_record(vetted):
     take a record over. The owner is live here, so the collision must be refused
     and the owner's bytes must survive untouched.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.config.paths import config_dir
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.config.paths import config_dir
 
     owner = "legacy-crew"
     assert members_mod.slug_for_name(owner) != SLUG, "the owner's NAME must miss the slug"
@@ -718,7 +718,7 @@ def test_the_drawer_serializer_classifies_every_record_key():
     silently: add a field to ``_panel_owner_record`` without classifying it in
     ``agent_panel.py`` and this fails.
     """
-    from kiro_crew.crew_log import projection
+    from efm_go.crew_log import projection
 
     record = projection._panel_owner_record(projection._panel_owner_start())
     classified = routes._PANEL_SERVED_KEYS | routes._PANEL_WITHHELD_KEYS
@@ -823,7 +823,7 @@ async def test_the_drawer_read_refuses_a_hostile_slug(vetted, hostile):
 async def test_the_read_route_is_not_under_the_strict_internal_prefix():
     """The drawer is a browser caller, so its route must not sit behind the
     MCP-only prefix -- it would 403 for the dashboard."""
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     paths = {str(r.resource.canonical) for r in _mounted().router.routes()}
     read_path = "/api/members/{slug}/panel"
@@ -832,7 +832,7 @@ async def test_the_read_route_is_not_under_the_strict_internal_prefix():
 
 
 async def test_the_publish_routes_are_under_the_strict_internal_prefix():
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     for path in ("/api/agent-panel/publish", "/api/agent-panel/templates"):
         assert any(
@@ -959,7 +959,7 @@ def test_the_stub_matches_where_the_real_selection_lives():
     stub had grown the method in the wrong place. So the stub is checked against
     the real class rather than trusted.
     """
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     assert hasattr(SessionManager, "get_agent_selection")
     assert hasattr(_State(CREW).sessions, "get_agent_selection")
@@ -1017,7 +1017,7 @@ def _member_session_key(crew_name: str = CREW) -> str:
     Production's own derivation rather than a string spelled a second way here,
     because a key spelled a second way is the entire bug this section guards.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     slug = members_mod.member_slug(crew_name)
     try:
@@ -1042,8 +1042,8 @@ def _real_allocation(crew_name: str = CREW, *, member: str | None = None):
     a blank ``crew_agent``, which is a live allocation that genuinely selected a
     provider template.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.session import SessionManager, _Session
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.session import SessionManager, _Session
 
     sessions = SessionManager(KiroCrewConfig())
     session = _Session(provider=SimpleNamespace(session_id=_unit_for(crew_name)), agent=crew_name)
@@ -1060,7 +1060,7 @@ def test_the_registry_key_is_the_slot_key_behind_a_transport_prefix():
     a guaranteed miss on the only session this tool is mounted on refused every
     member.
     """
-    from kiro_crew.dashboard.state import _normalize_slot_key
+    from efm_go.dashboard.state import _normalize_slot_key
 
     registry_key = _member_session_key()
     slot_key = _crew_slot(CREW)
@@ -1343,8 +1343,8 @@ async def test_a_v2_member_round_trips_through_the_resolving_slot(vetted):
     Here the member really has a V2 store, so the slot carries it, and the panel is
     published and read back through the routes rather than through the fold.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.config.paths import config_dir
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.config.paths import config_dir
 
     home = config_dir()
     write_member_home(home, CREW)
@@ -1420,7 +1420,7 @@ async def test_a_publish_whose_append_is_skipped_is_still_what_a_reader_gets(vet
     # The fold's history rides along with the file's panel, so the crew's past is not
     # lost just because its newest cycle went unlogged. Asserted on the record rather
     # than the response, because the route does not surface ``history`` yet.
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     crew_log_projection.forget_slot_folds()
     record = off_loop(
@@ -1829,7 +1829,7 @@ async def test_the_gateway_registers_exactly_these_paths_without_importing_us():
     """
     import inspect
 
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     ours = {str(r.resource.canonical) for r in _mounted().router.routes()}
     boot_src = inspect.getsource(server._register_mcp_routes)
@@ -1872,9 +1872,9 @@ def _publish_handler_ast():
     import ast
     from pathlib import Path
 
-    import kiro_crew
+    import efm_go
 
-    path = Path(kiro_crew.__file__).parent / "dashboard" / "handlers" / "agent_panel.py"
+    path = Path(efm_go.__file__).parent / "dashboard" / "handlers" / "agent_panel.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     for node in ast.walk(tree):
         if isinstance(node, ast.AsyncFunctionDef) and node.name == "api_agent_panel_publish":

@@ -36,7 +36,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _CI = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
@@ -600,7 +600,7 @@ class TestTheSelectorBehavesOnRealPayloadShapes:
     """
 
     _BRANCH = "feature/mine"
-    _REPO = "kirodotdev/KiroCrew"
+    _REPO = "efmleads.com"
 
     @staticmethod
     def _selector(script: str) -> str:

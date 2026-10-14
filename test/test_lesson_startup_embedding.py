@@ -35,22 +35,22 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import memory_schema, vector_memory
-from kiro_crew._sqlite_compat import sqlite3
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import config_dir
-from kiro_crew.context import (
+from efm_go import memory_schema, vector_memory
+from efm_go._sqlite_compat import sqlite3
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import config_dir
+from efm_go.context import (
     CONTEXT_GROUP_MEMORY,
     SWITCHABLE_CONTEXT_GROUPS,
     ContextBuilder,
 )
-from kiro_crew.context_assembly import budget as context_budget
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_stores import DEFAULT_MEMORY_STORE, resolve_store_path
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.vector_memory import VectorMemoryStore
-from kiro_crew.vector_memory_runtime.embedding import _RecallSpaceChanged
+from efm_go.context_assembly import budget as context_budget
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.memory_stores import DEFAULT_MEMORY_STORE, resolve_store_path
+from efm_go.skills import SkillsLoader
+from efm_go.vector_memory import VectorMemoryStore
+from efm_go.vector_memory_runtime.embedding import _RecallSpaceChanged
 
 FIRST_MESSAGE = "orchid deployment"
 # Shares no word with the first message; only its vector is close to it.
@@ -233,7 +233,7 @@ class TestStartupUsesTheVector:
             store.write_lesson(f"Keep release checklist item {index} signed by the owner")
         store.embed_fn.calls.clear()
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.context"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.context"):
             build_first_turn(store, tmp_path, model_window=200)
 
         assert "trimming lessons first" in caplog.text

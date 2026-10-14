@@ -18,8 +18,8 @@ import time
 
 import pytest
 
-from kiro_crew import name_grant, platform_compat
-from kiro_crew.hooks import TOOL_AUTO_APPROVE, HookManager, HooksConfig
+from efm_go import name_grant, platform_compat
+from efm_go.hooks import TOOL_AUTO_APPROVE, HookManager, HooksConfig
 
 pytestmark = pytest.mark.skipif(
     platform_compat.IS_WINDOWS,
@@ -266,7 +266,7 @@ class TestLoopSafety:
         # must not reach this module at all: not `shutil.which`, not a digest.
         import inspect
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         source = inspect.getsource(hooks.HookManager.on_tool_call)
         assert "name_grant" not in source
@@ -1294,7 +1294,7 @@ class TestDowngradePath:
     def test_clean_name_is_not_downgraded(self, world):
         system_dir, _ = world
         _program(system_dir, "head")
-        from kiro_crew.dashboard.chat_runner import _name_grant_refusal_for
+        from efm_go.dashboard.chat_runner import _name_grant_refusal_for
 
         assert asyncio.run(_name_grant_refusal_for(self._event("head x"))) is None
 
@@ -1302,14 +1302,14 @@ class TestDowngradePath:
         system_dir, user_dir = world
         _program(system_dir, "head")
         _program(user_dir, "head")
-        from kiro_crew.dashboard.chat_runner import _name_grant_refusal_for
+        from efm_go.dashboard.chat_runner import _name_grant_refusal_for
 
         refusal = asyncio.run(_name_grant_refusal_for(self._event("head x")))
         assert refusal is not None
         assert refusal.code == name_grant.SHADOWED
 
     def test_non_shell_and_commandless_events_are_left_alone(self, world):
-        from kiro_crew.dashboard.chat_runner import _name_grant_refusal_for
+        from efm_go.dashboard.chat_runner import _name_grant_refusal_for
 
         assert asyncio.run(_name_grant_refusal_for(self._event("head x", is_shell=False))) is None
         assert asyncio.run(_name_grant_refusal_for(self._event(None))) is None

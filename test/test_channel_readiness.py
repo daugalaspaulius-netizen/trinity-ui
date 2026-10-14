@@ -14,7 +14,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.channels import ChannelReadiness, builtin_channel_descriptors, channel_readiness
+from efm_go.channels import ChannelReadiness, builtin_channel_descriptors, channel_readiness
 
 
 def _cfg(**sections: Any) -> Any:
@@ -119,7 +119,7 @@ class TestStatusPayload:
     def test_every_channel_reaches_the_status_payload(self) -> None:
         # Only slack_connected reached /api/status before, so System > Services was
         # silent about a channel that failed to start.
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         state = object.__new__(DashboardState)
         state.slack_client = None
@@ -138,7 +138,7 @@ class TestStatusPayload:
         assert status["slack"]["connected"] is False
 
     def test_a_reconnect_loop_cannot_publish_an_unbounded_reason(self) -> None:
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         state = object.__new__(DashboardState)
         state.slack_client = None
@@ -150,7 +150,7 @@ class TestStatusPayload:
         assert len(state.channel_status()["telegram"]["error"]) == 120
 
     def test_a_channel_with_no_flags_yet_reads_as_not_connected(self) -> None:
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         state = object.__new__(DashboardState)
         state.slack_client = None
@@ -243,7 +243,7 @@ class TestRequiredConfig:
         # never be reported ready no matter what the operator set.
         from dataclasses import fields
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         broken: list[str] = []
@@ -273,9 +273,9 @@ def _credentials_the_gateway_requires() -> dict[str, set[str]]:
     import re
     from pathlib import Path
 
-    import kiro_crew as kiro_crew_pkg
+    import efm_go as efm_go_pkg
 
-    src = (Path(kiro_crew_pkg.__file__).parent / "slack" / "gateway.py").read_text(encoding="utf-8")
+    src = (Path(efm_go_pkg.__file__).parent / "slack" / "gateway.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
     cred_of: dict[str, str] = {}
     required: dict[str, set[str]] = {}
@@ -318,7 +318,7 @@ class TestDescriptorsMatchWhatTheGatewayNeeds:
         their token inside `maybe_start_*`, so they legitimately declare more than
         the enablement expression reads.
         """
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         derived = _credentials_the_gateway_requires()
         declared = {d.channel_type: set(d.credentials) for d in builtin_channel_descriptors()}
@@ -353,7 +353,7 @@ class TestTheServicesPageCoversEveryChannel:
         import re
         from pathlib import Path
 
-        # From THIS file, not from the package: `kiro_crew.__file__` points into
+        # From THIS file, not from the package: `efm_go.__file__` points into
         # `src/`, and an installed wheel has no `website/` above it at all, so
         # deriving the repo root from the test's own path is both shorter and the
         # only spelling that cannot silently resolve to a directory that is not

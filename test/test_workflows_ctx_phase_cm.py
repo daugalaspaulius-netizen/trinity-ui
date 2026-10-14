@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.workflows.runner import WorkflowRunner
-from kiro_crew.workflows.validate import validate
+from efm_go.workflows.runner import WorkflowRunner
+from efm_go.workflows.validate import validate
 
 NOW = "2026-07-17T00:00:00Z"
 

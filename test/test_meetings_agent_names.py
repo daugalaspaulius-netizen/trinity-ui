@@ -25,8 +25,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from kiro_crew.apps.builtins.meetings.backend import constants as k
-from kiro_crew.apps.builtins.meetings.backend import store
+from efm_go.apps.builtins.meetings.backend import constants as k
+from efm_go.apps.builtins.meetings.backend import store
 
 APP_ROOT = Path(k.__file__).resolve().parent.parent
 AGENTS_DIR = APP_ROOT / "agents"

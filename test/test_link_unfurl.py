@@ -17,8 +17,8 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 import pytest
 import yarl
 
-from kiro_crew import link_unfurl as lu
-from kiro_crew.dashboard.handlers import link_meta as lm
+from efm_go import link_unfurl as lu
+from efm_go.dashboard.handlers import link_meta as lm
 
 
 def _run(coro):
@@ -753,7 +753,7 @@ def _isolate(monkeypatch):
 
 def _set_enabled(monkeypatch, enabled: bool) -> None:
     """Patch the config loader the handler imports at call time."""
-    from kiro_crew.config import loader as loader_mod
+    from efm_go.config import loader as loader_mod
 
     cfg = SimpleNamespace(dashboard=SimpleNamespace(link_previews=enabled))
     monkeypatch.setattr(loader_mod.KiroCrewConfig, "load", staticmethod(lambda: cfg))
@@ -2067,7 +2067,7 @@ def test_a_url_the_redactors_would_change_is_never_previewed(monkeypatch) -> Non
     """A preview is a fetch nobody clicked, so a link whose query the exfil check
     blocks is refused even when a reader allowed its host for opening: it is
     neither fetched nor cached."""
-    from kiro_crew.security.exfil import scoped_exempt_hosts
+    from efm_go.security.exfil import scoped_exempt_hosts
 
     _set_enabled(monkeypatch, True)
     transport = _install(monkeypatch, {})

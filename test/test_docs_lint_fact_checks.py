@@ -75,7 +75,7 @@ class TestInvariantIds:
         )
         _write(
             tree,
-            "src/kiro_crew/harness.py",
+            "src/efm_go/harness.py",
             "# H4: valid citation\n"
             "def run():\n"
             '    """Valid citation (H13)."""\n'
@@ -83,20 +83,20 @@ class TestInvariantIds:
             "# H99: missing invariant\n",
         )
 
-        assert gate.run(tree).unknown_harness_invariants == ["src/kiro_crew/harness.py:5 -> H99"]
+        assert gate.run(tree).unknown_harness_invariants == ["src/efm_go/harness.py:5 -> H99"]
 
 
 class TestPathExists:
     """A repo-anchored path resolves, or the doc is wrong."""
 
     def test_reports_a_path_that_names_no_file(self, tree: Path) -> None:
-        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/kiro_crew/ghost.py`.\n")
-        assert "src/kiro_crew/ghost.py" in _tokens(tree, gate.CHECK_PATH_EXISTS)
+        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/efm_go/ghost.py`.\n")
+        assert "src/efm_go/ghost.py" in _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     @pytest.mark.parametrize(
         "shape",
         [
-            "src/kiro_crew/ghost.py",
+            "src/efm_go/ghost.py",
             "scripts/ghost.py",
             "scripts/ghost.sh",
             "website/src/pages/Ghost.tsx",
@@ -110,27 +110,27 @@ class TestPathExists:
         assert shape in _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     def test_silent_when_the_path_exists(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/real.py", "a = 1\n")
-        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/kiro_crew/real.py`.\n")
+        _write(tree, "src/efm_go/real.py", "a = 1\n")
+        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/efm_go/real.py`.\n")
         assert not _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     def test_silent_for_a_path_that_resolves_one_root_down(self, tree: Path) -> None:
         # A skill's own `scripts/reaper.sh` reads as repo-anchored and is not.
-        _write(tree, "src/kiro_crew/builtin_skills/demo/scripts/reaper.sh", "#!/bin/sh\n")
+        _write(tree, "src/efm_go/builtin_skills/demo/scripts/reaper.sh", "#!/bin/sh\n")
         _write(tree, "docs/ok.md", "# Ok\n\nRun `scripts/reaper.sh`.\n")
         assert not _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     def test_silent_for_a_path_that_is_only_a_longer_path_s_tail(self, tree: Path) -> None:
-        # `src/kiro_crew/docs/tips.md` must not also be read as `docs/tips.md`.
-        _write(tree, "src/kiro_crew/docs/tips.md", "# Tips\n")
-        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/kiro_crew/docs/tips.md`.\n")
+        # `src/efm_go/docs/tips.md` must not also be read as `docs/tips.md`.
+        _write(tree, "src/efm_go/docs/tips.md", "# Tips\n")
+        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/efm_go/docs/tips.md`.\n")
         assert not _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     @pytest.mark.parametrize(
         "real,truncated",
         [
             ("scripts/vendor_manifest.sha256", "scripts/vendor_manifest.sh"),
-            ("src/kiro_crew/types.pyi", "src/kiro_crew/types.py"),
+            ("src/efm_go/types.pyi", "src/efm_go/types.py"),
             ("docs/ci/page.mdx", "docs/ci/page.md"),
             ("website/src/a.tsx.snap", "website/src/a.tsx"),
             ("scripts/docs_lint.python-wrapper", "scripts/docs_lint.py"),
@@ -148,15 +148,15 @@ class TestPathExists:
     def test_a_local_coordinate_is_still_validated(self, tree: Path) -> None:
         # This repo addresses its OWN code as `path::Symbol`, so skipping on the
         # syntax alone would let a rename leave such a citation stale, gate green.
-        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/kiro_crew/gone.py::missing_symbol`.\n")
-        assert "src/kiro_crew/gone.py" in _tokens(tree, gate.CHECK_PATH_EXISTS)
+        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/efm_go/gone.py::missing_symbol`.\n")
+        assert "src/efm_go/gone.py" in _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     def test_a_resolvable_local_coordinate_is_silent(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/mcp_tools/workflows.py", "def workflow_run():\n    pass\n")
+        _write(tree, "src/efm_go/mcp_tools/workflows.py", "def workflow_run():\n    pass\n")
         _write(
             tree,
             "docs/ok.md",
-            "# Ok\n\nSee `src/kiro_crew/mcp_tools/workflows.py::workflow_run`.\n",
+            "# Ok\n\nSee `src/efm_go/mcp_tools/workflows.py::workflow_run`.\n",
         )
         assert not _tokens(tree, gate.CHECK_PATH_EXISTS)
 
@@ -169,7 +169,7 @@ class TestPathExists:
 
     def test_a_line_citation_is_still_seen_after_the_boundary(self, tree: Path) -> None:
         # The trailing boundary admits `:`, so the line check keeps its input.
-        _write(tree, "src/kiro_crew/small.py", "a = 1\n")
+        _write(tree, "src/efm_go/small.py", "a = 1\n")
         _write(tree, "docs/ok.md", "# Ok\n\nSee `small.py:1`.\n")
         assert "small.py:1" in _tokens(tree, gate.CHECK_LINE_REF)
 
@@ -177,16 +177,16 @@ class TestPathExists:
     def test_silent_in_a_forward_looking_genre(self, tree: Path, genre: str) -> None:
         # A proposal names files BECAUSE they do not exist yet.
         rel = f"{genre}proposal.md"
-        _write(tree, rel, "# Proposal\n\nThis adds `src/kiro_crew/planned.py`.\n")
+        _write(tree, rel, "# Proposal\n\nThis adds `src/efm_go/planned.py`.\n")
         assert not _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     def test_silent_for_a_bare_path_outside_backticks(self, tree: Path) -> None:
         # Backticks are what make a path a citation; prose about a tree is not one.
-        _write(tree, "docs/ok.md", "# Ok\n\nThe handler is in src/kiro_crew/ghost.py.\n")
+        _write(tree, "docs/ok.md", "# Ok\n\nThe handler is in src/efm_go/ghost.py.\n")
         assert not _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     def test_silent_inside_a_fenced_block(self, tree: Path) -> None:
-        _write(tree, "docs/ok.md", "# Ok\n\n```\ncat src/kiro_crew/ghost.py\n```\n")
+        _write(tree, "docs/ok.md", "# Ok\n\n```\ncat src/efm_go/ghost.py\n```\n")
         assert not _tokens(tree, gate.CHECK_PATH_EXISTS)
 
 
@@ -196,23 +196,23 @@ class TestLineRef:
     def test_reports_a_line_inside_the_file(self, tree: Path) -> None:
         # In range, so the beyond-EOF check stays silent: this is the citation that
         # rots on the next refactor with nothing going red.
-        _write(tree, "src/kiro_crew/small.py", "a = 1\nb = 2\nc = 3\n")
+        _write(tree, "src/efm_go/small.py", "a = 1\nb = 2\nc = 3\n")
         _write(tree, "docs/ok.md", "# Ok\n\nSee `small.py:2`.\n")
         assert not gate.run(tree).stale_line_cites
         assert "small.py:2" in _tokens(tree, gate.CHECK_LINE_REF)
 
     def test_reports_a_range_and_a_list(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/small.py", "\n".join(f"x = {i}" for i in range(50)) + "\n")
+        _write(tree, "src/efm_go/small.py", "\n".join(f"x = {i}" for i in range(50)) + "\n")
         _write(tree, "docs/ok.md", "# Ok\n\nSee `small.py:1-3` and `small.py:4,9`.\n")
         assert _tokens(tree, gate.CHECK_LINE_REF) == {"small.py:1-3", "small.py:4,9"}
 
     def test_silent_for_a_citation_without_a_line(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/small.py", "a = 1\n")
+        _write(tree, "src/efm_go/small.py", "a = 1\n")
         _write(tree, "docs/ok.md", "# Ok\n\nSee `resolve_it` in `small.py`.\n")
         assert not _tokens(tree, gate.CHECK_LINE_REF)
 
     def test_silent_inside_a_fenced_block(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/small.py", "a = 1\n")
+        _write(tree, "src/efm_go/small.py", "a = 1\n")
         _write(tree, "docs/ok.md", "# Ok\n\n```\nsee `small.py:2`\n```\n")
         assert not _tokens(tree, gate.CHECK_LINE_REF)
 
@@ -268,7 +268,7 @@ class TestFencedPath:
         # is a template for their project; "correct the path" is not a fix for it.
         _write(
             tree,
-            "src/kiro_crew/docs/task-runner.md",
+            "src/efm_go/docs/task-runner.md",
             "# Runner\n\n```bash\nkirocrew run docs/task-specs/2026/03/my-task/spec.md\n```\n",
         )
         assert not _tokens(tree, gate.CHECK_FENCED_PATH)
@@ -324,12 +324,12 @@ class TestCouplingCompleteness:
     """The inverse of CODE_COUPLED_DOCS: a consumer nobody recorded."""
 
     def test_reports_an_unrecorded_consumer(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/docs/ghost-integration.md", "# Ghost\n")
+        _write(tree, "src/efm_go/docs/ghost-integration.md", "# Ghost\n")
         _write(
             tree,
             "website/src/pages/settings/GhostPanel.tsx",
             "const SETUP_GUIDE = 'https://example.invalid/"
-            "src/kiro_crew/docs/ghost-integration.md'\n",
+            "src/efm_go/docs/ghost-integration.md'\n",
         )
         assert "ghost-integration.md" in _tokens(tree, gate.CHECK_COUPLING_COMPLETENESS)
 
@@ -344,23 +344,23 @@ class TestCouplingCompleteness:
 
     def test_silent_when_named_only_in_a_comment(self, tree: Path) -> None:
         # A comment is a citation, which check_code_citations already owns.
-        _write(tree, "src/kiro_crew/docs/iframe-hosts.md", "# Hosts\n")
+        _write(tree, "src/efm_go/docs/iframe-hosts.md", "# Hosts\n")
         _write(
             tree,
             "website/src/pages/ChatPage.tsx",
-            "// See `src/kiro_crew/docs/iframe-hosts.md`.\nexport const x = 1\n",
+            "// See `src/efm_go/docs/iframe-hosts.md`.\nexport const x = 1\n",
         )
         assert not _tokens(tree, gate.CHECK_COUPLING_COMPLETENESS)
 
     def test_silent_when_named_only_in_a_test(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/docs/fixture-doc.md", "# Fixture\n")
+        _write(tree, "src/efm_go/docs/fixture-doc.md", "# Fixture\n")
         _write(tree, "website/src/test/Panel.test.tsx", "const f = 'fixture-doc.md'\n")
         assert not _tokens(tree, gate.CHECK_COUPLING_COMPLETENESS)
 
     def test_silent_for_an_ambiguous_filename(self, tree: Path) -> None:
         # Every directory has a README.md, so a match cannot be attributed to the
         # packaged copy: the real hits are a user's project README.
-        _write(tree, "src/kiro_crew/docs/README.md", "# Index\n")
+        _write(tree, "src/efm_go/docs/README.md", "# Index\n")
         _write(tree, "website/src/utils/fileTokens.ts", "const f = 'README.md'\n")
         assert not _tokens(tree, gate.CHECK_COUPLING_COMPLETENESS)
 
@@ -369,12 +369,12 @@ class TestDeadIdentifier:
     """Report-only by default, because the class is measurably noisy."""
 
     def test_reports_a_name_absent_from_every_code_tree(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/real.py", "def live_handler():\n    return 1\n")
+        _write(tree, "src/efm_go/real.py", "def live_handler():\n    return 1\n")
         _write(tree, "docs/ok.md", "# Ok\n\nRouted through `vanished_handler`.\n")
         assert "vanished_handler" in _tokens(tree, gate.CHECK_DEAD_IDENTIFIER)
 
     def test_is_advisory_unless_strict(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/real.py", "a = 1\n")
+        _write(tree, "src/efm_go/real.py", "a = 1\n")
         _write(tree, "docs/ok.md", "# Ok\n\nRouted through `vanished_handler`.\n")
         lenient = gate.run(tree)
         assert not lenient.facts_for(gate.CHECK_DEAD_IDENTIFIER)
@@ -384,7 +384,7 @@ class TestDeadIdentifier:
         assert not strict.advisories and strict.total() == 1
 
     def test_silent_for_a_live_identifier(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/real.py", "def live_handler_name():\n    return 1\n")
+        _write(tree, "src/efm_go/real.py", "def live_handler_name():\n    return 1\n")
         _write(tree, "docs/ok.md", "# Ok\n\nRouted through `live_handler_name`.\n")
         assert not _tokens(tree, gate.CHECK_DEAD_IDENTIFIER)
 
@@ -397,17 +397,17 @@ class TestDeadIdentifier:
 
     @pytest.mark.parametrize("prefix", sorted(gate._IDENT_PLACEHOLDER_PREFIXES))
     def test_silent_for_a_documentation_placeholder(self, tree: Path, prefix: str) -> None:
-        _write(tree, "src/kiro_crew/real.py", "a = 1\n")
+        _write(tree, "src/efm_go/real.py", "a = 1\n")
         _write(tree, "docs/ok.md", f"# Ok\n\nName it `{prefix}OwnWidgetThing`.\n")
         assert not _tokens(tree, gate.CHECK_DEAD_IDENTIFIER)
 
     def test_silent_for_a_short_token(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/real.py", "a = 1\n")
+        _write(tree, "src/efm_go/real.py", "a = 1\n")
         _write(tree, "docs/ok.md", "# Ok\n\nSet `a_b_c`.\n")
         assert not _tokens(tree, gate.CHECK_DEAD_IDENTIFIER)
 
     def test_silent_in_a_forward_looking_genre(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/real.py", "a = 1\n")
+        _write(tree, "src/efm_go/real.py", "a = 1\n")
         _write(
             tree,
             "docs/request-for-change/rfc-x.md",
@@ -420,7 +420,7 @@ class TestBaseline:
     """The one part that could silently disable the whole family."""
 
     def _one_triple(self, tree: Path) -> tuple[str, str, str]:
-        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/kiro_crew/ghost.py`.\n")
+        _write(tree, "docs/ok.md", "# Ok\n\nSee `src/efm_go/ghost.py`.\n")
         facts = gate.run(tree).facts_for(gate.CHECK_PATH_EXISTS)
         assert facts
         return facts[0].key
@@ -441,14 +441,14 @@ class TestBaseline:
         assert findings.total() == 1
 
     def test_a_triple_that_no_longer_fires_is_reported_not_fatal(self, tree: Path) -> None:
-        gone = (gate.CHECK_PATH_EXISTS, "docs/ok.md", "src/kiro_crew/already-fixed.py")
+        gone = (gate.CHECK_PATH_EXISTS, "docs/ok.md", "src/efm_go/already-fixed.py")
         findings = gate.run(tree)
         stale = gate.apply_baseline(findings, {gone})
         assert stale == [gone]
         assert findings.total() == 0
 
     def test_the_baseline_filters_advisories_too(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/real.py", "a = 1\n")
+        _write(tree, "src/efm_go/real.py", "a = 1\n")
         _write(tree, "docs/ok.md", "# Ok\n\nRouted through `vanished_handler`.\n")
         triple = (gate.CHECK_DEAD_IDENTIFIER, "docs/ok.md", "vanished_handler")
         findings = gate.run(tree)
@@ -460,7 +460,7 @@ class TestBaseline:
         # merely moved down the page is the same unfixed finding.
         triple = self._one_triple(tree)
         _write(
-            tree, "docs/ok.md", "# Ok\n\nExtra prose.\n\nMore.\n\nSee `src/kiro_crew/ghost.py`.\n"
+            tree, "docs/ok.md", "# Ok\n\nExtra prose.\n\nMore.\n\nSee `src/efm_go/ghost.py`.\n"
         )
         findings = gate.run(tree)
         gate.apply_baseline(findings, {triple})
@@ -612,7 +612,7 @@ class TestNoHostSideEffects:
 
     def test_a_symlinked_doc_is_never_opened(self, tree: Path) -> None:
         # A symlink in a tree a fork PR controls is an arbitrary read primitive.
-        _write(tree, "docs/real-extra.md", "# Extra\n\nSee `src/kiro_crew/ghost.py`.\n")
+        _write(tree, "docs/real-extra.md", "# Extra\n\nSee `src/efm_go/ghost.py`.\n")
         _write(tree, "docs/README.md", "# Docs\n\n- [Ok](ok.md)\n- [Extra](real-extra.md)\n")
         try:
             (tree / "docs" / "linked.md").symlink_to(tree / "docs" / "real-extra.md")
@@ -629,7 +629,7 @@ class TestNoHostSideEffects:
         outside = tree / "outside"
         outside.mkdir()
         (outside / "sneaky.md").write_text(
-            "# Sneaky\n\nSee `src/kiro_crew/ghost.py`.\n", encoding="utf-8"
+            "# Sneaky\n\nSee `src/efm_go/ghost.py`.\n", encoding="utf-8"
         )
         make_dir_link(tree / "docs" / "linked-dir", outside)
         reported = {f.path for f in gate.run(tree).facts}
@@ -666,25 +666,25 @@ class TestBuiltinAppDocRoot:
     """
 
     def test_the_tree_is_a_declared_lint_root(self) -> None:
-        assert "src/kiro_crew/apps/builtins" in gate.DOC_ROOTS
-        assert "src/kiro_crew/apps/builtins/" in gate.UNCURATED_PREFIXES
+        assert "src/efm_go/apps/builtins" in gate.DOC_ROOTS
+        assert "src/efm_go/apps/builtins/" in gate.UNCURATED_PREFIXES
 
     def test_the_real_checkout_has_markdown_under_it(self) -> None:
-        found = gate._walk_markdown(_REPO_ROOT, "src/kiro_crew/apps/builtins")
+        found = gate._walk_markdown(_REPO_ROOT, "src/efm_go/apps/builtins")
         assert found, "the root would be silently empty"
 
     def test_reports_a_dead_path_in_an_app_readme(self, tree: Path) -> None:
         _write(
             tree,
-            "src/kiro_crew/apps/builtins/demo/README.md",
-            "# Demo\n\nBacked by `src/kiro_crew/apps/builtins/demo/ghost.py`.\n",
+            "src/efm_go/apps/builtins/demo/README.md",
+            "# Demo\n\nBacked by `src/efm_go/apps/builtins/demo/ghost.py`.\n",
         )
-        assert "src/kiro_crew/apps/builtins/demo/ghost.py" in _tokens(tree, gate.CHECK_PATH_EXISTS)
+        assert "src/efm_go/apps/builtins/demo/ghost.py" in _tokens(tree, gate.CHECK_PATH_EXISTS)
 
     def test_reports_a_line_citation_in_an_app_readme(self, tree: Path) -> None:
         _write(
             tree,
-            "src/kiro_crew/apps/builtins/demo/README.md",
+            "src/efm_go/apps/builtins/demo/README.md",
             "# Demo\n\nSee `loader.py:4612`.\n",
         )
         assert "loader.py:4612" in _tokens(tree, gate.CHECK_LINE_REF)
@@ -692,17 +692,17 @@ class TestBuiltinAppDocRoot:
     def test_reports_a_broken_link_in_an_app_readme(self, tree: Path) -> None:
         _write(
             tree,
-            "src/kiro_crew/apps/builtins/demo/README.md",
+            "src/efm_go/apps/builtins/demo/README.md",
             "# Demo\n\nSee [the brief](backend/ghost.md).\n",
         )
         findings = gate.run(tree)
         assert any("backend/ghost.md" in item for item in findings.broken_links)
 
     def test_a_leaf_skill_needs_no_index_of_its_own(self, tree: Path) -> None:
-        _write(tree, "src/kiro_crew/apps/builtins/demo/README.md", "# Demo\n\nBody.\n")
+        _write(tree, "src/efm_go/apps/builtins/demo/README.md", "# Demo\n\nBody.\n")
         _write(
             tree,
-            "src/kiro_crew/apps/builtins/demo/skills/thing/SKILL.md",
+            "src/efm_go/apps/builtins/demo/skills/thing/SKILL.md",
             "# Thing\n\nBody.\n",
         )
         findings = gate.run(tree)

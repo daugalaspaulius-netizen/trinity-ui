@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.artifacts import ArtifactNotFoundError, ArtifactStore
-from kiro_crew.knowledge import artifact_ingest
-from kiro_crew.knowledge.artifact_ingest import (
+from efm_go.artifacts import ArtifactNotFoundError, ArtifactStore
+from efm_go.knowledge import artifact_ingest
+from efm_go.knowledge.artifact_ingest import (
     ARTIFACT_SOURCE_TYPE,
     ARTIFACT_SOURCE_URI,
     ArtifactKnowledgeSync,
@@ -20,10 +20,10 @@ from kiro_crew.knowledge.artifact_ingest import (
     refresh_artifact_name,
     remove_artifact,
 )
-from kiro_crew.knowledge.ingestion import DUPLICATE_JOB_STATUS, IngestionPipeline
-from kiro_crew.knowledge.readers import FileReader
-from kiro_crew.knowledge.store import KnowledgeStore
-from kiro_crew.on_loop_db import OnLoopStoreError
+from efm_go.knowledge.ingestion import DUPLICATE_JOB_STATUS, IngestionPipeline
+from efm_go.knowledge.readers import FileReader
+from efm_go.knowledge.store import KnowledgeStore
+from efm_go.on_loop_db import OnLoopStoreError
 
 DEFAULT_KINDS = {"markdown", "text", "html", "json"}
 
@@ -211,7 +211,7 @@ class TestIngestArtifact:
             name="Backed", content="# notes\nsensitive body", kind="markdown",
             source_path=str(src_file))
         monkeypatch.setattr(
-            "kiro_crew.knowledge.artifact_ingest.is_sensitive_path", lambda p: True)
+            "efm_go.knowledge.artifact_ingest.is_sensitive_path", lambda p: True)
         assert await ingest_artifact(pipeline, art_store, art.slug, sid, DEFAULT_KINDS) is None
         assert _contents(kstore, sid) == []
 
@@ -1046,7 +1046,7 @@ class TestKnowledgeConfigDefaults:
     def test_auto_ingest_defaults_off(self):
         # Opt-in: the dataclass default and the loader must agree, or the
         # dashboard toggle and the running gateway disagree about the state.
-        from kiro_crew.config.loader import KiroCrewConfig, KnowledgeConfig
+        from efm_go.config.loader import KiroCrewConfig, KnowledgeConfig
         kc = KnowledgeConfig()
         assert kc.auto_ingest_artifacts is False
         assert kc.auto_ingest_artifact_kinds == ["markdown", "text", "html", "json"]
@@ -1068,7 +1068,7 @@ class TestGroupLabelAndRename:
     async def test_attach_file_paths_labels_artifact_items_by_name(
         self, pipeline, art_store, kstore
     ):
-        from kiro_crew.dashboard.handlers.knowledge import _attach_file_paths
+        from efm_go.dashboard.handlers.knowledge import _attach_file_paths
         sid, _ = ensure_artifact_source(kstore)
         art = art_store.create(name="Grouped Doc", content="body", kind="markdown")
         await ingest_artifact(pipeline, art_store, art.slug, sid, DEFAULT_KINDS)
@@ -1204,8 +1204,8 @@ def test_removing_a_deduped_artifact_releases_its_claim_on_the_winner(tmp_path):
     Deleting the artifact must drop that claim, or a later winner deletion hands the
     document to a source whose artifact is gone and the text stays searchable.
     """
-    from kiro_crew.knowledge.artifact_ingest import remove_artifact
-    from kiro_crew.knowledge.store import KnowledgeStore
+    from efm_go.knowledge.artifact_ingest import remove_artifact
+    from efm_go.knowledge.store import KnowledgeStore
 
     store = KnowledgeStore(str(tmp_path / "k.db"))
     try:

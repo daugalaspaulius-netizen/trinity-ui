@@ -4,7 +4,7 @@ kiro-cli v3 (KAS) and Kiro IDE define an agent as ONE markdown file: YAML
 frontmatter for the fields, the body as the system prompt. A scan of an agents
 directory that sees ``*.json`` alone leaves such an agent out of the roster and
 out of the KAS projection. These tests pin the shared reader
-(:mod:`kiro_crew.agent_spec_format`) and each consumer whose JSON-only
+(:mod:`efm_go.agent_spec_format`) and each consumer whose JSON-only
 behaviour would otherwise be a hole:
 
 * the roster and its cache signature (a markdown edit must invalidate);
@@ -32,13 +32,13 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent as agent_mod
-from kiro_crew import agent_discovery
-from kiro_crew.acp import kas_agents
-from kiro_crew.acp.harness import harness_for
-from kiro_crew.acp.kas_agents import KasAgentTranslationError, build_kas_custom_agents
-from kiro_crew.acp.types import ACP_BACKEND_KIRO
-from kiro_crew.agent_discovery import (
+from efm_go import agent as agent_mod
+from efm_go import agent_discovery
+from efm_go.acp import kas_agents
+from efm_go.acp.harness import harness_for
+from efm_go.acp.kas_agents import KasAgentTranslationError, build_kas_custom_agents
+from efm_go.acp.types import ACP_BACKEND_KIRO
+from efm_go.agent_discovery import (
     AmbiguousAgentSpecError,
     agent_model_map,
     agent_spec_stems,
@@ -48,7 +48,7 @@ from kiro_crew.agent_discovery import (
     project_agent_names,
     spec_by_declared_name,
 )
-from kiro_crew.agent_spec_format import (
+from efm_go.agent_spec_format import (
     agent_spec_candidates,
     is_agent_spec_name,
     is_markdown_spec,
@@ -413,7 +413,7 @@ class TestRoster:
         )
         (agents_dir / "bot.md").write_text(_md("bot", description="md twin"), encoding="utf-8")
 
-        with caplog.at_level("WARNING", logger="kiro_crew.agent_discovery"):
+        with caplog.at_level("WARNING", logger="efm_go.agent_discovery"):
             rows = list_agents(agents_dir=agents_dir)
 
         assert [(a.name, a.description) for a in rows] == [("bot", "json twin")]
@@ -570,14 +570,14 @@ class TestWriters:
 
 @pytest.fixture
 def _rewriter_flags(monkeypatch: pytest.MonkeyPatch) -> None:
-    from kiro_crew.mcp_gateway import rewriter
+    from efm_go.mcp_gateway import rewriter
 
     monkeypatch.setattr(rewriter, "forward_declared_env_enabled", lambda: True)
     monkeypatch.setattr(rewriter, "pool_identity_env_keys", lambda: frozenset())
 
 
 def _rewrite(root: Path) -> tuple[dict[str, int], dict[str, str]]:
-    from kiro_crew.mcp_gateway.rewriter import rewrite_agents
+    from efm_go.mcp_gateway.rewriter import rewrite_agents
 
     settings = root / "settings" / "mcp.json"
     if not settings.exists():
@@ -601,8 +601,8 @@ class TestRewriter:
         """Trap: unstubbed, a markdown agent's servers would spawn direct and
         bypass the tool gate. The overlay is ``<stem>.json`` because the
         session-level lookup resolves ``<agent>.json``."""
-        from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER
-        from kiro_crew.mcp_gateway.session_servers import injection_server_names
+        from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER
+        from efm_go.mcp_gateway.session_servers import injection_server_names
 
         src = tmp_path / "agents"
         src.mkdir()
@@ -634,7 +634,7 @@ class TestRewriter:
         that folds case has one file for their two overlays. The second write
         is refused and named, instead of replacing the first agent's servers
         with the second's."""
-        from kiro_crew.mcp_gateway import rewriter
+        from efm_go.mcp_gateway import rewriter
 
         (tmp_path / "Probe").write_text("", encoding="utf-8")
         if (tmp_path / "probe").exists():
@@ -683,8 +683,8 @@ class TestRewriter:
         as a collision and then prune its overlay -- KAS would launch that
         agent's MCP servers outside the tool gate. Only a kept or parsed
         source claims a destination."""
-        from kiro_crew.mcp_gateway import rewriter
-        from kiro_crew.mcp_gateway.rewriter import _WRAPPER_MARKER
+        from efm_go.mcp_gateway import rewriter
+        from efm_go.mcp_gateway.rewriter import _WRAPPER_MARKER
 
         (tmp_path / "Probe").write_text("", encoding="utf-8")
         if (tmp_path / "probe").exists():
@@ -721,7 +721,7 @@ class TestRewriter:
         """Two distinct files under the two spellings (a stale overlay on a
         case-sensitive directory) are NOT a collision; the same file reached by
         both spellings is."""
-        from kiro_crew.mcp_gateway.rewriter import _overlay_names_collide
+        from efm_go.mcp_gateway.rewriter import _overlay_names_collide
 
         (tmp_path / "Probe").write_text("", encoding="utf-8")
         if (tmp_path / "probe").exists():
@@ -737,7 +737,7 @@ class TestRewriter:
     def test_a_markdown_edit_invalidates_the_rewrite_cache(
         self, tmp_path: Path, _rewriter_flags: None, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.mcp_gateway import rewriter
+        from efm_go.mcp_gateway import rewriter
 
         src = tmp_path / "agents"
         src.mkdir()
@@ -774,7 +774,7 @@ class TestRewriter:
         """A symlink in the agents directory is resolved and vetted before the
         read, so a sensitive target never lands in an overlay -- and the skip is
         the deterministic kind (the pass stays cacheable), not a transient keep."""
-        from kiro_crew.mcp_gateway.rewriter import _FINGERPRINT_NAME
+        from efm_go.mcp_gateway.rewriter import _FINGERPRINT_NAME
 
         secret = tmp_path / "vault" / "notes.md"
         secret.parent.mkdir()
@@ -788,7 +788,7 @@ class TestRewriter:
             os.symlink(secret, src / "evil.md")
         except (OSError, NotImplementedError):
             pytest.skip("symlinks unavailable on this platform")
-        from kiro_crew.mcp_gateway import rewriter
+        from efm_go.mcp_gateway import rewriter
 
         # Both the fingerprint (rewriter._source_sig) and the rewrite loop's
         # strict read (agent_discovery) vet the resolved target; the strict read
@@ -826,10 +826,10 @@ def test_a_markdown_sharer_is_counted_by_the_census(
 ) -> None:
     """Trap: a census that lists ``*.json`` only reads a markdown sharer as
     absent and lets a Disconnect revoke a grant it is still using."""
-    from kiro_crew import mcp_discovery
-    from kiro_crew.config import paths as connections_paths
-    from kiro_crew.connections import ownership
-    from kiro_crew.dashboard.handlers import mcp as mcp_handlers
+    from efm_go import mcp_discovery
+    from efm_go.config import paths as connections_paths
+    from efm_go.connections import ownership
+    from efm_go.dashboard.handlers import mcp as mcp_handlers
 
     agents = tmp_path / "agents"
     agents.mkdir()
@@ -858,10 +858,10 @@ def test_an_unclosed_fence_leaves_the_census_incomplete(
     """A document that OPENS a fence announced itself as a spec: when it does
     not parse, what it declares is unknown, so the census is incomplete rather
     than treating it as a README."""
-    from kiro_crew import mcp_discovery
-    from kiro_crew.config import paths as connections_paths
-    from kiro_crew.connections import ownership
-    from kiro_crew.dashboard.handlers import mcp as mcp_handlers
+    from efm_go import mcp_discovery
+    from efm_go.config import paths as connections_paths
+    from efm_go.connections import ownership
+    from efm_go.dashboard.handlers import mcp as mcp_handlers
 
     agents = tmp_path / "agents"
     agents.mkdir()
@@ -885,7 +885,7 @@ def test_reading_markdown_specs_is_a_membership_answer() -> None:
     """The harness answers from ``ACP_BACKENDS_MARKDOWN_AGENT_SPECS``, never
     from its own identity, so a host added later joins the set. KAS reads the
     form (Crew parses the spec and hands it over the wire); kiro-cli does not."""
-    from kiro_crew.acp.types import ACP_BACKEND_KAS, ACP_BACKENDS_MARKDOWN_AGENT_SPECS
+    from efm_go.acp.types import ACP_BACKEND_KAS, ACP_BACKENDS_MARKDOWN_AGENT_SPECS
 
     assert ACP_BACKENDS_MARKDOWN_AGENT_SPECS == frozenset({ACP_BACKEND_KAS})
     assert harness_for(ACP_BACKEND_KAS).reads_markdown_agent_specs is True
@@ -905,8 +905,8 @@ async def test_the_activation_guard_explains_a_markdown_only_agent(
     operator to rewrite a JSON file that was never the problem."""
     from unittest.mock import AsyncMock
 
-    from kiro_crew.acp.runtime import AcpRuntime
-    from kiro_crew.acp.session_handle import AcpRuntimeError
+    from efm_go.acp.runtime import AcpRuntime
+    from efm_go.acp.session_handle import AcpRuntimeError
 
     (agents_dir / "kas-md-probe.md").write_text(PROBE, encoding="utf-8")
     work = tmp_path / "work"
@@ -942,7 +942,7 @@ _ONE_FORM_SCAN_RE = re.compile(
 # Kiro Crew, so a migration that reads-then-writes must not see it. agent.py has
 # two: migrate_agent_specs (bookkeeping keys) and migrate_relocated_skill_uris
 # (skill:// paths of a moved builtin skill).
-_ONE_FORM_SCANS_ALLOWED: dict[str, int] = {"kiro_crew/agent.py": 2}
+_ONE_FORM_SCANS_ALLOWED: dict[str, int] = {"efm_go/agent.py": 2}
 
 
 def test_no_agents_dir_scan_sees_one_form_only() -> None:
@@ -971,7 +971,7 @@ def test_no_agents_dir_scan_sees_one_form_only() -> None:
 
 
 def test_doctor_dead_path_walk_reads_markdown(tmp_path: Path) -> None:
-    from kiro_crew import doctor_deadpath as dp
+    from efm_go import doctor_deadpath as dp
 
     spec = tmp_path / "bot.md"
     spec.write_text(
@@ -992,7 +992,7 @@ def test_doctor_dead_path_walk_reads_through_the_hardened_gate(
 ) -> None:
     """A symlink in the agents dir is resolved and vetted before the doctor
     reads it: a sensitive target is reported as unreadable, never parsed."""
-    from kiro_crew import doctor_deadpath as dp
+    from efm_go import doctor_deadpath as dp
 
     secret = tmp_path / "vault" / "notes.md"
     secret.parent.mkdir()
@@ -1015,7 +1015,7 @@ def test_active_mcp_endpoint_lookup_tolerates_a_null_server_map(
     agents_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """``mcpServers: null`` declares no servers: an empty list, not a 500."""
-    from kiro_crew.dashboard.handlers import mcp as mcp_handlers
+    from efm_go.dashboard.handlers import mcp as mcp_handlers
 
     monkeypatch.setattr(mcp_handlers, "kiro_agents_dir_path", lambda: agents_dir)
     (agents_dir / "nullbot.md").write_text("---\nname: nullbot\nmcpServers: null\n---\nhi\n")
@@ -1028,7 +1028,7 @@ def test_active_mcp_endpoint_lookup_tolerates_a_null_server_map(
 def test_crew_context_opt_out_is_read_from_markdown(
     agents_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew import context
+    from efm_go import context
 
     monkeypatch.setattr(context, "kiro_agents_dir", lambda: agents_dir)
     (agents_dir / "quiet.md").write_text(_md("quiet", includeCrewContext=False), encoding="utf-8")
@@ -1039,7 +1039,7 @@ def test_crew_context_opt_out_is_read_from_markdown(
 
 
 def test_materialized_names_and_model_resolver_read_markdown(agents_dir: Path) -> None:
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     (agents_dir / "Pkg-bot.md").write_text(_md("bot", model="m-md"), encoding="utf-8")
     assert "bot" in loader._scan_materialized_agents(agents_dir)
@@ -1049,7 +1049,7 @@ def test_materialized_names_and_model_resolver_read_markdown(agents_dir: Path) -
 def test_slack_agent_names_read_markdown_and_skip_a_readme(
     agents_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from kiro_crew.slack import events, handler
+    from efm_go.slack import events, handler
 
     monkeypatch.setattr(events, "kiro_agents_dir", lambda: agents_dir)
     monkeypatch.setattr(handler, "kiro_agents_dir", lambda: agents_dir)
@@ -1082,7 +1082,7 @@ def test_slack_agent_names_read_markdown_and_skip_a_readme(
 def test_session_mcp_reads_a_markdown_spec_for_the_mirrored_hosts(
     agents_dir: Path, tmp_path: Path
 ) -> None:
-    from kiro_crew.acp import session_mcp
+    from efm_go.acp import session_mcp
 
     (agents_dir / "mdbot.md").write_text(
         _md("mdbot", mcpServers={"srv": {"command": sys.executable}}, tools=["@srv"]),
@@ -1105,7 +1105,7 @@ def test_session_mcp_reads_a_markdown_spec_for_the_mirrored_hosts(
 
 
 def test_the_agent_system_prompt_is_the_markdown_body(agents_dir: Path) -> None:
-    from kiro_crew.context import ContextBuilder
+    from efm_go.context import ContextBuilder
 
     # Bytes, not text: the reader keeps line endings as written, and a text
     # write on Windows would turn every ``\n`` below into ``\r\n``.

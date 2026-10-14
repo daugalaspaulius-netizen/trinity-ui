@@ -2,7 +2,7 @@
 
 Two layers:
 
-* Pure-function unit tests for :mod:`kiro_crew.mcp_gateway.apps`
+* Pure-function unit tests for :mod:`efm_go.mcp_gateway.apps`
   (:func:`extract_ui_resource_uri`, :func:`append_marker`,
   :func:`write_spool`, :func:`sweep_spool`) — no event loop needed.
 * An async end-to-end test of the backend's parking/injection seam: a fake
@@ -30,10 +30,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.mcp_apps_render import find_marker
-from kiro_crew.mcp_caller import CallerContext
-from kiro_crew.mcp_gateway import apps
-from kiro_crew.mcp_gateway.apps import (
+from efm_go.mcp_apps_render import find_marker
+from efm_go.mcp_caller import CallerContext
+from efm_go.mcp_gateway import apps
+from efm_go.mcp_gateway.apps import (
     AUDIENCE_APP,
     AUDIENCE_MODEL,
     MARKER_PREFIX,
@@ -46,13 +46,13 @@ from kiro_crew.mcp_gateway.apps import (
     visibility_allows,
     write_spool,
 )
-from kiro_crew.mcp_gateway.backend import (
+from efm_go.mcp_gateway.backend import (
     MCP_APPS_ENV_FLAG,
     MCP_APPS_MIME_TYPE,
     Backend,
     _PendingRequest,
 )
-from kiro_crew.mcp_gateway.pool import PoolKey
+from efm_go.mcp_gateway.pool import PoolKey
 
 
 @pytest.fixture
@@ -224,7 +224,7 @@ class TestWriteSpool:
         Asserted by measuring the file's SIZE at lockdown time — zero means no
         payload byte existed yet.
         """
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         calls: list[tuple[str, int]] = []
         real_restrict = platform_compat.restrict_to_owner
@@ -238,7 +238,7 @@ class TestWriteSpool:
                 calls.append((str(p), os.stat(p).st_size))
             return real_restrict(target)
 
-        monkeypatch.setattr("kiro_crew.platform_compat.restrict_to_owner", _measuring)
+        monkeypatch.setattr("efm_go.platform_compat.restrict_to_owner", _measuring)
         sid = write_spool({"html": "x"})
 
         assert (spool_tmp / f"{sid}.json").exists()
@@ -251,7 +251,7 @@ class TestWriteSpool:
         """Fail closed is structural now: an unprotectable record never exists
         at the final path (no unlink needed), and the raised OSError lets the
         interception caller's failure-safe path deliver the original result."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         real_restrict = platform_compat.restrict_to_owner
 
@@ -263,7 +263,7 @@ class TestWriteSpool:
                 raise OSError("cannot resolve the invoking user's SID")
             return real_restrict(target)
 
-        monkeypatch.setattr("kiro_crew.platform_compat.restrict_to_owner", _refuse)
+        monkeypatch.setattr("efm_go.platform_compat.restrict_to_owner", _refuse)
         with pytest.raises(OSError):
             write_spool({"html": "x"})
 
@@ -377,7 +377,7 @@ class TestSpoolDirAgreement:
         ``config_dir()`` — under KIROCREW_HOME (pods) the writer spooled into
         the LIVE plane's home and the reader found nothing. Both sides MUST
         resolve identically with only KIROCREW_HOME set (no spool override)."""
-        from kiro_crew import mcp_apps_render
+        from efm_go import mcp_apps_render
         monkeypatch.delenv(apps.SPOOL_ENV, raising=False)
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "isolated-home"))
         assert apps.spool_dir() == mcp_apps_render._spool_dir()
@@ -799,7 +799,7 @@ async def test_unreadable_visibility_drop_warns_declared_drop_informs(apps_flag_
         "jsonrpc": "2.0", "id": 1,
         "result": {"tools": [_tool("routine", ["app"]), _tool("bad_shape", 42)]},
     }
-    with caplog.at_level(logging.INFO, logger="kiro_crew.mcp_gateway.backend"):
+    with caplog.at_level(logging.INFO, logger="efm_go.mcp_gateway.backend"):
         assert await backend._maybe_intercept_ui_result(_listing_pending("s1"), msg) is False
     warned = [r for r in caplog.records if r.levelno == logging.WARNING]
     informed = [r for r in caplog.records if r.levelno == logging.INFO]
@@ -851,7 +851,7 @@ async def test_visibility_withhold_is_sel_audited(apps_flag_on, monkeypatch):
             calls.append(kw)
 
     monkeypatch.setattr(
-        "kiro_crew.mcp_gateway.backend.SecurityEventLog", lambda: _FakeSel()
+        "efm_go.mcp_gateway.backend.SecurityEventLog", lambda: _FakeSel()
     )
     backend = _make_backend()
     pending = _PendingRequest(
@@ -882,7 +882,7 @@ async def test_no_sel_event_when_nothing_withheld(apps_flag_on, monkeypatch):
             calls.append(kw)
 
     monkeypatch.setattr(
-        "kiro_crew.mcp_gateway.backend.SecurityEventLog", lambda: _FakeSel()
+        "efm_go.mcp_gateway.backend.SecurityEventLog", lambda: _FakeSel()
     )
     backend = _make_backend()
     msg = {"jsonrpc": "2.0", "id": 1, "result": {"tools": [_tool("ok")]}}
@@ -899,7 +899,7 @@ async def test_sel_failure_does_not_break_the_filter(apps_flag_on, monkeypatch):
             raise RuntimeError("sel disk full")
 
     monkeypatch.setattr(
-        "kiro_crew.mcp_gateway.backend.SecurityEventLog", lambda: _ExplodingSel()
+        "efm_go.mcp_gateway.backend.SecurityEventLog", lambda: _ExplodingSel()
     )
     backend = _make_backend()
     msg = _listing_msg()
@@ -1102,7 +1102,7 @@ async def test_resources_read_timeout_delivers_original(apps_flag_on, spool_tmp,
     """If the resources/read never returns, the original tools/call response is
     delivered unmodified after the timeout (best-effort — never wedge/drop)."""
     monkeypatch.setattr(
-        "kiro_crew.mcp_gateway.backend._APPS_RESOURCE_READ_TIMEOUT_SECS", 0.05
+        "efm_go.mcp_gateway.backend._APPS_RESOURCE_READ_TIMEOUT_SECS", 0.05
     )
     backend = _make_backend()
     inbox = await backend.attach_stub("s1")
@@ -1195,7 +1195,7 @@ class TestInterceptDecision:
     """Unit tests on the interception seam with a mock backend."""
 
     def _pending(self, method: str = "tools/call", tool: str = "draw"):
-        from kiro_crew.mcp_gateway.backend import _PendingRequest
+        from efm_go.mcp_gateway.backend import _PendingRequest
         return _PendingRequest(
             stub_uuid="s1", original_id=1, method=method,
             session_key="dashboard:x", tool_name=tool,
@@ -1205,7 +1205,7 @@ class TestInterceptDecision:
     async def test_is_error_result_never_intercepts_either_form(self, spool_tmp, monkeypatch):
         """A FAILED tool call must never spawn a render — checked before the
         result-side _meta.ui form is even read."""
-        from kiro_crew.mcp_gateway.backend import MCP_APPS_ENV_FLAG
+        from efm_go.mcp_gateway.backend import MCP_APPS_ENV_FLAG
         monkeypatch.setenv(MCP_APPS_ENV_FLAG, "1")
         backend = _make_backend()
         backend._apps_declared_uris = {"draw": "ui://fake/app.html"}
@@ -1224,7 +1224,7 @@ class TestInterceptDecision:
     async def test_tools_list_replaces_declaration_map(self, spool_tmp, monkeypatch):
         """Each tools/list is the server's COMPLETE current declaration set:
         a withdrawn tool→ui association must not survive the refresh."""
-        from kiro_crew.mcp_gateway.backend import MCP_APPS_ENV_FLAG
+        from efm_go.mcp_gateway.backend import MCP_APPS_ENV_FLAG
         monkeypatch.setenv(MCP_APPS_ENV_FLAG, "1")
         backend = _make_backend()
         backend._apps_declared_uris = {"draw": "ui://fake/app.html"}
@@ -1245,7 +1245,7 @@ class TestInterceptDecision:
         stub) whose called tool ALSO declares a ui:// resource must return
         verbatim — never re-spooled with a marker, which would replace the
         app's real result and mint a stray record."""
-        from kiro_crew.mcp_gateway.backend import MCP_APPS_ENV_FLAG, _PendingRequest
+        from efm_go.mcp_gateway.backend import MCP_APPS_ENV_FLAG, _PendingRequest
         monkeypatch.setenv(MCP_APPS_ENV_FLAG, "1")
         backend = _make_backend()
         backend._apps_declared_uris = {"draw": "ui://fake/app.html"}

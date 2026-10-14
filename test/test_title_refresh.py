@@ -27,8 +27,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.dashboard import chat_persistence, chat_title
-from kiro_crew.dashboard.chat_title import (
+from efm_go.dashboard import chat_persistence, chat_title
+from efm_go.dashboard.chat_title import (
     _TITLE_EARLY_REFRESH_MILESTONE,
     _TITLE_ORIGIN_AUTO,
     _TITLE_ORIGIN_USER,
@@ -38,7 +38,7 @@ from kiro_crew.dashboard.chat_title import (
     _title_refresh_due,
     maybe_refresh_title,
 )
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard.state import _ChatSlot
 
 
 def _fake_state(*slots):
@@ -640,10 +640,10 @@ class TestRehydration:
 
 # ── rehydration: the mark is re-based against the rows a reload holds ────────
 def _restore_state(tmp_path, monkeypatch):
-    from kiro_crew.dashboard.state import DashboardState
-    from kiro_crew.history import ConversationLog
+    from efm_go.dashboard.state import DashboardState
+    from efm_go.history import ConversationLog
 
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     sessions = MagicMock(count=0)
     sessions.get_pid = MagicMock(return_value=None)
     return DashboardState(
@@ -703,7 +703,7 @@ async def _rehydrate(state, driver: str) -> _ChatSlot:
             )
             assert resp.status == 200, await resp.text()
         return state._slots["chat1"]
-    from kiro_crew.dashboard.chat import restore_recent_sessions
+    from efm_go.dashboard.chat import restore_recent_sessions
 
     assert restore_recent_sessions(state, window_minutes=60) == 1
     return state._slots["chat1"]
@@ -912,7 +912,7 @@ class TestRehydratedMarkRebase:
         # all 600 rows are held (no frozen prefix), so the user count is the
         # count the mark was taken over and the re-base moves nothing, where
         # resume's 500-row window would have pulled the mark down to 250.
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         _write_transcript(tmp_path, _turn_rows(300), mark=300)
         state = _restore_state(tmp_path, monkeypatch)
@@ -1131,7 +1131,7 @@ class TestRefreshCadence:
     async def test_the_count_stops_rising_once_the_window_is_full(self, monkeypatch):
         # Once this full window drops one user row for each new user row, its
         # retained user count stays at four and later cadence marks are not due.
-        from kiro_crew.dashboard import state as state_mod
+        from efm_go.dashboard import state as state_mod
 
         monkeypatch.setattr(state_mod, "_MAX_SLOT_MESSAGES", 8)
         calls = _patch_generator(monkeypatch, "KEEP-unused")
@@ -1146,7 +1146,7 @@ class TestRefreshCadence:
 
     @pytest.mark.asyncio
     async def test_refresh_fires_while_a_full_window_drops_assistant_rows(self, monkeypatch):
-        from kiro_crew.dashboard import state as state_mod
+        from efm_go.dashboard import state as state_mod
 
         monkeypatch.setattr(state_mod, "_MAX_SLOT_MESSAGES", 8)
         calls = _patch_generator(monkeypatch, "KEEP-unused")
@@ -1169,7 +1169,7 @@ class TestRefreshCadence:
         # "Takes effect on the next turn; no restart", measured through the real
         # config load rather than a patched reader.
         cfg = tmp_path / "config.json"
-        with patch("kiro_crew.config.loader.config_path", return_value=cfg):
+        with patch("efm_go.config.loader.config_path", return_value=cfg):
             for every in (10, 100):
                 cfg.write_text(
                     json.dumps({"dashboard": {"title_refresh_every_turns": every}}),
@@ -1184,8 +1184,8 @@ class TestRefreshCadence:
         from dataclasses import fields
         from pathlib import Path
 
-        from kiro_crew.config import sections
-        from kiro_crew.dashboard.state import _MAX_SLOT_MESSAGES
+        from efm_go.config import sections
+        from efm_go.dashboard.state import _MAX_SLOT_MESSAGES
 
         floor = sections.TITLE_REFRESH_EVERY_TURNS_MIN
         ceiling = sections.TITLE_REFRESH_EVERY_TURNS_MAX
@@ -1198,7 +1198,7 @@ class TestRefreshCadence:
             if f.name == "title_refresh_every_turns"
         )
         root = Path(__file__).resolve().parents[1]
-        docs = (root / "src/kiro_crew/docs/configuration.md").read_text(encoding="utf-8")
+        docs = (root / "src/efm_go/docs/configuration.md").read_text(encoding="utf-8")
         doc_row = next(line for line in docs.splitlines() if key in line)
         spec = (root / "docs/system-specs/modules/learn-cron-dashboard.md").read_text(
             encoding="utf-8"
@@ -1241,13 +1241,13 @@ class TestRefreshCadence:
         ],
     )
     def test_loader_bounds(self, raw, parsed):
-        from kiro_crew.config.loader import _build_dashboard_config
+        from efm_go.config.loader import _build_dashboard_config
 
         config = _build_dashboard_config(set(), {"title_refresh_every_turns": raw})
         assert config.title_refresh_every_turns == parsed
 
     def test_default_is_off(self):
-        from kiro_crew.config.loader import _build_dashboard_config
+        from efm_go.config.loader import _build_dashboard_config
 
         assert _build_dashboard_config(set(), {}).title_refresh_every_turns == 0
 
@@ -1260,7 +1260,7 @@ class TestPersistWriteOrdering:
         in flight bumps the epoch; the persist loop must then write AGAIN with
         the current (user) values, so the disk can never end up on the stale
         auto title regardless of flock acquisition order."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("dashboard:chat-1-1", "user", "seed")
@@ -1300,7 +1300,7 @@ class TestPersistWriteOrdering:
 
     @pytest.mark.asyncio
     async def test_stable_epoch_writes_exactly_once(self, tmp_path):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("dashboard:chat-1-1", "user", "seed")
@@ -1356,11 +1356,11 @@ class TestSlotCreatePinIsFinal:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_ready_kiro_prerequisite
 
-        from kiro_crew.dashboard.chat import api_chat_slot_create
-        from kiro_crew.dashboard.state import DashboardState
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.chat import api_chat_slot_create
+        from efm_go.dashboard.state import DashboardState
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         sessions.remove = AsyncMock()
         sessions.recycle_background = AsyncMock()
@@ -1420,7 +1420,7 @@ class TestResumeRehydratesProvenance:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_app, _make_state
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -1444,7 +1444,7 @@ class TestResumeRehydratesProvenance:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_app, _make_state
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -1463,7 +1463,7 @@ class TestResumeRehydratesProvenance:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_app, _make_state
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.conversation_log.append("dashboard:s1", "user", "hello")
 
@@ -1491,10 +1491,10 @@ class TestCreatePinPersists:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard import chat_handlers
-        from kiro_crew.dashboard.chat import api_chat_slot_create
+        from efm_go.dashboard import chat_handlers
+        from efm_go.dashboard.chat import api_chat_slot_create
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         save_spy = AsyncMock()
         monkeypatch.setattr(chat_handlers, "save_slot_off_loop", save_spy)
         state = _make_state(tmp_path)
@@ -1568,7 +1568,7 @@ class TestResumeTitleEchoIsNotAPin:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_app, _make_state
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -1595,7 +1595,7 @@ class TestResumeTitleEchoIsNotAPin:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_app, _make_state
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -1621,7 +1621,7 @@ class TestResumeTitleEchoIsNotAPin:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_app, _make_state
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -1670,7 +1670,7 @@ class TestRefreshDurableMarkGate:
 
     @pytest.mark.asyncio
     async def test_persist_returns_false_on_write_failure(self, tmp_path):
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("dashboard:chat-1-1", "user", "seed")
@@ -1881,7 +1881,7 @@ class TestResumeCorruptedTitleMetadata:
         from aiohttp.test_utils import TestClient, TestServer
         from chat_test_helpers import _make_app, _make_state
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         log = state.conversation_log
         log.append("dashboard:s1", "user", "hello")
@@ -2275,10 +2275,10 @@ class TestSlotSavePersistsLowSignalFlag:
     """
 
     def _make_state(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.state import DashboardState
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.state import DashboardState
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         sessions.get_pid = MagicMock(return_value=None)
         return DashboardState(
@@ -2292,9 +2292,9 @@ class TestSlotSavePersistsLowSignalFlag:
         )
 
     def test_full_save_persists_low_signal_flag(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-        from kiro_crew.dashboard.chat_utils import _history_key_for
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_utils import _history_key_for
+        from efm_go.history import ConversationLog
 
         state = self._make_state(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("lowsig-full")
@@ -2311,9 +2311,9 @@ class TestSlotSavePersistsLowSignalFlag:
         assert stored["title_low_signal"] is True
 
     def test_forced_empty_slot_save_persists_low_signal_flag(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-        from kiro_crew.dashboard.chat_utils import _history_key_for
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_utils import _history_key_for
+        from efm_go.history import ConversationLog
 
         state = self._make_state(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("lowsig-empty")
@@ -2337,9 +2337,9 @@ class TestSlotSavePersistsLowSignalFlag:
         ``_persist_title`` write failed transiently must not be resurrected
         as True from an earlier persist -- the full save overwrites it with
         the slot's live False."""
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-        from kiro_crew.dashboard.chat_utils import _history_key_for
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_utils import _history_key_for
+        from efm_go.history import ConversationLog
 
         state = self._make_state(tmp_path, monkeypatch)
         slot = state.get_or_create_slot("lowsig-off")
@@ -2367,7 +2367,7 @@ class TestSlotSavePersistsLowSignalFlag:
         ``title_refresh_mark`` -- otherwise the popped slot's stale flag
         overwrites the replacement's and a restart wrongly suppresses or
         re-arms the turn-one refresh (GPT review of 3518b8081)."""
-        from kiro_crew.history import ROWS_ONLY_DEFERRED_META_KEYS
+        from efm_go.history import ROWS_ONLY_DEFERRED_META_KEYS
 
         assert "title_low_signal" in ROWS_ONLY_DEFERRED_META_KEYS
         # The two siblings it must travel with.

@@ -18,18 +18,18 @@ from pathlib import Path
 from skill_script_helpers import load_skill_script
 
 from conftest import make_dir_link
-from kiro_crew import agent, platform_compat
-from kiro_crew.agent_files import (
+from efm_go import agent, platform_compat
+from efm_go.agent_files import (
     OWNED_KIRO_AGENT_FILES,
     PIPELINE_CONDUCTOR_AGENT_FILENAME,
 )
-from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 SKILL_DIR = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "pipeline-conductor"
 )
@@ -45,13 +45,13 @@ def _pin_spec_permissions_cli(monkeypatch, which):
     """Pin what the shared writer gate believes the installed kiro-cli is.
 
     ``_write_derived_permissions`` reads ``installed_kiro_cli_version``
-    function-locally from ``kiro_crew.kiro_cli``, so the patch lands there.
+    function-locally from ``efm_go.kiro_cli``, so the patch lands there.
     Without it CI's absent binary reads as "unknown" and the field is withheld,
     failing a shared permissions assertion for a host reason. ``which`` is
     ``"accepts"``, ``"refuses"`` or ``"unknown"``.
     """
     version = {"accepts": _ACCEPTS, "refuses": _REFUSES, "unknown": None}[which]
-    monkeypatch.setattr("kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: version)
+    monkeypatch.setattr("efm_go.kiro_cli.installed_kiro_cli_version", lambda: version)
 
 
 class TestPipelineConductorInstaller:
@@ -173,7 +173,7 @@ class TestPipelineConductorInstaller:
         skill = (
             Path(__file__).resolve().parents[1]
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "builtin_skills"
             / "pipeline-conductor"
             / "SKILL.md"
@@ -689,7 +689,7 @@ class TestFleetProbe:
     ):
         """The docstring names two forms it gets approximately right; pin both.
 
-        ``--pyargs kiro_crew.mod`` narrows a run to one package but carries no
+        ``--pyargs efm_go.mod`` narrows a run to one package but carries no
         separator, no ``.py`` and no ``::``, so it reads ``suite`` -- over-stating
         severity, the same fail-closed direction the bare-token case takes. An
         interpreter that glues the module flag onto the runner name leaves no
@@ -703,7 +703,7 @@ class TestFleetProbe:
         proc = tmp_path / "proc"
         glued = b"-m" + b"pytest"
         for pid, argv in (
-            ("61", b"pytest\x00-n4\x00--pyargs\x00kiro_crew.mod\x00"),
+            ("61", b"pytest\x00-n4\x00--pyargs\x00efm_go.mod\x00"),
             ("62", b"/usr/bin/python3\x00" + glued + b"\x00-q\x00"),
         ):
             (proc / pid).mkdir(parents=True)
@@ -722,10 +722,10 @@ class TestFleetProbe:
         assert "scope=suite" in line["61"], line["61"]
         assert "scope=unknown" in line["62"], line["62"]
         # The package name is an argument like any other and must not ride out.
-        assert "kiro_crew.mod" not in out
+        assert "efm_go.mod" not in out
 
     def test_an_option_value_is_not_a_target(self, tmp_path, capsys, monkeypatch):
-        """``--cov src/kiro_crew`` and ``-W ignore::X`` are whole-suite runs.
+        """``--cov src/efm_go`` and ``-W ignore::X`` are whole-suite runs.
 
         Both carry the two shapes the target test looks for -- a separator and a
         ``::`` node id -- in the VALUE of a value-taking option rather than in a
@@ -737,7 +737,7 @@ class TestFleetProbe:
         proc = tmp_path / "proc"
         for pid, argv in (
             # A path-shaped value: the separator belongs to `--cov`, not a target.
-            ("51", b"/usr/bin/python3\x00-m\x00pytest\x00-n4\x00--cov\x00src/kiro_crew\x00-q\x00"),
+            ("51", b"/usr/bin/python3\x00-m\x00pytest\x00-n4\x00--cov\x00src/efm_go\x00-q\x00"),
             # A `::`-shaped value: a warning filter, not a node id.
             ("52", b"pytest\x00-n4\x00-W\x00ignore::DeprecationWarning\x00-q\x00"),
             # An `--ignore <path>` narrows nothing about the run's fan-out.
@@ -755,7 +755,7 @@ class TestFleetProbe:
             assert "scope=suite" in line[pid], line[pid]
         # The option values are arguments like any other and must not ride out on
         # the derived word.
-        assert "src/kiro_crew" not in out
+        assert "src/efm_go" not in out
         assert "DeprecationWarning" not in out
         assert "test/slow" not in out
 

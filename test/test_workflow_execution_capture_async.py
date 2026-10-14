@@ -8,17 +8,17 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef, bind_session_execution
-from kiro_crew.history import ConversationLog
-from kiro_crew.workflow_memory import WorkflowScope
-from kiro_crew.workflows.service import SOURCE_FORMAT_TASK_PLAN, WorkflowService
-from kiro_crew.workflows.store import WorkflowRunStore
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef, bind_session_execution
+from efm_go.history import ConversationLog
+from efm_go.workflow_memory import WorkflowScope
+from efm_go.workflows.service import SOURCE_FORMAT_TASK_PLAN, WorkflowService
+from efm_go.workflows.store import WorkflowRunStore
 
 SCRIPT = 'META = {"name": "capture"}\nasync def workflow(ctx):\n    return "done"\n'
 
 
 def gateway_context():
-    from kiro_crew.dashboard.handlers._shared import (
+    from efm_go.dashboard.handlers._shared import (
         live_session_memory_mode,
         resolve_session_memory_mode,
     )
@@ -63,7 +63,7 @@ async def test_workflow_capture_reads_off_loop_once_and_outlives_parent(
         log.delete_session(parent)
         removed.append(parent)
 
-    from kiro_crew import workflow_memory
+    from efm_go import workflow_memory
 
     original_capture = workflow_memory.capture_execution
 
@@ -190,7 +190,7 @@ async def test_scope_combines_captured_live_and_inherited_restrictions(
 async def test_admission_snapshots_live_restriction_before_capture_yields(
     tmp_path, monkeypatch, live, entry
 ):
-    from kiro_crew import workflow_memory
+    from efm_go import workflow_memory
 
     parent = "dashboard:closing-parent"
     context, state = gateway_context()
@@ -283,7 +283,7 @@ async def test_admission_snapshots_live_restriction_before_capture_yields(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("source", ["live-port", "live-map", "inherited"])
 async def test_scope_refuses_invalid_retention_inputs(source):
-    from kiro_crew.memory_stores import UnknownMemoryStore
+    from efm_go.memory_stores import UnknownMemoryStore
 
     parent = "dashboard:invalid-mode"
     context, _state = gateway_context()
@@ -307,7 +307,7 @@ async def test_scope_refuses_invalid_retention_inputs(source):
 async def test_workflow_capture_refuses_invalid_parent_without_global_fallback(
     tmp_path, monkeypatch, failure
 ):
-    from kiro_crew.workflow_memory import WorkflowMemoryError
+    from efm_go.workflow_memory import WorkflowMemoryError
 
     parent = "dashboard:workflow-invalid-parent"
     author = "dashboard:workflow-author"

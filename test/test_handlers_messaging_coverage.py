@@ -1,7 +1,7 @@
 """Coverage tests for dashboard messaging handlers.
 
 Focus: the request-validation, delivery-failure and status-code branches of
-``kiro_crew.dashboard.handlers.messaging`` that the existing per-channel test
+``efm_go.dashboard.handlers.messaging`` that the existing per-channel test
 files (slack/webex/wecom/telegram/discord config, send-message, notifications
 phase 5) never reach -- the subagent lifecycle routes, the notification
 ack/unack/channel routes, the Slack pins/reactions proxies, the browser
@@ -28,10 +28,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 
-import kiro_crew.config.loader as loader
-import kiro_crew.dashboard.handlers.messaging as mod
+import efm_go.config.loader as loader
+import efm_go.dashboard.handlers.messaging as mod
 from conftest import forget_env_at_teardown
-from kiro_crew.subagent import AGENT_NOT_FOUND_CODE
+from efm_go.subagent import AGENT_NOT_FOUND_CODE
 
 #: The subject every request double presents, and the id ``_state`` reports as its
 #: owner. These suites exercise body validation and response shape, not
@@ -307,9 +307,9 @@ class TestApiSpawn:
     def test_execution_record_lookup_runs_off_loop_before_spawn(
         self, monkeypatch, source: str, unavailable: bool
     ) -> None:
-        from kiro_crew.execution_context import read_session_execution
-        from kiro_crew.memory_stores import UnknownMemoryStore, provision_member_memory
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.execution_context import read_session_execution
+        from efm_go.memory_stores import UnknownMemoryStore, provision_member_memory
+        from efm_go.subagent_persistence import create_agent_folder
 
         cfg = loader.KiroCrewConfig.load()
         cfg.agents["worker"] = loader.KiroCrewAgentConfig(kiro_agent="kirocrew", triggers="work")
@@ -344,7 +344,7 @@ class TestApiSpawn:
                     raise UnknownMemoryStore("member memory cannot be read")
                 return read_session_execution(session_key)
 
-            monkeypatch.setattr("kiro_crew.execution_context.read_session_execution", inherited)
+            monkeypatch.setattr("efm_go.execution_context.read_session_execution", inherited)
 
         response = _run(mod.api_spawn, _Req(state, body))
 
@@ -893,7 +893,7 @@ class TestApiSpawnList:
 
 class TestApiSpawnRetry:
     def _req(self, mgr: Any, agent_id: str = "a1") -> _Req:
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
         old = mgr.get.return_value
         if isinstance(old, SimpleNamespace):
@@ -1231,7 +1231,7 @@ class TestNotificationRoutes:
         state.crons.unack_job_async.assert_awaited_once_with("j1")
 
     def test_unack_survives_a_busy_cron_store(self) -> None:
-        from kiro_crew.cron import CronStoreBusy
+        from efm_go.cron import CronStoreBusy
 
         state = _state(
             _notification_log=[{"ts": "1", "kind": "cron", "job_id": "j1"}],
@@ -1249,7 +1249,7 @@ class TestNotificationRoutes:
         into a 500, failing a notification unack that does not depend on the
         cron store at all.
         """
-        from kiro_crew.cron import CronStoreUnreadable
+        from efm_go.cron import CronStoreUnreadable
 
         state = _state(
             _notification_log=[{"ts": "1", "kind": "cron", "job_id": "j1"}],
@@ -1328,7 +1328,7 @@ class TestNotificationChannelSettings:
         assert _payload(resp)["error"] == "priority must be a string or null"
 
     def test_settings_error_becomes_400(self) -> None:
-        from kiro_crew.notifications.settings import ChannelSettingsError
+        from efm_go.notifications.settings import ChannelSettingsError
 
         state = self._state_with_update(error=ChannelSettingsError("cannot mute approval"))
         req = _Req(state, {"channel": "system.approval", "muted": True})
@@ -1356,7 +1356,7 @@ class TestNotificationChannelSettings:
 
 
 def _track(monkeypatch, tracked: bool) -> None:
-    monkeypatch.setattr("kiro_crew.slack.handler.is_tracked_channel", lambda cid: tracked)
+    monkeypatch.setattr("efm_go.slack.handler.is_tracked_channel", lambda cid: tracked)
 
 
 class TestSlackPins:
@@ -1592,7 +1592,7 @@ class TestHelpers:
         assert "add the required scope to" in msg
 
     def test_sanitize_blocks_redacts_keys_and_values(self) -> None:
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         blocks = [{"text": {"type": "mrkdwn", "text": "tok xoxb-1234567890-secret"}}]
         out = mod._sanitize_blocks(blocks, redact_credentials)
@@ -1600,7 +1600,7 @@ class TestHelpers:
         assert blocks[0]["text"]["text"].endswith("secret")  # input untouched
 
     def test_sanitize_blocks_truncates_deep_structures(self) -> None:
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         deep: Any = "leaf"
         for _ in range(mod._MAX_WALK_DEPTH + 3):
@@ -1609,7 +1609,7 @@ class TestHelpers:
         assert isinstance(out, list) and len(out) == 1
 
     def test_sanitize_blocks_caps_the_block_count(self) -> None:
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         blocks = [{"i": i} for i in range(mod._MAX_BLOCKS + 5)]
         assert len(mod._sanitize_blocks(blocks, redact_credentials)) == mod._MAX_BLOCKS
@@ -1886,7 +1886,7 @@ class TestWriteEnvUpdates:
     def test_a_failed_permission_lockdown_is_warned_not_raised(
         self, monkeypatch, tmp_path: Path
     ) -> None:
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         env = tmp_path / ".env"
         monkeypatch.setattr(loader, "env_path", lambda: env)
@@ -1908,7 +1908,7 @@ class TestWriteEnvUpdates:
         through the same os.write seam the helper's own ordering test uses."""
         import os as _os
 
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         env = tmp_path / ".env"
         monkeypatch.setattr(loader, "env_path", lambda: env)
@@ -1939,8 +1939,8 @@ class TestWriteEnvUpdates:
         when another writer holds the lock — and leaves .env untouched."""
         import os
 
-        from kiro_crew import platform_compat
-        from kiro_crew.secrets.migrate import _env_lock_path
+        from efm_go import platform_compat
+        from efm_go.secrets.migrate import _env_lock_path
 
         env = tmp_path / ".env"
         env.write_text("A=1\n", encoding="utf-8")

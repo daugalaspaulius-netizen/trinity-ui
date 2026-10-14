@@ -15,8 +15,8 @@ import sys
 
 import pytest
 
-from kiro_crew.acp import liveness
-from kiro_crew.acp.liveness import (
+from efm_go.acp import liveness
+from efm_go.acp.liveness import (
     CHILD_EXIT_GRACE_SECS,
     EVIDENCE_ESTABLISHED_FLAT,
     EVIDENCE_PLATFORM_LIMITED,
@@ -207,8 +207,8 @@ def test_enumeration_failure_does_not_age_a_live_tracked_child_into_dead(tmp_pat
 def test_observable_tree_with_only_old_descendants_is_tagged_absent(tmp_path):
     clock = _Clock()
     backend = FakeBackend()
-    backend.add(201, "python -m kiro_crew.mcp_gateway.stub --server github", started=0.0)
-    backend.add(202, "python -m kiro_crew.mcp_gateway.stub --server slack", started=0.0)
+    backend.add(201, "python -m efm_go.mcp_gateway.stub --server github", started=0.0)
+    backend.add(202, "python -m efm_go.mcp_gateway.stub --server slack", started=0.0)
     oracle = _oracle(backend, clock, tmp_path)
     tool = _shell_tool("ls /some/dir | grep needle | wc -l", clock)
     clock.advance(61.0)
@@ -234,7 +234,7 @@ def test_empty_but_enumerable_tree_is_an_absent_child(tmp_path):
 def test_young_unmatched_descendant_vetoes_the_absence_claim(tmp_path):
     clock = _Clock()
     backend = FakeBackend()
-    backend.add(201, "python -m kiro_crew.mcp_gateway.stub --server github", started=0.0)
+    backend.add(201, "python -m efm_go.mcp_gateway.stub --server github", started=0.0)
     backend.add(300, "/opt/vendor/bin/opaque-worker --serve")  # young
     oracle = _oracle(backend, clock, tmp_path)
     tool = _shell_tool("[REDACTED-CREDENTIAL] x", clock)
@@ -292,7 +292,7 @@ def test_agreeing_clocks_still_date_an_old_descendant_as_old(tmp_path):
     clock = _Clock()
     wall = _Clock(1_000_000.0)
     backend = FakeBackend()
-    backend.add(201, "python -m kiro_crew.mcp_gateway.stub --server github", started=0.0)
+    backend.add(201, "python -m efm_go.mcp_gateway.stub --server github", started=0.0)
     oracle = _oracle(backend, clock, tmp_path, wall=wall)
     tool = _shell_tool("[REDACTED-CREDENTIAL] x", clock, wall=wall)
     clock.advance(61.0)
@@ -309,7 +309,7 @@ def test_missing_steady_stamp_declines_to_attribute_on_darwin(tmp_path):
     claim on darwin rests on nothing else — so none is made."""
     clock = _Clock()
     backend = FakeBackend()
-    backend.add(201, "python -m kiro_crew.mcp_gateway.stub --server github", started=0.0)
+    backend.add(201, "python -m efm_go.mcp_gateway.stub --server github", started=0.0)
     oracle = _oracle(backend, clock, tmp_path)
     tool = _shell_tool("[REDACTED-CREDENTIAL] x", clock)
     tool.dispatch_steady_ts = None
@@ -325,7 +325,7 @@ def test_undatable_descendant_keeps_the_full_window(tmp_path):
     """A row without a start reads as possibly-this-tool's: fail-open."""
     clock = _Clock()
     backend = FakeBackend()
-    backend.add(201, "python -m kiro_crew.mcp_gateway.stub --server github", started=None)
+    backend.add(201, "python -m efm_go.mcp_gateway.stub --server github", started=None)
     oracle = _oracle(backend, clock, tmp_path)
     tool = _shell_tool("ls /some/dir | grep needle | wc -l", clock)
 
@@ -354,7 +354,7 @@ def test_unenumerable_tree_is_plain_unknown_without_an_absence_claim(tmp_path):
 def test_mcp_subtree_cpu_delta_is_working_with_the_cpu_only_label(tmp_path):
     clock = _Clock()
     backend = FakeBackend()
-    backend.add(210, "python -m kiro_crew.mcp_gateway.stub --server github", cpu=5_000_000_000)
+    backend.add(210, "python -m efm_go.mcp_gateway.stub --server github", cpu=5_000_000_000)
     oracle = _oracle(backend, clock, tmp_path, sample_min=1.0)
     tool = _mcp_tool(clock, tool_name="ReadInternalWebsites")
 
@@ -384,7 +384,7 @@ def test_model_wait_subtree_cpu_delta_is_working(tmp_path):
     could not see now reads WORKING through the subtree sum."""
     clock = _Clock()
     backend = FakeBackend()
-    backend.add(210, "python -m kiro_crew.mcp_gateway.stub --server github", cpu=5_000_000_000)
+    backend.add(210, "python -m efm_go.mcp_gateway.stub --server github", cpu=5_000_000_000)
     oracle = _oracle(backend, clock, tmp_path, sample_min=1.0)
 
     assert oracle.check_model_wait(RUNTIME) == (VERDICT_UNKNOWN, EVIDENCE_SAMPLING)
@@ -401,7 +401,7 @@ def test_model_wait_subtree_cpu_delta_is_working(tmp_path):
 def test_flat_model_wrapping_tool_is_not_tagged_established_flat_on_darwin(tmp_path):
     clock = _Clock()
     backend = FakeBackend()
-    backend.add(210, "python -m kiro_crew.mcp_gateway.stub --server github", cpu=5_000_000_000)
+    backend.add(210, "python -m efm_go.mcp_gateway.stub --server github", cpu=5_000_000_000)
     oracle = _oracle(backend, clock, tmp_path, sample_min=1.0)
     tool = _mcp_tool(clock, tool_name="use_subagent")
 
@@ -418,7 +418,7 @@ def test_flat_model_wait_is_unknown_never_dead_on_darwin(tmp_path):
     """No socket evidence → the lost-frame wedge cannot be claimed."""
     clock = _Clock()
     backend = FakeBackend()
-    backend.add(210, "python -m kiro_crew.mcp_gateway.stub --server github", cpu=5_000_000_000)
+    backend.add(210, "python -m efm_go.mcp_gateway.stub --server github", cpu=5_000_000_000)
     oracle = _oracle(backend, clock, tmp_path, sample_min=1.0)
 
     oracle.check_model_wait(RUNTIME)  # baseline

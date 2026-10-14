@@ -154,7 +154,7 @@ def format_row(row: dict[str, object]) -> str:
 def default_home() -> Path | None:
     """The data home the PRODUCT would resolve, or ``None`` if it cannot be asked.
 
-    Resolved through ``kiro_crew.config.paths.peek_data_home`` rather than
+    Resolved through ``efm_go.config.paths.peek_data_home`` rather than
     rebuilt from a literal. The top-level ``~/.kirocrew`` path is the LEGACY home;
     the current default nests under kiro-cli's base, so a hand-rolled default
     would point a stock run at a directory nothing writes to and report an empty
@@ -165,7 +165,7 @@ def default_home() -> Path | None:
     check below instead of silently creating an empty directory to measure.
     """
     try:
-        from kiro_crew.config.paths import peek_data_home
+        from efm_go.config.paths import peek_data_home
     except ImportError:
         return None
     try:
@@ -232,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     if home is None:
         print(
             "could not resolve a data home: pass --home, or set KIROCREW_HOME, or run "
-            "where kiro_crew is importable",
+            "where efm_go is importable",
             file=sys.stderr,
         )
         return 2

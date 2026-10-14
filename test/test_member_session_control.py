@@ -30,11 +30,11 @@ from unittest.mock import patch
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import create_rate_limit
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.state import SlotOrigin
-from kiro_crew.members import DM_SLOT_KEY_PREFIX
+from efm_go.dashboard import create_rate_limit
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.state import SlotOrigin
+from efm_go.members import DM_SLOT_KEY_PREFIX
 
 
 class TestMemberCallerPredicate:
@@ -259,11 +259,11 @@ class TestCreatedByRecentSessionRestore:
         import json as _json
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.chat import restore_recent_sessions
-        from kiro_crew.dashboard.state import DashboardState
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.chat import restore_recent_sessions
+        from efm_go.dashboard.state import DashboardState
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         meta_line = {
             "_type": "metadata",
             "created_at": "2026-03-23T10:00:00",
@@ -304,11 +304,11 @@ class TestCreatedByRecentSessionRestore:
         import json as _json
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.chat import restore_recent_sessions
-        from kiro_crew.dashboard.state import DashboardState
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.chat import restore_recent_sessions
+        from efm_go.dashboard.state import DashboardState
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         meta_line = {
             "_type": "metadata",
             "created_at": "2026-03-23T10:00:00",
@@ -352,14 +352,14 @@ class TestCreatedByRecentSessionRestore:
         import json as _json
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _rehydrate_slot_from_history,
             _save_slot_to_history,
         )
-        from kiro_crew.dashboard.state import DashboardState
-        from kiro_crew.history import ConversationLog
+        from efm_go.dashboard.state import DashboardState
+        from efm_go.history import ConversationLog
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         sessions = MagicMock(count=0)
         sessions.get_pid = MagicMock(return_value=None)
         sessions.remove = AsyncMock()
@@ -410,14 +410,14 @@ class TestCreatedByProjection:
     """
 
     def test_to_dict_carries_the_creator_slot_key(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         slot = _ChatSlot("chat-1-worker")
         slot._created_by = DM_SLOT_KEY_PREFIX + "autofix"
         assert slot.to_dict()["created_by"] == "member-autofix"
 
     def test_unattributed_slot_reports_empty_string_not_absent(self):
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         # "" rather than a missing key: the frontend must be able to tell "a
         # person's own tab" from "an older gateway that never sent the field".
@@ -532,7 +532,7 @@ class TestMemberDispatchCeiling:
     def test_config_default_is_true(self):
         # The knob's default IS today's behaviour, so installing the change
         # alters nothing until an operator opts in.
-        from kiro_crew.config.sections import AgentConfig
+        from efm_go.config.sections import AgentConfig
 
         assert AgentConfig().member_dispatch is True
 
@@ -665,10 +665,10 @@ class TestMemberChildExecutionContext:
 
         from member_memory_helpers import forget_declared_stores, write_member_home
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.config.sections import ResolvedBindings
-        from kiro_crew.execution_context import bind_session_execution, resolve_member_execution
-        from kiro_crew.history import ConversationLog
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.config.sections import ResolvedBindings
+        from efm_go.execution_context import bind_session_execution, resolve_member_execution
+        from efm_go.history import ConversationLog
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         write_member_home(tmp_path, "radar", "peer")
@@ -709,8 +709,8 @@ class TestMemberChildExecutionContext:
 
         from member_memory_helpers import make_request
 
-        from kiro_crew.dashboard.handlers.session_control import api_session_control_create
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.dashboard.handlers.session_control import api_session_control_create
+        from efm_go.execution_context import read_session_execution
 
         state, caller, execution = self._prepare(tmp_path, monkeypatch)
 
@@ -741,8 +741,8 @@ class TestMemberChildExecutionContext:
     def test_inheritance_uses_canonical_caller_key(
         self, tmp_path, monkeypatch, _fresh_create_budget, caller_form
     ):
-        from kiro_crew.execution_context import read_session_execution
-        from kiro_crew.history import transcript_stem
+        from efm_go.execution_context import read_session_execution
+        from efm_go.history import transcript_stem
 
         state, caller, execution = self._prepare(tmp_path, monkeypatch)
         canonical = slot_history_key(caller)
@@ -756,7 +756,7 @@ class TestMemberChildExecutionContext:
     def test_inherited_route_survives_changed_alias_binding(
         self, tmp_path, monkeypatch, _fresh_create_budget
     ):
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.execution_context import read_session_execution
 
         state, caller, execution = self._prepare(tmp_path, monkeypatch)
         real_resolve = sc.resolve_agent_bindings
@@ -777,7 +777,7 @@ class TestMemberChildExecutionContext:
         # PEER's store belongs with the refusals in
         # `TestPrivateStoreCallerIsolation`, not here. This case was parametrized
         # over both callers while nothing enforced the refusal half.
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.execution_context import read_session_execution
 
         state, caller, _ = self._prepare(tmp_path, monkeypatch, member=False)
         before = read_session_execution(slot_history_key(caller))
@@ -792,7 +792,7 @@ class TestMemberChildExecutionContext:
         """Resolve *name* as a TEMPLATE on the global store; every other name as today."""
         from pathlib import Path
 
-        from kiro_crew.config.sections import ResolvedBindings
+        from efm_go.config.sections import ResolvedBindings
 
         member_resolve = sc.resolve_agent_bindings
 
@@ -821,7 +821,7 @@ class TestMemberChildExecutionContext:
         # selection namespace becomes the template's, which is what
         # ContextBuilder reads to withhold the member operating protocol from a
         # delegate that was picked to do the work itself.
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.execution_context import read_session_execution
 
         state, caller, execution = self._prepare(tmp_path, monkeypatch)
         self._template_resolver(monkeypatch, "kirocrew-worker", "worker-template")
@@ -849,7 +849,7 @@ class TestMemberChildExecutionContext:
         # Same arm, member-less caller: the selection namespace names the template
         # the caller picked, not the caller's own template, and the store stays
         # global with no member identity minted.
-        from kiro_crew.execution_context import (
+        from efm_go.execution_context import (
             ExecutionContext,
             MemoryStoreRef,
             bind_session_execution,
@@ -887,7 +887,7 @@ class TestMemberChildExecutionContext:
         # exactly those two fields, leaving a record ContextBuilder attributes to
         # no member -- no identity, and no `[PERMANENT RULES]`. Such a caller's
         # child keeps the selection and takes only the template.
-        from kiro_crew.execution_context import (
+        from efm_go.execution_context import (
             ExecutionContext,
             MemoryStoreRef,
             bind_session_execution,
@@ -931,7 +931,7 @@ class TestMemberChildExecutionContext:
     def test_canonical_restricted_mode_cannot_create_persistent_child(
         self, tmp_path, monkeypatch, _fresh_create_budget, mode
     ):
-        from kiro_crew.execution_context import bind_session_execution
+        from efm_go.execution_context import bind_session_execution
 
         state, caller, execution = self._prepare(tmp_path, monkeypatch)
         bind_session_execution(
@@ -945,7 +945,7 @@ class TestMemberChildExecutionContext:
     def test_parent_privacy_change_during_resolution_retracts_child(
         self, tmp_path, monkeypatch, _fresh_create_budget
     ):
-        from kiro_crew.execution_context import bind_session_execution
+        from efm_go.execution_context import bind_session_execution
 
         state, caller, execution = self._prepare(tmp_path, monkeypatch)
         resolve = sc.resolve_agent_bindings
@@ -999,10 +999,10 @@ class TestPrivateStoreCallerIsolation:
 
         from member_memory_helpers import forget_declared_stores, write_member_home
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.config.sections import ResolvedBindings
-        from kiro_crew.execution_context import resolve_member_execution
-        from kiro_crew.history import ConversationLog
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.config.sections import ResolvedBindings
+        from efm_go.execution_context import resolve_member_execution
+        from efm_go.history import ConversationLog
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         write_member_home(tmp_path, "radar", "peer")
@@ -1052,7 +1052,7 @@ class TestPrivateStoreCallerIsolation:
 
     def _member_caller(self, state, cfg):
         """A crew member's DM slot, bound to its own private store."""
-        from kiro_crew.execution_context import bind_session_execution, resolve_member_execution
+        from efm_go.execution_context import bind_session_execution, resolve_member_execution
 
         caller = _member_tab(state)
         execution = resolve_member_execution(cfg, "radar")
@@ -1170,7 +1170,7 @@ class TestPrivateStoreCallerIsolation:
         # identity: there `bind_session_execution` commits it, so this process
         # vouches and the same create is admitted. That pair is what isolates the
         # vouched term from the record term.
-        from kiro_crew.execution_context import resolve_member_execution
+        from efm_go.execution_context import resolve_member_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         peer_execution = resolve_member_execution(cfg, "radar")
@@ -1199,10 +1199,10 @@ class TestPrivateStoreCallerIsolation:
         # to be checked against, collapsing the admission's two sources into one.
         from pathlib import Path
 
-        from kiro_crew import execution_context
-        from kiro_crew import session_agent_selection as sas
-        from kiro_crew.config.sections import ResolvedBindings
-        from kiro_crew.execution_context import (
+        from efm_go import execution_context
+        from efm_go import session_agent_selection as sas
+        from efm_go.config.sections import ResolvedBindings
+        from efm_go.execution_context import (
             bind_session_execution,
             read_session_execution,
             resolve_member_execution,
@@ -1254,7 +1254,7 @@ class TestPrivateStoreCallerIsolation:
         # `bind_session_execution`, so this process vouches for it and the record
         # agrees. Without this twin the refusal above could be a blanket break
         # rather than a conditional one.
-        from kiro_crew.execution_context import bind_session_execution, resolve_member_execution
+        from efm_go.execution_context import bind_session_execution, resolve_member_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         peer_execution = resolve_member_execution(cfg, "radar")
@@ -1282,8 +1282,8 @@ class TestPrivateStoreCallerIsolation:
         # member id -- a value the session cannot rewrite about itself. So this
         # create re-establishes the vouch and is admitted, with NO owner
         # re-selection.
-        from kiro_crew import execution_context
-        from kiro_crew.execution_context import read_vouched_session_execution
+        from efm_go import execution_context
+        from efm_go.execution_context import read_vouched_session_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         caller, execution = self._member_caller(state, cfg)
@@ -1325,8 +1325,8 @@ class TestPrivateStoreCallerIsolation:
         #      re-vouch resolves `radar`'s own store from CONFIG and refuses,
         #      because the record's `store_id` is not the one config says `radar`
         #      owns.
-        from kiro_crew import execution_context
-        from kiro_crew.execution_context import (
+        from efm_go import execution_context
+        from efm_go.execution_context import (
             read_vouched_session_execution,
             resolve_member_execution,
             revouch_at_verified_admission,
@@ -1363,7 +1363,7 @@ class TestPrivateStoreCallerIsolation:
         # as its own slug `radar` but `store.store_id` pointed at the PEER's store.
         # This is the shape the member-id agreement check alone would pass; the
         # config store-identity comparison is what refuses it.
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
         radar_execution = resolve_member_execution(cfg, "radar")
         forged_store_id = ExecutionContext(
@@ -1396,8 +1396,8 @@ class TestPrivateStoreCallerIsolation:
         # gate-verified self-heal above: both restore the capability after a
         # restart, one automatically at the next admission and one on an explicit
         # owner re-select, and neither removes it outright.
-        from kiro_crew import execution_context
-        from kiro_crew.execution_context import bind_session_execution
+        from efm_go import execution_context
+        from efm_go.execution_context import bind_session_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         caller, execution = self._member_caller(state, cfg)
@@ -1418,7 +1418,7 @@ class TestPrivateStoreCallerIsolation:
     ):
         # The shipped capability: an owner dispatching a member worker. Removing
         # this would need an RFC, so the narrowing keeps it.
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.execution_context import read_session_execution
 
         state, _cfg = self._prepare(tmp_path, monkeypatch)
         caller = state.get_or_create_slot("chat-owner")
@@ -1439,8 +1439,8 @@ class TestPrivateStoreCallerIsolation:
         # the selection namespace differs.
         from pathlib import Path
 
-        from kiro_crew.config.sections import ResolvedBindings
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.config.sections import ResolvedBindings
+        from efm_go.execution_context import read_session_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         caller, execution = self._member_caller(state, cfg)
@@ -1473,7 +1473,7 @@ class TestPrivateStoreCallerIsolation:
     def test_a_member_still_creates_a_same_store_worker(
         self, tmp_path, monkeypatch, _fresh_create_budget
     ):
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.execution_context import read_session_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         caller, execution = self._member_caller(state, cfg)
@@ -1487,7 +1487,7 @@ class TestPrivateStoreCallerIsolation:
     ):
         # Same-store, reached through the EXPLICIT selection branch rather than by
         # inheritance: the admission is the store, not which branch resolved it.
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.execution_context import read_session_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         caller, execution = self._member_caller(state, cfg)
@@ -1504,7 +1504,7 @@ class TestPrivateStoreCallerIsolation:
         # The authorization is about PRIVATE stores only. A cron creating an
         # ordinary global-store worker is the cron operating model, and refusing
         # it would break the surface rather than narrow it.
-        from kiro_crew.execution_context import read_session_execution
+        from efm_go.execution_context import read_session_execution
 
         state, _cfg = self._prepare(tmp_path, monkeypatch)
         caller = self._cron_caller(state)
@@ -1522,7 +1522,7 @@ class TestPrivateStoreCallerIsolation:
         # its own birth) AND the child is private. The own-store authority admits
         # it, so a grandchild on the same member store is still reachable -- a fix
         # that keyed only on the fence would kill recursive dispatch outright.
-        from kiro_crew.execution_context import bind_session_execution, read_session_execution
+        from efm_go.execution_context import bind_session_execution, read_session_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         _member, execution = self._member_caller(state, cfg)
@@ -1544,8 +1544,8 @@ class TestPrivateStoreCallerIsolation:
         # restarts, and the child's own-store dispatch must still be admitted.
         # The child's key is not a member DM key, so its trust source is the
         # durable vouch record the birth wrote in the sandbox-masked vouch directory.
-        from kiro_crew import execution_context
-        from kiro_crew.execution_context import (
+        from efm_go import execution_context
+        from efm_go.execution_context import (
             read_session_execution,
             read_vouched_session_execution,
         )
@@ -1573,8 +1573,8 @@ class TestPrivateStoreCallerIsolation:
         # rewrites its own record to name a PEER's store after a restart still
         # disagrees with what the gateway recorded at its birth, so nothing is
         # re-vouched and the create is refused.
-        from kiro_crew import execution_context
-        from kiro_crew.execution_context import (
+        from efm_go import execution_context
+        from efm_go.execution_context import (
             read_vouched_session_execution,
             resolve_member_execution,
         )
@@ -1601,9 +1601,9 @@ class TestPrivateStoreCallerIsolation:
         # vouches, in a directory every sandbox masks and no file tool opens,
         # and withdrawn where a deliberate withdrawal happens. A child that turns
         # incognito keeps no restart-surviving authority behind.
-        from kiro_crew._durable_vouch import durable_vouch_path, read_durable_vouch
-        from kiro_crew.config.paths import data_home
-        from kiro_crew.execution_context import bind_session_execution, read_session_execution
+        from efm_go._durable_vouch import durable_vouch_path, read_durable_vouch
+        from efm_go.config.paths import data_home
+        from efm_go.execution_context import bind_session_execution, read_session_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         member, execution = self._member_caller(state, cfg)
@@ -1611,8 +1611,8 @@ class TestPrivateStoreCallerIsolation:
         child_key = slot_history_key(state.get_slot(born["target"]))
 
         path = durable_vouch_path(child_key)
-        from kiro_crew import sandbox
-        from kiro_crew.security import sensitive_home_dirs
+        from efm_go import sandbox
+        from efm_go.security import sensitive_home_dirs
 
         leaf = path.parent.name
         assert path.parent == data_home() / leaf
@@ -1634,8 +1634,8 @@ class TestPrivateStoreCallerIsolation:
         # Every other withdrawal takes the durable copy with it too: an explicit
         # clear (the hook path's per-request withdrawal, a failed fork) and a
         # deleted transcript. Otherwise each such key leaves a vouch file for good.
-        from kiro_crew._durable_vouch import read_durable_vouch
-        from kiro_crew.execution_context import clear_session_execution
+        from efm_go._durable_vouch import read_durable_vouch
+        from efm_go.execution_context import clear_session_execution
 
         state, cfg = self._prepare(tmp_path, monkeypatch)
         member, _execution = self._member_caller(state, cfg)

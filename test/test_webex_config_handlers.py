@@ -11,8 +11,8 @@ from typing import Any
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-import kiro_crew.config.loader as loader
-import kiro_crew.dashboard.handlers.messaging as mod
+import efm_go.config.loader as loader
+import efm_go.dashboard.handlers.messaging as mod
 from conftest import forget_env_at_teardown
 
 
@@ -462,7 +462,7 @@ class TestSaveLoadRoundTrip:
         import json
         import os
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         (tmp_path / "config.json").write_text(json.dumps({"webex": webex}))
         old = os.environ.get("KIROCREW_HOME")
@@ -501,7 +501,7 @@ class TestSaveLoadRoundTrip:
         """
         import dataclasses
 
-        from kiro_crew.config.loader import WebexConfig
+        from efm_go.config.loader import WebexConfig
 
         defaults = WebexConfig()
         # A value that differs from the default for each field's own type.

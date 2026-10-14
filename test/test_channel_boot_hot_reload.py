@@ -43,14 +43,14 @@ import pytest
 from _hot_reload_helpers import cfg_with as _cfg_with
 from _hot_reload_helpers import change as _change
 
-from kiro_crew.channels import builtin_channel_descriptors
-from kiro_crew.config import live
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard.channel_folders import channel_restart_required
-from kiro_crew.messaging import registry
-from kiro_crew.slack import gateway as gw
-from kiro_crew.slack import handler as slack_handler
-from kiro_crew.slack.gateway import GatewayOrchestrator
+from efm_go.channels import builtin_channel_descriptors
+from efm_go.config import live
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard.channel_folders import channel_restart_required
+from efm_go.messaging import registry
+from efm_go.slack import gateway as gw
+from efm_go.slack import handler as slack_handler
+from efm_go.slack.gateway import GatewayOrchestrator
 
 # ------------------------------------------------------------------
 # Fixtures + helpers
@@ -976,7 +976,7 @@ class TestSlackApplierReconciles:
         assert orch._channel_handles["whatsapp"].closed is False
 
     def test_observe_registration_follows_the_new_activations(self):
-        from kiro_crew.config.loader import ACTIVATION_OBSERVE
+        from efm_go.config.loader import ACTIVATION_OBSERVE
 
         class FakeHistory:
             def __init__(self) -> None:
@@ -1034,7 +1034,7 @@ class TestSlackApplierReconciles:
         assert history.calls == [(99, 3600)]
 
     def test_allowed_enterprise_ids_change_reloads_the_validated_allowlist(self, monkeypatch):
-        from kiro_crew.slack import enterprise as slack_enterprise
+        from efm_go.slack import enterprise as slack_enterprise
 
         called: list[bool] = []
         monkeypatch.setattr(
@@ -1099,7 +1099,7 @@ class TestPhaseEmojisFollowConfig:
 class TestReloadAllowedTeamIds:
     @pytest.fixture(autouse=True)
     def _isolate(self, monkeypatch):
-        from kiro_crew.slack import enterprise as ent
+        from efm_go.slack import enterprise as ent
 
         monkeypatch.setattr(ent, "_validated_team_id", "", raising=False)
         monkeypatch.setattr(ent, "_validated_enterprise_id", "", raising=False)
@@ -1182,7 +1182,7 @@ class TestReloadAllowedTeamIds:
 
 class TestChannelRestartRequired:
     def test_a_restart_marked_field_requires_a_restart(self):
-        from kiro_crew.config.schema import requires_restart
+        from efm_go.config.schema import requires_restart
 
         assert requires_restart("slack.command") is True
         assert channel_restart_required("slack", ["command"]) is True
@@ -1205,7 +1205,7 @@ class TestChannelRestartRequired:
     def test_a_store_that_holds_a_credential_is_marked_boot_only(self):
         """``whatsapp.db_path`` is the device store: opened once at connect, and it
         holds the account key, so no in-process apply can move it."""
-        from kiro_crew.config.schema import requires_restart
+        from efm_go.config.schema import requires_restart
 
         assert requires_restart("whatsapp.db_path") is True
         assert channel_restart_required("whatsapp", ["db_path"]) is True
@@ -1221,7 +1221,7 @@ class TestChannelRestartRequired:
         assert channel_restart_required("whatsapp", []) is False
 
     def test_the_answer_comes_from_the_schema_not_a_hand_list(self, monkeypatch):
-        import kiro_crew.config.schema as schema
+        import efm_go.config.schema as schema
 
         monkeypatch.setattr(
             schema, "_RESTART_PATHS", frozenset({"whatsapp.dm_policy"}), raising=False
@@ -1236,8 +1236,8 @@ class TestChannelRestartRequired:
         the module carries no ``LIVE_RELOAD_FIELDS`` / ``_FALLBACK_*`` tables and the
         import is unconditional rather than guarded.
         """
-        from kiro_crew.config.schema import requires_restart
-        from kiro_crew.dashboard import channel_folders
+        from efm_go.config.schema import requires_restart
+        from efm_go.dashboard import channel_folders
 
         for name in ("LIVE_RELOAD_FIELDS", "_FALLBACK_LIVE_FIELDS", "_FALLBACK_BOOT_FIELDS"):
             assert not hasattr(channel_folders, name), name
@@ -1249,7 +1249,7 @@ class TestWhatsappSaverFlagIsPerField:
         """The bug this replaced: an unconditional ``restart_required: True``."""
         src = inspect.getsource(
             __import__(
-                "kiro_crew.dashboard.handlers.whatsapp_setup", fromlist=["whatsapp_config_save"]
+                "efm_go.dashboard.handlers.whatsapp_setup", fromlist=["whatsapp_config_save"]
             ).whatsapp_config_save
         )
         assert 'channel_restart_required("whatsapp", body.keys())' in src
@@ -1259,7 +1259,7 @@ class TestWhatsappSaverFlagIsPerField:
         assert channel_restart_required("whatsapp", ["session_folder"]) is False
 
     def test_the_flag_varies_with_the_saved_fields(self, monkeypatch):
-        import kiro_crew.config.schema as schema
+        import efm_go.config.schema as schema
 
         monkeypatch.setattr(
             schema, "_RESTART_PATHS", frozenset({"whatsapp.enabled"}), raising=False

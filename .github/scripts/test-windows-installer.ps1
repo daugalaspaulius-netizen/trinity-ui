@@ -18,7 +18,7 @@ Set-StrictMode -Version Latest
 $MaxInstallSeconds = 200
 # Healthy boot on the runner is ~12-24 s (observed 2026-09-29). /api/ready does not await
 # the Kiro CLI probe, but a tolerated probe timeout (_PROBE_TIMEOUT_SECS = 10 s in
-# src/kiro_crew/kiro_prerequisite.py) still slowed one boot from 12.8 s to 30.1 s on the
+# src/efm_go/kiro_prerequisite.py) still slowed one boot from 12.8 s to 30.1 s on the
 # same sha (issue #11810). 24 s plus that ~17 s is ~41 s, rounded up to 50.
 $MaxGatewayReadySeconds = 50
 
@@ -283,7 +283,7 @@ if ($SkipGatewayValidation) {
 # import closure; this catches either those files being filtered out of the
 # artifact or the launcher accidentally redirecting imports into an empty user
 # cache again.
-$backendRoot = Join-Path $installLocation "resources\backend-dist\kirocrew-backend"
+$backendRoot = Join-Path $installLocation "resources\backend-dist\efm-go-backend"
 $bundledPython = Join-Path $backendRoot "python.exe"
 if (-not (Test-Path -LiteralPath $bundledPython -PathType Leaf)) {
   throw "The installed bundled Python is missing: $bundledPython"
@@ -313,12 +313,12 @@ New-Item -ItemType Directory -Path $gatewayHome -Force | Out-Null
 # (`sandbox._PYTHON_ENV_PREFIXES`, by design, so a foreign interpreter never
 # inherits our cache settings), so the PYTHONPYCACHEPREFIX set below does not
 # reach this shim; without `-B` its interpreter writes `__pycache__` beside the
-# `kiro_crew.testing` sources, which ship without precompiled bytecode, and
+# `efm_go.testing` sources, which ship without precompiled bytecode, and
 # those files survive the uninstall as residue this script created.
 $fakeBackend = Join-Path $evidence "kiro-backend.cmd"
 Set-Content -Encoding ascii -LiteralPath $fakeBackend -Value @(
   '@echo off',
-  "`"$bundledPython`" -s -B -m kiro_crew.testing.fake_acp_backend %*"
+  "`"$bundledPython`" -s -B -m efm_go.testing.fake_acp_backend %*"
 )
 
 $savedGatewayEnv = @{
@@ -364,7 +364,7 @@ try {
   $env:PYTHONUTF8 = "1"
   $env:PYTHONIOENCODING = "utf-8:backslashreplace"
   $gatewayProcess = Start-Process -FilePath $bundledPython -ArgumentList @(
-    "-s", "-P", "-m", "kiro_crew", "gateway", "--no-open", "--port", "$gatewayPort"
+    "-s", "-P", "-m", "efm_go", "gateway", "--no-open", "--port", "$gatewayPort"
   ) -WorkingDirectory $installLocation -RedirectStandardOutput $gatewayStdout `
     -RedirectStandardError $gatewayStderr -WindowStyle Hidden -PassThru
 
@@ -475,7 +475,7 @@ if (Test-Path -LiteralPath $installLocation) {
     Select-Object -First 40 -ExpandProperty FullName |
     ForEach-Object { Write-Host "  left: $_" }
   # The bytecode residue too, by module: which interpreter wrote it is what the
-  # names tell (a `kiro_crew\testing` pyc is the fake backend shim's).
+  # names tell (a `efm_go\testing` pyc is the fake backend shim's).
   $files |
     Where-Object { $_.FullName -match '__pycache__' } |
     Select-Object -First 20 -ExpandProperty FullName |

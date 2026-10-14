@@ -29,9 +29,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from kiro_crew import member_memory_auth as auth
-from kiro_crew import platform_compat as pc
-from kiro_crew.apps.builtins.dev_fleet import worktree_ops
+from efm_go import member_memory_auth as auth
+from efm_go import platform_compat as pc
+from efm_go.apps.builtins.dev_fleet import worktree_ops
 
 
 # --------------------------------------------------------------------------- #
@@ -318,8 +318,8 @@ def test_pod_up_no_token_skips_the_mint_and_emits_empty_token(monkeypatch, capsy
     import json as _json
     from pathlib import Path
 
-    from kiro_crew.pod import cli as pod_cli
-    from kiro_crew.pod import runtime as rt
+    from efm_go.pod import cli as pod_cli
+    from efm_go.pod import runtime as rt
 
     class _Mutex:
         def __enter__(self):

@@ -1,45 +1,44 @@
 #!/usr/bin/env bash
-# ============================================================
-# EFM Go DONE GATE V2 — GRIEŽTAS pre-commit hook (Founder 2026-10-12)
-#
-# Business logic NĖRA šiame faile — jis tik kviečia gate engine:
-#   python3 /opt/efm/vault/gamyba/efm-go/tools/efm_done_gate.py --fast
-#
-# Hook tikrina ACTIVE_TASK kontraktą + log pilnumą + governance +
-# verifierius + diff --check. Commit BLOKUOJAMAS jei bet kas FAIL/UNKNOWN.
-# ============================================================
+# Pirmas tikrinimas yra KANONAS.md. DONE GATE yra žemiau ir jo neapeina.
 set -uo pipefail
 
+KANON="/opt/efm/vault/gamyba/efm-go/tools/efm_kanonas_hook.py"
 GATE="/opt/efm/vault/gamyba/efm-go/tools/efm_done_gate.py"
 
 echo ""
 echo "============================================================"
-echo " EFM Go DONE GATE V2 (pre-commit / FAST)"
+echo " KANONAS — pirmas hukas, aukščiau DONE GATE"
 echo "============================================================"
 
+if [ ! -f "$KANON" ]; then
+    echo "  FAIL: nėra kanono huko: $KANON"
+    echo "  Sutvarkyk: kanono hukas privalo būti vietoje."
+    exit 1
+fi
+
+python3 "$KANON" --repo "$(git rev-parse --show-toplevel)"
+if [ "$?" != "0" ]; then
+    echo ""
+    echo " COMMIT BLOKUOTAS. Darbas neatitinka KANONAS.md."
+    echo " Sutvarkyk darbą pagal kanoną. Tada komituok iš naujo."
+    echo " --no-verify naudoti draudžiama."
+    exit 1
+fi
+
 if [ ! -f "$GATE" ]; then
-    echo "  FAIL: nerastas gate engine: $GATE"
-    echo "============================================================"
+    echo "  FAIL: nėra DONE GATE: $GATE"
     exit 1
 fi
 
 python3 "$GATE" --fast
-RC=$?
-
-if [ "$RC" != "0" ]; then
+if [ "$?" != "0" ]; then
     echo ""
-    echo "============================================================"
     echo " COMMIT BLOKUOTAS — DONE GATE FAIL"
-    echo "============================================================"
-    echo ""
-    echo " Grįžk į procesą (00-TAISYKLES.md 0 skyrius — DONE GATE V2):"
-    echo "  WORK → TESTS → EVIDENCE → TASK LOG → STATE → CURRENT"
-    echo "  → ROADMAP/INVENTORY → VALIDATORS → STAGE → FAST GATE → COMMIT"
-    echo ""
-    echo "============================================================"
+    echo " Gate yra žemiau KANONAS.md. Sutvarkyk darbą ir įrodymus."
+    echo " --no-verify naudoti draudžiama."
     exit 1
 fi
 
 echo ""
-echo " DONE GATE PASS — commit leidžiamas ✓"
+echo " KANONAS ir DONE GATE PASS — commit leidžiamas"
 exit 0

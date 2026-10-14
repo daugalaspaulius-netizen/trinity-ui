@@ -538,7 +538,7 @@ rendering (`parse`, `chipLabel`, `refLabel`, an optional `icon` glyph, and the
 `capabilities` flags gating each write affordance), while fetching and every
 mutation are served by a backend plugin the edition registers with
 `register_source_provider()` in
-`src/kiro_crew/dashboard/handlers/source_providers.py`, under the same id. The
+`src/efm_go/dashboard/handlers/source_providers.py`, under the same id. The
 two registries validate the same id grammar (`/^[a-z][a-z0-9_-]{0,31}$/`) and
 both refuse the built-in ids (`github`, `gitlab`, `jira`), so a descriptor can
 never restyle a core provider and a payload provider id round-trips through both

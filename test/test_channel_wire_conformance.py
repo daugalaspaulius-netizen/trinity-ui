@@ -31,10 +31,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.testing.channel_fixtures import assert_same_shape, load_fixture
+from efm_go.testing.channel_fixtures import assert_same_shape, load_fixture
 
 # The fixtures root lives in the TEST tree, so the layout coupling lives here
-# too -- kiro_crew.testing.channel_fixtures ships in the wheel and deliberately
+# too -- efm_go.testing.channel_fixtures ships in the wheel and deliberately
 # has no default root (no test/ tree exists in an installed package).
 CHANNEL_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "channels"
 
@@ -64,7 +64,7 @@ class TestWeixinConformance:
         shipped: if ``qrcode_img_content`` ever stops being a string URL, or the
         response gains/loses fields, the fixture is stale and the diff says so.
         """
-        from kiro_crew.weixin.client import WeixinClient
+        from efm_go.weixin.client import WeixinClient
 
         token = _require("KIROCREW_WIRE_PROBE_WEIXIN_TOKEN")
         fixture = load_fixture("weixin", "get_bot_qrcode", root=CHANNEL_FIXTURES)

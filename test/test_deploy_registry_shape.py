@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from kiro_crew.deploy import profiles as profiles_mod
+from efm_go.deploy import profiles as profiles_mod
 
 EMPTY = {"version": 2, "profiles": [], "default": ""}
 

@@ -27,7 +27,7 @@ import types
 
 import pytest
 
-import kiro_crew.sandbox as sb
+import efm_go.sandbox as sb
 
 _EAGAIN_REASON = "fork failed with errno 11 (EAGAIN)"
 # The probe now mirrors the launcher's SPLIT sequence and names the failing

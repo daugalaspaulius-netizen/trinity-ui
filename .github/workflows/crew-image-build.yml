@@ -37,7 +37,7 @@ on:
       # The recipes themselves, their .dockerignore, container/requirements.txt,
       # the container/ tree the base image COPYs, and the supervisor module the
       # layer producer imports to recompute a bundle digest -- all under here.
-      - "src/kiro_crew/apps/builtins/aws_control/crew/runtime/**"
+      - "src/efm_go/apps/builtins/aws_control/crew/runtime/**"
       # The producers this lane invokes, and the file that decides what to
       # invoke them with. A glob rather than a list of names on purpose: which
       # scripts get run is DERIVED from what the recipes cite, so a name written
@@ -63,9 +63,9 @@ on:
   # The paths above are NOT provably complete, and this is the honest backstop
   # rather than a claim that they are. The build reaches outside the repository
   # -- a Debian package set, PyPI, and the pinned kiro-cli tarball -- and the
-  # image's own `import kiro_crew.cli` can be broken by any module in that
+  # image's own `import efm_go.cli` can be broken by any module in that
   # import graph. That last one is already exercised by every backend lane on
-  # every PR, so widening the trigger to `src/kiro_crew/**` would run a
+  # every PR, so widening the trigger to `src/efm_go/**` would run a
   # ~3-minute build on nearly every pull request to re-check something already
   # covered. A weekly run catches the rest without that cost.
   schedule:
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     # A fork that enables Actions should not spend its own minutes on a weekly
     # lane it never asked for; a fork's pull_request runs are unaffected.
-    if: github.event_name != 'schedule' || github.repository == 'kirodotdev/KiroCrew'
+    if: github.event_name != 'schedule' || github.repository == 'efmleads.com'
     timeout-minutes: 30
     env:
       # Loopback only. The registry exists to mint a repository digest for a

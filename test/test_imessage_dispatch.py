@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.imessage.transport_dispatch (IMessageDispatcher)."""
+"""Tests for efm_go.imessage.transport_dispatch (IMessageDispatcher)."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.imessage.client import IMessageInbound
-from kiro_crew.imessage.transport_dispatch import IMessageDispatcher
-from kiro_crew.session_allocation import SessionClosingError
+from efm_go.imessage.client import IMessageInbound
+from efm_go.imessage.transport_dispatch import IMessageDispatcher
+from efm_go.session_allocation import SessionClosingError
 
 HANDLE = "+15551234567"
 
@@ -115,7 +115,7 @@ class FakeSessions:
 
 
 def _cfg() -> Any:
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     return KiroCrewConfig()
 
@@ -154,7 +154,7 @@ def _permit(monkeypatch: pytest.MonkeyPatch) -> None:
     async def _yes(_channel: str) -> bool:
         return True
 
-    monkeypatch.setattr("kiro_crew.imessage.transport_dispatch.inbound_permitted", _yes)
+    monkeypatch.setattr("efm_go.imessage.transport_dispatch.inbound_permitted", _yes)
 
 
 class TestCommandIntercept:
@@ -198,7 +198,7 @@ class TestCommandIntercept:
         async def _no(_channel: str) -> bool:
             return False
 
-        monkeypatch.setattr("kiro_crew.imessage.transport_dispatch.inbound_permitted", _no)
+        monkeypatch.setattr("efm_go.imessage.transport_dispatch.inbound_permitted", _no)
         dispatcher, client, _ = _dispatcher()
         await dispatcher.handle_message(_inbound("/help"))
         assert client.sent == []

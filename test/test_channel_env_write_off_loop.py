@@ -31,8 +31,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.config.loader as loader
-import kiro_crew.dashboard.handlers.messaging as mod
+import efm_go.config.loader as loader
+import efm_go.dashboard.handlers.messaging as mod
 
 # Shapes each validator accepts. Real-looking because the handlers reject on
 # format before they ever reach the write, and a rejected body would make this
@@ -136,7 +136,7 @@ def test_cancelling_a_save_drains_the_env_write_before_releasing_the_lock(
     write, the caller is cancelled while it is parked, and a second writer then
     tries to proceed. It must not get through until the first worker finishes.
     """
-    from kiro_crew.dashboard.handlers.agents import _get_config_lock
+    from efm_go.dashboard.handlers.agents import _get_config_lock
 
     in_write = threading.Event()
     finish = threading.Event()

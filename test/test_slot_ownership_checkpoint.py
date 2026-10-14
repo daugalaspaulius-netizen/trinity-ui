@@ -32,18 +32,18 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app, _make_state, close_before_resume
 
-from kiro_crew.dashboard import slot_ownership
-from kiro_crew.dashboard.slot_ownership import (
+from efm_go.dashboard import slot_ownership
+from efm_go.dashboard.slot_ownership import (
     SLOT_ROUTE_POLICIES,
     SlotRoutePolicy,
     slot_ownership_middleware,
     slot_route_param,
     slot_route_policy,
 )
-from kiro_crew.dashboard.state import SlotOrigin, _ChatSlot
+from efm_go.dashboard.state import SlotOrigin, _ChatSlot
 
 APP = "crew-keyboard"
-_GRANT = "kiro_crew.apps.permissions.app_can_manage_session_approvals"
+_GRANT = "efm_go.apps.permissions.app_can_manage_session_approvals"
 _NOT_FOUND = {"error": "not found", "code": "slot_not_found"}
 _FAMILY_PREFIX = "/api/chat/slots/{"
 #: Header the sweep's identity stand-in reads: absent is no claim at all, "-" is
@@ -58,7 +58,7 @@ def family_routes() -> list[tuple[str, str]]:
     Enumerated from the router by template prefix, NOT through the checkpoint's own
     matcher, so a route the matcher would miss still shows up here.
     """
-    from kiro_crew.dashboard.routes import register_all
+    from efm_go.dashboard.routes import register_all
 
     app = web.Application()
     register_all(app)
@@ -91,7 +91,7 @@ def sel_spy(monkeypatch: pytest.MonkeyPatch) -> _SelSpy:
 
 @pytest.fixture
 def state(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     st = _make_state(tmp_path)
     st.broadcast_ws = MagicMock()
     st.push_slots_update = MagicMock()
@@ -180,7 +180,7 @@ class TestEveryPerSlotRouteIsDecided:
 
     def test_the_checkpoint_sits_inner_to_token_auth_in_both_server_chains(self) -> None:
         """A chain without it would serve every per-slot route undecided."""
-        import kiro_crew.dashboard.server as server_mod
+        import efm_go.dashboard.server as server_mod
 
         # Both chains are installed by a server_runtime owner server.py composes.
         owners = sorted((Path(server_mod.__file__).parent / "server_runtime").glob("[!_]*.py"))
@@ -208,7 +208,7 @@ class TestEveryPerSlotRouteIsDecided:
 
     def test_the_reserved_prefixes_are_the_ones_the_binders_mint(self) -> None:
         """The acquisition refusal and the binders must agree on the spelling."""
-        from kiro_crew.dashboard import session_control
+        from efm_go.dashboard import session_control
 
         assert slot_ownership.CRON_SLOT_PREFIX == session_control.CRON_SLOT_PREFIX
         assert slot_ownership.WORKFLOW_SLOT_PREFIX == session_control.WORKFLOW_SLOT_PREFIX
@@ -545,7 +545,7 @@ _FOREIGN = [
 
 
 def _client(state, caller: str | None) -> TestClient:
-    from kiro_crew.dashboard.chat import (
+    from efm_go.dashboard.chat import (
         api_chat_slot_create,
         api_chat_slot_drop,
         api_chat_slot_generate_title,
@@ -553,7 +553,7 @@ def _client(state, caller: str | None) -> TestClient:
         api_chat_slot_slack_link,
         api_chat_slot_summary_generate,
     )
-    from kiro_crew.dashboard.session_export import api_chat_slot_export
+    from efm_go.dashboard.session_export import api_chat_slot_export
 
     app = _make_app(state)
     app.router.add_post("/api/chat/slots/{slot}/generate-title", api_chat_slot_generate_title)
@@ -576,7 +576,7 @@ def _with_reply(slot: _ChatSlot, reply: str = "the user's ORIGINAL reply") -> No
 @pytest.fixture
 def regen_run(monkeypatch):
     run = AsyncMock()
-    monkeypatch.setattr("kiro_crew.dashboard.chat_regenerate._run_chat", run)
+    monkeypatch.setattr("efm_go.dashboard.chat_regenerate._run_chat", run)
     return run
 
 
@@ -605,7 +605,7 @@ class TestRegenerateAndSwitchVariant:
     ) -> None:
         rows: list[dict] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_regenerate.sel",
+            "efm_go.dashboard.chat_regenerate.sel",
             lambda: MagicMock(log_api_access=lambda **kw: rows.append(kw)),
         )
         slot = state.get_or_create_slot("s1", app=APP)
@@ -624,7 +624,7 @@ class TestRegenerateAndSwitchVariant:
     ) -> None:
         rows: list[dict] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_regenerate.sel",
+            "efm_go.dashboard.chat_regenerate.sel",
             lambda: MagicMock(log_api_access=lambda **kw: rows.append(kw)),
         )
         slot = state.get_or_create_slot("s1", app=APP)
@@ -662,7 +662,7 @@ class TestRegenerateAndSwitchVariant:
             return None
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_regenerate.reject_if_kiro_unverified", swap_during_await
+            "efm_go.dashboard.chat_regenerate.reject_if_kiro_unverified", swap_during_await
         )
         async with _client(state, APP) as client:
             resp = await client.post("/api/chat/slots/s1/regenerate")
@@ -687,7 +687,7 @@ class TestTitleAndColour:
         llm = AsyncMock(return_value="A summary of the private plan")
         with (
             patch(_GRANT, return_value=False),
-            patch("kiro_crew.dashboard.chat_title._generate_title_via_kiro", new=llm),
+            patch("efm_go.dashboard.chat_title._generate_title_via_kiro", new=llm),
         ):
             async with _client(state, APP) as client:
                 gen = await client.post("/api/chat/slots/s1/generate-title")
@@ -752,7 +752,7 @@ class TestChannelLinksAndLanes:
             state._slots["s1"] = replacement
             return None
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_mirror._expected_binding", swap_during_read)
+        monkeypatch.setattr("efm_go.dashboard.chat_mirror._expected_binding", swap_during_read)
         cleared = MagicMock()
         state.sessions.clear_mirror_link = cleared
         async with _client(state, APP) as client:
@@ -780,7 +780,7 @@ class TestExport:
 
 
 async def _persist(state, slot: _ChatSlot) -> None:
-    from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
+    from efm_go.dashboard.chat_persistence import save_slot_off_loop
 
     slot._titled = True
     slot.append("user", "USER-EARLIER")
@@ -789,7 +789,7 @@ async def _persist(state, slot: _ChatSlot) -> None:
 
 
 async def _persist_and_close(state, slot: _ChatSlot) -> None:
-    from kiro_crew.dashboard.chat_handlers import close_slot
+    from efm_go.dashboard.chat_handlers import close_slot
 
     await _persist(state, slot)
     await close_slot(state, slot, slot.key)
@@ -801,7 +801,7 @@ async def _persist_and_close(state, slot: _ChatSlot) -> None:
 @pytest.fixture
 def chat_run(monkeypatch):
     run = AsyncMock()
-    monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._run_chat", run)
+    monkeypatch.setattr("efm_go.dashboard.chat_handlers._run_chat", run)
     return run
 
 
@@ -843,7 +843,7 @@ class TestTranscriptOwnershipWithoutALiveSlot:
         self, state, monkeypatch, caller
     ) -> None:
         """The source's owner cannot authorize a destination written during the reads."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         log = state.conversation_log
         source_key, destination_key = "dashboard:a1", "dashboard:b1"
@@ -898,7 +898,7 @@ class TestTranscriptOwnershipWithoutALiveSlot:
     async def test_resume_reserves_the_destination_and_rechecks_the_source(
         self, state, monkeypatch, source_change
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         log = state.conversation_log
         source_key = "dashboard:a1"
@@ -1004,7 +1004,7 @@ class TestTranscriptOwnershipWithoutALiveSlot:
     async def test_resume_dedups_a_session_published_during_the_destination_read(
         self, state, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         log = state.conversation_log
         source_key = "dashboard:a1"
@@ -1069,7 +1069,7 @@ class TestTranscriptOwnershipWithoutALiveSlot:
         import builtins
         import threading
 
-        from kiro_crew.history import _METADATA_READ_ATTEMPTS
+        from efm_go.history import _METADATA_READ_ATTEMPTS
 
         await _persist_and_close(state, state.get_or_create_slot("a1", app=APP))
         log = state.conversation_log
@@ -1344,7 +1344,7 @@ class TestNoAnswerBeforeOwnership:
             return None, None
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers._app_slot_acquisition_denial", nothing_live_yet
+            "efm_go.dashboard.chat_handlers._app_slot_acquisition_denial", nothing_live_yet
         )
         state.get_or_create_slot("s1", origin=SlotOrigin.USER)
         async with _client(state, APP) as client:
@@ -1371,7 +1371,7 @@ class TestNoAnswerBeforeOwnership:
             return True
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.members_mod.is_configured_dispatchable_member",
+            "efm_go.dashboard.chat_handlers.members_mod.is_configured_dispatchable_member",
             close_meanwhile,
         )
         with patch(_GRANT, return_value=True):
@@ -1396,7 +1396,7 @@ class TestNoAnswerBeforeOwnership:
 @pytest.fixture
 def case_insensitive_fs(monkeypatch):
     """Transcript paths that fold letter case, as the macOS and Windows defaults do."""
-    from kiro_crew.history import ConversationLog
+    from efm_go.history import ConversationLog
 
     real_path = ConversationLog._path
 
@@ -1416,7 +1416,7 @@ class TestALetterCaseTwinIsNotANewSession:
     async def test_send_create_and_resume(
         self, state, chat_run, sel_spy, case_insensitive_fs
     ) -> None:
-        from kiro_crew.dashboard.slot_ownership import CASE_ALIAS_DENIED
+        from efm_go.dashboard.slot_ownership import CASE_ALIAS_DENIED
 
         await _persist_and_close(state, state.get_or_create_slot("appconv", app=APP))
         # The person's new tab: live, with nothing written to its transcript yet.
@@ -1475,8 +1475,8 @@ class TestModeChanges:
 
 class TestBindersDoNotAdoptAnAppSlot:
     def test_a_cron_result_is_not_bound_into_an_app_slot(self, state, sel_spy) -> None:
-        from kiro_crew.cron import CronJob
-        from kiro_crew.dashboard.cron_inject import inject_cron_result_to_dashboard
+        from efm_go.cron import CronJob
+        from efm_go.dashboard.cron_inject import inject_cron_result_to_dashboard
 
         squatter = state.get_or_create_slot("cron-j1", app=APP)
         job = CronJob(id="j1", name="nightly", message="report", agent_id="kirocrew")
@@ -1489,7 +1489,7 @@ class TestBindersDoNotAdoptAnAppSlot:
         ]
 
     def test_a_workflow_result_is_not_bound_into_an_app_slot(self, state, sel_spy) -> None:
-        from kiro_crew.dashboard.workflow_inject import inject_workflow_result
+        from efm_go.dashboard.workflow_inject import inject_workflow_result
 
         squatter = state.get_or_create_slot("workflow-r1", app=APP)
         snapshot = {
@@ -1510,7 +1510,7 @@ class TestBindersDoNotAdoptAnAppSlot:
     async def test_to_chat_files_the_refusal_under_the_person(self, state, sel_spy) -> None:
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.dashboard.handlers.cron import api_cron_to_chat
+        from efm_go.dashboard.handlers.cron import api_cron_to_chat
 
         state.get_or_create_slot("cron-j1", app=APP)
         app = web.Application()
@@ -1530,8 +1530,8 @@ class TestBindersDoNotAdoptAnAppSlot:
         """The run-start pre-create stands down before any transcript read or audit row."""
         import asyncio
 
-        from kiro_crew.cron import CronJob
-        from kiro_crew.dashboard.cron_inject import (
+        from efm_go.cron import CronJob
+        from efm_go.dashboard.cron_inject import (
             ensure_cron_slot,
             prefetch_cron_dismissed,
             prefetch_cron_history,
@@ -1591,7 +1591,7 @@ class TestTheOwnersSessionIsTheOneMintedForIt:
         assert not slot_ownership.app_owns_slot_session(APP, slot)
 
     def test_the_taskrunner_mints_the_shape_the_checkpoint_reads(self) -> None:
-        from kiro_crew.dashboard.handlers import taskrunner
+        from efm_go.dashboard.handlers import taskrunner
 
         src = Path(taskrunner.__file__).read_text(encoding="utf-8")
         assert "task_review_session_key(task_id, token)" in src
@@ -1723,7 +1723,7 @@ class TestResumeAnswersAnAppLikeEveryOtherRoute:
         self, state, sel_spy, monkeypatch
     ) -> None:
         """Another build of the key starting inside the reads refuses with no write."""
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         await _persist_and_close(state, state.get_or_create_slot("a1", app=APP))
         log = state.conversation_log
@@ -1794,8 +1794,8 @@ class TestHandlersOutsideTheChainAnswerOneBody:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("route", ["delete", "side-open"])
     async def test_missing_and_foreign(self, state, route) -> None:
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_delete
-        from kiro_crew.dashboard.handlers.side import api_side_open
+        from efm_go.dashboard.chat_handlers import api_chat_slot_delete
+        from efm_go.dashboard.handlers.side import api_side_open
 
         state.get_or_create_slot("theirs", origin=SlotOrigin.USER)
         app = web.Application(middlewares=[_as(APP)])
@@ -1825,8 +1825,8 @@ class TestAcquisitionAfterSetup:
             await _persist_and_close(state, state.get_or_create_slot("s1", origin=SlotOrigin.USER))
             return ""
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.cron_slot_creator", create_and_close)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.cron_slot_creator", create_and_close)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
         with patch(_GRANT, return_value=False):
             async with _client(state, APP) as client:
                 url, body = (
@@ -1858,8 +1858,8 @@ class TestAcquisitionAfterSetup:
             appeared.append(slot)
             return ""
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.cron_slot_creator", create_meanwhile)
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.cron_slot_creator", create_meanwhile)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers._maybe_auto_title", AsyncMock())
         with patch(_GRANT, return_value=False):
             async with _client(state, caller) as client:
                 url, body = (
@@ -1874,7 +1874,7 @@ class TestAcquisitionAfterSetup:
 
     @pytest.mark.asyncio
     async def test_cancellation_releases_the_free_key_reservation(self, state, monkeypatch) -> None:
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         entered, release, finished = threading.Event(), threading.Event(), threading.Event()
 
@@ -1922,7 +1922,7 @@ class TestPostAwaitOwnership:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("phase", ["generation", "persist-entry", "persist-exit"])
     async def test_title_cannot_retitle_a_replacement(self, state, monkeypatch, phase) -> None:
-        from kiro_crew.dashboard import chat_title
+        from efm_go.dashboard import chat_title
 
         slot = state.get_or_create_slot("s1", app=APP)
         await _persist(state, slot)
@@ -1962,8 +1962,8 @@ class TestPostAwaitOwnership:
     async def test_summary_cannot_publish_into_a_replacement(
         self, state, monkeypatch, phase
     ) -> None:
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.dashboard import chat_handlers, chat_summary
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.dashboard import chat_handlers, chat_summary
 
         slot = state.get_or_create_slot("s1", app=APP)
         for index in range(3):
@@ -2021,7 +2021,7 @@ class TestPostAwaitOwnership:
     async def test_replacement_after_history_save_cannot_dispatch_or_broadcast(
         self, state, regen_run, monkeypatch, route
     ) -> None:
-        from kiro_crew.dashboard import chat_regenerate
+        from efm_go.dashboard import chat_regenerate
 
         slot = state.get_or_create_slot("s1", app=APP)
         _with_reply(slot)
@@ -2049,7 +2049,7 @@ class TestPostAwaitOwnership:
     async def test_rewind_does_not_commit_or_dispatch_a_replacement(
         self, state, monkeypatch, phase
     ) -> None:
-        from kiro_crew.dashboard import chat_rewind
+        from efm_go.dashboard import chat_rewind
 
         slot = state.get_or_create_slot("s1", app=APP)
         await _persist(state, slot)
@@ -2099,7 +2099,7 @@ class TestAcquisitionRecheckPlacement:
     def test_no_await_between_final_recheck_and_acquisition(self, handler_name) -> None:
         import inspect
 
-        from kiro_crew.dashboard import chat_handlers
+        from efm_go.dashboard import chat_handlers
 
         tree = ast.parse(inspect.getsource(getattr(chat_handlers, handler_name)))
         calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)]

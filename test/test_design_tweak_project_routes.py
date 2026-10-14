@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.apps.builtins.design_tweak.backend import server
+from efm_go.apps.builtins.design_tweak.backend import server
 
 
 @pytest.fixture()

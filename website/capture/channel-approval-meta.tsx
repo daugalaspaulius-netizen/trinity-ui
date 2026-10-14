@@ -51,7 +51,7 @@ const LONG = [
   '--exclude=*.log --exclude=*.tmp --exclude=*.pyc --exclude=__pycache__ --exclude=.venv',
   '--exclude=.pytest_cache --exclude=.mypy_cache --exclude=.ruff_cache --exclude=playwright-report',
   '--directory=/home/dev/project website/src website/public website/capture website/scripts',
-  'src/kiro_crew test docs/system-specs README.md pyproject.toml package.json package-lock.json',
+  'src/efm_go test docs/system-specs README.md pyproject.toml package.json package-lock.json',
 ].join(' ')
 
 function shell(cmd: string, base: string | null) {

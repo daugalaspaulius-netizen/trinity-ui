@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.apps import registry
+from efm_go.apps import registry
 
 REPO = "example/monorepo"
 SUBDIR = "apps/demo"

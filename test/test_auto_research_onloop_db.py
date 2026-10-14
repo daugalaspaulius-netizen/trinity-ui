@@ -31,9 +31,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.apps.builtins.auto_research import handlers as h
-from kiro_crew.apps.builtins.auto_research.campaign import publication
-from kiro_crew.apps.builtins.auto_research.handlers import (
+from efm_go.apps.builtins.auto_research import handlers as h
+from efm_go.apps.builtins.auto_research.campaign import publication
+from efm_go.apps.builtins.auto_research.handlers import (
     CampaignStatus,
     _get_db,
     create_campaign,
@@ -41,7 +41,7 @@ from kiro_crew.apps.builtins.auto_research.handlers import (
     register_routes,
     update_campaign_status,
 )
-from kiro_crew.on_loop_db import OnLoopDBGuard, OnLoopStoreError
+from efm_go.on_loop_db import OnLoopDBGuard, OnLoopStoreError
 
 
 @pytest.fixture(autouse=True)
@@ -49,11 +49,11 @@ def _isolate(tmp_path: Path):
     """Isolate DB and research dir per test (same shape as test_auto_research)."""
     with (
         patch(
-            "kiro_crew.apps.builtins.auto_research.handlers.DB_PATH",
+            "efm_go.apps.builtins.auto_research.handlers.DB_PATH",
             tmp_path / "test.db",
         ),
         patch(
-            "kiro_crew.apps.builtins.auto_research.handlers.RESEARCH_DIR",
+            "efm_go.apps.builtins.auto_research.handlers.RESEARCH_DIR",
             tmp_path / "research",
         ),
     ):
@@ -85,7 +85,7 @@ class TestOnLoopGuard:
         so a mis-wired call-site is never silent."""
         monkeypatch.setenv("KIROCREW_STRICT_ON_LOOP_PERSIST", "0")
         h._ON_LOOP_DB_GUARD.reset_throttle()  # reset throttle window
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             conn = _get_db()
             conn.close()
         assert any("event loop" in r.message for r in caplog.records)
@@ -94,7 +94,7 @@ class TestOnLoopGuard:
     async def test_on_loop_warning_is_throttled(self, monkeypatch, caplog):
         monkeypatch.setenv("KIROCREW_STRICT_ON_LOOP_PERSIST", "0")
         h._ON_LOOP_DB_GUARD.reset_throttle()
-        with caplog.at_level("WARNING", logger="kiro_crew.on_loop_db"):
+        with caplog.at_level("WARNING", logger="efm_go.on_loop_db"):
             for _ in range(3):
                 conn = _get_db()
                 conn.close()
@@ -759,7 +759,7 @@ class TestWarnThrottleClock:
         shared ``KIROCREW_STRICT_ON_LOOP_PERSIST`` switch and the dev-mode arm --
         a raise means genuinely new drift. The knowledge store deliberately
         differs (its offload backlog is separate); pin that this one does not."""
-        from kiro_crew.on_loop_db import STRICT_ENV
+        from efm_go.on_loop_db import STRICT_ENV
 
         assert h._ON_LOOP_DB_GUARD._strict_env == STRICT_ENV
         assert h._ON_LOOP_DB_GUARD._include_dev_mode is True

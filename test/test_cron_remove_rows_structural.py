@@ -27,8 +27,8 @@ import ast
 import inspect
 from pathlib import Path
 
-import kiro_crew.cron as cron_module
-from kiro_crew.cron import CronService
+import efm_go.cron as cron_module
+from efm_go.cron import CronService
 
 SANCTIONED_HELPER = "_remove_job_rows"
 

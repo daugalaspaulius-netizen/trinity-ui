@@ -1,4 +1,4 @@
-"""Unit tests for kiro_crew.tips module."""
+"""Unit tests for efm_go.tips module."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from kiro_crew.tips import (
+from efm_go.tips import (
     CatalogEntry,
     TipsState,
     _fallback_tips,
@@ -29,7 +29,7 @@ from kiro_crew.tips import (
     _select_tip,
     _validate_tip_fields,
 )
-from kiro_crew.tips_text import (
+from efm_go.tips_text import (
     SUMMARY_MAX_CHARS,
     first_prose_paragraph,
     strip_decoration,
@@ -732,7 +732,7 @@ class TestShownAction:
     def test_shown_is_valid_action(self) -> None:
         import inspect
 
-        from kiro_crew import tips as tips_mod
+        from efm_go import tips as tips_mod
 
         src = inspect.getsource(tips_mod.api_tips_feedback)
         assert '"shown"' in src  # accepted by the handler's valid_actions
@@ -793,8 +793,8 @@ class TestCatalogAllowlist:
     }
 
     def test_bundled_catalog_only_contains_allowlisted_docs(self) -> None:
-        from kiro_crew.tips import _BUNDLED_CATALOG_FILE
-        from kiro_crew.tips_allowlist import TIP_DOC_ALLOWLIST
+        from efm_go.tips import _BUNDLED_CATALOG_FILE
+        from efm_go.tips_allowlist import TIP_DOC_ALLOWLIST
 
         data = json.loads(_BUNDLED_CATALOG_FILE.read_text(encoding="utf-8"))
         docs = {e["doc"] for e in data["entries"]}
@@ -803,25 +803,25 @@ class TestCatalogAllowlist:
         ), f"non-allowlisted docs in catalog: {docs - TIP_DOC_ALLOWLIST}"
 
     def test_internal_docs_not_in_allowlist(self) -> None:
-        from kiro_crew.tips_allowlist import TIP_DOC_ALLOWLIST
+        from efm_go.tips_allowlist import TIP_DOC_ALLOWLIST
 
         assert not (self._INTERNAL_DOCS & TIP_DOC_ALLOWLIST)
 
     def test_allowlisted_docs_exist(self) -> None:
         """Catch allowlist drift: every listed doc must exist in the docs dir."""
-        from kiro_crew.tips_allowlist import TIP_DOC_ALLOWLIST
+        from efm_go.tips_allowlist import TIP_DOC_ALLOWLIST
 
-        docs_dir = _REPO_ROOT / "src/kiro_crew/docs"
+        docs_dir = _REPO_ROOT / "src/efm_go/docs"
         if not docs_dir.is_dir():  # running from an installed package
-            import kiro_crew
+            import efm_go
 
-            docs_dir = Path(kiro_crew.__file__).parent / "docs"
+            docs_dir = Path(efm_go.__file__).parent / "docs"
         missing = {d for d in TIP_DOC_ALLOWLIST if not (docs_dir / d).is_file()}
         assert not missing, f"allowlisted docs missing on disk: {missing}"
 
     def test_runtime_scan_respects_allowlist(self) -> None:
-        from kiro_crew.tips import _scan_docs_catalog
-        from kiro_crew.tips_allowlist import TIP_DOC_ALLOWLIST
+        from efm_go.tips import _scan_docs_catalog
+        from efm_go.tips_allowlist import TIP_DOC_ALLOWLIST
 
         entries = _scan_docs_catalog()
         assert entries, "runtime scan returned nothing"
@@ -870,7 +870,7 @@ class TestStateFilePermissions:
         time — zero means no payload byte existed yet. A post-write stat passes
         on the buggy ordering too, so it would not be a regression test.
         """
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         sizes: list[int] = []
         real_restrict = platform_compat.restrict_to_owner
@@ -892,7 +892,7 @@ class TestStateFilePermissions:
         """``restrict_on_error="warn"`` keeps this site's established policy: a
         lockdown failure must not break tips persistence, but it must be
         visible (the helper logs it)."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         def _refuse(_target):
             raise OSError("read-only ACL store")
@@ -913,7 +913,7 @@ class TestTipFieldAllowlist:
     """
 
     def test_extra_fields_stripped_at_parse(self) -> None:
-        from kiro_crew.tips import _TIP_ALLOWED_FIELDS, _parse_tips
+        from efm_go.tips import _TIP_ALLOWED_FIELDS, _parse_tips
 
         raw = json.dumps(
             [
@@ -937,7 +937,7 @@ class TestTipFieldAllowlist:
         assert "AKIA" not in json.dumps(tips[0])
 
     def test_all_values_in_parsed_tip_are_strings(self) -> None:
-        from kiro_crew.tips import _parse_tips
+        from efm_go.tips import _parse_tips
 
         raw = json.dumps(
             [
@@ -994,7 +994,7 @@ class TestStateStructuralValidation:
         """Codex round-18: persisted tips/offered must pass the SAME field
         validation as generated tips — {"id": []} in the state file would
         otherwise crash _is_eligible with a 500 on every request."""
-        from kiro_crew.tips import _TIP_ALLOWED_FIELDS
+        from efm_go.tips import _TIP_ALLOWED_FIELDS
 
         valid = {
             "id": "t1",
@@ -1102,7 +1102,7 @@ class TestDocLevelDismissal:
         """Codex round-17: 'shown' clears offered; a catalog-fallback tip is
         also absent from st.tips — the doc must still be resolvable via the
         catalog-derived id reverse-mapping used by the feedback handler."""
-        from kiro_crew.tips import CatalogEntry
+        from efm_go.tips import CatalogEntry
 
         catalog = [CatalogEntry("Cron", "S", "cron-and-scheduling.md", mtime=1.0)]
         tip_id = "cron-and-scheduling-tip"  # catalog-derived fallback id
@@ -1140,7 +1140,7 @@ class TestSingleOfferConcurrency:
 
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.tips import TipsCache, api_tips_next
+        from efm_go.tips import TipsCache, api_tips_next
 
         def mk_tip(i: int) -> dict:  # type: ignore[type-arg]
             return {
@@ -1169,8 +1169,8 @@ class TestSingleOfferConcurrency:
                 return None
 
             with (
-                mpatch("kiro_crew.tips.KiroCrewConfig") as mock_cfg_cls,
-                mpatch("kiro_crew.tips.maybe_refresh", noop_refresh),
+                mpatch("efm_go.tips.KiroCrewConfig") as mock_cfg_cls,
+                mpatch("efm_go.tips.maybe_refresh", noop_refresh),
             ):
                 mock_cfg_cls.load.return_value = cfg
 
@@ -1294,7 +1294,7 @@ class TestBundledCatalog:
 
     def test_load_bundled_catalog_exists(self) -> None:
         """The bundled catalog JSON should be loadable at test time."""
-        from kiro_crew.tips import _load_bundled_catalog
+        from efm_go.tips import _load_bundled_catalog
 
         result = _load_bundled_catalog()
         assert result is not None
@@ -1306,8 +1306,8 @@ class TestBundledCatalog:
 
     def test_load_bundled_catalog_missing_file(self, tmp_path: Path) -> None:
         """When file doesn't exist, returns None (triggers fallback)."""
-        import kiro_crew.tips as tips_mod
-        from kiro_crew.tips import _load_bundled_catalog
+        import efm_go.tips as tips_mod
+        from efm_go.tips import _load_bundled_catalog
 
         original = tips_mod._BUNDLED_CATALOG_FILE
         try:
@@ -1319,8 +1319,8 @@ class TestBundledCatalog:
 
     def test_load_bundled_catalog_corrupt_json(self, tmp_path: Path) -> None:
         """When file is corrupt JSON, returns None (triggers fallback)."""
-        import kiro_crew.tips as tips_mod
-        from kiro_crew.tips import _load_bundled_catalog
+        import efm_go.tips as tips_mod
+        from efm_go.tips import _load_bundled_catalog
 
         corrupt_file = tmp_path / "tips_catalog.json"
         corrupt_file.write_text("not valid json!!!")
@@ -1335,8 +1335,8 @@ class TestBundledCatalog:
     def test_load_bundled_catalog_malformed_structures(self, tmp_path: Path) -> None:
         """Codex round-19: list root / non-numeric / huge mtime must degrade
         gracefully (fallback or mtime=0.0), never crash cache init."""
-        import kiro_crew.tips as tips_mod
-        from kiro_crew.tips import _load_bundled_catalog
+        import efm_go.tips as tips_mod
+        from efm_go.tips import _load_bundled_catalog
 
         original = tips_mod._BUNDLED_CATALOG_FILE
         cases = [
@@ -1364,8 +1364,8 @@ class TestBundledCatalog:
 
     def test_load_bundled_catalog_empty_entries(self, tmp_path: Path) -> None:
         """When entries array is empty, returns None."""
-        import kiro_crew.tips as tips_mod
-        from kiro_crew.tips import _load_bundled_catalog
+        import efm_go.tips as tips_mod
+        from efm_go.tips import _load_bundled_catalog
 
         empty_file = tmp_path / "tips_catalog.json"
         empty_file.write_text(json.dumps({"generated_at": "2026-01-01", "entries": []}))
@@ -1379,8 +1379,8 @@ class TestBundledCatalog:
 
     def test_load_bundled_catalog_with_mtime(self, tmp_path: Path) -> None:
         """Bundled entry with mtime field -> CatalogEntry.mtime populated."""
-        import kiro_crew.tips as tips_mod
-        from kiro_crew.tips import _load_bundled_catalog
+        import efm_go.tips as tips_mod
+        from efm_go.tips import _load_bundled_catalog
 
         catalog_file = tmp_path / "tips_catalog.json"
         catalog_file.write_text(
@@ -1407,8 +1407,8 @@ class TestBundledCatalog:
 
     def test_load_bundled_catalog_missing_mtime_defaults_zero(self, tmp_path: Path) -> None:
         """Bundled entry without mtime field -> CatalogEntry.mtime defaults to 0.0."""
-        import kiro_crew.tips as tips_mod
-        from kiro_crew.tips import _load_bundled_catalog
+        import efm_go.tips as tips_mod
+        from efm_go.tips import _load_bundled_catalog
 
         catalog_file = tmp_path / "tips_catalog.json"
         catalog_file.write_text(
@@ -1433,7 +1433,7 @@ class TestBundledCatalog:
 
     def test_bundled_catalog_json_contains_mtime(self) -> None:
         """The actual bundled tips_catalog.json in the repo has mtime values."""
-        from kiro_crew.tips import _BUNDLED_CATALOG_FILE
+        from efm_go.tips import _BUNDLED_CATALOG_FILE
 
         assert _BUNDLED_CATALOG_FILE.is_file()
         data = json.loads(_BUNDLED_CATALOG_FILE.read_text(encoding="utf-8"))
@@ -1456,7 +1456,7 @@ class TestExploreBlend:
         ]
         st = TipsState()
         # Generate catalog-based fallback tips
-        from kiro_crew.tips import _fallback_tips, _is_eligible
+        from efm_go.tips import _fallback_tips, _is_eligible
 
         all_catalog = [
             t for t in _fallback_tips(catalog, st) if _is_eligible(t, st, 999999.0, 48.0)
@@ -1486,33 +1486,33 @@ class TestConfigClamping:
     """Tests for tips_model and tips_explore_ratio config field handling."""
 
     def test_tips_model_default(self) -> None:
-        from kiro_crew.config.loader import DashboardConfig
+        from efm_go.config.loader import DashboardConfig
 
         cfg = DashboardConfig()
         assert cfg.tips_model == "auto"
 
     def test_tips_explore_ratio_default(self) -> None:
-        from kiro_crew.config.loader import DashboardConfig
+        from efm_go.config.loader import DashboardConfig
 
         cfg = DashboardConfig()
         assert cfg.tips_explore_ratio == 0.2
 
     def test_tips_explore_ratio_clamped_below(self) -> None:
-        from kiro_crew.config.loader import _safe_float
+        from efm_go.config.loader import _safe_float
 
         # Below 0 gets clamped to 0
         result = _safe_float(-0.5, 0.2, lo=0.0, hi=1.0)
         assert result == 0.0
 
     def test_tips_explore_ratio_clamped_above(self) -> None:
-        from kiro_crew.config.loader import _safe_float
+        from efm_go.config.loader import _safe_float
 
         # Above 1 gets clamped to 1
         result = _safe_float(1.5, 0.2, lo=0.0, hi=1.0)
         assert result == 1.0
 
     def test_tips_explore_ratio_invalid_uses_default(self) -> None:
-        from kiro_crew.config.loader import _safe_float
+        from efm_go.config.loader import _safe_float
 
         result = _safe_float("not a number", 0.2, lo=0.0, hi=1.0)
         assert result == 0.2
@@ -1520,13 +1520,13 @@ class TestConfigClamping:
     def test_safe_float_nan_uses_default(self) -> None:
         """Codex round-5: NaN converts fine but bypasses clamping (NaN compares
         false against any bound) — must fall back to default."""
-        from kiro_crew.config.loader import _safe_float
+        from efm_go.config.loader import _safe_float
 
         assert _safe_float("NaN", 0.2, lo=0.0, hi=1.0) == 0.2
         assert _safe_float(float("nan"), 6.0, lo=0.0) == 6.0
 
     def test_safe_float_infinity_uses_default(self) -> None:
-        from kiro_crew.config.loader import _safe_float
+        from efm_go.config.loader import _safe_float
 
         assert _safe_float("Infinity", 0.2, lo=0.0, hi=1.0) == 0.2
         assert _safe_float("-Infinity", 0.6, lo=0.0, hi=1.0) == 0.6
@@ -1535,14 +1535,14 @@ class TestConfigClamping:
     def test_safe_float_huge_int_uses_default(self) -> None:
         """Codex round-14 (HIGH): float(10**400) raises OverflowError — a
         config file with a huge JSON integer must not crash config load."""
-        from kiro_crew.config.loader import _safe_float
+        from efm_go.config.loader import _safe_float
 
         assert _safe_float(10**400, 6.0, lo=0.0) == 6.0
         assert _safe_float(-(10**400), 0.2, lo=0.0, hi=1.0) == 0.2
 
     def test_tips_model_from_config_data(self) -> None:
         """tips_model read as string from dashboard data."""
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         # Default config inherits the account's governed model via "auto"
         cfg = KiroCrewConfig.load()
@@ -1611,7 +1611,7 @@ class TestOptOutState:
 
 
 class TestTruncateSummary:
-    """Sentence-safe truncation (kiro_crew.tips_text.truncate_summary)."""
+    """Sentence-safe truncation (efm_go.tips_text.truncate_summary)."""
 
     def test_short_text_unchanged(self) -> None:
         assert truncate_summary("A short summary.") == "A short summary."
@@ -1691,7 +1691,7 @@ class TestCuratedTips:
     """Curated, action-first tips are the primary user-facing pool."""
 
     def test_curated_tips_ship_and_validate(self) -> None:
-        from kiro_crew.tips import _TIP_ALLOWED_FIELDS, _load_curated_tips
+        from efm_go.tips import _TIP_ALLOWED_FIELDS, _load_curated_tips
 
         tips = _load_curated_tips()
         assert len(tips) >= 8
@@ -1716,7 +1716,7 @@ class TestCuratedTips:
     def test_curated_tips_missing_file_returns_empty(self, tmp_path: Path) -> None:
         from unittest.mock import patch as mpatch
 
-        from kiro_crew import tips as tips_mod
+        from efm_go import tips as tips_mod
 
         missing = tmp_path / "nope.json"
         with mpatch.object(tips_mod, "_CURATED_FILE", missing):
@@ -1725,7 +1725,7 @@ class TestCuratedTips:
     def test_curated_tips_malformed_returns_empty(self, tmp_path: Path) -> None:
         from unittest.mock import patch as mpatch
 
-        from kiro_crew import tips as tips_mod
+        from efm_go import tips as tips_mod
 
         bad = tmp_path / "bad.json"
         bad.write_text("{ not json", encoding="utf-8")
@@ -1739,7 +1739,7 @@ class TestCuratedTips:
     def test_curated_tips_skip_invalid_entries(self, tmp_path: Path) -> None:
         from unittest.mock import patch as mpatch
 
-        from kiro_crew import tips as tips_mod
+        from efm_go import tips as tips_mod
 
         f = tmp_path / "c.json"
         good = {
@@ -1764,7 +1764,7 @@ class TestCuratedTips:
 
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.tips import TipsCache, api_tips_next
+        from efm_go.tips import TipsCache, api_tips_next
 
         curated = {
             "id": "split-view",
@@ -1791,8 +1791,8 @@ class TestCuratedTips:
                 return None
 
             with (
-                mpatch("kiro_crew.tips.KiroCrewConfig") as mock_cfg_cls,
-                mpatch("kiro_crew.tips.maybe_refresh", noop_refresh),
+                mpatch("efm_go.tips.KiroCrewConfig") as mock_cfg_cls,
+                mpatch("efm_go.tips.maybe_refresh", noop_refresh),
             ):
                 mock_cfg_cls.load.return_value = cfg
                 req = make_mocked_request("GET", "/api/tips/next")
@@ -1811,7 +1811,7 @@ class TestCuratedTips:
 
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.tips import TipsCache, api_tips_next
+        from efm_go.tips import TipsCache, api_tips_next
 
         gen = {
             "id": "gen-1",
@@ -1837,8 +1837,8 @@ class TestCuratedTips:
                 return None
 
             with (
-                mpatch("kiro_crew.tips.KiroCrewConfig") as mock_cfg_cls,
-                mpatch("kiro_crew.tips.maybe_refresh", noop_refresh),
+                mpatch("efm_go.tips.KiroCrewConfig") as mock_cfg_cls,
+                mpatch("efm_go.tips.maybe_refresh", noop_refresh),
             ):
                 mock_cfg_cls.load.return_value = cfg
                 req = make_mocked_request("GET", "/api/tips/next")
@@ -1850,7 +1850,7 @@ class TestCuratedTips:
                 assert body["tip"]["id"] == "gen-1"
 
     def test_sanitize_tip_action_valid_and_invalid(self) -> None:
-        from kiro_crew.tips import _sanitize_tip_action
+        from efm_go.tips import _sanitize_tip_action
 
         # Valid internal route (with query + highlight) is projected as-is.
         ok = _sanitize_tip_action(
@@ -1875,7 +1875,7 @@ class TestCuratedTips:
         assert _sanitize_tip_action({"kind": "route", "label": "L", "route": 5}) is None
 
     def test_persisted_tip_attaches_valid_action_drops_invalid(self) -> None:
-        from kiro_crew.tips import _sanitize_persisted_tip
+        from efm_go.tips import _sanitize_persisted_tip
 
         base = {
             "id": "x",
@@ -1904,7 +1904,7 @@ class TestCuratedTips:
         assert "action" not in none
 
     def test_shipped_curated_actions_match_capable_features(self) -> None:
-        from kiro_crew.tips import _load_curated_tips, _sanitize_tip_action
+        from efm_go.tips import _load_curated_tips, _sanitize_tip_action
 
         tips = {t["id"]: t for t in _load_curated_tips()}
         # Features with a navigable destination carry a valid, internal route action.
@@ -1938,8 +1938,8 @@ class TestCuratedTips:
         LLM-generated tips whose ids churn between regenerations; a curated tip
         has a hand-authored, permanent id and does not need it.
         """
-        from kiro_crew.tips import _load_curated_tips
-        from kiro_crew.tips_allowlist import TIP_DOC_ALLOWLIST
+        from efm_go.tips import _load_curated_tips
+        from efm_go.tips_allowlist import TIP_DOC_ALLOWLIST
 
         collisions = {
             t["id"]: t["doc"] for t in _load_curated_tips() if t.get("doc") in TIP_DOC_ALLOWLIST
@@ -1964,7 +1964,7 @@ class TestCuratedTips:
         deleted control silently turns the button into a navigation that
         highlights nothing. Pin the two together.
         """
-        from kiro_crew.tips import _load_curated_tips
+        from efm_go.tips import _load_curated_tips
 
         registry_file = (
             Path(__file__).resolve().parents[1]
@@ -2029,7 +2029,7 @@ class TestCuratedTips:
 
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.tips import TipsCache, api_tips_next
+        from efm_go.tips import TipsCache, api_tips_next
 
         curated = {
             "id": "split-view",
@@ -2061,8 +2061,8 @@ class TestCuratedTips:
                 return None
 
             with (
-                mpatch("kiro_crew.tips.KiroCrewConfig") as mock_cfg_cls,
-                mpatch("kiro_crew.tips.maybe_refresh", noop_refresh),
+                mpatch("efm_go.tips.KiroCrewConfig") as mock_cfg_cls,
+                mpatch("efm_go.tips.maybe_refresh", noop_refresh),
             ):
                 mock_cfg_cls.load.return_value = cfg
                 req = make_mocked_request("GET", "/api/tips/next")
@@ -2097,7 +2097,7 @@ class TestDocLinkSplit:
         from aiohttp import streams
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.tips import TipsCache, api_tips_feedback
+        from efm_go.tips import TipsCache, api_tips_feedback
 
         curated = {
             "id": "curated-a",
@@ -2152,7 +2152,7 @@ class TestDocLinkSplit:
     def test_restored_curated_tips_carry_doc_link(self) -> None:
         """The tips whose learn-more link was lost when their colliding `doc`
         was split off get it back through doc_link."""
-        from kiro_crew.tips import _load_curated_tips
+        from efm_go.tips import _load_curated_tips
 
         tips = {t["id"]: t for t in _load_curated_tips()}
         expected = {
@@ -2446,7 +2446,7 @@ class TestFeedbackErrorCodes:
         from aiohttp import streams
         from aiohttp.test_utils import make_mocked_request
 
-        from kiro_crew.tips import TipsCache, api_tips_feedback
+        from efm_go.tips import TipsCache, api_tips_feedback
 
         with patch.dict(os.environ, {"KIROCREW_HOME": str(tmp_path)}):
             cache = TipsCache()
@@ -2581,7 +2581,7 @@ class TestProseParagraphExtraction:
 
     def test_bundled_catalog_carries_no_markup_or_emoji(self) -> None:
         """The shipped catalog is served verbatim, so it is checked directly."""
-        from kiro_crew.tips import _BUNDLED_CATALOG_FILE
+        from efm_go.tips import _BUNDLED_CATALOG_FILE
 
         data = json.loads(_BUNDLED_CATALOG_FILE.read_text(encoding="utf-8"))
         for entry in data["entries"]:

@@ -54,7 +54,7 @@ const detail = {
 // The restored curated tips: doc="" (dismissal identity stays empty, so
 // dismissing them cannot suppress the catalog tip for the same doc) while
 // doc_link carries the learn-more target — exactly the shape shipped in
-// src/kiro_crew/data/tips_curated.json.
+// src/efm_go/data/tips_curated.json.
 const TIPS = {
   'subagent-parallelism': {
     id: 'subagent-parallelism',

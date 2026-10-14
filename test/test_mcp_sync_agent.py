@@ -13,12 +13,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from conftest import host_abs
-from kiro_crew.dashboard.handlers.agents import (
+from efm_go.dashboard.handlers.agents import (
     api_capability_mcp_install,
     api_capability_mcp_uninstall,
 )
-from kiro_crew.dashboard.handlers.mcp import _mcp_hot_reload_active as _REAL_GATE
-from kiro_crew.mcp_provenance import without_marker
+from efm_go.dashboard.handlers.mcp import _mcp_hot_reload_active as _REAL_GATE
+from efm_go.mcp_provenance import without_marker
 
 
 @pytest.fixture(autouse=True)
@@ -28,7 +28,7 @@ def _owner_caller(monkeypatch):
     its own enumerate-the-invariant coverage in
     test_agents_endpoints_owner_auth.py."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -41,7 +41,7 @@ def _no_hot_reload(monkeypatch):
     not carry; failing closed there is the production behaviour too.
     ``TestApiMcpSyncHotReload`` overrides it per test."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.mcp._mcp_hot_reload_active",
+        "efm_go.dashboard.handlers.mcp._mcp_hot_reload_active",
         lambda request: False,
     )
 
@@ -78,9 +78,9 @@ def mcp_env(tmp_path: Path):
     )
 
     with (
-        patch("kiro_crew.dashboard.handlers.mcp._GLOBAL_MCP_JSON", mcp_json),
+        patch("efm_go.dashboard.handlers.mcp._GLOBAL_MCP_JSON", mcp_json),
         patch(
-            "kiro_crew.dashboard.handlers.agents._installed_agent_config", return_value=agent_cfg
+            "efm_go.dashboard.handlers.agents._installed_agent_config", return_value=agent_cfg
         ),
     ):
         yield agent_cfg, mcp_json
@@ -104,9 +104,9 @@ async def _sync_one_remote(remote, mcp_env, *, owned: bool = True, marked: bool 
     the marker from the test body, which the collision and reclamation tests do
     because the marker's presence is the thing under test there.
     """
-    from kiro_crew.dashboard.handlers.mcp import api_mcp_sync
-    from kiro_crew.mcp_discovery import SCOPE_KIROCREW
-    from kiro_crew.mcp_provenance import stamp
+    from efm_go.dashboard.handlers.mcp import api_mcp_sync
+    from efm_go.mcp_discovery import SCOPE_KIROCREW
+    from efm_go.mcp_provenance import stamp
 
     _, mcp_json = mcp_env
     if marked:
@@ -120,18 +120,18 @@ async def _sync_one_remote(remote, mcp_env, *, owned: bool = True, marked: bool 
     req.app = {"state": MagicMock()}
     _store = {remote.name: {"url": "https://store"}} if owned else {}
     with (
-        patch("kiro_crew.mcp_discovery.discover_servers_to_sync", return_value=[remote]),
-        patch("kiro_crew.mcp_discovery.sync_to_agent_config", return_value=True),
-        patch("kiro_crew.mcp_discovery.register_servers_for_cc"),
+        patch("efm_go.mcp_discovery.discover_servers_to_sync", return_value=[remote]),
+        patch("efm_go.mcp_discovery.sync_to_agent_config", return_value=True),
+        patch("efm_go.mcp_discovery.register_servers_for_cc"),
         patch(
-            "kiro_crew.mcp_discovery._load_mcp_json_by_source",
+            "efm_go.mcp_discovery._load_mcp_json_by_source",
             return_value={SCOPE_KIROCREW: _store},
         ),
-        patch("kiro_crew.dashboard.handlers.mcp._get_mcp_lock") as mock_lock,
-        patch("kiro_crew.dashboard.handlers.mcp._write_mcp_json") as mock_write,
-        patch("kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent_batch"),
+        patch("efm_go.dashboard.handlers.mcp._get_mcp_lock") as mock_lock,
+        patch("efm_go.dashboard.handlers.mcp._write_mcp_json") as mock_write,
+        patch("efm_go.dashboard.handlers.mcp._sync_mcp_to_agent_batch"),
         patch(
-            "kiro_crew.dashboard.handlers.sessions._reset_all_sessions",
+            "efm_go.dashboard.handlers.sessions._reset_all_sessions",
             new_callable=AsyncMock,
             return_value=1,
         ),
@@ -159,10 +159,10 @@ class TestGlobalWritesAreOwnershipGated:
     @staticmethod
     def _own(names: set[str]):
         """Patch the store scope so ``kirocrew_managed_names`` sees exactly ``names``."""
-        from kiro_crew.mcp_discovery import SCOPE_KIROCREW
+        from efm_go.mcp_discovery import SCOPE_KIROCREW
 
         return patch(
-            "kiro_crew.mcp_discovery._load_mcp_json_by_source",
+            "efm_go.mcp_discovery._load_mcp_json_by_source",
             return_value={SCOPE_KIROCREW: {n: {"url": "https://store"} for n in names}},
         )
 
@@ -175,8 +175,8 @@ class TestGlobalWritesAreOwnershipGated:
         explicitly to build the third state -- a managed name whose global entry
         we cannot prove we wrote.
         """
-        from kiro_crew.mcp_discovery import McpServerInfo
-        from kiro_crew.mcp_provenance import stamp
+        from efm_go.mcp_discovery import McpServerInfo
+        from efm_go.mcp_provenance import stamp
 
         _, mcp_json = mcp_env
         data = _load(mcp_json)
@@ -201,7 +201,7 @@ class TestGlobalWritesAreOwnershipGated:
 
     def _cc_sidecar(self, *, managed: bool, tmp_path) -> dict:
         """Register a remote into the CC sidecar."""
-        from kiro_crew.mcp_discovery import McpServerInfo, register_servers_for_cc
+        from efm_go.mcp_discovery import McpServerInfo, register_servers_for_cc
 
         sidecar = tmp_path / "cc.json"
         remote = McpServerInfo(
@@ -270,10 +270,10 @@ class TestGlobalWritesAreOwnershipGated:
 
     def test_a_malformed_store_value_does_not_make_a_name_managed(self, tmp_path):
         """Same discriminator as the agent-spec path: a non-dict is not ownership."""
-        from kiro_crew.mcp_discovery import SCOPE_KIROCREW, kirocrew_managed_names
+        from efm_go.mcp_discovery import SCOPE_KIROCREW, kirocrew_managed_names
 
         with patch(
-            "kiro_crew.mcp_discovery._load_mcp_json_by_source",
+            "efm_go.mcp_discovery._load_mcp_json_by_source",
             return_value={SCOPE_KIROCREW: {"good": {"url": "https://x"}, "bad": "not-a-dict"}},
         ):
             assert kirocrew_managed_names() == {"good"}
@@ -307,7 +307,7 @@ class TestExactNameCollisionIsDecidedByTheMarker:
         ``entry`` is deliberately untyped: a hand-edited file can hold a string
         or ``null`` under a server name, and that shape has to reach the write.
         """
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         _, mcp_json = mcp_env
         data = _load(mcp_json)
@@ -322,7 +322,7 @@ class TestExactNameCollisionIsDecidedByTheMarker:
 
         The entry carries our marker, so the move is provably ours to make.
         """
-        from kiro_crew.mcp_provenance import stamp
+        from efm_go.mcp_provenance import stamp
 
         written = await self._sync_over_global(
             stamp({"url": "https://a.example.com/mcp"}), mcp_env
@@ -361,7 +361,7 @@ class TestExactNameCollisionIsDecidedByTheMarker:
         touched, so a MARKED entry carrying one must still sync. The marker, not
         the sub-key, is what decides.
         """
-        from kiro_crew.mcp_provenance import stamp
+        from efm_go.mcp_provenance import stamp
 
         written = await self._sync_over_global(
             stamp({"url": "https://a.example.com/mcp", "oauth": {"issuer": "https://i"}}),
@@ -398,7 +398,7 @@ class TestExactNameCollisionIsDecidedByTheMarker:
         entries stay unmanaged (re-established with Disconnect then Connect, which
         creates stamped) and reclamation holds.
         """
-        from kiro_crew.mcp_provenance import is_marked, stamp, without_marker
+        from efm_go.mcp_provenance import is_marked, stamp, without_marker
 
         settled = await self._sync_over_global(
             stamp({"url": "https://b.example.net/mcp"}), mcp_env
@@ -425,7 +425,7 @@ class TestExactNameCollisionIsDecidedByTheMarker:
         fields, so an unknown key never reaches it -- this pins that, because the
         failure mode is silent write amplification rather than a wrong value.
         """
-        from kiro_crew.mcp_provenance import is_marked, stamp
+        from efm_go.mcp_provenance import is_marked, stamp
 
         first = await self._sync_over_global(stamp({"url": "https://b.example.net/mcp"}), mcp_env)
         assert is_marked(first)
@@ -445,14 +445,14 @@ class TestExactNameCollisionIsDecidedByTheMarker:
         That record now exists, so both surfaces propagate. Pinning them together
         means a change to either one has to say so.
         """
-        from kiro_crew.mcp_provenance import stamp
+        from efm_go.mcp_provenance import stamp
 
         if site == "kiro_global":
             written = await self._sync_over_global(
                 stamp({"url": "https://a.example.com/mcp"}), mcp_env
             )
         else:
-            from kiro_crew.mcp_discovery import McpServerInfo, register_servers_for_cc
+            from efm_go.mcp_discovery import McpServerInfo, register_servers_for_cc
 
             sidecar = tmp_path / "cc.json"
             sidecar.write_text(
@@ -478,7 +478,7 @@ class TestExactNameCollisionIsDecidedByTheMarker:
         diverge from the discovered source and does enter the sync set for the
         surfaces that can act on it.
         """
-        from kiro_crew import mcp_discovery as md
+        from efm_go import mcp_discovery as md
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -525,8 +525,8 @@ class TestExactNameCollisionIsDecidedByTheMarker:
         agent config and the kiro-global file now reaches this surface too --
         unless the entry carries no marker, in which case add-only still holds.
         """
-        from kiro_crew import mcp_discovery as md
-        from kiro_crew.mcp_provenance import stamp, without_marker
+        from efm_go import mcp_discovery as md
+        from efm_go.mcp_provenance import stamp, without_marker
 
         agents = tmp_path / "agents"
         agents.mkdir()
@@ -579,8 +579,8 @@ class TestExactNameCollisionIsDecidedByTheMarker:
         we are the ones authoring it. That stamp is what lets the next sync tell
         this entry apart from one the user typed.
         """
-        from kiro_crew.mcp_discovery import McpServerInfo, register_servers_for_cc
-        from kiro_crew.mcp_provenance import is_marked, without_marker
+        from efm_go.mcp_discovery import McpServerInfo, register_servers_for_cc
+        from efm_go.mcp_provenance import is_marked, without_marker
 
         sidecar = tmp_path / "cc.json"
         sidecar.write_text(json.dumps({"mcpServers": {}}))
@@ -620,7 +620,7 @@ class TestAPresentButUnreadableEntryIsNotACreate:
         assert written == "not-a-dict"
 
     def test_a_malformed_sidecar_entry_survives_a_managed_sync(self, tmp_path):
-        from kiro_crew.mcp_discovery import McpServerInfo, register_servers_for_cc
+        from efm_go.mcp_discovery import McpServerInfo, register_servers_for_cc
 
         sidecar = tmp_path / "cc.json"
         sidecar.write_text(json.dumps({"mcpServers": {"collide": "not-a-dict"}}))
@@ -633,7 +633,7 @@ class TestAPresentButUnreadableEntryIsNotACreate:
 
     def test_a_null_sidecar_entry_is_not_mistaken_for_absence(self, tmp_path):
         """The shape that made ``None`` unusable as the absence signal."""
-        from kiro_crew.mcp_discovery import McpServerInfo, register_servers_for_cc
+        from efm_go.mcp_discovery import McpServerInfo, register_servers_for_cc
 
         sidecar = tmp_path / "cc.json"
         sidecar.write_text(json.dumps({"mcpServers": {"collide": None}}))
@@ -656,7 +656,7 @@ class TestSidecarStdioWritesAreGatedToo:
 
     @staticmethod
     def _sync_stdio(sidecar: Path, on_disk: object, managed: bool = True) -> bool:
-        from kiro_crew.mcp_discovery import McpServerInfo, register_servers_for_cc
+        from efm_go.mcp_discovery import McpServerInfo, register_servers_for_cc
 
         sidecar.write_text(json.dumps({"mcpServers": {"collide": on_disk}}))
         local = McpServerInfo(name="collide", command="/opt/ours", source="discovered")
@@ -666,14 +666,14 @@ class TestSidecarStdioWritesAreGatedToo:
     def test_a_colliding_hand_authored_stdio_entry_is_preserved(self, tmp_path, caplog):
         theirs = {"command": "/usr/local/bin/theirs", "args": ["--their-flag"]}
         sidecar = tmp_path / "cc.json"
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.mcp_provenance"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.mcp_provenance"):
             assert self._sync_stdio(sidecar, dict(theirs)) is False
         assert json.loads(sidecar.read_text())["mcpServers"]["collide"] == theirs
         assert "collide" in caplog.text
 
     def test_a_marked_stdio_entry_still_re_syncs(self, tmp_path):
         """The propagation the gate must not break."""
-        from kiro_crew.mcp_provenance import stamp, without_marker
+        from efm_go.mcp_provenance import stamp, without_marker
 
         sidecar = tmp_path / "cc.json"
         assert self._sync_stdio(sidecar, stamp({"command": "/opt/old"})) is True
@@ -681,11 +681,11 @@ class TestSidecarStdioWritesAreGatedToo:
         assert without_marker(written) == {"command": "/opt/ours", "args": [], "type": "stdio"}
 
     def test_an_absent_stdio_name_is_created_stamped(self, tmp_path):
-        from kiro_crew.mcp_provenance import is_marked
+        from efm_go.mcp_provenance import is_marked
 
         sidecar = tmp_path / "cc.json"
         sidecar.write_text(json.dumps({"mcpServers": {}}))
-        from kiro_crew.mcp_discovery import McpServerInfo, register_servers_for_cc
+        from efm_go.mcp_discovery import McpServerInfo, register_servers_for_cc
 
         local = McpServerInfo(name="fresh", command="/opt/ours", source="discovered")
         with TestGlobalWritesAreOwnershipGated._own({"fresh"}):
@@ -694,11 +694,11 @@ class TestSidecarStdioWritesAreGatedToo:
 
     def test_an_unmanaged_stdio_name_is_never_stamped(self, tmp_path):
         """Add-only for a name we do not manage, and no marker claiming it."""
-        from kiro_crew.mcp_provenance import is_marked
+        from efm_go.mcp_provenance import is_marked
 
         sidecar = tmp_path / "cc.json"
         sidecar.write_text(json.dumps({"mcpServers": {}}))
-        from kiro_crew.mcp_discovery import McpServerInfo, register_servers_for_cc
+        from efm_go.mcp_discovery import McpServerInfo, register_servers_for_cc
 
         local = McpServerInfo(name="theirs", command="/opt/ours", source="discovered")
         with TestGlobalWritesAreOwnershipGated._own(set()):
@@ -711,7 +711,7 @@ class TestSidecarStdioWritesAreGatedToo:
 class TestSyncMcpToAgent:
     def test_enable_adds_server_and_tool_refs(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("slack-mcp", enabled=True)
         cfg = _load(agent_cfg)
@@ -721,7 +721,7 @@ class TestSyncMcpToAgent:
 
     def test_enable_preserves_existing_server(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("builder-mcp", enabled=True)
         cfg = _load(agent_cfg)
@@ -732,7 +732,7 @@ class TestSyncMcpToAgent:
         d = json.loads(mcp_json.read_text(encoding="utf-8"))
         d["mcpServers"]["slack-mcp"]["disabled"] = True
         mcp_json.write_text(json.dumps(d))
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("slack-mcp", enabled=True)
         cfg = _load(agent_cfg)
@@ -740,7 +740,7 @@ class TestSyncMcpToAgent:
 
     def test_enable_noop_when_already_present(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("builder-mcp", enabled=True)
         cfg = _load(agent_cfg)
@@ -748,7 +748,7 @@ class TestSyncMcpToAgent:
 
     def test_disable_removes_tool_refs(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("builder-mcp", enabled=False)
         cfg = _load(agent_cfg)
@@ -760,7 +760,7 @@ class TestSyncMcpToAgent:
         kiro-cli's live reconcile; ``disabled: true`` on the entry is what stops
         the process — and spares a cold session the spawn."""
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("builder-mcp", enabled=False)
         cfg = _load(agent_cfg)
@@ -773,7 +773,7 @@ class TestSyncMcpToAgent:
         cfg["mcpServers"]["ns/tool-mcp"] = {"command": "legacy"}
         cfg["mcpServers"]["ns-tool-mcp"] = {"command": "alias"}
         agent_cfg.write_text(json.dumps(cfg))
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("ns/tool-mcp", enabled=False)
         cfg = _load(agent_cfg)
@@ -785,14 +785,14 @@ class TestSyncMcpToAgent:
         cfg = _load(agent_cfg)
         cfg["mcpServers"]["builder-mcp"] = "builder-mcp"
         agent_cfg.write_text(json.dumps(cfg))
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("builder-mcp", enabled=False)
         assert _load(agent_cfg)["mcpServers"]["builder-mcp"] == "builder-mcp"
 
     def test_reenable_lifts_the_disabled_marker(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("builder-mcp", enabled=False)
         _sync_mcp_to_agent("builder-mcp", enabled=True)
@@ -802,14 +802,14 @@ class TestSyncMcpToAgent:
 
     def test_remove_does_not_leave_a_disabled_ghost(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("builder-mcp", enabled=False, remove=True)
         assert "builder-mcp" not in _load(agent_cfg)["mcpServers"]
 
     def test_remove_deletes_server_entry(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("builder-mcp", enabled=False, remove=True)
         cfg = _load(agent_cfg)
@@ -818,7 +818,7 @@ class TestSyncMcpToAgent:
     def test_enable_returns_early_on_missing_mcp_json(self, mcp_env):
         agent_cfg, mcp_json = mcp_env
         mcp_json.unlink()
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent
 
         _sync_mcp_to_agent("slack-mcp", enabled=True)
         cfg = _load(agent_cfg)
@@ -828,7 +828,7 @@ class TestSyncMcpToAgent:
 class TestSyncMcpToAgentBatch:
     def test_enable_adds_multiple_servers(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
 
         _sync_mcp_to_agent_batch(["slack-mcp", "outlook-mcp"], enabled=True)
         cfg = _load(agent_cfg)
@@ -839,7 +839,7 @@ class TestSyncMcpToAgentBatch:
 
     def test_disable_removes_multiple_tool_refs(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
 
         _sync_mcp_to_agent_batch(["builder-mcp"], enabled=False)
         cfg = _load(agent_cfg)
@@ -847,7 +847,7 @@ class TestSyncMcpToAgentBatch:
 
     def test_batch_disable_marks_entries_and_reenable_lifts(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
 
         _sync_mcp_to_agent_batch(["slack-mcp"], enabled=True)
         _sync_mcp_to_agent_batch(["builder-mcp", "slack-mcp"], enabled=False)
@@ -866,7 +866,7 @@ class TestSyncMcpToAgentBatch:
         """Post #15 fix: existing servers get tool refs even when mcp.json missing."""
         agent_cfg, mcp_json = mcp_env
         mcp_json.unlink()
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
 
         _sync_mcp_to_agent_batch(["builder-mcp"], enabled=True)
         cfg = _load(agent_cfg)
@@ -878,7 +878,7 @@ class TestSyncMcpToAgentBatch:
         d = json.loads(mcp_json.read_text(encoding="utf-8"))
         d["mcpServers"]["bad-server"] = "not-a-dict"
         mcp_json.write_text(json.dumps(d))
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
 
         _sync_mcp_to_agent_batch(["bad-server"], enabled=True)
         cfg = _load(agent_cfg)
@@ -886,7 +886,7 @@ class TestSyncMcpToAgentBatch:
 
     def test_noop_returns_without_write(self, mcp_env):
         agent_cfg, _ = mcp_env
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent_batch
 
         _sync_mcp_to_agent_batch(["builder-mcp"], enabled=True)
         cfg = _load(agent_cfg)
@@ -897,7 +897,7 @@ class TestAimMcpInstallSync:
 
     @staticmethod
     def _mgr(ok: bool):
-        from kiro_crew.platform.interfaces import CapabilityResult
+        from efm_go.platform.interfaces import CapabilityResult
 
         m = MagicMock()
         m.available.return_value = True
@@ -916,10 +916,10 @@ class TestAimMcpInstallSync:
         req.app = {"state": MagicMock()}
         with (
             patch(
-                "kiro_crew.dashboard.handlers.agents._capability_manager",
+                "efm_go.dashboard.handlers.agents._capability_manager",
                 return_value=self._mgr(ok=True),
             ),
-            patch("kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent") as mock_sync,
+            patch("efm_go.dashboard.handlers.mcp._sync_mcp_to_agent") as mock_sync,
         ):
             resp = await api_capability_mcp_install(req)
 
@@ -933,10 +933,10 @@ class TestAimMcpInstallSync:
         req.app = {"state": MagicMock()}
         with (
             patch(
-                "kiro_crew.dashboard.handlers.agents._capability_manager",
+                "efm_go.dashboard.handlers.agents._capability_manager",
                 return_value=self._mgr(ok=False),
             ),
-            patch("kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent") as mock_sync,
+            patch("efm_go.dashboard.handlers.mcp._sync_mcp_to_agent") as mock_sync,
         ):
             resp = await api_capability_mcp_install(req)
 
@@ -950,10 +950,10 @@ class TestAimMcpInstallSync:
         req.app = {"state": MagicMock()}
         with (
             patch(
-                "kiro_crew.dashboard.handlers.agents._capability_manager",
+                "efm_go.dashboard.handlers.agents._capability_manager",
                 return_value=self._mgr(ok=True),
             ),
-            patch("kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent") as mock_sync,
+            patch("efm_go.dashboard.handlers.mcp._sync_mcp_to_agent") as mock_sync,
         ):
             resp = await api_capability_mcp_uninstall(req)
 
@@ -967,10 +967,10 @@ class TestAimMcpInstallSync:
         req.app = {"state": MagicMock()}
         with (
             patch(
-                "kiro_crew.dashboard.handlers.agents._capability_manager",
+                "efm_go.dashboard.handlers.agents._capability_manager",
                 return_value=self._mgr(ok=False),
             ),
-            patch("kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent") as mock_sync,
+            patch("efm_go.dashboard.handlers.mcp._sync_mcp_to_agent") as mock_sync,
         ):
             resp = await api_capability_mcp_uninstall(req)
 
@@ -983,7 +983,7 @@ class TestApiMcpSyncToolsUpdate:
     @pytest.mark.asyncio
     async def test_sync_adds_tools_for_discovered_servers(self, mcp_env):
         """api_mcp_sync should call _sync_mcp_to_agent_batch for new servers."""
-        from kiro_crew.dashboard.handlers.mcp import api_mcp_sync
+        from efm_go.dashboard.handlers.mcp import api_mcp_sync
 
         agent_cfg, _ = mcp_env
 
@@ -999,21 +999,21 @@ class TestApiMcpSyncToolsUpdate:
 
         with (
             patch(
-                "kiro_crew.mcp_discovery.discover_servers_to_sync",
+                "efm_go.mcp_discovery.discover_servers_to_sync",
                 return_value=[mock_server],
             ),
             patch(
-                "kiro_crew.mcp_discovery.sync_to_agent_config",
+                "efm_go.mcp_discovery.sync_to_agent_config",
                 return_value=True,
             ),
-            patch("kiro_crew.mcp_discovery.register_servers_for_cc"),
-            patch("kiro_crew.dashboard.handlers.mcp._get_mcp_lock") as mock_lock,
-            patch("kiro_crew.dashboard.handlers.mcp._write_mcp_json"),
+            patch("efm_go.mcp_discovery.register_servers_for_cc"),
+            patch("efm_go.dashboard.handlers.mcp._get_mcp_lock") as mock_lock,
+            patch("efm_go.dashboard.handlers.mcp._write_mcp_json"),
             patch(
-                "kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent_batch",
+                "efm_go.dashboard.handlers.mcp._sync_mcp_to_agent_batch",
             ) as mock_batch,
             patch(
-                "kiro_crew.dashboard.handlers.sessions._reset_all_sessions",
+                "efm_go.dashboard.handlers.sessions._reset_all_sessions",
                 new_callable=AsyncMock,
                 return_value=1,
             ),
@@ -1035,7 +1035,7 @@ class TestApiMcpSyncToolsUpdate:
         sync instead would let one typo in one entry block every other server's
         legitimate re-sync.
         """
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         _, mcp_json = mcp_env
         data = _load(mcp_json)
@@ -1059,14 +1059,14 @@ class TestApiMcpSyncToolsUpdate:
 
     def test_discovery_can_deliver_a_non_dict_header_map(self, tmp_path: Path):
         """The writer's guard is reachable: discovery does not coerce a truthy non-dict."""
-        from kiro_crew.mcp_discovery import discover_servers_to_sync
+        from efm_go.mcp_discovery import discover_servers_to_sync
 
         with (
             patch(
-                "kiro_crew.mcp_discovery._load_mcp_json",
+                "efm_go.mcp_discovery._load_mcp_json",
                 return_value={"remote": {"url": "https://mcp.example.com/v1", "headers": "bad"}},
             ),
-            patch("kiro_crew.mcp_discovery._load_agent_config", return_value={"mcpServers": {}}),
+            patch("efm_go.mcp_discovery._load_agent_config", return_value={"mcpServers": {}}),
         ):
             out = discover_servers_to_sync()
         assert [s.headers for s in out] == ["bad"], "a truthy non-dict passes through unchanged"
@@ -1079,7 +1079,7 @@ class TestApiMcpSyncToolsUpdate:
         here; a header present only in the kiro-global file is absent from it.
         Replacing the map wholesale would delete that credential outright.
         """
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         _, mcp_json = mcp_env
         data = _load(mcp_json)
@@ -1111,7 +1111,7 @@ class TestApiMcpSyncToolsUpdate:
         sent your credential somewhere else". Dropping it costs a re-auth, which
         is recoverable; forwarding it is not.
         """
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         _, mcp_json = mcp_env
         data = _load(mcp_json)
@@ -1142,7 +1142,7 @@ class TestApiMcpSyncToolsUpdate:
         a path the overlay's guard never sees. The url test has to sit ahead of
         both branches, not inside one.
         """
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         _, mcp_json = mcp_env
         data = _load(mcp_json)
@@ -1164,7 +1164,7 @@ class TestApiMcpSyncToolsUpdate:
     @pytest.mark.asyncio
     async def test_sync_writes_remote_url_and_headers_to_global_config(self, mcp_env):
         """A remote sync must never be serialized as an empty stdio command."""
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         _, mcp_json = mcp_env
         data = _load(mcp_json)
@@ -1198,7 +1198,7 @@ class TestApiMcpSyncToolsUpdate:
         unknown keys silently, so asserting the internal ``scopes``/``clientId``
         spellings here would guard the bug instead of the fix.
         """
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         remote = McpServerInfo(
             name="remote",
@@ -1217,7 +1217,7 @@ class TestApiMcpSyncToolsUpdate:
     @pytest.mark.asyncio
     async def test_sync_removes_oauth_hints_dropped_upstream(self, mcp_env):
         """Absent upstream means REMOVED, so narrowing a scope actually narrows it."""
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         _, mcp_json = mcp_env
         data = _load(mcp_json)
@@ -1254,7 +1254,7 @@ class TestApiMcpSyncToolsUpdate:
             "headers": {"Authorization": "Bearer user-typed"},
         }
         mcp_json.write_text(json.dumps(data))
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         remote = McpServerInfo(
             name="remote", url="https://mcp.example.com/v1", source="discovered"
@@ -1277,7 +1277,7 @@ class TestApiMcpSyncToolsUpdate:
             "oauth": {"issuer": "https://issuer.example.com", "clientId": "old-id"},
         }
         mcp_json.write_text(json.dumps(data))
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         remote = McpServerInfo(
             name="remote",
@@ -1307,11 +1307,11 @@ class TestApiMcpSyncToolsUpdate:
             "scopes": ["read", 7],
         }
         mcp_json.write_text(json.dumps(data))
-        from kiro_crew.mcp_discovery import _spec_scopes
+        from efm_go.mcp_discovery import _spec_scopes
 
         assert _spec_scopes(data["mcpServers"]["remote"]) == [], "readback must omit, not truncate"
 
-        from kiro_crew.mcp_discovery import McpServerInfo
+        from efm_go.mcp_discovery import McpServerInfo
 
         remote = McpServerInfo(
             name="remote",
@@ -1326,21 +1326,21 @@ class TestApiMcpSyncToolsUpdate:
     @pytest.mark.asyncio
     async def test_sync_no_tools_update_when_nothing_discovered(self, mcp_env):
         """api_mcp_sync should not call _sync_mcp_to_agent_batch when empty."""
-        from kiro_crew.dashboard.handlers.mcp import api_mcp_sync
+        from efm_go.dashboard.handlers.mcp import api_mcp_sync
 
         req = MagicMock()
         req.app = {"state": MagicMock()}
 
         with (
             patch(
-                "kiro_crew.mcp_discovery.discover_servers_to_sync",
+                "efm_go.mcp_discovery.discover_servers_to_sync",
                 return_value=[],
             ),
             patch(
-                "kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent_batch",
+                "efm_go.dashboard.handlers.mcp._sync_mcp_to_agent_batch",
             ) as mock_batch,
             patch(
-                "kiro_crew.dashboard.handlers.sessions._reset_all_sessions",
+                "efm_go.dashboard.handlers.sessions._reset_all_sessions",
                 new_callable=AsyncMock,
                 return_value=0,
             ),
@@ -1367,11 +1367,11 @@ class TestApiMcpSyncHotReload:
     async def _run(
         monkeypatch, *, active: list, warm: list | None = None
     ) -> tuple[dict, AsyncMock]:
-        from kiro_crew.dashboard.handlers.mcp import api_mcp_sync
+        from efm_go.dashboard.handlers.mcp import api_mcp_sync
 
         # The real gate over the request's session registry; the autouse
         # short-circuit is lifted so this class exercises it.
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.mcp._mcp_hot_reload_active", _REAL_GATE)
+        monkeypatch.setattr("efm_go.dashboard.handlers.mcp._mcp_hot_reload_active", _REAL_GATE)
         sessions = MagicMock()
         sessions.active_providers.return_value = list(active)
         sessions.warm_providers.return_value = list(warm or [])
@@ -1381,10 +1381,10 @@ class TestApiMcpSyncHotReload:
         req.app = {"state": state}
         reset = AsyncMock(return_value=3)
         with (
-            patch("kiro_crew.mcp_discovery.discover_servers_to_sync", return_value=[]),
-            patch("kiro_crew.mcp_discovery.sync_to_agent_config", return_value=False),
-            patch("kiro_crew.dashboard.handlers.mcp._sync_mcp_to_agent_batch"),
-            patch("kiro_crew.dashboard.handlers.sessions._reset_all_sessions", reset),
+            patch("efm_go.mcp_discovery.discover_servers_to_sync", return_value=[]),
+            patch("efm_go.mcp_discovery.sync_to_agent_config", return_value=False),
+            patch("efm_go.dashboard.handlers.mcp._sync_mcp_to_agent_batch"),
+            patch("efm_go.dashboard.handlers.sessions._reset_all_sessions", reset),
         ):
             resp = await api_mcp_sync(req)
         assert resp.status == 200
@@ -1449,7 +1449,7 @@ class TestOffloadedSyncHoldsTheConfigLock:
     def test_every_offloaded_sync_is_under_the_config_lock(self) -> None:
 
         lines = (
-            (_REPO_ROOT / "src/kiro_crew/dashboard/handlers/mcp.py").read_text(encoding="utf-8").splitlines()
+            (_REPO_ROOT / "src/efm_go/dashboard/handlers/mcp.py").read_text(encoding="utf-8").splitlines()
         )
         offenders: list[str] = []
         for i, ln in enumerate(lines):
@@ -1469,7 +1469,7 @@ class TestSyncSharesTheFileLockWithBridges:
     def test_both_sync_funcs_hold_the_mcp_file_lock(self) -> None:
         import inspect
 
-        from kiro_crew.dashboard.handlers import mcp
+        from efm_go.dashboard.handlers import mcp
 
         for fn in (mcp._sync_mcp_to_agent, mcp._sync_mcp_to_agent_batch):
             src = inspect.getsource(fn)
@@ -1484,7 +1484,7 @@ class TestSyncStripsGovernedAutoApprove:
     def test_single_sync_strips_autoapprove_when_governed(self) -> None:
         import inspect
 
-        from kiro_crew.dashboard.handlers import mcp
+        from efm_go.dashboard.handlers import mcp
 
         src = inspect.getsource(mcp._sync_mcp_to_agent_unlocked)
         assert 'entry.pop("autoApprove", None)' in src
@@ -1493,7 +1493,7 @@ class TestSyncStripsGovernedAutoApprove:
     def test_batch_sync_strips_autoapprove_when_governed(self) -> None:
         import inspect
 
-        from kiro_crew.dashboard.handlers import mcp
+        from efm_go.dashboard.handlers import mcp
 
         src = inspect.getsource(mcp._sync_mcp_to_agent_batch_unlocked)
         assert '_entry.pop("autoApprove", None)' in src
@@ -1506,8 +1506,8 @@ class TestSyncStripsPreExistingGovernedAutoApprove:
 
     def test_existing_entry_autoapprove_is_stripped(self, mcp_env, monkeypatch):
         agent_cfg, _ = mcp_env
-        import kiro_crew.dashboard.handlers.mcp as mcp
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent, mcp_server_alias
+        import efm_go.dashboard.handlers.mcp as mcp
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent, mcp_server_alias
 
         alias = mcp_server_alias("slack-mcp")
         cfg = _load(agent_cfg)
@@ -1538,8 +1538,8 @@ class TestGovernedSyncAuditsWithheld:
 
     def test_single_governed_emits_withheld_not_added(self, mcp_env, monkeypatch):
         agent_cfg, _ = mcp_env
-        import kiro_crew.dashboard.handlers.mcp as mcp
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent, mcp_server_alias
+        import efm_go.dashboard.handlers.mcp as mcp
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent, mcp_server_alias
 
         rec = self._SelRec()
         monkeypatch.setattr(mcp, "sel", lambda: rec)
@@ -1556,8 +1556,8 @@ class TestGovernedSyncAuditsWithheld:
 
     def test_single_ungoverned_still_emits_added(self, mcp_env, monkeypatch):
         agent_cfg, _ = mcp_env
-        import kiro_crew.dashboard.handlers.mcp as mcp
-        from kiro_crew.dashboard.handlers.mcp import _sync_mcp_to_agent, mcp_server_alias
+        import efm_go.dashboard.handlers.mcp as mcp
+        from efm_go.dashboard.handlers.mcp import _sync_mcp_to_agent, mcp_server_alias
 
         rec = self._SelRec()
         monkeypatch.setattr(mcp, "sel", lambda: rec)
@@ -1573,8 +1573,8 @@ class TestGovernedSyncAuditsWithheld:
 
     def test_batch_governed_emits_withheld_not_added(self, mcp_env, monkeypatch):
         agent_cfg, _ = mcp_env
-        import kiro_crew.dashboard.handlers.mcp as mcp
-        from kiro_crew.dashboard.handlers.mcp import (
+        import efm_go.dashboard.handlers.mcp as mcp
+        from efm_go.dashboard.handlers.mcp import (
             _sync_mcp_to_agent_batch,
             mcp_server_alias,
         )
@@ -1614,13 +1614,13 @@ class TestCapabilityInstallOffloadsTheLockedSync:
         ), f"{fn.__name__} calls _sync_mcp_to_agent on the event loop; offload it"
 
     def test_capability_install_uninstall_offload(self):
-        from kiro_crew.dashboard.handlers import agents
+        from efm_go.dashboard.handlers import agents
 
         self._assert_offloaded(agents.api_capability_mcp_install)
         self._assert_offloaded(agents.api_capability_mcp_uninstall)
 
     def test_discover_capability_install_offloads(self):
-        from kiro_crew.dashboard.handlers import mcp_discover
+        from efm_go.dashboard.handlers import mcp_discover
 
         self._assert_offloaded(mcp_discover._install_via_capability)
 
@@ -1629,7 +1629,7 @@ class TestCcSidecarEnvEmission:
     """The sidecar is a consumed surface — a declared PATH must be complete."""
 
     def test_stdio_env_path_is_expanded_on_write(self, tmp_path, monkeypatch):
-        from kiro_crew import mcp_discovery as md
+        from efm_go import mcp_discovery as md
 
         # Spelled for the host (conftest.host_abs): the declared entry passes
         # through the ``os.path.isabs`` filter in env._spec_path_entries, and from
@@ -1653,7 +1653,7 @@ class TestCcSidecarEnvEmission:
         assert written["env"]["TOKEN"] == "t"
 
     def test_source_env_object_is_not_mutated(self, tmp_path, monkeypatch):
-        from kiro_crew import mcp_discovery as md
+        from efm_go import mcp_discovery as md
 
         monkeypatch.setenv("PATH", "/usr/bin")
         source_env = {"PATH": "/opt/shims"}
@@ -1670,7 +1670,7 @@ class TestSyncDiscoveredServers:
     def test_runs_full_sequence_when_servers_found(self):
         from unittest.mock import patch
 
-        from kiro_crew import mcp_discovery as md
+        from efm_go import mcp_discovery as md
 
         fake = md.McpServerInfo(name="srv", command="x")
         with (
@@ -1692,7 +1692,7 @@ class TestSyncDiscoveredServers:
         write is the one thing skipped."""
         from unittest.mock import patch
 
-        from kiro_crew import mcp_discovery as md
+        from efm_go import mcp_discovery as md
 
         with (
             patch.object(md, "discover_servers_to_sync", return_value=[]),
@@ -1710,7 +1710,7 @@ class TestSyncDiscoveredServers:
         import threading
         from unittest.mock import patch
 
-        from kiro_crew import mcp_discovery as md
+        from efm_go import mcp_discovery as md
 
         active = []
         overlap = []

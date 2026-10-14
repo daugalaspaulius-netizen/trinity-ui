@@ -1,6 +1,6 @@
 # Plugin import
 
-Owner: `kiro_crew.apps.plugin_import`. CLI: `kirocrew app import`. Tests:
+Owner: `efm_go.apps.plugin_import`. CLI: `kirocrew app import`. Tests:
 `test/test_plugin_import.py`.
 
 Converts a manifest-declared plugin package into an installable Kiro Crew app.

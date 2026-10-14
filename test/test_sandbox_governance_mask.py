@@ -12,7 +12,7 @@ fenced only by the first one. These tests pin the reconciliation between them:
 The third is the one worth failing loudly: an entry that quietly moves from "masked" to
 "exception" is a ceiling the agent can rewrite again.
 
-The Linux side is read from the spawn's :class:`~kiro_crew.sandbox_plan.ConfinementPlan`
+The Linux side is read from the spawn's :class:`~efm_go.sandbox_plan.ConfinementPlan`
 (``sandbox._spawn_plan``), whose mask, seal and file lists are what the namespace
 launcher is handed, and the launcher's own seal stage is driven with a recording libc.
 The macOS side is read from the rendered Seatbelt profile.
@@ -27,7 +27,7 @@ import sys
 import pytest
 from test_sandbox_launcher_program import RecordingLibc, launch, refusal
 
-from kiro_crew import sandbox, sandbox_launcher_program, sandbox_plan, security
+from efm_go import sandbox, sandbox_launcher_program, sandbox_plan, security
 
 _POSIX_ONLY = pytest.mark.skipif(sys.platform == "win32", reason="POSIX launcher only")
 #: The launcher program pins its targets as ``/proc/self/fd/<n>``, which only Linux has.
@@ -116,7 +116,7 @@ def _expected_exceptions() -> set[str]:
 def test_run_authority_file_edits_are_refused_on_both_run_roots(
     tmp_path, monkeypatch, leaf, read_refused
 ):
-    from kiro_crew.hooks import TOOL_DENY, HookManager, HooksConfig
+    from efm_go.hooks import TOOL_DENY, HookManager, HooksConfig
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
     target = tmp_path / leaf / "run-one" / "state.json"
@@ -299,9 +299,9 @@ class TestAbsentRegistryTrustIsSealedByPrecreation:
 
     def test_an_empty_document_reads_as_no_grants(self, tmp_path, monkeypatch) -> None:
         """Criterion 1: the ``{}`` the launcher materialises means what an absent file means."""
-        from kiro_crew.apps import registry_trust as rt
-        from kiro_crew.apps.registry_pipeline import sources
-        from kiro_crew.config import loader
+        from efm_go.apps import registry_trust as rt
+        from efm_go.apps.registry_pipeline import sources
+        from efm_go.config import loader
 
         path = tmp_path / "registry_trust.json"
         monkeypatch.setattr(loader, "registry_trust_path", lambda: path)
@@ -550,7 +550,7 @@ class TestARelocatedDataHomeIsCoveredToo:
 
     @staticmethod
     def _relocate(monkeypatch, tmp_path) -> str:
-        from kiro_crew.config.paths import config_dir
+        from efm_go.config.paths import config_dir
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "relocated-crew"))
         return str(config_dir())
@@ -737,7 +737,7 @@ class TestAppBackendOwnedLeaves:
         """
         import inspect
 
-        from kiro_crew.apps import backend as backend_mod
+        from efm_go.apps import backend as backend_mod
 
         src = inspect.getsource(backend_mod._start_app_backend_body)
         assert "app_backend_visible_targets(app_name)" in src
@@ -857,7 +857,7 @@ class TestForeignMaskShadowGuard:
         mask for the CLI child, so the transfer must raise before ``_checked``
         runs -- and the per-call directory must still be cleaned up.
         """
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         monkeypatch.setattr(sandbox.Path, "home", staticmethod(lambda: tmp_path))
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / ".gnupg" / "relocated-crew"))
@@ -898,7 +898,7 @@ class TestForeignMaskShadowGuard:
         branches. The shadowed layout is asserted through the guard first, so
         this cannot pass by the layout being safe.
         """
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         monkeypatch.setattr(sandbox.Path, "home", staticmethod(lambda: tmp_path))
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / ".gnupg" / "relocated-crew"))
@@ -938,7 +938,7 @@ class TestForeignMaskShadowGuard:
         skip the refusal for a spawn that then applies the lift, which is the one
         direction this path must never fail in.
         """
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         monkeypatch.setattr(sandbox.Path, "home", staticmethod(lambda: tmp_path))
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / ".gnupg" / "relocated-crew"))
@@ -981,9 +981,9 @@ class TestForeignMaskShadowGuard:
         """
         import inspect
 
-        from kiro_crew.apps import backend as backend_mod
-        from kiro_crew.apps.builtins.aws_control.backend import storage as storage_mod
-        from kiro_crew.monitoring import provider_cli as provider_cli_mod
+        from efm_go.apps import backend as backend_mod
+        from efm_go.apps.builtins.aws_control.backend import storage as storage_mod
+        from efm_go.monitoring import provider_cli as provider_cli_mod
 
         for name, obj in (
             ("app_backend_visible_targets", sandbox.app_backend_visible_targets),
@@ -1046,7 +1046,7 @@ class TestForeignMaskShadowGuard:
         """
         import inspect
 
-        from kiro_crew.apps import backend as backend_mod
+        from efm_go.apps import backend as backend_mod
 
         src = inspect.getsource(backend_mod._start_app_backend_body)
         assert "carveout_shadowed_by_foreign_mask(_cache_target)" in src

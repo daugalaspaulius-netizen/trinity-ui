@@ -24,10 +24,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.appearance_packs import sounds as snd
-from kiro_crew.appearance_packs import store as st
-from kiro_crew.appearance_packs import transfer as transfer_mod
-from kiro_crew.appearance_packs.transfer import export_bundle, import_bundle, save_sprite_pack
+from efm_go.appearance_packs import sounds as snd
+from efm_go.appearance_packs import store as st
+from efm_go.appearance_packs import transfer as transfer_mod
+from efm_go.appearance_packs.transfer import export_bundle, import_bundle, save_sprite_pack
 
 #: A structurally recognisable WAV: the sniffer reads the RIFF/WAVE header, and
 #: nothing here needs it to be playable.

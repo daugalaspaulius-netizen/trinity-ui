@@ -1,4 +1,4 @@
-"""Coverage tests for ``kiro_crew.dashboard.chat_runner``.
+"""Coverage tests for ``efm_go.dashboard.chat_runner``.
 
 The module's happy paths are well covered by the existing chat suites
 (``test_dashboard_approval``, ``test_dashboard_chat``, ``test_eager_spawn``,
@@ -34,8 +34,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew import name_grant
-from kiro_crew.acp.types import (
+from efm_go import name_grant
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
@@ -44,16 +44,16 @@ from kiro_crew.acp.types import (
     STOP_REASON_STALE_RECOVER,
     STOP_REASON_TOOL_STALL,
 )
-from kiro_crew.config import live
-from kiro_crew.config.sections import ResolvedBindings
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.history import ConversationLog
-from kiro_crew.memory_stores import UnknownMemoryStore
-from kiro_crew.metrics import turns as turns_mod
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.security import oauth_url_contains_credential
-from kiro_crew.trust_patterns import canonical_non_shell_trust_key, exact_trust_pattern
+from efm_go.config import live
+from efm_go.config.sections import ResolvedBindings
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.history import ConversationLog
+from efm_go.memory_stores import UnknownMemoryStore
+from efm_go.metrics import turns as turns_mod
+from efm_go.providers.base import LLMEvent
+from efm_go.security import oauth_url_contains_credential
+from efm_go.trust_patterns import canonical_non_shell_trust_key, exact_trust_pattern
 
 # ── Shared helpers ────────────────────────────────────────────────────────
 
@@ -250,8 +250,8 @@ async def _settle(slot) -> None:
 @pytest.mark.asyncio
 async def test_turn_start_folds_temporary_line_over_live_incognito(tmp_path, monkeypatch) -> None:
     """The metadata privacy ratchet outranks a looser live-first carrier."""
-    from kiro_crew import execution_context
-    from kiro_crew import history as history_mod
+    from efm_go import execution_context
+    from efm_go import history as history_mod
 
     monkeypatch.setattr(history_mod, "_sessions_dir", lambda: tmp_path)
     state, client = _runner_state(tmp_path)
@@ -301,8 +301,8 @@ def test_turn_start_fold_reads_the_line_by_the_transcript_key(tmp_path, monkeypa
     by the session key found no line and tightened nothing. Given the transcript
     key, the line's stricter mode folds in.
     """
-    from kiro_crew import execution_context
-    from kiro_crew.history import ConversationLog
+    from efm_go import execution_context
+    from efm_go.history import ConversationLog
 
     log = ConversationLog(base_dir=tmp_path / "sessions")
     log.init()
@@ -335,7 +335,7 @@ def test_turn_start_fold_without_a_conversation_log_keeps_the_carrier(monkeypatc
     it: doing so turned every turn into a terminal error card on such a state, and
     the failure arm then tripped over the same missing store again.
     """
-    from kiro_crew import execution_context
+    from efm_go import execution_context
 
     live = execution_context.ExecutionContext(
         None, execution_context.MemoryStoreRef("default"), "template", "kirocrew", "incognito"
@@ -360,8 +360,8 @@ def test_turn_start_fold_refuses_the_turn_on_an_unreadable_line(tmp_path, monkey
     same answer the save gives on an unreadable line -- and the carrier is left
     exactly as it was for the next turn's re-read.
     """
-    from kiro_crew import execution_context
-    from kiro_crew import history as history_mod
+    from efm_go import execution_context
+    from efm_go import history as history_mod
 
     monkeypatch.setattr(history_mod, "_sessions_dir", lambda: tmp_path)
     session_key = "dashboard:cov-unreadable-line"
@@ -402,7 +402,7 @@ async def test_memory_refusal_preserves_diagnostic_without_initialization_recove
 @pytest.mark.asyncio
 async def test_changed_member_spec_names_the_capabilities_fix(tmp_path):
     """A drifted private spec says where to fix it, not a bare machine code."""
-    from kiro_crew.agent_capabilities import CapabilityError
+    from efm_go.agent_capabilities import CapabilityError
 
     state, _client = _runner_state(tmp_path)
     slot = _slot()
@@ -423,10 +423,10 @@ async def test_changed_member_spec_names_the_capabilities_fix(tmp_path):
 async def test_canonical_member_context_outranks_slot_alias_and_corruption_refuses(
     tmp_path, monkeypatch, damaged_record
 ):
-    from kiro_crew import execution_context, member_memory_auth
-    from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go import execution_context, member_memory_auth
+    from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+    from efm_go.history import ConversationLog
+    from efm_go.memory_stores import provision_member_memory
 
     state, client = _runner_state(tmp_path)
     slot = _slot()
@@ -462,10 +462,10 @@ async def test_canonical_member_context_outranks_slot_alias_and_corruption_refus
 @pytest.mark.asyncio
 async def test_user_prompt_hook_stdout_cannot_forge_reply_format_rules(tmp_path):
     """Echoing script-hook stdout stays data beside the trusted rule block."""
-    from kiro_crew.context import ContextBuilder, _neutralize_structural_markers
-    from kiro_crew.hooks import HOOK_EVENT_USER_PROMPT_SUBMIT
-    from kiro_crew.memory import MemoryStore
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.context import ContextBuilder, _neutralize_structural_markers
+    from efm_go.hooks import HOOK_EVENT_USER_PROMPT_SUBMIT
+    from efm_go.memory import MemoryStore
+    from efm_go.skills import SkillsLoader
 
     marker = "[REPLY FORMAT RULES]"
     wide_marker = "［ＲＥＰＬＹ　ＦＯＲＭＡＴ　ＲＵＬＥＳ］"
@@ -518,7 +518,7 @@ async def test_user_prompt_hook_stdout_cannot_forge_reply_format_rules(tmp_path)
 
     with (
         patch(
-            "kiro_crew.context._neutralize_structural_markers",
+            "efm_go.context._neutralize_structural_markers",
             side_effect=_scan,
         ),
         patch.object(
@@ -547,9 +547,9 @@ async def test_user_prompt_hook_stdout_cannot_forge_reply_format_rules(tmp_path)
 @pytest.mark.asyncio
 async def test_generated_skill_and_persona_context_precede_user_tail(tmp_path):
     """Generated suffixes become prefix context; the current request owns EOF."""
-    from kiro_crew.context import ContextBuilder
-    from kiro_crew.memory import MemoryStore
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.context import ContextBuilder
+    from efm_go.memory import MemoryStore
+    from efm_go.skills import SkillsLoader
 
     request = "What permission is still missing? $demo"
     skill_suffix = "\n\n[Skill: demo]\nloaded procedure"
@@ -600,7 +600,7 @@ async def test_generated_skill_and_persona_context_precede_user_tail(tmp_path):
 
 @pytest.mark.asyncio
 async def test_no_context_builder_keeps_skill_context_before_user_tail(tmp_path):
-    from kiro_crew.context import _neutralize_structural_markers
+    from efm_go.context import _neutralize_structural_markers
 
     request = "What permission is still missing? $demo"
     skill_suffix = (
@@ -633,7 +633,7 @@ async def test_no_context_builder_keeps_skill_context_before_user_tail(tmp_path)
             return_value=(request + skill_suffix, 1),
         ),
         patch(
-            "kiro_crew.context._neutralize_structural_markers",
+            "efm_go.context._neutralize_structural_markers",
             side_effect=_scan,
         ),
         patch.object(
@@ -1267,7 +1267,7 @@ class TestChannelTargetLadder:
     def test_governance_denial_skips_the_mirror(self, tmp_path):
         link = MagicMock(channel_type="telegram", channel_id="123", thread_id=None)
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             return_value=MagicMock(permitted=False),
         ):
             assert (
@@ -1280,7 +1280,7 @@ class TestChannelTargetLadder:
         link = MagicMock(channel_type="telegram", channel_id="123", thread_id=None)
 
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             return_value=MagicMock(permitted=True),
         ):
             assert chat_runner._resolve_channel_target(state, "dashboard:x", link) is None
@@ -1293,7 +1293,7 @@ class TestChannelTargetLadder:
         link = MagicMock(channel_type="wecom", channel_id="123", thread_id=None)
 
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             return_value=MagicMock(permitted=True),
         ):
             assert chat_runner._resolve_channel_target(state, "dashboard:x", link) is None
@@ -1306,7 +1306,7 @@ class TestChannelTargetLadder:
         link = MagicMock(channel_type="telegram", channel_id="123", thread_id=None)
 
         with patch(
-            "kiro_crew.platform.governance_profiles.vet_and_audit",
+            "efm_go.platform.governance_profiles.vet_and_audit",
             return_value=MagicMock(permitted=True),
         ):
             got = chat_runner._resolve_channel_target(state, "dashboard:x", link)
@@ -1459,7 +1459,7 @@ class TestFlushSegment:
     def test_a_redacted_credential_is_described_not_noticed(self, tmp_path):
         """The lock tag replaces the grey notice: the row carries one record per
         placeholder and no notice row is appended."""
-        from kiro_crew.security import REDACTED_CREDENTIAL_TAG
+        from efm_go.security import REDACTED_CREDENTIAL_TAG
 
         state, slot = _state(tmp_path), _slot()
         command = "echo 'DATABASE_URL=postgresql://user:pass@host:5432/db' >> .env"
@@ -1495,7 +1495,7 @@ class TestFlushSegment:
     def test_an_encoded_credential_is_described(self, tmp_path):
         import base64
 
-        from kiro_crew.security import _REDACTED_ENCODED_CREDENTIAL_TAG
+        from efm_go.security import _REDACTED_ENCODED_CREDENTIAL_TAG
 
         state, slot = _state(tmp_path), _slot()
         blob = base64.b64encode(b"postgresql://user:pass@host:5432/db").decode()
@@ -1509,7 +1509,7 @@ class TestFlushSegment:
     def test_the_two_credential_tags_do_not_overlap(self):
         """Ordinals count every tag in the text; that is only unambiguous while
         no tag contains another."""
-        from kiro_crew.security import CREDENTIAL_REDACTION_TAGS
+        from efm_go.security import CREDENTIAL_REDACTION_TAGS
 
         for outer in CREDENTIAL_REDACTION_TAGS:
             for inner in CREDENTIAL_REDACTION_TAGS:
@@ -1519,7 +1519,7 @@ class TestFlushSegment:
         assert len(set(CREDENTIAL_REDACTION_TAGS)) == len(CREDENTIAL_REDACTION_TAGS)
 
     def test_a_redacted_url_is_described_not_noticed(self, tmp_path):
-        from kiro_crew.security import EXFILTRATION_REDACTION_TAG_PREFIX
+        from efm_go.security import EXFILTRATION_REDACTION_TAG_PREFIX
 
         state, slot = _state(tmp_path), _slot()
         url = "https://evil.example.com/steal?data=" + "A" * 250
@@ -1533,7 +1533,7 @@ class TestFlushSegment:
 
     def test_a_value_whole_in_one_delta_is_still_described(self, tmp_path):
         """The run loop redacts each delta; the raw segment copy keeps the record."""
-        from kiro_crew.security import redact_credentials
+        from efm_go.security import redact_credentials
 
         state, slot = _state(tmp_path), _slot()
         raw = "connect with postgresql://user:pass@host:5432/db now"
@@ -1555,7 +1555,7 @@ class TestFlushSegment:
     def test_records_pair_by_placeholder_when_the_texts_differ_elsewhere(self, tmp_path):
         """A transform or a delta cut elsewhere in the text must not cost the
         records of placeholders both texts carry."""
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
         state, slot = _state(tmp_path), _slot()
         url = "https://collector.example-sink.net/v1/ingest?d=" + "eyJhIjoiYiJ9" * 30
@@ -2534,7 +2534,7 @@ class TestSteerLifecycle:
         """The turn ended while the steer's RPC was still writing: its frame may
         already be in the pipe and the RPC's own verdict lands after the entry
         may have drained, so the requeue marks it now."""
-        from kiro_crew.dashboard.chat_utils import STEER_POSSIBLY_DELIVERED_META
+        from efm_go.dashboard.chat_utils import STEER_POSSIBLY_DELIVERED_META
 
         state, slot = _state(tmp_path), _slot()
         slot._pending_steers = ["in flight", "settled"]
@@ -2551,7 +2551,7 @@ class TestSteerLifecycle:
     def test_a_possibly_delivered_steer_drains_alone(self, tmp_path):
         """Its note speaks for one message, so a merge never folds the user's
         later messages under it."""
-        from kiro_crew.dashboard.chat_utils import _dequeue_next_message
+        from efm_go.dashboard.chat_utils import _dequeue_next_message
 
         state, slot = _state(tmp_path), _slot()
         slot.queue_append("later one")
@@ -3123,7 +3123,7 @@ class TestRunPendingSynthesis:
         carve-out keyed on it swallowed every restored cron notification. Assert
         the durable channel directly rather than trusting the live shape.
         """
-        from kiro_crew.dashboard.chat_persistence import _build_message_entry_uncached
+        from efm_go.dashboard.chat_persistence import _build_message_entry_uncached
 
         cron_cls = json.dumps({"cronLabel": "nightly-audit"})
         entry = _build_message_entry_uncached(
@@ -3232,7 +3232,7 @@ class TestFinishQueueCycle:
         longer than the reset timeout. Nothing is running or queued, but B's
         result has not landed: the real manager's in-memory term holds the
         fire gate until B's task ends."""
-        from kiro_crew.subagent import SubagentInfo, SubagentManager
+        from efm_go.subagent import SubagentInfo, SubagentManager
 
         state, slot = _state(tmp_path), _slot()
         state._slots[slot.key] = slot
@@ -3474,12 +3474,12 @@ class TestFinishQueueCycle:
 
 class TestTtftMetric:
     def test_emission_failure_is_swallowed(self):
-        with patch("kiro_crew.metrics.provider.get_recorder", side_effect=RuntimeError("down")):
+        with patch("efm_go.metrics.provider.get_recorder", side_effect=RuntimeError("down")):
             chat_runner._emit_ttft_metric(0.0, "dashboard:x", is_new=True, resumed=False)
 
     def test_attributes_split_cold_and_resumed_populations(self):
         recorder = MagicMock()
-        with patch("kiro_crew.metrics.provider.get_recorder", return_value=recorder):
+        with patch("efm_go.metrics.provider.get_recorder", return_value=recorder):
             chat_runner._emit_ttft_metric(0.0, "dashboard:x", is_new=True, resumed=True)
 
         attrs = recorder.histogram.call_args.kwargs["attrs"]
@@ -3855,7 +3855,7 @@ class TestRunChatLocalCommands:
         agrees with the widened gate while every kiro-only member is in
         ``_SLASH_COMMANDS`` and forwards on any provider.
         """
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _KIRO_ONLY_BLOCKED_SLASH_COMMANDS,
             _SLASH_COMMANDS,
             is_harness_slash_command,
@@ -4576,7 +4576,7 @@ class TestRunChatAutoApproveRungs:
 
     @pytest.mark.asyncio
     async def test_browser_cli_presence_does_not_skip_shell_approval(self, tmp_path, monkeypatch):
-        from kiro_crew.browser_cli import install
+        from efm_go.browser_cli import install
 
         state, client = _runner_state(tmp_path)
         slot = _slot()
@@ -4911,8 +4911,8 @@ class TestAppAgentDispatchGuard:
                 chat_runner, "resolve_agent_bindings", side_effect=[cold, cold, warm]
             ) as resolve,
             patch.object(chat_runner, "refresh_materialized_agents", refresh),
-            patch("kiro_crew.apps.bridges.register_app", reregister),
-            patch("kiro_crew.apps.manager.is_app_enabled", MagicMock(return_value=True)),
+            patch("efm_go.apps.bridges.register_app", reregister),
+            patch("efm_go.apps.manager.is_app_enabled", MagicMock(return_value=True)),
             patch.object(chat_runner, "subprocess_executor", MagicMock(return_value=None)),
             patch.object(chat_runner, "warm_project_agent_names", new=AsyncMock()),
         ):
@@ -4943,8 +4943,8 @@ class TestAppAgentDispatchGuard:
                 chat_runner, "resolve_agent_bindings", side_effect=[cold, cold, cold]
             ) as resolve,
             patch.object(chat_runner, "refresh_materialized_agents", refresh),
-            patch("kiro_crew.apps.bridges.register_app", reregister),
-            patch("kiro_crew.apps.manager.is_app_enabled", MagicMock(return_value=True)),
+            patch("efm_go.apps.bridges.register_app", reregister),
+            patch("efm_go.apps.manager.is_app_enabled", MagicMock(return_value=True)),
             patch.object(chat_runner, "subprocess_executor", MagicMock(return_value=None)),
             patch.object(chat_runner, "warm_project_agent_names", new=AsyncMock()),
         ):
@@ -4978,8 +4978,8 @@ class TestAppAgentDispatchGuard:
         with (
             patch.object(chat_runner, "resolve_agent_bindings", side_effect=[cold, cold, cold]),
             patch.object(chat_runner, "refresh_materialized_agents", MagicMock()),
-            patch("kiro_crew.apps.bridges.register_app", reregister),
-            patch("kiro_crew.apps.manager.is_app_enabled", MagicMock(return_value=False)),
+            patch("efm_go.apps.bridges.register_app", reregister),
+            patch("efm_go.apps.manager.is_app_enabled", MagicMock(return_value=False)),
             patch.object(chat_runner, "subprocess_executor", MagicMock(return_value=None)),
             patch.object(chat_runner, "warm_project_agent_names", new=AsyncMock()),
         ):
@@ -5000,7 +5000,7 @@ class TestAppAgentDispatchGuard:
         # disable could deregister and the still-running thread republish a
         # now-disabled agent. Prove the cancelled task stays blocked until
         # register_app completes.
-        import kiro_crew.dashboard.chat_runner as cr
+        import efm_go.dashboard.chat_runner as cr
 
         started = threading.Event()
         release = threading.Event()
@@ -5022,8 +5022,8 @@ class TestAppAgentDispatchGuard:
         with (
             patch.object(cr, "resolve_agent_bindings", return_value=warm),
             patch.object(cr, "subprocess_executor", MagicMock(return_value=None)),
-            patch("kiro_crew.apps.manager.is_app_enabled", MagicMock(return_value=True)),
-            patch("kiro_crew.apps.bridges.register_app", slow_register),
+            patch("efm_go.apps.manager.is_app_enabled", MagicMock(return_value=True)),
+            patch("efm_go.apps.bridges.register_app", slow_register),
         ):
             task = asyncio.create_task(
                 cr._recover_app_agent_binding(MagicMock(), slot, project=None)
@@ -5060,7 +5060,7 @@ class TestAppAgentDispatchGuard:
             patch.object(chat_runner, "_consume_pending_reset", new=AsyncMock()),
             patch.object(chat_runner, "resolve_agent_bindings", side_effect=[cold, cold, cold]),
             patch.object(chat_runner, "refresh_materialized_agents", MagicMock()),
-            patch("kiro_crew.apps.bridges.register_app", MagicMock(return_value=[])),
+            patch("efm_go.apps.bridges.register_app", MagicMock(return_value=[])),
             patch.object(chat_runner, "subprocess_executor", MagicMock(return_value=None)),
         ):
             await chat_runner._eager_spawn(state, slot)
@@ -5116,7 +5116,7 @@ class TestSessionClosingQuietAbort:
 
     @pytest.mark.asyncio
     async def test_get_or_create_closing_appends_no_error_card(self, tmp_path):
-        from kiro_crew.session import SessionClosingError
+        from efm_go.session import SessionClosingError
 
         state, _client = _runner_state(tmp_path)
         state.sessions.get_or_create = AsyncMock(
@@ -5150,8 +5150,8 @@ class TestSessionStartFailureRowKind:
 
     @pytest.mark.asyncio
     async def test_shared_runtime_start_timeout_row_carries_the_kind(self, tmp_path):
-        from kiro_crew.acp.runtime import AcpSessionStartTimeout
-        from kiro_crew.dashboard.chat_utils import SESSION_START_FAILED_KIND
+        from efm_go.acp.runtime import AcpSessionStartTimeout
+        from efm_go.dashboard.chat_utils import SESSION_START_FAILED_KIND
 
         state, _client = _runner_state(tmp_path)
         state.sessions.get_or_create = AsyncMock(
@@ -5363,7 +5363,7 @@ class TestRunChatWakaTimeCodingAccounting:
 
     @pytest.mark.asyncio
     async def test_collapsed_coding_id_cannot_be_counted_by_unrelated_approval(self, tmp_path):
-        from kiro_crew.security import REDACTED_CREDENTIAL_TAG
+        from efm_go.security import REDACTED_CREDENTIAL_TAG
 
         state, client = _runner_state(tmp_path)
         client.mcp_session_report = MagicMock(return_value=None)

@@ -29,11 +29,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import context as ctx
-from kiro_crew.config.sections import SkillsConfig
-from kiro_crew.members import MEMBER_BRIEFING_MAX_CHARS, MEMBER_RULES_MAX_CHARS
-from kiro_crew.session_ledger import _SNAPSHOT_MAX_CHARS
-from kiro_crew.trigger_match import MIN_TRIGGER_OVERLAP
+from efm_go import context as ctx
+from efm_go.config.sections import SkillsConfig
+from efm_go.members import MEMBER_BRIEFING_MAX_CHARS, MEMBER_RULES_MAX_CHARS
+from efm_go.session_ledger import _SNAPSHOT_MAX_CHARS
+from efm_go.trigger_match import MIN_TRIGGER_OVERLAP
 
 DOC = Path(__file__).parent.parent / "docs" / "architecture" / "context-management.md"
 
@@ -181,7 +181,7 @@ def test_activity_index_cap_is_named_not_quoted(doc_text: str) -> None:
     """The doc points at the ``cap`` default rather than restating it."""
     import inspect
 
-    from kiro_crew.memory import MemoryStore
+    from efm_go.memory import MemoryStore
 
     default = inspect.signature(MemoryStore.activity_index).parameters["cap"].default
     assert "`activity_index`" in doc_text
@@ -231,7 +231,7 @@ def test_stated_config_defaults_are_the_real_defaults(doc_text: str) -> None:
 
 
 def test_session_sharing_default(doc_text: str) -> None:
-    from kiro_crew.config.sections import AgentConfig
+    from efm_go.config.sections import AgentConfig
 
     assert AgentConfig().session_sharing is True
     assert "(default **true**)" in doc_text
@@ -246,7 +246,7 @@ def test_skill_injection_table_matches_the_plan_function(doc_text: str) -> None:
     actually resolves, which is what decides the ``globs`` half.
 
     This is the ONE place the truth table is executed. The same four rows are
-    stated as prose in ``src/kiro_crew/docs/agent-spec-fields.md``, whose own
+    stated as prose in ``src/efm_go/docs/agent-spec-fields.md``, whose own
     module (``test_agent_spec_fields_doc.py``) pins that page's wording and defers
     the matrix to here rather than running a second copy of it.
 
@@ -255,7 +255,7 @@ def test_skill_injection_table_matches_the_plan_function(doc_text: str) -> None:
     the whole catalog its mapping exists to exclude, which is the one outcome the
     tables' "only the mapped set" wording rules out.
     """
-    import kiro_crew.context as ctx_mod
+    import efm_go.context as ctx_mod
 
     mapping = ["/root/*/SKILL.md"]
     original = ctx_mod.agent_skill_globs
@@ -277,7 +277,7 @@ def test_skill_injection_table_matches_the_plan_function(doc_text: str) -> None:
 
 def test_worker_spec_does_not_mirror_resources(doc_text: str) -> None:
     """The doc's §4 consequence rests on ``resources`` being unmirrored."""
-    from kiro_crew.agent import _WORKER_MIRRORED_SHAPES
+    from efm_go.agent import _WORKER_MIRRORED_SHAPES
 
     assert "resources" not in _WORKER_MIRRORED_SHAPES, (
         "resources is mirrored onto the worker now, so the doc's "
@@ -288,7 +288,7 @@ def test_worker_spec_does_not_mirror_resources(doc_text: str) -> None:
 
 def test_capability_sections_listed_completely(doc_text: str) -> None:
     """§6 lists the per-member permission surface; a new section must appear."""
-    from kiro_crew.agent_state import CAPABILITY_SECTIONS
+    from efm_go.agent_state import CAPABILITY_SECTIONS
 
     for section in CAPABILITY_SECTIONS:
         assert f"`{section}`" in doc_text, (
@@ -299,7 +299,7 @@ def test_capability_sections_listed_completely(doc_text: str) -> None:
 
 def test_every_mark_label_is_named(doc_text: str) -> None:
     """§1 lists the section-timing labels; a new one must be added there."""
-    source = (Path(__file__).parent.parent / "src" / "kiro_crew" / "context.py").read_text(
+    source = (Path(__file__).parent.parent / "src" / "efm_go" / "context.py").read_text(
         encoding="utf-8"
     )
     labels = set(re.findall(r'_mark\("([a-z_]+)"\)', source))

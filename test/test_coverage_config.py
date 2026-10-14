@@ -1,7 +1,7 @@
 """The coverage omit globs must swallow phantom fixture paths, not real source.
 
 Several tests in ``test_agent_home_isolation.py`` monkeypatch
-``kiro_crew.agent.__file__`` to a fabricated checkout under pytest's tmp dir.
+``efm_go.agent.__file__`` to a fabricated checkout under pytest's tmp dir.
 Nothing is ever written there, but the phantom path can land in the coverage
 data, and then ``coverage xml`` / ``coverage report`` in the Coverage Combine
 job aborts with ``No source for code: .../agent.py``. That step runs under
@@ -29,17 +29,17 @@ SETUP_CFG = Path(__file__).resolve().parents[1] / "setup.cfg"
 PHANTOM_PATHS = [
     pytest.param(
         "/tmp/pytest-of-runner/pytest-0/popen-gw0/"
-        "test_does_not_decline_from_an_0/KiroCrew/src/kiro_crew/agent.py",
+        "test_does_not_decline_from_an_0/KiroCrew/src/efm_go/agent.py",
         id="ci-ordinary-clone",
     ),
     pytest.param(
         "/tmp/pytest-of-runner/pytest-0/popen-gw0/"
-        "test_declines_0/kirocrew-wt-example/src/kiro_crew/agent.py",
+        "test_declines_0/kirocrew-wt-example/src/efm_go/agent.py",
         id="ci-linked-worktree",
     ),
     pytest.param(
         "/private/var/folders/ab/xyz/T/pytest-of-dev/pytest-3/"
-        "test_does_not_decline_from_an_0/KiroCrew/src/kiro_crew/agent.py",
+        "test_does_not_decline_from_an_0/KiroCrew/src/efm_go/agent.py",
         id="macos-local-tmp",
     ),
 ]
@@ -49,10 +49,10 @@ PHANTOM_PATHS = [
 # would omit the entire package and turn the coverage gate green on nothing.
 REAL_SOURCE_PATHS = [
     pytest.param(
-        "/home/runner/work/KiroCrew/KiroCrew/src/kiro_crew/agent.py",
+        "/home/runner/work/KiroCrew/KiroCrew/src/efm_go/agent.py",
         id="ci-checkout",
     ),
-    pytest.param("/home/dev/src/KiroCrew/src/kiro_crew/agent.py", id="local-checkout"),
+    pytest.param("/home/dev/src/KiroCrew/src/efm_go/agent.py", id="local-checkout"),
 ]
 
 OMIT_SECTIONS = ["coverage:run", "coverage:report"]

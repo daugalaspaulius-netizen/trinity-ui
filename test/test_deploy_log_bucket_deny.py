@@ -8,7 +8,7 @@ deploy principal out of Put/Delete on that bucket without affecting real deploys
 
 from __future__ import annotations
 
-from kiro_crew.deploy.iam import policy_document
+from efm_go.deploy.iam import policy_document
 
 
 def _by_sid(doc: dict, sid: str) -> dict | None:

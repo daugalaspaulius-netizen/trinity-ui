@@ -1,8 +1,8 @@
 """The hook subsystem keeps its surface and its contracts while its owners move.
 
-``kiro_crew.hooks`` is the hook subsystem's import path and its patch surface: 127
+``efm_go.hooks`` is the hook subsystem's import path and its patch surface: 127
 production modules import it and the tests rebind its names. Most of what it defined
-now lives in the modules of ``kiro_crew.hook_runtime``, one responsibility each, and
+now lives in the modules of ``efm_go.hook_runtime``, one responsibility each, and
 ``hook_runtime.compose`` runs every function they define on the facade's globals.
 
 These tests pin:
@@ -41,9 +41,9 @@ import pytest
 import yaml
 from source_corpus import repo_root
 
-from kiro_crew import hook_runtime
-from kiro_crew import hooks as hooks_mod
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go import hook_runtime
+from efm_go import hooks as hooks_mod
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _FACADE = hooks_mod.__name__
 _FACADE_PATH = Path(hooks_mod.__file__).resolve()
@@ -206,17 +206,17 @@ _FACADE_DEFS = (
 #: what ``test_agent_refactor_contracts`` and ``test_pinned_staging`` assert through
 #: the facade, so the split may not replace one with a copy.
 _COLLABORATORS = {
-    "_coerce_bool": ("kiro_crew.config.fields", "_coerce_bool"),
-    "_fd_real_path": ("kiro_crew.pinned_fs", "fd_real_path"),
-    "is_sensitive_path": ("kiro_crew.security", "is_sensitive_path"),
-    "is_unverifiable_path_refusal": ("kiro_crew.security", "is_unverifiable_path_refusal"),
-    "sensitive_path_refusal": ("kiro_crew.security", "sensitive_path_refusal"),
-    "is_read_only_bash": ("kiro_crew.security.readonly_bash", "is_read_only_bash"),
-    "target_paths": ("kiro_crew.platform.tool_paths", "target_paths"),
-    "is_edit_call": ("kiro_crew.platform.tool_paths", "is_edit_call"),
-    "edit_target_candidates": ("kiro_crew.platform.tool_paths", "edit_target_candidates"),
-    "redact_via_context": ("kiro_crew.platform", "redact_via_context"),
-    "current_context": ("kiro_crew.platform", "current_context"),
+    "_coerce_bool": ("efm_go.config.fields", "_coerce_bool"),
+    "_fd_real_path": ("efm_go.pinned_fs", "fd_real_path"),
+    "is_sensitive_path": ("efm_go.security", "is_sensitive_path"),
+    "is_unverifiable_path_refusal": ("efm_go.security", "is_unverifiable_path_refusal"),
+    "sensitive_path_refusal": ("efm_go.security", "sensitive_path_refusal"),
+    "is_read_only_bash": ("efm_go.security.readonly_bash", "is_read_only_bash"),
+    "target_paths": ("efm_go.platform.tool_paths", "target_paths"),
+    "is_edit_call": ("efm_go.platform.tool_paths", "is_edit_call"),
+    "edit_target_candidates": ("efm_go.platform.tool_paths", "edit_target_candidates"),
+    "redact_via_context": ("efm_go.platform", "redact_via_context"),
+    "current_context": ("efm_go.platform", "current_context"),
 }
 
 
@@ -285,7 +285,7 @@ def test_a_fresh_interpreter_sees_every_base_public_name(tmp_path: Path) -> None
         tmp_path,
         """
         import sys
-        import kiro_crew.hooks as hooks
+        import efm_go.hooks as hooks
         missing = [n for n in sys.argv[1:] if not hasattr(hooks, n)]
         assert missing == [], missing
         print("ok")
@@ -302,7 +302,7 @@ def test_a_star_import_carries_the_moved_public_names(tmp_path: Path) -> None:
     assert not hasattr(hooks_mod, "__all__")
     probe = tmp_path / "hooks_star_probe.py"
     probe.write_text(
-        "from kiro_crew.hooks import *  # noqa: F401,F403\n",
+        "from efm_go.hooks import *  # noqa: F401,F403\n",
         encoding="utf-8",
     )
     spec = importlib.util.spec_from_file_location("hooks_star_probe", probe)
@@ -325,7 +325,7 @@ def test_every_collaborator_is_still_the_source_object() -> None:
 def _facade_importers() -> dict[str, set[str]]:
     """``{module path: names}`` every source file imports from the facade by name."""
     found: dict[str, set[str]] = {}
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         if path.resolve() == _FACADE_PATH or "_vendor" in path.parts:
             continue
         text = path.read_text(encoding="utf-8")
@@ -435,7 +435,7 @@ def test_every_base_definition_is_in_exactly_one_place() -> None:
 
 
 def test_the_owners_log_as_the_facade() -> None:
-    """Log capture keyed to ``kiro_crew.hooks`` keeps seeing the moved sites."""
+    """Log capture keyed to ``efm_go.hooks`` keeps seeing the moved sites."""
     assert hooks_mod.logger.name == _FACADE
     readers = [
         label for label, fn in _owner_functions() if "logger" in set(_global_names(fn.__code__))
@@ -444,7 +444,7 @@ def test_the_owners_log_as_the_facade() -> None:
 
 
 def test_every_owner_function_runs_on_the_facade_globals() -> None:
-    """A patch of ``kiro_crew.hooks.<name>`` reaches an owner function only because
+    """A patch of ``efm_go.hooks.<name>`` reaches an owner function only because
     the function reads the facade's globals, not its own."""
     labels = {label for label, _ in _owner_functions()}
     assert len(labels) >= 71
@@ -557,7 +557,7 @@ def test_the_compose_copy_matches_its_siblings() -> None:
     package imports another's, and the copies stay identical."""
 
     def body(rel: str) -> str:
-        text = (_SRC / "kiro_crew" / rel / "__init__.py").read_text(encoding="utf-8")
+        text = (_SRC / "efm_go" / rel / "__init__.py").read_text(encoding="utf-8")
         return text[text.index("def compose(") :]
 
     assert (
@@ -703,7 +703,7 @@ def _type_checking_nodes(tree: ast.Module) -> set[int]:
 
 def _owner_runtime_edges(source: str, package: str) -> list[int]:
     """Lines where an owner imports a project module outside ``TYPE_CHECKING`` at
-    module level: the facade, a sibling owner, or anything else under ``kiro_crew``."""
+    module level: the facade, a sibling owner, or anything else under ``efm_go``."""
     tree = ast.parse(source)
     guarded = _type_checking_nodes(tree)
     module_level = {id(sub) for node in tree.body for sub in ast.walk(node)}
@@ -717,7 +717,7 @@ def _owner_runtime_edges(source: str, package: str) -> list[int]:
         {
             node.lineno
             for node, target in _import_targets(tree, package)
-            if _within(target, "kiro_crew")
+            if _within(target, "efm_go")
             and id(node) not in guarded
             and id(node) in module_level
             and id(node) not in function_bodies
@@ -730,13 +730,13 @@ def _owner_runtime_edges(source: str, package: str) -> list[int]:
     [
         ("from . import safe_reads\n", True),
         ("from .safe_reads import validate_file_path\n", True),
-        ("from kiro_crew import hooks\n", True),
-        ("from kiro_crew.hooks import MAX_FILE_BYTES\n", True),
-        ("import kiro_crew.hooks as hooks\n", True),
-        ("import importlib\nimportlib.import_module('kiro_crew.hooks')\n", True),
-        ("__import__('kiro_crew.hook_runtime.safe_reads')\n", True),
-        ("if TYPE_CHECKING:\n    from kiro_crew.hooks import MAX_FILE_BYTES\n", False),
-        ("def f():\n    from kiro_crew.sandbox import create_subprocess_limited\n", False),
+        ("from efm_go import hooks\n", True),
+        ("from efm_go.hooks import MAX_FILE_BYTES\n", True),
+        ("import efm_go.hooks as hooks\n", True),
+        ("import importlib\nimportlib.import_module('efm_go.hooks')\n", True),
+        ("__import__('efm_go.hook_runtime.safe_reads')\n", True),
+        ("if TYPE_CHECKING:\n    from efm_go.hooks import MAX_FILE_BYTES\n", False),
+        ("def f():\n    from efm_go.sandbox import create_subprocess_limited\n", False),
         ("import os\nimport stat as _stat\n", False),
     ],
 )
@@ -747,7 +747,7 @@ def test_the_owner_edge_check_sees_every_spelling(source: str, flagged: bool) ->
 def test_nothing_but_the_facade_imports_an_owner() -> None:
     """The facade is the one import path and the one patch surface."""
     importers = []
-    for path in sorted((_SRC / "kiro_crew").rglob("*.py")):
+    for path in sorted((_SRC / "efm_go").rglob("*.py")):
         resolved = path.resolve()
         if _OWNER_DIR in resolved.parents or resolved == _FACADE_PATH or "_vendor" in path.parts:
             continue
@@ -766,7 +766,7 @@ def test_an_owner_imports_project_modules_only_for_type_checking() -> None:
     """An owner's module-level imports are stdlib only, plus its ``TYPE_CHECKING``
     names from the facade. ``sandbox`` is the one that matters: ``sandbox -> registry
     -> apps -> hooks`` is a real cycle, so a module-level import of it in an owner
-    would make ``import kiro_crew.hooks`` raise and fail the suite at collection."""
+    would make ``import efm_go.hooks`` raise and fail the suite at collection."""
     offenders = {
         stem: lines
         for stem, source in _owner_sources().items()
@@ -790,9 +790,9 @@ def test_a_fresh_facade_import_loads_every_owner(tmp_path: Path) -> None:
         tmp_path,
         """
         import sys
-        import kiro_crew.hooks
+        import efm_go.hooks
         missing = [n for n in sys.argv[1:]
-                   if f"kiro_crew.hook_runtime.{n}" not in sys.modules]
+                   if f"efm_go.hook_runtime.{n}" not in sys.modules]
         assert missing == [], missing
         print("ok")
         """,
@@ -811,7 +811,7 @@ def test_the_unc_root_memos_are_primed_on_the_facade(tmp_path: Path) -> None:
     _run_child(
         tmp_path,
         """
-        import kiro_crew.hooks as hooks
+        import efm_go.hooks as hooks
         assert hooks._unc_agents_root_cache is not None, "agents root memo not primed"
         assert hooks._unc_data_home_root_cache is not None, "data home memo not primed"
         print("ok")
@@ -882,11 +882,11 @@ def test_the_gate_decision_order_is_unchanged() -> None:
 
 
 def test_the_ci_lanes_keyed_on_the_gate_also_select_the_owners() -> None:
-    """Three lanes and one AUTOSDE rule gate on ``src/kiro_crew/hooks.py``. The rules
+    """Three lanes and one AUTOSDE rule gate on ``src/efm_go/hooks.py``. The rules
     they carry apply to the moved code too, so each also names the owners -- without
     this an edit to extracted gate code skips the denial-differential and
     security-scope lanes, and the descriptor tests skip the native macOS suite."""
-    owner_rel = "src/kiro_crew/hook_runtime/safe_reads.py"
+    owner_rel = "src/efm_go/hook_runtime/safe_reads.py"
 
     def _matches(pattern: str, rel: str) -> bool:
         if pattern.endswith("/**"):
@@ -899,7 +899,7 @@ def test_the_ci_lanes_keyed_on_the_gate_also_select_the_owners() -> None:
         (_ROOT / ".github/workflows/denial-differential.yml").read_text(encoding="utf-8")
     )
     paths = denial[True]["pull_request"]["paths"]
-    assert "src/kiro_crew/hooks.py" in paths
+    assert "src/efm_go/hooks.py" in paths
     assert any(_matches(p, owner_rel) for p in paths), paths
 
     macos = yaml.safe_load(
@@ -909,20 +909,20 @@ def test_the_ci_lanes_keyed_on_the_gate_also_select_the_owners() -> None:
     darwin = yaml.safe_load(
         next(step["with"]["filters"] for step in steps if step.get("id") == "filter")
     )["darwin"]
-    assert "src/kiro_crew/hooks.py" in darwin
+    assert "src/efm_go/hooks.py" in darwin
     assert any(_matches(p, owner_rel) for p in darwin), darwin
 
     scope = (_ROOT / ".github/workflows/security-scope-review.yml").read_text(encoding="utf-8")
     block = scope.split("# SCOPE-SURFACE-BEGIN", 1)[1].split("# SCOPE-SURFACE-END", 1)[0]
     surface = re.findall(r"^\s*'([^']+)'\s*$", block, re.M)
-    assert "src/kiro_crew/hooks.py" in surface
+    assert "src/efm_go/hooks.py" in surface
     assert any(_matches(p, owner_rel) for p in surface), surface
 
     autosde = yaml.safe_load((_ROOT / "AUTOSDE.yaml").read_text(encoding="utf-8"))
     rules = [
         rule
         for rule in autosde["custom-rules"]
-        if "src/kiro_crew/hooks.py" in (rule.get("file-patterns") or [])
+        if "src/efm_go/hooks.py" in (rule.get("file-patterns") or [])
     ]
     assert rules, "no AUTOSDE rule names the gate any more"
     for rule in rules:
@@ -930,8 +930,8 @@ def test_the_ci_lanes_keyed_on_the_gate_also_select_the_owners() -> None:
 
     review = (_ROOT / ".github/workflows/code-review.yml").read_text(encoding="utf-8")
     tripwire = review.split("bool() truthiness", 1)[1].split("endgroup", 1)[0]
-    assert "'src/kiro_crew/hooks.py'" in tripwire
-    assert "'src/kiro_crew/hook_runtime/'" in tripwire
+    assert "'src/efm_go/hooks.py'" in tripwire
+    assert "'src/efm_go/hook_runtime/'" in tripwire
 
 
 # ── the patch reach ───────────────────────────────────────────────────────────
@@ -944,7 +944,7 @@ def _facade_aliases(tree: ast.Module) -> set[str]:
         if isinstance(node, ast.Import):
             aliases |= {a.asname for a in node.names if a.name == _FACADE and a.asname}
             aliases |= {a.name for a in node.names if a.name == _FACADE and not a.asname}
-        elif isinstance(node, ast.ImportFrom) and node.module == "kiro_crew":
+        elif isinstance(node, ast.ImportFrom) and node.module == "efm_go":
             aliases |= {a.asname or a.name for a in node.names if a.name == "hooks"}
     changed = True
     while changed:
@@ -1089,7 +1089,7 @@ def _test_sources() -> list[tuple[str, str]]:
     paths = sorted((_ROOT / "test").rglob("*.py"))
     paths += [
         path
-        for path in sorted((_SRC / "kiro_crew").rglob("*.py"))
+        for path in sorted((_SRC / "efm_go").rglob("*.py"))
         if any(part.endswith("tests") for part in path.relative_to(_SRC).parts[:-1])
     ]
     out = []
@@ -1097,7 +1097,7 @@ def _test_sources() -> list[tuple[str, str]]:
         if path.resolve() == Path(__file__).resolve():
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
-        if "kiro_crew.hooks" in text or "kiro_crew import hooks" in text:
+        if "efm_go.hooks" in text or "efm_go import hooks" in text:
             out.append((path.relative_to(_ROOT).as_posix(), text))
     return out
 
@@ -1106,40 +1106,40 @@ def _test_sources() -> list[tuple[str, str]]:
     ("source", "expected"),
     [
         (
-            "import kiro_crew.hooks as hooks\nmonkeypatch.setattr(hooks, 'MAX_FILE_BYTES', 1)\n",
+            "import efm_go.hooks as hooks\nmonkeypatch.setattr(hooks, 'MAX_FILE_BYTES', 1)\n",
             {"MAX_FILE_BYTES"},
         ),
-        ("from kiro_crew import hooks as h\nmonkeypatch.setattr(h, 'os', 1)\n", {"os"}),
+        ("from efm_go import hooks as h\nmonkeypatch.setattr(h, 'os', 1)\n", {"os"}),
         (
-            "monkeypatch.setattr('kiro_crew.hooks.validate_file_path', None)\n",
+            "monkeypatch.setattr('efm_go.hooks.validate_file_path', None)\n",
             {"validate_file_path"},
         ),
         (
-            "from unittest import mock\nmock.patch('kiro_crew.hooks.run_script_hook')\n",
+            "from unittest import mock\nmock.patch('efm_go.hooks.run_script_hook')\n",
             {"run_script_hook"},
         ),
         (
-            "from unittest.mock import patch as p\np.object(hooks, 'sel')\nimport kiro_crew.hooks as hooks\n",
+            "from unittest.mock import patch as p\np.object(hooks, 'sel')\nimport efm_go.hooks as hooks\n",
             {"sel"},
         ),
         (
-            "import kiro_crew.hooks as hooks\nF = 'kiro_crew.hooks'\nmp.setattr(f'{F}._fd_real_path', None)\n",
+            "import efm_go.hooks as hooks\nF = 'efm_go.hooks'\nmp.setattr(f'{F}._fd_real_path', None)\n",
             {"_fd_real_path"},
         ),
         (
-            "F = 'kiro_crew.hooks'\nmp.setattr(F + '.is_sensitive_path', None)\n",
+            "F = 'efm_go.hooks'\nmp.setattr(F + '.is_sensitive_path', None)\n",
             {"is_sensitive_path"},
         ),
         (
-            "import kiro_crew.hooks as hooks\nhooks._BUILTIN_APP_NAMES = frozenset()\n",
+            "import efm_go.hooks as hooks\nhooks._BUILTIN_APP_NAMES = frozenset()\n",
             {"_BUILTIN_APP_NAMES"},
         ),
         (
-            "import kiro_crew.hooks as hooks\nassert hooks._fd_real_path is pinned_fs.fd_real_path\n",
+            "import efm_go.hooks as hooks\nassert hooks._fd_real_path is pinned_fs.fd_real_path\n",
             {"_fd_real_path"},
         ),
-        ("import kiro_crew.hooks as hooks\nx = hooks.MAX_FILE_BYTES\n", set()),
-        ("monkeypatch.setattr('kiro_crew.security.is_sensitive_path', None)\n", set()),
+        ("import efm_go.hooks as hooks\nx = hooks.MAX_FILE_BYTES\n", set()),
+        ("monkeypatch.setattr('efm_go.security.is_sensitive_path', None)\n", set()),
         ("monkeypatch.setattr(other, 'MAX_FILE_BYTES', 1)\n", set()),
     ],
 )

@@ -13,9 +13,9 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, bus, eager, emit
-from kiro_crew.crew_log import projection as crew_log
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, bus, eager, emit
+from efm_go.crew_log import projection as crew_log
 
 GATEWAY = "gateway"
 SLOT = "dashboard:bus-1"

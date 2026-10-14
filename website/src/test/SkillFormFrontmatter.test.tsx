@@ -25,7 +25,7 @@ describe('structured editor preserves unmodelled frontmatter', () => {
     'name: worktree-dev',
     'description: Develop in a worktree',
     'triggers: worktree, build gate',
-    'repo_scope: src/kiro_crew',
+    'repo_scope: src/efm_go',
     'inject_on_trigger: false',
     '---',
     '',
@@ -35,7 +35,7 @@ describe('structured editor preserves unmodelled frontmatter', () => {
 
   it('round-trips repo_scope, which gates where the skill may match', () => {
     const out = assembleSkillContent(parseSkillContent(RAW, 'kirocrew-dev/worktree-dev'))
-    expect(parseFrontmatter(out).meta.repo_scope).toBe('src/kiro_crew')
+    expect(parseFrontmatter(out).meta.repo_scope).toBe('src/efm_go')
   })
 
   it('round-trips inject_on_trigger, so editing a description cannot re-enable injection', () => {
@@ -140,7 +140,7 @@ describe('structured editor preserves unmodelled frontmatter', () => {
    */
   it('re-emits every unmodelled field byte-identically', () => {
     const blocks = [
-      'repo_scope: src/kiro_crew',
+      'repo_scope: src/efm_go',
       'inject_on_trigger: false',
       'indentless:\n- alpha\n- beta',
       'indented:\n  - one\n  - two',
@@ -205,10 +205,10 @@ describe('structured editor preserves unmodelled frontmatter', () => {
   })
 
   it('does not let a top-level comment corrupt an unmodelled scalar', () => {
-    const raw = ['---', 'name: s', 'repo_scope: src/kiro_crew', '# scoped on purpose', '---', '', '# Body'].join('\n')
+    const raw = ['---', 'name: s', 'repo_scope: src/efm_go', '# scoped on purpose', '---', '', '# Body'].join('\n')
     const out = assembleSkillContent(parseSkillContent(raw, 's'))
-    expect(parseFrontmatter(out).meta.repo_scope).toBe('src/kiro_crew')
-    expect(out).toContain('repo_scope: src/kiro_crew\n# scoped on purpose')
+    expect(parseFrontmatter(out).meta.repo_scope).toBe('src/efm_go')
+    expect(out).toContain('repo_scope: src/efm_go\n# scoped on purpose')
   })
 
   it('removes a managed key without leaving a blank line behind', () => {

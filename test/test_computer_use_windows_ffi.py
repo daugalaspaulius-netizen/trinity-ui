@@ -27,7 +27,7 @@ from contextlib import contextmanager
 
 import pytest
 
-from kiro_crew.computer_use import windows_ffi as ffi
+from efm_go.computer_use import windows_ffi as ffi
 
 
 @contextmanager
@@ -219,7 +219,7 @@ class TestVtableTableIsTheOnlySourceOfSlotIndices:
 class TestAvailabilityIsPlatformGuarded:
     def test_available_is_false_off_windows_without_raising(self, monkeypatch) -> None:
         """The dashboard renders a Settings row on a host with no driver at all."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", False)
         ffi.reset_libraries()
@@ -234,8 +234,8 @@ class TestAvailabilityIsPlatformGuarded:
         A bare ``OSError`` from the loader would escape as an internal error
         instead.
         """
-        from kiro_crew import platform_compat
-        from kiro_crew.computer_use.types import ComputerUseUnsupported
+        from efm_go import platform_compat
+        from efm_go.computer_use.types import ComputerUseUnsupported
 
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", False)
         ffi.reset_libraries()

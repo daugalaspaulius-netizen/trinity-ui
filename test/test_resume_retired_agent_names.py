@@ -15,9 +15,9 @@ from dataclasses import replace
 
 import pytest
 
-from kiro_crew import execution_context, session_agent_selection
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, resolve_agent_bindings
-from kiro_crew.session_agent_selection import resolve_session_agent_bindings
+from efm_go import execution_context, session_agent_selection
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, resolve_agent_bindings
+from efm_go.session_agent_selection import resolve_session_agent_bindings
 
 AGENT = "docs-author"
 VIEW = "kirocrew-skill-view-" + "c" * 24
@@ -47,12 +47,12 @@ def installed(monkeypatch):
     """The agents whose specs are installed; a test may add or clear names."""
     names = {AGENT}
     monkeypatch.setattr(
-        "kiro_crew.config.loader._materialized_kiro_agent",
+        "efm_go.config.loader._materialized_kiro_agent",
         lambda name, project_dir=None: name if name in names else "",
     )
     # The fallback applies only to a row the prune recorded as removed.
     monkeypatch.setattr(
-        "kiro_crew.crewmate_prune_migration.removed_crewmate_names",
+        "efm_go.crewmate_prune_migration.removed_crewmate_names",
         lambda: frozenset({AGENT, VIEW}),
     )
     return names
@@ -101,7 +101,7 @@ def test_renamed_crewmate_is_not_read_as_another_installed_agent(monkeypatch, in
 @pytest.fixture
 def view_sidecar(tmp_path, monkeypatch):
     """A view of AGENT whose view file is gone and whose ownership sidecar is kept."""
-    from kiro_crew.acp import skill_projection as projection
+    from efm_go.acp import skill_projection as projection
 
     agents = tmp_path / "agents"
     metadata = agents / projection._PROJECTION_METADATA_DIR_NAME
@@ -158,7 +158,7 @@ def test_the_sdk_facade_answers_both_callers_without_the_projection_type(monkeyp
     """Both resolvers reach the projection through the SDK driver, which hands
     back ``None`` for a view nothing records instead of the projection's own
     exception type."""
-    from kiro_crew.agent_sdk.drivers import acp as acp_driver
+    from efm_go.agent_sdk.drivers import acp as acp_driver
 
     assert acp_driver.skill_view_source_agent(VIEW) == AGENT
     assert acp_driver.skill_view_source_agent(AGENT) == AGENT
@@ -185,7 +185,7 @@ def published_view(tmp_path, monkeypatch):
     import gc
     from types import SimpleNamespace
 
-    from kiro_crew.acp import skill_projection as projection
+    from efm_go.acp import skill_projection as projection
 
     monkeypatch.delenv("KIROCREW_NATIVE_SKILL_PROJECTION", raising=False)
     home = tmp_path / "kiro"
@@ -201,10 +201,10 @@ def published_view(tmp_path, monkeypatch):
     monkeypatch.setattr(projection.platform_compat, "first_linked_ancestor", lambda path: None)
     monkeypatch.setattr(projection, "_DRAIN_BATCH_PAUSE_SECS", 0)
     monkeypatch.setattr(
-        "kiro_crew.agent.managed_mcp_spec_entry",
+        "efm_go.agent.managed_mcp_spec_entry",
         lambda name: {"command": "test-core", "args": []},
     )
-    monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
+    monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
     monkeypatch.setattr(
         projection,
         "list_agents",
@@ -239,7 +239,7 @@ def published_view(tmp_path, monkeypatch):
 def test_a_view_the_real_boot_drain_retired_still_resumes(
     monkeypatch, installed, published_view, before_drain
 ):
-    from kiro_crew.acp import skill_projection as projection
+    from efm_go.acp import skill_projection as projection
 
     agents, view = published_view
     alias = agents / f"{view}.json"
@@ -269,7 +269,7 @@ def test_a_view_the_real_boot_drain_retired_still_resumes(
 
 
 def test_an_unrecoverable_view_tells_the_user_to_pick_again_or_start_new():
-    from kiro_crew.dashboard.chat_runner import unavailable_agent_message
+    from efm_go.dashboard.chat_runner import unavailable_agent_message
 
     message = unavailable_agent_message(VIEW)
     assert "Pick the agent for this chat again, or start a new chat" in message

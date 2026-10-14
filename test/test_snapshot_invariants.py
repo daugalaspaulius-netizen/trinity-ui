@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from test_snapshot import _setup_fake_kirocrew, snapshot_family_paths, unpinnable_argv
 
-from kiro_crew.snapshot import _merge_memory, restore_main, snapshot_main
+from efm_go.snapshot import _merge_memory, restore_main, snapshot_main
 
 
 @pytest.fixture
@@ -151,7 +151,7 @@ class TestEveryTreeRootSiteUsesTheChokepoint:
         in one of its ancestors — every individual node the loop inspects looks
         ordinary while the write still lands outside.
         """
-        from kiro_crew.snapshot import safe_tree_root
+        from efm_go.snapshot import safe_tree_root
 
         home = tmp_path / "home"
         (home / "workspace").mkdir(parents=True)
@@ -203,7 +203,7 @@ class TestEveryTreeRootSiteUsesTheChokepoint:
 class TestManifestDrivenRestoreEdges:
     def test_an_unknown_only_manifest_restores_nothing(self, tmp_path):
         """An empty resolved set must not collapse into 'restore everything'."""
-        from kiro_crew.snapshot import _manifest_components
+        from efm_go.snapshot import _manifest_components
 
         snap = tmp_path / "future"
         snap.mkdir()
@@ -211,7 +211,7 @@ class TestManifestDrivenRestoreEdges:
         assert _manifest_components(snap) == []
 
     def test_a_pre_manifest_bundle_still_means_everything(self, tmp_path):
-        from kiro_crew.snapshot import _manifest_components
+        from efm_go.snapshot import _manifest_components
 
         snap = tmp_path / "old"
         snap.mkdir()
@@ -240,7 +240,7 @@ class TestUnreadableManifestRefuses:
     """'We could not read it' must never resolve to the most destructive reading."""
 
     def test_a_malformed_manifest_raises_rather_than_defaulting(self, tmp_path):
-        from kiro_crew.snapshot import ManifestUnreadable, _manifest_components
+        from efm_go.snapshot import ManifestUnreadable, _manifest_components
 
         snap = tmp_path / "broken"
         snap.mkdir()
@@ -249,7 +249,7 @@ class TestUnreadableManifestRefuses:
             _manifest_components(snap)
 
     def test_a_components_key_of_the_wrong_type_raises(self, tmp_path):
-        from kiro_crew.snapshot import ManifestUnreadable, _manifest_components
+        from efm_go.snapshot import ManifestUnreadable, _manifest_components
 
         snap = tmp_path / "weird"
         snap.mkdir()

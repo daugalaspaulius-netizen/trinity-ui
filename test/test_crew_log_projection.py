@@ -18,10 +18,10 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, CrewLogError, Ref
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.crew_log import store
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, CrewLogError, Ref
+from efm_go.crew_log import projection as crew_log
+from efm_go.crew_log import store
 
 SESSION = "s-fold"
 GATEWAY = "gateway"
@@ -262,7 +262,7 @@ def test_the_class_fold_is_registered_but_not_advertised():
     to every owner socket for no reader, and advertises a projection with no consumer.
     Both halves are asserted, so neither drifts without this failing.
     """
-    from kiro_crew import mcp_crew_log
+    from efm_go import mcp_crew_log
 
     assert "class" in crew_log.FOLD_NAMES
     assert "class" in crew_log.INTERNAL_PROJECTION_NAMES
@@ -760,7 +760,7 @@ def test_usage_snapshot_row_is_not_stamped_by_a_later_completion():
     -- an occupancy from a turn the snapshot was taken BEFORE. The copy must be deep
     enough at the row level that the base can be stamped without touching it.
     """
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     state = crew_log._usage_start()
     crew_log._usage_step(
@@ -909,7 +909,7 @@ def test_usage_the_ordinal_memo_covers_the_rewindable_range():
     ``crew_log`` cannot import the dashboard, so the figure is restated there and pinned
     here: if the live cap grows, a rewind could again reach a turn the memo evicted.
     """
-    from kiro_crew.dashboard import state as dashboard_state
+    from efm_go.dashboard import state as dashboard_state
 
     assert crew_log.CONTEXT_ORDINAL_MEMO_LIMIT == dashboard_state._MAX_SLOT_MESSAGES
 
@@ -2765,7 +2765,7 @@ def test_a_gap_in_the_seqs_marks_the_history_damaged():
     The entries are handed to the fold directly because a skipped line is exactly what
     no writer produces: the seq that is missing was never delivered.
     """
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     opener = Entry(
         seq=1,
@@ -2799,7 +2799,7 @@ def test_a_class_move_that_cannot_be_read_marks_the_history_damaged():
     The direction it discards is always toward permissive, because a class move is worth
     writing only when it restricts.
     """
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     opener = Entry(
         seq=1,
@@ -2849,7 +2849,7 @@ def test_the_reader_treats_a_memory_less_class_as_nothing_stated():
     nothing stated rather than as a class whose memory mode is unknown, otherwise it
     would satisfy a reader's recorded-and-complete test.
     """
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     planted = Entry(
         seq=1,

@@ -29,17 +29,17 @@ from types import SimpleNamespace
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import session_export as se
-from kiro_crew.dashboard.chat_persistence import save_slot_off_loop
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.session_transfer import (
+from efm_go.dashboard import session_export as se
+from efm_go.dashboard.chat_persistence import save_slot_off_loop
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.session_transfer import (
     _SUPPORTED_BUNDLE_VERSIONS,
     BUNDLE_VERSION,
     _validate_bundle,
     build_source_record,
     build_transfer_bundle_async,
 )
-from kiro_crew.history import (
+from efm_go.history import (
     ConversationLog,
     TranscriptBusy,
     TranscriptWithheld,
@@ -304,7 +304,7 @@ def test_an_unreadable_registry_does_not_fail_the_export():
             raise RuntimeError("registry is wedged")
 
     state = _state(MSGS, sessions=_Boom())
-    from kiro_crew.dashboard.session_transfer import _snapshot_source_record
+    from efm_go.dashboard.session_transfer import _snapshot_source_record
 
     source = _snapshot_source_record(state, _slot(MSGS), "dashboard:slot-1")
     assert "approval_policy" not in source
@@ -335,7 +335,7 @@ def test_the_policy_is_read_for_the_pinned_session_not_the_slots_current_one():
     # The rebind that a cron injection performs, landing after the pin.
     slot.linked_session_key = "cron:job-7"
 
-    from kiro_crew.dashboard.session_transfer import _snapshot_source_record
+    from efm_go.dashboard.session_transfer import _snapshot_source_record
 
     source = _snapshot_source_record(state, slot, "dashboard:slot-1")
 
@@ -350,7 +350,7 @@ def test_the_slug_comes_from_the_redacted_title():
     """A filename is displayed by whatever holds the file, so a credential in a
     title must not reach it. The bundle's title is already redacted; this pins
     that the slug is built from that copy and not from a raw one."""
-    from kiro_crew.security import redact_credentials
+    from efm_go.security import redact_credentials
 
     raw = "debug ghp_0123456789abcdefghijklmnopqrstuvwxyz now"
     redacted, _ = redact_credentials(raw)
@@ -530,7 +530,7 @@ async def test_a_line_tightened_at_commit_leaves_only_the_denied_audit(monkeypat
 
 @pytest.mark.asyncio
 async def test_a_busy_commit_leaves_only_the_failure_audit(monkeypatch, tmp_path):
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     out = tmp_path / "egress"
     out.mkdir()
@@ -744,7 +744,7 @@ async def test_an_empty_session_is_refused_rather_than_handed_over():
 
 @pytest.mark.asyncio
 async def test_an_unstable_snapshot_is_a_retryable_503(monkeypatch):
-    from kiro_crew.dashboard.session_transfer import SnapshotUnstable
+    from efm_go.dashboard.session_transfer import SnapshotUnstable
 
     async def _unstable(*_a, **_k):
         raise SnapshotUnstable("a pending rewrite means the on-disk transcript is stale")
@@ -797,7 +797,7 @@ async def test_the_export_withholds_layer_b_by_default(monkeypatch):
     drop the ``and _export_layer_b_requested(...)`` conjunct at the call site and
     this test goes red -- ``layer_b`` appears and ``layer_b_skipped`` disappears.
     """
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     # A session that genuinely HAS resumable context; a withhold is a real choice.
     monkeypatch.setattr(st, "_resolve_layer_b_sid", lambda *_a, **_k: "a-real-sid")
@@ -837,7 +837,7 @@ async def test_an_export_carries_layer_b_on_explicit_opt_in(monkeypatch):
     REVERSE-VERIFY: drop either conjunct at the call site (permitted-only, or
     requested-only) and this test goes red -- ``layer_b`` disappears.
     """
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     monkeypatch.setattr(st, "_resolve_layer_b_sid", lambda *_a, **_k: "a-real-sid")
     monkeypatch.setattr(
@@ -868,7 +868,7 @@ async def test_an_export_carries_layer_b_on_explicit_opt_in(monkeypatch):
 @pytest.mark.asyncio
 async def test_an_export_withholds_layer_b_for_a_non_operator_caller(monkeypatch):
     """An app cannot turn the operator's twofold opt-in into its own authority."""
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     monkeypatch.setattr(st, "_resolve_layer_b_sid", lambda *_a, **_k: "a-real-sid")
     monkeypatch.setattr(
@@ -902,7 +902,7 @@ async def test_an_export_withholds_when_permitted_but_not_requested(monkeypatch)
     REVERSE-VERIFY: drop the ``and _export_layer_b_requested(...)`` conjunct at
     the call site and this test goes red -- ``layer_b`` appears.
     """
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     monkeypatch.setattr(st, "_resolve_layer_b_sid", lambda *_a, **_k: "a-real-sid")
     monkeypatch.setattr(
@@ -927,7 +927,7 @@ def test_the_export_layer_b_permission_defaults_to_off(monkeypatch):
     """The standing permission is OFF by default: an absent or garbage key reads
     False, and only an explicit true grants it. Read through the same
     ``_raw_config`` route the other dashboard tunables use."""
-    import kiro_crew.dashboard.session_export as se_mod
+    import efm_go.dashboard.session_export as se_mod
 
     monkeypatch.setattr(se_mod, "_raw_config", lambda: {})
     assert se_mod._export_layer_b_permitted() is False
@@ -964,7 +964,7 @@ def test_the_export_layer_b_permission_defaults_to_off(monkeypatch):
 def test_the_export_layer_b_request_flag_needs_an_explicit_yes():
     """The per-invocation flag reads truthy strings only; absent or anything else
     is "did not ask"."""
-    import kiro_crew.dashboard.session_export as se_mod
+    import efm_go.dashboard.session_export as se_mod
 
     for yes in ("true", "True", "1", "yes", "on", " TRUE "):
         assert se_mod._export_layer_b_requested(_request(None, query={"include_layer_b": yes}))
@@ -978,7 +978,7 @@ def test_the_export_layer_b_request_flag_needs_an_explicit_yes():
 
 @pytest.mark.asyncio
 async def test_the_builder_refuses_layer_b_when_asked(monkeypatch):
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     monkeypatch.setattr(st, "_resolve_layer_b_sid", lambda *_a, **_k: "a-real-sid")
     # Faithful to the real reader, which returns None for an empty sid -- a stub
@@ -1021,7 +1021,7 @@ def test_the_free_text_provenance_fields_are_redacted():
     """``workspace`` and ``project`` are the only free text in the record, and the
     document is an egress boundary, so they go through the same scan as the
     title."""
-    from kiro_crew.security import redact_credentials
+    from efm_go.security import redact_credentials
 
     raw = "/home/me/ghp_0123456789abcdefghijklmnopqrstuvwxyz/checkout"
     assert redact_credentials(raw)[0] != raw, "the fixture must actually be redactable"
@@ -1163,7 +1163,7 @@ async def test_a_pending_line_tightening_is_applied_before_export(tmp_path, monk
 async def test_an_export_streams_layer_b_from_its_snapshot_and_removes_it(monkeypatch, tmp_path):
     """Layer B rides out of its snapshot file, never read whole, and the
     snapshot is gone once the response is built."""
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     out = tmp_path / "egress"
     out.mkdir()
@@ -1198,7 +1198,7 @@ async def test_a_sent_export_streams_its_staged_file_and_removes_it(tmp_path, mo
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     out = tmp_path / "egress"
     out.mkdir()
@@ -1299,7 +1299,7 @@ async def test_a_refused_commit_cancelled_while_its_cleanup_waits_still_removes_
     """A commit that never hands the staged file to a response removes it
     itself. When the handler is cancelled while that removal is queued but not
     yet started, the removal still runs."""
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     out = tmp_path / "egress"
     out.mkdir()
@@ -1374,7 +1374,7 @@ async def test_a_staging_failure_is_an_audited_coded_500_and_releases_the_snapsh
 ):
     """A full staging volume fails the serialisation; the answer is the handler's
     own coded failure, audited, with the Layer B snapshot removed."""
-    import kiro_crew.dashboard.session_transfer as st
+    import efm_go.dashboard.session_transfer as st
 
     out = tmp_path / "egress"
     out.mkdir()

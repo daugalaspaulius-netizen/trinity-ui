@@ -62,12 +62,12 @@ const STEPERR_LINES = [
   '[provision] creating venv for kc-wt-oauth-device-flow (one-time, ~1 min)\u2026',
   '  $ /usr/bin/python3.12 -m venv /w/kc-wt-oauth-device-flow/.venv  (cwd=/w/kc-wt-oauth-device-flow)',
   '  $ /w/kc-wt-oauth-device-flow/.venv/bin/pip install --editable /w/kc-wt-oauth-device-flow  (cwd=/w/kc-wt-oauth-device-flow)',
-  "ERROR: Could not install packages due to an OSError: [Errno 13] Permission denied: '/w/kc-wt-oauth-device-flow/.venv/lib/python3.12/site-packages/kiro_crew.pth'",
+  "ERROR: Could not install packages due to an OSError: [Errno 13] Permission denied: '/w/kc-wt-oauth-device-flow/.venv/lib/python3.12/site-packages/efm_go.pth'",
   'Consider using the `--user` option or check the permissions.',
   'Obtaining file:///w/kc-wt-oauth-device-flow',
   '  Installing build dependencies: started',
   "  Installing build dependencies: finished with status 'done'",
-  "::steperr::2::ERROR: Could not install packages due to an OSError: [Errno 13] Permission denied: '/w/kc-wt-oauth-device-flow/.venv/lib/python3.12/site-packages/kiro_crew.pth'",
+  "::steperr::2::ERROR: Could not install packages due to an OSError: [Errno 13] Permission denied: '/w/kc-wt-oauth-device-flow/.venv/lib/python3.12/site-packages/efm_go.pth'",
   '::steperr::2::Consider using the `--user` option or check the permissions.',
   "pod: provisioning 'kc-wt-oauth-device-flow' failed (see output above)",
 ]
@@ -85,7 +85,7 @@ const FLEET = {
       name: 'kc-wt-oauth-device-flow', is_main: false, running: false,
       has_dist: false, has_venv: true, behind: 2, branch: 'feat/oauth-device-flow',
       last_updated_at: NOW - 3600, provision_run_id: RID,
-      pr: { number: 3180, state: 'OPEN', url: 'https://github.com/kirodotdev/KiroCrew/pull/3180', isDraft: false },
+      pr: { number: 3180, state: 'OPEN', url: 'https://efmleads.com/pull/3180', isDraft: false },
     },
     {
       name: 'kc-wt-slack-scope-probe', is_main: false, running: true, port: 7791,

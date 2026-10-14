@@ -23,7 +23,7 @@ write is obvious.
 Why routes and not lines: a route answered by the real app on a real boot
 proves the wiring between config, auth, store and handler; a line reached
 through a mock proves only that the line exists. Line coverage of the layer
-is still worth READING (``--cov=kiro_crew`` works as usual) -- it is just not
+is still worth READING (``--cov=efm_go`` works as usual) -- it is just not
 the number this layer is gated on.
 """
 

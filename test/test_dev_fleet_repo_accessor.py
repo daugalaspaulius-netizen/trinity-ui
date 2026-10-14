@@ -31,7 +31,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.apps.builtins.dev_fleet import (
+from efm_go.apps.builtins.dev_fleet import (
     fleet_state,
     http_api,
     live,

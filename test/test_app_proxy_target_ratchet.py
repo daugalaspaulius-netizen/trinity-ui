@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-_BUILTINS_DIR = Path(__file__).resolve().parent.parent / "src" / "kiro_crew" / "apps" / "builtins"
+_BUILTINS_DIR = Path(__file__).resolve().parent.parent / "src" / "efm_go" / "apps" / "builtins"
 
 #: Only files that participate in proxy-HMAC verification are in scope; a
 #: backend is recognised by the shared verifier import or the header name.

@@ -203,11 +203,11 @@ def _wire_common(monkeypatch: pytest.MonkeyPatch, topo: ProcessTopology, view: s
     # Reset the fork's process-lifetime from_env cache: an already-resolved
     # identity from an earlier test (or the host-view run of this test) would
     # otherwise short-circuit the walk and XPASS the strict pidns variants.
-    monkeypatch.setattr("kiro_crew.mcp_caller._FROM_ENV_CACHE", None)
+    monkeypatch.setattr("efm_go.mcp_caller._FROM_ENV_CACHE", None)
     # And the once-per-pid co-tenancy report, which is process-lifetime state
     # for the same reason: a warning already emitted by an earlier test would
     # make a later one assert on a debug line it never sees.
-    monkeypatch.setattr("kiro_crew.mcp_caller._reported_co_tenancy", set())
+    monkeypatch.setattr("efm_go.mcp_caller._reported_co_tenancy", set())
 
 
 # ---------------------------------------------------------------------------
@@ -217,12 +217,12 @@ def _wire_common(monkeypatch: pytest.MonkeyPatch, topo: ProcessTopology, view: s
 
 @pytest.mark.parametrize("view", VIEWS)
 def test_from_env_resolves_session_key(topo, monkeypatch, view) -> None:
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_common(monkeypatch, topo, view)
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup(view))
     # from_env imports config_dir lazily from the loader module.
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
 
     ctx = mcp_caller.CallerContext.from_env()
     assert ctx.session_key == SESSION_KEY
@@ -236,11 +236,11 @@ def test_from_env_resolves_session_key(topo, monkeypatch, view) -> None:
 
 @pytest.mark.parametrize("view", VIEWS)
 def test_mcp_core_resolves_session_key(topo, monkeypatch, view) -> None:
-    from kiro_crew import mcp_caller, mcp_core
+    from efm_go import mcp_caller, mcp_core
 
     _wire_common(monkeypatch, topo, view)
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup(view))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
 
     assert mcp_core._resolve_session_key() == SESSION_KEY
 
@@ -262,7 +262,7 @@ def test_mcp_core_resolves_session_key(topo, monkeypatch, view) -> None:
 def test_mcp_shared_policy_walk_resolves_but_fails_closed_without_dialling(
     topo, monkeypatch, view
 ) -> None:
-    from kiro_crew import mcp_shared
+    from efm_go import mcp_shared
 
     # Reset the module-lifetime policy caches so a prior test (or the
     # host-view run) cannot leak a cached/negative-cached result in.
@@ -273,7 +273,7 @@ def test_mcp_shared_policy_walk_resolves_but_fails_closed_without_dialling(
 
     monkeypatch.setattr(mcp_shared, "resolve_client_port_src", lambda port: (5476, "config"))
     monkeypatch.setattr(mcp_shared, "config_dir", lambda: topo.cfg_dir)
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
     (topo.cfg_dir / ".local_secret").write_text("s")
 
     topo.write_session_pid(KIRO_CLI)  # direct parent of MCP_SERVER
@@ -315,12 +315,12 @@ def test_mcp_shared_policy_walk_resolves_but_fails_closed_without_dialling(
 
 @pytest.mark.parametrize("view", VIEWS)
 def test_stub_caller_block_carries_session_key(topo, monkeypatch, view) -> None:
-    from kiro_crew import mcp_caller
-    from kiro_crew.mcp_gateway import stub
+    from efm_go import mcp_caller
+    from efm_go.mcp_gateway import stub
 
     _wire_common(monkeypatch, topo, view)
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup(view))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
 
     caller = stub._build_caller_block(None)
     assert caller["session_key"] == SESSION_KEY
@@ -331,7 +331,7 @@ def test_stub_caller_block_carries_session_key(topo, monkeypatch, view) -> None:
 def test_stub_ancestor_chain_reaches_session_host(topo, monkeypatch, view) -> None:
     """The claim-push index keys stub connections by REAL ancestor pids; a
     claim naming the session host must find this stub's connection."""
-    from kiro_crew.mcp_gateway import stub
+    from efm_go.mcp_gateway import stub
 
     _wire_common(monkeypatch, topo, view)
     # stub imports _parent_pid by value — patch the stub-module binding.
@@ -396,14 +396,14 @@ def _wire_shared(
     monkeypatch: pytest.MonkeyPatch, topo: ProcessTopology, *, token: str = ""
 ) -> None:
     """Run as the CO-TENANT's MCP server on the shared pid, with or without a token."""
-    from kiro_crew import session_token_sig
-    from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+    from efm_go import session_token_sig
+    from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
     monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
     monkeypatch.delenv("KIROCREW_HOST_PID", raising=False)
     monkeypatch.setattr("os.getppid", lambda: KIRO_CLI)
-    monkeypatch.setattr("kiro_crew.mcp_caller._FROM_ENV_CACHE", None)
-    monkeypatch.setattr("kiro_crew.mcp_caller._reported_co_tenancy", set())
+    monkeypatch.setattr("efm_go.mcp_caller._FROM_ENV_CACHE", None)
+    monkeypatch.setattr("efm_go.mcp_caller._reported_co_tenancy", set())
     # One patch covers all three client resolvers: each reads the token through
     # the single shared reader ``session_token_sig.session_key_from_env_token``,
     # which dispatches to ``verify_session_token`` by module-level name.
@@ -416,16 +416,16 @@ def _wire_shared(
 
 
 def _wire_shared_caller(monkeypatch, topo: ProcessTopology, *, token: str = "") -> None:
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_shared(monkeypatch, topo, token=token)
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup("host"))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
 
 
 def _published(tmp_path: Path, monkeypatch, *, co_tenants) -> str:
     """Bytes ``publish_session_pid`` writes for *co_tenants*, start token absent."""
-    from kiro_crew import session_pid_sig
+    from efm_go import session_pid_sig
 
     monkeypatch.setattr(session_pid_sig, "config_dir", lambda: tmp_path)
     # No live process behind a synthetic pid, so no start token is recorded.
@@ -467,7 +467,7 @@ def test_a_truncated_membership_still_states_the_true_count(tmp_path, monkeypatc
     that stores a two-byte line separator would otherwise overflow the bound
     and have the whole mapping refused, which reads as no tenancy at all.
     """
-    from kiro_crew import session_pid_sig
+    from efm_go import session_pid_sig
 
     # More sessions than the mapping's byte bound can enumerate.
     many = [f"dashboard:chat-{i}-{'k' * 40}" for i in range(200)]
@@ -493,7 +493,7 @@ def test_a_translated_line_separator_still_reads_back(tmp_path, monkeypatch) -> 
     misattribution the tenant section exists to prevent. Rewriting the bytes
     here puts that platform's outcome under the same assertion everywhere.
     """
-    from kiro_crew import session_pid_sig
+    from efm_go import session_pid_sig
 
     many = [f"dashboard:chat-{i}-{'k' * 40}" for i in range(200)]
     body = _published(tmp_path, monkeypatch, co_tenants=many)
@@ -513,7 +513,7 @@ def test_a_translated_line_separator_still_reads_back(tmp_path, monkeypatch) -> 
 
 
 def test_from_env_refuses_a_co_tenants_key(shared_topo, monkeypatch, caplog) -> None:
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_shared_caller(monkeypatch, shared_topo)
     with caplog.at_level(logging.WARNING):
@@ -525,7 +525,7 @@ def test_from_env_refuses_a_co_tenants_key(shared_topo, monkeypatch, caplog) -> 
 
 
 def test_from_env_names_the_co_tenant_from_its_own_token(shared_topo, monkeypatch) -> None:
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_shared_caller(monkeypatch, shared_topo, token=CO_TENANT_TOKEN)
     ctx = mcp_caller.CallerContext.from_env()
@@ -536,22 +536,22 @@ def test_from_env_names_the_co_tenant_from_its_own_token(shared_topo, monkeypatc
 
 
 def test_mcp_core_refuses_a_co_tenants_key(shared_topo, monkeypatch, caplog) -> None:
-    from kiro_crew import mcp_caller, mcp_core
+    from efm_go import mcp_caller, mcp_core
 
     _wire_shared(monkeypatch, shared_topo)
     monkeypatch.setattr(mcp_caller, "_parent_pid", shared_topo.parent_lookup("host"))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: shared_topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: shared_topo.cfg_dir)
     with caplog.at_level(logging.WARNING):
         assert mcp_core._resolve_session_key() == ""
     assert "co-tenant" in caplog.text
 
 
 def test_mcp_core_names_the_co_tenant_from_its_own_token(shared_topo, monkeypatch) -> None:
-    from kiro_crew import mcp_caller, mcp_core
+    from efm_go import mcp_caller, mcp_core
 
     _wire_shared(monkeypatch, shared_topo, token=CO_TENANT_TOKEN)
     monkeypatch.setattr(mcp_caller, "_parent_pid", shared_topo.parent_lookup("host"))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: shared_topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: shared_topo.cfg_dir)
     assert mcp_core._resolve_session_key() == CO_TENANT_KEY
 
 
@@ -559,7 +559,7 @@ def test_mcp_core_names_the_co_tenant_from_its_own_token(shared_topo, monkeypatc
 
 
 def _wire_shared_policy(monkeypatch, topo: ProcessTopology, *, token: str = "") -> MagicMock:
-    from kiro_crew import mcp_shared
+    from efm_go import mcp_shared
 
     monkeypatch.setattr(mcp_shared, "_excluded_tools_by_session", {})
     monkeypatch.setattr(mcp_shared, "_last_failure_time", 0.0)
@@ -567,7 +567,7 @@ def _wire_shared_policy(monkeypatch, topo: ProcessTopology, *, token: str = "") 
     monkeypatch.setattr(mcp_shared, "_failure_count", 0)
     monkeypatch.setattr(mcp_shared, "resolve_client_port_src", lambda port: (5476, "config"))
     monkeypatch.setattr(mcp_shared, "config_dir", lambda: topo.cfg_dir)
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
     (topo.cfg_dir / ".local_secret").write_text("s")
     _wire_shared(monkeypatch, topo, token=token)
     response = MagicMock()
@@ -589,7 +589,7 @@ def test_mcp_shared_policy_refuses_a_co_tenants_key(shared_topo, monkeypatch, ca
     class from that set would leave the label looking right while every excluded
     tool became callable on this topology.
     """
-    from kiro_crew import mcp_shared
+    from efm_go import mcp_shared
 
     urlopen = _wire_shared_policy(monkeypatch, shared_topo)
     with caplog.at_level(logging.WARNING):
@@ -615,7 +615,7 @@ def test_mcp_shared_policy_still_proceeds_when_nothing_has_named_the_session(
     against a stubbed rung: stubbing the rung is what lets a mutation inside it
     survive, since the pin would then never execute the line it is meant to hold.
     """
-    from kiro_crew import mcp_shared
+    from efm_go import mcp_shared
 
     urlopen = _wire_shared_policy(monkeypatch, shared_topo)
     # Point every config-dir seam at an EMPTY directory: same walk, no answers.
@@ -623,7 +623,7 @@ def test_mcp_shared_policy_still_proceeds_when_nothing_has_named_the_session(
     empty.mkdir()
     (empty / ".local_secret").write_text("s")
     monkeypatch.setattr(mcp_shared, "config_dir", lambda: empty)
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: empty)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: empty)
 
     policy = mcp_shared._resolve_tool_policy()
     assert policy.unresolved == "no_session_key"
@@ -632,7 +632,7 @@ def test_mcp_shared_policy_still_proceeds_when_nothing_has_named_the_session(
 
 
 def test_mcp_shared_policy_names_the_co_tenant_from_its_own_token(shared_topo, monkeypatch) -> None:
-    from kiro_crew import mcp_shared
+    from efm_go import mcp_shared
 
     urlopen = _wire_shared_policy(monkeypatch, shared_topo, token=CO_TENANT_TOKEN)
     assert mcp_shared._resolve_tool_policy().excluded == set()
@@ -643,7 +643,7 @@ def test_mcp_shared_policy_names_the_co_tenant_from_its_own_token(shared_topo, m
 
 
 def test_stub_caller_block_refuses_a_co_tenants_key(shared_topo, monkeypatch, caplog) -> None:
-    from kiro_crew.mcp_gateway import stub
+    from efm_go.mcp_gateway import stub
 
     _wire_shared_caller(monkeypatch, shared_topo)
     with caplog.at_level(logging.WARNING):
@@ -652,7 +652,7 @@ def test_stub_caller_block_refuses_a_co_tenants_key(shared_topo, monkeypatch, ca
 
 
 def test_stub_caller_block_names_the_co_tenant_from_its_own_token(shared_topo, monkeypatch) -> None:
-    from kiro_crew.mcp_gateway import stub
+    from efm_go.mcp_gateway import stub
 
     _wire_shared_caller(monkeypatch, shared_topo, token=CO_TENANT_TOKEN)
     assert stub._build_caller_block(None)["session_key"] == CO_TENANT_KEY
@@ -670,7 +670,7 @@ def test_peer_identity_refuses_to_name_a_shared_pids_founder(shared_topo, monkey
     session. The ancestor chain stays complete — claim-push indexing needs it
     whether or not a key resolved.
     """
-    from kiro_crew.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_gateway import gatewayd as gw
 
     monkeypatch.setattr(gw, "_config_dir", lambda: shared_topo.cfg_dir)
     monkeypatch.setattr(gw, "_ppid_fn", shared_topo.parent_lookup("host"))
@@ -686,7 +686,7 @@ def test_peer_identity_admits_a_recorded_co_tenant(shared_topo, monkeypatch) -> 
     The recorded membership is what lets ``token_auth`` verify a co-tenant's
     declared key instead of 403-ing it, so the walk has to surface the set.
     """
-    from kiro_crew.peer_resolve import resolve_peer_tenancy
+    from efm_go.peer_resolve import resolve_peer_tenancy
 
     tenancy = resolve_peer_tenancy(
         MCP_SERVER,
@@ -712,7 +712,7 @@ def test_peer_tenancy_carries_that_it_passed_an_unusable_mapping(shared_topo) ->
     and it is indistinguishable from a forgery -- which is why it must not read
     as "this pid hosts one session".
     """
-    from kiro_crew.peer_resolve import resolve_peer_tenancy
+    from efm_go.peer_resolve import resolve_peer_tenancy
 
     # A non-empty signature that cannot verify against the body: the window's
     # shape. Missing the `.sig` entirely would be REFUSAL_ABSENT instead, which
@@ -736,7 +736,7 @@ def test_peer_tenancy_reports_a_genuine_absence_as_absent(shared_topo) -> None:
     """The converse, and the reason the flag is keyed on a record being PRESENT:
     a pid with no mapping anywhere in its ancestry must stay the degrade arm --
     warm-pool runtimes before claim, cron scripts, pooled MCP backends."""
-    from kiro_crew.peer_resolve import resolve_peer_tenancy
+    from efm_go.peer_resolve import resolve_peer_tenancy
 
     for leftover in shared_topo.cfg_dir.glob("session_pid_*"):
         leftover.unlink()
@@ -762,8 +762,8 @@ def test_a_proven_recycle_is_not_unverifiable(shared_topo, monkeypatch) -> None:
     (a cron script, a pooled MCP backend) for as long as that file sits in
     their ancestry -- callers that work on main today.
     """
-    from kiro_crew import platform_compat, session_pid_sig
-    from kiro_crew.peer_resolve import resolve_peer_tenancy
+    from efm_go import platform_compat, session_pid_sig
+    from efm_go.peer_resolve import resolve_peer_tenancy
 
     # Publish a SIGNED 1:1 mapping, then make the live start token disagree with
     # the recorded one: REFUSAL_RECYCLED, reached only past a verifying MAC.
@@ -787,7 +787,7 @@ def test_a_proven_recycle_is_not_unverifiable(shared_topo, monkeypatch) -> None:
 
 def test_single_tenant_peer_identity_still_resolves(topo, monkeypatch) -> None:
     """Control: the 1:1 mapping the previous tests' shape differs from."""
-    from kiro_crew.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_gateway import gatewayd as gw
 
     monkeypatch.setattr(gw, "_config_dir", lambda: topo.cfg_dir)
     monkeypatch.setattr(gw, "_ppid_fn", topo.parent_lookup("host"))
@@ -810,15 +810,15 @@ def test_single_tenant_peer_identity_still_resolves(topo, monkeypatch) -> None:
     ["from_env", "mcp_core", "mcp_shared_policy"],
 )
 def test_the_token_outranks_a_stale_pid_mapping(topo, monkeypatch, resolver) -> None:
-    from kiro_crew import mcp_caller, mcp_core, mcp_shared, session_token_sig
-    from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+    from efm_go import mcp_caller, mcp_core, mcp_shared, session_token_sig
+    from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
     # The mapping on the direct parent names the session this process was
     # spawned under; the token on its own element names the one it serves now.
     topo.write_session_pid(KIRO_CLI, SESSION_KEY)
     _wire_common(monkeypatch, topo, "host")
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup("host"))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
     monkeypatch.setattr(
         session_token_sig,
         "verify_session_token",
@@ -848,12 +848,12 @@ def test_the_token_outranks_a_stale_pid_mapping(topo, monkeypatch, resolver) -> 
 
 
 def _wire_protected(monkeypatch, topo, answer, *, raises: bool = False) -> None:
-    import kiro_crew.member_memory_auth as mma
-    from kiro_crew import mcp_caller
+    import efm_go.member_memory_auth as mma
+    from efm_go import mcp_caller
 
     _wire_common(monkeypatch, topo, "host")
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup("host"))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
 
     def probe(pid):
         if raises:
@@ -864,7 +864,7 @@ def _wire_protected(monkeypatch, topo, answer, *, raises: bool = False) -> None:
 
 
 def test_a_protected_binding_outranks_the_pid_mapping(topo, monkeypatch) -> None:
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_protected(monkeypatch, topo, "dashboard:member-alice")
     identity = mcp_caller.resolve_own_identity()
@@ -873,7 +873,7 @@ def test_a_protected_binding_outranks_the_pid_mapping(topo, monkeypatch) -> None
 
 def test_an_invalid_protected_record_refuses_without_falling_through(topo, monkeypatch) -> None:
     """An empty binding is a refusal, and the pid mapping must not answer past it."""
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_protected(monkeypatch, topo, "")
     identity = mcp_caller.resolve_own_identity()
@@ -882,7 +882,7 @@ def test_an_invalid_protected_record_refuses_without_falling_through(topo, monke
 
 
 def test_a_raising_protected_probe_reports_a_broken_resolution(topo, monkeypatch) -> None:
-    from kiro_crew import mcp_caller, mcp_shared
+    from efm_go import mcp_caller, mcp_shared
 
     _wire_protected(monkeypatch, topo, None, raises=True)
     identity = mcp_caller.resolve_own_identity()
@@ -894,7 +894,7 @@ def test_a_raising_protected_probe_reports_a_broken_resolution(topo, monkeypatch
 
 
 def test_no_protected_binding_falls_through_to_the_pid_mapping(topo, monkeypatch) -> None:
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_protected(monkeypatch, topo, None)
     identity = mcp_caller.resolve_own_identity()
@@ -903,7 +903,7 @@ def test_no_protected_binding_falls_through_to_the_pid_mapping(topo, monkeypatch
 
 def test_mcp_cores_lenient_resolver_does_not_consult_the_binding(topo, monkeypatch) -> None:
     """The binding gates memory, and this resolver's consumers are attribution."""
-    from kiro_crew import mcp_core
+    from efm_go import mcp_core
 
     _wire_protected(monkeypatch, topo, "dashboard:member-alice")
     assert mcp_core._resolve_session_key() == SESSION_KEY
@@ -916,12 +916,12 @@ def test_the_co_tenancy_warning_is_reported_once_per_pid(shared_topo, monkeypatc
     needs to read it, so the operator-facing message fires once per pid and
     repeats land at debug.
     """
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_shared_caller(monkeypatch, shared_topo)
     with caplog.at_level(logging.DEBUG):
         for _ in range(3):
-            monkeypatch.setattr("kiro_crew.mcp_caller._FROM_ENV_CACHE", None)
+            monkeypatch.setattr("efm_go.mcp_caller._FROM_ENV_CACHE", None)
             assert mcp_caller.resolve_own_identity().session_key == ""
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
     repeats = [r for r in caplog.records if "still names" in r.getMessage()]
@@ -944,11 +944,11 @@ VIEWS_ALL_PASS = ["host", "pidns"]
 def test_from_env_host_pid_env_resolves_in_any_view(topo, monkeypatch, view) -> None:
     """KIROCREW_HOST_PID resolution must succeed under BOTH pid views — it
     bypasses the /proc walk entirely, which is its whole point."""
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _wire_common(monkeypatch, topo, view)
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup(view))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
     # The launcher (session host) exported its HOST pid before unshare.
     monkeypatch.setenv("KIROCREW_HOST_PID", str(SESSION_HOST))
 
@@ -959,11 +959,11 @@ def test_from_env_host_pid_env_resolves_in_any_view(topo, monkeypatch, view) -> 
 
 @pytest.mark.parametrize("view", VIEWS_ALL_PASS)
 def test_mcp_core_host_pid_env_resolves_in_any_view(topo, monkeypatch, view) -> None:
-    from kiro_crew import mcp_caller, mcp_core
+    from efm_go import mcp_caller, mcp_core
 
     _wire_common(monkeypatch, topo, view)
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup(view))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
     monkeypatch.setenv("KIROCREW_HOST_PID", str(SESSION_HOST))
 
     assert mcp_core._resolve_session_key() == SESSION_KEY
@@ -979,7 +979,7 @@ def test_mcp_core_host_pid_env_resolves_in_any_view(topo, monkeypatch, view) -> 
 
 
 def test_gatewayd_peer_identity_resolves_via_host_walk(topo, monkeypatch) -> None:
-    from kiro_crew.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_gateway import gatewayd as gw
 
     monkeypatch.setattr(gw, "_config_dir", lambda: topo.cfg_dir)
     monkeypatch.setattr(gw, "_ppid_fn", topo.parent_lookup("host"))
@@ -1008,19 +1008,19 @@ def _plant_symlink(topo, host_pid: int) -> None:
 
 
 def test_from_env_refuses_symlinked_pid_file(topo, monkeypatch) -> None:
-    from kiro_crew import mcp_caller
+    from efm_go import mcp_caller
 
     _plant_symlink(topo, SESSION_HOST)
     _wire_common(monkeypatch, topo, "host")
     monkeypatch.setattr(mcp_caller, "_parent_pid", topo.parent_lookup("host"))
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
 
     ctx = mcp_caller.CallerContext.from_env()
     assert ctx.session_key == ""
 
 
 def test_mcp_shared_refuses_symlinked_pid_file(topo, monkeypatch) -> None:
-    from kiro_crew import mcp_shared
+    from efm_go import mcp_shared
 
     monkeypatch.setattr(mcp_shared, "_excluded_tools_by_session", {})
     monkeypatch.setattr(mcp_shared, "_last_failure_time", 0.0)
@@ -1029,7 +1029,7 @@ def test_mcp_shared_refuses_symlinked_pid_file(topo, monkeypatch) -> None:
 
     monkeypatch.setattr(mcp_shared, "resolve_client_port_src", lambda port: (5476, "config"))
     monkeypatch.setattr(mcp_shared, "config_dir", lambda: topo.cfg_dir)
-    monkeypatch.setattr("kiro_crew.config.paths.config_dir", lambda: topo.cfg_dir)
+    monkeypatch.setattr("efm_go.config.paths.config_dir", lambda: topo.cfg_dir)
     (topo.cfg_dir / ".local_secret").write_text("s")
 
     # Symlink at the DIRECT parent's path (where the resolvable-case test
@@ -1053,7 +1053,7 @@ def test_mcp_shared_refuses_symlinked_pid_file(topo, monkeypatch) -> None:
 
 
 def test_gatewayd_peer_identity_refuses_symlinked_pid_file(topo, monkeypatch) -> None:
-    from kiro_crew.mcp_gateway import gatewayd as gw
+    from efm_go.mcp_gateway import gatewayd as gw
 
     _plant_symlink(topo, SESSION_HOST)
     monkeypatch.setattr(gw, "_config_dir", lambda: topo.cfg_dir)
@@ -1078,7 +1078,7 @@ def test_gatewayd_peer_identity_refuses_symlinked_pid_file(topo, monkeypatch) ->
 
 _SESSION_PID_TOKEN = re.compile(r"session_pid_(\{|\*|<)")
 
-#: file (relative to src/kiro_crew) -> declared role / namespace assumption
+#: file (relative to src/efm_go) -> declared role / namespace assumption
 _REGISTERED_CALL_SITES: dict[str, str] = {
     "messaging/identity.py": (
         "SOLE per-turn writer — publish_turn_identity() calls "
@@ -1193,7 +1193,7 @@ _REGISTERED_CALL_SITES: dict[str, str] = {
 
 
 def _src_root() -> Path:
-    return Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+    return Path(__file__).resolve().parent.parent / "src" / "efm_go"
 
 
 def test_session_pid_call_sites_are_registered() -> None:
@@ -1255,7 +1255,7 @@ def _code_text(path: Path) -> str:
 
 
 def test_reflexive_tools_route_through_the_strict_gate() -> None:
-    from kiro_crew.mcp_core import REFLEXIVE_TOOL_MODULES
+    from efm_go.mcp_core import REFLEXIVE_TOOL_MODULES
 
     src = _src_root()
     direct: set[str] = set()
@@ -1314,9 +1314,9 @@ def test_reflexive_tools_route_through_the_strict_gate() -> None:
 def test_session_reads_require_and_reuse_strict_identity(
     tmp_path, monkeypatch, identified, tool_name, args
 ):
-    from kiro_crew import mcp_core
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.mcp_tools import logs, sessions
+    from efm_go import mcp_core
+    from efm_go.history import ConversationLog
+    from efm_go.mcp_tools import logs, sessions
 
     caller_key = "dashboard:child"
     refusal = "Error: session identity unavailable. Fixture diagnosis."
@@ -1367,8 +1367,8 @@ def test_session_reads_require_and_reuse_strict_identity(
 
 @pytest.mark.parametrize("identified", [True, False])
 def test_memory_recall_uses_the_shared_gate_identity_once(monkeypatch, identified):
-    from kiro_crew import mcp_core
-    from kiro_crew.mcp_tools import learn
+    from efm_go import mcp_core
+    from efm_go.mcp_tools import learn
 
     key = "subagent:memory-recall" if identified else ""
     refusal = "Error: unresolved session. Fixture installation diagnosis."

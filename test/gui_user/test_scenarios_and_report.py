@@ -103,7 +103,7 @@ class TestShippedScenarios:
         # scenario reads off the source row. A note added or removed without the
         # scenario moving -- or a chunker change that splits a note -- fails here,
         # not as a paid nightly run.
-        from kiro_crew.knowledge.chunker import HeadingAwareChunker
+        from efm_go.knowledge.chunker import HeadingAwareChunker
 
         notes = sorted(KNOWLEDGE_NOTES_DIR.glob("*.md"))
         assert len(notes) == 3
@@ -144,8 +144,8 @@ class TestShippedScenarios:
         # here rather than as "No project directory is set" on a paid nightly run.
         import importlib.util
 
-        from kiro_crew.history import ConversationLog
-        from kiro_crew.testing.fixtures import seeded_home
+        from efm_go.history import ConversationLog
+        from efm_go.testing.fixtures import seeded_home
 
         spec = importlib.util.spec_from_file_location("gui_seed_home", SEED_HOME_PY)
         assert spec is not None and spec.loader is not None
@@ -174,8 +174,8 @@ class TestShippedScenarios:
         # scenario moving fails here rather than as a paid nightly run. The set is
         # a copy of the `artifacts-library` fixture's, and the two are held equal
         # so the copies cannot drift apart silently.
-        from kiro_crew.artifacts import ArtifactStore
-        from kiro_crew.testing.fixtures import seeded_home
+        from efm_go.artifacts import ArtifactStore
+        from efm_go.testing.fixtures import seeded_home
 
         def fingerprint(fixture: str) -> dict[str, tuple[str, str, int]]:
             with seeded_home(fixture):
@@ -364,7 +364,7 @@ class TestScenarioValidation:
 
     def test_docs_url_accepts_https_and_repo_docs_paths(self, tmp_path: Path) -> None:
         for url in (
-            "https://github.com/kirodotdev/KiroCrew/issues/9578",
+            "https://efmleads.com/issues/9578",
             "docs/system-specs/modules/themes.md",
             "docs/build/gui-user-test.md#adding-a-scenario",
         ):

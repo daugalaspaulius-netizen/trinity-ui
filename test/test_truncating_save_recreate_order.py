@@ -39,11 +39,11 @@ from types import SimpleNamespace
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import chat_fork
-from kiro_crew.dashboard import chat_handlers as handlers
-from kiro_crew.dashboard import chat_persistence, chat_regenerate, chat_rewind
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.dashboard_persistence import DashboardPersistenceCoordinator
+from efm_go.dashboard import chat_fork
+from efm_go.dashboard import chat_handlers as handlers
+from efm_go.dashboard import chat_persistence, chat_regenerate, chat_rewind
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.dashboard_persistence import DashboardPersistenceCoordinator
 
 NAME = "chat-1-9905"
 

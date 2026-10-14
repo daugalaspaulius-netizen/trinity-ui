@@ -1,7 +1,7 @@
 """The app backend's composition: one facade over private supervision owners.
 
-``kiro_crew.apps.backend`` is the backend's only import path and patch surface, and its
-responsibilities live in ``kiro_crew.apps.backend_runtime``. For that split to be
+``efm_go.apps.backend`` is the backend's only import path and patch surface, and its
+responsibilities live in ``efm_go.apps.backend_runtime``. For that split to be
 invisible to every caller, each property below is pinned in the direction that would
 catch a regression rather than in the direction that restates the code.
 
@@ -11,7 +11,7 @@ catch a regression rather than in the direction that restates the code.
 * A name and the symbol it denotes cannot come apart: every module holding a name holds
   the same object -- the process table and its locks included -- and a write through
   the facade reaches all of them, which is what the suite's ``monkeypatch.setattr(bmod,
-  ...)``, ``mock.patch("kiro_crew.apps.backend....")`` and ``bmod._processes.clear()``
+  ...)``, ``mock.patch("efm_go.apps.backend....")`` and ``bmod._processes.clear()``
   sites rely on.
 * The owners form one acyclic stack under the facade and none imports it. The
   constructs repository guards pin to ``backend.py`` stay there, and exactly four call
@@ -42,8 +42,8 @@ from unittest import mock
 import pytest
 import source_corpus
 
-from kiro_crew.apps import backend
-from kiro_crew.apps.backend_runtime import (
+from efm_go.apps import backend
+from efm_go.apps.backend_runtime import (
     pidfile,
     ports,
     probe,
@@ -62,8 +62,8 @@ from kiro_crew.apps.backend_runtime import (
 pytestmark = pytest.mark.xdist_group(name="tree_scan_app_backend_composition")
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_RUNTIME_DIR = _REPO_ROOT / "src/kiro_crew/apps/backend_runtime"
-_RUNTIME_PACKAGE = "kiro_crew.apps.backend_runtime"
+_RUNTIME_DIR = _REPO_ROOT / "src/efm_go/apps/backend_runtime"
+_RUNTIME_PACKAGE = "efm_go.apps.backend_runtime"
 
 #: The owners in the facade's declared layer order, lowest first.
 PARTS: tuple[ModuleType, ...] = (
@@ -554,7 +554,7 @@ class TestTheSurfaceSurvivesTheSplit:
         public = {name for name in FROZEN_NAMES if not name.startswith("_")}
         assert set(backend.__all__) == public
         probe_path = tmp_path / "backend_star_probe.py"
-        probe_path.write_text("from kiro_crew.apps.backend import *\n", encoding="utf-8")
+        probe_path.write_text("from efm_go.apps.backend import *\n", encoding="utf-8")
         spec = importlib.util.spec_from_file_location("backend_star_probe", probe_path)
         assert spec and spec.loader
         star = importlib.util.module_from_spec(spec)
@@ -670,7 +670,7 @@ class TestOneNamespaceForWrites:
             assert vars(module)[_MULTI_HOLDER] is original
 
     def test_a_dotted_string_patch_restores_every_holder(self) -> None:
-        # The spelling most of the suite uses: ``mock.patch("kiro_crew.apps.backend.X")``.
+        # The spelling most of the suite uses: ``mock.patch("efm_go.apps.backend.X")``.
         holders = [module for module in _holders(_MULTI_HOLDER) if module is not backend]
         original = getattr(backend, _MULTI_HOLDER)
         with mock.patch(f"{backend.__name__}.{_MULTI_HOLDER}") as fake:
@@ -766,11 +766,11 @@ class TestOneNamespaceForWrites:
             assert vars(module)[_MULTI_HOLDER] is original
 
     def test_every_part_logs_through_the_facades_logger(self) -> None:
-        # Log routing, filters and ``caplog.at_level(..., logger="kiro_crew.apps.backend")``
+        # Log routing, filters and ``caplog.at_level(..., logger="efm_go.apps.backend")``
         # captures key on the facade's name.
         for part in PARTS:
             assert part.logger is backend.logger, part.__name__
-        assert backend.logger.name == backend.__name__ == "kiro_crew.apps.backend"
+        assert backend.logger.name == backend.__name__ == "efm_go.apps.backend"
 
 
 # ---------------------------------------------------------------------------
@@ -1097,7 +1097,7 @@ class TestLayering:
         assert _facade_reads("def f():\n    return facade()._pid_alive(1)\n") == set()
 
     def test_the_runtime_helper_answers_the_facade(self) -> None:
-        from kiro_crew.apps import backend_runtime
+        from efm_go.apps import backend_runtime
 
         assert backend_runtime._FACADE == backend.__name__
         assert backend_runtime._facade() is backend
@@ -1107,7 +1107,7 @@ class TestLayering:
         # then for the facade by name. Run as a copy of the helper bound to stand-in
         # ``sys`` and ``importlib``, so the process's module table is never touched
         # while other threads may be resolving the facade.
-        from kiro_crew.apps import backend_runtime
+        from efm_go.apps import backend_runtime
 
         stand_in = ModuleType(backend.__name__)
         imported: list[str] = []
@@ -1197,7 +1197,7 @@ class TestTheFacadesOwnCode:
         assert (
             _bare_loads(
                 "if TYPE_CHECKING:\n"
-                "    from kiro_crew.apps.backend_runtime.pidfile import _pidfile_path\n"
+                "    from efm_go.apps.backend_runtime.pidfile import _pidfile_path\n"
                 "def f():\n"
                 "    return _part('x')._pidfile_path()\n"
             )
@@ -1240,7 +1240,7 @@ class TestTheFacadesOwnCode:
             assert refused.call_count == 0
             # The refusal sits on the binding the miss path calls.
             with pytest.raises(AssertionError, match="resolution imported"):
-                backend._part("kiro_crew._backend_absent_probe")
+                backend._part("efm_go._backend_absent_probe")
             assert refused.call_count == 1
 
     def test_the_facade_call_sites_resolve_without_import_module(
@@ -1249,7 +1249,7 @@ class TestTheFacadesOwnCode:
         # The boot wave reaches the facade's start through ``backend_runtime._facade()``.
         # A test that stubs ``importlib.import_module`` for its own reasons must not be
         # able to answer it.
-        from kiro_crew.apps import backend_runtime
+        from efm_go.apps import backend_runtime
 
         monkeypatch.setattr(backend, "_preclaim_fixed_ports", lambda names: None)
         monkeypatch.setattr(
@@ -1270,8 +1270,8 @@ class TestTheFacadesOwnCode:
 
 _RELOAD_PROBE = """
 import importlib, json, sys
-from kiro_crew.apps import backend
-from kiro_crew.apps.backend_runtime import probe, tracking
+from efm_go.apps import backend
+from efm_go.apps.backend_runtime import probe, tracking
 before_record = tracking.AppProcess
 before_table = tracking._processes
 importlib.reload(backend)
@@ -1301,10 +1301,10 @@ def test_a_reload_of_the_facade_reloads_every_owner(tmp_path: Path) -> None:
     import os
     import subprocess
 
-    from kiro_crew.subprocess_utf8 import UTF8_TEXT
+    from efm_go.subprocess_utf8 import UTF8_TEXT
 
     # The child imports this checkout's package, as the parent does through pytest's
-    # ``pythonpath``, not whichever ``kiro_crew`` its interpreter would otherwise find.
+    # ``pythonpath``, not whichever ``efm_go`` its interpreter would otherwise find.
     source = _REPO_ROOT / "src"
     env = {
         **os.environ,
@@ -1640,7 +1640,7 @@ def _facade_reexports() -> frozenset[str]:
     for path, text in _python_files():
         if _module_name(path) is None or _in_a_test_directory(path):
             continue
-        if "kiro_crew.apps" in text or "apps" in path.relative_to(_REPO_ROOT).parts:
+        if "efm_go.apps" in text or "apps" in path.relative_to(_REPO_ROOT).parts:
             candidates.append((_module_name(path) or "", _is_package(path), ast.parse(text)))
     found: frozenset[str] = frozenset()
     while True:
@@ -1723,7 +1723,7 @@ def _patch_sources() -> Iterator[tuple[Path, str]]:
 
 
 #: Imports most reader cases share.
-_CASE_IMPORTS = "from unittest import mock\nfrom kiro_crew.apps import backend\n"
+_CASE_IMPORTS = "from unittest import mock\nfrom efm_go.apps import backend\n"
 
 #: ``(id, source, module, expected names)`` for the reader: each form the guard must
 #: catch beside a spelling of it the guard must leave alone. ``@EXP@`` is a forwarded
@@ -1775,49 +1775,49 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     (
         "another module",
         _CASE_IMPORTS
-        + "from kiro_crew import config\nmock.patch.object(config, '@EXP@', create=True)\n",
+        + "from efm_go import config\nmock.patch.object(config, '@EXP@', create=True)\n",
         None,
         [],
     ),
     (
         "another module's .backend",
         _CASE_IMPORTS
-        + "from kiro_crew import config\n"
+        + "from efm_go import config\n"
         + "mock.patch.object(config.backend, '@EXP@', create=True)\n",
         None,
         [],
     ),
     (
         "the facade module imported by its path",
-        "from unittest import mock\nimport kiro_crew.apps.backend as reg\n"
+        "from unittest import mock\nimport efm_go.apps.backend as reg\n"
         "mock.patch.object(reg, '@EXP@', create=True)\n",
         None,
         ["@EXP@"],
     ),
     (
         "the facade module reached through its package",
-        "from unittest import mock\nimport kiro_crew.apps\n"
-        "mock.patch.object(kiro_crew.apps.backend, '@EXP@', create=True)\n",
+        "from unittest import mock\nimport efm_go.apps\n"
+        "mock.patch.object(efm_go.apps.backend, '@EXP@', create=True)\n",
         None,
         ["@EXP@"],
     ),
     (
         "patch as an alias",
-        "from unittest.mock import patch as P\nfrom kiro_crew.apps import backend\n"
+        "from unittest.mock import patch as P\nfrom efm_go.apps import backend\n"
         "P.object(backend, '@EXP@', create=True)\n",
         None,
         ["@EXP@"],
     ),
     (
         "a local function named patch",
-        "from kiro_crew.apps import backend\ndef patch(*a, **k):\n    return None\n"
+        "from efm_go.apps import backend\ndef patch(*a, **k):\n    return None\n"
         "patch.object(backend, '@EXP@', create=True)\n",
         None,
         [],
     ),
     (
         "mock as an alias",
-        "from unittest import mock as M\nfrom kiro_crew.apps import backend\n"
+        "from unittest import mock as M\nfrom efm_go.apps import backend\n"
         "M.patch.object(backend, '@EXP@', create=True)\n",
         None,
         ["@EXP@"],
@@ -1830,14 +1830,14 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     ),
     (
         "unittest.mock by its path",
-        "import unittest.mock\nfrom kiro_crew.apps import backend\n"
+        "import unittest.mock\nfrom efm_go.apps import backend\n"
         "unittest.mock.patch.multiple(backend, create=True, @EXP@=None)\n",
         None,
         ["@EXP@"],
     ),
     (
         "a third-party mock",
-        "import mock\nfrom kiro_crew.apps import backend\n"
+        "import mock\nfrom efm_go.apps import backend\n"
         "mock.patch.object(backend, '@EXP@', create=True)\n",
         None,
         [],
@@ -1870,7 +1870,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     ),
     (
         "another dotted string",
-        "from unittest import mock\nmock.patch('kiro_crew.config.@EXP@', create=True)\n",
+        "from unittest import mock\nmock.patch('efm_go.config.@EXP@', create=True)\n",
         None,
         [],
     ),
@@ -1883,7 +1883,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     (
         "an f-string of another __name__",
         _CASE_IMPORTS
-        + "from kiro_crew import config\nmock.patch(f'{config.__name__}.@EXP@', create=True)\n",
+        + "from efm_go import config\nmock.patch(f'{config.__name__}.@EXP@', create=True)\n",
         None,
         [],
     ),
@@ -1896,7 +1896,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     ),
     (
         "an f-string of another constant",
-        "from unittest import mock\nOTHER = 'kiro_crew.config'\n"
+        "from unittest import mock\nOTHER = 'efm_go.config'\n"
         "mock.patch(f'{OTHER}.@EXP@', create=True)\n",
         None,
         [],
@@ -1916,7 +1916,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     ),
     (
         "another constant concatenated",
-        "from unittest import mock\nOTHER = 'kiro_crew.config'\n"
+        "from unittest import mock\nOTHER = 'efm_go.config'\n"
         "mock.patch(OTHER + '.@EXP@', create=True)\n",
         None,
         [],
@@ -1930,7 +1930,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     (
         "keyword target elsewhere",
         _CASE_IMPORTS
-        + "from kiro_crew import config\n"
+        + "from efm_go import config\n"
         + "mock.patch.object(target=config, attribute='@EXP@', create=True)\n",
         None,
         [],
@@ -1969,7 +1969,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     ),
     (
         "an aliased patch with a positional create",
-        "from unittest.mock import patch as P\nfrom kiro_crew.apps import backend\n"
+        "from unittest.mock import patch as P\nfrom efm_go.apps import backend\n"
         "P.object(backend, '@EXP@', None, None, True)\n",
         None,
         ["@EXP@"],
@@ -1989,7 +1989,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     (
         "a splat on another module",
         _CASE_IMPORTS
-        + "from kiro_crew import config\n"
+        + "from efm_go import config\n"
         + "def test_x(opts):\n    mock.patch.object(config, '@EXP@', **opts)\n",
         None,
         [],
@@ -2012,7 +2012,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     (
         "**kwargs elsewhere",
         _CASE_IMPORTS
-        + "from kiro_crew import config\n"
+        + "from efm_go import config\n"
         + "def test_x(kw):\n    mock.patch.multiple(config, create=True, **kw)\n",
         None,
         [],
@@ -2026,7 +2026,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     (
         "patch.multiple of another string",
         "from unittest import mock\n"
-        "mock.patch.multiple('kiro_crew.config', create=True, @EXP@=None)\n",
+        "mock.patch.multiple('efm_go.config', create=True, @EXP@=None)\n",
         None,
         [],
     ),
@@ -2041,7 +2041,7 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
     (
         "import_module elsewhere",
         "import importlib\nfrom unittest import mock\n"
-        "other = importlib.import_module('kiro_crew.config')\n"
+        "other = importlib.import_module('efm_go.config')\n"
         "mock.patch.object(other, '@EXP@', create=True)\n",
         None,
         [],
@@ -2063,33 +2063,33 @@ _READER_CASES: list[tuple[str, str, str | None, list[str]]] = [
         "a relative import in a package",
         "from unittest import mock\nfrom ... import backend\n"
         "mock.patch.object(backend, '@EXP@', create=True)\n",
-        "kiro_crew.apps.builtins.tests.test_case",
+        "efm_go.apps.builtins.tests.test_case",
         ["@EXP@"],
     ),
     (
         "a relative import elsewhere",
         "from unittest import mock\nfrom ..crew import backend\n"
         "mock.patch.object(backend, '@EXP@', create=True)\n",
-        "kiro_crew.apps.builtins.tests.test_case",
+        "efm_go.apps.builtins.tests.test_case",
         [],
     ),
 ]
 
 #: A production module that re-exports the facade under another name, for the two
 #: cases below: the scan finds none today, so the reader is shown one.
-_SYNTHETIC_REEXPORTS = frozenset({"kiro_crew.apps.routes.backend_mod"})
+_SYNTHETIC_REEXPORTS = frozenset({"efm_go.apps.routes.backend_mod"})
 
 _REEXPORT_CASES: list[tuple[str, str, list[str]]] = [
     (
         "an assigned re-export",
-        "from unittest import mock\nfrom kiro_crew.apps import routes\n"
+        "from unittest import mock\nfrom efm_go.apps import routes\n"
         "def test_x():\n    reg = routes.backend_mod\n"
         "    mock.patch.object(reg, '@EXP@', create=True)\n",
         ["@EXP@"],
     ),
     (
         "an assigned other attribute",
-        "from unittest import mock\nfrom kiro_crew.apps import routes\n"
+        "from unittest import mock\nfrom efm_go.apps import routes\n"
         "def test_x():\n    reg = routes.backend_other\n"
         "    mock.patch.object(reg, '@EXP@', create=True)\n",
         [],
@@ -2131,15 +2131,15 @@ class TestPatchSpellings:
     def test_a_relative_import_resolves_against_the_right_package(
         self, is_package: bool, expected: list[str]
     ) -> None:
-        # ``from ... import backend`` in ``kiro_crew/apps/builtins/tests/__init__.py``
-        # names ``kiro_crew.apps.backend``; in a plain ``kiro_crew/apps/builtins/tests.py``
-        # it names ``kiro_crew.backend``, which is not the facade.
+        # ``from ... import backend`` in ``efm_go/apps/builtins/tests/__init__.py``
+        # names ``efm_go.apps.backend``; in a plain ``efm_go/apps/builtins/tests.py``
+        # it names ``efm_go.backend``, which is not the facade.
         source = _case(
             "from unittest import mock\nfrom ... import backend\n"
             "mock.patch.object(backend, '@EXP@', create=True)\n"
         )
         hits = _create_true_patches_of_forwarded_names(
-            source, "kiro_crew.apps.builtins.tests", is_package=is_package
+            source, "efm_go.apps.builtins.tests", is_package=is_package
         )
         assert [hit.name for hit in hits] == expected
 
@@ -2192,7 +2192,7 @@ class TestPatchSpellings:
             if (path, hit.function) not in _ALLOWED_CREATE_TRUE
         ]
         assert found == _ALLOWED_CREATE_TRUE, (
-            "mock.patch(..., create=True) of a name kiro_crew.apps.backend forwards to "
+            "mock.patch(..., create=True) of a name efm_go.apps.backend forwards to "
             "its owner deletes that name from every backend module when the patch "
             "exits. Drop create=True (the name exists) or patch it with "
             f"monkeypatch.setattr: {unexpected}; allowlisted but not found: "

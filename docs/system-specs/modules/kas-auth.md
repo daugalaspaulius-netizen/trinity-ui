@@ -1,8 +1,8 @@
 # KAS-Mode Auth Module
 
 > Status: implemented and wired to the KAS relay. The auth subsystem lives under
-> `src/kiro_crew/auth/` with unit tests. Its runtime consumer is
-> `src/kiro_crew/acp/kas_host_auth.py`: when the vault holds an identity, the KAS
+> `src/efm_go/auth/` with unit tests. Its runtime consumer is
+> `src/efm_go/acp/kas_host_auth.py`: when the vault holds an identity, the KAS
 > backend spawns the relay in `acp --agent-engine v3` mode WITHOUT `--auth-method
 > cli`, so the engine's `_kiro/auth/getAccessToken` request reaches Kiro Crew, and
 > `AcpRuntime` answers it from `KasAuthProvider.get_access_token_callback()`. That
@@ -164,7 +164,7 @@ driving Kiro's own portal/service exactly as the CLI does. This works only as lo
 Kiro's server keeps accepting the `kirocli` portal contract and the allowlisted ports.
 
 Endpoints (host: `https://prod.us-east-1.auth.desktop.kiro.dev`, portal:
-`https://app.kiro.dev`; both overridable — `KIRO_AUTH_PORTAL_URL`, setting
+`https://efmleads.com`; both overridable — `KIRO_AUTH_PORTAL_URL`, setting
 `ApiKiroAuthService`):
 
 - **Loopback:** open
@@ -233,7 +233,7 @@ KAS tokens live in a **dedicated `SecretVault` instance** rooted at
 `<data_home>/kas` (store `kas/.vault/secrets.enc`, key `kas/.vault/.vault_key`):
 per-entry **AES-256-GCM** with per-entry AAD (entry transplant fails decryption),
 atomic replace + fsync, cross-process flock, owner-only modes / Windows ACLs — all
-provided by `kiro_crew.secrets.SecretVault`, not reimplemented. Entry name = the
+provided by `efm_go.secrets.SecretVault`, not reimplemented. Entry name = the
 identity kind (`social` / `builder_id` / `identity_center` / `external_idp`), value
 = the token JSON.
 
@@ -261,7 +261,7 @@ Three-source priority when multiple credentials exist (from kiro-cli `auth/mod.r
 
 ## Module shape (proposed)
 
-New subsystem `src/kiro_crew/auth/` (implemented):
+New subsystem `src/efm_go/auth/` (implemented):
 
 ```
 auth/

@@ -13,12 +13,12 @@ import asyncio
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, bus
-from kiro_crew.crew_log import checkpoint as savepoints
-from kiro_crew.crew_log import eager, emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.dashboard.handlers import crew_log as routes
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, bus
+from efm_go.crew_log import checkpoint as savepoints
+from efm_go.crew_log import eager, emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.dashboard.handlers import crew_log as routes
 
 GATEWAY = "gateway"
 SESSION = "s-session-eager"
@@ -406,7 +406,7 @@ def test_a_removal_waits_for_a_fold_that_has_the_log_open(monkeypatch):
     """
     import threading
 
-    from kiro_crew.crew_log import store
+    from efm_go.crew_log import store
 
     handle = _log()
     seq = _turn(handle, 1)

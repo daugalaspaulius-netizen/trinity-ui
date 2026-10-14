@@ -3,7 +3,7 @@
 Third-party account connections: the provider registry and its tiers, the mint
 endpoints a card drives, where credential custody sits, warm prewarming, owner-only
 disconnect, the automated L0/L1 gates, and the manual L2 gate. The subsystem is
-`src/kiro_crew/connections/` (`registry.py`, `mint.py`, `warm.py`, `status.py`,
+`src/efm_go/connections/` (`registry.py`, `mint.py`, `warm.py`, `status.py`,
 `ownership.py`, `oauth_clients.py`, `tool_aliases.py`, `alias_record.py`,
 `l0_probe.py`, `l0_drift.py`, `l0_record.py`, `l1_smoke.py`, `tool_test.py`, `warm_runtime/`, and
 `control_plane/`), plus `dashboard/handlers/connections.py` and
@@ -289,12 +289,12 @@ module prefix, so a `warm_runtime` owner reached without its facade is caught to
 
 ## Minting and the warm table
 
-Cold mint (`kiro_crew.connections.mint`) spawns one kiro-cli process per provider for one
-approval URL: ~7.5s per card. `kiro_crew.connections.warm` serves the whole gallery from one
+Cold mint (`efm_go.connections.mint`) spawns one kiro-cli process per provider for one
+approval URL: ~7.5s per card. `efm_go.connections.warm` serves the whole gallery from one
 process, and every rule below answers an observed failure.
 
-**Placement.** `src/kiro_crew/connections/warm.py` is the warm engine's one import and patch
-surface, and it composes three private owners under `kiro_crew.connections.warm_runtime`; the
+**Placement.** `src/efm_go/connections/warm.py` is the warm engine's one import and patch
+surface, and it composes three private owners under `efm_go.connections.warm_runtime`; the
 dashboard handler adds only endpoint wiring -- `expire_dead_mints` on the status path,
 `_audited_mintable_providers` plus `warm_mint_all` on the premint path, and `adopt_shared_mint`
 on the mint path. The dashboard server registers two lifecycle hooks in both full and headless
@@ -305,13 +305,13 @@ no boot-path module loads a `warm_runtime` owner either.
 
 | Owner | Holds | Why there |
 |---|---|---|
-| `src/kiro_crew/connections/warm_runtime/spec_plan.py` | `_WarmSpecPlan`; the reuse rules `_plan_is_servable` and `_resident_roster_is_asked_for`; per-provider entry derivation (`_registry_server_entry`, `_operator_oauth_client`, `_auth_shape`, `_warm_mintable_entry`); `_wanted_aliases` | rules over registry and configured entries; `_operator_oauth_client` reads config, env and the vault on every call, so callers reach it only from sync helpers behind `asyncio.to_thread` |
-| `src/kiro_crew/connections/warm_runtime/start_identity.py` | `_process_identity_live` and the start-identity helpers it compares with | the tri-state PID-reuse verdict both generation readers act on |
-| `src/kiro_crew/connections/warm_runtime/shared_rows.py` | the two-axis predicates (`_warm_table_row`, the counts built on it, `_mint_is_cold_held`, `_mint_is_adopted`); the atomic `_claim_shared_mints`, `_dispose_displaced_rows` and `_release_shared_claims` | one claim transaction over the cold engine's table, bound from `mint` exactly as the facade binds it |
-| `src/kiro_crew/connections/warm.py` | the public API; every patch seam; the provider scan; `_warm_spec_plan`; spec ownership (sentinel, judge, gated writer); the generation-directory lifecycle and its owner marker; `_WarmMintRuntime`; adoption, absorb, expiry, drain, reaper and re-arms | pinned to the file by the link-screen baseline, the agent-spec call-site ratchet, the session-registry gate and the security spec's citation of `warm._credential_bearing_slugs`, or a caller of a seam patched on this module |
+| `src/efm_go/connections/warm_runtime/spec_plan.py` | `_WarmSpecPlan`; the reuse rules `_plan_is_servable` and `_resident_roster_is_asked_for`; per-provider entry derivation (`_registry_server_entry`, `_operator_oauth_client`, `_auth_shape`, `_warm_mintable_entry`); `_wanted_aliases` | rules over registry and configured entries; `_operator_oauth_client` reads config, env and the vault on every call, so callers reach it only from sync helpers behind `asyncio.to_thread` |
+| `src/efm_go/connections/warm_runtime/start_identity.py` | `_process_identity_live` and the start-identity helpers it compares with | the tri-state PID-reuse verdict both generation readers act on |
+| `src/efm_go/connections/warm_runtime/shared_rows.py` | the two-axis predicates (`_warm_table_row`, the counts built on it, `_mint_is_cold_held`, `_mint_is_adopted`); the atomic `_claim_shared_mints`, `_dispose_displaced_rows` and `_release_shared_claims` | one claim transaction over the cold engine's table, bound from `mint` exactly as the facade binds it |
+| `src/efm_go/connections/warm.py` | the public API; every patch seam; the provider scan; `_warm_spec_plan`; spec ownership (sentinel, judge, gated writer); the generation-directory lifecycle and its owner marker; `_WarmMintRuntime`; adoption, absorb, expiry, drain, reaper and re-arms | pinned to the file by the link-screen baseline, the agent-spec call-site ratchet, the session-registry gate and the security spec's citation of `warm._credential_bearing_slugs`, or a caller of a seam patched on this module |
 
 `warm.py` re-exports every owner name as the same object, and no owner imports the facade,
-`kiro_crew.acp` or `kiro_crew.providers` at module scope. One facade name is reached at call
+`efm_go.acp` or `efm_go.providers` at module scope. One facade name is reached at call
 time: `shared_rows` disposes a row through `warm._dispose_mint`, the binding the warm engine's
 callers substitute. `test/test_connections_warm_mint_composition_contract.py` pins all four
 properties. The cold engine stays whole in `mint.py`: every rule there either reads the
@@ -925,13 +925,13 @@ governed, audited agent path.
 
 ### Running it by hand
 
-`python3 -m kiro_crew.connections.l1_smoke --report connections-l1-report.json` (under a
+`python3 -m efm_go.connections.l1_smoke --report connections-l1-report.json` (under a
 pipx/venv install, use that environment's interpreter). `--min-exercised 1`
 reproduces the lane's gate; `--concurrency`/`--timeout` are in `--help`.
 
 ## The registry roster
 
-Every entry in `src/kiro_crew/connections/registry.json`, what stands between it
+Every entry in `src/efm_go/connections/registry.json`, what stands between it
 and the Connect grid, and the category it fills. `category` is a closed
 vocabulary (`registry.PROVIDER_CATEGORIES`) so the coverage diff against the
 ChatGPT and Claude connector directories is bucket-for-bucket; nothing mints,
@@ -1155,7 +1155,7 @@ channel.** A typed error's `detail` can reflect provider-returned text, so it
 goes through the SAME redact-then-truncate discipline as
 `l1_smoke._redacted_detail`, capped at the same 200 characters. `redacted_detail`
 (and the `operation_error` constructor that calls it) delegate to
-`kiro_crew.security.redact_and_truncate`, which runs the site-wide credential /
+`efm_go.security.redact_and_truncate`, which runs the site-wide credential /
 exfiltration-URL scanners over the whole string BEFORE the slice — truncating
 first would bisect a credential straddling the boundary and leak the prefix past
 the regex. There is no un-redacted path onto `detail`.
@@ -1225,6 +1225,6 @@ PEP 420 namespace packages let `vendors.<slug>` import regardless). Second,
 several streams landing in parallel from each trying to create `vendors/` and
 colliding. **W01 creates the anchor and nothing under it** — no `vendors/<slug>/`
 subdirectory is this slice's to make. The name is `vendors`, not `providers`,
-deliberately: `src/kiro_crew/providers/` already exists and means LLM providers,
+deliberately: `src/efm_go/providers/` already exists and means LLM providers,
 so a `connections/providers/` here would be one word for two different things in
 one package tree.

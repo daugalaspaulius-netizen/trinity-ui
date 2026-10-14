@@ -193,10 +193,10 @@ class TestScopeExclusions:
     def test_vendor_directory_is_excluded(self) -> None:
         # Vendored third-party code is not ours to rewrite, and code-style.md
         # exempts it.
-        assert gate._excluded("src/kiro_crew/_vendor/anyio/_core.py")
+        assert gate._excluded("src/efm_go/_vendor/anyio/_core.py")
 
     def test_first_party_paths_are_not_excluded(self) -> None:
-        assert not gate._excluded("src/kiro_crew/agent.py")
+        assert not gate._excluded("src/efm_go/agent.py")
         assert not gate._excluded("test/test_agent.py")
 
     def test_a_path_merely_containing_vendor_is_not_excluded(self) -> None:
@@ -205,7 +205,7 @@ class TestScopeExclusions:
         assert not gate._excluded("test/test_vendored_llama_payload.py")
 
     def test_targets_are_the_documented_two_trees(self) -> None:
-        assert gate.DEFAULT_TARGETS == ("src/kiro_crew", "test")
+        assert gate.DEFAULT_TARGETS == ("src/efm_go", "test")
 
 
 class TestAddedLineVerdict:
@@ -246,11 +246,11 @@ class TestAddedLineVerdict:
         assert offenders == {}
 
     def test_only_scanned_trees_are_in_targets(self) -> None:
-        assert gate._in_targets("src/kiro_crew/agent.py")
+        assert gate._in_targets("src/efm_go/agent.py")
         assert gate._in_targets("test/test_agent.py")
         assert not gate._in_targets("scripts/check_comment_history.py")
-        assert not gate._in_targets("src/kiro_crew/_vendor/x.py")
-        assert not gate._in_targets("src/kiro_crew/static/dist/index.js")
+        assert not gate._in_targets("src/efm_go/_vendor/x.py")
+        assert not gate._in_targets("src/efm_go/static/dist/index.js")
 
 
 class TestEnforceDiff:
@@ -273,7 +273,7 @@ class TestEnforceDiff:
 
         from test_ratchet_scope import _fixture_git_env
 
-        from kiro_crew.platform.update_governance import _GIT_LOCATION_VARS
+        from efm_go.platform.update_governance import _GIT_LOCATION_VARS
 
         # The module under test runs git with the ambient environment; an
         # exported GIT_DIR would answer for the wrong repository.
@@ -281,7 +281,7 @@ class TestEnforceDiff:
             monkeypatch.delenv(var, raising=False)
 
         repo = tmp_path / "repo"
-        (repo / "src" / "kiro_crew").mkdir(parents=True)
+        (repo / "src" / "efm_go").mkdir(parents=True)
 
         def git(*args: str) -> None:
             subprocess.run(
@@ -294,15 +294,15 @@ class TestEnforceDiff:
                 env=_fixture_git_env(),
             )
 
-        target = repo / "src" / "kiro_crew" / "pkg.py"
+        target = repo / "src" / "efm_go" / "pkg.py"
         git("init", "-b", "main", ".")
         target.write_text(self.BASE_SOURCE, encoding="utf-8")
-        git("add", "src/kiro_crew/pkg.py")
+        git("add", "src/efm_go/pkg.py")
         git("commit", "-m", "base file with one legacy marker")
         git("update-ref", "refs/remotes/origin/main", "HEAD")
         git("checkout", "-b", "topic")
         target.write_text(self.COMMITTED_SOURCE, encoding="utf-8")
-        git("add", "src/kiro_crew/pkg.py")
+        git("add", "src/efm_go/pkg.py")
         git("commit", "-m", "append clean lines below the marker")
 
         spec = importlib.util.spec_from_file_location(
@@ -336,8 +336,8 @@ class TestEnforceDiff:
         target.write_text(self.COMMITTED_SOURCE + "# previously this parsed lazily\n", "utf-8")
         assert gate.enforce_diff("origin/main") == 1
         out = capsys.readouterr().out
-        assert "src/kiro_crew/pkg.py:6: previously" in out
-        assert "::error file=src/kiro_crew/pkg.py" in out
+        assert "src/efm_go/pkg.py:6: previously" in out
+        assert "::error file=src/efm_go/pkg.py" in out
 
     def test_swapping_the_legacy_marker_for_a_fresh_one_fails(self, repo) -> None:
         # Delete the old marker, write a new one at the end: the count is level
@@ -370,7 +370,7 @@ class TestEnforceDiff:
 
         base = '"""Module.\n\nSee issue\n"""\nvalue = 1\n'
         target.write_text(base, encoding="utf-8")
-        git("add", "src/kiro_crew/pkg.py")
+        git("add", "src/efm_go/pkg.py")
         git("commit", "-m", "docstring ends mid-phrase")
         git("update-ref", "refs/remotes/origin/main", "HEAD")
         assert gate.violation_spans(base) == [], "the base alone must be clean"

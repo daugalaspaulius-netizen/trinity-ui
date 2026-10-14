@@ -17,7 +17,7 @@ superseded-by: [rfc-overload-resilience.md]
 - Status: superseded by
   [`rfc-overload-resilience.md`](rfc-overload-resilience.md) (its §13 decision
   Q1). The `runs` / `commands` / `outbox` store proposed below ships as tables of
-  `$KIROCREW_HOME/tasks/tasks.db` (`src/kiro_crew/taskq/`), with the outbox as
+  `$KIROCREW_HOME/tasks/tasks.db` (`src/efm_go/taskq/`), with the outbox as
   `task_events(kind="deliver")`; the in-memory manager and run folders described
   here are imported into it by `taskq.migrate.import_legacy` on first boot. No
   `RunCoordinator` port was built — this document is kept as the intent behind
@@ -58,7 +58,7 @@ Verified at `c4f253891` on 2026-08-22.
 
 ### 2.1 Strong lifecycle invariants exist, but they are concentrated
 
-`SubagentManager` begins at `src/kiro_crew/subagent.py:1344` and the module is
+`SubagentManager` begins at `src/efm_go/subagent.py:1344` and the module is
 6,415 lines. Its constructor owns process execution, approval callbacks,
 in-memory run/task registries, the admission queue, batch accounting, terminal
 report tasks, follow-up watchers, conversation retention, and the periodic
@@ -79,7 +79,7 @@ across one very broad class and tested mostly through its private surface.
 ### 2.2 Persistence records evidence, not a canonical execution ledger
 
 Every run currently gets a folder containing `state.json`, `result.txt`, and,
-when terminal, `tombstone.json` (`src/kiro_crew/subagent_persistence.py:1-7`).
+when terminal, `tombstone.json` (`src/efm_go/subagent_persistence.py:1-7`).
 Folder creation writes a running snapshot (`subagent_persistence.py:88-125`),
 updates rewrite that JSON (`132-147`), output appends to `result.txt`
 (`153-163`), and terminal classification writes a tombstone
@@ -102,12 +102,12 @@ not a transactional command, execution, and delivery ledger.
 ### 2.3 The submission boundary has an uncertainty seam
 
 The `spawn_run` MCP tool submits wave members through separate HTTP requests
-(`src/kiro_crew/mcp_tools/spawn.py:484-598`). A response can fail after the
+(`src/efm_go/mcp_tools/spawn.py:484-598`). A response can fail after the
 gateway accepted the request, so the caller and gateway maintain extra
 submission accounting and lost-submission reconciliation. The manager exposes
 `record_lost_submission()` and a stuck-wave reaper `_sweep_stuck_waves()`
 (`subagent.py`), while the dashboard handler reconciles the roster
-against accepted IDs (`src/kiro_crew/dashboard/handlers/messaging.py:90-202`).
+against accepted IDs (`src/efm_go/dashboard/handlers/messaging.py:90-202`).
 
 The existing preassigned run ID is an important foundation: `spawn()` assigns
 identity before every exit path and preserves it through queueing

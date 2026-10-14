@@ -27,8 +27,8 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import file_delivery_consent, security
-from kiro_crew.config.loader import file_delivery_consent_path
+from efm_go import file_delivery_consent, security
+from efm_go.config.loader import file_delivery_consent_path
 
 # ---------------------------------------------------------------- generators
 
@@ -113,7 +113,7 @@ class TestSynthesizedMaterialActuallyTrips:
         assert security.redact(pem) != pem
 
     def test_synth_flagged_media_is_detected_through_the_binary_scan(self):
-        from kiro_crew.platform import binary_content_is_flagged
+        from efm_go.platform import binary_content_is_flagged
 
         raw = _synth_flagged_media()
         with pytest.raises(UnicodeDecodeError):
@@ -168,7 +168,7 @@ class TestThirdPartyLegsCanNeverBeGranted:
         reach the Slack or channel leg by any code path -- a property that cannot
         be undone by inverting a check, only by editing that function.
         """
-        from kiro_crew.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import files as files_handlers
 
         src = inspect.getsource(files_handlers._gate_upload_file)
         assert "consent" not in src.lower()
@@ -296,7 +296,7 @@ class TestKeystoneFencing:
         caller could take): it reads the armed nonce from the keystone file and
         POSTs it to the approve endpoint, so it authorizes nothing on its own.
         """
-        from kiro_crew import cli, cli_server
+        from efm_go import cli, cli_server
 
         cli_src = inspect.getsource(cli)
         assert '"file-delivery"' in cli_src
@@ -335,7 +335,7 @@ class TestConsentedDownloadRequiresOwnerIdentity:
     def test_the_download_gate_requires_both_conjuncts(self):
         import inspect
 
-        from kiro_crew.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import files as files_handlers
 
         src = inspect.getsource(files_handlers.api_outbox_download)
         assert "is_granted" in src
@@ -348,7 +348,7 @@ class TestConsentedDownloadRequiresOwnerIdentity:
     def test_owner_check_and_grant_are_ANDed_not_ORed(self):
         import inspect
 
-        from kiro_crew.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import files as files_handlers
 
         src = inspect.getsource(files_handlers.api_outbox_download)
         # Anchored on the conjunction itself rather than on the store read: the
@@ -369,7 +369,7 @@ class TestConsentedDownloadRequiresOwnerIdentity:
         """
         import inspect
 
-        from kiro_crew.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import files as files_handlers
 
         for fn in (files_handlers.api_outbox_download, files_handlers.api_outbox_notify):
             src = inspect.getsource(fn)
@@ -391,7 +391,7 @@ class TestConsentedDownloadRequiresOwnerIdentity:
         owner check. This asserts the predicate the fix uses does tell them apart,
         and that it needs no store read to do it.
         """
-        from kiro_crew.dashboard.handlers.source_providers import is_owner_dashboard_request
+        from efm_go.dashboard.handlers.source_providers import is_owner_dashboard_request
 
         assert is_owner_dashboard_request(_consent_request(user="owner-1", owner="owner-1"))
         # The Slack !dashboard caller: authenticated, app-less, not the owner.
@@ -422,7 +422,7 @@ class TestConsentedDownloadRequiresOwnerIdentity:
         """
         import inspect
 
-        from kiro_crew.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import files as files_handlers
 
         src = inspect.getsource(files_handlers.api_outbox_download)
         assert '"flagged content, non-owner caller"' in src
@@ -518,13 +518,13 @@ class TestGrantRequiresAHostStepUp:
         # test that stubbed only some of them would be asserting on an incoherent
         # host -- "the mask applies" on a platform that cannot apply it -- and
         # would 403 on that platform alone.
-        from kiro_crew import sandbox
-        from kiro_crew.computer_use import enable_state
+        from efm_go import sandbox
+        from efm_go.computer_use import enable_state
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: False, raising=True)
         monkeypatch.setattr(sandbox, "credential_mask_applies", lambda mode: True, raising=True)
         # Captured before the stub so the tests ABOUT these two predicates still call
-        # the real ones: they import from ``kiro_crew.sandbox`` inside the test body,
+        # the real ones: they import from ``efm_go.sandbox`` inside the test body,
         # which reads the stubbed attribute, and a stub returning the permitting value
         # would make those assertions pass vacuously rather than fail.
         self._real_spawn_delegates_masking = sandbox.spawn_delegates_masking
@@ -545,7 +545,7 @@ class TestGrantRequiresAHostStepUp:
         assert view["approve_command"] == "kirocrew file-delivery approve"
 
     def test_approve_from_a_remote_caller_is_refused(self):
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         pending = file_delivery_consent.arm_grant(file_delivery_consent.CLASS_OWNER_DASHBOARD)
         req = _local_approve_request(nonce=pending.nonce, local=False)
@@ -558,7 +558,7 @@ class TestGrantRequiresAHostStepUp:
         )
 
     def test_approve_with_a_wrong_nonce_is_refused(self):
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         file_delivery_consent.arm_grant(file_delivery_consent.CLASS_OWNER_DASHBOARD)
         req = _local_approve_request(nonce="0" * 64)
@@ -573,8 +573,8 @@ class TestGrantRequiresAHostStepUp:
         # prompt-injected agent TYPE the approve command into a host terminal, so
         # with it enabled the terminal step-up stops proving a human is present.
         # While it is enabled the grant must NOT be recorded.
-        from kiro_crew.computer_use import enable_state
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.computer_use import enable_state
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: True, raising=True)
         pending = file_delivery_consent.arm_grant(file_delivery_consent.CLASS_OWNER_DASHBOARD)
@@ -591,8 +591,8 @@ class TestGrantRequiresAHostStepUp:
     def test_approve_is_allowed_when_computer_use_is_disabled(self, monkeypatch):
         # The fence is CONDITIONAL, not a blanket break: with computer use off,
         # the terminal step-up holds and a local approve records the grant.
-        from kiro_crew.computer_use import enable_state
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.computer_use import enable_state
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: False, raising=True)
         pending = file_delivery_consent.arm_grant(file_delivery_consent.CLASS_OWNER_DASHBOARD)
@@ -607,9 +607,9 @@ class TestGrantRequiresAHostStepUp:
         # mask (agent.sandbox 'off', or no backend + unsandboxed exec opted in), an
         # unsandboxed agent can read/forge the nonce directly, so the host step-up
         # stops proving human presence. The grant must NOT be recorded.
-        from kiro_crew import sandbox
-        from kiro_crew.computer_use import enable_state
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go import sandbox
+        from efm_go.computer_use import enable_state
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: False, raising=True)
         monkeypatch.setattr(sandbox, "configured_sandbox_mode", lambda: "off", raising=True)
@@ -629,9 +629,9 @@ class TestGrantRequiresAHostStepUp:
         # one test on purpose: the claim is about the SET of refusal legs, so a
         # leg added later without an audit has to redden something, and a
         # per-leg test would simply not exist for it.
-        from kiro_crew import sandbox
-        from kiro_crew.computer_use import enable_state
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go import sandbox
+        from efm_go.computer_use import enable_state
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         recorded: list[tuple[str, str, str]] = []
 
@@ -685,9 +685,9 @@ class TestGrantRequiresAHostStepUp:
         # question answers yes while the spawn is delegated and Crew's mask never
         # runs -- an agent could then read the nonce and complete the step-up with
         # no human present. Both questions must pass.
-        from kiro_crew import sandbox
-        from kiro_crew.computer_use import enable_state
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go import sandbox
+        from efm_go.computer_use import enable_state
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: False, raising=True)
         monkeypatch.setattr(sandbox, "credential_mask_applies", lambda mode: True, raising=True)
@@ -704,7 +704,7 @@ class TestGrantRequiresAHostStepUp:
     def test_an_unverifiable_delegation_setting_refuses(self, monkeypatch):
         # Fail closed: if the delegation setting cannot be read, the mask cannot
         # be shown to run, so the step-up does not prove human presence.
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         def _boom():
             raise OSError("delegation setting unreadable")
@@ -756,9 +756,9 @@ class TestGrantRequiresAHostStepUp:
         # spawned while the tier was `off` is still running unconfined after the
         # config flips -- and that live agent can read the nonce while every
         # config answer says it cannot.
-        from kiro_crew import sandbox
-        from kiro_crew.computer_use import enable_state
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go import sandbox
+        from efm_go.computer_use import enable_state
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: False, raising=True)
         monkeypatch.setattr(sandbox, "credential_mask_applies", lambda mode: True, raising=True)
@@ -778,7 +778,7 @@ class TestGrantRequiresAHostStepUp:
         # empty one, or the check passes precisely when it cannot see anything.
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         class _Boom:
             def session_keys(self):
@@ -808,7 +808,7 @@ class TestGrantRequiresAHostStepUp:
         a Windows CI shard discovers: stubbing only SOME of the fences in a
         success-path test reds on win32 alone, which reads as a platform flake.
         """
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         monkeypatch.setattr(sandbox.sys, "platform", "win32", raising=False)
         assert self._real_spawn_delegates_masking() is True
@@ -822,7 +822,7 @@ class TestGrantRequiresAHostStepUp:
         # toggle to turn computer use OFF. A check that only asks about NOW sees a
         # safe host and lets the delayed command through. The epoch was stamped
         # while computer use was on, so the claim refuses.
-        from kiro_crew.computer_use import enable_state
+        from efm_go.computer_use import enable_state
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: True, raising=True)
         pending = file_delivery_consent.arm_grant(file_delivery_consent.CLASS_OWNER_DASHBOARD)
@@ -855,9 +855,9 @@ class TestGrantRequiresAHostStepUp:
     def test_approve_is_allowed_when_the_sandbox_mask_applies(self, monkeypatch):
         # Conditional, not a blanket break: with the mask in effect the nonce is
         # hidden from the agent and a local approve records the grant.
-        from kiro_crew import sandbox
-        from kiro_crew.computer_use import enable_state
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go import sandbox
+        from efm_go.computer_use import enable_state
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: False, raising=True)
         monkeypatch.setattr(sandbox, "configured_sandbox_mode", lambda: "strict", raising=True)
@@ -872,7 +872,7 @@ class TestGrantRequiresAHostStepUp:
         # Order side effects so the irreversible one is last: if record_grant
         # fails, the single-use nonce must NOT already be consumed, so the owner
         # can retry rather than lose the armed request to a 500.
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         pending = file_delivery_consent.arm_grant(file_delivery_consent.CLASS_OWNER_DASHBOARD)
 
@@ -938,7 +938,7 @@ class TestGrantRequiresAHostStepUp:
         # The same contract through the real handler: a malformed nonce is an
         # audited refusal, never an unhandled TypeError racing past the
         # StepUpError arm.
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         pending = file_delivery_consent.arm_grant(file_delivery_consent.CLASS_OWNER_DASHBOARD)
         req = _local_approve_request(nonce="é" + pending.nonce, local=True)
@@ -1039,7 +1039,7 @@ class TestGrantRequiresAHostStepUp:
         # lives in its OWN leaf that is BOTH keystone-fenced (file gate) AND
         # bind-masked from the sandbox (no runtime-shell forge), and is NOT under
         # trust/.
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         leaf = file_delivery_consent._PENDING_GRANT_DIRNAME
         assert leaf in security._CREW_SECRET_LEAVES
@@ -1060,7 +1060,7 @@ class TestGrantRequiresAHostStepUp:
         # actually creates the leaf so the isdir-guarded mask is non-vacuous on a
         # fresh install (no prior arm). Without the leaf in the precreate list the
         # dir stays absent here and the mask would skip it.
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         monkeypatch.setattr(sandbox, "config_dir", lambda: tmp_path)
         leaf = file_delivery_consent._PENDING_GRANT_DIRNAME
@@ -1082,7 +1082,7 @@ class TestGrantRequiresAHostStepUp:
         # fall-through). MIXED would add the browser-polled cookie path and reopen
         # the self-approve hole -- so it must be STRICT and must NOT be MIXED, the
         # exact posture of its sibling /api/update/approve.
-        from kiro_crew.dashboard import server
+        from efm_go.dashboard import server
 
         path = "/api/file-delivery/consent/approve"
         assert path in server._STRICT_INTERNAL_API_PATHS
@@ -1107,7 +1107,7 @@ class TestConsentEndpointRequiresTheOwner:
         ],
     )
     def test_an_app_token_is_refused(self, verb):
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         req = _consent_request(app="notes", query={"destination_class": "owner_dashboard"})
         resp = asyncio.run(getattr(handler, verb)(req))
@@ -1123,7 +1123,7 @@ class TestConsentEndpointRequiresTheOwner:
     )
     def test_an_allow_listed_non_owner_is_refused(self, verb):
         """The case an app-only check misses: app is empty, caller is not the owner."""
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         req = _consent_request(
             app="",
@@ -1137,7 +1137,7 @@ class TestConsentEndpointRequiresTheOwner:
 
 class TestConsentEndpointAsOwner:
     def test_get_reports_grantable_and_never_grantable(self):
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         resp = asyncio.run(handler.api_file_delivery_consent_get(_consent_request()))
         assert resp.status == 200
@@ -1157,9 +1157,9 @@ class TestConsentEndpointAsOwner:
         # credential_mask_applies to False; native Windows delegates masking and
         # reads every pid as unconfined), so stubbing a subset asserts on a host
         # that cannot exist and 403s on that platform alone.
-        from kiro_crew import sandbox
-        from kiro_crew.computer_use import enable_state
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go import sandbox
+        from efm_go.computer_use import enable_state
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         monkeypatch.setattr(enable_state, "is_enabled", lambda *a, **k: False, raising=True)
         monkeypatch.setattr(sandbox, "credential_mask_applies", lambda mode: True, raising=True)
@@ -1210,7 +1210,7 @@ class TestConsentEndpointAsOwner:
     @pytest.mark.parametrize("leg", sorted(file_delivery_consent.NEVER_GRANTABLE_CLASSES))
     def test_post_refuses_a_never_grantable_leg_as_unknown(self, leg):
         """A request naming an upload leg is refused before anything is armed."""
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         resp = asyncio.run(
             handler.api_file_delivery_consent_post(
@@ -1221,14 +1221,14 @@ class TestConsentEndpointAsOwner:
         assert json.loads(resp.text)["code"] == "unknown_destination_class"
 
     def test_delete_of_an_absent_grant_reports_not_removed(self):
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         q = {"destination_class": file_delivery_consent.CLASS_OWNER_DASHBOARD}
         resp = asyncio.run(handler.api_file_delivery_consent_delete(_consent_request(query=q)))
         assert json.loads(resp.text)["removed"] is False
 
     def test_an_unknown_class_is_refused_on_delete_too(self):
-        from kiro_crew.dashboard.handlers import file_delivery_consent as handler
+        from efm_go.dashboard.handlers import file_delivery_consent as handler
 
         resp = asyncio.run(
             handler.api_file_delivery_consent_delete(
@@ -1240,7 +1240,7 @@ class TestConsentEndpointAsOwner:
 
 class TestFileSendHonoursTheGrant:
     def _call(self, path):
-        from kiro_crew.mcp_tools.messaging import file_send
+        from efm_go.mcp_tools.messaging import file_send
 
         return file_send("file_send", {"path": str(path)})
 
@@ -1251,7 +1251,7 @@ class TestFileSendHonoursTheGrant:
         assert "sensitive data" in out and "aborted" in out
 
     def test_with_a_grant_it_delivers_and_skips_both_upload_legs(self, tmp_path):
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         src = tmp_path / "device.conf"
         src.write_text(_synth_pem())
@@ -1284,7 +1284,7 @@ class TestFileSendHonoursTheGrant:
         assert "sensitive data" in out and "aborted" in out
 
     def test_with_a_grant_a_flagged_MEDIA_file_also_skips_both_upload_legs(self, tmp_path):
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         src = tmp_path / "shot.png"
         src.write_bytes(_synth_flagged_media())
@@ -1312,8 +1312,8 @@ class TestFileSendHonoursTheGrant:
         """
         import pathlib
 
-        from kiro_crew import file_delivery_consent as fdc
-        from kiro_crew import mcp_core
+        from efm_go import file_delivery_consent as fdc
+        from efm_go import mcp_core
 
         src = tmp_path / "device.conf"
         src.write_text(_synth_pem())
@@ -1341,7 +1341,7 @@ class TestFileSendHonoursTheGrant:
 
     def test_a_clean_media_file_still_needs_no_grant(self, tmp_path):
         """The scan must not turn ordinary media into a consent prompt."""
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         src = tmp_path / "clean.png"
         src.write_bytes(b"\x89PNG\r\n\x1a\n\xff\xfe" + b"\x00" * 200)
@@ -1362,8 +1362,8 @@ class TestOneBinaryScanForEveryGate:
     """
 
     def test_no_gate_hand_rolls_its_own_binary_decode(self):
-        from kiro_crew.dashboard.handlers import files as files_handlers
-        from kiro_crew.mcp_tools import messaging
+        from efm_go.dashboard.handlers import files as files_handlers
+        from efm_go.mcp_tools import messaging
 
         gates = (
             messaging.file_send,
@@ -1379,7 +1379,7 @@ class TestOneBinaryScanForEveryGate:
 
     def test_the_shared_scan_routes_through_the_context_shim(self):
         """A companion's extra credential regexes must apply to binary too."""
-        from kiro_crew.platform import context as platform_context
+        from efm_go.platform import context as platform_context
 
         src = inspect.getsource(platform_context.binary_content_is_flagged)
         assert "redact_via_context" in src
@@ -1390,7 +1390,7 @@ class TestOneBinaryScanForEveryGate:
         Whether that gate can read the store at all is pinned separately, on the
         same source, by ``TestThirdPartyLegsCanNeverBeGranted``.
         """
-        from kiro_crew.dashboard.handlers import files as files_handlers
+        from efm_go.dashboard.handlers import files as files_handlers
 
         src = inspect.getsource(files_handlers._gate_upload_file)
         assert "binary_credential_detected" in src
@@ -1423,7 +1423,7 @@ class TestWideEncodedCredentialsReachTheScan:
 
     @pytest.mark.parametrize("encoding", _WIDE_ENCODINGS)
     def test_a_wide_key_in_allow_listed_media_is_flagged(self, encoding):
-        from kiro_crew.platform import binary_content_is_flagged
+        from efm_go.platform import binary_content_is_flagged
 
         raw = _synth_wide_flagged_media(encoding)
         with pytest.raises(UnicodeDecodeError):
@@ -1433,7 +1433,7 @@ class TestWideEncodedCredentialsReachTheScan:
     @pytest.mark.parametrize("encoding", _WIDE_ENCODINGS)
     def test_innocent_wide_text_is_not_flagged(self, encoding):
         """The wide pass must discriminate on content, not on wide text existing."""
-        from kiro_crew.platform import binary_content_is_flagged
+        from efm_go.platform import binary_content_is_flagged
 
         assert not binary_content_is_flagged(_synth_wide_clean_media(encoding))
 
@@ -1444,14 +1444,14 @@ class TestWideEncodedCredentialsReachTheScan:
         detectors a second stream of high-entropy bytes, and this is the case that
         would show it.
         """
-        from kiro_crew.platform import binary_content_is_flagged
+        from efm_go.platform import binary_content_is_flagged
 
         raw = b"\x89PNG\r\n\x1a\n\xff\xfe" + bytes(range(256)) * 8 + b"\x80\x81"
         assert not binary_content_is_flagged(raw)
 
     def test_both_widths_and_both_byte_orders_are_covered(self):
         """One projection per (width, byte order); a missing one is a silent hole."""
-        from kiro_crew.platform import context as platform_context
+        from efm_go.platform import context as platform_context
 
         strides = {(offset, stride) for _, offset, stride in platform_context._WIDE_PROJECTIONS}
         assert strides == {(0, 2), (1, 2), (0, 4), (3, 4)}
@@ -1472,7 +1472,7 @@ class TestAuditDecisionRedactsBeforeTruncate:
 
     @staticmethod
     def _capture(monkeypatch):
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         calls: list[dict] = []
 
@@ -1525,7 +1525,7 @@ class TestARefusalNamesTheFileItHeldBack:
 
     @staticmethod
     def _capture(monkeypatch):
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         calls: list[dict] = []
 
@@ -1629,7 +1629,7 @@ class TestARefusalNamesTheFileItHeldBack:
 
     def test_the_primary_tool_refusal_names_the_file(self, tmp_path, monkeypatch):
         """The leg the owner actually meets: an agent sends a flagged file, unigranted."""
-        from kiro_crew.mcp_tools.messaging import file_send
+        from efm_go.mcp_tools.messaging import file_send
 
         calls = self._capture(monkeypatch)
         src = tmp_path / "device.conf"
@@ -1647,8 +1647,8 @@ class TestARefusalNamesTheFileItHeldBack:
 
     def test_a_granted_delivery_records_no_refusal(self, tmp_path, monkeypatch):
         """The negative direction: the entry must mean refused, not merely flagged."""
-        from kiro_crew import mcp_core
-        from kiro_crew.mcp_tools.messaging import file_send
+        from efm_go import mcp_core
+        from efm_go.mcp_tools.messaging import file_send
 
         src = tmp_path / "device.conf"
         src.write_text(_synth_pem())
@@ -1663,7 +1663,7 @@ class TestARefusalNamesTheFileItHeldBack:
 
     def test_a_flagged_name_is_recorded_without_reproducing_it(self, tmp_path, monkeypatch):
         """A name that IS the credential must not be copied verbatim into the log."""
-        from kiro_crew.mcp_tools.messaging import file_send
+        from efm_go.mcp_tools.messaging import file_send
 
         key = _synth_aws_key()
         calls = self._capture(monkeypatch)
@@ -1691,8 +1691,8 @@ class TestEveryScannerRefusalRecordsTheName:
 
     @staticmethod
     def _sources():
-        from kiro_crew.dashboard.handlers import files as files_mod
-        from kiro_crew.mcp_tools import messaging as messaging_mod
+        from efm_go.dashboard.handlers import files as files_mod
+        from efm_go.mcp_tools import messaging as messaging_mod
 
         return {
             "file_send": inspect.getsource(messaging_mod.file_send),

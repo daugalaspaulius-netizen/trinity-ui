@@ -22,7 +22,7 @@ import urllib.request
 
 import pytest
 
-from kiro_crew.appearance_packs import transfer as pack_transfer
+from efm_go.appearance_packs import transfer as pack_transfer
 
 
 def _would_follow(newurl: str) -> bool:

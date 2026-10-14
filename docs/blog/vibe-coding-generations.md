@@ -188,12 +188,12 @@ That second limit has a ceiling I can measure, and it is in this repository.
 In the Global (V1) memory store (Memory V2 member stores do not decay), episodic ranking defaults to a recency factor of
 `math.exp(-0.03 * days_old)`, with per-tag overrides through
 `memory.decay_rates` (`_DEFAULT_DECAY_RATE` and `_sanitize_decay_rates` in
-`src/kiro_crew/vector_memory.py`, which clamps each rate to
+`src/efm_go/vector_memory.py`, which clamps each rate to
 `[_DECAY_RATE_MIN, _DECAY_RATE_MAX]`). Scores, `sim * (0.7 + 0.3 * importance) * exp(-rate * days_old)`, are rounded to
 four decimals (`rank_from_scoring_set` in
-`src/kiro_crew/vector_memory_runtime/episodic_search.py`), so under the default rate a typical
+`src/efm_go/vector_memory_runtime/episodic_search.py`), so under the default rate a typical
 score reaches `0.0000` after roughly a year. The benchmark harness in
-[#2123](https://github.com/kirodotdev/KiroCrew/pull/2123) measured that default
+[#2123](https://efmleads.com/pull/2123) measured that default
 decay over a 293-day LoCoMo corpus: session `recall_all@1` fell from 0.4942 to
 0.0814, and turn `recall_all@5` fell from 0.4112 to 0.0754. These are
 pre-correction figures over 1 977 queries; the corrected decay-neutral baseline

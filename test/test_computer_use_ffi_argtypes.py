@@ -47,7 +47,7 @@ import inspect
 
 import pytest
 
-from kiro_crew.computer_use import macos_ffi
+from efm_go.computer_use import macos_ffi
 
 # Symbols the five live prototypes proved were required. Listed explicitly so a
 # refactor that "tidies away" one of them fails here instead of at runtime on a
@@ -364,7 +364,7 @@ def test_every_mouse_button_maps_to_a_distinct_per_button_event_triple():
     delivered as a LEFT click by AppKit, so the table must carry a distinct
     down/up/dragged triple for each button rather than one type plus a number.
     """
-    from kiro_crew.computer_use.types import MOUSE_BUTTONS
+    from efm_go.computer_use.types import MOUSE_BUTTONS
 
     table = macos_ffi.MOUSE_EVENT_TYPES
     assert set(table) == set(MOUSE_BUTTONS)
@@ -442,7 +442,7 @@ def test_no_cdll_at_module_scope():
 
     A module-scope ``CDLL`` raises ``OSError`` on the Linux CI fleet at IMPORT
     time, which breaks collection of every test that transitively imports
-    ``kiro_crew.computer_use`` — a whole-suite outage from one line. The import
+    ``efm_go.computer_use`` — a whole-suite outage from one line. The import
     statement itself is fine (and required by the top-level-imports rule); it is
     the *call* that must be deferred.
     """

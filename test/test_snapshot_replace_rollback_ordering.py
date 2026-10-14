@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from test_snapshot import _setup_fake_kirocrew, unpinnable_argv
 
-from kiro_crew import snapshot as snap
+from efm_go import snapshot as snap
 
 
 class TestNamesCannotForgeListingLines:

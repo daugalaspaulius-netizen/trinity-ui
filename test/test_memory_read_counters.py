@@ -25,8 +25,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import kiro_crew.dashboard.handlers.memory as mem_mod
-from kiro_crew.vector_memory import VectorMemoryStore
+import efm_go.dashboard.handlers.memory as mem_mod
+from efm_go.vector_memory import VectorMemoryStore
 
 _COUNTER_KEYS = {
     "statements_executed",
@@ -113,7 +113,7 @@ class TestSemanticSurface:
         query, not two. The over-budget refusal hands back the rows it already
         materialized instead of returning None and making the candidate helper
         re-issue the identical SELECT."""
-        import kiro_crew.vector_memory as vm
+        import efm_go.vector_memory as vm
 
         store = _store(tmp_path, semantic=4, opened=opened)
         # Force every build over budget so the refusal path is taken.

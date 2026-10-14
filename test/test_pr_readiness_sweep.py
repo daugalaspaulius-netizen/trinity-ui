@@ -316,7 +316,7 @@ class Runner:
             # The stub is bash and must name an interpreter for the translator;
             # `python3` on PATH is not necessarily the one running these tests.
             "STUB_PYTHON": sys.executable,
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             "STATUS_CONTEXT": "PR Readiness",
             "STALE_MINUTES": "15",
             "MAX_DISPATCH": "10",
@@ -1175,7 +1175,7 @@ def test_every_open_pull_request_is_scanned_across_pages(tmp_path: Path, script:
             "PATH": f"{bindir}{os.pathsep}{os.environ['PATH']}",
             "FIXTURES": str(fixtures),
             "STUB_PYTHON": sys.executable,
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             "STATUS_CONTEXT": "PR Readiness",
             "STALE_MINUTES": "15",
             "MAX_DISPATCH": "200",
@@ -1332,7 +1332,7 @@ def test_dispatch_is_oldest_stale_first(tmp_path: Path, script: str) -> None:
             "PATH": f"{bindir}{os.pathsep}{os.environ['PATH']}",
             "FIXTURES": str(fixtures),
             "STUB_PYTHON": sys.executable,
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             "STATUS_CONTEXT": "PR Readiness",
             "STALE_MINUTES": "15",
             "MAX_DISPATCH": "200",

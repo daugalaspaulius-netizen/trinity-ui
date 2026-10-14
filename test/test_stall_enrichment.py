@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import sys
 
-from kiro_crew.dashboard.stall_enrichment import (
+from efm_go.dashboard.stall_enrichment import (
     _decode_proc_addr,
     _established_lines,
     collect_stall_enrichment,
@@ -90,7 +90,7 @@ class _DumpFile:
 
 
 def _lag_watchdog(caplog):
-    from kiro_crew.dashboard.loop_watchdog import LoopStallWatchdog
+    from efm_go.dashboard.loop_watchdog import LoopStallWatchdog
 
     calls: list[float] = []
     dump_file = _DumpFile()
@@ -107,7 +107,7 @@ def _lag_watchdog(caplog):
         arm_later=lambda _t: None,
         cancel_later=lambda: None,
     )
-    caplog.set_level("WARNING", logger="kiro_crew.dashboard.loop_watchdog")
+    caplog.set_level("WARNING", logger="efm_go.dashboard.loop_watchdog")
     return wd, calls, dump_file, clock
 
 

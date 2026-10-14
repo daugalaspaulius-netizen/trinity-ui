@@ -24,13 +24,13 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.dashboard.chat_folders as chat_folders
-from kiro_crew.dashboard.chat_folders import (
+import efm_go.dashboard.chat_folders as chat_folders
+from efm_go.dashboard.chat_folders import (
     api_chat_folder_create,
     api_chat_folder_delete,
     api_chat_folder_update,
 )
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
+from efm_go.dashboard.state import DashboardState, _ChatSlot
 
 PERSON = "fldr00000001"
 FOREIGN = "fldr00000002"

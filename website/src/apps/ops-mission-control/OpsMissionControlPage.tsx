@@ -14,7 +14,7 @@
  * app does for its embed); app IDENTITY is published for every builtin page by
  * BuiltinAppRoute and needs no provider here.
  *
- * Backend contract: kiro_crew/apps/builtins/ops_mission_control/backend/routes.py
+ * Backend contract: efm_go/apps/builtins/ops_mission_control/backend/routes.py
  * Design: docs/system-specs/modules/ops-mission-control.md
  */
 import { useMemo, useState } from 'react'

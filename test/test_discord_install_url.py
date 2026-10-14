@@ -4,7 +4,7 @@ Discord publishes no app manifest, so the authorize URL IS the install surface,
 and its permissions bitfield is a magic number nobody can check by eye. These
 tests pin that number from two directions at once: to the named bits the module
 builds it from, and to the number
-``src/kiro_crew/docs/discord-integration.md`` publishes for operators to paste.
+``src/efm_go/docs/discord-integration.md`` publishes for operators to paste.
 Either one drifting alone would hand somebody a bot that can read a thread but
 not reply in it, with nothing going red.
 """
@@ -18,11 +18,11 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from kiro_crew.discord import install_url
+from efm_go.discord import install_url
 
 _APP_ID = "123456789012345678"
 
-_DOC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "docs" / "discord-integration.md"
+_DOC = Path(__file__).resolve().parents[1] / "src" / "efm_go" / "docs" / "discord-integration.md"
 
 #: The bitfield the setup doc publishes. Spelled out here rather than imported
 #: so this file states the expected value independently of the code under test.

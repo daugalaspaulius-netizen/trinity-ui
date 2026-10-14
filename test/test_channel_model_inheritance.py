@@ -13,8 +13,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.session import SessionManager, _model_fallback
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.session import SessionManager, _model_fallback
 
 
 @pytest.fixture
@@ -181,8 +181,8 @@ class TestAgentSpecReadsAreHardened:
     path donates nothing."""
 
     def test_named_resolver_refuses_an_oversized_spec(self, tmp_path, monkeypatch):
-        from kiro_crew import agent_discovery
-        from kiro_crew.hooks import FileTooLargeError
+        from efm_go import agent_discovery
+        from efm_go.hooks import FileTooLargeError
 
         (tmp_path / "huge.json").write_text(json.dumps({"name": "huge", "model": "m"}))
         monkeypatch.setattr(
@@ -201,7 +201,7 @@ class TestAgentSpecReadsAreHardened:
         # the junction's TARGET so the test proves resolution follows the
         # link: a same-named spec OUTSIDE the link must still read fine.
         from conftest import make_dir_link
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         outside = tmp_path / "sensitive-outside"
         outside.mkdir()
@@ -225,9 +225,9 @@ class TestAgentSpecReadsAreHardened:
         # The installed kirocrew.json path goes through the same reader: a
         # spec the reader refuses yields no model, and the resolver falls
         # through to the bundled default instead of trusting the file.
-        import kiro_crew.config.loader as loader_mod
-        from kiro_crew import agent_discovery
-        from kiro_crew.hooks import FileTooLargeError
+        import efm_go.config.loader as loader_mod
+        from efm_go import agent_discovery
+        from efm_go.hooks import FileTooLargeError
 
         (tmp_path / "kirocrew.json").write_text(json.dumps({"model": "pinned"}))
         monkeypatch.setattr(loader_mod, "kiro_agents_dir", lambda: tmp_path)

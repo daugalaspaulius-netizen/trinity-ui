@@ -40,16 +40,16 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 #: Every package whose public surface resolves through a module-level ``__getattr__``.
 PACKAGES = (
-    "kiro_crew.config",
-    "kiro_crew.crew_log",
-    "kiro_crew.dashboard",
-    "kiro_crew.diag",
-    "kiro_crew.mcp_gateway",
-    "kiro_crew.stt",
+    "efm_go.config",
+    "efm_go.crew_log",
+    "efm_go.dashboard",
+    "efm_go.diag",
+    "efm_go.mcp_gateway",
+    "efm_go.stt",
 )
 
 
@@ -60,13 +60,13 @@ def owners(package: str) -> dict[str, tuple[str, str]]:
     without editing this file.
     """
     module = importlib.import_module(package)
-    if package in ("kiro_crew.crew_log", "kiro_crew.stt"):
+    if package in ("efm_go.crew_log", "efm_go.stt"):
         return {n: (f"{package}.{owner}", n) for n, owner in module._EXPORTS.items()}
-    if package == "kiro_crew.config":
-        return {n: ("kiro_crew.config.loader", n) for n in module.__all__}
-    if package == "kiro_crew.diag":
+    if package == "efm_go.config":
+        return {n: ("efm_go.config.loader", n) for n in module.__all__}
+    if package == "efm_go.diag":
         return dict(module._LAZY)
-    if package in ("kiro_crew.dashboard", "kiro_crew.mcp_gateway"):
+    if package in ("efm_go.dashboard", "efm_go.mcp_gateway"):
         return {n: (f"{package}.{o}", s) for n, (o, s) in module._LAZY.items()}
     raise AssertionError(f"{package} is listed in PACKAGES with no owner table rule")
 
@@ -221,8 +221,8 @@ def test_a_submodule_still_imports_through_the_package(package: str) -> None:
 
 # ── one rule, spelled once per package ─────────────────────────────────────────
 #
-# The mechanism cannot live in a shared ``kiro_crew`` module: importing
-# ``kiro_crew.config.paths`` must pull in no other ``kiro_crew`` submodule
+# The mechanism cannot live in a shared ``efm_go`` module: importing
+# ``efm_go.config.paths`` must pull in no other ``efm_go`` submodule
 # (``test_config_paths.TestLeafPurity``), and a shared helper would be one. So each
 # package spells the rule itself, and these tests are the single place that holds
 # the six spellings to one shape -- a package that reimplements it differently, or
@@ -270,18 +270,18 @@ def test_a_name_outside_the_table_stays_on_the_package(package: str) -> None:
 
 
 @pytest.mark.parametrize("package", PACKAGES)
-def test_the_rule_imports_no_extra_kiro_crew_module(package: str) -> None:
+def test_the_rule_imports_no_extra_efm_go_module(package: str) -> None:
     """Installing the rule costs no module import, which is why it is spelled inline.
 
     A shared helper module would appear in ``sys.modules`` here, and for
-    ``kiro_crew.config`` that is exactly the leaf-purity regression
+    ``efm_go.config`` that is exactly the leaf-purity regression
     ``test_config_paths.TestLeafPurity`` catches. Measured in a subprocess so the
     warm modules in this process cannot mask it.
     """
     code = (
         "import sys\n"
         f"import {package}\n"
-        "print(','.join(sorted(m for m in sys.modules if m.startswith('kiro_crew'))))\n"
+        "print(','.join(sorted(m for m in sys.modules if m.startswith('efm_go'))))\n"
     )
     env = dict(os.environ)
     env["PYTHONPATH"] = (
@@ -366,13 +366,13 @@ def test_a_genuine_purge_and_reimport_is_seen_through_the_package() -> None:
 
     Importing a submodule also binds it on its parent package, and ``recorder`` is
     not a re-exported name, so that binding lands in the package's own namespace
-    rather than being forwarded. Teardown puts it back: ``from kiro_crew.diag
+    rather than being forwarded. Teardown puts it back: ``from efm_go.diag
     import recorder`` resolves through that attribute, so leaving it on the
     discarded module would hand a later reader in the same worker a module whose
     ``Recorder`` is this test's sentinel.
     """
-    diag = importlib.import_module("kiro_crew.diag")
-    owner_name = "kiro_crew.diag.recorder"
+    diag = importlib.import_module("efm_go.diag")
+    owner_name = "efm_go.diag.recorder"
     stale = importlib.import_module(owner_name)
     assert diag.Recorder is stale.Recorder  # resolve the owner before purging it
     had_parent_attr = "recorder" in vars(diag)

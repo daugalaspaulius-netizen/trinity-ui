@@ -25,9 +25,9 @@ from stall_dump_helpers import (
     write_dump,
 )
 
-from kiro_crew import cron_inflight, stall_attribution
-from kiro_crew.dashboard import crash_dump_store
-from kiro_crew.stall_attribution import (
+from efm_go import cron_inflight, stall_attribution
+from efm_go.dashboard import crash_dump_store
+from efm_go.stall_attribution import (
     attribute_dump,
     attribute_latest_stall,
     classify_surface,
@@ -285,7 +285,7 @@ class TestSurface:
         assert classify_surface([]) == "unknown"
 
     def test_windows_paths_classify_too(self) -> None:
-        win = [r'  File "C:\Users\u\venv\Lib\site-packages\kiro_crew\cron.py", line 1 in _execute']
+        win = [r'  File "C:\Users\u\venv\Lib\site-packages\efm_go\cron.py", line 1 in _execute']
         assert classify_surface(parse_frames(win)) == "cron"
 
     def test_rules_name_modules_and_functions_that_exist(self) -> None:
@@ -293,9 +293,9 @@ class TestSurface:
         the package. A rename that stranded a rule would otherwise degrade
         ``classify_surface`` to "unknown" -- and the breaker to a no-op -- with
         CI still green."""
-        import kiro_crew
+        import efm_go
 
-        pkg = Path(kiro_crew.__file__).resolve().parent
+        pkg = Path(efm_go.__file__).resolve().parent
         defs: set[str] = set()
         for py in pkg.rglob("*.py"):
             if "_vendor" in py.parts:
@@ -303,15 +303,15 @@ class TestSurface:
             defs.update(_DEF_RE.findall(py.read_text(encoding="utf-8", errors="replace")))
         for label, fragments, funcs in stall_attribution._SURFACE_RULES:
             for fragment in fragments:
-                rel = fragment.removeprefix("/kiro_crew/")
+                rel = fragment.removeprefix("/efm_go/")
                 assert (pkg / rel).exists(), f"{label}: no such module or package {fragment!r}"
             for func in funcs:
-                assert func in defs, f"{label}: no function named {func!r} in kiro_crew"
+                assert func in defs, f"{label}: no function named {func!r} in efm_go"
         for gate in stall_attribution._GATE_FILES:
             # ``exists`` rather than ``is_file``: a gate entry names a module file or
             # a package directory whose submodules all count, the same shape the
             # surface fragments above are checked with.
-            assert (pkg / gate.removeprefix("/kiro_crew/")).exists(), gate
+            assert (pkg / gate.removeprefix("/efm_go/")).exists(), gate
 
 
 class TestAttribution:
@@ -547,7 +547,7 @@ class TestAttribution:
         now = time.time()
         hostile = "\x1b[2Kok\rALL CLEAR 刷新"
         stack = [
-            '  File "/opt/venv/lib/python3.12/site-packages/kiro_crew/security/__init__.py\x07", '
+            '  File "/opt/venv/lib/python3.12/site-packages/efm_go/security/__init__.py\x07", '
             "line 1 in is_sensitive_bash_command",
         ] + CRON_STACK
         dump = write_dump(tmp_path / "dumps", 4_000_030, stack, mtime=now)

@@ -11,7 +11,7 @@ const sysctl = (value) => (p) => {
 };
 
 describe("describeSandboxProfileNeed", () => {
-  const CLI = "/tmp/.mount_abc123/resources/backend-dist/kirocrew-backend/bin/kirocrew";
+  const CLI = "/tmp/.mount_abc123/resources/backend-dist/efm-go-backend/bin/kirocrew";
   const restricted = {
     platform: "linux",
     env: { APPIMAGE: "/home/u/Applications/kirocrew.AppImage" },

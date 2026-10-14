@@ -27,8 +27,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.history import (
+from efm_go import platform_compat
+from efm_go.history import (
     _SESSION_KEEP_LINES,
     _SESSION_MAX_BYTES,
     ConversationLog,
@@ -79,7 +79,7 @@ class TestCrossProcessLock:
         """
         if not platform_compat.IS_POSIX:
             pytest.skip("advisory flock semantics are POSIX-specific")
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         monkeypatch.setattr(history_mod, "_FLOCK_ACQUIRE_TIMEOUT_S", 0.2)
         monkeypatch.setattr(history_mod, "_FLOCK_POLL_INTERVAL_S", 0.02)
@@ -122,7 +122,7 @@ class TestCrossProcessLock:
             pytest.skip("advisory flock semantics are POSIX-specific")
         import asyncio as _asyncio
 
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         # A long off-loop budget proves the loop path does NOT fall back to it,
         # and any _time.sleep on the loop path is a hard failure.
@@ -386,7 +386,7 @@ class TestMessageCacheRewriteSerialization:
     ) -> None:
         """A wedged holder must not hang the reader: the off-loop acquire is
         capped at the writer's own ceiling and then fills unlocked."""
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         monkeypatch.setattr(history_mod, "_FLOCK_ACQUIRE_TIMEOUT_S", 0.1)
         log = ConversationLog(base_dir=tmp_path)
@@ -429,7 +429,7 @@ class TestOnLoopPersistDiscipline:
         production."""
         import asyncio
 
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         monkeypatch.setenv("KIROCREW_STRICT_ON_LOOP_PERSIST", "1")
         log = ConversationLog(base_dir=tmp_path)
@@ -453,7 +453,7 @@ class TestOnLoopPersistDiscipline:
         e.g. ``update_metadata`` / ``set_title`` / ``delete_session``."""
         import asyncio
 
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         monkeypatch.setenv("KIROCREW_STRICT_ON_LOOP_PERSIST", "1")
         log = ConversationLog(base_dir=tmp_path)
@@ -473,7 +473,7 @@ class TestOnLoopPersistDiscipline:
         the production-fallback path stays testable even under dev-mode."""
         import asyncio
 
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         monkeypatch.delenv("KIROCREW_STRICT_ON_LOOP_PERSIST", raising=False)
         monkeypatch.setenv("KIROCREW_DEV_MODE", "1")
@@ -500,7 +500,7 @@ class TestOnLoopPersistDiscipline:
         mutator inside it does NOT raise (it proceeds to the real acquire)."""
         import asyncio
 
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         monkeypatch.setenv("KIROCREW_STRICT_ON_LOOP_PERSIST", "1")
         log = ConversationLog(base_dir=tmp_path)
@@ -525,7 +525,7 @@ class TestOnLoopPersistDiscipline:
         even under strict enforcement."""
         import asyncio
 
-        from kiro_crew.history import append_off_loop
+        from efm_go.history import append_off_loop
 
         monkeypatch.setenv("KIROCREW_STRICT_ON_LOOP_PERSIST", "1")
         log = ConversationLog(base_dir=tmp_path)
@@ -565,7 +565,7 @@ class TestOnLoopPersistDiscipline:
         import asyncio
         import logging
 
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         # Force strict off (simulate a production gateway) and reset the warning
         # throttle so the diagnostic is observable.
@@ -998,7 +998,7 @@ class TestRotateOversizedFewLines:
         directory must leave the transcript intact rather than being logged and
         rewritten past. An oversized file is recoverable; a dropped row is not.
         """
-        from kiro_crew import history as history_mod
+        from efm_go import history as history_mod
 
         def _oversized(key: str) -> Path:
             log = ConversationLog(base_dir=tmp_path / key)
@@ -1045,7 +1045,7 @@ class TestDeleteSessionMissingOk:
         """
         log = ConversationLog(base_dir=tmp_path)
         # Force the existence check to report True even though no file exists.
-        monkeypatch.setattr("kiro_crew.history.Path.exists", lambda self: True)
+        monkeypatch.setattr("efm_go.history.Path.exists", lambda self: True)
         # Must not raise.
         log.delete_session("ghost")
 
@@ -1082,7 +1082,7 @@ class TestDeleteSessionMissingOk:
         log.append("k", "user", "m")
         # Shrink the acquire budget so the test doesn't wait the full deadline.
         monkeypatch_budget = 0.2
-        import kiro_crew.history as history_mod
+        import efm_go.history as history_mod
 
         orig = history_mod._FLOCK_ACQUIRE_TIMEOUT_S
         history_mod._FLOCK_ACQUIRE_TIMEOUT_S = monkeypatch_budget
@@ -1102,7 +1102,7 @@ class TestDeleteSessionMissingOk:
 class TestAppendOffLoop:
     def test_inline_append_when_no_running_loop(self, tmp_path: Path) -> None:
         """Off the event loop, ``append_off_loop`` persists synchronously."""
-        from kiro_crew.history import append_off_loop
+        from efm_go.history import append_off_loop
 
         log = ConversationLog(base_dir=tmp_path)
         append_off_loop(log, "k", "assistant", "hello", agent="bot")
@@ -1117,7 +1117,7 @@ class TestAppendOffLoop:
         import asyncio
         import threading
 
-        from kiro_crew.history import append_off_loop
+        from efm_go.history import append_off_loop
 
         log = ConversationLog(base_dir=tmp_path)
         loop_thread = threading.get_ident()
@@ -1155,7 +1155,7 @@ class TestUpdateMetadataOffLoop:
 
     def test_inline_update_when_no_running_loop(self, tmp_path: Path) -> None:
         """Off the event loop the update persists synchronously."""
-        from kiro_crew.history import update_metadata_off_loop
+        from efm_go.history import update_metadata_off_loop
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("k", "user", "seed")
@@ -1171,7 +1171,7 @@ class TestUpdateMetadataOffLoop:
         import asyncio
         import threading
 
-        from kiro_crew.history import update_metadata_off_loop
+        from efm_go.history import update_metadata_off_loop
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("k", "user", "seed")
@@ -1218,7 +1218,7 @@ class TestOnLoopCallersOffload:
         import threading
         from unittest.mock import MagicMock
 
-        from kiro_crew.dashboard import chat_title
+        from efm_go.dashboard import chat_title
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("dashboard:t", "user", "seed")
@@ -1266,7 +1266,7 @@ class TestOnLoopCallersOffload:
         import threading
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.handlers import sessions as sessions_mod
+        from efm_go.dashboard.handlers import sessions as sessions_mod
 
         log = ConversationLog(base_dir=tmp_path)
         log.append("gone", "user", "seed")
@@ -1540,7 +1540,7 @@ class TestDashboardSaveHoldsLock:
     def _make_state(self, tmp_path: Path):
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         sessions = MagicMock(count=0)
         sessions.get_pid = MagicMock(return_value=None)
@@ -1558,11 +1558,11 @@ class TestDashboardSaveHoldsLock:
     def test_concurrent_append_off_loop_survives_save(self, tmp_path, monkeypatch):
         import threading
 
-        from kiro_crew.dashboard import chat_persistence
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-        from kiro_crew.dashboard.chat_utils import _history_key_for
+        from efm_go.dashboard import chat_persistence
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_utils import _history_key_for
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = self._make_state(tmp_path)
         slot = state.get_or_create_slot("locktest")
         slot.append("user", "m1")
@@ -1628,9 +1628,9 @@ class TestDashboardSaveHoldsLock:
         to the file first, then the slot (whose in-memory window never saw it) is
         saved. The save must merge the on-disk append rather than clobber it.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-        from kiro_crew.dashboard.chat_utils import _history_key_for
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_utils import _history_key_for
 
         state = self._make_state(tmp_path)
         slot = state.get_or_create_slot("staleoverwrite")
@@ -1677,9 +1677,9 @@ class TestDashboardSaveHoldsLock:
         with NO writer between the saves, so saves 2..4 all hit the fast path,
         and asserts the foreign line survives every one exactly once.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-        from kiro_crew.dashboard.chat_utils import _history_key_for
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_utils import _history_key_for
 
         state = self._make_state(tmp_path)
         slot = state.get_or_create_slot("fastpathloss")
@@ -1726,9 +1726,9 @@ class TestDashboardSaveHoldsLock:
         concurrent consolidation apply a stale offset and mark never-consolidated
         retained messages as done (undoing the rotation-generation fix).
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
-        from kiro_crew.dashboard.chat_utils import _history_key_for
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_utils import _history_key_for
 
         state = self._make_state(tmp_path)
         slot = state.get_or_create_slot("rotgen")
@@ -1781,12 +1781,12 @@ class TestDashboardSaveHoldsLock:
         import json
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.state.config_dir", lambda: tmp_path
+            "efm_go.dashboard.state.config_dir", lambda: tmp_path
         )
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _frozen_prefix_and_foreign_appends,
         )
-        from kiro_crew.dashboard.chat_utils import _history_key_for
+        from efm_go.dashboard.chat_utils import _history_key_for
 
         state = self._make_state(tmp_path)
         slot = state.get_or_create_slot("dedupsem")
@@ -1871,7 +1871,7 @@ class TestForeignFoldMidIdentity:
     def _make_state(self, tmp_path: Path):
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         sessions = MagicMock(count=0)
         sessions.get_pid = MagicMock(return_value=None)
@@ -1890,11 +1890,11 @@ class TestForeignFoldMidIdentity:
         """Write *disk_entries* (after a metadata line) and run the fold."""
         import json
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        from kiro_crew.dashboard.chat_persistence import (
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        from efm_go.dashboard.chat_persistence import (
             _frozen_prefix_and_foreign_appends,
         )
-        from kiro_crew.dashboard.chat_utils import _history_key_for
+        from efm_go.dashboard.chat_utils import _history_key_for
 
         state = self._make_state(tmp_path)
         slot = state.get_or_create_slot(slot_name)
@@ -2202,11 +2202,11 @@ class TestForeignFoldMidIdentity:
         """
         import json
 
-        from kiro_crew.chat_attachments import attachments_dir
-        from kiro_crew.dashboard.chat_persistence import _frozen_prefix_and_foreign_appends
-        from kiro_crew.dashboard.chat_utils import _history_key_for
+        from efm_go.chat_attachments import attachments_dir
+        from efm_go.dashboard.chat_persistence import _frozen_prefix_and_foreign_appends
+        from efm_go.dashboard.chat_utils import _history_key_for
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = self._make_state(tmp_path)
         slot = state.get_or_create_slot("imgfold")
         path = state.conversation_log._path(_history_key_for(slot.key))
@@ -2257,9 +2257,9 @@ class TestForeignFoldMidIdentity:
         import json
         import logging
 
-        from kiro_crew.dashboard.chat_persistence import _frozen_prefix_and_foreign_appends
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        caplog.set_level(logging.WARNING, logger="kiro_crew.dashboard.chat_persistence")
+        from efm_go.dashboard.chat_persistence import _frozen_prefix_and_foreign_appends
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        caplog.set_level(logging.WARNING, logger="efm_go.dashboard.chat_persistence")
         slot = self._make_state(tmp_path).get_or_create_slot("kc_warn_foreign")
         path = tmp_path / "kc_warn_foreign.jsonl"
         mine = {"role": "user", "content": "mine", "ts": "T1", "meta": {"mid": "m-1"}}
@@ -2306,7 +2306,7 @@ class TestBestEffortSaveMarksDirty:
     def _make_state(self, tmp_path: Path):
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         sessions = MagicMock(count=0)
         sessions.get_pid = MagicMock(return_value=None)
@@ -2324,9 +2324,9 @@ class TestBestEffortSaveMarksDirty:
     def test_offloaded_best_effort_failure_marks_dirty(self, tmp_path, monkeypatch):
         import asyncio
 
-        from kiro_crew.dashboard import chat_persistence
+        from efm_go.dashboard import chat_persistence
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = self._make_state(tmp_path)
         slot = state.get_or_create_slot("beffail")
         slot.append("user", "m1")
@@ -2409,7 +2409,7 @@ class TestOnLoopFdCleanupDeferred:
                 # must be dispatched to the default executor, not run inline.
                 # This deliberately exercises the low-level on-loop primitive, so
                 # it bypasses the strict off-loop discipline guard.
-                from kiro_crew.history import allow_on_loop_persist
+                from efm_go.history import allow_on_loop_persist
                 with allow_on_loop_persist():
                     log.append("k", "assistant", "on-loop-append")
                 for _ in range(50):
@@ -2521,7 +2521,7 @@ class TestAppendIfAbsent:
         import asyncio
         import threading
 
-        from kiro_crew.history import append_if_absent_off_loop
+        from efm_go.history import append_if_absent_off_loop
 
         log = ConversationLog(base_dir=tmp_path)
         loop_thread = threading.get_ident()

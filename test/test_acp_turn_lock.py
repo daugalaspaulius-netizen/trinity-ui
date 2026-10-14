@@ -30,7 +30,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.acp.client import AcpClient
+from efm_go.acp.client import AcpClient
 
 
 def _client_with_real_reader(tmp_path):

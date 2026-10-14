@@ -10,9 +10,9 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
-from kiro_crew.hooks import TOOL_ALLOW, TOOL_DENY, ToolHookResult
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.task_planner import decompose
+from efm_go.hooks import TOOL_ALLOW, TOOL_DENY, ToolHookResult
+from efm_go.providers.base import LLMEvent
+from efm_go.task_planner import decompose
 
 
 def _sessions_with(provider: MagicMock) -> MagicMock:

@@ -26,12 +26,8 @@ set -euo pipefail
 DMG_PATH="${1:-}"
 CHANNEL="${2:-}"
 VERSION="${3:-}"
-# Default to the ONBOARDED app identifier: the signing service's authz is
-# per-identifier -- an unfamiliar identifier (e.g. com.amazon.kiro.crew.dmg) is
-# rejected, whereas the onboarded app identifier signs successfully. The
-# bundle-id rename is a separate coordinated task (re-onboard the signing
-# identity first) -- do NOT change it as part of a string scrub.
-DMG_IDENTIFIER="${DMG_IDENTIFIER:-com.amazon.kiro.crew}"
+# EFM Go bundle id. A foreign signing identifier is not the default.
+DMG_IDENTIFIER="${DMG_IDENTIFIER:-com.efmleads.go}"
 
 if [ -z "$DMG_PATH" ] || [ -z "$CHANNEL" ] || [ -z "$VERSION" ]; then
   echo "Usage: $0 <dmg-path> <channel> <version>" >&2
@@ -97,7 +93,7 @@ print(json.dumps({
             "identifier": identifier,
             "signing_requirements": {
                 "certificate_type": "developerIDAppDistribution",
-                "team_id": "94KV3E626L",
+                "team_id": "",
             },
         },
     },

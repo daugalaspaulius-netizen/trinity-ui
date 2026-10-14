@@ -15,14 +15,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.channel import (
+from efm_go.channel import (
     _APPROVAL_FIELD_MAX_CHARS,
     _APPROVAL_SHELL_TITLE_PREFIX,
     Channel,
     ChannelMessage,
     _stream_task,
 )
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST
 
 
 def _make_agent():

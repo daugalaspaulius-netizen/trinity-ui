@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.mcp_panel import (
+from efm_go.mcp_panel import (
     ADVERTISE_CALLER_IDENTITY,
     SERVER_NAME,
     _call_tool,
@@ -45,7 +45,7 @@ def _verified_caller() -> Any:
     Module-wide because every tool here is behind the gate; the identity-gate
     tests patch this to empty themselves and the inner patch wins.
     """
-    with patch("kiro_crew.mcp_core._resolve_session_key_strict", return_value=GOOD_KEY):
+    with patch("efm_go.mcp_core._resolve_session_key_strict", return_value=GOOD_KEY):
         yield
 
 
@@ -63,8 +63,8 @@ class TestTheStrictIdentityGate:
 
     def test_a_caller_the_gateway_cannot_name_is_refused_not_resolved(self) -> None:
         with (
-            patch("kiro_crew.mcp_core._resolve_session_key_strict", return_value=""),
-            patch("kiro_crew.mcp_panel._post") as mock_post,
+            patch("efm_go.mcp_core._resolve_session_key_strict", return_value=""),
+            patch("efm_go.mcp_panel._post") as mock_post,
         ):
             out = _call_tool_inner("panel_publish", {"data": {"cycle": 1}})
 
@@ -84,8 +84,8 @@ class TestTheStrictIdentityGate:
         tool added would copy whichever one it saw first.
         """
         with (
-            patch("kiro_crew.mcp_core._resolve_session_key_strict", return_value=""),
-            patch("kiro_crew.mcp_panel._get") as mock_get,
+            patch("efm_go.mcp_core._resolve_session_key_strict", return_value=""),
+            patch("efm_go.mcp_panel._get") as mock_get,
         ):
             out = _call_tool_inner("panel_templates", {})
 
@@ -94,7 +94,7 @@ class TestTheStrictIdentityGate:
 
     def test_the_verified_key_reaches_the_gateway_unchanged(self) -> None:
         """Re-resolving downstream would send a different authority than was checked."""
-        with patch("kiro_crew.mcp_panel._post", return_value={"panel": {}}) as mock_post:
+        with patch("efm_go.mcp_panel._post", return_value={"panel": {}}) as mock_post:
             _call_tool_inner("panel_publish", {"data": {"cycle": 1}})
 
         assert mock_post.call_args.kwargs["session_key"] == GOOD_KEY
@@ -105,7 +105,7 @@ class TestTheStrictIdentityGate:
         A ``crew`` argument that reached the gateway would let any caller publish
         as any crew, making the whole strict gate above decorative.
         """
-        with patch("kiro_crew.mcp_panel._post", return_value={"panel": {}}) as mock_post:
+        with patch("efm_go.mcp_panel._post", return_value={"panel": {}}) as mock_post:
             _call_tool_inner(
                 "panel_publish",
                 {"data": {"cycle": 1}, "crew": "some-other-crew", "slug": "other"},
@@ -149,7 +149,7 @@ class TestRefusalProseIsRedacted:
     @pytest.mark.parametrize("secret", CREDENTIALS)
     def test_a_publish_refusal_carrying_a_credential_comes_back_scrubbed(self, secret: str) -> None:
         with patch(
-            "kiro_crew.mcp_panel._post",
+            "efm_go.mcp_panel._post",
             return_value={"error": f"bad_template: could not read {secret}"},
         ):
             out = _call_tool_inner("panel_publish", {"data": {"cycle": 1}})
@@ -160,7 +160,7 @@ class TestRefusalProseIsRedacted:
     @pytest.mark.parametrize("secret", CREDENTIALS)
     def test_a_templates_refusal_is_scrubbed_too(self, secret: str) -> None:
         """The read path has its own redactor call; both are claimed, both tested."""
-        with patch("kiro_crew.mcp_panel._get", return_value={"error": f"boom {secret}"}):
+        with patch("efm_go.mcp_panel._get", return_value={"error": f"boom {secret}"}):
             out = _call_tool_inner("panel_templates", {})
 
         assert secret not in out
@@ -175,7 +175,7 @@ class TestRefusalProseIsRedacted:
         above and destroy the feature.
         """
         with patch(
-            "kiro_crew.mcp_panel._post",
+            "efm_go.mcp_panel._post",
             return_value={"error": "unknown_template: no such template 'nope'"},
         ):
             out = _call_tool_inner("panel_publish", {"data": {"cycle": 1}})
@@ -191,7 +191,7 @@ class TestRefusalProseIsRedacted:
 class TestPanelPublish:
     def test_a_successful_publish_reports_what_it_did(self) -> None:
         with patch(
-            "kiro_crew.mcp_panel._post",
+            "efm_go.mcp_panel._post",
             return_value={"panel": {"template": "oncall"}},
         ):
             out = _call_tool_inner("panel_publish", {"data": {"a": 1, "b": 2}})
@@ -203,20 +203,20 @@ class TestPanelPublish:
         assert "replaced" in out.lower()
 
     def test_one_field_is_not_reported_as_plural(self) -> None:
-        with patch("kiro_crew.mcp_panel._post", return_value={"panel": {}}):
+        with patch("efm_go.mcp_panel._post", return_value={"panel": {}}):
             out = _call_tool_inner("panel_publish", {"data": {"only": 1}})
         assert "1 top-level field)" in out
         assert "1 top-level fields" not in out
 
     def test_a_publish_with_no_template_reports_the_default(self) -> None:
-        with patch("kiro_crew.mcp_panel._post", return_value={"panel": {}}):
+        with patch("efm_go.mcp_panel._post", return_value={"panel": {}}):
             out = _call_tool_inner("panel_publish", {"data": {"a": 1}})
         assert "default" in out
 
     @pytest.mark.parametrize("bad", [None, "a string", 42, ["a", "list"], True])
     def test_data_that_is_not_an_object_is_refused_before_the_gateway(self, bad: Any) -> None:
         """A shape refusal is answerable locally, so it costs no round trip."""
-        with patch("kiro_crew.mcp_panel._post") as mock_post:
+        with patch("efm_go.mcp_panel._post") as mock_post:
             out = _call_tool_inner("panel_publish", {"data": bad})
 
         assert out.startswith("Error:")
@@ -224,7 +224,7 @@ class TestPanelPublish:
         mock_post.assert_not_called()
 
     def test_template_and_title_are_forwarded_when_given(self) -> None:
-        with patch("kiro_crew.mcp_panel._post", return_value={"panel": {}}) as mock_post:
+        with patch("efm_go.mcp_panel._post", return_value={"panel": {}}) as mock_post:
             _call_tool_inner(
                 "panel_publish",
                 {"data": {"a": 1}, "template": "oncall", "title": "Oncall"},
@@ -236,7 +236,7 @@ class TestPanelPublish:
 
     def test_absent_optional_fields_are_omitted_rather_than_sent_as_null(self) -> None:
         """A null template would override the server's default with nothing."""
-        with patch("kiro_crew.mcp_panel._post", return_value={"panel": {}}) as mock_post:
+        with patch("efm_go.mcp_panel._post", return_value={"panel": {}}) as mock_post:
             _call_tool_inner("panel_publish", {"data": {"a": 1}, "template": None})
 
         assert "template" not in mock_post.call_args[0][1]
@@ -248,7 +248,7 @@ class TestPanelPublish:
 class TestPanelTemplates:
     def test_it_lists_the_installed_templates_and_names_the_default(self) -> None:
         with patch(
-            "kiro_crew.mcp_panel._get",
+            "efm_go.mcp_panel._get",
             return_value={"templates": ["default", "oncall"], "default": "oncall"},
         ):
             out = _call_tool_inner("panel_templates", {})
@@ -256,7 +256,7 @@ class TestPanelTemplates:
         assert "default" in out and "oncall" in out
 
     def test_an_empty_install_says_so_rather_than_listing_nothing(self) -> None:
-        with patch("kiro_crew.mcp_panel._get", return_value={"templates": []}):
+        with patch("efm_go.mcp_panel._get", return_value={"templates": []}):
             out = _call_tool_inner("panel_templates", {})
         assert "No panel templates" in out
 
@@ -298,7 +298,7 @@ class TestTheDispatchSurface:
         leave the discovery classification claiming a property the running server
         does not have.
         """
-        with patch("kiro_crew.mcp_panel.run_mcp_stdio_loop") as loop:
+        with patch("efm_go.mcp_panel.run_mcp_stdio_loop") as loop:
             run_mcp_server()
 
         assert loop.call_args.kwargs["advertise_caller_identity"] is ADVERTISE_CALLER_IDENTITY

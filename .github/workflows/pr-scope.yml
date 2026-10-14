@@ -28,7 +28,7 @@ concurrency:
 jobs:
   pr-scope:
     name: PR Scope
-    runs-on: ${{ github.repository == 'kirodotdev/KiroCrew' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
+    runs-on: ${{ github.repository == 'efmleads.com' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
     # 15, not 5: the job's own work is seconds, but its `fetch-depth: 0`
     # checkout (it needs the merge base for `BASE...HEAD`) is a full-history
     # fetch of a large repository, and on a slow hosted runner that fetch alone
@@ -67,7 +67,7 @@ jobs:
           # uncomputable diff refuses to report a verdict instead: a loud
           # warning, no scope claim, and still exit 0.
           if ! files="$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- . \
-            ':(exclude)src/kiro_crew/_vendor/**' \
+            ':(exclude)src/efm_go/_vendor/**' \
             ':(exclude)temp-screenshots/**')"; then
             echo "::warning::Could not compute the diff between the base and head commits, so this advisory check measured nothing. This is a read failure, not a self-contained scope -- re-run this job for a real measurement."
             echo "PR scope was NOT measured: the diff could not be computed." >> "$GITHUB_STEP_SUMMARY"
@@ -77,7 +77,7 @@ jobs:
           # status out of the awk pipeline so a failed `git diff` cannot be
           # summed into a legitimate-looking 0.
           if ! numstat="$(git diff --numstat "$BASE_SHA...$HEAD_SHA" -- . \
-            ':(exclude)src/kiro_crew/_vendor/**' \
+            ':(exclude)src/efm_go/_vendor/**' \
             ':(exclude)temp-screenshots/**')"; then
             echo "::warning::Could not compute the line-count diff between the base and head commits, so this advisory check measured nothing. This is a read failure, not a self-contained scope -- re-run this job for a real measurement."
             echo "PR scope was NOT measured: the diff could not be computed." >> "$GITHUB_STEP_SUMMARY"
@@ -94,7 +94,7 @@ jobs:
           # and the SPA that is the module/feature directory (2 levels deep), not
           # the repo-wide bucket -- otherwise every backend PR looks like one area.
           areas="$(printf '%s\n' "$files" | awk -F/ '
-            /^src\/kiro_crew\// { print (NF>=3 ? $1"/"$2"/"$3 : $1"/"$2); next }
+            /^src\/efm_go\// { print (NF>=3 ? $1"/"$2"/"$3 : $1"/"$2); next }
             /^website\/src\//   { print (NF>=3 ? $1"/"$2"/"$3 : $1"/"$2); next }
             { print $1 }
           ' | sort -u)"

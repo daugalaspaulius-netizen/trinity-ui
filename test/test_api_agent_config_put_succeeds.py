@@ -14,8 +14,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 
-import kiro_crew.config.loader as loader_module
-from kiro_crew.dashboard.handlers import api_agent_config
+import efm_go.config.loader as loader_module
+from efm_go.dashboard.handlers import api_agent_config
 
 
 @pytest.fixture(autouse=True)
@@ -25,7 +25,7 @@ def _owner_caller(monkeypatch):
     its own enumerate-the-invariant coverage in
     test_agents_endpoints_owner_auth.py."""
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
@@ -47,16 +47,16 @@ async def test_api_agent_config_put_succeeds(tmp_path):
     request.json = mock_json
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
         patch(
-            "kiro_crew.agent.build_agent_config",
+            "efm_go.agent.build_agent_config",
             return_value={"toolsSettings": {"execute_bash": {"deniedCommands": ["rm -rf"]}}},
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": ["a", "c"], "allowedTools": ["b"]},
         ),
     ):
@@ -77,9 +77,9 @@ async def test_api_agent_config_put_strips_governed_grants(tmp_path, monkeypatch
     through the governance filter — else a governed @denied allowedTools entry or
     a governed server's autoApprove written here restores the bypass the per-ref
     writers close. Executable (not source-inspection) coverage of that writer."""
-    import kiro_crew.platform.governance as gov
-    from kiro_crew.config import live as _live
-    from kiro_crew.config.loader import KiroCrewConfig as _Cfg
+    import efm_go.platform.governance as gov
+    from efm_go.config import live as _live
+    from efm_go.config.loader import KiroCrewConfig as _Cfg
 
     # Govern @denied only; everything else may auto-approve.
     monkeypatch.setattr(gov, "may_skip_gate_now", lambda ref: ref != "@denied")
@@ -115,11 +115,11 @@ async def test_api_agent_config_put_strips_governed_grants(tmp_path, monkeypatch
     request.json = mock_json
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.dashboard.handlers.agents.get_shipped_tools", return_value={"tools": [], "allowedTools": []}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.dashboard.handlers.agents.get_shipped_tools", return_value={"tools": [], "allowedTools": []}),
     ):
         response = await api_agent_config(request)
 
@@ -143,7 +143,7 @@ async def test_api_agent_config_put_strips_bookkeeping_keys(tmp_path):
     kiro-cli ``deny_unknown_fields`` then rejects the entire agent until the
     next ``migrate_agent_specs`` heal on gateway rebuild.
     """
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     installed = tmp_path / "kirocrew.json"
     installed.write_text(json.dumps({"name": "kirocrew"}))
@@ -168,11 +168,11 @@ async def test_api_agent_config_put_strips_bookkeeping_keys(tmp_path):
     request.json = mock_json
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.agent.get_shipped_tools", return_value={"tools": [], "allowedTools": []}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.agent.get_shipped_tools", return_value={"tools": [], "allowedTools": []}),
     ):
         response = await api_agent_config(request)
 
@@ -189,7 +189,7 @@ async def test_api_agent_config_put_strips_bookkeeping_keys(tmp_path):
 @pytest.mark.asyncio
 async def test_api_agent_config_put_does_not_clobber_sidecar(tmp_path):
     """A stale bookkeeping key in the PUT body must not overwrite the sidecar."""
-    from kiro_crew import agent_state
+    from efm_go import agent_state
 
     installed = tmp_path / "kirocrew.json"
     installed.write_text(json.dumps({"name": "kirocrew"}))
@@ -217,11 +217,11 @@ async def test_api_agent_config_put_does_not_clobber_sidecar(tmp_path):
     request.json = mock_json
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.agent.get_shipped_tools", return_value={"tools": [], "allowedTools": []}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.agent.get_shipped_tools", return_value={"tools": [], "allowedTools": []}),
     ):
         response = await api_agent_config(request)
 
@@ -272,17 +272,17 @@ async def test_api_agent_config_put_uses_atomic_write(tmp_path):
         path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": [], "allowedTools": []},
         ),
         # Intercept write_config_atomically as imported into agents.py.
         patch(
-            "kiro_crew.dashboard.handlers.agents.write_config_atomically",
+            "efm_go.dashboard.handlers.agents.write_config_atomically",
             side_effect=_fake_atomic,
         ),
     ):
@@ -362,28 +362,28 @@ async def test_agent_config_write_holds_the_mcp_transaction_lock(tmp_path):
         writes.append((str(path), holding, tuple(str(t) for t in file_locked)))
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
         patch(
-            "kiro_crew.agent.build_agent_config",
+            "efm_go.agent.build_agent_config",
             return_value={"toolsSettings": {}},
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": ["a", "c"], "allowedTools": ["b"]},
         ),
         patch(
-            "kiro_crew.dashboard.handlers.mcp._get_mcp_lock",
+            "efm_go.dashboard.handlers.mcp._get_mcp_lock",
             _recording_lock,
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents._agent_file_lock",
+            "efm_go.dashboard.handlers.agents._agent_file_lock",
             _recording_file_lock,
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents.write_config_atomically",
+            "efm_go.dashboard.handlers.agents.write_config_atomically",
             _recording_write,
         ),
     ):
@@ -482,25 +482,25 @@ async def test_agent_config_write_goes_through_one_shielded_offload(tmp_path):
         return real_locked(path, **kwargs)
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.agent.build_agent_config", return_value={"toolsSettings": {}}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.agent.build_agent_config", return_value={"toolsSettings": {}}),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": ["a", "c"], "allowedTools": ["b"]},
         ),
-        patch("kiro_crew.agent_state.lift_and_strip_bookkeeping", _recording_lift),
+        patch("efm_go.agent_state.lift_and_strip_bookkeeping", _recording_lift),
         patch(
-            "kiro_crew.dashboard.handlers.agents.write_config_atomically",
+            "efm_go.dashboard.handlers.agents.write_config_atomically",
             _recording_write,
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents.update_config_locked",
+            "efm_go.dashboard.handlers.agents.update_config_locked",
             _recording_locked,
         ),
-        patch("kiro_crew.dashboard.handlers.mcp._offload_config_write", _recording_offload),
+        patch("efm_go.dashboard.handlers.mcp._offload_config_write", _recording_offload),
     ):
         resp = await api_agent_config(request)
 
@@ -577,17 +577,17 @@ async def test_agent_config_put_persists_nothing_before_the_transaction_lock(tmp
             return None
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.agent.build_agent_config", return_value={"toolsSettings": {}}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.agent.build_agent_config", return_value={"toolsSettings": {}}),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": ["a", "c"], "allowedTools": ["b"]},
         ),
         patch(
-            "kiro_crew.dashboard.handlers.mcp._get_mcp_lock",
+            "efm_go.dashboard.handlers.mcp._get_mcp_lock",
             lambda: _ContendedLock(),
         ),
     ):
@@ -682,29 +682,29 @@ async def test_agent_config_put_lock_releases_only_after_every_write_landed(tmp_
             at_release.append(list(completed))
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.agent.build_agent_config", return_value={"toolsSettings": {}}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.agent.build_agent_config", return_value={"toolsSettings": {}}),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": ["a", "c"], "allowedTools": ["b"]},
         ),
         # Neutral: the filter persists nothing, and pinning it here would only
         # couple this test to the host's governance profiles.
         patch(
-            "kiro_crew.platform.governance.sanitize_agent_config_governance",
+            "efm_go.platform.governance.sanitize_agent_config_governance",
             lambda config: None,
         ),
-        patch("kiro_crew.agent_state.lift_and_strip_bookkeeping", _blocking_bookkeeping),
-        patch("kiro_crew.dashboard.handlers.mcp._get_mcp_lock", _recording_lock),
+        patch("efm_go.agent_state.lift_and_strip_bookkeeping", _blocking_bookkeeping),
+        patch("efm_go.dashboard.handlers.mcp._get_mcp_lock", _recording_lock),
         patch(
-            "kiro_crew.dashboard.handlers.agents.write_config_atomically",
+            "efm_go.dashboard.handlers.agents.write_config_atomically",
             _recording_write,
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents.update_config_locked",
+            "efm_go.dashboard.handlers.agents.update_config_locked",
             _recording_locked,
         ),
     ):
@@ -763,7 +763,7 @@ async def test_agent_config_put_unreadable_config_persists_nothing(tmp_path, mon
     Pins all three durable targets byte-identical, so the property is "nothing
     was persisted" rather than "the write I happened to think of was skipped".
     """
-    from kiro_crew.config.loader import ConfigReadError
+    from efm_go.config.loader import ConfigReadError
 
     installed = tmp_path / "kirocrew.json"
     installed.write_text(json.dumps({"name": "kirocrew", "tools": ["a", "c"]}))
@@ -775,7 +775,7 @@ async def test_agent_config_put_unreadable_config_persists_nothing(tmp_path, mon
     # enough for the bookkeeping write to be observable, and it keeps the
     # sidecar off the developer's real ~/.kiro/crew.
     state.write_text(json.dumps({"test": {"model_managed": False}}, indent=2, sort_keys=True) + "\n")
-    monkeypatch.setattr("kiro_crew.agent_state._state_path", lambda: state)
+    monkeypatch.setattr("efm_go.agent_state._state_path", lambda: state)
 
     before_cfg = mc_cfg.read_text()
     before_spec = installed.read_text()
@@ -805,20 +805,20 @@ async def test_agent_config_put_unreadable_config_persists_nothing(tmp_path, mon
         raise ConfigReadError("config.json is corrupt")
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.agent.build_agent_config", return_value={"toolsSettings": {}}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.agent.build_agent_config", return_value={"toolsSettings": {}}),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": ["a", "c"], "allowedTools": ["b"]},
         ),
         patch(
-            "kiro_crew.platform.governance.sanitize_agent_config_governance",
+            "efm_go.platform.governance.sanitize_agent_config_governance",
             lambda config: None,
         ),
-        patch("kiro_crew.dashboard.handlers.agents.update_config_locked", _unreadable),
+        patch("efm_go.dashboard.handlers.agents.update_config_locked", _unreadable),
     ):
         response = await api_agent_config(request)
 
@@ -885,22 +885,22 @@ async def test_agent_config_put_keeps_a_concurrent_config_write_that_lands_befor
         return fn(*args, **kwargs)
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.agent.build_agent_config", return_value={"toolsSettings": {}}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.agent.build_agent_config", return_value={"toolsSettings": {}}),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": ["a", "c"], "allowedTools": ["b"]},
         ),
         patch(
-            "kiro_crew.platform.governance.sanitize_agent_config_governance",
+            "efm_go.platform.governance.sanitize_agent_config_governance",
             lambda config: None,
         ),
-        patch("kiro_crew.dashboard.handlers.mcp._get_mcp_lock", _neutral_lock),
+        patch("efm_go.dashboard.handlers.mcp._get_mcp_lock", _neutral_lock),
         patch(
-            "kiro_crew.dashboard.handlers.mcp._offload_config_write",
+            "efm_go.dashboard.handlers.mcp._offload_config_write",
             _offload_after_a_concurrent_write,
         ),
     ):
@@ -945,7 +945,7 @@ async def test_agent_config_put_failed_config_write_leaves_bookkeeping_untouched
     state.write_text(
         json.dumps({"test": {"model_managed": False}}, indent=2, sort_keys=True) + "\n"
     )
-    monkeypatch.setattr("kiro_crew.agent_state._state_path", lambda: state)
+    monkeypatch.setattr("efm_go.agent_state._state_path", lambda: state)
 
     before_state = state.read_text()
     before_spec = installed.read_text()
@@ -974,21 +974,21 @@ async def test_agent_config_put_failed_config_write_leaves_bookkeeping_untouched
         raise OSError("disk full")
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.agent.build_agent_config", return_value={"toolsSettings": {}}),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.agent.build_agent_config", return_value={"toolsSettings": {}}),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             return_value={"tools": ["a", "c"], "allowedTools": ["b"]},
         ),
         patch(
-            "kiro_crew.platform.governance.sanitize_agent_config_governance",
+            "efm_go.platform.governance.sanitize_agent_config_governance",
             lambda config: None,
         ),
         patch(
-            "kiro_crew.dashboard.handlers.agents.update_config_locked",
+            "efm_go.dashboard.handlers.agents.update_config_locked",
             _config_write_fails,
         ),
     ):
@@ -1023,7 +1023,7 @@ async def test_offload_config_write_drains_through_repeated_cancellation():
     """
     import threading
 
-    from kiro_crew.dashboard.handlers.mcp import _offload_config_write
+    from efm_go.dashboard.handlers.mcp import _offload_config_write
 
     release = threading.Event()
     started = threading.Event()
@@ -1085,7 +1085,7 @@ async def test_offload_config_write_drains_through_repeated_cancellation():
 @pytest.mark.asyncio
 async def test_offload_config_write_propagates_write_errors():
     """A failing write still raises -- the drain must not swallow it."""
-    from kiro_crew.dashboard.handlers.mcp import _offload_config_write
+    from efm_go.dashboard.handlers.mcp import _offload_config_write
 
     def _failing_write():
         raise OSError("disk full")
@@ -1111,8 +1111,8 @@ async def test_default_agent_write_holds_the_config_lock(tmp_path):
     """
     import contextlib
 
-    from kiro_crew.config.loader import update_config_locked
-    from kiro_crew.dashboard.handlers import api_default_agent
+    from efm_go.config.loader import update_config_locked
+    from efm_go.dashboard.handlers import api_default_agent
 
     mc_cfg = tmp_path / "config.json"
     mc_cfg.write_text(json.dumps({"default_agent": "kirocrew", "unrelated": "keep me"}))
@@ -1162,10 +1162,10 @@ async def test_default_agent_write_holds_the_config_lock(tmp_path):
     fake_config_cls.load.return_value = loaded
 
     with (
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
-        patch("kiro_crew.dashboard.handlers.agents.KiroCrewConfig", fake_config_cls),
-        patch("kiro_crew.dashboard.handlers.agents._get_config_lock", _recording_lock),
-        patch("kiro_crew.dashboard.handlers.agents.update_config_locked", _recording_locked),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.dashboard.handlers.agents.KiroCrewConfig", fake_config_cls),
+        patch("efm_go.dashboard.handlers.agents._get_config_lock", _recording_lock),
+        patch("efm_go.dashboard.handlers.agents.update_config_locked", _recording_locked),
     ):
         resp = await api_default_agent(request)
 
@@ -1209,7 +1209,7 @@ async def test_agent_config_put_governs_against_the_ceiling_current_at_commit(
     """
     import contextlib
 
-    import kiro_crew.platform.governance as gov
+    import efm_go.platform.governance as gov
 
     # Mutable ceiling: everything is grantable until the lock wait revokes
     # @revoked_during_wait.
@@ -1244,17 +1244,17 @@ async def test_agent_config_put_governs_against_the_ceiling_current_at_commit(
         yield
 
     with (
-        patch("kiro_crew.dashboard.handlers._installed_agent_config", return_value=installed),
-        patch("kiro_crew.dashboard.handlers._find_agent_config", return_value=defaults),
-        patch("kiro_crew.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
-        patch("kiro_crew.dashboard.handlers.config_path", return_value=mc_cfg),
+        patch("efm_go.dashboard.handlers._installed_agent_config", return_value=installed),
+        patch("efm_go.dashboard.handlers._find_agent_config", return_value=defaults),
+        patch("efm_go.dashboard.handlers._reset_all_sessions", new_callable=AsyncMock),
+        patch("efm_go.dashboard.handlers.config_path", return_value=mc_cfg),
         patch(
-            "kiro_crew.dashboard.handlers.agents.get_shipped_tools",
+            "efm_go.dashboard.handlers.agents.get_shipped_tools",
             # Ships the ref the submission also carries, so a diff taken AFTER
             # the filter would see it missing and record a phantom user removal.
             return_value={"tools": [], "allowedTools": ["@revoked_during_wait"]},
         ),
-        patch("kiro_crew.dashboard.handlers.mcp._get_mcp_lock", _revoking_lock),
+        patch("efm_go.dashboard.handlers.mcp._get_mcp_lock", _revoking_lock),
     ):
         resp = await api_agent_config(request)
 

@@ -32,11 +32,11 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import crewmate_prune_migration as mig
-from kiro_crew.agent import kiro_agents_dir_path
-from kiro_crew.agent_discovery import AgentInfo
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_path
-from kiro_crew.memory_stores import provision_member_memory
+from efm_go import crewmate_prune_migration as mig
+from efm_go.agent import kiro_agents_dir_path
+from efm_go.agent_discovery import AgentInfo
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig, config_path
+from efm_go.memory_stores import provision_member_memory
 
 
 @pytest.fixture(autouse=True)
@@ -49,7 +49,7 @@ def _agents_dir(tmp_path, monkeypatch):
     """
     root = tmp_path / "agents"
     root.mkdir()
-    monkeypatch.setattr("kiro_crew.agent.KIRO_AGENTS_DIR", root)
+    monkeypatch.setattr("efm_go.agent.KIRO_AGENTS_DIR", root)
     return root
 
 
@@ -138,8 +138,8 @@ def bindings_dir(tmp_path, monkeypatch):
     """Point the DM-binding path at a scratch dir; ``write(name)`` opens a thread."""
     root = tmp_path / "dm"
     root.mkdir()
-    monkeypatch.setattr("kiro_crew.members.dm_binding_path", lambda slug: root / f"{slug}.json")
-    monkeypatch.setattr("kiro_crew.members.member_slug", lambda name, cfg=None: name)
+    monkeypatch.setattr("efm_go.members.dm_binding_path", lambda slug: root / f"{slug}.json")
+    monkeypatch.setattr("efm_go.members.member_slug", lambda name, cfg=None: name)
 
     def write(
         name: str,
@@ -175,7 +175,7 @@ def old_style_config():
     store = provision_member_memory(cfg, "kept-memory")
     cfg.agents["kept-memory"].member_id = ""  # back to the sync's shape, store kept
     cfg.save()
-    from kiro_crew.memory_stores import _named_store_dir
+    from efm_go.memory_stores import _named_store_dir
 
     (_named_store_dir(store) / "memory" / "note.md").write_text("kept\n")
     hand = KiroCrewConfig.load().agents["by-hand"]
@@ -185,7 +185,7 @@ def old_style_config():
 
 def _run(specs: dict, log, **kw):
     _write_specs(specs)
-    with patch("kiro_crew.agent_discovery.list_agents", return_value=list(specs.values())):
+    with patch("efm_go.agent_discovery.list_agents", return_value=list(specs.values())):
         return mig.prune_synced_crewmates(log, **kw)
 
 
@@ -231,7 +231,7 @@ class TestThePass:
         each such record must decode as the installed template on the shared
         store -- otherwise every reader refuses it as an unavailable member.
         """
-        from kiro_crew.execution_context import (
+        from efm_go.execution_context import (
             EXECUTION_CONTEXT_KEY,
             ExecutionContext,
             MemoryStoreRef,
@@ -461,7 +461,7 @@ class TestThePass:
     def test_the_first_passes_marker_does_not_stop_this_one(
         self, old_style_config, bindings_dir, log
     ):
-        from kiro_crew.config.paths import config_dir
+        from efm_go.config.paths import config_dir
 
         earlier = [
             config_dir() / "crewmate_prune_migrated.json",
@@ -654,7 +654,7 @@ class TestKeptOnDoubt:
         def _boom(slug):
             raise OSError("members root unreadable")
 
-        monkeypatch.setattr("kiro_crew.members.dm_binding_path", _boom)
+        monkeypatch.setattr("efm_go.members.dm_binding_path", _boom)
         report = _run(old_style_config, log)
         assert set(report.doubted) == {"radar", "scout"}
         assert "scout" in KiroCrewConfig.load().agents
@@ -665,12 +665,12 @@ class TestKeptOnDoubt:
         # A slug that passed ``member_slug`` but whose binding path resolves
         # outside the trust root (a symlinked component) is a binding that MAY
         # exist, not one that does not.
-        from kiro_crew.members import MemberSlugError
+        from efm_go.members import MemberSlugError
 
         def _escapes(slug):
             raise MemberSlugError(f"member slug {slug!r} escapes root")
 
-        monkeypatch.setattr("kiro_crew.members.dm_binding_path", _escapes)
+        monkeypatch.setattr("efm_go.members.dm_binding_path", _escapes)
         report = _run(old_style_config, log)
         assert set(report.doubted) == {"radar", "scout"}
         assert "scout" in KiroCrewConfig.load().agents
@@ -714,7 +714,7 @@ class TestKeptOnDoubt:
     ):
         # A build whose record had no member_id wrote rows without that key;
         # the delete's fence is identity and shape, not key-for-key equality.
-        from kiro_crew.config.loader import read_config_for_update, update_config_locked
+        from efm_go.config.loader import read_config_for_update, update_config_locked
 
         def _strip(doc):
             row = doc["agents"]["scout"]
@@ -826,8 +826,8 @@ class TestCandidates:
         cfg.save()
         raw = mig._raw_agents_section()
         with (
-            patch("kiro_crew.agent_discovery.list_agents", return_value=list(specs.values())),
-            patch("kiro_crew.agent.kiro_agents_dir_path", return_value="/nowhere"),
+            patch("efm_go.agent_discovery.list_agents", return_value=list(specs.values())),
+            patch("efm_go.agent.kiro_agents_dir_path", return_value="/nowhere"),
         ):
             got = mig._synced_candidates(cfg, raw, {}, frozenset())
         assert list(got) == ["radar", "omni", "older"]
@@ -843,7 +843,7 @@ class TestCandidates:
         assert mig._synced_candidates(cfg, mig._raw_agents_section(), {}, frozenset()) == {}
 
     def test_a_non_string_row_source_is_kept_without_exception(self, log):
-        from kiro_crew.config.loader import update_config_locked
+        from efm_go.config.loader import update_config_locked
 
         cfg = KiroCrewConfig.load()
         cfg.agents["scout"] = _synced("scout")
@@ -874,7 +874,7 @@ class TestCandidates:
         cfg.agents["legacy"] = _synced("legacy", source="aim")
         cfg.save()
         spec = _spec("legacy", source="package", package="Pkg")
-        with patch("kiro_crew.agent_discovery.list_agents", return_value=[spec]):
+        with patch("efm_go.agent_discovery.list_agents", return_value=[spec]):
             got = mig._synced_candidates(cfg, mig._raw_agents_section(), {}, frozenset())
         assert got == {"legacy": mig.SyncedCandidate(filename="legacy.json", source="package")}
 
@@ -968,7 +968,7 @@ class TestCandidates:
     def test_a_spec_made_private_under_the_lock_refuses_the_delete(
         self, old_style_config, bindings_dir, log
     ):
-        from kiro_crew import agent_state
+        from efm_go import agent_state
 
         original = mig.remove_never_chatted
 
@@ -1024,7 +1024,7 @@ class TestCandidates:
         # ``kirocrew config set --local agents.radar.model m`` leaves the base
         # row pristine and puts one leaf in config.local.json; deleting the
         # base row would leave that leaf as a crewmate bound to nothing.
-        from kiro_crew.config.loader import config_local_path
+        from efm_go.config.loader import config_local_path
 
         cfg = KiroCrewConfig.load()
         cfg.agents["radar"] = _synced("radar")
@@ -1037,15 +1037,15 @@ class TestCandidates:
         assert overlay == {"radar": {"model": "m"}}
         specs = {"radar": _spec("radar"), "scout": _spec("scout")}
         with (
-            patch("kiro_crew.agent_discovery.list_agents", return_value=list(specs.values())),
-            patch("kiro_crew.agent.kiro_agents_dir_path", return_value="/nowhere"),
+            patch("efm_go.agent_discovery.list_agents", return_value=list(specs.values())),
+            patch("efm_go.agent.kiro_agents_dir_path", return_value="/nowhere"),
         ):
             assert list(mig._synced_candidates(cfg, raw, overlay, frozenset())) == ["scout"]
 
     def test_an_overlay_leaf_appearing_under_the_lock_refuses_the_delete(
         self, old_style_config, bindings_dir, log
     ):
-        from kiro_crew.config.loader import config_local_path
+        from efm_go.config.loader import config_local_path
 
         original = mig.remove_never_chatted
 
@@ -1062,7 +1062,7 @@ class TestCandidates:
     def test_a_teamed_row_is_never_a_candidate(self):
         # Placing a crewmate on a team is the owner's own act, so the row is
         # the owner's whatever its shape.
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         cfg = KiroCrewConfig.load()
         cfg.agents["radar"] = _synced("radar")
@@ -1073,8 +1073,8 @@ class TestCandidates:
         assert teamed == frozenset({"radar"})
         specs = {"radar": _spec("radar"), "scout": _spec("scout")}
         with (
-            patch("kiro_crew.agent_discovery.list_agents", return_value=list(specs.values())),
-            patch("kiro_crew.agent.kiro_agents_dir_path", return_value="/nowhere"),
+            patch("efm_go.agent_discovery.list_agents", return_value=list(specs.values())),
+            patch("efm_go.agent.kiro_agents_dir_path", return_value="/nowhere"),
         ):
             assert list(mig._synced_candidates(cfg, mig._raw_agents_section(), {}, teamed)) == [
                 "scout"
@@ -1085,7 +1085,7 @@ class TestCandidates:
     ):
         # Neither removed, refused nor doubted: not a candidate at all, so the
         # pass records itself as complete with the row in place.
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         crew_teams.create_team("ops", ["scout"], known=lambda: {"radar", "scout"})
         report = _run(old_style_config, log)
@@ -1098,7 +1098,7 @@ class TestCandidates:
     def test_an_unteamed_row_is_still_removed_when_teams_exist(
         self, old_style_config, bindings_dir, log
     ):
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         crew_teams.create_team("ops", ["by-hand"], known=lambda: {"by-hand"})
         report = _run(old_style_config, log)
@@ -1111,7 +1111,7 @@ class TestCandidates:
     ):
         # The team write lands between discovery and the delete: newer
         # evidence, the delete is refused, no marker, the row and its team stay.
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         original = mig.remove_never_chatted
 
@@ -1134,7 +1134,7 @@ class TestCandidates:
     ):
         # None of them can be shown to be off a team, so all are kept on doubt
         # -- the way no conversation log keeps them -- and the marker records it.
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         path = crew_teams.teams_path()
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1149,7 +1149,7 @@ class TestCandidates:
     def test_a_team_document_turned_unreadable_under_the_lock_refuses_the_delete(
         self, old_style_config, bindings_dir, log
     ):
-        from kiro_crew import crew_teams
+        from efm_go import crew_teams
 
         original = mig.remove_never_chatted
 
@@ -1171,7 +1171,7 @@ class TestCandidates:
         # document lock is released the base file has already lost the row, so
         # a team write that waited on it cannot place a name the pass is about
         # to delete.
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         log.dm("radar")
         base_at_release: list[dict] = []
@@ -1199,7 +1199,7 @@ class TestCandidates:
         # after the peek: at the moment it is released, the base file on disk
         # has already lost the row. An overlay writer that waited on the lock
         # therefore finds the row gone, never a row it can still bind to.
-        from kiro_crew.config.loader import config_path
+        from efm_go.config.loader import config_path
 
         log.dm("radar")
         base_at_release: list[dict] = []
@@ -1229,8 +1229,8 @@ class TestCandidates:
         # has already lost the row, so a spec writer that waited on the lock
         # edits a spec no row is bound to -- never one about to be judged
         # against a description it just changed.
-        import kiro_crew.agent as agent_mod
-        from kiro_crew.config.loader import config_path
+        import efm_go.agent as agent_mod
+        from efm_go.config.loader import config_path
 
         log.dm("radar")
         base_at_release: list[dict] = []
@@ -1260,7 +1260,7 @@ class TestCandidates:
         # nothing takes a registry, overlay or spec lock while holding it), so
         # no writer that holds the base lock can wait on this pass for a lock
         # this pass waits on it for.
-        import kiro_crew.agent as agent_mod
+        import efm_go.agent as agent_mod
 
         log.dm("radar")
         order: list[str] = []
@@ -1329,7 +1329,7 @@ class TestTheGate:
 
         from aiohttp import web
 
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import server as server_mod
 
         event = asyncio.Event()
         event.set()
@@ -1408,7 +1408,7 @@ class TestTheGate:
         # dashboard route; the gate keys on the method, never on the path.
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import server as server_mod
 
         monkeypatch.setattr(server_mod, "_CREWMATE_PRUNE_GATE_TIMEOUT_S", 0.05)
         app, _state, hits = self._app()
@@ -1421,7 +1421,7 @@ class TestTheGate:
     async def test_a_pass_that_never_settles_answers_503(self, monkeypatch):
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import server as server_mod
 
         monkeypatch.setattr(server_mod, "_CREWMATE_PRUNE_GATE_TIMEOUT_S", 0.05)
         app, _state, hits = self._app()
@@ -1461,7 +1461,7 @@ class TestAwaitSettled:
     async def test_a_pass_that_settles_in_time_is_not_told_to_stop(self):
         import asyncio
 
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import server as server_mod
 
         state = self._state()
         waiter = asyncio.ensure_future(
@@ -1477,7 +1477,7 @@ class TestAwaitSettled:
     async def test_a_pass_past_its_budget_is_told_to_stop_and_still_waited_for(self, monkeypatch):
         import asyncio
 
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import server as server_mod
 
         monkeypatch.setattr(server_mod, "_CREWMATE_PRUNE_GATE_TIMEOUT_S", 0.05)
         state = self._state()
@@ -1497,7 +1497,7 @@ class TestAwaitSettled:
         # the same claimed-slot set, and it is tracked like the pass itself.
         import asyncio
 
-        from kiro_crew.dashboard import server as server_mod
+        from efm_go.dashboard import server as server_mod
 
         calls: list[dict] = []
 
@@ -1541,7 +1541,7 @@ class TestOneProcess:
         # nothing of its own -- the other pass already judged the rows.
         import threading
 
-        from kiro_crew.platform_compat import file_lock, open_lock_file
+        from efm_go.platform_compat import file_lock, open_lock_file
 
         log.dm("radar")
         holding = threading.Event()
@@ -1581,7 +1581,7 @@ class TestOneProcess:
         # lock and runs the pass itself.
         import threading
 
-        from kiro_crew.platform_compat import file_lock, open_lock_file
+        from efm_go.platform_compat import file_lock, open_lock_file
 
         monkeypatch.setattr(mig, "PRUNE_LOCK_WAIT_S", 0.1)
         log.dm("radar")
@@ -1612,7 +1612,7 @@ class TestOneProcess:
         # The marker is written last, under the lock: its presence means the
         # holder's deletes are done, so a waiting pass may settle on it even
         # before the holder lets go of the lock.
-        from kiro_crew.platform_compat import file_lock, open_lock_file
+        from efm_go.platform_compat import file_lock, open_lock_file
 
         monkeypatch.setattr(mig, "PRUNE_LOCK_WAIT_S", 0.1)
         log.dm("radar")
@@ -1644,7 +1644,7 @@ class TestOneProcess:
         assert "scout" in KiroCrewConfig.load().agents
 
     def test_the_lock_is_released_after_the_pass(self, old_style_config, bindings_dir, log):
-        from kiro_crew.platform_compat import file_lock, open_lock_file
+        from efm_go.platform_compat import file_lock, open_lock_file
 
         log.dm("radar")
         _run(old_style_config, log)
@@ -1654,7 +1654,7 @@ class TestOneProcess:
                 pass
 
     def test_the_lock_is_released_when_the_pass_raises(self, old_style_config, bindings_dir, log):
-        from kiro_crew.platform_compat import file_lock, open_lock_file
+        from efm_go.platform_compat import file_lock, open_lock_file
 
         with patch.object(mig, "_synced_candidates", side_effect=PermissionError("config")):
             with pytest.raises(PermissionError):

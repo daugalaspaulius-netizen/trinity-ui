@@ -38,16 +38,16 @@ from collections.abc import Iterator
 
 import pytest
 
-import kiro_crew.executors as ex
-from kiro_crew import security
-from kiro_crew.agent_sdk import host_auth
-from kiro_crew.subprocess_pool import (
+import efm_go.executors as ex
+from efm_go import security
+from efm_go.agent_sdk import host_auth
+from efm_go.subprocess_pool import (
     OP_REALPATH_MANY,
     SubprocessPoolTimeout,
     SubprocessPoolUnavailable,
 )
-from kiro_crew.subprocess_pool.executor import proc_syscall
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go.subprocess_pool.executor import proc_syscall
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 # Captured BEFORE the autouse fixture below can stub it.  The fixture replaces this
 # helper for every test in the file, so a test that wants to exercise the real state
@@ -488,7 +488,7 @@ def test_the_stall_prefix_never_ends_on_a_container_of_homes(monkeypatch) -> Non
     collapse on POSIX: two components of ``/local/home/<user>/...`` is ``/local/home``,
     one key for every user, workspace, checkout, data home and credential store on
     the machine, so one stall anywhere under it refused the whole host for the
-    cooldown (kirodotdev/KiroCrew#12386).  The key must not stop on a container of
+    cooldown (efmleads.com#12386).  The key must not stop on a container of
     homes; it takes the user too, which is exactly the key ``/home/<user>`` gets.
     Driven through ``posixpath`` so the layout is asserted on every platform.
     """
@@ -533,7 +533,7 @@ class _StallsOneHome:
 
 
 def test_a_stall_under_one_home_leaves_a_sibling_home_resolving(monkeypatch) -> None:
-    """kirodotdev/KiroCrew#12386, consequence 1: the blast radius is one home, not the host.
+    """efmleads.com#12386, consequence 1: the blast radius is one home, not the host.
 
     Through the real cooldown machinery, not the key alone.  A key that stops on the
     container charges Alice's stall to ``/local/home`` and refuses Bob's path for
@@ -642,7 +642,7 @@ def test_the_resolver_pool_knob_reaches_the_pool_in_a_fresh_interpreter() -> Non
     # a fresh interpreter, where the once-at-import read really happens, and follow
     # the value to the pool the gate submits to.
     probe = (
-        "import kiro_crew.executors as ex\n"
+        "import efm_go.executors as ex\n"
         "print(ex._MAX_PATH_RESOLVE_WORKERS, len(ex.path_resolve_executor()._children))\n"
     )
     env = dict(os.environ)
@@ -1345,7 +1345,7 @@ def test_a_descheduled_worker_does_not_charge_the_prefix(monkeypatch) -> None:
     # cooldown that refuses every path under it -- including, in the field, every
     # scheduled cron script for as long as the ceiling allowed.  The refusal of THIS
     # resolution is unchanged: the gate still fails closed, it just stops generalising
-    # from one descheduled thread to a whole subtree.  kirodotdev/KiroCrew#9482.
+    # from one descheduled thread to a whole subtree.  efmleads.com#9482.
     monkeypatch.setattr(security.paths, "_child_blocked_in_filesystem", lambda sampled: False)
     stalled = _StalledResolver()
     monkeypatch.setattr(security, "_resolved_spellings", stalled)
@@ -1393,7 +1393,7 @@ def test_the_discriminator_reads_a_running_thread_as_not_blocked() -> None:
 
 
 def test_a_saturated_pool_refuses_without_charging_or_tracking(caplog) -> None:
-    # THE QUEUED ARM, end to end on the real pool.  kirodotdev/KiroCrew#9482:
+    # THE QUEUED ARM, end to end on the real pool.  efmleads.com#9482:
     # simultaneous cron fires lease both children, so a third resolution times
     # out having never been TAKEN by a child.  Lease wait is evidence about
     # load, not the mount: the call is still refused (fail-closed, unchanged),
@@ -1402,7 +1402,7 @@ def test_a_saturated_pool_refuses_without_charging_or_tracking(caplog) -> None:
     pool = ex.path_resolve_executor()
     leased = [pool._free.get(timeout=5.0) for _ in pool._children]
     try:
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.security.paths"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.security.paths"):
             with pytest.raises(security.PathResolutionStalled):
                 security._candidate_forms("/home/someone/ws/file")
         assert security._path_resolve_degraded == {}, "lease wait must open no cooldown"
@@ -1712,7 +1712,7 @@ def test_an_in_s_filesystem_wait_is_sampled_stably_and_reads_as_blocked(
 
 # ---------------------------------------------------------------------------
 # The wiring itself: the ``realpath`` runs in ``subprocess_pool``'s child, reached
-# from the calling thread, and every fault path fails closed.  kirodotdev/KiroCrew#10255.
+# from the calling thread, and every fault path fails closed.  efmleads.com#10255.
 # ---------------------------------------------------------------------------
 
 
@@ -1884,7 +1884,7 @@ def test_a_run_of_child_faults_is_warned_about_once_and_degrades_in_process(
             r for r in caplog.records if "faulted" in r.message and r.levelno >= logging.WARNING
         ]
 
-    with _armed(), caplog.at_level(logging.DEBUG, logger="kiro_crew.security.paths"):
+    with _armed(), caplog.at_level(logging.DEBUG, logger="efm_go.security.paths"):
         for _ in range(threshold - 1):
             with pytest.raises(security.PathResolutionStalled):
                 security._resolved_spellings("/home/someone/ws/file")
@@ -1923,7 +1923,7 @@ def test_a_child_that_cannot_start_falls_back_in_process_once(monkeypatch, caplo
 
     monkeypatch.setattr(security.paths, "path_resolve_executor", lambda: _Unspawnable())
     monkeypatch.setattr(security.paths, "_child_fallback_warned", False)
-    with _armed(), caplog.at_level(logging.WARNING, logger="kiro_crew.security.paths"):
+    with _armed(), caplog.at_level(logging.WARNING, logger="efm_go.security.paths"):
         for _ in range(3):
             assert security._resolved_spellings("/") == security.paths._resolved_spellings_inline(
                 "/"

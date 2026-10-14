@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import time
 
-from kiro_crew.dashboard.state import _ChatSlot
-from kiro_crew.preview_text import strip_markdown_preview
+from efm_go.dashboard.state import _ChatSlot
+from efm_go.preview_text import strip_markdown_preview
 
 
 class TestStripMarkdownPreview:
@@ -254,7 +254,7 @@ class TestHistoryLastMessagePreviewStripsMarkdown:
     def test_archived_preview_is_plain_text(self, tmp_path):
         import json
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog(base_dir=tmp_path)
         log.init()
@@ -270,7 +270,7 @@ class TestHistoryLastMessagePreviewStripsMarkdown:
         import json
         from datetime import datetime
 
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         log = ConversationLog(base_dir=tmp_path)
         log.init()

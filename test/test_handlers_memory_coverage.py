@@ -1,4 +1,4 @@
-"""Coverage tests for ``kiro_crew.dashboard.handlers.memory``.
+"""Coverage tests for ``efm_go.dashboard.handlers.memory``.
 
 Focused on the request/response contract of the memory HTTP handlers: method
 dispatch, body and query validation, the restricted-session 403 gate, the
@@ -28,10 +28,10 @@ from unittest.mock import DEFAULT, AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 
-import kiro_crew.dashboard.handlers.memory as mem_mod
-from kiro_crew.embeddings import CustomModelSpec
+import efm_go.dashboard.handlers.memory as mem_mod
+from efm_go.embeddings import CustomModelSpec
 
-_MOD = "kiro_crew.dashboard.handlers.memory"
+_MOD = "efm_go.dashboard.handlers.memory"
 
 _CRED = "AKIAIOSFODNN7EXAMPLE"
 
@@ -153,7 +153,7 @@ def _store(**attrs: Any) -> Any:
 @pytest.fixture(autouse=True)
 def _fake_sel(monkeypatch: pytest.MonkeyPatch) -> None:
     """Never write to the real security event log from a unit test."""
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: MagicMock())
+    monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: MagicMock())
 
 
 @pytest.fixture(autouse=True)
@@ -275,7 +275,7 @@ class TestPreferencesProjectsHistory:
     @pytest.mark.asyncio
     async def test_projects_put_over_the_startup_cap_says_so(self) -> None:
         """The file keeps every byte, but sessions load only the head: tell the user."""
-        from kiro_crew.context_assembly.budget import _MEMORY_PROJECTS_CAP
+        from efm_go.context_assembly.budget import _MEMORY_PROJECTS_CAP
 
         mem = MagicMock()
         mem.read_projects.return_value = "## Before"
@@ -490,8 +490,8 @@ class TestRunConfigWriteCancellation:
         The assertion is on ORDER, not on the number of cancels: the second
         writer must not enter the critical section until the worker returns.
         """
-        from kiro_crew.dashboard.chat_utils import run_config_write
-        from kiro_crew.dashboard.handlers.agents import _get_config_lock
+        from efm_go.dashboard.chat_utils import run_config_write
+        from efm_go.dashboard.handlers.agents import _get_config_lock
 
         in_write = threading.Event()
         finish = threading.Event()
@@ -551,7 +551,7 @@ class TestRunConfigWriteCancellation:
 
     def test_an_uncancelled_call_returns_the_worker_result(self):
         """The loop must not change the ordinary path: the value still comes back."""
-        from kiro_crew.dashboard.chat_utils import run_config_write
+        from efm_go.dashboard.chat_utils import run_config_write
 
         async def _drive():
             return await run_config_write(lambda a, b=0: a + b, 40, b=2)
@@ -698,7 +698,7 @@ class TestRedactAndStoreResolution:
         state: Any = SimpleNamespace(context_builder=SimpleNamespace(memory=mem))
         created = MagicMock()
         with (
-            patch("kiro_crew.vector_memory.VectorMemoryStore", return_value=created) as ctor,
+            patch("efm_go.vector_memory.VectorMemoryStore", return_value=created) as ctor,
             patch(f"{_MOD}.KiroCrewConfig.load", return_value=_cfg()),
         ):
             first = mem_mod._get_vector_store(state)
@@ -729,7 +729,7 @@ class TestGetVectorStoreAsync:
     @pytest.mark.asyncio
     async def test_standalone_fallback_init_runs_off_event_loop(self, monkeypatch) -> None:
         """Fail-before: with the sync call reinstated, init runs on this thread."""
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         init_threads: list[threading.Thread] = []
 
@@ -761,7 +761,7 @@ class TestGetVectorStoreAsync:
         """Cancelling the first caller (e.g. an aiohttp client disconnect)
         must not let a racing request arm a second ``init()``: the shared
         shielded task keeps the in-flight init as the single flight."""
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         init_calls: list[threading.Thread] = []
         started = threading.Event()
@@ -799,7 +799,7 @@ class TestGetVectorStoreAsync:
     async def test_concurrent_first_calls_init_once(self, monkeypatch) -> None:
         """Single-flight: the lock restores the serialization the sync call
         sites get for free from the event loop."""
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         init_calls: list[threading.Thread] = []
         release = threading.Event()
@@ -948,7 +948,7 @@ class TestSemanticEndpoints:
 
     @pytest.mark.asyncio
     async def test_write_conflict_reject_is_409(self) -> None:
-        from kiro_crew.vector_memory import SemanticRejectCode
+        from efm_go.vector_memory import SemanticRejectCode
 
         store = _store()
         store.set_semantic.return_value = (SemanticRejectCode.CONFLICT, "already set")
@@ -965,7 +965,7 @@ class TestSemanticEndpoints:
 
     @pytest.mark.asyncio
     async def test_write_other_reject_is_422_and_redacted(self) -> None:
-        from kiro_crew.vector_memory import SemanticRejectCode
+        from efm_go.vector_memory import SemanticRejectCode
 
         store = _store()
         store.set_semantic.return_value = (
@@ -1150,7 +1150,7 @@ class TestStatsMigrateImport:
         cfg.memory.embedding_provider = "llama_cpp"
         with (
             patch(f"{_MOD}.KiroCrewConfig.load", return_value=cfg),
-            patch("kiro_crew.memory.legacy_memory_present", return_value=True),
+            patch("efm_go.memory.legacy_memory_present", return_value=True),
         ):
             body = _body(await mem_mod.api_memory_stats(_make_request(state)))
         assert body == {
@@ -1546,7 +1546,7 @@ class TestMemoryMutationSessionGate:
         """A refusal is an authorization decision, so it lands in the SEL log."""
         log = MagicMock()
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.sel", lambda: SimpleNamespace(log_api_access=log)
+            "efm_go.dashboard.handlers.sel", lambda: SimpleNamespace(log_api_access=log)
         )
         state, _blocked = _gate_fixture(case_id, mutator, restricted=True)
         req = _make_request(state, method=method, json_body=body, session_key="dashboard:ghost")
@@ -1617,8 +1617,8 @@ class TestSubagentMemorySessionRecognition:
         "run_id", ["", "../worker", r"..\worker", ".worker", "C:worker", "worker:stream", "a\x00b"]
     )
     async def test_invalid_subagent_ids_cannot_reach_the_filesystem(self, monkeypatch, run_id):
-        from kiro_crew.dashboard.handlers.cron import _recognize_session
-        from kiro_crew.history import is_incognito_transcript
+        from efm_go.dashboard.handlers.cron import _recognize_session
+        from efm_go.history import is_incognito_transcript
 
         # Model an existing target at every spelling: rejection must come from
         # key validation, not from an absent file (including Windows ADS paths).
@@ -1638,8 +1638,8 @@ class TestSubagentMemorySessionRecognition:
         exists.assert_not_called()
 
     async def test_subagent_history_cannot_replace_a_live_allocation(self, tmp_path, monkeypatch):
-        from kiro_crew.dashboard.handlers.cron import _recognize_session
-        from kiro_crew.history import ConversationLog, is_incognito_transcript
+        from efm_go.dashboard.handlers.cron import _recognize_session
+        from efm_go.history import ConversationLog, is_incognito_transcript
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         log = ConversationLog(base_dir=tmp_path / "sessions")
@@ -1664,8 +1664,8 @@ class TestSubagentMemorySessionRecognition:
     async def test_a_subagent_cannot_borrow_another_sessions_identity(
         self, tmp_path, monkeypatch, collision
     ):
-        from kiro_crew.dashboard.handlers.cron import _recognize_session
-        from kiro_crew.history import ConversationLog, is_incognito_transcript
+        from efm_go.dashboard.handlers.cron import _recognize_session
+        from efm_go.history import ConversationLog, is_incognito_transcript
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         state = _make_state()
@@ -1703,8 +1703,8 @@ class TestSubagentMemorySessionRecognition:
     async def test_subagent_history_mode_cannot_replace_a_live_allocation(
         self, tmp_path, monkeypatch, metadata
     ):
-        from kiro_crew.dashboard.handlers.cron import _recognize_session
-        from kiro_crew.history import is_incognito_transcript
+        from efm_go.dashboard.handlers.cron import _recognize_session
+        from efm_go.history import is_incognito_transcript
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         sessions = tmp_path / "sessions"
@@ -1767,7 +1767,7 @@ class TestConsolidate:
         )
         # Patched in ``cron``, whose globals ``_recognize_session`` reads.
         with patch(
-            "kiro_crew.dashboard.handlers.cron._probe_persisted_session",
+            "efm_go.dashboard.handlers.cron._probe_persisted_session",
             return_value=(False, None),
         ):
             resp = await mem_mod.api_memory_consolidate(req)
@@ -1817,7 +1817,7 @@ class TestConsolidate:
 
     @pytest.mark.asyncio
     async def test_already_running_is_409(self) -> None:
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         cons = _consolidator()
         cons._running.add("s1")
@@ -1832,7 +1832,7 @@ class TestConsolidate:
 
     @pytest.mark.asyncio
     async def test_schedules_background_consolidation(self) -> None:
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         cons = _consolidator()
         state = _make_state(consolidator=cons)
@@ -1875,7 +1875,7 @@ class TestConsolidate:
         A handler that tests only the caller answers ``200 {"ok": true}`` here and
         dispatches ``_consolidate`` for the private key.
         """
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         cons = _consolidator()
         state = _make_state(consolidator=cons, restricted_keys={f"dashboard:{mode[:3]}1"})
@@ -1887,7 +1887,7 @@ class TestConsolidate:
             json_body={"key": f"dashboard:{mode[:3]}1", "include_history": False},
             session_key="dashboard:ui",
         )
-        with patch("kiro_crew.dashboard.handlers.memory._sel") as sel:
+        with patch("efm_go.dashboard.handlers.memory._sel") as sel:
             resp = await mem_mod.api_memory_consolidate(req)
         assert resp.status == 403
         body = _body(resp)
@@ -1915,8 +1915,8 @@ class TestConsolidate:
         "Consolidate all" hands the endpoint ``list_sessions`` stems, which have no
         live slot; the mode then comes from the transcript's own ``memory_mode``.
         """
-        from kiro_crew.config.paths import config_dir
-        from kiro_crew.history import ConversationLog, allow_on_loop_persist
+        from efm_go.config.paths import config_dir
+        from efm_go.history import ConversationLog, allow_on_loop_persist
 
         log = ConversationLog(base_dir=config_dir() / "sessions")
         log.init()
@@ -1950,9 +1950,9 @@ class TestConsolidate:
         trackers start empty, so the stem has to be unfolded by the map and the
         flag hydrated from disk -- the path a gateway restart leaves behind.
         """
-        from kiro_crew.history import ConversationLog
-        from kiro_crew.messaging import privacy_mode
-        from kiro_crew.session_map import SessionMap
+        from efm_go.history import ConversationLog
+        from efm_go.messaging import privacy_mode
+        from efm_go.session_map import SessionMap
 
         live_key = "slack:1785861252.833429"
         stem = "slack_1785861252.833429"
@@ -1987,7 +1987,7 @@ class TestConsolidate:
     @pytest.mark.asyncio
     async def test_persistent_live_target_still_dispatches(self) -> None:
         """Pin: a target that positively resolves as persistent is untouched."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         cons = _consolidator()
         state = _make_state(consolidator=cons)
@@ -2020,10 +2020,10 @@ class TestConsolidate:
         would count it as summarized. The header is the modifier's own record, so
         the route probes it too.
         """
-        from kiro_crew.config.paths import config_dir
-        from kiro_crew.history import ConversationLog, allow_on_loop_persist
-        from kiro_crew.messaging import privacy_mode
-        from kiro_crew.session_map import SessionMap
+        from efm_go.config.paths import config_dir
+        from efm_go.history import ConversationLog, allow_on_loop_persist
+        from efm_go.messaging import privacy_mode
+        from efm_go.session_map import SessionMap
 
         live_key = "slack:1785861252.833429"
         stem = "slack_1785861252.833429"
@@ -2340,7 +2340,7 @@ class TestWriteEmbedModelConfig:
 class TestEnsurePipEdgeCases:
     @pytest.mark.asyncio
     async def test_sandbox_unavailable_is_a_normal_not_ok_result(self) -> None:
-        from kiro_crew.sandbox import SandboxUnavailableError
+        from efm_go.sandbox import SandboxUnavailableError
 
         def _refuse(argv: Any, **kw: Any) -> Any:
             raise SandboxUnavailableError("no backend", kind="no_backend", detail="not Linux")
@@ -2801,7 +2801,7 @@ class TestConfigWritesRunOffTheEventLoop:
         """
         import threading
 
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         cfg = tmp_path / "config.json"
         cfg.write_text(initial, encoding="utf-8")
@@ -2975,7 +2975,7 @@ class TestConfigWritesRunOffTheEventLoop:
         """
         import threading
 
-        from kiro_crew.dashboard.chat_utils import run_config_write
+        from efm_go.dashboard.chat_utils import run_config_write
 
         in_txn = threading.Event()
         finish = threading.Event()

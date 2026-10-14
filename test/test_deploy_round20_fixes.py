@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 
 _SCRIPTS = Path(__file__).resolve().parents[1] / (
-    "src/kiro_crew/deploy/skills/artifact-deploy"
+    "src/efm_go/deploy/skills/artifact-deploy"
 )
 
 
@@ -25,7 +25,7 @@ def test_f1_staging_uses_stage_tree_safe_not_copytree():
     shutil.copytree of the source tree bypasses the per-file hook gate and
     hardlink rejection."""
     src = (
-        Path(__file__).resolve().parents[1] / "src/kiro_crew/deploy/handlers.py"
+        Path(__file__).resolve().parents[1] / "src/efm_go/deploy/handlers.py"
     ).read_text(encoding="utf-8")
     # Both the fd-pinned branch and the non-Linux fallback stage via the helper.
     assert src.count("_stage_tree_safe(") >= 3  # def + 2 call sites
@@ -85,7 +85,7 @@ def test_f3_lambda_tag_calls_are_covered():
 
 def test_f4_profile_update_delete_redact_default_and_errors():
     src = (
-        Path(__file__).resolve().parents[1] / "src/kiro_crew/deploy/handlers.py"
+        Path(__file__).resolve().parents[1] / "src/efm_go/deploy/handlers.py"
     ).read_text(encoding="utf-8")
     # No handler returns the raw registry default anymore.
     assert '"default": result["default"],' not in src

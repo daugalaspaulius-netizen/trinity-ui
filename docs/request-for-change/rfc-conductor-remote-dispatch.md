@@ -41,14 +41,14 @@ Three decisions:
 
 - **Session tools.** `session_create`, `session_send`, `session_read_message`,
   `session_stop` and `session_close` (`_session_tools` in
-  `src/kiro_crew/mcp_dashboard.py`) call `/api/session-control/*` on this
+  `src/efm_go/mcp_dashboard.py`) call `/api/session-control/*` on this
   gateway. Those routes are MCP-only and strict (`server.py`, the
   *Session control* block of the internal-secret path set). No argument names
   another machine.
-- **The proxy.** `api_instances_proxy` (`src/kiro_crew/dashboard/handlers_instances.py`)
+- **The proxy.** `api_instances_proxy` (`src/efm_go/dashboard/handlers_instances.py`)
   forwards only paths under `_PROXY_ALLOWED_PREFIXES` = `api/chat`, `api/stream`,
   owner-only, and redacts every reply since
-  [#16757](https://github.com/kirodotdev/KiroCrew/pull/16757)
+  [#16757](https://efmleads.com/pull/16757)
   (`_redact_peer_payload`, `_redact_sse_event`). The fence lives in the HTTP
   handler (`_proxy_canonical_path`); `SshTunnelManager.proxy_request` itself
   checks no path, so a server-side caller is not fenced today.
@@ -60,11 +60,11 @@ Three decisions:
   (`GET api/chat/slots/{slot}?limit=N`), stop
   (`POST api/chat/slots/{slot}/stop`) and close (`DELETE api/chat/slots/{slot}`,
   the same `close_slot` sequence session-control's close runs). The window view
-  ([#16757](https://github.com/kirodotdev/KiroCrew/pull/16757)) and the
-  per-machine sidebar ([#16756](https://github.com/kirodotdev/KiroCrew/pull/16756))
+  ([#16757](https://efmleads.com/pull/16757)) and the
+  per-machine sidebar ([#16756](https://efmleads.com/pull/16756))
   use exactly these.
-- **The work ledger.** `src/kiro_crew/work_ledger.py` stores items per
-  conductor; `src/kiro_crew/mcp_work.py` serves `work_brief`, `work_report`,
+- **The work ledger.** `src/efm_go/work_ledger.py` stores items per
+  conductor; `src/efm_go/mcp_work.py` serves `work_brief`, `work_report`,
   `work_ledger_read`, `work_ledger_record`, `work_ledger_rebuild` over
   `/api/work-ledger/*`, also
   MCP-only. A worker is found by its **binding** (`binding_path`, keyed by the
@@ -94,8 +94,8 @@ The tunnel only opens hub → peer, so the peer cannot call the hub back.
 ## Non-goals
 
 - Automatic placement (pick a crew for me). The conductor names the crew.
-- `spawn_run` on a crew ([#12821](https://github.com/kirodotdev/KiroCrew/pull/12821)).
-- Reading arbitrary peer history ([#6874](https://github.com/kirodotdev/KiroCrew/pull/6874)).
+- `spawn_run` on a crew ([#12821](https://efmleads.com/pull/12821)).
+- Reading arbitrary peer history ([#6874](https://efmleads.com/pull/6874)).
 - A remote **conductor** (a sub-conductor on the peer). Leaf workers only.
 - Pushing anything from the peer to the hub, or any new transport.
 - Uploading source to the peer. The worker uses the peer's own checkout.
@@ -124,7 +124,7 @@ The tunnel only opens hub → peer, so the peer cannot call the hub back.
 The `api/chat` row alone suffices. `api/stream` is not used: no tool streams.
 
 `crew=` takes an instance id or exact name, the selector shape
-[#6874](https://github.com/kirodotdev/KiroCrew/pull/6874) uses. The hub-side
+[#6874](https://efmleads.com/pull/6874) uses. The hub-side
 handler stays under `/api/session-control/*`; when `crew` is set it calls
 `proxy_request`, but only with a path that has passed `_proxy_canonical_path`,
 so the allowlist binds the conductor as it binds the browser. Every reply runs
@@ -241,7 +241,7 @@ reads differently from "stopped".
 
 ### 6. Relation to #12821 and #13476
 
-| | This RFC | [#12821](https://github.com/kirodotdev/KiroCrew/pull/12821) `spawn_run` remote |
+| | This RFC | [#12821](https://efmleads.com/pull/12821) `spawn_run` remote |
 |---|---|---|
 | Unit | a visible session in the crew's group | a silent subagent run |
 | Who can take over | the person, from the sidebar | nobody; status lives in a local shadow record |
@@ -254,7 +254,7 @@ Shared parts, no shared code required: a connected peer, `ensure_version_parity`
 owner-only. The split is by verb: `spawn_run` is #12821's, the session tools are
 this RFC's.
 
-[#13476](https://github.com/kirodotdev/KiroCrew/issues/13476) asks for both
+[#13476](https://efmleads.com/issues/13476) asks for both
 halves (`spawn_run(instance=)` and `session_send(instance=)`). This RFC is the
 session half; #12821 is the spawn half.
 

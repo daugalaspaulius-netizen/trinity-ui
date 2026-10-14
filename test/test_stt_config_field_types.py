@@ -10,8 +10,8 @@ import pytest
 from aiohttp import web
 from dashboard_owner_helpers import NoConfiguredOwner
 
-import kiro_crew.dashboard.handlers.core as core
-from kiro_crew.config.loader import config_path
+import efm_go.dashboard.handlers.core as core
+from efm_go.config.loader import config_path
 
 
 def _put(body: dict) -> MagicMock:

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.platform.agentcore_schema import (
+from efm_go.platform.agentcore_schema import (
     AGENTCORE_GATEWAY_URL_MAX,
     WORKLOAD_NAME_MAX,
     WORKLOAD_NAME_MIN,

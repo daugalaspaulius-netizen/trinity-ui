@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cron as cron_mod
-from kiro_crew.cron import CronService, _job_from_record
+from efm_go import cron as cron_mod
+from efm_go.cron import CronService, _job_from_record
 
 
 def _write_store(path: Path, jobs: list) -> None:
@@ -46,7 +46,7 @@ def test_malformed_entry_is_skipped_and_good_jobs_survive(tmp_path, caplog) -> N
     bad = {"id": "bad", "message": "m", "schedule": {"kind": "every"}}  # no "name"
     _write_store(mgr._path, [_good("a"), bad, _good("b")])
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.cron"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.cron"):
         mgr._load()
 
     assert [j.id for j in mgr._jobs] == ["a", "b"]
@@ -80,7 +80,7 @@ def test_unparseable_file_still_resets_whole_store(tmp_path, caplog) -> None:
     mgr._path.parent.mkdir(parents=True, exist_ok=True)
     mgr._path.write_text("{not json", encoding="utf-8")
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.cron"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.cron"):
         mgr._load()
 
     assert mgr._jobs == []
@@ -141,7 +141,7 @@ def test_top_level_non_object_resets_store_and_counts_zero(tmp_path, caplog) -> 
     for payload in ("[]", '{"jobs": null}', '{"jobs": 3}'):
         mgr._path.write_text(payload, encoding="utf-8")
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.cron"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.cron"):
             mgr._load()
 
         assert mgr._jobs == [], payload
@@ -329,7 +329,7 @@ def test_non_string_metadata_fields_coerce_and_warn(tmp_path, caplog) -> None:
     good = {**_good("ok"), "approval_mode": "auto", "channel": "slack"}
     _write_store(mgr._path, [_corrupted_metadata("bad"), good])
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.cron"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.cron"):
         mgr._load()
 
     by_id = {j.id: j for j in mgr._jobs}
@@ -423,7 +423,7 @@ async def test_listing_renders_despite_corrupted_records(tmp_path) -> None:
     import json as _json
     from unittest.mock import MagicMock
 
-    from kiro_crew.dashboard.handlers import api_crons
+    from efm_go.dashboard.handlers import api_crons
 
     mgr = CronService(base_dir=tmp_path)
     _write_store(
@@ -461,7 +461,7 @@ def test_probe_readers_do_not_repeat_the_coercion_warning(tmp_path, caplog) -> N
     mgr = CronService(base_dir=tmp_path)
     _write_store(mgr._path, [_corrupted_metadata("bad"), _good("ok")])
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.cron"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.cron"):
         assert mgr.count_enabled_from_disk() == 2
         assert mgr.count_enabled_from_disk() == 2
 
@@ -478,7 +478,7 @@ def test_every_string_typed_field_is_guarded_completeness_pin(tmp_path) -> None:
     ""/None) or skipped (the record never loads)."""
     import dataclasses
 
-    from kiro_crew.cron import CronJob
+    from efm_go.cron import CronJob
 
     str_field_names = [
         f.name
@@ -521,7 +521,7 @@ async def test_extreme_schedule_values_load_and_render_without_dropping(tmp_path
     import json as _json
     from unittest.mock import MagicMock
 
-    from kiro_crew.dashboard.handlers import api_crons
+    from efm_go.dashboard.handlers import api_crons
 
     mgr = CronService(base_dir=tmp_path)
     poisoned = {**_good("poisoned"), "schedule": {"kind": "at", "at_ts": at_ts}}
@@ -582,7 +582,7 @@ def test_compute_next_run_ts_never_returns_non_finite(tmp_path) -> None:
     it reaches the GET /api/crons payload, where json.dumps(allow_nan=True)
     would emit the invalid-JSON token Infinity and break the whole listing
     client-side."""
-    from kiro_crew.cron import CronJob, CronSchedule, compute_next_run_ts
+    from efm_go.cron import CronJob, CronSchedule, compute_next_run_ts
 
     job = CronJob(
         id="j",
@@ -633,8 +633,8 @@ async def test_numeric_field_consumer_matrix_pin(tmp_path) -> None:
     import json as _json
     from unittest.mock import MagicMock
 
-    from kiro_crew.cron import CronJob, compute_next_run_ts, format_schedule
-    from kiro_crew.dashboard.handlers import api_crons
+    from efm_go.cron import CronJob, compute_next_run_ts, format_schedule
+    from efm_go.dashboard.handlers import api_crons
 
     numeric_fields = {
         f.name
@@ -691,7 +691,7 @@ def test_explicit_null_numeric_warns_unless_none_is_the_declared_unset(tmp_path,
         [{**_good("a"), "created_ts": None, "last_run_ts": None}],
     )
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.cron"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.cron"):
         mgr._load()
 
     warnings = [r.getMessage() for r in caplog.records if "Coercing" in r.getMessage()]
@@ -705,7 +705,7 @@ def test_mcp_next_run_render_degrades_on_extreme_at_ts(tmp_path) -> None:
     """cron_list's next-run formatter degrades an unrenderable (representable
     but beyond-strftime-range) timestamp instead of raising inside the loop
     that renders every job -- same posture as format_schedule and the CLI."""
-    from kiro_crew.mcp_cron import _format_next_run
+    from efm_go.mcp_cron import _format_next_run
 
     mgr = CronService(base_dir=tmp_path)
     _write_store(

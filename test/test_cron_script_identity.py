@@ -26,7 +26,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.cron_script import McpToolClient, ScriptContext, run_script_sandboxed
+from efm_go.cron_script import McpToolClient, ScriptContext, run_script_sandboxed
 
 JOB_ID = "job-8b1f"
 EXPECTED_KEY = f"cron:{JOB_ID}"
@@ -60,10 +60,10 @@ def _capture_launcher_env(
         return proc
 
     with (
-        patch("kiro_crew.cron_script.resolve_script_path", return_value=("/f.py", "run")),
-        patch("kiro_crew.cron_script.wrap_argv", return_value=(["true"], None)),
-        patch("kiro_crew.cron_script._resolve_internal_secret", return_value="s"),
-        patch("kiro_crew.cron_script.popen_limited", side_effect=fake_popen),
+        patch("efm_go.cron_script.resolve_script_path", return_value=("/f.py", "run")),
+        patch("efm_go.cron_script.wrap_argv", return_value=(["true"], None)),
+        patch("efm_go.cron_script._resolve_internal_secret", return_value="s"),
+        patch("efm_go.cron_script.popen_limited", side_effect=fake_popen),
     ):
         result = run_script_sandboxed("/f.py:run", job_id, "", timeout=30)
 
@@ -89,7 +89,7 @@ def _no_ambient_identity(monkeypatch, tmp_path):
     into the real crew home. Tests that need the mapping to verify layer their
     own trust root over this (see ``signing_root``).
     """
-    from kiro_crew import session_token_sig
+    from efm_go import session_token_sig
 
     for key in (
         "KIROCREW_SESSION_KEY",
@@ -133,7 +133,7 @@ class TestLauncherInjectsIdentity:
             captured["key"] = req.get_header("X-session-key")
             return _Resp()
 
-        with patch("kiro_crew.cron_script.loopback_urlopen", side_effect=fake_urlopen):
+        with patch("efm_go.cron_script.loopback_urlopen", side_effect=fake_urlopen):
             ctx._post("/api/send-message", {"text": "x"})
         assert captured["key"] == env["KIROCREW_SESSION_KEY"]
 
@@ -162,7 +162,7 @@ class TestLauncherPublishesAVerifiableToken:
         the protocol SHARES its key loader with ``session_pid_sig``, so patching
         one module's view of the trust root leaves the loader reading the real one.
         """
-        from kiro_crew import session_pid_sig, session_token_sig
+        from efm_go import session_pid_sig, session_token_sig
 
         key_path = tmp_path / "sel_hmac.key"
         key_path.write_bytes(b"\x02" * 32)
@@ -175,8 +175,8 @@ class TestLauncherPublishesAVerifiableToken:
             yield tmp_path
 
     def _capture_verified_env(self, signing_root, job_id):
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
-        from kiro_crew.session_token_sig import verify_session_token
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.session_token_sig import verify_session_token
 
         def verify_during_run(env):
             token = env[STUB_SESSION_TOKEN_ENV]
@@ -193,7 +193,7 @@ class TestLauncherPublishesAVerifiableToken:
         self._capture_verified_env(signing_root, JOB_ID)
 
     def test_the_token_names_this_job_and_not_a_neighbour(self, signing_root):
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
         mine = self._capture_verified_env(signing_root, JOB_ID)[STUB_SESSION_TOKEN_ENV]
         theirs = self._capture_verified_env(signing_root, "job-other")[STUB_SESSION_TOKEN_ENV]
@@ -201,7 +201,7 @@ class TestLauncherPublishesAVerifiableToken:
         assert mine != theirs
 
     def test_two_runs_have_different_tokens_and_leave_no_mappings(self, signing_root):
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
         first = self._capture_verified_env(signing_root, JOB_ID)[STUB_SESSION_TOKEN_ENV]
         second = self._capture_verified_env(signing_root, JOB_ID)[STUB_SESSION_TOKEN_ENV]
@@ -209,8 +209,8 @@ class TestLauncherPublishesAVerifiableToken:
         assert second != first
 
     def test_spawn_exception_retracts_the_mapping(self, signing_root):
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
-        from kiro_crew.session_token_sig import verify_session_token
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.session_token_sig import verify_session_token
 
         def fail_spawn(env):
             assert verify_session_token(env[STUB_SESSION_TOKEN_ENV]) == EXPECTED_KEY
@@ -226,7 +226,7 @@ class TestLauncherPublishesAVerifiableToken:
             assert len(list(signing_root.glob("session_token_*.sig"))) == 1
             return False
 
-        with patch("kiro_crew.cron_script._begin_spawn", side_effect=refuse_spawn):
+        with patch("efm_go.cron_script._begin_spawn", side_effect=refuse_spawn):
             _capture_launcher_env(
                 JOB_ID,
                 expected_result={
@@ -237,7 +237,7 @@ class TestLauncherPublishesAVerifiableToken:
         assert not list(signing_root.glob("session_token_*.sig"))
 
     def test_an_inherited_token_is_overwritten_not_kept(self, signing_root, monkeypatch):
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
         monkeypatch.setenv(STUB_SESSION_TOKEN_ENV, "f" * 64)
 
@@ -248,18 +248,18 @@ class TestLauncherPublishesAVerifiableToken:
 
 class TestBridgePinsIdentityOnTheServerSpawn:
     def _spawn_env(self, session_key: str, spec_env: dict[str, str] | None = None):
-        from kiro_crew.cron_script import _resolve_mcp_server
+        from efm_go.cron_script import _resolve_mcp_server
 
         _resolve_mcp_server.cache_clear()
         with (
             patch(
-                "kiro_crew.cron_script._resolve_mcp_server",
+                "efm_go.cron_script._resolve_mcp_server",
                 return_value=(("some-mcp",), spec_env or {}),
             ),
-            patch("kiro_crew.cron_script.wrap_argv", return_value=(["some-mcp"], None)),
-            patch("kiro_crew.cron_script.cgroup_scope_argv", side_effect=lambda argv: list(argv)),
+            patch("efm_go.cron_script.wrap_argv", return_value=(["some-mcp"], None)),
+            patch("efm_go.cron_script.cgroup_scope_argv", side_effect=lambda argv: list(argv)),
             patch(
-                "kiro_crew.cron_script.popen_limited", return_value=_handshake_proc()
+                "efm_go.cron_script.popen_limited", return_value=_handshake_proc()
             ) as mock_popen,
         ):
             client = McpToolClient("kirocrew-cron", session_key=session_key)
@@ -293,7 +293,7 @@ class TestBridgePinsIdentityOnTheServerSpawn:
             ctx = ScriptContext(job=job)
         fake_client = MagicMock()
         fake_client.call_tool.return_value = "ok"
-        with patch("kiro_crew.cron_script.McpToolClient", return_value=fake_client) as ctor:
+        with patch("efm_go.cron_script.McpToolClient", return_value=fake_client) as ctor:
             ctx.call_tool("kirocrew-cron", "cron_list", {})
         ctor.assert_called_once_with("kirocrew-cron", session_key=EXPECTED_KEY)
 
@@ -308,14 +308,14 @@ class TestTheRealConsumerAcceptsIt:
     """
 
     def test_strict_resolver_identifies_the_job(self):
-        from kiro_crew.mcp_core import _resolve_session_key_strict
+        from efm_go.mcp_core import _resolve_session_key_strict
 
         env = _capture_launcher_env(JOB_ID)
         with patch.dict(os.environ, env, clear=True):
             assert _resolve_session_key_strict() == EXPECTED_KEY
 
     def test_cron_authz_gate_sees_the_job_not_an_unidentified_caller(self):
-        from kiro_crew.mcp_cron import _authz_session_key
+        from efm_go.mcp_cron import _authz_session_key
 
         env = _capture_launcher_env(JOB_ID)
         with patch.dict(os.environ, env, clear=True):
@@ -328,8 +328,8 @@ class TestTheRealConsumerAcceptsIt:
         reads either, so the baseline has to strip both. Dropping only the env key
         would leave the signed token answering and measure nothing.
         """
-        from kiro_crew.mcp_core import _resolve_session_key_strict
-        from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+        from efm_go.mcp_core import _resolve_session_key_strict
+        from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
         env = _capture_launcher_env(JOB_ID)
         env.pop("KIROCREW_SESSION_KEY")

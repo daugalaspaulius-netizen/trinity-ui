@@ -62,7 +62,7 @@ Usage:
     python scripts/check_lockdown_before_publish.py [PATH ...]
 
 Exits non-zero and prints ``file:line`` per violation. With no arguments it
-scans ``src/kiro_crew``. Sites tracked by an open conversion issue live in
+scans ``src/efm_go``. Sites tracked by an open conversion issue live in
 ``KNOWN_UNCONVERTED``; that list is shrink-only.
 """
 
@@ -742,7 +742,7 @@ def scan_path(path: Path, root: Path) -> list[tuple[str, int, str, str]]:
 
 def main(argv: list[str]) -> int:
     root = Path(__file__).resolve().parent.parent
-    targets = [Path(a) for a in argv[1:]] or [root / "src" / "kiro_crew"]
+    targets = [Path(a) for a in argv[1:]] or [root / "src" / "efm_go"]
 
     found: list[tuple[str, int, str, str]] = []
     for target in targets:

@@ -9,11 +9,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 from aiohttp import web
 
-from kiro_crew.dashboard.slot_ownership import slot_ownership_middleware
-from kiro_crew.dashboard.state import DashboardState
-from kiro_crew.history import ConversationLog
-from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
-from kiro_crew.messaging.link import ChannelLink, binding_token
+from efm_go.dashboard.slot_ownership import slot_ownership_middleware
+from efm_go.dashboard.state import DashboardState
+from efm_go.history import ConversationLog
+from efm_go.kiro_prerequisite import KiroPrerequisiteService
+from efm_go.messaging.link import ChannelLink, binding_token
 
 #: Draining is a LOOP because a drained task may register another -- not because any
 #: current one does (``chat_slack`` has a single ``create_task``, and the backfill
@@ -155,7 +155,7 @@ def stub_readonly_spec_publisher(monkeypatch) -> list[tuple[str, str | None]]:
     digest and records the base it was asked for. The real derivation and
     publication are covered by ``test_side_readonly_spec.py``.
     """
-    from kiro_crew.dashboard.side_readonly_spec import PublishedSpec
+    from efm_go.dashboard.side_readonly_spec import PublishedSpec
 
     calls: list[tuple[str, str | None]] = []
 
@@ -163,7 +163,7 @@ def stub_readonly_spec_publisher(monkeypatch) -> list[tuple[str, str | None]]:
         calls.append((base_name, project_dir))
         return PublishedSpec(name=f"{base_name}--readonly", digest="d" * 64)
 
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.side.publish_readonly_spec", _fake_publish)
+    monkeypatch.setattr("efm_go.dashboard.handlers.side.publish_readonly_spec", _fake_publish)
     return calls
 
 
@@ -347,7 +347,7 @@ def _make_state(tmp_path, **kwargs):
 
 def _make_app(state: DashboardState) -> web.Application:
     """Minimal aiohttp app with chat endpoints."""
-    from kiro_crew.dashboard.chat import (
+    from efm_go.dashboard.chat import (
         api_chat,
         api_chat_mode,
         api_chat_slot_approve,
@@ -404,7 +404,7 @@ def _make_app(state: DashboardState) -> web.Application:
 
 def _make_app_with_agent_routes(state: DashboardState) -> web.Application:
     """Minimal aiohttp app with chat endpoints including agent and create routes."""
-    from kiro_crew.dashboard.chat import (
+    from efm_go.dashboard.chat import (
         api_chat_slot_agent,
         api_chat_slot_approve,
         api_chat_slot_create,
@@ -434,8 +434,8 @@ def _make_app_with_agent_routes(state: DashboardState) -> web.Application:
 
 def _make_folder_app(state: DashboardState) -> web.Application:
     """Minimal aiohttp app with folder endpoints."""
-    from kiro_crew.dashboard.chat import api_chat_slots
-    from kiro_crew.dashboard.chat_folders import (
+    from efm_go.dashboard.chat import api_chat_slots
+    from efm_go.dashboard.chat_folders import (
         api_chat_folder_create,
         api_chat_folder_delete,
         api_chat_folder_update,
@@ -460,7 +460,7 @@ def _make_tags_app(
     state: DashboardState, *, authenticate_owner: bool = True, booted_store: bool = True
 ) -> web.Application:
     """Minimal aiohttp app with chat_tags endpoints (vocabulary, columns, drop, slot tags)."""
-    from kiro_crew.dashboard import chat_tag_grants
+    from efm_go.dashboard import chat_tag_grants
 
     # A real boot always writes the grant store (``DashboardState.load_tags``
     # seeds it, empty on an upgraded install), and an owner create refuses to
@@ -475,7 +475,7 @@ def _make_tags_app(
     ):
         chat_tag_grants.seed_default_grants([])
         chat_tag_grants.refresh_cache()
-    from kiro_crew.dashboard.chat_tags import (
+    from efm_go.dashboard.chat_tags import (
         api_chat_slot_drop,
         api_chat_slot_tags,
         api_chat_tag_adopt,

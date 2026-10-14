@@ -2,7 +2,7 @@
 
 Focus: request validation, run-lifecycle state transitions, error responses and
 status codes for every endpoint in
-``kiro_crew.dashboard.handlers.taskrunner`` — plus the redaction applied to
+``efm_go.dashboard.handlers.taskrunner`` — plus the redaction applied to
 LLM-authored text on the status / plan / export surfaces.
 
 Everything is driven through ``make_mocked_request`` against a fake
@@ -26,8 +26,8 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from body_stream_helpers import BodyStreamPayload
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, EVENT_TEXT_CHUNK, AcpEvent
-from kiro_crew.dashboard.handlers.taskrunner import (
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, EVENT_TEXT_CHUNK, AcpEvent
+from efm_go.dashboard.handlers.taskrunner import (
     _run_refine,
     _validate_spec_path,
     api_taskrunner_cancel,
@@ -51,9 +51,9 @@ from kiro_crew.dashboard.handlers.taskrunner import (
     api_taskrunner_update_plan,
     api_taskrunner_update_task,
 )
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-from kiro_crew.hooks import FileTooLargeError
-from kiro_crew.taskrunner import Step, StepStatus, TaskRun
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+from efm_go.hooks import FileTooLargeError
+from efm_go.taskrunner import Step, StepStatus, TaskRun
 
 # A URL whose oversized query payload trips the (domain-agnostic) exfiltration
 # scanner — see test_security.py::test_long_query_redacted_domain_agnostic.
@@ -65,7 +65,7 @@ _EXFIL_URL = "https://collector.example.com/ingest?data=" + "A" * 250
 @pytest.fixture(autouse=True)
 def _stub_sel():
     """No real security-event-log writes from any handler under test."""
-    with patch("kiro_crew.dashboard.handlers.taskrunner._sel") as sel:
+    with patch("efm_go.dashboard.handlers.taskrunner._sel") as sel:
         sel.return_value = MagicMock()
         yield sel
 
@@ -280,7 +280,7 @@ class TestStart:
         spec = tmp_path / "creds.md"
         spec.write_text("# t", encoding="utf-8")
         runner = _runner(tmp_path)
-        with patch("kiro_crew.dashboard.handlers.taskrunner.is_sensitive_path", return_value=True):
+        with patch("efm_go.dashboard.handlers.taskrunner.is_sensitive_path", return_value=True):
             resp = await api_taskrunner_start(
                 _request(_state(runner), json_body={"spec": str(spec)})
             )
@@ -298,7 +298,7 @@ class TestStart:
         # followed target that could open an SMB connection.
         with (
             patch(
-                "kiro_crew.dashboard.handlers.taskrunner.validate_file_path", return_value=None
+                "efm_go.dashboard.handlers.taskrunner.validate_file_path", return_value=None
             ) as screen,
             patch("pathlib.Path.is_file") as is_file,
         ):
@@ -684,7 +684,7 @@ class TestExportYaml:
             tasks=[Step(index=1, title="a", description="b")],
         )
         with patch(
-            "kiro_crew.dashboard.handlers.taskrunner.plan_to_yaml",
+            "efm_go.dashboard.handlers.taskrunner.plan_to_yaml",
             side_effect=RuntimeError("boom SECRET"),
         ):
             resp = await api_taskrunner_export_yaml(
@@ -748,7 +748,7 @@ class TestToChat:
         async def _noop(*_a: Any, **_kw: Any) -> None:
             return None
 
-        with patch("kiro_crew.dashboard.chat._run_chat", new=_noop):
+        with patch("efm_go.dashboard.chat._run_chat", new=_noop):
             yield
 
     @staticmethod
@@ -936,7 +936,7 @@ class TestPlan:
         # The file-source branch shares the same validate_file_path screen.
         with (
             patch(
-                "kiro_crew.dashboard.handlers.taskrunner.validate_file_path", return_value=None
+                "efm_go.dashboard.handlers.taskrunner.validate_file_path", return_value=None
             ) as screen,
             patch("pathlib.Path.is_file") as is_file,
         ):
@@ -962,7 +962,7 @@ class TestValidateSpecPath:
         # followed target and returns the invalid_spec_path code.
         with (
             patch(
-                "kiro_crew.dashboard.handlers.taskrunner.validate_file_path", return_value=None
+                "efm_go.dashboard.handlers.taskrunner.validate_file_path", return_value=None
             ) as screen,
             patch("pathlib.Path.is_file") as is_file,
         ):
@@ -984,10 +984,10 @@ class TestValidateSpecPath:
         spec.write_text("# t", encoding="utf-8")
         with (
             patch(
-                "kiro_crew.dashboard.handlers.taskrunner.validate_file_path",
+                "efm_go.dashboard.handlers.taskrunner.validate_file_path",
                 return_value=str(spec),
             ),
-            patch("kiro_crew.dashboard.handlers.taskrunner.is_sensitive_path", return_value=True),
+            patch("efm_go.dashboard.handlers.taskrunner.is_sensitive_path", return_value=True),
         ):
             resolved, code = _validate_spec_path(str(spec))
         assert (resolved, code) == (None, "access_denied")
@@ -997,9 +997,9 @@ class TestValidateSpecPath:
         # link-free lexical check must still map it to access_denied, not the
         # generic invalid_spec_path, so the 403 contract survives.
         with (
-            patch("kiro_crew.dashboard.handlers.taskrunner.validate_file_path", return_value=None),
+            patch("efm_go.dashboard.handlers.taskrunner.validate_file_path", return_value=None),
             patch(
-                "kiro_crew.dashboard.handlers.taskrunner.is_sensitive_resolved_path",
+                "efm_go.dashboard.handlers.taskrunner.is_sensitive_resolved_path",
                 return_value=True,
             ) as sens,
             patch("pathlib.Path.is_file") as is_file,
@@ -1275,7 +1275,7 @@ class TestRefineStart:
         async def _noop(*_a: Any, **_kw: Any) -> None:
             return None
 
-        with patch("kiro_crew.dashboard.handlers.taskrunner._run_refine", new=_noop):
+        with patch("efm_go.dashboard.handlers.taskrunner._run_refine", new=_noop):
             resp = await api_taskrunner_refine(
                 _request(state, json_body={"input": " build a thing "})
             )
@@ -1633,7 +1633,7 @@ async def test_from_chat_owns_context_before_runtime_binding(tmp_path):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("status", ["planned", "completed"])
 async def test_task_to_chat_uses_owning_record_without_runtime_session(tmp_path, status):
-    from kiro_crew.execution_context import read_session_execution
+    from efm_go.execution_context import read_session_execution
 
     runner = _runner(tmp_path)
     execution = _member_execution()
@@ -1653,7 +1653,7 @@ async def test_task_to_chat_uses_owning_record_without_runtime_session(tmp_path,
     slot.append.side_effect = lambda *args: (
         None if slot.memory_store == "alice-store" else pytest.fail("unbound append")
     )
-    with patch("kiro_crew.dashboard.chat._run_chat", AsyncMock()) as chat:
+    with patch("efm_go.dashboard.chat._run_chat", AsyncMock()) as chat:
         response = await api_taskrunner_to_chat(
             _request(state, match_info={"task_id": "member-run"})
         )
@@ -1681,7 +1681,7 @@ async def test_owner_can_cancel_shared_planning(tmp_path):
 
 
 def test_exact_task_cancel_does_not_follow_another_runs_colliding_name():
-    from kiro_crew.taskrunner import TaskRunner
+    from efm_go.taskrunner import TaskRunner
 
     runner = object.__new__(TaskRunner)
     own = TaskRun(spec_path="own", spec_content="", task_id="own-id", status="running")
@@ -1790,7 +1790,7 @@ class TestSpecIoRunsOffTheEventLoop:
     async def test_cancelled_inline_write_does_not_orphan_spec(
         self, tmp_path: Path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import taskrunner as handlers
+        from efm_go.dashboard.handlers import taskrunner as handlers
 
         started = threading.Event()
         release = threading.Event()
@@ -1896,7 +1896,7 @@ class TestSpecIoRunsOffTheEventLoop:
     async def test_cancelled_plan_claim_does_not_orphan_directory(
         self, tmp_path: Path, monkeypatch
     ) -> None:
-        from kiro_crew.dashboard.handlers import taskrunner as handlers
+        from efm_go.dashboard.handlers import taskrunner as handlers
 
         started = threading.Event()
         release = threading.Event()

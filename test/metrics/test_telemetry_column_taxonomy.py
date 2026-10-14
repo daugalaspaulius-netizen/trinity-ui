@@ -30,8 +30,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from kiro_crew.dashboard.handlers import usage as usage_mod
-from kiro_crew.messaging.link import TELEMETRY_CHANNELS, telemetry_channel_of
+from efm_go.dashboard.handlers import usage as usage_mod
+from efm_go.messaging.link import TELEMETRY_CHANNELS, telemetry_channel_of
 
 #: Row surfaces written by the product that are NOT channel-taxonomy members:
 #: ``monitor`` (``slack/gateway.py``) and ``webhook`` (``handlers/hooks.py``).

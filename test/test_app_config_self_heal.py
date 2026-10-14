@@ -13,8 +13,8 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.apps.manager import APP_MANIFEST_FILENAME, app_data_dir, install_app
-from kiro_crew.apps.routes import register_app_routes
+from efm_go.apps.manager import APP_MANIFEST_FILENAME, app_data_dir, install_app
+from efm_go.apps.routes import register_app_routes
 
 
 def _setup_env(tmp_path, monkeypatch):
@@ -23,9 +23,9 @@ def _setup_env(tmp_path, monkeypatch):
     monkeypatch.setenv("KIROCREW_HOME", str(home))
     kiro_agents = tmp_path / "kiro-agents"
     kiro_agents.mkdir()
-    import kiro_crew.apps.bridges as bridges_mod
+    import efm_go.apps.bridges as bridges_mod
     monkeypatch.setattr(bridges_mod, "KIRO_AGENTS_DIR", kiro_agents)
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
     bmod._processes.clear()
     bmod._allocated_ports.clear()
     return home

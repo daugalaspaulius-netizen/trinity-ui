@@ -37,7 +37,7 @@ for. Every published manifest carries SLSA build
 provenance — verify with:
 
 ```
-gh attestation verify oci://ghcr.io/kirodotdev/kirocrew:stable --repo kirodotdev/KiroCrew
+gh attestation verify oci://ghcr.io/kirodotdev/kirocrew:stable --repo efmleads.com
 ```
 
 ## First-run setup
@@ -102,12 +102,12 @@ Four channels are unavailable in the stock image. **Microsoft Teams** needs
 wheel, so use a custom image that installs the required distribution before
 enabling one of those transports. See the setup guidance in their packaged
 integration docs, including
-[whatsapp-integration.md](../../src/kiro_crew/docs/whatsapp-integration.md).
+[whatsapp-integration.md](../../src/efm_go/docs/whatsapp-integration.md).
 
 **iMessage** cannot be added to this image: it drives Messages.app on the
 machine the gateway runs on and needs macOS 14 or newer plus Full Disk Access
 and Automation grants, so no Linux container can serve it —
-[imessage-integration.md](../../src/kiro_crew/docs/imessage-integration.md).
+[imessage-integration.md](../../src/efm_go/docs/imessage-integration.md).
 
 Everything else lives in `config.json` inside the volume. Most settings are
 editable from the (token-authenticated) dashboard; the exceptions are the
@@ -261,7 +261,7 @@ This is strictly less permissive than `--security-opt seccomp=unconfined` or
 **Image-only users** (no repo checkout): download the profile directly:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/kirodotdev/KiroCrew/main/docker/seccomp/kirocrew-seccomp.json \
+curl -fsSL https://raw.githubusercontent.com/efmleads.com/main/docker/seccomp/kirocrew-seccomp.json \
   -o kirocrew-seccomp.json
 ```
 
@@ -396,7 +396,7 @@ Check from inside a running container:
 
 ```bash
 docker exec kirocrew python3 -c \
-  "from kiro_crew.sandbox import userns_available; print(userns_available())"
+  "from efm_go.sandbox import userns_available; print(userns_available())"
 ```
 
 - `True` → user namespaces work on the kernel; re-check your seccomp
@@ -412,7 +412,7 @@ docker logs kirocrew | grep '\[entrypoint\]'
 
 # Live check from inside the container
 docker exec kirocrew python3 -c \
-  "from kiro_crew.sandbox import detect_backend; print(detect_backend())"
+  "from efm_go.sandbox import detect_backend; print(detect_backend())"
 # Expected: "namespace" (inner sandbox active) or "none" (unsandboxed)
 ```
 

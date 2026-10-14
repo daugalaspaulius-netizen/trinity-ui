@@ -20,14 +20,14 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 
 @pytest.fixture()
 def cfg_file(tmp_path):
     p = tmp_path / "config.json"
     p.write_text("{}", encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=p):
+    with patch("efm_go.config.loader.config_path", return_value=p):
         yield p
 
 
@@ -60,7 +60,7 @@ def test_mcp_app_panel_load_from_existing(cfg_file):
 def test_mcp_app_panel_in_generated_schema():
     # The settings UI is driven by the generated schema, so the field must carry
     # its label/help through to /api/config/schema without a manual edit.
-    from kiro_crew.config.schema import JSON_SCHEMA
+    from efm_go.config.schema import JSON_SCHEMA
 
     node = JSON_SCHEMA["properties"]["dashboard"]["properties"]["mcp_app_panel"]
     assert node["type"] == "boolean"
@@ -72,18 +72,18 @@ def test_mcp_app_panel_in_generated_schema():
 @pytest.fixture()
 def mock_sel():
     try:
-        import kiro_crew.dashboard.handlers  # noqa: F401
+        import efm_go.dashboard.handlers  # noqa: F401
     except ImportError:
         pytest.skip("dashboard handler deps not available locally")
     m = MagicMock()
     m.log_tool_invocation = MagicMock()
-    with patch("kiro_crew.dashboard.handlers.sel", return_value=m):
+    with patch("efm_go.dashboard.handlers.sel", return_value=m):
         yield m
 
 
 @pytest.fixture()
 def handler_app(cfg_file, mock_sel):
-    from kiro_crew.dashboard.handlers.files import api_dashboard_config
+    from efm_go.dashboard.handlers.files import api_dashboard_config
     app = web.Application()
     app.router.add_put("/api/dashboard/config", api_dashboard_config)
     app.router.add_get("/api/dashboard/config", api_dashboard_config)

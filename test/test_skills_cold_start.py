@@ -12,10 +12,10 @@ from types import SimpleNamespace
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew import skills
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.security import paths
-from kiro_crew.skill_search_index import SkillSearchIndex
+from efm_go import skills
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.security import paths
+from efm_go.skill_search_index import SkillSearchIndex
 
 
 def _skill(root: Path, key: str, *, always: bool = False) -> Path:

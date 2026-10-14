@@ -29,15 +29,15 @@ import pytest
 from _hot_reload_helpers import change
 from overload_fakes import Clock, mock_ctx, mock_sessions, wait_taskq_open
 
-import kiro_crew.subagent as subagent_mod
-from kiro_crew import taskq
-from kiro_crew.config import live
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.paths import data_home
-from kiro_crew.config.schema import requires_restart
-from kiro_crew.subagent import SubagentManager
-from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator, taskq_bridge
-from kiro_crew.subagent_wait_reasons import QUEUED_WAIT_EXPIRED_TEXT
+import efm_go.subagent as subagent_mod
+from efm_go import taskq
+from efm_go.config import live
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.paths import data_home
+from efm_go.config.schema import requires_restart
+from efm_go.subagent import SubagentManager
+from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator, taskq_bridge
+from efm_go.subagent_wait_reasons import QUEUED_WAIT_EXPIRED_TEXT
 
 pytestmark = pytest.mark.usefixtures("healthy_host_memory")
 
@@ -193,7 +193,7 @@ class TestTheBoundEndsTheWait:
     async def test_expiry_delivers_one_terminal_and_the_depth_goes_to_zero(
         self, monkeypatch, caplog
     ) -> None:
-        caplog.set_level(logging.DEBUG, logger="kiro_crew.subagent_manager.admission")
+        caplog.set_level(logging.DEBUG, logger="efm_go.subagent_manager.admission")
         async with _harness(monkeypatch) as h:
             await _reload_bound(h, 90)
             info = await h.spawn()
@@ -384,7 +384,7 @@ class TestEveryWaitingRowExpires:
         """No store row for the sweep to read: a start in temporary memory waits
         in the in-memory window, and the gate bounds that floor wait from its
         own parked clock (``_floor_waits``), ending it with the same terminal."""
-        from kiro_crew.subagent_manager.admission import MEMORY_WAIT_UNTIL_KEY
+        from efm_go.subagent_manager.admission import MEMORY_WAIT_UNTIL_KEY
 
         async with _harness(monkeypatch) as h:
             h.mgr._memory_mode_for_session = lambda _key: "temporary"
@@ -432,7 +432,7 @@ class TestEveryWaitingRowExpires:
         wherever the monotonic clock happens to stand. In float seconds a park
         that began 2.05 s into the clock adds ``(2.05 + 30) - 2.05``, an ulp
         short of 30, so a 30 s bound would keep the row one more admit wait."""
-        from kiro_crew.subagent_manager.admission import MEMORY_WAIT_UNTIL_KEY
+        from efm_go.subagent_manager.admission import MEMORY_WAIT_UNTIL_KEY
 
         async with _harness(monkeypatch) as h:
             h.mgr._memory_mode_for_session = lambda _key: "temporary"
@@ -454,7 +454,7 @@ class TestEveryWaitingRowExpires:
     @pytest.mark.asyncio
     @pytest.mark.timeout(60)
     async def test_zero_leaves_an_in_memory_floor_wait_unbounded(self, monkeypatch) -> None:
-        from kiro_crew.subagent_manager.admission import MEMORY_WAIT_UNTIL_KEY
+        from efm_go.subagent_manager.admission import MEMORY_WAIT_UNTIL_KEY
 
         async with _harness(monkeypatch) as h:
             h.mgr._memory_mode_for_session = lambda _key: "temporary"
@@ -883,8 +883,8 @@ def _through_the_gateway(h: _Harness, stream: Any = None) -> Any:
     )
     orch.dashboard_state.get_slot = MagicMock(return_value=slot)
     orch.dashboard_state.subagents = h.mgr
-    with patch("kiro_crew.slack.handler.is_yolo_mode", return_value=False):
-        with patch("kiro_crew.slack.gateway.SubagentManager") as factory:
+    with patch("efm_go.slack.handler.is_yolo_mode", return_value=False):
+        with patch("efm_go.slack.gateway.SubagentManager") as factory:
             factory.return_value = MagicMock()
             orch._init_subagents()
             on_done = factory.call_args.kwargs["on_done"]
@@ -899,10 +899,10 @@ def _through_the_gateway(h: _Harness, stream: Any = None) -> Any:
             _on_consumed()
 
     with (
-        patch("kiro_crew.slack.gateway._run_chat", consuming_run_chat),
-        patch("kiro_crew.slack.gateway.session_store_for_turn", AsyncMock(return_value="")),
+        patch("efm_go.slack.gateway._run_chat", consuming_run_chat),
+        patch("efm_go.slack.gateway.session_store_for_turn", AsyncMock(return_value="")),
         patch(
-            "kiro_crew.slack.gateway.stream_and_collect",
+            "efm_go.slack.gateway.stream_and_collect",
             stream or AsyncMock(return_value="the parent's reply"),
         ),
         patch.object(
@@ -1054,8 +1054,8 @@ class TestADigestHeldExpiryStaysOwed:
     @pytest.mark.asyncio
     @pytest.mark.timeout(60)
     async def test_a_queued_announce_carries_the_debt_to_its_drain(self, monkeypatch) -> None:
-        from kiro_crew.slack.gateway import GatewayOrchestrator
-        from kiro_crew.subagent import SubagentDelivery
+        from efm_go.slack.gateway import GatewayOrchestrator
+        from efm_go.subagent import SubagentDelivery
 
         info = subagent_mod.SubagentInfo(id="e1", task="t", error=QUEUED_WAIT_EXPIRED_TEXT)
         info._report_owed = True
@@ -1078,7 +1078,7 @@ class TestADigestHeldExpiryStaysOwed:
     ) -> None:
         # The wave's flusher reports to a parent a teardown retired: nothing is
         # injected, and the held expiry it carried is owed to no one any more.
-        from kiro_crew.subagent import SubagentDelivery
+        from efm_go.subagent import SubagentDelivery
 
         async with _harness(monkeypatch) as h:
             cleared: list[list[str]] = []
@@ -1234,7 +1234,7 @@ class TestAGivenUpInjectionStaysOwed:
     @pytest.mark.timeout(60)
     @pytest.mark.parametrize("parent", ["cron:j1", "slack:U000"])
     async def test_a_dead_parent_runtime_leaves_the_expiry_owed(self, monkeypatch, parent) -> None:
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         async with _harness(monkeypatch) as h:
             stream = AsyncMock(side_effect=AcpProcessDied("ACP process pipe broken"))
@@ -1320,7 +1320,7 @@ class TestAGivenUpDigestKeepsItsHeldExpiriesOwed:
     async def test_a_failed_digest_leaves_the_held_expiry_owed(
         self, monkeypatch, parent, error, flush
     ) -> None:
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         raised = (
             AcpProcessDied("ACP process pipe broken")

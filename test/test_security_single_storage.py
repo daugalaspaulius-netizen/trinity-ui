@@ -1,6 +1,6 @@
-"""One storage location per re-exported name in ``kiro_crew.security``.
+"""One storage location per re-exported name in ``efm_go.security``.
 
-``kiro_crew.security`` is a facade: the controls live in submodules of the
+``efm_go.security`` is a facade: the controls live in submodules of the
 package and roughly forty modules import them through the package. A re-exported
 name therefore has an owner, and the rule these tests hold is that the name's
 value lives in that owner's namespace and nowhere else, and that the owner itself
@@ -19,11 +19,11 @@ back at the cause.
 
 DUPLICATE, ON PURPOSE. ``test/test_lazy_reexport_storage.py`` holds the same rule
 for the six lazily re-exporting packages, and this file holds it for
-``kiro_crew.security`` alone so the two land in either order without touching one
+``efm_go.security`` alone so the two land in either order without touching one
 another.
 
     Retire this file when ``test/test_lazy_reexport_storage.py`` on main contains a
-    ``kiro_crew.security`` entry in ``PACKAGES``.
+    ``efm_go.security`` entry in ``PACKAGES``.
 """
 
 from __future__ import annotations
@@ -39,10 +39,10 @@ from types import ModuleType
 
 import pytest
 
-import kiro_crew.security as facade
-from kiro_crew.security import _exports
+import efm_go.security as facade
+from efm_go.security import _exports
 
-PACKAGE = "kiro_crew.security"
+PACKAGE = "efm_go.security"
 
 #: Every re-exported name, read from the package's own table so a name added
 #: there is covered here without editing this file.
@@ -64,7 +64,7 @@ def _owner_restored(module_name: str) -> Iterator[None]:
     A test that purges an owner and lets it be imported again has changed two
     things, not one. The obvious one is :data:`sys.modules`. The other is this
     package's own attribute: ``importlib`` finishes a submodule import by setting
-    it on the parent package, so ``kiro_crew.security.paths`` is rebound to the
+    it on the parent package, so ``efm_go.security.paths`` is rebound to the
     fresh copy -- and that name is an ``_EXPORTS`` VALUE, not a key, so the write
     lands on the package itself rather than being forwarded.
 
@@ -541,7 +541,7 @@ class TestAnUnresolvableGateFailsClosed:
         ``True``. An edit that narrowed either fails here.
         """
         parsers = Path(
-            importlib.import_module("kiro_crew.apps.builtins.spec_builder.backend.parsers").__file__
+            importlib.import_module("efm_go.apps.builtins.spec_builder.backend.parsers").__file__
             or ""
         )
         tree = ast.parse(parsers.read_text(encoding="utf-8"))

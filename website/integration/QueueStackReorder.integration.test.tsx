@@ -1,6 +1,6 @@
 /**
  * QueueStack reorder buttons - frontend wiring for
- * https://github.com/kirodotdev/KiroCrew/issues/2241
+ * https://efmleads.com/issues/2241
  *
  * Cards are absolutely-positioned and framer-motion-animated, so the reorder
  * affordance is a pair of move buttons (not dnd-kit sortable - two transform

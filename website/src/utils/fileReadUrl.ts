@@ -117,11 +117,11 @@ export function fileStreamUrl(filePath: string): string {
 /** Build the /api/file-office-preview URL — extracts plaintext from a
  * .docx / .pptx for inline preview in the file viewer.
  *
- * The backend uses `kiro_crew.doc_parser.extract_text` (defusedxml-hardened
+ * The backend uses `efm_go.doc_parser.extract_text` (defusedxml-hardened
  * ZIP+XML parser, no python-docx / python-pptx dep). Returns 415 when the
  * extension isn't previewable (.xls/.xlsx/.doc/.ppt/ODF) so the caller can
  * fall back to the download card. See `api_file_office_preview` in
- * `src/kiro_crew/dashboard/handlers/files.py`.
+ * `src/efm_go/dashboard/handlers/files.py`.
  *
  * Derived from fileDownloadUrl rather than restated: the two endpoints take
  * the identical query shape (path + optional resolve=1), so swapping the
@@ -140,7 +140,7 @@ export function fileOfficePreviewUrl(filePath: string, format?: 'blocks'): strin
  * fileDownloadUrl like fileOfficePreviewUrl above. The response is either
  * `{status: 'ready', count, slides}` or `{status: 'unavailable', hint}` when the
  * host has no LibreOffice; see `api_file_office_slides` in
- * `src/kiro_crew/dashboard/handlers/office_slides.py`. */
+ * `src/efm_go/dashboard/handlers/office_slides.py`. */
 export function fileOfficeSlidesUrl(filePath: string): string {
   return fileDownloadUrl(filePath).replace('/api/file-download', '/api/file-office-slides')
 }

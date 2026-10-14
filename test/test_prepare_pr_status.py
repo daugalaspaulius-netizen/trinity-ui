@@ -11,7 +11,7 @@ from types import ModuleType
 from skill_script_helpers import is_rollup_graphql_read, load_skill_script, rollup_graphql_response
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev" / "kirocrew-prepare-pr" / "scripts" / "pr_status.py"
+SCRIPT = ROOT / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev" / "kirocrew-prepare-pr" / "scripts" / "pr_status.py"
 
 
 def _load_script() -> ModuleType:
@@ -425,9 +425,9 @@ def test_a_stale_green_is_reported_and_changes_no_exit_code(capsys) -> None:
         module,
         _pr_payload([{"context": "PR Readiness", "state": "SUCCESS"}]),
         git=lambda args: _fake_git_with(
-            args, moved=["src/kiro_crew/ledger/store.py"], mine=[], commits=3
+            args, moved=["src/efm_go/ledger/store.py"], mine=[], commits=3
         ),
-        pr_files=["src/kiro_crew/ledger/store.py"],
+        pr_files=["src/efm_go/ledger/store.py"],
     )
 
     code = module.main(["pr_status.py", "42", "--json"])
@@ -435,7 +435,7 @@ def test_a_stale_green_is_reported_and_changes_no_exit_code(capsys) -> None:
     report = json.loads([ln for ln in out.strip().splitlines() if ln.strip()][-1])
 
     assert code == 0, "the green-age line is information, not a gate"
-    assert "src/kiro_crew/ledger/store.py (same-file)" in out
+    assert "src/efm_go/ledger/store.py (same-file)" in out
     assert report["advisory"]["green_age"]["stale"] is True
     assert report["advisory"]["green_age"]["commits"] == 3
 

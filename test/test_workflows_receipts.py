@@ -6,10 +6,10 @@ from types import SimpleNamespace
 import pytest
 from test_workflows_private_execution import world as _world
 
-from kiro_crew.acp.types import EVENT_COMPACTION_STATUS, EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.dashboard.workflow_inject import inject_bound_workflow_result
-from kiro_crew.providers.base import LLMEvent, LLMProvider
-from kiro_crew.workflow_memory import WorkflowScope, authorize_run
+from efm_go.acp.types import EVENT_COMPACTION_STATUS, EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.dashboard.workflow_inject import inject_bound_workflow_result
+from efm_go.providers.base import LLMEvent, LLMProvider
+from efm_go.workflow_memory import WorkflowScope, authorize_run
 
 world = _world
 
@@ -142,16 +142,16 @@ async def test_malformed_member_snapshot_cannot_deliver_without_canonical_identi
 async def test_owner_can_cancel_unavailable_store_without_reading_it(world, monkeypatch):
     from member_memory_helpers import make_request
 
-    from kiro_crew.context import release_cached_memory_store
-    from kiro_crew.dashboard.handlers.workflows import api_workflow_run_cancel
-    from kiro_crew.memory_stores import resolve_store_path
+    from efm_go.context import release_cached_memory_store
+    from efm_go.dashboard.handlers.workflows import api_workflow_run_cancel
+    from efm_go.memory_stores import resolve_store_path
 
     scope = await WorkflowScope.admit("wf_owner_cancel", world.builder, "dashboard:alice")
     path = resolve_store_path(world.stores["alice"])
     await asyncio.to_thread(release_cached_memory_store, world.stores["alice"])
     path.unlink()
     assert not path.exists()
-    from kiro_crew.workflows.registry import RunHandle
+    from efm_go.workflows.registry import RunHandle
 
     handle = RunHandle(
         run_id=scope.run_id,

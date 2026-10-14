@@ -15,10 +15,10 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, session_tree
-from kiro_crew.crew_log import store as crew_store
-from kiro_crew.crew_log.session_tree import (
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, session_tree
+from efm_go.crew_log import store as crew_store
+from efm_go.crew_log.session_tree import (
     CHAIN_END_CAP,
     CHAIN_END_CYCLE,
     CHAIN_END_FIRST,
@@ -33,8 +33,8 @@ from kiro_crew.crew_log.session_tree import (
     fold_tree,
     parent_payload,
 )
-from kiro_crew.session_ledger import _store_name
-from kiro_crew.validation import MAX_ACP_SESSION_ID_LEN
+from efm_go.session_ledger import _store_name
+from efm_go.validation import MAX_ACP_SESSION_ID_LEN
 
 GATEWAY = "gateway"
 
@@ -322,7 +322,7 @@ def test_a_retained_string_past_its_bound_refuses_the_whole_record() -> None:
     # Every string the scanner keeps is bounded by the constant its writer
     # shares; an oversize one is not something the gateway wrote, so the unit
     # contributes nothing rather than a truncated key that matches nothing.
-    from kiro_crew.validation import MAX_ACP_SESSION_ID_LEN, MAX_SHORT_STRING
+    from efm_go.validation import MAX_ACP_SESSION_ID_LEN, MAX_SHORT_STRING
 
     directory = Path("/units") / _store_name("c-sid")
     header = {"type": "session", "id": "c-sid", "slot": "chat-2", "createdAt": 5}
@@ -333,7 +333,7 @@ def test_a_retained_string_past_its_bound_refuses_the_whole_record() -> None:
         "src": GATEWAY,
         "data": {"slot": "chat-2", "parent": {"slot": "chat-1", "sid": "p-sid"}},
     }
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     entry = Entry.from_dict(opened)
     assert entry is not None
@@ -1078,7 +1078,7 @@ def test_a_previous_that_is_not_a_mapping_contributes_no_edge() -> None:
     header, entry, _ = crew_store.read_head(crew_store.oldest_segment(directory))
     assert entry is not None
 
-    from kiro_crew.crew_log.schema import Entry
+    from efm_go.crew_log.schema import Entry
 
     with pytest.raises(Exception):
         # The premise of this test: the emitter cannot write it.

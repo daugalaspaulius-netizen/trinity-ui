@@ -8,8 +8,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.dashboard.handlers.workflows as workflow_handlers
-from kiro_crew.dashboard.handlers.workflows import (
+import efm_go.dashboard.handlers.workflows as workflow_handlers
+from efm_go.dashboard.handlers.workflows import (
     api_workflow_definition_get,
     api_workflow_definition_run,
     api_workflow_definition_update,

@@ -29,11 +29,11 @@ from types import SimpleNamespace
 
 import pytest
 
-import kiro_crew.autonudge_authz as autonudge_authz
-from kiro_crew.autonudge import NudgeAdmissionRefused, binding_key_for
-from kiro_crew.autonudge_authz import authorize_and_add_nudge
-from kiro_crew.monitoring.models import MonitorCreationSurface
-from kiro_crew.workflows.service import WorkflowService
+import efm_go.autonudge_authz as autonudge_authz
+from efm_go.autonudge import NudgeAdmissionRefused, binding_key_for
+from efm_go.autonudge_authz import authorize_and_add_nudge
+from efm_go.monitoring.models import MonitorCreationSurface
+from efm_go.workflows.service import WorkflowService
 
 pytestmark = pytest.mark.asyncio
 
@@ -255,7 +255,7 @@ async def test_autonudge_add_survives_caller_cancellation(tmp_path, monkeypatch)
     shielded: the caller sees CancelledError, but the arm+persist completes."""
     import threading
 
-    from kiro_crew.autonudge import AutoNudgeService
+    from efm_go.autonudge import AutoNudgeService
 
     svc = AutoNudgeService(base_dir=tmp_path)
     write_started = threading.Event()
@@ -554,7 +554,7 @@ async def test_author_prompt_advertises_only_wired_primitives() -> None:
     ctx.cron / ctx.memory / ctx.learn ...) MUST be wired in ``_runner`` first,
     or this test fails — the drift can't silently reappear.
     """
-    from kiro_crew.workflows.service import _AUTHOR_SYSTEM
+    from efm_go.workflows.service import _AUTHOR_SYSTEM
 
     advertised = set(_CTX_TOKEN_RE.findall(_AUTHOR_SYSTEM))
     assert advertised, "coherence check: the authoring prompt names ctx primitives"

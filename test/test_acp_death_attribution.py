@@ -16,7 +16,7 @@ import asyncio
 
 import pytest
 
-from kiro_crew.acp.session_handle import AcpProcessDied, AcpSessionHandle
+from efm_go.acp.session_handle import AcpProcessDied, AcpSessionHandle
 
 
 class _DeadRuntime:

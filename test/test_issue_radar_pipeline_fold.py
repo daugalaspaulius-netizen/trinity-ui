@@ -20,8 +20,8 @@ from unittest import mock
 
 import pytest
 
-from kiro_crew.apps.builtins.issue_radar.backend import pipeline_fold as fold
-from kiro_crew.apps.builtins.issue_radar.backend import pipeline_routes as routes
+from efm_go.apps.builtins.issue_radar.backend import pipeline_fold as fold
+from efm_go.apps.builtins.issue_radar.backend import pipeline_routes as routes
 
 # --------------------------------------------------------------------------
 # Fixtures: everything resolves inside tmp_path.
@@ -1103,7 +1103,7 @@ def test_the_shard_name_matches_what_the_writers_produce(tmp_path: Path) -> None
     the fold opens a path nothing ever wrote and reports an empty queue -- so the
     name is pinned as a literal on this side too.
     """
-    got = fold.queue_path(repo="kirodotdev/KiroCrew", root=tmp_path).name
+    got = fold.queue_path(repo="efmleads.com", root=tmp_path).name
     assert got == "gh-autofix-dispatch-queue.kirodotdev__KiroCrew.jsonl"
     assert fold._repo_slug("Weird Name/Repo!") == "Weird-Name__Repo-"
     # ASCII-explicit, so it cannot diverge from the writers' shell-side slug on a

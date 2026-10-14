@@ -30,8 +30,8 @@ import pytest
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_app, _make_state
 
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.state import _ChatSlot
 
 
 class _Boom(RuntimeError):
@@ -235,7 +235,7 @@ class TestSeam4BulkCleanup:
         key in ``archived``: data loss reported as success. The flush shares the
         archive-save's ``except`` arm instead, so the slot comes back with its
         note still held and the key is reported in ``failed``."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = self._stale(state, "stale-flush")
         _hold(slot, "held note")
@@ -258,7 +258,7 @@ class TestSeam4BulkCleanup:
     ):
         """The flush is inside the ``for name in stale_keys`` loop, so an
         unguarded raise also abandons every slot after the failing one."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         for key in ("stale-a", "stale-b", "stale-c"):
             self._stale(state, key)

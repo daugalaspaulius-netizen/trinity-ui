@@ -44,7 +44,7 @@
       "method": "session/load",
       "params": {
         "_meta": {
-          "_kiro.dev/session_file": "/pinned/transcript.jsonl",
+          "_efm.go/session_file": "/pinned/transcript.jsonl",
           "kiro": {
             "customAgents": [
               {

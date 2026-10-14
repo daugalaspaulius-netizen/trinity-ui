@@ -36,16 +36,16 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard.chat_handlers import (
+from efm_go.dashboard.chat_handlers import (
     _persist_deferred_note_hold,
     api_chat_slot_note,
 )
-from kiro_crew.dashboard.chat_persistence import (
+from efm_go.dashboard.chat_persistence import (
     _rehydrate_slot_from_history,
     _save_slot_to_history,
 )
-from kiro_crew.dashboard.chat_utils import effective_session_key, slot_history_key
-from kiro_crew.dashboard.slot_buffers import (
+from efm_go.dashboard.chat_utils import effective_session_key, slot_history_key
+from efm_go.dashboard.slot_buffers import (
     MAX_DEFERRED_NOTE_CHARS,
     MAX_DEFERRED_NOTES,
     DeferredHoldFull,
@@ -57,7 +57,7 @@ from kiro_crew.dashboard.slot_buffers import (
     sanitize_restored_deferred_notes,
     serialize_deferred_notes,
 )
-from kiro_crew.dashboard.state import DashboardState
+from efm_go.dashboard.state import DashboardState
 
 
 def _seeded_slot(state: DashboardState, name: str):
@@ -119,7 +119,7 @@ class TestEnqueueDurability:
 
     @pytest.mark.asyncio
     async def test_200_means_the_hold_is_already_durable(self, tmp_path: Path, monkeypatch):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "s1")
         slot.task = asyncio.get_running_loop().create_future()
@@ -145,7 +145,7 @@ class TestEnqueueDurability:
         self, tmp_path: Path, monkeypatch
     ):
         """No 200 may promise durability the write did not deliver."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "s2")
         slot.task = asyncio.get_running_loop().create_future()
@@ -153,7 +153,7 @@ class TestEnqueueDurability:
         def _boom(conversation_log, s, ensure, authorized_history_key):
             raise OSError("disk full")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.persist_deferred_notes_sync", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.persist_deferred_notes_sync", _boom)
         try:
             async with self._make_client(state) as client:
                 resp = await client.post("/api/chat/slots/s2/note", json={"content": "x"})
@@ -170,7 +170,7 @@ class TestEnqueueDurability:
         """Two same-content notes from a capped source are byte-identical dicts
         (context None). An equality rollback would evict the sibling that
         already holds a durable 200; identity rollback removes THIS note."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "s2b")
         session = effective_session_key(slot)
@@ -182,7 +182,7 @@ class TestEnqueueDurability:
         def _boom(conversation_log, s):
             raise OSError("disk full")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.persist_deferred_notes_sync", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.persist_deferred_notes_sync", _boom)
         resp = await _persist_deferred_note_hold(state, slot, failing, slot_history_key(slot))
         assert resp is not None and resp.status == 503
         assert len(slot._deferred_notes) == 1
@@ -198,7 +198,7 @@ class TestEnqueueDurability:
         enqueue: a cron/workflow rebind landing in the persist window must be
         refused (uniform not-found shape) with the note rolled back — never
         committed into the foreign transcript's metadata."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rb1")
         authorized_key = slot_history_key(slot)
@@ -234,7 +234,7 @@ class TestEnqueueDurability:
         no durable copy (no recovery path: the caller will not retry). With
         the positive-evidence rule the rebind branch answers its uniform 404:
         no live row, no durable entry, no committed row."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rbdrop")
         authorized_key = slot_history_key(slot)
@@ -268,7 +268,7 @@ class TestEnqueueDurability:
         ids), so ``written=True`` alone is not evidence — the endpoint must
         refuse rather than acknowledge a note nothing will deliver or
         replay."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "twindrop")
         key = slot_history_key(slot)
@@ -301,7 +301,7 @@ class TestEnqueueDurability:
         the slot's live message list, stamped ``meta.noteId`` — so the 200
         stands even when this writer's own durable write fails. An error
         answer would make the caller re-post a line the user already saw."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "liverow")
         note = {
@@ -323,7 +323,7 @@ class TestEnqueueDurability:
         def _boom(conversation_log, s, ensure, authorized_history_key):
             raise OSError("write failed after the flush delivered")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.persist_deferred_notes_sync", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.persist_deferred_notes_sync", _boom)
         resp = await _persist_deferred_note_hold(state, slot, note, slot_history_key(slot))
         assert resp is None, "a delivered note keeps its 200 on positive evidence"
 
@@ -335,7 +335,7 @@ class TestEnqueueDurability:
         the note, a 429 would make the caller re-post a line the user already
         saw. The rollback finding nothing means delivered — the 200 stands,
         same as the generic failure branch."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "hf2")
         note = {
@@ -349,7 +349,7 @@ class TestEnqueueDurability:
         def _full(conversation_log, s, ensure, authorized_history_key):
             raise DeferredHoldFull("ceiling")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.persist_deferred_notes_sync", _full)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.persist_deferred_notes_sync", _full)
         # The racing flush drained AND DELIVERED the note: its row is in the
         # slot's live message list, stamped with the note id — the positive
         # evidence (clause a) the 200 stands on. Mere absence from the hold is
@@ -374,7 +374,7 @@ class TestEnqueueDurability:
         slot's file exists, and its tab WILL come back after a restart. That
         case must surface as a failure (→ 503 upstream), not as a durable 200
         with nothing behind it."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "s2c")
         _hold_note(slot)
@@ -391,7 +391,7 @@ class TestEnqueueDurability:
         """No metadata line on disk => the slot itself would not survive a
         restart, so there is no durable promise to keep. The note is held in
         memory and the 200 keeps its this-lifetime meaning."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("s3")  # never saved: no metadata line
         slot.task = asyncio.get_running_loop().create_future()
@@ -412,7 +412,7 @@ class TestEnqueueDurability:
         the enqueue boundary where the caller can act on it — never as a
         truncation that would replay altered content for an acknowledged
         note. Immediate (non-held) notes keep the larger shared bound."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "s5")
         slot.task = asyncio.get_running_loop().create_future()
@@ -439,7 +439,7 @@ class TestEnqueueDurability:
         caller re-posts, and the restore replays the original — duplicate.
         When the note is already on disk, the 200 stands and nothing is
         rolled back."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "sib1")
         session = effective_session_key(slot)
@@ -460,7 +460,7 @@ class TestEnqueueDurability:
         def _boom(conversation_log, s, ensure, authorized_history_key):
             raise OSError("this writer's own attempt fails")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_handlers.persist_deferred_notes_sync", _boom)
+        monkeypatch.setattr("efm_go.dashboard.chat_handlers.persist_deferred_notes_sync", _boom)
         resp = await _persist_deferred_note_hold(state, slot, note, key)
         assert resp is None, "an already-durable note must keep its 200"
         assert slot._deferred_notes == [note], "the still-undelivered note stays held"
@@ -475,7 +475,7 @@ class TestEnqueueDurability:
         ``False`` (no metadata line) must NOT fall through to the 200 the
         never-persisted case gets: the session and any durable copy are gone,
         so the endpoint answers its uniform not-found shape instead."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "delwon")
         key = slot_history_key(slot)
@@ -489,7 +489,7 @@ class TestEnqueueDurability:
             return DeferredHoldOutcome(written=False, evidence=NoteEvidence(False, False))
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.persist_deferred_notes_sync", _delete_wins
+            "efm_go.dashboard.chat_handlers.persist_deferred_notes_sync", _delete_wins
         )
         resp = await _persist_deferred_note_hold(state, slot, note, key)
         assert resp is not None, "delete-won must not be acknowledged with a 200"
@@ -505,7 +505,7 @@ class TestEnqueueDurability:
         and will replay after a restart, so the rebind's 404 would invite the
         caller to re-post a duplicate — the 200 stands and nothing is rolled
         back."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rebsib")
         key = slot_history_key(slot)
@@ -523,7 +523,7 @@ class TestEnqueueDurability:
             )
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.persist_deferred_notes_sync", _rebound
+            "efm_go.dashboard.chat_handlers.persist_deferred_notes_sync", _rebound
         )
         resp = await _persist_deferred_note_hold(state, slot, note, key)
         assert resp is None, "a sibling-durable note keeps its 200 across a rebind refusal"
@@ -539,9 +539,9 @@ class TestEnqueueDurability:
         persisted entry over the bound is dropped fail-closed by the restore
         sanitizer — a 200 would be an acknowledgement the restart silently
         breaks."""
-        from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+        from efm_go.security import redact_credentials, redact_exfiltration_urls
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         # Build content whose RAW length is under the bound but whose
         # redacted form is over it, computed against the real redactors so
         # the test tracks their behavior instead of hardcoding tag widths.
@@ -572,7 +572,7 @@ class TestEnqueueDurability:
     async def test_memory_only_state_keeps_prior_semantics(self, tmp_path: Path, monkeypatch):
         """With no conversation log at all, nothing survives a restart — the
         hold stays in memory and the endpoint neither writes nor fails."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         state.conversation_log = None
         slot = state.get_or_create_slot("s4")
@@ -592,7 +592,7 @@ class TestRestartRoundTrip:
     def test_note_survives_restart_and_first_flush_delivers_exactly_once(
         self, tmp_path: Path, monkeypatch
     ):
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rt1")
         _hold_note(slot, "survives the restart")
@@ -644,7 +644,7 @@ class TestRestartRoundTrip:
         gateway after the flush but before the row save must re-deliver the
         note (the delivered row died with the in-memory window), never lose
         it. This is exactly why the flush cannot clear the durable copy."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rt2")
         _hold_note(slot, "must not vanish")
@@ -672,7 +672,7 @@ class TestRestartRoundTrip:
         persisted session stamp still mismatches), and the next full save
         retires it. What must never happen is a metadata clear racing ahead
         of a row-committing save."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rt3")
         slot._deferred_notes.append(
@@ -717,7 +717,7 @@ class TestRestartRoundTrip:
         the still-unsaved window; mirroring live state would erase A from the
         one durable place it exists, and a crash would lose a 200-acknowledged
         note. The merge must retain A's disk entry alongside the new note."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rt5")
         session = effective_session_key(slot)
@@ -767,7 +767,7 @@ class TestRestartRoundTrip:
         save's patient acquire) must survive that save — the save reads the
         on-disk and live holds under the lock and retires ONLY entries whose
         delivered rows are in the window it writes."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rd1")
         session = effective_session_key(slot)
@@ -815,9 +815,9 @@ class TestRestartRoundTrip:
         retirement path. The save must consume the record only AFTER its
         atomic write commits — consumed before, a failed write would leak the
         entry into the durable hold forever."""
-        import kiro_crew.dashboard.chat_persistence as cp
+        import efm_go.dashboard.chat_persistence as cp
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "dr1")
         slot._deferred_notes.append(
@@ -856,7 +856,7 @@ class TestRestartRoundTrip:
     def test_full_save_write_through_and_clear_by_absence(self, tmp_path: Path, monkeypatch):
         """``deferred_notes`` is slot-owned: the full save writes the live hold
         and, once the hold is empty, clears the on-disk copy by absence."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rt4")
         _hold_note(slot, "written by the full save")
@@ -884,7 +884,7 @@ class TestRestoreTrustBoundary:
         and a restore that kept only the live cap's worth would silently
         discard acknowledged content); a note without an authorization
         session is dropped, never delivered unconditionally."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "tb1")
         session = effective_session_key(slot)
@@ -919,7 +919,7 @@ class TestRestoreTrustBoundary:
         of it: the newest half are undelivered 200-acknowledged notes whose
         callers were told not to re-post, so capping the restore at the live
         cap would silently discard exactly those."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "tb2")
         session = effective_session_key(slot)
@@ -1029,7 +1029,7 @@ class TestRestoreTrustBoundary:
         """A retained entry is the only durable copy of an acknowledged note.
         When the union would exceed the ceiling, the NEW note is refused
         (DeferredHoldFull -> the handler's 429), never an eviction."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "hf1")
         session = effective_session_key(slot)
@@ -1059,7 +1059,7 @@ class TestRestoreTrustBoundary:
         worker thread reads the live hold. The write must still contain that
         note's entry — otherwise the 200 acknowledges a note with no durable
         copy anywhere."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "en1")
         note = {
@@ -1120,7 +1120,7 @@ class TestRestoreTrustBoundary:
         sees BOTH the committed row and the stale on-disk hold. Restoring
         that hold would deliver the acknowledged note a second time — the
         restore drops entries the transcript already owns."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "rowwin")
         key = slot_history_key(slot)
@@ -1169,7 +1169,7 @@ class TestRestoreTrustBoundary:
         delivered row. Counting it as evidence would back a 200 with an entry
         the save destroys — a loss the caller never retries. The refusal must
         stand even when a sibling's merge writer put the entry on disk."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "dropdur")
         key = slot_history_key(slot)
@@ -1203,7 +1203,7 @@ class TestRestoreTrustBoundary:
         slot-side flag is monotonic: once the slot has observed its on-disk
         identity, a no-line outcome is refused no matter when the delete
         landed."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "earlydel")
         key = slot_history_key(slot)
@@ -1217,7 +1217,7 @@ class TestRestoreTrustBoundary:
             return DeferredHoldOutcome(written=False, evidence=NoteEvidence(False, False))
 
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.persist_deferred_notes_sync", _no_line
+            "efm_go.dashboard.chat_handlers.persist_deferred_notes_sync", _no_line
         )
         resp = await _persist_deferred_note_hold(state, slot, note, key)
         assert resp is not None and resp.status == 404
@@ -1249,7 +1249,7 @@ class TestRestoreTrustBoundary:
         replay a second copy of a line the transcript permanently carries.
         Under the lock, an ensure whose noteId is already in the committed
         transcript is skipped."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = _seeded_slot(state, "le1")
         note = {
@@ -1290,7 +1290,7 @@ class TestRestoreTrustBoundary:
         not mirror the (possibly just-drained) live hold over a disk entry
         whose delivered row this save does not write. Merge writers union;
         only the full save's paired snapshot retires."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("mw1")
         slot._titled = True

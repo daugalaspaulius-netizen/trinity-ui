@@ -12,14 +12,14 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew import agent_files
-from kiro_crew.agent_discovery import AgentInfo
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.sections import KiroCrewAgentConfig
-from kiro_crew.dashboard.handlers import agent_catalog
-from kiro_crew.platform import build_default_context, set_context
-from kiro_crew.platform.context import PlatformCompositionError
-from kiro_crew.platform.defaults import DefaultProviderRegistry
+from efm_go import agent_files
+from efm_go.agent_discovery import AgentInfo
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.sections import KiroCrewAgentConfig
+from efm_go.dashboard.handlers import agent_catalog
+from efm_go.platform import build_default_context, set_context
+from efm_go.platform.context import PlatformCompositionError
+from efm_go.platform.defaults import DefaultProviderRegistry
 
 
 def _template(name: str, **kwargs) -> AgentInfo:
@@ -53,7 +53,7 @@ def catalog(monkeypatch, tmp_path):
     save = Mock(side_effect=AssertionError("Catalog must not persist config"))
     allocate = Mock(side_effect=AssertionError("Catalog must not allocate member memory"))
     monkeypatch.setattr(KiroCrewConfig, "save", save)
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.agents.provision_member_memory", allocate)
+    monkeypatch.setattr("efm_go.dashboard.handlers.agents.provision_member_memory", allocate)
     state = SimpleNamespace(
         owner_id="catalog-owner",
         _slots={
@@ -315,7 +315,7 @@ async def test_member_rows_carry_the_companion_runtime_policy(catalog, engine_id
 async def test_file_name_bound_member_asks_the_policy_for_the_declared_agent(catalog, monkeypatch):
     # A row that recorded the engine's FILE name runs the agent that file
     # declares, so the companion is asked about that agent, not the file name.
-    import kiro_crew.config.loader as loader
+    import efm_go.config.loader as loader
 
     catalog.config.agents["reviewer"].kiro_agent = "Pkg-review-engine"
     monkeypatch.setattr(loader, "_MATERIALIZED_AGENTS", frozenset({"review-engine"}))
@@ -405,7 +405,7 @@ def test_runtime_policy_lookup_preserves_composition_failures(catalog, failure, 
         with pytest.raises(PlatformCompositionError, match="lookup failed"):
             agent_catalog._agent_runtime_policy("reviewer", "review-engine")
     else:
-        with caplog.at_level("DEBUG", logger="kiro_crew.platform.context"):
+        with caplog.at_level("DEBUG", logger="efm_go.platform.context"):
             assert agent_catalog._agent_runtime_policy("reviewer", "review-engine") is None
         assert "Failed to read runtime policy for crew reviewer" in caplog.text
     provider.agent_runtime_policy.assert_called_once_with("review-engine")

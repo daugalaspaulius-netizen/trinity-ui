@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.knowledge.readers import FileReader
+from efm_go.knowledge.readers import FileReader
 
 docx = pytest.importorskip("docx")
 

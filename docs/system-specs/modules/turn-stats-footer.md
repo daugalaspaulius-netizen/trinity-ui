@@ -25,7 +25,7 @@ chat_done → refreshSlot → persisted metadata
 AssistantMessage renders the footer when its presentation gates permit it
 ```
 
-## Backend (`src/kiro_crew/dashboard/chat_runner.py`, `chat_turn/turn_stats.py`)
+## Backend (`src/efm_go/dashboard/chat_runner.py`, `chat_turn/turn_stats.py`)
 
 `_run_chat` captures a monotonic start time and message boundary at turn start. On `EVENT_COMPLETE`, it prefers `TurnUsage.duration_ms` when present and otherwise measures elapsed time locally; it reads credits and cost from `TurnUsage` and calls `read_turn_model(client)`. ACP credit telemetry is accumulated from `meteringUsage` entries whose unit is `credit` by `acp.client.AcpClient._track_metadata`; `acp._dispatch.parse_metadata` applies the same unit filter for the shared dispatch path.
 

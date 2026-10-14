@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 from test_snapshot import _setup_fake_kirocrew, unpinnable_argv
 
-from kiro_crew import snapshot as snap
+from efm_go import snapshot as snap
 
 
 def _peek(bundle, tmp_path):

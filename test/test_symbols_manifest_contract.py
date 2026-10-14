@@ -52,8 +52,8 @@ from typing import NamedTuple
 import pytest
 import yaml
 
-from kiro_crew import platform_compat
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go import platform_compat
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "build-desktop.yml"

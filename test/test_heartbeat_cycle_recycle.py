@@ -25,8 +25,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.heartbeat import HeartbeatService, heartbeat_path
-from kiro_crew.session import HEARTBEAT_KEY
+from efm_go.heartbeat import HeartbeatService, heartbeat_path
+from efm_go.session import HEARTBEAT_KEY
 
 
 def _make_cfg():
@@ -43,7 +43,7 @@ def _make_cfg():
 @pytest.fixture()
 def heartbeat_file(tmp_path, monkeypatch):
     """Redirect heartbeat_path() to a tmp file."""
-    monkeypatch.setattr("kiro_crew.heartbeat.workspace_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.heartbeat.workspace_dir", lambda: tmp_path)
     return heartbeat_path()
 
 
@@ -111,7 +111,7 @@ class TestOnCycleEndCallback:
         candidate's error."""
         import logging
 
-        from kiro_crew.llm_helpers import FALLBACK_STORY_ATTR
+        from efm_go.llm_helpers import FALLBACK_STORY_ATTR
 
         async def _on_task(text, deliver):
             exc = RuntimeError("backend throttle 500")
@@ -131,7 +131,7 @@ class TestOnCycleEndCallback:
             memory=MagicMock(),
             on_task=_on_task,
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.heartbeat"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.heartbeat"):
             await svc._process_heartbeat_file()
 
         failed = [
@@ -158,7 +158,7 @@ class TestOnCycleEndCallback:
             memory=MagicMock(),
             on_task=_on_task,
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.heartbeat"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.heartbeat"):
             await svc._process_heartbeat_file()
 
         failed = [
@@ -228,7 +228,7 @@ class TestRecycleHeartbeat:
     async def test_no_op_when_session_absent(self):
         """Cycles where no heartbeat task ever ran (no session created)
         must be cheap — no work, no errors."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         mgr = SessionManager(cfg=_make_cfg(), provider_factory=MagicMock())
         # Should not raise even with no provider, no session, no factory call.
@@ -240,7 +240,7 @@ class TestRecycleHeartbeat:
         change: preserving a session under 70% context and under 40 prompts
         let the heartbeat transcript accumulate
         across cycles while the docs promised fresh context."""
-        from kiro_crew.session import FirstTurnState, SessionManager, _Session
+        from efm_go.session import FirstTurnState, SessionManager, _Session
 
         mgr = SessionManager(cfg=_make_cfg(), provider_factory=MagicMock())
         provider = MagicMock()
@@ -259,7 +259,7 @@ class TestRecycleHeartbeat:
     async def test_recycles_at_pct_threshold(self):
         """A full session is recycled too — the next ``get_or_create``
         creates a fresh one on demand."""
-        from kiro_crew.session import FirstTurnState, SessionManager, _Session
+        from efm_go.session import FirstTurnState, SessionManager, _Session
 
         mgr = SessionManager(cfg=_make_cfg(), provider_factory=MagicMock())
         provider = MagicMock()
@@ -281,7 +281,7 @@ class TestRecycleHeartbeat:
     async def test_recycles_when_context_pct_unavailable(self):
         """A provider that can't report context% is recycled all the same —
         there is no threshold left to fall back on."""
-        from kiro_crew.session import FirstTurnState, SessionManager, _Session
+        from efm_go.session import FirstTurnState, SessionManager, _Session
 
         mgr = SessionManager(cfg=_make_cfg(), provider_factory=MagicMock())
         provider = MagicMock()
@@ -309,7 +309,7 @@ class TestHeartbeatAgentInstall:
         ``_install_research_agent`` / ``_install_knowledge_agent``.)"""
         import json
 
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         kiro_dir = tmp_path / "agents"
         kiro_dir.mkdir()
@@ -355,7 +355,7 @@ class TestHeartbeatAgentInstall:
         """
         import json
 
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         kiro_dir = tmp_path / "agents"
         kiro_dir.mkdir()
@@ -404,7 +404,7 @@ class TestHeartbeatAgentInstall:
         mcpServers) heartbeat config — install ordering is not load-bearing."""
         import json
 
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         kiro_dir = tmp_path / "agents"
         kiro_dir.mkdir()
@@ -436,7 +436,7 @@ class TestHeartbeatAgentInstall:
         """
         import json
 
-        from kiro_crew import agent as agent_mod
+        from efm_go import agent as agent_mod
 
         kiro_dir = tmp_path / "agents"
         kiro_dir.mkdir()

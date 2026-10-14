@@ -9,7 +9,7 @@
  * app the viewer has NOT installed. Its detail page resolves from the catalog
  * ROW alone (`/api/apps/<name>` 404s, `/api/apps/registry` supplies the row).
  * The catalog hosts its art on the CDN, so the row's `heroImageDetail` and
- * `screenshots` are absolute `https://apps.crew.kiro.dev/...` URLs the page
+ * `screenshots` are absolute `https://efmleads.com/api/apps/...` URLs the page
  * loads directly — never `/api/apps/blob`, which 403s for a repo the SSRF
  * allowlist does not carry.
  *
@@ -49,7 +49,7 @@ if (MODE !== 'before' && MODE !== 'after') {
 mkdirSync(OUT, { recursive: true })
 
 const APP = 'atlas-notes'
-const CDN = 'https://apps.crew.kiro.dev'
+const CDN = 'https://efmleads.com/api/apps'
 const ICON = `${CDN}/assets/icons/atlas.png`
 const HERO = `${CDN}/assets/heroes/atlas-hero.png`
 const BANNER = `${CDN}/assets/hero-details/atlas-detail.png`

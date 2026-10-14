@@ -18,12 +18,12 @@ import os
 import platform
 import re
 
-import kiro_crew
-from kiro_crew import beacon
-from kiro_crew.config.loader import KiroCrewConfig, TelemetryConfig
-from kiro_crew.metrics import provider
-from kiro_crew.metrics.provider import get_recorder, reset_for_testing
-from kiro_crew.metrics.provider import shutdown as provider_shutdown
+import efm_go
+from efm_go import beacon
+from efm_go.config.loader import KiroCrewConfig, TelemetryConfig
+from efm_go.metrics import provider
+from efm_go.metrics.provider import get_recorder, reset_for_testing
+from efm_go.metrics.provider import shutdown as provider_shutdown
 
 
 def _patch_config(monkeypatch, **tel_kwargs):
@@ -58,7 +58,7 @@ def test_attrs_carry_identity_version_and_environment():
 
     # Release-clamped, never a raw dev/nightly stamp: same clamp the beacon
     # ships, so the two surfaces can never disagree about one build.
-    assert attrs["service.version"] == beacon.release(kiro_crew.__version__)
+    assert attrs["service.version"] == beacon.release(efm_go.__version__)
     version = str(attrs["service.version"])
     assert re.fullmatch(r"\d+\.\d+\.\d+", version) or version == beacon.UNKNOWN_VERSION
 
@@ -271,7 +271,7 @@ def test_exported_shard_carries_the_resource(tmp_path, monkeypatch):
         record = json.loads(shards[0].read_text().splitlines()[0])
         resource_attrs = record["resource_metrics"][0]["resource"]["attributes"]
         assert resource_attrs["service.name"] == "kirocrew"
-        assert resource_attrs["service.version"] == beacon.release(kiro_crew.__version__)
+        assert resource_attrs["service.version"] == beacon.release(efm_go.__version__)
         assert resource_attrs["os.type"] == platform.system().lower()
         assert resource_attrs["host.cpu.logical_count"] == os.cpu_count()
         assert resource_attrs["process.pid"] == os.getpid()

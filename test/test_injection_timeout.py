@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import pytest
 
-import kiro_crew.subagent as subagent
-from kiro_crew.subagent import (
+import efm_go.subagent as subagent
+from efm_go.subagent import (
     _DEFAULT_INJECTION_TIMEOUT,
     _ON_DONE_TIMEOUT,
     _env_float,

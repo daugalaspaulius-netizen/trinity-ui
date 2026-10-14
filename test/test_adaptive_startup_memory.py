@@ -17,16 +17,16 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from overload_fakes import Clock, mock_ctx, mock_sessions, wait_taskq_open
 
-import kiro_crew.subagent as subagent_mod
-from kiro_crew.adaptive.controller import AdaptiveController, HostSample
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.subagent import (
+import efm_go.subagent as subagent_mod
+from efm_go.adaptive.controller import AdaptiveController, HostSample
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.subagent import (
     _UNLEARNED_DEDICATED_START_GB,
     SubagentInfo,
     SubagentManager,
     _startup_memory_reserve_gb,
 )
-from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
 
 @pytest.mark.parametrize("platform", ["WINDOWS", "MACOS"])
@@ -93,8 +93,8 @@ def test_startup_reserve_tracks_unobserved_dedicated_memory(rows, running, expec
 
 def test_cost_samples_are_written_under_the_bucket_the_gate_reads(monkeypatch, tmp_path) -> None:
     """An agent-less run inheriting a template builds THAT template's bucket."""
-    from kiro_crew import subagent_cost as sc
-    from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+    from efm_go import subagent_cost as sc
+    from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
     log = tmp_path / "cost_samples.jsonl"
     monkeypatch.setattr(sc, "_cost_log_path", lambda: log)
@@ -130,7 +130,7 @@ def test_cost_samples_are_written_under_the_bucket_the_gate_reads(monkeypatch, t
 def test_compaction_keeps_dedicated_history_under_a_flood_of_shared_runs(
     monkeypatch, tmp_path
 ) -> None:
-    from kiro_crew import subagent_cost as sc
+    from efm_go import subagent_cost as sc
 
     log = tmp_path / "cost_samples.jsonl"
     monkeypatch.setattr(sc, "_cost_log_path", lambda: log)
@@ -145,7 +145,7 @@ def test_compaction_keeps_dedicated_history_under_a_flood_of_shared_runs(
 
 
 def test_the_held_map_is_bounded_against_an_agent_writable_log(monkeypatch, tmp_path) -> None:
-    from kiro_crew import subagent_cost as sc
+    from efm_go import subagent_cost as sc
 
     log = tmp_path / "cost_samples.jsonl"
     monkeypatch.setattr(sc, "_cost_log_path", lambda: log)

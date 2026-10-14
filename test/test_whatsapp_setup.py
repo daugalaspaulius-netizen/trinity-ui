@@ -42,8 +42,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-import kiro_crew.config.loader as loader
-from kiro_crew.dashboard.handlers import whatsapp_setup as mod
+import efm_go.config.loader as loader
+from efm_go.dashboard.handlers import whatsapp_setup as mod
 
 #: A forwarding header on a loopback peer is how every remote path (tunnel,
 #: reverse proxy) reaches the gateway, and is what the production gate keys on.

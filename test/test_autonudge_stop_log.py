@@ -8,9 +8,9 @@ import logging
 
 import pytest
 
-from kiro_crew import autonudge as _an
-from kiro_crew import autonudge_stop_log as stoplog
-from kiro_crew.autonudge import AutoNudgeService
+from efm_go import autonudge as _an
+from efm_go import autonudge_stop_log as stoplog
+from efm_go.autonudge import AutoNudgeService
 
 
 @pytest.fixture(autouse=True)
@@ -103,7 +103,7 @@ def test_store_text_is_clipped_and_scrubbed_before_it_is_kept():
 
 def test_log_line_escapes_a_newline_in_store_text(caplog):
     record = {"kind": "loop", "loop_id": "a\nFORGED", "slot_key": "s", "reason": "r"}
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.autonudge"):
         stoplog.log_record(record)
     assert "\n" not in caplog.records[-1].getMessage()
 
@@ -174,7 +174,7 @@ def test_deactivation_is_logged_at_warning(tmp_path, caplog):
         svc.stop()
         return loop.id
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.autonudge"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.autonudge"):
         loop_id = _run(body())
     [rec] = _records(tmp_path)
     assert (rec["loop_id"], rec["slot_key"], rec["reason"]) == (loop_id, "chat-7", "runtime_budget")

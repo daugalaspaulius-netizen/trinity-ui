@@ -16,8 +16,8 @@ from unittest import mock
 import pytest
 import source_corpus
 
-import kiro_crew.embeddings as embeddings_mod
-from kiro_crew.vector_memory import (
+import efm_go.embeddings as embeddings_mod
+from efm_go.vector_memory import (
     _HAS_FAISS,
     _HAS_NUMPY,
     _MAX_EPISODIC_RETIRED_PER_WRITE,
@@ -480,7 +480,7 @@ class TestLogRejectEvent:
 
         store = opened(VectorMemoryStore(db_path=tmp_path / "mem.db"))
         store.init()
-        with patch("kiro_crew.vector_memory._MAX_AUDITED_REJECTS", 0):
+        with patch("efm_go.vector_memory._MAX_AUDITED_REJECTS", 0):
             with patch.object(store, "_log_event") as mock_log:
                 store.log_reject_event(SemanticRejectCode.VALUE_EMPTY, "pref.os", None, "promotion")
                 store.log_reject_event(SemanticRejectCode.VALUE_EMPTY, "pref.os", None, "promotion")
@@ -558,7 +558,7 @@ class TestConflictResolution:
             with id_lock:
                 return next(ids)
 
-        monkeypatch.setattr("kiro_crew.vector_memory.uuid4", synchronized_uuid)
+        monkeypatch.setattr("efm_go.vector_memory.uuid4", synchronized_uuid)
 
         try:
             with ThreadPoolExecutor(max_workers=2) as executor:
@@ -809,7 +809,7 @@ class TestValueSizeLimit:
         # (+2 JSON quotes), well under the 4096 cap. The escaped dump is 4802
         # bytes: measuring it instead of the raw bytes refuses this value at
         # one sixth of the budget.
-        from kiro_crew.vector_memory import _MAX_VALUE_BYTES
+        from efm_go.vector_memory import _MAX_VALUE_BYTES
 
         korean = "\ud55c" * 800
         raw_bytes = len(json.dumps(korean, ensure_ascii=False).encode("utf-8"))
@@ -828,7 +828,7 @@ class TestValueSizeLimit:
     def test_over_cap_raw_non_ascii_value_still_refused(self, tmp_path: Path, opened) -> None:
         # 1400 Hangul syllables = 4200 raw bytes (+2 quotes) > 4096: refused,
         # and the message quotes the raw measurement, not the escaped count.
-        from kiro_crew.vector_memory import _MAX_VALUE_BYTES
+        from efm_go.vector_memory import _MAX_VALUE_BYTES
 
         korean = "\ud55c" * 1400
         raw_bytes = len(json.dumps(korean, ensure_ascii=False).encode("utf-8"))
@@ -858,7 +858,7 @@ class TestValueSizeLimit:
         # compare must not treat an existing 1 and a submitted true as
         # unchanged, or the automated write is silently skipped and the stale
         # value never self-corrects.
-        from kiro_crew.vector_memory import _json_value_equal
+        from efm_go.vector_memory import _json_value_equal
 
         assert not _json_value_equal("1", "true")
         assert not _json_value_equal("0", "false")
@@ -1008,7 +1008,7 @@ class TestSchemaInit:
     def test_file_permissions(self, tmp_path: Path, opened) -> None:
         import stat
 
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         db_path = tmp_path / "mem.db"
         store = opened(VectorMemoryStore(db_path=db_path))
@@ -1029,7 +1029,7 @@ class TestSchemaInit:
         mode assertion can catch that, because NTFS has no mode bits to read. This
         asserts the call, which is observable everywhere.
         """
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         seen: list[str] = []
         real = vm.platform_compat.restrict_to_owner
@@ -1076,7 +1076,7 @@ class TestSchemaInit:
         readable parent directory leaves committed memories readable on Windows even
         though the .db file itself is locked down.
         """
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         dirs: list[str] = []
         real = vm.platform_compat.make_owner_only_dir
@@ -1104,7 +1104,7 @@ class TestSchemaInit:
         born with, and it can hold committed rows indefinitely if no checkpoint has
         run -- so an existing install is not repaired by the directory alone.
         """
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         db_path = tmp_path / "mem.db"
         first = VectorMemoryStore(db_path=db_path)
@@ -1143,7 +1143,7 @@ class TestSchemaInit:
         whose FAISS index predates the lockdown is therefore only fixed by naming the
         file.
         """
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         db_path = tmp_path / "mem.db"
         faiss = tmp_path / "memory.faiss"
@@ -1173,7 +1173,7 @@ class TestSchemaInit:
         happened at the end of ``init()``, every schema migration would run against a
         file another local user could concurrently write.
         """
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         db_path = tmp_path / "mem.db"
         first = VectorMemoryStore(db_path=db_path)
@@ -1220,7 +1220,7 @@ class TestSchemaInit:
         """
         import stat
 
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         if not platform_compat.IS_POSIX:
             pytest.skip("POSIX mode bits")
@@ -1243,7 +1243,7 @@ class TestSchemaInit:
         helper pins the check itself, which is observable on both platforms; a mode or
         DACL assertion could not distinguish the two implementations.
         """
-        from kiro_crew import vector_memory as vm
+        from efm_go import vector_memory as vm
 
         # Existence is recorded AT CALL TIME, not after init: the pass runs twice and
         # ``close()`` checkpoints the ``-wal``/``-shm`` away, so a sidecar that existed
@@ -1284,7 +1284,7 @@ class TestSchemaInit:
         """
         # The driver the store itself runs on: pysqlite3 on Linux x86_64 (CI), the
         # stdlib elsewhere. Their ProgrammingError classes are unrelated types.
-        from kiro_crew._sqlite_compat import sqlite3
+        from efm_go._sqlite_compat import sqlite3
 
         store = opened(VectorMemoryStore(db_path=tmp_path / "mem.db"))
         store.init()
@@ -1653,14 +1653,14 @@ class TestEmbedLogsCarryNoMemoryText:
     def test_success_branch(self, tmp_path: Path, caplog: pytest.LogCaptureFixture, opened) -> None:
         store = self._store(tmp_path, opened=opened)
         store.embed_fn = lambda _t: [0.1, 0.2]
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.vector_memory"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.vector_memory"):
             assert store._try_embed(self._SENTINEL) == [0.1, 0.2]
         self._assert_not_logged(caplog)
 
     def test_none_branch(self, tmp_path: Path, caplog: pytest.LogCaptureFixture, opened) -> None:
         store = self._store(tmp_path, opened=opened)
         store.embed_fn = lambda _t: None
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.vector_memory"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.vector_memory"):
             assert store._try_embed(self._SENTINEL) is None
         self._assert_not_logged(caplog)
 
@@ -1673,7 +1673,7 @@ class TestEmbedLogsCarryNoMemoryText:
             raise RuntimeError("embedder down")
 
         store.embed_fn = boom
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.vector_memory"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.vector_memory"):
             assert store._try_embed(self._SENTINEL) is None
         self._assert_not_logged(caplog)
 
@@ -2379,7 +2379,7 @@ class TestFaissDimMismatch:
 
         import numpy as np
 
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         # Mock faiss with a real-behaving IndexFlatIP stand-in
         mock_index = MagicMock()
@@ -2437,7 +2437,7 @@ class TestFaissDimMismatch:
 
         import numpy as np
 
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         mock_index = MagicMock()
         mock_index.ntotal = 0
@@ -2484,14 +2484,14 @@ class TestEmbeddingDimPlumbing:
             original_init(self, *args, **kwargs)
 
         with (
-            patch("kiro_crew.cli_commands.KiroCrewConfig.load", return_value=mock_cfg),
+            patch("efm_go.cli_commands.KiroCrewConfig.load", return_value=mock_cfg),
             patch.object(VectorMemoryStore, "__init__", capturing_init),
             patch.object(VectorMemoryStore, "init", return_value=None),
             patch.object(VectorMemoryStore, "close", return_value=None),
         ):
             import argparse
 
-            from kiro_crew.cli_commands import _learn
+            from efm_go.cli_commands import _learn
 
             args = argparse.Namespace(learn_action="list")
             try:
@@ -2517,14 +2517,14 @@ class TestEmbeddingDimPlumbing:
             original_init(self, *args, **kwargs)
 
         with (
-            patch("kiro_crew.cli_commands.KiroCrewConfig.load", return_value=mock_cfg),
+            patch("efm_go.cli_commands.KiroCrewConfig.load", return_value=mock_cfg),
             patch.object(VectorMemoryStore, "__init__", capturing_init),
             patch.object(VectorMemoryStore, "init", return_value=None),
             patch.object(VectorMemoryStore, "close", return_value=None),
         ):
             import argparse
 
-            from kiro_crew.cli_commands import _memory_cmd
+            from efm_go.cli_commands import _memory_cmd
 
             args = argparse.Namespace(mem_action="list")
             try:
@@ -2538,7 +2538,7 @@ class TestEmbeddingDimPlumbing:
         """Dashboard _get_vector_store fallback constructs store with cfg embedding_dim."""
         from unittest.mock import MagicMock
 
-        import kiro_crew.dashboard.handlers.memory as mem_mod
+        import efm_go.dashboard.handlers.memory as mem_mod
 
         mock_cfg = MagicMock()
         mock_cfg.memory.embedding_dim = 384
@@ -2557,11 +2557,11 @@ class TestEmbeddingDimPlumbing:
             def init(self):
                 pass
 
-        # _get_vector_store does lazy `from kiro_crew.config.loader import KiroCrewConfig`
-        # and `from kiro_crew.vector_memory import VectorMemoryStore` inside the function.
+        # _get_vector_store does lazy `from efm_go.config.loader import KiroCrewConfig`
+        # and `from efm_go.vector_memory import VectorMemoryStore` inside the function.
         # Patch at the source module so the local import picks them up.
-        import kiro_crew.config.loader as loader_mod
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.config.loader as loader_mod
+        import efm_go.vector_memory as vm_mod
 
         mock_config_cls = MagicMock()
         mock_config_cls.load.return_value = mock_cfg
@@ -2634,7 +2634,7 @@ class TestMemoryTuningPlumbing:
         """The dashboard standalone fallback carries the configured tuning."""
         from unittest.mock import MagicMock
 
-        import kiro_crew.dashboard.handlers.memory as mem_mod
+        import efm_go.dashboard.handlers.memory as mem_mod
 
         mock_cfg = MagicMock()
         mock_cfg.memory.embedding_dim = 1024
@@ -2659,8 +2659,8 @@ class TestMemoryTuningPlumbing:
             def init(self) -> None:  # sqlite/migrations are not what this pins
                 return None
 
-        import kiro_crew.config.loader as loader_mod
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.config.loader as loader_mod
+        import efm_go.vector_memory as vm_mod
 
         mock_config_cls = MagicMock()
         mock_config_cls.load.return_value = mock_cfg
@@ -2735,9 +2735,9 @@ class TestMemoryTuningPlumbing:
         import inspect
         from pathlib import Path as _Path
 
-        import kiro_crew
+        import efm_go
 
-        pkg_root = _Path(inspect.getfile(kiro_crew)).parent
+        pkg_root = _Path(inspect.getfile(efm_go)).parent
         violations: list[str] = []
         for rel in self._PLUMBED_SITES:
             src = pkg_root / rel
@@ -2756,9 +2756,9 @@ class TestMemoryTuningPlumbing:
         import inspect
         from pathlib import Path as _Path
 
-        import kiro_crew
+        import efm_go
 
-        pkg_root = _Path(inspect.getfile(kiro_crew)).parent
+        pkg_root = _Path(inspect.getfile(efm_go)).parent
         found: set[str] = set()
         for src in pkg_root.rglob("*.py"):
             rel = src.relative_to(pkg_root).as_posix()
@@ -2840,7 +2840,7 @@ class TestWriteEpisodicWithoutEmbedding:
         """Store whose FAISS index is a populated mock (ntotal=1)."""
         from unittest.mock import MagicMock
 
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         mock_faiss = MagicMock()
         monkeypatch.setattr(vm_mod, "_HAS_FAISS", True)
@@ -3236,7 +3236,7 @@ class TestDeferredEmbedding:
         ``search_episodic`` needs only the stored blob (``_sqlite_vector_search``),
         so the vectors are useful with or without the index.
         """
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         monkeypatch.setattr(vm_mod, "_HAS_FAISS", False)
         store = opened(VectorMemoryStore(db_path=tmp_path / "mem.db"))
@@ -3985,7 +3985,7 @@ class TestDbLockGuard:
     @staticmethod
     def _runtime_sources() -> dict[str, str]:
         """Every ``vector_memory_runtime`` module's source, keyed by file name."""
-        from kiro_crew import vector_memory
+        from efm_go import vector_memory
 
         root = Path(vector_memory.__file__).resolve().with_name("vector_memory_runtime")
         return {path.name: path.read_text(encoding="utf-8") for path in sorted(root.glob("*.py"))}
@@ -3994,7 +3994,7 @@ class TestDbLockGuard:
         import ast
         import inspect
 
-        from kiro_crew import vector_memory
+        from efm_go import vector_memory
 
         source = inspect.getsource(vector_memory)
         tree = ast.parse(source)
@@ -4122,7 +4122,7 @@ class TestDbLockGuard:
         import ast
         import inspect
 
-        from kiro_crew import vector_memory
+        from efm_go import vector_memory
 
         source = inspect.getsource(vector_memory)
         acquisition = "resources.enter_context(self._db_lock)"
@@ -4421,7 +4421,7 @@ class TestHandlerOffload1947:
     ``vector_memory.py`` and of the ``vector_memory_runtime`` modules it delegates
     to (public methods that reach a ``with <store>._db_lock:`` directly or
     transitively through store calls and runtime functions), and the scan covers
-    every module in the ``kiro_crew`` package.
+    every module in the ``efm_go`` package.
     """
 
     #: Lock-reaching methods exempt from this name-only scan. ``init`` is the
@@ -4432,9 +4432,9 @@ class TestHandlerOffload1947:
 
     @staticmethod
     def _package_root() -> Path:
-        import kiro_crew
+        import efm_go
 
-        return Path(kiro_crew.__file__).resolve().parent
+        return Path(efm_go.__file__).resolve().parent
 
     #: A floor, not the list the scan enforces: the public lock-reaching set as
     #: it stood before the store delegated to ``vector_memory_runtime``. The
@@ -4486,12 +4486,12 @@ class TestHandlerOffload1947:
         Nodes are ``VMS.<method>`` for store methods and ``<module>.<function>``
         for runtime functions. The receiver is ``self`` in the store and ``store``
         in a runtime function; a call to a runtime function is resolved through the
-        importing module's own ``from kiro_crew.vector_memory_runtime import mod``
-        aliases and ``from kiro_crew.vector_memory_runtime.mod import name`` names.
+        importing module's own ``from efm_go.vector_memory_runtime import mod``
+        aliases and ``from efm_go.vector_memory_runtime.mod import name`` names.
         """
         import ast
 
-        package = "kiro_crew.vector_memory_runtime"
+        package = "efm_go.vector_memory_runtime"
 
         def aliases(tree: ast.Module) -> tuple[dict[str, str], dict[str, str]]:
             modules: dict[str, str] = {}
@@ -4659,7 +4659,7 @@ class TestHandlerOffload1947:
         import textwrap
 
         facade = textwrap.dedent("""
-            from kiro_crew.vector_memory_runtime import reads as _reads
+            from efm_go.vector_memory_runtime import reads as _reads
 
             class VectorMemoryStore:
                 def _fetch(self):
@@ -4677,7 +4677,7 @@ class TestHandlerOffload1947:
             """)
         runtime = {
             "reads": textwrap.dedent("""
-                from kiro_crew.vector_memory_runtime.other import helper
+                from efm_go.vector_memory_runtime.other import helper
 
                 def fetch_rows(store):
                     with store._db_lock:
@@ -4884,7 +4884,7 @@ class TestSemanticWriteTimeEmbedding:
         assert lines and lines[0].startswith("pref.travel"), ctx
 
     def test_write_time_embed_uses_bulk_priority(self, tmp_path: Path, opened) -> None:
-        from kiro_crew.embeddings import PRIORITY_BULK
+        from efm_go.embeddings import PRIORITY_BULK
 
         store = opened(VectorMemoryStore(db_path=tmp_path / "mem.db"))
         store.init()
@@ -5192,7 +5192,7 @@ class TestPromotionSkipIsObservable:
             patch.object(store, "_delete_episodic_row") as mock_delete,
             # Scoped to this module's logger: the package level is raised elsewhere, so an
             # unscoped at_level passes alone and fails in a full-suite run.
-            caplog.at_level(logging.INFO, logger="kiro_crew.vector_memory"),
+            caplog.at_level(logging.INFO, logger="efm_go.vector_memory"),
         ):
             promoted = store.promote_episodic_patterns(min_count=1, min_sim=0.0)
 
@@ -5229,7 +5229,7 @@ class TestPromotionSkipIsObservable:
                 return_value=(SemanticRejectCode.VALUE_EMPTY, "Value must not be null or empty"),
             ),
             patch.object(store, "_delete_episodic_row"),
-            caplog.at_level(logging.INFO, logger="kiro_crew.vector_memory"),
+            caplog.at_level(logging.INFO, logger="efm_go.vector_memory"),
         ):
             store.promote_episodic_patterns(min_count=1, min_sim=0.0)
             store.promote_episodic_patterns(min_count=1, min_sim=0.0)
@@ -5247,7 +5247,7 @@ class TestPromotionSkipIsObservable:
         import logging
         from unittest.mock import patch
 
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         store = opened(VectorMemoryStore(db_path=tmp_path / "mem.db", embedding_dim=8))
         store.init()
@@ -5268,7 +5268,7 @@ class TestPromotionSkipIsObservable:
                 return_value=(SemanticRejectCode.VALUE_EMPTY, "Value must not be null or empty"),
             ),
             patch.object(store, "_delete_episodic_row"),
-            caplog.at_level(logging.INFO, logger="kiro_crew.vector_memory"),
+            caplog.at_level(logging.INFO, logger="efm_go.vector_memory"),
         ):
             store.promote_episodic_patterns(min_count=1, min_sim=0.0)
             store.promote_episodic_patterns(min_count=1, min_sim=0.0)
@@ -5294,7 +5294,7 @@ class TestSanitizeDecayRates:
         assert out == {"huge": 10.0, "neghuge": 0.0}
 
     def test_ignores_non_numeric_with_warning(self, caplog: pytest.LogCaptureFixture) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.vector_memory"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.vector_memory"):
             out = _sanitize_decay_rates(
                 {"legal": "forever", "flag": True, "nan": float("nan"), "ok": 0.1}
             )
@@ -5412,7 +5412,7 @@ class TestEpisodicDecayRates:
     def test_invalid_values_fall_back_to_default(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture, opened
     ) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.vector_memory"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.vector_memory"):
             store = self._store(
                 tmp_path, rates={"legal": "forever", "default": True}, opened=opened
             )
@@ -5522,14 +5522,14 @@ class TestDedupThresholdLoaderValidation:
     def _memory_section(self, tmp_path: Path, monkeypatch, raw_value: object):
         import json as _json
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(
             _json.dumps({"memory": {"episodic_dedup_threshold": raw_value}}),
             encoding="utf-8",
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_path)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_path)
         return KiroCrewConfig.load().memory
 
     def test_a_string_typo_falls_back_to_the_default(self, tmp_path: Path, monkeypatch) -> None:
@@ -5553,11 +5553,11 @@ class TestDedupThresholdLoaderValidation:
     def _section_with(self, tmp_path: Path, monkeypatch, memory: dict):
         import json as _json
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         cfg_path = tmp_path / "config.json"
         cfg_path.write_text(_json.dumps({"memory": memory}), encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: cfg_path)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: cfg_path)
         return KiroCrewConfig.load().memory
 
     def test_sibling_numeric_fields_absorb_typos_the_same_way(
@@ -5713,7 +5713,7 @@ class TestFaissMmrPoolRecallContract:
         """
         import numpy as np
 
-        import kiro_crew.vector_memory as vm_mod
+        import efm_go.vector_memory as vm_mod
 
         monkeypatch.setattr(vm_mod, "_HAS_FAISS", True)
         monkeypatch.setattr(vm_mod, "_HAS_NUMPY", True)

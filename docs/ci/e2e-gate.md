@@ -73,7 +73,7 @@ order:
    Node >= 18 binary. Node resolution deliberately skips mise shims: a shim is
    cwd-sensitive and the website dir often pins an older Node, so the test scans
    real installs and prepends the winning bin dir to `PATH` for the child.
-2. Points `KIROCREW_KIRO_BIN` at `kiro_crew.testing.fake_acp_backend`. That is
+2. Points `KIROCREW_KIRO_BIN` at `efm_go.testing.fake_acp_backend`. That is
    the env var `kiro_cli.py` reads to override the agent binary, so the harness
    gateway spawns the fake instead of a real `kiro-cli`. The fake speaks the
    minimal ACP subset the client drives (`initialize`, `session/new`,
@@ -182,7 +182,7 @@ silent darkening is no guard.
 
 `ci.yml`'s `e2e` job (`E2E (stub ACP backend, offline)`) installs the backend
 with `--group dev`, runs `npm ci` and `npm run build` in `website/`, stages
-`website/dist` into `src/kiro_crew/static/dist` so the specs render the real
+`website/dist` into `src/efm_go/static/dist` so the specs render the real
 bundled dashboard rather than a 404, installs Chromium, resolves the i18n base,
 then runs `python scripts/ci_e2e_parallel.py`. The separate
 `e2e-private-namespace` job owns the real private-workflow MCP test and does not
@@ -481,7 +481,7 @@ There is no `PATH` edit to assert. The `nsis` block in
 `website/electron/build/installer.nsh` touches only shortcuts and the
 electron-updater cache, so a desktop install puts no `kirocrew` on `PATH`. The
 bundled CLI is exercised at its packaged path
-(`resources\backend-dist\kirocrew-backend\bin\kirocrew.cmd`) as its own new
+(`resources\backend-dist\efm-go-backend\bin\kirocrew.cmd`) as its own new
 process instead, which is the path
 [windows-install.md](../guides/windows-install.md) describes and the one the
 managed-server invocation resolves.
@@ -505,7 +505,7 @@ measured gateway import closure -- minus the voice extras, which add a
 pywhispercpp and numpy download for a code path a gateway boot never reaches.
 
 `KIROCREW_KIRO_BIN` points at a `.cmd` shim running
-`kiro_crew.testing.fake_acp_backend` out of the INSTALLED payload through the
+`efm_go.testing.fake_acp_backend` out of the INSTALLED payload through the
 INSTALLED interpreter, so readiness needs no model, no network and no sign-in.
 `KIROCREW_SKIP_MODEL_DOWNLOAD=1` keeps the embedding model out of a 50-second
 ceiling.
@@ -514,7 +514,7 @@ Two ceilings are load-bearing. The install-duration ceiling measures a real
 install, at 200 s, about twice the slowest measured green install.
 `MinStartupPycs` is passed as 750 rather than the script's 1000 default, because
 the default describes the full release bundle and this job omits the voice
-extras: the core closure of `kiro_crew.cli_server` measures about 990 sources, so
+extras: the core closure of `efm_go.cli_server` measures about 990 sources, so
 750 leaves headroom for the win32 closure differing while still catching what the
 assertion exists for, which is bytecode filtered out of the artifact or a
 launcher redirecting imports into an empty user cache. Both land near zero.
@@ -566,7 +566,7 @@ push runs mac alone. The real-Darwin boot is covered twice: that leg, and
 Outside this job, no macOS or Windows job starts a gateway: the whole E2E
 surface is gated on `KIROCREW_E2E`, which only `setup.py test_e2e` sets, and
 only the Linux `e2e` job runs that. A unit test cannot close that gap.
-[#8117](https://github.com/kirodotdev/KiroCrew/pull/8117) is the defining case:
+[#8117](https://efmleads.com/pull/8117) is the defining case:
 a settings-file probe in `sandbox.wrap_argv`'s Windows delegation branch made
 the Kiro ACP spawn on a fresh Windows host (where that file does not exist) fall
 through to the no-backend fail-closed path, so the gateway never became usable.
@@ -654,7 +654,7 @@ hide in the fail-closed branch.
 
 The boot-matrix module reads the same `KIROCREW_E2E_REQUIRE` marker described
 above, and the `e2e-boot-matrix` job sets it. An unmet PRECONDITION (the packaged
-fake ACP backend missing, `kiro_crew.testing` not importable) is a graceful
+fake ACP backend missing, `efm_go.testing` not importable) is a graceful
 `pytest.skip` on a local run and a `pytest.fail` on the job.
 
 ## Real-`kiro-cli` opt-in smoke
@@ -708,7 +708,7 @@ without a preflight retain startup seeding. No replacement or preflight-data
 wipe is used.
 
 The native CLI documents `KIRO_HOME` as relocating agents, settings, and sessions
-([native configuration scopes](https://kiro.dev/docs/configuration/#scopes)). This
+([native configuration scopes](https://efmleads.com/docs/configuration/#scopes)). This
 is the native writer control, not the Python-only session-reader overrides. A
 fresh Python preflight verifies that both the config resolver and agent target
 point at the harness-private tree. It also requires the existing launcher to be
@@ -752,7 +752,7 @@ account usage. Two named owners, two named moments:
 
 | Owner | When | Mode |
 |---|---|---|
-| The PR author | before requesting review on a change to the ACP client or kiro-cli transport (`src/kiro_crew/acp/`, `src/kiro_crew/kiro_cli.py`), the harness (`src/kiro_crew/testing/harness.py`), the private-agent derivation the smoke uses, or the tool-governance gate (`hooks.py`, the PreToolUse path) | required |
+| The PR author | before requesting review on a change to the ACP client or kiro-cli transport (`src/efm_go/acp/`, `src/efm_go/kiro_cli.py`), the harness (`src/efm_go/testing/harness.py`), the private-agent derivation the smoke uses, or the tool-governance gate (`hooks.py`, the PreToolUse path) | required |
 | The release verifier | before adopting a new installed `kiro-cli` version as the one releases are cut against | required |
 
 Required mode is the exact invocation below; the `_REQUIRE` marker turns a
@@ -782,7 +782,7 @@ any run made under it.
   Windows. It lives in the job env, not the test, so a slow runner is retunable
   without a code change. Windows needs the widest window: subprocess spawn and
   filesystem latency there are measurably slower, the conditions
-  [#9172](https://github.com/kirodotdev/KiroCrew/pull/9172) addressed when a slow
+  [#9172](https://efmleads.com/pull/9172) addressed when a slow
   disk killed the gateway.
 - **`-n0` with `--timeout=420`**: the module spawns a real process per test, and
   under xdist a block takes the worker with it, which on Windows aborts the run.
@@ -925,7 +925,7 @@ below.
 
 Steps, in order: build the checkout's `.venv` (a pod boots the CHECKOUT's own
 `kirocrew`, and the suite refuses to fall back to a global one), `npm ci` plus
-`npm run build` in `website/` staged into `src/kiro_crew/static/dist` (a pod
+`npm run build` in `website/` staged into `src/efm_go/static/dist` (a pod
 refuses to come up without a bundle), bring up a service manager, run the suite,
 upload the pod logs on failure.
 
@@ -1035,7 +1035,7 @@ Every step the label pays for carries the identical `if: env.POD_SCENARIOS ==
 keyed on `website/package-lock.json`), `uv pip install --system build==1.3.0`
 (the wheel scenario runs `python -m build --wheel` with `sys.executable` and,
 under `KIROCREW_E2E_REQUIRE=1`, fails rather than skips without it), the real
-`npm ci` + `npm run build` staged into `src/kiro_crew/static/dist`, and the
+`npm ci` + `npm run build` staged into `src/efm_go/static/dist`, and the
 suite step itself. The one-file stand-in carries the negation, so a labelled run
 serves the built bundle to the boot canary too. The 3-test canary and its
 `3 passed` grep run on both paths, unconditionally. The suite step is the
@@ -1073,7 +1073,7 @@ fails there.
 `windows-latest` is out of `test/test_pod_scenario_matrix.py`'s
 `PENDING_VALIDATION` table on the strength of one completed hosted run of the full
 suite:
-[run 34744065942](https://github.com/kirodotdev/KiroCrew/actions/runs/34744065942/job/103688668718).
+[run 34744065942](https://efmleads.com/actions/runs/34744065942/job/103688668718).
 That run is evidence for its own revision only. A revision that changes a
 scenario body or the pod code it drives gets its own hosted Windows evidence from
 a labelled PR run or from the nightly. The strict `55 passed` assertion holds on

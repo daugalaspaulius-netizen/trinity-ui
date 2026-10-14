@@ -22,8 +22,8 @@ import json
 
 import pytest
 
-from kiro_crew.config import loader as L
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config import loader as L
+from efm_go.config.loader import KiroCrewConfig
 
 # The one spelling the frontend, the docs and existing user configs all use.
 FLAG = "connections_ui"
@@ -39,7 +39,7 @@ def _point_loader_at(tmp_path, monkeypatch, data: dict) -> None:
 
 
 def _masked(cfg: KiroCrewConfig) -> dict:
-    from kiro_crew.dashboard.handlers.core import _masked_config_dict
+    from efm_go.dashboard.handlers.core import _masked_config_dict
 
     return _masked_config_dict(cfg)
 
@@ -132,7 +132,7 @@ def test_flag_is_schema_known_so_load_does_not_warn_about_it():
     Connections-enabled config log "unrecognized top-level keys:
     connections_ui" — the same missing-citizenship as the stripped GET.
     """
-    from kiro_crew.config.schema import SCHEMA_REGISTRY
+    from efm_go.config.schema import SCHEMA_REGISTRY
 
     top_level = {e.path for e in SCHEMA_REGISTRY if "." not in e.path}
     assert FLAG in top_level
@@ -202,7 +202,7 @@ async def test_the_wire_response_carries_the_flag(tmp_path, monkeypatch):
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.handlers import core as core_mod
+    from efm_go.dashboard.handlers import core as core_mod
 
     _point_loader_at(tmp_path, monkeypatch, {FLAG: True})
 

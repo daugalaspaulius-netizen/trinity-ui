@@ -13,21 +13,21 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.mcp_session_report import McpSessionReport
-from kiro_crew.acp.types import (
+from efm_go.acp.client import AcpClient
+from efm_go.acp.mcp_session_report import McpSessionReport
+from efm_go.acp.types import (
     EVENT_MCP_SERVER_INIT_FAILURE,
     EVENT_MCP_SERVER_INITIALIZED,
     METHOD_MCP_SERVER_INIT_FAILURE,
     METHOD_MCP_SERVER_INITIALIZED,
     JsonRpcMessage,
 )
-from kiro_crew.dashboard.chat_runner import (
+from efm_go.dashboard.chat_runner import (
     _publish_session_mcp_report,
     _record_session_mcp_event,
     _session_mcp_report,
 )
-from kiro_crew.dashboard.state import _ChatSlot
+from efm_go.dashboard.state import _ChatSlot
 
 
 def _ready_frame(name: str) -> JsonRpcMessage:
@@ -293,13 +293,13 @@ class TestResetInvalidation:
 
     @pytest.mark.asyncio
     async def test_reset_drops_the_report_and_broadcasts(self):
-        from kiro_crew.dashboard.chat_handlers import _reset_slot_session
+        from efm_go.dashboard.chat_handlers import _reset_slot_session
 
         slot = _ChatSlot("s1")
         slot.set_mcp_report({"ready": ["a"]})
         state = self._state(True)
 
-        with patch("kiro_crew.dashboard.chat_handlers._unblock_pending_waits"):
+        with patch("efm_go.dashboard.chat_handlers._unblock_pending_waits"):
             assert await _reset_slot_session(state, slot, "dashboard:s1") is True
 
         assert slot.mcp_report_payload() is None
@@ -309,13 +309,13 @@ class TestResetInvalidation:
     async def test_declined_reset_keeps_the_report(self):
         # skip_if_busy declined the reset, so the session described by the report
         # is still the live one. Clearing it here would blank a true answer.
-        from kiro_crew.dashboard.chat_handlers import _reset_slot_session
+        from efm_go.dashboard.chat_handlers import _reset_slot_session
 
         slot = _ChatSlot("s1")
         slot.set_mcp_report({"ready": ["a"]})
         state = self._state(False)
 
-        with patch("kiro_crew.dashboard.chat_handlers._unblock_pending_waits"):
+        with patch("efm_go.dashboard.chat_handlers._unblock_pending_waits"):
             assert await _reset_slot_session(state, slot, "dashboard:s1") is False
 
         assert slot.mcp_report_payload() == {"ready": ["a"]}
@@ -332,7 +332,7 @@ class TestLiveEventOwnershipIsWired:
 
     @staticmethod
     def _slot_with_report():
-        from kiro_crew.acp.mcp_session_report import McpSessionReport
+        from efm_go.acp.mcp_session_report import McpSessionReport
 
         report = McpSessionReport()
         slot = _ChatSlot("s1")
@@ -344,8 +344,8 @@ class TestLiveEventOwnershipIsWired:
         return slot, provider, report
 
     def test_an_ownerless_event_does_not_reach_the_report(self):
-        from kiro_crew.acp.types import EVENT_MCP_SERVER_INITIALIZED
-        from kiro_crew.dashboard.chat_runner import _record_session_mcp_event
+        from efm_go.acp.types import EVENT_MCP_SERVER_INITIALIZED
+        from efm_go.dashboard.chat_runner import _record_session_mcp_event
 
         slot, provider, report = self._slot_with_report()
         state = MagicMock()
@@ -356,8 +356,8 @@ class TestLiveEventOwnershipIsWired:
         state.broadcast_ws.assert_not_called()
 
     def test_an_owned_event_does(self):
-        from kiro_crew.acp.types import EVENT_MCP_SERVER_INITIALIZED
-        from kiro_crew.dashboard.chat_runner import _record_session_mcp_event
+        from efm_go.acp.types import EVENT_MCP_SERVER_INITIALIZED
+        from efm_go.dashboard.chat_runner import _record_session_mcp_event
 
         slot, provider, report = self._slot_with_report()
         _record_session_mcp_event(MagicMock(), slot, provider, EVENT_MCP_SERVER_INITIALIZED, "mine")
@@ -375,7 +375,7 @@ class TestLiveEventOwnershipIsWired:
         # as stalled — the exact regression a bulk rename introduced once.
         import inspect
 
-        from kiro_crew.acp import session_handle as handle_mod
+        from efm_go.acp import session_handle as handle_mod
 
         src = inspect.getsource(handle_mod)
         roster_at = src.index("kind=EVENT_SUBAGENT_LIST,")
@@ -472,7 +472,7 @@ class TestReportFrameFloor:
         # config captures above it must stay UNgated.
         import inspect
 
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         src = inspect.getsource(client_mod)
         marker = "if idx >= self._mcp_report_frame_floor:"
@@ -499,7 +499,7 @@ class TestSerializerDropsOrphanedReport:
 
     @staticmethod
     def _state_with_slot(live_id: str | None, *, stamped: str = "sid-1"):
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         state = DashboardState.__new__(DashboardState)
         slot = _ChatSlot("s1")
@@ -538,7 +538,7 @@ class TestSerializerDropsOrphanedReport:
         # different provider (or none), mismatches, and clears a live session's
         # report mid-turn. The turn's own key must win — the same rule turn
         # cancellation follows.
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         state = DashboardState.__new__(DashboardState)
         slot = _ChatSlot("s1")
@@ -558,7 +558,7 @@ class TestSerializerDropsOrphanedReport:
         # publish must record the identity the serializer will ask for. Stamping
         # nothing there makes the serializer drop the report on EVERY snapshot —
         # the feature silently gone while both halves look correct in isolation.
-        from kiro_crew.dashboard.state import DashboardState
+        from efm_go.dashboard.state import DashboardState
 
         report = McpSessionReport()
         report.begin_session([{"name": "kirocrew-core"}])

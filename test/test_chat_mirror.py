@@ -16,9 +16,9 @@ from chat_test_helpers import _make_state
 # eight-channel roster so there is one place a new channel has to be added.
 from test_options_cap_contract import _all_channel_capabilities
 
-from kiro_crew.discord.client import DiscordClient as _RealDiscordClient
-from kiro_crew.messaging.link import SLACK_NAMESPACE, ChannelLink, binding_token
-from kiro_crew.messaging.transport import ConfiguredChannelTarget
+from efm_go.discord.client import DiscordClient as _RealDiscordClient
+from efm_go.messaging.link import SLACK_NAMESPACE, ChannelLink, binding_token
+from efm_go.messaging.transport import ConfiguredChannelTarget
 
 #: Channels whose REAL capabilities refuse a proactive send, so the mirror-link
 #: gate must reject them. Pinned as a set as well as derived below, so unlocking
@@ -57,7 +57,7 @@ def _channels_declaring_proactive(supported: bool) -> list[str]:
 
 
 def _make_mirror_app(state):
-    from kiro_crew.dashboard.chat_mirror import (
+    from efm_go.dashboard.chat_mirror import (
         api_channel_targets,
         api_chat_slot_mirror_link,
         api_chat_slot_mirror_unlink,
@@ -130,13 +130,13 @@ def _caps_transport(channel_type: str, **overrides):
     ``supports_proactive_send=True``, so the refusing branch has no real subject —
     but the gate still has to refuse, and this is the only honest way to say so.
     """
-    from kiro_crew.messaging.transport import TransportCapabilities
+    from efm_go.messaging.transport import TransportCapabilities
 
     return _fake_transport(channel_type, capabilities=TransportCapabilities(**overrides))
 
 
 def _prep(tmp_path, monkeypatch):
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
     state = _make_state(tmp_path)
     # ``get_mirror_link`` is deliberately NOT stubbed to a constant None here. The
     # shared double is dict-backed and already answers None while nothing is bound,
@@ -195,7 +195,7 @@ class TestMirrorLink:
         self, tmp_path, monkeypatch, body
     ):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=False),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -236,7 +236,7 @@ class TestMirrorLink:
                 reason="",
             )
 
-        monkeypatch.setattr("kiro_crew.platform.governance_profiles.governance_permits", _permits)
+        monkeypatch.setattr("efm_go.platform.governance_profiles.governance_permits", _permits)
         state = _prep(tmp_path, monkeypatch)
         state.register_channel_transport(transport)
         state.sessions.set_mirror_link = MagicMock()
@@ -464,7 +464,7 @@ class TestMirrorLink:
         -target spelling (``user:123``) can never match, so it refuses a
         recipient the user explicitly allow-listed.
         """
-        from kiro_crew.telegram.transport import TelegramTransport
+        from efm_go.telegram.transport import TelegramTransport
 
         client = MagicMock()
         client.send_message = AsyncMock(return_value=7)
@@ -487,11 +487,11 @@ class TestMirrorLink:
         """The companion negative, on the same real transport: the fix must not
         have widened anything. An id absent from ``allowed_user_ids`` is refused
         by ``resolve_configured_target`` (409), and the denial is SEL-audited."""
-        from kiro_crew.telegram.transport import TelegramTransport
+        from efm_go.telegram.transport import TelegramTransport
 
         recorded: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_mirror.sel",
+            "efm_go.dashboard.chat_mirror.sel",
             lambda: type("S", (), {"log_api_access": lambda self, **kw: recorded.append(kw)})(),
         )
         client = MagicMock()
@@ -529,7 +529,7 @@ class TestMirrorLink:
         """
         recorded: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.sel",
+            "efm_go.dashboard.chat_runner.sel",
             lambda: type("S", (), {"log_api_access": lambda self, **kw: recorded.append(kw)})(),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -587,7 +587,7 @@ class TestMirrorLink:
         hence the patched seam."""
         recorded: list[dict[str, Any]] = []
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_runner.sel",
+            "efm_go.dashboard.chat_runner.sel",
             lambda: type("S", (), {"log_api_access": lambda self, **kw: recorded.append(kw)})(),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -669,7 +669,7 @@ class TestADiscordDmMirrorOfADashboardSession:
 
     @staticmethod
     def _discord():
-        from kiro_crew.discord.transport import DiscordTransport
+        from efm_go.discord.transport import DiscordTransport
 
         return DiscordTransport(
             _FakeDiscordClient(), allowed_user_ids=["42", "55"], allowed_thread_ids=["thr-1"]
@@ -699,8 +699,8 @@ class TestADiscordDmMirrorOfADashboardSession:
     async def test_the_link_lands_records_the_peer_and_resolves_for_delivery(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
-        from kiro_crew.mirror_admission import verify_mirror_admission
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.mirror_admission import verify_mirror_admission
 
         transport = self._discord()
         state = self._state(tmp_path, monkeypatch, transport)
@@ -722,7 +722,7 @@ class TestADiscordDmMirrorOfADashboardSession:
         """The pairing is in-process and a restart forgets it; the admitted record is
         on disk and verifies, so the very next dashboard reply is delivered with
         no message from the peer and nothing re-linked."""
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
 
         transport = self._discord()
         state = self._state(tmp_path, monkeypatch, transport)
@@ -735,7 +735,7 @@ class TestADiscordDmMirrorOfADashboardSession:
     @pytest.mark.asyncio
     async def test_a_peer_revoked_after_linking_is_refused_at_delivery(self, tmp_path, monkeypatch):
         """The record names the peer; the LIVE roster still judges each send."""
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
 
         transport = self._discord()
         state = self._state(tmp_path, monkeypatch, transport)
@@ -753,7 +753,7 @@ class TestADiscordDmMirrorOfADashboardSession:
         verify, so this session's replies cannot be aimed at that user."""
         import dataclasses
 
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
 
         transport = self._discord()
         state = self._state(tmp_path, monkeypatch, transport)
@@ -771,7 +771,7 @@ class TestADiscordDmMirrorOfADashboardSession:
         second time."""
         import dataclasses
 
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
 
         transport = self._discord()
         state = self._state(tmp_path, monkeypatch, transport)
@@ -788,7 +788,7 @@ class TestADiscordDmMirrorOfADashboardSession:
     @pytest.mark.asyncio
     async def test_a_thread_target_records_no_peer(self, tmp_path, monkeypatch):
         """A room audience names nobody; the thread roster answers that route."""
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
 
         transport = self._discord()
         state = self._state(tmp_path, monkeypatch, transport)
@@ -810,8 +810,8 @@ class TestADiscordDmMirrorOfADashboardSession:
         location alone and stays refused. Nothing is minted on the way."""
         import dataclasses
 
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
-        from kiro_crew.mirror_admission import sign_mirror_admission
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.mirror_admission import sign_mirror_admission
 
         transport = self._discord()
         state = self._state(tmp_path, monkeypatch, transport)
@@ -856,9 +856,9 @@ class TestADiscordDmMirrorOfADashboardSession:
         import dataclasses
         import secrets
 
-        from kiro_crew.dashboard import token_secret
-        from kiro_crew.dashboard.chat_runner import _resolve_mirror_target
-        from kiro_crew.mirror_admission import sign_mirror_admission, verify_mirror_admission
+        from efm_go.dashboard import token_secret
+        from efm_go.dashboard.chat_runner import _resolve_mirror_target
+        from efm_go.mirror_admission import sign_mirror_admission, verify_mirror_admission
 
         transport = self._discord()
         state = self._state(tmp_path, monkeypatch, transport)
@@ -1075,7 +1075,7 @@ class TestMirrorUnlink:
         the notice exists for — an unattributed clear would land in the trail as
         ``unspecified`` and read as a path nobody threaded.
         """
-        from kiro_crew.messaging.link import UNBIND_REASON_DASHBOARD_UNLINK
+        from efm_go.messaging.link import UNBIND_REASON_DASHBOARD_UNLINK
 
         state = _prep(tmp_path, monkeypatch)
         state.sessions.clear_mirror_link = MagicMock(return_value=True)
@@ -1157,7 +1157,7 @@ class TestMirrorUnlink:
         "unlink there first" instead of inviting a retry of a request that is
         behaving correctly.
         """
-        from kiro_crew.session_map import ConversationOwnershipConflict
+        from efm_go.session_map import ConversationOwnershipConflict
 
         state = _prep(tmp_path, monkeypatch)
         transport = _fake_transport("telegram")
@@ -1179,7 +1179,7 @@ class TestMirrorReminder:
     @pytest.mark.asyncio
     async def test_existing_live_mirror_posts_reminder(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1214,7 +1214,7 @@ class TestMirrorReminder:
         malformed link attempt.
         """
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1289,7 +1289,7 @@ class TestMirrorReminder:
         empty and falls into reminder mode — posting an unsolicited message.
         """
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1319,7 +1319,7 @@ class TestMirrorPause:
 
     @pytest.fixture
     def mirror_pause_app(self):
-        from kiro_crew.dashboard.chat_mirror import api_chat_slot_mirror_pause
+        from efm_go.dashboard.chat_mirror import api_chat_slot_mirror_pause
 
         def _build(state):
             app = web.Application()
@@ -1385,7 +1385,7 @@ class TestMirrorPause:
     ):
         """The disconnect note is sent when governance allows it."""
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1412,7 +1412,7 @@ class TestMirrorPause:
     ):
         """No disconnect note when governance denies the send."""
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=False),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1434,7 +1434,7 @@ class TestMirrorPause:
     ):
         """Origin disconnect must not send a note to the explicit mirror."""
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1459,7 +1459,7 @@ class TestMirrorPause:
     async def test_pause_noop_when_already_paused(self, tmp_path, monkeypatch, mirror_pause_app):
         """No disconnect note when already paused (not a transition)."""
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1485,7 +1485,7 @@ class TestMirrorPause:
     ):
         """Disconnect note delivery failure does not affect the response."""
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1526,7 +1526,7 @@ class TestChannelTargetsSlackEnumeration:
     async def test_slack_channels_are_listed(self, tmp_path, monkeypatch):
         """When slack_client and owner_id are present, Slack channels appear."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_mirror.list_slack_channels",
+            "efm_go.dashboard.chat_mirror.list_slack_channels",
             AsyncMock(
                 return_value=[
                     {"id": "C001", "name": "general"},
@@ -1550,7 +1550,7 @@ class TestChannelTargetsSlackEnumeration:
     async def test_slack_enumeration_failure_is_silent(self, tmp_path, monkeypatch):
         """Slack failure does not prevent other targets from listing."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_mirror.list_slack_channels",
+            "efm_go.dashboard.chat_mirror.list_slack_channels",
             AsyncMock(side_effect=RuntimeError("slack down")),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1585,7 +1585,7 @@ class TestChannelTargetsSlackEnumeration:
     async def test_slack_channel_with_empty_id_is_skipped(self, tmp_path, monkeypatch):
         """Slack channels with no id are excluded."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_mirror.list_slack_channels",
+            "efm_go.dashboard.chat_mirror.list_slack_channels",
             AsyncMock(
                 return_value=[
                     {"id": "", "name": "phantom"},
@@ -1626,7 +1626,7 @@ class TestMirrorLinkEdgeCases:
     async def test_reminder_delivery_failure_returns_502(self, tmp_path, monkeypatch):
         """When reminder send fails, 502 is returned."""
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1645,7 +1645,7 @@ class TestMirrorLinkEdgeCases:
     async def test_reminder_mirror_not_live_returns_503(self, tmp_path, monkeypatch):
         """When mirror target cannot be resolved but link exists, 503."""
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=False),
         )
         state = _prep(tmp_path, monkeypatch)
@@ -1692,7 +1692,7 @@ class TestMirrorLinkEdgeCases:
     @pytest.mark.asyncio
     async def test_ownership_conflict_race_returns_409(self, tmp_path, monkeypatch):
         """ConversationOwnershipConflict during set_mirror_link returns 409."""
-        from kiro_crew.session_map import ConversationOwnershipConflict
+        from efm_go.session_map import ConversationOwnershipConflict
 
         state = _prep(tmp_path, monkeypatch)
         transport = _fake_transport("telegram")
@@ -1752,7 +1752,7 @@ class TestMirrorLinkEdgeCases:
             # (the send-boundary recheck).
             return SimpleNamespace(permitted=call_count["n"] <= 1)
 
-        monkeypatch.setattr("kiro_crew.platform.governance_profiles.governance_permits", _permits)
+        monkeypatch.setattr("efm_go.platform.governance_profiles.governance_permits", _permits)
         state = _prep(tmp_path, monkeypatch)
         transport = _fake_transport("telegram")
         state.register_channel_transport(transport)
@@ -2142,7 +2142,7 @@ class TestMirrorBackfillFidelity:
         transport = _fake_transport("telegram", session_resume=True)
         state.register_channel_transport(transport)
 
-        from kiro_crew.session_map import ConversationOwnershipConflict
+        from efm_go.session_map import ConversationOwnershipConflict
 
         state.sessions.set_mirror_link = MagicMock(
             side_effect=ConversationOwnershipConflict("taken")
@@ -2397,7 +2397,7 @@ class TestInboundClaimFollowsTheCapability:
                 reason="",
             )
 
-        monkeypatch.setattr("kiro_crew.platform.governance_profiles.governance_permits", _permits)
+        monkeypatch.setattr("efm_go.platform.governance_profiles.governance_permits", _permits)
         state = _prep(tmp_path, monkeypatch)
         state.register_channel_transport(transport)
         slot = state.get_or_create_slot("s1")

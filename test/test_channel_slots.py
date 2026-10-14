@@ -23,13 +23,13 @@ from typing import Any
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard import channel_slots
-from kiro_crew.history import _safe_key
-from kiro_crew.messaging.link import (
+from efm_go.dashboard import channel_slots
+from efm_go.history import _safe_key
+from efm_go.messaging.link import (
     channel_namespace_of,
     is_channel_session_key,
 )
-from kiro_crew.session_surface import has_dashboard_surface
+from efm_go.session_surface import has_dashboard_surface
 
 # Shared time origin for session stamps. Captured at import, so any test whose
 # production path reads the LIVE clock must also pin that clock to NOW (see
@@ -355,7 +355,7 @@ class TestSurfaceChannelSession:
         Parametrised across the reply-token-bound transports as well, because those go
         quiet on the same path and a Slack-only proof leaves them unestablished.
         """
-        from kiro_crew.history import transcript_stem
+        from efm_go.history import transcript_stem
 
         assert channel_slots.is_channel_session_key(live), f"precondition: {live} is a channel key"
         stem = transcript_stem(live)
@@ -382,7 +382,7 @@ class TestSurfaceChannelSession:
         alone would route that tab's later turns into the channel's conversation, so the
         rebind requires the marker only a channel path sets.
         """
-        from kiro_crew.history import transcript_stem
+        from efm_go.history import transcript_stem
 
         live = "slack:1785370133.085469"
         stem = transcript_stem(live)
@@ -1040,7 +1040,7 @@ class TestClosedAtStamp:
     """
 
     def _bound_slot(self, tmp_path: Any, monkeypatch: Any) -> tuple[Any, Any]:
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("slack_1.1", linked_session_key="slack:1.1")
         slot.append("user", "hello")
@@ -1057,7 +1057,7 @@ class TestClosedAtStamp:
     ) -> None:
         """With no caller-supplied instant the save falls back to save time
         (callers with no user gesture to anchor to)."""
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         state, slot = self._bound_slot(tmp_path, monkeypatch)
 
@@ -1081,7 +1081,7 @@ class TestClosedAtStamp:
         shared transcript, so without preserving the pre-close mtime the close
         outruns itself and the tab reopens on the next pass.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         state, slot = self._bound_slot(tmp_path, monkeypatch)
         path = tmp_path / "slack_1.1.jsonl"
@@ -1118,7 +1118,7 @@ class TestClosedAtStamp:
         OLDER than the close, hiding a conversation the reactivation rule should
         surface. The persisted closed_at must be the instant the user acted —
         the value note_slot_closed returned — not the (later) save time."""
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         state, slot = self._bound_slot(tmp_path, monkeypatch)
 
@@ -1140,7 +1140,7 @@ class TestClosedAtStamp:
         assert channel_slots._RECENT_CLOSES[dashboard_state]["slack_1.1"] == returned
 
     def test_open_save_carries_no_close_fields(self, tmp_path: Any, monkeypatch: Any) -> None:
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         state, slot = self._bound_slot(tmp_path, monkeypatch)
 
@@ -1381,7 +1381,7 @@ class TestReconcileKeepsMarkedEffort:
     async def test_marked_custom_effort_survives_reconcile(
         self, dashboard_state: Any, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.dashboard import chat_persistence
+        from efm_go.dashboard import chat_persistence
 
         monkeypatch.setattr(
             chat_persistence,

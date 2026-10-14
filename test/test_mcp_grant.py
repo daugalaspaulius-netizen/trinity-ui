@@ -1,4 +1,4 @@
-"""kiro_crew.mcp_grant -- the pod-aware OAuth-cache-directory resolver.
+"""efm_go.mcp_grant -- the pod-aware OAuth-cache-directory resolver.
 
 The resolver ``kiro_oauth_cache_dir()`` must not call ``Path.home()``
 directly. A pod's gateway process and its OWN kiro-cli children both keep the
@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import mcp_grant
-from kiro_crew.config import paths as paths_mod
+from efm_go import mcp_grant
+from efm_go.config import paths as paths_mod
 
 
 def _no_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -85,7 +85,7 @@ class TestKiroOauthCacheHome:
         """One predicate for both overrides, so they refuse the same targets --
         catching a future divergence where one resolver's guard is edited and
         the other's is not."""
-        from kiro_crew.config.paths import _is_unsafe_home
+        from efm_go.config.paths import _is_unsafe_home
 
         assert paths_mod.kiro_oauth_cache_home.__module__ == paths_mod.kiro_home.__module__
         assert _is_unsafe_home(Path(Path("/").resolve().anchor))

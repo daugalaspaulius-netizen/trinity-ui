@@ -3,7 +3,7 @@
 Issue Radar shells out to the user's own ``gh`` session, so the binary it picks
 is a trust decision. It deliberately shares both the search order and the
 validation with every other gh surface via the shared hardened runner
-(``kiro_crew.github_runner.resolve_gh``): the well-known install dirs first,
+(``efm_go.github_runner.resolve_gh``): the well-known install dirs first,
 then the ambient ``PATH``, accepting the user's own (Homebrew, asdf,
 ``~/.local/bin``) install and refusing only provenance the user did not choose.
 These tests pin that wiring — a regression here either locks out every stock
@@ -26,8 +26,8 @@ pytestmark = [
     ),
 ]
 
-from kiro_crew import github_runner  # noqa: E402
-from kiro_crew.apps.builtins.issue_radar.backend import github_client as gh  # noqa: E402
+from efm_go import github_runner  # noqa: E402
+from efm_go.apps.builtins.issue_radar.backend import github_client as gh  # noqa: E402
 
 
 def _trust_ancestors_above(monkeypatch, base):

@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.sel — Security Event Log."""
+"""Tests for efm_go.sel — Security Event Log."""
 
 from __future__ import annotations
 
@@ -20,11 +20,11 @@ from unittest.mock import patch
 
 import pytest
 
-import kiro_crew.sel as sel_mod
+import efm_go.sel as sel_mod
 from conftest import requires_symlinks
-from kiro_crew import platform_compat
-from kiro_crew import sel as kiro_crew_sel
-from kiro_crew.sel import SecurityEvent, SecurityEventLog, _infer_source, sel, sel_hmac_key_path
+from efm_go import platform_compat
+from efm_go import sel as efm_go_sel
+from efm_go.sel import SecurityEvent, SecurityEventLog, _infer_source, sel, sel_hmac_key_path
 
 
 @pytest.fixture
@@ -175,7 +175,7 @@ class TestHmacKeyManagement:
             # locked down before we read its descriptor. _apply_owner_only_dacl
             # is the real engine both restrict_to_owner and restrict_dir_to_owner
             # route through and is itself never stubbed.
-            from kiro_crew import windows_acl
+            from efm_go import windows_acl
 
             monkeypatch.setattr(
                 platform_compat,
@@ -513,7 +513,7 @@ import sys
 import time
 from pathlib import Path
 
-from kiro_crew.sel import SecurityEvent, SecurityEventLog
+from efm_go.sel import SecurityEvent, SecurityEventLog
 
 sel_dir, sync_dir, tag, count = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], int(sys.argv[4])
 log = SecurityEventLog(base_dir=sel_dir, sync=True)
@@ -551,15 +551,15 @@ log.flush()
         # processes racing to create it would sign with different keys, which
         # would fail this test for a reason that is not the chain ordering.
         SecurityEventLog(base_dir=sel_dir, sync=True)
-        assert (sel_dir / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._HMAC_KEY_FILE).exists()
+        assert (sel_dir / efm_go_sel._TRUST_SUBDIR / efm_go_sel._HMAC_KEY_FILE).exists()
 
         child = tmp_path / "sel_child.py"
         child.write_text(self._CHILD, encoding="utf-8")
 
         env = dict(os.environ)
-        # parents[1] is the src/ root holding kiro_crew, so the children import
+        # parents[1] is the src/ root holding efm_go, so the children import
         # the same tree as this test rather than any installed copy.
-        env["PYTHONPATH"] = str(Path(kiro_crew_sel.__file__).parents[1])
+        env["PYTHONPATH"] = str(Path(efm_go_sel.__file__).parents[1])
 
         procs = [
             subprocess.Popen(
@@ -618,7 +618,7 @@ log.flush()
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         log.log(_make_event(event_id="lockloc-1"))
 
-        expected = tmp_path / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        expected = tmp_path / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
         assert expected.exists(), "lock sidecar was not created under the trust dir"
         assert not list(tmp_path.glob("*.lock")), "a lock file sits beside the log"
 
@@ -635,12 +635,12 @@ log.flush()
         install (see
         ``test_a_planted_legacy_key_does_not_arm_the_fallback_on_a_healthy_install``).
         """
-        legacy = tmp_path / kiro_crew_sel._HMAC_KEY_FILE
+        legacy = tmp_path / efm_go_sel._HMAC_KEY_FILE
         # Windows' CRT text mode treats a trailing 0x1A as DOS EOF. Keep this
         # input deterministic so opening the binary key as a lock can never
         # regress to text mode and silently truncate its final byte.
         legacy.write_bytes(b"k" * 63 + b"\x1a")
-        trust = tmp_path / kiro_crew_sel._TRUST_SUBDIR
+        trust = tmp_path / efm_go_sel._TRUST_SUBDIR
 
         real_mkdir = Path.mkdir
 
@@ -678,9 +678,9 @@ log.flush()
         both states yield one value.
         """
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
-        migrated = tmp_path / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._HMAC_KEY_FILE
-        legacy = tmp_path / kiro_crew_sel._HMAC_KEY_FILE
-        sidecar = tmp_path / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        migrated = tmp_path / efm_go_sel._TRUST_SUBDIR / efm_go_sel._HMAC_KEY_FILE
+        legacy = tmp_path / efm_go_sel._HMAC_KEY_FILE
+        sidecar = tmp_path / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
 
         log._hmac_key_file = migrated
         as_migrated = log._chain_lock_path()
@@ -705,8 +705,8 @@ log.flush()
         """
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         log.log(_make_event(event_id="nocreate-1"))
-        legacy = tmp_path / kiro_crew_sel._HMAC_KEY_FILE
-        trust = tmp_path / kiro_crew_sel._TRUST_SUBDIR
+        legacy = tmp_path / efm_go_sel._HMAC_KEY_FILE
+        trust = tmp_path / efm_go_sel._TRUST_SUBDIR
         assert not legacy.exists(), "precondition: the key migrated out of the log dir"
 
         real_mkdir = Path.mkdir
@@ -741,9 +741,9 @@ log.flush()
         """
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         log.log(_make_event(event_id="planted-1"))
-        legacy = tmp_path / kiro_crew_sel._HMAC_KEY_FILE
-        trust = tmp_path / kiro_crew_sel._TRUST_SUBDIR
-        assert log._hmac_key_file == trust / kiro_crew_sel._HMAC_KEY_FILE, (
+        legacy = tmp_path / efm_go_sel._HMAC_KEY_FILE
+        trust = tmp_path / efm_go_sel._TRUST_SUBDIR
+        assert log._hmac_key_file == trust / efm_go_sel._HMAC_KEY_FILE, (
             "precondition: this process signs from the trust dir"
         )
 
@@ -782,9 +782,9 @@ log.flush()
         the most permissive state the fallback has, to show the pin's refusal is
         not admitted by either condition.
         """
-        legacy = tmp_path / kiro_crew_sel._HMAC_KEY_FILE
+        legacy = tmp_path / efm_go_sel._HMAC_KEY_FILE
         legacy.write_bytes(b"k" * 64)
-        trust = tmp_path / kiro_crew_sel._TRUST_SUBDIR
+        trust = tmp_path / efm_go_sel._TRUST_SUBDIR
 
         real_mkdir = Path.mkdir
 
@@ -800,7 +800,7 @@ log.flush()
         healthy_path, _, healthy_fd = log._chain_lock_target()
         if healthy_fd is not None:
             os.close(healthy_fd)
-        assert healthy_path == trust / kiro_crew_sel._SEL_LOCK_FILE, (
+        assert healthy_path == trust / efm_go_sel._SEL_LOCK_FILE, (
             "precondition: the healthy path is reached once trust/ is creatable"
         )
 
@@ -845,7 +845,7 @@ log.flush()
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         log.log(_make_event(event_id="sidecar-1"))
         log.log(_make_event(event_id="sidecar-2"))
-        sidecar = tmp_path / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        sidecar = tmp_path / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
         assert sidecar.exists(), "precondition: the chain lock was taken on the sidecar"
         assert sidecar.stat().st_size == 0, "a byte was written on the way to the lock"
 
@@ -857,7 +857,7 @@ log.flush()
         now must wait for the lock and then append, not fail on the way to it.
         """
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
-        sidecar = tmp_path / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        sidecar = tmp_path / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
         sidecar.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         holder = os.open(sidecar, os.O_CREAT | os.O_RDWR | getattr(os, "O_BINARY", 0), 0o600)
         release = threading.Event()
@@ -909,7 +909,7 @@ log.flush()
         log = SecurityEventLog()  # async writer in the session-scoped dir
         log.log(_make_event(event_id="drain-preheat"))
         log.flush()
-        lock_path = log._dir / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        lock_path = log._dir / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
         lock_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
 
         # Stand in for another process holding the chain lock (e.g. prune).
@@ -1055,8 +1055,8 @@ log.flush()
             assert entered.wait(5)
             deadline = time.monotonic() + 5
             while time.monotonic() < deadline:
-                with kiro_crew_sel._CHAIN_HOLDS_MUTEX:
-                    hold = kiro_crew_sel._CHAIN_HOLDS.get(key)
+                with efm_go_sel._CHAIN_HOLDS_MUTEX:
+                    hold = efm_go_sel._CHAIN_HOLDS.get(key)
                     if hold is not None and hold.kind == "prune":
                         break
                 time.sleep(0.01)
@@ -1173,7 +1173,7 @@ log.flush()
         """
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         log.log(_make_event(event_id="preheat-1"))  # materialize dir + sidecar
-        lock_path = tmp_path / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        lock_path = tmp_path / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
 
         # A second open file description contends with the writer's own, so this
         # stands in for another process holding the lock.
@@ -1200,11 +1200,11 @@ log.flush()
         locks on different inodes, which is the fork this serialization prevents.
         """
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
-        trust = tmp_path / kiro_crew_sel._TRUST_SUBDIR
+        trust = tmp_path / efm_go_sel._TRUST_SUBDIR
         trust.mkdir(mode=0o700, parents=True, exist_ok=True)
         elsewhere = tmp_path / "planted-target"
         elsewhere.write_text("", encoding="utf-8")
-        (trust / kiro_crew_sel._SEL_LOCK_FILE).symlink_to(elsewhere)
+        (trust / efm_go_sel._SEL_LOCK_FILE).symlink_to(elsewhere)
 
         with pytest.raises(OSError):
             log.log(_make_event(event_id="symlink-1"), critical=True)
@@ -1215,9 +1215,9 @@ log.flush()
     def test_hard_linked_sidecar_is_refused(self, tmp_path):
         """A second name for the same inode is outside the deny-list's reach."""
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
-        trust = tmp_path / kiro_crew_sel._TRUST_SUBDIR
+        trust = tmp_path / efm_go_sel._TRUST_SUBDIR
         trust.mkdir(mode=0o700, parents=True, exist_ok=True)
-        sidecar = trust / kiro_crew_sel._SEL_LOCK_FILE
+        sidecar = trust / efm_go_sel._SEL_LOCK_FILE
         sidecar.write_text("", encoding="utf-8")
         os.link(sidecar, tmp_path / "second-name")
 
@@ -1258,7 +1258,7 @@ log.flush()
         """
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         log.log(_make_event(event_id="order-preheat"))
-        lock_path = tmp_path / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        lock_path = tmp_path / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
 
         # Stand in for another process holding the sidecar (e.g. tail recovery).
         holder = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
@@ -1328,7 +1328,7 @@ log.flush()
         """
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         log.log(_make_event(event_id="single-shot-preheat"))
-        lock_path = tmp_path / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        lock_path = tmp_path / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
 
         # Stand in for a sibling process holding the sidecar.
         holder = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
@@ -1344,11 +1344,11 @@ log.flush()
         def _blocking_acquire_is_a_bug(*_args, **_kwargs):
             pytest.fail("on-loop chain-lock acquire used a blocking primitive")
 
-        monkeypatch.setattr(kiro_crew_sel.platform_compat, "try_acquire_lock", _counting_try)
+        monkeypatch.setattr(efm_go_sel.platform_compat, "try_acquire_lock", _counting_try)
         monkeypatch.setattr(
-            kiro_crew_sel.platform_compat, "acquire_lock", _blocking_acquire_is_a_bug
+            efm_go_sel.platform_compat, "acquire_lock", _blocking_acquire_is_a_bug
         )
-        monkeypatch.setattr(kiro_crew_sel.platform_compat, "file_lock", _blocking_acquire_is_a_bug)
+        monkeypatch.setattr(efm_go_sel.platform_compat, "file_lock", _blocking_acquire_is_a_bug)
         try:
             with pytest.raises(OSError):
                 log.log(_make_event(event_id="single-shot-critical"), critical=True)
@@ -1367,11 +1367,11 @@ log.flush()
         would be reintroduced as a sleep call, and a wall-clock bound alone
         would tolerate a short one.
         """
-        src = inspect.getsource(kiro_crew_sel._acquire_chain_lock_on_loop)
+        src = inspect.getsource(efm_go_sel._acquire_chain_lock_on_loop)
         body = src.split('"""')[-1]
         assert "sleep" not in body, "on-loop chain-lock acquire sleeps on the event loop"
-        assert not hasattr(kiro_crew_sel, "time"), (
-            "kiro_crew.sel imports time again — the on-loop path must not sleep"
+        assert not hasattr(efm_go_sel, "time"), (
+            "efm_go.sel imports time again — the on-loop path must not sleep"
         )
 
     @pytest.mark.asyncio
@@ -1407,8 +1407,8 @@ log.flush()
             # on the gate, then promote the hold the way rotation's relabel
             # does. 0.2s spans several poll slices.
             release.wait(timeout=0.2)
-            with kiro_crew_sel._CHAIN_HOLDS_MUTEX:
-                hold = kiro_crew_sel._CHAIN_HOLDS.get(key)
+            with efm_go_sel._CHAIN_HOLDS_MUTEX:
+                hold = efm_go_sel._CHAIN_HOLDS.get(key)
                 if hold is not None:
                     hold.kind = "rotation"
 
@@ -1428,8 +1428,8 @@ log.flush()
         assert "promoted-critical" not in log._path.read_text(encoding="utf-8")
         # The refused joiner must have left the hold: once the holder exits,
         # the registry entry is gone and a fresh append works normally.
-        with kiro_crew_sel._CHAIN_HOLDS_MUTEX:
-            assert key not in kiro_crew_sel._CHAIN_HOLDS, "hold leaked after refusal"
+        with efm_go_sel._CHAIN_HOLDS_MUTEX:
+            assert key not in efm_go_sel._CHAIN_HOLDS, "hold leaked after refusal"
         log.log(_make_event(event_id="after-promotion-1"))
         assert "after-promotion-1" in log._path.read_text(encoding="utf-8")
 
@@ -1483,7 +1483,7 @@ class TestSingleton:
 
     def test_sel_accessor(self, sel_dir):
         """The module-level sel() function returns the singleton."""
-        with patch("kiro_crew.sel._default_dir", lambda: sel_dir):
+        with patch("efm_go.sel._default_dir", lambda: sel_dir):
             instance = sel()
             assert isinstance(instance, SecurityEventLog)
 
@@ -1547,7 +1547,7 @@ class TestHmacKeyManagementExtras:
         def _boom(*a, **kw):
             raise OSError("chmod denied")
 
-        monkeypatch.setattr("kiro_crew.platform_compat.os.chmod", _boom)
+        monkeypatch.setattr("efm_go.platform_compat.os.chmod", _boom)
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         assert (tmp_path / "trust" / "sel_hmac.key").exists()
         assert log._hmac_key
@@ -1567,7 +1567,7 @@ class TestHmacKeyManagementExtras:
         def _refuse(_target):
             raise OSError("icacls failed")
 
-        monkeypatch.setattr("kiro_crew.platform_compat.restrict_to_owner", _refuse)
+        monkeypatch.setattr("efm_go.platform_compat.restrict_to_owner", _refuse)
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         assert (tmp_path / "trust" / "sel_hmac.key").exists()
         assert log._hmac_key
@@ -1584,7 +1584,7 @@ class TestHmacKeyManagementExtras:
         window). Asserted by measuring the file's SIZE
         at lockdown time — zero means no key byte existed yet.
         """
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         trust_dir = tmp_path / "trust"
         calls: list[tuple[Path, int]] = []
@@ -1596,7 +1596,7 @@ class TestHmacKeyManagementExtras:
                 calls.append((p, os.stat(p).st_size))
             return real_restrict(target)
 
-        monkeypatch.setattr("kiro_crew.platform_compat.restrict_to_owner", _measuring)
+        monkeypatch.setattr("efm_go.platform_compat.restrict_to_owner", _measuring)
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
 
         assert log._hmac_key
@@ -2139,7 +2139,7 @@ class TestHmacKeyPermissionEnforcement:
         def _boom(*a, **kw):
             raise OSError("chmod denied")
 
-        monkeypatch.setattr("kiro_crew.platform_compat.os.chmod", _boom)
+        monkeypatch.setattr("efm_go.platform_compat.os.chmod", _boom)
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         assert log._hmac_key == key
 
@@ -2451,7 +2451,7 @@ class TestHmacKeyTrustDirMigration:
         (tmp_path / "trust" / "sel_hmac.key").write_bytes(planted_key)
         (tmp_path / "sel_hmac.key").write_bytes(legacy_key)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.sel"):
+        with caplog.at_level("WARNING", logger="efm_go.sel"):
             log = SecurityEventLog(base_dir=tmp_path, sync=True)
         assert log._hmac_key == legacy_key
         assert (tmp_path / "trust" / "sel_hmac.key").read_bytes() == legacy_key
@@ -2688,7 +2688,7 @@ class TestHmacKeyTrustDirMigration:
         """Without a live singleton the accessor falls back to the same
         trust/ default the singleton would use."""
         self._reset()
-        monkeypatch.setattr("kiro_crew.sel._default_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.sel._default_dir", lambda: tmp_path)
         assert sel_hmac_key_path() == tmp_path / "trust" / "sel_hmac.key"
 
     def test_readonly_config_dir_with_legacy_key_still_boots(
@@ -2779,7 +2779,7 @@ class TestHmacKeyTrustDirMigration:
             raise PermissionError(30, "Read-only file system", str(path))
 
         monkeypatch.setattr(
-            "kiro_crew.platform_compat.unlink_link_or_junction", _deny_unlink
+            "efm_go.platform_compat.unlink_link_or_junction", _deny_unlink
         )
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         assert log._hmac_key == legacy_key
@@ -2813,7 +2813,7 @@ class TestHmacKeyTrustDirMigration:
             raise PermissionError(30, "Read-only file system", str(path))
 
         monkeypatch.setattr(
-            "kiro_crew.platform_compat.unlink_link_or_junction", _deny_unlink
+            "efm_go.platform_compat.unlink_link_or_junction", _deny_unlink
         )
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         assert log._hmac_key == legacy_key
@@ -2911,7 +2911,7 @@ class TestHmacKeyTrustDirMigration:
         """The recovery path for the dependent protocol: SEL caches the
         validated bytes at init, so they stay available when the file behind the
         frozen resolved path fails to load."""
-        from kiro_crew.sel import _sel_hmac_key_bytes
+        from efm_go.sel import _sel_hmac_key_bytes
 
         log = SecurityEventLog(base_dir=tmp_path, sync=True)
         assert _sel_hmac_key_bytes() == log._hmac_key
@@ -2922,7 +2922,7 @@ class TestHmacKeyTrustDirMigration:
     def test_key_bytes_accessor_is_none_without_a_live_singleton(self) -> None:
         """The verifying MCP process has no singleton; it must get None rather
         than a partially-constructed instance's attribute."""
-        from kiro_crew.sel import _sel_hmac_key_bytes
+        from efm_go.sel import _sel_hmac_key_bytes
 
         self._reset()
         assert _sel_hmac_key_bytes() is None
@@ -2932,8 +2932,8 @@ class TestHmacKeyTrustDirMigration:
         loads the key, so a concurrent reader can see an instance whose
         ``_hmac_key`` does not exist yet. ``_initialized`` is the barrier that
         makes that window return None instead of raising or yielding garbage."""
-        from kiro_crew.sel import SecurityEventLog as _SEL
-        from kiro_crew.sel import _sel_hmac_key_bytes
+        from efm_go.sel import SecurityEventLog as _SEL
+        from efm_go.sel import _sel_hmac_key_bytes
 
         self._reset()
         try:
@@ -2948,7 +2948,7 @@ class TestHmacKeyTrustDirMigration:
         """Handing out raw trust-root bytes is safe only under the file-first
         ordering its ONE caller enforces; a second caller would inherit none of
         it. Pin the caller set rather than trusting the underscore."""
-        root = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = Path(__file__).resolve().parents[1] / "src" / "efm_go"
         callers = {
             path
             for path in root.rglob("*.py")
@@ -3305,7 +3305,7 @@ class TestSizeRotation:
         log = SecurityEventLog(base_dir=sel_dir, sync=True)
         _fill(log, 200)
         before = len(log.recent(limit=10_000))
-        with patch("kiro_crew.sel.os.replace", side_effect=OSError("boom")):
+        with patch("efm_go.sel.os.replace", side_effect=OSError("boom")):
             _fill(log, 300, start=1000)
         after = log.recent(limit=10_000)
         assert len(after) > before, "events were dropped when rotation failed"
@@ -3372,7 +3372,7 @@ class TestRotationIsSerializedAcrossProcesses:
         the chain-lock sidecar's fd and nothing else.
         """
         log = SecurityEventLog(base_dir=sel_dir, sync=True)
-        sidecar = sel_dir / kiro_crew_sel._TRUST_SUBDIR / kiro_crew_sel._SEL_LOCK_FILE
+        sidecar = sel_dir / efm_go_sel._TRUST_SUBDIR / efm_go_sel._SEL_LOCK_FILE
         real_file_lock = platform_compat.file_lock
 
         def rotation_must_not_block(fd, *, exclusive):
@@ -3386,7 +3386,7 @@ class TestRotationIsSerializedAcrossProcesses:
             return real_file_lock(fd, exclusive=exclusive)
 
         with patch(
-            "kiro_crew.sel.platform_compat.file_lock",
+            "efm_go.sel.platform_compat.file_lock",
             side_effect=rotation_must_not_block,
         ):
             _fill(log, 200)
@@ -3409,7 +3409,7 @@ class TestRotationIsSerializedAcrossProcesses:
     def test_below_the_cap_no_cross_process_lock_is_taken(self, sel_dir, small_segments):
         """The audit hot path must not pay for a lock it does not need."""
         log = SecurityEventLog(base_dir=sel_dir, sync=True)
-        with patch("kiro_crew.sel.platform_compat.try_acquire_lock") as locker:
+        with patch("efm_go.sel.platform_compat.try_acquire_lock") as locker:
             _fill(log, 3)  # nowhere near the cap
         locker.assert_not_called()
 
@@ -3446,7 +3446,7 @@ class TestRotationIsSerializedAcrossProcesses:
 
         log._live_seen = (pre_dev, pre_ino, _pre_size)
         log._last_hash = stale_tip
-        with patch("kiro_crew.sel.platform_compat.try_acquire_lock", return_value=False):
+        with patch("efm_go.sel.platform_compat.try_acquire_lock", return_value=False):
             with patch.object(
                 SecurityEventLog,
                 "_live_identity",
@@ -3520,11 +3520,11 @@ class TestRotationIsSerializedAcrossProcesses:
         log = SecurityEventLog(base_dir=sel_dir, sync=True)
         _fill(log, 200)
         before = log._segments_oldest_first()
-        with patch("kiro_crew.sel.platform_compat.is_link_or_junction") as is_link:
+        with patch("efm_go.sel.platform_compat.is_link_or_junction") as is_link:
             # The segment DIR check must still pass; only the lock path is linked.
             is_link.side_effect = lambda p: Path(p).name == ".rotate.lock"
             with patch(
-                "kiro_crew.sel.platform_compat.unlink_link_or_junction",
+                "efm_go.sel.platform_compat.unlink_link_or_junction",
                 side_effect=OSError("read-only"),
             ):
                 _fill(log, 300, start=4000)
@@ -3839,7 +3839,7 @@ class TestAppendValidatesTheFileByFd:
                 live.write_text(json.dumps(asdict(sibling)) + "\n", encoding="utf-8")
             return real_open(path, flags, *args, **kwargs)
 
-        with patch("kiro_crew.sel.os.open", rotating_open):
+        with patch("efm_go.sel.os.open", rotating_open):
             _fill(log, 1, start=7000)
 
         assert rotated, "precondition: the injected rotation fired"
@@ -4015,7 +4015,7 @@ class TestSegmentEnumerationIsBounded:
                 examined += 1
                 return entry
 
-        with patch("kiro_crew.sel.os.scandir", _CountingScandir):
+        with patch("efm_go.sel.os.scandir", _CountingScandir):
             log._segments_oldest_first()
 
         assert examined <= sel_mod._SEGMENT_SCAN_CAP + 1, (
@@ -4347,7 +4347,7 @@ class TestTwoWritersCannotBothClaimGenesis:
                 live.write_text(json.dumps(asdict(first)) + "\n", encoding="utf-8")
             return result
 
-        with patch("kiro_crew.sel.os.replace", replace_then_race):
+        with patch("efm_go.sel.os.replace", replace_then_race):
             with patch.object(
                 SecurityEventLog, "_live_size", return_value=sel_mod._SEGMENT_MAX_BYTES
             ):
@@ -4678,11 +4678,11 @@ class TestSegmentDirIsNotFollowedThroughALink:
             return real_probe(path)
 
         with patch(
-            "kiro_crew.sel.platform_compat.is_link_or_junction",
+            "efm_go.sel.platform_compat.is_link_or_junction",
             side_effect=rotation_paths_are_links,
         ):
             with patch(
-                "kiro_crew.sel.platform_compat.unlink_link_or_junction",
+                "efm_go.sel.platform_compat.unlink_link_or_junction",
                 side_effect=OSError("read-only"),
             ):
                 before = log._segments_oldest_first()
@@ -5153,7 +5153,7 @@ class TestTimeWindowRead:
             read_bytes += len(chunk)
             return chunk
 
-        with patch("kiro_crew.sel.os.read", counting_read, create=True):
+        with patch("efm_go.sel.os.read", counting_read, create=True):
             with patch.object(Path, "read_text", side_effect=AssertionError("whole-file read")):
                 assert len(log.recent(limit=5)) == 5
 
@@ -5303,7 +5303,7 @@ class TestMetadataRedaction:
         """Fail-closed containment: if the redactor raises, the event lands
         with placeholder metadata and the raw text never reaches disk."""
         with patch(
-            "kiro_crew.sel._redacted_metadata_copy",
+            "efm_go.sel._redacted_metadata_copy",
             side_effect=RuntimeError("simulated redactor failure"),
         ):
             log.log(_make_event(
@@ -5326,7 +5326,7 @@ class TestMetadataRedaction:
             return {k: v for k, v in metadata.items()}
 
         try:
-            with patch("kiro_crew.sel._redacted_metadata_copy", side_effect=_flaky):
+            with patch("efm_go.sel._redacted_metadata_copy", side_effect=_flaky):
                 log.log(_make_event(event_id="ok1", metadata={"query": "fine"}))
                 log.log(_make_event(event_id="bad1", metadata={"poison": "x"}))
                 log.log(_make_event(event_id="ok2", metadata={"query": "also fine"}))
@@ -5418,7 +5418,7 @@ class TestMetadataRedaction:
         would cut a credential in half and leave a prefix that no full-token
         grammar matches, so redaction must run on the whole string BEFORE the
         clip. Place the key so the clip lands mid-token."""
-        from kiro_crew.sel import _MAX_ARG_LEN
+        from efm_go.sel import _MAX_ARG_LEN
 
         # Key starts 10 chars before the clip point, so a clip-first order would
         # keep its first 10 characters and drop the rest.
@@ -5448,7 +5448,7 @@ class TestMetadataRedaction:
         assert len(data["error"]) <= _MAX_ARG_LEN
 
     def test_api_access_helper_also_redacts_before_clipping(self, log, sel_dir):
-        from kiro_crew.sel import _MAX_ARG_LEN
+        from efm_go.sel import _MAX_ARG_LEN
 
         prefix = "path=" + ("y" * (_MAX_ARG_LEN - 15))
         log.log_api_access(

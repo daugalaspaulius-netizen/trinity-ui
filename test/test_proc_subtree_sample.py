@@ -29,11 +29,11 @@ import pytest
 from non_utf8_comm import comm_is_settable, renamed_child
 
 from conftest import absent_sysconf
-from kiro_crew import platform_compat
-from kiro_crew import subagent as sa
-from kiro_crew.mcp_gateway import pool as pool_mod
-from kiro_crew.mcp_gateway.backend import Backend
-from kiro_crew.mcp_gateway.pool import BackendPool, PoolKey
+from efm_go import platform_compat
+from efm_go import subagent as sa
+from efm_go.mcp_gateway import pool as pool_mod
+from efm_go.mcp_gateway.backend import Backend
+from efm_go.mcp_gateway.pool import BackendPool, PoolKey
 
 #: 1 root + 3 children, two of which match the caller's needles.
 TREE = {10: [11, 12, 13], 11: [], 12: [], 13: []}

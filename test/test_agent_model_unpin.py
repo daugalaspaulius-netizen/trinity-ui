@@ -28,10 +28,10 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import agent_state
-from kiro_crew.agent import _refresh_dynamic_fields
-from kiro_crew.config import config_path
-from kiro_crew.config.loader import DEFAULT_MODEL, KiroCrewConfig, resolve_effective_model
+from efm_go import agent_state
+from efm_go.agent import _refresh_dynamic_fields
+from efm_go.config import config_path
+from efm_go.config.loader import DEFAULT_MODEL, KiroCrewConfig, resolve_effective_model
 
 _AGENT = "kirocrew"
 _PINNED = "claude-opus-5"
@@ -47,7 +47,7 @@ def shipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             payload["model"] = model
         path = tmp_path / "shipped-defaults.json"
         path.write_text(json.dumps(payload), encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.agent._shipped_defaults", lambda: path)
+        monkeypatch.setattr("efm_go.agent._shipped_defaults", lambda: path)
         return path
 
     return _write
@@ -179,7 +179,7 @@ class TestResolverOracle:
         agent_state.set_model_managed(_AGENT, True)
         specs = tmp_path / "agents"
         specs.mkdir()
-        monkeypatch.setattr("kiro_crew.config.loader.kiro_agents_dir", lambda: specs)
+        monkeypatch.setattr("efm_go.config.loader.kiro_agents_dir", lambda: specs)
 
         # Global set to a concrete model: the spec carries it, and the resolver
         # reports it.
@@ -204,7 +204,7 @@ def _load_config() -> KiroCrewConfig:
         json.dump(data, f)
         tmp = Path(f.name)
     try:
-        with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=tmp):
+        with unittest.mock.patch("efm_go.config.loader.config_path", return_value=tmp):
             return KiroCrewConfig.load()
     finally:
         tmp.unlink(missing_ok=True)

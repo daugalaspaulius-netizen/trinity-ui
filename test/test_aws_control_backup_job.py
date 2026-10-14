@@ -37,11 +37,11 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps import job_sdk
-from kiro_crew.apps.builtins.aws_control import hooks
-from kiro_crew.apps.builtins.aws_control.backend import accounts as accounts_mod
-from kiro_crew.apps.builtins.aws_control.backend import backup
-from kiro_crew.apps.builtins.aws_control.backend import routes as routes_mod
+from efm_go.apps import job_sdk
+from efm_go.apps.builtins.aws_control import hooks
+from efm_go.apps.builtins.aws_control.backend import accounts as accounts_mod
+from efm_go.apps.builtins.aws_control.backend import backup
+from efm_go.apps.builtins.aws_control.backend import routes as routes_mod
 
 BASE = "/api/apps/aws-control"
 ACCOUNT = "111122223333"
@@ -105,18 +105,18 @@ class TestEveryUploadRefusalIsAudited:
         """Put every check in a PASSING state, so each case fails exactly one."""
         stack.enter_context(
             mock.patch(
-                "kiro_crew.deploy.engine._checked",
+                "efm_go.deploy.engine._checked",
                 return_value=json.dumps({"Account": over.get("live", ACCOUNT)}),
             )
         )
         stack.enter_context(
             mock.patch(
-                "kiro_crew.apps.manager.is_app_enabled", return_value=over.get("enabled", True)
+                "efm_go.apps.manager.is_app_enabled", return_value=over.get("enabled", True)
             )
         )
-        granted = stack.enter_context(mock.patch("kiro_crew.aws_consent.is_granted"))
+        granted = stack.enter_context(mock.patch("efm_go.aws_consent.is_granted"))
         granted.return_value = over.get("granted", (True, ""))
-        grant = stack.enter_context(mock.patch("kiro_crew.aws_consent.read_grant"))
+        grant = stack.enter_context(mock.patch("efm_go.aws_consent.read_grant"))
         grant.return_value = over.get("grant", SimpleNamespace(account=ACCOUNT))
         stack.enter_context(
             mock.patch.object(backup._STOP, "is_set", return_value=over.get("stopping", False))
@@ -793,11 +793,11 @@ class TestRunnerAuthorization:
             mock.patch.object(backup, "snapshot_main", side_effect=fake_snapshot),
             mock.patch.object(backup, "_redact_for_upload", create=True, side_effect=lambda p: p),
             mock.patch(
-                "kiro_crew.deploy.engine._checked",
+                "efm_go.deploy.engine._checked",
                 return_value=json.dumps({"Account": ACCOUNT}),
             ),
-            mock.patch("kiro_crew.apps.manager.is_app_enabled", return_value=True),
-            mock.patch("kiro_crew.aws_consent.is_granted", return_value=(False, "not confirmed")),
+            mock.patch("efm_go.apps.manager.is_app_enabled", return_value=True),
+            mock.patch("efm_go.aws_consent.is_granted", return_value=(False, "not confirmed")),
             mock.patch.object(backup.storage, "put_file") as put_file,
         ):
             run_id = sdk.start(backup.KIND_SNAPSHOT, dedupe_key=ACCOUNT)
@@ -962,7 +962,7 @@ class TestStartupRegistration:
         manifest = json.loads(
             (
                 Path(__file__).resolve().parents[1]
-                / "src/kiro_crew/apps/builtins/aws_control/app.json"
+                / "src/efm_go/apps/builtins/aws_control/app.json"
             ).read_text(encoding="utf-8")
         )
         assert manifest["permissions"]["jobs"] is True

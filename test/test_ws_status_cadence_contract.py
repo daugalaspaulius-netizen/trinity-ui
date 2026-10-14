@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.dashboard import ws
+from efm_go.dashboard import ws
 
 _REPO = Path(__file__).resolve().parents[1]
 _USE_WEBSOCKET_TS = _REPO / "website" / "src" / "hooks" / "useWebSocket.ts"

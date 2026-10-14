@@ -13,15 +13,15 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.channels import builtin_channel_descriptors
-from kiro_crew.messaging import registry
-from kiro_crew.messaging.link import (
+from efm_go.channels import builtin_channel_descriptors
+from efm_go.messaging import registry
+from efm_go.messaging.link import (
     CHANNEL_SESSION_NAMESPACES,
     assert_colon_free,
     build_dm_session_key,
     parse_session_key,
 )
-from kiro_crew.messaging.registry import ChannelDescriptor
+from efm_go.messaging.registry import ChannelDescriptor
 
 
 class TestRegistryRoster:
@@ -42,16 +42,16 @@ class TestRegistryRoster:
 
     def test_channel_type_matches_each_transport_class(self) -> None:
         """The descriptor id and the transport's channel_type must be ONE fact."""
-        from kiro_crew.discord.transport import DiscordTransport
-        from kiro_crew.feishu.transport import FeishuTransport
-        from kiro_crew.imessage.transport import IMessageTransport
-        from kiro_crew.slack.transport import SlackTransport
-        from kiro_crew.teams.transport import TeamsTransport
-        from kiro_crew.telegram.transport import TelegramTransport
-        from kiro_crew.webex.transport import WebexTransport
-        from kiro_crew.wecom.transport import WeComTransport
-        from kiro_crew.weixin.transport import WeixinTransport
-        from kiro_crew.whatsapp.transport import WhatsAppTransport
+        from efm_go.discord.transport import DiscordTransport
+        from efm_go.feishu.transport import FeishuTransport
+        from efm_go.imessage.transport import IMessageTransport
+        from efm_go.slack.transport import SlackTransport
+        from efm_go.teams.transport import TeamsTransport
+        from efm_go.telegram.transport import TelegramTransport
+        from efm_go.webex.transport import WebexTransport
+        from efm_go.wecom.transport import WeComTransport
+        from efm_go.weixin.transport import WeixinTransport
+        from efm_go.whatsapp.transport import WhatsAppTransport
 
         transports = {
             t.channel_type: t

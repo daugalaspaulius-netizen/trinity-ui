@@ -33,10 +33,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.acp.types import STOP_REASON_END_TURN, TurnUsage
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_runner import _run_chat
-from kiro_crew.dashboard.handlers import usage as usage_mod
+from efm_go.acp.types import STOP_REASON_END_TURN, TurnUsage
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_runner import _run_chat
+from efm_go.dashboard.handlers import usage as usage_mod
 
 
 class _FakeSlot:
@@ -239,7 +239,7 @@ class TestCancelDuringCompletePersist:
         # then sees a changed stats object -- a regressed guard WOULD bill it.
         client.last_prompt_stats = _RealStats(credits=0.0)
 
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         async def _complete(msg):
             # Mid-turn the runtime installs fresh per-turn stats; model that so
@@ -320,7 +320,7 @@ class TestCancelDuringCompletePersist:
         state, slot, client = _drive_state_and_slot(tmp_path, name="shield-persist-slot")
         client.last_prompt_stats = _RealStats(credits=0.0)
 
-        from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
         async def _complete(msg):
             client.last_prompt_stats = _RealStats(credits=7.0)
@@ -429,7 +429,7 @@ class TestCancelDuringCompletePersist:
         prior = _RealStats(credits=9.0)
         client.last_prompt_stats = prior
 
-        from kiro_crew.providers.base import EVENT_TEXT_CHUNK, LLMEvent
+        from efm_go.providers.base import EVENT_TEXT_CHUNK, LLMEvent
 
         async def _dies_before_complete(msg):
             # Fresh stats are NOT installed (the dispatch dies first); the prior

@@ -18,9 +18,9 @@ import logging
 
 import pytest
 
-from kiro_crew.platform import governance
-from kiro_crew.platform.context import PlatformCompositionError
-from kiro_crew.platform.governance import (
+from efm_go.platform import governance
+from efm_go.platform.context import PlatformCompositionError
+from efm_go.platform.governance import (
     CAPABILITY,
     MODE_ALLOW,
     MODE_DENY,
@@ -414,7 +414,7 @@ class TestLoader:
     def test_absent_returns_none(self, monkeypatch, tmp_path):
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         _nope = tmp_path / "nope.json"
-        monkeypatch.setattr("kiro_crew.platform.governance._policy_home_path", lambda: _nope)
+        monkeypatch.setattr("efm_go.platform.governance._policy_home_path", lambda: _nope)
         assert load_security_policy() is None
 
     def test_env_path_wins(self, monkeypatch, tmp_path):
@@ -441,14 +441,14 @@ class TestLoader:
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         home = tmp_path / "security_policy.json"
         home.write_text(json.dumps(_policy_body()))
-        monkeypatch.setattr("kiro_crew.platform.governance._policy_home_path", lambda: home)
+        monkeypatch.setattr("efm_go.platform.governance._policy_home_path", lambda: home)
         ceiling = load_security_policy()
         assert ceiling is not None
 
     def test_bundled_loader_precedence(self, monkeypatch, tmp_path):
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         _nope = tmp_path / "nope.json"
-        monkeypatch.setattr("kiro_crew.platform.governance._policy_home_path", lambda: _nope)
+        monkeypatch.setattr("efm_go.platform.governance._policy_home_path", lambda: _nope)
         called = {}
 
         def bundled():
@@ -1064,7 +1064,7 @@ class TestProfileUnknownCapabilityTolerance:
             )
 
     def test_unknown_capability_child_is_logged_with_profile_and_key(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.governance"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.governance"):
             parse_profile({"name": "host", "capabilities": {"vaulted": {"enabled": True}}})
         assert any(
             "host" in r.getMessage() and "capabilities.vaulted" in r.getMessage()
@@ -1148,9 +1148,9 @@ class TestSchemaStrictness:
     def test_allow_mode_deny_warning_never_carries_the_pasted_url(self, caplog):
         """The Rule-1 sibling fires on every boot too, so it must not echo a deny entry."""
         pasted = "https://user:pass@evil.example/p?api_key=SECRET123"
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.governance"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.governance"):
             ScopedRuleset.from_dict({"mode": "allow", "allow": ["skills.sh"], "deny": [pasted]})
-        warned = [r.getMessage() for r in caplog.records if r.name == "kiro_crew.platform.governance"]
+        warned = [r.getMessage() for r in caplog.records if r.name == "efm_go.platform.governance"]
         assert any("Rule 1: allow beats deny" in m for m in warned), warned
         for secret in ("user", "pass", "SECRET123", pasted):
             assert all(secret not in m for m in warned), (secret, warned)
@@ -1158,7 +1158,7 @@ class TestSchemaStrictness:
 
     @staticmethod
     def _host_warnings(caplog, body, *, matcher="host"):
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.governance"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.governance"):
             ScopedRuleset.from_dict(body, matcher=matcher, scope="network.egress")
         return [r.getMessage() for r in caplog.records if "matcher=host" in r.getMessage()]
 
@@ -1378,7 +1378,7 @@ def _sign_policy(body: dict, secret: str) -> dict:
 def _patch_trust(monkeypatch, *, require: bool, keys: dict):
     """Point the loader's trust root at fixed settings (no admission file I/O)."""
     monkeypatch.setattr(
-        "kiro_crew.platform.governance._policy_trust_settings",
+        "efm_go.platform.governance._policy_trust_settings",
         lambda: (require, dict(keys)),
     )
 
@@ -1435,7 +1435,7 @@ class TestPolicySigningPayload:
     def test_shares_admission_canonicalization(self):
         # One canonicalizer for both trust roots — a divergence here is exactly how
         # a signer and a verifier drift apart.
-        from kiro_crew.platform.admission import canonical_signing_bytes
+        from efm_go.platform.admission import canonical_signing_bytes
 
         body = {"version": 1, "boot": {"fail_closed": True}}
         assert policy_signing_payload(body) == canonical_signing_bytes(body)
@@ -1634,7 +1634,7 @@ class TestPolicySignatureOptIn:
         assert load_security_policy().signature_state == SIGNATURE_VERIFIED
 
     def test_require_on_marks_governance_health_incident(self, monkeypatch, tmp_path):
-        from kiro_crew.platform import governance_health
+        from efm_go.platform import governance_health
 
         governance_health.reset()
         p = tmp_path / "policy.json"
@@ -1654,7 +1654,7 @@ class TestPolicySignatureOptIn:
         home.write_text(
             json.dumps(_sign_policy(_policy_body(identity={"issuer": "operator"}), secret))
         )
-        monkeypatch.setattr("kiro_crew.platform.governance._policy_home_path", lambda: home)
+        monkeypatch.setattr("efm_go.platform.governance._policy_home_path", lambda: home)
         _patch_trust(monkeypatch, require=False, keys={"operator": secret})
         assert load_security_policy().signature_state == SIGNATURE_VERIFIED
 
@@ -1662,7 +1662,7 @@ class TestPolicySignatureOptIn:
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         home = tmp_path / "security_policy.json"
         home.write_text(json.dumps(_policy_body()))
-        monkeypatch.setattr("kiro_crew.platform.governance._policy_home_path", lambda: home)
+        monkeypatch.setattr("efm_go.platform.governance._policy_home_path", lambda: home)
         _real_trust_file(monkeypatch, tmp_path, require=True, keys={})
         with pytest.raises(PlatformCompositionError):
             _load_and_enforce()
@@ -1678,7 +1678,7 @@ class TestPolicySignatureOptIn:
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         home = tmp_path / "security_policy.json"
         home.write_text(json.dumps(_policy_body()))  # unsigned, lower precedence
-        monkeypatch.setattr("kiro_crew.platform.governance._policy_home_path", lambda: home)
+        monkeypatch.setattr("efm_go.platform.governance._policy_home_path", lambda: home)
         _real_trust_file(monkeypatch, tmp_path, require=True, keys={"fleet-control": secret})
         # The core's loader-less pass must not abort on the lower-precedence tier…
         assert load_security_policy() is not None
@@ -1693,7 +1693,7 @@ class TestPolicySignatureOptIn:
         # bundled policy still loads — advisory, exactly like the file tiers.
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         monkeypatch.setattr(
-            "kiro_crew.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
+            "efm_go.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
         )
         _patch_trust(monkeypatch, require=False, keys={})
         ceiling = load_security_policy(bundled_loader=lambda: _policy_body())
@@ -1708,7 +1708,7 @@ class TestPolicySignatureOptIn:
         # require_policy_signature the bundled tier must verify like any other.
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         monkeypatch.setattr(
-            "kiro_crew.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
+            "efm_go.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
         )
         _real_trust_file(monkeypatch, tmp_path, require=True, keys={"fleet-control": "trust-key"})
         # An unsigned bundled policy under require must abort, not load.
@@ -1726,7 +1726,7 @@ class TestPolicySignatureOptIn:
         # require OFF: an ungoverned standalone host stays ungoverned.
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         monkeypatch.setattr(
-            "kiro_crew.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
+            "efm_go.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
         )
         _patch_trust(monkeypatch, require=False, keys={})
         assert load_security_policy() is None
@@ -1740,7 +1740,7 @@ class TestPolicySignatureOptIn:
         # absence always yields None here; the refusal lives in the boot gate.
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         monkeypatch.setattr(
-            "kiro_crew.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
+            "efm_go.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
         )
         adm = tmp_path / "admission_policy.json"
         adm.write_text(json.dumps({"require_policy_signature": True,
@@ -1774,7 +1774,7 @@ class TestPolicySignatureAbsenceGate:
         monkeypatch.setenv("KIROCREW_ADMISSION_POLICY", str(adm))
         monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
         monkeypatch.setattr(
-            "kiro_crew.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
+            "efm_go.platform.governance._policy_home_path", lambda: tmp_path / "nope.json"
         )
         ceiling = load_security_policy()  # standalone: no bundled_loader, ever
         assert ceiling is None
@@ -1867,7 +1867,7 @@ class TestPolicySignatureAbsenceGate:
         # it must not additionally make the security ceiling unloadable here.
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         monkeypatch.setattr(
-            "kiro_crew.platform.admission._policy_default_path",
+            "efm_go.platform.admission._policy_default_path",
             lambda: tmp_path / "no-admission.json",
         )
         p = tmp_path / "policy.json"
@@ -1879,7 +1879,7 @@ class TestPolicySignatureAbsenceGate:
 
     def test_raising_trust_root_keeps_verification_advisory(self, monkeypatch, tmp_path):
         monkeypatch.setattr(
-            "kiro_crew.platform.admission.read_policy_trust_root",
+            "efm_go.platform.admission.read_policy_trust_root",
             lambda: (_ for _ in ()).throw(RuntimeError("boom")),
         )
         p = tmp_path / "policy.json"
@@ -1895,7 +1895,7 @@ class TestPolicySignatureAbsenceGate:
             json.dumps({"require_policy_signature": True, "trust_keys": {"fleet-control": "k"}})
         )
         monkeypatch.setenv("KIROCREW_ADMISSION_POLICY", str(adm))
-        from kiro_crew.platform.governance import _policy_trust_settings
+        from efm_go.platform.governance import _policy_trust_settings
 
         require, keys = _policy_trust_settings()
         assert require is True
@@ -1916,12 +1916,12 @@ class TestPolicySignatureAbsenceGate:
         # The trust-root read must NOT run the audited admission loader: that
         # records posture + a critical SEL, and gatewayd re-loads the security
         # policy per app call.
-        from kiro_crew.platform import governance_health
+        from efm_go.platform import governance_health
 
         governance_health.reset()
         monkeypatch.delenv("KIROCREW_ADMISSION_POLICY", raising=False)
         monkeypatch.setattr(
-            "kiro_crew.platform.admission._policy_default_path",
+            "efm_go.platform.admission._policy_default_path",
             lambda: tmp_path / "no-admission.json",
         )
         p = tmp_path / "policy.json"
@@ -1954,13 +1954,13 @@ class TestPolicyShowReporting:
         import argparse
         from unittest.mock import patch
 
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         args = argparse.Namespace(policy_action="show")
         # _policy imports current_context lazily from platform.context, so patch
         # it at the definition site.
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=type("Ctx", (), {"governance": ceiling})(),
         ):
             cli_commands._policy(args)
@@ -2104,11 +2104,11 @@ class TestValidateReportsUngovernedCapabilities:
         import argparse
         from unittest.mock import patch
 
-        from kiro_crew import cli_commands
+        from efm_go import cli_commands
 
         args = argparse.Namespace(policy_action="validate")
         with patch(
-            "kiro_crew.platform.context.current_context",
+            "efm_go.platform.context.current_context",
             return_value=type("Ctx", (), {"governance": ceiling})(),
         ):
             cli_commands._policy(args)
@@ -2145,7 +2145,7 @@ class TestValidateReportsUngovernedCapabilities:
         re-reads a parsed object and cannot see a pattern that never matched.
         The line matters because this policy reports OK while denying nothing.
         """
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.platform.governance"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.platform.governance"):
             ceiling = parse_policy(
                 _policy_body(
                     network={"egress": {"mode": MODE_DENY, "deny": ["https://skills.sh/api"]}}

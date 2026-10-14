@@ -22,13 +22,13 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.dashboard.handlers import office_slides as mod
-from kiro_crew.dashboard.handlers.office_slides import (
+from efm_go.dashboard.handlers import office_slides as mod
+from efm_go.dashboard.handlers.office_slides import (
     api_file_office_slide,
     api_file_office_slides,
 )
 
-_MOD = "kiro_crew.dashboard.handlers.office_slides"
+_MOD = "efm_go.dashboard.handlers.office_slides"
 
 
 def _make_app() -> web.Application:
@@ -41,8 +41,8 @@ def _make_app() -> web.Application:
 @pytest.fixture
 def mock_sel():
     with (
-        patch("kiro_crew.sel.sel") as m,
-        patch("kiro_crew.dashboard.handlers.files.is_sensitive_path", return_value=False),
+        patch("efm_go.sel.sel") as m,
+        patch("efm_go.dashboard.handlers.files.is_sensitive_path", return_value=False),
     ):
         instance = MagicMock()
         m.return_value = instance
@@ -65,7 +65,7 @@ def cache(tmp_path):
     root = tmp_path / "cache" / "slide-previews"
     with (
         patch(f"{_MOD}.cache_root", return_value=root),
-        patch("kiro_crew.dashboard.token_secret._get_secret", return_value=_TEST_ROOT_KEY),
+        patch("efm_go.dashboard.token_secret._get_secret", return_value=_TEST_ROOT_KEY),
     ):
         yield root
 
@@ -139,7 +139,7 @@ def _seed_cache(root: Path, digest: str, count: int, *, signed: bool = True) -> 
 
 
 def _validated(path: Path):
-    return patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=str(path))
+    return patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=str(path))
 
 
 # --- degrade: no LibreOffice on the host --------------------------------------
@@ -487,7 +487,7 @@ async def test_without_a_trust_root_the_cache_is_inert(tmp_path, mock_sel, cache
     _seed_cache(cache, digest, 1)
     with (
         _validated(f),
-        patch("kiro_crew.dashboard.token_secret._get_secret", side_effect=OSError("unwritable")),
+        patch("efm_go.dashboard.token_secret._get_secret", side_effect=OSError("unwritable")),
         patch(f"{_MOD}.soffice_path", return_value="/usr/bin/soffice"),
         patch(f"{_MOD}._run_soffice", AsyncMock()) as soffice,
     ):
@@ -736,7 +736,7 @@ async def test_sensitive_path_is_403(tmp_path, mock_sel, cache):
     _write_pptx(f)
     with (
         _validated(f),
-        patch("kiro_crew.dashboard.handlers.files.is_sensitive_path", return_value=True),
+        patch("efm_go.dashboard.handlers.files.is_sensitive_path", return_value=True),
     ):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get(f"/api/file-office-slides?path={f}")
@@ -746,7 +746,7 @@ async def test_sensitive_path_is_403(tmp_path, mock_sel, cache):
 
 @pytest.mark.asyncio
 async def test_forbidden_path_is_400(mock_sel, cache):
-    with patch("kiro_crew.dashboard.handlers._validate_dashboard_path", return_value=None):
+    with patch("efm_go.dashboard.handlers._validate_dashboard_path", return_value=None):
         async with TestClient(TestServer(_make_app())) as client:
             resp = await client.get("/api/file-office-slides?path=/etc/passwd.pptx")
             assert resp.status == 400
@@ -895,7 +895,7 @@ def test_soffice_path_returns_none_when_nothing_is_discovered(monkeypatch):
     with (
         patch.dict(
             "sys.modules",
-            {"kiro_crew.apps.builtins.pptx_maker.backend": MagicMock(engine=fake_engine)},
+            {"efm_go.apps.builtins.pptx_maker.backend": MagicMock(engine=fake_engine)},
         ),
         patch(f"{_MOD}.validate_provider_executable") as validate,
     ):
@@ -913,7 +913,7 @@ def test_soffice_path_refuses_an_executable_that_fails_the_provenance_check(monk
     with (
         patch.dict(
             "sys.modules",
-            {"kiro_crew.apps.builtins.pptx_maker.backend": MagicMock(engine=fake_engine)},
+            {"efm_go.apps.builtins.pptx_maker.backend": MagicMock(engine=fake_engine)},
         ),
         patch(
             f"{_MOD}.validate_provider_executable",
@@ -931,7 +931,7 @@ def test_soffice_path_returns_the_validated_canonical_path(monkeypatch):
     with (
         patch.dict(
             "sys.modules",
-            {"kiro_crew.apps.builtins.pptx_maker.backend": MagicMock(engine=fake_engine)},
+            {"efm_go.apps.builtins.pptx_maker.backend": MagicMock(engine=fake_engine)},
         ),
         patch(f"{_MOD}.validate_provider_executable", return_value="/usr/bin/soffice") as validate,
     ):
@@ -946,7 +946,7 @@ def test_soffice_hint_delegates_to_the_app(monkeypatch):
     fake_preview.soffice_hint.return_value = "apt-get install libreoffice"
     with patch.dict(
         "sys.modules",
-        {"kiro_crew.apps.builtins.pptx_maker.backend": MagicMock(preview_tools=fake_preview)},
+        {"efm_go.apps.builtins.pptx_maker.backend": MagicMock(preview_tools=fake_preview)},
     ):
         assert mod.soffice_hint() == "apt-get install libreoffice"
 

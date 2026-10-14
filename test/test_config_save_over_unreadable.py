@@ -22,8 +22,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import web
 
-from kiro_crew.config.loader import ConfigReadError, KiroCrewConfig, config_path
-from kiro_crew.dashboard.handlers import core as core_mod
+from efm_go.config.loader import ConfigReadError, KiroCrewConfig, config_path
+from efm_go.dashboard.handlers import core as core_mod
 
 # Cut off mid-document, as a torn hand edit leaves it.
 _UNREADABLE = b'{"dashboard": {"theme_mode": "light", "onboarded": tr'

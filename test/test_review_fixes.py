@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from conftest import forget_env_at_teardown
-from kiro_crew.security import audit_bash_command
+from efm_go.security import audit_bash_command
 
 
 class TestExpandedBashPatterns:
@@ -64,8 +64,8 @@ class TestYoloExpiry:
 
     @pytest.fixture(autouse=True)
     def _reset_yolo(self):
-        from kiro_crew.safety_override import reset_singleton
-        from kiro_crew.slack.handler import disable_yolo
+        from efm_go.safety_override import reset_singleton
+        from efm_go.slack.handler import disable_yolo
 
         disable_yolo()
         yield
@@ -73,9 +73,9 @@ class TestYoloExpiry:
 
     def test_slack_yolo_expires(self) -> None:
         """!yolo on expires after _YOLO_TTL_SECS (30min)."""
-        import kiro_crew.slack.handler as h
-        from kiro_crew.safety_override import safety_override
-        from kiro_crew.slack.handler import enable_yolo_with_ttl, is_yolo_mode
+        import efm_go.slack.handler as h
+        from efm_go.safety_override import safety_override
+        from efm_go.slack.handler import enable_yolo_with_ttl, is_yolo_mode
 
         enable_yolo_with_ttl(h._YOLO_TTL_SECS)
 
@@ -87,8 +87,8 @@ class TestYoloExpiry:
 
     def test_config_yolo_does_not_expire(self) -> None:
         """A declared grant is a standing instruction — it must not lapse."""
-        from kiro_crew.safety_override import SafetyOverride, safety_override
-        from kiro_crew.slack.handler import is_yolo_mode, set_yolo_mode
+        from efm_go.safety_override import SafetyOverride, safety_override
+        from efm_go.slack.handler import is_yolo_mode, set_yolo_mode
 
         set_yolo_mode(True)
 
@@ -99,15 +99,15 @@ class TestYoloExpiry:
 
         base = time.monotonic()
         with patch(
-            "kiro_crew.safety_override.time.monotonic",
+            "efm_go.safety_override.time.monotonic",
             return_value=base + SafetyOverride._MAX_TTL + 60,
         ):
             assert is_yolo_mode(), "Config-declared YOLO must not expire"
 
     def test_dashboard_yolo_expires_6h(self) -> None:
         """Every ad-hoc surface uses SafetyOverride._ADHOC_TTL_DEFAULT (6h)."""
-        from kiro_crew.safety_override import SafetyOverride, safety_override
-        from kiro_crew.slack.handler import enable_yolo_with_ttl, is_yolo_mode
+        from efm_go.safety_override import SafetyOverride, safety_override
+        from efm_go.slack.handler import enable_yolo_with_ttl, is_yolo_mode
 
         enable_yolo_with_ttl(SafetyOverride._ADHOC_TTL_DEFAULT)
 
@@ -120,7 +120,7 @@ class TestYoloExpiry:
             assert not is_yolo_mode(), "Dashboard YOLO should expire after 6h"
 
     def test_yolo_disable_clears(self) -> None:
-        from kiro_crew.slack.handler import disable_yolo, is_yolo_mode, set_yolo_mode
+        from efm_go.slack.handler import disable_yolo, is_yolo_mode, set_yolo_mode
 
         set_yolo_mode(True)
         assert is_yolo_mode()
@@ -134,14 +134,14 @@ class TestEnvPermissions:
     def test_env_permissions_enforced(self, tmp_path: object) -> None:
         from pathlib import Path
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         tmp = Path(str(tmp_path))
         env_file = tmp / ".env"
         env_file.write_text("SLACK_BOT_TOKEN=xoxb-test\n")
         env_file.chmod(0o644)
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             cfg = KiroCrewConfig.__new__(KiroCrewConfig)
             cfg.load_credentials()
 
@@ -157,8 +157,8 @@ class TestEnvPermissions:
         writers), all off the loop."""
         from pathlib import Path
 
-        from kiro_crew.config import loader as loader_mod
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config import loader as loader_mod
+        from efm_go.config.loader import KiroCrewConfig
 
         tmp = Path(str(tmp_path))
         env_file = tmp / ".env"
@@ -183,7 +183,7 @@ class TestEnvPermissions:
         chmods: list[int] = []
         monkeypatch.setattr(Path, "chmod", lambda self, mode, **_kw: chmods.append(mode))
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             cfg = KiroCrewConfig.__new__(KiroCrewConfig)
             creds = cfg.load_credentials()
 
@@ -197,7 +197,7 @@ class TestSelForwardCallback:
     def test_forward_callback_called(self, tmp_path: object) -> None:
         from pathlib import Path
 
-        from kiro_crew.sel import SecurityEventLog
+        from efm_go.sel import SecurityEventLog
 
         SecurityEventLog._instance = None
         SecurityEventLog._initialized = False
@@ -222,7 +222,7 @@ class TestSelForwardCallback:
     def test_forward_callback_failure_silent(self, tmp_path: object) -> None:
         from pathlib import Path
 
-        from kiro_crew.sel import SecurityEventLog
+        from efm_go.sel import SecurityEventLog
 
         SecurityEventLog._instance = None
         SecurityEventLog._initialized = False
@@ -243,7 +243,7 @@ class TestSelForwardCallback:
     def test_forward_callback_redacts_credentials(self, tmp_path: object) -> None:
         from pathlib import Path
 
-        from kiro_crew.sel import SecurityEventLog
+        from efm_go.sel import SecurityEventLog
 
         SecurityEventLog._instance = None
         SecurityEventLog._initialized = False
@@ -270,9 +270,9 @@ class TestYoloSlackCommandPath:
     """Guard test for the !yolo on Slack command path (handler.py)."""
 
     def test_enable_yolo_with_ttl_sets_expiry(self) -> None:
-        import kiro_crew.slack.handler as h
-        from kiro_crew.safety_override import reset_singleton, safety_override
-        from kiro_crew.slack.handler import disable_yolo, enable_yolo_with_ttl
+        import efm_go.slack.handler as h
+        from efm_go.safety_override import reset_singleton, safety_override
+        from efm_go.slack.handler import disable_yolo, enable_yolo_with_ttl
 
         reset_singleton()
         enable_yolo_with_ttl(h._YOLO_TTL_SECS)
@@ -291,19 +291,19 @@ class TestObserveModeAuthFilter:
     def test_unauthorized_user_blocked(self) -> None:
         from unittest.mock import MagicMock
 
-        from kiro_crew.security import should_record_observe_history
+        from efm_go.security import should_record_observe_history
 
         assert not should_record_observe_history(MagicMock(), user_authorized=False)
 
     def test_authorized_user_allowed(self) -> None:
         from unittest.mock import MagicMock
 
-        from kiro_crew.security import should_record_observe_history
+        from efm_go.security import should_record_observe_history
 
         assert should_record_observe_history(MagicMock(), user_authorized=True)
 
     def test_no_history_object(self) -> None:
-        from kiro_crew.security import should_record_observe_history
+        from efm_go.security import should_record_observe_history
 
         assert not should_record_observe_history(None, user_authorized=True)
 
@@ -314,7 +314,7 @@ class TestLoaderChmodWarning:
     def test_chmod_enforced_on_open_permissions(self, tmp_path: object, monkeypatch) -> None:
         from pathlib import Path
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         # load_credentials() seeds os.environ with every key it reads, so the
         # fixture key below would otherwise outlive this test.
@@ -324,7 +324,7 @@ class TestLoaderChmodWarning:
         env_file.write_text("TEST_KEY=value\n")
         env_file.chmod(0o644)
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             cfg = KiroCrewConfig.__new__(KiroCrewConfig)
             creds = cfg.load_credentials()
 
@@ -341,15 +341,15 @@ class TestLoadCredentialsEnvPropagation:
     ) -> None:
         from pathlib import Path
 
-        from kiro_crew.config import loader as loader_mod
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config import loader as loader_mod
+        from efm_go.config.loader import KiroCrewConfig
 
         env_file = Path(str(tmp_path)) / ".env"
         env_file.write_text("KC_UNKNOWN_SETTING=value\n")
         env_file.chmod(0o600)
         monkeypatch.setattr(loader_mod, "_warned_env_keys", set())
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             KiroCrewConfig.__new__(KiroCrewConfig).load_credentials(propagate=False)
 
         assert "KC_UNKNOWN_SETTING" in caplog.text
@@ -360,7 +360,7 @@ class TestLoadCredentialsEnvPropagation:
         import os
         from pathlib import Path
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         monkeypatch.delenv("SLACK_BOT_TOKEN", raising=False)
         monkeypatch.delenv("SLACK_APP_TOKEN", raising=False)
@@ -373,7 +373,7 @@ class TestLoadCredentialsEnvPropagation:
         )
         env_file.chmod(0o600)
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             cfg = KiroCrewConfig.__new__(KiroCrewConfig)
             cfg.load_credentials()
 
@@ -387,7 +387,7 @@ class TestLoadCredentialsEnvPropagation:
         import os
         from pathlib import Path
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         monkeypatch.delenv("AZURE_DEVOPS_EXT_PAT", raising=False)
         tmp = Path(str(tmp_path))
@@ -395,7 +395,7 @@ class TestLoadCredentialsEnvPropagation:
         env_file.write_text("AZURE_DEVOPS_EXT_PAT=probe-token\n")
         env_file.chmod(0o600)
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             cfg = KiroCrewConfig.__new__(KiroCrewConfig)
             creds = cfg.load_credentials(propagate=False)
 
@@ -408,7 +408,7 @@ class TestLoadCredentialsEnvPropagation:
         import os
         from pathlib import Path
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-from-systemd")
 
@@ -417,7 +417,7 @@ class TestLoadCredentialsEnvPropagation:
         env_file.write_text("SLACK_BOT_TOKEN=xoxb-from-file\n")
         env_file.chmod(0o600)
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             cfg = KiroCrewConfig.__new__(KiroCrewConfig)
             creds = cfg.load_credentials()
 
@@ -433,7 +433,7 @@ class TestLoadCredentialsEnvPropagation:
         import os
         from pathlib import Path
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-from-parent")
 
@@ -442,7 +442,7 @@ class TestLoadCredentialsEnvPropagation:
         env_file.write_text("")
         env_file.chmod(0o600)
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             cfg = KiroCrewConfig.__new__(KiroCrewConfig)
             creds = cfg.load_credentials()
 
@@ -458,7 +458,7 @@ class TestLoadCredentialsEnvPropagation:
         import os
         from pathlib import Path
 
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.config.loader import KiroCrewConfig
 
         monkeypatch.setenv("_KIROCREW_CREDS_SCRUBBED", "1")
         monkeypatch.delenv("SLACK_BOT_TOKEN", raising=False)
@@ -472,7 +472,7 @@ class TestLoadCredentialsEnvPropagation:
         env_file.chmod(0o600)
 
         try:
-            with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+            with patch("efm_go.config.loader.env_path", return_value=env_file):
                 cfg = KiroCrewConfig.__new__(KiroCrewConfig)
                 creds = cfg.load_credentials()
 
@@ -495,7 +495,7 @@ class TestLoadCredentialsEnvPropagation:
         import os
         from pathlib import Path
 
-        from kiro_crew.config.loader import CREDENTIAL_KEYS, KiroCrewConfig
+        from efm_go.config.loader import CREDENTIAL_KEYS, KiroCrewConfig
 
         monkeypatch.setenv("_KIROCREW_CREDS_SCRUBBED", "1")
         for key in CREDENTIAL_KEYS:
@@ -532,7 +532,7 @@ class TestLoadCredentialsEnvPropagation:
         env_file.write_text("".join(f"{key}=placeholder-value\n" for key in fixture_keys))
         env_file.chmod(0o600)
 
-        with patch("kiro_crew.config.loader.env_path", return_value=env_file):
+        with patch("efm_go.config.loader.env_path", return_value=env_file):
             cfg = KiroCrewConfig.__new__(KiroCrewConfig)
             cfg.load_credentials()
 
@@ -549,15 +549,15 @@ class TestYoloFromConfigGuard:
 
     @pytest.fixture(autouse=True)
     def _reset_yolo(self):
-        from kiro_crew.safety_override import reset_singleton
+        from efm_go.safety_override import reset_singleton
 
         reset_singleton()
         yield
         reset_singleton()
 
     def test_config_yolo_sets_config_source(self) -> None:
-        from kiro_crew.safety_override import safety_override
-        from kiro_crew.slack.handler import set_yolo_mode
+        from efm_go.safety_override import safety_override
+        from efm_go.slack.handler import set_yolo_mode
 
         set_yolo_mode(True)
         so = safety_override()
@@ -567,9 +567,9 @@ class TestYoloFromConfigGuard:
 
     def test_enable_with_ttl_overwrites_config_source(self) -> None:
         """enable_yolo_with_ttl now always activates (no config-permanent guard)."""
-        import kiro_crew.slack.handler as h
-        from kiro_crew.safety_override import safety_override
-        from kiro_crew.slack.handler import enable_yolo_with_ttl, is_yolo_mode, set_yolo_mode
+        import efm_go.slack.handler as h
+        from efm_go.safety_override import safety_override
+        from efm_go.slack.handler import enable_yolo_with_ttl, is_yolo_mode, set_yolo_mode
 
         set_yolo_mode(True)
         config_expires = safety_override()._expires_at
@@ -580,22 +580,22 @@ class TestYoloFromConfigGuard:
         assert safety_override()._expires_at < config_expires
 
     def test_config_yolo_does_not_expire(self) -> None:
-        from kiro_crew.safety_override import SafetyOverride, safety_override
-        from kiro_crew.slack.handler import is_yolo_mode, set_yolo_mode
+        from efm_go.safety_override import SafetyOverride, safety_override
+        from efm_go.slack.handler import is_yolo_mode, set_yolo_mode
 
         set_yolo_mode(True)
         so = safety_override()
         assert so.is_permanent is True
         base = time.monotonic()
         with patch(
-            "kiro_crew.safety_override.time.monotonic",
+            "efm_go.safety_override.time.monotonic",
             return_value=base + SafetyOverride._MAX_TTL + 60,
         ):
             assert is_yolo_mode(), "Config-declared YOLO must not expire"
 
     def test_disable_clears_active_state(self) -> None:
-        from kiro_crew.safety_override import safety_override
-        from kiro_crew.slack.handler import disable_yolo, is_yolo_mode, set_yolo_mode
+        from efm_go.safety_override import safety_override
+        from efm_go.slack.handler import disable_yolo, is_yolo_mode, set_yolo_mode
 
         set_yolo_mode(True)
         assert safety_override()._source == "config"
@@ -604,7 +604,7 @@ class TestYoloFromConfigGuard:
 
     def test_set_yolo_mode_false_is_noop(self) -> None:
         """set_yolo_mode(False) is a no-op since False is not passed at startup."""
-        from kiro_crew.slack.handler import is_yolo_mode, set_yolo_mode
+        from efm_go.slack.handler import is_yolo_mode, set_yolo_mode
 
         # set_yolo_mode(False) should not activate anything
         set_yolo_mode(False)
@@ -616,7 +616,7 @@ class TestYoloFromConfigSlackGuards:
 
     @pytest.fixture(autouse=True)
     def _reset_yolo(self):
-        from kiro_crew.safety_override import reset_singleton
+        from efm_go.safety_override import reset_singleton
 
         reset_singleton()
         yield
@@ -627,18 +627,18 @@ class TestYoloFromConfigSlackGuards:
         """events.py: /kirocrew yolo on responds with 'already ON' when active."""
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.slack.handler import set_yolo_mode
+        from efm_go.slack.handler import set_yolo_mode
 
         set_yolo_mode(True)
 
         orch = MagicMock()
         respond = AsyncMock()
 
-        from kiro_crew.slack.events import _handle_yolo
+        from efm_go.slack.events import _handle_yolo
 
         with (
-            patch("kiro_crew.slack.events.sel") as mock_sel,
-            patch("kiro_crew.slack.events.is_owner", return_value=True),
+            patch("efm_go.slack.events.sel") as mock_sel,
+            patch("efm_go.slack.events.is_owner", return_value=True),
         ):
             await _handle_yolo(orch, "UOWNER", "on", respond)
 
@@ -652,7 +652,7 @@ class TestYoloFromConfigSlackGuards:
         """handler.py: !yolo on responds with 'already on' when active."""
         from unittest.mock import AsyncMock, MagicMock
 
-        from kiro_crew.slack.handler import _handle_slash_command, set_yolo_mode
+        from efm_go.slack.handler import _handle_slash_command, set_yolo_mode
 
         set_yolo_mode(True)
 
@@ -660,8 +660,8 @@ class TestYoloFromConfigSlackGuards:
         sessions = MagicMock()
 
         with (
-            patch("kiro_crew.slack.handler.sel") as mock_sel,
-            patch("kiro_crew.slack.handler.is_owner", return_value=True),
+            patch("efm_go.slack.handler.sel") as mock_sel,
+            patch("efm_go.slack.handler.is_owner", return_value=True),
         ):
             result = await _handle_slash_command(
                 "!yolo on", slack, sessions, "C123", "ts1", "ts2", "key1", "UOWNER"

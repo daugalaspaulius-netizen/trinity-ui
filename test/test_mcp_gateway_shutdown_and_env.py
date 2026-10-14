@@ -20,22 +20,22 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.mcp_gateway import gatewayd, launch_approval, manager
-from kiro_crew.mcp_gateway.backend import HEARTBEAT_PING_ID, Backend
-from kiro_crew.mcp_gateway.hashing import (
+from efm_go.mcp_gateway import gatewayd, launch_approval, manager
+from efm_go.mcp_gateway.backend import HEARTBEAT_PING_ID, Backend
+from efm_go.mcp_gateway.hashing import (
     ENV_SCRUB_PREFIXES,
     expand_stub_flags,
     hash_effective_env,
     is_secret_env_key,
     non_secret_env,
 )
-from kiro_crew.mcp_gateway.pool import BackendPool, PoolKey
-from kiro_crew.mcp_gateway.rewriter import (
+from efm_go.mcp_gateway.pool import BackendPool, PoolKey
+from efm_go.mcp_gateway.rewriter import (
     env_sidecar_dir,
     env_sidecar_name,
     resolve_overlay_dir,
 )
-from kiro_crew.mcp_gateway.shutdown_budget import (
+from efm_go.mcp_gateway.shutdown_budget import (
     DRAIN_SECS,
     POOL_SHUTDOWN_SECS,
     TOTAL_SHUTDOWN_BUDGET_SECS,
@@ -340,9 +340,9 @@ class TestDeclaredEnvForwarding:
         classifier short-circuits on ``len(entry_env)`` and never consults the
         forwarder's rules, so only the ON path can drift.
         """
-        from kiro_crew.mcp_gateway import gatewayd
-        from kiro_crew.mcp_gateway.hashing import is_secret_env_key
-        from kiro_crew.mcp_gateway.rewriter import _withheld_env_count
+        from efm_go.mcp_gateway import gatewayd
+        from efm_go.mcp_gateway.hashing import is_secret_env_key
+        from efm_go.mcp_gateway.rewriter import _withheld_env_count
 
         declared = {
             "LOG_LEVEL": "debug",
@@ -392,8 +392,8 @@ class TestDeclaredEnvForwarding:
         learned about ``pool_identity_env`` the count identity below breaks, which
         is the same drift this class already guards for the default set.
         """
-        from kiro_crew.mcp_gateway import gatewayd
-        from kiro_crew.mcp_gateway.rewriter import _withheld_env_count
+        from efm_go.mcp_gateway import gatewayd
+        from efm_go.mcp_gateway.rewriter import _withheld_env_count
 
         named = frozenset({"OAUTH_TOKEN"})
         monkeypatch.setattr(gatewayd, "pool_identity_env_keys", lambda: named)
@@ -431,7 +431,7 @@ class TestDeclaredEnvForwarding:
         is in the identity but still refused, which would re-partition the pool on
         every rotation while leaving the entry unpoolable anyway.
         """
-        from kiro_crew.mcp_gateway.rewriter import pool_identity_env_keys
+        from efm_go.mcp_gateway.rewriter import pool_identity_env_keys
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         (tmp_path / "config.json").write_text(
@@ -454,7 +454,7 @@ class TestDeclaredEnvForwarding:
         gate refuses the whole sidecar. No new check: the gate that guards a spec
         edited mid-session guards this identically.
         """
-        from kiro_crew.mcp_gateway import gatewayd
+        from efm_go.mcp_gateway import gatewayd
 
         # Daemon: nothing opted in. Stub: claims OAUTH_TOKEN is identity.
         monkeypatch.setattr(gatewayd, "pool_identity_env_keys", lambda: frozenset())
@@ -482,7 +482,7 @@ class TestDeclaredEnvForwarding:
         Counting the reads pins the structural fix (the set is a required
         parameter of ``_declared_env_pairs``) rather than the current line order.
         """
-        from kiro_crew.mcp_gateway import gatewayd
+        from efm_go.mcp_gateway import gatewayd
 
         named = frozenset({"OAUTH_TOKEN"})
         reads = {"n": 0}
@@ -729,7 +729,7 @@ class TestCoherentSidecarScanReadsOnce:
 
         # Patched on the OWNER module, which is where the scan resolves it.
         # Patching only the facade re-export would leave the real loader running.
-        from kiro_crew.mcp_gateway.daemon import launch as launch_mod
+        from efm_go.mcp_gateway.daemon import launch as launch_mod
 
         real_loader = launch_mod._load_env_sidecar
         calls: list[int] = []
@@ -850,14 +850,14 @@ def _load_config_from_dict(data: object):
     import unittest.mock
     from pathlib import Path
 
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(data, f)
         tmp = Path(f.name)
     try:
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path", return_value=tmp
+            "efm_go.config.loader.config_path", return_value=tmp
         ):
             return KiroCrewConfig.load()
     finally:
@@ -872,7 +872,7 @@ class TestMalformedDeclaredEnv:
 
     @staticmethod
     def _build(tmp_path, env_value):
-        from kiro_crew.mcp_gateway.rewriter import _build_stub_entry, _normalized_env
+        from efm_go.mcp_gateway.rewriter import _build_stub_entry, _normalized_env
 
         original = {"command": "/bin/true", "args": [], "env": env_value}
         return _build_stub_entry(
@@ -911,7 +911,7 @@ class TestForwardDeclaredEnvFlag:
         whole server its pooling, on the strength of a disagreement that check
         has already ruled out.
         """
-        from kiro_crew.config.loader import McpGatewayConfig
+        from efm_go.config.loader import McpGatewayConfig
 
         assert McpGatewayConfig().forward_declared_env is True
 
@@ -1022,7 +1022,7 @@ class TestPrivateBackendDeclaredEnv:
         assert gatewayd._declared_env_to_forward(key) == {"REGION": "us-west-2"}
 
     def test_private_backend_approval_binds_secret_prefixed_values(self, tmp_path, monkeypatch):
-        from kiro_crew.mcp_gateway import launch_approval
+        from efm_go.mcp_gateway import launch_approval
 
         approved = {"AWS_SECRET_ACCESS_KEY": "first", "REGION": "us-west-2"}
         key = _pool_key(server="gh-mcp")
@@ -1045,8 +1045,8 @@ class TestPrivateBackendDeclaredEnv:
         import shlex
         import sys
 
-        from kiro_crew.mcp_gateway import launch_approval
-        from kiro_crew.mcp_gateway.hashing import hash_command
+        from efm_go.mcp_gateway import launch_approval
+        from efm_go.mcp_gateway.hashing import hash_command
 
         approved = {"AWS_SESSION_TOKEN": "first", "REGION": "us-west-2"}
         key = _pool_key(server="gh-mcp")

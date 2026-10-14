@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from conftest import assert_rejected_without_backtracking
-from kiro_crew.slack.format import (
+from efm_go.slack.format import (
     OPTIONS_CHECKBOXES_ACTION,
     OPTIONS_SUBMIT_ACTION,
     build_options_blocks,

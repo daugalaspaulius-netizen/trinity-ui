@@ -15,11 +15,11 @@ import json
 
 import pytest
 
-from kiro_crew import cli_doctor, cron
-from kiro_crew.agent import DEPRECATED_AGENT_SPECS
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.paths import config_dir
-from kiro_crew.config.sections import KiroCrewAgentConfig
+from efm_go import cli_doctor, cron
+from efm_go.agent import DEPRECATED_AGENT_SPECS
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.paths import config_dir
+from efm_go.config.sections import KiroCrewAgentConfig
 
 DEPRECATED = "kirocrew-ledger-conductor"
 REPLACEMENT = "kirocrew-conductor"
@@ -180,7 +180,7 @@ class TestJobAgentNamesFromDisk:
     def test_gate_predicate_is_shared_with_dispatch(self) -> None:
         # The reader, session-key stability, and the Slack dispatch path must
         # all read the same gate.
-        from kiro_crew.slack import gateway
+        from efm_go.slack import gateway
 
         assert gateway.agent_sequence_dispatches is cron.agent_sequence_dispatches
         assert not cron.agent_sequence_dispatches(["one"])
@@ -198,8 +198,8 @@ class TestJobAgentNamesFromDisk:
 
 class TestOpenSlotAgentNames:
     def _write_slot(self, slot_key: str, agent: str) -> None:
-        from kiro_crew.dashboard.chat_utils import slot_transcript_key
-        from kiro_crew.history import _safe_key, _sessions_dir
+        from efm_go.dashboard.chat_utils import slot_transcript_key
+        from efm_go.history import _safe_key, _sessions_dir
 
         sessions = _sessions_dir()
         sessions.mkdir(parents=True, exist_ok=True)
@@ -290,7 +290,7 @@ class TestDoctorDeprecatedAgentSpecs:
     def test_config_selectors_naming_deprecated_are_flagged(
         self, no_other_surfaces, capsys
     ) -> None:
-        from kiro_crew.config.sections import ChannelConfig
+        from efm_go.config.sections import ChannelConfig
 
         cfg = KiroCrewConfig()
         cfg.agent.default_agent = DEPRECATED
@@ -322,7 +322,7 @@ class TestDoctorDeprecatedAgentSpecs:
         # verbatim, so a list can arrive here; dict.get on an unhashable value
         # would raise TypeError. Doctor must diagnose a malformed config, not
         # crash on it.
-        from kiro_crew.config.sections import ChannelConfig
+        from efm_go.config.sections import ChannelConfig
 
         cfg = KiroCrewConfig()
         cfg.agents = {"broken": KiroCrewAgentConfig(kiro_agent=[DEPRECATED])}  # type: ignore[arg-type]

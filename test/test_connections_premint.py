@@ -18,8 +18,8 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.connections.registry import Provider
-from kiro_crew.dashboard.handlers import connections
+from efm_go.connections.registry import Provider
+from efm_go.dashboard.handlers import connections
 
 
 def _provider(slug: str) -> Provider:
@@ -47,7 +47,7 @@ def warm_engine(monkeypatch: pytest.MonkeyPatch):
     function-local import resolves against -- patching a name on the handler
     module would miss, and the real activation would spawn kiro-cli.
     """
-    from kiro_crew.connections import warm
+    from efm_go.connections import warm
 
     calls: dict[str, object] = {"warmed": None, "invocations": 0}
     candidates: list[Provider] = [_provider("linear"), _provider("vercel")]
@@ -110,7 +110,7 @@ async def test_premint_with_no_eligible_provider_warms_nothing(
     monkeypatch: pytest.MonkeyPatch, warm_engine
 ):
     """An empty candidate set must not activate a process to warm nothing."""
-    from kiro_crew.connections import warm
+    from efm_go.connections import warm
 
     monkeypatch.setattr(warm, "mintable_providers", lambda: [])
     client = await _client()
@@ -134,7 +134,7 @@ async def test_premint_answers_before_the_activation_settles(
     A handler that awaited the engine would hang here for the whole test timeout
     instead of answering, which is exactly the regression this pins.
     """
-    from kiro_crew.connections import warm
+    from efm_go.connections import warm
 
     released = asyncio.Event()
     started = asyncio.Event()
@@ -185,7 +185,7 @@ def test_the_premint_read_id_is_registered_with_the_audit_gate():
     """``emit_internal_read_audit`` fail-closes on an unregistered read_id, and the
     audit tests below monkeypatch the hook, so only this un-mocked check can catch a
     registration gap that silently disables the audit."""
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     assert connections._GRANT_PRESENCE_READ_ID in hooks._AUDIT_ONLY_READ_IDS
 
@@ -198,7 +198,7 @@ async def test_premint_audits_the_grant_observation_it_acts_on(warm_engine, monk
     yields N candidates and exactly one act decision, so N events would over-count one
     observation.
     """
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     calls: list[tuple[str, str]] = []
     monkeypatch.setattr(
@@ -227,7 +227,7 @@ async def test_premint_still_warms_when_the_audit_cannot_be_recorded(
     Denying here would turn an SEL outage into a page that pays a cold spawn on every
     Connect, so an unaudited boolean is the lesser failure -- and it leaves a warning.
     """
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     monkeypatch.setattr(hooks, "emit_internal_read_audit", lambda read_id, outcome: False)
 
@@ -259,8 +259,8 @@ async def test_premint_with_no_candidates_audits_nothing(warm_engine, monkeypatc
     persisted, and no grant answer reaches the user -- so a page mounted against a
     fully-authorized gallery must not write an event on every poll.
     """
-    from kiro_crew import hooks
-    from kiro_crew.connections import warm
+    from efm_go import hooks
+    from efm_go.connections import warm
 
     calls: list[tuple[str, str]] = []
     monkeypatch.setattr(
@@ -286,7 +286,7 @@ async def test_premint_with_no_candidates_audits_nothing(warm_engine, monkeypatc
 
 def test_the_premint_route_is_wired_into_the_dashboard():
     """A handler the route table never registers is unreachable from the page."""
-    from kiro_crew.dashboard.routes import agent_config
+    from efm_go.dashboard.routes import agent_config
 
     app = web.Application()
     agent_config.register(app)
@@ -311,8 +311,8 @@ def test_the_handlers_package_does_not_import_the_warm_engine():
     always find it.
     """
     probe = (
-        "import sys; import kiro_crew.dashboard.handlers;"
-        " leaked = [m for m in ('kiro_crew.connections.warm', 'kiro_crew.connections.mint')"
+        "import sys; import efm_go.dashboard.handlers;"
+        " leaked = [m for m in ('efm_go.connections.warm', 'efm_go.connections.mint')"
         " if m in sys.modules];"
         " print('LEAKED:' + ','.join(leaked) if leaked else 'CLEAN')"
     )

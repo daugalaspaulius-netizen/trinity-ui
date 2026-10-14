@@ -20,10 +20,10 @@ import json
 import re
 from pathlib import Path
 
-from kiro_crew.apps.manifest import SetupConfig
+from efm_go.apps.manifest import SetupConfig
 
 _REPO = Path(__file__).resolve().parent.parent
-_APPS = _REPO / "src" / "kiro_crew" / "apps"
+_APPS = _REPO / "src" / "efm_go" / "apps"
 _MANIFEST_PY = _APPS / "manifest.py"
 _REFERENCE_MD = _REPO / "docs" / "app-kit" / "manifest-reference.md"
 _SPEC_MD = _REPO / "docs" / "system-specs" / "modules" / "app-kit-platform.md"

@@ -264,7 +264,7 @@ FAMILY_REMEDY = {
     "subprocess": (
         "a child process blocks the loop until it exits -- use "
         "`asyncio.create_subprocess_exec`, or `await asyncio.to_thread(...)` / "
-        "`kiro_crew.executors.subprocess_executor()`"
+        "`efm_go.executors.subprocess_executor()`"
     ),
     "http": (
         "a synchronous request blocks the loop for the whole round trip -- use "
@@ -283,7 +283,7 @@ HEADER = """\
 #
 # Do NOT add or raise a line to make a red gate green: a new offender belongs
 # in a thread (`await asyncio.to_thread(...)`, or a named lane from
-# src/kiro_crew/executors.py), or carries an inline `# on-loop-io-ok: <why it
+# src/efm_go/executors.py), or carries an inline `# on-loop-io-ok: <why it
 # cannot block>` comment. The refresh command below only lowers counts and
 # deletes lines.
 #
@@ -868,7 +868,7 @@ _FLAGGED: dict[str, str] = {
         "import subprocess as sp\nasync def f():\n    sp.check_output(['git'])\n"
     ),
     "repo wrapper run_limited": (
-        "from kiro_crew.sandbox import run_limited\n"
+        "from efm_go.sandbox import run_limited\n"
         "async def f():\n"
         "    run_limited(['git'])\n"
     ),
@@ -1005,7 +1005,7 @@ _CLEAN: dict[str, str] = {
         "async def f(loop, db):\n" "    await loop.run_in_executor(None, lambda: db.commit())\n"
     ),
     "named pool helper": (
-        "from kiro_crew.executors import run_in_embed_pool\n"
+        "from efm_go.executors import run_in_embed_pool\n"
         "async def f(db):\n"
         "    await run_in_embed_pool(db.execute, 'SELECT 1')\n"
     ),

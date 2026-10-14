@@ -40,9 +40,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.slack import gateway as slack_gateway
+from efm_go import platform_compat
+from efm_go.dashboard.handlers import updates
+from efm_go.slack import gateway as slack_gateway
 
 
 def _executable(tmp_path, name: str = "shim") -> str:
@@ -359,8 +359,8 @@ class TestTheFatalExitCannotBeHeldUp:
 
     @pytest.mark.asyncio
     async def test_a_wedged_drain_does_not_stop_the_exit(self, monkeypatch):
-        from kiro_crew import cli as kiro_cli
-        from kiro_crew import eventlog_hooks
+        from efm_go import cli as kiro_cli
+        from efm_go import eventlog_hooks
 
         def wedged(*_args, **_kwargs):
             raise RuntimeError("disk is not answering")
@@ -379,7 +379,7 @@ class TestTheFatalExitCannotBeHeldUp:
         """The exit status is generic, so the log line carries the whole diagnosis."""
         codes = _capture_exit(monkeypatch)
 
-        with caplog.at_level(logging.CRITICAL, logger="kiro_crew.platform_compat"):
+        with caplog.at_level(logging.CRITICAL, logger="efm_go.platform_compat"):
             with pytest.raises(_Exited):
                 await platform_compat.exit_after_failed_restart_exec("/opt/kirocrew/bin/python3")
 
@@ -431,8 +431,8 @@ class TestTheseChecksDoNotBlockTheEventLoop:
         offloaded and one inline still freezes the loop, so a single recorded thread
         would pass while the defect stands.
         """
-        from kiro_crew import cli as kiro_cli
-        from kiro_crew import eventlog_hooks
+        from efm_go import cli as kiro_cli
+        from efm_go import eventlog_hooks
 
         loop_thread = threading.current_thread()
         flush_threads: list[threading.Thread] = []
@@ -467,8 +467,8 @@ class TestTheseChecksDoNotBlockTheEventLoop:
         so a few seconds of the measured time are that contract holding rather than
         this one.
         """
-        from kiro_crew import cli as kiro_cli
-        from kiro_crew import eventlog_hooks
+        from efm_go import cli as kiro_cli
+        from efm_go import eventlog_hooks
 
         started = threading.Event()
         released = threading.Event()

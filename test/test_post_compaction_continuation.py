@@ -33,21 +33,21 @@ import re
 
 import pytest
 
-from kiro_crew.acp._dispatch import parse_claude_compaction_notice
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.types import (
+from efm_go.acp._dispatch import parse_claude_compaction_notice
+from efm_go.acp.client import AcpClient
+from efm_go.acp.types import (
     EVENT_COMPACTION_STATUS,
     STOP_REASON_CANCELLED,
     STOP_REASON_END_TURN,
     AcpEvent,
     AcpPromptStats,
 )
-from kiro_crew.acp_backends import ACP_BACKEND_CLAUDE, ACP_BACKEND_KIRO
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.acp_backends import ACP_BACKEND_CLAUDE, ACP_BACKEND_KIRO
+from efm_go.dashboard.chat_utils import (
     _COMPACTION_CONTINUE_MSG,
     should_continue_after_compaction,
 )
-from kiro_crew.dashboard.state import COMPACTION_RECOVERY_PREFIX
+from efm_go.dashboard.state import COMPACTION_RECOVERY_PREFIX
 
 # --------------------------------------------------------------------------- #
 # 1. ACP-layer notice translation
@@ -88,7 +88,7 @@ def test_adapter_notices_are_classified(chunk: str, expected: tuple[str, str]) -
         "I am compacting...",
         "Compacting... let me explain what that means.",
         # kiro-cli's own streamed text, which travels a different path
-        # (_kiro.dev/compaction/status) and must not be claimed here.
+        # (_efm.go/compaction/status) and must not be claimed here.
         "Compacting conversation...",
         # The `failed` arm carries a variable reason, which made it tempting to
         # match with `startswith`. That is too loose in exactly the way this
@@ -387,7 +387,7 @@ def test_the_runner_gates_continuation_on_completed_not_on_any_terminal() -> Non
     src = (
         pathlib.Path(__file__).resolve().parents[1]
         / "src"
-        / "kiro_crew"
+        / "efm_go"
         / "dashboard"
         / "chat_runner.py"
     ).read_text(encoding="utf-8")
@@ -424,7 +424,7 @@ def test_the_dispatch_path_flags_the_notice_chunk_it_forwards() -> None:
     and the regression is exactly the flag going missing from the call.
     """
     src = (
-        pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "acp" / "client.py"
+        pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "acp" / "client.py"
     ).read_text(encoding="utf-8")
     assert "yield AcpEvent(kind=kind, text=chunk, control_notice=_notice_chunk)" in src
     assert re.search(
@@ -444,7 +444,7 @@ def _runner_source() -> str:
     return (
         pathlib.Path(__file__).resolve().parents[1]
         / "src"
-        / "kiro_crew"
+        / "efm_go"
         / "dashboard"
         / "chat_runner.py"
     ).read_text(encoding="utf-8")
@@ -524,7 +524,7 @@ def test_a_notice_only_turn_is_still_flushed() -> None:
 
 def test_answer_text_only_removes_each_recorded_chunk_once() -> None:
     """The helper reconstructs the turn's own answer from the exact chunks."""
-    from kiro_crew.dashboard.chat_runner import _answer_text_only
+    from efm_go.dashboard.chat_runner import _answer_text_only
 
     # Notice-only turn: nothing of the turn's own remains, so the gate sees blank.
     assert _answer_text_only("Compacting...", ["Compacting..."]) == ""
@@ -570,7 +570,7 @@ def test_no_chunk_path_drops_the_text_on_a_notice() -> None:
     discounted, and nothing downstream can recover it.
     """
     src = (
-        pathlib.Path(__file__).resolve().parents[1] / "src" / "kiro_crew" / "acp" / "client.py"
+        pathlib.Path(__file__).resolve().parents[1] / "src" / "efm_go" / "acp" / "client.py"
     ).read_text(encoding="utf-8")
     lines = src.splitlines()
     calls = [i for i, ln in enumerate(lines) if "_claude_compaction_event(chunk)" in ln]
@@ -602,7 +602,7 @@ def test_the_runner_only_clears_text_on_an_observed_terminal() -> None:
     src = (
         pathlib.Path(__file__).resolve().parents[1]
         / "src"
-        / "kiro_crew"
+        / "efm_go"
         / "dashboard"
         / "chat_runner.py"
     ).read_text(encoding="utf-8")

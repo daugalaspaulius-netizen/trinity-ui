@@ -31,10 +31,10 @@ from test_sandbox_launcher_program import (
     refusal,
 )
 
-from kiro_crew import sandbox
-from kiro_crew import sandbox_launcher_program as program
-from kiro_crew import sandbox_plan
-from kiro_crew.sandbox import SandboxCeilingUnsealable
+from efm_go import sandbox
+from efm_go import sandbox_launcher_program as program
+from efm_go import sandbox_plan
+from efm_go.sandbox import SandboxCeilingUnsealable
 
 _POSIX_ONLY = pytest.mark.skipif(os.name == "nt", reason="POSIX mode bits / bind-mount mask")
 #: The launcher program's stages pin through ``O_PATH`` and ``/proc/self/fd``, which only

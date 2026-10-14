@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.acp import client as acp_client
-from kiro_crew.acp.client import (
+from efm_go.acp import client as acp_client
+from efm_go.acp.client import (
     PROVIDER_ERROR_AUTH,
     PROVIDER_ERROR_CONNECTION,
     PROVIDER_ERROR_CREDENTIAL_PROPAGATION,
@@ -87,7 +87,7 @@ def test_matched_token_is_short_and_never_the_message() -> None:
 def test_adapter_uses_no_private_client_names() -> None:
     import inspect
 
-    from kiro_crew.taskq.adapters import acp_provider
+    from efm_go.taskq.adapters import acp_provider
 
     source = inspect.getsource(acp_provider)
     assert "client._RE_" not in source

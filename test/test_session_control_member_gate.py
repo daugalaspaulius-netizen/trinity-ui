@@ -37,8 +37,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.handlers import session_control as handler
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.handlers import session_control as handler
 
 MEMBER_SESSION = "dashboard:member-radar"
 CHAT_SLOT_SESSION = "dashboard:chat-10-1789623359"
@@ -265,7 +265,7 @@ class TestCarriedFenceVerdict:
         # member did not create is refused at the creator fence, not served.
         from chat_test_helpers import _make_state
 
-        from kiro_crew.dashboard.chat_utils import slot_history_key
+        from efm_go.dashboard.chat_utils import slot_history_key
 
         state = _make_state(tmp_path)
         caller = state.get_or_create_slot("chat-10-1789623359")

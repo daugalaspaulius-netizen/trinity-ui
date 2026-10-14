@@ -7,8 +7,8 @@ import asyncio
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard import tailnet as recovery
-from kiro_crew.dashboard.urls import build_allowed_hosts
+from efm_go.dashboard import tailnet as recovery
+from efm_go.dashboard.urls import build_allowed_hosts
 
 _HOST = "desk.tail-abc.ts.net"
 

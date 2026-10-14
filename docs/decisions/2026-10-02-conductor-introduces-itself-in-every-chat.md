@@ -14,5 +14,5 @@ Every `kirocrew-conductor` chat introduces itself in plain words and reports wit
 
 ## Evidence
 
-- https://github.com/kirodotdev/KiroCrew/pull/16088#issuecomment-5948162487 -- the maintainer's on-record decision on the pull request that adds this entry.
-- https://github.com/kirodotdev/KiroCrew/pull/16088 -- the pull request that adds the "Talking to the person" section to the Conductor's prompt.
+- https://efmleads.com/pull/16088#issuecomment-5948162487 -- the maintainer's on-record decision on the pull request that adds this entry.
+- https://efmleads.com/pull/16088 -- the pull request that adds the "Talking to the person" section to the Conductor's prompt.

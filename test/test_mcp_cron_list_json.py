@@ -26,13 +26,13 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import mcp_cron
-from kiro_crew.cron import CronJob, CronSchedule
+from efm_go import mcp_cron
+from efm_go.cron import CronJob, CronSchedule
 
 
 @pytest.fixture(autouse=True)
 def _isolate(monkeypatch, tmp_path):
-    monkeypatch.setattr("kiro_crew.cron._DEFAULT_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.cron._DEFAULT_DIR", tmp_path)
     monkeypatch.setenv("KIROCREW_SESSION_KEY", "dashboard:json-slot")
     yield
 
@@ -181,7 +181,7 @@ class TestBoundsAndSafety:
         assert len(out["jobs"]) == mcp_cron._JSON_MAX_JOBS
 
     def test_it_stays_under_the_response_ceiling_on_ASCII_prompts(self) -> None:
-        from kiro_crew.validation import MAX_RESPONSE_LEN
+        from efm_go.validation import MAX_RESPONSE_LEN
 
         jobs = [
             _job(id=f"j{i:03d}", name=f"job-{i}" * 5, message="Check the timestamp. " * 40)
@@ -199,7 +199,7 @@ class TestBoundsAndSafety:
         appends a notice OUTSIDE the JSON grammar, so the consumer would receive a
         document that does not parse at all.
         """
-        from kiro_crew.validation import MAX_RESPONSE_LEN
+        from efm_go.validation import MAX_RESPONSE_LEN
 
         jobs = [
             _job(id=f"j{i:03d}", name="任务" * 20, message="检查时间戳是否变化。" * 60)
@@ -278,7 +278,7 @@ class TestValidationSurface:
         assert mcp_cron._validate_args("cron_list", {"json": True})["json"] is True
 
     def test_a_non_bool_flag_is_rejected(self) -> None:
-        from kiro_crew.validation import ValidationError
+        from efm_go.validation import ValidationError
 
         with pytest.raises(ValidationError):
             mcp_cron._validate_args("cron_list", {"json": "yes"})

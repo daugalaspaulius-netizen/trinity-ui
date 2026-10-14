@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from kiro_crew import autonudge as _an
-from kiro_crew.autonudge import APPROVAL_STALL_REASON, AutoNudgeService, NudgeLoop
+from efm_go import autonudge as _an
+from efm_go.autonudge import APPROVAL_STALL_REASON, AutoNudgeService, NudgeLoop
 
 
 @pytest.fixture(autouse=True)

@@ -19,8 +19,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.cron import CronJob, CronSchedule
-from kiro_crew.dashboard.handlers.cron import api_crons
+from efm_go.cron import CronJob, CronSchedule
+from efm_go.dashboard.handlers.cron import api_crons
 
 
 def _request_with_job(**job_kw) -> MagicMock:

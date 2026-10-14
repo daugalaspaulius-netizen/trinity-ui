@@ -23,8 +23,8 @@ import json
 
 import pytest
 
-from kiro_crew.dashboard.handlers import _shared as shared
-from kiro_crew.dashboard.handlers._shared import _MAX_BODY_BYTES, read_bounded_json
+from efm_go.dashboard.handlers import _shared as shared
+from efm_go.dashboard.handlers._shared import _MAX_BODY_BYTES, read_bounded_json
 
 
 class _FakeContent:

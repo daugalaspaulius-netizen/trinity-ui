@@ -10,11 +10,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
-from kiro_crew.messaging.session_resume import RoutingDecision
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.teams.client import TeamsInbound
-from kiro_crew.teams.transport_dispatch import TeamsDispatcher
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
+from efm_go.messaging.session_resume import RoutingDecision
+from efm_go.session_allocation import SessionClosingError
+from efm_go.teams.client import TeamsInbound
+from efm_go.teams.transport_dispatch import TeamsDispatcher
 
 
 class FakeProvider:
@@ -403,7 +403,7 @@ class TestCommands:
         client = FakeClient()
         d = _dispatcher(sessions, FakeCtx(), client)
         spool = AsyncMock(return_value=True)
-        monkeypatch.setattr("kiro_crew.messaging.dispatch.spool_refused_turn", spool)
+        monkeypatch.setattr("efm_go.messaging.dispatch.spool_refused_turn", spool)
 
         await d.handle_message(_inbound("/new"))
 
@@ -428,7 +428,7 @@ class TestCommands:
         )
         d._session_restricted = AsyncMock(side_effect=lambda key: key == "dashboard:restricted")
         spool = AsyncMock(return_value=True)
-        monkeypatch.setattr("kiro_crew.messaging.dispatch.spool_refused_turn", spool)
+        monkeypatch.setattr("efm_go.messaging.dispatch.spool_refused_turn", spool)
 
         await d.handle_message(_inbound("keep this private"))
 
@@ -548,7 +548,7 @@ class TestInboundGovernance:
         # ``inbound_permitted`` wrapper, which resolves
         # ``channel_inbound_permitted`` from dispatch's globals at call time --
         # so this one patch covers both the channel-side and pipeline gates.
-        monkeypatch.setattr("kiro_crew.messaging.dispatch.channel_inbound_permitted", _deny)
+        monkeypatch.setattr("efm_go.messaging.dispatch.channel_inbound_permitted", _deny)
         provider = FakeProvider([AcpEvent(kind=EVENT_COMPLETE)])
         sessions = FakeSessions(provider)
         client = FakeClient()

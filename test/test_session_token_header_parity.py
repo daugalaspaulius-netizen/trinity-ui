@@ -19,8 +19,8 @@ import io
 
 import pytest
 
-from kiro_crew import mcp_core, mcp_shared
-from kiro_crew.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
+from efm_go import mcp_core, mcp_shared
+from efm_go.mcp_gateway.claim import STUB_SESSION_TOKEN_ENV
 
 _TOKEN = "d" * 64
 _SESSION = "dashboard:chat-7"

@@ -103,7 +103,7 @@ class TestStopIdleWhileRunning:
         success that claims a running turn was stopped, and no forced reset is
         issued against the still-settling backend.
         """
-        from kiro_crew.dashboard.chat_handlers import api_chat_slot_stop
+        from efm_go.dashboard.chat_handlers import api_chat_slot_stop
 
         slot = _FakeSlot()
         slot.running = True
@@ -118,10 +118,10 @@ class TestStopIdleWhileRunning:
 
         state.sessions.stop_turn = AsyncMock(side_effect=_stop_turn)
 
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 resp = await api_chat_slot_stop(_request(state))
 
         body = json.loads(resp.body)
@@ -144,7 +144,7 @@ class TestStopIdleWhileRunning:
         the ``"no active turn"`` info -- reserved for a slot that still reads
         running -- is not attached.
         """
-        from kiro_crew.dashboard.chat_handlers import stop_slot_turn
+        from efm_go.dashboard.chat_handlers import stop_slot_turn
 
         slot = _FakeSlot()
         slot.running = True
@@ -161,10 +161,10 @@ class TestStopIdleWhileRunning:
 
         state.sessions.stop_turn = AsyncMock(side_effect=_stop_turn)
 
-        with patch("kiro_crew.dashboard.chat_handlers.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_handlers.sel") as mock_sel:
             mock_sel.return_value.log_tool_invocation = MagicMock()
             mock_sel.return_value.log = MagicMock()
-            with patch("kiro_crew.dashboard.chat_handlers._reject_pending_approvals"):
+            with patch("efm_go.dashboard.chat_handlers._reject_pending_approvals"):
                 body = await stop_slot_turn(state, slot)
 
         assert not any(c["force"] for c in calls), "a settled turn must not be force-reset"

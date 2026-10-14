@@ -40,7 +40,7 @@ AUTOSDE = ROOT / "AUTOSDE.yaml"
 PREPARE_PR = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"

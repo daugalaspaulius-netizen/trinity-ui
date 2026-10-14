@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 _SKILL = Path(__file__).resolve().parents[1] / (
-    "src/kiro_crew/deploy/skills/artifact-deploy"
+    "src/efm_go/deploy/skills/artifact-deploy"
 )
 
 
@@ -48,12 +48,12 @@ def test_f1_shell_reaper_gates_stack_deletion():
 
 
 def _validate(url: str):
-    from kiro_crew.validation import _validate_webapp_metadata_shape
+    from efm_go.validation import _validate_webapp_metadata_shape
     _validate_webapp_metadata_shape({"deploy_target": {"public_url": url}})
 
 
 def test_f2_backend_rejects_userinfo_url():
-    from kiro_crew.validation import ValidationError
+    from efm_go.validation import ValidationError
     with pytest.raises(ValidationError):
         _validate("https://user:secret@attacker.example/path")
     with pytest.raises(ValidationError):

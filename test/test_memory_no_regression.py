@@ -14,18 +14,18 @@ from member_memory_helpers import request
 from test_default_context_admission import rig as _rig
 from test_default_context_admission import seed_skill
 
-from kiro_crew import context as ctx
-from kiro_crew import mcp_core, member_memory_auth, memory_stores
-from kiro_crew.config import loader
-from kiro_crew.dashboard.handlers import discover, memory_member
-from kiro_crew.hooks import HookManager
-from kiro_crew.learn import LessonStore
-from kiro_crew.mcp_tools import learn
-from kiro_crew.mcp_tools import skills as skill_tools
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_recall import bound_recall_payload
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import context as ctx
+from efm_go import mcp_core, member_memory_auth, memory_stores
+from efm_go.config import loader
+from efm_go.dashboard.handlers import discover, memory_member
+from efm_go.hooks import HookManager
+from efm_go.learn import LessonStore
+from efm_go.mcp_tools import learn
+from efm_go.mcp_tools import skills as skill_tools
+from efm_go.memory import MemoryStore
+from efm_go.memory_recall import bound_recall_payload
+from efm_go.skills import SkillsLoader
+from efm_go.vector_memory import VectorMemoryStore
 
 env = _env
 rig = _rig
@@ -293,12 +293,12 @@ def test_noise_never_displaces_relevant_episode():
 
 
 def test_overflow_retains_navigation_and_latest_user(rig, tmp_path):
-    from kiro_crew.history import ConversationLog
+    from efm_go.history import ConversationLog
 
     builder, memory, skills, lessons, _ = rig
     memory.write_preferences("Required preference.\n" * 2000)
     memory.write_projects("# Paymentquartz\nTask detail")
-    from kiro_crew.learn import Lesson
+    from efm_go.learn import Lesson
 
     lessons.save(
         Lesson(ts="2026-09-19", rule="Always retain safe behavior. " * 1500, category="knowledge")
@@ -322,13 +322,13 @@ def test_overflow_retains_navigation_and_latest_user(rig, tmp_path):
 def test_disabled_metrics_skip_measurement(rig, monkeypatch):
     import logging
 
-    from kiro_crew.metrics.recorder import MetricsRecorder
+    from efm_go.metrics.recorder import MetricsRecorder
 
     builder, _, _, _, _ = rig
     monkeypatch.setattr(ctx, "get_recorder", lambda: MetricsRecorder(None))
     monkeypatch.setattr(ctx.logger, "level", logging.INFO)
     measure = Mock(side_effect=AssertionError("measurement"))
-    monkeypatch.setattr("kiro_crew.context_blocks.measure_prompt", measure)
+    monkeypatch.setattr("efm_go.context_blocks.measure_prompt", measure)
     builder.build_message("hello", False)
     measure.assert_not_called()
 
@@ -336,7 +336,7 @@ def test_disabled_metrics_skip_measurement(rig, monkeypatch):
 @pytest.mark.parametrize("pinned", [False, True])
 @pytest.mark.parametrize("reinject", [False, True])
 def test_project_body_and_discovery_survive(rig, tmp_path, pinned, reinject):
-    from kiro_crew import skill_trust
+    from efm_go import skill_trust
 
     builder, _, skills, _, _ = rig
     project = tmp_path / "project"
@@ -366,8 +366,8 @@ def test_project_body_and_discovery_survive(rig, tmp_path, pinned, reinject):
 
 
 def test_skill_search_reads_project_bodies_only_under_the_body_cap(rig, tmp_path, monkeypatch):
-    from kiro_crew import skill_trust
-    from kiro_crew import skills as skills_mod
+    from efm_go import skill_trust
+    from efm_go import skills as skills_mod
 
     builder, _, skills, _, _ = rig
     project = tmp_path / "project"
@@ -424,7 +424,7 @@ def test_skill_search_reads_project_bodies_only_under_the_body_cap(rig, tmp_path
 async def test_project_search_agent_route_loads_confined_body(rig, tmp_path, monkeypatch):
     from member_memory_helpers import make_request
 
-    from kiro_crew import skill_trust
+    from efm_go import skill_trust
 
     builder, _, skills, _, _ = rig
     project = tmp_path / "project"
@@ -432,7 +432,7 @@ async def test_project_search_agent_route_loads_confined_body(rig, tmp_path, mon
     state = SimpleNamespace(
         context_builder=builder, _slots={"synthetic": SimpleNamespace(project=str(project))}
     )
-    from kiro_crew.dashboard.server import _MIXED_INTERNAL_API_PATHS
+    from efm_go.dashboard.server import _MIXED_INTERNAL_API_PATHS
 
     assert "/api/skills/-/discover" in _MIXED_INTERNAL_API_PATHS
     monkeypatch.setattr(
@@ -515,7 +515,7 @@ def test_session_only_source_snippets_are_retained(rig):
 
 
 def test_cancel_restore_span_counts_only_the_real_request(rig):
-    from kiro_crew.context_blocks import measure_prompt
+    from efm_go.context_blocks import measure_prompt
 
     builder, _, _, _, _ = rig
     prefix = "[PREVIOUS TURN WAS CANCELLED BY THE USER — context restore]\nOld task\n[END PREVIOUS TURN]\n\n"

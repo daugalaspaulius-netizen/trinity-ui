@@ -12,8 +12,8 @@ from __future__ import annotations
 import inspect
 import time
 
-from kiro_crew.apps.builtins.code_review_sage.backend import routes as sage_routes
-from kiro_crew.dashboard import arrival_folders, channel_folders, chat_folders
+from efm_go.apps.builtins.code_review_sage.backend import routes as sage_routes
+from efm_go.dashboard import arrival_folders, channel_folders, chat_folders
 
 _STAMP_LINE = '"created_at": time.time()'
 

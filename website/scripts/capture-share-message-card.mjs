@@ -28,7 +28,7 @@ const ANSWER = [
   '## Overnight batch done',
   'Scanned **47 new issues**, triaged 3 as auto-fixable and dispatched all of them in parallel worktrees.',
   '![run summary](/tmp/run-summary.png)',
-  '- #4881 opened [PR #7202](https://github.com/kirodotdev/KiroCrew/pull/7202) — CI all green, awaiting review',
+  '- #4881 opened [PR #7202](https://efmleads.com/pull/7202) — CI all green, awaiting review',
   '- #5104 opened PR #7205 — Windows shard still running',
   '- #5121 needs a design decision, parked with a `needs-decision` label and a written summary',
   '```bash\ngh pr checks 7202 --json name,state\n```',
@@ -80,7 +80,7 @@ async function main() {
       await route.fulfill({
         status: 200,
         contentType: 'image/png',
-        body: readFileSync(new URL('../../src/kiro_crew/static/kirocrew-logo.png', import.meta.url)),
+        body: readFileSync(new URL('../../src/efm_go/static/kirocrew-logo.png', import.meta.url)),
       })
       return true
     }

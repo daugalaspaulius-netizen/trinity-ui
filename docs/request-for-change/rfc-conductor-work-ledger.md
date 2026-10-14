@@ -26,11 +26,11 @@ names, which was read at that PR's own head.
 
 Revision v3 changes what the ledger *is*. v1 and v2 described a two-party record — one conductor, one worker, one item each, and a worker that could see nothing but its own row. v3 calls it what the shipped store already is: **one shared board per conductor, masked by identity.** The conductor sees the whole board. A worker still writes only its own square, but it may now *read* a pointer-only digest of its siblings (§Visibility model, §`work_brief`), and it may ask the conductor for a channel to one of them (§`work_request`) which the conductor may grant with a bounded, expiring pairwise channel (§`work_message`). Every message and every request is an event on the board, so the manager reading the board sees all of the traffic it authorised. The v1/v2 "not a message bus" non-goal is narrowed rather than dropped: there is still no fan-out, no addressing outside one ledger, and no path from a worker's text into anyone's prompt. v3 also promotes the shipped phases from "proposed" to "as implemented" and closes Q2 and Q6.
 
-Revision v4 moves Phase 3 and Phase 4 from planned to in flight and records what each is actually being built as. Phase 3, the wake gate, is [#12781](https://github.com/kirodotdev/KiroCrew/pull/12781) on `feat/work-ledger-wake-gate`, still a draft; Phase 4, the surfaces, is [#12792](https://github.com/kirodotdev/KiroCrew/pull/12792) on `feat/crew-page-work-items`. **Neither is on main**, so §Migration plan's two phase sections describe them as in flight and say what the branches contain rather than claiming shipped behaviour. Because a branch under review moves, each of those two sections is pinned to the head it was read at and marked for re-audit at merge. That pin is load-bearing rather than ceremonial: both heads moved once while this revision was itself in review, which is why neither section may be trusted on this document's `last-audited` date alone. The two phases are closer than §Migration plan implies: Phase 4's outstanding band is the *rendering* of Phase 3's actionable set, so one event set decides both what wakes a conductor and what a human sees as still unanswered. v4 corrects the size of that set. Phase 3's scope names four actionable events, but the store has no `request` event kind at all — `EVENT_KINDS` is `create`, `bind`, `report`, `decision`, `verdict`, `close` — so what wakes a conductor is a worker `report` carrying `done`, `blocked` or `question`, three statuses rather than four, and the `request` half of both the gate and the band waits for Phase 5 with the event kind that would carry it. That gives Phase 4 a requirement v3 left implicit: **a human reads the state of every dispatched worker from the Crew page at a cost of zero conductor turns.** It is what makes the board worth building beside a gate that already wakes the conductor, and it is the exit criterion the phase should be judged on. §Scope: conductors outside `kirocrew-conductor` is new in v4 and records which conductors none of this reaches, as an open question (Q10) rather than a decision. v4 also keeps one rejected alternative from a separate proposal folded in here: a second wake channel built on [`session_ledger.py`](../../src/kiro_crew/session_ledger.py) rather than on this store, rejected because a worker would then carry two status records — its `work_report` status and its session ledger's `phase` — that can disagree, with nothing to say which one a conductor should believe. The complementary half of that proposal survived separately as [`rfc-wake-judge.md`](rfc-wake-judge.md), whose §Alternatives considered states the division this document should be read against: a typed probe answers what can be typed, and a judge reads only the prose evidence a probe cannot — probe first, judge on what the probe cannot type. Phase 3 is the typed side of that split, which is why its verdicts are the ones a judge is forbidden to mint. The data model, storage layout, visibility model and agent specs are unchanged.
+Revision v4 moves Phase 3 and Phase 4 from planned to in flight and records what each is actually being built as. Phase 3, the wake gate, is [#12781](https://efmleads.com/pull/12781) on `feat/work-ledger-wake-gate`, still a draft; Phase 4, the surfaces, is [#12792](https://efmleads.com/pull/12792) on `feat/crew-page-work-items`. **Neither is on main**, so §Migration plan's two phase sections describe them as in flight and say what the branches contain rather than claiming shipped behaviour. Because a branch under review moves, each of those two sections is pinned to the head it was read at and marked for re-audit at merge. That pin is load-bearing rather than ceremonial: both heads moved once while this revision was itself in review, which is why neither section may be trusted on this document's `last-audited` date alone. The two phases are closer than §Migration plan implies: Phase 4's outstanding band is the *rendering* of Phase 3's actionable set, so one event set decides both what wakes a conductor and what a human sees as still unanswered. v4 corrects the size of that set. Phase 3's scope names four actionable events, but the store has no `request` event kind at all — `EVENT_KINDS` is `create`, `bind`, `report`, `decision`, `verdict`, `close` — so what wakes a conductor is a worker `report` carrying `done`, `blocked` or `question`, three statuses rather than four, and the `request` half of both the gate and the band waits for Phase 5 with the event kind that would carry it. That gives Phase 4 a requirement v3 left implicit: **a human reads the state of every dispatched worker from the Crew page at a cost of zero conductor turns.** It is what makes the board worth building beside a gate that already wakes the conductor, and it is the exit criterion the phase should be judged on. §Scope: conductors outside `kirocrew-conductor` is new in v4 and records which conductors none of this reaches, as an open question (Q10) rather than a decision. v4 also keeps one rejected alternative from a separate proposal folded in here: a second wake channel built on [`session_ledger.py`](../../src/efm_go/session_ledger.py) rather than on this store, rejected because a worker would then carry two status records — its `work_report` status and its session ledger's `phase` — that can disagree, with nothing to say which one a conductor should believe. The complementary half of that proposal survived separately as [`rfc-wake-judge.md`](rfc-wake-judge.md), whose §Alternatives considered states the division this document should be read against: a typed probe answers what can be typed, and a judge reads only the prose evidence a probe cannot — probe first, judge on what the probe cannot type. Phase 3 is the typed side of that split, which is why its verdicts are the ones a judge is forbidden to mint. The data model, storage layout, visibility model and agent specs are unchanged.
 
 Revision v2 reverses v1's agent-spec recommendation. v1 argued against a `kirocrew-worker` agent and put the four tools on `kirocrew-core` to fail closed. Both halves of that reasoning turned out to point the other way, and §Agent spec changes now proposes a worker agent that is the default agent's superset plus an opt-in `kirocrew-work` server. §Alternatives considered keeps v1's position as the rejected option. The data model, storage layout, wake gate and Phase 1 are unchanged.
 
-**Disambiguation.** "Ledger" already names two things here. [`src/kiro_crew/session_ledger.py`](../../src/kiro_crew/session_ledger.py) is one session's own durable state, and Issue Radar's `crew_store` keeps a per-repository work ledger for issue crews. This RFC adds a third, now on main: a shared record between a conductor session and the worker sessions it dispatched. It is deliberately the generalization of the Issue Radar one, and §9 names what is lifted and what is left behind.
+**Disambiguation.** "Ledger" already names two things here. [`src/efm_go/session_ledger.py`](../../src/efm_go/session_ledger.py) is one session's own durable state, and Issue Radar's `crew_store` keeps a per-repository work ledger for issue crews. This RFC adds a third, now on main: a shared record between a conductor session and the worker sessions it dispatched. It is deliberately the generalization of the Issue Radar one, and §9 names what is lifted and what is left behind.
 
 ---
 
@@ -48,13 +48,13 @@ The reason this is not simply "let the worker call `session_send`" is in the cod
 
 This section describes what `kirocrew-conductor` cost BEFORE the ledger, and it is now a historical account: the swap in §Rollout note — swap done made the ledger flow what `kirocrew-conductor` runs, so the four costs below are what it no longer pays. `kirocrew-ledger-conductor` is a deprecated alias of it for one release.
 
-The conductor agent spec is built by `_install_conductor_agent` in [`src/kiro_crew/agent_materialization/conductor_agents.py`](../../src/kiro_crew/agent_materialization/conductor_agents.py). Its operating loop is [`goal-conductor/SKILL.md`](../../src/kiro_crew/builtin_skills/goal-conductor/SKILL.md): dispatch with `session_create` plus `session_send`, then patrol on an AutoNudge loop armed by `monitor_start`, and each cycle read `session_ledger_read`, run `accept_eval.py` over every open item, and call `session_read_message` against a stored cursor.
+The conductor agent spec is built by `_install_conductor_agent` in [`src/efm_go/agent_materialization/conductor_agents.py`](../../src/efm_go/agent_materialization/conductor_agents.py). Its operating loop is [`goal-conductor/SKILL.md`](../../src/efm_go/builtin_skills/goal-conductor/SKILL.md): dispatch with `session_create` plus `session_send`, then patrol on an AutoNudge loop armed by `monitor_start`, and each cycle read `session_ledger_read`, run `accept_eval.py` over every open item, and call `session_read_message` against a stored cursor.
 
 Four costs follow from that shape.
 
 **Latency equals the interval.** A worker that finishes one second after a poll waits a whole interval to be noticed. The interval is an idle gap measured from the end of the conductor's turn, so real cadence is turn duration plus interval.
 
-**Every cycle spends a turn.** `monitor_start` already avoids this for one subject kind — a GitHub pull request named by full URL is watched by `PrWatchProbe` in [`src/kiro_crew/probes/gh_pr.py`](../../src/kiro_crew/probes/gh_pr.py), and an unchanged observation re-arms the timer without firing. There is no equivalent probe for "did my workers do anything", so a conductor patrol is a plain timer and every tick costs a model turn whether or not anything moved.
+**Every cycle spends a turn.** `monitor_start` already avoids this for one subject kind — a GitHub pull request named by full URL is watched by `PrWatchProbe` in [`src/efm_go/probes/gh_pr.py`](../../src/efm_go/probes/gh_pr.py), and an unchanged observation re-arms the timer without firing. There is no equivalent probe for "did my workers do anything", so a conductor patrol is a plain timer and every tick costs a model turn whether or not anything moved.
 
 **A stalled worker looks like a working one.** `session_read_message` returns transcript. A worker parked on an approval prompt, a worker whose process died, and a worker mid-build all produce "no new assistant message". The skill uses that call for liveness, which is the best signal available and still cannot separate those three.
 
@@ -62,7 +62,7 @@ Four costs follow from that shape.
 
 ### Why the obvious fix is withheld
 
-`session_send` would let a worker push a line into the conductor's session. It is granted to the conductor and to Crew Mode members, and withheld from workers. The comment in [`src/kiro_crew/agent.py`](../../src/kiro_crew/agent.py) says why, verbatim:
+`session_send` would let a worker push a line into the conductor's session. It is granted to the conductor and to Crew Mode members, and withheld from workers. The comment in [`src/efm_go/agent.py`](../../src/efm_go/agent.py) says why, verbatim:
 
 ```text
 #: * ``session_send`` — WITHHELD. Runs text as another session's user-role turn
@@ -70,7 +70,7 @@ Four costs follow from that shape.
 #:   reachable; nothing bounds WHAT is sent.
 ```
 
-`send_to_target` in [`src/kiro_crew/dashboard/session_control.py`](../../src/kiro_crew/dashboard/session_control.py) hands the body to `enqueue_or_run_prompt` — the same call the human composer uses. A worker's text would therefore *be* the conductor's next prompt, executed under the conductor's grants. Granting it downward turns every worker into an operator of its parent.
+`send_to_target` in [`src/efm_go/dashboard/session_control.py`](../../src/efm_go/dashboard/session_control.py) hands the body to `enqueue_or_run_prompt` — the same call the human composer uses. A worker's text would therefore *be* the conductor's next prompt, executed under the conductor's grants. Granting it downward turns every worker into an operator of its parent.
 
 So the requirement is not "a channel from worker to conductor". It is a channel that cannot carry an instruction.
 
@@ -127,7 +127,7 @@ Both agents reach the store through the dashboard HTTP API with a server-resolve
 
 ### Identity: resolved, never asserted
 
-Every one of the six tools resolves the caller with `require_strict_session_key` in [`src/kiro_crew/mcp_core.py`](../../src/kiro_crew/mcp_core.py). Strict means the gateway-injected caller block, the `KIROCREW_SESSION_KEY` environment variable, or the HMAC host-pid sidecar — and explicitly *not* the lenient resolver's `/proc` ancestor walk, because a subagent walking its ancestry would resolve to its parent's identity. `session_ledger_read` and `issue_radar_crew_read` already depend on exactly this property; the failure text and diagnosis helper are reused unchanged.
+Every one of the six tools resolves the caller with `require_strict_session_key` in [`src/efm_go/mcp_core.py`](../../src/efm_go/mcp_core.py). Strict means the gateway-injected caller block, the `KIROCREW_SESSION_KEY` environment variable, or the HMAC host-pid sidecar — and explicitly *not* the lenient resolver's `/proc` ancestor walk, because a subagent walking its ancestry would resolve to its parent's identity. `session_ledger_read` and `issue_radar_crew_read` already depend on exactly this property; the failure text and diagnosis helper are reused unchanged.
 
 No tool takes a session key, a conductor id, or an item id from the worker side. The server derives all three.
 
@@ -186,7 +186,7 @@ One file per item.
 
 #### Event
 
-Every write appends exactly one event. There is no way to change a field without appending a line, which is the structural form of the invariant Issue Radar enforces with a validator — `_validate_crew_record_couples_phase_to_an_event` in [`src/kiro_crew/validation.py`](../../src/kiro_crew/validation.py) rejects a phase change that carries no event. Here the record and the line are the same write, so the check has nothing to reject.
+Every write appends exactly one event. There is no way to change a field without appending a line, which is the structural form of the invariant Issue Radar enforces with a validator — `_validate_crew_record_couples_phase_to_an_event` in [`src/efm_go/validation.py`](../../src/efm_go/validation.py) rejects a phase change that carries no event. Here the record and the line are the same write, so the check has nothing to reject.
 
 | field | type | notes |
 |---|---|---|
@@ -263,7 +263,7 @@ gives.
 
 ### Storage layout
 
-Rooted at `data_home()` from [`src/kiro_crew/config/paths.py`](../../src/kiro_crew/config/paths.py), which is the resolve-only helper safe on hot paths. Directory naming copies `session_ledger`'s scheme — a filesystem-safe readable prefix plus the first eight hex of the key's SHA-256 — so a directory is greppable by a human and still collision-resistant.
+Rooted at `data_home()` from [`src/efm_go/config/paths.py`](../../src/efm_go/config/paths.py), which is the resolve-only helper safe on hot paths. Directory naming copies `session_ledger`'s scheme — a filesystem-safe readable prefix plus the first eight hex of the key's SHA-256 — so a directory is greppable by a human and still collision-resistant.
 
 ```text
 <data_home>/work-ledger/
@@ -281,7 +281,7 @@ Rooted at `data_home()` from [`src/kiro_crew/config/paths.py`](../../src/kiro_cr
     <worker-digest8>.json    {conductor_dir, item_id}; written once by the conductor
 ```
 
-Files are written with `atomic_write` from [`src/kiro_crew/atomic_write.py`](../../src/kiro_crew/atomic_write.py) using `mode=0o600` and `restrict_to_owner=True`, matching `session_ledger`. Event lines append under `platform_compat.file_lock`.
+Files are written with `atomic_write` from [`src/efm_go/atomic_write.py`](../../src/efm_go/atomic_write.py) using `mode=0o600` and `restrict_to_owner=True`, matching `session_ledger`. Event lines append under `platform_compat.file_lock`.
 
 Three choices here differ from the shape this design started from, and each is a correction rather than a preference.
 
@@ -317,12 +317,12 @@ key whichever party wrote it. The entry carries `actor`, `by`, `action` and only
 fields that action set; an omitted field means "unchanged".
 
 The `work` fold in
-[`src/kiro_crew/crew_log/projection.py`](../../src/kiro_crew/crew_log/projection.py),
+[`src/efm_go/crew_log/projection.py`](../../src/efm_go/crew_log/projection.py),
 registered in the projection registry beside the session folds, replays those entries
 across the conductor's and its workers' units into the shape the readers already
 consume: the conductor header and every item in creation order, each with its event
 tail. `rebuild_from_projection` in
-[`src/kiro_crew/work_ledger.py`](../../src/kiro_crew/work_ledger.py) re-materialises
+[`src/efm_go/work_ledger.py`](../../src/efm_go/work_ledger.py) re-materialises
 `conductor.json`, `items/*.json` and `items/*.jsonl` from that fold under the same locks
 the writers take, so a lost or damaged cache is recovered from the log rather than from
 a copy of the cache.
@@ -457,7 +457,7 @@ Six tools, all mounted on one opt-in MCP server, `kirocrew-work`. Which of them 
 
 Caller: worker. Input schema: `{}`. No arguments, following `session_ledger_read` and `issue_radar_crew_read`.
 
-**As implemented (Phase 2, [#9152](https://github.com/kirodotdev/KiroCrew/pull/9152)):** returns the item's `item_id`, `title`, `acceptance`, `round`, the conductor's latest `decision`, and the worker's own last `status`/`summary` — `read_work_brief` in [`src/kiro_crew/work_ledger.py`](../../src/kiro_crew/work_ledger.py) composes exactly those seven keys, and the route re-checks channel-mirror containment *after* its thread hop, because a brief carries a private dispatch's acceptance bar.
+**As implemented (Phase 2, [#9152](https://efmleads.com/pull/9152)):** returns the item's `item_id`, `title`, `acceptance`, `round`, the conductor's latest `decision`, and the worker's own last `status`/`summary` — `read_work_brief` in [`src/efm_go/work_ledger.py`](../../src/efm_go/work_ledger.py) composes exactly those seven keys, and the route re-checks channel-mirror containment *after* its thread hop, because a brief carries a private dispatch's acceptance bar.
 
 **Phase 3b adds `siblings`**, a list over the same conductor's other **open** items:
 
@@ -667,7 +667,7 @@ The seed is sent **after** the bind, which inverts the current skill's "seed bef
 
 ### Wake gate and liveness
 
-`monitor_start` gates on exactly one subject kind today. `infer` in [`src/kiro_crew/probes/targets.py`](../../src/kiro_crew/probes/targets.py) scans the loop message for a single GitHub pull-request URL and returns a `Target`; `build` in [`src/kiro_crew/probes/__init__.py`](../../src/kiro_crew/probes/__init__.py) maps the kind to a probe; `_monitor_tick_is_quiet` in [`src/kiro_crew/autonudge_service/gate.py`](../../src/kiro_crew/autonudge_service/gate.py) runs it and re-arms without firing on a positive quiet verdict. The kernel in [`src/kiro_crew/irq.py`](../../src/kiro_crew/irq.py) needs no change: its state, dedupe, coalescing and failure backstop are already kind-agnostic.
+`monitor_start` gates on exactly one subject kind today. `infer` in [`src/efm_go/probes/targets.py`](../../src/efm_go/probes/targets.py) scans the loop message for a single GitHub pull-request URL and returns a `Target`; `build` in [`src/efm_go/probes/__init__.py`](../../src/efm_go/probes/__init__.py) maps the kind to a probe; `_monitor_tick_is_quiet` in [`src/efm_go/autonudge_service/gate.py`](../../src/efm_go/autonudge_service/gate.py) runs it and re-arms without firing on a positive quiet verdict. The kernel in [`src/efm_go/irq.py`](../../src/efm_go/irq.py) needs no change: its state, dedupe, coalescing and failure backstop are already kind-agnostic.
 
 A work-ledger gate adds a `work-ledger` kind and a probe, and needs one thing the pull-request gate does not: the subject is the calling session's own identity, which no regex over the message can find. So `monitor_start` gains an explicit `watch: "work-ledger"` field rather than inferring the gate from session state. Implicit selection would be more convenient and would make a quiet loop unexplainable — a conductor could not tell whether it was gated on its ledger or not, and neither could a maintainer reading the loop.
 
@@ -736,7 +736,7 @@ The threat model is what shapes the tool surface, so each row names the mechanis
 
 **A worker rewrites what acceptance means.** Unrepresentable: `acceptance`, `verdict` and `state` have no parameter on the worker tool. A worker cannot widen its own bar.
 
-**A worker edits the ledger files directly.** The two "unrepresentable" rows above hold only for the tools: a worker is a full-capability agent with `fs_write`, so a prompt-injected one could bypass `work_report` and open `items/it_*.json` itself — forging `state: accepted`, gutting `acceptance` before the conductor's evaluator runs, or reading a sibling item past `read_work_brief`'s scoping — and the conductor would read the forgery as its own writing. Prevented by the file fence, on two planes. The file-tool plane: `work-ledger` is a directory leaf in `_CREW_SECRET_LEAVES` ([`src/kiro_crew/security/paths.py`](../../src/kiro_crew/security/paths.py)), which projects it into `_SENSITIVE_HOME_DIRS` under both crew data-home prefixes and re-anchors it under a `KIROCREW_HOME` override, so `is_sensitive_path` is true for every path under `<data_home>/work-ledger/` and `hooks.on_tool_call` refuses the agent's read and edit tools there — read AND write, because reading a sibling's record is the scoping bypass and writing one is the forgery. The shell plane: the same leaf is in `sandbox._CREW_HIDDEN_LEAVES`, so `echo >` and `python -c` inside the agent's sandbox find no such directory; command text is deliberately not matched (see `is_sensitive_bash_command`), because a text matcher denies ordinary commands whenever a fenced spelling appears as data. The store's own `atomic_write` runs in the gateway process and opens the paths directly, not through the gate, so the sanctioned writers are unaffected. A directory leaf rather than a file leaf for the reason the sibling `ledger` entry is one: the store publishes through a `mkstemp` sibling, and fencing final names only leaves the same bytes writable under a temp name.
+**A worker edits the ledger files directly.** The two "unrepresentable" rows above hold only for the tools: a worker is a full-capability agent with `fs_write`, so a prompt-injected one could bypass `work_report` and open `items/it_*.json` itself — forging `state: accepted`, gutting `acceptance` before the conductor's evaluator runs, or reading a sibling item past `read_work_brief`'s scoping — and the conductor would read the forgery as its own writing. Prevented by the file fence, on two planes. The file-tool plane: `work-ledger` is a directory leaf in `_CREW_SECRET_LEAVES` ([`src/efm_go/security/paths.py`](../../src/efm_go/security/paths.py)), which projects it into `_SENSITIVE_HOME_DIRS` under both crew data-home prefixes and re-anchors it under a `KIROCREW_HOME` override, so `is_sensitive_path` is true for every path under `<data_home>/work-ledger/` and `hooks.on_tool_call` refuses the agent's read and edit tools there — read AND write, because reading a sibling's record is the scoping bypass and writing one is the forgery. The shell plane: the same leaf is in `sandbox._CREW_HIDDEN_LEAVES`, so `echo >` and `python -c` inside the agent's sandbox find no such directory; command text is deliberately not matched (see `is_sensitive_bash_command`), because a text matcher denies ordinary commands whenever a fenced spelling appears as data. The store's own `atomic_write` runs in the gateway process and opens the paths directly, not through the gate, so the sanctioned writers are unaffected. A directory leaf rather than a file leaf for the reason the sibling `ledger` entry is one: the store publishes through a `mkstemp` sibling, and fencing final names only leaves the same bytes writable under a temp name.
 
 **A worker points acceptance at someone else's green pull request.** This is live and worth stating plainly, because it is the one place the shape nearly leaked. `accept_eval.py` needs an integer `pr`, and the worker is what learns the number, so the tempting design has `work_ledger_read` fill `acceptance.pr` from the worker's report. A worker could then claim any already-green pull request and pass. The design therefore keeps the worker's `pr` as a **claim only**: `accept_batch` is composed from `acceptance` alone, the claim is surfaced beside the item, and the conductor promotes it with an explicit `work_ledger_record verdict`-adjacent write. The two-phase acceptance the skill performs by hand — leaving an unknown `pr` out of the batch entirely — becomes a visible field instead of a manual omission, without moving control of the bar: the read itself drops an item whose bar is still a placeholder and says why on `acceptance_concrete`, and the `accept` promotion is what puts it back.
 
@@ -825,7 +825,7 @@ Splitting the worker half onto a server of its own would express the same rule i
 
 ### Conductor and pipeline-conductor specs
 
-**As implemented, this is where v2's recommendation was walked back and then reinstated.** Phase 2 mounted the server on `kirocrew-conductor` and `kirocrew-pipeline-conductor`; Phase 2.5 ([#9277](https://github.com/kirodotdev/KiroCrew/pull/9277)) retracted both and moved the flow to its own `kirocrew-ledger-conductor` spec; the swap recorded in §Rollout note — swap done made `kirocrew-conductor` the ledger conductor again and kept `kirocrew-ledger-conductor` as a deprecated alias. `kirocrew-pipeline-conductor` stayed retracted. What is on main:
+**As implemented, this is where v2's recommendation was walked back and then reinstated.** Phase 2 mounted the server on `kirocrew-conductor` and `kirocrew-pipeline-conductor`; Phase 2.5 ([#9277](https://efmleads.com/pull/9277)) retracted both and moved the flow to its own `kirocrew-ledger-conductor` spec; the swap recorded in §Rollout note — swap done made `kirocrew-conductor` the ledger conductor again and kept `kirocrew-ledger-conductor` as a deprecated alias. `kirocrew-pipeline-conductor` stayed retracted. What is on main:
 
 - `_conductor_spec`, which `_install_conductor_agent` and the alias installer `_install_ledger_conductor_agent` both call: `_conductor_mcp_servers(work=True)` hand-builds the `kirocrew-work` entry, `"@kirocrew-work"` is in `tools`, and `_LEDGER_CONDUCTOR_WORK_GRANTS` auto-approves three refs — `work_ledger_read`, `work_ledger_record` and `work_brief`. The third is the one worker-half verb a conductor holds, because a second-level conductor's mandated first call is `work_brief` in a child session nobody opened, and gating that is an approval stall before any planning happens. `work_report` stays gated: it writes into the parent's record, across a dispatch relationship.
 - `_install_pipeline_conductor_agent` and `_install_security_conductor_agent`: **no work-ledger grant.** Both emit the spec they emitted before the ledger existed, and `_conductor_mcp_servers`'s `work` parameter stays a parameter precisely so that remains true — their children report through their own skills' scripts.
@@ -867,9 +867,9 @@ Two mechanics are worth stating outright, because both are easy to get wrong and
 
 **`select_crew` and `session_create` are not wired.** `select_crew` is an advisory `kirocrew-core` tool that returns a crew's resolved configuration; it creates nothing and binds nothing. The conductor must pass the agent name to `session_create` itself. v1's phrasing — that the conductor "chooses the child's agent through the skill's `select_crew` step" — reads as though the two are connected, and they are not.
 
-**An omitted `agent` inherits the CALLER's agent, not the global default.** `create_session` in [`src/kiro_crew/dashboard/session_control.py`](../../src/kiro_crew/dashboard/session_control.py) falls back to the caller slot's own agent, and the comment above that fallback gives the reason: the caller is already running in this workspace, so its agent is the one bound here, and dropping to the global default would put the child on another workspace's memory store the moment that default is bound elsewhere. For a conductor, an omitted `agent` therefore produces a *second conductor* — which has no `fs_write` and cannot do the work. That is what `goal-conductor/SKILL.md` warns about, and it is why this design makes the value explicit per item instead of leaning on any default.
+**An omitted `agent` inherits the CALLER's agent, not the global default.** `create_session` in [`src/efm_go/dashboard/session_control.py`](../../src/efm_go/dashboard/session_control.py) falls back to the caller slot's own agent, and the comment above that fallback gives the reason: the caller is already running in this workspace, so its agent is the one bound here, and dropping to the global default would put the child on another workspace's memory store the moment that default is bound elsewhere. For a conductor, an omitted `agent` therefore produces a *second conductor* — which has no `fs_write` and cannot do the work. That is what `goal-conductor/SKILL.md` warns about, and it is why this design makes the value explicit per item instead of leaning on any default.
 
-`session_create`'s own MCP parameter description in [`src/kiro_crew/mcp_dashboard.py`](../../src/kiro_crew/mcp_dashboard.py) says the agent may be omitted "to use the default agent", which is wrong about the one mechanism a conductor most depends on. Phase 2 corrects it.
+`session_create`'s own MCP parameter description in [`src/efm_go/mcp_dashboard.py`](../../src/efm_go/mcp_dashboard.py) says the agent may be omitted "to use the default agent", which is wrong about the one mechanism a conductor most depends on. Phase 2 corrects it.
 
 ### Scope: conductors outside `kirocrew-conductor`
 
@@ -886,9 +886,9 @@ Seven phases. Each is independently shippable and independently abandonable, and
 
 | phase | state | PR |
 |---|---|---|
-| 1 — the store, with no tools | **done** | [#8855](https://github.com/kirodotdev/KiroCrew/pull/8855), with lock-open fixes in [#9237](https://github.com/kirodotdev/KiroCrew/pull/9237) |
-| 2 — the first four tools and their routes | **done** | [#9152](https://github.com/kirodotdev/KiroCrew/pull/9152), test follow-up [#9257](https://github.com/kirodotdev/KiroCrew/pull/9257) |
-| 2.5 — isolation | **done**, then superseded by the swap | [#9277](https://github.com/kirodotdev/KiroCrew/pull/9277) |
+| 1 — the store, with no tools | **done** | [#8855](https://efmleads.com/pull/8855), with lock-open fixes in [#9237](https://efmleads.com/pull/9237) |
+| 2 — the first four tools and their routes | **done** | [#9152](https://efmleads.com/pull/9152), test follow-up [#9257](https://efmleads.com/pull/9257) |
+| 2.5 — isolation | **done**, then superseded by the swap | [#9277](https://efmleads.com/pull/9277) |
 | 2.6 — the swap: `kirocrew-conductor` becomes the ledger conductor, old name kept as a deprecated alias | **done** | see §Rollout note — swap done |
 | 3 — the wake gate | not started | |
 | 3b — visibility (`siblings`) | not started | |
@@ -901,9 +901,9 @@ one turn per quiet tick. Phase 3 is a cost optimisation on that loop, not the th
 makes it work — which is what the swap in §Rollout note — swap done settled, by taking
 the per-quiet-tick turn as the accepted cost rather than as a blocker.
 
-### Phase 1 — the store, with no tools (done, [#8855](https://github.com/kirodotdev/KiroCrew/pull/8855))
+### Phase 1 — the store, with no tools (done, [#8855](https://efmleads.com/pull/8855))
 
-As implemented, [`src/kiro_crew/work_ledger.py`](../../src/kiro_crew/work_ledger.py)
+As implemented, [`src/efm_go/work_ledger.py`](../../src/efm_go/work_ledger.py)
 carries the record dataclasses, the five vocabularies as `frozenset` constants, every cap
 as a module constant, path resolution, the lock helpers, the derived list and derived
 flags, content-addressed event ids with merge-on-read dedupe, and the depth cap. Two
@@ -911,7 +911,7 @@ details differ from what this section proposed and both are the design catching 
 reality: `_coalesce_progress` collapses consecutive `progress` reports (which is Q6's
 answer, see §Open questions), and `MAX_RECORD_BYTES` reads an over-large file as absent
 rather than raising, matching `session_ledger`. A follow-up
-([#9237](https://github.com/kirodotdev/KiroCrew/pull/9237)) fixed the lock-sidecar open
+([#9237](https://efmleads.com/pull/9237)) fixed the lock-sidecar open
 truncating on Windows — the cross-platform argument this section makes for taking a lock
 turned out to need one more fix than it predicted.
 
@@ -927,11 +927,11 @@ Exit criteria:
 
 Phase 1 is untouched by v2's agent-spec reversal: the store has no tools, no server and no agent.
 
-### Phase 2 — the four tools and their routes (done, [#9152](https://github.com/kirodotdev/KiroCrew/pull/9152))
+### Phase 2 — the four tools and their routes (done, [#9152](https://efmleads.com/pull/9152))
 
-As implemented: [`src/kiro_crew/mcp_work.py`](../../src/kiro_crew/mcp_work.py) advertises
+As implemented: [`src/efm_go/mcp_work.py`](../../src/efm_go/mcp_work.py) advertises
 the four tools and resolves its caller with `_strict_caller`;
-[`src/kiro_crew/dashboard/handlers/work_ledger.py`](../../src/kiro_crew/dashboard/handlers/work_ledger.py)
+[`src/efm_go/dashboard/handlers/work_ledger.py`](../../src/efm_go/dashboard/handlers/work_ledger.py)
 carries the four routes under a shared `/api/work-ledger` prefix in
 `_STRICT_INTERNAL_API_PATHS`, one literal status-and-code sink per refusal class, SEL
 audit on every branch, and the channel-agent re-check after the read. `agent.py` carries
@@ -953,9 +953,9 @@ Exit criteria:
 - `kirocrew-work` carries no `autoApprove` key, asserted so it cannot be added later without a failing test.
 - Each of the four caller states in the dispatch table resolves as tabulated, asserted against both tool halves.
 - `mcp_dashboard.py`'s `agent` parameter description states the caller-inheritance rule, asserted against the string so it cannot silently revert.
-- `<data_home>/work-ledger/**` is on the sensitive-path floor and the sandbox mask (§Security considerations, "A worker edits the ledger files directly"), asserted two ways: by spelling under both crew data-home prefixes, and end to end through `hooks.on_tool_call` against the real item, binding and conductor files of a dispatched worker under a `KIROCREW_HOME` override — an edit and a read are both refused, and the worker's route and the conductor's store action still write the very file the tool was refused. Deferred from the Phase 1 design review as [#9083](https://github.com/kirodotdev/KiroCrew/issues/9083); the fence itself shipped in #9152.
+- `<data_home>/work-ledger/**` is on the sensitive-path floor and the sandbox mask (§Security considerations, "A worker edits the ledger files directly"), asserted two ways: by spelling under both crew data-home prefixes, and end to end through `hooks.on_tool_call` against the real item, binding and conductor files of a dispatched worker under a `KIROCREW_HOME` override — an edit and a read are both refused, and the worker's route and the conductor's store action still write the very file the tool was refused. Deferred from the Phase 1 design review as [#9083](https://efmleads.com/issues/9083); the fence itself shipped in #9152.
 
-### Phase 2.5 — isolation (done, [#9277](https://github.com/kirodotdev/KiroCrew/pull/9277))
+### Phase 2.5 — isolation (done, [#9277](https://efmleads.com/pull/9277))
 
 Scope: a `kirocrew-ledger-conductor` spec with its own `_LEDGER_CONDUCTOR_SYSTEM_PROMPT`
 and a `goal-ledger-conductor` skill; `_narrow_conductor_mcp_servers` gains a `work`
@@ -969,7 +969,7 @@ Exit criteria, all met at the time — the first and third are superseded by the
 - `kirocrew-ledger-conductor` auto-approves exactly `work_ledger_read`, `work_ledger_record` and `work_brief`, and not `work_report`. Still true, and now true of `kirocrew-conductor` by the same code path.
 - `goal-conductor/SKILL.md` and `ledger_entry.py` are untouched, so an un-migrated conductor mid-goal sees no change. **Superseded:** the SKILL.md carries the ledger procedure; `ledger_entry.py` is still shipped and its deletion is still Phase 4's.
 
-### Phase 3 — the wake gate (in flight, [#12781](https://github.com/kirodotdev/KiroCrew/pull/12781))
+### Phase 3 — the wake gate (in flight, [#12781](https://efmleads.com/pull/12781))
 
 **As built, v4 — valid only at head `c749aff0d4`; re-audit at merge.** The branch is `feat/work-ledger-wake-gate` and the PR is still a draft, so everything here describes a branch rather than main, and every sentence in this block was read at that head. A draft under review can change any of it, and what merges is what counts: treat this block as superseded the moment that PR merges, and re-verify it against the merged commit rather than against this document's `last-audited` date. The gate is a probe kind and not a second loop: `WORK_LEDGER_KIND` in the new `probes/work_ledger.py` registers `work-ledger` beside the existing `gh-pr`, and `build` kept its branch rather than becoming a registry — two kinds is still not a registry — which is the call this phase was left to make. The fingerprint is the newest event id per item, folded by `ledger_wake.revision`, so a write nobody must answer still advances the board without waking anyone. Liveness is `work_ledger.is_stale`, and the conjunction lives *inside* that function rather than beside it: quiet past the window AND the worker not running AND the next move still the worker's. A worker in a thirty-minute build is running, so it is never flagged however long it stays silent, and a `done` item is not flagged either unless the conductor ruled `verdict: fail` on it and left it open, which hands the move back. A ledger whose every item is closed returns a terminal outcome that resets on nothing, keyed `all-accepted` when the work finished well and `all-closed` when it did not. The driver injects `worker_running`, and `MAX_WAKES_PER_ITEM_PER_HOUR` caps one item at twelve wakes an hour; past the cap the revision still advances and the wake folds into the next delivered one, so a conductor sees the newest state instead of a queue of superseded ones.
 
@@ -984,7 +984,7 @@ Two decisions reviewers keep re-opening on this branch, recorded so each round s
 - **The gate has no configuration switch, and that is the decision.** `test_no_config_switch_gates_the_wake` asserts the subtraction rather than the absence of a line: arming is already opt-in because a conductor must name the subject, and a loop is already stoppable, so a third off-position was a setting with one consumer — and the one it had never read a persisted value, because no loader hydration was written for it. Two review lanes asked for the removal on those grounds.
 - **The two `_PERMITTED_STORE_IMPORTERS` entries are a human's edit, by design.** `ledger_wake.py` and `probes/work_ledger.py` both import the store directly, and the allowlist in `test/test_work_ledger.py` names only the routes module and the operator cleanup sweep, so `test_only_the_phase_2_seams_import_the_module` fails on the branch naming exactly those two files. That red is the guard working as specified: its own note says a second importer is a design change that must argue for itself in review "rather than arrive with a passing suite", so the entries belong to whoever accepts the seam, not to the change that needs them.
 
-**The one-call arm is not in #12781; it is [#15691](https://github.com/kirodotdev/KiroCrew/pull/15691).** Arming the gate in a single call takes four linked pieces — a `watch` field on `monitor_start` and `monitor_update`, the payload that carries it, the applier that turns it into a subject, and the authorization forward — and the last of those lands in [`autonudge_authz.py`](../../src/kiro_crew/autonudge_authz.py), which this branch does not touch. The field is held back deliberately so the whole chain lands together: a `watch` parameter that is accepted and then ignored is worse than one that does not exist yet, because a conductor cannot tell the difference from the call site. That PR carries the whole chain together, along with [`rfc-crew-log-wake`](rfc-crew-log-wake.md), which hooks the crew log so a worker's report pulls the gate's next tick forward instead of waiting out the cadence. Until it lands, the probe is reachable but a conductor cannot arm it in one call.
+**The one-call arm is not in #12781; it is [#15691](https://efmleads.com/pull/15691).** Arming the gate in a single call takes four linked pieces — a `watch` field on `monitor_start` and `monitor_update`, the payload that carries it, the applier that turns it into a subject, and the authorization forward — and the last of those lands in [`autonudge_authz.py`](../../src/efm_go/autonudge_authz.py), which this branch does not touch. The field is held back deliberately so the whole chain lands together: a `watch` parameter that is accepted and then ignored is worse than one that does not exist yet, because a conductor cannot tell the difference from the call site. That PR carries the whole chain together, along with [`rfc-crew-log-wake`](rfc-crew-log-wake.md), which hooks the crew log so a worker's report pulls the gate's next tick forward instead of waiting out the cadence. Until it lands, the probe is reachable but a conductor cannot arm it in one call.
 
 Scope: a `work-ledger` probe, its registration in `build`, the `watch` field on `monitor_start`'s schema, and the target-inference branch. No kernel change. The actionable event set is `done`, `blocked`, `question` and `request`; `progress`, `message`, `channel_open` and `channel_close` advance the fingerprint without firing.
 
@@ -1029,7 +1029,7 @@ Exit criteria:
 - A channel between two items of *different* ledgers is refused, and one naming a closed item is refused.
 - `_coalesce_progress` does not collapse `message` events, asserted with two identical bodies.
 
-### Phase 4 — the surfaces (in flight, [#12792](https://github.com/kirodotdev/KiroCrew/pull/12792))
+### Phase 4 — the surfaces (in flight, [#12792](https://efmleads.com/pull/12792))
 
 **As built, v4 — valid only at head `f0287a4a50`; re-audit at merge.** The branch is `feat/crew-page-work-items`, open and not on main, and every sentence in this block was read at that head. Review can change any of it, and what merges is what counts: treat this block as superseded the moment that PR merges, and re-verify it against the merged commit rather than against this document's `last-audited` date. The page is `/crew-board?conductor=KEY`, reading a masked projection at `GET /api/crew-board` rather than the conductor's own tool route, and the rows land in three bands: `ruling` for items waiting on the conductor, rendered first whatever their age; `working` for open items not waiting on a ruling; and `finished` for terminal items, collapsed behind an expander. Terminal wins over outstanding, and the precedence is the point — an item can carry `status: "question"` and still be closed, because the conductor answered it by closing it, and lifting such a row into the ruling band would ask a human to rule on finished work. A band that contains anything unactionable stops being read.
 
@@ -1166,7 +1166,7 @@ variant of it.
 
 **The doctor notice -- shipped.** The retirement spec above requires a
 `kirocrew doctor` notice for any config that still names `kirocrew-ledger-conductor`,
-and that notice now ships ([#10268](https://github.com/kirodotdev/KiroCrew/issues/10268)):
+and that notice now ships ([#10268](https://efmleads.com/issues/10268)):
 doctor scans every config surface that persists an agent name -- cron jobs
 (`agent_id`, and `agent_sequence` entries when the sequence actually dispatches),
 crew bindings (`agents.<name>.kiro_agent`), the config's own selectors

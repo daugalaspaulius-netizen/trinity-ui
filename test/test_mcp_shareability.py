@@ -9,11 +9,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.mcp_gateway import hazards, shareability
-from kiro_crew.mcp_gateway import verdict_cache as vc
-from kiro_crew.mcp_gateway.hashing import ENV_SCRUB_PREFIXES
-from kiro_crew.mcp_gateway.record_json import finite_float
-from kiro_crew.mcp_gateway.shareability import ShareEvidence, Strength, assess
+from efm_go.mcp_gateway import hazards, shareability
+from efm_go.mcp_gateway import verdict_cache as vc
+from efm_go.mcp_gateway.hashing import ENV_SCRUB_PREFIXES
+from efm_go.mcp_gateway.record_json import finite_float
+from efm_go.mcp_gateway.shareability import ShareEvidence, Strength, assess
 
 
 def _ident(**over: object) -> vc.Identity:
@@ -1015,7 +1015,7 @@ class TestNameCollisionDoesNotInheritEvidence:
         cache.flush()
 
     def test_a_stored_row_is_served_by_name(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.dashboard.handlers import mcp as handler
+        from efm_go.dashboard.handlers import mcp as handler
 
         self._write_row(tmp_path, "srv", _ident(command_args_hash="cmdA"))
         monkeypatch.setattr(handler, "records_dir", lambda *_a, **_k: tmp_path)
@@ -1033,7 +1033,7 @@ class TestNameCollisionDoesNotInheritEvidence:
         forced a size cap, an eviction policy, and a newest-wins rule on every
         reader. There is no history to sort through now.
         """
-        from kiro_crew.dashboard.handlers import mcp as handler
+        from efm_go.dashboard.handlers import mcp as handler
 
         cache = vc.VerdictCache(vc.cache_path(tmp_path))
         cache.put(
@@ -1061,7 +1061,7 @@ class TestNameCollisionDoesNotInheritEvidence:
         correct recommendation for every server an operator shares across agents,
         which is most of them. The row keys on the launch hash for that reason.
         """
-        from kiro_crew.mcp_gateway.hashing import hash_command
+        from efm_go.mcp_gateway.hashing import hash_command
 
         assert len({hash_command("/bin/a", ["--x"]) for _ in range(5)}) == 1
         assert len({hash_command("/bin/a", []), hash_command("/bin/b", [])}) == 2
@@ -1085,9 +1085,9 @@ class TestNoBlockingRecordIoOnTheLoop:
 
     #: Modules whose helpers own the record files and the binaries behind them.
     RECORD_MODULES = (
-        "kiro_crew.mcp_gateway.hazards",
-        "kiro_crew.mcp_gateway.verdict_cache",
-        "kiro_crew.mcp_gateway.evaluate",
+        "efm_go.mcp_gateway.hazards",
+        "efm_go.mcp_gateway.verdict_cache",
+        "efm_go.mcp_gateway.evaluate",
     )
 
     #: Primitives that make a helper blocking. Deliberately spelled as bare
@@ -1115,9 +1115,9 @@ class TestNoBlockingRecordIoOnTheLoop:
 
     #: (module, async function) pairs that reach the records.
     SITES = (
-        ("kiro_crew.dashboard.handlers.mcp", "api_mcp_gateway_servers"),
-        ("kiro_crew.dashboard.handlers.mcp", "_evaluate_shareability"),
-        ("kiro_crew.mcp_gateway.evaluate", "evaluate_new_servers"),
+        ("efm_go.dashboard.handlers.mcp", "api_mcp_gateway_servers"),
+        ("efm_go.dashboard.handlers.mcp", "_evaluate_shareability"),
+        ("efm_go.mcp_gateway.evaluate", "evaluate_new_servers"),
     )
 
     @classmethod
@@ -1203,7 +1203,7 @@ class TestNoBlockingRecordIoOnTheLoop:
         """
         import asyncio
 
-        from kiro_crew.mcp_gateway import evaluate
+        from efm_go.mcp_gateway import evaluate
 
         async def call_it() -> None:
             evaluate.identity_for(
@@ -1217,7 +1217,7 @@ class TestNoBlockingRecordIoOnTheLoop:
         """Startup counts too: a slow ledger would delay socket readiness."""
         import inspect
 
-        from kiro_crew.mcp_gateway import gatewayd
+        from efm_go.mcp_gateway import gatewayd
 
         src = inspect.getsource(gatewayd.run_gatewayd)
         line = next(ln for ln in src.splitlines() if "install_sink" in ln)
@@ -1239,13 +1239,13 @@ class TestNoBlockingRecordIoOnTheLoop:
         import ast
         import inspect
 
-        from kiro_crew.dashboard.handlers import mcp as handler
+        from efm_go.dashboard.handlers import mcp as handler
 
         tree = ast.parse(inspect.getsource(handler))
         banned = {
-            "kiro_crew.mcp_gateway.evaluate",
-            "kiro_crew.mcp_gateway.preflight",
-            "kiro_crew.mcp_gateway.stub",
+            "efm_go.mcp_gateway.evaluate",
+            "efm_go.mcp_gateway.preflight",
+            "efm_go.mcp_gateway.stub",
         }
         for node in tree.body:  # module scope only
             if isinstance(node, ast.ImportFrom) and node.module in banned:
@@ -1263,7 +1263,7 @@ class TestNoBlockingRecordIoOnTheLoop:
         import ast
         import inspect
 
-        from kiro_crew.mcp_gateway import evaluate, preflight, seed, verdict_cache
+        from efm_go.mcp_gateway import evaluate, preflight, seed, verdict_cache
 
         for mod in (shareability, hazards, preflight, verdict_cache, seed, evaluate):
             tree = ast.parse(inspect.getsource(mod))
@@ -1281,7 +1281,7 @@ class TestNoBlockingRecordIoOnTheLoop:
         """It takes the loaded state as arguments and opens nothing."""
         import inspect
 
-        from kiro_crew.dashboard.handlers import mcp as handler
+        from efm_go.dashboard.handlers import mcp as handler
 
         src = inspect.getsource(handler._assess_server)
         for forbidden in ("load_cache", "load_ledger", "KiroCrewConfig", "open("):
@@ -1294,7 +1294,7 @@ class TestNoBlockingRecordIoOnTheLoop:
         """One ``to_thread`` call, outside the row loop."""
         import inspect
 
-        from kiro_crew.dashboard.handlers import mcp as handler
+        from efm_go.dashboard.handlers import mcp as handler
 
         src = inspect.getsource(handler.api_mcp_gateway_servers)
         assert src.count("_load_shareability_state") == 1
@@ -1498,7 +1498,7 @@ class TestHazardInvalidation:
         ``PoolKey`` already carries the three fingerprints, which is what makes
         stamping free at a site that runs on the event loop.
         """
-        from kiro_crew.mcp_gateway import backend as backend_mod
+        from efm_go.mcp_gateway import backend as backend_mod
 
         src = inspect.getsource(backend_mod.Backend._record_hazard)
         assert "launch_identity" in src
@@ -1518,7 +1518,7 @@ class TestRecordsDirIsNotGatedOnABroker:
     """
 
     def test_unconfigured_socket_still_resolves_a_directory(self, monkeypatch, tmp_path) -> None:
-        from kiro_crew.mcp_gateway.rewriter import records_dir, runtime_dir
+        from efm_go.mcp_gateway.rewriter import records_dir, runtime_dir
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         assert records_dir("") == runtime_dir()
@@ -1526,7 +1526,7 @@ class TestRecordsDirIsNotGatedOnABroker:
 
     def test_configured_socket_wins_so_writer_and_reader_agree(self, tmp_path) -> None:
         """gatewayd writes beside its real socket; the page must read there."""
-        from kiro_crew.mcp_gateway.rewriter import records_dir
+        from efm_go.mcp_gateway.rewriter import records_dir
 
         sock = tmp_path / "custom" / "gateway.sock"
         assert records_dir(str(sock)) == sock.parent
@@ -1539,7 +1539,7 @@ class TestRecordsDirIsNotGatedOnABroker:
         Branching on the Path instead of its string form would put the hazard
         ledger in whatever directory the process happened to start in.
         """
-        from kiro_crew.mcp_gateway.rewriter import records_dir, runtime_dir
+        from efm_go.mcp_gateway.rewriter import records_dir, runtime_dir
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         assert records_dir(Path("")) == runtime_dir()
@@ -1550,7 +1550,7 @@ class TestRecordsDirIsNotGatedOnABroker:
         assert records_dir("gateway.sock") == Path(".")
 
     def test_the_default_socket_lives_in_that_same_directory(self, monkeypatch, tmp_path) -> None:
-        from kiro_crew.mcp_gateway.rewriter import default_socket_path, runtime_dir
+        from efm_go.mcp_gateway.rewriter import default_socket_path, runtime_dir
 
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path))
         assert default_socket_path().parent == runtime_dir()
@@ -1559,7 +1559,7 @@ class TestRecordsDirIsNotGatedOnABroker:
         """Ratchet: the early `if not socket_path: return` must not come back."""
         import inspect
 
-        from kiro_crew.dashboard.handlers import mcp as handler
+        from efm_go.dashboard.handlers import mcp as handler
 
         for fn in (handler._load_shareability_state, handler._evaluate_shareability):
             src = inspect.getsource(fn)
@@ -1599,7 +1599,7 @@ class TestBackendRecordsHazards:
         hazard means anything: two clients attached, so an unattributable frame
         could have reached the wrong one.
         """
-        from kiro_crew.mcp_gateway.backend import Backend
+        from efm_go.mcp_gateway.backend import Backend
 
         obj = object.__new__(Backend)
         obj.pool_key = SimpleNamespace(  # type: ignore[attr-defined]
@@ -1670,7 +1670,7 @@ class TestBackendRecordsHazards:
         """
         from pathlib import Path as _Path
 
-        import kiro_crew.mcp_gateway.backend as backend_mod
+        import efm_go.mcp_gateway.backend as backend_mod
 
         src = _Path(backend_mod.__file__).read_text(encoding="utf-8")
         assert src.count("self._record_hazard(") == 3, "expected exactly three hazard sites"

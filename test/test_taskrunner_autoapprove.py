@@ -16,11 +16,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import task_executor
-from kiro_crew.context import ContextBuilder
-from kiro_crew.hooks import TOOL_ALLOW, TOOL_AUTO_APPROVE, HookManager, ToolHookResult
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.task_models import Project, Task
+from efm_go import task_executor
+from efm_go.context import ContextBuilder
+from efm_go.hooks import TOOL_ALLOW, TOOL_AUTO_APPROVE, HookManager, ToolHookResult
+from efm_go.providers.base import LLMEvent
+from efm_go.task_models import Project, Task
 
 
 def _mock_sessions(provider):

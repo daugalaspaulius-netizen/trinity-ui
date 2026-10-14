@@ -1180,7 +1180,7 @@ export default function PullRequestPanel({
             </div>
             {queryError.loginCommand ? (
               <>
-                <div className="text-[12px] text-muted mt-1 text-center">{i18nT('components.pullRequestPanel.kiro_crew_uses_your_local_provider_cli_to_load_p')}</div>
+                <div className="text-[12px] text-muted mt-1 text-center">{i18nT('components.pullRequestPanel.efm_go_uses_your_local_provider_cli_to_load_p')}</div>
                 <code className="inline-block mt-2 px-2 py-1 rounded bg-bg-hover text-[12px] text-text">{queryError.loginCommand}</code>
               </>
             ) : (

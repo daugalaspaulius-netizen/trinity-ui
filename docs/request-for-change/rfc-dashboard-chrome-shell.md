@@ -15,7 +15,7 @@ superseded-by: []
 # RFC: Dashboard chrome shell — one continuous surface with a fixed desktop rail
 
 - Status: draft — nothing implemented on main. The implementation is
-  [#16052](https://github.com/kirodotdev/KiroCrew/pull/16052).
+  [#16052](https://efmleads.com/pull/16052).
 - Author: krewworker
 - Related: `website/docs/page-layout.md` (the shell/panel layout this reshapes),
   `website/docs/theming-contract.md` (the stable class hooks it adds),
@@ -88,7 +88,7 @@ default changes.
 
 ## Rollout
 
-One frontend PR, [#16052](https://github.com/kirodotdev/KiroCrew/pull/16052):
+One frontend PR, [#16052](https://efmleads.com/pull/16052):
 the shell CSS and class hooks in `website/src/index.css`, the rail wiring in
 `website/src/App.tsx` (fixed-collapsed off mobile, toggle removed, switcher in
 the header), the switcher component `website/src/components/InstanceTabBar.tsx`

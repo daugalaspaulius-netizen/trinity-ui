@@ -20,7 +20,7 @@ is fail-safe: ``encode`` cannot produce two different readable markers.
 
 from __future__ import annotations
 
-from kiro_crew import session_directive
+from efm_go import session_directive
 
 MAX = session_directive.MAX_TOOL_RESULT_CHARS
 SENTINEL = session_directive.SENTINEL

@@ -17,12 +17,12 @@ import time
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import CrewLog, emit
-from kiro_crew.crew_log import session_tree_projection as stp
-from kiro_crew.dashboard import state as st
-from kiro_crew.dashboard.session_memory import lineage_parents
-from kiro_crew.dashboard.state import _attach_slot_parents
+from efm_go import crew_log as lg
+from efm_go.crew_log import CrewLog, emit
+from efm_go.crew_log import session_tree_projection as stp
+from efm_go.dashboard import state as st
+from efm_go.dashboard.session_memory import lineage_parents
+from efm_go.dashboard.state import _attach_slot_parents
 
 GATEWAY = "gateway"
 
@@ -44,7 +44,7 @@ def _isolated_home(tmp_path, monkeypatch):
     # the test that asked for it returns. The one test that counts submits installs its
     # own stub over this.
     monkeypatch.setattr(
-        "kiro_crew.executors.maintenance_executor",
+        "efm_go.executors.maintenance_executor",
         lambda: type("_Inline", (), {"submit": staticmethod(lambda fn, *a, **k: fn(*a, **k))}),
     )
     stp.reset_for_tests()
@@ -564,7 +564,7 @@ def test_reads_after_the_first_do_not_touch_the_store(monkeypatch):
     _unit("s-2", "chat-2", parent="chat-1")
     _seeded()
 
-    from kiro_crew.crew_log import store as crew_store
+    from efm_go.crew_log import store as crew_store
 
     reads = {"n": 0}
     for name in ("unit_dirs", "oldest_segment", "read_head"):
@@ -619,7 +619,7 @@ def test_the_seed_is_requested_once_however_many_frames_arrive(monkeypatch):
         seeds["n"] += 1  # never runs fn, so the flag stays raised
 
     monkeypatch.setattr(
-        "kiro_crew.executors.maintenance_executor",
+        "efm_go.executors.maintenance_executor",
         lambda: type("P", (), {"submit": staticmethod(fake_submit)}),
     )
 

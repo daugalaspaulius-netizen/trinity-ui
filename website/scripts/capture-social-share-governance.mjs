@@ -129,7 +129,7 @@ async function captureWithdrawnMidCompose(context, base) {
       await route.fulfill({
         status: 200,
         contentType: 'image/png',
-        body: readFileSync(new URL('../../src/kiro_crew/static/kirocrew-logo.png', import.meta.url)),
+        body: readFileSync(new URL('../../src/efm_go/static/kirocrew-logo.png', import.meta.url)),
       })
       return true
     }

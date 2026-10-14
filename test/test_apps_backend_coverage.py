@@ -1,4 +1,4 @@
-"""Additional unit coverage for :mod:`kiro_crew.apps.backend`.
+"""Additional unit coverage for :mod:`efm_go.apps.backend`.
 
 Complements ``test_app_backend.py`` (port allocation, spawn survival, dispatch)
 and ``test_app_backend_stale_reap.py`` (pidfile reap safety) by exercising the
@@ -38,8 +38,8 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-import kiro_crew.apps.backend as bmod
-from kiro_crew.apps.backend import AppProcess
+import efm_go.apps.backend as bmod
+from efm_go.apps.backend import AppProcess
 
 
 def test_lifecycle_mutation_is_confined_to_declared_owners() -> None:
@@ -355,7 +355,7 @@ def boot_env(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[Any]]:
     monkeypatch.setattr(bmod, "app_execution_denied", lambda _name, **_kw: None)
     monkeypatch.setattr(bmod, "start_app_backend", _start)
     monkeypatch.setattr(
-        "kiro_crew.apps.backend._app_activation_denied", lambda _name, **_kwargs: None
+        "efm_go.apps.backend._app_activation_denied", lambda _name, **_kwargs: None
     )
 
     def _dereg_mcp(name: str) -> int:
@@ -377,11 +377,11 @@ def boot_env(monkeypatch: pytest.MonkeyPatch) -> dict[str, list[Any]]:
     def _reconcile(name: str) -> None:
         calls["reconcile_skills"].append(name)
 
-    monkeypatch.setattr("kiro_crew.apps.bridges._deregister_mcp_servers", _dereg_mcp)
-    monkeypatch.setattr("kiro_crew.apps.bridges._deregister_agents", _dereg_agents)
-    monkeypatch.setattr("kiro_crew.apps.bridges._deregister_skills", _dereg_skills)
-    monkeypatch.setattr("kiro_crew.apps.bridges.register_app", _register)
-    monkeypatch.setattr("kiro_crew.apps.bridges.reconcile_app_skills", _reconcile)
+    monkeypatch.setattr("efm_go.apps.bridges._deregister_mcp_servers", _dereg_mcp)
+    monkeypatch.setattr("efm_go.apps.bridges._deregister_agents", _dereg_agents)
+    monkeypatch.setattr("efm_go.apps.bridges._deregister_skills", _dereg_skills)
+    monkeypatch.setattr("efm_go.apps.bridges.register_app", _register)
+    monkeypatch.setattr("efm_go.apps.bridges.reconcile_app_skills", _reconcile)
     return calls
 
 
@@ -1446,7 +1446,7 @@ class TestDependencyInstall:
         but no ensurepip, so venv creation dies after building the directory
         skeleton - which the venv-first interpreter policy then prefers while
         it holds none of the app's dependencies."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         (spawn_root / "requirements.txt").write_bytes(b"requests\n")
@@ -1495,7 +1495,7 @@ class TestDependencyInstall:
         # No pip ran, no deps dir was created, and no stamp exists anywhere
         # that could disclose a digest of the outside file's bytes.
         assert not any("install" in argv for argv in runs), runs
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         assert not app_deps_dir(spawn_root).exists()
         assert not list((spawn_root / "data").glob(f"{bmod._DEPS_STAGING_NAME}*"))
@@ -1563,7 +1563,7 @@ class TestDependencyInstall:
         the deps_boot shim processes via site.addsitedir - so provisioning
         RETAINS them and swaps the tree live (the refusal that predated the
         shim is gone)."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         (spawn_root / "requirements.txt").write_bytes(b"-e ./lib\n")
@@ -1622,7 +1622,7 @@ class TestDependencyInstall:
         final front position when addsitedir runs. A gateway copy of a
         colliding name earlier on sys.path must NOT win (no later reordering
         can evict a wrongly cached module)."""
-        from kiro_crew.apps import deps_boot
+        from efm_go.apps import deps_boot
 
         gateway = tmp_path / "gateway"
         gateway.mkdir()
@@ -1655,7 +1655,7 @@ class TestDependencyInstall:
         reach the shim): it must take the script dispatch - the embedded-
         launcher arm's execv fallback would restart its shebang interpreter
         WITHOUT the deps path."""
-        from kiro_crew.apps import deps_boot
+        from efm_go.apps import deps_boot
 
         deps = tmp_path / "deps"
         deps.mkdir()
@@ -1689,7 +1689,7 @@ class TestDependencyInstall:
         handed to execv exactly as an unshimmed launch would."""
         import zipfile as _zf
 
-        from kiro_crew.apps import deps_boot
+        from efm_go.apps import deps_boot
 
         class _ExecvCalled(Exception):
             pass
@@ -1743,7 +1743,7 @@ class TestDependencyInstall:
         """Path-launch shape: CPython puts the shim script's OWN directory at
         sys.path[0], which would let an app import gateway modules by bare
         name - the shim must drop it before anything resolves."""
-        from kiro_crew.apps import deps_boot
+        from efm_go.apps import deps_boot
 
         own = os.path.dirname(os.path.abspath(deps_boot.__file__))
         deps = tmp_path / "deps"
@@ -1762,7 +1762,7 @@ class TestDependencyInstall:
         (with the script dir at sys.path[0]), -m module dispatch (module
         resolved through the addsitedir'd deps dir, moved to the front),
         and the usage error."""
-        from kiro_crew.apps import deps_boot
+        from efm_go.apps import deps_boot
 
         _clean_path = list(sys.path)  # arms mutate the patched list; reset from this
         deps = tmp_path / "deps"
@@ -1920,7 +1920,7 @@ class TestDependencyInstall:
             [
                 sys.executable,
                 # Absolute SCRIPT path, not -m: the -m spelling imports the
-                # kiro_crew package and Python writes __pycache__ into the
+                # efm_go package and Python writes __pycache__ into the
                 # CHECKOUT - a test must not leave artifacts outside
                 # tmp_path. (Production spells it by path for its own
                 # reason: session-cwd shadowing.)
@@ -1947,7 +1947,7 @@ class TestDependencyInstall:
         """A provisioned backend spawns via deps_boot (which addsitedir()s
         the deps dir, processing .pth) rather than a raw interpreter+entry
         argv - and only for the gateway interpreter."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         (spawn_root / "requirements.txt").write_bytes(b"requests\n")
@@ -1960,7 +1960,7 @@ class TestDependencyInstall:
             bmod._start_app_backend_body("deps-shim", _manifest("server.py"))
         argv = seen["argv"]
         assert argv[0] == sys.executable, argv
-        # absolute-path spelling: an app-root kiro_crew.py must not be able
+        # absolute-path spelling: an app-root efm_go.py must not be able
         # to shadow the shim for -m resolution under cwd=app root
         assert argv[1] == "-s", argv
         assert argv[2].endswith("deps_boot.py"), argv
@@ -2256,7 +2256,7 @@ class TestDependencyInstall:
         assert errs == ["", ""], errs
         assert not overlap, "two pip transactions ran concurrently"
         assert len(installs) == 1, "the waiter must reuse the completed install"
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         assert (app_deps_dir(spawn_root) / "pkg.py").is_file()
 
@@ -2455,7 +2455,7 @@ class TestDependencyInstall:
 
         if not hasattr(_os, "symlink"):
             pytest.skip("no symlink support")
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         req = b"requests\n"
@@ -2481,7 +2481,7 @@ class TestDependencyInstall:
         change confined to an included file (-r base.txt) would preserve the
         stamp and serve stale dependencies. Include-bearing requirements
         therefore disable the skip: pip runs even when the stamp matches."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         req = b"-r base.txt\n"
@@ -2503,7 +2503,7 @@ class TestDependencyInstall:
         install could, so the stamp is what keeps a restart with unchanged
         requirements off the network - and keeps an OFFLINE restart of a
         healthy backend from raising a false provisioning alarm."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         (spawn_root / "requirements.txt").write_bytes(b"requests\n")
@@ -2519,7 +2519,7 @@ class TestDependencyInstall:
     def test_a_changed_requirements_file_reinstalls(
         self, spawn_root: Any, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         (spawn_root / "requirements.txt").write_bytes(b"requests==2.32.0\n")
@@ -2564,7 +2564,7 @@ class TestDependencyInstall:
         prior name only. The next start must put it back - and, with a
         matching stamp inside, skip pip - so an offline restart keeps its
         dependencies instead of spawning bare."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         (spawn_root / "requirements.txt").write_bytes(b"requests\n")
@@ -2594,7 +2594,7 @@ class TestDependencyInstall:
         import os as _os
         from pathlib import Path
 
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         victim = tmp_path / "victim-outside-app"
         victim.mkdir()
@@ -2627,7 +2627,7 @@ class TestDependencyInstall:
         """pip fills a staging dir that is swapped in only on success, so a
         failed or interrupted (re)install can never corrupt the live deps dir
         in place - the prior good install keeps serving the spawn."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         (spawn_root / "server.py").write_text("x = 1\n")
         (spawn_root / "requirements.txt").write_bytes(b"requests==2.32.0\n")
@@ -2852,13 +2852,13 @@ class TestDependencyInstall:
     def test_a_shimmed_child_gets_no_deps_pythonpath(
         self, spawn_root: Any, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Shim XOR PYTHONPATH: `python -m kiro_crew.apps.deps_boot` resolves
-        kiro_crew through sys.path, so a deps-provided kiro_crew copy on
+        """Shim XOR PYTHONPATH: `python -m efm_go.apps.deps_boot` resolves
+        efm_go through sys.path, so a deps-provided efm_go copy on
         PYTHONPATH would SHADOW the gateway's shim - app code running as the
         "shim". A shimmed child therefore launches WITHOUT the deps dir on
         PYTHONPATH; addsitedir supplies the deps only after the trusted shim
         has imported. The operator's own PYTHONPATH still passes through."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         deps_dir = app_deps_dir(spawn_root)
         deps_dir.mkdir(parents=True)
@@ -2922,7 +2922,7 @@ def probe_sandbox_passthrough(monkeypatch: pytest.MonkeyPatch) -> None:
     sys.prefix ownership and ABI match against a real venv interpreter - so
     the seams are passed through and the child runs directly.
     """
-    from kiro_crew.apps import interpreter as imod
+    from efm_go.apps import interpreter as imod
 
     monkeypatch.setattr(imod.sandbox, "wrap_argv", lambda argv, **_k: (list(argv), None))
     monkeypatch.setattr(imod.sandbox, "cgroup_scope_argv", lambda argv: list(argv))
@@ -2932,7 +2932,7 @@ def probe_sandbox_passthrough(monkeypatch: pytest.MonkeyPatch) -> None:
 def _plant_stamp(app_root: Any) -> None:
     """Command selection requires a CURRENT stamp (stale trees crash at
     import); fixtures that expect deps-dir scripts to resolve plant one."""
-    from kiro_crew.apps.interpreter import app_deps_dir as _add
+    from efm_go.apps.interpreter import app_deps_dir as _add
 
     d = _add(app_root)
     d.mkdir(parents=True, exist_ok=True)
@@ -2941,7 +2941,7 @@ def _plant_stamp(app_root: Any) -> None:
 
 class TestInterpreterResolution:
     def _venv_python(self, root: Any) -> Any:
-        from kiro_crew.apps.interpreter import venv_python_path
+        from efm_go.apps.interpreter import venv_python_path
 
         return venv_python_path(root)
 
@@ -2952,7 +2952,7 @@ class TestInterpreterResolution:
         return self._venv_python(root)
 
     def test_a_real_venv_is_preferred(self, tmp_path: Any, probe_sandbox_passthrough: Any) -> None:
-        from kiro_crew.apps.interpreter import resolve_app_python
+        from efm_go.apps.interpreter import resolve_app_python
 
         py = self._real_venv(tmp_path)
         assert resolve_app_python(tmp_path) == str(py)
@@ -2965,7 +2965,7 @@ class TestInterpreterResolution:
         and whose pyvenv.cfg names the current minor version - a version
         check ACCEPTS it, but its sys.prefix is not this venv (no working
         environment), so the probe rejects it."""
-        from kiro_crew.apps.interpreter import resolve_app_python
+        from efm_go.apps.interpreter import resolve_app_python
 
         # A stub interpreter that starts but is NOT the venv's own python
         # (its sys.prefix will not point inside <root>/.venv).
@@ -2979,7 +2979,7 @@ class TestInterpreterResolution:
         assert resolve_app_python(tmp_path) == sys.executable
 
     def test_a_venv_without_an_interpreter_is_not_preferred(self, tmp_path: Any) -> None:
-        from kiro_crew.apps.interpreter import resolve_app_python
+        from efm_go.apps.interpreter import resolve_app_python
 
         (tmp_path / ".venv").mkdir()
         assert resolve_app_python(tmp_path) == sys.executable
@@ -2990,7 +2990,7 @@ class TestInterpreterResolution:
         """The probe executable is app-controlled, so it must receive the
         same sanitized environment every app subprocess gets - never the
         gateway's own, which can carry credentials."""
-        from kiro_crew.apps import interpreter as imod
+        from efm_go.apps import interpreter as imod
 
         _create_real_venv(tmp_path)
         monkeypatch.setenv("GATEWAY_SECRET_CANARY", "leak-me")
@@ -3013,7 +3013,7 @@ class TestInterpreterResolution:
         OS sandbox; a host where wrap_argv fail-closes (no backend) gets no
         positive evidence and falls back to sys.executable - the exception
         must never propagate into spawn or registration."""
-        from kiro_crew.apps import interpreter as imod
+        from efm_go.apps import interpreter as imod
 
         _create_real_venv(tmp_path)
 
@@ -3034,7 +3034,7 @@ class TestInterpreterResolution:
         py.parent.mkdir(parents=True)
         py.write_text("#!/bin/sh\necho '[null, %d, %d]'\n" % sys.version_info[:2])
         py.chmod(0o755)
-        from kiro_crew.apps import interpreter as imod
+        from efm_go.apps import interpreter as imod
 
         assert imod._venv_is_usable(tmp_path) is False
         assert imod.resolve_app_python(tmp_path) == sys.executable
@@ -3049,7 +3049,7 @@ class TestInterpreterResolution:
         import sys as _sys
         from unittest import mock
 
-        from kiro_crew.apps import interpreter as imod
+        from efm_go.apps import interpreter as imod
 
         (tmp_path / "requirements.txt").write_bytes(b"uvicorn\n")
         # No tree + usable venv: the venv wins (the F2 fallback).
@@ -3123,8 +3123,8 @@ class TestInterpreterResolution:
         """pip --target puts console scripts in <target>/bin (Scripts on
         Windows); the resolver must find them there now that the gateway never
         creates the venv layout that carries them on real installs."""
-        from kiro_crew import platform_compat as _pc
-        from kiro_crew.apps.interpreter import app_deps_dir, venv_provided_command
+        from efm_go import platform_compat as _pc
+        from efm_go.apps.interpreter import app_deps_dir, venv_provided_command
 
         scripts = "Scripts" if _pc.IS_WINDOWS else "bin"
         name = "my-tool.exe" if _pc.IS_WINDOWS else "my-tool"
@@ -3137,7 +3137,7 @@ class TestInterpreterResolution:
     def test_provisioned_deps_pin_the_gateway_interpreter(self, tmp_path: Any) -> None:
         """Once the gateway provisioned .kirocrew-deps, those wheels were
         built by sys.executable, so the venv is not consulted at all."""
-        from kiro_crew.apps.interpreter import app_deps_dir, resolve_app_python
+        from efm_go.apps.interpreter import app_deps_dir, resolve_app_python
 
         self._real_venv(tmp_path)
         app_deps_dir(tmp_path).mkdir(parents=True)
@@ -3148,8 +3148,8 @@ class TestInterpreterResolution:
     def test_a_venv_console_script_wins_only_without_provisioned_deps(
         self, tmp_path: Any, probe_sandbox_passthrough: Any
     ) -> None:
-        from kiro_crew import platform_compat as _pc
-        from kiro_crew.apps.interpreter import app_deps_dir, venv_provided_command
+        from efm_go import platform_compat as _pc
+        from efm_go.apps.interpreter import app_deps_dir, venv_provided_command
 
         scripts = "Scripts" if _pc.IS_WINDOWS else "bin"
         name = "my-tool.exe" if _pc.IS_WINDOWS else "my-tool"
@@ -3170,8 +3170,8 @@ class TestInterpreterResolution:
         """A console script under a NON-usable venv (skeleton / no working
         interpreter) is skipped: its shebang interpreter would not carry the
         app's environment. The deps-dir script is used instead."""
-        from kiro_crew import platform_compat as _pc
-        from kiro_crew.apps.interpreter import app_deps_dir, venv_provided_command
+        from efm_go import platform_compat as _pc
+        from efm_go.apps.interpreter import app_deps_dir, venv_provided_command
 
         scripts = "Scripts" if _pc.IS_WINDOWS else "bin"
         name = "my-tool.exe" if _pc.IS_WINDOWS else "my-tool"
@@ -3349,7 +3349,7 @@ class TestAsgiDispatch:
         # and checks sys.prefix + ABI), so a stub file fails the probe. A
         # bootstrap skeleton or wrong-ABI copy is rejected by that probe;
         # provisioned deps (absent here) would pin sys.executable instead.
-        from kiro_crew.apps.interpreter import venv_python_path
+        from efm_go.apps.interpreter import venv_python_path
 
         _create_real_venv(spawn_root)
         venv_py = venv_python_path(spawn_root)
@@ -3369,7 +3369,7 @@ class TestAsgiDispatch:
         A requirements.txt or .kirocrew-deps sitting in its writable app dir
         must NOT be provisioned or prepended to its PYTHONPATH - that would
         let agent-authored wheels load ahead of the trusted module."""
-        from kiro_crew.apps.interpreter import app_deps_dir
+        from efm_go.apps.interpreter import app_deps_dir
 
         # Both attack surfaces present in the writable app dir:
         (spawn_root / "requirements.txt").write_bytes(b"requests\n")
@@ -3380,11 +3380,11 @@ class TestAsgiDispatch:
         # A module-style entry point: dotted, no separator, no extension, and
         # no such file under the app root.
         with pytest.raises(_StopSpawn):
-            bmod._start_app_backend_body("mod-builtin", _manifest("kiro_crew.apps.builtins.demo"))
+            bmod._start_app_backend_body("mod-builtin", _manifest("efm_go.apps.builtins.demo"))
         assert seen["argv"] == [
             sys.executable,
             "-m",
-            "kiro_crew.apps.builtins.demo",
+            "efm_go.apps.builtins.demo",
         ]
         # No pip install ran, and the deps dir is NOT on the child PYTHONPATH.
         assert not any("install" in argv for argv in runs), runs
@@ -3882,7 +3882,7 @@ class TestGateMcpRegistration:
     ) -> None:
         seen: list[tuple[str, int]] = []
         monkeypatch.setattr(
-            "kiro_crew.apps.bridges.reregister_app_mcp_servers",
+            "efm_go.apps.bridges.reregister_app_mcp_servers",
             lambda name, live_port, io_failures=None: seen.append((name, live_port)),
         )
         bmod._gate_mcp_registration("app", 9133, healthy=True)
@@ -3893,7 +3893,7 @@ class TestGateMcpRegistration:
     ) -> None:
         """A dead MCP url breaks every kiro-cli session, not just this app."""
 
-        monkeypatch.setattr("kiro_crew.apps.bridges._deregister_mcp_servers", lambda _n: 2)
+        monkeypatch.setattr("efm_go.apps.bridges._deregister_mcp_servers", lambda _n: 2)
         with caplog.at_level(logging.WARNING):
             bmod._gate_mcp_registration("app", 9133, healthy=False)
         assert any("Scrubbed 2 MCP server(s)" in r.getMessage() for r in caplog.records)
@@ -3904,7 +3904,7 @@ class TestGateMcpRegistration:
         def _boom(*_a: Any, **_k: Any) -> None:
             raise RuntimeError("mcp.json locked")
 
-        monkeypatch.setattr("kiro_crew.apps.bridges.reregister_app_mcp_servers", _boom)
+        monkeypatch.setattr("efm_go.apps.bridges.reregister_app_mcp_servers", _boom)
         with caplog.at_level(logging.WARNING):
             bmod._gate_mcp_registration("app", 9133, healthy=True)
         assert any("Health-gated MCP registration failed" in r.message for r in caplog.records)
@@ -4040,7 +4040,7 @@ class TestRestartExitedBackend:
     def test_restart_revet_reads_origin_without_syncing_installed_metadata(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.apps import manager
+        from efm_go.apps import manager
 
         stored = manager.InstalledApp(
             name="app",
@@ -4073,10 +4073,10 @@ class TestRestartExitedBackend:
         monkeypatch.setattr(bmod, "_forget_app_pid_if", lambda *_args: None)
         monkeypatch.setattr(bmod, "sel", lambda: audit)
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._app_activation_denied", lambda _name, **_kwargs: None
+            "efm_go.apps.backend._app_activation_denied", lambda _name, **_kwargs: None
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._read_installed",
+            "efm_go.apps.backend._read_installed",
             lambda _name: SimpleNamespace(origin="registry"),
         )
         monkeypatch.setattr(
@@ -4198,7 +4198,7 @@ class TestRestartExitedBackend:
             return replacement
 
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             _evaluate,
         )
         monkeypatch.setattr(
@@ -4247,10 +4247,10 @@ class TestRestartExitedBackend:
         monkeypatch.setattr(bmod, "_app_enabled_state", lambda _name: True)
         monkeypatch.setattr(bmod, "_forget_app_pid_if", lambda *_args: None)
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._app_activation_denied", lambda _name, **_kwargs: None
+            "efm_go.apps.backend._app_activation_denied", lambda _name, **_kwargs: None
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._read_installed",
+            "efm_go.apps.backend._read_installed",
             lambda _name: SimpleNamespace(origin="builtin"),
         )
         monkeypatch.setattr(
@@ -4313,11 +4313,11 @@ class TestRestartExitedBackend:
         monkeypatch.setattr(bmod, "_app_enabled_state", lambda _name: True)
         monkeypatch.setattr(bmod, "_forget_app_pid_if", lambda *_args: None)
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._app_activation_denied",
+            "efm_go.apps.backend._app_activation_denied",
             lambda _name, **_kwargs: "not in apps allowlist",
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._read_installed",
+            "efm_go.apps.backend._read_installed",
             lambda _name: SimpleNamespace(origin="builtin"),
         )
         monkeypatch.setattr(
@@ -5045,7 +5045,7 @@ class TestBootMcpReconcile:
         def _boom(_name: str) -> int:
             raise RuntimeError("mcp.json locked")
 
-        monkeypatch.setattr("kiro_crew.apps.bridges._deregister_mcp_servers", _boom)
+        monkeypatch.setattr("efm_go.apps.bridges._deregister_mcp_servers", _boom)
         monkeypatch.setattr(
             bmod,
             "list_apps",
@@ -5073,7 +5073,7 @@ class TestBootResourceReconcile:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         monkeypatch.setattr(
-            "kiro_crew.apps.bridges.register_app",
+            "efm_go.apps.bridges.register_app",
             lambda _n: SimpleNamespace(errors=["skill clash"]),
         )
         monkeypatch.setattr(bmod, "list_apps", lambda: [_app("noisy")])
@@ -5090,7 +5090,7 @@ class TestBootResourceReconcile:
         def _boom(_name: str) -> Any:
             raise RuntimeError("registry corrupt")
 
-        monkeypatch.setattr("kiro_crew.apps.bridges.register_app", _boom)
+        monkeypatch.setattr("efm_go.apps.bridges.register_app", _boom)
         monkeypatch.setattr(bmod, "list_apps", lambda: [_app("broken")])
         with caplog.at_level(logging.WARNING):
             bmod.start_enabled_app_backends()
@@ -5104,7 +5104,7 @@ class TestBootResourceReconcile:
         """A policy tightened after enable must revoke, not merely decline to start."""
 
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._app_activation_denied",
+            "efm_go.apps.backend._app_activation_denied",
             lambda _n, **_kwargs: "not in allowlist",
         )
         monkeypatch.setattr(bmod, "list_apps", lambda: [_app("banned")])
@@ -5124,9 +5124,9 @@ class TestBootResourceReconcile:
         def _boom(_name: str) -> int:
             raise RuntimeError("agents dir read-only")
 
-        monkeypatch.setattr("kiro_crew.apps.bridges._deregister_agents", _boom)
+        monkeypatch.setattr("efm_go.apps.bridges._deregister_agents", _boom)
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._app_activation_denied", lambda _n, **_kwargs: "banned"
+            "efm_go.apps.backend._app_activation_denied", lambda _n, **_kwargs: "banned"
         )
         monkeypatch.setattr(bmod, "list_apps", lambda: [_app("banned")])
         with caplog.at_level(logging.ERROR):
@@ -5155,7 +5155,7 @@ class TestBootResourceReconcile:
     ) -> None:
         """Boot must still start admitted backends when the reconcile cannot load."""
 
-        monkeypatch.setitem(sys.modules, "kiro_crew.apps.bridges", SimpleNamespace())
+        monkeypatch.setitem(sys.modules, "efm_go.apps.bridges", SimpleNamespace())
         monkeypatch.setattr(bmod, "list_apps", lambda: [_app("a"), _app("b")])
         with caplog.at_level(logging.WARNING):
             bmod.start_enabled_app_backends()
@@ -5168,7 +5168,7 @@ class TestBootSpawnGating:
         self, boot_env: dict[str, list[Any]], monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
-            "kiro_crew.apps.backend._app_activation_denied", lambda _n, **_kwargs: "not allowed"
+            "efm_go.apps.backend._app_activation_denied", lambda _n, **_kwargs: "not allowed"
         )
         monkeypatch.setattr(bmod, "list_apps", lambda: [_app("blocked")])
         assert bmod.start_enabled_app_backends() == []

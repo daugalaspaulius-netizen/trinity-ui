@@ -1,7 +1,7 @@
 """Deny-class classification and the remediation text attached to a refusal.
 
 The classifier reads anchor phrases out of refusal text, so the tests that matter
-drive the REAL producers in :mod:`kiro_crew.security` rather than asserting on
+drive the REAL producers in :mod:`efm_go.security` rather than asserting on
 copied strings. A pinned copy would keep passing after the producer reworded
 itself, which is the exact failure this guards: the refusal would silently lose
 its guidance and nothing would go red.
@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import deny_guidance as dg
-from kiro_crew import security
-from kiro_crew.dashboard.state import (
+from efm_go import deny_guidance as dg
+from efm_go import security
+from efm_go.dashboard.state import (
     DENY_CAUSE_HOOK_ERROR,
     DENY_CAUSE_INVALID_NAME,
     DENY_CAUSE_POLICY,
@@ -180,7 +180,7 @@ def _rule_tier_reason(rule: security.DeniedCommandRule) -> str:
     """The refusal a rule-tier hit on *rule* produces, from the real producer.
 
     ``_deny_reason`` is the single module-level producer every tier in
-    :mod:`kiro_crew.security` emits through, precisely so the micro-format cannot
+    :mod:`efm_go.security` emits through, precisely so the micro-format cannot
     drift between them, so calling it is driving the producer rather than pinning
     a copy of its output. The end-to-end tests below additionally go through
     ``is_denied`` with a real command; this form is what lets every one of the
@@ -735,7 +735,7 @@ class TestRemediationText:
         # was extended for lived in BOTH the dict and the skill, so a sweep of the
         # dict alone would have declared it fixed while the trigger-loaded copy
         # still taught it.
-        root = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = Path(__file__).resolve().parents[1] / "src" / "efm_go"
         surfaces = {
             "blocked-by-policy/SKILL.md": (
                 root / "builtin_skills" / "blocked-by-policy" / "SKILL.md"
@@ -915,7 +915,7 @@ class TestRemediationText:
         skill = (
             Path(__file__).resolve().parents[1]
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "builtin_skills"
             / "blocked-by-policy"
             / "SKILL.md"
@@ -959,7 +959,7 @@ class TestRemediationText:
         skill = (
             Path(__file__).resolve().parents[1]
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "builtin_skills"
             / "blocked-by-policy"
             / "SKILL.md"
@@ -980,7 +980,7 @@ class TestRemediationText:
         ILLUSTRATION of a refused shape, not a command to run, so requiring the
         other surfaces to reproduce it would pin the wrong thing.
         """
-        root = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+        root = Path(__file__).resolve().parents[1] / "src" / "efm_go"
         surfaces = {
             "builtin_skills/blocked-by-policy/SKILL.md": (
                 root / "builtin_skills" / "blocked-by-policy" / "SKILL.md"
@@ -1197,7 +1197,7 @@ class TestResolveHintOnThePublicEdition:
                 raise AssertionError("list_mcp must not run when available() is False")
 
         monkeypatch.setattr(dg, "_HINT_TTL_SECS", 300.0)
-        import kiro_crew.platform.context as ctx_mod
+        import efm_go.platform.context as ctx_mod
 
         monkeypatch.setattr(ctx_mod, "safe_context_call", lambda fn, **kw: _Manager(), raising=True)
         assert await dg.resolve_credential_tool_hint() == ""
@@ -1235,7 +1235,7 @@ class TestResolveHintOnThePublicEdition:
 
     async def test_lookup_failure_degrades_to_no_hint(self, monkeypatch):
         dg.reset_credential_tool_hint_cache()
-        import kiro_crew.platform.context as ctx_mod
+        import efm_go.platform.context as ctx_mod
 
         def _boom(fn, **kw):
             raise RuntimeError("composition exploded")
@@ -1357,8 +1357,8 @@ _CONTACTS_REMOTE = (
 
 
 def _ssh_hook_result(monkeypatch, options: str):
-    from kiro_crew.hooks import HookManager
-    from kiro_crew.security import argv_floor
+    from efm_go.hooks import HookManager
+    from efm_go.security import argv_floor
 
     # Fixture host is remote. Isolate DNS; no SSH or osascript is executed.
     monkeypatch.setattr(argv_floor, "_resolved_host_verdict", lambda host, **kwargs: False)
@@ -1376,13 +1376,13 @@ class TestSshBatchModeRefusalHint:
     """
 
     def test_equivalent_options_pass_the_deny_floor_unchanged(self, monkeypatch):
-        from kiro_crew.hooks import TOOL_DENY
+        from efm_go.hooks import TOOL_DENY
 
         _, result = _ssh_hook_result(monkeypatch, _SSH_EQUIVALENT)
         assert result.action != TOOL_DENY, result.reason
 
     def test_batchmode_is_still_refused_and_the_hint_names_the_equivalent(self, monkeypatch):
-        from kiro_crew.hooks import TOOL_DENY
+        from efm_go.hooks import TOOL_DENY
 
         command, result = _ssh_hook_result(monkeypatch, "-o BatchMode=yes")
         assert result.action == TOOL_DENY
@@ -1390,7 +1390,7 @@ class TestSshBatchModeRefusalHint:
         assert _SSH_EQUIVALENT in dg.SSH_BATCHMODE_REMEDIATION
 
     def test_the_stall_hint_proposes_the_same_equivalent(self):
-        from kiro_crew.acp import liveness
+        from efm_go.acp import liveness
 
         assert liveness._SSH_NONINTERACTIVE_OPTIONS == _SSH_EQUIVALENT
         assert _SSH_EQUIVALENT in liveness.non_interactive_hint("ssh host uptime")

@@ -2,7 +2,7 @@
 
 Three providers reach this module: the resident local recogniser (the default),
 Apple's on-device speech, and AWS Transcribe. Everything a test here needs about
-the recogniser is stubbed at the ``kiro_crew.stt`` seam, because the point of the
+the recogniser is stubbed at the ``efm_go.stt`` seam, because the point of the
 batch path is what it does with an availability answer and a PCM buffer, not how
 whisper.cpp decodes one.
 """
@@ -37,11 +37,11 @@ import pytest
 # shape these tests replace.
 from imageio_ffmpeg._definitions import FNAME_PER_PLATFORM, get_platform
 
-from kiro_crew import platform_compat as _pc
-from kiro_crew import stt, transcribe
-from kiro_crew.config.loader import SttConfig
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
-from kiro_crew.transcribe import (
+from efm_go import platform_compat as _pc
+from efm_go import stt, transcribe
+from efm_go.config.loader import SttConfig
+from efm_go.subprocess_utf8 import UTF8_TEXT
+from efm_go.transcribe import (
     _ProfileCredentialResolver,
     availability_detail,
     find_brew,
@@ -98,7 +98,7 @@ def _stub_recogniser_absent(monkeypatch) -> None:
     reported an installed-but-unloadable wheel (missing system library, too-old
     glibc) as "install the voice extra" to someone who already had.
     """
-    from kiro_crew.stt import engine as engine_mod
+    from efm_go.stt import engine as engine_mod
 
     monkeypatch.setattr(engine_mod.importlib.util, "find_spec", lambda name: None)
 
@@ -109,20 +109,20 @@ class TestFindBrew:
     ``find_brew`` falls back to the fixed install prefixes."""
 
     def test_found_on_path(self):
-        with patch("kiro_crew.transcribe.shutil.which", return_value="/opt/homebrew/bin/brew"):
+        with patch("efm_go.transcribe.shutil.which", return_value="/opt/homebrew/bin/brew"):
             assert find_brew() == "/opt/homebrew/bin/brew"
 
     def test_found_off_path_via_prefix(self, tmp_path, monkeypatch):
         brew = tmp_path / "brew"
         brew.write_text("#!/bin/sh\n")
         brew.chmod(0o755)
-        with patch("kiro_crew.transcribe.shutil.which", return_value=None):
-            monkeypatch.setattr("kiro_crew.transcribe._BREW_CANDIDATE_PATHS", [str(brew)])
+        with patch("efm_go.transcribe.shutil.which", return_value=None):
+            monkeypatch.setattr("efm_go.transcribe._BREW_CANDIDATE_PATHS", [str(brew)])
             assert find_brew() == str(brew)
 
     def test_not_installed(self, monkeypatch):
-        with patch("kiro_crew.transcribe.shutil.which", return_value=None):
-            monkeypatch.setattr("kiro_crew.transcribe._BREW_CANDIDATE_PATHS", ["/nonexistent/brew"])
+        with patch("efm_go.transcribe.shutil.which", return_value=None):
+            monkeypatch.setattr("efm_go.transcribe._BREW_CANDIDATE_PATHS", ["/nonexistent/brew"])
             assert find_brew() is None
 
 
@@ -137,7 +137,7 @@ class TestIsAvailable:
     def test_loads_config_when_none(self):
         mock_cfg = MagicMock()
         mock_cfg.stt = SttConfig(enabled=False)
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=mock_cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=mock_cfg):
             assert is_available(None) is False
 
 
@@ -187,7 +187,7 @@ class TestAvailabilityDetail:
     def test_local_no_wheel_for_platform(self, monkeypatch):
         """A platform with no published wheel means "install a C++ toolchain",
         not "install the extra"."""
-        from kiro_crew.stt import engine as engine_mod
+        from efm_go.stt import engine as engine_mod
 
         _stub_recogniser_absent(monkeypatch)
         monkeypatch.setattr(engine_mod, "_has_prebuilt_wheel", lambda: False)
@@ -222,7 +222,7 @@ class TestAvailabilityDetail:
         under the per-test data home and holds nothing, so the configured model is
         genuinely absent here.
         """
-        from kiro_crew.stt import models
+        from efm_go.stt import models
 
         _stub_recogniser_importable(monkeypatch)
         cfg = SttConfig(enabled=True, provider="local", model="base")
@@ -256,7 +256,7 @@ class TestAvailabilityDetail:
         settings read) and a refusal writes an audit entry, so asking here would
         fill the audit log with refusals nobody requested.
         """
-        from kiro_crew import aws_consent
+        from efm_go import aws_consent
 
         monkeypatch.setattr(transcribe, "boto3", object())
         monkeypatch.setitem(sys.modules, "amazon_transcribe", types.ModuleType("amazon_transcribe"))
@@ -271,7 +271,7 @@ class TestAvailabilityDetail:
 
     def test_apple_needs_toolchain(self, monkeypatch):
         """Separate from unsupported because this one has a one-line fix."""
-        from kiro_crew import apple_speech
+        from efm_go import apple_speech
 
         monkeypatch.setattr(
             apple_speech,
@@ -288,7 +288,7 @@ class TestAvailabilityDetail:
     def test_apple_unsupported_host(self, monkeypatch):
         """Not macOS, or too old a macOS for the SpeechAnalyzer API. No install
         fixes it, so it must not be reported as something to install."""
-        from kiro_crew import apple_speech
+        from efm_go import apple_speech
 
         monkeypatch.setattr(
             apple_speech,
@@ -303,7 +303,7 @@ class TestAvailabilityDetail:
         """Availability runs on the event loop (the settings read, the transcribe
         endpoint, the Slack voice path), and compiling the Swift helper there
         would freeze the gateway for as long as swiftc takes."""
-        from kiro_crew import apple_speech
+        from efm_go import apple_speech
 
         monkeypatch.setattr(apple_speech, "availability", lambda: apple_speech.Availability(True))
 
@@ -335,7 +335,7 @@ class TestAvailabilityDetail:
 class TestTranscribeAudio:
     @staticmethod
     def _recogniser(monkeypatch, transcript="Hello world", available=True, seen=None):
-        """Stand the recogniser up at the ``kiro_crew.stt`` seam.
+        """Stand the recogniser up at the ``efm_go.stt`` seam.
 
         Patched on the package namespace ``transcribe.py`` actually reads, so the
         lazy re-export cannot route a call past the stub. *seen* collects the
@@ -425,7 +425,7 @@ class TestTranscribeAudio:
     ):
         from threading import get_ident
 
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         audio = tmp_path / "test.ogg"
         audio.write_bytes(b"fake audio")
@@ -437,8 +437,8 @@ class TestTranscribeAudio:
         # about WHERE the read runs, not about the gate -- consents first. The
         # refusal itself is covered in `test_aws_consent.py`.
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
-        from kiro_crew import aws_consent
-        from kiro_crew.config.loader import config_dir
+        from efm_go import aws_consent
+        from efm_go.config.loader import config_dir
 
         config_dir().mkdir(parents=True, exist_ok=True)
         aws_consent.record_grant(
@@ -512,7 +512,7 @@ class TestTranscribeAudio:
     async def test_apple_batch_uses_effective_locale(
         self, tmp_path, monkeypatch, language, expected_locale
     ):
-        from kiro_crew import apple_speech
+        from efm_go import apple_speech
 
         cfg = SttConfig(provider="apple", language_code=language, timeout_secs=10)
         recognize = AsyncMock(return_value=("heard", {}))
@@ -530,7 +530,7 @@ class TestTranscribeAudio:
         that heard nothing and ``(None, {"error": ...})`` for a failure; the
         provider boundary passes the first through as ``""`` and only the second
         as None."""
-        from kiro_crew import apple_speech
+        from efm_go import apple_speech
 
         cfg = SttConfig(provider="apple", timeout_secs=10)
         audio_path = str(tmp_path / "voice.wav")
@@ -550,7 +550,7 @@ class TestTranscribeAudio:
         """A Transcribe stream that completes with no final results is ``""``;
         a stream that raises is None. The join-and-strip must not fold the first
         onto the second."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         audio = tmp_path / "quiet.ogg"
         audio.write_bytes(b"fake audio")
@@ -600,7 +600,7 @@ class TestTranscribeAudio:
     ):
         """A voice memo hears the same names live dictation does: both Transcribe
         paths read the one setting, and None (not ``""``) means no header at all."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         audio = tmp_path / "memo.ogg"
         audio.write_bytes(b"fake audio")
@@ -786,7 +786,7 @@ class TestTranscribeAudio:
 
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", side_effect=fake_exec),
@@ -820,7 +820,7 @@ class TestTranscribeAudio:
             raise AssertionError("no child may be spawned without an ffmpeg binary")
 
         with (
-            patch("kiro_crew.transcribe._open_ffmpeg_for_execution", return_value=None),
+            patch("efm_go.transcribe._open_ffmpeg_for_execution", return_value=None),
             patch("asyncio.create_subprocess_exec", side_effect=_never),
         ):
             assert await transcribe_audio(str(audio), cfg) is None
@@ -860,7 +860,7 @@ class TestTranscribeAudio:
 
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", return_value=_Proc()),
@@ -918,7 +918,7 @@ class TestTranscribeAudio:
 
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", return_value=_Proc()),
@@ -949,7 +949,7 @@ class TestTranscribeAudio:
     async def test_loads_config_when_none(self):
         mock_cfg = MagicMock()
         mock_cfg.stt = SttConfig(enabled=False)
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=mock_cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=mock_cfg):
             result = await transcribe_audio("/tmp/test.webm", None)
         assert result is None
 
@@ -1171,7 +1171,7 @@ class TestTranscribeFiles:
     @pytest.mark.xdist_group(name="serial")
     @pytest.mark.asyncio
     async def test_transcribe_audio_files(self):
-        from kiro_crew.slack.events import _transcribe_files
+        from efm_go.slack.events import _transcribe_files
 
         mock_orch = MagicMock()
         mock_orch.slack = AsyncMock()
@@ -1187,9 +1187,9 @@ class TestTranscribeFiles:
         ]
 
         with (
-            patch("kiro_crew.slack.events.batch_duration_cap_secs", return_value=None),
+            patch("efm_go.slack.events.batch_duration_cap_secs", return_value=None),
             patch(
-                "kiro_crew.slack.events.transcribe_audio",
+                "efm_go.slack.events.transcribe_audio",
                 new_callable=AsyncMock,
                 return_value="Hello",
             ),
@@ -1199,7 +1199,7 @@ class TestTranscribeFiles:
 
     @pytest.mark.asyncio
     async def test_skips_non_audio(self):
-        from kiro_crew.slack.events import _transcribe_files
+        from efm_go.slack.events import _transcribe_files
 
         mock_orch = MagicMock()
         mock_orch.slack = AsyncMock()
@@ -1213,7 +1213,7 @@ class TestTranscribeFiles:
 
     @pytest.mark.asyncio
     async def test_skips_no_url(self):
-        from kiro_crew.slack.events import _transcribe_files
+        from efm_go.slack.events import _transcribe_files
 
         mock_orch = MagicMock()
         mock_orch.slack = AsyncMock()
@@ -1225,7 +1225,7 @@ class TestTranscribeFiles:
 
     @pytest.mark.asyncio
     async def test_handles_transcription_failure(self):
-        from kiro_crew.slack.events import _transcribe_files
+        from efm_go.slack.events import _transcribe_files
 
         mock_orch = MagicMock()
         mock_orch.slack = AsyncMock()
@@ -1241,14 +1241,14 @@ class TestTranscribeFiles:
         ]
 
         # Patch where events.py BOUND the symbol, not where it is defined: events.py
-        # does `from kiro_crew.transcribe import transcribe_audio`, so it holds its own
+        # does `from efm_go.transcribe import transcribe_audio`, so it holds its own
         # module global. Patching the definition left the REAL transcriber running --
         # the assertion passed for the wrong reason and the test was the 3rd slowest in
         # the suite. Matches the sibling test above.
         with (
-            patch("kiro_crew.slack.events.batch_duration_cap_secs", return_value=None),
+            patch("efm_go.slack.events.batch_duration_cap_secs", return_value=None),
             patch(
-                "kiro_crew.slack.events.transcribe_audio",
+                "efm_go.slack.events.transcribe_audio",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
@@ -1258,7 +1258,7 @@ class TestTranscribeFiles:
 
     @pytest.mark.asyncio
     async def test_handles_exception(self):
-        from kiro_crew.slack.events import _transcribe_files
+        from efm_go.slack.events import _transcribe_files
 
         mock_orch = MagicMock()
         mock_orch.slack = AsyncMock()
@@ -1285,7 +1285,7 @@ class TestTranscribeFiles:
 class TestSlackClientDownloadFile:
     @pytest.mark.asyncio
     async def test_base_class_raises(self):
-        from kiro_crew.slack.client import SlackClientOps
+        from efm_go.slack.client import SlackClientOps
 
         class MinimalClient(SlackClientOps):
             async def post_message(self, *a, **kw):
@@ -1361,7 +1361,7 @@ class TestSttConfig:
         """The default names a model the downloader can actually fetch. The
         advertised menu offering a model with no sha256 pin is how a first
         dictation fails on a fresh install."""
-        from kiro_crew.stt import models
+        from efm_go.stt import models
 
         assert SttConfig().model in {m.name for m in models.CATALOG}
 
@@ -1429,7 +1429,7 @@ class TestSensitivePathGuard:
 
         monkeypatch.setattr(stt, "availability", _never_probed)
         monkeypatch.setattr(transcribe, "_pcm_from_wav", _never_decoded)
-        with patch("kiro_crew.security.is_sensitive_path", return_value=True):
+        with patch("efm_go.security.is_sensitive_path", return_value=True):
             result = await transcribe_audio(str(audio), cfg)
         assert result is None
 
@@ -1438,7 +1438,7 @@ class TestSensitivePathGuard:
         audio = tmp_path / "test.webm"
         audio.write_text("fake")
         cfg = SttConfig(enabled=True, provider="transcribe")
-        with patch("kiro_crew.security.is_sensitive_path", return_value=True):
+        with patch("efm_go.security.is_sensitive_path", return_value=True):
             result = await transcribe_audio(str(audio), cfg)
         assert result is None
 
@@ -1454,9 +1454,9 @@ class TestSensitivePathGuard:
         snap.parent.mkdir()
         snap.write_bytes(b"bytes")
         monkeypatch.setattr(
-            "kiro_crew.sandbox.prime_voice_runtime_sandbox_paths", lambda: str(root)
+            "efm_go.sandbox.prime_voice_runtime_sandbox_paths", lambda: str(root)
         )
-        with patch("kiro_crew.security.is_sensitive_path", return_value=True):
+        with patch("efm_go.security.is_sensitive_path", return_value=True):
             assert transcribe._is_sensitive_audio_path(str(snap)) is False
 
     @pytest.mark.skipif(not hasattr(os, "symlink"), reason="platform has no symlinks")
@@ -1470,9 +1470,9 @@ class TestSensitivePathGuard:
         link = root / "recording.wav"
         link.symlink_to(outside)
         monkeypatch.setattr(
-            "kiro_crew.sandbox.prime_voice_runtime_sandbox_paths", lambda: str(root)
+            "efm_go.sandbox.prime_voice_runtime_sandbox_paths", lambda: str(root)
         )
-        with patch("kiro_crew.security.is_sensitive_path", return_value=True):
+        with patch("efm_go.security.is_sensitive_path", return_value=True):
             assert transcribe._is_sensitive_audio_path(str(link)) is True
 
 
@@ -1966,7 +1966,7 @@ class TestBundledFfmpeg:
         root.mkdir(mode=0o755)
         cleanup_calls = []
         monkeypatch.setattr(
-            "kiro_crew.sandbox.prime_voice_runtime_sandbox_paths",
+            "efm_go.sandbox.prime_voice_runtime_sandbox_paths",
             lambda: str(root),
         )
         monkeypatch.setattr(transcribe, "_ffmpeg_snapshot_roots_cleaned", set())
@@ -1987,7 +1987,7 @@ class TestBundledFfmpeg:
         root = tmp_path / "not-a-directory"
         root.write_bytes(b"not a runtime root")
         monkeypatch.setattr(
-            "kiro_crew.sandbox.prime_voice_runtime_sandbox_paths",
+            "efm_go.sandbox.prime_voice_runtime_sandbox_paths",
             lambda: str(root),
         )
 
@@ -2250,7 +2250,7 @@ class TestBundledFfmpeg:
         decode error. Every import-admissible suffix must therefore map to a
         demuxer, so no attacker-influenced input ever falls back to content
         sniffing."""
-        from kiro_crew.apps.builtins.meetings.backend import constants as k
+        from efm_go.apps.builtins.meetings.backend import constants as k
 
         for suffix in k.IMPORT_AUDIO_EXTENSIONS:
             forced = transcribe._forced_demuxer_args(f"/tmp/talk{suffix}")
@@ -2462,8 +2462,8 @@ class TestFfmpegCandidateDirsWindows:
     """
 
     def test_windows_dirs_appended(self, monkeypatch):
-        from kiro_crew import platform_compat as pc
-        from kiro_crew import transcribe as tr
+        from efm_go import platform_compat as pc
+        from efm_go import transcribe as tr
 
         monkeypatch.setattr(pc, "IS_WINDOWS", True)
         pf = r"C:\Program Files"
@@ -2477,8 +2477,8 @@ class TestFfmpegCandidateDirsWindows:
         assert "/usr/local/bin" in dirs
 
     def test_non_windows_omits_windows_dirs(self, monkeypatch):
-        from kiro_crew import platform_compat as pc
-        from kiro_crew import transcribe as tr
+        from efm_go import platform_compat as pc
+        from efm_go import transcribe as tr
 
         monkeypatch.setattr(pc, "IS_WINDOWS", False)
         dirs = tr._ffmpeg_candidate_dirs()
@@ -2492,7 +2492,7 @@ class TestFfmpegCandidateDirsWindows:
         Regression: the prior implementation called ``os.path.isfile(<d>/ffmpeg)``
         which is blind to the ``.exe`` suffix.
         """
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         target_dir = tmp_path / "ffbin"
         target_dir.mkdir()
@@ -2514,7 +2514,7 @@ class TestFfmpegCandidateDirsWindows:
         assert os.environ["PATH"].startswith(str(target_dir))
 
     def test_ensure_ffmpeg_skips_dirs_already_on_path(self, tmp_path, monkeypatch):
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         target_dir = tmp_path / "ffbin"
         target_dir.mkdir()
@@ -2545,7 +2545,7 @@ class TestFfmpegDiscoveryWindowsOnly:
         reason="Windows-only: exercises PATHEXT-driven .exe suffix resolution.",
     )
     def test_ffmpeg_exe_discovered(self, tmp_path, monkeypatch):
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         ffbin = tmp_path / "ffbin"
         ffbin.mkdir()
@@ -2570,7 +2570,7 @@ class TestTranscribeFormatValidation:
         audio = tmp_path / "test.mp3"
         audio.write_text("fake")
         cfg = SttConfig(enabled=True, provider="transcribe")
-        with patch("kiro_crew.security.is_sensitive_path", return_value=False):
+        with patch("efm_go.security.is_sensitive_path", return_value=False):
             result = await transcribe_audio(str(audio), cfg)
         assert result is None
 
@@ -2617,8 +2617,8 @@ class TestTranscribeAwsTempOwnership:
     def _grant_consent(tmp_path, monkeypatch, cfg):
         """Record Transcribe consent so the paid-service gate lets tests pass."""
         monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
-        from kiro_crew import aws_consent
-        from kiro_crew.config.loader import config_dir
+        from efm_go import aws_consent
+        from efm_go.config.loader import config_dir
 
         config_dir().mkdir(parents=True, exist_ok=True)
         aws_consent.record_grant(
@@ -2638,7 +2638,7 @@ class TestTranscribeAwsTempOwnership:
     @staticmethod
     def _owned_temp(tmp_path, monkeypatch):
         """Pin ``_make_temp_ogg`` to a known file so the tests can watch it."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         owned = tmp_path / "owned.ogg"
         owned.write_bytes(b"")
@@ -2652,7 +2652,7 @@ class TestTranscribeAwsTempOwnership:
         """A cancellation mid-``communicate`` must kill the child, reap it, THEN
         remove ``tmp_ogg``, and re-raise — an ``except Exception`` guard would
         miss the ``CancelledError`` and do none of that."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         cfg = SttConfig(enabled=True, provider="transcribe", timeout_secs=10)
         self._grant_consent(tmp_path, monkeypatch, cfg)
@@ -2687,7 +2687,7 @@ class TestTranscribeAwsTempOwnership:
         monkeypatch.setattr(tr, "_unlink_if_exists", tracked_unlink)
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", return_value=_Proc()),
@@ -2702,7 +2702,7 @@ class TestTranscribeAwsTempOwnership:
     async def test_remux_failure_still_unlinks_and_returns_none(self, tmp_path, monkeypatch):
         """The new cancellation path must not eat the established ``Exception``
         contract: a failed remux logs, removes the temp, and returns None."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         cfg = SttConfig(enabled=True, provider="transcribe", timeout_secs=10)
         self._grant_consent(tmp_path, monkeypatch, cfg)
@@ -2717,7 +2717,7 @@ class TestTranscribeAwsTempOwnership:
         monkeypatch.setattr(tr, "_load_aws_transcribe_components", lambda: (object, object))
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", return_value=proc),
@@ -2732,7 +2732,7 @@ class TestTranscribeAwsTempOwnership:
         """A REPEAT cancellation landing on the cleanup ``end_stream`` await
         escapes its ``except Exception`` guard; the nested ``finally`` must
         still remove ``tmp_ogg`` and let the cancellation propagate."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         cfg = SttConfig(enabled=True, provider="transcribe", timeout_secs=10)
         self._grant_consent(tmp_path, monkeypatch, cfg)
@@ -2773,7 +2773,7 @@ class TestTranscribeAwsTempOwnership:
         )
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", return_value=remux_proc),
@@ -2791,7 +2791,7 @@ class TestTranscribeAwsTempOwnership:
         the child may still hold the file and the unlink raises
         ``PermissionError``. That must not REPLACE the in-flight cancellation
         — the guard swallows the ``OSError`` and the original propagates."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         cfg = SttConfig(enabled=True, provider="transcribe", timeout_secs=10)
         self._grant_consent(tmp_path, monkeypatch, cfg)
@@ -2818,7 +2818,7 @@ class TestTranscribeAwsTempOwnership:
         monkeypatch.setattr(tr, "_unlink_if_exists", locked_unlink)
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", return_value=_Proc()),
@@ -2838,7 +2838,7 @@ class TestTranscribeAwsTempOwnership:
         """A cancellation landing on ``create_subprocess_exec`` itself means no
         child exists — the owned temp must still be removed and the
         cancellation must propagate."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         cfg = SttConfig(enabled=True, provider="transcribe", timeout_secs=10)
         self._grant_consent(tmp_path, monkeypatch, cfg)
@@ -2850,7 +2850,7 @@ class TestTranscribeAwsTempOwnership:
         monkeypatch.setattr(tr, "_load_aws_transcribe_components", lambda: (object, object))
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch(
@@ -2868,7 +2868,7 @@ class TestTranscribeAwsTempOwnership:
         """When the off-loop unlink hop is itself cancelled AND the synchronous
         fallback hits a locked file, the ``OSError`` must be swallowed so the
         cancellation — not a ``PermissionError`` — reaches the awaiter."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         cfg = SttConfig(enabled=True, provider="transcribe", timeout_secs=10)
         self._grant_consent(tmp_path, monkeypatch, cfg)
@@ -2921,7 +2921,7 @@ class TestTranscribeAwsTempOwnership:
         monkeypatch.setattr(asyncio, "to_thread", cancelled_unlink_hop)
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", return_value=remux_proc),
@@ -2939,7 +2939,7 @@ class TestTranscribeAwsTempOwnership:
         ``communicate()`` -- not ``wait()`` -- so the PIPE buffers are drained
         and a child blocked writing to a full stderr PIPE cannot hang the
         event loop."""
-        from kiro_crew import transcribe as tr
+        from efm_go import transcribe as tr
 
         cfg = SttConfig(enabled=True, provider="transcribe", timeout_secs=10)
         self._grant_consent(tmp_path, monkeypatch, cfg)
@@ -2956,7 +2956,7 @@ class TestTranscribeAwsTempOwnership:
         monkeypatch.setattr(tr, "_load_aws_transcribe_components", lambda: (object, object))
         with (
             patch(
-                "kiro_crew.transcribe._open_ffmpeg_for_execution",
+                "efm_go.transcribe._open_ffmpeg_for_execution",
                 return_value="/fake/ffmpeg",
             ),
             patch("asyncio.create_subprocess_exec", return_value=proc),

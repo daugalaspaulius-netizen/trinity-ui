@@ -7,7 +7,7 @@ import re
 
 import pytest
 
-from kiro_crew.deploy import engine
+from efm_go.deploy import engine
 
 
 class FakeAWS:
@@ -84,7 +84,7 @@ def test_aws_bin_resolved_absolutely_from_extra_dirs(monkeypatch, tmp_path):
     # Isolate the provenance chokepoint (it has its own dedicated tests and its
     # verdict depends on host /tmp ownership): assert the resolver routes the
     # fallback hit through it and returns its canonical result.
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     validated = []
 
@@ -132,7 +132,7 @@ def test_aws_bin_fallback_hit_failing_provenance_returns_bare_name(monkeypatch, 
     monkeypatch.setenv("PATH", str(empty_bin))
     monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(tmp_path),))
 
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     def _refuse(candidate):
         raise ValueError("planted shim")
@@ -166,7 +166,7 @@ def test_aws_bin_refused_dir_does_not_shadow_a_good_later_dir(monkeypatch, tmp_p
     monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(bad_dir), str(good_dir)))
     monkeypatch.setattr(engine, "_REFUSED_AWS_BIN_DIRS", set())
 
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     def _refuse_only_bad(candidate):
         if candidate.startswith(str(bad_dir)):
@@ -203,7 +203,7 @@ def test_aws_spawn_env_omits_a_refused_dir_while_widening_for_a_good_one(monkeyp
     monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(bad_dir), str(good_dir)))
     monkeypatch.setattr(engine, "_REFUSED_AWS_BIN_DIRS", set())
 
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     def _refuse_only_bad(candidate):
         if candidate.startswith(str(bad_dir)):
@@ -237,7 +237,7 @@ def test_aws_bin_every_dir_refused_still_returns_bare_name(monkeypatch, tmp_path
     monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(first), str(second)))
     monkeypatch.setattr(engine, "_REFUSED_AWS_BIN_DIRS", set())
 
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     def _refuse(candidate):
         raise ValueError("planted shim")
@@ -265,7 +265,7 @@ def test_aws_bin_repaired_dir_is_cleared_from_the_refused_set(monkeypatch, tmp_p
     monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(install),))
     monkeypatch.setattr(engine, "_REFUSED_AWS_BIN_DIRS", set())
 
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     ownership_fixed = {"yet": False}
 
@@ -314,7 +314,7 @@ def test_aws_pass_does_not_clear_a_refused_plugin_in_the_same_dir(monkeypatch, t
     monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(mixed), str(good)))
     monkeypatch.setattr(engine, "_REFUSED_AWS_BIN_DIRS", set())
 
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     def _refuse_mixed_plugin(candidate):
         # Only the plugin in the mixed dir is refused; aws there passes.
@@ -373,7 +373,7 @@ def test_aws_tool_bin_resolves_session_manager_plugin_from_extra_dirs(monkeypatc
     monkeypatch.setenv("PATH", str(empty_bin))
     monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(tmp_path),))
 
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     validated = []
 
@@ -405,7 +405,7 @@ def test_aws_tool_bin_refused_provenance_falls_back_to_that_tool_s_name(monkeypa
     monkeypatch.setenv("PATH", str(empty_bin))
     monkeypatch.setattr(engine, "_AWS_BIN_DIRS", (str(tmp_path),))
 
-    from kiro_crew import github_runner
+    from efm_go import github_runner
 
     def _refuse(candidate):
         raise ValueError("planted shim")

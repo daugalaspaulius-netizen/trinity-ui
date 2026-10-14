@@ -1,6 +1,6 @@
 # MCP Configuration
 
-Source: https://kiro.dev/docs/mcp/configuration/ (fetched 2026-09-06; upstream
+Source: https://efmleads.com/docs/mcp/configuration/ (fetched 2026-09-06; upstream
 retired `/docs/cli/mcp/configuration/` and made the page surface-agnostic)
 
 ## Config structure

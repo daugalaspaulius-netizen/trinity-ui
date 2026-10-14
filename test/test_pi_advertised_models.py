@@ -8,16 +8,16 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import model_registry
-from kiro_crew.acp_backends import (
+from efm_go import model_registry
+from efm_go.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_KIRO,
     ACP_BACKEND_PI,
     ACP_BACKENDS_ADVERTISED_MODEL_SELECTION,
     model_registry_namespace,
 )
-from kiro_crew.agent_sdk.capabilities import capabilities_for
-from kiro_crew.dashboard.handlers import agents
+from efm_go.agent_sdk.capabilities import capabilities_for
+from efm_go.dashboard.handlers import agents
 
 
 @pytest.fixture(autouse=True)

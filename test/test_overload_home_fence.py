@@ -33,10 +33,10 @@ from pathlib import Path
 import pytest
 from test_sandbox_launcher_program import CoveringLibc, launch, payload, refusal, rendered_payload
 
-from kiro_crew import sandbox
-from kiro_crew import sandbox_launcher_program as program
-from kiro_crew import security
-from kiro_crew.taskq.store import TaskStore
+from efm_go import sandbox
+from efm_go import sandbox_launcher_program as program
+from efm_go import security
+from efm_go.taskq.store import TaskStore
 
 _HOME = os.path.expanduser("~")
 _CREW = os.path.join(_HOME, ".kiro", "crew")
@@ -146,7 +146,7 @@ class TestScratchConfidentiality:
     def test_the_spawn_sites_hand_their_scratch_back_as_a_private_window(self) -> None:
         import inspect
 
-        from kiro_crew.acp import client, runtime
+        from efm_go.acp import client, runtime
 
         for module in (client, runtime):
             src = inspect.getsource(module)
@@ -163,11 +163,11 @@ class TestPrivateWindowDoesNotCostDelegation:
         fail-closed no-backend path)."""
         from unittest.mock import MagicMock, patch
 
-        monkeypatch.setattr("kiro_crew.sandbox.sys.platform", "win32")
+        monkeypatch.setattr("efm_go.sandbox.sys.platform", "win32")
         launch = r"C:\Program Files\Kiro\kiro-cli.exe"
         with (
-            patch("kiro_crew.sel.sel", return_value=MagicMock()),
-            patch("kiro_crew.sandbox.detect_backend") as mock_detect,
+            patch("efm_go.sel.sel", return_value=MagicMock()),
+            patch("efm_go.sandbox.detect_backend") as mock_detect,
         ):
             argv, cleanup = sandbox.wrap_argv(
                 [launch, "acp"],
@@ -239,8 +239,8 @@ class TestThePrivateWindowSurvivesTheRoutingItDependsOn:
         _outside_any_sandbox(monkeypatch)
         own = os.path.join(_CREW, "scratch", "session-aaaa")
         with (
-            patch("kiro_crew.sel.sel", return_value=MagicMock()),
-            patch("kiro_crew.sandbox.detect_backend", return_value="namespace"),
+            patch("efm_go.sel.sel", return_value=MagicMock()),
+            patch("efm_go.sandbox.detect_backend", return_value="namespace"),
             # A kiro-cli spawn on macOS is handed to kiro-cli's OWN sandbox when the
             # internal edition's settings ask for it, and then Kiro Crew writes no
             # launcher at all -- so on a machine carrying that setting this test
@@ -248,7 +248,7 @@ class TestThePrivateWindowSurvivesTheRoutingItDependsOn:
             # decision is the host's, not this test's subject, so it is pinned:
             # ``is_kiro_cli=True`` is what reaches it, which is why the sibling
             # seatbelt case (``is_kiro_cli=False``) never saw it.
-            patch("kiro_crew.sandbox.kiro_internal_sandbox_enabled", return_value=False),
+            patch("efm_go.sandbox.kiro_internal_sandbox_enabled", return_value=False),
         ):
             argv, cleanup = sandbox.wrap_argv(
                 ["/usr/bin/kiro-cli", "acp"],
@@ -288,9 +288,9 @@ class TestThePrivateWindowSurvivesTheRoutingItDependsOn:
             return list(argv), None
 
         with (
-            patch("kiro_crew.sel.sel", return_value=MagicMock()),
-            patch("kiro_crew.sandbox.detect_backend", return_value="sandbox-exec"),
-            patch("kiro_crew.sandbox.sandbox_exec_argv", side_effect=_spy),
+            patch("efm_go.sel.sel", return_value=MagicMock()),
+            patch("efm_go.sandbox.detect_backend", return_value="sandbox-exec"),
+            patch("efm_go.sandbox.sandbox_exec_argv", side_effect=_spy),
         ):
             sandbox.wrap_argv(
                 ["/usr/bin/kiro-cli", "acp"],

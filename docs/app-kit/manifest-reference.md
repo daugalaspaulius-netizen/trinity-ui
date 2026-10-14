@@ -73,8 +73,8 @@ installed against:
   interpreter (`.venv/bin/python3`, or `.venv\Scripts\python.exe` on Windows)
   when it exists as a runnable file created by the same Python minor version
   as the gateway, else again to the gateway's own interpreter - never a PATH
-  lookup. Exception: a server whose `args` launch a `kiro_crew` module
-  (`-m kiro_crew...`) always gets the gateway's interpreter and never the
+  lookup. Exception: a server whose `args` launch a `efm_go` module
+  (`-m efm_go...`) always gets the gateway's interpreter and never the
   app deps on `PYTHONPATH`, so an app cannot shadow the gateway's own code.
 - **Any other bare name** (no path separator, no drive qualifier) is rewritten
   only when the app's provisioned deps dir or its venv provides that exact
@@ -609,7 +609,7 @@ icon; an unrecognised or absent name renders a generic panel glyph.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `backend.entryPoint` | string | | Script to run (relative to app root), or a dotted Python module path launched via `python -m` (used by built-in apps like `file-explorer`, e.g. `kiro_crew.apps.builtins.file_explorer.server`) |
+| `backend.entryPoint` | string | | Script to run (relative to app root), or a dotted Python module path launched via `python -m` (used by built-in apps like `file-explorer`, e.g. `efm_go.apps.builtins.file_explorer.server`) |
 | `backend.port` | string | `"auto"` | Port number or `"auto"` for auto-assignment |
 | `backend.healthCheck` | string | `"/health"` | Absolute health-check path beginning with `/`; unsafe or ambiguous paths are refused. Polled until it answers at startup, then re-polled for the life of the backend — keep the handler cheap and dependency-free. A backend that stops answering it is dropped from the reverse proxy and its MCP servers are deregistered until it answers again. **The route must answer an UNSIGNED loopback GET directly with a 2xx** — the probe sends no proxy credential and follows no redirect, so a path behind the backend's own auth (401/403) and a path that redirects (3xx) both fail forever and the app never becomes reachable (the gateway then returns `app '<name>' has no reachable backend`). The gateway log names the observed status. |
 | `backend.routes` | string | | Base route path for the backend |
@@ -676,7 +676,7 @@ above the app root (`from ... import x` is refused). It is not a sandbox: app
 Python already runs in the Gateway process with full filesystem access, so a
 symlinked sibling resolves wherever it points. Do not use a bare
 `import config`: `sys.modules["config"]` is process-global, so two apps each
-shipping a `config.py` would end up sharing one module. `from kiro_crew...`
+shipping a `config.py` would end up sharing one module. `from efm_go...`
 absolute imports are for built-in apps only.
 
 **Python dependencies.** Runtime `requirements.txt` provisioning — the
@@ -689,7 +689,7 @@ through a `site`-processing launch shim for Python commands, on `PYTHONPATH`
 for ABI-matched others — and is never placed on the Gateway's own import path,
 because hooks run inside the Gateway process, where an app-controlled tree
 ahead of the trusted modules could shadow the Gateway's own code. That is the
-same rule that keeps `-m kiro_crew...` servers off the app deps, and it binds
+same rule that keeps `-m efm_go...` servers off the app deps, and it binds
 your hook code too: do not push your own tree onto `sys.path` ahead of the
 Gateway's modules from inside a hook.
 
@@ -1073,7 +1073,7 @@ distributed desktop application.
 Two things decide whether your app can honestly claim `windows`:
 
 1. **Does its code assume POSIX?** Route every platform decision through
-   `kiro_crew.platform_compat` (`IS_WINDOWS`, `IS_POSIX`, `file_lock`,
+   `efm_go.platform_compat` (`IS_WINDOWS`, `IS_POSIX`, `file_lock`,
    `rename_noreplace`, `trusted_system_bin`, …) rather than writing a raw
    `sys.platform` test. Pass explicit `encoding="utf-8"` on text I/O — the
    Windows default code page is not UTF-8. Prefer `os.replace` over

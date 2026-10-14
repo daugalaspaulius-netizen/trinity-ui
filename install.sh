@@ -4,9 +4,7 @@
 # One-command setup for macOS and Linux. Public build — no Brazil workspace,
 # no internal tooling required. Uses python3/pip (backend) + npm/vite (frontend).
 #
-# Usage (from a local clone):
-#   git clone https://github.com/kirodotdev/KiroCrew.git
-#   cd kirocrew
+# Usage (from a local checkout):
 #   bash install.sh
 #
 # Options:
@@ -49,7 +47,7 @@ KIROCREW_APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 KIROCREW_DATA_DIR="${KIROCREW_HOME:-$HOME/.kiro/crew}"
 NODE_VERSION="24"
 # Minimum Node version (major.minor.patch) Kiro Crew supports -- the same
-# floor as MIN_NODE_VERSION in src/kiro_crew/constants.py and ensure-node.sh.
+# floor as MIN_NODE_VERSION in src/efm_go/constants.py and ensure-node.sh.
 # A full version, not a major: an early 22.x lacks APIs the code needs
 # (worker_threads.markAsUncloneable landed in 22.10.0) and is below the
 # bundler's declared ">=22.12.0". Defined here (not just at the post-install
@@ -163,8 +161,7 @@ echo "  ${DIM}Platform:${RESET}           $(uname -s) $(uname -m)"
 echo ""
 
 if [ ! -f "$KIROCREW_APP_DIR/pyproject.toml" ]; then
-    die "Run this from inside a KiroCrew clone (pyproject.toml not found in $KIROCREW_APP_DIR).
-     git clone https://github.com/kirodotdev/KiroCrew.git && cd kirocrew && bash install.sh"
+    die "Run this from inside an EFM Go checkout (pyproject.toml not found in $KIROCREW_APP_DIR)."
 fi
 
 # ══════════════════════════════════════════════════════════════════════
@@ -418,8 +415,7 @@ else
     warn "npm not available — install the agent backend later:"
     detail "npm i -g $ACP_NPM_PKG"
 fi
-warn "The default Kiro agent requires Kiro CLI; this installer does not install or sign in to it."
-detail "Install it separately from https://kiro.dev/cli/ and run: kiro-cli login"
+warn "EFM Go does not install a foreign agent CLI."
 
 # ══════════════════════════════════════════════════════════════════════
 # Step 3: Build
@@ -429,7 +425,7 @@ step "Build"
 cd "$KIROCREW_APP_DIR"
 
 # ── Frontend (npm + vite) ──
-# Vite emits to website/dist; we stage it into src/kiro_crew/static/dist
+# Vite emits to website/dist; we stage it into src/efm_go/static/dist
 # where setup.py copies it into the package at install time.
 if has node && [ -d "$KIROCREW_APP_DIR/website" ]; then
     info "Building frontend (website/)…"
@@ -495,12 +491,12 @@ if has node && [ -d "$KIROCREW_APP_DIR/website" ]; then
     _fe_ok=0
     if wait $!; then
         _dist_src="$KIROCREW_APP_DIR/website/dist"
-        _dist_dst="$KIROCREW_APP_DIR/src/kiro_crew/static/dist"
+        _dist_dst="$KIROCREW_APP_DIR/src/efm_go/static/dist"
         if [ -d "$_dist_src" ]; then
             rm -rf "$_dist_dst"
             mkdir -p "$(dirname "$_dist_dst")"
             cp -R "$_dist_src" "$_dist_dst"
-            ok "Frontend built and staged → src/kiro_crew/static/dist"
+            ok "Frontend built and staged → src/efm_go/static/dist"
             _fe_ok=1
         fi
     fi
@@ -603,8 +599,8 @@ if wait $!; then
     if [ ! -x "$_venv/bin/kirocrew" ]; then
         die "Install incomplete: entry point $_venv/bin/kirocrew missing or not executable."
     fi
-    if ! "$_venv/bin/python" -I -c "import kiro_crew" 2>/dev/null; then
-        die "Install incomplete: kiro_crew not importable."
+    if ! "$_venv/bin/python" -I -c "import efm_go" 2>/dev/null; then
+        die "Install incomplete: efm_go not importable."
     fi
 else
     if [ -s "$_pip_log" ]; then
@@ -807,9 +803,7 @@ case "$(basename "${SHELL:-}")" in
     *) echo "       ${GREEN}Restart your terminal${RESET}" ;;
 esac
 echo ""
-echo "    ${CYAN}2.${RESET} Set up the default Kiro agent (skip if you selected another ACP backend):"
-echo "       ${GREEN}Install Kiro CLI from https://kiro.dev/cli/${RESET}"
-echo "       ${GREEN}kiro-cli login${RESET}"
+echo "    ${CYAN}2.${RESET} The foreign agent CLI is not part of this install."
 echo ""
 echo "    ${CYAN}3.${RESET} Run the setup wizard:"
 echo "       ${GREEN}kirocrew setup${RESET}"

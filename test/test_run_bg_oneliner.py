@@ -16,17 +16,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.client import AcpError, _rejected_model_from_error
-from kiro_crew.acp.prompt_blocks import build_prompt_blocks
-from kiro_crew.acp.types import (
+from efm_go.acp.client import AcpError, _rejected_model_from_error
+from efm_go.acp.prompt_blocks import build_prompt_blocks
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
     JsonRpcMessage,
     TurnUsage,
 )
-from kiro_crew.image_refs import strip_image_refs
-from kiro_crew.llm_helpers import run_bg_oneliner
+from efm_go.image_refs import strip_image_refs
+from efm_go.llm_helpers import run_bg_oneliner
 
 
 class _FakeSession:
@@ -118,7 +118,7 @@ async def test_the_background_owner_is_pinned_before_the_call_not_after_it(monke
     silently, in an append-only file. The registry double flips its answer between
     the two moments, so only a pre-call resolution can pass.
     """
-    from kiro_crew.crew_log import emit
+    from efm_go.crew_log import emit
 
     monkeypatch.setenv(emit.CREW_LOG_ENV, "1")
     recorded: list[str] = []
@@ -164,7 +164,7 @@ async def test_image_paths_in_the_prompt_are_not_sent_as_attachments(tmp_path):
     """A one-liner quotes session history; a pasted screenshot's path in it must
     reach the builder as the history marker, never as a readable path it would
     inline as an image block (a text-only model rejects the whole request)."""
-    from kiro_crew.image_refs import STRIPPED_IMAGE_MARKER
+    from efm_go.image_refs import STRIPPED_IMAGE_MARKER
 
     shot = tmp_path / "pasted-image-1.png"
     shot.write_bytes(b"\x89PNG\r\n\x1a\n")
@@ -220,7 +220,7 @@ async def test_empty_model_does_not_override_session_default():
 @pytest.mark.asyncio
 async def test_permission_request_is_rejected_and_sel_logged(monkeypatch):
     logged: list = []
-    import kiro_crew.llm_helpers as mod
+    import efm_go.llm_helpers as mod
 
     def _fake_sel():
         return SimpleNamespace(log_tool_invocation=lambda **kw: logged.append(kw))
@@ -245,7 +245,7 @@ async def test_permission_denial_is_sel_logged_even_without_sel_source(monkeypat
     ``sel_source`` still produces a ``denied`` SEL event under the generic
     ``bg_oneliner`` source (backend-security-controls; Codex HIGH regression)."""
     logged: list = []
-    import kiro_crew.llm_helpers as mod
+    import efm_go.llm_helpers as mod
 
     def _fake_sel():
         return SimpleNamespace(log_tool_invocation=lambda **kw: logged.append(kw))
@@ -469,7 +469,7 @@ async def test_permission_denial_is_audited_even_if_reject_fails(monkeypatch):
     ``reject_tool`` transport failure cannot skip the audit (every permission
     decision must be logged; backend-security-controls)."""
     logged: list = []
-    import kiro_crew.llm_helpers as mod
+    import efm_go.llm_helpers as mod
 
     monkeypatch.setattr(
         mod,
@@ -494,7 +494,7 @@ async def test_permission_denial_is_audited_even_if_reject_fails(monkeypatch):
     assert sess.destroyed is True
 
 
-_USAGE_TARGET = "kiro_crew.dashboard.handlers.usage.persist_token_record_async"
+_USAGE_TARGET = "efm_go.dashboard.handlers.usage.persist_token_record_async"
 
 
 class _SubstitutingSession(_FakeSession):
@@ -571,7 +571,7 @@ async def test_the_turn_duration_reaches_the_row():
     # unambiguous and the assertion cannot drift on a fraction like 0.4.
     clock = iter([50.0, 50.25])
 
-    with patch("kiro_crew.llm_helpers.time", SimpleNamespace(monotonic=lambda: next(clock))):
+    with patch("efm_go.llm_helpers.time", SimpleNamespace(monotonic=lambda: next(clock))):
         with patch(_USAGE_TARGET) as persist:
             await run_bg_oneliner(_FakeSessions(sess), "p")
 
@@ -721,7 +721,7 @@ async def _send(prompt: str) -> list[list[dict]]:
 
 @pytest.mark.asyncio
 async def test_the_title_prompt_carries_no_image(attachment):
-    from kiro_crew.dashboard.chat_title import _build_title_prompt
+    from efm_go.dashboard.chat_title import _build_title_prompt
 
     prompt = _build_title_prompt([{"role": "user", "content": f"look at this\n{attachment}"}])
 
@@ -731,7 +731,7 @@ async def test_the_title_prompt_carries_no_image(attachment):
 
 @pytest.mark.asyncio
 async def test_the_suggestions_prompt_carries_no_image(attachment, monkeypatch):
-    from kiro_crew import suggestions
+    from efm_go import suggestions
 
     monkeypatch.setattr(
         suggestions.ContextBuilder, "get_memory_for", MagicMock(side_effect=RuntimeError)
@@ -750,7 +750,7 @@ async def test_the_suggestions_prompt_carries_no_image(attachment, monkeypatch):
 @pytest.mark.skipif(os.name == "nt", reason="JSON doubles a Windows path's separators")
 @pytest.mark.asyncio
 async def test_the_status_card_prompt_carries_no_image(attachment):
-    from kiro_crew.dashboard import card_lifecycle
+    from efm_go.dashboard import card_lifecycle
 
     rows = card_lifecycle._evidence_rows([{"role": "user", "content": attachment}])
     prompt = card_lifecycle._ROOT_PROMPT + json.dumps({"recent_messages": rows})
@@ -786,7 +786,7 @@ class _PromptRuntime:
 @pytest.mark.asyncio
 @pytest.mark.parametrize(("allow_image", "expected"), [(True, ["image"]), (False, [])])
 async def test_the_runtime_handle_honours_the_seam(attachment, allow_image, expected):
-    from kiro_crew.acp.session_handle import AcpSessionHandle
+    from efm_go.acp.session_handle import AcpSessionHandle
 
     queue: asyncio.Queue = asyncio.Queue()
     rt = _PromptRuntime(queue)
@@ -802,7 +802,7 @@ async def test_the_runtime_handle_honours_the_seam(attachment, allow_image, expe
 @pytest.mark.asyncio
 @pytest.mark.parametrize(("allow_image", "expected"), [(True, ["image"]), (False, [])])
 async def test_the_direct_client_honours_the_seam(tmp_path, attachment, allow_image, expected):
-    from kiro_crew.acp.client import AcpClient
+    from efm_go.acp.client import AcpClient
 
     client = AcpClient(work_dir=tmp_path)
     client._session_id = "sid"
@@ -816,9 +816,9 @@ async def test_the_direct_client_honours_the_seam(tmp_path, attachment, allow_im
 
 @pytest.mark.asyncio
 async def test_the_provider_paths_forward_the_seam():
-    from kiro_crew.acp.session_provider import AcpSessionProvider
-    from kiro_crew.providers.acp import AcpProvider
-    from kiro_crew.session_background import _ProviderBgSession
+    from efm_go.acp.session_provider import AcpSessionProvider
+    from efm_go.providers.acp import AcpProvider
+    from efm_go.session_background import _ProviderBgSession
 
     seen: list[object] = []
 
@@ -834,7 +834,7 @@ async def test_the_provider_paths_forward_the_seam():
         pass
 
     # The direct-client provider that entry holds.
-    with patch("kiro_crew.providers.acp.AcpClient"):
+    with patch("efm_go.providers.acp.AcpClient"):
         direct = AcpProvider(acp_backend="")
     direct._client = MagicMock()
     direct._client.stream_events = _record

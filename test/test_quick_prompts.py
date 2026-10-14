@@ -22,17 +22,17 @@ import json
 import re
 from pathlib import Path
 
-from kiro_crew.context import ContextBuilder
-from kiro_crew.context_blocks import attributable_user_chars
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.context import ContextBuilder
+from efm_go.context_blocks import attributable_user_chars
+from efm_go.dashboard.chat_utils import (
     _BLOCKED_SLASH_COMMANDS,
     _SLASH_COMMANDS,
     is_harness_slash_command,
     user_text_span,
 )
-from kiro_crew.memory import MemoryStore
-from kiro_crew.quick_prompts import QUICK_PROMPTS, expand_quick_prompt
-from kiro_crew.skills import SkillsLoader
+from efm_go.memory import MemoryStore
+from efm_go.quick_prompts import QUICK_PROMPTS, expand_quick_prompt
+from efm_go.skills import SkillsLoader
 
 _REPO = Path(__file__).resolve().parents[1]
 _MENU_TSX = _REPO / "website" / "src" / "components" / "SlashCommandMenu.tsx"
@@ -203,10 +203,10 @@ class TestDoesNotShadowRealCommands:
         """
         collected: dict[str, set[str]] = {}
         for mod_name in (
-            "kiro_crew.telegram.commands",
-            "kiro_crew.discord.commands",
-            "kiro_crew.teams.commands",
-            "kiro_crew.imessage.commands",
+            "efm_go.telegram.commands",
+            "efm_go.discord.commands",
+            "efm_go.teams.commands",
+            "efm_go.imessage.commands",
         ):
             mod = importlib.import_module(mod_name)
             aliases: set[str] = set()

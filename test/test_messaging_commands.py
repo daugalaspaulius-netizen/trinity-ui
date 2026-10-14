@@ -8,7 +8,7 @@ channel (where the copies could drift), the CONTRACT the hoist has to preserve -
 the ``None`` sentinel meaning "not this command, keep routing", the retryable busy
 answer, and the redaction every reply owes an external surface -- and the two
 structural guarantees that make the extraction safe: the module accepts no address,
-and ``kiro_crew.messaging`` still imports nothing from the surfaces built on it.
+and ``efm_go.messaging`` still imports nothing from the surfaces built on it.
 """
 
 from __future__ import annotations
@@ -25,10 +25,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.messaging.commands as commands
-from kiro_crew.cron import CronJob, CronSchedule, CronStoreBusy
-from kiro_crew.dashboard.token_auth import parse_duration
-from kiro_crew.messaging.commands import (
+import efm_go.messaging.commands as commands
+from efm_go.cron import CronJob, CronSchedule, CronStoreBusy
+from efm_go.dashboard.token_auth import parse_duration
+from efm_go.messaging.commands import (
     _CRON_BUSY,
     DEFAULT_DASHBOARD_TTL_SECS,
     MIN_DASHBOARD_TTL_SECS,
@@ -48,8 +48,8 @@ from kiro_crew.messaging.commands import (
     task_arg_reply,
     task_command_reply,
 )
-from kiro_crew.messaging.queue_drain import owner_token
-from kiro_crew.messaging.queue_receipt import ReceiptQueue, receipt_text
+from efm_go.messaging.queue_drain import owner_token
+from efm_go.messaging.queue_receipt import ReceiptQueue, receipt_text
 
 
 class _Surface:
@@ -218,7 +218,7 @@ class TestStopRunningTurn:
 
 
 def _reset_grant() -> Any:
-    from kiro_crew.safety_override import safety_override
+    from efm_go.safety_override import safety_override
 
     so = safety_override()
     if so.is_active():
@@ -314,7 +314,7 @@ class TestRunYoloCommand:
     def test_a_failed_activation_is_audited_as_denied(
         self, grant: Any, audit: _Sel, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.safety_override import ActivationResult
+        from efm_go.safety_override import ActivationResult
 
         monkeypatch.setattr(
             grant,
@@ -483,7 +483,7 @@ class TestLayering:
     #: trade than one documented deferred import. Recorded as a pair so a NEW edge
     #: still fails, and so removing this one does not silently widen the gate.
     _ALLOWED_SURFACE_EDGES = {
-        ("dispatch.py", "kiro_crew.dashboard.session_directive_apply"),
+        ("dispatch.py", "efm_go.dashboard.session_directive_apply"),
     }
 
     def test_messaging_imports_nothing_from_the_surfaces_built_on_it(self) -> None:
@@ -506,7 +506,7 @@ class TestLayering:
                     module = ",".join(a.name for a in node.names)
                 else:
                     continue
-                if "kiro_crew.dashboard" not in module and "kiro_crew.slack" not in module:
+                if "efm_go.dashboard" not in module and "efm_go.slack" not in module:
                     continue
                 if (path.name, module) in self._ALLOWED_SURFACE_EDGES:
                     continue
@@ -514,16 +514,16 @@ class TestLayering:
         assert not offenders, offenders
 
     #: The services the module docstring keeps duck-typed: each reaches
-    #: ``kiro_crew.slack`` transitively, so a RUNTIME import of either -- at any
+    #: ``efm_go.slack`` transitively, so a RUNTIME import of either -- at any
     #: nesting depth -- is the ``messaging -> slack`` edge in disguise. Typing-only
     #: imports under ``if TYPE_CHECKING:`` are the sanctioned way to name them.
-    _DUCK_TYPED_SERVICES = ("kiro_crew.subagent", "kiro_crew.taskrunner")
+    _DUCK_TYPED_SERVICES = ("efm_go.subagent", "efm_go.taskrunner")
 
     def test_the_duck_typed_services_are_never_imported_at_runtime(self) -> None:
         """A deferred in-function import is still an edge: the channel ``spawn``
-        reply once reached for ``kiro_crew.subagent`` inside its function body to
+        reply once reached for ``efm_go.subagent`` inside its function body to
         read the queued-reason kinds, which is why those live in the leaf module
-        ``kiro_crew.subagent_wait_reasons`` instead."""
+        ``efm_go.subagent_wait_reasons`` instead."""
         pkg = Path(commands.__file__).resolve().parent
         offenders: list[str] = []
         for path in sorted(pkg.glob("*.py")):
@@ -556,25 +556,25 @@ class TestLayering:
 
     def test_the_wait_reason_kinds_come_from_a_leaf_module(self) -> None:
         """The module the channel reply reads the kinds from imports nothing from
-        ``kiro_crew`` itself, so reading it can never grow into the edge above;
-        and it agrees with what ``kiro_crew.subagent`` re-exports."""
+        ``efm_go`` itself, so reading it can never grow into the edge above;
+        and it agrees with what ``efm_go.subagent`` re-exports."""
         import importlib
 
-        leaf = importlib.import_module("kiro_crew.subagent_wait_reasons")
+        leaf = importlib.import_module("efm_go.subagent_wait_reasons")
         tree = ast.parse(Path(leaf.__file__).read_text(encoding="utf-8"))
         edges = [
             (node.module or "")
             for node in ast.walk(tree)
-            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("kiro_crew")
+            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("efm_go")
         ] + [
             a.name
             for node in ast.walk(tree)
             if isinstance(node, ast.Import)
             for a in node.names
-            if a.name.startswith("kiro_crew")
+            if a.name.startswith("efm_go")
         ]
         assert edges == [], edges
-        from kiro_crew import subagent as sub
+        from efm_go import subagent as sub
 
         assert sub.DEFERRED_QUEUED_REASONS is leaf.DEFERRED_QUEUED_REASONS
         assert leaf.QUEUED_REASON_CONCURRENCY_LIMIT not in leaf.DEFERRED_QUEUED_REASONS
@@ -816,7 +816,7 @@ class TestCron:
         svc.remove_jobs = AsyncMock(return_value=(["j1"], []))
         svc.remove_job_async = AsyncMock(return_value=True)
 
-        with patch("kiro_crew.messaging.commands.sel") as mock_sel:
+        with patch("efm_go.messaging.commands.sel") as mock_sel:
             await cron_command_reply("cron remove all", svc, source="telegram", caller="7")
             await cron_command_reply("cron remove j1", svc, source="telegram", caller="7")
 
@@ -833,7 +833,7 @@ class TestCron:
         svc.list_jobs.return_value = [_job("j1")]
         svc.remove_jobs = AsyncMock(return_value=(["j1"], []))
 
-        with patch("kiro_crew.messaging.commands.sel") as mock_sel:
+        with patch("efm_go.messaging.commands.sel") as mock_sel:
             await cron_command_reply("cron remove all", svc, source="webex")
 
         svc.remove_jobs.assert_awaited_once_with(["j1"], actor="webex", source="webex")
@@ -1021,7 +1021,7 @@ class TestTaskSpecPathIsGated:
         key = secret_dir / "id_rsa"
         key.write_text("PRIVATE KEY", encoding="utf-8")
         monkeypatch.setattr(
-            "kiro_crew.hooks.is_sensitive_path",
+            "efm_go.hooks.is_sensitive_path",
             lambda p: str(secret_dir) in str(p),
         )
 
@@ -1051,7 +1051,7 @@ class TestTaskSpecPathIsGated:
         link = tmp_path / "plan.yaml"
         link.symlink_to(secret_dir / "id_rsa")
         monkeypatch.setattr(
-            "kiro_crew.hooks.is_sensitive_path",
+            "efm_go.hooks.is_sensitive_path",
             lambda p: str(secret_dir) in str(p),
         )
 
@@ -1098,7 +1098,7 @@ class TestSlackKeywordCarriesTheSessionKey:
 
     @pytest.mark.asyncio
     async def test_the_slack_handler_forwards_the_session_key(self) -> None:
-        from kiro_crew.slack import handler as sh
+        from efm_go.slack import handler as sh
 
         seen: list[dict] = []
 
@@ -1123,7 +1123,7 @@ class TestSlackKeywordCarriesTheSessionKey:
     async def test_omitting_it_reproduces_the_old_behaviour(self) -> None:
         # Keyword-only with a default, so the ~25 existing positional call sites are
         # unchanged and an omitted key means owner-DM-only exactly as before.
-        from kiro_crew.slack import handler as sh
+        from efm_go.slack import handler as sh
 
         seen: list[str] = []
 
@@ -1244,7 +1244,7 @@ class TestCompactUnsupportedBackend:
 
 @pytest.mark.asyncio
 async def test_spawn_memory_refusal_does_not_announce_or_start_work(monkeypatch):
-    from kiro_crew.memory_stores import UnknownMemoryStore
+    from efm_go.memory_stores import UnknownMemoryStore
 
     manager = SimpleNamespace(spawn_async=AsyncMock())
     loop_thread = threading.get_ident()
@@ -1254,7 +1254,7 @@ async def test_spawn_memory_refusal_does_not_announce_or_start_work(monkeypatch)
         assert key == "slack:C123:456.789"
         raise UnknownMemoryStore("Private memory binding is unavailable")
 
-    monkeypatch.setattr("kiro_crew.context.store_of_session", refuse)
+    monkeypatch.setattr("efm_go.context.store_of_session", refuse)
     result = await spawn_task_reply("do work", manager, "slack:C123:456.789")
     assert "Private memory binding is unavailable" in result
     assert "Spawned" not in result

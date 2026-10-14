@@ -8,11 +8,11 @@ from types import SimpleNamespace
 import pytest
 from member_memory_helpers import write_member_home
 
-from kiro_crew import context
-from kiro_crew import embeddings as emb
-from kiro_crew.config import loader
-from kiro_crew.dashboard.handlers import memory
-from kiro_crew.vector_memory import VectorMemoryStore, open_member_database
+from efm_go import context
+from efm_go import embeddings as emb
+from efm_go.config import loader
+from efm_go.dashboard.handlers import memory
+from efm_go.vector_memory import VectorMemoryStore, open_member_database
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def rebuild_home(tmp_path, monkeypatch):
     legacy_path = tmp_path / "memory_stores" / "legacy" / "memory.db"
     legacy_path.parent.mkdir()
     # Copy an empty V1 database so the named legacy store keeps the V1 lineage.
-    from kiro_crew._sqlite_compat import sqlite3
+    from efm_go._sqlite_compat import sqlite3
 
     with sqlite3.connect(str(legacy_path)) as destination:
         global_store.db.backup(destination)
@@ -161,7 +161,7 @@ def test_episode_backfill_does_not_attach_old_body_vector(rebuild_home, monkeypa
     from concurrent.futures import ThreadPoolExecutor
     from threading import Event
 
-    from kiro_crew import memory_edit
+    from efm_go import memory_edit
 
     store = rebuild_home.late[1] if private else rebuild_home.global_store
     store.reconcile_embedding_space(store.recorded_embedding_space(), force=True)

@@ -7,10 +7,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.pod import _windows_run as runs
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod import windows as win
-from kiro_crew.pod.config import PodConfig
+from efm_go.pod import _windows_run as runs
+from efm_go.pod import runtime as rt
+from efm_go.pod import windows as win
+from efm_go.pod.config import PodConfig
 
 
 @pytest.fixture
@@ -304,12 +304,12 @@ def test_public_up_prepares_home_only_after_start_reservation(
 ):
     import argparse
 
-    from kiro_crew.pod import cli
+    from efm_go.pod import cli
 
     cfg, state = model
     checkout = tmp_path / "checkout"
     binary = checkout / "fake-gateway"
-    (checkout / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True)
+    (checkout / "src" / "efm_go" / "static" / "dist").mkdir(parents=True)
     binary.write_text("unused", encoding="utf-8")
     binary.chmod(0o700)
     if preexisting_home:

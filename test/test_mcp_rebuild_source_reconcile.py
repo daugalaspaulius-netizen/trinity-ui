@@ -147,8 +147,8 @@ class TestAUserFieldOnTheEntrySurvives:
         """``mcp.honour_auto_approve`` is pinned on: the subject is preservation by
         omission, and the undeclared-grant floor would otherwise drop the key before
         the owned-key list is exercised at all."""
-        from kiro_crew.config import live as _live
-        from kiro_crew.config.loader import KiroCrewConfig as _Cfg
+        from efm_go.config import live as _live
+        from efm_go.config.loader import KiroCrewConfig as _Cfg
 
         _cfg = _Cfg()
         _cfg.mcp.honour_auto_approve = True
@@ -204,7 +204,7 @@ class TestAnAppAssignedNameStillOutranksAGlobal:
 
         def _emit() -> dict:
             with patch(
-                "kiro_crew.agent._collect_app_mcp_servers",
+                "efm_go.agent._collect_app_mcp_servers",
                 lambda **kw: {SERVER: dict(app_spec)},
             ):
                 return _kiro(tmp_path, cfg_dir, leftover)

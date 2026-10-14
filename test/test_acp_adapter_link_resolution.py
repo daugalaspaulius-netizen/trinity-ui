@@ -29,11 +29,11 @@ from typing import Callable
 
 import pytest
 
-import kiro_crew.acp.client as acp_client
+import efm_go.acp.client as acp_client
 from conftest import cap_node_module_walk, make_dir_link
-from kiro_crew.agent_sdk.backends import NODE_ADAPTER_ENTRY_SEGMENTS
+from efm_go.agent_sdk.backends import NODE_ADAPTER_ENTRY_SEGMENTS
 
-_LOGGER = "kiro_crew.acp.client"
+_LOGGER = "efm_go.acp.client"
 
 
 @dataclass(frozen=True)

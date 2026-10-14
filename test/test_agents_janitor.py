@@ -1,6 +1,6 @@
 """Tests for the age-based agents-directory janitor.
 
-Covers the hard safety contract in :mod:`kiro_crew.agents_janitor`:
+Covers the hard safety contract in :mod:`efm_go.agents_janitor`:
 
 * an aged orphaned atomic-write temp is removed (foreign shape and this
   project's own ``mkstemp`` residue);
@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.agents_janitor import (
+from efm_go.agents_janitor import (
     DEFAULT_BACKUP_MAX_AGE_SECONDS,
     DEFAULT_TEMP_MAX_AGE_SECONDS,
     SweepResult,
@@ -114,7 +114,7 @@ def test_sweep_survives_zeroed_dirent_identity(tmp_path: Path, monkeypatch) -> N
     during teardown, and a globally patched scandir handed it a fake that broke
     on Windows while passing on Linux.
     """
-    import kiro_crew.agents_janitor as aj
+    import efm_go.agents_janitor as aj
 
     orphan = _touch(tmp_path / "build-agent.json.98765.tmp", mtime=_OLD_TEMP)
 

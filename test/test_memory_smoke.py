@@ -14,12 +14,12 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.context import ContextBuilder
-from kiro_crew.hooks import ContextRule, HookManager, HooksConfig, TransformHook
-from kiro_crew.learn import LessonStore
-from kiro_crew.memory import MemoryStore
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go.context import ContextBuilder
+from efm_go.hooks import ContextRule, HookManager, HooksConfig, TransformHook
+from efm_go.learn import LessonStore
+from efm_go.memory import MemoryStore
+from efm_go.skills import SkillsLoader
+from efm_go.vector_memory import VectorMemoryStore
 
 
 def _builder(tmp_path: Path, *, opened, **kw: object) -> ContextBuilder:
@@ -136,8 +136,8 @@ class TestMemoryInjectionAllAgents:
         # explicit ``includeCrewContext: false`` suppresses it.
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.context.kiro_agents_dir", lambda: agents_dir)
-        monkeypatch.setattr("kiro_crew.context._INCLUDE_CREW_CONTEXT_CACHE", {})
+        monkeypatch.setattr("efm_go.context.kiro_agents_dir", lambda: agents_dir)
+        monkeypatch.setattr("efm_go.context._INCLUDE_CREW_CONTEXT_CACHE", {})
         builder = _builder(tmp_path, opened=opened)
         ctx = builder.build_session_context(agent="my-custom-agent")
         assert "[CRITICAL RULES" in ctx
@@ -155,8 +155,8 @@ class TestMemoryInjectionAllAgents:
         (agents_dir / "opted-out-agent.json").write_text(
             json.dumps({"name": "opted-out-agent", "includeCrewContext": False})
         )
-        monkeypatch.setattr("kiro_crew.context.kiro_agents_dir", lambda: agents_dir)
-        monkeypatch.setattr("kiro_crew.context._INCLUDE_CREW_CONTEXT_CACHE", {})
+        monkeypatch.setattr("efm_go.context.kiro_agents_dir", lambda: agents_dir)
+        monkeypatch.setattr("efm_go.context._INCLUDE_CREW_CONTEXT_CACHE", {})
         builder = _builder(tmp_path, opened=opened)
         ctx = builder.build_session_context(agent="opted-out-agent")
         assert "[CRITICAL RULES" not in ctx
@@ -169,9 +169,9 @@ class TestMemoryInjectionAllAgents:
         # (ask_question / suggest_followup) are still injected on a dashboard slot.
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.context.kiro_agents_dir", lambda: agents_dir)
-        monkeypatch.setattr("kiro_crew.context._INCLUDE_CREW_CONTEXT_CACHE", {})
-        monkeypatch.setattr("kiro_crew.context.has_dashboard_surface", lambda key: True)
+        monkeypatch.setattr("efm_go.context.kiro_agents_dir", lambda: agents_dir)
+        monkeypatch.setattr("efm_go.context._INCLUDE_CREW_CONTEXT_CACHE", {})
+        monkeypatch.setattr("efm_go.context.has_dashboard_surface", lambda key: True)
         builder = _builder(tmp_path, opened=opened)
         msg, _ = builder.build_message(
             "hello",
@@ -195,9 +195,9 @@ class TestMemoryInjectionAllAgents:
         (agents_dir / "opted-out-agent.json").write_text(
             json.dumps({"name": "opted-out-agent", "includeCrewContext": False})
         )
-        monkeypatch.setattr("kiro_crew.context.kiro_agents_dir", lambda: agents_dir)
-        monkeypatch.setattr("kiro_crew.context._INCLUDE_CREW_CONTEXT_CACHE", {})
-        monkeypatch.setattr("kiro_crew.context.has_dashboard_surface", lambda key: True)
+        monkeypatch.setattr("efm_go.context.kiro_agents_dir", lambda: agents_dir)
+        monkeypatch.setattr("efm_go.context._INCLUDE_CREW_CONTEXT_CACHE", {})
+        monkeypatch.setattr("efm_go.context.has_dashboard_surface", lambda key: True)
         builder = _builder(tmp_path, opened=opened)
         msg, _ = builder.build_message(
             "hello",
@@ -214,7 +214,7 @@ class TestMemoryInjectionAllAgents:
         # The per-agent flag cache must be droppable: an app upgrade rewrites its
         # agent JSON mid-process, so a value cached before that write would stay
         # wrong until gateway restart otherwise.
-        import kiro_crew.context as ctx
+        import efm_go.context as ctx
 
         monkeypatch.setattr(ctx, "_INCLUDE_CREW_CONTEXT_CACHE", {"a": True, "b": False})
         ctx.invalidate_include_crew_context_cache()
@@ -224,8 +224,8 @@ class TestMemoryInjectionAllAgents:
         # Wiring: rescanning the materialized-agent snapshot MUST invalidate the
         # flag cache, so a flipped includeCrewContext takes effect without a
         # gateway restart (the restart-heals class this PR removes).
-        import kiro_crew.context as ctx
-        from kiro_crew.config import loader
+        import efm_go.context as ctx
+        from efm_go.config import loader
 
         hit = {}
         monkeypatch.setattr(
@@ -260,7 +260,7 @@ class TestMemoryInjectionAllAgents:
         assert "WORKSPACE IDENTITY" not in ctx
 
     def test_custom_agent_gets_lessons(self, tmp_path: Path, opened) -> None:
-        from kiro_crew.learn import Lesson
+        from efm_go.learn import Lesson
 
         lessons = LessonStore(base_dir=tmp_path)
         lessons.save(
@@ -438,7 +438,7 @@ class TestMMRReranking:
     """MMR reranking balances relevance with diversity in episodic results."""
 
     def test_mmr_rerank_promotes_diversity(self) -> None:
-        from kiro_crew.vector_memory import _mmr_rerank
+        from efm_go.vector_memory import _mmr_rerank
 
         candidates = [
             {"text": "deployed H2C to prod fixed IAM role", "score": 0.92},
@@ -458,18 +458,18 @@ class TestMMRReranking:
         assert not any("wrong scope" in t for t in texts)
 
     def test_mmr_rerank_single_item(self) -> None:
-        from kiro_crew.vector_memory import _mmr_rerank
+        from efm_go.vector_memory import _mmr_rerank
 
         result = _mmr_rerank([{"text": "only one", "score": 0.5}], limit=3)
         assert len(result) == 1
 
     def test_mmr_rerank_empty(self) -> None:
-        from kiro_crew.vector_memory import _mmr_rerank
+        from efm_go.vector_memory import _mmr_rerank
 
         assert _mmr_rerank([], limit=3) == []
 
     def test_mmr_rerank_respects_limit(self) -> None:
-        from kiro_crew.vector_memory import _mmr_rerank
+        from efm_go.vector_memory import _mmr_rerank
 
         candidates = [{"text": f"item {i}", "score": 1.0 - i * 0.1} for i in range(10)]
         result = _mmr_rerank(candidates, limit=4)
@@ -549,20 +549,20 @@ class TestHybridSemanticRetrieval:
 
 class TestJaccardSimilarity:
     def test_identical_texts(self) -> None:
-        from kiro_crew.vector_memory import _jaccard, _tokenize
+        from efm_go.vector_memory import _jaccard, _tokenize
 
         a = _tokenize("deployed the app to production")
         assert _jaccard(a, a) == 1.0
 
     def test_disjoint_texts(self) -> None:
-        from kiro_crew.vector_memory import _jaccard, _tokenize
+        from efm_go.vector_memory import _jaccard, _tokenize
 
         a = _tokenize("deployed the app")
         b = _tokenize("migration database schema")
         assert _jaccard(a, b) == 0.0
 
     def test_partial_overlap(self) -> None:
-        from kiro_crew.vector_memory import _jaccard, _tokenize
+        from efm_go.vector_memory import _jaccard, _tokenize
 
         a = _tokenize("deployed app to production")
         b = _tokenize("deployed service to staging")
@@ -570,7 +570,7 @@ class TestJaccardSimilarity:
         assert 0.0 < sim < 1.0
 
     def test_empty_sets(self) -> None:
-        from kiro_crew.vector_memory import _jaccard
+        from efm_go.vector_memory import _jaccard
 
         assert _jaccard(set(), set()) == 0.0
         assert _jaccard({"a"}, set()) == 0.0
@@ -706,7 +706,7 @@ class TestLessonEmbeddingStorage:
     def test_backfill_cap(self, tmp_path: Path, opened) -> None:
         """Lazy backfill stops after _MAX_BACKFILLS_PER_CALL legacy lessons."""
 
-        from kiro_crew.vector_memory import _MAX_BACKFILLS_PER_CALL
+        from efm_go.vector_memory import _MAX_BACKFILLS_PER_CALL
 
         db = tmp_path / "mem.db"
         s = opened(VectorMemoryStore(db_path=db))

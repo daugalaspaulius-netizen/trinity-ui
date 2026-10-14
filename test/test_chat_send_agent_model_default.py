@@ -27,13 +27,13 @@ from pathlib import Path
 import pytest
 from test_chat_runner_coverage import _complete, _drive, _runner_state, _set_stream, _slot
 
-from kiro_crew.acp.types import EVENT_TEXT_CHUNK
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat_runner import _eager_spawn
-from kiro_crew.member_memory_auth import bind_private_session_store
-from kiro_crew.memory_stores import provision_member_memory
-from kiro_crew.providers.base import LLMEvent
+from efm_go.acp.types import EVENT_TEXT_CHUNK
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat_runner import _eager_spawn
+from efm_go.member_memory_auth import bind_private_session_store
+from efm_go.memory_stores import provision_member_memory
+from efm_go.providers.base import LLMEvent
 
 GLOBAL_DEFAULT = "claude-opus-5"
 CREW_PIN = "claude-sonnet-5"
@@ -44,7 +44,7 @@ def _load_config(tmp_path: Path, data: dict) -> KiroCrewConfig:
     """A real ``KiroCrewConfig`` loaded from *data* (same shape as config.json)."""
     cfg_file = tmp_path / "config.json"
     cfg_file.write_text(json.dumps(data))
-    with unittest.mock.patch("kiro_crew.config.loader.config_path", return_value=cfg_file):
+    with unittest.mock.patch("efm_go.config.loader.config_path", return_value=cfg_file):
         return KiroCrewConfig.load()
 
 

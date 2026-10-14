@@ -15,9 +15,9 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew import platform_compat
-from kiro_crew.config import loader
-from kiro_crew.config.loader import WorkspaceDirUnusable, materialize_workspace_dir
+from efm_go import platform_compat
+from efm_go.config import loader
+from efm_go.config.loader import WorkspaceDirUnusable, materialize_workspace_dir
 
 
 def _by_name(monkeypatch: pytest.MonkeyPatch) -> None:

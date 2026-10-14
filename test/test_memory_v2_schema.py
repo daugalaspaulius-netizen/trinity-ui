@@ -40,10 +40,10 @@ from unittest import mock
 import pytest
 
 from conftest import make_dir_link
-from kiro_crew import memory_schema, vector_memory
-from kiro_crew.config import loader as loader_mod
-from kiro_crew.config.loader import config_dir
-from kiro_crew.memory_stores import (
+from efm_go import memory_schema, vector_memory
+from efm_go.config import loader as loader_mod
+from efm_go.config.loader import config_dir
+from efm_go.memory_stores import (
     DEFAULT_MEMORY_STORE,
     MEMORY_DB_FILE,
     UnknownMemoryStore,
@@ -51,7 +51,7 @@ from kiro_crew.memory_stores import (
     named_store_of_db,
     resolve_store_path,
 )
-from kiro_crew.vector_memory import (
+from efm_go.vector_memory import (
     _HAS_NUMPY,
     _MEMORY_META_TABLE,
     _MIGRATIONS,
@@ -1218,7 +1218,7 @@ class TestAFacetStampNeverFailsAWrite:
         # write at the operator's real data home.
         with (
             mock.patch.object(silo, "_db", connection),
-            caplog.at_level(logging.WARNING, logger="kiro_crew.vector_memory"),
+            caplog.at_level(logging.WARNING, logger="efm_go.vector_memory"),
         ):
             assert (
                 silo.set_semantic(_SEMANTIC_KEY, "vim", 1.0, "user_explicit", facets=_WRITER_AXES)

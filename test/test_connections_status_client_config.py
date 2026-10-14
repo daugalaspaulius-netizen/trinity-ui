@@ -17,10 +17,10 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew import mcp_grant
-from kiro_crew.connections import get_provider, mint, status
-from kiro_crew.dashboard.handlers import connections
-from kiro_crew.secrets import SecretVault
+from efm_go import mcp_grant
+from efm_go.connections import get_provider, mint, status
+from efm_go.dashboard.handlers import connections
+from efm_go.secrets import SecretVault
 
 GITHUB_MCP_URL = "https://api.githubcopilot.com/mcp/"
 NOTION_MCP_URL = "https://mcp.notion.com/mcp"
@@ -262,7 +262,7 @@ async def test_an_indeterminate_grant_lookup_still_flags(isolated, monkeypatch):
 
 def test_client_config_map_is_empty_without_preregistered_providers(isolated, monkeypatch):
     """No vault or config read at all for a DCR-only page."""
-    import kiro_crew.secrets as secrets_module
+    import efm_go.secrets as secrets_module
 
     def _never(*a, **kw):  # pragma: no cover - reaching this IS the failure
         raise AssertionError("the vault must not be opened for DCR-only providers")
@@ -284,7 +284,7 @@ def test_client_config_map_reads_config_and_vault(isolated):
 
 
 def test_an_unreadable_vault_reads_as_not_configured(isolated, monkeypatch):
-    import kiro_crew.secrets as secrets_module
+    import efm_go.secrets as secrets_module
 
     class _Broken:
         def __init__(self, *a, **kw) -> None:

@@ -28,11 +28,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.dashboard import handlers_instances as hi
-from kiro_crew.dashboard.handlers import _shared
-from kiro_crew.dashboard.handlers import sessions as hs
-from kiro_crew.instances.ssh_tunnel_manager import TunnelState
+from efm_go import security
+from efm_go.dashboard import handlers_instances as hi
+from efm_go.dashboard.handlers import _shared
+from efm_go.dashboard.handlers import sessions as hs
+from efm_go.instances.ssh_tunnel_manager import TunnelState
 
 #: The redacted field set, spelled out HERE rather than read from
 #: ``_shared.SESSION_SEARCH_TEXT_FIELDS``. Iterating the constant under test

@@ -18,19 +18,19 @@ from uuid import uuid4
 import pytest
 from pdf_test_helpers import flate_bomb_pdf
 
-from kiro_crew import pdf_extract
-from kiro_crew.embeddings import PRIORITY_NORMAL
-from kiro_crew.knowledge import readers
-from kiro_crew.knowledge.chunker import HeadingAwareChunker
-from kiro_crew.knowledge.extractor import EntityExtractor
-from kiro_crew.knowledge.readers import FileReader
-from kiro_crew.knowledge.retrieval import (
+from efm_go import pdf_extract
+from efm_go.embeddings import PRIORITY_NORMAL
+from efm_go.knowledge import readers
+from efm_go.knowledge.chunker import HeadingAwareChunker
+from efm_go.knowledge.extractor import EntityExtractor
+from efm_go.knowledge.readers import FileReader
+from efm_go.knowledge.retrieval import (
     ANY_EMBEDDING_SPACE,
     HybridRetriever,
     _bytes_to_floats,
 )
-from kiro_crew.knowledge.store import KnowledgeBundleError, KnowledgeStore, SimpleDiGraph
-from kiro_crew.knowledge.sync import SyncScheduler
+from efm_go.knowledge.store import KnowledgeBundleError, KnowledgeStore, SimpleDiGraph
+from efm_go.knowledge.sync import SyncScheduler
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -102,7 +102,7 @@ class TestKnowledgeStore:
         """
         # The driver the store itself runs on: pysqlite3 on Linux x86_64 (CI), the
         # stdlib elsewhere. Their ProgrammingError classes are unrelated types.
-        from kiro_crew._sqlite_compat import sqlite3
+        from efm_go._sqlite_compat import sqlite3
 
         store.add_item("Doc", "body", "note")
         took_first = threading.Event()
@@ -150,11 +150,11 @@ class TestKnowledgeStore:
         thread is provably idle short of process exit. The refusal names the
         file that flips the flag -- ``test/conftest.py``, which only the
         ``test/`` testpath loads -- and says that the app test trees under
-        ``src/kiro_crew/apps/builtins`` do not activate the flip themselves,
+        ``src/efm_go/apps/builtins`` do not activate the flip themselves,
         rather than pointing at a conftest that holds none.
         """
-        from kiro_crew._sqlite_compat import sqlite3
-        from kiro_crew.knowledge import store as store_mod
+        from efm_go._sqlite_compat import sqlite3
+        from efm_go.knowledge import store as store_mod
 
         monkeypatch.setattr(store_mod, "_ALLOW_CROSS_THREAD_CLOSE_FOR_TESTS", False)
         prod = KnowledgeStore(str(tmp_path / "prod.db"))
@@ -182,7 +182,7 @@ class TestKnowledgeStore:
         message = str(excinfo.value)
         assert "test/conftest.py" in message, message
         assert "rootdir" not in message, message
-        assert "src/kiro_crew/apps/builtins" in message, message
+        assert "src/efm_go/apps/builtins" in message, message
 
     def test_the_test_mode_connection_still_refuses_another_threads_use(self, store):
         """Relaxing SQLite's guard for the teardown close does not relax it for USE.
@@ -192,7 +192,7 @@ class TestKnowledgeStore:
         did not open it is refused exactly as production refuses it, so the suite
         still catches a caller that caches ``store.db`` and uses it from a worker.
         """
-        from kiro_crew._sqlite_compat import sqlite3
+        from efm_go._sqlite_compat import sqlite3
 
         handle = store.db
         outcome: list = []
@@ -454,7 +454,7 @@ class TestKnowledgeStore:
                     conn.close()
             return parsed
 
-        with patch("kiro_crew.knowledge.store.json.loads", confirm_lands_mid_scan):
+        with patch("efm_go.knowledge.store.json.loads", confirm_lands_mid_scan):
             reopened = KnowledgeStore(db_path)
         try:
             assert fired, "the mid-scan write never landed; the test proves nothing"
@@ -819,7 +819,7 @@ class TestFileReader:
             assert meta["extension"] == ext
         # Scripts and modules chunk at function boundaries like their .sh/.rb
         # peers; the .psd1 manifest is data, so it stays on the generic path.
-        from kiro_crew.knowledge.ingestion import CODE_EXTS
+        from efm_go.knowledge.ingestion import CODE_EXTS
 
         assert ".ps1" in CODE_EXTS
         assert ".psm1" in CODE_EXTS
@@ -857,7 +857,7 @@ class TestFileReader:
         # gates the folder scan. An extension listed in CODE_EXTS alone never
         # reaches the chunker it selects -- the file is dropped upstream with no
         # error -- so the subset relation is the guard against that silent drift.
-        from kiro_crew.knowledge.ingestion import CODE_EXTS
+        from efm_go.knowledge.ingestion import CODE_EXTS
 
         assert {".kt", ".kts"} <= CODE_EXTS
         missing = sorted(CODE_EXTS - FileReader.SUPPORTED)
@@ -866,7 +866,7 @@ class TestFileReader:
     def test_kotlin_script_routes_to_the_code_chunker(self):
         # .kts is a Kotlin build/script file, not prose: it must reach chunk_code
         # like .kt rather than the generic prose chunker.
-        from kiro_crew.knowledge.ingestion import _run_chunker
+        from efm_go.knowledge.ingestion import _run_chunker
 
         chunker = MagicMock()
         _run_chunker(chunker, ".kts", "val x = 1", "file:///build.gradle.kts")
@@ -1636,7 +1636,7 @@ class TestKnowledgeStoreExtended:
                     conn.close()
             return parsed
 
-        with patch("kiro_crew.knowledge.store.json.loads", failure_lands_mid_scan):
+        with patch("efm_go.knowledge.store.json.loads", failure_lands_mid_scan):
             reopened = KnowledgeStore(db_path)
         try:
             assert fired, "the mid-scan write never landed; the test proves nothing"
@@ -2088,7 +2088,7 @@ class TestRetireAutoRegisteredFolders:
 
     @staticmethod
     def _watcher(store):
-        from kiro_crew.knowledge.watcher import KnowledgeWatcher
+        from efm_go.knowledge.watcher import KnowledgeWatcher
 
         return KnowledgeWatcher(store=store, pipeline=object(), interval=1)
 
@@ -2147,7 +2147,7 @@ class TestRetireAutoRegisteredFolders:
             def log_tool_invocation(**kw):
                 events.append(kw)
 
-        with patch("kiro_crew.knowledge.folder_watcher.sel", lambda: _Sel()):
+        with patch("efm_go.knowledge.folder_watcher.sel", lambda: _Sel()):
             await fw.scan_source(
                 {
                     "id": sid,
@@ -2234,7 +2234,7 @@ class TestRetireAutoRegisteredFolders:
         ``"false"`` is truthy, and on the retired marker that direction is fail-open:
         the row would read as adopted and skip the refusal entirely.
         """
-        from kiro_crew.knowledge.store import is_auto_registered
+        from efm_go.knowledge.store import is_auto_registered
 
         expected = (
             props.get("auto_added") is True and props.get("auto_registration_retired") is not True
@@ -2242,7 +2242,7 @@ class TestRetireAutoRegisteredFolders:
         assert is_auto_registered(props) is expected
 
     def test_a_real_legacy_row_is_recognised(self):
-        from kiro_crew.knowledge.store import is_auto_registered
+        from efm_go.knowledge.store import is_auto_registered
 
         assert is_auto_registered({"auto_added": True}) is True
         assert is_auto_registered({"auto_added": True, "auto_registration_retired": True}) is False
@@ -2296,7 +2296,7 @@ class TestRetireAutoRegisteredFolders:
         (measured: both sides took BEGIN IMMEDIATE at once), so a racer opened that way
         would land whether or not a lock is held, and the test would prove nothing.
         """
-        from kiro_crew.knowledge import store as store_mod
+        from efm_go.knowledge import store as store_mod
 
         sqlite = store_mod.sqlite3
 
@@ -2318,7 +2318,7 @@ class TestRetireAutoRegisteredFolders:
                     conn.close()
             return parsed
 
-        with patch("kiro_crew.knowledge.store.json.loads", ingestion_writes_mid_pass):
+        with patch("efm_go.knowledge.store.json.loads", ingestion_writes_mid_pass):
             store.retire_auto_registered_folder(sid)
 
         assert outcome, "the mid-pass write never ran; the test proves nothing"
@@ -2334,7 +2334,7 @@ class TestRetireAutoRegisteredFolders:
         this returning True -- so deferring costs nothing and raising would surface as
         a failed scan the user cannot act on.
         """
-        from kiro_crew.knowledge import store as store_mod
+        from efm_go.knowledge import store as store_mod
 
         sqlite = store_mod.sqlite3
 
@@ -2465,7 +2465,7 @@ class TestWatcherRunLoop:
 
     @staticmethod
     def _watcher(store, interval=0.01):
-        from kiro_crew.knowledge.watcher import KnowledgeWatcher
+        from efm_go.knowledge.watcher import KnowledgeWatcher
 
         return KnowledgeWatcher(store=store, pipeline=object(), interval=interval)
 
@@ -2513,7 +2513,7 @@ class TestScheduledDedupCadence:
 
     @staticmethod
     def _watcher(store):
-        from kiro_crew.knowledge.watcher import KnowledgeWatcher
+        from efm_go.knowledge.watcher import KnowledgeWatcher
 
         return KnowledgeWatcher(store=store, pipeline=object(), interval=1)
 
@@ -2527,8 +2527,8 @@ class TestScheduledDedupCadence:
     async def test_zero_disables_the_scheduled_pass(self, store):
         w = self._watcher(store)
         with (
-            patch("kiro_crew.knowledge.watcher.KiroCrewConfig") as cfg,
-            patch("kiro_crew.knowledge.watcher.dedup_sweep") as sweep,
+            patch("efm_go.knowledge.watcher.KiroCrewConfig") as cfg,
+            patch("efm_go.knowledge.watcher.dedup_sweep") as sweep,
         ):
             cfg.load.return_value = self._cfg(0)
             await w._maybe_dedup_sweep()
@@ -2539,8 +2539,8 @@ class TestScheduledDedupCadence:
         w = self._watcher(store)
         w._sweep_count = 5  # 5 % 4 != 0
         with (
-            patch("kiro_crew.knowledge.watcher.KiroCrewConfig") as cfg,
-            patch("kiro_crew.knowledge.watcher.dedup_sweep") as sweep,
+            patch("efm_go.knowledge.watcher.KiroCrewConfig") as cfg,
+            patch("efm_go.knowledge.watcher.dedup_sweep") as sweep,
         ):
             cfg.load.return_value = self._cfg(4)
             await w._maybe_dedup_sweep()
@@ -2564,8 +2564,8 @@ class TestScheduledDedupCadence:
             return [{"loser": "a", "winner": "b", "reason": "exact"}]
 
         with (
-            patch("kiro_crew.knowledge.watcher.KiroCrewConfig") as cfg,
-            patch("kiro_crew.knowledge.watcher.dedup_sweep", _sweep),
+            patch("efm_go.knowledge.watcher.KiroCrewConfig") as cfg,
+            patch("efm_go.knowledge.watcher.dedup_sweep", _sweep),
         ):
             cfg.load.return_value = self._cfg(4)
             await w._maybe_dedup_sweep()
@@ -2582,8 +2582,8 @@ class TestScheduledDedupCadence:
         w = self._watcher(store)
         w._sweep_count = 4
         with (
-            patch("kiro_crew.knowledge.watcher.KiroCrewConfig") as cfg,
-            patch("kiro_crew.knowledge.watcher.dedup_sweep", side_effect=RuntimeError("locked")),
+            patch("efm_go.knowledge.watcher.KiroCrewConfig") as cfg,
+            patch("efm_go.knowledge.watcher.dedup_sweep", side_effect=RuntimeError("locked")),
         ):
             cfg.load.return_value = self._cfg(4)
             await w._maybe_dedup_sweep()  # contained, must not raise
@@ -2593,8 +2593,8 @@ class TestScheduledDedupCadence:
     async def test_an_unreadable_cadence_setting_skips_the_pass(self, store):
         w = self._watcher(store)
         with (
-            patch("kiro_crew.knowledge.watcher.KiroCrewConfig") as cfg,
-            patch("kiro_crew.knowledge.watcher.dedup_sweep") as sweep,
+            patch("efm_go.knowledge.watcher.KiroCrewConfig") as cfg,
+            patch("efm_go.knowledge.watcher.dedup_sweep") as sweep,
         ):
             cfg.load.side_effect = RuntimeError("no config")
             await w._maybe_dedup_sweep()
@@ -2932,9 +2932,9 @@ class TestPysqlite3Fallback:
     """Verify modules fall back to stdlib sqlite3 when pysqlite3 is unavailable."""
 
     _MODULES = (
-        "kiro_crew.knowledge.store",
-        "kiro_crew.knowledge.retrieval",
-        "kiro_crew.snapshot",
+        "efm_go.knowledge.store",
+        "efm_go.knowledge.retrieval",
+        "efm_go.snapshot",
     )
 
     def _reload_without_pysqlite3(self, module_name: str):
@@ -2946,7 +2946,7 @@ class TestPysqlite3Fallback:
         """
         import sqlite3 as stdlib_sqlite3
 
-        compat = "kiro_crew._sqlite_compat"
+        compat = "efm_go._sqlite_compat"
         missing = object()
         saved = sys.modules.pop("pysqlite3", missing)
         # Restore the original module objects afterwards: a reloaded module is a
@@ -2986,13 +2986,13 @@ class TestPysqlite3Fallback:
                     setattr(parent, child, value)
 
     def test_store_falls_back_to_stdlib_sqlite3(self):
-        self._reload_without_pysqlite3("kiro_crew.knowledge.store")
+        self._reload_without_pysqlite3("efm_go.knowledge.store")
 
     def test_retrieval_falls_back_to_stdlib_sqlite3(self):
-        self._reload_without_pysqlite3("kiro_crew.knowledge.retrieval")
+        self._reload_without_pysqlite3("efm_go.knowledge.retrieval")
 
     def test_snapshot_falls_back_to_stdlib_sqlite3(self):
-        self._reload_without_pysqlite3("kiro_crew.snapshot")
+        self._reload_without_pysqlite3("efm_go.snapshot")
 
 
 # ---------------------------------------------------------------------------
@@ -3217,11 +3217,11 @@ class _FakeEmbedder:
 @pytest.mark.asyncio
 class TestRebuildEmbeddingsJob:
     async def _run(self, store, embedder, n_items):
-        from kiro_crew.dashboard.handlers.knowledge import _rebuild_embeddings_job
+        from efm_go.dashboard.handlers.knowledge import _rebuild_embeddings_job
 
         # Seed active items, each with a stale (single-element) embedding so we can
         # prove the rebuild overwrites in place rather than only filling NULLs.
-        from kiro_crew.knowledge.embedder import floats_to_bytes
+        from efm_go.knowledge.embedder import floats_to_bytes
 
         for i in range(n_items):
             store.add_item(
@@ -3240,8 +3240,8 @@ class TestRebuildEmbeddingsJob:
 
     async def test_rebuild_reembeds_all_items_across_batches(self, store):
         # More than one _REBUILD_BATCH_SIZE page to exercise the id-cursor loop.
-        from kiro_crew.knowledge.embedder import embed_signature, floats_to_bytes
-        from kiro_crew.knowledge.ingestion import _REBUILD_BATCH_SIZE
+        from efm_go.knowledge.embedder import embed_signature, floats_to_bytes
+        from efm_go.knowledge.ingestion import _REBUILD_BATCH_SIZE
 
         n = _REBUILD_BATCH_SIZE + 5
         embedder = _FakeEmbedder()
@@ -3273,7 +3273,7 @@ class TestRebuildEmbeddingsJob:
         assert len(embedder.embedded_titles) == 3
 
         # A second rebuild on an unchanged setup finds nothing stale -> no-op.
-        from kiro_crew.knowledge.ingestion import rebuild_embeddings
+        from efm_go.knowledge.ingestion import rebuild_embeddings
 
         second = _FakeEmbedder()
         processed = await rebuild_embeddings(store, second)
@@ -3282,8 +3282,8 @@ class TestRebuildEmbeddingsJob:
 
     async def test_rebuild_partial_retry_resumes_only_stale(self, store):
         # One item already carries the current sig; the rest are stale (NULL sig).
-        from kiro_crew.knowledge.embedder import embed_signature, floats_to_bytes
-        from kiro_crew.knowledge.ingestion import rebuild_embeddings
+        from efm_go.knowledge.embedder import embed_signature, floats_to_bytes
+        from efm_go.knowledge.ingestion import rebuild_embeddings
 
         embedder = _FakeEmbedder()
         sig = embed_signature(embedder.model, embedder.dim)
@@ -3305,7 +3305,7 @@ class TestRebuildEmbeddingsJob:
         embedder = _FakeEmbedder()
         await self._run(store, embedder, 3)
 
-        from kiro_crew.knowledge.ingestion import rebuild_embeddings
+        from efm_go.knowledge.ingestion import rebuild_embeddings
 
         forced = _FakeEmbedder()
         processed = await rebuild_embeddings(store, forced, force=True)
@@ -3327,7 +3327,7 @@ class TestRebuildEmbeddingsJob:
         abandoned mid-batch: updated_at is committed AFTER EACH item, so it
         advances within a batch rather than only at end-of-batch. A heartbeat that
         only lands at end-of-batch lets a second claimer duplicate the rebuild."""
-        from kiro_crew.knowledge.ingestion import rebuild_embeddings
+        from efm_go.knowledge.ingestion import rebuild_embeddings
 
         # Capture the job row's COMMITTED updated_at as each item is embedded (the
         # embedder runs between the prior item's heartbeat commit and this one).
@@ -3365,7 +3365,7 @@ class TestRebuildEmbeddingsJob:
 @pytest.mark.asyncio
 class TestWatcherSelfHeal:
     def _watcher(self, store, embedder):
-        from kiro_crew.knowledge.watcher import KnowledgeWatcher
+        from efm_go.knowledge.watcher import KnowledgeWatcher
 
         class _Pipe:
             pass
@@ -3376,7 +3376,7 @@ class TestWatcherSelfHeal:
 
     async def test_stale_items_trigger_rebuild_job(self, store):
         # Items with NULL sig are stale -> watcher fires a tracked rebuild job.
-        from kiro_crew.knowledge.embedder import embed_signature
+        from efm_go.knowledge.embedder import embed_signature
 
         embedder = _FakeEmbedder()
         for i in range(3):
@@ -3403,7 +3403,7 @@ class TestWatcherSelfHeal:
 
     async def test_no_stale_items_is_noop(self, store):
         # Everything already current -> no job created.
-        from kiro_crew.knowledge.embedder import embed_signature, floats_to_bytes
+        from efm_go.knowledge.embedder import embed_signature, floats_to_bytes
 
         embedder = _FakeEmbedder()
         sig = embed_signature(embedder.model, embedder.dim)
@@ -3440,7 +3440,7 @@ class TestWatcherSelfHeal:
         # A 'processing' row whose updated_at is older than the staleness window is
         # from a crash that bypassed cleanup -> the guard ignores it and the watcher
         # starts a fresh rebuild rather than being permanently blocked.
-        from kiro_crew.knowledge.ingestion import _REBUILD_STALE_AFTER
+        from efm_go.knowledge.ingestion import _REBUILD_STALE_AFTER
 
         embedder = _FakeEmbedder()
         store.add_item("stale", "body", "document")
@@ -3476,7 +3476,7 @@ class TestWatcherSelfHeal:
         async def _boom(*a, **k):
             raise asyncio.CancelledError()
 
-        with patch("kiro_crew.knowledge.watcher.rebuild_embeddings", _boom):
+        with patch("efm_go.knowledge.watcher.rebuild_embeddings", _boom):
             with pytest.raises(asyncio.CancelledError):
                 await watcher._run_reembed_job(embedder, "cancel000001")
 
@@ -3490,21 +3490,21 @@ class TestEmbedSignature:
     def test_base_url_ignored_by_signature(self):
         # Embeddings run in-process (no external inference endpoint), so the sig
         # has no base_url input. Same model + width = stable signature.
-        from kiro_crew.knowledge.embedder import embed_signature
+        from efm_go.knowledge.embedder import embed_signature
 
         a = embed_signature("m", 1024)
         b = embed_signature("m", 1024)
         assert a == b
 
     def test_model_changes_signature(self):
-        from kiro_crew.knowledge.embedder import embed_signature
+        from efm_go.knowledge.embedder import embed_signature
 
         assert embed_signature("m1", 1024) != embed_signature("m2", 1024)
 
     def test_content_budget_changes_signature(self):
         # Changing the budget must change the embed signature, else items
         # truncated under the old budget would never be re-embedded.
-        from kiro_crew.knowledge.embedder import embed_signature
+        from efm_go.knowledge.embedder import embed_signature
 
         assert embed_signature("m", 1024) != embed_signature("m", 1024, content_budget=42)
 
@@ -3518,8 +3518,8 @@ class TestEmbedSignature:
         changed. Asserting BOTH here is what makes dropping the input from either
         half fail a test rather than ship.
         """
-        from kiro_crew.embeddings import embedding_space_signature
-        from kiro_crew.knowledge.embedder import embed_signature
+        from efm_go.embeddings import embedding_space_signature
+        from efm_go.knowledge.embedder import embed_signature
 
         assert embedding_space_signature("m", 1024) != embedding_space_signature("m", 768)
         assert embed_signature("m", 1024) != embed_signature("m", 768)
@@ -3533,8 +3533,8 @@ class TestEmbedSignature:
         hash over the same fields -- see the derivation test below for the half it
         cannot reach.
         """
-        from kiro_crew.embeddings import embedding_space_signature
-        from kiro_crew.knowledge.embedder import embed_signature
+        from efm_go.embeddings import embedding_space_signature
+        from efm_go.knowledge.embedder import embed_signature
 
         spaces = [("m", 1024), ("m", 768), ("other", 1024), ("other", 768)]
         memory = [embedding_space_signature(model, dim) for model, dim in spaces]
@@ -3560,8 +3560,8 @@ class TestEmbedSignature:
         only if every ``(model, dim)`` input reaches ``embed_signature`` through
         that one function.
         """
-        from kiro_crew import embeddings as embeddings_mod
-        from kiro_crew.knowledge.embedder import embed_signature
+        from efm_go import embeddings as embeddings_mod
+        from efm_go.knowledge.embedder import embed_signature
 
         assert embed_signature("m", 1024) != embed_signature("m", 768)
 
@@ -3574,7 +3574,7 @@ class TestEmbedSignature:
         assert embed_signature("m", 1024) != embed_signature("m", 1024, content_budget=42)
 
     def test_embedder_signature_matches_model_signature(self):
-        from kiro_crew.knowledge.embedder import (
+        from efm_go.knowledge.embedder import (
             _EMBED_CONTENT_BUDGET,
             embed_signature,
             embedder_signature,
@@ -3595,7 +3595,7 @@ class TestEmbedSignature:
         in — and no other test would notice, because the value would still be
         internally consistent.
         """
-        from kiro_crew.knowledge.embedder import (
+        from efm_go.knowledge.embedder import (
             _EMBED_CONTENT_BUDGET,
             embed_signature,
             embedder_signature,
@@ -3632,7 +3632,7 @@ class TestRebuildFailureAccounting:
     async def test_none_vec_not_counted_as_processed(self, store):
         # When embed returns None, the item is NOT counted as processed, its sig
         # stays stale (so it retries), but items_failed reflects the miss.
-        from kiro_crew.knowledge.ingestion import rebuild_embeddings
+        from efm_go.knowledge.ingestion import rebuild_embeddings
 
         ok = store.add_item("ok", "body", "document")
         bad = store.add_item("bad", "body", "document")
@@ -3651,7 +3651,7 @@ class TestRebuildFailureAccounting:
         assert ok_row["embedding_sig"] is not None
 
     async def test_job_row_tracks_items_failed(self, store):
-        from kiro_crew.knowledge.ingestion import rebuild_embeddings
+        from efm_go.knowledge.ingestion import rebuild_embeddings
 
         for t in ("a", "b", "c"):
             store.add_item(t, "body", "document")
@@ -3676,8 +3676,8 @@ class TestRebuildFailureAccounting:
         # A perpetually-failing item keeps a stale sig; once it has a recent
         # embedded_at attempt stamp, the watcher's stale count excludes it so it
         # doesn't re-trigger a rebuild every scan (post-merge retrigger-loop fix).
-        from kiro_crew.knowledge.embedder import embedder_signature
-        from kiro_crew.knowledge.ingestion import count_stale_items
+        from efm_go.knowledge.embedder import embedder_signature
+        from efm_go.knowledge.ingestion import count_stale_items
 
         embedder = _FakeEmbedder()
         sig = embedder_signature(embedder)
@@ -3703,7 +3703,7 @@ class TestRebuildLostUpdateRace:
         # stamped "current". The guarded UPDATE drops on the contended row.
         import sqlite3
 
-        from kiro_crew.knowledge.ingestion import rebuild_embeddings
+        from efm_go.knowledge.ingestion import rebuild_embeddings
 
         item = store.add_item("racey", "old body", "document")
         store.db.commit()
@@ -3744,7 +3744,7 @@ class TestStartRebuildJobSingleFlight:
     async def test_concurrent_claims_create_one_job(self, store):
         # The atomic claim must let only ONE of two racing callers (watcher tick vs
         # dashboard click) create a job -- the other gets None.
-        from kiro_crew.knowledge.ingestion import start_rebuild_job
+        from efm_go.knowledge.ingestion import start_rebuild_job
 
         first = start_rebuild_job(store)
         second = start_rebuild_job(store)
@@ -3759,7 +3759,7 @@ class TestStartRebuildJobSingleFlight:
     async def test_stale_processing_rows_swept_to_abandoned(self, store):
         # Crashed leftovers (stale 'processing' rows) are finalized to 'abandoned'
         # when a new rebuild claims the slot, so they don't accumulate forever.
-        from kiro_crew.knowledge.ingestion import _REBUILD_STALE_AFTER, start_rebuild_job
+        from efm_go.knowledge.ingestion import _REBUILD_STALE_AFTER, start_rebuild_job
 
         old = (datetime.now() - _REBUILD_STALE_AFTER - timedelta(minutes=1)).isoformat()
         for i in range(3):
@@ -3787,7 +3787,7 @@ class TestStartRebuildJobSingleFlight:
 class TestDashboardRebuildCancel:
     async def test_dashboard_job_cancel_finalizes_row(self, store):
         # Same cancel-finalization contract as the watcher, in the dashboard wrapper.
-        from kiro_crew.dashboard.handlers.knowledge import _rebuild_embeddings_job
+        from efm_go.dashboard.handlers.knowledge import _rebuild_embeddings_job
 
         embedder = _FakeEmbedder()
         store.add_item("item", "body", "document")
@@ -3802,7 +3802,7 @@ class TestDashboardRebuildCancel:
         async def _boom(*a, **k):
             raise asyncio.CancelledError()
 
-        with patch("kiro_crew.dashboard.handlers.knowledge.rebuild_embeddings", _boom):
+        with patch("efm_go.dashboard.handlers.knowledge.rebuild_embeddings", _boom):
             with pytest.raises(asyncio.CancelledError):
                 await _rebuild_embeddings_job(None, store, embedder, "dashcancel01")
 
@@ -3817,7 +3817,7 @@ class TestWatcherLargeRebuildWarning:
     """A stale count at/over _LARGE_REBUILD_WARN_THRESHOLD logs a prominent WARNING."""
 
     def _watcher(self, store):
-        from kiro_crew.knowledge.watcher import KnowledgeWatcher
+        from efm_go.knowledge.watcher import KnowledgeWatcher
 
         class _Pipe:
             pass
@@ -3827,14 +3827,14 @@ class TestWatcherLargeRebuildWarning:
         return KnowledgeWatcher(store, pipe)
 
     async def test_large_stale_count_logs_warning(self, store, monkeypatch, caplog):
-        import kiro_crew.knowledge.watcher as watcher_mod
+        import efm_go.knowledge.watcher as watcher_mod
 
         monkeypatch.setattr(watcher_mod, "_LARGE_REBUILD_WARN_THRESHOLD", 3)
         for i in range(3):
             store.add_item(f"Item {i}", "body", "document")
         watcher = self._watcher(store)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.knowledge.watcher"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.knowledge.watcher"):
             await watcher._maybe_reembed_stale()
         assert watcher._reembed_task is not None
         await watcher._reembed_task
@@ -3848,13 +3848,13 @@ class TestWatcherLargeRebuildWarning:
         assert "3 items" in warnings[0].getMessage()
 
     async def test_small_stale_count_no_warning(self, store, monkeypatch, caplog):
-        import kiro_crew.knowledge.watcher as watcher_mod
+        import efm_go.knowledge.watcher as watcher_mod
 
         monkeypatch.setattr(watcher_mod, "_LARGE_REBUILD_WARN_THRESHOLD", 100)
         store.add_item("Only item", "body", "document")
         watcher = self._watcher(store)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.knowledge.watcher"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.knowledge.watcher"):
             await watcher._maybe_reembed_stale()
         assert watcher._reembed_task is not None
         await watcher._reembed_task
@@ -4318,9 +4318,9 @@ class TestCjkKeywordRecall:
         """
         import inspect
 
-        from kiro_crew.dashboard.handlers import knowledge as handler_mod
-        from kiro_crew.knowledge import retrieval as retrieval_mod
-        from kiro_crew.knowledge import store as store_mod
+        from efm_go.dashboard.handlers import knowledge as handler_mod
+        from efm_go.knowledge import retrieval as retrieval_mod
+        from efm_go.knowledge import store as store_mod
 
         readers = {
             "search_items_fts": store_mod.KnowledgeStore.search_items_fts,
@@ -4349,7 +4349,7 @@ class TestCjkKeywordRecall:
         """
         import inspect
 
-        from kiro_crew.knowledge import store as store_mod
+        from efm_go.knowledge import store as store_mod
 
         module_writes = len(re.findall(r"INSERT INTO items_fts", inspect.getsource(store_mod)))
         owned = sum(
@@ -4377,7 +4377,7 @@ class TestCjkKeywordRecall:
         """
         import inspect
 
-        from kiro_crew.knowledge import store as store_mod
+        from efm_go.knowledge import store as store_mod
 
         source = inspect.getsource(store_mod)
         bare = re.findall(r"""execute\(\s*["']BEGIN["']\s*\)""", source)
@@ -4391,7 +4391,7 @@ class TestCjkKeywordRecall:
         character-segmented index, so a CJK entity name would silently return no
         items on this endpoint.
         """
-        from kiro_crew.dashboard.handlers.knowledge import _entity_items_rows
+        from efm_go.dashboard.handlers.knowledge import _entity_items_rows
 
         store = KnowledgeStore(str(tmp_path / "entity.db"))
         try:
@@ -4413,7 +4413,7 @@ class TestCjkKeywordRecall:
         to "both words present anywhere", which is a different (and wrong) answer
         for an entity name.
         """
-        from kiro_crew.dashboard.handlers.knowledge import _entity_items_rows
+        from efm_go.dashboard.handlers.knowledge import _entity_items_rows
 
         store = KnowledgeStore(str(tmp_path / "phrase.db"))
         try:
@@ -4425,7 +4425,7 @@ class TestCjkKeywordRecall:
             store.close()
 
     def test_entity_items_lookup_mixed_script_name(self, tmp_path):
-        from kiro_crew.dashboard.handlers.knowledge import _entity_items_rows
+        from efm_go.dashboard.handlers.knowledge import _entity_items_rows
 
         store = KnowledgeStore(str(tmp_path / "mixed_entity.db"))
         try:
@@ -4538,7 +4538,7 @@ class TestCjkKeywordRecall:
             # The first reader migrates, on the reader's thread.
             assert self._titles(reopened.search_items_fts(self.LEAK)) == ["run"]
             assert reopened._fts_index_current is True
-            from kiro_crew.knowledge.store import FTS_INDEX_VERSION
+            from efm_go.knowledge.store import FTS_INDEX_VERSION
 
             assert reopened.db.execute("PRAGMA user_version").fetchone()[0] == FTS_INDEX_VERSION
         finally:
@@ -4601,7 +4601,7 @@ class TestCjkKeywordRecall:
         Its CREATE statement is byte-identical to the new one, so the rebuild is
         gated on PRAGMA user_version rather than a schema probe.
         """
-        from kiro_crew.knowledge.store import FTS_INDEX_VERSION
+        from efm_go.knowledge.store import FTS_INDEX_VERSION
 
         path = str(tmp_path / "legacy.db")
         first = KnowledgeStore(path)
@@ -4643,22 +4643,22 @@ class TestCjkKeywordRecall:
 
 
 class TestCjkFts5Primitives:
-    """The shared FTS5 dialect helpers (src/kiro_crew/_sqlite_compat.py)."""
+    """The shared FTS5 dialect helpers (src/efm_go/_sqlite_compat.py)."""
 
     def test_non_cjk_expression_is_unchanged(self):
-        from kiro_crew._sqlite_compat import fts5_cjk_match_groups, fts5_quote_tokens
+        from efm_go._sqlite_compat import fts5_cjk_match_groups, fts5_quote_tokens
 
         for query in ["JWT", "PROJ-123 hooks.py", 'say "hi" now', "", "   "]:
             assert fts5_cjk_match_groups(query) == fts5_quote_tokens(query), query
 
     def test_non_cjk_text_is_not_segmented(self):
-        from kiro_crew._sqlite_compat import fts5_segment_for_index
+        from efm_go._sqlite_compat import fts5_segment_for_index
 
         for text in ["JWT tokens with refresh flow", "PROJ-123", ""]:
             assert fts5_segment_for_index(text) == text
 
     def test_cjk_run_becomes_adjacent_pair_alternatives(self):
-        from kiro_crew._sqlite_compat import fts5_cjk_match_groups
+        from efm_go._sqlite_compat import fts5_cjk_match_groups
 
         # The 4-char "memory leak" run -> its three overlapping pairs, each a
         # phrase over the segmented characters.
@@ -4667,23 +4667,23 @@ class TestCjkFts5Primitives:
         ]
 
     def test_single_cjk_character_has_no_pair(self):
-        from kiro_crew._sqlite_compat import fts5_cjk_match_groups
+        from efm_go._sqlite_compat import fts5_cjk_match_groups
 
         assert fts5_cjk_match_groups("\u5185") == ['"\u5185"']
 
     def test_mixed_script_token_ands_its_runs(self):
-        from kiro_crew._sqlite_compat import fts5_cjk_match_groups
+        from efm_go._sqlite_compat import fts5_cjk_match_groups
 
         assert fts5_cjk_match_groups("kirocrew\u90e8\u7f72") == ['("kirocrew" AND "\u90e8 \u7f72")']
 
     def test_quotes_in_input_cannot_escape_the_literal(self):
-        from kiro_crew._sqlite_compat import fts5_cjk_match_groups
+        from efm_go._sqlite_compat import fts5_cjk_match_groups
 
         assert fts5_cjk_match_groups('a" OR body:*') == ['"a"""', '"OR"', '"body:*"']
 
     def test_hangul_is_not_segmented(self):
         """Modern Korean is space-separated, so it needs no character gate."""
-        from kiro_crew._sqlite_compat import fts5_cjk_match_groups, is_cjk_char
+        from efm_go._sqlite_compat import fts5_cjk_match_groups, is_cjk_char
 
         assert not is_cjk_char("\ud68c")  # first syllable of "meeting"
         # "meeting" (2 syllables) stays one token, not a character pair.

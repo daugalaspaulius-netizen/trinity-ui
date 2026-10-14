@@ -34,10 +34,10 @@ from pathlib import Path
 # Source files known to contain ``_run_chat`` dispatches.  When a new
 # dispatch site lands in another file, add it here.
 _DISPATCH_FILES = (
-    "src/kiro_crew/dashboard/chat_handlers.py",
-    "src/kiro_crew/dashboard/chat_runner.py",
-    "src/kiro_crew/dashboard/handlers/messaging.py",
-    "src/kiro_crew/slack/gateway.py",
+    "src/efm_go/dashboard/chat_handlers.py",
+    "src/efm_go/dashboard/chat_runner.py",
+    "src/efm_go/dashboard/handlers/messaging.py",
+    "src/efm_go/slack/gateway.py",
 )
 
 
@@ -53,8 +53,8 @@ def test_cap_matches_inner_acp_prompt_timeout() -> None:
     transport layer's promised "longest legitimate turn" budget, otherwise
     legitimate long-running agentic turns die at the wall.
     """
-    from kiro_crew.acp import client as acp_client
-    from kiro_crew.constants import CHAT_TURN_TIMEOUT
+    from efm_go.acp import client as acp_client
+    from efm_go.constants import CHAT_TURN_TIMEOUT
 
     assert CHAT_TURN_TIMEOUT == acp_client._DEFAULT_PROMPT_TIMEOUT, (
         "CHAT_TURN_TIMEOUT must match _DEFAULT_PROMPT_TIMEOUT in acp/client.py — "
@@ -73,8 +73,8 @@ def test_cap_value_is_four_hours() -> None:
     default (``AgentConfig.chat_turn_timeout_secs``) in step: a config-less
     context must behave exactly like a default config.
     """
-    from kiro_crew.config.loader import AgentConfig
-    from kiro_crew.constants import CHAT_TURN_TIMEOUT
+    from efm_go.config.loader import AgentConfig
+    from efm_go.constants import CHAT_TURN_TIMEOUT
 
     assert CHAT_TURN_TIMEOUT == 14400.0
     assert AgentConfig().chat_turn_timeout_secs == CHAT_TURN_TIMEOUT

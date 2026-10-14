@@ -20,12 +20,12 @@ from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 from overload_fakes import Clock, open_task_store
 
-from kiro_crew.dashboard import session_health
-from kiro_crew.dashboard.handlers import tasks as tasks_mod
-from kiro_crew.taskq import model
-from kiro_crew.taskq.adapters import runner as taskq_runner
-from kiro_crew.taskq.store import TaskStore
-from kiro_crew.taskq.waits import WaitRecord
+from efm_go.dashboard import session_health
+from efm_go.dashboard.handlers import tasks as tasks_mod
+from efm_go.taskq import model
+from efm_go.taskq.adapters import runner as taskq_runner
+from efm_go.taskq.store import TaskStore
+from efm_go.taskq.waits import WaitRecord
 
 
 @pytest.fixture
@@ -404,7 +404,7 @@ def test_redaction_runs_exfil_before_credentials() -> None:
     assert scrubbed == f"[REDACTED: suspicious URL to {_EXFIL_HOST}]"
     # Credentials-first would have produced this instead: the credential gone,
     # the destination and the whole fetchable URL still on the wire.
-    from kiro_crew.security import redact_credentials, redact_exfiltration_urls
+    from efm_go.security import redact_credentials, redact_exfiltration_urls
 
     creds_first, _ = redact_credentials(_EXFIL_URL)
     assert redact_exfiltration_urls(creds_first)[0] == creds_first
@@ -720,7 +720,7 @@ def test_queued_set_is_one_constant_spelled_from_the_model() -> None:
     surface starts counting a state the other does not. The spelling is checked
     against ``taskq.model`` here because ``session_health`` writes it in
     literals on purpose -- it duck-types the store and must not import
-    ``kiro_crew.taskq`` (``test_dashboard_handlers_lazy_tasks.py``).
+    ``efm_go.taskq`` (``test_dashboard_handlers_lazy_tasks.py``).
     """
     # The handler must RESOLVE that object, not hold an equal one: `is` against the
     # attribute the handler itself reaches is the only spelling a module-level copy
@@ -971,8 +971,8 @@ async def test_summary_survives_a_mock_state(monkeypatch: pytest.MonkeyPatch) ->
 )
 async def test_routes_are_refused_without_a_token(method: str, path: str) -> None:
     """Drive the REAL token middleware: no cookie, no token, no internal secret."""
-    from kiro_crew.dashboard.server import _MIXED_INTERNAL_API_PATHS, _STRICT_INTERNAL_API_PATHS
-    from kiro_crew.dashboard.token_auth import token_auth_middleware
+    from efm_go.dashboard.server import _MIXED_INTERNAL_API_PATHS, _STRICT_INTERNAL_API_PATHS
+    from efm_go.dashboard.token_auth import token_auth_middleware
 
     # Not internal routes: an MCP caller with only the loopback secret is
     # refused too, exactly like /api/sessions/health.
@@ -1004,7 +1004,7 @@ async def test_routes_are_refused_without_a_token(method: str, path: str) -> Non
 
 def test_routes_are_registered_in_order() -> None:
     """``/summary`` must be registered before ``/{task_id}`` or it is swallowed."""
-    from kiro_crew.dashboard.routes import system as system_routes
+    from efm_go.dashboard.routes import system as system_routes
 
     app = web.Application()
     system_routes.register(app)

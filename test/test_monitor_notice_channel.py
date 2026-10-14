@@ -16,23 +16,23 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.autonudge import NudgeLoop
-from kiro_crew.dashboard.handlers.messaging import api_notification_channels
-from kiro_crew.dashboard.state import DashboardState
-from kiro_crew.monitoring.models import MonitorOutcome, MonitorState
-from kiro_crew.notifications.bus import (
+from efm_go.autonudge import NudgeLoop
+from efm_go.dashboard.handlers.messaging import api_notification_channels
+from efm_go.dashboard.state import DashboardState
+from efm_go.monitoring.models import MonitorOutcome, MonitorState
+from efm_go.notifications.bus import (
     MONITOR_CHANNEL,
     SYSTEM_CHANNELS,
     NotificationValidationError,
     payload_from_legacy,
 )
-from kiro_crew.notifications.settings import PROTECTED_CHANNELS
-from kiro_crew.slack.gateway import GatewayOrchestrator
+from efm_go.notifications.settings import PROTECTED_CHANNELS
+from efm_go.slack.gateway import GatewayOrchestrator
 
 
 def _make_state(monkeypatch, tmp_path) -> DashboardState:
-    monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-    monkeypatch.setattr("kiro_crew.notifications.settings.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.notifications.settings.config_dir", lambda: tmp_path)
     return DashboardState(
         sessions=MagicMock(count=0),
         crons=MagicMock(),

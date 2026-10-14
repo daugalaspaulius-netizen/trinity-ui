@@ -19,9 +19,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import cli_doctor, cli_server, platform_compat
-from kiro_crew.code_fingerprint import code_fingerprint
-from kiro_crew.mcp_gateway import daemon_control as dc
+from efm_go import cli_doctor, cli_server, platform_compat
+from efm_go.code_fingerprint import code_fingerprint
+from efm_go.mcp_gateway import daemon_control as dc
 
 _POSIX_ONLY = pytest.mark.skipif(sys.platform == "win32", reason="AF_UNIX listener")
 
@@ -365,7 +365,7 @@ class TestTheWindowsStopPathIsReachable:
         monkeypatch.setattr(
             platform_compat,
             "process_command_line",
-            lambda pid: "python.exe -m kiro_crew.mcp_gateway.gatewayd",
+            lambda pid: "python.exe -m efm_go.mcp_gateway.gatewayd",
         )
         monkeypatch.setattr(dc.transport, "singleton_lock_free", lambda p: True)
         monkeypatch.setattr(platform_compat, "pid_exists", lambda pid: False)
@@ -411,7 +411,7 @@ class TestTheWindowsStopPathIsReachable:
 
 class TestConfiguredSocketPath:
     def test_a_configured_socket_path_wins(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew.config import KiroCrewConfig
+        from efm_go.config import KiroCrewConfig
 
         cfg = KiroCrewConfig.load()
         cfg.mcp_gateway.socket_path = "/srv/crew/custom.sock"
@@ -459,7 +459,7 @@ class TestStopDaemon:
         monkeypatch.setattr(
             platform_compat,
             "process_command_line",
-            lambda pid: "python -m kiro_crew.mcp_gateway.gatewayd",
+            lambda pid: "python -m efm_go.mcp_gateway.gatewayd",
         )
         killed: list[int] = []
         monkeypatch.setattr(
@@ -476,7 +476,7 @@ class TestStopDaemon:
         monkeypatch.setattr(
             platform_compat,
             "process_command_line",
-            lambda pid: "python -m kiro_crew.mcp_gateway.gatewayd",
+            lambda pid: "python -m efm_go.mcp_gateway.gatewayd",
         )
         monkeypatch.setattr(platform_compat, "IS_WINDOWS", False)
         monkeypatch.setattr(platform_compat, "process_start_time", lambda pid: "7777")
@@ -494,7 +494,7 @@ class TestStopDaemon:
         monkeypatch.setattr(
             platform_compat,
             "process_command_line",
-            lambda pid: "python -m kiro_crew.mcp_gateway.gatewayd",
+            lambda pid: "python -m efm_go.mcp_gateway.gatewayd",
         )
         monkeypatch.setattr(platform_compat, "process_start_time", lambda pid: "1000")
         # The pinned kill reports the identity did not hold: nothing was sent.
@@ -508,7 +508,7 @@ class TestStopDaemon:
         monkeypatch.setattr(
             platform_compat,
             "process_command_line",
-            lambda pid: "python -m kiro_crew.mcp_gateway.gatewayd",
+            lambda pid: "python -m efm_go.mcp_gateway.gatewayd",
         )
         sent: list[tuple[int, str, int]] = []
         # The pin is the token the DAEMON reported; the local read only CONFIRMS
@@ -533,7 +533,7 @@ class TestStopDaemon:
         monkeypatch.setattr(
             platform_compat,
             "process_command_line",
-            lambda pid: "python -m kiro_crew.mcp_gateway.gatewayd",
+            lambda pid: "python -m efm_go.mcp_gateway.gatewayd",
         )
         monkeypatch.setattr(platform_compat, "process_start_time", lambda pid: "1000")
         monkeypatch.setattr(platform_compat, "kill_pid_pinned", lambda pid, start, sig: True)
@@ -546,7 +546,7 @@ class TestStopDaemon:
         monkeypatch.setattr(
             platform_compat,
             "process_command_line",
-            lambda pid: "python -m kiro_crew.mcp_gateway.gatewayd",
+            lambda pid: "python -m efm_go.mcp_gateway.gatewayd",
         )
 
         def denied(pid, start, sig):

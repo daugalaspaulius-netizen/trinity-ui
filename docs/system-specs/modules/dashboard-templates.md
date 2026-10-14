@@ -6,7 +6,7 @@ the two are shipped together.
 The host renders a card as `{html, data}`. The `html` is inert layout it sanitizes; the
 `data` is a flat map of text it binds into that layout by `data-dashboard-field`, setting
 each matching element's text. The host is two files, and both are worth reading before
-authoring a page: `src/kiro_crew/dashboard/dynamic_cards.py` (`normalize_card`, which
+authoring a page: `src/efm_go/dashboard/dynamic_cards.py` (`normalize_card`, which
 accepts or refuses the card) and `website/src/pages/chat/command-center/dashboardDocument.ts`
 (which queries `[data-dashboard-field]` and does the binding). Nothing checks that binding,
 because one half is markup. So
@@ -18,15 +18,15 @@ of them belongs in the same pull request as the others:
 
 | Artifact | Where | What it is |
 |---|---|---|
-| the page | `src/kiro_crew/dashboard_templates/` | inert html, one `data-dashboard-field` per value, no controls |
-| the contract | `src/kiro_crew/dashboard_templates/` | a flat `TypedDict` naming exactly those fields, plus the judgment type and `CONTRACT_VERSION` |
-| the provider | `src/kiro_crew/dashboard_templates/` | `build_<slug>`, whose **return type is the contract** |
+| the page | `src/efm_go/dashboard_templates/` | inert html, one `data-dashboard-field` per value, no controls |
+| the contract | `src/efm_go/dashboard_templates/` | a flat `TypedDict` naming exactly those fields, plus the judgment type and `CONTRACT_VERSION` |
+| the provider | `src/efm_go/dashboard_templates/` | `build_<slug>`, whose **return type is the contract** |
 | the gate | `test/test_dashboard_templates.py` and one test per template | asserts the page and the contract agree |
-| the registration | `src/kiro_crew/dashboard_templates/registry.py` | `slug -> (contract, provider, source fold, version)` |
+| the registration | `src/efm_go/dashboard_templates/registry.py` | `slug -> (contract, provider, source fold, version)` |
 
-Shared pieces live in `src/kiro_crew/dashboard_templates/__init__.py` (the `Unsaid`
+Shared pieces live in `src/efm_go/dashboard_templates/__init__.py` (the `Unsaid`
 sentinel, the fold readers, the single exit to a card) and
-`src/kiro_crew/dashboard_templates/parity.py` (the page reader and the two structural
+`src/efm_go/dashboard_templates/parity.py` (the page reader and the two structural
 rules). The authoring procedure is the `dashboard-template` skill, and its
 `scaffold.py` emits all four artifacts from one field list so they cannot disagree about
 what the fields are.

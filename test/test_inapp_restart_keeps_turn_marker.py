@@ -15,17 +15,17 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from test_local_turn_restart_marker import _client_streaming, _state_for_run_chat
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.dashboard.chat_persistence import _rehydrate_slot_from_history
-from kiro_crew.dashboard.handlers import updates
-from kiro_crew.session import SessionManager
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.dashboard.chat_persistence import _rehydrate_slot_from_history
+from efm_go.dashboard.handlers import updates
+from efm_go.session import SessionManager
 
 _RESTART_KIND = "gateway_restart_interruption"
 
 
 def _blocking_client(release: asyncio.Event, *, lands: bool):
-    from kiro_crew.acp.types import STOP_REASON_CANCELLED, STOP_REASON_END_TURN
-    from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
+    from efm_go.acp.types import STOP_REASON_CANCELLED, STOP_REASON_END_TURN
+    from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK, LLMEvent
 
     client = _client_streaming([])
     stop_reason = STOP_REASON_END_TURN if lands else STOP_REASON_CANCELLED
@@ -42,7 +42,7 @@ def _blocking_client(release: asyncio.Event, *, lands: bool):
 
 async def _restart_mid_turn(tmp_path, monkeypatch, key: str, *, lands: bool):
     """Run one turn, then drive the real in-app restart while it is in flight."""
-    from kiro_crew.dashboard.chat import _run_chat
+    from efm_go.dashboard.chat import _run_chat
 
     state = _state_for_run_chat(tmp_path, monkeypatch)
     state._gateway_restart_in_progress = False

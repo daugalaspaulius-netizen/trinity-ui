@@ -24,7 +24,7 @@ from unittest.mock import patch
 
 import pytest
 
-import kiro_crew.sandbox as sb
+import efm_go.sandbox as sb
 
 
 def _wrap(argv=None):
@@ -39,17 +39,17 @@ def _wrap(argv=None):
     sb._CGROUP_WARNED = False
     try:
         with (
-            patch("kiro_crew.sandbox._probe_cgroup_scope", return_value=(True, "ok")),
+            patch("efm_go.sandbox._probe_cgroup_scope", return_value=(True, "ok")),
             patch(
-                "kiro_crew.platform_compat.trusted_system_bin",
+                "efm_go.platform_compat.trusted_system_bin",
                 return_value="/usr/bin/systemd-run",
             ),
-            patch("kiro_crew.sandbox._reconcile_slice_memory_high_off_thread"),
+            patch("efm_go.sandbox._reconcile_slice_memory_high_off_thread"),
             patch(
-                "kiro_crew.sandbox._cgroup_limits_from_config",
+                "efm_go.sandbox._cgroup_limits_from_config",
                 return_value=(8192, 8192, 50, 0),
             ),
-            patch("kiro_crew.sandbox._cpu_controller_delegated", return_value=False),
+            patch("efm_go.sandbox._cpu_controller_delegated", return_value=False),
         ):
             return sb.cgroup_scope_argv(list(argv or ["kiro-cli", "chat"]))
     finally:
@@ -300,7 +300,7 @@ class TestOverlayIsKeyedByWorkDir:
         session: two sessions on one runtime share the work directory and
         therefore this file, and kiro-cli reads it at spawn.
         """
-        from kiro_crew.providers.acp import _read_cli_overlay, _write_cli_overlay
+        from efm_go.providers.acp import _read_cli_overlay, _write_cli_overlay
 
         _write_cli_overlay(tmp_path, "claude-sonnet-4", "high")
         written = tmp_path / ".kiro" / "settings" / "cli.json"
@@ -310,7 +310,7 @@ class TestOverlayIsKeyedByWorkDir:
 
     def test_a_second_write_for_one_model_replaces_the_first(self, tmp_path):
         """One entry per model per work dir: the last writer is what a respawn reads."""
-        from kiro_crew.providers.acp import _read_cli_overlay, _write_cli_overlay
+        from efm_go.providers.acp import _read_cli_overlay, _write_cli_overlay
 
         _write_cli_overlay(tmp_path, "claude-sonnet-4", "high")
         _write_cli_overlay(tmp_path, "claude-sonnet-4", "low")
@@ -326,7 +326,7 @@ class TestChatLogIsPerProcess:
         kiro-cli log is the failure the pin exists to prevent. What it cannot fix
         is several sessions on ONE process, which share the file by construction.
         """
-        from kiro_crew import agent_scratch
+        from efm_go import agent_scratch
 
         own, shared = tmp_path / "own", tmp_path / "shared"
         env = agent_scratch.scratch_env(own, shared=shared)

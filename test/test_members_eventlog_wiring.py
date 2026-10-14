@@ -4,7 +4,7 @@ reconcile sweep, the record/read round trip, and the agent
 PUT config-change hook.
 
 Isolation: every test re-roots the members space at a fresh ``tmp_path`` by
-monkeypatching ``kiro_crew.members.data_home`` (``get_service()`` rebuilds its
+monkeypatching ``efm_go.members.data_home`` (``get_service()`` rebuilds its
 singleton when ``members_root()`` moves) and drops the cached service with
 ``set_service(None)`` via the ``_fresh_eventlog`` fixture, so no test observes
 another test's log. The fixture pattern for the aiohttp routes mirrors the
@@ -23,11 +23,11 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew import eventlog_hooks, members
-from kiro_crew.config.loader import KiroCrewAgentConfig
-from kiro_crew.dashboard.handlers import members as handlers_members
-from kiro_crew.eventlog import types
-from kiro_crew.eventlog.service import get_service, set_service
+from efm_go import eventlog_hooks, members
+from efm_go.config.loader import KiroCrewAgentConfig
+from efm_go.dashboard.handlers import members as handlers_members
+from efm_go.eventlog import types
+from efm_go.eventlog.service import get_service, set_service
 
 CREW = "code-reviewer"
 
@@ -95,7 +95,7 @@ def live_config_stamp_matches(monkeypatch):
     reconcile refuses on a mismatch and a test that means to exercise it silently does
     not.
     """
-    from kiro_crew.config import loader as loader_mod
+    from efm_go.config import loader as loader_mod
 
     monkeypatch.setattr(loader_mod, "config_content_stamp", lambda: FAKE_CONFIG_DIGEST)
     return FAKE_CONFIG_DIGEST
@@ -109,7 +109,7 @@ def _agent(**kw) -> KiroCrewAgentConfig:
 # 1. api_members: projections + idempotent lazy config reconcile
 # ---------------------------------------------------------------------------
 def _members_app(state) -> web.Application:
-    from kiro_crew.dashboard.handlers.members import api_members
+    from efm_go.dashboard.handlers.members import api_members
 
     @web.middleware
     async def _auth(request, handler):
@@ -134,7 +134,7 @@ class TestApiMembersProjections:
         self, tmp_path, monkeypatch, live_config_stamp_matches
     ):
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         app = _members_app(state)
 
@@ -188,8 +188,8 @@ class TestApiMembersProjections:
         observation, so nothing moves between observing and writing. What tells the
         two apart is whether the config is still the bytes the request read.
         """
-        from kiro_crew.config import loader as loader_mod
-        from kiro_crew.dashboard.handlers import members as handlers
+        from efm_go.config import loader as loader_mod
+        from efm_go.dashboard.handlers import members as handlers
 
         cfg = _fake_config({CREW: _agent(model="sonnet")})
         # Provenance rides on the config object: a real load records the digest of the
@@ -198,7 +198,7 @@ class TestApiMembersProjections:
         # matching and the baseline below is free to be written.
         live = {"stamp": "stamp-as-this-request-read-it"}
         cfg._content_digest = live["stamp"]
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         monkeypatch.setattr(loader_mod, "config_content_stamp", lambda: live["stamp"])
         state = _make_state(tmp_path)
         app = _members_app(state)
@@ -265,8 +265,8 @@ class TestApiMembersProjections:
         entry takes no stand-in for "unknown": the sweep's exemption is reached by its
         own name, so a failed load cannot borrow it.
         """
-        from kiro_crew.config import loader as loader_mod
-        from kiro_crew.dashboard.handlers import members as handlers
+        from efm_go.config import loader as loader_mod
+        from efm_go.dashboard.handlers import members as handlers
 
         cfg = _fake_config({CREW: _agent(model="sonnet")})
         live = {"stamp": "stamp-as-the-file-actually-is"}
@@ -275,7 +275,7 @@ class TestApiMembersProjections:
         # digest exercises the currency refusal instead, and this test is about the
         # absence of one.
         del cfg._content_digest
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         monkeypatch.setattr(loader_mod, "config_content_stamp", lambda: live["stamp"])
         state = _make_state(tmp_path)
         app = _members_app(state)
@@ -339,7 +339,7 @@ class TestApiMembersProjections:
         """
         cfg = _fake_config({CREW: _agent(model="sonnet")})
         cfg.degraded_sections = frozenset({"agent"})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         app = _members_app(state)
 
@@ -385,7 +385,7 @@ class TestApiMembersProjections:
         Here the live content has moved on from what the served entry holds, so the
         reconcile must write nothing at all.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         cfg = _fake_config({CREW: _agent(model="sonnet")})
         state = _make_state(tmp_path)
@@ -408,7 +408,7 @@ class TestApiMembersProjections:
         # The load is served a cached document whose bytes are stale: it reports the
         # digest of what it was parsed from, and the live content differs.
         cfg._content_digest = "digest-of-the-bytes-this-entry-was-parsed-from"
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         monkeypatch.setattr(loader_mod, "config_content_stamp", lambda: "digest-of-the-live-bytes")
 
         seq_before = svc.last_seq(slug)
@@ -438,14 +438,14 @@ class TestApiMembersProjections:
         what moved is the projection. The direct call below passes no stamp, so the
         conditional append is the only thing that can refuse it.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         cfg = _fake_config({CREW: _agent(model="sonnet")})
         # A real load names the bytes it parsed, and the baseline read below depends on
         # that: a config of unknown provenance is reconciled by no read at all.
         cfg._content_digest = "the-bytes-this-request-read"
         monkeypatch.setattr(loader_mod, "config_content_stamp", lambda: cfg._content_digest)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         app = _members_app(state)
 
@@ -495,7 +495,7 @@ class TestApiMembersProjections:
         served empty instead, and the header is what tells the two apart.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         app = _members_app(state)
 
@@ -528,7 +528,7 @@ class TestApiMembersProjections:
         cfg = _fake_config(
             {CREW: _agent(model="claude-x"), other: _agent(model="claude-y")},
         )
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         app = _members_app(state)
 
@@ -570,7 +570,7 @@ class TestApiMembersProjections:
         # Phase 1: the member is not in the config, so the header keeps the slug.
         empty = _fake_config({})
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: empty
+            "efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: empty
         )
         svc = get_service()
         svc.ensure(slug, slug)
@@ -579,7 +579,7 @@ class TestApiMembersProjections:
 
         # Phase 2: the member now exists under a name the slug does not equal.
         cfg = _fake_config({named: _agent(model="claude-x")}, default=named)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         app = _members_app(state)
 
@@ -601,7 +601,7 @@ class TestApiMembersProjections:
         slug = members.slug_for_name(named)
         empty = _fake_config({})
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: empty
+            "efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: empty
         )
         svc = get_service()
         svc.ensure(slug, slug)
@@ -610,7 +610,7 @@ class TestApiMembersProjections:
         before = svc.last_seq(slug)
 
         cfg = _fake_config({named: _agent(model="claude-x")}, default=named)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         async with TestClient(TestServer(_members_app(state))) as client:
             data = await (await client.get("/api/members")).json()
@@ -633,7 +633,7 @@ class TestApiMembersProjections:
         """
         named = "Code_Reviewer"
         cfg = _fake_config({named: _agent(model="claude-x")}, default=named)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         svc = get_service()
         slug = members.slug_for_name(named)
         assert slug != named, "this test needs a name its slug does not equal"
@@ -655,7 +655,7 @@ class TestApiMembersProjections:
 
         secret_url = "https://evil.example/x?token=AKIAIOSFODNN7EXAMPLE"
         cfg = _fake_config({CREW: _agent(avatar=secret_url)})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         slug = members.slug_for_name(CREW)
         svc = get_service()
         svc.ensure(slug, CREW)
@@ -687,14 +687,14 @@ class TestApiMembersProjections:
         own save: an operator editing the file with the gateway up. Nothing is
         remembered between requests, so the next read is the one that corrects it.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         cfg = _fake_config({CREW: _agent(model="claude-x")})
         # A real load names the bytes it parsed; a hand edit changes the file, so the
         # digest moves with it and the live stamp keeps agreeing with what was read.
         cfg._content_digest = "the-bytes-holding-claude-x"
         monkeypatch.setattr(loader_mod, "config_content_stamp", lambda: cfg._content_digest)
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         app = _members_app(state)
         slug = members.slug_for_name(CREW)
@@ -727,7 +727,7 @@ class TestApiMembersProjections:
 # ---------------------------------------------------------------------------
 def _projections_app(state) -> web.Application:
     """The per-member projections route, mounted the way the roster app above is."""
-    from kiro_crew.dashboard.handlers.members import api_member_projections
+    from efm_go.dashboard.handlers.members import api_member_projections
 
     @web.middleware
     async def _auth(request, handler):
@@ -756,8 +756,8 @@ def _member_log_root():
     ``KIROCREW_HOME`` -- that, not any per-fixture patch, is what keeps this count
     scoped to the test's own isolated home.
     """
-    from kiro_crew.crew_log.store import crew_log_root
-    from kiro_crew.eventlog.service import KIND_MEMBER
+    from efm_go.crew_log.store import crew_log_root
+    from efm_go.eventlog.service import KIND_MEMBER
 
     return crew_log_root(KIND_MEMBER)
 
@@ -780,7 +780,7 @@ class TestRosterIsAPureRead:
         there is nothing for the read to correct and nothing for it to create.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
 
         before = _log_files()
@@ -825,7 +825,7 @@ class TestRosterIsAPureRead:
         log cannot be read.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         svc = get_service()
@@ -867,7 +867,7 @@ class TestRosterIsAPureRead:
         takes the route's failure path and the error notice the page already has.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         svc = get_service()
@@ -903,7 +903,7 @@ class TestRosterIsAPureRead:
         proves reads like any other.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         svc = get_service()
@@ -945,7 +945,7 @@ class TestRosterIsAPureRead:
     ):
         """The drawer must not 500 on a member whose log has only just appeared."""
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         svc = get_service()
@@ -988,7 +988,7 @@ class TestRosterIsAPureRead:
         per-member read path buys one member's correction and opens that window again.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         state = _make_state(tmp_path)
         slug = members.slug_for_name(CREW)
         svc = get_service()
@@ -1022,7 +1022,7 @@ class TestRosterIsAPureRead:
         whole set arrives for the member that is open.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         slug = members.slug_for_name(CREW)
         svc = get_service()
         svc.ensure(slug, CREW)
@@ -1053,7 +1053,7 @@ class TestRosterIsAPureRead:
         sequence, which is what decides whether later frames are applied or muted.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         slug = members.slug_for_name(CREW)
         state = _make_state(tmp_path)
         before = _log_files()
@@ -1079,7 +1079,7 @@ class TestRosterIsAPureRead:
         import json
 
         cfg = _fake_config({CREW: _agent(avatar=SECRET_URL)})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         slug = members.slug_for_name(CREW)
         svc = get_service()
         svc.ensure(slug, CREW)
@@ -1124,7 +1124,7 @@ class TestRosterIsAPureRead:
         of any size costs one fold each rather than four.
         """
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         slug = members.slug_for_name(CREW)
         svc = get_service()
         svc.ensure(slug, CREW)
@@ -1159,7 +1159,7 @@ class TestRosterIsAPureRead:
         """
         other = "other-crew"
         cfg = _fake_config({CREW: _agent(model="claude-x"), other: _agent(model="claude-y")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         slug = members.slug_for_name(CREW)
         svc = get_service()
         # Header holds the SLUG, the placeholder a writer with no name in hand
@@ -1189,10 +1189,10 @@ class TestRosterIsAPureRead:
         makes the read cost twice what the enumeration is for, against the very
         claim that one pass beats a probe per row.
         """
-        from kiro_crew.eventlog.service import get_service as _get
+        from efm_go.eventlog.service import get_service as _get
 
         cfg = _fake_config({CREW: _agent(model="claude-x")})
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.KiroCrewConfig.load", lambda: cfg)
         slug = members.slug_for_name(CREW)
         svc = _get()
         svc.ensure(slug, CREW)
@@ -1246,9 +1246,9 @@ class TestRosterIsAPureRead:
         conf.write_text(
             json.dumps({"agents": {name: {"kiro_agent": "reviewer"}}}), encoding="utf-8"
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_path", lambda: conf)
+        monkeypatch.setattr("efm_go.config.loader.config_path", lambda: conf)
         monkeypatch.setattr(
-            "kiro_crew.config.loader.config_local_path", lambda: tmp_path / "config.local.json"
+            "efm_go.config.loader.config_local_path", lambda: tmp_path / "config.local.json"
         )
         monkeypatch.setattr(members, "data_home", lambda: tmp_path)
 
@@ -1280,7 +1280,7 @@ class TestStartupReconcile:
         pinned together because a single entry that accepted a falsy stamp would open
         that exemption silently.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         cfg = _fake_config({CREW: _agent(model="sonnet")})
         slug = members.slug_for_name(CREW)
@@ -1346,7 +1346,7 @@ class TestStartupReconcile:
         The sweep therefore loads config itself and reconciles from THAT, so the live
         value is what reaches the log.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         boot_cfg = _fake_config({CREW: _agent(model="sonnet")})
         live_cfg = _fake_config({CREW: _agent(model="opus")})
@@ -1390,7 +1390,7 @@ class TestStartupReconcile:
         content, so they must still land -- an interrupted slot reading open until the
         next boot is a separate defect from a degraded config.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         cfg = _fake_config({CREW: _agent(model="sonnet")})
         live_cfg = _fake_config({CREW: _agent(model="opus")})
@@ -1463,7 +1463,7 @@ class TestStartupReconcile:
         contending for it. Only the patrol closer is starved here; the slot's own
         append is left alone, so a green run is the slot closer having been reached.
         """
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         cfg = _fake_config({CREW: _agent()})
         slug = members.slug_for_name(CREW)
@@ -1515,7 +1515,7 @@ class TestStartupReconcile:
         the second door. A refusal is also the store's own guarantee that nothing was
         written, which is what makes one more attempt safe.
         """
-        from kiro_crew.crew_log.errors import CODE_ALREADY_OWNED, CrewLogError
+        from efm_go.crew_log.errors import CODE_ALREADY_OWNED, CrewLogError
 
         cfg = _fake_config({CREW: _agent()})
         slug = members.slug_for_name(CREW)
@@ -1566,8 +1566,8 @@ class TestStartupReconcile:
         stops, and the sweep's own second pass places the closers -- without which the
         interrupted slot reads open and the patrol reads armed until the next restart.
         """
-        from kiro_crew.eventlog import log as log_mod
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import log as log_mod
+        from efm_go.eventlog import service as svc_mod
 
         cfg = _fake_config({CREW: _agent()})
         slug = members.slug_for_name(CREW)
@@ -1638,7 +1638,7 @@ class TestStartupReconcile:
         very projection its predicate reads, so the retry declines it correctly. The
         events are on disk either way; only the report would be wrong.
         """
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         cfg = _fake_config({CREW: _agent()})
         slug = members.slug_for_name(CREW)
@@ -1705,7 +1705,7 @@ class TestStartupReconcile:
         assert [
             record.getMessage()
             for record in caplog.records
-            if record.name == "kiro_crew.eventlog_hooks" and record.levelname == "WARNING"
+            if record.name == "efm_go.eventlog_hooks" and record.levelname == "WARNING"
         ] == ["member event-log startup reconcile skipped ambiguous slug='dr-eggbot' (2 members)"]
 
     def test_a_malformed_colliding_claimant_blocks_reconciliation(self, caplog):
@@ -1730,7 +1730,7 @@ class TestStartupReconcile:
         warnings = [
             record.getMessage()
             for record in caplog.records
-            if record.name == "kiro_crew.eventlog_hooks" and record.levelname == "WARNING"
+            if record.name == "efm_go.eventlog_hooks" and record.levelname == "WARNING"
         ]
         assert warnings == [
             "member event-log startup reconcile skipped 1 non-dispatchable name(s) and 0 unresolved slug(s)",
@@ -1755,7 +1755,7 @@ class TestStartupReconcile:
         assert [
             record.getMessage()
             for record in caplog.records
-            if record.name == "kiro_crew.eventlog_hooks" and record.levelname == "WARNING"
+            if record.name == "efm_go.eventlog_hooks" and record.levelname == "WARNING"
         ] == ["member event-log startup reconcile skipped slug='dr-eggbot' with foreign header"]
 
     def test_invalid_names_and_unresolved_slugs_are_counted_without_values(
@@ -1783,7 +1783,7 @@ class TestStartupReconcile:
         messages = [
             record.getMessage()
             for record in caplog.records
-            if record.name == "kiro_crew.eventlog_hooks" and record.levelname == "WARNING"
+            if record.name == "efm_go.eventlog_hooks" and record.levelname == "WARNING"
         ]
         assert messages == [
             "member event-log startup reconcile skipped 1 non-dispatchable name(s) and 1 unresolved slug(s)"
@@ -1803,7 +1803,7 @@ class TestStartupReconcile:
             raise RuntimeError(private_header)
 
         monkeypatch.setattr(svc, "logged_name", _fail_logged_name)
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.eventlog_hooks"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.eventlog_hooks"):
             eventlog_hooks.reconcile_members_at_startup(
                 cfg, SimpleNamespace(_slots={}), SimpleNamespace(get_by_slot=lambda key: None)
             )
@@ -1812,7 +1812,7 @@ class TestStartupReconcile:
         assert [
             record.getMessage()
             for record in caplog.records
-            if record.name == "kiro_crew.eventlog_hooks" and record.levelname == "WARNING"
+            if record.name == "efm_go.eventlog_hooks" and record.levelname == "WARNING"
         ] == ["member event-log startup reconcile failed for slug='dr-eggbot'"]
 
     def test_a_placeholder_log_header_is_ambiguous_and_never_reconciled(self, caplog):
@@ -1838,7 +1838,7 @@ class TestStartupReconcile:
         assert [
             record.getMessage()
             for record in caplog.records
-            if record.name == "kiro_crew.eventlog_hooks" and record.levelname == "WARNING"
+            if record.name == "efm_go.eventlog_hooks" and record.levelname == "WARNING"
         ] == ["member event-log startup reconcile skipped slug='dr-eggbot' with placeholder header"]
 
     def test_a_recreated_member_handed_a_retired_slug_never_inherits_the_old_log(self, caplog):
@@ -1880,7 +1880,7 @@ class TestStartupReconcile:
         assert [
             record.getMessage()
             for record in caplog.records
-            if record.name == "kiro_crew.eventlog_hooks" and record.levelname == "WARNING"
+            if record.name == "efm_go.eventlog_hooks" and record.levelname == "WARNING"
         ] == [
             "member event-log startup reconcile skipped slug='issue-radar' with placeholder header"
         ]
@@ -1893,7 +1893,7 @@ class TestStartupReconcile:
         sweep that folds the name instead creates and reconciles a SECOND log,
         so the member's history splits and their real log is never corrected.
         """
-        from kiro_crew.config import loader as loader_mod
+        from efm_go.config import loader as loader_mod
 
         # No space: the sweep skips any name failing _AGENT_NAME_RE, so a
         # two-word fixture would be skipped and the test would pass vacuously.
@@ -1954,17 +1954,17 @@ class TestActivityRoundTrip:
 # ---------------------------------------------------------------------------
 class TestAgentPutConfigHook:
     def _app(self, state, cfg, monkeypatch):
-        from kiro_crew.dashboard.handlers.agents import api_kirocrew_agent_update
+        from efm_go.dashboard.handlers.agents import api_kirocrew_agent_update
 
         # api_kirocrew_agent_update reloads and SAVES the config; patch both the
         # module-level loader and the instance's save so the PUT stays in-memory.
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.agents.KiroCrewConfig.load", lambda: cfg)
+        monkeypatch.setattr("efm_go.dashboard.handlers.agents.KiroCrewConfig.load", lambda: cfg)
         cfg.save = lambda: None
         # main routes the write through memory_stores.persist_member_config, which
         # reloads config from disk under a lock; stub it so the PUT stays in-memory
         # (this fake cfg is not persisted) and the eventlog hook still fires.
         monkeypatch.setattr(
-            "kiro_crew.dashboard.handlers.agents.persist_member_config",
+            "efm_go.dashboard.handlers.agents.persist_member_config",
             lambda *a, **k: None,
         )
 
@@ -2161,12 +2161,12 @@ def test_the_connect_baseline_call_site_exists_in_the_ws_handler():
     """
     from pathlib import Path as _Path
 
-    ws = _Path(__file__).resolve().parents[1] / "src/kiro_crew/dashboard/ws.py"
+    ws = _Path(__file__).resolve().parents[1] / "src/efm_go/dashboard/ws.py"
     source = ws.read_text(encoding="utf-8")
     assert (
         "await state.send_members_subscribed(ws)" in source
     ), "the connect path must send the members_subscribed baseline"
-    hub = _Path(__file__).resolve().parents[1] / "src/kiro_crew/dashboard/websocket_hub.py"
+    hub = _Path(__file__).resolve().parents[1] / "src/efm_go/dashboard/websocket_hub.py"
     assert "def send_members_subscribed" in hub.read_text(encoding="utf-8")
 
     # The baseline is sent AFTER the connect snapshot, and that position is not
@@ -2239,7 +2239,7 @@ class TestMemberEventLogAppendsAreOrdered:
     """
 
     def test_the_shared_executor_has_exactly_one_worker(self):
-        from kiro_crew import eventlog_hooks as hooks
+        from efm_go import eventlog_hooks as hooks
 
         ex = hooks.io_executor()
         assert ex is hooks.io_executor(), "a fresh pool per call orders nothing"
@@ -2249,7 +2249,7 @@ class TestMemberEventLogAppendsAreOrdered:
         )
 
     def test_it_runs_submissions_in_submission_order(self):
-        from kiro_crew import eventlog_hooks as hooks
+        from efm_go import eventlog_hooks as hooks
 
         ex = hooks.io_executor()
         seen: list[int] = []
@@ -2274,9 +2274,9 @@ class TestMemberEventLogAppendsAreOrdered:
         import ast
         import pathlib
 
-        import kiro_crew
+        import efm_go
 
-        root = pathlib.Path(kiro_crew.__file__).parent
+        root = pathlib.Path(efm_go.__file__).parent
         offenders: list[str] = []
         for f in sorted(root.rglob("*.py")):
             src = f.read_text(encoding="utf-8", errors="replace")
@@ -2309,9 +2309,9 @@ class TestMemberEventLogAppendsAreOrdered:
     def test_every_writer_reaches_the_executor_through_the_hooks_module(self):
         import pathlib
 
-        import kiro_crew
+        import efm_go
 
-        root = pathlib.Path(kiro_crew.__file__).parent
+        root = pathlib.Path(efm_go.__file__).parent
         calls = sum(
             f.read_text(encoding="utf-8", errors="replace").count("eventlog_hooks.submit(")
             for f in root.rglob("*.py")
@@ -2395,9 +2395,9 @@ class TestPatrolTransitionPersistsBeforeItPublishes:
         import ast
         import pathlib
 
-        import kiro_crew
+        import efm_go
 
-        src = (pathlib.Path(kiro_crew.__file__).parent / "slack" / "gateway.py").read_text(
+        src = (pathlib.Path(efm_go.__file__).parent / "slack" / "gateway.py").read_text(
             encoding="utf-8"
         )
         tree = ast.parse(src)
@@ -2441,9 +2441,9 @@ class TestPatrolTransitionPersistsBeforeItPublishes:
         import ast
         import pathlib
 
-        import kiro_crew
+        import efm_go
 
-        src = (pathlib.Path(kiro_crew.__file__).parent / "slack" / "gateway.py").read_text(
+        src = (pathlib.Path(efm_go.__file__).parent / "slack" / "gateway.py").read_text(
             encoding="utf-8"
         )
         tree = ast.parse(src)
@@ -2482,9 +2482,9 @@ class TestPatrolTransitionPersistsBeforeItPublishes:
         import ast
         import pathlib
 
-        import kiro_crew
+        import efm_go
 
-        src = (pathlib.Path(kiro_crew.__file__).parent / "slack" / "gateway.py").read_text(
+        src = (pathlib.Path(efm_go.__file__).parent / "slack" / "gateway.py").read_text(
             encoding="utf-8"
         )
         tree = ast.parse(src)
@@ -2562,9 +2562,9 @@ class TestPatrolTransitionPersistsBeforeItPublishes:
         import ast
         import pathlib
 
-        import kiro_crew
+        import efm_go
 
-        src = (pathlib.Path(kiro_crew.__file__).parent / "slack" / "gateway.py").read_text(
+        src = (pathlib.Path(efm_go.__file__).parent / "slack" / "gateway.py").read_text(
             encoding="utf-8"
         )
         tree = ast.parse(src)
@@ -2619,9 +2619,9 @@ class TestPatrolTransitionPersistsBeforeItPublishes:
         import ast
         import pathlib
 
-        import kiro_crew
+        import efm_go
 
-        src = (pathlib.Path(kiro_crew.__file__).parent / "slack" / "gateway.py").read_text(
+        src = (pathlib.Path(efm_go.__file__).parent / "slack" / "gateway.py").read_text(
             encoding="utf-8"
         )
         tree = ast.parse(src)

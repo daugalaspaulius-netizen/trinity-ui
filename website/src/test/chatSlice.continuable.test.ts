@@ -9,7 +9,7 @@ import type { ChatMessage } from '../types'
  *
  * `selectContinuable` decides whether the UI OFFERS Continue on an empty
  * composer — mirroring `_has_conversation` in
- * `src/kiro_crew/dashboard/chat_handlers.py`, which authorizes the press under
+ * `src/efm_go/dashboard/chat_handlers.py`, which authorizes the press under
  * the slot lock. `selectTurnInterrupted` only decides what the button SAYS,
  * mirroring `_is_interrupted`, which makes the same split to pick the
  * continuation body handed to the model.
@@ -271,7 +271,7 @@ describe('selectTurnInterrupted', () => {
   })
 
   // The completed-/compact shapes, mirroring `is_turn_interrupted` in
-  // `src/kiro_crew/dashboard/state.py` (test_is_interrupted.py pins the same
+  // `src/efm_go/dashboard/state.py` (test_is_interrupted.py pins the same
   // five tails). Only the PAIR -- a /compact user row whose compaction result
   // row is present -- reads as finished; the tag alone must not decide (the
   // auto-compaction case above is a real interruption carrying the same row).

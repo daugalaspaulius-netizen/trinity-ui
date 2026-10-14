@@ -1,7 +1,7 @@
 """Tests for the resource-pressure notification producer.
 
 Exercises the episode/hysteresis state machine in
-:mod:`kiro_crew.notifications.resource_pressure` against a real
+:mod:`efm_go.notifications.resource_pressure` against a real
 :class:`NotificationBus` (list sink) with injected probes and clock — no real
 ``/proc`` or wall-clock dependence.
 """
@@ -14,16 +14,16 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.notifications import resource_pressure
-from kiro_crew.notifications.bus import SYSTEM_CHANNELS, NotificationBus
-from kiro_crew.notifications.resource_pressure import (
+from efm_go.notifications import resource_pressure
+from efm_go.notifications.bus import SYSTEM_CHANNELS, NotificationBus
+from efm_go.notifications.resource_pressure import (
     CHANNEL,
     CRITICAL_REALERT_SECS,
     SAMPLE_INTERVAL_SECS,
     SUSTAINED_TIGHT_SECS,
     ResourcePressureNotifier,
 )
-from kiro_crew.resource_status import (
+from efm_go.resource_status import (
     POSTURE_AMPLE,
     POSTURE_CRITICAL,
     POSTURE_TIGHT,

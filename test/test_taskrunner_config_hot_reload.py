@@ -14,8 +14,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.taskrunner import TaskRunner
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.taskrunner import TaskRunner
 
 
 def _sessions() -> MagicMock:
@@ -28,14 +28,14 @@ def _sessions() -> MagicMock:
 
 def _runner(tmp_path: Path, **kw) -> TaskRunner:
     with (
-        patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
-        patch("kiro_crew.taskrunner.KiroCrewConfig.load", return_value=KiroCrewConfig()),
+        patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
+        patch("efm_go.taskrunner.KiroCrewConfig.load", return_value=KiroCrewConfig()),
     ):
         return TaskRunner(sessions=_sessions(), auto_test=False, work_dir=tmp_path, **kw)
 
 
 def _snapshot(cfg: KiroCrewConfig):
-    return patch("kiro_crew.taskrunner.live.snapshot", return_value=cfg)
+    return patch("efm_go.taskrunner.live.snapshot", return_value=cfg)
 
 
 class TestPerRunReRead:
@@ -46,7 +46,7 @@ class TestPerRunReRead:
         cfg.taskrunner.max_parallel_steps = 2
         with (
             _snapshot(cfg),
-            patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
+            patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
         ):
             runner._refresh_from_config()
         assert runner._max_parallel_steps == 2
@@ -57,7 +57,7 @@ class TestPerRunReRead:
         cfg.taskrunner.max_parallel_steps = 50
         with (
             _snapshot(cfg),
-            patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
+            patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
         ):
             runner._refresh_from_config()
         assert runner._max_parallel_steps == 9
@@ -68,7 +68,7 @@ class TestPerRunReRead:
         assert runner._max_parallel_steps == 2
         with (
             _snapshot(KiroCrewConfig()),
-            patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
+            patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
         ):
             runner._refresh_from_config()
         assert runner._max_parallel_steps == 2
@@ -82,7 +82,7 @@ class TestPerRunReRead:
         cfg.taskrunner.workspace_dir = str(target)
         with (
             _snapshot(cfg),
-            patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
+            patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
         ):
             runner._refresh_from_config()
         assert Path(runner._workspace_dir) == target.resolve()
@@ -92,7 +92,7 @@ class TestPerRunReRead:
         # restores the constructor's target exactly.
         with (
             _snapshot(KiroCrewConfig()),
-            patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
+            patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
         ):
             runner._refresh_from_config()
         assert runner._workspace_dir == ""
@@ -104,8 +104,8 @@ class TestPerRunReRead:
         cfg.taskrunner.workspace_dir = "/somewhere/new"
         with (
             _snapshot(cfg),
-            patch("kiro_crew.taskrunner._resolve_workspace_dir", side_effect=ValueError("no")),
-            patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
+            patch("efm_go.taskrunner._resolve_workspace_dir", side_effect=ValueError("no")),
+            patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
         ):
             runner._refresh_from_config()
         assert runner._workspace_dir == ""
@@ -120,9 +120,9 @@ class TestPerRunReRead:
         runner = _runner(tmp_path, max_parallel_steps=0)
         assert runner._max_parallel_steps == 9
         with (
-            patch("kiro_crew.taskrunner.live.snapshot", return_value=None),
-            patch("kiro_crew.taskrunner.KiroCrewConfig.load") as load,
-            patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
+            patch("efm_go.taskrunner.live.snapshot", return_value=None),
+            patch("efm_go.taskrunner.KiroCrewConfig.load") as load,
+            patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9),
         ):
             runner._refresh_from_config()
         load.assert_not_called()
@@ -150,7 +150,7 @@ class TestEntryPointsRefresh:
     @pytest.mark.asyncio
     async def test_a_running_execution_keeps_its_cap(self, tmp_path: Path) -> None:
         """``_execute_tasks`` binds the cap once; a later refresh does not resize it."""
-        from kiro_crew.task_models import Project, Task, TaskStatus
+        from efm_go.task_models import Project, Task, TaskStatus
 
         runner = _runner(tmp_path, max_parallel_steps=0)
         run = Project(spec_path="s", spec_content="c", status="running")
@@ -171,13 +171,13 @@ class TestEntryPointsRefresh:
 
         with (
             patch(
-                "kiro_crew.taskrunner.group_parallel_tasks",
+                "efm_go.taskrunner.group_parallel_tasks",
                 return_value=[[run.tasks[0], run.tasks[1]]],
             ),
             patch.object(runner, "_execute_single_task", AsyncMock(return_value=True)),
             patch.object(runner, "_notify", AsyncMock()),
             patch.object(runner, "_apersist_runs", AsyncMock()),
-            patch("kiro_crew.taskrunner.asyncio.Semaphore", side_effect=_sem),
+            patch("efm_go.taskrunner.asyncio.Semaphore", side_effect=_sem),
         ):
             await runner._execute_tasks(run, "hk")
 

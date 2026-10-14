@@ -11,8 +11,8 @@ from types import SimpleNamespace
 import pytest
 from skill_script_helpers import load_skill_script
 
-from kiro_crew.deploy import engine, handlers
-from kiro_crew.deploy import profiles as profiles_mod
+from efm_go.deploy import engine, handlers
+from efm_go.deploy import profiles as profiles_mod
 
 # On native Windows the deploy handlers hard-gate on ``os.name == "nt"`` (the
 # deploy scripts need a POSIX bash shell), so every handler test would receive
@@ -61,9 +61,9 @@ def _force_posix_shell(monkeypatch):
 @pytest.fixture(autouse=True)
 def _isolate_config(tmp_path: Path, monkeypatch):
     # Patch config_dir on all deploy submodules so paths resolve under tmp_path.
-    import kiro_crew.deploy as _deploy_pkg
-    from kiro_crew.deploy import pending as _pending_mod
-    from kiro_crew.deploy import profiles as _profiles_mod
+    import efm_go.deploy as _deploy_pkg
+    from efm_go.deploy import pending as _pending_mod
+    from efm_go.deploy import profiles as _profiles_mod
 
     monkeypatch.setattr(handlers, "config_dir", lambda: tmp_path)
     monkeypatch.setattr(_profiles_mod, "config_dir", lambda: tmp_path)
@@ -257,7 +257,7 @@ def test_deploy_rejects_local_dir_outside_allowed_roots(monkeypatch, tmp_path):
 
 def test_deploy_missing_artifact_404(monkeypatch):
     _set_profile(monkeypatch)
-    from kiro_crew.artifacts import ArtifactNotFoundError
+    from efm_go.artifacts import ArtifactNotFoundError
 
     def boom():
         return SimpleNamespace(get=lambda slug: (_ for _ in ()).throw(ArtifactNotFoundError("x")))
@@ -460,7 +460,7 @@ def test_teardown_persistent_manifest_unreachable_returns_502(monkeypatch):
     tombstoning (card retains Tear down button for retry)."""
     # F2 (r4): teardown validates metadata profile against the registry —
     # register the fake profile so these tests exercise the paths under test.
-    from kiro_crew.deploy import profiles as _profiles_mod
+    from efm_go.deploy import profiles as _profiles_mod
     monkeypatch.setattr(_profiles_mod, "load_registry", lambda: {
         "version": 2,
         "profiles": [{"name": "p", "region": "us-west-2"}],
@@ -668,7 +668,7 @@ def test_deploy_rejects_on_windows(monkeypatch):
     """_do_deploy returns 400 with clear message on Windows (os.name == 'nt')."""
     import asyncio
 
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     class _NtNameOs:
         """Delegate everything to the real ``os`` except ``name``."""
@@ -695,13 +695,13 @@ def test_teardown_reaper_present_tombstones(monkeypatch):
     """Teardown proceeds (tombstones) when the reaper stack exists."""
     # F2 (r4): teardown validates metadata profile against the registry —
     # register the fake profile so these tests exercise the paths under test.
-    from kiro_crew.deploy import profiles as _profiles_mod
+    from efm_go.deploy import profiles as _profiles_mod
     monkeypatch.setattr(_profiles_mod, "load_registry", lambda: {
         "version": 2,
         "profiles": [{"name": "p", "region": "us-west-2"}],
         "default": "p",
     })
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     # Mock _check_reaper_installed to return True
     monkeypatch.setattr(handlers, "_check_reaper_installed", lambda p, r: True)
@@ -728,7 +728,7 @@ def test_teardown_reaper_present_tombstones(monkeypatch):
             super().__init__(body={"confirm": True}, match_info={"slug": "test-slug"})
 
     # Patch _serialize to avoid import issues
-    monkeypatch.setattr("kiro_crew.dashboard.handlers.artifacts._serialize",
+    monkeypatch.setattr("efm_go.dashboard.handlers.artifacts._serialize",
                         lambda a, include_content=False: {
                             "webapp_metadata": {"teardown": {}, "architecture": {}},
                         })
@@ -741,13 +741,13 @@ def test_teardown_reaper_absent_returns_409(monkeypatch):
     """Teardown returns 409 when the reaper stack is not installed."""
     # F2 (r4): teardown validates metadata profile against the registry —
     # register the fake profile so these tests exercise the paths under test.
-    from kiro_crew.deploy import profiles as _profiles_mod
+    from efm_go.deploy import profiles as _profiles_mod
     monkeypatch.setattr(_profiles_mod, "load_registry", lambda: {
         "version": 2,
         "profiles": [{"name": "p", "region": "us-west-2"}],
         "default": "p",
     })
-    from kiro_crew.deploy import handlers
+    from efm_go.deploy import handlers
 
     # Mock _check_reaper_installed to return False
     monkeypatch.setattr(handlers, "_check_reaper_installed", lambda p, r: False)
@@ -777,7 +777,7 @@ def test_teardown_reaper_absent_returns_409(monkeypatch):
 
 def test_do_deploy_local_dir_stages_public_dir(monkeypatch, tmp_path):
     """_do_deploy with local_dir correctly stages the directory for static deploy."""
-    from kiro_crew.deploy import engine, handlers
+    from efm_go.deploy import engine, handlers
 
     # Create a fullstack-layout dir: public/ + api/
     public = tmp_path / "myapp" / "public"
@@ -985,7 +985,7 @@ def test_deploy_manifest_includes_engine_arch_fields(monkeypatch, tmp_path):
     """F1: _do_deploy must write arch, bucket, distribution_id to the manifest."""
     _set_profile(monkeypatch, "p")
 
-    from kiro_crew.artifacts import ArtifactStore
+    from efm_go.artifacts import ArtifactStore
 
     store = ArtifactStore(tmp_path / "store")
     store.create(name="mywidget", content="<p>Hello</p>", kind="widget")
@@ -1029,7 +1029,7 @@ def test_deploy_manifest_includes_engine_arch_fields(monkeypatch, tmp_path):
 
 _REAPER_LAMBDA_INDEX = (
     Path(__file__).resolve().parent.parent
-    / "src/kiro_crew/deploy/skills/artifact-deploy/scripts/reaper_lambda/index.py"
+    / "src/efm_go/deploy/skills/artifact-deploy/scripts/reaper_lambda/index.py"
 )
 
 
@@ -1225,7 +1225,7 @@ def test_ttl_hours_overflow_blocked(monkeypatch, tmp_path):
     """F4: ttl_hours > 8760 returns 400 BEFORE any engine call."""
     _set_profile(monkeypatch, "p")
 
-    from kiro_crew.artifacts import ArtifactStore
+    from efm_go.artifacts import ArtifactStore
 
     store = ArtifactStore(tmp_path / "store")
     store.create(name="myart", content="<p>test</p>", kind="widget")
@@ -1254,7 +1254,7 @@ def test_internal_secret_strips_confirm_enforces_preview():
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.token_auth import token_auth_middleware
+    from efm_go.dashboard.token_auth import token_auth_middleware
 
     _internal_secret = "test-secret-12345678"
 
@@ -1276,7 +1276,7 @@ def test_internal_secret_strips_confirm_enforces_preview():
 
         engine_called = []
 
-        import kiro_crew.deploy.engine as _eng
+        import efm_go.deploy.engine as _eng
         orig_deploy = _eng.deploy
 
         def _fake_deploy(*a, **kw):
@@ -1315,7 +1315,7 @@ def test_internal_secret_teardown_denied_403():
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.token_auth import token_auth_middleware
+    from efm_go.dashboard.token_auth import token_auth_middleware
 
     _internal_secret = "test-secret-12345678"
 
@@ -1377,8 +1377,8 @@ def test_scan_tree_unreadable_file_produces_finding(tmp_path):
 
 def test_migrated_builtin_cleans_hyphenated_name(tmp_path, monkeypatch):
     """Migration cleans up a 'deploy-web' legacy app install."""
-    from kiro_crew.apps import manager as mgr
-    from kiro_crew.apps.builtins import _MIGRATED_BUILTINS
+    from efm_go.apps import manager as mgr
+    from efm_go.apps.builtins import _MIGRATED_BUILTINS
 
     # Verify "deploy-web" is in the list
     assert "deploy-web" in _MIGRATED_BUILTINS
@@ -1538,7 +1538,7 @@ def test_internal_secret_profiles_post_denied():
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.token_auth import token_auth_middleware
+    from efm_go.dashboard.token_auth import token_auth_middleware
 
     _internal_secret = "test-secret-12345678"
 
@@ -1578,7 +1578,7 @@ def test_internal_secret_list_allowed():
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
 
-    from kiro_crew.dashboard.token_auth import token_auth_middleware
+    from efm_go.dashboard.token_auth import token_auth_middleware
 
     _internal_secret = "test-secret-12345678"
 
@@ -1652,7 +1652,7 @@ def test_deploy_local_dir_staged_copy_cleaned(tmp_path, monkeypatch):
 
 def test_allowed_local_roots_no_bare_tmp(monkeypatch, tmp_path):
     """F2: _allowed_local_roots does NOT include bare /tmp."""
-    from kiro_crew.config.loader import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewConfig
     monkeypatch.setattr(KiroCrewConfig, "load", lambda: type("C", (), {
         "agent": type("A", (), {"subagent_cwd_allowed_roots": ["/home/testuser/workplace"]})()
     })())
@@ -1882,7 +1882,7 @@ def test_reaper_remediation_is_a_runnable_absolute_command(monkeypatch, tmp_path
     ``~/.kiro/crew`` both occur — so it is resolved from the live skills dir
     rather than spelled out.
     """
-    import kiro_crew.skills as skills_mod
+    import efm_go.skills as skills_mod
 
     fake_skills = tmp_path / "skills"
     monkeypatch.setattr(skills_mod, "skills_dir", lambda: fake_skills)
@@ -1894,7 +1894,7 @@ def test_reaper_remediation_is_a_runnable_absolute_command(monkeypatch, tmp_path
 
 def test_reaper_remediation_survives_an_unresolvable_skills_root(monkeypatch):
     """Remediation text must never be what breaks the 409."""
-    import kiro_crew.skills as skills_mod
+    import efm_go.skills as skills_mod
 
     def boom():
         raise RuntimeError("no skills root")
@@ -2111,7 +2111,7 @@ def test_pending_confirm_readds_entry_when_deploy_raises(monkeypatch, tmp_path):
     """A TimeoutExpired mid-deploy must leave a retryable entry and a reason."""
     import subprocess
 
-    from kiro_crew.deploy import pending as pending_mod
+    from efm_go.deploy import pending as pending_mod
 
     # The handler refuses with 409 when the resolved profile/region drifted from
     # the previewed one, so the stored entry and the live config have to agree

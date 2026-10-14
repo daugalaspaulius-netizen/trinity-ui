@@ -4,7 +4,7 @@ double-write fix.
 ``_spawn_detached_gateway`` redirects the child gateway's stdout/stderr INTO
 ``gateway.log``. Before the fix, ``main()``'s ``basicConfig`` console handler
 (root → stderr) then wrote a second, console-formatted copy (no [PID]) of
-every ``kiro_crew`` record into the same file the rotating file handler
+every ``efm_go`` record into the same file the rotating file handler
 writes, doubling log volume and halving the 2MB rotation window. The boot
 rotation also renamed the inode fds 1/2 point at, sending raw stderr writes
 into ``gateway.log.prev``.
@@ -31,8 +31,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import kiro_crew.cli as cli_mod
-from kiro_crew.cli import (
+import efm_go.cli as cli_mod
+from efm_go.cli import (
     _CliLogQueueHandler,
     _fd_targets_file,
     _FdTrackingRotatingFileHandler,
@@ -41,14 +41,14 @@ from kiro_crew.cli import (
     _stop_log_queue_listener,
     drain_log_queue_before_hard_exit,
 )
-from kiro_crew.config import config_dir
+from efm_go.config import config_dir
 
 
 @pytest.fixture(autouse=True)
 def _pristine_logging():
     """Snapshot, clear, and restore global logging state around each test.
 
-    ``_setup_cli_logging`` mutates the root and ``kiro_crew`` loggers
+    ``_setup_cli_logging`` mutates the root and ``efm_go`` loggers
     (handlers + levels), and these tests assert on absolute handler
     topology. Other tests in the same process may have leaked handlers
     onto either logger (they are process-global), so start each test from
@@ -59,7 +59,7 @@ def _pristine_logging():
     thread and the file handler's fd never leak across tests.
     """
     root = logging.getLogger()
-    kc = logging.getLogger("kiro_crew")
+    kc = logging.getLogger("efm_go")
     saved_root = (root.handlers[:], root.level)
     saved_kc = (kc.handlers[:], kc.level)
     root.handlers[:] = []
@@ -220,7 +220,7 @@ class TestFdTrackingRotatingFileHandler:
     def test_do_rollover_calls_fd_redirect(self, tmp_path, monkeypatch):
         """The subclass must re-point fds 1/2 at the new base file on every
         rollover — pin the doRollover hook itself."""
-        import kiro_crew.cli as cli_mod
+        import efm_go.cli as cli_mod
 
         calls: list[Path] = []
         monkeypatch.setattr(
@@ -392,9 +392,9 @@ class TestSetupCliLoggingDetached:
         # Force detached detection instead of dup2-ing over the REAL fd 2,
         # which would fight pytest's capture machinery. The detection
         # primitive itself is covered by TestFdTargetsFile.
-        monkeypatch.setattr("kiro_crew.cli._fd_targets_file", lambda fd, path: True)
+        monkeypatch.setattr("efm_go.cli._fd_targets_file", lambda fd, path: True)
         self.redirect = MagicMock()
-        monkeypatch.setattr("kiro_crew.cli._redirect_fds_to", self.redirect)
+        monkeypatch.setattr("efm_go.cli._redirect_fds_to", self.redirect)
 
     def test_no_console_handler_installed(self):
         _setup_cli_logging("gateway", 1)
@@ -403,17 +403,17 @@ class TestSetupCliLoggingDetached:
         ]
         assert stream_handlers == []
 
-    def test_queue_handler_on_root_not_kiro_crew(self):
+    def test_queue_handler_on_root_not_efm_go(self):
         _setup_cli_logging("gateway", 1)
         root_qhs = [h for h in logging.getLogger().handlers if isinstance(h, _CliLogQueueHandler)]
         assert len(root_qhs) == 1
         kc_qhs = [
-            h for h in logging.getLogger("kiro_crew").handlers if isinstance(h, _CliLogQueueHandler)
+            h for h in logging.getLogger("efm_go").handlers if isinstance(h, _CliLogQueueHandler)
         ]
         assert kc_qhs == []
         # The file handler must never sit on a logger directly — inline emit
         # on the event-loop thread is the loop-stall bug this fix removes.
-        for logger in (logging.getLogger(), logging.getLogger("kiro_crew")):
+        for logger in (logging.getLogger(), logging.getLogger("efm_go")):
             assert not any(isinstance(h, RotatingFileHandler) for h in logger.handlers)
         listener = cli_mod._LOG_QUEUE_LISTENER
         assert listener is not None
@@ -423,9 +423,9 @@ class TestSetupCliLoggingDetached:
         assert isinstance(fh, _FdTrackingRotatingFileHandler)
         assert Path(fh.baseFilename) == config_dir() / "gateway.log"
 
-    def test_kiro_crew_record_written_exactly_once(self):
+    def test_efm_go_record_written_exactly_once(self):
         _setup_cli_logging("gateway", 1)
-        logging.getLogger("kiro_crew.test_doublewrite").warning("sentinel-record")
+        logging.getLogger("efm_go.test_doublewrite").warning("sentinel-record")
         _stop_log_queue_listener()  # deterministic drain to disk
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
         assert text.count("sentinel-record") == 1
@@ -455,27 +455,27 @@ class TestSetupCliLoggingDetached:
         self.redirect.assert_not_called()
 
     def test_handlers_carry_no_level_third_party_warning_still_lands(self, monkeypatch):
-        """The ``kiro_crew`` logger is the SINGLE level gate. Neither the file
+        """The ``efm_go`` logger is the SINGLE level gate. Neither the file
         handler nor the queue handler carries a level of its own: a stricter
-        persisted kiro_crew level gates kiro_crew records at the kiro_crew
+        persisted efm_go level gates efm_go records at the efm_go
         logger, third-party records are gated at the root logger's WARNING,
         and nothing is re-judged on the way to the file. A level on either
         handler would be a boot-time copy that a runtime ``agent.log_level``
         change does not reach."""
-        from kiro_crew.config import KiroCrewConfig
+        from efm_go.config import KiroCrewConfig
 
         cfg = KiroCrewConfig()
         cfg.agent.log_level = "ERROR"
-        monkeypatch.setattr("kiro_crew.cli.KiroCrewConfig.load", staticmethod(lambda: cfg))
+        monkeypatch.setattr("efm_go.cli.KiroCrewConfig.load", staticmethod(lambda: cfg))
         _setup_cli_logging("gateway", 0)
         (fh,) = cli_mod._LOG_QUEUE_LISTENER.handlers
         (qh,) = [h for h in logging.getLogger().handlers if isinstance(h, _CliLogQueueHandler)]
         assert fh.level == logging.NOTSET
         assert qh.level == logging.NOTSET
         assert cli_mod._LOG_QUEUE_LISTENER.respect_handler_level is False
-        assert logging.getLogger("kiro_crew").level == logging.ERROR
+        assert logging.getLogger("efm_go").level == logging.ERROR
         logging.getLogger("somelib.test_single_gate").warning("thirdparty-still-flows")
-        logging.getLogger("kiro_crew.test_single_gate").warning("kiro-crew-gated")
+        logging.getLogger("efm_go.test_single_gate").warning("kiro-crew-gated")
         _stop_log_queue_listener()  # deterministic drain to disk
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
         assert "thirdparty-still-flows" in text
@@ -495,8 +495,8 @@ class TestSetupCliLoggingDetached:
         def _deny(*_a, **_k):
             raise PermissionError(1, "Operation not permitted")
 
-        monkeypatch.setattr("kiro_crew.cli.RotatingFileHandler", _deny)
-        monkeypatch.setattr("kiro_crew.cli._FdTrackingRotatingFileHandler", _deny)
+        monkeypatch.setattr("efm_go.cli.RotatingFileHandler", _deny)
+        monkeypatch.setattr("efm_go.cli._FdTrackingRotatingFileHandler", _deny)
         with pytest.raises(PermissionError):
             _setup_cli_logging("gateway", 1)
 
@@ -506,24 +506,24 @@ class TestSetupCliLoggingForeground:
 
     @pytest.fixture(autouse=True)
     def _foreground(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.cli._fd_targets_file", lambda fd, path: False)
+        monkeypatch.setattr("efm_go.cli._fd_targets_file", lambda fd, path: False)
         self.redirect = MagicMock()
-        monkeypatch.setattr("kiro_crew.cli._redirect_fds_to", self.redirect)
+        monkeypatch.setattr("efm_go.cli._redirect_fds_to", self.redirect)
 
-    def test_queue_handler_on_kiro_crew_logger(self):
+    def test_queue_handler_on_efm_go_logger(self):
         _setup_cli_logging("gateway", 1)
         kc_qhs = [
-            h for h in logging.getLogger("kiro_crew").handlers if isinstance(h, _CliLogQueueHandler)
+            h for h in logging.getLogger("efm_go").handlers if isinstance(h, _CliLogQueueHandler)
         ]
         assert len(kc_qhs) == 1
-        # The level lives on the kiro_crew logger alone; the queue handler and
+        # The level lives on the efm_go logger alone; the queue handler and
         # the file handler carry none (a copy here is one a runtime change
         # does not reach).
         assert kc_qhs[0].level == logging.NOTSET
-        assert logging.getLogger("kiro_crew").level == logging.INFO
+        assert logging.getLogger("efm_go").level == logging.INFO
         assert not any(isinstance(h, _CliLogQueueHandler) for h in logging.getLogger().handlers)
         # No inline file handler on either logger.
-        for logger in (logging.getLogger(), logging.getLogger("kiro_crew")):
+        for logger in (logging.getLogger(), logging.getLogger("efm_go")):
             assert not any(isinstance(h, RotatingFileHandler) for h in logger.handlers)
         (fh,) = cli_mod._LOG_QUEUE_LISTENER.handlers
         # Foreground keeps the plain handler: no fds were redirected, so
@@ -533,7 +533,7 @@ class TestSetupCliLoggingForeground:
 
     def test_record_written_once_to_file(self):
         _setup_cli_logging("gateway", 1)
-        logging.getLogger("kiro_crew.test_foreground").warning("fg-sentinel")
+        logging.getLogger("efm_go.test_foreground").warning("fg-sentinel")
         _stop_log_queue_listener()  # deterministic drain to disk
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
         assert text.count("fg-sentinel") == 1
@@ -559,12 +559,12 @@ class TestSetupCliLoggingForeground:
         def _deny(*_a, **_k):
             raise PermissionError(1, "Operation not permitted")
 
-        monkeypatch.setattr("kiro_crew.cli.RotatingFileHandler", _deny)
-        monkeypatch.setattr("kiro_crew.cli._FdTrackingRotatingFileHandler", _deny)
+        monkeypatch.setattr("efm_go.cli.RotatingFileHandler", _deny)
+        monkeypatch.setattr("efm_go.cli._FdTrackingRotatingFileHandler", _deny)
         _setup_cli_logging("mcp-core", 0)  # must not raise
         assert cli_mod._LOG_QUEUE_LISTENER is None
         assert not any(
-            isinstance(h, RotatingFileHandler) for h in logging.getLogger("kiro_crew").handlers
+            isinstance(h, RotatingFileHandler) for h in logging.getLogger("efm_go").handlers
         )
 
     def test_unwritable_gateway_log_still_redacts_for_long_lived(self, monkeypatch):
@@ -574,9 +574,9 @@ class TestSetupCliLoggingForeground:
             raise PermissionError(1, "Operation not permitted")
 
         redaction = MagicMock()
-        monkeypatch.setattr("kiro_crew.cli.RotatingFileHandler", _deny)
-        monkeypatch.setattr("kiro_crew.cli._FdTrackingRotatingFileHandler", _deny)
-        monkeypatch.setattr("kiro_crew.cli.install_log_redaction", redaction)
+        monkeypatch.setattr("efm_go.cli.RotatingFileHandler", _deny)
+        monkeypatch.setattr("efm_go.cli._FdTrackingRotatingFileHandler", _deny)
+        monkeypatch.setattr("efm_go.cli.install_log_redaction", redaction)
         _setup_cli_logging("gateway", 1)  # must not raise
         redaction.assert_called_once_with([])
 
@@ -585,7 +585,7 @@ class TestRuntimeLevelReachesFileLog:
     """A runtime ``agent.log_level`` change reaches ``gateway.log`` without a restart.
 
     ``apply_log_level`` -- the Logs-page toggle and the ``agent.log_level``
-    config applier -- moves the ``kiro_crew`` logger, and that logger is the
+    config applier -- moves the ``efm_go`` logger, and that logger is the
     single level gate: neither the file handler nor the producer-side queue
     handler pins a boot-time level of its own. A gateway booted at WARNING and
     raised to INFO writes its INFO records to the file ``kirocrew logs`` reads,
@@ -599,33 +599,33 @@ class TestRuntimeLevelReachesFileLog:
         level from config (no ``--verbose``), foreground or detach-spawned.
         The config handed to boot is a fresh default object, never the one a
         real ``load()`` returned, so no cached document is mutated."""
-        from kiro_crew.config import KiroCrewConfig
+        from efm_go.config import KiroCrewConfig
 
-        monkeypatch.setattr("kiro_crew.cli._fd_targets_file", lambda fd, path: detached)
-        monkeypatch.setattr("kiro_crew.cli._redirect_fds_to", MagicMock())
+        monkeypatch.setattr("efm_go.cli._fd_targets_file", lambda fd, path: detached)
+        monkeypatch.setattr("efm_go.cli._redirect_fds_to", MagicMock())
         cfg = KiroCrewConfig()
         cfg.agent.log_level = persisted
-        monkeypatch.setattr("kiro_crew.cli.KiroCrewConfig.load", staticmethod(lambda: cfg))
+        monkeypatch.setattr("efm_go.cli.KiroCrewConfig.load", staticmethod(lambda: cfg))
         _setup_cli_logging("gateway", 0)
 
     @staticmethod
     def _sinks(detached: bool):
-        producer = logging.getLogger() if detached else logging.getLogger("kiro_crew")
+        producer = logging.getLogger() if detached else logging.getLogger("efm_go")
         (qh,) = [h for h in producer.handlers if isinstance(h, _CliLogQueueHandler)]
         (fh,) = cli_mod._LOG_QUEUE_LISTENER.handlers
         return fh, qh
 
     def test_raised_info_record_reaches_gateway_log(self, monkeypatch):
-        from kiro_crew.dashboard.handlers.updates import apply_log_level
+        from efm_go.dashboard.handlers.updates import apply_log_level
 
         self._boot(monkeypatch, detached=False)
         fh, qh = self._sinks(detached=False)
-        assert logging.getLogger("kiro_crew").level == logging.WARNING
+        assert logging.getLogger("efm_go").level == logging.WARNING
 
         assert apply_log_level("INFO", source="dashboard") is True
 
-        assert logging.getLogger("kiro_crew").level == logging.INFO
-        logging.getLogger("kiro_crew.test_runtime_level").info("raised-info-record")
+        assert logging.getLogger("efm_go").level == logging.INFO
+        logging.getLogger("efm_go.test_runtime_level").info("raised-info-record")
         _stop_log_queue_listener()  # deterministic drain to disk
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
         assert "raised-info-record" in text, "raised INFO record never reached gateway.log"
@@ -636,35 +636,35 @@ class TestRuntimeLevelReachesFileLog:
         assert fh.level == qh.level == logging.NOTSET
 
     def test_detached_tightening_keeps_third_party_warnings_flowing(self, monkeypatch):
-        """A stricter kiro_crew level gates kiro_crew records at the kiro_crew
+        """A stricter efm_go level gates efm_go records at the efm_go
         logger; third-party records on the shared root handler stay gated at
         the root logger's WARNING. Neither handler holds a level to do it."""
-        from kiro_crew.dashboard.handlers.updates import apply_log_level
+        from efm_go.dashboard.handlers.updates import apply_log_level
 
         self._boot(monkeypatch, detached=True)
         fh, qh = self._sinks(detached=True)
 
         assert apply_log_level("ERROR", source="config") is True
 
-        assert logging.getLogger("kiro_crew").level == logging.ERROR
+        assert logging.getLogger("efm_go").level == logging.ERROR
         assert fh.level == qh.level == logging.NOTSET
         logging.getLogger("somelib.test_runtime_level").warning("thirdparty-still-flows")
-        logging.getLogger("kiro_crew.test_runtime_level").warning("kiro-crew-gagged")
+        logging.getLogger("efm_go.test_runtime_level").warning("kiro-crew-gagged")
         _stop_log_queue_listener()
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
         assert "thirdparty-still-flows" in text
         assert "kiro-crew-gagged" not in text
 
     def test_detached_raise_does_not_open_the_root_to_third_party_info(self, monkeypatch):
-        """Raising kiro_crew to INFO admits kiro_crew INFO; third-party INFO
+        """Raising efm_go to INFO admits efm_go INFO; third-party INFO
         stays gated at the root logger's WARNING, exactly as a boot at INFO."""
-        from kiro_crew.dashboard.handlers.updates import apply_log_level
+        from efm_go.dashboard.handlers.updates import apply_log_level
 
         self._boot(monkeypatch, detached=True)
 
         assert apply_log_level("INFO", source="dashboard") is True
 
-        logging.getLogger("kiro_crew.test_runtime_level").info("kiro-crew-info")
+        logging.getLogger("efm_go.test_runtime_level").info("kiro-crew-info")
         logging.getLogger("somelib.test_runtime_level").info("thirdparty-info")
         _stop_log_queue_listener()
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
@@ -677,14 +677,14 @@ class TestRuntimeLevelReachesFileLog:
         handler-level re-check at dequeue, nothing judges a queued record by a
         level set after it was logged -- a queue backed up behind a rollover
         on a slow disk holds hundreds of them."""
-        from kiro_crew.dashboard.handlers.updates import apply_log_level
+        from efm_go.dashboard.handlers.updates import apply_log_level
 
         self._boot(monkeypatch, detached=False, persisted="INFO")
         listener = cli_mod._LOG_QUEUE_LISTENER
         assert listener is not None
         listener.stop()  # park the consumer: records now sit in the queue
         try:
-            logging.getLogger("kiro_crew.test_runtime_level").info("queued-before-tightening")
+            logging.getLogger("efm_go.test_runtime_level").info("queued-before-tightening")
 
             assert apply_log_level("ERROR", source="dashboard") is True
         finally:
@@ -707,8 +707,8 @@ class TestQueueOffLoop:
 
     @pytest.fixture(autouse=True)
     def _foreground(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.cli._fd_targets_file", lambda fd, path: False)
-        monkeypatch.setattr("kiro_crew.cli._redirect_fds_to", MagicMock())
+        monkeypatch.setattr("efm_go.cli._fd_targets_file", lambda fd, path: False)
+        monkeypatch.setattr("efm_go.cli._redirect_fds_to", MagicMock())
 
     def test_file_emit_runs_on_listener_thread(self):
         _setup_cli_logging("gateway", 1)
@@ -721,7 +721,7 @@ class TestQueueOffLoop:
             orig_emit(record)
 
         fh.emit = recording_emit  # type: ignore[method-assign]
-        logging.getLogger("kiro_crew.offloop").warning("off-loop-sentinel")
+        logging.getLogger("efm_go.offloop").warning("off-loop-sentinel")
         _stop_log_queue_listener()  # drains the queue through recording_emit
         assert emit_threads, "record never reached the file handler"
         caller = threading.current_thread()
@@ -729,7 +729,7 @@ class TestQueueOffLoop:
 
     def test_stop_drains_pending_records(self):
         _setup_cli_logging("gateway", 1)
-        log = logging.getLogger("kiro_crew.drain")
+        log = logging.getLogger("efm_go.drain")
         for i in range(50):
             log.warning("drain-record-%d", i)
         _stop_log_queue_listener()
@@ -740,7 +740,7 @@ class TestQueueOffLoop:
         _setup_cli_logging("gateway", 1)
         _setup_cli_logging("gateway", 1)
         kc_qhs = [
-            h for h in logging.getLogger("kiro_crew").handlers if isinstance(h, _CliLogQueueHandler)
+            h for h in logging.getLogger("efm_go").handlers if isinstance(h, _CliLogQueueHandler)
         ]
         assert len(kc_qhs) == 1
         assert cli_mod._LOG_QUEUE_LISTENER is not None
@@ -753,11 +753,11 @@ class TestQueueOffLoop:
         protect."""
         _setup_cli_logging("status", 1)
         assert cli_mod._LOG_QUEUE_LISTENER is None
-        kc = logging.getLogger("kiro_crew")
+        kc = logging.getLogger("efm_go")
         assert not any(isinstance(h, _CliLogQueueHandler) for h in kc.handlers)
         sync_fhs = [h for h in kc.handlers if isinstance(h, RotatingFileHandler)]
         assert len(sync_fhs) == 1
-        logging.getLogger("kiro_crew.short").warning("short-lived-record")
+        logging.getLogger("efm_go.short").warning("short-lived-record")
         for h in kc.handlers:
             h.flush()
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
@@ -772,7 +772,7 @@ class TestQueueOffLoop:
     def test_bounded_stop_still_drains_when_healthy(self):
         """The force-exit path (timeout=) must still flush a healthy queue."""
         _setup_cli_logging("gateway", 1)
-        logging.getLogger("kiro_crew.bounded").warning("bounded-record")
+        logging.getLogger("efm_go.bounded").warning("bounded-record")
         _stop_log_queue_listener(timeout=5.0)
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
         assert "bounded-record" in text
@@ -793,7 +793,7 @@ class TestQueueOffLoop:
             orig_emit(record)
 
         fh.emit = wedged_emit  # type: ignore[method-assign]
-        logging.getLogger("kiro_crew.wedged").warning("wedged-record")
+        logging.getLogger("efm_go.wedged").warning("wedged-record")
         t0 = time.monotonic()
         _stop_log_queue_listener(timeout=0.2)
         elapsed = time.monotonic() - t0
@@ -809,15 +809,15 @@ class TestDrainBeforeHardExit:
 
     @pytest.fixture(autouse=True)
     def _foreground(self, monkeypatch):
-        monkeypatch.setattr("kiro_crew.cli._fd_targets_file", lambda fd, path: False)
-        monkeypatch.setattr("kiro_crew.cli._redirect_fds_to", MagicMock())
+        monkeypatch.setattr("efm_go.cli._fd_targets_file", lambda fd, path: False)
+        monkeypatch.setattr("efm_go.cli._redirect_fds_to", MagicMock())
 
     @pytest.mark.asyncio
     async def test_queued_tail_reaches_disk(self):
         """The records logged immediately before a hard exit - the ones a
         post-mortem actually needs - are on disk when the drain returns."""
         _setup_cli_logging("gateway", 1)
-        logging.getLogger("kiro_crew.shutdown").warning("shutdown-tail-record")
+        logging.getLogger("efm_go.shutdown").warning("shutdown-tail-record")
         await drain_log_queue_before_hard_exit()
         text = (config_dir() / "gateway.log").read_text(encoding="utf-8")
         assert "shutdown-tail-record" in text
@@ -859,7 +859,7 @@ class TestDrainBeforeHardExit:
             orig_emit(record)
 
         fh.emit = wedged_emit  # type: ignore[method-assign]
-        logging.getLogger("kiro_crew.wedged").warning("wedged-shutdown-record")
+        logging.getLogger("efm_go.wedged").warning("wedged-shutdown-record")
         t0 = time.monotonic()
         await drain_log_queue_before_hard_exit(timeout=0.2)
         elapsed = time.monotonic() - t0
@@ -893,7 +893,7 @@ class TestDrainBeforeHardExit:
 
 class TestEveryGatewayHardExitDrainsTheQueue:
     """Ratchet: the queue only helps if EVERY hard exit in the gateway process
-    drains it. ``src/kiro_crew/slack/gateway.py`` and ``.../events.py`` are the
+    drains it. ``src/efm_go/slack/gateway.py`` and ``.../events.py`` are the
     two modules that call ``os._exit`` from inside the long-lived gateway
     process - the other ``os._exit`` sites in the tree (``sandbox.py``,
     ``_process_group_supervisor.py``) run in forked/pre-exec children that
@@ -903,8 +903,8 @@ class TestEveryGatewayHardExitDrainsTheQueue:
     drain in a sibling closure cannot vouch for its parent."""
 
     _MODULES = (
-        Path(__file__).resolve().parents[1] / "src/kiro_crew/slack/gateway.py",
-        Path(__file__).resolve().parents[1] / "src/kiro_crew/slack/events.py",
+        Path(__file__).resolve().parents[1] / "src/efm_go/slack/gateway.py",
+        Path(__file__).resolve().parents[1] / "src/efm_go/slack/events.py",
     )
     _DRAINS = {"_stop_log_queue_listener", "drain_log_queue_before_hard_exit"}
 

@@ -21,7 +21,7 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.apps.builtins.auto_improvement.backend import routes, store
+from efm_go.apps.builtins.auto_improvement.backend import routes, store
 
 OWNER = "owner-subject"
 

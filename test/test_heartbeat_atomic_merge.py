@@ -15,8 +15,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import kiro_crew.heartbeat as hb_mod
-from kiro_crew.heartbeat import _HEADER, HeartbeatService
+import efm_go.heartbeat as hb_mod
+from efm_go.heartbeat import _HEADER, HeartbeatService
 
 
 @pytest.mark.asyncio

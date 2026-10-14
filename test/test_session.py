@@ -14,18 +14,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.acp.runtime import AcpWorkspaceBindingError
-from kiro_crew.acp.types import ACP_BACKEND_KAS, ACP_BACKEND_KIRO, AcpPromptStats
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.messaging.link import ChannelLink
-from kiro_crew.session import (
+from efm_go.acp.runtime import AcpWorkspaceBindingError
+from efm_go.acp.types import ACP_BACKEND_KAS, ACP_BACKEND_KIRO, AcpPromptStats
+from efm_go.config import KiroCrewConfig
+from efm_go.messaging.link import ChannelLink
+from efm_go.session import (
     _BG_BLIND_RECYCLE_PROMPTS,
     BACKGROUND_KEY,
     SessionClosingError,
     SessionEndingError,
     SessionManager,
 )
-from kiro_crew.start_priority import StartPriority
+from efm_go.start_priority import StartPriority
 
 
 @pytest.fixture
@@ -78,7 +78,7 @@ def _raw_sid(mgr, key: str):
     "was it cleared?" assertion pass whether or not the clear ran. These tests
     care about the stored pointer, so they read it.
     """
-    from kiro_crew.session_map import canonical_key
+    from efm_go.session_map import canonical_key
 
     return (mgr._session_map._data.get(canonical_key(key)) or {}).get("sid")
 
@@ -621,7 +621,7 @@ class TestWorkflowPoolStateless:
     context and violating the pool's isolation guarantee."""
 
     def test_wf_pool_prefix_is_stateless(self):
-        from kiro_crew.session import _STATELESS_PREFIXES
+        from efm_go.session import _STATELESS_PREFIXES
 
         assert any("wf-pool:".startswith(p) for p in _STATELESS_PREFIXES)
         assert "wf-pool:run-1:0".startswith(
@@ -666,7 +666,7 @@ class TestHeartbeatStateless:
     @pytest.mark.asyncio
     async def test_heartbeat_key_skips_resume_lookup(self, cfg):
         """``_hb`` must NOT consult the session_map for a resume sid."""
-        from kiro_crew.session import HEARTBEAT_KEY
+        from efm_go.session import HEARTBEAT_KEY
 
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         mgr._session_map.get = MagicMock(return_value="stale-sid")  # type: ignore[method-assign]
@@ -1495,7 +1495,7 @@ class TestStopTurn:
         with patch.object(
             mgr, "get_or_create", new_callable=AsyncMock, side_effect=RuntimeError("boom")
         ):
-            with caplog.at_level(logging.DEBUG, logger="kiro_crew.session"):
+            with caplog.at_level(logging.DEBUG, logger="efm_go.session"):
                 await mgr._eager_respawn("key1")
 
         assert "Eager respawn failed" in caplog.text
@@ -1568,7 +1568,7 @@ class TestCompactCallback:
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         mgr.set_compact_callback(AsyncMock())
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
             mgr.set_compact_callback(AsyncMock())
 
         assert any("Compact callback already registered" in r.message for r in caplog.records)
@@ -1640,14 +1640,14 @@ class TestCompactCallback:
         # Only the outer cap is scaled: the inner status wait clamps to
         # _COMPACT_RESULT_WAIT_FLOOR_SECS (5s) — patch that too if a test
         # needs the inner wait itself to time out quickly.
-        monkeypatch.setattr("kiro_crew.session.COMPACT_WAIT_TIMEOUT_SECS", 0.1)
+        monkeypatch.setattr("efm_go.session.COMPACT_WAIT_TIMEOUT_SECS", 0.1)
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         # Hold the semaphore and never release -> simulates a long-running turn.
         provider, _, _ = await mgr.get_or_create("dashboard:chat-1")
         cb = AsyncMock()
         mgr.set_compact_callback(cb)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
             await asyncio.wait_for(mgr._compact_session("dashboard:chat-1", 92.0), timeout=2)
 
         # Session survives, the live turn was not killed, and nothing was
@@ -1669,7 +1669,7 @@ class TestCompactCallback:
         cb = AsyncMock(side_effect=RuntimeError("boom"))
         mgr.set_compact_callback(cb)
 
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.session"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.session"):
             await mgr._compact_session("dashboard:chat-1", 95.0)
 
         cb.assert_awaited_once()
@@ -1740,7 +1740,7 @@ class TestRecordSuccessFailure:
     @pytest.mark.asyncio
     async def test_pool_size_clamping(self, cfg, caplog):
         cfg.session.pool_size = 999
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
             mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         assert any("exceeds max" in r.message for r in caplog.records)
         await mgr.close_all()
@@ -2013,7 +2013,7 @@ class TestRelease:
         mgr.release("A")  # caller 2's OWN legitimate finally, already run
         assert not session_2.semaphore.locked()
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
             mgr.release("A")  # caller 1's finally, arriving late on a stale key lookup
 
         assert "session was replaced" in caplog.text
@@ -2098,7 +2098,7 @@ class TestResetRetainsTheTornDownSession:
         The table captures the handle in the pop's own lock hold and never reads
         the session again.
         """
-        from kiro_crew.process_identity import process_handle_of
+        from efm_go.process_identity import process_handle_of
 
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         provider, _, _ = await mgr.get_or_create("k1")
@@ -2444,7 +2444,7 @@ class TestTheEndingFenceAdmitsNothingUnderTheKey:
 
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         with (
-            patch("kiro_crew.execution_context.read_session_execution", _blocking_first_read),
+            patch("efm_go.execution_context.read_session_execution", _blocking_first_read),
             patch.object(mgr, "_dispatch_hard_kill") as hard_kill,
         ):
             cold_start = asyncio.create_task(mgr.get_or_create("k1"))
@@ -2702,7 +2702,7 @@ class TestTheEndingFenceAdmitsNothingUnderTheKey:
     @pytest.mark.asyncio
     async def test_a_fence_held_past_the_wait_bound_refuses_the_held_caller(self, cfg, monkeypatch):
         """The one refusal a held caller can meet: a fence that outlives its bound is a stuck holder, surfaced."""
-        from kiro_crew import session_allocation
+        from efm_go import session_allocation
 
         monkeypatch.setattr(session_allocation, "ENDING_FENCE_WAIT_SECS", 0.05)
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
@@ -2832,8 +2832,8 @@ class TestResetWithPid:
             patch("os.kill", return_value=None),
             patch("os.killpg") as mock_killpg,
             patch("os.getpgid", return_value=12345),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
         ):
             await mgr.reset("k1")
             mock_killpg.assert_called_once()
@@ -2853,8 +2853,8 @@ class TestResetWithPid:
 
         with (
             patch("os.kill", side_effect=ProcessLookupError),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=None),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=None),
         ):
             await mgr.reset("k1")
 
@@ -2873,10 +2873,10 @@ class TestResetWithPid:
 
         with (
             patch("os.kill", side_effect=ProcessLookupError),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[333]),
-            patch("kiro_crew.platform_compat.get_process_start_id", return_value=3000),
-            patch("kiro_crew.acp.client._read_basename", return_value=b"node"),
-            patch("kiro_crew.acp.client._kill_escaped_children") as mock_sweep,
+            patch("efm_go.acp.client._get_child_pids", return_value=[333]),
+            patch("efm_go.platform_compat.get_process_start_id", return_value=3000),
+            patch("efm_go.acp.client._read_basename", return_value=b"node"),
+            patch("efm_go.acp.client._kill_escaped_children") as mock_sweep,
         ):
             await mgr.reset("k1")
             mock_sweep.assert_called_once()
@@ -2984,7 +2984,7 @@ class TestCheckContextUsage:
         would pin the test to one threshold and go stale the next time either
         number moves.
         """
-        from kiro_crew.config.loader import CONTEXT_WARN_MARGIN_PCT
+        from efm_go.config.loader import CONTEXT_WARN_MARGIN_PCT
 
         cfg.session.autocompact_pct = 90.0
         warn_at = 90.0 - CONTEXT_WARN_MARGIN_PCT
@@ -2993,12 +2993,12 @@ class TestCheckContextUsage:
         mgr.release("k1")
         provider.context_usage_pct = lambda: warn_at
         with (
-            patch("kiro_crew.session.published_autocompact_pct", return_value=90.0),
-            caplog.at_level(logging.WARNING, logger="kiro_crew.session"),
+            patch("efm_go.session.published_autocompact_pct", return_value=90.0),
+            caplog.at_level(logging.WARNING, logger="efm_go.session"),
         ):
             mgr.check_context_usage("k1", provider)
         assert any(
-            f"{warn_at:.0f}%" in r.message for r in caplog.records if r.name == "kiro_crew.session"
+            f"{warn_at:.0f}%" in r.message for r in caplog.records if r.name == "efm_go.session"
         )
         await mgr.close_all()
 
@@ -3009,7 +3009,7 @@ class TestCheckContextUsage:
         Pins the boundary from the other side: without this, a margin widened
         to cover the whole window would still satisfy the test above.
         """
-        from kiro_crew.config.loader import CONTEXT_WARN_MARGIN_PCT
+        from efm_go.config.loader import CONTEXT_WARN_MARGIN_PCT
 
         cfg.session.autocompact_pct = 90.0
         below = 90.0 - CONTEXT_WARN_MARGIN_PCT - 1.0
@@ -3018,8 +3018,8 @@ class TestCheckContextUsage:
         mgr.release("k1")
         provider.context_usage_pct = lambda: below
         with (
-            patch("kiro_crew.session.published_autocompact_pct", return_value=90.0),
-            caplog.at_level(logging.WARNING, logger="kiro_crew.session"),
+            patch("efm_go.session.published_autocompact_pct", return_value=90.0),
+            caplog.at_level(logging.WARNING, logger="efm_go.session"),
         ):
             mgr.check_context_usage("k1", provider)
         # Scoped to this logger: caplog captures the whole root hierarchy, so an
@@ -3029,7 +3029,7 @@ class TestCheckContextUsage:
         assert not [
             r
             for r in caplog.records
-            if r.levelno >= logging.WARNING and r.name == "kiro_crew.session"
+            if r.levelno >= logging.WARNING and r.name == "efm_go.session"
         ]
         await mgr.close_all()
 
@@ -3419,7 +3419,7 @@ class TestDestroy:
 
         with (
             patch(
-                "kiro_crew.session_lifecycle.record_session_ended",
+                "efm_go.session_lifecycle.record_session_ended",
                 new=AsyncMock(side_effect=delayed_metric),
             ),
             patch.object(mgr._session_map, "delete") as mock_delete,
@@ -3745,7 +3745,7 @@ class TestResolveAgentModelResolution:
         agent_file = tmp_path / "test-agent.json"
         agent_file.write_text(json.dumps({"name": "test-agent", "model": "opus-5"}))
 
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
             result = SessionManager._resolve_agent_model("test-agent")
         assert result == "opus-5"
 
@@ -3766,7 +3766,7 @@ class TestResolveAgentModelResolution:
             json.dumps({"name": "foreign", "model": {"id": "anthropic:claude-opus-4-8"}})
         )
 
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
             result = SessionManager._resolve_agent_model("foreign")
         assert result == "auto"
         assert isinstance(result, str)
@@ -3785,7 +3785,7 @@ class TestResolveAgentModelResolution:
         """
         import json
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         if hasattr(SessionManager, "_agent_model_cache"):
             SessionManager._agent_model_cache.clear()
@@ -3794,14 +3794,14 @@ class TestResolveAgentModelResolution:
             json.dumps({"name": "big", "model": "pinned-by-oversized", "pad": "x" * 1024})
         )
 
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
             assert SessionManager._resolve_agent_model("big") == "auto"
 
     def test_resolve_agent_model_still_reads_a_spec_under_the_same_cap(self, tmp_path, monkeypatch):
         """A-side of the cap test above: a normal spec still resolves."""
         import json
 
-        from kiro_crew import hooks
+        from efm_go import hooks
 
         if hasattr(SessionManager, "_agent_model_cache"):
             SessionManager._agent_model_cache.clear()
@@ -3810,7 +3810,7 @@ class TestResolveAgentModelResolution:
             json.dumps({"name": "small", "model": "pinned-by-small"})
         )
 
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
             assert SessionManager._resolve_agent_model("small") == "pinned-by-small"
 
     @requires_symlinks
@@ -3819,7 +3819,7 @@ class TestResolveAgentModelResolution:
         so the model is not resolved out of whatever the link names."""
         import json
 
-        from kiro_crew import agent_discovery
+        from efm_go import agent_discovery
 
         if hasattr(SessionManager, "_agent_model_cache"):
             SessionManager._agent_model_cache.clear()
@@ -3832,7 +3832,7 @@ class TestResolveAgentModelResolution:
             agent_discovery, "is_sensitive_canonical_path", lambda p: str(target) in str(p)
         )
 
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", agents):
             assert SessionManager._resolve_agent_model("linked") == "auto"
 
 
@@ -4083,14 +4083,14 @@ class TestCleanupLoop:
 
         with (
             patch.object(mgr, "_expire_idle", new_callable=AsyncMock) as mock_expire,
-            patch("kiro_crew.session._cleanup_orphaned_mcp_servers", return_value=0),
-            patch("kiro_crew.session.cleanup_stale_sandbox_profiles", return_value=0),
-            patch("kiro_crew.session._collect_active_pids", return_value=({}, True)),
-            patch("kiro_crew.session._periodic_pid_sweep", return_value=([], [])),
-            patch("kiro_crew.session._kill_confirmed_and_writeback", return_value=0),
-            patch("kiro_crew.session.cleanup_orphaned_session_roots", return_value=0),
-            patch("kiro_crew.session.find_orphan_mcp_candidates", return_value=[]),
-            patch("kiro_crew.session.shutdown_event") as mock_event,
+            patch("efm_go.session._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session.cleanup_stale_sandbox_profiles", return_value=0),
+            patch("efm_go.session._collect_active_pids", return_value=({}, True)),
+            patch("efm_go.session._periodic_pid_sweep", return_value=([], [])),
+            patch("efm_go.session._kill_confirmed_and_writeback", return_value=0),
+            patch("efm_go.session.cleanup_orphaned_session_roots", return_value=0),
+            patch("efm_go.session.find_orphan_mcp_candidates", return_value=[]),
+            patch("efm_go.session.shutdown_event") as mock_event,
         ):
             # First wait_for returns TimeoutError (normal wakeup), second signals shutdown
             mock_event.is_set = lambda: mock_expire.await_count >= 1
@@ -4107,14 +4107,14 @@ class TestCleanupLoop:
 
         with (
             patch.object(mgr, "_expire_idle", new_callable=AsyncMock) as mock_expire,
-            patch("kiro_crew.session._cleanup_orphaned_mcp_servers", return_value=0),
-            patch("kiro_crew.session.cleanup_stale_sandbox_profiles", return_value=0),
-            patch("kiro_crew.session._collect_active_pids", return_value=({}, True)),
-            patch("kiro_crew.session._periodic_pid_sweep", return_value=([], [])),
-            patch("kiro_crew.session._kill_confirmed_and_writeback", return_value=0),
-            patch("kiro_crew.session.cleanup_orphaned_session_roots", return_value=0),
-            patch("kiro_crew.session.find_orphan_mcp_candidates", return_value=[]),
-            patch("kiro_crew.session.shutdown_event") as mock_event,
+            patch("efm_go.session._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session.cleanup_stale_sandbox_profiles", return_value=0),
+            patch("efm_go.session._collect_active_pids", return_value=({}, True)),
+            patch("efm_go.session._periodic_pid_sweep", return_value=([], [])),
+            patch("efm_go.session._kill_confirmed_and_writeback", return_value=0),
+            patch("efm_go.session.cleanup_orphaned_session_roots", return_value=0),
+            patch("efm_go.session.find_orphan_mcp_candidates", return_value=[]),
+            patch("efm_go.session.shutdown_event") as mock_event,
         ):
             call_count = [0]
 
@@ -4137,18 +4137,18 @@ class TestCleanupLoop:
 
         with (
             patch.object(mgr, "_expire_idle", new_callable=AsyncMock) as mock_expire,
-            patch("kiro_crew.session._cleanup_orphaned_mcp_servers", return_value=0),
-            patch("kiro_crew.session.cleanup_stale_sandbox_profiles", return_value=0),
-            patch("kiro_crew.session._collect_active_pids", return_value=({}, True)),
-            patch("kiro_crew.session._periodic_pid_sweep", return_value=([], [])),
-            patch("kiro_crew.session._kill_confirmed_and_writeback", return_value=0),
-            patch("kiro_crew.session.cleanup_orphaned_session_roots", return_value=0),
-            patch("kiro_crew.session.find_orphan_mcp_candidates", return_value=[]),
-            patch("kiro_crew.session.shutdown_event") as mock_event,
+            patch("efm_go.session._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session.cleanup_stale_sandbox_profiles", return_value=0),
+            patch("efm_go.session._collect_active_pids", return_value=({}, True)),
+            patch("efm_go.session._periodic_pid_sweep", return_value=([], [])),
+            patch("efm_go.session._kill_confirmed_and_writeback", return_value=0),
+            patch("efm_go.session.cleanup_orphaned_session_roots", return_value=0),
+            patch("efm_go.session.find_orphan_mcp_candidates", return_value=[]),
+            patch("efm_go.session.shutdown_event") as mock_event,
         ):
             mock_event.is_set = lambda: mock_expire.await_count >= 1
             mock_event.wait = AsyncMock(side_effect=asyncio.TimeoutError)
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.session"):
                 await mgr._cleanup_loop()
 
         # Should clamp to 60
@@ -4160,7 +4160,7 @@ class TestCleanupLoop:
         cfg.session.timeout_secs = 120
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
 
-        with patch("kiro_crew.session.shutdown_event") as mock_event:
+        with patch("efm_go.session.shutdown_event") as mock_event:
             mock_event.is_set = lambda: True
             mock_event.wait = AsyncMock(return_value=None)
             # Should return immediately since shutdown is set
@@ -4191,20 +4191,20 @@ class TestCleanupLoop:
 
         with (
             patch.object(mgr, "_expire_idle", new_callable=AsyncMock),
-            patch("kiro_crew.session._cleanup_orphaned_mcp_servers", return_value=0),
+            patch("efm_go.session._cleanup_orphaned_mcp_servers", return_value=0),
             patch(
-                "kiro_crew.session.cleanup_stale_sandbox_profiles", side_effect=_fake_sweep
+                "efm_go.session.cleanup_stale_sandbox_profiles", side_effect=_fake_sweep
             ) as mock_sweep,
-            patch("kiro_crew.session._collect_active_pids", return_value=({}, True)),
-            patch("kiro_crew.session._periodic_pid_sweep", return_value=([], [])),
-            patch("kiro_crew.session._kill_confirmed_and_writeback", return_value=0),
-            patch("kiro_crew.session.cleanup_orphaned_session_roots", return_value=0),
-            patch("kiro_crew.session.find_orphan_mcp_candidates", return_value=[]),
-            patch("kiro_crew.session.shutdown_event") as mock_event,
+            patch("efm_go.session._collect_active_pids", return_value=({}, True)),
+            patch("efm_go.session._periodic_pid_sweep", return_value=([], [])),
+            patch("efm_go.session._kill_confirmed_and_writeback", return_value=0),
+            patch("efm_go.session.cleanup_orphaned_session_roots", return_value=0),
+            patch("efm_go.session.find_orphan_mcp_candidates", return_value=[]),
+            patch("efm_go.session.shutdown_event") as mock_event,
         ):
             mock_event.is_set = lambda: mock_sweep.call_count >= 1
             mock_event.wait = AsyncMock(side_effect=asyncio.TimeoutError)
-            with caplog.at_level(logging.INFO, logger="kiro_crew.session"):
+            with caplog.at_level(logging.INFO, logger="efm_go.session"):
                 await mgr._cleanup_loop()
 
         # Verify: sweep was called (production wiring). At least once, not
@@ -4486,7 +4486,7 @@ class TestClaudeBackendCompaction:
 
         mgr.set_compact_callback(cb)
 
-        with patch("kiro_crew.session._is_claude_backend", return_value=True):
+        with patch("efm_go.session._is_claude_backend", return_value=True):
             await mgr._compact_session("k1", 92.0)
 
         provider.compact.assert_awaited_once()
@@ -4505,8 +4505,8 @@ class TestClaudeBackendCompaction:
         mgr.set_compact_callback(cb)
 
         with (
-            patch("kiro_crew.session._is_claude_backend", return_value=True),
-            caplog.at_level(logging.ERROR, logger="kiro_crew.session"),
+            patch("efm_go.session._is_claude_backend", return_value=True),
+            caplog.at_level(logging.ERROR, logger="efm_go.session"),
         ):
             await mgr._compact_session("k1", 92.0)
 
@@ -4528,7 +4528,7 @@ class TestClaudeBackendCompaction:
         provider.context_usage_pct = lambda: 40.0
 
         with (
-            patch("kiro_crew.session._is_claude_backend", return_value=True),
+            patch("efm_go.session._is_claude_backend", return_value=True),
             patch.object(mgr, "_trigger_compaction") as mock_trigger,
         ):
             mgr.check_context_usage("k1", provider)
@@ -4545,7 +4545,7 @@ class TestClaudeBackendCompaction:
         provider, _, _ = await mgr.get_or_create("k1")
         mgr.release("k1")
 
-        with patch("kiro_crew.session._is_claude_backend", return_value=True):
+        with patch("efm_go.session._is_claude_backend", return_value=True):
             # Simulate compact in progress.
             mgr._compacting.add("k1")
             try:
@@ -4585,7 +4585,7 @@ class TestClaudeBackendCompaction:
         healthy REPLACEMENT for a key whose OLD session is still being torn
         down, get_or_create must reuse the replacement — not exile it and
         cold-start a duplicate provider that would overwrite and leak it."""
-        from kiro_crew.session import FirstTurnState, _Session
+        from efm_go.session import FirstTurnState, _Session
 
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         old_provider, _, _ = await mgr.get_or_create("k1")
@@ -4769,7 +4769,7 @@ class TestKiroInPlaceCompaction:
         end_turn). The stream watcher must latch it so the blind drain never
         eats it — otherwise wait_for_compaction would stall to timeout and
         wrongly recycle a just-compacted healthy session."""
-        from kiro_crew.acp.types import EVENT_COMPACTION_STATUS, AcpEvent
+        from efm_go.acp.types import EVENT_COMPACTION_STATUS, AcpEvent
 
         mid = AcpEvent(kind=EVENT_COMPACTION_STATUS, text="completed", title="sum")
         mgr = SessionManager(
@@ -4796,7 +4796,7 @@ class TestKiroInPlaceCompaction:
     @pytest.mark.asyncio
     async def test_inplace_never_uses_commands_execute(self, cfg):
         """Sending /compact
-        via the string form of _kiro.dev/commands/execute makes kiro-cli
+        via the string form of _efm.go/commands/execute makes kiro-cli
         2.14.0 exit rc=0. The auto-compact path must use the prompt
         transport (stream_command), never send_command."""
         mgr = SessionManager(
@@ -4932,7 +4932,7 @@ class TestKiroInPlaceCompaction:
         """If a racing cold-start replaced the entry while the in-place
         compact was still running, the failure recycle kills only the OLD
         session; the fresh replacement (and its session_map entry) survives."""
-        from kiro_crew.session import FirstTurnState, _Session
+        from efm_go.session import FirstTurnState, _Session
 
         gate = asyncio.Event()
 
@@ -4998,7 +4998,7 @@ class TestCompactFailureCooldown:
         mgr.release("k1")
         provider.compact = AsyncMock(side_effect=RuntimeError("boom"))
 
-        with patch("kiro_crew.session._is_claude_backend", return_value=True):
+        with patch("efm_go.session._is_claude_backend", return_value=True):
             await mgr._compact_session("k1", 92.0)
 
         assert mgr._compact_cooldown_until.get("k1", 0.0) > time.monotonic()
@@ -5026,7 +5026,7 @@ class TestCompactFailureCooldown:
         # Pre-existing cooldown from an earlier failure.
         mgr._compact_cooldown_until["k1"] = time.monotonic() + 60.0
 
-        with patch("kiro_crew.session._is_claude_backend", return_value=True):
+        with patch("efm_go.session._is_claude_backend", return_value=True):
             await mgr._compact_session("k1", 92.0)
 
         assert "k1" not in mgr._compact_cooldown_until
@@ -5072,10 +5072,10 @@ class TestCompactTimeout:
         mgr.set_compact_callback(cb)
 
         with (
-            patch("kiro_crew.session._is_claude_backend", return_value=True),
+            patch("efm_go.session._is_claude_backend", return_value=True),
             # Only the outer cap is scaled — see _COMPACT_RESULT_WAIT_FLOOR_SECS
             # note above if the inner wait must time out quickly.
-            patch("kiro_crew.session.COMPACT_WAIT_TIMEOUT_SECS", 0.05),
+            patch("efm_go.session.COMPACT_WAIT_TIMEOUT_SECS", 0.05),
         ):
             await mgr._compact_session("k1", 92.0)
 
@@ -5103,7 +5103,7 @@ class TestCompactCallbackSuccessFlag:
 
         mgr.set_compact_callback(cb)
 
-        with patch("kiro_crew.session._is_claude_backend", return_value=True):
+        with patch("efm_go.session._is_claude_backend", return_value=True):
             await mgr._compact_session("k1", 92.0)
 
         assert calls == [("k1", 92.0, True)]
@@ -5178,8 +5178,8 @@ class TestCloseAllPersistence:
     async def test_close_all_persists_acp_session_ids(self, cfg):
         from unittest.mock import MagicMock
 
-        from kiro_crew.providers.acp import AcpProvider
-        from kiro_crew.session import _Session
+        from efm_go.providers.acp import AcpProvider
+        from efm_go.session import _Session
 
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         mock_provider = MagicMock(spec=AcpProvider)
@@ -5269,7 +5269,7 @@ class TestSetCompactCallback:
     def test_warns_on_replace(self, cfg, caplog):
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         mgr.set_compact_callback(AsyncMock())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
             mgr.set_compact_callback(AsyncMock())
         assert any("already registered" in r.message for r in caplog.records)
 
@@ -5315,7 +5315,7 @@ class TestGetOrCreatePoolClaim:
 
     @pytest.mark.asyncio
     async def test_claims_from_pool_on_new_session(self, cfg):
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         cfg.session.pool_size = 1
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
@@ -5350,8 +5350,8 @@ class TestGetOrCreatePoolClaim:
         path calls client.rekey(), whose reset makes the first turn-end
         check_context_usage read 0%/unknown instead of firing compaction on
         an empty conversation."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.acp.client import AcpClient
+        from efm_go.providers.acp import AcpProvider
 
         cfg.session.pool_size = 1
         cfg.session.autocompact_pct = 90.0
@@ -5614,22 +5614,22 @@ class TestCleanupLoopResilience:
             if call_count == 1:
                 raise RuntimeError("simulated crash")
             # Force loop exit on second call
-            from kiro_crew import shutdown_event
+            from efm_go import shutdown_event
 
             shutdown_event.set()
 
-        import kiro_crew
+        import efm_go
 
-        kiro_crew.shutdown_event.clear()
+        efm_go.shutdown_event.clear()
         with (
             patch("asyncio.wait_for", side_effect=_fast_wait_for),
             patch.object(mgr, "_expire_idle", side_effect=_expire_then_stop),
-            patch("kiro_crew.session.find_orphan_mcp_candidates", return_value=[]),
+            patch("efm_go.session.find_orphan_mcp_candidates", return_value=[]),
         ):
             await asyncio.wait_for(mgr._cleanup_loop(), timeout=5)
 
         assert call_count >= 2
-        kiro_crew.shutdown_event.clear()
+        efm_go.shutdown_event.clear()
         await mgr.close_all()
 
     @pytest.mark.asyncio
@@ -5650,24 +5650,24 @@ class TestCleanupLoopResilience:
             return await real_wait_for(coro, timeout=timeout)
 
         async def _crash_and_stop(timeout):
-            from kiro_crew import shutdown_event
+            from efm_go import shutdown_event
 
             shutdown_event.set()
             raise ValueError("boom")
 
-        import kiro_crew
+        import efm_go
 
-        kiro_crew.shutdown_event.clear()
+        efm_go.shutdown_event.clear()
         with (
             patch("asyncio.wait_for", side_effect=_fast_wait_for),
             patch.object(mgr, "_expire_idle", side_effect=_crash_and_stop),
-            patch("kiro_crew.session.find_orphan_mcp_candidates", return_value=[]),
+            patch("efm_go.session.find_orphan_mcp_candidates", return_value=[]),
         ):
             with caplog.at_level(logging.ERROR):
                 await asyncio.wait_for(mgr._cleanup_loop(), timeout=5)
 
         assert "_expire_idle crashed" in caplog.text
-        kiro_crew.shutdown_event.clear()
+        efm_go.shutdown_event.clear()
         await mgr.close_all()
 
 
@@ -5693,7 +5693,7 @@ class TestGetBgSessionRecycle:
         sentinel = object()
         rt2.create_session = AsyncMock(return_value=sentinel)
 
-        with patch("kiro_crew.acp.runtime.AcpRuntime", side_effect=[rt2]):
+        with patch("efm_go.acp.runtime.AcpRuntime", side_effect=[rt2]):
             result = await mgr.get_bg_session()
 
         stale._is_stale.assert_awaited_once()
@@ -5731,7 +5731,7 @@ class TestGetBgSessionRecycle:
         sentinel = object()
         rt2.create_session = AsyncMock(return_value=sentinel)
 
-        with patch("kiro_crew.acp.runtime.AcpRuntime", side_effect=[rt2]):
+        with patch("efm_go.acp.runtime.AcpRuntime", side_effect=[rt2]):
             result = await mgr.get_bg_session()
 
         stale._is_stale.assert_awaited_once()
@@ -5764,7 +5764,7 @@ class TestGetBgSessionBackendSwitch:
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
         rt = self._fresh_runtime()
 
-        with patch("kiro_crew.acp.runtime.AcpRuntime", return_value=rt) as ctor:
+        with patch("efm_go.acp.runtime.AcpRuntime", return_value=rt) as ctor:
             result = await mgr.get_bg_session()
 
         assert ctor.call_args.kwargs["acp_backend"] == backend
@@ -5787,7 +5787,7 @@ class TestGetBgSessionBackendSwitch:
         mgr._bg_runtime = stranded
 
         rt2 = self._fresh_runtime()
-        with patch("kiro_crew.acp.runtime.AcpRuntime", return_value=rt2) as ctor:
+        with patch("efm_go.acp.runtime.AcpRuntime", return_value=rt2) as ctor:
             result = await mgr.get_bg_session()
 
         stranded.kill.assert_awaited_once()  # mismatched + idle → recycled
@@ -5816,7 +5816,7 @@ class TestGetBgSessionBackendSwitch:
         mgr._bg_runtime = busy
 
         rt2 = self._fresh_runtime()
-        with patch("kiro_crew.acp.runtime.AcpRuntime", return_value=rt2) as ctor:
+        with patch("efm_go.acp.runtime.AcpRuntime", return_value=rt2) as ctor:
             result = await mgr.get_bg_session()
 
         busy.kill.assert_not_awaited()  # live handles are never killed
@@ -5844,7 +5844,7 @@ class TestGetBgSessionBackendSwitch:
         mgr._draining_bg_runtimes.append(still_busy)
 
         rt = self._fresh_runtime()
-        with patch("kiro_crew.acp.runtime.AcpRuntime", return_value=rt):
+        with patch("efm_go.acp.runtime.AcpRuntime", return_value=rt):
             await mgr.get_bg_session()
 
         drained.kill.assert_awaited_once()  # drained → reaped
@@ -5890,7 +5890,7 @@ class TestGetBgSessionBackendSwitch:
         mgr._bg_runtime = cached
 
         with patch(
-            "kiro_crew.acp.runtime.AcpRuntime",
+            "efm_go.acp.runtime.AcpRuntime",
             side_effect=AssertionError("should not respawn a matching runtime"),
         ):
             result = await mgr.get_bg_session()
@@ -6003,8 +6003,8 @@ class TestRetireStaleBackendBgRuntime:
         with (
             patch.object(mgr, "start_pool", AsyncMock()),
             patch.object(mgr, "_retire_stale_backend_bg_runtime", AsyncMock()) as retire,
-            patch("kiro_crew.session.build_provider_factory", return_value=MagicMock()),
-            patch("kiro_crew.session.KiroCrewConfig.load", return_value=cfg),
+            patch("efm_go.session.build_provider_factory", return_value=MagicMock()),
+            patch("efm_go.session.KiroCrewConfig.load", return_value=cfg),
         ):
             await mgr.refresh_defaults()
 
@@ -6149,7 +6149,7 @@ class TestRetireStaleBackendBgRuntime:
                 mgr, "_provider_backed_bg_session", AsyncMock(return_value=provider_handle)
             ),
             patch(
-                "kiro_crew.acp.runtime.AcpRuntime",
+                "efm_go.acp.runtime.AcpRuntime",
                 side_effect=AssertionError("must not construct a runtime for a moved backend"),
             ),
         ):
@@ -6372,8 +6372,8 @@ class TestLoadRecoveryHistoryReplay:
     async def test_pending_replay_preserves_prior_sid_until_commit(
         self, cfg, monkeypatch, tmp_path
     ):
-        from kiro_crew.acp.types import PROVIDER_LABEL_DEFAULT
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.acp.types import PROVIDER_LABEL_DEFAULT
+        from efm_go.providers.acp import AcpProvider
 
         shutdown_started = asyncio.Event()
         release_shutdown = asyncio.Event()
@@ -6411,7 +6411,7 @@ class TestLoadRecoveryHistoryReplay:
             encoding="utf-8",
         )
         monkeypatch.setattr(
-            "kiro_crew.session_map._kiro_sessions_dir",
+            "efm_go.session_map._kiro_sessions_dir",
             lambda: native_sessions,
         )
 
@@ -6449,8 +6449,8 @@ class TestLoadRecoveryHistoryReplay:
     async def test_generic_load_recovery_promotes_fresh_sid_immediately(
         self, cfg, monkeypatch, tmp_path
     ):
-        from kiro_crew.acp.types import PROVIDER_LABEL_DEFAULT
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.acp.types import PROVIDER_LABEL_DEFAULT
+        from efm_go.providers.acp import AcpProvider
 
         def factory(session_key=None, agent=None, channel_id=None, **kwargs):
             provider = object.__new__(AcpProvider)
@@ -6480,7 +6480,7 @@ class TestLoadRecoveryHistoryReplay:
                 encoding="utf-8",
             )
         monkeypatch.setattr(
-            "kiro_crew.session_map._kiro_sessions_dir",
+            "efm_go.session_map._kiro_sessions_dir",
             lambda: native_sessions,
         )
 
@@ -6553,7 +6553,7 @@ class TestIneffectiveCompactionCooldown:
         provider.context_usage_pct = lambda: 40.0
         mgr._compact_cooldown_until["k1"] = time.monotonic() + 999
 
-        with patch("kiro_crew.session._is_claude_backend", return_value=True):
+        with patch("efm_go.session._is_claude_backend", return_value=True):
             await mgr._compact_session("k1", 92.0)
 
         assert "k1" not in mgr._compact_cooldown_until
@@ -6608,7 +6608,7 @@ class TestIneffectiveCompactionCooldown:
         unknown mid-turn -- would settle here and be recorded nowhere, so the
         ledger would be missing exactly the compactions that were hardest to
         measure."""
-        from kiro_crew.crew_log import emit as crew_log_emit
+        from efm_go.crew_log import emit as crew_log_emit
 
         seen: list[tuple[float, float]] = []
         monkeypatch.setattr(
@@ -6640,7 +6640,7 @@ class TestIneffectiveCompactionCooldown:
         mgr._compact_pending_verdict["dashboard:chat-1"] = 92.0
         provider.context_usage_pct = lambda: 91.0  # >= autocompact_pct (90)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
             mgr.check_context_usage("dashboard:chat-1", provider)
 
         assert "dashboard:chat-1" not in mgr._compact_pending_verdict
@@ -6680,7 +6680,7 @@ class TestIneffectiveCompactionCooldown:
         provider.compact = AsyncMock()
         provider.context_usage_pct = lambda: 92.0  # unchanged: stats never reset
 
-        with patch("kiro_crew.session._is_claude_backend", return_value=True):
+        with patch("efm_go.session._is_claude_backend", return_value=True):
             await mgr._compact_session("k1", 92.0)
 
         # Deferred, not damped: a successful compaction must not be punished.
@@ -6720,7 +6720,7 @@ class TestIneffectiveCompactionCooldown:
         cb = AsyncMock()
         mgr.set_compact_callback(cb)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.session"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.session"):
             await mgr._compact_session("dashboard:chat-1", 92.0)
 
         assert mgr._compact_cooldown_until.get("dashboard:chat-1", 0.0) > time.monotonic()
@@ -6748,8 +6748,8 @@ class TestIneffectiveCompactionCooldown:
         mgr.set_compact_callback(cb)
 
         with (
-            patch("kiro_crew.session._is_claude_backend", return_value=True),
-            caplog.at_level(logging.WARNING, logger="kiro_crew.session"),
+            patch("efm_go.session._is_claude_backend", return_value=True),
+            caplog.at_level(logging.WARNING, logger="efm_go.session"),
         ):
             await mgr._compact_session("k1", 92.0)
 
@@ -6768,7 +6768,7 @@ class TestIneffectiveCompactionCooldown:
         circuit breaker: when the stuck session's turns keep failing,
         ``record_failure`` trips at ``_CIRCUIT_BREAKER_THRESHOLD`` and the
         forced reset clears the cooldown along with the session."""
-        from kiro_crew.session import _CIRCUIT_BREAKER_THRESHOLD
+        from efm_go.session import _CIRCUIT_BREAKER_THRESHOLD
 
         mgr = SessionManager(cfg, provider_factory=self._inplace_factory(pct_after=91.0))
         await mgr.get_or_create("dashboard:chat-1")
@@ -6859,8 +6859,8 @@ class TestParentEndCancelsItsChildren:
     @pytest.mark.asyncio
     async def test_parent_end_cancels_owned_followup_without_recreating_session(self, cfg):
         """A queued continuation cannot outlive the parent that accepted it."""
-        from kiro_crew.subagent import SubagentInfo
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent import SubagentInfo
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         parent = "dashboard:chat-9"
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
@@ -7015,7 +7015,7 @@ class TestParentEndCancelsItsChildren:
         mgr.release("dashboard:chat-9")
 
         with patch(
-            "kiro_crew.session._provider_uses_kiro_identity_store",
+            "efm_go.session._provider_uses_kiro_identity_store",
             return_value=True,
         ):
             retired, _complete = await mgr.retire_kiro_identity_sessions()
@@ -7176,7 +7176,7 @@ class TestParentEndCancelsItsChildren:
         mgr.set_child_teardown_handler(_SlowHandler())
         await mgr.get_or_create("dashboard:chat-9")
 
-        with patch("kiro_crew.session_lifecycle._CHILD_CANCEL_TIMEOUT_SECS", 0.01):
+        with patch("efm_go.session_lifecycle._CHILD_CANCEL_TIMEOUT_SECS", 0.01):
             await mgr.remove("dashboard:chat-9")
 
         await _asyncio.wait_for(finished.wait(), timeout=5)
@@ -7202,7 +7202,7 @@ class TestParentEndCancelsItsChildren:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         def _run(agent_id, *, awaiting, started):
             return SimpleNamespace(
@@ -7270,7 +7270,7 @@ class TestParentEndCancelsItsChildren:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         def _run(agent_id: str, *, done: bool, reported: bool, held=0.0, queued=False):
             info = SimpleNamespace(
@@ -7382,8 +7382,8 @@ class TestParentEndCancelsItsChildren:
         import ast
         import pathlib
 
-        import kiro_crew.subagent as _subagent_mod
-        from kiro_crew.subagent import DELIVERY_ROUTING_FIELDS, DELIVERY_ROUTING_MODULES
+        import efm_go.subagent as _subagent_mod
+        from efm_go.subagent import DELIVERY_ROUTING_FIELDS, DELIVERY_ROUTING_MODULES
 
         root = pathlib.Path(_subagent_mod.__file__).resolve().parent
         written: set[str] = set()
@@ -7426,7 +7426,7 @@ class TestParentEndCancelsItsChildren:
         A classification nothing reads is a classification that can be wrong, so this drives
         one field at a time rather than trusting the table's shape.
         """
-        from kiro_crew.subagent import (
+        from efm_go.subagent import (
             DELIVERY_ROUTING_FIELDS,
             PARKS_WHEN_SET,
             PARKS_WHEN_UNSET,
@@ -7476,7 +7476,7 @@ class TestParentEndCancelsItsChildren:
         """
         import logging
 
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         class _Admission:
             async def taskq_row_is_claimed_unstarted_async(self, agent_id):
@@ -7506,7 +7506,7 @@ class TestParentEndCancelsItsChildren:
 
         coordinator = CancellationCoordinator(_Manager())  # type: ignore[arg-type]
 
-        with caplog.at_level(logging.INFO, logger="kiro_crew.subagent"):
+        with caplog.at_level(logging.INFO, logger="efm_go.subagent"):
             await coordinator.cancel_for_teardown_impl(
                 ("in-window",),
                 parent_session_key="dashboard:chat-9",
@@ -7535,7 +7535,7 @@ class TestParentEndCancelsItsChildren:
         import ast
         import inspect
 
-        from kiro_crew import session_lifecycle
+        from efm_go import session_lifecycle
 
         tree = ast.parse(inspect.getsource(session_lifecycle))
         # EVERY method that reaches the teardown names itself, with no exemption: the
@@ -7608,7 +7608,7 @@ class TestParentEndCancelsItsChildren:
         Both halves are asserted: the store cancel is asked to refuse an ``admitted`` row,
         and the refusal does not then reach the live reap through the other door.
         """
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         asked: list[bool] = []
         reaped: list[str] = []
@@ -7674,7 +7674,7 @@ class TestParentEndCancelsItsChildren:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         reaped: list[str] = []
 
@@ -7751,7 +7751,7 @@ class TestParentEndCancelsItsChildren:
         """
         from types import SimpleNamespace
 
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         sync_store_calls: list[str] = []
         reaped: list[str] = []
@@ -7918,7 +7918,7 @@ class TestParentEndCancelsItsChildren:
                 # The identity marker is what selects a session for this sweep, and the
                 # sweep reports a failure rather than raising it.
                 with patch(
-                    "kiro_crew.session._provider_uses_kiro_identity_store",
+                    "efm_go.session._provider_uses_kiro_identity_store",
                     return_value=True,
                 ):
                     await mgr.retire_kiro_identity_sessions()
@@ -7993,8 +7993,8 @@ class TestParentEndCancelsItsChildren:
         import asyncio as _asyncio
         from types import SimpleNamespace
 
-        from kiro_crew.subagent import delivery_is_parked
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent import delivery_is_parked
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         async def _forever():
             await _asyncio.Event().wait()
@@ -8065,7 +8065,7 @@ class TestParentEndCancelsItsChildren:
         import asyncio as _asyncio
         from types import SimpleNamespace
 
-        from kiro_crew.subagent_manager.cancellation import CancellationCoordinator
+        from efm_go.subagent_manager.cancellation import CancellationCoordinator
 
         async def _forever():
             await _asyncio.Event().wait()
@@ -8126,7 +8126,7 @@ class TestParentEndCancelsItsChildren:
         import pathlib
         import re
 
-        root = pathlib.Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        root = pathlib.Path(__file__).resolve().parent.parent / "src" / "efm_go"
         offenders: list[str] = []
         for path in root.rglob("*.py"):
             if path.name == "session_lifecycle.py":
@@ -8156,7 +8156,7 @@ class TestParentEndCancelsItsChildren:
         import pathlib
         import re
 
-        root = pathlib.Path(__file__).resolve().parent.parent / "src" / "kiro_crew"
+        root = pathlib.Path(__file__).resolve().parent.parent / "src" / "efm_go"
         # The module that DEFINES ``reset`` names the keyword in its own docstring, which
         # is not a call site.
         defines_it = {"session_lifecycle.py"}
@@ -8238,7 +8238,7 @@ class TestParentEndCancelsItsChildren:
         import ast
         import inspect
 
-        from kiro_crew import session_lifecycle
+        from efm_go import session_lifecycle
 
         tree = ast.parse(inspect.getsource(session_lifecycle))
         required = {"_snapshot_parent_children", "_cancel_parent_children"}

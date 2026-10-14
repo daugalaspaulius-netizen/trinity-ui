@@ -1,4 +1,4 @@
-"""Failure-branch coverage for :mod:`kiro_crew.slack.handler`.
+"""Failure-branch coverage for :mod:`efm_go.slack.handler`.
 
 ``test_slack_handler.py`` and ``test_slack_handler_coverage.py`` drive the happy
 paths of the Slack command surface. This module deliberately targets what they
@@ -21,12 +21,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from conftest import MockSlackClient
-from kiro_crew import agent_discovery
-from kiro_crew.config.loader import ConfigReadError
-from kiro_crew.messaging import auto_title
-from kiro_crew.messaging import commands as mc
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.slack import handler as h
+from efm_go import agent_discovery
+from efm_go.config.loader import ConfigReadError
+from efm_go.messaging import auto_title
+from efm_go.messaging import commands as mc
+from efm_go.providers.base import LLMEvent
+from efm_go.slack import handler as h
 
 # ──────────────────────────────────────────────────────────────────────
 # doubles

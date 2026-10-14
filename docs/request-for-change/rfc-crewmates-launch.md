@@ -413,22 +413,22 @@ The launch is complete when, on main:
 
 Open at the time of writing:
 
-- [#12797](https://github.com/kirodotdev/KiroCrew/pull/12797) — reply threads,
+- [#12797](https://efmleads.com/pull/12797) — reply threads,
   API half (screen 07).
-- [#12798](https://github.com/kirodotdev/KiroCrew/pull/12798) — one-time
+- [#12798](https://efmleads.com/pull/12798) — one-time
   startup prune of sync-generated crewmates (screen 03).
-- [#14897](https://github.com/kirodotdev/KiroCrew/pull/14897) — the revised
+- [#14897](https://efmleads.com/pull/14897) — the revised
   § 03 rule: package-sourced rows and the Crewmates-page definition of
   "chatted with".
-- [#12805](https://github.com/kirodotdev/KiroCrew/pull/12805) — crewmate
+- [#12805](https://efmleads.com/pull/12805) — crewmate
   panel: Notes, Work log, Dashboard (screen 06).
-- [#12806](https://github.com/kirodotdev/KiroCrew/pull/12806) — Customize
+- [#12806](https://efmleads.com/pull/12806) — Customize
   page and crewmate vocabulary (screens 01 and 04, § 3).
 
 Branches not yet open as PRs; each will add its number to
 `implementation-prs` when it opens:
 
-- [#12924](https://github.com/kirodotdev/KiroCrew/pull/12924) — empty state,
+- [#12924](https://efmleads.com/pull/12924) — empty state,
   New crewmate and the returning-visit landing (screen 02).
 - `feat/crewmate-chat-bubbles` — chat shows only what it says to you, grouped
   bubbles (screen 05).

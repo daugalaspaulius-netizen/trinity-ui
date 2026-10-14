@@ -17,12 +17,12 @@ import asyncio
 import json
 from pathlib import Path
 
-from kiro_crew.testing.fake_channel_wire import (
+from efm_go.testing.fake_channel_wire import (
     FakeWireSession,
     FakeWireWebSocket,
     WireResponse,
 )
-from kiro_crew.wecom.client import WECOM_MAX_REPLY_BYTES, WeComClient
+from efm_go.wecom.client import WECOM_MAX_REPLY_BYTES, WeComClient
 
 CHANNEL_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "channels"
 

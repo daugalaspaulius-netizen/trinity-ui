@@ -44,9 +44,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.apps.builtins.dev_fleet import gateway_service
-from kiro_crew.dashboard.handlers import themes as themes_mod
-from kiro_crew.service import macos as svc_macos
+from efm_go.apps.builtins.dev_fleet import gateway_service
+from efm_go.dashboard.handlers import themes as themes_mod
+from efm_go.service import macos as svc_macos
 
 POSIX_ONLY = pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits only")
 

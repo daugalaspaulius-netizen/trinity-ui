@@ -29,7 +29,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent, mcp_cleanup, mcp_discovery, onboarding_import
+from efm_go import agent, mcp_cleanup, mcp_discovery, onboarding_import
 
 DASH_SERVER = "kirocrew-dashboard"
 DASH_SUBCOMMAND = "mcp-dashboard"
@@ -46,7 +46,7 @@ class TestRegistryParity:
     def test_tool_module_is_mapped_for_in_process_listing(self) -> None:
         """Discovery reads tool names in-process; an unmapped server lists zero."""
         assert (
-            mcp_discovery._MANAGED_SERVER_TOOL_MODULES.get(DASH_SERVER) == "kiro_crew.mcp_dashboard"
+            mcp_discovery._MANAGED_SERVER_TOOL_MODULES.get(DASH_SERVER) == "efm_go.mcp_dashboard"
         )
 
     def test_spec_carries_no_auto_approve(self) -> None:
@@ -86,7 +86,7 @@ class TestDoctorTreatsItAsAssignedNotMissing:
         For tools that rewrite the user's session layout that would delete the
         deny floor and the governance ceiling in one step.
         """
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         assert DASH_SERVER in cli_doctor._NO_BLANKET_ALLOW_MCPS
 
@@ -100,7 +100,7 @@ class TestDoctorTreatsItAsAssignedNotMissing:
         """
         import json
 
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         spec_path = tmp_path / "kirocrew.json"
         spec = {
@@ -124,7 +124,7 @@ class TestDoctorTreatsItAsAssignedNotMissing:
         """The mirror half: a ref mounting a server the spec never defines."""
         import json
 
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         spec_path = tmp_path / "kirocrew.json"
         spec = {
@@ -145,7 +145,7 @@ class TestDoctorTreatsItAsAssignedNotMissing:
         """A default install has no grant, and that is the healthy state."""
         import json
 
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         spec = tmp_path / "kirocrew.json"
         spec.write_text(
@@ -237,7 +237,7 @@ class TestAHandWrittenGrantIsUserInput:
     ) -> None:
         import json
 
-        from kiro_crew import cli_doctor
+        from efm_go import cli_doctor
 
         spec_path = tmp_path / "kirocrew.json"
         spec_path.write_text(
@@ -394,13 +394,13 @@ class TestWhatThisSetGrants:
     GRANTED_TOOLS = FOLDER_TOOLS | TAG_TOOLS | COLUMN_TOOLS | PIN_TOOLS | SESSION_TOOLS
 
     def test_the_set_is_exactly_the_folder_tools(self) -> None:
-        from kiro_crew import mcp_dashboard
+        from efm_go import mcp_dashboard
 
         assert {t["name"] for t in mcp_dashboard._tool_definitions()} == self.GRANTED_TOOLS
 
     def test_the_advertised_list_is_the_set(self) -> None:
         """Reaching the process means the set was assigned; nothing is hidden."""
-        from kiro_crew import mcp_dashboard
+        from efm_go import mcp_dashboard
 
         assert {t["name"] for t in mcp_dashboard._list_tools()} == self.GRANTED_TOOLS
 
@@ -419,7 +419,7 @@ class TestWhatThisSetGrants:
         an accident. If either class disappears from the server, this fails and
         whoever changed it has to say which half they meant to drop.
         """
-        from kiro_crew import mcp_dashboard
+        from efm_go import mcp_dashboard
 
         names = {t["name"] for t in mcp_dashboard._tool_definitions()}
         folder = {n for n in names if n.startswith("chat_folder_")}

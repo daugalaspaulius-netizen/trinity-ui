@@ -14,7 +14,7 @@ import pathlib
 
 import pytest
 
-from kiro_crew.cloud import iam
+from efm_go.cloud import iam
 
 _FIXTURE = (
     pathlib.Path(__file__).resolve().parent / "fixtures" / "cfn_schema_handler_permissions.json"

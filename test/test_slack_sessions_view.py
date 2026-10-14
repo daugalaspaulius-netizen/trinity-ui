@@ -1,9 +1,9 @@
 """Tests for the shared Slack sessions view.
 
-Covers the helpers in ``kiro_crew.slack.sessions_view`` that the slash command
+Covers the helpers in ``efm_go.slack.sessions_view`` that the slash command
 ``/<command> sessions``, the ``sessions`` keyword in DMs, and the App
 Home Tab all share, plus the keyword handler in
-``kiro_crew.slack.handler`` which delegates to those helpers.
+``efm_go.slack.handler`` which delegates to those helpers.
 """
 
 from __future__ import annotations
@@ -21,9 +21,9 @@ import pytest
 from source_corpus import parsed_candidates
 
 from conftest import MockSlackClient
-from kiro_crew.slack import sessions_view
-from kiro_crew.slack.handler import _handle_sessions_command, _is_sessions_keyword
-from kiro_crew.slack.sessions_view import (
+from efm_go.slack import sessions_view
+from efm_go.slack.handler import _handle_sessions_command, _is_sessions_keyword
+from efm_go.slack.sessions_view import (
     _SESSION_KIND_DASHBOARD,
     _SESSION_KIND_OTHER,
     _SESSION_KIND_TASKRUNNER,
@@ -130,12 +130,12 @@ class TestCollectRecentSessions:
     def sess_dir(self, tmp_path, monkeypatch):
         d = tmp_path / "sessions"
         d.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", d)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", d)
         return d
 
     def test_missing_dir_returns_empty(self, tmp_path, monkeypatch):
         # Point at a directory that doesn't exist
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", tmp_path / "nope")
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", tmp_path / "nope")
         assert _collect_recent_sessions(None) == []
 
     def test_reads_dashboard_session(self, sess_dir):
@@ -331,7 +331,7 @@ class TestEndedRowsLeaveTheList:
     def sess_dir(self, tmp_path, monkeypatch):
         d = tmp_path / "sessions"
         d.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", d)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", d)
         return d
 
     def test_dismissed_row_is_left_out(self, sess_dir):
@@ -444,7 +444,7 @@ class TestChannelStemsResolveToTheirRealKey:
     def sess_dir(self, tmp_path, monkeypatch):
         d = tmp_path / "sessions"
         d.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", d)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", d)
         return d
 
     def test_live_channel_session_is_not_read_as_idle(self, sess_dir):
@@ -601,7 +601,7 @@ class TestSessionsIncludeEndedArgument:
             return []
 
         slack = MockSlackClient()
-        with patch("kiro_crew.slack.handler._collect_recent_sessions_off_loop", _fake):
+        with patch("efm_go.slack.handler._collect_recent_sessions_off_loop", _fake):
             await _handle_sessions_command(
                 "sessions all", slack, "C1", "1.0", "1.0", "slack:C1", None
             )
@@ -616,7 +616,7 @@ class TestSessionsIncludeEndedArgument:
             return []
 
         slack = MockSlackClient()
-        with patch("kiro_crew.slack.handler._collect_recent_sessions_off_loop", _fake):
+        with patch("efm_go.slack.handler._collect_recent_sessions_off_loop", _fake):
             await _handle_sessions_command(
                 "sessions", slack, "C1", "1.0", "1.0", "slack:C1", None
             )
@@ -825,7 +825,7 @@ class TestHandleSessionsCommandDelegation:
     async def test_empty_posts_no_recent_sessions_message(self, tmp_path, monkeypatch):
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
 
         slack = MockSlackClient()
         await _handle_sessions_command(
@@ -841,7 +841,7 @@ class TestHandleSessionsCommandDelegation:
     async def test_renders_blocks_via_shared_builder(self, tmp_path, monkeypatch):
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
         _write_jsonl(
             sess_dir / "dashboard_chat-1.jsonl",
             title="Hello",
@@ -873,11 +873,11 @@ class TestHandleSessionsCommandDelegation:
     async def test_logs_sel_audit_on_access(self, tmp_path, monkeypatch):
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
         _write_jsonl(sess_dir / "dashboard_a.jsonl", title="t", messages=[("user", "x")])
 
         slack = MockSlackClient()
-        with patch("kiro_crew.slack.handler.sel") as mock_sel:
+        with patch("efm_go.slack.handler.sel") as mock_sel:
             mock_sel.return_value.log_api_access = MagicMock()
             await _handle_sessions_command(
                 "sessions",
@@ -903,7 +903,7 @@ class TestHandleSessionsCommandDelegation:
         so a card for a live session renders as ``in_progress`` (🟢)."""
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
         _write_jsonl(
             sess_dir / "dashboard_chat-1.jsonl",
             title="Live chat",
@@ -939,10 +939,10 @@ class TestHandleSessionsCommandDelegation:
         slack = MockSlackClient()
         with (
             patch(
-                "kiro_crew.slack.sessions_view._collect_recent_sessions",
+                "efm_go.slack.sessions_view._collect_recent_sessions",
                 side_effect=OSError("disk error"),
             ),
-            patch("kiro_crew.slack.handler.sel") as mock_sel,
+            patch("efm_go.slack.handler.sel") as mock_sel,
         ):
             mock_sel.return_value.log_api_access = MagicMock()
             await _handle_sessions_command(
@@ -980,10 +980,10 @@ class TestHandleSessionsCommandDelegation:
         leaked_key = "AKIAIOSFODNN7EXAMPLE"
         with (
             patch(
-                "kiro_crew.slack.sessions_view._collect_recent_sessions",
+                "efm_go.slack.sessions_view._collect_recent_sessions",
                 side_effect=OSError(f"failed reading {leaked_key} from path"),
             ),
-            patch("kiro_crew.slack.handler.sel") as mock_sel,
+            patch("efm_go.slack.handler.sel") as mock_sel,
         ):
             mock_sel.return_value.log_api_access = MagicMock()
             await _handle_sessions_command(
@@ -1019,11 +1019,11 @@ class TestSlashSessionsAudit:
     async def test_slash_logs_sel_audit_with_caller_and_count(
         self, tmp_path, monkeypatch
     ):
-        from kiro_crew.slack.events import _handle_sessions
+        from efm_go.slack.events import _handle_sessions
 
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
         _write_jsonl(
             sess_dir / "dashboard_chat-1.jsonl",
             title="t",
@@ -1039,9 +1039,9 @@ class TestSlashSessionsAudit:
             respond(*a, **kw)
 
         with (
-            patch("kiro_crew.slack.events.sel") as mock_sel,
-            patch("kiro_crew.slack.events.is_owner", return_value=True),
-            patch("kiro_crew.slack.events.is_allowed_user", return_value=False),
+            patch("efm_go.slack.events.sel") as mock_sel,
+            patch("efm_go.slack.events.is_owner", return_value=True),
+            patch("efm_go.slack.events.is_allowed_user", return_value=False),
         ):
             mock_sel.return_value.log_api_access = MagicMock()
             await _handle_sessions(orch, "UCALLER", "", _arespond)
@@ -1060,11 +1060,11 @@ class TestSlashSessionsAudit:
     ):
         """The audit fires before the empty-rows check so the access
         attempt is recorded even when there is nothing to display."""
-        from kiro_crew.slack.events import _handle_sessions
+        from efm_go.slack.events import _handle_sessions
 
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
 
         orch = MagicMock()
         orch.sessions = MagicMock()
@@ -1074,9 +1074,9 @@ class TestSlashSessionsAudit:
             respond(*a, **kw)
 
         with (
-            patch("kiro_crew.slack.events.sel") as mock_sel,
-            patch("kiro_crew.slack.events.is_owner", return_value=True),
-            patch("kiro_crew.slack.events.is_allowed_user", return_value=False),
+            patch("efm_go.slack.events.sel") as mock_sel,
+            patch("efm_go.slack.events.is_owner", return_value=True),
+            patch("efm_go.slack.events.is_allowed_user", return_value=False),
         ):
             mock_sel.return_value.log_api_access = MagicMock()
             await _handle_sessions(orch, "UCALLER", "", _arespond)
@@ -1101,11 +1101,11 @@ class TestSlashSessionsAudit:
         unauthorized read attempts show up in the audit pipeline.
         Mirror of the keyword path's gate in handler.py:1868.
         """
-        from kiro_crew.slack.events import _handle_sessions
+        from efm_go.slack.events import _handle_sessions
 
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
         # Real session on disk so we can prove the collector was NOT called
         # via the absence of the success-path audit (only the denied audit
         # should fire, and the response should be the permission-denied msg).
@@ -1123,9 +1123,9 @@ class TestSlashSessionsAudit:
             respond(*a, **kw)
 
         with (
-            patch("kiro_crew.slack.events.sel") as mock_sel,
-            patch("kiro_crew.slack.events.is_owner", return_value=False),
-            patch("kiro_crew.slack.events.is_allowed_user", return_value=False),
+            patch("efm_go.slack.events.sel") as mock_sel,
+            patch("efm_go.slack.events.is_owner", return_value=False),
+            patch("efm_go.slack.events.is_allowed_user", return_value=False),
         ):
             mock_sel.return_value.log_api_access = MagicMock()
             await _handle_sessions(orch, "UATTACKER", "skim", _arespond)
@@ -1158,11 +1158,11 @@ class TestSlashSessionsAudit:
         still grants access. Locks in that the auth check accepts allowed-list
         users, not just the owner.
         """
-        from kiro_crew.slack.events import _handle_sessions
+        from efm_go.slack.events import _handle_sessions
 
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
         _write_jsonl(
             sess_dir / "dashboard_chat-1.jsonl",
             title="t",
@@ -1178,9 +1178,9 @@ class TestSlashSessionsAudit:
             respond(*a, **kw)
 
         with (
-            patch("kiro_crew.slack.events.sel") as mock_sel,
-            patch("kiro_crew.slack.events.is_owner", return_value=False),
-            patch("kiro_crew.slack.events.is_allowed_user", return_value=True),
+            patch("efm_go.slack.events.sel") as mock_sel,
+            patch("efm_go.slack.events.is_owner", return_value=False),
+            patch("efm_go.slack.events.is_allowed_user", return_value=True),
         ):
             mock_sel.return_value.log_api_access = MagicMock()
             await _handle_sessions(orch, "UALLOWED", "", _arespond)
@@ -1196,7 +1196,7 @@ class TestSlashSessionsAudit:
         raises, mirroring the Home Tab error-path pattern. Without this, an
         IO failure would skip the audit entirely.
         """
-        from kiro_crew.slack.events import _handle_sessions
+        from efm_go.slack.events import _handle_sessions
 
         orch = MagicMock()
         orch.sessions = MagicMock()
@@ -1206,11 +1206,11 @@ class TestSlashSessionsAudit:
             respond(*a, **kw)
 
         with (
-            patch("kiro_crew.slack.events.sel") as mock_sel,
-            patch("kiro_crew.slack.events.is_owner", return_value=True),
-            patch("kiro_crew.slack.events.is_allowed_user", return_value=False),
+            patch("efm_go.slack.events.sel") as mock_sel,
+            patch("efm_go.slack.events.is_owner", return_value=True),
+            patch("efm_go.slack.events.is_allowed_user", return_value=False),
             patch(
-                "kiro_crew.slack.sessions_view._collect_recent_sessions",
+                "efm_go.slack.sessions_view._collect_recent_sessions",
                 side_effect=OSError("disk error"),
             ),
         ):
@@ -1240,7 +1240,7 @@ class TestSlashSessionsAudit:
         leaked AWS access key), the SEL audit's ``error=`` field MUST be
         redacted before truncation. Locks in redact-then-truncate ordering.
         """
-        from kiro_crew.slack.events import _handle_sessions
+        from efm_go.slack.events import _handle_sessions
 
         orch = MagicMock()
         orch.sessions = MagicMock()
@@ -1251,11 +1251,11 @@ class TestSlashSessionsAudit:
 
         leaked_key = "AKIAIOSFODNN7EXAMPLE"
         with (
-            patch("kiro_crew.slack.events.sel") as mock_sel,
-            patch("kiro_crew.slack.events.is_owner", return_value=True),
-            patch("kiro_crew.slack.events.is_allowed_user", return_value=False),
+            patch("efm_go.slack.events.sel") as mock_sel,
+            patch("efm_go.slack.events.is_owner", return_value=True),
+            patch("efm_go.slack.events.is_allowed_user", return_value=False),
             patch(
-                "kiro_crew.slack.sessions_view._collect_recent_sessions",
+                "efm_go.slack.sessions_view._collect_recent_sessions",
                 side_effect=OSError(f"failed reading {leaked_key} from path"),
             ),
         ):
@@ -1294,7 +1294,7 @@ class TestWithMessagesBoundsTheRead:
         return d, p
 
     def test_it_reads_only_the_metadata_line(self, tmp_path, monkeypatch):
-        from kiro_crew.messaging import sessions_view as sv
+        from efm_go.messaging import sessions_view as sv
 
         d, path = self._seed(tmp_path)
         # Measured on the FILE, so this cannot pass by the collector reading
@@ -1321,7 +1321,7 @@ class TestWithMessagesBoundsTheRead:
 
     def test_the_default_still_reads_the_preview(self, tmp_path):
         """Non-vacuity: the bound is scoped to the flag, not applied always."""
-        from kiro_crew.messaging import sessions_view as sv
+        from efm_go.messaging import sessions_view as sv
 
         d, _ = self._seed(tmp_path)
         rows = sv._collect_recent_sessions(None, limit=5, sessions_dir=d)
@@ -1333,7 +1333,7 @@ class TestBoundedTranscriptReads:
     def sess_dir(self, tmp_path, monkeypatch):
         d = tmp_path / "sessions"
         d.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", d)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", d)
         return d
 
     def _seed_many(self, sess_dir: Path, count: int, *, prefix: str = "dashboard_chat-") -> None:
@@ -1405,7 +1405,7 @@ class TestCollectorEventLoopOffload:
     async def test_off_loop_wrapper_runs_collector_in_worker_thread(self, tmp_path, monkeypatch):
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
         _write_jsonl(sess_dir / "dashboard_a.jsonl", title="t", messages=[("user", "x")])
 
         seen: dict = {}
@@ -1435,7 +1435,7 @@ class TestCollectorEventLoopOffload:
         """
         sess_dir = tmp_path / "sessions"
         sess_dir.mkdir()
-        monkeypatch.setattr("kiro_crew.slack.sessions_view._SESSIONS_DIR", sess_dir)
+        monkeypatch.setattr("efm_go.slack.sessions_view._SESSIONS_DIR", sess_dir)
         for i in range(25):
             _write_jsonl(
                 sess_dir / f"dashboard_chat-{i}.jsonl",
@@ -1542,7 +1542,7 @@ class TestOffLoopStructuralRatchet:
         the func of a Call node."""
         import ast
 
-        import kiro_crew.slack.interactions as interactions_mod
+        import efm_go.slack.interactions as interactions_mod
 
         tree = ast.parse(Path(interactions_mod.__file__).read_text(encoding="utf-8"))
         direct_calls = [

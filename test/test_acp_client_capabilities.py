@@ -7,7 +7,7 @@ agent assumed the all-false default.
 
 from pathlib import Path
 
-from kiro_crew.acp.types import ACP_CLIENT_CAPABILITIES
+from efm_go.acp.types import ACP_CLIENT_CAPABILITIES
 
 
 def test_elicitation_is_not_advertised_without_a_handler() -> None:
@@ -51,9 +51,9 @@ def test_both_acp_transports_send_capabilities() -> None:
     host must name the constant itself.
     """
     for rel in (
-        "src/kiro_crew/acp/client.py",
-        "src/kiro_crew/acp/harness/kiro.py",
-        "src/kiro_crew/acp/harness/kas.py",
+        "src/efm_go/acp/client.py",
+        "src/efm_go/acp/harness/kiro.py",
+        "src/efm_go/acp/harness/kas.py",
     ):
         src = Path(__file__).resolve().parents[1] / rel
         # encoding is explicit: read_text() defaults to the locale codec, which
@@ -69,7 +69,7 @@ def test_the_shared_process_transport_reads_capabilities_from_its_host() -> None
     actually sent, and the drift is invisible: both spellings compile and only a
     live session shows which set went out.
     """
-    src = Path(__file__).resolve().parents[1] / "src/kiro_crew/acp/runtime.py"
+    src = Path(__file__).resolve().parents[1] / "src/efm_go/acp/runtime.py"
     text = src.read_text(encoding="utf-8")
     # The declaration is read from the harness; the runtime only fills the
     # settings channel a host declares (``client_meta_settings``) before sending.
@@ -89,7 +89,7 @@ def test_both_acp_transports_send_client_info_name() -> None:
     "kirocrew"). AcpRuntime sends the nested form on BOTH transports. Asserted on source because neither params
     dict is reachable without spawning a real agent subprocess.
     """
-    for rel in ("src/kiro_crew/acp/client.py", "src/kiro_crew/acp/runtime.py"):
+    for rel in ("src/efm_go/acp/client.py", "src/efm_go/acp/runtime.py"):
         src = Path(__file__).resolve().parents[1] / rel
         text = src.read_text(encoding="utf-8")
         assert '"clientInfo": {"name": CLIENT_NAME' in text, rel
@@ -108,13 +108,13 @@ def test_client_version_is_the_package_version() -> None:
 
     Binding it to `__version__` is also what makes it track the two places the
     version really moves: a release lane rewriting the literal in
-    `kiro_crew/__init__.py`, and a repackager's `BUILD_VERSION` stamp, which that
+    `efm_go/__init__.py`, and a repackager's `BUILD_VERSION` stamp, which that
     module resolves at import before any reader copies the attribute.
     """
-    import kiro_crew
-    from kiro_crew.acp import client
+    import efm_go
+    from efm_go.acp import client
 
-    assert client.CLIENT_VERSION == kiro_crew.__version__
+    assert client.CLIENT_VERSION == efm_go.__version__
 
 
 def test_client_identity_is_declared_once_for_both_transports() -> None:
@@ -129,12 +129,12 @@ def test_client_identity_is_declared_once_for_both_transports() -> None:
     Checked on source as well as by identity because an equal-but-separate
     literal passes the value check on the day it is written and drifts later.
     """
-    from kiro_crew.acp import client, runtime
+    from efm_go.acp import client, runtime
 
     assert runtime.CLIENT_NAME is client.CLIENT_NAME
     assert runtime.CLIENT_VERSION is client.CLIENT_VERSION
 
-    text = (Path(__file__).resolve().parents[1] / "src/kiro_crew/acp/runtime.py").read_text(
+    text = (Path(__file__).resolve().parents[1] / "src/efm_go/acp/runtime.py").read_text(
         encoding="utf-8"
     )
     assert "CLIENT_NAME = " not in text

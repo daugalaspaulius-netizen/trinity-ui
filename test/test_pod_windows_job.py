@@ -9,8 +9,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import platform_compat as pc
-from kiro_crew.pod import _windows_job as jobs
+from efm_go import platform_compat as pc
+from efm_go.pod import _windows_job as jobs
 
 
 class Kernel:

@@ -18,8 +18,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import web
 
-import kiro_crew.dashboard.handlers.core as core
-from kiro_crew.config.loader import KiroCrewConfig, config_path
+import efm_go.dashboard.handlers.core as core
+from efm_go.config.loader import KiroCrewConfig, config_path
 
 
 def _req(method: str, body: dict | None = None):

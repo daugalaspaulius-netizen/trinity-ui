@@ -20,9 +20,9 @@ from unittest.mock import patch
 import pytest
 from test_sandbox_launcher_program import launch, payload, rendered_payload
 
-import kiro_crew.sandbox as _sb_mod
-from kiro_crew import sandbox_launcher_program as program
-from kiro_crew.sandbox import (
+import efm_go.sandbox as _sb_mod
+from efm_go import sandbox_launcher_program as program
+from efm_go.sandbox import (
     _AGENT_DENIED_ENV_KEYS,
     _CC_DIRS,
     _CC_EXPOSE_FILES,
@@ -35,7 +35,7 @@ from kiro_crew.sandbox import (
     scrub_env,
     wrap_argv,
 )
-from kiro_crew.sandbox_plan import BACKEND_NAMESPACE, ConfinementPlan, namespace_payload
+from efm_go.sandbox_plan import BACKEND_NAMESPACE, ConfinementPlan, namespace_payload
 
 #: The launcher stages that MOUNT run against ``CoveringLibc``, which resolves each
 #: ``/proc/self/fd/<n>`` target as only Linux can; the namespace launcher runs nowhere else.
@@ -315,7 +315,7 @@ class TestBuildSeatbeltProfileCcMode:
 
 
 class TestWrapArgvCcMode:
-    @patch("kiro_crew.sandbox.detect_backend", return_value="sandbox-exec")
+    @patch("efm_go.sandbox.detect_backend", return_value="sandbox-exec")
     def test_cc_mode_routes_to_sandbox(self, _mock_backend):
         wrapped, cleanup = wrap_argv(["echo", "hi"], mode="cc")
         assert len(wrapped) > 2
@@ -327,7 +327,7 @@ class TestWrapArgvCcMode:
         assert wrapped == ["echo", "hi"]
         assert cleanup is None
 
-    @patch("kiro_crew.sandbox.detect_backend", return_value="sandbox-exec")
+    @patch("efm_go.sandbox.detect_backend", return_value="sandbox-exec")
     def test_cc_seatbelt_does_not_deny_aws(self, _mock_backend):
         """CC seatbelt does NOT deny .aws on macOS — full access needed."""
         wrapped, cleanup = wrap_argv(["echo", "hi"], mode="cc")
@@ -338,7 +338,7 @@ class TestWrapArgvCcMode:
         finally:
             os.unlink(cleanup)
 
-    @patch("kiro_crew.sandbox.detect_backend", return_value="sandbox-exec")
+    @patch("efm_go.sandbox.detect_backend", return_value="sandbox-exec")
     def test_cc_seatbelt_profile_does_not_deny_ssh(self, _mock_backend):
         """CC profile should not contain ssh deny rules."""
         wrapped, cleanup = wrap_argv(["echo", "hi"], mode="cc")
@@ -415,7 +415,7 @@ class TestAgentDeniedEnvKeys:
             if cleanup:
                 os.unlink(cleanup)
 
-    @patch("kiro_crew.sandbox.detect_backend", return_value="namespace")
+    @patch("efm_go.sandbox.detect_backend", return_value="namespace")
     def test_cc_namespace_launcher_hides_aws_exposes_config(self, _mock_backend):
         """The launcher ``wrap_argv`` writes for cc carries the cc plan: ``~/.aws``
         masked with its ``config`` re-exposed, and ``~/.ssh`` left alone."""
@@ -455,7 +455,7 @@ class TestChannelCredentialIsolation:
         (``config.loader.inject_kiro_cli_api_key``) instead of letting it ride
         the inherited environ.
         """
-        from kiro_crew.config.loader import CRED_KIRO_API_KEY, CREDENTIAL_KEYS
+        from efm_go.config.loader import CRED_KIRO_API_KEY, CREDENTIAL_KEYS
 
         missing = set(CREDENTIAL_KEYS) - set(_AGENT_DENIED_ENV_KEYS) - {CRED_KIRO_API_KEY}
         assert not missing, f"loader credential keys not in agent denylist: {sorted(missing)}"
@@ -479,8 +479,8 @@ class TestChannelCredentialIsolation:
             monkeypatch.setenv(key, value)
         monkeypatch.setenv("KIROCREW_UNRELATED_KEEPME", "keep-this-value")
         with (
-            patch("kiro_crew.sandbox.detect_backend", return_value="none"),
-            patch("kiro_crew.sandbox._allow_unsandboxed_exec", return_value=True),
+            patch("efm_go.sandbox.detect_backend", return_value="none"),
+            patch("efm_go.sandbox._allow_unsandboxed_exec", return_value=True),
         ):
             _argv, env, cleanup = sandboxed_spawn_argv(["echo", "hi"], mode="standard")
         try:

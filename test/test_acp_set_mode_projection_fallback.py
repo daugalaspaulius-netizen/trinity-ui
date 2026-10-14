@@ -24,11 +24,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
-from kiro_crew.acp import runtime as runtime_mod
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.session_handle import AcpModeNotFound, AcpRuntimeError
-from kiro_crew.acp.skill_projection import NativeSkillProjection
-from kiro_crew.acp.types import METHOD_SET_MODE
+from efm_go.acp import runtime as runtime_mod
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.session_handle import AcpModeNotFound, AcpRuntimeError
+from efm_go.acp.skill_projection import NativeSkillProjection
+from efm_go.acp.types import METHOD_SET_MODE
 
 STALE_ALIAS = "kirocrew-skill-view-" + "a" * 24
 FRESH_ALIAS = "kirocrew-skill-view-" + "b" * 24
@@ -102,7 +102,7 @@ def _runtime(loaded: set[str]) -> tuple[AcpRuntime, _FakeKiro]:
 @pytest.fixture(autouse=True)
 def announced(monkeypatch):
     """Record the in-place rescan nudges instead of touching an agents directory."""
-    from kiro_crew.acp import skill_projection
+    from efm_go.acp import skill_projection
 
     seen: list[str] = []
     monkeypatch.setattr(skill_projection, "announce_alias", seen.append)
@@ -139,10 +139,10 @@ async def _activate(rt: AcpRuntime, projection: NativeSkillProjection | None) ->
     rt.terminate_session = AsyncMock()  # type: ignore[method-assign]
     with (
         patch(
-            "kiro_crew.acp.skill_projection.prepare_native_skill_projection",
+            "efm_go.acp.skill_projection.prepare_native_skill_projection",
             return_value=projection,
         ),
-        patch("kiro_crew.agent.require_unchanged_derived_spec", return_value=None),
+        patch("efm_go.agent.require_unchanged_derived_spec", return_value=None),
     ):
         await rt._activate_mode_bracketed(
             "s1", "ops", budget=5.0, payload_snapshot=None, wire_registered=True
@@ -171,7 +171,7 @@ async def test_an_alias_the_host_never_loads_fails_the_start_with_the_remedy(
     the new alias. The start fails naming the agent and the restart -- and neither
     the authored agent nor any older alias is activated in its place."""
     rt, kiro = _runtime({STALE_ALIAS, "ops"})
-    caplog.set_level(logging.WARNING, logger="kiro_crew.acp.runtime")
+    caplog.set_level(logging.WARNING, logger="efm_go.acp.runtime")
 
     with pytest.raises(AcpRuntimeError, match="Restart the gateway") as excinfo:
         await _with_reader(rt, _activate(rt, NativeSkillProjection({"ops": FRESH_ALIAS})))
@@ -188,7 +188,7 @@ async def test_an_alias_the_host_loads_after_its_reload_is_used(no_retry_wait, c
     """The forced reload makes kiro-cli pick the alias up; the retry lands on it."""
     rt, kiro = _runtime({"ops"})
     kiro.reload_after_misses = 1
-    caplog.set_level(logging.WARNING, logger="kiro_crew.acp.runtime")
+    caplog.set_level(logging.WARNING, logger="efm_go.acp.runtime")
 
     await _with_reader(rt, _activate(rt, NativeSkillProjection({"ops": FRESH_ALIAS})))
 
@@ -376,7 +376,7 @@ async def test_a_miss_forces_a_rescan_before_each_retry(no_retry_wait, announced
     """A miss triggers no reload in kiro-cli, and the rename that published the
     alias is invisible to its watcher; each retry is preceded by a same-bytes
     in-place rewrite of the alias, which is a data write it DOES reload on."""
-    from kiro_crew.acp import skill_projection
+    from efm_go.acp import skill_projection
 
     rt, kiro = _runtime({"ops"})
 
@@ -395,7 +395,7 @@ def test_recognised_aliases_stay_bounded_keep_the_spawn_ones_first_and_warn(monk
     """A process whose specs are edited without end publishes an alias per edit;
     what a projection keeps translating is bounded, the spawn aliases are
     recognised first, and dropping any says so once."""
-    from kiro_crew.acp import skill_projection
+    from efm_go.acp import skill_projection
 
     assert skill_projection._RECOGNISED_ALIASES_MAX == 1024
     monkeypatch.setattr(skill_projection, "_RECOGNISED_ALIASES_MAX", 8)
@@ -405,7 +405,7 @@ def test_recognised_aliases_stay_bounded_keep_the_spawn_ones_first_and_warn(monk
         earlier._recognised[f"kirocrew-skill-view-{n:024d}"] = "ops"
     current = NativeSkillProjection({"ops": "kirocrew-skill-view-" + "e" * 24})
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.skill_projection"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.acp.skill_projection"):
         current.recognise(spawn)
         current.recognise(earlier)
         current.recognise(earlier)

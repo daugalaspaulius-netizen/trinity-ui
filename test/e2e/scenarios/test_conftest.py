@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.pod import runtime, windows
-from kiro_crew.pod.config import PodConfig
+from efm_go import platform_compat
+from efm_go.pod import runtime, windows
+from efm_go.pod.config import PodConfig
 
 # Relative, not `test.e2e.scenarios`: the interpreter's own stdlib `test`
 # package shadows that absolute name wherever it is installed (the CI
@@ -20,7 +20,7 @@ from . import conftest as scenarios_conftest
 def plane_driver(tmp_path, monkeypatch):
     """Drive the real fixture generator; no CLI, service or process is real."""
     root = tmp_path / "checkout"
-    (root / "src/kiro_crew/static/dist").mkdir(parents=True)
+    (root / "src/efm_go/static/dist").mkdir(parents=True)
     cli = root / "kirocrew.exe"
     cli.write_text("fixture executable", encoding="utf-8")
     cli.chmod(0o755)

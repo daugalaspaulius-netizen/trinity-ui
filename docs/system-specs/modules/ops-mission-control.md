@@ -1095,13 +1095,13 @@ the filename equal to the fence entry.
 tool-call fence does not cover, and prints a URL that authenticates every gateway route —
 including this PUT. So the ceiling is only as strong as the deny-command rule that blocks the
 mint. That rule (`credential-exfil-kirocrew-token`) matched `.*kirocrew.*token` but not the
-identical `python -m kiro_crew token` module form, which was a way for a prompt-injected agent
+identical `python -m efm_go token` module form, which was a way for a prompt-injected agent
 to raise its own ceiling. Broadened to `.*kiro[-_]?crew.*token` (both the console script and the
 module path); a test pins both forms blocked and benign mentions allowed. This is a generic
 security-control fix, not an ops one — every authenticated route shared the exposure — so it
 lives in `security.BUILTIN_DENIED_RULES`, not in this app.
 
-Review then found the same escape one interpreter flag over: `python -c "from kiro_crew.cli
+Review then found the same escape one interpreter flag over: `python -c "from efm_go.cli
 import main; main()" token` reaches the identical mint with the import name buried in an inline
 program. Two independent defects had to be fixed together, which is why the first read of the
 argv floor looked complete — `_is_self_module_invocation` treated the `-c` payload as a script
@@ -1113,7 +1113,7 @@ spellings (separate and attached operand) are now matched.
 Then a follow-up finding closed the rest of it: on the `-c` path the VERB REQUIREMENT IS NOT
 ENFORCEABLE. The payload is arbitrary Python with the interpreter's full authority, so it can
 BUILD the verb rather than pass it — `python -c "import sys; sys.argv.append('token'); from
-kiro_crew.cli import main; main()"` names no `token` argv word at all, and neither does
+efm_go.cli import main; main()"` names no `token` argv word at all, and neither does
 `main(['token'])`. So a `-c` payload matching `_SELF_IMPORT_RE` is now denied on the IMPORT alone
 (`_has_self_importing_inline_program`), while the verb stays the trigger everywhere else, because
 `kirocrew doctor` is legitimate and only `kirocrew token` mints.
@@ -1121,15 +1121,15 @@ kiro_crew.cli import main; main()"` names no `token` argv word at all, and neith
 Both fixes also required matching the payload RAW rather than through `_normalize_operand`: that
 helper truncates at the first control operator, which is right for an operand the shell will split
 and wrong for a quoted Python program whose `;` is a statement separator — it reduced
-`"import sys; …; from kiro_crew.cli import main"` to `import sys` and hid the import entirely.
+`"import sys; …; from efm_go.cli import main"` to `import sys` and hid the import entirely.
 
 The `-c`/`-m` spellings pin 15 blocked and 13 allowed, including `python -c 'print(1)' token` and
-`grep -r kiro_crew src/` to show the deny is scoped to code we are about to run, and a payload
-that imports the package WITHOUT the mint verb (`python -c "import kiro_crew.cli" && echo ok`)
+`grep -r efm_go src/` to show the deny is scoped to code we are about to run, and a payload
+that imports the package WITHOUT the mint verb (`python -c "import efm_go.cli" && echo ok`)
 still allowed — the verb is what the rule blocks, not the import.
 
 Obfuscation is where this matcher meets its limit, and the fix draws the line honestly rather
-than pretending to close it. `\bkiro_crew\b` misses a name assembled at runtime —
+than pretending to close it. `\befm_go\b` misses a name assembled at runtime —
 `__import__('kiro'+'_crew')`, `importlib.import_module(name)`, `exec(base64.b64decode(...))` — so
 an inline-program payload combining an interpreter with any of a NARROW list of dynamic-exec
 primitives (`__import__(`, `importlib`, `exec(`, `eval(`, `compile(`, `b64decode`, `marshal`,
@@ -1167,7 +1167,7 @@ and balancing the count is not decidable. `_python_reads_stdin` consumes redirec
 through the same helper, so the detector and the carrier scope agree on where an operand ends;
 it also now answers True for `python < prog.py`, which does read its program from that file.
 Scanning the whole frame was a false-positive source: a frame is not split on a newline, so a
-neighbouring command naming the package in a FILE PATH (`isort src/kiro_crew/mcp_core.py`
+neighbouring command naming the package in a FILE PATH (`isort src/efm_go/mcp_core.py`
 followed by any harmless heredoc) read as a mint with no `token` word present (#2660). The pipe
 is detected as a CHARACTER left of or glued into the interpreter token, not as a standalone `|`
 word: the tokenizer splits on whitespace only, so `echo '…'|python -` hands the operator over
@@ -1181,7 +1181,7 @@ as covered — the same residual the written-then-run script form already has.
 and closing tag, and a here-string's operand, read off the raw token because the operand
 normaliser strips a redirection to the empty string; a heredoc's closing tag ENDS the command,
 so a following `echo ok` is not read as this interpreter's script) so `python script.py`,
-`python -c …`, and `cat kiro_crew_notes.txt | python -`
+`python -c …`, and `cat efm_go_notes.txt | python -`
 do not trip it, and the inline-program scan bails at the interpreter's first positional so the
 ReDoS-resistance budget still holds on spam input. Found in review (GPT 5.6).
 
@@ -2970,7 +2970,7 @@ review time, not to simulate the platform.
 
 ## Files
 
-- `src/kiro_crew/apps/builtins/ops_mission_control/app.json` — manifest
+- `src/efm_go/apps/builtins/ops_mission_control/app.json` — manifest
 - `.../__init__.py` — **re-exports `register_routes`** (the startup loop checks the
   PACKAGE, not `backend.routes`; without it routes silently never register)
 - `.../backend/models.py` — `Signal`, `Incident`, `LedgerEntry`, transition grammar,
@@ -3014,7 +3014,7 @@ review time, not to simulate the platform.
     `_webhook_reject_status`.
 - `.../backend/providers/` — the four Protocols + public adapters; the package
   `__init__` also owns config read/merge (`merge_provider_config`, `set_top_level`)
-- `src/kiro_crew/builtin_skills/ops-mission-control/` — the agent skill AND the
+- `src/efm_go/builtin_skills/ops-mission-control/` — the agent skill AND the
   five SOPs (`sops/dispatch|investigate|reconcile|rotation-check|ledger-hygiene.md`).
   **They live here, not under the app**, because `register_builtin_apps` copies only
   `app.json` + `installed.json` into the data home for a builtin — so a
@@ -3070,7 +3070,7 @@ review time, not to simulate the platform.
 - The app's development journals (research sweeps, feature ledger, parity report) are
   deliberately NOT in the repository. They lived in the package tree
   (`apps/builtins/ops_mission_control/planning/`) and were pruned from the sdist by a
-  `MANIFEST.in` special case, because `recursive-include src/kiro_crew/apps *.md` — which
+  `MANIFEST.in` special case, because `recursive-include src/efm_go/apps *.md` — which
   exists to ship ATTRIBUTION/README credit — swept them in as a side effect. They were moved
   out of the package (removing the special case rather than papering over it) and then dropped
   altogether: they carried provenance narrative that does not belong in a public
@@ -3267,7 +3267,7 @@ line-anchored so a genuinely internal reference in that file is still caught.
 
 ## Tests
 
-`src/kiro_crew/apps/builtins/ops_mission_control/tests/` — 1,134 collected tests across 23 files:
+`src/efm_go/apps/builtins/ops_mission_control/tests/` — 1,134 collected tests across 23 files:
 
 - `test_models.py` — fingerprint stability, normalization fallbacks, transition
   grammar, mode algebra

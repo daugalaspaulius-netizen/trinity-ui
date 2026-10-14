@@ -21,7 +21,7 @@ measured at `8a9c269b4`: `break_glass`, `BreakGlass`, `BREAK_GLASS`,
 `compose_local_ceiling` each return zero hits under `src/` (grep for callers,
 not just definitions).
 
-This document exists because [PR #7362](https://github.com/kirodotdev/KiroCrew/pull/7362)
+This document exists because [PR #7362](https://efmleads.com/pull/7362)
 landed the central governance ceiling — the fleet's security document binding
 above local configuration — but **withdrew** two things before merge: a
 time-boxed local override (`break_glass`, RFC step 6) and a fully generic
@@ -48,7 +48,7 @@ companion-bundled → `~/.kiro/crew/security_policy.json` (home) → none
 (ungoverned). Local tiers may only *tighten*; the fleet's document is the
 ceiling. See [`../system-specs/modules/governance.md`](../system-specs/modules/governance.md)
 and `load_security_policy` in
-[`../../src/kiro_crew/platform/governance.py`](../../src/kiro_crew/platform/governance.py)
+[`../../src/efm_go/platform/governance.py`](../../src/efm_go/platform/governance.py)
 for the shape that is actually on main.
 
 This RFC records two follow-ups that were designed but not shipped:
@@ -80,7 +80,7 @@ in this order:
    `distribution.source` a lower tier declares, served from a last-known-good
    cache when the endpoint is unreachable
    (`resolve_distribution` / `PolicyDistribution` in
-   [`../../src/kiro_crew/platform/policy_distribution.py`](../../src/kiro_crew/platform/policy_distribution.py)).
+   [`../../src/efm_go/platform/policy_distribution.py`](../../src/efm_go/platform/policy_distribution.py)).
 3. the companion-bundled resource (`bundled_loader`), supplied only by the
    `amazon` edition.
 4. `~/.kiro/crew/security_policy.json` — standalone operator-authored home file.

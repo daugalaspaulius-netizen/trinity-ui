@@ -21,14 +21,14 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.config.loader import KiroCrewConfig
+from efm_go.config.loader import KiroCrewConfig
 
 
 @pytest.fixture()
 def cfg_file(tmp_path):
     p = tmp_path / "config.json"
     p.write_text("{}", encoding="utf-8")
-    with patch("kiro_crew.config.loader.config_path", return_value=p):
+    with patch("efm_go.config.loader.config_path", return_value=p):
         yield p
 
 
@@ -80,18 +80,18 @@ def test_browser_view_port_out_of_range_falls_back_to_unset(cfg_file):
 @pytest.fixture()
 def mock_sel():
     try:
-        import kiro_crew.dashboard.handlers  # noqa: F401
+        import efm_go.dashboard.handlers  # noqa: F401
     except ImportError:
         pytest.skip("dashboard handler deps not available locally")
     m = MagicMock()
     m.log_api_access = MagicMock()
-    with patch("kiro_crew.dashboard.handlers.sel", return_value=m):
+    with patch("efm_go.dashboard.handlers.sel", return_value=m):
         yield m
 
 
 @pytest.fixture()
 def view_start_app(cfg_file, mock_sel):
-    from kiro_crew.dashboard.handlers.messaging import api_browser_view_start
+    from efm_go.dashboard.handlers.messaging import api_browser_view_start
 
     app = web.Application()
     app.router.add_post("/api/browser/view/start", api_browser_view_start)
@@ -111,11 +111,11 @@ async def test_view_start_passes_the_configured_pin(cfg_file, view_start_app):
     calls: list[int | None] = []
     with (
         patch(
-            "kiro_crew.browser_cli.view.ensure_running",
+            "efm_go.browser_cli.view.ensure_running",
             side_effect=lambda port=None: calls.append(port),
         ),
         patch(
-            "kiro_crew.browser_cli.view.status",
+            "efm_go.browser_cli.view.status",
             return_value={"status": "stopped", "url": None, "port": None, "reason": None},
         ),
     ):
@@ -130,11 +130,11 @@ async def test_view_start_unset_pin_maps_to_none(cfg_file, view_start_app):
     calls: list[int | None] = []
     with (
         patch(
-            "kiro_crew.browser_cli.view.ensure_running",
+            "efm_go.browser_cli.view.ensure_running",
             side_effect=lambda port=None: calls.append(port),
         ),
         patch(
-            "kiro_crew.browser_cli.view.status",
+            "efm_go.browser_cli.view.status",
             return_value={"status": "stopped", "url": None, "port": None, "reason": None},
         ),
     ):

@@ -547,7 +547,7 @@ export function useVisibilityReplacement<T>(ctx: {
   // tab was hidden the scroller got a zero-height layout, which released
   // `stick`, and the WebSocket heal path rebuilt the rows under the still-
   // mounted scroller. WebKit has no scroll anchoring to absorb that, so the
-  // reader landed far back instead of at the live end (kirodotdev/KiroCrew: the
+  // reader landed far back instead of at the live end (efmleads.com: the
   // "transcript jumps back on tab return" mobile report).
   //
   // Re-placing on EVERY return would be its own regression: a desktop reader

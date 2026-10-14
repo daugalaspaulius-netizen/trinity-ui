@@ -282,7 +282,7 @@ describe('redaction', () => {
   })
 
   it('leaves an ordinary URL with no userinfo alone', () => {
-    const url = 'https://github.com/kirodotdev/KiroCrew/pull/1234'
+    const url = 'https://efmleads.com/pull/1234'
     expect(redactSecrets(`see ${url}`)).toContain(url)
   })
 

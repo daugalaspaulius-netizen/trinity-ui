@@ -27,7 +27,7 @@ import json
 import os
 from pathlib import Path
 
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     LOOP_STALL_EXIT_AFTER_MAX,
     LOOP_STALL_EXIT_AFTER_MIN,
     KiroCrewConfig,
@@ -36,13 +36,13 @@ from kiro_crew.config.loader import (
     load_loop_stall_exit_after,
     resolve_loop_stall_exit_after,
 )
-from kiro_crew.dashboard.crash_dump_store import (
+from efm_go.dashboard.crash_dump_store import (
     claim_dump_notification,
     current_process_identity,
     dump_superseded,
     dumps_with_stacks,
 )
-from kiro_crew.dashboard.loop_watchdog import LoopStallWatchdog
+from efm_go.dashboard.loop_watchdog import LoopStallWatchdog
 
 
 def _dump(tmp_path: Path, name: str = "loopstall-20260803T000000Z.txt") -> Path:
@@ -72,7 +72,7 @@ class TestClaimDumpNotification:
 
     def test_marker_is_not_mistaken_for_a_dump(self, tmp_path) -> None:
         """The marker lives in the dumps dir; rotation must ignore it."""
-        from kiro_crew.dashboard.crash_dump_store import _list_dumps
+        from efm_go.dashboard.crash_dump_store import _list_dumps
 
         dump = _dump(tmp_path)
         claim_dump_notification(dump, tmp_path)
@@ -227,9 +227,9 @@ class TestLoopStallBudgetConfig:
     def test_automatic_default_survives_unrelated_full_config_save(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.config.loader import _invalidate_config_cache
+        from efm_go.config.loader import _invalidate_config_cache
 
-        monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
         _invalidate_config_cache()
         try:
             assert load_loop_stall_exit_after({"KIROCREW_SERVICE_MANAGED": "1"}) == 90
@@ -244,7 +244,7 @@ class TestLoopStallBudgetConfig:
             _invalidate_config_cache()
 
     def test_schema_explains_the_automatic_launch_class_defaults(self) -> None:
-        from kiro_crew.config.schema import SCHEMA_REGISTRY
+        from efm_go.config.schema import SCHEMA_REGISTRY
 
         entry = next(
             item for item in SCHEMA_REGISTRY if item.path == "dashboard.loop_stall_exit_after_secs"
@@ -257,13 +257,13 @@ class TestLoopStallBudgetConfig:
     def test_legacy_materialized_desktop_default_is_reported_not_rewritten(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.config.loader import _invalidate_config_cache
+        from efm_go.config.loader import _invalidate_config_cache
 
         (tmp_path / "config.json").write_text(
             json.dumps({"dashboard": {"loop_stall_exit_after_secs": 25}}),
             encoding="utf-8",
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
         _invalidate_config_cache()
         try:
             assert KiroCrewConfig.load().dashboard.loop_stall_exit_after_secs == 25
@@ -276,13 +276,13 @@ class TestLoopStallBudgetConfig:
     def test_explicit_desktop_default_is_preserved_for_managed_service(
         self, tmp_path, monkeypatch
     ) -> None:
-        from kiro_crew.config.loader import _invalidate_config_cache
+        from efm_go.config.loader import _invalidate_config_cache
 
         (tmp_path / "config.json").write_text(
             json.dumps({"dashboard": {"loop_stall_exit_after_secs": 25}}),
             encoding="utf-8",
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
         _invalidate_config_cache()
         try:
             assert KiroCrewConfig.load().dashboard.loop_stall_exit_after_secs == 25
@@ -301,19 +301,19 @@ class TestLoopStallBudgetConfig:
             json.dumps({"dashboard": {"loop_stall_exit_after_secs": 60}}),
             encoding="utf-8",
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
 
         assert load_loop_stall_exit_after({"KIROCREW_SERVICE_MANAGED": "1"}) == 60
 
     def test_configured_value_is_read(self, tmp_path, monkeypatch) -> None:
-        from kiro_crew.config.loader import _invalidate_config_cache
+        from efm_go.config.loader import _invalidate_config_cache
 
         cfg_dir = tmp_path / "cfgdir"
         cfg_dir.mkdir()
         (cfg_dir / "config.json").write_text(
             json.dumps({"dashboard": {"loop_stall_exit_after_secs": 60}}), encoding="utf-8"
         )
-        monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: cfg_dir)
+        monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: cfg_dir)
         _invalidate_config_cache()
         try:
             assert KiroCrewConfig.load().dashboard.loop_stall_exit_after_secs == 60
@@ -339,10 +339,10 @@ class TestChatTurnCeilingConfig:
         it and ``AgentConfig`` makes an on-disk config with the key omitted
         behave differently from ``KiroCrewConfig()``.
         """
-        from kiro_crew.config.loader import AgentConfig, _invalidate_config_cache
+        from efm_go.config.loader import AgentConfig, _invalidate_config_cache
 
         (tmp_path / "config.json").write_text(json.dumps({"agent": {}}), encoding="utf-8")
-        monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
         _invalidate_config_cache()
         try:
             loaded = KiroCrewConfig.load().agent.chat_turn_timeout_secs
@@ -352,7 +352,7 @@ class TestChatTurnCeilingConfig:
         assert KiroCrewConfig().agent.chat_turn_timeout_secs == AgentConfig().chat_turn_timeout_secs
 
     def test_out_of_range_values_are_clamped(self) -> None:
-        from kiro_crew.config.loader import CHAT_TURN_TIMEOUT_MAX, CHAT_TURN_TIMEOUT_MIN
+        from efm_go.config.loader import CHAT_TURN_TIMEOUT_MAX, CHAT_TURN_TIMEOUT_MIN
 
         data = {"agent": {"chat_turn_timeout_secs": 999999}}
         _clamp_security_bounds(data)

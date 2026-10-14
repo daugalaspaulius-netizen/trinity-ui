@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew.dashboard.handlers.core import api_kirocrew_config
+from efm_go.dashboard.handlers.core import api_kirocrew_config
 
 
 async def _put(agent_settings: dict, cfg_path) -> web.Response:
@@ -30,7 +30,7 @@ async def _put(agent_settings: dict, cfg_path) -> web.Response:
         return {"agent": agent_settings}
 
     request.json = _json
-    with patch("kiro_crew.config.loader.config_path", return_value=cfg_path):
+    with patch("efm_go.config.loader.config_path", return_value=cfg_path):
         return await api_kirocrew_config(request)
 
 

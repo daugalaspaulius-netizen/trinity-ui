@@ -14,9 +14,9 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const KIROCREW_EXE_NAMES = new Set(["kirocrew", "kirocrew-backend"]);
+const KIROCREW_EXE_NAMES = new Set(["kirocrew", "efm-go-backend"]);
 const PYTHON_EXE_RE = /^(?:python(?:\d+(?:\.\d+)*)?w?|py)$/i;
-// The module a `python -m <module>` gateway is booted from. `kiro_crew` is the
+// The module a `python -m <module>` gateway is booted from. `efm_go` is the
 // core. A composed edition boots from its companion's own top-level module so
 // the composition root runs instead of the core CLI, and the companion is named
 // `kirocrew_<edition>` (the `kirocrew.plugins` entry-point convention the Python
@@ -24,7 +24,7 @@ const PYTHON_EXE_RE = /^(?:python(?:\d+(?:\.\d+)*)?w?|py)$/i;
 // installed-entry-point view of that Python environment, so it matches the
 // naming convention instead; the core never learns any edition's name. Exact
 // top-level module only: a dotted submodule is not a gateway entry point.
-const KIROCREW_MODULE_RE = /^(?:kiro_crew|kirocrew_[a-z0-9][a-z0-9_]*)$/;
+const KIROCREW_MODULE_RE = /^(?:efm_go|kirocrew_[a-z0-9][a-z0-9_]*)$/;
 // A gateway module is only a gateway when argparse's first positional after it
 // is a server subcommand -- the same set `port_resolution._KIROCREW_SERVER_SUBCOMMANDS`
 // gates `kirocrew stop` on. Without this the module name alone would authorize a
@@ -88,7 +88,7 @@ function executableSelector(tokens) {
 
 /**
  * Match only a EFM Go executable, or a Python process whose first execution
- * selector invokes a EFM Go gateway module (`kiro_crew`, or a composed
+ * selector invokes a EFM Go gateway module (`efm_go`, or a composed
  * edition's `kirocrew_<edition>` companion — `KIROCREW_MODULE_RE`) followed by
  * a server subcommand (`KIROCREW_SERVER_SUBCOMMANDS`), or a EFM Go script.
  * Later process arguments never establish ownership, so SSH aliases and
@@ -173,7 +173,7 @@ function kirocrewCommandShape(
     if (token === "-m") {
       // Module AND server subcommand, both in their fixed argparse slots. The
       // subcommand is the first positional after the module, so only that slot
-      // is read: a later argument (`-m kiro_crew run gateway`) never qualifies.
+      // is read: a later argument (`-m efm_go run gateway`) never qualifies.
       const isGatewayModule = KIROCREW_MODULE_RE.test(tokens[index + 1] || "")
         && KIROCREW_SERVER_SUBCOMMANDS.has(tokens[index + 2]);
       return isGatewayModule ? { serverSubcommand: true } : null;

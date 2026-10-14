@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.client import AcpAuthRequired, AcpClient, AcpError
+from efm_go.acp.client import AcpAuthRequired, AcpClient, AcpError
 
 
 class _CapturingRecorder:
@@ -62,7 +62,7 @@ async def test_success_outcome_ready():
 
     client._initialize_session = _init
     rec = _CapturingRecorder()
-    with patch("kiro_crew.metrics.provider.get_recorder", return_value=rec):
+    with patch("efm_go.metrics.provider.get_recorder", return_value=rec):
         await client.ensure_ready()
     attrs = _last_outcome(rec)
     assert attrs["outcome"] == "ready"
@@ -79,7 +79,7 @@ async def test_auth_required_outcome():
 
     client._initialize_session = _init
     rec = _CapturingRecorder()
-    with patch("kiro_crew.metrics.provider.get_recorder", return_value=rec):
+    with patch("efm_go.metrics.provider.get_recorder", return_value=rec):
         with pytest.raises(AcpAuthRequired):
             await client.ensure_ready()
     assert _last_outcome(rec)["outcome"] == "auth_required"
@@ -100,7 +100,7 @@ async def test_acp_error_outcome_error():
     client._initialize_session = _init
     client._reset_state = _reset
     rec = _CapturingRecorder()
-    with patch("kiro_crew.metrics.provider.get_recorder", return_value=rec):
+    with patch("efm_go.metrics.provider.get_recorder", return_value=rec):
         with pytest.raises(AcpError):
             await client.ensure_ready()
     assert _last_outcome(rec)["outcome"] == "error"
@@ -117,7 +117,7 @@ async def test_unexpected_exception_not_ready():
 
     client._initialize_session = _init
     rec = _CapturingRecorder()
-    with patch("kiro_crew.metrics.provider.get_recorder", return_value=rec):
+    with patch("efm_go.metrics.provider.get_recorder", return_value=rec):
         with pytest.raises(RuntimeError):
             await client.ensure_ready()
     outcome = _last_outcome(rec)["outcome"]
@@ -136,12 +136,12 @@ class TestKiroStartupAttrs:
     """
 
     def _emit(self, outcome="ready"):
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         rec = _CapturingRecorder()
         provider = AcpProvider.__new__(AcpProvider)  # no spawn, just the emitter
         phases = {"spawn_init": 1400.0, "session_new": 1900.0, "set_model": 1.0}
-        with patch("kiro_crew.metrics.provider.get_recorder", return_value=rec):
+        with patch("efm_go.metrics.provider.get_recorder", return_value=rec):
             provider._emit_kiro_startup_metric(0.0, phases, outcome)
         return [attrs for name, attrs in rec.calls]
 

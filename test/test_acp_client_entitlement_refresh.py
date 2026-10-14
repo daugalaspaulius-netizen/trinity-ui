@@ -18,9 +18,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp.client import AcpClient, AcpModelUnavailable
-from kiro_crew.acp.runtime import _ENTITLEMENT_PROBE_TTL_SECS
-from kiro_crew.acp.types import JsonRpcMessage
+from efm_go.acp.client import AcpClient, AcpModelUnavailable
+from efm_go.acp.runtime import _ENTITLEMENT_PROBE_TTL_SECS
+from efm_go.acp.types import JsonRpcMessage
 
 
 def _rows(*ids: str) -> list[dict[str, str]]:
@@ -185,11 +185,11 @@ def _fake_probe_client(real: AcpClient, sent: list, *, answer: dict) -> AcpClien
             probe._mcp_notifications.extend(
                 [
                     JsonRpcMessage(
-                        method="_kiro.dev/mcp/oauth_request",
+                        method="_efm.go/mcp/oauth_request",
                         params={"serverName": "github", "oauthUrl": "https://example.invalid/a"},
                     ),
                     JsonRpcMessage(
-                        method="_kiro.dev/mcp/server_initialized",
+                        method="_efm.go/mcp/server_initialized",
                         params={"serverName": "github"},
                     ),
                     JsonRpcMessage(method="session/update", params={"sessionId": "probe-1"}),
@@ -218,7 +218,7 @@ async def test_probe_runs_on_its_own_transport_and_nothing_it_emits_reaches_the_
     client._spawn = AsyncMock()  # type: ignore[method-assign]
     client._wait_for_response = AsyncMock(return_value={})  # type: ignore[method-assign]
     client.shutdown = AsyncMock()  # type: ignore[method-assign]
-    before = JsonRpcMessage(method="_kiro.dev/mcp/server_initialized", params={})
+    before = JsonRpcMessage(method="_efm.go/mcp/server_initialized", params={})
     client._mcp_notifications = [before]
     client._last_substitution_model = "before-probe"
     probe_sent: list = []
@@ -238,7 +238,7 @@ async def test_probe_runs_on_its_own_transport_and_nothing_it_emits_reaches_the_
     assert [m for m, _ in probe_sent] == [
         "initialize",
         "session/new",
-        "_kiro.dev/session/terminate",
+        "_efm.go/session/terminate",
     ]
     assert probe_sent[0][1] == client._initialize_params()
     assert probe_sent[2][1] == {"sessionId": "probe-1"}
@@ -306,7 +306,7 @@ async def test_a_spec_revoked_during_probe_init_aborts_before_session_new(monkey
     between the probe's initialize and its session/new must abort, so no session
     (and none of that spec's MCP server commands) is ever created on an
     unverified spec. The stale-spec raise is absorbed as a failed probe."""
-    from kiro_crew.agent_materialization.worker_agent import DerivedSpecStale
+    from efm_go.agent_materialization.worker_agent import DerivedSpecStale
 
     client = _kiro_client(["auto"])
     sent: list = []
@@ -316,7 +316,7 @@ async def test_a_spec_revoked_during_probe_init_aborts_before_session_new(monkey
     def _revoked(_snapshot: Any) -> None:
         raise DerivedSpecStale("worker spec revoked during probe init")
 
-    monkeypatch.setattr("kiro_crew.acp.client.require_unchanged_derived_spec", _revoked)
+    monkeypatch.setattr("efm_go.acp.client.require_unchanged_derived_spec", _revoked)
 
     assert await client._probe_advertised_models() == ([], 0.0)
     # initialize happened; session/new never did.
@@ -395,7 +395,7 @@ async def test_probe_without_a_live_session_is_no_evidence():
 def _dedicated_provider(client: AcpClient):
     """An ``AcpProvider`` whose inner client is still a plain kiro ``AcpClient``
     (the dedicated transport never swaps it for the shared-runtime handle)."""
-    from kiro_crew.providers.acp import AcpProvider
+    from efm_go.providers.acp import AcpProvider
 
     provider = AcpProvider(acp_backend="")
     provider._client = client
@@ -528,10 +528,10 @@ async def test_dedicated_transport_picker_read_deadline_raises_revalidating(monk
     running."""
     import asyncio
 
-    from kiro_crew.acp.session_handle import EntitlementRevalidating
+    from efm_go.acp.session_handle import EntitlementRevalidating
 
     # Collapse the deadline so the test does not actually wait 3s.
-    monkeypatch.setattr("kiro_crew.providers.acp._READ_PATH_PROBE_DEADLINE_SECS", 0.01)
+    monkeypatch.setattr("efm_go.providers.acp._READ_PATH_PROBE_DEADLINE_SECS", 0.01)
 
     client = _kiro_client(["auto"])
     started = asyncio.Event()

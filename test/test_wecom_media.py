@@ -18,10 +18,10 @@ import pytest
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from kiro_crew import link_unfurl
-from kiro_crew.wecom import media as media_mod
-from kiro_crew.wecom.attachments import to_attachments
-from kiro_crew.wecom.media import (
+from efm_go import link_unfurl
+from efm_go.wecom import media as media_mod
+from efm_go.wecom.attachments import to_attachments
+from efm_go.wecom.media import (
     WeComMediaError,
     _vet_media_url,
     decode_aes_key,

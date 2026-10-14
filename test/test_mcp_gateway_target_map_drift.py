@@ -28,9 +28,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.mcp_gateway.gatewayd import _TargetUnknown, resolvable_target_stems
-from kiro_crew.mcp_gateway.manager import GatewayManager, GatewaySpec
-from kiro_crew.mcp_gateway.stub import (
+from efm_go.mcp_gateway.gatewayd import _TargetUnknown, resolvable_target_stems
+from efm_go.mcp_gateway.manager import GatewayManager, GatewaySpec
+from efm_go.mcp_gateway.stub import (
     TARGET_UNKNOWN_REASON,
     fallback_counts,
     log_fallback,
@@ -236,7 +236,7 @@ class _Args:
 def _counts_in(tmp_path, monkeypatch, records):
     """Write `records` through the real writer, then aggregate them."""
     monkeypatch.setattr(
-        "kiro_crew.mcp_gateway.stub._fallback_log_path",
+        "efm_go.mcp_gateway.stub._fallback_log_path",
         lambda: tmp_path / "stub_fallback.jsonl",
     )
     for reason, terminal in records:
@@ -288,7 +288,7 @@ def test_a_record_predating_the_flag_still_counts_as_a_fallback(tmp_path, monkey
         json.dumps({"ts": time.time(), "reason": "at capacity", "server": "pdf"}) + "\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr("kiro_crew.mcp_gateway.stub._fallback_log_path", lambda: log)
+    monkeypatch.setattr("efm_go.mcp_gateway.stub._fallback_log_path", lambda: log)
     c = fallback_counts()
     assert c["total"] == 1
     assert c["terminal_total"] == 0

@@ -31,14 +31,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
     EVENT_TOOL_CALL,
     EVENT_TOOL_CALL_UPDATE,
 )
-from kiro_crew.apps.builtins.auto_improvement.spine import agent_runner as R
+from efm_go.apps.builtins.auto_improvement.spine import agent_runner as R
 
 # ── shared fakes ────────────────────────────────────────────────────────────
 
@@ -59,14 +59,14 @@ class _FakeSel:
 @pytest.fixture
 def fake_sel(monkeypatch):
     sel = _FakeSel()
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel)
     return sel
 
 
 @pytest.fixture
 def broken_sel(monkeypatch):
     sel = _FakeSel(fail=True)
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel)
     return sel
 
 
@@ -605,7 +605,7 @@ def test_audit_unattended_agent_denies_the_launch_when_the_audit_fails(broken_se
 
 
 def test_audit_fallback_tool_redacts_and_truncates_the_target(monkeypatch, fake_sel):
-    monkeypatch.setattr("kiro_crew.security.redact", lambda t: "R:" + t)
+    monkeypatch.setattr("efm_go.security.redact", lambda t: "R:" + t)
     R._audit_fallback_tool(tool="Bash", detail="d" * 400, cwd="/tmp/wt")
     (call,) = fake_sel.calls
     assert call["outcome"] == "invoked"
@@ -618,14 +618,14 @@ def test_audit_fallback_tool_never_emits_raw_text_when_redaction_breaks(monkeypa
     def _boom(text):
         raise RuntimeError("redactor down")
 
-    monkeypatch.setattr("kiro_crew.security.redact", _boom)
+    monkeypatch.setattr("efm_go.security.redact", _boom)
     R._audit_fallback_tool(tool="Bash", detail="secret-value", cwd=None)
     (call,) = fake_sel.calls
     assert call["metadata"]["target"] == "[redaction unavailable]"
 
 
 def test_audit_fallback_tool_survives_an_unwritable_log(broken_sel, monkeypatch):
-    monkeypatch.setattr("kiro_crew.security.redact", lambda t: t)
+    monkeypatch.setattr("efm_go.security.redact", lambda t: t)
     R._audit_fallback_tool(tool="Bash", detail="x", cwd=None)  # must not raise
 
 
@@ -808,7 +808,7 @@ def test_run_json_encodes_a_non_string_result():
     runner = R.AgentRunner()
     popen = _OneShotPopen(out='{"result": {"a": 1}}')
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr("kiro_crew.sel.sel", lambda: _FakeSel())
+        mp.setattr("efm_go.sel.sel", lambda: _FakeSel())
         _wire_spawn(mp, runner, popen)
         res = runner.run("prompt")
     assert res.ok is True
@@ -1224,7 +1224,7 @@ def test_ensure_agent_registered_never_blocks_a_run_on_a_path_failure(monkeypatc
     def _boom():
         raise RuntimeError("no agents dir")
 
-    monkeypatch.setattr("kiro_crew.config.paths.kiro_agents_dir", _boom)
+    monkeypatch.setattr("efm_go.config.paths.kiro_agents_dir", _boom)
     assert R.SessionAgentRunner().ensure_agent_registered() is False
 
 

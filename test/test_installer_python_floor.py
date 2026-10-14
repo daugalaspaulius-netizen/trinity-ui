@@ -47,7 +47,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import dep_sync
+from efm_go import dep_sync
 
 REPO = Path(__file__).resolve().parent.parent
 INSTALL_SH = REPO / "install.sh"
@@ -302,7 +302,7 @@ def test_editable_reinstall_refuses_a_venv_below_the_declared_floor(tmp_path, ca
         patch.object(
             dep_sync,
             "installed_package_origin",
-            return_value=str(repo / "src" / "kiro_crew" / "__init__.py"),
+            return_value=str(repo / "src" / "efm_go" / "__init__.py"),
         ),
         patch.object(dep_sync, "locked_console_scripts", return_value=[]),
         patch.object(dep_sync, "requires_python", return_value=">=3.12"),
@@ -327,7 +327,7 @@ def test_editable_reinstall_proceeds_when_the_venv_meets_the_floor(tmp_path):
         patch.object(
             dep_sync,
             "installed_package_origin",
-            return_value=str(repo / "src" / "kiro_crew" / "__init__.py"),
+            return_value=str(repo / "src" / "efm_go" / "__init__.py"),
         ),
         patch.object(dep_sync, "locked_console_scripts", return_value=[]),
         patch.object(dep_sync, "requires_python", return_value=">=3.12"),
@@ -355,7 +355,7 @@ def test_the_floor_gate_is_read_from_the_repo_not_hardcoded(tmp_path):
         patch.object(
             dep_sync,
             "installed_package_origin",
-            return_value=str(repo / "src" / "kiro_crew" / "__init__.py"),
+            return_value=str(repo / "src" / "efm_go" / "__init__.py"),
         ),
         patch.object(dep_sync, "locked_console_scripts", return_value=[]),
         patch.object(dep_sync, "interpreter_version", return_value=(3, 12, 3)),
@@ -376,7 +376,7 @@ def test_no_floor_declared_does_not_block_the_reinstall(tmp_path):
         patch.object(
             dep_sync,
             "installed_package_origin",
-            return_value=str(repo / "src" / "kiro_crew" / "__init__.py"),
+            return_value=str(repo / "src" / "efm_go" / "__init__.py"),
         ),
         patch.object(dep_sync, "locked_console_scripts", return_value=[]),
         patch.object(dep_sync, "requires_python", return_value=None),
@@ -487,14 +487,14 @@ def test_install_sh_verifies_the_console_script_before_recording_pip():
     venv with a working interpreter but no console script, yet the old install.sh
     still wrote `.install-method=pip` and symlinked a dangling `kirocrew`. The
     gateway then dies later with exit 127. install.sh must die before recording
-    the method unless BOTH the executable entry point and the `import kiro_crew`
+    the method unless BOTH the executable entry point and the `import efm_go`
     check pass.
     """
     body = INSTALL_SH.read_text(encoding="utf-8")
 
     entry_guard = '[ ! -x "$_venv/bin/kirocrew" ]'
-    import_guard = '"$_venv/bin/python" -I -c "import kiro_crew"'
-    unsafe_import_guard = '"$_venv/bin/python" -c "import kiro_crew"'
+    import_guard = '"$_venv/bin/python" -I -c "import efm_go"'
+    unsafe_import_guard = '"$_venv/bin/python" -c "import efm_go"'
     record = 'echo "pip" > "$KIROCREW_APP_DIR/.install-method"'
 
     assert entry_guard in body, "missing the entry-point executable guard"
@@ -521,7 +521,7 @@ def test_install_sh_entry_point_guard_is_not_embedded_in_the_ec2_template():
     The bootstrap template has a hard 16KB UserData ceiling, and the guard belongs
     in install.sh (which the template invokes), not copied into the template.
     """
-    template = REPO / "src" / "kiro_crew" / "cloud" / "templates" / "kirocrew-ec2.yaml"
+    template = REPO / "src" / "efm_go" / "cloud" / "templates" / "kirocrew-ec2.yaml"
     body = template.read_text(encoding="utf-8")
     assert "Install incomplete: entry point" not in body
-    assert '-c "import kiro_crew"' not in body
+    assert '-c "import efm_go"' not in body

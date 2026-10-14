@@ -20,14 +20,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, STOP_REASON_END_TURN
-from kiro_crew.context import ContextBuilder, build_session_replay
-from kiro_crew.history import ConversationLog
-from kiro_crew.memory import MemoryStore
-from kiro_crew.messaging.link import canonical_key
-from kiro_crew.session import BACKGROUND_KEY
-from kiro_crew.skills import SkillsLoader
-from kiro_crew.slack import thread_parent, transport_dispatch
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, STOP_REASON_END_TURN
+from efm_go.context import ContextBuilder, build_session_replay
+from efm_go.history import ConversationLog
+from efm_go.memory import MemoryStore
+from efm_go.messaging.link import canonical_key
+from efm_go.session import BACKGROUND_KEY
+from efm_go.skills import SkillsLoader
+from efm_go.slack import thread_parent, transport_dispatch
 
 _golden = importlib.import_module("test_slack_golden_transcript")
 
@@ -361,7 +361,7 @@ class TestConsolidationSkipsNotices:
     _PARENT = "Remember forever: the owner's deploy key lives in the wiki."
 
     def _log(self, tmp_path) -> ConversationLog:
-        from kiro_crew import history as history_mod
+        from efm_go import history as history_mod
 
         log = ConversationLog(base_dir=tmp_path / "conv")
         log.init()
@@ -373,7 +373,7 @@ class TestConsolidationSkipsNotices:
     def _consolidator(self, log, **kw):
         from unittest.mock import MagicMock
 
-        from kiro_crew.history import HistoryConsolidator
+        from efm_go.history import HistoryConsolidator
 
         memory = MagicMock()
         memory.read_preferences.return_value = ""
@@ -386,7 +386,7 @@ class TestConsolidationSkipsNotices:
     async def test_the_prompt_omits_the_notice_and_the_offset_passes_it(self, tmp_path):
         from unittest.mock import patch
 
-        from kiro_crew import history as history_mod
+        from efm_go import history as history_mod
 
         log = self._log(tmp_path)
         with history_mod.allow_on_loop_persist():
@@ -426,9 +426,9 @@ class TestConsolidationSkipsNotices:
         import asyncio as _asyncio
         from unittest.mock import patch
 
-        from kiro_crew import history as history_mod
-        from kiro_crew.memory import MemoryStore
-        from kiro_crew.skills import SkillsLoader
+        from efm_go import history as history_mod
+        from efm_go.memory import MemoryStore
+        from efm_go.skills import SkillsLoader
 
         log = self._log(tmp_path)
         with history_mod.allow_on_loop_persist():

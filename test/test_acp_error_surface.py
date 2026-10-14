@@ -34,9 +34,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp.client import AcpError, AcpPromptBusy
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import JsonRpcMessage
+from efm_go.acp.client import AcpError, AcpPromptBusy
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import JsonRpcMessage
 
 # The exact frame from the reported transcript, minus the request id value.
 _MODEL_UNAVAILABLE = {
@@ -287,7 +287,7 @@ class TestNamelessCapacityWording:
         A phrase echo in the JSON-RPC ``message`` alone must not reclassify an
         otherwise-terminal error as transient.
         """
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         echo_only = {
             "code": -32603,
@@ -298,7 +298,7 @@ class TestNamelessCapacityWording:
 
     def test_typographic_apostrophe_still_matches(self):
         """Providers flip between straight and curly quotes; both must match."""
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         curly = dict(
             _MODEL_TEMP_UNAVAILABLE,
@@ -312,7 +312,7 @@ class TestNamelessCapacityWording:
         The string-fallback path (``_TRANSIENT_MARKERS``) must recognise it so
         history-restored messages keep their retry verdict.
         """
-        from kiro_crew.llm_helpers import is_transient_backend_error
+        from efm_go.llm_helpers import is_transient_backend_error
 
         assert is_transient_backend_error(str(_MODEL_TEMP_UNAVAILABLE["data"]))
 
@@ -380,13 +380,13 @@ class TestRunnerPromptBusyIsStructural:
         structural isinstance branch (not the resurrected substring) is what
         keeps the reset-and-requeue path alive.
         """
-        from kiro_crew.acp.client import _format_acp_error
+        from efm_go.acp.client import _format_acp_error
 
         assert "already in progress" not in _format_acp_error(_PROMPT_BUSY)
 
     def test_runner_gate_matches_typed_exception(self):
         """The runner's own predicate, evaluated on a formatted AcpPromptBusy."""
-        from kiro_crew.acp.client import _format_acp_error
+        from efm_go.acp.client import _format_acp_error
 
         exc = AcpPromptBusy(_format_acp_error(_PROMPT_BUSY))
         _msg = str(exc)
@@ -428,8 +428,8 @@ class TestTransientMarkerCoupling:
         ],
     )
     def test_formatted_transient_still_classifies(self, error):
-        from kiro_crew.acp.client import _format_acp_error
-        from kiro_crew.llm_helpers import is_transient_backend_error
+        from efm_go.acp.client import _format_acp_error
+        from efm_go.llm_helpers import is_transient_backend_error
 
         assert is_transient_backend_error(_format_acp_error(error))
 
@@ -439,8 +439,8 @@ class TestTransientMarkerCoupling:
         A marker that caught the unentitled text would resurrect the pointless
         retry loop the entitlement split removed, via the string-fallback path.
         """
-        from kiro_crew.acp.client import _format_acp_error
-        from kiro_crew.llm_helpers import is_transient_backend_error
+        from efm_go.acp.client import _format_acp_error
+        from efm_go.llm_helpers import is_transient_backend_error
 
         formatted = _format_acp_error(_MODEL_UNAVAILABLE, ["claude-sonnet-4-5"])
         assert "does not have access" in formatted
@@ -454,7 +454,7 @@ class TestTransientMarkerCoupling:
         message has to route them to the picker AND the default-model setting,
         and must never suggest the value that just failed.
         """
-        from kiro_crew.acp.client import _format_acp_error
+        from efm_go.acp.client import _format_acp_error
 
         error = dict(
             _MODEL_UNAVAILABLE, data=_MODEL_UNAVAILABLE["data"].replace("claude-opus-4.8", "auto")
@@ -496,7 +496,7 @@ class TestTransientMarkerCoupling:
         verdict and the same guidance, or a headless caller on the MPS wording
         gets the generic fallback with no usable remedy.
         """
-        from kiro_crew.acp.client import _format_acp_error, _is_transient_raw_error
+        from efm_go.acp.client import _format_acp_error, _is_transient_raw_error
 
         served = ["gpt-5.6-sol", "glm-5"]
         error = {
@@ -519,7 +519,7 @@ class TestTransientMarkerCoupling:
         advice re-opens the circle the unentitled branch closes, so it is
         emitted only when ``auto`` is served or the list is unknown.
         """
-        from kiro_crew.acp.client import _format_acp_error
+        from efm_go.acp.client import _format_acp_error
 
         # Advertised model rejected = capacity blip, not entitlement.
         no_auto = ["claude-opus-4.8", "glm-5"]
@@ -544,7 +544,7 @@ class TestTransientMarkerCoupling:
         each site's verdict is exactly the helper's, so a change to
         advertised-list semantics lands once.
         """
-        from kiro_crew.acp.client import (
+        from efm_go.acp.client import (
             DEFAULT_MODEL,
             _auto_remedy,
             _format_acp_error,
@@ -582,12 +582,12 @@ class TestConnectionErrorClassification:
         ],
     )
     def test_connection_failures_are_transient(self, text):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         assert _is_transient_raw_error({"code": -32603, "message": text, "data": ""})
 
     def test_dns_resolution_failure_stays_terminal(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         assert not _is_transient_raw_error(
             {"code": -32603, "message": "getaddrinfo ENOTFOUND fleet-router", "data": ""}
@@ -601,13 +601,13 @@ class TestConnectionErrorClassification:
         ],
     )
     def test_terminal_branches_keep_precedence_over_connection(self, data):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         assert not _is_transient_raw_error({"code": -32603, "message": "", "data": data})
 
     def test_formatted_connection_wording_classifies_via_fallback(self):
-        from kiro_crew.acp.client import _format_acp_error
-        from kiro_crew.llm_helpers import is_transient_backend_error
+        from efm_go.acp.client import _format_acp_error
+        from efm_go.llm_helpers import is_transient_backend_error
 
         formatted = _format_acp_error(
             {"code": -32603, "message": "connect ECONNREFUSED 127.0.0.1:8484", "data": ""}

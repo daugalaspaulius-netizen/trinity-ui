@@ -8,7 +8,7 @@ Under ``agent.session_sharing`` (default true) co-tenant subagents are separate
 sessions on ONE ``AcpRuntime``, and that runtime fans every frame carrying no
 ``sessionId`` out to EVERY registered session queue (``_reader_loop``: "No
 sessionId -> genuinely global notification; broadcast to all"). The roster
-notification ``_kiro.dev/subagent/list_update`` is such a frame, so it reaches
+notification ``_efm.go/subagent/list_update`` is such a frame, so it reaches
 co-tenants that did not produce it. Refreshing the idle clock on it made a
 wedged subagent look busy because an unrelated tenant's roster changed --
 clearing its "stalled" badge and restarting its idle count.
@@ -42,18 +42,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp._dispatch import classify_notification
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.acp.types import METHOD_SUBAGENT_LIST_UPDATE
-from kiro_crew.providers.acp import AcpProvider
-from kiro_crew.providers.base import (
+from efm_go.acp._dispatch import classify_notification
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.acp.types import METHOD_SUBAGENT_LIST_UPDATE
+from efm_go.providers.acp import AcpProvider
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_SUBAGENT_LIST,
     EVENT_TEXT_CHUNK,
     LLMEvent,
 )
-from kiro_crew.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent import SubagentInfo, SubagentManager
 
 # ``SubagentManager.spawn`` refuses -- registering no task -- while the host
 # looks short of memory, which is the runner's state, not this test's input.
@@ -174,7 +174,7 @@ async def test_dispatch_carries_provenance_onto_every_fanned_out_notice(kind, co
     sole owner) is not. The handle already gates its own compaction state on
     this; the event carries it so a consumer measuring this session's activity
     or startup sees the same answer."""
-    from kiro_crew.acp.types import (
+    from efm_go.acp.types import (
         EVENT_AGENT_SWITCHED,
         EVENT_CLEAR_STATUS,
         EVENT_COMPACTION_STATUS,
@@ -297,7 +297,7 @@ async def _observe_after(event: SimpleNamespace) -> tuple[float, bool]:
 
     mgr = _manager(stream_factory)
     holder["mgr"] = mgr
-    with patch("kiro_crew.subagent.Stats"), patch("kiro_crew.subagent.sel"):
+    with patch("efm_go.subagent.Stats"), patch("efm_go.subagent.sel"):
         info = mgr.spawn("watch my idle clock")
         assert info is not None
         await mgr._tasks[info.id]

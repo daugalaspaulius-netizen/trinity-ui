@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from body_stream_helpers import attach_body
 
-from kiro_crew.dashboard.handlers import api_cron_update
+from efm_go.dashboard.handlers import api_cron_update
 
 
 def _make_request(body: dict, job_id: str = "abc123") -> MagicMock:

@@ -14,7 +14,7 @@ import os
 
 import pytest
 
-from kiro_crew.sandbox import (
+from efm_go.sandbox import (
     _POD_OS_HOME_GRANT_STORE_LEAVES,
     _POD_OS_HOME_MASKED_SUBLEAVES,
     _pod_os_home_targets,

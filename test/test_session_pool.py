@@ -13,9 +13,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.acp.session_handle import WatchdogSettings
-from kiro_crew.start_priority import PrioritySemaphore, StartPriority
+from efm_go import platform_compat
+from efm_go.acp.session_handle import WatchdogSettings
+from efm_go.start_priority import PrioritySemaphore, StartPriority
 
 
 @pytest.fixture(autouse=True)
@@ -62,12 +62,12 @@ def _make_provider() -> MagicMock:
 
 
 def _make_manager(pool_size: int = 2, pool_agent: str = "kirocrew", pool_ttl_secs: int = 1800):
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     cfg = _make_cfg(pool_size, pool_agent, pool_ttl_secs)
     factory = MagicMock(side_effect=lambda *a, **kw: _make_provider())
     with patch(
-        "kiro_crew.session.default_project_dir", return_value="/home/user/.kirocrew/workspace"
+        "efm_go.session.default_project_dir", return_value="/home/user/.kirocrew/workspace"
     ):
         mgr = SessionManager(cfg, provider_factory=factory)
     return mgr, factory
@@ -84,7 +84,7 @@ class TestMemberContextAllocation:
         "key", ["cron:review", "subagent:review", "memory-consolidation:review:unique"]
     )
     async def test_member_context_captures_native_sources_before_start_without_pool(self, key):
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
         execution = ExecutionContext(
             "review", MemoryStoreRef("member-review", "review"), "member", "kirocrew"
@@ -100,7 +100,7 @@ class TestMemberContextAllocation:
             assert provider.memory_mode == "persistent"
 
         provider.start.side_effect = start
-        with patch("kiro_crew.execution_context.read_session_execution", return_value=execution):
+        with patch("efm_go.execution_context.read_session_execution", return_value=execution):
             actual, is_new, _ = await mgr.get_or_create(key, agent="kirocrew")
             assert actual is provider and is_new
             mgr.release(key)
@@ -113,7 +113,7 @@ class TestMemberContextAllocation:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("mode", ["incognito", "temporary"])
     async def test_restricted_task_uses_fresh_provider_instead_of_parent_runtime(self, mode):
-        from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
+        from efm_go.execution_context import ExecutionContext, MemoryStoreRef
 
         execution = ExecutionContext(
             "review", MemoryStoreRef("member-review", "review"), "member", "kirocrew", mode
@@ -122,7 +122,7 @@ class TestMemberContextAllocation:
         expected = (_make_provider(), True, False)
         mgr.get_or_create = AsyncMock(return_value=expected)
         mgr._get_or_bootstrap_run_runtime = AsyncMock()
-        with patch("kiro_crew.execution_context.read_session_execution", return_value=execution):
+        with patch("efm_go.execution_context.read_session_execution", return_value=execution):
             result = await mgr.open_task_session(
                 "task:parent", "task:child", agent="review", cwd="/work"
             )
@@ -191,7 +191,7 @@ class TestFillWarmPool:
         provider.shutdown = AsyncMock(side_effect=asyncio.CancelledError)
         factory.side_effect = lambda *a, **kw: provider
 
-        with patch("kiro_crew.session._sync_kill_provider") as mock_kill:
+        with patch("efm_go.session._sync_kill_provider") as mock_kill:
             with pytest.raises(asyncio.CancelledError):
                 await mgr._fill_warm_pool()
             # The hard kill is dispatched fire-and-forget to the subprocess
@@ -314,15 +314,15 @@ class TestPoolAgentResolvesLikeASession:
     """A blank / alias pool agent resolves to the kiro agent a session asks for."""
 
     def _manager(self, tmp_path, monkeypatch, pool_agent: str):
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.session import SessionManager
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.session import SessionManager
 
         monkeypatch.setenv("HOME", str(tmp_path))
         cfg = KiroCrewConfig.load()
         cfg.session.pool_size = 1
         cfg.session.pool_agent = pool_agent
         factory = MagicMock(side_effect=lambda *a, **kw: _make_provider())
-        with patch("kiro_crew.session.default_project_dir", return_value=str(tmp_path)):
+        with patch("efm_go.session.default_project_dir", return_value=str(tmp_path)):
             mgr = SessionManager(cfg, provider_factory=factory)
         return mgr, factory
 
@@ -419,7 +419,7 @@ class TestConfigWiring:
         assert mgr._pool_agent == "custom"
 
     def test_pool_agent_falls_back_to_default_agent(self):
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         cfg = _make_cfg(pool_size=1, pool_agent="")
         cfg.agent.default_agent = "fallback-agent"
@@ -427,7 +427,7 @@ class TestConfigWiring:
         assert mgr._pool_agent == "fallback-agent"
 
     def test_pool_disabled_by_default(self):
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         cfg = _make_cfg(pool_size=0)
         mgr = SessionManager(cfg)
@@ -448,7 +448,7 @@ class TestGetOrCreatePoolIntegration:
     @pytest.mark.asyncio
     async def test_claims_from_pool_when_agent_matches(self):
         """get_or_create uses pooled provider, verifies rekey() called."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -481,8 +481,8 @@ class TestGetOrCreatePoolIntegration:
         """The claiming session's crew_agent kwarg reaches rekey so the pooled
         handle's watchdog windows rebind to the claiming crew — the identity
         travels with the session, not the pool key."""
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.providers.acp import AcpProvider
 
         def declared_legacy_member():
             cfg = KiroCrewConfig.load()
@@ -515,7 +515,7 @@ class TestGetOrCreatePoolIntegration:
         assert isinstance(kwargs["watchdog"], WatchdogSettings)
 
     def test_capability_preparation_refuses_an_undeclared_canonical_member(self):
-        from kiro_crew.session_capabilities import CapabilityStartupError, prepare_runtime
+        from efm_go.session_capabilities import CapabilityStartupError, prepare_runtime
 
         with pytest.raises(CapabilityStartupError, match="capability_member_missing"):
             prepare_runtime("kirocrew", "undeclared-crew", None)
@@ -526,9 +526,9 @@ class TestGetOrCreatePoolIntegration:
         refuses with the closed ``capability_state_unreadable`` code, never a
         raw parser error, while a session that resolves to no crew never reads
         the sidecar and still starts."""
-        from kiro_crew import agent_state
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-        from kiro_crew.session_capabilities import CapabilityStartupError, prepare_runtime
+        from efm_go import agent_state
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go.session_capabilities import CapabilityStartupError, prepare_runtime
 
         cfg = KiroCrewConfig.load()
         cfg.agents["legacy-member"] = KiroCrewAgentConfig(
@@ -547,9 +547,9 @@ class TestGetOrCreatePoolIntegration:
     def test_capability_refusal_names_the_member_it_belongs_to(self):
         """The chat card links to the member's Capabilities pane, so the
         refusal must say whose spec failed; the code stays unchanged."""
-        from kiro_crew import session_capabilities
-        from kiro_crew.agent_capabilities import CapabilityError
-        from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+        from efm_go import session_capabilities
+        from efm_go.agent_capabilities import CapabilityError
+        from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
 
         cfg = KiroCrewConfig.load()
         cfg.agents["drifted"] = KiroCrewAgentConfig(kiro_agent="kirocrew", memory_store="default")
@@ -615,7 +615,7 @@ class TestGetOrCreatePoolIntegration:
     @pytest.mark.asyncio
     async def test_claims_pool_with_model_override_and_switches(self):
         """get_or_create claims pool even with model_override, then calls set_model."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -709,8 +709,8 @@ class TestTTLExpiration:
         mgr._warm_pool.put_nowait((stale, time.monotonic() - 120))
         mgr._warm_pool.put_nowait((stale_dead, time.monotonic() - 120))
 
-        with patch("kiro_crew.session._sync_kill_provider"):
-            with caplog.at_level(logging.INFO, logger="kiro_crew.session"):
+        with patch("efm_go.session._sync_kill_provider"):
+            with caplog.at_level(logging.INFO, logger="efm_go.session"):
                 result = await mgr._drain_and_claim("kirocrew")
 
         assert result is None
@@ -735,7 +735,7 @@ class TestModelMatchesPoolDefault:
     @pytest.mark.asyncio
     async def test_pool_claimed_when_model_matches_agent_default(self):
         """model='claude-opus-4.6' matching pool agent default → pool used, no set_model."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -760,7 +760,7 @@ class TestModelMatchesPoolDefault:
     @pytest.mark.asyncio
     async def test_pool_claimed_when_model_differs_with_post_switch(self):
         """model='claude-sonnet-4.6' != pool default → pool claimed, set_model called."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -787,7 +787,7 @@ class TestModelMatchesPoolDefault:
         """On the claude backend, a canonical wire key (e.g. opus-4.8-1m) is
         translated to a provider id before set_model — else the adapter
         mis-resolves it. kiro/acp backends still pass the value through."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -811,7 +811,7 @@ class TestModelMatchesPoolDefault:
         and the pool agent's kiro model slot that resolve to the SAME provider id
         must NOT trigger a redundant set_model. Requested 'opus-4.8-1m' vs pool
         agent kiro 'claude-opus-4.6' both → the flagship provider id."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -857,7 +857,7 @@ class TestModelMatchesPoolDefault:
     @pytest.mark.asyncio
     async def test_none_model_still_claims_from_pool(self):
         """model=None (no explicit model) → pool used as before."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -876,7 +876,7 @@ class TestModelMatchesPoolDefault:
     @pytest.mark.asyncio
     async def test_empty_pool_agent_skips_model_resolution_on_claim(self):
         """No pool_agent configured → no model resolution on post-claim check."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="")
         pooled = _make_provider()
@@ -905,7 +905,7 @@ class TestModelMatchesPoolDefault:
         provider — while an identical cold start quietly withholds. That makes
         the outcome depend on whether a pooled process happened to exist.
         """
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -939,7 +939,7 @@ class TestModelMatchesPoolDefault:
         a pooled process happened to exist — the exact failure class the
         withhold test above guards from the other direction.
         """
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -1262,7 +1262,7 @@ class TestReloadProviderFactoryRefillsPool:
         old_provider = _make_provider()
         mgr._warm_pool.put_nowait((old_provider, time.monotonic()))
 
-        with patch("kiro_crew.session.KiroCrewConfig.load") as mock_load:
+        with patch("efm_go.session.KiroCrewConfig.load") as mock_load:
             new_cfg = _make_cfg(pool_size=1)
             new_factory = MagicMock(side_effect=lambda *a, **kw: _make_provider())
             new_cfg.create_provider_factory = MagicMock(return_value=new_factory)
@@ -1287,7 +1287,7 @@ class TestReloadProviderFactoryRefillsPool:
         fake_task.cancel = MagicMock()
         mgr._pool_health_task = fake_task
 
-        with patch("kiro_crew.session.KiroCrewConfig.load") as mock_load:
+        with patch("efm_go.session.KiroCrewConfig.load") as mock_load:
             new_cfg = _make_cfg(pool_size=1)
             new_cfg.create_provider_factory = MagicMock(
                 return_value=MagicMock(side_effect=lambda *a, **kw: _make_provider())
@@ -1317,7 +1317,7 @@ class TestRefreshDefaultsSparesLiveSessions:
         live_provider = _make_provider()
         mgr._sessions["dashboard:1"] = SimpleNamespace(provider=live_provider)
 
-        with patch("kiro_crew.session.KiroCrewConfig.load") as mock_load:
+        with patch("efm_go.session.KiroCrewConfig.load") as mock_load:
             new_cfg = _make_cfg(pool_size=0)
             new_cfg.create_provider_factory = MagicMock(
                 return_value=MagicMock(side_effect=lambda *a, **kw: _make_provider())
@@ -1339,7 +1339,7 @@ class TestRefreshDefaultsSparesLiveSessions:
         # factory in test_effort.py::TestFactoryDefaultEffortFallback.
         mgr, old_factory = _make_manager(pool_size=0)
 
-        with patch("kiro_crew.session.KiroCrewConfig.load") as mock_load:
+        with patch("efm_go.session.KiroCrewConfig.load") as mock_load:
             new_cfg = _make_cfg(pool_size=0)
             new_factory = MagicMock(side_effect=lambda *a, **kw: _make_provider())
             new_cfg.create_provider_factory = MagicMock(return_value=new_factory)
@@ -1367,7 +1367,7 @@ class TestRefreshDefaultsSparesLiveSessions:
         stale_pooled = _make_provider()
         mgr._warm_pool.put_nowait((stale_pooled, time.monotonic()))
 
-        with patch("kiro_crew.session.KiroCrewConfig.load") as mock_load:
+        with patch("efm_go.session.KiroCrewConfig.load") as mock_load:
             new_cfg = _make_cfg(pool_size=1)
             new_cfg.create_provider_factory = MagicMock(
                 return_value=MagicMock(side_effect=lambda *a, **kw: _make_provider())
@@ -1395,7 +1395,7 @@ class TestRefreshDefaultsSparesLiveSessions:
         mgr._pool_health_task = stale_task
         mgr._warm_pool.put_nowait((_make_provider(), time.monotonic()))
 
-        with patch("kiro_crew.session.KiroCrewConfig.load") as mock_load:
+        with patch("efm_go.session.KiroCrewConfig.load") as mock_load:
             new_cfg = _make_cfg(pool_size=1)
             new_cfg.create_provider_factory = MagicMock(
                 return_value=MagicMock(side_effect=lambda *a, **kw: _make_provider())
@@ -1420,16 +1420,16 @@ class TestDefaultProjectDir:
     def test_returns_realpath_of_workspace_dir(self, tmp_path):
         ws = tmp_path / "workspace"
         ws.mkdir()
-        with patch("kiro_crew.config.loader.workspace_dir_for", return_value=ws):
-            from kiro_crew.config.loader import default_project_dir
+        with patch("efm_go.config.loader.workspace_dir_for", return_value=ws):
+            from efm_go.config.loader import default_project_dir
 
             result = default_project_dir("default")
         assert result == str(ws.resolve())
 
     def test_returns_empty_when_dir_missing(self, tmp_path):
         missing = tmp_path / "nonexistent"
-        with patch("kiro_crew.config.loader.workspace_dir_for", return_value=missing):
-            from kiro_crew.config.loader import default_project_dir
+        with patch("efm_go.config.loader.workspace_dir_for", return_value=missing):
+            from efm_go.config.loader import default_project_dir
 
             result = default_project_dir("default")
         assert result == ""
@@ -1438,17 +1438,17 @@ class TestDefaultProjectDir:
         ws = tmp_path / "workspace"
         ws.mkdir()
         with (
-            patch("kiro_crew.config.loader.workspace_dir_for", return_value=ws),
-            patch("kiro_crew.security.is_sensitive_path", return_value=True),
+            patch("efm_go.config.loader.workspace_dir_for", return_value=ws),
+            patch("efm_go.security.is_sensitive_path", return_value=True),
         ):
-            from kiro_crew.config.loader import default_project_dir
+            from efm_go.config.loader import default_project_dir
 
             result = default_project_dir("default")
         assert result == ""
 
     def test_returns_empty_on_exception(self):
-        with patch("kiro_crew.config.loader.workspace_dir_for", side_effect=RuntimeError("boom")):
-            from kiro_crew.config.loader import default_project_dir
+        with patch("efm_go.config.loader.workspace_dir_for", side_effect=RuntimeError("boom")):
+            from efm_go.config.loader import default_project_dir
 
             result = default_project_dir("default")
         assert result == ""
@@ -1461,25 +1461,25 @@ class TestDefaultProjectDir:
 
 class TestPoolCwd:
     def test_pool_cwd_set_from_default_project_dir(self):
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         cfg = _make_cfg()
-        with patch("kiro_crew.session.default_project_dir", return_value="/custom/workspace"):
+        with patch("efm_go.session.default_project_dir", return_value="/custom/workspace"):
             mgr = SessionManager(cfg)
         assert mgr._pool_cwd == "/custom/workspace"
 
     def test_pool_cwd_empty_when_no_workspace(self):
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         cfg = _make_cfg()
-        with patch("kiro_crew.session.default_project_dir", return_value=""):
+        with patch("efm_go.session.default_project_dir", return_value=""):
             mgr = SessionManager(cfg)
         assert mgr._pool_cwd == ""
 
     @pytest.mark.asyncio
     async def test_pool_claimed_when_cwd_matches_pool_cwd(self):
         """cwd == _pool_cwd should NOT bypass pool."""
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         mgr, factory = _make_manager(pool_agent="kirocrew")
         pooled = _make_provider()
@@ -1505,11 +1505,11 @@ class TestPoolCwd:
     @pytest.mark.asyncio
     async def test_pool_bypassed_when_pool_cwd_empty_and_cwd_set(self):
         """If _pool_cwd is empty, any cwd bypasses pool."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         cfg = _make_cfg()
         factory = MagicMock(side_effect=lambda *a, **kw: _make_provider())
-        with patch("kiro_crew.session.default_project_dir", return_value=""):
+        with patch("efm_go.session.default_project_dir", return_value=""):
             mgr = SessionManager(cfg, provider_factory=factory)
 
         pooled = _make_provider()
@@ -1537,11 +1537,11 @@ class TestPoolCwd:
     @pytest.mark.asyncio
     async def test_fill_warm_pool_passes_none_when_pool_cwd_empty(self):
         """Pool processes get cwd=None when _pool_cwd is empty."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         cfg = _make_cfg(pool_size=1)
         factory = MagicMock(side_effect=lambda *a, **kw: _make_provider())
-        with patch("kiro_crew.session.default_project_dir", return_value=""):
+        with patch("efm_go.session.default_project_dir", return_value=""):
             mgr = SessionManager(cfg, provider_factory=factory)
 
         await mgr._fill_warm_pool()
@@ -1575,7 +1575,7 @@ class TestDiscardReaping:
         survivor.is_process_alive = MagicMock(return_value=True)
         self._expired_entry(mgr, survivor)
 
-        with patch("kiro_crew.session._sync_kill_provider") as mock_kill:
+        with patch("efm_go.session._sync_kill_provider") as mock_kill:
             pooled = await mgr._drain_and_claim("kirocrew")
 
         assert pooled is None
@@ -1591,7 +1591,7 @@ class TestDiscardReaping:
         clean.is_process_alive = MagicMock(return_value=False)
         self._expired_entry(mgr, clean)
 
-        with patch("kiro_crew.session._sync_kill_provider") as mock_kill:
+        with patch("efm_go.session._sync_kill_provider") as mock_kill:
             await mgr._drain_and_claim("kirocrew")
 
         clean.shutdown.assert_awaited_once()
@@ -1606,7 +1606,7 @@ class TestDiscardReaping:
         broken.shutdown = AsyncMock(side_effect=RuntimeError("protocol close failed"))
         self._expired_entry(mgr, broken)
 
-        with patch("kiro_crew.session._sync_kill_provider") as mock_kill:
+        with patch("efm_go.session._sync_kill_provider") as mock_kill:
             pooled = await mgr._drain_and_claim("kirocrew")
 
         assert pooled is None
@@ -1617,7 +1617,7 @@ class TestDiscardReaping:
         """A shutdown that never returns must not stall the discard path
         (the health sweep is a single task — a wedge would disable TTL
         enforcement for the whole pool)."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         monkeypatch.setattr(SessionManager, "_POOL_DISCARD_TIMEOUT", 0.05)
         mgr, _ = _make_manager(pool_agent="kirocrew", pool_ttl_secs=1)
@@ -1643,8 +1643,8 @@ class TestDiscardReaping:
         # spare capacity.
         with (
             ThreadPoolExecutor(max_workers=1) as private_executor,
-            patch("kiro_crew.session._sync_kill_provider") as mock_kill,
-            patch("kiro_crew.session.subprocess_executor", return_value=private_executor),
+            patch("efm_go.session._sync_kill_provider") as mock_kill,
+            patch("efm_go.session.subprocess_executor", return_value=private_executor),
         ):
             pooled = await asyncio.wait_for(mgr._drain_and_claim("kirocrew"), timeout=5)
 
@@ -1659,7 +1659,7 @@ class TestDiscardReaping:
         survivor.is_process_alive = MagicMock(return_value=True)
         self._expired_entry(mgr, survivor)
 
-        with patch("kiro_crew.session._sync_kill_provider") as mock_kill:
+        with patch("efm_go.session._sync_kill_provider") as mock_kill:
             await mgr._sweep_warm_pool_once()
 
         survivor.shutdown.assert_awaited_once()
@@ -1686,8 +1686,8 @@ class TestDiscardReaping:
         mgr._warm_pool.put_nowait((stale_dead, time.monotonic() - 120))
         mgr._warm_pool.put_nowait((dead, time.monotonic()))
 
-        with patch("kiro_crew.session._sync_kill_provider"):
-            with caplog.at_level(logging.INFO, logger="kiro_crew.session"):
+        with patch("efm_go.session._sync_kill_provider"):
+            with caplog.at_level(logging.INFO, logger="efm_go.session"):
                 await mgr._sweep_warm_pool_once()
 
         ttl_records = [
@@ -1710,13 +1710,13 @@ class TestDiscardReaping:
         """A provider stand-in whose pid resolves to a non-int (Mock coerces
         to 1 via __index__) or to pid<=1 must never be signaled — an unguarded
         kill would SIGTERM init / the CI container entrypoint."""
-        from kiro_crew.session_pid import _sync_kill_provider
+        from efm_go.session_pid import _sync_kill_provider
 
         mock_provider = _make_provider()  # _client._pid auto-resolves to a Mock
         pid_one = _make_provider()
         pid_one._client = SimpleNamespace(_pid=1)
 
-        with patch("kiro_crew.session_pid.platform_compat.kill_pid") as mock_kill:
+        with patch("efm_go.session_pid.platform_compat.kill_pid") as mock_kill:
             _sync_kill_provider(mock_provider)
             _sync_kill_provider(pid_one)
 
@@ -1802,7 +1802,7 @@ class TestDiscardReaping:
         teardown), the fallback must carry the kill on a dedicated thread —
         never inline on the event loop, where ``_sync_kill_provider`` blocks
         (``os.waitpid`` / ``taskkill``) and can trip the loop watchdog."""
-        from kiro_crew.session import SessionManager
+        from efm_go.session import SessionManager
 
         dead_executor = ThreadPoolExecutor(max_workers=1)
         dead_executor.shutdown(wait=True)
@@ -1816,8 +1816,8 @@ class TestDiscardReaping:
 
         provider = _make_provider()
         with (
-            patch("kiro_crew.session.subprocess_executor", return_value=dead_executor),
-            patch("kiro_crew.session._sync_kill_provider", side_effect=_record_thread),
+            patch("efm_go.session.subprocess_executor", return_value=dead_executor),
+            patch("efm_go.session._sync_kill_provider", side_effect=_record_thread),
         ):
             SessionManager._dispatch_hard_kill(provider)
 
@@ -1846,7 +1846,7 @@ class TestDiscardReaping:
             if provider is first:
                 raise RuntimeError("kill blew up")
 
-        with patch("kiro_crew.session._sync_kill_provider", side_effect=_kill):
+        with patch("efm_go.session._sync_kill_provider", side_effect=_kill):
             await mgr._sweep_warm_pool_once()
 
         assert (
@@ -1896,7 +1896,7 @@ class TestFillLockReleasedAcrossStart:
             # the fill lock released.
             await asyncio.wait_for(first_started.wait(), timeout=2.0)
 
-            with patch("kiro_crew.session.KiroCrewConfig.load") as mock_load:
+            with patch("efm_go.session.KiroCrewConfig.load") as mock_load:
                 new_cfg = _make_cfg(pool_size=0)
                 new_cfg.create_provider_factory = MagicMock(
                     return_value=MagicMock(side_effect=lambda *a, **kw: _make_provider())

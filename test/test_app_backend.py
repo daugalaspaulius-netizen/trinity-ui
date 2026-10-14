@@ -1,4 +1,4 @@
-"""Tests for kiro_crew.apps.backend — backend process management."""
+"""Tests for efm_go.apps.backend — backend process management."""
 from __future__ import annotations
 
 import json
@@ -15,7 +15,7 @@ import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
 from conftest import requires_symlinks
-from kiro_crew.apps.backend import (
+from efm_go.apps.backend import (
     AppProcess,
     PortUnavailableError,
     _find_free_port,
@@ -25,7 +25,7 @@ from kiro_crew.apps.backend import (
     start_app_backend,
     stop_app_backend,
 )
-from kiro_crew.apps.manager import APP_MANIFEST_FILENAME, install_app
+from efm_go.apps.manager import APP_MANIFEST_FILENAME, install_app
 
 
 def _probe_outcome(ok: bool):
@@ -34,7 +34,7 @@ def _probe_outcome(ok: bool):
     The probe answers WHAT it observed, so a stub has to name something; these tests are
     about the transitions rather than the status, hence one shape for each verdict.
     """
-    from kiro_crew.apps.backend import HealthProbeOutcome
+    from efm_go.apps.backend import HealthProbeOutcome
 
     if ok:
         return HealthProbeOutcome.answered(200)
@@ -58,7 +58,7 @@ def _own_probe_sel(probe_home: str):
     and a join that times out leaves a daemon thread whose next ``_flush_batch``
     re-creates the deleted home -- the leak this exists to close, one race away.
     """
-    from kiro_crew.sel import SecurityEventLog
+    from efm_go.sel import SecurityEventLog
 
     if SecurityEventLog._instance is not None:
         return None
@@ -79,7 +79,7 @@ def _retire_probe_sel(owned) -> None:
     thread. Clearing the slots lets the first test's ``sel()`` rebuild under
     the session floor's redirected default dir (``_isolate_sel_default_dir``).
     """
-    from kiro_crew.sel import SecurityEventLog
+    from efm_go.sel import SecurityEventLog
 
     if owned is None or SecurityEventLog._instance is not owned:
         return
@@ -127,7 +127,7 @@ def _sandbox_can_spawn() -> bool:
     (inline writes, no thread), and clears it before the directory goes.
     """
     try:
-        from kiro_crew import sandbox as _sb
+        from efm_go import sandbox as _sb
 
         with tempfile.TemporaryDirectory() as empty_home:
             saved = os.environ.get("KIROCREW_HOME")
@@ -211,7 +211,7 @@ def app_env(tmp_path, monkeypatch, worker_id):
     (home / "config.json").write_text(
         json.dumps({"agent": {"apps_allow_third_party": True}}), encoding="utf-8"
     )
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
 
     # Under xdist (-n auto) each worker runs in its OWN process with its own
     # _allocated_ports dict, so two workers both auto-allocate 9100 and the real
@@ -266,7 +266,7 @@ def app_env(tmp_path, monkeypatch, worker_id):
 
 class TestPortAllocation:
     def test_find_free_port(self, app_env):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         port = _find_free_port()
         # Bounds read off the module, not the 9100/9200 literals: ``app_env`` gives
@@ -284,7 +284,7 @@ class TestPortAllocation:
         """
         import threading
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         with bmod._lock:
             bmod._allocated_ports.clear()
@@ -322,7 +322,7 @@ def _drive_spawn_to_publication(monkeypatch, name, *, wrap_marks_sandbox):
     On Linux that cleanup path identifies the generated forking namespace launcher.
     Everything after the Popen boundary is faked so the body reaches publication.
     """
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
 
     def _wrap(argv, **k):
         if wrap_marks_sandbox:
@@ -360,7 +360,7 @@ def test_spawn_sets_forking_launcher_true_for_the_namespace_launcher_wrap(
     the seatbelt profile's cleanup path does not mark a forking launcher, so the flag
     stays False -- which is what this asserts against the live platform.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     src = tmp_path / "source" / "ns-app"
     src.mkdir(parents=True)
@@ -401,7 +401,7 @@ def test_the_namespace_launcher_forks_once_and_its_parent_only_waits(tier):
     """
     import ast
 
-    from kiro_crew import sandbox
+    from efm_go import sandbox
 
     tree = ast.parse(sandbox._build_launcher_script(tier))
     called = [ast.unparse(n.func) for n in ast.walk(tree) if isinstance(n, ast.Call)]
@@ -472,8 +472,8 @@ def test_an_app_entry_point_named_like_the_launcher_does_not_set_the_forking_fla
     tmp_path, app_env, monkeypatch
 ):
     """An app-controlled entry-point name cannot confer ownership of its children."""
-    from kiro_crew import platform_compat, sandbox
-    from kiro_crew.apps.backend import running_spawned_backend_pids
+    from efm_go import platform_compat, sandbox
+    from efm_go.apps.backend import running_spawned_backend_pids
 
     src = tmp_path / "source" / "launcher-named-app"
     src.mkdir(parents=True)
@@ -510,7 +510,7 @@ class TestFixedAndAutoPortIsolation:
         auto worker can select that exact number first and the fixed app is then
         refused even though other ports were free — an enabled backend left down.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -552,7 +552,7 @@ class TestFixedAndAutoPortIsolation:
 
     def test_preclaim_tolerates_unreadable_or_invalid_manifests(self, monkeypatch):
         """Pre-claiming is best-effort: it must never itself fail boot."""
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -583,7 +583,7 @@ class TestFixedAndAutoPortIsolation:
         backend would stay unavailable. Asserted at the real seam: the port must
         already be reserved by the time the spawn body runs.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -632,7 +632,7 @@ class TestFixedAndAutoPortIsolation:
         allocate), so a failure that kept the reservation would permanently burn
         that port — and a gateway retrying a broken app would leak one per attempt.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -677,7 +677,7 @@ class TestFixedAndAutoPortIsolation:
         leaves two apps mapped to one port; both children then bind it and the
         loser dies of EADDRINUSE, staying unavailable.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         with bmod._lock:
             bmod._allocated_ports.clear()
@@ -694,7 +694,7 @@ class TestFixedAndAutoPortIsolation:
 
     def test_reclaiming_your_own_fixed_port_is_idempotent(self):
         """A restart/retry of the SAME app must not be refused its own port."""
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         with bmod._lock:
             bmod._allocated_ports.clear()
@@ -708,7 +708,7 @@ class TestFixedAndAutoPortIsolation:
 
     def test_auto_allocation_skips_ports_claimed_by_other_apps(self):
         """The free-port scan must honor claims, not just live sockets."""
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         with bmod._lock:
             bmod._allocated_ports.clear()
@@ -747,7 +747,7 @@ class TestBootSpawnLatency:
         """
         import time as real_time
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -779,7 +779,7 @@ class TestBootSpawnLatency:
         host) must be reported as failed. Only OUR child owning the listener —
         positive evidence that its own bind succeeded — may short-circuit.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -811,7 +811,7 @@ class TestBootSpawnLatency:
         and about to die of EADDRINUSE — reporting a doomed pid as started and
         routing two apps at one backend.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -844,7 +844,7 @@ class TestBootSpawnLatency:
         or the early exit would never fire in production (where the listening pid
         is the launcher's child, not the pid Popen returned).
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -885,7 +885,7 @@ class TestBootSpawnLatency:
         """
         import time as real_time
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         class _Alive:
             pid = 4242
@@ -910,7 +910,7 @@ class TestBootSpawnLatency:
         """No port to observe → unchanged behavior (wait out the whole window)."""
         import time as real_time
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         class _Alive:
             pid = 4242
@@ -928,7 +928,7 @@ class TestBootSpawnLatency:
         """No port->PID tool → cannot prove ownership → keep the old behavior."""
         import time as real_time
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -963,7 +963,7 @@ class TestBootSpawnLatency:
         """
         import threading
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -985,7 +985,7 @@ class TestBootSpawnLatency:
 
     def test_concurrent_boot_isolates_a_single_app_failure(self, monkeypatch):
         """One app's spawn failure must never take down the others (or boot)."""
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -1126,8 +1126,8 @@ class TestBackendLifecycle:
         # by the runtime backstop in _start_app_backend_body. We materialize the
         # app dir directly (bypassing install-time validation) to exercise the
         # boot-time guard — never spawning a real process.
-        from kiro_crew.apps.backend import _start_app_backend_body
-        from kiro_crew.apps.manager import app_dir, get_app_manifest
+        from efm_go.apps.backend import _start_app_backend_body
+        from efm_go.apps.manager import app_dir, get_app_manifest
 
         root = app_dir("escape-app")
         root.mkdir(parents=True, exist_ok=True)
@@ -1155,8 +1155,8 @@ class TestBackendLifecycle:
         # when the switch is off.
         import logging
 
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import app_dir, get_app_manifest
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import app_dir, get_app_manifest
 
         root = app_dir("third-party-backend")
         root.mkdir(parents=True, exist_ok=True)
@@ -1173,7 +1173,7 @@ class TestBackendLifecycle:
             )
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.execution.third_party_execution_allowed", lambda: False
+            "efm_go.apps.execution.third_party_execution_allowed", lambda: False
         )
         monkeypatch.setattr(
             bmod.subprocess, "Popen", lambda *a, **k: pytest.fail("spawned despite gate off")
@@ -1190,8 +1190,8 @@ class TestBackendLifecycle:
     ):
         # The gate stays open for a real shipped builtin only when the manifest's
         # python -m target resolves inside that builtin's immutable package.
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import (
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import (
             InstalledApp,
             _write_installed,
             app_dir,
@@ -1209,7 +1209,7 @@ class TestBackendLifecycle:
                     "displayName": "Files",
                     "description": "shipped builtin backend",
                     "backend": {
-                        "entryPoint": "kiro_crew.apps.builtins.file_explorer.server",
+                        "entryPoint": "efm_go.apps.builtins.file_explorer.server",
                         "port": "auto",
                     },
                 }
@@ -1220,7 +1220,7 @@ class TestBackendLifecycle:
             InstalledApp(name=name, origin="builtin", enabled=True),
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.execution.third_party_execution_allowed", lambda: False
+            "efm_go.apps.execution.third_party_execution_allowed", lambda: False
         )
 
         class _ReachedSpawn(Exception):
@@ -1248,8 +1248,8 @@ class TestBackendLifecycle:
         # when its dotted entry resolves to genuine shipped builtin code.
         import logging
 
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import (
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import (
             InstalledApp,
             _write_installed,
             app_dir,
@@ -1266,7 +1266,7 @@ class TestBackendLifecycle:
                     "displayName": "Evil",
                     "description": "forged builtin provenance",
                     "backend": {
-                        "entryPoint": "kiro_crew.apps.builtins.file_explorer.server",
+                        "entryPoint": "efm_go.apps.builtins.file_explorer.server",
                         "port": "auto",
                     },
                 }
@@ -1277,7 +1277,7 @@ class TestBackendLifecycle:
             InstalledApp(name="evil-dotted", origin="builtin", enabled=True),
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.execution.third_party_execution_allowed", lambda: False
+            "efm_go.apps.execution.third_party_execution_allowed", lambda: False
         )
         monkeypatch.setattr(
             bmod.subprocess, "Popen", lambda *a, **k: pytest.fail("spawned despite gate off")
@@ -1294,8 +1294,8 @@ class TestBackendLifecycle:
     ):
         import logging
 
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import (
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import (
             InstalledApp,
             _write_installed,
             app_dir,
@@ -1322,7 +1322,7 @@ class TestBackendLifecycle:
             InstalledApp(name=name, origin="builtin", enabled=True),
         )
         monkeypatch.setattr(
-            "kiro_crew.apps.execution.third_party_execution_allowed", lambda: False
+            "efm_go.apps.execution.third_party_execution_allowed", lambda: False
         )
         monkeypatch.setattr(
             bmod.subprocess, "Popen", lambda *a, **k: pytest.fail("spawned mutable code")
@@ -1340,7 +1340,7 @@ class TestBackendLifecycle:
         # reported as started — otherwise the gateway proxies to a dead port (502) and
         # respawns onto the same doomed port forever (the crash-loop we hit). The spawn
         # verifies the child survived its bind; an immediate exit → None + cleared state.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -1387,7 +1387,7 @@ class TestBackendLifecycle:
         # sandboxed os.fork()s racing (a fork-in-threads deadlock unrelated to this fix).
         import threading
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         src = _make_app_with_backend(tmp_path)
         install_app(src)
@@ -1438,7 +1438,7 @@ class TestBackendLifecycle:
         # never fires), an awaiting caller hits the deadline with the placeholder still
         # STARTING. It must clear that placeholder and return None — otherwise the app is
         # wedged in 'starting' forever and every later call re-enters the 20s wait.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         with bmod._lock:
             bmod._processes["wedged-app"] = AppProcess(
@@ -1495,8 +1495,8 @@ class TestShellDispatch:
     def _dispatch_cmd(self, tmp_path, monkeypatch, name, entry_rel, content, *,
                       executable, backend_type=""):
         """Install an app, then capture the argv the dispatch builds."""
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import get_app_manifest
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import get_app_manifest
 
         src = tmp_path / "source" / name
         src.mkdir(parents=True)
@@ -1580,8 +1580,8 @@ class TestShellDispatch:
         # On native Windows (IS_POSIX False) the shell branch must fail fast
         # with a logged error and return None — never reach Popen with a
         # shebang-dependent argv or the nonexistent /bin/sh.
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import get_app_manifest
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import get_app_manifest
 
         name = "win-shell-refused"
         src = tmp_path / "source" / name
@@ -1615,7 +1615,7 @@ class TestBootAdmissionRevet:
     """
 
     def _boot_env(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -1724,7 +1724,7 @@ class TestBootAdmissionRevet:
     def test_a_deferred_app_denied_by_governance_between_the_waves_is_not_spawned(
         self, tmp_path, app_env, monkeypatch
     ):
-        import kiro_crew.apps.manager as manager
+        import efm_go.apps.manager as manager
 
         bmod, started = self._boot_env(monkeypatch)
         apps = [{"name": "dev-fleet", "enabled": True, "origin": "builtin",
@@ -1736,7 +1736,7 @@ class TestBootAdmissionRevet:
         assert started == []
 
     def test_dev_fleet_is_the_bound_port_deferred_backend(self):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         assert bmod.DEV_FLEET_APP_NAME == "dev-fleet"
 
@@ -1744,7 +1744,7 @@ class TestBootAdmissionRevet:
         """A per-app spawn failure (e.g. sandbox.wrap_argv fail-closing on macOS 26
         where sandbox-exec is gone) must NOT crash the whole gateway — the loop logs,
         skips the failing app, and still boots the healthy one."""
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -1787,7 +1787,7 @@ def _reconcile_lock_held() -> bool:
     """
     import threading
 
-    import kiro_crew.apps.backend as bmod
+    import efm_go.apps.backend as bmod
 
     result: list[bool] = []
 
@@ -1828,7 +1828,7 @@ class TestHealthGatedMcpRegistration:
         monkeypatch.setattr(bmod, "_HEALTH_CHECK_RETRIES", 3)
 
     def test_registers_when_healthy_and_still_tracked(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -1854,7 +1854,7 @@ class TestHealthGatedMcpRegistration:
     def test_does_not_register_if_stopped_mid_healthcheck(self, monkeypatch):
         # review-bot race finding: app removed from _processes between the poll and the lock →
         # must NOT register MCP for a now-dead backend.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -1874,7 +1874,7 @@ class TestHealthGatedMcpRegistration:
         assert calls == []  # never registered — no dead-URL entry written
 
     def test_scrubs_when_never_healthy(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -1919,8 +1919,8 @@ def test_devfleet_repo_survives_the_app_backend_env_allowlist(monkeypatch):
     """
     from pathlib import Path
 
-    import kiro_crew.apps.backend as bmod
-    from kiro_crew.apps.registry import minimal_env
+    import efm_go.apps.backend as bmod
+    from efm_go.apps.registry import minimal_env
 
     monkeypatch.setenv("KIROCREW_DEVFLEET_REPO", "/opt/checkouts/kirocrew")
     # The generic allowlist does NOT carry it — that is the trap this guards.
@@ -1936,11 +1936,11 @@ def test_devfleet_repo_survives_the_app_backend_env_allowlist(monkeypatch):
 
 def test_devfleet_repo_env_wins_repo_discovery(monkeypatch, tmp_path):
     """dev-fleet honors the forwarded override ahead of every other hint."""
-    from kiro_crew.apps.builtins.dev_fleet import server as dfmod
+    from efm_go.apps.builtins.dev_fleet import server as dfmod
 
     proj = tmp_path / "proj"
     (proj / ".git").mkdir(parents=True)
-    (proj / "src" / "kiro_crew").mkdir(parents=True)
+    (proj / "src" / "efm_go").mkdir(parents=True)
     (proj / "pyproject.toml").write_text("[project]\nname = 'kiro-crew'\n")
     monkeypatch.setenv("KIROCREW_DEVFLEET_REPO", "/opt/checkouts/kirocrew")
     monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(proj))
@@ -1993,7 +1993,7 @@ class TestGatewayOriginInjection:
         return name
 
     def _write_secret(self, name, *, mode=0o600, secret=None):
-        from kiro_crew.apps.manager import app_dir
+        from efm_go.apps.manager import app_dir
 
         path = app_dir(name) / ".app_secret"
         path.write_text(secret if secret is not None else self._SECRET)
@@ -2008,7 +2008,7 @@ class TestGatewayOriginInjection:
         spy Popen that records the env the gateway would hand the child, then
         raises to stop before a real process is created.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         captured: dict[str, dict] = {}
 
@@ -2029,7 +2029,7 @@ class TestGatewayOriginInjection:
         The origin must be the port THIS gateway bound (KIROCREW_BOUND_PORT),
         not the app's own PORT (which lives in the 9100-9200 app range).
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         name = self._install_backend_app(tmp_path)
         self._write_secret(name)
@@ -2141,7 +2141,7 @@ class TestGatewayOriginInjection:
         -- exec). Module-style dotted entries are builtin-only and not installable
         here. The value is the same generic origin regardless of type.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # A node backend must find a node binary before it reaches the spawn; the
         # binary is never executed (Popen is spied), so a stub path suffices.
@@ -2175,8 +2175,8 @@ class TestGatewayOriginInjection:
         self, tmp_path, app_env, monkeypatch
     ):
         """A symlinked app dir must not reach node's argv[1]: ESM main guards compare realpaths."""
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import app_dir
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import app_dir
 
         monkeypatch.setattr(bmod, "_find_node_binary", lambda: sys.executable)
         self._install_typed_backend_app(tmp_path, "node-link", "server.mjs", "node", "//\n")
@@ -2247,7 +2247,7 @@ class TestGatewayOriginInjection:
         self, tmp_path, app_env, monkeypatch
     ):
         """A missing .app_secret is tolerated: origin still set, no proof, no secret."""
-        from kiro_crew.apps.manager import app_dir
+        from efm_go.apps.manager import app_dir
 
         name = self._install_backend_app(tmp_path)
         (app_dir(name) / ".app_secret").unlink()  # install writes one; remove it
@@ -2290,8 +2290,8 @@ class TestTheCacheOnlyChildCanSeeTheCacheItMustBootFrom:
     """
 
     def test_the_spawn_passes_the_cache_as_a_visible_dir(self, app_env, tmp_path, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.platform import policy_distribution as pd
+        import efm_go.apps.backend as bmod
+        from efm_go.platform import policy_distribution as pd
 
         # A gateway whose OWN ceiling came from the central tier is the only one that
         # flags a child cache-only, so that is the state to reproduce.
@@ -2369,13 +2369,13 @@ class TestTheCacheOnlyChildCanSeeTheCacheItMustBootFrom:
         """
         import logging
 
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.platform import policy_distribution as pd
+        import efm_go.apps.backend as bmod
+        from efm_go.platform import policy_distribution as pd
 
         pd._record_installed(b'{"version": 1, "boot": {}}')
         monkeypatch.setattr(bmod, "_warned_unconfined_cache", False, raising=False)
         try:
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.apps.backend"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.apps.backend"):
                 # An unwrapped argv is exactly what wrap_argv returns with no sandbox backend.
                 self._spawn_with_wrap(
                     bmod, tmp_path, monkeypatch, "unconfined-app", lambda argv, **kw: (list(argv), None)
@@ -2391,13 +2391,13 @@ class TestTheCacheOnlyChildCanSeeTheCacheItMustBootFrom:
         """The control: where the seal applies there is nothing to warn about."""
         import logging
 
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.platform import policy_distribution as pd
+        import efm_go.apps.backend as bmod
+        from efm_go.platform import policy_distribution as pd
 
         pd._record_installed(b'{"version": 1, "boot": {}}')
         monkeypatch.setattr(bmod, "_warned_unconfined_cache", False, raising=False)
         try:
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.apps.backend"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.apps.backend"):
                 # A CHANGED argv is what a real wrap returns.
                 self._spawn_with_wrap(
                     bmod,
@@ -2414,8 +2414,8 @@ class TestTheCacheOnlyChildCanSeeTheCacheItMustBootFrom:
 
     def test_an_ungoverned_host_passes_no_visible_dirs(self, app_env, tmp_path, monkeypatch):
         """No central ceiling means no cache-only flag and nothing to un-hide."""
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.platform import policy_distribution as pd
+        import efm_go.apps.backend as bmod
+        from efm_go.platform import policy_distribution as pd
 
         pd.reset_process_state()
         seen: dict = {}
@@ -2480,9 +2480,9 @@ class TestTheMdNotebookBackendCanSeeItsOwnStateFiles:
     def test_the_shipped_builtin_spawn_starts_isolated_with_the_carveout(
         self, app_env, monkeypatch
     ):
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import register_builtin_apps
-        from kiro_crew.sandbox import MD_NOTEBOOK_APP_NAME, app_backend_visible_targets
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import register_builtin_apps
+        from efm_go.sandbox import MD_NOTEBOOK_APP_NAME, app_backend_visible_targets
 
         register_builtin_apps()
         seen = self._spy(bmod, monkeypatch)
@@ -2503,7 +2503,7 @@ class TestTheMdNotebookBackendCanSeeItsOwnStateFiles:
         argv = seen["argv"]
         assert "-I" in argv, f"module builtin spawned without isolated startup: {argv!r}"
         assert "-m" not in argv and any(
-            "runpy" in a and "kiro_crew.apps.builtins.md_notebook" in a for a in argv
+            "runpy" in a and "efm_go.apps.builtins.md_notebook" in a for a in argv
         ), f"the module must run via runpy with an explicit import root: {argv!r}"
 
     def test_other_module_builtins_keep_the_bare_module_launch(self, app_env, monkeypatch):
@@ -2511,8 +2511,8 @@ class TestTheMdNotebookBackendCanSeeItsOwnStateFiles:
         carve-out: the other module builtins have no unmasked secret in their
         namespace, and rewriting their import environment would be a rider on a
         fix scoped to one (First Principles review)."""
-        import kiro_crew.apps.backend as bmod
-        from kiro_crew.apps.manager import register_builtin_apps
+        import efm_go.apps.backend as bmod
+        from efm_go.apps.manager import register_builtin_apps
 
         register_builtin_apps()
         seen = self._spy(bmod, monkeypatch)
@@ -2534,7 +2534,7 @@ class TestTheMdNotebookBackendCanSeeItsOwnStateFiles:
         NAMED md-notebook that executes from the mutable installed tree (here
         via the blanket third-party toggle the fixture enables) must not see
         the GitHub token."""
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         seen = self._spy(bmod, monkeypatch)
 
@@ -2593,7 +2593,7 @@ class TestBackendLivenessWatch:
         result list — the watch stops by untracking the record once the script runs out,
         which is the same guard ``stop_app_backend`` exits it through in production.
         """
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -2738,7 +2738,7 @@ class TestHealthSupervisorHandoff:
     """The startup poll must hand the watch its record, or the whole watch is dead wiring."""
 
     def test_watch_runs_when_the_backend_came_up(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -2756,7 +2756,7 @@ class TestHealthSupervisorHandoff:
 
     def test_no_watch_when_the_backend_never_came_up(self, monkeypatch):
         # Nothing to watch: the startup path already scrubbed the MCP entry and gave up.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -2782,7 +2782,7 @@ class TestHealthTransitionsRefuseAStaleRecord:
 
     @pytest.fixture
     def gate_calls(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         calls: list[tuple[str, int, bool]] = []
         monkeypatch.setattr(
             bmod, "_gate_mcp_registration",
@@ -2827,7 +2827,7 @@ class TestMcpReconcileHonoursRecordIdentity:
 
     @pytest.fixture
     def wired(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         calls: list[tuple[str, int, bool]] = []
         monkeypatch.setattr(
             bmod, "_gate_mcp_registration",
@@ -2893,7 +2893,7 @@ class TestMcpReconcileHonoursRecordIdentity:
         # Serializing only the watch would not be enough: the successor's own startup
         # registration has to queue behind a retiring watcher's reconcile, or the two
         # can still interleave and leave the dead port as the last write.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -2929,7 +2929,7 @@ class TestStartupProbeCannotPromoteAReplacement:
     """
 
     def test_a_successor_installed_mid_probe_is_not_promoted(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -2979,7 +2979,7 @@ class TestFailedMcpReconcileIsRetried:
 
     @pytest.fixture
     def watched(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -3068,7 +3068,7 @@ class TestStartupPollBelongsToOneGeneration:
 
     @pytest.fixture
     def wired(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -3152,7 +3152,7 @@ class TestTerminalScrubIsRetriedUntilItLands:
 
     @pytest.fixture
     def wired(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -3239,7 +3239,7 @@ class TestTeardownParticipatesInTheReconcileSerialization:
     """
 
     def test_stop_holds_the_reconcile_lock_across_the_pop(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         ap = AppProcess(app_name="s", port=9230, healthy=True, mcp_healthy=True)
         with bmod._lock:
@@ -3285,7 +3285,7 @@ class TestAdoptedRecoveryRebindsOwnership:
 
     @pytest.fixture
     def watched(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -3373,7 +3373,7 @@ class TestUnknownMcpStateStillGetsScrubbed:
     """
 
     def test_a_none_mcp_state_keeps_retrying_the_terminal_scrub(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -3403,7 +3403,7 @@ class TestUnknownMcpStateStillGetsScrubbed:
                 bmod._processes.clear()
 
     def test_a_confirmed_scrub_still_ends_the_watch(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -3440,7 +3440,7 @@ class TestHealthProbeSecurity:
     def test_ordinary_paths_preserve_the_loopback_authority(self, path):
         import urllib.parse
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         url = bmod._health_probe_url(9101, path)
         assert url == f"http://127.0.0.1:9101{path}"
@@ -3454,20 +3454,20 @@ class TestHealthProbeSecurity:
         ],
     )
     def test_authority_smuggling_and_ambiguous_paths_are_refused(self, path):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         assert bmod._health_probe_url(9101, path) is None
 
     @pytest.mark.parametrize("port", [0, -1, 65536, 99999])
     def test_impossible_ports_are_refused(self, port):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         assert bmod._health_probe_url(port, "/health") is None
 
     def test_the_userinfo_payload_would_otherwise_leave_loopback(self):
         import urllib.parse
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         naive = "http://127.0.0.1:9101@example.com/"
         assert urllib.parse.urlsplit(naive).hostname == "example.com"
@@ -3478,7 +3478,7 @@ class TestHealthProbeSecurity:
     ):
         import logging
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         monkeypatch.setattr(bmod, "_warned_health_paths", set())
         monkeypatch.setattr(
@@ -3497,7 +3497,7 @@ class TestHealthProbeSecurity:
     def test_a_valid_path_uses_the_hardened_opener_with_the_exact_url(
         self, monkeypatch
     ):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         seen = {}
 
@@ -3517,7 +3517,7 @@ class TestHealthProbeSecurity:
         assert seen == {"url": "http://127.0.0.1:9101/health?q=1", "timeout": 1.5}
 
     def test_adoption_startup_and_watch_share_the_same_probe_contract(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         calls = []
 
@@ -3600,7 +3600,7 @@ class TestProbeSurvivesAMalformedHttpResponse:
         # Drives a REAL socket rather than a stubbed exception: the whole finding is
         # about which concrete exception urllib lets through, so faking it would beg
         # the question.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         port = self._serve_garbage(b"NOT-HTTP garbage\r\n\r\n")
 
         assert bmod._health_probe(port, "/health").healthy is False
@@ -3609,7 +3609,7 @@ class TestProbeSurvivesAMalformedHttpResponse:
         # The first line off the socket belongs to the app backend, which is arbitrary
         # third-party code, and `BadStatusLine` carries it verbatim. Printed raw into the
         # log it could forge an entry, so the detail escapes it.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         port = self._serve_garbage(b"NOT-HTTP \x1b[2Jforged WARNING line\r\n")
 
         detail = bmod._health_probe(port, "/health").detail
@@ -3620,7 +3620,7 @@ class TestProbeSurvivesAMalformedHttpResponse:
 
     def test_an_enormous_status_line_does_not_fill_the_log(self):
         # A status line may be 64 KB; one failed probe must not write a screenful.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         port = self._serve_garbage(b"NOT-HTTP " + b"A" * 5000 + b"\r\n")
 
         detail = bmod._health_probe(port, "/health").detail
@@ -3631,7 +3631,7 @@ class TestProbeSurvivesAMalformedHttpResponse:
     def test_the_adoption_probe_survives_it_too(self):
         # Same class of bug in the sibling probe — fixed together so one does not sit
         # next to the other still wrong.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         port = self._serve_garbage(b"\x00\x01binary noise\r\n\r\n")
 
         assert bmod._probe_adoption_health(port, "/health") is False
@@ -3680,7 +3680,7 @@ class TestAFailedHealthCheckNamesWhatItObserved:
     @pytest.fixture
     def exhausts_at_once(self, monkeypatch):
         """One attempt, no sleeping, and a recording MCP gate — nothing else stubbed."""
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         monkeypatch.setattr(bmod, "_app_enabled_state", lambda _name: True)
         monkeypatch.setattr(bmod, "_HEALTH_CHECK_INTERVAL", 0)
@@ -3787,7 +3787,7 @@ class TestAFailedHealthCheckNamesWhatItObserved:
         # by the watch, whose reason was equally silent about why.
         import logging
 
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         monkeypatch.setattr(bmod, "_app_enabled_state", lambda _name: True)
         monkeypatch.setattr(bmod, "_HEALTH_WATCH_INTERVAL", 0)
@@ -3826,7 +3826,7 @@ class TestWatchSurvivesAnUnexpectedSweepFault:
     """A dying watch silently restores write-once, so a sweep fault must not kill it."""
 
     def test_the_watch_restarts_after_an_unexpected_exception(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -3860,7 +3860,7 @@ class TestWatchSurvivesAnUnexpectedSweepFault:
                 bmod._processes.clear()
 
     def test_it_does_not_restart_once_the_record_is_gone(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -3900,8 +3900,8 @@ class TestScrubAlsoRefreshesMaterializedAgents:
     """
 
     def test_an_unhealthy_reconcile_refreshes_the_apps_agents(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         seen: list[str] = []
         monkeypatch.setattr(
@@ -3921,8 +3921,8 @@ class TestScrubAlsoRefreshesMaterializedAgents:
         assert seen == ["a"]
 
     def test_a_healthy_reconcile_does_not_take_the_scrub_path(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         seen: list[str] = []
         monkeypatch.setattr(brmod, "reregister_app_mcp_servers",
@@ -3940,8 +3940,8 @@ class TestScrubAlsoRefreshesMaterializedAgents:
         # The agent JSON is the file kiro-cli reads, so a scrub whose agent half failed
         # has NOT achieved what the scrub exists for. Reporting it landed would let
         # `mcp_healthy` advance and strand the dead url there permanently.
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(
             brmod, "scrub_backend_mcp_url", lambda name, unreconciled=None: []
@@ -3964,8 +3964,8 @@ class TestScrubAlsoRefreshesMaterializedAgents:
         # A self-managed app, a denied one, and an app with no declared agents all return
         # an empty list. None is a failed write, and retrying them never converges — only
         # the io_failures collector means retry.
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(
             brmod, "scrub_backend_mcp_url", lambda name, unreconciled=None: []
@@ -3991,7 +3991,7 @@ class TestSupervisorIsBoundAtSpawn:
     """
 
     def test_the_starter_hands_over_the_record_itself(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         captured: list[object] = []
         monkeypatch.setattr(
             bmod.threading, "Thread",
@@ -4007,7 +4007,7 @@ class TestSupervisorIsBoundAtSpawn:
         # Simulates the window: the successor is installed before the supervisor's first
         # statement. Binding to the record means the poll retires instead of acting on a
         # generation it never probed.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         # These exercise promotion logic, not enablement: their app names are
         # fabricated and so are not in installed.json. The real gate is pinned by
@@ -4046,8 +4046,8 @@ class TestRegistrationReportsAgentIoFailuresToo:
     """
 
     def test_a_failed_agent_write_on_recovery_is_unlanded(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         def _reregister(app_name, live_port=None, io_failures=None):
             if io_failures is not None:
@@ -4058,8 +4058,8 @@ class TestRegistrationReportsAgentIoFailuresToo:
         assert bmod._gate_mcp_registration("a", 9300, healthy=True) is False
 
     def test_a_clean_registration_still_lands(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(
             brmod, "reregister_app_mcp_servers",
@@ -4070,8 +4070,8 @@ class TestRegistrationReportsAgentIoFailuresToo:
 
     def test_the_live_port_is_still_threaded_through(self, monkeypatch):
         # The collector must not displace the argument that makes the url reachable.
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         seen: dict[str, object] = {}
 
@@ -4095,7 +4095,7 @@ class TestPromotionRequiresAConfirmedEnabledApp:
 
     @pytest.fixture
     def tracked(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         calls: list[tuple[str, int, bool]] = []
         monkeypatch.setattr(
             bmod, "_gate_mcp_registration",
@@ -4157,7 +4157,7 @@ class TestPromotionIsVerifiedAfterTheWrite:
 
     @pytest.fixture
     def tracked(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         calls: list[tuple[str, int, bool]] = []
         monkeypatch.setattr(
             bmod, "_gate_mcp_registration",
@@ -4179,7 +4179,7 @@ class TestPromotionIsVerifiedAfterTheWrite:
         states = iter([True, False])
         monkeypatch.setattr(bmod, "_app_enabled_state", lambda name: next(states))
         undone: list[str] = []
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         monkeypatch.setattr(brmod, "deregister_app", lambda n: undone.append(n))
 
         assert bmod._set_backend_health(ap, healthy=True) is False
@@ -4190,7 +4190,7 @@ class TestPromotionIsVerifiedAfterTheWrite:
     def test_a_still_enabled_app_is_left_registered(self, monkeypatch, tracked):
         bmod, ap, calls = tracked
         monkeypatch.setattr(bmod, "_app_enabled_state", lambda name: True)
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         monkeypatch.setattr(
             brmod, "deregister_app",
             lambda n: pytest.fail("must not undo a promotion that is still valid"),
@@ -4226,7 +4226,7 @@ class TestUndoIsRetriedUntilItCompletes:
 
     @pytest.fixture
     def disabled(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         monkeypatch.setattr(bmod, "_app_enabled_state", lambda name: False)
         monkeypatch.setattr(
             bmod, "_gate_mcp_registration", lambda name, port, *, healthy: True
@@ -4243,7 +4243,7 @@ class TestUndoIsRetriedUntilItCompletes:
 
     def test_a_soft_failure_leaves_the_record_unreconciled(self, monkeypatch, disabled):
         bmod, ap = disabled
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         monkeypatch.setattr(
             brmod, "deregister_app",
             lambda n: SimpleNamespace(errors=["could not remove agent: ENOSPC"]),
@@ -4255,7 +4255,7 @@ class TestUndoIsRetriedUntilItCompletes:
 
     def test_a_clean_removal_is_recorded(self, monkeypatch, disabled):
         bmod, ap = disabled
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         monkeypatch.setattr(brmod, "deregister_app", lambda n: SimpleNamespace(errors=[]))
 
         assert bmod._undo_promotion_of_disabled_app(ap) is True
@@ -4263,7 +4263,7 @@ class TestUndoIsRetriedUntilItCompletes:
 
     def test_a_raising_deregister_also_leaves_it_unreconciled(self, monkeypatch, disabled):
         bmod, ap = disabled
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
 
         def _boom(n):
             raise OSError("agents dir unwritable")
@@ -4277,7 +4277,7 @@ class TestUndoIsRetriedUntilItCompletes:
         # refusal path is where an unlanded undo gets another attempt.
         bmod, ap = disabled
         attempts: list[str] = []
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         monkeypatch.setattr(
             brmod, "deregister_app",
             lambda n: (attempts.append(n), SimpleNamespace(errors=["still failing"]))[1],
@@ -4290,7 +4290,7 @@ class TestUndoIsRetriedUntilItCompletes:
     def test_a_completed_undo_is_not_retried(self, monkeypatch, disabled):
         bmod, ap = disabled
         ap.mcp_healthy = False  # already reconciled
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.bridges as brmod
         monkeypatch.setattr(
             brmod, "deregister_app",
             lambda n: pytest.fail("nothing of ours is registered; nothing to undo"),
@@ -4310,8 +4310,8 @@ class TestDemotionRefreshIsGatedOnEnablement:
 
     @pytest.fixture
     def wired(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         scrubbed: list[str] = []
         refreshed: list[str] = []
@@ -4363,8 +4363,8 @@ class TestDisabledCleanupResultIsTheReconcileResult:
     """A failed disabled-app cleanup is not a completed reconcile."""
 
     def test_a_failed_cleanup_reports_unlanded(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(
             brmod, "scrub_backend_mcp_url", lambda name, unreconciled=None: []
@@ -4375,8 +4375,8 @@ class TestDisabledCleanupResultIsTheReconcileResult:
         assert bmod._gate_mcp_registration("app", 9350, healthy=False) is False
 
     def test_a_clean_cleanup_reports_landed(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(
             brmod, "scrub_backend_mcp_url", lambda name, unreconciled=None: []
@@ -4396,7 +4396,7 @@ class TestTheUndoNeverTouchesASuccessor:
     """
 
     def test_a_retired_record_with_unreadable_enablement_undoes_nothing(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         old = AppProcess(app_name="app", port=9360, healthy=False, mcp_healthy=True)
         successor = AppProcess(app_name="app", port=9361, healthy=True, mcp_healthy=True)
@@ -4429,8 +4429,8 @@ class TestUnreadableManifestKeepsTheScrubUnlanded:
     """
 
     def test_an_unreadable_manifest_reports_unlanded(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         def _scrub(name, unreconciled=None):
             if unreconciled is not None:
@@ -4441,8 +4441,8 @@ class TestUnreadableManifestKeepsTheScrubUnlanded:
         assert bmod._gate_mcp_registration("app", 9370, healthy=False) is False
 
     def test_a_readable_manifest_reports_landed(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(
             brmod, "scrub_backend_mcp_url", lambda name, unreconciled=None: []
@@ -4464,8 +4464,8 @@ class TestUnknownEnablementNeverDeletes:
 
     @pytest.fixture
     def wired(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         dropped: list[str] = []
         monkeypatch.setattr(
@@ -4496,8 +4496,8 @@ class TestUnknownEnablementNeverDeletes:
         # The other direction is unchanged: not-confirmed means do not add. Asserted
         # through the transition rather than a predicate, because what matters is that
         # the promotion does not happen AND nothing is deleted on the way.
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         monkeypatch.setattr(bmod, "_app_enabled_state", lambda name: None)
         monkeypatch.setattr(
@@ -4525,7 +4525,7 @@ class TestATransitionAlwaysReconciles:
     """
 
     def test_a_demotion_reconciles_even_when_the_flags_agree(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         calls: list[bool] = []
         monkeypatch.setattr(
@@ -4547,7 +4547,7 @@ class TestATransitionAlwaysReconciles:
     def test_an_unchanged_verdict_still_short_circuits(self, monkeypatch):
         # The fast path has to survive: without it a settled backend would rewrite
         # mcp.json on every sweep.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
 
         monkeypatch.setattr(
             bmod, "_gate_mcp_registration",
@@ -4575,8 +4575,8 @@ class TestTheUndoPathsAlsoRefuseAnUnknownState:
 
     @pytest.fixture
     def tracked(self, monkeypatch):
-        import kiro_crew.apps.backend as bmod
-        import kiro_crew.apps.bridges as brmod
+        import efm_go.apps.backend as bmod
+        import efm_go.apps.bridges as brmod
 
         deleted: list[str] = []
         monkeypatch.setattr(brmod, "deregister_app", lambda n: deleted.append(n))
@@ -4641,7 +4641,7 @@ class TestEnabledStateDistinguishesUnreadableFromDisabled:
     """
 
     def _meta(self, monkeypatch, tmp_path):
-        import kiro_crew.apps.manager as mgr
+        import efm_go.apps.manager as mgr
         app = tmp_path / "probe"
         app.mkdir(parents=True, exist_ok=True)
         monkeypatch.setattr(mgr, "app_dir", lambda name: app)
@@ -4677,7 +4677,7 @@ class TestEnabledStateDistinguishesUnreadableFromDisabled:
         self, monkeypatch, tmp_path
     ):
         # The path that matters: backend must see None, or no deletion is ever refused.
-        import kiro_crew.apps.backend as bmod
+        import efm_go.apps.backend as bmod
         mgr, meta = self._meta(monkeypatch, tmp_path)
         meta.write_text("{ not json", encoding="utf-8")
 
@@ -4688,8 +4688,8 @@ class TestEnabledStateDistinguishesUnreadableFromDisabled:
 class TestExecBackendShebangShim:
     def _spawn_cmd(self, tmp_path, shebang_line: str):
         """Build the exec-arm inputs and return the resolved cmd."""
-        import kiro_crew.apps.backend as bk
-        from kiro_crew.apps.interpreter import app_deps_dir
+        import efm_go.apps.backend as bk
+        from efm_go.apps.interpreter import app_deps_dir
 
         root = tmp_path / "app"
         root.mkdir()

@@ -34,11 +34,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew import llm_helpers
-from kiro_crew.hooks import ToolHookResult
-from kiro_crew.llm_helpers import ToolApprovalPolicy, _resolve_permission
-from kiro_crew.name_grant import Refusal
-from kiro_crew.providers.base import (
+from efm_go import llm_helpers
+from efm_go.hooks import ToolHookResult
+from efm_go.llm_helpers import ToolApprovalPolicy, _resolve_permission
+from efm_go.name_grant import Refusal
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
@@ -305,7 +305,7 @@ async def test_interactive_rejection_still_audits_before_the_wire(monkeypatch):
     sel.log_tool_invocation = MagicMock(
         side_effect=lambda **kw: audited.append(kw.get("outcome", ""))
     )
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel)
 
     class _StalledReject(_Provider):
         async def reject_tool(self, request_id) -> None:
@@ -384,7 +384,7 @@ async def test_unverifiable_path_stall_keeps_its_structural_class(monkeypatch):
     judged, retry shortly" from a credential match; the reason must reach the
     notice untrimmed so an agent path spelled with ``.aws`` is not answered with
     credential-read prose for a rule that never fired."""
-    from kiro_crew.security import UNVERIFIABLE_PATH_PREFIX
+    from efm_go.security import UNVERIFIABLE_PATH_PREFIX
 
     stalled = f"{UNVERIFIABLE_PATH_PREFIX}: /work/aws-credentials-tool/.aws/notes.txt"
     monkeypatch.setattr(llm_helpers, "sensitive_path_refusal", lambda path, base_dir=None: stalled)
@@ -415,7 +415,7 @@ async def test_audit_lands_before_the_steer_and_survives_cancellation(monkeypatc
     sel.log_tool_invocation = MagicMock(
         side_effect=lambda **kw: audited.append(kw.get("outcome", ""))
     )
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: sel)
+    monkeypatch.setattr("efm_go.sel.sel", lambda: sel)
 
     class _Stalled(_Provider):
         async def steer(self, message: str) -> bool:
@@ -480,7 +480,7 @@ async def test_cancelled_mid_steer_does_not_hang_on_a_stalled_reject(monkeypatch
     (orphan,) = [t for t in llm_helpers._orphan_rejects if not t.done()]
     # The abandoned task must retire itself AND retrieve its outcome when it
     # finally settles -- a bare set.discard would leave the exception unread.
-    with caplog.at_level("DEBUG", logger="kiro_crew.llm_helpers"):
+    with caplog.at_level("DEBUG", logger="efm_go.llm_helpers"):
         orphan.cancel()
         with pytest.raises(asyncio.CancelledError):
             await orphan
@@ -532,7 +532,7 @@ async def test_an_audit_failure_on_a_deny_raises_before_the_wire(monkeypatch):
     def _broken_sel():
         raise OSError("audit root unavailable")
 
-    monkeypatch.setattr("kiro_crew.sel.sel", _broken_sel)
+    monkeypatch.setattr("efm_go.sel.sel", _broken_sel)
     provider = _Provider()
     with pytest.raises(OSError):
         await _resolve_permission(provider, _event(), ToolApprovalPolicy.REJECT_ALL, None)
@@ -548,7 +548,7 @@ async def test_an_audit_failure_on_an_approval_still_raises(monkeypatch):
     def _broken_sel():
         raise OSError("audit root unavailable")
 
-    monkeypatch.setattr("kiro_crew.sel.sel", _broken_sel)
+    monkeypatch.setattr("efm_go.sel.sel", _broken_sel)
     provider = _Provider()
     with pytest.raises(OSError):
         await _resolve_permission(provider, _event(), ToolApprovalPolicy.AUTO_APPROVE, None)
@@ -596,7 +596,7 @@ async def test_orphan_reject_failure_is_retrieved_and_logged(caplog):
     task = asyncio.ensure_future(_failing_reject())
     llm_helpers._orphan_rejects.add(task)
     task.add_done_callback(llm_helpers._orphan_reject_done)
-    with caplog.at_level("WARNING", logger="kiro_crew.llm_helpers"):
+    with caplog.at_level("WARNING", logger="efm_go.llm_helpers"):
         with pytest.raises(ConnectionResetError):
             await task
         await asyncio.sleep(0)
@@ -643,7 +643,7 @@ class TestEveryHostDenyInLlmHelpersSteersFirst:
     cannot silently break.
     """
 
-    MODULE = pathlib.Path(__file__).resolve().parents[1] / "src/kiro_crew/llm_helpers.py"
+    MODULE = pathlib.Path(__file__).resolve().parents[1] / "src/efm_go/llm_helpers.py"
     REJECT = re.compile(r"^\s*await \w+\.reject_tool\(")
     STEER = re.compile(r"^\s*await _steer_host_deny\(")
     #: The audit spellings: ``_resolve_permission``'s single raising funnel, and

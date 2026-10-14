@@ -18,17 +18,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.runtime import _format_runtime_rpc_error
-from kiro_crew.agent import missing_required_agent_specs
-from kiro_crew.agent_files import (
+from efm_go.acp.runtime import _format_runtime_rpc_error
+from efm_go.agent import missing_required_agent_specs
+from efm_go.agent_files import (
     AGENT_FILENAME,
     KNOWLEDGE_AGENT_FILENAME,
     LITE_AGENT_FILENAME,
     OWNED_KIRO_AGENT_FILES,
     REQUIRED_KIRO_AGENT_FILES,
 )
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.slack.gateway import GatewayOrchestrator
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.slack.gateway import GatewayOrchestrator
 
 
 def _make_orchestrator() -> GatewayOrchestrator:
@@ -73,19 +73,19 @@ class TestMissingRequiredAgentSpecs:
         # first act, so a failure after that leaves a created-but-empty dir.
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
             assert missing_required_agent_specs() == list(REQUIRED_KIRO_AGENT_FILES)
 
     def test_absent_dir_reports_every_required_spec(self, tmp_path):
         # The decline path returns before mkdir, so the dir may not exist at all.
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path / "nope"):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path / "nope"):
             assert missing_required_agent_specs() == list(REQUIRED_KIRO_AGENT_FILES)
 
     def test_complete_install_reports_nothing(self, tmp_path):
         agents_dir = tmp_path / "agents"
         for name in REQUIRED_KIRO_AGENT_FILES:
             _write_spec(agents_dir, name)
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
             assert missing_required_agent_specs() == []
 
     def test_partial_install_reports_only_the_absent_one(self, tmp_path):
@@ -94,7 +94,7 @@ class TestMissingRequiredAgentSpecs:
         # auto-titles and every other background turn.
         agents_dir = tmp_path / "agents"
         _write_spec(agents_dir, AGENT_FILENAME)
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
             assert missing_required_agent_specs() == [LITE_AGENT_FILENAME]
 
     def test_directory_named_like_a_spec_is_not_a_spec(self, tmp_path):
@@ -102,7 +102,7 @@ class TestMissingRequiredAgentSpecs:
         agents_dir = tmp_path / "agents"
         (agents_dir / AGENT_FILENAME).mkdir(parents=True)
         _write_spec(agents_dir, LITE_AGENT_FILENAME)
-        with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+        with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
             assert missing_required_agent_specs() == [AGENT_FILENAME]
 
 
@@ -116,7 +116,7 @@ class TestFormatRuntimeRpcError:
             "message": "Internal error",
             "data": f"Mode '{agent}' not found",
         }
-        with patch("kiro_crew.acp.runtime.kiro_agents_dir", return_value=tmp_path):
+        with patch("efm_go.acp.runtime.kiro_agents_dir", return_value=tmp_path):
             text = _format_runtime_rpc_error(err)
 
         assert f"'{agent}.json'" in text  # names the file that is missing
@@ -130,7 +130,7 @@ class TestFormatRuntimeRpcError:
         # answers "not found" for one that is on disk but unloaded.
         name = "kirocrew-skill-view-" + "0123456789abcdef01234567"
         err = {"code": -32603, "message": "Internal error", "data": f"Mode '{name}' not found"}
-        with patch("kiro_crew.acp.runtime.kiro_agents_dir", return_value=tmp_path):
+        with patch("efm_go.acp.runtime.kiro_agents_dir", return_value=tmp_path):
             text = _format_runtime_rpc_error(err)
 
         assert name in text
@@ -179,23 +179,23 @@ class TestGatewayInstallVerification:
     def _run_init_services(orch, *, rebuild):
         """Drive _init_services with every heavy collaborator stubbed out."""
         names = [
-            "kiro_crew.slack.gateway.SkillsLoader",
-            "kiro_crew.slack.gateway.HookManager",
-            "kiro_crew.slack.gateway.LessonStore",
-            "kiro_crew.slack.gateway.ContextBuilder",
-            "kiro_crew.slack.gateway.SessionManager",
-            "kiro_crew.slack.gateway.HistoryConsolidator",
-            "kiro_crew.slack.gateway.ChannelHistory",
+            "efm_go.slack.gateway.SkillsLoader",
+            "efm_go.slack.gateway.HookManager",
+            "efm_go.slack.gateway.LessonStore",
+            "efm_go.slack.gateway.ContextBuilder",
+            "efm_go.slack.gateway.SessionManager",
+            "efm_go.slack.gateway.HistoryConsolidator",
+            "efm_go.slack.gateway.ChannelHistory",
         ]
         with contextlib.ExitStack() as stack:
             for name in names:
                 stack.enter_context(patch(name))
             for name in ("MemoryStore", "ConversationLog"):
-                mock = stack.enter_context(patch(f"kiro_crew.slack.gateway.{name}"))
+                mock = stack.enter_context(patch(f"efm_go.slack.gateway.{name}"))
                 mock.return_value = MagicMock()
-            vector = stack.enter_context(patch("kiro_crew.vector_memory.VectorMemoryStore"))
+            vector = stack.enter_context(patch("efm_go.vector_memory.VectorMemoryStore"))
             vector.return_value = MagicMock()
-            stack.enter_context(patch("kiro_crew.agent.rebuild_agent_config", rebuild))
+            stack.enter_context(patch("efm_go.agent.rebuild_agent_config", rebuild))
             proc = MagicMock()
             proc.returncode = 0
             proc.communicate = AsyncMock(return_value=(b"kiro-cli 2.16.0", b""))
@@ -210,8 +210,8 @@ class TestGatewayInstallVerification:
     def test_install_exception_logs_error_not_warning(self, tmp_path, caplog, capsys):
         orch = _make_orchestrator()
         boom = MagicMock(side_effect=RuntimeError("no shipped defaults"))
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.slack.gateway"):
-            with patch("kiro_crew.agent.KIRO_AGENTS_DIR", tmp_path):
+        with caplog.at_level(logging.ERROR, logger="efm_go.slack.gateway"):
+            with patch("efm_go.agent.KIRO_AGENTS_DIR", tmp_path):
                 self._run_init_services(orch, rebuild=boom)
 
         # ERROR, not WARNING: a turn-fatal condition must sit at the threshold
@@ -229,9 +229,9 @@ class TestGatewayInstallVerification:
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
         quiet = MagicMock(return_value=agents_dir / AGENT_FILENAME)
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.slack.gateway"):
-            with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
-                with patch("kiro_crew.slack.gateway.kiro_agents_dir", return_value=agents_dir):
+        with caplog.at_level(logging.ERROR, logger="efm_go.slack.gateway"):
+            with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
+                with patch("efm_go.slack.gateway.kiro_agents_dir", return_value=agents_dir):
                     self._run_init_services(orch, rebuild=quiet)
 
         assert any(
@@ -246,8 +246,8 @@ class TestGatewayInstallVerification:
         for name in REQUIRED_KIRO_AGENT_FILES:
             _write_spec(agents_dir, name)
         ok = MagicMock(return_value=agents_dir / AGENT_FILENAME)
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.slack.gateway"):
-            with patch("kiro_crew.agent.KIRO_AGENTS_DIR", agents_dir):
+        with caplog.at_level(logging.ERROR, logger="efm_go.slack.gateway"):
+            with patch("efm_go.agent.KIRO_AGENTS_DIR", agents_dir):
                 self._run_init_services(orch, rebuild=ok)
 
         # Scoped to our own loggers on purpose: the claim is that a healthy
@@ -259,6 +259,6 @@ class TestGatewayInstallVerification:
         assert not [
             r
             for r in caplog.records
-            if r.levelno >= logging.ERROR and r.name.startswith("kiro_crew")
+            if r.levelno >= logging.ERROR and r.name.startswith("efm_go")
         ]
         assert "ERROR" not in capsys.readouterr().out

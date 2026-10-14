@@ -11,7 +11,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_f1_backend_recall_verifies_expected_resource_ids():
-    src = (_ROOT / "src/kiro_crew/deploy/handlers.py").read_text(encoding="utf-8")
+    src = (_ROOT / "src/efm_go/deploy/handlers.py").read_text(encoding="utf-8")
     seg = src.split("async def _do_recall", 1)[1].split("\nasync def ", 1)[0]
     assert "expected_distribution_id" in seg
     assert "resource ids changed since preview" in seg
@@ -33,6 +33,6 @@ def test_f1_frontend_two_call_recall():
 
 
 def test_f2_no_raw_json_response_result_in_deploy_handlers():
-    src = (_ROOT / "src/kiro_crew/deploy/handlers.py").read_text(encoding="utf-8")
+    src = (_ROOT / "src/efm_go/deploy/handlers.py").read_text(encoding="utf-8")
     assert "web.json_response(result)" not in src
     assert 'web.json_response({**result, "profile": profile})' not in src

@@ -15,11 +15,11 @@ from unittest.mock import MagicMock
 import pytest
 from aiohttp import web
 
-from kiro_crew import artifacts as art_mod
-from kiro_crew.artifacts import ArtifactStore
-from kiro_crew.dashboard.handlers import webapp_preview as wp
-from kiro_crew.deploy import handlers as deploy_handlers
-from kiro_crew.deploy.webapp_types import webapp_metadata_from_dict
+from efm_go import artifacts as art_mod
+from efm_go.artifacts import ArtifactStore
+from efm_go.dashboard.handlers import webapp_preview as wp
+from efm_go.deploy import handlers as deploy_handlers
+from efm_go.deploy.webapp_types import webapp_metadata_from_dict
 
 
 @pytest.fixture
@@ -305,7 +305,7 @@ class TestRound2Fixes:
     async def test_an_injecting_ancestor_cannot_reach_the_header(self, env, monkeypatch) -> None:
         """The ancestor producer is not trusted to have made its values safe."""
         monkeypatch.setattr(
-            "kiro_crew.dashboard.server._extra_frame_ancestors",
+            "efm_go.dashboard.server._extra_frame_ancestors",
             lambda request, app: ["http://localhost:5476; default-src *"],
         )
         store, app_dir = env
@@ -358,7 +358,7 @@ class TestRound3Fixes:
 
     def test_write_time_app_dir_validation(self) -> None:
         """Round-3 F1: validation.py rejects control chars and relative paths."""
-        from kiro_crew.validation import ValidationError, _validate_webapp_metadata_shape
+        from efm_go.validation import ValidationError, _validate_webapp_metadata_shape
         _validate_webapp_metadata_shape({"app_dir": "/abs/path"})
         _validate_webapp_metadata_shape({"app_dir": "~/workspace/app"})
         _validate_webapp_metadata_shape({"app_dir": ""})
@@ -475,7 +475,7 @@ class TestRound6Fixes:
         """Round-6 F2: native Windows absolute paths pass write-time
         validation (preview later degrades via the platform gate);
         relative paths still fail."""
-        from kiro_crew.validation import (
+        from efm_go.validation import (
             ValidationError,
             _validate_webapp_metadata_shape,
         )

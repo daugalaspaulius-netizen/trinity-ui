@@ -10,12 +10,12 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.dashboard.chat import _dequeue_next_message
-from kiro_crew.dashboard.chat_utils import (
+from efm_go.dashboard.chat import _dequeue_next_message
+from efm_go.dashboard.chat_utils import (
     CRON_NOTIFICATION_KIND,
     SUBAGENT_COMPLETION_KIND,
 )
-from kiro_crew.dashboard.state import (
+from efm_go.dashboard.state import (
     CRON_NOTIFY_PREFIX,
     SUBAGENT_COMPLETION_PREFIX,
     DashboardState,
@@ -61,7 +61,7 @@ class TestDequeueNextMessage:
         mirrored to linked channels). Classification is STRUCTURAL — the
         entry's kind tag set at queue_insert time — so it drains ALONE,
         exactly like sub-agent and cron injections."""
-        from kiro_crew.dashboard.chat_utils import (
+        from efm_go.dashboard.chat_utils import (
             _SYNTHETIC_RECOVERY_MSGS,
             SYNTHETIC_RECOVERY_KIND,
         )
@@ -84,8 +84,8 @@ class TestDequeueNextMessage:
         entry classified as user speech AND rendered as an editable queue card.
         Mirrors the chat_runner call site, which now passes
         kind=SYNTHETIC_RECOVERY_KIND."""
-        from kiro_crew.dashboard.chat_utils import SYNTHETIC_RECOVERY_KIND
-        from kiro_crew.dashboard.state import (
+        from efm_go.dashboard.chat_utils import SYNTHETIC_RECOVERY_KIND
+        from efm_go.dashboard.state import (
             REFUSAL_RECOVERY_PREFIX,
             build_refusal_recovery_prompt,
         )
@@ -108,7 +108,7 @@ class TestDequeueNextMessage:
         plain user message: without the structural kind tag it must merge and
         classify as user speech — content equality is deliberately NOT a
         classification mechanism (attribution correctness)."""
-        from kiro_crew.dashboard.chat_utils import _EMPTY_AUTO_CONTINUE_MSG
+        from efm_go.dashboard.chat_utils import _EMPTY_AUTO_CONTINUE_MSG
 
         slot = _ChatSlot("s1")
         slot.queue_append(_EMPTY_AUTO_CONTINUE_MSG)  # no kind: user-typed
@@ -249,7 +249,7 @@ def _make_state(tmp_path):
 
 
 def _make_config_app(tmp_path):
-    from kiro_crew.dashboard.handlers import api_dashboard_config
+    from efm_go.dashboard.handlers import api_dashboard_config
 
     state = _make_state(tmp_path)
     app = web.Application()
@@ -264,10 +264,10 @@ class TestDashboardConfigMergeQueued:
     async def test_get_includes_merge_queued_messages(self, tmp_path, monkeypatch):
         """GET /api/dashboard/config returns merge_queued_messages field."""
         monkeypatch.setattr(
-            "kiro_crew.config.loader.config_path", lambda: tmp_path / "config.json"
+            "efm_go.config.loader.config_path", lambda: tmp_path / "config.json"
         )
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        with patch("efm_go.sel.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             app = _make_config_app(tmp_path)
             async with TestClient(TestServer(app)) as client:
@@ -282,10 +282,10 @@ class TestDashboardConfigMergeQueued:
         """PUT merge_queued_messages=true persists to config.json."""
         cfg_file = tmp_path / "config.json"
         monkeypatch.setattr(
-            "kiro_crew.config.loader.config_path", lambda: cfg_file
+            "efm_go.config.loader.config_path", lambda: cfg_file
         )
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        with patch("efm_go.sel.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             app = _make_config_app(tmp_path)
             async with TestClient(TestServer(app)) as client:
@@ -309,10 +309,10 @@ class TestDashboardConfigMergeQueued:
     async def test_put_rejects_non_dict_body(self, tmp_path, monkeypatch):
         """PUT with a non-object JSON body returns 400."""
         monkeypatch.setattr(
-            "kiro_crew.config.loader.config_path", lambda: tmp_path / "config.json"
+            "efm_go.config.loader.config_path", lambda: tmp_path / "config.json"
         )
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        with patch("efm_go.sel.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             app = _make_config_app(tmp_path)
             async with TestClient(TestServer(app)) as client:
@@ -325,10 +325,10 @@ class TestDashboardConfigMergeQueued:
     async def test_put_rejects_unknown_fields(self, tmp_path, monkeypatch):
         """PUT with unknown fields returns 400."""
         monkeypatch.setattr(
-            "kiro_crew.config.loader.config_path", lambda: tmp_path / "config.json"
+            "efm_go.config.loader.config_path", lambda: tmp_path / "config.json"
         )
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        with patch("efm_go.sel.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             app = _make_config_app(tmp_path)
             async with TestClient(TestServer(app)) as client:
@@ -343,10 +343,10 @@ class TestDashboardConfigMergeQueued:
     async def test_put_rejects_non_boolean_merge_queued(self, tmp_path, monkeypatch):
         """PUT merge_queued_messages with non-boolean returns 400."""
         monkeypatch.setattr(
-            "kiro_crew.config.loader.config_path", lambda: tmp_path / "config.json"
+            "efm_go.config.loader.config_path", lambda: tmp_path / "config.json"
         )
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
+        with patch("efm_go.sel.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             app = _make_config_app(tmp_path)
             async with TestClient(TestServer(app)) as client:

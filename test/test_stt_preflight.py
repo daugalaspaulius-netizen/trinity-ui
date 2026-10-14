@@ -1,17 +1,17 @@
 """The native recogniser is checked before it is loaded, and a crash trips a fuse.
 
-kirodotdev/KiroCrew#13179: a ``pywhispercpp`` build compiled with AVX-512 was
+efmleads.com#13179: a ``pywhispercpp`` build compiled with AVX-512 was
 loaded on a Broadwell Xeon that has none. ``SIGILL`` is a process-level signal,
 so the whole gateway died, the supervisor restarted it, the boot prewarm loaded
 the model again five seconds later, and the gateway died again -- every 15-25 s,
 indefinitely, with every chat session and channel along for the ride.
 
-Two things are pinned here. The ISA check in :mod:`kiro_crew.stt.preflight` runs
+Two things are pinned here. The ISA check in :mod:`efm_go.stt.preflight` runs
 the one native call that both exercises ``ggml_cpu_init`` and reports the build's
 instruction sets in a CHILD process, so the answer costs the gateway nothing; and
 the load marker the engine writes around every native load turns "the last load
 took the process down" into a refusal instead of another attempt. Both reach
-every surface through :func:`kiro_crew.stt.engine.probe`.
+every surface through :func:`efm_go.stt.engine.probe`.
 """
 
 from __future__ import annotations
@@ -26,9 +26,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.stt import capabilities as caps_mod
-from kiro_crew.stt import engine as engine_mod
-from kiro_crew.stt import models, preflight
+from efm_go.stt import capabilities as caps_mod
+from efm_go.stt import engine as engine_mod
+from efm_go.stt import models, preflight
 
 # Real captures. The first is a stock CPU wheel (see stt/capabilities.py); the
 # second is what a `-march=native` build on a Skylake-SP class host reports.
@@ -248,7 +248,7 @@ class TestProbeNative:
         assert "import _pywhispercpp" not in preflight._PROBE_SOURCE
         # Nothing in the child but the probe: no site customisation of ours, no
         # numpy, no gateway import that could itself be the thing that crashes.
-        assert "kiro_crew" not in preflight._PROBE_SOURCE
+        assert "efm_go" not in preflight._PROBE_SOURCE
         # The child expects to die; it must not leave a core file behind, so the
         # rlimit prelude comes first and is a separate constant a test can keep.
         assert preflight._PROBE_SOURCE == preflight._PROBE_PRELUDE + preflight._PROBE_BODY
@@ -741,7 +741,7 @@ class TestProbeConsultsPreflight:
     def test_capabilities_do_not_touch_the_build_when_preflight_refuses(self, monkeypatch) -> None:
         """`GET /api/stt/status` reads the build's capabilities in-process, and
         that call runs `ggml_cpu_init` -- the very code that faults."""
-        from kiro_crew.stt import capabilities as caps_mod
+        from efm_go.stt import capabilities as caps_mod
 
         monkeypatch.setattr(
             preflight,

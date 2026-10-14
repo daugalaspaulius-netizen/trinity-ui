@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.deploy import handlers
-from kiro_crew.deploy import profiles as profiles_mod
+from efm_go.deploy import handlers
+from efm_go.deploy import profiles as profiles_mod
 
 
 @pytest.fixture(autouse=True)
@@ -90,7 +90,7 @@ def test_profiles_post_registers_and_defaults(monkeypatch):
 
 
 def test_region_spec_accepts_govcloud():
-    from kiro_crew.validation import validate_field
+    from efm_go.validation import validate_field
     assert validate_field("us-gov-west-1", profiles_mod.REGION_SPEC) == "us-gov-west-1"
     assert validate_field("ap-southeast-2", profiles_mod.REGION_SPEC) == "ap-southeast-2"
     with pytest.raises(Exception):

@@ -11,13 +11,13 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.messaging.conversation import ConversationState, reserve_new_generation
-from kiro_crew.session_map import SessionMap
+from efm_go.messaging.conversation import ConversationState, reserve_new_generation
+from efm_go.session_map import SessionMap
 
 
 @pytest.fixture()
 def session_map(tmp_path):
-    with patch("kiro_crew.session_map.config_dir", return_value=tmp_path):
+    with patch("efm_go.session_map.config_dir", return_value=tmp_path):
         yield SessionMap()
 
 

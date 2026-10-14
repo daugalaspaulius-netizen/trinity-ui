@@ -1,6 +1,6 @@
 """``stt.provider = off`` is a real value, and an unknown value lands on it.
 
-Both halves come from one incident (kirodotdev/KiroCrew#13179): a gateway whose
+Both halves come from one incident (efmleads.com#13179): a gateway whose
 native recogniser raised ``SIGILL`` on model load was told to run
 ``kirocrew config set stt.provider off``. That value did not exist, so the loader
 degraded it to ``local`` -- the very engine that was crashing -- and said so only
@@ -33,10 +33,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from kiro_crew.config import loader as loader_module
-from kiro_crew.config.loader import KiroCrewConfig, SttConfig, _validated_stt_provider
-from kiro_crew.config.schema import SCHEMA_REGISTRY
-from kiro_crew.config.sections import STT_PROVIDER_LOCAL, STT_PROVIDER_OFF
+from efm_go.config import loader as loader_module
+from efm_go.config.loader import KiroCrewConfig, SttConfig, _validated_stt_provider
+from efm_go.config.schema import SCHEMA_REGISTRY
+from efm_go.config.sections import STT_PROVIDER_LOCAL, STT_PROVIDER_OFF
 
 
 @pytest.fixture(autouse=True)
@@ -49,7 +49,7 @@ def _reset_warn_once():
 
 def _loaded_stt(tmp_path: Path, stt_block: dict) -> SttConfig:
     (tmp_path / "config.json").write_text(json.dumps({"stt": stt_block}))
-    with patch("kiro_crew.config.loader.config_dir", return_value=tmp_path):
+    with patch("efm_go.config.loader.config_dir", return_value=tmp_path):
         return KiroCrewConfig.load().stt
 
 
@@ -59,7 +59,7 @@ class TestOffIsSelectable:
         assert STT_PROVIDER_OFF in loader_module._VALID_STT_PROVIDERS
 
     def test_off_validates_to_itself_without_a_warning(self, caplog) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             assert _validated_stt_provider(STT_PROVIDER_OFF) == STT_PROVIDER_OFF
         assert caplog.text == ""
 
@@ -69,29 +69,29 @@ class TestOffIsSelectable:
     def test_off_is_offered_to_the_settings_picker(self) -> None:
         """The picker and ``config set`` read the same tuple; a value only one of
         them accepts is a value a user can store and then not see."""
-        from kiro_crew.dashboard.handlers.core import _stt_providers
+        from efm_go.dashboard.handlers.core import _stt_providers
 
         assert STT_PROVIDER_OFF in _stt_providers()
 
     def test_off_never_streams(self) -> None:
         """The live socket grants by POSITIVE membership; ``off`` must not be in it."""
-        from kiro_crew.dashboard.stt_stream import _STREAMING_PROVIDERS
+        from efm_go.dashboard.stt_stream import _STREAMING_PROVIDERS
 
         assert STT_PROVIDER_OFF not in _STREAMING_PROVIDERS
 
 
 class TestOffDisablesEverySpeechPath:
     def test_the_batch_module_spells_off_the_same_way(self) -> None:
-        """``transcribe`` keeps ``kiro_crew.config`` off its import path, so it
+        """``transcribe`` keeps ``efm_go.config`` off its import path, so it
         carries its own copy of the value; the two must never drift."""
-        from kiro_crew import transcribe
+        from efm_go import transcribe
 
         assert transcribe.STT_PROVIDER_OFF == STT_PROVIDER_OFF
 
     def test_availability_names_the_provider_control_not_the_toggle(self) -> None:
         """Its own code, because the remedy differs: ``stt_disabled`` renders as
         "switch it on above", and the Enabled toggle IS on for this user."""
-        from kiro_crew import transcribe
+        from efm_go import transcribe
 
         result = transcribe.availability_detail(SttConfig(enabled=True, provider="off"))
         assert result.ok is False
@@ -99,7 +99,7 @@ class TestOffDisablesEverySpeechPath:
         assert result.code != transcribe.CODE_DISABLED
 
     def test_the_toggle_still_wins_when_both_are_off(self) -> None:
-        from kiro_crew import transcribe
+        from efm_go import transcribe
 
         result = transcribe.availability_detail(SttConfig(enabled=False, provider="off"))
         assert result.code == transcribe.CODE_DISABLED
@@ -108,7 +108,7 @@ class TestOffDisablesEverySpeechPath:
     async def test_batch_transcription_dispatches_nothing(self, tmp_path: Path) -> None:
         """``transcribe_audio``'s dispatch treats every non-apple, non-transcribe
         value as ``local``; ``off`` must return before that branch is reached."""
-        from kiro_crew import transcribe
+        from efm_go import transcribe
 
         audio = tmp_path / "memo.wav"
         audio.write_bytes(b"RIFF")
@@ -128,7 +128,7 @@ class TestOffDisablesEverySpeechPath:
 
 class TestUnknownProviderFailsClosed:
     def test_an_unknown_value_degrades_to_off_not_local(self, caplog) -> None:
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             assert _validated_stt_provider("whispr") == STT_PROVIDER_OFF
         assert "whispr" in caplog.text
         assert f"using {STT_PROVIDER_OFF!r}" in caplog.text
@@ -150,17 +150,17 @@ class TestConfigSetRefusesValuesOutsideAnEnum:
 
     @staticmethod
     def _run(config_dir: Path, key: str, value: str) -> None:
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         args = argparse.Namespace(config_action="set", key=key, value=value, file=None, local=False)
         with (
-            patch("kiro_crew.cli_config.config_path", return_value=config_dir / "config.json"),
+            patch("efm_go.cli_config.config_path", return_value=config_dir / "config.json"),
             patch(
-                "kiro_crew.cli_config.config_local_path",
+                "efm_go.cli_config.config_local_path",
                 return_value=config_dir / "config.local.json",
             ),
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            patch("kiro_crew.cli_config.sel"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            patch("efm_go.cli_config.sel"),
         ):
             _config_cmd(args)
 
@@ -203,7 +203,7 @@ class TestConfigSetRefusesValuesOutsideAnEnum:
 
         saved = json.loads((config_dir / "config.json").read_text(encoding="utf-8"))
         assert saved["stt"]["provider"] == "local"
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             assert KiroCrewConfig.load().stt.provider == STT_PROVIDER_LOCAL
 
     def test_a_key_without_an_enum_is_unaffected(self, tmp_path: Path) -> None:
@@ -253,7 +253,7 @@ class TestConfigSetRefusesValuesOutsideAnEnum:
         and upper-cased spellings all resolve to the enum's own spelling. A key
         whose loader grows an alias table the enum does not list shows up as a
         refusal here, the way ``stt.model`` did."""
-        from kiro_crew.cli_config import _declared_enum_value
+        from efm_go.cli_config import _declared_enum_value
 
         for spelling in (value, value.lower(), value.upper(), value.swapcase()):
             assert _declared_enum_value(key, spelling) == value, (key, spelling)
@@ -261,8 +261,8 @@ class TestConfigSetRefusesValuesOutsideAnEnum:
     def test_the_model_alias_table_is_what_the_loader_resolves(self) -> None:
         """``stt.model`` is the one key whose loader accepts names outside its enum;
         every alias the catalog knows must be admitted and stored as its row."""
-        from kiro_crew.cli_config import _declared_enum_value
-        from kiro_crew.stt import models as stt_models
+        from efm_go.cli_config import _declared_enum_value
+        from efm_go.stt import models as stt_models
 
         rows = {entry.path: entry.enum_values for entry in SCHEMA_REGISTRY}["stt.model"]
         for alias, row in stt_models._ALIASES.items():
@@ -275,9 +275,9 @@ class TestTheResolverIsPure:
         """`stt_provider_resolution` is the rule; `_validated_stt_provider` is the
         rule plus the load-time notice. A surface that only needs the answer must
         get it with no log line and no entry in the once-per-process set."""
-        from kiro_crew.config import sections
+        from efm_go.config import sections
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             assert sections.stt_provider_resolution("whispr") == STT_PROVIDER_OFF
             assert sections.stt_provider_resolution("mlx") == STT_PROVIDER_LOCAL
             assert sections.stt_provider_resolution(None) == STT_PROVIDER_LOCAL
@@ -286,9 +286,9 @@ class TestTheResolverIsPure:
         assert loader_module._WARNED_STT_PROVIDERS == set()
 
     def test_the_wrapper_agrees_with_the_resolver_and_warns_once(self, caplog) -> None:
-        from kiro_crew.config import sections
+        from efm_go.config import sections
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             for value in ("whispr", "mlx", None, "apple", ["a", "list"]):
                 assert _validated_stt_provider(value) == sections.stt_provider_resolution(value)
                 assert _validated_stt_provider(value) == sections.stt_provider_resolution(value)
@@ -304,19 +304,19 @@ class TestAdoptingACoercedProviderKeepsWhatRuns:
 
     @staticmethod
     def _adopt(config_dir: Path, keys: list[str] | None = None) -> str:
-        from kiro_crew.cli_config import _config_cmd
+        from efm_go.cli_config import _config_cmd
 
         args = argparse.Namespace(
             config_action="defaults", adopt=True, keep=False, keys=keys, file=None, local=False
         )
         with (
-            patch("kiro_crew.cli_config.config_path", return_value=config_dir / "config.json"),
+            patch("efm_go.cli_config.config_path", return_value=config_dir / "config.json"),
             patch(
-                "kiro_crew.cli_config.config_local_path",
+                "efm_go.cli_config.config_local_path",
                 return_value=config_dir / "config.local.json",
             ),
-            patch("kiro_crew.config.loader.config_dir", return_value=config_dir),
-            patch("kiro_crew.cli_config.sel"),
+            patch("efm_go.config.loader.config_dir", return_value=config_dir),
+            patch("efm_go.cli_config.sel"),
         ):
             _config_cmd(args)
         return (config_dir / "config.json").read_text(encoding="utf-8")
@@ -332,7 +332,7 @@ class TestAdoptingACoercedProviderKeepsWhatRuns:
         others = {"session": {"watchdog_rss_max_mb": 0}, "decisions": {"history_budget_chars": 0}}
         stored = {"stt": {"provider": provider, "language_code": "en-US"}, **others}
         (config_dir / "config.json").write_text(json.dumps(stored))
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.config.loader"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.config.loader"):
             _validated_stt_provider(provider)
         commands = re.findall(r"'kirocrew config defaults --adopt([^']*)'", caplog.text)
         assert commands == [" stt.provider"]
@@ -352,7 +352,7 @@ class TestAdoptingACoercedProviderKeepsWhatRuns:
 
         assert saved["stt"]["provider"] == STT_PROVIDER_OFF
         assert "set to 'off'" in capsys.readouterr().out
-        with patch("kiro_crew.config.loader.config_dir", return_value=config_dir):
+        with patch("efm_go.config.loader.config_dir", return_value=config_dir):
             assert KiroCrewConfig.load().stt.provider == STT_PROVIDER_OFF
 
     def test_a_retired_provider_is_still_adopted_by_removal(self, tmp_path: Path) -> None:
@@ -366,7 +366,7 @@ class TestAdoptingACoercedProviderKeepsWhatRuns:
         assert "provider" not in saved["stt"]
 
     def test_the_listing_says_what_the_value_runs_as(self) -> None:
-        from kiro_crew.config import superseded_defaults as sd
+        from efm_go.config import superseded_defaults as sd
 
         entry = next(c for c in sd.COERCED_VALUES if c.dotted_key == "stt.provider")
         assert entry.resolves_to("whispercpp") == STT_PROVIDER_OFF

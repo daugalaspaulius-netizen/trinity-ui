@@ -18,9 +18,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 
-from kiro_crew import session_directive
-from kiro_crew.dashboard import directive_queue
-from kiro_crew.dashboard.handlers.sessions import api_session_directive
+from efm_go import session_directive
+from efm_go.dashboard import directive_queue
+from efm_go.dashboard.handlers.sessions import api_session_directive
 
 
 @pytest.fixture(autouse=True)
@@ -403,7 +403,7 @@ class TestEndpoint:
 
     @pytest.mark.asyncio
     async def test_happy_path_parks_the_derived_record_for_the_declared_session(self):
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         raw = {"message": "go"}
         resp = await api_session_directive(
@@ -489,7 +489,7 @@ class TestEndpoint:
         """
         import json as _json
 
-        with caplog.at_level("WARNING", logger="kiro_crew.dashboard.handlers.sessions"):
+        with caplog.at_level("WARNING", logger="efm_go.dashboard.handlers.sessions"):
             resp = await api_session_directive(
                 _request(
                     {"X-Session-Key": "dashboard:slot-a"},
@@ -595,8 +595,8 @@ class TestEmitHelperPublishes:
     marker — the marker alone is what a provider-less backend cannot use."""
 
     def test_emit_posts_the_call_not_the_payload(self):
-        from kiro_crew import mcp_core
-        from kiro_crew.mcp_tools import control
+        from efm_go import mcp_core
+        from efm_go.mcp_tools import control
 
         posted: list[tuple] = []
         with patch.object(mcp_core, "_post", side_effect=lambda p, b, **kw: posted.append((p, b))):
@@ -606,13 +606,13 @@ class TestEmitHelperPublishes:
         assert path == "/api/session-directive"
         assert body == {"tool": "monitor_start", "raw_args": {"message": "hi"}}
         assert "args" not in body and "input_digest" not in body
-        from kiro_crew import session_directive
+        from efm_go import session_directive
 
         assert session_directive.has_marker(out)
         assert control is not None
 
     def test_capture_mode_records_instead_of_posting(self):
-        from kiro_crew import mcp_core
+        from efm_go import mcp_core
 
         posted: list[tuple] = []
         with patch.object(mcp_core, "_post", side_effect=lambda p, b, **kw: posted.append((p, b))):
@@ -627,8 +627,8 @@ class TestEmitHelperPublishes:
     def test_a_refused_oversized_directive_is_never_published(self):
         """``encode`` refuses an over-limit payload and tells the model nothing was
         applied. Publishing anyway would leave a record that contradicts that."""
-        from kiro_crew import session_directive
-        from kiro_crew.mcp_tools import control
+        from efm_go import session_directive
+        from efm_go.mcp_tools import control
 
         posted: list[tuple] = []
         huge = {"message": "x" * (session_directive.MAX_DIRECTIVE_CHARS + 100)}
@@ -644,8 +644,8 @@ class TestEmitHelperPublishes:
     def test_a_publish_failure_does_not_break_the_tool(self):
         """An older gateway with no such route, or one that is down, must not turn
         a working tool call into an error — the marker path may still work."""
-        from kiro_crew import session_directive
-        from kiro_crew.mcp_tools import control
+        from efm_go import session_directive
+        from efm_go.mcp_tools import control
 
         with patch.object(control.mcp_core, "_post", side_effect=RuntimeError("gateway down")):
             out = control._emit_directive("monitor_start", {"message": "hi"}, "Monitor requested.")

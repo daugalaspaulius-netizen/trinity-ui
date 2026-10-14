@@ -124,7 +124,7 @@ export interface StatusData {
   version_display?: string
   /**
    * Which release lane these bytes came from. The gateway resolves it (see
-   * `src/kiro_crew/release_channel.py`) rather than leaving the dashboard to
+   * `src/efm_go/release_channel.py`) rather than leaving the dashboard to
    * parse `version`: the same release is stamped as SemVer for the desktop app
    * and PEP 440 for wheels, and neither PEP 440 prerelease spelling
    * (`1.2.3rc4`, `1.2.3.dev<stamp>`) contains a `-`, so a mirror of the rule

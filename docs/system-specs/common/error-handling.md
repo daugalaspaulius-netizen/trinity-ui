@@ -235,7 +235,7 @@ is the one shape every harness is folded onto (`category`,
 did not say — never guessed.
 
 - **Kiro (kiro-cli, KAS)** — the service's content filter emits a
-  `_kiro.dev/metadata` frame with `stopReason: CONTENT_FILTERED` and a `refusal`
+  `_efm.go/metadata` frame with `stopReason: CONTENT_FILTERED` and a `refusal`
   object, streams the canned explanation ("The selected model cannot continue
   this conversation…") as ordinary assistant text, then ends the turn with a
   plain `end_turn` (or a bare `-32603`). `acp/_dispatch.parse_refusal` reads the

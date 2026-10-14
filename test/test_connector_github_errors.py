@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.connections.control_plane import ERROR_CLASSES
-from kiro_crew.connections.vendors.github.errors import (
+from efm_go.connections.control_plane import ERROR_CLASSES
+from efm_go.connections.vendors.github.errors import (
     GithubFailure,
     classify_github_failure,
 )

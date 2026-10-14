@@ -207,7 +207,7 @@ describe('wire parity with the gateway constants', () => {
   // `TRANSIENT_NOTICE_<NAME> = "<token>"` at column 0 in chat_utils.py (the META_KEY
   // entry names the meta field, not a token); every token must be known to the
   // frontend or its row falls back to raw English on every locale.
-  const py = readFileSync(join(__dirname, '../../../src/kiro_crew/dashboard/chat_utils.py'), 'utf8')
+  const py = readFileSync(join(__dirname, '../../../src/efm_go/dashboard/chat_utils.py'), 'utf8')
   const backend = [...py.matchAll(/^TRANSIENT_NOTICE_(?!META_KEY)[A-Z_]+\s*=\s*"([^"]+)"/gm)].map((m) => m[1])
   const metaKey = /^TRANSIENT_NOTICE_META_KEY\s*=\s*"([^"]+)"/m.exec(py)?.[1]
 

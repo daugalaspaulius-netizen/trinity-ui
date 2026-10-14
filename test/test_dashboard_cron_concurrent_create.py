@@ -26,8 +26,8 @@ from unittest.mock import MagicMock
 import pytest
 from body_stream_helpers import attach_body
 
-from kiro_crew.cron import CronService
-from kiro_crew.dashboard.handlers import api_crons_create
+from efm_go.cron import CronService
+from efm_go.dashboard.handlers import api_crons_create
 
 
 def _create_request(body: dict, crons: CronService) -> MagicMock:

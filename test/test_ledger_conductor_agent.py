@@ -21,20 +21,20 @@ an ungoverned host, and the governed case gets its own test.
 import json
 from pathlib import Path
 
-from kiro_crew import agent
-from kiro_crew.agent_files import (
+from efm_go import agent
+from efm_go.agent_files import (
     CONDUCTOR_AGENT_FILENAME,
     LEDGER_CONDUCTOR_AGENT_FILENAME,
     OWNED_KIRO_AGENT_FILES,
     REQUIRED_KIRO_AGENT_FILES,
 )
-from kiro_crew.agent_sdk.drivers.acp import derived_agent_permissions
-from kiro_crew.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
+from efm_go.agent_sdk.drivers.acp import derived_agent_permissions
+from efm_go.kiro_cli import SPEC_PERMISSIONS_MIN_VERSION
 
 SKILL_DIR = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "goal-ledger-conductor"
 )
@@ -50,14 +50,14 @@ def _pin_spec_permissions_cli(monkeypatch, which):
     """Pin what the shared writer gate believes the installed kiro-cli is.
 
     ``_write_derived_permissions`` reads ``installed_kiro_cli_version``
-    function-locally from ``kiro_crew.kiro_cli``, so the patch lands there.
+    function-locally from ``efm_go.kiro_cli``, so the patch lands there.
     Without it the answer is whatever the test HOST has -- nothing on CI, which
     reads as "unknown" and withholds the field, so a shared permissions
     assertion would fail for a host reason. ``which`` is ``"accepts"``,
     ``"refuses"`` or ``"unknown"``.
     """
     version = {"accepts": _ACCEPTS, "refuses": _REFUSES, "unknown": None}[which]
-    monkeypatch.setattr("kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: version)
+    monkeypatch.setattr("efm_go.kiro_cli.installed_kiro_cli_version", lambda: version)
 
 
 def _stub(tmp_path, monkeypatch, *, may_auto_approve=None, cli_version="accepts"):
@@ -267,7 +267,7 @@ def test_the_index_line_sends_a_reader_to_the_live_skill():
     Skills`` line is the only thing an agent reads before deciding to load a
     skill. A deprecation that shows up as a normal-looking procedure summary gets
     loaded; one whose first sentence says where the procedure went does not."""
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.skills import SkillsLoader
 
     body = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
     desc = SkillsLoader._parse_frontmatter_text(body).get("description") or ""

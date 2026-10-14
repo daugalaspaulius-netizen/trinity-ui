@@ -38,7 +38,7 @@ rating" costs ten full model turns. Most of those turns involve no reasoning.
 The model is picking one line out of a list the harness already wrote.
 
 Kiro Crew already has a cheap model for that kind of question. The decisions
-seam (`src/kiro_crew/decisions/`, spec
+seam (`src/efm_go/decisions/`, spec
 [`decisions.md`](../system-specs/modules/decisions.md)) sends Jev a closed menu
 and gets back one pick with a calibrated probability. Seven points use it today
 (`skills.select`, `message.steer`, `model.route`, `memory.recall`, `tool.risk`,
@@ -121,7 +121,7 @@ without a Kiro Crew release. Core takes only the generic loop. Site-specific
 rules stay out, and JevOnly stays the place to experiment before a rule is
 generic enough to land.
 
-The module is `src/kiro_crew/jev_executor/`. It imports `decisions.gate`,
+The module is `src/efm_go/jev_executor/`. It imports `decisions.gate`,
 `computer_use.tools` and the browser runtime, and nothing imports it on the
 gateway boot path (`no-new-work-on-gateway-boot-path`): the route handlers
 import it inside the handler, as `dashboard/handlers/decisions.py` already does
@@ -456,7 +456,7 @@ Each property names where it is enforced. All of them are in core.
 
 1. Do maintainers accept the executor below the tenet 8 line, as a
    trust-boundary component? (`no-new-builtin-apps` covers only
-   `src/kiro_crew/apps/builtins/**`, which this module does not touch, so no
+   `src/efm_go/apps/builtins/**`, which this module does not touch, so no
    exemption is requested.)
 
    **Decided 2026-09-29 by buluoray: accepted as proposed. The executor is a
@@ -495,7 +495,7 @@ Each property names where it is enforced. All of them are in core.
    adapters.
 5. **The executor and the desktop tool.** The per-task budget and ceilings
    wait on open question 3.
-   `src/kiro_crew/jev_executor/`, the run routes, `jev_computer_task`, the
+   `src/efm_go/jev_executor/`, the run routes, `jev_computer_task`, the
    per-task budget and ceilings, with a new system spec
    under `docs/system-specs/modules/`. Tests cover each missing prerequisite
    returning `not_permitted`, `internal_auth` and caller identity on the run

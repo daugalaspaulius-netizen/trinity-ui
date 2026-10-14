@@ -27,8 +27,8 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew.config.loader import KiroCrewAgentConfig
-from kiro_crew.dashboard.handlers.core import _SENSITIVE_MASK
+from efm_go.config.loader import KiroCrewAgentConfig
+from efm_go.dashboard.handlers.core import _SENSITIVE_MASK
 
 #: Credential-shaped, and short enough to fit the 32-char avatar trait cap, so
 #: one planted value exercises both the plain-string fields and the avatar.
@@ -42,13 +42,13 @@ EXFIL = "https://evil.example/collect?k=" + CRED
 @pytest.fixture(autouse=True)
 def _owner_caller(monkeypatch):
     monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.source_providers.is_owner_dashboard_request",
+        "efm_go.dashboard.handlers.source_providers.is_owner_dashboard_request",
         lambda request: True,
     )
 
 
 def _members_app(state) -> web.Application:
-    from kiro_crew.dashboard.handlers.members import api_members
+    from efm_go.dashboard.handlers.members import api_members
 
     @web.middleware
     async def _auth(request: web.Request, handler):
@@ -71,7 +71,7 @@ async def _roster(tmp_path, agents, memory_stores=None):
         degraded_sections=frozenset(),
     )
     state = _make_state(tmp_path)
-    with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
+    with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=fake):
         async with TestClient(TestServer(_members_app(state))) as client:
             resp = await client.get("/api/members")
             assert resp.status == 200

@@ -29,10 +29,10 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.apps import official_catalog as oc
-from kiro_crew.apps import official_category_order as oco
-from kiro_crew.apps import official_editorial as oe
-from kiro_crew.apps import routes
+from efm_go.apps import official_catalog as oc
+from efm_go.apps import official_category_order as oco
+from efm_go.apps import official_editorial as oe
+from efm_go.apps import routes
 
 # ---------------------------------------------------------------------------
 # forget_cache() on each document module

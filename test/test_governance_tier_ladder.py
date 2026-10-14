@@ -25,11 +25,11 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.platform import governance
-from kiro_crew.platform import governance_health as health
-from kiro_crew.platform import governance_profiles as gp
-from kiro_crew.platform import policy_distribution as pd
-from kiro_crew.platform.governance import (
+from efm_go.platform import governance
+from efm_go.platform import governance_health as health
+from efm_go.platform import governance_profiles as gp
+from efm_go.platform import policy_distribution as pd
+from efm_go.platform.governance import (
     SIGNATURE_UNSIGNED,
     SIGNATURE_UNVERIFIED,
     TIER_CENTRAL,
@@ -381,7 +381,7 @@ class TestAnEnvDocumentBeneathAnAuthorityIsAnnouncedOnce:
         central("fleet")
         monkeypatch.setenv(_POLICY_ENV, str(_write_policy(tmp_path / "env.json", "local-env")))
 
-        with caplog.at_level("WARNING", logger="kiro_crew.platform.governance"):
+        with caplog.at_level("WARNING", logger="efm_go.platform.governance"):
             load_security_policy()
             load_security_policy()
 
@@ -1027,7 +1027,7 @@ class TestAnUnreadableHomeFileBeneathAnAuthorityIsSkipped:
         assert refreshed.identity_issuer == "fleet"
 
     def test_with_no_authority_the_error_is_still_fatal(self, broken_home):
-        from kiro_crew.platform.context import PlatformCompositionError
+        from efm_go.platform.context import PlatformCompositionError
 
         with pytest.raises(PlatformCompositionError, match="is unreadable"):
             load_security_policy()
@@ -1061,7 +1061,7 @@ class TestAnUnreadableHomeFileBeneathAnAuthorityIsSkipped:
         assert refreshed.identity_issuer == "fleet"
 
     def test_with_no_authority_a_schema_error_is_still_fatal(self, schema_invalid_home):
-        from kiro_crew.platform.context import PlatformCompositionError
+        from efm_go.platform.context import PlatformCompositionError
 
         with pytest.raises(PlatformCompositionError):
             load_security_policy()
@@ -1109,7 +1109,7 @@ class TestAnUnreadableHomeFileBeneathAnAuthorityIsSkipped:
     def test_a_malformed_home_distribution_block_with_no_authority_is_fatal(
         self, monkeypatch, tmp_path
     ):
-        from kiro_crew.platform.context import PlatformCompositionError
+        from efm_go.platform.context import PlatformCompositionError
 
         _point_home(
             monkeypatch,

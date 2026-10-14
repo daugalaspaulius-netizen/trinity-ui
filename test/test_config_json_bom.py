@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.config import loader
-from kiro_crew.config.loader import (
+from efm_go.config import loader
+from efm_go.config.loader import (
     ConfigReadError,
     KiroCrewConfig,
     config_local_path,
@@ -113,7 +113,7 @@ def test_a_malformed_config_still_fails_closed(home: Path) -> None:
 def test_hot_reload_does_not_call_a_bom_saved_config_torn(home: Path) -> None:
     # The live watcher keeps the previous snapshot while a file is "torn", so a
     # BOM read as torn would silently discard every hot edit.
-    from kiro_crew.config.live import ConfigWatch
+    from efm_go.config.live import ConfigWatch
 
     _write_with_bom(config_path(), _user_document())
     _write_with_bom(config_local_path(), {"dashboard": {"theme_mode": "dark"}})
@@ -125,8 +125,8 @@ def test_a_bom_saved_overlay_still_owns_its_trust_grant(home: Path) -> None:
     # The loader applies a BOM'd overlay, so the overlay-ownership gates must see
     # it too: otherwise a revoke edits only config.json, answers 200, and the
     # overlay re-grants the app on the next load.
-    from kiro_crew.apps.manager import trust_grant_removal_blocked
-    from kiro_crew.dashboard.handlers.security import _overlay_owned_trust_settings
+    from efm_go.apps.manager import trust_grant_removal_blocked
+    from efm_go.dashboard.handlers.security import _overlay_owned_trust_settings
 
     config_path().write_text(json.dumps({"agent": {"apps_trusted": ["demo"]}}), encoding="utf-8")
     _write_with_bom(config_local_path(), {"agent": {"apps_trusted": ["demo"]}})
@@ -145,7 +145,7 @@ def test_raw_config_reads_a_bom_saved_non_object_as_empty(home: Path) -> None:
 def test_a_bom_saved_non_object_knowledge_section_does_not_crash_the_embedder_setup(
     home: Path,
 ) -> None:
-    from kiro_crew.dashboard.handlers import knowledge
+    from efm_go.dashboard.handlers import knowledge
 
     config_path().write_bytes(_BOM + b'{"knowledge": ["x"]}')
 
@@ -153,7 +153,7 @@ def test_a_bom_saved_non_object_knowledge_section_does_not_crash_the_embedder_se
 
 
 def test_a_bom_saved_non_object_config_does_not_crash_the_embedder_setup(home: Path) -> None:
-    from kiro_crew.dashboard.handlers import knowledge
+    from efm_go.dashboard.handlers import knowledge
 
     config_path().write_bytes(_BOM + b"[]")
 
@@ -163,7 +163,7 @@ def test_a_bom_saved_non_object_config_does_not_crash_the_embedder_setup(home: P
 def test_the_agent_spec_builder_reads_a_bom_saved_config(home: Path) -> None:
     # build_agent_config reads the crew config through agent._load_json, so a
     # BOM there must not read as an absent file (hooks, aliases, OAuth client).
-    from kiro_crew import agent
+    from efm_go import agent
 
     _write_with_bom(config_path(), _user_document())
 
@@ -224,7 +224,7 @@ def _config_reads_outside_the_helper(src: Path) -> tuple[list[str], int]:
         ):
             continue
         tree = ast.parse(text)
-        # An aliased import (``from kiro_crew.config import config_path as
+        # An aliased import (``from efm_go.config import config_path as
         # _mc_config_path``) is the same source under another name.
         sources = {"config_path", "config_local_path"} | {
             alias.asname

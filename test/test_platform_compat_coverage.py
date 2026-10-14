@@ -1,4 +1,4 @@
-"""Coverage-raising unit tests for :mod:`kiro_crew.platform_compat`.
+"""Coverage-raising unit tests for :mod:`efm_go.platform_compat`.
 
 Companion to ``test_platform_compat.py``, which covers the POSIX-native surface
 and the process-session contracts that need a real process. This file targets
@@ -34,7 +34,7 @@ from typing import Any, Callable
 
 import pytest
 
-from kiro_crew import platform_compat as pc
+from efm_go import platform_compat as pc
 
 # Some tests below simulate the POSIX branch (forcing ``IS_POSIX = True``) or the
 # Windows branch from a POSIX host, by monkeypatching attributes that only exist
@@ -1146,14 +1146,14 @@ class TestProcessCommandLine:
         def _check_output(argv: Any, **kwargs: Any) -> str:
             seen["argv"] = argv
             seen["kwargs"] = kwargs
-            return "python.exe -m kiro_crew gateway\n"
+            return "python.exe -m efm_go gateway\n"
 
         monkeypatch.setattr(pc, "IS_WINDOWS", True)
         monkeypatch.setattr(pc.sys, "platform", "win32")
         monkeypatch.setattr(pc, "trusted_system_bin", lambda _n: r"C:\ps.exe")
         monkeypatch.setattr(pc.subprocess, "check_output", _check_output)
 
-        assert pc.process_command_line(7) == "python.exe -m kiro_crew gateway"
+        assert pc.process_command_line(7) == "python.exe -m efm_go gateway"
         assert "-NoProfile" in seen["argv"]
         assert "ProcessId=7" in " ".join(seen["argv"])
         # A console-less parent must not flash a window per poll.

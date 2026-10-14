@@ -29,10 +29,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import artifacts as art_mod
-from kiro_crew.artifacts import ArtifactFolderStore, ArtifactStore
-from kiro_crew.dashboard.handlers import artifacts as art_handlers
-from kiro_crew.dashboard.handlers.artifacts import (
+from efm_go import artifacts as art_mod
+from efm_go.artifacts import ArtifactFolderStore, ArtifactStore
+from efm_go.dashboard.handlers import artifacts as art_handlers
+from efm_go.dashboard.handlers.artifacts import (
     _spawn_artifact_folder_icon_task,
     api_artifact_folder_create,
     api_artifact_folder_delete,

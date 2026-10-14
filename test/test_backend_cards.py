@@ -43,9 +43,9 @@ from typing import Set, Tuple
 
 import pytest
 
-from kiro_crew.agent_sdk import backend_cards as cards_mod
-from kiro_crew.agent_sdk import backends as sdk_backends
-from kiro_crew.agent_sdk.backends import (
+from efm_go.agent_sdk import backend_cards as cards_mod
+from efm_go.agent_sdk import backends as sdk_backends
+from efm_go.agent_sdk.backends import (
     ACP_BACKEND_DEEPSEEK,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,

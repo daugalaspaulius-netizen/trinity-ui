@@ -28,8 +28,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.session_handle import AcpSessionHandle, WatchdogSettings
+from efm_go.acp.client import AcpClient
+from efm_go.acp.session_handle import AcpSessionHandle, WatchdogSettings
 
 # ── Driver adapters ───────────────────────────────────────────────────────────
 #

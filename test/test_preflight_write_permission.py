@@ -46,13 +46,13 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.platform.update_governance import _GIT_LOCATION_VARS
+from efm_go.platform.update_governance import _GIT_LOCATION_VARS
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PREFLIGHT = str(
     REPO_ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"

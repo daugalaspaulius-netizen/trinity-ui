@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.platform import wheel_apply, wheel_engine
+from efm_go.platform import wheel_apply, wheel_engine
 
 
 @pytest.fixture(autouse=True)
@@ -62,7 +62,7 @@ class TestPreflight:
     ) -> None:
         seen: list[str] = []
         monkeypatch.setattr(
-            "kiro_crew.platform.update_layout.cdn_bases",
+            "efm_go.platform.update_layout.cdn_bases",
             lambda: ("https://feed.example", "https://bytes.example"),
         )
 
@@ -74,8 +74,8 @@ class TestPreflight:
             seen.append("shape")
             return True
 
-        monkeypatch.setattr("kiro_crew.platform.update_governance.update_blocked_reason", blocked)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.cdn_bases_are_safe", safe)
+        monkeypatch.setattr("efm_go.platform.update_governance.update_blocked_reason", blocked)
+        monkeypatch.setattr("efm_go.platform.update_layout.cdn_bases_are_safe", safe)
         with pytest.raises(wheel_apply.WheelApplyRefused) as info:
             wheel_apply.preflight_bases()
         assert info.value.code == "blocked_by_policy"
@@ -83,9 +83,9 @@ class TestPreflight:
 
     def test_the_cdn_shape_is_checked_after_the_pin(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_blocked_reason", lambda _b: ""
+            "efm_go.platform.update_governance.update_blocked_reason", lambda _b: ""
         )
-        monkeypatch.setattr("kiro_crew.platform.update_layout.cdn_bases_are_safe", lambda: False)
+        monkeypatch.setattr("efm_go.platform.update_layout.cdn_bases_are_safe", lambda: False)
         with pytest.raises(wheel_apply.WheelApplyRefused) as info:
             wheel_apply.preflight_bases()
         assert info.value.code == "bad_cdn"
@@ -96,7 +96,7 @@ class TestMemoryReadiness:
 
     @staticmethod
     def _phase(monkeypatch: pytest.MonkeyPatch, phase: str, error: str = "") -> None:
-        import kiro_crew.memory_startup as startup
+        import efm_go.memory_startup as startup
 
         monkeypatch.setattr(startup, "memory_startup_preparing", lambda: phase == "preparing")
 
@@ -109,7 +109,7 @@ class TestMemoryReadiness:
     def test_only_a_running_unsettled_startup_is_preparing(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import kiro_crew.memory_startup as startup
+        import efm_go.memory_startup as startup
 
         monkeypatch.setattr(startup, "_active", None)
         assert startup.memory_startup_preparing() is False, "no startup here (the CLI)"
@@ -136,7 +136,7 @@ class TestMemoryReadiness:
             wheel_apply.check_memory_ready()
 
     def test_an_unresolvable_store_refuses(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import kiro_crew.memory_stores as stores
+        import efm_go.memory_stores as stores
 
         self._phase(monkeypatch, "ready")
         monkeypatch.setattr(stores, "active_store_names", lambda: ["default", "lost"])
@@ -149,9 +149,9 @@ class TestMemoryReadiness:
     def test_a_store_that_failed_its_startup_gets_an_unverified_copy(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
-        import kiro_crew.memory_backup as backup
-        import kiro_crew.memory_startup as startup
-        import kiro_crew.memory_stores as stores
+        import efm_go.memory_backup as backup
+        import efm_go.memory_startup as startup
+        import efm_go.memory_stores as stores
 
         db = tmp_path / "memory.db"
         db.write_bytes(b"sqlite bytes")
@@ -176,9 +176,9 @@ class TestMemoryReadiness:
     ) -> None:
         """The memory folder is sandbox-writable; a planted ``-wal`` link must not
         carry a masked file (``.env``) into the agent-readable backups."""
-        import kiro_crew.memory_backup as backup
-        import kiro_crew.memory_startup as startup
-        import kiro_crew.memory_stores as stores
+        import efm_go.memory_backup as backup
+        import efm_go.memory_startup as startup
+        import efm_go.memory_stores as stores
 
         secret = tmp_path / "outside" / ".env"
         secret.parent.mkdir()
@@ -217,7 +217,7 @@ class TestMemorySnapshotHook:
             wheel_apply.memory_snapshot_hook(lambda _m: None)()
 
     def test_a_snapshot_reports_its_count_and_where(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import kiro_crew.memory_backup as backup
+        import efm_go.memory_backup as backup
 
         monkeypatch.setattr(wheel_apply, "snapshot_memory_before_update", lambda: (2, ""))
         newest = Path("/home/u/backups/m.db")
@@ -241,8 +241,8 @@ class TestUsernsReattach:
         restricted: bool = True,
         applies: bool = True,
     ) -> None:
-        from kiro_crew.service import apparmor
-        from kiro_crew.service import linux as service_linux
+        from efm_go.service import apparmor
+        from efm_go.service import linux as service_linux
 
         legacy = tmp_path / "crew-venv"
         (legacy / "bin").mkdir(parents=True)
@@ -283,7 +283,7 @@ class TestUsernsReattach:
     def test_the_shared_predicate_honours_a_unit_directive(self, tmp_path: Path) -> None:
         """The predicate doctor reports with: an ``AppArmorProfile=`` line in the
         unit silently wins over the path attachment, so the profile does not apply."""
-        from kiro_crew.service import apparmor
+        from efm_go.service import apparmor
 
         launcher = tmp_path / "kirocrew"
         launcher.write_text("", encoding="utf-8")
@@ -576,7 +576,7 @@ class TestOutcomes:
             def submit(self, *args: object) -> None:
                 raise RuntimeError("executor is shut down")
 
-        monkeypatch.setattr("kiro_crew.executors.update_executor", StoppedExecutor)
+        monkeypatch.setattr("efm_go.executors.update_executor", StoppedExecutor)
         monkeypatch.setattr(wheel_engine, "release_update_lock", release)
         apply = MagicMock()
         fd = wheel_engine.hold_update_lock()
@@ -686,7 +686,7 @@ class TestOwnership:
     async def test_a_process_exit_cancels_the_apply(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Every exec seam and hard exit cancels the applies in flight through
         ``platform_compat.cancel_wheel_applies_in_flight``."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         started = threading.Event()
         reasons: list[str] = []

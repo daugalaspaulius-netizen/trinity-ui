@@ -24,9 +24,9 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import cli_doctor
-from kiro_crew.config.loader import DiscordConfig, KiroCrewConfig
-from kiro_crew.discord import intent_probe
+from efm_go import cli_doctor
+from efm_go.config.loader import DiscordConfig, KiroCrewConfig
+from efm_go.discord import intent_probe
 
 _TOKEN = "MFYzNQ.qXpLwZ.vKjHgFdSaPoIuYtReWq"
 _APP_ID = "123456789012345678"

@@ -6,8 +6,8 @@ import uuid
 
 import pytest
 
-from kiro_crew.cron import CronService
-from kiro_crew.mcp_cron import _call_tool_inner
+from efm_go.cron import CronService
+from efm_go.mcp_cron import _call_tool_inner
 
 
 def _unique_name() -> str:
@@ -17,8 +17,8 @@ def _unique_name() -> str:
 @pytest.fixture(autouse=True)
 def _isolate_cron_store(monkeypatch, tmp_path):
     """Route all CronService() instances to tmp_path for test isolation."""
-    monkeypatch.setattr("kiro_crew.cron._DEFAULT_DIR", tmp_path)
-    monkeypatch.setattr("kiro_crew.mcp_cron.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.cron._DEFAULT_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.mcp_cron.config_dir", lambda: tmp_path)
 
 
 class TestCronAddSessionKey:
@@ -47,7 +47,7 @@ class TestCronAddSessionKey:
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
         monkeypatch.delenv("KIROCREW_CHANNEL_ID", raising=False)
         monkeypatch.delenv("KIROCREW_CLI", raising=False)
-        monkeypatch.setattr("kiro_crew.mcp_cron._authz_session_key", lambda: "")
+        monkeypatch.setattr("efm_go.mcp_cron._authz_session_key", lambda: "")
         name = _unique_name()
         result = _call_tool_inner("cron_add", {"name": name, "message": "hi", "every": 120})
 
@@ -124,7 +124,7 @@ class TestCronRemoveAllScoped:
 
         # Try to remove with no identity the gateway can name
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
-        monkeypatch.setattr("kiro_crew.mcp_cron._authz_session_key", lambda: "")
+        monkeypatch.setattr("efm_go.mcp_cron._authz_session_key", lambda: "")
         result = _call_tool_inner("cron_remove_all", {})
         assert "cannot determine which session is calling" in result
 

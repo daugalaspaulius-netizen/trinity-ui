@@ -27,8 +27,8 @@ import os
 
 import pytest
 
-import kiro_crew.sandbox as sb
-from kiro_crew import platform_compat
+import efm_go.sandbox as sb
+from efm_go import platform_compat
 
 pytestmark = pytest.mark.skipif(
     not platform_compat.IS_POSIX,
@@ -245,7 +245,7 @@ class TestTheDrivePreviewUsesTheSpellingSet:
         a temp directory outside the data home, where every spelling collapses to
         one and the bug cannot appear.
         """
-        from kiro_crew.apps.builtins.aws_control.backend import storage
+        from efm_go.apps.builtins.aws_control.backend import storage
 
         _link, data_home = symlinked_home
         staging_parent = data_home / _STAGING_LEAF

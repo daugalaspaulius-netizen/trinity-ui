@@ -67,9 +67,9 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import runtime_ownership as ro
-from kiro_crew import runtime_reconcile as rr
-from kiro_crew.apps import backend as bmod
+from efm_go import runtime_ownership as ro
+from efm_go import runtime_reconcile as rr
+from efm_go.apps import backend as bmod
 
 # The rootdir conftest wipes runtime_ownership's tables on both sides of every
 # test. This file does its own intra-file isolation with explicit
@@ -448,7 +448,7 @@ def test_the_wiring_reads_a_recycled_identity_out_of_the_real_registry_file(
     ``<gw>:<pid>:<token>`` form, then answers the live identity lookup with a
     different token for one pid and the recorded token for the other.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -474,9 +474,9 @@ def test_the_wiring_reads_a_recycled_identity_out_of_the_real_registry_file(
         real_retract(rows)  # type: ignore[arg-type]
 
     monkeypatch.setattr(rr, "_retract_session_rows", _recording_retract)
-    monkeypatch.setattr("kiro_crew.session_scope_reap.instance_slice_pids", lambda: {5001, 5002})
+    monkeypatch.setattr("efm_go.session_scope_reap.instance_slice_pids", lambda: {5001, 5002})
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_ALIVE
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_ALIVE
     )
 
     reconciler = rr.build_reconciler(active_pids=lambda: set(), notify_dead=lambda pid: None)
@@ -581,7 +581,7 @@ def test_an_absent_backend_pidfile_is_an_empty_set_not_a_refusal(
     possible way for this module to do nothing at all.
     """
     missing = tmp_path / "gateway.sock"
-    monkeypatch.setattr("kiro_crew.runtime_reconcile.configured_socket_path", lambda: str(missing))
+    monkeypatch.setattr("efm_go.runtime_reconcile.configured_socket_path", lambda: str(missing))
     assert rr._mcp_backend_pids() == set(), "an absent pidfile means nothing is hosted"
 
     # A file that EXISTS and cannot be read is still a refusal: presenting every
@@ -625,7 +625,7 @@ def test_a_backend_this_gateway_spawned_is_owned_and_never_reaches_the_gate(
     And a backend whose child has exited is out of the answer, so it is not reported
     as a dead runtime.
     """
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -693,7 +693,7 @@ def test_a_forking_launchers_server_child_is_owned_through_the_real_membership_w
     faked so the test does not depend on a live ``/proc`` tree. The assertion that this
     FAILS without the union is the positive control below.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -756,7 +756,7 @@ def test_without_the_children_union_the_server_child_would_be_unowned(
     closes. If this test ever reports ``unowned_alive == 0`` the union has stopped
     being load-bearing and the test above proves nothing.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -822,7 +822,7 @@ def test_the_app_backend_table_claims_only_a_running_child_this_gateway_spawned(
     reader is ever consulted, so a reused pid's current children can never be claimed
     on behalf of a dead launcher.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     children_calls: list[int] = []
 
@@ -866,7 +866,7 @@ def test_a_forking_launcher_claims_its_root_and_the_roots_direct_children(
     therefore contributes the root AND that root's direct children (the server), so
     the server is owned rather than reading as a leak on every pass.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     monkeypatch.setattr(
         platform_compat, "_proc_children", lambda pid: [8801] if pid == 5601 else []
@@ -896,7 +896,7 @@ def test_a_grandchild_of_a_forking_launcher_root_is_not_claimed(
     direct children once and never walks the tree, so a grandchild (a child of the
     server, not of the root) is never in the answer.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     # 5602 -> [8802]; 8802 -> [9999]. A tree walk would reach 9999; a direct-children
     # read of the ROOT alone returns only 8802.
@@ -930,7 +930,7 @@ def test_a_non_forking_record_claims_only_its_root(
     forking, both leave the root as the server itself. The default-False record must
     contribute its root only, and the children reader must never be consulted for it.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     walked: list[int] = []
 
@@ -959,7 +959,7 @@ def test_an_oserror_reading_children_leaves_the_forking_root_claimed_alone(
     claimed on its own rather than the whole record being dropped (which would make a
     live launcher parent read as a leak).
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     def _boom(pid: int) -> list[int]:
         raise OSError("proc read failed")
@@ -1148,8 +1148,8 @@ def test_process_age_comes_from_the_process_start_not_the_procfs_inode() -> None
     Pinned against the repository's own helper rather than a recomputation of it,
     and against this live process, whose age is genuinely non-zero.
     """
-    from kiro_crew import platform_compat
-    from kiro_crew.session_pid import _pid_age_seconds
+    from efm_go import platform_compat
+    from efm_go.session_pid import _pid_age_seconds
 
     mine = os.getpid()
     if platform_compat.IS_WINDOWS:
@@ -1250,7 +1250,7 @@ def test_the_audit_seam_reaches_sel_and_cannot_break_a_pass(
         def log_tool_invocation(self, **kwargs: Any) -> None:
             logged.append(kwargs)
 
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: _Sel())
+    monkeypatch.setattr("efm_go.sel.sel", lambda: _Sel())
     rr._sel_reconcile_kill(4242, "killed", "because")
     assert logged and logged[0]["tool_name"] == "runtime_reconcile"
     assert logged[0]["tool_kind"] == "process_kill"
@@ -1260,7 +1260,7 @@ def test_the_audit_seam_reaches_sel_and_cannot_break_a_pass(
     def boom() -> Any:
         raise RuntimeError("sel is down")
 
-    monkeypatch.setattr("kiro_crew.sel.sel", boom)
+    monkeypatch.setattr("efm_go.sel.sel", boom)
     rr._sel_reconcile_kill(4242, "killed", "because")  # must not raise
 
 
@@ -1436,7 +1436,7 @@ def test_the_configured_ceiling_cannot_exceed_the_shipped_budget() -> None:
     a write can withhold signals and cannot authorize one the arm would not already
     send. A ceiling above the default would make the field an arming surface.
     """
-    from kiro_crew.config import sections
+    from efm_go.config import sections
 
     assert sections.RECONCILE_MAX_KILLS_MAX == rr.DEFAULT_MAX_KILLS
     assert rr.DEFAULT_MAX_KILLS > 0, "and the shipped budget is a real one"
@@ -1449,7 +1449,7 @@ def test_the_config_default_matches_the_module_default() -> None:
     import would be a cycle -- so the value is written in both places. A test is the
     only place they can be held together.
     """
-    from kiro_crew.config import sections
+    from efm_go.config import sections
 
     assert sections.DEFAULT_RECONCILE_MAX_KILLS == rr.DEFAULT_MAX_KILLS
     assert sections.SessionConfig().reconcile_max_kills == rr.DEFAULT_MAX_KILLS
@@ -1481,7 +1481,7 @@ def test_the_configured_budget_is_clamped_on_load(stored: object, loaded: int) -
     ``config.json`` is agent-writable and never passes the dashboard's write gate, so
     the load path is the only place a hand-edited kill budget is bounded.
     """
-    from kiro_crew.config import loader
+    from efm_go.config import loader
 
     cfg = loader._build_session_config({"reconcile_max_kills": stored})
     assert cfg.reconcile_max_kills == loaded
@@ -1578,7 +1578,7 @@ def test_the_kill_line_names_the_count_signalled_not_the_root_alone(
     rec._kill_tree = lambda pid, expected=None: 3  # type: ignore[method-assign]
     rec.run_once()
     audited.clear()
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.runtime_reconcile"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.runtime_reconcile"):
         rec.run_once()
 
     lines = [r.getMessage() for r in caplog.records]
@@ -1610,7 +1610,7 @@ def test_the_wiring_claims_pids_tracked_by_any_gateway_on_this_data_home(
     by construction, passes the inherited marker test, ages past the floor, and is
     signalled. So membership comes from both pid files across every gateway pid.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -1628,7 +1628,7 @@ def test_the_wiring_claims_pids_tracked_by_any_gateway_on_this_data_home(
     # reconciler would read the host's real slice.
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: {5101, 5202, 5303})
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_ALIVE
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_ALIVE
     )
     monkeypatch.setattr(session_pid, "_pid_start_token", lambda pid: None)
 
@@ -1657,7 +1657,7 @@ def test_an_incomplete_tracked_pid_snapshot_refuses_the_pass(
     incomplete membership -- the same requirement the scope reaper imposes on every
     kill-authorizing caller.
     """
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(session_pid, "_session_pid_entry_index", lambda gw: {})
@@ -1681,7 +1681,7 @@ def test_a_foreign_gateways_dead_record_is_counted_but_not_claimed_retracted(
     row -- and an unchanged rewrite still returns True, so calling it would report a
     retraction that never happened, every pass, forever.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -1693,7 +1693,7 @@ def test_a_foreign_gateways_dead_record_is_counted_but_not_claimed_retracted(
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: set())
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
     )
     untracked: list[str] = []
     real_retract = rr._retract_session_rows
@@ -1723,7 +1723,7 @@ def test_the_entry_reader_carries_every_gateways_rows(
 ) -> None:
     """POSITIVE CONTROL for the reader: without it, a reader that silently returned
     nothing would satisfy the test above by making both rows invisible."""
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -1754,7 +1754,7 @@ def test_the_reconcile_pass_reads_the_pid_union_on_the_loop_not_in_the_worker(
     that sees a momentarily empty pool spawns runtimes to fill one that was never
     empty -- so the union must be gathered here and handed over frozen.
     """
-    from kiro_crew import session_cleanup as sc
+    from efm_go import session_cleanup as sc
 
     union_threads: list[int] = []
     pass_threads: list[int] = []
@@ -1795,7 +1795,7 @@ def test_an_incomplete_pid_union_skips_the_reconcile_pass(
     union makes a live runtime look unowned, which is the one input that turns this
     reconciler into the leak it exists to report.
     """
-    from kiro_crew import session_cleanup as sc
+    from efm_go import session_cleanup as sc
 
     ran: list[int] = []
 
@@ -1839,7 +1839,7 @@ def test_the_hook_hands_the_configured_kill_budget_to_every_pass(
     Without this the field is inert: the reconciler would keep whatever budget it was
     built with, and an operator arming it would see nothing change.
     """
-    from kiro_crew import session_cleanup as sc
+    from efm_go import session_cleanup as sc
 
     budgets: list[int] = []
 
@@ -1873,7 +1873,7 @@ def test_the_configured_budget_is_re_read_on_the_next_tick(
     The reconciler instance is built once and kept, so this is the only thing that
     makes arming the budget take effect without a gateway restart.
     """
-    from kiro_crew import session_cleanup as sc
+    from efm_go import session_cleanup as sc
 
     budgets: list[int] = []
 
@@ -1918,7 +1918,7 @@ def test_a_record_in_neither_tracking_file_is_counted_dead_but_not_claimed_retra
     succeeds. Counting that as a retraction reports work that did not happen on
     every pass for as long as the record lives.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -1926,7 +1926,7 @@ def test_a_record_in_neither_tracking_file_is_counted_dead_but_not_claimed_retra
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: set())
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
     )
     handed: list[int] = []
     monkeypatch.setattr(session_pid, "_untrack_session_pid", lambda pid: handed.append(pid) is None)
@@ -1949,7 +1949,7 @@ def test_a_descendant_only_record_is_retracted_from_the_descendant_file(
     because the pid that is tracked and leased is the launcher parent. Their record
     is not in the session file at all, so the session untracker cannot retract it.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -1959,7 +1959,7 @@ def test_a_descendant_only_record_is_retracted_from_the_descendant_file(
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: set())
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness",
+        "efm_go.platform_compat.pid_liveness",
         lambda pid: platform_compat.PID_DEAD if pid == 5501 else platform_compat.PID_ALIVE,
     )
     # The live sibling must also pass the recycle check, so its identity is pinned
@@ -1988,7 +1988,7 @@ def test_a_legacy_bare_descendant_row_is_retracted_by_the_bare_line_remover(
 ) -> None:
     """The two row grammars in one file need different removers, and the remover for
     a parented row matches on its child field -- which a bare line has no form of."""
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -1998,7 +1998,7 @@ def test_a_legacy_bare_descendant_row_is_retracted_by_the_bare_line_remover(
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: set())
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
     )
 
     reading = rr.build_reconciler(
@@ -2019,7 +2019,7 @@ def test_a_session_row_the_remover_left_in_place_is_not_claimed_retracted(
     its rewrite succeeded, which an unchanged rewrite also does. So a row still
     present after the retraction must count as nothing removed.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -2028,7 +2028,7 @@ def test_a_session_row_the_remover_left_in_place_is_not_claimed_retracted(
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: set())
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
     )
     # Returns nothing and changes nothing -- the shape of a rewrite that matched no
     # row, which is indistinguishable from a successful one by its answer alone.
@@ -2053,7 +2053,7 @@ def test_the_descendant_row_reader_names_only_a_pids_own_row(
     A pid appearing only as the PARENT field is not a record of itself -- that is the
     field the reapers deliberately ignore, and the field no remover matches on.
     """
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -2079,7 +2079,7 @@ def test_a_pid_carrying_two_rows_keeps_both_so_neither_is_retracted_by_the_other
     child, so one pid legitimately carries a row per parent. A reader that kept only
     the last would hand the retraction a set that omits rows it inspected.
     """
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -2104,7 +2104,7 @@ def test_a_replacement_row_under_a_reused_pid_survives_the_dead_rows_retraction(
     dead one. The live descendant would then be tracked in neither file: leaked past
     every reaper that keys off it, and read as unowned by the next pass.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -2129,7 +2129,7 @@ def test_a_replacement_row_under_a_reused_pid_survives_the_dead_rows_retraction(
                 handle.write(replacement + "\n")
         return platform_compat.PID_DEAD
 
-    monkeypatch.setattr("kiro_crew.platform_compat.pid_liveness", register_replacement_mid_pass)
+    monkeypatch.setattr("efm_go.platform_compat.pid_liveness", register_replacement_mid_pass)
 
     reading = rr.build_reconciler(
         active_pids=lambda: set(), notify_dead=lambda pid: None
@@ -2230,8 +2230,8 @@ def _cleanup(
     service, as a raw object rather than an int: the hook reads it off a config file
     an agent can write, so the tests need to hand it the values a hand edit produces.
     """
-    from kiro_crew.session_cleanup import CleanupDeps, CleanupState, SessionCleanup
-    from kiro_crew.watchdog import SessionWatchdog
+    from efm_go.session_cleanup import CleanupDeps, CleanupState, SessionCleanup
+    from efm_go.watchdog import SessionWatchdog
 
     recorded: dict[str, list[int]] = {"pid_kills": [], "mcp_kills": []}
     executor = ThreadPoolExecutor(max_workers=1)
@@ -2376,7 +2376,7 @@ async def test_an_unanswerable_gate_withholds_the_pid() -> None:
             raise RuntimeError("gate unavailable")
         return True
 
-    with patch("kiro_crew.session_cleanup.authorize_runtime_kill", raising_for_one):
+    with patch("efm_go.session_cleanup.authorize_runtime_kill", raising_for_one):
         await service._sweep_periodic_pids()
 
     assert recorded["pid_kills"] == [6262], (
@@ -2443,7 +2443,7 @@ async def test_the_scope_reaper_does_not_stop_a_unit_holding_a_leased_pid(
     """
     from unittest.mock import patch
 
-    from kiro_crew import session_scope_reap as reap
+    from efm_go import session_scope_reap as reap
 
     ro._reset_for_tests()
     scope = tmp_path / "run-test.scope"
@@ -2505,7 +2505,7 @@ def test_the_scope_reaper_signals_every_member_when_none_is_leased(tmp_path: Pat
     depends on is worth least on the platform where it does not run: the refusal would
     pass for free there, which is the whole failure mode the control exists to rule out.
     """
-    from kiro_crew import session_scope_reap as reap
+    from efm_go import session_scope_reap as reap
 
     ro._reset_for_tests()
     scope = tmp_path / "run-plain.scope"
@@ -2527,7 +2527,7 @@ def test_the_slice_enumerator_reads_every_scope_under_the_slice(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Kernel truth is the union of the slice's own members and every scope's."""
-    from kiro_crew import session_scope_reap as reap
+    from efm_go import session_scope_reap as reap
 
     slice_dir = tmp_path / "kirocrew-agents-tok.slice"
     slice_dir.mkdir()
@@ -2548,7 +2548,7 @@ def test_the_slice_enumerator_reads_every_scope_under_the_slice(
 def test_an_unresolvable_slice_reads_as_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     """Empty is the honest answer, and the reconciler's registry refusal is what
     stops an empty kernel reading from being acted on as an empty install."""
-    from kiro_crew import session_scope_reap as reap
+    from efm_go import session_scope_reap as reap
 
     monkeypatch.setattr(reap, "_instance_scope_dir", lambda: (None, "no cgroup dir"))
     assert reap.instance_slice_pids() == set()
@@ -2562,7 +2562,7 @@ def agent_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Point subagent persistence at a registry below this test's temp directory."""
     root = tmp_path / "subagents"
     root.mkdir()
-    monkeypatch.setattr("kiro_crew.subagent_persistence._SUBAGENTS_DIR", root)
+    monkeypatch.setattr("efm_go.subagent_persistence._SUBAGENTS_DIR", root)
     return root
 
 
@@ -2578,8 +2578,8 @@ async def test_the_orphan_reconcile_withholds_a_leased_pid(agent_root: Path) -> 
     """
     from unittest.mock import MagicMock, patch
 
-    from kiro_crew.subagent import SubagentManager
-    from kiro_crew.subagent_persistence import create_agent_folder, update_state
+    from efm_go.subagent import SubagentManager
+    from efm_go.subagent_persistence import create_agent_folder, update_state
 
     ro._reset_for_tests()
     manager = SubagentManager(sessions=MagicMock(), ctx_builder=MagicMock())
@@ -2616,8 +2616,8 @@ def test_a_flagged_result_is_the_agents_answer(agent_root: Path) -> None:
     whole from memory, which makes the flag the proof: a flagged result is the
     agent's answer, ``result_available``, never a fragment.
     """
-    from kiro_crew.subagent_manager.monitoring import tombstone_recovery_action
-    from kiro_crew.subagent_persistence import create_agent_folder, write_result_chunk
+    from efm_go.subagent_manager.monitoring import tombstone_recovery_action
+    from efm_go.subagent_persistence import create_agent_folder, write_result_chunk
 
     create_agent_folder("flagged-finished", task="a finished answer")
     write_result_chunk("flagged-finished", "the whole answer, every byte of it", fresh=True)
@@ -2635,8 +2635,8 @@ def test_an_unflagged_result_still_under_claims_as_a_fragment(agent_root: Path) 
     ``result_complete``. That genuinely partial result must still be announced
     as cut off, never promoted to a whole answer.
     """
-    from kiro_crew.subagent_manager.monitoring import tombstone_recovery_action
-    from kiro_crew.subagent_persistence import create_agent_folder, write_result_chunk
+    from efm_go.subagent_manager.monitoring import tombstone_recovery_action
+    from efm_go.subagent_persistence import create_agent_folder, write_result_chunk
 
     create_agent_folder("truly-partial", task="an interrupted stream")
     write_result_chunk("truly-partial", "an opening sentence the restart", fresh=True)
@@ -2660,8 +2660,8 @@ async def test_the_reconcile_announces_a_finished_run_as_finished(agent_root: Pa
     """
     from unittest.mock import MagicMock, patch
 
-    from kiro_crew.subagent import SubagentManager
-    from kiro_crew.subagent_persistence import (
+    from efm_go.subagent import SubagentManager
+    from efm_go.subagent_persistence import (
         create_agent_folder,
         read_tombstone,
         update_state,
@@ -2724,8 +2724,8 @@ async def test_the_reset_ladder_withholds_the_kill_and_the_shared_child_sweep() 
     """
     from unittest.mock import MagicMock, patch
 
-    from kiro_crew.process_identity import ProcessHandle
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.process_identity import ProcessHandle
+    from efm_go.subagent import SubagentManager
 
     ro._reset_for_tests()
     manager = SubagentManager(sessions=MagicMock(), ctx_builder=MagicMock())
@@ -2740,8 +2740,8 @@ async def test_the_reset_ladder_withholds_the_kill_and_the_shared_child_sweep() 
     swept: list[Any] = []
     try:
         with (
-            patch("kiro_crew.acp.client._kill_escaped_children", side_effect=swept.append),
-            patch("kiro_crew.subagent.kill_verified_process") as mock_verified_kill,
+            patch("efm_go.acp.client._kill_escaped_children", side_effect=swept.append),
+            patch("efm_go.subagent.kill_verified_process") as mock_verified_kill,
         ):
             failure = await manager._sigkill_session("hung", handle)
     finally:
@@ -2789,8 +2789,8 @@ async def test_a_teardown_is_not_refused_by_the_lease_it_is_tearing_down() -> No
     """
     from unittest.mock import patch
 
-    from kiro_crew.cron import CronService
-    from kiro_crew.process_identity import ProcessHandle
+    from efm_go.cron import CronService
+    from efm_go.process_identity import ProcessHandle
 
     ro._reset_for_tests()
     handle = ProcessHandle(pid=9292, start_id="abc", pgid=9292, child_pids={})
@@ -2819,8 +2819,8 @@ async def test_a_teardown_is_not_refused_by_the_lease_it_is_tearing_down() -> No
         return None
 
     with (
-        patch("kiro_crew.cron.kill_verified_process", fake_kill),
-        patch("kiro_crew.session.child_process_helpers", lambda: (None, None, None)),
+        patch("efm_go.cron.kill_verified_process", fake_kill),
+        patch("efm_go.session.child_process_helpers", lambda: (None, None, None)),
     ):
         failure = await CronService._sigkill_session(_Svc(), "cron:job", handle, who="Reaper")
 
@@ -2838,8 +2838,8 @@ async def test_another_tenants_lease_still_withholds_the_cron_kill() -> None:
     Without this, releasing before the gate could be 'release everything and
     always kill', which is the original bug with extra steps.
     """
-    from kiro_crew.cron import CronService
-    from kiro_crew.process_identity import ProcessHandle
+    from efm_go.cron import CronService
+    from efm_go.process_identity import ProcessHandle
 
     ro._reset_for_tests()
     handle = ProcessHandle(pid=9393, start_id="abc", pgid=9393, child_pids={})
@@ -2879,8 +2879,8 @@ async def test_only_the_lease_of_the_process_being_killed_is_released() -> None:
       because it is a lease on the pid being killed, releasing it wrongly would let
       the kill proceed.
     """
-    from kiro_crew.cron import CronService
-    from kiro_crew.process_identity import ProcessHandle
+    from efm_go.cron import CronService
+    from efm_go.process_identity import ProcessHandle
 
     ro._reset_for_tests()
     killing = ProcessHandle(pid=9494, start_id="mine", pgid=9494, child_pids={})
@@ -2930,8 +2930,8 @@ async def test_the_reset_ladder_kills_when_the_only_lease_is_its_own_subject() -
     """
     from unittest.mock import MagicMock, patch
 
-    from kiro_crew.process_identity import ProcessHandle
-    from kiro_crew.subagent import SubagentManager
+    from efm_go.process_identity import ProcessHandle
+    from efm_go.subagent import SubagentManager
 
     ro._reset_for_tests()
     manager = SubagentManager(sessions=MagicMock(), ctx_builder=MagicMock())
@@ -2948,7 +2948,7 @@ async def test_the_reset_ladder_kills_when_the_only_lease_is_its_own_subject() -
     )()
     manager._sessions.tearing_down = lambda key: [entry]
 
-    with patch("kiro_crew.subagent.kill_verified_process", return_value=None) as mock_verified_kill:
+    with patch("efm_go.subagent.kill_verified_process", return_value=None) as mock_verified_kill:
         failure = await manager._sigkill_session("hung", handle)
 
     mock_verified_kill.assert_called_once()
@@ -2974,7 +2974,7 @@ async def test_the_sweep_gate_audits_both_outcomes() -> None:
     await holder.take()
     try:
         with patch(
-            "kiro_crew.session_cleanup.audit_kill_decision",
+            "efm_go.session_cleanup.audit_kill_decision",
             lambda pid, outcome, reason, *, tool_name: events.append((pid, outcome)),
         ):
             await service._sweep_periodic_pids()
@@ -3001,9 +3001,9 @@ def test_the_shared_audit_emitter_reaches_sel_and_cannot_break_a_caller(
         def log_tool_invocation(self, **kwargs: Any) -> None:
             logged.append(kwargs)
 
-    from kiro_crew import process_identity
+    from efm_go import process_identity
 
-    monkeypatch.setattr("kiro_crew.sel.sel", lambda: _Sel())
+    monkeypatch.setattr("efm_go.sel.sel", lambda: _Sel())
     process_identity.audit_kill_decision(4242, "refused", "because", tool_name="a-caller")
     assert logged and logged[0]["tool_name"] == "a-caller"
     assert logged[0]["tool_kind"] == "process_kill"
@@ -3013,7 +3013,7 @@ def test_the_shared_audit_emitter_reaches_sel_and_cannot_break_a_caller(
     def boom() -> Any:
         raise RuntimeError("sel is down")
 
-    monkeypatch.setattr("kiro_crew.sel.sel", boom)
+    monkeypatch.setattr("efm_go.sel.sel", boom)
     process_identity.audit_kill_decision(4242, "killed", "because", tool_name="a-caller")
 
 
@@ -3031,8 +3031,8 @@ async def test_the_cron_reaper_reports_a_leased_runtime_instead_of_killing_it() 
     The refusal is RETURNED, not swallowed, so the run is never recorded as reaped
     over a process tree that is still standing.
     """
-    from kiro_crew.cron import CronService
-    from kiro_crew.process_identity import ProcessHandle
+    from efm_go.cron import CronService
+    from efm_go.process_identity import ProcessHandle
 
     ro._reset_for_tests()
     handle = ProcessHandle(pid=9191, start_id="abc", pgid=9191, child_pids={})
@@ -3071,8 +3071,8 @@ async def test_a_cancelled_resets_own_lease_is_still_released_from_the_captured_
     """
     from unittest.mock import patch
 
-    from kiro_crew.cron import CronService
-    from kiro_crew.process_identity import ProcessHandle
+    from efm_go.cron import CronService
+    from efm_go.process_identity import ProcessHandle
 
     ro._reset_for_tests()
     handle = ProcessHandle(pid=9494, start_id="abc", pgid=9494, child_pids={})
@@ -3098,8 +3098,8 @@ async def test_a_cancelled_resets_own_lease_is_still_released_from_the_captured_
         return None
 
     with (
-        patch("kiro_crew.cron.kill_verified_process", fake_kill),
-        patch("kiro_crew.session.child_process_helpers", lambda: (None, None, None)),
+        patch("efm_go.cron.kill_verified_process", fake_kill),
+        patch("efm_go.session.child_process_helpers", lambda: (None, None, None)),
     ):
         failure = await CronService._sigkill_session(
             _Svc(), "cron:job", handle, who="Reaper", popped=[(popped_session, handle)]
@@ -3121,8 +3121,8 @@ async def test_the_captured_pop_does_not_release_another_tenants_lease() -> None
     into an always-kill. Here the popped session's handle names a DIFFERENT process
     start on the same number, so its lease is not this teardown's to release.
     """
-    from kiro_crew.cron import CronService
-    from kiro_crew.process_identity import ProcessHandle
+    from efm_go.cron import CronService
+    from efm_go.process_identity import ProcessHandle
 
     ro._reset_for_tests()
     handle = ProcessHandle(
@@ -3161,7 +3161,7 @@ async def test_a_provider_reached_through_both_sources_is_released_once() -> Non
     is counted and logged per teardown, so a duplicate would report two teardowns
     where there was one.
     """
-    from kiro_crew.process_identity import ProcessHandle, release_teardown_lease
+    from efm_go.process_identity import ProcessHandle, release_teardown_lease
 
     handle = ProcessHandle(pid=9696, start_id="abc", pgid=9696, child_pids={})
     releases: list[object] = []
@@ -3177,7 +3177,7 @@ async def test_a_provider_reached_through_both_sources_is_released_once() -> Non
         def tearing_down(self, key: str) -> list[object]:
             return [entry]
 
-    import kiro_crew.process_identity as pi
+    import efm_go.process_identity as pi
 
     real = pi.release_session_lease
     try:
@@ -3211,7 +3211,7 @@ def test_a_replacements_session_row_survives_the_dead_records_retraction(
     with the dead one, and its LIVE runtime is tracked nowhere -- past every reaper
     that keys off this file, and read as unowned by the next pass.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -3223,7 +3223,7 @@ def test_a_replacements_session_row_survives_the_dead_records_retraction(
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: set())
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_DEAD
     )
 
     real_retract = rr._retract_session_rows
@@ -3259,7 +3259,7 @@ def test_the_session_row_remover_matches_whole_lines_in_both_grammars(
     Without this, a remover that quietly removed nothing would satisfy the guard
     above by leaving every row in place.
     """
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -3284,7 +3284,7 @@ def test_a_recycled_descendant_with_no_session_row_counts_as_dead(
     reused: its dead row is never retracted, so a record goes on naming somebody
     else's process for the gateway's life.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -3294,7 +3294,7 @@ def test_a_recycled_descendant_with_no_session_row_counts_as_dead(
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: set())
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_ALIVE
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_ALIVE
     )
 
     reading = rr.build_reconciler(
@@ -3317,7 +3317,7 @@ def test_a_descendant_row_whose_identity_still_matches_is_alive(
     Without this, reading both files could become "any disagreement is a stranger",
     which would retract the record of a live runtime whose other row is stale.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -3331,7 +3331,7 @@ def test_a_descendant_row_whose_identity_still_matches_is_alive(
     monkeypatch.setattr(rr, "_mcp_backend_pids", lambda: set())
     monkeypatch.setattr(rr, "instance_slice_pids", lambda: set())
     monkeypatch.setattr(
-        "kiro_crew.platform_compat.pid_liveness", lambda pid: platform_compat.PID_ALIVE
+        "efm_go.platform_compat.pid_liveness", lambda pid: platform_compat.PID_ALIVE
     )
 
     reading = rr.build_reconciler(
@@ -3461,7 +3461,7 @@ def test_a_record_that_is_not_ours_to_retract_is_not_warned_about_every_pass(
         forget=lambda pid: "not-mine",
         notify_dead=lambda pid: None,
     )
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.runtime_reconcile"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.runtime_reconcile"):
         reconciler.run_once()
 
     warnings = [
@@ -3491,7 +3491,7 @@ def test_a_retraction_that_was_ours_and_did_not_land_is_still_warned_about(
         forget=lambda pid: "failed",
         notify_dead=lambda pid: None,
     )
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.runtime_reconcile"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.runtime_reconcile"):
         reconciler.run_once()
 
     warnings = [
@@ -3513,11 +3513,11 @@ def test_the_kill_phase_reports_what_it_actually_killed() -> None:
     -- "prune, never kill" -- so a phase handed candidates and killing none is a real
     shape an operator needs when a leak reading will not come down.
     """
-    from kiro_crew.process_identity import audit_kill_phase
+    from efm_go.process_identity import audit_kill_phase
 
     rows: list[tuple[str, str]] = []
 
-    import kiro_crew.process_identity as pi
+    import efm_go.process_identity as pi
 
     real = pi._audit_kill
     try:
@@ -3546,7 +3546,7 @@ async def test_the_periodic_sweep_emits_one_phase_row_after_its_kill() -> None:
     phases: list[tuple[int, int]] = []
 
     with patch(
-        "kiro_crew.session_cleanup.audit_kill_phase",
+        "efm_go.session_cleanup.audit_kill_phase",
         lambda *, allowed, killed, reason, tool_name: phases.append((allowed, killed)),
     ):
         await service._sweep_periodic_pids()
@@ -3570,7 +3570,7 @@ def test_a_lock_that_fails_to_open_is_reported_and_does_not_raise(
     """
     from contextlib import contextmanager
 
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     home = tmp_path / "home"
     home.mkdir()
@@ -3583,7 +3583,7 @@ def test_a_lock_that_fails_to_open_is_reported_and_does_not_raise(
 
     monkeypatch.setattr(session_pid, "_pid_file_lock", _failing_lock)
 
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.runtime_reconcile"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.runtime_reconcile"):
         rr._retract_descendant_rows(["8001:4242:TOK"])  # must not raise
 
     messages = [r.getMessage() for r in caplog.records if "could not retract" in r.getMessage()]
@@ -3613,7 +3613,7 @@ async def test_the_scope_reaper_does_not_stop_a_unit_holding_a_tenanted_pid(
     """
     from unittest.mock import patch
 
-    from kiro_crew import session_scope_reap as reap
+    from efm_go import session_scope_reap as reap
 
     ro._reset_for_tests()
     scope = tmp_path / "run-tenant.scope"
@@ -3690,7 +3690,7 @@ async def test_a_tenant_arriving_after_the_survey_abandons_the_whole_reclaim(
     """
     from unittest.mock import patch
 
-    from kiro_crew import session_scope_reap as reap
+    from efm_go import session_scope_reap as reap
 
     ro._reset_for_tests()
     scope = tmp_path / "run-late.scope"
@@ -3743,7 +3743,7 @@ def test_the_scope_reaper_releases_every_barrier_after_a_successful_stop(
     """
     from unittest.mock import patch
 
-    from kiro_crew import session_scope_reap as reap
+    from efm_go import session_scope_reap as reap
 
     ro._reset_for_tests()
     scope = tmp_path / "run-clear.scope"
@@ -3960,7 +3960,7 @@ def test_an_identity_that_changes_during_the_descendant_walk_spares_the_root(
     Checking at the door is not enough, which is the rule the sibling teardown states
     for itself: before EVERY signal, not once up front.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     live = {"token": "THE-PROCESS-WE-VERIFIED"}
     signalled: list[int] = []
@@ -3971,7 +3971,7 @@ def test_an_identity_that_changes_during_the_descendant_walk_spares_the_root(
         # its members are legitimately signalled, and only the root is spared.
         live["token"] = "A-REPLACEMENT-RUNTIME"
 
-    monkeypatch.setattr("kiro_crew.acp.client._get_child_pids", lambda pid: [5511])
+    monkeypatch.setattr("efm_go.acp.client._get_child_pids", lambda pid: [5511])
     monkeypatch.setattr(session_pid, "_is_managed_agent_process", lambda pid: True)
     monkeypatch.setattr(platform_compat, "get_process_start_id", lambda pid: live["token"])
     # The child really is our descendant in this scenario, so the ancestry edge the
@@ -3992,11 +3992,11 @@ def test_a_pinned_identity_that_differs_at_the_door_signals_nothing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The first of the two checks: a pid that already moved is not walked at all."""
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     signalled: list[int] = []
     monkeypatch.setattr(
-        "kiro_crew.acp.client._get_child_pids",
+        "efm_go.acp.client._get_child_pids",
         lambda pid: pytest.fail("a pid that already moved must not even be walked"),
     )
     monkeypatch.setattr(session_pid, "_is_managed_agent_process", lambda pid: True)
@@ -4016,10 +4016,10 @@ def test_an_unreadable_identity_withholds_a_pinned_kill(
     decides whether to RETRACT a record. Here it decides whether to kill, and the two
     directions cannot share an answer.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     signalled: list[int] = []
-    monkeypatch.setattr("kiro_crew.acp.client._get_child_pids", lambda pid: [])
+    monkeypatch.setattr("efm_go.acp.client._get_child_pids", lambda pid: [])
     monkeypatch.setattr(session_pid, "_is_managed_agent_process", lambda pid: True)
     monkeypatch.setattr(platform_compat, "get_process_start_id", lambda pid: None)
     monkeypatch.setattr(platform_compat, "kill_pid", lambda pid, sig: signalled.append(pid))
@@ -4036,10 +4036,10 @@ def test_an_unpinned_kill_behaves_exactly_as_before(
     Without this, the pin could have become a fail-closed default that silently
     stopped four older sweeps from killing anything.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     signalled: list[int] = []
-    monkeypatch.setattr("kiro_crew.acp.client._get_child_pids", lambda pid: [5541])
+    monkeypatch.setattr("efm_go.acp.client._get_child_pids", lambda pid: [5541])
     monkeypatch.setattr(session_pid, "_is_managed_agent_process", lambda pid: True)
     # Unreadable on purpose: a caller with no captured identity has nothing to
     # compare, so this must not be read as a mismatch.
@@ -4098,7 +4098,7 @@ def test_an_identity_that_changes_while_descendants_are_read_spares_the_children
     was already ours, so the children found while it was ours are still killed. Here,
     during the read, so the list itself belongs to a stranger and nothing is killed.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     live = {"token": "OURS"}
     signalled: list[int] = []
@@ -4108,7 +4108,7 @@ def test_an_identity_that_changes_while_descendants_are_read_spares_the_children
         live["token"] = "A-REPLACEMENT-RUNTIME"
         return [5611, 5612]
 
-    monkeypatch.setattr("kiro_crew.acp.client._get_child_pids", _children)
+    monkeypatch.setattr("efm_go.acp.client._get_child_pids", _children)
     monkeypatch.setattr(session_pid, "_is_managed_agent_process", lambda pid: True)
     monkeypatch.setattr(platform_compat, "get_process_start_id", lambda pid: live["token"])
     # Both children ARE under the root, so the capture's ancestry guard admits them and
@@ -4142,7 +4142,7 @@ def test_a_child_whose_identity_changes_before_its_signal_is_spared(
 
     The root's three checks cannot cover this: they are about the root's number.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     tokens = {5710: "ROOT", 5711: "CHILD-ONE", 5712: "CHILD-TWO"}
     signalled: list[int] = []
@@ -4153,7 +4153,7 @@ def test_a_child_whose_identity_changes_before_its_signal_is_spared(
         # hands right after -- which is 5711's moment, not the root's.
         tokens[5711] = "A-DIFFERENT-PROCESS"
 
-    monkeypatch.setattr("kiro_crew.acp.client._get_child_pids", lambda pid: [5711, 5712])
+    monkeypatch.setattr("efm_go.acp.client._get_child_pids", lambda pid: [5711, 5712])
     monkeypatch.setattr(session_pid, "_is_managed_agent_process", lambda pid: True)
     monkeypatch.setattr(platform_compat, "get_process_start_id", lambda pid: tokens.get(pid))
     # Both children are genuinely under the root here; the capture's ancestry check
@@ -4177,10 +4177,10 @@ def test_a_child_with_no_readable_identity_is_spared_when_pinned(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Fail-closed per child: this comparison authorizes a signal, so unknown withholds."""
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     signalled: list[int] = []
-    monkeypatch.setattr("kiro_crew.acp.client._get_child_pids", lambda pid: [5721])
+    monkeypatch.setattr("efm_go.acp.client._get_child_pids", lambda pid: [5721])
     monkeypatch.setattr(session_pid, "_is_managed_agent_process", lambda pid: True)
     # The root reads, the child does not.
     monkeypatch.setattr(
@@ -4222,7 +4222,7 @@ async def test_the_periodic_sweep_does_not_hand_a_late_tenants_pid_to_the_kill_p
     def _late_tenant_on_5801(pid: int, epoch: int) -> bool:
         return pid != 5801 and real_commit(pid, epoch)
 
-    with patch("kiro_crew.process_identity.commit_runtime_teardown", _late_tenant_on_5801):
+    with patch("efm_go.process_identity.commit_runtime_teardown", _late_tenant_on_5801):
         await service._sweep_periodic_pids()
 
     assert recorded["pid_kills"] == [5802], (
@@ -4261,8 +4261,8 @@ async def test_the_cron_reaper_reports_a_tenant_that_claimed_after_the_gate() ->
     """
     from unittest.mock import patch
 
-    from kiro_crew.cron import CronService
-    from kiro_crew.process_identity import ProcessHandle
+    from efm_go.cron import CronService
+    from efm_go.process_identity import ProcessHandle
 
     ro._reset_for_tests()
     handle = ProcessHandle(pid=5821, start_id="abc", pgid=5821, child_pids={})
@@ -4281,9 +4281,9 @@ async def test_the_cron_reaper_reports_a_tenant_that_claimed_after_the_gate() ->
         return None
 
     with (
-        patch("kiro_crew.cron.kill_verified_process", fake_kill),
-        patch("kiro_crew.session.child_process_helpers", lambda: (None, None, None)),
-        patch("kiro_crew.process_identity.commit_runtime_teardown", lambda pid, epoch: False),
+        patch("efm_go.cron.kill_verified_process", fake_kill),
+        patch("efm_go.session.child_process_helpers", lambda: (None, None, None)),
+        patch("efm_go.process_identity.commit_runtime_teardown", lambda pid, epoch: False),
     ):
         failure = await CronService._sigkill_session(_Svc(), "cron:job", handle, who="Reaper")
 
@@ -4305,10 +4305,10 @@ def test_a_child_whose_ancestry_cannot_be_proven_is_never_captured(
     Walking the parent chain back to the root is what rules it out: whatever is
     captured was provably in this tree at that moment.
     """
-    from kiro_crew import platform_compat, session_pid
+    from efm_go import platform_compat, session_pid
 
     signalled: list[int] = []
-    monkeypatch.setattr("kiro_crew.acp.client._get_child_pids", lambda pid: [5911, 5912])
+    monkeypatch.setattr("efm_go.acp.client._get_child_pids", lambda pid: [5911, 5912])
     monkeypatch.setattr(session_pid, "_is_managed_agent_process", lambda pid: True)
     monkeypatch.setattr(platform_compat, "get_process_start_id", lambda pid: f"id-{pid}")
     # 5911 is still ours. 5912's number belongs to a process outside this tree by the
@@ -4338,10 +4338,10 @@ def test_the_ancestry_walk_follows_a_chain_and_refuses_a_cycle() -> None:
     """
     from unittest.mock import patch
 
-    from kiro_crew import session_pid
+    from efm_go import session_pid
 
     chain = {9003: 9002, 9002: 9001, 9001: 1}
-    with patch("kiro_crew.platform_compat.get_ppid", lambda pid: chain.get(pid, -1)):
+    with patch("efm_go.platform_compat.get_ppid", lambda pid: chain.get(pid, -1)):
         assert session_pid._is_our_descendant(9003, 9001) is True, "a grandchild is ours"
         assert session_pid._is_our_descendant(9003, 9999) is False, "a stranger's root is not"
 
@@ -4352,14 +4352,14 @@ def test_the_ancestry_walk_follows_a_chain_and_refuses_a_cycle() -> None:
         reads.append(pid)
         return loop.get(pid, -1)
 
-    with patch("kiro_crew.platform_compat.get_ppid", _looping):
+    with patch("efm_go.platform_compat.get_ppid", _looping):
         assert session_pid._is_our_descendant(9011, 9001) is False, "a cycle answers no"
     # The walk limit alone would also answer no, so what the cycle guard adds is
     # STOPPING: two reads, not one per allowed step. Asserting only the verdict would
     # let the guard be removed with the test still green.
     assert reads == [9011, 9012], f"a cycle is detected on its second link; {reads}"
 
-    with patch("kiro_crew.platform_compat.get_ppid", lambda pid: -1):
+    with patch("efm_go.platform_compat.get_ppid", lambda pid: -1):
         assert session_pid._is_our_descendant(9021, 9001) is False, "an unreadable link answers no"
 
 
@@ -4378,8 +4378,8 @@ async def test_the_orphan_reconcile_audits_a_barrier_refusal_as_refused(
     """
     from unittest.mock import MagicMock, patch
 
-    from kiro_crew.subagent import SubagentManager
-    from kiro_crew.subagent_persistence import create_agent_folder, update_state
+    from efm_go.subagent import SubagentManager
+    from efm_go.subagent_persistence import create_agent_folder, update_state
 
     ro._reset_for_tests()
     rows: list[str] = []
@@ -4393,10 +4393,10 @@ async def test_the_orphan_reconcile_audits_a_barrier_refusal_as_refused(
     update_state("barriered-orphan", pid=5931)
 
     with (
-        # ``kiro_crew.subagent.sel``, not ``kiro_crew.sel.sel``: every ``*_impl`` is
+        # ``efm_go.subagent.sel``, not ``efm_go.sel.sel``: every ``*_impl`` is
         # rebound onto ``subagent``'s globals, so that is where the name resolves.
-        patch("kiro_crew.subagent.sel", lambda: _Sel()),
-        patch("kiro_crew.process_identity.commit_runtime_teardown", lambda pid, epoch: False),
+        patch("efm_go.subagent.sel", lambda: _Sel()),
+        patch("efm_go.process_identity.commit_runtime_teardown", lambda pid, epoch: False),
         patch.object(manager, "_is_pid_alive", return_value=True),
         patch.object(manager, "_is_orphan_process", return_value=True),
         patch.object(manager, "_kill_orphan_pid") as mock_kill,
@@ -4493,7 +4493,7 @@ def _cleanup_with_clock(
 
 def _drive_reconcile(cleanup: Any, monkeypatch: pytest.MonkeyPatch, reading: Any) -> None:
     """Run one reconcile hook tick whose pass returns *reading*."""
-    from kiro_crew import session_cleanup as sc
+    from efm_go import session_cleanup as sc
 
     class _Fake:
         def __init__(self, active_pids: Any) -> None:
@@ -4649,7 +4649,7 @@ def test_an_incomplete_union_skip_surfaces_through_the_same_warn_once_ledger(
     """
     import dataclasses
 
-    from kiro_crew import session_cleanup as sc
+    from efm_go import session_cleanup as sc
 
     logger = logging.getLogger("test.reconcile.refusal.union")
     clock = [0.0]

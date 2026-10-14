@@ -34,7 +34,7 @@ WORKFLOW = ROOT / ".github" / "workflows" / "pr-readiness.yml"
 GATE = (
     ROOT
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "kirocrew-dev"
     / "kirocrew-prepare-pr"
@@ -134,7 +134,7 @@ class GateRunner:
             "RUNNER_TEMP": str(self.temp),
             "GITHUB_OUTPUT": str(self.output),
             "GH_TOKEN": "stub",
-            "REPO": "kirodotdev/KiroCrew",
+            "REPO": "efmleads.com",
             "PR": "6658",
             "SHA": HEAD,
             "GATE": str(GATE),

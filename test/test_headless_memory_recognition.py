@@ -12,14 +12,14 @@ from member_memory_helpers import make_request
 from test_session import _alive_provider_factory
 from test_subagent_turn_identity import _child
 
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.session_handle import AcpSessionHandle
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.dashboard.handlers import cron, memory_member
-from kiro_crew.history import is_incognito_transcript
-from kiro_crew.messaging.identity import publish_turn_identity
-from kiro_crew.session import SessionManager
-from kiro_crew.subagent import SubagentInfo, SubagentManager
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.session_handle import AcpSessionHandle
+from efm_go.config import KiroCrewConfig
+from efm_go.dashboard.handlers import cron, memory_member
+from efm_go.history import is_incognito_transcript
+from efm_go.messaging.identity import publish_turn_identity
+from efm_go.session import SessionManager
+from efm_go.subagent import SubagentInfo, SubagentManager
 
 env = _member_env
 
@@ -30,7 +30,7 @@ env = _member_env
 )
 async def test_registered_child_member_memory_and_teardown(env, tmp_path, monkeypatch, key):
     """Real ordinary identity publication and manager lifecycle."""
-    from kiro_crew import context
+    from efm_go import context
 
     monkeypatch.setattr(context, "_vector_stores", dict(env.tiers))
     monkeypatch.setattr(context, "_memory_stores", {})
@@ -50,7 +50,7 @@ async def test_registered_child_member_memory_and_teardown(env, tmp_path, monkey
         manager = SubagentManager(sessions=sessions, ctx_builder=SimpleNamespace())
         env.state.subagents = manager
         if key.startswith("subagent:"):
-            from kiro_crew.subagent_persistence import create_agent_folder
+            from efm_go.subagent_persistence import create_agent_folder
 
             info = SubagentInfo(
                 id=key.split(":", 1)[1], task="test", parent_session_key="dashboard:alice"
@@ -291,7 +291,7 @@ async def test_live_archived_dashboard_still_checks_persisted_mode(env, mode):
 @pytest.mark.parametrize("kind", ["subagent", "continued", "nested", "workflow"])
 async def test_live_child_checks_origin_privacy_without_child_markers(env, mode, kind):
     """A real live allocation and its originating run must not erase parent policy."""
-    from kiro_crew.workflow_memory import WorkflowScope
+    from efm_go.workflow_memory import WorkflowScope
 
     parent = "dashboard:parent"
     env.state._slots["parent"] = SimpleNamespace(
@@ -316,11 +316,11 @@ async def test_live_child_checks_origin_privacy_without_child_markers(env, mode,
         manager._agents[info.id] = info
         key = info.conversation_key or f"subagent:{info.id}"
     else:
-        from kiro_crew.dashboard.handlers._shared import (
+        from efm_go.dashboard.handlers._shared import (
             live_session_memory_mode,
             resolve_session_memory_mode,
         )
-        from kiro_crew.execution_context import execution_from_record, read_session_execution
+        from efm_go.execution_context import execution_from_record, read_session_execution
 
         # Admission and route recognition use the same gateway-owned builder.
         admitted_context = env.state.context_builder
@@ -387,7 +387,7 @@ async def test_headless_birth_authority_survives_origin_loss(env, origin_state):
     run_id = f"origin-check-{origin_state}"
     key = f"subagent:{run_id}"
     if origin_state != "missing":
-        from kiro_crew.subagent_persistence import create_agent_folder
+        from efm_go.subagent_persistence import create_agent_folder
 
         run_folder = await asyncio.to_thread(
             create_agent_folder,
@@ -423,9 +423,9 @@ async def test_headless_birth_authority_survives_origin_loss(env, origin_state):
 async def test_gateway_spawn_freezes_mode_and_enforces_it_after_parent_change(
     env, mode, parent_change
 ):
-    from kiro_crew.dashboard.handlers import messaging
-    from kiro_crew.dashboard.state import DashboardState
-    from kiro_crew.subagent_persistence import read_run_memory_mode
+    from efm_go.dashboard.handlers import messaging
+    from efm_go.dashboard.state import DashboardState
+    from efm_go.subagent_persistence import read_run_memory_mode
 
     sessions = SessionManager(KiroCrewConfig(), provider_factory=_alive_provider_factory())
     manager = SubagentManager(sessions=sessions, ctx_builder=None, is_yolo=lambda: True)

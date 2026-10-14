@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.pod import _windows_job as jobs
+from efm_go.pod import _windows_job as jobs
 
 _WAIT_OBJECT_0 = 0
 _WAIT_TIMEOUT = 258

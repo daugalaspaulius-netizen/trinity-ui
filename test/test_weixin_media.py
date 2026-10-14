@@ -23,10 +23,10 @@ import pytest
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from kiro_crew.messaging.attachments import append_attachment_context
-from kiro_crew.messaging.transport import InboundMessage
-from kiro_crew.weixin.attachments import process_weixin_attachments
-from kiro_crew.weixin.client import (
+from efm_go.messaging.attachments import append_attachment_context
+from efm_go.messaging.transport import InboundMessage
+from efm_go.weixin.attachments import process_weixin_attachments
+from efm_go.weixin.client import (
     INBOUND_MEDIA_ITEM_TYPES,
     ITEM_FILE,
     ITEM_IMAGE,
@@ -35,7 +35,7 @@ from kiro_crew.weixin.client import (
     ITEM_VOICE,
     ContextTokenStore,
 )
-from kiro_crew.weixin.media import (
+from efm_go.weixin.media import (
     MAX_CDN_BYTES,
     WeixinMediaError,
     build_download_url,
@@ -44,7 +44,7 @@ from kiro_crew.weixin.media import (
     media_ref,
     parse_aes_key,
 )
-from kiro_crew.weixin.transport import WEIXIN_CAPABILITIES, WeixinTransport
+from efm_go.weixin.transport import WEIXIN_CAPABILITIES, WeixinTransport
 
 KEY = bytes(range(16))
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
@@ -52,7 +52,7 @@ PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 def _encrypt(plaintext: bytes, key: bytes = KEY) -> bytes:
     # Test-only inverse of the production decrypt. ECB because that is what the
-    # WeChat CDN uses; see kiro_crew.weixin.media's module docstring.
+    # WeChat CDN uses; see efm_go.weixin.media's module docstring.
     padder = padding.PKCS7(128).padder()
     padded = padder.update(plaintext) + padder.finalize()
     enc = Cipher(  # nosec B305  # lgtm[py/weak-cryptographic-algorithm]

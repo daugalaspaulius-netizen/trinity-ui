@@ -20,7 +20,7 @@ from typing import Any
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
-from kiro_crew.metrics.recorder import MetricsRecorder
+from efm_go.metrics.recorder import MetricsRecorder
 
 
 def _recorder_with_reader() -> tuple[MetricsRecorder, InMemoryMetricReader]:
@@ -102,13 +102,13 @@ class TestUpDownCounter:
 class TestFailuresAreSwallowed:
     def test_invalid_name_is_logged_not_raised(self, caplog: Any) -> None:
         rec, _reader = _recorder_with_reader()
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.metrics.recorder"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.metrics.recorder"):
             rec.up_down_counter("Not A Metric Name", 1)
         assert any("up_down_counter" in r.message for r in caplog.records)
 
     def test_instrument_add_failure_is_logged_not_raised(self, caplog: Any) -> None:
         rec = MetricsRecorder(_BoomMeter())  # type: ignore[arg-type]
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.metrics.recorder"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.metrics.recorder"):
             rec.up_down_counter("kirocrew.pool.live", 1)
             rec.counter("kirocrew.pool.spawns")
             rec.histogram("kirocrew.pool.latency", 5.0)
@@ -121,6 +121,6 @@ class TestFailuresAreSwallowed:
         """``app_id`` set + a ``kirocrew.`` name is a namespace violation, and the
         facade must drop it rather than emit it."""
         rec, reader = _recorder_with_reader()
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.metrics.recorder"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.metrics.recorder"):
             rec.up_down_counter("kirocrew.core.thing", 1, app_id="some_app")
         assert not [n for n, _ in _points(reader) if n == "kirocrew.core.thing"]

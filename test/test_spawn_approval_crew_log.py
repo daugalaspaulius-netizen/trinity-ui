@@ -31,10 +31,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from off_loop_helpers import off_loop
 
-from kiro_crew.crew_log import crew_log_path, emit
-from kiro_crew.crew_log.projection import fold_approvals
-from kiro_crew.crew_log.store import CrewLog
-from kiro_crew.subagent import SpawnApprovalUnreachable, SubagentManager
+from efm_go.crew_log import crew_log_path, emit
+from efm_go.crew_log.projection import fold_approvals
+from efm_go.crew_log.store import CrewLog
+from efm_go.subagent import SpawnApprovalUnreachable, SubagentManager
 
 SESSION = "acp-spawn-approval-1"
 ASKING_TURN = 6
@@ -190,7 +190,7 @@ async def _settle(info) -> None:  # type: ignore[no-untyped-def]
 @pytest.fixture
 def _pinned_parent(monkeypatch):
     """Resolve every spawn's parent key to this test's crew-log unit."""
-    from kiro_crew.crew_log import resolve
+    from efm_go.crew_log import resolve
 
     monkeypatch.setattr(resolve, "unit_for_session_key", lambda _sessions, _key: SESSION)
 
@@ -286,7 +286,7 @@ async def test_a_prompt_no_surface_received_is_a_host_decline_with_its_cause(_pi
     The request is still written: the gate DID ask, and a reader who sees only the
     refusal cannot tell an undeliverable prompt from a spawn nobody asked about.
     """
-    from kiro_crew.constants import DENY_CAUSE_APPROVAL_UNDELIVERABLE
+    from efm_go.constants import DENY_CAUSE_APPROVAL_UNDELIVERABLE
 
     _open_session()
 
@@ -310,7 +310,7 @@ async def test_a_prompt_no_surface_received_is_a_host_decline_with_its_cause(_pi
 @pytest.mark.asyncio
 async def test_a_callback_that_raised_is_a_host_decline_with_its_own_cause(_pinned_parent):
     """A broken approval path must not read as a person saying no."""
-    from kiro_crew.constants import DENY_CAUSE_HOOK_ERROR
+    from efm_go.constants import DENY_CAUSE_HOOK_ERROR
 
     _open_session()
 
@@ -371,7 +371,7 @@ async def test_an_unresolvable_parent_writes_neither_half(_pinned_parent, monkey
     Checked as a PAIR: a decision written without its request would read to the
     fold as an unmatched decision about a session that never asked.
     """
-    from kiro_crew.crew_log import resolve
+    from efm_go.crew_log import resolve
 
     monkeypatch.setattr(resolve, "unit_for_session_key", lambda _sessions, _key: "")
     _open_session()
@@ -429,7 +429,7 @@ def test_the_decision_helper_is_a_no_op_for_a_request_that_was_not_written():
     ``ManagerComponent`` because a running child's tool prompts owe the log the
     same pair, so this reaches it through the gate, the asker under test here.
     """
-    from kiro_crew.subagent_manager.admission.gate import _GateMixin
+    from efm_go.subagent_manager.admission.gate import _GateMixin
 
     _open_session()
     _GateMixin._record_crew_log_approval_decided(

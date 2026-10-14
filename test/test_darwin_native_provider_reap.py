@@ -22,10 +22,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew import platform_compat as pc
-from kiro_crew import session, session_pid, session_pool
-from kiro_crew.acp.client import _capture_child_records
-from kiro_crew.config import KiroCrewConfig
+from efm_go import platform_compat as pc
+from efm_go import session, session_pid, session_pool
+from efm_go.acp.client import _capture_child_records
+from efm_go.config import KiroCrewConfig
 
 pytestmark = [
     pytest.mark.skipif(sys.platform != "darwin", reason="requires the real Darwin kernel"),

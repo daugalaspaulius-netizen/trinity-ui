@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.config.sections import MemoryStoreConfig
-from kiro_crew.cron import CronJob
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef, read_session_execution
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.config.sections import MemoryStoreConfig
+from efm_go.cron import CronJob
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef, read_session_execution
 
 
 class ReachedProvider(BaseException):
@@ -17,7 +17,7 @@ class ReachedProvider(BaseException):
 
 
 async def _callback(monkeypatch):
-    from kiro_crew.slack import gateway
+    from efm_go.slack import gateway
 
     gw = gateway.GatewayOrchestrator.__new__(gateway.GatewayOrchestrator)
     gw.sessions = MagicMock()
@@ -113,12 +113,12 @@ async def test_legacy_capture_reads_off_loop_and_freezes_selectors(monkeypatch, 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", ["persistent", "incognito", "temporary"])
 async def test_supplied_cron_carrier_does_not_reload_configuration(monkeypatch, mode):
-    from kiro_crew import execution_context, vector_memory
-    from kiro_crew.slack import gateway
+    from efm_go import execution_context, vector_memory
+    from efm_go.slack import gateway
 
     monkeypatch.setattr(execution_context, "_LIVE_EXECUTIONS", {})
     gw, callback = await _callback(monkeypatch)
-    from kiro_crew.memory_stores import memory_stores_root
+    from efm_go.memory_stores import memory_stores_root
 
     vector_memory.create_member_database(
         memory_stores_root() / "member-store" / "memory.db",
@@ -199,7 +199,7 @@ async def test_uncaptured_legacy_v1_member_record_keeps_its_configured_store(mon
 
 @pytest.mark.asyncio
 async def test_usage_fallback_keeps_captured_template_after_job_edit(monkeypatch):
-    from kiro_crew.slack import gateway
+    from efm_go.slack import gateway
 
     gw, callback = await _callback(monkeypatch)
     gw.sessions.get_or_create = AsyncMock(return_value=(MagicMock(), True, False))

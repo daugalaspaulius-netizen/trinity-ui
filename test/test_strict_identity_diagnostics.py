@@ -2,7 +2,7 @@
 
 Two surfaces are under test, and they exist for two different readers:
 
-1. :func:`kiro_crew.mcp_core.strict_identity_diagnosis` — the reader who just
+1. :func:`efm_go.mcp_core.strict_identity_diagnosis` — the reader who just
    had a tool refused. Every strict refusal already said WHAT was refused; none
    said why THIS install cannot answer "which session is calling", so there was
    no next step. The diagnosis is appended to the refusal text.
@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew import cli_doctor, mcp_core
+from efm_go import cli_doctor, mcp_core
 
 
 class TestStrictIdentityDiagnosis:
@@ -71,7 +71,7 @@ class TestStrictIdentityDiagnosis:
         to ``kirocrew doctor`` on the real gateway — which reports a healthy
         trust root and points nowhere near the poisoned home.
         """
-        from kiro_crew.config import paths as config_paths
+        from efm_go.config import paths as config_paths
 
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
         monkeypatch.setenv("KIROCREW_HOST_PID", "4242")
@@ -105,7 +105,7 @@ class TestStrictIdentityDiagnosis:
         existence through the refusal text; the suffix only names the path the
         verifier searched.
         """
-        from kiro_crew.config import paths as config_paths
+        from efm_go.config import paths as config_paths
 
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
         monkeypatch.setenv("KIROCREW_HOST_PID", "4242")
@@ -132,7 +132,7 @@ class TestStrictIdentityDiagnosis:
         replacing the denial it decorates with a crash — and would create
         directories from a message-formatting path.
         """
-        from kiro_crew.session_pid_sig import session_pid_mapping_path
+        from efm_go.session_pid_sig import session_pid_mapping_path
 
         home = tmp_path / "never-created"
         monkeypatch.setenv("KIROCREW_HOME", str(home))
@@ -190,7 +190,7 @@ class TestExternalClientNote:
         monkeypatch.delenv("KIROCREW_HOST_PID", raising=False)
 
     def test_the_note_is_actionable_and_names_no_machine(self) -> None:
-        from kiro_crew import mcp_shared
+        from efm_go import mcp_shared
 
         note = mcp_shared.external_client_identity_note()
         # What the reader must learn, in the words they will search for.
@@ -218,7 +218,7 @@ class TestExternalClientNote:
     ) -> None:
         """Path 2: ``memory_recall`` (no env var). The existing no-channel text is
         kept verbatim as the prefix; the note follows it."""
-        from kiro_crew import mcp_shared
+        from efm_go import mcp_shared
 
         self._unspawned(monkeypatch)
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
@@ -234,7 +234,7 @@ class TestExternalClientNote:
         """A token on the element means the gateway spawned this server and the
         trust root is what failed; the external-client note would point away from
         it, so the existing text stays byte-identical."""
-        from kiro_crew import mcp_shared
+        from efm_go import mcp_shared
 
         monkeypatch.setenv("KIROCREW_STUB_SESSION_TOKEN", "tok")
         monkeypatch.delenv("KIROCREW_HOST_PID", raising=False)
@@ -258,8 +258,8 @@ class TestExternalClientNote:
         assert mcp_shared.external_client_identity_note() not in out
 
     def test_memory_recall_refusal_carries_the_note(self, monkeypatch) -> None:
-        from kiro_crew import mcp_shared
-        from kiro_crew.mcp_tools import learn
+        from efm_go import mcp_shared
+        from efm_go.mcp_tools import learn
 
         self._unspawned(monkeypatch)
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
@@ -272,8 +272,8 @@ class TestExternalClientNote:
         """Path 3: the gateway's 400 ``missing_session_key`` is the same missing
         identity as the other two, so ``learn_add`` answers with the same text
         instead of the HTTP body's ``missing X-Session-Key``."""
-        from kiro_crew import mcp_shared
-        from kiro_crew.mcp_tools import learn
+        from efm_go import mcp_shared
+        from efm_go.mcp_tools import learn
 
         self._unspawned(monkeypatch)
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
@@ -298,7 +298,7 @@ class TestExternalClientNote:
     def test_learn_add_leaves_every_other_error_as_it_was(self, monkeypatch) -> None:
         """Only the missing-identity code is mapped; a different backend error --
         and the same wording under a different code -- pass through unchanged."""
-        from kiro_crew.mcp_tools import learn
+        from efm_go.mcp_tools import learn
 
         monkeypatch.setattr(mcp_core, "_vet_memory_writes_governance", lambda *_a: None)
         for body in (
@@ -316,8 +316,8 @@ class TestExternalClientNote:
         """The DELETE route answers the same ``missing_session_key`` 400, so the
         sibling tool answers with the same refusal -- and, being a destructive
         verb, keeps saying that nothing was removed."""
-        from kiro_crew import mcp_shared
-        from kiro_crew.mcp_tools import learn
+        from efm_go import mcp_shared
+        from efm_go.mcp_tools import learn
 
         self._unspawned(monkeypatch)
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
@@ -345,8 +345,8 @@ class TestExternalClientNote:
         shared config, since an opt-in server found there is the user's own
         wiring; the read-only tools listed are kirocrew-core's alone; and shipped
         text names no pull request, because a plan is not a step."""
-        from kiro_crew import mcp_shared
-        from kiro_crew.mcp_cleanup import OPT_IN_BIN_MCP_SERVERS, STALE_MANAGED_MCP_SERVERS
+        from efm_go import mcp_shared
+        from efm_go.mcp_cleanup import OPT_IN_BIN_MCP_SERVERS, STALE_MANAGED_MCP_SERVERS
 
         for server in STALE_MANAGED_MCP_SERVERS:
             note = mcp_shared.external_client_identity_note(server)
@@ -364,8 +364,8 @@ class TestExternalClientNote:
 
     def test_all_three_refusals_share_one_string(self, monkeypatch) -> None:
         """The point of the change: one explanation, not three."""
-        from kiro_crew import mcp_shared
-        from kiro_crew.mcp_tools import learn
+        from efm_go import mcp_shared
+        from efm_go.mcp_tools import learn
 
         self._unspawned(monkeypatch)
         monkeypatch.delenv("KIROCREW_SESSION_KEY", raising=False)
@@ -393,7 +393,7 @@ class TestRefusalsCarryTheDiagnosis:
     _MARKER = " [why: no identity channel]"
 
     def test_ledger_refusal_carries_it(self, monkeypatch) -> None:
-        from kiro_crew.mcp_tools import ledger
+        from efm_go.mcp_tools import ledger
 
         monkeypatch.setattr(mcp_core, "_resolve_session_key_strict", lambda: "")
         monkeypatch.setattr(mcp_core, "strict_identity_diagnosis", lambda *a: self._MARKER)
@@ -401,7 +401,7 @@ class TestRefusalsCarryTheDiagnosis:
         assert err.startswith("Error:") and self._MARKER in err
 
     def test_crew_ledger_refusal_carries_it(self, monkeypatch) -> None:
-        from kiro_crew.mcp_tools import apps
+        from efm_go.mcp_tools import apps
 
         monkeypatch.setattr(mcp_core, "_resolve_session_key_strict", lambda: "")
         monkeypatch.setattr(mcp_core, "strict_identity_diagnosis", lambda *a: self._MARKER)

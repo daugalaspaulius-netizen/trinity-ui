@@ -26,18 +26,18 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import credential_patterns as _cred
-from kiro_crew.config.sections import (
+from efm_go import credential_patterns as _cred
+from efm_go.config.sections import (
     DECISION_PROVIDER_ENDPOINT_DEFAULT,
     DecisionProviderConfig,
     DecisionsConfig,
     NudgeWakeConfig,
 )
-from kiro_crew.decisions import consent as consent_mod
-from kiro_crew.decisions import gate as gate_mod
-from kiro_crew.decisions import log as log_mod
-from kiro_crew.decisions.gate import DECISION_POINT_NAMES, decide, in_bucket, is_enabled
-from kiro_crew.decisions.types import Answer, Choice, Noul, Score
+from efm_go.decisions import consent as consent_mod
+from efm_go.decisions import gate as gate_mod
+from efm_go.decisions import log as log_mod
+from efm_go.decisions.gate import DECISION_POINT_NAMES, decide, in_bucket, is_enabled
+from efm_go.decisions.types import Answer, Choice, Noul, Score
 
 # ---------------------------------------------------------------------------
 # Fixtures and doubles
@@ -101,7 +101,7 @@ def consent(tmp_path, monkeypatch):
     identity) is part of what these tests pin.
     """
     path = tmp_path / "decisions_consent.json"
-    monkeypatch.setattr("kiro_crew.config.loader.decisions_consent_path", lambda: path)
+    monkeypatch.setattr("efm_go.config.loader.decisions_consent_path", lambda: path)
 
     def _set(value, endpoint=DECISION_PROVIDER_ENDPOINT_DEFAULT):
         if value is None:
@@ -170,7 +170,7 @@ def install_impl(monkeypatch):
     hot path's import graph), so the patch lands on the module the import
     resolves against, not on a name in ``gate``.
     """
-    import kiro_crew.decisions.impl_jev as impl_mod
+    import efm_go.decisions.impl_jev as impl_mod
 
     def _install(oracle):
         monkeypatch.setattr(impl_mod, "JevOracle", lambda provider: oracle)
@@ -316,7 +316,7 @@ class TestEnablingIsExplicit:
         monkeypatch.setattr(gate_mod, "_unconsented_warned", set())
         oracle = install_impl(_ExplodingOracle())
         moved = _config(endpoint="https://attacker.example/v1/systemone")
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.decisions.gate"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.decisions.gate"):
             assert is_enabled(POINT, config=moved) is False
             assert asyncio.run(decide(POINT, "hi", QUESTIONS, config=moved)) is None
             assert is_enabled(POINT, config=moved) is False
@@ -425,7 +425,7 @@ class TestGovernanceWithdrawsTheSeam:
         call log records the key rather than a tally, so a caller that stops passing
         the turn's own surface is visible here instead of merely counted.
         """
-        from kiro_crew.decisions import capability
+        from efm_go.decisions import capability
 
         calls: list[str] = []
 
@@ -445,7 +445,7 @@ class TestGovernanceWithdrawsTheSeam:
 
         calls = self._deny(monkeypatch, True)
         oracle = install_impl(_ExplodingOracle())
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.decisions.gate"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.decisions.gate"):
             assert is_enabled(POINT, config=_config()) is False
             assert asyncio.run(decide(POINT, "hi", QUESTIONS, config=_config())) is None
             assert is_enabled(POINT, config=_config()) is False
@@ -512,10 +512,10 @@ class TestGovernanceWithdrawsTheSeam:
         and the consent PUT use -- still permits. Without the second half the first
         would also pass under a blanket denial, which is the opposite defect.
         """
-        from kiro_crew.decisions.capability import is_decisions_denied
-        from kiro_crew.platform import context as pc
-        from kiro_crew.platform import governance_profiles as gp
-        from kiro_crew.platform.governance import parse_policy
+        from efm_go.decisions.capability import is_decisions_denied
+        from efm_go.platform import context as pc
+        from efm_go.platform import governance_profiles as gp
+        from efm_go.platform.governance import parse_policy
 
         profiles = tmp_path / "profiles"
         profiles.mkdir()
@@ -564,7 +564,7 @@ class TestGovernanceWithdrawsTheSeam:
     def test_an_unevaluable_ceiling_fails_closed(self, install_impl, consent, monkeypatch):
         """The probe itself is fail-closed; the gate must not re-open it by treating
         a raising probe as "no opinion"."""
-        from kiro_crew.decisions import capability
+        from efm_go.decisions import capability
 
         monkeypatch.setattr(
             capability,
@@ -844,7 +844,7 @@ class TestScrub:
     def test_a_scanner_that_itself_fails_refuses(self, install_impl, log_home, monkeypatch):
         """An external request cannot be cleared by a scan that did not complete."""
         oracle = install_impl(_ExplodingOracle())
-        import kiro_crew.security.redaction as redaction_mod
+        import efm_go.security.redaction as redaction_mod
 
         def _boom(_text):
             raise RuntimeError("scanner exploded")
@@ -1133,7 +1133,7 @@ class TestLoggingCannotCostTheResult:
     def test_no_provider_message_reaches_the_application_log(self, install_impl, log_home, caplog):
         """Not the row and not the logger: a provider can quote the request back."""
         install_impl(_RaisingOracle(RuntimeError("rejected body: my-secret-payload")))
-        with caplog.at_level("DEBUG", logger="kiro_crew.decisions.gate"):
+        with caplog.at_level("DEBUG", logger="efm_go.decisions.gate"):
             asyncio.run(decide(POINT, "hi", QUESTIONS, config=_config()))
         assert "my-secret-payload" not in caplog.text
         assert "RuntimeError" in caplog.text, "the exception class is the diagnostic"

@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = REPO_ROOT / "src/kiro_crew/apps/builtins/design_critique/skills/design-critique/scripts"
+SCRIPTS = REPO_ROOT / "src/efm_go/apps/builtins/design_critique/skills/design-critique/scripts"
 SSRF_GUARD = SCRIPTS / "ssrf-guard.mjs"
 ENSURE_PW = SCRIPTS / "ensure-playwright.mjs"
 

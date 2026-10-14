@@ -26,8 +26,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import agent
-from kiro_crew.agent_files import AGENT_FILENAME, WORKER_AGENT_FILENAME
+from efm_go import agent
+from efm_go.agent_files import AGENT_FILENAME, WORKER_AGENT_FILENAME
 
 CREW_PROMPT = "I am the shared crew's own prompt, and no derivation may replace it."
 
@@ -119,7 +119,7 @@ class TestForeignSpecIsNotOverwritten:
         the whole failure this guard exists to end.
         """
         _write(agents_dir / WORKER_AGENT_FILENAME, _crew_spec())
-        with caplog.at_level("ERROR", logger="kiro_crew.agent"):
+        with caplog.at_level("ERROR", logger="efm_go.agent"):
             with pytest.raises(agent.ForeignAgentSpec):
                 agent._install_worker_agent()
         logged = "\n".join(record.getMessage() for record in caplog.records)

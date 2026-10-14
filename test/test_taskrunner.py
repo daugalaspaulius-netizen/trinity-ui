@@ -12,10 +12,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import kiro_crew.taskrunner as taskrunner_module
+import efm_go.taskrunner as taskrunner_module
 from conftest import requires_git
-from kiro_crew.task_models import PROGRESS_FILE
-from kiro_crew.taskrunner import (
+from efm_go.task_models import PROGRESS_FILE
+from efm_go.taskrunner import (
     _STALL_CANCEL_TIMEOUT,
     _STALL_TIMEOUT,
     MAX_TOTAL_TASKS,
@@ -25,8 +25,8 @@ from kiro_crew.taskrunner import (
     TaskRunner,
     WorkingMemory,
 )
-from kiro_crew.workflows.service import WorkflowService
-from kiro_crew.workflows.store import WorkflowRunStore
+from efm_go.workflows.service import WorkflowService
+from efm_go.workflows.store import WorkflowRunStore
 
 # Bound for a wait on state that MUST arrive but whose latency the host controls
 # (an executor hop, an fsync). Returns as soon as the state is observed, so the
@@ -83,7 +83,7 @@ def _make_mock_sessions() -> MagicMock:
 
 def _make_mock_provider(text: str = "done") -> MagicMock:
     """Create a mock provider that yields a text chunk + complete event."""
-    from kiro_crew.providers.base import LLMEvent
+    from efm_go.providers.base import LLMEvent
 
     provider = MagicMock()
 
@@ -859,7 +859,7 @@ class TestWorkflowRunIntegration:
             return_value=[Step(index=1, title="Implement", description="make the change")]
         )
 
-        with patch("kiro_crew.taskrunner.time.time_ns", return_value=123):
+        with patch("efm_go.taskrunner.time.time_ns", return_value=123):
             first, second = await asyncio.gather(runner.plan("first"), runner.plan("second"))
 
         assert first.task_id == "plan_123"
@@ -1049,7 +1049,7 @@ class TestParseSteps:
         runner = TaskRunner(sessions=sessions, auto_test=False)
         secret = "ghp_" + "a" * 36
         text = "totally not json " + secret + " " + "x" * 5000
-        with caplog.at_level(logging.ERROR, logger="kiro_crew.task_planner"):
+        with caplog.at_level(logging.ERROR, logger="efm_go.task_planner"):
             assert runner._parse_tasks(text) == []
         record = next(r for r in caplog.records if "Failed to parse tasks JSON" in r.getMessage())
         message = record.getMessage()
@@ -1186,7 +1186,7 @@ class TestRun:
 
         # First call = decompose (returns JSON), subsequent = step execution
         def _make_stream(text: str):
-            from kiro_crew.providers.base import LLMEvent
+            from efm_go.providers.base import LLMEvent
 
             async def _stream(message: str):
                 yield LLMEvent(kind="text_chunk", text=text)
@@ -1225,7 +1225,7 @@ class TestRun:
             work_dir=tmp_path,
         )
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True):
+        with patch("efm_go.task_executor.self_review", return_value=True):
             result = await runner.run(spec)
 
         assert result.status == "completed"
@@ -1253,7 +1253,7 @@ class TestRun:
 
         step_json = json.dumps([{"title": "Broken step", "description": "Will fail"}])
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         decompose_provider = MagicMock()
 
@@ -1810,7 +1810,7 @@ class TestCheckpointResume:
             ]
         )
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         decompose_provider = MagicMock()
 
@@ -1852,7 +1852,7 @@ class TestCheckpointResume:
             sessions=sessions, auto_test=False, on_notify=_on_notify, work_dir=tmp_path
         )
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True):
+        with patch("efm_go.task_executor.self_review", return_value=True):
             result = await runner.run(spec)
 
         assert result.status == "completed"
@@ -1881,7 +1881,7 @@ class TestCheckpointResume:
         sessions = _make_mock_sessions()
         step_json = json.dumps([{"title": "Create file", "description": "Create foo.py"}])
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         decompose_provider = MagicMock()
 
@@ -1916,7 +1916,7 @@ class TestCheckpointResume:
 
         runner = TaskRunner(sessions=sessions, auto_test=False, work_dir=tmp_path, fresh=True)
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True):
+        with patch("efm_go.task_executor.self_review", return_value=True):
             result = await runner.run(spec)
 
         assert result.status == "completed"
@@ -1948,8 +1948,8 @@ class TestSessionRecovery:
         """A drain-stall death carries ambiguous_delivery: the buffered step prompt
         may already have run, so the retry must resume from current state instead
         of re-stating the task verbatim (which would re-run its tools)."""
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.providers.base import LLMEvent
 
         sessions = _make_mock_sessions()
         prompts: list[str] = []
@@ -1999,8 +1999,8 @@ class TestSessionRecovery:
         """The hint must clear only AFTER the hint-bearing prompt is delivered: if a
         later turn fails before it streams, the next retry must still carry the
         resume hint rather than fall back to a verbatim replay."""
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.providers.base import LLMEvent
 
         sessions = _make_mock_sessions()
         prompts: list[str] = []
@@ -2047,8 +2047,8 @@ class TestSessionRecovery:
     @pytest.mark.asyncio
     async def test_process_died_recovers(self, tmp_path: Path) -> None:
         """AcpProcessDied → recovers and completes step."""
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.providers.base import LLMEvent
 
         sessions = _make_mock_sessions()
         call_count = 0
@@ -2093,7 +2093,7 @@ class TestSessionRecovery:
     @pytest.mark.asyncio
     async def test_process_death_does_not_consume_logic_retry(self, tmp_path: Path) -> None:
         """Process dies once then logic fails — should still get full 3 logic attempts."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         sessions = _make_mock_sessions()
         call_count = 0
@@ -2135,7 +2135,7 @@ class TestSessionRecovery:
         ambiguous death KEEPS the resume hint: a Resume or retry restarts the
         step at attempt 1 in the same work dir, where its prompt may already
         have run, so the restarted prompt still opens with "do not restart"."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         sessions = _make_mock_sessions()
 
@@ -2168,7 +2168,7 @@ class TestSessionRecovery:
     async def test_a_loop_detected_give_up_keeps_the_resume_hint(self, tmp_path: Path) -> None:
         """Only a normally completed attempt clears the hint, so a step that
         dies ambiguously and then fails on a repeated error still carries it."""
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         sessions = _make_mock_sessions()
         provider = MagicMock()
@@ -2204,8 +2204,8 @@ class TestSessionRecovery:
         the attempt number, so the "continue" error text never renders; the
         retry must still open by inspecting state instead of restating a step
         whose tool (a push) may already have run."""
-        from kiro_crew.acp.client import AcpProcessDied
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.acp.client import AcpProcessDied
+        from efm_go.providers.base import LLMEvent
 
         sessions = _make_mock_sessions()
         prompts: list[str] = []
@@ -2237,7 +2237,7 @@ class TestSessionRecovery:
     async def test_a_replan_after_a_possibly_run_step_says_so(self, tmp_path: Path) -> None:
         """The automatic replan after a give-up sees the resume hint, so the new
         tasks do not restate possibly-executed work as fresh."""
-        from kiro_crew.task_models import RESUME_HINT
+        from efm_go.task_models import RESUME_HINT
 
         runner = TaskRunner(sessions=_make_mock_sessions(), auto_test=False, work_dir=tmp_path)
         runner._decompose = AsyncMock(return_value=[])
@@ -2268,7 +2268,7 @@ class TestSessionRecovery:
             yield LLMEvent(kind="text_chunk", text="ok")
             yield LLMEvent(kind="complete")
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         provider.stream = _fail_twice_then_succeed
         provider.approve_tool = AsyncMock()
@@ -2291,7 +2291,7 @@ class TestSessionRecovery:
     @pytest.mark.asyncio
     async def test_mid_stream_context_overflow_compacts(self, tmp_path: Path) -> None:
         """Context ≥90% during tool call → compact and retry without burning attempt."""
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         sessions = _make_mock_sessions()
         call_count = 0
@@ -2339,8 +2339,8 @@ class TestSessionRecovery:
     @pytest.mark.asyncio
     async def test_mid_stream_context_overflow_exceeds_max_recoveries(self, tmp_path: Path) -> None:
         """Compaction exceeds MAX_RECOVERIES → task fails."""
-        from kiro_crew.providers.base import LLMEvent
-        from kiro_crew.task_executor import MAX_RECOVERIES
+        from efm_go.providers.base import LLMEvent
+        from efm_go.task_executor import MAX_RECOVERIES
 
         sessions = _make_mock_sessions()
 
@@ -2379,7 +2379,7 @@ class TestSessionRecovery:
     @pytest.mark.asyncio
     async def test_mid_stream_compaction_failure_falls_back_to_reset(self, tmp_path: Path) -> None:
         """Compaction raises → falls back to session reset, then retries."""
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         sessions = _make_mock_sessions()
         call_count = 0
@@ -2423,7 +2423,7 @@ class TestSessionRecovery:
     @pytest.mark.asyncio
     async def test_task_result_redacts_credentials(self, tmp_path: Path) -> None:
         """Final task.result must have credentials redacted."""
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         sessions = _make_mock_sessions()
         provider = MagicMock()
@@ -2457,7 +2457,7 @@ class TestExtractLesson:
     @pytest.mark.asyncio
     async def test_extract_lesson_saves(self, tmp_path: Path) -> None:
         """Failed step → lesson extracted and saved."""
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         store = LessonStore(base_dir=tmp_path)
         sessions = _make_mock_sessions()
@@ -2492,7 +2492,7 @@ class TestExtractLesson:
     @pytest.mark.asyncio
     async def test_volatile_lesson_is_not_reported_as_learned(self, tmp_path: Path) -> None:
         """A refused JSONL write must not notify or update the run ledger."""
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         store = LessonStore(base_dir=tmp_path)
         sessions = _make_mock_sessions()
@@ -2521,7 +2521,7 @@ class TestExtractLesson:
     @pytest.mark.asyncio
     async def test_private_volatile_lesson_is_not_reported_as_learned(self, tmp_path: Path) -> None:
         """A refused private vector write must not notify or update the run ledger."""
-        from kiro_crew.vector_memory import LessonWriteOutcome, LessonWriteResult
+        from efm_go.vector_memory import LessonWriteOutcome, LessonWriteResult
 
         sessions = _make_mock_sessions()
         runner = TaskRunner(sessions=sessions, auto_test=False, work_dir=tmp_path)
@@ -2534,10 +2534,10 @@ class TestExtractLesson:
 
         with (
             patch(
-                "kiro_crew.member_memory_auth.read_private_session_store",
+                "efm_go.member_memory_auth.read_private_session_store",
                 return_value="member-store",
             ),
-            patch("kiro_crew.context.inherit_session_memory", new=AsyncMock()),
+            patch("efm_go.context.inherit_session_memory", new=AsyncMock()),
             patch.object(
                 runner,
                 "_call_llm_for_lesson",
@@ -2548,7 +2548,7 @@ class TestExtractLesson:
                 },
             ),
             patch(
-                "kiro_crew.taskrunner.run_in_embed_pool",
+                "efm_go.taskrunner.run_in_embed_pool",
                 new=AsyncMock(
                     return_value=LessonWriteResult(
                         LessonWriteOutcome.REFUSED,
@@ -2574,7 +2574,7 @@ class TestExtractLesson:
     @pytest.mark.asyncio
     async def test_extract_lesson_invalid_response(self, tmp_path: Path) -> None:
         """Invalid Bedrock response → no lesson saved."""
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         store = LessonStore(base_dir=tmp_path)
         sessions = _make_mock_sessions()
@@ -2590,7 +2590,7 @@ class TestExtractLesson:
     @pytest.mark.asyncio
     async def test_extract_lesson_missing_rule_key(self, tmp_path: Path) -> None:
         """LLM returns dict without 'rule' → no lesson saved."""
-        from kiro_crew.learn import LessonStore
+        from efm_go.learn import LessonStore
 
         store = LessonStore(base_dir=tmp_path)
         sessions = _make_mock_sessions()
@@ -2610,7 +2610,7 @@ class TestExtractLesson:
 class TestHistoryIntegration:
     def test_log_task(self, tmp_path: Path) -> None:
         """Completed step → entries in ConversationLog."""
-        from kiro_crew.history import ConversationLog
+        from efm_go.history import ConversationLog
 
         conv_log = ConversationLog(base_dir=tmp_path)
         conv_log.init()
@@ -2654,7 +2654,7 @@ class TestHistoryIntegration:
 
         step_json = json.dumps([{"title": "One step", "description": "d"}])
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         decompose_provider = MagicMock()
 
@@ -2719,7 +2719,7 @@ class TestWatchdog:
         TestGitCoord)."""
         import os as _os
 
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         monkeypatch.setattr(
             git_coord,
@@ -2746,7 +2746,7 @@ class TestWatchdog:
         run.last_task_time = time.time() - _STALL_TIMEOUT - 60
 
         # Run watchdog for one tick then stop
-        with patch("kiro_crew.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("efm_go.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             mock_sleep.side_effect = [None, asyncio.CancelledError()]
             try:
                 await runner._watchdog_loop(run)
@@ -2781,7 +2781,7 @@ class TestWatchdog:
         run.started_at = time.time()
         run.last_task_time = time.time()  # just now
 
-        with patch("kiro_crew.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("efm_go.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             mock_sleep.side_effect = [None, asyncio.CancelledError()]
             try:
                 await runner._watchdog_loop(run)
@@ -2803,7 +2803,7 @@ class TestWatchdog:
         run.started_at = time.time()
         run.last_task_time = time.time() - _STALL_CANCEL_TIMEOUT - 60
 
-        with patch("kiro_crew.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("efm_go.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             mock_sleep.side_effect = [None, asyncio.CancelledError()]
             try:
                 await runner._watchdog_loop(run)
@@ -2831,7 +2831,7 @@ class TestWatchdog:
         # Set decoy on runner (the old bug) — watchdog must ignore this
         runner._last_task_time = 0.0  # type: ignore[attr-defined]
 
-        with patch("kiro_crew.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("efm_go.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             mock_sleep.side_effect = [None, asyncio.CancelledError()]
             try:
                 await runner._watchdog_loop(run)
@@ -2908,7 +2908,7 @@ class TestPlanRevision:
 
         sessions = _make_mock_sessions()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         original_steps = json.dumps([{"title": "Broken step", "description": "Will fail"}])
         replan_steps = json.dumps([{"title": "Fixed step", "description": "Will work"}])
@@ -2974,7 +2974,7 @@ class TestPlanRevision:
 
         sessions = _make_mock_sessions()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         step_json = json.dumps([{"title": "Always fails", "description": "d"}])
 
@@ -3019,7 +3019,7 @@ class TestPlanRevision:
 
         sessions = _make_mock_sessions()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         original_steps = json.dumps([{"title": "Broken", "description": "d"}])
         replan_steps = json.dumps(
@@ -3086,7 +3086,7 @@ class TestPlanRevision:
 
         sessions = _make_mock_sessions()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         original = json.dumps([{"title": "Task ", "description": "d"}])
         replan1 = json.dumps([{"title": "Replan1 step", "description": "d"}])
@@ -3150,7 +3150,7 @@ class TestSelfReview:
         sessions = _make_mock_sessions()
         provider = MagicMock()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         async def _stream(msg: str):
             yield LLMEvent(kind="text_chunk", text='{"ok": true}')
@@ -3165,7 +3165,7 @@ class TestSelfReview:
         step = Step(index=1, title="Test", description="d", status=StepStatus.PASSED)
         run.tasks = [step]
 
-        with patch("kiro_crew.task_executor.stream_and_collect_json", return_value={"ok": True}):
+        with patch("efm_go.task_executor.stream_and_collect_json", return_value={"ok": True}):
             result = await runner.self_review(run, step)
 
         assert result is True
@@ -3184,7 +3184,7 @@ class TestSelfReview:
         run.tasks = [step]
 
         with patch(
-            "kiro_crew.task_executor.stream_and_collect_json",
+            "efm_go.task_executor.stream_and_collect_json",
             return_value={"ok": False, "issue": "wrong file modified"},
         ):
             result = await runner.self_review(run, step)
@@ -3220,8 +3220,8 @@ class TestSelfReview:
 
         judge = AsyncMock(return_value={"ok": True})
         with (
-            patch("kiro_crew.task_executor.git_coord.get_step_diff", AsyncMock(return_value="")),
-            patch("kiro_crew.task_executor.stream_and_collect_json", judge),
+            patch("efm_go.task_executor.git_coord.get_step_diff", AsyncMock(return_value="")),
+            patch("efm_go.task_executor.stream_and_collect_json", judge),
         ):
             result = await runner.self_review(run, step)
 
@@ -3234,7 +3234,7 @@ class TestSelfReview:
         self, tmp_path: Path
     ) -> None:
         """A failed commit (non-fatal) explains the missing diff, so review still runs."""
-        from kiro_crew.task_executor import self_review
+        from efm_go.task_executor import self_review
 
         sessions = _make_mock_sessions()
         sessions.get_or_create = AsyncMock(return_value=(MagicMock(), True, False))
@@ -3244,8 +3244,8 @@ class TestSelfReview:
         run.tasks = [step]
 
         with (
-            patch("kiro_crew.task_executor.git_coord.get_step_diff", AsyncMock(return_value="")),
-            patch("kiro_crew.task_executor.stream_and_collect_json", return_value={"ok": True}),
+            patch("efm_go.task_executor.git_coord.get_step_diff", AsyncMock(return_value="")),
+            patch("efm_go.task_executor.stream_and_collect_json", return_value={"ok": True}),
         ):
             assert await self_review(run, step, sessions, "", commit_failed=True) is True
 
@@ -3260,7 +3260,7 @@ class TestSelfReview:
         run.tasks = [step]
         sessions.get_or_create = AsyncMock(return_value=(MagicMock(), True, False))
 
-        with patch("kiro_crew.task_executor.stream_and_collect_json", return_value={"ok": True}):
+        with patch("efm_go.task_executor.stream_and_collect_json", return_value={"ok": True}):
             assert await runner.self_review(run, step) is True
 
     @pytest.mark.asyncio
@@ -3279,8 +3279,8 @@ class TestSelfReview:
             return False
 
         with (
-            patch("kiro_crew.task_executor.self_review", side_effect=_unverified),
-            patch("kiro_crew.task_executor.execute_task", AsyncMock(return_value=True)) as ex,
+            patch("efm_go.task_executor.self_review", side_effect=_unverified),
+            patch("efm_go.task_executor.execute_task", AsyncMock(return_value=True)) as ex,
         ):
             success = await runner._execute_single_task(run, step, "key")
 
@@ -3374,7 +3374,7 @@ class TestActiveStallRecovery:
         run.started_at = time.time()
         run.last_task_time = time.time() - _STALL_CANCEL_TIMEOUT - 60
 
-        with patch("kiro_crew.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("efm_go.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             mock_sleep.side_effect = [None, asyncio.CancelledError()]
             try:
                 await runner._watchdog_loop(run)
@@ -3415,7 +3415,7 @@ class TestActiveStallRecovery:
             if tick >= 3:
                 raise asyncio.CancelledError()
 
-        with patch("kiro_crew.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("efm_go.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             mock_sleep.side_effect = _tick_sleep
             try:
                 await runner._watchdog_loop(run)
@@ -3451,7 +3451,7 @@ class TestActiveStallRecovery:
             if tick >= 3:
                 raise asyncio.CancelledError()  # stop after task2's first check
 
-        with patch("kiro_crew.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("efm_go.taskrunner.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             mock_sleep.side_effect = _tick_sleep
             try:
                 await runner._watchdog_loop(run)
@@ -3474,7 +3474,7 @@ class TestTokenBudget:
 
         sessions = _make_mock_sessions()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         step_json = json.dumps(
             [
@@ -3661,7 +3661,7 @@ class TestEdgeCases:
                 return False
             return True
 
-        with patch("kiro_crew.task_executor.self_review", side_effect=_review_once):
+        with patch("efm_go.task_executor.self_review", side_effect=_review_once):
             success = await runner._execute_single_task(run, step, "key")
 
         assert success is True
@@ -3698,7 +3698,7 @@ class TestEdgeCases:
 
         sessions = _make_mock_sessions()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         step_json = json.dumps(
             [
@@ -3862,7 +3862,7 @@ class TestParallelGroups:
 
         sessions = _make_mock_sessions()
 
-        from kiro_crew.providers.base import LLMEvent
+        from efm_go.providers.base import LLMEvent
 
         # 3 independent steps (no deps → single parallel group)
         step_json = json.dumps(
@@ -3908,7 +3908,7 @@ class TestParallelGroups:
 
         runner = TaskRunner(sessions=sessions, auto_test=False, work_dir=tmp_path)
 
-        with patch("kiro_crew.task_executor.self_review", return_value=True):
+        with patch("efm_go.task_executor.self_review", return_value=True):
             result = await runner.run(spec)
 
         assert result.status == "completed"
@@ -3941,7 +3941,7 @@ class TestGitCoord:
         sandbox availability, so run the command unwrapped in-test."""
         import os as _os
 
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         monkeypatch.setattr(
             git_coord,
@@ -3952,7 +3952,7 @@ class TestGitCoord:
     @pytest.mark.asyncio
     async def test_init_workspace_no_repo(self, tmp_path: Path, monkeypatch) -> None:
         """init_workspace in a non-git dir → run in place, no git init."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = _non_git_dir(tmp_path, monkeypatch, "work")
         (work_dir / "hello.txt").write_text("hi")
@@ -3977,7 +3977,7 @@ class TestGitCoord:
         Locks the git-optional guarantee independently of whether the test host
         actually has git installed, by simulating the missing binary.
         """
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         async def _no_git(*_a, **_k):
             raise FileNotFoundError(2, "No such file or directory", "git")
@@ -4002,7 +4002,7 @@ class TestGitCoord:
     @pytest.mark.asyncio
     async def test_init_workspace_existing_repo(self, tmp_path: Path) -> None:
         """init_workspace in existing git repo → worktree created."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         # Set up a real git repo
         work_dir = tmp_path / "repo"
@@ -4029,7 +4029,7 @@ class TestGitCoord:
 
     @pytest.mark.asyncio
     async def test_workspace_is_valid_true_for_a_live_worktree(self, tmp_path: Path) -> None:
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4056,7 +4056,7 @@ class TestGitCoord:
         repository at the expected path, so validation fails closed and the
         retry is refused with a clear error instead of resuming on a
         workspace whose identity cannot be established."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4084,7 +4084,7 @@ class TestGitCoord:
     async def test_workspace_is_valid_true_for_a_run_with_no_worktree(self, tmp_path: Path) -> None:
         """A run that never had a worktree (non-git-folder mode) is trivially
         valid -- there is nothing broken to detect."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         run = TaskRun(spec_path="/t.md", spec_content="s")
         run.task_id = "nogit_valid"
@@ -4105,7 +4105,7 @@ class TestGitCoord:
         (``run.repo_root``) and the run's EXISTING branch -- not fail with
         "branch already exists", which a naive re-``init_workspace()`` call
         would hit."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4152,7 +4152,7 @@ class TestGitCoord:
     ) -> None:
         """If even run.repo_root cannot be recovered from, reinit must
         report failure rather than silently disabling git."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4168,7 +4168,7 @@ class TestGitCoord:
 
         import shutil
 
-        from kiro_crew.platform_compat import rmtree_force
+        from efm_go.platform_compat import rmtree_force
 
         shutil.rmtree(run.worktree_path, ignore_errors=True)
         # Plain shutil.rmtree(..., ignore_errors=False) fails closed on Windows:
@@ -4195,7 +4195,7 @@ class TestGitCoord:
         that answer would commit every remaining step into the enclosing
         checkout while reporting those steps completed. Validity therefore has
         to be identity (is this MY worktree?), not mere repo-ness."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         enclosing = tmp_path / "enclosing"
         enclosing.mkdir()
@@ -4238,7 +4238,7 @@ class TestGitCoord:
         repository that is not the run's own. A linked worktree shares its main
         repository's git directory, so the common git dir is what actually
         distinguishes them."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4256,7 +4256,7 @@ class TestGitCoord:
 
         # Replace the worktree with an unrelated repository at the SAME path.
         await git_coord.finalize(run)
-        from kiro_crew.platform_compat import rmtree_force
+        from efm_go.platform_compat import rmtree_force
 
         rmtree_force(worktree_dir)
         Path(worktree_dir).mkdir(parents=True)
@@ -4281,7 +4281,7 @@ class TestGitCoord:
         repo, checked out on a DIFFERENT branch at the run's own path, must
         not read as valid -- resuming would commit the run's remaining steps
         onto somebody else's branch while reporting success."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4319,7 +4319,7 @@ class TestGitCoord:
         lets the rest fail the run."""
         import errno
 
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         async def exhausted(*args: object, **kwargs: object) -> object:
             raise OSError(errno.EMFILE, "Too many open files")
@@ -4344,7 +4344,7 @@ class TestGitCoord:
         propagated on Windows -- exactly the lost-worktree state the retry path
         exists to detect. Both are ``OSError``, which is what the guard tests.
         """
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         async def refuse_to_spawn(*args: object, **kwargs: object) -> object:
             raise NotADirectoryError(267, "The directory name is invalid")
@@ -4377,7 +4377,7 @@ class TestGitCoord:
         """
         import shutil as _shutil
 
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4444,7 +4444,7 @@ class TestGitCoord:
         """
         import shutil as _shutil
 
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4509,7 +4509,7 @@ class TestGitCoord:
         authorize destruction. The rename is what frees the path for the
         re-add; the tree survives on disk under the set-aside name.
         """
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4550,7 +4550,7 @@ class TestGitCoord:
         ``exists()`` on a UNC target performs outbound SMB authentication --
         a credential exposure -- so UNC/device forms are rejected on the raw
         string before any syscall."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         worktrees_dir = str(tmp_path / "repo" / ".git" / "worktrees")
         tree = tmp_path / "leftover"
@@ -4587,7 +4587,7 @@ class TestGitCoord:
         (On Windows the same applies to junctions/reparse points.)"""
         import os as _os
 
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         if not hasattr(_os, "symlink"):
             pytest.skip("no symlink support on this platform")
@@ -4648,7 +4648,7 @@ class TestGitCoord:
         worktree path must not be recursively deleted during recovery --
         that would be silent, unrecoverable data loss for whatever that
         repository holds. Recovery must refuse and fail the run instead."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4666,7 +4666,7 @@ class TestGitCoord:
         # Replace the worktree with an unrelated, independent repository at
         # the SAME path -- exactly the shape a foreign occupant would take.
         await git_coord.finalize(run)
-        from kiro_crew.platform_compat import rmtree_force
+        from efm_go.platform_compat import rmtree_force
 
         rmtree_force(worktree_dir)
         Path(worktree_dir).mkdir(parents=True)
@@ -4692,7 +4692,7 @@ class TestGitCoord:
         Git's pointer back to this run's original repository.  A replacement
         directory with unrelated files must survive byte-for-byte.
         """
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4720,7 +4720,7 @@ class TestGitCoord:
         self, tmp_path: Path
     ) -> None:
         """Repository identity alone does not authorize destructive recovery."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4761,7 +4761,7 @@ class TestGitCoord:
         unrelated directory at the run's worktree path and asserts the
         contents survive recovery on disk.
         """
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4822,7 +4822,7 @@ class TestGitCoord:
         commit ledger is the ground truth the branch tip must still descend
         from.
         """
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4860,7 +4860,7 @@ class TestGitCoord:
         steps stay marked passed while their output is absent. Recovery must
         refuse -- and refuse BEFORE touching the leftover tree on disk.
         """
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4909,7 +4909,7 @@ class TestGitCoord:
         """
         import shutil as _shutil
 
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4965,7 +4965,7 @@ class TestGitCoord:
     @pytest.mark.asyncio
     async def test_commit_and_revert(self, tmp_path: Path) -> None:
         """commit_step creates commit, revert_step undoes it."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -4997,7 +4997,7 @@ class TestGitCoord:
     @pytest.mark.asyncio
     async def test_commit_no_changes(self, tmp_path: Path) -> None:
         """commit_step with no changes → empty string."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -5021,7 +5021,7 @@ class TestGitCoord:
     @pytest.mark.asyncio
     async def test_non_git_workspace_git_ops_are_noops(self, tmp_path: Path, monkeypatch) -> None:
         """A non-git workspace runs in place; all git helpers are safe no-ops."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = _non_git_dir(tmp_path, monkeypatch, "plain")
         (work_dir / "a.py").write_text("x = 1")
@@ -5047,7 +5047,7 @@ class TestGitCoord:
     @pytest.mark.asyncio
     async def test_get_state_summary(self, tmp_path: Path) -> None:
         """get_state_summary returns git log + diff stat."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         work_dir = tmp_path / "repo"
         work_dir.mkdir()
@@ -5075,7 +5075,7 @@ class TestGitCoord:
     @pytest.mark.asyncio
     async def test_revert_no_commits(self, tmp_path: Path) -> None:
         """revert_step with no commits → no-op."""
-        from kiro_crew import git_coord
+        from efm_go import git_coord
 
         run = TaskRun(spec_path="/t.md", spec_content="s")
         run.work_dir = str(tmp_path)
@@ -5207,14 +5207,14 @@ class TestWorkspaceDirValidation:
             TaskRunner(sessions=_make_mock_sessions(), workspace_dir=str(link))
 
     def test_resolve_helper_blank_and_normal(self, tmp_path):
-        from kiro_crew.taskrunner import _resolve_workspace_dir
+        from efm_go.taskrunner import _resolve_workspace_dir
 
         assert _resolve_workspace_dir("") == ""
         assert _resolve_workspace_dir("   ") == ""
         assert _resolve_workspace_dir(str(tmp_path)) == str(Path(tmp_path).resolve())
 
     def test_resolve_helper_rejects_sensitive(self):
-        from kiro_crew.taskrunner import _resolve_workspace_dir
+        from efm_go.taskrunner import _resolve_workspace_dir
 
         with pytest.raises(ValueError, match="sensitive"):
             _resolve_workspace_dir("~/.aws")
@@ -5248,7 +5248,7 @@ class TestMaxParallelStepsClamp:
     def _cap(self, value):
         sessions = _make_mock_sessions()
         # Pin the computed host-safe ceiling to a known value (9).
-        with patch("kiro_crew.taskrunner.compute_memory_sized_parallel_cap", return_value=9):
+        with patch("efm_go.taskrunner.compute_memory_sized_parallel_cap", return_value=9):
             runner = TaskRunner(sessions=sessions, auto_test=False, max_parallel_steps=value)
         return runner._max_parallel_steps
 
@@ -5269,7 +5269,7 @@ class TestMaxParallelStepsClamp:
     def test_compute_failure_falls_back_to_legacy_default(self):
         sessions = _make_mock_sessions()
         with patch(
-            "kiro_crew.taskrunner.compute_memory_sized_parallel_cap",
+            "efm_go.taskrunner.compute_memory_sized_parallel_cap",
             side_effect=RuntimeError("boom"),
         ):
             runner = TaskRunner(sessions=sessions, auto_test=False, max_parallel_steps=0)
@@ -5331,7 +5331,7 @@ class TestSemaphoreParallelScheduling:
         without this the test proves nothing.
         """
         monkeypatch.setattr(
-            "kiro_crew.taskrunner.compute_memory_sized_parallel_cap", lambda _cfg: 64
+            "efm_go.taskrunner.compute_memory_sized_parallel_cap", lambda _cfg: 64
         )
         sessions = _make_mock_sessions()
         runner = TaskRunner(
@@ -5357,7 +5357,7 @@ class TestSemaphoreParallelScheduling:
         guard still wins — the property those tests deliberately stop covering.
         """
         monkeypatch.setattr(
-            "kiro_crew.taskrunner.compute_memory_sized_parallel_cap", lambda _cfg: 2
+            "efm_go.taskrunner.compute_memory_sized_parallel_cap", lambda _cfg: 2
         )
         runner = TaskRunner(
             sessions=_make_mock_sessions(),
@@ -5381,7 +5381,7 @@ class TestSemaphoreParallelScheduling:
         ``test_host_ceiling_still_caps_the_knob``.
         """
         monkeypatch.setattr(
-            "kiro_crew.taskrunner.compute_memory_sized_parallel_cap", lambda _cfg: 64
+            "efm_go.taskrunner.compute_memory_sized_parallel_cap", lambda _cfg: 64
         )
         sessions = _make_mock_sessions()
         runner = TaskRunner(

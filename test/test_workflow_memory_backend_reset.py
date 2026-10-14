@@ -4,7 +4,7 @@ import json
 import subprocess
 import sys
 
-from kiro_crew.testing import fake_acp_backend
+from efm_go.testing import fake_acp_backend
 
 
 def test_workflow_warm_reset_allocates_distinct_native_sessions(tmp_path):
@@ -12,7 +12,7 @@ def test_workflow_warm_reset_allocates_distinct_native_sessions(tmp_path):
         {"id": 1, "method": "initialize", "params": {}},
         {"id": 2, "method": "session/new", "params": {"cwd": str(tmp_path)}},
         {"id": 3, "method": "session/new", "params": {"cwd": str(tmp_path)}},
-        {"id": 4, "method": "_kiro.dev/session/terminate", "params": {"sessionId": "fake-1"}},
+        {"id": 4, "method": "_efm.go/session/terminate", "params": {"sessionId": "fake-1"}},
         {
             "id": 5,
             "method": "session/prompt",
@@ -23,7 +23,7 @@ def test_workflow_warm_reset_allocates_distinct_native_sessions(tmp_path):
         },
     ]
     result = subprocess.run(
-        [sys.executable, "-m", "kiro_crew.testing.fake_acp_backend", "acp"],
+        [sys.executable, "-m", "efm_go.testing.fake_acp_backend", "acp"],
         input="".join(json.dumps({"jsonrpc": "2.0", **row}) + "\n" for row in requests),
         capture_output=True,
         text=True,
@@ -52,7 +52,7 @@ def test_workflow_warm_reset_allocates_distinct_native_sessions(tmp_path):
 
 
 def test_workflow_timeout_summary_omits_private_payloads():
-    from kiro_crew.testing.workflow_memory_scenario import progress_summary
+    from efm_go.testing.workflow_memory_scenario import progress_summary
 
     private = "PRIVATE_PAYLOAD_MUST_NOT_APPEAR"
     run = {
@@ -80,7 +80,7 @@ def test_workflow_backend_routes_each_session_to_its_own_projection(tmp_path, mo
     """Only observe the scenario entry; projection and proof code are not replaced."""
     import io
 
-    from kiro_crew.testing import workflow_memory_scenario
+    from efm_go.testing import workflow_memory_scenario
 
     captured = io.StringIO()
     monkeypatch.setattr(fake_acp_backend, "_SESSIONS", {})
@@ -110,7 +110,7 @@ def test_workflow_backend_routes_each_session_to_its_own_projection(tmp_path, mo
     prompt = [{"type": "text", "text": "[[WF_E2E:WORK:A]]"}]
     request(3, "session/prompt", {"sessionId": a, "prompt": prompt})
     assert calls[-1][1:] == (projections[0]["mcpServers"], projections[0]["cwd"])
-    request(4, "_kiro.dev/session/terminate", {"sessionId": a})
+    request(4, "_efm.go/session/terminate", {"sessionId": a})
     request(5, "session/prompt", {"sessionId": b, "prompt": prompt})
     assert calls[-1][1:] == (projections[1]["mcpServers"], projections[1]["cwd"])
     count = len(calls)
@@ -138,19 +138,19 @@ def test_workflow_worker_publishes_identity_before_mcp_http(tmp_path, monkeypatc
     import asyncio
     import os
 
-    from kiro_crew.messaging.identity import publish_turn_identity
-    from kiro_crew.providers.base import LLMEvent
-    from kiro_crew.workflows.agent_pool import _WorkflowSessionWorker
+    from efm_go.messaging.identity import publish_turn_identity
+    from efm_go.providers.base import LLMEvent
+    from efm_go.workflows.agent_pool import _WorkflowSessionWorker
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "crew"))
     monkeypatch.setenv("KIROCREW_WORKSPACE", str(tmp_path / "workspace"))
     monkeypatch.setenv("KIRO_HOME", str(tmp_path / "kiro"))
     key = "wf-pool:wf_1:identity-probe"
-    from kiro_crew.config import KiroCrewConfig
-    from kiro_crew.config.loader import KiroCrewAgentConfig
-    from kiro_crew.history import ConversationLog
-    from kiro_crew.member_memory_auth import bind_private_session_store
-    from kiro_crew.memory_stores import persist_member_config, provision_member_memory
+    from efm_go.config import KiroCrewConfig
+    from efm_go.config.loader import KiroCrewAgentConfig
+    from efm_go.history import ConversationLog
+    from efm_go.member_memory_auth import bind_private_session_store
+    from efm_go.memory_stores import persist_member_config, provision_member_memory
 
     cfg = KiroCrewConfig.load()
     cfg.agents["identity-probe"] = KiroCrewAgentConfig(kiro_agent="kirocrew")
@@ -194,9 +194,9 @@ def test_workflow_worker_publishes_identity_before_mcp_http(tmp_path, monkeypatc
             child = await asyncio.create_subprocess_exec(
                 sys.executable,
                 "-c",
-                "import subprocess,sys\nfrom kiro_crew.mcp_core import _api_port\n"
+                "import subprocess,sys\nfrom efm_go.mcp_core import _api_port\n"
                 "assert _api_port() == int(sys.argv[1])\n"
-                'code = "import json; from kiro_crew.mcp_core import _post; '
+                'code = "import json; from efm_go.mcp_core import _post; '
                 "print(json.dumps(_post('/identity-probe', {}, timeout=5)))\"\n"
                 "for line in sys.stdin:\n"
                 " result = subprocess.run([sys.executable, '-c', code], "
@@ -259,20 +259,20 @@ def test_unpooled_paths_publish_identity_before_prompt(monkeypatch):
     Only the final filesystem writer is captured, at its defining module."""
     import asyncio
 
-    from kiro_crew.workflows.agent_pool import build_pooled_agent_fn
+    from efm_go.workflows.agent_pool import build_pooled_agent_fn
 
     events: list[tuple] = []
 
     def _capture_publish(pid, session_key):
         events.append(("publish", pid, session_key))
 
-    monkeypatch.setattr("kiro_crew.messaging.identity.publish_session_pid", _capture_publish)
+    monkeypatch.setattr("efm_go.messaging.identity.publish_session_pid", _capture_publish)
 
     async def _stream(provider, prompt, **kwargs):
         events.append(("stream", provider.key))
         return prompt
 
-    monkeypatch.setattr("kiro_crew.workflows.agent_pool.stream_and_collect", _stream)
+    monkeypatch.setattr("efm_go.workflows.agent_pool.stream_and_collect", _stream)
 
     class Provider:
         def __init__(self, key):

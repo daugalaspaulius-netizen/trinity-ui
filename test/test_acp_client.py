@@ -15,9 +15,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from spawn_test_helpers import strip_spawn_shim
 
-import kiro_crew.acp.client as acp_client
+import efm_go.acp.client as acp_client
 from conftest import cap_node_module_walk, requires_symlinks
-from kiro_crew.acp.client import (
+from efm_go.acp.client import (
     _CLAUDE_ACP_PKG_ENTRY,
     _DRAIN_DURATION,
     _DRAIN_IDLE_EXIT,
@@ -33,20 +33,20 @@ from kiro_crew.acp.client import (
     format_command_result,
     parse_slash_command,
 )
-from kiro_crew.acp.liveness import (
+from efm_go.acp.liveness import (
     EVIDENCE_SAMPLING,
     VERDICT_DEAD,
     VERDICT_UNKNOWN,
     VERDICT_WORKING,
     LivenessOracle,
 )
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_OPENCODE,
     JSONRPC_METHOD_NOT_FOUND,
     AcpPromptStats,
 )
-from kiro_crew.agent_sdk import host_auth
+from efm_go.agent_sdk import host_auth
 
 # Windows lacks os.killpg and POSIX process-tree APIs (ps, /proc).
 # Tests that exercise these paths are skipped on Windows.
@@ -73,12 +73,12 @@ def _pin_the_installed_kiro_cli_version(monkeypatch):
     protocol and process doubles. The version the gate sees is a property of the
     host, not of the client under test; ``None`` is the "cannot be established"
     branch every host without the binary already takes."""
-    monkeypatch.setattr("kiro_crew.kiro_cli.installed_kiro_cli_version", lambda: None)
+    monkeypatch.setattr("efm_go.kiro_cli.installed_kiro_cli_version", lambda: None)
 
 
 @pytest.fixture(autouse=True)
 def _native_projection_for_fake_processes(monkeypatch):
-    from kiro_crew.acp import skill_projection
+    from efm_go.acp import skill_projection
 
     # These protocol/process doubles do not own installed native agent specs.
     # The projection contract is exercised in test_native_skill_projection.
@@ -126,7 +126,7 @@ class TestVendoredClaudeAcp:
         With *with_deps* (default) also creates the hoisted dependency marker
         ``@agentclientprotocol/sdk`` so the completeness guard accepts it.
         """
-        from kiro_crew.acp.client import _CLAUDE_ACP_DEP_MARKER
+        from efm_go.acp.client import _CLAUDE_ACP_DEP_MARKER
 
         entry = root / _CLAUDE_ACP_PKG_ENTRY
         entry.parent.mkdir(parents=True, exist_ok=True)
@@ -140,14 +140,14 @@ class TestVendoredClaudeAcp:
         # Inject a fake pkg_dir under an isolated home so the real workspace
         # (sibling-website detection / KIROCREW_PROJECT_DIR) is not consulted.
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        pkg_dir = tmp_path / "site-packages" / "kiro_crew"
+        pkg_dir = tmp_path / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         entry = self._make_vendored(pkg_dir / "_vendor" / "node_modules")
         assert _resolve_vendored_claude_acp(pkg_dir=pkg_dir) == str(entry)
 
     def test_finds_vendored_under_project_dir(self, tmp_path, monkeypatch):
         # KIROCREW_PROJECT_DIR/node_modules holds the adapter; pkg_dir has none.
-        pkg_dir = tmp_path / "site-packages" / "kiro_crew"
+        pkg_dir = tmp_path / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         entry = self._make_vendored(tmp_path / "proj" / "node_modules")
         (tmp_path / "proj").mkdir(exist_ok=True)
@@ -158,7 +158,7 @@ class TestVendoredClaudeAcp:
         # Isolated pkg_dir with no _vendor and a project dir with no adapter.
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path / "empty"))
         (tmp_path / "empty").mkdir()
-        pkg_dir = tmp_path / "site-packages" / "kiro_crew"
+        pkg_dir = tmp_path / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         assert _resolve_vendored_claude_acp(pkg_dir=pkg_dir) is None
 
@@ -166,7 +166,7 @@ class TestVendoredClaudeAcp:
         # Regression: an entry script whose dependency Node could not import must
         # be rejected (it would crash with ERR_MODULE_NOT_FOUND @agentclientprotocol/sdk),
         # falling through to a complete copy under KIROCREW_PROJECT_DIR.
-        pkg_dir = tmp_path / "site-packages" / "kiro_crew"
+        pkg_dir = tmp_path / "site-packages" / "efm_go"
         pkg_dir.mkdir(parents=True)
         # Incomplete copy in _vendor (entry only, no deps) — must be skipped. The
         # dependency walk runs to the filesystem root like Node's; cap it at tmp_path
@@ -300,7 +300,7 @@ class TestAcpClientZeroTools:
 
     @staticmethod
     def _permission_request(request_id: int = 1) -> "acp_client.JsonRpcMessage":
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(
             id=request_id,
@@ -423,7 +423,7 @@ class TestEffectiveSpecDeclaresZeroTools:
 
     @staticmethod
     def _client_with_projection(specs, errors=None) -> AcpClient:
-        from kiro_crew.acp.skill_projection import NativeSkillProjection
+        from efm_go.acp.skill_projection import NativeSkillProjection
 
         client = AcpClient(agent="kirocrew-knowledge")
         client._native_skill_projection = NativeSkillProjection(
@@ -586,7 +586,7 @@ class TestAuthoredSpecDeclaresZeroTools:
             raise OSError("unreadable")
 
         monkeypatch.setattr(acp_client, "agent_spec_snapshot", _boom)
-        with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with caplog.at_level("WARNING", logger="efm_go.acp.client"):
             assert self._client().authored_spec_declares_zero_tools() is False
         assert any("unreadable" in r.getMessage() for r in caplog.records)
 
@@ -604,8 +604,8 @@ class TestAuthoredSpecDeclaresZeroTools:
     def test_the_project_spec_wins_over_the_user_level_one(self, tmp_path, monkeypatch):
         """Project-nearest, as the harness resolves ``--agent``: a project spec
         carrying tools is judged even though the user-level one is empty."""
-        from kiro_crew import agent as agent_mod
-        from kiro_crew.acp import session_mcp
+        from efm_go import agent as agent_mod
+        from efm_go.acp import session_mcp
 
         user_agents = tmp_path / "agents"
         user_agents.mkdir()
@@ -939,13 +939,13 @@ class TestAcpClientSessionKey:
     async def test_spawn_sets_env_with_session_key(self, tmp_path):
         client = AcpClient(work_dir=tmp_path, session_key="test-key")
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
+                "efm_go.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -965,13 +965,13 @@ class TestAcpClientSessionKey:
     async def test_spawn_sets_env_with_channel_id(self, tmp_path):
         client = AcpClient(work_dir=tmp_path, session_key="k", channel_id="C0ABC123")
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
+                "efm_go.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -1001,7 +1001,7 @@ class TestAcpClientSessionKey:
         )
         with (
             patch(
-                "kiro_crew.acp.client._resolve_claude_acp_bin",
+                "efm_go.acp.client._resolve_claude_acp_bin",
                 return_value=(["/usr/bin/node", "/x/acp.js"], ""),
             ),
             # ``_spawn`` fills CLAUDE_CODE_EXECUTABLE from
@@ -1010,16 +1010,16 @@ class TestAcpClientSessionKey:
             # is about the env being forwarded, not about where ``claude`` lives,
             # so pin the answer instead of depending on the developer's toolchain.
             patch(
-                "kiro_crew.acp.client._resolve_claude_code_executable",
+                "efm_go.acp.client._resolve_claude_code_executable",
                 return_value="/usr/local/bin/claude",
             ),
             patch(
-                "kiro_crew.acp.client.wrap_argv",
+                "efm_go.acp.client.wrap_argv",
                 return_value=(["/usr/bin/node", "/x/acp.js"], None),
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -1065,15 +1065,15 @@ class TestAcpClientSessionKey:
                 },
             )
             with (
-                patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+                patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
                 patch(
-                    "kiro_crew.acp.client.wrap_argv",
+                    "efm_go.acp.client.wrap_argv",
                     return_value=(["/usr/bin/kiro-cli", "acp"], None),
                 ),
                 patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-                patch("kiro_crew.acp.client.browser_socket_env", side_effect=_lifecycle_env),
-                patch("kiro_crew.session._track_pid"),
-                patch("kiro_crew.session._track_session_pid"),
+                patch("efm_go.acp.client.browser_socket_env", side_effect=_lifecycle_env),
+                patch("efm_go.session._track_pid"),
+                patch("efm_go.session._track_session_pid"),
             ):
                 mock_proc = MagicMock()
                 mock_proc.pid = 12345
@@ -1100,13 +1100,13 @@ class TestAcpClientSessionKey:
         monkeypatch.delenv("PWTEST_DAEMON_SESSION_DIR", raising=False)
         client = AcpClient(work_dir=tmp_path, session_key="k")
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
+                "efm_go.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -1128,13 +1128,13 @@ class TestAcpClientSessionKey:
     async def test_spawn_no_channel_id_env_absent(self, tmp_path):
         client = AcpClient(work_dir=tmp_path, session_key="k", channel_id=None)
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
+                "efm_go.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -1155,13 +1155,13 @@ class TestAcpClientSessionKey:
         clean_env = {k: v for k, v in os.environ.items() if k != "KIROCREW_SESSION_KEY"}
         client = AcpClient(work_dir=tmp_path, session_key=None, channel_id="C0ABC123")
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
+                "efm_go.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
             patch.dict(os.environ, clean_env, clear=True),
         ):
             mock_proc = MagicMock()
@@ -1183,13 +1183,13 @@ class TestAcpClientSessionKey:
     async def test_spawn_no_session_key_env_none(self, tmp_path):
         client = AcpClient(work_dir=tmp_path, session_key=None)
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
+                "efm_go.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -1221,13 +1221,13 @@ class TestSpawnStderrDrainCleanup:
         # start a live drain task, so the cleanup below is load-bearing.
         client = AcpClient(work_dir=tmp_path, session_key="k")
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
+                "efm_go.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -1250,13 +1250,13 @@ class TestSpawnStderrDrainCleanup:
         # would hide a re-leak, so assert on the task's own state instead.
         client = AcpClient(work_dir=tmp_path, session_key="k")
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
+                "efm_go.acp.client.wrap_argv", return_value=(["/usr/bin/kiro-cli", "acp"], None)
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = AsyncMock()
             mock_proc.pid = 12345
@@ -1348,7 +1348,7 @@ async def test_failed_live_spawn_cleanup_releases_workspace_when_kill_is_cancell
     async def record_release(descriptor):
         released.append(descriptor)
 
-    with patch("kiro_crew.acp.client.release_bound_agent_workspace", side_effect=record_release):
+    with patch("efm_go.acp.client.release_bound_agent_workspace", side_effect=record_release):
         with pytest.raises(asyncio.CancelledError):
             await client._cleanup_failed_live_spawn()
 
@@ -1362,7 +1362,7 @@ class TestAcpClientBackendSelection:
 
     @pytest.fixture(autouse=True)
     def _reset_claude_cache(self):
-        import kiro_crew.acp.client as _mod
+        import efm_go.acp.client as _mod
 
         _mod._claude_acp_argv_cache = _mod._UNRESOLVED
         yield
@@ -1379,7 +1379,7 @@ class TestAcpClientBackendSelection:
         # to this class only; test_sandbox_argv.py (which tests the wrapping
         # itself) is a separate file and is unaffected.
         with patch(
-            "kiro_crew.sandbox._probe_cgroup_scope",
+            "efm_go.sandbox._probe_cgroup_scope",
             return_value=(False, "disabled-in-test"),
         ):
             yield
@@ -1389,26 +1389,26 @@ class TestAcpClientBackendSelection:
         client = AcpClient(work_dir=tmp_path, acp_backend=ACP_BACKEND_CLAUDE)
         with (
             patch(
-                "kiro_crew.acp.client._resolve_claude_acp_bin",
+                "efm_go.acp.client._resolve_claude_acp_bin",
                 return_value=(
                     ["/usr/local/bin/node", "/usr/local/lib/claude-agent-acp/index.js"],
                     "",
                 ),
             ),
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             # The claude path also resolves CLAUDE_CODE_EXECUTABLE through the
             # host's ``mise``; the subject here is the argv, so pin the resolver.
             patch(
-                "kiro_crew.acp.client._resolve_claude_code_executable",
+                "efm_go.acp.client._resolve_claude_code_executable",
                 return_value="/usr/local/bin/claude",
             ),
             patch(
-                "kiro_crew.acp.client.wrap_argv",
+                "efm_go.acp.client.wrap_argv",
                 side_effect=lambda argv, mode, **kwargs: (argv, None),
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -1429,7 +1429,7 @@ class TestAcpClientBackendSelection:
     async def test_spawn_claude_backend_missing_bin_raises(self, tmp_path):
         client = AcpClient(work_dir=tmp_path, acp_backend=ACP_BACKEND_CLAUDE)
         with (
-            patch("kiro_crew.acp.client._resolve_claude_acp_bin", return_value=(None, "")),
+            patch("efm_go.acp.client._resolve_claude_acp_bin", return_value=(None, "")),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock),
         ):
             with pytest.raises(AcpError, match="claude-agent-acp not found"):
@@ -1443,7 +1443,7 @@ class TestAcpClientBackendSelection:
         later = str(tmp_path / "later-path")
         client = AcpClient(work_dir=tmp_path, acp_backend=ACP_BACKEND_CLAUDE)
         with patch(
-            "kiro_crew.acp.client._resolve_claude_acp_bin",
+            "efm_go.acp.client._resolve_claude_acp_bin",
             return_value=(None, searched),
         ) as resolve:
             with pytest.raises(AcpError) as first:
@@ -1465,8 +1465,8 @@ class TestAcpClientBackendSelection:
         unsearched = str(tmp_path / "never-checked")
         client = AcpClient(work_dir=tmp_path)
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value=None),
-            patch("kiro_crew.acp.client.known_kiro_cli_dirs", return_value=searched),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value=None),
+            patch("efm_go.acp.client.known_kiro_cli_dirs", return_value=searched),
         ):
             with pytest.raises(AcpError) as raised:
                 await client._spawn()
@@ -1495,7 +1495,7 @@ class TestAcpClientBackendSelection:
         ``test_spawn_claude_missing_bin_reports_the_cached_search_path``); this
         pins it for the Kiro sibling.
         """
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         injected = str(tmp_path / "appeared-after-the-search")
         resolver_env: dict[str, object] = {}
@@ -1515,10 +1515,10 @@ class TestAcpClientBackendSelection:
         client = AcpClient(work_dir=tmp_path)
         with (
             patch(
-                "kiro_crew.acp.client._resolve_kiro_bin",
+                "efm_go.acp.client._resolve_kiro_bin",
                 side_effect=_resolve_then_change_path,
             ),
-            patch("kiro_crew.acp.client.known_kiro_cli_dirs", side_effect=_spy_dirs),
+            patch("efm_go.acp.client.known_kiro_cli_dirs", side_effect=_spy_dirs),
         ):
             with pytest.raises(AcpError, match="not found"):
                 await client._spawn()
@@ -1540,9 +1540,9 @@ class TestAcpClientBackendSelection:
         ``handlers/agents.py`` and ``handlers/sessions.py``, none of which needs
         the search set. Omitting the arguments must resolve exactly as before.
         """
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
-        with patch("kiro_crew.acp.client.resolve_kiro_cli", return_value=None) as resolve:
+        with patch("efm_go.acp.client.resolve_kiro_cli", return_value=None) as resolve:
             assert await client_mod._resolve_kiro_bin_for_spawn() is None
         resolve.assert_called_once_with(environ=None, home=None)
 
@@ -1551,14 +1551,14 @@ class TestAcpClientBackendSelection:
         """Default (non-claude) backend still spawns `kiro-cli acp --agent <name>`."""
         client = AcpClient(work_dir=tmp_path)
         with (
-            patch("kiro_crew.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
+            patch("efm_go.acp.client._resolve_kiro_bin", return_value="/usr/bin/kiro-cli"),
             patch(
-                "kiro_crew.acp.client.wrap_argv",
+                "efm_go.acp.client.wrap_argv",
                 side_effect=lambda argv, mode, **kwargs: (argv, None),
             ),
             patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec,
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
         ):
             mock_proc = MagicMock()
             mock_proc.pid = 12345
@@ -1577,7 +1577,7 @@ class TestAcpClientBackendSelection:
     @pytest.mark.asyncio
     async def test_initialize_protocol_version_per_backend(self, tmp_path):
         """kiro expects a date string; claude-agent-acp expects an integer."""
-        from kiro_crew.acp.client import (
+        from efm_go.acp.client import (
             PROTOCOL_VERSION,
             PROTOCOL_VERSION_CLAUDE,
         )
@@ -1615,8 +1615,8 @@ class TestAcpClientBackendSelection:
 
 class TestResolveClaudeAcpBin:
     def test_env_override_wins(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.acp.client import _resolve_claude_acp_bin
+        from efm_go.acp import client as client_mod
+        from efm_go.acp.client import _resolve_claude_acp_bin
 
         bin_path = tmp_path / "claude-agent-acp"
         bin_path.write_text("#!/bin/sh\nexit 0\n")
@@ -1629,7 +1629,7 @@ class TestResolveClaudeAcpBin:
 
     @_POSIX_EXEC_PATHS_ONLY
     def test_path_lookup(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         bin_path = tmp_path / "claude-agent-acp"
         bin_path.write_text("#!/bin/sh\nexit 0\n")
@@ -1651,7 +1651,7 @@ class TestResolveClaudeAcpBin:
 
     @_POSIX_EXEC_PATHS_ONLY
     def test_mise_which_preferred(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         script = tmp_path / "bin" / "claude-agent-acp"
         script.parent.mkdir(parents=True)
@@ -1673,8 +1673,8 @@ class TestResolveClaudeAcpBin:
 
     @_POSIX_EXEC_PATHS_ONLY
     def test_mise_installed_script_resolves_node(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.acp.client import _resolve_claude_acp_bin
+        from efm_go.acp import client as client_mod
+        from efm_go.acp.client import _resolve_claude_acp_bin
 
         mise_node = tmp_path / ".local" / "share" / "mise" / "installs" / "node" / "20.18.0"
         node_bin = mise_node / "bin" / "node"
@@ -1700,7 +1700,7 @@ class TestResolveClaudeAcpBin:
         assert argv == [str(node_bin), str(script.resolve())]
 
     def test_non_executable_script_falls_back_to_path_node(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
@@ -1729,7 +1729,7 @@ class TestResolveClaudeAcpBin:
 
     @_POSIX_EXEC_PATHS_ONLY
     def test_mise_glob_fallback(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         mise_node = tmp_path / ".local" / "share" / "mise" / "installs" / "node" / "22.1.0"
         bin_dir = mise_node / "bin"
@@ -1754,7 +1754,7 @@ class TestResolveClaudeAcpBin:
         assert argv == [str(node_bin), str(acp_script.resolve())]
 
     def test_returns_none_when_not_found(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         fake_home = tmp_path / "fakehome"
         fake_home.mkdir()
@@ -1774,7 +1774,7 @@ class TestResolveClaudeAcpBin:
 
 class TestResolveClaudeCodeExecutable:
     def test_env_override_wins(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         exe = tmp_path / "claude"
         exe.write_text("#!/bin/sh\nexit 0\n")
@@ -1785,7 +1785,7 @@ class TestResolveClaudeCodeExecutable:
         assert client_mod._resolve_claude_code_executable() == str(exe)
 
     def test_env_override_ignored_when_missing(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.setenv("CLAUDE_CODE_EXECUTABLE", str(tmp_path / "nope"))
         monkeypatch.setattr(client_mod, "_mise_which", lambda tool: None)
@@ -1793,7 +1793,7 @@ class TestResolveClaudeCodeExecutable:
         assert client_mod._resolve_claude_code_executable() is None
 
     def test_mise_preferred_over_path(self, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.delenv("CLAUDE_CODE_EXECUTABLE", raising=False)
         monkeypatch.setattr(client_mod, "_mise_which", lambda tool: "/mise/bin/claude")
@@ -1802,7 +1802,7 @@ class TestResolveClaudeCodeExecutable:
 
     @_POSIX_EXEC_PATHS_ONLY
     def test_path_lookup(self, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.delenv("CLAUDE_CODE_EXECUTABLE", raising=False)
         monkeypatch.setattr(client_mod, "_mise_which", lambda tool: None)
@@ -1814,7 +1814,7 @@ class TestResolveClaudeCodeExecutable:
         assert client_mod._resolve_claude_code_executable() == "/home/u/.toolbox/bin/claude"
 
     def test_none_when_absent(self, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.delenv("CLAUDE_CODE_EXECUTABLE", raising=False)
         monkeypatch.setattr(client_mod, "_mise_which", lambda tool: None)
@@ -1824,8 +1824,8 @@ class TestResolveClaudeCodeExecutable:
 
 class TestMiseWhich:
     def test_returns_path_on_success(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.acp.client import _mise_which
+        from efm_go.acp import client as client_mod
+        from efm_go.acp.client import _mise_which
 
         script = tmp_path / "claude-agent-acp"
         script.write_text("#!/usr/bin/env node\n")
@@ -1841,15 +1841,15 @@ class TestMiseWhich:
         assert _mise_which("claude-agent-acp") == str(script)
 
     def test_returns_none_when_mise_not_installed(self, monkeypatch):
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.acp.client import _mise_which
+        from efm_go.acp import client as client_mod
+        from efm_go.acp.client import _mise_which
 
         monkeypatch.setattr(client_mod.shutil, "which", lambda name: None)
         assert _mise_which("claude-agent-acp") is None
 
     def test_returns_none_on_nonzero_exit(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.acp.client import _mise_which
+        from efm_go.acp import client as client_mod
+        from efm_go.acp.client import _mise_which
 
         monkeypatch.setattr(
             client_mod.shutil,
@@ -1863,8 +1863,8 @@ class TestMiseWhich:
     def test_returns_none_on_timeout(self, tmp_path, monkeypatch):
         import subprocess
 
-        from kiro_crew.acp import client as client_mod
-        from kiro_crew.acp.client import _mise_which
+        from efm_go.acp import client as client_mod
+        from efm_go.acp.client import _mise_which
 
         monkeypatch.setattr(
             client_mod.shutil,
@@ -1925,8 +1925,8 @@ class TestAcpClientStaleTurn:
         # otherwise the loop exits on `remaining <= 0` before the check runs and
         # the test would pass trivially, even without the fix. Each 0.05s poll
         # refreshes _last_activity, staying well under the 0.2s stale window.
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.2):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.2):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 actions = []
                 async for action, _msg in client._prompt_loop(req_id=1, timeout=1.0):
                     actions.append(action)
@@ -1941,8 +1941,8 @@ class TestAcpClientStaleTurn:
         # _last_activity never refreshes → genuinely silent on both clocks.
         client._last_activity = time.monotonic()
 
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 actions = []
                 async for action, _msg in client._prompt_loop(req_id=7, timeout=5.0):
                     actions.append(action)
@@ -1980,8 +1980,8 @@ class TestAcpClientStaleTurnOracleGate:
 
         # Loop timeout must exceed the stale window so the check fires repeatedly;
         # without the fix the first stale hit returns and the turn ends.
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.1):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.1):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 actions = []
                 async for action, _msg in client._prompt_loop(req_id=11, timeout=0.6):
                     actions.append(action)
@@ -2050,9 +2050,9 @@ class TestAcpClientStaleTurnOracleGate:
 
         client._read_message = AsyncMock(side_effect=read_and_move)
 
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
-            with patch("kiro_crew.acp.client._READ_TIMEOUT", 0.02):
-                with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
+            with patch("efm_go.acp.client._READ_TIMEOUT", 0.02):
+                with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                     actions = []
                     async for action, _msg in client._prompt_loop(req_id=42, timeout=0.5):
                         actions.append(action)
@@ -2068,8 +2068,8 @@ class TestAcpClientStaleTurnOracleGate:
             return_value=(VERDICT_DEAD, "no established backend socket")
         )
 
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 actions = []
                 async for action, _msg in client._prompt_loop(req_id=12, timeout=5.0):
                     actions.append(action)
@@ -2086,8 +2086,8 @@ class TestAcpClientStaleTurnOracleGate:
             return_value=(VERDICT_UNKNOWN, "established-but-flat")
         )
 
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 actions = []
                 async for action, _msg in client._prompt_loop(req_id=13, timeout=5.0):
                     actions.append(action)
@@ -2156,7 +2156,7 @@ class TestAcpClientStaleTurnOracleGate:
         client._liveness_oracle = MagicMock()
 
         with patch(
-            "kiro_crew.acp.client.subprocess_executor",
+            "efm_go.acp.client.subprocess_executor",
             side_effect=RuntimeError("cannot schedule new futures after shutdown"),
         ):
             assert await client._consult_liveness_model_wait() == (
@@ -2183,9 +2183,9 @@ class TestAcpClientStaleTurnOracleGate:
         client._consult_future = asyncio.get_running_loop().create_future()
 
         with (
-            patch("kiro_crew.session_pid._pid_gone_or_unmanaged", return_value=True),
-            patch("kiro_crew.session._untrack_pid"),
-            patch("kiro_crew.session._untrack_session_pid"),
+            patch("efm_go.session_pid._pid_gone_or_unmanaged", return_value=True),
+            patch("efm_go.session._untrack_pid"),
+            patch("efm_go.session._untrack_session_pid"),
         ):
             client._reset_state()
         client._pid = 5353
@@ -2211,9 +2211,9 @@ class TestAcpClientStaleTurnOracleGate:
         client._consult_future = wedged
 
         with (
-            patch("kiro_crew.session_pid._pid_gone_or_unmanaged", return_value=True),
-            patch("kiro_crew.session._untrack_pid"),
-            patch("kiro_crew.session._untrack_session_pid"),
+            patch("efm_go.session_pid._pid_gone_or_unmanaged", return_value=True),
+            patch("efm_go.session._untrack_pid"),
+            patch("efm_go.session._untrack_session_pid"),
         ):
             client._reset_state()
 
@@ -2247,9 +2247,9 @@ class TestAcpClientStaleTurnOracleGate:
         retired._child_gone_ts = 1.0
 
         with (
-            patch("kiro_crew.session_pid._pid_gone_or_unmanaged", return_value=True),
-            patch("kiro_crew.session._untrack_pid"),
-            patch("kiro_crew.session._untrack_session_pid"),
+            patch("efm_go.session_pid._pid_gone_or_unmanaged", return_value=True),
+            patch("efm_go.session._untrack_pid"),
+            patch("efm_go.session._untrack_session_pid"),
         ):
             client._reset_state()
 
@@ -2363,8 +2363,8 @@ class TestAcpClientStaleTurnOracleGate:
             return await _real_wait_for(awaitable, timeout=0.01)
 
         with (
-            patch("kiro_crew.acp.client.subprocess_executor", return_value=pool),
-            patch("kiro_crew.acp.client.asyncio.wait_for", _fast_timeout),
+            patch("efm_go.acp.client.subprocess_executor", return_value=pool),
+            patch("efm_go.acp.client.asyncio.wait_for", _fast_timeout),
         ):
             await client._consult_liveness_model_wait()
 
@@ -2408,8 +2408,8 @@ class TestAcpClientStaleTurnOracleGate:
             return await _real_wait_for(awaitable, timeout=0.01)
 
         with (
-            patch("kiro_crew.acp.client.subprocess_executor", return_value=pool),
-            patch("kiro_crew.acp.client.asyncio.wait_for", _fast_timeout),
+            patch("efm_go.acp.client.subprocess_executor", return_value=pool),
+            patch("efm_go.acp.client.asyncio.wait_for", _fast_timeout),
         ):
             assert await client._consult_liveness_model_wait() == (
                 VERDICT_UNKNOWN,
@@ -2446,9 +2446,9 @@ class TestAcpClientStaleTurnOracleGate:
         configured = client._liveness_oracle
 
         with (
-            patch("kiro_crew.session_pid._pid_gone_or_unmanaged", return_value=True),
-            patch("kiro_crew.session._untrack_pid"),
-            patch("kiro_crew.session._untrack_session_pid"),
+            patch("efm_go.session_pid._pid_gone_or_unmanaged", return_value=True),
+            patch("efm_go.session._untrack_pid"),
+            patch("efm_go.session._untrack_session_pid"),
         ):
             client._reset_state()
 
@@ -2492,8 +2492,8 @@ class TestAcpClientStaleTurnOracleGate:
 
         _real_wait_for = asyncio.wait_for
         with (
-            patch("kiro_crew.acp.client.subprocess_executor", return_value=pool),
-            patch("kiro_crew.acp.client.asyncio.wait_for", _always_times_out),
+            patch("efm_go.acp.client.subprocess_executor", return_value=pool),
+            patch("efm_go.acp.client.asyncio.wait_for", _always_times_out),
         ):
             assert await client._consult_liveness_model_wait() == (
                 VERDICT_UNKNOWN,
@@ -2532,7 +2532,7 @@ class TestAcpClientStaleTurnOracleGate:
         pool = MagicMock()
         pool.submit.return_value = thread_future
 
-        with patch("kiro_crew.acp.client.subprocess_executor", return_value=pool):
+        with patch("efm_go.acp.client.subprocess_executor", return_value=pool):
             task = asyncio.ensure_future(client._consult_liveness_model_wait())
             while client._consult_future is None:
                 await asyncio.sleep(0)
@@ -2584,8 +2584,8 @@ class TestStaleTurnOpenToolCall:
         client = self._silent_client(tmp_path, tool_dispatched=True)
 
         t0 = time.monotonic()
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 actions = []
                 async for action, _msg in client._prompt_loop(req_id=85, timeout=0.4):
                     actions.append(action)
@@ -2610,8 +2610,8 @@ class TestStaleTurnOpenToolCall:
 
         client._read_message = AsyncMock(side_effect=_resolve_then_stay_silent)
 
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 actions = []
                 async for action, _msg in client._prompt_loop(req_id=86, timeout=5.0):
                     actions.append(action)
@@ -2632,7 +2632,7 @@ class TestStaleTurnOpenToolCall:
         client = self._silent_client(tmp_path, tool_dispatched=True)
         client._kill_process = AsyncMock()
 
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
             with pytest.raises(AcpProcessDied, match="tool stalled"):
                 async for _action, _msg in client._prompt_loop(req_id=87, timeout=5.0):
                     pass
@@ -2679,8 +2679,8 @@ class TestStaleTurnProbeAccounting:
 
         # Cutoff 0 so every silent read is past it: the only thing that can keep
         # the turn alive on the first read is the priming deferral.
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.0):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.0):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 async for _action, _msg in client._prompt_loop(req_id=88, timeout=5.0):
                     pass
 
@@ -2705,8 +2705,8 @@ class TestStaleTurnProbeAccounting:
 
         client._consult_liveness_model_wait = _slow_consult
 
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
-            with caplog.at_level("WARNING", logger="kiro_crew.acp.client"):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
+            with caplog.at_level("WARNING", logger="efm_go.acp.client"):
                 async for _action, _msg in client._prompt_loop(req_id=89, timeout=5.0):
                     pass
 
@@ -2836,7 +2836,7 @@ class TestAcpClientReadMessage:
 class TestAcpClientExtractChunk:
     def test_extract_text_chunk(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -2851,7 +2851,7 @@ class TestAcpClientExtractChunk:
 
     def test_extract_thinking_chunk(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -2866,7 +2866,7 @@ class TestAcpClientExtractChunk:
 
     def test_extract_non_text_chunk(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -2880,7 +2880,7 @@ class TestAcpClientExtractChunk:
         raised AttributeError on update.get() inside the prompt-turn dispatch
         path, tearing down the whole turn."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(method="session/update", params={"update": bad_update})
         assert client._extract_text_chunk(msg) == (None, False)  # must not raise
@@ -2889,7 +2889,7 @@ class TestAcpClientExtractChunk:
 class TestAcpClientTrackToolCall:
     def test_tracks_tool_call(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -2909,7 +2909,7 @@ class TestAcpClientTrackToolCall:
         """Same boundary as _extract_text_chunk: non-dict update must be a
         no-op, not an AttributeError in the dispatch path."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(method="session/update", params={"update": bad_update})
         client._track_tool_call(msg)  # must not raise
@@ -2919,10 +2919,10 @@ class TestAcpClientTrackToolCall:
 class TestAcpClientTrackMetadata:
     def test_tracks_context_pct(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={"contextUsagePercentage": 42.5},
         )
         client._track_metadata(msg)
@@ -2931,8 +2931,8 @@ class TestAcpClientTrackMetadata:
     def test_backfill_clamps_malformed_pct(self, tmp_path, monkeypatch):
         """A degenerate metadata percentage (huge finite / inf / NaN) must not
         overflow round() and abort the turn; derived used stays in [0, window]."""
-        import kiro_crew.acp.client as c
-        from kiro_crew.acp.types import JsonRpcMessage
+        import efm_go.acp.client as c
+        from efm_go.acp.types import JsonRpcMessage
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: True)
         monkeypatch.setattr(c.model_registry, "model_window", lambda mid, **kw: 200000)
@@ -2942,7 +2942,7 @@ class TestAcpClientTrackMetadata:
             # Must not raise OverflowError/ValueError.
             client._track_metadata(
                 JsonRpcMessage(
-                    method="_kiro.dev/metadata",
+                    method="_efm.go/metadata",
                     params={"contextUsagePercentage": bad},
                 )
             )
@@ -2958,7 +2958,7 @@ class TestAcpClientTrackUsageUpdate:
     records the raw token counts for the dashboard token text."""
 
     def _usage_msg(self, used, size):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(
             method="session/update",
@@ -2980,7 +2980,7 @@ class TestAcpClientTrackUsageUpdate:
         kiro metadata contextUsagePercentage=73 must NOT leave the headline pct
         at 73 while the token text still reads 408K/1000K (the desync the user
         saw in the context-window popover). usage_update wins for BOTH."""
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         client._track_usage_update(self._usage_msg(408_000, 1_000_000))
@@ -2988,7 +2988,7 @@ class TestAcpClientTrackUsageUpdate:
 
         client._track_metadata(
             JsonRpcMessage(
-                method="_kiro.dev/metadata",
+                method="_efm.go/metadata",
                 params={"contextUsagePercentage": 73},
             )
         )
@@ -3000,13 +3000,13 @@ class TestAcpClientTrackUsageUpdate:
     def test_metadata_credits_still_captured_when_tokens_authoritative(self, tmp_path):
         """The pct guard must not drop kiro billing credits — those accumulate
         regardless of whether token counts are authoritative."""
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         client._track_usage_update(self._usage_msg(408_000, 1_000_000))
         client._track_metadata(
             JsonRpcMessage(
-                method="_kiro.dev/metadata",
+                method="_efm.go/metadata",
                 params={
                     "contextUsagePercentage": 73,
                     "meteringUsage": [{"unit": "credit", "value": 1.5}],
@@ -3072,7 +3072,7 @@ class TestAcpClientTrackUsageUpdate:
         prev_used = client.last_prompt_stats.context_used_tokens
         prev_window = client.last_prompt_stats.context_window_tokens
         prev_from_usage = client.last_prompt_stats.context_tokens_from_usage
-        from kiro_crew.acp.types import AcpPromptStats
+        from efm_go.acp.types import AcpPromptStats
 
         # Mirror the reset sites (send_message_stream / _dispatch_events / etc.)
         client.last_prompt_stats = AcpPromptStats(
@@ -3108,27 +3108,27 @@ class TestAcpClientNoProcess:
 
 class TestGetChildPids:
     def test_nonexistent_pid(self):
-        from kiro_crew.acp.client import _get_child_pids
+        from efm_go.acp.client import _get_child_pids
 
         assert _get_child_pids(999999) == []
 
     def test_none_pid(self):
-        from kiro_crew.acp.client import _get_child_pids
+        from efm_go.acp.client import _get_child_pids
 
         assert _get_child_pids(None) == []
 
     def test_own_pid_returns_list(self):
         import os
 
-        from kiro_crew.acp.client import _get_child_pids
+        from efm_go.acp.client import _get_child_pids
 
         # May or may not have children, but should not raise
         result = _get_child_pids(os.getpid())
         assert isinstance(result, list)
 
     def test_recursive_children(self, monkeypatch):
-        import kiro_crew.acp.client as client_mod
-        from kiro_crew.acp.client import _get_child_pids
+        import efm_go.acp.client as client_mod
+        from efm_go.acp.client import _get_child_pids
 
         # _direct_children tries /proc first, falls back to pgrep.
         # Mock _direct_children directly to avoid platform-specific /proc behavior.
@@ -3141,17 +3141,17 @@ class TestGetChildPids:
 @_POSIX_ONLY
 class TestIsOurChild:
     def test_nonexistent_pid(self):
-        from kiro_crew.acp.client import _is_our_child
+        from efm_go.acp.client import _is_our_child
 
         assert _is_our_child(999999) is False
 
     def test_own_pid_matches_with_basename(self, monkeypatch):
         import sys
 
-        import kiro_crew.acp.client as client_mod
-        from kiro_crew.acp.client import _is_our_child
+        import efm_go.acp.client as client_mod
+        from efm_go.acp.client import _is_our_child
 
-        monkeypatch.setattr("kiro_crew.platform_compat.get_process_start_id", lambda pid: 42)
+        monkeypatch.setattr("efm_go.platform_compat.get_process_start_id", lambda pid: 42)
         monkeypatch.setattr(sys, "platform", "darwin")
         monkeypatch.setattr(
             client_mod.subprocess_mod,
@@ -3164,10 +3164,10 @@ class TestIsOurChild:
     def test_basename_match_returns_true(self, monkeypatch):
         import sys
 
-        import kiro_crew.acp.client as client_mod
-        from kiro_crew.acp.client import _is_our_child
+        import efm_go.acp.client as client_mod
+        from efm_go.acp.client import _is_our_child
 
-        monkeypatch.setattr("kiro_crew.platform_compat.get_process_start_id", lambda pid: 42)
+        monkeypatch.setattr("efm_go.platform_compat.get_process_start_id", lambda pid: 42)
         monkeypatch.setattr(sys, "platform", "darwin")
         monkeypatch.setattr(
             client_mod.subprocess_mod,
@@ -3179,10 +3179,10 @@ class TestIsOurChild:
     def test_basename_mismatch_returns_false(self, monkeypatch):
         import sys
 
-        import kiro_crew.acp.client as client_mod
-        from kiro_crew.acp.client import _is_our_child
+        import efm_go.acp.client as client_mod
+        from efm_go.acp.client import _is_our_child
 
-        monkeypatch.setattr("kiro_crew.platform_compat.get_process_start_id", lambda pid: 42)
+        monkeypatch.setattr("efm_go.platform_compat.get_process_start_id", lambda pid: 42)
         monkeypatch.setattr(sys, "platform", "darwin")
         monkeypatch.setattr(
             client_mod.subprocess_mod,
@@ -3195,7 +3195,7 @@ class TestIsOurChild:
     def test_no_start_time_rejects(self):
         import os
 
-        from kiro_crew.acp.client import _is_our_child
+        from efm_go.acp.client import _is_our_child
 
         # No expected_start → fail-closed
         assert _is_our_child(os.getpid()) is False
@@ -3203,7 +3203,7 @@ class TestIsOurChild:
     def test_start_time_mismatch_rejects(self):
         import os
 
-        from kiro_crew.acp.client import _is_our_child
+        from efm_go.acp.client import _is_our_child
 
         # Our own PID with a wrong start time → should reject (recycled)
         assert _is_our_child(os.getpid(), expected_start=-999) is False
@@ -3212,10 +3212,10 @@ class TestIsOurChild:
         """Any binary recorded at spawn is supervised — no allowlist needed."""
         import sys
 
-        import kiro_crew.acp.client as client_mod
-        from kiro_crew.acp.client import _is_our_child
+        import efm_go.acp.client as client_mod
+        from efm_go.acp.client import _is_our_child
 
-        monkeypatch.setattr("kiro_crew.platform_compat.get_process_start_id", lambda pid: 42)
+        monkeypatch.setattr("efm_go.platform_compat.get_process_start_id", lambda pid: 42)
         monkeypatch.setattr(sys, "platform", "darwin")
         monkeypatch.setattr(
             client_mod.subprocess_mod,
@@ -3230,9 +3230,9 @@ class TestIsOurChild:
 
     def test_none_basename_denied_fail_closed(self, monkeypatch):
         """When no basename was recorded, deny (fail-closed)."""
-        from kiro_crew.acp.client import _is_our_child
+        from efm_go.acp.client import _is_our_child
 
-        monkeypatch.setattr("kiro_crew.platform_compat.get_process_start_id", lambda pid: 42)
+        monkeypatch.setattr("efm_go.platform_compat.get_process_start_id", lambda pid: 42)
         # No expected_basename → deny-by-default even with matching start id
         assert _is_our_child(999, expected_start=42, expected_basename=None) is False
 
@@ -3240,18 +3240,18 @@ class TestIsOurChild:
 @_POSIX_ONLY
 class TestKillEscapedChildren:
     def test_empty_dict(self):
-        from kiro_crew.acp.client import _kill_escaped_children
+        from efm_go.acp.client import _kill_escaped_children
 
         _kill_escaped_children({})
 
     def test_dead_pids_skipped(self):
-        from kiro_crew.acp.client import _kill_escaped_children
+        from efm_go.acp.client import _kill_escaped_children
 
         _kill_escaped_children({999998: None, 999999: None})
 
     def test_reverse_order_and_allowlist(self, monkeypatch):
-        import kiro_crew.acp.client as client_mod
-        from kiro_crew.acp.client import _kill_escaped_children
+        import efm_go.acp.client as client_mod
+        from efm_go.acp.client import _kill_escaped_children
 
         killed: list[int] = []
 
@@ -3288,8 +3288,8 @@ class TestReadBasename:
     def test_reads_basename_from_ps(self, monkeypatch):
         import sys
 
-        import kiro_crew.acp.client as client_mod
-        from kiro_crew.acp.client import _read_basename
+        import efm_go.acp.client as client_mod
+        from efm_go.acp.client import _read_basename
 
         monkeypatch.setattr(sys, "platform", "darwin")
         monkeypatch.setattr(
@@ -3303,8 +3303,8 @@ class TestReadBasename:
         import subprocess
         import sys
 
-        import kiro_crew.acp.client as client_mod
-        from kiro_crew.acp.client import _read_basename
+        import efm_go.acp.client as client_mod
+        from efm_go.acp.client import _read_basename
 
         def raise_error(cmd, **kw):
             raise subprocess.CalledProcessError(1, cmd)
@@ -3322,7 +3322,7 @@ class TestProcessMessage:
 
     def test_compaction_status_classified(self):
         client = self._make_client()
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         msg = JsonRpcMessage(
             method=METHOD_COMPACTION_STATUS, params={"status": {"type": "completed"}}
@@ -3331,42 +3331,42 @@ class TestProcessMessage:
 
     def test_clear_status_classified(self):
         client = self._make_client()
-        from kiro_crew.acp.types import METHOD_CLEAR_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_CLEAR_STATUS, JsonRpcMessage
 
         msg = JsonRpcMessage(method=METHOD_CLEAR_STATUS, params={"sessionId": "s1"})
         assert client._process_message(msg, req_id=99) == "clear"
 
     def test_agent_switched_classified(self):
         client = self._make_client()
-        from kiro_crew.acp.types import METHOD_AGENT_SWITCHED, JsonRpcMessage
+        from efm_go.acp.types import METHOD_AGENT_SWITCHED, JsonRpcMessage
 
         msg = JsonRpcMessage(method=METHOD_AGENT_SWITCHED, params={"agentName": "planner"})
         assert client._process_message(msg, req_id=99) == "agent_switched"
 
     def test_subagent_list_update_classified(self):
         client = self._make_client()
-        from kiro_crew.acp.types import METHOD_SUBAGENT_LIST_UPDATE, JsonRpcMessage
+        from efm_go.acp.types import METHOD_SUBAGENT_LIST_UPDATE, JsonRpcMessage
 
         msg = JsonRpcMessage(method=METHOD_SUBAGENT_LIST_UPDATE, params={"subagents": []})
         assert client._process_message(msg, req_id=99) == "subagent_list"
 
     def test_kiro_session_update_classified(self):
         client = self._make_client()
-        from kiro_crew.acp.types import METHOD_KIRO_SESSION_UPDATE, JsonRpcMessage
+        from efm_go.acp.types import METHOD_KIRO_SESSION_UPDATE, JsonRpcMessage
 
         msg = JsonRpcMessage(method=METHOD_KIRO_SESSION_UPDATE, params={"sessionId": "s1"})
         assert client._process_message(msg, req_id=99) == "subagent_activity"
 
     def test_unknown_method_skipped(self):
         client = self._make_client()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
-        msg = JsonRpcMessage(method="_kiro.dev/unknown/thing")
+        msg = JsonRpcMessage(method="_efm.go/unknown/thing")
         assert client._process_message(msg, req_id=99) == "skip"
 
     def test_mcp_oauth_request_classified(self):
         client = self._make_client()
-        from kiro_crew.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
 
         msg = JsonRpcMessage(
             method=METHOD_MCP_OAUTH_REQUEST,
@@ -3381,7 +3381,7 @@ class TestProcessMessage:
         # req_id must classify as "permission", NOT "complete" — otherwise the
         # turn ends early and the tool blocks forever (stuck Claude Code turn).
         client = self._make_client()
-        from kiro_crew.acp.types import METHOD_REQUEST_PERMISSION, JsonRpcMessage
+        from efm_go.acp.types import METHOD_REQUEST_PERMISSION, JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=4,
@@ -3393,7 +3393,7 @@ class TestProcessMessage:
     def test_real_response_with_matching_id_completes(self):
         # The genuine prompt response (id + result, no method) still completes.
         client = self._make_client()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(id=4, result={"stopReason": "end_turn"})
         assert client._process_message(msg, req_id=4) == "complete"
@@ -3405,7 +3405,7 @@ class TestStreamEventsExtension:
     @pytest.mark.asyncio
     async def test_agent_switched_event_fields(self):
         """stream_events extracts agentName from params and yields correct AcpEvent."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_AGENT_SWITCHED,
             EVENT_COMPLETE,
             METHOD_AGENT_SWITCHED,
@@ -3440,7 +3440,7 @@ class TestStreamEventsExtension:
     @pytest.mark.asyncio
     async def test_compaction_event_fields(self):
         """stream_events extracts status.type and summary from compaction params."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPACTION_STATUS,
             METHOD_COMPACTION_STATUS,
             AcpEvent,
@@ -3475,7 +3475,7 @@ class TestStreamEventsExtension:
     @pytest.mark.asyncio
     async def test_clear_event_fields(self):
         """stream_events yields EVENT_CLEAR_STATUS with no extra fields."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_CLEAR_STATUS,
             METHOD_CLEAR_STATUS,
             AcpEvent,
@@ -3506,7 +3506,7 @@ class TestStreamEventsExtension:
     @pytest.mark.asyncio
     async def test_mcp_oauth_request_event_fields(self):
         """stream_events extracts serverName + oauthUrl and yields EVENT_MCP_OAUTH_REQUEST."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             EVENT_MCP_OAUTH_REQUEST,
             METHOD_MCP_OAUTH_REQUEST,
@@ -3543,7 +3543,7 @@ class TestStreamEventsExtension:
     @pytest.mark.asyncio
     async def test_mcp_oauth_request_missing_url_skipped(self):
         """Notifications without oauthUrl are dropped (no event yielded)."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             EVENT_MCP_OAUTH_REQUEST,
             METHOD_MCP_OAUTH_REQUEST,
@@ -3584,7 +3584,7 @@ class TestStreamEventsExtension:
         never sends a session/prompt response. Detect the marker and synthesize a
         complete event so the caller exits cleanly.
         """
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             UPDATE_AGENT_MESSAGE_CHUNK,
@@ -3629,7 +3629,7 @@ class TestStreamEventsExtension:
     @pytest.mark.asyncio
     async def test_tool_interrupted_marker_send_message_stream_returns(self):
         """send_message_stream returns cleanly (no hang) when kiro-cli cancels tools."""
-        from kiro_crew.acp.types import UPDATE_AGENT_MESSAGE_CHUNK, JsonRpcMessage
+        from efm_go.acp.types import UPDATE_AGENT_MESSAGE_CHUNK, JsonRpcMessage
 
         client = AcpClient()
         interrupt_msg = JsonRpcMessage(
@@ -3664,7 +3664,7 @@ class TestStreamEventsExtension:
     @pytest.mark.asyncio
     async def test_tool_interrupted_marker_send_message_returns(self):
         """send_message returns accumulated text instead of raising AcpTimeoutError."""
-        from kiro_crew.acp.types import UPDATE_AGENT_MESSAGE_CHUNK, JsonRpcMessage
+        from efm_go.acp.types import UPDATE_AGENT_MESSAGE_CHUNK, JsonRpcMessage
 
         client = AcpClient()
         interrupt_msg = JsonRpcMessage(
@@ -3699,7 +3699,7 @@ class TestStreamEventsExtension:
 
         Protects against false positives when the model quotes the marker text.
         """
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             UPDATE_AGENT_MESSAGE_CHUNK,
@@ -3757,7 +3757,7 @@ class TestStreamEventsExtension:
         it must not be treated as kiro-cli's interrupt signal — only top-level
         agent_message_chunk with non-thinking content type is the real signal.
         """
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             EVENT_THINKING_CHUNK,
             UPDATE_AGENT_MESSAGE_CHUNK,
@@ -3805,10 +3805,10 @@ class TestStreamEventsExtension:
 
         The other marker tests mock _emit_tool_interrupted_sel itself, which only
         asserts it's invoked — not that the audit event carries the right fields.
-        This test patches kiro_crew.sel.sel so the real helper runs, protecting
+        This test patches efm_go.sel.sel so the real helper runs, protecting
         against silent regressions in the security-audit contract.
         """
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             UPDATE_AGENT_MESSAGE_CHUNK,
             JsonRpcMessage,
         )
@@ -3835,7 +3835,7 @@ class TestStreamEventsExtension:
         client._prompt_loop = fake_prompt_loop
         client._read_new_tool_results_sync = lambda: []
 
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        with patch("efm_go.sel.sel") as mock_sel:
             async for _ in client.stream_events("test"):
                 pass
 
@@ -3876,7 +3876,7 @@ class TestStreamEventsExtension:
         import logging
         import time
 
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             UPDATE_AGENT_MESSAGE_CHUNK,
             JsonRpcMessage,
         )
@@ -3906,10 +3906,10 @@ class TestStreamEventsExtension:
         client._prompt_loop = fake_prompt_loop
         client._read_new_tool_results_sync = lambda: []
 
-        caplog.set_level(logging.WARNING, logger="kiro_crew.acp.client")
+        caplog.set_level(logging.WARNING, logger="efm_go.acp.client")
 
         t0 = time.monotonic()
-        with patch("kiro_crew.sel.sel") as mock_sel:
+        with patch("efm_go.sel.sel") as mock_sel:
             if entry_point == "stream_events":
                 async for _ in client.stream_events("test"):
                     pass
@@ -3952,7 +3952,7 @@ class TestDrainStderrRedaction:
         reader = AsyncMock(spec=["readline"])
         reader.readline = AsyncMock(side_effect=[raw.encode() + b"\n", b""])
 
-        with patch("kiro_crew.acp.client.logger") as mock_logger:
+        with patch("efm_go.acp.client.logger") as mock_logger:
             await client._drain_stderr(reader)
 
         # Raw stored
@@ -3982,7 +3982,7 @@ class TestDrainStderrSuppression:
         )
         reader = self._reader([marker] * 5)
 
-        with patch("kiro_crew.acp.client.logger") as mock_logger:
+        with patch("efm_go.acp.client.logger") as mock_logger:
             await client._drain_stderr(reader)
 
         # No per-line WARNING for suppressed markers.
@@ -3996,7 +3996,7 @@ class TestDrainStderrSuppression:
         client._last_activity = 0.0  # force a detectable advance
         reader = self._reader(["estimated thinking_tokens delta"])
 
-        with patch("kiro_crew.acp.client.logger"):
+        with patch("efm_go.acp.client.logger"):
             await client._drain_stderr(reader)
 
         # Liveness must advance for suppressed lines so the idle watchdog
@@ -4009,7 +4009,7 @@ class TestDrainStderrSuppression:
         raw = "Error: adapter crashed in handler"
         reader = self._reader([raw])
 
-        with patch("kiro_crew.acp.client.logger") as mock_logger:
+        with patch("efm_go.acp.client.logger") as mock_logger:
             await client._drain_stderr(reader)
 
         assert list(client._stderr_lines) == [raw]
@@ -4024,7 +4024,7 @@ class TestDrainStderrSuppression:
         burst = ["system subtype thinking_tokens delta"] * 50
         reader = self._reader([real_before] + burst + [real_after])
 
-        with patch("kiro_crew.acp.client.logger") as mock_logger:
+        with patch("efm_go.acp.client.logger") as mock_logger:
             await client._drain_stderr(reader)
 
         # Only the two real lines are logged and buffered; the 50-line burst
@@ -4211,7 +4211,7 @@ class TestMakeUnifiedDiff:
         """A cut diff ends with the ``\\ diff truncated`` annotation on its own
         line (unified-diff escape convention — renderers skip it), never with a
         garbled half-row, so downstream +/- counting can detect understatement."""
-        from kiro_crew.acp._dispatch import DIFF_TRUNCATION_MARK
+        from efm_go.acp._dispatch import DIFF_TRUNCATION_MARK
 
         result = _make_unified_diff("", "wordwordword\n" * 5000, "file.py", max_len=200)
         assert len(result) <= 200
@@ -4224,7 +4224,7 @@ class TestMakeUnifiedDiff:
         )
 
     def test_under_cap_diff_is_not_marked(self):
-        from kiro_crew.acp._dispatch import DIFF_TRUNCATION_MARK
+        from efm_go.acp._dispatch import DIFF_TRUNCATION_MARK
 
         result = _make_unified_diff("old\n", "new\n", "file.py")
         assert DIFF_TRUNCATION_MARK not in result
@@ -4235,7 +4235,7 @@ class TestDeriveEditDiff:
     tool_call with no diff content block still displays what changed."""
 
     def test_create_content_becomes_addition_diff(self):
-        from kiro_crew.acp._dispatch import derive_edit_diff
+        from efm_go.acp._dispatch import derive_edit_diff
 
         diff = derive_edit_diff(
             {"path": "/a/new.py", "command": "create", "fileText": "x = 1\ny = 2\n"}
@@ -4245,7 +4245,7 @@ class TestDeriveEditDiff:
         assert "+++ /a/new.py" in diff
 
     def test_str_replace_pair_becomes_replace_hunk(self):
-        from kiro_crew.acp._dispatch import derive_edit_diff
+        from efm_go.acp._dispatch import derive_edit_diff
 
         diff = derive_edit_diff(
             {"path": "/a/b.py", "command": "strReplace", "oldStr": "x = 1\n", "newStr": "x = 2\n"}
@@ -4254,7 +4254,7 @@ class TestDeriveEditDiff:
         assert "+x = 2" in diff
 
     def test_unrecognized_shapes_yield_empty(self):
-        from kiro_crew.acp._dispatch import derive_edit_diff
+        from efm_go.acp._dispatch import derive_edit_diff
 
         assert derive_edit_diff({"path": "/a/b", "command": "create"}) == ""
         assert derive_edit_diff({"command": "create", "fileText": "x"}) == ""  # no path
@@ -4264,7 +4264,7 @@ class TestDeriveEditDiff:
     def test_non_string_arguments_never_reach_difflib(self):
         """Malformed args (numeric path, dict oldStr) must yield "" instead of
         letting a TypeError out of difflib abort the whole dispatch mid-turn."""
-        from kiro_crew.acp._dispatch import derive_edit_diff
+        from efm_go.acp._dispatch import derive_edit_diff
 
         assert (
             derive_edit_diff({"path": 42, "command": "strReplace", "oldStr": "a", "newStr": "b"})
@@ -4282,7 +4282,7 @@ class TestDeriveEditDiff:
     def test_insert_with_line_number_derives_positioned_hunk(self):
         """An insert IS additions-only, so with a line number the derived
         hunk is exact: zero old lines at insertLine, additions after it."""
-        from kiro_crew.acp._dispatch import derive_edit_diff
+        from efm_go.acp._dispatch import derive_edit_diff
 
         diff = derive_edit_diff(
             {"path": "/a/b.py", "command": "insert", "insertLine": 4, "content": "x = 1\ny = 2"}
@@ -4294,7 +4294,7 @@ class TestDeriveEditDiff:
     def test_insert_without_line_number_derives_nothing(self):
         """Without a line number the hunk position would be a guess — the
         row keeps its fold-proof trace via the file_changes snapshot."""
-        from kiro_crew.acp._dispatch import derive_edit_diff
+        from efm_go.acp._dispatch import derive_edit_diff
 
         assert derive_edit_diff({"path": "/a/b.py", "command": "insert", "content": "x = 1"}) == ""
 
@@ -4313,7 +4313,7 @@ class TestStopReasonPopulated:
     @pytest.mark.asyncio
     async def test_stop_reason_populated_on_complete(self):
         """Prompt response with stopReason='cancelled' populates event.stop_reason."""
-        from kiro_crew.acp.types import EVENT_COMPLETE, JsonRpcMessage
+        from efm_go.acp.types import EVENT_COMPLETE, JsonRpcMessage
 
         client = AcpClient()
         complete_msg = JsonRpcMessage(id=1, result={"stopReason": "cancelled"})
@@ -4336,7 +4336,7 @@ class TestStopReasonPopulated:
     @pytest.mark.asyncio
     async def test_stop_reason_populated_end_turn(self):
         """Prompt response with stopReason='end_turn' populates event.stop_reason."""
-        from kiro_crew.acp.types import EVENT_COMPLETE, JsonRpcMessage
+        from efm_go.acp.types import EVENT_COMPLETE, JsonRpcMessage
 
         client = AcpClient()
         complete_msg = JsonRpcMessage(id=1, result={"stopReason": "end_turn"})
@@ -4359,7 +4359,7 @@ class TestStopReasonPopulated:
     @pytest.mark.asyncio
     async def test_stop_reason_empty_when_absent(self):
         """Prompt response without stopReason key yields empty stop_reason."""
-        from kiro_crew.acp.types import EVENT_COMPLETE, JsonRpcMessage
+        from efm_go.acp.types import EVENT_COMPLETE, JsonRpcMessage
 
         client = AcpClient()
         complete_msg = JsonRpcMessage(id=1, result={"status": "ok"})
@@ -4386,7 +4386,7 @@ class TestWaitTurnDone:
     @pytest.mark.asyncio
     async def test_wait_turn_done_returns_reason(self):
         """wait_turn_done returns the stop_reason after turn completes."""
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient()
         complete_msg = JsonRpcMessage(id=1, result={"stopReason": "cancelled"})
@@ -4559,7 +4559,7 @@ class TestSendPipeErrors:
     @pytest.mark.asyncio
     async def test_stale_turn_synthesizes_complete_after_text(self):
         """When text is streamed but no complete arrives, synthesize EVENT_COMPLETE."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             STOP_REASON_END_TURN,
@@ -4600,8 +4600,8 @@ class TestSendPipeErrors:
     @pytest.mark.asyncio
     async def test_stale_eligible_cleared_by_tool_call(self):
         """Tool call after text clears _stale_eligible — no synthetic complete."""
-        from kiro_crew.acp.client import AcpTimeoutError
-        from kiro_crew.acp.types import (
+        from efm_go.acp.client import AcpTimeoutError
+        from efm_go.acp.types import (
             UPDATE_AGENT_MESSAGE_CHUNK,
             UPDATE_TOOL_CALL,
             JsonRpcMessage,
@@ -4648,8 +4648,8 @@ class TestSendPipeErrors:
     @pytest.mark.asyncio
     async def test_stale_eligible_cleared_by_permission(self):
         """Permission request after text clears _stale_eligible."""
-        from kiro_crew.acp.client import AcpTimeoutError
-        from kiro_crew.acp.types import (
+        from efm_go.acp.client import AcpTimeoutError
+        from efm_go.acp.types import (
             UPDATE_AGENT_MESSAGE_CHUNK,
             JsonRpcMessage,
         )
@@ -4693,7 +4693,7 @@ class TestSendPipeErrors:
     @pytest.mark.asyncio
     async def test_stale_eligible_re_enabled_after_completed_tool_then_text(self):
         """Text after a completed tool permits synthetic completion."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             EVENT_TOOL_CALL,
@@ -4779,7 +4779,7 @@ class TestSendPipeErrors:
         but never sends complete. The blanket _stale_eligible=False on every event
         disabled the 90s timeout, causing the session to hang until the 2h deadline.
         """
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
             STOP_REASON_END_TURN,
@@ -4874,8 +4874,8 @@ class TestKillProcess:
         with (
             patch("os.killpg") as mock_killpg,
             patch("os.getpgid", return_value=12345),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children") as mock_esc,
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children") as mock_esc,
         ):
             await client._kill_process()
             mock_killpg.assert_called_once_with(12345, signal.SIGTERM)
@@ -4904,8 +4904,8 @@ class TestKillProcess:
         with (
             patch("os.killpg", side_effect=fake_killpg),
             patch("os.getpgid", return_value=99),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
         ):
             await client._kill_process()
 
@@ -4935,8 +4935,8 @@ class TestKillProcess:
         with (
             patch("os.killpg", side_effect=fake_killpg),
             patch("os.getpgid", return_value=55),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
         ):
             await client._kill_process(force=True)
 
@@ -4961,8 +4961,8 @@ class TestKillProcess:
         with (
             patch("os.killpg", side_effect=ProcessLookupError()),
             patch("os.getpgid", return_value=77),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
         ):
             await client._kill_process(force=True)
 
@@ -4976,7 +4976,7 @@ class TestKillProcess:
         event-loop offload. A test that patches only kill_process_tree would
         silently pass if someone regresses the await back to sync, so pin
         both symbols and hard-fail if the sync one is ever called."""
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         client = AcpClient()
         proc = MagicMock()
@@ -4994,15 +4994,15 @@ class TestKillProcess:
         # SIGTERM path
         with (
             patch(
-                "kiro_crew.platform_compat.kill_process_tree_async",
+                "efm_go.platform_compat.kill_process_tree_async",
                 new_callable=AsyncMock,
             ) as mock_async,
             patch(
-                "kiro_crew.platform_compat.kill_process_tree",
+                "efm_go.platform_compat.kill_process_tree",
                 side_effect=_sync_forbidden,
             ),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
         ):
             await client._kill_process(force=False)
 
@@ -5018,15 +5018,15 @@ class TestKillProcess:
 
         with (
             patch(
-                "kiro_crew.platform_compat.kill_process_tree_async",
+                "efm_go.platform_compat.kill_process_tree_async",
                 new_callable=AsyncMock,
             ) as mock_async_kill,
             patch(
-                "kiro_crew.platform_compat.kill_process_tree",
+                "efm_go.platform_compat.kill_process_tree",
                 side_effect=_sync_forbidden,
             ),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
         ):
             await client._kill_process(force=True)
 
@@ -5074,10 +5074,10 @@ class TestResetStateExtended:
         client._child_pids = {5678: None, 9012: None}
 
         with (
-            patch("kiro_crew.session_pid._pid_gone_or_unmanaged", return_value=True),
-            patch("kiro_crew.session._untrack_child_pids") as mock_uc,
-            patch("kiro_crew.session._untrack_pid") as mock_up,
-            patch("kiro_crew.session._untrack_session_pid") as mock_usp,
+            patch("efm_go.session_pid._pid_gone_or_unmanaged", return_value=True),
+            patch("efm_go.session._untrack_child_pids") as mock_uc,
+            patch("efm_go.session._untrack_pid") as mock_up,
+            patch("efm_go.session._untrack_session_pid") as mock_usp,
         ):
             client._reset_state()
 
@@ -5098,9 +5098,9 @@ class TestResetStateExtended:
         client._child_pids = {}
 
         with (
-            patch("kiro_crew.session_pid._pid_gone_or_unmanaged", return_value=False),
-            patch("kiro_crew.session._untrack_pid") as mock_up,
-            patch("kiro_crew.session._untrack_session_pid") as mock_usp,
+            patch("efm_go.session_pid._pid_gone_or_unmanaged", return_value=False),
+            patch("efm_go.session._untrack_pid") as mock_up,
+            patch("efm_go.session._untrack_session_pid") as mock_usp,
         ):
             client._reset_state()
 
@@ -5120,8 +5120,8 @@ class TestResetStateExtended:
             return pid == 5678  # 5678 dead -> untrack; 9012 alive -> retain
 
         with (
-            patch("kiro_crew.session_pid._pid_gone_or_unmanaged", side_effect=_gone),
-            patch("kiro_crew.session._untrack_child_pids") as mock_uc,
+            patch("efm_go.session_pid._pid_gone_or_unmanaged", side_effect=_gone),
+            patch("efm_go.session._untrack_child_pids") as mock_uc,
         ):
             client._reset_state()
 
@@ -5222,7 +5222,7 @@ class TestInitializeSession:
     @pytest.mark.asyncio
     async def test_session_resume_fallback_to_new(self, tmp_path):
         """session/load fails → falls back to session/new."""
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         client = self._make_client(tmp_path)
         client._resume_session_id = "bad-sess"
@@ -5259,7 +5259,7 @@ class TestInitializeSession:
         """claude backend: a stale persisted sid with NO transcript on disk
         must fall back to session/new (a fresh start), not replay via
         session/load. Guards against the ~38%-on-'hi' base-context bloat."""
-        from kiro_crew.acp.types import ACP_BACKEND_CLAUDE
+        from efm_go.acp.types import ACP_BACKEND_CLAUDE
 
         client = self._make_client(tmp_path, acp_backend=ACP_BACKEND_CLAUDE)
         client._resume_session_id = "ghost-sess"  # no transcript exists for it
@@ -5351,7 +5351,7 @@ class TestWaitForResponse:
     @pytest.mark.asyncio
     async def test_matching_response_returned(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(id=5, result={"data": "ok"})
         client._read_message = AsyncMock(return_value=msg)
@@ -5362,7 +5362,7 @@ class TestWaitForResponse:
     @pytest.mark.asyncio
     async def test_error_response_raises(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(id=5, error={"code": -1, "message": "fail"})
         client._read_message = AsyncMock(return_value=msg)
@@ -5373,7 +5373,7 @@ class TestWaitForResponse:
     @pytest.mark.asyncio
     async def test_notification_buffered(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         notif = JsonRpcMessage(method="mcp/serverReady", params={"name": "builder"})
         response = JsonRpcMessage(id=3, result={"ok": True})
@@ -5386,7 +5386,7 @@ class TestWaitForResponse:
     @pytest.mark.asyncio
     async def test_non_matching_response_buffered(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         other = JsonRpcMessage(id=99, result={"other": True})
         target = JsonRpcMessage(id=3, result={"target": True})
@@ -5398,7 +5398,7 @@ class TestWaitForResponse:
 
     @pytest.mark.asyncio
     async def test_timeout_raises(self, tmp_path):
-        from kiro_crew.acp.client import AcpTimeoutError
+        from efm_go.acp.client import AcpTimeoutError
 
         client = AcpClient(work_dir=tmp_path)
         client._read_message = AsyncMock(return_value=None)
@@ -5411,7 +5411,7 @@ class TestWaitForResponse:
         client = AcpClient(work_dir=tmp_path)
         client._read_message = AsyncMock(return_value=None)
 
-        with patch("kiro_crew.shutdown_event") as mock_ev:
+        with patch("efm_go.shutdown_event") as mock_ev:
             mock_ev.is_set.return_value = True
             with pytest.raises(AcpError, match="Shutdown"):
                 await client._wait_for_response(1, timeout=5.0)
@@ -5420,7 +5420,7 @@ class TestWaitForResponse:
     async def test_server_request_warned_and_dropped(self, tmp_path):
         """Unexpected server request (method + id) is warned and dropped."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         server_req = JsonRpcMessage(id=50, method="unexpected/request", params={})
         response = JsonRpcMessage(id=3, result={"ok": True})
@@ -5436,7 +5436,7 @@ class TestDrainNotifications:
     @pytest.mark.asyncio
     async def test_drains_buffered_notifications(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client._mcp_notifications = [
             JsonRpcMessage(method="mcp/serverReady", params={"name": "builder-mcp"}),
@@ -5451,7 +5451,7 @@ class TestDrainNotifications:
     @pytest.mark.asyncio
     async def test_drains_live_messages(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         live_msg = JsonRpcMessage(method="mcp/serverReady", params={"name": "core"})
         client._mcp_notifications = []
@@ -5480,7 +5480,7 @@ class TestDrainNotifications:
     async def test_captures_buffered_mcp_oauth_request(self, tmp_path):
         """OAuth notifications buffered during init are captured into pending list."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
 
         url = "https://mcp.linear.app/authorize?response_type=code&client_id=abc"
         client._mcp_notifications = [
@@ -5505,7 +5505,7 @@ class TestDrainNotifications:
     async def test_captures_live_mcp_oauth_request(self, tmp_path):
         """OAuth notifications arriving live during drain are also captured."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
 
         url = "https://auth.smithery.ai/neon/authorize?client_id=xyz"
         oauth_msg = JsonRpcMessage(
@@ -5534,7 +5534,7 @@ class TestDrainNotifications:
     async def test_oauth_request_without_url_not_captured(self, tmp_path):
         """Malformed oauth notifications (no oauthUrl) are ignored."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
 
         client._mcp_notifications = [
             JsonRpcMessage(
@@ -5552,7 +5552,7 @@ class TestDrainNotifications:
     async def test_oauth_request_dedupes_per_server(self, tmp_path):
         """kiro-cli may emit oauth_request multiple times per server probe — dedupe."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
 
         url = "https://mcp.linear.app/authorize?client_id=abc"
         client._mcp_notifications = [
@@ -5577,7 +5577,7 @@ class TestDrainNotifications:
         """Unsafe-scheme URL must be rejected *before* the dedupe key is recorded,
         so a later safe retry for the same server still surfaces."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
 
         client._mcp_notifications = [
             JsonRpcMessage(
@@ -5606,7 +5606,7 @@ class TestDrainNotifications:
         recording a banner with empty server_name would create a permanently-
         stuck dedupe entry.  Drop instead."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import METHOD_MCP_OAUTH_REQUEST, JsonRpcMessage
 
         client._mcp_notifications = [
             JsonRpcMessage(
@@ -5631,7 +5631,7 @@ class TestPromptLoop:
     @pytest.mark.asyncio
     async def test_yields_actions(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msgs = [
             JsonRpcMessage(
@@ -5664,7 +5664,7 @@ class TestPromptLoop:
 
     @pytest.mark.asyncio
     async def test_process_death_raises(self, tmp_path):
-        from kiro_crew.acp.client import AcpProcessDied
+        from efm_go.acp.client import AcpProcessDied
 
         client = AcpClient(work_dir=tmp_path)
         proc = MagicMock()
@@ -5687,7 +5687,7 @@ class TestPromptLoop:
 
         # With stale_eligible=True and no data, should exit after _STALE_TURN_TIMEOUT
         # We patch the timeout to be very short
-        with patch("kiro_crew.acp.client._STALE_TURN_TIMEOUT", 0.05):
+        with patch("efm_go.acp.client._STALE_TURN_TIMEOUT", 0.05):
             actions = []
             async for action, msg in client._prompt_loop(req_id=1, timeout=2.0):
                 actions.append(action)
@@ -5701,7 +5701,7 @@ class TestDispatchEventsExtended:
 
     @pytest.mark.asyncio
     async def test_permission_event_yielded(self):
-        from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import EVENT_COMPLETE, EVENT_PERMISSION_REQUEST, JsonRpcMessage
 
         client = AcpClient()
         perm_msg = JsonRpcMessage(
@@ -5735,7 +5735,7 @@ class TestDispatchEventsExtended:
 
     @pytest.mark.asyncio
     async def test_tool_event_yielded(self):
-        from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TOOL_CALL, JsonRpcMessage
+        from efm_go.acp.types import EVENT_COMPLETE, EVENT_TOOL_CALL, JsonRpcMessage
 
         client = AcpClient()
         tool_msg = JsonRpcMessage(
@@ -5775,7 +5775,7 @@ class TestDispatchEventsExtended:
     @pytest.mark.asyncio
     async def test_extract_agent_from_result(self):
         """extract_agent_from_result=True yields agent_switched from result data."""
-        from kiro_crew.acp.types import EVENT_AGENT_SWITCHED, EVENT_COMPLETE, JsonRpcMessage
+        from efm_go.acp.types import EVENT_AGENT_SWITCHED, EVENT_COMPLETE, JsonRpcMessage
 
         client = AcpClient()
         complete_msg = JsonRpcMessage(
@@ -5805,7 +5805,7 @@ class TestDispatchEventsExtended:
 
     @pytest.mark.asyncio
     async def test_error_action_raises(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient()
         error_msg = JsonRpcMessage(id=1, error={"code": -1, "message": "boom"})
@@ -5846,7 +5846,7 @@ class TestSendCommand:
 
     @pytest.mark.asyncio
     async def test_send_command_timeout_returns_empty(self, tmp_path):
-        from kiro_crew.acp.client import AcpTimeoutError
+        from efm_go.acp.client import AcpTimeoutError
 
         client = AcpClient(work_dir=tmp_path)
         client._session_id = "s1"
@@ -5876,7 +5876,7 @@ class TestSendCommand:
         # here we verify the call site wires it up at all (a vacuous isinstance
         # check would not catch a missed redact step).
         with patch(
-            "kiro_crew.acp.client.redact_exfiltration_urls",
+            "efm_go.acp.client.redact_exfiltration_urls",
             return_value=("[redacted]", ["url"]),
         ) as mock_redact:
             result = await client.send_command("/test")
@@ -5940,7 +5940,7 @@ class TestCancelSession:
     async def test_cancel_raises_grace_window_to_budget(self, tmp_path):
         """A budget above the 10s floor must extend the read-grace window so
         the read loop does not abort the turn early and force a hard kill."""
-        from kiro_crew.acp.client import _CANCEL_GRACE_SECS
+        from efm_go.acp.client import _CANCEL_GRACE_SECS
 
         client = AcpClient(work_dir=tmp_path)
         client._session_id = "s1"
@@ -5966,7 +5966,7 @@ class TestWaitForCompaction:
     @pytest.mark.asyncio
     async def test_returns_completed(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         msg = JsonRpcMessage(
             method=METHOD_COMPACTION_STATUS,
@@ -5980,7 +5980,7 @@ class TestWaitForCompaction:
     @pytest.mark.asyncio
     async def test_returns_failed(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         msg = JsonRpcMessage(
             method=METHOD_COMPACTION_STATUS,
@@ -5998,7 +5998,7 @@ class TestWaitForCompaction:
         the reason the payload names -- read by the same extractor the dispatch
         loop uses -- and a manual /compact names its cause like auto-compaction."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         msg = JsonRpcMessage(
             method=METHOD_COMPACTION_STATUS,
@@ -6017,8 +6017,8 @@ class TestWaitForCompaction:
         """No summary and no reason-bearing key: the result carries the
         extractor's own generic text, the same line the streaming notice shows."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.client import compaction_failure_detail
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.client import compaction_failure_detail
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         params = {"status": {"type": "failed"}, "summary": ""}
         msg = JsonRpcMessage(method=METHOD_COMPACTION_STATUS, params=params)
@@ -6035,7 +6035,7 @@ class TestWaitForCompaction:
         result carries it scrubbed -- the same ``redact_text`` the session
         handle applies -- before the dashboard or a channel mirror shows it."""
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         msg = JsonRpcMessage(
             method=METHOD_COMPACTION_STATUS,
@@ -6061,13 +6061,13 @@ class TestWaitForCompaction:
 
     @pytest.mark.asyncio
     async def test_buffers_non_compaction_notifications(self, tmp_path, monkeypatch):
-        import kiro_crew.acp.client as c
+        import efm_go.acp.client as c
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: True)
         monkeypatch.setattr(c.model_registry, "model_window", lambda mid, **kw: 200_000)
         client = AcpClient(work_dir=tmp_path)
         client._model = "some-model"
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, METHOD_METADATA, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, METHOD_METADATA, JsonRpcMessage
 
         meta_msg = JsonRpcMessage(method=METHOD_METADATA, params={"contextUsagePercentage": 55.0})
         other_notif = JsonRpcMessage(method="mcp/something", params={"x": 1})
@@ -6099,14 +6099,14 @@ class TestExtractToolEvent:
         """Non-dict update raised AttributeError on update.get() in the
         prompt-turn dispatch path — must be a clean None instead."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(method="session/update", params={"update": bad_update})
         assert client._extract_tool_event(msg) is None  # must not raise
 
     def test_basic_tool_call(self):
         client = AcpClient()
-        from kiro_crew.acp.types import EVENT_TOOL_CALL, JsonRpcMessage
+        from efm_go.acp.types import EVENT_TOOL_CALL, JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -6127,7 +6127,7 @@ class TestExtractToolEvent:
 
     def test_tool_call_with_diff_content(self):
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -6156,7 +6156,7 @@ class TestExtractToolEvent:
         agent-influenced ``kind`` cannot hide a real file write from
         ``tool.risk``'s caution carve-out."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -6184,7 +6184,7 @@ class TestExtractToolEvent:
 
     def test_tool_call_str_replace_fallback(self):
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -6209,7 +6209,7 @@ class TestExtractToolEvent:
 
     def test_non_tool_call_returns_none(self):
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -6220,7 +6220,7 @@ class TestExtractToolEvent:
 
     def test_tool_purpose_extracted(self):
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -6243,7 +6243,7 @@ class TestExtractToolEvent:
         calls. Reading only the snake_case spelling dropped the purpose, which
         made the dashboard's concise tool pill fall back to the raw command."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             method="session/update",
@@ -6270,7 +6270,7 @@ class TestBuildPermissionEvent:
 
     def test_basic_permission(self):
         client = AcpClient()
-        from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import EVENT_PERMISSION_REQUEST, JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=42,
@@ -6295,7 +6295,7 @@ class TestBuildPermissionEvent:
         # (e.g. the display-name length cap). Without the carried kind a long
         # bash command aborts as "User refused permission".
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=43,
@@ -6310,7 +6310,7 @@ class TestBuildPermissionEvent:
 
     def test_tool_kind_defaults_empty_when_absent(self):
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=44,
@@ -6322,7 +6322,7 @@ class TestBuildPermissionEvent:
 
     def test_default_options_when_empty(self):
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=10,
@@ -6340,7 +6340,7 @@ class TestBuildPermissionEvent:
         dict keys), tearing down the prompt-turn event generator instead of
         degrading to the default allow options."""
         client = AcpClient()
-        from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import EVENT_PERMISSION_REQUEST, JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=12,
@@ -6356,7 +6356,7 @@ class TestBuildPermissionEvent:
     def test_non_dict_toolcall_degrades_to_unknown(self, bad_toolcall):
         """A non-dict toolCall made tool_call.get(...) raise AttributeError."""
         client = AcpClient()
-        from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, JsonRpcMessage
+        from efm_go.acp.types import EVENT_PERMISSION_REQUEST, JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=13,
@@ -6372,7 +6372,7 @@ class TestBuildPermissionEvent:
         crashed opt_id.lower() in the legacy-kind synthesis. Both must be
         skipped while valid entries still parse."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=14,
@@ -6392,7 +6392,7 @@ class TestBuildPermissionEvent:
 
     def test_cached_tool_input_used(self):
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client._tool_call_inputs["tc-6"] = '{"cmd": "rm -rf /"}'
         msg = JsonRpcMessage(
@@ -6412,7 +6412,7 @@ class TestBuildPermissionEvent:
         """A secret removed before the permission event must leave a boolean
         provenance bit; the original bytes must not be copied onto the event."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         tool = JsonRpcMessage(
             params={
@@ -6448,7 +6448,7 @@ class TestBuildPermissionEvent:
 
     def test_fallback_input_from_tool_call(self):
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=12,
@@ -6464,7 +6464,7 @@ class TestBuildPermissionEvent:
     def test_acp_spec_shape_records_optionids(self):
         """ACP-spec shape (optionId/name/kind) populates _permission_options."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=20,
@@ -6483,7 +6483,7 @@ class TestBuildPermissionEvent:
     def test_legacy_kiro_shape_records_optionids(self):
         """Legacy kiro shape (id/label, no kind) is classified by literal id."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=21,
@@ -6508,7 +6508,7 @@ class TestBuildPermissionEvent:
         the claude-agent-acp adapter turns into "Tool use aborted").
         """
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=22,
@@ -6529,7 +6529,7 @@ class TestBuildPermissionEvent:
         ``cancelled`` fallback, which the backend treats as cancelling the
         TURN — every later tool call was auto-denied without prompting."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         for req_id, opt_id in ((24, "reject"), (25, "deny"), (26, "Deny_Once")):
             msg = JsonRpcMessage(
@@ -6551,12 +6551,12 @@ class TestBuildPermissionEvent:
         recognized by BOTH classification sites — the event builder (recorded
         reject option) and the auto-answer path (reject_option_id). Driven by
         the table itself so a vocabulary addition cannot ship untested."""
-        from kiro_crew.acp._dispatch import (
+        from efm_go.acp._dispatch import (
             _DENY_BEHAVIORS,
             _DENY_OPTION_IDS,
             reject_option_id,
         )
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         assert _DENY_OPTION_IDS, "derived deny-id table must not be empty"
         client = AcpClient()
@@ -6597,7 +6597,7 @@ class TestBuildPermissionEvent:
         {kind:"allow_once"} with a contradictory deny behavior or deny-naming
         id must never be selected as the reject — answering with an allow
         optionId would APPROVE the tool the caller meant to deny."""
-        from kiro_crew.acp._dispatch import reject_option_id
+        from efm_go.acp._dispatch import reject_option_id
 
         # behavior:"deny" on an allow-kind option: not a reject candidate.
         params = {
@@ -6627,7 +6627,7 @@ class TestBuildPermissionEvent:
         ``kind`` is a per-tool reject whatever its id is called. An allow
         behavior must never be classified as a reject."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=27,
@@ -6651,7 +6651,7 @@ class TestBuildPermissionEvent:
         reject_tool answers a per-tool ``selected`` reject — never the
         turn-cancelling ``cancelled`` outcome."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=28,
@@ -6679,7 +6679,7 @@ class TestBuildPermissionEvent:
     def test_unknown_legacy_id_not_classified(self):
         """Unknown legacy ids do not get a synthesized kind."""
         client = AcpClient()
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=23,
@@ -6699,7 +6699,7 @@ class TestApproveTool:
     @pytest.fixture(autouse=True)
     def _recorded_requests(self, monkeypatch):
         """Every id approved here stands for a request the client built an event for."""
-        from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
+        from efm_go.acp.types import EVENT_PERMISSION_REQUEST, AcpEvent
 
         class _Recorded(dict):
             def pop(self, key, default=None):
@@ -6715,7 +6715,7 @@ class TestApproveTool:
 
     @pytest.mark.asyncio
     async def test_always_uses_recorded_optionid(self, tmp_path):
-        from kiro_crew.acp.types import OUTCOME_SELECTED
+        from efm_go.acp.types import OUTCOME_SELECTED
 
         client = AcpClient(work_dir=tmp_path)
         client._permission_options[42] = {"once": "allow", "always": "allow_always"}
@@ -6729,7 +6729,7 @@ class TestApproveTool:
 
     @pytest.mark.asyncio
     async def test_once_uses_recorded_optionid(self, tmp_path):
-        from kiro_crew.acp.types import OUTCOME_SELECTED
+        from efm_go.acp.types import OUTCOME_SELECTED
 
         client = AcpClient(work_dir=tmp_path)
         client._permission_options[43] = {"once": "allow", "always": "allow_always"}
@@ -6742,7 +6742,7 @@ class TestApproveTool:
 
     @pytest.mark.asyncio
     async def test_no_recorded_falls_back_to_literal(self, tmp_path):
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             OPTION_ALLOW_ALWAYS,
             OPTION_ALLOW_ONCE,
             OUTCOME_SELECTED,
@@ -6765,7 +6765,7 @@ class TestApproveTool:
     async def test_explicit_option_id_skips_recorded_pop(self, tmp_path):
         """Explicit option_id bypasses the recorded entry — defensive retries
         with a recorded entry left intact still send the explicit id."""
-        from kiro_crew.acp.types import OUTCOME_SELECTED
+        from efm_go.acp.types import OUTCOME_SELECTED
 
         client = AcpClient(work_dir=tmp_path)
         client._permission_options[46] = {"once": "allow", "always": "allow_always"}
@@ -6782,7 +6782,7 @@ class TestApproveTool:
         """A request that advertised only a reject option records {"reject": ...}
         with no "once"/"always" keys. Approving it must fall back to the canonical
         allow id rather than KeyError-ing on the missing key."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             OPTION_ALLOW_ALWAYS,
             OPTION_ALLOW_ONCE,
             OUTCOME_SELECTED,
@@ -6814,7 +6814,7 @@ class TestRejectTool:
         """When a reject option was advertised, reject_tool sends a clean
         ``selected`` reject so the adapter returns behavior:"deny" rather than
         throwing "Tool use aborted" on a cancelled outcome."""
-        from kiro_crew.acp.types import OUTCOME_SELECTED
+        from efm_go.acp.types import OUTCOME_SELECTED
 
         client = AcpClient(work_dir=tmp_path)
         # claude-agent-acp advertises optionId "reject" with kind "reject_once"
@@ -6831,7 +6831,7 @@ class TestRejectTool:
     async def test_falls_back_to_cancelled_when_no_reject_option(self, tmp_path):
         """When no reject option was advertised (kiro-cli), reject_tool falls
         back to the cancelled outcome — kiro handles it as a clean rejection."""
-        from kiro_crew.acp.types import OUTCOME_CANCELLED
+        from efm_go.acp.types import OUTCOME_CANCELLED
 
         client = AcpClient(work_dir=tmp_path)
         client._permission_options[61] = {"once": "allow_once", "always": "allow_always"}
@@ -6846,7 +6846,7 @@ class TestRejectTool:
     @pytest.mark.asyncio
     async def test_falls_back_to_cancelled_when_nothing_recorded(self, tmp_path):
         """No recorded options at all → cancelled fallback (safe for kiro)."""
-        from kiro_crew.acp.types import OUTCOME_CANCELLED
+        from efm_go.acp.types import OUTCOME_CANCELLED
 
         client = AcpClient(work_dir=tmp_path)
         client._send_response = AsyncMock()
@@ -6863,7 +6863,7 @@ class TestHandlePermission:
     @pytest.mark.asyncio
     async def test_auto_approves(self, tmp_path):
         client = AcpClient(work_dir=tmp_path)
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         msg = JsonRpcMessage(
             id=55,
@@ -7093,7 +7093,7 @@ class TestStreamCommand:
 
     @pytest.mark.asyncio
     async def test_stream_command_yields_events(self):
-        from kiro_crew.acp.types import EVENT_COMPLETE, JsonRpcMessage
+        from efm_go.acp.types import EVENT_COMPLETE, JsonRpcMessage
 
         client = AcpClient()
         client._session_id = "s1"
@@ -7121,7 +7121,7 @@ class TestReadPromptResponse:
 
     @pytest.mark.asyncio
     async def test_accumulates_text(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient()
         text_msg = JsonRpcMessage(
@@ -7150,7 +7150,7 @@ class TestReadPromptResponse:
 
     @pytest.mark.asyncio
     async def test_timeout_raises(self):
-        from kiro_crew.acp.client import AcpTimeoutError
+        from efm_go.acp.client import AcpTimeoutError
 
         client = AcpClient()
 
@@ -7166,7 +7166,7 @@ class TestReadPromptResponse:
 
     @pytest.mark.asyncio
     async def test_error_raises(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient()
         error_msg = JsonRpcMessage(id=1, error={"code": -1, "message": "fail"})
@@ -7224,7 +7224,7 @@ class TestPromptLoopReleasesTurnDone:
 
     @pytest.mark.asyncio
     async def test_permission_auto_approved(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient()
         perm_msg = JsonRpcMessage(
@@ -7252,7 +7252,7 @@ class TestToolStallWatchdog:
 
     @pytest.mark.asyncio
     async def test_dispatched_tool_with_no_data_exits(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as acp_client
+        from efm_go.acp import client as acp_client
 
         # Shrink the windows so the watchdog trips quickly under test.
         monkeypatch.setattr(acp_client, "_TOOL_STALL_TIMEOUT", 0.2)
@@ -7293,7 +7293,7 @@ class TestToolStallWatchdog:
     async def test_no_dispatch_does_not_trip_watchdog(self, tmp_path, monkeypatch):
         # Without a dispatched tool, the stall watchdog must NOT fire; the loop
         # simply runs to its own deadline (proving the guard is gated on the flag).
-        from kiro_crew.acp import client as acp_client
+        from efm_go.acp import client as acp_client
 
         monkeypatch.setattr(acp_client, "_TOOL_STALL_TIMEOUT", 0.2)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.02)
@@ -7330,8 +7330,8 @@ class TestToolStallWatchdog:
         # turn completion (handled in _dispatch_events) clears it.  The
         # last_data_ts reset alone prevents false positives for tools that keep
         # streaming.
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import JsonRpcMessage
 
         monkeypatch.setattr(acp_client, "_TOOL_STALL_TIMEOUT", 0.2)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.02)
@@ -7370,7 +7370,7 @@ class TestToolStallWatchdog:
         # Covers the EVENT_COMPLETE clear path in _dispatch_events: a turn that
         # ends while a tool is still marked dispatched must disarm the flag so a
         # stale True can't leak into the next turn's watchdog.
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient()
         # No tool results to flush on the complete path.
@@ -7392,7 +7392,7 @@ class TestToolStallWatchdog:
     async def test_tool_result_clears_tool_dispatched(self, monkeypatch):
         # Covers the tool_call_update clear path in _dispatch_events: when the
         # dispatched tool produces a result, the watchdog is disarmed.
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_TOOL_CALL_UPDATE,
             METHOD_SESSION_UPDATE,
             AcpEvent,
@@ -7440,7 +7440,7 @@ class TestToolStallKeepalive:
     async def test_keepalive_prevents_tool_stall(self, tmp_path, monkeypatch):
         """When _last_activity is refreshed by keepalive pings, the tool stall
         watchdog must NOT fire even if no JSON-RPC stdout data arrives."""
-        from kiro_crew.acp import client as acp_client
+        from efm_go.acp import client as acp_client
 
         monkeypatch.setattr(acp_client, "_TOOL_STALL_TIMEOUT", 0.5)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.05)
@@ -7490,7 +7490,7 @@ class TestToolStallKeepalive:
     async def test_genuine_stall_still_fires_without_keepalive(self, tmp_path, monkeypatch):
         """Without keepalive pings, the tool stall watchdog must still fire
         when a dispatched tool goes completely silent."""
-        from kiro_crew.acp import client as acp_client
+        from efm_go.acp import client as acp_client
 
         monkeypatch.setattr(acp_client, "_TOOL_STALL_TIMEOUT", 0.2)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.02)
@@ -7524,7 +7524,7 @@ class TestSendMessageStreamBranches:
 
     @pytest.mark.asyncio
     async def test_metadata_tracked(self):
-        from kiro_crew.acp.types import METHOD_METADATA, JsonRpcMessage
+        from efm_go.acp.types import METHOD_METADATA, JsonRpcMessage
 
         client = AcpClient()
         meta_msg = JsonRpcMessage(method=METHOD_METADATA, params={"contextUsagePercentage": 75.0})
@@ -7546,7 +7546,7 @@ class TestSendMessageStreamBranches:
 
     @pytest.mark.asyncio
     async def test_compaction_logged(self):
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         client = AcpClient()
         compact_msg = JsonRpcMessage(
@@ -7615,8 +7615,8 @@ class TestKillProcessPipeClose:
         with (
             patch("os.killpg"),
             patch("os.getpgid", return_value=100),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
         ):
             await client._kill_process()
 
@@ -7641,8 +7641,8 @@ class TestKillProcessPipeClose:
         with (
             patch("os.killpg"),
             patch("os.getpgid", return_value=101),
-            patch("kiro_crew.acp.client._get_child_pids", return_value=[]),
-            patch("kiro_crew.acp.client._kill_escaped_children"),
+            patch("efm_go.acp.client._get_child_pids", return_value=[]),
+            patch("efm_go.acp.client._kill_escaped_children"),
         ):
             await client._kill_process()  # should not raise
 
@@ -7654,7 +7654,7 @@ class TestExtractToolCallUpdate:
     """Tests for real-time tool result extraction from session updates."""
 
     def _make_msg(self, update):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(params={"update": update})
 
@@ -7662,7 +7662,7 @@ class TestExtractToolCallUpdate:
         return AcpClient()
 
     def test_ignores_non_tool_call_update(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = self._client()
         msg = JsonRpcMessage(params={"update": {"sessionUpdate": "other"}})
@@ -8018,7 +8018,7 @@ class TestExtractToolCallUpdate:
         assert client._extract_tool_call_update(msg) is None
 
     def test_none_params(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = self._client()
         msg = JsonRpcMessage(params=None)
@@ -8056,7 +8056,7 @@ class TestExtractToolCallUpdate:
                 "content": [{"type": "resource_link", "uri": "file:///etc/secret.txt"}],
             }
         )
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             assert client._extract_tool_call_update(msg) is None
         hits = [r.getMessage() for r in caplog.records if "could be rendered" in r.getMessage()]
         assert len(hits) == 1
@@ -8071,7 +8071,7 @@ class TestExtractToolCallUpdate:
 
         client = self._client()
         msg = self._make_msg({"sessionUpdate": "tool_call_update", "toolCallId": "tc-quiet"})
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             assert client._extract_tool_call_update(msg) is None
         assert [r for r in caplog.records if "could be rendered" in r.getMessage()] == []
 
@@ -8085,7 +8085,7 @@ class TestDispatchToolResultContentShapes:
     a backend's shape is not a function of which of the two loops read it."""
 
     def test_bare_text_block_in_content_is_accepted(self):
-        from kiro_crew.acp._dispatch import _build_tool_result_event
+        from efm_go.acp._dispatch import _build_tool_result_event
 
         event = _build_tool_result_event(
             {
@@ -8100,9 +8100,9 @@ class TestDispatchToolResultContentShapes:
     def test_unrenderable_content_entries_are_logged_with_shape(self, caplog):
         import logging
 
-        from kiro_crew.acp._dispatch import _build_tool_result_event
+        from efm_go.acp._dispatch import _build_tool_result_event
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp._dispatch"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp._dispatch"):
             assert (
                 _build_tool_result_event(
                     {
@@ -8125,14 +8125,14 @@ class TestDispatchToolResultContentShapes:
         credential in either -- both must be scrubbed before they are logged."""
         import logging
 
-        from kiro_crew.acp._dispatch import _build_tool_result_event
+        from efm_go.acp._dispatch import _build_tool_result_event
 
         # Split so this file holds no literal-looking key; matches
         # (?:AKIA|ASIA)[A-Z0-9]{16}, the same shape as
         # test_core_path_redact_before_bound.
         token = "AKIA" + "SHAPELEAK0123456"
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp._dispatch"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp._dispatch"):
             assert (
                 _build_tool_result_event(
                     {
@@ -8154,11 +8154,11 @@ class TestDispatchToolResultContentShapes:
         whole id on one line with the newline escaped."""
         import logging
 
-        from kiro_crew.acp._dispatch import _build_tool_result_event
+        from efm_go.acp._dispatch import _build_tool_result_event
 
-        forged = "tc-1\nWARNING kiro_crew: drive deleted by owner"
+        forged = "tc-1\nWARNING efm_go: drive deleted by owner"
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp._dispatch"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp._dispatch"):
             assert (
                 _build_tool_result_event(
                     {
@@ -8181,7 +8181,7 @@ class TestDispatchToolResultContentShapes:
         """The constant's docstring names four entry types as understood. If one is
         dropped from the frozenset a real backend's frame starts warning, so pin
         the documented set rather than trusting the comment above it."""
-        from kiro_crew.acp._dispatch import _KNOWN_TOOL_CONTENT_TYPES, unrenderable_content_shapes
+        from efm_go.acp._dispatch import _KNOWN_TOOL_CONTENT_TYPES, unrenderable_content_shapes
 
         assert _KNOWN_TOOL_CONTENT_TYPES == frozenset({"content", "diff", "terminal", "text"})
         for known in sorted(_KNOWN_TOOL_CONTENT_TYPES):
@@ -8195,11 +8195,11 @@ class TestDispatchToolResultContentShapes:
         to abort the turn it is reporting on."""
         import logging
 
-        from kiro_crew.acp._dispatch import _build_tool_result_event, _loggable_request_id
+        from efm_go.acp._dispatch import _build_tool_result_event, _loggable_request_id
 
         assert _loggable_request_id(1234) == "1234"
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp._dispatch"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp._dispatch"):
             assert (
                 _build_tool_result_event(
                     {
@@ -8217,7 +8217,7 @@ class TestDispatchToolResultContentShapes:
         entry, so a frame that pads them cannot be held in memory in full. Bounds
         are applied AFTER redaction, never before -- a cut taken first can split a
         credential into fragments no pattern matches."""
-        from kiro_crew.acp._dispatch import (
+        from efm_go.acp._dispatch import (
             _REQUEST_ID_LOG_CAP,
             _loggable_request_id,
             unrenderable_content_shapes,
@@ -8241,7 +8241,7 @@ class TestDispatchToolResultContentShapes:
         length/content assertion passes either way, because the tail is cut off
         regardless of whether the loop broke early. Counting is what discriminates.
         """
-        from kiro_crew.acp._dispatch import unrenderable_content_shapes
+        from efm_go.acp._dispatch import unrenderable_content_shapes
 
         visits = 0
 
@@ -8264,7 +8264,7 @@ class TestDispatchToolResultContentShapes:
         prints its nested VALUES, so a credential parked one level down would reach
         the log ring through the very diagnostic that promises names only. A
         non-string type renders by CLASS instead."""
-        from kiro_crew.acp._dispatch import unrenderable_content_shapes
+        from efm_go.acp._dispatch import unrenderable_content_shapes
 
         token = "AKIA" + "NESTEDLEAK012345"
         out = unrenderable_content_shapes([{"type": {"secret": token}, "other": 1}])
@@ -8278,7 +8278,7 @@ class TestDispatchToolResultContentShapes:
         """Per-entry key rendering is capped by DROPPING whole names, never by
         cutting through one: a cut ahead of redaction could leave half a credential
         that no pattern matches."""
-        from kiro_crew.acp._dispatch import unrenderable_content_shapes
+        from efm_go.acp._dispatch import unrenderable_content_shapes
 
         entry = {"type": "unknown"} | {f"k{i:04d}": 1 for i in range(500)}
         out = unrenderable_content_shapes([entry])
@@ -8293,7 +8293,7 @@ class TestDispatchToolResultContentShapes:
         of that shape discriminates nothing. The ordering is enforced by the
         function returning a single joined string, not by a test.
         """
-        from kiro_crew.acp._dispatch import unrenderable_content_shapes
+        from efm_go.acp._dispatch import unrenderable_content_shapes
 
         joined = unrenderable_content_shapes([{"type": "one"}, {"type": "two"}])
         assert "type='one'" in joined and "type='two'" in joined
@@ -8306,7 +8306,7 @@ class TestDispatchToolResultContentShapes:
         level it said nothing either: the same undiagnosable blank the shape
         diagnostic exists to eliminate, one level down.
         """
-        from kiro_crew.acp._dispatch import unrenderable_content_shapes
+        from efm_go.acp._dispatch import unrenderable_content_shapes
 
         out = unrenderable_content_shapes(
             [{"type": "content", "content": {"kind": "text", "text": "AKIAIOSFODNN7SECRET"}}]
@@ -8326,7 +8326,7 @@ class TestDispatchToolResultContentShapes:
         false positive `test_content_free_frame_is_not_warned_about` guards at the
         frame level.
         """
-        from kiro_crew.acp._dispatch import unrenderable_content_shapes
+        from efm_go.acp._dispatch import unrenderable_content_shapes
 
         for kind in ("text", "image", "audio", "resource", "resource_link"):
             entry = {"type": "content", "content": {"type": kind}}
@@ -8340,7 +8340,7 @@ class TestDispatchToolResultContentShapes:
         understood, and it is why the check cannot be a plain ``.get("content")``,
         which would collapse this case into the null one below.
         """
-        from kiro_crew.acp._dispatch import unrenderable_content_shapes
+        from efm_go.acp._dispatch import unrenderable_content_shapes
 
         assert unrenderable_content_shapes([{"type": "content"}]) == ""
         assert unrenderable_content_shapes([{"type": "content", "content": None}]) != ""
@@ -8349,7 +8349,7 @@ class TestDispatchToolResultContentShapes:
         """``{"type": "content", "content": "<secret>"}`` is unreadable too, and the
         inner is not a dict, so there are no key names -- only its CLASS may be
         named, never the string itself."""
-        from kiro_crew.acp._dispatch import unrenderable_content_shapes
+        from efm_go.acp._dispatch import unrenderable_content_shapes
 
         out = unrenderable_content_shapes([{"type": "content", "content": "AKIAIOSFODNN7SECRET"}])
         assert "inner=<str>" in out
@@ -8364,7 +8364,7 @@ class TestExtractToolCallRefinement:
     tool input is complete; the refinement carries title / kind / rawInput."""
 
     def _make_msg(self, update):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(params={"update": update})
 
@@ -8372,7 +8372,7 @@ class TestExtractToolCallRefinement:
         return AcpClient()
 
     def test_ignores_non_tool_call_update(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = self._client()
         msg = JsonRpcMessage(params={"update": {"sessionUpdate": "other"}})
@@ -8747,9 +8747,9 @@ class TestCaptureAvailableModels:
 
         Depends on the function-local import in ``_capture_available_models``;
         if that import is ever hoisted to module scope, patch
-        ``kiro_crew.acp.client.parse_advertised_models`` instead.
+        ``efm_go.acp.client.parse_advertised_models`` instead.
         """
-        from kiro_crew.acp import session_handle as sh
+        from efm_go.acp import session_handle as sh
 
         sentinel = [
             {"modelId": "sentinel-a", "name": "A", "description": ""},
@@ -8893,21 +8893,21 @@ class TestWaitForResponseDeferral:
         assert m1.id == 88
 
     def test_session_timeout_progress_names_missing_failed_and_oauth_servers(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         client._mcp_notifications = [
             JsonRpcMessage(
-                method="_kiro.dev/mcp/server_initialized", params={"serverName": "ready"}
+                method="_efm.go/mcp/server_initialized", params={"serverName": "ready"}
             ),
             JsonRpcMessage(
-                method="_kiro.dev/mcp/server_init_failure",
+                method="_efm.go/mcp/server_init_failure",
                 params={
                     "serverName": "broken",
                     "error": "aws_secret_access_key=supersecret connection failed",
                 },
             ),
-            JsonRpcMessage(method="_kiro.dev/mcp/oauth_request", params={"serverName": "oauth"}),
+            JsonRpcMessage(method="_efm.go/mcp/oauth_request", params={"serverName": "oauth"}),
         ]
 
         progress = client._mcp_timeout_progress(
@@ -8955,7 +8955,7 @@ class TestWaitForResponseActivityDeadline:
         proc.returncode = None
         client._process = proc
 
-        monkeypatch.setattr("kiro_crew.acp.client.time.monotonic", fake_monotonic)
+        monkeypatch.setattr("efm_go.acp.client.time.monotonic", fake_monotonic)
 
         result = await asyncio.wait_for(client._wait_for_response(4, timeout=0.1), timeout=10.0)
         assert result == {"loaded": True}
@@ -8985,7 +8985,7 @@ class TestWaitForResponseActivityDeadline:
         proc.returncode = None
         client._process = proc
 
-        monkeypatch.setattr("kiro_crew.acp.client.time.monotonic", fake_monotonic)
+        monkeypatch.setattr("efm_go.acp.client.time.monotonic", fake_monotonic)
 
         with pytest.raises(AcpError):
             await asyncio.wait_for(client._wait_for_response(1, timeout=0.1), timeout=10.0)
@@ -8996,21 +8996,21 @@ class TestProcessMessageUnknownServerRequest:
     not silently skipped."""
 
     def test_unknown_server_request_classified(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         msg = JsonRpcMessage(id=12, method="fs/read_text_file", params={"path": "/x"})
         assert client._process_message(msg, req_id=1) == "server_request_unknown"
 
     def test_terminal_create_classified(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         msg = JsonRpcMessage(id=3, method="terminal/create", params={})
         assert client._process_message(msg, req_id=1) == "server_request_unknown"
 
     def test_notification_still_skipped(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         # Unknown notification (method, NO id) is not a request -> skip.
@@ -9018,7 +9018,7 @@ class TestProcessMessageUnknownServerRequest:
         assert client._process_message(msg, req_id=1) == "skip"
 
     def test_known_permission_request_not_unknown(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         msg = JsonRpcMessage(id=2, method="session/request_permission", params={})
@@ -9026,7 +9026,7 @@ class TestProcessMessageUnknownServerRequest:
 
     @pytest.mark.asyncio
     async def test_reject_sends_method_not_found_error(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         client._process = _scripted_process([])
@@ -9043,7 +9043,7 @@ class TestProcessMessageUnknownServerRequest:
 
     @pytest.mark.asyncio
     async def test_reject_noop_when_no_id(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         client._process = _scripted_process([])
@@ -9134,7 +9134,7 @@ class TestFormatAcpError:
         assert "abc-123" in out
 
     def test_advertised_model_still_reads_as_capacity(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # The model IS on offer, so a rejection really is a transient blip and
         # must keep the capacity wording (and stay retryable).
@@ -9145,7 +9145,7 @@ class TestFormatAcpError:
         assert _is_transient_raw_error(err, ["opus", "sonnet"]) is True
 
     def test_unentitled_model_is_terminal_not_retried(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # The retry verdict must move with the wording -- retrying a model the
         # account was never offered just reproduces the same rejection.
@@ -9156,7 +9156,7 @@ class TestFormatAcpError:
         assert _is_transient_raw_error(err, []) is True
 
     def test_unentitled_match_is_case_insensitive(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # An entitled-but-differently-cased model must not be called unentitled.
         err = {"code": -32603, "message": "x", "data": "The model 'Opus' is not available."}
@@ -9285,7 +9285,7 @@ class TestFormatAcpError:
             "message": "weird upstream",
             "data": "leak: AKIAIOSFODNN7EXAMPLE",
         }
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.client"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.client"):
             _format_acp_error(err)
 
         warnings = [r for r in caplog.records if "sensitive content" in r.getMessage()]
@@ -9473,7 +9473,7 @@ class TestFormatAcpError:
         assert "Prompt error: {" not in out
         # The string fallback in llm_helpers classifies both the raw wrapper
         # and the rewrite, so a path that lost the structured flag still retries.
-        from kiro_crew.llm_helpers import is_transient_backend_error
+        from efm_go.llm_helpers import is_transient_backend_error
 
         assert is_transient_backend_error(str(err["data"])) is True
         assert is_transient_backend_error(out) is True
@@ -9649,7 +9649,7 @@ class TestIsTransientRawError:
     error so the verdict is independent of the formatted message."""
 
     def test_internal_server_error_is_transient(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         err = {
             "code": -32603,
@@ -9663,7 +9663,7 @@ class TestIsTransientRawError:
         assert _is_transient_raw_error(err) is True
 
     def test_status_50x_and_hint_are_transient(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         assert _is_transient_raw_error({"data": "HTTP 503 Service Unavailable"}) is True
         assert _is_transient_raw_error({"data": "HTTP 504 Gateway Timeout"}) is True
@@ -9673,7 +9673,7 @@ class TestIsTransientRawError:
         assert _is_transient_raw_error({"data": "please try again"}) is True
 
     def test_5xx_token_in_message_field_is_transient(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # 5xx signal carried in `message` (not `data`) must still be caught:
         # the classifier scans the combined haystack, so this does not fail
@@ -9689,14 +9689,14 @@ class TestIsTransientRawError:
         )
 
     def test_throttle_and_model_unavailable_are_transient(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         assert _is_transient_raw_error({"data": "ThrottlingException: slow down"}) is True
         assert _is_transient_raw_error({"message": "Rate limit exceeded", "data": ""}) is True
         assert _is_transient_raw_error({"data": "The model 'opus' is not available."}) is True
 
     def test_auth_and_unknown_are_not_transient(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # Auth is terminal — a retry can't fix an expired/denied credential.
         assert _is_transient_raw_error({"data": "AccessDeniedException: nope"}) is False
@@ -9720,7 +9720,7 @@ class TestIsTransientRawError:
         error is enough to make it look retryable, spending the whole ladder on
         a credential no retry can revive.
         """
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         assert (
             _is_transient_raw_error(
@@ -9754,7 +9754,7 @@ class TestIsTransientRawError:
         also carried DispatchFailure/ConnectionResetError), telling the user to
         retry when re-authentication was required.
         """
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # Direct session-expired wording from kiro-cli.
         assert _is_transient_raw_error({"data": "session expired"}) is False
@@ -9792,7 +9792,7 @@ class TestIsTransientRawError:
         assert _is_transient_raw_error({"data": "HTTP 503"}) is True
 
     def test_kiro_generic_generation_failure_is_transient(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # kiro-cli's pre-stream generation failure wrapper: no request_id, no
         # error class, none of the 5xx/throttle tokens. Retryable — this exact
@@ -9806,7 +9806,7 @@ class TestIsTransientRawError:
         assert _is_transient_raw_error(err) is True
 
     def test_generation_failure_scoped_to_data_and_loses_to_auth(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # Phrase only in `message` (data carries a deterministic failure):
         # scoped match must not fire — stays terminal.
@@ -9829,7 +9829,7 @@ class TestIsTransientRawError:
         )
 
     def test_kiro_process_failure_is_transient(self):
-        from kiro_crew.acp.client import _is_transient_raw_error, classify_provider_error
+        from efm_go.acp.client import _is_transient_raw_error, classify_provider_error
 
         # kiro-cli's post-stream sibling of the generation-failure wrapper: a
         # request_id is present, no error class, none of the 5xx tokens. This
@@ -9845,7 +9845,7 @@ class TestIsTransientRawError:
         assert verdict.matched == "failed to process the request"
 
     def test_process_failure_scoped_to_data_and_loses_to_auth(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # Phrase only in `message`: the scoped match must not fire.
         assert (
@@ -9866,7 +9866,7 @@ class TestIsTransientRawError:
         )
 
     def test_prose_spelled_dispatch_failure_is_transient(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # The AWS Rust SDK spells ONE connector fault two ways: the Debug repr
         # is CamelCase (DispatchFailure) and the Display impl is prose
@@ -9890,7 +9890,7 @@ class TestIsTransientRawError:
         assert _is_transient_raw_error({"data": "connection reset by peer"}) is True
 
     def test_bare_internal_error_stays_terminal(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # -32603's canonical message is literally "Internal error". The
         # separator tolerance loosens only the gaps BETWEEN words, never the
@@ -9905,7 +9905,7 @@ class TestIsTransientRawError:
         )
 
     def test_terminal_branches_outrank_a_co_occurring_dispatch_failure(self):
-        from kiro_crew.acp.client import _is_transient_raw_error
+        from efm_go.acp.client import _is_transient_raw_error
 
         # Every terminal branch is checked BEFORE the 5xx family, so widening
         # the 5xx pattern must not let a connector token rescue an error that
@@ -9921,8 +9921,8 @@ class TestIsTransientRawError:
     def test_prose_dispatch_failure_reaches_the_retry_decider(self):
         import pytest
 
-        from kiro_crew.acp.client import AcpError, _raise_acp_error
-        from kiro_crew.llm_helpers import acp_error_is_transient
+        from efm_go.acp.client import AcpError, _raise_acp_error
+        from efm_go.llm_helpers import acp_error_is_transient
 
         # The classifier and the retry decider are two different layers, and
         # the gap between them is what broke: acp_error_is_transient prefers the
@@ -9950,7 +9950,7 @@ class TestIsTransientRawError:
     def test_raise_acp_error_carries_transient_flag_and_formatted_message(self):
         import pytest
 
-        from kiro_crew.acp.client import AcpError, _raise_acp_error
+        from efm_go.acp.client import AcpError, _raise_acp_error
 
         transient_err = {
             "code": -32603,
@@ -9975,9 +9975,9 @@ class TestIsTransientRawError:
     def test_context_window_overflow_is_structural_and_non_transient(self):
         import pytest
 
-        import kiro_crew.acp as acp_package
-        from kiro_crew.acp import transport_errors
-        from kiro_crew.acp.client import AcpError, _raise_acp_error
+        import efm_go.acp as acp_package
+        from efm_go.acp import transport_errors
+        from efm_go.acp.client import AcpError, _raise_acp_error
 
         error = {
             "code": -32603,
@@ -10007,7 +10007,7 @@ class TestIsTransientRawError:
         assert not hasattr(acp_package, "AcpContextOverflow")
 
     def test_context_window_overflow_tag_is_data_field_only(self):
-        from kiro_crew.acp.client import AcpError, _raise_acp_error
+        from efm_go.acp.client import AcpError, _raise_acp_error
 
         error = {
             "code": -32603,
@@ -10028,7 +10028,7 @@ class TestIsTransientRawError:
         # ``subagent_manager/run.py`` appends this text after its own
         # post-activity reason, so a startup-only claim would contradict the
         # caller. Both causes and both remedies must be named.
-        from kiro_crew.acp.client import AcpError, _raise_acp_error
+        from efm_go.acp.client import AcpError, _raise_acp_error
 
         error = {
             "code": -32603,
@@ -10050,7 +10050,7 @@ class TestIsTransientRawError:
         assert raised.value.context_overflow is True
 
     def test_acp_error_default_transient_is_none(self):
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         assert AcpError("plain").transient is None
         assert AcpError("flagged", transient=True).transient is True
@@ -10075,23 +10075,23 @@ class TestAcpClientDrainEarlyExit:
 
     @pytest.mark.asyncio
     async def test_drain_exits_early_when_quiet(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         # Pre-buffered notification (arrived during _wait_for_response) — exercises
         # the buffered-drain path in addition to the live-read path (CR feedback).
         client._mcp_notifications = [
             JsonRpcMessage(
-                method="_kiro.dev/mcp/server_initialized", params={"name": "buffered-mcp"}
+                method="_efm.go/mcp/server_initialized", params={"name": "buffered-mcp"}
             ),
         ]
 
         # Two live MCP notifications, then quiet (None) forever.
         msgs = [
             JsonRpcMessage(
-                method="_kiro.dev/mcp/server_initialized", params={"name": "builder-mcp"}
+                method="_efm.go/mcp/server_initialized", params={"name": "builder-mcp"}
             ),
-            JsonRpcMessage(method="_kiro.dev/mcp/server_initialized", params={"name": "node"}),
+            JsonRpcMessage(method="_efm.go/mcp/server_initialized", params={"name": "node"}),
         ]
         calls = {"n": 0}
 
@@ -10121,7 +10121,7 @@ class TestAcpClientDrainEarlyExit:
 
     @pytest.mark.asyncio
     async def test_drain_respects_hard_cap_when_chatty(self, tmp_path):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         client._mcp_notifications = []
@@ -10131,7 +10131,7 @@ class TestAcpClientDrainEarlyExit:
 
         async def fake_read(timeout):
             reads["n"] += 1
-            return JsonRpcMessage(method="_kiro.dev/mcp/progress", params={"name": "slow"})
+            return JsonRpcMessage(method="_efm.go/mcp/progress", params={"name": "slow"})
 
         client._read_message = fake_read  # type: ignore[assignment]
 
@@ -10151,19 +10151,19 @@ class TestResolveKiroBinEnvOverride:
     (e.g. AgentSpaces/DevSpaces) where the toolbox shim is broken."""
 
     def test_env_override_used_when_valid(self, tmp_path):
-        from kiro_crew.acp.client import _resolve_kiro_bin
-        from kiro_crew.kiro_prerequisite import TrustedAcpExecutableSnapshot
+        from efm_go.acp.client import _resolve_kiro_bin
+        from efm_go.kiro_prerequisite import TrustedAcpExecutableSnapshot
 
         fake = tmp_path / "kiro-cli"
         fake.write_text("#!/bin/sh\n")
         fake.chmod(0o755)
         with (
             patch(
-                "kiro_crew.acp.client.resolve_kiro_cli",
+                "efm_go.acp.client.resolve_kiro_cli",
                 return_value=str(fake),
             ),
             patch(
-                "kiro_crew.kiro_prerequisite.snapshot_trusted_acp_executable",
+                "efm_go.kiro_prerequisite.snapshot_trusted_acp_executable",
                 return_value=TrustedAcpExecutableSnapshot("/immutable/kiro-cli"),
             ),
         ):
@@ -10174,7 +10174,7 @@ class TestResolveKiroBinEnvOverride:
         # never substitute a private copy: Kiro CLI 2.15+ exec's a sibling
         # subcommand binary resolved relative to its own path, so a copy into a
         # flat dir breaks every spawn with ENOENT.
-        from kiro_crew.acp import client as client_module
+        from efm_go.acp import client as client_module
 
         macos_dir = tmp_path / "Kiro CLI.app" / "Contents" / "MacOS"
         macos_dir.mkdir(parents=True)
@@ -10191,7 +10191,7 @@ class TestResolveKiroBinEnvOverride:
         assert (Path(launch_path).parent / "kiro-cli-chat").exists()
 
     def test_windows_resolver_accepts_runnable_candidate_anywhere(self, tmp_path):
-        from kiro_crew.acp import client as client_module
+        from efm_go.acp import client as client_module
 
         # Trust is "it runs": a Windows CLI outside Program Files (winget/scoop,
         # a venv Scripts dir) resolves for ACP launch rather than being rejected.
@@ -10217,9 +10217,9 @@ class TestResolveKiroBinEnvOverride:
 
     @pytest.mark.asyncio
     async def test_spawn_launches_self_updated_override(self, tmp_path):
-        from kiro_crew import sandbox as sandbox_module
-        from kiro_crew.acp import client as client_module
-        from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+        from efm_go import sandbox as sandbox_module
+        from efm_go.acp import client as client_module
+        from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
         fake = tmp_path / "kiro-cli"
         fake.write_bytes(b"#!/bin/sh\n# original\n")
@@ -10228,8 +10228,8 @@ class TestResolveKiroBinEnvOverride:
         mock_exec.return_value.pid = 12345
         with (
             patch.dict("os.environ", {"KIROCREW_KIRO_BIN": str(fake)}),
-            patch("kiro_crew.session._track_pid"),
-            patch("kiro_crew.session._track_session_pid"),
+            patch("efm_go.session._track_pid"),
+            patch("efm_go.session._track_session_pid"),
             patch.object(client_module, "_get_child_pids", return_value=[]),
             # This test asserts WHICH bytes get launched, not that the spawn is
             # sandboxed (covered by test_sandbox_*.py). A CI runner with
@@ -10262,7 +10262,7 @@ class TestResolveKiroBinEnvOverride:
 
     @pytest.mark.asyncio
     async def test_spawn_passes_installed_path_through_exact_wrappers(self, tmp_path):
-        from kiro_crew.acp import client as client_module
+        from efm_go.acp import client as client_module
 
         fake = tmp_path / "kiro-cli"
         fake.write_bytes(b"#!/bin/sh\n")
@@ -10370,7 +10370,7 @@ class TestResolveKiroBinEnvOverride:
         # create_subprocess_limited(chdir_fd=...) -> a pass_fds holding exactly
         # that descriptor. Spy-and-delegate rather than stub, so the fd compared
         # against pass_fds is the one the real binding opened.
-        from kiro_crew.acp import client as client_module
+        from efm_go.acp import client as client_module
 
         fake = tmp_path / "kiro-cli"
         fake.write_bytes(b"#!/bin/sh\n")
@@ -10415,20 +10415,20 @@ class TestResolveKiroBinEnvOverride:
     def test_env_override_ignored_when_missing_file(self, tmp_path):
         # A configured-but-nonexistent path must not be returned; resolution
         # falls through to the normal candidates / PATH lookup.
-        from kiro_crew.acp.client import _resolve_kiro_bin
+        from efm_go.acp.client import _resolve_kiro_bin
 
         missing = str(tmp_path / "does-not-exist")
         with (
             patch.dict("os.environ", {"KIROCREW_KIRO_BIN": missing}),
             patch(
-                "kiro_crew.acp.client.resolve_kiro_cli",
+                "efm_go.acp.client.resolve_kiro_cli",
                 return_value=None,
             ),
         ):
             assert _resolve_kiro_bin() is None
 
     def test_env_override_ignored_when_not_executable(self, tmp_path):
-        from kiro_crew.acp.client import _resolve_kiro_bin
+        from efm_go.acp.client import _resolve_kiro_bin
 
         nonexec = tmp_path / "kiro-cli"
         nonexec.write_text("#!/bin/sh\n")
@@ -10436,7 +10436,7 @@ class TestResolveKiroBinEnvOverride:
         with (
             patch.dict("os.environ", {"KIROCREW_KIRO_BIN": str(nonexec)}),
             patch(
-                "kiro_crew.acp.client.resolve_kiro_cli",
+                "efm_go.acp.client.resolve_kiro_cli",
                 return_value=None,
             ),
         ):
@@ -10445,13 +10445,13 @@ class TestResolveKiroBinEnvOverride:
     def test_no_env_falls_through(self):
         # With no override set, resolution uses the normal candidate/PATH path
         # and never returns the override sentinel.
-        from kiro_crew.acp.client import _resolve_kiro_bin
+        from efm_go.acp.client import _resolve_kiro_bin
 
         env = {k: v for k, v in os.environ.items() if k != "KIROCREW_KIRO_BIN"}
         with (
             patch.dict("os.environ", env, clear=True),
             patch(
-                "kiro_crew.acp.client.resolve_kiro_cli",
+                "efm_go.acp.client.resolve_kiro_cli",
                 return_value=None,
             ),
         ):
@@ -10462,12 +10462,12 @@ class TestResolveKiroBinEnvOverride:
 
 class TestDispatchSubagentEvents:
     """_dispatch_events must yield EVENT_SUBAGENT_LIST and EVENT_SUBAGENT_ACTIVITY
-    for kiro-cli's _kiro.dev/subagent/list_update and _kiro.dev/session/update
+    for kiro-cli's _efm.go/subagent/list_update and _efm.go/session/update
     notifications."""
 
     @pytest.mark.asyncio
     async def test_dispatch_yields_subagent_list_and_activity(self):
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_SUBAGENT_ACTIVITY,
             EVENT_SUBAGENT_LIST,
             JsonRpcMessage,
@@ -10535,13 +10535,13 @@ class TestDispatchSubagentEvents:
         """A frame naming THIS session is the parent's own stream, not a child's.
 
         kiro-cli carries the parent turn's own ``tool_call_chunk`` on
-        ``_kiro.dev/session/update`` with ``params.sessionId`` set to the
+        ``_efm.go/session/update`` with ``params.sessionId`` set to the
         parent's session, the same method a child's update arrives on, so the
         sessionId is the only separator. Recorded live in
         ``test/fixtures/acp_frames/kiro/session.jsonl``. Both carriers are
         checked so one guard cannot cover half the shape.
         """
-        from kiro_crew.acp.types import EVENT_SUBAGENT_ACTIVITY, JsonRpcMessage
+        from efm_go.acp.types import EVENT_SUBAGENT_ACTIVITY, JsonRpcMessage
 
         client = AcpClient()
         client._session_id = "own-1"
@@ -10615,7 +10615,7 @@ class TestDispatchSubagentEvents:
         the same answer for a child past it, and one that arrives without them
         is the one-of-N shape that makes a cap decision partial.
         """
-        from kiro_crew.acp.types import EVENT_SUBAGENT_LIST, JsonRpcMessage
+        from efm_go.acp.types import EVENT_SUBAGENT_LIST, JsonRpcMessage
 
         client = AcpClient()
         roster = [{"sessionId": f"c-{i}"} for i in range(5000)]
@@ -10648,7 +10648,7 @@ class TestDispatchSubagentEvents:
         must be scrubbed before they surface as EVENT_SUBAGENT_ACTIVITY. Also
         the streamed text must be read from the nested ``content.text`` shape
         kiro-cli 2.10.0 emits, not only the flat top-level ``text`` field."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_SUBAGENT_ACTIVITY,
             JsonRpcMessage,
         )
@@ -10715,7 +10715,7 @@ class TestDispatchSubagentEvents:
         top-level ``text`` (older payloads); (2) a reasoning/thinking content
         block must NOT surface as user-visible sub-agent output; (3) a non-dict
         ``content`` must not raise (the flat pre-port read tolerated it)."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_SUBAGENT_ACTIVITY,
             JsonRpcMessage,
         )
@@ -10791,10 +10791,10 @@ class TestTrackMetadataCredits:
 
     @staticmethod
     def _metadata_msg(credit_values, *, pct=17.1):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={
                 "contextUsagePercentage": pct,
                 "meteringUsage": [
@@ -10827,12 +10827,12 @@ class TestTrackMetadataCredits:
         assert client.last_prompt_stats.credits == pytest.approx(0.4)
 
     def test_metadata_without_metering_usage_leaves_credits_zero(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient()
         client._track_metadata(
             JsonRpcMessage(
-                method="_kiro.dev/metadata",
+                method="_efm.go/metadata",
                 params={"contextUsagePercentage": 12.5},
             )
         )
@@ -10846,10 +10846,10 @@ class TestTrackMetadataWindowResolution:
 
     @staticmethod
     def _metadata_msg(pct):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={"contextUsagePercentage": pct},
         )
 
@@ -10918,7 +10918,7 @@ class TestTrackMetadataWindowResolution:
         # with a non-Anthropic model's real window, the backfill SHOULD report it
         # (it is now a "known" window), instead of the old no-op. This is what
         # lets GPT/DeepSeek sessions show their real window before a usage_update.
-        import kiro_crew.model_registry as mr
+        import efm_go.model_registry as mr
 
         saved = dict(mr._KIRO_WINDOWS)
         try:
@@ -10933,14 +10933,14 @@ class TestTrackMetadataWindowResolution:
             mr._KIRO_WINDOWS.update(saved)
 
     def test_malformed_pct_does_not_raise_or_update_stats(self):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient()
         client._resolved_model_id = "claude-opus-4.6"
         client.last_prompt_stats.context_pct = 42.0
         client._track_metadata(
             JsonRpcMessage(
-                method="_kiro.dev/metadata", params={"contextUsagePercentage": "not-a-number"}
+                method="_efm.go/metadata", params={"contextUsagePercentage": "not-a-number"}
             )
         )
         assert client.last_prompt_stats.context_pct == 42.0
@@ -11196,8 +11196,8 @@ class TestSubstitutionFollow:
         assert sent.count("session/new") == 2
 
     async def _run_substitution_retry_case(self, tmp_path, monkeypatch, *, lose_surface):
-        from kiro_crew import model_registry
-        from kiro_crew.acp import seed_provenance as sp
+        from efm_go import model_registry
+        from efm_go.acp import seed_provenance as sp
 
         monkeypatch.setattr(model_registry, "_ADVERTISED_MODELS", {})
         monkeypatch.setattr(sp, "_RECORDS", {})
@@ -11512,7 +11512,7 @@ class TestSubstitutionWrappersAndRedaction:
         client._send_request = _send  # type: ignore[assignment]
         client._wait_for_response = _wait  # type: ignore[assignment]
 
-        with patch("kiro_crew.acp.client.logger") as mock_logger:
+        with patch("efm_go.acp.client.logger") as mock_logger:
             await client._new_session_following_substitution()
 
         # Find the warning call that mentions the substitution adoption.
@@ -11574,7 +11574,7 @@ class TestSubstitutionWrappersAndRedaction:
 
         client._drain_notifications = _drain  # type: ignore[assignment]
 
-        with patch("kiro_crew.acp.client.logger") as mock_logger:
+        with patch("efm_go.acp.client.logger") as mock_logger:
             await client._initialize_session()
 
         info_calls = [
@@ -11684,7 +11684,7 @@ class TestAcpClientIsShellSignal:
     """
 
     def _tool_call_msg(self, kind, tool_call_id="tc-1", command="echo hi"):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(
             method="session/update",
@@ -11700,7 +11700,7 @@ class TestAcpClientIsShellSignal:
         )
 
     def _permission_msg(self, tool_call_id="tc-1", kind=None):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         tool_call = {"toolCallId": tool_call_id, "title": "x" * 400}
         # By default no "kind" on the permission payload — mirrors live
@@ -11718,7 +11718,7 @@ class TestAcpClientIsShellSignal:
         )
 
     def _refinement_msg(self, kind, tool_call_id="tc-1", command="echo hi"):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         update = {
             "sessionUpdate": "tool_call_update",
@@ -11733,7 +11733,7 @@ class TestAcpClientIsShellSignal:
         return JsonRpcMessage(method="session/update", params={"update": update})
 
     def test_execute_kind_marks_event_is_shell(self, tmp_path):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient(work_dir=tmp_path)
         ev = client._extract_tool_event(self._tool_call_msg("execute"))
@@ -11742,7 +11742,7 @@ class TestAcpClientIsShellSignal:
         assert client._tool_call_is_shell.get("tc-1") is True
 
     def test_non_shell_kind_not_is_shell(self, tmp_path):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient(work_dir=tmp_path)
         ev = client._extract_tool_event(self._tool_call_msg("edit"))
@@ -11750,7 +11750,7 @@ class TestAcpClientIsShellSignal:
         assert ev.is_shell is False
 
     def test_permission_event_inherits_is_shell_from_tool_call(self, tmp_path):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient(work_dir=tmp_path)
         # 1. tool_call notification arrives first (kind="execute")
@@ -11760,7 +11760,7 @@ class TestAcpClientIsShellSignal:
         assert perm.is_shell is True  # inherited via the toolCallId cache
 
     def test_permission_event_non_shell_stays_false(self, tmp_path):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient(work_dir=tmp_path)
         client._extract_tool_event(self._tool_call_msg("edit"))
@@ -11774,8 +11774,8 @@ class TestAcpClientIsShellSignal:
         # app-own-server auto-approve's per-tool governance. Without the
         # tool_name cache the permission event's tool_name is always "" and the
         # auto-approve fails closed (never fires).
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import JsonRpcMessage
 
         client = AcpClient(work_dir=tmp_path)
         tc = JsonRpcMessage(
@@ -11803,9 +11803,9 @@ class TestAcpClientIsShellSignal:
 
     def test_permission_event_does_not_promote_title_on_identity_cache_miss(self, tmp_path):
         """Legacy per-session transport fails closed without ``_meta.kiro``."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import JsonRpcMessage
-        from kiro_crew.trust_patterns import approval_command
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import JsonRpcMessage
+        from efm_go.trust_patterns import approval_command
 
         client = AcpClient(work_dir=tmp_path)
         client._extract_tool_event(
@@ -11839,9 +11839,9 @@ class TestAcpClientIsShellSignal:
 
     def test_structured_non_shell_reprompt_keeps_argument_provenance(self, tmp_path):
         """A repeated MCP permission retains both display and raw provenance."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import JsonRpcMessage
-        from kiro_crew.trust_patterns import approval_command
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import JsonRpcMessage
+        from efm_go.trust_patterns import approval_command
 
         client = AcpClient(work_dir=tmp_path)
         client._extract_tool_event(
@@ -11887,9 +11887,9 @@ class TestAcpClientIsShellSignal:
         self, tmp_path, raw_input
     ):
         """String/list rawInput must not become argument-free after one prompt."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import JsonRpcMessage
-        from kiro_crew.trust_patterns import approval_command
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import JsonRpcMessage
+        from efm_go.trust_patterns import approval_command
 
         client = AcpClient(work_dir=tmp_path)
         client._extract_tool_event(
@@ -11927,8 +11927,8 @@ class TestAcpClientIsShellSignal:
     def test_end_to_end_long_shell_title_passes_validation(self, tmp_path):
         """The full regression: a 400-char shell title validates only because
         is_shell propagated from tool_call → permission → _validate_tool_name."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.dashboard.chat_utils import _validate_tool_name
+        from efm_go.acp.client import AcpClient
+        from efm_go.dashboard.chat_utils import _validate_tool_name
 
         client = AcpClient(work_dir=tmp_path)
         client._extract_tool_event(self._tool_call_msg("execute"))
@@ -11940,7 +11940,7 @@ class TestAcpClientIsShellSignal:
         """A refinement update that omits `kind` must NOT overwrite the
         is_shell=True cached by the initial tool_call notification (kind is
         optional on updates). This pins the no-clobber invariant."""
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient(work_dir=tmp_path)
         # 1. initial tool_call carries kind="execute" → caches True
@@ -11953,7 +11953,7 @@ class TestAcpClientIsShellSignal:
 
     def test_refinement_with_kind_refreshes_shell_signal(self, tmp_path):
         """A refinement that DOES carry a kind refreshes the cached signal."""
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient(work_dir=tmp_path)
         # initial tool_call had no shell kind (edit) → cached False
@@ -11971,7 +11971,7 @@ class TestAcpClientIsShellSignal:
         length cap on the very name being validated. With no preceding
         tool_call to populate the cache, is_shell must stay False even when the
         payload claims kind="execute"."""
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient(work_dir=tmp_path)
         # No _extract_tool_event call → cache miss; payload tries kind="execute".
@@ -11983,7 +11983,7 @@ class TestAcpClientIsShellSignal:
         .pop(): a later tool_call_update refinement for the same toolCallId
         reads the same cache, so popping would make it wrongly see is_shell=
         False. The read must use .get(), not a .pop() that consumes the entry."""
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         client = AcpClient(work_dir=tmp_path)
         client._extract_tool_event(self._tool_call_msg("execute"))
@@ -11998,7 +11998,7 @@ class TestAcpClientIsShellSignal:
         """_is_shell_kind tolerates a non-str/None kind without raising — the
         ACP payload can carry "kind": null (JSON-legal), and equality keeps the
         classifier crash-free where a `.lower()`-based predicate would not."""
-        from kiro_crew.acp.client import _is_shell_kind
+        from efm_go.acp.client import _is_shell_kind
 
         assert _is_shell_kind(None) is False
         assert _is_shell_kind("") is False
@@ -12010,9 +12010,9 @@ class TestAcpClientIsShellSignal:
         emitted by real ACP/MCP servers) must not crash event construction, and
         the resulting title must still validate. Guards the chat-runner event
         loop against a null-kind AttributeError on the length-cap path."""
-        from kiro_crew.acp.client import AcpClient
-        from kiro_crew.acp.types import JsonRpcMessage
-        from kiro_crew.dashboard.chat_utils import _validate_tool_name
+        from efm_go.acp.client import AcpClient
+        from efm_go.acp.types import JsonRpcMessage
+        from efm_go.dashboard.chat_utils import _validate_tool_name
 
         client = AcpClient(work_dir=tmp_path)
         msg = JsonRpcMessage(
@@ -12032,9 +12032,9 @@ class TestAcpClientIsShellSignal:
         """AcpProvider._to_llm_event re-wraps an event field-by-field; the
         is_shell flag must survive that copy or the dashboard (which consumes
         the re-wrapped LLMEvent) would never see it on the live ACP path."""
-        from kiro_crew.acp.types import AcpEvent
-        from kiro_crew.providers.acp import AcpProvider
-        from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST
+        from efm_go.acp.types import AcpEvent
+        from efm_go.providers.acp import AcpProvider
+        from efm_go.providers.base import EVENT_PERMISSION_REQUEST
 
         src = AcpEvent(kind=EVENT_PERMISSION_REQUEST, title="x" * 400, is_shell=True)
         wrapped = AcpProvider._to_llm_event(src)
@@ -12133,7 +12133,7 @@ class TestSetModelRebasesContextStats:
         return client
 
     def _usage_msg(self, used, size):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(
             method="session/update",
@@ -12142,7 +12142,7 @@ class TestSetModelRebasesContextStats:
 
     @pytest.mark.asyncio
     async def test_rebases_window_and_clears_usage_flag(self, tmp_path, monkeypatch):
-        import kiro_crew.acp.client as c
+        import efm_go.acp.client as c
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: True)
         monkeypatch.setattr(c.model_registry, "model_window", lambda mid, **kw: 272_000)
@@ -12169,7 +12169,7 @@ class TestSetModelRebasesContextStats:
         against the substitute's token counts, so the percentage was wrong for
         exactly the sessions that were silently moved.
         """
-        import kiro_crew.acp.client as c
+        import efm_go.acp.client as c
 
         windows = {"gpt-5.6-sol": 272_000, "substitute-model": 128_000}
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: mid in windows)
@@ -12193,8 +12193,8 @@ class TestSetModelRebasesContextStats:
         """Load-bearing: with the rebase reverted, context_tokens_from_usage
         stays True and this metadata pct would be ignored, leaving the window
         at the OLD model's 1M forever."""
-        import kiro_crew.acp.client as c
-        from kiro_crew.acp.types import JsonRpcMessage
+        import efm_go.acp.client as c
+        from efm_go.acp.types import JsonRpcMessage
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: True)
         monkeypatch.setattr(c.model_registry, "model_window", lambda mid, **kw: 272_000)
@@ -12204,7 +12204,7 @@ class TestSetModelRebasesContextStats:
         await client.set_model("gpt-5.6-sol")
         client._track_metadata(
             JsonRpcMessage(
-                method="_kiro.dev/metadata",
+                method="_efm.go/metadata",
                 params={"contextUsagePercentage": 50.0},
             )
         )
@@ -12218,7 +12218,7 @@ class TestSetModelRebasesContextStats:
     async def test_unknown_window_zeroes_out(self, tmp_path, monkeypatch):
         """A registry miss must not keep the old window: zero it so downstream
         consumers fall back to their own model-derived value."""
-        import kiro_crew.acp.client as c
+        import efm_go.acp.client as c
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: False)
         client = self._client(tmp_path)
@@ -12263,7 +12263,7 @@ class TestCompactionResetsContextStats:
         return client
 
     def _usage_msg(self, used, size):
-        from kiro_crew.acp.types import JsonRpcMessage
+        from efm_go.acp.types import JsonRpcMessage
 
         return JsonRpcMessage(
             method="session/update",
@@ -12271,7 +12271,7 @@ class TestCompactionResetsContextStats:
         )
 
     def _compaction_msg(self, status_type):
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         return JsonRpcMessage(
             method=METHOD_COMPACTION_STATUS,
@@ -12307,8 +12307,8 @@ class TestCompactionResetsContextStats:
         """Load-bearing: with the reset reverted, context_tokens_from_usage
         stays True and this fresh metadata percentage would be ignored,
         freezing the meter at the pre-compaction value forever."""
-        import kiro_crew.acp.client as c
-        from kiro_crew.acp.types import JsonRpcMessage
+        import efm_go.acp.client as c
+        from efm_go.acp.types import JsonRpcMessage
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: True)
         monkeypatch.setattr(c.model_registry, "model_window", lambda mid, **kw: 200_000)
@@ -12319,7 +12319,7 @@ class TestCompactionResetsContextStats:
         client._handle_compaction_status(self._compaction_msg("completed"))
         client._track_metadata(
             JsonRpcMessage(
-                method="_kiro.dev/metadata",
+                method="_efm.go/metadata",
                 params={"contextUsagePercentage": 12.0},
             )
         )
@@ -12331,8 +12331,8 @@ class TestCompactionResetsContextStats:
         unchanged) and can differ from the registry's static entry (opus
         served at 1M vs a 200K registry row). A metadata pct must derive
         against the kept served window, not clobber it with the registry."""
-        import kiro_crew.acp.client as c
-        from kiro_crew.acp.types import JsonRpcMessage
+        import efm_go.acp.client as c
+        from efm_go.acp.types import JsonRpcMessage
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: True)
         monkeypatch.setattr(c.model_registry, "model_window", lambda mid, **kw: 200_000)
@@ -12343,7 +12343,7 @@ class TestCompactionResetsContextStats:
 
         client._track_metadata(
             JsonRpcMessage(
-                method="_kiro.dev/metadata",
+                method="_efm.go/metadata",
                 params={"contextUsagePercentage": 5.0},
             )
         )
@@ -12359,8 +12359,8 @@ class TestCompactionResetsContextStats:
         metadata frame ~1s AFTER the completed status (live-probe confirmed).
         wait_for_compaction must capture it so the dashboard broadcast
         reports accurate numbers instead of the unknown fallback."""
-        import kiro_crew.acp.client as c
-        from kiro_crew.acp.types import JsonRpcMessage
+        import efm_go.acp.client as c
+        from efm_go.acp.types import JsonRpcMessage
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: True)
         monkeypatch.setattr(c.model_registry, "model_window", lambda mid, **kw: 200_000)
@@ -12369,7 +12369,7 @@ class TestCompactionResetsContextStats:
         client._track_usage_update(self._usage_msg(900_000, 1_000_000))
 
         post_meta = JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={"contextUsagePercentage": 5.0},
         )
         client._read_message = AsyncMock(side_effect=[self._compaction_msg("completed"), post_meta])
@@ -12387,8 +12387,8 @@ class TestCompactionResetsContextStats:
         """A credits-only metadata frame (no contextUsagePercentage) must not
         end the grace drain — the real usage frame behind it would be
         stranded and the meter would fall back to the reset state."""
-        import kiro_crew.acp.client as c
-        from kiro_crew.acp.types import JsonRpcMessage
+        import efm_go.acp.client as c
+        from efm_go.acp.types import JsonRpcMessage
 
         monkeypatch.setattr(c.model_registry, "has_known_window", lambda mid: True)
         monkeypatch.setattr(c.model_registry, "model_window", lambda mid, **kw: 200_000)
@@ -12397,11 +12397,11 @@ class TestCompactionResetsContextStats:
         client._track_usage_update(self._usage_msg(900_000, 1_000_000))
 
         credits_only = JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={"meteringUsage": [{"unit": "credit", "amount": 0.1}]},
         )
         usage_meta = JsonRpcMessage(
-            method="_kiro.dev/metadata",
+            method="_efm.go/metadata",
             params={"contextUsagePercentage": 5.0},
         )
         client._read_message = AsyncMock(
@@ -12443,7 +12443,7 @@ class TestModelEntitlementPreflight:
 
     @staticmethod
     def _client(advertised, model, is_claude=False):
-        from kiro_crew.acp.client import ACP_BACKEND_CLAUDE, AcpClient
+        from efm_go.acp.client import ACP_BACKEND_CLAUDE, AcpClient
 
         client = AcpClient()
         client._session_id = "sess-1"
@@ -12489,7 +12489,7 @@ class TestModelEntitlementPreflight:
         Nothing goes on the wire and the session is recorded as running the
         backend default, so the turn proceeds instead of dying three retries in.
         """
-        from kiro_crew.acp.client import DEFAULT_MODEL
+        from efm_go.acp.client import DEFAULT_MODEL
 
         client = self._client(["claude-sonnet-4.6"], "claude-opus-4.8")
         client._resolved_model_id = "claude-sonnet-4.6"
@@ -12506,7 +12506,7 @@ class TestModelEntitlementPreflight:
 
     @pytest.mark.asyncio
     async def test_startup_auto_keeps_the_backend_default(self):
-        from kiro_crew.acp.client import DEFAULT_MODEL
+        from efm_go.acp.client import DEFAULT_MODEL
 
         client = self._client(["gpt-5.6-terra"], DEFAULT_MODEL)
         client._resolved_model_id = "gpt-5.6-terra"
@@ -12557,7 +12557,7 @@ class TestModelEntitlementPreflight:
     @pytest.mark.asyncio
     async def test_startup_still_withholds_namespaced_pin_absent_when_peeled(self):
         """The resolve is not a rubber stamp: absent under BOTH spellings withholds."""
-        from kiro_crew.acp.client import DEFAULT_MODEL
+        from efm_go.acp.client import DEFAULT_MODEL
 
         client = self._client(["z-ai/glm-5.3-flash"], "openrouter::no-such-model")
         sent = []
@@ -12689,7 +12689,7 @@ class TestModelEntitlementPreflight:
     @pytest.mark.asyncio
     async def test_explicit_switch_is_refused_not_downgraded(self):
         """An explicit pick gets an error, because silence would misreport it."""
-        from kiro_crew.acp.client import AcpModelUnavailable
+        from efm_go.acp.client import AcpModelUnavailable
 
         client = self._client(["claude-sonnet-4.6", "claude-haiku-4.5"], "claude-sonnet-4.6")
         sent = []
@@ -12799,13 +12799,13 @@ class TestColdCacheModelFallback:
         spelling and the adapter sees ONE push instead of the three fallbacks --
         a 1-in-5 failure in full runs. Cold is the premise, so pin it.
         """
-        from kiro_crew import model_registry
+        from efm_go import model_registry
 
         monkeypatch.setattr(model_registry, "_ADVERTISED_MODELS", {})
 
     @staticmethod
     def _claude_client(model):
-        from kiro_crew.acp.client import ACP_BACKEND_CLAUDE, AcpClient
+        from efm_go.acp.client import ACP_BACKEND_CLAUDE, AcpClient
 
         client = AcpClient()
         client._session_id = "sess-1"
@@ -12816,7 +12816,7 @@ class TestColdCacheModelFallback:
 
     @staticmethod
     def _rejecting_set_config_option(applied, accepted):
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         async def _set_config_option(config_id, value):
             applied.append((config_id, value))
@@ -12828,7 +12828,7 @@ class TestColdCacheModelFallback:
     @pytest.mark.asyncio
     async def test_startup_falls_back_to_bare_spelling(self):
         """The reported failure: prefixed [1m] id refused, bare spelling served."""
-        from kiro_crew.acp.client import DEFAULT_MODEL
+        from efm_go.acp.client import DEFAULT_MODEL
 
         client = self._claude_client("global.anthropic.claude-sonnet-4-6[1m]")
         applied = []
@@ -12864,7 +12864,7 @@ class TestColdCacheModelFallback:
     @pytest.mark.asyncio
     async def test_startup_all_refused_stays_on_default(self):
         """Every spelling refused = the withhold contract, not a crash."""
-        from kiro_crew.acp.client import DEFAULT_MODEL
+        from efm_go.acp.client import DEFAULT_MODEL
 
         client = self._claude_client("global.anthropic.claude-sonnet-4-6[1m]")
         applied = []
@@ -12878,7 +12878,7 @@ class TestColdCacheModelFallback:
     @pytest.mark.asyncio
     async def test_explicit_switch_refused_raises_unavailable(self):
         """set_model is an explicit pick: refusal is typed, never a silent lie."""
-        from kiro_crew.acp.client import AcpModelUnavailable
+        from efm_go.acp.client import AcpModelUnavailable
 
         client = self._claude_client("claude-sonnet-4-6[1m]")
         client.set_config_option = self._rejecting_set_config_option([], set())
@@ -12904,7 +12904,7 @@ class TestColdCacheModelFallback:
     @pytest.mark.asyncio
     async def test_unknown_config_option_skips_push(self):
         """No 'model' option at all (other adapter build): no spelling retry."""
-        from kiro_crew.acp.client import DEFAULT_MODEL, AcpError
+        from efm_go.acp.client import DEFAULT_MODEL, AcpError
 
         client = self._claude_client("global.anthropic.claude-sonnet-4-6[1m]")
         applied = []
@@ -12923,7 +12923,7 @@ class TestColdCacheModelFallback:
     @pytest.mark.asyncio
     async def test_transport_error_propagates(self):
         """A non-value-rejection failure is not ours to swallow."""
-        from kiro_crew.acp.client import AcpError
+        from efm_go.acp.client import AcpError
 
         client = self._claude_client("claude-sonnet-4-6[1m]")
 
@@ -12936,7 +12936,7 @@ class TestColdCacheModelFallback:
             await client._apply_startup_model()
 
     def test_candidate_order_is_derived_from_the_id(self):
-        from kiro_crew.acp.client import AcpClient
+        from efm_go.acp.client import AcpClient
 
         assert AcpClient._model_config_candidates("global.anthropic.claude-sonnet-4-6[1m]") == [
             "global.anthropic.claude-sonnet-4-6[1m]",
@@ -12963,7 +12963,7 @@ class TestMiseNodeInstallsDir:
         monkeypatch.delenv("XDG_DATA_HOME", raising=False)
 
     def test_default_layout_is_unchanged(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path))
         assert (
@@ -12972,7 +12972,7 @@ class TestMiseNodeInstallsDir:
         )
 
     def test_mise_data_dir_env_is_honoured(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.setenv("MISE_DATA_DIR", str(tmp_path / "custom-mise"))
         assert (
@@ -12980,7 +12980,7 @@ class TestMiseNodeInstallsDir:
         )
 
     def test_xdg_data_home_is_honoured(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "xdg"))
         assert (
@@ -12989,7 +12989,7 @@ class TestMiseNodeInstallsDir:
 
     @_POSIX_EXEC_PATHS_ONLY
     def test_resolve_node_for_script_under_custom_mise_data_dir(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.setenv("MISE_DATA_DIR", str(tmp_path / "custom-mise"))
         version_dir = tmp_path / "custom-mise" / "installs" / "node" / "22.1.0"
@@ -13005,7 +13005,7 @@ class TestMiseNodeInstallsDir:
 
     @_POSIX_EXEC_PATHS_ONLY
     def test_resolve_node_for_script_outside_mise_returns_none(self, tmp_path, monkeypatch):
-        from kiro_crew.acp import client as client_mod
+        from efm_go.acp import client as client_mod
 
         monkeypatch.setenv("MISE_DATA_DIR", str(tmp_path / "custom-mise"))
         script = tmp_path / "elsewhere" / "cli.js"
@@ -13028,7 +13028,7 @@ class TestCompactionFailureTurnBudget:
     """
 
     def _failed_msg(self, params: dict | None = None):
-        from kiro_crew.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
+        from efm_go.acp.types import METHOD_COMPACTION_STATUS, JsonRpcMessage
 
         return JsonRpcMessage(
             method=METHOD_COMPACTION_STATUS,
@@ -13047,7 +13047,7 @@ class TestCompactionFailureTurnBudget:
     async def test_silent_turn_after_failure_ends_at_budget(self, tmp_path, monkeypatch):
         """Armed by the failed status, the loop stops reading at the budget and
         marks the turn so the caller can terminate it explicitly."""
-        from kiro_crew.acp import client as acp_client
+        from efm_go.acp import client as acp_client
 
         monkeypatch.setattr(acp_client, "_COMPACTION_FAILED_TURN_BUDGET", 0.2)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.02)
@@ -13081,8 +13081,8 @@ class TestCompactionFailureTurnBudget:
         """Full path, the reported hang: a `failed` status arrives, the backend
         never answers the prompt, and the stream still terminates — with the
         compaction stop reason, well inside the 30s turn ceiling."""
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import (
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import (
             EVENT_COMPACTION_STATUS,
             EVENT_COMPLETE,
             STOP_REASON_COMPACTION_FAILED,
@@ -13115,7 +13115,7 @@ class TestCompactionFailureTurnBudget:
     async def test_budget_is_disarmed_without_a_failure(self, tmp_path, monkeypatch):
         """No failed status → no budget: the loop runs to its own deadline, so
         an ordinary silent turn keeps its existing watchdog behavior."""
-        from kiro_crew.acp import client as acp_client
+        from efm_go.acp import client as acp_client
 
         monkeypatch.setattr(acp_client, "_COMPACTION_FAILED_TURN_BUDGET", 0.05)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.02)
@@ -13152,8 +13152,8 @@ class TestCompactionFailureTurnBudget:
     async def test_frames_after_the_failure_defer_the_budget(self, tmp_path, monkeypatch):
         """The budget measures BACKEND SILENCE: a backend that keeps sending
         frames after a failed compaction is not reaped by it."""
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import METHOD_METADATA, JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import METHOD_METADATA, JsonRpcMessage
 
         monkeypatch.setattr(acp_client, "_COMPACTION_FAILED_TURN_BUDGET", 0.3)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.02)
@@ -13181,7 +13181,7 @@ class TestCompactionFailureTurnBudget:
     async def test_dispatch_ends_turn_with_compaction_stop_reason(self):
         """The abandoned turn terminates with the explicit stop reason instead
         of raising the generic timeout, so the runner releases the slot."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             STOP_REASON_COMPACTION_FAILED,
             AcpEvent,
@@ -13212,7 +13212,7 @@ class TestCompactionFailureTurnBudget:
     async def test_streamed_text_still_reports_compaction_failure(self):
         """A turn that streamed text before the failure must NOT be finalized as
         a normal end_turn by the stale-turn branch — the cause is the failure."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPLETE,
             STOP_REASON_COMPACTION_FAILED,
             AcpEvent,
@@ -13242,7 +13242,7 @@ class TestCompactionFailureTurnBudget:
         """The notice reads AcpEvent.title. kiro-cli leaves `summary` empty on
         failure, which collapsed the row to "unknown error" — the raw
         notification's own reason now rides the title instead."""
-        from kiro_crew.acp.types import (
+        from efm_go.acp.types import (
             EVENT_COMPACTION_STATUS,
             METHOD_COMPACTION_STATUS,
             AcpEvent,
@@ -13282,8 +13282,8 @@ class TestCompactionFailureTurnBudget:
         AcpSessionHandle park accounting): without the exclusion, the resume
         computes idle = the park length and reaps a live turn whose backend
         was only ever waiting for the approval answer."""
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import METHOD_METADATA, JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import METHOD_METADATA, JsonRpcMessage
 
         monkeypatch.setattr(acp_client, "_COMPACTION_FAILED_TURN_BUDGET", 0.2)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.02)
@@ -13325,7 +13325,7 @@ class TestCompactionFailureTurnBudget:
         legitimately silent long tool (a build, a spawned subagent) must NOT be
         reaped at the compaction budget — that would cancel valid work the
         tool-stall watchdog already governs on its own longer budget."""
-        from kiro_crew.acp import client as acp_client
+        from efm_go.acp import client as acp_client
 
         monkeypatch.setattr(acp_client, "_COMPACTION_FAILED_TURN_BUDGET", 0.05)
         monkeypatch.setattr(acp_client, "_TOOL_STALL_TIMEOUT", 30.0)
@@ -13359,8 +13359,8 @@ class TestCompactionFailureTurnBudget:
     async def test_the_budget_re_arms_when_the_tool_resolves(self, tmp_path, monkeypatch):
         """Suspension is not a permanent disarm: once the tool resolves and the
         backend goes silent again, the abandoned turn is still ended."""
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.acp.types import METHOD_METADATA, JsonRpcMessage
+        from efm_go.acp import client as acp_client
+        from efm_go.acp.types import METHOD_METADATA, JsonRpcMessage
 
         monkeypatch.setattr(acp_client, "_COMPACTION_FAILED_TURN_BUDGET", 0.1)
         monkeypatch.setattr(acp_client, "_READ_TIMEOUT", 0.02)
@@ -13394,7 +13394,7 @@ class TestCompactionFailureDetail:
     shape, redacted, because it lands on a chat row."""
 
     def test_prefers_a_named_reason(self):
-        from kiro_crew.acp.client import compaction_failure_detail
+        from efm_go.acp.client import compaction_failure_detail
 
         assert (
             compaction_failure_detail({"status": {"type": "failed", "reason": "too large"}})
@@ -13402,7 +13402,7 @@ class TestCompactionFailureDetail:
         )
 
     def test_reads_a_nested_error_object(self):
-        from kiro_crew.acp.client import compaction_failure_detail
+        from efm_go.acp.client import compaction_failure_detail
 
         detail = compaction_failure_detail(
             {"status": {"type": "failed"}, "error": {"message": "throttled"}}
@@ -13410,14 +13410,14 @@ class TestCompactionFailureDetail:
         assert detail == "throttled"
 
     def test_falls_back_to_the_raw_shape(self):
-        from kiro_crew.acp.client import compaction_failure_detail
+        from efm_go.acp.client import compaction_failure_detail
 
         detail = compaction_failure_detail({"status": {"type": "failed"}})
         assert "no reason reported" in detail
         assert "failed" in detail
 
     def test_is_bounded_and_redacted(self):
-        from kiro_crew.acp.client import _COMPACTION_DETAIL_MAX_CHARS, compaction_failure_detail
+        from efm_go.acp.client import _COMPACTION_DETAIL_MAX_CHARS, compaction_failure_detail
 
         detail = compaction_failure_detail({"status": {"type": "failed", "error": "x" * 5000}})
         assert len(detail) == _COMPACTION_DETAIL_MAX_CHARS
@@ -13432,7 +13432,7 @@ class TestCompactionFailureDetail:
         frame carried exactly that, which rendered as "Compaction failed: error"
         — no cause on the row and nothing to grep server-side. Falling through
         to the raw shape is strictly more evidence than the word."""
-        from kiro_crew.acp.client import compaction_failure_detail
+        from efm_go.acp.client import compaction_failure_detail
 
         detail = compaction_failure_detail({"kind": "summarization_failed", "error": "error"})
         assert detail != "error"
@@ -13442,7 +13442,7 @@ class TestCompactionFailureDetail:
         """The nested pair is the shape KAS reports a throttle in. The machine
         reason identifies the fault; the sentence is the one that tells the
         reader what to do about it, so the sentence wins."""
-        from kiro_crew.acp.client import compaction_failure_detail
+        from efm_go.acp.client import compaction_failure_detail
 
         detail = compaction_failure_detail(
             {
@@ -13464,7 +13464,7 @@ class TestKasSummarizationFailureLogging:
 
     @staticmethod
     def _bare_handle():
-        from kiro_crew.acp.session_handle import AcpSessionHandle
+        from efm_go.acp.session_handle import AcpSessionHandle
 
         handle = AcpSessionHandle.__new__(AcpSessionHandle)
         handle._compaction_failed_at = None
@@ -13490,7 +13490,7 @@ class TestKasSummarizationFailureLogging:
             },
         }
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.acp.session_handle"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.acp.session_handle"):
             events = handle._handle_kas_session_info(update)
 
         assert any("KAS summarization failed" in r.getMessage() for r in caplog.records)
@@ -13512,7 +13512,7 @@ class TestCompactionVerdictReachesTheConsumer:
         it must answer "permanent" from the contract rather than from a getattr
         default nobody wrote down. False is the safe value — it gives up the turn
         exactly as it did before the capability existed."""
-        from kiro_crew.providers.base import LLMProvider
+        from efm_go.providers.base import LLMProvider
 
         assert isinstance(LLMProvider.last_compaction_transient, property)
         # Read through the descriptor rather than an instance: LLMProvider is
@@ -13527,7 +13527,7 @@ class TestCompactionVerdictReachesTheConsumer:
     def test_the_provider_forwards_the_verdict_from_its_inner_client(self):
         from types import SimpleNamespace
 
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         prov = AcpProvider.__new__(AcpProvider)
         prov._client = SimpleNamespace(last_compaction_transient=True)
@@ -13536,7 +13536,7 @@ class TestCompactionVerdictReachesTheConsumer:
     def test_the_session_provider_forwards_the_verdict_from_its_handle(self):
         from types import SimpleNamespace
 
-        from kiro_crew.acp.session_provider import AcpSessionProvider
+        from efm_go.acp.session_provider import AcpSessionProvider
 
         sess = AcpSessionProvider.__new__(AcpSessionProvider)
         sess._handle = SimpleNamespace(last_compaction_transient=True)
@@ -13547,7 +13547,7 @@ class TestCompactionVerdictReachesTheConsumer:
         "not retryable" rather than raising — the fields are additive."""
         from types import SimpleNamespace
 
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         prov = AcpProvider.__new__(AcpProvider)
         prov._client = SimpleNamespace()
@@ -13560,7 +13560,7 @@ class TestCompactionVerdictReachesTheConsumer:
         from types import SimpleNamespace
         from unittest.mock import MagicMock
 
-        from kiro_crew.providers.acp import AcpProvider
+        from efm_go.providers.acp import AcpProvider
 
         prov = AcpProvider.__new__(AcpProvider)
         prov._client = SimpleNamespace(last_compaction_transient=MagicMock())
@@ -13573,7 +13573,7 @@ class TestCompactionFailureIsTransient:
     that text is truncated, redacted, and sometimes only a raw repr."""
 
     def test_a_throttled_summarization_call_is_transient(self):
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert compaction_failure_is_transient(
             {
@@ -13586,26 +13586,26 @@ class TestCompactionFailureIsTransient:
         """The machine reason arrives SCREAMING_SNAKE while the sentence beside
         it is prose, so a marker list matching only one spelling would classify
         the same fault differently depending on which field was filled."""
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert compaction_failure_is_transient({"reason": "MODEL_TEMPORARILY_UNAVAILABLE"})
 
     def test_a_nested_5xx_status_is_transient(self):
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert compaction_failure_is_transient(
             {"status": {"type": "failed"}, "error": {"cause": {"httpStatusCode": 503}}}
         )
 
     def test_a_429_is_transient(self):
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert compaction_failure_is_transient({"error": {"httpStatusCode": 429}})
 
     def test_an_overflowing_conversation_is_not_transient(self):
         """The case the no-retry policy was written for: replaying it repeats
         the same overflow, so it must NOT be classified as retryable."""
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert not compaction_failure_is_transient(
             {"status": {"type": "failed", "reason": "context window exceeded"}}
@@ -13617,7 +13617,7 @@ class TestCompactionFailureIsTransient:
         KAS branch passes whole, so a summary that merely mentions a timeout must
         not upgrade a permanent overflow to transient — a control decision has to
         be unreachable from content the model wrote."""
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert not compaction_failure_is_transient(
             {
@@ -13633,7 +13633,7 @@ class TestCompactionFailureIsTransient:
     def test_a_reason_bearing_key_still_matches_beside_that_summary(self):
         """The scoping must not cost a real case: the same frame with a genuine
         throttle in a reason-bearing field is still transient."""
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert compaction_failure_is_transient(
             {
@@ -13646,19 +13646,19 @@ class TestCompactionFailureIsTransient:
     def test_a_4xx_is_not_transient(self):
         """A validation or auth failure is answered by fixing the request, not
         by sending it again."""
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert not compaction_failure_is_transient({"error": {"httpStatusCode": 400}})
 
     def test_a_bare_failure_is_not_transient(self):
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert not compaction_failure_is_transient({"status": {"type": "failed"}})
 
     def test_a_boolean_is_not_read_as_a_status_code(self):
         """``bool`` is an ``int`` subclass, so a True under this key would
         otherwise compare as 1 — and 1 is not a status code at all."""
-        from kiro_crew.acp.client import compaction_failure_is_transient
+        from efm_go.acp.client import compaction_failure_is_transient
 
         assert not compaction_failure_is_transient({"error": {"httpStatusCode": True}})
 
@@ -13667,7 +13667,7 @@ class TestCompactionFailureIsTransient:
         and the verdict that decides the RETRY cannot be derived from different
         views of the same frame. Separate calls rather than a paired helper,
         because only the verdict crosses the provider contract."""
-        from kiro_crew.acp.client import (
+        from efm_go.acp.client import (
             compaction_failure_detail,
             compaction_failure_is_transient,
         )
@@ -13695,8 +13695,8 @@ class TestMovedAsideRestore:
     @pytest.fixture(autouse=True)
     def _isolated_provenance(self, monkeypatch):
         """Per-test provenance registries and a warm advertised-model cache."""
-        from kiro_crew import model_registry
-        from kiro_crew.acp import seed_provenance
+        from efm_go import model_registry
+        from efm_go.acp import seed_provenance
 
         monkeypatch.setattr(seed_provenance, "_RECORDS", {})
         monkeypatch.setattr(seed_provenance, "_LIVE", {})
@@ -13807,7 +13807,7 @@ class TestMovedAsideRestore:
 
     def test_crew_own_seed_restore_still_round_trips(self, tmp_path, monkeypatch):
         """Positive control: a refused durable revoke puts Crew's own seed back cleanly."""
-        from kiro_crew.acp import seed_provenance
+        from efm_go.acp import seed_provenance
 
         client, path = self._authored(tmp_path)
         before = path.read_bytes()
@@ -13823,7 +13823,7 @@ class TestMovedAsideRestore:
 
         The POSIX fallback is the validated byte copy, called with no size cap.
         """
-        from kiro_crew.acp import seed_provenance
+        from efm_go.acp import seed_provenance
 
         calls = self._force_the_copy_fallback(monkeypatch)
         client, path = self._authored(tmp_path)
@@ -14073,8 +14073,8 @@ class TestCreateRaceLoserPoll:
     @pytest.fixture(autouse=True)
     def _isolated_provenance(self, tmp_path, monkeypatch):
         """Per-test provenance registries, sidecar and a warm advertised-model cache."""
-        from kiro_crew import model_registry
-        from kiro_crew.acp import seed_provenance
+        from efm_go import model_registry
+        from efm_go.acp import seed_provenance
 
         monkeypatch.setattr(seed_provenance, "_RECORDS", {})
         monkeypatch.setattr(seed_provenance, "_LIVE", {})
@@ -14093,7 +14093,7 @@ class TestCreateRaceLoserPoll:
         the digest-only shape ``_read_disk_seeds`` accepts, so no live holder
         pins it and nothing in this process's memory knows of it.
         """
-        from kiro_crew.acp import seed_provenance
+        from efm_go.acp import seed_provenance
 
         stale = '{"permissions": {"defaultMode": "bypassPermissions"}}'
         sidecar = seed_provenance._sidecar_path()
@@ -14147,7 +14147,7 @@ class TestCreateRaceLoserPoll:
         decline on its first iteration and run this session toolless; the poll
         must keep waiting until a record naming its own bytes appears, then share.
         """
-        from kiro_crew.acp import seed_provenance
+        from efm_go.acp import seed_provenance
 
         loser = AcpClient(
             work_dir=tmp_path, acp_backend=ACP_BACKEND_CLAUDE, permission_mode="default"
@@ -14184,7 +14184,7 @@ class TestCreateRaceLoserPoll:
         never unbounded -- and the loser declines exactly once. The clock is
         mocked so the deadline is a handful of iterations, not two real seconds.
         """
-        from kiro_crew.acp import seed_provenance
+        from efm_go.acp import seed_provenance
 
         loser = AcpClient(
             work_dir=tmp_path,
@@ -14235,7 +14235,7 @@ def test_resolve_spawn_agent_argv_converts_a_refusal_to_acperror(tmp_path):
     would escape ``ensure_ready``'s transport ladder uncaught, skipping cleanup;
     the helper must convert it to ``AcpError`` (which the ladder catches) while
     keeping the actionable message, and pass a resolvable name straight through."""
-    from kiro_crew.acp.skill_projection import NativeSkillProjection
+    from efm_go.acp.skill_projection import NativeSkillProjection
 
     client = AcpClient(work_dir=tmp_path, agent="ghost")
     client._native_skill_projection = NativeSkillProjection(

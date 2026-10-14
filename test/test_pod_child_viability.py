@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod.config import EXIT_REFUSED_UNRECOVERABLE, PodConfig
+from efm_go.pod import runtime as rt
+from efm_go.pod.config import EXIT_REFUSED_UNRECOVERABLE, PodConfig
 
 
 @pytest.fixture
@@ -70,8 +70,8 @@ def resolved(monkeypatch: pytest.MonkeyPatch):
     the final argv. Substituting ``[sys.executable, <script>, <subcmd>]`` keeps that
     path intact while staying executable on Windows.
     """
-    from kiro_crew import sandbox
-    from kiro_crew.acp import client as acp_client
+    from efm_go import sandbox
+    from efm_go.acp import client as acp_client
 
     def _install(script: Path) -> None:
         # The confinement legs are neutralised for the CLASSIFICATION tests: what
@@ -152,7 +152,7 @@ def test_a_host_without_kiro_cli_is_not_a_refusal(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """kiro-cli is a separate prerequisite; its absence has its own message."""
-    from kiro_crew.acp import client as acp_client
+    from efm_go.acp import client as acp_client
 
     monkeypatch.setattr(acp_client, "_resolve_kiro_bin", lambda **_kw: None)
 
@@ -171,8 +171,8 @@ def test_an_unspawnable_child_refuses_rather_than_tracebacks(
     missing-binary spelling failed. Its subject is the missing-binary path, so the
     sandbox has to be present-and-working for it to be under test at all.
     """
-    from kiro_crew import sandbox
-    from kiro_crew.acp import client as acp_client
+    from efm_go import sandbox
+    from efm_go.acp import client as acp_client
 
     missing = tmp_path / "not-there" / "kiro-cli"
     monkeypatch.setattr(acp_client, "_resolve_kiro_bin", lambda **_kw: str(missing))
@@ -214,9 +214,9 @@ def test_a_sandbox_refusal_outranks_a_missing_binary(
     supported configuration rather than a broken one. Full order --
     unavailable > sandbox-unavailable > dead(binary).
     """
-    from kiro_crew import sandbox
-    from kiro_crew.acp import client as acp_client
-    from kiro_crew.agent_sdk import pod_child_probe as probe_mod
+    from efm_go import sandbox
+    from efm_go.acp import client as acp_client
+    from efm_go.agent_sdk import pod_child_probe as probe_mod
 
     missing = tmp_path / "not-there" / "kiro-cli"
     monkeypatch.setattr(acp_client, "_resolve_kiro_bin", lambda **_kw: str(missing))
@@ -291,9 +291,9 @@ class TestTheProbeIsConfined:
     @staticmethod
     def _spy_on_spawn(monkeypatch, tmp_path: Path, script: Path) -> dict:
         """Point resolution at a Python fake and capture the wrap + spawn calls."""
-        from kiro_crew import sandbox
-        from kiro_crew.acp import client as acp_client
-        from kiro_crew.agent_sdk import pod_child_probe as probe_mod
+        from efm_go import sandbox
+        from efm_go.acp import client as acp_client
+        from efm_go.agent_sdk import pod_child_probe as probe_mod
 
         seen: dict = {}
         monkeypatch.setattr(acp_client, "_resolve_kiro_bin", lambda **_kw: sys.executable)
@@ -328,8 +328,8 @@ class TestTheProbeIsConfined:
         the delegation decision carried through from ``apply_pod_bundle_spawn``
         rather than re-derived.
         """
-        from kiro_crew import sandbox
-        from kiro_crew.agent_sdk import pod_child_probe as probe_mod
+        from efm_go import sandbox
+        from efm_go.agent_sdk import pod_child_probe as probe_mod
 
         script = _fake_cli(tmp_path, "raise SystemExit(0)\n")
         seen = self._spy_on_spawn(monkeypatch, tmp_path, script)
@@ -368,8 +368,8 @@ class TestTheProbeIsConfined:
         set in HOST config and not in POD config would get a probe that PASSED
         and an agent that could never spawn: healthy status, dead pod.
         """
-        from kiro_crew import sandbox
-        from kiro_crew.agent_sdk import pod_child_probe as probe_mod
+        from efm_go import sandbox
+        from efm_go.agent_sdk import pod_child_probe as probe_mod
 
         script = _fake_cli(tmp_path, "raise SystemExit(0)\n")
         self._spy_on_spawn(monkeypatch, tmp_path, script)
@@ -409,8 +409,8 @@ class TestTheProbeIsConfined:
         probe, ``boot`` exited 1, and the service manager restarted into the same
         failure every few seconds -- the loop the terminal-exit work exists to stop.
         """
-        from kiro_crew import sandbox
-        from kiro_crew.agent_sdk import pod_child_probe as probe_mod
+        from efm_go import sandbox
+        from efm_go.agent_sdk import pod_child_probe as probe_mod
 
         script = _fake_cli(tmp_path, "raise SystemExit(0)\n")
         seen = self._spy_on_spawn(monkeypatch, tmp_path, script)
@@ -439,8 +439,8 @@ class TestTheProbeIsConfined:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """The other sandbox-preparation refusal maps the same way, not to a crash."""
-        from kiro_crew import sandbox
-        from kiro_crew.agent_sdk import pod_child_probe as probe_mod
+        from efm_go import sandbox
+        from efm_go.agent_sdk import pod_child_probe as probe_mod
 
         script = _fake_cli(tmp_path, "raise SystemExit(0)\n")
         self._spy_on_spawn(monkeypatch, tmp_path, script)
@@ -459,8 +459,8 @@ class TestTheProbeIsConfined:
         self, cfg: PodConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """End to end: unsandboxable host -> recorded terminal refusal, not exit 1."""
-        from kiro_crew import sandbox
-        from kiro_crew.agent_sdk import pod_child_probe as probe_mod
+        from efm_go import sandbox
+        from efm_go.agent_sdk import pod_child_probe as probe_mod
 
         script = _fake_cli(tmp_path, "raise SystemExit(0)\n")
         self._spy_on_spawn(monkeypatch, tmp_path, script)
@@ -506,7 +506,7 @@ class TestTheRefusalNoteIsReadNoFollow:
         return dataclasses.replace(PodConfig.load(), pods_dir=pods)
 
     def test_a_regular_note_still_prints(self, tmp_path: Path) -> None:
-        from kiro_crew import pinned_fs
+        from efm_go import pinned_fs
 
         note = tmp_path / "pod-a.refused"
         pinned_fs.write_file_pinned(note, "child could not bootstrap\n", what="note")
@@ -517,7 +517,7 @@ class TestTheRefusalNoteIsReadNoFollow:
 
     def test_a_planted_symlink_note_is_refused_and_never_read(self, tmp_path: Path) -> None:
         """Red-first: a by-name ``read_text`` returned the SECRET here."""
-        from kiro_crew import pinned_fs
+        from efm_go import pinned_fs
 
         secret = tmp_path / "host-credential"
         secret.write_text("SECRET-MATERIAL\n")
@@ -538,7 +538,7 @@ class TestTheRefusalNoteIsReadNoFollow:
         one would hang ``pod ls`` rather than leak. The same lstat gate catches both,
         which is why the check is "is a regular file" and not "is not a symlink".
         """
-        from kiro_crew import pinned_fs
+        from efm_go import pinned_fs
 
         if not hasattr(os, "mkfifo"):  # pragma: no cover - POSIX-only shape
             pytest.skip("mkfifo is POSIX-only; the lstat gate itself is not")

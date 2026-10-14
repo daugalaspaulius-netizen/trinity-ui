@@ -19,7 +19,7 @@ from test_ci_additional_fleet_routes import _evaluate as _expression
 from conftest import _find_posix_test_shell
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-_REPO = "kirodotdev/KiroCrew"
+_REPO = "efmleads.com"
 _ACTION = _REPO_ROOT / ".github/actions/setup-windows-tests"
 
 

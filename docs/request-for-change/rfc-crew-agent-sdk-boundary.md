@@ -10,7 +10,7 @@ doc-pr:
 implementation-prs:
   - "PR 1 — the boundary gate and its baseline: scripts/check_agent_sdk_boundary.py,
     .github/agent-sdk-boundary-baseline.txt (seeded at 58 files / 107 edges),
-    src/kiro_crew/agent_sdk/, and the ci.yml wiring at :440-441"
+    src/efm_go/agent_sdk/, and the ci.yml wiring at :440-441"
 tracking-issues: []
 supersedes: []
 superseded-by: []
@@ -21,7 +21,7 @@ superseded-by: []
   are live; PR 3a moved backend/capability tables behind `agent_sdk` and replaced
   six identity branches with `SessionCapabilities`; the import-cycle half of PR 4
   is also complete. The current ratchet baseline is **57 files / 102 edges**
-  (64 via `kiro_crew.acp`, 38 via `kiro_crew.providers`). PR 2's SDK-owned event
+  (64 via `efm_go.acp`, 38 via `efm_go.providers`). PR 2's SDK-owned event
   and approval types, the remaining role protocols and supervisor ownership, the
   consumer migration waves, and the final seal remain incomplete. The migration
   stays additive: consumers move behind the boundary one wave at a time.
@@ -37,22 +37,22 @@ superseded-by: []
   `../system-specs/modules/subagent.md`,
   and `rfc-pluggable-model-providers.md`
 - Related unmerged work: PR
-  [#6307](https://github.com/kirodotdev/KiroCrew/pull/6307) (`feat: add staged
+  [#6307](https://efmleads.com/pull/6307) (`feat: add staged
   acp adapter admission`, head `7e3e27395`) adds an adapter descriptor and
   registry **inside** the ACP layer. It is orthogonal to this RFC and needs no
   change to land — see §11.2.
 
 ## 1. Summary
 
-Introduce `kiro_crew.agent_sdk` as the **only** import surface through which the
-rest of the codebase talks to an agent backend, and make `kiro_crew.acp` private
+Introduce `efm_go.agent_sdk` as the **only** import surface through which the
+rest of the codebase talks to an agent backend, and make `efm_go.acp` private
 to a single driver behind it.
 
-Today there is a package named `kiro_crew.providers` that looks like this
+Today there is a package named `efm_go.providers` that looks like this
 boundary and is not one. It re-exports ACP symbols rather than translating them,
 its "provider-agnostic" event type is the ACP event class under an alias
-(`src/kiro_crew/providers/base.py:30`), and most modules outside it import
-`kiro_crew.acp` directly rather than going through it. PR 1's baseline seeded the
+(`src/efm_go/providers/base.py:30`), and most modules outside it import
+`efm_go.acp` directly rather than going through it. PR 1's baseline seeded the
 census at **58 files / 107 edges** across the two forbidden roots; the live split
 is printed by the gate on every run, and
 `.github/agent-sdk-boundary-baseline.txt` is the per-file record. Do not read a
@@ -83,7 +83,7 @@ exposed a design flaw in an earlier draft of §5 (§5.3).
 ## 2. Motivation and current state
 
 Re-verified at `73d60a83d` on 2026-09-05. Counts below are from
-`src/kiro_crew`, excluding `src/kiro_crew/acp/` and `src/kiro_crew/providers/`
+`src/efm_go`, excluding `src/efm_go/acp/` and `src/efm_go/providers/`
 themselves, and excluding `test/` unless stated. For import edges the
 authoritative count is no longer an ad-hoc scan: it is
 `.github/agent-sdk-boundary-baseline.txt`, and the gate prints the live per-root
@@ -91,18 +91,18 @@ split on every run.
 
 ### 2.1 The existing seam is an alias, not a translation
 
-`src/kiro_crew/providers/base.py:30`:
+`src/efm_go/providers/base.py:30`:
 
 ```python
-from kiro_crew.acp.types import AcpEvent as LLMEvent  # noqa: F401
+from efm_go.acp.types import AcpEvent as LLMEvent  # noqa: F401
 ```
 
 Every consumer that touches a turn reads ACP's own dataclass. `base.py` further
-re-exports 13 `EVENT_*` constants from `kiro_crew.acp.types` unchanged, so the
+re-exports 13 `EVENT_*` constants from `efm_go.acp.types` unchanged, so the
 event vocabulary is ACP's vocabulary with a different import path. There are
 **466** `EVENT_*` / `STOP_REASON_*` usages outside the ACP package.
 
-`AcpEvent` (`src/kiro_crew/acp/types.py`) carries 30 fields. Roughly a third
+`AcpEvent` (`src/efm_go/acp/types.py`) carries 30 fields. Roughly a third
 are not domain facts:
 
 | Field | Why it should not cross a boundary |
@@ -121,7 +121,7 @@ keys `slot._approval_futures` on `str(event.request_id)`, and
 `chat_runner.py:7487` ships `{"id": str(event.request_id)}` to the browser. A raw
 JSON-RPC id is part of the frontend contract.
 
-The first domain vocabulary now owned by `kiro_crew.agent_sdk` is the minimal
+The first domain vocabulary now owned by `efm_go.agent_sdk` is the minimal
 completed-turn contract used by structured monitors: provider-neutral input and
 output token dimensions plus terminal stop reasons. Monitor accounting consumes
 that SDK surface instead of importing ACP's `TurnUsage` and constants directly.
@@ -142,7 +142,7 @@ from the SDK root.
 
 **58 files / 107 edges**, as seeded into
 `.github/agent-sdk-boundary-baseline.txt` by PR 1 across both forbidden roots
-(`kiro_crew.acp` and `kiro_crew.providers`).
+(`efm_go.acp` and `efm_go.providers`).
 
 An earlier revision printed a per-file table here. It is deleted rather than
 refreshed, for the reason §PR 5 gives about counts: every row was already wrong
@@ -159,7 +159,7 @@ imports `acp.runtime._get_rss_tree_mb` and `_iter_descendant_pids`,
 `dashboard/stall_enrichment.py` imports `acp.liveness.socket_inodes` (a `/proc`
 primitive), and `dashboard/steer_settle.py` imports `acp._dispatch.redact_text`.
 
-`src/kiro_crew/mcp_tools/spawn.py` has zero ACP references — it consumes
+`src/efm_go/mcp_tools/spawn.py` has zero ACP references — it consumes
 everything through `subagent.py`. It is the only already-clean consumer and it is
 the shape the rest should have.
 
@@ -169,7 +169,7 @@ the shape the rest should have.
 `acp/types.py` as the home of the backend constants and "seven opt-in
 frozensets in the same file". `acp/types.py` now holds **zero** of either. Every
 constant and every capability set lives in the leaf
-`src/kiro_crew/acp_backends.py` — `ACP_BACKEND_CLAUDE`,
+`src/efm_go/acp_backends.py` — `ACP_BACKEND_CLAUDE`,
 `ACP_BACKEND_KAS`, `ACP_BACKEND_CODEX`, `ACP_BACKEND_KIRO` — which `acp/types.py` re-exports, so existing call sites kept their
 import path while the definitions moved.
 
@@ -192,14 +192,14 @@ covers that too now. At ~580 lines it holds:
   `ACP_BACKEND_PERMISSION_CONFIG` — read through `routing_for()` and `permission_config_for()`, both of which fail closed on
   an id the table does not name.
 
-A second top-level policy module has joined it: `src/kiro_crew/acp_tool_gate.py`
+A second top-level policy module has joined it: `src/efm_go/acp_tool_gate.py`
 (383 lines), which decides whether a harness's routing counts as *enforced*
 (`ENFORCED_ROUTINGS`) and derives the credential directories an adapter's
 child must not be able to read. Like the leaf, it imports nothing from `acp/`;
 like the leaf, it sits outside `agent_sdk`.
 
 Neither module is a boundary violation, and the architecture test pins that: a
-prefix-match on `kiro_crew.acp` would flag `acp_backends`, which is why the gate
+prefix-match on `efm_go.acp` would flag `acp_backends`, which is why the gate
 matches on module boundaries instead.
 
 So the defect is narrower and more precise than v3 stated, and PR 3's job changes
@@ -238,19 +238,19 @@ owns the whole PID lifecycle for agent processes, was genuinely ACP-owned — an
 the cycle v3 named there was the wrong cycle.
 
 **The cycle, corrected.** v3 asserted `session_pid → acp.client → session →
-session_pid`, evidenced by two lazy `from kiro_crew.acp.client import
+session_pid`, evidenced by two lazy `from efm_go.acp.client import
 _get_child_pids` calls. Those calls are real — two sites in `session_pid.py`
 today — but a lazy in-function import
 runs after both modules are initialized, so it cannot close a loop at import time.
 The operative cycle ran through a **module-scope** import: `session_pid.py`
-imported `kiro_crew.providers.base` for one parameter annotation, giving
+imported `efm_go.providers.base` for one parameter annotation, giving
 
 ```
 session_pid → providers.base → acp.types → acp/__init__ → acp.runtime → session_pid
 ```
 
-and that one was fatal rather than cosmetic. `import kiro_crew.session_pid` as the
-first `kiro_crew` module raised `ImportError: cannot import name '_track_pid' from
+and that one was fatal rather than cosmetic. `import efm_go.session_pid` as the
+first `efm_go` module raised `ImportError: cannot import name '_track_pid' from
 partially initialized module`. It also explains a pattern elsewhere: leaf modules
 carried `LLMProvider = Any` runtime stubs to stay out of it.
 
@@ -268,7 +268,7 @@ from 107 edges to 106. The `LLMProvider = Any` runtime stubs whose only job was 
 dodge that cycle (`session_compaction.py`, `session_background.py`,
 `session_cleanup.py`) are deleted with it; and
 `test/test_agent_lifecycle_cycle.py` pins both halves in a fresh interpreter —
-`import kiro_crew.session_pid` standing alone, plus an assertion that the import
+`import efm_go.session_pid` standing alone, plus an assertion that the import
 leaks no ACP module into `sys.modules`. `session_allocation.py` and
 `session_pool.py` keep theirs, because each subscripts the name at module scope
 (`Callable[..., LLMProvider]`) — a runtime use that deferral does not reach — and
@@ -325,7 +325,7 @@ kinds of undeclared hole:
 | Comment clusters naming the companion or a deleted module as the supplier of behaviour | 19 | The seam's real contract lives in prose |
 | Refusal / downgrade mechanisms, including the degrade log in `acp_backends.resolve_selected_backend()` and five capability non-memberships | 9 | — |
 | Live `_is_claude` branches inside `acp/` | 13 | — |
-| CC-symbol lines in `src/kiro_crew` | 146 (352 with `test/`) | — |
+| CC-symbol lines in `src/efm_go` | 146 (352 with `test/`) | — |
 
 None of the three hole kinds is declared in a Protocol, none is type-checked, and
 none fails loudly when forgotten. That is the concrete cost this RFC's driver
@@ -421,7 +421,7 @@ silent should fail a test — and that is what §12.4 turns into code.
 ## 3. Goals
 
 1. Exactly one import path from application code to an agent backend:
-   `kiro_crew.agent_sdk`. Enforced mechanically, with a baseline that can only
+   `efm_go.agent_sdk`. Enforced mechanically, with a baseline that can only
    shrink.
 2. No ACP protocol shape crosses that boundary — no JSON-RPC ids, no raw ACP
    option dicts, no raw tool params, no multiplexing artifacts.
@@ -429,7 +429,7 @@ silent should fail a test — and that is what §12.4 turns into code.
    questions, and where a backend *lacks* an operation they test for a protocol
    rather than reading a boolean (§5.3).
 4. Agent process and session lifecycle state has a single owner, and
-   `session_pid.py` imports no `kiro_crew.acp` or `kiro_crew.providers` name at
+   `session_pid.py` imports no `efm_go.acp` or `efm_go.providers` name at
    module scope. There is no `session_pid` ↔ `worker_pool` cycle and never was
    (§2.4); the real one ran `session_pid.py:28 → providers.base → acp.types →
    acp/__init__ → acp.runtime → session_pid`, and it is closed. What remains of
@@ -469,18 +469,18 @@ silent should fail a test — and that is what §12.4 turns into code.
 consumers        dashboard/  slack/  discord/  telegram/  messaging/
                  session.py  subagent.py  apps/  cli_*.py  workflows/
                         |
-                        |  may import ONLY kiro_crew.agent_sdk
+                        |  may import ONLY efm_go.agent_sdk
                         v
-                 kiro_crew.agent_sdk          domain types, role protocols,
+                 efm_go.agent_sdk          domain types, role protocols,
                                               capabilities, supervisor
                         |
                         |  resolves drivers through a registry
                         v
-                 kiro_crew.agent_sdk.drivers.acp
+                 efm_go.agent_sdk.drivers.acp
                                               the ONLY module permitted to
-                                              import kiro_crew.acp
+                                              import efm_go.acp
                         v
-                 kiro_crew.acp   (private)    wire, dialects, adapters,
+                 efm_go.acp   (private)    wire, dialects, adapters,
                                               session handles, worker pool
 ```
 
@@ -492,13 +492,13 @@ driver applies the shared suspended-child resource policy and translates the ACP
 failure into a boolean, so application transports can fail in their own vocabulary
 without importing an ACP exception or lifecycle helper.
 
-`kiro_crew.providers` becomes a thin deprecated shim during migration (§9) and
+`efm_go.providers` becomes a thin deprecated shim during migration (§9) and
 its **shim surface** is deleted at the end. Not the whole package: since v3,
-`src/kiro_crew/providers/mirrors/` has become a real and growing layer —
+`src/efm_go/providers/mirrors/` has become a real and growing layer —
 `base.py`'s `AgentConfigMirror` with `Concern` / `Disposition` / `Ruling`,
 `registry.py`'s `MIRRORS` / `NO_MIRROR`, `claude_code.py`, and a `README.md` —
 with claude the only mirror and kiro, KAS and codex carrying explicit `NO_MIRROR`
-reasons. That is load-bearing code, not an alias, and deleting `kiro_crew.providers`
+reasons. That is load-bearing code, not an alias, and deleting `efm_go.providers`
 wholesale would delete it. Where it lives after the boundary is drawn is an open
 question (§12.5), and PR 6's deletion is scoped accordingly.
 
@@ -763,12 +763,12 @@ moves in.
 
 What that has to accomplish is the cycle `session_pid → acp.client → session →
 session_pid`, whose two live sites are `session_pid.py:311` and `:1888` (both a
-lazy `from kiro_crew.acp.client import _get_child_pids`). Deleting the
+lazy `from efm_go.acp.client import _get_child_pids`). Deleting the
 `worker_pool.py:49` guard is a *consequence* of the move, not the proof it worked —
 that edge is one-way and the guard exists for standalone importability (§2.4). The
 move must therefore place two pieces of shared surface: `_get_child_pids`, or a
 PID-enumeration primitive it can be replaced by, so `session_pid.py` retains no
-`kiro_crew.acp` import at any scope; and `_kill_pid_tree` (`session_pid.py:300`)
+`efm_go.acp` import at any scope; and `_kill_pid_tree` (`session_pid.py:300`)
 plus the `_MANAGED_AGENT_MARKERS` vocabulary, both of which are consulted
 from the agent half and the work half. The non-agent sweeps gate their kill sets
 *negatively* on that marker vocabulary and consume the protected
@@ -873,7 +873,7 @@ Shipped as described, with one deviation worth recording. `ci.yml` runs
 at **58 files / 107 edges** across both roots; the architecture tests landed as
 four `test/test_agent_sdk_*.py` files.
 
-The deviation: PR 1 proposed `src/kiro_crew/agent_sdk/` with "the layer docstring
+The deviation: PR 1 proposed `src/efm_go/agent_sdk/` with "the layer docstring
 and nothing else" and "no code moves". The package now also carries
 `drivers/acp.py`, `backend_install.py`, `backend_identity.py`,
 `provider_identity.py` and `native_commands.py`. That is not drift to be corrected
@@ -881,8 +881,8 @@ and nothing else" and "no code moves". The package now also carries
 it does mean the boundary's contents are no longer described by this plan, and
 PR 2's first job is to reconcile what is there with §5.2.
 
-**The gate watches two roots, not one.** `kiro_crew.acp` is the obvious one;
-`kiro_crew.providers` is the one that makes the number honest. `providers/base.py`
+**The gate watches two roots, not one.** `efm_go.acp` is the obvious one;
+`efm_go.providers` is the one that makes the number honest. `providers/base.py`
 re-exports `LLMEvent` and the `EVENT_*` constants, so a consumer can depend on
 ACP shapes without naming ACP. A gate watching only `acp` would let a file look
 migrated while nothing decoupled, and the baseline would fall for free.
@@ -892,8 +892,8 @@ file from a live scan and refuses to overwrite an existing one, because re-seedi
 is exactly the "regenerate and absorb every new offender" move the missing-file
 error exists to prevent. `--update-baseline` only lowers counts and deletes lines.
 An earlier draft of this section hardcoded "68 edges across 42 files"; that number
-came from a regex whose `kiro_crew\.acp` prefix also matched
-`kiro_crew.acp_backends`, a sibling leaf module that imports no ACP at all. The
+came from a regex whose `efm_go\.acp` prefix also matched
+`efm_go.acp_backends`, a sibling leaf module that imports no ACP at all. The
 AST scan is authoritative, which is why §2.2 now points at the baseline instead of
 reprinting a table — v3 disowned the figure here and printed it there.
 
@@ -902,7 +902,7 @@ Exit criteria, as verified on the merged tree:
 - Verified: `--test` plants one probe per rule family (plain, module, relative,
   multi-line, `TYPE_CHECKING`-only, dynamic `import_module`, `__import__`, and the
   `providers` re-export channel) plus clean probes for the SDK, an unrelated
-  `kiro_crew` module, and the `acp_backends` prefix neighbour — and runs first in
+  `efm_go` module, and the `acp_backends` prefix neighbour — and runs first in
   the same CI step (`ci.yml`).
 - Verified: the gate exits 0 on the seeded tree, and non-zero when an import of
   either forbidden root is added to any file under `src/`.
@@ -973,7 +973,7 @@ PR 5's waves delete the shims per file as each consumer moves, and PR 6's exit
 asserts none remain. The "no `request_id` on `AgentEvent`" criterion therefore
 belongs to PR 6, not here.
 
-- Exit: `grep -rn "AcpEvent" src/kiro_crew` outside `acp/` and the driver returns
+- Exit: `grep -rn "AcpEvent" src/efm_go` outside `acp/` and the driver returns
   zero hits.
 - Exit: a parity test asserts every SDK event-kind and stop-reason string equals
   its ACP counterpart.
@@ -1165,7 +1165,7 @@ work-class sweep as *safety* input, not merely as shared code.
   properties onto `session_pool.py` / `session_background.py` /
   `session_allocation.py` / `session_cleanup.py` either move with the pool or are
   stated as staying, deliberately.
-- Exit: **`session_pid.py` imports no `kiro_crew.acp` or `kiro_crew.providers`
+- Exit: **`session_pid.py` imports no `efm_go.acp` or `efm_go.providers`
   name at module scope, proven by `test/test_agent_lifecycle_cycle.py` — a
   standalone import in a fresh interpreter plus a zero-leaked-ACP-modules
   assertion — not by a grep.** This criterion is already met, and it replaces v3's,
@@ -1173,15 +1173,15 @@ work-class sweep as *safety* input, not merely as shared code.
   have closed the real cycle, because a lazy in-function import runs after both
   modules are initialized.
 - Exit (tidy-up, not a cycle proof): `acp/worker_pool.py` contains no
-  `from kiro_crew.session_pid import`. v3 listed this as cycle evidence; the edge
+  `from efm_go.session_pid import`. v3 listed this as cycle evidence; the edge
   is one-way and the guard exists for standalone importability (§2.4), so it
   certifies nothing about the cycle and should not be read as doing so.
-- Exit: the remaining lazy `from kiro_crew.acp.client import _get_child_pids`
+- Exit: the remaining lazy `from efm_go.acp.client import _get_child_pids`
   calls (`session_pid.py`) are gone — this is a *coupling* criterion
   now, not the cycle criterion.
 - Exit: `dashboard/session_memory.py` imports no underscore-prefixed ACP names
   (`_get_rss_tree_mb`, `_iter_descendant_pids` today).
-- Exit: `dashboard/stall_enrichment.py` imports no `kiro_crew.acp` name at all.
+- Exit: `dashboard/stall_enrichment.py` imports no `efm_go.acp` name at all.
   The underscore form of this criterion passes today — its only ACP import is
   `acp.liveness.socket_inodes` — so it certifies nothing; the `/proc` primitive has
   to move behind the SDK or into a shared module for this to go green.
@@ -1225,10 +1225,10 @@ reader of (PR 2). A wave that moves the import but leaves a shim alive has not
 finished — the shim is what let PR 2 be additive, and it is dead weight from the
 moment its last consumer is gone.
 
-Both halves of the baseline move here. The `kiro_crew.providers` edges are not a
+Both halves of the baseline move here. The `efm_go.providers` edges are not a
 PR 6 problem: roughly two fifths of the recorded edges reach the shim rather than
 the ACP package, spread across more files than the `acp` half. If the waves only
-chase `kiro_crew.acp`, PR 6 arrives with that whole half still pointing at a
+chase `efm_go.acp`, PR 6 arrives with that whole half still pointing at a
 package it is supposed to delete. The gate prints the live split on every run —
 read it there rather than from this paragraph.
 
@@ -1240,7 +1240,7 @@ which module they import the name *from*, not how they build it.
 
 - Exit: after each wave the baseline shrinks and never grows.
 - Exit: each wave's commit reduces the per-root split the gate prints, and by the
-  end of wave four the `kiro_crew.providers` half is at zero.
+  end of wave four the `efm_go.providers` half is at zero.
 - Exit: `mcp_tools/spawn.py` remains at zero, unmodified.
 - Blocked on: PRs 2-4.
 
@@ -1250,12 +1250,12 @@ The baseline reaches zero and is empty. **The driver never appears in it.** The
 gate exempts by directory prefix and `_scan` skips exempt files, so
 `agent_sdk/drivers/acp.py` is carried by the exempt set, not by a baseline
 count — and PR 1's own test already pins that
-(`assert gate._is_exempt("src/kiro_crew/agent_sdk/drivers/acp.py")`). A
+(`assert gate._is_exempt("src/efm_go/agent_sdk/drivers/acp.py")`). A
 hand-written baseline entry for it would fail
 `test_every_recorded_violation_still_exists` and be erased by
 `--update-baseline`.
 
-`kiro_crew.providers`'s **shim surface** is deleted — `base.py`'s aliases and
+`efm_go.providers`'s **shim surface** is deleted — `base.py`'s aliases and
 `EVENT_*` re-exports, `acp.py`'s provider class and its `is_claude_backend` /
 `provider_label` helpers — and with it the `providers/` entry in the gate's exempt
 set. The exemption was always temporary and the architecture test pins the set, so
@@ -1331,21 +1331,21 @@ The gate ships as `scripts/check_agent_sdk_boundary.py` with
 `.github/agent-sdk-boundary-baseline.txt`, and three of its decisions are load
 bearing rather than incidental:
 
-**It watches two roots, not one.** `kiro_crew.acp` alone would be a hole.
+**It watches two roots, not one.** `efm_go.acp` alone would be a hole.
 `providers/base.py` re-exports `LLMEvent` and the `EVENT_*` constants from ACP
-verbatim, so a consumer that swapped `from kiro_crew.acp import
-LLMEvent` for `from kiro_crew.providers import LLMEvent` would read as migrated
+verbatim, so a consumer that swapped `from efm_go.acp import
+LLMEvent` for `from efm_go.providers import LLMEvent` would read as migrated
 while still depending on ACP event shapes — and the baseline would shrink for
-free. The forbidden roots are therefore `kiro_crew.acp` **and**
-`kiro_crew.providers`, the exempt prefixes are `agent_sdk/`, `acp/` and
+free. The forbidden roots are therefore `efm_go.acp` **and**
+`efm_go.providers`, the exempt prefixes are `agent_sdk/`, `acp/` and
 `providers/` themselves, and the gate prints the per-root split on every run, so a
 wave that moves one half and stalls on the other is visible rather than merely
 smaller.
 
-**It matches bound names, not just the from-target.** `from kiro_crew import acp`
-has `node.module == "kiro_crew"`, which matches no forbidden root — the forbidden
+**It matches bound names, not just the from-target.** `from efm_go import acp`
+has `node.module == "efm_go"`, which matches no forbidden root — the forbidden
 package is the *name being bound*. A gate that inspects only the from-target lets
-that spelling, plus `from kiro_crew import providers` and `from .. import acp`,
+that spelling, plus `from efm_go import providers` and `from .. import acp`,
 through untouched. Since there is no inline opt-out marker, that would not have
 been an obscure edge case: it would have become the standard way around the rule,
 with the baseline still shrinking and dependence unchanged. So each bound name is
@@ -1382,8 +1382,8 @@ out of scope" — an argument that only held while the alternative was believed 
 be silence.
 
 Two properties keep this from being merely conservative. Ancestry is required, so
-`__import__("kiro_crew.sandbox", fromlist=[...])` — which this tree really does
-call — is untouched, because no forbidden root lives under `kiro_crew.sandbox`. And
+`__import__("efm_go.sandbox", fromlist=[...])` — which this tree really does
+call — is untouched, because no forbidden root lives under `efm_go.sandbox`. And
 a bare string is decided rather than feared: iterating `"acp"` yields single
 characters, so it can only ever name one-letter submodules.
 
@@ -1391,7 +1391,7 @@ One argument-parsing bug is worth recording separately, because it was not a
 container shape and no amount of enumeration would have found it. `__import__("")`
 with a `level` is how a purely relative import spells itself, and
 `__import__("", globals(), locals(), ("acp",), 2)` from two levels under
-`kiro_crew` really does import `kiro_crew.acp`. The scanner read the module name as
+`efm_go` really does import `efm_go.acp`. The scanner read the module name as
 `positional or keyword`, and `""` is falsy — so a legal name was treated as "no
 name given" and the whole relative branch never ran. The rule is to test for
 absence, not for truth. Its mirror is equally load-bearing:
@@ -1463,9 +1463,9 @@ An `ast`-based test in house style, modelled on
   that exists. Widening the boundary — or leaving `providers/` exempt after PR 6
   deletes it — fails a test instead of passing quietly. A
   "every module is classified" assertion was considered and rejected: every path
-  under `src/` begins with `src/kiro_crew/`, so such a test can never fail and
+  under `src/` begins with `src/efm_go/`, so such a test can never fail and
   reads as coverage it does not provide.
-- A neighbouring-name probe: `kiro_crew.acp_backends` is not `kiro_crew.acp`, and
+- A neighbouring-name probe: `efm_go.acp_backends` is not `efm_go.acp`, and
   the test pins that a prefix-match regression does not start flagging it.
 - `test_every_recorded_violation_still_exists` — a stale exemption fails.
 - Negative probes: a violation outside the table is still caught; a
@@ -1514,7 +1514,7 @@ does not handle fails too.
 - **Event kind values unchanged.** Persisted transcripts and channel payloads
   keep working; only the Python import path moves.
 - **`LLMProvider` survives migration, and `AgentEvent` ships deprecation shims.**
-  `kiro_crew.providers.base` becomes a deprecation shim re-exporting the SDK role
+  `efm_go.providers.base` becomes a deprecation shim re-exporting the SDK role
   protocols, so PR 2 does not have to land with every consumer file. That alone
   is not enough to make PR 2 additive: the five ACP-shaped fields PR 2 drops from
   the event object are read at a large majority of the consumer files, led by
@@ -1584,7 +1584,7 @@ does not handle fails too.
 
 ## 11. Alternatives considered
 
-### 11.1 Evolve `kiro_crew.providers` in place
+### 11.1 Evolve `efm_go.providers` in place
 
 Rejected. It is already positioned as the boundary and has not become one in
 practice: it re-exports rather than translates, and most consumer modules bypass
@@ -1728,7 +1728,7 @@ reopens it.
    cannot close a loop at initialization time. The real cycle ran
    `session_pid.py:28 → providers.base → acp.types → acp/__init__ → acp.runtime →
    session_pid`, raised a hard `ImportError` on a standalone
-   `import kiro_crew.session_pid`, and **is already closed** by deleting that one
+   `import efm_go.session_pid`, and **is already closed** by deleting that one
    annotation-only import rather than deferring it (§2.4). So the cycle is no longer
    an argument for this decision — the ownership question is the whole argument,
    and the move still has to relocate `_get_child_pids` and place
@@ -1814,7 +1814,7 @@ reopens it.
 5. **Does the deprecated `providers` shim need a release window, and where does
    `providers/mirrors/` live? — DISPOSITION: three halves; the third is a
    relocation decision, not a release-window one, and it gates PR 6.** The
-   question is not only about external consumers. `from kiro_crew.providers` is a substantial minority of the
+   question is not only about external consumers. `from efm_go.providers` is a substantial minority of the
    baseline — the gate prints the exact split on every run — and it pulls the role
    protocols (`LLMProvider`), the provider class (`AcpProvider`), the event type
    and `EVENT_*` constants that `providers/base.py` re-exports from ACP, plus
@@ -1829,17 +1829,17 @@ reopens it.
    must not arrive with it outstanding.
    The second half, genuinely open, is *external*: before PR 6 deletes the shim
    surface, grep the internal companion and the app catalogue for
-   `kiro_crew.providers.base`. Zero hits → delete in PR 6. Any hit → one release
+   `efm_go.providers.base`. Zero hits → delete in PR 6. Any hit → one release
    window, and the shim carries its deprecation warning from PR 2 rather than
    PR 6.
    **The third half is new since v3 and is not a release-window question at all.**
-   `src/kiro_crew/providers/mirrors/` did not exist when this item was written. It
+   `src/efm_go/providers/mirrors/` did not exist when this item was written. It
    is now a real agent-config projection layer — `base.py`'s `AgentConfigMirror`
    with `Concern` / `Disposition` / `Ruling`, `registry.py`'s `MIRRORS` /
    `NO_MIRROR`, `claude_code.py`, `README.md` — with claude the only mirror and
    kiro, KAS and codex carrying explicit `NO_MIRROR` reasons, and KAS's own entry
    says its projection is next in the stack. So the layer is *growing*, and
-   "delete `kiro_crew.providers`" as v3 wrote it would delete live code. It needs a
+   "delete `efm_go.providers`" as v3 wrote it would delete live code. It needs a
    home named before PR 6 starts, and the choice is a real one: a mirror projects
    an agent spec for one host, which is driver work and argues for
    `agent_sdk/mirrors/`; but the mirrors also encode per-host *decisions* a driver

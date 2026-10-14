@@ -3,7 +3,7 @@
 The defect behind this script: a work source selects and excludes by LABEL, and a
 contributor who opens a PR carrying ``Fixes #N`` applies no label, so an item
 whose fix is already in flight is indistinguishable from a free one. Measured on
-kirodotdev/KiroCrew, 25 of 29 label-clean candidates were referenced by an open
+efmleads.com, 25 of 29 label-clean candidates were referenced by an open
 PR.
 
 ``claim_preflight.py`` already refuses those at claim time, so the risk in adding
@@ -35,14 +35,14 @@ from skill_script_helpers import load_skill_script
 SKILL_DIR = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "pipeline-conductor"
 )
 SCRIPT = SKILL_DIR / "scripts" / "coverage_filter.py"
 PREFLIGHT = SKILL_DIR / "scripts" / "claim_preflight.py"
 
-REPO = "kirodotdev/KiroCrew"
+REPO = "efmleads.com"
 ITEM = 11516
 
 
@@ -98,9 +98,9 @@ class TestItemReference:
             "Fixes #11516",
             "closes #11516 and tidies up",
             "see #11516 for the measurement",  # a reference, reported as MENTIONED
-            "Resolves kirodotdev/KiroCrew#11516",
-            "refs https://github.com/kirodotdev/KiroCrew/issues/11516",
-            "http://github.com/kirodotdev/KiroCrew/issues/11516",
+            "Resolves efmleads.com#11516",
+            "refs https://efmleads.com/issues/11516",
+            "http://efmleads.com/issues/11516",
             "FIXES KIRODOTDEV/KIROCREW#11516",
         ],
     )
@@ -128,10 +128,10 @@ class TestItemReference:
     @pytest.mark.parametrize(
         "text",
         [
-            "Fixes fakekirodotdev/KiroCrew#11516",
-            "Fixes not-kirodotdev/KiroCrew#11516",
-            "Fixes x.kirodotdev/KiroCrew#11516",
-            "Fixes a/kirodotdev/KiroCrew#11516",
+            "Fixes fakeefmleads.com#11516",
+            "Fixes not-efmleads.com#11516",
+            "Fixes x.efmleads.com#11516",
+            "Fixes a/efmleads.com#11516",
         ],
     )
     def test_an_owner_merely_ending_in_this_one_is_not_a_reference(self, mod, text):
@@ -145,7 +145,7 @@ class TestItemReference:
     def test_a_lookalike_owner_does_not_cover_the_item(self, mod):
         """End to end, not only on the pattern: a pull request whose body names a
         lookalike owner leaves the item UNCOVERED, so the queue keeps it."""
-        pulls = [api_pull(41, body="Fixes fakekirodotdev/KiroCrew#11516")]
+        pulls = [api_pull(41, body="Fixes fakeefmleads.com#11516")]
         found = mod.coverage(REPO, [ITEM], pulls)
         assert found[ITEM] == []
 
@@ -171,8 +171,8 @@ class TestVocabularyAgreesWithClaimPreflight:
         "text",
         [
             "Fixes #11516",
-            "closes kirodotdev/KiroCrew#11516",
-            "resolved https://github.com/kirodotdev/KiroCrew/issues/11516",
+            "closes efmleads.com#11516",
+            "resolved https://efmleads.com/issues/11516",
         ],
     )
     def test_anything_the_preflight_reads_as_closure_is_read_here_as_coverage(
@@ -210,8 +210,8 @@ class TestVocabularyAgreesWithClaimPreflight:
         "text",
         [
             "Fixes #11516",
-            "closes kirodotdev/KiroCrew#11516",
-            "resolved https://github.com/kirodotdev/KiroCrew/issues/11516",
+            "closes efmleads.com#11516",
+            "resolved https://efmleads.com/issues/11516",
         ],
     )
     def test_a_closing_reference_is_read_the_same_way_by_both(self, mod, preflight, text):
@@ -289,8 +289,8 @@ class TestCoverage:
         [
             ("Fixes #11516", True),
             ("closes: #11516", True),
-            ("Resolved kirodotdev/KiroCrew#11516", True),
-            ("fixed https://github.com/kirodotdev/KiroCrew/issues/11516", True),
+            ("Resolved efmleads.com#11516", True),
+            ("fixed https://efmleads.com/issues/11516", True),
             ("Refs #11516", False),
             ("Related (not fixed by this PR): #11516", False),
             ("tracked in #11516", False),

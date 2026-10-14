@@ -9,8 +9,8 @@ import sys
 
 import pytest
 
-import kiro_crew.dashboard.chat_utils as chat_utils
-from kiro_crew.dashboard.chat_utils import (
+import efm_go.dashboard.chat_utils as chat_utils
+from efm_go.dashboard.chat_utils import (
     _history_key_for,
     _normalize_model,
     _prepare_messages,
@@ -21,7 +21,7 @@ from kiro_crew.dashboard.chat_utils import (
     _validate_tool_name,
     is_deprecated_model,
 )
-from kiro_crew.trust_patterns import extract_bash_command
+from efm_go.trust_patterns import extract_bash_command
 
 
 class TestRedactDeep:

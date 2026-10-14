@@ -89,7 +89,7 @@ jobs:
   # re-run. See the env block on the verdict step for the measurement behind it.
   decide:
     name: Decide whether the macOS suite runs
-    runs-on: ${{ github.repository == 'kirodotdev/KiroCrew' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
+    runs-on: ${{ github.repository == 'efmleads.com' && contains(fromJSON(vars.CODEBUILD_ACTOR_IDS || '[]'), github.actor_id) && (github.event_name == 'push' || (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize') && github.event.pull_request.head.repo.full_name == github.repository)) && format('codebuild-kirocrew-gha-linux-{0}-{1}', github.run_id, github.run_attempt) || 'ubuntu-latest' }}
     timeout-minutes: 5
     permissions:
       contents: read
@@ -118,50 +118,50 @@ jobs:
             darwin:
               # The macOS-only identity primitives (LOCAL_PEERPID for the peer
               # pid, libproc for the process start id) and their callers.
-              - "src/kiro_crew/mcp_gateway/socketsec.py"
-              - "src/kiro_crew/peer_resolve.py"
-              - "src/kiro_crew/platform_compat.py"
-              - "src/kiro_crew/platform_lock_compat.py"
-              - "src/kiro_crew/platform_owner_compat.py"
+              - "src/efm_go/mcp_gateway/socketsec.py"
+              - "src/efm_go/peer_resolve.py"
+              - "src/efm_go/platform_compat.py"
+              - "src/efm_go/platform_lock_compat.py"
+              - "src/efm_go/platform_owner_compat.py"
               # Descriptor identity and containment depend on native APFS spelling.
-              - "src/kiro_crew/hooks.py"
-              - "src/kiro_crew/hook_runtime/**"
-              - "src/kiro_crew/pinned_fs.py"
-              - "src/kiro_crew/dashboard/handlers/files.py"
-              - "src/kiro_crew/dashboard/file_api/**"
+              - "src/efm_go/hooks.py"
+              - "src/efm_go/hook_runtime/**"
+              - "src/efm_go/pinned_fs.py"
+              - "src/efm_go/dashboard/handlers/files.py"
+              - "src/efm_go/dashboard/file_api/**"
               - "test/test_safe_read_file_bytes_descriptor.py"
               - "test/test_theme_install.py"
               # Credential redaction withholds the id macOS's confstr reports for
               # the per-user temp dir; its one real-platform test skips elsewhere.
-              - "src/kiro_crew/security/redaction.py"
+              - "src/efm_go/security/redaction.py"
               # The singleton home lock: its durable anchor is POSIX-only, and
               # its guard tests skip themselves where a directory cannot be
               # locked, so a darwin regression would read as green without this
               # lane.
-              - "src/kiro_crew/gateway_lock.py"
+              - "src/efm_go/gateway_lock.py"
               - "test/test_gateway_lock.py"
               - "test/test_gateway_lock_diagnosis.py"
               # The Seatbelt profile the private-memory boundary compiles.
-              - "src/kiro_crew/sandbox.py"
-              - "src/kiro_crew/sandbox_plan.py"
-              - "src/kiro_crew/sandbox_seatbelt.py"
-              - "src/kiro_crew/sandbox_mount_sweep.py"
+              - "src/efm_go/sandbox.py"
+              - "src/efm_go/sandbox_plan.py"
+              - "src/efm_go/sandbox_seatbelt.py"
+              - "src/efm_go/sandbox_mount_sweep.py"
               # launchd is the macOS pod backend.
-              - "src/kiro_crew/pod/**"
+              - "src/efm_go/pod/**"
               # darwin PTY behaviour.
-              - "src/kiro_crew/dashboard/handlers/terminal.py"
-              - "src/kiro_crew/dashboard/terminal_commands.py"
-              - "src/kiro_crew/subagent_manager/terminal.py"
+              - "src/efm_go/dashboard/handlers/terminal.py"
+              - "src/efm_go/dashboard/terminal_commands.py"
+              - "src/efm_go/subagent_manager/terminal.py"
               # The contracts themselves, and the two darwin gap lists a change
               # here can silently widen.
               - "test/test_socketsec.py"
               - "test/test_member_memory_filesystem.py"
               - "test/test_terminal_handler.py"
               # Native lifecycle contracts must not depend on the SHA sample.
-              - "src/kiro_crew/session_pid.py"
-              - "src/kiro_crew/session_lifecycle.py"
-              - "src/kiro_crew/session_cleanup.py"
-              - "src/kiro_crew/session_pool.py"
+              - "src/efm_go/session_pid.py"
+              - "src/efm_go/session_lifecycle.py"
+              - "src/efm_go/session_cleanup.py"
+              - "src/efm_go/session_pool.py"
               - "test/test_darwin_native_provider_reap.py"
               - "test/macos-expected-failures.txt"
               - "test/macos-collect-ignore.txt"

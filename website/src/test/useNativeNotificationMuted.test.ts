@@ -1,6 +1,6 @@
 /**
  * Muting a notification channel must silence it on every attention surface,
- * per the backend contract in `kiro_crew/notifications/settings.py`
+ * per the backend contract in `efm_go/notifications/settings.py`
  * (`ChannelSettings.apply()`): a muted note arrives with `silenced: true` and
  * `priority: "passive"`, and every attention surface — badge count, sound,
  * native banner, feed styling — is meant to skip it.

@@ -8,20 +8,20 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.auth.login import builder_id
-from kiro_crew.auth.login.builder_id import BuilderIdAuthError, RegisteredClient
-from kiro_crew.auth.login.portal import (
+from efm_go.auth.login import builder_id
+from efm_go.auth.login.builder_id import BuilderIdAuthError, RegisteredClient
+from efm_go.auth.login.portal import (
     PortalAuthError,
     exchange_code,
 )
-from kiro_crew.auth.provider import KasAuthProvider, NotAuthenticated
-from kiro_crew.auth.refresh import (
+from efm_go.auth.provider import KasAuthProvider, NotAuthenticated
+from efm_go.auth.refresh import (
     IdentitySignedOut,
     RefreshError,
     RefreshRejected,
     ensure_fresh,
 )
-from kiro_crew.auth.store import KasToken, SocialProvider, TokenStore
+from efm_go.auth.store import KasToken, SocialProvider, TokenStore
 
 pytestmark = pytest.mark.asyncio
 

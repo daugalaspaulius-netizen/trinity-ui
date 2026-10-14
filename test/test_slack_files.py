@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew.slack.files import (
+from efm_go.slack.files import (
     _MAX_IMAGE_BYTES,
     _MAX_OPAQUE_BYTES,
     _MAX_TEXT_BYTES,
@@ -292,7 +292,7 @@ class TestProcessSlackFiles:
         ]
         # Temp handling now lives in the channel-neutral ingestion layer.
         with patch(
-            "kiro_crew.messaging.attachments.tempfile.mkstemp", side_effect=tracking_mkstemp
+            "efm_go.messaging.attachments.tempfile.mkstemp", side_effect=tracking_mkstemp
         ):
             await process_slack_files(orch, files)
         assert len(created_paths) == 1
@@ -503,7 +503,7 @@ class TestProcessSlackFiles:
     @pytest.mark.asyncio
     async def test_document_too_large_skipped(self):
         """Documents exceeding size limit are skipped."""
-        from kiro_crew.slack.files import _MAX_DOC_BYTES
+        from efm_go.slack.files import _MAX_DOC_BYTES
 
         orch = _make_orch()
         files = [

@@ -18,10 +18,10 @@ from typing import Any
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.config.loader import config_path
-from kiro_crew.config.paths import config_dir
-from kiro_crew.dashboard import channel_folders, channel_slots, chat_folders
-from kiro_crew.dashboard.chat_utils import effective_session_key
+from efm_go.config.loader import config_path
+from efm_go.config.paths import config_dir
+from efm_go.dashboard import channel_folders, channel_slots, chat_folders
+from efm_go.dashboard.chat_utils import effective_session_key
 
 
 @pytest.fixture
@@ -73,7 +73,7 @@ class TestConfiguredFolderName:
         def boom() -> Any:
             raise OSError("config unreadable")
 
-        monkeypatch.setattr("kiro_crew.config.loader.KiroCrewConfig.load", staticmethod(boom))
+        monkeypatch.setattr("efm_go.config.loader.KiroCrewConfig.load", staticmethod(boom))
         assert channel_folders.configured_folder_name("discord") == ""
 
 
@@ -533,7 +533,7 @@ class TestFilingOnSurface:
         """Inherited tags ship under a revision distinct from the slot's birth one."""
         from unittest.mock import patch
 
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         birth_revisions: list[str] = []
         original_init = _ChatSlot.__init__
@@ -1025,7 +1025,7 @@ class TestReconcilePassFiling:
         tag deletion committing between the intersection and the write would
         resurrect the deleted id onto the filed chat, and the sticky filing
         marker means no later pass ever re-validates it."""
-        from kiro_crew.dashboard.chat_tags import tags_write_lock
+        from efm_go.dashboard.chat_tags import tags_write_lock
 
         _write_config("discord", "Discord")
         key = "discord:kirocrew:direct:U1"
@@ -1065,7 +1065,7 @@ class TestReconcilePassFiling:
         pass. Carrying the on-disk value forward makes that whole class of
         omission harmless rather than relying on every restore path being correct.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         dashboard_state.push_slots_update = lambda: None  # type: ignore[method-assign]
         slot = dashboard_state.get_or_create_slot("chan2")
@@ -1101,7 +1101,7 @@ class TestReconcilePassFiling:
         ``test_a_move_to_the_top_level_survives_a_restart``, reached through the
         save path rather than the reconcile path.
         """
-        from kiro_crew.dashboard.chat_persistence import _save_slot_to_history
+        from efm_go.dashboard.chat_persistence import _save_slot_to_history
 
         dashboard_state.push_slots_update = lambda: None  # type: ignore[method-assign]
         slot = dashboard_state.get_or_create_slot("chan")

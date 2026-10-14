@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.eval.bench.corpus import (
+from efm_go.eval.bench.corpus import (
     CAT_ADVERSARIAL,
     CAT_MULTI_HOP,
     CAT_PREFERENCE,
@@ -32,7 +32,7 @@ from kiro_crew.eval.bench.corpus import (
     CAT_TEMPORAL,
     BenchQuery,
 )
-from kiro_crew.eval.bench.scorers import (
+from efm_go.eval.bench.scorers import (
     JUDGE_CALL_PARAMS,
     REFUSAL_MARKERS,
     AnswerScore,

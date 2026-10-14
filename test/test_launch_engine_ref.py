@@ -20,8 +20,8 @@ import subprocess
 
 import pytest
 
-import kiro_crew.cloud.source as source_mod
-from kiro_crew.cloud import aws, ec2, launch_engine, sizes
+import efm_go.cloud.source as source_mod
+from efm_go.cloud import aws, ec2, launch_engine, sizes
 
 _BOUNDARY_ARN = "arn:aws:iam::123456789012:policy/kirocrew-instance-boundary"
 
@@ -176,7 +176,7 @@ class TestReleaseTagExists:
         """A PATH shim must not run with the gateway's privileges; no git = no probe."""
         monkeypatch.setattr(ec2.platform_compat, "trusted_git_bin", lambda: None)
         monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("must not spawn"))
-        with caplog.at_level("WARNING", logger="kiro_crew.cloud.ec2"):
+        with caplog.at_level("WARNING", logger="efm_go.cloud.ec2"):
             assert ec2.release_tag_exists("v0.7.0") is False
         assert "no trusted git" in caplog.text
 
@@ -199,7 +199,7 @@ class TestReleaseTagExists:
             "run",
             lambda argv, **kw: subprocess.CompletedProcess(argv, returncode, "", "fatal"),
         )
-        with caplog.at_level("WARNING", logger="kiro_crew.cloud.ec2"):
+        with caplog.at_level("WARNING", logger="efm_go.cloud.ec2"):
             assert ec2.release_tag_exists("v0.7.0") is False
         assert "v0.7.0" in caplog.text
 
@@ -216,7 +216,7 @@ class TestReleaseTagExists:
             raise exc
 
         monkeypatch.setattr(subprocess, "run", raiser)
-        with caplog.at_level("WARNING", logger="kiro_crew.cloud.ec2"):
+        with caplog.at_level("WARNING", logger="efm_go.cloud.ec2"):
             assert ec2.release_tag_exists("v0.7.0") is False
         assert "could not probe" in caplog.text
 
@@ -266,7 +266,7 @@ class TestResolvePublicRef:
         monkeypatch.setattr(ec2, "__version__", "0.7.0")
         monkeypatch.setattr(ec2.release_channel, "__version__", "0.7.0")
         monkeypatch.setattr(ec2, "release_tag_exists", lambda ref, repo="": False)
-        with caplog.at_level("WARNING", logger="kiro_crew.cloud.ec2"):
+        with caplog.at_level("WARNING", logger="efm_go.cloud.ec2"):
             assert ec2.resolve_public_ref() == ""
         assert "v0.7.0" in caplog.text and "will run main" in caplog.text
 
@@ -276,7 +276,7 @@ class TestResolvePublicRef:
         monkeypatch.setattr(
             ec2, "release_tag_exists", lambda *a, **k: pytest.fail("nightly has no tag to probe")
         )
-        with caplog.at_level("WARNING", logger="kiro_crew.cloud.ec2"):
+        with caplog.at_level("WARNING", logger="efm_go.cloud.ec2"):
             assert ec2.resolve_public_ref() == ""
         assert "0.8.0.dev20260922" in caplog.text and "will run main" in caplog.text
 
@@ -393,7 +393,7 @@ class TestLaunchersReachTheSeam:
         assert "ref" not in seen and "ship_source" not in seen
 
     def test_cli_wizard_passes_no_ref(self, monkeypatch) -> None:
-        from kiro_crew.cloud import wizard
+        from efm_go.cloud import wizard
 
         seen: dict = {}
 

@@ -17,10 +17,10 @@ import warnings
 import pytest
 from hypothesis import HealthCheck, settings
 
-from kiro_crew.safety_override import reset_singleton as _reset_safety_override
-from kiro_crew.safety_override import reset_yolo_policy_state as _reset_yolo_policy_state
-from kiro_crew.slack.client import SlackClientOps
-from kiro_crew.slack.handler import _PHASE_EMOJIS, _build_phase_emojis
+from efm_go.safety_override import reset_singleton as _reset_safety_override
+from efm_go.safety_override import reset_yolo_policy_state as _reset_yolo_policy_state
+from efm_go.slack.client import SlackClientOps
+from efm_go.slack.handler import _PHASE_EMOJIS, _build_phase_emojis
 
 if os.name == "nt":
 
@@ -192,7 +192,7 @@ def posix_test_shell() -> str:
 
 
 # ── Windows and macOS CI ────────────────────────────────────────────────
-# The backend runs natively on Windows (kiro_crew.platform_compat), but a
+# The backend runs natively on Windows (efm_go.platform_compat), but a
 # handful of suites exercise POSIX-only-by-design features (OS-level
 # sandbox, process groups / PGID semantics, PTY, AF_UNIX sockets -- see
 # docs/guides/windows-install.md's per-feature table). Skip collecting them on
@@ -203,7 +203,7 @@ def posix_test_shell() -> str:
 # POSIX, so the reasons that fill the Windows list do not apply there; that list is
 # expected to stay short or empty, and a file exists so a whole-file exclusion has
 # one documented home instead of an inline literal.
-from kiro_crew import platform_compat  # noqa: E402
+from efm_go import platform_compat  # noqa: E402
 
 
 @pytest.fixture
@@ -274,10 +274,10 @@ def make_escaping_link(inside: pathlib.Path, outside: pathlib.Path) -> str:
     return "link.py"
 
 
-# ``make_dir_link`` lives in kiro_crew.testing.links so the app-embedded test
+# ``make_dir_link`` lives in efm_go.testing.links so the app-embedded test
 # packages, which never see this conftest, share the one copy. Re-exported so
 # ``from conftest import make_dir_link`` keeps working.
-from kiro_crew.testing.links import make_dir_link  # noqa: E402,F401
+from efm_go.testing.links import make_dir_link  # noqa: E402,F401
 
 
 def plant_day_link(link: pathlib.Path, secret_file: pathlib.Path) -> None:
@@ -509,7 +509,7 @@ def assert_rejected_without_backtracking(reject, build_pump) -> None:
 
 
 def cap_project_root_walk(monkeypatch, ceiling: pathlib.Path) -> None:
-    """Make ``kiro_crew.artifact_source`` see NO project root above ``ceiling``.
+    """Make ``efm_go.artifact_source`` see NO project root above ``ceiling``.
 
     ``classify_source`` walks up from a file looking for ``PROJECT_ROOT_MARKERS``
     (``.git``, ``Makefile``, ``package.json``, ``.kiro``, ...), so a test that
@@ -525,7 +525,7 @@ def cap_project_root_walk(monkeypatch, ceiling: pathlib.Path) -> None:
     the ``_tempdir`` narrowing these tests already do -- the two seams together
     make the rest of ``tmp_path`` ordinary, UNMARKED filesystem.
     """
-    from kiro_crew import artifact_source
+    from efm_go import artifact_source
 
     real_marker = artifact_source.project_root_marker
     top = os.path.normcase(os.path.realpath(str(ceiling)))
@@ -551,7 +551,7 @@ def cap_node_module_walk(monkeypatch, ceiling: pathlib.Path) -> None:
     outside ``ceiling`` are dropped from the walk; inside it the real walk runs, so
     the ``node_modules`` a test plants beside a link target still counts.
     """
-    from kiro_crew.acp import client as acp_client
+    from efm_go.acp import client as acp_client
 
     real_walk = acp_client._node_module_search_dirs
     top = os.path.normcase(os.path.realpath(str(ceiling)))
@@ -568,7 +568,7 @@ def cap_node_module_walk(monkeypatch, ceiling: pathlib.Path) -> None:
 #: ``pytest_collection_modifyitems`` -- which applies the
 #: ``windows-expected-failures.txt`` skips -- lives in the ROOTDIR ``conftest.py``.
 #: That list already names node ids under
-#: ``src/kiro_crew/apps/builtins/auto_improvement/tests/``, and a hook rooted here never
+#: ``src/efm_go/apps/builtins/auto_improvement/tests/``, and a hook rooted here never
 #: runs when only those in-package tests are collected (which is exactly what CI's
 #: reduced-scope Windows job does on a frontend-only diff), so the skips silently did
 #: not apply where they were needed.
@@ -591,7 +591,7 @@ def _fresh_update_ownership(_floor_monkeypatch):
     never finished, which would own the gap in whatever test runs next, so that
     fails the test that left it.
     """
-    from kiro_crew import update_ownership
+    from efm_go import update_ownership
 
     registry: list = []
     _floor_monkeypatch.setattr(update_ownership, "_live", registry)
@@ -612,7 +612,7 @@ def _fresh_reexec_environment(_floor_monkeypatch):
     consumed must not make a later test's gateway read as service-launched, nor
     be written into the environment by a later test's stubbed exec.
     """
-    from kiro_crew import platform_compat
+    from efm_go import platform_compat
 
     _floor_monkeypatch.setattr(platform_compat, "_KEPT_FOR_REEXEC", {})
 
@@ -648,7 +648,7 @@ def _approve_every_mcp_launch(request, _floor_monkeypatch):
     if getattr(request.module, "ENFORCE_LAUNCH_APPROVAL", False):
         return
     try:
-        from kiro_crew.mcp_gateway import launch_approval, launch_resolve
+        from efm_go.mcp_gateway import launch_approval, launch_resolve
     except ImportError:
         return
     monkeypatch = _floor_monkeypatch
@@ -740,7 +740,7 @@ def _release_source_corpus_after_module():
 def _drop_live_config_snapshot():
     """Give every test an unstarted process watcher, and leave none behind.
 
-    ``kiro_crew.config.live`` keeps ONE process-global watcher, and every
+    ``efm_go.config.live`` keeps ONE process-global watcher, and every
     point-of-use reader (``SkillsLoader._max_triggered_now``, the channel
     dispatchers' ``_live_cfg``) prefers its snapshot over the config it was
     constructed with. A test that primes it and does not reset therefore sets the
@@ -754,7 +754,7 @@ def _drop_live_config_snapshot():
     process-global too, and an entry another test left in it is indistinguishable
     from one the test under way registered.
     """
-    from kiro_crew.config import live
+    from efm_go.config import live
 
     live.reset_for_tests()
     yield
@@ -772,7 +772,7 @@ def _inline_taskq_pump(_floor_monkeypatch):
     which cannot wait for a thread hop. Both off-loop paths are pinned by their
     own tests, which turn the switches back on.
     """
-    from kiro_crew.subagent_manager.admission import SpawnAdmissionCoordinator
+    from efm_go.subagent_manager.admission import SpawnAdmissionCoordinator
 
     _floor_monkeypatch.setattr(SpawnAdmissionCoordinator, "pump_off_loop", False)
     _floor_monkeypatch.setattr(SpawnAdmissionCoordinator, "open_store_off_loop", False)
@@ -793,7 +793,7 @@ def _isolate_aim_skills_dir(_floor_monkeypatch):
     autouse it made every one of the suite's ~26k tests allocate a temp directory it
     never touched -- the single largest fixed cost in the suite's setup path.
     """
-    from kiro_crew.platform.defaults import DefaultMcpToolingProvider
+    from efm_go.platform.defaults import DefaultMcpToolingProvider
 
     _floor_monkeypatch.setattr(DefaultMcpToolingProvider, "extra_skills", lambda self: [])
 
@@ -940,14 +940,14 @@ def pytest_internalerror(excrepr, excinfo) -> None:
 def _release_stt_engine():
     """Never let a loaded speech model outlive the test that loaded it.
 
-    ``kiro_crew.stt.engine`` keeps ONE recogniser per process on purpose: the
+    ``efm_go.stt.engine`` keeps ONE recogniser per process on purpose: the
     whole point of the module is that an utterance does not pay for a model load.
     Under xdist that same property makes it cross-test state, and the instance
     carries the idle-eviction window the first caller passed, so a later test
     reading a different setting would silently get the earlier one.
     """
     yield
-    from kiro_crew.stt import engine as stt_engine
+    from efm_go.stt import engine as stt_engine
 
     stt_engine._engine = None
 
@@ -972,7 +972,7 @@ def drain_breadcrumb_writes(timeout: float = 5.0) -> None:
     write landed inside its own context needs certainty, so a drain that does
     not complete raises instead of returning a value a fixture could ignore.
     """
-    from kiro_crew.safety_override import flush_breadcrumb_writes
+    from efm_go.safety_override import flush_breadcrumb_writes
 
     if not flush_breadcrumb_writes(timeout):
         raise TimeoutError(
@@ -1018,7 +1018,7 @@ def _reset_safety_override_between_tests():
 def _reset_degraded_config_observations():
     """Forget the loader's process-sticky malformed-config observations.
 
-    ``kiro_crew.config.loader`` remembers every malformed config section it has
+    ``efm_go.config.loader`` remembers every malformed config section it has
     ever seen for the LIFE OF THE PROCESS (deliberately: ``load()``'s migration
     repairs the file on first read, so the observation is the only surviving
     evidence, and the publish gate fails closed on it). Tests share one
@@ -1031,7 +1031,7 @@ def _reset_degraded_config_observations():
     ``reset_degraded_observations`` documents tests as its only legitimate
     caller; this fixture is that caller.
     """
-    from kiro_crew.config.loader import reset_degraded_observations
+    from efm_go.config.loader import reset_degraded_observations
 
     reset_degraded_observations()
     yield
@@ -1042,7 +1042,7 @@ def _reset_degraded_config_observations():
 def _reset_channel_turn_ceiling():
     """Forget the channel turn ceiling's process-global per-conversation counts.
 
-    ``kiro_crew.messaging.turn_ceiling`` keeps ONE counter for the whole process
+    ``efm_go.messaging.turn_ceiling`` keeps ONE counter for the whole process
     (``_SHARED``), keyed by session key, so a counted turn outlives the test that
     drove it. Tests share one interpreter and the Slack, Telegram and Discord
     inbound routes all drive the same handful of session keys, so a worker that
@@ -1056,7 +1056,7 @@ def _reset_channel_turn_ceiling():
     The notification sink is module-global for the same reason and is cleared with
     it, so a test that registers an observer cannot be heard by the next one.
     """
-    from kiro_crew.messaging.turn_ceiling import set_notification_sink, shared_ceiling
+    from efm_go.messaging.turn_ceiling import set_notification_sink, shared_ceiling
 
     shared_ceiling().clear()
     set_notification_sink(None)
@@ -1086,7 +1086,7 @@ def _restore_autonudge_singleton():
     Retiring the leaked instance's timers goes through ``_cancel_timer``, which is the one
     place that knows a task on a closed loop must be dropped rather than cancelled.
     """
-    from kiro_crew import autonudge as _an
+    from efm_go import autonudge as _an
 
     inherited = _an._INSTANCE
     try:
@@ -1110,7 +1110,7 @@ def _reset_reasoning_effort_globals():
     through ``_sync_effort_levels`` -> ``update_reasoning_effort_values``;
     without this, a level like ``"extreme"`` leaks into the global and poisons
     validation tests sharing the xdist worker (e.g. test_chat_slot_reasoning_effort)."""
-    import kiro_crew.dashboard.chat_persistence as _cp
+    import efm_go.dashboard.chat_persistence as _cp
 
     saved_values = set(_cp._reasoning_effort_values)
     saved_ordered = list(_cp._reasoning_effort_ordered)
@@ -1124,7 +1124,7 @@ def _reset_reasoning_effort_globals():
 #: ``_isolation_root`` / ``_isolation_dirs`` / ``_isolate_kirocrew_home`` live in the
 #: ROOTDIR ``conftest.py``, not here. The data home has to be pinned for every
 #: testpath, including the ~108 test modules that ship inside the package under
-#: ``src/kiro_crew/apps/builtins/*/tests/`` and never see this file. The fixtures
+#: ``src/efm_go/apps/builtins/*/tests/`` and never see this file. The fixtures
 #: below still request ``_isolation_dirs`` and resolve it up the hierarchy.
 
 
@@ -1190,7 +1190,7 @@ def _isolate_kiro_window_cache():
     disk — so a local run matches CI. Tests that need entries seed them in their
     own body.
     """
-    import kiro_crew.model_registry as _mr
+    import efm_go.model_registry as _mr
 
     saved = dict(_mr._KIRO_WINDOWS)
     _mr._KIRO_WINDOWS.clear()
@@ -1214,7 +1214,7 @@ def _history_cleanup_throttle_closed(_floor_monkeypatch):
     """
     import math
 
-    from kiro_crew import history
+    from efm_go import history
 
     _floor_monkeypatch.setattr(history, "_last_cleanup", math.inf)
 
@@ -1222,7 +1222,7 @@ def _history_cleanup_throttle_closed(_floor_monkeypatch):
 @pytest.fixture(autouse=True)
 def _isolate_advertised_model_cache(_floor_monkeypatch):
     """Keep one session's advertised model spellings inside its own test."""
-    from kiro_crew import model_registry
+    from efm_go import model_registry
 
     _floor_monkeypatch.setattr(model_registry, "_ADVERTISED_MODELS", {})
 
@@ -1253,7 +1253,7 @@ def _isolate_message_entry_cache():
     that resolved them under its own home would otherwise leak its bounds into
     every later test's cache behaviour.
     """
-    from kiro_crew.dashboard import chat_persistence as _cp
+    from efm_go.dashboard import chat_persistence as _cp
 
     _cp._entry_cache.clear()
     _cp._entry_cache_bytes = 0
@@ -1283,7 +1283,7 @@ def _disarm_agent_slice_memory_high():
     switch and restore all four state globals after, so tests of the
     reconciler itself can re-arm explicitly in their own body.
     """
-    import kiro_crew.sandbox as _sb
+    import efm_go.sandbox as _sb
 
     saved_disabled = _sb._SLICE_MEMHIGH_DISABLED
     saved_applied = _sb._SLICE_MEMHIGH_APPLIED
@@ -1305,9 +1305,9 @@ def _reset_live_execution_records():
 
     def clear():
         for name, attribute in (
-            ("kiro_crew.execution_context", "_LIVE_EXECUTIONS"),
-            ("kiro_crew.execution_context", "_VOUCHED_EXECUTIONS"),
-            ("kiro_crew.subagent_persistence", "_LIVE_RUN_STATES"),
+            ("efm_go.execution_context", "_LIVE_EXECUTIONS"),
+            ("efm_go.execution_context", "_VOUCHED_EXECUTIONS"),
+            ("efm_go.subagent_persistence", "_LIVE_RUN_STATES"),
         ):
             module = sys.modules.get(name)
             if module is not None:
@@ -1316,7 +1316,7 @@ def _reset_live_execution_records():
         # needs its own reset. A test that leaves the flag ARMED makes the next
         # test's first episode silent, which reads as a missing log line rather
         # than as leaked state.
-        execution = sys.modules.get("kiro_crew.execution_context")
+        execution = sys.modules.get("efm_go.execution_context")
         if execution is not None:
             execution._vouched_overflow_reported = False
             execution._vouched_overflow_count = 0
@@ -1357,7 +1357,7 @@ def _reset_runtime_ownership_tables(request):
         return
 
     def clear():
-        module = sys.modules.get("kiro_crew.runtime_ownership")
+        module = sys.modules.get("efm_go.runtime_ownership")
         if module is not None:
             module._reset_for_tests()
 
@@ -1373,7 +1373,7 @@ def _reset_session_switch_locks(_floor_monkeypatch):
     """Tests reuse session keys across loops; the gateway has one serving loop."""
     import weakref
 
-    from kiro_crew import llm_helpers
+    from efm_go import llm_helpers
 
     _floor_monkeypatch.setattr(
         llm_helpers, "_slot_switch_session_locks", weakref.WeakValueDictionary()
@@ -1389,7 +1389,7 @@ def _knowledge_store_cross_thread_close():
     executor threads opened. Flipped once per session, before any store is built
     (the flag is read at connect time), and restored at session end.
     """
-    from kiro_crew.knowledge import store as knowledge_store
+    from efm_go.knowledge import store as knowledge_store
 
     previous = knowledge_store._ALLOW_CROSS_THREAD_CLOSE_FOR_TESTS
     knowledge_store._ALLOW_CROSS_THREAD_CLOSE_FOR_TESTS = True
@@ -1442,7 +1442,7 @@ def close_skills_loaders(monkeypatch):
     that build loaders inline is not worth its cost, so a module that builds
     ``ContextBuilder``s requests it from a one-line module-level autouse fixture.
     """
-    from kiro_crew.skills import SkillsLoader
+    from efm_go.skills import SkillsLoader
 
     created: list = []
     orig_init = SkillsLoader.__init__
@@ -1485,7 +1485,7 @@ def close_subagent_managers(monkeypatch):
     module that builds managers inline requests it from a one-line module-level
     autouse fixture instead of carrying its own copy of this body.
     """
-    import kiro_crew.subagent as _subagent_mod
+    import efm_go.subagent as _subagent_mod
 
     created: list = []
     orig_init = _subagent_mod.SubagentManager.__init__
@@ -1519,7 +1519,7 @@ def _shut_down_shared_pools_in_session():
     it, and leaves nothing for ``atexit`` to do.
     """
     yield
-    from kiro_crew import executors as _executors
+    from efm_go import executors as _executors
 
     _executors.shutdown_maintenance_executor()
 
@@ -1529,12 +1529,12 @@ def _no_boot_sandbox_sweep(_floor_monkeypatch):
     """A real ``SessionManager`` must not sweep the host's sandbox profiles from a test.
 
     ``SessionManager.get_or_create`` arms the cleanup loop, whose boot reclaim
-    submits ``kiro_crew.session.cleanup_stale_sandbox_profiles`` -- the REAL
+    submits ``efm_go.session.cleanup_stale_sandbox_profiles`` -- the REAL
     ``/proc`` pin scan over the data home -- to the shared ``mc-maint`` executor.
     ``close_all()`` cancels the asyncio task but cannot stop the executor
     thread, so on a loaded xdist worker the scan finishes seconds later, inside
     whichever test is then running, and logs at WARNING on
-    ``kiro_crew.sandbox`` (the tenth sweep caught it as a second record in an
+    ``efm_go.sandbox`` (the tenth sweep caught it as a second record in an
     unrelated test's ``caplog``). The seam is the name the session module
     rebinds at import, so the module is imported here rather than looked up in
     ``sys.modules``: a guard on "already loaded" would let the first test on a
@@ -1543,7 +1543,7 @@ def _no_boot_sandbox_sweep(_floor_monkeypatch):
     nothing extra. A test of the sweep itself patches the same name inside its
     body (``TestCleanupLoop``) and so overrides this.
     """
-    from kiro_crew import session as session_mod
+    from efm_go import session as session_mod
 
     _floor_monkeypatch.setattr(session_mod, "cleanup_stale_sandbox_profiles", lambda *a, **kw: 0)
 
@@ -1552,7 +1552,7 @@ def _no_boot_sandbox_sweep(_floor_monkeypatch):
 def _reset_options_control_state():
     """Clear the per-message OPTIONS registries between tests.
 
-    ``kiro_crew.slack.outbound`` holds two process-global maps keyed by
+    ``efm_go.slack.outbound`` holds two process-global maps keyed by
     ``(channel, ts)``: the per-message edit lock, and the once-only answer claim
     that stops a second Send click dispatching a duplicate turn. Both are
     correct as process state in the gateway, where a control's ts is unique and
@@ -1563,7 +1563,7 @@ def _reset_options_control_state():
     control and every later test's click is silently dropped as a duplicate.
     Reset per test rather than making production defensive about it.
     """
-    from kiro_crew.slack import outbound
+    from efm_go.slack import outbound
 
     outbound._ANSWERED.clear()
     outbound._EDIT_LOCKS.clear()
@@ -1705,9 +1705,9 @@ def _git_identity(_floor_monkeypatch) -> None:
 @pytest.fixture(autouse=True)
 def _enterprise_bypass(_floor_monkeypatch) -> None:
     """Set a default validated team_id so _route_message doesn't reject messages."""
-    _floor_monkeypatch.setattr("kiro_crew.slack.enterprise._validated_team_id", "TTEST")
-    _floor_monkeypatch.setattr("kiro_crew.slack.enterprise._validated_enterprise_id", "ETEST")
-    _floor_monkeypatch.setattr("kiro_crew.slack.enterprise._allowed_team_ids", {"TTEST"})
+    _floor_monkeypatch.setattr("efm_go.slack.enterprise._validated_team_id", "TTEST")
+    _floor_monkeypatch.setattr("efm_go.slack.enterprise._validated_enterprise_id", "ETEST")
+    _floor_monkeypatch.setattr("efm_go.slack.enterprise._allowed_team_ids", {"TTEST"})
 
 
 @pytest.fixture(autouse=True)
@@ -1742,7 +1742,7 @@ def _clean_slack_thread_state():
     Clearing before and after every test makes each hermetic regardless of
     scheduling. Idempotent with per-file fixtures that already clear a subset.
     """
-    from kiro_crew.slack import handler as _h
+    from efm_go.slack import handler as _h
 
     for _m in (_h._thread_temporary, _h._thread_incognito, _h._titled_threads, _h._thread_agents):
         _m.clear()
@@ -1914,17 +1914,17 @@ def _fake_computer_use_backend():
 
     MODULE-scoped, not function-scoped, deliberately: the registration is a
     single module-global assignment plus a singleton drop, and paying that (plus
-    the ``kiro_crew.testing.fake_computer_use`` import) on all ~16k tests would
+    the ``efm_go.testing.fake_computer_use`` import) on all ~16k tests would
     be pure overhead. Any test that swaps the backend itself is responsible for
     restoring it (see that file's ``restore_registry`` fixture) — a
     function-scoped fixture here would paper over such a leak instead of letting
     it fail.
     """
-    from kiro_crew.computer_use.backend import (
+    from efm_go.computer_use.backend import (
         register_computer_use_backend,
         reset_shared_backend,
     )
-    from kiro_crew.testing.fake_computer_use import FakeComputerUseBackend
+    from efm_go.testing.fake_computer_use import FakeComputerUseBackend
 
     register_computer_use_backend(FakeComputerUseBackend)
     reset_shared_backend()
@@ -1935,7 +1935,7 @@ def _fake_computer_use_backend():
 
 # ``_reset_platform_context`` (the per-test PlatformContext reset and the
 # ``KIROCREW_PROFILE=standalone`` pin) lives in the ROOTDIR conftest, not here:
-# the ~108 test modules under ``src/kiro_crew/apps/builtins/*/tests/`` never see
+# the ~108 test modules under ``src/efm_go/apps/builtins/*/tests/`` never see
 # this file, and an inherited enterprise ``KIROCREW_PROFILE`` failed 150+ of them
 # closed on an operator's box while ``test/`` stayed green.
 
@@ -1989,7 +1989,7 @@ def _no_release_feed_network(_floor_monkeypatch) -> None:
     env with no ``KIROCREW_PROJECT_DIR`` takes the feed branch by definition.
 
     Without this fixture the suite would make real HTTPS requests to
-    ``updates.crew.kiro.dev`` — slow, flaky, offline-hostile, and CI traffic
+    ``updates.efmleads.com`` — slow, flaky, offline-hostile, and CI traffic
     nobody asked for. Tests that WANT a feed response stub this same seam, which
     overrides the fixture for that test.
 
@@ -2003,11 +2003,11 @@ def _no_release_feed_network(_floor_monkeypatch) -> None:
     async def _refuse(url: str) -> tuple[int, bytes]:
         raise AssertionError(
             f"test reached the real release feed ({url}) — stub "
-            "kiro_crew.dashboard.handlers.updates._fetch_feed_bytes instead"
+            "efm_go.dashboard.handlers.updates._fetch_feed_bytes instead"
         )
 
     _floor_monkeypatch.setattr(
-        "kiro_crew.dashboard.handlers.updates._fetch_feed_bytes", _refuse, raising=True
+        "efm_go.dashboard.handlers.updates._fetch_feed_bytes", _refuse, raising=True
     )
 
 
@@ -2020,7 +2020,7 @@ def _no_carried_auto_update_effect(_floor_monkeypatch) -> None:
     Left over from one test, it changes the status field the next test reads and
     can start that derivation inside an unrelated test's event loop.
     """
-    from kiro_crew.dashboard.handlers import updates
+    from efm_go.dashboard.handlers import updates
 
     _floor_monkeypatch.setattr(updates, "_auto_effect", None)
     _floor_monkeypatch.setattr(updates, "_auto_effect_task", None)
@@ -2042,12 +2042,12 @@ def _no_live_kernel_memory_pressure(_floor_monkeypatch) -> None:
     floor's own ``MonkeyPatch`` so a test's ``monkeypatch.undo()`` cannot lift it.
     """
     _floor_monkeypatch.setattr(
-        "kiro_crew.platform_compat.memory_pressure_level", lambda: None, raising=True
+        "efm_go.platform_compat.memory_pressure_level", lambda: None, raising=True
     )
     # On a macOS runner that pinned None would otherwise make the probe log its
     # once-per-process "level unreadable" WARNING into whichever test came first.
     _floor_monkeypatch.setattr(
-        "kiro_crew.resource_status._pressure_unreadable_reported", True, raising=True
+        "efm_go.resource_status._pressure_unreadable_reported", True, raising=True
     )
 
 
@@ -2082,7 +2082,7 @@ def _no_live_catalog_network(_floor_monkeypatch):
     ``_no_release_feed_network`` above, this is a NETWORK guard first and a
     diagnostic second.
     """
-    from kiro_crew.apps import official_catalog
+    from efm_go.apps import official_catalog
 
     original = official_catalog._open_catalog
 
@@ -2090,7 +2090,7 @@ def _no_live_catalog_network(_floor_monkeypatch):
         url = getattr(req, "full_url", repr(req))
         raise AssertionError(
             f"test reached the live app catalog ({url}) — stub "
-            "kiro_crew.apps.official_catalog.fetch_document (or a higher "
+            "efm_go.apps.official_catalog.fetch_document (or a higher "
             "seam such as inventory_for_install) instead"
         )
 
@@ -2156,8 +2156,8 @@ def healthy_host_memory(monkeypatch: pytest.MonkeyPatch) -> None:
     a bar no 8 GB machine clears -- a wave whose reserve outgrew the host would
     read as admitted here and as queued on the operator's.
     """
-    import kiro_crew.subagent as subagent
-    from kiro_crew.constants import DEFAULT_SPAWN_MIN_MEMORY_GB
+    import efm_go.subagent as subagent
+    from efm_go.constants import DEFAULT_SPAWN_MIN_MEMORY_GB
 
     real_check = subagent.check_memory_available
 
@@ -2193,7 +2193,7 @@ def ample_host_resources(monkeypatch: pytest.MonkeyPatch) -> None:
     A test that is actually ABOUT the advisory patches the probe in its own body,
     which lands on top of this and reverts to it.
     """
-    import kiro_crew.resource_status as resource_status
+    import efm_go.resource_status as resource_status
 
     def _ample(cfg: object | None = None) -> "resource_status.ResourceStatus":
         return resource_status.ResourceStatus(
@@ -2212,7 +2212,7 @@ def ample_host_resources(monkeypatch: pytest.MonkeyPatch) -> None:
 def _reset_create_rate_limit_buckets():
     """Clear the session/folder creation rate limiter between tests.
 
-    ``kiro_crew.dashboard.create_rate_limit`` keeps its per-(verb, caller)
+    ``efm_go.dashboard.create_rate_limit`` keeps its per-(verb, caller)
     buckets in MODULE-LEVEL state (deliberately: the production guard needs no
     durable state), so every session-creating test in a pytest process
     accumulates timestamps under shared caller keys. A shard whose test
@@ -2222,7 +2222,7 @@ def _reset_create_rate_limit_buckets():
     and runner speed, not the code under test. The limiter's own direct tests build their scenarios on
     top of a clean slate, so clearing between tests changes nothing for them.
     """
-    from kiro_crew.dashboard import create_rate_limit
+    from efm_go.dashboard import create_rate_limit
 
     with create_rate_limit._lock:
         create_rate_limit._buckets.clear()
@@ -2301,7 +2301,7 @@ def gateway_posts(request, _floor_monkeypatch):
     patches override it), so the no-traffic property holds per test rather
     than resting on every future test remembering its own patch.
     """
-    from kiro_crew import mcp_core
+    from efm_go import mcp_core
 
     if getattr(request.module, "__name__", "") in _REAL_MCP_POST_MODULES:
 
@@ -2349,7 +2349,7 @@ def _no_leaked_interleave_hook():
     the dashboard pays one dict lookup and does not drag ``chat_handlers`` and its
     import graph into every worker's collection.
     """
-    mod = sys.modules.get("kiro_crew.dashboard.chat_handlers")
+    mod = sys.modules.get("efm_go.dashboard.chat_handlers")
     if mod is not None and mod._test_interleave is not None:
         mod._test_interleave = None
         pytest.fail(

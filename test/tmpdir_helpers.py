@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import os
 
-from kiro_crew import platform_compat
+from efm_go import platform_compat
 
 #: ``prefix=`` for every ``mkdtemp`` that takes :func:`short_tmp_base`.
 #:

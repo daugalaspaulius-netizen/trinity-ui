@@ -6,7 +6,7 @@ Covers:
 - Agent create/update handlers accept and normalize session_color
 """
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, _safe_color
+from efm_go.config.loader import KiroCrewAgentConfig, _safe_color
 
 
 class TestSafeColor:

@@ -535,7 +535,7 @@ export default function AgentImportFlow({
     const headings: Record<Stage, { title: string; description: string }> = {
       1: {
         title: i18nT('components.agentImportFlow.choose_sources'),
-        description: i18nT('components.agentImportFlow.kiro_crew_found_agent_setup_on_this_gateway_host'),
+        description: i18nT('components.agentImportFlow.efm_go_found_agent_setup_on_this_gateway_host'),
       },
       2: {
         title: i18nT('components.agentImportFlow.select_items_to_import'),
@@ -543,11 +543,11 @@ export default function AgentImportFlow({
       },
       3: {
         title: i18nT('components.agentImportFlow.review_import'),
-        description: i18nT('components.agentImportFlow.review_the_merge_before_kiro_crew_changes_local'),
+        description: i18nT('components.agentImportFlow.review_the_merge_before_efm_go_changes_local'),
       },
       4: {
         title: i18nT('components.agentImportFlow.import_complete'),
-        description: i18nT('components.agentImportFlow.your_selected_setup_is_ready_in_kiro_crew'),
+        description: i18nT('components.agentImportFlow.your_selected_setup_is_ready_in_efm_go'),
       },
     }
     const { title, description } = headings[stage]

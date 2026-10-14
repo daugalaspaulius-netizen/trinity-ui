@@ -24,11 +24,11 @@ never by anything read out of the result -- see
 
 import json
 
-from kiro_crew import session_directive as sd
-from kiro_crew.acp._dispatch import _build_tool_result_event, _mcp_content_text
-from kiro_crew.mcp_apps_render import find_marker
-from kiro_crew.mcp_gateway.apps import append_marker
-from kiro_crew.validation import build_tool_response, strip_hidden_unicode
+from efm_go import session_directive as sd
+from efm_go.acp._dispatch import _build_tool_result_event, _mcp_content_text
+from efm_go.mcp_apps_render import find_marker
+from efm_go.mcp_gateway.apps import append_marker
+from efm_go.validation import build_tool_response, strip_hidden_unicode
 
 DIRECTIVE_ARGS = {"questions": [{"question": "pick one"}]}
 

@@ -20,9 +20,9 @@ from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 from test_chat_slack import _make_slack_app
 
-from kiro_crew.dashboard.chat_backfill import select_backfill_messages
-from kiro_crew.dashboard.chat_slack import drain_slack_backfill
-from kiro_crew.slack.format import SLACK_MAX_TEXT, SLACK_MSG_LIMIT
+from efm_go.dashboard.chat_backfill import select_backfill_messages
+from efm_go.dashboard.chat_slack import drain_slack_backfill
+from efm_go.slack.format import SLACK_MAX_TEXT, SLACK_MSG_LIMIT
 
 
 def _state(tmp_path):
@@ -336,7 +336,7 @@ class TestBackfillFormatting:
         credential, so the second redaction pass caught it and the test passed
         even with the fix removed.
         """
-        from kiro_crew.slack.format import CONTINUATION
+        from efm_go.slack.format import CONTINUATION
 
         state = _state(tmp_path)
         slot = state.get_or_create_slot("s1")
@@ -544,7 +544,7 @@ class TestBackfillHandlerWiring:
         handler returned with the seeding still in flight, rather than racing a
         drain that happens to finish instantly against AsyncMock.
         """
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _state(tmp_path)
         slot = state.get_or_create_slot("s1")
         _seed(slot, [("user", "seed me"), ("assistant", "seeded")])
@@ -586,7 +586,7 @@ class TestBackfillHandlerWiring:
     @pytest.mark.asyncio
     async def test_existing_thread_link_seeds_nothing(self, tmp_path, monkeypatch):
         """Challenge-and-redirect: the thread already holds this history."""
-        monkeypatch.setattr("kiro_crew.dashboard.state.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.dashboard.state.config_dir", lambda: tmp_path)
         state = _state(tmp_path)
         slot = state.get_or_create_slot("s1")
         _seed(slot, [("user", "hello"), ("assistant", "hi there")])

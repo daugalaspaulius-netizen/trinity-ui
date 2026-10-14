@@ -143,7 +143,7 @@ case "$(uname -m)" in
   x86_64) ARCH_SUFFIX=x64 ;;
   *) echo "ERROR: unsupported runner arch $(uname -m)" >&2; exit 1 ;;
 esac
-BACKEND="$RESOURCES/backend-dist/kirocrew-backend-$ARCH_SUFFIX"
+BACKEND="$RESOURCES/backend-dist/efm-go-backend-$ARCH_SUFFIX"
 LAUNCHER="$BACKEND/bin/kirocrew"
 PYTHON="$BACKEND/bin/python3.12"
 for required in "$BACKEND" "$LAUNCHER" "$PYTHON"; do

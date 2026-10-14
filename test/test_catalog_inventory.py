@@ -13,8 +13,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.apps import official_catalog as oc
-from kiro_crew.apps import registry as reg
+from efm_go.apps import official_catalog as oc
+from efm_go.apps import registry as reg
 
 SHA = "a" * 40
 OTHER_SHA = "b" * 40
@@ -222,8 +222,8 @@ class TestResolveRefList:
 
     def test_each_member_resolves_against_the_catalog(self):
         assert oc._resolve_ref_list(["assets/s/1.png", "assets/s/2.png"]) == [
-            "https://apps.crew.kiro.dev/assets/s/1.png",
-            "https://apps.crew.kiro.dev/assets/s/2.png",
+            "https://efmleads.com/api/apps/assets/s/1.png",
+            "https://efmleads.com/api/apps/assets/s/2.png",
         ]
 
     def test_an_absolute_member_is_a_client_local_path(self):
@@ -246,8 +246,8 @@ class TestResolveRefList:
             "assets/s/2.png",
         ])
         assert out == [
-            "https://apps.crew.kiro.dev/assets/s/1.png",
-            "https://apps.crew.kiro.dev/assets/s/2.png",
+            "https://efmleads.com/api/apps/assets/s/1.png",
+            "https://efmleads.com/api/apps/assets/s/2.png",
         ]
 
     def test_a_list_of_only_unreadable_members_answers_empty(self):
@@ -264,7 +264,7 @@ class TestInventoryArt:
 
     def test_a_detail_hero_ref_becomes_a_catalog_url(self):
         (row,) = oc.inventory([catalog_git(heroDetailRef="assets/hero/detail.png")])
-        assert row["heroImageDetail"] == "https://apps.crew.kiro.dev/assets/hero/detail.png"
+        assert row["heroImageDetail"] == "https://efmleads.com/api/apps/assets/hero/detail.png"
         assert "/api/apps/blob" not in row["heroImageDetail"], "never the SSRF-gated proxy"
 
     def test_an_absolute_detail_hero_ref_is_a_client_local_path(self):
@@ -276,8 +276,8 @@ class TestInventoryArt:
             [catalog_git(screenshotRefs=["assets/s/1.png", "assets/s/2.png"])]
         )
         assert row["screenshots"] == [
-            "https://apps.crew.kiro.dev/assets/s/1.png",
-            "https://apps.crew.kiro.dev/assets/s/2.png",
+            "https://efmleads.com/api/apps/assets/s/1.png",
+            "https://efmleads.com/api/apps/assets/s/2.png",
         ]
 
     def test_absent_art_leaves_the_fields_unset(self):
@@ -304,8 +304,8 @@ class TestInstallCoordinatesDoNotTrustTheCache:
     def test_the_cache_is_writable_by_the_agent(self):
         """The premise, asserted rather than assumed -- if this ever becomes False
         the reasoning below can be revisited, and the test says so out loud."""
-        from kiro_crew import security
-        from kiro_crew.config.loader import config_dir
+        from efm_go import security
+        from efm_go.config.loader import config_dir
 
         cache = config_dir() / "cache" / "official-catalog.json"
         assert security.is_sensitive_write_path(str(cache)) is False
@@ -1434,7 +1434,7 @@ class TestCandidatesRefuseBeforeAnyFallback:
             def load():
                 return _Cfg()
 
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         monkeypatch.setattr(loader, "KiroCrewConfig", _Cfg)
         # A markerless external row -- exactly the shape that reads as official.
@@ -1474,7 +1474,7 @@ class TestCandidatesRefuseBeforeAnyFallback:
             def load():
                 return _Cfg()
 
-        import kiro_crew.config.loader as loader
+        import efm_go.config.loader as loader
 
         monkeypatch.setattr(loader, "KiroCrewConfig", _Cfg)
         monkeypatch.setattr(
@@ -1610,26 +1610,26 @@ class TestRequestPathPatternsRejectATrailingNewline:
 
     @pytest.mark.parametrize("value", ["main\n", "refs/heads/main\n", "v1.0\n"])
     def test_ref_pattern_rejects_a_trailing_newline(self, value):
-        from kiro_crew.apps import routes
+        from efm_go.apps import routes
 
         assert not routes._SAFE_REF_RE.match(value)
 
     @pytest.mark.parametrize("value", ["icon.png\n", "assets/logo.svg\n"])
     def test_path_pattern_rejects_a_trailing_newline(self, value):
-        from kiro_crew.apps import routes
+        from efm_go.apps import routes
 
         assert not routes._SAFE_PATH_RE.match(value)
 
     @pytest.mark.parametrize("value", ["main", "refs/heads/main", "v1.0"])
     def test_ordinary_refs_still_pass(self, value):
         """Scope: tightening the anchor must not reject the values it exists to admit."""
-        from kiro_crew.apps import routes
+        from efm_go.apps import routes
 
         assert routes._SAFE_REF_RE.match(value)
 
     @pytest.mark.parametrize("value", ["icon.png", "assets/logo.svg"])
     def test_ordinary_paths_still_pass(self, value):
-        from kiro_crew.apps import routes
+        from efm_go.apps import routes
 
         assert routes._SAFE_PATH_RE.match(value)
 

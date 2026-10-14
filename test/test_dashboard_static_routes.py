@@ -1,4 +1,4 @@
-"""Tests for ``kiro_crew.dashboard.server._register_dist_static_routes``.
+"""Tests for ``efm_go.dashboard.server._register_dist_static_routes``.
 
 The dashboard serves the React ``dist/`` build by mounting each build
 subdirectory at a fixed URL prefix. The font route in particular is load-
@@ -23,9 +23,9 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
 from conftest import make_dir_link, requires_symlinks
-from kiro_crew.dashboard import server as server_mod
-from kiro_crew.dashboard.server import _register_dist_static_routes
-from kiro_crew.platform_compat import unlink_link_or_junction
+from efm_go.dashboard import server as server_mod
+from efm_go.dashboard.server import _register_dist_static_routes
+from efm_go.platform_compat import unlink_link_or_junction
 
 _PREFIXES = {"/assets", "/sprites", "/fonts", "/vendor", "/app-assets"}
 

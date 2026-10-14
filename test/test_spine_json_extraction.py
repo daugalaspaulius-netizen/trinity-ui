@@ -10,7 +10,7 @@ tool-side forcing re-emit relies on. Pure-function tests — no agent, no I/O.
 
 from __future__ import annotations
 
-from kiro_crew.apps.builtins.auto_improvement.spine.agent_discovery import (
+from efm_go.apps.builtins.auto_improvement.spine.agent_discovery import (
     _extract_json_array,
     _has_json_array,
     discover_surfaces_via_agent,

@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kiro_crew.dashboard.refresh_tokens import (
+from efm_go.dashboard.refresh_tokens import (
     MAX_REFRESH_TTL_SECS,
     REFRESH_GRACE_SECS,
     RefreshStateManager,
@@ -46,7 +46,7 @@ def isolated_state(tmp_path: Path):
 
     # Force the module-level singleton to point at our isolated manager
     with patch(
-        "kiro_crew.dashboard.refresh_tokens._state_singleton",
+        "efm_go.dashboard.refresh_tokens._state_singleton",
         mgr,
     ):
         yield mgr
@@ -141,7 +141,7 @@ def test_tr_u_07_validate_expired():
 def test_tr_u_08_validate_wrong_kind():
     """Access tokens (kind != 'refresh') are rejected."""
     # generate_token (the access token) doesn't set kind=refresh
-    from kiro_crew.dashboard.token_auth import generate_token
+    from efm_go.dashboard.token_auth import generate_token
 
     access = generate_token("alice")
     valid, _user, reason, _c, _j, _e = validate_refresh_token(access)
@@ -247,7 +247,7 @@ def test_tr_u_15c_handler_rate_limiter_caps_per_ip():
 
     Defense-in-depth against an attacker pumping rotations.
     """
-    from kiro_crew.dashboard.handlers import auth_refresh
+    from efm_go.dashboard.handlers import auth_refresh
 
     # Fresh bucket for this IP to avoid cross-test pollution
     auth_refresh._refresh_rate_buckets.pop("198.51.100.7", None)
@@ -265,7 +265,7 @@ def test_tr_u_15c_handler_rate_limiter_caps_per_ip():
 
 def test_tr_u_15d_handler_rate_limiter_per_ip_isolation():
     """Rate-limit buckets must not cross-contaminate between source IPs."""
-    from kiro_crew.dashboard.handlers import auth_refresh
+    from efm_go.dashboard.handlers import auth_refresh
 
     auth_refresh._refresh_rate_buckets.pop("203.0.113.1", None)
     auth_refresh._refresh_rate_buckets.pop("203.0.113.2", None)
@@ -286,7 +286,7 @@ def test_tr_u_15e_handler_rate_limiter_empty_ip_fails_closed():
     #2 on bucketing under a shared sentinel still allowed
     60/min, which contradicted the docstring claim of fail-closed.
     """
-    from kiro_crew.dashboard.handlers import auth_refresh
+    from efm_go.dashboard.handlers import auth_refresh
 
     # First empty-IP call denied (no bucket lookup, immediate deny)
     assert auth_refresh._rate_limited("", now=1.0) is True
@@ -304,7 +304,7 @@ def test_tr_u_15f_rate_buckets_evict_stale_ips():
     so a wide spread of one-shot client IPs (or a spoofed-XFF pump) slowly
     leaked memory. The periodic sweep must evict stale/empty buckets.
     """
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     # Isolate: clear the map and force a sweep on the next call.
     with ar._refresh_rate_lock:
@@ -343,7 +343,7 @@ def test_tr_u_15g_rate_buckets_hard_capped():
     new source IP is rate-limited (fail-closed) rather than
     admitted by evicting a live bucket. The map never grows past the cap and
     no live bucket is dropped to make room for a newcomer."""
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     with ar._refresh_rate_lock:
         ar._refresh_rate_buckets.clear()
@@ -378,7 +378,7 @@ def test_tr_u_15h_rate_buckets_capped_per_insertion_between_sweeps():
     (so only the per-insert fail-closed cap check can bound it), then feed a
     burst of brand-new source IPs. The map must never exceed
     _REFRESH_RATE_MAX_BUCKETS."""
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     with ar._refresh_rate_lock:
         ar._refresh_rate_buckets.clear()
@@ -416,7 +416,7 @@ def test_tr_u_15i_saturated_client_cannot_reset_bucket_via_cap_flood():
     exhausted bucket survives and they stay limited until it ages out of the
     window on its own.
     """
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     with ar._refresh_rate_lock:
         ar._refresh_rate_buckets.clear()
@@ -465,7 +465,7 @@ def test_tr_u_15j_new_ip_admitted_at_cap_when_stale_buckets_reclaimable():
     """
     import collections as _c
 
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     with ar._refresh_rate_lock:
         ar._refresh_rate_buckets.clear()
@@ -522,7 +522,7 @@ def test_tr_u_16b_unusable_staging_dir_degrades_the_store(tmp_path, monkeypatch)
     Degrading is both answers at once, and the existing reader fails closed on it -- so a
     spent token is REFUSED rather than accepted.
     """
-    from kiro_crew.dashboard import refresh_tokens as rt
+    from efm_go.dashboard import refresh_tokens as rt
 
     def _refused(_home):
         raise OSError(errno.ENOTDIR, "staging directory is not usable")
@@ -556,7 +556,7 @@ def test_tr_u_16d_a_dropped_consumption_is_REPORTED_to_its_caller(tmp_path, monk
     meant to burn authenticates again, with its replacement pair already delivered. So the
     return value has to carry the failure, or no caller can decline to publish.
     """
-    from kiro_crew.dashboard import refresh_tokens as rt
+    from efm_go.dashboard import refresh_tokens as rt
 
     def _refused(_home):
         raise OSError(errno.ENOTDIR, "staging directory is not usable")
@@ -585,7 +585,7 @@ def test_tr_u_16f_a_dropped_consumption_is_ROLLED_BACK_in_memory(tmp_path, monke
     entry for the same chain must be RESTORED rather than dropped, since this rotation had no
     grounds to retire it.
     """
-    from kiro_crew.dashboard import refresh_tokens as rt
+    from efm_go.dashboard import refresh_tokens as rt
 
     mgr = RefreshStateManager(state_path=tmp_path / "rt.json")
     earlier = mgr.mark_consumed(
@@ -710,7 +710,7 @@ def test_tr_u_16l_EVERY_revoke_chain_call_site_consumes_the_result(tmp_path):
     import ast
     import inspect
 
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     tree = ast.parse(inspect.getsource(ar))
     discarded = []
@@ -744,7 +744,7 @@ def test_tr_u_16k_EVERY_writer_holds_the_write_sequence_lock(tmp_path):
     import ast
     import inspect
 
-    from kiro_crew.dashboard import refresh_tokens as rt
+    from efm_go.dashboard import refresh_tokens as rt
 
     tree = ast.parse(inspect.getsource(rt))
     offenders = []
@@ -780,7 +780,7 @@ def test_tr_u_16i_a_revocation_that_does_NOT_persist_is_reported_to_its_caller(
     The revocation stays in memory on failure -- unlike a rotation there is no rollback, because
     undoing it would reopen the chain the caller asked to close.
     """
-    from kiro_crew.dashboard import refresh_tokens as rt
+    from efm_go.dashboard import refresh_tokens as rt
 
     def _refused(_home):
         raise OSError(errno.EACCES, "staging directory is not writable")
@@ -826,7 +826,7 @@ def test_tr_u_16e_a_consumption_that_lands_reports_success(tmp_path):
 
 def test_tr_u_16c_a_later_successful_write_clears_the_degraded_mark(tmp_path, monkeypatch):
     """Degraded is a statement about the last write, not a latch."""
-    from kiro_crew.dashboard import refresh_tokens as rt
+    from efm_go.dashboard import refresh_tokens as rt
 
     calls = {"n": 0}
     real = rt.auth_store_staging_dir
@@ -885,7 +885,7 @@ def test_a_failed_lockdown_still_persists_the_reuse_record(
     def _boom(*a, **kw):
         raise OSError("chmod denied (read-only filesystem)")
 
-    monkeypatch.setattr("kiro_crew.platform_compat.os.chmod", _boom)
+    monkeypatch.setattr("efm_go.platform_compat.os.chmod", _boom)
     mgr.mark_consumed(
         "jti1", chain_id="c1", exp=time.time() + 86400, ip="1.2.3.4", replacement="{}"
     )
@@ -1171,7 +1171,7 @@ def test_foreign_port_cookies_ignores_non_port_names():
 def test_cookie_jar_needs_pruning_threshold():
     """The size gate is False for a small jar (live gateways coexist) and True
     once the approximate Cookie header size crosses the threshold."""
-    from kiro_crew.dashboard.refresh_tokens import COOKIE_JAR_PRUNE_THRESHOLD_BYTES
+    from efm_go.dashboard.refresh_tokens import COOKIE_JAR_PRUNE_THRESHOLD_BYTES
 
     small = {"mc_token_7777": "abc", "mc_refresh_7777": "def"}
     assert cookie_jar_needs_pruning(small) is False
@@ -1219,7 +1219,7 @@ def test_tr_u_23_logout_revokes_chain_and_clears_cookies(
 
     from aiohttp import web
 
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     # Mint a real refresh token so validate_refresh_token accepts it
     token, chain_id, _jti, _exp = generate_refresh_token("alice")
@@ -1234,7 +1234,7 @@ def test_tr_u_23_logout_revokes_chain_and_clears_cookies(
     request.remote = "127.0.0.1"
 
     # check_origin must accept loopback — patch it tight to True
-    with patch("kiro_crew.dashboard.handlers.auth_refresh.check_origin", return_value=True):
+    with patch("efm_go.dashboard.handlers.auth_refresh.check_origin", return_value=True):
         import asyncio
         resp = asyncio.run(ar.api_auth_logout(request))
 
@@ -1259,7 +1259,7 @@ def test_tr_u_24_logout_without_cookie_still_clears(
 
     from aiohttp import web
 
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     request = MagicMock(spec=web.Request)
     request.app = {"port": 7777, "allowed_origins": set()}
@@ -1269,7 +1269,7 @@ def test_tr_u_24_logout_without_cookie_still_clears(
     request.host = "localhost:7777"
     request.remote = "127.0.0.1"
 
-    with patch("kiro_crew.dashboard.handlers.auth_refresh.check_origin", return_value=True):
+    with patch("efm_go.dashboard.handlers.auth_refresh.check_origin", return_value=True):
         import asyncio
         resp = asyncio.run(ar.api_auth_logout(request))
 
@@ -1294,7 +1294,7 @@ def test_tr_u_25_secure_flag_only_on_https():
 
     from aiohttp import web
 
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     # HTTP request: Secure should NOT be set
     http_resp = web.Response()
@@ -1335,7 +1335,7 @@ def test_tr_u_25b_secure_flag_via_forwarded_proto_over_tunnel():
 
     from aiohttp import web
 
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     # Tunnel: scheme=http on loopback, XFP=https -> Secure MUST be set
     tun_resp = web.Response()
@@ -1381,8 +1381,8 @@ def test_tr_u_26_refresh_cookie_path_covers_logout():
 
     from aiohttp import web
 
-    from kiro_crew.dashboard import refresh_tokens
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard import refresh_tokens
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     # The constant itself must scope to /api/auth (one segment broader than
     # /api/auth/refresh) so /api/auth/logout is included.
@@ -1444,14 +1444,14 @@ def test_tr_u_27_logout_revokes_access_cookie(tmp_path, monkeypatch):
 
     from aiohttp import web
 
-    import kiro_crew.dashboard.revocation_gen as rg
-    import kiro_crew.dashboard.token_auth as ta
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
-    from kiro_crew.dashboard.token_auth import generate_token, validate_token
+    import efm_go.dashboard.revocation_gen as rg
+    import efm_go.dashboard.token_auth as ta
+    from efm_go.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.token_auth import generate_token, validate_token
 
     # Isolate BOTH the refresh store and the token_auth revoked-nonce store to
     # tmp dirs so nothing touches the real ~/.kirocrew.
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
     monkeypatch.setattr(rg, "_gen", 0)
     monkeypatch.setattr(ta, "_revoked_store_singleton", None)
     refresh_state = RefreshStateManager(state_path=tmp_path / "refresh_chains.json")
@@ -1475,9 +1475,9 @@ def test_tr_u_27_logout_revokes_access_cookie(tmp_path, monkeypatch):
     request.remote = "127.0.0.1"
 
     with patch(
-        "kiro_crew.dashboard.refresh_tokens._state_singleton", refresh_state
+        "efm_go.dashboard.refresh_tokens._state_singleton", refresh_state
     ), patch(
-        "kiro_crew.dashboard.handlers.auth_refresh.check_origin", return_value=True
+        "efm_go.dashboard.handlers.auth_refresh.check_origin", return_value=True
     ):
         resp = asyncio.run(ar.api_auth_logout(request))
 
@@ -1507,7 +1507,7 @@ def test_refresh_expires_foreign_port_cookies_keeps_current(
 
     from aiohttp import web
 
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     token, _chain_id, _jti, _exp = generate_refresh_token("alice")
 
@@ -1527,9 +1527,9 @@ def test_refresh_expires_foreign_port_cookies_keeps_current(
     request.remote = "127.0.0.1"
 
     with patch(
-        "kiro_crew.dashboard.handlers.auth_refresh.check_origin", return_value=True
+        "efm_go.dashboard.handlers.auth_refresh.check_origin", return_value=True
     ), patch(
-        "kiro_crew.dashboard.handlers.auth_refresh._rate_limited", return_value=False
+        "efm_go.dashboard.handlers.auth_refresh._rate_limited", return_value=False
     ):
         resp = asyncio.run(ar.api_auth_refresh(request))
 
@@ -1557,7 +1557,7 @@ def test_refresh_leaves_small_jar_untouched(
 
     from aiohttp import web
 
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.handlers import auth_refresh as ar
 
     token, _chain_id, _jti, _exp = generate_refresh_token("alice")
 
@@ -1575,9 +1575,9 @@ def test_refresh_leaves_small_jar_untouched(
     request.remote = "127.0.0.1"
 
     with patch(
-        "kiro_crew.dashboard.handlers.auth_refresh.check_origin", return_value=True
+        "efm_go.dashboard.handlers.auth_refresh.check_origin", return_value=True
     ), patch(
-        "kiro_crew.dashboard.handlers.auth_refresh._rate_limited", return_value=False
+        "efm_go.dashboard.handlers.auth_refresh._rate_limited", return_value=False
     ):
         resp = asyncio.run(ar.api_auth_refresh(request))
 
@@ -1601,9 +1601,9 @@ def isolated_gen(tmp_path: Path, monkeypatch):
 
     Yields the revocation_gen module so tests can bump/inspect the counter.
     """
-    import kiro_crew.dashboard.revocation_gen as rg
+    import efm_go.dashboard.revocation_gen as rg
 
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
     monkeypatch.setattr(rg, "_gen", 0)
     yield rg
 
@@ -1617,8 +1617,8 @@ def test_tr_u_28_revoke_all_sessions_kills_refresh_token(
     pre-logout refresh token carries the old gen and validation rejects it
     with reason "session revoked" — the same semantics as the access cookie.
     """
-    import kiro_crew.dashboard.token_auth as ta
-    from kiro_crew.dashboard.token_auth import revoke_all_sessions
+    import efm_go.dashboard.token_auth as ta
+    from efm_go.dashboard.token_auth import revoke_all_sessions
 
     # Fresh revoked-nonce store bound to this test's tmp config_dir.
     monkeypatch.setattr(ta, "_revoked_store_singleton", None)
@@ -1642,8 +1642,8 @@ def test_tr_u_29_refresh_token_minted_after_bump_validates(
     isolated_gen, isolated_state: RefreshStateManager, monkeypatch
 ):
     """A refresh token minted AFTER the bump embeds the new gen and validates."""
-    import kiro_crew.dashboard.token_auth as ta
-    from kiro_crew.dashboard.token_auth import revoke_all_sessions
+    import efm_go.dashboard.token_auth as ta
+    from efm_go.dashboard.token_auth import revoke_all_sessions
 
     monkeypatch.setattr(ta, "_revoked_store_singleton", None)
 
@@ -1665,7 +1665,7 @@ def test_tr_u_30_legacy_payload_without_gen_fails_closed(
     fail-closed posture. On installs that never ran a logout (gen still 0),
     legacy tokens keep validating.
     """
-    import kiro_crew.dashboard.refresh_tokens as rt
+    import efm_go.dashboard.refresh_tokens as rt
 
     now = time.time()
     legacy_payload = {
@@ -1703,9 +1703,9 @@ def test_tr_u_31_refresh_endpoint_rejects_pre_logout_cookie(
 
     from aiohttp import web
 
-    import kiro_crew.dashboard.token_auth as ta
-    from kiro_crew.dashboard.handlers import auth_refresh as ar
-    from kiro_crew.dashboard.token_auth import revoke_all_sessions
+    import efm_go.dashboard.token_auth as ta
+    from efm_go.dashboard.handlers import auth_refresh as ar
+    from efm_go.dashboard.token_auth import revoke_all_sessions
 
     monkeypatch.setattr(ta, "_revoked_store_singleton", None)
 
@@ -1721,9 +1721,9 @@ def test_tr_u_31_refresh_endpoint_rejects_pre_logout_cookie(
     request.remote = "127.0.0.1"
 
     with patch(
-        "kiro_crew.dashboard.handlers.auth_refresh.check_origin", return_value=True
+        "efm_go.dashboard.handlers.auth_refresh.check_origin", return_value=True
     ), patch(
-        "kiro_crew.dashboard.handlers.auth_refresh._rate_limited", return_value=False
+        "efm_go.dashboard.handlers.auth_refresh._rate_limited", return_value=False
     ):
         resp = asyncio.run(ar.api_auth_refresh(request))
 
@@ -1738,7 +1738,7 @@ def test_tr_u_32_failed_gen_load_is_not_memoized(monkeypatch):
     real persisted counter — a startup read glitch on a host whose counter is
     above 0 cannot pin the process at gen 0 for its lifetime.
     """
-    import kiro_crew.dashboard.revocation_gen as rg
+    import efm_go.dashboard.revocation_gen as rg
 
     monkeypatch.setattr(rg, "_gen", None)
     loads = iter([None, 7])  # first read fails, retry succeeds
@@ -1759,12 +1759,12 @@ def test_tr_u_33_validator_fails_closed_when_counter_unreadable(
     revoked. Both the refresh and access validators reject with
     "revocation state unavailable"; the next validation retries the read.
     """
-    from kiro_crew.dashboard.token_auth import generate_token, validate_token
+    from efm_go.dashboard.token_auth import generate_token, validate_token
 
     refresh_token, _cid, _jti, _exp = generate_refresh_token("alice")  # minted at gen 0
     access_token = generate_token("alice", ttl_seconds=3600)
 
-    import kiro_crew.dashboard.revocation_gen as rg
+    import efm_go.dashboard.revocation_gen as rg
 
     monkeypatch.setattr(rg, "_gen", None)
     monkeypatch.setattr(rg, "_load_revocation_gen_or_none", lambda: None)
@@ -1785,7 +1785,7 @@ def test_tr_u_34_bump_refuses_unreadable_base(monkeypatch):
     value than on disk (e.g. 5 -> 1), resurrecting revoked sessions after a
     restart. The bump refuses with OSError instead.
     """
-    import kiro_crew.dashboard.revocation_gen as rg
+    import efm_go.dashboard.revocation_gen as rg
 
     monkeypatch.setattr(rg, "_gen", None)
     monkeypatch.setattr(rg, "_load_revocation_gen_or_none", lambda: None)
@@ -1804,13 +1804,13 @@ def test_tr_u_35_bump_persist_failure_leaves_counter_unchanged(
     after restart and outlive a later successful logout, so a failed persist
     must not advance what mints observe.
     """
-    import kiro_crew.dashboard.revocation_gen as rg
+    import efm_go.dashboard.revocation_gen as rg
 
     # Point config_dir at a FILE so the mkdir(parents=True) in the persist
     # path raises — a deterministic write failure confined to tmp_path.
     blocker = tmp_path / "not-a-dir"
     blocker.write_text("x", encoding="utf-8")
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: blocker)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: blocker)
     monkeypatch.setattr(rg, "_gen", 3)
 
     with pytest.raises(OSError):
@@ -1830,9 +1830,9 @@ def test_tr_u_36_unreadable_counter_file_logs_recovery(
     next boot. The loader reports it unreadable, explains the reset cost, and
     validators reject until the state is repaired.
     """
-    import kiro_crew.dashboard.revocation_gen as rg
+    import efm_go.dashboard.revocation_gen as rg
 
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
     counter = tmp_path / rg._REVOCATION_FILE
     counter.write_text(contents, encoding="utf-8")
     monkeypatch.setattr(rg, "_gen", None)
@@ -1853,9 +1853,9 @@ def test_tr_u_36_unreadable_counter_file_logs_recovery(
 def test_tr_u_37_bump_persists_atomically(tmp_path: Path, monkeypatch):
     """The bump lands via same-directory tmp + os.replace: the on-disk file
     always carries a complete value and no tmp residue is left behind."""
-    import kiro_crew.dashboard.revocation_gen as rg
+    import efm_go.dashboard.revocation_gen as rg
 
-    monkeypatch.setattr("kiro_crew.config.loader.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.config.loader.config_dir", lambda: tmp_path)
     monkeypatch.setattr(rg, "_gen", None)
 
     assert rg.bump_revocation_gen() == 1
@@ -1878,7 +1878,7 @@ def test_tr_u_16m_a_record_is_not_reported_persisted_until_its_NAME_is_durable(
     success here without the directory sync leaves the burned refresh token spendable again
     after an unclean shutdown -- the exact single-use guarantee this module exists to hold.
     """
-    import kiro_crew.dashboard.refresh_tokens as rt
+    import efm_go.dashboard.refresh_tokens as rt
 
     state_file = tmp_path / "rt.json"
     mgr = rt.RefreshStateManager(state_path=state_file)
@@ -1929,7 +1929,7 @@ def test_tr_u_16n_the_degraded_warnings_do_not_promise_a_recovery_that_cannot_ha
     import inspect
     import textwrap
 
-    from kiro_crew.dashboard import refresh_tokens as rt
+    from efm_go.dashboard import refresh_tokens as rt
 
     # Read the message CONSTANTS, not the source text. Adjacent string literals are folded
     # by the parser, so a message split across two source lines still arrives here whole --

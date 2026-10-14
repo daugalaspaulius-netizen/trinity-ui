@@ -5,9 +5,9 @@ from contextlib import contextmanager
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.history import ConversationLog
-from kiro_crew.messaging.link import ChannelLink, binding_token
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.history import ConversationLog
+from efm_go.messaging.link import ChannelLink, binding_token
 
 # -- Helpers --
 
@@ -168,7 +168,7 @@ def _fake_transport(channel_type: str):
 class TestChannelNeutralSlotLinks:
     def _permit_channels(self, monkeypatch):
         monkeypatch.setattr(
-            "kiro_crew.platform.governance_profiles.governance_permits",
+            "efm_go.platform.governance_profiles.governance_permits",
             lambda *args, **kwargs: SimpleNamespace(permitted=True),
         )
 

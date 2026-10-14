@@ -4,7 +4,7 @@ Where kiro-cli writes MCP OAuth credentials on disk, how Kiro Crew identifies
 the exact pair without reading token bytes, and how to disconnect safely. The file
 layout is derived from `aws/amazon-q-developer-cli`'s
 `crates/chat-cli/src/mcp_client/oauth_util.rs`; Kiro Crew's current behavior is in
-`src/kiro_crew/mcp_grant.py` and `src/kiro_crew/connections/ownership.py`.
+`src/efm_go/mcp_grant.py` and `src/efm_go/connections/ownership.py`.
 
 > Current supported paths: interactive kiro-cli provides `/mcp logout <server>`,
 > while Kiro Crew's **Settings > Connections > Disconnect** removes configuration

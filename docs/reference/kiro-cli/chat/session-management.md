@@ -1,6 +1,6 @@
 # Session Management
 
-Source: https://kiro.dev/docs/cli/chat/session-management/ (fetched 2026-09-06)
+Source: https://efmleads.com/docs/cli/chat/session-management/ (fetched 2026-09-06)
 
 Auto-saves every conversation turn to a local SQLite database (`~/.kiro/`).
 Sessions are per-directory and identified by a UUID. On exit the CLI prints the

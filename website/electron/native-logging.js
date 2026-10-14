@@ -158,7 +158,7 @@ function rotateNativeLog(logPath, { fs, log = () => {} } = {}) {
     // is not itself a failure mode. What DOES fail on Windows is a sharing
     // violation when any handle is open on either path (an AV or
     // Search-indexer touch is enough); see `replace_with_retry` in
-    // `src/kiro_crew/atomic_write.py`.
+    // `src/efm_go/atomic_write.py`.
     fs.renameSync(logPath, previousPath);
     return { rotated: true, blocked: false, previousPath };
   } catch (e) {

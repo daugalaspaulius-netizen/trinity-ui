@@ -14,7 +14,7 @@ def _run_collect() -> dict:
     The remaining system metrics (memory, CPU, network) are all wrapped in
     try/except so they degrade gracefully — only the MCP block matters here.
     """
-    from kiro_crew.dashboard import handlers_system
+    from efm_go.dashboard import handlers_system
 
     with (
         patch.object(handlers_system, "_get_static_system_info", return_value={}),
@@ -59,9 +59,9 @@ class TestMcpProcessCountLinux:
             return orig_read_bytes(self_path)
 
         with (
-            patch("kiro_crew.dashboard.handlers_system.sys") as mock_sys,
-            patch("kiro_crew.dashboard.handlers_system.os.getpid", return_value=99999),
-            patch("kiro_crew.dashboard.handlers_system.os.listdir", side_effect=fake_listdir),
+            patch("efm_go.dashboard.handlers_system.sys") as mock_sys,
+            patch("efm_go.dashboard.handlers_system.os.getpid", return_value=99999),
+            patch("efm_go.dashboard.handlers_system.os.listdir", side_effect=fake_listdir),
             patch.object(Path, "read_bytes", fake_read_bytes),
             # Linux MCP counting uses /proc (os.listdir + read_bytes), NOT
             # subprocess. Stub check_output so the unrelated CPU `ps -A -o %cpu`
@@ -69,7 +69,7 @@ class TestMcpProcessCountLinux:
             # 2s timeout SIGKILLs the child and the Popen-cleanup waitpid reap
             # hangs past pytest-timeout (a flaky failure under load).
             patch(
-                "kiro_crew.dashboard.handlers_system.subprocess.check_output",
+                "efm_go.dashboard.handlers_system.subprocess.check_output",
                 return_value="%CPU\n0.0\n",
             ),
         ):
@@ -92,14 +92,14 @@ class TestMcpProcessCountLinux:
             return b"kiro-cli\x00acp"
 
         with (
-            patch("kiro_crew.dashboard.handlers_system.sys") as mock_sys,
-            patch("kiro_crew.dashboard.handlers_system.os.getpid", return_value=10),
-            patch("kiro_crew.dashboard.handlers_system.os.listdir", side_effect=fake_listdir),
+            patch("efm_go.dashboard.handlers_system.sys") as mock_sys,
+            patch("efm_go.dashboard.handlers_system.os.getpid", return_value=10),
+            patch("efm_go.dashboard.handlers_system.os.listdir", side_effect=fake_listdir),
             patch.object(Path, "read_bytes", fake_read_bytes),
             # See test_counts_all_signatures: stub the CPU `ps` subprocess so a
             # 2s-timeout SIGKILL + waitpid hang can't make this flaky under load.
             patch(
-                "kiro_crew.dashboard.handlers_system.subprocess.check_output",
+                "efm_go.dashboard.handlers_system.subprocess.check_output",
                 return_value="%CPU\n0.0\n",
             ),
         ):
@@ -121,10 +121,10 @@ class TestMcpProcessCountMacOS:
         )
 
         with (
-            patch("kiro_crew.dashboard.handlers_system.sys") as mock_sys,
-            patch("kiro_crew.dashboard.handlers_system.os.getpid", return_value=99999),
+            patch("efm_go.dashboard.handlers_system.sys") as mock_sys,
+            patch("efm_go.dashboard.handlers_system.os.getpid", return_value=99999),
             patch(
-                "kiro_crew.dashboard.handlers_system.subprocess.check_output",
+                "efm_go.dashboard.handlers_system.subprocess.check_output",
                 return_value=ps_output,
             ),
         ):
@@ -139,10 +139,10 @@ class TestMcpProcessCountMacOS:
         ps_output = "  PID COMMAND\n   42 kiro-cli acp\n"
 
         with (
-            patch("kiro_crew.dashboard.handlers_system.sys") as mock_sys,
-            patch("kiro_crew.dashboard.handlers_system.os.getpid", return_value=42),
+            patch("efm_go.dashboard.handlers_system.sys") as mock_sys,
+            patch("efm_go.dashboard.handlers_system.os.getpid", return_value=42),
             patch(
-                "kiro_crew.dashboard.handlers_system.subprocess.check_output",
+                "efm_go.dashboard.handlers_system.subprocess.check_output",
                 return_value=ps_output,
             ),
         ):
@@ -153,10 +153,10 @@ class TestMcpProcessCountMacOS:
 
     def test_ps_failure_returns_zeros(self) -> None:
         with (
-            patch("kiro_crew.dashboard.handlers_system.sys") as mock_sys,
-            patch("kiro_crew.dashboard.handlers_system.os.getpid", return_value=1),
+            patch("efm_go.dashboard.handlers_system.sys") as mock_sys,
+            patch("efm_go.dashboard.handlers_system.os.getpid", return_value=1),
             patch(
-                "kiro_crew.dashboard.handlers_system.subprocess.check_output",
+                "efm_go.dashboard.handlers_system.subprocess.check_output",
                 side_effect=OSError("ps not found"),
             ),
         ):

@@ -40,7 +40,7 @@ class TestWarmPoolAcquireCounter:
     """record_outcome emits a hit/miss counter (drives production)."""
 
     def _make_store(self, tmp_path):
-        from kiro_crew.mcp_gateway.prewarm import HotKeyStore
+        from efm_go.mcp_gateway.prewarm import HotKeyStore
 
         return HotKeyStore(tmp_path / "hot-keys.json")
 
@@ -49,21 +49,21 @@ class TestWarmPoolAcquireCounter:
         rec = _CapturingRecorder()
         # prewarm imports get_recorder at module top-level, so patch the
         # consumer binding, not the definition module.
-        with patch("kiro_crew.mcp_gateway.prewarm.get_recorder", return_value=rec):
+        with patch("efm_go.mcp_gateway.prewarm.get_recorder", return_value=rec):
             store.record_outcome(hit=True)
         assert rec.counters == [("kirocrew.mcp.warm_pool.acquire", {"result": "hit"})]
 
     def test_miss_emits_counter(self, tmp_path):
         store = self._make_store(tmp_path)
         rec = _CapturingRecorder()
-        with patch("kiro_crew.mcp_gateway.prewarm.get_recorder", return_value=rec):
+        with patch("efm_go.mcp_gateway.prewarm.get_recorder", return_value=rec):
             store.record_outcome(hit=False)
         assert rec.counters == [("kirocrew.mcp.warm_pool.acquire", {"result": "miss"})]
 
     def test_multiple_calls_accumulate(self, tmp_path):
         store = self._make_store(tmp_path)
         rec = _CapturingRecorder()
-        with patch("kiro_crew.mcp_gateway.prewarm.get_recorder", return_value=rec):
+        with patch("efm_go.mcp_gateway.prewarm.get_recorder", return_value=rec):
             store.record_outcome(hit=True)
             store.record_outcome(hit=False)
             store.record_outcome(hit=True)
@@ -79,20 +79,20 @@ class TestBackendAcquireMetric:
     """The ensure_backend path emits acquire duration via this helper."""
 
     def test_warm_hit(self):
-        from kiro_crew.mcp_gateway.gatewayd import _emit_backend_acquire_metric
+        from efm_go.mcp_gateway.gatewayd import _emit_backend_acquire_metric
 
         rec = _CapturingRecorder()
-        with patch("kiro_crew.mcp_gateway.gatewayd.get_recorder", return_value=rec):
+        with patch("efm_go.mcp_gateway.gatewayd.get_recorder", return_value=rec):
             _emit_backend_acquire_metric(12.5, warm=True)
         assert rec.histograms == [
             ("kirocrew.mcp.backend.acquire.duration", 12.5, "ms", {"warm": True})
         ]
 
     def test_cold_spawn(self):
-        from kiro_crew.mcp_gateway.gatewayd import _emit_backend_acquire_metric
+        from efm_go.mcp_gateway.gatewayd import _emit_backend_acquire_metric
 
         rec = _CapturingRecorder()
-        with patch("kiro_crew.mcp_gateway.gatewayd.get_recorder", return_value=rec):
+        with patch("efm_go.mcp_gateway.gatewayd.get_recorder", return_value=rec):
             _emit_backend_acquire_metric(340.0, warm=False)
         assert rec.histograms == [
             ("kirocrew.mcp.backend.acquire.duration", 340.0, "ms", {"warm": False})
@@ -108,10 +108,10 @@ class TestLazyLoadMetrics:
     """The lazy-spawn path emits count + duration + acquire via this helper."""
 
     def test_emits_count_duration_and_acquire(self):
-        from kiro_crew.mcp_gateway.gatewayd import _emit_lazy_load_metrics
+        from efm_go.mcp_gateway.gatewayd import _emit_lazy_load_metrics
 
         rec = _CapturingRecorder()
-        with patch("kiro_crew.mcp_gateway.gatewayd.get_recorder", return_value=rec):
+        with patch("efm_go.mcp_gateway.gatewayd.get_recorder", return_value=rec):
             _emit_lazy_load_metrics(250.0, warm=False)
 
         # Counter: lazy_load.count

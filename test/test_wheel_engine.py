@@ -30,8 +30,8 @@ from spawn_test_helpers import (
     kill_leftovers,
 )
 
-from kiro_crew.platform import wheel_engine
-from kiro_crew.platform.wheel_engine import (
+from efm_go.platform import wheel_engine
+from efm_go.platform.wheel_engine import (
     ManagedVenvLayout,
     WheelUpdateError,
     managed_venv_layout,
@@ -41,7 +41,7 @@ from kiro_crew.platform.wheel_engine import (
     running_from_managed_venv,
     running_from_pipx,
 )
-from kiro_crew.platform_compat import IS_POSIX, trusted_system_bin
+from efm_go.platform_compat import IS_POSIX, trusted_system_bin
 
 # The engine is POSIX-only by construction: cli.sh is a POSIX installer, and
 # running_from_managed_venv() answers False on Windows, so no production path
@@ -53,8 +53,8 @@ pytestmark = pytest.mark.skipif(not IS_POSIX, reason="the shadow-venv engine is 
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 
-_ARTIFACT_BASE = "https://download.crew.kiro.dev"
-_FEED_BASE = "https://updates.crew.kiro.dev"
+_ARTIFACT_BASE = "https://efmleads.com"
+_FEED_BASE = "https://efmleads.com/go/updates"
 
 
 def _manifest(
@@ -523,10 +523,10 @@ class TestWheelDownload:
 
     def test_http_url_refused(self) -> None:
         with pytest.raises(WheelUpdateError, match="non-HTTPS"):
-            wheel_engine._fetch_bytes("http://download.crew.kiro.dev/x", 10, 1)
+            wheel_engine._fetch_bytes("http://download.efmleads.com/x", 10, 1)
         with pytest.raises(WheelUpdateError, match="non-HTTPS"):
             wheel_engine._download_to_file(
-                "http://download.crew.kiro.dev/x", Path("/dev/null"), 10, 1, "0" * 64
+                "http://download.efmleads.com/x", Path("/dev/null"), 10, 1, "0" * 64
             )
 
 
@@ -801,7 +801,7 @@ class TestCancellableBuildChild:
 
     def test_every_child_holds_the_update_lock_past_its_parent(self, tmp_path: Path) -> None:
         """The lock fd is handed to the child, so an orphaned child keeps the lock."""
-        from kiro_crew.platform_compat import try_acquire_lock
+        from efm_go.platform_compat import try_acquire_lock
 
         lock_path = tmp_path / "crew-venv.update.lock"
         parent_fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o600)
@@ -980,7 +980,7 @@ class TestLayoutAndDetection:
     def test_layout_defaults_beside_data_home(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("KIROCREW_VENV", raising=False)
         layout = managed_venv_layout()
-        from kiro_crew.config.paths import data_home
+        from efm_go.config.paths import data_home
 
         assert layout.legacy == Path(f"{str(data_home()).rstrip('/')}-venv")
 
@@ -1307,7 +1307,7 @@ class TestReexecExecutableParameter:
         monkeypatch: pytest.MonkeyPatch,
         nonbundled_python_without_user_site,
     ) -> None:
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         # The real call mutates os.environ (UTF-8 pinning) before exec; with
         # execv mocked the process KEEPS RUNNING, so the mutation would leak
@@ -1322,20 +1322,20 @@ class TestReexecExecutableParameter:
             captured["argv"] = argv
 
         monkeypatch.setattr(os, "execv", fake_execv)
-        platform_compat.reexec_python_module("kiro_crew", ["--flag"], executable="/x/bin/python3")
+        platform_compat.reexec_python_module("efm_go", ["--flag"], executable="/x/bin/python3")
         assert captured["path"] == "/x/bin/python3"
         argv = captured["argv"]
         assert isinstance(argv, list)
-        assert argv[1:5] == ["-s", "-P", "-m", "kiro_crew"]
+        assert argv[1:5] == ["-s", "-P", "-m", "efm_go"]
         assert argv[5:] == ["--flag"]
 
     def test_reexec_defaults_to_sys_executable(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
 
         monkeypatch.setattr(platform_compat, "_ensure_utf8_process_environment", lambda: None)
         captured: dict[str, object] = {}
         monkeypatch.setattr(os, "execv", lambda p, a: captured.update(path=p))
-        platform_compat.reexec_python_module("kiro_crew", [])
+        platform_compat.reexec_python_module("efm_go", [])
         assert captured["path"] == sys.executable
 
 
@@ -1684,7 +1684,7 @@ class TestApplyWheelUpdateOrchestration:
         """The update lock admits ONE writer; a second run refuses cleanly."""
         import os as _os
 
-        from kiro_crew.platform_compat import try_acquire_lock as _try
+        from efm_go.platform_compat import try_acquire_lock as _try
 
         layout, calls = self._wire(monkeypatch, tmp_path)
         lock_path = layout.stable_link.with_name(f"{layout.legacy.name}.update.lock")
@@ -1888,7 +1888,7 @@ class TestApplyWheelUpdateOrchestration:
         layout, calls = self._wire(monkeypatch, tmp_path)
 
         def failing_verify(shadow: Path, version: str, **_kw: object) -> None:
-            raise WheelUpdateError("shadow venv cannot import kiro_crew — not promoting")
+            raise WheelUpdateError("shadow venv cannot import efm_go — not promoting")
 
         monkeypatch.setattr(wheel_engine, "verify_shadow_venv", failing_verify)
         with pytest.raises(WheelUpdateError, match="not promoting"):

@@ -31,7 +31,7 @@ import sys
 
 import pytest
 
-import kiro_crew.sandbox as sb
+import efm_go.sandbox as sb
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "linux", reason="cgroup v2 scopes and the user bus are Linux-only"

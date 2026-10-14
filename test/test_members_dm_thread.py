@@ -30,9 +30,9 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state
 
-from kiro_crew.config.loader import KiroCrewAgentConfig, KiroCrewConfig
-from kiro_crew.dashboard.chat_handlers import _history_key_for
-from kiro_crew.members import (
+from efm_go.config.loader import KiroCrewAgentConfig, KiroCrewConfig
+from efm_go.dashboard.chat_handlers import _history_key_for
+from efm_go.members import (
     DM_SLOT_MODE,
     MEMBER_BRIEFING_MAX_CHARS,
     MemberSlugError,
@@ -45,7 +45,7 @@ from kiro_crew.members import (
     slug_for_name,
     write_dm_binding,
 )
-from kiro_crew.validation import normalize_unicode
+from efm_go.validation import normalize_unicode
 
 CREW = "code-reviewer"
 OTHER = "other-agent"
@@ -84,7 +84,7 @@ def _record_or_explain(member, session_key, memory_mode, **kwargs) -> bool:
     member, crew-log and event-log records the call produced.
     """
     handler = _RenderedLogs()
-    names = ("kiro_crew.members", "kiro_crew.eventlog", "kiro_crew.crew_log")
+    names = ("efm_go.members", "efm_go.eventlog", "efm_go.crew_log")
     loggers = [logging.getLogger(n) for n in names]
     levels = [lg.level for lg in loggers]
     for lg in loggers:
@@ -221,8 +221,8 @@ class TestRestrictedRestartMemberIdentity:
 
     @staticmethod
     def _member(cfg, tmp_path, alias, member_id, store):
-        from kiro_crew.config.sections import KiroCrewAgentConfig, MemoryStoreConfig
-        from kiro_crew.vector_memory import create_member_database
+        from efm_go.config.sections import KiroCrewAgentConfig, MemoryStoreConfig
+        from efm_go.vector_memory import create_member_database
 
         path = tmp_path / "memory_stores" / store / "memory.db"
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -235,9 +235,9 @@ class TestRestrictedRestartMemberIdentity:
         )
 
     def test_dm_slot_refuses_after_alias_reassignment(self, tmp_path, monkeypatch):
-        from kiro_crew import execution_context as execution
-        from kiro_crew.config import loader
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go import execution_context as execution
+        from efm_go.config import loader
+        from efm_go.dashboard.chat_runner import (
             _dm_member_binding_changed,
             _slot_member_slug,
         )
@@ -271,9 +271,9 @@ class TestRestrictedRestartMemberIdentity:
         assert _dm_member_binding_changed(resolved.member_id, slot_key)
 
     def test_dm_slot_runs_normally_when_alias_is_unchanged(self, tmp_path, monkeypatch):
-        from kiro_crew import execution_context as execution
-        from kiro_crew.config import loader
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go import execution_context as execution
+        from efm_go.config import loader
+        from efm_go.dashboard.chat_runner import (
             _dm_member_binding_changed,
             _slot_member_slug,
         )
@@ -295,10 +295,10 @@ class TestRestrictedRestartMemberIdentity:
         assert not _dm_member_binding_changed(resolved.member_id, slot_key)
 
     def test_legacy_member_without_persisted_id_touches_neither_branch(self, tmp_path, monkeypatch):
-        from kiro_crew import execution_context as execution
-        from kiro_crew.config import loader
-        from kiro_crew.config.sections import KiroCrewAgentConfig
-        from kiro_crew.dashboard.chat_runner import (
+        from efm_go import execution_context as execution
+        from efm_go.config import loader
+        from efm_go.config.sections import KiroCrewAgentConfig
+        from efm_go.dashboard.chat_runner import (
             _dm_member_binding_changed,
             _slot_member_slug,
         )
@@ -327,13 +327,13 @@ class TestRestrictedRestartMemberIdentity:
         assert not _dm_member_binding_changed(resolved.member_id or "", "chat-7-f00d")
 
     def test_non_member_slot_key_has_no_slug(self):
-        from kiro_crew.dashboard.chat_runner import _slot_member_slug
+        from efm_go.dashboard.chat_runner import _slot_member_slug
 
         assert _slot_member_slug("chat-1-abc") == ""
 
 
 def _make_members_app(state) -> web.Application:
-    from kiro_crew.dashboard.handlers.members import (
+    from efm_go.dashboard.handlers.members import (
         api_member_activity,
         api_member_briefing,
         api_member_thread,
@@ -365,7 +365,7 @@ def _make_members_app(state) -> web.Application:
 
 def _patched_config(names, default=CREW):
     return patch(
-        "kiro_crew.dashboard.handlers.members.KiroCrewConfig.load",
+        "efm_go.dashboard.handlers.members.KiroCrewConfig.load",
         return_value=_fake_config(names, default),
     )
 
@@ -373,8 +373,8 @@ def _patched_config(names, default=CREW):
 class TestMemberRoutes:
     @pytest.mark.asyncio
     async def test_roster_reuses_config_loaded_off_loop(self, tmp_path, monkeypatch):
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.platform import build_default_context, reset_context, set_context
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.platform import build_default_context, reset_context, set_context
 
         cfg = _fake_config([CREW, OTHER])
         loop_thread = threading.get_ident()
@@ -423,7 +423,7 @@ class TestMemberRoutes:
 
     @pytest.mark.asyncio
     async def test_roster_hides_a_credential_shaped_legacy_name(self, tmp_path):
-        from kiro_crew.external_text import external_text_requires_redaction
+        from efm_go.external_text import external_text_requires_redaction
 
         name = "crew password=shortvalue"
         assert external_text_requires_redaction(name)
@@ -437,12 +437,12 @@ class TestMemberRoutes:
     def test_shared_redactor_applies_a_companion_policy_on_top_of_the_baseline(self):
         import dataclasses
 
-        from kiro_crew import security
-        from kiro_crew.external_text import (
+        from efm_go import security
+        from efm_go.external_text import (
             external_text_requires_redaction,
             redact_external_text,
         )
-        from kiro_crew.platform import (
+        from efm_go.platform import (
             PROFILE_ENTERPRISE,
             build_default_context,
             reset_context,
@@ -478,7 +478,7 @@ class TestMemberRoutes:
 
         cfg = _fake_config([name], default=name)
         assert _record_or_explain(name, "dashboard_chat-1", "persistent", via="chat")
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
             async with TestClient(TestServer(_make_members_app(state))) as client:
                 roster_response = await client.get("/api/members")
                 assert roster_response.status == 200
@@ -513,7 +513,7 @@ class TestMemberRoutes:
         state = _make_state(tmp_path)
         cfg = _fake_config([name], default=name)
         assert _record_or_explain(name, "dashboard_chat-1", "persistent", via="chat")
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
             async with TestClient(TestServer(_make_members_app(state))) as client:
                 roster_response = await client.get("/api/members")
                 assert roster_response.status == 200
@@ -678,7 +678,7 @@ class TestMemberRoutes:
                 _tick["n"] += 1
                 return _base + _dt.timedelta(seconds=_tick["n"])
 
-        monkeypatch.setattr("kiro_crew.history.datetime", _IncDateTime)
+        monkeypatch.setattr("efm_go.history.datetime", _IncDateTime)
 
         state = _make_state(tmp_path)
         write_dm_binding(CREW, member=CREW, slot_key=member_slot_key(CREW))
@@ -733,9 +733,9 @@ class TestMemberRoutes:
     ):
         """A new member DM uses the configured workspace for cwd and project guides."""
 
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.config.sections import WorkspaceConfig
-        from kiro_crew.memory_stores import provision_member_memory
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.config.sections import WorkspaceConfig
+        from efm_go.memory_stores import provision_member_memory
 
         team_dir = tmp_path / "team-a-workspace"
         team_dir.mkdir()
@@ -780,7 +780,7 @@ class TestMemberRoutes:
 
         with (
             _patched_config([CREW]),
-            patch("kiro_crew.dashboard.handlers.members.default_project_dir", resolve),
+            patch("efm_go.dashboard.handlers.members.default_project_dir", resolve),
         ):
             async with TestClient(TestServer(_make_members_app(state))) as client:
                 pending = asyncio.create_task(client.post(f"/api/members/{CREW}/thread"))
@@ -809,7 +809,7 @@ class TestMemberRoutes:
         with (
             _patched_config([CREW]),
             patch(
-                "kiro_crew.dashboard.handlers.members.default_project_dir",
+                "efm_go.dashboard.handlers.members.default_project_dir",
                 side_effect=AssertionError("existing project was re-resolved"),
             ),
         ):
@@ -888,7 +888,7 @@ class TestMemberRoutes:
         a legacy one (pre-reservation install) by inserting the slot directly —
         the endpoint must still refuse to adopt it.
         """
-        from kiro_crew.dashboard.state import _ChatSlot
+        from efm_go.dashboard.state import _ChatSlot
 
         state = _make_state(tmp_path)
         foreign = _ChatSlot("member-code-reviewer", agent="someone-else")
@@ -1012,7 +1012,7 @@ class TestPinEnforcement:
         cfg = KiroCrewConfig()
         cfg.agents = {name: KiroCrewAgentConfig(kiro_agent="kirocrew")}
         cfg.default_agent = name
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg):
             async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
                 resp = await client.post(f"/api/chat/slots/{slot.key}/agent", json={"agent": name})
                 assert resp.status == 200, await resp.text()
@@ -1126,7 +1126,7 @@ class TestPinEnforcement:
         state = _make_state(tmp_path)
         slot = _member_slot(state, key="member-dr-eggbot", agent=name)
         cfg = _fake_config([name], default=name)
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat", json={"slot": slot.key, "agent": name, "message": ""}
@@ -1144,7 +1144,7 @@ class TestPinEnforcement:
         state = _make_state(tmp_path)
         slot = _member_slot(state, key="member-legacy-credential", agent=name)
         cfg = _fake_config([name], default=name)
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
             async with TestClient(TestServer(_make_app(state))) as client:
                 for body in (
                     {"slot": slot.key, "agent": name, "message": ""},
@@ -1157,8 +1157,8 @@ class TestPinEnforcement:
 
     @pytest.mark.asyncio
     async def test_runner_refuses_a_redaction_requiring_stored_member_pin(self, tmp_path, caplog):
-        from kiro_crew.dashboard.chat_runner import _run_chat
-        from kiro_crew.eventlog.service import get_service
+        from efm_go.dashboard.chat_runner import _run_chat
+        from efm_go.eventlog.service import get_service
 
         name = "crew password=shortvalue"
         credential = "".join(["AKIA", "IOSFODNN7", "EXAMPLE"])
@@ -1178,8 +1178,8 @@ class TestPinEnforcement:
         autonudge = MagicMock()
 
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=autonudge),
-            caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"),
+            patch("efm_go.autonudge.get_instance", return_value=autonudge),
+            caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"),
         ):
             await _run_chat(state, slot, "hello")
 
@@ -1207,10 +1207,10 @@ class TestPinEnforcement:
         not bound to the replacement member's private store. Deleting the guard
         regresses this to a silent cross-member bind.
         """
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.config.sections import KiroCrewAgentConfig, MemoryStoreConfig
-        from kiro_crew.dashboard.chat_runner import _run_chat
-        from kiro_crew.vector_memory import create_member_database
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.config.sections import KiroCrewAgentConfig, MemoryStoreConfig
+        from efm_go.dashboard.chat_runner import _run_chat
+        from efm_go.vector_memory import create_member_database
 
         def _member(cfg, alias, member_id, store):
             path = tmp_path / "memory_stores" / store / "memory.db"
@@ -1247,9 +1247,9 @@ class TestPinEnforcement:
         slot.append("user", "hello", "msg msg-u")
 
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=MagicMock()),
             patch(
-                "kiro_crew.dashboard.chat_runner.chat_done_payload",
+                "efm_go.dashboard.chat_runner.chat_done_payload",
                 AsyncMock(return_value={}),
             ),
         ):
@@ -1266,7 +1266,7 @@ class TestPinEnforcement:
     async def test_runner_refuses_a_non_dispatchable_default_member_on_an_ordinary_slot(
         self, tmp_path, caplog
     ):
-        from kiro_crew.dashboard.chat_runner import _run_chat
+        from efm_go.dashboard.chat_runner import _run_chat
 
         name = "crew password=shortvalue"
         credential = "".join(["AKIA", "IOSFODNN7", "EXAMPLE"])
@@ -1288,9 +1288,9 @@ class TestPinEnforcement:
         autonudge = MagicMock()
 
         with (
-            patch("kiro_crew.dashboard.chat_runner.KiroCrewConfig.load", return_value=cfg),
-            patch("kiro_crew.autonudge.get_instance", return_value=autonudge),
-            caplog.at_level("WARNING", logger="kiro_crew.dashboard.chat_runner"),
+            patch("efm_go.dashboard.chat_runner.KiroCrewConfig.load", return_value=cfg),
+            patch("efm_go.autonudge.get_instance", return_value=autonudge),
+            caplog.at_level("WARNING", logger="efm_go.dashboard.chat_runner"),
         ):
             await _run_chat(state, slot, "hello")
 
@@ -1354,9 +1354,9 @@ class TestPinEnforcement:
         assert slot.agent == CREW
 
     def _runner_harness(self, tmp_path, monkeypatch, *, mode, private=True, switch_to=OTHER):
-        from kiro_crew.config.loader import KiroCrewConfig
-        from kiro_crew.dashboard.chat_runner import _run_chat
-        from kiro_crew.memory_stores import provision_member_memory
+        from efm_go.config.loader import KiroCrewConfig
+        from efm_go.dashboard.chat_runner import _run_chat
+        from efm_go.memory_stores import provision_member_memory
 
         cfg = KiroCrewConfig.load()
         cfg.agents[CREW] = KiroCrewAgentConfig(kiro_agent="kirocrew")
@@ -1364,10 +1364,10 @@ class TestPinEnforcement:
         cfg.save()
         # No real provider or embedding process runs in this stream harness.
         # Keep private ownership and the protected session binding real.
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.title_then_refresh", AsyncMock())
-        monkeypatch.setattr("kiro_crew.dashboard.chat_runner.generate_session_summary", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.title_then_refresh", AsyncMock())
+        monkeypatch.setattr("efm_go.dashboard.chat_runner.generate_session_summary", AsyncMock())
         monkeypatch.setattr(
-            "kiro_crew.config.loader._materialized_kiro_agent",
+            "efm_go.config.loader._materialized_kiro_agent",
             lambda name, project_dir=None: name if name == switch_to else "",
         )
         context = SimpleNamespace(
@@ -1397,7 +1397,7 @@ class TestPinEnforcement:
         if private:
             # The turn only confirms a grant an owner-gated route wrote; the
             # harness stands in for that route.
-            from kiro_crew.member_memory_auth import bind_private_session_store
+            from efm_go.member_memory_auth import bind_private_session_store
 
             bind_private_session_store(f"dashboard:{slot_key}", cfg.agents[CREW].memory_store)
         slot.append("user", "hello", "msg msg-u")
@@ -1405,7 +1405,7 @@ class TestPinEnforcement:
         client = state.sessions.get_or_create.return_value[0]
         client.shutdown = AsyncMock()
 
-        from kiro_crew.providers.base import (
+        from efm_go.providers.base import (
             EVENT_AGENT_SWITCHED,
             EVENT_COMPLETE,
             EVENT_TEXT_CHUNK,
@@ -1491,7 +1491,7 @@ class TestPinEnforcement:
 
 
 def _mode_app(state) -> web.Application:
-    from kiro_crew.dashboard.chat_folders import api_chat_slot_mode
+    from efm_go.dashboard.chat_folders import api_chat_slot_mode
 
     app = web.Application()
     app["state"] = state
@@ -1645,7 +1645,7 @@ class TestResumeGuards:
         """
         from chat_test_helpers import _make_app
 
-        import kiro_crew.dashboard.chat_handlers as handlers
+        import efm_go.dashboard.chat_handlers as handlers
 
         state = _make_state(tmp_path)
         write_dm_binding(CREW, member=CREW, slot_key=member_slot_key(CREW))
@@ -1792,7 +1792,7 @@ class TestResumeGuards:
         """
         from chat_test_helpers import _make_app
 
-        import kiro_crew.dashboard.chat_handlers as handlers
+        import efm_go.dashboard.chat_handlers as handlers
 
         state = _make_state(tmp_path)
         write_dm_binding(CREW, member=CREW, slot_key=member_slot_key(CREW))
@@ -1876,7 +1876,7 @@ class TestFreeFormMemberOnOrdinarySlot:
         cfg = KiroCrewConfig()
         cfg.agents = {self.NAME: KiroCrewAgentConfig(kiro_agent="kirocrew")}
         cfg.default_agent = self.NAME
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg):
             async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
                 resp = await client.post(
                     f"/api/chat/slots/{slot.key}/agent", json={"agent": self.NAME}
@@ -1902,7 +1902,7 @@ class TestFreeFormMemberOnOrdinarySlot:
         state = _make_state(tmp_path)
         slot = state.get_or_create_slot("ordinary", agent="kirocrew")
         cfg = _fake_config(configured, default=configured[0])
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg):
             async with TestClient(TestServer(_make_app_with_agent_routes(state))) as client:
                 resp = await client.post(
                     f"/api/chat/slots/{slot.key}/agent", json={"agent": requested}
@@ -1941,7 +1941,7 @@ class TestFreeFormMemberOnOrdinarySlot:
         slot = state.get_or_create_slot("ordinary", agent=self.NAME)
         assert slot.mode != DM_SLOT_MODE
         cfg = _fake_config([self.NAME], default=self.NAME)
-        with patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg):
             async with TestClient(TestServer(_make_app(state))) as client:
                 resp = await client.post(
                     "/api/chat", json={"slot": slot.key, "agent": self.NAME, "message": ""}
@@ -1965,8 +1965,8 @@ class TestFreeFormMemberOnOrdinarySlot:
     async def test_completions_admit_only_a_configured_free_form_member(
         self, configured, model, admitted
     ):
-        from kiro_crew.dashboard.openai_compat import api_completions
-        from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+        from efm_go.dashboard.openai_compat import api_completions
+        from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
         class _Ready(KiroPrerequisiteService):
             async def session_ready(self) -> bool:  # pragma: no cover - trivial
@@ -1990,8 +1990,8 @@ class TestFreeFormMemberOnOrdinarySlot:
 
         cfg = _fake_config(configured, default=configured[0])
         with (
-            patch("kiro_crew.config.loader.KiroCrewConfig.load", return_value=cfg),
-            patch("kiro_crew.dashboard.openai_compat._make_id", side_effect=_PastTheGuard),
+            patch("efm_go.config.loader.KiroCrewConfig.load", return_value=cfg),
+            patch("efm_go.dashboard.openai_compat._make_id", side_effect=_PastTheGuard),
         ):
             if admitted:
                 with pytest.raises(_PastTheGuard):
@@ -2015,8 +2015,8 @@ class TestOpenAiCompatPin:
         ],
     )
     async def test_app_completion_hides_member_slot_existence(self, live, slot_id, model):
-        from kiro_crew.dashboard.openai_compat import api_completions
-        from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+        from efm_go.dashboard.openai_compat import api_completions
+        from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
         class _Ready(KiroPrerequisiteService):
             async def session_ready(self) -> bool:
@@ -2063,8 +2063,8 @@ class TestOpenAiCompatPin:
         """The OpenAI-compat per-request agent write honors the pin."""
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.openai_compat import api_completions
-        from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+        from efm_go.dashboard.openai_compat import api_completions
+        from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
         class _Ready(KiroPrerequisiteService):
             async def session_ready(self) -> bool:  # pragma: no cover - trivial
@@ -2113,8 +2113,8 @@ class TestOpenAiCompatPin:
     async def test_completion_refuses_a_redaction_requiring_stored_member_pin(self, name):
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.openai_compat import api_completions
-        from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+        from efm_go.dashboard.openai_compat import api_completions
+        from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
         class _Ready(KiroPrerequisiteService):
             async def session_ready(self) -> bool:
@@ -2151,7 +2151,7 @@ class TestOpenAiCompatPin:
         request.get = MagicMock(side_effect=lambda key, default="": default)
 
         cfg = _fake_config([name], default=name)
-        with patch("kiro_crew.dashboard.openai_compat.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.openai_compat.KiroCrewConfig.load", return_value=cfg):
             response = await api_completions(request)
         assert response.status == 409
         body = json.loads(response.body)
@@ -2170,8 +2170,8 @@ class TestOpenAiCompatPin:
         """
         import asyncio as _asyncio
 
-        from kiro_crew.dashboard.openai_compat import api_completions
-        from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+        from efm_go.dashboard.openai_compat import api_completions
+        from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
         class _Ready(KiroPrerequisiteService):
             async def session_ready(self) -> bool:  # pragma: no cover - trivial
@@ -2209,7 +2209,7 @@ class TestOpenAiCompatPin:
         request.get = MagicMock(side_effect=lambda k, d="": d)
 
         cfg = _fake_config([name], default=name)
-        with patch("kiro_crew.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
+        with patch("efm_go.dashboard.handlers.members.KiroCrewConfig.load", return_value=cfg):
             resp = await api_completions(request)
         assert resp.status == 409
         body = json.loads(resp.body)
@@ -2265,7 +2265,7 @@ class TestRegistryDriftWithoutLiveSlot:
         write_dm_binding(CREW, member="Code.Reviewer", slot_key=member_slot_key(CREW))
         # Registry knows only the same-slug successor; no slot is live.
         with patch(
-            "kiro_crew.dashboard.handlers.members._member_names_for_slug",
+            "efm_go.dashboard.handlers.members._member_names_for_slug",
             return_value=[CREW],
         ):
             with _patched_config([CREW]):
@@ -2360,7 +2360,7 @@ class TestReservedMemberKeys:
 
 class TestPersistenceRestoreGate:
     def test_member_identity_resolves_from_the_binding(self):
-        from kiro_crew.dashboard.chat_persistence import _member_restore_identity
+        from efm_go.dashboard.chat_persistence import _member_restore_identity
 
         key = member_slot_key(CREW)
         write_dm_binding(CREW, member=CREW, slot_key=key)
@@ -2369,7 +2369,7 @@ class TestPersistenceRestoreGate:
         assert _member_restore_identity("chat-1-1") is None
 
     def test_non_dispatchable_member_identity_is_skipped(self):
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _SKIP_MEMBER_RESTORE,
             _member_restore_identity,
         )
@@ -2384,7 +2384,7 @@ class TestPersistenceRestoreGate:
     def test_skipped_restore_warning_does_not_log_a_credential_shaped_slot(self, caplog):
         import logging
 
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _SKIP_MEMBER_RESTORE,
             _member_restore_identity,
         )
@@ -2394,7 +2394,7 @@ class TestPersistenceRestoreGate:
         key = member_slot_key(slug)
         write_dm_binding(slug, member=name, slot_key=key)
 
-        with caplog.at_level(logging.WARNING, logger="kiro_crew.dashboard.chat_persistence"):
+        with caplog.at_level(logging.WARNING, logger="efm_go.dashboard.chat_persistence"):
             assert _member_restore_identity(key) is _SKIP_MEMBER_RESTORE
 
         messages = [record.getMessage() for record in caplog.records]
@@ -2410,7 +2410,7 @@ class TestPersistenceRestoreGate:
         loses nothing: the transcript stays on disk and the member-thread
         endpoint re-creates and re-binds the slot on the next page open.
         """
-        from kiro_crew.dashboard.chat_persistence import (
+        from efm_go.dashboard.chat_persistence import (
             _SKIP_MEMBER_RESTORE,
             _member_restore_identity,
         )
@@ -2424,7 +2424,7 @@ class TestPersistenceRestoreGate:
         binding is consulted breaks this; binding-first resolution is what
         admits the legitimate restore.
         """
-        from kiro_crew.dashboard.chat_persistence import _rehydrate_slot_from_history
+        from efm_go.dashboard.chat_persistence import _rehydrate_slot_from_history
 
         state = _make_state(tmp_path)
         key = member_slot_key(CREW)
@@ -2440,7 +2440,7 @@ class TestPersistenceRestoreGate:
         assert slot.mode == DM_SLOT_MODE
 
     def test_open_slot_restore_skips_a_member_key_without_binding(self, tmp_path):
-        from kiro_crew.dashboard.chat_persistence import _rehydrate_slot_from_history
+        from efm_go.dashboard.chat_persistence import _rehydrate_slot_from_history
 
         state = _make_state(tmp_path)
         key = member_slot_key(CREW)
@@ -2579,7 +2579,7 @@ class TestCentralReservation:
             ]
         )
         monkeypatch.setattr(
-            "kiro_crew.dashboard.chat_handlers.members_mod.read_dm_binding_for_slot",
+            "efm_go.dashboard.chat_handlers.members_mod.read_dm_binding_for_slot",
             lambda _slot_key: next(binding_reads),
         )
 
@@ -2678,9 +2678,9 @@ class TestMemberActivityRoute:
         state = _make_state(tmp_path)
         from unittest import mock
 
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.eventlog import types as _types
-        from kiro_crew.members import slug_for_name
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.eventlog import types as _types
+        from efm_go.members import slug_for_name
 
         assert _record_or_explain(
             CREW, "dashboard_chat-1", "persistent", project="/repo", via="chat"
@@ -2730,9 +2730,9 @@ class TestMemberActivityRoute:
         the records are still in the log. The filter runs before any cap.
         """
         state = _make_state(tmp_path)
-        from kiro_crew.eventlog import types as _types
-        from kiro_crew.eventlog.service import get_service
-        from kiro_crew.members import slug_for_name
+        from efm_go.eventlog import types as _types
+        from efm_go.eventlog.service import get_service
+        from efm_go.members import slug_for_name
 
         assert _record_or_explain(
             CREW, "dashboard_chat-1", "persistent", project="/repo", via="chat"
@@ -2813,7 +2813,7 @@ class TestMemberActivityRoute:
         timeline — including a numeric epoch from a foreign writer, which
         must read as unplaceable rather than crash the endpoint."""
         state = _make_state(tmp_path)
-        from kiro_crew.members import ACTIVITY_FILE_NAME, member_dir
+        from efm_go.members import ACTIVITY_FILE_NAME, member_dir
 
         assert _record_or_explain(CREW, "dashboard_chat-1", "persistent", via="chat")
         path = member_dir("code-reviewer") / ACTIVITY_FILE_NAME
@@ -2862,7 +2862,7 @@ class TestMemberActivityRoute:
         response says the window is saturated so the drawer renders its
         derived counters as floors ("N+") instead of asserting exact totals."""
         state = _make_state(tmp_path)
-        from kiro_crew.dashboard.handlers import members as handler_mod
+        from efm_go.dashboard.handlers import members as handler_mod
 
         for i in range(handler_mod._ACTIVITY_LIMIT + 3):
             assert _record_or_explain(CREW, f"dashboard_chat-{i}", "persistent", via="chat")
@@ -2909,8 +2909,8 @@ class TestEventlogSingletonDoesNotLeakAcrossTests:
     _bound_home: str = ""
 
     def test_a_service_built_here_binds_to_this_home(self, tmp_path):
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.members import slug_for_name
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.members import slug_for_name
 
         # Touch the service the way a real test does, leaving it live at teardown.
         assert _record_or_explain(CREW, "dashboard_chat-1", "persistent", via="chat")
@@ -2921,7 +2921,7 @@ class TestEventlogSingletonDoesNotLeakAcrossTests:
         assert svc_mod._singleton is not None
 
     def test_the_next_test_does_not_inherit_that_service(self, tmp_path):
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         # The floor reset the singleton at the previous test's teardown (and this
         # test's setup), so nothing is inherited: the first read here rebuilds
@@ -2960,7 +2960,7 @@ class TestEventlogServiceRetirementReleasesHandles:
     """
 
     def test_set_service_none_clears_cached_logs_and_breaks_cycle(self, tmp_path):
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         # Touch the service so it caches a MemberLog whose CrewLog took the lease.
         assert _record_or_explain(CREW, "dashboard_chat-1", "persistent", via="chat")
@@ -2984,7 +2984,7 @@ class TestEventlogServiceRetirementReleasesHandles:
         )
 
     def test_home_change_rebuild_retires_the_previous_service(self, tmp_path, monkeypatch):
-        from kiro_crew.eventlog import service as svc_mod
+        from efm_go.eventlog import service as svc_mod
 
         # First home: build a live service with a cached log.
         assert _record_or_explain(CREW, "dashboard_chat-1", "persistent", via="chat")
@@ -2996,7 +2996,7 @@ class TestEventlogServiceRetirementReleasesHandles:
         new_home = tmp_path / "second-home"
         new_home.mkdir()
         monkeypatch.setenv("KIROCREW_HOME", str(new_home))
-        import kiro_crew.config.paths as paths
+        import efm_go.config.paths as paths
 
         monkeypatch.setattr(paths, "_resolved_home", None, raising=False)
 
@@ -3008,8 +3008,8 @@ class TestEventlogServiceRetirementReleasesHandles:
         assert first._registry._on_change is None
 
     def test_close_is_idempotent_and_reopens_on_demand(self, tmp_path):
-        from kiro_crew.eventlog import service as svc_mod
-        from kiro_crew.members import slug_for_name
+        from efm_go.eventlog import service as svc_mod
+        from efm_go.members import slug_for_name
 
         assert _record_or_explain(CREW, "dashboard_chat-1", "persistent", via="chat")
         svc = svc_mod.get_service()
@@ -3042,7 +3042,7 @@ class TestMemberBriefingEndpoint:
 
     @staticmethod
     def _write_briefing(text: str):
-        from kiro_crew.members import member_briefing_path
+        from efm_go.members import member_briefing_path
 
         path = member_briefing_path("code-reviewer")
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -3110,8 +3110,8 @@ class TestMemberBriefingEndpoint:
         state = _make_state(tmp_path)
         self._write_briefing("Notes the platform cannot read safely.\n")
         # Both the handler (module attribute) and the mtime helper (module global)
-        # resolve the gate through kiro_crew.members at call time.
-        monkeypatch.setattr("kiro_crew.members.member_briefing_supported", lambda: False)
+        # resolve the gate through efm_go.members at call time.
+        monkeypatch.setattr("efm_go.members.member_briefing_supported", lambda: False)
         with _patched_config([CREW]):
             async with TestClient(TestServer(_make_members_app(state))) as client:
                 resp = await client.get(
@@ -3197,7 +3197,7 @@ class TestMemberBriefingEndpoint:
         with _patched_config([CREW]):
             async with TestClient(TestServer(_make_members_app(state))) as client:
                 with patch(
-                    "kiro_crew.members.read_member_briefing_bounded",
+                    "efm_go.members.read_member_briefing_bounded",
                     side_effect=AssertionError("read must not run for a non-owner"),
                 ):
                     resp = await client.get(
@@ -3360,7 +3360,7 @@ class TestMemberBriefingEndpoint:
             def log_api_access(self, **kwargs):
                 record["kwargs"] = kwargs
 
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: _RecordingSel())
+        monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: _RecordingSel())
         with _patched_config([CREW]):
             async with TestClient(TestServer(_make_members_app(state))) as client:
                 resp = await client.get(
@@ -3400,7 +3400,7 @@ class TestDenialAuditOffload:
     async def test_app_denial_audit_runs_inline(self, tmp_path, monkeypatch):
         state = _make_state(tmp_path)
         record: dict = {}
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: self._recording_sel(record))
+        monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: self._recording_sel(record))
 
         @web.middleware
         async def _as_app(request: web.Request, handler):
@@ -3424,7 +3424,7 @@ class TestDenialAuditOffload:
         """The pin-mismatch denial (binding names a non-owner) audits inline."""
         state = _make_state(tmp_path)
         record: dict = {}
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.sel", lambda: self._recording_sel(record))
+        monkeypatch.setattr("efm_go.dashboard.handlers.sel", lambda: self._recording_sel(record))
         # ``Code_Reviewer`` slugifies to CREW's slug (so the binding reads back
         # as present) but is NOT a config-registered owner → pin mismatch.
         write_dm_binding(CREW, member="Code_Reviewer", slot_key=member_slot_key(CREW))
@@ -3452,7 +3452,7 @@ class TestDenialAuditOffload:
         import ast
         import inspect
 
-        from kiro_crew.dashboard.handlers import members as members_mod_py
+        from efm_go.dashboard.handlers import members as members_mod_py
 
         tree = ast.parse(inspect.getsource(members_mod_py))
         offloaded: set[int] = set()
@@ -3488,8 +3488,8 @@ class TestDenialAuditOffload:
 @pytest.mark.parametrize("conflict", ["linked", "store"])
 async def test_private_thread_conflict_names_its_actual_cause(tmp_path, monkeypatch, conflict):
 
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.memory_stores import provision_member_memory
 
     pass  # Member routing does not depend on OS isolation.
 
@@ -3554,9 +3554,9 @@ async def test_reopen_bound_private_thread_preserves_active_turn(
     tmp_path, monkeypatch, running, fault
 ):
     """Opening the same pinned DM must not interrupt or reassign its active turn."""
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.member_memory_auth import read_private_session_store
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.member_memory_auth import read_private_session_store
+    from efm_go.memory_stores import provision_member_memory
 
     cfg = KiroCrewConfig.load()
     cfg.agents[CREW] = KiroCrewAgentConfig(kiro_agent=CREW)
@@ -3584,7 +3584,7 @@ async def test_reopen_bound_private_thread_preserves_active_turn(
 
         def change_identity():
             if fault == "race_replaced":
-                from kiro_crew.dashboard.state import _ChatSlot
+                from efm_go.dashboard.state import _ChatSlot
 
                 state._slots[slot.key] = _ChatSlot(slot.key, agent=CREW, mode=DM_SLOT_MODE)
             elif fault == "race_linked":
@@ -3609,19 +3609,19 @@ async def test_reopen_bound_private_thread_preserves_active_turn(
             return read_private_session_store(key)
 
         monkeypatch.setattr(
-            "kiro_crew.member_memory_auth.read_private_session_store", read_assignment
+            "efm_go.member_memory_auth.read_private_session_store", read_assignment
         )
         if fault in {"binding_missing", "binding_other_slot"}:
             reported_binding = (
                 None if fault == "binding_missing" else dict(binding, slot_key="member-other")
             )
-            monkeypatch.setattr("kiro_crew.members.read_dm_binding", lambda slug: reported_binding)
+            monkeypatch.setattr("efm_go.members.read_dm_binding", lambda slug: reported_binding)
         if running:
             slot._memory_assignment_from_history = False
         assignment_flag = slot._memory_assignment_from_history
         pin = AsyncMock(side_effect=AssertionError("running thread was re-pinned"))
         if running:
-            monkeypatch.setattr("kiro_crew.dashboard.handlers.members.pin_private_agent_store", pin)
+            monkeypatch.setattr("efm_go.dashboard.handlers.members.pin_private_agent_store", pin)
         try:
             reopened = await client.post(f"/api/members/{CREW}/thread")
             body = await reopened.json()
@@ -3674,10 +3674,10 @@ async def test_running_private_thread_refuses_ownership_changed_during_read(
     tmp_path, monkeypatch, fault
 ):
     """A completed owner change must invalidate an in-flight, read-only reopen."""
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.dashboard.handlers import agents
-    from kiro_crew.member_memory_auth import read_private_session_store
-    from kiro_crew.memory_stores import memory_stores_root, provision_member_memory
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.dashboard.handlers import agents
+    from efm_go.member_memory_auth import read_private_session_store
+    from efm_go.memory_stores import memory_stores_root, provision_member_memory
 
     cfg = KiroCrewConfig.load()
     cfg.agents[CREW] = KiroCrewAgentConfig(kiro_agent=CREW)
@@ -3747,8 +3747,8 @@ async def test_running_private_thread_refuses_ownership_changed_during_read(
                 # ``member_database`` row, not a JSON manifest: flip the stored
                 # member_id so the reopen's identity read mismatches its
                 # declaration.
-                from kiro_crew.memory_stores import MEMORY_DB_FILE
-                from kiro_crew.vector_memory import sqlite3
+                from efm_go.memory_stores import MEMORY_DB_FILE
+                from efm_go.vector_memory import sqlite3
 
                 database = memory_stores_root() / store / MEMORY_DB_FILE
                 connection = sqlite3.connect(database)
@@ -3760,19 +3760,19 @@ async def test_running_private_thread_refuses_ownership_changed_during_read(
                 finally:
                     connection.close()
             elif fault == "manifest_missing":
-                from kiro_crew.memory_stores import MEMORY_DB_FILE
+                from efm_go.memory_stores import MEMORY_DB_FILE
 
                 (memory_stores_root() / store / MEMORY_DB_FILE).unlink()
             elif fault == "config_malformed":
-                from kiro_crew.config.loader import config_path
+                from efm_go.config.loader import config_path
 
                 config_path().write_text("{invalid", encoding="utf-8")
                 return
             current.save()
 
-        monkeypatch.setattr("kiro_crew.member_memory_auth.read_private_session_store", paused_read)
+        monkeypatch.setattr("efm_go.member_memory_auth.read_private_session_store", paused_read)
         pin = AsyncMock(side_effect=AssertionError("running thread was re-pinned"))
-        monkeypatch.setattr("kiro_crew.dashboard.handlers.members.pin_private_agent_store", pin)
+        monkeypatch.setattr("efm_go.dashboard.handlers.members.pin_private_agent_store", pin)
         try:
             reopen = asyncio.create_task(client.post(f"/api/members/{CREW}/thread"))
             await asyncio.wait_for(entered.wait(), timeout=5)
@@ -3837,10 +3837,10 @@ async def test_private_thread_reopen_rechecks_running_after_slot_lock(
     tmp_path, monkeypatch, initial_running, final_running, fault
 ):
     """A queued idle opener cannot reuse an unchecked running identity."""
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.dashboard.handlers import agents, members
-    from kiro_crew.member_memory_auth import read_private_session_store
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.dashboard.handlers import agents, members
+    from efm_go.member_memory_auth import read_private_session_store
+    from efm_go.memory_stores import provision_member_memory
 
     cfg = KiroCrewConfig.load()
     cfg.agents[CREW] = KiroCrewAgentConfig(kiro_agent=CREW)
@@ -3958,10 +3958,10 @@ async def test_private_thread_reopen_rechecks_running_after_assignment(
     repointed in that same window, the assignment path's identity-only snapshot
     would publish and return 200 instead.
     """
-    from kiro_crew.config.loader import KiroCrewConfig
-    from kiro_crew.dashboard.handlers import agents, members
-    from kiro_crew.member_memory_auth import read_private_session_store
-    from kiro_crew.memory_stores import provision_member_memory
+    from efm_go.config.loader import KiroCrewConfig
+    from efm_go.dashboard.handlers import agents, members
+    from efm_go.member_memory_auth import read_private_session_store
+    from efm_go.memory_stores import provision_member_memory
 
     cfg = KiroCrewConfig.load()
     cfg.agents[CREW] = KiroCrewAgentConfig(kiro_agent=CREW)

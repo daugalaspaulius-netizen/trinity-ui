@@ -51,13 +51,13 @@ carry a downscale step for this reason
 Dry run first -- it changes nothing and prints what it would rewrite:
 
 ```bash
-python -m kiro_crew.session_image_repair ~/.kiro/sessions/cli/<session-id>.jsonl
+python -m efm_go.session_image_repair ~/.kiro/sessions/cli/<session-id>.jsonl
 ```
 
 Then, with the session ENDED (not merely idle -- see below):
 
 ```bash
-python -m kiro_crew.session_image_repair --apply ~/.kiro/sessions/cli/<session-id>.jsonl
+python -m efm_go.session_image_repair --apply ~/.kiro/sessions/cli/<session-id>.jsonl
 ```
 
 Notes on what it does and does not do:

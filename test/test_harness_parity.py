@@ -27,10 +27,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp import client as acp_client
-from kiro_crew.acp import runtime as acp_runtime
-from kiro_crew.acp.harness import KasHarness, KiroHarness
-from kiro_crew.acp.types import (
+from efm_go.acp import client as acp_client
+from efm_go.acp import runtime as acp_runtime
+from efm_go.acp.harness import KasHarness, KiroHarness
+from efm_go.acp.types import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_DEEPSEEK,
@@ -60,7 +60,7 @@ from kiro_crew.acp.types import (
     PROVIDER_LABEL_OPENCODE,
     PROVIDER_LABEL_PI,
 )
-from kiro_crew.acp_backends import (
+from efm_go.acp_backends import (
     ACP_BACKENDS_ADVERTISED_MODEL_SELECTION,
     ACP_BACKENDS_EFFORT_VIA_CONFIG_OPTION,
     ACP_BACKENDS_KIRO_SLASH_COMMANDS,
@@ -73,10 +73,10 @@ from kiro_crew.acp_backends import (
     BASELINE_SELECTABLE_BACKENDS,
     selectable_backends,
 )
-from kiro_crew.agent_sdk import backends as acp_backends
-from kiro_crew.config.loader import AgentConfig, _normalize_acp_backend
-from kiro_crew.providers import acp as providers_acp
-from kiro_crew.providers import mirrors
+from efm_go.agent_sdk import backends as acp_backends
+from efm_go.config.loader import AgentConfig, _normalize_acp_backend
+from efm_go.providers import acp as providers_acp
+from efm_go.providers import mirrors
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _GATE_PATH = os.path.join(_REPO_ROOT, "scripts", "check_harness_parity.py")
@@ -166,7 +166,7 @@ def test_registering_a_backend_makes_it_survive_load() -> None:
     effective set would leak a widened baseline into the rest of the run.
     """
     # Reaches the private registry state through ``agent_sdk.backends``, the module
-    # that DEFINES it. The ``kiro_crew.acp_backends`` shim re-exports the public
+    # that DEFINES it. The ``efm_go.acp_backends`` shim re-exports the public
     # names only: a second binding to a mutable set is how two views of one
     # registry start disagreeing, so the private pair deliberately has one home.
     baseline_before = set(acp_backends._baseline)
@@ -204,7 +204,7 @@ def test_config_load_never_reads_the_platform_context(monkeypatch) -> None:
     ``AssertionError`` is swallowed and the fallback returns the value the test
     would then assert — passing against the very implementation it rejects.
     """
-    from kiro_crew.platform import context as pc
+    from efm_go.platform import context as pc
 
     reached: list = []
     monkeypatch.setattr(pc, "current_context", lambda: reached.append("current_context"))
@@ -267,7 +267,7 @@ def test_session_sharing_is_opt_in() -> None:
 
 def test_member_capabilities_are_opt_in() -> None:
     """H6: full member-spec loading has its own opt-in, not harness identity."""
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     for provider in (providers_acp.AcpProvider, AcpSessionProvider):
         source = inspect.getsource(provider.member_capabilities_supported.fget)
@@ -292,7 +292,7 @@ def test_mcp_config_hot_reload_is_opt_in() -> None:
     server unmounted with nothing red to say why. KAS receives its servers on
     ``session/new`` and claude reads no agent file, so neither is a member.
     """
-    from kiro_crew import mcp_hot_reload
+    from efm_go import mcp_hot_reload
 
     source = inspect.getsource(mcp_hot_reload.mcp_hot_reload_supported)
     assert "ACP_BACKENDS_MCP_CONFIG_HOT_RELOAD" in source
@@ -318,9 +318,9 @@ def test_steer_capability_declares_its_stamp() -> None:
     the guarantee has to live here instead: a defensive read cannot tell "this
     backend does not steer" from "this backend forgot the stamp".
     """
-    from kiro_crew.acp.session_provider import AcpSessionProvider  # noqa: F401
-    from kiro_crew.providers.acp import AcpProvider  # noqa: F401
-    from kiro_crew.providers.base import LLMProvider
+    from efm_go.acp.session_provider import AcpSessionProvider  # noqa: F401
+    from efm_go.providers.acp import AcpProvider  # noqa: F401
+    from efm_go.providers.base import LLMProvider
 
     def _walk(cls):
         for sub in cls.__subclasses__():
@@ -497,7 +497,7 @@ def test_provider_label_resolves_every_known_backend_through_the_mapping() -> No
     """
     from unittest.mock import MagicMock
 
-    from kiro_crew.acp.session_provider import AcpSessionProvider
+    from efm_go.acp.session_provider import AcpSessionProvider
 
     for backend in sorted(ACP_BACKENDS_KNOWN):
         runtime = MagicMock()
@@ -516,8 +516,8 @@ def test_opencode_is_selectable_and_answerable() -> None:
     harness's own permission default is permissive, so that second half is not
     hypothetical.
     """
-    from kiro_crew.agent_sdk import tool_gate
-    from kiro_crew.agent_sdk.backend_install import _PROBES
+    from efm_go.agent_sdk import tool_gate
+    from efm_go.agent_sdk.backend_install import _PROBES
 
     assert ACP_BACKEND_OPENCODE in ACP_BACKENDS_KNOWN
     assert ACP_BACKEND_OPENCODE in BASELINE_SELECTABLE_BACKENDS
@@ -541,8 +541,8 @@ def test_pi_is_selectable_and_answerable() -> None:
     it declares must be one this core enforces or the switch offers a harness that
     runs every tool call unasked.
     """
-    from kiro_crew.agent_sdk import tool_gate
-    from kiro_crew.agent_sdk.backend_install import _PROBES
+    from efm_go.agent_sdk import tool_gate
+    from efm_go.agent_sdk.backend_install import _PROBES
 
     assert ACP_BACKEND_PI in ACP_BACKENDS_KNOWN
     assert ACP_BACKEND_PI in BASELINE_SELECTABLE_BACKENDS
@@ -570,7 +570,7 @@ def test_codex_is_selectable_and_answerable() -> None:
     while leaving the baseline entry would fail here rather than silently ship a
     switch with nothing behind it.
     """
-    from kiro_crew.agent_sdk.backend_install import _PROBES
+    from efm_go.agent_sdk.backend_install import _PROBES
 
     assert ACP_BACKEND_CODEX in ACP_BACKENDS_KNOWN
     assert ACP_BACKEND_CODEX in BASELINE_SELECTABLE_BACKENDS
@@ -588,7 +588,7 @@ def test_codex_tool_calls_are_gated_before_it_is_offered() -> None:
     an id and the gate being armed for it are separate facts, and selectability
     without routing would put the operator's narrowing silently out of circuit.
     """
-    from kiro_crew import acp_tool_gate
+    from efm_go import acp_tool_gate
 
     verdict, _reason = acp_tool_gate.routing_verdict(ACP_BACKEND_CODEX)
     assert verdict is acp_tool_gate.Verdict.ROUTED
@@ -643,7 +643,7 @@ def test_effort_channel_is_opt_in() -> None:
 
     The two channels are separate opt-ins because a harness can have neither. Read
     as ``not is_claude_backend``, an adapter harness is handed kiro's ``/effort``
-    slash command, which rides ``_kiro.dev/commands/execute`` — a verb it does not
+    slash command, which rides ``_efm.go/commands/execute`` — a verb it does not
     implement — so the push fails -32601 and the dashboard resets the session.
     """
     assert ACP_BACKENDS_EFFORT_VIA_CONFIG_OPTION <= ACP_BACKENDS_KNOWN
@@ -709,7 +709,7 @@ def test_codex_resolves_its_own_adapter_and_declares_its_own_handshake() -> None
     performs the handshake is a copy nothing keeps honest, and the second half of
     this test is what stops one growing back.
     """
-    from kiro_crew.acp.harness import codex as codex_harness
+    from efm_go.acp.harness import codex as codex_harness
 
     spawn_source = inspect.getsource(codex_harness.CodexHarness.resolve_spawn)
     assert "_resolve_codex_acp_bin" in spawn_source
@@ -799,7 +799,7 @@ def test_codex_mcp_seam_projects_through_its_mirror() -> None:
     folder exists to stop: one per-harness override per author, each rediscovering
     the same projection.
     """
-    from kiro_crew.acp.harness import codex as codex_harness
+    from efm_go.acp.harness import codex as codex_harness
 
     source = inspect.getsource(codex_harness.CodexHarness.session_mcp_servers)
     assert "drop_unadvertised_transports" in source
@@ -955,8 +955,8 @@ def test_added_line_gate_flags_a_planted_negative_test(tmp_path, monkeypatch) ->
 # act with a written justification instead of a line nobody notices.
 
 _RUNTIME_PATH_MODULES = (
-    "src/kiro_crew/acp/runtime.py",
-    "src/kiro_crew/acp/session_handle.py",
+    "src/efm_go/acp/runtime.py",
+    "src/efm_go/acp/session_handle.py",
 )
 
 #: Backend-identity comparisons the runtime path is allowed to make, keyed by
@@ -965,49 +965,49 @@ _RUNTIME_PATH_MODULES = (
 #: :func:`test_every_runtime_path_identity_test_is_declared`.
 _DECLARED_IDENTITY_TESTS: dict[tuple[str, str], str] = {
     (
-        "src/kiro_crew/acp/session_handle.py",
+        "src/efm_go/acp/session_handle.py",
         "_build_permission_event",
     ): "``_meta.kiro.consent`` on a permission request is KAS's own vocabulary (toolId "
     "plus consent capability). No other harness sends it, and reading it elsewhere would "
     "mint a non-shell verdict from a shape that backend never promised.",
     (
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "_spawn_admitted",
     ): "Only native Kiro loads the alias agent files and workspace resource-inheritance "
     "setting used to bound skill metadata. Other harnesses must keep their own spawn plans.",
     (
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "_unpooled_control_planes",
     ): "Kiro alone loads its native agent spec without a mirror or wire agent. "
     "Its unpooled managed stdio declarations need a per-session token override; "
     "other harnesses already carry identity through their own projections.",
     (
-        "src/kiro_crew/acp/runtime.py",
+        "src/efm_go/acp/runtime.py",
         "load_session",
     ): "KAS alone must have its custom agents re-attached on resume, and no harness "
     "property means 'this host needs its agent re-sent'. Adding one would cost the "
     "kiro path an awaited step it does not need (H13).",
     (
-        "src/kiro_crew/acp/session_handle.py",
+        "src/efm_go/acp/session_handle.py",
         "stream_command",
-    ): "``_kiro.dev/commands/execute`` is kiro-cli's own RPC. The positive test is what "
+    ): "``_efm.go/commands/execute`` is kiro-cli's own RPC. The positive test is what "
     "makes every other harness fail CLOSED onto the prompt transport instead of "
     "inheriting a kiro-only verb (H5/H6).",
     (
-        "src/kiro_crew/acp/session_handle.py",
+        "src/efm_go/acp/session_handle.py",
         "set_model",
     ): "KAS is deliberately absent from ``ACP_BACKENDS_MODEL_VIA_CONFIG_OPTION``: it "
     "advertises the option and accepts the resolved id, so the member ladder would only "
     "add retries after a terminal failure and would turn a refusal into a silent "
     "stay-on-default. The reason is recorded at the branch.",
     (
-        "src/kiro_crew/acp/session_handle.py",
+        "src/efm_go/acp/session_handle.py",
         "ensure_served_default",
     ): "The served-default backfill reads kiro-cli's own ``currentModelId`` semantics. "
     "Another host reaching it would have its resolved id rewritten from a list it did "
     "not author.",
     (
-        "src/kiro_crew/acp/session_handle.py",
+        "src/efm_go/acp/session_handle.py",
         "_handle_update",
     ): "KAS emits its own notification discriminants. The positive gate restores those "
     "displays without touching the kiro parser, and returns None for anything not "
@@ -1060,7 +1060,7 @@ def test_agent_activation_by_mode_matches_the_routing_table(backend):
     activate, so the routing table already answers this and the runtime must not
     re-derive it from "is this kiro".
     """
-    from kiro_crew import acp_tool_gate
+    from efm_go import acp_tool_gate
 
     expected = acp_tool_gate.routing_for(backend) is acp_tool_gate.Routing.AGENT_SPEC
     assert _runtime_for(backend)._activates_agent_by_mode() is expected
@@ -1073,7 +1073,7 @@ def test_the_model_select_fold_matches_the_advertised_selection_table(backend):
     Both readers go through one fold, so asserting the fold covers the session-init
     capture and the entitlement probe together.
     """
-    from kiro_crew.acp.session_handle import (
+    from efm_go.acp.session_handle import (
         advertised_models_from_session,
         models_from_config_options,
     )
@@ -1103,7 +1103,7 @@ def test_the_session_mcp_array_is_mirror_built_for_exactly_the_mirrored_hosts(ba
     """
     import asyncio
 
-    from kiro_crew.providers.mirrors.base import SessionProjection
+    from efm_go.providers.mirrors.base import SessionProjection
 
     projected: list[dict] = []
 

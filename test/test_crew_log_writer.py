@@ -1,4 +1,4 @@
-"""Interface tests for the crew log's durable writer, :mod:`kiro_crew.crew_log.writer`.
+"""Interface tests for the crew log's durable writer, :mod:`efm_go.crew_log.writer`.
 
 Every test builds its own :class:`CrewLogWriter` against REAL session crew logs on the
 test's temporary data home, through an ``open_unit`` adapter that can inject a fault
@@ -27,9 +27,9 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import crew_log as lg
-from kiro_crew.crew_log import emit, lease
-from kiro_crew.crew_log.writer import (
+from efm_go import crew_log as lg
+from efm_go.crew_log import emit, lease
+from efm_go.crew_log.writer import (
     DEFAULT_LIMITS,
     CrewLogWriter,
     DrainReport,
@@ -40,7 +40,7 @@ from kiro_crew.crew_log.writer import (
 
 UNIT = "acp-writer-0001"
 OTHER = "acp-writer-0002"
-LOGGER = "kiro_crew.crew_log.writer"
+LOGGER = "efm_go.crew_log.writer"
 
 
 # --------------------------------------------------------------------------- #
@@ -1335,15 +1335,15 @@ def test_a_repeat_is_logged_at_debug_as_text_without_the_exception(clock, caplog
 
 def test_the_writer_reports_through_the_budget_and_logger_it_is_given(units, clock, caplog):
     units.create(UNIT)
-    named = logging.getLogger("kiro_crew.crew_log.emit")
+    named = logging.getLogger("efm_go.crew_log.emit")
     budget = WarningBudget(named, clock=clock)
     writer = CrewLogWriter(
         units.open_unit, clock=clock, sleep=clock.sleep, warnings=budget, logger=named
     )
     units.fault = _failing(_is_step(1))
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.crew_log.emit"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.crew_log.emit"):
         writer.submit(UNIT, _step(units, UNIT, 1))
         assert writer.flush(timeout=60.0)
-    assert {r.name for r in caplog.records} == {"kiro_crew.crew_log.emit"}
+    assert {r.name for r in caplog.records} == {"efm_go.crew_log.emit"}
     assert _messages(caplog, "session log writes are failing")
     assert _messages(caplog, "gave up on")

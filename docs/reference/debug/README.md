@@ -125,7 +125,7 @@ source, so `debug_refusals` classifies budget timeouts after the fact from the
 security event log and reports `live.available: false`. That block becomes real when
 the accessor exists.
 
-A build that does not carry `kiro_crew.diag` cannot answer `debug_threads`,
+A build that does not carry `efm_go.diag` cannot answer `debug_threads`,
 `debug_processes` or `debug_snapshots` at all. Those routes answer HTTP 501 with
 `{"error": "diag not available in this build", "code": "diag_unavailable"}` and the
 tools relay it verbatim, so

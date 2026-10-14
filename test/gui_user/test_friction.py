@@ -1110,7 +1110,7 @@ class TestRendering:
         )
 
 
-REPO = "kirodotdev/KiroCrew"
+REPO = "efmleads.com"
 
 
 def _run(run_id: int, **over: object) -> dict[str, object]:
@@ -1422,7 +1422,7 @@ class TestReconcileAndBounds:
 
 class TestIssueReferenceDefang:
     def test_hash_number_never_autolinks(self) -> None:
-        cell = friction._cell("saw #123 and kirodotdev/KiroCrew#45 but #hashtag stays")
+        cell = friction._cell("saw #123 and efmleads.com#45 but #hashtag stays")
         assert "#\u200b123" in cell and "#\u200b45" in cell
         assert "#123" not in cell and "#45" not in cell
         assert "#hashtag" in cell

@@ -1,6 +1,6 @@
 """Tests for the git-publish branch gate (feature-branch allow, protected deny).
 
-Covers the always-on Python gate in ``kiro_crew.security`` and its kiro-cli
+Covers the always-on Python gate in ``efm_go.security`` and its kiro-cli
 ``defaults.json`` mirror:
 
 * ``_is_git_publish`` — a PURE detector ("is this a git publish?"), incl.
@@ -22,8 +22,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from kiro_crew import security
-from kiro_crew.security import (
+from efm_go import security
+from efm_go.security import (
     _is_git_publish,
     _is_push_to_protected_branch,
     _schedule_push_allow_audit,
@@ -1463,7 +1463,7 @@ class TestTokenizerContractBetweenTheLayers:
     def test_the_argument_scan_is_handed_raw_words(self):
         # The shapes whose identity lives in the operator: cutting them here
         # turned each into a plain word and erased its tag.
-        from kiro_crew.security import _git_push_args
+        from efm_go.security import _git_push_args
 
         assert _git_push_args("git push origin>/dev/null") == ["origin>/dev/null"]
         assert _git_push_args("git push origin @(main)") == ["origin", "@(main)"]
@@ -1474,7 +1474,7 @@ class TestTokenizerContractBetweenTheLayers:
         # ``<<-`` is a complete operator, so its delimiter is a SEPARATED word.
         # A second reading of the grammar here read the ``-`` as an attached
         # target and left ``EOF`` behind as a phantom refspec.
-        from kiro_crew.security import _git_push_args
+        from efm_go.security import _git_push_args
 
         assert _git_push_args("git push origin <<- EOF") == ["origin"]
         # Still stepped over with the shell's arity, and the words behind a
@@ -1495,7 +1495,7 @@ class TestTokenizerContractBetweenTheLayers:
         # ``<(`` / ``>(`` at the start of a word is process substitution, which
         # bash substitutes as a /dev/fd path WORD. Consuming it as a redirection
         # ate an option's value and shifted the positional split onto the remote.
-        from kiro_crew.security import _git_push_args
+        from efm_go.security import _git_push_args
 
         assert _git_push_args("git push -o <(echo) origin main") == [
             "-o",
@@ -1519,7 +1519,7 @@ class TestTokenizerContractBetweenTheLayers:
         # fragment then arrived with the shell state open — which the fragment
         # rule reads as a word fused across the boundary. Legal, unprotected
         # branch names were denied by the protective fallback.
-        from kiro_crew.security import _split_push_command_segments
+        from efm_go.security import _split_push_command_segments
 
         assert _split_push_command_segments("git push origin 'feature|x'") == [
             "git push origin 'feature|x'"
@@ -1550,7 +1550,7 @@ class TestTokenizerContractBetweenTheLayers:
         # one this segment cannot reconstruct. It must keep splitting, and the
         # trailing escape must survive into the segment it ends — that escape is
         # the signal the ungated sentinel is drawn from.
-        from kiro_crew.security import _split_push_command_segments
+        from efm_go.security import _split_push_command_segments
 
         assert _split_push_command_segments("git push origin ma\\\nin") == [
             "git push origin ma\\",
@@ -1564,7 +1564,7 @@ class TestTokenizerContractBetweenTheLayers:
         # OUTER line — which is not itself a push — parsed as one and its
         # fragmented ref denied ordinary work. The payload is one word; the
         # caller judges it on its own, which is where the denial still comes from.
-        from kiro_crew.security import _git_push_args, _split_shell_words, is_denied
+        from efm_go.security import _git_push_args, _split_shell_words, is_denied
 
         assert _split_shell_words("bash -c '(cd /tmp && git push origin my-feature)'") == [
             "bash",
@@ -1944,7 +1944,7 @@ class TestNestedPayloadExtractionSpansTheProvenBoundary:
         )
 
     def test_the_extracted_body_is_the_whole_body(self):
-        from kiro_crew.security import _substitution_bodies
+        from efm_go.security import _substitution_bodies
 
         assert _substitution_bodies(">(X=')' git push origin main)") == [
             "X=')' git push origin main"
@@ -1967,7 +1967,7 @@ class TestNestedPayloadExtractionSpansTheProvenBoundary:
         ]
 
     def test_the_span_helper_is_quote_aware_and_reports_proof(self):
-        from kiro_crew.security import _matching_close_paren
+        from efm_go.security import _matching_close_paren
 
         # offset 2 is just past a ">(" / "$(" opener.
         assert _matching_close_paren(">(a)", 2) == (4, True)
@@ -1987,7 +1987,7 @@ class TestNestedPayloadExtractionSpansTheProvenBoundary:
         # stopped at a quoted ')', so a name after it was never seen. That is an
         # UNDER-deny for this rule -- correcting an earlier audit note on this
         # line, which had recorded the truncation as over-deny-only.
-        from kiro_crew.security import _protected_name_in_substitution
+        from efm_go.security import _protected_name_in_substitution
 
         # The quoted ')' must sit in a LATER token to reach the close test: a
         # private str.count walk drove depth to 0 there and BROKE, so the name

@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew.subagent as subagent
-import kiro_crew.subagent_cost as sc
-from kiro_crew.config.sections import AgentConfig
+import efm_go.subagent as subagent
+import efm_go.subagent_cost as sc
+from efm_go.config.sections import AgentConfig
 
 
 @pytest.fixture

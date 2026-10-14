@@ -21,15 +21,15 @@ from unittest.mock import patch
 import pytest
 from tmpdir_helpers import SHORT_TMP_PREFIX, short_tmp_base
 
-from kiro_crew import env as env_mod
-from kiro_crew import platform_compat
-from kiro_crew.instances import run_marker
-from kiro_crew.pod import cli as pod_cli
-from kiro_crew.pod import launchd
-from kiro_crew.pod import provision as prov
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod import unit as unit_mod
-from kiro_crew.pod.config import (
+from efm_go import env as env_mod
+from efm_go import platform_compat
+from efm_go.instances import run_marker
+from efm_go.pod import cli as pod_cli
+from efm_go.pod import launchd
+from efm_go.pod import provision as prov
+from efm_go.pod import runtime as rt
+from efm_go.pod import unit as unit_mod
+from efm_go.pod.config import (
     DEFAULT_BASE_PORT,
     DEFAULT_LIVE_PORT,
     DEFAULT_UNIT_PREFIX,
@@ -159,9 +159,9 @@ def _ready_worktree(
         b.write_text("#!/bin/sh\n")
         b.chmod(0o755)
     if dist:
-        (co / "src" / "kiro_crew" / "static" / "dist").mkdir(parents=True, exist_ok=True)
+        (co / "src" / "efm_go" / "static" / "dist").mkdir(parents=True, exist_ok=True)
     if flags:
-        cli = co / "src" / "kiro_crew" / "cli.py"
+        cli = co / "src" / "efm_go" / "cli.py"
         cli.parent.mkdir(parents=True, exist_ok=True)
         cli.write_text('gw.add_argument("--no-crons")\ngw.add_argument("--no-tunnel")\n')
     return co
@@ -236,7 +236,7 @@ class TestPathOverridesAreAnchoredNotCwdRelative:
         ``tmp/pods`` verbatim and the gateway landed in a tree ``pod down`` would
         never reclaim; the grants minted there outlived the pod.
         """
-        from kiro_crew.pod.config import environment_vars
+        from efm_go.pod.config import environment_vars
 
         cli_cwd = tmp_path / "operator-invocation-dir"
         gateway_cwd = tmp_path / "service-manager-root"
@@ -279,7 +279,7 @@ class TestPathOverridesAreAnchoredNotCwdRelative:
         definition -- resolved, at boot, against a working directory the operator
         never chose.
         """
-        from kiro_crew.pod.config import environment_vars
+        from efm_go.pod.config import environment_vars
 
         monkeypatch.chdir(tmp_path)
         monkeypatch.setenv("KIROCREW_POD_ROOT", self.RELATIVE)
@@ -1394,7 +1394,7 @@ class TestSeedSanitization:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         seed = self._write(tmp_path / "s", {"tunnel": {"enabled": True}})
-        monkeypatch.setattr("kiro_crew.security.is_sensitive_path", lambda p, base_dir=None: True)
+        monkeypatch.setattr("efm_go.security.is_sensitive_path", lambda p, base_dir=None: True)
         assert rt.sanitized_seed_config(seed) is None
 
     def test_forces_teams_off_and_keeps_its_app_id(self, tmp_path: Path) -> None:
@@ -1428,8 +1428,8 @@ class TestSeedSanitization:
         """
         import dataclasses
 
-        from kiro_crew.channels import builtin_channel_descriptors
-        from kiro_crew.config.loader import KiroCrewConfig
+        from efm_go.channels import builtin_channel_descriptors
+        from efm_go.config.loader import KiroCrewConfig
 
         section_fields = {f.name: f for f in dataclasses.fields(KiroCrewConfig)}
         exempt: set[str] = set()
@@ -1476,7 +1476,7 @@ class TestPodEnvCredentialScrub:
         credential and a pod runs agent turns, and ``KIROCREW_OWNER_ID`` is the pod
         dashboard's owner identity rather than a bot credential.
         """
-        from kiro_crew.config.loader import CRED_KIRO_API_KEY, CRED_OWNER_ID, CREDENTIAL_KEYS
+        from efm_go.config.loader import CRED_KIRO_API_KEY, CRED_OWNER_ID, CREDENTIAL_KEYS
 
         for key in CREDENTIAL_KEYS:
             monkeypatch.setenv(key, f"live-{key}")
@@ -2030,7 +2030,7 @@ class TestProvisionBuildPaths:
     def test_find_uv_is_the_shared_ladder(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Pod provisioning resolves uv through ``kiro_crew.env.resolve_uv`` — the
+        """Pod provisioning resolves uv through ``efm_go.env.resolve_uv`` — the
         one ladder pptx-maker also consumes — so the declared wheel wins over
         PATH and a systemd/launchd gateway with a minimal PATH still finds it."""
         monkeypatch.setenv(prov.USE_UV_ENV, "1")
@@ -2069,7 +2069,7 @@ class TestProvisionBuildPaths:
         monkeypatch.setattr(prov, "_run", fake_run)
         assert prov.build_dist(co) is True
         # website/dist staged into the served static/dist.
-        assert (co / "src" / "kiro_crew" / "static" / "dist" / "index.html").is_file()
+        assert (co / "src" / "efm_go" / "static" / "dist" / "index.html").is_file()
 
     def test_build_dist_restages_over_a_dangling_dist_link(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -2098,7 +2098,7 @@ class TestProvisionBuildPaths:
         """
         co = tmp_path / "wt"
         (co / "website").mkdir(parents=True)
-        served = co / "src" / "kiro_crew" / "static"
+        served = co / "src" / "efm_go" / "static"
         served.mkdir(parents=True)
         gone = tmp_path / "removed-dist"
         gone.mkdir()
@@ -2133,7 +2133,7 @@ class TestProvisionBuildPaths:
         work and touches nothing.
         """
         co = tmp_path / "wt"
-        served = co / "src" / "kiro_crew" / "static"
+        served = co / "src" / "efm_go" / "static"
         served.mkdir(parents=True)
         target = tmp_path / "linked-dist"
         target.mkdir()
@@ -2421,7 +2421,7 @@ class TestPodConfigWrite:
     def test_a_failed_lockdown_publishes_no_config(self, tmp_path: Path, monkeypatch) -> None:
         """restrict_to_owner runs on the temp; a failure must not leave config.json."""
         monkeypatch.setattr(
-            "kiro_crew.atomic_write.platform_compat.restrict_to_owner",
+            "efm_go.atomic_write.platform_compat.restrict_to_owner",
             lambda path: (_ for _ in ()).throw(OSError("icacls: transient failure")),
         )
         home = tmp_path / "pod-home"
@@ -2479,7 +2479,7 @@ class TestSeedPodOsHome:
         grant pairs must NEVER be seeded forward. Seeding one would make a
         pod boot already "Connected" to a provider nobody consented to from
         inside it."""
-        from kiro_crew import mcp_grant
+        from efm_go import mcp_grant
 
         real_cache = Path.home() / ".aws" / "sso" / "cache"
         real_cache.mkdir(parents=True)
@@ -3001,7 +3001,7 @@ class TestEveryBootPathWriteRefusesAPlantedLink:
         `pinned_fs.write_file_pinned`."""
         import inspect
 
-        from kiro_crew import pinned_fs as pfs
+        from efm_go import pinned_fs as pfs
 
         assert "write_file_pinned" in inspect.getsource(unit_mod._write_unit_file_atomic_nofollow)
         assert "atomic_write_at" in inspect.getsource(pfs.write_file_pinned)
@@ -3228,7 +3228,7 @@ class TestAnAcpTurnHasNoInheritedAwsCredentials:
     environment and the child's are not the same."""
 
     def test_the_scrubber_removes_the_secret_and_session_token(self) -> None:
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         scrubbed = sandbox.scrub_agent_subprocess_env(
             {
@@ -3249,7 +3249,7 @@ class TestAnAcpTurnHasNoInheritedAwsCredentials:
     def test_the_prefixes_the_posture_depends_on_are_pinned(self) -> None:
         """If either prefix left the list, the corrected claim would silently
         become false again."""
-        from kiro_crew import sandbox
+        from efm_go import sandbox
 
         assert "AWS_SECRET" in sandbox._SENSITIVE_ENV_PREFIXES
         assert "AWS_SESSION" in sandbox._SENSITIVE_ENV_PREFIXES
@@ -6615,8 +6615,8 @@ class TestUnitExecSelfHeal:
     dangling and every start fails EXEC. unit_exec_ok detects that."""
 
     def _cfg_with_unit(self, tmp_path, monkeypatch, exec_line):
-        from kiro_crew.pod import unit as unit_mod
-        from kiro_crew.pod.config import PodConfig
+        from efm_go.pod import unit as unit_mod
+        from efm_go.pod.config import PodConfig
 
         monkeypatch.setattr(unit_mod, "unit_path", lambda cfg: tmp_path / "pod@.service")
         # Carries every directive this build REQUIRES (see `_REQUIRED_DIRECTIVES`),
@@ -6631,7 +6631,7 @@ class TestUnitExecSelfHeal:
         return PodConfig.load()
 
     def test_dangling_binary_detected(self, tmp_path, monkeypatch):
-        from kiro_crew.pod import unit as unit_mod
+        from efm_go.pod import unit as unit_mod
 
         cfg = self._cfg_with_unit(
             tmp_path,
@@ -6641,7 +6641,7 @@ class TestUnitExecSelfHeal:
         assert unit_mod.unit_exec_ok(cfg) is False
 
     def test_valid_binary_passes(self, tmp_path, monkeypatch):
-        from kiro_crew.pod import unit as unit_mod
+        from efm_go.pod import unit as unit_mod
 
         exe = tmp_path / "kirocrew"
         exe.write_text("#!/bin/sh\n")
@@ -6650,8 +6650,8 @@ class TestUnitExecSelfHeal:
         assert unit_mod.unit_exec_ok(cfg) is True
 
     def test_missing_unit_file_detected(self, tmp_path, monkeypatch):
-        from kiro_crew.pod import unit as unit_mod
-        from kiro_crew.pod.config import PodConfig
+        from efm_go.pod import unit as unit_mod
+        from efm_go.pod.config import PodConfig
 
         monkeypatch.setattr(unit_mod, "unit_path", lambda cfg: tmp_path / "absent@.service")
         assert unit_mod.unit_exec_ok(PodConfig.load()) is False
@@ -6661,7 +6661,7 @@ class TestUnitExecSelfHeal:
         whatever it installed. Without this, an older unit's ExecStopPost would go
         on racing the pod's own subprocesses (and wiping the HOME on the stop half
         of a Restart=) until someone reinstalled by hand."""
-        from kiro_crew.pod import unit as unit_mod
+        from efm_go.pod import unit as unit_mod
 
         exe = tmp_path / "kirocrew"
         exe.write_text("#!/bin/sh\n")
@@ -6676,7 +6676,7 @@ class TestUnitExecSelfHeal:
     def test_what_this_build_renders_is_current(self, cfg, monkeypatch, tmp_path):
         """Guard against the reverse failure: a check that flagged the CURRENT
         template would re-render and daemon-reload on every single `pod up`."""
-        from kiro_crew.pod import unit as unit_mod
+        from efm_go.pod import unit as unit_mod
 
         monkeypatch.setattr(unit_mod, "unit_path", lambda c: tmp_path / "pod@.service")
         # An executable that exists on every platform the suite runs on — a POSIX
@@ -6687,7 +6687,7 @@ class TestUnitExecSelfHeal:
 
     @requires_posix_pod_lifecycle
     def test_spaced_executable_is_quoted_and_current(self, cfg, monkeypatch, tmp_path):
-        from kiro_crew.pod import unit as unit_mod
+        from efm_go.pod import unit as unit_mod
 
         exe = tmp_path / "venv with spaces" / "kirocrew"
         exe.parent.mkdir()
@@ -6700,7 +6700,7 @@ class TestUnitExecSelfHeal:
         assert unit_mod.unit_is_current(cfg) is True
 
     def test_malformed_execstart_is_stale(self, tmp_path, monkeypatch):
-        from kiro_crew.pod import unit as unit_mod
+        from efm_go.pod import unit as unit_mod
 
         cfg = self._cfg_with_unit(tmp_path, monkeypatch, 'ExecStart="unterminated')
         assert unit_mod.unit_exec_ok(cfg) is False
@@ -6729,12 +6729,12 @@ class TestUnitExecSelfHeal:
         ]
 
     def test_module_invocation_form_passes(self, tmp_path, monkeypatch):
-        from kiro_crew.pod import unit as unit_mod
+        from efm_go.pod import unit as unit_mod
 
         cfg = self._cfg_with_unit(
             tmp_path,
             monkeypatch,
-            "ExecStart=python3 -m kiro_crew pod _run %i",
+            "ExecStart=python3 -m efm_go pod _run %i",
         )
         assert unit_mod.unit_exec_ok(cfg) is True
 
@@ -7733,7 +7733,7 @@ class TestBootTimeSettings:
         it.
         """
         repo_root = Path(rt.__file__).resolve().parents[3]
-        assert (repo_root / "src" / "kiro_crew" / "cli.py").is_file(), repo_root
+        assert (repo_root / "src" / "efm_go" / "cli.py").is_file(), repo_root
         assert rt.target_supports_flag(repo_root, "--no-tunnel") is True
         assert rt.target_supports_flag(repo_root, "--no-crons") is True
         # A flag this repo does not declare must still read as unsupported, so the
@@ -7745,8 +7745,8 @@ class TestBootTimeSettings:
         # comment as a declaration would pass the flag and produce exactly the
         # argparse-exit restart loop the probe exists to prevent.
         co = tmp_path / "co"
-        (co / "src" / "kiro_crew").mkdir(parents=True)
-        cli = co / "src" / "kiro_crew" / "cli.py"
+        (co / "src" / "efm_go").mkdir(parents=True)
+        cli = co / "src" / "efm_go" / "cli.py"
 
         cli.write_text('# TODO: someday accept "--no-tunnel" here\ngw.add_argument("--x")\n')
         assert rt.target_supports_flag(co, "--no-tunnel") is False
@@ -7766,8 +7766,8 @@ class TestBootTimeSettings:
         # source -- that distinction is the entire point, so it is asserted
         # directly rather than only through boot().
         co = tmp_path / "co"
-        (co / "src" / "kiro_crew").mkdir(parents=True)
-        cli = co / "src" / "kiro_crew" / "cli.py"
+        (co / "src" / "efm_go").mkdir(parents=True)
+        cli = co / "src" / "efm_go" / "cli.py"
 
         cli.write_text('gw.add_argument("--no-crons")\n')
         assert rt.target_supports_flag(co, "--no-tunnel") is False
@@ -7996,7 +7996,7 @@ class TestBootTimeSettings:
         # what keeps the two spellings from drifting. A typo here exports a variable
         # nothing reads and the pod downloads the model anyway -- silently, since a
         # pod with the model IS healthy.
-        from kiro_crew import embeddings
+        from efm_go import embeddings
 
         assert rt.SKIP_MODEL_DOWNLOAD_ENV == embeddings._SKIP_DOWNLOAD_ENV
 
@@ -8084,7 +8084,7 @@ class TestBootTimeSettings:
     def test_the_embed_model_override_env_names_match_the_embedder(self) -> None:
         # Same drift guard as the skip switch: a misspelt override name here is a
         # variable nothing reads, and the pod loads the custom model anyway.
-        from kiro_crew import embeddings
+        from efm_go import embeddings
 
         assert set(rt.EMBED_MODEL_OVERRIDE_ENVS) == {
             embeddings._MODEL_PATH_ENV,

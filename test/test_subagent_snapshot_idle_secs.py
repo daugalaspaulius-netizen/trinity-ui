@@ -23,8 +23,8 @@ from types import SimpleNamespace
 # Importing the handlers package first resolves the cycle in the direction
 # every green consumer uses, and keeps this file collectable when a
 # pytest-xdist worker imports it before any other dashboard module.
-import kiro_crew.dashboard.handlers  # noqa: F401
-from kiro_crew.dashboard.ws import _subagent_replay_has_owner, build_subagent_snapshot
+import efm_go.dashboard.handlers  # noqa: F401
+from efm_go.dashboard.ws import _subagent_replay_has_owner, build_subagent_snapshot
 
 
 def _agent(**over):

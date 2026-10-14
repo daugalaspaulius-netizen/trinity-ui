@@ -17,8 +17,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp import skill_projection as projection
-from kiro_crew.acp.runtime import AcpRuntime, AcpRuntimeError, _format_runtime_rpc_error
+from efm_go.acp import skill_projection as projection
+from efm_go.acp.runtime import AcpRuntime, AcpRuntimeError, _format_runtime_rpc_error
 
 VIEW = "kirocrew-skill-view-" + "a" * 24
 OTHER_VIEW = "kirocrew-skill-view-" + "b" * 24
@@ -45,7 +45,7 @@ def native_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(projection.platform_compat, "path_volume_is_remote", lambda path: False)
     monkeypatch.setattr(projection.platform_compat, "first_linked_ancestor", lambda path: None)
     monkeypatch.setattr(
-        "kiro_crew.agent.managed_mcp_spec_entry",
+        "efm_go.agent.managed_mcp_spec_entry",
         lambda name: {"command": "test-core", "args": []},
     )
     monkeypatch.setattr(
@@ -53,7 +53,7 @@ def native_tree(tmp_path, monkeypatch):
         "list_agents",
         lambda **kw: [SimpleNamespace(name="custom", filename="custom.json", scope="global")],
     )
-    monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
+    monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
     (agents / "custom.json").write_text('{"name":"custom","description":"v1"}', encoding="utf-8")
     return agents, project
 
@@ -364,7 +364,7 @@ async def test_create_and_load_map_a_stored_view_before_any_guard():
 
 @pytest.mark.asyncio
 async def test_a_handle_set_mode_sends_the_source_agent():
-    from kiro_crew.acp.session_handle import AcpSessionHandle
+    from efm_go.acp.session_handle import AcpSessionHandle
 
     projection._remember_view_sources({"custom": VIEW})
     runtime = MagicMock()
@@ -398,14 +398,14 @@ def test_a_missing_view_nothing_remembers_still_reads_as_a_view(tmp_path):
 
 
 def test_a_missing_real_spec_suggests_setup_without_clean(tmp_path):
-    with patch("kiro_crew.acp.runtime.kiro_agents_dir", return_value=tmp_path):
+    with patch("efm_go.acp.runtime.kiro_agents_dir", return_value=tmp_path):
         text = _format_runtime_rpc_error(_mode_not_found("kirocrew"))
     assert "kirocrew setup --agent-only`" in text
     assert "--clean" not in text
 
 
 def test_the_direct_client_launches_the_source_agent(tmp_path):
-    from kiro_crew.acp.client import AcpClient, AcpError
+    from efm_go.acp.client import AcpClient, AcpError
 
     projection._remember_view_sources({"custom": VIEW})
     client = AcpClient(work_dir=tmp_path / "wd", agent=VIEW, sandbox_mode="off")

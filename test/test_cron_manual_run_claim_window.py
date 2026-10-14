@@ -31,12 +31,12 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 
-from kiro_crew import cron as cron_module
-from kiro_crew.cron import CronJob, CronService, _RunClaim, _RunMarkers
-from kiro_crew.cron_inflight import clear_marker as _clear_marker
-from kiro_crew.cron_inflight import read_markers
-from kiro_crew.dashboard.handlers.cron import api_cron_cancel, api_cron_run
-from kiro_crew.resource_status import POSTURE_AMPLE, AdmissionDecision
+from efm_go import cron as cron_module
+from efm_go.cron import CronJob, CronService, _RunClaim, _RunMarkers
+from efm_go.cron_inflight import clear_marker as _clear_marker
+from efm_go.cron_inflight import read_markers
+from efm_go.dashboard.handlers.cron import api_cron_cancel, api_cron_run
+from efm_go.resource_status import POSTURE_AMPLE, AdmissionDecision
 
 
 class _SelRecorder:
@@ -342,7 +342,7 @@ class TestCancelInsideTheClaimWindow:
         with (
             patch.object(svc, "_synced_snapshot", gate),
             patch.object(svc, "_run_job_isolated", side_effect=fake_run),
-            patch("kiro_crew.cron_script.kill_running_process", fake_kill),
+            patch("efm_go.cron_script.kill_running_process", fake_kill),
         ):
             async with TestClient(TestServer(_make_app(state))) as client:
                 run = await client.post(f"/api/crons/{job.id}/run")
@@ -496,7 +496,7 @@ class TestCancelInsideTheClaimWindow:
         state = _make_state(svc)
         with (
             patch.object(svc, "_synced_snapshot", snapshot),
-            patch("kiro_crew.cron_inflight.clear_marker", clearing),
+            patch("efm_go.cron_inflight.clear_marker", clearing),
         ):
             try:
                 async with TestClient(TestServer(_make_app(state))) as client:
@@ -593,7 +593,7 @@ class TestCancelInsideTheClaimWindow:
         svc, job = await _service(tmp_path, on_job)
         clearing = _FirstCallGate(_clear_marker)
         state = _make_state(svc)
-        with patch("kiro_crew.cron_inflight.clear_marker", clearing):
+        with patch("efm_go.cron_inflight.clear_marker", clearing):
             try:
                 async with TestClient(TestServer(_make_app(state))) as client:
                     run = await client.post(f"/api/crons/{job.id}/run")
@@ -679,7 +679,7 @@ class TestCancelInsideTheClaimWindow:
         svc, job = await _service(tmp_path, on_job)
         clearing = _EachCallGate(_clear_marker)
         state = _make_state(svc)
-        with patch("kiro_crew.cron_inflight.clear_marker", clearing):
+        with patch("efm_go.cron_inflight.clear_marker", clearing):
             try:
                 async with TestClient(TestServer(_make_app(state))) as client:
                     run = await client.post(f"/api/crons/{job.id}/run")
@@ -1250,7 +1250,7 @@ class TestCancelInsideTheClaimWindow:
 
         admitted = AdmissionDecision(admitted=True, posture=POSTURE_AMPLE, available_gb=16.0)
         with (
-            patch("kiro_crew.cron.admission_check", return_value=admitted),
+            patch("efm_go.cron.admission_check", return_value=admitted),
             patch.object(svc, "_run_job_isolated", stepped_run),
             patch.object(svc, "cancel", observed_cancel),
         ):

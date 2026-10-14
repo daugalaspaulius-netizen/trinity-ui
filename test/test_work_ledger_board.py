@@ -20,9 +20,9 @@ from types import SimpleNamespace
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew import work_ledger as wl
-from kiro_crew.dashboard.handlers import work_ledger as wlh
-from kiro_crew.dashboard.handlers import work_ledger_board as board
+from efm_go import work_ledger as wl
+from efm_go.dashboard.handlers import work_ledger as wlh
+from efm_go.dashboard.handlers import work_ledger_board as board
 
 CONDUCTOR = "chat-1-conductor"
 OTHER_CONDUCTOR = "chat-9-other-conductor"
@@ -389,7 +389,7 @@ def _stop_calls(monkeypatch):
         return {"ok": True}
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_handlers.stop_slot_turn", _fake_stop, raising=True
+        "efm_go.dashboard.chat_handlers.stop_slot_turn", _fake_stop, raising=True
     )
     return calls
 
@@ -455,7 +455,7 @@ async def test_an_unreachable_worker_is_audited_as_a_failure(monkeypatch, _audit
         return {"ok": False, "code": "remote_stop_unreachable"}
 
     monkeypatch.setattr(
-        "kiro_crew.dashboard.chat_handlers.stop_slot_turn", _unreachable, raising=True
+        "efm_go.dashboard.chat_handlers.stop_slot_turn", _unreachable, raising=True
     )
 
     item_id = _orphaned_item()

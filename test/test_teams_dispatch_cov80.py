@@ -18,10 +18,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
-from kiro_crew.session_allocation import SessionClosingError
-from kiro_crew.teams.client import TeamsInbound
-from kiro_crew.teams.transport_dispatch import TeamsDispatcher
+from efm_go.acp.types import EVENT_COMPLETE, EVENT_TEXT_CHUNK, AcpEvent
+from efm_go.session_allocation import SessionClosingError
+from efm_go.teams.client import TeamsInbound
+from efm_go.teams.transport_dispatch import TeamsDispatcher
 
 _EMAIL = "quinn@example.com"
 _SVC = "https://smba.trafficmanager.net/"

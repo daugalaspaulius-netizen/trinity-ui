@@ -83,7 +83,7 @@ mkdirSync(OUT, { recursive: true })
 
 /* `/api/project/tree` returns paths RELATIVE to `root`. The tree model is
  * created with `flattenEmptyDirectories: true`, so single-child directory
- * chains (src/kiro_crew/dashboard/handlers) collapse into one row — which is
+ * chains (src/efm_go/dashboard/handlers) collapse into one row — which is
  * what the real workspace looks like too. Deep + shallow paths on purpose, so
  * All-files shows nesting and Changed shows a flat handful. */
 const TREE_PATHS = [
@@ -93,10 +93,10 @@ const TREE_PATHS = [
   'website/scripts/fixtures/pierre-migration.md',
   'docs/architecture/side-panel.md',
   'docs/system-specs/modules/session.md',
-  'src/kiro_crew/dashboard/handlers/files.py',
-  'src/kiro_crew/dashboard/handlers/sessions.py',
-  'src/kiro_crew/dashboard/server.py',
-  'src/kiro_crew/session.py',
+  'src/efm_go/dashboard/handlers/files.py',
+  'src/efm_go/dashboard/handlers/sessions.py',
+  'src/efm_go/dashboard/server.py',
+  'src/efm_go/session.py',
   'website/package.json',
   'website/scripts/capture-pierre-chat-diffs.mjs',
   'website/scripts/capture-pierre-files-tab.mjs',
@@ -552,7 +552,7 @@ async function main() {
     probe('FilesHomePanel empty-viewer hint', p10.getByText('Select a file from the tree to open it in a new tab')),
     probe('rail filter field placeholder', p10.locator('input[placeholder="Filter files…"]'), { attr: 'placeholder' }),
     probe('All-files segment aria-pressed=true', p10.locator('[aria-label="All files"][aria-pressed="true"]'), { attr: 'aria-pressed' }),
-  ], [await assertTreeRows('10-files-tab-all-files', ['AGENTS.md', 'README.md', 'package.json', 'docs', 'website', 'kiro_crew'])])
+  ], [await assertTreeRows('10-files-tab-all-files', ['AGENTS.md', 'README.md', 'package.json', 'docs', 'website', 'efm_go'])])
 
   // ── Frame 11: the CHANGED filter ───────────────────────────────────────────
   // Module-level `sessionChangedMode` in FileBrowserRail is deliberately NOT

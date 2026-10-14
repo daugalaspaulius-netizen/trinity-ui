@@ -25,21 +25,21 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from kiro_crew import llm_helpers, name_grant, task_executor, tool_permission
-from kiro_crew.agent_sdk.spec_hooks import TurnSpecHooks
-from kiro_crew.constants import DENY_CAUSE_POLICY, DENY_CAUSE_SURFACE_POLICY
-from kiro_crew.hooks import TOOL_ALLOW, TOOL_AUTO_APPROVE, TOOL_DENY, ToolHookResult
-from kiro_crew.permission_floor import OUTCOME_REJECTED_TRANSPORT_FLOOR
-from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
-from kiro_crew.subagent import (
+from efm_go import llm_helpers, name_grant, task_executor, tool_permission
+from efm_go.agent_sdk.spec_hooks import TurnSpecHooks
+from efm_go.constants import DENY_CAUSE_POLICY, DENY_CAUSE_SURFACE_POLICY
+from efm_go.hooks import TOOL_ALLOW, TOOL_AUTO_APPROVE, TOOL_DENY, ToolHookResult
+from efm_go.permission_floor import OUTCOME_REJECTED_TRANSPORT_FLOOR
+from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+from efm_go.subagent import (
     _HEADLESS_DENY_REASON,
     _LOW_FIDELITY_DENY_REASON,
     SubagentInfo,
     SubagentManager,
 )
-from kiro_crew.subagent_manager import run as run_mod
-from kiro_crew.task_models import Project, Task
-from kiro_crew.tool_permission import (
+from efm_go.subagent_manager import run as run_mod
+from efm_go.task_models import Project, Task
+from efm_go.tool_permission import (
     GATE_GRANT,
     NO_GATE,
     AcpWire,
@@ -1246,7 +1246,7 @@ def _subagent_ladder(
         parent_policy=parent_policy,
         consult=consult or (lambda event: ToolHookResult(action=hook, identity_grant=True)),
         sel=sel or _Sel(log),
-        log=logging.getLogger("kiro_crew.subagent"),
+        log=logging.getLogger("efm_go.subagent"),
     )
     return policy, info, log
 
@@ -1656,7 +1656,7 @@ _ANSWER_CALLS = frozenset({"approve_tool", "reject_tool", "_steer_host_deny"})
 _WIRE_ANSWERS = frozenset({"allow", "refuse"})
 # The ladder's stages that also expose ``refuse``: a floor and the interject.
 _STAGE_RECEIVERS = frozenset({"floor", "policy.interject"})
-_SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+_SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 
 def test_the_ladder_answers_the_wire_in_exactly_one_adapter():

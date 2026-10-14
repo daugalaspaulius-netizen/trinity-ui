@@ -19,8 +19,8 @@ import uuid
 
 import pytest
 
-from kiro_crew.cron import CronService, cron_job_id_from_session_key, cron_session_key_is_stable
-from kiro_crew.mcp_cron import (
+from efm_go.cron import CronService, cron_job_id_from_session_key, cron_session_key_is_stable
+from efm_go.mcp_cron import (
     _SCOPED_EMPTY,
     _call_tool_inner,
     _ephemeral_authority_caveat,
@@ -36,8 +36,8 @@ def _unique_name() -> str:
 @pytest.fixture(autouse=True)
 def _isolate_cron_store(monkeypatch, tmp_path):
     """Route all CronService() instances to tmp_path for test isolation."""
-    monkeypatch.setattr("kiro_crew.cron._DEFAULT_DIR", tmp_path)
-    monkeypatch.setattr("kiro_crew.mcp_cron.config_dir", lambda: tmp_path)
+    monkeypatch.setattr("efm_go.cron._DEFAULT_DIR", tmp_path)
+    monkeypatch.setattr("efm_go.mcp_cron.config_dir", lambda: tmp_path)
 
 
 class TestSessionKeyStabilityPredicate:

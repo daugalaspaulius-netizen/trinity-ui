@@ -150,7 +150,7 @@ predate this subsystem and remain the color-theme surface.)
 ### Asset, overlay and topbar responses revalidate, never expire
 
 All three serving routes answer through one helper (`_theme_asset_response`),
-which itself calls the dashboard-wide `kiro_crew.dashboard.conditional_get`
+which itself calls the dashboard-wide `efm_go.dashboard.conditional_get`
 (the same compare the appearance-media, app-art and crew-avatar routes use).
 A `200` carries `ETag: W/"<hex>"` — the 8-byte blake2b digest of the body bytes
 just read — and `Cache-Control: private, max-age=0, must-revalidate`. A request
@@ -201,7 +201,7 @@ dashboard load into header-only round trips.
   The scoper is the **load-bearing runtime boundary** for attacker-authored
   `overrides.css` injected into the main document; both hand-rolled parsers are
   slated for consolidation onto CSSOM rule-walking as a **pre-1.0 blocker**,
-  tracked in kirodotdev/KiroCrew#316 (milestone-bound to the first L1-pack
+  tracked in efmleads.com#316 (milestone-bound to the first L1-pack
   release). Until then, drift between the two parsers — and between the scoper
   and real browser CSS parsing (escapes, comments, exotic at-rules) — is pinned
   by the shared adversarial corpus `test/fixtures/theme_css_corpus.json`,
@@ -339,8 +339,8 @@ a persona or third-party-derived branding.
 
 This covers **art assets too**, not just personas and manifests. The
 built-in-theme removal deleted the persona markdown but left nine unreferenced
-image/font/video files behind in `src/kiro_crew/static/`, which
-`MANIFEST.in`'s `recursive-include src/kiro_crew/static *` kept shipping in the
+image/font/video files behind in `src/efm_go/static/`, which
+`MANIFEST.in`'s `recursive-include src/efm_go/static *` kept shipping in the
 sdist, wheel and DMG. They are gone. When retiring a theme, delete its art in
-the same change: every file under `src/kiro_crew/static/` ships, so an orphan
+the same change: every file under `src/efm_go/static/` ships, so an orphan
 there is a shipped orphan, not dead weight in a dev tree.

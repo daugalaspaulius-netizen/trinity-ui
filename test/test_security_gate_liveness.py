@@ -19,8 +19,8 @@ import json
 import time
 from pathlib import Path
 
-from kiro_crew import security
-from kiro_crew.security import (
+from efm_go import security
+from efm_go.security import (
     MAX_SCANNABLE_COMMAND_CHARS,
     MAX_SCANNABLE_SOURCE_BODY_CHARS,
     is_sensitive_bash_command,
@@ -201,7 +201,7 @@ _MODULE_LINE_CAP = 4_500
 
 
 def _package_line_counts() -> dict[str, int]:
-    """Line count per file of the installed ``kiro_crew.security`` package."""
+    """Line count per file of the installed ``efm_go.security`` package."""
     package_dir = Path(security.__file__).parent
     return {
         path.name: len(path.read_text(encoding="utf-8").splitlines())
@@ -263,7 +263,7 @@ def test_command_at_the_ceiling_is_scanned_not_refused() -> None:
 def test_ceiling_matches_the_tool_input_tier() -> None:
     """The two tiers refuse at the same size, so a command cannot be too long
     for one and scanned by the other."""
-    from kiro_crew import llm_helpers
+    from efm_go import llm_helpers
 
     assert llm_helpers._MAX_SCANNABLE_TOOL_INPUT_CHARS == MAX_SCANNABLE_COMMAND_CHARS
 
@@ -277,7 +277,7 @@ def test_the_source_body_ceiling_is_larger_and_owned_by_the_cron_reader() -> Non
     """20 KiB of shell on one ``Bash`` call is a heredoc; 20 KiB of cron script is an
     ordinary script, and refusing it there is permanent (every tick until edited). The
     cron gate reads and refuses on ONE number so the reader and the scan agree."""
-    from kiro_crew import mcp_cron
+    from efm_go import mcp_cron
 
     assert MAX_SCANNABLE_SOURCE_BODY_CHARS > MAX_SCANNABLE_COMMAND_CHARS
     assert mcp_cron._MAX_SCRIPT_SCAN_BYTES == MAX_SCANNABLE_SOURCE_BODY_CHARS

@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig, MessagingConfig, SlackConfig
-from kiro_crew.slack.events import SeenCache, _route_message
+from efm_go.config.loader import KiroCrewConfig, MessagingConfig, SlackConfig
+from efm_go.slack.events import SeenCache, _route_message
 
 
 def _make_orch(allowed_users: list[dict] | None = None) -> MagicMock:
@@ -61,8 +61,8 @@ class TestUserResolutionFallback:
             "team": "TTEST",
         }
 
-        with patch("kiro_crew.slack.events.handle_message", new_callable=AsyncMock) as mock_hm:
-            with patch("kiro_crew.slack.events.is_allowed_user", return_value=True):
+        with patch("efm_go.slack.events.handle_message", new_callable=AsyncMock) as mock_hm:
+            with patch("efm_go.slack.events.is_allowed_user", return_value=True):
                 await _route_message(orch, event, seen, is_mention=False)
                 await asyncio.sleep(0)
                 tasks = list(orch._handler_tasks)
@@ -93,8 +93,8 @@ class TestUserResolutionFallback:
             "team": "TTEST",
         }
 
-        with patch("kiro_crew.slack.events.handle_message", new_callable=AsyncMock) as mock_hm:
-            with patch("kiro_crew.slack.events.is_allowed_user", return_value=True):
+        with patch("efm_go.slack.events.handle_message", new_callable=AsyncMock) as mock_hm:
+            with patch("efm_go.slack.events.is_allowed_user", return_value=True):
                 await _route_message(orch, event, seen, is_mention=False)
                 await asyncio.sleep(0)
                 tasks = list(orch._handler_tasks)
@@ -120,8 +120,8 @@ class TestUserResolutionFallback:
             "team": "TTEST",
         }
 
-        with patch("kiro_crew.slack.events.handle_message", new_callable=AsyncMock) as mock_hm:
-            with patch("kiro_crew.slack.events.is_allowed_user", return_value=True):
+        with patch("efm_go.slack.events.handle_message", new_callable=AsyncMock) as mock_hm:
+            with patch("efm_go.slack.events.is_allowed_user", return_value=True):
                 await _route_message(orch, event, seen, is_mention=False)
                 await asyncio.sleep(0)
                 tasks = list(orch._handler_tasks)

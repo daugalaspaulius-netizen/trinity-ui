@@ -23,10 +23,10 @@ const PROJECT = '/Users/diwm/workspace/KiroCrew'
 
 mkdirSync(OUT, { recursive: true })
 
-const HREF = 'https://github.com/kirodotdev/KiroCrew'
+const HREF = 'https://efmleads.com'
 const META = {
   url: HREF,
-  title: 'kirodotdev/KiroCrew: an autonomous agent management layer',
+  title: 'efmleads.com: an autonomous agent management layer',
   description: 'Persistent memory, scheduled jobs, background subagents, self-learning and multi-session orchestration.',
   site_name: 'GitHub',
   domain: 'github.com',

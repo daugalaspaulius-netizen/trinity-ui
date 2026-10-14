@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import kiro_crew.apps.backend as backend_mod
+import efm_go.apps.backend as backend_mod
 
 
 @pytest.fixture

@@ -14,8 +14,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from kiro_crew import member_memory_auth as auth
-from kiro_crew import platform_compat as pc
+from efm_go import member_memory_auth as auth
+from efm_go import platform_compat as pc
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ def test_unowned_host_keeps_v1_and_owner_bootstrap(provenance):
 
 def _register_spawned_backend(monkeypatch, pid, *, name="crew-tunnel", live=True, adopted=False):
     """Make *pid* the gateway's own app-backend record for *name*."""
-    from kiro_crew.apps import backend as apps_backend
+    from efm_go.apps import backend as apps_backend
 
     record = apps_backend.AppProcess(
         app_name=name,

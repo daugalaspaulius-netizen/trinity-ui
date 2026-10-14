@@ -14,10 +14,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.dashboard.chat_folder_cleanup import api_chat_folders_cleanup, removable_folder_ids
-from kiro_crew.dashboard.folder_repository import FolderRepository
-from kiro_crew.dashboard.state import DashboardState, _ChatSlot
-from kiro_crew.loop_lock import LoopBoundLock
+from efm_go.dashboard.chat_folder_cleanup import api_chat_folders_cleanup, removable_folder_ids
+from efm_go.dashboard.folder_repository import FolderRepository
+from efm_go.dashboard.state import DashboardState, _ChatSlot
+from efm_go.loop_lock import LoopBoundLock
 
 
 def _f(fid: str, parent: str = "", order: int = 0, **extra: Any) -> dict[str, Any]:
@@ -205,7 +205,7 @@ class TestCleanupRoute:
             under_lock.append(state.folder_lock.locked())
             return {"travel"}
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_folder_cleanup.channel_folder_names", _names)
+        monkeypatch.setattr("efm_go.dashboard.chat_folder_cleanup.channel_folder_names", _names)
         async with TestClient(TestServer(_app(state))) as client:
             resp = await client.post(
                 "/api/chat/folders/cleanup", json={"dry_run": True, "include_top_level": True}
@@ -272,7 +272,7 @@ class TestCleanupRoute:
         def _broken() -> set[str]:
             raise OSError("config.json unreadable")
 
-        monkeypatch.setattr("kiro_crew.dashboard.chat_folder_cleanup.channel_folder_names", _broken)
+        monkeypatch.setattr("efm_go.dashboard.chat_folder_cleanup.channel_folder_names", _broken)
         state = _state(_slot("chat-1-1", "lead"))
         before = _ids(state)
         async with TestClient(TestServer(_app(state))) as client:
@@ -406,7 +406,7 @@ class TestCronChatFolderIds:
     async def test_reads_every_job_folder_and_fails_closed_on_a_bad_store(
         self, tmp_path: Any
     ) -> None:
-        from kiro_crew.cron import CronService, CronStoreUnreadable
+        from efm_go.cron import CronService, CronStoreUnreadable
 
         svc = CronService(base_dir=tmp_path)
         svc.add_job("a", "m", every_secs=300, persistent_session=True, chat_folder_id="f1")
@@ -425,7 +425,7 @@ class TestChannelFolderNames:
     ) -> None:
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard import chat_folder_cleanup as mod
+        from efm_go.dashboard import chat_folder_cleanup as mod
 
         cfg = SimpleNamespace(degraded_sections=frozenset(degraded))
         monkeypatch.setattr(mod.KiroCrewConfig, "load", staticmethod(lambda: cfg))
@@ -435,7 +435,7 @@ class TestChannelFolderNames:
     def test_reads_every_channel_s_folder_name(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from types import SimpleNamespace
 
-        from kiro_crew.dashboard import chat_folder_cleanup as mod
+        from efm_go.dashboard import chat_folder_cleanup as mod
 
         cfg = SimpleNamespace(
             degraded_sections=frozenset({"memory"}),

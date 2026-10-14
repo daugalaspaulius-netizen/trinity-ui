@@ -24,8 +24,8 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew import skills as skills_mod
-from kiro_crew.skills import (
+from efm_go import skills as skills_mod
+from efm_go.skills import (
     SKILL_INSTALL_BEHIND,
     SKILL_INSTALL_EDITED,
     SKILL_INSTALL_IN_SYNC,
@@ -300,7 +300,7 @@ def test_doctor_names_the_verdict_the_source_and_a_remedy_that_works(
     skips it again. The output has to name the action that does work, or the
     operator is left with a diagnosis and no move.
     """
-    from kiro_crew.cli_doctor import _doctor_skill_currency, _safe_display
+    from efm_go.cli_doctor import _doctor_skill_currency, _safe_display
 
     base, packaged = trees
     _ship(packaged, "probe-skill")
@@ -500,13 +500,13 @@ def test_doctor_says_the_check_does_not_run_on_windows(
     must also not record a readiness issue: the operator's install is not at
     fault, the check simply does not run here.
     """
-    from kiro_crew.cli_doctor import _doctor_skill_currency
+    from efm_go.cli_doctor import _doctor_skill_currency
 
     base, packaged = trees
     _ship(packaged, "probe-skill")
     skills_mod._ensure_builtin_skills(base)
     monkeypatch.setattr(skills_mod, "os", _WindowsNameOnly())
-    monkeypatch.setattr("kiro_crew.cli_doctor.os.name", "nt")
+    monkeypatch.setattr("efm_go.cli_doctor.os.name", "nt")
 
     issues: list[str] = []
     _doctor_skill_currency(issues)
@@ -527,7 +527,7 @@ def test_on_a_real_windows_host_the_gate_fires() -> None:
     no fixture: the gate returns before ``skills_dir()`` is called, so there is
     nothing to arrange and nothing is read.
     """
-    from kiro_crew.cli_doctor import _doctor_skill_currency
+    from efm_go.cli_doctor import _doctor_skill_currency
 
     assert installed_skill_currency() == []
 

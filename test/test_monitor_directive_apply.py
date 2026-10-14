@@ -7,16 +7,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.autonudge import (
+from efm_go.autonudge import (
     APPROVAL_STALL_REASON,
     CONSECUTIVE_FAILURE_REASON,
     STOP_SENTINEL_REASON,
     AutoNudgeService,
 )
-from kiro_crew.autonudge_authz import authorize_and_update_monitor
-from kiro_crew.dashboard import session_directive_apply as sda
-from kiro_crew.dashboard.session_directive_apply import apply_session_directive
-from kiro_crew.monitoring.models import (
+from efm_go.autonudge_authz import authorize_and_update_monitor
+from efm_go.dashboard import session_directive_apply as sda
+from efm_go.dashboard.session_directive_apply import apply_session_directive
+from efm_go.monitoring.models import (
     MonitorBudgets,
     MonitorCreationSurface,
     MonitorDispatchResult,
@@ -33,8 +33,8 @@ async def test_channel_origin_survives_a_linked_dashboard_monitor_binding(tmp_pa
         channel_transports={},
     )
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
     ):
         result = await apply_session_directive(
             state,
@@ -82,8 +82,8 @@ async def test_channel_origin_retarget_downgrades_dashboard_monitor_credentials(
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 state,
@@ -108,8 +108,8 @@ async def test_channel_origin_retarget_downgrades_dashboard_monitor_credentials(
 async def test_disabled_structured_monitor_directives_are_audited_as_denied(kind):
     audit = MagicMock()
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=None),
-        patch("kiro_crew.sel.sel", return_value=audit),
+        patch("efm_go.autonudge.get_instance", return_value=None),
+        patch("efm_go.sel.sel", return_value=audit),
     ):
         result = await apply_session_directive(
             SimpleNamespace(),
@@ -133,8 +133,8 @@ async def test_unsupported_structured_monitor_stop_is_audited_as_denied(tmp_path
     service = AutoNudgeService(base_dir=tmp_path)
     audit = MagicMock()
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.dashboard.session_directive_apply._audit", audit),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.dashboard.session_directive_apply._audit", audit),
     ):
         result = await apply_session_directive(
             SimpleNamespace(),
@@ -155,8 +155,8 @@ async def test_webex_structured_watch_is_refused_by_authoritative_consumer(tmp_p
     audit = MagicMock()
     session_key = "webex:kirocrew:direct:operator@example.com"
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.dashboard.session_directive_apply._audit", audit),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.dashboard.session_directive_apply._audit", audit),
     ):
         result = await apply_session_directive(
             SimpleNamespace(),
@@ -200,8 +200,8 @@ async def test_webex_legacy_loop_is_stopped_by_monitor_stop(tmp_path):
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.dashboard.session_directive_apply._audit", audit),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.dashboard.session_directive_apply._audit", audit),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -234,8 +234,8 @@ async def test_monitor_stop_removes_a_dashboard_legacy_loop(tmp_path):
     loop = await service.add(slot_key="chat-1", message="Watch it.", idle_secs=300)
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.dashboard.session_directive_apply._audit", MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.dashboard.session_directive_apply._audit", MagicMock()),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -273,9 +273,9 @@ async def test_monitor_stop_and_autonudge_stop_route_a_structured_loop_identical
         )
         try:
             with (
-                patch("kiro_crew.autonudge.get_instance", return_value=service),
-                patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
-                patch("kiro_crew.dashboard.session_directive_apply._audit", MagicMock()),
+                patch("efm_go.autonudge.get_instance", return_value=service),
+                patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
+                patch("efm_go.dashboard.session_directive_apply._audit", MagicMock()),
             ):
                 result = await apply_session_directive(
                     SimpleNamespace(),
@@ -309,8 +309,8 @@ async def test_webex_cannot_update_a_persisted_structured_monitor(tmp_path):
     )
     audit = MagicMock()
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.dashboard.session_directive_apply._audit", audit),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.dashboard.session_directive_apply._audit", audit),
     ):
         result = await apply_session_directive(
             SimpleNamespace(),
@@ -339,12 +339,12 @@ async def test_refused_structured_monitor_stop_is_audited_as_denied(tmp_path):
     )
     audit = MagicMock()
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
+        patch("efm_go.autonudge.get_instance", return_value=service),
         patch(
-            "kiro_crew.autonudge_authz.authorize_and_stop_monitor",
+            "efm_go.autonudge_authz.authorize_and_stop_monitor",
             new=AsyncMock(return_value=(None, "audit unavailable", 503)),
         ),
-        patch("kiro_crew.dashboard.session_directive_apply._audit", audit),
+        patch("efm_go.dashboard.session_directive_apply._audit", audit),
     ):
         result = await apply_session_directive(
             SimpleNamespace(),
@@ -371,10 +371,10 @@ async def test_watch_update_and_stop_are_authoritative_and_owned(tmp_path):
     audit = MagicMock()
     load_hosts = AsyncMock(return_value=frozenset())
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.autonudge_authz.sel", return_value=audit),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.autonudge_authz.sel", return_value=audit),
         patch(
-            "kiro_crew.dashboard.handlers.source_providers.ensure_gitlab_hosts_loaded",
+            "efm_go.dashboard.handlers.source_providers.ensure_gitlab_hosts_loaded",
             load_hosts,
         ),
     ):
@@ -475,7 +475,7 @@ async def test_legacy_autonudge_stop_retains_only_structured_records(tmp_path):
     )
     state = SimpleNamespace(_slots={}, sessions=None, channel_transports={})
     slot = SimpleNamespace(key="chat-1", _app="")
-    with patch("kiro_crew.autonudge.get_instance", return_value=service):
+    with patch("efm_go.autonudge.get_instance", return_value=service):
         result = await apply_session_directive(
             state, slot, "dashboard:chat-1", "autonudge_stop", {"reason": "legacy caller"}
         )
@@ -500,12 +500,12 @@ async def test_legacy_structured_stop_failure_is_audited_as_denied(tmp_path):
     )
     audit = MagicMock()
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
+        patch("efm_go.autonudge.get_instance", return_value=service),
         patch(
-            "kiro_crew.autonudge_authz.authorize_and_stop_monitor",
+            "efm_go.autonudge_authz.authorize_and_stop_monitor",
             new=AsyncMock(return_value=(None, "audit unavailable", 503)),
         ),
-        patch("kiro_crew.dashboard.session_directive_apply._audit", audit),
+        patch("efm_go.dashboard.session_directive_apply._audit", audit),
     ):
         result = await apply_session_directive(
             SimpleNamespace(),
@@ -585,7 +585,7 @@ async def test_failed_session_close_restores_dispatched_completion_evidence(tmp_
 async def test_structured_fields_cannot_silently_patch_a_legacy_loop(tmp_path):
     service = AutoNudgeService(base_dir=tmp_path)
     await service.add("chat-1", "legacy prompt", idle_secs=60)
-    with patch("kiro_crew.autonudge.get_instance", return_value=service):
+    with patch("efm_go.autonudge.get_instance", return_value=service):
         result = await apply_session_directive(
             SimpleNamespace(),
             SimpleNamespace(key="chat-1", _app=""),
@@ -605,7 +605,7 @@ async def test_monitor_watch_does_not_replace_a_legacy_loop(tmp_path):
     legacy = await service.add("chat-1", "legacy prompt", idle_secs=60)
     slot = SimpleNamespace(key="chat-1", workspace="default", _app="", is_closing=False)
     state = SimpleNamespace(_slots={"chat-1": slot}, sessions=None, channel_transports={})
-    with patch("kiro_crew.autonudge.get_instance", return_value=service):
+    with patch("efm_go.autonudge.get_instance", return_value=service):
         result = await apply_session_directive(
             state,
             slot,
@@ -642,7 +642,7 @@ async def test_monitor_start_does_not_replace_a_structured_monitor(tmp_path):
     )
     slot = SimpleNamespace(key="chat-1", workspace="default", _app="", is_closing=False)
     state = SimpleNamespace(_slots={"chat-1": slot}, sessions=None, channel_transports={})
-    with patch("kiro_crew.autonudge.get_instance", return_value=service):
+    with patch("efm_go.autonudge.get_instance", return_value=service):
         result = await apply_session_directive(
             state,
             slot,
@@ -670,7 +670,7 @@ async def test_identity_update_conflict_is_a_controlled_authorizer_denial(tmp_pa
     )
     assert await service.mark_monitor_action_in_flight(loop.id, "failure-a", now=120.0)
 
-    with patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()):
+    with patch("efm_go.autonudge_authz.sel", return_value=MagicMock()):
         updated, error, status = await authorize_and_update_monitor(
             svc=service,
             state=SimpleNamespace(
@@ -718,8 +718,8 @@ async def test_banner_cannot_silently_patch_a_structured_monitor(tmp_path):
     )
     slot = SimpleNamespace(key="chat-1", _app="")
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
     ):
         result = await apply_session_directive(
             state,
@@ -759,8 +759,8 @@ async def test_denied_monitor_update_is_surfaced_into_the_session(tmp_path):
     )
     slot = SimpleNamespace(key="chat-1", _app="", messages=[])
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.dashboard.state.append_and_surface", surfaced),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.dashboard.state.append_and_surface", surfaced),
     ):
         result = await apply_session_directive(
             state,
@@ -808,8 +808,8 @@ async def test_denied_monitor_update_names_the_consecutive_failure_bound(tmp_pat
     )
     slot = SimpleNamespace(key="chat-1", _app="", messages=[])
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.dashboard.state.append_and_surface", surfaced),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.dashboard.state.append_and_surface", surfaced),
     ):
         result = await apply_session_directive(
             state,
@@ -847,8 +847,8 @@ async def test_monitor_update_names_a_stop_file_finish_and_revives_nothing(tmp_p
     )
     slot = SimpleNamespace(key="chat-1", _app="", messages=[])
     with (
-        patch("kiro_crew.autonudge.get_instance", return_value=service),
-        patch("kiro_crew.dashboard.state.append_and_surface", MagicMock()),
+        patch("efm_go.autonudge.get_instance", return_value=service),
+        patch("efm_go.dashboard.state.append_and_surface", MagicMock()),
     ):
         result = await apply_session_directive(
             state,
@@ -893,8 +893,8 @@ async def test_late_monitor_wake_cannot_rearm_after_user_stop(tmp_path, kind):
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 state,
@@ -947,8 +947,8 @@ async def test_late_wake_of_a_user_stopped_structured_monitor_cannot_rearm(tmp_p
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 state,
@@ -983,8 +983,8 @@ async def test_final_cycle_wake_may_arm_the_successor_of_its_capped_loop(tmp_pat
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 state,
@@ -1015,8 +1015,8 @@ async def test_self_wake_revives_cap_expired_loop_by_raising_cap(tmp_path):
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 state,
@@ -1048,8 +1048,8 @@ async def test_stale_wake_cannot_mutate_replacement_loop(tmp_path, kind):
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1083,9 +1083,9 @@ async def test_stale_wake_stop_refusal_uses_stop_wording_and_is_surfaced(tmp_pat
     state = SimpleNamespace()
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
-            patch("kiro_crew.dashboard.state.append_and_surface", surfaced),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.dashboard.state.append_and_surface", surfaced),
         ):
             result = await apply_session_directive(
                 state,
@@ -1128,9 +1128,9 @@ async def test_stale_wake_cannot_remove_person_paused_loop(tmp_path, kind, stopp
     slot = SimpleNamespace(key="chat-1", _app="", messages=[])
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
-            patch("kiro_crew.dashboard.state.append_and_surface", surfaced),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.dashboard.state.append_and_surface", surfaced),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1162,8 +1162,8 @@ async def test_live_wake_can_stop_its_own_active_loop(tmp_path, kind):
     loop = await service.add(slot_key="chat-1", message="old", idle_secs=86400)
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1191,8 +1191,8 @@ async def test_live_wake_can_stop_its_own_system_deactivated_loop(tmp_path, kind
     await service.update(loop.id, active=False, stopped_reason="cycle_cap")
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1217,8 +1217,8 @@ async def test_live_wake_can_mutate_its_own_loop(tmp_path, kind):
     args = {"patch": {"message": "revised"}} if kind == "monitor_update" else {"reason": "done"}
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1247,8 +1247,8 @@ async def test_self_wake_without_loop_id_keeps_binding_fallback(tmp_path):
     loop = await service.add(slot_key="chat-1", message="old", idle_secs=86400)
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1277,8 +1277,8 @@ async def test_self_wake_revives_budget_expired_loop_by_raising_budget(tmp_path)
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 state,
@@ -1307,8 +1307,8 @@ async def test_self_wake_cannot_revive_cap_expired_loop_without_raising_cap(tmp_
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 state,
@@ -1347,8 +1347,8 @@ async def test_self_wake_cannot_revive_user_paused_loop_by_raising_cap(tmp_path,
     )
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 state,
@@ -1388,8 +1388,8 @@ async def test_stale_wake_stop_preserves_pause_landing_before_remove(tmp_path, k
     monkeypatch.setattr(service, "_acquire_mutation_lock", _pause_before_stop_acquires)
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1425,7 +1425,7 @@ async def test_remove_unserialized_requires_mutation_lock(tmp_path):
 
 @pytest.mark.asyncio
 async def test_remove_unserialized_requires_lock_owned_by_caller(tmp_path):
-    from kiro_crew import autonudge as an
+    from efm_go import autonudge as an
 
     service = AutoNudgeService(base_dir=tmp_path)
     loop = await service.add(slot_key="chat-1", message="keep", idle_secs=86400)
@@ -1455,7 +1455,7 @@ async def test_remove_unserialized_requires_lock_owned_by_caller(tmp_path):
 
 @pytest.mark.asyncio
 async def test_remove_unserialized_requires_service_maintenance_lock(tmp_path):
-    from kiro_crew import autonudge as an
+    from efm_go import autonudge as an
 
     service = AutoNudgeService(base_dir=tmp_path)
     loop = await service.add(slot_key="chat-1", message="keep", idle_secs=86400)
@@ -1498,8 +1498,8 @@ async def test_stale_wake_stop_preserves_pause_landing_before_research_update(
     monkeypatch.setattr(service, "_acquire_mutation_lock", _pause_before_stop_acquires)
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=MagicMock()),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=MagicMock()),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1549,9 +1549,9 @@ async def test_stale_wake_stop_of_row_deleted_before_remove_is_idempotent_succes
     audit = MagicMock()
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=audit),
-            patch("kiro_crew.sel.sel", return_value=audit),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=audit),
+            patch("efm_go.sel.sel", return_value=audit),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1593,9 +1593,9 @@ async def test_stale_wake_stop_of_row_deleted_before_research_update_is_idempote
     audit = MagicMock()
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=audit),
-            patch("kiro_crew.sel.sel", return_value=audit),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=audit),
+            patch("efm_go.sel.sel", return_value=audit),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1650,9 +1650,9 @@ async def test_stale_wake_stop_of_row_replaced_before_write_is_refused(
     audit = MagicMock()
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=audit),
-            patch("kiro_crew.sel.sel", return_value=audit),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=audit),
+            patch("efm_go.sel.sel", return_value=audit),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1690,9 +1690,9 @@ async def test_stale_wake_stop_that_never_took_the_lock_is_not_reported_stopped(
     audit = MagicMock()
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=audit),
-            patch("kiro_crew.sel.sel", return_value=audit),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=audit),
+            patch("efm_go.sel.sel", return_value=audit),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1736,9 +1736,9 @@ async def test_user_stop_that_never_took_the_lock_is_not_reported_stopped(
     audit = MagicMock()
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=audit),
-            patch("kiro_crew.sel.sel", return_value=audit),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=audit),
+            patch("efm_go.sel.sel", return_value=audit),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),
@@ -1791,9 +1791,9 @@ async def test_user_stop_of_row_replaced_before_write_is_refused(
     audit = MagicMock()
     try:
         with (
-            patch("kiro_crew.autonudge.get_instance", return_value=service),
-            patch("kiro_crew.autonudge_authz.sel", return_value=audit),
-            patch("kiro_crew.sel.sel", return_value=audit),
+            patch("efm_go.autonudge.get_instance", return_value=service),
+            patch("efm_go.autonudge_authz.sel", return_value=audit),
+            patch("efm_go.sel.sel", return_value=audit),
         ):
             result = await apply_session_directive(
                 SimpleNamespace(),

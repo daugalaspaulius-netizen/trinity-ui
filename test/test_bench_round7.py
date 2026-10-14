@@ -17,15 +17,15 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.eval.bench.corpus import (
+from efm_go.eval.bench.corpus import (
     CAT_SINGLE_HOP,
     BenchInstance,
     BenchSession,
     BenchTurn,
 )
-from kiro_crew.eval.bench.ingest import IngestConfig, IngestError, ingest_instance
-from kiro_crew.eval.bench.retrieval import QueryRetrieval, aggregate
-from kiro_crew.eval.bench.run import compare_reports
+from efm_go.eval.bench.ingest import IngestConfig, IngestError, ingest_instance
+from efm_go.eval.bench.retrieval import QueryRetrieval, aggregate
+from efm_go.eval.bench.run import compare_reports
 
 LME_TS = "2023/04/10 (Mon) 23:07"
 
@@ -218,8 +218,8 @@ def test_the_digest_reaches_the_serialized_report() -> None:
     comparison refusing on a missing digest would otherwise be triggered by the
     harness's own reports.
     """
-    from kiro_crew.eval.bench.retrieval import RetrievalAggregate
-    from kiro_crew.eval.bench.run import RunResult
+    from efm_go.eval.bench.retrieval import RetrievalAggregate
+    from efm_go.eval.bench.run import RunResult
 
     agg = RetrievalAggregate()
     agg.session = {"recall_all@5": 0.5}

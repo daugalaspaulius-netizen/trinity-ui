@@ -16,9 +16,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.service import linux as svc_linux
-from kiro_crew.service import selinux as sel
-from kiro_crew.service.common import SERVICE_NAME
+from efm_go.service import linux as svc_linux
+from efm_go.service import selinux as sel
+from efm_go.service.common import SERVICE_NAME
 
 # Contexts as they appear on a Fedora-family targeted policy. Only used as
 # opaque strings — the module never parses or matches on a type name.
@@ -370,7 +370,7 @@ class TestUserScopeUnitRendering:
     def _render(monkeypatch, user_scope):
         monkeypatch.setenv("USER", "tester")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/home/tester/.local/bin/kirocrew",
         ):
             return svc_linux.render_unit(user_scope=user_scope)
@@ -390,7 +390,7 @@ class TestUserScopeUnitRendering:
         """Callers that pass nothing must get exactly today's unit."""
         monkeypatch.setenv("USER", "tester")
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/home/tester/.local/bin/kirocrew",
         ):
             assert svc_linux.render_unit() == svc_linux.render_unit(user_scope=False)
@@ -446,10 +446,10 @@ class TestStartFailureCoversWhatThePreflightCannotProve:
         run = self._restart_fails(monkeypatch, enforcing=True)
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/usr/local/bin/kirocrew-wrapper",
             ),
-            patch("kiro_crew.service.linux.subprocess.run", side_effect=run),
+            patch("efm_go.service.linux.subprocess.run", side_effect=run),
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc:
                 svc_linux.install()
@@ -484,7 +484,7 @@ class TestStartFailureCoversWhatThePreflightCannotProve:
         monkeypatch.setattr(svc_linux.selinux, "is_enforcing", lambda: True)
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/home/tester/.local/bin/kirocrew",
             ),
             patch.object(svc_linux, "_home_for_user", return_value="/home/tester"),
@@ -502,10 +502,10 @@ class TestStartFailureCoversWhatThePreflightCannotProve:
         run = self._restart_fails(monkeypatch, enforcing=False)
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/usr/local/bin/kirocrew",
             ),
-            patch("kiro_crew.service.linux.subprocess.run", side_effect=run),
+            patch("efm_go.service.linux.subprocess.run", side_effect=run),
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc:
                 svc_linux.install()
@@ -525,7 +525,7 @@ class TestStartFailureCoversWhatThePreflightCannotProve:
         monkeypatch.setattr(svc_linux.selinux, "is_enforcing", lambda: True)
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/home/tester/.local/bin/kirocrew",
             ),
             patch.object(svc_linux, "_home_for_user", return_value="/home/tester"),
@@ -555,10 +555,10 @@ class TestInstallRefusesAnUnstartableSystemUnit:
 
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/home/tester/.local/bin/kirocrew",
             ),
-            patch("kiro_crew.service.linux.subprocess.run", return_value=ok) as run,
+            patch("efm_go.service.linux.subprocess.run", return_value=ok) as run,
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc:
                 svc_linux.install()
@@ -574,7 +574,7 @@ class TestInstallRefusesAnUnstartableSystemUnit:
     def test_refusal_carries_a_pasteable_user_unit(self, monkeypatch):
         self._blocked(monkeypatch)
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/home/tester/.local/bin/kirocrew",
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc:
@@ -596,7 +596,7 @@ class TestInstallRefusesAnUnstartableSystemUnit:
         ship, which sends the operator into `invalid choice`."""
         self._blocked(monkeypatch)
         with patch(
-            "kiro_crew.service.common.shutil.which",
+            "efm_go.service.common.shutil.which",
             return_value="/home/tester/.local/bin/kirocrew",
         ):
             with pytest.raises(svc_linux.ServiceInstallError) as exc:
@@ -620,7 +620,7 @@ class TestInstallRefusesAnUnstartableSystemUnit:
         self._blocked(monkeypatch)
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/home/tester/.local/bin/kirocrew",
             ),
             patch.object(svc_linux, "_home_for_user", return_value="/home/tester"),
@@ -648,7 +648,7 @@ class TestInstallRefusesAnUnstartableSystemUnit:
         self._blocked(monkeypatch)
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/home/tester/.local/bin/kirocrew",
             ),
             patch.object(svc_linux, "_home_for_user", return_value="/home/tester"),
@@ -676,7 +676,7 @@ class TestInstallRefusesAnUnstartableSystemUnit:
         spaced_home = "/home/tester with space"
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/home/tester/.local/bin/kirocrew",
             ),
             patch.object(svc_linux, "_home_for_user", return_value=spaced_home),
@@ -701,7 +701,7 @@ class TestInstallRefusesAnUnstartableSystemUnit:
         self._blocked(monkeypatch)
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/home/tester/.local/bin/kirocrew",
             ),
             patch.object(svc_linux, "_home_for_user", return_value="/home/tester"),
@@ -718,10 +718,10 @@ class TestInstallRefusesAnUnstartableSystemUnit:
 
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/usr/local/bin/kirocrew",
             ),
-            patch("kiro_crew.service.linux.subprocess.run", return_value=ok) as run,
+            patch("efm_go.service.linux.subprocess.run", return_value=ok) as run,
         ):
             svc_linux.install()
 
@@ -743,10 +743,10 @@ class TestInstallRefusesAnUnstartableSystemUnit:
 
         with (
             patch(
-                "kiro_crew.service.common.shutil.which",
+                "efm_go.service.common.shutil.which",
                 return_value="/home/tester/.local/bin/kirocrew",
             ),
-            patch("kiro_crew.service.linux.subprocess.run", return_value=ok),
+            patch("efm_go.service.linux.subprocess.run", return_value=ok),
         ):
             svc_linux.install()
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew.cloud import sizes
+from efm_go.cloud import sizes
 
 
 class TestTierCatalog:

@@ -9,7 +9,7 @@ import shlex
 
 import pytest
 
-from kiro_crew.security import argv_floor, inline_payload
+from efm_go.security import argv_floor, inline_payload
 
 
 def _encode(text: str) -> str:
@@ -40,14 +40,14 @@ class TestDecoderArguments:
 
     @pytest.mark.parametrize("module", ["base64", "b64"])
     def test_nested_keyword_input_keeps_raw_case(self, module):
-        inner = _encode("import kiro_crew.cli")
+        inner = _encode("import efm_go.cli")
         outer = _encode(inner)
         payload = (
             f"{module}.b64decode(validate=True, s=" f'{module}.standard_b64decode(s="{outer}"))'
         )
         assert inline_payload._decode_call_literals(payload) == (
             inner.lower(),
-            "import kiro_crew.cli",
+            "import efm_go.cli",
         )
 
     @pytest.mark.parametrize(
@@ -95,7 +95,7 @@ class TestCallerPreservation:
     @pytest.mark.parametrize("attached", [False, True])
     @pytest.mark.parametrize("nested", [False, True])
     def test_keyword_encoded_execution_remains_denied(self, attached, nested):
-        encoded = _encode("import kiro_crew.cli")
+        encoded = _encode("import efm_go.cli")
         expression = f'base64.b64decode(s="{encoded}")'
         if nested:
             expression = (
@@ -136,7 +136,7 @@ class TestCallerPreservation:
 class TestRawPayloadOwnership:
     @pytest.mark.parametrize("carrier", ["shell", "pipe", "heredoc", "here-string"])
     def test_encoded_execution_on_each_carrier(self, carrier):
-        payload = f'exec(base64.b64decode(s="{_encode("import kiro_crew.cli")}"))'
+        payload = f'exec(base64.b64decode(s="{_encode("import efm_go.cli")}"))'
         quoted = shlex.quote(payload)
         commands = {
             "shell": "bash -c " + shlex.quote("python -c " + quoted),
@@ -151,7 +151,7 @@ class TestRawPayloadOwnership:
         hello = "python -c " + shlex.quote('print(base64.b64decode(s="aGVsbG8="))')
         # The second command prints Python syntax; it never executes that syntax.
         other = "printf %s " + shlex.quote(
-            f'base64.b64decode(s="{_encode("import kiro_crew.cli")}")'
+            f'base64.b64decode(s="{_encode("import efm_go.cli")}")'
         )
         command = hello + "; " + other
         assert not argv_floor._is_credential_mint(command.lower(), raw_text=command)
@@ -159,7 +159,7 @@ class TestRawPayloadOwnership:
     def test_imported_decoder_alias_reaches_the_same_input(self):
         payload = (
             "from base64 import b64decode as decode; "
-            f'exec(decode(s="{_encode("import kiro_crew.cli")}"))'
+            f'exec(decode(s="{_encode("import efm_go.cli")}"))'
         )
         command = "python -c " + shlex.quote(payload)
         assert argv_floor._is_credential_mint(command.lower(), raw_text=command)
@@ -172,9 +172,9 @@ class TestExplicitDecoderAliases:
     def test_explicit_alias_is_scoped_to_its_payload(self, decoder):
         payload = (
             f"from base64 import {decoder} as decode; "
-            f'exec(decode(s=b"{_encode("import kiro_crew.cli")}"))'
+            f'exec(decode(s=b"{_encode("import efm_go.cli")}"))'
         )
-        assert inline_payload._decode_call_literals(payload) == ("import kiro_crew.cli",)
+        assert inline_payload._decode_call_literals(payload) == ("import efm_go.cli",)
         command = "python -c " + shlex.quote(payload)
         assert argv_floor._is_credential_mint(command.lower(), raw_text=command)
 
@@ -183,11 +183,11 @@ class TestExplicitDecoderAliases:
         imports = "b64decode as outer, standard_b64decode as inner"
         if parentheses:
             imports = "(\n" + imports + ", # import comment\n)"
-        encoded = _encode("import kiro_crew.cli")
+        encoded = _encode("import efm_go.cli")
         payload = f'from base64 import {imports}; exec(outer(s=inner(s=b"{_encode(encoded)}")))'
         assert inline_payload._decode_call_literals(payload) == (
             encoded.lower(),
-            "import kiro_crew.cli",
+            "import efm_go.cli",
         )
 
     @pytest.mark.parametrize(

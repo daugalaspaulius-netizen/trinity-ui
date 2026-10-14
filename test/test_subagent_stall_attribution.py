@@ -12,13 +12,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.liveness import (
+from efm_go.acp.liveness import (
     VERDICT_DEAD,
     VERDICT_STUCK_INPUT,
     VERDICT_UNKNOWN,
     VERDICT_WORKING,
 )
-from kiro_crew.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent import SubagentInfo, SubagentManager
 
 
 def _make_manager(stall_idle_secs: int = 120) -> SubagentManager:
@@ -147,7 +147,7 @@ async def test_consult_failure_degrades_to_unknown():
     SubagentManager._note_tool_dispatch(info, _event())
     boom = MagicMock()
     boom.check_tool.side_effect = RuntimeError("proc read blew up")
-    with patch("kiro_crew.subagent.LivenessOracle", return_value=boom):
+    with patch("efm_go.subagent.LivenessOracle", return_value=boom):
         verdict, evidence = await mgr._stall_verdict(info)
     assert verdict == VERDICT_UNKNOWN
     assert evidence == "oracle offload error"
@@ -175,7 +175,7 @@ async def test_consult_runs_off_the_event_loop():
 
     oracle = MagicMock()
     oracle.check_tool.side_effect = _probe
-    with patch("kiro_crew.subagent.LivenessOracle", return_value=oracle):
+    with patch("efm_go.subagent.LivenessOracle", return_value=oracle):
         verdict, _ = await mgr._stall_verdict(info)
 
     assert verdict == VERDICT_WORKING
@@ -204,11 +204,11 @@ async def test_only_one_consult_outstanding_per_agent():
     oracle = MagicMock()
     oracle.check_tool.side_effect = _wedged
     try:
-        with patch("kiro_crew.subagent.LivenessOracle", return_value=oracle):
+        with patch("efm_go.subagent.LivenessOracle", return_value=oracle):
             # First sweep: submits the walk, then times out waiting on it.
             # The bounded await lives in ``consult_offloaded``, so the seam is
             # patched there rather than in this module.
-            with patch("kiro_crew.acp.liveness.asyncio.wait_for", side_effect=asyncio.TimeoutError):
+            with patch("efm_go.acp.liveness.asyncio.wait_for", side_effect=asyncio.TimeoutError):
                 first, _ = await mgr._stall_verdict(info)
             assert first == VERDICT_UNKNOWN
             # The walk is genuinely in a worker thread and still wedged there.
@@ -251,10 +251,10 @@ async def test_working_child_is_not_flagged():
     SubagentManager._note_tool_dispatch(info, _event())
     with (
         patch(
-            "kiro_crew.subagent.LivenessOracle",
+            "efm_go.subagent.LivenessOracle",
             return_value=_oracle(VERDICT_WORKING, "shell child 5150 alive"),
         ),
-        patch("kiro_crew.subagent.record_slow_command") as rec,
+        patch("efm_go.subagent.record_slow_command") as rec,
     ):
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     assert info.stalled is False
@@ -281,8 +281,8 @@ async def test_wedged_verdict_flags_immediately_without_two_sweep(verdict, evide
     info = _info(turns=1, _pid=4242, last_activity=now - 200)
     SubagentManager._note_tool_dispatch(info, _event())
     with (
-        patch("kiro_crew.subagent.LivenessOracle", return_value=_oracle(verdict, evidence)),
-        patch("kiro_crew.subagent.record_slow_command"),
+        patch("efm_go.subagent.LivenessOracle", return_value=_oracle(verdict, evidence)),
+        patch("efm_go.subagent.record_slow_command"),
     ):
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     assert info.stalled is True
@@ -302,7 +302,7 @@ async def test_unknown_still_needs_the_two_sweep_confirmation():
     now = 1_000.0
     info = _info(turns=1, _pid=4242, last_activity=now - 200)
     SubagentManager._note_tool_dispatch(info, _event(is_shell=False))  # -> UNKNOWN
-    with patch("kiro_crew.subagent.record_slow_command") as rec:
+    with patch("efm_go.subagent.record_slow_command") as rec:
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
         # Sweep 1: suspect only.
         assert info.stalled is False and info._stall_suspect_at > 0
@@ -325,8 +325,8 @@ async def test_wedged_verdict_still_never_reaps():
     info = _info(turns=1, _pid=4242, last_activity=now - 200)
     SubagentManager._note_tool_dispatch(info, _event())
     with (
-        patch("kiro_crew.subagent.LivenessOracle", return_value=_oracle(VERDICT_DEAD, "gone")),
-        patch("kiro_crew.subagent.record_slow_command"),
+        patch("efm_go.subagent.LivenessOracle", return_value=_oracle(VERDICT_DEAD, "gone")),
+        patch("efm_go.subagent.record_slow_command"),
     ):
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     assert info.stalled is True
@@ -353,7 +353,7 @@ async def test_working_cannot_suppress_the_badge_forever():
     that turns a case the old idle-time path DID badge into a permanent false
     negative — worse than what it replaces, since the badge is self-clearing and a
     missing badge is not. Past the ceiling the badge wins."""
-    from kiro_crew.subagent import _SUPPRESS_CEILING
+    from efm_go.subagent import _SUPPRESS_CEILING
 
     mgr = _make_manager(stall_idle_secs=10)
     now = 1_000.0
@@ -363,8 +363,8 @@ async def test_working_cannot_suppress_the_badge_forever():
     below = _info(turns=1, _pid=4242, last_activity=now - 10 * _SUPPRESS_CEILING + 5)
     SubagentManager._note_tool_dispatch(below, _event())
     with (
-        patch("kiro_crew.subagent.LivenessOracle", return_value=oracle),
-        patch("kiro_crew.subagent.record_slow_command"),
+        patch("efm_go.subagent.LivenessOracle", return_value=oracle),
+        patch("efm_go.subagent.record_slow_command"),
     ):
         await mgr._maybe_flag_stall("a1b2c3d4", below, now)
     assert below.stalled is False, "WORKING should still suppress below the ceiling"
@@ -378,8 +378,8 @@ async def test_working_cannot_suppress_the_badge_forever():
     )
     SubagentManager._note_tool_dispatch(over, _event())
     with (
-        patch("kiro_crew.subagent.LivenessOracle", return_value=oracle),
-        patch("kiro_crew.subagent.record_slow_command"),
+        patch("efm_go.subagent.LivenessOracle", return_value=oracle),
+        patch("efm_go.subagent.record_slow_command"),
     ):
         await mgr._maybe_flag_stall("a1b2c3d4", over, now)
     assert over.stalled is True, "a WORKING reading suppressed the badge past the ceiling"
@@ -429,7 +429,7 @@ async def test_a_verdict_superseded_mid_consult_is_discarded():
         return (VERDICT_DEAD, "shell child 5150 exited, no result frame")
 
     oracle.check_tool.side_effect = _walk_then_activity
-    with patch("kiro_crew.subagent.LivenessOracle", return_value=oracle):
+    with patch("efm_go.subagent.LivenessOracle", return_value=oracle):
         verdict, evidence = await mgr._stall_verdict(info)
     assert verdict == VERDICT_UNKNOWN, "a stale DEAD verdict was applied"
     assert evidence == "superseded mid-consult"
@@ -452,10 +452,10 @@ async def _flag_with_dead(mgr, info, now):
     SubagentManager._note_tool_dispatch(info, _event())
     with (
         patch(
-            "kiro_crew.subagent.LivenessOracle",
+            "efm_go.subagent.LivenessOracle",
             return_value=_oracle(VERDICT_DEAD, "shell child 5150 exited, no result frame"),
         ),
-        patch("kiro_crew.subagent.record_slow_command"),
+        patch("efm_go.subagent.record_slow_command"),
     ):
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     return info.stalled
@@ -590,7 +590,7 @@ async def test_a_declared_wait_reads_working_inside_its_duration():
     """The wait contract reads only this agent's own tool input and dispatch
     time, so it is as attributable as the shell-child match and must not be
     declined with the opaque MCP tools."""
-    from kiro_crew.acp.liveness import WAIT_TOOL_SLACK_SECS
+    from efm_go.acp.liveness import WAIT_TOOL_SLACK_SECS
 
     mgr = _make_manager()
     info = _info(_pid=4242)
@@ -616,7 +616,7 @@ async def test_a_subagent_inside_a_declared_wait_is_not_flagged():
     info = _info(turns=1, _pid=4242, last_activity=now - 238)
     SubagentManager._note_tool_dispatch(info, _wait_event(270))
     _age_dispatch(info, 238)
-    with patch("kiro_crew.subagent.record_slow_command") as rec:
+    with patch("efm_go.subagent.record_slow_command") as rec:
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
         await mgr._maybe_flag_stall("a1b2c3d4", info, now + 60)
     assert info.stalled is False
@@ -629,7 +629,7 @@ async def test_a_long_declared_wait_is_not_capped_by_the_suppression_ceiling():
     """The ceiling bounds a cmdline match that may belong to a sibling. The wait
     contract cannot be misattributed and bounds itself at seconds + slack, so a
     1800s wait must not be flagged at 4x the idle threshold."""
-    from kiro_crew.subagent import _SUPPRESS_CEILING
+    from efm_go.subagent import _SUPPRESS_CEILING
 
     mgr = _make_manager(stall_idle_secs=120)
     now = 1_000.0
@@ -637,7 +637,7 @@ async def test_a_long_declared_wait_is_not_capped_by_the_suppression_ceiling():
     info = _info(turns=1, _pid=4242, last_activity=now - idle, _stall_suspect_at=now - 60)
     SubagentManager._note_tool_dispatch(info, _wait_event(1800))
     _age_dispatch(info, idle)
-    with patch("kiro_crew.subagent.record_slow_command"):
+    with patch("efm_go.subagent.record_slow_command"):
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     assert info.stalled is False
     mgr._fire_event.assert_not_called()
@@ -647,7 +647,7 @@ async def test_a_long_declared_wait_is_not_capped_by_the_suppression_ceiling():
 async def test_a_wait_past_its_declared_duration_flags_after_two_sweeps():
     """Once seconds + slack have elapsed the verdict is UNKNOWN again and the
     idle-time path applies unchanged."""
-    from kiro_crew.acp.liveness import WAIT_TOOL_SLACK_SECS
+    from efm_go.acp.liveness import WAIT_TOOL_SLACK_SECS
 
     mgr = _make_manager(stall_idle_secs=120)
     now = 1_000.0
@@ -655,7 +655,7 @@ async def test_a_wait_past_its_declared_duration_flags_after_two_sweeps():
     info = _info(turns=1, _pid=4242, last_activity=now - overdue)
     SubagentManager._note_tool_dispatch(info, _wait_event(270))
     _age_dispatch(info, overdue)
-    with patch("kiro_crew.subagent.record_slow_command"):
+    with patch("efm_go.subagent.record_slow_command"):
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
         assert info.stalled is False and info._stall_suspect_at > 0
         await mgr._maybe_flag_stall("a1b2c3d4", info, now + 60)
@@ -669,7 +669,7 @@ async def test_the_wait_contract_needs_no_proc_consult():
     mgr = _make_manager()
     info = _info(_pid=4242)
     SubagentManager._note_tool_dispatch(info, _wait_event(270))
-    with patch("kiro_crew.subagent.consult_offloaded", new=AsyncMock()) as consult:
+    with patch("efm_go.subagent.consult_offloaded", new=AsyncMock()) as consult:
         verdict, _evidence = await mgr._stall_verdict(info)
     assert verdict == VERDICT_WORKING
     consult.assert_not_awaited()
@@ -680,7 +680,7 @@ async def test_a_declared_duration_past_the_wait_maximum_counts_as_the_maximum()
     """The declared ``seconds`` is model-authored input, so a value beyond what
     the wait tool will ever sleep must not hold the badge back for longer than
     that tool's own clamp."""
-    from kiro_crew.acp.liveness import WAIT_TOOL_MAX_SECS, WAIT_TOOL_SLACK_SECS
+    from efm_go.acp.liveness import WAIT_TOOL_MAX_SECS, WAIT_TOOL_SLACK_SECS
 
     mgr = _make_manager()
     info = _info(_pid=4242)
@@ -736,7 +736,7 @@ async def test_the_wait_contract_is_selected_by_trusted_identity_not_title(event
 async def test_a_forged_wait_title_does_not_lift_the_suppression_ceiling():
     """Even if some other evidence reads WORKING, a call that is not the trusted
     wait tool keeps the ceiling: past it the badge wins."""
-    from kiro_crew.subagent import _SUPPRESS_CEILING
+    from efm_go.subagent import _SUPPRESS_CEILING
 
     mgr = _make_manager(stall_idle_secs=10)
     now = 1_000.0
@@ -748,7 +748,7 @@ async def test_a_forged_wait_title_does_not_lift_the_suppression_ceiling():
     )
     SubagentManager._note_tool_dispatch(info, _forged_wait_event())
     mgr._stall_verdict = AsyncMock(return_value=(VERDICT_WORKING, "wait tool declared 1800s"))
-    with patch("kiro_crew.subagent.record_slow_command"):
+    with patch("efm_go.subagent.record_slow_command"):
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
     assert info.stalled is True
 
@@ -757,7 +757,7 @@ async def test_a_forged_wait_title_does_not_lift_the_suppression_ceiling():
 async def test_a_real_acp_wait_event_selects_the_contract():
     """Pins the field wiring against the real event type: the adapter identity a
     kiro-cli ``_meta.kiro`` frame yields for the wait tool selects the contract."""
-    from kiro_crew.acp.types import EVENT_TOOL_CALL, AcpEvent
+    from efm_go.acp.types import EVENT_TOOL_CALL, AcpEvent
 
     ev = AcpEvent(
         kind=EVENT_TOOL_CALL,
@@ -780,8 +780,8 @@ def test_the_contract_ceiling_matches_the_wait_tool_schema():
     """The reaper stops vouching for a wait at ``WAIT_TOOL_MAX_SECS`` plus slack.
     If the tool's own accepted maximum ever rose past it, a legitimate long wait
     would be badged stalled again, so the two numbers are pinned together."""
-    from kiro_crew.acp.liveness import WAIT_TOOL_MAX_SECS
-    from kiro_crew.validation import WAIT_SCHEMA
+    from efm_go.acp.liveness import WAIT_TOOL_MAX_SECS
+    from efm_go.validation import WAIT_SCHEMA
 
     (seconds,) = [f for f in WAIT_SCHEMA.fields if f.name == "seconds"]
     assert seconds.max_val == WAIT_TOOL_MAX_SECS
@@ -816,7 +816,7 @@ async def test_a_raw_harness_wait_frame_selects_the_contract(meta):
     ``tool_call`` frame, built by the production frame builder, must yield the
     trusted pair the contract keys on. A hand-built event cannot catch a builder
     that stops earning ``mcp_identity_trusted``."""
-    from kiro_crew.acp._dispatch import _build_tool_call_event
+    from efm_go.acp._dispatch import _build_tool_call_event
 
     update = {
         "sessionUpdate": "tool_call",
@@ -874,7 +874,7 @@ async def test_a_parallel_call_returning_first_leaves_the_wait_judged(write_firs
 
     assert info._inflight_tool is info._active_tool_calls["wait-1"]
     _age_dispatch(info, 300)
-    with patch("kiro_crew.subagent.record_slow_command") as rec:
+    with patch("efm_go.subagent.record_slow_command") as rec:
         await mgr._maybe_flag_stall("a1b2c3d4", info, now)
         await mgr._maybe_flag_stall("a1b2c3d4", info, now + 60)
     assert info.stalled is False

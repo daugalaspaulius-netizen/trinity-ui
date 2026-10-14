@@ -13,7 +13,7 @@ So two things are pinned here:
 
 * the death is announced ONCE, where it is detected, with what the process was
   carrying at that instant -- and each consumer reads that one record instead of
-  forming its own account (:mod:`kiro_crew.runtime_death`);
+  forming its own account (:mod:`efm_go.runtime_death`);
 * the reason names the exit status, and a stderr line becomes the stated CAUSE
   only when it matches a signature that describes a death.
 
@@ -31,8 +31,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from kiro_crew import runtime_death, runtime_ownership
-from kiro_crew.acp.runtime import AcpRuntime, _proven_death_cause, _rc_phrase
+from efm_go import runtime_death, runtime_ownership
+from efm_go.acp.runtime import AcpRuntime, _proven_death_cause, _rc_phrase
 
 # The exact stderr those deaths carry, and the line wrongly promoted to their
 # cause. Kept verbatim so a future edit to the signature table
@@ -135,7 +135,7 @@ def test_the_unexplained_tail_is_demoted_to_debug_not_dropped(caplog):
     """Demoted, not lost: a reader already looking at this runtime still gets
     the line, and the composed summary keeps its own labelled stderr_tail."""
     rt = _runtime(stderr=COE_STDERR)
-    with caplog.at_level(logging.DEBUG, logger="kiro_crew.acp.runtime"):
+    with caplog.at_level(logging.DEBUG, logger="efm_go.acp.runtime"):
         rt._exit_reason(-15)
     assert "HTTP 404" in caplog.text
     assert "exit stderr tail" in caplog.text
@@ -170,7 +170,7 @@ def test_a_shared_runtimes_death_is_nobodys_single_failure(caplog):
     is real at cap 1 -- a sub-agent holds no lease, so the registry cannot see
     it and only the runtime's own session count can."""
     rt = _runtime(sessions=2)
-    with caplog.at_level(logging.WARNING, logger="kiro_crew.runtime_death"):
+    with caplog.at_level(logging.WARNING, logger="efm_go.runtime_death"):
         rt._mark_dead(rt._exit_reason(-15))
     death = runtime_death.death_of(rt)
     assert death is not None
@@ -252,7 +252,7 @@ def test_a_lease_only_tenant_counts_too(monkeypatch):
     """The other half of the two readings: a session that holds a lease but has
     not opened its ACP session yet is a real tenant the runtime cannot see."""
     rt = _runtime(sessions=1)
-    monkeypatch.setattr("kiro_crew.acp.runtime.outstanding_leases", lambda _t: 2)
+    monkeypatch.setattr("efm_go.acp.runtime.outstanding_leases", lambda _t: 2)
     rt._mark_dead(rt._exit_reason(-15))
     death = runtime_death.death_of(rt)
     assert death is not None
@@ -352,7 +352,7 @@ def test_the_cap_drops_an_abandoned_row_not_the_streak_still_recovering():
 
 # ────────────── the guards exist at the sites that charge (items b, c) ──────────────
 
-_SRC = Path(__file__).resolve().parents[1] / "src" / "kiro_crew"
+_SRC = Path(__file__).resolve().parents[1] / "src" / "efm_go"
 
 # Each entry: the file, the call that must not run unguarded, and how many such
 # calls the guard is expected to cover. Structural rather than behavioural

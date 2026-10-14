@@ -1092,22 +1092,22 @@ html:lang(ko) {
   --chrome:rgba(25,22,29,.95);
   --text:#dcdadf;--text-strong:#f2f1f4;--muted:#938f9b;--muted-strong:#5e5966;
   --border:#352f3d;--border-strong:#4a464f;--border-hover:#5e5966;
-  --accent:#8e48ff;--accent-fg:#ffffff;--accent-hover:#9f63ff;--accent-subtle:rgba(178,127,255,.16);
-  --accent-glow:rgba(142,72,255,.3);--ring:#8e48ff;
+  --accent:#00d492;--accent-fg:#04281c;--accent-hover:#5eecc4;--accent-subtle:rgba(0,212,146,.16);
+  --accent-glow:rgba(0,212,146,.3);--ring:#00d492;
   --ok:#008543;--ok-subtle:rgba(0,133,67,.15);
   --warn:#e0b94d;--warn-subtle:rgba(224,185,77,.12);
   --danger:#f94359;--danger-subtle:rgba(249,67,89,.12);
   --info:#6f9ae0;
-  --aim:#c19aff;--aim-subtle:rgba(193,154,255,.15);
+  --aim:#5eecc4;--aim-subtle:rgba(94,236,196,.15);
   --clarify:#e0b94d;--clarify-subtle:rgba(224,185,77,.08);
   --diff-add:rgba(46,160,67,.15);--diff-add-text:#7ee787;
   --diff-del:rgba(249,67,89,.15);--diff-del-text:#ffa198;
-  --diff-hunk:rgba(159,99,255,.15);--diff-hunk-text:#b07fff;
+  --diff-hunk:rgba(0,212,146,.15);--diff-hunk-text:#5eecc4;
   --diff-meta-text:#e6edf3;
   --shadow-sm:0 1px 2px rgba(0,0,0,.3);
   --shadow-md:0 4px 12px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.02);
   --shadow-lg:0 12px 28px rgba(0,0,0,.45);
-  --json-key:#b07fff;--json-str:#7ee787;--json-num:#c19aff;--json-bool:#f94359;
+  --json-key:#5eecc4;--json-str:#7ee787;--json-num:#9af6dc;--json-bool:#f94359;
   color-scheme:dark;
 }
 [data-theme="kiro-light"]{
@@ -1117,22 +1117,22 @@ html:lang(ko) {
   --chrome:rgba(255,255,255,.95);
   --text:#4a464f;--text-strong:#19161d;--muted:#5e5966;--muted-strong:#4a464f;
   --border:#e4e4e7;--border-strong:#d4d4d8;--border-hover:#a1a1aa;
-  --accent:#8e48ff;--accent-fg:#ffffff;--accent-hover:#7a35e0;--accent-subtle:rgba(142,72,255,.12);
-  --accent-glow:rgba(142,72,255,.15);--ring:#8e48ff;
+  --accent:#00a878;--accent-fg:#ffffff;--accent-hover:#007a5a;--accent-subtle:rgba(0,168,120,.12);
+  --accent-glow:rgba(0,168,120,.15);--ring:#00a878;
   --ok:#008543;--ok-subtle:rgba(0,133,67,.12);
   --warn:#a38a00;--warn-fg:#000;--warn-subtle:rgba(163,138,0,.1);
   --danger:#d92544;--danger-fg:#fff;--danger-subtle:rgba(217,37,68,.1);
   --info:#285092;
-  --aim:#8041e6;--aim-subtle:rgba(128,65,230,.12);
+  --aim:#00a878;--aim-subtle:rgba(0,168,120,.12);
   --clarify:#a38a00;--clarify-subtle:rgba(163,138,0,.06);
   --diff-add:rgba(22,163,74,.12);--diff-add-text:#15803d;
   --diff-del:rgba(217,37,68,.12);--diff-del-text:#be123c;
-  --diff-hunk:rgba(128,65,230,.12);--diff-hunk-text:#723acc;
+  --diff-hunk:rgba(0,168,120,.12);--diff-hunk-text:#007a5a;
   --diff-meta-text:#19161d;
   --shadow-sm:0 1px 2px rgba(0,0,0,.06);
   --shadow-md:0 4px 12px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.04);
   --shadow-lg:0 12px 28px rgba(0,0,0,.12);
-  --json-key:#723acc;--json-str:#16a34a;--json-num:#8041e6;--json-bool:#d92544;
+  --json-key:#007a5a;--json-str:#16a34a;--json-num:#00a878;--json-bool:#d92544;
   color-scheme:light;
 }
 
@@ -1658,8 +1658,8 @@ html[data-font-family="custom"][data-custom-ligatures="off"] body{font-variant-l
 .msg-content :not(pre)>code{background:rgba(0,0,0,.15);padding:.15em .4em;border-radius:4px;overflow-wrap:break-word;word-break:break-all}
 [data-mode="light"] .msg-content :not(pre)>code{background:rgba(0,0,0,.06)}
 /* Kiro theme: inline code = neutral elevated surface (Prey/750) + light-purple text (Figma 3906:185658) */
-[data-theme="kiro-dark"] .msg-content :not(pre)>code{background:#28242e;color:#c19aff}
-[data-theme="kiro-light"] .msg-content :not(pre)>code{background:var(--bg-hover);color:#723acc}
+[data-theme="kiro-dark"] .msg-content :not(pre)>code{background:#28242e;color:#5eecc4}
+[data-theme="kiro-light"] .msg-content :not(pre)>code{background:var(--bg-hover);color:#007a5a}
 /* Inline-code CHIPS (MarkdownRenderer): a chip's colour says what its click does. A chip whose
    click navigates (`navigate`: a confirmed path, a session, an autolinked work item or a span
    inside a link) wears the accent, the colour links wear; a chip that only copies (`copy`)
@@ -1677,21 +1677,17 @@ html[data-font-family="custom"][data-custom-ligatures="off"] body{font-variant-l
    that is no chip at all (an image-only raw span) keeps the theme's purple. */
 [data-theme="kiro-dark"] .msg-content :not(pre)>code[data-chip-action="copy"]{color:var(--text)}
 [data-theme="kiro-light"] .msg-content :not(pre)>code[data-chip-action="copy"]{color:var(--text)}
-[data-theme="kiro-dark"] .msg-content :not(pre)>code[data-chip-action="navigate"]{color:#b07fff}
+[data-theme="kiro-dark"] .msg-content :not(pre)>code[data-chip-action="navigate"]{color:#5eecc4}
 [data-theme="kiro-light"] .msg-content :not(pre)>code[data-chip-action="navigate"]{color:var(--accent)}
-/* Kiro dark: brighten message links — #8e48ff (=accent, same as the button fill) reads dull as thin
-   text on the dark bg, so step up to Purple/300 for equal perceived vibrancy. Scoped to Kiro. */
-[data-theme="kiro-dark"] .msg-content a{color:#b07fff;text-decoration-color:rgba(176,127,255,.45)}
-/* Kiro dark: accent FOREGROUND (icons, spinners, accent text) reads dull/blue as thin strokes at
-   #8e48ff, so brighten the text-accent utility to Purple/300. Fills (bg-accent, e.g. buttons) are a
-   separate utility and stay #8e48ff. More-specific rules (e.g. .nav-active .text-accent) still win. */
-[data-theme="kiro-dark"] .text-accent{color:#b07fff}
-/* Kiro theme: selected nav item + session row = neutral surface (Prey/700) with purple text/icon,
-   not a purple-tinted fill (Figma SessionTitle 2010:46988). Hover stays --bg-hover (Prey/750). */
-[data-theme="kiro-dark"] .nav-active,[data-theme="kiro-dark"] .session-row.session-active,[data-theme="kiro-dark"] .list-selected{background:#352f3d;color:#c19aff;border-color:#4a464f}
-[data-theme="kiro-dark"] .nav-active .text-accent{color:#c19aff}
-[data-theme="kiro-light"] .nav-active,[data-theme="kiro-light"] .session-row.session-active,[data-theme="kiro-light"] .list-selected{background:#d8d2e0;color:#723acc;border-color:#c4bcd0}
-[data-theme="kiro-light"] .nav-active .text-accent{color:#723acc}
+/* Dark theme: message links use the bright mint step so thin text stays readable on the dark bg. */
+[data-theme="kiro-dark"] .msg-content a{color:#5eecc4;text-decoration-color:rgba(94,236,196,.45)}
+/* Dark theme: accent text, icons, and spinners use the bright mint step. Button fills stay --accent. */
+[data-theme="kiro-dark"] .text-accent{color:#5eecc4}
+/* Selected nav item and session row keep a neutral surface with mint text. Hover stays --bg-hover. */
+[data-theme="kiro-dark"] .nav-active,[data-theme="kiro-dark"] .session-row.session-active,[data-theme="kiro-dark"] .list-selected{background:#352f3d;color:#5eecc4;border-color:#4a464f}
+[data-theme="kiro-dark"] .nav-active .text-accent{color:#5eecc4}
+[data-theme="kiro-light"] .nav-active,[data-theme="kiro-light"] .session-row.session-active,[data-theme="kiro-light"] .list-selected{background:#d7ebe3;color:#007a5a;border-color:#b7d4c8}
+[data-theme="kiro-light"] .nav-active .text-accent{color:#007a5a}
 /* Kiro light: the canvas is white and the app shell steps back. --bg is #ffffff so the chat
    transcript and every page read as the primary surface; the nav rail and the list cards (the
    sessions list and the Crew Members roster, both built from components/listShell) take --panel
@@ -1716,9 +1712,8 @@ html[data-font-family="custom"][data-custom-ligatures="off"] body{font-variant-l
    primary text (var(--text) = Prey/200 #dcdadf in dark) — titles were dim at ~5.7:1; now ~9-10:1. */
 [data-theme="kiro-dark"] .session-header-title,[data-theme="kiro-light"] .session-header-title,
 [data-theme="kiro-dark"] .sessions-panel-title,[data-theme="kiro-light"] .sessions-panel-title{color:var(--text)}
-/* Kiro dark: panel resize-handle highlight is a thin line, so match it to the brightened thin-accent
-   (#B07FFF) rather than the #8E48FF fill it inherits from bg-accent. Only applies while dragging-hover. */
-[data-theme="kiro-dark"] .group\/drag:hover .resize-accent{background-color:#b07fff}
+/* Dark theme: the resize handle is a thin line, so it uses the bright mint step while dragging. */
+[data-theme="kiro-dark"] .group\/drag:hover .resize-accent{background-color:#5eecc4}
 /* Kiro dark: the queued-message card used to take the Figma "Waiting for input"
    snackbar's olive here. It is a Glass pane on the warn tint step now
    (components/QueueStack.tsx, `glass-warn`), and a background on the host

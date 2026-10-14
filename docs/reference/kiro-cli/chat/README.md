@@ -1,6 +1,6 @@
 # Chat
 
-Source: https://kiro.dev/docs/cli/chat/ (fetched 2026-09-06)
+Source: https://efmleads.com/docs/cli/chat/ (fetched 2026-09-06)
 
 ## Starting a session
 

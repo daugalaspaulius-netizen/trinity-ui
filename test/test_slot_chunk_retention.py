@@ -28,9 +28,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew.dashboard.chat_runner import _flush_segment
-from kiro_crew.dashboard.state import _ChatSlot
-from kiro_crew.kiro_prerequisite import KiroPrerequisiteService
+from efm_go.dashboard.chat_runner import _flush_segment
+from efm_go.dashboard.state import _ChatSlot
+from efm_go.kiro_prerequisite import KiroPrerequisiteService
 
 
 def _stream(slot: _ChatSlot, tokens: list[str]) -> list[dict]:
@@ -265,7 +265,7 @@ async def test_openai_compat_response_survives_a_turn_end_purge(tmp_path):
         sl.append("done", "", "done", broadcast=False)
         sl.event.set()
 
-    from kiro_crew.dashboard import openai_compat
+    from efm_go.dashboard import openai_compat
 
     with patch.object(openai_compat, "_run_chat", side_effect=fake_run_chat):
         resp = await openai_compat.api_completions(request)

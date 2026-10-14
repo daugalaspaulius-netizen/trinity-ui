@@ -123,8 +123,8 @@ def _make_repo(
     # rather than on the behaviour under test. ``declared_version=None`` omits
     # them deliberately, for the case that pins the missing-file failure.
     if declared_version is not None:
-        (repo / "src" / "kiro_crew").mkdir(parents=True)
-        (repo / "src" / "kiro_crew" / "__init__.py").write_text(
+        (repo / "src" / "efm_go").mkdir(parents=True)
+        (repo / "src" / "efm_go" / "__init__.py").write_text(
             f'__version__ = "{declared_version}"\n', encoding="utf-8"
         )
         (repo / "pyproject.toml").write_text(
@@ -136,7 +136,7 @@ def _make_repo(
             encoding="utf-8",
         )
         tracked += [
-            "src/kiro_crew/__init__.py",
+            "src/efm_go/__init__.py",
             "pyproject.toml",
             "website/electron/package.json",
         ]
@@ -191,7 +191,7 @@ def _run(
             "VERSION": version,
             "PROMOTE_MODE": promote_mode,
             "OVERRIDE": override,
-            "GITHUB_REPOSITORY": "kirodotdev/KiroCrew",
+            "GITHUB_REPOSITORY": "efmleads.com",
             "GH_TOKEN": "shim",
             "GH_SHIM_MODE": "fail" if gh == "fail" else "ok",
             "GH_SHIM_OUT": MATCHING_RUN if gh == "match" else "",

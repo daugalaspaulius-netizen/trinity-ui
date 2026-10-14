@@ -18,15 +18,15 @@ import pytest
 from overload_fakes import Clock, open_task_store, settle_dependency_park, settle_store_writes
 from test_taskrunner import _make_mock_sessions
 
-from kiro_crew.acp.types import STOP_REASON_END_TURN, STOP_REASON_TOOL_STALL
-from kiro_crew.execution_context import ExecutionContext, MemoryStoreRef
-from kiro_crew.providers.base import LLMEvent
-from kiro_crew.recovery.ladder import RecoveryLadder
-from kiro_crew.taskq import model as m
-from kiro_crew.taskq.adapters import runner as r
-from kiro_crew.taskq.dependency import KIND_RATE_LIMITED, SIGNAL_ATTR, DependencySignal
-from kiro_crew.taskq.store import TaskStore
-from kiro_crew.taskrunner import Step, StepStatus, TaskRun, TaskRunner
+from efm_go.acp.types import STOP_REASON_END_TURN, STOP_REASON_TOOL_STALL
+from efm_go.execution_context import ExecutionContext, MemoryStoreRef
+from efm_go.providers.base import LLMEvent
+from efm_go.recovery.ladder import RecoveryLadder
+from efm_go.taskq import model as m
+from efm_go.taskq.adapters import runner as r
+from efm_go.taskq.dependency import KIND_RATE_LIMITED, SIGNAL_ATTR, DependencySignal
+from efm_go.taskq.store import TaskStore
+from efm_go.taskrunner import Step, StepStatus, TaskRun, TaskRunner
 
 _STALL_EVIDENCE = "verdict=unknown; idle_secs=5400; tool=execute_bash; evidence=no result frame"
 
@@ -98,7 +98,7 @@ def _stalled(text: str = "half") -> list[LLMEvent]:
 @pytest.fixture(autouse=True)
 def _no_self_review(monkeypatch):
     # The post-step self-review is its own turn; these tests count STEP turns.
-    monkeypatch.setattr("kiro_crew.task_executor.self_review", AsyncMock(return_value=True))
+    monkeypatch.setattr("efm_go.task_executor.self_review", AsyncMock(return_value=True))
 
 
 def _runner(tmp_path: Path, provider: MagicMock, admission: r.RunnerAdmission) -> TaskRunner:
@@ -415,7 +415,7 @@ async def test_restart_mid_step_resumes_from_checkpoint(
     run.branch_name = "kirocrew/r1"  # git-coordinated: the checkpoint is real
     runner._runs["r1"] = run
     monkeypatch.setattr(runner, "_ensure_resumable_workspace", AsyncMock(return_value=True))
-    monkeypatch.setattr("kiro_crew.taskrunner.git_coord.finalize", AsyncMock())
+    monkeypatch.setattr("efm_go.taskrunner.git_coord.finalize", AsyncMock())
     monkeypatch.setattr(runner, "_apersist_runs", AsyncMock())
 
     report = await runner.adopt_task_rows()  # joins the sweep attach started
@@ -526,7 +526,7 @@ async def test_persistent_stall_recovers_through_the_ladder_then_fails_with_part
         clock.advance(secs)
         await asyncio.sleep(0)
 
-    monkeypatch.setattr("kiro_crew.task_executor._recovery_delay", _fake_delay)
+    monkeypatch.setattr("efm_go.task_executor._recovery_delay", _fake_delay)
     adm = _admission(store, clock)
     provider = _provider(lambda n, msg: _stalled())
     runner = _runner(tmp_path, provider, adm)
@@ -558,7 +558,7 @@ async def test_persistent_stall_recovers_through_the_ladder_then_fails_with_part
 async def test_stall_then_success_passes_after_one_recovery(
     tmp_path: Path, store: TaskStore, clock: Clock, monkeypatch
 ) -> None:
-    monkeypatch.setattr("kiro_crew.task_executor._recovery_delay", AsyncMock())
+    monkeypatch.setattr("efm_go.task_executor._recovery_delay", AsyncMock())
     adm = _admission(store, clock)
     provider = _provider(lambda n, msg: _stalled() if n == 1 else _done())
     runner = _runner(tmp_path, provider, adm)
@@ -662,7 +662,7 @@ async def test_run_and_step_admission_stay_off_the_loop(
     outside this pin -- what is pinned here is the admission boundary the runner
     owns.
     """
-    from kiro_crew.taskq import store as store_mod
+    from efm_go.taskq import store as store_mod
 
     adm = _admission(store, clock, cap=1)
     provider = _provider(lambda n, msg: _done())
@@ -702,9 +702,9 @@ async def test_the_step_body_keeps_its_store_writes_off_the_loop(
     append once the step has durably passed. Armed, any one of them left on the
     loop raises instead of shipping.
     """
-    from kiro_crew.taskq import store as store_mod
+    from efm_go.taskq import store as store_mod
 
-    monkeypatch.setattr("kiro_crew.task_executor._recovery_delay", AsyncMock())
+    monkeypatch.setattr("efm_go.task_executor._recovery_delay", AsyncMock())
     adm = _admission(store, clock)
     # A persisted, not-yet-consumed operator answer on the row the step re-adopts.
     seeded = adm.accept(kind=m.KIND_TASKRUNNER_STEP, task_id="taskrunner:r1:task1")
@@ -754,7 +754,7 @@ async def test_a_dependency_wake_writes_running_off_the_loop(
     driven here by ``adm.tick()`` -- the test's own synchronous store I/O, which
     in production runs through the monitoring loop's off-loop tick.
     """
-    from kiro_crew.taskq import store as store_mod
+    from efm_go.taskq import store as store_mod
 
     adm = _admission(store, clock)
     raised = asyncio.Event()
@@ -935,7 +935,7 @@ async def test_a_lost_run_row_mark_keeps_the_run_and_still_settles_the_row(
         step = Step(index=1, title="one", description="d1")
         run = _run(tmp_path, step)
 
-        with caplog.at_level("WARNING", logger="kiro_crew.taskrunner"):
+        with caplog.at_level("WARNING", logger="efm_go.taskrunner"):
             await runner._taskq_begin_run(run)
 
         assert "r1" in runner._run_handles

@@ -13,8 +13,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.dashboard.handlers.hooks import api_hook_test
-from kiro_crew.hooks import HOOK_EVENT_STOP, HOOK_EVENT_USER_PROMPT_SUBMIT, ScriptHookStore
+from efm_go.dashboard.handlers.hooks import api_hook_test
+from efm_go.hooks import HOOK_EVENT_STOP, HOOK_EVENT_USER_PROMPT_SUBMIT, ScriptHookStore
 
 
 def _req_with_store(store: ScriptHookStore, hook_id: str, context: str) -> make_mocked_request:
@@ -60,9 +60,9 @@ async def test_stop_hook_test_supplies_full_assistant_text(tmp_path):
     )()
     with (
         patch(
-            "kiro_crew.hooks.run_script_hook", new_callable=AsyncMock, return_value=fake_result
+            "efm_go.hooks.run_script_hook", new_callable=AsyncMock, return_value=fake_result
         ) as mock_run,
-        patch("kiro_crew.dashboard.handlers.hooks._sel", return_value=MagicMock()),
+        patch("efm_go.dashboard.handlers.hooks._sel", return_value=MagicMock()),
     ):
         resp = await api_hook_test(_req_with_store(store, hook.id, full))
 
@@ -106,9 +106,9 @@ async def test_user_prompt_submit_hook_test_supplies_full_prompt(tmp_path):
     )()
     with (
         patch(
-            "kiro_crew.hooks.run_script_hook", new_callable=AsyncMock, return_value=fake_result
+            "efm_go.hooks.run_script_hook", new_callable=AsyncMock, return_value=fake_result
         ) as mock_run,
-        patch("kiro_crew.dashboard.handlers.hooks._sel", return_value=MagicMock()),
+        patch("efm_go.dashboard.handlers.hooks._sel", return_value=MagicMock()),
     ):
         resp = await api_hook_test(_req_with_store(store, hook.id, full))
 
@@ -125,7 +125,7 @@ async def test_other_event_hook_test_uses_default_payload(tmp_path):
     # An event whose context fire() sends only via the env var (not a dedicated
     # stdin key) keeps the default (None) payload — run_script_hook builds it,
     # matching production, so the diagnostic path does not diverge.
-    from kiro_crew.hooks import HOOK_EVENT_PRE_TOOL_USE
+    from efm_go.hooks import HOOK_EVENT_PRE_TOOL_USE
 
     store = ScriptHookStore(tmp_path)
     hook = store.create(
@@ -146,9 +146,9 @@ async def test_other_event_hook_test_uses_default_payload(tmp_path):
     )()
     with (
         patch(
-            "kiro_crew.hooks.run_script_hook", new_callable=AsyncMock, return_value=fake_result
+            "efm_go.hooks.run_script_hook", new_callable=AsyncMock, return_value=fake_result
         ) as mock_run,
-        patch("kiro_crew.dashboard.handlers.hooks._sel", return_value=MagicMock()),
+        patch("efm_go.dashboard.handlers.hooks._sel", return_value=MagicMock()),
     ):
         resp = await api_hook_test(_req_with_store(store, hook.id, "hello"))
 
@@ -187,11 +187,11 @@ async def test_hook_test_redacts_context_in_sel_metadata(tmp_path):
 
     with (
         patch(
-            "kiro_crew.hooks.run_script_hook",
+            "efm_go.hooks.run_script_hook",
             new_callable=AsyncMock,
             return_value=fake_result,
         ) as mock_run,
-        patch("kiro_crew.dashboard.handlers.hooks._sel", return_value=audit),
+        patch("efm_go.dashboard.handlers.hooks._sel", return_value=audit),
     ):
         resp = await api_hook_test(_req_with_store(store, hook.id, context))
 

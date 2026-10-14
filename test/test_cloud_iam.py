@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from kiro_crew.cloud import aws, iam
+from efm_go.cloud import aws, iam
 
 # The interactive Session Manager documents AWS ships today. These are the concrete
 # sample DenyStartSessionOutsideTheLane's inversion is measured against: none of them
@@ -117,7 +117,7 @@ class TestPolicyDocument:
     def test_template_puts_instance_role_under_role_path(self):
         import pathlib
 
-        import kiro_crew.cloud as cloud_pkg
+        import efm_go.cloud as cloud_pkg
 
         text = (
             pathlib.Path(cloud_pkg.__file__).parent / "templates" / "kirocrew-ec2.yaml"
@@ -248,7 +248,7 @@ class TestPolicyDocument:
         assert all(iam.STACK_PREFIX in r for r in res)  # all kirocrew-*-scoped
 
     def test_stack_prefix_matches_ec2(self):
-        from kiro_crew.cloud import ec2
+        from efm_go.cloud import ec2
 
         assert iam.STACK_PREFIX == ec2.STACK_PREFIX
 
@@ -842,7 +842,7 @@ class TestAgentDenyListForCloudVerbs:
 
     @staticmethod
     def _denied(cmd: str) -> bool:
-        from kiro_crew.security import is_denied
+        from efm_go.security import is_denied
 
         return is_denied(cmd) is not None
 

@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from kiro_crew.acp.client import CLIENT_NAME, AcpClient
-from kiro_crew.acp.types import METHOD_SET_MODE
+from efm_go.acp.client import CLIENT_NAME, AcpClient
+from efm_go.acp.types import METHOD_SET_MODE
 
 
 def _make_client(agent: str, tmp_path) -> AcpClient:
@@ -70,7 +70,7 @@ async def test_set_mode_fails_closed_when_agent_not_in_advertised_modes(tmp_path
     """Guard (A): backend advertises a `modes` list that excludes the agent →
     FAIL CLOSED (raise), never silently run kiro-cli's default mode in place of
     the requested (possibly more-restricted) agent."""
-    from kiro_crew.acp.client import AcpError
+    from efm_go.acp.client import AcpError
 
     client = _make_client("ghost-agent", tmp_path)
     client._session_id = None  # force the session/new path so modes are captured
@@ -94,9 +94,9 @@ async def test_unavailable_readonly_spec_is_explained_not_sent_to_setup(tmp_path
     setup``, so the refusal names what it is and the base agent instead."""
     import json
 
-    from kiro_crew import agent as agent_mod
-    from kiro_crew.acp.client import AcpError
-    from kiro_crew.dashboard import side_readonly_spec as srs
+    from efm_go import agent as agent_mod
+    from efm_go.acp.client import AcpError
+    from efm_go.dashboard import side_readonly_spec as srs
 
     registry = tmp_path / "agents"
     registry.mkdir()

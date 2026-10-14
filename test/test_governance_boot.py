@@ -11,9 +11,9 @@ import json
 
 import pytest
 
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.context import CONTRACT_VERSION, PlatformCompositionError
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.context import CONTRACT_VERSION, PlatformCompositionError
 
 
 def test_contract_version_current():
@@ -27,7 +27,7 @@ def test_contract_version_current():
 def test_standalone_no_policy_is_none(monkeypatch, tmp_path):
     monkeypatch.delenv("KIROCREW_SECURITY_POLICY", raising=False)
     _nope = tmp_path / "nope.json"
-    monkeypatch.setattr("kiro_crew.platform.governance._policy_home_path", lambda: _nope)
+    monkeypatch.setattr("efm_go.platform.governance._policy_home_path", lambda: _nope)
     ctx = build_default_context(KiroCrewConfig.load())
     assert ctx.governance is None
     assert ctx.contract_version == CONTRACT_VERSION
@@ -60,7 +60,7 @@ def test_unreadable_policy_aborts_boot(monkeypatch, tmp_path):
 
 def test_looser_profile_ordinal_aborts_boot(monkeypatch, tmp_path):
     """Validation rules 3 & 7: a profile looser than the ceiling aborts boot."""
-    from kiro_crew.platform import governance_profiles as gp
+    from efm_go.platform import governance_profiles as gp
 
     # Ceiling requires sandbox >= cc; a profile that sets sandbox off is looser.
     profiles = tmp_path / "profiles"
@@ -82,7 +82,7 @@ def test_looser_profile_ordinal_aborts_boot(monkeypatch, tmp_path):
     )
     monkeypatch.setenv("KIROCREW_SECURITY_POLICY", str(p))
     try:
-        from kiro_crew.platform import bootstrap
+        from efm_go.platform import bootstrap
 
         with pytest.raises(PlatformCompositionError):
             bootstrap.bootstrap_context(KiroCrewConfig.load())
@@ -91,7 +91,7 @@ def test_looser_profile_ordinal_aborts_boot(monkeypatch, tmp_path):
 
 
 def test_profile_within_ceiling_boots(monkeypatch, tmp_path):
-    from kiro_crew.platform import governance_profiles as gp
+    from efm_go.platform import governance_profiles as gp
 
     profiles = tmp_path / "profiles"
     profiles.mkdir()
@@ -112,7 +112,7 @@ def test_profile_within_ceiling_boots(monkeypatch, tmp_path):
     )
     monkeypatch.setenv("KIROCREW_SECURITY_POLICY", str(p))
     try:
-        from kiro_crew.platform import bootstrap
+        from efm_go.platform import bootstrap
 
         bootstrap.bootstrap_context(KiroCrewConfig.load())  # no raise
     finally:
@@ -121,7 +121,7 @@ def test_profile_within_ceiling_boots(monkeypatch, tmp_path):
 
 def test_lazy_default_carries_ceiling(monkeypatch, tmp_path):
     """The lazy current_context() path (stray subprocess) also gets the ceiling."""
-    from kiro_crew.platform import context as ctx_mod
+    from efm_go.platform import context as ctx_mod
 
     p = tmp_path / "policy.json"
     p.write_text(json.dumps({"version": 1, "boot": {"fail_closed": True}}))

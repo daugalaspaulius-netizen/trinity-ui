@@ -1,8 +1,8 @@
-"""Tests for kiro_crew.imessage.plaintext (markdown flattening + splitting)."""
+"""Tests for efm_go.imessage.plaintext (markdown flattening + splitting)."""
 
 from __future__ import annotations
 
-from kiro_crew.imessage.plaintext import chunk_plaintext, to_plaintext
+from efm_go.imessage.plaintext import chunk_plaintext, to_plaintext
 
 
 class TestCodeBlocksPassThroughVerbatim:

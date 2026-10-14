@@ -28,8 +28,8 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.cron import CronService
-from kiro_crew.dashboard.handlers.cron import (
+from efm_go.cron import CronService
+from efm_go.dashboard.handlers.cron import (
     api_cron_ack,
     api_cron_enable,
     api_cron_update,
@@ -202,9 +202,9 @@ async def test_lessons_delete_refuses_a_non_object_body(payload) -> None:
     app = _lessons_app()
 
     with (
-        patch("kiro_crew.dashboard.handlers.cron._recognize_session", AsyncMock(return_value=None)),
-        patch("kiro_crew.dashboard.handlers.cron._blocks_reads_session", return_value=False),
-        patch("kiro_crew.dashboard.handlers.cron._sel"),
+        patch("efm_go.dashboard.handlers.cron._recognize_session", AsyncMock(return_value=None)),
+        patch("efm_go.dashboard.handlers.cron._blocks_reads_session", return_value=False),
+        patch("efm_go.dashboard.handlers.cron._sel"),
     ):
         async with TestClient(TestServer(app)) as client:
             response = await client.delete(
@@ -225,9 +225,9 @@ async def test_lessons_delete_keeps_the_object_path() -> None:
     app = _lessons_app()
 
     with (
-        patch("kiro_crew.dashboard.handlers.cron._recognize_session", AsyncMock(return_value=None)),
-        patch("kiro_crew.dashboard.handlers.cron._blocks_reads_session", return_value=False),
-        patch("kiro_crew.dashboard.handlers.cron._sel"),
+        patch("efm_go.dashboard.handlers.cron._recognize_session", AsyncMock(return_value=None)),
+        patch("efm_go.dashboard.handlers.cron._blocks_reads_session", return_value=False),
+        patch("efm_go.dashboard.handlers.cron._sel"),
     ):
         async with TestClient(TestServer(app)) as client:
             response = await client.delete(
@@ -249,13 +249,13 @@ async def test_lessons_delete_threads_repo_scope_to_the_store() -> None:
     app["state"].context_builder = SimpleNamespace(memory=SimpleNamespace(vector_store=None))
 
     guards = (
-        patch("kiro_crew.dashboard.handlers.cron._recognize_session", AsyncMock(return_value=None)),
-        patch("kiro_crew.dashboard.handlers.cron._blocks_reads_session", return_value=False),
-        patch("kiro_crew.dashboard.handlers.cron._sel"),
+        patch("efm_go.dashboard.handlers.cron._recognize_session", AsyncMock(return_value=None)),
+        patch("efm_go.dashboard.handlers.cron._blocks_reads_session", return_value=False),
+        patch("efm_go.dashboard.handlers.cron._sel"),
         # No named binding: the caller uses the global lessons contract, so the
         # delete reaches state.lessons rather than a per-silo store.
         patch(
-            "kiro_crew.dashboard.handlers.cron.resolve_lesson_memory_store",
+            "efm_go.dashboard.handlers.cron.resolve_lesson_memory_store",
             AsyncMock(return_value=("", None)),
         ),
     )
@@ -293,13 +293,13 @@ async def test_lessons_delete_refuses_selector_shapes_that_collide_with_global()
     app["state"].context_builder = SimpleNamespace(memory=SimpleNamespace(vector_store=None))
 
     guards = (
-        patch("kiro_crew.dashboard.handlers.cron._recognize_session", AsyncMock(return_value=None)),
-        patch("kiro_crew.dashboard.handlers.cron._blocks_reads_session", return_value=False),
-        patch("kiro_crew.dashboard.handlers.cron._sel"),
+        patch("efm_go.dashboard.handlers.cron._recognize_session", AsyncMock(return_value=None)),
+        patch("efm_go.dashboard.handlers.cron._blocks_reads_session", return_value=False),
+        patch("efm_go.dashboard.handlers.cron._sel"),
         # No named binding: the caller uses the global lessons contract, so the
         # accepted whitespace selector reaches state.lessons.
         patch(
-            "kiro_crew.dashboard.handlers.cron.resolve_lesson_memory_store",
+            "efm_go.dashboard.handlers.cron.resolve_lesson_memory_store",
             AsyncMock(return_value=("", None)),
         ),
     )

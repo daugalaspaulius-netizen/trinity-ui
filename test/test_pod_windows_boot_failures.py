@@ -16,11 +16,11 @@ import pytest
 from test_pod_windows_liveness import supervisor as supervisor
 from test_pod_windows_run import model as model
 
-from kiro_crew import cli as kc_cli
-from kiro_crew import platform_compat
-from kiro_crew.pod import runtime as rt
-from kiro_crew.pod import windows as win
-from kiro_crew.pod.config import PodConfig, environment_vars
+from efm_go import cli as kc_cli
+from efm_go import platform_compat
+from efm_go.pod import runtime as rt
+from efm_go.pod import windows as win
+from efm_go.pod.config import PodConfig, environment_vars
 
 __all__ = ["model", "supervisor"]
 

@@ -1,9 +1,9 @@
 # `kirocrew pod` — Design
 
-Status: implemented in `src/kiro_crew/pod/` and exposed by `kirocrew pod`. This design is
+Status: implemented in `src/efm_go/pod/` and exposed by `kirocrew pod`. This design is
 historical: the shipped systemd unit has no `ExecStopPost` hook (teardown runs from
 `stop_pod` in `runtime_lifecycle.py`), and macOS launchd and Windows backends exist
-beside systemd. The current contract is [`src/kiro_crew/pod/README.md`](../../../src/kiro_crew/pod/README.md).
+beside systemd. The current contract is [`src/efm_go/pod/README.md`](../../../src/efm_go/pod/README.md).
 
 ## Module layout
 
@@ -12,7 +12,7 @@ so a `pip install` of KiroCrew is complete. Mirrors the thin-verb / runtime spli
 used elsewhere in the CLI.
 
 ```
-src/kiro_crew/pod/
+src/efm_go/pod/
   __init__.py     # exports PodConfig, PodError, derive_port, resolve_checkout, pod_home, pod_unit
   config.py       # PodConfig dataclass — every path/knob, KIROCREW_POD_*-overridable
   runtime.py      # git worktree resolution, systemd wrappers; facade over runtime_ports.py
@@ -25,12 +25,12 @@ src/kiro_crew/pod/
   cli.py          # thin verb layer (up/down/ls/status/token/url/logs/install/provision)
 ```
 
-Wiring into the existing CLI (`src/kiro_crew/cli.py`):
+Wiring into the existing CLI (`src/efm_go/cli.py`):
 - add a `pod` sub-parser next to the other `sub.add_parser(...)` calls, with a
   `pod_sub = pod_parser.add_subparsers(dest="pod_action")` (same shape as
   `cron`/`spawn`/`security`);
 - add `elif args.command == "pod": _pod(args)` in the dispatch chain;
-- implement `_pod(args)` in `cli_commands.py` → `from kiro_crew.pod.cli import dispatch; dispatch(args)`
+- implement `_pod(args)` in `cli_commands.py` → `from efm_go.pod.cli import dispatch; dispatch(args)`
   (same delegation pattern as `_security` / `_policy`).
 
 ## Control plane vs payload
@@ -76,7 +76,7 @@ pinned `CHECKOUT=` and is FATAL if absent — which cannot happen on the normal
 | | value |
 |---|---|
 | venv binary | `checkout / ".venv" / "bin" / "kirocrew"` |
-| built dist | `checkout / "src" / "kiro_crew" / "static" / "dist"` |
+| built dist | `checkout / "src" / "efm_go" / "static" / "dist"` |
 
 Only `up` / `provision` / `boot` need the checkout path; `ls` / `status` /
 `derive_port` / `token` / `logs` need only `name → port` (cksum) + health, so they
@@ -102,7 +102,7 @@ Cost asymmetry drives the design:
 - `ensure_venv(checkout)`: `python3.12 -m venv .venv` then `.venv/bin/pip install -e .`
   (editable install → provides `.venv/bin/kirocrew`).
 - `build_dist(checkout)`: `npm run build` in `<checkout>/website` (→ `website/dist`),
-  then stage `website/dist` into the served `src/kiro_crew/static/dist`. Progress
+  then stage `website/dist` into the served `src/efm_go/static/dist`. Progress
   goes to **stderr** so a concurrent `pod up --json` keeps a clean stdout.
 
 ## Boot (the `ExecStart` body)

@@ -36,9 +36,9 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.dashboard import refresh_tokens as rt
-from kiro_crew.dashboard.handlers import auth_refresh as h
-from kiro_crew.dashboard.refresh_tokens import (
+from efm_go.dashboard import refresh_tokens as rt
+from efm_go.dashboard.handlers import auth_refresh as h
+from efm_go.dashboard.refresh_tokens import (
     MAX_REFRESH_TTL_SECS,
     RefreshStateManager,
     generate_refresh_token,
@@ -47,8 +47,8 @@ from kiro_crew.dashboard.refresh_tokens import (
     refresh_token_requires_peer,
     validate_refresh_token,
 )
-from kiro_crew.dashboard.tailnet import ForwardedPeer, TailnetTrust
-from kiro_crew.dashboard.token_auth import (
+from efm_go.dashboard.tailnet import ForwardedPeer, TailnetTrust
+from efm_go.dashboard.token_auth import (
     MAX_SESSION_TTL_SECS,
     _b64url_decode,
     generate_token,
@@ -788,8 +788,8 @@ async def test_rotation_carries_the_boot_binding_onto_both_new_cookies(
     body deliberately carries no tokens — the cookies are the credential that
     the phone actually keeps.
     """
-    from kiro_crew.dashboard import boot_id
-    from kiro_crew.dashboard.refresh_tokens import refresh_token_boot
+    from efm_go.dashboard import boot_id
+    from efm_go.dashboard.refresh_tokens import refresh_token_boot
 
     bid = boot_id.current_boot_id()
     token, _chain, _jti, _exp = generate_refresh_token("alice", boot=bid)
@@ -826,9 +826,9 @@ async def test_a_boot_bound_rotation_keeps_its_address_pin(
     asserts against, on the path where tailnet identity trust is OFF (the
     default) and the tailnet branch therefore does nothing.
     """
-    from kiro_crew.dashboard import boot_id
-    from kiro_crew.dashboard.token_auth import _state as _token_state
-    from kiro_crew.dashboard.token_auth import check_token_ip
+    from efm_go.dashboard import boot_id
+    from efm_go.dashboard.token_auth import _state as _token_state
+    from efm_go.dashboard.token_auth import check_token_ip
 
     def rt_state_has_binding(tok: str) -> bool:
         return _token_state.has_binding(tok)
@@ -857,8 +857,8 @@ async def test_an_unbound_rotation_is_left_unpinned(
     which currently survives because its rotated token is unbound. That is a
     separate decision, so this pins the scope of the fix above.
     """
-    from kiro_crew.dashboard.token_auth import _state as _token_state
-    from kiro_crew.dashboard.token_auth import check_token_ip
+    from efm_go.dashboard.token_auth import _state as _token_state
+    from efm_go.dashboard.token_auth import check_token_ip
 
     token, _chain, _jti, _exp = generate_refresh_token("alice")
     response = await h.api_auth_refresh(_mk(cookies={refresh_cookie_name(str(PORT)): token}))
@@ -876,7 +876,7 @@ async def test_rotation_of_an_unbound_chain_stays_unbound(
     state: RefreshStateManager, audit: list
 ) -> None:
     """The default path must not acquire a binding it never asked for."""
-    from kiro_crew.dashboard.refresh_tokens import refresh_token_boot
+    from efm_go.dashboard.refresh_tokens import refresh_token_boot
 
     token, _chain, _jti, _exp = generate_refresh_token("alice")
     response = await h.api_auth_refresh(_mk(cookies={refresh_cookie_name(str(PORT)): token}))

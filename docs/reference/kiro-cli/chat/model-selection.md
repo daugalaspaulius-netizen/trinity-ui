@@ -1,7 +1,7 @@
 # Model Selection
 
-Source: https://kiro.dev/docs/models/ and
-https://kiro.dev/docs/models/available-models/ (fetched 2026-09-06)
+Source: https://efmleads.com/docs/models/ and
+https://efmleads.com/docs/models/available-models/ (fetched 2026-09-06)
 
 Upstream retired `/docs/cli/chat/model-selection/`; the model catalogue is now
 surface-agnostic and lives under `/docs/models/`. Model selection applies to the

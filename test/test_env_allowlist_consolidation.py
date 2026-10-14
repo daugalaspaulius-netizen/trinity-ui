@@ -34,11 +34,11 @@ from __future__ import annotations
 
 import pytest
 
-from kiro_crew import kiro_prerequisite, platform_compat
-from kiro_crew.apps import registry
-from kiro_crew.apps.builtins.auto_improvement.profiles.github_repo import profile as gh_profile
-from kiro_crew.apps.builtins.dev_fleet import server as dev_fleet_server
-from kiro_crew.dashboard.handlers import source_providers
+from efm_go import kiro_prerequisite, platform_compat
+from efm_go.apps import registry
+from efm_go.apps.builtins.auto_improvement.profiles.github_repo import profile as gh_profile
+from efm_go.apps.builtins.dev_fleet import server as dev_fleet_server
+from efm_go.dashboard.handlers import source_providers
 
 
 def _oracle_admitted(

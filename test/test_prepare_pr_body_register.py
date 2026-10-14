@@ -15,7 +15,7 @@ fine but resolves to nothing). One assertion each.
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILLS = ROOT / "src" / "kiro_crew" / "builtin_skills"
+SKILLS = ROOT / "src" / "efm_go" / "builtin_skills"
 PREPARE_PR = SKILLS / "kirocrew-dev" / "kirocrew-prepare-pr" / "SKILL.md"
 EXPLAIN_FOR = SKILLS / "explain-for" / "SKILL.md"
 
@@ -126,7 +126,7 @@ def test_the_new_section_is_not_added_to_the_fork_description_gate() -> None:
         (
             root
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "builtin_skills"
             / "kirocrew-dev"
             / "kirocrew-prepare-pr"

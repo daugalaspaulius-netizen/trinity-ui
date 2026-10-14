@@ -13,7 +13,7 @@ import time
 
 import pytest
 
-from kiro_crew.autonudge import _OVERDUE_REARM_SECS, AutoNudgeService, NudgeLoop
+from efm_go.autonudge import _OVERDUE_REARM_SECS, AutoNudgeService, NudgeLoop
 
 
 @pytest.fixture(autouse=True)
@@ -91,7 +91,7 @@ async def test_delivered_fire_clears_deadline_then_turn_end_starts_fresh(svc, mo
         return True
 
     svc._on_fire = on_fire
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     async def _nosleep(_secs):
         return None
@@ -312,7 +312,7 @@ async def test_update_during_nudge_turn_leaves_arm_to_turn_end(svc, monkeypatch)
         return True
 
     svc._on_fire = on_fire
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     real_sleep = _aio.sleep
 
@@ -349,7 +349,7 @@ async def test_turn_complete_fresh_deadline_is_persisted(svc, monkeypatch):
         return True
 
     svc._on_fire = on_fire
-    import kiro_crew.autonudge as _an
+    import efm_go.autonudge as _an
 
     real_sleep = _aio.sleep
 

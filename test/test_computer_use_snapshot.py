@@ -22,10 +22,10 @@ import time
 
 import pytest
 
-from kiro_crew.computer_use import index as index_mod
-from kiro_crew.computer_use import render
-from kiro_crew.computer_use.index import SnapshotIndex, drift_message
-from kiro_crew.computer_use.types import (
+from efm_go.computer_use import index as index_mod
+from efm_go.computer_use import render
+from efm_go.computer_use.index import SnapshotIndex, drift_message
+from efm_go.computer_use.types import (
     DEFAULT_TEXT_LIMIT,
     MAX_INDEXED_APPS,
     SECURE_PLACEHOLDER,
@@ -40,7 +40,7 @@ from kiro_crew.computer_use.types import (
     SnapshotRequest,
     StaleIndex,
 )
-from kiro_crew.testing.fake_computer_use import (
+from efm_go.testing.fake_computer_use import (
     FAKE_CREDENTIAL_FIXTURE,
     FAKE_FILES_APP,
     FAKE_LOGIN_APP,
@@ -354,13 +354,13 @@ class TestScreenshotSpoolNamesAreUnique:
     """
 
     def _service(self, tmp_path, monkeypatch):
-        from kiro_crew.computer_use import service as service_mod
+        from efm_go.computer_use import service as service_mod
 
         monkeypatch.setattr(service_mod.tempfile, "gettempdir", lambda: str(tmp_path))
         return service_mod
 
     def _snap(self, service_mod, payload: bytes):
-        from kiro_crew.computer_use.types import AppRef, Snapshot
+        from efm_go.computer_use.types import AppRef, Snapshot
 
         return Snapshot(
             app=AppRef(name="A", pid=1, bundle_id="com.acme.a", window_id=7),
@@ -421,13 +421,13 @@ class TestSpoolFailureLeavesNoOrphanFrame:
     """
 
     def _service(self, tmp_path, monkeypatch):
-        from kiro_crew.computer_use import service as service_mod
+        from efm_go.computer_use import service as service_mod
 
         monkeypatch.setattr(service_mod.tempfile, "gettempdir", lambda: str(tmp_path))
         return service_mod
 
     def _snap(self, service_mod, payload: bytes):
-        from kiro_crew.computer_use.types import AppRef, Snapshot
+        from efm_go.computer_use.types import AppRef, Snapshot
 
         return Snapshot(
             app=AppRef(name="A", pid=1, bundle_id="com.acme.a", window_id=7),
@@ -930,7 +930,7 @@ class TestTheCeilingRoundTripIsLossless:
         rather than being silently dropped by the next lossy rebuild."""
         import dataclasses
 
-        from kiro_crew.computer_use.tools import _element_from_payload, _element_payload
+        from efm_go.computer_use.tools import _element_from_payload, _element_payload
 
         rec = ElementRec(
             index=4,
@@ -957,7 +957,7 @@ class TestTheCeilingRoundTripIsLossless:
 
     def test_the_tools_render_path_emits_the_geometry_and_traits(self, fake):
         """The model-facing surface, not ``render_tree`` in isolation."""
-        from kiro_crew.computer_use import tools as cu_tools
+        from efm_go.computer_use import tools as cu_tools
 
         snap = _snap(fake, FAKE_FILES_APP)
         text = cu_tools._render_snapshot(
@@ -979,7 +979,7 @@ class TestTheCeilingRoundTripIsLossless:
         else is worse than no rect, because a model will pass it to a coordinate
         click. ``bool`` is excluded explicitly (it is an ``int`` subclass).
         """
-        from kiro_crew.computer_use.tools import _element_from_payload
+        from efm_go.computer_use.tools import _element_from_payload
 
         for bad in ((1, 2, 3), (1, 2, 3, "x"), (1, 2, 3, True), "nope", (1, 2, 3, 4, 5), None):
             rec = _element_from_payload({"index": 1, "role": "AXButton", "frame": bad})
@@ -994,7 +994,7 @@ class TestTheCeilingRoundTripIsLossless:
         frame, so populating them in the payload cannot leak — asserted rather than
         assumed, because this fix is what put real values in those fields.
         """
-        from kiro_crew.computer_use import tools as cu_tools
+        from efm_go.computer_use import tools as cu_tools
 
         snap = _snap(fake, FAKE_LOGIN_APP)
         text = cu_tools._render_snapshot(
@@ -1113,10 +1113,10 @@ class TestASuppressedScreenshotAlwaysSaysSoWhy:
         """
         import json
 
-        from kiro_crew.computer_use import backend as cu_backend
-        from kiro_crew.computer_use import index as cu_index
-        from kiro_crew.computer_use import service as cu_service
-        from kiro_crew.computer_use import tools as cu_tools
+        from efm_go.computer_use import backend as cu_backend
+        from efm_go.computer_use import index as cu_index
+        from efm_go.computer_use import service as cu_service
+        from efm_go.computer_use import tools as cu_tools
 
         # The keystone primary enable, in an isolated home — the dispatcher refuses
         # everything before rendering otherwise, and a developer's real

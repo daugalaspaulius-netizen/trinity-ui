@@ -953,7 +953,7 @@ the parent RUN and needs its id.
 ## Security Controls
 
 - **Spawn hardening**: All `gh` calls funnel through `_gh_run`, a thin wrapper
-  over the shared hardened runner (`kiro_crew.github_runner.run_gh`), which
+  over the shared hardened runner (`efm_go.github_runner.run_gh`), which
   resolves a canonical `gh` via `github_runner.resolve_gh`
   (`KIROCREW_ISSUE_RADAR_GH` override, then `KIROCREW_GH_BIN`, then the
   well-known install dirs, then the ambient `PATH`) and validates it (and every
@@ -1322,7 +1322,7 @@ the list, the filters, the selected item — is untouched.
   check is answered from POSIX ownership (`st_uid` + the group/other write bits)
   or, on Windows, from the object's ACL — see
   `github_runner.check_provider_path_component_windows` and
-  `kiro_crew.windows_acl`. A **root** POSIX gateway is refused: the sandbox
+  `efm_go.windows_acl`. A **root** POSIX gateway is refused: the sandbox
   masks the credential homes from the agent's children but leaves the filesystem
   writable, and a provider child runs unsandboxed with those credentials, so a
   root agent could overwrite a root-owned `gh` that the ownership walk cannot

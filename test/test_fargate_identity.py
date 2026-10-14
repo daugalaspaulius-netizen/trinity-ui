@@ -14,8 +14,8 @@ import typing
 
 import pytest
 
-from kiro_crew.cloud.fargate import identity as ident
-from kiro_crew.cloud.fargate.identity import CrewBinding, DocumentRefused
+from efm_go.cloud.fargate import identity as ident
+from efm_go.cloud.fargate.identity import CrewBinding, DocumentRefused
 
 ACCOUNT = "123456789012"
 OTHER_ACCOUNT = "210987654321"
@@ -205,7 +205,7 @@ def test_the_charset_is_reachable_without_reading_the_pattern():
     That is the failure the package surface exists to stop, and the crew charset is on the
     limb it names: a caller cannot build an acceptable crew name without reading it.
     """
-    from kiro_crew.cloud import fargate as fargate_package
+    from efm_go.cloud import fargate as fargate_package
 
     assert "validated_crew_name" in fargate_package.__all__
     assert fargate_package.validated_crew_name is ident.validated_crew_name

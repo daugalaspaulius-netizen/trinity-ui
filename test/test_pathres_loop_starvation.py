@@ -36,12 +36,12 @@ from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 
-import kiro_crew.agent_discovery as agent_discovery
-import kiro_crew.skills as skills_mod
-from kiro_crew import security
-from kiro_crew.agent_discovery import clear_list_agents_cache
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.skills import _iter_skill_files
+import efm_go.agent_discovery as agent_discovery
+import efm_go.skills as skills_mod
+from efm_go import security
+from efm_go.agent_discovery import clear_list_agents_cache
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.skills import _iter_skill_files
 
 
 def _refuse_candidate_resolution(expanded: str) -> set[str]:
@@ -153,7 +153,7 @@ class TestIsSensitiveResolvedPath:
         assert len(security.paths._home_targets_cache) == 1
 
     def test_the_gate_is_exported_on_the_facade(self) -> None:
-        from kiro_crew.security import _exports
+        from efm_go.security import _exports
 
         assert "is_sensitive_resolved_path" in _exports.EXPORTED_NAMES
         assert security.is_sensitive_resolved_path is security.paths.is_sensitive_resolved_path
@@ -189,7 +189,7 @@ class TestIsSensitiveResolvedPath:
 _EXPECTED_GATE_CALL_SITES: dict[str, int] = {
     # ``_iter_skill_files``: one check per directory (prune) and per SKILL.md
     # (skip), each against the ``realpath`` the walk computed for loop detection.
-    "kiro_crew/skills.py": 2,
+    "efm_go/skills.py": 2,
     # ``_complete_path_listing`` / ``_scan_completion_dir``: the project root, the
     # directory a `./` completion token named, and every entry that directory
     # offers. Both halves of the contract hold. The argument is canonical without a
@@ -200,13 +200,13 @@ _EXPECTED_GATE_CALL_SITES: dict[str, int] = {
     # on the dashboard's path-probe pool worker, never the event loop -- resolving
     # the candidate there is what this endpoint must not do at all, since on Windows
     # it would follow a junction aimed at a share.
-    "kiro_crew/dashboard/file_api/path_complete.py": 3,
+    "efm_go/dashboard/file_api/path_complete.py": 3,
     # ``_project_tree_fence``: the walk's own directory, and every entry of
     # that directory the directory-level answers do not settle -- a link, or any
     # entry when a store sits at or beneath the directory. Each is handed the
     # ``os.path.realpath`` computed on the line itself. The walk runs inside
     # ``api_project_tree``'s ``asyncio.to_thread`` worker, never the event loop.
-    "kiro_crew/dashboard/file_api/project_tree.py": 2,
+    "efm_go/dashboard/file_api/project_tree.py": 2,
     # ``_validate_spec_path``: ``validate_file_path`` has already rejected the
     # candidate without following a UNC/link-laundered target.  This call only
     # recovers the 403 classification for a lexically named sensitive path; an
@@ -215,7 +215,7 @@ _EXPECTED_GATE_CALL_SITES: dict[str, int] = {
     # the candidate lexical (input + ``normpath``) and resolves only its trusted
     # anchors.  Both handler call sites run this helper via ``asyncio.to_thread``,
     # so those inline anchor resolutions never block the event loop.
-    "kiro_crew/dashboard/handlers/taskrunner.py": 1,
+    "efm_go/dashboard/handlers/taskrunner.py": 1,
     # ``security.is_sensitive_canonical_path``: the shared entry point for a
     # reader that canonicalised its path itself. It picks the gate by thread --
     # this pre-resolved gate off the event loop, the bounded gate on it -- so
@@ -236,7 +236,7 @@ _EXPECTED_GATE_CALL_SITES: dict[str, int] = {
     # root check and ``source_path`` pointers, and the reader module's project
     # root and cache key checks, stay on ``is_sensitive_path``: none of those
     # values is canonicalised first.
-    "kiro_crew/security/paths.py": 1,
+    "efm_go/security/paths.py": 1,
 }
 
 # path relative to ``src`` -> number of ``pre_resolved=True`` containment claims.
@@ -246,7 +246,7 @@ _EXPECTED_CONTAINMENT_CALL_SITES: dict[str, int] = {
     # lets the walk settle a whole directory of entries without a gate call per
     # entry, and it runs inside ``api_project_tree``'s ``asyncio.to_thread``
     # worker, never the event loop.
-    "kiro_crew/dashboard/file_api/project_tree.py": 1,
+    "efm_go/dashboard/file_api/project_tree.py": 1,
 }
 
 
@@ -588,7 +588,7 @@ class TestNamedAgentModelReadsTheSnapshot:
 
         _, futures = _discovery_pool
         for attempt in range(2):
-            with caplog.at_level(logging.WARNING, logger="kiro_crew.agent_discovery"):
+            with caplog.at_level(logging.WARNING, logger="efm_go.agent_discovery"):
                 assert asyncio.run(lookup()) == []
                 assert len(futures) == attempt + 1
                 # The worker swallows the failure so the fire-and-forget future
@@ -672,10 +672,10 @@ class TestBackgroundSessionWarmsTheSnapshotFirst:
     """
 
     def _create_background(self, tmp_path, monkeypatch, _discovery_pool):
-        import kiro_crew.providers.acp as acp_mod
-        from kiro_crew.config import loader
-        from kiro_crew.config import paths as config_paths
-        from kiro_crew.session import BACKGROUND_KEY, SessionManager
+        import efm_go.providers.acp as acp_mod
+        from efm_go.config import loader
+        from efm_go.config import paths as config_paths
+        from efm_go.session import BACKGROUND_KEY, SessionManager
 
         # Both agents-dir hooks at ONE directory, as the suite's isolation floor
         # pins them: the lookup resolves ``kiro_agents_dir()`` and the snapshot
@@ -753,7 +753,7 @@ class TestBackgroundSessionWarmsTheSnapshotFirst:
             raise RuntimeError("snapshot unavailable")
 
         monkeypatch.setattr(agent_discovery, "parsed_agent_specs", fail)
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.agent_discovery"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.agent_discovery"):
             constructed = self._create_background(tmp_path, monkeypatch, _discovery_pool)
         # Best-effort: the warm-up swallows the failure and the session is still
         # created, on the cold answer.

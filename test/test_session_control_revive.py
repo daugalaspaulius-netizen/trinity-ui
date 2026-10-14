@@ -19,11 +19,11 @@ from unittest.mock import MagicMock
 import pytest
 from chat_test_helpers import _make_state
 
-from kiro_crew import history_projection as _history_projection
-from kiro_crew.dashboard import create_rate_limit
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard import stop_retry
-from kiro_crew.dashboard.chat_utils import slot_history_key
+from efm_go import history_projection as _history_projection
+from efm_go.dashboard import create_rate_limit
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard import stop_retry
+from efm_go.dashboard.chat_utils import slot_history_key
 
 
 @pytest.fixture(autouse=True)
@@ -77,7 +77,7 @@ def _settle_metadata_rewrite_before_read(monkeypatch):
     """
     import time
 
-    from kiro_crew import atomic_write as _aw
+    from efm_go import atomic_write as _aw
 
     real_replace = _aw.replace_with_retry
 
@@ -540,7 +540,7 @@ def _drift_in_window(monkeypatch, mutate):
     rewritten, a link or mirror recorded, a caller losing eligibility, a cap
     crossed. Also asserts what the core promises for that window: the built slot
     is not resolvable and never in the live table while the hook awaits."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     original = chat_handlers.resume_slot_from_history
     seen: dict = {}
@@ -778,7 +778,7 @@ def test_revive_raises_every_target_side_code_authorize_target_raises():
 
 
 def test_route_forwards_folder_id_and_fence_to_the_core(monkeypatch):
-    from kiro_crew.dashboard.handlers import session_control as handlers_sc
+    from efm_go.dashboard.handlers import session_control as handlers_sc
 
     seen: dict = {}
 
@@ -819,7 +819,7 @@ def _none_async():
 def test_route_is_registered_and_strict():
     """Every /api/session-control route must be in the strict-auth list too, or
     the MCP caller's internal secret is ignored and the tool is unreachable."""
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     assert "/api/session-control/revive" in server._STRICT_INTERNAL_API_PATHS
 
@@ -829,9 +829,9 @@ def test_route_is_registered_and_strict():
 
 def _revive_tool(args: dict, routes: dict, caller=None):
     """One ``session_revive`` frame through the dashboard table, in memory."""
-    from kiro_crew.mcp_dashboard import TABLE
-    from kiro_crew.mcp_tools.dashboard_client import InMemoryDashboardClient
-    from kiro_crew.mcp_tools.table import Caller, ToolContext
+    from efm_go.mcp_dashboard import TABLE
+    from efm_go.mcp_tools.dashboard_client import InMemoryDashboardClient
+    from efm_go.mcp_tools.table import Caller, ToolContext
 
     dash = InMemoryDashboardClient(routes)
     ctx = ToolContext(dash, caller or Caller.strict("dashboard:chat-1"))
@@ -851,7 +851,7 @@ def test_mcp_tool_posts_to_the_revive_route_with_the_callers_key():
 
 
 def test_mcp_tool_refuses_a_caller_without_a_strict_key():
-    from kiro_crew.mcp_tools.table import Caller
+    from efm_go.mcp_tools.table import Caller
 
     out, requests = _revive_tool(
         {"target": "chat-2"},
@@ -1090,7 +1090,7 @@ def test_a_failed_filing_does_not_erase_a_placement_committed_meanwhile(tmp_path
 def test_the_filing_runs_under_the_slot_metadata_txn_lock(tmp_path, monkeypatch):
     """Same lock the folder endpoint serializes its mutate/save/rollback under,
     so a PATCH cannot commit between this call's write and its rollback."""
-    from kiro_crew.dashboard import chat_folders
+    from efm_go.dashboard import chat_folders
 
     state = _make_state(tmp_path)
     _folder(state, "f1", "Gamma")
@@ -1144,7 +1144,7 @@ def test_a_cancellation_while_waiting_for_the_filing_lock_still_audits_once(tmp_
     the filing waits for a contended ``_slot_meta_txn_lock`` has written nothing
     to roll back but must still leave exactly one allowed SEL record for the
     revive, which the resume core has already committed."""
-    from kiro_crew.dashboard import chat_folders
+    from efm_go.dashboard import chat_folders
 
     state = _make_state(tmp_path)
     _folder(state, "f1", "Gamma")
@@ -1446,7 +1446,7 @@ def test_a_refused_hook_leaves_the_durable_session_as_it_found_it(tmp_path):
     restores on the next start). A refusal from the hook must not leave that
     clear behind: the marker goes back with its original ``closed_at``, no slot
     is published, and the construction mark is released."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1475,7 +1475,7 @@ def test_a_refused_hook_leaves_the_durable_session_as_it_found_it(tmp_path):
 
 
 def test_a_hook_that_raises_discards_the_built_slot(tmp_path):
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1499,7 +1499,7 @@ def test_a_hook_that_raises_discards_the_built_slot(tmp_path):
 def test_a_clean_hook_publishes_once_and_the_history_click_passes_none(tmp_path):
     """No hook is the History tab's path and is unchanged; a hook that answers
     ``None`` publishes the same slot the click would."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1530,7 +1530,7 @@ def test_a_refused_hook_restores_the_marker_before_releasing_the_reservation(tmp
     construction mark still reserves the key (a concurrent resume could
     otherwise publish in the gap and be marked closed), and releases the mark
     last."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1581,7 +1581,7 @@ def test_a_reopen_write_that_cannot_land_refuses_instead_of_publishing(tmp_path,
     """A hooked resume whose deferred ``clear_closed`` raises must not publish a
     tab whose line still says closed (it would vanish at the next start); it
     refuses ``reopen_failed`` and leaves the marker as it was."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1613,7 +1613,7 @@ def test_a_cancellation_during_the_deferred_clear_still_discards_the_build(tmp_p
     mark stays reserved for the process lifetime and the cleared ``closed`` marker
     stays cleared. The clear lands, then the task is cancelled before the
     verification read; the mark must be released and the marker restored."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1654,7 +1654,7 @@ def test_a_history_click_that_loses_the_race_leaves_the_marker_untouched(tmp_pat
     construction (a revive retracted its build inside the click's read window)
     is refused ``resume_in_progress`` with the marker exactly as it found it, so
     if that revive is then refused too, the archived session stays archived."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1686,7 +1686,7 @@ def test_a_history_click_refused_by_an_in_flight_delete_writes_nothing(tmp_path,
     durable write: the ``closed`` marker is still set, and neither the reopen
     clear nor a marker restore was attempted, so there is nothing a failed
     rollback could leave half-done."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1724,7 +1724,7 @@ def test_a_concurrent_resume_during_the_hook_gets_a_coded_conflict_not_a_500(tmp
     """While one resume holds the built slot retracted and under construction, a
     second resume of the same key must not reach the constructor's bare
     ``ValueError``; it is answered with ``resume_in_progress`` (409)."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1755,7 +1755,7 @@ def test_with_a_hook_the_folder_un_hide_keeps_the_history_paths_place(tmp_path):
     the hook's last answer and the publish. So a refused hooked resume can leave
     a hidden folder visible, exactly as a click refused at the member barrier
     already can; nothing is rolled back there either."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     _folder(state, "f1", "Hidden one")
@@ -1784,7 +1784,7 @@ def test_with_a_hook_a_gone_folder_still_drops_the_filing_like_the_click_does(tm
     """The existence verdict hydration binds ``folder_id`` from is still taken
     before construction under a hook (read-only); a session whose folder no
     longer exists comes back unfiled, as it does from the History tab."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     _folder(state, "f1", "Doomed")
@@ -1840,7 +1840,7 @@ def _publish_live_during_resume(monkeypatch, state, key, **fields):
     """A human History click (or another reviver) publishes *key* while the
     revive's own resume is between its resolution and its publish, with the
     given slot fields on the live slot."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     original = chat_handlers.resume_slot_from_history
 
@@ -1887,7 +1887,7 @@ def test_a_clear_that_lands_then_reads_unreadable_still_restores_the_marker(tmp_
     successful ``clear_closed`` can be followed by an unreadable verification.
     That refuses (``resume_conflict``), and because the clear DID land the marker
     must be restored, or the refused session reopens at the next start."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1939,7 +1939,7 @@ def test_a_refusal_whose_marker_restore_cannot_be_confirmed_answers_rollback_fai
     marker absent, the caller hears ``reopen_rollback_failed`` (503) instead of
     the refusal that triggered the discard, because the durable session is now
     in a state the caller must act on (it would reopen at the next start)."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -1981,7 +1981,7 @@ def test_a_refusal_whose_marker_restore_cannot_be_confirmed_answers_rollback_fai
 def test_a_marker_restore_that_fails_once_recovers_on_the_retry(tmp_path, monkeypatch):
     """One raise from the restore write is retried; when the retry lands and the
     re-read confirms the marker, the original refusal is what the caller hears."""
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -2028,7 +2028,7 @@ def test_a_session_recreated_during_the_hook_is_refused_not_published(tmp_path):
     hook's last await with the same ``resume_session_deleted`` answer."""
     import time
 
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -2060,7 +2060,7 @@ def test_a_session_recreated_during_the_hook_is_refused_not_published(tmp_path):
 
 
 def test_a_session_deleted_during_the_hook_is_refused_not_resurrected(tmp_path):
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -2115,7 +2115,7 @@ def test_the_rollback_never_archives_a_replacement_transcript(tmp_path, monkeypa
     stamp against the one this resume read."""
     import time
 
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -2214,7 +2214,7 @@ def test_an_unreadable_final_identity_read_refuses_rather_than_publishing(tmp_pa
     delete-and-recreate's lock-free signature, and refuses ``resume_conflict``
     with the marker rolled back instead of publishing over it.
     """
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -2250,7 +2250,7 @@ def test_a_delete_in_flight_during_the_last_await_refuses_before_it_unlinks(tmp_
     await, so the synchronous re-check after it carries the marker term too and
     refuses ``resume_conflict`` with the marker rolled back.
     """
-    from kiro_crew.dashboard import chat_handlers
+    from efm_go.dashboard import chat_handlers
 
     state = _make_state(tmp_path)
     caller = _slot(state, "chat-1")
@@ -2292,7 +2292,7 @@ def test_the_archived_link_probe_reads_getters_the_session_manager_actually_has(
     import inspect
     import re
 
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     names: set[str] = set()
     for fn in (sc._archived_session_is_channel_linked, sc._probe_channel_mirror_for_key):

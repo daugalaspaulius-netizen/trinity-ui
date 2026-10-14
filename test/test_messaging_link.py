@@ -13,7 +13,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-from kiro_crew.messaging.link import (
+from efm_go.messaging.link import (
     CHAT_TYPE_DIRECT,
     CHAT_TYPE_FORUM,
     DEFAULT_DM_SCOPE,
@@ -28,7 +28,7 @@ from kiro_crew.messaging.link import (
     should_rotate_generation,
     split_dm_session_key,
 )
-from kiro_crew.session_map import ConversationOwnershipConflict
+from efm_go.session_map import ConversationOwnershipConflict
 
 
 class TestBuildDmSessionKey:
@@ -250,9 +250,9 @@ class TestBindOriginMirror:
         copy of that rule and sees ``None``. A Slack binding that names a thread is
         deliberate and is left alone like any other.
         """
-        from kiro_crew.session_map import SessionMap
+        from efm_go.session_map import SessionMap
 
-        monkeypatch.setattr("kiro_crew.session_map.config_dir", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.session_map.config_dir", lambda: tmp_path)
         store = SessionMap()
         sess = _Sessions()
         sess.get_mirror_link = store.get_mirror_link  # type: ignore[method-assign]
@@ -463,7 +463,7 @@ class TestUnbindReasonVocabulary:
     """
 
     def test_the_vocabulary_is_closed_and_unambiguous(self) -> None:
-        from kiro_crew.messaging import link as link_mod
+        from efm_go.messaging import link as link_mod
 
         declared = [
             value
@@ -486,7 +486,7 @@ class TestUnbindReasonVocabulary:
         import ast
         from pathlib import Path
 
-        import kiro_crew
+        import efm_go
 
         binding_calls = {
             "clear_mirror_link",
@@ -512,7 +512,7 @@ class TestUnbindReasonVocabulary:
         planted = ast.parse('s.clear_mirror_link(key, reason="made_up")\n')
         assert len(_bare_reasons(planted)) == 1, "the scanner does not fire"
 
-        pkg = Path(kiro_crew.__file__).resolve().parent
+        pkg = Path(efm_go.__file__).resolve().parent
         offenders = [
             f"{path.relative_to(pkg)}:{line}"
             for path in pkg.rglob("*.py")

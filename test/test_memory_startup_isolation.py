@@ -10,14 +10,14 @@ from member_memory_helpers import env as _member_env
 from member_memory_helpers import request
 from test_memory_startup import _gateway
 
-from kiro_crew import member_memory_backup, memory_backup, memory_stores
-from kiro_crew.config import loader
-from kiro_crew.dashboard.handlers import memory_admin, memory_member
-from kiro_crew.dashboard.handlers._shared import markdown_memory_for_store
-from kiro_crew.heartbeat import HeartbeatService
-from kiro_crew.memory import MemoryStore
-from kiro_crew.memory_startup import MemoryStartup, MemoryStartupUnavailable, require_memory_ready
-from kiro_crew.vector_memory import VectorMemoryStore
+from efm_go import member_memory_backup, memory_backup, memory_stores
+from efm_go.config import loader
+from efm_go.dashboard.handlers import memory_admin, memory_member
+from efm_go.dashboard.handlers._shared import markdown_memory_for_store
+from efm_go.heartbeat import HeartbeatService
+from efm_go.memory import MemoryStore
+from efm_go.memory_startup import MemoryStartup, MemoryStartupUnavailable, require_memory_ready
+from efm_go.vector_memory import VectorMemoryStore
 
 env = _member_env
 

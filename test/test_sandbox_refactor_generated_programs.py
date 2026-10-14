@@ -1,8 +1,8 @@
 """The two programs a spawn writes out, against a fully pinned host.
 
 The Linux namespace launcher and the macOS Seatbelt profile are renderings of one
-confinement plan (``kiro_crew.sandbox_plan``). Each is pinned here by ONE golden, taken
-through the live host adapter (``kiro_crew.sandbox._live_plan_host``) with every host
+confinement plan (``efm_go.sandbox_plan``). Each is pinned here by ONE golden, taken
+through the live host adapter (``efm_go.sandbox._live_plan_host``) with every host
 input pinned so the golden does not depend on the machine that computes it: the run
 root is ``tmp_path`` and is folded to ``<ROOT>``, and every table whose entries reach
 either program is replaced by the small stand-in in ``_PINNED_TABLES``, so a leaf
@@ -10,11 +10,11 @@ added to a real table leaves these goldens alone.
 
 * The launcher's golden is the PLAN DATA it carries -- its one substitution -- for a
   spawn that passes every kind of extra path and identity. The program text around it
-  is the ``kiro_crew.sandbox_launcher_program`` module itself, which
+  is the ``efm_go.sandbox_launcher_program`` module itself, which
   ``test_sandbox_launcher_program.py`` drives stage by stage.
 * The profile's golden is its full text for a spawn with private windows.
 * Every host reader and table the live host plans from is read off
-  ``kiro_crew.sandbox`` when it runs, so a test that rebinds one there reaches the plan
+  ``efm_go.sandbox`` when it runs, so a test that rebinds one there reaches the plan
   of either backend.
 
 Both goldens are the output the builders produced before the plan existed, so they
@@ -36,7 +36,7 @@ from typing import Any
 import pytest
 from test_sandbox_launcher_program import rendered_payload
 
-from kiro_crew import sandbox, sandbox_launcher, sandbox_launcher_program, sandbox_plan
+from efm_go import sandbox, sandbox_launcher, sandbox_launcher_program, sandbox_plan
 
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32",
@@ -609,11 +609,11 @@ def test_the_launcher_carries_the_golden_plan(
     host: _Host, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     _pod_home(host, monkeypatch)
-    caplog.set_level(logging.WARNING, logger="kiro_crew.sandbox")
+    caplog.set_level(logging.WARNING, logger="efm_go.sandbox")
     script = sandbox._build_launcher_script("strict", **_everything(host))
     assert _fold(rendered_payload(script), host) == _LAUNCHER_PLAN_GOLDEN
     # The window that holds a masked tree is refused, as a log line naming no path.
-    assert [r.getMessage() for r in caplog.records if r.name == "kiro_crew.sandbox"] == [
+    assert [r.getMessage() for r in caplog.records if r.name == "efm_go.sandbox"] == [
         sandbox_plan.WINDOW_REFUSAL
     ]
 
@@ -665,7 +665,7 @@ def test_each_pinned_host_input_reaches_the_plan(
 
 
 # --------------------------------------------------------------------------- #
-# The live host reads what it plans from kiro_crew.sandbox when it runs.
+# The live host reads what it plans from efm_go.sandbox when it runs.
 # --------------------------------------------------------------------------- #
 
 
@@ -685,7 +685,7 @@ def _raiser(label: str) -> Callable[..., object]:
 
 
 #: The host readers ``_live_plan_host`` calls for each backend. A patch of one on
-#: ``kiro_crew.sandbox`` must still reach that backend's plan.
+#: ``efm_go.sandbox`` must still reach that backend's plan.
 _HOST_READERS: dict[str, tuple[str, ...]] = {
     sandbox_plan.BACKEND_NAMESPACE: (
         "_md_notebook_degraded_mask_dirs",

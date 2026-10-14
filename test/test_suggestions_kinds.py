@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from kiro_crew.suggestions import (
+from efm_go.suggestions import (
     _FALLBACK_SUGGESTIONS,
     SUGGESTION_KINDS,
     SuggestionsCache,

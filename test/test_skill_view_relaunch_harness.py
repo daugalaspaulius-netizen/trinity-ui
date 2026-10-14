@@ -46,10 +46,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from test_update_provider import _UNALLOCATABLE_PID
 
-from kiro_crew.acp import runtime as runtime_mod
-from kiro_crew.acp import skill_projection as projection
-from kiro_crew.acp.runtime import AcpRuntime
-from kiro_crew.acp.types import METHOD_SET_MODE
+from efm_go.acp import runtime as runtime_mod
+from efm_go.acp import skill_projection as projection
+from efm_go.acp.runtime import AcpRuntime
+from efm_go.acp.types import METHOD_SET_MODE
 
 pytestmark = pytest.mark.skipif(
     not sys.platform.startswith("linux"), reason="the fake watcher is driven by inotify"
@@ -253,7 +253,7 @@ def host_tree(tmp_path, monkeypatch):
     monkeypatch.setattr(projection.platform_compat, "path_volume_is_remote", lambda path: False)
     monkeypatch.setattr(projection.platform_compat, "first_linked_ancestor", lambda path: None)
     monkeypatch.setattr(
-        "kiro_crew.agent.managed_mcp_spec_entry",
+        "efm_go.agent.managed_mcp_spec_entry",
         lambda name: {"command": "test-core", "args": []},
     )
     monkeypatch.setattr(
@@ -263,7 +263,7 @@ def host_tree(tmp_path, monkeypatch):
             SimpleNamespace(name=name, filename=f"{name}.json", scope="global") for name in AGENTS
         ],
     )
-    monkeypatch.setattr("kiro_crew.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
+    monkeypatch.setattr("efm_go.agent._KIRO_MCP_JSON", home / "settings" / "mcp.json")
     monkeypatch.setattr(runtime_mod, "_PROJECTED_MODE_RETRY_DELAYS_SECS", (0.0, 0.0), raising=False)
     for name in AGENTS:
         resources = [] if name == "plain" else [f"skill://catalog/{name}/*/SKILL.md"]
@@ -352,7 +352,7 @@ async def _one_spawn(
     await asyncio.sleep(0)
     views: dict[str, str] = {}
     try:
-        with patch("kiro_crew.agent.require_unchanged_derived_spec", return_value=None):
+        with patch("efm_go.agent.require_unchanged_derived_spec", return_value=None):
             for name in AGENTS:
                 before = len(host.activated)
                 if name in refused:
@@ -542,7 +542,7 @@ async def test_a_rewriter_that_wins_the_announcement_race_never_runs_an_unverifi
     await asyncio.sleep(0)
     try:
         with (
-            patch("kiro_crew.agent.require_unchanged_derived_spec", return_value=None),
+            patch("efm_go.agent.require_unchanged_derived_spec", return_value=None),
             patch.object(runtime_mod, "emit_counter", lambda n, a: counter.append(a["outcome"])),
             pytest.raises(runtime_mod.AcpRuntimeError, match="Restart the gateway"),
         ):
@@ -594,7 +594,7 @@ async def test_many_agents_with_huge_welcome_messages_keep_session_new_under_the
         ],
     )
     projection._DISPLAY_TEXT_WARNED.clear()
-    caplog.set_level(logging.WARNING, logger="kiro_crew.acp.skill_projection")
+    caplog.set_level(logging.WARNING, logger="efm_go.acp.skill_projection")
 
     prepared = projection.prepare_native_skill_projection(project)
     assert prepared is not None and set(package) <= set(prepared.aliases)

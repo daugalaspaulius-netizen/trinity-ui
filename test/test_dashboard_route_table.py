@@ -28,7 +28,7 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.dashboard import routes as routes_pkg
+from efm_go.dashboard import routes as routes_pkg
 
 
 def test_registrar_tuple_is_explicit_and_not_alphabetical() -> None:
@@ -203,7 +203,7 @@ def test_every_slice_module_exposes_register() -> None:
     import importlib
 
     for name in routes_pkg.REGISTRAR_NAMES:
-        mod = importlib.import_module(f"kiro_crew.dashboard.routes.{name}")
+        mod = importlib.import_module(f"efm_go.dashboard.routes.{name}")
         assert callable(getattr(mod, "register", None)), f"{name} has no register()"
 
 
@@ -234,7 +234,7 @@ def _table_owned_paths() -> set[tuple[str, str]]:
     Ownership is defined by "a slice module registers this path", not by the
     handler's ``__module__``. That distinction matters: the table registers
     ``/api/suggestions`` and ``/api/tips/*``, whose handlers live in
-    ``kiro_crew.suggestions`` and ``kiro_crew.tips``, so filtering on the handler
+    ``efm_go.suggestions`` and ``efm_go.tips``, so filtering on the handler
     module would silently drop exactly the routes a shadowing check is for.
     """
     owned: set[tuple[str, str]] = set()

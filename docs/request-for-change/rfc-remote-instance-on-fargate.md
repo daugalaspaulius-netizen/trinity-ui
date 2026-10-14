@@ -47,7 +47,7 @@ other end.
 
 An EC2 remote instance builds its environment on every launch. Every claim in this
 section was measured at `8fd5193e6`. The `UserData` block of
-`src/kiro_crew/cloud/templates/kirocrew-ec2.yaml` does all of this before the
+`src/efm_go/cloud/templates/kirocrew-ec2.yaml` does all of this before the
 instance is usable:
 
 ```
@@ -61,7 +61,7 @@ systemctl enable kirocrew.service && systemctl start kirocrew.service
 
 Package installs, a Node download over the public internet, and a full repository
 clone, none of it cached between launches. On top of that the launcher budgets
-`_SIGNIN_ATTEMPTS = 30` in `src/kiro_crew/cloud/launch_engine.py` at roughly five
+`_SIGNIN_ATTEMPTS = 30` in `src/efm_go/cloud/launch_engine.py` at roughly five
 seconds each for sign-in to complete, and that budget begins only after the
 bootstrap has finished.
 
@@ -71,7 +71,7 @@ launch.
 
 ### Sizing is three choices
 
-`src/kiro_crew/cloud/sizes.py` fixes `light` to `instance_type="t4g.xlarge"` and
+`src/efm_go/cloud/sizes.py` fixes `light` to `instance_type="t4g.xlarge"` and
 `balanced` to `instance_type="m7g.2xlarge"`; `power` is the third. A
 workload wanting two vCPUs and 8 GB takes the nearest shape and pays for the gap.
 Fargate takes CPU and memory as parameters, so the request matches the workload.
@@ -155,7 +155,7 @@ The secret-valued half is load-bearing, and the two secrets are load-bearing
 differently. `KIRO_IDENTITY` carries the model identity and the container refuses to
 boot without it: the supervisor writes the delivered document into the crew's vault
 and `require_model_identity` in
-`src/kiro_crew/apps/builtins/aws_control/crew/runtime/container/supervisor/backend.py`
+`src/efm_go/apps/builtins/aws_control/crew/runtime/container/supervisor/backend.py`
 then reads that vault at startup. `SMC_CONTROL_SECRET` separates the owner's
 control surface from a customer turn and is NOT a boot requirement -- a task
 started without it boots and then refuses every control route, because the check
@@ -194,7 +194,7 @@ relay", and in section 7.
 ### What it plugs into
 
 Provisioning a remote instance already goes through one seam,
-the `LaunchEngine` protocol in `src/kiro_crew/cloud/launch_job.py`:
+the `LaunchEngine` protocol in `src/efm_go/cloud/launch_job.py`:
 
 ```python
 class LaunchEngine(Protocol):
@@ -206,16 +206,16 @@ class LaunchEngine(Protocol):
     def teardown(self, *, tag, profile, region) -> bool: ...
 ```
 
-The EC2 implementation is `RealLaunchEngine` in `src/kiro_crew/cloud/launch_engine.py`,
+The EC2 implementation is `RealLaunchEngine` in `src/efm_go/cloud/launch_engine.py`,
 163 lines with five references to `ec2`, and the engine is already an injectable
-field named `cloud_launch_engine` in `src/kiro_crew/dashboard/state.py`, today set
+field named `cloud_launch_engine` in `src/efm_go/dashboard/state.py`, today set
 only by tests. A Fargate backend is a second
 implementation of these five methods. Everything above the seam, which is the
 launch job machinery, the tunnel manager and the relay surfaces, does not learn
 that a second backend exists.
 
 The registry was the exception, and the reason was a hard one rather than a
-preference. `src/kiro_crew/instances/registry.py` closed its transport set:
+preference. `src/efm_go/instances/registry.py` closed its transport set:
 `CONNECTION_METHODS` was `("ssh", "ssm")` and a record naming anything else was
 refused with `InvalidInstanceError`. The identity fields were equally closed --
 `ssm_target` was validated against `^(i|mi)-[a-f0-9]{8,17}$`, an EC2 instance id or
@@ -489,7 +489,7 @@ the thing this RFC is trying to remove.
 ## 11. Open questions
 
 **Whether phase 1 buys registry parity.** Answered yes. It cost a third transport
-in `src/kiro_crew/instances/registry.py` and a tunnel manager that knows what to do
+in `src/efm_go/instances/registry.py` and a tunnel manager that knows what to do
 with a task, which was the largest single piece of work this RFC could add and was
 not needed for "deploy a crew and chat with it" -- and the deferral section 6
 recorded did not hold, because ten unregistered fan-out workers are ten things the

@@ -15,12 +15,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew.acp.types import (
+from efm_go.acp.types import (
     EVENT_COMPLETE,
     EVENT_TEXT_CHUNK,
     STOP_REASON_END_TURN,
 )
-from kiro_crew.slack import transport_dispatch
+from efm_go.slack import transport_dispatch
 
 _golden = importlib.import_module("test_slack_golden_transcript")
 
@@ -119,8 +119,8 @@ def test_transport_successful_delivery_still_records_success(monkeypatch):
 # ── Native path (handler.handle_message) ──
 
 from conftest import MockSlackClient  # noqa: E402
-from kiro_crew.providers.base import LLMEvent  # noqa: E402
-from kiro_crew.slack.handler import handle_message  # noqa: E402
+from efm_go.providers.base import LLMEvent  # noqa: E402
+from efm_go.slack.handler import handle_message  # noqa: E402
 
 _handler_tests = importlib.import_module("test_slack_handler")
 FakeSessionManager = _handler_tests.FakeSessionManager
@@ -220,7 +220,7 @@ def test_native_permit_released_only_after_accounting(monkeypatch):
 
 # ── F2: a model error plus a failed error-post books exactly one failure ──
 
-from kiro_crew.acp.client import AcpError  # noqa: E402
+from efm_go.acp.client import AcpError  # noqa: E402
 
 
 class _RaisingProvider:
@@ -307,7 +307,7 @@ def test_transport_footer_failure_keeps_delivered_turn_a_success(monkeypatch):
 
 import asyncio as _asyncio  # noqa: E402
 
-from kiro_crew.slack.handler import ACTIVATION_REVIEW  # noqa: E402
+from efm_go.slack.handler import ACTIVATION_REVIEW  # noqa: E402
 
 
 class _ReviewEphemeralRaisesSlack(MockSlackClient):
@@ -551,7 +551,7 @@ class _HandlerAsyncio:
 
 
 def test_native_cancel_at_predelivery_yield_releases_permit(monkeypatch):
-    import kiro_crew.slack.handler as _h
+    import efm_go.slack.handler as _h
 
     real_sleep = asyncio.sleep
     state = {"tripped": False}
@@ -731,7 +731,7 @@ def test_native_options_fallback_redacts_markup_obfuscated_credential(monkeypatc
     # ``**`` in the bytes but intact on screen is caught here. A literal-only
     # exfil+credential scrub (the bypassed path) leaves the key in the rendered
     # form; the display-safe scrub redacts it before it is ever sent.
-    from kiro_crew.messaging.display_safety import canonicalize_display
+    from efm_go.messaging.display_safety import canonicalize_display
 
     rendered_fallback = canonicalize_display(slack.fallback_text)
     assert (
@@ -985,7 +985,7 @@ def test_native_cancel_at_sleep0_after_stream_delivered_books_success(monkeypatc
     # model stream loop (the release-region yield at handler.py:4367). By then a
     # real-text append has confirmed (_stream_delivered True) though _answer_reached
     # still defaults False.
-    import kiro_crew.slack.handler as _h
+    import efm_go.slack.handler as _h
 
     real_sleep = asyncio.sleep
     state = {"fired": False}

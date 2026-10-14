@@ -9,11 +9,11 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from kiro_crew.config import KiroCrewConfig
-from kiro_crew.dashboard.handlers.cron import _recognize_session
-from kiro_crew.dashboard.handlers.memory import _memory_write_gate
-from kiro_crew.history import is_incognito_transcript
-from kiro_crew.session import SessionManager
+from efm_go.config import KiroCrewConfig
+from efm_go.dashboard.handlers.cron import _recognize_session
+from efm_go.dashboard.handlers.memory import _memory_write_gate
+from efm_go.history import is_incognito_transcript
+from efm_go.session import SessionManager
 
 
 @pytest.mark.asyncio
@@ -33,7 +33,7 @@ async def test_workflow_memory_recognition_tracks_registration(prefix):
         )
 
     assert (await recognize(key)).status == 400
-    from kiro_crew.execution_context import (
+    from efm_go.execution_context import (
         ExecutionContext,
         MemoryStoreRef,
         bind_session_execution,

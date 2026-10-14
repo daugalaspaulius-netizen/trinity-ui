@@ -21,12 +21,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import kiro_crew.slack.gateway as gw_mod
-from kiro_crew.config.loader import KiroCrewConfig, SkillsConfig
-from kiro_crew.context import ContextBuilder
-from kiro_crew.memory import MemoryStore
-from kiro_crew.session import HEARTBEAT_KEY
-from kiro_crew.skills import SkillsLoader
+import efm_go.slack.gateway as gw_mod
+from efm_go.config.loader import KiroCrewConfig, SkillsConfig
+from efm_go.context import ContextBuilder
+from efm_go.memory import MemoryStore
+from efm_go.session import HEARTBEAT_KEY
+from efm_go.skills import SkillsLoader
 
 BODY_SENTINEL = "STEP ONE: pour the concrete before the rebar."
 HINT_HEADER = "[Relevant skills for this message]"

@@ -43,7 +43,7 @@ function findKirocrewBin(
   //    don't ship these dirs so the probes miss (ENOENT) and fall through.
   const suffix = ARCH_DIR_SUFFIX[arch];
   if (suffix) {
-    const archBackend = `kirocrew-backend-${suffix}`;
+    const archBackend = `efm-go-backend-${suffix}`;
     candidates.push(
       path.join(resourcesPath || "", "backend-dist", archBackend, "bin", "kirocrew"),
       path.resolve(dirname, "backend-dist", archBackend, "bin", "kirocrew")
@@ -86,15 +86,15 @@ function findKirocrewBin(
     //    two. Ranking them the other way round both broke the build-time
     //    resolver gate and, had the gate not caught it, would have shipped
     //    an app whose backend could never start.
-    path.join(resourcesPath || "", "backend-dist", "kirocrew-backend", "bin", "kirocrew.cmd"),
-    path.resolve(dirname, "backend-dist", "kirocrew-backend", "bin", "kirocrew.cmd"),
+    path.join(resourcesPath || "", "backend-dist", "efm-go-backend", "bin", "kirocrew.cmd"),
+    path.resolve(dirname, "backend-dist", "efm-go-backend", "bin", "kirocrew.cmd"),
     // 3. Bundled POSIX layout (packaging/build-desktop.sh): a
     //    python-build-standalone interpreter copied into backend-dist with a
-    //    `bin/kirocrew` launcher wrapper (exec python3.12 -s -P -m kiro_crew).
+    //    `bin/kirocrew` launcher wrapper (exec python3.12 -s -P -m efm_go).
     //    This is what a freshly-built .app actually ships. Keep this in sync
     //    with build-desktop.sh's BACKEND_OUT/bin/kirocrew path.
-    path.join(resourcesPath || "", "backend-dist", "kirocrew-backend", "bin", "kirocrew"),
-    path.resolve(dirname, "backend-dist", "kirocrew-backend", "bin", "kirocrew"),
+    path.join(resourcesPath || "", "backend-dist", "efm-go-backend", "bin", "kirocrew"),
+    path.resolve(dirname, "backend-dist", "efm-go-backend", "bin", "kirocrew"),
     path.resolve(dirname, "..", "bin", "kirocrew")
   );
   if (isWindows) {
@@ -106,8 +106,8 @@ function findKirocrewBin(
     //    the machine. It is correct for a bundle built where it runs (a local
     //    `make desktop`), which is why it is probed at all.
     candidates.push(
-      path.join(resourcesPath || "", "backend-dist", "kirocrew-backend", "Scripts", "kirocrew.exe"),
-      path.resolve(dirname, "backend-dist", "kirocrew-backend", "Scripts", "kirocrew.exe")
+      path.join(resourcesPath || "", "backend-dist", "efm-go-backend", "Scripts", "kirocrew.exe"),
+      path.resolve(dirname, "backend-dist", "efm-go-backend", "Scripts", "kirocrew.exe")
     );
   }
   // 5. Well-known install paths (toolbox, installer symlink, and venv). Last,
@@ -127,6 +127,11 @@ function findKirocrewBin(
       path.join(home, ".local", "bin", "kirocrew.exe")
     );
   }
+  candidates.push(
+    ...candidates
+      .filter((item) => typeof item === "string" && item.indexOf("efm-go-backend") !== -1)
+      .map((item) => item.split("efm-go-backend").join("kirocrew-backend"))
+  );
   for (const bin of candidates) {
     try {
       fs.accessSync(bin, fs.constants.X_OK);
@@ -137,12 +142,12 @@ function findKirocrewBin(
   }
   // Packaged Windows portable: if python.exe landed but the .cmd shim is
   // briefly missing (SFX extract) or X_OK fails, still return the .cmd path.
-  // gateway-supervisor unwraps kirocrew.cmd → python.exe -m kiro_crew.
+  // gateway-supervisor unwraps kirocrew.cmd → python.exe -m efm_go.
   // Never fall through to bare kirocrew.exe while the bundled interpreter
   // exists — that PATH name is what produced spawn REFUSED after exit 75.
   if (isWindows) {
-    const bundledPy = path.join(resourcesPath || "", "backend-dist", "kirocrew-backend", "python.exe");
-    const bundledCmd = path.join(resourcesPath || "", "backend-dist", "kirocrew-backend", "bin", "kirocrew.cmd");
+    const bundledPy = path.join(resourcesPath || "", "backend-dist", "efm-go-backend", "python.exe");
+    const bundledCmd = path.join(resourcesPath || "", "backend-dist", "efm-go-backend", "bin", "kirocrew.cmd");
     try {
       fs.accessSync(bundledPy);
       return bundledCmd;

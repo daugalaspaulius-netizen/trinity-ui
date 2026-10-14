@@ -5,10 +5,10 @@ calls, so a refusal is only ever discovered by violating it and costs a whole
 round-trip to resend. The cap still binds and the overflow is cut rather than
 rejected. Both halves of that are required for the cut to be honest:
 
-* :func:`kiro_crew.validation.clamp_to_max_len` stamps the stored value, which is
+* :func:`efm_go.validation.clamp_to_max_len` stamps the stored value, which is
   what the conductor reads;
 * ``work_report``'s reply reads the stamp back with
-  :func:`kiro_crew.validation.clamp_report`, which is the only way the WORKER can
+  :func:`efm_go.validation.clamp_report`, which is the only way the WORKER can
   learn its text was cut -- the success frame carries no summary to read it off.
 
 Scope: the clamp is on ``summary`` alone. ``artifacts``, ``pr`` and ``status``
@@ -24,9 +24,9 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import mcp_work, validation
-from kiro_crew import work_ledger as wl
-from kiro_crew.validation import (
+from efm_go import mcp_work, validation
+from efm_go import work_ledger as wl
+from efm_go.validation import (
     WORK_REPORT_SCHEMA,
     ValidationError,
     clamp_report,

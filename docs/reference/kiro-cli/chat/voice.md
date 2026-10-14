@@ -82,7 +82,7 @@ program or provider-specific runtime to install. `kirocrew doctor` reports the
 recognizer, model, and resolved decoder.
 
 The other two providers, the full setting list and the retired providers are in
-Kiro Crew's own [configuration reference](../../../../src/kiro_crew/docs/configuration.md).
+Kiro Crew's own [configuration reference](../../../../src/efm_go/docs/configuration.md).
 
 ### CPU threads (many-core hosts)
 

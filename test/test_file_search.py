@@ -10,7 +10,7 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew.dashboard.handlers import api_file_search
+from efm_go.dashboard.handlers import api_file_search
 
 
 def _make_app() -> web.Application:
@@ -28,7 +28,7 @@ def _make_app() -> web.Application:
 
 @pytest.fixture()
 def mock_sel():
-    with patch("kiro_crew.dashboard.handlers.sel") as m:
+    with patch("efm_go.dashboard.handlers.sel") as m:
         m.return_value = MagicMock()
         yield m.return_value
 
@@ -104,7 +104,7 @@ class TestFileSearch:
         ws_dir.mkdir()
         (ws_dir / "target.py").write_text("t")
         (tmp_path / "target_outside.py").write_text("o")
-        with patch("kiro_crew.config.loader.workspace_dir_for", return_value=ws_dir):
+        with patch("efm_go.config.loader.workspace_dir_for", return_value=ws_dir):
             async with TestClient(TestServer(_make_app())) as client:
                 resp = await client.get("/api/file-search?q=target&workspace=myws")
                 names = {r["name"] for r in (await resp.json())["results"]}
@@ -176,7 +176,7 @@ class TestFileSearch:
     async def test_project_sensitive_path_rejected(self, tmp_path, mock_sel):
         sensitive_dir = tmp_path / "secret"
         sensitive_dir.mkdir()
-        with patch("kiro_crew.security.is_sensitive_path", return_value=True):
+        with patch("efm_go.security.is_sensitive_path", return_value=True):
             async with TestClient(TestServer(_make_app())) as client:
                 resp = await client.get(
                     f"/api/file-search?q=test&project={sensitive_dir}"
@@ -282,7 +282,7 @@ class TestFileSearch:
         """SECURITY: an absurd limit is clamped to _SEARCH_LIMIT_CEILING, never
         passed to the walk -- max_collect multiplies it 10x, so an unclamped
         value would amplify server-side filesystem work."""
-        from kiro_crew.dashboard.handlers.files import _SEARCH_LIMIT_CEILING
+        from efm_go.dashboard.handlers.files import _SEARCH_LIMIT_CEILING
         for i in range(_SEARCH_LIMIT_CEILING + 10):
             (tmp_path / f"match_{i:03d}.txt").write_text("x")
         async with TestClient(TestServer(_make_app())) as client:

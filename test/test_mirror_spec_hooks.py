@@ -24,21 +24,21 @@ from types import SimpleNamespace
 
 import pytest
 
-import kiro_crew.config.paths as paths_mod
-import kiro_crew.hooks as hooks_mod
-from kiro_crew.acp import _dispatch
-from kiro_crew.acp.types import EVENT_PERMISSION_REQUEST, JsonRpcMessage
-from kiro_crew.agent_sdk import spec_hooks
-from kiro_crew.agent_sdk.backends import (
+import efm_go.config.paths as paths_mod
+import efm_go.hooks as hooks_mod
+from efm_go.acp import _dispatch
+from efm_go.acp.types import EVENT_PERMISSION_REQUEST, JsonRpcMessage
+from efm_go.agent_sdk import spec_hooks
+from efm_go.agent_sdk.backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
     ACP_BACKEND_GOOSE,
     ACP_BACKEND_OPENCODE,
     ACP_BACKENDS_CREW_FIRES_SPEC_HOOKS,
 )
-from kiro_crew.agent_sdk.capabilities import capabilities_for
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.hooks import (
+from efm_go.agent_sdk.capabilities import capabilities_for
+from efm_go.dashboard import chat_runner
+from efm_go.hooks import (
     HOOK_EVENT_AGENT_SPAWN,
     HOOK_EVENT_POST_TOOL_USE,
     HOOK_EVENT_PRE_TOOL_USE,
@@ -47,8 +47,8 @@ from kiro_crew.hooks import (
     ScriptHookResult,
     ScriptHookStore,
 )
-from kiro_crew.providers.mirrors import mirror_for
-from kiro_crew.providers.mirrors.base import Concern, Disposition
+from efm_go.providers.mirrors import mirror_for
+from efm_go.providers.mirrors.base import Concern, Disposition
 
 _FRAMES = Path(__file__).parent / "fixtures" / "acp_frames"
 
@@ -294,8 +294,8 @@ def test_the_chat_turn_loop_fires_the_other_four_events(backend, agents_dir, tmp
 
 def _bare_client(backend: str):
     """An ``AcpClient`` with only the tool-call caches, as the goose tests build one."""
-    from kiro_crew.acp.client import AcpClient
-    from kiro_crew.acp.types import AcpPromptStats
+    from efm_go.acp.client import AcpClient
+    from efm_go.acp.types import AcpPromptStats
 
     client = AcpClient.__new__(AcpClient)
     client._acp_backend = backend
@@ -493,7 +493,7 @@ def test_a_name_with_no_underscore_stays_as_written():
 
 
 def _qualified(backend, name, servers):
-    from kiro_crew.acp.harness_tool_names import qualified_harness_tool_id
+    from efm_go.acp.harness_tool_names import qualified_harness_tool_id
 
     return qualified_harness_tool_id(backend, name, servers)
 
@@ -618,7 +618,7 @@ def test_a_rewritten_server_from_opencodes_own_config_meets_its_exact_deny(tmp_p
 def test_a_long_mcp_title_keeps_its_identity_and_meets_its_deny(tmp_path, monkeypatch):
     # KAS's 128-character id bound does not apply: a 130-character server name
     # fused with its tool is still read, so a deny written for it still blocks.
-    from kiro_crew.acp.harness_tool_names import MAX_HARNESS_TOOL_NAME_LEN
+    from efm_go.acp.harness_tool_names import MAX_HARNESS_TOOL_NAME_LEN
 
     server = "s" * 130
     client = _bare_client(ACP_BACKEND_OPENCODE)
@@ -634,7 +634,7 @@ def test_a_long_mcp_title_keeps_its_identity_and_meets_its_deny(tmp_path, monkey
 def test_the_every_underscore_split_of_a_bounded_name_stays_small():
     # The worst title the bound admits ("a_a_..._a") splits at every "_"; the id
     # it yields stays within a fixed size, not megabytes.
-    from kiro_crew.acp.harness_tool_names import MAX_HARNESS_TOOL_NAME_LEN
+    from efm_go.acp.harness_tool_names import MAX_HARNESS_TOOL_NAME_LEN
 
     title = ("a_" * MAX_HARNESS_TOOL_NAME_LEN)[: MAX_HARNESS_TOOL_NAME_LEN - 1] + "a"
     assert _dispatch.harness_tool_name({"title": title}) == title
@@ -718,7 +718,7 @@ def test_an_unreadable_project_spec_fails_closed(backend, agents_dir, tmp_path):
 
 
 def test_kas_still_reads_the_user_level_alone(agents_dir, tmp_path):
-    from kiro_crew.agent_sdk.backends import ACP_BACKEND_KAS
+    from efm_go.agent_sdk.backends import ACP_BACKEND_KAS
 
     _write_spec(agents_dir, "a1", {})
     project = _project_spec(

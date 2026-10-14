@@ -1,6 +1,6 @@
 """No test patches a name the sandbox or platform_compat facade forwards with ``create=True``.
 
-``kiro_crew.sandbox`` and ``kiro_crew.platform_compat`` forward a write or delete of a
+``efm_go.sandbox`` and ``efm_go.platform_compat`` forward a write or delete of a
 moved name to the owner module that defines it. ``mock.patch`` restores a name the
 facade does not hold by deleting it and then, finding it gone, writing its original
 back -- unless ``create`` is true, in which case it skips that write and the owner loses
@@ -12,7 +12,7 @@ The scan reads every file in the test trees and the root conftest that mentions
 ``mock.patch`` under any import alias, and which module and name a target means,
 through imports, name assignments, ``importlib.import_module`` and
 ``pytest.importorskip`` of a known string, module-name constants, f-strings and
-concatenation. A facade is also recognised as any kiro_crew module's attribute
+concatenation. A facade is also recognised as any efm_go module's attribute
 (``discover.platform_compat``, ``sandbox.platform_compat``), since every module that
 binds one of those names binds the facade. A name is first looked up among the enclosing functions'
 parameters, which are unbound here. A target that is a parameter, a call's result, a name
@@ -36,7 +36,7 @@ from unittest import mock
 import pytest
 from stale_package_attribute import package_attribute_replaced
 
-from kiro_crew import platform_compat, sandbox
+from efm_go import platform_compat, sandbox
 
 # The scan parses every test file once per module; keep it on one worker.
 pytestmark = pytest.mark.xdist_group(name="tree_scan_sandbox_refactor_create_guard")
@@ -47,7 +47,7 @@ _FACADES = {module.__name__: module for module in (sandbox, platform_compat)}
 _FACADE_LEAVES = {name.rpartition(".")[2]: name for name in _FACADES}
 _DYNAMIC = "<dynamic>"
 _REPO = Path(__file__).resolve().parents[1]
-_SRC = _REPO / "src" / "kiro_crew"
+_SRC = _REPO / "src" / "efm_go"
 
 #: What a ``mock.patch`` callable resolves to, per module that provides one: the
 #: standard library, its PyPI backport, and pytest-mock's ``mocker`` fixture.
@@ -99,15 +99,15 @@ _IMPORTERS = frozenset({"importlib.import_module", "pytest.importorskip"})
 
 
 def _facade_spelling(dotted: str) -> str:
-    """*dotted*, or the facade it spells as another kiro_crew module's attribute.
+    """*dotted*, or the facade it spells as another efm_go module's attribute.
 
-    ``kiro_crew.dashboard.handlers.discover.platform_compat`` is the facade itself:
-    every kiro_crew module that binds ``platform_compat`` or ``sandbox`` binds that
-    module, the sandbox facade included (``kiro_crew.sandbox.platform_compat``).
+    ``efm_go.dashboard.handlers.discover.platform_compat`` is the facade itself:
+    every efm_go module that binds ``platform_compat`` or ``sandbox`` binds that
+    module, the sandbox facade included (``efm_go.sandbox.platform_compat``).
     """
     prefix, _, leaf = dotted.rpartition(".")
     facade = _FACADE_LEAVES.get(leaf)
-    if facade is None or dotted == facade or not prefix.startswith("kiro_crew"):
+    if facade is None or dotted == facade or not prefix.startswith("efm_go"):
         return dotted
     return facade
 
@@ -353,11 +353,11 @@ _FACADE_WORD = re.compile(r"\b(?:sandbox|platform_compat)\b")
 def _worth_parsing(text: str) -> bool:
     """Whether a test file could hold a patch of a facade at all: it mentions a patch,
     the package, and either facade's module name however it is imported or spelled."""
-    return "patch" in text and "kiro_crew" in text and _FACADE_WORD.search(text) is not None
+    return "patch" in text and "efm_go" in text and _FACADE_WORD.search(text) is not None
 
 
-_IMPORT_SB = "from kiro_crew import sandbox\n"
-_IMPORT_PC = "from kiro_crew import platform_compat\n"
+_IMPORT_SB = "from efm_go import sandbox\n"
+_IMPORT_PC = "from efm_go import platform_compat\n"
 _FROM_MOCK = "from unittest import mock\n"
 _SB = sandbox.__name__
 _PC = platform_compat.__name__
@@ -415,7 +415,7 @@ _CASES: list[tuple[str, list[str]]] = [
     (_FROM_MOCK + f'_MOD = "{_SB}"\nmock.patch(f"{{_MOD}}.{_MOVED}", create=True)', [_MOVED]),
     (_FROM_MOCK + f'_MOD = "{_SB}"\nmock.patch(_MOD + ".{_MOVED}", create=True)', [_MOVED]),
     (
-        _FROM_MOCK + f'_MOD = "kiro_crew.other"\nmock.patch(f"{{_MOD}}.{_MOVED}", create=True)',
+        _FROM_MOCK + f'_MOD = "efm_go.other"\nmock.patch(f"{{_MOD}}.{_MOVED}", create=True)',
         [],
     ),
     (_FROM_MOCK + f'import os\nmock.patch(f"{{os.__name__}}.{_MOVED}", create=True)', []),
@@ -478,25 +478,25 @@ _CASES: list[tuple[str, list[str]]] = [
     ),
     # the owner itself is not the facade: its own binding is restored by assignment
     (
-        "from kiro_crew import sandbox_mount_sweep\n"
+        "from efm_go import sandbox_mount_sweep\n"
         + _FROM_MOCK
         + f'mock.patch.object(sandbox_mount_sweep, "{_MOVED}", create=True)',
         [],
     ),
-    # a facade reached as another kiro_crew module's attribute is still the facade
+    # a facade reached as another efm_go module's attribute is still the facade
     (
-        "from kiro_crew.dashboard.handlers import discover\n"
+        "from efm_go.dashboard.handlers import discover\n"
         + _FROM_MOCK
         + f'mock.patch.object(discover.platform_compat, "{_MOVED_PC}", create=True)',
         [_MOVED_PC],
     ),
     (
-        "from kiro_crew.dashboard.handlers import discover\n"
+        "from efm_go.dashboard.handlers import discover\n"
         + _FROM_MOCK
         + f'mock.patch.object(discover.platform_compat, "{_KEPT_PC}", create=True)',
         [],
     ),
-    (_FROM_MOCK + f'mock.patch("kiro_crew.cron.sandbox.{_MOVED}", create=True)', [_MOVED]),
+    (_FROM_MOCK + f'mock.patch("efm_go.cron.sandbox.{_MOVED}", create=True)', [_MOVED]),
     (_FROM_MOCK + f'mock.patch("{_SB}.os.{_MOVED}", create=True)', []),
     # a parameter shadows what the file binds under that name, even a fixture def
     (
@@ -534,9 +534,9 @@ _CASES: list[tuple[str, list[str]]] = [
         [_DYNAMIC],
     ),
     (
-        "import kiro_crew.sandbox\n"
+        "import efm_go.sandbox\n"
         + _FROM_MOCK
-        + f'h = getattr(kiro_crew, "sandbox")\nmock.patch.object(h, "{_MOVED}", create=True)',
+        + f'h = getattr(efm_go, "sandbox")\nmock.patch.object(h, "{_MOVED}", create=True)',
         [_DYNAMIC],
     ),
     (
@@ -565,21 +565,21 @@ _CASES: list[tuple[str, list[str]]] = [
     ),
     # a rebound string constant: the binding that spells a facade path wins
     (
-        _FROM_MOCK + f'T = "kiro_crew.other.x"\nT = "{_SB}.{_MOVED}"\nmock.patch(T, create=True)',
+        _FROM_MOCK + f'T = "efm_go.other.x"\nT = "{_SB}.{_MOVED}"\nmock.patch(T, create=True)',
         [_MOVED],
     ),
     (
-        _FROM_MOCK + 'T = "kiro_crew.other.x"\nT = "kiro_crew.other.y"\nmock.patch(T, create=True)',
+        _FROM_MOCK + 'T = "efm_go.other.x"\nT = "efm_go.other.y"\nmock.patch(T, create=True)',
         [],
     ),
     # import_module of a relative name with its package
     (
-        _FROM_MOCK + 'import importlib\nh = importlib.import_module(".sandbox", "kiro_crew")\n'
+        _FROM_MOCK + 'import importlib\nh = importlib.import_module(".sandbox", "efm_go")\n'
         f'mock.patch.object(h, "{_MOVED}", create=True)',
         [_MOVED],
     ),
     (
-        _FROM_MOCK + 'import importlib\nh = importlib.import_module(".other", "kiro_crew")\n'
+        _FROM_MOCK + 'import importlib\nh = importlib.import_module(".other", "efm_go")\n'
         f'mock.patch.object(h, "{_MOVED}", create=True)',
         [],
     ),
@@ -589,15 +589,15 @@ _CASES: list[tuple[str, list[str]]] = [
         [_MOVED],
     ),
     (
-        "import kiro_crew.sandbox\n"
+        "import efm_go.sandbox\n"
         + _FROM_MOCK
-        + f'mock.patch.object(kiro_crew.sandbox, "{_MOVED}", create=True)',
+        + f'mock.patch.object(efm_go.sandbox, "{_MOVED}", create=True)',
         [_MOVED],
     ),
     (
-        "import kiro_crew.platform_compat\n"
+        "import efm_go.platform_compat\n"
         + _FROM_MOCK
-        + f'mock.patch.object(kiro_crew.platform_compat, "{_MOVED_PC}", create=True)',
+        + f'mock.patch.object(efm_go.platform_compat, "{_MOVED_PC}", create=True)',
         [_MOVED_PC],
     ),
 ]
@@ -618,18 +618,18 @@ def test_the_case_names_are_what_the_cases_claim() -> None:
 
 
 def test_a_facade_reached_as_a_module_attribute_is_the_facade() -> None:
-    """The attribute rule, pinned both ways: any kiro_crew module's ``sandbox`` or
+    """The attribute rule, pinned both ways: any efm_go module's ``sandbox`` or
     ``platform_compat`` binding IS that facade, and any other attribute is itself."""
-    from kiro_crew.dashboard.handlers import discover
+    from efm_go.dashboard.handlers import discover
 
     assert discover.platform_compat is platform_compat
-    assert _facade_spelling("kiro_crew.dashboard.handlers.discover.platform_compat") == _PC
-    assert _facade_spelling("kiro_crew.cron.sandbox") == _SB
+    assert _facade_spelling("efm_go.dashboard.handlers.discover.platform_compat") == _PC
+    assert _facade_spelling("efm_go.cron.sandbox") == _SB
     assert _facade_spelling(_SB) == _SB
     assert _facade_spelling(f"{_SB}.platform_compat") == _PC
     assert _facade_spelling(f"{_SB}.os") == f"{_SB}.os"
     assert _facade_spelling("elsewhere.sandbox") == "elsewhere.sandbox"
-    assert _facade_spelling("kiro_crew.sandbox_mount_sweep") == "kiro_crew.sandbox_mount_sweep"
+    assert _facade_spelling("efm_go.sandbox_mount_sweep") == "efm_go.sandbox_mount_sweep"
 
 
 @pytest.mark.parametrize("split", [False, True], ids=["as-imported", "package-attribute-stale"])
@@ -640,7 +640,7 @@ def test_the_premise_create_true_through_the_facade_unbinds_the_owner(split: boo
     attribute can name another copy once an earlier test in the worker imports it
     fresh, so reading the attribute would make this check depend on test order.
     """
-    owner = "kiro_crew.sandbox_mount_sweep"
+    owner = "efm_go.sandbox_mount_sweep"
     with package_attribute_replaced(owner) if split else nullcontext():
         sandbox_mount_sweep = importlib.import_module(owner)
         original = vars(sandbox_mount_sweep)["_overflow_uid"]
@@ -658,20 +658,20 @@ def test_every_must_flag_case_passes_the_prefilter() -> None:
     flagged = [source for source, expected in _CASES if expected]
     assert flagged and [source for source in flagged if not _worth_parsing(source)] == []
     assert not _worth_parsing(
-        "from unittest import mock\nfrom kiro_crew import agent_state\n"
+        "from unittest import mock\nfrom efm_go import agent_state\n"
         "mock.patch.object(agent_state, 'x')\n"
     )
     assert _worth_parsing(
-        "from unittest import mock\nfrom kiro_crew import (\n    sandbox,\n)\n"
+        "from unittest import mock\nfrom efm_go import (\n    sandbox,\n)\n"
         "mock.patch.object(sandbox, 'x')\n"
     )
     assert _worth_parsing(
-        "from unittest import mock\nfrom kiro_crew import (  # noqa\n    agent,  # x\n"
+        "from unittest import mock\nfrom efm_go import (  # noqa\n    agent,  # x\n"
         "    platform_compat,\n)\nmock.patch.object(platform_compat, 'x')\n"
     )
     assert not _worth_parsing("from unittest import mock\nmock.patch.object(json, 'x')\n")
-    assert not _worth_parsing("from kiro_crew import sandbox\n")
-    assert not _worth_parsing("from kiro_crew import sandbox_doc\nmock.patch.object(x, 'y')\n")
+    assert not _worth_parsing("from efm_go import sandbox\n")
+    assert not _worth_parsing("from efm_go import sandbox_doc\nmock.patch.object(x, 'y')\n")
 
 
 def test_no_test_patches_a_forwarded_name_that_it_may_create() -> None:

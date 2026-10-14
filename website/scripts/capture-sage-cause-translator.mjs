@@ -67,7 +67,7 @@ const CAUSES = [
   {
     id: 'runtime-not-importable',
     pr: 42,
-    error: 'the reviewer cannot run: the ACP runtime (kiro_crew.acp.runtime) is not'
+    error: 'the reviewer cannot run: the ACP runtime (efm_go.acp.runtime) is not'
       + ' importable in this install',
     expect: 'this install cannot load the agent runtime it needs',
   },

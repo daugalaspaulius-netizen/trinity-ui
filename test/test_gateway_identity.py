@@ -15,7 +15,7 @@ import threading
 
 import pytest
 
-from kiro_crew import gateway_identity
+from efm_go import gateway_identity
 
 
 @pytest.fixture(autouse=True)

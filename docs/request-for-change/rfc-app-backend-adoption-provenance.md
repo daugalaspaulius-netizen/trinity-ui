@@ -19,7 +19,7 @@ Status: draft. This document exists to put a decision on the base branch, becaus
 the change it covers REMOVES two capabilities the current specs describe. It asks
 maintainers to accept the removals, or to reject them and say what should ship
 instead. Nothing here is implemented by this document; the implementation is
-[#13650](https://github.com/kirodotdev/KiroCrew/pull/13650).
+[#13650](https://efmleads.com/pull/13650).
 
 - Author: drafted by the agent working #13403; the acceptance decision is a
   maintainer's, not the author's.

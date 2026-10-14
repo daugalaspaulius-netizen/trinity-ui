@@ -29,9 +29,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew.acp.types import TurnUsage
-from kiro_crew.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
-from kiro_crew.subagent import SubagentManager
+from efm_go.acp.types import TurnUsage
+from efm_go.providers.base import EVENT_COMPLETE, EVENT_TEXT_CHUNK
+from efm_go.subagent import SubagentManager
 
 # ``SubagentManager.spawn`` refuses -- registering no task -- while the host
 # looks short of memory, which is the runner's state, not this test's input.
@@ -112,22 +112,22 @@ async def _spawn_and_capture(stream_factory) -> list[dict]:
     captured: list[dict] = []
     mgr = _manager(_mock_sessions(stream_factory))
     with (
-        patch("kiro_crew.subagent.Stats"),
-        patch("kiro_crew.subagent.sel"),
+        patch("efm_go.subagent.Stats"),
+        patch("efm_go.subagent.sel"),
         patch(
-            "kiro_crew.dashboard.handlers.usage._write_token_record",
+            "efm_go.dashboard.handlers.usage._write_token_record",
             side_effect=lambda record, now: captured.append(record),
         ),
         patch(
-            "kiro_crew.dashboard.handlers.usage.read_context_tokens",
+            "efm_go.dashboard.handlers.usage.read_context_tokens",
             return_value=(0, 0),
         ),
         patch(
-            "kiro_crew.dashboard.handlers.usage.read_effective_agent",
+            "efm_go.dashboard.handlers.usage.read_effective_agent",
             return_value="kirocrew",
         ),
         patch(
-            "kiro_crew.dashboard.handlers.usage.read_effective_model",
+            "efm_go.dashboard.handlers.usage.read_effective_model",
             return_value="claude-opus-5",
         ),
     ):

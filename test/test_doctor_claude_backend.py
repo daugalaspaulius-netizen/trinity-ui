@@ -19,8 +19,8 @@ import io
 
 import pytest
 
-from kiro_crew import cli_doctor
-from kiro_crew.agent_sdk import INSTALLED, MISSING, UNKNOWN, BackendInstallState
+from efm_go import cli_doctor
+from efm_go.agent_sdk import INSTALLED, MISSING, UNKNOWN, BackendInstallState
 
 
 def _state(installed: str, **over) -> BackendInstallState:
@@ -48,7 +48,7 @@ def _report(monkeypatch, state, *, on_path: bool = True) -> str:
             raise RuntimeError("probe blew up")
         return state
 
-    monkeypatch.setattr("kiro_crew.agent_sdk.probe_backend", _probe)
+    monkeypatch.setattr("efm_go.agent_sdk.probe_backend", _probe)
     monkeypatch.setattr(
         cli_doctor.shutil,
         "which",

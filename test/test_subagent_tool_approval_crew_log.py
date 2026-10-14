@@ -40,14 +40,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from off_loop_helpers import off_loop
 
-from kiro_crew.crew_log import crew_log_path, emit
-from kiro_crew.crew_log.projection import fold_approvals
-from kiro_crew.crew_log.store import CrewLog
-from kiro_crew.execution_context import execution_for_store
-from kiro_crew.hooks import TOOL_ALLOW, ToolHookResult
-from kiro_crew.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
-from kiro_crew.subagent import SubagentInfo, SubagentManager
-from kiro_crew.subagent_manager._component import ManagerComponent
+from efm_go.crew_log import crew_log_path, emit
+from efm_go.crew_log.projection import fold_approvals
+from efm_go.crew_log.store import CrewLog
+from efm_go.execution_context import execution_for_store
+from efm_go.hooks import TOOL_ALLOW, ToolHookResult
+from efm_go.providers.base import EVENT_PERMISSION_REQUEST, LLMEvent
+from efm_go.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent_manager._component import ManagerComponent
 
 SESSION = "acp-child-tool-approval-1"
 ASKING_TURN = 4
@@ -219,10 +219,10 @@ def _manager(event: LLMEvent, *, agent_id: str = AGENT_ID, **manager_kw: object)
 async def _drive(manager: SubagentManager, info: SubagentInfo) -> None:
     """Run the child's event loop to completion."""
     with (
-        patch("kiro_crew.subagent.Stats"),
-        patch("kiro_crew.subagent.sel"),
-        patch("kiro_crew.subagent.update_state"),
-        patch("kiro_crew.subagent.create_agent_folder", MagicMock()),
+        patch("efm_go.subagent.Stats"),
+        patch("efm_go.subagent.sel"),
+        patch("efm_go.subagent.update_state"),
+        patch("efm_go.subagent.create_agent_folder", MagicMock()),
     ):
         await manager._run_inner(info, f"subagent:{info.id}")
 
@@ -499,7 +499,7 @@ def test_two_children_of_one_parent_sharing_a_wire_id_keep_separate_rows():
     what is unproven until here is that the ids that helper mints for two
     children survive together in one parent's fold.
     """
-    from kiro_crew.subagent_manager.run import RunEventCoordinator
+    from efm_go.subagent_manager.run import RunEventCoordinator
 
     _open_session()
     recorder = SimpleNamespace(

@@ -17,14 +17,14 @@ from unittest.mock import MagicMock
 import pytest
 from chat_test_helpers import _make_state, move_transcript_past
 
-from kiro_crew.config.loader import KiroCrewConfig, SessionSummaryConfig
-from kiro_crew.dashboard import chat_summary
-from kiro_crew.dashboard import session_control as sc
-from kiro_crew.dashboard.chat_utils import slot_history_key
-from kiro_crew.dashboard.handlers import session_control as handlers_sc
-from kiro_crew.mcp_dashboard import TABLE, _render_session_summary
-from kiro_crew.mcp_tools.dashboard_client import InMemoryDashboardClient
-from kiro_crew.mcp_tools.table import Caller, ToolContext
+from efm_go.config.loader import KiroCrewConfig, SessionSummaryConfig
+from efm_go.dashboard import chat_summary
+from efm_go.dashboard import session_control as sc
+from efm_go.dashboard.chat_utils import slot_history_key
+from efm_go.dashboard.handlers import session_control as handlers_sc
+from efm_go.mcp_dashboard import TABLE, _render_session_summary
+from efm_go.mcp_tools.dashboard_client import InMemoryDashboardClient
+from efm_go.mcp_tools.table import Caller, ToolContext
 
 _VERIFIED = "dashboard:chat-verified"
 
@@ -241,7 +241,7 @@ def test_the_route_serves_an_internal_caller(tmp_path, monkeypatch):
 
 
 def test_the_route_is_a_strict_internal_path():
-    from kiro_crew.dashboard.server import _STRICT_INTERNAL_API_PATHS
+    from efm_go.dashboard.server import _STRICT_INTERNAL_API_PATHS
 
     assert "/api/session-control/summary" in _STRICT_INTERNAL_API_PATHS
 

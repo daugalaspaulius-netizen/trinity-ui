@@ -22,7 +22,7 @@ on the card.
 Every foreign contribution kind lands in exactly one:
 
 - **(a) existing extension point** — an `app.json` field a Kiro Crew app already
-  declares today, consumed by `kiro_crew.apps.bridges`. Named per row.
+  declares today, consumed by `efm_go.apps.bridges`. Named per row.
 - **(b) out-of-process contributor** — needs a mechanism this repo does not have: a
   live foreign process reading and writing a unit's state through a published surface.
   Named here so the matrix can say which kinds fall outside the converter, not as a
@@ -47,8 +47,8 @@ field exists but a foreign process has to be alive to fill it.
 
 ## 2. What Kiro Crew already has
 
-The mapping targets, from this tree (`src/kiro_crew/apps/manifest.py`, consumed at
-`src/kiro_crew/apps/bridges.py`):
+The mapping targets, from this tree (`src/efm_go/apps/manifest.py`, consumed at
+`src/efm_go/apps/bridges.py`):
 
 | Target | `app.json` field | Consumer |
 |---|---|---|
@@ -68,7 +68,7 @@ Two facts about this table decide several rows below.
 **There is no app-declarable agent hook.** `backend.hooks` are Python callables inside
 the app's own process; they are not agent lifecycle hooks. The agent hook surface is
 `agent.kiro_hooks` plus autoimport from the kiro hooks dir
-(`kiro_crew.agent_materialization.kiro_hooks`, reached through `kiro_crew.agent`), it
+(`efm_go.agent_materialization.kiro_hooks`, reached through `efm_go.agent`), it
 accepts five events -- `preToolUse`, `postToolUse`, `userPromptSubmit`, `agentSpawn`,
 `stop` -- and each entry is `{command, matcher}` where `command` must be an absolute
 path to an existing file with no shell metacharacters. It is operator config, not an

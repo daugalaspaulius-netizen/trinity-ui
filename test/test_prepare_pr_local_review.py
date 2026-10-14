@@ -33,10 +33,10 @@ from pathlib import Path
 import pytest
 from skill_script_helpers import load_skill_script
 
-from kiro_crew.platform.update_governance import _GIT_LOCATION_VARS
+from efm_go.platform.update_governance import _GIT_LOCATION_VARS
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SKILL_DIR = REPO_ROOT / "src" / "kiro_crew" / "builtin_skills" / "kirocrew-dev" / "kirocrew-prepare-pr"
+SKILL_DIR = REPO_ROOT / "src" / "efm_go" / "builtin_skills" / "kirocrew-dev" / "kirocrew-prepare-pr"
 SCRIPTS_DIR = SKILL_DIR / "scripts"
 PROFILES_DIR = SKILL_DIR / "profiles"
 WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"
@@ -66,7 +66,7 @@ FAKE_VALUES = {
     "github.event.pull_request.head.sha": "b" * 40,
     "github.event.pull_request.base.ref": "main",
     "github.event.pull_request.number": "(local run - no PR yet)",
-    "github.repository": "kirodotdev/KiroCrew",
+    "github.repository": "efmleads.com",
     "runner.temp": "/tmp/stage",
 }
 

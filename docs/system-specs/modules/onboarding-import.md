@@ -79,7 +79,7 @@ Placement rules that are load-bearing:
   `_install_skill_tree`, `_sqlite_columns`, `_scan_lineage_install`,
   `_preserve_replaced_tree`, `_preserve_replaced_json`, `_toml`, `url2pathname`,
   `_is_link_like` and `_write_json` are mirrored the same way as the
-  `kiro_crew.security` facade: `onboarding_import._EXPORTS` maps each name to the
+  `efm_go.security` facade: `onboarding_import._EXPORTS` maps each name to the
   dotted name of the one module that holds it (the Gemini adapter for the
   standard library's `url2pathname`, since that is where its call site looks it
   up), and that module's namespace is the only place the value lives. The facade
@@ -144,7 +144,7 @@ Placement rules that are load-bearing:
   guard is pinned on a planted source, and it must see the names the engine's own
   suites rebind (`_is_link_like`, `_write_json`, `_MAX_LESSONS_TOTAL`,
   `make_sync_embed_fn`), so an empty scan cannot pass.
-- **One logger.** Every owner logs through `kiro_crew.onboarding_import`, the
+- **One logger.** Every owner logs through `efm_go.onboarding_import`, the
   name operators and tests filter import warnings on.
 - **Managed MCP names are read from the live registry.** `_scan_source` wires the
   registry's own `_managed_mcp_names` into `_Scan.managed_mcp_names`. The MCP

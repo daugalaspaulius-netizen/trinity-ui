@@ -4,7 +4,7 @@ The two pipeline-conductor scripts re-implement readers for three on-disk
 formats this package itself writes:
 
 1. the session-transcript JSONL entry shape -- written by
-   ``kiro_crew.history.ConversationLog.append``;
+   ``efm_go.history.ConversationLog.append``;
 2. the ``dashboard_`` transcript-filename prefix -- a dashboard slot key
    becomes ``dashboard:<slot>`` via ``chat_utils._history_key_for`` and then
    the ``dashboard_<slot>.jsonl`` stem via ``history._safe_key``;
@@ -35,15 +35,15 @@ from pathlib import Path
 
 from skill_script_helpers import load_skill_script
 
-from kiro_crew.acp.types import TurnUsage
-from kiro_crew.dashboard.chat_utils import _history_key_for
-from kiro_crew.dashboard.handlers import usage as usage_mod
-from kiro_crew.history import ConversationLog
+from efm_go.acp.types import TurnUsage
+from efm_go.dashboard.chat_utils import _history_key_for
+from efm_go.dashboard.handlers import usage as usage_mod
+from efm_go.history import ConversationLog
 
 SKILL_DIR = (
     Path(__file__).resolve().parents[1]
     / "src"
-    / "kiro_crew"
+    / "efm_go"
     / "builtin_skills"
     / "pipeline-conductor"
 )
@@ -95,8 +95,8 @@ class TestDeliveryPatternRoundTrip:
     """
 
     def test_watchdog_patterns_match_the_constants_the_gateway_emits(self):
-        from kiro_crew.acp.types import STOP_REASON_TOOL_STALL
-        from kiro_crew.dashboard.state import (
+        from efm_go.acp.types import STOP_REASON_TOOL_STALL
+        from efm_go.dashboard.state import (
             STALE_RECOVERY_PREFIX,
             TOOL_STALL_RECOVERY_PREFIX,
         )

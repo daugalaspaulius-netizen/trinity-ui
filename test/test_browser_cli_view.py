@@ -14,8 +14,8 @@ from collections.abc import Iterator
 
 import pytest
 
-from kiro_crew import platform_compat
-from kiro_crew.browser_cli import view as mod
+from efm_go import platform_compat
+from efm_go.browser_cli import view as mod
 
 _REAL_STRUCTURAL_BLINDNESS_PROBE = mod._structurally_blind_listener_attribution
 _REAL_PROCESS_OWNS_LOOPBACK_LISTENER = platform_compat.process_owns_loopback_listener

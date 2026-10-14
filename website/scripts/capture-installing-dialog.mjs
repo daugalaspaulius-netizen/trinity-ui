@@ -33,7 +33,7 @@ const OUT = process.argv[2] || '../temp-screenshots/installing-dialog-auto-retry
 mkdirSync(OUT, { recursive: true })
 
 const PROBE_MS = 5000
-const BUNDLE_ROOT = '/virtual/resources/backend-dist/kirocrew-backend-x64'
+const BUNDLE_ROOT = '/virtual/resources/backend-dist/efm-go-backend-x64'
 const BUNDLE_BIN = `${BUNDLE_ROOT}/bin/kirocrew`
 const BUNDLE_LIB = `${BUNDLE_ROOT}/lib/python3.12`
 

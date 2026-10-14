@@ -19,10 +19,10 @@ from pathlib import Path
 
 import pytest
 
-import kiro_crew
-from kiro_crew import jsonl_util, platform_compat
-from kiro_crew.image_artifacts import MAX_IMAGE_BYTES_PER_MESSAGE
-from kiro_crew.jsonl_util import (
+import efm_go
+from efm_go import jsonl_util, platform_compat
+from efm_go.image_artifacts import MAX_IMAGE_BYTES_PER_MESSAGE
+from efm_go.jsonl_util import (
     RECORD_CAP,
     OversizedRecord,
     UndecodableRecord,
@@ -288,7 +288,7 @@ class TestBoundedRecordReaders:
 
     def test_skip_reader_logs_once_and_keeps_going(self, tmp_path, caplog):
         path = self._write(tmp_path, b"y" * 300 + b"\n", b'{"a":2}\n', b"y" * 300 + b"\n")
-        with caplog.at_level(logging.DEBUG, logger="kiro_crew.jsonl_util"):
+        with caplog.at_level(logging.DEBUG, logger="efm_go.jsonl_util"):
             with open(path, "rb") as fh:
                 got = list(bounded_records(fh, path, cap=200, label="probe"))
         assert got == ['{"a":2}\n']
@@ -737,7 +737,7 @@ class TestNoUnboundedHandleIteration:
     """
 
     def test_every_handle_iteration_is_bounded_or_excused(self):
-        src = Path(kiro_crew.__file__).parent
+        src = Path(efm_go.__file__).parent
         # Detect by the handle-name vocabulary this codebase uses, not by a
         # fixed window after the `with`: sel.py binds its handle several lines
         # earlier (`handle = self._reader_handle(...)`, then `with handle:`),
@@ -772,7 +772,7 @@ class TestNoUnboundedHandleIteration:
         The excused sites are real instances of the shape, so finding them
         proves the detector still works even when nothing is unexcused.
         """
-        src = Path(kiro_crew.__file__).parent
+        src = Path(efm_go.__file__).parent
         handle_names = r"(?:fh|fh2|f|f2|fp|fobj|handle|infile|log_f|logf|src_f|dst_f|stream)"
         found = {
             py.relative_to(src).as_posix()
@@ -785,7 +785,7 @@ class TestNoUnboundedHandleIteration:
 
     def test_the_excused_list_is_not_stale(self):
         """A listed file must still exist, so the list cannot rot into a lie."""
-        src = Path(kiro_crew.__file__).parent
+        src = Path(efm_go.__file__).parent
         for rel in sorted(_ALLOWED_UNBOUNDED_FILES):
             assert (src / rel).is_file(), f"excused reader {rel} no longer exists"
 
@@ -799,7 +799,7 @@ def test_the_byte_ceiling_is_enforced_while_the_handle_is_consumed(tmp_path):
     """
     import errno
 
-    from kiro_crew.jsonl_util import open_regular_nofollow
+    from efm_go.jsonl_util import open_regular_nofollow
 
     path = tmp_path / "grows-under-the-reader.jsonl"
     path.write_bytes(b'{"one":1}\n')
@@ -816,7 +816,7 @@ def test_the_byte_ceiling_is_enforced_while_the_handle_is_consumed(tmp_path):
 
 def test_a_file_of_exactly_the_ceiling_still_reads_to_the_end(tmp_path):
     """The cap must refuse only an OVERRUN: charging the EOF read would refuse a legal file."""
-    from kiro_crew.jsonl_util import open_regular_nofollow
+    from efm_go.jsonl_util import open_regular_nofollow
 
     path = tmp_path / "exactly-at-the-ceiling.jsonl"
     payload = b"y" * 64

@@ -611,7 +611,7 @@ export function buildAgentRegistry(entries: SettingEntry[]): AgentSettingEntry[]
 
 /**
  * Serialize the agent-facing registry bundled into the Python docs package
- * (`src/kiro_crew/docs/settings-registry.generated.json`).
+ * (`src/efm_go/docs/settings-registry.generated.json`).
  *
  * Emitted from the SAME extraction pass as `settingsRegistry.gen.ts` so the
  * agent's enumeration cannot describe a different set of controls than the

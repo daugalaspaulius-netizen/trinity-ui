@@ -23,12 +23,12 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from kiro_crew.context_blocks import PHASE_PER_TURN, PHASE_SESSION_START, USER_LABEL
-from kiro_crew.crew_log import eager as crew_log_eager
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log import projection as crew_log
-from kiro_crew.dashboard.handlers import usage as usage_mod
-from kiro_crew.dashboard.handlers.telemetry import api_context_trace
+from efm_go.context_blocks import PHASE_PER_TURN, PHASE_SESSION_START, USER_LABEL
+from efm_go.crew_log import eager as crew_log_eager
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log import projection as crew_log
+from efm_go.dashboard.handlers import usage as usage_mod
+from efm_go.dashboard.handlers.telemetry import api_context_trace
 
 SLOT = "chat-1"
 UNIT = "acp-ctx-trace"
@@ -294,7 +294,7 @@ class TestContextTrace:
         source = (
             Path(__file__).resolve().parents[2]
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "dashboard"
             / "chat_runner.py"
         ).read_text(encoding="utf-8")
@@ -399,7 +399,7 @@ class TestContextTrace:
         source = (
             Path(__file__).resolve().parents[2]
             / "src"
-            / "kiro_crew"
+            / "efm_go"
             / "dashboard"
             / "chat_runner.py"
         ).read_text(encoding="utf-8")
@@ -1396,7 +1396,7 @@ class TestApiContextTraceAppDenial:
 
     @pytest.fixture(autouse=True)
     def _quiet_sel(self, monkeypatch):
-        import kiro_crew.sel as sel_mod
+        import efm_go.sel as sel_mod
 
         calls: list[dict] = []
 

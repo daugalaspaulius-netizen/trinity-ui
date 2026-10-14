@@ -93,7 +93,7 @@ try {
     # Last resort: try via python module
     $venvPython = Join-Path (Split-Path (Split-Path $bin)) "python.exe"
     if (Test-Path $venvPython) {
-        & $venvPython -m kiro_crew.cli restart 2>&1 | Out-Null
+        & $venvPython -m efm_go.cli restart 2>&1 | Out-Null
         $status = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 1 }
     }
 }

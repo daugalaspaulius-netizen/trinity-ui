@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from kiro_crew.acp.client import (
+from efm_go.acp.client import (
     _CLAUDE_ACP_PKG_ENTRY,
     _CODEX_ACP_PKG_ENTRY,
     _PI_ACP_PKG_ENTRY,
@@ -128,7 +128,7 @@ async def test_kiro_stderr_keeps_its_existing_prefix():
     reader = AsyncMock(spec=["readline"])
     reader.readline = AsyncMock(side_effect=[b"adapter warning\\n", b""])
 
-    with patch("kiro_crew.acp.client.logger") as logger:
+    with patch("efm_go.acp.client.logger") as logger:
         await client._drain_stderr(reader)
 
     assert logger.warning.call_args.args[1] == "kiro-cli"
@@ -141,7 +141,7 @@ async def test_adapter_stderr_uses_the_label_its_call_site_resolved():
     reader = AsyncMock(spec=["readline"])
     reader.readline = AsyncMock(side_effect=[b"adapter warning\\n", b""])
 
-    with patch("kiro_crew.acp.client.logger") as logger:
+    with patch("efm_go.acp.client.logger") as logger:
         await client._drain_stderr(reader, label="codex-acp via /opt/acp/codex-acp")
 
     assert logger.warning.call_args.args[1] == "codex-acp via /opt/acp/codex-acp"

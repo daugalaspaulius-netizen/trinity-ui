@@ -42,15 +42,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from kiro_crew import session
-from kiro_crew.acp._dispatch import (
+from efm_go import session
+from efm_go.acp._dispatch import (
     BACKGROUND_LAUNCH_LABELS_MAX,
     BackgroundLaunchRecord,
     parse_background_launch,
 )
-from kiro_crew.acp.client import AcpClient
-from kiro_crew.acp.types import ACP_BACKEND_CLAUDE, JsonRpcMessage
-from kiro_crew.session_cleanup import (
+from efm_go.acp.client import AcpClient
+from efm_go.acp.types import ACP_BACKEND_CLAUDE, JsonRpcMessage
+from efm_go.session_cleanup import (
     HARNESS_BACKGROUND_WORK_HARD_CEILING_FACTOR,
     HARNESS_BACKGROUND_WORK_HOLD_SECS,
 )
@@ -354,7 +354,7 @@ class TestProviderExposesIt:
 
 
 def _make_manager(rss_max_mb: int):
-    from kiro_crew.session import SessionManager
+    from efm_go.session import SessionManager
 
     cfg = MagicMock()
     cfg.session.pool_size = 0
@@ -383,8 +383,8 @@ def _proc_route(monkeypatch: pytest.MonkeyPatch) -> None:
 
 async def _rss_tick(manager: Any, rss: int = 2514) -> None:
     with (
-        patch("kiro_crew.session._build_child_map", return_value={}),
-        patch("kiro_crew.session._rss_mb_from_tree", return_value=rss),
+        patch("efm_go.session._build_child_map", return_value={}),
+        patch("efm_go.session._rss_mb_from_tree", return_value=rss),
     ):
         await manager._rss_threshold_check()
 

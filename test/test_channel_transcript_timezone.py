@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from kiro_crew.history import ConversationLog, metadata_now_iso
+from efm_go.history import ConversationLog, metadata_now_iso
 
 CHANNEL_KEY = "slack:1785370133.085469"
 

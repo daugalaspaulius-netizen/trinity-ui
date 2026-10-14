@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from kiro_crew.subagent import SubagentInfo, SubagentManager
+from efm_go.subagent import SubagentInfo, SubagentManager
 
 # Subagent-registry isolation is provided globally by the autouse
 # ``_isolate_subagents_dir`` fixture in ``conftest.py``.
@@ -464,7 +464,7 @@ class TestFollowUpRestApi:
         from aiohttp import web
         from aiohttp.test_utils import TestClient, TestServer
 
-        from kiro_crew.dashboard.handlers.messaging import api_spawn_steer
+        from efm_go.dashboard.handlers.messaging import api_spawn_steer
 
         subagents = MagicMock()
         subagents.follow_up_run = AsyncMock(return_value=(True, "queued"))

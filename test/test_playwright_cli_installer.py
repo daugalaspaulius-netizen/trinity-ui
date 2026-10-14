@@ -1626,7 +1626,7 @@ def test_the_node_floor_matches_what_the_product_requires_of_this_cli() -> None:
     failure, because the install SUCCEEDED. The scripts cannot import the constant,
     running as they do before any Python exists, so it is bound here instead.
     """
-    from kiro_crew.browser_cli.install import MIN_NODE_MAJOR as product_floor
+    from efm_go.browser_cli.install import MIN_NODE_MAJOR as product_floor
 
     sh = re.search(r"^MIN_NODE_MAJOR=(\d+)", INSTALLER_SH.read_text(encoding="utf-8"), re.MULTILINE)
     ps1 = re.search(
@@ -2061,8 +2061,8 @@ def test_the_windows_install_command_cannot_run_a_stale_local_script() -> None:
     NOT prevent the next statement, because the terminating error ends the pipeline
     rather than the command. `&&` is unavailable, since this targets PowerShell 5.1.
     """
-    import kiro_crew.browser_cli.install as install_mod
-    from kiro_crew.browser_cli.install import _standalone_install_command
+    import efm_go.browser_cli.install as install_mod
+    from efm_go.browser_cli.install import _standalone_install_command
 
     original = install_mod.os.name
     try:

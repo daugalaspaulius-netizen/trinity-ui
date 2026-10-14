@@ -14,10 +14,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from chat_test_helpers import _make_ready_kiro_prerequisite
 
-from kiro_crew.dashboard import chat_runner
-from kiro_crew.dashboard.chat import _run_chat
-from kiro_crew.dashboard.handlers.sessions import api_approval_resolve
-from kiro_crew.dashboard.state import (
+from efm_go.dashboard import chat_runner
+from efm_go.dashboard.chat import _run_chat
+from efm_go.dashboard.handlers.sessions import api_approval_resolve
+from efm_go.dashboard.state import (
     REFUSAL_RECOVERY_PREFIX,
     DashboardState,
     _ChatSlot,
@@ -25,17 +25,17 @@ from kiro_crew.dashboard.state import (
     parse_cls_meta,
     row_mid,
 )
-from kiro_crew.dashboard.turn_dispatch import format_approval_no_budget_card
-from kiro_crew.history import ConversationLog
-from kiro_crew.hooks import HOOK_EVENT_PRE_TOOL_USE, ScriptHookResult, ToolHookResult
-from kiro_crew.providers.base import (
+from efm_go.dashboard.turn_dispatch import format_approval_no_budget_card
+from efm_go.history import ConversationLog
+from efm_go.hooks import HOOK_EVENT_PRE_TOOL_USE, ScriptHookResult, ToolHookResult
+from efm_go.providers.base import (
     EVENT_COMPLETE,
     EVENT_PERMISSION_REQUEST,
     EVENT_TEXT_CHUNK,
     EVENT_THINKING_CHUNK,
     LLMEvent,
 )
-from kiro_crew.validation import MAX_TOOL_NAME_LEN
+from efm_go.validation import MAX_TOOL_NAME_LEN
 
 # ── Helpers ──
 
@@ -47,7 +47,7 @@ async def _async_iter(items: list):  # type: ignore[type-arg]
 
 @contextmanager
 def _patch_stats():
-    with patch("kiro_crew.dashboard.chat.sel") as mock_sel:
+    with patch("efm_go.dashboard.chat.sel") as mock_sel:
         mock_sel.return_value = MagicMock()
         yield
 
@@ -251,7 +251,7 @@ async def _answer_approval(
 
 
 def _context_builder(hook_result: ToolHookResult | None = None) -> MagicMock:
-    # ``allow()`` counts itself through kiro_crew.metrics. As a DEFAULT ARGUMENT it
+    # ``allow()`` counts itself through efm_go.metrics. As a DEFAULT ARGUMENT it
     # ran at import, before any pin existed, and built the process-global recorder
     # from the operator's real config: an exporter bound to the real
     # ~/.kiro/crew/metrics for the life of the worker. Built per call instead.
@@ -585,7 +585,7 @@ class TestApprovalModes:
     @pytest.mark.asyncio
     async def test_auto_approve_still_fires_pretooluse_script_hook(self, tmp_path):
         """Auto-approve must NOT bypass scripted PreToolUse hooks (audit gate)."""
-        from kiro_crew.hooks import HOOK_EVENT_PRE_TOOL_USE
+        from efm_go.hooks import HOOK_EVENT_PRE_TOOL_USE
 
         cb = _context_builder(ToolHookResult.auto_approve())
         hook_store = _make_hook_store()
@@ -1312,7 +1312,7 @@ class TestDenyOnce:
         fut: asyncio.Future[str] = loop.create_future()
         slot._approval_futures["req-audit"] = fut
 
-        with patch("kiro_crew.dashboard.state.sel") as mock_sel:
+        with patch("efm_go.dashboard.state.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             state.resolve_approval("req-audit", False, rejected_once=True)
             outcomes = [
@@ -1391,7 +1391,7 @@ class TestDenyOnce:
         answerer = asyncio.get_event_loop().create_task(
             _answer_approval(slot, "req-1", "rejected_once")
         )
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             mock_sel.return_value = MagicMock()
             with _patch_stats():
                 await _run_chat(state, slot, "hello")
@@ -1444,7 +1444,7 @@ class TestBackgroundApprovalDenyFast:
             fut.cancel()  # don't leave a dangling future
             raise asyncio.TimeoutError
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.asyncio.wait_for", _fake_wait_for)
+        monkeypatch.setattr("efm_go.dashboard.state.asyncio.wait_for", _fake_wait_for)
 
         result = await state.request_approval("req-bg", "heartbeat", "fs_write", is_background=True)
 
@@ -1466,7 +1466,7 @@ class TestBackgroundApprovalDenyFast:
             fut.cancel()
             raise asyncio.TimeoutError
 
-        monkeypatch.setattr("kiro_crew.dashboard.state.asyncio.wait_for", _fake_wait_for)
+        monkeypatch.setattr("efm_go.dashboard.state.asyncio.wait_for", _fake_wait_for)
 
         # Default is_background=False — interactive dashboard/slack path.
         result = await state.request_approval("req-ui", "dashboard", "fs_write")
@@ -1555,7 +1555,7 @@ class TestExpiredApprovalRetiresTheCard:
         state, _ = _make_state(tmp_path)
         slot = self._slot_with_permission(state, "req-exp")
         mock_sel = MagicMock()
-        monkeypatch.setattr("kiro_crew.dashboard.state.sel", lambda: mock_sel)
+        monkeypatch.setattr("efm_go.dashboard.state.sel", lambda: mock_sel)
         self._expire_fast(state, monkeypatch)
 
         result = await state.request_approval("req-exp", "dashboard", "fs_write", slot=slot.key)
@@ -1611,7 +1611,7 @@ class TestExpiredApprovalRetiresTheCard:
         """A background approval has no slot messages: broadcast, no marker."""
         state, _ = _make_state(tmp_path)
         marker = MagicMock(return_value=True)
-        monkeypatch.setattr("kiro_crew.dashboard.state._mark_permission_resolved", marker)
+        monkeypatch.setattr("efm_go.dashboard.state._mark_permission_resolved", marker)
         self._expire_fast(state, monkeypatch, background=True)
 
         result = await state.request_approval("req-bg", "cron", "fs_write", is_background=True)
@@ -2323,7 +2323,7 @@ class TestPreToolUseHookBlockRecovery:
         )
         slot = _make_slot()
 
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_hook_blocked_turn(state, client, slot, title=f"Deploy with {secret} now")
@@ -2472,7 +2472,7 @@ class TestDenyRowTitleRedaction:
             tmp_path, context_builder=_context_builder(ToolHookResult.auto_approve())
         )
         slot = _make_slot()
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(state, client, slot, title=self._invalid_title())
@@ -2487,7 +2487,7 @@ class TestDenyRowTitleRedaction:
             hook_store=_raising_hook_store("hook exploded"),
         )
         slot = _make_slot()
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(state, client, slot, title=self._valid_title())
@@ -2498,7 +2498,7 @@ class TestDenyRowTitleRedaction:
     async def test_gated_path_invalid_name_redacts(self, tmp_path):
         state, client = _make_state(tmp_path, context_builder=_context_builder())
         slot = _make_slot()
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(state, client, slot, title=self._invalid_title())
@@ -2513,7 +2513,7 @@ class TestDenyRowTitleRedaction:
             hook_store=_raising_hook_store("hook exploded"),
         )
         slot = _make_slot()
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(state, client, slot, title=self._valid_title())
@@ -2539,7 +2539,7 @@ class TestDenyRowTitleRedaction:
         _no_refusal = patch.object(
             chat_runner, "_name_grant_refusal_off_loop", new=AsyncMock(return_value=None)
         )
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel, _no_refusal:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel, _no_refusal:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(
@@ -2562,7 +2562,7 @@ class TestDenyRowTitleRedaction:
     async def test_trust_mode_invalid_name_redacts(self, tmp_path):
         state, client = _make_state(tmp_path)
         slot = _make_slot(trust=True)
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(state, client, slot, title=self._invalid_title())
@@ -2573,7 +2573,7 @@ class TestDenyRowTitleRedaction:
     async def test_trust_mode_hook_error_redacts(self, tmp_path):
         state, client = _make_state(tmp_path, hook_store=_raising_hook_store("hook exploded"))
         slot = _make_slot(trust=True)
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(state, client, slot, title=self._valid_title())
@@ -2584,7 +2584,7 @@ class TestDenyRowTitleRedaction:
     async def test_interactive_approved_invalid_name_redacts(self, tmp_path):
         state, client = _make_state(tmp_path)
         slot = _make_slot()
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(
@@ -2597,7 +2597,7 @@ class TestDenyRowTitleRedaction:
     async def test_interactive_approved_hook_error_redacts(self, tmp_path):
         state, client = _make_state(tmp_path, hook_store=_raising_hook_store("hook exploded"))
         slot = _make_slot()
-        with patch("kiro_crew.dashboard.chat_runner.sel") as mock_sel:
+        with patch("efm_go.dashboard.chat_runner.sel") as mock_sel:
             audit = MagicMock()
             mock_sel.return_value = audit
             await _drive_deny_turn(
@@ -2785,7 +2785,7 @@ class TestHostPreDeclinedRowIsBornResolved:
     async def test_slack_linked_row_is_published_before_the_post_and_retired_when_it_fails(
         self, tmp_path, failure
     ):
-        from kiro_crew.dashboard.chat_handlers import _get_pattern_from_pending
+        from efm_go.dashboard.chat_handlers import _get_pattern_from_pending
 
         state, client = _make_state(tmp_path, context_builder=_context_builder())
         # A linked slot whose thread the prompt cannot reach. The user-echo

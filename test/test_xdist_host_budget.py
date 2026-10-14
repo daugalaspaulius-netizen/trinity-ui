@@ -151,7 +151,7 @@ def _holding_slots(slot_dir: pathlib.Path, count: int) -> Iterator[subprocess.Po
         import os, sys
         sys.path.insert(0, {str(pathlib.Path(ct.__file__).parent)!r})
         sys.path.insert(0, {str(pathlib.Path(ct.__file__).parent.parent / "src")!r})
-        from kiro_crew import platform_compat
+        from efm_go import platform_compat
         held = []
         for i in range({count}):
             fd = os.open(os.path.join({str(slot_dir)!r}, "worker-%03d.lock" % i),

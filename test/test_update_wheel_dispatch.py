@@ -79,7 +79,7 @@ def _pin_probe_git(monkeypatch, tmp_path):
         )
         fake.chmod(0o755)
     monkeypatch.setattr(
-        "kiro_crew.platform.update_capability.trusted_system_bin", lambda _name: str(fake)
+        "efm_go.platform.update_capability.trusted_system_bin", lambda _name: str(fake)
     )
     return fake
 
@@ -94,11 +94,11 @@ class TestDetectInstallLayout:
         _pin_probe_git(monkeypatch, tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(proj))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
 
-        from kiro_crew.platform.update_layout import detect_install_layout
+        from efm_go.platform.update_layout import detect_install_layout
 
         layout = detect_install_layout()
         assert layout.kind == "git"
@@ -121,10 +121,10 @@ class TestDetectInstallLayout:
         proj.mkdir()
         _init_repo(proj)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(proj))
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "docker")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "docker")
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "docker")
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "docker")
 
-        from kiro_crew.platform.update_layout import detect_install_layout
+        from efm_go.platform.update_layout import detect_install_layout
 
         layout = detect_install_layout()
         assert layout.kind == "docker"
@@ -140,11 +140,11 @@ class TestDetectInstallLayout:
         _pin_probe_git(monkeypatch, tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(proj))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
 
-        from kiro_crew.platform.update_layout import detect_install_layout
+        from efm_go.platform.update_layout import detect_install_layout
 
         layout = detect_install_layout()
         assert layout.kind == "git"
@@ -152,9 +152,9 @@ class TestDetectInstallLayout:
 
     def test_no_project_dir_falls_to_distribution(self, monkeypatch) -> None:
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "wheel")
 
-        from kiro_crew.platform.update_layout import detect_install_layout
+        from efm_go.platform.update_layout import detect_install_layout
 
         layout = detect_install_layout()
         assert layout.kind == "wheel"
@@ -163,9 +163,9 @@ class TestDetectInstallLayout:
 
     def test_dmg_is_externally_managed(self, monkeypatch) -> None:
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "dmg")
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "dmg")
 
-        from kiro_crew.platform.update_layout import detect_install_layout
+        from efm_go.platform.update_layout import detect_install_layout
 
         layout = detect_install_layout()
         assert layout.kind == "dmg"
@@ -174,9 +174,9 @@ class TestDetectInstallLayout:
 
     def test_docker_is_externally_managed(self, monkeypatch) -> None:
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "docker")
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "docker")
 
-        from kiro_crew.platform.update_layout import detect_install_layout
+        from efm_go.platform.update_layout import detect_install_layout
 
         layout = detect_install_layout()
         assert layout.kind == "docker"
@@ -186,9 +186,9 @@ class TestDetectInstallLayout:
     def test_source_distribution_treated_as_wheel(self, monkeypatch) -> None:
         """Unstamped builds (no _build_info) report 'source' — still feed-checkable."""
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "source")
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "source")
 
-        from kiro_crew.platform.update_layout import detect_install_layout
+        from efm_go.platform.update_layout import detect_install_layout
 
         layout = detect_install_layout()
         assert layout.kind == "source"
@@ -209,24 +209,24 @@ class TestReleaseChannel:
 
     def test_reads_channel_file(self, monkeypatch, tmp_path) -> None:
         (tmp_path / "channel").write_text("insider\n")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
 
-        from kiro_crew.platform.update_layout import release_channel
+        from efm_go.platform.update_layout import release_channel
 
         assert release_channel() == "insider"
 
     def test_defaults_to_stable(self, monkeypatch, tmp_path) -> None:
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
 
-        from kiro_crew.platform.update_layout import release_channel
+        from efm_go.platform.update_layout import release_channel
 
         assert release_channel() == "stable"
 
     def test_invalid_channel_falls_to_stable(self, monkeypatch, tmp_path) -> None:
         (tmp_path / "channel").write_text("bogus-channel\n")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
 
-        from kiro_crew.platform.update_layout import release_channel
+        from efm_go.platform.update_layout import release_channel
 
         assert release_channel() == "stable"
 
@@ -236,21 +236,21 @@ class TestWheelUpdateCommand:
 
     def test_includes_channel(self, monkeypatch, tmp_path) -> None:
         (tmp_path / "channel").write_text("nightly\n")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
         monkeypatch.delenv("KIROCREW_CDN_BASE", raising=False)
 
-        from kiro_crew.platform.update_layout import wheel_update_command
+        from efm_go.platform.update_layout import wheel_update_command
 
         cmd = wheel_update_command("nightly")
         assert "--channel nightly" in cmd
-        assert "https://download.crew.kiro.dev/cli.sh" in cmd
+        assert "https://efmleads.com/cli.sh" in cmd
         assert "--proto '=https'" in cmd
 
     def test_cdn_override(self, monkeypatch, tmp_path) -> None:
         monkeypatch.setenv("KIROCREW_CDN_BASE", "https://custom.cdn.example")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
 
-        from kiro_crew.platform.update_layout import wheel_update_command
+        from efm_go.platform.update_layout import wheel_update_command
 
         cmd = wheel_update_command("stable")
         assert "https://custom.cdn.example/cli.sh" in cmd
@@ -272,16 +272,16 @@ class TestUpdateWheelCli:
     def test_up_to_date_exits_cleanly(self, monkeypatch, tmp_path, capsys) -> None:
         """When local == remote, prints 'already on latest' and returns."""
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "wheel")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
         monkeypatch.delenv("KIROCREW_CDN_BASE", raising=False)
 
         # Pretend local is 0.2.0 and feed also reports 0.2.0
-        monkeypatch.setattr("kiro_crew.cli_server.__version__", "0.2.0")
-        monkeypatch.setattr("kiro_crew.__version__", "0.2.0")
+        monkeypatch.setattr("efm_go.cli_server.__version__", "0.2.0")
+        monkeypatch.setattr("efm_go.__version__", "0.2.0")
 
-        import kiro_crew.cli_server as cs
-        from kiro_crew.platform.update_layout import InstallLayout
+        import efm_go.cli_server as cs
+        from efm_go.platform.update_layout import InstallLayout
 
         layout = InstallLayout(
             kind="wheel", proj="", is_git=False, is_externally_managed=False, guidance=""
@@ -314,21 +314,21 @@ class TestUpdateWheelCli:
         shape keeps the installer path. (A plain-pip install refuses instead —
         see ``test_non_managed_pip_refuses_with_hint``.)"""
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "wheel")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
         monkeypatch.delenv("KIROCREW_CDN_BASE", raising=False)
         # The managed venv takes the shadow path; a pipx install takes the
         # installer re-run this test asserts on.
         monkeypatch.setattr(
-            "kiro_crew.platform.wheel_engine.running_from_managed_venv", lambda: False
+            "efm_go.platform.wheel_engine.running_from_managed_venv", lambda: False
         )
-        monkeypatch.setattr("kiro_crew.platform.wheel_engine.running_from_pipx", lambda: True)
+        monkeypatch.setattr("efm_go.platform.wheel_engine.running_from_pipx", lambda: True)
 
-        monkeypatch.setattr("kiro_crew.cli_server.__version__", "0.1.3")
-        monkeypatch.setattr("kiro_crew.__version__", "0.1.3")
+        monkeypatch.setattr("efm_go.cli_server.__version__", "0.1.3")
+        monkeypatch.setattr("efm_go.__version__", "0.1.3")
 
-        import kiro_crew.cli_server as cs
-        from kiro_crew.platform.update_layout import InstallLayout
+        import efm_go.cli_server as cs
+        from efm_go.platform.update_layout import InstallLayout
 
         layout = InstallLayout(
             kind="wheel", proj="", is_git=False, is_externally_managed=False, guidance=""
@@ -381,22 +381,22 @@ class TestUpdateWheelCli:
         installer re-run must NOT fire for this shape.
         """
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "wheel")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
         if cdn_base:
             monkeypatch.setenv("KIROCREW_CDN_BASE", cdn_base)
         else:
             monkeypatch.delenv("KIROCREW_CDN_BASE", raising=False)
-        monkeypatch.setattr("kiro_crew.cli_server.__version__", "0.1.3")
-        monkeypatch.setattr("kiro_crew.__version__", "0.1.3")
+        monkeypatch.setattr("efm_go.cli_server.__version__", "0.1.3")
+        monkeypatch.setattr("efm_go.__version__", "0.1.3")
         monkeypatch.setattr(
-            "kiro_crew.platform.wheel_engine.running_from_managed_venv", lambda: False
+            "efm_go.platform.wheel_engine.running_from_managed_venv", lambda: False
         )
-        monkeypatch.setattr("kiro_crew.platform.wheel_engine.running_from_pipx", lambda: False)
+        monkeypatch.setattr("efm_go.platform.wheel_engine.running_from_pipx", lambda: False)
         monkeypatch.setattr("sys.platform", platform)
 
-        import kiro_crew.cli_server as cs
-        from kiro_crew.platform.update_layout import InstallLayout
+        import efm_go.cli_server as cs
+        from efm_go.platform.update_layout import InstallLayout
 
         layout = InstallLayout(
             kind="wheel", proj="", is_git=False, is_externally_managed=False, guidance=""
@@ -408,12 +408,12 @@ class TestUpdateWheelCli:
         # fetch raise cleanly rather than hit the `subprocess.run` guard below.
         # The refusal then reports the failure with manual-install guidance and
         # emits no name-resolving command.
-        from kiro_crew.platform.wheel_engine import WheelUpdateError
+        from efm_go.platform.wheel_engine import WheelUpdateError
 
         def _no_manifest(*a, **k):
             raise WheelUpdateError("no CDN in test")
 
-        monkeypatch.setattr("kiro_crew.platform.wheel_engine.fetch_verified_manifest", _no_manifest)
+        monkeypatch.setattr("efm_go.platform.wheel_engine.fetch_verified_manifest", _no_manifest)
 
         manifest = self._make_manifest("0.2.0")
 
@@ -452,7 +452,7 @@ class TestUpdateWheelCli:
         # The report points at the channel's artifact directory for a manual,
         # hash-verified install — it must NOT hand out the dependency-confusion
         # `--extra-index-url ... -U kirocrew` form.
-        assert "https://download.crew.kiro.dev/cli/stable/" in out
+        assert "https://efmleads.com/cli/stable/" in out
         assert "SHA256SUMS" in out
         assert "--extra-index-url" not in out
         assert "-U kirocrew" not in out
@@ -472,7 +472,7 @@ class TestUpdateWheelCli:
         exc = self._drive_non_managed_pip(monkeypatch, tmp_path, "win32")
         assert exc.value.code == 1
         out = capsys.readouterr().out
-        assert "https://download.crew.kiro.dev/cli/stable/" in out
+        assert "https://efmleads.com/cli/stable/" in out
         assert "--extra-index-url" not in out
         assert "-U kirocrew" not in out
         assert "kirocrew restart" in out
@@ -505,15 +505,15 @@ class TestUpdateWheelCli:
     def test_feed_unreachable_prints_manual_command(self, monkeypatch, tmp_path, capsys) -> None:
         """Network failure prints the manual update command."""
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "wheel")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
         monkeypatch.delenv("KIROCREW_CDN_BASE", raising=False)
         (tmp_path / "channel").write_text("stable\n")
 
         import urllib.error
 
-        import kiro_crew.cli_server as cs
-        from kiro_crew.platform.update_layout import InstallLayout
+        import efm_go.cli_server as cs
+        from efm_go.platform.update_layout import InstallLayout
 
         layout = InstallLayout(
             kind="wheel", proj="", is_git=False, is_externally_managed=False, guidance=""
@@ -534,12 +534,12 @@ class TestUpdateWheelCli:
     def test_schema_mismatch_exits(self, monkeypatch, tmp_path, capsys) -> None:
         """Feed with wrong schema prints guidance and exits."""
         monkeypatch.delenv("KIROCREW_PROJECT_DIR", raising=False)
-        monkeypatch.setattr("kiro_crew.platform.update_layout.distribution", lambda: "wheel")
-        monkeypatch.setattr("kiro_crew.platform.update_layout.data_home", lambda: tmp_path)
+        monkeypatch.setattr("efm_go.platform.update_layout.distribution", lambda: "wheel")
+        monkeypatch.setattr("efm_go.platform.update_layout.data_home", lambda: tmp_path)
         monkeypatch.delenv("KIROCREW_CDN_BASE", raising=False)
 
-        import kiro_crew.cli_server as cs
-        from kiro_crew.platform.update_layout import InstallLayout
+        import efm_go.cli_server as cs
+        from efm_go.platform.update_layout import InstallLayout
 
         layout = InstallLayout(
             kind="wheel", proj="", is_git=False, is_externally_managed=False, guidance=""
@@ -573,10 +573,10 @@ class TestUpdateDispatch:
         # Both readers are bound at import, so patching `beacon.distribution`
         # alone would not reach them: the capability module decides the branch and
         # cli_server only names the stamp in the message.
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "dmg")
-        monkeypatch.setattr("kiro_crew.cli_server.distribution", lambda: "dmg")
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "dmg")
+        monkeypatch.setattr("efm_go.cli_server.distribution", lambda: "dmg")
 
-        import kiro_crew.cli_server as cs
+        import efm_go.cli_server as cs
 
         cs._update()
         out = capsys.readouterr().out
@@ -593,15 +593,15 @@ class TestUpdateDispatch:
         """
         _init_repo(tmp_path)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(tmp_path))
-        monkeypatch.setattr("kiro_crew.platform.update_capability.distribution", lambda: "docker")
-        monkeypatch.setattr("kiro_crew.cli_server.distribution", lambda: "docker")
+        monkeypatch.setattr("efm_go.platform.update_capability.distribution", lambda: "docker")
+        monkeypatch.setattr("efm_go.cli_server.distribution", lambda: "docker")
 
         def _no_git(*_a, **_k):  # pragma: no cover - must not be called
             raise AssertionError("the git update path must not run for a container")
 
         monkeypatch.setattr("subprocess.run", _no_git)
 
-        import kiro_crew.cli_server as cs
+        import efm_go.cli_server as cs
 
         cs._update()
         out = capsys.readouterr().out.lower()
@@ -615,11 +615,11 @@ class TestUpdateDispatch:
         _init_repo(proj)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(proj))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
 
-        import kiro_crew.cli_server as cs
+        import efm_go.cli_server as cs
 
         # Stub out git subprocess calls to verify we reach the git path
         calls: list[list[str]] = []
@@ -636,10 +636,10 @@ class TestUpdateDispatch:
 
         monkeypatch.setattr("subprocess.run", fake_run)
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.resolve_remote_url", lambda *a, **k: ""
+            "efm_go.platform.update_governance.resolve_remote_url", lambda *a, **k: ""
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_blocked_reason", lambda *a: ""
+            "efm_go.platform.update_governance.update_blocked_reason", lambda *a: ""
         )
 
         # The function will call git rev-parse, then git fetch, then git diff.
@@ -683,17 +683,17 @@ class TestUpdateDivergenceGuard:
         _init_repo(proj)
         monkeypatch.setenv("KIROCREW_PROJECT_DIR", str(proj))
         monkeypatch.setattr(
-            "kiro_crew.platform.update_capability.running_from_checkout",
+            "efm_go.platform.update_capability.running_from_checkout",
             lambda root, **kw: True,
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.resolve_remote_url", lambda *a, **k: ""
+            "efm_go.platform.update_governance.resolve_remote_url", lambda *a, **k: ""
         )
         monkeypatch.setattr(
-            "kiro_crew.platform.update_governance.update_blocked_reason", lambda *a: ""
+            "efm_go.platform.update_governance.update_blocked_reason", lambda *a: ""
         )
 
-        import kiro_crew.cli_server as cs
+        import efm_go.cli_server as cs
 
         if calls is None:
             calls = []
@@ -745,10 +745,10 @@ class TestUpdateDivergenceGuard:
         monkeypatch.setattr("subprocess.run", fake_run)
         # Short-circuit everything after the reset: the guard under test sits
         # before these steps, and they are not what these tests assert on.
-        monkeypatch.setattr("kiro_crew.cli_server.shutil.which", lambda *_: None)
-        monkeypatch.setattr("kiro_crew.cli._ensure_node", lambda *_: None)
-        monkeypatch.setattr("kiro_crew.cli_server.build_frontend_sync", lambda *_: None)
-        monkeypatch.setattr("kiro_crew.cli_server.dep_sync.sync_or_reinstall", lambda *a, **k: 0)
+        monkeypatch.setattr("efm_go.cli_server.shutil.which", lambda *_: None)
+        monkeypatch.setattr("efm_go.cli._ensure_node", lambda *_: None)
+        monkeypatch.setattr("efm_go.cli_server.build_frontend_sync", lambda *_: None)
+        monkeypatch.setattr("efm_go.cli_server.dep_sync.sync_or_reinstall", lambda *a, **k: 0)
         monkeypatch.setattr("builtins.input", lambda *_: answer)
 
         cs._update(force=force)
@@ -977,10 +977,10 @@ class TestUpdateDivergenceGuard:
             # attaches a RotatingFileHandler on gateway.log that outlives the
             # test, and an open fd there blocks the isolated home's cleanup on
             # Windows.
-            patch("kiro_crew.cli._setup_cli_logging"),
-            patch("kiro_crew.cli_server._update") as mock_update,
+            patch("efm_go.cli._setup_cli_logging"),
+            patch("efm_go.cli_server._update") as mock_update,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
             mock_update.assert_called_once_with(force=True)
@@ -991,10 +991,10 @@ class TestUpdateDivergenceGuard:
 
         with (
             patch.object(sys, "argv", ["kirocrew", "update"]),
-            patch("kiro_crew.cli._setup_cli_logging"),
-            patch("kiro_crew.cli_server._update") as mock_update,
+            patch("efm_go.cli._setup_cli_logging"),
+            patch("efm_go.cli_server._update") as mock_update,
         ):
-            from kiro_crew.cli import main
+            from efm_go.cli import main
 
             main()
             mock_update.assert_called_once_with(force=False)

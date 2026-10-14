@@ -18,20 +18,20 @@ from unittest.mock import AsyncMock
 import pytest
 from off_loop_helpers import off_loop
 
-from kiro_crew import crew_log as lg
-from kiro_crew.autonudge import AutoNudgeService
-from kiro_crew.crew_log import CrewLog, CrewLogError
-from kiro_crew.crew_log import emit as crew_log_emit
-from kiro_crew.crew_log.entry_types import (
+from efm_go import crew_log as lg
+from efm_go.autonudge import AutoNudgeService
+from efm_go.crew_log import CrewLog, CrewLogError
+from efm_go.crew_log import emit as crew_log_emit
+from efm_go.crew_log.entry_types import (
     OBJECT_PRODUCER_PROBE,
     OBJECT_PRODUCERS,
     SESSION_ENTRY_TYPES,
     validate_data,
 )
-from kiro_crew.crew_log.schema import KIND_SESSION, MAX_ENTRY_BYTES
-from kiro_crew.monitoring.controller import MonitorController
-from kiro_crew.monitoring.github_pull_request import GitHubPullRequestProbeResult
-from kiro_crew.monitoring.models import (
+from efm_go.crew_log.schema import KIND_SESSION, MAX_ENTRY_BYTES
+from efm_go.monitoring.controller import MonitorController
+from efm_go.monitoring.github_pull_request import GitHubPullRequestProbeResult
+from efm_go.monitoring.models import (
     MonitorBudgets,
     MonitorDecision,
     MonitorDispatchResult,
@@ -326,7 +326,7 @@ async def test_a_resolver_failure_is_logged_and_never_reaches_the_tick(tmp_path,
         tmp_path, [_result(fingerprint="fp-1")], owner=_broken
     )
 
-    with caplog.at_level(logging.ERROR, logger="kiro_crew.monitoring.controller"):
+    with caplog.at_level(logging.ERROR, logger="efm_go.monitoring.controller"):
         verdict = await controller.tick(loop, now=160.0)
 
     assert verdict.decision is MonitorDecision.RECORD_ONLY

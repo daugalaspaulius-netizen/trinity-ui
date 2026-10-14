@@ -17,8 +17,8 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_symlinks
-from kiro_crew.cli_bench import _load_report, bench_cmd
-from kiro_crew.eval.bench.run import compare_reports
+from efm_go.cli_bench import _load_report, bench_cmd
+from efm_go.eval.bench.run import compare_reports
 
 
 class _Args:
@@ -238,10 +238,10 @@ def test_importing_cli_bench_does_not_drag_the_vector_store_into_the_boot_path()
     code = textwrap.dedent(
         """
         import json, sys
-        import kiro_crew.cli_bench  # noqa: F401
+        import efm_go.cli_bench  # noqa: F401
         print(json.dumps({
-            "vector_memory": "kiro_crew.vector_memory" in sys.modules,
-            "bench": "kiro_crew.eval.bench" in sys.modules,
+            "vector_memory": "efm_go.vector_memory" in sys.modules,
+            "bench": "efm_go.eval.bench" in sys.modules,
             "sqlite3": "sqlite3" in sys.modules,
         }))
         """

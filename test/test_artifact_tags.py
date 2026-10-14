@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.artifact_store import rules
-from kiro_crew.artifacts import ArtifactStore, ArtifactValidationError, normalize_tag
-from kiro_crew.validation import (
+from efm_go.artifact_store import rules
+from efm_go.artifacts import ArtifactStore, ArtifactValidationError, normalize_tag
+from efm_go.validation import (
     ARTIFACT_LIST_SCHEMA,
     ARTIFACT_SAVE_SCHEMA,
     ARTIFACT_UPDATE_SCHEMA,
@@ -456,7 +456,7 @@ class TestMcpGateReadsTheSameRule:
 
 class TestFacade:
     def test_the_store_reads_the_rule_through_the_facade(self) -> None:
-        import kiro_crew.artifacts as art_mod
+        import efm_go.artifacts as art_mod
 
         assert art_mod.normalize_tag is rules.normalize_tag
         assert art_mod.MAX_TAG_LEN == rules.MAX_TAG_LEN == 64

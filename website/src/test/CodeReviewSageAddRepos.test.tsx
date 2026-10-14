@@ -235,7 +235,7 @@ describe('pasting a pull request link', () => {
     api.pinnedRepos.mockResolvedValue({ repos: [] })
     api.recentRepos.mockResolvedValue({ repos: [], pinned: [], gh_ready: true })
     api.myRepos.mockResolvedValue({ repos: [], pinned: [], gh_ready: true })
-    api.repoPrs.mockResolvedValue({ repo: 'kirodotdev/KiroCrew', prs: [], count: 0 })
+    api.repoPrs.mockResolvedValue({ repo: 'efmleads.com', prs: [], count: 0 })
     api.settings.mockResolvedValue({
       settings: { review: { concurrency: 2 } }, pool: null, reviewer: null,
     })
@@ -250,16 +250,16 @@ describe('pasting a pull request link', () => {
       added: { owner: 'kirodotdev', repo: 'KiroCrew' },  // brand-ok: literal repository name
       pull_request: {
         owner: 'kirodotdev', repo: 'KiroCrew', number: 777,  // brand-ok: literal repository name
-        url: 'https://github.com/kirodotdev/KiroCrew/pull/777',
+        url: 'https://efmleads.com/pull/777',
         change_id: 'GH-kirodotdev-KiroCrew-777',
       },
     })
     mount()
     const field = await screen.findByLabelText(/Repository or pull request URL/i)
-    await userEvent.type(field, 'https://github.com/kirodotdev/KiroCrew/pull/777')
+    await userEvent.type(field, 'https://efmleads.com/pull/777')
     await userEvent.click(screen.getByRole('button', { name: /^Add$/ }))
     await waitFor(() => expect(api.pinRepoUrl).toHaveBeenCalledWith(
-      'https://github.com/kirodotdev/KiroCrew/pull/777'))
+      'https://efmleads.com/pull/777'))
   })
 
   it('opens the pasted pull request instead of leaving you to find it', async () => {
@@ -271,12 +271,12 @@ describe('pasting a pull request link', () => {
       added: { owner: 'kirodotdev', repo: 'KiroCrew' },  // brand-ok: literal repository name
       pull_request: {
         owner: 'kirodotdev', repo: 'KiroCrew', number: 777,  // brand-ok: literal repository name
-        url: 'https://github.com/kirodotdev/KiroCrew/pull/777',
+        url: 'https://efmleads.com/pull/777',
         change_id: 'GH-kirodotdev-KiroCrew-777',
       },
     })
     api.pullRequestSource?.mockResolvedValue?.({
-      provider: 'github', url: 'https://github.com/kirodotdev/KiroCrew/pull/777',
+      provider: 'github', url: 'https://efmleads.com/pull/777',
       number: 777, title: 'Pasted pull request', description: '', state: 'open',
       draft: false, mergedAt: '', updatedAt: '', headBranch: 'x', baseBranch: 'main',
       headSha: 'abc', author: 'ann', additions: 0, deletions: 0, changedFiles: 0,
@@ -289,14 +289,14 @@ describe('pasting a pull request link', () => {
     })
     mount()
     const field = await screen.findByLabelText(/Repository or pull request URL/i)
-    await userEvent.type(field, 'https://github.com/kirodotdev/KiroCrew/pull/777')
+    await userEvent.type(field, 'https://efmleads.com/pull/777')
     await userEvent.click(screen.getByRole('button', { name: /^Add$/ }))
     // The modal closes, the repo is active, and the pull request is selected.
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     await waitFor(() => expect(screen.getByTestId('probe').textContent)
       .toContain('pr:777'))
     expect(screen.getByTestId('probe').textContent)
-      .toContain('repo:kirodotdev/KiroCrew')
+      .toContain('repo:efmleads.com')
   })
 
   it('says pasting a pull request link works', async () => {

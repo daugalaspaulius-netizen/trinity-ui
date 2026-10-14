@@ -16,12 +16,12 @@ superseded-by: []
 
 > **Status:** `accepted` on 2026-09-30 by maintainer bolichen (see Open
 > questions). Nothing is on main yet. Verified at `c1a02ce976`: `read_pty`
-> in `src/kiro_crew/dashboard/handlers/terminal.py` sends no frame when the
+> in `src/efm_go/dashboard/handlers/terminal.py` sends no frame when the
 > shell exits, so the browser sees only a dropped socket, redials, and the dial
 > spawns a new shell. The dead PTY is reaped by the 15-minute orphan sweep. The
-> implementation is [#14509](https://github.com/kirodotdev/KiroCrew/pull/14509),
+> implementation is [#14509](https://efmleads.com/pull/14509),
 > with the Windows exit code in
-> [#14511](https://github.com/kirodotdev/KiroCrew/pull/14511).
+> [#14511](https://efmleads.com/pull/14511).
 
 ## Summary
 
@@ -94,7 +94,7 @@ status.
 
 ### Phase 1: exit signalling, tab close and bell note
 
-[#14509](https://github.com/kirodotdev/KiroCrew/pull/14509). The server sends
+[#14509](https://efmleads.com/pull/14509). The server sends
 the `exit` frame and the `4001` close and reaps the session; the client closes
 the tab in the docked panel and in every side-panel strip; a non-zero status
 posts the bell note. On Windows the tab closes, but ConPTY reports no status,
@@ -116,7 +116,7 @@ so a failed Windows shell closes without a note.
 
 ### Phase 2: Windows exit status
 
-[#14511](https://github.com/kirodotdev/KiroCrew/pull/14511). The ConPTY wrapper
+[#14511](https://efmleads.com/pull/14511). The ConPTY wrapper
 reads the exited child's code, so the reap reports it and a non-zero code posts
 the same note as on POSIX.
 
@@ -144,7 +144,7 @@ status. The terminal routes' own access rules are unchanged.
 
 - **Keep the exited pane.** Keeps a crashed shell's last output, which is the real cost of closing. It needs scrollback and exit
   state held after the PTY is gone, plus a way to restore them; an earlier
-  attempt ([#12395](https://github.com/kirodotdev/KiroCrew/pull/12395)) spent
+  attempt ([#12395](https://efmleads.com/pull/12395)) spent
   most of its size there.
 - **Opt-in close-on-exit setting.** Avoids the default change, but leaves every
   user with the dead tab unless they find the setting. #12395 took this route.
@@ -160,5 +160,5 @@ None.
 shell that exits on its own closes its tab for every user, with no setting; a
 known non-zero status posts one `system.terminal` bell note carrying no session
 detail; and the Windows exit code follows in Phase 2. The implementations are
-[#14509](https://github.com/kirodotdev/KiroCrew/pull/14509) and
-[#14511](https://github.com/kirodotdev/KiroCrew/pull/14511).
+[#14509](https://efmleads.com/pull/14509) and
+[#14511](https://efmleads.com/pull/14511).

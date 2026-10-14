@@ -53,9 +53,9 @@ const slots = [{
 }]
 
 const PREFILL_SPACED =
-  'https://github.com/kirodotdev/KiroCrew/issues/new?title=Bug: dashboard chat fails&labels=bug, area: dashboard&assignees=someone'
+  'https://efmleads.com/issues/new?title=Bug: dashboard chat fails&labels=bug, area: dashboard&assignees=someone'
 const LONG_ENCODED =
-  'https://github.com/kirodotdev/KiroCrew/issues/new?title=Bug%3A+dashboard+chat+fails&body=%23%23+What%0A%0AURLs+are+not+clickable%0A%0A%23%23+Why%0A%0AThe+agent+generated+a+link&labels=bug%2Carea%3A+dashboard&assignees=someone&template=bug_report.md&milestone=v2.0'
+  'https://efmleads.com/issues/new?title=Bug%3A+dashboard+chat+fails&body=%23%23+What%0A%0AURLs+are+not+clickable%0A%0A%23%23+Why%0A%0AThe+agent+generated+a+link&labels=bug%2Carea%3A+dashboard&assignees=someone&template=bug_report.md&milestone=v2.0'
 
 // The reported shape first, then the working control cases.
 const CONTENT = [

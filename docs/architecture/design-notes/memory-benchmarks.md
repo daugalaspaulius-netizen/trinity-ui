@@ -419,11 +419,11 @@ stdlib cosine, or FTS5 keyword), so two hosts can rank the same corpus different
 
 ## The statistics layer
 
-`src/kiro_crew/eval/bench/stats.py` carries the paired-interleaved-median protocol for the noisy
+`src/efm_go/eval/bench/stats.py` carries the paired-interleaved-median protocol for the noisy
 end-to-end half: warmups discarded, ≥2 reps, **median never mean**, arms measured
 alternating so host drift cancels in the paired delta, and a noise band from 2σ of
 the untouched baseline. The protocol is lifted from
-`src/kiro_crew/apps/builtins/auto_improvement/spine/measurer.py`, which already gets this right; its code is not
+`src/efm_go/apps/builtins/auto_improvement/spine/measurer.py`, which already gets this right; its code is not
 reusable because it is shaped around a git worktree and a duration to be minimized.
 
 It refuses to attach a confidence band to the deterministic ruler, and refuses to

@@ -37,8 +37,8 @@ from typing import Any
 
 import pytest
 
-from kiro_crew.mcp_gateway import rewriter, stub
-from kiro_crew.mcp_gateway.pool import PoolKey
+from efm_go.mcp_gateway import rewriter, stub
+from efm_go.mcp_gateway.pool import PoolKey
 
 _STUB_PYTHON_PREFIX = ["-s", "-m", rewriter._STUB_MODULE]
 

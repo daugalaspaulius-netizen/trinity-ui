@@ -1,10 +1,10 @@
-"""Tests for kiro_crew.channel — data models and ChannelManager."""
+"""Tests for efm_go.channel — data models and ChannelManager."""
 
 from __future__ import annotations
 
 import pytest
 
-from kiro_crew.channel import (
+from efm_go.channel import (
     _MAX_A2A_EXCHANGES,
     ApprovalPolicy,
     Channel,

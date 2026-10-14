@@ -79,9 +79,9 @@ def test_built_wheel_installs_and_the_cli_answers(
         tar.extractall(source, filter="data")
     # The built SPA is untracked but is what `pod up` serves; the wheel carries
     # it when present, so copy it beside the sources the same way a release does.
-    dist_src = checkout / "src" / "kiro_crew" / "static" / "dist"
+    dist_src = checkout / "src" / "efm_go" / "static" / "dist"
     if dist_src.is_dir():
-        shutil.copytree(dist_src, source / "src" / "kiro_crew" / "static" / "dist")
+        shutil.copytree(dist_src, source / "src" / "efm_go" / "static" / "dist")
 
     build = _run(
         [sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir)],

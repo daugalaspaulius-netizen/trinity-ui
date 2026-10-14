@@ -19,13 +19,13 @@ from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 from dashboard_owner_helpers import as_owner
 
-from kiro_crew import security
-from kiro_crew.config.loader import KiroCrewConfig
-from kiro_crew.hooks import HooksConfig, resolve_effective_denied_regexes
-from kiro_crew.platform import context as ctx_mod
-from kiro_crew.platform.bootstrap import build_default_context
-from kiro_crew.platform.defaults import DefaultDeniedRuleProvider
-from kiro_crew.security import DeniedCommandRule
+from efm_go import security
+from efm_go.config.loader import KiroCrewConfig
+from efm_go.hooks import HooksConfig, resolve_effective_denied_regexes
+from efm_go.platform import context as ctx_mod
+from efm_go.platform.bootstrap import build_default_context
+from efm_go.platform.defaults import DefaultDeniedRuleProvider
+from efm_go.security import DeniedCommandRule
 
 _EDITION_ID = "acme-ada-credentials-mutate"
 _EDITION_PATTERN = r"ada\s+credentials\s+(update|add|delete)"
@@ -186,7 +186,7 @@ def test_a_composition_error_still_fails_closed(monkeypatch) -> None:
     treats that as fail-closed.  Swallowing it here would make a misconfigured
     host look like a host that simply contributes no rules.
     """
-    from kiro_crew.platform.context import PlatformCompositionError
+    from efm_go.platform.context import PlatformCompositionError
 
     class _Broken:
         def denied_rules(self):
@@ -246,7 +246,7 @@ def home(tmp_path, monkeypatch):
 
 
 def test_snapshot_lists_the_edition_rule_as_toggleable(monkeypatch, home) -> None:
-    from kiro_crew.dashboard.handlers.security import build_denied_commands_snapshot
+    from efm_go.dashboard.handlers.security import build_denied_commands_snapshot
 
     _with_context(monkeypatch, denied_rules=_Source([_rule()]))
     snap = build_denied_commands_snapshot()
@@ -263,7 +263,7 @@ def test_snapshot_lists_the_edition_rule_as_toggleable(monkeypatch, home) -> Non
 
 
 def _make_app() -> web.Application:
-    from kiro_crew.dashboard.handlers.security import api_denied_command_builtin_toggle
+    from efm_go.dashboard.handlers.security import api_denied_command_builtin_toggle
 
     app = web.Application()
     app.router.add_patch(

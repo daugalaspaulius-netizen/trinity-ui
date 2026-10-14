@@ -1262,7 +1262,7 @@ function createGatewaySupervisor({
     // is back at a probed path. Unpackaged (source checkout) launches keep the
     // PATH fallback, which is how a developer's own install is found.
     if (IS_WIN && app.isPackaged && isPathFallback(bin)) {
-      const bundledCmd = path.join(processObj.resourcesPath || "", "backend-dist", "kirocrew-backend", "bin", "kirocrew.cmd");
+      const bundledCmd = path.join(processObj.resourcesPath || "", "backend-dist", "efm-go-backend", "bin", "kirocrew.cmd");
       const bundledPy = path.resolve(path.dirname(bundledCmd), "..", "python.exe");
       let pyOk = false;
       try { fs.accessSync(bundledPy); pyOk = true; } catch { /* missing */ }
@@ -1333,7 +1333,7 @@ function createGatewaySupervisor({
     // The refusal above already required python.exe beside a .cmd shim.
     if (bin.endsWith("kirocrew.cmd")) {
       spawnBin = path.resolve(path.dirname(bin), "..", "python.exe");
-      spawnArgs = ["-s", "-P", "-m", "kiro_crew", ...spawnArgs];
+      spawnArgs = ["-s", "-P", "-m", "efm_go", ...spawnArgs];
     }
 
     const child = spawn(spawnBin, spawnArgs, {

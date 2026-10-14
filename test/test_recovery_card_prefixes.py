@@ -22,10 +22,10 @@ from pathlib import Path
 import pytest
 
 _ROOT = Path(__file__).resolve().parents[1]
-_STATE = _ROOT / "src/kiro_crew/dashboard/state.py"
+_STATE = _ROOT / "src/efm_go/dashboard/state.py"
 _CARD = _ROOT / "website/src/pages/chat/RecoveryCard.tsx"
 _EN = _ROOT / "website/src/i18n/locales/en.json"
-_DENIED_RULES = _ROOT / "src/kiro_crew/security/denied_rules.py"
+_DENIED_RULES = _ROOT / "src/efm_go/security/denied_rules.py"
 _DENY_UTIL = _ROOT / "website/src/utils/denyReason.ts"
 
 #: ``NAME = "[Something — automatic recovery]"`` at module level in state.py.
@@ -91,7 +91,7 @@ def test_synthetic_recovery_messages_carry_a_known_marker() -> None:
     They are built from the prefixes rather than hardcoding the marker, so this
     guards the composition (a lost f-string prefix) as well as the marker set.
     """
-    from kiro_crew.dashboard.chat_utils import _SYNTHETIC_RECOVERY_MSGS
+    from efm_go.dashboard.chat_utils import _SYNTHETIC_RECOVERY_MSGS
 
     known = set(_card_prefixes().values())
     for msg in _SYNTHETIC_RECOVERY_MSGS:

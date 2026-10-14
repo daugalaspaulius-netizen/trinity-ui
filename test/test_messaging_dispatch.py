@@ -17,10 +17,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from kiro_crew.agent_sdk.backends import ACP_BACKEND_KIRO
-from kiro_crew.messaging import dispatch as D
-from kiro_crew.messaging.dispatch import ChannelTurn, drive_turn
-from kiro_crew.session_allocation import SessionClosingError
+from efm_go.agent_sdk.backends import ACP_BACKEND_KIRO
+from efm_go.messaging import dispatch as D
+from efm_go.messaging.dispatch import ChannelTurn, drive_turn
+from efm_go.session_allocation import SessionClosingError
 
 
 class _Sessions:
@@ -260,7 +260,7 @@ def test_every_pipeline_channel_stop_path_records_the_stop() -> None:
     ``note_user_stop`` next to a direct ``provider.cancel``. A channel that
     cancels the provider directly without recording leaves the transient
     compaction replay blind to a Stop issued in the reset gap."""
-    root = Path(__file__).resolve().parents[1] / "src/kiro_crew"
+    root = Path(__file__).resolve().parents[1] / "src/efm_go"
     checked: list[str] = []
     for path in sorted(root.glob("*/transport_dispatch.py")):
         source = path.read_text(encoding="utf-8")
@@ -284,7 +284,7 @@ def test_the_driver_reaches_its_renderer_only_through_the_guarded_surface() -> N
     every declared handler, but the two methods the driver itself calls are the
     ones that carry the hold logic. A driver that starts calling something else
     must widen the guard on purpose, not silently bypass it."""
-    source = (Path(__file__).resolve().parents[1] / "src/kiro_crew/messaging/driver.py").read_text(
+    source = (Path(__file__).resolve().parents[1] / "src/efm_go/messaging/driver.py").read_text(
         encoding="utf-8"
     )
     used = set(re.findall(r"self\.renderer\.([a-z_]+)", source))
@@ -356,17 +356,17 @@ class TestPureCancelPredicate:
         import importlib
         import pkgutil
 
-        import kiro_crew
+        import efm_go
 
         found: dict[str, set[str]] = {}
         unreadable: list[str] = []
-        for mod in pkgutil.iter_modules(kiro_crew.__path__):
+        for mod in pkgutil.iter_modules(efm_go.__path__):
             # `messaging` is the shared layer that OWNS the union rather than a
             # channel that contributes to it, so it is not a mirror of anything.
             if not mod.ispkg or mod.name == "messaging":
                 continue
             try:
-                commands = importlib.import_module(f"kiro_crew.{mod.name}.commands")
+                commands = importlib.import_module(f"efm_go.{mod.name}.commands")
             except ModuleNotFoundError:
                 continue
             aliases: set[str] = set()
@@ -458,7 +458,7 @@ class TestToollessAgentSpecIsTheBoundary:
     def test_the_regenerated_guest_spec_mounts_no_tools_and_no_servers(self, tmp_path, monkeypatch):
         import json
 
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         monkeypatch.setattr(agent_module, "kiro_agents_dir_path", lambda: tmp_path)
         agent_module._install_guest_agent()
@@ -472,7 +472,7 @@ class TestToollessAgentSpecIsTheBoundary:
 
     def test_the_guest_spec_is_installed_with_the_lite_one(self, tmp_path, monkeypatch):
         """Every rebuild that writes the background agent writes the guest agent."""
-        from kiro_crew import agent as agent_module
+        from efm_go import agent as agent_module
 
         monkeypatch.setattr(agent_module, "kiro_agents_dir_path", lambda: tmp_path)
         monkeypatch.setattr(agent_module, "_background_agent_model", lambda: "auto")

@@ -17,7 +17,7 @@ import json
 import unittest.mock
 from pathlib import Path
 
-from kiro_crew.config.loader import (
+from efm_go.config.loader import (
     KiroCrewConfig,
     _resolve_stub_overrides,
     _resolve_stub_roster,
@@ -34,7 +34,7 @@ def _load_from_dict(data: object, tmp_path: Path) -> KiroCrewConfig:
     cfg = tmp_path / "config.json"
     cfg.write_text(json.dumps(data), encoding="utf-8")
     with unittest.mock.patch(
-        "kiro_crew.config.loader.config_path",
+        "efm_go.config.loader.config_path",
         return_value=cfg,
     ):
         return KiroCrewConfig.load()
@@ -182,7 +182,7 @@ class TestSaveRoundTripPreservesTheRoster:
         cfg_file = tmp_path / "config.json"
         cfg_file.write_text(json.dumps(data), encoding="utf-8")
         with unittest.mock.patch(
-            "kiro_crew.config.loader.config_path",
+            "efm_go.config.loader.config_path",
             return_value=cfg_file,
         ):
             cfg = KiroCrewConfig.load()

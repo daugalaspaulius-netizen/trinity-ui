@@ -1,4 +1,4 @@
-"""Branch coverage for :mod:`kiro_crew.onboarding_import` helpers.
+"""Branch coverage for :mod:`efm_go.onboarding_import` helpers.
 
 Focuses on the malformed-input, partial-import and refusal paths that the
 behavioural suite in ``test_onboarding_import.py`` does not reach: config
@@ -21,11 +21,11 @@ from typing import Any
 
 import pytest
 
-from kiro_crew import onboarding_apply, onboarding_plan, onboarding_scan, onboarding_sources
-from kiro_crew.onboarding_sources import codex as codex_source
-from kiro_crew.onboarding_sources import hermes as hermes_source
-from kiro_crew.onboarding_sources import lineage as lineage_source
-from kiro_crew.onboarding_sources import openclaw as openclaw_source
+from efm_go import onboarding_apply, onboarding_plan, onboarding_scan, onboarding_sources
+from efm_go.onboarding_sources import codex as codex_source
+from efm_go.onboarding_sources import hermes as hermes_source
+from efm_go.onboarding_sources import lineage as lineage_source
+from efm_go.onboarding_sources import openclaw as openclaw_source
 
 # These cases encode POSIX filesystem semantics: which directory names the OS
 # refuses, and how a path renders inside a returned mapping. Windows disagrees on
@@ -53,14 +53,14 @@ def _isolate_mcp_host_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     in a worker reaches the operator's real files. A test that patches these names
     itself still wins, because its own patch runs after this one.
     """
-    mcp_handlers = importlib.import_module("kiro_crew.dashboard.handlers.mcp")
+    mcp_handlers = importlib.import_module("efm_go.dashboard.handlers.mcp")
     global_mcp = tmp_path / "host-kiro-settings" / "mcp.json"
     monkeypatch.setattr(mcp_handlers, "_GLOBAL_MCP_JSON", global_mcp)
     monkeypatch.setattr(mcp_handlers, "_MCP_LOCK_PATH", global_mcp.with_suffix(".lock"))
 
 
 def _api() -> ModuleType:
-    return importlib.import_module("kiro_crew.onboarding_import")
+    return importlib.import_module("efm_go.onboarding_import")
 
 
 def _scan(tmp_path: Path, source_id: str = "hermes") -> Any:
@@ -1658,7 +1658,7 @@ class TestMcpWriter:
         def reserved(**_kwargs: Any) -> set[str]:
             return {"srv"}
 
-        module = importlib.import_module("kiro_crew.mcp_discovery")
+        module = importlib.import_module("efm_go.mcp_discovery")
         monkeypatch.setattr(module, "configured_mcp_aliases", reserved)
 
         outcome = onboarding_apply._write_mcp(

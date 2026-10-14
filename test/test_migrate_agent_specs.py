@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import kiro_crew.agent as agent_mod
+import efm_go.agent as agent_mod
 from conftest import requires_symlinks
 
 
@@ -38,7 +38,7 @@ def test_valid_spec_is_cleaned_and_counted(agents_dir, monkeypatch):
 
 
 def test_oversized_spec_is_not_rewritten(agents_dir, monkeypatch):
-    from kiro_crew import hooks
+    from efm_go import hooks
 
     monkeypatch.setattr(hooks, "MAX_FILE_BYTES", 64)
     path = agents_dir / "large.json"
@@ -50,7 +50,7 @@ def test_oversized_spec_is_not_rewritten(agents_dir, monkeypatch):
 
 
 def test_reader_denial_keeps_migrate_attribution(agents_dir, monkeypatch):
-    from kiro_crew import agent_discovery
+    from efm_go import agent_discovery
 
     path = agents_dir / "denied.json"
     original = json.dumps({"name": "denied", "model_managed": True})

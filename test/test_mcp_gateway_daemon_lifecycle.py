@@ -35,10 +35,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kiro_crew import code_fingerprint as cf
-from kiro_crew.mcp_gateway import gatewayd as gw
-from kiro_crew.mcp_gateway import manager as mgr
-from kiro_crew.subprocess_utf8 import UTF8_TEXT
+from efm_go import code_fingerprint as cf
+from efm_go.mcp_gateway import gatewayd as gw
+from efm_go.mcp_gateway import manager as mgr
+from efm_go.subprocess_utf8 import UTF8_TEXT
 
 _POSIX_ONLY = pytest.mark.skipif(sys.platform == "win32", reason="/proc and unix sockets")
 
@@ -383,7 +383,7 @@ async def test_a_real_daemon_exits_when_its_owner_dies(
         # Same entry the manager uses, with the probe interval shortened so
         # the test does not wait the production 15 s.
         "import sys, asyncio\n"
-        "from kiro_crew.mcp_gateway import gatewayd as g\n"
+        "from efm_go.mcp_gateway import gatewayd as g\n"
         "g._OWNER_LIVENESS_INTERVAL_SECS = 0.2\n"
         "sys.exit(asyncio.run(g._amain(sys.argv[1:])))",
         "--socket",
@@ -402,20 +402,20 @@ async def test_a_real_daemon_exits_when_its_owner_dies(
         start_new_session=True,
     )
     try:
-        from kiro_crew.mcp_gateway import transport
+        from efm_go.mcp_gateway import transport
 
         deadline = asyncio.get_running_loop().time() + 60
         while not await asyncio.to_thread(transport.endpoint_exists, sock):
             assert asyncio.get_running_loop().time() < deadline, "daemon never bound"
             await asyncio.sleep(0.05)
-        from kiro_crew.mcp_gateway.daemon_control import describe_daemon
+        from efm_go.mcp_gateway.daemon_control import describe_daemon
 
         info = await asyncio.to_thread(describe_daemon, sock)
         assert info is not None
         assert info.owner_pid == owner.pid
         assert info.pid == daemon.pid
         assert info.fingerprint == cf.code_fingerprint()
-        from kiro_crew.platform_compat import process_start_time
+        from efm_go.platform_compat import process_start_time
 
         assert info.start_time == process_start_time(daemon.pid)
 
@@ -703,7 +703,7 @@ class TestStubBinaryVersion:
     def test_kirocrew_servers_fold_in_the_code_fingerprint(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        from kiro_crew.mcp_gateway import stub
+        from efm_go.mcp_gateway import stub
 
         monkeypatch.setattr(stub, "_binary_version", lambda cmd: "shimhash")
         assert (
@@ -713,7 +713,7 @@ class TestStubBinaryVersion:
 
     def test_third_party_servers_are_untouched(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A git pull of Kiro Crew must not cold-start every npx server."""
-        from kiro_crew.mcp_gateway import stub
+        from efm_go.mcp_gateway import stub
 
         monkeypatch.setattr(stub, "_binary_version", lambda cmd: "shimhash")
         assert stub.pool_binary_version("npx", ["-y", "server-pdf"]) == "shimhash"

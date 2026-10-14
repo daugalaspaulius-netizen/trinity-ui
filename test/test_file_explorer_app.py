@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kiro_crew.apps.builtins.file_explorer import server
+from efm_go.apps.builtins.file_explorer import server
 
 
 @pytest.fixture

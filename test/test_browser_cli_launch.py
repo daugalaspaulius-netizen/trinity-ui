@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from kiro_crew.browser_cli import launch as mod
+from efm_go.browser_cli import launch as mod
 
 
 def test_launch_config_path_is_under_the_data_home(
@@ -66,7 +66,7 @@ def test_engine_is_the_one_the_capability_gate_requires(
     """The config must name the engine `install-browser` fetched and `browser_ok`
     gates on, or the product would install one browser and launch another --
     which is the whole defect this module exists to close."""
-    from kiro_crew.browser_cli import install
+    from efm_go.browser_cli import install
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
 
@@ -198,7 +198,7 @@ def test_the_launch_config_is_write_protected_from_the_agent(
     Asserted on BOTH paths, because a leaf on only one is reachable through the
     other, and the two gates are separate matchers.
     """
-    from kiro_crew import security
+    from efm_go import security
 
     monkeypatch.setenv("KIROCREW_HOME", str(tmp_path / "home"))
     path = str(mod.launch_config_path())
@@ -219,7 +219,7 @@ def test_launch_config_shell_protection_matches_an_existing_protected_leaf() -> 
     in command text, so neither leaf is refused there, and this fails the moment
     someone fences one of the two by text without the other.
     """
-    from kiro_crew import security
+    from efm_go import security
 
     ours = "playwright-cli-config.json"
     existing = "apps/ops-mission-control/data/rotation.yaml"
@@ -240,7 +240,7 @@ def test_gateway_startup_merges_the_override(monkeypatch: pytest.MonkeyPatch) ->
     wiring is what delivers the fix -- an unwired module changes nothing."""
     import inspect
 
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     source = inspect.getsource(server)
 
@@ -256,7 +256,7 @@ def test_gateway_startup_does_not_write_the_config_on_the_event_loop() -> None:
     """
     import inspect
 
-    from kiro_crew.dashboard import server
+    from efm_go.dashboard import server
 
     source = inspect.getsource(server)
 
@@ -336,7 +336,7 @@ def test_both_agent_spawn_paths_name_their_browser_session() -> None:
     """
     import inspect
 
-    from kiro_crew.acp import client, runtime
+    from efm_go.acp import client, runtime
 
     for module in (client, runtime):
         source = inspect.getsource(module)
@@ -356,11 +356,11 @@ def test_the_session_name_does_not_travel_as_extra_env() -> None:
     """
     import inspect
 
-    from kiro_crew import session_allocation
+    from efm_go import session_allocation
 
     assert 'pool_decision = "bypass_env"' in inspect.getsource(session_allocation)
 
-    from kiro_crew.acp import client, runtime
+    from efm_go.acp import client, runtime
 
     for module in (client, runtime):
         source = inspect.getsource(module)
